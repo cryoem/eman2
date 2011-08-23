@@ -950,7 +950,6 @@ namespace EMAN
 				d.put("searchx", EMObject::INT,"The maximum length of the detectable translational shift in the x direction- if you supply this parameter you can not supply the maxshift parameters. Default is 3.");
 				d.put("searchy", EMObject::INT,"The maximum length of the detectable translational shift in the y direction- if you supply this parameter you can not supply the maxshift parameters. Default is 3.");
 				d.put("searchz", EMObject::INT,"The maximum length of the detectable translational shift in the z direction- if you supply this parameter you can not supply the maxshift parameters. Default is 3");
-				d.put("maxshift", EMObject::INT,"Maximum translation in pixels in any direction. If the solution yields a shift beyond this value in any direction, then the refinement is judged a failure and the original alignment is used as the solution.");
 				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
 				return d;
 			}

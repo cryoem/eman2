@@ -757,6 +757,9 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.camera.update(width, height)
 		if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
 	
+	def renderNode(self):
+		pass
+	
 	def getItemInspector(self):
 		"""
 		Return a Qt widget that controls the scene item
@@ -764,9 +767,6 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		if not self.item_inspector: self.item_inspector = EMItem3DInspector("All Objects", self)
 		return self.item_inspector
 		
-	def renderNode(self):
-		pass
-	
 	def setInspector(self, inspector):
 		"""
 		Set the main 3d inspector
@@ -890,7 +890,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 				selecteditem = EMItem3D.selection_idx_dict[record.names[len(record.names)-1]]()
 				selecteditem.setSelectedItem(True)
 				# Inspector tree management
-				if self.main_3d_inspector: self.main_3d_inspector.updateInspectorTree(selecteditem)
+				if self.main_3d_inspector: self.main_3d_inspector.updateSelection(selecteditem)
 			else:
 				if record.near < bestdistance:
 					bestdistance = record.near
@@ -903,7 +903,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			else:
 				selecteditem.setSelectedItem(True)
 			# Inspector tree management
-			if self.main_3d_inspector: self.main_3d_inspector.updateInspectorTree(selecteditem)
+			if self.main_3d_inspector: self.main_3d_inspector.updateSelection(selecteditem)
 	
 	def clearSelection(self):
 		"""
@@ -914,24 +914,6 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			# Inspector tree management
 			if selected.EMQTreeWidgetItem:
 				selected.EMQTreeWidgetItem.setSelectionStateBox()
-					
-	def insertNewNode(self, name, node, parentnode=None, parentidx=None):
-		"""
-		Insert a new node in the SG, also takes care of inspector
-		if parent node is sepcified the node is inserted as a child of the parent
-		This function should be used to add nodes to the tree b/c it detemines where in the tree the node should be inserted
-		"""
-		insertionpoint = None
-		node.setLabel(name)
-		if self.main_3d_inspector: insertionpoint = self.main_3d_inspector.insertNewNode(node, parentnode, thisnode_index=parentidx) # This is used to find out where we want the item inserted
-		if insertionpoint:
-			insertionpoint[0].insertChild(node, (insertionpoint[1] + 1))
-		else:
-			if not parentnode: parentnode = self
-			if parentidx == None:
-				parentnode.addChild(node)
-			else:
-				parentnode.insertChild(node, (parentidx+1))
 
 	# Event subclassing
 	def mousePressEvent(self, event):
@@ -1135,10 +1117,6 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		return self.mousemode
 		
-	def saveSnapShot(self, filename, format="tiff"):
-		image = self.grabFrameBuffer()
-		image.save(filename, format)
-		
 	def setZclip(self, zclip):
 		""" Set the Z clipping plane """
 		self.camera.setZclip(zclip)
@@ -1179,11 +1157,47 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.pixels.append(self.camera.width)
 		self.pixels.append(self.camera.height)
 		self.pixels.append(pixeldata)
+		
+	def saveSnapShot(self, filename, format="tiff"):
+		image = self.grabFrameBuffer()
+		image.save(filename, format)
 	
-	def loadSession(self, tree):
+	def insertNewNode(self, name, node, parentnode=None, parentidx=None):
+		"""
+		Insert a new node in the SG, also takes care of inspector
+		if parent node is sepcified the node is inserted as a child of the parent
+		This function should be used to add nodes to the tree b/c it detemines where in the tree the node should be inserted
+		@param name The node name
+		@param node the node iteslf
+		@param parentnode, the parent node if there is one
+		@param the index to insert the child in. NOne, means append child to end of children 
+		"""
+		insertionpoint = None
+		node.setLabel(name)
+		if self.main_3d_inspector: insertionpoint = self.main_3d_inspector.insertNewNode(node, parentnode, thisnode_index=parentidx) # This is used to find out where we want the item inserted
+		if insertionpoint:
+			insertionpoint[0].insertChild(node, insertionpoint[1]) # We will insert AFTER node xxxx
+		else:
+			if not parentnode: parentnode = self
+			if parentidx == None:
+				parentnode.addChild(node)
+			else:
+				parentnode.insertChild(node, parentidx) # We will insert AFTER node xxxx
+				
+	def loadSession(self, filename):
 		"""
 		Loads a session begining 
 		"""
+		rfile = open(filename, 'rb')
+		try:
+			tree = pickle.load(rfile)
+		except:
+			print "ERROR!!! Couldn't load the session file"
+			rfile.close()
+			return	
+		rfile.close()
+		
+		self.makeCurrent()
 		# Clear old tree
 		children = tuple(self.getChildren()) # Need to create immutable so that list chaos does not ensue with prunnig down the list
 		for child in children:
@@ -1192,7 +1206,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.parentnodestack = [self]
 		#print tree
 		self._process_session_load(tree)
-		if self.main_3d_inspector: self.main_3d_inspector.loadSG()
+		self.updateTree()
+		self.updateSG()
 		
 	def _process_session_load(self, line):
 		"""
@@ -1325,6 +1340,13 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		self.update()
 		if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+		
+	def updateTree(self):
+		"""
+		Update the inspector tree if there is one
+		"""
+		if self.main_3d_inspector: self.main_3d_inspector.updateTree()
+		
 	# Maybe add methods to control the lights
 
 class EMLight:
@@ -1671,26 +1693,7 @@ class EMInspector3D(QtGui.QWidget):
 		# There is a BUG in QStackedWidget @^#^&#, so it thinks that widgets have been deleted when they haven't!!! (It thinks that when you delete the stacked widget all widgets in the stack have been removed when in fact that is not always the case)
 		for node in self.scenegraph.getAllNodes():
 			node.item_inspector = None
-		
-	def _recursiveAdd(self, parentitem, parentnode):
-		"""
-		Helper function to laod the SG
-		"""
-		for child in parentnode.getChildren():
-			if not child.getLabel(): child.setLabel(child.name)
-			addeditem = self.addTreeNode(child.getLabel(), child, parentitem)
-			self._recursiveAdd(addeditem, child)
-		# Expand the data items
-		if parentitem.childCount() > 0: parentitem.setExpanded(True)
-		
-	def loadSG(self):
-		"""
-		Load the SG
-		"""
-		rootitem = self.addTreeNode("All Objects", self.scenegraph)
-		self._recursiveAdd(rootitem, self.scenegraph)
 			
-	
 	def getTreeWidget(self):
 		"""
 		This returns the treeview-control panel widget
@@ -1730,7 +1733,7 @@ class EMInspector3D(QtGui.QWidget):
 		
 		return tvbox
 	
-	def updateInspectorTree(self, selecteditem):
+	def updateSelection(self, selecteditem):
 		"""
 		Update the inspector tree_item
 		"""
@@ -1753,6 +1756,130 @@ class EMInspector3D(QtGui.QWidget):
 				ancestor.EMQTreeWidgetItem.setSelectionState(False)
 		for child in item.getAllSelectedNodes()[1:]: 	# Lop the node itself off
 			child.EMQTreeWidgetItem.setSelectionState(False)
+	
+	def _recursiveAdd(self, parentitem, parentnode):
+		"""
+		Helper function to laod the SG
+		"""
+		for child in parentnode.getChildren():
+			if not child.getLabel(): child.setLabel(child.name)
+			addeditem = self.addTreeNode(child.getLabel(), child, parentitem)
+			self._recursiveAdd(addeditem, child)
+		# Expand the data items
+		if parentitem.childCount() > 0: parentitem.setExpanded(True)
+		
+	def loadSG(self):
+		"""
+		Load the SG
+		"""
+		rootitem = self.addTreeNode("All Objects", self.scenegraph)
+		self._recursiveAdd(rootitem, self.scenegraph)
+		
+	def addTreeNode(self, name, item3d, parentitem=None, insertionindex=-1):
+		"""
+		Add a node (item3d) to the TreeWidget if not parent node, otherwise add a child to parent node
+		We need to get a GUI for the treeitem. The treeitem and the GUI need know each other so they can talk
+		The Treeitem also needs to know the node, so it can talk to the node.
+		You can think of this as a three way conversation (the alterative it to use a mediator, but that is not worth it w/ only three players)
+		"""
+		tree_item = EMQTreeWidgetItem(QtCore.QStringList(name), item3d, parentitem)	# Make a QTreeItem widget, and let the TreeItem talk to the scenegraph node and its GUI
+		item3d.setEMQTreeWidgetItem(tree_item)				# Reference to the EMQTreeWidgetItem
+		item_inspector = item3d.getItemInspector()				# Get the node GUI controls 
+		item_inspector.setInspector(self)					# Associate the item GUI with the inspector
+		self.stacked_widget.addWidget(item_inspector)			# Add a widget to the stack
+		item3d.setLabel(name)						# Set the label
+		# Set icon status
+		tree_item.setSelectionStateBox()
+		# Set parent if one exists	
+		if not parentitem:
+			self.tree_widget.insertTopLevelItem(0, tree_item)
+		else:
+			if insertionindex >= 0:
+				parentitem.insertChild(insertionindex, tree_item)
+			else:
+				parentitem.addChild(tree_item)
+		return tree_item
+	
+	def removeTreeNode(self, parentitem, childindex):
+		# I am using the parent item rather than the item itself b/c the stupid widget has no , remove self function...
+		# Remove both the QTreeWidgetItem and the widget from the WidgetStack, otherwise we'll get memory leaks 
+		if parentitem.child(childindex).item3d():
+			self.stacked_widget.removeWidget(parentitem.child(childindex).item3d().getItemInspector())
+		parentitem.takeChild(childindex)
+	
+	def insertNewNode(self, insertion_node, parentnode=None, thisnode_index=None):
+		"""
+		Insert a node at the highlighted location. If an item is highlighted the item3d who had a child is retured along with its order in the children
+		"""
+		currentitem = self.tree_widget.currentItem()
+		itemparentnode = None
+
+		if currentitem:
+			if not parentnode:
+				if currentitem.parent: itemparentnode = currentitem.parent()
+			else:
+				itemparentnode = parentnode.EMQTreeWidgetItem
+			if itemparentnode:
+				if not thisnode_index: thisnode_index = itemparentnode.indexOfChild(currentitem) + 1 # Insert after the this node
+				addeditem = self.addTreeNode(insertion_node.getLabel(), insertion_node, parentitem=itemparentnode, insertionindex=thisnode_index)
+				self.tree_widget.setCurrentItem(addeditem)
+				self._tree_widget_click(addeditem, 0)
+				return [itemparentnode.item3d(), thisnode_index]
+		# Otherwise add the node to the Root
+		addeditem = self.addTreeNode(insertion_node.getLabel(), insertion_node, parentitem=self.tree_widget.topLevelItem(0))
+		self.tree_widget.setCurrentItem(addeditem)
+		self._tree_widget_click(addeditem, 0, quiet=True)
+		
+		return None
+	
+	def clearTree(self):
+		"""
+		Clear the entire tree
+		"""
+		self.tree_widget.topLevelItem(0).removeAllChildren(self)
+		self.tree_widget.takeTopLevelItem(0)
+		
+	def _tree_widget_click(self, item, col, quiet=False):
+		"""
+		When a user clicks on the selection tree check box
+		"""
+		self.stacked_widget.setCurrentWidget(item.item3d().getItemInspector())
+		item.setSelectionState(item.checkState(0))
+		# This code is to prevent both decendents and childer from being selected....
+		self.ensureUniqueTreeLevelSelection(item.item3d())
+		if not quiet: self.updateSceneGraph()
+		
+	def _tree_widget_visible(self, item):
+		"""
+		When a user clicks on the visible icon
+		"""
+		item.toggleVisibleState()
+		self.updateSceneGraph()
+	
+	def _tree_widget_edit(self):
+		"""
+		When a use middle clicks
+		"""
+		nodedialog = NodeEditDialog(self, self.tree_widget.currentItem())
+		nodedialog.exec_()
+		self.activateWindow()
+	
+	def _on_add_button(self):
+		nodedialog =  NodeDialog(self, self.tree_widget.currentItem())
+		nodedialog.exec_()
+		self.activateWindow()
+		
+	def _tree_widget_remove(self):
+		"""
+		When a use wants to remove a node_name
+		"""
+		item = self.tree_widget.currentItem()
+		if item.parent:
+			self.removeTreeNode(item.parent(), item.parent().indexOfChild(item)) 
+			item.parent().item3d().removeChild(item.item3d())
+			self.updateSceneGraph()
+		else:
+			print "Error cannot remove root node!!"
 			
 	def _get_toolbox_layout(self):
 		tvbox = QtGui.QHBoxLayout()
@@ -1878,112 +2005,6 @@ class EMInspector3D(QtGui.QWidget):
 				
 	def _apptool_clicked(self, state):
 		self.scenegraph.setMouseMode("app")
-		
-	def addTreeNode(self, name, item3d, parentitem=None, insertionindex=-1):
-		"""
-		Add a node (item3d) to the TreeWidget if not parent node, otherwise add a child to parent node
-		We need to get a GUI for the treeitem. The treeitem and the GUI need know each other so they can talk
-		The Treeitem also needs to know the node, so it can talk to the node.
-		You can think of this as a three way conversation (the alterative it to use a mediator, but that is not worth it w/ only three players)
-		"""
-		tree_item = EMQTreeWidgetItem(QtCore.QStringList(name), item3d, parentitem)	# Make a QTreeItem widget, and let the TreeItem talk to the scenegraph node and its GUI
-		item3d.setEMQTreeWidgetItem(tree_item)				# Reference to the EMQTreeWidgetItem
-		item_inspector = item3d.getItemInspector()				# Get the node GUI controls 
-		item_inspector.setInspector(self)					# Associate the item GUI with the inspector
-		self.stacked_widget.addWidget(item_inspector)			# Add a widget to the stack
-		item3d.setLabel(name)						# Set the label
-		# Set icon status
-		tree_item.setSelectionStateBox()
-		# Set parent if one exists	
-		if not parentitem:
-			self.tree_widget.insertTopLevelItem(0, tree_item)
-		else:
-			if insertionindex >= 0:
-				parentitem.insertChild(insertionindex, tree_item)
-			else:
-				parentitem.addChild(tree_item)
-		return tree_item
-	
-	def removeTreeNode(self, parentitem, childindex):
-		# I am using the parent item rather than the item itself b/c the stupid widget has no , remove self function...
-		# Remove both the QTreeWidgetItem and the widget from the WidgetStack, otherwise we'll get memory leaks 
-		if parentitem.child(childindex).item3d():
-			self.stacked_widget.removeWidget(parentitem.child(childindex).item3d().getItemInspector())
-		parentitem.takeChild(childindex)
-	
-	def insertNewNode(self, insertion_node, parentnode=None, thisnode_index=None):
-		"""
-		Insert a node at the highlighted location. If an item is highlighted the item3d who had a child is retured along with its order in the children
-		"""
-		currentitem = self.tree_widget.currentItem()
-		itemparentnode = None
-
-		if currentitem:
-			if not parentnode:
-				if currentitem.parent: itemparentnode = currentitem.parent()
-			else:
-				itemparentnode = parentnode.EMQTreeWidgetItem
-			if itemparentnode:
-				if not thisnode_index: thisnode_index = itemparentnode.indexOfChild(currentitem)
-				addeditem = self.addTreeNode(insertion_node.getLabel(), insertion_node, parentitem=itemparentnode, insertionindex=(thisnode_index+1))
-				self.tree_widget.setCurrentItem(addeditem)
-				self._tree_widget_click(addeditem, 0)
-				return [itemparentnode.item3d(), thisnode_index]
-		# Otherwise add the node to the Root
-		addeditem = self.addTreeNode(insertion_node.getLabel(), insertion_node, parentitem=self.tree_widget.topLevelItem(0))
-		self.tree_widget.setCurrentItem(addeditem)
-		self._tree_widget_click(addeditem, 0, quiet=True)
-		
-		return None
-	
-	def clearTree(self):
-		"""
-		Clear the entire tree
-		"""
-		self.tree_widget.topLevelItem(0).removeAllChildren(self)
-		self.tree_widget.takeTopLevelItem(0)
-		
-	def _tree_widget_click(self, item, col, quiet=False):
-		"""
-		When a user clicks on the selection tree check box
-		"""
-		self.stacked_widget.setCurrentWidget(item.item3d().getItemInspector())
-		item.setSelectionState(item.checkState(0))
-		# This code is to prevent both decendents and childer from being selected....
-		self.ensureUniqueTreeLevelSelection(item.item3d())
-		if not quiet: self.updateSceneGraph()
-		
-	def _tree_widget_visible(self, item):
-		"""
-		When a user clicks on the visible icon
-		"""
-		item.toggleVisibleState()
-		self.updateSceneGraph()
-	
-	def _tree_widget_edit(self):
-		"""
-		When a use middle clicks
-		"""
-		nodedialog = NodeEditDialog(self, self.tree_widget.currentItem())
-		nodedialog.exec_()
-		self.activateWindow()
-	
-	def _on_add_button(self):
-		nodedialog =  NodeDialog(self, self.tree_widget.currentItem())
-		nodedialog.exec_()
-		self.activateWindow()
-		
-	def _tree_widget_remove(self):
-		"""
-		When a use wants to remove a node_name
-		"""
-		item = self.tree_widget.currentItem()
-		if item.parent:
-			self.removeTreeNode(item.parent(), item.parent().indexOfChild(item)) 
-			item.parent().item3d().removeChild(item.item3d())
-			self.updateSceneGraph()
-		else:
-			print "Error cannot remove root node!!"
 		
 	def getLightsWidget(self):
 		"""
@@ -2188,26 +2209,8 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		# Open the file
 		filename = QtGui.QFileDialog.getOpenFileName(self, 'Open Session', os.getcwd(), "*.eman")
-		self.loadSession(filename)
-	
-	def loadSession(self, filename):
-		"""
-		Load a session
-		"""
-		rfile = open(filename, 'rb')
-		try:
-			tree = pickle.load(rfile)
-		except:
-			print "ERROR!!! Couldn't load the session file"
-			rfile.close()
-			return	
-		rfile.close()
-		# Clear the current tree
-		self.clearTree()
-		# Load the new data
-		self.scenegraph.makeCurrent()
-		self.scenegraph.loadSession(tree)
-		self.updateSceneGraph()
+		if filename:
+			self.scenegraph.loadSession(filename)
 		
 	def _on_save_session(self):
 		"""

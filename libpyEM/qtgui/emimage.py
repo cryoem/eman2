@@ -126,7 +126,6 @@ class EMImageWidget(object):
 				from emdataitem3d import EMDataItem3D, EMIsosurface
 				data = EMDataItem3D(data, transform=Transform())
 				isosurface = EMIsosurface(data, transform=Transform())
-				print "WHAT"
 				if old:
 					if isinstance(old,EMScene3D):
 						old.insertNewNode("Data", data, parentnode=old)
@@ -234,7 +233,6 @@ class EMWidgetFromFile(object):
 					widget.set_data_from_file(filename)
 					return widget
 			elif isinstance(data,EMData):
-				print "X", os.path.basename(filename)
 				if usescenegraph:
 					from EMAN2 import Transform
 					from emscene3d import EMScene3D
