@@ -2950,6 +2950,362 @@ class Popuppdb2em(QWidget):
         #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
 	self.pdbfileedit.setText(str(a))
         
+#Layout of the Pop Up window Popuptwodali (for sxali2d); started by the function twodali of the main window        
+class Popuppca(QWidget):
+    def __init__(self):
+        QWidget.__init__(self)
+	
+	#######################################################################################
+	# class variables
+	
+	self.cmd = ""
+	# populate with default values
+	self.savedparmsdict = {'input_stack_list':'','output_stack':'','subavg':'','rad':'-1','nvec':'1','mask':'','sdir':'.','usebuf':Qt.Unchecked,'nproc':'1','shuffle':Qt.Unchecked}
+
+	#######################################################################################
+	# Layout parameters
+	
+	self.y1 = 10 # title and Repopulate button
+	self.y2 = self.y1 + 78 # Text boxes for inputting parameters
+	#self.y3 = self.y2 + 222 # activate images button and set xform.align2d button
+	self.y4 = self.y2 + 222 # Advanced Parameters, Save Input and Generate command line buttons
+	self.y5 = self.y4 + 95 # run button 
+	self.yspc = 4
+	
+	self.x1 = 10 # first column (text box labels)
+	self.x2 = self.x1 + 150 # second column (text boxes)
+	self.x3 = self.x2+145 # third column (Open .hdf button)
+	self.x4 = self.x3+100 # fourth column (Open .bdb button)
+	self.x5 = self.x4+100
+	self.x6 = 230 # run button
+	#######################################################################################
+	
+        #Here we just set the window title
+	self.setWindowTitle('sxpca')
+        #Here we just set a label and its position in the window
+	title1=QtGui.QLabel('<b>sxpca</b> - Principal Component Analysis of images', self)
+	title1.move(self.x1,self.y1)
+	self.y1 += 30
+
+	self.repopbtn = QPushButton("Repopulate With Saved Parameters", self)
+        self.repopbtn.move(self.x1-5,self.y1)
+        #sets an infotip for this Pushbutton
+        self.repopbtn.setToolTip('Repopulate With Saved Parameters')
+        #when this button is clicked, this action starts the subfunction twodali
+        self.connect(self.repopbtn, SIGNAL("clicked()"), self.repoparms_pca)
+
+	#######################################################################################
+        #Here we create a Button(file_button with title run open .hdf) and its position in the window
+	self.file_button = QtGui.QPushButton("Open .hdf", self)
+	self.file_button.move(self.x3, self.y2-self.yspc)
+        #Here we define, that when this button is clicked, it starts subfunction choose_file
+	QtCore.QObject.connect(self.file_button, QtCore.SIGNAL("clicked()"), self.choose_file)
+        #exactly the same as above, but for subfunction choose_file1
+	self.file_button1 = QtGui.QPushButton("Open .bdb", self)
+	self.file_button1.move(self.x4,self.y2-self.yspc)
+	QtCore.QObject.connect(self.file_button1, QtCore.SIGNAL("clicked()"), self.choose_file1)
+	
+	inpstklist= QtGui.QLabel('Enter input stacks', self)
+	inpstklist.move(self.x1,self.y2)
+	self.input_stack_listedit=QtGui.QLineEdit(self)
+        self.input_stack_listedit.move(self.x2,self.y2)
+	self.input_stack_listedit.setText(self.savedparmsdict['input_stack_list'])
+	
+	self.inputinfobtn = QPushButton("Input Info", self)
+        self.inputinfobtn.move(self.x5,  self.y2-self.yspc)
+        #sets an infotip for this Pushbutton
+        self.inputinfobtn.setToolTip('Input help')
+        #when this button is clicked, this action starts the subfunction twodali
+        self.connect(self.inputinfobtn, SIGNAL("clicked()"), self.inputinfo_pca)
+	
+	self.y2 += 30
+	
+	outstk= QtGui.QLabel('Output Stack', self)
+	outstk.move(self.x1,self.y2)
+	self.output_stackedit=QtGui.QLineEdit(self)
+	self.output_stackedit.move(self.x2,self.y2)
+	self.output_stackedit.setText(self.savedparmsdict['output_stack'])	
+	
+	self.outinfobtn = QPushButton("Output Info", self)
+        self.outinfobtn.move(self.x3,  self.y2-self.yspc)
+        #sets an infotip for this Pushbutton
+        self.outinfobtn.setToolTip('Output Info')
+        #when this button is clicked, this action starts the subfunction twodali
+        self.connect(self.outinfobtn, SIGNAL("clicked()"), self.outputinfo_pca)
+	self.y2 += 30
+
+	sa= QtGui.QLabel('Average to subtract', self)
+	sa.move(self.x1,self.y2)
+	self.subavgedit=QtGui.QLineEdit(self)
+	self.subavgedit.move(self.x2,self.y2)
+	self.subavgedit.setText(self.savedparmsdict['subavg'])
+	self.subavgedit.setToolTip('subtract average')	
+	
+	self.file_button2 = QtGui.QPushButton("Open file", self)
+	self.file_button2.move(self.x3, self.y2-self.yspc)
+        #Here we define, that when this button is clicked, it starts subfunction choose_file
+	QtCore.QObject.connect(self.file_button2, QtCore.SIGNAL("clicked()"), self.choose_file2)
+	
+	self.y2 += 30
+	
+	radius= QtGui.QLabel('Radius of mask', self)
+	radius.move(self.x1,self.y2)
+	self.radedit=QtGui.QLineEdit(self)
+	self.radedit.move(self.x2,self.y2)
+	self.radedit.setText(self.savedparmsdict['rad'])
+	self.radedit.setToolTip('Radius of mask')	
+	self.y2 += 30
+
+	nv= QtGui.QLabel('Number of eigenvectors', self)
+	nv.move(self.x1,self.y2)
+	self.nvecedit=QtGui.QLineEdit(self)
+	self.nvecedit.move(self.x2,self.y2)
+	self.nvecedit.setText(self.savedparmsdict['nvec'])
+	self.nvecedit.setToolTip('Number of eigenvectors')
+	self.y2 += 30
+	
+	nproc= QtGui.QLabel('Number of Processors', self)
+	nproc.move(self.x1,self.y2)
+	self.nprocedit=QtGui.QLineEdit(self)
+	self.nprocedit.move(self.x2,self.y2)
+	self.nprocedit.setText(self.savedparmsdict['nproc'])
+	self.nprocedit.setToolTip('The number of processors to use. Default is single processor mode')
+
+	
+	######################################################################################
+	
+	self.savepbtn = QPushButton("Save Input Parameters", self)
+        self.savepbtn.move(self.x1-5, self.y4)
+        #sets an infotip for this Pushbutton
+        self.savepbtn.setToolTip('Save Input Parameters')
+        #when this button is clicked, this action starts the subfunction twodali
+        self.connect(self.savepbtn, SIGNAL("clicked()"), self.saveparms)
+	self.y4+=30
+	
+	self.cmdlinebtn = QPushButton("Generate command line from input parameters", self)
+        self.cmdlinebtn.move(self.x1-5, self.y4)
+        #sets an infotip for this Pushbutton
+        self.cmdlinebtn.setToolTip('Generate command line using input parameters')
+        #when this button is clicked, this action starts the subfunction twodali
+        self.connect(self.cmdlinebtn, SIGNAL("clicked()"), self.gencmdline_pca)
+
+	#######################################################################
+	 #Here we create a Button(Run_button with title run sxali2d) and its position in the window
+	self.RUN_button = QtGui.QPushButton('Run sxpca', self)
+	# make 3D textured push button look
+	s = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px}"
+	
+	self.RUN_button.setStyleSheet(s)
+	self.RUN_button.move(self.x6, self.y5)
+        #Here we define, that when this button is clicked, it starts subfunction runsxali2d
+        self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxpca)
+        #Labels and Line Edits for User Input	
+
+	
+     #Function runsxali2d started when  the  RUN_button of the  Poptwodali window is clicked 
+    def outputinfo_pca(self):
+    	QMessageBox.information(self, "sxpca output",'output_stack contains the result of the PCA. saved as stack files')
+	
+	
+    def inputinfo_pca(self):
+    	QMessageBox.information(self, "sxpca input",'input list of filenames delimited by space, e.g., myfile1.hdf /usr/folder/myfile2.hdf myfile3.hdf')
+	
+    def gencmdline_pca(self,writefile=True):
+	#Here we just read in all user inputs in the line edits of the Poptwodali window
+   	input_stack_list = self.input_stack_listedit.text()
+	output_stack=self.output_stackedit.text()
+	rad=self.radedit.text()
+	nvec=self.nvecedit.text()
+	subavg=self.subavgedit.text()
+	
+	inpstklist=str(input_stack_list).split(' ')
+	
+	cmd1 = "sxpca.py"
+	
+	for fn in inpstklist:
+		if len(str(fn))>0:
+			cmd1 = cmd1+" "+fn
+	cmd1 = cmd1+" "+str(output_stack)
+	
+	args = " --rad="+ str(rad)+ " --subavg='"+str(subavg)+"'"+" --nvec="+str(nvec)
+	
+	cmd1 = cmd1 + args
+	
+	mask = self.w1.maskedit.text()
+	sdir = self.w1.sdiredit.text()
+	usebuf=self.w1.usebufchkbx.checkState()
+	shuffle=self.w1.shufflechkbx.checkState()		
+			
+	cmd1 = cmd1+" --mask='" +str(mask) +"'"+" --sdir="+str(sdir)
+	
+	if usebuf == Qt.Checked:
+		cmd1 = cmd1 + " --usebuf"
+	if shuffle == Qt.Checked:
+		cmd1 = cmd1 + " --shuffle"	
+	
+	np = self.nprocedit.text()
+	
+	self.savedparmsdict = {'input_stack_list':str(input_stack_list),'output_stack':str(output_stack),'subavg':str(subavg),'rad':str(rad),'nvec':str(nvec),'mask':str(mask),'sdir':str(sdir),'usebuf':usebuf,'nproc':str(np),'shuffle':shuffle}
+
+	self.w1.savedparmsdict=self.savedparmsdict
+	
+	if int(str(np)) > 1:
+		cmd1="mpirun -np "+ str(np) + " "+ cmd1+" --MPI" 
+	
+	if writefile:	
+		(fname,stat)= QInputDialog.getText(self,"Generate Command Line","Enter name of file to save command line in",QLineEdit.Normal,"")
+		if stat:
+			f = open(fname,'a')
+			f.write(cmd1)
+			f.write('\n')
+			f.close()
+	
+	print cmd1
+	self.cmd = cmd1
+	
+    def runsxpca(self):
+	self.gencmdline_pca(writefile=False)
+	process = subprocess.Popen(self.cmd,shell=True)
+	self.emit(QtCore.SIGNAL("process_started"),process.pid)
+	
+    def saveparms(self):	
+	(fname,stat)= QInputDialog.getText(self,"Save Input Parameters","Enter name of file to save parameters in",QLineEdit.Normal,"")
+	if stat:
+		import pickle
+		output=open(fname,'wb')
+		self.gencmdline_pca(writefile=False)
+		pickle.dump(self.savedparmsdict,output)
+		output.close()
+	
+    def repoparms_pca(self):	
+	(fname,stat)= QInputDialog.getText(self,"Repopulate Parameters","Enter name of file parameters were saved in",QLineEdit.Normal,"")
+	if stat:
+		import pickle
+		pkl = open(fname,'rb')
+		self.savedparmsdict = pickle.load(pkl)
+		self.input_stack_listedit.setText(self.savedparmsdict['input_stack_list'])
+		self.output_stackedit.setText(self.savedparmsdict['output_stack'])
+		self.radedit.setText(self.savedparmsdict['rad'])
+		self.subavgedit.setText(self.savedparmsdict['subavg'])
+		self.nvecedit.setText(self.savedparmsdict['nvec'])
+		self.nprocedit.setText(self.savedparmsdict['nproc'])
+		self.w1.maskedit.setText(self.savedparmsdict['mask'])
+		self.w1.sdiredit.setText(self.savedparmsdict['sdir'])
+		self.w1.usebufchkbx.setCheckState(self.savedparmsdict['usebuf'])
+		self.w1.shufflechkbx.setCheckState(self.savedparmsdict['shuffle'])
+		
+	#Function choose_file started when  the  open_file of the  Poptwodali window is clicked
+    def choose_file(self):
+	#opens a file browser, showing files only in .hdf format
+   	file_name = QtGui.QFileDialog.getOpenFileName(self, "Open Data File", "", "HDF files (*.hdf)")
+        #after the user selected a file, we obtain this filename as a Qstring
+	a=QtCore.QString(file_name)
+	print a
+        #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
+	curlist = self.input_stack_listedit.text()
+	curlist = curlist+' '+str(a)
+	self.input_stack_listedit.setText(str(curlist))
+        
+	#Function choose_file started when  the  open_file of the  Poptwodali window is clicked (same as above but for bdb files(maybe we can combine these two into one function)
+    def choose_file1(self):
+	file_name1 = QtGui.QFileDialog.getOpenFileName(self, "Open Data File", "EMAN2DB/", "BDB FILES (*.bdb)" )
+	a=QtCore.QString(file_name1)
+	b=os.path.basename(str(a))
+	c=os.path.splitext(b)[0]
+	d="bdb:"+c
+	print d
+	curlist = self.input_stack_listedit.text()
+	curlist = curlist+' '+str(d)
+	self.input_stack_listedit.setText(str(curlist))
+
+    def choose_file2(self):
+	#opens a file browser, showing files only in .hdf format
+   	file_name = QtGui.QFileDialog.getOpenFileName(self, "Open Data File", "", "files (*)")
+        #after the user selected a file, we obtain this filename as a Qstring
+	a=QtCore.QString(file_name)
+	print a
+        #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
+	self.subavgedit.setText(str(a))
+		
+class Popupadvparams_pca(QWidget):
+    def __init__(self,savedparms):
+        QWidget.__init__(self)
+	
+	self.x1 = 10
+	self.x2 = 140
+	self.x3 = 285
+	
+	self.y1 = 10
+	self.yspc = 4
+	
+        #Here we just set the window title
+	self.setWindowTitle('sxali2d advanced parameter selection')
+        #Here we just set a label and its position in the window
+	title1=QtGui.QLabel('<b>sxali2d</b> - set advanced params', self)
+	title1.move(self.x1,self.y1)
+        #Labels and Line Edits for User Input
+        #Just a label
+	self.y1 += 30
+	
+	title2= QtGui.QLabel('<b>Advanced</b> parameters', self)
+	title2.move(self.x1,self.y1)
+	
+	self.y1 += 30
+	
+	self.savedparmsdict=savedparms
+        #Example for User input stack name
+        #First create the label and define its position
+	maskname= QtGui.QLabel('Mask', self)
+	maskname.move(self.x1,self.y1)
+        #Now add a line edit and define its position
+	self.maskedit=QtGui.QLineEdit(self)
+        self.maskedit.move(self.x2,self.y1)
+        #Adds a default value for the line edit
+	self.maskedit.setText(self.savedparmsdict['mask'])
+	self.maskedit.setToolTip("mask file")
+	
+	self.mskfile_button = QtGui.QPushButton("Open File", self)
+	self.mskfile_button.move(self.x3, self.y1-self.yspc)
+        #Here we define, that when this button is clicked, it starts subfunction choose_file
+	QtCore.QObject.connect(self.mskfile_button, QtCore.SIGNAL("clicked()"), self.choose_mskfile)
+	
+	self.y1 += 30
+	
+	sd= QtGui.QLabel('Scratch directory', self)
+	sd.move(self.x1,self.y1)
+	self.sdiredit=QtGui.QLineEdit(self)
+	self.sdiredit.move(self.x2,self.y1)
+	self.sdiredit.setText(self.savedparmsdict['sdir'])
+	self.sdiredit.setToolTip('Scratch directory')
+	
+	self.y1 += 30
+	
+	useb= QtGui.QLabel('Use existing buffer', self)
+	useb.move(self.x1,self.y1)
+	self.usebufchkbx = QtGui.QCheckBox("",self)
+	self.usebufchkbx.move(self.x2, self.y1)
+	self.usebufchkbx.setCheckState(self.savedparmsdict['usebuf'])
+	
+	self.y1 += 30
+		
+	shuf= QtGui.QLabel('Use shuffle', self)
+	shuf.move(self.x1,self.y1)
+	self.shufflechkbx=QtGui.QCheckBox("",self)
+	self.shufflechkbx.move(self.x2,self.y1)
+	self.shufflechkbx.setCheckState(self.savedparmsdict['shuffle'])
+	self.shufflechkbx.setToolTip('use shuffle')
+	
+	
+    def choose_mskfile(self):
+	#opens a file browser, showing files only in .hdf format
+   	file_name = QtGui.QFileDialog.getOpenFileName(self, "Open File Containing Mask", "", "(*)")
+        #after the user selected a file, we obtain this filename as a Qstring
+	a=QtCore.QString(file_name)
+	print a
+        #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
+	self.maskedit.setText(str(a))
+		
+
 
 ###MAIN WINDOW	(started by class App)
 #This class includes the layout of the main window; within each class, i name the main object self, to avoid confusion)    	
@@ -3016,7 +3372,15 @@ class MainWindow(QtGui.QWidget):
         #sets an infotip for this Pushbutton
         self.btn7.setToolTip('determine \'best\' number of clusters in the data using K-means classification of a set of images')
 	self.connect(self.btn7, SIGNAL("clicked()"), self.pdb2em)
-
+	
+	self.y2 += 30
+	
+	self.btn8 = QPushButton("sxpca", self)
+        self.btn8.move(10, self.y2)
+        #sets an infotip for this Pushbutton
+        self.btn8.setToolTip('Principal Component Analysis of images')
+	self.connect(self.btn8, SIGNAL("clicked()"), self.pca)
+	
 	 #Pushbutton named Info
 	self.picbutton = QPushButton(self)
         #when this button is clicked, this action starts the subfunction info
@@ -3116,6 +3480,20 @@ class MainWindow(QtGui.QWidget):
 	self.w = Popuppdb2em()
 	self.w.resize(580,570)
     	self.w.show()
+	
+    def pca(self):
+        print "Opening a new popup window..."
+        #opens the window Poptwodali, and defines its width and height
+        #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
+        self.w = Popuppca()
+	self.w1 = Popupadvparams_pca(self.w.savedparmsdict)
+        self.w.w1 = self.w1
+        self.TabWidget = QtGui.QTabWidget()
+    	self.TabWidget.insertTab(0,self.w,'Main')
+    	self.TabWidget.insertTab(1,self.w1,'Advanced')
+	self.TabWidget.resize(620,500)
+    	self.TabWidget.show()
+	
 		
     #This is the function info, which is being started when the Pushbutton picbutton of the main window is being clicked
     def info(self):
