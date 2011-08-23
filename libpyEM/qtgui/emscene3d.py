@@ -2531,9 +2531,9 @@ class NodeDialog(QtGui.QDialog):
 		isosurfacewidget = QtGui.QWidget()
 		grid = QtGui.QGridLayout()
 		node_name_data_label = QtGui.QLabel("Isosurface Name")
-		self.node_name_data = QtGui.QLineEdit()
+		self.node_name_iso = QtGui.QLineEdit()
 		grid.addWidget(node_name_data_label, 0, 0, 1, 2)
-		grid.addWidget(self.node_name_data, 0, 2, 1, 2)
+		grid.addWidget(self.node_name_iso, 0, 2, 1, 2)
 		self._get_transformlayout(grid, 2, "ISO")
 		isosurfacewidget.setLayout(grid)
 		
@@ -2603,9 +2603,10 @@ class NodeDialog(QtGui.QDialog):
 		
 	def _on_browse(self):
 		filename = QtGui.QFileDialog.getOpenFileName(self, 'Get file', os.getcwd())
-		self.data_path.setText(filename)
-		name = os.path.basename(str(filename))
-		self.node_name_data.setText(name)
+		if filename:
+			self.data_path.setText(filename)
+			name = os.path.basename(str(filename))
+			self.node_name_data.setText(str(name))
 	
 	def _on_add_node(self):
 		insertion_node = None
@@ -2641,11 +2642,11 @@ class NodeDialog(QtGui.QDialog):
 			d = self.transformgroup["ISO"]
 			transform = Transform({"type":"eman","az":float(d[4].text()),"alt":float(d[5].text()),"phi":float(d[6].text()),"tx":float(d[0].text()),"ty":float(d[1].text()),"tz":float(d[2].text()),"scale":float(d[3].text())})
 			insertion_node =  EMIsosurface(self.item.item3d(), transform=transform)
-			if self.node_name_data.text() != "": node_name = self.node_name_data.text()
+			if self.node_name_iso.text() != "": node_name = self.node_name_iso.text()
 			parentnode = self.item.item3d()
 		
 		insertion_node.setLabel(node_name)
-		self.inspector().scenegraph.insertNewNode(insertion_node, parentnode=parentnode)
+		self.inspector().scenegraph.insertNewNode(node_name, insertion_node, parentnode=parentnode)
 		self.inspector().updateSceneGraph()
 		self.done(0)
 	
