@@ -43,6 +43,8 @@ from emapplication import get_application, EMApp
 from emimage2d import EMImage2DWidget
 from emimagemx import EMImageMXWidget
 from emimage3d import EMImage3DWidget
+from emscene3d import EMScene3D
+from emdataitem3d import EMDataItem3D, EMIsosurface
 from emshape import EMShape
 from valslider import *
 
@@ -240,7 +242,9 @@ def main():
 										where clearly the "short" direction is Z; yet, if in the actual tomogram the short direction is Y, as they come out from
 										IMOD by default, then the line should have been:\n
 										1243 45 3412\n''')
+	parser.add_option("--newwidget",action="store_true",default=False,help="Use the new 3D widgetD. Highly recommended!!!!")
 
+	global options
 	(options, args) = parser.parse_args()
 		
 	if len(args) != 1: 
@@ -370,7 +374,15 @@ class EMAverageViewer(QtGui.QWidget):
 		#self.zyview = EMImage2DWidget()
 		#self.gbl.addWidget(self.zyview,0,0)
 
-		self.d3view = EMImage3DWidget()
+		if options.newwidget:
+			self.d3view = EMScene3D()
+			self.d3viewdata = EMDataItem3D(test_image_3d(3), transform=Transform())
+			isosurface = EMIsosurface(self.d3viewdata, transform=Transform())
+			self.d3view.insertNewNode('', self.d3viewdata, parentnode=self.d3view)
+			self.d3view.insertNewNode("Iso", isosurface, parentnode=self.d3viewdata)
+		else:
+			self.d3view = EMImage3DWidget()
+			
 		self.gbl.addWidget(self.d3view,0,0)
 		
 		self.gbl2 = QtGui.QGridLayout()
@@ -467,7 +479,11 @@ class EMAverageViewer(QtGui.QWidget):
 		#self.xyview.set_data(xyd)	
 		#self.xzview.set_data(xzd)
 		#self.zyview.set_data(zyd)
-		self.d3view.set_data(self.data)
+		if options.newwidget:
+			self.d3viewdata.setData(self.data)
+			self.d3view.updateSG()
+		else:
+			self.d3view.set_data(self.data)
 		
 	def thread_process(self):
 		
@@ -494,7 +510,14 @@ class EMBoxViewer(QtGui.QWidget):
 		self.zyview = EMImage2DWidget()
 		self.gbl.addWidget(self.zyview,0,0)
 
-		self.d3view = EMImage3DWidget()
+		if options.newwidget:
+			self.d3view = EMScene3D()
+			self.d3viewdata = EMDataItem3D(test_image_3d(3), transform=Transform())
+			isosurface = EMIsosurface(self.d3viewdata, transform=Transform())
+			self.d3view.insertNewNode('', self.d3viewdata, parentnode=self.d3view)
+			self.d3view.insertNewNode("Iso", isosurface, parentnode=self.d3viewdata )
+		else:
+			self.d3view = EMImage3DWidget()
 		self.gbl.addWidget(self.d3view,1,0)
 		
 		self.wfilt = ValSlider(rng=(0,50),label="Filter:",value=0.0)
@@ -551,7 +574,11 @@ class EMBoxViewer(QtGui.QWidget):
 		self.xyview.set_data(xyd)	
 		self.xzview.set_data(xzd)
 		self.zyview.set_data(zyd)
-		self.d3view.set_data(self.fdata)
+		if options.newwidget:
+			self.d3viewdata.setData(self.fdata)
+			self.d3view.updateSG()
+		else:
+			self.d3view.set_data(self.fdata)
 		
 	def event_filter(self,value):
 		self.update()
@@ -646,6 +673,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.wfilt = ValSlider(rng=(0,50),label="Filt:",value=0.0)
 		self.gbl2.addWidget(self.wfilt,4,0,1,2)
 		
+		# Helix boxer mode
+		self.hbcheckbox = QtGui.QCheckBox("Helix Boxer Mode")
+		self.gbl2.addWidget(self.hbcheckbox,5,0,1,2)
 		
 		
 		self.curbox=-1
@@ -1232,7 +1262,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				self.xydown=(len(self.boxes)-1,x,y,x,y)		# box #, x down, y down, x box at down, y box at down
 				self.update_box(self.xydown[0])
 
-		if self.curbox>=0 :
+		if self.curbox>=0:
 			box=self.boxes[self.curbox]
 			self.xzview.scroll_to(None,box[2])
 			self.zyview.scroll_to(box[2],None)

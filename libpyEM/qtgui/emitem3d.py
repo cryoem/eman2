@@ -272,6 +272,15 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		"""
 		self.EMQTreeWidgetItem = node
 	
+	def getTransformStdCoord(self):
+		"""
+		This returns the transform in standard coordinate system, not one changed by7 parent matrices
+		"""
+		tt = t = self.transform
+		tp = self.getParentMatrixProduct()
+		if tp: tt = tp*t
+		return tt
+		
 	def getParentMatrixProduct(self):
 		"""
 		Get the product of all parent matrices
@@ -448,7 +457,13 @@ class EMItem3DInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.resetbuttonrot,QtCore.SIGNAL("clicked()"),self._on_resetrot)
 	
 	def _on_translation(self, value):
-		self.item3d().getTransform().set_trans(self.tx.getValue(), self.ty.getValue(), self.tz.getValue())
+		"""
+		Need to contain the right coords
+		"""
+		tt = t = Transform({"tx":self.tx.getValue(),"ty":self.ty.getValue(),"tz":self.tz.getValue()})
+		tp = self.item3d().getParentMatrixProduct()
+		if tp: tt = tp.inverse()*t
+		self.item3d().getTransform().set_trans(tt.get_trans())
 		self.inspector().updateSceneGraph()
 		
 	def _on_scale(self, value):
@@ -468,13 +483,15 @@ class EMItem3DInspector(QtGui.QWidget):
 		
 	def updateItemControls(self):
 		# Translation update
-		translation =  self.item3d().getTransform().get_trans()
+		stdtransfrom = self.item3d().getTransformStdCoord()
+		translation =  stdtransfrom.get_trans()
+		
 		self.tx.setValue(translation[0])
 		self.ty.setValue(translation[1])
 		self.tz.setValue(translation[2])
 		# Rotation update
-		rotation =  self.item3d().getTransform().get_rotation(str(self.rotcombobox.currentText()))
-		is_identity = self.item3d().getTransform().is_rot_identity()
+		rotation =  stdtransfrom.get_rotation(str(self.rotcombobox.currentText()))
+		is_identity = stdtransfrom.is_rot_identity()
 		comboboxidx = self.rotcombobox.currentIndex()
 		if comboboxidx == 0:
 			self.emanazslider.setValue(rotation["az"], quiet=1)
@@ -686,44 +703,49 @@ class EMItem3DInspector(QtGui.QWidget):
 		self.updateItemControls()
 		
 	def _on_EMAN_rotation(self, value):
-		self.item3d().getTransform().set_rotation({"type":"eman","az":self.emanazslider.getValue(),"alt":self.emanaltslider.getValue(),"phi":self.emanphislider.getValue()})
+		self._set_rotation_std_coords(Transform({"type":"eman","az":self.emanazslider.getValue(),"alt":self.emanaltslider.getValue(),"phi":self.emanphislider.getValue()}))
 		self.inspector().updateSceneGraph()
 		
 	def _on_Imagic_rotation(self, value):
-		self.item3d().getTransform().set_rotation({"type":"imagic","gamma":self.imagicgammaslider.getValue(),"beta":self.imagicbetaslider.getValue(),"alpha":self.imagicalphaslider.getValue()})
+		self._set_rotation_std_coords(Transform({"type":"imagic","gamma":self.imagicgammaslider.getValue(),"beta":self.imagicbetaslider.getValue(),"alpha":self.imagicalphaslider.getValue()}))
 		self.inspector().updateSceneGraph()
 		
 	def _on_Spider_rotation(self, value):
-		self.item3d().getTransform().set_rotation({"type":"spider","psi":self.spiderpsislider.getValue(),"theta":self.spiderthetaslider.getValue(),"phi":self.spiderphislider.getValue()})
+		self._set_rotation_std_coords(Transform({"type":"spider","psi":self.spiderpsislider.getValue(),"theta":self.spiderthetaslider.getValue(),"phi":self.spiderphislider.getValue()}))
 		self.inspector().updateSceneGraph()
 		
 	def _on_MRC_rotation(self, value):
-		self.item3d().getTransform().set_rotation({"type":"mrc","phi":self.mrcpsislider.getValue(),"theta":self.mrcthetaslider.getValue(),"omega":self.mrcomegaslider.getValue()})
+		self._set_rotation_std_coords(Transform({"type":"mrc","phi":self.mrcpsislider.getValue(),"theta":self.mrcthetaslider.getValue(),"omega":self.mrcomegaslider.getValue()}))
 		self.inspector().updateSceneGraph()
 		
 	def _on_XYZ_rotation(self, value):
-		self.item3d().getTransform().set_rotation({"type":"xyz","ztilt":self.xyzzslider.getValue(),"ytilt":self.xyzyslider.getValue(),"xtilt":self.xyzxslider.getValue()})
+		self._set_rotation_std_coords(Transform({"type":"xyz","ztilt":self.xyzzslider.getValue(),"ytilt":self.xyzyslider.getValue(),"xtilt":self.xyzxslider.getValue()}))
 		self.inspector().updateSceneGraph()
 		
 	def _on_spin_rotation(self, value):
 		v = Vec3f(self.spinn1slider.getValue(), self.spinn2slider.getValue(), self.spinn3slider.getValue())
 		v.normalize()
-		self.item3d().getTransform().set_rotation({"type":"spin","Omega":self.spinomegaslider.getValue(),"n1":v[0],"n2":v[1],"n3":v[2]})
+		self._set_rotation_std_coords(Transform({"type":"spin","Omega":self.spinomegaslider.getValue(),"n1":v[0],"n2":v[1],"n3":v[2]}))
 		self.inspector().updateSceneGraph()
 		
 	def _on_sgirot_rotation(self, value):
 		v = Vec3f(self.sgirotn1slider.getValue(), self.sgirotn2slider.getValue(), self.sgirotn3slider.getValue())
 		v.normalize()
-		self.item3d().getTransform().set_rotation({"type":"sgirot","q":self.sgirotqslider.getValue(),"n1":v[0],"n2":v[1],"n3":v[2]})
+		self._set_rotation_std_coords(Transform({"type":"sgirot","q":self.sgirotqslider.getValue(),"n1":v[0],"n2":v[1],"n3":v[2]}))
 		self.inspector().updateSceneGraph()
 		
 	def _on_quaternion_rotation(self, value):
 		v = Vec4f(self.quaternione0slider.getValue(), self.quaternione1slider.getValue(), self.quaternione2slider.getValue(), self.quaternione3slider.getValue())
 		v.normalize()
-		self.item3d().getTransform().set_rotation({"type":"quaternion","e0":v[0],"e1":v[1],"e2":v[2],"e3":v[3]})
+		self._set_rotation_std_coords(Transform({"type":"quaternion","e0":v[0],"e1":v[1],"e2":v[2],"e3":v[3]}))
 		self.inspector().updateSceneGraph()
 		
-
+	def _set_rotation_std_coords(self, rotation):
+		tt = rotation
+		tp = self.item3d().getParentMatrixProduct()
+		if tp: tt = tp.inverse()*rotation
+		self.item3d().getTransform().set_rotation(tt.get_rotation())
+		
 if __name__ == '__main__':
 	#Test code
 	root = EMItem3D(0)

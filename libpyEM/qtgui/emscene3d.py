@@ -42,7 +42,7 @@ from libpyGLUtils2 import GLUtil
 from valslider import ValSlider, EMLightControls, CameraControls, EMSpinWidget, EMQTColorWidget, EMANToolButton
 import math, weakref, os, pickle
 from emshapeitem3d import *
-from emdataitem3d import EMDataItem3D, EMIsosurface
+from emdataitem3d import EMDataItem3D, EMIsosurface, EMSliceItem3D
 # XPM format Cursors
 
 visibleicon = [
@@ -1847,6 +1847,7 @@ class EMInspector3D(QtGui.QWidget):
 		item.setSelectionState(item.checkState(0))
 		# This code is to prevent both decendents and childer from being selected....
 		self.ensureUniqueTreeLevelSelection(item.item3d())
+		if not item.item3d().isSelectedItem(): item.item3d().getItemInspector().updateItemControls() # This is too update a widget, translation and rotation may change in parent nodes change
 		if not quiet: self.updateSceneGraph()
 		
 	def _tree_widget_visible(self, item):
@@ -1854,7 +1855,6 @@ class EMInspector3D(QtGui.QWidget):
 		When a user clicks on the visible icon
 		"""
 		item.toggleVisibleState()
-		self.updateSceneGraph()
 	
 	def _tree_widget_edit(self):
 		"""
@@ -2438,6 +2438,8 @@ class NodeDialog(QtGui.QDialog):
 		if self.item and self.item.item3d().name == "Data":
 			self.node_type_combo.addItem("Isosurface")
 			self.node_stacked_widget.addWidget(self.getIsosurfaceWidget())
+			self.node_type_combo.addItem("Slice")
+			self.node_stacked_widget.addWidget(self.getSliceWidget())
 		
 		self.connect(self.addnode_button, QtCore.SIGNAL('clicked()'), self._on_add_node)
 		self.connect(self.cancel_button, QtCore.SIGNAL('clicked()'), self._on_cancel)
@@ -2538,6 +2540,21 @@ class NodeDialog(QtGui.QDialog):
 		isosurfacewidget.setLayout(grid)
 		
 		return isosurfacewidget
+		
+	def getSliceWidget(self):
+		"""
+		Get Slice Widget
+		"""
+		slicewidget = QtGui.QWidget()
+		grid = QtGui.QGridLayout()
+		node_name_slice_label = QtGui.QLabel("Slice Name")
+		self.node_name_slice = QtGui.QLineEdit()
+		grid.addWidget(node_name_slice_label, 0, 0, 1, 2)
+		grid.addWidget(self.node_name_slice, 0, 2, 1, 2)
+		self._get_transformlayout(grid, 2, "SLICE")
+		slicewidget.setLayout(grid)
+		
+		return slicewidget
 	
 	def _get_transformlayout(self, layout, idx, name):
 		self.transformgroup[name] = []
@@ -2644,12 +2661,20 @@ class NodeDialog(QtGui.QDialog):
 			insertion_node =  EMIsosurface(self.item.item3d(), transform=transform)
 			if self.node_name_iso.text() != "": node_name = self.node_name_iso.text()
 			parentnode = self.item.item3d()
+		# Slice
+		if self.node_type_combo.currentText() == "Slice": 
+			d = self.transformgroup["SLICE"]
+			transform = Transform({"type":"eman","az":float(d[4].text()),"alt":float(d[5].text()),"phi":float(d[6].text()),"tx":float(d[0].text()),"ty":float(d[1].text()),"tz":float(d[2].text()),"scale":float(d[3].text())})
+			insertion_node =  EMSliceItem3D(self.item.item3d(), transform=transform)
+			if self.node_name_slice.text() != "": node_name = self.node_name_slice.text()
+			parentnode = self.item.item3d()
 		
 		insertion_node.setLabel(node_name)
 		self.inspector().scenegraph.insertNewNode(node_name, insertion_node, parentnode=parentnode)
+		insertion_node.setTransform(insertion_node.getParentMatrixProduct().inverse()*insertion_node.getTransform()) # Move to standard coordinatre system
 		self.inspector().updateSceneGraph()
 		self.done(0)
-	
+		
 	def _on_cancel(self):
 		self.done(1)
 	

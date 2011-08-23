@@ -48,7 +48,10 @@ class EMDataItem3D(EMItem3D):
 			self.path = str(data)
 		
 		for child in self.getChildren():
-			child.dataChanged()
+			try:	# What if child ins't a data type?
+				child.dataChanged()
+			except:
+				pass
 	
 class EMDataItem3DInspector(EMItem3DInspector):
 	def __init__(self, name, item3d):
