@@ -959,7 +959,6 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.insertNewNode("Cube", self.newnode)
 			self.newnode.setTransform(self.newnode.getParentMatrixProduct().inverse()*self.newnode.getTransform())
 			self.updateSG()
-			self.main_3d_inspector.updateTree(currentnode=self.newnode)
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "sphere"):
 			self.setCursor(self.spherecursor)
 			self.newnode = EMSphere(2.0, transform=self._gettransformbasedonscreen(event))
@@ -2672,6 +2671,7 @@ class NodeDialog(QtGui.QDialog):
 		insertion_node.setLabel(node_name)
 		self.inspector().scenegraph.insertNewNode(node_name, insertion_node, parentnode=parentnode)
 		insertion_node.setTransform(insertion_node.getParentMatrixProduct().inverse()*insertion_node.getTransform()) # Move to standard coordinatre system
+		insertion_node.getTransform().set_scale(1.0)	# The scale can be adverly affected by the above line of code
 		self.inspector().updateSceneGraph()
 		self.done(0)
 		
