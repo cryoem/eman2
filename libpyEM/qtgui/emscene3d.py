@@ -341,6 +341,28 @@ datacursor = [
     'ccccccccccccccccc'
 ] 
 
+textcursor = [
+    '16 16 2 1',
+    'b c #00ff00',
+    'c c None',
+    'ccccccccccccccccc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbbbbbbbbbbbbcc',
+    'ccbbcccbbbcccbbcc',
+    'ccbccccbbbccccbcc',
+    'cccccccbbbccccccc',
+    'cccccccbbbccccccc',
+    'cccccccbbbccccccc',
+    'cccccccbbbccccccc',
+    'cccccccbbbccccccc',
+    'cccccccbbbccccccc',
+    'cccccccbbbccccccc',
+    'cccccccbbbccccccc',
+    'ccccccbbbbbcccccc',
+    'cccccbbbbbbbccccc',
+    'ccccccccccccccccc'
+] 
+
 appcursor = [
     '17 16 2 1',
     'b c #00ff00',
@@ -727,6 +749,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.cylindercursor = QtGui.QCursor(QtGui.QPixmap(cylindercursor),-1,-1)
 		self.conecursor = QtGui.QCursor(QtGui.QPixmap(conecursor),-1,-1)
 		self.datacursor = QtGui.QCursor(QtGui.QPixmap(datacursor),-1,-1)
+		self.textcursor = QtGui.QCursor(QtGui.QPixmap(textcursor),-1,-1)
 		self.appcursor = QtGui.QCursor(QtGui.QPixmap(appcursor),-1,-1)
 
 	def getEvalString(self):
@@ -943,6 +966,16 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.isonode.setSelectedItem(True)
 			self.insertNewNode("Isosurface", self.isonode, parentnode=self.newnode)
 			self.updateSG()
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "text"):
+			self.setCursor(self.textcursor)
+			text, ok = QtGui.QInputDialog.getText(self, 'Enter Text', '')
+			if ok:
+				self.newnode = EM3DText(str(text), 10.0, transform=self._gettransformbasedonscreen(event))
+				self.clearSelection()
+				self.newnode.setSelectedItem(True)
+				self.insertNewNode(text, self.newnode)
+				self.newnode.setTransform(self.newnode.getParentMatrixProduct().inverse()*self.newnode.getTransform())
+				self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "line"):
 			self.setCursor(self.linecursor)
 			self.newnode = EMLine(0.0, 0.0, 0.0, 2.0, 2.0, 0.0, 4.0, transform=self._gettransformbasedonscreen(event))
@@ -1039,7 +1072,6 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "app"):
 			self.emit(QtCore.SIGNAL("sgmousemove()"), [event.x(), event.y()])
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "line"):
-			#print event.x() - self.first_x, self.first_y - event.y()
 			self.newnode.setEndAndWidth(0.0, 0.0, 0.0, event.x() - self.first_x, self.first_y - event.y(), 0.0, 4.0)
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cube"):
 			self.newnode.setSize(math.sqrt((event.x() - self.first_x)**2 + (event.y() - self.first_y)**2))
@@ -2433,6 +2465,12 @@ class NodeDialog(QtGui.QDialog):
 		self.node_stacked_widget.addWidget(self.getSphereWidget())
 		self.node_type_combo.addItem("Cylinder")
 		self.node_stacked_widget.addWidget(self.getCylinderWidget())
+		self.node_type_combo.addItem("Cone")
+		self.node_stacked_widget.addWidget(self.getConeWidget())
+		self.node_type_combo.addItem("Line")
+		self.node_stacked_widget.addWidget(self.getLineWidget())
+		self.node_type_combo.addItem("Text")
+		self.node_stacked_widget.addWidget(self.getTextWidget())
 		self.node_type_combo.addItem("Data")
 		self.node_stacked_widget.addWidget(self.getDataWidget())
 		if self.item and self.item.item3d().name == "Data":
@@ -2503,6 +2541,85 @@ class NodeDialog(QtGui.QDialog):
 		cyliderwidget.setLayout(grid)
 		return cyliderwidget
 	
+			
+	def getConeWidget(self):
+		"""
+		Return a cylider control widget for the stacked_widget
+		"""
+		conewidget = QtGui.QWidget()
+		grid = QtGui.QGridLayout()
+		cone_radius_label = QtGui.QLabel("Cone Radius")
+		self.cone_radius = QtGui.QLineEdit()
+		grid.addWidget(cone_radius_label, 0, 0, 1, 2)
+		grid.addWidget(self.cone_radius, 0, 2, 1, 2)
+		cone_height_label = QtGui.QLabel("Cone Height")
+		self.cone_height = QtGui.QLineEdit()
+		node_name_label = QtGui.QLabel("Cone Name")
+		self.node_name_cone = QtGui.QLineEdit()
+		grid.addWidget(cone_height_label, 1, 0, 1, 2)
+		grid.addWidget(self.cone_height, 1, 2, 1, 2)
+		grid.addWidget(node_name_label , 2, 0, 1, 2)
+		grid.addWidget(self.node_name_cone, 2, 2, 1, 2)
+		self._get_transformlayout(grid, 3, "CONE")
+		conewidget.setLayout(grid)
+		return conewidget
+	
+	def getLineWidget(self):
+		"""
+		Return a cylider control widget for the stacked_widget
+		"""
+		linewidget = QtGui.QWidget()
+		grid = QtGui.QGridLayout()
+		line_xyzi_label = QtGui.QLabel("Line start, X, Y, Z")
+		self.linexi = QtGui.QLineEdit("0.0")
+		self.lineyi = QtGui.QLineEdit("0.0")
+		self.linezi = QtGui.QLineEdit("0.0")
+		grid.addWidget(line_xyzi_label, 0, 0, 1, 3)
+		grid.addWidget(self.linexi, 1, 0, 1, 1)
+		grid.addWidget(self.lineyi, 1, 1, 1, 1)
+		grid.addWidget(self.linezi, 1, 2, 1, 1)
+		line_xyzf_label = QtGui.QLabel("Line end, X, Y, Z")
+		self.linexf = QtGui.QLineEdit("0.0")
+		self.lineyf = QtGui.QLineEdit("0.0")
+		self.linezf = QtGui.QLineEdit("0.0")
+		grid.addWidget(line_xyzf_label, 2, 0, 1, 3)
+		grid.addWidget(self.linexf, 3, 0, 1, 1)
+		grid.addWidget(self.lineyf, 3, 1, 1, 1)
+		grid.addWidget(self.linezf, 3, 2, 1, 1)
+		line_width = QtGui.QLabel("Line Width")
+		line_width.setAlignment(QtCore.Qt.AlignCenter)
+		self.linewidth = QtGui.QLineEdit("10.0")
+		grid.addWidget(line_width, 4, 0, 1, 2)
+		grid.addWidget(self.linewidth, 4, 2, 1, 1)
+		node_name_label = QtGui.QLabel("Line Name")
+		self.node_name_line = QtGui.QLineEdit()
+		grid.addWidget(node_name_label , 5, 0, 1, 3)
+		grid.addWidget(self.node_name_line, 6, 0, 1, 3)
+		linewidget.setLayout(grid)
+		return linewidget
+	
+	def getTextWidget(self):
+		"""
+		Return a sphere control widget for the stacked_widget
+		"""
+		textwidget = QtGui.QWidget()
+		grid = QtGui.QGridLayout()
+		text_label = QtGui.QLabel("Text")
+		self.text_content = QtGui.QLineEdit()
+		grid.addWidget(text_label, 0, 0, 1, 2)
+		grid.addWidget(self.text_content, 0, 2, 1, 2)
+		fontsize_label = QtGui.QLabel("Font Size")
+		self.fontsize = QtGui.QLineEdit("10.0")
+		grid.addWidget(fontsize_label , 1, 0, 1, 2)
+		grid.addWidget(self.fontsize, 1, 2, 1, 2)
+		node_name_label = QtGui.QLabel("Text Name")
+		self.node_name_text = QtGui.QLineEdit()
+		grid.addWidget(node_name_label , 2, 0, 1, 2)
+		grid.addWidget(self.node_name_text, 2, 2, 1, 2)
+		self._get_transformlayout(grid, 3, "TEXT")
+		textwidget.setLayout(grid)
+		return textwidget
+		
 	def getDataWidget(self):
 		"""
 		Get Data Widget
@@ -2647,6 +2764,23 @@ class NodeDialog(QtGui.QDialog):
 			transform = Transform({"type":"eman","az":float(d[4].text()),"alt":float(d[5].text()),"phi":float(d[6].text()),"tx":float(d[0].text()),"ty":float(d[1].text()),"tz":float(d[2].text()),"scale":float(d[3].text())})
 			insertion_node = EMCylinder(float(self.cylider_radius.text()), float(self.cylider_height.text()), transform=transform)
 			if self.node_name_cylinder.text() != "": node_name = self.node_name_cylinder.text()
+		# Cone
+		if self.node_type_combo.currentText() == "Cone":
+			d = self.transformgroup["CONE"]
+			transform = Transform({"type":"eman","az":float(d[4].text()),"alt":float(d[5].text()),"phi":float(d[6].text()),"tx":float(d[0].text()),"ty":float(d[1].text()),"tz":float(d[2].text()),"scale":float(d[3].text())})
+			insertion_node = EMCone(float(self.cone_radius.text()), float(self.cone_height.text()), transform=transform)
+			if self.node_name_cone.text() != "": node_name = self.node_name_cone.text()
+		# Line
+		if self.node_type_combo.currentText() == "Line":
+			transform = Transform()
+			insertion_node = EMLine(float(self.linexi.text()), float(self.lineyi.text()), float(self.linezi.text()), float(self.linexf.text()), float(self.lineyf.text()), float(self.linezf.text()), float(self.linewidth.text()), transform=transform)
+			if self.node_name_cone.text() != "": node_name = self.node_name_cone.text()
+		# Text
+		if self.node_type_combo.currentText() == "Text":
+			d = self.transformgroup["TEXT"]
+			transform = Transform({"type":"eman","az":float(d[4].text()),"alt":float(d[5].text()),"phi":float(d[6].text()),"tx":float(d[0].text()),"ty":float(d[1].text()),"tz":float(d[2].text()),"scale":float(d[3].text())})
+			insertion_node = EM3DText(str(self.text_content.text()), float(self.fontsize.text()), transform=transform)
+			if self.node_name_text.text() != "": node_name = self.node_name_text.text()
 		# Data
 		if self.node_type_combo.currentText() == "Data": 
 			d = self.transformgroup["DATA"]

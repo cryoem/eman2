@@ -453,7 +453,7 @@ class EMLine(EMItem3D):
 		gluQuadricDrawStyle(quadratic, GLU_FILL)
 		gluQuadricNormals(quadratic, GLU_SMOOTH)    # Create Smooth Normals (NEW) 
 		gluQuadricTexture(quadratic, GL_TRUE)      # Create Texture Coords (NEW)
-		glTranslatef( 0,0,-length/2)
+		#glTranslatef( 0,0,-length/2)			# Do we want the line to be centered on the origin?
 		gluCylinder(quadratic,self.width/2,self.width/2,length,self.slices,self.stacks)
 		gluQuadricOrientation(quadratic,GLU_OUTSIDE)
 		glTranslatef( 0,0,-length/10)
@@ -558,8 +558,8 @@ class EMCone(EMItem3D):
 class EM3DText(EMItem3D):
 	name = "3DText"
 	nodetype = "ShapeNode"
-	def __init__(self, string, fontSize):
-		EMItem3D.__init__(self, parent=None, children=set(), transform=Transform())
+	def __init__(self, string, fontSize, transform=Transform()):
+		EMItem3D.__init__(self, parent=None, children=set(), transform=transform)
 		#size
 		self.setRenderString(string, fontSize)
 		
