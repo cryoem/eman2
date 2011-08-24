@@ -24,7 +24,7 @@ class MouseAndKeyModifiers(QtGui.QWidget):
 		if event.modifiers()&QtCore.Qt.ShiftModifier:
 			self.text_browser.append("Shift Modifier")
 		if event.modifiers()&QtCore.Qt.ControlModifier:
-			#Apple/Command key on a Mac
+			#Apple/Command key on a Mac... NOT CONTROL KEY ON A MAC!
 			self.text_browser.append("Control Modifier")
 		if event.modifiers()&QtCore.Qt.AltModifier:
 			#Alt/Option key on a Mac. An EMAN convention is that Alt+Left click works like a middle click.
