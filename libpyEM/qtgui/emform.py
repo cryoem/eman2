@@ -483,7 +483,8 @@ class EMFileTable(QtGui.QTableWidget):
 			
 			self.setHorizontalHeaderItem(col,item)
 			for i in xrange(0,len(self.listed_names)):
-				item = QtGui.QTableWidgetItem(cd.function(self.listed_names[i]))
+				try : item = QtGui.QTableWidgetItem(cd.function(self.listed_names[i]))
+				except : item = QtGui.QTableWidgetItem("-")
 				item.setTextAlignment(QtCore.Qt.AlignHCenter)
 				item.setFlags(flag3)
 				if cd.lt_function: # This is how sort gets customized

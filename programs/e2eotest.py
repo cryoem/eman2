@@ -390,11 +390,19 @@ def get_last_class_average_number(options):
 		input = cmd["input"]
 		nec_files = [ "classes_", "classify_","projections_"]
 		
-		most_recent = options.iteration
+		# Find the most recent complete iteration
+		dbs=[i for i in db_list_dicts("bdb:"+path) if "threed_filt" in i]
+		dbs.sort()
+		most_recent=dbs[-1].rsplit("_",1)[-1]
+		if int(options.iteration)>int(most_recent) : 
+			print "Warning, specified iteration does not exist. Using iteration %02d instead."%int(most_recent)
+		else : most_recent="%02d"%int(options.iteration)
+		
 		if most_recent == None:
+			
 			fail = False
-			for i in range(0,10):
-				for j in range(0,10):
+			for i in range(0,99):
+				for j in range(0,99):
 					end = str(i) + str(j)
 					for file in nec_files:
 						db_first_part = "bdb:"+dir+"#" + file
