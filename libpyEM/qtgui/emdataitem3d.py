@@ -33,6 +33,10 @@ class EMDataItem3D(EMItem3D):
 			self.item_inspector = EMDataItem3DInspector("DATA", self)
 		return self.item_inspector
 	
+	def getBoundingBoxDimensions(self):
+		data = self.getData()
+		return (data["nx"], data["ny"], data["nz"])
+	
 	def getData(self):
 		return self.data
 		
@@ -158,7 +162,7 @@ class EMSliceItem3D(EMItem3D):
 		
 class EMSliceInspector(EMInspectorControlShape):
 	def __init__(self, name, item3d):
-		EMItem3DInspector.__init__(self, name, item3d, numgridcols=2)	# for the slice inspector we need two grid cols for extra space....
+		EMItem3DInspector.__init__(self, name, item3d)
 
 	def updateItemControls(self):
 		super(EMSliceInspector, self).updateItemControls()
@@ -167,6 +171,42 @@ class EMSliceInspector(EMInspectorControlShape):
 	def addControls(self, gridbox):
 		super(EMSliceInspector, self).addControls(gridbox)
 
+class EMVolumeItem3D(EMItem3D):
+	name = "Volume"
+	nodetype = "DataChild" 
+
+	def __init__(self, parent, children = set(), transform = Transform()):
+		EMItem3D.__init__(self, parent, children, transform)
+		self.glflags = EMOpenGLFlagsAndTools()		# OpenGL flags - this is a singleton convenience class for testing texture support		
+		self.texture_name = 0
+
+		self.colors = get_default_gl_colors()
+		self.isocolor = "bluewhite"
+	
+		# color Needed for inspector to work John Flanagan
+		self.diffuse = self.colors[self.isocolor]["diffuse"]
+		self.specular = self.colors[self.isocolor]["specular"]
+		self.ambient = self.colors[self.isocolor]["ambient"]		
+		self.shininess = self.colors[self.isocolor]["shininess"]
+
+	def getItemInspector(self):
+		if not self.item_inspector:
+			self.item_inspector = EMVolumeInspector("VOLUME", self)
+		return self.item_inspector
+
+	def renderNode(self):
+		pass
+		
+class EMVolumeInspector(EMInspectorControlShape):
+	def __init__(self, name, item3d):
+		EMItem3DInspector.__init__(self, name, item3d)
+
+	def updateItemControls(self):
+		super(EMVolumeInspector, self).updateItemControls()
+		# Anything that needs to be updated when the scene is rendered goes here.....
+		
+	def addControls(self, gridbox):
+		super(EMVolumeInspector, self).addControls(gridbox)
 
 
 	
@@ -336,6 +376,9 @@ class EMIsosurface(EMItem3D):
 			self.item_inspector = EMIsosurfaceInspector("ISOSURFACE", self)
 		return self.item_inspector
 	
+	def getBoundingBoxDimensions(self):
+		return self.getParent().getBoundingBoxDimensions()
+	
 	def loadColors(self):
 		self.colors = get_default_gl_colors()
 		
@@ -396,11 +439,8 @@ class EMIsosurface(EMItem3D):
 		# This code draws an outline around the isosurface
 		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER: # No need for outlining in selection mode
 			
-			#Ross: these two lines add bounding box
-			data = self.getParent().data
-			drawBoundingBox(data.get_xsize(), data.get_ysize(), data.get_zsize())
-			
-			
+			drawBoundingBox(*self.getBoundingBoxDimensions())
+						
 			glPushAttrib( GL_ALL_ATTRIB_BITS )
 		
 			# First render the cylinder, writing the outline to the stencil buffer
