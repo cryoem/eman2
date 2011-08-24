@@ -726,6 +726,7 @@ void Transform::rotate_origin_newBasis(const Transform& tcs, const float& Omega,
 	//Get the rotational inverse
 	Transform tcsinv = Transform(tcs);
 	tcsinv.set_trans(0.0, 0.0, 0.0);
+	tcsinv.set_scale(1.0);
 	tcsinv.invert();
 	
 	//Get the current rotation

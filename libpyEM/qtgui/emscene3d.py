@@ -945,7 +945,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "line"):
 			self.setCursor(self.linecursor)
-			self.newnode = EMLine(0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 4.0, transform=self._gettransformbasedonscreen(event))
+			self.newnode = EMLine(0.0, 0.0, 0.0, 2.0, 2.0, 0.0, 4.0, transform=self._gettransformbasedonscreen(event))
 			self.clearSelection()
 			self.newnode.setSelectedItem(True)
 			self.insertNewNode("Line", self.newnode)
@@ -1039,7 +1039,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "app"):
 			self.emit(QtCore.SIGNAL("sgmousemove()"), [event.x(), event.y()])
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "line"):
-			self.newnode.setEndAndWidth(0.0, 0.0, 0.0, event.x() - self.first_x, event.y() - self.first_y, 0.0, 4.0)
+			#print event.x() - self.first_x, self.first_y - event.y()
+			self.newnode.setEndAndWidth(0.0, 0.0, 0.0, event.x() - self.first_x, self.first_y - event.y(), 0.0, 4.0)
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cube"):
 			self.newnode.setSize(math.sqrt((event.x() - self.first_x)**2 + (event.y() - self.first_y)**2))
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "sphere"):
@@ -2671,7 +2672,7 @@ class NodeDialog(QtGui.QDialog):
 		insertion_node.setLabel(node_name)
 		self.inspector().scenegraph.insertNewNode(node_name, insertion_node, parentnode=parentnode)
 		insertion_node.setTransform(insertion_node.getParentMatrixProduct().inverse()*insertion_node.getTransform()) # Move to standard coordinatre system
-		insertion_node.getTransform().set_scale(1.0)	# The scale can be adverly affected by the above line of code
+		insertion_node.getTransform().set_scale(1.0)	# The scale can be adverly affected by the above line of code. This may or may not be optimal I'll have to think about it....
 		self.inspector().updateSceneGraph()
 		self.done(0)
 		

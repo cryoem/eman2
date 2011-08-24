@@ -305,9 +305,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		if self.is_selected:
 			if xformtype == "rotate":
 				if self.parent:
-					scaleinvariant = Transform(self.getParentMatrixProduct())
-					scaleinvariant.set_scale(1.0) # If parent total scale is not one, then self.transform will get rescaled upon translation. NOT desirable!!!! This sets the parent scale to one as we are only interested in the rotation bit
-					self.transform.rotate_origin_newbasis(scaleinvariant, params[0], params[1], params[2], params[3])
+					self.transform.rotate_origin_newbasis(self.getParentMatrixProduct(), params[0], params[1], params[2], params[3])
 				else:
 					self.transform.rotate_origin(Transform({"type":"spin","Omega":params[0],"n1":params[1],"n2":params[2],"n3":params[3]}))
 			elif xformtype == "translate":

@@ -432,12 +432,11 @@ class EMLine(EMItem3D):
 		ax = 0.0
 		
 		if vz == 0:
-			ax = r2d*math.acos(vx/length)
-			if vx<=0: ax = -ax
+			ax = r2d*math.atan2(vy, vx) # Find trig, John F
 		else:
 			ax = r2d*math.acos(vz/length)
 			if vz<=0: ax = -ax
-		
+
 		if vz==0:
 			glRotated(90.0, 0, 1, 0.0)	#Rotate & align with x axis
 			glRotated(ax, -1.0, 0.0, 0.0)	#Rotate to point 2 in x-y plane
