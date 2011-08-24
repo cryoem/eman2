@@ -365,7 +365,7 @@ class EMLine(EMItem3D):
 		if self.item_inspector: self.item_inspector.updateMetaData()	
 		
 	def getEvalString(self):
-		return "EMLine(%s, %s, %s, %s, %s, %s. %s)"%(self.x1, self.y1, self.z1, self.x2, self.y2,self.z2, self.width)
+		return "EMLine(%s, %s, %s, %s, %s, %s, %s)"%(self.x1, self.y1, self.z1, self.x2, self.y2,self.z2, self.width)
 	
 	def setAmbientColor(self, red, green, blue, alpha=1.0):
 		self.ambient = [red, green, blue, alpha]
@@ -579,7 +579,7 @@ class EM3DText(EMItem3D):
 		if self.item_inspector: self.item_inspector.updateMetaData()
 		
 	def getEvalString(self):
-		return "EMCone(%s, %s)"%(self.radius, self.height)
+		return "EM3DText('%s', %s)"%(self.renderString, self.fontSize)
 		
 	def setAmbientColor(self, red, green, blue, alpha=1.0):
 		self.ambient = [red, green, blue, alpha]
