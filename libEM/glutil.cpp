@@ -39,11 +39,9 @@
 #include "emdata.h"
 #include "marchingcubes.h"
 
-#ifndef _WIN32
-	#ifndef GL_GLEXT_PROTOTYPES
-		#define GL_GLEXT_PROTOTYPES
-	#endif	//GL_GLEXT_PROTOTYPES
-#endif	//_WIN32
+#ifndef GL_GLEXT_PROTOTYPES
+	#define GL_GLEXT_PROTOTYPES
+#endif	//GL_GLEXT_PROTOTYPES
 
 #ifdef __APPLE__
 	#include "OpenGL/gl.h"
@@ -719,12 +717,24 @@ unsigned long GLUtil::get_isosurface_dl(MarchingCubes* mc, unsigned int tex_id,b
 // This crap could be avoided and speed up(A lot) if we implemented an openGL shader........
 void GLUtil::glLoadMatrix(const Transform& xform)
 {
+#ifdef _WIN32
+	typedef void (APIENTRYP PFNGLLOADTRANSPOSEMATRIXFPROC) (const GLfloat *m);
+	PFNGLLOADTRANSPOSEMATRIXFPROC glLoadTransposeMatrixf = NULL;
+	glLoadTransposeMatrixf = (PFNGLLOADTRANSPOSEMATRIXFPROC) wglGetProcAddress("glLoadTransposeMatrixf");
+#endif	//_WIN32
+
 	vector<float> xformlist = xform.get_matrix_4x4();
 	glLoadTransposeMatrixf(reinterpret_cast<GLfloat*>(&xformlist[0]));
 }
 
 void GLUtil::glMultMatrix(const Transform& xform)
 {
+#ifdef _WIN32
+	typedef void (APIENTRYP PFNGLMULTTRANSPOSEMATRIXFPROC) (const GLfloat *m);
+	PFNGLMULTTRANSPOSEMATRIXFPROC glMultTransposeMatrixf = NULL;
+	glMultTransposeMatrixf = (PFNGLMULTTRANSPOSEMATRIXFPROC) wglGetProcAddress("glMultTransposeMatrixf");
+#endif	//_WIN32
+
 	vector<float> xformlist = xform.get_matrix_4x4();
 	glMultTransposeMatrixf(reinterpret_cast<GLfloat*>(&xformlist[0]));
 }
