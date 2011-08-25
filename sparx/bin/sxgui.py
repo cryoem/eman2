@@ -2973,7 +2973,7 @@ class Popuppca(QWidget):
 	self.yspc = 4
 	
 	self.x1 = 10 # first column (text box labels)
-	self.x2 = self.x1 + 150 # second column (text boxes)
+	self.x2 = self.x1 + 160 # second column (text boxes)
 	self.x3 = self.x2+145 # third column (Open .hdf button)
 	self.x4 = self.x3+100 # fourth column (Open .bdb button)
 	self.x5 = self.x4+100
@@ -3239,9 +3239,9 @@ class Popupadvparams_pca(QWidget):
 	self.yspc = 4
 	
         #Here we just set the window title
-	self.setWindowTitle('sxali2d advanced parameter selection')
+	self.setWindowTitle('sxpca advanced parameter selection')
         #Here we just set a label and its position in the window
-	title1=QtGui.QLabel('<b>sxali2d</b> - set advanced params', self)
+	title1=QtGui.QLabel('<b>sxpca</b> - set advanced params', self)
 	title1.move(self.x1,self.y1)
         #Labels and Line Edits for User Input
         #Just a label
@@ -4469,6 +4469,15 @@ class MainWindow(QtGui.QWidget):
 	
 	self.y2 = 65
 	
+	
+	self.btn7 = QPushButton("sxpdb2em", self)
+        self.btn7.move(10, self.y2)
+        #sets an infotip for this Pushbutton
+        self.btn7.setToolTip('convert atomic model (pdb file) into sampled electron density map')
+	self.connect(self.btn7, SIGNAL("clicked()"), self.pdb2em)
+	
+	self.y2 += 30
+	
         #creates a Pushbutton, named sxali2d, defines its position in the window 
         self.btn1 = QPushButton("sxali2d", self)
         self.btn1.move(10, self.y2)
@@ -4486,20 +4495,11 @@ class MainWindow(QtGui.QWidget):
        
 	self.y2 += 30
 	
-        self.btn3 = QPushButton("sxihrsr", self)
-        self.btn3.move(10, self.y2)
+	self.btn6 = QPushButton("sxk_means_groups", self)
+        self.btn6.move(10, self.y2)
         #sets an infotip for this Pushbutton
-        self.btn3.setToolTip('Iterative Real Space Helical Refinement ')
-        #when this button is clicked, this action starts the subfunction twodali
-        self.connect(self.btn3, SIGNAL("clicked()"), self.helicalrefinement)
-	
-	self.y2 += 30
-	
-	self.btn4 = QPushButton("sxali3d", self)
-        self.btn4.move(10, self.y2)
-        #sets an infotip for this Pushbutton
-        self.btn4.setToolTip('Perform 3-D projection matching given initial reference volume and image series')
-	self.connect(self.btn4, SIGNAL("clicked()"), self.ali3d)
+        self.btn6.setToolTip('determine \'best\' number of clusters in the data using K-means classification of a set of images')
+	self.connect(self.btn6, SIGNAL("clicked()"), self.kmeansgroups)
 	
 	self.y2 += 30
 	
@@ -4511,27 +4511,32 @@ class MainWindow(QtGui.QWidget):
 	
 	self.y2 += 30
 	
-	self.btn6 = QPushButton("sxk_means_groups", self)
-        self.btn6.move(10, self.y2)
-        #sets an infotip for this Pushbutton
-        self.btn6.setToolTip('determine \'best\' number of clusters in the data using K-means classification of a set of images')
-	self.connect(self.btn6, SIGNAL("clicked()"), self.kmeansgroups)
-	
-	self.y2 += 30
-	
-	self.btn7 = QPushButton("sxpdb2em", self)
-        self.btn7.move(10, self.y2)
-        #sets an infotip for this Pushbutton
-        self.btn7.setToolTip('determine \'best\' number of clusters in the data using K-means classification of a set of images')
-	self.connect(self.btn7, SIGNAL("clicked()"), self.pdb2em)
-	
-	self.y2 += 30
 	
 	self.btn8 = QPushButton("sxpca", self)
         self.btn8.move(10, self.y2)
         #sets an infotip for this Pushbutton
         self.btn8.setToolTip('Principal Component Analysis of images')
 	self.connect(self.btn8, SIGNAL("clicked()"), self.pca)
+	
+	self.y2 += 30
+	
+	
+	
+	self.btn10 = QPushButton("sxisac", self)
+        self.btn10.move(10, self.y2)
+        #sets an infotip for this Pushbutton
+        self.btn10.setToolTip('Perform Iterative Stable Alignment and Clustering (ISAC) on a 2-D image stack')
+	self.connect(self.btn10, SIGNAL("clicked()"), self.isac)
+	
+	self.y2 += 30
+	
+	self.btn4 = QPushButton("sxali3d", self)
+        self.btn4.move(10, self.y2)
+        #sets an infotip for this Pushbutton
+        self.btn4.setToolTip('Perform 3-D projection matching given initial reference volume and image series')
+	self.connect(self.btn4, SIGNAL("clicked()"), self.ali3d)
+	
+	self.y2 += 30
 	
 	self.btn9 = QPushButton("sxmref_ali3d", self)
         self.btn9.move(10, self.y2)
@@ -4541,13 +4546,15 @@ class MainWindow(QtGui.QWidget):
 	
 	self.y2 += 30
 	
-	self.btn10 = QPushButton("sxisac", self)
-        self.btn10.move(10, self.y2)
+        self.btn3 = QPushButton("sxihrsr", self)
+        self.btn3.move(10, self.y2)
         #sets an infotip for this Pushbutton
-        self.btn10.setToolTip('Perform Iterative Stable Alignment and Clustering (ISAC) on a 2-D image stack')
-	self.connect(self.btn10, SIGNAL("clicked()"), self.isac)
+        self.btn3.setToolTip('Iterative Real Space Helical Refinement ')
+        #when this button is clicked, this action starts the subfunction twodali
+        self.connect(self.btn3, SIGNAL("clicked()"), self.helicalrefinement)
 	
-	self.y2 += 30
+	
+	
 	
 	 #Pushbutton named Info
 	self.picbutton = QPushButton(self)
@@ -4572,7 +4579,7 @@ class MainWindow(QtGui.QWidget):
 	QtGui.QToolTip.setFont(QtGui.QFont('OldEnglish', 8))
 	
     	#here we set the width and height of the main window
-        self.resize(300,350)
+        self.resize(300,400)
 	
    
     #This is the function two2ali, which is being started when the Pushbutton btn1 of the main window(called sxali2d) is being clicked
@@ -4659,7 +4666,7 @@ class MainWindow(QtGui.QWidget):
         self.TabWidget = QtGui.QTabWidget()
     	self.TabWidget.insertTab(0,self.w,'Main')
     	self.TabWidget.insertTab(1,self.w1,'Advanced')
-	self.TabWidget.resize(620,500)
+	self.TabWidget.resize(630,500)
     	self.TabWidget.show()
 	
     def mref_ali3d(self):
