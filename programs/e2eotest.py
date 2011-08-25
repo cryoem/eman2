@@ -330,6 +330,10 @@ def check(options):
 			error = True
 			
 	else:
+		if not get_last_class_average_number(options):
+			print "Error: you have specified an invalid path - refinement data is incomplete in %s", options.path
+			error = True
+			
 		if options.iteration != None and options.path != None:
 			nec_files = [ "classes_", "classify_"]
 			dir = options.path
@@ -339,9 +343,6 @@ def check(options):
 					print "Error: %s doesn't exist", db_name
 					error= True
 					
-		if not get_last_class_average_number(options):
-			print "Error: you have specified an invalid path - refinement data is incomplete in %s", options.path
-			error = True
 	
 	if options.sym == None or len(options.sym) == 0:
 		print "Error: you must specify the sym argument"
@@ -391,7 +392,7 @@ def get_last_class_average_number(options):
 		nec_files = [ "classes_", "classify_","projections_"]
 		
 		# Find the most recent complete iteration
-		dbs=[i for i in db_list_dicts("bdb:"+path) if "threed_filt" in i]
+		dbs=[i for i in db_list_dicts("bdb:"+dir) if "threed_filt" in i]
 		dbs.sort()
 		most_recent=dbs[-1].rsplit("_",1)[-1]
 		if int(options.iteration)>int(most_recent) : 

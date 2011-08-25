@@ -552,14 +552,16 @@ std::string EMData::render_ap24(int x0, int y0, int ixsize, int iysize,
 				if (ll >= nx / 2) {
 					if (l >= (ny - inv_scale) * nx) k = 2 * (ll - nx / 2) + 2;
 					else k = 2 * (ll - nx / 2) + l + 2 + nx;
+					if (k>=mid) k-=mid;		// These 2 lines handle the Fourier origin being in the corner, not the middle
+					else k+=mid;
 					ph = (int)(image_data[k+1]*768/(2.0*M_PI))+384;	// complex phase as integer 0-767
 				}
 				else {
 					k = nx * ny - (l + 2 * ll) - 2;
 					ph = (int)(-image_data[k+1]*768/(2.0*M_PI))+384;	// complex phase as integer 0-767
+					if (k>=mid) k-=mid;		// These 2 lines handle the Fourier origin being in the corner, not the middle
+					else k+=mid;
 				}
-				if (k>=mid) k-=mid;		// These 2 lines handle the Fourier origin being in the corner, not the middle
-				else k+=mid;
 				float t = image_data[k];
 				if (t <= rm)  p = mingray;
 				else if (t >= render_max) p = maxgray;
@@ -609,14 +611,16 @@ std::string EMData::render_ap24(int x0, int y0, int ixsize, int iysize,
 				if (ll >= nx / 2) {
 					if (l >= (ny * nx - nx)) k = 2 * (ll - nx / 2) + 2;
 					else k = 2 * (ll - nx / 2) + l + 2 + nx;
+					if (k>=mid) k-=mid;		// These 2 lines handle the Fourier origin being in the corner, not the middle
+					else k+=mid;
 					ph = (int)(image_data[k+1]*768/(2.0*M_PI))+384;	// complex phase as integer 0-767
 				}
 				else {
 					k = nx * ny - (l + 2 * ll) - 2;
+					if (k>=mid) k-=mid;		// These 2 lines handle the Fourier origin being in the corner, not the middle
+					else k+=mid;
 					ph = (int)(-image_data[k+1]*768/(2.0*M_PI))+384;	// complex phase as integer 0-767
 				}
-				if (k>=mid) k-=mid;		// These 2 lines handle the Fourier origin being in the corner, not the middle
-				else k+=mid;
 
 				float t = image_data[k];
 				if (t <= rm)
