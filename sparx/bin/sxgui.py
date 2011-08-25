@@ -3971,7 +3971,494 @@ class Popupadvparams_mrefali3d_1(QWidget):
         #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
 	self.focusedit.setText(str(a))
 
+class Popupisac(QWidget):
+    def __init__(self):
+        QWidget.__init__(self)
+	
+	#######################################################################################
+	# class variables
+	
+	self.cmd = ""
+	# populate with default values
+	self.savedparmsdict = {'stackname':'NONE','partradius':'-1','xyrange':'4 2 1 1','trans':'2 1 0.5 0.25','nriter':'3','nproc':'1',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","dst":"90.0","FL":"0.1","FH":"0.3","FF":"0.2","init_iter":"3","main_iter":"3","iter_reali":"1","match_first":"1","max_round":"20","match_second":"5","stab_ali":"5","thld_err":"1.732","indep_run":"4","thld_grp":"10","img_per_grp":"100","generation":"1"}
 
+	#######################################################################################
+	# Layout parameters
+	
+	self.y1 = 10 # title and Repopulate button
+	self.y2 = self.y1 + 78 # Text boxes for inputting parameters
+	self.y3 = self.y2 + 250 # activate images button and set xform.align2d button
+	self.y4 = self.y3 + 80 # Advanced Parameters, Save Input and Generate command line buttons
+	self.y5 = self.y4 + 95 # run button 
+	self.yspc = 4
+	
+	self.x1 = 10 # first column (text box labels)
+	self.x2 = self.x1 + 150 # second column (text boxes)
+	self.x3 = self.x2+145 # third column (Open .hdf button)
+	self.x4 = self.x3+100 # fourth column (Open .bdb button)
+	self.x5 = 230 # run button
+	#######################################################################################
+	
+        #Here we just set the window title
+	self.setWindowTitle('sxisac')
+        #Here we just set a label and its position in the window
+	title1=QtGui.QLabel('<b>sxisac</b> - Perform Iterative Stable Alignment and Clustering (ISAC) on a 2-D image stack', self)
+	title1.move(self.x1,self.y1)
+	self.y1 += 30
+
+	self.repopbtn = QPushButton("Repopulate With Saved Parameters", self)
+        self.repopbtn.move(self.x1-5,self.y1)
+        #sets an infotip for this Pushbutton
+        self.repopbtn.setToolTip('Repopulate With Saved Parameters')
+        #when this button is clicked, this action starts the subfunction twodali
+        self.connect(self.repopbtn, SIGNAL("clicked()"), self.repoparms_isac)
+
+	#######################################################################################
+        #Here we create a Button(file_button with title run open .hdf) and its position in the window
+	self.file_button = QtGui.QPushButton("Open .hdf", self)
+	self.file_button.move(self.x3, self.y2-self.yspc)
+        #Here we define, that when this button is clicked, it starts subfunction choose_file
+	QtCore.QObject.connect(self.file_button, QtCore.SIGNAL("clicked()"), self.choose_file)
+        #exactly the same as above, but for subfunction choose_file1
+	self.file_button1 = QtGui.QPushButton("Open .bdb", self)
+	self.file_button1.move(self.x4,self.y2-self.yspc)
+	QtCore.QObject.connect(self.file_button1, QtCore.SIGNAL("clicked()"), self.choose_file1)
+	
+	stackname= QtGui.QLabel('Name of input stack', self)
+	stackname.move(self.x1,self.y2)
+	self.stacknameedit=QtGui.QLineEdit(self)
+        self.stacknameedit.move(self.x2,self.y2)
+	self.stacknameedit.setText(self.savedparmsdict['stackname'])
+	
+	self.y2 += 30
+	
+	partradius= QtGui.QLabel('Particle radius', self)
+	partradius.move(self.x1,self.y2)
+	self.partradiusedit=QtGui.QLineEdit(self)
+	self.partradiusedit.move(self.x2,self.y2)
+	self.partradiusedit.setText(self.savedparmsdict['partradius'])
+	self.partradiusedit.setToolTip('Parameter ou: Outer radius for rotational correlation \nshould be set to particle radius\nif not sure, set to boxsize/2-2 ')	
+	self.y2 += 30
+	
+	match_first= QtGui.QLabel('match_first', self)
+	match_first.move(self.x1,self.y2)
+	self.match_firstedit=QtGui.QLineEdit(self)
+	self.match_firstedit.move(self.x2,self.y2)
+	self.match_firstedit.setText(self.savedparmsdict['match_first'])
+	self.match_firstedit.setToolTip('number of iterations to run 2-way matching in the first phase')
+	
+	self.y2 += 30
+	
+	
+	match_second= QtGui.QLabel('match_second', self)
+	match_second.move(self.x1,self.y2)
+	self.match_secondedit=QtGui.QLineEdit(self)
+	self.match_secondedit.move(self.x2,self.y2)
+	self.match_secondedit.setText(self.savedparmsdict['match_second'])
+	self.match_secondedit.setToolTip('number of iterations to run 2-way (or 3-way) matching in the second phase')
+	
+	self.y2 += 30
+	
+	nriter= QtGui.QLabel('Number of Iterations', self)
+	nriter.move(self.x1,self.y2)
+	self.nriteredit=QtGui.QLineEdit(self)
+	self.nriteredit.move(self.x2,self.y2)
+	self.nriteredit.setText(self.savedparmsdict['nriter'])
+	self.nriteredit.setToolTip('Maximum number of iterations the program will perform\n Using the default values the program will run 3 rounds with xy-range 4 and translational step 1, 3 rounds with xyrange 2 and translational step 1 and so on..\nif set to 0 maximum iteration number will be 10 and will automatically stop should the criterion falls')
+	self.y2 += 30
+	
+	
+	img_per_grp= QtGui.QLabel('img_per_grp', self)
+	img_per_grp.move(self.x1,self.y2)
+	self.img_per_grpedit=QtGui.QLineEdit(self)
+	self.img_per_grpedit.move(self.x2,self.y2)
+	self.img_per_grpedit.setText(self.savedparmsdict['img_per_grp'])
+	self.img_per_grpedit.setToolTip('number of images per group in the ideal case (essentially maximum size of class)')
+	
+	self.y2 += 30
+	
+	
+	
+	
+	thld_grp= QtGui.QLabel('thld_grp', self)
+	thld_grp.move(self.x1,self.y2)
+	self.thld_grpedit=QtGui.QLineEdit(self)
+	self.thld_grpedit.move(self.x2,self.y2)
+	self.thld_grpedit.setText(self.savedparmsdict['thld_grp'])
+	self.thld_grpedit.setToolTip('the threshold of size of reproducible class (essentially minimum size of class)')
+	self.y2 += 30
+	
+	
+	thld_err= QtGui.QLabel('thld_err', self)
+	thld_err.move(self.x1,self.y2)
+	self.thld_erredit=QtGui.QLineEdit(self)
+	self.thld_erredit.move(self.x2,self.y2)
+	self.thld_erredit.setText(self.savedparmsdict['thld_err'])
+	self.thld_erredit.setToolTip('the threshold of pixel error when checking stability')
+	
+	self.y2 += 30
+	
+	generation= QtGui.QLabel('generation', self)
+	generation.move(self.x1,self.y2)
+	self.generationedit=QtGui.QLineEdit(self)
+	self.generationedit.move(self.x2,self.y2)
+	self.generationedit.setText(self.savedparmsdict['generation'])
+	self.generationedit.setToolTip('the n-th approach on the dataset')
+	
+	self.y2 += 30
+	
+	
+	nproc= QtGui.QLabel('Number of Processors', self)
+	nproc.move(self.x1,self.y2)
+	self.nprocedit=QtGui.QLineEdit(self)
+	self.nprocedit.move(self.x2,self.y2)
+	self.nprocedit.setText(self.savedparmsdict['nproc'])
+	self.nprocedit.setToolTip('The number of processors to use. Default is single processor mode')
+
+	
+	######################################################################################
+	
+	self.savepbtn = QPushButton("Save Input Parameters", self)
+        self.savepbtn.move(self.x1-5, self.y4)
+        #sets an infotip for this Pushbutton
+        self.savepbtn.setToolTip('Save Input Parameters')
+        #when this button is clicked, this action starts the subfunction twodali
+        self.connect(self.savepbtn, SIGNAL("clicked()"), self.saveparms)
+	self.y4+=30
+	
+	self.cmdlinebtn = QPushButton("Generate command line from input parameters", self)
+        self.cmdlinebtn.move(self.x1-5, self.y4)
+        #sets an infotip for this Pushbutton
+        self.cmdlinebtn.setToolTip('Generate command line using input parameters')
+        #when this button is clicked, this action starts the subfunction twodali
+        self.connect(self.cmdlinebtn, SIGNAL("clicked()"), self.gencmdline_isac)
+	self.y4+=30
+
+	self.outinfobtn = QPushButton("Output Info", self)
+        self.outinfobtn.move(self.x1-5, self.y4)
+        #sets an infotip for this Pushbutton
+        self.outinfobtn.setToolTip('Output Info')
+        #when this button is clicked, this action starts the subfunction twodali
+        self.connect(self.outinfobtn, SIGNAL("clicked()"), self.outputinfo_isac)
+	
+	#######################################################################
+	 #Here we create a Button(Run_button with title run sxali2d) and its position in the window
+	self.RUN_button = QtGui.QPushButton('Run sxisac', self)
+	# make 3D textured push button look
+	s = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px}"
+	
+	self.RUN_button.setStyleSheet(s)
+	self.RUN_button.move(self.x5, self.y5)
+        #Here we define, that when this button is clicked, it starts subfunction runsxali2d
+        self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxisac)
+        #Labels and Line Edits for User Input	
+
+    def outputinfo_isac(self):
+    	QMessageBox.information(self, "isac output",'For each generation of running the program, there are two phases. The first phase is an exploratory phase. In this phase, we set the criteria to be very loose and try to find as much candidate class averages as possible. This phase typically should have 10 to 20 rounds (set by max_round, default = 20). The candidate class averages are stored in class_averages_candidate_generation_n.hdf.\n\n The second phase is where the actual class averages are generated, it typically have 3~9 iterations (set by match_second, default = 5) of matching. The first half of iterations are 2-way matching, the second half of iterations are 3-way matching, and the last iteration is 4-way matching. In the second phase, three files will be generated:\n\n class_averages_generation_n.hdf : class averages generated in this generation \n\n generation_n_accounted.txt : IDs of accounted particles in this generation\n\n generation_n_unaccounted.txt : IDs of unaccounted particles in this generation')
+	
+    def gencmdline_isac(self,writefile=True):
+	#Here we just read in all user inputs in the line edits of the Poptwodali window
+   	stack = self.stacknameedit.text()
+	ou=self.partradiusedit.text()
+	
+	match_first = self.match_firstedit.text()
+	match_second = self.match_secondedit.text()
+	maxit=self.nriteredit.text()
+	thld_err = self.thld_erredit.text()
+	thld_grp = self.thld_grpedit.text()
+	img_per_grp = self.img_per_grpedit.text()
+	generation = self.generationedit.text()
+	
+	xr=self.w1.xyrangeedit.text()
+	yr=self.w1.xyrangeedit.text()
+	ts=self.w1.transedit.text()
+	dst = self.w1.dstedit.text()
+	FL = self.w1.FLedit.text()
+	FH = self.w1.FHedit.text()
+	FF = self.w1.FFedit.text()
+	init_iter = self.w1.init_iteredit.text()
+	main_iter = self.w1.main_iteredit.text()
+	iter_reali = self.w1.iter_realiedit.text()
+	max_round = self.w1.max_roundedit.text()
+	stab_ali = self.w1.stab_aliedit.text()
+	indep_run = self.w1.indep_runedit.text()
+	ringstep = self.w1.ringstepedit.text()
+	inrad = self.w1.innerradiusedit.text()
+	CTF=self.w1.ctfchkbx.checkState()
+	snr = self.w1.snredit.text()
+	
+	cmd1 = "sxisac.py "+str(stack)+ " --ir=" + str(inrad)+" --ou="+ str(ou) +" --rs="+str(ringstep)+ " --xr='"+str(xr)+"'"+ " --yr='"+str(yr)+"'"+ " --ts='"+str(ts)+"'"+  " --maxit="+ str(maxit)+  " --snr=" + str(snr)
+	
+	
+	if CTF == Qt.Checked:
+		cmd1 = cmd1 + " --CTF"
+	
+	cmd1 = cmd1 + " --dst=" + str(dst) + " --FL="+str(FL)+" --FH="+str(FH)+" --FF="+str(FF)+" --init_iter="+str(init_iter)+" --main_iter="+str(main_iter)+ " --iter_reali="+str(iter_reali)+" --match_first="+str(match_first)+ " --match_second="+str(match_second)+" --max_round="+str(max_round)+" --stab_ali="+str(stab_ali)+" --thld_err="+str(thld_err)+" --indep_run="+str(indep_run)+" --thld_grp="+str(thld_grp)+" --img_per_grp="+str(img_per_grp)+" --generation="+str(generation)
+	
+	np = self.nprocedit.text()
+	
+	self.savedparmsdict = {'stackname':str(stack),'partradius':str(ou),'xyrange':str(xr),'trans':str(ts),'nriter':str(maxit),'nproc':str(np),"ringstep":str(ringstep),"innerradius":str(inrad),"ctf":CTF,"snr":str(snr),"dst":str(dst),"FL":str(FL),"FH":str(FH),"FF":str(FF),"init_iter":str(init_iter),"main_iter":str(main_iter),"iter_reali":str(iter_reali),"match_first":str(match_first),"max_round":str(max_round),"match_second":str(match_second),"stab_ali":str(stab_ali),"thld_err":str(thld_err),"indep_run":str(indep_run),"thld_grp":str(thld_grp),"img_per_grp":str(img_per_grp),"generation":str(generation)}
+	
+	self.w1.savedparmsdict=self.savedparmsdict
+	
+	if int(str(np)) > 1:
+		cmd1="mpirun -np "+ str(np) + " "+ cmd1+" --MPI" 
+	
+	if writefile:	
+		(fname,stat)= QInputDialog.getText(self,"Generate Command Line","Enter name of file to save command line in",QLineEdit.Normal,"")
+		if stat:
+			f = open(fname,'a')
+			f.write(cmd1)
+			f.write('\n')
+			f.close()
+	
+	print cmd1
+	self.cmd = cmd1
+	
+    def runsxisac(self):
+	self.gencmdline_isac(writefile=False)
+	process = subprocess.Popen(self.cmd,shell=True)
+	self.emit(QtCore.SIGNAL("process_started"),process.pid)
+	
+    def saveparms(self):	
+	(fname,stat)= QInputDialog.getText(self,"Save Input Parameters","Enter name of file to save parameters in",QLineEdit.Normal,"")
+	if stat:
+		import pickle
+		output=open(fname,'wb')
+		self.gencmdline_isac(writefile=False)
+		pickle.dump(self.savedparmsdict,output)
+		output.close()
+	
+    def repoparms_isac(self):	
+	(fname,stat)= QInputDialog.getText(self,"Repopulate Parameters","Enter name of file parameters were saved in",QLineEdit.Normal,"")
+	if stat:
+		import pickle
+		pkl = open(fname,'rb')
+		self.savedparmsdict = pickle.load(pkl)
+		self.partradiusedit.setText(self.savedparmsdict['partradius'])
+		self.stacknameedit.setText(self.savedparmsdict['stackname'])	
+		self.nriteredit.setText(self.savedparmsdict['nriter'])
+		self.nprocedit.setText(self.savedparmsdict['nproc'])
+		self.match_firstedit.setText(self.savedparmsdict['match_first'])
+		self.match_secondedit.setText(self.savedparmsdict['match_second'])
+		self.thld_erredit.setText(self.savedparmsdict['thld_err'])
+    		self.thld_grpedit.setText(self.savedparmsdict['thld_grp'])
+		self.img_per_grpedit.setText(self.savedparmsdict['img_per_grp'])
+		self.generationedit.setText(self.savedparmsdict['generation'])
+		
+		self.w1.indep_runedit.setText(self.savedparmsdict['indep_run'])
+		self.w1.stab_aliedit.setText(self.savedparmsdict['stab_ali'])
+		self.w1.max_roundedit.setText(self.savedparmsdict['max_round'])
+		self.w1.xyrangeedit.setText(self.savedparmsdict['xyrange'])
+		self.w1.transedit.setText(self.savedparmsdict['trans'])
+		self.w1.ringstepedit.setText(self.savedparmsdict['ringstep'])
+		self.w1.innerradiusedit.setText(self.savedparmsdict['innerradius'])
+		self.w1.ctfchkbx.setCheckState(self.savedparmsdict['ctf'])
+		self.w1.snredit.setText(self.savedparmsdict['snr'])
+		self.w1.dstedit.setText(self.savedparmsdict['dst'])
+		self.w1.FLedit.setText(self.savedparmsdict['FL'])
+		self.w1.FHedit.setText(self.savedparmsdict['FH'])
+		self.w1.FFedit.setText(self.savedparmsdict['FF'])
+		self.w1.init_iteredit.setText(self.savedparmsdict['init_iter'])		
+		self.w1.main_iteredit.setText(self.savedparmsdict['main_iter'])
+		self.w1.iter_realiedit.setText(self.savedparmsdict['iter_reali'])
+   
+	#Function choose_file started when  the  open_file of the  Poptwodali window is clicked
+    def choose_file(self):
+	#opens a file browser, showing files only in .hdf format
+   	file_name = QtGui.QFileDialog.getOpenFileName(self, "Open Data File", "", "HDF files (*.hdf)")
+        #after the user selected a file, we obtain this filename as a Qstring
+	a=QtCore.QString(file_name)
+	print a
+        #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
+	self.stacknameedit.setText(str(a))
+        
+	#Function choose_file started when  the  open_file of the  Poptwodali window is clicked (same as above but for bdb files(maybe we can combine these two into one function)
+    def choose_file1(self):
+	file_name1 = QtGui.QFileDialog.getOpenFileName(self, "Open Data File", "EMAN2DB/", "BDB FILES (*.bdb)" )
+	a=QtCore.QString(file_name1)
+	b=os.path.basename(str(a))
+	c=os.path.splitext(b)[0]
+	d="bdb:"+c
+	print d
+	self.stacknameedit.setText(d)
+
+
+class Popupadvparams_isac_1(QWidget):
+    def __init__(self,savedparms):
+        QWidget.__init__(self)
+	
+	self.x1 = 10
+	self.x2 = 140
+	self.x3 = 285
+	
+	self.y1 = 10
+	self.yspc = 4
+	
+        #Here we just set the window title
+	self.setWindowTitle('sxisac advanced parameter selection')
+        #Here we just set a label and its position in the window
+	title1=QtGui.QLabel('<b>sxisac</b> - set advanced params', self)
+	title1.move(self.x1,self.y1)
+        #Labels and Line Edits for User Input
+        #Just a label
+	self.y1 += 30
+	
+	title2= QtGui.QLabel('<b>Advanced</b> parameters', self)
+	title2.move(self.x1,self.y1)
+	
+	self.y1 += 30
+	
+	self.savedparmsdict=savedparms
+	
+	
+	xyrange= QtGui.QLabel('xy range', self)
+	xyrange.move(self.x1,self.y1)
+	self.xyrangeedit=QtGui.QLineEdit(self)
+	self.xyrangeedit.move(self.x2,self.y1)
+	self.xyrangeedit.setText(self.savedparmsdict['xyrange'])
+	self.xyrangeedit.setToolTip('Range for translational search in x, y direction\nif set to 0 only rotational alignment will be performed')
+	self.y1 += 30
+	
+	trans= QtGui.QLabel('translational step', self)
+	trans.move(self.x1,self.y1)
+	self.transedit=QtGui.QLineEdit(self)
+	self.transedit.move(self.x2,self.y1)
+	self.transedit.setText(self.savedparmsdict['trans'])
+	self.transedit.setToolTip('Step of translational search in x, y direction\nlarger values increase the speed but decrease the accuracy')	
+	self.y1 += 30
+	
+	
+	ringstep= QtGui.QLabel('Ring step', self)
+	ringstep.move(self.x1,self.y1)
+	self.ringstepedit=QtGui.QLineEdit(self)
+	self.ringstepedit.move(self.x2,self.y1)
+	self.ringstepedit.setText(self.savedparmsdict['ringstep'])
+	self.ringstepedit.setToolTip('step between rings in rotational correlation > 0 (set to 1)')
+	
+	self.y1 += 30
+	
+	innerradius= QtGui.QLabel('Inner radius', self)
+	innerradius.move(self.x1,self.y1)
+	self.innerradiusedit=QtGui.QLineEdit(self)
+	self.innerradiusedit.move(self.x2,self.y1)
+	self.innerradiusedit.setText(self.savedparmsdict['innerradius'])
+	self.innerradiusedit.setToolTip('inner radius for rotational correlation > 0 (set to 1) ')	
+	
+	self.y1 += 30
+	
+	ctf= QtGui.QLabel('CTF', self)
+	ctf.move(self.x1,self.y1)
+	self.ctfchkbx = QtGui.QCheckBox("",self)
+	self.ctfchkbx.move(self.x2, self.y1)
+	self.ctfchkbx.setCheckState(self.savedparmsdict['ctf'])
+	
+	self.y1 += 30
+	
+	snr= QtGui.QLabel('SNR', self)
+	snr.move(self.x1,self.y1)
+	self.snredit=QtGui.QLineEdit(self)
+	self.snredit.move(self.x2,self.y1)
+	self.snredit.setText(self.savedparmsdict['snr'])
+	self.snredit.setToolTip('signal-to-noise ratio of the data (default SNR=1.0)')	
+	
+	self.y1 += 30
+		
+	dst= QtGui.QLabel('dst', self)
+	dst.move(self.x1,self.y1)
+	self.dstedit=QtGui.QLineEdit(self)
+	self.dstedit.move(self.x2,self.y1)
+	self.dstedit.setText(self.savedparmsdict['dst'])
+	self.dstedit.setToolTip('discrete angle used in within group alignment')	
+	
+	self.y1 += 30
+	
+	FL= QtGui.QLabel('FL', self)
+	FL.move(self.x1,self.y1)
+	self.FLedit=QtGui.QLineEdit(self)
+	self.FLedit.move(self.x2,self.y1)
+	self.FLedit.setText(self.savedparmsdict['FL'])
+	self.FLedit.setToolTip('lowest stopband frequency used in the tangent filter')
+	
+	self.y1 += 30
+	
+	FH= QtGui.QLabel('FH', self)
+	FH.move(self.x1,self.y1)
+	self.FHedit=QtGui.QLineEdit(self)
+	self.FHedit.move(self.x2,self.y1)
+	self.FHedit.setText(self.savedparmsdict['FL'])
+	self.FHedit.setToolTip('highest stopband frequency used in the tangent filter')
+	
+	self.y1 += 30
+	
+	FF= QtGui.QLabel('FF', self)
+	FF.move(self.x1,self.y1)
+	self.FFedit=QtGui.QLineEdit(self)
+	self.FFedit.move(self.x2,self.y1)
+	self.FFedit.setText(self.savedparmsdict['FF'])
+	self.FFedit.setToolTip('fall-off of the tangent filter')
+	
+	self.y1 += 30
+	
+	init_iter= QtGui.QLabel('init_iter', self)
+	init_iter.move(self.x1,self.y1)
+	self.init_iteredit=QtGui.QLineEdit(self)
+	self.init_iteredit.move(self.x2,self.y1)
+	self.init_iteredit.setText(self.savedparmsdict['init_iter'])
+	self.init_iteredit.setToolTip('number of iterations of ISAC program in initialization')
+	
+	self.y1 += 30
+	
+	main_iter= QtGui.QLabel('main_iter', self)
+	main_iter.move(self.x1,self.y1)
+	self.main_iteredit=QtGui.QLineEdit(self)
+	self.main_iteredit.move(self.x2,self.y1)
+	self.main_iteredit.setText(self.savedparmsdict['main_iter'])
+	self.main_iteredit.setToolTip('number of iterations of ISAC program in main part')
+	
+	self.y1 += 30
+	
+	iter_reali= QtGui.QLabel('iter_reali', self)
+	iter_reali.move(self.x1,self.y1)
+	self.iter_realiedit=QtGui.QLineEdit(self)
+	self.iter_realiedit.move(self.x2,self.y1)
+	self.iter_realiedit.setText(self.savedparmsdict['iter_reali'])
+	self.iter_realiedit.setToolTip('number of iterations in ISAC before checking stability')
+	
+	self.y1 += 30
+	
+	
+	
+	max_round= QtGui.QLabel('max_round', self)
+	max_round.move(self.x1,self.y1)
+	self.max_roundedit=QtGui.QLineEdit(self)
+	self.max_roundedit.move(self.x2,self.y1)
+	self.max_roundedit.setText(self.savedparmsdict['max_round'])
+	self.max_roundedit.setToolTip('maximum rounds of generating candidate averages in the first phase')
+	
+	self.y1 += 30
+	
+	
+	stab_ali= QtGui.QLabel('stab_ali', self)
+	stab_ali.move(self.x1,self.y1)
+	self.stab_aliedit=QtGui.QLineEdit(self)
+	self.stab_aliedit.move(self.x2,self.y1)
+	self.stab_aliedit.setText(self.savedparmsdict['stab_ali'])
+	self.stab_aliedit.setToolTip('number of alignments when checking stability')
+	
+	self.y1 += 30
+	
+	
+	
+	indep_run= QtGui.QLabel('indep_run', self)
+	indep_run.move(self.x1,self.y1)
+	self.indep_runedit=QtGui.QLineEdit(self)
+	self.indep_runedit.move(self.x2,self.y1)
+	self.indep_runedit.setText(self.savedparmsdict['indep_run'])
+	self.indep_runedit.setToolTip('number of indepentdent runs for reproducibility (default=4, currently other values not supported')
+	
+	
+	
 ###MAIN WINDOW	(started by class App)
 #This class includes the layout of the main window; within each class, i name the main object self, to avoid confusion)    	
 class MainWindow(QtGui.QWidget):
@@ -4051,6 +4538,14 @@ class MainWindow(QtGui.QWidget):
         #sets an infotip for this Pushbutton
         self.btn9.setToolTip('perform 3-D multireference projection matching given initial reference volumes and image series')
 	self.connect(self.btn9, SIGNAL("clicked()"), self.mref_ali3d)
+	
+	self.y2 += 30
+	
+	self.btn10 = QPushButton("sxisac", self)
+        self.btn10.move(10, self.y2)
+        #sets an infotip for this Pushbutton
+        self.btn10.setToolTip('Perform Iterative Stable Alignment and Clustering (ISAC) on a 2-D image stack')
+	self.connect(self.btn10, SIGNAL("clicked()"), self.isac)
 	
 	self.y2 += 30
 	
@@ -4179,7 +4674,20 @@ class MainWindow(QtGui.QWidget):
     	self.TabWidget.insertTab(1,self.w1,'Advanced Parameters')
 	self.TabWidget.resize(550,670)
     	self.TabWidget.show()
-			
+
+    def isac(self):
+        print "Opening a new popup window..."
+        #opens the window Poptwodali, and defines its width and height
+        #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
+        self.w = Popupisac()
+	self.w1 = Popupadvparams_isac_1(self.w.savedparmsdict)
+	self.w.w1 = self.w1
+	self.TabWidget = QtGui.QTabWidget()
+    	self.TabWidget.insertTab(0,self.w,'Main')
+    	self.TabWidget.insertTab(1,self.w1,'Advanced')
+	self.TabWidget.resize(600,600)
+    	self.TabWidget.show()
+        				
     #This is the function info, which is being started when the Pushbutton picbutton of the main window is being clicked
     def info(self):
         print "Opening a new popup window..."
