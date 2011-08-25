@@ -163,13 +163,60 @@ class EMSliceItem3D(EMItem3D):
 class EMSliceInspector(EMInspectorControlShape):
 	def __init__(self, name, item3d):
 		EMItem3DInspector.__init__(self, name, item3d)
-
+		
+		self.onConstrainedOrientationChanged()
+		self.constrained_plane_combobox.currentIndexChanged.connect(self.onConstrainedOrientationChanged)
+		QtCore.QObject.connect(self.constrained_slider, QtCore.SIGNAL("valueChanged"), self.onConstraintSlider)
 	def updateItemControls(self):
 		super(EMSliceInspector, self).updateItemControls()
 		# Anything that needs to be updated when the scene is rendered goes here.....
 		
 	def addControls(self, gridbox):
 		super(EMSliceInspector, self).addControls(gridbox)
+				
+		self.constrained_group_box = QtGui.QGroupBox("Constrained Slices")
+		self.constrained_group_box.setCheckable(True)
+		self.constrained_group_box.setChecked(False)
+		
+		self.constrained_plane_combobox = QtGui.QComboBox()
+		self.constrained_plane_combobox.addItems(["XY", "YZ", "ZX"])
+		self.constrained_slider = ValSlider(label="Trans:")
+		
+		constrained_layout = QtGui.QVBoxLayout()
+		constrained_layout.addWidget(self.constrained_plane_combobox)
+		constrained_layout.addWidget(self.constrained_slider)
+		constrained_layout.addStretch()
+		self.constrained_group_box.setLayout(constrained_layout)
+		
+		gridbox.addWidget(self.constrained_group_box, 2, 1, 1, 1)
+	
+	def onConstrainedOrientationChanged(self):
+		self.constrained_slider.setValue(0)
+		(nx, ny, nz) = self.item3d().getParent().getBoundingBoxDimensions()
+		range = (0, nx)
+		plane = str(self.constrained_plane_combobox.currentText())
+		if plane == "XY": range = (-nz/2.0, nz/2.0)
+		elif plane == "YZ": range = (-nx/2.0, nx/2.0)
+		elif plane == "ZX": range = (-ny/2.0, ny/2.0) 
+		self.constrained_slider.setRange(*range)
+		self.onConstraintSlider()
+	
+	def onConstraintSlider(self):
+		value = self.constrained_slider.getValue()
+		transform = self.item3d().getTransform()
+		plane = str(self.constrained_plane_combobox.currentText())
+		if plane == "XY":
+			transform.set_rotation((0,0,1))
+			transform.set_trans(0,0,value)
+		elif plane == "YZ":
+			transform.set_rotation((1,0,0))
+			transform.set_trans(value, 0, 0)
+		elif plane == "ZX":
+			transform.set_rotation((0,1,0))
+			transform.set_trans(0,value,0)
+		
+		if self.inspector:
+			self.inspector().updateSceneGraph()
 
 class EMVolumeItem3D(EMItem3D):
 	name = "Volume"
