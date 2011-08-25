@@ -558,7 +558,7 @@ class EMCone(EMItem3D):
 class EM3DText(EMItem3D):
 	name = "3DText"
 	nodetype = "ShapeNode"
-	def __init__(self, string, fontSize, transform=Transform()):
+	def __init__(self, string, fontSize, fontMode=FTGLFontMode.TEXTURE, depth=10, transform=Transform()):
 		EMItem3D.__init__(self, parent=None, children=set(), transform=transform)
 		#size
 		self.setRenderString(string, fontSize)
@@ -570,8 +570,8 @@ class EM3DText(EMItem3D):
 		self.shininess = 25.0
 		
 		self.font_renderer = get_3d_font_renderer()
-		self.font_renderer.set_font_mode(FTGLFontMode.EXTRUDE)
-		self.font_renderer.set_depth(75)
+		self.font_renderer.set_font_mode(fontMode)
+		self.font_renderer.set_depth(depth)
 		
 	def setRenderString(self, string, fontSize):
 		self.renderString = string

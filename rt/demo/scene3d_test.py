@@ -32,8 +32,23 @@ class GLdemo(QtGui.QWidget):
 		self.line = EMLine(10,10,10,200,200,200, 16)
 		self.widget.addChild(self.line)
 		
-		self.text = EM3DText('This is a 3D text', 75)
-		self.widget.addChild(self.text)
+		self.text1 = EM3DText('3D text in extrude', 75)
+		self.widget.addChild(self.text1)
+		
+		self.text2 = EM3DText('3D text in texture', 75, FTGLFontMode.TEXTURE)
+		self.widget.addChild(self.text2)
+		
+#		self.text3 = EM3DText('3D text in bitmap', 75, FTGLFontMode.BITMAP)
+#		self.widget.addChild(self.text3)
+		
+		self.text4 = EM3DText('3D text in polygon', 75, FTGLFontMode.POLYGON)
+		self.widget.addChild(self.text4)
+		
+		self.text5 = EM3DText('3D text in outline', 75, FTGLFontMode.OUTLINE)
+		self.widget.addChild(self.text5)
+		
+		self.text6 = EM3DText('3D text in pixmap', 75, FTGLFontMode.PIXMAP)
+		self.widget.addChild(self.text6)
 		
 		#Show inspector
 		self.widget.showInspector()
