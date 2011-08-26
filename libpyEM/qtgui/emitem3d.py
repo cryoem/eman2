@@ -60,7 +60,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 	name = "General 3D Item"
 	nodetype = "BaseNode"
 	
-	def __init__(self, parent = None, children = [], transform = None):
+	def __init__(self, parent = None, children = [], transform = Transform()):
 		"""
 		@type parent: EMItem3D
 		@param parent: the parent node to the current node or None for the root node
@@ -158,6 +158,9 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		return node in self.children
 	
 	def displayTree(self, level = 1):
+		"""
+		This prints a representation of the subtree rooted at this node to standard output. Useful for debugging.
+		"""
 		indent = "\t"*(level-1)
 		marker = "<-->" if self.parent else "-->"
 		print indent, marker, self.intname
@@ -323,7 +326,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		# TODO: we MIGHT want to get rid of the recursive part of this algorithm
 		#        instead, the calling function would get a list of all selected nodes, and apply transformations to each
 		for child in self.children:
-			child.updateMatrices(params, xformtype)
+			child.updateMatrices(params, xformtype) #Note: the transformation is only applied to SELECTED nodes
 			
 	def render(self):
 		"""
@@ -333,9 +336,14 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		"""
 		if not self.is_visible:
 			return #Also applies to subtree rooted at this node
-		
-		if self.transform != None:
-			if self.item_inspector != None and self.is_selected: self.item_inspector.updateItemControls()
+
+		if self.transform.is_identity():
+			GL.glPushName(self.intname)
+			self.renderNode()
+			for child in self.children:
+				child.render()
+			GL.glPopName()
+		else:
 			GL.glPushMatrix()
 			GL.glPushName(self.intname)
 			GLUtil.glMultMatrix(self.transform) #apply the transformation
@@ -345,14 +353,9 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 				child.render()
 			GL.glPopName()
 			GL.glPopMatrix()
-			
-		else:
-			GL.glPushName(self.intname)
-			self.renderNode()
-			for child in self.children:
-				child.render()
-			GL.glPopName()
-		
+
+		if self.item_inspector != None and self.is_selected: 
+				self.item_inspector.updateItemControls()
 
 	def renderNode(self):
 		"""
