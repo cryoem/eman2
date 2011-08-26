@@ -6703,7 +6703,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	#else: mask3D = model_circle(last_ring, nx, nx, nx)
 
 	numr	= Numrinit(first_ring, last_ring, rstep, "F")
-	mask2D  = model_circle(last_ring,nz,nz) - model_circle(first_ring,nz,nz)
+	#mask2D  = model_circle(last_ring,nz,nz) - model_circle(first_ring,nz,nz)
 
 	if CTF:
 		from reconstruction import recons3d_4nn_ctf_MPI
@@ -6736,25 +6736,24 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 		finfo.write("image_start, image_end: %d %d\n" %(image_start, image_end))
 		finfo.flush()
 	
-	rect_mask = pad( model_blank( int(2*rmax),nz,1,bckg=1.0), nz, nz, 1,0.0)
+	rect_mask = pad( model_blank( int(2*rmax),nz,1,bckg=1.0), nz, nz, 1,0.0)  # only if it does not exist
 	
 	data = EMData.read_images(stack, list_of_particles)
 	if fourvar:  original_data = []
 	for im in xrange(nima):
-		
 		data[im].set_attr('ID', list_of_particles[im])
-		sttt = Util.infomask(data[im], rect_mask, False)
+		sttt = Util.infomask(data[im], mask2D, False)
 		data[im] = data[im] - sttt[0]
 		if fourvar: original_data.append(data[im].copy())
 		if CTF:
-			st = Util.infomask(data[im], mask2D, False)
 			data[im] -= st[0]
 			st = data[im].get_attr_default("ctf_applied", 0)
 			if(st == 0):
 				ctf_params = data[im].get_attr("ctf")
 				data[im] = filt_ctf(data[im], ctf_params)
 				data[im].set_attr('ctf_applied', 1)
-		data[im] = data[im]*rect_mask
+		Util.img_mul (data[im], rect_mask)  #?????
+	del mask2D
 
 	if debug:
 		finfo.write( '%d loaded  \n' % nima )
