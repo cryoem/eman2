@@ -44,7 +44,8 @@ from libpyGLUtils2 import FTGLFontMode
 class EMCube(EMItem3D):
 	name = "Cube"
 	nodetype = "ShapeNode"
-	def __init__(self, size, transform=Transform()):
+	def __init__(self, size, transform=None):
+		if not transform: transform = Transform()
 		EMItem3D.__init__(self, parent=None, children=set(), transform=transform)
 		# size
 		self.setSize(size)
@@ -166,7 +167,8 @@ class EMCube(EMItem3D):
 class EMSphere(EMItem3D):
 	name = "Sphere"
 	nodetype = "ShapeNode"
-	def __init__(self, radius, transform=Transform()):
+	def __init__(self, radius, transform=None):
+		if not transform: transform = Transform()
 		EMItem3D.__init__(self, parent=None, children=set(), transform=transform)
 		# size
 		self.setRadius(radius)
@@ -247,7 +249,8 @@ class EMSphere(EMItem3D):
 class EMCylinder(EMItem3D):
 	name = "Cylinder"
 	nodetype = "ShapeNode"
-	def __init__(self, radius, height, transform=Transform()):
+	def __init__(self, radius, height, transform=None):
+		if not transform: transform = Transform()
 		EMItem3D.__init__(self, parent=None, children=set(), transform=transform)
 		#size
 		self.setRadiusAndHeight(radius, height)
@@ -340,7 +343,8 @@ class EMCylinder(EMItem3D):
 class EMLine(EMItem3D):
 	name = "Line"
 	nodetype = "ShapeNode"
-	def __init__(self, x1, y1, z1, x2, y2, z2, linewidth, transform=Transform()):
+	def __init__(self, x1, y1, z1, x2, y2, z2, linewidth, transform=None):
+		if not transform: transform = Transform()
 		EMItem3D.__init__(self, parent=None, children=set(), transform=transform)
 		# size
 		self.setEndAndWidth(x1, y1, z1, x2, y2, z2, linewidth)
@@ -467,7 +471,8 @@ class EMLine(EMItem3D):
 class EMCone(EMItem3D):
 	name = "Cone"
 	nodetype = "ShapeNode"
-	def __init__(self, radius, height, transform=Transform()):
+	def __init__(self, radius, height, transform=None):
+		if not transform: transform = Transform()
 		EMItem3D.__init__(self, parent=None, children=set(), transform=transform)
 		#size
 		self.setRadiusAndHeight(radius, height)
@@ -558,7 +563,8 @@ class EMCone(EMItem3D):
 class EM3DText(EMItem3D):
 	name = "3DText"
 	nodetype = "ShapeNode"
-	def __init__(self, string, fontSize, fontMode=FTGLFontMode.TEXTURE, depth=10, transform=Transform()):
+	def __init__(self, string, fontSize, fontMode=FTGLFontMode.TEXTURE, depth=10, transform=None):
+		if not transform: transform = Transform()
 		EMItem3D.__init__(self, parent=None, children=set(), transform=transform)
 		#size
 		self.setRenderString(string, fontSize)
@@ -731,3 +737,10 @@ class EMInspectorControlShape(EMItem3DInspector):
 	def _on_shininess(self, shininess):
 		self.item3d().setShininess(shininess)
 		self.inspector().updateSceneGraph()
+		
+class EMInspectorControl3DText(EMInspectorControlShape):
+	"""
+	Class to make EMItem GUI SHAPE 3DText Inspector
+	"""
+	def __init__(self, name, item3d):
+		EMInspectorControlShape.__init__(self, name, item3d)
