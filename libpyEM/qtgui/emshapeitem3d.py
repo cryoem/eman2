@@ -603,7 +603,7 @@ class EM3DText(EMItem3D):
 		"""
 		Return a Qt widget that controls the scene item
 		"""
-		if not self.item_inspector: self.item_inspector = EMInspectorControlShape("3DText", self)
+		if not self.item_inspector: self.item_inspector = EMInspectorControl3DText("3DText", self)
 		return self.item_inspector
 	
 	def renderNode(self):
@@ -742,5 +742,33 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 	"""
 	Class to make EMItem GUI SHAPE 3DText Inspector
 	"""
-	def __init__(self, name, item3d):
+	def __init__(self, name, item3d, numgridcols=2):
 		EMInspectorControlShape.__init__(self, name, item3d)
+
+	def addControls(self, gridbox):
+		super(EMInspectorControl3DText, self).addControls(gridbox)
+			
+		textframe = QtGui.QFrame()
+		textframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		textvbox = QtGui.QVBoxLayout()
+		lfont = QtGui.QFont()
+		lfont.setBold(True)
+		textlabel = QtGui.QLabel("Text", textframe)
+		textlabel.setFont(lfont)
+		textlabel.setAlignment(QtCore.Qt.AlignCenter)
+		
+		textframe = QtGui.QFrame()
+		textframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		textgridbox = QtGui.QGridLayout()
+		# Add widgets to textframe
+		textlabel2 = QtGui.QLabel("TextMode")
+		textlabel2.setFont(lfont)
+		textgridbox.addWidget(textlabel2, 0, 0, 1, 1)
+		
+		textframe.setLayout(textgridbox)
+		
+		gridbox.addWidget(textframe, 2, 1, 2, 1)
+		
+		# set to default, but run only as a base class
+		if type(self) == EMInspectorControl3DText: self.updateItemControls()
+		
