@@ -6568,7 +6568,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	fourvar, debug):
 
 	from alignment      import Numrinit, prepare_refrings, proj_ali_helical, proj_ali_helical_90, proj_ali_helical_local, proj_ali_helical_90_local, helios,helios7
-	from utilities      import model_circle, get_image, drop_image, get_input_from_string
+	from utilities      import model_circle, get_image, drop_image, get_input_from_string, pad, model_blank
 	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all
 	from utilities      import send_attr_dict
 	from utilities      import get_params_proj, set_params_proj, file_type
@@ -6735,11 +6735,16 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	if debug:
 		finfo.write("image_start, image_end: %d %d\n" %(image_start, image_end))
 		finfo.flush()
-
+	
+	rect_mask = pad( model_blank( int(2*rmax),nz,1,bckg=1.0), nz, nz, 1,0.0)
+	
 	data = EMData.read_images(stack, list_of_particles)
 	if fourvar:  original_data = []
 	for im in xrange(nima):
+		
 		data[im].set_attr('ID', list_of_particles[im])
+		sttt = Util.infomask(data[im], rect_mask, False)
+		data[im] = data[im] - sttt[0]
 		if fourvar: original_data.append(data[im].copy())
 		if CTF:
 			st = Util.infomask(data[im], mask2D, False)
@@ -6749,6 +6754,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 				ctf_params = data[im].get_attr("ctf")
 				data[im] = filt_ctf(data[im], ctf_params)
 				data[im].set_attr('ctf_applied', 1)
+		data[im] = data[im]*rect_mask
 
 	if debug:
 		finfo.write( '%d loaded  \n' % nima )
