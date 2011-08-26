@@ -294,7 +294,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		else:
 			return None
 		
-	def update_matrices(self, params, xformtype):
+	def updateMatrices(self, params, xformtype):
 		"""
 		The matrcies are updated in such a way that each is done in the standard cooridnate system and the std coord system is not perturbed by the others
 		@type params: List
@@ -320,8 +320,10 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 				raise Exception,"Invalid transformation type"
 		
 		# Now tell all children to update
+		# TODO: we MIGHT want to get rid of the recursive part of this algorithm
+		#        instead, the calling function would get a list of all selected nodes, and apply transformations to each
 		for child in self.children:
-			child.update_matrices(params, xformtype)
+			child.updateMatrices(params, xformtype)
 			
 	def render(self):
 		"""

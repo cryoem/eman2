@@ -1007,7 +1007,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.newnode.setSelectedItem(True)
 			self.insertNewNode("Cylinder", self.newnode)
 			self.newnode.setTransform(self.newnode.getParentMatrixProduct().inverse()*self.newnode.getTransform())
-			self.newnode.update_matrices([90,1,0,0], "rotate")
+			self.newnode.updateMatrices([90,1,0,0], "rotate")
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cone"):
 			self.setCursor(self.conecursor)
@@ -1016,7 +1016,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.newnode.setSelectedItem(True)
 			self.insertNewNode("Cone", self.newnode)
 			self.newnode.setTransform(self.newnode.getParentMatrixProduct().inverse()*self.newnode.getTransform())
-			self.newnode.update_matrices([90,1,0,0], "rotate")
+			self.newnode.updateMatrices([90,1,0,0], "rotate")
 			self.updateSG()	
 		if event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and self.mousemode == "rotate"):
 			if  event.y() > 0.95*self.size().height(): # The lowest 5% of the screen is reserved from the Z spin virtual slider
@@ -1085,19 +1085,19 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			magnitude = math.sqrt(dx*dx + dy*dy)
 			#Check to see if the cursor is in the 'virtual slider pannel'
 			if  self.zrotate: # The lowest 5% of the screen is reserved from the Z spin virtual slider
-				self.update_matrices([dx,0,0,-1], "rotate")
+				self.updateMatrices([dx,0,0,-1], "rotate")
 			else:
-				self.update_matrices([magnitude,-dy/magnitude,-dx/magnitude,0], "rotate")
+				self.updateMatrices([magnitude,-dy/magnitude,-dx/magnitude,0], "rotate")
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "selection") and not event.modifiers()&Qt.ControlModifier:
-			self.update_matrices([dx,-dy,0], "translate")
+			self.updateMatrices([dx,-dy,0], "translate")
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "multiselection"):
 			self.selectArea(self.first_x, event.x(), self.first_y, event.y())
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "ztranslate"):
-			self.update_matrices([0,0,(-dy)], "translate")
+			self.updateMatrices([0,0,(-dy)], "translate")
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "xytranslate"):
-			self.update_matrices([dx,-dy,0], "translate")
+			self.updateMatrices([dx,-dy,0], "translate")
 		if event.buttons()&Qt.LeftButton and self.mousemode == "scale":
-			self.update_matrices([self.scalestep*0.1*(dx+dy)], "scale")
+			self.updateMatrices([self.scalestep*0.1*(dx+dy)], "scale")
 		self.previous_x =  event.x()
 		self.previous_y =  event.y()
 		self.updateSG()	
@@ -2832,9 +2832,12 @@ class GLdemo(QtGui.QWidget):
 		self.cylider = EMCylinder(50.0, 50.0)
 		self.widget.addChild(self.cylider)
 		#self.emdata = EMDataItem3D("/home/john/Bo_data/simulated_data/3DmapIP3R1_small.mrc", transform=Transform())
+		#self.emdata = EMDataItem3D("/Users/ross/Work/AVGmonomer96.mrc", transform=Transform())
 		#self.widget.addChild(self.emdata)
 		#self.isosurface = EMIsosurface(self.emdata, transform=Transform())
 		#self.emdata.addChild(self.isosurface)
+		#self.slice = EMSliceItem3D(self.emdata, transform = Transform())
+		#self.emdata.addChild(self.slice)
 		
 		#self.inspector = EMInspector3D(self.widget)
 		#self.widget.setInspector(self.inspector)
