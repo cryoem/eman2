@@ -6703,7 +6703,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	#else: mask3D = model_circle(last_ring, nx, nx, nx)
 
 	numr	= Numrinit(first_ring, last_ring, rstep, "F")
-	#mask2D  = model_circle(last_ring,nz,nz) - model_circle(first_ring,nz,nz)
 
 	if CTF:
 		from reconstruction import recons3d_4nn_ctf_MPI
@@ -6736,9 +6735,8 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 		finfo.write("image_start, image_end: %d %d\n" %(image_start, image_end))
 		finfo.flush()
 	
-	if mask2D is None:
-		mask2D = pad( model_blank( int(2*rmax),nz,1,bckg=1.0), nz, nz, 1,0.0)  # only if it does not exist
-	
+	mask2D = pad( model_blank( int(2*rmax),nz,1,bckg=1.0), nz, nz, 1,0.0)
+
 	data = EMData.read_images(stack, list_of_particles)
 	if fourvar:  original_data = []
 	for im in xrange(nima):
