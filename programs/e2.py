@@ -41,10 +41,11 @@ from PyQt4.QtCore import Qt
 import threading
 from emapplication import EMApp
 import IPython
-if int(IPython.release.version.split('.')[0])==0 and int(IPython.release.version.split('.')[1])<11:
+try:
 	from IPython.Shell import *
-else:
-	from IPython.lib.backgroundjobs import *
+except ImportError:
+	print 'Error: Please use IPython version < 0.11'
+
 
 class IPShellQt4a(threading.Thread):
 	"""Run a Qt event loop in a separate thread.
