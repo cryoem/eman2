@@ -53,7 +53,7 @@ if global_def.GUIUSE:
 	import threading
 	from emapplication import EMApp
 	import IPython
-		if int(IPython.Release.version.split('.')[0])==0 and int(IPython.Release.version.split('.')[1])<11:
+		if int(IPython.release.version.split('.')[0])==0 and int(IPython.Release.version.split('.')[1])<11:
 			from IPython.Shell import *
 		else:
 			IPython.lib.backgroundjobs import *
@@ -158,7 +158,7 @@ else:
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
-		if int(IPython.Release.version.split('.')[0])==0 and int(IPython.Release.version.split('.')[1])<11:		
+		if int(IPython.release.version.split('.')[0])==0 and int(IPython.Release.version.split('.')[1])<11:		
 			from IPython.Shell import IPShellEmbed
 			ipshell = IPShellEmbed(banner="Welcome to non-GUI "+SPARXVERSION)
 		else:

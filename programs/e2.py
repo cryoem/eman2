@@ -41,7 +41,7 @@ from PyQt4.QtCore import Qt
 import threading
 from emapplication import EMApp
 import IPython
-if int(IPython.Release.version.split('.')[0])==0 and int(IPython.Release.version.split('.')[1])<11:
+if int(IPython.release.version.split('.')[0])==0 and int(IPython.Release.version.split('.')[1])<11:
 	from IPython.Shell import *
 else:
 	from IPython.lib.backgroundjobs import *
