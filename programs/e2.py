@@ -39,8 +39,12 @@ from emimage import image_update
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 import threading
-from IPython.Shell import *
 from emapplication import EMApp
+import IPython
+if int(IPython.Release.version.split('.')[0])==0 and int(IPython.Release.version.split('.')[1])<11:
+	from IPython.Shell import *
+else:
+	from IPython.lib.backgroundjobs import *
 
 class IPShellQt4a(threading.Thread):
 	"""Run a Qt event loop in a separate thread.

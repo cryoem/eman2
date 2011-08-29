@@ -51,8 +51,12 @@ if global_def.GUIUSE:
 	from PyQt4 import QtCore, QtGui, QtOpenGL
 	from PyQt4.QtCore import Qt
 	import threading
-	from IPython.Shell import *
 	from emapplication import EMApp
+	import IPython
+		if int(IPython.Release.version.split('.')[0])==0 and int(IPython.Release.version.split('.')[1])<11:
+			from IPython.Shell import *
+		else:
+			IPython.lib.backgroundjobs import *
 
 	class IPShellQt4a(threading.Thread):
 	      """Run a Qt event loop in a separate thread.
@@ -153,9 +157,14 @@ else:
 	try:
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
-			disable_bdb_cache()		
-		from IPython.Shell import IPShellEmbed
-		ipshell = IPShellEmbed(banner="Welcome to non-GUI "+SPARXVERSION)
+			disable_bdb_cache()
+		if int(IPython.Release.version.split('.')[0])==0 and int(IPython.Release.version.split('.')[1])<11:		
+			from IPython.Shell import IPShellEmbed
+			ipshell = IPShellEmbed(banner="Welcome to non-GUI "+SPARXVERSION)
+		else:
+			from IPython.frontend.terminal.embed import InteractiveShellEmbed
+			ipshell = InteractiveShellEmbed()
+			ipshell.banner = "Welcome to non-GUI "+SPARXVERSION
 		ipshell()
 	except:
 		print 'Please install "ipython".'
