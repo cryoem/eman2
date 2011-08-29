@@ -36,61 +36,83 @@ import sys
 import time
 
 if len(sys.argv)<2 : 
-	print "Usage: mergeproject.py <project dir>\n\nRun this program from the target project directory, and specify the path to another project whose particles you wish to incorporate.\nDeals only with boxed particles & CTF. New sets will need to be made in the current project."
+	print "Usage: mergeproject.py <project dir> ... [--minquality=<0-9>]\n\nRun this program from the target project directory, and specify the path to another project whose particles you wish to incorporate.\nDeals only with boxed particles & CTF. New sets will need to be made in the current project.\nIf minquality is provided, only particles with a quality at least as large as the specified value will be copied."
 
-dest=db_open_dict("bdb:.#project")
-src=db_open_dict("bdb:%s#project"%sys.argv[1],ro=True)
+minq=0
+for i in sys.argv[1:]:
+	if i[:13]=="--minquality=" :
+		minq=int(i[13:])
+	elif i[0]=="-" :
+		print "Usage: mergeproject.py <project dir> ... [--minquality=<0-9>]"
+		print "Unknown option: ",i
+		sys.exit(1)
 
-# get a dictionary containing dictionaries of particle paths
-srcptcl=src["global.spr_ptcls_dict"]
-destptcl=dest["global.spr_ptcls_dict"]
+for source in sys.argv[1:]:
+	if source[0]=="-" : continue
+	print "================= Processing project : ",source
+	
+	dest=db_open_dict("bdb:.#project")
+	src=db_open_dict("bdb:%s#project"%source,ro=True)
 
-# This means we're in a new project directory, so we copy a bit more
-if destptcl==None : 
-	destptcl={}
-	for k in ("global.apix","global.microscope_cs","global.microscope_voltage","global.num_cpus"):
+	# get a dictionary containing dictionaries of particle paths
+	srcptcl=src["global.spr_ptcls_dict"]
+	destptcl=dest["global.spr_ptcls_dict"]
+
+	# This means we're in a new project directory, so we copy a bit more
+	if destptcl==None : 
+		destptcl={}
+		for k in ("global.apix","global.microscope_cs","global.microscope_voltage","global.num_cpus"):
+			dest[k]=src[k]
+
+	# filter out images with low quality if requested
+	if minq>0 :
+		src2=db_open_dict("bdb:%s#e2ctf.parms"%source,ro=True)
+		for k in src2.keys():
+			if src2[k][3]<minq :
+				print "%s excluded with quality %d"%(k,src2[k][3])
+				try: del srcptcl[k]
+				except : print "Odd, it wasn't in the particle list"
+
+	# now copy the particle databases from the source project
+	for f in srcptcl:
+		print "process ",f
+		destptcl[f]=srcptcl[f]
+
+		# f is a dictionary containing type:path pairs for each original source frame
+		for tp in srcptcl[f]:
+			# tp iterates over the keys of f
+			src2path="bdb:%s/%s"%(source,srcptcl[f][tp][4:])
+			src2=db_open_dict(src2path,ro=True)
+
+			dst2=db_open_dict(srcptcl[f][tp])
+
+			print "Copy %s to %s"%(src2path,srcptcl[f][tp])
+			# copy the images
+			for i in range(len(src2)):
+				dst2[i]=src2[i]
+
+
+	dest["global.spr_ptcls_dict"]=destptcl
+
+	# now copy CTF parameters
+	print "Copy e2ctf.bg2d"
+	src=db_open_dict("bdb:%s#e2ctf.bg2d"%source,ro=True)
+	dest=db_open_dict("bdb:.#e2ctf.bg2d")
+	for k in src.keys(): 
+		print k
 		dest[k]=src[k]
 
-# now copy the particle databases from the source project
-for f in srcptcl:
-	print "process ",f
-	destptcl[f]=srcptcl[f]
+	print "Copy e2ctf.im2d"
+	src=db_open_dict("bdb:%s#e2ctf.im2d"%source,ro=True)
+	dest=db_open_dict("bdb:.#e2ctf.im2d")
+	for k in src.keys(): 
+		print k
+		dest[k]=src[k]
 
-	# f is a dictionary containing type:path pairs for each original source frame
-	for tp in srcptcl[f]:
-		# tp iterates over the keys of f
-		src2path="bdb:%s/%s"%(sys.argv[1],srcptcl[f][tp][4:])
-		src2=db_open_dict(src2path,ro=True)
-
-		dst2=db_open_dict(srcptcl[f][tp])
-
-		print "Copy %s to %s"%(src2path,srcptcl[f][tp])
-		# copy the images
-		for i in range(len(src2)):
-			dst2[i]=src2[i]
-
-
-dest["global.spr_ptcls_dict"]=destptcl
-
-# now copy CTF parameters
-print "Copy e2ctf.bg2d"
-src=db_open_dict("bdb:%s#e2ctf.bg2d"%sys.argv[1],ro=True)
-dest=db_open_dict("bdb:.#e2ctf.bg2d")
-for k in src.keys(): 
-	print k
-	dest[k]=src[k]
-
-print "Copy e2ctf.im2d"
-src=db_open_dict("bdb:%s#e2ctf.im2d"%sys.argv[1],ro=True)
-dest=db_open_dict("bdb:.#e2ctf.im2d")
-for k in src.keys(): 
-	print k
-	dest[k]=src[k]
-
-print "Copy e2ctf.parms"
-src=db_open_dict("bdb:%s#e2ctf.parms"%sys.argv[1],ro=True)
-dest=db_open_dict("bdb:.#e2ctf.parms")
-for k in src.keys(): 
-	print k
-	dest[k]=src[k]
+	print "Copy e2ctf.parms"
+	src=db_open_dict("bdb:%s#e2ctf.parms"%source,ro=True)
+	dest=db_open_dict("bdb:.#e2ctf.parms")
+	for k in src.keys(): 
+		print k
+		dest[k]=src[k]
 
