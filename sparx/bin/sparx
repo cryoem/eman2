@@ -53,10 +53,10 @@ if global_def.GUIUSE:
 	import threading
 	from emapplication import EMApp
 	import IPython
-		if int(IPython.release.version.split('.')[0])==0 and int(IPython.release.version.split('.')[1])<11:
-			from IPython.Shell import *
-		else:
-			IPython.lib.backgroundjobs import *
+	if int(IPython.release.version.split('.')[0])==0 and int(IPython.release.version.split('.')[1])<11:
+		from IPython.Shell import *
+	else:
+		IPython.lib.backgroundjobs import *
 
 	class IPShellQt4a(threading.Thread):
 	      """Run a Qt event loop in a separate thread.
