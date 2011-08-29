@@ -19,6 +19,7 @@ import math
 class EMDataItem3D(EMItem3D):
 	name = "Data"
 	def __init__(self, data, parent = None, children = set(), transform = None):
+		if not transform: transform = Transform()
 		EMItem3D.__init__(self, parent, children, transform)
 		self.setData(data)
 		
@@ -89,7 +90,8 @@ class EMSliceItem3D(EMItem3D):
 	name = "Slice"
 	nodetype = "DataChild" 
 
-	def __init__(self, parent, children = set(), transform = Transform()):
+	def __init__(self, parent, children = set(), transform = None):
+		if not transform: transform = Transform()
 		EMItem3D.__init__(self, parent, children, transform)
 		self.glflags = EMOpenGLFlagsAndTools()		# OpenGL flags - this is a singleton convenience class for testing texture support		
 		self.texture_name = 0
@@ -348,7 +350,8 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 class EMIsosurface(EMItem3D):
 	name = "Isosurface"
 	nodetype = "DataChild" 
-	def __init__(self, parent=None, children = set(), transform = Transform()):
+	def __init__(self, parent=None, children = set(), transform = None):
+		if not transform: transform = Transform()
 		EMItem3D.__init__(self, parent, children, transform)
 		
 		self.isothr = None #Will be set in self.dataChanged()

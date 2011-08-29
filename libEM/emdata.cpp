@@ -4122,6 +4122,48 @@ void EMData::uncut_slice(EMData * const map, const Transform& transform) const
 	EXITFUNC;
 }
 
+EMData *EMData::extract_box(const Transform& cs, const Region& r)
+{
+	vector<float> cs_matrix = cs.get_matrix();
+	
+	EMData* box = new EMData();
+	box->set_size((r.get_width()-r.x_origin()), (r.get_height()-r.y_origin()), (r.get_depth()-r.z_origin()));
+	int box_nx = box->get_xsize();
+	int box_ny = box->get_ysize();
+	int box_nxy = box_nx*box_ny;
+	float* bdata = box->get_data();
+	float* ddata = get_data();
+	
+	for (int x = r.x_origin(); x < r.get_width(); x++) {
+		for (int y = r.y_origin(); y < r.get_height(); y++) {
+			for (int z = r.z_origin(); z < r.get_depth(); z++) {
+				float xb = cs_matrix[0]*x + cs_matrix[1]*y + cs_matrix[2]*z + cs_matrix[3];
+				float yb = cs_matrix[4]*x + cs_matrix[5]*y + cs_matrix[6]*z + cs_matrix[7];
+				float zb = cs_matrix[8]*x + cs_matrix[9]*y + cs_matrix[10]*z + cs_matrix[11];
+				float t = xb - Util::fast_floor(xb);
+				float u = yb - Util::fast_floor(yb);
+				float v = zb - Util::fast_floor(zb);
+				
+				//cout << x << " " << y << " " << z << " Box " << xb << " " << yb << " " << zb << endl;
+				int l = (x - r.x_origin()) + (y - r.y_origin())*box_nx + (z - r.z_origin())*box_nxy;
+				int k = (int) (Util::fast_floor(xb) + Util::fast_floor(yb) * nx + Util::fast_floor(zb) * nxy);
+				//cout << k << " " << l << endl;
+				if ( xb > nx - 1 || yb > ny - 1 || zb > nz - 1) {
+					bdata[l] = 0;
+					continue;
+				}
+
+
+				if (xb < (nx - 1) && yb < (ny - 1) && zb < (nz - 1)) {
+					bdata[l] = Util::trilinear_interpolate(ddata[k], ddata[k + 1], ddata[k + nx],ddata[k + nx + 1], ddata[k + nxy], ddata[k + nxy + 1], ddata[k + nx + nxy], ddata[k + nx + nxy + 1],t, u, v);
+					//bdata[l] = 0.0;
+				}
+			}
+		}
+	}
+	
+	return box;
+}
 
 void EMData::save_byteorder_to_dict(ImageIO * imageio)
 {

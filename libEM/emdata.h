@@ -742,6 +742,16 @@ namespace EMAN
 		 */
 		void uncut_slice(EMData * const map, const Transform& tr) const;
 
+		/** Extract a box from EMData in an abritrary orrientation. Used for extracting helix boxes from tomograms
+		
+		EMData extract_box(const Transform& cs, const int ix, const int fx, const int iy, const int yf, const int zi, const int zf);
+		* @param cs Transform describing the coordinate system of the box realative to the standard coord system
+		* @param r Region describe the volume to extract, in the local coordinate system
+		* @author John Flanagan
+		* @date Aug 2011
+		**/
+		EMData *extract_box(const Transform& cs, const Region& r);
+		
 		/** function for MarchingCubes, for 3D image display
 		 * @return the resolution
 		 * */
@@ -755,7 +765,7 @@ namespace EMAN
 
 			return resolution;
 		}
-
+		
 		/** Printing EMData params for debugging purpose.
 		 * */
 		void debug_print_parms()

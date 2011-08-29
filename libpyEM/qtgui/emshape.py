@@ -163,6 +163,18 @@ class EMShape:
 			GL.glVertex(*d2s(s[4],s[7]))
 			GL.glEnd()
 		
+		if s[0]=="rect4point":
+			assert self.shape[12] >= 0
+			GL.glLineWidth(s[12])
+			
+			GL.glBegin(GL.GL_LINE_LOOP)
+			GL.glColor(*col)
+			GL.glVertex(*d2s(s[4],s[5]))
+			GL.glVertex(*d2s(s[6],s[7]))
+			GL.glVertex(*d2s(s[8],s[9]))
+			GL.glVertex(*d2s(s[10],s[11]))
+			GL.glEnd()
+			
 		elif s[0]=="rectline":
 			#This makes a rectangle based on a width and two points
 			#The two points are the endpoints for the longer axis of symmetry

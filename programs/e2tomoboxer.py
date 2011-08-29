@@ -37,6 +37,7 @@ import sys
 import os
 import weakref
 import threading
+import math
 
 from EMAN2 import *
 from emapplication import get_application, EMApp
@@ -243,6 +244,7 @@ def main():
 										IMOD by default, then the line should have been:\n
 										1243 45 3412\n''')
 	parser.add_option("--newwidget",action="store_true",default=False,help="Use the new 3D widgetD. Highly recommended!!!!")
+	parser.add_option("--helixboxer",action="store_true",default=False,help="Helix Boxer Mode")
 
 	global options
 	(options, args) = parser.parse_args()
@@ -561,7 +563,11 @@ class EMBoxViewer(QtGui.QWidget):
 			self.xyview.set_data(None)
 			self.xzview.set_data(None)
 			self.zyview.set_data(None)
-			self.d3view.set_data(None)
+			if options.newwidget:
+				self.d3viewdata.setData(test_image_3d(3))
+				self.d3view.updateSG()
+			else:
+				self.d3view.set_data(None)
 			return
 		
 		if self.wfilt.getValue()!=0.0 :
@@ -673,15 +679,12 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.wfilt = ValSlider(rng=(0,50),label="Filt:",value=0.0)
 		self.gbl2.addWidget(self.wfilt,4,0,1,2)
 		
-		# Helix boxer mode
-		self.hbcheckbox = QtGui.QCheckBox("Helix Boxer Mode")
-		self.gbl2.addWidget(self.hbcheckbox,5,0,1,2)
-		
-		
 		self.curbox=-1
 		self.boxes=[]						# array of box info, each is (x,y,z,...)
+		self.helixboxes=[]					# array of helix box info. each is (xi, yi, zi, xf, yf, zf)
 		self.boxesimgs=[]					# z projection of each box
 		self.xydown=None
+		self.firsthbclick = None
 		
 		# file menu
 		QtCore.QObject.connect(self.mfile_open,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_open  )
@@ -723,7 +726,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("mouseup")  ,self.zy_up  )
 		QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("set_scale"),self.zy_scale)
 		QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("origin_update"),self.zy_origin)
-
+		
 		if datafile!=None : self.set_datafile(datafile)		# This triggers a lot of things to happen, so we do it last
 		if data!=None : self.set_data(data)
 		
@@ -748,8 +751,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	def menu_win_boxes(self) : self.boxesviewer.show()
 	def menu_win_single(self) : self.boxviewer.show()
 #	def menu_win_average(self) : self.averageviewer.show()
-
-
+		
 	def set_datafile(self,datafile):
 		if datafile==None :
 			self.datafile=None
@@ -950,33 +952,59 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		fsp=str(QtGui.QFileDialog.getSaveFileName(self, "Select output file (numbers added)"))
 		
 		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
-		for i,b in enumerate(self.boxes):
-			#img=self.get_cube(b[0],b[1],b[2])
-			bs=self.boxsize()
-			binf=self.bin
-			contrast=self.contrast
+		if options.helixboxer:
+			tomogram = EMData(argv[1])
+			for i,b in enumerate(self.helixboxes):
+				bs=self.boxsize()
+				helixbox = self.get_extended_a_vector(b)
+				a = Vec3f((helixbox[3]-helixbox[0]), (helixbox[4]-helixbox[1]), (helixbox[4]-helixbox[2]))	# Find the a, the long vector
+				tcs = self.get_box_coord_system(helixbox)
+				img = tomogram.extract_box(tcs, Region(0, -bs, -bs, a.length(), bs, bs))
+				
+				img['origin_x'] = 0						#jesus
+				img['origin_y'] = 0				
+				img['origin_z'] = 0
 			
-			if self.yshort:							#jesus
-				img = unbinned_extractor(bs,b[0],b[2],b[1],binf,contrast) 	#jesus
-			else:
-				img = unbinned_extractor(bs,b[0],b[1],b[2],binf,contrast) 	#jesus
-			
-			img['origin_x'] = 0						#jesus
-			img['origin_y'] = 0				
-			img['origin_z'] = 0
-			
-			img=img.process('normalize.edgemean')
+				img=img.process('normalize.edgemean')
 
-			if fsp[:4].lower()=="bdb:": 
-				img.write_image("%s_%03d"%(fsp,i),0)
-			elif "." in fsp: 
-				img.write_image("%s_%03d.%s"%(fsp.rsplit(".",1)[0],i,fsp.rsplit(".",1)[1]))
-			else:
-				QtGui.QMessageBox.warning(None,"Error","Please provide a valid image file extension. The numerical sequence will be inserted before the extension.")
-				return
+				if fsp[:4].lower()=="bdb:": 
+					img.write_image("%s_%03d"%(fsp,i),0)
+				elif "." in fsp: 
+					img.write_image("%s_%03d.%s"%(fsp.rsplit(".",1)[0],i,fsp.rsplit(".",1)[1]))
+				else:
+					QtGui.QMessageBox.warning(None,"Error","Please provide a valid image file extension. The numerical sequence will be inserted before the extension.")
+					return
+					
+				progress.setValue(i+1)
+				if progress.wasCanceled() : break
+		else:
+			for i,b in enumerate(self.boxes):
+				#img=self.get_cube(b[0],b[1],b[2])
+				bs=self.boxsize()
+				binf=self.bin
+				contrast=self.contrast
 			
-			progress.setValue(i+1)
-			if progress.wasCanceled() : break
+				if self.yshort:							#jesus
+					img = unbinned_extractor(bs,b[0],b[2],b[1],binf,contrast) 	#jesus
+				else:
+					img = unbinned_extractor(bs,b[0],b[1],b[2],binf,contrast) 	#jesus
+			
+				img['origin_x'] = 0						#jesus
+				img['origin_y'] = 0				
+				img['origin_z'] = 0
+			
+				img=img.process('normalize.edgemean')
+
+				if fsp[:4].lower()=="bdb:": 
+					img.write_image("%s_%03d"%(fsp,i),0)
+				elif "." in fsp: 
+					img.write_image("%s_%03d.%s"%(fsp.rsplit(".",1)[0],i,fsp.rsplit(".",1)[1]))
+				else:
+					QtGui.QMessageBox.warning(None,"Error","Please provide a valid image file extension. The numerical sequence will be inserted before the extension.")
+					return
+					
+				progress.setValue(i+1)
+				if progress.wasCanceled() : break
 		
 	def menu_file_save_boxes_stack(self):
 		fsp=str(QtGui.QFileDialog.getSaveFileName(self, "Select output file (bdb and hdf only)"))
@@ -1034,29 +1062,66 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.cury=y
 		self.curx=x
 		bs=self.boxsize()
-		
+				
 		# update shape display
 		if self.wlocalbox.isChecked():
 			xzs=self.xzview.get_shapes()
-			for i in range(len(self.boxes)):
-				if self.boxes[i][1]<self.cury+bs/2 and self.boxes[i][1]>self.cury-bs/2: 
-					xzs[i][0]="rect"
-				else: 
-					xzs[i][0]="hidden"
+			if options.helixboxer:
+				for i in range(0, len(self.boxes), 2):
+					if i + 1 >= len(self.boxes):
+						break
+					#if abs(self.boxes[i][1] - zc) < bs/2 or abs(self.boxes[i+1][2] - zc) < bs/2:
+					if (self.boxes[i][1]<self.cury+bs/2 and self.boxes[i][1]>self.cury-bs/2) or (self.boxes[i+1][1]<self.cury+bs/2 and self.boxes[i+1][1]>self.cury-bs/2):
+						xzs[i][0]="rect"
+						xzs[str(i/2)+"helix"][0]="line"
+						xzs[i+1][0]="rect"
+					else:
+						xzs[i][0]="hidden"
+						xzs[str(i/2)+"helix"][0]="hidden"
+						xzs[i+1][0]="hidden"
+			else:
+					for i in range(len(self.boxes)):
+						if self.boxes[i][1]<self.cury+bs/2 and self.boxes[i][1]>self.cury-bs/2: 
+							xzs[i][0]="rect"
+						else: 
+							xzs[i][0]="hidden"
 				
 			zys=self.zyview.get_shapes()
-			for i in range(len(self.boxes)):
-				if self.boxes[i][0]<self.curx+bs/2 and self.boxes[i][0]>self.curx-bs/2: 
-					zys[i][0]="rect"
-				else: 
-					zys[i][0]="hidden"
+			if options.helixboxer:
+				for i in range(0, len(self.boxes), 2):
+					if i + 1 >= len(self.boxes):
+						break
+					if (self.boxes[i][0]<self.curx+bs/2 and self.boxes[i][0]>self.curx-bs/2) or (self.boxes[i+1][0]<self.curx+bs/2 and self.boxes[i+1][0]>self.curx-bs/2):
+						zys[i][0]="rect"
+						zys[str(i/2)+"helix"][0]="line"
+						zys[i+1][0]="rect"
+					else:
+						zys[i][0]="hidden"
+						zys[str(i/2)+"helix"][0]="hidden"
+						zys[i+1][0]="hidden"
+			else:
+				for i in range(len(self.boxes)):
+					if self.boxes[i][0]<self.curx+bs/2 and self.boxes[i][0]>self.curx-bs/2: 
+						zys[i][0]="rect"
+					else: 
+						zys[i][0]="hidden"
 		else :
 			xzs=self.xzview.get_shapes()
-			for i in range(len(self.boxes)): 
-				xzs[i][0]="rect"
 			zys=self.zyview.get_shapes()
-			for i in range(len(self.boxes)): 
-				zys[i][0]="rect"
+			if options.helixboxer:
+				for i in range(0, len(self.boxes), 2):
+					if i + 1 >= len(self.boxes):
+						break
+					xzs[i][0]="rect"
+					xzs[str(i/2)+"helix"][0]="line"
+					xzs[i+1][0]="rect"
+					zys[i][0]="rect"
+					zys[str(i/2)+"helix"][0]="line"
+					zys[i+1][0]="rect"
+			else:
+				for i in range(len(self.boxes)): 
+					xzs[i][0]="rect"
+					zys[i][0]="rect"
 			
 		self.xzview.shapechange=1
 		self.zyview.shapechange=1
@@ -1098,15 +1163,28 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			#print "The current depth is", self.wdepth.value()
 			bs=self.boxsize()
 			xys=self.xyview.get_shapes()
-			for i in range(len(self.boxes)):
-				#print "the z coord of box %d is %d" %(i,self.boxes[i][2])
-				#print "therefore the criteria to determine whether to display it is", abs(self.boxes[i][2] - zc)
-				if abs(self.boxes[i][2] - zc) < bs/2: 
-					#print "Which is less than half the box thus it survives"
-					xys[i][0]="rect"
-				else : 
-					xys[i][0]="hidden"
-					#print "Which is more than half the box and thus it dies"
+			if options.helixboxer:
+				for i in range(0, len(self.boxes), 2):
+					if i + 1 >= len(self.boxes):
+						break
+					if abs(self.boxes[i][2] - zc) < bs/2 or abs(self.boxes[i+1][2] - zc) < bs/2:
+						xys[i][0]="rect"
+						xys[str(i/2)+"helix"][0]="line"
+						xys[i+1][0]="rect"
+					else:
+						xys[i][0]="hidden"
+						xys[str(i/2)+"helix"][0]="hidden"
+						xys[i+1][0]="hidden"
+			else:
+				for i in range(len(self.boxes)):
+					#print "the z coord of box %d is %d" %(i,self.boxes[i][2])
+					#print "therefore the criteria to determine whether to display it is", abs(self.boxes[i][2] - zc)
+					if abs(self.boxes[i][2] - zc) < bs/2: 
+						#print "Which is less than half the box thus it survives"
+						xys[i][0]="rect"
+					else : 
+						xys[i][0]="hidden"
+						#print "Which is more than half the box and thus it dies"
 		
 			self.xyview.shapechange=1
 		
@@ -1142,13 +1220,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		if z>=0 and (z<box[2]-self.boxsize()/2 or z>box[2]+self.boxsize()/2) : return False
 		return True
 
-	def del_box(self,n):
-		"""Delete an existing box by replacing the deleted box with the last box. A bit funny, but otherwise
-		update after deletion is REALLY slow."""
-#		print "del ",n
-		if n<0 or n>=len(self.boxes): return
-		self.boxviewer.set_data(None)
-		self.curbox=-1
+	def do_deletion(self, n):
+		""" Helper for del_box"""
 		if n==len(self.boxes)-1 : 
 			self.boxes.pop()
 			self.boxesimgs.pop()
@@ -1158,7 +1231,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			self.xzview.del_shape(n)
 			self.zyview.del_shape(n)
 			self.curbox=-1
-			self.update()
+			self.xyview.update()
+			self.xzview.update()
+			self.zyview.update()
+			#self.update()
 		else :
 			a=self.boxes.pop()
 			self.boxes[n]=a
@@ -1173,6 +1249,120 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			self.update_box(n,True)
 #			self.update()
 
+	def do_helix_deletion(self, n):
+		if n==len(self.helixboxes)-1 :
+			self.helixboxes.pop()
+			self.xyview.del_shape(str(n)+"helix")
+		else:
+			a=self.helixboxes.pop()
+			self.helixboxes[n]=a
+			self.xyview.del_shape(str(len(self.helixboxes))+"helix")
+			self.update_helixbox(n)
+			
+	def del_box(self,n):
+		"""Delete an existing box by replacing the deleted box with the last box. A bit funny, but otherwise
+		update after deletion is REALLY slow."""
+#		print "del ",n
+		if n<0 or n>=len(self.boxes): return
+		self.boxviewer.set_data(None)
+		self.curbox=-1
+		if options.helixboxer:
+			if n + 1 == len(self.boxes) and len(self.boxes) % 2 == 1: 	# Delete unpaired box
+				self.do_deletion(n)
+			else:								# Delete box pairs
+				if n % 2:
+					self.do_helix_deletion(int(n/2))
+					self.do_deletion(n)
+					self.do_deletion(n-1)
+				else:
+					self.do_helix_deletion(int(n/2))
+					self.do_deletion(n+1)
+					self.do_deletion(n)
+				return "DELHELIX"	# If we have deleted a pair do not reset the pair toggle/counter	
+		else:
+			self.do_deletion(n)
+			
+	"""	
+	def compute_perpZold(self, a):
+		# Solve:
+		# 1: a1*b1 + a2*b2 + a3*b3 = 0
+		# 2: b2 = SQRT(1- b1^2 - b3^2)
+		# 3: b3 = 0, b vector is perpendiclar to Z
+		b3 = 0.0 # We say that the box must be perpendicular to the Z axis
+		b1soln1 = math.sqrt(a[1]*a[1]/(a[0]*a[0] + a[1]*a[1]))
+		b1soln2 = -b1soln1
+		b2soln1 = math.sqrt(1 - b1soln1*b1soln1)
+		b2soln2 = -b2soln1
+		# Only correct solution are perpendicular to a
+		if math.fabs(a[0]*b1soln1 + a[1]*b2soln1 + a[2]*b3) < 0.0001:
+			return [b1soln1, b2soln1,  b3]
+		if math.fabs(a[0]*b1soln2 + a[1]*b2soln1 + a[2]*b3) < 0.0001:
+			return [b1soln2, b2soln1,  b3]
+		if math.fabs(a[0]*b1soln1 + a[1]*b2soln2 + a[2]*b3) < 0.0001:
+			return [b1soln1, b2soln2,  b3]
+		if math.fabs(a[0]*b1soln2 + a[1]*b2soln2 + a[2]*b3) < 0.0001:
+			return [b1soln2, b2soln2,  b3]
+	"""
+	
+	def compute_crossAB(self, a, b):
+		c1 = a[1]*b[2] - a[2]*b[1]
+		c2 = a[2]*b[0] - a[0]*b[2]
+		c3 = a[0]*b[1] - a[1]*b[0]
+		return Vec3f(c1,c2,c3)
+		
+	def compute_perpZ(self, a):
+		b1 = a[1]
+		b2 = - a[0]
+		b3 = 0
+		return Vec3f(b1,b2,b3)
+	
+	def get_box_coord_system(self, helixbox):
+		"""
+		Compute the coordinate system for the box
+		"""
+		a = Vec3f((helixbox[3]-helixbox[0]), (helixbox[4]-helixbox[1]), (helixbox[5]-helixbox[2]))
+		a.normalize()
+		b = self.compute_perpZ(a)
+		b.normalize()
+		c = self.compute_crossAB(a, b)
+		print a.length(), b.length(), c.length()
+		return Transform([a[0],a[1],a[2],helixbox[0],b[0],b[1],b[2],helixbox[1],c[0],c[1],c[2],helixbox[2]])
+	
+	def get_extended_a_vector(self, helixbox):
+		"""
+		Extend the A vector to the box ends
+		"""
+		a = Vec3f((helixbox[3]-helixbox[0]), (helixbox[4]-helixbox[1]), (helixbox[5]-helixbox[2]))
+		a.normalize()
+		bs = self.boxsize()
+		return [(helixbox[0] - a[0]*bs/2),(helixbox[1] - a[1]*bs/2),(helixbox[2] - a[2]*bs/2),(helixbox[3] + a[0]*bs/2),(helixbox[4] + a[1]*bs/2),(helixbox[5] + a[2]*bs/2)]
+		
+		
+	def update_helixbox(self, n):
+		"""
+		Update a helix box
+		"""
+		helixbox = self.get_extended_a_vector(self.helixboxes[n])
+		#bs = self.boxsize()
+		# In case I want to add box projection
+		#print a, b, c
+		#point1 = [(helixbox[3] - b[0]*bs/2), (helixbox[4] - b[1]*bs/2), helixbox[5]]
+		#point2 = [(helixbox[3] + b[0]*bs/2), (helixbox[4] + b[1]*bs/2), helixbox[5]]
+		#point3 = [(helixbox[3] - c[0]*bs/2), (helixbox[4] - c[1]*bs/2), (helixbox[5] - c[2]*bs/2)]
+		#point4 = [(helixbox[3] + c[0]*bs/2), (helixbox[4] + c[1]*bs/2), (helixbox[5] + c[2]*bs/2)]
+		#point5 = [(helixbox[0] + b[0]*bs/2), (helixbox[1] + b[1]*bs/2), helixbox[2]]
+		#point6 = [(helixbox[0] - b[0]*bs/2), (helixbox[1] - b[1]*bs/2), helixbox[2]]
+		#point7 = [(helixbox[0] + c[0]*bs/2), (helixbox[1] + c[1]*bs/2), (helixbox[2] + c[2]*bs/2)]
+		#point8 = [(helixbox[0] - c[0]*bs/2), (helixbox[1] - c[1]*bs/2), (helixbox[2] - c[2]*bs/2)]
+		
+		key = str(n)+"helix"
+		self.xyview.add_shape(key,EMShape(("line",.2,.2,.8, helixbox[0], helixbox[1], helixbox[3], helixbox[4],2)))
+		self.xzview.add_shape(key,EMShape(("line",.2,.2,.8, helixbox[0], helixbox[2], helixbox[3], helixbox[5],2)))
+		self.zyview.add_shape(key,EMShape(("line",.2,.2,.8, helixbox[2], helixbox[1], helixbox[5], helixbox[4],2)))
+		self.xyview.update()
+		self.xzview.update()
+		self.zyview.update()
+		
 	def update_box(self,n,quiet=False):
 		"""After adjusting a box, call this"""
 #		print "upd ",n,quiet
@@ -1245,12 +1435,13 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	def xy_down(self,event):
 		x,y=self.xyview.scr_to_img((event.x(),event.y()))
 		x,y=int(x),int(y)
-		self.xydown=None
+		self.xydown=None	
 		if x<0 or y<0 : return		# no clicking outside the image (on 2 sides)
-		
+						
 		for i in range(len(self.boxes)):
 			if self.inside_box(i,x,y) :
-				if event.modifiers()&Qt.ShiftModifier: self.del_box(i)
+				if event.modifiers()&Qt.ShiftModifier: 
+					if self.del_box(i) != "DELHELIX": self.firsthbclick = None
 				else:
 					self.xydown=(i,x,y,self.boxes[i][0],self.boxes[i][1])
 					self.update_box(i)
@@ -1258,6 +1449,15 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		else:
 #			if x>self.boxsize()/2 and x<self.datasize[0]-self.boxsize()/2 and y>self.boxsize()/2 and y<self.datasize[1]-self.boxsize()/2 and self.depth()>self.boxsize()/2 and self.depth()<self.datasize[2]-self.boxsize()/2 :
 			if not event.modifiers()&Qt.ShiftModifier:
+				###########
+				if options.helixboxer:	# Only create a helixbox every 2 clicks
+					if self.firsthbclick:
+						self.helixboxes.append([x, y, self.depth(), self.firsthbclick[0], self.firsthbclick[1], self.firsthbclick[2]])
+						self.firsthbclick = None
+						self.update_helixbox(len(self.helixboxes)-1)
+					else:
+						self.firsthbclick = [x, y, self.depth()]
+				###########
 				self.boxes.append(([x,y,self.depth()]))
 				self.xydown=(len(self.boxes)-1,x,y,x,y)		# box #, x down, y down, x box at down, y box at down
 				self.update_box(self.xydown[0])
@@ -1275,6 +1475,17 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		dx=x-self.xydown[1]
 		dy=y-self.xydown[2]
+		if options.helixboxer:
+			if len(self.boxes) % 2 == 0:	# Only update the helix boxer if it is paired, otherwise treat it as a regular box
+				hb = self.helixboxes[int(self.xydown[0]/2)]
+				if self.xydown[0] % 2 == 0:
+					hb[3] = dx+self.xydown[3]
+					hb[4] = dy+self.xydown[4]
+				else:
+					hb[0] = dx+self.xydown[3]
+					hb[1] = dy+self.xydown[4]
+				self.update_helixbox(int(self.xydown[0]/2))
+				
 		self.boxes[self.xydown[0]][0]=dx+self.xydown[3]
 		self.boxes[self.xydown[0]][1]=dy+self.xydown[4]
 		self.update_box(self.curbox,True)
@@ -1315,13 +1526,25 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		for i in range(len(self.boxes)):
 			if (not self.wlocalbox.isChecked() and self.inside_box(i,x,-1,z)) or self.inside_box(i,x,self.cury,z) :
-				if event.modifiers()&Qt.ShiftModifier: self.del_box(i)
+				if event.modifiers()&Qt.ShiftModifier: 
+					if self.del_box(i) != "DELHELIX": self.firsthbclick = None
 				else :
 					self.xzdown=(i,x,z,self.boxes[i][0],self.boxes[i][2])
 					self.update_box(i)
 				break
+
+
 		else:
 			if not event.modifiers()&Qt.ShiftModifier:
+				###########
+				if options.helixboxer:	# Only create a helixbox every 2 clicks
+					if self.firsthbclick:
+						self.helixboxes.append([x, self.cury, z, self.firsthbclick[0], self.firsthbclick[1], self.firsthbclick[2]])
+						self.firsthbclick = None
+						self.update_helixbox(len(self.helixboxes)-1)
+					else:
+						self.firsthbclick = [x, self.cury, z]
+				###########
 				self.boxes.append(([x,self.cury,z]))
 				self.xzdown=(len(self.boxes)-1,x,z,x,z)		# box #, x down, y down, x box at down, y box at down
 				self.update_box(self.xzdown[0])
@@ -1339,6 +1562,16 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		dx=x-self.xzdown[1]
 		dz=z-self.xzdown[2]
+		if options.helixboxer:
+			if len(self.boxes) % 2 == 0:	# Only update the helix boxer if it is paired, otherwise treat it as a regular box
+				hb = self.helixboxes[int(self.xzdown[0]/2)]
+				if self.xzdown[0] % 2 == 0:
+					hb[3] = dx+self.xzdown[3]
+					hb[5] = dz+self.xzdown[4]
+				else:
+					hb[0] = dx+self.xzdown[3]
+					hb[2] = dz+self.xzdown[4]
+				self.update_helixbox(int(self.xzdown[0]/2))
 		self.boxes[self.xzdown[0]][0]=dx+self.xzdown[3]
 		self.boxes[self.xzdown[0]][2]=dz+self.xzdown[4]
 		self.update_box(self.curbox,True)
@@ -1370,13 +1603,23 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		for i in range(len(self.boxes)):
 			if (not self.wlocalbox.isChecked() and self.inside_box(i,-1,y,z)) or  self.inside_box(i,self.curx,y,z):
-				if event.modifiers()&Qt.ShiftModifier: self.del_box(i)
+				if event.modifiers()&Qt.ShiftModifier: 
+					if self.del_box(i) != "DELHELIX": self.firsthbclick = None
 				else :
 					self.zydown=(i,z,y,self.boxes[i][2],self.boxes[i][1])
 					self.update_box(i)
 					break
 		else:
 			if not event.modifiers()&Qt.ShiftModifier:
+				###########
+				if options.helixboxer:	# Only create a helixbox every 2 clicks
+					if self.firsthbclick:
+						self.helixboxes.append([self.curx, y, z, self.firsthbclick[0], self.firsthbclick[1], self.firsthbclick[2]])
+						self.firsthbclick = None
+						self.update_helixbox(len(self.helixboxes)-1)
+					else:
+						self.firsthbclick = [self.curx, y, z]
+				###########
 				self.boxes.append(([self.curx,y,z]))
 				self.zydown=(len(self.boxes)-1,z,y,z,y)		# box #, x down, y down, x box at down, y box at down
 				self.update_box(self.zydown[0])
@@ -1394,6 +1637,16 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		dz=z-self.zydown[1]
 		dy=y-self.zydown[2]
+		if options.helixboxer:
+			if len(self.boxes) % 2 == 0:	# Only update the helix boxer if it is paired, otherwise treat it as a regular box
+				hb = self.helixboxes[int(self.zydown[0]/2)]
+				if self.zydown[0] % 2 == 0:
+					hb[5] = dz+self.zydown[3]
+					hb[4] = dy+self.zydown[4]
+				else:
+					hb[2] = dz+self.zydown[3]
+					hb[1] = dy+self.zydown[4]
+				self.update_helixbox(int(self.zydown[0]/2))
 		self.boxes[self.zydown[0]][2]=dz+self.zydown[3]
 		self.boxes[self.zydown[0]][1]=dy+self.zydown[4]
 		self.update_box(self.curbox,True)
