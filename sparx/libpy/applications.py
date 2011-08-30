@@ -9843,7 +9843,7 @@ def cml_find_structure_MPI2(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 	cml_init_global_var(dpsi, delta, len(Prj), debug)
 	# Update logfile
 	if myid == main_node:
-		cml_head_log(stack, out_dir, delta, ir, ou, lf, hf, rand_seed, maxit, given, flag_weights, trials, 1)
+		cml_head_log(stack, out_dir, delta, ir, ou, lf, hf, rand_seed, maxit, given, flag_weights, trials, number_of_proc)
 
 	ibest    = -1
 	bestdisc = 1.0e20
