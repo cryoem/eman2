@@ -308,6 +308,7 @@ class EMApp(QtGui.QApplication):
 			child.setFocus()
 
 	def start_timer(self,interval,function):
+		print "START APP TIMER"
 	
 		if self.tmr != None:
 			print "can't start a timer, already have one running. Call stop_timer first"
@@ -323,6 +324,7 @@ class EMApp(QtGui.QApplication):
 		
 	
 	def stop_timer(self):
+		print "STOP APP TIMER"
 		if self.tmr != None:
 			QtCore.QObject.disconnect(self.tmr, QtCore.SIGNAL("timeout()"), self.timer_function)
 			self.tmr = None

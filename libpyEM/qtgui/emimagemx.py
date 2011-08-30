@@ -209,14 +209,14 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True)
 		#fmt.setSampleBuffers(True)
-		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
+#		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
+		EMGLWidget.__init__(self,winid=winid)
 		EMGLProjectionViewMatrices.__init__(self)
 		
 		
 		self.init_size_flag = True
 		self.data=None
 #		EMGLWidget.__init__(self,ensure_gl_context=True,winid=winid)
-		EMGLWidget.__init__(self,winid=winid)
 		EMImageMXWidget.allim[self] = 0
 		self.file_name = ''
 		self.datasize=(1,1)
@@ -879,7 +879,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			glColor(0.5,1.0,0.5)
 			glLineWidth(2)
 
-			txtcol=(1,1,1,1)
+			txtcol=(1.0,1.0,1.0)
 			
 			if ( len(self.tex_names) > 0 ):	glDeleteTextures(self.tex_names)
 			self.tex_names = []
@@ -1130,18 +1130,18 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		glEnd()
 	
 	def __draw_mx_text(self,tx,ty,txtcol,i):
-		bgcol = [1-v for v in txtcol]
-			
-		glEnable(GL_TEXTURE_2D)
-		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+		txtcol=(0,0,0)
+		bgcol = [1.0-v for v in txtcol]
+		
+		#glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 		lighting = glIsEnabled(GL_LIGHTING)
 		glDisable(GL_LIGHTING)
 		#glEnable(GL_NORMALIZE)
 		tagy = ty
 		
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,txtcol)
-		glMaterial(GL_FRONT,GL_SPECULAR,txtcol)
-		glMaterial(GL_FRONT,GL_SHININESS,1.0)
+		#glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,txtcol)
+		#glMaterial(GL_FRONT,GL_SPECULAR,txtcol)
+		#glMaterial(GL_FRONT,GL_SHININESS,1.0)
 		for v in self.valstodisp:
 			glPushMatrix()
 			glTranslate(tx,tagy,0)
@@ -1150,9 +1150,15 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 				idx = i+self.img_num_offset
 				if idx != 0: idx = idx%self.max_idx
 				sidx = str(idx)
+				GL.glPushAttrib(GL.GL_ALL_ATTRIB_BITS)
 				bbox = self.font_renderer.bounding_box(sidx)
 				GLUtil.mx_bbox(bbox,txtcol,bgcol)
+				GL.glEnable(GL_TEXTURE_2D)
+				GL.glEnable(GL.GL_BLEND)
+				GL.glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+				GL.glColor(txtcol)
 				self.font_renderer.render_string(sidx)
+				GL.glPopAttrib()
 				
 			else : 
 				try:
@@ -1167,18 +1173,26 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 						else: avs=str(av)
 					except:avs ="???"
 				except: avs = ""
+				
+				GL.glPushAttrib(GL.GL_ALL_ATTRIB_BITS)
 				bbox = self.font_renderer.bounding_box(avs)
 				
 				GLUtil.mx_bbox(bbox,txtcol,bgcol)
+				print txtcol,bgcol,avs
+				GL.glEnable(GL_TEXTURE_2D)
+				GL.glEnable(GL.GL_BLEND)
+				GL.glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+				GL.glColor(txtcol)
 				self.font_renderer.render_string(avs)
+				GL.glPopAttrib()
 
 			tagy+=self.font_renderer.get_face_size()
 
 			glPopMatrix()
 			
-			if lighting:
-				glEnable(GL_LIGHTING)
-			glDisable(GL_TEXTURE_2D)
+		if lighting:
+			glEnable(GL_LIGHTING)
+#			glDisable(GL_TEXTURE_2D)
 								
 	
 	def bounding_box(self,character):

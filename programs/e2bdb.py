@@ -73,6 +73,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 	parser.add_option("--match",type="string",help="Only include dictionaries matching the provided Python regular expression",default=None)
 	parser.add_option("--exclude",type="string",help="The name of a database containing a list of exclusion keys",default=None)
 	parser.add_option("--dump","-D",action="store_true",help="List contents of an entire database, eg 'e2bdb.py -D refine_01#register",default=False)
+	parser.add_option("--smalldump",action="store_true",help="Lists contents of an entire database, but only list 2 items per dictionary to better see headers",default=False)
 	parser.add_option("--extractplots",action="store_true",help="If a database contains sets of plots, such as bdb:refine_xx#convergence.results, this will extract the plots as text files.")
 	parser.add_option("--check",action="store_true",help="Check for self-consistency and errors in the structure of specified databases",default=False)
 	parser.add_option("--nocache",action="store_true",help="Don't use the database cache fof this operation",default=False)
@@ -245,6 +246,35 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 					except: continue
 				dct.close()
 			
+		if options.smalldump :
+			for db in dbs:
+				print "##### ",db
+				dct=db_open_dict(path+db,ro=True)
+				
+				#### Dump
+				keys=dct.keys()
+				keys.sort()
+				for k in keys:
+					v=dct[k]
+					print "%s : "%k,
+					if isinstance (v,list) or isinstance(v,tuple)  :
+						for i in v: print "\n\t%s"%str(i),
+						print ""
+					elif isinstance(v,dict) :
+						ks2=v.keys()
+						ks2.sort()
+						kc=0
+						for i in ks2:
+							if kc>=2 :
+								print "..."
+								break
+							print "\n\t%s : %s"%(i,v[i]),
+							kc+=1
+						print ""
+					else : print str(v)
+				dct.close()
+
+
 		if options.dump :
 			for db in dbs:
 				print "##### ",db

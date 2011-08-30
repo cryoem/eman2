@@ -321,6 +321,7 @@ class EMShape:
 			GL.glEnd()
 			
 		elif s[0]=="label":
+			if len(col)==4 : col=col[:3]
 			GL.glPushMatrix()
 			if EMShape.font_renderer != None :
 				GL.glPushAttrib(GL.GL_ALL_ATTRIB_BITS)
@@ -328,7 +329,9 @@ class EMShape:
 				EMShape.font_renderer.set_face_size(int(s[7]))
 				if s[8]<0 :
 					bbox = EMShape.font_renderer.bounding_box(s[6])
-					GLUtil.mx_bbox(bbox,(0,0,0,0),(1,1,1,1))
+					GLUtil.mx_bbox(bbox,col,(1.0-col[0],1.0-col[1],1.0-col[2]))
+				GL.glEnable(GL_TEXTURE_2D)
+				GL.glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
 				GL.glColor(*col)
 				EMShape.font_renderer.render_string(s[6])
 				GL.glPopAttrib()
@@ -398,18 +401,20 @@ class EMShape:
 				GL.glVertex(x2,y2)
 				GL.glEnd()
 			elif s[0]=="scrlabel":
+				if len(col)==4 : col=col[:3]
 				x1 = int( round(s[4]) )
 				y1 = int( round(s[5]) )
-				text = s[6]
 #				if s[8]<0 :
 				if EMShape.font_renderer != None :
 					GL.glPushAttrib(GL.GL_ALL_ATTRIB_BITS)
 					GL.glTranslate(x1,y1,.2)
 					if s[8]<0 :
-						bbox = EMShape.font_renderer.bounding_box(text)
-						GLUtil.mx_bbox(bbox,(0,0,0,0),(1,1,1,1))
+						bbox = EMShape.font_renderer.bounding_box(s[6])
+						GLUtil.mx_bbox(bbox,col,(1.0-col[0],1.0-col[1],1.0-col[2]))
+					GL.glEnable(GL_TEXTURE_2D)
+					GL.glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
 					GL.glColor(*col)
-					EMShape.font_renderer.render_string(text)
+					EMShape.font_renderer.render_string(s[6])
 					GL.glPopAttrib()
 				else :
 					pass

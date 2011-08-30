@@ -195,17 +195,19 @@ void GLUtil::colored_rectangle(const vector<float>& data,const float& alpha,cons
 }
 
 void GLUtil::mx_bbox(const vector<float>& data, const vector<float>& text_color, const vector<float>& bg_color) {
-	glColor4f(bg_color[0],bg_color[1],bg_color[2],bg_color[3]);
 	glDisable(GL_TEXTURE_2D);
 	glBegin(GL_QUADS);
-
+	if (bg_color.size()==4) glColor4f(bg_color[0],bg_color[1],bg_color[2],bg_color[3]);
+	else glColor3f(bg_color[0],bg_color[1],bg_color[2]);
 	glVertex3f(data[0]-1,data[1]-1,-.1);
 	glVertex3f(data[3]+1,data[1]-1,-.1);
 	glVertex3f(data[3]+1,data[4]+1,-.1);
 	glVertex3f(data[0]-1,data[4]+1,-.1);
 	glEnd();
-	glEnable(GL_TEXTURE_2D);
-	glColor4f(text_color[0],text_color[1],text_color[2],text_color[3]);
+//	glEnable(GL_TEXTURE_2D);
+	if (text_color.size()==4) glColor4f(text_color[0],text_color[1],text_color[2],text_color[3]);
+	else glColor3f(text_color[0],text_color[1],text_color[2]);
+	
 }
 
 std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int iysize,

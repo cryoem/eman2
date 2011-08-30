@@ -75,6 +75,7 @@ template < typename T > void checked_delete( T*& x )
 }
 
 const string FourierReconstructor::NAME = "fourier";
+const string FourierPlaneReconstructor::NAME = "fourier_plane";
 const string FourierReconstructorSimple2D::NAME = "fouriersimple2D";
 const string WienerFourierReconstructor::NAME = "wiener_fourier";
 const string BackProjectionReconstructor::NAME = "back_projection";
@@ -88,6 +89,7 @@ const string nnSSNR_ctfReconstructor::NAME = "nnSSNR_ctf";
 template <> Factory < Reconstructor >::Factory()
 {
 	force_add<FourierReconstructor>();
+	force_add<FourierPlaneReconstructor>();
 	force_add<FourierReconstructorSimple2D>();
 //	force_add(&BaldwinWoolfordReconstructor::NEW);
 	force_add<WienerFourierReconstructor>();
@@ -322,6 +324,20 @@ void ReconstructorVolumeData::normalize_threed(const bool sqrt_damp,const bool w
 		}
 	}
 }
+
+void FourierPlaneReconstructor::load_default_settings() {}
+void FourierPlaneReconstructor::free_memory() {}
+void FourierPlaneReconstructor::load_inserter() {}
+void FourierPlaneReconstructor::setup() {}
+void FourierPlaneReconstructor::setup_seed(EMData* seed,float seed_weight) {}
+void FourierPlaneReconstructor::clear() {}
+EMData* FourierPlaneReconstructor::preprocess_slice( const EMData* const slice,  const Transform& t ) { return NULL; }
+int FourierPlaneReconstructor::insert_slice(const EMData* const input_slice, const Transform & arg, const float weight) { return 0; }
+void FourierPlaneReconstructor::do_insert_slice_work(const EMData* const input_slice, const Transform & arg,const float weight) {}
+int FourierPlaneReconstructor::determine_slice_agreement(EMData*  input_slice, const Transform & arg, const float weight,bool sub) { return 0; }
+void FourierPlaneReconstructor::do_compare_slice_work(EMData* input_slice, const Transform & arg,float weight) {}
+bool FourierPlaneReconstructor::pixel_at(const float& xx, const float& yy, const float& zz, float *dt) { return false; }
+EMData *FourierPlaneReconstructor::finish(bool doift) { return NULL; }
 
 void FourierReconstructor::load_default_settings()
 {
