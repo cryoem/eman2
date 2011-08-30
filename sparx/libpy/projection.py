@@ -868,6 +868,160 @@ def cml_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_w
 			period_ct = 0
 
 	return Ori, disc, ite
+	
+# find structure
+def cml_find_structure2(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_weights, myid, main_node, number_of_proc):
+	from projection import cml_export_progress, cml_disc, cml_export_txtagls
+	import time, sys
+
+	from mpi import MPI_FLOAT, MPI_INT, MPI_SUM, MPI_COMM_WORLD
+	from mpi import mpi_reduce, mpi_bcast, mpi_barrier
+
+	# global vars
+	global g_i_prj, g_n_prj, g_n_anglst, g_anglst, g_d_psi, g_debug, g_n_lines, g_seq
+
+	# list of free orientation
+	ocp = [-1] * g_n_anglst
+
+	if first_zero:
+		listprj = range(1, g_n_prj)
+		ocp[0]  = 0 
+	else:   listprj = range(g_n_prj)
+
+	# to stop when the solution oscillates
+	period_disc = [0, 0, 0]
+	period_ct   = 0
+	period_th   = 2
+
+	# iteration loop
+	for ite in xrange(maxit):
+		#print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>    ite = ", ite, "   myid = ", myid
+		t_start = time.time()
+
+		# loop over i prj
+		change = False
+		for iprj in listprj:
+			#print "**********************************  iprj = ", iprj, g_n_anglst
+
+			# Store current the current orientation
+			ind          = 4*iprj
+			store_phi    = Ori[ind]
+			store_theta  = Ori[ind+1]
+			store_psi    = Ori[ind+2]
+			cur_agl      = Ori[ind+3]
+			if cur_agl  != -1: ocp[cur_agl] = -1
+
+			# prepare active index of cml for weighting in order to earn time later
+			iw = [0] * (g_n_prj - 1)
+			c  = 0
+			ct = 0
+			for i in xrange(g_n_prj):
+				for j in xrange(i+1, g_n_prj):
+					if i == iprj or j == iprj:
+						iw[ct] = c
+						ct += 1
+					c += 1
+
+			# loop over all angles
+			best_disc_list = [0]*g_n_anglst
+			best_psi_list  = [0]*g_n_anglst
+			for iagl in xrange(myid, g_n_anglst, number_of_proc):
+				# if orientation is free
+				if ocp[iagl] == -1:
+					# assign new orientation
+					Ori[ind]   = g_anglst[iagl][0]
+					Ori[ind+1] = g_anglst[iagl][1]
+					Rot        = Util.cml_update_rot(Rot, iprj, Ori[ind], Ori[ind+1], 0.0)
+					# weights
+					if flag_weights:
+						cml = Util.cml_line_in3d(Ori, g_seq, g_n_prj, g_n_lines)
+						weights = Util.cml_weights(cml)
+						mw  = max(weights)
+						for i in xrange(g_n_lines): weights[i]  = mw - weights[i]
+						sw = sum(weights)
+						if sw == 0:
+							weights = [6.28 / float(g_n_lines)] * g_n_lines
+						else:
+							for i in xrange(g_n_lines):
+								weights[i] /= sw
+								weights[i] *= weights[i]
+					else:   weights = [1.0] * g_n_lines
+
+					# spin all psi
+					com = Util.cml_line_insino(Rot, iprj, g_n_prj)
+					res = Util.cml_spin_psi(Prj, com, weights, iprj, iw, g_n_psi, g_d_psi, g_n_prj)
+
+					# select the best
+					best_disc_list[iagl] = res[0]
+					best_psi_list[iagl]  = res[1]
+
+					if g_debug: cml_export_progress(outdir, ite, iprj, iagl, res[1], res[0], 'progress')
+				else:
+					if g_debug: cml_export_progress(outdir, ite, iprj, iagl, -1, -1, 'progress')
+			best_disc_list = mpi_reduce(best_disc_list, g_n_anglst, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+			best_psi_list = mpi_reduce(best_psi_list, g_n_anglst, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+
+			best_psi = -1
+			best_iagl = -1
+
+			if myid == main_node:
+				best_disc = 1e20
+				for iagl in xrange(g_n_anglst):
+					if best_disc_list[iagl] > 0.0 and best_disc_list[iagl] < best_disc:
+						best_disc = best_disc_list[iagl]
+						best_psi = best_psi_list[iagl]
+						best_iagl = iagl
+			best_psi = mpi_bcast(best_psi, 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			best_iagl = mpi_bcast(best_iagl, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+			best_psi = float(best_psi[0])
+			best_iagl =  int(best_iagl[0])
+			
+			#print "xxxxx myid = ", myid, "    best_psi = ", best_psi, "   best_ialg = ", best_iagl
+
+			# if change, assign
+			if best_iagl != cur_agl:
+				ocp[best_iagl] = iprj
+				Ori[ind]       = g_anglst[best_iagl][0] # phi
+				Ori[ind+1]     = g_anglst[best_iagl][1] # theta
+				Ori[ind+2]     = best_psi * g_d_psi     # psi
+				Ori[ind+3]     = best_iagl              # index
+				change = True
+			else:
+				if cur_agl != -1: ocp[cur_agl] = iprj
+				Ori[ind]    = store_phi
+				Ori[ind+1]  = store_theta
+				Ori[ind+2]  = store_psi
+				Ori[ind+3]  = cur_agl
+
+			Rot = Util.cml_update_rot(Rot, iprj, Ori[ind], Ori[ind+1], Ori[ind+2])
+
+			if g_debug: cml_export_progress(outdir, ite, iprj, best_iagl, best_psi * g_d_psi, best_disc, 'choose')
+
+		# if one change, compute new full disc
+		disc = cml_disc(Prj, Ori, Rot)
+
+		# display in the progress file
+		if myid == main_node:
+			cml_export_txtagls(outdir, outname, Ori, disc, 'Ite: %03i' % (ite + 1))
+
+		if not change: break
+
+		# to stop when the solution oscillates
+		period_disc.pop(0)
+		period_disc.append(disc)
+		if period_disc[0] == period_disc[2]:
+			period_ct += 1
+			if period_ct >= period_th and min(period_disc) == disc and myid == main_node:
+				angfile = open(outdir + '/' + outname, 'a')
+				angfile.write('\nSTOP SOLUTION UNSTABLE\n')
+				angfile.write('Discrepancy period: %s\n' % period_disc)
+				angfile.close()
+				break
+		else:
+			period_ct = 0
+		mpi_barrier(MPI_COMM_WORLD)
+
+	return Ori, disc, ite
 
 
 # this function return the degree of colinearity of the orientations found (if colinear the value is close to zero)

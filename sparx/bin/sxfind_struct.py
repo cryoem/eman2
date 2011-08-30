@@ -78,9 +78,12 @@ def main():
 				      weights, options.debug, options.maxgen, options.pcross, options.pmut)
 			global_def.BATCH = False
 		elif options.MPI:
-			from applications import cml_find_structure_MPI
+			from mpi import mpi_init
+			sys.argv = mpi_init(len(sys.argv),sys.argv)
+
+			from applications import cml_find_structure_MPI2
 			global_def.BATCH = True
-			cml_find_structure_MPI(args[0], args[1], options.ir, options.ou, options.delta, options.dpsi, 
+			cml_find_structure_MPI2(args[0], args[1], options.ir, options.ou, options.delta, options.dpsi, 
 				    options.lf, options.hf, options.rand_seed, options.maxit, options.given, options.first_zero, 
 				    weights, options.debug, options.trials)
 			global_def.BATCH = False
