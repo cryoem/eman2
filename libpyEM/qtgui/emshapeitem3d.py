@@ -576,9 +576,12 @@ class EM3DText(EMItem3D):
 		self.shininess = 25.0
 		
 		self.font_renderer = get_3d_font_renderer()
-		self.font_renderer.set_font_mode(fontMode)
+		self.setFontMode(fontMode)
 		self.font_renderer.set_depth(depth)
 		
+	def setFontMode(self, fontMode):
+		self.font_renderer.set_font_mode(fontMode)
+	
 	def setRenderString(self, string, fontSize):
 		self.renderString = string
 		self.fontSize = fontSize
@@ -744,31 +747,59 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 	"""
 	def __init__(self, name, item3d, numgridcols=2):
 		EMInspectorControlShape.__init__(self, name, item3d)
+		
+		self.on3DFontModeChanged()
+		self.textModeBox.currentIndexChanged.connect(self.on3DFontModeChanged)
 
 	def addControls(self, gridbox):
 		super(EMInspectorControl3DText, self).addControls(gridbox)
 			
 		textframe = QtGui.QFrame()
 		textframe.setFrameShape(QtGui.QFrame.StyledPanel)
-		textvbox = QtGui.QVBoxLayout()
 		lfont = QtGui.QFont()
 		lfont.setBold(True)
-		textlabel = QtGui.QLabel("Text", textframe)
-		textlabel.setFont(lfont)
-		textlabel.setAlignment(QtCore.Qt.AlignCenter)
-		
-		textframe = QtGui.QFrame()
-		textframe.setFrameShape(QtGui.QFrame.StyledPanel)
 		textgridbox = QtGui.QGridLayout()
+		
 		# Add widgets to textframe
-		textlabel2 = QtGui.QLabel("TextMode")
+		textlabel = QtGui.QLabel("3D Font Mode")
+		textlabel.setFont(lfont)
+		textlabel.setAlignment(QtCore.Qt.AlignHCenter)
+		textgridbox.addWidget(textlabel, 0, 0, 1, 8)
+		
+		self.textModeBox = QtGui.QComboBox()
+		self.textModeBox.addItems(["EXTRUDE", "TEXTURE", "POLYGON", "OUTLINE"])
+		textgridbox.addWidget(self.textModeBox, 1, 0, 1, 8)
+		
+		textframe.setLayout(textgridbox)	
+		gridbox.addWidget(textframe, 2, 1, 1, 1)
+		
+		####################################################
+		textframe2 = QtGui.QFrame()
+		textframe2.setFrameShape(QtGui.QFrame.StyledPanel)
+		textgridbox2 = QtGui.QGridLayout()
+		
+		textlabel2 = QtGui.QLabel("3D Font Depth")
 		textlabel2.setFont(lfont)
-		textgridbox.addWidget(textlabel2, 0, 0, 1, 1)
+		textlabel2.setAlignment(QtCore.Qt.AlignHCenter)
+		textgridbox2.addWidget(textlabel2, 2, 0, 1, 8)
 		
-		textframe.setLayout(textgridbox)
-		
-		gridbox.addWidget(textframe, 2, 1, 2, 1)
+		textframe2.setLayout(textgridbox2)
+		gridbox.addWidget(textframe2, 3, 1, 1, 1)
 		
 		# set to default, but run only as a base class
 		if type(self) == EMInspectorControl3DText: self.updateItemControls()
 		
+	def on3DFontModeChanged(self):
+		textMode = str(self.textModeBox.currentText())
+		#print 'textMode = ', textMode
+		if textMode == "EXTRUDE":
+			self.item3d().setFontMode(FTGLFontMode.EXTRUDE)
+		elif textMode == "TEXTURE":
+			self.item3d().setFontMode(FTGLFontMode.TEXTURE)
+		elif textMode == "POLYGON":
+			self.item3d().setFontMode(FTGLFontMode.POLYGON)
+		elif textMode == "OUTLINE":
+			self.item3d().setFontMode(FTGLFontMode.OUTLINE)
+		
+		if self.inspector:
+			self.inspector().updateSceneGraph()
