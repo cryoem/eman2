@@ -682,7 +682,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 					print "Particle %4d :  pixel error = %8.4f \n"%(i, sqrt(pixel_error_after[cleaned_part.index(j)]))
 				else:
 					print "Particle %4d :  pixel error = %8.4f     outlier \n"%(i, sqrt(pixel_error_before[j]))
-			else: print "Particle %3d :  Mirror unstable \n"%i
+			else: print "Particle %4d :  Mirror unstable \n"%i
 
 	stable_set = []
 	for i in xrange(nima3):

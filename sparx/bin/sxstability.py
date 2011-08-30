@@ -83,7 +83,7 @@ def main():
 				mem = averages[i].get_attr('members')
 				mem = map(int, mem)
 				if len(mem) < options.thld_grp:
-					print "Average %3d: Group size too small to consider for stability."%i
+					print "Average %4d: Group size too small to consider for stability."%i
 				else:
 					class_data = [data[im] for im in mem]
 					for im in class_data: set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0])
