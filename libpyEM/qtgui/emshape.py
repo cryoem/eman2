@@ -310,8 +310,6 @@ class EMShape:
 			GL.glEnd()
 		
 		elif s[0]=="linemask":
-#			print "A line ",s[4],s[5],s[6],s[7]
-#			print "A line ",d2s(s[4],s[5]),d2s(s[6],s[7])
 			assert self.shape[12] >= 0
 			GL.glLineWidth(s[12])
 			GL.glColor(*col)
@@ -323,16 +321,16 @@ class EMShape:
 			GL.glEnd()
 			
 		elif s[0]=="label":
-			
 			GL.glPushMatrix()
 			if EMShape.font_renderer != None :
 				GL.glPushAttrib(GL.GL_ALL_ATTRIB_BITS)
-				GL.glTranslate(x1,y1,.2)
+				GL.glTranslate(v[0],v[1],.2)
+				EMShape.font_renderer.set_face_size(int(s[7]))
 				if s[8]<0 :
-					bbox = EMShape.font_renderer.bounding_box(text)
+					bbox = EMShape.font_renderer.bounding_box(s[6])
 					GLUtil.mx_bbox(bbox,(0,0,0,0),(1,1,1,1))
 				GL.glColor(*col)
-				EMShape.font_renderer.render_string(text)
+				EMShape.font_renderer.render_string(s[6])
 				GL.glPopAttrib()
 			else :
 				pass
@@ -360,6 +358,7 @@ class EMShape:
 				#for i in s[6]:
 					#GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_ROMAN,ord(i))
 			GL.glPopMatrix()
+			
 		elif s[0]=="circle":
 #			print s[6],v,v2
 			GL.glPushMatrix()

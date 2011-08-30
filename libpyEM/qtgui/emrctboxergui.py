@@ -304,7 +304,7 @@ class ControlPannel(QtGui.QWidget):
 		butbox = QtGui.QHBoxLayout()
 		self.write_box_but=QtGui.QPushButton("Write Boxes")
 		butbox.addWidget(self.write_box_but)
-		self.write_but=QtGui.QPushButton("Write Output")
+		self.write_but=QtGui.QPushButton("Write Ptcls")
 		butbox.addWidget(self.write_but)
 		layout.addLayout(butbox)
 		self.done_but=QtGui.QPushButton("Done")

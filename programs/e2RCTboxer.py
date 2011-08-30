@@ -404,7 +404,7 @@ class MainWin:
 	def write_boxes(self,out_file_name,box_size):
 		boxfile = open(out_file_name, 'w')
 		for i,box in enumerate(self.boxes.boxlist):
-			boxfile.write("%d\t%d\t%d\t%d\n" % (int(box.x),int(box.y),box_size,box_size))
+			boxfile.write("%d\t%d\t%d\t%d\n" % (int(box.x - box_size/2),int(box.y - box_size/2),box_size,box_size))
 		boxfile.close()
 			
 		
