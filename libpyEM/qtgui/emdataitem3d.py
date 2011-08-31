@@ -83,7 +83,7 @@ class EMDataItem3DInspector(EMItem3DInspector):
 	def updateItemControls(self):
 		super(EMDataItem3DInspector, self).updateItemControls()
 		# Anything that needs to be updated when the scene is rendered goes here.....
-		self.file_path_label.setText(self.item3d().path)
+		if self.item3d().path: self.file_path_label.setText(self.item3d().path)
 		
 	def addControls(self, gridbox):
 		super(EMDataItem3DInspector, self).addControls(gridbox)

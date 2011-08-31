@@ -511,7 +511,8 @@ class EMBoxViewer(QtGui.QWidget):
 
 		self.zyview = EMImage2DWidget()
 		self.gbl.addWidget(self.zyview,0,0)
-
+		self.data = None
+		
 		if options.newwidget:
 			self.d3view = EMScene3D()
 			self.d3viewdata = EMDataItem3D(test_image_3d(3), transform=Transform())
@@ -558,6 +559,9 @@ class EMBoxViewer(QtGui.QWidget):
 		self.update()
 		self.show()
 		
+	def get_data(self):
+		return self.data
+		
 	def update(self):
 		if self.data==None:
 			self.xyview.set_data(None)
@@ -588,6 +592,9 @@ class EMBoxViewer(QtGui.QWidget):
 		
 	def event_filter(self,value):
 		self.update()
+		
+	def closeEvent(self, event):
+		self.d3view.close()
 
 class EMTomoBoxer(QtGui.QMainWindow):
 	"""This class represents the EMTomoBoxer application instance.  """
@@ -933,10 +940,21 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		fsp=str(QtGui.QFileDialog.getOpenFileName(self, "Select output text file"))
 		
 		f=file(fsp,"r")
-		for b in f:
-			b2=[int(float(i)) for i in b.split()[:3]]
-			self.boxes.append(b2)
-			self.update_box(len(self.boxes)-1)
+		if options.helixboxer:
+			for b in f:
+				b2=[int(float(i)) for i in b.split()[:6]]
+				self.boxes.append(b2[3:6])
+				self.update_box(len(self.boxes)-1)
+				self.helixboxes.append(b2)
+				self.update_helixbox(len(self.helixboxes)-1)
+				self.boxes.append(b2[0:3])
+				self.update_box(len(self.boxes)-1)
+		else:
+			for b in f:
+				b2=[int(float(i)) for i in b.split()[:3]]
+				self.boxes.append(b2)
+				self.update_box(len(self.boxes)-1)
+		f.close()
 
 	def menu_file_save_boxloc(self):
 		binf=self.bin 								#jesus
@@ -944,8 +962,12 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		fsp=str(QtGui.QFileDialog.getSaveFileName(self, "Select output text file"))
 		
 		out=file(fsp,"w")
-		for b in self.boxes:
-			out.write("%d\t%d\t%d\n"%(b[0]*binf,b[1]*binf,b[2]*binf))
+		if options.helixboxer:
+			for b in self.helixboxes:
+				out.write("%d\t%d\t%d\t%d\t%d\t%d\n"%(b[0]*binf,b[1]*binf,b[2]*binf,b[3]*binf,b[4]*binf,b[5]*binf))
+		else:
+			for b in self.boxes:
+				out.write("%d\t%d\t%d\n"%(b[0]*binf,b[1]*binf,b[2]*binf))
 		out.close()
 		
 	def menu_file_save_boxes(self):
@@ -953,13 +975,13 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
 		if options.helixboxer:
-			tomogram = EMData(argv[1])
 			for i,b in enumerate(self.helixboxes):
-				bs=self.boxsize()
-				helixbox = self.get_extended_a_vector(b)
-				a = Vec3f((helixbox[3]-helixbox[0]), (helixbox[4]-helixbox[1]), (helixbox[4]-helixbox[2]))	# Find the a, the long vector
-				tcs = self.get_box_coord_system(helixbox)
-				img = tomogram.extract_box(tcs, Region(0, -bs, -bs, a.length(), bs, bs))
+				#bs=self.boxsize()
+				#helixbox = self.get_extended_a_vector(b)
+				#a = Vec3f((helixbox[3]-helixbox[0]), (helixbox[4]-helixbox[1]), (helixbox[4]-helixbox[2]))	# Find the a, the long vector
+				#tcs = self.get_box_coord_system(helixbox)
+				#img = tomogram.extract_box(tcs, Region(0, -bs, -bs, a.length(), bs, bs))
+				img = self.extract_subtomo_box(b)
 				
 				img['origin_x'] = 0						#jesus
 				img['origin_y'] = 0				
@@ -1014,33 +1036,71 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			return
 		
 		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
-		for i,b in enumerate(self.boxes):
-			#img=self.get_cube(b[0],b[1],b[2])
-			bs=self.boxsize()
-			binf=self.bin
-			contrast=self.contrast
+		if options.helixboxer:
+			for i,b in enumerate(self.helixboxes):
+				img = self.extract_subtomo_box(b)
+				
+				img['origin_x'] = 0						#jesus
+				img['origin_y'] = 0				
+				img['origin_z'] = 0
+			
+				img=img.process('normalize.edgemean')
+			
+				img.write_image(fsp,i)
+			
+				progress.setValue(i+1)
+				if progress.wasCanceled(): 
+					break
+		else:
+			for i,b in enumerate(self.boxes):
+				#img=self.get_cube(b[0],b[1],b[2])
+				bs=self.boxsize()
+				binf=self.bin
+				contrast=self.contrast
 
-			if self.yshort:							#jesus
-				img = unbinned_extractor(bs,b[0],b[2],b[1],binf,contrast) 	#jesus
-			else:
-				img = unbinned_extractor(bs,b[0],b[1],b[2],binf,contrast) 	#jesus
+				if self.yshort:							#jesus
+					img = unbinned_extractor(bs,b[0],b[2],b[1],binf,contrast) 	#jesus
+				else:
+					img = unbinned_extractor(bs,b[0],b[1],b[2],binf,contrast) 	#jesus
 			
-			img['origin_x'] = 0						#jesus
-			img['origin_y'] = 0				
-			img['origin_z'] = 0
+				img['origin_x'] = 0						#jesus
+				img['origin_y'] = 0				
+				img['origin_z'] = 0
 			
-			img=img.process('normalize.edgemean')
+				img=img.process('normalize.edgemean')
 			
-			img.write_image(fsp,i)
+				img.write_image(fsp,i)
 			
-			progress.setValue(i+1)
-			if progress.wasCanceled(): 
-				break
+				progress.setValue(i+1)
+				if progress.wasCanceled(): 
+					break
 		
 		
 	def menu_file_quit(self):
 		self.close()
-		
+	
+	def extract_subtomo_box(self, b, tomogram=argv[1]):
+		""" Retruns an extracted subtomogram box"""
+		bs=self.boxsize()
+		#print b
+		helixbox = self.get_extended_a_vector(b)
+		if self.yshort: helixbox = [helixbox[0],helixbox[2],helixbox[1],helixbox[3],helixbox[5],helixbox[4]]
+		# Get the extended vector based on boxsize
+		a = Vec3f((helixbox[3]-helixbox[0]), (helixbox[4]-helixbox[1]), (helixbox[5]-helixbox[2]))	# Find the a, the long vector
+		tcs = self.get_box_coord_system(helixbox)							# Get the new coord system
+		# First extract a subtomo gram bounding region from the tomogram so we do have to read the whole bloody thing in!
+		rv = [tcs*Vec3f(0, -bs, -bs), tcs*Vec3f(0, bs, bs), tcs*Vec3f(0, bs, -bs), tcs*Vec3f(0, -bs, bs), tcs*Vec3f(a.length(), -bs, -bs), tcs*Vec3f(a.length(), bs, bs), tcs*Vec3f(a.length(), bs, -bs), tcs*Vec3f(a.length(), -bs, bs)]
+		rvmin = [int(min([i[0] for i in rv])), int(min([i[1] for i in rv])), int(min([i[2] for i in rv]))]
+		rvmax = [int(max([i[0] for i in rv])), int(max([i[1] for i in rv])), int(max([i[2] for i in rv]))]
+		r = Region(rvmin[0],rvmin[1],rvmin[2],rvmax[0]-rvmin[0],rvmax[1]-rvmin[1],rvmax[2]-rvmin[2])
+		e = EMData()
+		e.read_image(tomogram,0,False,r)
+		e.set_attr("source_path", tomogram)
+		# Next adjust the transform matrix to move it to the origin
+		tcs.set_trans(helixbox[0]-rvmin[0],helixbox[1]-rvmin[1],helixbox[2]-rvmin[2])
+
+		return e.extract_box(tcs, Region(0, -bs, -bs, a.length(), bs, bs))
+	
 	def get_averager(self):
 		"""returns an averager of the appropriate type for generating projection views"""
 		if self.wmaxmean.isChecked() : return Averagers.get("minmax",{"max":1})
@@ -1220,13 +1280,14 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		if z>=0 and (z<box[2]-self.boxsize()/2 or z>box[2]+self.boxsize()/2) : return False
 		return True
 
-	def do_deletion(self, n):
+	def do_deletion(self, n, delimgs=True):
 		""" Helper for del_box"""
 		if n==len(self.boxes)-1 : 
 			self.boxes.pop()
-			self.boxesimgs.pop()
-			self.boxesviewer.set_data(self.boxesimgs)
-			self.boxesviewer.update()
+			if delimgs:
+				self.boxesimgs.pop()
+				self.boxesviewer.set_data(self.boxesimgs)
+				self.boxesviewer.update()
 			self.xyview.del_shape(n)
 			self.xzview.del_shape(n)
 			self.zyview.del_shape(n)
@@ -1238,11 +1299,12 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		else :
 			a=self.boxes.pop()
 			self.boxes[n]=a
-			a=self.boxesimgs.pop()
-			self.boxesimgs[n]=a
-			self.boxesviewer.set_data(self.boxesimgs)
-			self.boxesviewer.set_selected([],True)
-			self.boxesviewer.update()
+			if delimgs:
+				a=self.boxesimgs.pop()
+				self.boxesimgs[n]=a
+				self.boxesviewer.set_data(self.boxesimgs)
+				self.boxesviewer.set_selected([],True)
+				self.boxesviewer.update()
 			self.xyview.del_shape(len(self.boxes))
 			self.xzview.del_shape(len(self.boxes))
 			self.zyview.del_shape(len(self.boxes))
@@ -1264,20 +1326,21 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		update after deletion is REALLY slow."""
 #		print "del ",n
 		if n<0 or n>=len(self.boxes): return
-		self.boxviewer.set_data(None)
+		
+		if self.boxviewer.get_data(): self.boxviewer.set_data(None)
 		self.curbox=-1
 		if options.helixboxer:
 			if n + 1 == len(self.boxes) and len(self.boxes) % 2 == 1: 	# Delete unpaired box
-				self.do_deletion(n)
+				self.do_deletion(n, delimgs=False)
 			else:								# Delete box pairs
 				if n % 2:
 					self.do_helix_deletion(int(n/2))
-					self.do_deletion(n)
-					self.do_deletion(n-1)
+					self.do_deletion(n, delimgs=False)
+					self.do_deletion(n-1, delimgs=False)
 				else:
 					self.do_helix_deletion(int(n/2))
-					self.do_deletion(n+1)
-					self.do_deletion(n)
+					self.do_deletion(n+1, delimgs=False)
+					self.do_deletion(n, delimgs=False)
 				return "DELHELIX"	# If we have deleted a pair do not reset the pair toggle/counter	
 		else:
 			self.do_deletion(n)
@@ -1311,9 +1374,17 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		return Vec3f(c1,c2,c3)
 		
 	def compute_perpZ(self, a):
-		b1 = a[1]
-		b2 = - a[0]
-		b3 = 0
+		if options.yshort:
+			# Y axis
+			b1 = -a[2]
+			b2 = 0
+			b3 = a[0]
+		else:
+			# Z axis
+			b1 = a[1]
+			b2 = - a[0]
+			b3 = 0
+
 		return Vec3f(b1,b2,b3)
 	
 	def get_box_coord_system(self, helixbox):
@@ -1325,7 +1396,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		b = self.compute_perpZ(a)
 		b.normalize()
 		c = self.compute_crossAB(a, b)
-		print a.length(), b.length(), c.length()
+		
 		return Transform([a[0],a[1],a[2],helixbox[0],b[0],b[1],b[2],helixbox[1],c[0],c[1],c[2],helixbox[2]])
 	
 	def get_extended_a_vector(self, helixbox):
@@ -1338,7 +1409,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		return [(helixbox[0] - a[0]*bs/2),(helixbox[1] - a[1]*bs/2),(helixbox[2] - a[2]*bs/2),(helixbox[3] + a[0]*bs/2),(helixbox[4] + a[1]*bs/2),(helixbox[5] + a[2]*bs/2)]
 		
 		
-	def update_helixbox(self, n):
+	def update_helixbox(self, n, quiet=False):
 		"""
 		Update a helix box
 		"""
@@ -1363,6 +1434,21 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.xzview.update()
 		self.zyview.update()
 		
+		if not quiet and options.helixboxer:
+			hb = self.extract_subtomo_box(helixbox)
+			self.boxviewer.set_data(hb)
+			
+			proj=hb.process("misc.directional_sum",{"axis":"z"})
+			try: self.boxesimgs[n]=proj
+			except:
+				for i in range(len(self.boxesimgs),n+1): self.boxesimgs.append(None)
+				self.boxesimgs[n]=proj
+			self.boxesviewer.set_data(self.boxesimgs)
+			self.boxesviewer.update()
+			
+		if n!=self.curbox and options.helixboxer:
+			self.boxesviewer.set_selected((n,),True)
+			
 	def update_box(self,n,quiet=False):
 		"""After adjusting a box, call this"""
 #		print "upd ",n,quiet
@@ -1400,7 +1486,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.update_sides()
 
 		# For speed, we turn off updates while dragging a box around. Quiet is set until the mouse-up
-		if not quiet:
+		if not quiet and not options.helixboxer:
 			# Get the cube from the original data (normalized)
 			cube=self.get_cube(*box)
 			self.boxviewer.set_data(cube)
@@ -1414,7 +1500,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			self.boxesviewer.set_data(self.boxesimgs)
 			self.boxesviewer.update()
 			
-		if n!=self.curbox:
+		if n!=self.curbox and not options.helixboxer:
 			self.boxesviewer.set_selected((n,),True)
 
 		self.curbox=n
@@ -1444,6 +1530,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 					if self.del_box(i) != "DELHELIX": self.firsthbclick = None
 				else:
 					self.xydown=(i,x,y,self.boxes[i][0],self.boxes[i][1])
+					if options.helixboxer: self.update_helixbox(int(i/2))
 					self.update_box(i)
 				break
 		else:
@@ -1530,10 +1617,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 					if self.del_box(i) != "DELHELIX": self.firsthbclick = None
 				else :
 					self.xzdown=(i,x,z,self.boxes[i][0],self.boxes[i][2])
+					if options.helixboxer: self.update_helixbox(int(i/2))
 					self.update_box(i)
 				break
-
-
 		else:
 			if not event.modifiers()&Qt.ShiftModifier:
 				###########
@@ -1607,8 +1693,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 					if self.del_box(i) != "DELHELIX": self.firsthbclick = None
 				else :
 					self.zydown=(i,z,y,self.boxes[i][2],self.boxes[i][1])
+					if options.helixboxer: self.update_helixbox(int(i/2))
 					self.update_box(i)
-					break
+				break
 		else:
 			if not event.modifiers()&Qt.ShiftModifier:
 				###########

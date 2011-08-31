@@ -713,6 +713,7 @@ selectionicon = [
     'ccccccccccccccccc',
     'ccccccccccccccccc'
 ] 
+		
 class EMScene3D(EMItem3D, EMGLWidget):
 	"""
 	Widget for rendering 3D objects. Uses a scne graph for rendering
@@ -751,7 +752,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.datacursor = QtGui.QCursor(QtGui.QPixmap(datacursor),-1,-1)
 		self.textcursor = QtGui.QCursor(QtGui.QPixmap(textcursor),-1,-1)
 		self.appcursor = QtGui.QCursor(QtGui.QPixmap(appcursor),-1,-1)
-
+		
 	def getEvalString(self):
 		"""
 		Retrun a string that after eval can reinstatiate the object
@@ -1378,6 +1379,12 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		Update the inspector tree if there is one
 		"""
 		if self.main_3d_inspector: self.main_3d_inspector.updateTree()
+	
+	def closeEvent(self, event):
+		"""
+		Close the main inspector
+		"""
+		if self.main_3d_inspector: self.main_3d_inspector.close()
 		
 	# Maybe add methods to control the lights
 
@@ -1690,7 +1697,8 @@ class EMCamera:
 		else:
 			self.perspective_z = clip
 	# Maybe other methods to control the camera
-
+	
+		
 ###################################### Inspector Code #########################################################################################
 
 class EMInspector3D(QtGui.QWidget):
@@ -1699,7 +1707,7 @@ class EMInspector3D(QtGui.QWidget):
 		The inspector for the 3D widget. The inspector is a strict observer of the SceneGraph, and is updated by calling update inspector
 		"""
 		QtGui.QWidget.__init__(self)
-		self.scenegraph = scenegraph
+		self.scenegraph = weakref.ref(scenegraph)
 		self.mintreewidth = 200		# minimum width of the tree
 		self.mincontrolwidth = 250
 		
@@ -1721,9 +1729,9 @@ class EMInspector3D(QtGui.QWidget):
 		self.updateGeometry()
 	
 	def closeEvent(self, event):
-		self.scenegraph.main_3d_inspector = None
+		self.scenegraph().main_3d_inspector = None
 		# There is a BUG in QStackedWidget @^#^&#, so it thinks that widgets have been deleted when they haven't!!! (It thinks that when you delete the stacked widget all widgets in the stack have been removed when in fact that is not always the case)
-		for node in self.scenegraph.getAllNodes():
+		for node in self.scenegraph().getAllNodes():
 			node.item_inspector = None
 			
 	def getTreeWidget(self):
@@ -1804,8 +1812,8 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		Load the SG
 		"""
-		rootitem = self.addTreeNode("All Objects", self.scenegraph)
-		self._recursiveAdd(rootitem, self.scenegraph)
+		rootitem = self.addTreeNode("All Objects", self.scenegraph())
+		self._recursiveAdd(rootitem, self.scenegraph())
 		
 	def addTreeNode(self, name, item3d, parentitem=None, insertionindex=-1):
 		"""
@@ -1997,46 +2005,46 @@ class EMInspector3D(QtGui.QWidget):
 		return tvbox
 	
 	def _rotatetool_clicked(self, state):
-		self.scenegraph.setMouseMode("rotate")
+		self.scenegraph().setMouseMode("rotate")
 		
 	def _transtool_clicked(self, state):
-		self.scenegraph.setMouseMode("xytranslate")
+		self.scenegraph().setMouseMode("xytranslate")
 		
 	def _ztranstool_clicked(self, state):
-		self.scenegraph.setMouseMode("ztranslate")
+		self.scenegraph().setMouseMode("ztranslate")
 		
 	def _scaletool_clicked(self, state):
-		self.scenegraph.setMouseMode("scale")
+		self.scenegraph().setMouseMode("scale")
 	
 	def _seltool_clicked(self, state):
-		self.scenegraph.setMouseMode("selection")
+		self.scenegraph().setMouseMode("selection")
 		
 	def _multiseltool_clicked(self, state):
-		self.scenegraph.setMouseMode("multiselection")
+		self.scenegraph().setMouseMode("multiselection")
 	
 	def _linetool_clicked(self, state):
-		self.scenegraph.setMouseMode("line")
+		self.scenegraph().setMouseMode("line")
 		
 	def _cubetool_clicked(self, state):
-		self.scenegraph.setMouseMode("cube")
+		self.scenegraph().setMouseMode("cube")
 		
 	def _spheretool_clicked(self, state):
-		self.scenegraph.setMouseMode("sphere")
+		self.scenegraph().setMouseMode("sphere")
 		
 	def _cylindertool_clicked(self, state):
-		self.scenegraph.setMouseMode("cylinder")
+		self.scenegraph().setMouseMode("cylinder")
 	
 	def _conetool_clicked(self, state):
-		self.scenegraph.setMouseMode("cone")
+		self.scenegraph().setMouseMode("cone")
 		
 	def _texttool_clicked(self, state):
-		self.scenegraph.setMouseMode("text")
+		self.scenegraph().setMouseMode("text")
 		
 	def _datatool_clicked(self, state):
-		self.scenegraph.setMouseMode("data")
+		self.scenegraph().setMouseMode("data")
 				
 	def _apptool_clicked(self, state):
-		self.scenegraph.setMouseMode("app")
+		self.scenegraph().setMouseMode("app")
 		
 	def getLightsWidget(self):
 		"""
@@ -2081,19 +2089,19 @@ class EMInspector3D(QtGui.QWidget):
 		return lwidget
 	
 	def _light_position_moved(self, position): 
-		self.scenegraph.firstlight.setAngularPosition(position[0], position[1])
-		self.scenegraph.updateSG()
+		self.scenegraph().firstlight.setAngularPosition(position[0], position[1])
+		self.scenegraph().updateSG()
 	
 	def _on_light_slider(self, value):
 		self.lightwidget.setAngularPosition(self.hvalslider.getValue(), self.vvalslider.getValue())
 		position = self.lightwidget.getPosition()
-		self.scenegraph.firstlight.setPosition(position[0], position[1], position[2], position[3])
-		self.scenegraph.update()
+		self.scenegraph().firstlight.setPosition(position[0], position[1], position[2], position[3])
+		self.scenegraph().update()
 	
 	def _on_light_ambient(self):
 		ambient = self.ambientlighting.getValue()
-		self.scenegraph.firstlight.setAmbient(ambient, ambient, ambient, 1.0)
-		self.scenegraph.update()
+		self.scenegraph().firstlight.setAmbient(ambient, ambient, ambient, 1.0)
+		self.scenegraph().update()
 	
 	def getCameraWidget(self):
 		"""
@@ -2102,12 +2110,12 @@ class EMInspector3D(QtGui.QWidget):
 		self.cameratab_open = False
 		cwidget = QtGui.QWidget()
 		grid = QtGui.QGridLayout()
-		self.camerawidget = CameraControls(scenegraph=self.scenegraph)
+		self.camerawidget = CameraControls(scenegraph=self.scenegraph())
 		grid.addWidget(self.camerawidget, 0, 0, 1, 2)
 		nlabel = QtGui.QLabel("Near clipping plane", cwidget)
 		nlabel.setMaximumHeight(30.0)
 		nlabel.setAlignment(QtCore.Qt.AlignCenter)
-		self.near = EMSpinWidget(self.scenegraph.camera.getClipNear(), 1.0)
+		self.near = EMSpinWidget(self.scenegraph().camera.getClipNear(), 1.0)
 		self.near.setToolTip("In the Window above:\nClick 'n' drag, near the near clipping, to move near clipping plane")
 		self.near.setMaximumHeight(40.0)
 		grid.addWidget(nlabel, 1, 0)
@@ -2115,7 +2123,7 @@ class EMInspector3D(QtGui.QWidget):
 		flabel = QtGui.QLabel("Far clipping plane", cwidget)
 		flabel.setMaximumHeight(30.0)
 		flabel.setAlignment(QtCore.Qt.AlignCenter)
-		self.far = EMSpinWidget(self.scenegraph.camera.getClipFar(), 1.0)
+		self.far = EMSpinWidget(self.scenegraph().camera.getClipFar(), 1.0)
 		self.far.setToolTip("In the Window above:\nClick 'n' drag, near the far clipping, to move far clipping plane")
 		self.far.setMaximumHeight(40.0)
 		grid.addWidget(flabel, 2, 0)
@@ -2144,37 +2152,37 @@ class EMInspector3D(QtGui.QWidget):
 		return cwidget
 	
 	def _on_near(self, value):
-		if not self.scenegraph.camera.usingortho and value <= 0:
+		if not self.scenegraph().camera.usingortho and value <= 0:
 			return
-		if self.scenegraph.camera.getClipFar() > value:
-			self.scenegraph.camera.setClipNear(value)
-			self.scenegraph.updateSG()
+		if self.scenegraph().camera.getClipFar() > value:
+			self.scenegraph().camera.setClipNear(value)
+			self.scenegraph().updateSG()
 	
 	def _on_far(self, value):
-		if value > self.scenegraph.camera.getClipNear():
-			self.scenegraph.camera.setClipFar(value)
-			self.scenegraph.updateSG()
+		if value > self.scenegraph().camera.getClipNear():
+			self.scenegraph().camera.setClipFar(value)
+			self.scenegraph().updateSG()
 		
 	def _on_near_move(self, movement):
-		value = self.scenegraph.camera.getClipNear() + movement
-		if not self.scenegraph.camera.usingortho and value <= 0:
+		value = self.scenegraph().camera.getClipNear() + movement
+		if not self.scenegraph().camera.usingortho and value <= 0:
 			return
-		if self.scenegraph.camera.getClipFar() > value:
-			self.scenegraph.camera.setClipNear(value)
-			self.scenegraph.updateSG()
+		if self.scenegraph().camera.getClipFar() > value:
+			self.scenegraph().camera.setClipNear(value)
+			self.scenegraph().updateSG()
 		
 	def _on_far_move(self, movement):
-		value = self.scenegraph.camera.getClipFar() + movement
-		if value > self.scenegraph.camera.getClipNear():
-			self.scenegraph.camera.setClipFar(value)
-			self.scenegraph.updateSG()
+		value = self.scenegraph().camera.getClipFar() + movement
+		if value > self.scenegraph().camera.getClipNear():
+			self.scenegraph().camera.setClipFar(value)
+			self.scenegraph().updateSG()
 		
 	def _on_load_camera(self, idx):
 		"""
 		Load the SG Z slice and only update widgets that are open
 		"""
 		if idx == 2: # '2' is the camera tab
-			self.scenegraph.setZslice()
+			self.scenegraph().setZslice()
 			self.cameratab_open = True
 			self.updateInspector()
 			return
@@ -2190,7 +2198,7 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		Get the viewing volume of the camera
 		"""
-		if self.scenegraph.camera.usingortho: 
+		if self.scenegraph().camera.usingortho: 
 			self.orthoradio.setChecked(True)
 		else:
 			self.perspectiveradio.setChecked(True)
@@ -2200,9 +2208,9 @@ class EMInspector3D(QtGui.QWidget):
 		set the viewing volume. objectsize is the size of the bounding box of the largest displayed object
 		"""
 		objectsize = 50
-		if self.orthoradio.isChecked(): self.scenegraph.camera.useOrtho(self.scenegraph.camera.getZclip(disregardvv=True))
-		if self.perspectiveradio.isChecked(): self.scenegraph.camera.usePrespective(objectsize, 0.25, 60.0)
-		self.scenegraph.updateSG()
+		if self.orthoradio.isChecked(): self.scenegraph().camera.useOrtho(self.scenegraph().camera.getZclip(disregardvv=True))
+		if self.perspectiveradio.isChecked(): self.scenegraph().camera.usePrespective(objectsize, 0.25, 60.0)
+		self.scenegraph().updateSG()
 		
 	def getUtilsWidget(self):
 		"""
@@ -2242,7 +2250,7 @@ class EMInspector3D(QtGui.QWidget):
 		# Open the file
 		filename = QtGui.QFileDialog.getOpenFileName(self, 'Open Session', os.getcwd(), "*.eman")
 		if filename:
-			self.scenegraph.loadSession(filename)
+			self.scenegraph().loadSession(filename)
 		
 	def _on_save_session(self):
 		"""
@@ -2250,7 +2258,7 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save Session', os.getcwd(), "*.eman")
 		if filename: # if we cancel
-			self.scenegraph.saveSession(filename)
+			self.scenegraph().saveSession(filename)
 
 	def _on_save(self):
 		"""
@@ -2258,13 +2266,13 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save Image', os.getcwd(), "*.tiff")
 		if filename: # if we cancel
-			self.scenegraph.saveSnapShot(filename)
+			self.scenegraph().saveSnapShot(filename)
 			print "Saved %s to disk"%os.path.basename(str(filename))
 	
 	def _on_bg_color(self, color):
 		rgb = color.getRgb()
-		self.scenegraph.makeCurrent()
-		self.scenegraph.setClearColor(float(rgb[0])/255.0, float(rgb[1])/255.0, float(rgb[2])/255.0)
+		self.scenegraph().makeCurrent()
+		self.scenegraph().setClearColor(float(rgb[0])/255.0, float(rgb[1])/255.0, float(rgb[2])/255.0)
 		self.updateSceneGraph()
 		
 	def updateInspector(self):
@@ -2272,37 +2280,37 @@ class EMInspector3D(QtGui.QWidget):
 		Update Inspector,is called whenever the scence changes
 		"""
 		#tool buttons
-		if self.scenegraph.getMouseMode() == "selection": self.selectiontool.setDown(True)
-		if self.scenegraph.getMouseMode() == "multiselection": self.multiselectiontool.setDown(True)
-		if self.scenegraph.getMouseMode() == "rotate": self.rotatetool.setDown(True)
-		if self.scenegraph.getMouseMode() == "xytranslate": self.translatetool.setDown(True)
-		if self.scenegraph.getMouseMode() == "ztranslate": self.ztranslate.setDown(True)
-		if self.scenegraph.getMouseMode() == "scale": self.scaletool.setDown(True)
-		if self.scenegraph.getMouseMode() == "cube": self.cubetool.setDown(True)
-		if self.scenegraph.getMouseMode() == "sphere": self.spheretool.setDown(True)
-		if self.scenegraph.getMouseMode() == "cylinder": self.cylindertool.setDown(True)
-		if self.scenegraph.getMouseMode() == "cone": self.conetool.setDown(True)
-		if self.scenegraph.getMouseMode() == "line": self.linetool.setDown(True)
-		if self.scenegraph.getMouseMode() == "app": self.apptool.setDown(True)
+		if self.scenegraph().getMouseMode() == "selection": self.selectiontool.setDown(True)
+		if self.scenegraph().getMouseMode() == "multiselection": self.multiselectiontool.setDown(True)
+		if self.scenegraph().getMouseMode() == "rotate": self.rotatetool.setDown(True)
+		if self.scenegraph().getMouseMode() == "xytranslate": self.translatetool.setDown(True)
+		if self.scenegraph().getMouseMode() == "ztranslate": self.ztranslate.setDown(True)
+		if self.scenegraph().getMouseMode() == "scale": self.scaletool.setDown(True)
+		if self.scenegraph().getMouseMode() == "cube": self.cubetool.setDown(True)
+		if self.scenegraph().getMouseMode() == "sphere": self.spheretool.setDown(True)
+		if self.scenegraph().getMouseMode() == "cylinder": self.cylindertool.setDown(True)
+		if self.scenegraph().getMouseMode() == "cone": self.conetool.setDown(True)
+		if self.scenegraph().getMouseMode() == "line": self.linetool.setDown(True)
+		if self.scenegraph().getMouseMode() == "app": self.apptool.setDown(True)
 		# Lights
 		if self.lighttab_open:
-			position =  self.scenegraph.firstlight.getAngularPosition()
+			position =  self.scenegraph().firstlight.getAngularPosition()
 			self.lightwidget.setAngularPosition(position[0], position[1])
 			angularposition = self.lightwidget.getAngularPosition()
 			self.hvalslider.setValue(angularposition[0], quiet=1)
 			self.vvalslider.setValue(angularposition[1], quiet=1)
-			al = self.scenegraph.firstlight.getAmbient()
+			al = self.scenegraph().firstlight.getAmbient()
 			ambient = (al[0] + al[1] + al[2])/3
 			self.ambientlighting.setValue(ambient, quiet=1)
 		# camera
 		if self.cameratab_open:
-			self.near.setValue(self.scenegraph.camera.getClipNear(), quiet=1)
-			self.far.setValue(self.scenegraph.camera.getClipFar(), quiet=1)
+			self.near.setValue(self.scenegraph().camera.getClipNear(), quiet=1)
+			self.far.setValue(self.scenegraph().camera.getClipFar(), quiet=1)
 			self._get_vv_state()
-			self.scenegraph.setZslice()
+			self.scenegraph().setZslice()
 			self.camerawidget.updateWidget()
 		# utils
-		self.backgroundcolor.setColor(QtGui.QColor(255*self.scenegraph.clearcolor[0],255*self.scenegraph.clearcolor[1],255*self.scenegraph.clearcolor[2]))
+		self.backgroundcolor.setColor(QtGui.QColor(255*self.scenegraph().clearcolor[0],255*self.scenegraph().clearcolor[1],255*self.scenegraph().clearcolor[2]))
 	
 	def updateTree(self, currentnode=None):
 		"""
@@ -2317,7 +2325,7 @@ class EMInspector3D(QtGui.QWidget):
 		""" 
 		Updates SG, in the near future this will be improved to allow for slow operations
 		"""
-		self.scenegraph.updateSG()
+		self.scenegraph().updateSG()
 
 class EMQTreeWidget(QtGui.QTreeWidget):
 	"""
@@ -2850,13 +2858,13 @@ class GLdemo(QtGui.QWidget):
 		self.setGeometry(300, 300, 600, 600)
 		self.setWindowTitle('BCM EM Viewer')
 		
-	def show_inspector(self):
-		self.inspector.show()
+	def closeEvent(self, event): 
+		self.widget.close()
+		
 		
 if __name__ == "__main__":
 	import sys
 	app = QtGui.QApplication(sys.argv)
 	window = GLdemo()
 	window.show()
-	#window.show_inspector()
 	app.exec_()

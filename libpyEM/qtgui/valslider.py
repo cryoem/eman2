@@ -30,7 +30,7 @@
 #
 #
 
-import sys, math
+import sys, math, weakref
 from OpenGL.GL import *
 from OpenGL import GLU
 from PyQt4 import QtCore, QtGui, QtOpenGL 
@@ -1053,7 +1053,7 @@ class CameraControls(QtOpenGL.QGLWidget):
 	"""
 	def __init__(self, parent=None, scenegraph=None):
 		QtOpenGL.QGLWidget.__init__(self, parent)
-		self.scenegraph = scenegraph
+		self.scenegraph = weakref.ref(scenegraph)
 		self.texture = glGenTextures(1)
 		
 	def __del__(self):
@@ -1098,11 +1098,11 @@ class CameraControls(QtOpenGL.QGLWidget):
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		glColor3f(1.0, 1.0, 0.0)
-		sixtydegrees = math.sin(math.radians(self.scenegraph.camera.getFovy()))
-		self.scale = float(self.scenegraph.camera.getWidth())/float(self.width)*2.0
+		sixtydegrees = math.sin(math.radians(self.scenegraph().camera.getFovy()))
+		self.scale = float(self.scenegraph().camera.getWidth())/float(self.width)*2.0
 		origin = 0.0
-		self.near_clipping = origin + (self.scenegraph.camera.getClipNear() + self.scenegraph.camera.getZclip())/self.scale
-		self.far_clipping = origin + (self.scenegraph.camera.getClipFar() + self.scenegraph.camera.getZclip())/self.scale
+		self.near_clipping = origin + (self.scenegraph().camera.getClipNear() + self.scenegraph().camera.getZclip())/self.scale
+		self.far_clipping = origin + (self.scenegraph().camera.getClipFar() + self.scenegraph().camera.getZclip())/self.scale
 		glBegin(GL_LINES)
 		glVertex(self.near_clipping, -self.height/4, 0)
 		glVertex(self.near_clipping, self.height/4, 0)
@@ -1115,7 +1115,7 @@ class CameraControls(QtOpenGL.QGLWidget):
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
-		self.pixels = self.scenegraph.pixels
+		self.pixels = self.scenegraph().pixels
 		glBindTexture(GL_TEXTURE_2D, self.texture)
 		
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
@@ -1128,7 +1128,7 @@ class CameraControls(QtOpenGL.QGLWidget):
 		glEnable(GL_TEXTURE_2D)
 		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 		glBindTexture(GL_TEXTURE_2D, self.texture)
-		aspectratio = float(self.scenegraph.camera.getHeight())/float(self.scenegraph.camera.getWidth())
+		aspectratio = float(self.scenegraph().camera.getHeight())/float(self.scenegraph().camera.getWidth())
 		glBegin(GL_QUADS)
 		glTexCoord2f(0.0,0.0)
 		glVertex(-self.width/4,-aspectratio*self.width/4,-1)
