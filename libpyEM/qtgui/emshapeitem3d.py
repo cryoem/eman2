@@ -38,7 +38,7 @@ import math
 from emglobjects import init_glut
 from emitem3d import EMItem3D, EMItem3DInspector
 from EMAN2 import Transform, get_3d_font_renderer
-from valslider import EMQTColorWidget, ValSlider
+from valslider import EMQTColorWidget, ValSlider, EMSpinWidget
 from libpyGLUtils2 import FTGLFontMode
 
 class EMCube(EMItem3D):
@@ -354,6 +354,19 @@ class EMLine(EMItem3D):
 		self.specular = [1.0,1.0,1.0,1.0]
 		self.ambient = [1.0, 1.0, 1.0, 1.0]
 		self.shininess = 25.0
+		
+		#arrow size
+		dx = self.x1 - self.x2
+		dy = self.y1 - self.y2
+		dz = self.z1 - self.z2
+		self.length = math.sqrt(dx*dx + dy*dy + dz*dz)	#cylinder length
+		self.leftArrowSize = self.width
+		self.leftArrowLength = self.length/10.0
+		self.rightArrowSize = self.width
+		self.rightArrowLength = self.length/10.0
+		
+		self.showLeftArrow = True
+		self.showRightArrow = True
 
 	def setEndAndWidth(self, x1, y1, z1, x2, y2, z2, width):
 		self.x1 = x1
@@ -387,7 +400,7 @@ class EMLine(EMItem3D):
 		"""
 		Return a Qt widget that controls the scene item
 		"""
-		if not self.item_inspector: self.item_inspector = EMInspectorControlShape("LINE", self)
+		if not self.item_inspector: self.item_inspector = EMInspectorControlLine("LINE", self)
 		return self.item_inspector
 	
 	def renderNode(self):
@@ -417,11 +430,7 @@ class EMLine(EMItem3D):
 			
 	def renderLine(self):
 		r2d = 180.0/math.pi
-		dx = self.x1 - self.x2
-		dy = self.y1 - self.y2
-		dz = self.z1 - self.z2
-		length = math.sqrt(dx*dx + dy*dy + dz*dz)	#cylinder length
-		
+				
 		glPushMatrix()
 		glTranslatef(self.x1, self.y1, self.z1)
 		
@@ -438,7 +447,7 @@ class EMLine(EMItem3D):
 		if vz == 0:
 			ax = r2d*math.atan2(vy, vx) # Find trig, John F
 		else:
-			ax = r2d*math.acos(vz/length)
+			ax = r2d*math.acos(vz/self.length)
 			if vz<=0: ax = -ax
 
 		if vz==0:
@@ -457,14 +466,16 @@ class EMLine(EMItem3D):
 		gluQuadricDrawStyle(quadratic, GLU_FILL)
 		gluQuadricNormals(quadratic, GLU_SMOOTH)    # Create Smooth Normals (NEW) 
 		gluQuadricTexture(quadratic, GL_TRUE)      # Create Texture Coords (NEW)
-		#glTranslatef( 0,0,-length/2)			# Do we want the line to be centered on the origin?
-		gluCylinder(quadratic,self.width/2,self.width/2,length,self.slices,self.stacks)
+		#glTranslatef( 0,0,-self.length/2)			# Do we want the line to be centered on the origin?
+		gluCylinder(quadratic,self.width/2,self.width/2,self.length,self.slices,self.stacks)
 		gluQuadricOrientation(quadratic,GLU_OUTSIDE)
-		glTranslatef( 0,0,-length/10)
-		gluCylinder(quadratic,0,self.width/2,length/10,self.slices,self.stacks)
-		glTranslatef( 0,0,length+length/10)
+		glTranslatef( 0,0,-self.leftArrowLength)
+		if self.showLeftArrow:
+			gluCylinder(quadratic,0,self.leftArrowSize,self.leftArrowLength,self.slices,self.stacks)
+		glTranslatef( 0,0,self.length+self.rightArrowLength)
 		gluQuadricOrientation(quadratic,GLU_OUTSIDE)
-		gluCylinder(quadratic,self.width/2,0,length/10,self.slices,self.stacks)
+		if self.showRightArrow:
+			gluCylinder(quadratic,self.rightArrowSize,0,self.rightArrowLength,self.slices,self.stacks)
 		glPopMatrix()
 		glPopMatrix()
 
@@ -568,6 +579,8 @@ class EM3DText(EMItem3D):
 		EMItem3D.__init__(self, parent=None, children=set(), transform=transform)
 		#size
 		self.setRenderString(string, fontSize)
+		self.setFontMode(fontMode)
+		self.setFontDepth(depth)
 		
 		# color
 		self.diffuse = [0.5,0.5,0.5,1.0]
@@ -576,11 +589,14 @@ class EM3DText(EMItem3D):
 		self.shininess = 25.0
 		
 		self.font_renderer = get_3d_font_renderer()
-		self.setFontMode(fontMode)
-		self.font_renderer.set_depth(depth)
 		
 	def setFontMode(self, fontMode):
-		self.font_renderer.set_font_mode(fontMode)
+		self.fontMode = fontMode
+		if self.item_inspector: self.item_inspector.updateMetaData()
+		
+	def setFontDepth(self, fontDepth):
+		self.fontDepth = fontDepth
+		if self.item_inspector: self.item_inspector.updateMetaData()
 	
 	def setRenderString(self, string, fontSize):
 		self.renderString = string
@@ -589,6 +605,15 @@ class EM3DText(EMItem3D):
 		
 	def getEvalString(self):
 		return "EM3DText('%s', %s)"%(self.renderString, self.fontSize)
+	
+	def getFontDepth(self):
+		return self.fontDepth
+	
+	def getFontSize(self):
+		return self.fontSize
+	
+	def getRenderString(self):
+		return self.renderString
 		
 	def setAmbientColor(self, red, green, blue, alpha=1.0):
 		self.ambient = [red, green, blue, alpha]
@@ -648,6 +673,8 @@ class EM3DText(EMItem3D):
 		glEnable(GL_TEXTURE_2D)
 		
 		self.font_renderer.render_string(self.renderString)
+		self.font_renderer.set_font_mode(self.fontMode)
+		self.font_renderer.set_depth(self.fontDepth)
 		glPopMatrix()	
 
 class EMInspectorControlShape(EMItem3DInspector):
@@ -747,9 +774,6 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 	"""
 	def __init__(self, name, item3d, numgridcols=2):
 		EMInspectorControlShape.__init__(self, name, item3d)
-		
-		self.on3DFontModeChanged()
-		self.textModeBox.currentIndexChanged.connect(self.on3DFontModeChanged)
 
 	def addControls(self, gridbox):
 		super(EMInspectorControl3DText, self).addControls(gridbox)
@@ -763,35 +787,41 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 		# Add widgets to textframe
 		textlabel = QtGui.QLabel("3D Font Mode")
 		textlabel.setFont(lfont)
-		textlabel.setAlignment(QtCore.Qt.AlignHCenter)
-		textgridbox.addWidget(textlabel, 0, 0, 1, 8)
+		textlabel.setAlignment(QtCore.Qt.AlignCenter)
+		textgridbox.addWidget(textlabel, 0, 0, 1, 1)
 		
 		self.textModeBox = QtGui.QComboBox()
 		self.textModeBox.addItems(["EXTRUDE", "TEXTURE", "POLYGON", "OUTLINE"])
-		textgridbox.addWidget(self.textModeBox, 1, 0, 1, 8)
-		
-		textframe.setLayout(textgridbox)	
-		gridbox.addWidget(textframe, 2, 1, 1, 1)
-		
-		####################################################
-		textframe2 = QtGui.QFrame()
-		textframe2.setFrameShape(QtGui.QFrame.StyledPanel)
-		textgridbox2 = QtGui.QGridLayout()
-		
+		textgridbox.addWidget(self.textModeBox, 0, 1, 1, 2)
+			
 		textlabel2 = QtGui.QLabel("3D Font Depth")
 		textlabel2.setFont(lfont)
-		textlabel2.setAlignment(QtCore.Qt.AlignHCenter)
-		textgridbox2.addWidget(textlabel2, 2, 0, 1, 8)
+		textlabel2.setAlignment(QtCore.Qt.AlignCenter)
+		textgridbox.addWidget(textlabel2, 1, 0, 1, 1)
 		
-		textframe2.setLayout(textgridbox2)
-		gridbox.addWidget(textframe2, 3, 1, 1, 1)
+		self.fontDepth = EMSpinWidget(self.item3d().getFontDepth(), 1.0)
+		textgridbox.addWidget(self.fontDepth, 1, 1, 1, 2)
+		
+		textlabel2 = QtGui.QLabel("3D Font Size")
+		textlabel2.setFont(lfont)
+		textlabel2.setAlignment(QtCore.Qt.AlignCenter)
+		textgridbox.addWidget(textlabel2, 2, 0, 1, 1)
+		
+		self.fontSize = EMSpinWidget(self.item3d().getFontSize(), 1.0)
+		textgridbox.addWidget(self.fontSize, 2, 1, 1, 2)
+		
+		textframe.setLayout(textgridbox)	
+		gridbox.addWidget(textframe, 2, 3, 1, 3)
 		
 		# set to default, but run only as a base class
 		if type(self) == EMInspectorControl3DText: self.updateItemControls()
 		
+		self.textModeBox.currentIndexChanged.connect(self.on3DFontModeChanged)
+		QtCore.QObject.connect(self.fontDepth,QtCore.SIGNAL("valueChanged(int)"),self._on_fontdepth)
+		QtCore.QObject.connect(self.fontSize,QtCore.SIGNAL("valueChanged(int)"),self._on_fontsize)
+		
 	def on3DFontModeChanged(self):
 		textMode = str(self.textModeBox.currentText())
-		#print 'textMode = ', textMode
 		if textMode == "EXTRUDE":
 			self.item3d().setFontMode(FTGLFontMode.EXTRUDE)
 		elif textMode == "TEXTURE":
@@ -803,3 +833,24 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 		
 		if self.inspector:
 			self.inspector().updateSceneGraph()
+
+	def _on_fontdepth(self):
+		print 'font depth = ', int(self.fontDepth.getValue())
+		self.item3d().setFontDepth(int(self.fontDepth.getValue()))
+		print 'now font depth = ', self.item3d().getFontDepth()
+		if self.inspector:
+			print 'update scene graph...'
+			self.inspector().updateSceneGraph()
+			
+	def _on_fontsize(self):
+		self.item3d().setRenderString(self.item3d().getRenderString(), int(self.fontSize.getValue()))
+		if self.inspector:
+			self.inspector().updateSceneGraph()
+
+class EMInspectorControlLine(EMInspectorControlShape):
+	"""
+	Class to make EMItem GUI SHAPE Line Inspector
+	"""
+	def __init__(self, name, item3d, numgridcols=2):
+		EMInspectorControlShape.__init__(self, name, item3d)
+		
