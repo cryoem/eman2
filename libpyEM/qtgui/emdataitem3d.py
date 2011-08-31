@@ -21,7 +21,15 @@ class EMDataItem3D(EMItem3D):
 	def __init__(self, data, parent = None, children = set(), transform = None):
 		if not transform: transform = Transform()
 		EMItem3D.__init__(self, parent, children, transform)
+		self.glflags = EMOpenGLFlagsAndTools()		# OpenGL flags - this is a singleton convenience class for testing texture support		
+		self.texture_name = 0
 		self.setData(data)
+		
+	def get3DTexture(self):
+		if self.texture_name == 0:
+			self.texture_name = self.glflags.gen_textureName(self.data)
+			print "Texture ==", self.texture_name
+		return self.texture_name
 		
 	def getEvalString(self):
 		if self.transform:
@@ -52,11 +60,19 @@ class EMDataItem3D(EMItem3D):
 			self.data = EMData(str(data))
 			self.path = str(data)
 		
+		if self.texture_name != 0:
+			GL.glDeleteTextures(self.texture_name)
+		
 		for child in self.getChildren():
 			try:	# What if child ins't a data type?
 				child.dataChanged()
 			except:
 				pass
+	def renderNode(self):
+		self.model_view = GL.glGetFloatv(GL.GL_MODELVIEW_MATRIX)
+	
+	def getModelViewMatrix(self):
+		return self.model_view
 	
 class EMDataItem3DInspector(EMItem3DInspector):
 	def __init__(self, name, item3d):
@@ -226,8 +242,6 @@ class EMVolumeItem3D(EMItem3D):
 
 	def __init__(self, parent, children = set(), transform = Transform()):
 		EMItem3D.__init__(self, parent, children, transform)
-		self.glflags = EMOpenGLFlagsAndTools()		# OpenGL flags - this is a singleton convenience class for testing texture support		
-		self.texture_name = 0
 
 		self.colors = get_default_gl_colors()
 		self.isocolor = "bluewhite"
@@ -244,7 +258,49 @@ class EMVolumeItem3D(EMItem3D):
 		return self.item_inspector
 
 	def renderNode(self):
-		pass
+		(nx, ny, nz) = self.getParent().getBoundingBoxDimensions()
+		interior_diagonal = math.sqrt(nx**2+ny**2+nz**2) #A square with sides this big could hold any slice from the volume
+		#The interior diagonal is usually too big, and OpenGL textures work best with powers of 2 so let's get the next smaller power of 2
+		diag = 2**(int(math.floor( math.log(interior_diagonal)/math.log(2) ))) #next smaller power of 2
+		diag2 = diag/2
+		
+		quad_points = [(-diag2, -diag2, 0), (-diag2, diag2, 0), (diag2, diag2, 0), (diag2, -diag2, 0)]
+		inverse_transform = self.transform.inverse()
+		#quad_points_data_coords = [tuple(inverse_transform.transform(point)) for point in quad_points]
+		quad_points_data_coords = [(0,0,0), (0,2,0), (2,2,0), (2,0,0)]
+		
+		#For debugging purposes, draw an outline
+		GL.glMatrixMode(GL.GL_MODELVIEW)
+		GL.glBegin(GL.GL_LINE_LOOP)
+		for i in range(4):
+			GL.glVertex3f(*quad_points[i])
+		GL.glEnd()
+#		GL.glPopMatrix()		
+		
+		#Now draw the texture on another quad
+		GL.glEnable(GL.GL_TEXTURE_3D)
+		GL.glBindTexture(GL.GL_TEXTURE_3D, self.getParent().get3DTexture())
+		GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_S, GL.GL_REPEAT)#GL.GL_CLAMP_TO_EDGE)
+		GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_T, GL.GL_REPEAT)#GL.GL_CLAMP_TO_EDGE)
+		GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_R, GL.GL_REPEAT)#GL.GL_CLAMP_TO_EDGE)
+		GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR)#GL.GL_NEAREST)
+		GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR)#GL.GL_NEAREST)
+#		GL.glTexParameterfv(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_BORDER_COLOR, (0,0,0,0))
+
+		GL.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_REPLACE)
+		GL.glMatrixMode(GL.GL_TEXTURE)
+		#GL.glLoadIdentity()
+		GL.glLoadMatrixf(self.getParent().getModelViewMatrix()) #Set texture coordinates to be the same as data node coords
+		#GLUtil.glMultMatrix(self.getParentMatrixProduct())
+		GL.glMatrixMode(GL.GL_MODELVIEW)
+		
+		GL.glBegin(GL.GL_QUADS)
+		for i in range(4):
+			GL.glTexCoord3f(*quad_points_data_coords[i])
+			GL.glVertex3f(*quad_points[i])
+		glEnd()
+		
+		GL.glDisable(GL.GL_TEXTURE_3D)
 		
 class EMVolumeInspector(EMInspectorControlShape):
 	def __init__(self, name, item3d):
