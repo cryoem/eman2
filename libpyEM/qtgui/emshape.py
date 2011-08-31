@@ -328,10 +328,13 @@ class EMShape:
 				GL.glTranslate(v[0],v[1],.2)
 				EMShape.font_renderer.set_face_size(int(s[7]))
 				if s[8]<0 :
+					# try for a sensible background color
+					if col[0]+col[1]+col[2]>.4 and col[0]+col[1]+col[2]<.6 : bgcol=(0.0,0.0,0.0)
+					else : bgcol = (1.0-col[0],1.0-col[1],1.0-col[2])
 					bbox = EMShape.font_renderer.bounding_box(s[6])
-					GLUtil.mx_bbox(bbox,col,(1.0-col[0],1.0-col[1],1.0-col[2]))
-				GL.glEnable(GL_TEXTURE_2D)
-				GL.glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
+					GLUtil.mx_bbox(bbox,col,bgcol)
+				GL.glEnable(GL.GL_TEXTURE_2D)
+				GL.glTexEnvi (GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_REPLACE)
 				GL.glColor(*col)
 				EMShape.font_renderer.render_string(s[6])
 				GL.glPopAttrib()
@@ -409,10 +412,13 @@ class EMShape:
 					GL.glPushAttrib(GL.GL_ALL_ATTRIB_BITS)
 					GL.glTranslate(x1,y1,.2)
 					if s[8]<0 :
+						# try for a sensible background color
+						if col[0]+col[1]+col[2]>.4 and col[0]+col[1]+col[2]<.6 : bgcol=(0.0,0.0,0.0)
+						else : bgcol = (1.0-col[0],1.0-col[1],1.0-col[2])
 						bbox = EMShape.font_renderer.bounding_box(s[6])
 						GLUtil.mx_bbox(bbox,col,(1.0-col[0],1.0-col[1],1.0-col[2]))
-					GL.glEnable(GL_TEXTURE_2D)
-					GL.glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
+					GL.glEnable(GL.GL_TEXTURE_2D)
+					GL.glTexEnvi (GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_REPLACE)
 					GL.glColor(*col)
 					EMShape.font_renderer.render_string(s[6])
 					GL.glPopAttrib()

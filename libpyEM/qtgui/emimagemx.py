@@ -540,7 +540,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			hfac *= self.data.get_ysize()
 			if hfac > 512: hfac = 512
 			if w > 512: w = 512
-			return (int(w)+12,int(hfac)+12) # the 12 is related to the EMParentWin... hack...
+			return (int(w)+26,int(hfac)+12) # the 12 is related to the EMParentWin... hack...
 		else: return (512+12,512+12)
 	
 	def setWindowTitle(self,filename):
@@ -1130,8 +1130,9 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		glEnd()
 	
 	def __draw_mx_text(self,tx,ty,txtcol,i):
-		txtcol=(0,0,0)
-		bgcol = [1.0-v for v in txtcol]
+		# try for a sensible background color
+		if txtcol[0]+txtcol[1]+txtcol[2]>.4 and txtcol[0]+txtcol[1]+txtcol[2]<.6 : bgcol=(0.0,0.0,0.0)
+		else : bgcol = (1.0-txtcol[0],1.0-txtcol[1],1.0-txtcol[2])
 		
 		#glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 		lighting = glIsEnabled(GL_LIGHTING)
@@ -1154,9 +1155,8 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 				bbox = self.font_renderer.bounding_box(sidx)
 				GLUtil.mx_bbox(bbox,txtcol,bgcol)
 				GL.glEnable(GL_TEXTURE_2D)
-				GL.glEnable(GL.GL_BLEND)
 				GL.glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-				GL.glColor(txtcol)
+				GL.glColor(*txtcol)
 				self.font_renderer.render_string(sidx)
 				GL.glPopAttrib()
 				
@@ -1176,13 +1176,10 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 				
 				GL.glPushAttrib(GL.GL_ALL_ATTRIB_BITS)
 				bbox = self.font_renderer.bounding_box(avs)
-				
 				GLUtil.mx_bbox(bbox,txtcol,bgcol)
-				print txtcol,bgcol,avs
 				GL.glEnable(GL_TEXTURE_2D)
-				GL.glEnable(GL.GL_BLEND)
 				GL.glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-				GL.glColor(txtcol)
+				GL.glColor(*txtcol)
 				self.font_renderer.render_string(avs)
 				GL.glPopAttrib()
 
