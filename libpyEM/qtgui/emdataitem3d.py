@@ -72,6 +72,8 @@ class EMDataItem3D(EMItem3D):
 		self.model_view = GL.glGetFloatv(GL.GL_MODELVIEW_MATRIX)
 	
 	def getModelViewMatrix(self):
+		print "Data node's modelview matrix:"
+		print self.model_view
 		return self.model_view
 	
 class EMDataItem3DInspector(EMItem3DInspector):
@@ -266,8 +268,7 @@ class EMVolumeItem3D(EMItem3D):
 		
 		quad_points = [(-diag2, -diag2, 0), (-diag2, diag2, 0), (diag2, diag2, 0), (diag2, -diag2, 0)]
 		inverse_transform = self.transform.inverse()
-		#quad_points_data_coords = [tuple(inverse_transform.transform(point)) for point in quad_points]
-		quad_points_data_coords = [(0,0,0), (0,2,0), (2,2,0), (2,0,0)]
+		quad_points_data_coords = [tuple(inverse_transform.transform(point)) for point in quad_points]
 		
 		#For debugging purposes, draw an outline
 		GL.glMatrixMode(GL.GL_MODELVIEW)
@@ -289,9 +290,9 @@ class EMVolumeItem3D(EMItem3D):
 
 		GL.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_REPLACE)
 		GL.glMatrixMode(GL.GL_TEXTURE)
-		#GL.glLoadIdentity()
-		GL.glLoadMatrixf(self.getParent().getModelViewMatrix()) #Set texture coordinates to be the same as data node coords
-		#GLUtil.glMultMatrix(self.getParentMatrixProduct())
+		GL.glLoadIdentity()
+		GL.glTranslatef(0.5, 0.5, 0.5) #Put the origin at the center of the 3D texture
+		GL.glScalef(1.0/nx, 1.0/ny, 1.0/nz) #Scale to make the texture coords teh same as data coords
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		
 		GL.glBegin(GL.GL_QUADS)
