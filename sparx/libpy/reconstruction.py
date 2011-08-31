@@ -109,25 +109,21 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weig
 			params["size"] = size
 			params["snr"] = snr
 			params["varsnr"] = int(varsnr)
-		print "cubic case", xysize, zsize	
 		r = Reconstructors.get("nn4", params)
 	else:
 		if ( xysize != -1 and zsize != -1):
 			rx = float(xysize)/size
 			ry = float(xysize)/size
 			rz = float(zsize)/size
-			print "1111",rx,ry,rz
 		elif( xysize != -1):
 			rx = float(xysize)/size
 			ry = float(xysize)/size
 			rz = 1.0
-			print "2222",rx,ry,rz
 		else:
 			rx = 1.0
 			ry = 1.0
 			rz = float(zsize)/size
-			print "3333",rx,ry,rz
-					
+							
 		if snr is None:
 			params["sizeprojection"] = size
 			params["xratio"] = rx
