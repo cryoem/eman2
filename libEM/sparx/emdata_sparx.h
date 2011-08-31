@@ -146,7 +146,7 @@ EMData* mult_radial(EMData* radial);
 		 * @param mult
 		 */
 		void nn(EMData* wptr, EMData* myfft, const Transform& tf, int mult=1);
-		void insert_rect_slice( EMData* w, EMData* myfft,const Transform& trans, int sizeofprojection, float xratio, float yratio, int npad, int mult);
+		void insert_rect_slice( EMData* w, EMData* myfft,const Transform& trans, int sizeofprojection, float xratio, float yratio, float zratio, int npad, int mult);
 
 		/** Nearest Neighbor interpolation, meanwhile return necessary data such as
 		 *  Kn, sum_k(F_k^n) ans sum_k(|F_k^n|^2)

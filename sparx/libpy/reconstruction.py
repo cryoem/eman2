@@ -60,7 +60,7 @@ def rec2D(  lines, idrange=None, snr=None ):
 	return r.finish(True)
 
 
-def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weighting=1, varsnr=True, xysize=-1):
+def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weighting=1, varsnr=True, xysize=-1, zsize = -1):
 	"""
 	Perform a 3-D reconstruction using Pawel's FFT Back Projection algoritm.
 	   
@@ -102,28 +102,46 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weig
 	fftvol = EMData()
 	weight = EMData()
 	params = {"npad":npad, "symmetry":symmetry, "weighting":weighting, "fftvol":fftvol, "weight":weight}
-	if xysize == -1:
+	if ( xysize == -1 and zsize == -1 ):
 		if snr is None:
 			params["size"] = size
 		else:
 			params["size"] = size
 			params["snr"] = snr
-			params["varsnr"] = int(varsnr)	
+			params["varsnr"] = int(varsnr)
+		print "cubic case", xysize, zsize	
 		r = Reconstructors.get("nn4", params)
 	else:
-		rx = float(xysize)/size
-		ry = float(xysize)/size			
+		if ( xysize != -1 and zsize != -1):
+			rx = float(xysize)/size
+			ry = float(xysize)/size
+			rz = float(zsize)/size
+			print "1111",rx,ry,rz
+		elif( xysize != -1):
+			rx = float(xysize)/size
+			ry = float(xysize)/size
+			rz = 1.0
+			print "2222",rx,ry,rz
+		else:
+			rx = 1.0
+			ry = 1.0
+			rz = float(zsize)/size
+			print "3333",rx,ry,rz
+					
 		if snr is None:
 			params["sizeprojection"] = size
 			params["xratio"] = rx
 			params["yratio"] = ry
+			params["zratio"] = rz
 		else:
 			params["sizeprojection"] = size
 			params["snr"] = snr
 			params["varsnr"] = int(varsnr)
 			params["xratio"] = rx
-			params["yratio"] = ry	
+			params["yratio"] = ry
+			params["zratio"] = rz	
 		r = Reconstructors.get("nn4_rect", params)
+		
 	r.setup()
 
 	if type(stack_name) == types.StringType:

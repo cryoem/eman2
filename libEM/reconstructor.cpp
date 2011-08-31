@@ -2476,11 +2476,18 @@ void nn4_rectReconstructor::setup( const string& symmetry, int sizeprojection, i
 
 	if( params.has_key("sizez") ) 
 		m_vnz = params["sizez"];
-	else                          
-		m_vnz = (m_ndim==3) ? sizeprojection : 1;
+	else 
+		if (params.has_key("zratio"))
+		{
+			float temp=params["zratio"];
+		 	m_vnz=int(float(sizeprojection)*temp);
+		}
+		else                          
+			m_vnz = (m_ndim==3) ? sizeprojection : 1;
 	
 	m_xratio=float(m_vnx)/float(sizeprojection);	
 	m_yratio=float(m_vny)/float(sizeprojection);
+	m_zratio=float(m_vnz)/float(sizeprojection);
 
 	m_vnxp = m_vnx*npad;
 	m_vnyp = m_vny*npad;
@@ -2644,10 +2651,10 @@ int nn4_rectReconstructor::insert_slice(const EMData* const slice, const Transfo
 int nn4_rectReconstructor::insert_padfft_slice( EMData* padded, const Transform& t, int mult )
 {
 	Assert( padded != NULL );
-	
+		
 	vector<Transform> tsym = t.get_sym_proj(m_symmetry);
 	for (unsigned int isym=0; isym < tsym.size(); isym++) {
-		m_volume->insert_rect_slice(m_wptr, padded, tsym[isym], m_sizeofprojection, m_xratio, m_yratio, m_npad, mult);
+		m_volume->insert_rect_slice(m_wptr, padded, tsym[isym], m_sizeofprojection, m_xratio, m_yratio, m_zratio, m_npad, mult);
         }
 	
 

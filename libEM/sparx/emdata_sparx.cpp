@@ -1201,7 +1201,7 @@ void EMData::nn(EMData* wptr, EMData* myfft, const Transform& tf, int mult)
 }
 
 
-void EMData::insert_rect_slice(EMData* w, EMData* myfft, const Transform& trans, int sizeofprojection, float xratio, float yratio, int npad, int mult)
+void EMData::insert_rect_slice(EMData* w, EMData* myfft, const Transform& trans, int sizeofprojection, float xratio, float yratio, float zratio, int npad, int mult)
 {
 	ENTERFUNC;
 	vector<int> saved_offsets = get_array_offsets();
@@ -1221,7 +1221,7 @@ void EMData::insert_rect_slice(EMData* w, EMData* myfft, const Transform& trans,
 	//unit vector x,y of 2D fft transformed to new positon after rotation and scaling
 	axis_newx[0] = xratio*0.5f*(sizeofprojection*npad)*trans[0][0];
 	axis_newx[1] = yratio*0.5f*(sizeofprojection*npad)*trans[0][1];
-	axis_newx[2] = 0.5f*(sizeofprojection*npad)*trans[0][2];
+	axis_newx[2] = zratio*0.5f*(sizeofprojection*npad)*trans[0][2];
 
 	float ellipse_length_x = std::sqrt(axis_newx[0]*axis_newx[0]+axis_newx[1]*axis_newx[1]+axis_newx[2]*axis_newx[2]);
 	
@@ -1231,7 +1231,7 @@ void EMData::insert_rect_slice(EMData* w, EMData* myfft, const Transform& trans,
 
   	axis_newy[0] = xratio*0.5f*(sizeofprojection*npad)*trans[1][0];
   	axis_newy[1] = yratio*0.5f*(sizeofprojection*npad)*trans[1][1];
-  	axis_newy[2] = 0.5f*(sizeofprojection*npad)*trans[1][2];
+  	axis_newy[2] = zratio*0.5f*(sizeofprojection*npad)*trans[1][2];
 
 
 
@@ -1241,7 +1241,7 @@ void EMData::insert_rect_slice(EMData* w, EMData* myfft, const Transform& trans,
 	float yscale = ellipse_step_y;
 	//end of scaling factor calculation
 	std::complex<float> c1;
-	nz = get_zsize();
+	int nxyz = sizeofprojection*npad;
 
 	float r2=0.25f*sizeofprojection*npad*sizeofprojection*npad;
 	float r2_at_point;
@@ -1258,13 +1258,13 @@ void EMData::insert_rect_slice(EMData* w, EMData* myfft, const Transform& trans,
 				float xnew = coordinate_2d_square[0]*trans[0][0] + coordinate_2d_square[1]*trans[1][0];
 				float ynew = coordinate_2d_square[0]*trans[0][1] + coordinate_2d_square[1]*trans[1][1];
 				float znew = coordinate_2d_square[0]*trans[0][2] + coordinate_2d_square[1]*trans[1][2];
-				coordinate_3dnew[0] =xnew*xratio;
+				coordinate_3dnew[0] = xnew*xratio;
 				coordinate_3dnew[1] = ynew*yratio;
-				coordinate_3dnew[2] = znew;
+				coordinate_3dnew[2] = znew*zratio;
 				
 				//binlinear interpolation
 				float xp = coordinate_2d_square[0];
-				float yp = ( coordinate_2d_square[1] >= 0) ? coordinate_2d_square[1]+1 : nz+coordinate_2d_square[1]+1;
+				float yp = ( coordinate_2d_square[1] >= 0) ? coordinate_2d_square[1]+1 : nxyz+coordinate_2d_square[1]+1;
 				std::complex<float> lin_interpolated(0,0);
 				int xlow=int(xp),xhigh=int(xp)+1;
 				int ylow=int(yp),yhigh=int(yp)+1;

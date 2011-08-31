@@ -9013,9 +9013,9 @@ def transform2d(stack_data, stack_data_ali):
 		temp.write_image(stack_data_ali, im)
 	print_end_msg("transform2d")
 
-def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=4, sym="c1", listfile = "", group = -1, verbose=0, MPI=False,xysize=-1):
+def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=4, sym="c1", listfile = "", group = -1, verbose=0, MPI=False,xysize=-1, zsize = -1):
 	if MPI:
-		recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose,xysize)
+		recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose,xysize,)
 		return
 
 	from reconstruction import recons3d_4nn_ctf, recons3d_4nn
@@ -9044,7 +9044,7 @@ def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=
 		del tmp_list
 
 	if CTF: vol = recons3d_4nn_ctf(prj_stack, pid_list, snr, 1, sym, verbose, npad, xysize=xysize)
-	else:   vol = recons3d_4nn(prj_stack,  pid_list, sym, npad, xysize=xysize)
+	else:   vol = recons3d_4nn(prj_stack,  pid_list, sym, npad, xysize=xysize, zsize = zsize)
 	if(vol_stack[-3:] == "spi"):
 		drop_image(vol, vol_stack, "s")
 	else:

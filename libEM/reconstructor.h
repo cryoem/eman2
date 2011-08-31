@@ -1079,6 +1079,7 @@ namespace EMAN
 			d.put("sizez",		EMObject::INT);
 			d.put("xratio",		EMObject::FLOAT);
 			d.put("yratio", 	EMObject::FLOAT);
+			d.put("zratio", 	EMObject::FLOAT);
 			d.put("npad",		EMObject::INT);
 			d.put("sign",		EMObject::INT);
 			d.put("ndim",		EMObject::INT);
@@ -1110,7 +1111,7 @@ namespace EMAN
 		int m_vnzc, m_vnyc, m_vnxc;
 		int m_count;
 		float m_xratio,m_yratio,m_zratio;//ratio of x,y,z direction in the 3d volume comparing to the cubic case
-		float m_xscale,m_yscale;//ratior of x,y direction of 2D FFT after scaling and roatating operations
+		float m_xscale,m_yscale;//ratio of x,y direction of 2D FFT after scaling and roatating operations
 		int m_sizeofprojection;
 		void buildFFTVolume();
 		void buildNormVolume();
