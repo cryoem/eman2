@@ -229,8 +229,8 @@ EMData* mult_radial(EMData* radial);
                 /**
 		 helper function to insert rectangualr slice for ctf rect case
 		**/
-		void insert_rect_slice_ctf( EMData* w, EMData* myfft,const Transform& trans, int sizeofprojection, float xratio, float yratio, int npad, int mult);
-		void insert_rect_slice_ctf_applied(EMData* w, EMData* myfft, const Transform& trans, int sizeofprojection, float xratio, float yratio, int npad,int mult);
+		void insert_rect_slice_ctf( EMData* w, EMData* myfft,const Transform& trans, int sizeofprojection, float xratio, float yratio, float zratio, int npad, int mult);
+		void insert_rect_slice_ctf_applied(EMData* w, EMData* myfft, const Transform& trans, int sizeofprojection, float xratio, float yratio, float zratio, int npad,int mult);
 	
 
 		/** Helper function for method nn4_ctf.

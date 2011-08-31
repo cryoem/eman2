@@ -216,7 +216,7 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad=4, xysize=-1)
 	return fftvol
 
 
-def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 10.0, sign=1, symmetry="c1", verbose=0, npad=4, xysize = -1):
+def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 10.0, sign=1, symmetry="c1", verbose=0, npad=4, xysize = -1, zsize = -1 ):
 	"""Perform a 3-D reconstruction using Pawel's FFT Back Projection algoritm.
 	   
 	   Input:
@@ -263,15 +263,27 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 10.0, sign=1, symmetry="c
 	fftvol = EMData()
 	weight = EMData()
 	params = {"npad":npad, "symmetry":symmetry, "snr":snr, "sign":sign, "fftvol":fftvol, "weight":weight}
-	if xysize== -1:
+	if ( xysize == -1 and zsize == -1 ):
 		params["size"] = size
 		r = Reconstructors.get("nn4_ctf", params)
 	else:
-		rx = float(xysize)/size
-		ry = float(xysize)/size
+		if ( xysize != -1 and zsize != -1):
+			rx = float(xysize)/size
+			ry = float(xysize)/size
+			rz = float(zsize)/size
+		elif( xysize != -1):
+			rx = float(xysize)/size
+			ry = float(xysize)/size
+			rz = 1.0
+		else:
+			rx = 1.0
+			ry = 1.0
+			rz = float(zsize)/size
+		
 		params["sizeprojection"] = size
 		params["xratio"] = rx
 		params["yratio"] = ry
+		params["zratio"] = rz
 		r = Reconstructors.get("nn4_ctf_rect", params)
 	r.setup()
 

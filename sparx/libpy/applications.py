@@ -9043,7 +9043,7 @@ def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=
 			if(tmp_list[i] == group):  pid_list.append(i)
 		del tmp_list
 
-	if CTF: vol = recons3d_4nn_ctf(prj_stack, pid_list, snr, 1, sym, verbose, npad, xysize=xysize)
+	if CTF: vol = recons3d_4nn_ctf(prj_stack, pid_list, snr, 1, sym, verbose, npad, xysize=xysize, zsize=zsize)
 	else:   vol = recons3d_4nn(prj_stack,  pid_list, sym, npad, xysize=xysize, zsize = zsize)
 	if(vol_stack[-3:] == "spi"):
 		drop_image(vol, vol_stack, "s")

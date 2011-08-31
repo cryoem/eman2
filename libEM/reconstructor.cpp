@@ -3506,14 +3506,18 @@ void nn4_ctf_rectReconstructor::setup( const string& symmetry, int sizeprojectio
 		m_vny=int(float(sizeprojection)*temp);
 	}
 	else m_vny=sizeprojection;
+	
+	if (params.has_key("sizez"))  m_vnz = params["sizez"];
+	else if (params.has_key("zratio")) {
+		float temp=params["zratio"];
+		m_vnz=int(float(sizeprojection)*temp);
+	}
+	else m_vnz=sizeprojection;
 
-	if( params.has_key("sizez") ) 
-		m_vnz = params["sizez"];
-	else                          
-		m_vnz =sizeprojection;
 	
 	m_xratio=float(m_vnx)/float(sizeprojection);	
 	m_yratio=float(m_vny)/float(sizeprojection);
+	m_zratio=float(m_vnz)/float(sizeprojection);
 
 	//std::cout<<"xratio=="<<m_xratio<<"yratio=="<<m_yratio<<std::endl;
 	//std::cout<<"sx=="<<m_vnx<<"sy=="<<m_vny<<"sz=="<<m_vnz<<std::endl;
@@ -3631,9 +3635,9 @@ int nn4_ctf_rectReconstructor::insert_padfft_slice( EMData* padfft, const Transf
 	int   ctf_applied = (int) tmp;
 	vector<Transform> tsym = t.get_sym_proj(m_symmetry);
 	for (unsigned int isym=0; isym < tsym.size(); isym++) {
-		if(ctf_applied) m_volume->insert_rect_slice_ctf_applied(m_wptr, padfft, tsym[isym], m_sizeofprojection, m_xratio,m_yratio, m_npad, mult);
+		if(ctf_applied) m_volume->insert_rect_slice_ctf_applied(m_wptr, padfft, tsym[isym], m_sizeofprojection, m_xratio,m_yratio, m_zratio, m_npad, mult);
 				
-		else            m_volume->insert_rect_slice_ctf(m_wptr, padfft, tsym[isym], m_sizeofprojection, m_xratio, m_yratio, m_npad, mult);
+		else            m_volume->insert_rect_slice_ctf(m_wptr, padfft, tsym[isym], m_sizeofprojection, m_xratio, m_yratio, m_zratio, m_npad, mult);
 		
         }
 
