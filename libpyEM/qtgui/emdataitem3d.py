@@ -113,6 +113,7 @@ class EMSliceItem3D(EMItem3D):
 		EMItem3D.__init__(self, parent, children, transform)
 		self.glflags = EMOpenGLFlagsAndTools()		# OpenGL flags - this is a singleton convenience class for testing texture support		
 		self.texture_name = 0
+		self.use_3d_texture = False
 
 		self.colors = get_default_gl_colors()
 		self.isocolor = "bluewhite"
@@ -139,46 +140,101 @@ class EMSliceItem3D(EMItem3D):
 		diag = 2**(int(math.floor( math.log(interior_diagonal)/math.log(2) ))) #next smaller power of 2
 		diag2 = diag/2
 		
-		temp_data = EMData(diag, diag)
-		temp_data.cut_slice(data, self.transform)
+		if not self.use_3d_texture:
+			
+			temp_data = EMData(diag, diag)
+			temp_data.cut_slice(data, self.transform)
+			
+			if self.texture_name != 0:
+				GL.glDeleteTextures(self.texture_name)
+			
+			self.texture_name = self.glflags.gen_textureName(temp_data)
+			
+			
+			#For debugging purposes, draw an outline
+			GL.glBegin(GL.GL_LINE_LOOP)
+			GL.glVertex3f(-diag2, -diag2, 0)
+			GL.glVertex3f(-diag2, diag2, 0)
+			GL.glVertex3f(diag2, diag2, 0)
+			GL.glVertex3f(diag2, -diag2, 0)
+			GL.glEnd()
+			
+			
+			#Now draw the texture on another quad
+			GL.glEnable(GL.GL_BLEND)
+			GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE)
+			GL.glDisable(GL.GL_LIGHTING)
+			
+			GL.glEnable(GL.GL_TEXTURE_2D)
+			GL.glBindTexture(GL.GL_TEXTURE_2D, self.texture_name)
+			GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP)
+			GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP)
+			GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR)#GL.GL_NEAREST)
+			GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR)#GL.GL_NEAREST)
+	
+			GL.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_REPLACE)
+			
+			GL.glBegin(GL.GL_QUADS)
+			GL.glTexCoord2f(0, 0)
+			GL.glVertex3f(-diag2, -diag2, 0)
+			GL.glTexCoord2f(0, 1)
+			GL.glVertex3f(-diag2, diag2, 0)
+			GL.glTexCoord2f(1, 1)
+			GL.glVertex3f(diag2, diag2, 0)
+			GL.glTexCoord2f(1, 0)
+			GL.glVertex3f(diag2, -diag2, 0)
+			glEnd()
 		
-		if self.texture_name != 0:
-			GL.glDeleteTextures(self.texture_name)
+			GL.glDisable(GL.GL_TEXTURE_2D)
+			
+			GL.glDisable(GL.GL_TEXTURE_3D)
+			GL.glEnable(GL.GL_LIGHTING)
+			GL.glDisable(GL.GL_BLEND)
+		else:
+			quad_points = [(-diag2, -diag2, 0), (-diag2, diag2, 0), (diag2, diag2, 0), (diag2, -diag2, 0)]
 		
-		self.texture_name = self.glflags.gen_textureName(temp_data)
-		
-		
-		#For debugging purposes, draw an outline
-		GL.glBegin(GL.GL_LINE_LOOP)
-		GL.glVertex3f(-diag2, -diag2, 0)
-		GL.glVertex3f(-diag2, diag2, 0)
-		GL.glVertex3f(diag2, diag2, 0)
-		GL.glVertex3f(diag2, -diag2, 0)
-		GL.glEnd()
-		
-		
-		#Now draw the texture on another quad
-		GL.glEnable(GL.GL_TEXTURE_2D)
-		GL.glBindTexture(GL.GL_TEXTURE_2D, self.texture_name)
-		GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP)
-		GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP)
-		GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR)#GL.GL_NEAREST)
-		GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR)#GL.GL_NEAREST)
-
-		GL.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_REPLACE)
-		
-		GL.glBegin(GL.GL_QUADS)
-		GL.glTexCoord2f(0, 0)
-		GL.glVertex3f(-diag2, -diag2, 0)
-		GL.glTexCoord2f(0, 1)
-		GL.glVertex3f(-diag2, diag2, 0)
-		GL.glTexCoord2f(1, 1)
-		GL.glVertex3f(diag2, diag2, 0)
-		GL.glTexCoord2f(1, 0)
-		GL.glVertex3f(diag2, -diag2, 0)
-		glEnd()
-		
-		GL.glDisable(GL.GL_TEXTURE_2D)
+			#For debugging purposes, draw an outline
+			GL.glMatrixMode(GL.GL_MODELVIEW)
+			GL.glBegin(GL.GL_LINE_LOOP)
+			for i in range(4):
+				GL.glVertex3f(*quad_points[i])
+			GL.glEnd()	
+			
+			#Now draw the texture on another quad
+			GL.glEnable(GL.GL_BLEND)
+			GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE)
+			GL.glDisable(GL.GL_LIGHTING)
+			
+			GL.glEnable(GL.GL_TEXTURE_3D)
+			GL.glBindTexture(GL.GL_TEXTURE_3D, self.getParent().get3DTexture())
+			GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_BORDER)
+			GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_BORDER)
+			GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_R, GL.GL_CLAMP_TO_BORDER)
+			GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR)#GL.GL_NEAREST)
+			GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR)#GL.GL_NEAREST)
+	#		GL.glTexParameterfv(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_BORDER_COLOR, (0.0, 0.0,1.0,1.0,1.0))
+	
+			GL.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_REPLACE)
+			GL.glMatrixMode(GL.GL_TEXTURE)
+			GL.glLoadIdentity()
+			GL.glTranslatef(0.5, 0.5, 0.5) #Put the origin at the center of the 3D texture
+			GL.glScalef(1.0/nx, 1.0/ny, 1.0/nz) #Scale to make the texture coords the same as data coords
+			GLUtil.glMultMatrix(self.transform) #Make texture coord the same as Volume coords
+			GL.glMatrixMode(GL.GL_MODELVIEW)
+			
+			GL.glBegin(GL.GL_QUADS)
+			for i in range(4):
+				GL.glTexCoord3f(*quad_points[i])
+				GL.glVertex3f(*quad_points[i])
+			glEnd()
+			
+			GL.glMatrixMode(GL.GL_TEXTURE)
+			GL.glLoadIdentity()
+			GL.glMatrixMode(GL.GL_MODELVIEW)
+			
+			GL.glDisable(GL.GL_TEXTURE_3D)
+			GL.glEnable(GL.GL_LIGHTING)
+			GL.glDisable(GL.GL_BLEND)
 		
 class EMSliceInspector(EMInspectorControlShape):
 	def __init__(self, name, item3d):
@@ -186,13 +242,20 @@ class EMSliceInspector(EMInspectorControlShape):
 		
 		self.onConstrainedOrientationChanged()
 		self.constrained_plane_combobox.currentIndexChanged.connect(self.onConstrainedOrientationChanged)
+		self.use_3d_texture_checkbox.clicked.connect(self.on3DTextureCheckbox)
 		QtCore.QObject.connect(self.constrained_slider, QtCore.SIGNAL("valueChanged"), self.onConstraintSlider)
+		
 	def updateItemControls(self):
 		super(EMSliceInspector, self).updateItemControls()
 		# Anything that needs to be updated when the scene is rendered goes here.....
+		self.use_3d_texture_checkbox.setChecked(self.item3d().use_3d_texture)
 		
 	def addControls(self, gridbox):
 		super(EMSliceInspector, self).addControls(gridbox)
+		
+		sliceframe = QtGui.QFrame()
+		sliceframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		slicegridbox = QtGui.QGridLayout()
 				
 		self.constrained_group_box = QtGui.QGroupBox("Constrained Slices")
 		self.constrained_group_box.setCheckable(True)
@@ -208,7 +271,18 @@ class EMSliceInspector(EMInspectorControlShape):
 		constrained_layout.addStretch()
 		self.constrained_group_box.setLayout(constrained_layout)
 		
-		gridbox.addWidget(self.constrained_group_box, 2, 1, 1, 1)
+		self.use_3d_texture_checkbox = QtGui.QCheckBox("Use 3D Texture")
+		self.use_3d_texture_checkbox.setChecked(self.item3d().use_3d_texture)
+		
+		slicegridbox.addWidget(self.constrained_group_box, 0, 1, 2, 1)
+		slicegridbox.addWidget(self.use_3d_texture_checkbox, 2, 1, 1, 1)
+		sliceframe.setLayout(slicegridbox)
+		gridbox.addWidget(sliceframe, 2, 1, 2, 1)
+	
+	def on3DTextureCheckbox(self):
+		self.item3d().use_3d_texture = self.use_3d_texture_checkbox.isChecked()
+		if self.inspector:
+			self.inspector().updateSceneGraph()
 	
 	def onConstrainedOrientationChanged(self):
 		self.constrained_slider.setValue(0)
@@ -263,45 +337,53 @@ class EMVolumeItem3D(EMItem3D):
 		(nx, ny, nz) = self.getParent().getBoundingBoxDimensions()
 		interior_diagonal = math.sqrt(nx**2+ny**2+nz**2) #A square with sides this big could hold any slice from the volume
 		#The interior diagonal is usually too big, and OpenGL textures work best with powers of 2 so let's get the next smaller power of 2
-		diag = 2**(int(math.floor( math.log(interior_diagonal)/math.log(2) ))) #next smaller power of 2
+		diag = interior_diagonal
+		#diag = 2**(int(math.floor( math.log(interior_diagonal)/math.log(2) ))) #next smaller power of 2
 		diag2 = diag/2
 		
 		quad_points = [(-diag2, -diag2, 0), (-diag2, diag2, 0), (diag2, diag2, 0), (diag2, -diag2, 0)]
-		inverse_transform = self.transform.inverse()
-		quad_points_data_coords = [tuple(inverse_transform.transform(point)) for point in quad_points]
 		
 		#For debugging purposes, draw an outline
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glBegin(GL.GL_LINE_LOOP)
 		for i in range(4):
 			GL.glVertex3f(*quad_points[i])
-		GL.glEnd()
-#		GL.glPopMatrix()		
+		GL.glEnd()	
 		
 		#Now draw the texture on another quad
 		GL.glEnable(GL.GL_TEXTURE_3D)
+		GL.glEnable(GL.GL_BLEND)
+		GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE)
+		GL.glDisable(GL.GL_LIGHTING)
 		GL.glBindTexture(GL.GL_TEXTURE_3D, self.getParent().get3DTexture())
-		GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_S, GL.GL_REPEAT)#GL.GL_CLAMP_TO_EDGE)
-		GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_T, GL.GL_REPEAT)#GL.GL_CLAMP_TO_EDGE)
-		GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_R, GL.GL_REPEAT)#GL.GL_CLAMP_TO_EDGE)
+		GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_BORDER)
+		GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_BORDER)
+		GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_R, GL.GL_CLAMP_TO_BORDER)
 		GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR)#GL.GL_NEAREST)
 		GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR)#GL.GL_NEAREST)
-#		GL.glTexParameterfv(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_BORDER_COLOR, (0,0,0,0))
+#		GL.glTexParameterfv(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_BORDER_COLOR, (0.0, 0.0,1.0,1.0,1.0))
 
 		GL.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_REPLACE)
 		GL.glMatrixMode(GL.GL_TEXTURE)
 		GL.glLoadIdentity()
 		GL.glTranslatef(0.5, 0.5, 0.5) #Put the origin at the center of the 3D texture
-		GL.glScalef(1.0/nx, 1.0/ny, 1.0/nz) #Scale to make the texture coords teh same as data coords
+		GL.glScalef(1.0/nx, 1.0/ny, 1.0/nz) #Scale to make the texture coords the same as data coords
+		GLUtil.glMultMatrix(self.transform) #Make texture coord the same as Volume coords
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		
 		GL.glBegin(GL.GL_QUADS)
 		for i in range(4):
-			GL.glTexCoord3f(*quad_points_data_coords[i])
+			GL.glTexCoord3f(*quad_points[i])
 			GL.glVertex3f(*quad_points[i])
 		glEnd()
 		
+		GL.glMatrixMode(GL.GL_TEXTURE)
+		GL.glLoadIdentity() #Return texture coord system to default
+		GL.glMatrixMode(GL.GL_MODELVIEW)
+		
 		GL.glDisable(GL.GL_TEXTURE_3D)
+		GL.glEnable(GL.GL_LIGHTING)
+		GL.glDisable(GL.GL_BLEND)
 		
 class EMVolumeInspector(EMInspectorControlShape):
 	def __init__(self, name, item3d):
