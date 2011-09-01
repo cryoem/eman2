@@ -365,8 +365,8 @@ class EMLine(EMItem3D):
 		self.rightArrowSize = self.width
 		self.rightArrowLength = self.length/10.0
 		
-		self.showLeftArrow = True
-		self.showRightArrow = True
+		self.setShowLeftArrow(True)
+		self.setShowRightArrow(True)
 
 	def setEndAndWidth(self, x1, y1, z1, x2, y2, z2, width):
 		self.x1 = x1
@@ -395,6 +395,12 @@ class EMLine(EMItem3D):
 	
 	def setShininess(self, shininess):
 		self.shininess = shininess
+
+	def setShowLeftArrow(self, state):
+		self.showLeftArrow = state
+
+	def setShowRightArrow(self, state):
+		self.showRightArrow = state
 
 	def getItemInspector(self):
 		"""
@@ -472,7 +478,7 @@ class EMLine(EMItem3D):
 		glTranslatef( 0,0,-self.leftArrowLength)
 		if self.showLeftArrow:
 			gluCylinder(quadratic,0,self.leftArrowSize,self.leftArrowLength,self.slices,self.stacks)
-		glTranslatef( 0,0,self.length+self.rightArrowLength)
+		glTranslatef( 0,0,self.length+self.leftArrowLength)
 		gluQuadricOrientation(quadratic,GLU_OUTSIDE)
 		if self.showRightArrow:
 			gluCylinder(quadratic,self.rightArrowSize,0,self.rightArrowLength,self.slices,self.stacks)
@@ -799,7 +805,7 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 		textlabel2.setAlignment(QtCore.Qt.AlignCenter)
 		textgridbox.addWidget(textlabel2, 1, 0, 1, 1)
 		
-		self.fontDepth = EMSpinWidget(self.item3d().getFontDepth(), 1.0)
+		self.fontDepth = EMSpinWidget(int(self.item3d().getFontDepth()), 1.0)
 		textgridbox.addWidget(self.fontDepth, 1, 1, 1, 2)
 		
 		textlabel2 = QtGui.QLabel("3D Font Size")
@@ -807,7 +813,7 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 		textlabel2.setAlignment(QtCore.Qt.AlignCenter)
 		textgridbox.addWidget(textlabel2, 2, 0, 1, 1)
 		
-		self.fontSize = EMSpinWidget(self.item3d().getFontSize(), 1.0)
+		self.fontSize = EMSpinWidget(int(self.item3d().getFontSize()), 1.0)
 		textgridbox.addWidget(self.fontSize, 2, 1, 1, 2)
 		
 		textframe.setLayout(textgridbox)	
@@ -835,7 +841,6 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 			self.inspector().updateSceneGraph()
 
 	def _on_fontdepth(self):
-		print 'font depth = ', int(self.fontDepth.getValue())
 		self.item3d().setFontDepth(int(self.fontDepth.getValue()))
 		print 'now font depth = ', self.item3d().getFontDepth()
 		if self.inspector:
@@ -854,3 +859,77 @@ class EMInspectorControlLine(EMInspectorControlShape):
 	def __init__(self, name, item3d, numgridcols=2):
 		EMInspectorControlShape.__init__(self, name, item3d)
 		
+	def addControls(self, gridbox):
+		super(EMInspectorControlLine, self).addControls(gridbox)
+		
+		lineframe = QtGui.QFrame()
+		lineframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		lfont = QtGui.QFont()
+		lfont.setBold(True)
+		linegridbox = QtGui.QGridLayout()
+		
+		leftlabel = QtGui.QLabel("Left arrow")
+		leftlabel.setFont(lfont)
+		leftlabel.setAlignment(QtCore.Qt.AlignCenter)
+		linegridbox.addWidget(leftlabel, 0, 1, 1, 1)
+		
+		sidelabel1 = QtGui.QLabel("Size")
+		sidelabel1.setFont(lfont)
+		sidelabel1.setAlignment(QtCore.Qt.AlignVCenter)
+		linegridbox.addWidget(sidelabel1, 2, 0, 1, 1)
+		
+		sidelabel2 = QtGui.QLabel("Length")
+		sidelabel2.setFont(lfont)
+		sidelabel2.setAlignment(QtCore.Qt.AlignVCenter)
+		linegridbox.addWidget(sidelabel2, 3, 0, 1, 1)
+		
+		self.leftShowArrow = QtGui.QCheckBox("Show")
+		self.leftShowArrow.setChecked(self.item3d().showLeftArrow)
+		linegridbox.addWidget(self.leftShowArrow, 1, 1, 1, 1)
+		
+		self.leftArrowSize = EMSpinWidget(self.item3d().leftArrowSize, 1.0)
+		linegridbox.addWidget(self.leftArrowSize, 2, 1, 1, 1)
+		
+		self.leftArrowLength = EMSpinWidget(int(self.item3d().leftArrowLength), 1.0)
+		linegridbox.addWidget(self.leftArrowLength, 3, 1, 1, 1)
+		
+		rightlabel = QtGui.QLabel("Right arrow")
+		rightlabel.setFont(lfont)
+		rightlabel.setAlignment(QtCore.Qt.AlignCenter)
+		linegridbox.addWidget(rightlabel, 0, 2, 1, 1)
+		
+		self.rightShowArrow = QtGui.QCheckBox("Show")
+		self.rightShowArrow.setChecked(self.item3d().showRightArrow)
+		linegridbox.addWidget(self.rightShowArrow, 1, 2, 1, 1)
+		
+		self.rightArrowSize = EMSpinWidget(self.item3d().rightArrowSize, 1.0)
+		linegridbox.addWidget(self.rightArrowSize, 2, 2, 1, 1)
+		
+		self.rightArrowLength = EMSpinWidget(int(self.item3d().rightArrowLength), 1.0)
+		linegridbox.addWidget(self.rightArrowLength, 3, 2, 1, 1)
+		
+		lineframe.setLayout(linegridbox)	
+		gridbox.addWidget(lineframe, 2, 3, 1, 3)
+		
+		# set to default, but run only as a base class
+		if type(self) == EMInspectorControl3DText: self.updateItemControls()
+		
+		QtCore.QObject.connect(self.leftShowArrow, QtCore.SIGNAL("stateChanged(int)"), self.redraw)
+		QtCore.QObject.connect(self.rightShowArrow, QtCore.SIGNAL("stateChanged(int)"), self.redraw)
+		QtCore.QObject.connect(self.leftArrowSize,QtCore.SIGNAL("valueChanged(int)"),self.redraw)
+		QtCore.QObject.connect(self.leftArrowLength,QtCore.SIGNAL("valueChanged(int)"),self.redraw)
+		QtCore.QObject.connect(self.rightArrowSize,QtCore.SIGNAL("valueChanged(int)"),self.redraw)
+		QtCore.QObject.connect(self.rightArrowLength,QtCore.SIGNAL("valueChanged(int)"),self.redraw)
+
+	def redraw(self):
+		self.item3d().setShowLeftArrow(self.leftShowArrow.isChecked())
+		self.item3d().setShowRightArrow(self.rightShowArrow.isChecked())
+		self.item3d().leftArrowSize = self.leftArrowSize.getValue()
+		self.item3d().leftArrowLength = self.leftArrowLength.getValue()
+		self.item3d().rightArrowSize = self.rightArrowSize.getValue()
+		self.item3d().rightArrowLength = self.rightArrowLength.getValue()
+		
+		if self.inspector:
+			self.inspector().updateSceneGraph()
+
+	
