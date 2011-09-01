@@ -4447,10 +4447,13 @@ EMData* EMData::extract_plane_rect(const Transform& tf, Util::KaiserBessel& kbx,
 	if (nx%2 != 0)
 		throw ImageDimensionException("extractplane requires nx to be even");
 
-	int nxfromz = nz+2;
-	int nxcircal = nxfromz - 2;
+	int nxfromxyz = max( max(nx-2,ny), nz) + 2;
+	//int nxfromz = nz+2;
+	//int nxcircal = nxfromz - 2;
+	int nxcircal = nxfromxyz - 2;
 	EMData* res = new EMData();
-	res->set_size(nxfromz,nz,1);
+	//res->set_size(nxfromz,nz,1);
+	res->set_size(nxfromxyz,nxcircal,1);
 	res->to_zero();
 	res->set_complex(true);
 	res->set_fftodd(false);
@@ -4491,8 +4494,9 @@ EMData* EMData::extract_plane_rect(const Transform& tf, Util::KaiserBessel& kbx,
 	float wsum = 0.f;
 	Transform tftrans = tf; // need transpose of tf here for consistency
 	tftrans.invert();      // with spider
-	float xratio=float(nx-2)/float(nz);
-	float yratio=float(ny)/float(nz);
+	float xratio=float(nx-2)/float(nxcircal);
+	float yratio=float(ny)/float(nxcircal);
+	float zratio=float(nz)/float(nxcircal);
 	//std::cout<<"xratio,yratio=="<<xratio<<" "<<yratio<<std::endl;
 	for (int jy = -nhalf; jy < nhalf; jy++) 
 	{
@@ -4500,7 +4504,7 @@ EMData* EMData::extract_plane_rect(const Transform& tf, Util::KaiserBessel& kbx,
 		{
 			Vec3f nucur((float)jx, (float)jy, 0.f);
 			Vec3f nunew = tftrans*nucur;
-			float xnew = nunew[0]*xratio, ynew = nunew[1]*yratio, znew = nunew[2];
+			float xnew = nunew[0]*xratio, ynew = nunew[1]*yratio, znew = nunew[2]*zratio;
 			
 			if (nunew[0]*nunew[0]+nunew[1]*nunew[1]+nunew[2]*nunew[2] <= rim)
 			{
