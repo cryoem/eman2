@@ -822,11 +822,11 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 		# set to default, but run only as a base class
 		if type(self) == EMInspectorControl3DText: self.updateItemControls()
 		
-		self.textModeBox.currentIndexChanged.connect(self.on3DFontModeChanged)
-		QtCore.QObject.connect(self.fontDepth,QtCore.SIGNAL("valueChanged(int)"),self._on_fontdepth)
-		QtCore.QObject.connect(self.fontSize,QtCore.SIGNAL("valueChanged(int)"),self._on_fontsize)
+		self.textModeBox.currentIndexChanged.connect(self.on3DTextChanged)
+		QtCore.QObject.connect(self.fontDepth,QtCore.SIGNAL("valueChanged(int)"),self.on3DTextChanged)
+		QtCore.QObject.connect(self.fontSize,QtCore.SIGNAL("valueChanged(int)"),self.on3DTextChanged)
 		
-	def on3DFontModeChanged(self):
+	def on3DTextChanged(self):
 		textMode = str(self.textModeBox.currentText())
 		if textMode == "EXTRUDE":
 			self.item3d().setFontMode(FTGLFontMode.EXTRUDE)
@@ -837,18 +837,10 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 		elif textMode == "OUTLINE":
 			self.item3d().setFontMode(FTGLFontMode.OUTLINE)
 		
-		if self.inspector:
-			self.inspector().updateSceneGraph()
-
-	def _on_fontdepth(self):
 		self.item3d().setFontDepth(int(self.fontDepth.getValue()))
-		print 'now font depth = ', self.item3d().getFontDepth()
-		if self.inspector:
-			print 'update scene graph...'
-			self.inspector().updateSceneGraph()
-			
-	def _on_fontsize(self):
+		
 		self.item3d().setRenderString(self.item3d().getRenderString(), int(self.fontSize.getValue()))
+		
 		if self.inspector:
 			self.inspector().updateSceneGraph()
 
@@ -887,7 +879,7 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		self.leftShowArrow.setChecked(self.item3d().showLeftArrow)
 		linegridbox.addWidget(self.leftShowArrow, 1, 1, 1, 1)
 		
-		self.leftArrowSize = EMSpinWidget(self.item3d().leftArrowSize, 1.0)
+		self.leftArrowSize = EMSpinWidget(int(self.item3d().leftArrowSize), 1.0)
 		linegridbox.addWidget(self.leftArrowSize, 2, 1, 1, 1)
 		
 		self.leftArrowLength = EMSpinWidget(int(self.item3d().leftArrowLength), 1.0)
@@ -902,7 +894,7 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		self.rightShowArrow.setChecked(self.item3d().showRightArrow)
 		linegridbox.addWidget(self.rightShowArrow, 1, 2, 1, 1)
 		
-		self.rightArrowSize = EMSpinWidget(self.item3d().rightArrowSize, 1.0)
+		self.rightArrowSize = EMSpinWidget(int(self.item3d().rightArrowSize), 1.0)
 		linegridbox.addWidget(self.rightArrowSize, 2, 2, 1, 1)
 		
 		self.rightArrowLength = EMSpinWidget(int(self.item3d().rightArrowLength), 1.0)
