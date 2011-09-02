@@ -7215,7 +7215,7 @@ def ihrsr_chunk_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	fourvar, debug, chunk):
 
 	from alignment      import Numrinit, prepare_refrings, proj_ali_helical, proj_ali_helical_90, proj_ali_helical_local, proj_ali_helical_90_local, helios,helios7
-	from utilities      import model_circle, get_image, drop_image, get_input_from_string
+	from utilities      import model_circle, get_image, drop_image, get_input_from_string, pad, model_blank
 	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all
 	from utilities      import send_attr_dict
 	from utilities      import get_params_proj, set_params_proj, file_type
@@ -7310,10 +7310,22 @@ def ihrsr_chunk_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	nx      = vol.get_xsize()
 	ny      = vol.get_ysize()
 	nz      = vol.get_zsize()
-	if( nx==nz & ny==nz):
-		xysize = -1
+	nmax = max(nx, ny, nz)
+	if ( nx == ny ):
+		if( nx == nz):
+			xysize = -1
+			zsize = -1
+		elif( nx < nz):
+			xysize = nx
+			zsize = -1
+		else:
+			zsize = nz
+			xysize = -1
+	
 	else:
-		xysize=nx
+		ERROR('the x and y size have to be same, please change the reference volume and restart the program', "ihrsr_MPI", 1,myid)
+	
+
 	if last_ring < 0:	last_ring = int(nx/2) - 2
 
 	if myid == main_node:
@@ -7352,8 +7364,6 @@ def ihrsr_chunk_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	#else: mask3D = model_circle(last_ring, nx, nx, nx)
 
 	numr	= Numrinit(first_ring, last_ring, rstep, "F")
-	mask2D  = model_circle(last_ring,nz,nz) - model_circle(first_ring,nz,nz)
-
 	if CTF:
 		from reconstruction import recons3d_4nn_ctf_MPI
 		from filter         import filt_ctf
@@ -7384,20 +7394,22 @@ def ihrsr_chunk_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	if debug:
 		finfo.write("image_start, image_end: %d %d\n" %(image_start, image_end))
 		finfo.flush()
-
+	mask2D = pad( model_blank( int(2*rmax),nmax,1,bckg=1.0), nmax, nmax, 1,0.0)
 	data = EMData.read_images(stack, list_of_particles)
 	if fourvar:  original_data = []
 	for im in xrange(nima):
 		data[im].set_attr('ID', list_of_particles[im])
+		sttt = Util.infomask(data[im], mask2D, False)
+		data[im] = data[im] - sttt[0]
 		if fourvar: original_data.append(data[im].copy())
 		if CTF:
-			st = Util.infomask(data[im], mask2D, False)
-			data[im] -= st[0]
 			st = data[im].get_attr_default("ctf_applied", 0)
 			if(st == 0):
 				ctf_params = data[im].get_attr("ctf")
 				data[im] = filt_ctf(data[im], ctf_params)
 				data[im].set_attr('ctf_applied', 1)
+		Util.mul_img(data[im], mask2D)  #?????
+	del mask2D
 
 	if debug:
 		finfo.write( '%d loaded  \n' % nima )
@@ -7477,8 +7489,8 @@ def ihrsr_chunk_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 					rdata[k]= data[ list2[k] ]
 				if myid == main_node:
 					start_time = time()
-				if CTF: vol = recons3d_4nn_ctf_MPI(myid, rdata, symmetry=sym, snr = snr, npad = npad, xysize = xysize)
-				else:    vol = recons3d_4nn_MPI(myid, rdata, symmetry=sym, npad = npad, xysize = xysize)
+				if CTF: vol = recons3d_4nn_ctf_MPI(myid, rdata, symmetry=sym, snr = snr, npad = npad, xysize = xysize, zsize = zsize)
+				else:    vol = recons3d_4nn_MPI(myid, rdata, symmetry=sym, npad = npad, xysize = xysize, zsize = zsize)
 				del rdata, list2
 				if myid==main_node:
 					#  for each chunk, we directly impose helicla parameters
@@ -7490,13 +7502,13 @@ def ihrsr_chunk_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 
 				bcast_EMData_to_all(vol, myid, main_node)
 
-				if( xysize == -1 ):
+				if( xysize == -1 and zsize==-1 ):
 					volft,kb = prep_vol( vol )
-					refrings = prepare_refrings( volft, kb, nz, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero", initial_theta =initial_theta, delta_theta = delta_theta)
+					refrings = prepare_refrings( volft, kb, nmax, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero", initial_theta =initial_theta, delta_theta = delta_theta)
 					del volft,kb
 				else:
 					volft, kbx, kby, kbz = prep_vol( vol )
-					refrings = prepare_refrings( volft, kbz, nz, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero", kbx = kbx, kby = kby, initial_theta =initial_theta, delta_theta = delta_theta)
+					refrings = prepare_refrings( volft, kbz, nmax, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero", kbx = kbx, kby = kby, initial_theta =initial_theta, delta_theta = delta_theta)
 					del volft, kbx, kby, kbz
 				
 				#split refrings to two list: refrings1 (theta =90), and refrings2( theat not 90)
@@ -7761,8 +7773,8 @@ def ihrsr_chunk_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 				print_msg("Time to write parameters = %d\n"%(time()-start_time))
 				start_time = time()
 
-			if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad, xysize = xysize)
-			else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, npad = npad, xysize = xysize)
+			if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad, xysize = xysize, zsize = zsize )
+			else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, npad = npad, xysize = xysize, zsize = zsize )
 
 			if myid == main_node:
 				print_msg("\n3D reconstruction time = %d\n"%(time()-start_time))
