@@ -2732,7 +2732,7 @@ class Popuppdb2em(QWidget):
 	self.yspc = 4
 	
 	self.x1 = 10 # first column (text box labels)
-	self.x2 = self.x1 + 150 # second column (text boxes)
+	self.x2 = self.x1 + 260 # second column (text boxes)
 	self.x3 = self.x2+145 # third column (Open .hdf button)
 	self.x4 = self.x3+100 # fourth column (Open .bdb button)
 	self.x5 = 230 # run button
@@ -2785,7 +2785,7 @@ class Popuppdb2em(QWidget):
 	self.apixedit=QtGui.QLineEdit(self)
 	self.apixedit.move(self.x2,self.y2)
 	self.apixedit.setText(self.savedparmsdict['apix'])
-	self.apixedit.setToolTip('Pixel size in Angstroms of the output map')	
+	self.apixedit.setToolTip('Angstrom/voxel')	
 	self.y2 += 30
 	
 	box= QtGui.QLabel('Box size (voxels)', self)
@@ -2793,10 +2793,10 @@ class Popuppdb2em(QWidget):
 	self.boxedit=QtGui.QLineEdit(self)
 	self.boxedit.move(self.x2,self.y2)
 	self.boxedit.setText(self.savedparmsdict['box'])
-	self.boxedit.setToolTip('size of the output map in voxels. (If not given, the program will find the minimum box size that includes the structre. However, in most cases this will result in a rectangular box, i.e., each dimension will be different.)')	
+	self.boxedit.setToolTip('Box size in pixels, <xyz> or <x,y,z>')	
 	self.y2 += 30
 
-	het= QtGui.QLabel('het', self)
+	het= QtGui.QLabel('Include HET atoms', self)
 	het.move(self.x1,self.y2)
 	self.hetchkbx = QtGui.QCheckBox("",self)
 	self.hetchkbx.move(self.x2, self.y2)
@@ -2804,15 +2804,15 @@ class Popuppdb2em(QWidget):
 	self.hetchkbx.setToolTip('Include HET atoms in the map.')	
 	self.y2 += 30
 	
-	center= QtGui.QLabel('Center', self)
+	center= QtGui.QLabel('Center atomic model', self)
 	center.move(self.x1,self.y2)
 	self.centeredit=QtGui.QLineEdit(self)
 	self.centeredit.move(self.x2,self.y2)
 	self.centeredit.setText(self.savedparmsdict['center'])
-	self.centeredit.setToolTip('specify whether to center the atomic model before converting to electron density map (warning: pdb deposited atomic models are not necesserily centered). Options: c - center using coordinates of atoms; a - center by setting center of gravity to zero (recommended); a triplet x,y,z (no spaces in between) - coordinates (in Angstrom) to be substracted from all the PDB coordinates. Default: no centering, in which case (0,0,0) in the PDB space will map to the center of the EM volume, i.e., (nx/2, ny/2, nz/2).')	
+	self.centeredit.setToolTip('center: c - coordinates; a - center of gravity; <x,y,z> - a vector (in Angstrom) to substract from all coordinates; default: n - no')	
 	self.y2 += 30
 	
-	Och= QtGui.QLabel('O', self)
+	Och= QtGui.QLabel('Use O system of coordinates', self)
 	Och.move(self.x1,self.y2)
 	self.Ochchkbx = QtGui.QCheckBox("",self)
 	self.Ochchkbx.move(self.x2, self.y2)
@@ -2820,20 +2820,26 @@ class Popuppdb2em(QWidget):
 	self.Ochchkbx.setToolTip('apply additional rotation so the model will appear in O in the same rotation as in chimera.')	
 	self.y2 += 30
 	
-	quiet= QtGui.QLabel('Quiet', self)
+	quiet= QtGui.QLabel('Do not print to monitor', self)
 	quiet.move(self.x1,self.y2)
 	self.quietchkbx = QtGui.QCheckBox("",self)
 	self.quietchkbx.move(self.x2, self.y2)
 	self.quietchkbx.setCheckState(self.savedparmsdict['quiet'])
-	self.quietchkbx.setToolTip('do not print any information to the monitor.')	
+	self.quietchkbx.setToolTip('Verbose is the default')	
 	self.y2 += 30
 	
-	tr0= QtGui.QLabel('tr0', self)
+	tr0= QtGui.QLabel('Transformation matrix to apply to PDB', self)
 	tr0.move(self.x1,self.y2)
 	self.tr0edit=QtGui.QLineEdit(self)
 	self.tr0edit.move(self.x2,self.y2)
 	self.tr0edit.setText(self.savedparmsdict['tr0'])
 	self.tr0edit.setToolTip('Filename of initial 3x4 transformation matrix')
+	
+	self.file_button = QtGui.QPushButton("Open File", self)
+	self.file_button.move(self.x3, self.y2-self.yspc)
+        #Here we define, that when this button is clicked, it starts subfunction choose_file
+	QtCore.QObject.connect(self.file_button, QtCore.SIGNAL("clicked()"), self.choose_file1)
+	
 	self.y2 += 30
 	# make ctf, normalize and init_method radio button...
 	
@@ -2949,7 +2955,16 @@ class Popuppdb2em(QWidget):
 	a=QtCore.QString(file_name)
         #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
 	self.pdbfileedit.setText(str(a))
-        
+       
+       
+    def choose_file1(self):
+	#opens a file browser, showing files only in .hdf format
+   	file_name = QtGui.QFileDialog.getOpenFileName(self, "Open file containing transformation matrix", "", "(*)")
+        #after the user selected a file, we obtain this filename as a Qstring
+	a=QtCore.QString(file_name)
+        #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
+	self.tr0edit.setText(str(a))
+	 
 #Layout of the Pop Up window Popuptwodali (for sxali2d); started by the function twodali of the main window        
 class Popuppca(QWidget):
     def __init__(self):
