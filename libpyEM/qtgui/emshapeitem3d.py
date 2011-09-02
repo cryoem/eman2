@@ -355,16 +355,6 @@ class EMLine(EMItem3D):
 		self.ambient = [1.0, 1.0, 1.0, 1.0]
 		self.shininess = 25.0
 		
-		#arrow size
-		dx = self.x1 - self.x2
-		dy = self.y1 - self.y2
-		dz = self.z1 - self.z2
-		self.length = math.sqrt(dx*dx + dy*dy + dz*dz)	#cylinder length
-		self.leftArrowSize = self.width
-		self.leftArrowLength = self.length/10.0
-		self.rightArrowSize = self.width
-		self.rightArrowLength = self.length/10.0
-		
 		self.setShowLeftArrow(True)
 		self.setShowRightArrow(True)
 
@@ -379,6 +369,17 @@ class EMLine(EMItem3D):
 		self.slices = int(width/2)
 		self.stacks = int(width/2)
 		self.boundingboxsize = max(self.width/2, self.width/2)
+		
+		#arrow size
+		dx = self.x1 - self.x2
+		dy = self.y1 - self.y2
+		dz = self.z1 - self.z2
+		self.length = math.sqrt(dx*dx + dy*dy + dz*dz)	#cylinder length
+		self.leftArrowSize = self.width
+		self.leftArrowLength = self.length/10.0
+		self.rightArrowSize = self.width
+		self.rightArrowLength = self.length/10.0
+		
 		if self.item_inspector: self.item_inspector.updateMetaData()	
 		
 	def getEvalString(self):
