@@ -91,6 +91,7 @@ class EMCube(EMItem3D):
 	
 	def renderNode(self):
 		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER: # No need to draw outline in selection mode
+			'''
 			#if glGetIntegerv(GL_RENDER_MODE) == GL_RENDER: print "X"
 			glPushAttrib( GL_ALL_ATTRIB_BITS )
 		
@@ -112,6 +113,12 @@ class EMCube(EMItem3D):
 			self.renderCube()
 	
 			glPopAttrib()
+			'''
+			glPushAttrib( GL_ALL_ATTRIB_BITS )
+			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0, 1.0, 0.0, 0.0])
+			self.renderCube()
+			glPopAttrib()
+			
 		else:
 			self.renderCube()
 			

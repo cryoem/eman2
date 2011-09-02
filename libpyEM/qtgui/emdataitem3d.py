@@ -24,6 +24,13 @@ class EMDataItem3D(EMItem3D):
 		self.glflags = EMOpenGLFlagsAndTools()		# OpenGL flags - this is a singleton convenience class for testing texture support		
 		self.texture_name = 0
 		self.setData(data)
+		self.renderBoundingBox = False
+		
+	def getRenderBoundingBox(self):
+		return self.renderBoundingBox
+		
+	def setRenderBoundingBox(self, state):
+		self.renderBoundingBox = state
 		
 	def get3DTexture(self):
 		if self.texture_name == 0:
@@ -69,6 +76,7 @@ class EMDataItem3D(EMItem3D):
 			except:
 				pass
 	def renderNode(self):
+		if self.renderBoundingBox: drawBoundingBox(*self.getBoundingBoxDimensions())
 		self.model_view = GL.glGetFloatv(GL.GL_MODELVIEW_MATRIX)
 	
 	def getModelViewMatrix(self):
@@ -84,15 +92,31 @@ class EMDataItem3DInspector(EMItem3DInspector):
 		super(EMDataItem3DInspector, self).updateItemControls()
 		# Anything that needs to be updated when the scene is rendered goes here.....
 		if self.item3d().path: self.file_path_label.setText(self.item3d().path)
+		self.data_checkbox.setChecked(self.item3d().getRenderBoundingBox())
 		
 	def addControls(self, gridbox):
 		super(EMDataItem3DInspector, self).addControls(gridbox)
-		self.file_path_label = QtGui.QLabel()
-		gridbox.addWidget(self.file_path_label, 3, 0, 1, 1)
-		self.file_browse_button = QtGui.QPushButton("Browse")
-		gridbox.addWidget(self.file_browse_button, 3, 1, 1, 1)
 		
+		dataframe = QtGui.QFrame()
+		dataframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		lfont = QtGui.QFont()
+		lfont.setBold(True)
+		datagridbox = QtGui.QGridLayout()
+		
+		self.data_checkbox= QtGui.QCheckBox("Display Bounding Box")
+		datagridbox.addWidget(self.data_checkbox, 0, 0, 1, 1)
+		self.file_browse_button = QtGui.QPushButton("Set Data Source")
+		datagridbox.addWidget(self.file_browse_button, 1, 0, 1, 1)
+		dataframe.setLayout(datagridbox)
+		gridbox.addWidget(dataframe, 2, 1, 1, 1)
+		
+		self.file_path_label = QtGui.QLabel()
+		self.file_path_label.setAlignment(QtCore.Qt.AlignCenter)
+		self.file_path_label.setFont(lfont)
+		gridbox.addWidget(self.file_path_label, 3, 0, 1, 2)
+
 		self.file_browse_button.clicked.connect(self.onFileBrowse)
+		QtCore.QObject.connect(self.data_checkbox, QtCore.SIGNAL("stateChanged(int)"), self.onBBoxChange)
 		
 		# Set to default, but run only once and not in each base class
 		if type(self) == EMDataItem3DInspector: self.updateItemControls()
@@ -100,8 +124,13 @@ class EMDataItem3DInspector(EMItem3DInspector):
 	def onFileBrowse(self):
 		#TODO: replace this with an EMAN2 browser window once we re-write it
 		file_path = QtGui.QFileDialog.getOpenFileName(self, "Open 3D Volume Map")
-		self.file_path_label.setText(file_path)
-		self.item3d().setData(file_path)
+		if file_path:
+			self.file_path_label.setText(file_path)
+			self.item3d().setData(file_path)
+			self.inspector().updateSceneGraph()
+			
+	def onBBoxChange(self, state):
+		self.item3d().setRenderBoundingBox(not self.item3d().getRenderBoundingBox())
 		self.inspector().updateSceneGraph()
 
 class EMSliceItem3D(EMItem3D):
@@ -627,8 +656,6 @@ class EMIsosurface(EMItem3D):
 		
 		# This code draws an outline around the isosurface
 		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER: # No need for outlining in selection mode
-			
-			drawBoundingBox(*self.getBoundingBoxDimensions())
 						
 			glPushAttrib( GL_ALL_ATTRIB_BITS )
 		
