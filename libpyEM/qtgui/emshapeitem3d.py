@@ -687,8 +687,8 @@ class EMInspectorControlShape(EMItem3DInspector):
 	"""
 	Class to make EMItem GUI SHAPE Inspector
 	"""
-	def __init__(self, name, item3d):
-		EMItem3DInspector.__init__(self, name, item3d)
+	def __init__(self, name, item3d, numgridcols=1):
+		EMItem3DInspector.__init__(self, name, item3d, numgridcols=numgridcols)
 		
 	def updateItemControls(self):
 		super(EMInspectorControlShape, self).updateItemControls()
@@ -778,9 +778,12 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 	"""
 	Class to make EMItem GUI SHAPE 3DText Inspector
 	"""
-	def __init__(self, name, item3d, numgridcols=2):
-		EMInspectorControlShape.__init__(self, name, item3d)
+	def __init__(self, name, item3d):
+		EMInspectorControlShape.__init__(self, name, item3d, numgridcols=2)
 
+	def updateItemControls(self):
+		super(EMInspectorControl3DText, self).updateItemControls()
+		
 	def addControls(self, gridbox):
 		super(EMInspectorControl3DText, self).addControls(gridbox)
 			
@@ -817,7 +820,8 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 		textgridbox.addWidget(self.fontSize, 2, 1, 1, 2)
 		
 		textframe.setLayout(textgridbox)	
-		gridbox.addWidget(textframe, 2, 3, 1, 3)
+
+		gridbox.addWidget(textframe, 2, 1, 2, 1)
 		
 		# set to default, but run only as a base class
 		if type(self) == EMInspectorControl3DText: self.updateItemControls()
@@ -848,8 +852,11 @@ class EMInspectorControlLine(EMInspectorControlShape):
 	"""
 	Class to make EMItem GUI SHAPE Line Inspector
 	"""
-	def __init__(self, name, item3d, numgridcols=2):
-		EMInspectorControlShape.__init__(self, name, item3d)
+	def __init__(self, name, item3d):
+		EMInspectorControlShape.__init__(self, name, item3d, numgridcols=2)
+		
+	def updateItemControls(self):
+		super(EMInspectorControlLine, self).updateItemControls()
 		
 	def addControls(self, gridbox):
 		super(EMInspectorControlLine, self).addControls(gridbox)
@@ -901,7 +908,7 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		linegridbox.addWidget(self.rightArrowLength, 3, 2, 1, 1)
 		
 		lineframe.setLayout(linegridbox)	
-		gridbox.addWidget(lineframe, 2, 3, 1, 3)
+		gridbox.addWidget(lineframe, 2, 1, 2, 1)
 		
 		# set to default, but run only as a base class
 		if type(self) == EMInspectorControl3DText: self.updateItemControls()
