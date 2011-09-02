@@ -3091,10 +3091,12 @@ def rotation_between_anglesets(agls1, agls2):
 			phi = d["phi"]
 			theta = d["theta"]
 			psi = d["psi"]
-
+		"""
+		#  This makes no sense here!  PAP 09/2011
 		if theta > 90.0:
 			phi += 180.0
 			theta = 180.0-theta
+		"""
 		phi   *= deg2rad
 		theta *= deg2rad
 		x = sin(theta) * sin(phi)
