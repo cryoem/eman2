@@ -873,7 +873,7 @@ def cml_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_w
 def cml_find_structure2(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_weights, myid, main_node, number_of_proc):
 	from projection import cml_export_progress, cml_disc, cml_export_txtagls
 	import time, sys
-	from random import shuffle
+	from random import shuffle,random
 
 	from mpi import MPI_FLOAT, MPI_INT, MPI_SUM, MPI_COMM_WORLD
 	from mpi import mpi_reduce, mpi_bcast, mpi_barrier
@@ -906,6 +906,24 @@ def cml_find_structure2(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_
 		nnn = len(tlistprj)
 		tlistprj = mpi_bcast(tlistprj, nnn, MPI_INT, main_node, MPI_COMM_WORLD)
 		tlistprj = map(int, tlistprj)
+		if(ite>1 and ite%3 == 0  and ite<14):
+			if(myid == main_node):
+				for i in xrange(0,len(tlistprj),10):
+					ind          = 4*i
+					Ori[ind]      =  360.*random()
+					Ori[ind+1]    =  180.*random()
+					Ori[ind+2]    =  360.*random()
+					Ori[ind+3]    =  -1
+				for i in xrange(len(tlistprj)):
+					ind          = 4*i
+					Ori[ind+3]    = float(Ori[ind+3])
+			nnn = len(Ori)
+			Ori = mpi_bcast(Ori, nnn, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			Ori = map(float, Ori)
+			for i in xrange(len(tlistprj)):
+				ind          = 4*i
+				Ori[ind+3]    = int(Ori[ind+3])
+
 		for iprj in tlistprj:
 			#print "**********************************  iprj = ", iprj, g_n_anglst
 
