@@ -920,7 +920,7 @@ class Popuptwodali(QWidget):
 	self.transedit.setToolTip('Step of translational search in x, y direction\nlarger values increase the speed but decrease the accuracy')	
 	self.y2 += 30
 	
-	nriter= QtGui.QLabel('Number of Iterations', self)
+	nriter= QtGui.QLabel('Number of iterations', self)
 	nriter.move(self.x1,self.y2)
 	self.nriteredit=QtGui.QLineEdit(self)
 	self.nriteredit.move(self.x2,self.y2)
@@ -928,7 +928,7 @@ class Popuptwodali(QWidget):
 	self.nriteredit.setToolTip('Maximum number of iterations the program will perform\n Using the default values the program will run 3 rounds with xy-range 4 and translational step 1, 3 rounds with xyrange 2 and translational step 1 and so on..\nif set to 0 maximum iteration number will be 10 and will automatically stop should the criterion falls')
 	self.y2 += 30
 	
-	nproc= QtGui.QLabel('Number of Processors', self)
+	nproc= QtGui.QLabel('MPI processors', self)
 	nproc.move(self.x1,self.y2)
 	self.nprocedit=QtGui.QLineEdit(self)
 	self.nprocedit.move(self.x2,self.y2)
@@ -1440,7 +1440,7 @@ class Popupthreedali(QWidget):
 	
 	self.y2 =self.y2+30
 
-	nriter= QtGui.QLabel('Number of Iterations', self)
+	nriter= QtGui.QLabel('Number of iterations', self)
 	nriter.move(self.x1,self.y2)
 	self.nriteredit=QtGui.QLineEdit(self)
 	self.nriteredit.move(self.x2,self.y2)
@@ -1449,7 +1449,7 @@ class Popupthreedali(QWidget):
 	
 	self.y2 =self.y2+30
 	
-	nproc= QtGui.QLabel('Number of Processors', self)
+	nproc= QtGui.QLabel('MPI processors', self)
 	nproc.move(self.x1,self.y2)
 	self.nprocedit=QtGui.QLineEdit(self)
 	self.nprocedit.move(self.x2,self.y2)
@@ -2095,7 +2095,7 @@ class Popupkmeans(QWidget):
 	self.trialsedit.setToolTip('number of trials of K-means (see description below) (default one trial). MPI version ignore --trials, the number of trials in MPI version will be the number of cpu used.')
 	self.y2 += 30
 	
-	maxiter= QtGui.QLabel('Maxinum Number of Iterations', self)
+	maxiter= QtGui.QLabel('Number of iterations', self)
 	maxiter.move(self.x1,self.y2)
 	self.maxiteredit=QtGui.QLineEdit(self)
 	self.maxiteredit.move(self.x2,self.y2)
@@ -2105,7 +2105,7 @@ class Popupkmeans(QWidget):
 	
 	# make ctf, normalize and init_method radio button...
 	
-	nproc= QtGui.QLabel('Number of Processors', self)
+	nproc= QtGui.QLabel('MPI processors', self)
 	nproc.move(self.x1,self.y2)
 	self.nprocedit=QtGui.QLineEdit(self)
 	self.nprocedit.move(self.x2,self.y2)
@@ -2466,7 +2466,7 @@ class Popupkmeansgroups(QWidget):
 	self.trialsedit.setToolTip('number of trials of K-means (see description below) (default one trial). MPI version ignore --trials, the number of trials in MPI version will be the number of cpu used.')
 	self.y2 += 30
 	
-	maxiter= QtGui.QLabel('Maxinum Number of Iterations', self)
+	maxiter= QtGui.QLabel('Number of iterations', self)
 	maxiter.move(self.x1,self.y2)
 	self.maxiteredit=QtGui.QLineEdit(self)
 	self.maxiteredit.move(self.x2,self.y2)
@@ -2475,7 +2475,7 @@ class Popupkmeansgroups(QWidget):
 	self.y2 += 30
 	# make ctf, normalize and init_method radio button...
 	
-	nproc= QtGui.QLabel('Number of Processors', self)
+	nproc= QtGui.QLabel('MPI processors', self)
 	nproc.move(self.x1,self.y2)
 	self.nprocedit=QtGui.QLineEdit(self)
 	self.nprocedit.move(self.x2,self.y2)
@@ -3064,7 +3064,7 @@ class Popuppca(QWidget):
 	self.nvecedit.setToolTip('Number of eigenvectors')
 	self.y2 += 30
 	
-	nproc= QtGui.QLabel('Number of Processors', self)
+	nproc= QtGui.QLabel('MPI processors', self)
 	nproc.move(self.x1,self.y2)
 	self.nprocedit=QtGui.QLineEdit(self)
 	self.nprocedit.move(self.x2,self.y2)
@@ -3436,7 +3436,7 @@ class Popupmrefthreedali(QWidget):
 	
 	self.y2 =self.y2+30
 
-	nriter= QtGui.QLabel('Number of Iterations', self)
+	nriter= QtGui.QLabel('Number of iterations', self)
 	nriter.move(self.x1,self.y2)
 	self.nriteredit=QtGui.QLineEdit(self)
 	self.nriteredit.move(self.x2,self.y2)
@@ -3445,7 +3445,7 @@ class Popupmrefthreedali(QWidget):
 	
 	self.y2 =self.y2+30
 	
-	nproc= QtGui.QLabel('Number of Processors', self)
+	nproc= QtGui.QLabel('MPI processors', self)
 	nproc.move(self.x1,self.y2)
 	self.nprocedit=QtGui.QLineEdit(self)
 	self.nprocedit.move(self.x2,self.y2)
@@ -4059,7 +4059,7 @@ class Popupisac(QWidget):
 	
 	self.y2 += 30
 	
-	nriter= QtGui.QLabel('Number of Iterations', self)
+	nriter= QtGui.QLabel('Number of iterations', self)
 	nriter.move(self.x1,self.y2)
 	self.nriteredit=QtGui.QLineEdit(self)
 	self.nriteredit.move(self.x2,self.y2)
@@ -4108,7 +4108,7 @@ class Popupisac(QWidget):
 	self.y2 += 30
 	
 	
-	nproc= QtGui.QLabel('Number of Processors', self)
+	nproc= QtGui.QLabel('MPI processors', self)
 	nproc.move(self.x1,self.y2)
 	self.nprocedit=QtGui.QLineEdit(self)
 	self.nprocedit.move(self.x2,self.y2)
