@@ -137,7 +137,7 @@ class EMSliceItem3D(EMItem3D):
 	name = "Slice"
 	nodetype = "DataChild" 
 
-	def __init__(self, parent, children = set(), transform = None):
+	def __init__(self, parent=None, children = set(), transform = None):
 		if not transform: transform = Transform()
 		EMItem3D.__init__(self, parent, children, transform)
 		self.glflags = EMOpenGLFlagsAndTools()		# OpenGL flags - this is a singleton convenience class for testing texture support		
@@ -165,7 +165,19 @@ class EMSliceItem3D(EMItem3D):
 	
 	def setShininess(self, shininess):
 		self.shininess = shininess
+	
+	def dataChanged(self):
+		"""
+		This method must be implmented in any data child EMItem3D
+		"""
+		data = self.getParent().getData()
 		
+	def getEvalString(self):
+		if self.transform:
+			return "EMSliceItem3D(transform=Transform())"
+		else:
+			return "EMSliceItem3D()"
+			
 	def getItemInspector(self):
 		if not self.item_inspector:
 			self.item_inspector = EMSliceInspector("SLICE", self)
@@ -358,7 +370,7 @@ class EMVolumeItem3D(EMItem3D):
 	name = "Volume"
 	nodetype = "DataChild" 
 
-	def __init__(self, parent, children = set(), transform = Transform()):
+	def __init__(self, parent=None, children = set(), transform = Transform()):
 		EMItem3D.__init__(self, parent, children, transform)
 
 		self.colors = get_default_gl_colors()
@@ -382,6 +394,12 @@ class EMVolumeItem3D(EMItem3D):
 	
 	def setShininess(self, shininess):
 		self.shininess = shininess
+	
+	def getEvalString(self):
+		if self.transform:
+			return "EMVolumeItem3D(transform=Transform())"
+		else:
+			return "EMVolumeItem3D()"
 		
 	def getItemInspector(self):
 		if not self.item_inspector:
