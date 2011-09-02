@@ -503,7 +503,7 @@ def cml_export_txtagls(outdir, outname, Ori, disc, title):
 	angfile.write('|%s|-----------------------------------------------%s---------\n' % (title, time.ctime()))
 	for i in xrange(g_n_prj): angfile.write('%10.3f\t%10.3f\t%10.3f\n' % (Ori[4*i], Ori[4*i+1], Ori[4*i+2]))
 			
-	angfile.write('\nDiscrepancy: %10.3e\n\n' % disc)
+	angfile.write('\nDiscrepancy: %12.5e\n\n' % disc)
 	angfile.close()
 
 # init global variables used to a quick acces with many function of common-lines
@@ -873,6 +873,7 @@ def cml_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_w
 def cml_find_structure2(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_weights, myid, main_node, number_of_proc):
 	from projection import cml_export_progress, cml_disc, cml_export_txtagls
 	import time, sys
+	from random import shuffle
 
 	from mpi import MPI_FLOAT, MPI_INT, MPI_SUM, MPI_COMM_WORLD
 	from mpi import mpi_reduce, mpi_bcast, mpi_barrier
@@ -900,7 +901,10 @@ def cml_find_structure2(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_
 
 		# loop over i prj
 		change = False
-		for iprj in listprj:
+		tlistprj = shuffle(listprj)
+		tlistprj = mpi_bcast(tlistprj, len(tlistprj), MPI_INT, main_node, MPI_COMM_WORLD)
+		tlistprj = map(int, tlistprj)
+		for iprj in tlistprj:
 			#print "**********************************  iprj = ", iprj, g_n_anglst
 
 			# Store current the current orientation
