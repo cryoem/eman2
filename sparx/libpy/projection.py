@@ -503,7 +503,7 @@ def cml_export_txtagls(outdir, outname, Ori, disc, title):
 	angfile.write('|%s|-----------------------------------------------%s---------\n' % (title, time.ctime()))
 	for i in xrange(g_n_prj): angfile.write('%10.3f\t%10.3f\t%10.3f\n' % (Ori[4*i], Ori[4*i+1], Ori[4*i+2]))
 			
-	angfile.write('\nDiscrepancy: %10.3f\n\n' % disc)
+	angfile.write('\nDiscrepancy: %10.3e\n\n' % disc)
 	angfile.close()
 
 # init global variables used to a quick acces with many function of common-lines
