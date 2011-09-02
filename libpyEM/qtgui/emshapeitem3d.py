@@ -868,6 +868,10 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		
 	def updateItemControls(self):
 		super(EMInspectorControlLine, self).updateItemControls()
+		self.leftArrowSize.setValue(self.item3d().leftArrowSize, quiet=1)
+		self.leftArrowLength.setValue(self.item3d().leftArrowLength, quiet=1)
+		self.rightArrowSize.setValue(self.item3d().rightArrowSize, quiet=1)
+		self.rightArrowLength.setValue(self.item3d().rightArrowLength, quiet=1)
 		
 	def addControls(self, gridbox):
 		super(EMInspectorControlLine, self).addControls(gridbox)
@@ -897,10 +901,12 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		self.leftShowArrow.setChecked(self.item3d().showLeftArrow)
 		linegridbox.addWidget(self.leftShowArrow, 1, 1, 1, 1)
 		
-		self.leftArrowSize = EMSpinWidget(int(self.item3d().leftArrowSize), 1.0)
+		self.leftArrowSize = EMSpinWidget(int(self.item3d().leftArrowSize), 1.0, rounding=0)
+		self.leftArrowSize.setMinimumWidth(120)
 		linegridbox.addWidget(self.leftArrowSize, 2, 1, 1, 1)
 		
-		self.leftArrowLength = EMSpinWidget(int(self.item3d().leftArrowLength), 1.0)
+		self.leftArrowLength = EMSpinWidget(int(self.item3d().leftArrowLength), 1.0, rounding=0)
+		self.leftArrowLength.setMinimumWidth(120)
 		linegridbox.addWidget(self.leftArrowLength, 3, 1, 1, 1)
 		
 		rightlabel = QtGui.QLabel("Right arrow")
@@ -912,10 +918,12 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		self.rightShowArrow.setChecked(self.item3d().showRightArrow)
 		linegridbox.addWidget(self.rightShowArrow, 1, 2, 1, 1)
 		
-		self.rightArrowSize = EMSpinWidget(int(self.item3d().rightArrowSize), 1.0)
+		self.rightArrowSize = EMSpinWidget(int(self.item3d().rightArrowSize), 1.0, rounding=0)
+		self.rightArrowSize.setMinimumWidth(120)
 		linegridbox.addWidget(self.rightArrowSize, 2, 2, 1, 1)
 		
-		self.rightArrowLength = EMSpinWidget(int(self.item3d().rightArrowLength), 1.0)
+		self.rightArrowLength = EMSpinWidget(int(self.item3d().rightArrowLength), 1.0, rounding=0)
+		self.rightArrowLength.setMinimumWidth(120)
 		linegridbox.addWidget(self.rightArrowLength, 3, 2, 1, 1)
 		
 		lineframe.setLayout(linegridbox)	
