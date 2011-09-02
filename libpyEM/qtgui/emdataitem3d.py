@@ -238,7 +238,7 @@ class EMSliceItem3D(EMItem3D):
 		
 class EMSliceInspector(EMInspectorControlShape):
 	def __init__(self, name, item3d):
-		EMItem3DInspector.__init__(self, name, item3d)
+		EMInspectorControlShape.__init__(self, name, item3d, numgridcols=2)
 		
 		self.onConstrainedOrientationChanged()
 		self.constrained_plane_combobox.currentIndexChanged.connect(self.onConstrainedOrientationChanged)
@@ -387,7 +387,7 @@ class EMVolumeItem3D(EMItem3D):
 		
 class EMVolumeInspector(EMInspectorControlShape):
 	def __init__(self, name, item3d):
-		EMItem3DInspector.__init__(self, name, item3d)
+		EMInspectorControlShape.__init__(self, name, item3d)
 
 	def updateItemControls(self):
 		super(EMVolumeInspector, self).updateItemControls()
@@ -402,7 +402,7 @@ class EMVolumeInspector(EMInspectorControlShape):
 
 class EMIsosurfaceInspector(EMInspectorControlShape):
 	def __init__(self, name, item3d):
-		EMItem3DInspector.__init__(self, name, item3d, numgridcols=2)	# for the iso inspector we need two grid cols for extra space....
+		EMInspectorControlShape.__init__(self, name, item3d, numgridcols=2)	# for the iso inspector we need two grid cols for extra space....
 		
 		QtCore.QObject.connect(self.thr, QtCore.SIGNAL("valueChanged"), self.onThresholdSlider)
 		QtCore.QObject.connect(self.histogram_widget, QtCore.SIGNAL("thresholdChanged(float)"), self.onHistogram)
