@@ -1736,8 +1736,8 @@ class Popupadvparams_ali3d_1(QWidget):
 	self.yspc = 4
 	
 	self.x1 = 10
-	self.x2 = 140
-	self.x3 = 285
+	self.x2 = self.x1+220 #140
+	self.x3 = self.x2+145 #285
 	########################################################################################
 	
         #Here we just set the window title
@@ -1764,7 +1764,7 @@ class Popupadvparams_ali3d_1(QWidget):
         self.masknameedit.move(self.x2,self.y1)
         #Adds a default value for the line edit
 	self.masknameedit.setText(self.savedparmsdict['maskname'])
-	self.masknameedit.setToolTip("Default is a circle mask with radius equal to the particle radius")
+	self.masknameedit.setToolTip("filename of the file containing 3D mask. If not provided, a 3D spherical mask will be created with radius equal to outer_radius. This mask is used to multiply the reference volume for calculation of reference projections.")
 	
 	self.mskfile_button = QtGui.QPushButton("Open Mask", self)
 	self.mskfile_button.move(self.x3, self.y1-self.yspc)
@@ -1778,7 +1778,7 @@ class Popupadvparams_ali3d_1(QWidget):
 	self.centeredit=QtGui.QLineEdit(self)
 	self.centeredit.move(self.x2,self.y1)
 	self.centeredit.setText(self.savedparmsdict['center'])
-	self.centeredit.setToolTip('-1 - use average centering method (default),\n0 - if you do not want the average to be centered, \n1 - phase approximation of the center of gravity phase_cog, \n2 - cross-correlate with Gaussian function, \n3 - cross-correlate with donut shape image (e.g. inner radius=2, outer radius=7), \n4 - cross-correlate with reference image provided by user, \n5 - cross-correlate with self-rotated average..\ncentering may fail..use 0 to deactive it')
+	self.centeredit.setToolTip('-1: average shift method; 0: no centering; 1: center of gravity (default=-1)')
 	
 	self.y1 += 30
 	
@@ -1787,7 +1787,7 @@ class Popupadvparams_ali3d_1(QWidget):
 	self.ringstepedit=QtGui.QLineEdit(self)
 	self.ringstepedit.move(self.x2,self.y1)
 	self.ringstepedit.setText(self.savedparmsdict['ringstep'])
-	self.ringstepedit.setToolTip('step between rings in rotational correlation > 0 (set to 1)')
+	self.ringstepedit.setToolTip('step between rings in rotational correlation >0  (set to 1)')
 	
 	self.y1 += 30
 	
@@ -1796,7 +1796,7 @@ class Popupadvparams_ali3d_1(QWidget):
 	self.innerradiusedit=QtGui.QLineEdit(self)
 	self.innerradiusedit.move(self.x2,self.y1)
 	self.innerradiusedit.setText(self.savedparmsdict['innerradius'])
-	self.innerradiusedit.setToolTip('inner radius for rotational correlation > 0 (set to 1) ')	
+	self.innerradiusedit.setToolTip('inner radius for rotational correlation > 0 (set to 1)')	
 	
 	self.y1 += 30
 	
@@ -1805,7 +1805,7 @@ class Popupadvparams_ali3d_1(QWidget):
 	self.ctfchkbx = QtGui.QCheckBox("",self)
 	self.ctfchkbx.move(self.x2, self.y1)
 	self.ctfchkbx.setCheckState(self.savedparmsdict['ctf'])
-	self.ctfchkbx.setToolTip('if this flag is set, the program will use CTF information provided in file headers')
+	self.ctfchkbx.setToolTip('Consider CTF correction during the alignment ')
 	
 	self.y1 += 30
 	
@@ -1814,66 +1814,62 @@ class Popupadvparams_ali3d_1(QWidget):
 	self.snredit=QtGui.QLineEdit(self)
 	self.snredit.move(self.x2,self.y1)
 	self.snredit.setText(self.savedparmsdict['snr'])
-	self.snredit.setToolTip('signal-to-noise ratio of the data (default SNR=1.0)')	
+	self.snredit.setToolTip('Signal-to-Noise Ratio of the data')	
 	
 	self.y1 += 30
 	
-	refa= QtGui.QLabel('ref_a', self)
+	refa= QtGui.QLabel('Method for generating reference \nprojections', self)
 	refa.move(self.x1,self.y1)
         #Now add a line edit and define its position
 	self.refaedit=QtGui.QLineEdit(self)
         self.refaedit.move(self.x2,self.y1)
         #Adds a default value for the line edit
 	self.refaedit.setText(self.savedparmsdict['ref_a'])
-	self.refaedit.setToolTip("Default is a circle mask with radius equal to the particle radius")
+	self.refaedit.setToolTip("method for generating the quasi-uniformly distributed projection directions (default S)")
 	
-	self.y1 += 30
+	self.y1 += 50
 	
 	sym= QtGui.QLabel('Symmetry', self)
 	sym.move(self.x1,self.y1)
 	self.symedit=QtGui.QLineEdit(self)
 	self.symedit.move(self.x2,self.y1)
 	self.symedit.setText(self.savedparmsdict['sym'])
-	self.symedit.setToolTip('-1 - use average centering method (default),\n0 - if you do not want the average to be centered, \n1 - phase approximation of the center of gravity phase_cog, \n2 - cross-correlate with Gaussian function, \n3 - cross-correlate with donut shape image (e.g. inner radius=2, outer radius=7), \n4 - cross-correlate with reference image provided by user, \n5 - cross-correlate with self-rotated average..\ncentering may fail..use 0 to deactive it')
+	self.symedit.setToolTip('symmetry of the refined structure')
 	
 	self.y1 += 30
 	
-	pad= QtGui.QLabel('npad', self)
+	pad= QtGui.QLabel('Padding size for 3D \nreconstruction', self)
 	pad.move(self.x1,self.y1)
 	self.npadedit=QtGui.QLineEdit(self)
 	self.npadedit.move(self.x2,self.y1)
 	self.npadedit.setText(self.savedparmsdict['npad'])
-	self.npadedit.setToolTip('step between rings in rotational correlation > 0 (set to 1)')
+	self.npadedit.setToolTip('padding size for 3D \nreconstruction')
 	
-	self.y1 += 30
+	self.y1 += 50
 	
-	an= QtGui.QLabel('an', self)
+	an= QtGui.QLabel('Angular neighborhood for local \nsearches', self)
 	an.move(self.x1,self.y1)
 	self.anedit=QtGui.QLineEdit(self)
 	self.anedit.move(self.x2,self.y1)
 	self.anedit.setText(self.savedparmsdict['an'])
-	self.anedit.setToolTip('inner radius for rotational correlation > 0 (set to 1) ')	
+	self.anedit.setToolTip('angular neighborhood for local searches')	
 
-	self.y1 += 30
+	self.y1 += 50
 	
 	usrfunc= QtGui.QLabel('User Function Name', self)
 	usrfunc.move(self.x1,self.y1)
 	self.usrfuncedit=QtGui.QLineEdit(self)
 	self.usrfuncedit.move(self.x2,self.y1)
 	self.usrfuncedit.setText(self.savedparmsdict['usrfunc'])
-	self.usrfuncedit.setToolTip('name of the user-supplied-function that prepares reference image for each iteration')
+	self.usrfuncedit.setToolTip('name of the reference preparation function (ref_ali3d)')
 	
 	self.y1 += 30
 		
-	usrfuncfile= QtGui.QLabel('Enter name of external file containing user function:', self)
+	usrfuncfile= QtGui.QLabel('Enter name of external file containing user function:\n(Leave blank if file is not external to Sparx)', self)
 	usrfuncfile.move(self.x1,self.y1)
 	
-	self.y1 += 20
 	
-	usrfuncfile= QtGui.QLabel('(Leave blank if file is not external to Sparx)', self)
-	usrfuncfile.move(self.x1,self.y1)
-	
-	self.y1 += 20
+	self.y1 += 40
 	
 	self.usrfuncfileedit=QtGui.QLineEdit(self)
 	self.usrfuncfileedit.move(self.x2,self.y1)
@@ -1915,8 +1911,8 @@ class Popupadvparams_ali3d_2(QWidget):
 	self.yspc = 4
 	
 	self.x1 = 10
-	self.x2 = 140
-	self.x3 = 285
+	self.x2 = self.x1+220 #140
+	self.x3 = self.x2+145 # 285
 	########################################################################################
 	
         #Here we just set the window title
@@ -1929,66 +1925,66 @@ class Popupadvparams_ali3d_2(QWidget):
 	
 	self.savedparmsdict=savedparms
        	
-	fourvar= QtGui.QLabel('Fourvar', self)
+	fourvar= QtGui.QLabel('Compute fourier variance', self)
 	fourvar.move(self.x1,self.y1)
 	self.fourvarchkbx=QtGui.QCheckBox("",self)
 	self.fourvarchkbx.move(self.x2,self.y1)
 	self.fourvarchkbx.setCheckState(self.savedparmsdict['fourvar'])
-	self.fourvarchkbx.setToolTip('use Fourier variance to weight the reference (recommended, default False)')
+	self.fourvarchkbx.setToolTip('compute Fourier variance')
 	
 	self.y1 += 30
 	
-	deltapsi= QtGui.QLabel('deltapsi', self)
+	deltapsi= QtGui.QLabel('Delta psi for coarse search', self)
 	deltapsi.move(self.x1,self.y1)
 	self.deltapsiedit=QtGui.QLineEdit(self)
 	self.deltapsiedit.move(self.x2,self.y1)
 	self.deltapsiedit.setText(self.savedparmsdict['deltapsi'])
-	self.deltapsiedit.setToolTip('inner radius for rotational correlation > 0 (set to 1) ')	
+	self.deltapsiedit.setToolTip('Delta psi for coarse search')	
 
 	self.y1 += 30
 	
-	startpsi= QtGui.QLabel('startpsi', self)
+	startpsi= QtGui.QLabel('Start psi for coarse search', self)
 	startpsi.move(self.x1,self.y1)
 	self.startpsiedit=QtGui.QLineEdit(self)
 	self.startpsiedit.move(self.x2,self.y1)
 	self.startpsiedit.setText(self.savedparmsdict['startpsi'])
-	self.startpsiedit.setToolTip('inner radius for rotational correlation > 0 (set to 1) ')	
+	self.startpsiedit.setToolTip('Start psi for coarse search')	
 
 	self.y1 += 30
 	
-	stoprnct= QtGui.QLabel('stoprnct', self)
+	stoprnct= QtGui.QLabel('Minimum percentage of particles \nwhich must change orientation, \nbelow which the program stops', self)
 	stoprnct.move(self.x1,self.y1)
 	self.stoprnctedit=QtGui.QLineEdit(self)
 	self.stoprnctedit.move(self.x2,self.y1)
 	self.stoprnctedit.setText(self.savedparmsdict['stoprnct'])
-	self.stoprnctedit.setToolTip('inner radius for rotational correlation > 0 (set to 1) ')	
+	self.stoprnctedit.setToolTip('Minimum percentage of particles that change orientation to stop the program ')	
 
-	self.y1 += 30
+	self.y1 += 60
 	
-	nch= QtGui.QLabel('n', self)
+	nch= QtGui.QLabel('New version of ali3d where \na percentage of data \nis used for alignment', self)
 	nch.move(self.x1,self.y1)
 	self.nchchkbx=QtGui.QCheckBox("",self)
 	self.nchchkbx.move(self.x2,self.y1)
 	self.nchchkbx.setCheckState(self.savedparmsdict['nch'])
-	self.nchchkbx.setToolTip('use Fourier variance to weight the reference (recommended, default False)')
+	self.nchchkbx.setToolTip('new')
 	
-	self.y1 += 30
+	self.y1 += 60
 	
-	chunk= QtGui.QLabel('chunk', self)
+	chunk= QtGui.QLabel('Percentage of data used \nfor alignment', self)
 	chunk.move(self.x1,self.y1)
 	self.chunkedit=QtGui.QLineEdit(self)
 	self.chunkedit.move(self.x2,self.y1)
 	self.chunkedit.setText(self.savedparmsdict['chunk'])
-	self.chunkedit.setToolTip('inner radius for rotational correlation > 0 (set to 1) ')	
+	self.chunkedit.setToolTip('percentage of data used for alignment')	
 
-	self.y1 += 30
+	self.y1 += 50
 	
-	dbg= QtGui.QLabel('debug', self)
+	dbg= QtGui.QLabel('Debug mode', self)
 	dbg.move(self.x1,self.y1)
 	self.debugchkbx=QtGui.QCheckBox("",self)
 	self.debugchkbx.move(self.x2,self.y1)
 	self.debugchkbx.setCheckState(self.savedparmsdict['debug'])
-	self.debugchkbx.setToolTip('use Fourier variance to weight the reference (recommended, default False)')
+	self.debugchkbx.setToolTip('debug mode')
 	
 	self.y1 += 30
 	
@@ -1997,7 +1993,7 @@ class Popupadvparams_ali3d_2(QWidget):
 	self.rantestchkbx=QtGui.QCheckBox("",self)
 	self.rantestchkbx.move(self.x2,self.y1)
 	self.rantestchkbx.setCheckState(self.savedparmsdict['rantest'])
-	self.rantestchkbx.setToolTip('use Fourier variance to weight the reference (recommended, default False)')
+	self.rantestchkbx.setToolTip('rantest')
 	
 	self.y1 += 30
 	
