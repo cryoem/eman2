@@ -971,7 +971,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.setCursor(self.textcursor)
 			text, ok = QtGui.QInputDialog.getText(self, 'Enter Text', '')
 			if ok:
-				self.newnode = EM3DText(str(text), 10.0, transform=self._gettransformbasedonscreen(event))
+				self.newnode = EM3DText(str(text), 32.0, transform=self._gettransformbasedonscreen(event))
 				self.clearSelection()
 				self.newnode.setSelectedItem(True)
 				self.insertNewNode(text, self.newnode)
@@ -2617,7 +2617,7 @@ class NodeDialog(QtGui.QDialog):
 		grid.addWidget(text_label, 0, 0, 1, 2)
 		grid.addWidget(self.text_content, 0, 2, 1, 2)
 		fontsize_label = QtGui.QLabel("Font Size")
-		self.fontsize = QtGui.QLineEdit("10.0")
+		self.fontsize = QtGui.QLineEdit("32.0")
 		grid.addWidget(fontsize_label , 1, 0, 1, 2)
 		grid.addWidget(self.fontsize, 1, 2, 1, 2)
 		node_name_label = QtGui.QLabel("Text Name")

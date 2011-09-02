@@ -678,9 +678,10 @@ class EM3DText(EMItem3D):
 		glNormal(0,0,1)
 		glEnable(GL_TEXTURE_2D)
 		
-		self.font_renderer.render_string(self.renderString)
 		self.font_renderer.set_font_mode(self.fontMode)
 		self.font_renderer.set_depth(self.fontDepth)
+		self.font_renderer.set_face_size(int(self.fontSize))
+		self.font_renderer.render_string(self.renderString)
 		glPopMatrix()	
 
 class EMInspectorControlShape(EMItem3DInspector):
@@ -808,7 +809,8 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 		textlabel2.setAlignment(QtCore.Qt.AlignCenter)
 		textgridbox.addWidget(textlabel2, 1, 0, 1, 1)
 		
-		self.fontDepth = EMSpinWidget(int(self.item3d().getFontDepth()), 1.0)
+		self.fontDepth = EMSpinWidget(int(self.item3d().getFontDepth()), 1.0, rounding=0)
+		self.fontDepth.setMinimumWidth(120)
 		textgridbox.addWidget(self.fontDepth, 1, 1, 1, 2)
 		
 		textlabel2 = QtGui.QLabel("3D Font Size")
@@ -816,7 +818,8 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 		textlabel2.setAlignment(QtCore.Qt.AlignCenter)
 		textgridbox.addWidget(textlabel2, 2, 0, 1, 1)
 		
-		self.fontSize = EMSpinWidget(int(self.item3d().getFontSize()), 1.0)
+		self.fontSize = EMSpinWidget(int(self.item3d().getFontSize()), 1.0, rounding=0)
+		self.fontSize.setMinimumWidth(120)
 		textgridbox.addWidget(self.fontSize, 2, 1, 1, 2)
 		
 		textframe.setLayout(textgridbox)	
