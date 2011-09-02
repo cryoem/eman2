@@ -902,7 +902,8 @@ def cml_find_structure2(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_
 		# loop over i prj
 		change = False
 		tlistprj = shuffle(listprj)
-		tlistprj = mpi_bcast(tlistprj, len(tlistprj), MPI_INT, main_node, MPI_COMM_WORLD)
+		nnn = len(tlistprj)
+		tlistprj = mpi_bcast(tlistprj, nnn, MPI_INT, main_node, MPI_COMM_WORLD)
 		tlistprj = map(int, tlistprj)
 		for iprj in tlistprj:
 			#print "**********************************  iprj = ", iprj, g_n_anglst
