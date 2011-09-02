@@ -215,10 +215,15 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad=4, xysize=-1,
 	if myid == 0:  dummy = r.finish(True)
 	else:
 		from utilities import model_blank
-		if(xysize==-1):
+		if ( xysize == -1 and zsize == -1 ):
 			fftvol = model_blank(imgsize, imgsize, imgsize)
 		else:
-			fftvol = model_blank(xysize, xysize, imgsize)
+			if zsize == -1:
+				fftvol = model_blank(xysize, xysize, imgsize)
+			elif xysize == -1:
+				fftvol = model_blank(imgsize, imgsize, zsize)
+			else:
+				fftvol = model_blank(xysize, xysize, zsize)
 	return fftvol
 
 
@@ -382,10 +387,15 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None, n
 		dummy = r.finish(True)
 	else:
 		from utilities import model_blank
-		if xysize == -1:
+		if ( xysize == -1 and zsize == -1 ):
 			fftvol = model_blank(imgsize, imgsize, imgsize)
 		else:
-			fftvol = model_blank(xysize, xysize, imgsize)
+			if zsize == -1:
+				fftvol = model_blank(xysize, xysize, imgsize)
+			elif xysize == -1:
+				fftvol = model_blank(imgsize, imgsize, zsize)
+			else:
+				fftvol = model_blank(xysize, xysize, zsize)
 	return fftvol
 
 def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, symmetry="c1", CTF = False, random_angles = 0):

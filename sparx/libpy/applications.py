@@ -6662,10 +6662,22 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	nx      = vol.get_xsize()
 	ny      = vol.get_ysize()
 	nz      = vol.get_zsize()
-	if( nx==nz & ny==nz):
-		xysize = -1
+	nmax = max(nx, ny, nz)
+	if ( nx == ny ):
+		if( nx == nz):
+			xysize = -1
+			zsize = -1
+		elif( nx < nz):
+			xysize = nx
+			zsize = -1
+		else:
+			zsize = nz
+			xysize = -1
+	
 	else:
-		xysize=nx
+		ERROR('the x and y size have to be same, please change the reference volume and restart the program', "ihrsr_MPI", 1,myid)
+	
+
 	if last_ring < 0:	last_ring = int(nx/2) - 2
 
 	if myid == main_node:
@@ -6735,7 +6747,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 		finfo.write("image_start, image_end: %d %d\n" %(image_start, image_end))
 		finfo.flush()
 	
-	mask2D = pad( model_blank( int(2*rmax),nz,1,bckg=1.0), nz, nz, 1,0.0)
+	mask2D = pad( model_blank( int(2*rmax),nmax,1,bckg=1.0), nmax, nmax, 1,0.0)
 
 	data = EMData.read_images(stack, list_of_particles)
 	if fourvar:  original_data = []
@@ -6800,13 +6812,13 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 			if myid == main_node:
 				start_time = time()
 				print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.4f, xrange = %5.4f,stepx = %5.4f, yrange = %5.4f,  stepy = %5.4f, ynumber = %3d\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],stepx[N_step],yrng[N_step],stepy,ynumber[N_step]))
-			if( xysize == -1 ):
+			if( xysize == -1 and zsize==-1 ):
 				volft,kb = prep_vol( vol )
-				refrings = prepare_refrings( volft, kb, nz, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero", initial_theta =initial_theta, delta_theta = delta_theta)
+				refrings = prepare_refrings( volft, kb, nmax, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero", initial_theta =initial_theta, delta_theta = delta_theta)
 				del volft,kb
 			else:
 				volft, kbx, kby, kbz = prep_vol( vol )
-				refrings = prepare_refrings( volft, kbz, nz, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero", kbx = kbx, kby = kby, initial_theta =initial_theta, delta_theta = delta_theta)
+				refrings = prepare_refrings( volft, kbz, nmax, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero", kbx = kbx, kby = kby, initial_theta =initial_theta, delta_theta = delta_theta)
 				del volft, kbx, kby, kbz
 			if myid== main_node:
 				print_msg( "Time to prepare rings: %d\n" % (time()-start_time) )
@@ -7079,8 +7091,8 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 				print_msg("Time to write parameters = %d\n"%(time()-start_time))
 				start_time = time()
 
-			if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad, xysize = xysize)
-			else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, npad = npad, xysize = xysize)
+			if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad, xysize = xysize, zsize = zsize)
+			else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, npad = npad, xysize = xysize, zsize = zsize)
 
 			if myid == main_node:
 				print_msg("\n3D reconstruction time = %d\n"%(time()-start_time))
