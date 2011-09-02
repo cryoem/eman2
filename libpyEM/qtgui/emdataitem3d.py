@@ -153,6 +153,19 @@ class EMSliceItem3D(EMItem3D):
 		self.ambient = self.colors[self.isocolor]["ambient"]		
 		self.shininess = self.colors[self.isocolor]["shininess"]
 
+	# I have added these methods so the inspector can set the color John Flanagan
+	def setAmbientColor(self, red, green, blue, alpha=1.0):
+		self.ambient = [red, green, blue, alpha]
+
+	def setDiffuseColor(self, red, green, blue, alpha=1.0):
+		self.diffuse = [red, green, blue, alpha]
+		
+	def setSpecularColor(self, red, green, blue, alpha=1.0):
+		self.specular = [red, green, blue, alpha]
+	
+	def setShininess(self, shininess):
+		self.shininess = shininess
+		
 	def getItemInspector(self):
 		if not self.item_inspector:
 			self.item_inspector = EMSliceInspector("SLICE", self)
@@ -357,6 +370,19 @@ class EMVolumeItem3D(EMItem3D):
 		self.ambient = self.colors[self.isocolor]["ambient"]		
 		self.shininess = self.colors[self.isocolor]["shininess"]
 
+	# I have added these methods so the inspector can set the color John Flanagan
+	def setAmbientColor(self, red, green, blue, alpha=1.0):
+		self.ambient = [red, green, blue, alpha]
+
+	def setDiffuseColor(self, red, green, blue, alpha=1.0):
+		self.diffuse = [red, green, blue, alpha]
+		
+	def setSpecularColor(self, red, green, blue, alpha=1.0):
+		self.specular = [red, green, blue, alpha]
+	
+	def setShininess(self, shininess):
+		self.shininess = shininess
+		
 	def getItemInspector(self):
 		if not self.item_inspector:
 			self.item_inspector = EMVolumeInspector("VOLUME", self)
@@ -655,7 +681,7 @@ class EMIsosurface(EMItem3D):
 			self.force_update = False
 		
 		# This code draws an outline around the isosurface
-		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER: # No need for outlining in selection mode
+		if (self.is_selected or self.getParent().is_selected) and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER: # No need for outlining in selection mode
 						
 			glPushAttrib( GL_ALL_ATTRIB_BITS )
 		

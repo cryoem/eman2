@@ -42,7 +42,7 @@ from libpyGLUtils2 import GLUtil
 from valslider import ValSlider, EMLightControls, CameraControls, EMSpinWidget, EMQTColorWidget, EMANToolButton
 import math, weakref, os, pickle
 from emshapeitem3d import *
-from emdataitem3d import EMDataItem3D, EMIsosurface, EMSliceItem3D
+from emdataitem3d import EMDataItem3D, EMIsosurface, EMSliceItem3D, EMVolumeItem3D
 # XPM format Cursors
 
 visibleicon = [
@@ -912,6 +912,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		for record in records:
 			if self.multiselect:
 				selecteditem = EMItem3D.selection_idx_dict[record.names[len(record.names)-1]]()
+				if selecteditem.nodetype == "DataChild": selecteditem = selecteditem.parent
 				selecteditem.setSelectedItem(True)
 				# Inspector tree management
 				if self.main_3d_inspector: self.main_3d_inspector.updateSelection(selecteditem)
@@ -921,6 +922,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 					closestitem = record
 		if closestitem:
 			selecteditem = EMItem3D.selection_idx_dict[closestitem.names[len(closestitem.names)-1]]()
+			if selecteditem.nodetype == "DataChild": selecteditem = selecteditem.parent
 			if not selecteditem.isSelectedItem() and not self.appendselection and not self.toggleselection: self.clearSelection()
 			if self.toggleselection and selecteditem.isSelectedItem(): 
 				selecteditem.setSelectedItem(False)
@@ -2486,6 +2488,8 @@ class NodeDialog(QtGui.QDialog):
 			self.node_stacked_widget.addWidget(self.getIsosurfaceWidget())
 			self.node_type_combo.addItem("Slice")
 			self.node_stacked_widget.addWidget(self.getSliceWidget())
+			self.node_type_combo.addItem("Volume")
+			self.node_stacked_widget.addWidget(self.getVolumeWidget())
 		
 		self.connect(self.addnode_button, QtCore.SIGNAL('clicked()'), self._on_add_node)
 		self.connect(self.cancel_button, QtCore.SIGNAL('clicked()'), self._on_cancel)
@@ -2681,6 +2685,21 @@ class NodeDialog(QtGui.QDialog):
 		
 		return slicewidget
 	
+	def getVolumeWidget(self):
+		"""
+		Get Volume Widget
+		"""
+		volumewidget = QtGui.QWidget()
+		grid = QtGui.QGridLayout()
+		node_name_volume_label = QtGui.QLabel("Volume Name")
+		self.node_name_volume = QtGui.QLineEdit()
+		grid.addWidget(node_name_volume_label, 0, 0, 1, 2)
+		grid.addWidget(self.node_name_volume, 0, 2, 1, 2)
+		self._get_transformlayout(grid, 2, "VOLUME")
+		volumewidget.setLayout(grid)
+		
+		return volumewidget
+		
 	def _get_transformlayout(self, layout, idx, name):
 		self.transformgroup[name] = []
 		font = QtGui.QFont()
@@ -2754,6 +2773,8 @@ class NodeDialog(QtGui.QDialog):
 		insertion_node = None
 		node_name = "default" 
 		parentnode = None
+		d = None
+		reverttrans = False
 		# Cube
 		if self.node_type_combo.currentText() == "Cube":
 			d = self.transformgroup["CUBE"]
@@ -2803,6 +2824,7 @@ class NodeDialog(QtGui.QDialog):
 			insertion_node =  EMIsosurface(self.item.item3d(), transform=transform)
 			if self.node_name_iso.text() != "": node_name = self.node_name_iso.text()
 			parentnode = self.item.item3d()
+			reverttrans = True
 		# Slice
 		if self.node_type_combo.currentText() == "Slice": 
 			d = self.transformgroup["SLICE"]
@@ -2810,11 +2832,21 @@ class NodeDialog(QtGui.QDialog):
 			insertion_node =  EMSliceItem3D(self.item.item3d(), transform=transform)
 			if self.node_name_slice.text() != "": node_name = self.node_name_slice.text()
 			parentnode = self.item.item3d()
+			reverttrans = True
+		# Volume
+		if self.node_type_combo.currentText() == "Volume": 
+			d = self.transformgroup["VOLUME"]
+			transform = Transform({"type":"eman","az":float(d[4].text()),"alt":float(d[5].text()),"phi":float(d[6].text()),"tx":float(d[0].text()),"ty":float(d[1].text()),"tz":float(d[2].text()),"scale":float(d[3].text())})
+			insertion_node =  EMVolumeItem3D(self.item.item3d(), transform=transform)
+			if self.node_name_volume.text() != "": node_name = self.node_name_volume.text()
+			parentnode = self.item.item3d()
+			reverttrans = True
 		
 		insertion_node.setLabel(node_name)
-		self.inspector().scenegraph.insertNewNode(node_name, insertion_node, parentnode=parentnode)
+		self.inspector().scenegraph().insertNewNode(node_name, insertion_node, parentnode=parentnode)
 		insertion_node.setTransform(insertion_node.getParentMatrixProduct().inverse()*insertion_node.getTransform()) # Move to standard coordinatre system
 		insertion_node.getTransform().set_scale(1.0)	# The scale can be adverly affected by the above line of code. This may or may not be optimal I'll have to think about it....
+		if reverttrans: insertion_node.getTransform().set_trans(float(d[0].text()),float(d[1].text()),float(d[2].text()))
 		self.inspector().updateSceneGraph()
 		self.done(0)
 		
