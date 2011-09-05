@@ -1559,7 +1559,7 @@ public:
         	return Util::tf( m_defocus, ak, m_voltage, m_cs, m_ampcont, m_bfactor, 1);
 	else {
 		float az = atan2(float(j), float(i));
-		float dzz = m_defocus + m_dza/2.0f*sin(2*(az-m_azz*M_PI/180.0f));
+		float dzz = m_defocus + m_dza/2.0f*sin(2*(az-m_azz*M_PI/180.0f - M_PI/2.0f));
 		return Util::tf( dzz, ak, m_voltage, m_cs, m_ampcont, m_bfactor, 1);
 	}
     }

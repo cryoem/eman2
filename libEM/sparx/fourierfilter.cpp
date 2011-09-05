@@ -633,6 +633,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 			}
 			break;
 		case CTF_:
+			float pihalf = M_PI/2.0f;
 			for ( iz = 1; iz <= nzp; iz++) {
 				jz=iz-1; if (jz>nzp2) jz=jz-nzp;
 				for ( iy = 1; iy <= nyp; iy++) {
@@ -646,7 +647,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 							if(dza == 0.0f)  tf = Util::tf(dz, ak, voltage, cs, wgh, b_factor, sign);
 							else {
 								float az = atan2(static_cast<float>(jy)/nyp2, static_cast<float>(jx)/lsd3);
-								float dzz = dz + dza/2.0f*sin(2*(az-azz*M_PI/180.0f));
+								float dzz = dz + dza/2.0f*sin(2*(az-azz*M_PI/180.0f-pihalf));
 								tf = Util::tf(dzz, ak, voltage, cs, wgh, b_factor, sign);
 							}
 						}  else if(ny<=1) {

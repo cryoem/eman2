@@ -6135,7 +6135,7 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 #undef   SS
 #undef   PROJ
 
-float Util::tf(float dzz, float ak, float voltage, float cs, float wgh, float b_factor, float sign, float daz, float dang)
+float Util::tf(float dzz, float ak, float voltage, float cs, float wgh, float b_factor, float sign)
 {
 	float cst  = cs*1.0e7f;
 
@@ -20106,6 +20106,7 @@ EMData* Util::ctf_img(int nx, int ny, int nz, float dz,float ps,float voltage,fl
 	if(nz>=1) scz = 2.0f/float(nz); else scz=0.0f;
 	nr2 = ny/2 ;
 	nl2 = nz/2 ;
+	float pihalf = M_PI/2.0f;
 	for ( k=0; k<nz;k++) {
 		iz = k;  if(k>nl2) iz=k-nz;
 		float oz2 = iz*scz*iz*scz;
@@ -20122,7 +20123,7 @@ EMData* Util::ctf_img(int nx, int ny, int nz, float dz,float ps,float voltage,fl
 					float ox = ix*scx;
 					ak=pow(ox*ox + oy2 + oz2, 0.5f)*freq;
 					az = atan2(oy, ox);
-					float dzz = dz + dza/2.0f*sin(2*(az-azz*M_PI/180.0f));
+					float dzz = dz + dza/2.0f*sin(2*(az-azz*M_PI/180.0f-pihalf));
 					(*ctf_img1) (i*2,j,k)   = Util::tf(dzz, ak, voltage, cs, wgh, b_factor, sign);
 				}
 				//(*ctf_img1) (i*2+1,j,k) = 0.0f;  PAP  I assumed new EMData sets to zero
