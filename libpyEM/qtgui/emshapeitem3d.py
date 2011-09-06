@@ -389,6 +389,18 @@ class EMLine(EMItem3D):
 		
 		if self.item_inspector: self.item_inspector.updateMetaData()	
 		
+	def setSlices(self, slices):
+		if slices>0:
+			self.slices = int(slices)
+		else:
+			self.slices = int(self.width/2)
+		
+	def setStacks(self, stacks):
+		if stacks>0:
+			self.stacks = int(stacks)
+		else:
+			self.stacks = int(self.width/2)
+	
 	def getEvalString(self):
 		return "EMLine(%s, %s, %s, %s, %s, %s, %s)"%(self.x1, self.y1, self.z1, self.x2, self.y2,self.z2, self.width)
 	
@@ -872,10 +884,13 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		self.leftArrowLength.setValue(self.item3d().leftArrowLength, quiet=1)
 		self.rightArrowSize.setValue(self.item3d().rightArrowSize, quiet=1)
 		self.rightArrowLength.setValue(self.item3d().rightArrowLength, quiet=1)
+		self.slice.setValue(self.item3d().slices, quiet=1)
+		self.stack.setValue(self.item3d().stacks, quiet=1)
 		
 	def addControls(self, gridbox):
 		super(EMInspectorControlLine, self).addControls(gridbox)
 		
+		#frame to control properties of left/right arrows
 		lineframe = QtGui.QFrame()
 		lineframe.setFrameShape(QtGui.QFrame.StyledPanel)
 		lfont = QtGui.QFont()
@@ -927,7 +942,24 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		linegridbox.addWidget(self.rightArrowLength, 3, 2, 1, 1)
 		
 		lineframe.setLayout(linegridbox)	
-		gridbox.addWidget(lineframe, 2, 1, 2, 1)
+		gridbox.addWidget(lineframe, 2, 1, 1, 1)
+		
+		#frame to control slice/stack of the line
+		lineframe2 = QtGui.QFrame()
+		lineframe2.setFrameShape(QtGui.QFrame.StyledPanel)
+		linehbox = QtGui.QVBoxLayout()
+				
+		self.slice = ValSlider(lineframe2, (1, 100), "Slice", rounding=0)
+		self.slice.setValue(self.item3d().slices)
+		
+		self.stack = ValSlider(lineframe2, (1, 100), "Stack", rounding=0)
+		self.slice.setValue(self.item3d().stacks)
+		
+		linehbox.addWidget(self.slice)
+		linehbox.addWidget(self.stack)
+		
+		lineframe2.setLayout(linehbox)
+		gridbox.addWidget(lineframe2, 3, 1, 1, 1)
 		
 		# set to default, but run only as a base class
 		if type(self) == EMInspectorControl3DText: self.updateItemControls()
@@ -938,6 +970,9 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		QtCore.QObject.connect(self.leftArrowLength,QtCore.SIGNAL("valueChanged(int)"),self.redraw)
 		QtCore.QObject.connect(self.rightArrowSize,QtCore.SIGNAL("valueChanged(int)"),self.redraw)
 		QtCore.QObject.connect(self.rightArrowLength,QtCore.SIGNAL("valueChanged(int)"),self.redraw)
+		
+		QtCore.QObject.connect(self.slice,QtCore.SIGNAL("valueChanged"),self.redraw)
+		QtCore.QObject.connect(self.stack,QtCore.SIGNAL("valueChanged"),self.redraw)
 
 	def redraw(self):
 		self.item3d().setShowLeftArrow(self.leftShowArrow.isChecked())
@@ -946,6 +981,9 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		self.item3d().leftArrowLength = self.leftArrowLength.getValue()
 		self.item3d().rightArrowSize = self.rightArrowSize.getValue()
 		self.item3d().rightArrowLength = self.rightArrowLength.getValue()
+		
+		self.item3d().setSlices(self.slice.getValue())
+		self.item3d().setStacks(self.stack.getValue())
 		
 		if self.inspector:
 			self.inspector().updateSceneGraph()
