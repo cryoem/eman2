@@ -420,13 +420,12 @@ class PopupHelicalRefinement(QWidget):
 		cmd1="mpirun -np "+ str(np) + " "+ cmd1+" --MPI" 
 	
 	if writefile:	
-		from time import localtime
-		a=time.localtime()
-		fname = 'ihrsrcmd_%02d_%02d_%04d_%02d_%02d_%02d.txt'%(a.tm_mday,a.tm_mon, a.tm_year,a.tm_hour, a.tm_min, a.tm_sec)
-		f = open(fname,'a')
-		f.write(cmd1)
-		f.write('\n')
-		f.close()
+		(fname,stat)= QInputDialog.getText(self,"Generate Command Line","Enter name of file to save command line in",QLineEdit.Normal,"")
+		if stat:
+			f = open(fname,'a')
+			f.write(cmd1)
+			f.write('\n')
+			f.close()
 	
 	print cmd1
 	self.cmd = cmd1
