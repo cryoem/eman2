@@ -88,7 +88,7 @@ class PopupHelicalRefinement(QWidget):
         #sets an infotip for this Pushbutton
         self.repopbtn.setToolTip('Repopulate With Saved Parameters')
         #when this button is clicked, this action starts the subfunction twodali
-        self.connect(self.repopbtn, SIGNAL("clicked()"), self.repoparms)
+        self.connect(self.repopbtn, SIGNAL("clicked()"), self.repoparms_helical)
 
 	
         #Here we create a Button(file_button with title run open .hdf) and its position in the window
@@ -246,20 +246,12 @@ class PopupHelicalRefinement(QWidget):
 	
 	
 	y = y +30
-	self.advbtn = QPushButton("Advanced Parameters", self)
-        self.advbtn.move(x1-5, y)
-        #sets an infotip for this Pushbutton
-        self.advbtn.setToolTip('Set Advanced Parameters for helical refinement such as center and CTF')
-        #when this button is clicked, this action starts the subfunction advanced params
-        self.connect(self.advbtn, SIGNAL("clicked()"), self.advparams)
-		
-	y = y +30
 	self.savepbtn = QPushButton("Save Input Parameters", self)
         self.savepbtn.move(x1-5, y)
         #sets an infotip for this Pushbutton
         self.savepbtn.setToolTip('Save Input Parameters')
         #when this button is clicked, this action starts the subfunction twodali
-        self.connect(self.savepbtn, SIGNAL("clicked()"), self.saveparms)
+        self.connect(self.savepbtn, SIGNAL("clicked()"), self.saveparms_helical)
 	
 	y = y +30
 	self.cmdlinebtn = QPushButton("Generate command line from input parameters", self)
@@ -267,7 +259,7 @@ class PopupHelicalRefinement(QWidget):
         #sets an infotip for this Pushbutton
         self.cmdlinebtn.setToolTip('Generate command line using input parameters')
         #when this button is clicked, this action starts the subfunction twodali
-        self.connect(self.cmdlinebtn, SIGNAL("clicked()"), self.gencmdline)
+        self.connect(self.cmdlinebtn, SIGNAL("clicked()"), self.gencmdline_helical)
 
 	 #Here we create a Button(Run_button with title run sxali2d) and its position in the window
 	
@@ -291,7 +283,7 @@ class PopupHelicalRefinement(QWidget):
 	
      #Function runsxali2d started when  the  RUN_button of the  Poptwodali window is clicked 
    
-    def gencmdline(self,writefile=True):
+    def gencmdline_helical(self,writefile=True):
 	#Here we just read in all user inputs in the line edits of the Poptwodali window
    	stack = self.stacknameedit.text()
 	print "stack defined="+ stack
@@ -322,124 +314,107 @@ class PopupHelicalRefinement(QWidget):
 	
 	cmd1 = " sxihrsr.py "+str(stack) +" "+str(referencevolume)+" " + str(output)
 	
-	args = " --ou="+ str(ou)+ " --xr="+str(xr)+" "+ " --ynumber="+str(ynumber)+" "+ " --txs="+str(tx)+" " + " --dp="+str(dp)+" " + " --dphi="+str(dphi)+" "+ " --rmax="+str(rmax)+" " + " --maxit="+ str(maxit) 
-	
-	CTF=self.w1.ctfchkbx.checkState()
-	mask=self.savedparmsdict['maskname']
-	delta=self.savedparmsdict['delta']
-	ringstep=self.savedparmsdict['ringstep']
-	inrad=self.savedparmsdict['innerradius']
-	snr=self.savedparmsdict['snr']
-	initial_theta=self.savedparmsdict['initial_theta']
-	delta_theta=self.savedparmsdict['delta_theta']
-	nise=self.savedparmsdict['nise']
-	rmin = self.savedparmsdict['rmin']
-	fract = self.savedparmsdict['fract']
-	dp_step = self.savedparmsdict['dp_step']
-	ndp = self.savedparmsdict['ndp']
-	dphi_step = self.savedparmsdict['dphi_step']
-	ndphi = self.savedparmsdict['ndphi']
-	psi_max = self.savedparmsdict['psi_max']
-	an = self.savedparmsdict['an']
-	npad = self.savedparmsdict['npad']
-	chunk = self.savedparmsdict['chunk']
-	sym =self.savedparmsdict['sym']
-	datasym =self.savedparmsdict['datasym']
+	args = " --ou="+ str(ou)+ " --xr="+str(xr)+" " + " --ynumber="+str(ynumber)+ " " + " --txs="+str(tx)+" " +" --rmax="+str(rmax)+" " + " --maxit="+ str(maxit) 
 	
 	userf=''
 	userfile=''
 	
-	if self.setadv:
-		mask = self.w.masknameedit.text()
-		if len(str(mask))> 1:
-			cmd1 = cmd1+" "+str(mask) 
+	
+	mask = self.w1.masknameedit.text()
+	if len(str(mask))> 1:
+		cmd1 = cmd1+" "+str(mask) 
 	cmd1 = cmd1 + args
 	
-	if self.setadv:	
-		delta=self.w.deltaedit.text()
-		cmd1 = cmd1+" --delta=" +str(delta)
 		
-		ringstep = self.w.ringstepedit.text()
-		cmd1 = cmd1+" --rs="+str(ringstep)
+	delta=self.w1.deltaedit.text()
+	cmd1 = cmd1+" --delta=" +str(delta)
 		
-		inrad = self.w.innerradiusedit.text()
-		cmd1 = cmd1 + " --ir=" + str(inrad)
+	ringstep = self.w1.ringstepedit.text()
+	cmd1 = cmd1+" --rs="+str(ringstep)
+		
+	inrad = self.w1.innerradiusedit.text()
+	cmd1 = cmd1 + " --ir=" + str(inrad)
 		
 				
-		snr = self.w.snredit.text()
-		cmd1 = cmd1 + " --snr=" + str(snr)
+	snr = self.w1.snredit.text()
+	cmd1 = cmd1 + " --snr=" + str(snr)
 		
-		initial_theta = self.w.initial_thetaedit.text()
-		cmd1 = cmd1 + " --initial_theta=" + str(initial_theta)
+	initial_theta = self.w1.initial_thetaedit.text()
+	cmd1 = cmd1 + " --initial_theta=" + str(initial_theta)
 			
-		delta_theta = self.w.delta_thetaedit.text()
-		cmd1 = cmd1 + " --delta_theta=" + str(delta_theta)
+	delta_theta = self.w1.delta_thetaedit.text()
+	cmd1 = cmd1 + " --delta_theta=" + str(delta_theta)
 		
-		nise = self.w.niseedit.text()
-		cmd1 = cmd1 + " --nise=" + str(nise)
+
 		
-		rmin = self.w.rminedit.text()
-		cmd1 = cmd1 + " --rmin=" + str(rmin)
+	an = self.w1.anedit.text()
+	cmd1 = cmd1 + " --an=" + str(an)
 		
-		fract = self.w.fractedit.text()
-		cmd1 = cmd1 + " --fract=" + str(fract)
+	npad = self.w1.npadedit.text()
+	cmd1 = cmd1 + " --npad=" + str(npad)
 		
-		dp_step = self.w.dp_stepedit.text()
-		cmd1 = cmd1 + " --dp_step=" + str(dp_step)
+	chunk = self.w1.chunkedit.text()
+	cmd1 = cmd1 + " --chunk=" + str(chunk)
+	
+	nise = self.w2.niseedit.text()
+	cmd1 = cmd1 + " --nise=" + str(nise)
 		
-		ndp = self.w.ndpedit.text()
-		cmd1 = cmd1 + " --ndp=" + str(ndp)
+	rmin = self.w2.rminedit.text()
+	cmd1 = cmd1 + " --rmin=" + str(rmin)
 		
-		dphi_step = self.w.dphi_stepedit.text()
-		cmd1 = cmd1 + " --dphi_step=" + str(dphi_step)
+	fract = self.w2.fractedit.text()
+	cmd1 = cmd1 + " --fract=" + str(fract)
+	cmd1 = cmd1 +" --dp="+str(dp) 	
+	dp_step = self.w2.dp_stepedit.text()
+	cmd1 = cmd1 + " --dp_step=" + str(dp_step)
 		
-		ndphi = self.w.ndphiedit.text()
-		cmd1 = cmd1 + " --ndphi=" + str(ndphi)
+	ndp = self.w2.ndpedit.text()
+	cmd1 = cmd1 + " --ndp=" + str(ndp)
+	
+	cmd1 = cmd1 +" --dphi="+str(dphi)	
+	dphi_step = self.w2.dphi_stepedit.text()
+	cmd1 = cmd1 + " --dphi_step=" + str(dphi_step)
 		
-		psi_max = self.w.psi_maxedit.text()
-		cmd1 = cmd1 + " --psi_max=" + str(psi_max)
+	ndphi = self.w2.ndphiedit.text()
+	cmd1 = cmd1 + " --ndphi=" + str(ndphi)
 		
-		an = self.w.anedit.text()
-		cmd1 = cmd1 + " --an=" + str(an)
+	psi_max = self.w2.psi_maxedit.text()
+	cmd1 = cmd1 + " --psi_max=" + str(psi_max)	
+	sym = self.w2.symedit.text()
+	cmd1 = cmd1 + " --sym=" + str(sym)
+	datasym = self.w2.datasymedit.text()
+	cmd1 = cmd1 + " --datasym=" + str(datasym)
+	CTF=self.w1.ctfchkbx.checkState()
+	if CTF == Qt.Checked:
+		cmd1 = cmd1 + " --CTF"	
+	userf = self.w1.usrfuncedit.text()
 		
-		npad = self.w.npadedit.text()
-		cmd1 = cmd1 + " --npad=" + str(npad)
+	userfile = self.w1.usrfuncfileedit.text()
 		
-		chunk = self.w.chunkedit.text()
-		cmd1 = cmd1 + " --chunk=" + str(chunk)
-		
-		sym = self.w.symedit.text()
-		cmd1 = cmd1 + " --sym=" + str(sym)
-		datasym = self.w.datasymedit.text()
-		cmd1 = cmd1 + " --datasym=" + str(datasym)
-		
-		userf = self.w.usrfuncedit.text()
-		
-		userfile = self.w.usrfuncfileedit.text()
-		
-		if len(userfile) <= 1:
-			cmd1 = cmd1 + " --function="+str(userf)
-		else:
-			userfile = self.w.usrfuncfileedit.text()
-			userfile = str(userfile)
-			if len(userfile) > 1:
+	if len(userfile) <= 1:
+		cmd1 = cmd1 + " --function="+str(userf)
+	else:
+		userfile = self.w1.usrfuncfileedit.text()
+		userfile = str(userfile)
+		if len(userfile) > 1:
 				# break it down into file name and directory path
-				rind = userfile.rfind('/')
-				fname = userfile[rind+1:]
-				fname, ext = os.path.splitext(fname)
-				fdir = userfile[0:rind]
-				cmd1 = cmd1 + " --function=\"[" +fdir+","+fname+","+str(userf)+"]\""
+			rind = userfile.rfind('/')
+			fname = userfile[rind+1:]
+			fname, ext = os.path.splitext(fname)
+			fdir = userfile[0:rind]
+			cmd1 = cmd1 + " --function=\"[" +fdir+","+fname+","+str(userf)+"]\""
 	
 	np = self.nprocedit.text()
 	
-	self.savedparmsdict = {'stackname':str(stack),'initialprojectionparameter':str(projectionparameters),'referencevolume':str(referencevolume),'foldername':str(output),'outradius':str(ou),'xrange':str(xr),'xtrans':str(tx),'ynumber':str(ynumber),'dp':str(dp),'dphi':str(dphi),'rmax':str(rmax),'nriter':str(maxit),'nproc':str(np),'maskname':str(mask),'delta':str(delta),"ringstep":str(ringstep),"innerradius":str(inrad),"ctf":str(CTF),"snr":str(snr),"initial_theta":str(initial_theta), "delta_theta":str(delta_theta),"nise":str(nise),"rmin":str(rmin),"fract":str(fract),"dp_step":str(dp_step),"ndp":str(ndp),"dphi_step":str(dphi_step),"ndphi":str(ndphi),"psi_max":str(psi_max),"an":str(an), "npad":str(npad), "chunk":str(chunk),"sym":str(sym),"datasym":str(datasym),"usrfunc":str(userf), "usrfuncfile":str(userfile)}
+	self.savedparmsdict = {'stackname':str(stack),'initialprojectionparameter':str(projectionparameters),'referencevolume':str(referencevolume),'foldername':str(output),'outradius':str(ou),'xrange':str(xr),'xtrans':str(tx),'ynumber':str(ynumber),'dp':str(dp),'dphi':str(dphi),'rmax':str(rmax),'nriter':str(maxit),'nproc':str(np),'maskname':str(mask),'delta':str(delta),"ringstep":str(ringstep),"innerradius":str(inrad),"ctf":CTF,"snr":str(snr),"initial_theta":str(initial_theta), "delta_theta":str(delta_theta),"nise":str(nise),"rmin":str(rmin),"fract":str(fract),"dp_step":str(dp_step),"ndp":str(ndp),"dphi_step":str(dphi_step),"ndphi":str(ndphi),"psi_max":str(psi_max),"an":str(an), "npad":str(npad), "chunk":str(chunk),"sym":str(sym),"datasym":str(datasym),"usrfunc":str(userf), "usrfuncfile":str(userfile)}
 	
 	
 	
 	
 	
-	if self.setadv:
-		self.w.savedparmsdict=self.savedparmsdict
+	
+	self.w1.savedparmsdict=self.savedparmsdict
+	self.w2.savedparmsdict=self.savedparmsdict
 	
 	if int(str(np)) > 1:
 		cmd1="mpirun -np "+ str(np) + " "+ cmd1+" --MPI" 
@@ -465,66 +440,68 @@ class PopupHelicalRefinement(QWidget):
 	process = subprocess.Popen(self.cmd,shell=True)
 	self.emit(QtCore.SIGNAL("process_started"),process.pid)
 	
-    def saveparms(self):	
+    def saveparms_helical(self):	
 	# save all the parms in a text file so we can repopulate if user requests
-	import pickle
-	parameter_name = QtGui.QFileDialog.getSaveFileName(self, "Save Parameter File", "", "pkl files (*.pkl)")
-        #after the user selected a file, we obtain this filename as a Qstring
-	parameter_name=QtCore.QString(parameter_name)
-	output=open(parameter_name,'wb')
-	self.gencmdline(writefile=False)
-	pickle.dump(self.savedparmsdict,output)
-	output.close()
 
-    def repoparms(self):
+	(fname,stat)= QInputDialog.getText(self,"Save Input Parameters","Enter name of file to save parameters in",QLineEdit.Normal,"")
+	if stat:
+		import pickle
+		output=open(fname,'wb')
+		self.gencmdline_helical(writefile=False)
+		pickle.dump(self.savedparmsdict,output)
+		output.close()
+
+    def repoparms_helical(self):
     
   	
 	# repopulate with saved parms
-	import pickle
-	parameter_name = QtGui.QFileDialog.getOpenFileName(self, "Open Parameter File", "", "pkl files (*.pkl)")
-        #after the user selected a file, we obtain this filename as a Qstring
-	parameter_name=QtCore.QString(parameter_name)
-	
-	pkl = open(parameter_name,'rb')
-	self.savedparmsdict = pickle.load(pkl)
-	print self.savedparmsdict
-	self.outradiusedit.setText(self.savedparmsdict['outradius'])
-	self.stacknameedit.setText(self.savedparmsdict['stackname'])
-	self.initialprojectionparameteredit.setText(self.savedparmsdict['initialprojectionparameter'])	
-	self.referencevolumeedit.setText(self.savedparmsdict['referencevolume'])	
-	self.foldernameedit.setText(self.savedparmsdict['foldername'])	
-	self.xrangeedit.setText(self.savedparmsdict['xrange'])
-	self.xtransedit.setText(self.savedparmsdict['xtrans'])
-	self.ynumberedit.setText(self.savedparmsdict['ynumber'])
-	self.dpedit.setText(self.savedparmsdict['dp'])
-	self.dphiedit.setText(self.savedparmsdict['dphi'])
-	self.rmaxedit.setText(self.savedparmsdict['rmax'])
-	self.nriteredit.setText(self.savedparmsdict['nriter'])
-	self.nprocedit.setText(self.savedparmsdict['nproc'])
-	if( self.savedparmsdict['ctf'] == str("True")):
-		self.CTF_radio_button.setChecked(True)
-	else:
-		self.CTF_radio_button.setChecked(False)
-	if self.setadv:
-		self.w.masknameedit.setText(self.savedparmsdict['maskname'])
-		self.w.deltaedit.setText(self.savedparmsdict['delta'])
-		self.w.ringstepedit.setText(self.savedparmsdict['ringstep'])
-		self.w.innerradiusedit.setText(self.savedparmsdict['innerradius'])
-		self.w.snredit.setText(self.savedparmsdict['snr'])
-		self.w.initial_thetaedit.setText(self.savedparmsdict['initial_theta'])
-		self.w.delta_thetaedit.setText(self.savedparmsdict['delta_theta'])
-		self.w.niseedit.setText(self.savedparmsdict['nise'])
-		self.w.symedit.setText(self.savedparmsdict['sym'])
-		self.w.datasymedit.setText(self.savedparmsdict['datasym'])
-		self.w.usrfuncedit.setText(self.savedparmsdict['usrfunc'])
-		self.w.usrfuncfileedit.setText(self.savedparmsdict['usrfuncfile'])
+	(fname,stat)= QInputDialog.getText(self,"Repopulate Parameters","Enter name of file parameters were saved in",QLineEdit.Normal,"")
+	if stat:
+		import pickle
+		pkl = open(fname,'rb')
+        	#after the user selected a file, we obtain this filename as a Qstring
+		self.savedparmsdict = pickle.load(pkl)
+		print self.savedparmsdict
+		self.outradiusedit.setText(self.savedparmsdict['outradius'])
+		self.stacknameedit.setText(self.savedparmsdict['stackname'])
+		self.initialprojectionparameteredit.setText(self.savedparmsdict['initialprojectionparameter'])	
+		self.referencevolumeedit.setText(self.savedparmsdict['referencevolume'])	
+		self.foldernameedit.setText(self.savedparmsdict['foldername'])	
+		self.xrangeedit.setText(self.savedparmsdict['xrange'])
+		self.xtransedit.setText(self.savedparmsdict['xtrans'])
+		self.ynumberedit.setText(self.savedparmsdict['ynumber'])
+		self.dpedit.setText(self.savedparmsdict['dp'])
+		self.dphiedit.setText(self.savedparmsdict['dphi'])
+		self.rmaxedit.setText(self.savedparmsdict['rmax'])
+		self.nriteredit.setText(self.savedparmsdict['nriter'])
+		self.nprocedit.setText(self.savedparmsdict['nproc'])
 		
-    def advparams(self):
-        print "Opening a new popup window..."
-        self.w = Popupadvparams_helical(self.savedparmsdict)
-        self.w.resize(500,800)
-        self.w.show()
-	self.setadv=True
+		self.w1.ctfchkbx.setCheckState(self.savedparmsdict['ctf'])
+		self.w1.masknameedit.setText(self.savedparmsdict['maskname'])
+		self.w1.deltaedit.setText(self.savedparmsdict['delta'])
+		self.w1.ringstepedit.setText(self.savedparmsdict['ringstep'])
+		self.w1.innerradiusedit.setText(self.savedparmsdict['innerradius'])
+		self.w1.snredit.setText(self.savedparmsdict['snr'])
+		self.w1.initial_thetaedit.setText(self.savedparmsdict['initial_theta'])
+		self.w1.delta_thetaedit.setText(self.savedparmsdict['delta_theta'])
+		self.w1.delta_thetaedit.setText(self.savedparmsdict['delta_theta'])
+		self.w1.anedit.setText(self.savedparmsdict['an'])
+		self.w1.npadedit.setText(self.savedparmsdict['npad'])
+		self.w1.chunkedit.setText(self.savedparmsdict['chunk'])
+		self.w1.usrfuncedit.setText(self.savedparmsdict['usrfunc'])
+		self.w1.usrfuncfileedit.setText(self.savedparmsdict['usrfuncfile'])
+		
+		self.w2.niseedit.setText(self.savedparmsdict['nise'])
+		self.w2.symedit.setText(self.savedparmsdict['sym'])
+		self.w2.datasymedit.setText(self.savedparmsdict['datasym'])
+		self.w2.rminedit.setText(self.savedparmsdict['rmin'])
+		self.w2.fractedit.setText(self.savedparmsdict['fract'])
+		self.w2.dp_stepedit.setText(self.savedparmsdict['dp_step'])
+		self.w2.ndpedit.setText(self.savedparmsdict['ndp'])
+		self.w2.dphi_stepedit.setText(self.savedparmsdict['dphi_step'])
+		self.w2.ndphiedit.setText(self.savedparmsdict['ndphi'])
+		self.w2.psi_maxedit.setText(self.savedparmsdict['psi_max'])
+
     def setactiveheader(self):
 	stack = self.stacknameedit.text()
 	print "stack defined="+ stack
@@ -4650,7 +4627,7 @@ class MainWindow(QtGui.QWidget):
     	self.TabWidget.insertTab(0,self.w,'Main')
     	self.TabWidget.insertTab(1,self.w1,'Advanced CTF and Search')
 	self.TabWidget.insertTab(2,self.w2,'Advanced Symmetry')
-	self.TabWidget.resize(600,800)
+	self.TabWidget.resize(600,700)
     	self.TabWidget.show()
         
 	
