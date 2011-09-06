@@ -187,6 +187,9 @@ class EMSliceItem3D(EMItem3D):
 		diag = 2**(int(math.floor( math.log(interior_diagonal)/math.log(2) ))) #next smaller power of 2
 		diag2 = diag/2
 		
+		GL.glDisable(GL.GL_LIGHTING)
+		GL.glColor3f(1.0,1.0,0.0)
+		
 		if not self.use_3d_texture:
 			
 			temp_data = EMData(diag, diag)
@@ -210,7 +213,7 @@ class EMSliceItem3D(EMItem3D):
 			#Now draw the texture on another quad
 			GL.glEnable(GL.GL_BLEND)
 			GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE)
-			GL.glDisable(GL.GL_LIGHTING)
+#			GL.glDisable(GL.GL_LIGHTING)
 			
 			GL.glEnable(GL.GL_TEXTURE_2D)
 			GL.glBindTexture(GL.GL_TEXTURE_2D, self.texture_name)
@@ -235,7 +238,7 @@ class EMSliceItem3D(EMItem3D):
 			GL.glDisable(GL.GL_TEXTURE_2D)
 			
 			GL.glDisable(GL.GL_TEXTURE_3D)
-			GL.glEnable(GL.GL_LIGHTING)
+#			GL.glEnable(GL.GL_LIGHTING)
 			GL.glDisable(GL.GL_BLEND)
 		else:
 			quad_points = [(-diag2, -diag2, 0), (-diag2, diag2, 0), (diag2, diag2, 0), (diag2, -diag2, 0)]
@@ -250,7 +253,7 @@ class EMSliceItem3D(EMItem3D):
 			#Now draw the texture on another quad
 			GL.glEnable(GL.GL_BLEND)
 			GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE)
-			GL.glDisable(GL.GL_LIGHTING)
+#			GL.glDisable(GL.GL_LIGHTING)
 			
 			GL.glEnable(GL.GL_TEXTURE_3D)
 			GL.glBindTexture(GL.GL_TEXTURE_3D, self.getParent().get3DTexture())
@@ -280,8 +283,10 @@ class EMSliceItem3D(EMItem3D):
 			GL.glMatrixMode(GL.GL_MODELVIEW)
 			
 			GL.glDisable(GL.GL_TEXTURE_3D)
-			GL.glEnable(GL.GL_LIGHTING)
+#			GL.glEnable(GL.GL_LIGHTING)
 			GL.glDisable(GL.GL_BLEND)
+		
+		GL.glEnable(GL.GL_LIGHTING)
 		
 class EMSliceInspector(EMInspectorControlShape):
 	def __init__(self, name, item3d):
@@ -402,10 +407,7 @@ class EMVolumeItem3D(EMItem3D):
 	def renderNode(self):
 		(nx, ny, nz) = self.getParent().getBoundingBoxDimensions()
 		interior_diagonal = math.sqrt(nx**2+ny**2+nz**2) #A square with sides this big could hold any slice from the volume
-		#The interior diagonal is usually too big, and OpenGL textures work best with powers of 2 so let's get the next smaller power of 2
-		diag = interior_diagonal
-		#diag = 2**(int(math.floor( math.log(interior_diagonal)/math.log(2) ))) #next smaller power of 2
-		diag2 = diag/2
+		diag2 = interior_diagonal/2
 		
 		quad_points = [(-diag2, -diag2, 0), (-diag2, diag2, 0), (diag2, diag2, 0), (diag2, -diag2, 0)]
 		
@@ -441,9 +443,10 @@ class EMVolumeItem3D(EMItem3D):
 		GL.glLoadIdentity()
 		GL.glTranslatef(0.5, 0.5, 0.5) #Put the origin at the center of the 3D texture
 		GL.glScalef(1.0/nx, 1.0/ny, 1.0/nz) #Scale to make the texture coords the same as data coords
-		transform = self.getParent().transform * self.transform
-		transform.invert()
-		GLUtil.glMultMatrix(transform) #Make texture coord the same as Volume coords
+#		transform = self.getParent().transform * self.transform
+#		transform.invert()
+#		GLUtil.glMultMatrix(transform) #Make texture coord the same as Volume coords
+		GLUtil.glMultMatrix(self.getTransformStdCoord().inverse())
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		
 		GL.glEnable(GL.GL_BLEND)
