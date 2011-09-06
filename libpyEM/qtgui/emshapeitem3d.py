@@ -701,6 +701,11 @@ class EM3DText(EMItem3D):
 		self.font_renderer.set_font_mode(self.fontMode)
 		self.font_renderer.set_depth(self.fontDepth)
 		self.font_renderer.set_face_size(int(self.fontSize))
+		
+		#make 3D text rotate at the center
+		tvar = self.font_renderer.bounding_box(self.renderString)
+		glTranslate((tvar[0]-tvar[3])/2,(tvar[1]-tvar[4])/2,-(tvar[2]-tvar[5])/2)
+		
 		self.font_renderer.render_string(self.renderString)
 		glPopMatrix()	
 
@@ -804,6 +809,8 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 
 	def updateItemControls(self):
 		super(EMInspectorControl3DText, self).updateItemControls()
+		self.fontDepth.setValue(int(self.item3d().getFontDepth()))
+		self.fontSize.setValue(int(self.item3d().getFontSize()))
 		
 	def addControls(self, gridbox):
 		super(EMInspectorControl3DText, self).addControls(gridbox)
