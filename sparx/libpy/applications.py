@@ -11863,6 +11863,8 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		mpi_barrier(MPI_COMM_WORLD)	
 	'''
 
+	ali_params_filename = "ali_params_%d"%color
+
 	if myid == main_node:
 		print "******************************************************************************************"
 		print "*            Beginning of the first phase           "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"            *"
@@ -11968,9 +11970,8 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				all_ali_params[3].append(mirror)
 				all_ali_params[4].append(scale)
 			if key == group_main_node:
-				filename = "ali_params_%d"%(color)
-				call(['rm', '-f', filename])
-				write_text_file(all_ali_params, filename)
+				call(['rm', '-f', ali_params_filename])
+				write_text_file(all_ali_params, ali_params_filename)
 			del all_ali_params
 
 			# gather the data from the group main node to the main node
@@ -11984,8 +11985,6 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 					current_refim = [model_blank(nx, nx) for i in xrange(K)]
 				for k in xrange(K):
 					bcast_EMData_to_all(current_refim[k], myid, main_node)
-				if myid == main_node:
-					for k in xrange(K): current_refim[k].write_image("two_way_match_%02d_%02d.hdf"%(Iter, mloop), k)
 			mpi_barrier(MPI_COMM_WORLD)
 		del current_refim
 
@@ -12191,9 +12190,8 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			all_ali_params[3].append(mirror)
 			all_ali_params[4].append(scale)
 		if key == group_main_node:
-			filename = "ali_params_%d"%(color)
-			call(['rm', '-f', filename])
-			write_text_file(all_ali_params, filename)
+			call(['rm', '-f', ali_params_filename])
+			write_text_file(all_ali_params, ali_params_filename)
 
 		# gather refim to the main node
 		if key == group_main_node:
@@ -12237,6 +12235,9 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			#if key == group_main_node:
 			#	for k in xrange(K): refim[k].write_image("%s_way_match_%02d_%02d.hdf"%(wayness_english, mloop, color), k)
 		mpi_barrier(MPI_COMM_WORLD)
+
+	if key == group_main_node:
+		call(['rm', '-f', ali_params_filename])
 
 	if myid == main_node:
 		print "**********************************************************************"
@@ -12846,6 +12847,9 @@ def match_2_way(data, refi, indep_run, thld_grp, FH, FF, find_unique=True, wayne
 	reproducible_avgs = []
         
 	for irun in xrange(indep_run):
+		filename = "ali_params_%d"%run[irun]
+		all_ali_params = read_text_row(filename)
+	
 		Parts = []
 	        part = [] 
         	for k in xrange(K): 
@@ -12888,7 +12892,6 @@ def match_2_way(data, refi, indep_run, thld_grp, FH, FF, find_unique=True, wayne
                 	if len(STB_PART[i]) > 0:
                         	class_data = []
 				members_id = []
-				all_ali_params = read_text_row("ali_params_%d"%run[irun])
                         	for im in STB_PART[i]:
 					set_params2D(data[im], [all_ali_params[im][0], all_ali_params[im][1], all_ali_params[im][2], int(all_ali_params[im][3]), 1.0])
                                 	class_data.append(data[im])
