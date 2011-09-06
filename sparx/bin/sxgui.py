@@ -64,7 +64,7 @@ class PopupHelicalRefinement(QWidget):
 	
 	
 	# populate with default values
-	self.savedparmsdict ={'stackname':'NONE','initialprojectionparameter':'NONE','referencevolume':'NONE','foldername':'NONE','outradius':'-1','xrange':'1.0','xtrans':'1.0','ynumber':"2",'nriter':'3','nproc':'3','dp':'NONE','dphi':'NONE','rmax':'NONE','maskname':'',"delta":"1.0","ringstep":"1","innerradius":"1","ctf":"False","snr":"1.0","initial_theta":"90.0", "delta_theta":"1.0","nise":"2","nise":"2","rmin":"0.0","fract":"0.7","dp_step":"0.1","ndp":"12","dphi_step":"0.1","ndphi":"12","psi_max":"15","an":"-1", "npad":"2", "chunk":"-1.0", "sym":"c1","datasym":"symdoc.dat","usrfunc":"helical","usrfuncfile":""}
+	self.savedparmsdict ={'stackname':'NONE','initialprojectionparameter':'NONE','referencevolume':'NONE','foldername':'NONE','outradius':'-1','xrange':'1.0','xtrans':'1.0','ynumber':"2",'nriter':'3','nproc':'3','dp':'NONE','dphi':'NONE','rmax':'NONE','maskname':'',"delta":"1.0","ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","initial_theta":"90.0", "delta_theta":"1.0","nise":"2","nise":"2","rmin":"0.0","fract":"0.7","dp_step":"0.1","ndp":"12","dphi_step":"0.1","ndphi":"12","psi_max":"15","an":"-1", "npad":"2", "chunk":"-1.0", "sym":"c1","datasym":"symdoc.dat","usrfunc":"helical","usrfuncfile":""}
 	
 	
 	self.setadv=False
@@ -150,6 +150,12 @@ class PopupHelicalRefinement(QWidget):
 	self.foldernameedit.move(x2,y)
 	self.foldernameedit.setText(self.savedparmsdict['foldername'])	
 	
+	self.outinfobtn = QPushButton("Output Info", self)
+        self.outinfobtn.move(x3,  y)
+        #sets an infotip for this Pushbutton
+        self.outinfobtn.setToolTip('Output Info')
+        #when this button is clicked, this action starts the subfunction twodali
+        self.connect(self.outinfobtn, SIGNAL("clicked()"), self.outputinfo_helical)
 	
 	y = y +30
 	outradius= QtGui.QLabel('Particle outer radius', self)
@@ -205,12 +211,7 @@ class PopupHelicalRefinement(QWidget):
 	self.rmaxedit.move(x2,y)
 	self.rmaxedit.setText(self.savedparmsdict['rmax'])
 	self.rmaxedit.setToolTip('helical out radious')	
-	
-	y = y +30	
-	self.CTF_radio_button=QtGui.QRadioButton('CTF on', self)
-	self.CTF_radio_button.move(x1,y)
-	self.CTF_radio_button.setChecked(True)
-		
+
 	y = y +30
 	nriter= QtGui.QLabel('Number of iterations', self)
 	nriter.move(x1,y)
@@ -282,12 +283,10 @@ class PopupHelicalRefinement(QWidget):
         #Here we define, that when this button is clicked, it starts subfunction runsxali2d
         self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxihrsr)
         #Labels and Line Edits for User Input
-	y = y +30
-	outinfo= QtGui.QLabel('Output files (logfile, projection parameter files and pix error files)\nvol--reconstructed volume, volf--reconstructed volume after helicising and user function \n xform.projection was stored in each image header. ', self)
-	outinfo.move(x1,y)
-
+		
+    def outputinfo_helical(self):
+        QMessageBox.information(self, "helical output",'Output files (logfile, projection parameter files and pix error files)\nvol--reconstructed volume, volf--reconstructed volume after helicising and user function \n xform.projection was stored in each image header.')
 	
-
 
 	
      #Function runsxali2d started when  the  RUN_button of the  Poptwodali window is clicked 
@@ -324,12 +323,8 @@ class PopupHelicalRefinement(QWidget):
 	cmd1 = " sxihrsr.py "+str(stack) +" "+str(referencevolume)+" " + str(output)
 	
 	args = " --ou="+ str(ou)+ " --xr="+str(xr)+" "+ " --ynumber="+str(ynumber)+" "+ " --txs="+str(tx)+" " + " --dp="+str(dp)+" " + " --dphi="+str(dphi)+" "+ " --rmax="+str(rmax)+" " + " --maxit="+ str(maxit) 
-	if (self.CTF_radio_button.isChecked() ):
-		args = args +" --CTF"
-		CTF = "True"
-	else:
-		CTF = "False"
 	
+	CTF=self.w1.ctfchkbx.checkState()
 	mask=self.savedparmsdict['maskname']
 	delta=self.savedparmsdict['delta']
 	ringstep=self.savedparmsdict['ringstep']
@@ -586,7 +581,7 @@ class PopupHelicalRefinement(QWidget):
         #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
 	self.referencevolumeedit.setText(str(a))
 
-class Popupadvparams_helical(QWidget):
+class Popupadvparams_helical_1(QWidget):
     def __init__(self,savedparms):
         QWidget.__init__(self)
         #Here we just set the window title
@@ -623,6 +618,22 @@ class Popupadvparams_helical(QWidget):
         #Here we define, that when this button is clicked, it starts subfunction choose_file
 	QtCore.QObject.connect(self.mskfile_button, QtCore.SIGNAL("clicked()"), self.choose_mskfile)
 	
+	y = y +30
+	ctf= QtGui.QLabel('CTF', self)
+	ctf.move(x1,y)
+	self.ctfchkbx = QtGui.QCheckBox("",self)
+	self.ctfchkbx.move(x2, y)
+	self.ctfchkbx.setCheckState(self.savedparmsdict['ctf'])
+	self.ctfchkbx.setToolTip('Consider CTF correction during the alignment ')
+	
+	y = y +30
+	snr= QtGui.QLabel('SNR', self)
+	snr.move(x1,y)
+	self.snredit=QtGui.QLineEdit(self)
+	self.snredit.move(x2,y)
+	self.snredit.setText(self.savedparmsdict['snr'])
+	self.snredit.setToolTip('signal-to-noise ratio of the data (default SNR=1.0)')	
+	
 	y = y+30
 	delta= QtGui.QLabel('Angular step', self)
 	delta.move(x1,y)
@@ -647,13 +658,6 @@ class Popupadvparams_helical(QWidget):
 	self.innerradiusedit.setText(self.savedparmsdict['innerradius'])
 	self.innerradiusedit.setToolTip('inner radius for rotational correlation > 0 (set to 1) ')	
 	
-	y = y +30
-	snr= QtGui.QLabel('SNR', self)
-	snr.move(x1,y)
-	self.snredit=QtGui.QLineEdit(self)
-	self.snredit.move(x2,y)
-	self.snredit.setText(self.savedparmsdict['snr'])
-	self.snredit.setToolTip('signal-to-noise ratio of the data (default SNR=1.0)')	
 		
 	y = y + 30
 	initial_theta= QtGui.QLabel('Initial theta', self)
@@ -671,6 +675,96 @@ class Popupadvparams_helical(QWidget):
 	self.delta_thetaedit.setText(self.savedparmsdict['delta_theta'])
 	self.delta_thetaedit.setToolTip('step of theta for reference projection, default 1.0)')
 
+	
+	y = y + 30
+	an = QtGui.QLabel('Angular neighborhood', self)
+	an.move(x1,y)
+	self.anedit=QtGui.QLineEdit(self)
+	self.anedit.move(x2,y)
+	self.anedit.setText(self.savedparmsdict['an'])
+	self.anedit.setToolTip('angular neighborhood for local searches, defaut -1')	
+	
+	y = y + 30
+	npad = QtGui.QLabel('Npad', self)
+	npad.move(x1,y)
+	self.npadedit=QtGui.QLineEdit(self)
+	self.npadedit.move(x2,y)
+	self.npadedit.setText(self.savedparmsdict['npad'])
+	self.npadedit.setToolTip('padding size for 3D reconstruction, please use npad = 2')	
+	
+	y = y + 30
+	chunk = QtGui.QLabel('Chunk', self)
+	chunk.move(x1,y)
+	self.chunkedit=QtGui.QLineEdit(self)
+	self.chunkedit.move(x2,y)
+	self.chunkedit.setText(self.savedparmsdict['chunk'])
+	self.chunkedit.setToolTip('percentage of data used for alignment')	
+
+	
+	y = y + 30
+	usrfunc= QtGui.QLabel('User Function Name', self)
+	usrfunc.move(x1,y)
+	self.usrfuncedit=QtGui.QLineEdit(self)
+	self.usrfuncedit.move(x2,y)
+	self.usrfuncedit.setText(self.savedparmsdict['usrfunc'])
+	self.usrfuncedit.setToolTip('name of the user-supplied-function that prepares reference image for each iteration')
+	
+	y = y +30	
+	usrfuncfile= QtGui.QLabel('Enter (full path) name of external file containing user function:', self)
+	usrfuncfile.move(x1,y)
+	y = y + 30
+	usrfuncfile= QtGui.QLabel('(Leave blank if file is not external to Sparx)', self)	
+	usrfuncfile.move(x1,y)
+	y = y + 30
+	self.usrfuncfileedit=QtGui.QLineEdit(self)
+	self.usrfuncfileedit.move(x2,y)
+	self.usrfuncfileedit.setText(self.savedparmsdict['usrfuncfile'])
+	self.usrfuncfileedit.setToolTip('name of the external file containing user function')	
+     #Function runsxali2d started when  the  RUN_button of the  Poptwodali window is clicked 
+    	#Here we define, that when this button is clicked, it starts subfunction choose_file
+	self.usrfile_button = QtGui.QPushButton("Select File", self)
+	self.usrfile_button.move(x3, y)
+	QtCore.QObject.connect(self.usrfile_button, QtCore.SIGNAL("clicked()"), self.choose_usrfile)
+	
+    def choose_usrfile(self):
+	#opens a file browser, showing files only in .hdf format
+   	file_name = QtGui.QFileDialog.getOpenFileName(self, "Open File Containing User Fuction", "", "py files (*.py)")
+        #after the user selected a file, we obtain this filename as a Qstring
+	a=QtCore.QString(file_name)
+	print a
+        #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
+	self.usrfuncfileedit.setText(str(a))
+	
+    def choose_mskfile(self):
+	#opens a file browser, showing files only in .hdf format
+   	file_name = QtGui.QFileDialog.getOpenFileName(self, "Open File Containing Mask", "", "(*)")
+        #after the user selected a file, we obtain this filename as a Qstring
+	a=QtCore.QString(file_name)
+	print a
+        #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
+	self.masknameedit.setText(str(a))
+#helical_end		
+
+class Popupadvparams_helical_2(QWidget):
+    def __init__(self,savedparms):
+        QWidget.__init__(self)
+        #Here we just set the window title
+	self.setWindowTitle('sxihrsr advanced parameters related to helix and symmetry')
+        #Here we just set a label and its position in the window
+	x1 = 10
+	x2 = x1 + 150
+	x3 = x2 + 145
+	x4 = x3 + 100
+	y = 10
+	title1=QtGui.QLabel('<b>sxihrsr</b> - set advanced helical params', self)
+	title1.move(10,y)
+        #Labels and Line Edits for User Input
+        #Just a label
+	y = y +20
+	title2= QtGui.QLabel('<b>Advanced</b> parameters', self)
+	title2.move(10,y)
+
+	self.savedparmsdict=savedparms
 	y = y + 30
 	nise = QtGui.QLabel('Nise', self)
 	nise.move(x1,y)
@@ -735,29 +829,6 @@ class Popupadvparams_helical(QWidget):
 	self.psi_maxedit.setText(self.savedparmsdict['psi_max'])
 	self.psi_maxedit.setToolTip('maximum psi - how far rotation in plane can can deviate from 90 or 270 degrees')	
 	
-	y = y + 30
-	an = QtGui.QLabel('Angular neighborhood', self)
-	an.move(x1,y)
-	self.anedit=QtGui.QLineEdit(self)
-	self.anedit.move(x2,y)
-	self.anedit.setText(self.savedparmsdict['an'])
-	self.anedit.setToolTip('angular neighborhood for local searches, defaut -1')	
-	
-	y = y + 30
-	npad = QtGui.QLabel('Npad', self)
-	npad.move(x1,y)
-	self.npadedit=QtGui.QLineEdit(self)
-	self.npadedit.move(x2,y)
-	self.npadedit.setText(self.savedparmsdict['npad'])
-	self.npadedit.setToolTip('padding size for 3D reconstruction, please use npad = 2')	
-	
-	y = y + 30
-	chunk = QtGui.QLabel('Chunk', self)
-	chunk.move(x1,y)
-	self.chunkedit=QtGui.QLineEdit(self)
-	self.chunkedit.move(x2,y)
-	self.chunkedit.setText(self.savedparmsdict['chunk'])
-	self.chunkedit.setToolTip('percentage of data used for alignment')	
 
 	y = y + 30
 	sym = QtGui.QLabel('Point group symmetry', self)
@@ -775,50 +846,6 @@ class Popupadvparams_helical(QWidget):
 	self.datasymedit.setText(self.savedparmsdict['datasym'])
 	self.datasymedit.setToolTip('file to save helical parameters of each iteration')	
 	
-	y = y + 30
-	usrfunc= QtGui.QLabel('User Function Name', self)
-	usrfunc.move(x1,y)
-	self.usrfuncedit=QtGui.QLineEdit(self)
-	self.usrfuncedit.move(x2,y)
-	self.usrfuncedit.setText(self.savedparmsdict['usrfunc'])
-	self.usrfuncedit.setToolTip('name of the user-supplied-function that prepares reference image for each iteration')
-	
-	y = y +30	
-	usrfuncfile= QtGui.QLabel('Enter (full path) name of external file containing user function:', self)
-	usrfuncfile.move(x1,y)
-	y = y + 30
-	usrfuncfile= QtGui.QLabel('(Leave blank if file is not external to Sparx)', self)	
-	usrfuncfile.move(x1,y)
-	y = y + 30
-	self.usrfuncfileedit=QtGui.QLineEdit(self)
-	self.usrfuncfileedit.move(x2,y)
-	self.usrfuncfileedit.setText(self.savedparmsdict['usrfuncfile'])
-	self.usrfuncfileedit.setToolTip('name of the external file containing user function')	
-     #Function runsxali2d started when  the  RUN_button of the  Poptwodali window is clicked 
-    	#Here we define, that when this button is clicked, it starts subfunction choose_file
-	self.usrfile_button = QtGui.QPushButton("Select File", self)
-	self.usrfile_button.move(x3, y)
-	QtCore.QObject.connect(self.usrfile_button, QtCore.SIGNAL("clicked()"), self.choose_usrfile)
-	
-    def choose_usrfile(self):
-	#opens a file browser, showing files only in .hdf format
-   	file_name = QtGui.QFileDialog.getOpenFileName(self, "Open File Containing User Fuction", "", "py files (*.py)")
-        #after the user selected a file, we obtain this filename as a Qstring
-	a=QtCore.QString(file_name)
-	print a
-        #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
-	self.usrfuncfileedit.setText(str(a))
-	
-    def choose_mskfile(self):
-	#opens a file browser, showing files only in .hdf format
-   	file_name = QtGui.QFileDialog.getOpenFileName(self, "Open File Containing Mask", "", "(*)")
-        #after the user selected a file, we obtain this filename as a Qstring
-	a=QtCore.QString(file_name)
-	print a
-        #we convert this Qstring to a string and send it to line edit classed stackname edit of the Poptwodali window
-	self.masknameedit.setText(str(a))
-#helical_end		
-
 
 
 #Layout of the Pop Up window Popuptwodali (for sxali2d); started by the function twodali of the main window        
@@ -4611,9 +4638,21 @@ class MainWindow(QtGui.QWidget):
         print "Opening a new popup window..."
         #opens the window Poptwodali, and defines its width and height
         #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
-        self.w = PopupHelicalRefinement()
-        self.w.resize(600,800)
-        self.w.show()   
+        #self.w = PopupHelicalRefinement()
+        #self.w.resize(600,800)
+        #self.w.show()   
+	self.w = PopupHelicalRefinement()
+	self.w1 = Popupadvparams_helical_1(self.w.savedparmsdict)
+	self.w2 = Popupadvparams_helical_2(self.w.savedparmsdict)
+	self.w.w1 = self.w1
+	self.w.w2 = self.w2
+	self.TabWidget = QtGui.QTabWidget()
+    	self.TabWidget.insertTab(0,self.w,'Main')
+    	self.TabWidget.insertTab(1,self.w1,'Advanced CTF and Search')
+	self.TabWidget.insertTab(2,self.w2,'Advanced Symmetry')
+	self.TabWidget.resize(600,800)
+    	self.TabWidget.show()
+        
 	
     def ali3d(self):
         print "Opening a new popup window..."
