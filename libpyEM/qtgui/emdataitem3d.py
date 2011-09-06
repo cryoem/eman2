@@ -35,7 +35,6 @@ class EMDataItem3D(EMItem3D):
 	def get3DTexture(self):
 		if self.texture_name == 0:
 			self.texture_name = self.glflags.gen_textureName(self.data)
-			print "Texture ==", self.texture_name
 		return self.texture_name
 		
 	def getEvalString(self):
@@ -77,12 +76,6 @@ class EMDataItem3D(EMItem3D):
 				pass
 	def renderNode(self):
 		if self.renderBoundingBox: drawBoundingBox(*self.getBoundingBoxDimensions())
-		self.model_view = GL.glGetFloatv(GL.GL_MODELVIEW_MATRIX)
-	
-	def getModelViewMatrix(self):
-		print "Data node's modelview matrix:"
-		print self.model_view
-		return self.model_view
 	
 class EMDataItem3DInspector(EMItem3DInspector):
 	def __init__(self, name, item3d):
@@ -416,18 +409,26 @@ class EMVolumeItem3D(EMItem3D):
 		
 		quad_points = [(-diag2, -diag2, 0), (-diag2, diag2, 0), (diag2, diag2, 0), (diag2, -diag2, 0)]
 		
-		#For debugging purposes, draw an outline
+		#Find root node
+		rootNode = self
+		while rootNode.getParent():
+			rootNode = rootNode.getParent()
+			
 		GL.glMatrixMode(GL.GL_MODELVIEW)
+		GL.glPushMatrix()
+		GL.glLoadIdentity() #Make the polygon be in the plane of the screen
+		rootNode.camera.setCameraPosition()		
+
+		#For debugging purposes, draw an outline
+		GL.glDisable(GL.GL_LIGHTING)
+		GL.glColor3f(1.0,0.0,1.0)
 		GL.glBegin(GL.GL_LINE_LOOP)
 		for i in range(4):
 			GL.glVertex3f(*quad_points[i])
-		GL.glEnd()	
+		GL.glEnd()
 		
 		#Now draw the texture on another quad
 		GL.glEnable(GL.GL_TEXTURE_3D)
-		GL.glEnable(GL.GL_BLEND)
-		GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE)
-		GL.glDisable(GL.GL_LIGHTING)
 		GL.glBindTexture(GL.GL_TEXTURE_3D, self.getParent().get3DTexture())
 		GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_BORDER)
 		GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_BORDER)
@@ -436,19 +437,26 @@ class EMVolumeItem3D(EMItem3D):
 		GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR)#GL.GL_NEAREST)
 #		GL.glTexParameterfv(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_BORDER_COLOR, (0.0, 0.0,1.0,1.0,1.0))
 
-		GL.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_REPLACE)
 		GL.glMatrixMode(GL.GL_TEXTURE)
 		GL.glLoadIdentity()
 		GL.glTranslatef(0.5, 0.5, 0.5) #Put the origin at the center of the 3D texture
 		GL.glScalef(1.0/nx, 1.0/ny, 1.0/nz) #Scale to make the texture coords the same as data coords
-		GLUtil.glMultMatrix(self.transform) #Make texture coord the same as Volume coords
+		transform = self.getParent().transform * self.transform
+		transform.invert()
+		GLUtil.glMultMatrix(transform) #Make texture coord the same as Volume coords
 		GL.glMatrixMode(GL.GL_MODELVIEW)
+		
+		GL.glEnable(GL.GL_BLEND)
+		GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE)
+		GL.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_REPLACE)
 		
 		GL.glBegin(GL.GL_QUADS)
 		for i in range(4):
 			GL.glTexCoord3f(*quad_points[i])
 			GL.glVertex3f(*quad_points[i])
 		glEnd()
+		
+		GL.glPopMatrix()
 		
 		GL.glMatrixMode(GL.GL_TEXTURE)
 		GL.glLoadIdentity() #Return texture coord system to default
