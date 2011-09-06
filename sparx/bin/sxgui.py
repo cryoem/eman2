@@ -431,7 +431,7 @@ class PopupHelicalRefinement(QWidget):
 	self.cmd = cmd1
 	
     def runsxihrsr(self):
-	self.gencmdline(writefile=False)
+	self.gencmdline_helical(writefile=False)
 	outfolder=self.savedparmsdict['foldername']
 	if os.path.exists(outfolder):
 		print "output folder "+outfolder+" already exists!"
