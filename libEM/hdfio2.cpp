@@ -71,6 +71,8 @@ HdfIO2::HdfIO2(const string & hdf_filename, IOMode rw)
 //	H5Pset_cache(accprop)
 	hsize_t dims=1;
 	simple_space=H5Screate_simple(1,&dims,NULL);
+
+	meta_attr_dict = Dict();
 }
 
 HdfIO2::~HdfIO2()
@@ -460,6 +462,21 @@ void HdfIO2::init()
 		if (group<0) throw ImageWriteException(filename,"Unable to add image group (/MDF/images) to HDF5 file");
 		write_attr(group,"imageid_max",EMObject(-1));
 	}
+	else {	//read the meta attributes for all images
+		int nattr=H5Aget_num_attrs(group);
+
+		char name[ATTR_NAME_LEN];
+		for (int i=0; i<nattr; i++) {
+			hid_t attr=H5Aopen_idx(group, i);
+			H5Aget_name(attr,127,name);
+
+			EMObject val=read_attr(attr);
+			meta_attr_dict["DDD."+string(name)]=val;
+
+			H5Aclose(attr);
+		}
+
+	}
 	initialized = true;
 	EXITFUNC;
 }
@@ -518,6 +535,15 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 	init();
+
+	/**Copy the meta attributes stored in /MDF/images*/
+	size_t meta_attr_size = meta_attr_dict.size();
+	if(meta_attr_size!=0) {
+		for (size_t i=0; i<meta_attr_size; ++i) {
+			dict[meta_attr_dict.keys()[i]] = meta_attr_dict.values()[i];
+		}
+	}
+
 #ifdef DEBUGHDF
 	printf("read_head %d\n", image_index);
 #endif

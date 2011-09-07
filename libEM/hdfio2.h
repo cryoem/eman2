@@ -121,6 +121,8 @@ namespace EMAN
 		IOMode rw_mode;
 		bool initialized;
 		
+		Dict meta_attr_dict;	//this is used for the meta attributes stored in /MDF/images
+
 		/* Erases any existing attributes from the image group
 		 * prior to writing a new header. For a new image there
 		 * won't be any, so this should be harmless. 
