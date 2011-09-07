@@ -37,7 +37,7 @@ from OpenGL.GL import *
 import math 
 from emglobjects import init_glut
 from emitem3d import EMItem3D, EMItem3DInspector
-from EMAN2 import Transform, get_3d_font_renderer
+from EMAN2 import Transform, get_3d_font_renderer, Vec3f
 from valslider import EMQTColorWidget, ValSlider, EMSpinWidget
 from libpyGLUtils2 import FTGLFontMode
 
@@ -365,7 +365,7 @@ class EMLine(EMItem3D):
 		self.setShowLeftArrow(True)
 		self.setShowRightArrow(True)
 
-	def setEndAndWidth(self, x1, y1, z1, x2, y2, z2, width):
+	def setEndAndWidth(self, x1, y1, z1, x2, y2, z2, width, comparrows=True):
 		self.x1 = x1
 		self.y1 = y1
 		self.z1 = z1
@@ -381,19 +381,28 @@ class EMLine(EMItem3D):
 		dy = self.y1 - self.y2
 		dz = self.z1 - self.z2
 		self.length = math.sqrt(dx*dx + dy*dy + dz*dz)	#cylinder length
-		self.leftArrowSize = self.width
-		self.leftArrowLength = self.length/10.0
-		self.rightArrowSize = self.width
-		self.rightArrowLength = self.length/10.0
+		if comparrows: 
+			self.leftArrowSize = self.width
+			self.leftArrowLength = self.length/10.0
+			self.rightArrowSize = self.width
+			self.rightArrowLength = self.length/10.0
 		self.boundingboxsize = 'length='+str(round(self.length, 2))+', width='+str(round(self.width, 2))
 		
 		if self.item_inspector: self.item_inspector.updateMetaData()	
+	
+	def setLength(self, length):
+		v = Vec3f((self.x2-self.x1), (self.y2-self.y1), (self.z2-self.z1))
+		v.normalize()
+		self.setEndAndWidth(self.x1,self.y1,self.z1,v[0]*length,v[1]*length,v[2]*length,self.width,comparrows=False)
 		
 	def setSlices(self, slices):
 		if slices>0:
 			self.slices = int(slices)
 		else:
 			self.slices = int(self.width/2)
+	
+	def setWidth(self, width):
+		self.width = width
 		
 	def setStacks(self, stacks):
 		if stacks>0:
@@ -617,7 +626,7 @@ class EM3DText(EMItem3D):
 		self.font_renderer = get_3d_font_renderer()
 		
 	def setFontMode(self, fontMode):
-		self.fontMode = fontMode
+		self.fontMode = FTGLFontMode(fontMode)	# Cast to enum
 		if self.item_inspector: self.item_inspector.updateMetaData()
 		
 	def setFontDepth(self, fontDepth):
@@ -630,8 +639,11 @@ class EM3DText(EMItem3D):
 		if self.item_inspector: self.item_inspector.updateMetaData()
 		
 	def getEvalString(self):
-		return "EM3DText('%s', %s)"%(self.renderString, self.fontSize)
+		return "EM3DText('%s', %s, fontMode=%d, depth=%d)"%(self.renderString, self.fontSize, self.fontMode, self.fontDepth)
 	
+	def getFontMode(self):
+		return self.fontMode
+		
 	def getFontDepth(self):
 		return self.fontDepth
 	
@@ -811,6 +823,17 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 		super(EMInspectorControl3DText, self).updateItemControls()
 		self.fontDepth.setValue(int(self.item3d().getFontDepth()))
 		self.fontSize.setValue(int(self.item3d().getFontSize()))
+	
+	def updateMetaData(self):
+		super(EMInspectorControlShape, self).updateMetaData()
+		if self.item3d().getFontMode() == FTGLFontMode.EXTRUDE:
+			self.textModeBox.setCurrentIndex(0)
+		if self.item3d().getFontMode() == FTGLFontMode.TEXTURE:
+			self.textModeBox.setCurrentIndex(1)
+		if self.item3d().getFontMode() == FTGLFontMode.POLYGON:
+			self.textModeBox.setCurrentIndex(2)
+		if self.item3d().getFontMode() == FTGLFontMode.OUTLINE:
+			self.textModeBox.setCurrentIndex(3)
 		
 	def addControls(self, gridbox):
 		super(EMInspectorControl3DText, self).addControls(gridbox)
@@ -854,13 +877,15 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 		gridbox.addWidget(textframe, 2, 1, 2, 1)
 		
 		# set to default, but run only as a base class
-		if type(self) == EMInspectorControl3DText: self.updateItemControls()
+		if type(self) == EMInspectorControl3DText: 
+			self.updateItemControls()
+			self.updateMetaData()
+			
+		self.textModeBox.currentIndexChanged.connect(self.on3DTextModeChanged)
+		QtCore.QObject.connect(self.fontDepth,QtCore.SIGNAL("valueChanged(int)"),self.on3DTextDepthChanged)
+		QtCore.QObject.connect(self.fontSize,QtCore.SIGNAL("valueChanged(int)"),self.on3DTextFontChanged)
 		
-		self.textModeBox.currentIndexChanged.connect(self.on3DTextChanged)
-		QtCore.QObject.connect(self.fontDepth,QtCore.SIGNAL("valueChanged(int)"),self.on3DTextChanged)
-		QtCore.QObject.connect(self.fontSize,QtCore.SIGNAL("valueChanged(int)"),self.on3DTextChanged)
-		
-	def on3DTextChanged(self):
+	def on3DTextModeChanged(self):
 		textMode = str(self.textModeBox.currentText())
 		if textMode == "EXTRUDE":
 			self.item3d().setFontMode(FTGLFontMode.EXTRUDE)
@@ -869,15 +894,17 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 		elif textMode == "POLYGON":
 			self.item3d().setFontMode(FTGLFontMode.POLYGON)
 		elif textMode == "OUTLINE":
-			self.item3d().setFontMode(FTGLFontMode.OUTLINE)
+			self.item3d().setFontMode(FTGLFontMode.OUTLINE)	
+		if self.inspector: self.inspector().updateSceneGraph()
 		
+	def on3DTextDepthChanged(self):
 		self.item3d().setFontDepth(int(self.fontDepth.getValue()))
-		
+		if self.inspector: self.inspector().updateSceneGraph()
+	
+	def on3DTextFontChanged(self):
 		self.item3d().setRenderString(self.item3d().getRenderString(), int(self.fontSize.getValue()))
+		if self.inspector: self.inspector().updateSceneGraph()
 		
-		if self.inspector:
-			self.inspector().updateSceneGraph()
-
 class EMInspectorControlLine(EMInspectorControlShape):
 	"""
 	Class to make EMItem GUI SHAPE Line Inspector
@@ -887,12 +914,16 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		
 	def updateItemControls(self):
 		super(EMInspectorControlLine, self).updateItemControls()
+	
+	def updateMetaData(self):
+		super(EMInspectorControlLine, self).updateMetaData()
 		self.leftArrowSize.setValue(self.item3d().leftArrowSize, quiet=1)
 		self.leftArrowLength.setValue(self.item3d().leftArrowLength, quiet=1)
 		self.rightArrowSize.setValue(self.item3d().rightArrowSize, quiet=1)
 		self.rightArrowLength.setValue(self.item3d().rightArrowLength, quiet=1)
 		self.slice.setValue(self.item3d().slices, quiet=1)
 		self.stack.setValue(self.item3d().stacks, quiet=1)
+		self.linelength.setValue(int(self.item3d().length), quiet=1)
 		
 	def addControls(self, gridbox):
 		super(EMInspectorControlLine, self).addControls(gridbox)
@@ -948,6 +979,22 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		self.rightArrowLength.setMinimumWidth(120)
 		linegridbox.addWidget(self.rightArrowLength, 3, 2, 1, 1)
 		
+		linelengthlabel = QtGui.QLabel("Line Length")
+		linelengthlabel.setFont(lfont)
+		linelengthlabel.setAlignment(QtCore.Qt.AlignCenter)
+		linegridbox.addWidget(linelengthlabel, 4, 0, 2, 2)
+		
+		self.linelength = EMSpinWidget(int(self.item3d().length), 1.0, rounding=0)
+		linegridbox.addWidget(self.linelength, 4, 2, 2, 2)
+		
+		linewidthlabel = QtGui.QLabel("Line Width")
+		linewidthlabel.setFont(lfont)
+		linewidthlabel.setAlignment(QtCore.Qt.AlignCenter)
+		linegridbox.addWidget(linewidthlabel, 5, 0, 1, 2)
+		
+		self.linewidth = EMSpinWidget(int(self.item3d().width), 1.0, rounding=0)
+		linegridbox.addWidget(self.linewidth, 5, 2, 1, 2)
+		
 		lineframe.setLayout(linegridbox)	
 		gridbox.addWidget(lineframe, 2, 1, 1, 1)
 		
@@ -969,7 +1016,9 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		gridbox.addWidget(lineframe2, 3, 1, 1, 1)
 		
 		# set to default, but run only as a base class
-		if type(self) == EMInspectorControl3DText: self.updateItemControls()
+		if type(self) == EMInspectorControl3DText: 
+			self.updateItemControls()
+			self.updateMetaData()
 		
 		QtCore.QObject.connect(self.leftShowArrow, QtCore.SIGNAL("stateChanged(int)"), self.redraw)
 		QtCore.QObject.connect(self.rightShowArrow, QtCore.SIGNAL("stateChanged(int)"), self.redraw)
@@ -977,6 +1026,8 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		QtCore.QObject.connect(self.leftArrowLength,QtCore.SIGNAL("valueChanged(int)"),self.redraw)
 		QtCore.QObject.connect(self.rightArrowSize,QtCore.SIGNAL("valueChanged(int)"),self.redraw)
 		QtCore.QObject.connect(self.rightArrowLength,QtCore.SIGNAL("valueChanged(int)"),self.redraw)
+		QtCore.QObject.connect(self.linelength,QtCore.SIGNAL("valueChanged(int)"),self.redraw)
+		QtCore.QObject.connect(self.linewidth,QtCore.SIGNAL("valueChanged(int)"),self.redraw)
 		
 		QtCore.QObject.connect(self.slice,QtCore.SIGNAL("valueChanged"),self.redraw)
 		QtCore.QObject.connect(self.stack,QtCore.SIGNAL("valueChanged"),self.redraw)
@@ -988,6 +1039,8 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		self.item3d().leftArrowLength = self.leftArrowLength.getValue()
 		self.item3d().rightArrowSize = self.rightArrowSize.getValue()
 		self.item3d().rightArrowLength = self.rightArrowLength.getValue()
+		self.item3d().setLength(self.linelength.getValue())
+		self.item3d().setWidth(self.linewidth.getValue())
 		
 		self.item3d().setSlices(self.slice.getValue())
 		self.item3d().setStacks(self.stack.getValue())

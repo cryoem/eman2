@@ -401,6 +401,7 @@ class EMItem3DInspector(QtGui.QWidget):
 		label.setAlignment(QtCore.Qt.AlignCenter)
 		gridbox.addWidget(label, 0, 0, 1, self.gridcols)
 		databox = QtGui.QHBoxLayout()
+		self.boundingbox = None
 		if self.item3d().boundingboxsize:
 			self.boundingbox = QtGui.QLabel("Size: "+self.item3d().boundingboxsize,self)
 			databox.addWidget(self.boundingbox)

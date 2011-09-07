@@ -1305,7 +1305,17 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			item3dobject.wire = datadict["ISOPARS"][0]
 			item3dobject.cullbackfaces = datadict["ISOPARS"][0]
 			item3dobject.cullbackfaces = datadict["ISOPARS"][1]
-			item3dobject.setThreshold(datadict["ISOPARS"][2])	
+			item3dobject.setThreshold(datadict["ISOPARS"][2])
+		if datadict.has_key("LINEPARS"):
+			item3dobject.leftArrowSize = datadict["LINEPARS"][0]
+			item3dobject.leftArrowLength = datadict["LINEPARS"][1]
+			item3dobject.showLeftArrow = datadict["LINEPARS"][2]
+			item3dobject.rightArrowSize = datadict["LINEPARS"][3]
+			item3dobject.rightArrowLength = datadict["LINEPARS"][4]
+			item3dobject.showRightArrow = datadict["LINEPARS"][5]
+			item3dobject.setSlices(datadict["LINEPARS"][6])
+			item3dobject.setStacks(datadict["LINEPARS"][7])
+			item3dobject.setWidth(datadict["LINEPARS"][8])
 		item3dobject.setVisibleItem(datadict["VISIBLE"])
 		item3dobject.setSelectedItem(datadict["SELECTED"])
 		self.parentnodestack[-1:][0].addChild(item3dobject)
@@ -1333,6 +1343,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		if item.nodetype == "ShapeNode" or item.nodetype == "DataChild":
 			dictionary["COLOR"] = [item.ambient, item.diffuse, item.specular, item.shininess]
 		if item.name == "Isosurface": dictionary["ISOPARS"] = [item.wire, item.cullbackfaces, item.isothr]
+		if item.name == "Line": dictionary["LINEPARS"] = [item.leftArrowSize, item.leftArrowLength, item.showLeftArrow, item.rightArrowSize, item.rightArrowLength, item.showRightArrow, item.slices, item.stacks, item.width] 
 		
 		# Process a SceneGraph if needed
 		if item.getEvalString() == "SG":	
@@ -1888,7 +1899,7 @@ class EMInspector3D(QtGui.QWidget):
 		self.stacked_widget.setCurrentWidget(item.item3d().getItemInspector())
 		item.setSelectionState(item.checkState(0))
 		# This code is to prevent both decendents and childer from being selected....
-		self.ensureUniqueTreeLevelSelection(item.item3d())
+		if item.checkState(0) == QtCore.Qt.Checked: self.ensureUniqueTreeLevelSelection(item.item3d())
 		if not item.item3d().isSelectedItem(): item.item3d().getItemInspector().updateItemControls() # This is too update a widget, translation and rotation may change in parent nodes change
 		if not quiet: self.updateSceneGraph()
 		

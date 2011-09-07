@@ -1090,16 +1090,13 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		bs=self.boxsize()/2
 		# Get the extended vector based on boxsize
 		a = Vec3f((helixbox[3]-helixbox[0]), (helixbox[4]-helixbox[1]), (helixbox[5]-helixbox[2]))	# Find the a, the long vector
-		tcs = self.get_box_coord_system(helixbox)
-		
-		#return self.data.extract_box(tcs, Region(0, -bs, -bs, a.length(), bs, bs))
-
+		tcs = self.get_box_coord_system(helixbox)							# Get the local coord system
 		# Get the new coord system
 		# First extract a subtomo gram bounding region from the tomogram so we do have to read the whole bloody thing in!
 		rv = [self.transform_coords([0, -bs, -bs], tcs), self.transform_coords([0, bs, bs], tcs), self.transform_coords([0, bs, -bs], tcs), self.transform_coords([0, -bs, bs], tcs), self.transform_coords([a.length(), -bs, -bs], tcs), self.transform_coords([a.length(), bs, bs], tcs), self.transform_coords([a.length(), bs, -bs], tcs), self.transform_coords([a.length(), -bs, bs], tcs)]
-		rvmin = [int(min([i[0] for i in rv])), int(min([i[1] for i in rv])), int(min([i[2] for i in rv]))]
-		rvmax = [int(max([i[0] for i in rv])), int(max([i[1] for i in rv])), int(max([i[2] for i in rv]))]
-		r = Region(rvmin[0],rvmin[1],rvmin[2],rvmax[0]-rvmin[0],rvmax[1]-rvmin[1],rvmax[2]-rvmin[2])
+		rvmin = [int(min([i[0] for i in rv])), int(min([i[1] for i in rv])), int(min([i[2] for i in rv]))]	# Min bounding box extension
+		rvmax = [int(max([i[0] for i in rv])), int(max([i[1] for i in rv])), int(max([i[2] for i in rv]))]	# Max bounding box extension
+		r = Region(rvmin[0],rvmin[1],rvmin[2],rvmax[0]-rvmin[0],rvmax[1]-rvmin[1],rvmax[2]-rvmin[2])		# Extract the region
 		e = EMData()
 		e.read_image(tomogram,0,False,r)
 		e.set_attr("source_path", tomogram)
