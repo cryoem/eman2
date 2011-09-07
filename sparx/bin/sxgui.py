@@ -83,10 +83,10 @@ class PopupHelicalRefinement(QWidget):
 	
 	
 	y = y +30
-	self.repopbtn = QPushButton("Repopulate With Previously Saved Parameters", self)
+	self.repopbtn = QPushButton("Retrieve saved parameters", self)
         self.repopbtn.move(x1-5,y)
         #sets an infotip for this Pushbutton
-        self.repopbtn.setToolTip('Repopulate With Saved Parameters')
+        self.repopbtn.setToolTip('Retrieve saved parameters')
         #when this button is clicked, this action starts the subfunction twodali
         self.connect(self.repopbtn, SIGNAL("clicked()"), self.repoparms_helical)
 
@@ -454,7 +454,7 @@ class PopupHelicalRefinement(QWidget):
     
   	
 	# repopulate with saved parms
-	(fname,stat)= QInputDialog.getText(self,"Repopulate Parameters","Enter name of file parameters were saved in",QLineEdit.Normal,"")
+	(fname,stat)= QInputDialog.getText(self,"Retrieve saved parameters","Enter name of file parameters were saved in",QLineEdit.Normal,"")
 	if stat:
 		import pickle
 		pkl = open(fname,'rb')
@@ -860,10 +860,10 @@ class Popuptwodali(QWidget):
 	title1.move(self.x1,self.y1)
 	self.y1 += 30
 
-	self.repopbtn = QPushButton("Repopulate With Saved Parameters", self)
+	self.repopbtn = QPushButton("Retrieve saved parameters", self)
         self.repopbtn.move(self.x1-5,self.y1)
         #sets an infotip for this Pushbutton
-        self.repopbtn.setToolTip('Repopulate With Saved Parameters')
+        self.repopbtn.setToolTip('Retrieve saved parameters')
         #when this button is clicked, this action starts the subfunction twodali
         self.connect(self.repopbtn, SIGNAL("clicked()"), self.repoparms_ali2d)
 
@@ -1084,7 +1084,7 @@ class Popuptwodali(QWidget):
 		output.close()
 	
     def repoparms_ali2d(self):	
-	(fname,stat)= QInputDialog.getText(self,"Repopulate Parameters","Enter name of file parameters were saved in",QLineEdit.Normal,"")
+	(fname,stat)= QInputDialog.getText(self,"Retrieve saved parameters","Enter name of file parameters were saved in",QLineEdit.Normal,"")
 	if stat:
 		import pickle
 		pkl = open(fname,'rb')
@@ -1346,10 +1346,10 @@ class Popupthreedali(QWidget):
 	title1.move(self.x1,self.y1)
 	self.y1 += 30
 
-	self.repopbtn = QPushButton("Repopulate With Saved Parameters", self)
+	self.repopbtn = QPushButton("Retrieve saved parameters", self)
         self.repopbtn.move(self.x1-5,self.y1)
         #sets an infotip for this Pushbutton
-        self.repopbtn.setToolTip('Repopulate With Saved Parameters')
+        self.repopbtn.setToolTip('Retrieve saved parameters')
         #when this button is clicked, this action starts the subfunction twodali
         self.connect(self.repopbtn, SIGNAL("clicked()"), self.repoparms_ali3d)
 	
@@ -1634,7 +1634,7 @@ class Popupthreedali(QWidget):
 	
     def repoparms_ali3d(self):	
 	# repopulate with saved parms
-	(fname,stat)= QInputDialog.getText(self,"Repopulate Parameters","Enter name of file parameters were saved in",QLineEdit.Normal,"")
+	(fname,stat)= QInputDialog.getText(self,"Retrieve saved parameters","Enter name of file parameters were saved in",QLineEdit.Normal,"")
 	if stat:
 		import pickle
 		pkl = open(fname,'rb')
@@ -2039,10 +2039,10 @@ class Popupkmeans(QWidget):
 	title1.move(self.x1,self.y1)
 	self.y1 += 30
 
-	self.repopbtn = QPushButton("Repopulate With Saved Parameters", self)
+	self.repopbtn = QPushButton("Retrieve saved parameters", self)
         self.repopbtn.move(self.x1-5,self.y1)
         #sets an infotip for this Pushbutton
-        self.repopbtn.setToolTip('Repopulate With Saved Parameters')
+        self.repopbtn.setToolTip('Retrieve saved parameters')
         #when this button is clicked, this action starts the subfunction twodali
         self.connect(self.repopbtn, SIGNAL("clicked()"), self.repoparms_kmeans)
 
@@ -2232,7 +2232,7 @@ class Popupkmeans(QWidget):
 		output.close()
 	
     def repoparms_kmeans(self):	
-	(fname,stat)= QInputDialog.getText(self,"Repopulate Parameters","Enter name of file parameters were saved in",QLineEdit.Normal,"")
+	(fname,stat)= QInputDialog.getText(self,"Retrieve saved parameters","Enter name of file parameters were saved in",QLineEdit.Normal,"")
 	if stat:
 		import pickle
 		pkl = open(fname,'rb')
@@ -2402,10 +2402,10 @@ class Popupkmeansgroups(QWidget):
 	title1.move(self.x1,self.y1)
 	self.y1 += 30
 
-	self.repopbtn = QPushButton("Repopulate With Saved Parameters", self)
+	self.repopbtn = QPushButton("Retrieve saved parameters", self)
         self.repopbtn.move(self.x1-5,self.y1)
         #sets an infotip for this Pushbutton
-        self.repopbtn.setToolTip('Repopulate With Saved Parameters')
+        self.repopbtn.setToolTip('Retrieve saved parameters')
         #when this button is clicked, this action starts the subfunction twodali
         self.connect(self.repopbtn, SIGNAL("clicked()"), self.repoparms_kmeans_groups)
 
@@ -2744,10 +2744,10 @@ class Popuppdb2em(QWidget):
 	title1.move(self.x1,self.y1)
 	self.y1 += 30
 
-	self.repopbtn = QPushButton("Repopulate With Saved Parameters", self)
+	self.repopbtn = QPushButton("Retrieve saved parameters", self)
         self.repopbtn.move(self.x1-5,self.y1)
         #sets an infotip for this Pushbutton
-        self.repopbtn.setToolTip('Repopulate With Saved Parameters')
+        self.repopbtn.setToolTip('Retrieve saved parameters')
         #when this button is clicked, this action starts the subfunction twodali
         self.connect(self.repopbtn, SIGNAL("clicked()"), self.repoparms_pdb2em)
 
@@ -3001,10 +3001,10 @@ class Popuppca(QWidget):
 	title1.move(self.x1,self.y1)
 	self.y1 += 30
 
-	self.repopbtn = QPushButton("Repopulate With Saved Parameters", self)
+	self.repopbtn = QPushButton("Retrieve saved parameters", self)
         self.repopbtn.move(self.x1-5,self.y1)
         #sets an infotip for this Pushbutton
-        self.repopbtn.setToolTip('Repopulate With Saved Parameters')
+        self.repopbtn.setToolTip('Retrieve saved parameters')
         #when this button is clicked, this action starts the subfunction twodali
         self.connect(self.repopbtn, SIGNAL("clicked()"), self.repoparms_pca)
 
@@ -3192,7 +3192,7 @@ class Popuppca(QWidget):
 		output.close()
 	
     def repoparms_pca(self):	
-	(fname,stat)= QInputDialog.getText(self,"Repopulate Parameters","Enter name of file parameters were saved in",QLineEdit.Normal,"")
+	(fname,stat)= QInputDialog.getText(self,"Retrieve saved parameters","Enter name of file parameters were saved in",QLineEdit.Normal,"")
 	if stat:
 		import pickle
 		pkl = open(fname,'rb')
@@ -3353,10 +3353,10 @@ class Popupmrefthreedali(QWidget):
 	title1.move(self.x1,self.y1)
 	self.y1 += 30
 
-	self.repopbtn = QPushButton("Repopulate With Saved Parameters", self)
+	self.repopbtn = QPushButton("Retrieve saved parameters", self)
         self.repopbtn.move(self.x1-5,self.y1)
         #sets an infotip for this Pushbutton
-        self.repopbtn.setToolTip('Repopulate With Saved Parameters')
+        self.repopbtn.setToolTip('Retrieve saved parameters')
         #when this button is clicked, this action starts the subfunction twodali
         self.connect(self.repopbtn, SIGNAL("clicked()"), self.repoparms_mrefali3d)
 	
@@ -3638,7 +3638,7 @@ class Popupmrefthreedali(QWidget):
 	
     def repoparms_mrefali3d(self):	
 	# repopulate with saved parms
-	(fname,stat)= QInputDialog.getText(self,"Repopulate Parameters","Enter name of file parameters were saved in",QLineEdit.Normal,"")
+	(fname,stat)= QInputDialog.getText(self,"Retrieve saved parameters","Enter name of file parameters were saved in",QLineEdit.Normal,"")
 	if stat:
 		import pickle
 		pkl = open(fname,'rb')
@@ -3994,20 +3994,20 @@ class Popupisac(QWidget):
 	
 	self.cmd = ""
 	# populate with default values
-	self.savedparmsdict = {'stackname':'NONE','partradius':'-1','xyrange':'1','trans':'1','nriter':'30','nproc':'1',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","dst":"90.0","FL":"0.1","FH":"0.3","FF":"0.2","init_iter":"3","main_iter":"3","iter_reali":"1","match_first":"1","max_round":"20","match_second":"5","stab_ali":"5","thld_err":"1.732","indep_run":"4","thld_grp":"10","img_per_grp":"100","generation":"1"}
+	self.savedparmsdict = {'stackname':'NONE','partradius':'-1','xyrange':'1','trans':'1','nriter':'30','nproc':'2',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","dst":"90.0","FL":"0.1","FH":"0.3","FF":"0.2","init_iter":"3","main_iter":"3","iter_reali":"1","match_first":"1","max_round":"20","match_second":"5","stab_ali":"5","thld_err":"1.732","indep_run":"4","thld_grp":"10","img_per_grp":"100","generation":"1"}
 
 	#######################################################################################
 	# Layout parameters
 	
 	self.y1 = 10 # title and Repopulate button
 	self.y2 = self.y1 + 78 # Text boxes for inputting parameters
-	self.y3 = self.y2 + 250 # activate images button and set xform.align2d button
+	self.y3 = self.y2 + 450 # activate images button and set xform.align2d button
 	self.y4 = self.y3 + 80 # Advanced Parameters, Save Input and Generate command line buttons
 	self.y5 = self.y4 + 95 # run button 
 	self.yspc = 4
 	
 	self.x1 = 10 # first column (text box labels)
-	self.x2 = self.x1 + 150 # second column (text boxes)
+	self.x2 = self.x1 + 260 # second column (text boxes)
 	self.x3 = self.x2+145 # third column (Open .hdf button)
 	self.x4 = self.x3+100 # fourth column (Open .bdb button)
 	self.x5 = 230 # run button
@@ -4020,10 +4020,10 @@ class Popupisac(QWidget):
 	title1.move(self.x1,self.y1)
 	self.y1 += 30
 
-	self.repopbtn = QPushButton("Repopulate With Saved Parameters", self)
+	self.repopbtn = QPushButton("Retrieve saved parameters", self)
         self.repopbtn.move(self.x1-5,self.y1)
         #sets an infotip for this Pushbutton
-        self.repopbtn.setToolTip('Repopulate With Saved Parameters')
+        self.repopbtn.setToolTip('Retrieve saved parameters')
         #when this button is clicked, this action starts the subfunction twodali
         self.connect(self.repopbtn, SIGNAL("clicked()"), self.repoparms_isac)
 
@@ -4054,80 +4054,80 @@ class Popupisac(QWidget):
 	self.partradiusedit.setToolTip('Parameter ou: Outer radius for rotational correlation \nshould be set to particle radius\nif not sure, set to boxsize/2-2 ')	
 	self.y2 += 30
 	
-	match_first= QtGui.QLabel('match_first', self)
+	match_first= QtGui.QLabel('match_first (number of iterations to run \n2-way matching in the first phase)', self)
 	match_first.move(self.x1,self.y2)
 	self.match_firstedit=QtGui.QLineEdit(self)
 	self.match_firstedit.move(self.x2,self.y2)
 	self.match_firstedit.setText(self.savedparmsdict['match_first'])
 	self.match_firstedit.setToolTip('number of iterations to run 2-way matching in the first phase')
 	
-	self.y2 += 30
+	self.y2 += 50
 	
 	
-	match_second= QtGui.QLabel('match_second', self)
+	match_second= QtGui.QLabel('match_second (number of iterations to \nrun 2-way or 3-way matching in the \nsecond phase)', self)
 	match_second.move(self.x1,self.y2)
 	self.match_secondedit=QtGui.QLineEdit(self)
 	self.match_secondedit.move(self.x2,self.y2)
 	self.match_secondedit.setText(self.savedparmsdict['match_second'])
 	self.match_secondedit.setToolTip('number of iterations to run 2-way (or 3-way) matching in the second phase')
 	
-	self.y2 += 30
+	self.y2 += 70
 	
-	nriter= QtGui.QLabel('Number of iterations', self)
+	nriter= QtGui.QLabel('maxit (Number of iterations for reference-free \nalignment)', self)
 	nriter.move(self.x1,self.y2)
 	self.nriteredit=QtGui.QLineEdit(self)
 	self.nriteredit.move(self.x2,self.y2)
 	self.nriteredit.setText(self.savedparmsdict['nriter'])
-	self.nriteredit.setToolTip('Maximum number of iterations the program will perform\n Using the default values the program will run 3 rounds with xy-range 4 and translational step 1, 3 rounds with xyrange 2 and translational step 1 and so on..\nif set to 0 maximum iteration number will be 10 and will automatically stop should the criterion falls')
-	self.y2 += 30
+	self.nriteredit.setToolTip('number of iterations for reference-free alignment')
+	self.y2 += 50
 	
 	
-	img_per_grp= QtGui.QLabel('img_per_grp', self)
+	img_per_grp= QtGui.QLabel('img_per_grp (number of images per group in the ideal \ncase (essentially maximum size of class))', self)
 	img_per_grp.move(self.x1,self.y2)
 	self.img_per_grpedit=QtGui.QLineEdit(self)
 	self.img_per_grpedit.move(self.x2,self.y2)
 	self.img_per_grpedit.setText(self.savedparmsdict['img_per_grp'])
 	self.img_per_grpedit.setToolTip('number of images per group in the ideal case (essentially maximum size of class)')
 	
-	self.y2 += 30
+	self.y2 += 50
 	
 	
 	
 	
-	thld_grp= QtGui.QLabel('thld_grp', self)
+	thld_grp= QtGui.QLabel('thld_grp (the threshold of size of \nreproducible class (essentially minimum \nsize of class))', self)
 	thld_grp.move(self.x1,self.y2)
 	self.thld_grpedit=QtGui.QLineEdit(self)
 	self.thld_grpedit.move(self.x2,self.y2)
 	self.thld_grpedit.setText(self.savedparmsdict['thld_grp'])
 	self.thld_grpedit.setToolTip('the threshold of size of reproducible class (essentially minimum size of class)')
-	self.y2 += 30
+	self.y2 += 70
 	
 	
-	thld_err= QtGui.QLabel('thld_err', self)
+	thld_err= QtGui.QLabel('thld_err (the threshold of pixel error \nwhen checking stability)', self)
 	thld_err.move(self.x1,self.y2)
 	self.thld_erredit=QtGui.QLineEdit(self)
 	self.thld_erredit.move(self.x2,self.y2)
 	self.thld_erredit.setText(self.savedparmsdict['thld_err'])
 	self.thld_erredit.setToolTip('the threshold of pixel error when checking stability')
 	
-	self.y2 += 30
+	self.y2 += 50
 	
-	generation= QtGui.QLabel('generation', self)
+	generation= QtGui.QLabel('generation (the n-th approach on the \ndataset)', self)
 	generation.move(self.x1,self.y2)
 	self.generationedit=QtGui.QLineEdit(self)
 	self.generationedit.move(self.x2,self.y2)
 	self.generationedit.setText(self.savedparmsdict['generation'])
 	self.generationedit.setToolTip('the n-th approach on the dataset')
 	
-	self.y2 += 30
+	self.y2 += 50
 	
 	
-	nproc= QtGui.QLabel('MPI processors', self)
+	nproc= QtGui.QLabel('MPI processors (default=True, False is \nnot currently supported)', self)
 	nproc.move(self.x1,self.y2)
 	self.nprocedit=QtGui.QLineEdit(self)
 	self.nprocedit.move(self.x2,self.y2)
 	self.nprocedit.setText(self.savedparmsdict['nproc'])
-	self.nprocedit.setToolTip('The number of processors to use. Default is single processor mode')
+	self.nprocedit.setToolTip('use MPI version (default=True, currently False is not supported)')
 
 	
 	######################################################################################
@@ -4244,7 +4244,7 @@ class Popupisac(QWidget):
 		output.close()
 	
     def repoparms_isac(self):	
-	(fname,stat)= QInputDialog.getText(self,"Repopulate Parameters","Enter name of file parameters were saved in",QLineEdit.Normal,"")
+	(fname,stat)= QInputDialog.getText(self,"Retrieve saved parameters","Enter name of file parameters were saved in",QLineEdit.Normal,"")
 	if stat:
 		import pickle
 		pkl = open(fname,'rb')
@@ -4718,7 +4718,7 @@ class MainWindow(QtGui.QWidget):
 	self.TabWidget = QtGui.QTabWidget()
     	self.TabWidget.insertTab(0,self.w,'Main')
     	self.TabWidget.insertTab(1,self.w1,'Advanced')
-	self.TabWidget.resize(600,600)
+	self.TabWidget.resize(650,800)
     	self.TabWidget.show()
         				
     #This is the function info, which is being started when the Pushbutton picbutton of the main window is being clicked
