@@ -4303,8 +4303,8 @@ class Popupadvparams_isac_1(QWidget):
         QWidget.__init__(self)
 	
 	self.x1 = 10
-	self.x2 = 140
-	self.x3 = 285
+	self.x2 = self.x1+380 
+	self.x3 = self.x2 + 145 
 	
 	self.y1 = 10
 	self.yspc = 4
@@ -4326,7 +4326,7 @@ class Popupadvparams_isac_1(QWidget):
 	self.savedparmsdict=savedparms
 	
 	
-	xyrange= QtGui.QLabel('xy range', self)
+	xyrange= QtGui.QLabel('xr (x and y range of translational search)', self)
 	xyrange.move(self.x1,self.y1)
 	self.xyrangeedit=QtGui.QLineEdit(self)
 	self.xyrangeedit.move(self.x2,self.y1)
@@ -4334,51 +4334,51 @@ class Popupadvparams_isac_1(QWidget):
 	self.xyrangeedit.setToolTip('Range for translational search in x, y direction\nif set to 0 only rotational alignment will be performed')
 	self.y1 += 30
 	
-	trans= QtGui.QLabel('translational step', self)
+	trans= QtGui.QLabel('ts (search step of translational search)', self)
 	trans.move(self.x1,self.y1)
 	self.transedit=QtGui.QLineEdit(self)
 	self.transedit.move(self.x2,self.y1)
 	self.transedit.setText(self.savedparmsdict['trans'])
-	self.transedit.setToolTip('Step of translational search in x, y direction\nlarger values increase the speed but decrease the accuracy')	
+	self.transedit.setToolTip('search step of translational search')	
 	self.y1 += 30
 	
 	
-	ringstep= QtGui.QLabel('Ring step', self)
+	ringstep= QtGui.QLabel('rs (ring step of the resampling to polar coordinates)', self)
 	ringstep.move(self.x1,self.y1)
 	self.ringstepedit=QtGui.QLineEdit(self)
 	self.ringstepedit.move(self.x2,self.y1)
 	self.ringstepedit.setText(self.savedparmsdict['ringstep'])
-	self.ringstepedit.setToolTip('step between rings in rotational correlation > 0 (set to 1)')
+	self.ringstepedit.setToolTip('ring step of the resampling to polar coordinates')
 	
 	self.y1 += 30
 	
-	innerradius= QtGui.QLabel('Inner radius', self)
+	innerradius= QtGui.QLabel('ir (Inner ring of the resampling to polar coordinates)', self)
 	innerradius.move(self.x1,self.y1)
 	self.innerradiusedit=QtGui.QLineEdit(self)
 	self.innerradiusedit.move(self.x2,self.y1)
 	self.innerradiusedit.setText(self.savedparmsdict['innerradius'])
-	self.innerradiusedit.setToolTip('inner radius for rotational correlation > 0 (set to 1) ')	
+	self.innerradiusedit.setToolTip('inner ring of the resampling to polar coordinates ')	
 	
 	self.y1 += 30
 	
-	ctf= QtGui.QLabel('CTF', self)
+	ctf= QtGui.QLabel('Use CTF information (default=False, currently \nTrue is not supported)', self)
 	ctf.move(self.x1,self.y1)
 	self.ctfchkbx = QtGui.QCheckBox("",self)
 	self.ctfchkbx.move(self.x2, self.y1)
 	self.ctfchkbx.setCheckState(self.savedparmsdict['ctf'])
 	
-	self.y1 += 30
+	self.y1 += 50
 	
-	snr= QtGui.QLabel('SNR', self)
+	snr= QtGui.QLabel('Signal-to-noise ratio (only meaningful when CTF \nis enabled, currently not supported)', self)
 	snr.move(self.x1,self.y1)
 	self.snredit=QtGui.QLineEdit(self)
 	self.snredit.move(self.x2,self.y1)
 	self.snredit.setText(self.savedparmsdict['snr'])
-	self.snredit.setToolTip('signal-to-noise ratio of the data (default SNR=1.0)')	
+	self.snredit.setToolTip('signal-to-noise ratio (only meaningful when CTF is enabled, currently not supported)')	
 	
-	self.y1 += 30
+	self.y1 += 50
 		
-	dst= QtGui.QLabel('dst', self)
+	dst= QtGui.QLabel('dst (discrete angle used in within group alignment)', self)
 	dst.move(self.x1,self.y1)
 	self.dstedit=QtGui.QLineEdit(self)
 	self.dstedit.move(self.x2,self.y1)
@@ -4387,7 +4387,7 @@ class Popupadvparams_isac_1(QWidget):
 	
 	self.y1 += 30
 	
-	FL= QtGui.QLabel('FL', self)
+	FL= QtGui.QLabel('FL (lowest stopband frequency used in the tangent filter)', self)
 	FL.move(self.x1,self.y1)
 	self.FLedit=QtGui.QLineEdit(self)
 	self.FLedit.move(self.x2,self.y1)
@@ -4396,7 +4396,7 @@ class Popupadvparams_isac_1(QWidget):
 	
 	self.y1 += 30
 	
-	FH= QtGui.QLabel('FH', self)
+	FH= QtGui.QLabel('FH (highest stopband frequency used in the tangent filter)', self)
 	FH.move(self.x1,self.y1)
 	self.FHedit=QtGui.QLineEdit(self)
 	self.FHedit.move(self.x2,self.y1)
@@ -4405,7 +4405,7 @@ class Popupadvparams_isac_1(QWidget):
 	
 	self.y1 += 30
 	
-	FF= QtGui.QLabel('FF', self)
+	FF= QtGui.QLabel('FF (fall-off of the tangent filter)', self)
 	FF.move(self.x1,self.y1)
 	self.FFedit=QtGui.QLineEdit(self)
 	self.FFedit.move(self.x2,self.y1)
@@ -4414,46 +4414,46 @@ class Popupadvparams_isac_1(QWidget):
 	
 	self.y1 += 30
 	
-	init_iter= QtGui.QLabel('init_iter', self)
+	init_iter= QtGui.QLabel('init_iter (number of iterations of ISAC program in \ninitialization)', self)
 	init_iter.move(self.x1,self.y1)
 	self.init_iteredit=QtGui.QLineEdit(self)
 	self.init_iteredit.move(self.x2,self.y1)
 	self.init_iteredit.setText(self.savedparmsdict['init_iter'])
 	self.init_iteredit.setToolTip('number of iterations of ISAC program in initialization')
 	
-	self.y1 += 30
+	self.y1 += 50
 	
-	main_iter= QtGui.QLabel('main_iter', self)
+	main_iter= QtGui.QLabel('main_iter (number of iterations of ISAC program in main \npart)', self)
 	main_iter.move(self.x1,self.y1)
 	self.main_iteredit=QtGui.QLineEdit(self)
 	self.main_iteredit.move(self.x2,self.y1)
 	self.main_iteredit.setText(self.savedparmsdict['main_iter'])
 	self.main_iteredit.setToolTip('number of iterations of ISAC program in main part')
 	
-	self.y1 += 30
+	self.y1 += 50
 	
-	iter_reali= QtGui.QLabel('iter_reali', self)
+	iter_reali= QtGui.QLabel('iter_reali (number of iterations in ISAC before checking \nstability)', self)
 	iter_reali.move(self.x1,self.y1)
 	self.iter_realiedit=QtGui.QLineEdit(self)
 	self.iter_realiedit.move(self.x2,self.y1)
 	self.iter_realiedit.setText(self.savedparmsdict['iter_reali'])
 	self.iter_realiedit.setToolTip('number of iterations in ISAC before checking stability')
 	
-	self.y1 += 30
+	self.y1 += 50
 	
 	
 	
-	max_round= QtGui.QLabel('max_round', self)
+	max_round= QtGui.QLabel('max_round (maximum rounds of generating candidate \naverages in the first phase)', self)
 	max_round.move(self.x1,self.y1)
 	self.max_roundedit=QtGui.QLineEdit(self)
 	self.max_roundedit.move(self.x2,self.y1)
 	self.max_roundedit.setText(self.savedparmsdict['max_round'])
 	self.max_roundedit.setToolTip('maximum rounds of generating candidate averages in the first phase')
 	
-	self.y1 += 30
+	self.y1 += 50
 	
 	
-	stab_ali= QtGui.QLabel('stab_ali', self)
+	stab_ali= QtGui.QLabel('stab_ali (number of alignments when checking stability)', self)
 	stab_ali.move(self.x1,self.y1)
 	self.stab_aliedit=QtGui.QLineEdit(self)
 	self.stab_aliedit.move(self.x2,self.y1)
@@ -4464,7 +4464,7 @@ class Popupadvparams_isac_1(QWidget):
 	
 	
 	
-	indep_run= QtGui.QLabel('indep_run', self)
+	indep_run= QtGui.QLabel('indep_run (number of indepentdent runs for reproducibility \n(default=4, currently other values not supported)', self)
 	indep_run.move(self.x1,self.y1)
 	self.indep_runedit=QtGui.QLineEdit(self)
 	self.indep_runedit.move(self.x2,self.y1)
