@@ -4873,9 +4873,7 @@ class MainWindow(QtGui.QWidget):
         self.connect(self.btn3, QtCore.SIGNAL('clicked()'),QtGui.qApp, QtCore.SLOT('quit()'))
         #here we set two labels, their position and font style
 	title=QtGui.QLabel('<b>SPARX</b> GUI', self)
-	title1=QtGui.QLabel('<b>2D alignment</b> applications', self)
 	title.move(10,10)
-	title1.move(20, 45)
 	QtGui.QToolTip.setFont(QtGui.QFont('OldEnglish', 8))
 	
     	#here we set the width and height of the main window
