@@ -189,7 +189,7 @@ class PopupHelicalRefinement(QWidget):
 	self.ynumberedit.setToolTip('number of steps in y direction\n ystep will be dp/ynumber')
 		
 	y = y +30	
-	dp= QtGui.QLabel('Helical rise (angstrom)', self)
+	dp= QtGui.QLabel('Helical rise dz(angstrom)', self)
 	dp.move(x1,y)
 	self.dpedit=QtGui.QLineEdit(self)
 	self.dpedit.move(x2,y)
@@ -766,7 +766,7 @@ class Popupadvparams_helical_2(QWidget):
 	self.fractedit.setToolTip('fraction of the volume used for helicising')	
 	
 	y = y + 30
-	dp_step = QtGui.QLabel('Dp step size in Angstroms during search', self)
+	dp_step = QtGui.QLabel('Dz step size in Angstroms during search', self)
 	dp_step.move(x1,y)
 	self.dp_stepedit=QtGui.QLineEdit(self)
 	self.dp_stepedit.move(x2,y)
@@ -774,7 +774,7 @@ class Popupadvparams_helical_2(QWidget):
 	self.dp_stepedit.setToolTip('step size of helicise rise search')
 	
 	y = y + 30
-	ndp = QtGui.QLabel('Number of dp step during search', self)
+	ndp = QtGui.QLabel('Number of dz step during search', self)
 	ndp.move(x1,y)
 	self.ndpedit=QtGui.QLineEdit(self)
 	self.ndpedit.move(x2,y)
