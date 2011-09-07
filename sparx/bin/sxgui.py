@@ -4266,6 +4266,7 @@ class Popupisac(QWidget):
 		import pickle
 		output=open(fname,'wb')
 		self.gencmdline_isac(writefile=False)
+		self.w2.gencmdline_shftali(writefile=False)
 		pickle.dump(self.savedparmsdict,output)
 		output.close()
 	
@@ -4306,7 +4307,7 @@ class Popupisac(QWidget):
    		self.w2.stacknameedit.setText(self.savedparmsdict['stackname_prectr'])
 		self.w2.outdiredit.setText(self.savedparmsdict['outdir_prectr'])
 		self.w2.maskedit.setText(self.savedparmsdict['mask_prectr'])
-		self.w2.search_rng_edit.setText(self.savedparmsdict['search_rng_prectr'])
+		self.w2.search_rngedit.setText(self.savedparmsdict['search_rng_prectr'])
 		self.w2.ouedit.setText(self.savedparmsdict['ou_prectr'])
 		self.w2.maxitedit.setText(self.savedparmsdict['maxit_prectr'])
 		self.w2.snredit.setText(self.savedparmsdict['snr_prectr'])
