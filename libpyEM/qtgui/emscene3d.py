@@ -850,7 +850,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		# process records
 		self.processSelection(records)
 	
-	def selectArea(self, xi, xf, yi, yf):
+	def selectArea(self, xi, xf, yi, yf, togglearea=True):
 		"""
 		Set an area for selection. Need to switch bewteen viewport coords, where (0,0 is bottom left) to
 		volume view coords where 0,0) is center of the screen.
@@ -859,7 +859,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.sa_xf = xf - self.camera.getWidth()/2
 		self.sa_yi = -yi + self.camera.getHeight()/2
 		self.sa_yf = -yf + self.camera.getHeight()/2
-		self.toggle_render_selectedarea = True
+		self.toggle_render_selectedarea = togglearea
 		
 	def deselectArea(self):
 		"""
@@ -974,51 +974,33 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			text, ok = QtGui.QInputDialog.getText(self, 'Enter Text', '')
 			if ok:
 				self.newnode = EM3DText(str(text), 32.0, transform=self._gettransformbasedonscreen(event))
-				self.clearSelection()
-				self.newnode.setSelectedItem(True)
-				self.insertNewNode(text, self.newnode)
-				self.newnode.setTransform(self.newnode.getParentMatrixProduct().inverse()*self.newnode.getTransform())
+				self._insert_shape(text, self.newnode)
 				self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "line"):
 			self.setCursor(self.linecursor)
 			self.newnode = EMLine(0.0, 0.0, 0.0, 2.0, 2.0, 0.0, 30.0, transform=self._gettransformbasedonscreen(event))
-			self.clearSelection()
-			self.newnode.setSelectedItem(True)
-			self.insertNewNode("Line", self.newnode)
-			self.newnode.setTransform(self.newnode.getParentMatrixProduct().inverse()*self.newnode.getTransform())
+			self._insert_shape("Line", self.newnode)
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cube"):
 			self.setCursor(self.cubecursor)
 			self.newnode = EMCube(2.0, transform=self._gettransformbasedonscreen(event))
-			self.clearSelection()
-			self.newnode.setSelectedItem(True)
-			self.insertNewNode("Cube", self.newnode)
-			self.newnode.setTransform(self.newnode.getParentMatrixProduct().inverse()*self.newnode.getTransform())
+			self._insert_shape("Cube", self.newnode)
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "sphere"):
 			self.setCursor(self.spherecursor)
 			self.newnode = EMSphere(2.0, transform=self._gettransformbasedonscreen(event))
-			self.clearSelection()
-			self.newnode.setSelectedItem(True)
-			self.insertNewNode("Sphere", self.newnode)
-			self.newnode.setTransform(self.newnode.getParentMatrixProduct().inverse()*self.newnode.getTransform())
+			self._insert_shape("Sphere", self.newnode)
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cylinder"):
 			self.setCursor(self.cylindercursor)
 			self.newnode = EMCylinder(2.0,2.0, transform=self._gettransformbasedonscreen(event))
-			self.clearSelection()
-			self.newnode.setSelectedItem(True)
-			self.insertNewNode("Cylinder", self.newnode)
-			self.newnode.setTransform(self.newnode.getParentMatrixProduct().inverse()*self.newnode.getTransform())
+			self._insert_shape("Cylinder", self.newnode)
 			self.newnode.updateMatrices([90,1,0,0], "rotate")
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cone"):
 			self.setCursor(self.conecursor)
 			self.newnode = EMCone(2.0,2.0, transform=self._gettransformbasedonscreen(event))
-			self.clearSelection()
-			self.newnode.setSelectedItem(True)
-			self.insertNewNode("Cone", self.newnode)
-			self.newnode.setTransform(self.newnode.getParentMatrixProduct().inverse()*self.newnode.getTransform())
+			self._insert_shape("Cone", self.newnode)
 			self.newnode.updateMatrices([90,1,0,0], "rotate")
 			self.updateSG()	
 		if event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and self.mousemode == "rotate"):
@@ -1040,10 +1022,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			if event.modifiers()&Qt.ControlModifier:
 				self.toggleselection = True
 			# 5 seems a big enough selection box
-			self.sa_xi = event.x() - self.camera.getWidth()/2
-			self.sa_xf = event.x() + 5 - self.camera.getWidth()/2
-			self.sa_yi = -event.y() + self.camera.getHeight()/2
-			self.sa_yf = -event.y() + 5 + self.camera.getHeight()/2
+			self.selectArea(event.x(), event.x() + 5, event.y(), event.y() + 5, togglearea=False)
 			self.pickItem()
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "multiselection"):
@@ -1061,6 +1040,13 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		if event.buttons()&Qt.MidButton or (event.buttons()&Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.showInspector()
 	
+	def _insert_shape(self, name, node):
+		""" Helper function to reduce code duplication"""
+		self.clearSelection()
+		node.setSelectedItem(True)
+		self.insertNewNode(name, node)
+		node.setTransform(self.newnode.getParentMatrixProduct().inverse()*self.newnode.getTransform())
+		
 	def _gettransformbasedonscreen(self, event):
 		x = event.x() - self.camera.getWidth()/2
 		y = -event.y() + self.camera.getHeight()/2
@@ -1109,6 +1095,9 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		Qt event handler. Returns the cursor to arrow unpon mouse button release
 		"""
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "app"):
+			self.emit(QtCore.SIGNAL("sgmouserelease()"), [event.x(), event.y()])
+			
 		self.setCursor(Qt.ArrowCursor)
 		# Select using the selection box
 		if self.toggle_render_selectedarea:
