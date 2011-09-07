@@ -753,7 +753,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		#self.averageviewer.show()
 		
 		QtCore.QObject.connect(self.boxesviewer,QtCore.SIGNAL("mx_image_selected"),self.img_selected)
-		
+		self.e = None
 
 	def menu_win_boxes(self) : self.boxesviewer.show()
 	def menu_win_single(self) : self.boxviewer.show()
@@ -976,12 +976,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
 		if options.helixboxer:
 			for i,b in enumerate(self.helixboxes):
-				#bs=self.boxsize()
-				#helixbox = self.get_extended_a_vector(b)
-				#a = Vec3f((helixbox[3]-helixbox[0]), (helixbox[4]-helixbox[1]), (helixbox[4]-helixbox[2]))	# Find the a, the long vector
-				#tcs = self.get_box_coord_system(helixbox)
-				#img = tomogram.extract_box(tcs, Region(0, -bs, -bs, a.length(), bs, bs))
-				img = self.extract_subtomo_box(b)
+				img = self.extract_subtomo_box(self.get_extended_a_vector(b))
 				
 				img['origin_x'] = 0						#jesus
 				img['origin_y'] = 0				
@@ -1038,8 +1033,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
 		if options.helixboxer:
 			for i,b in enumerate(self.helixboxes):
-				img = self.extract_subtomo_box(b)
-				
+				img = self.extract_subtomo_box(self.get_extended_a_vector(b))
+
 				img['origin_x'] = 0						#jesus
 				img['origin_y'] = 0				
 				img['origin_z'] = 0
@@ -1079,17 +1074,22 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	def menu_file_quit(self):
 		self.close()
 	
-	def extract_subtomo_box(self, b, tomogram=argv[1]):
+	def transform_coords(self, point, xform):
+		xvec = xform.get_matrix()
+		return [xvec[0]*point[0] + xvec[4]*point[1] + xvec[8]*point[2] + xvec[3], xvec[1]*point[0] + xvec[5]*point[1] + xvec[9]*point[2] + xvec[7], xvec[2]*point[0] + xvec[6]*point[1] + xvec[10]*point[2] + xvec[11]]
+		
+	def extract_subtomo_box(self, helixbox, tomogram=argv[1]):
 		""" Retruns an extracted subtomogram box"""
-		bs=self.boxsize()
-		#print b
-		helixbox = self.get_extended_a_vector(b)
-		if self.yshort: helixbox = [helixbox[0],helixbox[2],helixbox[1],helixbox[3],helixbox[5],helixbox[4]]
+		bs=self.boxsize()/2
 		# Get the extended vector based on boxsize
 		a = Vec3f((helixbox[3]-helixbox[0]), (helixbox[4]-helixbox[1]), (helixbox[5]-helixbox[2]))	# Find the a, the long vector
-		tcs = self.get_box_coord_system(helixbox)							# Get the new coord system
+		tcs = self.get_box_coord_system(helixbox)
+		
+		#return self.data.extract_box(tcs, Region(0, -bs, -bs, a.length(), bs, bs))
+
+		# Get the new coord system
 		# First extract a subtomo gram bounding region from the tomogram so we do have to read the whole bloody thing in!
-		rv = [tcs*Vec3f(0, -bs, -bs), tcs*Vec3f(0, bs, bs), tcs*Vec3f(0, bs, -bs), tcs*Vec3f(0, -bs, bs), tcs*Vec3f(a.length(), -bs, -bs), tcs*Vec3f(a.length(), bs, bs), tcs*Vec3f(a.length(), bs, -bs), tcs*Vec3f(a.length(), -bs, bs)]
+		rv = [self.transform_coords([0, -bs, -bs], tcs), self.transform_coords([0, bs, bs], tcs), self.transform_coords([0, bs, -bs], tcs), self.transform_coords([0, -bs, bs], tcs), self.transform_coords([a.length(), -bs, -bs], tcs), self.transform_coords([a.length(), bs, bs], tcs), self.transform_coords([a.length(), bs, -bs], tcs), self.transform_coords([a.length(), -bs, bs], tcs)]
 		rvmin = [int(min([i[0] for i in rv])), int(min([i[1] for i in rv])), int(min([i[2] for i in rv]))]
 		rvmax = [int(max([i[0] for i in rv])), int(max([i[1] for i in rv])), int(max([i[2] for i in rv]))]
 		r = Region(rvmin[0],rvmin[1],rvmin[2],rvmax[0]-rvmin[0],rvmax[1]-rvmin[1],rvmax[2]-rvmin[2])
@@ -1097,7 +1097,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		e.read_image(tomogram,0,False,r)
 		e.set_attr("source_path", tomogram)
 		# Next adjust the transform matrix to move it to the origin
-		tcs.set_trans(helixbox[0]-rvmin[0],helixbox[1]-rvmin[1],helixbox[2]-rvmin[2])
+		origin = self.transform_coords([0,0,0], tcs)
+		tcs.set_trans(origin[0] - rvmin[0], origin[1] - rvmin[1], origin[2] - rvmin[2])
 
 		return e.extract_box(tcs, Region(0, -bs, -bs, a.length(), bs, bs))
 	
@@ -1345,7 +1346,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		else:
 			self.do_deletion(n)
 			
-	"""	
+	
 	def compute_perpZold(self, a):
 		# Solve:
 		# 1: a1*b1 + a2*b2 + a3*b3 = 0
@@ -1358,14 +1359,13 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		b2soln2 = -b2soln1
 		# Only correct solution are perpendicular to a
 		if math.fabs(a[0]*b1soln1 + a[1]*b2soln1 + a[2]*b3) < 0.0001:
-			return [b1soln1, b2soln1,  b3]
-		if math.fabs(a[0]*b1soln2 + a[1]*b2soln1 + a[2]*b3) < 0.0001:
-			return [b1soln2, b2soln1,  b3]
+			return Vec3f(b1soln1, b2soln1,  b3)
 		if math.fabs(a[0]*b1soln1 + a[1]*b2soln2 + a[2]*b3) < 0.0001:
-			return [b1soln1, b2soln2,  b3]
+			return Vec3f(b1soln1, b2soln2,  b3)
+		if math.fabs(a[0]*b1soln2 + a[1]*b2soln1 + a[2]*b3) < 0.0001:
+			return Vec3f(b1soln2, b2soln1,  b3)
 		if math.fabs(a[0]*b1soln2 + a[1]*b2soln2 + a[2]*b3) < 0.0001:
-			return [b1soln2, b2soln2,  b3]
-	"""
+			return Vec3f(b1soln2, b2soln2,  b3)
 	
 	def compute_crossAB(self, a, b):
 		c1 = a[1]*b[2] - a[2]*b[1]
@@ -1374,30 +1374,40 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		return Vec3f(c1,c2,c3)
 		
 	def compute_perpZ(self, a):
-		if options.yshort:
-			# Y axis
-			b1 = -a[2]
-			b2 = 0
-			b3 = a[0]
-		else:
-			# Z axis
-			b1 = a[1]
-			b2 = - a[0]
-			b3 = 0
+		# Z axis
+		b1 = -a[1]
+		b2 = a[0]
+		b3 = 0
+		return Vec3f(b1,b2,b3)
+ 
+	def compute_perpY(self, a):
+		# Y axis
+		b1 = -a[2]
+		b2 = 0
+		b3 = a[0]
 
 		return Vec3f(b1,b2,b3)
-	
+		
 	def get_box_coord_system(self, helixbox):
 		"""
 		Compute the coordinate system for the box
 		"""
-		a = Vec3f((helixbox[3]-helixbox[0]), (helixbox[4]-helixbox[1]), (helixbox[5]-helixbox[2]))
+		a = None
+		if options.yshort:
+			a = Vec3f((helixbox[0]-helixbox[3]), (helixbox[2]-helixbox[5]), (helixbox[1]-helixbox[4]))
+		else:
+			a = Vec3f((helixbox[0]-helixbox[3]), (helixbox[1]-helixbox[4]), (helixbox[2]-helixbox[5]))
+		
 		a.normalize()
 		b = self.compute_perpZ(a)
 		b.normalize()
 		c = self.compute_crossAB(a, b)
 		
-		return Transform([a[0],a[1],a[2],helixbox[0],b[0],b[1],b[2],helixbox[1],c[0],c[1],c[2],helixbox[2]])
+		if options.yshort:
+			return Transform([a[0],a[1],a[2],helixbox[3],b[0],b[1],b[2],helixbox[5],c[0],c[1],c[2],helixbox[4]])
+		else:
+			return Transform([a[0],a[1],a[2],helixbox[3],b[0],b[1],b[2],helixbox[4],c[0],c[1],c[2],helixbox[5]])
+		
 	
 	def get_extended_a_vector(self, helixbox):
 		"""
@@ -1413,7 +1423,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		"""
 		Update a helix box
 		"""
+		if n > len(self.helixboxes)-1: return	# Some boxes may not be paired
 		helixbox = self.get_extended_a_vector(self.helixboxes[n])
+		
 		#bs = self.boxsize()
 		# In case I want to add box projection
 		#print a, b, c
@@ -1563,7 +1575,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		dx=x-self.xydown[1]
 		dy=y-self.xydown[2]
 		if options.helixboxer:
-			if len(self.boxes) % 2 == 0:	# Only update the helix boxer if it is paired, otherwise treat it as a regular box
+			if len(self.boxes) % 2 == 0 or (self.xydown[0] != len(self.boxes)-1):	# Only update the helix boxer if it is paired, otherwise treat it as a regular box
 				hb = self.helixboxes[int(self.xydown[0]/2)]
 				if self.xydown[0] % 2 == 0:
 					hb[3] = dx+self.xydown[3]
@@ -1572,6 +1584,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 					hb[0] = dx+self.xydown[3]
 					hb[1] = dy+self.xydown[4]
 				self.update_helixbox(int(self.xydown[0]/2))
+			else:
+				self.firsthbclick[0] = x
+				self.firsthbclick[1] = y
 				
 		self.boxes[self.xydown[0]][0]=dx+self.xydown[3]
 		self.boxes[self.xydown[0]][1]=dy+self.xydown[4]
@@ -1649,7 +1664,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		dx=x-self.xzdown[1]
 		dz=z-self.xzdown[2]
 		if options.helixboxer:
-			if len(self.boxes) % 2 == 0:	# Only update the helix boxer if it is paired, otherwise treat it as a regular box
+			if len(self.boxes) % 2 == 0 or (self.xzdown[0] != len(self.boxes)-1):	# Only update the helix boxer if it is paired, otherwise treat it as a regular box
 				hb = self.helixboxes[int(self.xzdown[0]/2)]
 				if self.xzdown[0] % 2 == 0:
 					hb[3] = dx+self.xzdown[3]
@@ -1658,6 +1673,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 					hb[0] = dx+self.xzdown[3]
 					hb[2] = dz+self.xzdown[4]
 				self.update_helixbox(int(self.xzdown[0]/2))
+			else:
+				self.firsthbclick[0] = x
+				self.firsthbclick[2] = z
+				
 		self.boxes[self.xzdown[0]][0]=dx+self.xzdown[3]
 		self.boxes[self.xzdown[0]][2]=dz+self.xzdown[4]
 		self.update_box(self.curbox,True)
@@ -1725,7 +1744,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		dz=z-self.zydown[1]
 		dy=y-self.zydown[2]
 		if options.helixboxer:
-			if len(self.boxes) % 2 == 0:	# Only update the helix boxer if it is paired, otherwise treat it as a regular box
+			if len(self.boxes) % 2 == 0 or (self.zydown[0] != len(self.boxes)-1):	# Only update the helix boxer if it is paired, otherwise treat it as a regular box
 				hb = self.helixboxes[int(self.zydown[0]/2)]
 				if self.zydown[0] % 2 == 0:
 					hb[5] = dz+self.zydown[3]
@@ -1734,6 +1753,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 					hb[2] = dz+self.zydown[3]
 					hb[1] = dy+self.zydown[4]
 				self.update_helixbox(int(self.zydown[0]/2))
+			else:
+				self.firsthbclick[2] = z
+				self.firsthbclick[1] = y
+				
 		self.boxes[self.zydown[0]][2]=dz+self.zydown[3]
 		self.boxes[self.zydown[0]][1]=dy+self.zydown[4]
 		self.update_box(self.curbox,True)

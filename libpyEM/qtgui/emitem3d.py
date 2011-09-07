@@ -76,7 +76,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		self.is_visible = True 
 		self.is_selected = False
 		self.item_inspector = None			# This is an inspector widget
-		self.EMQTreeWidgetItem = None 		# This is an inspector tree item
+		self.EMQTreeWidgetItem = None 			# This is an inspector tree item
 		self.boundingboxsize = None
 		self.getAndSetUniqueInteger()
 	
@@ -402,7 +402,7 @@ class EMItem3DInspector(QtGui.QWidget):
 		gridbox.addWidget(label, 0, 0, 1, self.gridcols)
 		databox = QtGui.QHBoxLayout()
 		if self.item3d().boundingboxsize:
-			self.boundingbox = QtGui.QLabel("Size: "+str(round(self.item3d().boundingboxsize, 2))+u'\u00B3',self)
+			self.boundingbox = QtGui.QLabel("Size: "+self.item3d().boundingboxsize,self)
 			databox.addWidget(self.boundingbox)
 		gridbox.addLayout(databox, 1, 0, 1, self.gridcols)
 		# angluar controls
@@ -561,10 +561,7 @@ class EMItem3DInspector(QtGui.QWidget):
 		I didn't want to put this in update b/c this data doesn't change very often, and I don't want to waste CPU
 		Its a judgement call really, less coupling vs. more efficiency
 		"""
-		try:
-			self.boundingbox.setText("Size: "+str(round(self.item3d().boundingboxsize,2))+u'\u00B3')
-		except:
-			pass
+		if self.boundingbox: self.boundingbox.setText("Size: "+self.item3d().boundingboxsize)
 			
 		
 	def addRotationWidgets(self):

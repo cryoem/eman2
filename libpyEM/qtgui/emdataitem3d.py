@@ -74,6 +74,9 @@ class EMDataItem3D(EMItem3D):
 				child.dataChanged()
 			except:
 				pass
+		self.boundingboxsize = str(self.getBoundingBoxDimensions()[0])+'x'+str(self.getBoundingBoxDimensions()[1])+'x'+str(self.getBoundingBoxDimensions()[2])
+		if self.item_inspector: self.item_inspector.updateMetaData()
+
 	def renderNode(self):
 		if self.renderBoundingBox: drawBoundingBox(*self.getBoundingBoxDimensions())
 	

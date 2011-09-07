@@ -58,7 +58,7 @@ class EMCube(EMItem3D):
 		
 	def setSize(self, size):
 		self.size = size
-		self.boundingboxsize = size
+		self.boundingboxsize = str(round(size, 2))+u'\u00B3'
 		self.xi = -size/2
 		self.yi = -size/2
 		self.zi = -size/2
@@ -188,7 +188,7 @@ class EMSphere(EMItem3D):
 	
 	def setRadius(self, radius):
 		self.radius = radius
-		self.boundingboxsize = radius
+		self.boundingboxsize = str(round(radius, 2))+u'\u00B3'
 		self.slices = int(radius)
 		self.stacks = int(radius)
 		if self.item_inspector: self.item_inspector.updateMetaData()
@@ -273,7 +273,7 @@ class EMCylinder(EMItem3D):
 		self.height = height
 		self.slices = int(radius)
 		self.stacks = int(radius)
-		self.boundingboxsize = max(self.radius, self.height)
+		self.boundingboxsize = str(round(radius, 2))+'x'+str(round(height, 2))
 		if self.item_inspector: self.item_inspector.updateMetaData()
 		
 	def getEvalString(self):
@@ -375,7 +375,6 @@ class EMLine(EMItem3D):
 		self.width = width
 		self.slices = int(width/2)
 		self.stacks = int(width/2)
-		self.boundingboxsize = max(self.width/2, self.width/2)
 		
 		#arrow size
 		dx = self.x1 - self.x2
@@ -386,6 +385,7 @@ class EMLine(EMItem3D):
 		self.leftArrowLength = self.length/10.0
 		self.rightArrowSize = self.width
 		self.rightArrowLength = self.length/10.0
+		self.boundingboxsize = 'length='+str(round(self.length, 2))+', width='+str(round(self.width, 2))
 		
 		if self.item_inspector: self.item_inspector.updateMetaData()	
 		
@@ -525,7 +525,7 @@ class EMCone(EMItem3D):
 		self.height = height
 		self.slices = int(radius)
 		self.stacks = int(radius)
-		self.boundingboxsize = max(self.radius, self.height)
+		self.boundingboxsize = str(round(radius, 2))+'x'+str(round(height, 2))
 		if self.item_inspector: self.item_inspector.updateMetaData()
 		
 	def getEvalString(self):

@@ -4137,9 +4137,12 @@ EMData *EMData::extract_box(const Transform& cs, const Region& r)
 	for (int x = r.x_origin(); x < r.get_width(); x++) {
 		for (int y = r.y_origin(); y < r.get_height(); y++) {
 			for (int z = r.z_origin(); z < r.get_depth(); z++) {
-				float xb = cs_matrix[0]*x + cs_matrix[1]*y + cs_matrix[2]*z + cs_matrix[3];
-				float yb = cs_matrix[4]*x + cs_matrix[5]*y + cs_matrix[6]*z + cs_matrix[7];
-				float zb = cs_matrix[8]*x + cs_matrix[9]*y + cs_matrix[10]*z + cs_matrix[11];
+				//float xb = cs_matrix[0]*x + cs_matrix[1]*y + cs_matrix[2]*z + cs_matrix[3];
+				//float yb = cs_matrix[4]*x + cs_matrix[5]*y + cs_matrix[6]*z + cs_matrix[7];
+				//float zb = cs_matrix[8]*x + cs_matrix[9]*y + cs_matrix[10]*z + cs_matrix[11];
+				float xb = cs_matrix[0]*x + y*cs_matrix[4] + z*cs_matrix[8] + cs_matrix[3];
+				float yb = cs_matrix[1]*x + y*cs_matrix[5] + z*cs_matrix[9] + cs_matrix[7];
+				float zb = cs_matrix[2]*x + y*cs_matrix[6] + z*cs_matrix[10] + cs_matrix[11];
 				float t = xb - Util::fast_floor(xb);
 				float u = yb - Util::fast_floor(yb);
 				float v = zb - Util::fast_floor(zb);
