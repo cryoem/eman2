@@ -70,7 +70,7 @@ class PopupHelicalRefinement(QWidget):
 	self.setadv=False
 	self.cmd = ""
 	x1 = 10
-	x2 = x1 + 150
+	x2 = x1 + 170
 	x3 = x2 + 145
 	x4 = x3 + 100
 	x5 = 230 # run button
@@ -173,7 +173,7 @@ class PopupHelicalRefinement(QWidget):
 	self.xrangeedit.setText(self.savedparmsdict['xrange'])
 	self.xrangeedit.setToolTip('Range for translational search in x\nif set to 0 no x directional alignment will be performed')
 	y = y +30
-	xtrans= QtGui.QLabel('Step of x', self)
+	xtrans= QtGui.QLabel('Step of x search in pixel', self)
 	xtrans.move(x1,y)
 	self.xtransedit=QtGui.QLineEdit(self)
 	self.xtransedit.move(x2,y)
@@ -205,7 +205,7 @@ class PopupHelicalRefinement(QWidget):
 	self.dphiedit.setToolTip('helical angle in degree')	
 	
 	y = y +30	
-	rmax= QtGui.QLabel('Helical out radius', self)
+	rmax= QtGui.QLabel('Outer radius of helix', self)
 	rmax.move(x1,y)
 	self.rmaxedit=QtGui.QLineEdit(self)
 	self.rmaxedit.move(x2,y)
@@ -728,7 +728,7 @@ class Popupadvparams_helical_2(QWidget):
 	self.setWindowTitle('sxihrsr advanced parameters related to helix and symmetry')
         #Here we just set a label and its position in the window
 	x1 = 10
-	x2 = x1 + 150
+	x2 = x1 + 300
 	x3 = x2 + 145
 	x4 = x3 + 100
 	y = 10
@@ -742,7 +742,7 @@ class Popupadvparams_helical_2(QWidget):
 
 	self.savedparmsdict=savedparms
 	y = y + 30
-	nise = QtGui.QLabel('Nise', self)
+	nise = QtGui.QLabel('Number of iterations to start dp, dphi search', self)
 	nise.move(x1,y)
 	self.niseedit=QtGui.QLineEdit(self)
 	self.niseedit.move(x2,y)
@@ -750,7 +750,7 @@ class Popupadvparams_helical_2(QWidget):
 	self.niseedit.setToolTip('start symmetrization searching after nise steps')	
 	
 	y = y + 30
-	rmin = QtGui.QLabel('Helical inner radius', self)
+	rmin = QtGui.QLabel('Inner radius of helix', self)
 	rmin.move(x1,y)
 	self.rminedit=QtGui.QLineEdit(self)
 	self.rminedit.move(x2,y)
@@ -758,7 +758,7 @@ class Popupadvparams_helical_2(QWidget):
 	self.rminedit.setToolTip('Inner radius of the helix')	
 	
 	y = y + 30
-	fract = QtGui.QLabel('Fraction used', self)
+	fract = QtGui.QLabel('Fraction of the volume used for helicising', self)
 	fract.move(x1,y)
 	self.fractedit=QtGui.QLineEdit(self)
 	self.fractedit.move(x2,y)
@@ -766,7 +766,7 @@ class Popupadvparams_helical_2(QWidget):
 	self.fractedit.setToolTip('fraction of the volume used for helicising')	
 	
 	y = y + 30
-	dp_step = QtGui.QLabel('Dp step', self)
+	dp_step = QtGui.QLabel('Dp step size in Angstroms during search', self)
 	dp_step.move(x1,y)
 	self.dp_stepedit=QtGui.QLineEdit(self)
 	self.dp_stepedit.move(x2,y)
@@ -774,7 +774,7 @@ class Popupadvparams_helical_2(QWidget):
 	self.dp_stepedit.setToolTip('step size of helicise rise search')
 	
 	y = y + 30
-	ndp = QtGui.QLabel('Number of dp search', self)
+	ndp = QtGui.QLabel('Number of dp step during search', self)
 	ndp.move(x1,y)
 	self.ndpedit=QtGui.QLineEdit(self)
 	self.ndpedit.move(x2,y)
@@ -782,7 +782,7 @@ class Popupadvparams_helical_2(QWidget):
 	self.ndpedit.setToolTip('In symmetrization search, number of delta z steps equas to 2*ndp+1')	
 	
 	y = y + 30
-	dphi_step = QtGui.QLabel('Dphi step', self)
+	dphi_step = QtGui.QLabel('Dphi step size in degree during search', self)
 	dphi_step.move(x1,y)
 	self.dphi_stepedit=QtGui.QLineEdit(self)
 	self.dphi_stepedit.move(x2,y)
@@ -790,7 +790,7 @@ class Popupadvparams_helical_2(QWidget):
 	self.dphi_stepedit.setToolTip('step size of helicise angle search')
 	
 	y = y + 30
-	ndphi = QtGui.QLabel('Number of dphi search', self)
+	ndphi = QtGui.QLabel('Number of dphi step during search', self)
 	ndphi.move(x1,y)
 	self.ndphiedit=QtGui.QLineEdit(self)
 	self.ndphiedit.move(x2,y)
@@ -798,7 +798,7 @@ class Popupadvparams_helical_2(QWidget):
 	self.ndphiedit.setToolTip('In symmetrization search, number of angular steps equas to 2*ndphi+1')	
 	
 	y = y + 30
-	psi_max = QtGui.QLabel('Maximum psi', self)
+	psi_max = QtGui.QLabel('Maximum psi range to deviate from 90/270', self)
 	psi_max.move(x1,y)
 	self.psi_maxedit=QtGui.QLineEdit(self)
 	self.psi_maxedit.move(x2,y)
@@ -4613,9 +4613,7 @@ class MainWindow(QtGui.QWidget):
     def helicalrefinement(self):
         print "Opening a new popup window..."
         #opens the window Poptwodali, and defines its width and height
-        #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
-        #self.w = PopupHelicalRefinement()
-        #self.w.resize(600,800)
+       
         #self.w.show()   
 	self.w = PopupHelicalRefinement()
 	self.w1 = Popupadvparams_helical_1(self.w.savedparmsdict)
@@ -4626,7 +4624,7 @@ class MainWindow(QtGui.QWidget):
     	self.TabWidget.insertTab(0,self.w,'Main')
     	self.TabWidget.insertTab(1,self.w1,'Advanced CTF and Search')
 	self.TabWidget.insertTab(2,self.w2,'Advanced Symmetry')
-	self.TabWidget.resize(600,700)
+	self.TabWidget.resize(600,650)
     	self.TabWidget.show()
         
 	
