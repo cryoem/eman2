@@ -2,6 +2,7 @@
 
 #
 # Author: Steven Ludtke  2/8/2011 (rewritten)
+# Author: John Flanagan  9/7/2011 (helixboxer)
 # Copyright (c) 2011- Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -1355,27 +1356,6 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				return "DELHELIX"	# If we have deleted a pair do not reset the pair toggle/counter	
 		else:
 			self.do_deletion(n)
-			
-	
-	def compute_perpZold(self, a):
-		# Solve:
-		# 1: a1*b1 + a2*b2 + a3*b3 = 0
-		# 2: b2 = SQRT(1- b1^2 - b3^2)
-		# 3: b3 = 0, b vector is perpendiclar to Z
-		b3 = 0.0 # We say that the box must be perpendicular to the Z axis
-		b1soln1 = math.sqrt(a[1]*a[1]/(a[0]*a[0] + a[1]*a[1]))
-		b1soln2 = -b1soln1
-		b2soln1 = math.sqrt(1 - b1soln1*b1soln1)
-		b2soln2 = -b2soln1
-		# Only correct solution are perpendicular to a
-		if math.fabs(a[0]*b1soln1 + a[1]*b2soln1 + a[2]*b3) < 0.0001:
-			return Vec3f(b1soln1, b2soln1,  b3)
-		if math.fabs(a[0]*b1soln1 + a[1]*b2soln2 + a[2]*b3) < 0.0001:
-			return Vec3f(b1soln1, b2soln2,  b3)
-		if math.fabs(a[0]*b1soln2 + a[1]*b2soln1 + a[2]*b3) < 0.0001:
-			return Vec3f(b1soln2, b2soln1,  b3)
-		if math.fabs(a[0]*b1soln2 + a[1]*b2soln2 + a[2]*b3) < 0.0001:
-			return Vec3f(b1soln2, b2soln2,  b3)
 	
 	def compute_crossAB(self, a, b):
 		c1 = a[1]*b[2] - a[2]*b[1]
