@@ -812,7 +812,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		Pick an item on the screen using openGL's selection mechanism
 		"""
-		self.makeCurrent()	# This is needed so we use openGL for the correct widget!!!
+		self.makeCurrent()	# This is needed so we use openGL for the correct widget!!! An not say the lights or camera 3D widget
 		viewport = glGetIntegerv(GL_VIEWPORT)
 		glSelectBuffer(1024)	# The buffer size for selection
 		glRenderMode(GL_SELECT)
@@ -863,7 +863,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		
 	def deselectArea(self):
 		"""
-		Turn off selectin box
+		Turn off selection box
 		"""
 		self.sa_xi = 0.0
 		self.sa_xf = 0.0
@@ -912,7 +912,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		for record in records:
 			if self.multiselect:
 				selecteditem = EMItem3D.selection_idx_dict[record.names[len(record.names)-1]]()
-				if selecteditem.nodetype == "DataChild": selecteditem = selecteditem.parent
+				if selecteditem.nodetype == "DataChild": selecteditem = selecteditem.parent	# Select the data itself and no the isosurface, slice, etc
 				selecteditem.setSelectedItem(True)
 				# Inspector tree management
 				if self.main_3d_inspector: self.main_3d_inspector.updateSelection(selecteditem)
@@ -922,7 +922,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 					closestitem = record
 		if closestitem:
 			selecteditem = EMItem3D.selection_idx_dict[closestitem.names[len(closestitem.names)-1]]()
-			if selecteditem.nodetype == "DataChild": selecteditem = selecteditem.parent
+			if selecteditem.nodetype == "DataChild": selecteditem = selecteditem.parent	# Select the data itself and no the isosurface, slice, etc
 			if not selecteditem.isSelectedItem() and not self.appendselection and not self.toggleselection: self.clearSelection()
 			if self.toggleselection and selecteditem.isSelectedItem(): 
 				selecteditem.setSelectedItem(False)
@@ -1041,13 +1041,14 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.showInspector()
 	
 	def _insert_shape(self, name, node):
-		""" Helper function to reduce code duplication"""
+		""" Helper function for mousePressEvent to reduce code duplication"""
 		self.clearSelection()
 		node.setSelectedItem(True)
 		self.insertNewNode(name, node)
-		node.setTransform(self.newnode.getParentMatrixProduct().inverse()*self.newnode.getTransform())
+		node.setTransform(self.newnode.getParentMatrixProduct().inverse()*self.newnode.getTransform()) # so the object is not modied by parent transform upon insertion
 		
 	def _gettransformbasedonscreen(self, event):
+		""" Helper function to for mousePressEvent"""
 		x = event.x() - self.camera.getWidth()/2
 		y = -event.y() + self.camera.getHeight()/2
 		return Transform({"type":"eman","tx":x,"ty":y})
@@ -1107,7 +1108,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			
 	def wheelEvent(self, event):
 		"""
-		QT event handler. Scales the SG unpon wheel movement
+		QT event handler. Scales the SG upon wheel movement, does so by chaning fovy or orthographic equilivant
 		"""
 		if event.orientation() & Qt.Vertical:
 			self.cameraNeedsanUpdate()
@@ -1148,7 +1149,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		
 	def setZslice(self):
 		"""
-		Get a Z slice to display in the camera widget, only works for orthoganal mode
+		Get a Z slice to display in the camera widget, only works for orthographic mode
 		"""
 		# Getting the Z slice will have problems when using perspective viewing
 		self.setAutoBufferSwap(False)
@@ -1173,7 +1174,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.setTransform(current_xform)
 		self.camera.setClipNear(oldnear)
 		self.camera.setClipFar(oldfar)
-		self.reset_camera = True	# Reset the camera when redering the real scene
+		self.reset_camera = True	# Reset the camera when rendering the real scene
 		self.setAutoBufferSwap(True)
 		self.pixels = []
 		self.pixels.append(1)
@@ -1183,6 +1184,11 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.pixels.append(pixeldata)
 		
 	def saveSnapShot(self, filename, format="tiff"):
+		"""
+		Save the frame buffer to an image file
+		@param filename The Filename you want to save to
+		@param format The image file format
+		"""
 		image = self.grabFrameBuffer()
 		image.save(filename, format)
 	
@@ -1210,7 +1216,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 				
 	def loadSession(self, filename):
 		"""
-		Loads a session begining 
+		Loads a session
+		@param filename Name of the session file
 		"""
 		rfile = open(filename, 'rb')
 		try:
@@ -1313,6 +1320,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 	def saveSession(self, filename):
 		"""
 		Save the SG as a session
+		@param filename The Filename you want to save to
 		"""
 		wfile = open(filename, 'wb')
 		treelist = self.getTreeAsList(self)
@@ -1324,6 +1332,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		Returns the SG as a list along with all metadata. Used for saving a session
 		item is the item you want to start at.
 		This is a recursive function
+		@param item, the emItem that you want to transverse (grabs its subtree)
 		"""
 		childlist = []
 		dictionary = {"CONSTRUCTOR":item.getEvalString(),"NAME":str(item.getLabel()),"VISIBLE":item.isVisibleItem(),"SELECTED":item.isSelectedItem(),"NODETYPE":item.nodetype}
