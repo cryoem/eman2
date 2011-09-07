@@ -4711,7 +4711,7 @@ class Popupcenter_isac(QWidget):
 	(self.winmain.savedparmsdict)['nproc_prectr']=str(nproc_prectr)
 	
 	if int(str(nproc_prectr)) > 1:
-		cmd1="mpirun -np "+ str(np) + " "+ cmd1+" --MPI" 
+		cmd1="mpirun -np "+ str(nproc_prectr) + " "+ cmd1+" --MPI" 
 	
 	if writefile:	
 		(fname,stat)= QInputDialog.getText(self,"Generate Command Line","Enter name of file to save command line in",QLineEdit.Normal,"")
