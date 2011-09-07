@@ -12250,9 +12250,12 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	# and send them back, even though the code will be much more complicated.
 	# I have decided that main node should not do realignment, otherwise it could clog the whole operation if it happened to have
 	# a very large group.  The main node is used to send and collect information.
+	
+	ali_params_dir = "ali_params_generation_%d"%generation
 	if myid == main_node:
 		STB_PART = match_independent_runs(alldata, refim, indep_run, thld_grp)
 		l_STB = len(STB_PART)
+		call(['mkdir', ali_params_dir])
 	else:
 		l_STB = 0
 	mpi_barrier(MPI_COMM_WORLD)
@@ -12341,7 +12344,17 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			
 			l_stable_set = len(stable_set)
 			stable_set_id = [0]*l_stable_set
-			for j in xrange(l_stable_set): stable_set_id[j] = members_id[stable_set[j][1]]
+			all_alpha = [0]*l_stable_set
+			all_sx = [0]*l_stable_set
+			all_sy = [0]*l_stable_set
+			all_mirror = [0]*l_stable_set
+			all_scale = [1.0]*l_stable_set
+			for j in xrange(l_stable_set): 
+				stable_set_id[j] = members_id[stable_set[j][1]]
+				all_alpha[j] = ali_params[0][stable_set[j][1]]
+				all_sx[j] = ali_params[1][stable_set[j][1]]
+				all_sy[j] = ali_params[2][stable_set[j][1]]
+				all_mirror[j] = ali_params[3][stable_set[j][1]]
 
 			mpi_send(l_stable_set, 1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 			mpi_send(stable_set_id, l_stable_set, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
@@ -12349,6 +12362,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			mpi_send(pix_err, 1, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 			
 			if l_stable_set > thld_grp:
+				write_text_file([all_alpha, all_sx, all_sy, all_mirror, all_scale], "%s/ali_params_%03d"%(ali_params_dir, i))
 				send_EMData(ave, main_node, i*100)			
 	
 	mpi_barrier(MPI_COMM_WORLD)
