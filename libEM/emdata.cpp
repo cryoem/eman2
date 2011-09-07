@@ -4162,7 +4162,6 @@ EMData *EMData::extract_box(const Transform& cs, const Region& r)
 
 				if (xb < (nx - 1) && yb < (ny - 1) && zb < (nz - 1)) {
 					bdata[l] = Util::trilinear_interpolate(ddata[k], ddata[k + 1], ddata[k + nx],ddata[k + nx + 1], ddata[k + nxy], ddata[k + nxy + 1], ddata[k + nx + nxy], ddata[k + nx + nxy + 1],t, u, v);
-					//bdata[l] = 0.0;
 				}
 			}
 		}

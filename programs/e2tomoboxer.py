@@ -936,6 +936,12 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	def menu_file_open(self,tog):
 		QtGui.QMessageBox.warning(None,"Error","Sorry, in the current version, you must provide a file to open on the command-line.")
 
+	def load_box_yshort(self, boxcoords):
+		if options.yshort:
+			return [boxcoords[0], boxcoords[2], boxcoords[1]]
+		else:
+			return boxcoords
+			
 	def menu_file_read_boxloc(self):
 		fsp=str(QtGui.QFileDialog.getOpenFileName(self, "Select output text file"))
 		
@@ -943,11 +949,11 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		if options.helixboxer:
 			for b in f:
 				b2=[int(float(i)) for i in b.split()[:6]]
-				self.boxes.append(b2[3:6])
+				self.boxes.append(self.load_box_yshort(b2[3:6]))
 				self.update_box(len(self.boxes)-1)
 				self.helixboxes.append(b2)
 				self.update_helixbox(len(self.helixboxes)-1)
-				self.boxes.append(b2[0:3])
+				self.boxes.append(self.load_box_yshort(b2[0:3]))
 				self.update_box(len(self.boxes)-1)
 		else:
 			for b in f:
@@ -1316,10 +1322,14 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		if n==len(self.helixboxes)-1 :
 			self.helixboxes.pop()
 			self.xyview.del_shape(str(n)+"helix")
+			self.xzview.del_shape(str(n)+"helix")
+			self.zyview.del_shape(str(n)+"helix")
 		else:
 			a=self.helixboxes.pop()
 			self.helixboxes[n]=a
 			self.xyview.del_shape(str(len(self.helixboxes))+"helix")
+			self.xzview.del_shape(str(len(self.helixboxes))+"helix")
+			self.zyview.del_shape(str(len(self.helixboxes))+"helix")
 			self.update_helixbox(n)
 			
 	def del_box(self,n):
@@ -1392,21 +1402,14 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		"""
 		Compute the coordinate system for the box
 		"""
-		a = None
-		if options.yshort:
-			a = Vec3f((helixbox[0]-helixbox[3]), (helixbox[2]-helixbox[5]), (helixbox[1]-helixbox[4]))
-		else:
-			a = Vec3f((helixbox[0]-helixbox[3]), (helixbox[1]-helixbox[4]), (helixbox[2]-helixbox[5]))
+		a = Vec3f((helixbox[0]-helixbox[3]), (helixbox[1]-helixbox[4]), (helixbox[2]-helixbox[5]))
 		
 		a.normalize()
 		b = self.compute_perpZ(a)
 		b.normalize()
 		c = self.compute_crossAB(a, b)
 		
-		if options.yshort:
-			return Transform([a[0],a[1],a[2],helixbox[3],b[0],b[1],b[2],helixbox[5],c[0],c[1],c[2],helixbox[4]])
-		else:
-			return Transform([a[0],a[1],a[2],helixbox[3],b[0],b[1],b[2],helixbox[4],c[0],c[1],c[2],helixbox[5]])
+		return Transform([a[0],a[1],a[2],helixbox[3],b[0],b[1],b[2],helixbox[4],c[0],c[1],c[2],helixbox[5]])
 		
 	
 	def get_extended_a_vector(self, helixbox):
@@ -1439,9 +1442,14 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		#point8 = [(helixbox[0] - c[0]*bs/2), (helixbox[1] - c[1]*bs/2), (helixbox[2] - c[2]*bs/2)]
 		
 		key = str(n)+"helix"
-		self.xyview.add_shape(key,EMShape(("line",.2,.2,.8, helixbox[0], helixbox[1], helixbox[3], helixbox[4],2)))
-		self.xzview.add_shape(key,EMShape(("line",.2,.2,.8, helixbox[0], helixbox[2], helixbox[3], helixbox[5],2)))
-		self.zyview.add_shape(key,EMShape(("line",.2,.2,.8, helixbox[2], helixbox[1], helixbox[5], helixbox[4],2)))
+		if options.yshort:
+			self.xyview.add_shape(key,EMShape(("line",.2,.2,.8, helixbox[0], helixbox[2], helixbox[3], helixbox[5],2)))
+			self.xzview.add_shape(key,EMShape(("line",.2,.2,.8, helixbox[0], helixbox[1], helixbox[3], helixbox[4],2)))
+			self.zyview.add_shape(key,EMShape(("line",.2,.2,.8, helixbox[1], helixbox[2], helixbox[4], helixbox[5],2)))
+		else:
+			self.xyview.add_shape(key,EMShape(("line",.2,.2,.8, helixbox[0], helixbox[1], helixbox[3], helixbox[4],2)))
+			self.xzview.add_shape(key,EMShape(("line",.2,.2,.8, helixbox[0], helixbox[2], helixbox[3], helixbox[5],2)))
+			self.zyview.add_shape(key,EMShape(("line",.2,.2,.8, helixbox[2], helixbox[1], helixbox[5], helixbox[4],2)))
 		self.xyview.update()
 		self.xzview.update()
 		self.zyview.update()
@@ -1530,6 +1538,18 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			self.xzview.scroll_to(None,box[2])
 			self.zyview.scroll_to(box[2],None)
 
+	def add_helix_box(self, xf, yf, zf, xi, yi, zi):
+		if options.yshort:
+			self.helixboxes.append([xf, zf, yf, xi, zi, yi])
+		else:
+			self.helixboxes.append([xf, yf, zf, xi, yi, zi])
+	
+	def edit_helix_box(self, hb, value, index, yshortindex):
+		if options.yshort:
+			hb[yshortindex] = value
+		else:
+			hb[index] = value
+			
 	def xy_down(self,event):
 		x,y=self.xyview.scr_to_img((event.x(),event.y()))
 		x,y=int(x),int(y)
@@ -1551,7 +1571,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				###########
 				if options.helixboxer:	# Only create a helixbox every 2 clicks
 					if self.firsthbclick:
-						self.helixboxes.append([x, y, self.depth(), self.firsthbclick[0], self.firsthbclick[1], self.firsthbclick[2]])
+						self.add_helix_box(x, y, self.depth(), self.firsthbclick[0], self.firsthbclick[1], self.firsthbclick[2])
 						self.firsthbclick = None
 						self.update_helixbox(len(self.helixboxes)-1)
 					else:
@@ -1579,14 +1599,14 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				hb = self.helixboxes[int(self.xydown[0]/2)]
 				if self.xydown[0] % 2 == 0:
 					hb[3] = dx+self.xydown[3]
-					hb[4] = dy+self.xydown[4]
+					self.edit_helix_box(hb, dy+self.xydown[4], 4, 5)
 				else:
 					hb[0] = dx+self.xydown[3]
-					hb[1] = dy+self.xydown[4]
+					self.edit_helix_box(hb, dy+self.xydown[4], 1, 2)
 				self.update_helixbox(int(self.xydown[0]/2))
 			else:
 				self.firsthbclick[0] = x
-				self.firsthbclick[1] = y
+				self.edit_helix_box(self.firsthbclick, y, 1, 2)
 				
 		self.boxes[self.xydown[0]][0]=dx+self.xydown[3]
 		self.boxes[self.xydown[0]][1]=dy+self.xydown[4]
@@ -1640,7 +1660,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				###########
 				if options.helixboxer:	# Only create a helixbox every 2 clicks
 					if self.firsthbclick:
-						self.helixboxes.append([x, self.cury, z, self.firsthbclick[0], self.firsthbclick[1], self.firsthbclick[2]])
+						self.add_helix_box(x, self.cury, z, self.firsthbclick[0], self.firsthbclick[1], self.firsthbclick[2])
 						self.firsthbclick = None
 						self.update_helixbox(len(self.helixboxes)-1)
 					else:
@@ -1668,14 +1688,14 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				hb = self.helixboxes[int(self.xzdown[0]/2)]
 				if self.xzdown[0] % 2 == 0:
 					hb[3] = dx+self.xzdown[3]
-					hb[5] = dz+self.xzdown[4]
+					self.edit_helix_box(hb, dz+self.xzdown[4], 5, 4)
 				else:
 					hb[0] = dx+self.xzdown[3]
-					hb[2] = dz+self.xzdown[4]
+					self.edit_helix_box(hb, dz+self.xzdown[4], 2, 1)
 				self.update_helixbox(int(self.xzdown[0]/2))
 			else:
 				self.firsthbclick[0] = x
-				self.firsthbclick[2] = z
+				self.edit_helix_box(self.firsthbclick, z, 2, 1)
 				
 		self.boxes[self.xzdown[0]][0]=dx+self.xzdown[3]
 		self.boxes[self.xzdown[0]][2]=dz+self.xzdown[4]
@@ -1720,7 +1740,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				###########
 				if options.helixboxer:	# Only create a helixbox every 2 clicks
 					if self.firsthbclick:
-						self.helixboxes.append([self.curx, y, z, self.firsthbclick[0], self.firsthbclick[1], self.firsthbclick[2]])
+						self.add_helix_box(self.curx, y, z, self.firsthbclick[0], self.firsthbclick[1], self.firsthbclick[2])
 						self.firsthbclick = None
 						self.update_helixbox(len(self.helixboxes)-1)
 					else:
@@ -1747,15 +1767,21 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			if len(self.boxes) % 2 == 0 or (self.zydown[0] != len(self.boxes)-1):	# Only update the helix boxer if it is paired, otherwise treat it as a regular box
 				hb = self.helixboxes[int(self.zydown[0]/2)]
 				if self.zydown[0] % 2 == 0:
-					hb[5] = dz+self.zydown[3]
-					hb[4] = dy+self.zydown[4]
+					self.edit_helix_box(hb, dz+self.zydown[3], 5, 4)
+					self.edit_helix_box(hb, dy+self.zydown[4], 4, 5)
+					#hb[5] = dz+self.zydown[3]
+					#hb[4] = dy+self.zydown[4]
 				else:
-					hb[2] = dz+self.zydown[3]
-					hb[1] = dy+self.zydown[4]
+					self.edit_helix_box(hb, dz+self.zydown[3], 2, 1)
+					self.edit_helix_box(hb, dy+self.zydown[4], 1, 2)
+					#hb[2] = dz+self.zydown[3]
+					#hb[1] = dy+self.zydown[4]
 				self.update_helixbox(int(self.zydown[0]/2))
 			else:
-				self.firsthbclick[2] = z
-				self.firsthbclick[1] = y
+				self.edit_helix_box(self.firsthbclick, z, 2, 1)
+				self.edit_helix_box(self.firsthbclick, y, 1, 2)
+				#self.firsthbclick[2] = z
+				#self.firsthbclick[1] = y
 				
 		self.boxes[self.zydown[0]][2]=dz+self.zydown[3]
 		self.boxes[self.zydown[0]][1]=dy+self.zydown[4]
