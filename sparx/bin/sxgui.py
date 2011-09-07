@@ -834,7 +834,7 @@ class Popuptwodali(QWidget):
 	
 	self.cmd = ""
 	# populate with default values
-	self.savedparmsdict = {'stackname':'NONE','foldername':'NONE','partradius':'-1','xyrange':'4 2 1 1','trans':'2 1 0.5 0.25','nriter':'3','nproc':'1','maskname':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","fourvar":Qt.Unchecked, "gpnr":"-1","usrfunc":"ref_ali2d","usrfuncfile":""}
+	self.savedparmsdict = {'stackname':'','foldername':'NONE','partradius':'-1','xyrange':'4 2 1 1','trans':'2 1 0.5 0.25','nriter':'3','nproc':'1','maskname':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","fourvar":Qt.Unchecked, "gpnr":"-1","usrfunc":"ref_ali2d","usrfuncfile":""}
 
 	#######################################################################################
 	# Layout parameters
@@ -1320,7 +1320,7 @@ class Popupthreedali(QWidget):
 	# class variables
 	self.cmd = ""
 	# populate with default values
-	self.savedparmsdict = {'stackname':'NONE','refname':'NONE','foldername':'NONE','partradius':'-1','xyrange':'4 2 1 1','trans':'2 1 0.5 0.25', 'delta':'15 5 2','nriter':'3','nproc':'1','maskname':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","fourvar":Qt.Unchecked,"usrfunc":"ref_ali3d","usrfuncfile":"","an":'-1',"ref_a":'S',"sym":'c1',"npad":'4',"deltapsi":'-1',"startpsi":'-1',"stoprnct":'0.0',"debug":False,"nch":False,"chunk":'0.2',"rantest":False}
+	self.savedparmsdict = {'stackname':'','refname':'NONE','foldername':'NONE','partradius':'-1','xyrange':'4 2 1 1','trans':'2 1 0.5 0.25', 'delta':'15 5 2','nriter':'3','nproc':'1','maskname':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","fourvar":Qt.Unchecked,"usrfunc":"ref_ali3d","usrfuncfile":"","an":'-1',"ref_a":'S',"sym":'c1',"npad":'4',"deltapsi":'-1',"startpsi":'-1',"stoprnct":'0.0',"debug":False,"nch":False,"chunk":'0.2',"rantest":False}
 	
 	########################################################################################
 	# layout parameters
@@ -2013,7 +2013,7 @@ class Popupkmeans(QWidget):
 	# class variables
 	self.cmd = ""
 	# populate with default values
-	self.savedparmsdict = {'stackname':'NONE','foldername':'NONE','kc':'2','trials':'1','maxiter':'100','nproc':'1','randsd':'-1','maskname':'',"ctf":Qt.Unchecked,"crit":"all","normalize":Qt.Unchecked, "init_method":"rnd"}
+	self.savedparmsdict = {'stackname':'','foldername':'NONE','kc':'2','trials':'1','maxiter':'100','nproc':'1','randsd':'-1','maskname':'',"ctf":Qt.Unchecked,"crit":"all","normalize":Qt.Unchecked, "init_method":"rnd"}
 
 	#######################################################################################
 	# Layout parameters
@@ -2376,7 +2376,7 @@ class Popupkmeansgroups(QWidget):
 	# class variables
 	self.cmd = ""
 	# populate with default values
-	self.savedparmsdict = {'stackname':'NONE','foldername':'NONE','kc1':'2','kc2':'3','trials':'1','nproc':'1','randsd':'-1','maskname':'',"ctf":Qt.Unchecked,'maxiter':'100'}
+	self.savedparmsdict = {'stackname':'','foldername':'NONE','kc1':'2','kc2':'3','trials':'1','nproc':'1','randsd':'-1','maskname':'',"ctf":Qt.Unchecked,'maxiter':'100'}
 	
 	#######################################################################################
 	# Layout parameters
@@ -3327,7 +3327,7 @@ class Popupmrefthreedali(QWidget):
 	# class variables
 	self.cmd = ""
 	# populate with default values
-	self.savedparmsdict = {'stackname':'NONE','refname':'NONE','foldername':'NONE','partradius':'-1','xyrange':'4 2 1 1','trans':'2 1 0.5 0.25', 'delta':'15 5 2','nriter':'3','nproc':'1','maskname':'','focus':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","fourvar":Qt.Unchecked,"usrfunc":"ref_ali3dm","usrfuncfile":"","an":'-1',"ref_a":'S',"sym":'c1',"npad":'4',"stoprnct":'0.0',"debug":False,'nrefine':'1','nassign':'0'}
+	self.savedparmsdict = {'stackname':'','refname':'NONE','foldername':'NONE','partradius':'-1','xyrange':'4 2 1 1','trans':'2 1 0.5 0.25', 'delta':'15 5 2','nriter':'3','nproc':'1','maskname':'','focus':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","fourvar":Qt.Unchecked,"usrfunc":"ref_ali3dm","usrfuncfile":"","an":'-1',"ref_a":'S',"sym":'c1',"npad":'4',"stoprnct":'0.0',"debug":False,'nrefine':'1','nassign':'0'}
 	
 	########################################################################################
 	# layout parameters
@@ -3994,7 +3994,7 @@ class Popupisac(QWidget):
 	
 	self.cmd = ""
 	# populate with default values
-	self.savedparmsdict = {'stackname':'NONE','partradius':'-1','xyrange':'1','trans':'1','nriter':'30','nproc':'2',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","dst":"90.0","FL":"0.1","FH":"0.3","FF":"0.2","init_iter":"3","main_iter":"3","iter_reali":"1","match_first":"1","max_round":"20","match_second":"5","stab_ali":"5","thld_err":"1.732","indep_run":"4","thld_grp":"10","img_per_grp":"100","generation":"1",'stackname_prectr':'NONE','outdir_prectr':'NONE','mask_prectr':'','search_rng_prectr':'-1','ou_prectr':'-1','maxit_prectr':'100','snr_prectr':'1','fourvar_prectr':Qt.Unchecked,'ctf_prectr':Qt.Unchecked,'oneDx_prectr':Qt.Unchecked,'nproc_prectr':'2'}
+	self.savedparmsdict = {'stackname':'','partradius':'-1','xyrange':'1','trans':'1','nriter':'30','nproc':'2',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","dst":"90.0","FL":"0.1","FH":"0.3","FF":"0.2","init_iter":"3","main_iter":"3","iter_reali":"1","match_first":"1","max_round":"20","match_second":"5","stab_ali":"5","thld_err":"1.732","indep_run":"4","thld_grp":"10","img_per_grp":"100","generation":"1",'stackname_prectr':'NONE','outdir_prectr':'NONE','mask_prectr':'','search_rng_prectr':'-1','ou_prectr':'-1','maxit_prectr':'100','snr_prectr':'1','fourvar_prectr':Qt.Unchecked,'ctf_prectr':Qt.Unchecked,'oneDx_prectr':Qt.Unchecked,'nproc_prectr':'2'}
 
 	#######################################################################################
 	# Layout parameters
@@ -4439,7 +4439,7 @@ class Popupadvparams_isac_1(QWidget):
 	FH.move(self.x1,self.y1)
 	self.FHedit=QtGui.QLineEdit(self)
 	self.FHedit.move(self.x2,self.y1)
-	self.FHedit.setText(self.savedparmsdict['FL'])
+	self.FHedit.setText(self.savedparmsdict['FH'])
 	self.FHedit.setToolTip('highest stopband frequency used in the tangent filter')
 	
 	self.y1 += 30
