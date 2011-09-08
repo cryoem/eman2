@@ -12351,10 +12351,10 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			all_scale = [1.0]*l_stable_set
 			for j in xrange(l_stable_set): 
 				stable_set_id[j] = members_id[stable_set[j][1]]
-				all_alpha[j] = ali_params[0][stable_set[j][1]*4]
-				all_sx[j] = ali_params[0][stable_set[j][1]*4+1]
-				all_sy[j] = ali_params[0][stable_set[j][1]*4+2]
-				all_mirror[j] = ali_params[0][stable_set[j][1]*4+3]
+				all_alpha[j] = ali_params[stab_ali-1][stable_set[j][1]*4]
+				all_sx[j] = ali_params[stab_ali-1][stable_set[j][1]*4+1]
+				all_sy[j] = ali_params[stab_ali-1][stable_set[j][1]*4+2]
+				all_mirror[j] = ali_params[stab_ali-1][stable_set[j][1]*4+3]
 
 			mpi_send(l_stable_set, 1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 			mpi_send(stable_set_id, l_stable_set, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
