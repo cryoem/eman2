@@ -1110,19 +1110,31 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		QT event handler. Scales the SG upon wheel movement, does so by chaning fovy or orthographic equilivant
 		"""
+		# Originally the wheel sclaed by zoom the viewport, but that caused all sorts of issues, so I now just scale the SG
 		if event.orientation() & Qt.Vertical:
 			self.cameraNeedsanUpdate()
+			iniselstate = self.getAllSelectedNodes()
+			for i in iniselstate:
+				i.setSelectedItem(False)
+			self.setSelectedItem(True)
 			if event.delta() > 0:
-				if self.camera.getUseOrtho():
-					self.camera.setPseudoFovy(self.camera.getPseudoFovy()+10)
-				else:
-					self.camera.setFovy(self.camera.getFovy()+1.0)
+				self.updateMatrices([0.05], "scale")
+				#if self.camera.getUseOrtho():
+				#	self.camera.setPseudoFovy(self.camera.getPseudoFovy()+10)
+				#else:
+				#	self.camera.setFovy(self.camera.getFovy()+1.0)
 			else:
-				if self.camera.getUseOrtho():
-					self.camera.setPseudoFovy(self.camera.getPseudoFovy()-10)
-				else:
-					self.camera.setFovy(self.camera.getFovy()-1.0)
+				self.updateMatrices([-0.05], "scale")
+				#if self.camera.getUseOrtho():
+				#	self.camera.setPseudoFovy(self.camera.getPseudoFovy()-10)
+				#else:
+					#self.camera.setFovy(self.camera.getFovy()-1.0)
+			self.setSelectedItem(False)
+			if self.item_inspector: self.item_inspector.updateItemControls()
+			for i in iniselstate:
+				i.setSelectedItem(True)
 			self.updateSG()
+			
 			
 	def mouseDoubleClickEvent(self,event):
 		print "Mouse Double Click Event"

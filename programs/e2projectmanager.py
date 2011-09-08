@@ -32,7 +32,7 @@
 #
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
-import os
+import os, json
 from EMAN2db import db_open_dict
 
 class EMProjectManager(QtGui.QMainWindow):
@@ -44,6 +44,8 @@ class EMProjectManager(QtGui.QMainWindow):
 		self.usingEMEN = False
 		# Load the project DataBase
 		self.loadPMdb()
+		# Load icons
+		self._load_icons()
 		
 		# Make the project manager layout
 		self.makeMenues()
@@ -227,7 +229,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		"""
 		self.tree_stacked_widget = QtGui.QStackedWidget()
 		self.tree_stacked_widget.setMaximumWidth(300)
-		self.tree_stacked_widget.addWidget(self.makeTreeWidget())
+		self.tree_stacked_widget.addWidget(self.makeSPRTreeWidget())
 		self.tree_stacked_widget.addWidget(self.makeTomoTreeWidget())
 		
 		return self.tree_stacked_widget
@@ -241,148 +243,54 @@ class EMProjectManager(QtGui.QMainWindow):
 		self.gui_stacked_widget.setFrameShape(QtGui.QFrame.StyledPanel)
 		
 		return self.gui_stacked_widget
+	
+	def _add_children(self, toplevel, widgetitem, treewidgetdict):
+		""" recursive hlper function for loadTree"""
+		for child in toplevel["CHILDREN"]:
+			treewidgetdict[child["NAME"]] = QtGui.QTreeWidgetItem(QtCore.QStringList(child["NAME"]))
+			treewidgetdict[child["NAME"]].setIcon(0, self.icons[child["ICON"]])
+			self._add_children(child, treewidgetdict[child["NAME"]], treewidgetdict)
+			widgetitem.addChild(treewidgetdict[child["NAME"]])
+			
 		
+	def loadTree(self, filename, treename, treewidgetdict):
+		"""
+		Load a workflow tree from a JSON file
+		@param filename The JSON filename
+		@param treename The name of the QTreWidget
+		@param treewidgetdict the dictionary containing the QtreeWidgets
+		"""
+		jsonfile = open(filename, 'r')
+		tree = json.load(jsonfile)
+		jsonfile.close()
+		
+		QTree = QtGui.QTreeWidget()
+		QTree.setMinimumHeight(400)
+		QTree.setHeaderLabel(treename)
+		
+		for toplevel in tree:
+			treewidgetdict[toplevel["NAME"]] = QtGui.QTreeWidgetItem(QtCore.QStringList(toplevel["NAME"]))
+			treewidgetdict[toplevel["NAME"]].setIcon(0, self.icons[toplevel["ICON"]])
+			self._add_children(toplevel, treewidgetdict[toplevel["NAME"]], treewidgetdict)
+			QTree.addTopLevelItem(treewidgetdict[toplevel["NAME"]])
+			
+		return QTree
+		
+	def makeSPRTreeWidget(self):
+		"""
+		Make the SPR tree
+		"""
+		self.SPRtreewidgetdict = {}
+		self.SPRtree = self.loadTree('spr.json', 'SPR', self.SPRtreewidgetdict)
+		return self.SPRtree
+	
 	def makeTomoTreeWidget(self):
 		"""
 		Make the tomo tree widget
 		"""
-		self.TomoTree = QtGui.QTreeWidget()
-		self.TomoTree.setHeaderLabel("Tomography")
-		
-		self.tomogrpahy = QtGui.QTreeWidgetItem(QtCore.QStringList("Tomographic Particle Reconstruction"))
-		self.tomogrpahy.setIcon(0, self.icons['single_image_3d'])
-		self.raw_tomographic_files =  QtGui.QTreeWidgetItem(QtCore.QStringList("Raw Tomogram Files"))
-		self.raw_tomographic_files.setIcon(0, self.icons['single_image_3d'])
-		self.tomogrpahy.addChild(self.raw_tomographic_files)
-		self.box_tomogram_particles = QtGui.QTreeWidgetItem(QtCore.QStringList("Box Tomogram Files"))
-		self.box_tomogram_particles.setIcon(0, self.icons['green_boxes'])
-		self.tomogrpahy.addChild(self.box_tomogram_particles)
-		self.tomogram_alignment_averaging = QtGui.QTreeWidgetItem(QtCore.QStringList("Tomogram Alignment and Averaging"))
-		self.tomogram_alignment_averaging.setIcon(0, self.icons['tomo_hunter'])
-		self.tomogrpahy.addChild(self.tomogram_alignment_averaging)
-		
-		self.TomoTree.addTopLevelItem(self.tomogrpahy)
-		
-		return self.TomoTree
-		
-	def makeTreeWidget(self):
-		"""
-		Make the SPR tree
-		"""
-		self.SPRtree = QtGui.QTreeWidget()
-		self.SPRtree.setMinimumHeight(400)
-		self.SPRtree.setHeaderLabel("SPR")
-		self._load_icons()
-		
-		# Raw Data
-		self.rawdata = QtGui.QTreeWidgetItem(QtCore.QStringList("Raw Data"))
-		self.rawdata.setIcon(0, self.icons['single_image'])
-		self.impemen_raw_data = QtGui.QTreeWidgetItem(QtCore.QStringList("Import Data"))
-		self.impemen_raw_data.setIcon(0, self.icons['single_image'])
-		#self.impdisk_raw_data = QtGui.QTreeWidgetItem(QtCore.QStringList("Import Data From Disk"))
-		#self.impdisk_raw_data.setIcon(0, self.icons['single_image'])
-		self.filter_raw_data = QtGui.QTreeWidgetItem(QtCore.QStringList("Filter Raw Data"))
-		self.filter_raw_data.setIcon(0, self.icons['single_image'])
-		self.rawdata.addChild(self.impemen_raw_data)
-		self.rawdata.addChild(self.filter_raw_data)
-		# Particles
-		self.particles = QtGui.QTreeWidgetItem(QtCore.QStringList("Particles"))
-		self.particles.setIcon(0, self.icons['green_boxes'])
-		self.interactive_boxing = QtGui.QTreeWidgetItem(QtCore.QStringList("Interactive Boxing-  e2boxer"))
-		self.interactive_boxing.setIcon(0, self.icons['green_boxes'])
-		self.particles.addChild(self.interactive_boxing)
-		self.auto_boxing = QtGui.QTreeWidgetItem(QtCore.QStringList("Auto Boxing -e2boxer"))
-		self.auto_boxing.setIcon(0, self.icons['green_boxes'])
-		self.particles.addChild(self.auto_boxing)
-		self.generate_output = QtGui.QTreeWidgetItem(QtCore.QStringList("Generate Output -e2boxer"))
-		self.generate_output.setIcon(0, self.icons['green_boxes'])
-		self.particles.addChild(self.generate_output)
-		self.particle_import = QtGui.QTreeWidgetItem(QtCore.QStringList("Particle Import"))
-		self.particle_import.setIcon(0, self.icons['green_boxes'])
-		self.particles.addChild(self.particle_import)
-		self.coordinate_import = QtGui.QTreeWidgetItem(QtCore.QStringList("Coordinate Import"))
-		self.coordinate_import.setIcon(0, self.icons['green_boxes'])
-		self.particles.addChild(self.coordinate_import)
-		# CTF
-		self.ctf = QtGui.QTreeWidgetItem(QtCore.QStringList("CTF"))
-		self.ctf.setIcon(0, self.icons['ctf'])
-		self.automated_fitted = QtGui.QTreeWidgetItem(QtCore.QStringList("Automated Fitting -e2ctf"))
-		self.automated_fitted.setIcon(0, self.icons['ctf'])
-		self.ctf.addChild(self.automated_fitted)
-		self.interactive_tuning = QtGui.QTreeWidgetItem(QtCore.QStringList("Interactive Tuning -e2ctf"))
-		self.interactive_tuning.setIcon(0, self.icons['ctf'])
-		self.ctf.addChild(self.interactive_tuning)
-		self.generate_output = QtGui.QTreeWidgetItem(QtCore.QStringList("Generate Output - e2ctf"))
-		self.generate_output.setIcon(0, self.icons['ctf'])
-		self.ctf.addChild(self.generate_output)
-		self.generate_structure_factor = QtGui.QTreeWidgetItem(QtCore.QStringList("Generate Structure Factor - e2ctf"))
-		self.generate_structure_factor.setIcon(0, self.icons['ctf'])
-		self.ctf.addChild(self.generate_structure_factor)
-		# Particle Sets
-		self.particle_sets = QtGui.QTreeWidgetItem(QtCore.QStringList("Particle Sets"))
-		self.particle_sets.setIcon(0, self.icons['multiple_images'])
-		self.build_particle_sets = QtGui.QTreeWidgetItem(QtCore.QStringList("Build Particle Sets"))
-		self.build_particle_sets.setIcon(0, self.icons['multiple_images'])
-		self.particle_sets.addChild(self.build_particle_sets)
-		self.evalute_particle_sets = QtGui.QTreeWidgetItem(QtCore.QStringList("Evaluate Particle Sets"))
-		self.evalute_particle_sets.setIcon(0, self.icons['multiple_images'])
-		self.particle_sets.addChild(self.evalute_particle_sets)
-		# Reference Free Class Averages
-		self.reference_free_cas = QtGui.QTreeWidgetItem(QtCore.QStringList("Reference Free Class Averages"))
-		self.reference_free_cas.setIcon(0, self.icons['web'])
-		self.generate_classes = QtGui.QTreeWidgetItem(QtCore.QStringList("Generate Classes - e2refine2d"))
-		self.generate_classes.setIcon(0, self.icons['web'])
-		self.reference_free_cas.addChild(self.generate_classes)
-		# Initial Model
-		self.initial_model = QtGui.QTreeWidgetItem(QtCore.QStringList("Initial Model"))
-		self.initial_model.setIcon(0, self.icons['single_image_3d'])
-		self.make_initialmodel_random = QtGui.QTreeWidgetItem(QtCore.QStringList("Make Model - e2initialmodel"))
-		self.make_initialmodel_random.setIcon(0, self.icons['single_image_3d'])
-		self.initial_model.addChild(self.make_initialmodel_random)
-		# 3D Refinement
-		self.threed_refinement = QtGui.QTreeWidgetItem(QtCore.QStringList("3D Refinement"))
-		self.threed_refinement.setIcon(0, self.icons['refine'])
-		self.e2refine = QtGui.QTreeWidgetItem(QtCore.QStringList("Run e2refine"))
-		self.e2refine.setIcon(0, self.icons['refine'])
-		self.threed_refinement.addChild(self.e2refine)
-		self.e2refinemulti = QtGui.QTreeWidgetItem(QtCore.QStringList("Run e2refinemulti"))
-		self.e2refinemulti.setIcon(0, self.icons['refine'])
-		self.threed_refinement.addChild(self.e2refinemulti)
-		self.frealign = QtGui.QTreeWidgetItem(QtCore.QStringList("Frealign"))
-		self.frealign.setIcon(0, self.icons['refine'])
-		self.threed_refinement.addChild(self.frealign)
-		self.e2refinetofrealign = QtGui.QTreeWidgetItem(QtCore.QStringList("Run e2refinetofrealign"))
-		self.e2refinetofrealign.setIcon(0, self.icons['refine'])
-		self.frealign.addChild(self.e2refinetofrealign)
-		self.e2runfrealign = QtGui.QTreeWidgetItem(QtCore.QStringList("Run e2runfrealign"))
-		self.e2runfrealign.setIcon(0, self.icons['refine'])
-		self.frealign.addChild(self.e2runfrealign)
-		self.e2refinefromfrealign = QtGui.QTreeWidgetItem(QtCore.QStringList("Run e2refinefromfrealign"))
-		self.e2refinefromfrealign.setIcon(0, self.icons['refine'])
-		self.frealign.addChild(self.e2refinefromfrealign)
-		self.eulers = QtGui.QTreeWidgetItem(QtCore.QStringList("Eulers"))
-		self.eulers.setIcon(0, self.icons['eulers'])
-		# Resolution
-		self.resolution =  QtGui.QTreeWidgetItem(QtCore.QStringList("Resolution"))
-		self.resolution.setIcon(0, self.icons['resolution'])
-		self.e2eotest = QtGui.QTreeWidgetItem(QtCore.QStringList("Run e2eotest"))
-		self.e2eotest.setIcon(0, self.icons['resolution'])
-		self.resolution.addChild(self.e2eotest)
-		self.e2resolution = QtGui.QTreeWidgetItem(QtCore.QStringList("Run e2resolution"))
-		self.e2resolution.setIcon(0, self.icons['resolution'])
-		self.resolution.addChild(self.e2resolution)
-		
-		self.SPRtree.addTopLevelItem(self.rawdata)
-		self.SPRtree.addTopLevelItem(self.particles)
-		self.SPRtree.addTopLevelItem(self.ctf)
-		self.SPRtree.addTopLevelItem(self.particle_sets)
-		self.SPRtree.addTopLevelItem(self.reference_free_cas)
-		self.SPRtree.addTopLevelItem(self.initial_model)
-		self.SPRtree.addTopLevelItem(self.threed_refinement)
-		self.SPRtree.addTopLevelItem(self.eulers)
-		self.SPRtree.addTopLevelItem(self.resolution)
-		
-		return self.SPRtree
+		self.TOMOtreewidgetdict = {}
+		self.TOMOtree = self.loadTree('tomo.json', 'Tomography', self.TOMOtreewidgetdict)
+		return self.TOMOtree
 			
 class EMAN2StatusBar(QtGui.QLabel):
 	"""
