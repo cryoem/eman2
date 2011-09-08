@@ -80,7 +80,7 @@ def main():
 		mpi_finalize()
 
 def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=1.0, Fourvar=False, search_rng=-1, oneDx=False,Applyparams=False,outstack=''):  
-	from applications import MPI_start_end
+	from applications import MPI_start_end, transform2d
 	from utilities    import model_circle, model_blank, get_image, peak_search
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
 	from statistics   import varf2d_MPI
@@ -316,6 +316,8 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 		else:
 			from utilities import recv_attr_dict
 			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+		if Applyparams:
+			transform2d(stack,outstack)
 	else:           send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node: print_end_msg("shftali_MPI")				
 
