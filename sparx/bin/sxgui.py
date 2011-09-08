@@ -4315,7 +4315,7 @@ class Popupisac(QWidget):
 		self.w2.fourvarchkbx.setCheckState(self.savedparmsdict['fourvar_prectr'])
 		self.w2.oneDxchkbx.setCheckState(self.savedparmsdict['oneDx_prectr'])
 		self.w2.nprocedit.setText(self.savedparmsdict['nproc_prectr'])
-		self.w2.outstacknameedit.setText(self.savedparmsdict['outstackname_prectr'])
+		self.w2.outstackname = self.savedparmsdict['outstackname_prectr']
 		self.w2.applyparamschkbx.setCheckState(self.savedparmsdict['applyparams_prectr'])
 		
 	#Function choose_file started when  the  open_file of the  Poptwodali window is clicked
@@ -4685,9 +4685,8 @@ class Popupcenter(QWidget):
         #Labels and Line Edits for User Input	
 
     def getoutstack(self):
-    	print 'hi'
     	if self.applyparamschkbx.checkState() == Qt.Checked:
-		(fname,stat)= QInputDialog.getText(self,"Output stack","Enter output stack name",QLineEdit.Normal,"")
+		(fname,stat)= QInputDialog.getText(self,"Output stack","You chose to apply centering paramters to input stack. \nPlease enter file name to save transformed stack to",QLineEdit.Normal,(self.winmain.savedparmsdict)['outstackname_prectr'])
 		if stat:
 			print fname
 			self.outstackname=fname
@@ -4713,11 +4712,6 @@ class Popupcenter(QWidget):
 		print 'has mask'
 		cmd1 = cmd1+" "+str(mask_prectr)
 		
-	if applyparams_prectr == Qt.Checked:
-		cmd1 = cmd1 + " "+self.outstackname
-	else:
-		self.outstackname=""	
-		
 	cmd1 = cmd1+" --search_rng=" + str(search_rng_prectr)+" --ou="+ str(ou_prectr) +" --maxit="+ str(maxit_prectr)+  " --snr=" + str(snr_prectr)
 	
 	
@@ -4725,6 +4719,11 @@ class Popupcenter(QWidget):
 		cmd1 = cmd1 + " --CTF"
 	if oneDx_prectr == Qt.Checked:
 		cmd1 = cmd1 + " --oneDx"
+	
+	if applyparams_prectr == Qt.Checked:
+		cmd1 = cmd1 + " --Applyparams" + " --outstack="+self.outstackname
+	else:
+		self.outstackname=""	
 		
 	nproc_prectr = self.nprocedit.text()
 	
