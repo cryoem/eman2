@@ -64,7 +64,7 @@ class PopupHelicalRefinement(QWidget):
 	
 	
 	# populate with default values
-	self.savedparmsdict ={'stackname':'NONE','initialprojectionparameter':'NONE','referencevolume':'NONE','foldername':'NONE','outradius':'-1','xrange':'1.0','xtrans':'1.0','ynumber':"2",'nriter':'3','nproc':'3','dp':'NONE','dphi':'NONE','rmax':'NONE','maskname':'',"delta":"1.0","ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","initial_theta":"90.0", "delta_theta":"1.0","nise":"2","nise":"2","rmin":"0.0","fract":"0.7","dp_step":"0.1","ndp":"12","dphi_step":"0.1","ndphi":"12","psi_max":"15","an":"-1", "npad":"2", "chunk":"-1.0", "sym":"c1","datasym":"symdoc.dat","usrfunc":"helical","usrfuncfile":""}
+	self.savedparmsdict ={'stackname':'NONE','initialprojectionparameter':'NONE','referencevolume':'NONE','foldername':'NONE','outradius':'-1','xrange':'1.0','xtrans':'1.0','ynumber':"2",'nriter':'3','nproc':'3','dp':'NONE','dphi':'NONE','rmax':'NONE','maskname':'',"delta":"1.0","ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","initial_theta":"90.0", "delta_theta":"1.0","nise":"2","nise":"2","rmin":"0.0","fract":"0.7","dp_step":"0.1","ndp":"12","dphi_step":"0.1","ndphi":"12","psi_max":"15","an":"-1", "npad":"2", "chunk":"-1.0", "sym":"c1","datasym":"symdoc.dat","usrfunc":"helical","usrfuncfile":"",'stackname_prectr':'','outdir_prectr':'','mask_prectr':'','search_rng_prectr':'-1','ou_prectr':'-1','maxit_prectr':'100','snr_prectr':'1','fourvar_prectr':Qt.Unchecked,'ctf_prectr':Qt.Unchecked,'oneDx_prectr':Qt.Unchecked,'nproc_prectr':'2','applyparams_prectr':Qt.Unchecked,'outstackname_prectr':''}
 	
 	
 	self.setadv=False
@@ -406,15 +406,50 @@ class PopupHelicalRefinement(QWidget):
 	
 	np = self.nprocedit.text()
 	
-	self.savedparmsdict = {'stackname':str(stack),'initialprojectionparameter':str(projectionparameters),'referencevolume':str(referencevolume),'foldername':str(output),'outradius':str(ou),'xrange':str(xr),'xtrans':str(tx),'ynumber':str(ynumber),'dp':str(dp),'dphi':str(dphi),'rmax':str(rmax),'nriter':str(maxit),'nproc':str(np),'maskname':str(mask),'delta':str(delta),"ringstep":str(ringstep),"innerradius":str(inrad),"ctf":CTF,"snr":str(snr),"initial_theta":str(initial_theta), "delta_theta":str(delta_theta),"nise":str(nise),"rmin":str(rmin),"fract":str(fract),"dp_step":str(dp_step),"ndp":str(ndp),"dphi_step":str(dphi_step),"ndphi":str(ndphi),"psi_max":str(psi_max),"an":str(an), "npad":str(npad), "chunk":str(chunk),"sym":str(sym),"datasym":str(datasym),"usrfunc":str(userf), "usrfuncfile":str(userfile)}
+	(self.savedparmsdict)['stackname']=str(stack)
+	(self.savedparmsdict)['initialprojectionparameter']=str(projectionparameters)
+	(self.savedparmsdict)['referencevolume']=str(referencevolume)
+	(self.savedparmsdict)['foldername']=str(output)
+	(self.savedparmsdict)['outradius']=str(ou)
+	(self.savedparmsdict)['xrange']=str(xr)
+	(self.savedparmsdict)['xtrans']=str(tx)
+	(self.savedparmsdict)['ynumber']=str(ynumber)
+	(self.savedparmsdict)['dp']=str(dp)
+	(self.savedparmsdict)['dphi']=str(dphi)
+	(self.savedparmsdict)['rmax']=str(rmax)
+	(self.savedparmsdict)['nriter']=str(maxit)
+	(self.savedparmsdict)['nproc']=str(np)
+	(self.savedparmsdict)['maskname']=str(mask)
+	(self.savedparmsdict)['delta']=str(delta)
+	(self.savedparmsdict)['ringstep']=str(ringstep)
+	(self.savedparmsdict)['innerradius']=str(inrad)
+	(self.savedparmsdict)['ctf']=CTF
+	(self.savedparmsdict)['snr']=str(snr)
+	(self.savedparmsdict)['initial_theta']=str(initial_theta)
+	(self.savedparmsdict)['delta_theta']=str(delta_theta)
+	(self.savedparmsdict)['nise']=str(nise)
+	(self.savedparmsdict)['rmin']=str(rmin)
+	(self.savedparmsdict)['fract']=str(fract)
+	(self.savedparmsdict)['dp_step']=str(dp_step)
+	(self.savedparmsdict)['ndp']=str(ndp)
+	(self.savedparmsdict)['dphi_step']=str(dphi_step)
+	(self.savedparmsdict)['ndphi']=str(ndphi)
+	(self.savedparmsdict)['psi_max']=str(psi_max)
+	(self.savedparmsdict)['an']=str(an)
+	(self.savedparmsdict)['npad']=str(npad)
+	(self.savedparmsdict)['chunk']=str(chunk)
+	(self.savedparmsdict)['sym']=str(sym)
+	(self.savedparmsdict)['datasym']=str(datasym)
+	(self.savedparmsdict)['usrfunc']=str(userf)
+	(self.savedparmsdict)['usrfuncfile']=str(userfile)
 	
 	
-	
-	
+	#self.savedparmsdict = {'stackname':str(stack),'initialprojectionparameter':str(projectionparameters),'referencevolume':str(referencevolume),'foldername':str(output),'outradius':str(ou),'xrange':str(xr),'xtrans':str(tx),'ynumber':str(ynumber),'dp':str(dp),'dphi':str(dphi),'rmax':str(rmax),'nriter':str(maxit),'nproc':str(np),'maskname':str(mask),'delta':str(delta),"ringstep":str(ringstep),"innerradius":str(inrad),"ctf":CTF,"snr":str(snr),"initial_theta":str(initial_theta), "delta_theta":str(delta_theta),"nise":str(nise),"rmin":str(rmin),"fract":str(fract),"dp_step":str(dp_step),"ndp":str(ndp),"dphi_step":str(dphi_step),"ndphi":str(ndphi),"psi_max":str(psi_max),"an":str(an), "npad":str(npad), "chunk":str(chunk),"sym":str(sym),"datasym":str(datasym),"usrfunc":str(userf), "usrfuncfile":str(userfile)}
 	
 	
 	self.w1.savedparmsdict=self.savedparmsdict
 	self.w2.savedparmsdict=self.savedparmsdict
+	self.w3.savedparmsdict=self.savedparmsdict
 	
 	if int(str(np)) > 1:
 		cmd1="mpirun -np "+ str(np) + " "+ cmd1+" --MPI" 
@@ -447,6 +482,7 @@ class PopupHelicalRefinement(QWidget):
 		import pickle
 		output=open(fname,'wb')
 		self.gencmdline_helical(writefile=False)
+		self.w3.gencmdline_shftali(writefile=False)
 		pickle.dump(self.savedparmsdict,output)
 		output.close()
 
@@ -500,6 +536,21 @@ class PopupHelicalRefinement(QWidget):
 		self.w2.dphi_stepedit.setText(self.savedparmsdict['dphi_step'])
 		self.w2.ndphiedit.setText(self.savedparmsdict['ndphi'])
 		self.w2.psi_maxedit.setText(self.savedparmsdict['psi_max'])
+		
+		
+		self.w3.stacknameedit.setText(self.savedparmsdict['stackname_prectr'])
+		self.w3.outdiredit.setText(self.savedparmsdict['outdir_prectr'])
+		self.w3.maskedit.setText(self.savedparmsdict['mask_prectr'])
+		self.w3.search_rngedit.setText(self.savedparmsdict['search_rng_prectr'])
+		self.w3.ouedit.setText(self.savedparmsdict['ou_prectr'])
+		self.w3.maxitedit.setText(self.savedparmsdict['maxit_prectr'])
+		self.w3.snredit.setText(self.savedparmsdict['snr_prectr'])
+		self.w3.ctfchkbx.setCheckState(self.savedparmsdict['ctf_prectr'])
+		self.w3.fourvarchkbx.setCheckState(self.savedparmsdict['fourvar_prectr'])
+		self.w3.oneDxchkbx.setCheckState(self.savedparmsdict['oneDx_prectr'])
+		self.w3.nprocedit.setText(self.savedparmsdict['nproc_prectr'])
+		self.w3.outstackname = self.savedparmsdict['outstackname_prectr']
+		self.w3.applyparamschkbx.setCheckState(self.savedparmsdict['applyparams_prectr'])
 
     def setactiveheader(self):
 	stack = self.stacknameedit.text()
@@ -834,7 +885,7 @@ class Popuptwodali(QWidget):
 	
 	self.cmd = ""
 	# populate with default values
-	self.savedparmsdict = {'stackname':'','foldername':'NONE','partradius':'-1','xyrange':'4 2 1 1','trans':'2 1 0.5 0.25','nriter':'3','nproc':'1','maskname':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","fourvar":Qt.Unchecked, "gpnr":"-1","usrfunc":"ref_ali2d","usrfuncfile":""}
+	self.savedparmsdict = {'stackname':'','foldername':'','partradius':'-1','xyrange':'4 2 1 1','trans':'2 1 0.5 0.25','nriter':'3','nproc':'1','maskname':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","fourvar":Qt.Unchecked, "gpnr":"-1","usrfunc":"ref_ali2d","usrfuncfile":""}
 
 	#######################################################################################
 	# Layout parameters
@@ -1320,7 +1371,7 @@ class Popupthreedali(QWidget):
 	# class variables
 	self.cmd = ""
 	# populate with default values
-	self.savedparmsdict = {'stackname':'','refname':'NONE','foldername':'NONE','partradius':'-1','xyrange':'4 2 1 1','trans':'2 1 0.5 0.25', 'delta':'15 5 2','nriter':'3','nproc':'1','maskname':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","fourvar":Qt.Unchecked,"usrfunc":"ref_ali3d","usrfuncfile":"","an":'-1',"ref_a":'S',"sym":'c1',"npad":'4',"deltapsi":'-1',"startpsi":'-1',"stoprnct":'0.0',"debug":False,"nch":False,"chunk":'0.2',"rantest":False}
+	self.savedparmsdict = {'stackname':'','refname':'','foldername':'','partradius':'-1','xyrange':'4 2 1 1','trans':'2 1 0.5 0.25', 'delta':'15 5 2','nriter':'3','nproc':'1','maskname':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","fourvar":Qt.Unchecked,"usrfunc":"ref_ali3d","usrfuncfile":"","an":'-1',"ref_a":'S',"sym":'c1',"npad":'4',"deltapsi":'-1',"startpsi":'-1',"stoprnct":'0.0',"debug":False,"nch":False,"chunk":'0.2',"rantest":False}
 	
 	########################################################################################
 	# layout parameters
@@ -2013,7 +2064,7 @@ class Popupkmeans(QWidget):
 	# class variables
 	self.cmd = ""
 	# populate with default values
-	self.savedparmsdict = {'stackname':'','foldername':'NONE','kc':'2','trials':'1','maxiter':'100','nproc':'1','randsd':'-1','maskname':'',"ctf":Qt.Unchecked,"crit":"all","normalize":Qt.Unchecked, "init_method":"rnd"}
+	self.savedparmsdict = {'stackname':'','foldername':'','kc':'2','trials':'1','maxiter':'100','nproc':'1','randsd':'-1','maskname':'',"ctf":Qt.Unchecked,"crit":"all","normalize":Qt.Unchecked, "init_method":"rnd"}
 
 	#######################################################################################
 	# Layout parameters
@@ -2376,7 +2427,7 @@ class Popupkmeansgroups(QWidget):
 	# class variables
 	self.cmd = ""
 	# populate with default values
-	self.savedparmsdict = {'stackname':'','foldername':'NONE','kc1':'2','kc2':'3','trials':'1','nproc':'1','randsd':'-1','maskname':'',"ctf":Qt.Unchecked,'maxiter':'100'}
+	self.savedparmsdict = {'stackname':'','foldername':'','kc1':'2','kc2':'3','trials':'1','nproc':'1','randsd':'-1','maskname':'',"ctf":Qt.Unchecked,'maxiter':'100'}
 	
 	#######################################################################################
 	# Layout parameters
@@ -2718,7 +2769,7 @@ class Popuppdb2em(QWidget):
 	# class variables
 	self.cmd = ""
 	# populate with default values
-	self.savedparmsdict = {'pdbfile':'NONE','output':'NONE','apix':'1.0','box':'150','het':Qt.Unchecked,'center':'n','Och':Qt.Unchecked,'quiet':Qt.Unchecked,'tr0':''}
+	self.savedparmsdict = {'pdbfile':'','output':'','apix':'1.0','box':'150','het':Qt.Unchecked,'center':'n','Och':Qt.Unchecked,'quiet':Qt.Unchecked,'tr0':''}
 	
 	#######################################################################################
 	# Layout parameters
@@ -3327,7 +3378,7 @@ class Popupmrefthreedali(QWidget):
 	# class variables
 	self.cmd = ""
 	# populate with default values
-	self.savedparmsdict = {'stackname':'','refname':'NONE','foldername':'NONE','partradius':'-1','xyrange':'4 2 1 1','trans':'2 1 0.5 0.25', 'delta':'15 5 2','nriter':'3','nproc':'1','maskname':'','focus':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","fourvar":Qt.Unchecked,"usrfunc":"ref_ali3dm","usrfuncfile":"","an":'-1',"ref_a":'S',"sym":'c1',"npad":'4',"stoprnct":'0.0',"debug":False,'nrefine':'1','nassign':'0'}
+	self.savedparmsdict = {'stackname':'','refname':'','foldername':'','partradius':'-1','xyrange':'4 2 1 1','trans':'2 1 0.5 0.25', 'delta':'15 5 2','nriter':'3','nproc':'1','maskname':'','focus':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","fourvar":Qt.Unchecked,"usrfunc":"ref_ali3dm","usrfuncfile":"","an":'-1',"ref_a":'S',"sym":'c1',"npad":'4',"stoprnct":'0.0',"debug":False,'nrefine':'1','nassign':'0'}
 	
 	########################################################################################
 	# layout parameters
@@ -3994,7 +4045,7 @@ class Popupisac(QWidget):
 	
 	self.cmd = ""
 	# populate with default values
-	self.savedparmsdict = {'stackname':'','partradius':'-1','xyrange':'1','trans':'1','nriter':'30','nproc':'2',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","dst":"90.0","FL":"0.1","FH":"0.3","FF":"0.2","init_iter":"3","main_iter":"3","iter_reali":"1","match_first":"1","max_round":"20","match_second":"5","stab_ali":"5","thld_err":"1.732","indep_run":"4","thld_grp":"10","img_per_grp":"100","generation":"1",'stackname_prectr':'NONE','outdir_prectr':'NONE','mask_prectr':'','search_rng_prectr':'-1','ou_prectr':'-1','maxit_prectr':'100','snr_prectr':'1','fourvar_prectr':Qt.Unchecked,'ctf_prectr':Qt.Unchecked,'oneDx_prectr':Qt.Unchecked,'nproc_prectr':'2','applyparams_prectr':Qt.Unchecked,'outstackname_prectr':''}
+	self.savedparmsdict = {'stackname':'','partradius':'-1','xyrange':'1','trans':'1','nriter':'30','nproc':'2',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","dst":"90.0","FL":"0.1","FH":"0.3","FF":"0.2","init_iter":"3","main_iter":"3","iter_reali":"1","match_first":"1","max_round":"20","match_second":"5","stab_ali":"5","thld_err":"1.732","indep_run":"4","thld_grp":"10","img_per_grp":"100","generation":"1",'stackname_prectr':'','outdir_prectr':'','mask_prectr':'','search_rng_prectr':'-1','ou_prectr':'-1','maxit_prectr':'100','snr_prectr':'1','fourvar_prectr':Qt.Unchecked,'ctf_prectr':Qt.Unchecked,'oneDx_prectr':Qt.Unchecked,'nproc_prectr':'2','applyparams_prectr':Qt.Unchecked,'outstackname_prectr':''}
 
 	#######################################################################################
 	# Layout parameters
@@ -4200,7 +4251,7 @@ class Popupisac(QWidget):
 	CTF=self.w1.ctfchkbx.checkState()
 	snr = self.w1.snredit.text()
 	
-	cmd1 = "sxisac.py "+str(stack)+ " --ir=" + str(inrad)+" --ou="+ str(ou) +" --rs="+str(ringstep)+ " --xr='"+str(xr)+"'"+ " --yr='"+str(yr)+"'"+ " --ts='"+str(ts)+"'"+  " --maxit="+ str(maxit)+  " --snr=" + str(snr)
+	cmd1 = "sxisac.py "+str(stack)+ " --ir=" + str(inrad)+" --ou="+ str(ou) +" --rs="+str(ringstep)+ " --xr="+str(xr)+ " --yr="+str(yr)+ " --ts="+str(ts)+ " --maxit="+ str(maxit)+  " --snr=" + str(snr)
 	
 	
 	if CTF == Qt.Checked:
@@ -4514,7 +4565,7 @@ class Popupadvparams_isac_1(QWidget):
 	
 
 class Popupcenter(QWidget):
-    def __init__(self,winmain):
+    def __init__(self,winmain,intro_string):
         QWidget.__init__(self)
 	
 	#######################################################################################
@@ -4523,6 +4574,7 @@ class Popupcenter(QWidget):
 	self.cmd = ""
 	self.winmain=winmain
 	self.outstackname= ""
+	self.intro_string = intro_string
 	#######################################################################################
 	# Layout parameters
 	
@@ -4542,7 +4594,7 @@ class Popupcenter(QWidget):
         #Here we just set the window title
 	self.setWindowTitle('sxisac')
         #Here we just set a label and its position in the window
-	title1=QtGui.QLabel("Before running sxisac.py, it is recommended that the stack be centered. The centering is performed \nusing sxshftali.py. The alignment parameters calculated by the centering procedure is stored in the \nheaders of the input stack as xform.align2d. \n\nTo apply orientation parameters stored in the file headers, check the 'Apply calculated centering parameters \nto input stack' box below and enter the name of the output stack. The resulting output stack will be the input \nstack after applying the shifts calculated by the centering procedure. The orientation parameters 'sx' and \n'sy' in the header of the transformed stack will be set to 0", self)
+	title1=QtGui.QLabel(self.intro_string, self)
 	title1.move(self.x1,self.y1)
 	#self.y1 += 30
 
@@ -4931,13 +4983,19 @@ class MainWindow(QtGui.QWidget):
 	self.w = PopupHelicalRefinement()
 	self.w1 = Popupadvparams_helical_1(self.w.savedparmsdict)
 	self.w2 = Popupadvparams_helical_2(self.w.savedparmsdict)
+	
+	intro_string = "Place holder text....fill this in"
+	self.w3 = Popupcenter(self.w,intro_string)
+	
 	self.w.w1 = self.w1
 	self.w.w2 = self.w2
+	self.w.w3 = self.w3
 	self.TabWidget = QtGui.QTabWidget()
     	self.TabWidget.insertTab(0,self.w,'Main')
     	self.TabWidget.insertTab(1,self.w1,'Advanced CTF and Search')
 	self.TabWidget.insertTab(2,self.w2,'Advanced Symmetry')
-	self.TabWidget.resize(600,650)
+	self.TabWidget.insertTab(3,self.w3,'Pre-center input stack (Recommended)')
+	self.TabWidget.resize(730,800)
     	self.TabWidget.show()
         
 	
@@ -5025,7 +5083,8 @@ class MainWindow(QtGui.QWidget):
         #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
         self.w = Popupisac()
 	self.w1 = Popupadvparams_isac_1(self.w.savedparmsdict)
-	self.w2 = Popupcenter(self.w)
+	intro_string = "Before running sxisac.py, it is recommended that the stack be centered. The centering is performed \nusing sxshftali.py. The alignment parameters calculated by the centering procedure is stored in the \nheaders of the input stack as xform.align2d. \n\nTo apply orientation parameters stored in the file headers, check the 'Apply calculated centering parameters \nto input stack' box below and enter the name of the output stack. The resulting output stack will be the input \nstack after applying the shifts calculated by the centering procedure. The orientation parameters 'sx' and \n'sy' in the header of the transformed stack will be set to 0"
+	self.w2 = Popupcenter(self.w,intro_string)
 	self.w.w1 = self.w1
 	self.w.w2 = self.w2
 	self.TabWidget = QtGui.QTabWidget()
