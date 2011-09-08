@@ -42,7 +42,7 @@ import sys
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack outdir <maskfile> <output_stack> --search_rng --ou=outer_radius --maxit=max_iteration --CTF --snr=SNR --Fourvar=Fourier_variance --oneDx --MPI"
+	usage = progname + " stack outdir <maskfile> --search_rng --ou=outer_radius --maxit=max_iteration --CTF --snr=SNR --Fourvar=Fourier_variance --oneDx --applyparams --outstack=outputstackname --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--search_rng",       type="int",  default=-1,             help="Used to compute the dimension of a \nnwx by nwx section of the 2D ccf which is \nwindowed out for peak search: \nnwx=2*search_rng+1 (nwx=nx if search_rng is -1))")
 	parser.add_option("--ou",       type="float",  default=-1,            help="radius of the particle - used for constructing the default mask. If ou is -1, then the mask is a circle with radius nx/2 - 2")
@@ -51,9 +51,11 @@ def main():
 	parser.add_option("--snr",      type="float",  default=1.0,           help="signal-to-noise ratio of the data (default is 1.0)")
 	parser.add_option("--Fourvar",  action="store_true", default=False,   help="compute Fourier variance")
 	parser.add_option("--oneDx",  action="store_true", default=False,   help="Window out central line of 2D cross correlation for peak search")
+	parser.add_option("--Applyparams",  action="store_true", default=False,   help="apply calculated centering parameters to input stack and save results to output stack")
+	parser.add_option("--outstack",       type="string", default="",     help="name of transformed stack after applying calculated centering parameters")
 	parser.add_option("--MPI",      action="store_true", default=False,   help="use multiple processors ")
 	(options, args) = parser.parse_args()
-	if len(args) < 2 or len(args) > 4:
+	if len(args) < 2 or len(args) > 3:
     		print "usage: " + usage
     		print "Please run '" + progname + " -h' for detailed options"
 	else:
@@ -62,11 +64,6 @@ def main():
 
 		if len(args) == 2: mask = None
 		else:              mask = args[2]
-		
-		if len(args) == 3: 
-			output_stack = None
-		else:
-			output_stack = args[3]
 			
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
@@ -76,13 +73,13 @@ def main():
 		sys.argv = mpi_init(len(sys.argv),sys.argv)
 
 		global_def.BATCH = True
-		shiftali_MPI(args[0], outdir, mask, output_stack,options.ou, options.maxit, options.CTF, options.snr, options.Fourvar,options.search_rng,options.oneDx)
+		shiftali_MPI(args[0], outdir, mask,options.ou, options.maxit, options.CTF, options.snr, options.Fourvar,options.search_rng,options.oneDx,options.Applyparams,options.outstack)
 		global_def.BATCH = False
 
 		from mpi import mpi_finalize
 		mpi_finalize()
 
-def shiftali_MPI(stack, outdir, maskfile=None, output_stack=None, ou=-1, maxit=100, CTF=False, snr=1.0, Fourvar=False, search_rng=-1, oneDx=False):  
+def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=1.0, Fourvar=False, search_rng=-1, oneDx=False,Applyparams=False,outstack=''):  
 	from applications import MPI_start_end
 	from utilities    import model_circle, model_blank, get_image, peak_search
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
@@ -312,7 +309,6 @@ def shiftali_MPI(stack, outdir, maskfile=None, output_stack=None, ou=-1, maxit=1
 	mpi_barrier(MPI_COMM_WORLD)
 	par_str = ["xform.align2d", "ID"]
 	if myid == main_node:
-		print "all done, write headers"
 		from utilities import file_type
 		if(file_type(stack) == "bdb"):
 			from utilities import recv_attr_dict_bdb
