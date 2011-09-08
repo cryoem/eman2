@@ -284,7 +284,8 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 		
 		if myid == main_node:
 			sx_sum_total = int(sx_sum[0])
-			sy_sum_total = int(sy_sum[0])
+			if not oneDx:
+				sy_sum_total = int(sy_sum[0])
 		else:
 			sx_sum_total = 0	
 			sy_sum_total = 0
