@@ -4721,7 +4721,7 @@ class Popupcenter(QWidget):
 		cmd1 = cmd1 + " --oneDx"
 	
 	if applyparams_prectr == Qt.Checked:
-		cmd1 = cmd1 + " --Applyparams" + " --outstack="+self.outstackname
+		cmd1 = cmd1 + " --Applyparams" + " --outstack='"+str(self.outstackname)+"'"
 	else:
 		self.outstackname=""	
 		
@@ -4759,8 +4759,7 @@ class Popupcenter(QWidget):
 	self.gencmdline_shftali(writefile=False)
 	process = subprocess.Popen(self.cmd,shell=True)
 	self.emit(QtCore.SIGNAL("process_started"),process.pid)
-	print 'hi done'
-   
+   	
 	#Function choose_file started when  the  open_file of the  Poptwodali window is clicked
     def choose_file(self):
 	#opens a file browser, showing files only in .hdf format

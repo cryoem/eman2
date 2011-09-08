@@ -55,6 +55,7 @@ def main():
 	parser.add_option("--outstack",       type="string", default="",     help="name of transformed stack after applying calculated centering parameters")
 	parser.add_option("--MPI",      action="store_true", default=False,   help="use multiple processors ")
 	(options, args) = parser.parse_args()
+	
 	if len(args) < 2 or len(args) > 3:
     		print "usage: " + usage
     		print "Please run '" + progname + " -h' for detailed options"
@@ -75,12 +76,12 @@ def main():
 		global_def.BATCH = True
 		shiftali_MPI(args[0], outdir, mask,options.ou, options.maxit, options.CTF, options.snr, options.Fourvar,options.search_rng,options.oneDx,options.Applyparams,options.outstack)
 		global_def.BATCH = False
-
+		
 		from mpi import mpi_finalize
 		mpi_finalize()
 
 def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=1.0, Fourvar=False, search_rng=-1, oneDx=False,Applyparams=False,outstack=''):  
-	from applications import MPI_start_end, transform2d
+	from applications import MPI_start_end
 	from utilities    import model_circle, model_blank, get_image, peak_search
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
 	from statistics   import varf2d_MPI
@@ -317,6 +318,7 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 			from utilities import recv_attr_dict
 			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 		if Applyparams:
+			from applications import transform2d
 			transform2d(stack,outstack)
 	else:           send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node: print_end_msg("shftali_MPI")				
