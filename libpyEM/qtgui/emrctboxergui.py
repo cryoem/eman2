@@ -353,8 +353,11 @@ class ControlPannel(QtGui.QWidget):
 	def on_write(self):
 		print "Saving Particles"
 		for window in self.mediator.windowlist:
-			window.write_particles(window.filename, ("bdb:RCTparticles#"+os.path.splitext(window.filename)[0]),self.mediator.boxsize,normproc="normalize.edgemean")
-	
+			splitpath = os.path.split(os.path.splitext(window.filename)[0])
+			if splitpath[0] == '':
+				window.write_particles(window.filename, ("bdb:RCTparticles#"+splitpath[1]),self.mediator.boxsize,normproc="normalize.edgemean")
+			else:
+				window.write_particles(window.filename, ("bdb:"+splitpath[0]+"/RCTparticles#"+splitpath[1]),self.mediator.boxsize,normproc="normalize.edgemean")
 	def on_write_box(self):
 		for window in self.mediator.windowlist:
 			window.write_boxes(os.path.splitext(window.filename)[0]+".box",self.mediator.boxsize)

@@ -291,9 +291,9 @@ class Strategy2IMGPair(Strategy):
 	
 	def imagesaveevent(self, image):
 		if self.A != None:
-			image.set_attr("tiltaxis", self.dphi)
-			image.set_attr("tiltgamma", self.dgamma)
-			image.set_attr("tiltangle", self.tiltangle)
+			if image.has_attr("tiltaxis"): image.set_attr("tiltaxis", self.dphi)
+			if image.has_attr("tiltgamma"): image.set_attr("tiltgamma", self.dgamma)
+			if image.has_attr("tiltangle"): image.set_attr("tiltangle", self.tiltangle)
 	
 	def unpickevent(self, caller, box_num):
 		if caller == self.mediator.untilt_win:
