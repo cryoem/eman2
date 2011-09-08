@@ -3994,7 +3994,7 @@ class Popupisac(QWidget):
 	
 	self.cmd = ""
 	# populate with default values
-	self.savedparmsdict = {'stackname':'','partradius':'-1','xyrange':'1','trans':'1','nriter':'30','nproc':'2',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","dst":"90.0","FL":"0.1","FH":"0.3","FF":"0.2","init_iter":"3","main_iter":"3","iter_reali":"1","match_first":"1","max_round":"20","match_second":"5","stab_ali":"5","thld_err":"1.732","indep_run":"4","thld_grp":"10","img_per_grp":"100","generation":"1",'stackname_prectr':'NONE','outdir_prectr':'NONE','mask_prectr':'','search_rng_prectr':'-1','ou_prectr':'-1','maxit_prectr':'100','snr_prectr':'1','fourvar_prectr':Qt.Unchecked,'ctf_prectr':Qt.Unchecked,'oneDx_prectr':Qt.Unchecked,'nproc_prectr':'2'}
+	self.savedparmsdict = {'stackname':'','partradius':'-1','xyrange':'1','trans':'1','nriter':'30','nproc':'2',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","dst":"90.0","FL":"0.1","FH":"0.3","FF":"0.2","init_iter":"3","main_iter":"3","iter_reali":"1","match_first":"1","max_round":"20","match_second":"5","stab_ali":"5","thld_err":"1.732","indep_run":"4","thld_grp":"10","img_per_grp":"100","generation":"1",'stackname_prectr':'NONE','outdir_prectr':'NONE','mask_prectr':'','search_rng_prectr':'-1','ou_prectr':'-1','maxit_prectr':'100','snr_prectr':'1','fourvar_prectr':Qt.Unchecked,'ctf_prectr':Qt.Unchecked,'oneDx_prectr':Qt.Unchecked,'nproc_prectr':'2','applyparams_prectr':Qt.Unchecked,'outstackname_prectr':''}
 
 	#######################################################################################
 	# Layout parameters
@@ -4315,6 +4315,8 @@ class Popupisac(QWidget):
 		self.w2.fourvarchkbx.setCheckState(self.savedparmsdict['fourvar_prectr'])
 		self.w2.oneDxchkbx.setCheckState(self.savedparmsdict['oneDx_prectr'])
 		self.w2.nprocedit.setText(self.savedparmsdict['nproc_prectr'])
+		self.w2.outstacknameedit.setText(self.savedparmsdict['outstackname_prectr'])
+		self.w2.applyparamschkbx.setCheckState(self.savedparmsdict['applyparams_prectr'])
 		
 	#Function choose_file started when  the  open_file of the  Poptwodali window is clicked
     def choose_file(self):
@@ -4511,7 +4513,7 @@ class Popupadvparams_isac_1(QWidget):
 	self.indep_runedit.setToolTip('number of indepentdent runs for reproducibility (default=4, currently other values not supported')
 	
 
-class Popupcenter_isac(QWidget):
+class Popupcenter(QWidget):
     def __init__(self,winmain):
         QWidget.__init__(self)
 	
@@ -4520,17 +4522,18 @@ class Popupcenter_isac(QWidget):
 	
 	self.cmd = ""
 	self.winmain=winmain
+	self.outstackname= ""
 	#######################################################################################
 	# Layout parameters
 	
 	self.y1 = 10 # title and Repopulate button
 	self.y2 = self.y1 + 150 # Text boxes for inputting parameters
-	self.y3 = self.y2 + 490 # activate images button and set xform.align2d button
-	self.y4 = self.y3 + 40 # run button 
+	self.y3 = self.y2 + 510 # activate images button and set xform.align2d button
+	self.y4 = self.y3 + 20 # run button 
 	self.yspc = 4
 	
 	self.x1 = 10 # first column (text box labels)
-	self.x2 = self.x1 + 320 # second column (text boxes)
+	self.x2 = self.x1 + 350 # second column (text boxes)
 	self.x3 = self.x2+145 # third column (Open .hdf button)
 	self.x4 = self.x3+100 # fourth column (Open .bdb button)
 	self.x5 = 230 # run button
@@ -4539,7 +4542,7 @@ class Popupcenter_isac(QWidget):
         #Here we just set the window title
 	self.setWindowTitle('sxisac')
         #Here we just set a label and its position in the window
-	title1=QtGui.QLabel('Before running sxisac.py, it is recommended that the stack be centered. The centering is performed \nusing sxshftali.py. The alignment parameters calculated by the centering procedure is stored in the \nheaders of the input stack as xform.align2d. \n\nTo apply orientation parameters stored in the file headers to the input stack, check the "Apply \nParameters" box below.', self)
+	title1=QtGui.QLabel("Before running sxisac.py, it is recommended that the stack be centered. The centering is performed \nusing sxshftali.py. The alignment parameters calculated by the centering procedure is stored in the \nheaders of the input stack as xform.align2d. \n\nTo apply orientation parameters stored in the file headers, check the 'Apply calculated centering parameters \nto input stack' box below and enter the name of the output stack. The resulting output stack will be the input \nstack after applying the shifts calculated by the centering procedure. The orientation parameters 'sx' and \n'sy' in the header of the transformed stack will be set to 0", self)
 	title1.move(self.x1,self.y1)
 	#self.y1 += 30
 
@@ -4585,15 +4588,15 @@ class Popupcenter_isac(QWidget):
 	
 	self.y2 += 30
 	
-	searchrange= QtGui.QLabel('search_rng (Used to compute the dimension of a \nnwx by nwx section of the 2D ccf which is \nwindowed out for peak search: \nnwx=2*search_rng+1 (nwx=nx if search_rng is -1))', self)
+	searchrange= QtGui.QLabel('search_rng (Used to compute the dimension of a \nnwx by nwx section of the 2D ccf which is \nwindowed out for peak search: nwx=2*search_rng+1 (nwx=nx if search_rng is -1))', self)
 	searchrange.move(self.x1,self.y2)
 	self.search_rngedit=QtGui.QLineEdit(self)
 	self.search_rngedit.move(self.x2,self.y2)
 	self.search_rngedit.setText(self.winmain.savedparmsdict['search_rng_prectr'])
 	self.search_rngedit.setToolTip('Used to compute the dimension of a \nnwx by nwx section of the 2D ccf which is \nwindowed out for peak search: \nnwx=2*search_rng+1 (nwx=nx if search_rng is -1))')	
-	self.y2 += 90
+	self.y2 += 70
 	
-	partradius= QtGui.QLabel('ou (radius of the particle - used for constructing \nthe default mask. If ou is -1, then the mask is a \ncircle with radius nx/2 - 2.)', self)
+	partradius= QtGui.QLabel('ou (radius of the particle - used for constructing the \ndefault mask. If ou is -1, then the mask is a circle \nwith radius nx/2 - 2.)', self)
 	partradius.move(self.x1,self.y2)
 	self.ouedit=QtGui.QLineEdit(self)
 	self.ouedit.move(self.x2,self.y2)
@@ -4602,7 +4605,7 @@ class Popupcenter_isac(QWidget):
 	self.y2 += 70
 	
 	
-	maxit= QtGui.QLabel('maxit (maximum number of iterations program \nwill perform)', self)
+	maxit= QtGui.QLabel('maxit (maximum number of iterations program will \nperform)', self)
 	maxit.move(self.x1,self.y2)
 	self.maxitedit=QtGui.QLineEdit(self)
 	self.maxitedit.move(self.x2,self.y2)
@@ -4637,7 +4640,7 @@ class Popupcenter_isac(QWidget):
 	
 	self.y2 += 30
 	
-	oneDx= QtGui.QLabel('oneDx (Window out central line of 2D cross \ncorrelation for peak search)', self)
+	oneDx= QtGui.QLabel('oneDx (Window out central line of 2D cross correlation for \npeak search)', self)
 	oneDx.move(self.x1,self.y2)
 	self.oneDxchkbx = QtGui.QCheckBox("",self)
 	self.oneDxchkbx.move(self.x2, self.y2)
@@ -4645,12 +4648,22 @@ class Popupcenter_isac(QWidget):
 	
 	self.y2+= 50
 	
-	nproc= QtGui.QLabel('MPI Processors', self)
+	nproc= QtGui.QLabel('MPI Processors (currently only works for n>1 \nprocessors)', self)
 	nproc.move(self.x1,self.y2)
 	self.nprocedit=QtGui.QLineEdit(self)
 	self.nprocedit.move(self.x2,self.y2)
 	self.nprocedit.setText(self.winmain.savedparmsdict['nproc_prectr'])
 	self.nprocedit.setToolTip('')
+	
+	self.y2 += 50
+	
+	applyparams= QtGui.QLabel('Apply calculated centering parameters to input stack', self)
+	applyparams.move(self.x1,self.y2)
+	self.applyparamschkbx = QtGui.QCheckBox("",self)
+	self.applyparamschkbx.move(self.x2, self.y2)
+	self.applyparamschkbx.setCheckState(self.winmain.savedparmsdict['applyparams_prectr'])
+	self.connect(self.applyparamschkbx, QtCore.SIGNAL('stateChanged(int)'), self.getoutstack)
+	#self.y2 += 50
 	
 	self.cmdlinebtn = QPushButton("Generate command line from input parameters", self)
         self.cmdlinebtn.move(self.x1-5, self.y3)
@@ -4661,7 +4674,7 @@ class Popupcenter_isac(QWidget):
 	self.y4+=30
 
 	 #Here we create a Button(Run_button with title run sxali2d) and its position in the window
-	self.RUN_button = QtGui.QPushButton('Run center', self)
+	self.RUN_button = QtGui.QPushButton('Run centering', self)
 	# make 3D textured push button look
 	s = "QPushButton {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #8D0);min-width:90px;margin:5px} QPushButton:pressed {font: bold; color: #000;border: 1px solid #333;border-radius: 11px;padding: 2px;background: qradialgradient(cx: 0, cy: 0,fx: 0.5, fy:0.5,radius: 1, stop: 0 #fff, stop: 1 #084);min-width:90px;margin:5px}"
 	
@@ -4671,6 +4684,14 @@ class Popupcenter_isac(QWidget):
         self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxshftali)
         #Labels and Line Edits for User Input	
 
+    def getoutstack(self):
+    	print 'hi'
+    	if self.applyparamschkbx.checkState() == Qt.Checked:
+		(fname,stat)= QInputDialog.getText(self,"Output stack","Enter output stack name",QLineEdit.Normal,"")
+		if stat:
+			print fname
+			self.outstackname=fname
+		
     def gencmdline_shftali(self,writefile=True):
 	#Here we just read in all user inputs in the line edits of the Poptwodali window
    	stackname_prectr = self.stacknameedit.text()
@@ -4685,9 +4706,17 @@ class Popupcenter_isac(QWidget):
 	oneDx_prectr=self.oneDxchkbx.checkState()
 	nproc_prectr = self.nprocedit.text()
 	
+	applyparams_prectr=self.applyparamschkbx.checkState()
+	
 	cmd1 = "sxshftali.py "+str(stackname_prectr)+" "+str(outdir_prectr)
 	if len(str(mask_prectr))>0:
+		print 'has mask'
 		cmd1 = cmd1+" "+str(mask_prectr)
+		
+	if applyparams_prectr == Qt.Checked:
+		cmd1 = cmd1 + " "+self.outstackname
+	else:
+		self.outstackname=""	
 		
 	cmd1 = cmd1+" --search_rng=" + str(search_rng_prectr)+" --ou="+ str(ou_prectr) +" --maxit="+ str(maxit_prectr)+  " --snr=" + str(snr_prectr)
 	
@@ -4710,6 +4739,8 @@ class Popupcenter_isac(QWidget):
 	(self.winmain.savedparmsdict)['fourvar_prectr']=fourvar_prectr
 	(self.winmain.savedparmsdict)['oneDx_prectr']=oneDx_prectr
 	(self.winmain.savedparmsdict)['nproc_prectr']=str(nproc_prectr)
+	(self.winmain.savedparmsdict)['applyparams_prectr']=applyparams_prectr
+	(self.winmain.savedparmsdict)['outstackname_prectr']=str(self.outstackname)
 	
 	if int(str(nproc_prectr)) > 1:
 		cmd1="mpirun -np "+ str(nproc_prectr) + " "+ cmd1+" --MPI" 
@@ -4729,7 +4760,7 @@ class Popupcenter_isac(QWidget):
 	self.gencmdline_shftali(writefile=False)
 	process = subprocess.Popen(self.cmd,shell=True)
 	self.emit(QtCore.SIGNAL("process_started"),process.pid)
-	
+	print 'hi done'
    
 	#Function choose_file started when  the  open_file of the  Poptwodali window is clicked
     def choose_file(self):
@@ -4996,14 +5027,14 @@ class MainWindow(QtGui.QWidget):
         #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
         self.w = Popupisac()
 	self.w1 = Popupadvparams_isac_1(self.w.savedparmsdict)
-	self.w2 = Popupcenter_isac(self.w)
+	self.w2 = Popupcenter(self.w)
 	self.w.w1 = self.w1
 	self.w.w2 = self.w2
 	self.TabWidget = QtGui.QTabWidget()
     	self.TabWidget.insertTab(0,self.w,'Main')
     	self.TabWidget.insertTab(1,self.w1,'Advanced')
 	self.TabWidget.insertTab(2,self.w2,'Pre-center input stack (Recommended)')
-	self.TabWidget.resize(700,800)
+	self.TabWidget.resize(730,800)
     	self.TabWidget.show()
         				
     #This is the function info, which is being started when the Pushbutton picbutton of the main window is being clicked
