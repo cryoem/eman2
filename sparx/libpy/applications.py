@@ -12296,6 +12296,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			for j in xrange(l_stable_members): stable_members_ori[j] = alldata_n[stable_members[j]]
 			ave.set_attr_dict({"members": stable_members_ori, "n_objects": l_stable_members})
 			ave.write_image("class_averages_generation_%d.hdf"%generation, ave_num)
+			mpi_send(ave_num, 1, MPI_INT, node_to_run, MPI_TAG_UB, MPI_COMM_WORLD)
 			ave_num += 1
 			members_acc.extend(stable_members_ori)
 			
@@ -12362,8 +12363,10 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			mpi_send(pix_err, 1, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 			
 			if l_stable_set > thld_grp:
-				write_text_file([all_alpha, all_sx, all_sy, all_mirror, all_scale], "%s/ali_params_%03d"%(ali_params_dir, i))
 				send_EMData(ave, main_node, i*100)			
+				ave_num = mpi_recv(1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+				ave_num = int(ave_num[0])
+				write_text_file([all_alpha, all_sx, all_sy, all_mirror, all_scale], "%s/ali_params_%03d"%(ali_params_dir, ave_num))
 	
 	mpi_barrier(MPI_COMM_WORLD)
 	
