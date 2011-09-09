@@ -40,7 +40,7 @@ from emapplication import EMGLWidget
 from emitem3d import EMItem3D, EMItem3DInspector
 from libpyGLUtils2 import GLUtil
 from valslider import ValSlider, EMLightControls, CameraControls, EMSpinWidget, EMQTColorWidget, EMANToolButton
-import math, weakref, os, pickle
+import math, weakref, os, pickle, copy
 from emshapeitem3d import *
 from emdataitem3d import EMDataItem3D, EMIsosurface, EMSliceItem3D, EMVolumeItem3D
 # XPM format Cursors
@@ -718,6 +718,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 	"""
 	Widget for rendering 3D objects. Uses a scne graph for rendering
 	"""
+	name = "SG"
 	def __init__(self, parentwidget=None, SGactivenodeset=set(), scalestep=0.5):
 		"""
 		@param parent: The parent of the widget
@@ -1188,7 +1189,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		if event.key() == QtCore.Qt.Key_L:
 			self.setMouseMode("line")
 			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
-		if event.key() == QtCore.Qt.Key_C:
+		if event.key() == QtCore.Qt.Key_C and not event.modifiers()&Qt.ControlModifier:
 			self.setMouseMode("cube")
 			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
 		if event.key() == QtCore.Qt.Key_P:
@@ -1209,7 +1210,20 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		if event.key() == QtCore.Qt.Key_A:
 			self.setMouseMode("app")
 			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
-			
+		if event.key() == QtCore.Qt.Key_C and event.modifiers()&Qt.ControlModifier:
+			nodes = self.getAllSelectedNodes()
+			if not nodes: return
+			for node in nodes:
+				if node.name == "Data" or node.name == "SG" or node.nodetype == "DataChild": continue	# Can't copy data nodes
+				copiednode = eval(node.getEvalString())
+				copiednode.setTransform(copy.deepcopy(node.getTransform()))
+				name = "Copy"
+				if node.getLabel(): name = node.getLabel()+name
+				copiednode.setAmbientColor(node.ambient[0], node.ambient[1], node.ambient[2])
+				copiednode.setSpecularColor(node.specular[0], node.specular[1], node.specular[2])
+				copiednode.setDiffuseColor(node.diffuse[0], node.diffuse[1], node.diffuse[2])
+				self.insertNewNode(name, copiednode)
+					
 	def setMouseMode(self, mousemode):
 		"""
 		Sets the mouse mode, used by the inpsector
@@ -2040,46 +2054,46 @@ class EMInspector3D(QtGui.QWidget):
 		toollabel.setFont(font)
 		self.rotatetool = EMANToolButton()
 		self.rotatetool.setIcon(QtGui.QIcon(QtGui.QPixmap(rotateicon)))
-		self.rotatetool.setToolTip("Rotate X/Y\nMouse: Right 'n' drag")
+		self.rotatetool.setToolTip("Rotate X/Y\nMouse: Right 'n' drag\nHot Key: R")
 		self.translatetool =EMANToolButton()
 		self.translatetool.setIcon(QtGui.QIcon(QtGui.QPixmap(crosshairsicon)))
-		self.translatetool.setToolTip("Translate X/Y\nMouse: Left 'n' drag")
+		self.translatetool.setToolTip("Translate X/Y\nMouse: Left 'n' drag\nHot Key: T")
 		self.ztranslate = EMANToolButton()
 		self.ztranslate.setIcon(QtGui.QIcon(QtGui.QPixmap(ztransicon)))
-		self.ztranslate.setToolTip("Translate Z")
+		self.ztranslate.setToolTip("Translate Z\nHot Key: Z")
 		self.scaletool = EMANToolButton()
 		self.scaletool.setIcon(QtGui.QIcon(QtGui.QPixmap(scaleicon)))
-		self.scaletool.setToolTip("Scale\nMouse: Middle 'n' drag")
+		self.scaletool.setToolTip("Scale\nHot Key: S")
 		self.selectiontool = EMANToolButton()
 		self.selectiontool.setIcon(QtGui.QIcon(QtGui.QPixmap(selectionicon)))
-		self.selectiontool.setToolTip("Select objects\nMouse: Left 'n' drag\nMultiple = + Shift")
+		self.selectiontool.setToolTip("Select objects\nMouse: Left 'n' drag\nMultiple = + Shift\nHot Key: Esc")
 		self.multiselectiontool = EMANToolButton()
 		self.multiselectiontool.setIcon(QtGui.QIcon(QtGui.QPixmap(multiselectoricon)))
-		self.multiselectiontool.setToolTip("Select multiple objects\nMouse: Left 'n' drag")
+		self.multiselectiontool.setToolTip("Select multiple objects\nMouse: Left 'n' drag\nHot Key: M")
 		self.linetool = EMANToolButton()
 		self.linetool.setIcon(QtGui.QIcon(QtGui.QPixmap(lineicon)))
-		self.linetool.setToolTip("Insert Line")
+		self.linetool.setToolTip("Insert Line\nHot Key: L")
 		self.cubetool = EMANToolButton()
 		self.cubetool.setIcon(QtGui.QIcon(QtGui.QPixmap(cubeicon)))
-		self.cubetool.setToolTip("Insert Cube")
+		self.cubetool.setToolTip("Insert Cube\nHot Key: C")
 		self.spheretool = EMANToolButton()
 		self.spheretool.setIcon(QtGui.QIcon(QtGui.QPixmap(sphereicon)))
-		self.spheretool.setToolTip("Insert Sphere")
+		self.spheretool.setToolTip("Insert Sphere\nHot Key: P")
 		self.cylindertool = EMANToolButton()
 		self.cylindertool.setIcon(QtGui.QIcon(QtGui.QPixmap(cylindericon)))
-		self.cylindertool.setToolTip("Insert Cylinder")
+		self.cylindertool.setToolTip("Insert Cylinder\nHot Key: Y")
 		self.conetool = EMANToolButton()
 		self.conetool.setIcon(QtGui.QIcon(QtGui.QPixmap(coneicon)))
-		self.conetool.setToolTip("Insert Cone")
+		self.conetool.setToolTip("Insert Cone\nHot Key: O")
 		self.texttool = EMANToolButton()
 		self.texttool.setIcon(QtGui.QIcon(QtGui.QPixmap(texticon)))
-		self.texttool.setToolTip("Insert Text")
+		self.texttool.setToolTip("Insert Text\nHot Key: X")
 		self.datatool = EMANToolButton()
 		self.datatool.setIcon(QtGui.QIcon(QtGui.QPixmap(dataicon)))
-		self.datatool.setToolTip("Insert Data")
+		self.datatool.setToolTip("Insert Data\nHot Key: E")
 		self.apptool = EMANToolButton()
 		self.apptool.setIcon(QtGui.QIcon(QtGui.QPixmap(appicon)))
-		self.apptool.setToolTip("Insert Data")
+		self.apptool.setToolTip("Application dependent\nHot Key: A")
 		
 		tvbox.addWidget(toollabel)
 		tvbox.addWidget(self.selectiontool)
@@ -2329,15 +2343,25 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		uwidget = QtGui.QWidget()
 		uvbox = QtGui.QVBoxLayout()
+		font = QtGui.QFont()
+		font.setBold(True)
+		# Controls frame
 		frame = QtGui.QFrame()
 		frame.setFrameShape(QtGui.QFrame.StyledPanel)
-		fvbox = QtGui.QHBoxLayout()
+		gridbox = QtGui.QGridLayout()
 		backgroundcolor_label = QtGui.QLabel("Background Color", frame)
+		backgroundcolor_label.setFont(font)
 		self.backgroundcolor = EMQTColorWidget(parent=frame)
-		fvbox.addWidget(backgroundcolor_label)
-		fvbox.addWidget(self.backgroundcolor)
-		fvbox.setAlignment(QtCore.Qt.AlignCenter)
-		frame.setLayout(fvbox)
+		self.hideselectionbutton = QtGui.QCheckBox("Hide Display Selections")
+		self.hideselectionbutton.setMinimumHeight(100)
+		self.hideselectionbutton.setFont(font)
+		gridbox.addWidget(backgroundcolor_label, 0, 0)
+		gridbox.addWidget(self.backgroundcolor, 0, 1)
+		gridbox.addWidget(self.hideselectionbutton, 1, 0, 1, 2)
+		gridbox.setAlignment(QtCore.Qt.AlignCenter)
+		gridbox.setSpacing(10)
+		frame.setLayout(gridbox)
+		# Buttons frame
 		uvbox.addWidget(frame)
 		self.opensession_button = QtGui.QPushButton("Open Session")
 		self.savesession_button = QtGui.QPushButton("Save Session")
@@ -2348,12 +2372,21 @@ class EMInspector3D(QtGui.QWidget):
 		uwidget.setLayout(uvbox)
 		
 		QtCore.QObject.connect(self.backgroundcolor,QtCore.SIGNAL("newcolor(QColor)"),self._on_bg_color)
+		QtCore.QObject.connect(self.hideselectionbutton, QtCore.SIGNAL("clicked()"),self._on_hide)
 		QtCore.QObject.connect(self.savebutton, QtCore.SIGNAL("clicked()"),self._on_save)
 		QtCore.QObject.connect(self.savesession_button, QtCore.SIGNAL("clicked()"),self._on_save_session)
 		QtCore.QObject.connect(self.opensession_button, QtCore.SIGNAL("clicked()"),self._on_open_session)
 		
 		return uwidget
-				
+	
+	def _on_hide(self):
+		"""
+		Hide display selections
+		"""
+		for node in self.scenegraph().getAllNodes():
+				node.setHiddenSelected(self.hideselectionbutton.isChecked())
+		self.updateSceneGraph()
+		
 	def _on_open_session(self):
 		"""
 		Open a session
@@ -2424,6 +2457,7 @@ class EMInspector3D(QtGui.QWidget):
 			self.camerawidget.updateWidget()
 		# utils
 		self.backgroundcolor.setColor(QtGui.QColor(255*self.scenegraph().clearcolor[0],255*self.scenegraph().clearcolor[1],255*self.scenegraph().clearcolor[2]))
+		self.hideselectionbutton.setChecked(self.scenegraph().isSelectionHidded())
 	
 	def updateTree(self, currentnode=None):
 		"""
