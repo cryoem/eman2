@@ -530,20 +530,23 @@ def main():
 				#write processed image to file
 				if options.threed2threed or options.twod2threed:    #output a single 3D image
 					if i==0:
-						out3d_img = EMData(d.get_xsize(), d.get_ysize(), nimg)		
-						
-					out3d_img.insert_clip(d, (0,0,i))
-					
-					if i==n1:
+						out3d_img = EMData(d.get_xsize(), d.get_ysize(), nimg)
 						if 'mrc8bit' in optionlist:
-							out3d_img.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
+							out3d_img.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', 0, EMUtil.get_image_ext_type(options.outtype), True, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
 						elif 'mrc16bit' in optionlist:
-							out3d_img.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
+							out3d_img.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', 0, EMUtil.get_image_ext_type(options.outtype), True, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
 						else:
-							if options.inplace:
-								out3d_img.write_image(outfile)
-							else:
-								out3d_img.write_image(outfile, -1)
+							out3d_img.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), True, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+					
+					region = Region(0, 0, i, d.get_xsize(), d.get_ysize(), 1)
+									
+					if 'mrc8bit' in optionlist:
+							d.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', 0, EMUtil.get_image_ext_type(options.outtype), False, region, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
+					elif 'mrc16bit' in optionlist:
+							d.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', 0, EMUtil.get_image_ext_type(options.outtype), False, region, EMUtil.EMDataType.EM_SHORT, not(options.swap))
+					else:
+							d.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, region, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+					
 				elif options.unstacking:	#output a series numbered single image files
 					if 'mrc8bit' in optionlist:
 						d.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
