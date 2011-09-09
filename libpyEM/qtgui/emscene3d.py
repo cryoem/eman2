@@ -1166,6 +1166,49 @@ class EMScene3D(EMItem3D, EMGLWidget):
 				node.setHiddenSelected(not node.isSelectionHidded())
 			
 			self.updateSG()
+		# Now toolbar hot keys
+		if event.key() == QtCore.Qt.Key_Escape:
+			self.setMouseMode("selection")
+			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+		if event.key() == QtCore.Qt.Key_M:
+			self.setMouseMode("multiselection")
+			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+		if event.key() == QtCore.Qt.Key_T:
+			self.setMouseMode("xytranslate")
+			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+		if event.key() == QtCore.Qt.Key_Z:
+			self.setMouseMode("ztranslate")
+			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+		if event.key() == QtCore.Qt.Key_R:
+			self.setMouseMode("rotate")
+			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+		if event.key() == QtCore.Qt.Key_S:
+			self.setMouseMode("scale")
+			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+		if event.key() == QtCore.Qt.Key_L:
+			self.setMouseMode("line")
+			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+		if event.key() == QtCore.Qt.Key_C:
+			self.setMouseMode("cube")
+			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+		if event.key() == QtCore.Qt.Key_P:
+			self.setMouseMode("sphere")
+			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+		if event.key() == QtCore.Qt.Key_Y:
+			self.setMouseMode("cylinder")
+			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+		if event.key() == QtCore.Qt.Key_O:
+			self.setMouseMode("cone")
+			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+		if event.key() == QtCore.Qt.Key_X:
+			self.setMouseMode("text")
+			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+		if event.key() == QtCore.Qt.Key_E:
+			self.setMouseMode("data")
+			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+		if event.key() == QtCore.Qt.Key_A:
+			self.setMouseMode("app")
+			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
 			
 	def setMouseMode(self, mousemode):
 		"""
@@ -2359,6 +2402,8 @@ class EMInspector3D(QtGui.QWidget):
 		if self.scenegraph().getMouseMode() == "cylinder": self.cylindertool.setDown(True)
 		if self.scenegraph().getMouseMode() == "cone": self.conetool.setDown(True)
 		if self.scenegraph().getMouseMode() == "line": self.linetool.setDown(True)
+		if self.scenegraph().getMouseMode() == "text": self.texttool.setDown(True)
+		if self.scenegraph().getMouseMode() == "data": self.datatool.setDown(True)
 		if self.scenegraph().getMouseMode() == "app": self.apptool.setDown(True)
 		# Lights
 		if self.lighttab_open:

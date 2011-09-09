@@ -1160,15 +1160,16 @@ class EMANToolButton(QtGui.QToolButton):
 			if tool != self:
 				tool.setDown(False)
 	
-	def setDown(self, state):
+	def setDown(self, state, quiet=True):
 		QtGui.QToolButton.setDown(self, state)
-		self.emit(QtCore.SIGNAL("clicked(int)"), self.isDown())
+		if state: self.setSelfAsUnique()
+		if not quiet: self.emit(QtCore.SIGNAL("clicked(int)"), self.isDown())
 		
 	def mousePressEvent(self, event):
 		# Toggle the button on and off
 		if not self.isDown():
 			self.setSelfAsUnique()
-			self.setDown(True)
+			self.setDown(True, quiet=False)
 		
 	def mouseReleaseEvent(self, event):
 		pass
