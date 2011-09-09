@@ -732,7 +732,6 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		QtOpenGL.QGLFormat().setDepth(True)
 		self.camera = EMCamera(1.0, 500.0)	# Default near,far
 		self.clearcolor = [0.0, 0.0, 0.0, 0.0]	# Back ground color
-		self.grabKeyboard()			# Grab the keyboard
 		self.main_3d_inspector = None
 		self.item_inspector = None				# Get the inspector GUI
 		self.reset_camera = False				# Toogle flag to deterine if the clipping plane has changed and needs redrawing
@@ -1151,6 +1150,13 @@ class EMScene3D(EMItem3D, EMGLWidget):
 	def mouseDoubleClickEvent(self,event):
 		print "Mouse Double Click Event"
 	
+	# Grab and release the keyboard
+	def enterEvent(self, event):
+		self.grabKeyboard()	
+		
+	def leaveEvent(self, event):
+		self.releaseKeyboard()
+		
 	def keyPressEvent(self,event):
 		"""Process keyboard stuff"""
 		# Delete nodes
