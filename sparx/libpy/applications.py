@@ -12471,7 +12471,6 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 	else:  seed()
 	if myid != main_node: jumpahead(17*myid + 12345)
 
-	a0 = -1.0
 	fl = FL
 	Iter = -1
 	main_iter = 0
