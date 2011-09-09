@@ -824,13 +824,13 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		# Find the selection box. Go from Volume view coords to viewport coords. sa = selection area
 		dx = self.sa_xf - self.sa_xi
 		dy = self.sa_yf - self.sa_yi
-		x = (self.sa_xi + self.camera.getWidth()/2) 
-		y = (self.camera.getHeight()/2 - self.sa_yi)
+		x = (self.sa_xi + viewport[2]/2) 
+		y = (viewport[3]/2 - self.sa_yi)
 		if dx < 2 and dx > -2: dx = 2
 		if dy < 2 and dy > -2: dy = 2
 
 		# Apply selection box, and center it in the green box
-		GLU.gluPickMatrix(x + dx/2, (viewport[3] - y) + dy/2, int(math.fabs(dx)), int(math.fabs(dy)), viewport)
+		GLU.gluPickMatrix(x + dx/2, (viewport[3]- 2*self.camera.getPseudoFovy() - y) + dy/2, int(math.fabs(dx)), int(math.fabs(dy)), viewport)
 		self.camera.setProjectionMatrix()
 		
 		#drawstuff, but first we need to remove the influence of any previous xforms which ^$#*$ the selection
@@ -853,12 +853,13 @@ class EMScene3D(EMItem3D, EMGLWidget):
 	def selectArea(self, xi, xf, yi, yf, togglearea=True):
 		"""
 		Set an area for selection. Need to switch bewteen viewport coords, where (0,0 is bottom left) to
-		volume view coords where 0,0) is center of the screen.
+		volume view coords where 
+0,0) is center of the screen.
 		"""
-		self.sa_xi = xi - self.camera.getWidth()/2
-		self.sa_xf = xf - self.camera.getWidth()/2
-		self.sa_yi = -yi + self.camera.getHeight()/2
-		self.sa_yf = -yf + self.camera.getHeight()/2
+		self.sa_xi = xi - self.camera.getWidth()/2 - self.camera.getPseudoFovy()
+		self.sa_xf = xf - self.camera.getWidth()/2 - self.camera.getPseudoFovy()
+		self.sa_yi = -yi + self.camera.getHeight()/2 + self.camera.getPseudoFovy()
+		self.sa_yf = -yf + self.camera.getHeight()/2 + self.camera.getPseudoFovy()
 		self.toggle_render_selectedarea = togglearea
 		
 	def deselectArea(self):
@@ -889,10 +890,12 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			glBegin(GL_LINE_LOOP)
 			# set the box just in front of the cliping plane
 			z = -self.camera.getClipNear() - self.camera.getZclip()
-			glVertex3f(self.sa_xi, self.sa_yi, z)
-			glVertex3f(self.sa_xi, self.sa_yf, z)
-			glVertex3f(self.sa_xf, self.sa_yf, z)
-			glVertex3f(self.sa_xf, self.sa_yi, z)
+			sfw = self.camera.getViewPortWidthScaling()
+			sfh = self.camera.getViewPortHeightScaling()
+			glVertex3f(sfw*(self.sa_xi+self.camera.getPseudoFovy()), sfh*(self.sa_yi-self.camera.getPseudoFovy()), z)
+			glVertex3f(sfw*(self.sa_xi+self.camera.getPseudoFovy()), sfh*(self.sa_yf-self.camera.getPseudoFovy()), z)
+			glVertex3f(sfw*(self.sa_xf+self.camera.getPseudoFovy()), sfh*(self.sa_yf-self.camera.getPseudoFovy()), z)
+			glVertex3f(sfw*(self.sa_xf+self.camera.getPseudoFovy()), sfh*(self.sa_yi-self.camera.getPseudoFovy()), z)
 			glEnd()
 			glPopMatrix()
 			glMatrixMode(GL_MODELVIEW)
@@ -1049,16 +1052,17 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		
 	def _gettransformbasedonscreen(self, event):
 		""" Helper function to for mousePressEvent"""
-		x = event.x() - self.camera.getWidth()/2
-		y = -event.y() + self.camera.getHeight()/2
+		x = self.camera.getViewPortWidthScaling()*(event.x() - self.camera.getWidth()/2)
+		y = self.camera.getViewPortHeightScaling()*(-event.y() + self.camera.getHeight()/2)
+		
 		return Transform({"type":"eman","tx":x,"ty":y})
 		
 	def mouseMoveEvent(self, event):
 		"""
 		Qt event handler. Scales the SG depending on what mouse button(s) are pressed when dragged
 		"""
-		dx = event.x() - self.previous_x
-		dy = event.y() - self.previous_y
+		dx = (event.x() - self.previous_x)*self.camera.getViewPortWidthScaling()
+		dy = (event.y() - self.previous_y)*self.camera.getViewPortHeightScaling()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "app"):
 			self.emit(QtCore.SIGNAL("sgmousemove()"), [event.x(), event.y()])
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "line"):
@@ -1113,26 +1117,26 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		# Originally the wheel sclaed by zoom the viewport, but that caused all sorts of issues, so I now just scale the SG
 		if event.orientation() & Qt.Vertical:
 			self.cameraNeedsanUpdate()
-			iniselstate = self.getAllSelectedNodes()
-			for i in iniselstate:
-				i.setSelectedItem(False)
-			self.setSelectedItem(True)
+			#iniselstate = self.getAllSelectedNodes()
+			#for i in iniselstate:
+			#	i.setSelectedItem(False)
+			#self.setSelectedItem(True)
 			if event.delta() > 0:
-				self.updateMatrices([0.05], "scale")
-				#if self.camera.getUseOrtho():
-				#	self.camera.setPseudoFovy(self.camera.getPseudoFovy()+10)
-				#else:
-				#	self.camera.setFovy(self.camera.getFovy()+1.0)
+			#	self.updateMatrices([0.05], "scale")
+				if self.camera.getUseOrtho():
+					self.camera.setPseudoFovy(self.camera.getPseudoFovy()+10)
+				else:
+					self.camera.setFovy(self.camera.getFovy()+1.0)
 			else:
-				self.updateMatrices([-0.05], "scale")
-				#if self.camera.getUseOrtho():
-				#	self.camera.setPseudoFovy(self.camera.getPseudoFovy()-10)
-				#else:
-					#self.camera.setFovy(self.camera.getFovy()-1.0)
-			self.setSelectedItem(False)
-			if self.item_inspector: self.item_inspector.updateItemControls()
-			for i in iniselstate:
-				i.setSelectedItem(True)
+			#	self.updateMatrices([-0.05], "scale")
+				if self.camera.getUseOrtho():
+					self.camera.setPseudoFovy(self.camera.getPseudoFovy()-10)
+				else:
+					self.camera.setFovy(self.camera.getFovy()-1.0)
+			#self.setSelectedItem(False)
+			#if self.item_inspector: self.item_inspector.updateItemControls()
+			#for i in iniselstate:
+			#	i.setSelectedItem(True)
 			self.updateSG()
 			
 			
@@ -1697,6 +1701,18 @@ class EMCamera:
 		Return PseudoFovy, a sort of fovy for orthogramphic projections
 		"""
 		return self.pseudofovy
+	
+	def getViewPortWidthScaling(self):
+		"""
+		Return the scaling nesssary to insert move from the viewport to the actual viewport. Need this b/c of the crazy scaling scheme
+		"""
+		return float(self.getWidth())/float(self.getWidth() + 2*self.getPseudoFovy())
+		
+	def getViewPortHeightScaling(self):
+		"""
+		Return the scaling nesssary to insert move from the viewport to the actual viewport. Need this b/c of the crazy scaling scheme
+		"""
+		return float(self.getHeight())/float(self.getHeight() + 2*self.getPseudoFovy())
 		
 	def getHeight(self):
 		""" Get the viewport height """

@@ -909,7 +909,7 @@ def singleton(cls):
 @singleton
 class EMQtColorDialog(QtGui.QColorDialog):
 	"""
-	The Is to create a non-modal color dialog
+	The Is to create a non-modal color dialog. Only one color dialog is allowed at once, so I use the singltion pattern
 	"""
 	def __init__(self, inicolor):
 		QtGui.QColorDialog.__init__(self, inicolor)
@@ -998,7 +998,7 @@ class EMLightControls(QtOpenGL.QGLWidget):
 		self.init_y = event.y()
 		
 	def mouseMoveEvent(self, event):
-
+		""" When the mouse moves, move the light"""
 		self.theta -= event.x() - self.init_x
 		self.phi -= event.y() - self.init_y
 		self.theta = self.theta % 360
@@ -1020,6 +1020,7 @@ class EMLightControls(QtOpenGL.QGLWidget):
 		return [self.theta, self.phi]
 	
 	def setAngularPosition(self, theta, phi):
+		""" The position is in spherical coords"""
 		self.theta = theta
 		self.phi = phi
 		z = math.sin(math.radians(self.theta + 90))*math.cos(math.radians(self.phi))
@@ -1086,6 +1087,7 @@ class CameraControls(QtOpenGL.QGLWidget):
 		self.init_x = event.x()
 		
 	def mouseMoveEvent(self, event):
+		""" Move the clipping planes"""
 		self.movement = (event.x() - self.init_x)*self.scale
 		if math.fabs(event.x()-(self.near_clipping + self.width/2)) > math.fabs(event.x()-(self.far_clipping + self.width/2)):
 			self.emit(QtCore.SIGNAL("farMoved(int)"), self.movement)
@@ -1095,23 +1097,24 @@ class CameraControls(QtOpenGL.QGLWidget):
 		
 	def _drawViewingVolume(self):
 		# These current scheme draws what looks like a frustrum, which is a bit of a lie, b/c usually a orthographic projection is used. But is it hard to depict such
-		# disuation using a camera analogy
+		#situation using a camera analogy
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
-		glColor3f(1.0, 1.0, 0.0)
+		glColor3f(0.7, 0.7, 0.0)
 		sixtydegrees = math.sin(math.radians(self.scenegraph().camera.getFovy()))
-		self.scale = float(self.scenegraph().camera.getWidth())/float(self.width)*2.0
+		self.scale = float(self.scenegraph().camera.getWidth())/float(self.width)*self.scenegraph().camera.getViewPortWidthScaling()
 		origin = 0.0
 		self.near_clipping = origin + (self.scenegraph().camera.getClipNear() + self.scenegraph().camera.getZclip())/self.scale
 		self.far_clipping = origin + (self.scenegraph().camera.getClipFar() + self.scenegraph().camera.getZclip())/self.scale
 		glBegin(GL_LINES)
-		glVertex(self.near_clipping, -self.height/4, 0)
-		glVertex(self.near_clipping, self.height/4, 0)
-		glVertex(self.far_clipping, -self.height/4, 0)
-		glVertex(self.far_clipping, self.height/4, 0)
+		glVertex(self.near_clipping, -self.height/2.2, 0)
+		glVertex(self.near_clipping, self.height/2.2, 0)
+		glVertex(self.far_clipping, -self.height/2.2, 0)
+		glVertex(self.far_clipping, self.height/2.2, 0)
 		glEnd()
 		
 	def _drawZslice(self):
+		""" Draw the Z slice in a box as the texture"""
 		#glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
@@ -1132,13 +1135,13 @@ class CameraControls(QtOpenGL.QGLWidget):
 		aspectratio = float(self.scenegraph().camera.getHeight())/float(self.scenegraph().camera.getWidth())
 		glBegin(GL_QUADS)
 		glTexCoord2f(0.0,0.0)
-		glVertex(-self.width/4,-aspectratio*self.width/4,-1)
+		glVertex(-self.width/2,-aspectratio*self.width/2,-1)
 		glTexCoord2f(1.0,0.0)
-		glVertex(self.width/4,-aspectratio*self.width/4,-1)
+		glVertex(self.width/2,-aspectratio*self.width/2,-1)
 		glTexCoord2f(1.0,1.0)
-		glVertex(self.width/4,aspectratio*self.width/4,-1)
+		glVertex(self.width/2,aspectratio*self.width/2,-1)
 		glTexCoord2f(0.0,1.0)
-		glVertex(-self.width/4,aspectratio*self.width/4,-1)
+		glVertex(-self.width/2,aspectratio*self.width/2,-1)
 		glEnd()
 		glDisable(GL_TEXTURE_2D)
 		

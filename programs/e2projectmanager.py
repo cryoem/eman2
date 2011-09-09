@@ -30,6 +30,47 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
+
+helpicon = [
+    '15 14 2 1',
+    'b c #000055',
+    'c c None',
+    'cccccbbbbbccccc',
+    'ccccbbbbbbbcccc',
+    'cccbbcccccbbccc',
+    'ccbbcccccccbbcc',
+    'ccbbccccccbbccc',
+    'cccccccccbbcccc',
+    'ccccccccbbccccc',
+    'cccccccbbcccccc',
+    'ccccccbbccccccc',
+    'ccccccbbccccccc',
+    'ccccccbbccccccc',
+    'ccccccccccccccc',
+    'ccccccbbccccccc',
+    'ccccccbbccccccc'
+]
+
+wizardicon = [
+    '15 14 2 1',
+    'b c #000055',
+    'c c None',
+    'cccccccccbbbccc',
+    'ccccccccbbbbccc',
+    'cccccccbbbccccc',
+    'ccccccbbbbccccc',
+    'cccccbbbbbccccc',
+    'cccccbbbbbccccc',
+    'ccccbbbbbbccccc',
+    'ccccbbbbbbbcccc',
+    'cccbbbbbbbbcccc',
+    'cccbbcccbbbcccc',
+    'ccbbbcbcbbbbccc',
+    'bbbbbcccbbbbbbc',
+    'cbbbbbbbbbbbbcc',
+    'cccbbbbbbbbcccc'
+]
+
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
 import os, json
@@ -61,7 +102,8 @@ class EMProjectManager(QtGui.QMainWindow):
 		guilabel.setFont(font)
 		grid.addWidget(guilabel, 1,1)
 		grid.addWidget(self.makeStackedWidget(),2,0)
-		grid.addWidget(self.makeStackedGUIwidget(),2,1,2,1)
+		grid.addWidget(self.makeStackedGUIwidget(),2,1,1,1)
+		grid.addWidget(self.makeGUIToolButtons(),3,1,1,1)
 		# Make Browse button
 		self.browsebutton = QtGui.QPushButton("Browse")
 		grid.addWidget(self.browsebutton, 3, 0)
@@ -86,6 +128,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		self.logbook.close()
 	
 	def loadPMdb(self):
+		"""LOad the PM database"""
 		# This probably wont work on WINDOWS.....
 		self.pm_projects_db = db_open_dict("bdb:"+os.environ['HOME']+"#:pm_projects")
 		# Load the project if we are already in the right dir
@@ -244,6 +287,29 @@ class EMProjectManager(QtGui.QMainWindow):
 		
 		return self.gui_stacked_widget
 	
+	def makeGUIToolButtons(self):
+		toolwidget = QtGui.QWidget()
+		tbox = QtGui.QHBoxLayout()
+		font = QtGui.QFont()
+		font.setBold(True)
+		tlabel = QtGui.QLabel("GUI Tools:")
+		tlabel.setFont(font)
+		tlabel.setAlignment(QtCore.Qt.AlignCenter)
+		self.helpbutton = QtGui.QToolButton()
+		self.helpbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(helpicon)))
+		self.helpbutton.setToolTip("Help button")
+		self.wizardbutton = QtGui.QToolButton()
+		self.wizardbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(wizardicon)))
+		self.wizardbutton.setToolTip("Form Wizard")
+		tbox.addWidget(tlabel)
+		tbox.addWidget(self.helpbutton)
+		tbox.addWidget(self.wizardbutton)
+		tbox.setContentsMargins(0,0,0,0)
+		tbox.setAlignment(QtCore.Qt.AlignRight)
+		toolwidget.setLayout(tbox)
+		
+		return toolwidget
+		
 	def _add_children(self, toplevel, widgetitem, treewidgetdict):
 		""" recursive hlper function for loadTree"""
 		for child in toplevel["CHILDREN"]:
