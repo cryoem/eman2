@@ -90,7 +90,7 @@ class EMCube(EMItem3D):
 		return self.item_inspector
 	
 	def renderNode(self):
-		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER: # No need to draw outline in selection mode
+		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded(): # No need to draw outline in selection mode
 			'''
 			#if glGetIntegerv(GL_RENDER_MODE) == GL_RENDER: print "X"
 			glPushAttrib( GL_ALL_ATTRIB_BITS )
@@ -216,7 +216,7 @@ class EMSphere(EMItem3D):
 		return self.item_inspector
 	
 	def renderNode(self):
-		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER:
+		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded():
 			glPushAttrib( GL_ALL_ATTRIB_BITS )
 		
 			# First render the cylinder, writing the outline to the stencil buffer
@@ -299,7 +299,7 @@ class EMCylinder(EMItem3D):
 		return self.item_inspector
 	
 	def renderNode(self):
-		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER:
+		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded():
 			glPushAttrib( GL_ALL_ATTRIB_BITS )
 		
 			# First render the cylinder, writing the outline to the stencil buffer
@@ -439,7 +439,7 @@ class EMLine(EMItem3D):
 		return self.item_inspector
 	
 	def renderNode(self):
-		if self.is_selected:
+		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded():
 			glPushAttrib( GL_ALL_ATTRIB_BITS )
 		
 			# First render the cylinder, writing the outline to the stencil buffer
@@ -560,7 +560,7 @@ class EMCone(EMItem3D):
 		return self.item_inspector
 	
 	def renderNode(self):
-		if self.is_selected:
+		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded():
 			glPushAttrib( GL_ALL_ATTRIB_BITS )
 		
 			# First render the cone, writing the outline to the stencil buffer
@@ -673,7 +673,7 @@ class EM3DText(EMItem3D):
 		return self.item_inspector
 	
 	def renderNode(self):
-		if self.is_selected:
+		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded():
 			glPushAttrib( GL_ALL_ATTRIB_BITS )
 		
 			# First render the cone, writing the outline to the stencil buffer

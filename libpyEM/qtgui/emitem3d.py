@@ -75,6 +75,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		self.transform = transform
 		self.is_visible = True 
 		self.is_selected = False
+		self.hide_selection = False
 		self.item_inspector = None			# This is an inspector widget
 		self.EMQTreeWidgetItem = None 			# This is an inspector tree item
 		self.boundingboxsize = None
@@ -92,6 +93,8 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 			#parent.addChild(self)
 	def isSelectedItem(self): return self.is_selected
 	def setSelectedItem(self, is_selected): self.is_selected = is_selected
+	def isSelectionHidded(self): return self.hide_selection
+	def setHiddenSelected(self, hide_selection): self.hide_selection = hide_selection
 	def getTransform(self): return self.transform
 	def setTransform(self, transform): self.transform = transform
 	def isVisibleItem(self): return self.is_visible

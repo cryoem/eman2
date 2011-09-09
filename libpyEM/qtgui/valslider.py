@@ -1088,11 +1088,11 @@ class CameraControls(QtOpenGL.QGLWidget):
 		
 	def mouseMoveEvent(self, event):
 		""" Move the clipping planes"""
-		self.movement = (event.x() - self.init_x)*self.scale
+		self.movement = float(event.x() - self.init_x)*self.scale
 		if math.fabs(event.x()-(self.near_clipping + self.width/2)) > math.fabs(event.x()-(self.far_clipping + self.width/2)):
-			self.emit(QtCore.SIGNAL("farMoved(int)"), self.movement)
+			self.emit(QtCore.SIGNAL("farMoved(float)"), self.movement)
 		else:
-			self.emit(QtCore.SIGNAL("nearMoved(int)"), self.movement)
+			self.emit(QtCore.SIGNAL("nearMoved(float)"), self.movement)
 		self.init_x = event.x()
 		
 	def _drawViewingVolume(self):
@@ -1104,6 +1104,7 @@ class CameraControls(QtOpenGL.QGLWidget):
 		sixtydegrees = math.sin(math.radians(self.scenegraph().camera.getFovy()))
 		self.scale = float(self.scenegraph().camera.getWidth())/float(self.width)*self.scenegraph().camera.getViewPortWidthScaling()
 		origin = 0.0
+		#print self.scenegraph().camera.getClipNear()
 		self.near_clipping = origin + (self.scenegraph().camera.getClipNear() + self.scenegraph().camera.getZclip())/self.scale
 		self.far_clipping = origin + (self.scenegraph().camera.getClipFar() + self.scenegraph().camera.getZclip())/self.scale
 		glBegin(GL_LINES)

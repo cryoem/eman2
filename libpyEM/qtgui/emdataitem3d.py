@@ -713,7 +713,7 @@ class EMIsosurface(EMItem3D):
 			self.force_update = False
 		
 		# This code draws an outline around the isosurface
-		if (self.is_selected or self.getParent().is_selected) and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER: # No need for outlining in selection mode
+		if (self.is_selected or self.getParent().is_selected) and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded(): # No need for outlining in selection mode
 						
 			glPushAttrib( GL_ALL_ATTRIB_BITS )
 		

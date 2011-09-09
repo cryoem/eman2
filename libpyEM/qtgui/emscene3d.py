@@ -731,6 +731,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		QtOpenGL.QGLFormat().setDepth(True)
 		self.camera = EMCamera(1.0, 500.0)	# Default near,far
 		self.clearcolor = [0.0, 0.0, 0.0, 0.0]	# Back ground color
+		self.grabKeyboard()			# Grab the keyboard
 		self.main_3d_inspector = None
 		self.item_inspector = None				# Get the inspector GUI
 		self.reset_camera = False				# Toogle flag to deterine if the clipping plane has changed and needs redrawing
@@ -830,7 +831,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		if dy < 2 and dy > -2: dy = 2
 
 		# Apply selection box, and center it in the green box
-		GLU.gluPickMatrix(x + dx/2, (viewport[3]- 2*self.camera.getPseudoFovy() - y) + dy/2, int(math.fabs(dx)), int(math.fabs(dy)), viewport)
+		GLU.gluPickMatrix(x + dx/2, (viewport[3]- 2*self.camera.getPseudoFovyHeight() - y) + dy/2, int(math.fabs(dx)), int(math.fabs(dy)), viewport)
 		self.camera.setProjectionMatrix()
 		
 		#drawstuff, but first we need to remove the influence of any previous xforms which ^$#*$ the selection
@@ -856,10 +857,10 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		volume view coords where 
 0,0) is center of the screen.
 		"""
-		self.sa_xi = xi - self.camera.getWidth()/2 - self.camera.getPseudoFovy()
-		self.sa_xf = xf - self.camera.getWidth()/2 - self.camera.getPseudoFovy()
-		self.sa_yi = -yi + self.camera.getHeight()/2 + self.camera.getPseudoFovy()
-		self.sa_yf = -yf + self.camera.getHeight()/2 + self.camera.getPseudoFovy()
+		self.sa_xi = xi - self.camera.getWidth()/2 - self.camera.getPseudoFovyWidth()
+		self.sa_xf = xf - self.camera.getWidth()/2 - self.camera.getPseudoFovyWidth()
+		self.sa_yi = -yi + self.camera.getHeight()/2 + self.camera.getPseudoFovyHeight()
+		self.sa_yf = -yf + self.camera.getHeight()/2 + self.camera.getPseudoFovyHeight()
 		self.toggle_render_selectedarea = togglearea
 		
 	def deselectArea(self):
@@ -892,10 +893,10 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			z = -self.camera.getClipNear() - self.camera.getZclip()
 			sfw = self.camera.getViewPortWidthScaling()
 			sfh = self.camera.getViewPortHeightScaling()
-			glVertex3f(sfw*(self.sa_xi+self.camera.getPseudoFovy()), sfh*(self.sa_yi-self.camera.getPseudoFovy()), z)
-			glVertex3f(sfw*(self.sa_xi+self.camera.getPseudoFovy()), sfh*(self.sa_yf-self.camera.getPseudoFovy()), z)
-			glVertex3f(sfw*(self.sa_xf+self.camera.getPseudoFovy()), sfh*(self.sa_yf-self.camera.getPseudoFovy()), z)
-			glVertex3f(sfw*(self.sa_xf+self.camera.getPseudoFovy()), sfh*(self.sa_yi-self.camera.getPseudoFovy()), z)
+			glVertex3f(sfw*(self.sa_xi+self.camera.getPseudoFovyWidth()), sfh*(self.sa_yi-self.camera.getPseudoFovyHeight()), z)
+			glVertex3f(sfw*(self.sa_xi+self.camera.getPseudoFovyWidth()), sfh*(self.sa_yf-self.camera.getPseudoFovyHeight()), z)
+			glVertex3f(sfw*(self.sa_xf+self.camera.getPseudoFovyWidth()), sfh*(self.sa_yf-self.camera.getPseudoFovyHeight()), z)
+			glVertex3f(sfw*(self.sa_xf+self.camera.getPseudoFovyWidth()), sfh*(self.sa_yi-self.camera.getPseudoFovyHeight()), z)
 			glEnd()
 			glPopMatrix()
 			glMatrixMode(GL_MODELVIEW)
@@ -941,8 +942,9 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		for selected in self.getAllSelectedNodes():
 			selected.setSelectedItem(False)
 			# Inspector tree management
-			if selected.EMQTreeWidgetItem:
-				selected.EMQTreeWidgetItem.setSelectionStateBox()
+			if self.main_3d_inspector:
+				if selected.EMQTreeWidgetItem:
+					selected.EMQTreeWidgetItem.setSelectionStateBox()
 
 	# Event subclassing
 	def mousePressEvent(self, event):
@@ -964,7 +966,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			filename = QtGui.QFileDialog.getOpenFileName(self, 'Get file', os.getcwd())
 			if not filename: return
 			name = os.path.basename(str(filename))
-			self.newnode = EMDataItem3D(filename, transform=self._gettransformbasedonscreen(event))
+			self.newnode = EMDataItem3D(filename, transform=self._gettransformbasedonscreen(event, rescale=False))
 			self.insertNewNode(name, self.newnode)
 			self.newnode.setTransform(self.newnode.getParentMatrixProduct().inverse()*self.newnode.getTransform())
 			self.isonode = EMIsosurface(self.newnode, transform=Transform())
@@ -981,7 +983,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 				self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "line"):
 			self.setCursor(self.linecursor)
-			self.newnode = EMLine(0.0, 0.0, 0.0, 2.0, 2.0, 0.0, 30.0, transform=self._gettransformbasedonscreen(event))
+			self.newnode = EMLine(0.0, 0.0, 0.0, 2.0, 2.0, 0.0, 20.0, transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Line", self.newnode)
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cube"):
@@ -1050,12 +1052,15 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.insertNewNode(name, node)
 		node.setTransform(self.newnode.getParentMatrixProduct().inverse()*self.newnode.getTransform()) # so the object is not modied by parent transform upon insertion
 		
-	def _gettransformbasedonscreen(self, event):
+	def _gettransformbasedonscreen(self, event, rescale=True):
 		""" Helper function to for mousePressEvent"""
 		x = self.camera.getViewPortWidthScaling()*(event.x() - self.camera.getWidth()/2)
 		y = self.camera.getViewPortHeightScaling()*(-event.y() + self.camera.getHeight()/2)
 		
-		return Transform({"type":"eman","tx":x,"ty":y})
+		if rescale:
+			return Transform({"type":"eman","tx":x,"ty":y,"scale":self.camera.getViewPortWidthScaling()})
+		else:
+			return Transform({"type":"eman","tx":x,"ty":y})
 		
 	def mouseMoveEvent(self, event):
 		"""
@@ -1063,18 +1068,20 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		dx = (event.x() - self.previous_x)*self.camera.getViewPortWidthScaling()
 		dy = (event.y() - self.previous_y)*self.camera.getViewPortHeightScaling()
+		x = event.x()
+		y = event.y()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "app"):
 			self.emit(QtCore.SIGNAL("sgmousemove()"), [event.x(), event.y()])
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "line"):
-			self.newnode.setEndAndWidth(0.0, 0.0, 0.0, event.x() - self.first_x, self.first_y - event.y(), 0.0, 30.0)
+			self.newnode.setEndAndWidth(0.0, 0.0, 0.0, x - self.first_x, self.first_y - y, 0.0, 20.0)
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cube"):
-			self.newnode.setSize(math.sqrt((event.x() - self.first_x)**2 + (event.y() - self.first_y)**2))
+			self.newnode.setSize(math.sqrt((x - self.first_x)**2 + (y - self.first_y)**2))
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "sphere"):
-			self.newnode.setRadius(math.sqrt((event.x() - self.first_x)**2 + (event.y() - self.first_y)**2))
+			self.newnode.setRadius(math.sqrt((x - self.first_x)**2 + (y - self.first_y)**2))
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cylinder"):
-			self.newnode.setRadiusAndHeight(math.fabs(event.x() - self.first_x), math.fabs(event.y() - self.first_y))
+			self.newnode.setRadiusAndHeight(math.fabs(x - self.first_x), math.fabs(y - self.first_y))
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cone"):
-			self.newnode.setRadiusAndHeight(math.fabs(event.x() - self.first_x), math.fabs(event.y() - self.first_y))
+			self.newnode.setRadiusAndHeight(math.fabs(x - self.first_x), math.fabs(y - self.first_y))
 		if event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and self.mousemode == "rotate"):
 			magnitude = math.sqrt(dx*dx + dy*dy)
 			#Check to see if the cursor is in the 'virtual slider pannel'
@@ -1092,8 +1099,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.updateMatrices([dx,-dy,0], "translate")
 		if event.buttons()&Qt.LeftButton and self.mousemode == "scale":
 			self.updateMatrices([self.scalestep*0.1*(dx+dy)], "scale")
-		self.previous_x =  event.x()
-		self.previous_y =  event.y()
+		self.previous_x =  x
+		self.previous_y =  y
 		self.updateSG()	
 			
 	def mouseReleaseEvent(self, event):
@@ -1124,13 +1131,13 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			if event.delta() > 0:
 			#	self.updateMatrices([0.05], "scale")
 				if self.camera.getUseOrtho():
-					self.camera.setPseudoFovy(self.camera.getPseudoFovy()+10)
+					self.camera.setPseudoFovy(self.camera.getPseudoFovyWidth()+self.camera.getWidth()/20)
 				else:
 					self.camera.setFovy(self.camera.getFovy()+1.0)
 			else:
 			#	self.updateMatrices([-0.05], "scale")
 				if self.camera.getUseOrtho():
-					self.camera.setPseudoFovy(self.camera.getPseudoFovy()-10)
+					self.camera.setPseudoFovy(self.camera.getPseudoFovyWidth()-self.camera.getWidth()/20)
 				else:
 					self.camera.setFovy(self.camera.getFovy()-1.0)
 			#self.setSelectedItem(False)
@@ -1144,8 +1151,22 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		print "Mouse Double Click Event"
 	
 	def keyPressEvent(self,event):
-		print "Mouse KeyPress Event"
-	
+		"""Process keyboard stuff"""
+		# Delete nodes
+		if event.key() == QtCore.Qt.Key_Delete:
+			for node in self.getAllSelectedNodes():
+				#item = self.tree_widget.currentItem()
+				if node.parent:
+					if self.main_3d_inspector: self.main_3d_inspector.removeTreeNode(node.parent.EMQTreeWidgetItem, node.parent.EMQTreeWidgetItem.indexOfChild(node.EMQTreeWidgetItem))
+					node.parent.removeChild(node)
+			self.updateSG()
+		# Hide selections
+		if event.key() == QtCore.Qt.Key_H:
+			for node in self.getAllNodes():
+				node.setHiddenSelected(not node.isSelectionHidded())
+			
+			self.updateSG()
+			
 	def setMouseMode(self, mousemode):
 		"""
 		Sets the mouse mode, used by the inpsector
@@ -1586,8 +1607,9 @@ class EMCamera:
 		"""
 		if width: self.width = width
 		if height: self.height = height
+		self.aspectratio = float(self.height)/float(self.width)
 		if self.usingortho:
-			glViewport(-self.pseudofovy,-self.pseudofovy,self.width+2*self.pseudofovy,self.height+2*self.pseudofovy)
+			glViewport(-self.pseudofovy,int(-self.pseudofovy*self.aspectratio),self.width+2*self.pseudofovy,int(self.height+2*self.pseudofovy*self.aspectratio))
 			glMatrixMode(GL_PROJECTION)
 			glLoadIdentity()
 			self.setOrthoProjectionMatrix()
@@ -1696,23 +1718,30 @@ class EMCamera:
 		"""
 		if (self.width+2*pseudofovy) > 0 and (self.height+2*pseudofovy) > 0: self.pseudofovy = pseudofovy # negative viewport values are not acceptable
 		
-	def getPseudoFovy(self):
+	def getPseudoFovyWidth(self):
 		"""
 		Return PseudoFovy, a sort of fovy for orthogramphic projections
 		"""
 		return self.pseudofovy
 	
+	def getPseudoFovyHeight(self):
+		"""
+		Return PseudoFovy, a sort of fovy for orthogramphic projections
+		"""
+		return self.pseudofovy*self.aspectratio
+		
 	def getViewPortWidthScaling(self):
 		"""
 		Return the scaling nesssary to insert move from the viewport to the actual viewport. Need this b/c of the crazy scaling scheme
 		"""
-		return float(self.getWidth())/float(self.getWidth() + 2*self.getPseudoFovy())
+		
+		return float(self.getWidth())/float(self.getWidth() + 2*self.getPseudoFovyWidth())
 		
 	def getViewPortHeightScaling(self):
 		"""
 		Return the scaling nesssary to insert move from the viewport to the actual viewport. Need this b/c of the crazy scaling scheme
 		"""
-		return float(self.getHeight())/float(self.getHeight() + 2*self.getPseudoFovy())
+		return float(self.getHeight())/float(self.getHeight() + 2*self.getPseudoFovyHeight())
 		
 	def getHeight(self):
 		""" Get the viewport height """
@@ -2183,8 +2212,8 @@ class EMInspector3D(QtGui.QWidget):
 
 		QtCore.QObject.connect(self.near,QtCore.SIGNAL("valueChanged(int)"),self._on_near)
 		QtCore.QObject.connect(self.far,QtCore.SIGNAL("valueChanged(int)"),self._on_far)
-		QtCore.QObject.connect(self.camerawidget,QtCore.SIGNAL("nearMoved(int)"),self._on_near_move)
-		QtCore.QObject.connect(self.camerawidget,QtCore.SIGNAL("farMoved(int)"),self._on_far_move)
+		QtCore.QObject.connect(self.camerawidget,QtCore.SIGNAL("nearMoved(float)"),self._on_near_move)
+		QtCore.QObject.connect(self.camerawidget,QtCore.SIGNAL("farMoved(float)"),self._on_far_move)
 		QtCore.QObject.connect(self.orthoradio,QtCore.SIGNAL("clicked()"),self._on_radio_click)
 		QtCore.QObject.connect(self.perspectiveradio,QtCore.SIGNAL("clicked()"),self._on_radio_click)
 		
@@ -2343,8 +2372,8 @@ class EMInspector3D(QtGui.QWidget):
 			self.ambientlighting.setValue(ambient, quiet=1)
 		# camera
 		if self.cameratab_open:
-			self.near.setValue(self.scenegraph().camera.getClipNear(), quiet=1)
-			self.far.setValue(self.scenegraph().camera.getClipFar(), quiet=1)
+			self.near.setValue(int(self.scenegraph().camera.getClipNear()), quiet=1)
+			self.far.setValue(int(self.scenegraph().camera.getClipFar()), quiet=1)
 			self._get_vv_state()
 			self.scenegraph().setZslice()
 			self.camerawidget.updateWidget()
