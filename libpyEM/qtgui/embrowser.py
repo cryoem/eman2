@@ -35,6 +35,187 @@ import PyQt4
 from PyQt4 import QtCore, QtGui,Qt
 from emapplication import EMApp
 from EMAN2 import *
+import os.path
+
+class EMDirEntry:
+	"""Represents a directory entry in the filesystem"""
+	
+	# list of lambda functions to extract column values for sorting
+	col=(lambda x:x.name,lambda x:x.filetype,lambda x:x.size,lambda x:x.dim,lambda x:x.nimg,lambda x:x.date)
+	
+	def __init__(self,root,name):
+		self.__parent=None		# single parent
+		self.__children=None	# ordered list of children, None indicates no check has been made, empty list means no children, otherwise list of names or list of EMDirEntrys
+		self.root=str(root)		# Path prefixing name
+		self.name=str(name)		# name of this path element (string)
+		if name[:4].lower=="bdb:":
+			self.isbdb=True
+			self.name=name[4:]
+		else:
+			self.isbdb=False
+			
+		if self.isbdb :
+			self.filepath=os.path.join(self.root,"EMAN2DB",self.name+".bdb")
+		else : self.filepath=os.path.join(self.root,self.name)
+		stat=os.stat(self.filepath)
+		
+		self.size=stat[6]		# file size (integer, bytes)
+		self.date=local_datetime(stat[8])	# modification date (string: yyyy/mm/dd hh:mm:ss)
+
+		# These can be expensive so we only get them on request, or if they are fast 
+		self.dim=None			# dimensions (string)
+		self.filetype=None		# file type (string, "Folder" for directory)
+		self.nimg=None			# number of images in file (int)
+
+		# Directories don't really have extra info
+		if os.path.isdir(self.filepath) :
+			self.filetype="Folder"
+			self.dim=""
+			self.nimg=""
+			self.size=0			# more convenient to show as zero
+		# BDB details are cached and can be retrieved quickly
+		elif self.isbdb:
+			self.filetype="BDB"
+			try:
+				d=db_open_dict("bdb:%s#00image_counts",True)
+				p=d[name]
+				self.nimg=p[1]
+				if p[2][1]==1 : self.dim=str(p[2][0])
+				elif p[2][2]==1 : self.dim="%dx%d"%(p[2][0],p[2][1])
+				else : self.dim="%dx%dx%d"%(p[2][0],p[2][1],p[2][2])
+			except:
+				self.nimg=-1
+				self.dim="-"
+		
+	def sort(self,column,order):
+		"Recursive sorting"
+		if self.__children==None or len(self.__children)==0 or isinstance(self.__children[0],str): return
+		
+		self.__children.sort(key=EMDirEntry[column])
+		
+	def parent(self):
+		"""Return the parent"""
+		return self.__parent
+
+	def child(self,n):
+		"""Returns nth child or None"""
+		self.fillChildEntries()
+		return self.__children(n)
+	
+	def nChildren(self):
+		"""Count of children"""
+		self.fillChildNames()
+		return len(self.__children)
+	
+	def fillChildNames(self):
+		"""Makes sure that __children contains at LEAST a list of names"""
+		if self.root==None:
+			
+			if not os.path.isdir(path) :
+				self.__children=[]
+				return
+			
+			self.__children=os.listdir(path)
+			if "EMAN2DIR" in self.__children :
+				self.__children.remove("EMAN2DIR")
+				
+				t=["bdb:"+i for i in db_list_dicts(path)]
+				self.__children.extend(t)
+				
+	def fillChildEntries(self):
+		"""Makes sure that __children have been filled with EMDirEntries when appropriate"""
+		if self.__children == None : self.fillChildNames()
+		if len(self.__children)==0 : return		# nothing to do. No children
+		if not isinstance(self.__children[0],str) : return 		# this implies entries have already been filled
+		
+		for i,n in enumerate(self.__children):
+			self.__children[i]=EMDirEntry(self.filepath,n)
+	
+	def fillDetails(self):
+		"""Fills in the expensive metadata about this entry"""
+		if self.filetype!=None : return
+		
+		# FIXME - finish this
+		
+class EMFileItemModel(QtCore.QAbstractItemModel):
+	"""This ItemModel represents the local filesystem. We don't use the normal filesystem item model because we want
+	to provide more info on images, and we need to merge BDB: files into the file view."""
+	
+	headers=("Name","Type","Size","Dim","N","Date")
+	
+	def __init__(self,startpath=None):
+		QtCore.QAbstractItemModel.__init__(self)
+		self.root=EMDirEntry(startpath,"")					# EMDirEntry as a parent for the root path
+		self.rootpath=startpath			# root path for current browser
+
+	def canFetchMore(self,idx):
+		return False
+		
+	def columnCount(self,parent):
+		return 6
+		
+	def rowCount(self,parent):
+		if parent.isValid() : return parent.internalPointer().nChildren()
+		return root.nChildren()
+		
+	def data(self,index,role):
+		"QModelIndex, Qt::DisplayRole"
+		
+		if not index.isValid() : return None
+		if role!=Qt.DisplayRole : return None
+		
+		data=parent.internalPointer()
+		col=index.column()
+		if col==0 : return str(data.name)
+		elif col==1 : return str(data.filetype)
+		elif col==2 : return str(data.size)
+		elif col==3 : return str(data.dim)
+		elif col==4 : return str(data.nimg)
+		elif col==5 : return str(data.date)
+		
+	def headerData(self,sec,orient,role):
+		if orient==Qt.Horizontal:
+			if role==Qt.DisplayRole :
+				return EMFileItemModel.headers[sec]
+			elif role==Qt.ToolTipRole:
+				return None								# May fill this in later
+			
+		return None
+			
+	def hasChildren(self,parent):
+		if parent.internalPointer().nChildren()>0 : return True
+		return False
+		
+	def hasIndex(self,row,col,parent):
+		try:
+			if parent.isValid(): 
+				data=parent.internalPointer().child(row)
+			else: data=self.root.children(row)
+		except: return False
+		return True
+		
+	def index(self,row,column,parent):
+		try:
+			if parent.isValid(): 
+				data=parent.internalPointer().child(row)
+			else: data=self.root.children(row)
+		except: return QtCore.QModelIndex()			# No data, return invalid
+		return self.createIndex(row,column,data)
+		
+	def parent(self,index):
+		"qmodelindex"
+		if index.isValid(): 
+			data=index.internalPointer().parent()
+		else: return QtCore.QModelIndex()
+		if data==None : return QtCore.QModelIndex()			# No data, return invalid
+		
+		return self.createIndex(row,column,data)
+
+	def sort(self,column,order):
+		"Trigger recursive sorting"
+		self.root.sort(column,order)
+	
+	
 
 
 class EMBrowserWidget(QtGui.QWidget):
@@ -47,31 +228,63 @@ class EMBrowserWidget(QtGui.QWidget):
 	def __init__(self,parent=None,withmodal=False):
 		QtGui.QWidget.__init__(self,parent)
 		
-		self.vbl = QtGui.QVBoxLayout(self)
+		self.gbl = QtGui.QGridLayout(self)
 		
 		# Top Toolbar area
 		self.wtools=QtGui.QWidget()
-		self.vbl.addWidget(self.wtools)
+		self.wtoolhbl=QtGui.QHBoxLayout(self.wtools)
+		self.wtoolhbl.setContentsMargins(0,0,0,0)
 		
-		# Central verticalregion has bookmarks and tree
-		self.hbl1 = QtGui.QHBoxLayout()
+		self.wbutback=QtGui.QPushButton("<-")
+		self.wbutback.setMaximumWidth(42)
+		self.wtoolhbl.addWidget(self.wbutback,0)
+
+		self.wbutup=QtGui.QPushButton("^")
+		self.wbutup.setMaximumWidth(42)
+		self.wtoolhbl.addWidget(self.wbutup,0)
+
+		self.wbutfwd=QtGui.QPushButton("->")
+		self.wbutfwd.setMaximumWidth(42)
+		self.wtoolhbl.addWidget(self.wbutfwd,0)
+
+		# Text line for showing (or editing) full path
+		self.wpath = QtGui.QLineEdit()
+		self.wtoolhbl.addWidget(self.wpath,5)
+				
+		#self.wspacet1=QtGui.QSpacerItem(100,10,QtGui.QSizePolicy.MinimumExpanding)
+		#self.wtoolhbl.addSpacerItem(self.wspacet1)
+
+
+		self.wbutinfo=QtGui.QPushButton("Info")
+		self.wbutinfo.setCheckable(True)
+		self.wtoolhbl.addWidget(self.wbutinfo,1)
+
+		self.gbl.addWidget(self.wtools,0,0,1,2)
 		
-		# Bookmarks implemented with a toolbar
-		self.wbookmarks = QtGui.QToolBar()
+		
+		### Central verticalregion has bookmarks and tree
+		# Bookmarks implemented with a toolbar in a frame
+		self.wbookmarkfr = QtGui.QFrame()
+		self.wbookmarkfr.setFrameStyle(QtGui.QFrame.StyledPanel|QtGui.QFrame.Raised)
+		self.wbmfrbl=QtGui.QVBoxLayout(self.wbookmarkfr)
+		
+		self.wbookmarks = QtGui.QToolBar()	
+		#self.wbookmarks.setAutoFillBackground(True)
+		#self.wbookmarks.setBackgroundRole(QtGui.QPalette.Dark)
 		self.wbookmarks.setOrientation(2)
-		self.wbookmarks.addAction("EMEN2",self.BookmarkPress)
+		self.addBookmark("EMEN2","emen2")
 		self.wbookmarks.addSeparator()
-		self.wbookmarks.addAction("Root",self.BookmarkPress)
-		self.wbookmarks.addAction("Current",self.BookmarkPress)
-		self.wbookmarks.addAction("Home",self.BookmarkPress)
-		self.hbl1.addWidget(self.wbookmarks)
+		self.addBookmark("Root","/")
+		self.addBookmark("Current",".")
+		self.addBookmark("Home",e2gethome())
+		self.wbmfrbl.addWidget(self.wbookmarks)
+		
+		self.gbl.addWidget(self.wbookmarkfr,1,0)
 		
 		self.wtree = QtGui.QTreeView()
-		self.hbl1.addWidget(self.wtree)
+		self.gbl.addWidget(self.wtree,1,1)
 		
-		self.vbl.addLayout(self.hbl1)
-		
-		
+		# Lower region has buttons for actions
 		self.hbl2 = QtGui.QHBoxLayout()
 
 		self.wbutshow = QtGui.QPushButton("Show")
@@ -83,20 +296,86 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.wbutnew = QtGui.QPushButton("New")
 		self.hbl2.addWidget(self.wbutnew)
 
+		self.wbutsave = QtGui.QPushButton("Save")
+		self.hbl2.addWidget(self.wbutsave)
+
+
 		# buttons for selector use
-		self.wspace1=QtGui.QSpacerItem(100,10,QtGui.QSizePolicy.MinimumExpanding)
-		self.hbl2.addSpacerItem(self.wspace1)
+		if withmodal :
+			self.wspace1=QtGui.QSpacerItem(100,10,QtGui.QSizePolicy.MinimumExpanding)
+			self.hbl2.addSpacerItem(self.wspace1)
+			
+			self.wbutcancel=QtGui.QPushButton("Cancel")
+			self.hbl2.addWidget(self.wbutcancel)
+			
+			self.wbutok=QtGui.QPushButton("OK")
+			self.hbl2.addWidget(self.wbutok)
+
+			QtCore.QObject.connect(self.wbutcancel, QtCore.SIGNAL('clicked(bool)'), self.buttonCancel)
+			QtCore.QObject.connect(self.wbutok, QtCore.SIGNAL('clicked(bool)'), self.buttonOk)
+
+		self.gbl.addLayout(self.hbl2,3,1)
+
+		QtCore.QObject.connect(self.wbutshow, QtCore.SIGNAL('clicked(bool)'), self.buttonShow)
+		QtCore.QObject.connect(self.wbutadd, QtCore.SIGNAL('clicked(bool)'), self.buttonAdd)
+		QtCore.QObject.connect(self.wbutnew, QtCore.SIGNAL('clicked(bool)'), self.buttonNew)
+		QtCore.QObject.connect(self.wbutsave, QtCore.SIGNAL('clicked(bool)'), self.buttonSave)
+		QtCore.QObject.connect(self.wbutback, QtCore.SIGNAL('clicked(bool)'), self.buttonBack)
+		QtCore.QObject.connect(self.wbutfwd, QtCore.SIGNAL('clicked(bool)'), self.buttonFwd)
+		QtCore.QObject.connect(self.wbutup, QtCore.SIGNAL('clicked(bool)'), self.buttonUp)
+		QtCore.QObject.connect(self.wbutinfo, QtCore.SIGNAL('clicked(bool)'), self.buttonInfo)
+		QtCore.QObject.connect(self.wpath, QtCore.SIGNAL('returnPressed()'), self.editPath)
+		QtCore.QObject.connect(self.wbookmarks, QtCore.SIGNAL('actionTriggered(QAction*)'), self.bookmarkPress)
+
+		self.curmodel=None
+		self.curpath=None
+
+	def editPath(self):
+		"Return pressed in path editor"
+
+	def buttonOk(self,tog):
+		"Button press"
 		
-		self.wbutcancel=QtGui.QPushButton("Cancel")
-		self.hbl2.addWidget(self.wbutcancel)
+	def buttonCancel(self,tog):
+		"Button press"
 		
-		self.wbutok=QtGui.QPushButton("OK")
-		self.hbl2.addWidget(self.wbutok)
+	def buttonShow(self,tog):
+		"Button press"
 		
-		self.vbl.addLayout(self.hbl2)
+	def buttonNew(self,tog):
+		"Button press"
+
+	def buttonSave(self,tog):
+		"Button press"
 		
-	def BookmarkPress(self,action):
+	def buttonAdd(self,tog):
+		"Button press"
+		
+	def buttonBack(self,tog):
+		"Button press"
+		
+	def buttonFwd(self,tog):
+		"Button press"
+		
+	def buttonUp(self,tog):
+		"Button press"
+		
+	def buttonInfo(self,tog):
+		"Button press"
+
+	def addBookmark(self,label,path):
+		"""Add a new bookmark"""
+		act=self.wbookmarks.addAction(label)
+		act.setData(path)
+	
+	def bookmarkPress(self,action):
 		""
+		print "Got action ",action.text(),action.data().toString()
+		
+		newpath=action.data().toString()
+		self.curpath=newpath
+		self.curmodel=EMFileItemModel(newpath)
+		self.wpath.setModel(self.curmodel)
 		
 # This is just for testing, of course
 if __name__ == '__main__':

@@ -2994,7 +2994,7 @@ the following pattern:
 			
 			string_args = ["oversamp","ac","apix","cs","voltage"]
 			bool_args = ["nosmooth","nonorm","autohp","invert"]
-			additional_args = ["--autofit"]
+			additional_args = ["--autofit","--curdefocushint"]
 			temp_file_name = "e2ctf_autofit_stdout.txt"
 			self.spawn_task("e2ctf.py",options,string_args,bool_args,additional_args,temp_file_name)
 			

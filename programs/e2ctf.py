@@ -74,6 +74,7 @@ images far from focus."""
 	parser.add_option("--minptcl",type="int",help="Files with fewer than the specified number of particles will be skipped",default=0)
 	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive fitting",default=False)
 	parser.add_option("--autofit",action="store_true",help="Runs automated CTF fitting on the input images",default=False)
+	parser.add_option("--curdefocushint",action="store_true",help="Rather than doing the defocus from scratch, use existing values in the project as a starting point",default=False)
 	parser.add_option("--refinebysnr",action="store_true",help="Refines the defocus value by looking at the high resolution smoothed SNR. Important: also replaces the SNR with a smoothed version.",default=False)
 	parser.add_option("--bgmask",type="int",help="Background is computed using a soft mask of the center/edge of each particle with the specified radius. Default radius is boxsize/2.6.",default=0)
 	parser.add_option("--fixnegbg",action="store_true",help="Will perform a final background correction to avoid slight negative values near zeroes")
@@ -427,9 +428,21 @@ def pspec_and_ctf_fit(options,debug=False):
 		# Fit the CTF parameters
 		if debug : print "Fit CTF"
 		if options.dfmax != None : dfhint=(.15,options.dfmax)
+		elif options.curdefocushint :
+			try:
+				ctf=EMAN2Ctf()
+				ctf.from_string(db_parms[name][0])
+				curdf=ctf.defocus
+				dfhint=(curdf-0.4,curdf+0.4)
+				print "Using existing defocus as hint :",dfhint
+			except : 
+				dfhint=None
+				print "No existing defocus to start with"
 		else: dfhint=None
 		ctf=ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,options.voltage,options.cs,options.ac,apix,bgadj=not options.nosmooth,autohp=options.autohp,dfhint=dfhint,verbose=options.verbose)
-		db_parms[name]=[ctf.to_string(),im_1d,bg_1d,5]		# the 5 is a default quality value
+		try : qual=db_parms[name][3]
+		except: qual=5
+		db_parms[name]=[ctf.to_string(),im_1d,bg_1d,qual]		# the 5 is a default quality value
 		db_im2d[name]=im_2d
 		db_bg2d[name]=bg_2d
 		
@@ -1609,6 +1622,10 @@ class GUIctf(QtGui.QWidget):
 		ds=self.data[val][1].dsbg
 		r=len(ctf.background)
 		s=[ds*i for i in range(r)]
+		
+		if r==0 or len(s)<2 :
+			print "Trying to plot bad data (set %s): %s"%(str(val),str(ctf))
+			return
 		
 		# This updates the image circles
 		fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)
