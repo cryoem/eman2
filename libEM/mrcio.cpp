@@ -802,9 +802,17 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 	check_write_access(rw_mode, image_index, 1, data);
 	check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file);
 
-	int nx = mrch.nx;
-	int ny = mrch.ny;
-	int nz = mrch.nz;
+	int nx, ny, nz;
+	if(!area) {
+		nx = mrch.nx;
+		ny = mrch.ny;
+		nz = mrch.nz;
+	}
+	else {
+		nx = area->get_width();
+		ny = area->get_height();
+		nz = area->get_depth();
+	}
 	size_t size = (size_t)nx * ny * nz;
 
 	if (is_complex_mode()) {
