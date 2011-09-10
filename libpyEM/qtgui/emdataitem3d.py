@@ -34,7 +34,11 @@ class EMDataItem3D(EMItem3D):
 		
 	def get3DTexture(self):
 		if self.texture_name == 0:
-			self.texture_name = self.glflags.gen_textureName(self.data)
+			#self.texture_name = self.glflags.gen_textureName(self.data)
+			self.texture_name = GL.glGenTextures(1)
+			print "textures == ", self.texture_name
+			GL.glBindTexture(GL.GL_TEXTURE_3D, self.texture_name)
+			GL.glTexImage3D(GL.GL_TEXTURE_3D,0, GL.GL_ALPHA,self.data["nx"], self.data["ny"], self.data["nz"],0, GL.GL_ALPHA, GL.GL_FLOAT, self.data.get_data_as_vector());
 		return self.texture_name
 		
 	def getEvalString(self):
@@ -68,6 +72,7 @@ class EMDataItem3D(EMItem3D):
 		
 		if self.texture_name != 0:
 			GL.glDeleteTextures(self.texture_name)
+			self.texture_name = 0
 		
 		for child in self.getChildren():
 			try:	# What if child ins't a data type?
@@ -413,6 +418,8 @@ class EMVolumeItem3D(EMItem3D):
 		diag2 = interior_diagonal/2
 		
 		quad_points = [(-diag2, -diag2, 0), (-diag2, diag2, 0), (diag2, diag2, 0), (diag2, -diag2, 0)]
+		transform_std_coords = self.getTransformStdCoord()
+		
 		
 		#Find root node
 		rootNode = self
@@ -422,11 +429,15 @@ class EMVolumeItem3D(EMItem3D):
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glPushMatrix()
 		GL.glLoadIdentity() #Make the polygon be in the plane of the screen
-		rootNode.camera.setCameraPosition()		
+#		GL.glTranslate(*transform_std_coords.get_trans())
+		transf = Transform(transform_std_coords) # Get a copy, not a reference, need to use original later
+		transf.set_rotation({"type":"eman"}) #Removing rotation
+		GLUtil.glMultMatrix(transf)
+		rootNode.camera.setCameraPosition()
 
 		#For debugging purposes, draw an outline
 		GL.glDisable(GL.GL_LIGHTING)
-		GL.glColor3f(1.0,0.0,1.0)
+		GL.glColor3f(1.0,1.0,1.0)
 		GL.glBegin(GL.GL_LINE_LOOP)
 		for i in range(4):
 			GL.glVertex3f(*quad_points[i])
@@ -446,14 +457,17 @@ class EMVolumeItem3D(EMItem3D):
 		GL.glLoadIdentity()
 		GL.glTranslatef(0.5, 0.5, 0.5) #Put the origin at the center of the 3D texture
 		GL.glScalef(1.0/nx, 1.0/ny, 1.0/nz) #Scale to make the texture coords the same as data coords
-#		transform = self.getParent().transform * self.transform
-#		transform.invert()
-#		GLUtil.glMultMatrix(transform) #Make texture coord the same as Volume coords
-		GLUtil.glMultMatrix(self.getTransformStdCoord().inverse())
+
+		transf = Transform(transform_std_coords) # Get a copy, not a reference, in case we need to use original later
+		transf.set_trans((0,0,0)) #Removing translation
+		transf.set_scale(1.0) #Removing scaling
+		GLUtil.glMultMatrix(transf.inverse())
+#		GL.glTranslate(*transform_std_coords.get_trans())
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		
 		GL.glEnable(GL.GL_BLEND)
-		GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE)
+		#GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE)
+		GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA) #TODO: Need the texture to have an alpha value
 		GL.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_REPLACE)
 		
 		GL.glBegin(GL.GL_QUADS)
