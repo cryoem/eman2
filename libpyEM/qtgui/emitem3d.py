@@ -109,7 +109,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		"""
 		Retrun a string that after eval can reinstatiate the object
 		"""
-		return ""
+		return "EMItem3D()"
 	
 	def getAndSetUniqueInteger(self):
 		"""
@@ -270,7 +270,8 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		"""
 		Return a Qt widget that controls the scene item
 		"""
-		raise NotImplementedError("GUI controls must be implemented in the subclasses")
+		if not self.item_inspector: self.item_inspector = EMItem3DInspector("Node", self)
+		return self.item_inspector
 		
 	def setEMQTreeWidgetItem(self, node):
 		"""

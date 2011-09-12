@@ -1162,7 +1162,6 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		# Delete nodes
 		if event.key() == QtCore.Qt.Key_Delete:
 			for node in self.getAllSelectedNodes():
-				#item = self.tree_widget.currentItem()
 				if node.parent:
 					if self.main_3d_inspector: self.main_3d_inspector.removeTreeNode(node.parent.EMQTreeWidgetItem, node.parent.EMQTreeWidgetItem.indexOfChild(node.EMQTreeWidgetItem))
 					node.parent.removeChild(node)
@@ -1219,17 +1218,69 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		if event.key() == QtCore.Qt.Key_C and event.modifiers()&Qt.ControlModifier:
 			nodes = self.getAllSelectedNodes()
 			if not nodes: return
-			for node in nodes:
-				if node.name == "Data" or node.name == "SG" or node.nodetype == "DataChild": continue	# Can't copy data nodes
-				copiednode = eval(node.getEvalString())
-				copiednode.setTransform(copy.deepcopy(node.getTransform()))
-				name = "Copy"
-				if node.getLabel(): name = node.getLabel()+name
-				copiednode.setAmbientColor(node.ambient[0], node.ambient[1], node.ambient[2])
-				copiednode.setSpecularColor(node.specular[0], node.specular[1], node.specular[2])
-				copiednode.setDiffuseColor(node.diffuse[0], node.diffuse[1], node.diffuse[2])
-				self.insertNewNode(name, copiednode)
-					
+			self.copyNodes(nodes)
+		if event.key() == QtCore.Qt.Key_G and event.modifiers()&Qt.ControlModifier:
+			nodes = self.getAllSelectedNodes()
+			if not nodes: return
+			self.groupNodes(nodes)
+		if event.key() == QtCore.Qt.Key_U and event.modifiers()&Qt.ControlModifier:
+			nodes = self.getAllSelectedNodes()
+			if not nodes: return
+			self.unGroupNodes(nodes)
+			
+	def copyNodes(self, nodes):
+		"""
+		Copy a set nof node(s)
+		"""
+		for node in nodes:
+			if node.name == "Data" or node.name == "SG" or node.nodetype == "DataChild": continue	# Can't copy data nodes
+			copiednode = eval(node.getEvalString())
+			copiednode.setTransform(copy.deepcopy(node.getTransform()))
+			name = "Copy"
+			if node.getLabel(): name = node.getLabel()+name
+			copiednode.setAmbientColor(node.ambient[0], node.ambient[1], node.ambient[2])
+			copiednode.setSpecularColor(node.specular[0], node.specular[1], node.specular[2])
+			copiednode.setDiffuseColor(node.diffuse[0], node.diffuse[1], node.diffuse[2])
+			self.insertNewNode(name, copiednode)
+	
+	def groupNodes(self, nodes):
+		"""
+		Group nodes into a new base node
+		"""
+		skipped = 0
+		newbasenode = EMItem3D(transform=Transform())
+		self.insertNewNode("Node", newbasenode)
+		for i,node in enumerate(nodes):
+			if node.name == "SG": 
+				skipped +=1
+				continue	# Don't group these 
+			if self.main_3d_inspector: self.main_3d_inspector.removeTreeNode(node.parent.EMQTreeWidgetItem, node.parent.EMQTreeWidgetItem.indexOfChild(node.EMQTreeWidgetItem))
+			node.parent.getChildren().remove(node)
+			newbasenode.addChild(node)
+			if self.main_3d_inspector: self.main_3d_inspector.insertNewNode(node, newbasenode, thisnode_index=i-skipped)
+	
+	def unGroupNodes(self, nodes):
+		"""
+		UnGroup nodes
+		"""
+		skipped = 0
+		parentnode = None
+		for i,node in enumerate(nodes):
+			parentnode = node.parent
+			if parentnode.name == "SG": 
+				skipped +=1
+				continue
+			if self.main_3d_inspector: self.main_3d_inspector.removeTreeNode(parentnode.EMQTreeWidgetItem, parentnode.EMQTreeWidgetItem.indexOfChild(node.EMQTreeWidgetItem))
+			parentnode.getChildren().remove(node)
+			parentnode.parent.addChild(node)
+			if self.main_3d_inspector: 
+				parentnodeidx = parentnode.parent.EMQTreeWidgetItem.indexOfChild(parentnode.EMQTreeWidgetItem)
+				self.main_3d_inspector.insertNewNode(node, parentnode.parent, parentnodeidx+i-skipped)
+		
+		if not parentnode.getChildren():
+			if self.main_3d_inspector: self.main_3d_inspector.removeTreeNode(parentnode.parent.EMQTreeWidgetItem, parentnode.parent.EMQTreeWidgetItem.indexOfChild(parentnode.EMQTreeWidgetItem))
+			parentnode.parent.getChildren().remove(parentnode)
+			
 	def setMouseMode(self, mousemode):
 		"""
 		Sets the mouse mode, used by the inpsector
@@ -1839,7 +1890,7 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		QtGui.QWidget.__init__(self)
 		self.scenegraph = weakref.ref(scenegraph)
-		self.mintreewidth = 200		# minimum width of the tree
+		self.mintreewidth = 250		# minimum width of the tree
 		self.mincontrolwidth = 250
 		
 		vbox = QtGui.QVBoxLayout(self)
@@ -2634,6 +2685,8 @@ class NodeDialog(QtGui.QDialog):
 		self.node_stacked_widget.addWidget(self.getTextWidget())
 		self.node_type_combo.addItem("Data")
 		self.node_stacked_widget.addWidget(self.getDataWidget())
+		#self.node_type_combo.addItem("Node")
+		#self.node_stacked_widget.addWidget(self.getNodeWidget())
 		if self.item and self.item.item3d().name == "Data":
 			self.node_type_combo.addItem("Isosurface")
 			self.node_stacked_widget.addWidget(self.getIsosurfaceWidget())
@@ -2805,7 +2858,22 @@ class NodeDialog(QtGui.QDialog):
 		self.connect(self.browse_button, QtCore.SIGNAL('clicked()'), self._on_browse)
 		
 		return datawidget
-	
+		
+	def getNodeWidget(self):
+		"""
+		Get Data Widget
+		"""
+		nodewidget = QtGui.QWidget()
+		grid = QtGui.QGridLayout()
+		node_name_label = QtGui.QLabel("Node Name")
+		self.node_name_node = QtGui.QLineEdit()
+		grid.addWidget(node_name_label , 0, 0, 1, 2)
+		grid.addWidget(self.node_name_node, 0, 2, 1, 2)
+		self._get_transformlayout(grid, 1, "NODE")
+		nodewidget.setLayout(grid)
+		
+		return nodewidget
+		
 	def getIsosurfaceWidget(self):
 		"""
 		Get Isosurface Widget
