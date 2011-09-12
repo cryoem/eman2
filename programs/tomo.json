@@ -1,0 +1,30 @@
+/* JSON file to configure the project manager SPR mode */
+/* The ICON string needs to correspond to a dict key listed in the PM */
+/* The available keys can be found by browsing the JSON files of looking at e2 projectmanager.py */ 
+[
+  {
+    "ICON": "single_image_3d",
+    "PROGRAM": "programName", 
+    "NAME": "Tomographic Particle Reconstruction", 
+    "CHILDREN": [
+      {
+        "ICON": "single_image_3d",
+        "PROGRAM": "programName", 
+        "NAME": "Raw Tomogram Files",
+        "CHILDREN": [] 
+      }, 
+      {
+        "ICON": "green_boxes",
+        "PROGRAM": "programName", 
+        "NAME": "Box Tomogram Files", 
+        "CHILDREN": [] 
+      },
+      {
+        "ICON": "tomo_hunter",
+        "PROGRAM": "programName", 
+        "NAME": "Tomogram Alignment and Averaging", 
+        "CHILDREN": [] 
+      }
+    ] 
+  }
+]

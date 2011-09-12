@@ -1,0 +1,206 @@
+/* JSON file to configure the project manager SPR mode */
+/* The ICON string needs to correspond to a dict key listed in the PM */
+/* The available keys can be found by browsing the JSON files of looking at e2 projectmanager.py */ 
+[
+  {
+    "ICON": "single_image", 
+    "PROGRAM": "programName", 
+    "NAME": "Raw Data", 
+    "CHILDREN": [
+      {
+        "ICON": "single_image", 
+        "PROGRAM": "programName", 
+        "NAME": "Import Data", 
+        "CHILDREN": []
+      }, 
+      {
+        "ICON": "single_image", 
+        "PROGRAM": "programName", 
+        "NAME": "Filter Raw Data", 
+        "CHILDREN": []
+      }
+    ]
+  }, 
+  {
+    "ICON": "green_boxes", 
+    "PROGRAM": "programName", 
+    "NAME": "Particles", 
+    "CHILDREN": [
+      {
+        "ICON": "green_boxes", 
+        "PROGRAM": "programName", 
+        "NAME": "Interactive Boxing-  e2boxer", 
+        "CHILDREN": []
+      }, 
+      {
+        "ICON": "green_boxes", 
+        "PROGRAM": "programName", 
+        "NAME": "Auto Boxing -e2boxer", 
+        "CHILDREN": []
+      }, 
+      {
+        "ICON": "green_boxes", 
+        "PROGRAM": "programName", 
+        "NAME": "Generate Output -e2boxer", 
+        "CHILDREN": []
+      }, 
+      {
+        "ICON": "green_boxes", 
+        "PROGRAM": "programName", 
+        "NAME": "Particle Import", 
+        "CHILDREN": []
+      }, 
+      {
+        "ICON": "green_boxes", 
+        "PROGRAM": "programName", 
+        "NAME": "Coordinate Import", 
+        "CHILDREN": []
+      }
+    ]
+  }, 
+  {
+    "ICON": "ctf", 
+    "PROGRAM": "programName", 
+    "NAME": "CTF", 
+    "CHILDREN": [
+      {
+        "ICON": "ctf", 
+        "PROGRAM": "programName", 
+        "NAME": "Automated Fitting -e2ctf", 
+        "CHILDREN": []
+      }, 
+      {
+        "ICON": "ctf", 
+        "PROGRAM": "programName", 
+        "NAME": "Interactive Tuning -e2ctf", 
+        "CHILDREN": []
+      }, 
+      {
+        "ICON": "ctf", 
+        "PROGRAM": "programName", 
+        "NAME": "Generate Output - e2ctf", 
+        "CHILDREN": []
+      }, 
+      {
+        "ICON": "ctf", 
+        "PROGRAM": "programName", 
+        "NAME": "Generate Structure Factor - e2ctf", 
+        "CHILDREN": []
+      }
+    ]
+  }, 
+  {
+    "ICON": "multiple_images", 
+    "PROGRAM": "programName", 
+    "NAME": "Particle Sets", 
+    "CHILDREN": [
+      {
+        "ICON": "multiple_images", 
+        "PROGRAM": "programName", 
+        "NAME": "Build Particle Sets", 
+        "CHILDREN": []
+      }, 
+      {
+        "ICON": "multiple_images", 
+        "PROGRAM": "programName", 
+        "NAME": "Evaluate Particle Sets", 
+        "CHILDREN": []
+      }, 
+      {
+        "ICON": "multiple_images", 
+        "PROGRAM": "programName", 
+        "NAME": "multiple_images", 
+        "CHILDREN": []
+      }
+    ]
+  }, 
+  {
+    "ICON": "web", 
+    "PROGRAM": "programName", 
+    "NAME": "Reference Free Class Averages", 
+    "CHILDREN": [
+      {
+        "ICON": "web", 
+        "PROGRAM": "programName", 
+        "NAME": "Generate Classes - e2refine2d", 
+        "CHILDREN": []
+      }
+    ]
+  }, 
+  {
+    "ICON": "single_image_3d", 
+    "PROGRAM": "programName", 
+    "NAME": "Initial Model", 
+    "CHILDREN": [
+      {
+        "ICON": "single_image_3d", 
+        "PROGRAM": "programName", 
+        "NAME": "Make Model - e2initialmodel", 
+        "CHILDREN": []
+      }
+    ]
+  }, 
+  {
+    "ICON": "refine", 
+    "PROGRAM": "programName", 
+    "NAME": "3D Refinement", 
+    "CHILDREN": [
+      {
+        "ICON": "refine", 
+        "PROGRAM": "programName", 
+        "NAME": "Run e2refine", 
+        "CHILDREN": []
+      }, 
+      {
+        "ICON": "refine", 
+        "PROGRAM": "programName", 
+        "NAME": "Run e2refinemulti", 
+        "CHILDREN": []
+      }, 
+      {
+        "ICON": "refine", 
+        "PROGRAM": "programName", 
+        "NAME": "Frealign", 
+        "CHILDREN": [
+          {
+            "ICON": "refine", 
+            "PROGRAM": "programName", 
+            "NAME": "Run e2refinetofrealign", 
+            "CHILDREN": []
+          }, 
+          {
+            "ICON": "refine", 
+            "PROGRAM": "programName", 
+            "NAME": "Run e2runfrealign", 
+            "CHILDREN": []
+          }, 
+          {
+            "ICON": "refine", 
+            "PROGRAM": "programName", 
+            "NAME": "Run e2refinefromfrealign", 
+            "CHILDREN": []
+          }
+        ]
+      }
+    ]
+  }, 
+  {
+    "ICON": "resolution", 
+    "PROGRAM": "programName", 
+    "NAME": "Resolution", 
+    "CHILDREN": [
+      {
+        "ICON": "resolution", 
+        "PROGRAM": "programName", 
+        "NAME": "Run e2eotest", 
+        "CHILDREN": []
+      }, 
+      {
+        "ICON": "resolution", 
+        "PROGRAM": "programName", 
+        "NAME": "Run e2resolution", 
+        "CHILDREN": []
+      }
+    ]
+  }
+]
