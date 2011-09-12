@@ -42,7 +42,7 @@ import sys
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack outdir <maskfile> --search_rng --ou=outer_radius --maxit=max_iteration --CTF --snr=SNR --Fourvar=Fourier_variance --oneDx --applyparams --outstack=outputstackname --MPI"
+	usage = progname + " stack outdir <maskfile> --search_rng --ou=outer_radius --maxit=max_iteration --CTF --snr=SNR --Fourvar=Fourier_variance --oneDx --Applyparams --outstack=outputstackname --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--search_rng",       type="int",  default=-1,             help="Used to compute the dimension of a \nnwx by nwx section of the 2D ccf which is \nwindowed out for peak search: \nnwx=2*search_rng+1 (nwx=nx if search_rng is -1))")
 	parser.add_option("--ou",       type="float",  default=-1,            help="radius of the particle - used for constructing the default mask. If ou is -1, then the mask is a circle with radius nx/2 - 2")
@@ -306,7 +306,7 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 			shift_y[im] += p1_y
 	for im in xrange(len(data)):		
 		dummy1, sx, sy, dummy2, dummy3 = get_params2D(data[im], 'xform.align2d')
-		set_params2D(data[im], [dummy1, shift_x[im], shift_y[im], dummy2, dummy3], 'xform.align2d')
+		set_params2D(data[im], [0, shift_x[im], shift_y[im], 0, dummy3], 'xform.align2d')
 	# write out headers and STOP, under MPI writing has to be done sequentially
 	mpi_barrier(MPI_COMM_WORLD)
 	par_str = ["xform.align2d", "ID"]
