@@ -295,8 +295,8 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 		if not oneDx:
 			sy_sum_total = bcast_number_to_all(sy_sum_total, source_node = main_node)
 		
-		sx_ave = float(sx_sum_total)/nima
-		sy_ave = float(sy_sum_total)/nima
+		sx_ave = round(float(sx_sum_total)/nima)
+		sy_ave = round(float(sy_sum_total)/nima)
 		for im in xrange(len(data)): 
 			p1_x = ishift_x[im] - sx_ave
 			p1_y = ishift_y[im] - sy_ave
