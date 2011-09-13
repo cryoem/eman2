@@ -60,6 +60,7 @@ def main():
 	parser.add_option("--align", action="store_true", help="Switch on image alignment.",default=False)
 	parser.add_option("--tiltaxis", action="store_true", help="Do a tiltaxis correction(Takes into account variations in tilt axis from micrograph to micrograph.",default=False)
 	parser.add_option("--maxshift",type="int",help="Maximun amount to shift the images during alignment", default=2)
+	parser.add_option("--process",metavar="processor_name(param1=value1:param2=value2)",type="string",default=None,action="append",help="process recons before Usually used to filter RCTS")
 	# Options for averaging RCTs
 	parser.add_option("--avgrcts",action="store_true", help="If set recons from each CA will be alinged and averaged.",default=False)
 	parser.add_option("--reference", type="string",default=None,help="Reference used to align RCT recons to, needs to be aligned to symetry axis is --sym is specified")
@@ -67,7 +68,6 @@ def main():
 	parser.add_option("--cuda",action="store_true", help="Use CUDA for the alignment step.",default=False)
 	parser.add_option("--aligngran",type="float",default=10.0,help="Fineness of global search in e2align3d.py, default=10.0")
 	parser.add_option("--weightrecons",action="store_true", help="Weight the reconstruction by particle numbers.",default=False)
-	parser.add_option("--preprocess",metavar="processor_name(param1=value1:param2=value2)",type="string",default=None,action="append",help="preprocess recons before alignment")
 	parser.add_option("--verbose", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	global options
@@ -144,10 +144,13 @@ def main():
 			if options.verbose>0: print "Reconstructing: %srctrecon_%02d" % (options.path,avnum)
 			run("e2make3d.py --input=%srctclasses_%02d --output=%srctrecon_%02d --iter=2" % (options.path,avnum,options.path,avnum))
 			
+			# Process the RCTs usually for filtering
+			currentrct = EMData("%srctrecon_%02d" % (options.path,avnum))
+			processimage(currentrct, options.process)
+			currentrct.write_image(("%srctrecon_%02d" % (options.path,avnum)),0)
+			
 			#now make an averaged 
 			if options.avgrcts:
-				currentrct = EMData("%srctrecon_%02d" % (options.path,avnum))
-				processimage(currentrct, options.preprocess)
 				#if options.shrink: currentrct.process_inplace('xform.scale', {'scale':options.shrink})
 				if reference:
 					# Do the alignment, perhaps I should use e2align3d.py?

@@ -1076,6 +1076,8 @@ class CameraControls(QtOpenGL.QGLWidget):
 	def resizeGL(self, width, height):
 		self.width = width
 		self.height = height
+		#self.setMaximumWidth(width)
+		#self.setMaximumHeight(height)
 		glViewport(0,0,width,height)
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
@@ -1102,7 +1104,8 @@ class CameraControls(QtOpenGL.QGLWidget):
 		glLoadIdentity()
 		glColor3f(0.7, 0.7, 0.0)
 		sixtydegrees = math.sin(math.radians(self.scenegraph().camera.getFovy()))
-		self.scale = float(self.scenegraph().camera.getWidth())/float(self.width)*self.scenegraph().camera.getViewPortWidthScaling()
+		size = min(self.width, self.height)
+		self.scale = float(self.scenegraph().camera.getWidth())/float(size)*self.scenegraph().camera.getViewPortWidthScaling()
 		origin = 0.0
 		#print self.scenegraph().camera.getClipNear()
 		self.near_clipping = origin + (self.scenegraph().camera.getClipNear() + self.scenegraph().camera.getZclip())/self.scale
@@ -1134,15 +1137,17 @@ class CameraControls(QtOpenGL.QGLWidget):
 		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 		glBindTexture(GL_TEXTURE_2D, self.texture)
 		aspectratio = float(self.scenegraph().camera.getHeight())/float(self.scenegraph().camera.getWidth())
+
 		glBegin(GL_QUADS)
 		glTexCoord2f(0.0,0.0)
-		glVertex(-self.width/2,-aspectratio*self.width/2,-1)
+		size = min(self.width, self.height)
+		glVertex(-size/2,-aspectratio*size/2,-1)
 		glTexCoord2f(1.0,0.0)
-		glVertex(self.width/2,-aspectratio*self.width/2,-1)
+		glVertex(size/2,-aspectratio*size/2,-1)
 		glTexCoord2f(1.0,1.0)
-		glVertex(self.width/2,aspectratio*self.width/2,-1)
+		glVertex(size/2,aspectratio*size/2,-1)
 		glTexCoord2f(0.0,1.0)
-		glVertex(-self.width/2,aspectratio*self.width/2,-1)
+		glVertex(-size/2,aspectratio*size/2,-1)
 		glEnd()
 		glDisable(GL_TEXTURE_2D)
 		

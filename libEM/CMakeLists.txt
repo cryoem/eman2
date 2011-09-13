@@ -1,6 +1,7 @@
 ADD_SUBDIRECTORY(sparx)
 ADD_SUBDIRECTORY(gorgon)
 ADD_SUBDIRECTORY(plugins)
+ADD_SUBDIRECTORY(pmconfig)
 
 SET(LIB_EM_SOURCE byteorder.cpp
     boxingtools.cpp

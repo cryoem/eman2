@@ -73,14 +73,14 @@ wizardicon = [
 
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
-import os, json
+import os, json, re
 from EMAN2db import db_open_dict
 
 class EMProjectManager(QtGui.QMainWindow):
 	def __init__(self):
 		QtGui.QMainWindow.__init__(self)
 		# default PM attributes
-		self.pm_icon = "../images/EMAN2Icon.tif"
+		self.pm_icon = os.getenv("EMAN2DIR")+"/images/EMAN2Icon.png"
 		self.pm_cwd = os.getcwd()
 		self.usingEMEN = False
 		# Load the project DataBase
@@ -255,16 +255,17 @@ class EMProjectManager(QtGui.QMainWindow):
 	
 	def _load_icons(self):
 		self.icons = {}
-		self.icons["single_image"] = QtGui.QIcon("../images/macimages/single_image.png")
-		self.icons["multiple_images"] = QtGui.QIcon("../images/macimages/multiple_images.png")
-		self.icons["green_boxes"] = QtGui.QIcon("../images/macimages/green_boxes.png")
-		self.icons["ctf"] = QtGui.QIcon("../images/macimages/ctf.png")
-		self.icons["web"] = QtGui.QIcon("../images/macimages/classes.png")
-		self.icons["single_image_3d"] = QtGui.QIcon("../images/macimages/single_image_3d.png")
-		self.icons["refine"] = QtGui.QIcon("../images/macimages/refine.png")
-		self.icons["eulers"] = QtGui.QIcon("../images/macimages/eulerxplor.png")
-		self.icons["resolution"] = QtGui.QIcon("../images/macimages/plot.png")
-		self.icons["tomo_hunter"] = QtGui.QIcon("../images/macimages/tomo_hunter.png")
+		EMAN2DIR = os.getenv("EMAN2DIR")
+		self.icons["single_image"] = QtGui.QIcon(EMAN2DIR+"/images/macimages/single_image.png")
+		self.icons["multiple_images"] = QtGui.QIcon(EMAN2DIR+"/images/macimages/multiple_images.png")
+		self.icons["green_boxes"] = QtGui.QIcon(EMAN2DIR+"/images/macimages/green_boxes.png")
+		self.icons["ctf"] = QtGui.QIcon(EMAN2DIR+"/images/macimages/ctf.png")
+		self.icons["web"] = QtGui.QIcon(EMAN2DIR+"/images/macimages/classes.png")
+		self.icons["single_image_3d"] = QtGui.QIcon(EMAN2DIR+"/images/macimages/single_image_3d.png")
+		self.icons["refine"] = QtGui.QIcon(EMAN2DIR+"/images/macimages/refine.png")
+		self.icons["eulers"] = QtGui.QIcon(EMAN2DIR+"/images/macimages/eulerxplor.png")
+		self.icons["resolution"] = QtGui.QIcon(EMAN2DIR+"/images/macimages/plot.png")
+		self.icons["tomo_hunter"] = QtGui.QIcon(EMAN2DIR+"/images/macimages/tomo_hunter.png")
 	
 	def makeStackedWidget(self):
 		"""
@@ -327,7 +328,9 @@ class EMProjectManager(QtGui.QMainWindow):
 		@param treewidgetdict the dictionary containing the QtreeWidgets
 		"""
 		jsonfile = open(filename, 'r')
-		tree = json.load(jsonfile)
+		data = jsonfile.read()
+		data = self.json_strip_comments(data)
+		tree = json.loads(data)
 		jsonfile.close()
 		
 		QTree = QtGui.QTreeWidget()
@@ -341,13 +344,21 @@ class EMProjectManager(QtGui.QMainWindow):
 			QTree.addTopLevelItem(treewidgetdict[toplevel["NAME"]])
 			
 		return QTree
-		
+	
+	def json_strip_comments(self, data):
+		"""This method takes a JSON-serialized string and removes
+		JavaScript-style comments. These include // and /* */"""
+		r = re.compile('/\\*.*\\*/', flags=re.M|re.S)
+		data = r.sub("", data)
+		data = re.sub("\s//.*\n", "", data)
+		return data
+        
 	def makeSPRTreeWidget(self):
 		"""
 		Make the SPR tree
 		"""
 		self.SPRtreewidgetdict = {}
-		self.SPRtree = self.loadTree('spr.json', 'SPR', self.SPRtreewidgetdict)
+		self.SPRtree = self.loadTree(os.getenv("EMAN2DIR")+'/lib/pmconfig/spr.json', 'SPR', self.SPRtreewidgetdict)
 		return self.SPRtree
 	
 	def makeTomoTreeWidget(self):
@@ -355,7 +366,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		Make the tomo tree widget
 		"""
 		self.TOMOtreewidgetdict = {}
-		self.TOMOtree = self.loadTree('tomo.json', 'Tomography', self.TOMOtreewidgetdict)
+		self.TOMOtree = self.loadTree(os.getenv("EMAN2DIR")+'/lib/pmconfig/tomo.json', 'Tomography', self.TOMOtreewidgetdict)
 		return self.TOMOtree
 			
 class EMAN2StatusBar(QtGui.QLabel):
@@ -376,9 +387,11 @@ class PMIcon(QtGui.QLabel):
 	The Icon manager for PM
 	"""
 	def __init__(self, image, parent=None):
+		print image
 		QtGui.QLabel.__init__(self, ("<img src=\"%s\" />")%image, parent)
 	
 	def setIcon(self, image):
+		print image
 		self.setText(("<img src=\"%s\" />")%image)
 		
 class LogBook(QtGui.QWidget):
