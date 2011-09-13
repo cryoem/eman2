@@ -1228,7 +1228,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			if not nodes: return
 			self.unGroupNodes(nodes)
 			
-	def copyNodes(self, nodes):
+	def copyNodes(self, nodes, parentnode=None, parentidx=None):
 		"""
 		Copy a set nof node(s)
 		"""
@@ -1238,10 +1238,16 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			copiednode.setTransform(copy.deepcopy(node.getTransform()))
 			name = "Copy"
 			if node.getLabel(): name = node.getLabel()+name
-			copiednode.setAmbientColor(node.ambient[0], node.ambient[1], node.ambient[2])
-			copiednode.setSpecularColor(node.specular[0], node.specular[1], node.specular[2])
-			copiednode.setDiffuseColor(node.diffuse[0], node.diffuse[1], node.diffuse[2])
-			self.insertNewNode(name, copiednode)
+			try:
+				copiednode.setAmbientColor(node.ambient[0], node.ambient[1], node.ambient[2])
+				copiednode.setSpecularColor(node.specular[0], node.specular[1], node.specular[2])
+				copiednode.setDiffuseColor(node.diffuse[0], node.diffuse[1], node.diffuse[2])
+			except:
+				pass
+			
+			self.insertNewNode(name, copiednode, parentnode=parentnode, parentidx=parentidx)
+			if node.getChildren(): 
+				self.copyNodes(node.getChildren(), parentnode=copiednode, parentidx=0)
 	
 	def groupNodes(self, nodes):
 		"""

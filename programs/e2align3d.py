@@ -82,15 +82,15 @@ def main():
 	moving = EMData()
         
 	try:
-		fixed.read_image(sys.argv[1])
+		fixed.read_image(args[0])
 	except:
-		print "Not able to read file %s" % sys.argv[1]
+		print "Not able to read file %s" % args[0]
 		exit(1)
 	    
 	try:
-		moving.read_image(sys.argv[2])
+		moving.read_image(args[1])
 	except:
-		print "Not able to read file %s" % sys.argv[2]
+		print "Not able to read file %s" % args[1]
 		exit(1)
 	    
 	if (fixed.get_attr('nx') != fixed.get_attr('ny') != fixed.get_a+ options.precttr('nz')):

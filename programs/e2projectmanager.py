@@ -311,16 +311,17 @@ class EMProjectManager(QtGui.QMainWindow):
 		
 		return toolwidget
 		
-	def _add_children(self, toplevel, widgetitem, treewidgetdict):
+	def _add_children(self, toplevel, widgetitem):
 		""" recursive hlper function for loadTree"""
 		for child in toplevel["CHILDREN"]:
-			treewidgetdict[child["NAME"]] = QtGui.QTreeWidgetItem(QtCore.QStringList(child["NAME"]))
-			treewidgetdict[child["NAME"]].setIcon(0, self.icons[child["ICON"]])
-			self._add_children(child, treewidgetdict[child["NAME"]], treewidgetdict)
-			widgetitem.addChild(treewidgetdict[child["NAME"]])
+			qtreewidget = PMQTreeWidgetItem(QtCore.QStringList(child["NAME"]))
+			qtreewidget.setIcon(0, self.icons[child["ICON"]])
+			qtreewidget.setProgram(child["PROGRAM"])
+			self._add_children(child, qtreewidget)
+			widgetitem.addChild(qtreewidget)
 			
 		
-	def loadTree(self, filename, treename, treewidgetdict):
+	def loadTree(self, filename, treename):
 		"""
 		Load a workflow tree from a JSON file
 		@param filename The JSON filename
@@ -338,11 +339,14 @@ class EMProjectManager(QtGui.QMainWindow):
 		QTree.setHeaderLabel(treename)
 		
 		for toplevel in tree:
-			treewidgetdict[toplevel["NAME"]] = QtGui.QTreeWidgetItem(QtCore.QStringList(toplevel["NAME"]))
-			treewidgetdict[toplevel["NAME"]].setIcon(0, self.icons[toplevel["ICON"]])
-			self._add_children(toplevel, treewidgetdict[toplevel["NAME"]], treewidgetdict)
-			QTree.addTopLevelItem(treewidgetdict[toplevel["NAME"]])
-			
+			qtreewidget = PMQTreeWidgetItem(QtCore.QStringList(toplevel["NAME"]))
+			qtreewidget.setIcon(0, self.icons[toplevel["ICON"]])
+			qtreewidget.setProgram(toplevel["PROGRAM"])
+			self._add_children(toplevel, qtreewidget)
+			QTree.addTopLevelItem(qtreewidget)
+		
+		QtCore.QObject.connect(QTree, QtCore.SIGNAL("itemClicked(QTreeWidgetItem*,int)"), self._tree_widget_click)
+		
 		return QTree
 	
 	def json_strip_comments(self, data):
@@ -353,20 +357,21 @@ class EMProjectManager(QtGui.QMainWindow):
 		data = re.sub("\s//.*\n", "", data)
 		return data
         
+        def _tree_widget_click(self, item, col):
+		print item.getProgram()
+		
 	def makeSPRTreeWidget(self):
 		"""
 		Make the SPR tree
 		"""
-		self.SPRtreewidgetdict = {}
-		self.SPRtree = self.loadTree(os.getenv("EMAN2DIR")+'/lib/pmconfig/spr.json', 'SPR', self.SPRtreewidgetdict)
+		self.SPRtree = self.loadTree(os.getenv("EMAN2DIR")+'/lib/pmconfig/spr.json', 'SPR')
 		return self.SPRtree
 	
 	def makeTomoTreeWidget(self):
 		"""
 		Make the tomo tree widget
 		"""
-		self.TOMOtreewidgetdict = {}
-		self.TOMOtree = self.loadTree(os.getenv("EMAN2DIR")+'/lib/pmconfig/tomo.json', 'Tomography', self.TOMOtreewidgetdict)
+		self.TOMOtree = self.loadTree(os.getenv("EMAN2DIR")+'/lib/pmconfig/tomo.json', 'Tomography')
 		return self.TOMOtree
 			
 class EMAN2StatusBar(QtGui.QLabel):
@@ -415,6 +420,19 @@ class LogBook(QtGui.QWidget):
 		grid.addWidget(self.closepb, 2,1)
 		self.setLayout(grid)
 
+class PMQTreeWidgetItem(QtGui.QTreeWidgetItem):
+	"""
+	Custon QTreeWidget for PM
+	"""
+	def __init__(self, qstring):
+		QtGui.QTreeWidgetItem.__init__(self, qstring)
+		
+	def setProgram(self, program):
+		self.program = program
+		
+	def getProgram(self):
+		return self.program
+	
 class DialogNewProject(QtGui.QDialog):
 	"""
 	Generate the new projects dialog

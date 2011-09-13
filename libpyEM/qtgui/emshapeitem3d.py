@@ -852,7 +852,7 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 		
 		self.textModeBox = QtGui.QComboBox()
 		self.textModeBox.addItems(["EXTRUDE", "TEXTURE", "POLYGON", "OUTLINE"])
-		textgridbox.addWidget(self.textModeBox, 0, 1, 1, 2)
+		textgridbox.addWidget(self.textModeBox, 0, 1, 1, 1)
 			
 		textlabel2 = QtGui.QLabel("3D Font Depth")
 		textlabel2.setFont(lfont)
@@ -861,7 +861,7 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 		
 		self.fontDepth = EMSpinWidget(int(self.item3d().getFontDepth()), 1.0, rounding=0)
 		self.fontDepth.setMinimumWidth(120)
-		textgridbox.addWidget(self.fontDepth, 1, 1, 1, 2)
+		textgridbox.addWidget(self.fontDepth, 1, 1, 1, 1)
 		
 		textlabel2 = QtGui.QLabel("3D Font Size")
 		textlabel2.setFont(lfont)
@@ -870,11 +870,25 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 		
 		self.fontSize = EMSpinWidget(int(self.item3d().getFontSize()), 1.0, rounding=0)
 		self.fontSize.setMinimumWidth(120)
-		textgridbox.addWidget(self.fontSize, 2, 1, 1, 2)
+		textgridbox.addWidget(self.fontSize, 2, 1, 1, 1)
 		
 		textframe.setLayout(textgridbox)	
-
-		gridbox.addWidget(textframe, 2, 1, 2, 1)
+		gridbox.addWidget(textframe, 2, 1, 1, 1)
+		
+		# Add text
+		text3dframe = QtGui.QFrame()
+		text3dframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		text3dgridbox = QtGui.QGridLayout()
+		
+		textlabel3 = QtGui.QLabel("3D Text")
+		textlabel3.setFont(lfont)
+		text3dgridbox.addWidget(textlabel3, 3, 0, 2, 1)
+		
+		self.text3d = QtGui.QLineEdit(self.item3d().getRenderString())
+		text3dgridbox.addWidget(self.text3d, 3, 1, 2, 1)
+		
+		text3dframe.setLayout(text3dgridbox)
+		gridbox.addWidget(text3dframe, 3, 1, 1, 1)
 		
 		# set to default, but run only as a base class
 		if type(self) == EMInspectorControl3DText: 
@@ -884,6 +898,7 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 		self.textModeBox.currentIndexChanged.connect(self.on3DTextModeChanged)
 		QtCore.QObject.connect(self.fontDepth,QtCore.SIGNAL("valueChanged(int)"),self.on3DTextDepthChanged)
 		QtCore.QObject.connect(self.fontSize,QtCore.SIGNAL("valueChanged(int)"),self.on3DTextFontChanged)
+		QtCore.QObject.connect(self.text3d,QtCore.SIGNAL("textChanged(const QString&)"),self.on3DTextChanged)
 		
 	def on3DTextModeChanged(self):
 		textMode = str(self.textModeBox.currentText())
@@ -903,6 +918,10 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 	
 	def on3DTextFontChanged(self):
 		self.item3d().setRenderString(self.item3d().getRenderString(), int(self.fontSize.getValue()))
+		if self.inspector: self.inspector().updateSceneGraph()
+		
+	def on3DTextChanged(self, string):
+		self.item3d().setRenderString(str(string), self.item3d().getFontSize())
 		if self.inspector: self.inspector().updateSceneGraph()
 		
 class EMInspectorControlLine(EMInspectorControlShape):
