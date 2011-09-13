@@ -906,6 +906,7 @@ def cml_find_structure2(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_
 		nnn = len(tlistprj)
 		tlistprj = mpi_bcast(tlistprj, nnn, MPI_INT, main_node, MPI_COMM_WORLD)
 		tlistprj = map(int, tlistprj)
+		"""
 		if(ite>1 and ite%5 == 0  and ite<140):
 			if(myid == main_node):
 				for i in xrange(0,len(tlistprj),5):
@@ -923,6 +924,7 @@ def cml_find_structure2(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_
 			for i in xrange(len(tlistprj)):
 				ind          = 4*i
 				Ori[ind+3]    = int(Ori[ind+3])
+		"""
 
 		for iprj in tlistprj:
 			#print "**********************************  iprj = ", iprj, g_n_anglst
