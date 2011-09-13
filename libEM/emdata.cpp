@@ -950,10 +950,10 @@ float EMData::max_3D_pixel_error(const Transform &t1, const Transform & t2, floa
 
 	t = t2*t1.inverse();
 	for (int i=0; i<int(2*M_PI*r0+0.5); i++) {
-		Vec3f v = Vec3f(r0*cos((float)i), r0*sin((float)i), 0);
+		float ang = (float)i/r;
+		Vec3f v = Vec3f(r0*cos(ang), r0*sin(ang), 0.0f);
 		Vec3f d = t*v-v;
-		float dd = d[0]*d[0]+d[1]*d[1]+d[2]*d[2];
-		if (dd > ddmax) ddmax = dd; 
+		ddmax = std::max(ddmax,d[0]*d[0]+d[1]*d[1]+d[2]*d[2]);
 	}
 	return std::sqrt(ddmax);
 }

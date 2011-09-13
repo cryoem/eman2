@@ -4781,7 +4781,7 @@ vector<double> Util::cml_weights(const vector<float>& cml){
 
 void Util::set_line(EMData* img, int posline, EMData* line, int offset, int length)
 {
-    	int i;
+	int i;
 	int nx=img->get_xsize();
 	float *img_ptr  = img->get_data();
 	float *line_ptr = line->get_data();
@@ -4790,35 +4790,68 @@ void Util::set_line(EMData* img, int posline, EMData* line, int offset, int leng
 }
 
 void Util::cml_prepare_line(EMData* sino, EMData* line, int ilf, int ihf, int pos_line, int nblines){
-    int j;
-    int nx = sino->get_xsize();
-    int i = nx * pos_line;
-    float r1, r2;
-    float *line_ptr = line->get_data();
-    float *sino_ptr = sino->get_data();
-    for (j=ilf;j<=ihf; j += 2) {
-	r1 = line_ptr[j];
-	r2 = line_ptr[j + 1];
-	sino_ptr[i + j - ilf] = r1;
-	sino_ptr[i + j - ilf + 1] = r2;
-	sino_ptr[i + nx * nblines + j - ilf] = r1;
-	sino_ptr[i + nx * nblines + j - ilf + 1] = -r2;
-    }
-    sino->update();
+	int j;
+	int nx = sino->get_xsize();
+	int i = nx * pos_line;
+	float r1, r2;
+	float *line_ptr = line->get_data();
+	float *sino_ptr = sino->get_data();
+	for (j=ilf;j<=ihf; j += 2) {
+		r1 = line_ptr[j];
+		r2 = line_ptr[j + 1];
+		sino_ptr[i + j - ilf] = r1;
+		sino_ptr[i + j - ilf + 1] = r2;
+		sino_ptr[i + nx * nblines + j - ilf] = r1;
+		sino_ptr[i + nx * nblines + j - ilf + 1] = -r2;
+	}
+	sino->update();
 }
 
 vector<double> Util::cml_init_rot(vector<float> Ori){
-    int nb_ori = Ori.size() / 4;
-    int i, ind;
-    float ph, th, ps;
-    double cph, cth, cps, sph, sth, sps;
-    vector<double> Rot(nb_ori*9);
-    for (i=0; i<nb_ori; ++i){
-	ind = i*4;
+	int nb_ori = Ori.size() / 4;
+	int i, ind;
+	float ph, th, ps;
+	double cph, cth, cps, sph, sth, sps;
+	vector<double> Rot(nb_ori*9);
+	for (i=0; i<nb_ori; ++i){
+		ind = i*4;
+		// spider convention phi=psi-90, psi=phi+90
+		ph = Ori[ind+2]-90;
+		th = Ori[ind+1];
+		ps = Ori[ind]+90;
+		ph *= deg_rad;
+		th *= deg_rad;
+		ps *= deg_rad;
+		// pre-calculate some trigo stuffs
+		cph = cos(ph);
+		cth = cos(th);
+		cps = cos(ps);
+		sph = sin(ph);
+		sth = sin(th);
+		sps = sin(ps);
+		// fill rotation matrix
+		ind = i*9;
+		Rot[ind] = cph*cps-cth*sps*sph;
+		Rot[ind+1] = cph*sps+cth*cps*sph;
+		Rot[ind+2] = sth*sph;
+		Rot[ind+3] = -sph*cps-cth*sps*cph;
+		Rot[ind+4] = -sph*sps+cth*cps*cph;
+		Rot[ind+5] = sth*cph;
+		Rot[ind+6] = sth*sps;
+		Rot[ind+7] = -sth*cps;
+		Rot[ind+8] = cth;
+	}
+
+	return Rot;
+}
+
+vector<float> Util::cml_update_rot(vector<float> Rot, int iprj, float nph, float th, float nps){
+	float ph, ps;
+	double cph, cth, cps, sph, sth, sps;
+	int ind = iprj*9;
 	// spider convention phi=psi-90, psi=phi+90
-	ph = Ori[ind+2]-90;
-	th = Ori[ind+1];
-	ps = Ori[ind]+90;
+	ph = nps-90;
+	ps = nph+90;
 	ph *= deg_rad;
 	th *= deg_rad;
 	ps *= deg_rad;
@@ -4830,276 +4863,243 @@ vector<double> Util::cml_init_rot(vector<float> Ori){
 	sth = sin(th);
 	sps = sin(ps);
 	// fill rotation matrix
-	ind = i*9;
-	Rot[ind] = cph*cps-cth*sps*sph;
-	Rot[ind+1] = cph*sps+cth*cps*sph;
-	Rot[ind+2] = sth*sph;
-	Rot[ind+3] = -sph*cps-cth*sps*cph;
-	Rot[ind+4] = -sph*sps+cth*cps*cph;
-	Rot[ind+5] = sth*cph;
-	Rot[ind+6] = sth*sps;
-	Rot[ind+7] = -sth*cps;
-	Rot[ind+8] = cth;
-    }
+	Rot[ind] = (float)(cph*cps-cth*sps*sph);
+	Rot[ind+1] = (float)(cph*sps+cth*cps*sph);
+	Rot[ind+2] = (float)(sth*sph);
+	Rot[ind+3] = (float)(-sph*cps-cth*sps*cph);
+	Rot[ind+4] = (float)(-sph*sps+cth*cps*cph);
+	Rot[ind+5] = (float)(sth*cph);
+	Rot[ind+6] = (float)(sth*sps);
+	Rot[ind+7] = (float)(-sth*cps);
+	Rot[ind+8] = (float)(cth);
 
-    return Rot;
-}
-
-vector<float> Util::cml_update_rot(vector<float> Rot, int iprj, float nph, float th, float nps){
-    float ph, ps;
-    double cph, cth, cps, sph, sth, sps;
-    int ind = iprj*9;
-    // spider convention phi=psi-90, psi=phi+90
-    ph = nps-90;
-    ps = nph+90;
-    ph *= deg_rad;
-    th *= deg_rad;
-    ps *= deg_rad;
-    // pre-calculate some trigo stuffs
-    cph = cos(ph);
-    cth = cos(th);
-    cps = cos(ps);
-    sph = sin(ph);
-    sth = sin(th);
-    sps = sin(ps);
-    // fill rotation matrix
-    Rot[ind] = (float)(cph*cps-cth*sps*sph);
-    Rot[ind+1] = (float)(cph*sps+cth*cps*sph);
-    Rot[ind+2] = (float)(sth*sph);
-    Rot[ind+3] = (float)(-sph*cps-cth*sps*cph);
-    Rot[ind+4] = (float)(-sph*sps+cth*cps*cph);
-    Rot[ind+5] = (float)(sth*cph);
-    Rot[ind+6] = (float)(sth*sps);
-    Rot[ind+7] = (float)(-sth*cps);
-    Rot[ind+8] = (float)(cth);
-
-    return Rot;
+	return Rot;
 }
 
 vector<int> Util::cml_line_insino(vector<float> Rot, int i_prj, int n_prj){
-    vector<int> com(2*(n_prj - 1));
-    int a = i_prj*9;
-    int i, b, c;
-    int n1=0, n2=0;
-    float vmax = 1 - 1.0e-6f;
-    double r11, r12, r13, r23, r31, r32, r33;
+	vector<int> com(2*(n_prj - 1));
+	int a = i_prj*9;
+	int i, b, c;
+	int n1=0, n2=0;
+	float vmax = 1 - 1.0e-6f;
+	double r11, r12, r13, r23, r31, r32, r33;
 
-    c = 0;
-    for (i=0; i<n_prj; ++i){
-	if (i!=i_prj){
-	    b = i*9;
-	    // this is equivalent to R = A*B'
-	    r11 = Rot[a]*Rot[b]+Rot[a+1]*Rot[b+1]+Rot[a+2]*Rot[b+2];
-	    r12 = Rot[a]*Rot[b+3]+Rot[a+1]*Rot[b+4]+Rot[a+2]*Rot[b+5];
-	    r13 = Rot[a]*Rot[b+6]+Rot[a+1]*Rot[b+7]+Rot[a+2]*Rot[b+8];
-	    r23 = Rot[a+3]*Rot[b+6]+Rot[a+4]*Rot[b+7]+Rot[a+5]*Rot[b+8];
-	    r31 = Rot[a+6]*Rot[b]+Rot[a+7]*Rot[b+1]+Rot[a+8]*Rot[b+2];
-	    r32 = Rot[a+6]*Rot[b+3]+Rot[a+7]*Rot[b+4]+Rot[a+8]*Rot[b+5];
-	    r33 = Rot[a+6]*Rot[b+6]+Rot[a+7]*Rot[b+7]+Rot[a+8]*Rot[b+8];
-	    if (r33 > vmax) {
-		n2 = 270;
-		n1 = 270 + nint180((float)(rad_deg*atan2(r12, r11)));
-	    }
-	    else if (r33 < -vmax) {
-		n2 = 270;
-		n1 = 270 - nint180((float)(rad_deg*atan2(r12, r11)));
-	    } else {
-		n2 = nint180((float)(rad_deg*atan2(r31, -r32)));
-		n1 = nint180((float)(rad_deg*atan2(r13, r23)));
-		if (n1 < 0) {n1 += 360;}
-		if (n2 <= 0) {n2 = abs(n2);}
-		else {n2 = 360 - n2;}
-	    }
+	c = 0;
+	for (i=0; i<n_prj; ++i){
+		if (i!=i_prj){
+			b = i*9;
+			// this is equivalent to R = A*B'
+			r11 = Rot[a]*Rot[b]+Rot[a+1]*Rot[b+1]+Rot[a+2]*Rot[b+2];
+			r12 = Rot[a]*Rot[b+3]+Rot[a+1]*Rot[b+4]+Rot[a+2]*Rot[b+5];
+			r13 = Rot[a]*Rot[b+6]+Rot[a+1]*Rot[b+7]+Rot[a+2]*Rot[b+8];
+			r23 = Rot[a+3]*Rot[b+6]+Rot[a+4]*Rot[b+7]+Rot[a+5]*Rot[b+8];
+			r31 = Rot[a+6]*Rot[b]+Rot[a+7]*Rot[b+1]+Rot[a+8]*Rot[b+2];
+			r32 = Rot[a+6]*Rot[b+3]+Rot[a+7]*Rot[b+4]+Rot[a+8]*Rot[b+5];
+			r33 = Rot[a+6]*Rot[b+6]+Rot[a+7]*Rot[b+7]+Rot[a+8]*Rot[b+8];
+			if (r33 > vmax) {
+			    n2 = 270;
+			    n1 = 270 + nint180((float)(rad_deg*atan2(r12, r11)));
+			}
+			else if (r33 < -vmax) {
+			    n2 = 270;
+			    n1 = 270 - nint180((float)(rad_deg*atan2(r12, r11)));
+			} else {
+			    n2 = nint180((float)(rad_deg*atan2(r31, -r32)));
+			    n1 = nint180((float)(rad_deg*atan2(r13, r23)));
+			    if (n1 < 0) {n1 += 360;}
+			    if (n2 <= 0) {n2 = abs(n2);}
+			    else {n2 = 360 - n2;}
+			}
 
-	    if (n1 >= 360){n1 = n1 % 360;}
-	    if (n2 >= 360){n2 = n2 % 360;}
+			if (n1 >= 360){n1 = n1 % 360;}
+			if (n2 >= 360){n2 = n2 % 360;}
 
-	    // store common-lines
-	    b = c*2;
-	    com[b] = n1;
-	    com[b+1] = n2;
-	    ++c;
+			// store common-lines
+			b = c*2;
+			com[b] = n1;
+			com[b+1] = n2;
+			++c;
+		}
 	}
-    }
 
     return com;
 
 }
 
 vector<int> Util::cml_line_insino_all(vector<float> Rot, vector<int> seq, int, int n_lines) {
-    vector<int> com(2*n_lines);
-    int a=0, b, c, l;
-    int n1=0, n2=0, mem=-1;
-    float vmax = 1 - 1.0e-6f;
-    double r11, r12, r13, r23, r31, r32, r33;
-    c = 0;
-    for (l=0; l<n_lines; ++l){
-	c = 2*l;
-	if (seq[c]!=mem){
-	    mem = seq[c];
-	    a = seq[c]*9;
-	}
-	b = seq[c+1]*9;
+	vector<int> com(2*n_lines);
+	int a=0, b, c, l;
+	int n1=0, n2=0, mem=-1;
+	float vmax = 1 - 1.0e-6f;
+	double r11, r12, r13, r23, r31, r32, r33;
+	c = 0;
+	for (l=0; l<n_lines; ++l){
+		c = 2*l;
+		if (seq[c]!=mem){
+		    mem = seq[c];
+		    a = seq[c]*9;
+		}
+		b = seq[c+1]*9;
 
-	// this is equivalent to R = A*B'
-	r11 = Rot[a]*Rot[b]+Rot[a+1]*Rot[b+1]+Rot[a+2]*Rot[b+2];
-	r12 = Rot[a]*Rot[b+3]+Rot[a+1]*Rot[b+4]+Rot[a+2]*Rot[b+5];
-	r13 = Rot[a]*Rot[b+6]+Rot[a+1]*Rot[b+7]+Rot[a+2]*Rot[b+8];
-	r23 = Rot[a+3]*Rot[b+6]+Rot[a+4]*Rot[b+7]+Rot[a+5]*Rot[b+8];
-	r31 = Rot[a+6]*Rot[b]+Rot[a+7]*Rot[b+1]+Rot[a+8]*Rot[b+2];
-	r32 = Rot[a+6]*Rot[b+3]+Rot[a+7]*Rot[b+4]+Rot[a+8]*Rot[b+5];
-	r33 = Rot[a+6]*Rot[b+6]+Rot[a+7]*Rot[b+7]+Rot[a+8]*Rot[b+8];
-	if (r33 > vmax) {
-	    n2 = 270;
-	    n1 = 270 + nint180((float)(rad_deg*atan2(r12, r11)));
-	}
-	else if (r33 < -vmax) {
-	    n2 = 270;
-	    n1 = 270 - nint180((float)(rad_deg*atan2(r12, r11)));
-	} else {
-	    n2 = nint180((float)(rad_deg*atan2(r31, -r32)));
-	    n1 = nint180((float)(rad_deg*atan2(r13, r23)));
-	    if (n1 < 0) {n1 += 360;}
-	    if (n2 <= 0) {n2 = abs(n2);}
-	    else {n2 = 360 - n2;}
-	}
-	if (n1 >= 360){n1 = n1 % 360;}
-	if (n2 >= 360){n2 = n2 % 360;}
+		// this is equivalent to R = A*B'
+		r11 = Rot[a]*Rot[b]+Rot[a+1]*Rot[b+1]+Rot[a+2]*Rot[b+2];
+		r12 = Rot[a]*Rot[b+3]+Rot[a+1]*Rot[b+4]+Rot[a+2]*Rot[b+5];
+		r13 = Rot[a]*Rot[b+6]+Rot[a+1]*Rot[b+7]+Rot[a+2]*Rot[b+8];
+		r23 = Rot[a+3]*Rot[b+6]+Rot[a+4]*Rot[b+7]+Rot[a+5]*Rot[b+8];
+		r31 = Rot[a+6]*Rot[b]+Rot[a+7]*Rot[b+1]+Rot[a+8]*Rot[b+2];
+		r32 = Rot[a+6]*Rot[b+3]+Rot[a+7]*Rot[b+4]+Rot[a+8]*Rot[b+5];
+		r33 = Rot[a+6]*Rot[b+6]+Rot[a+7]*Rot[b+7]+Rot[a+8]*Rot[b+8];
+		if (r33 > vmax) {
+		    n2 = 270;
+		    n1 = 270 + nint180((float)(rad_deg*atan2(r12, r11)));
+		}
+		else if (r33 < -vmax) {
+		    n2 = 270;
+		    n1 = 270 - nint180((float)(rad_deg*atan2(r12, r11)));
+		} else {
+		    n2 = nint180((float)(rad_deg*atan2(r31, -r32)));
+		    n1 = nint180((float)(rad_deg*atan2(r13, r23)));
+		    if (n1 < 0) {n1 += 360;}
+		    if (n2 <= 0) {n2 = abs(n2);}
+		    else {n2 = 360 - n2;}
+		}
+		if (n1 >= 360){n1 = n1 % 360;}
+		if (n2 >= 360){n2 = n2 % 360;}
 
-	// store common-lines
-	com[c] = n1;
-	com[c+1] = n2;
-    }
+		// store common-lines
+		com[c] = n1;
+		com[c+1] = n2;
+	}
 
-    return com;
+	return com;
 
 }
 
 vector<double> Util::cml_line_in3d(vector<float> Ori, vector<int> seq, int, int nlines){
-    // seq is the pairwise index ij: 0, 1, 0, 2, 0, 3, 1, 2, 1, 3, 2, 3
-    vector<double> cml(2*nlines); // [phi, theta] / line
-    float ph1, th1;
-    float ph2, th2;
-    double nx, ny, nz;
-    double norm;
-    double sth1=0, sph1=0, cth1=0, cph1=0;
-    double sth2, sph2, cth2, cph2;
-    int l, ind, c;
-    int mem = -1;
-    for (l=0; l<nlines; ++l){
-	c = 2*l;
-	if (seq[c]!=mem){
-	    mem = seq[c];
-	    ind = 4*seq[c];
-	    ph1 = Ori[ind]*deg_rad;
-	    th1 = Ori[ind+1]*deg_rad;
-	    sth1 = sin(th1);
-	    sph1 = sin(ph1);
-	    cth1 = cos(th1);
-	    cph1 = cos(ph1);
-	}
-	ind = 4*seq[c+1];
-	ph2 = Ori[ind]*deg_rad;
-	th2 = Ori[ind+1]*deg_rad;
-	sth2 = sin(th2);
-	cth2 = cos(th2);
-	sph2 = sin(ph2);
-	cph2 = cos(ph2);
-	// cross product
-  	nx = sth1*cph1*cth2 - cth1*sth2*cph2;
-	ny = cth1*sth2*sph2 - cth2*sth1*sph1;
-	nz = sth1*sph1*sth2*cph2 - sth1*cph1*sth2*sph2;
-	norm = sqrt(nx*nx+ny*ny+nz*nz);
-	nx /= norm;
-	ny /= norm;
-	nz /= norm;
-	// apply mirror if need
-	if (nz<0) {nx=-nx; ny=-ny; nz=-nz;}
-	// compute theta and phi
-	cml[c+1] = acos(nz);
-	if (cml[c+1] == 0) {cml[c] = 0;}
-	else {
-	    cml[c+1] *= rad_deg;
-	    if (cml[c+1] > 89.99) {cml[c+1] = 89.99;} // this fix some pb in Voronoi
-	    cml[c] = rad_deg * atan2(nx, ny);
-	    cml[c] = fmod(360 + cml[c], 360);
+	// seq is the pairwise index ij: 0, 1, 0, 2, 0, 3, 1, 2, 1, 3, 2, 3
+	vector<double> cml(2*nlines); // [phi, theta] / line
+	float ph1, th1;
+	float ph2, th2;
+	double nx, ny, nz;
+	double norm;
+	double sth1=0, sph1=0, cth1=0, cph1=0;
+	double sth2, sph2, cth2, cph2;
+	int l, ind, c;
+	int mem = -1;
+	for (l=0; l<nlines; ++l){
+		c = 2*l;
+		if (seq[c]!=mem){
+			mem = seq[c];
+			ind = 4*seq[c];
+			ph1 = Ori[ind]*deg_rad;
+			th1 = Ori[ind+1]*deg_rad;
+			sth1 = sin(th1);
+			sph1 = sin(ph1);
+			cth1 = cos(th1);
+			cph1 = cos(ph1);
+		}
+		ind = 4*seq[c+1];
+		ph2 = Ori[ind]*deg_rad;
+		th2 = Ori[ind+1]*deg_rad;
+		sth2 = sin(th2);
+		cth2 = cos(th2);
+		sph2 = sin(ph2);
+		cph2 = cos(ph2);
+		// cross product
+		nx = sth1*cph1*cth2 - cth1*sth2*cph2;
+		ny = cth1*sth2*sph2 - cth2*sth1*sph1;
+		nz = sth1*sph1*sth2*cph2 - sth1*cph1*sth2*sph2;
+		norm = sqrt(nx*nx+ny*ny+nz*nz);
+		nx /= norm;
+		ny /= norm;
+		nz /= norm;
+		// apply mirror if need
+		if (nz<0) {nx=-nx; ny=-ny; nz=-nz;}
+		// compute theta and phi
+		cml[c+1] = acos(nz);
+		if (cml[c+1] == 0) {cml[c] = 0;}
+		else {
+			cml[c+1] *= rad_deg;
+			if (cml[c+1] > 89.99) {cml[c+1] = 89.99;} // this fix some pb in Voronoi
+			cml[c] = rad_deg * atan2(nx, ny);
+			cml[c] = fmod(360 + cml[c], 360);
 
+		}
 	}
-    }
 
-    return cml;
+	return cml;
 }
 
 double Util::cml_disc(const vector<EMData*>& data, vector<int> com, vector<int> seq, vector<float> weights, int n_lines) {
-    double res = 0;
-    double buf = 0;
-    float* line_1;
-    float* line_2;
-    int i, n, ind;
-    int lnlen = data[0]->get_xsize();
-    for (n=0; n<n_lines; ++n) {
-	ind = n*2;
-	line_1 = data[seq[ind]]->get_data() + com[ind] * lnlen;
-	line_2 = data[seq[ind+1]]->get_data() + com[ind+1] *lnlen;
-	buf = 0;
-	for (i=0; i<lnlen; ++i) {
-	    buf += (line_1[i]-line_2[i])*(line_1[i]-line_2[i]);
+	double res = 0;
+	double buf = 0;
+	float* line_1;
+	float* line_2;
+	int i, n, ind;
+	int lnlen = data[0]->get_xsize();
+	for (n=0; n<n_lines; ++n) {
+		ind = n*2;
+		line_1 = data[seq[ind]]->get_data() + com[ind] * lnlen;
+		line_2 = data[seq[ind+1]]->get_data() + com[ind+1] *lnlen;
+		buf = 0;
+		for (i=0; i<lnlen; ++i) {
+		    buf += (line_1[i]-line_2[i])*(line_1[i]-line_2[i]);
+		}
+		res += buf * weights[n];
 	}
-	res += buf * weights[n];
-    }
 
-    return res;
+	return res;
 
 }
 
 vector<double> Util::cml_spin_psi(const vector<EMData*>& data, vector<int> com, vector<float> weights, \
 				 int iprj, vector<int> iw, int n_psi, int d_psi, int n_prj){
-    // res: [best_disc, best_ipsi]
-    // seq: pairwise indexes ij, 0, 1, 0, 2, 0, 3, 1, 2, 1, 3, 2, 3
-    // iw : index to know where is the weight for the common-lines on the current projection in the all weights, [12, 4, 2, 7]
-    vector<double> res(2);
-    int lnlen = data[0]->get_xsize();
-    int end = 2*(n_prj-1);
-    double disc, buf, bdisc, tmp;
-    int n, i, ipsi, ind, bipsi, c;
-    float* line_1;
-    float* line_2;
-    bdisc = 1.0e6;
-    bipsi = -1;
-    // loop psi
-    for(ipsi=0; ipsi<n_psi; ipsi += d_psi) {
-	// discrepancy
-	disc = 0;
-	c = 0;
-	for (n=0; n<n_prj; ++n) {
-	    if(n!=iprj) {
-		ind = 2*c;
-		line_1 = data[iprj]->get_data() + com[ind] * lnlen;
-		line_2 = data[n]->get_data() + com[ind+1] * lnlen;
-		buf = 0;
-		for (i=0; i<lnlen; ++i) {
-		    tmp = line_1[i]-line_2[i];
-		    buf += tmp*tmp;
+	// res: [best_disc, best_ipsi]
+	// seq: pairwise indexes ij, 0, 1, 0, 2, 0, 3, 1, 2, 1, 3, 2, 3
+	// iw : index to know where is the weight for the common-lines on the current projection in the all weights, [12, 4, 2, 7]
+	vector<double> res(2);
+	int lnlen = data[0]->get_xsize();
+	int end = 2*(n_prj-1);
+	double disc, buf, bdisc, tmp;
+	int n, i, ipsi, ind, bipsi, c;
+	float* line_1;
+	float* line_2;
+	bdisc = 1.0e6;
+	bipsi = -1;
+	// loop psi
+	for(ipsi=0; ipsi<n_psi; ipsi += d_psi) {
+		// discrepancy
+		disc = 0;
+		c = 0;
+		for (n=0; n<n_prj; ++n) {
+			if(n!=iprj) {
+				ind = 2*c;
+				line_1 = data[iprj]->get_data() + com[ind] * lnlen;
+				line_2 = data[n]->get_data() + com[ind+1] * lnlen;
+				buf = 0;
+				for (i=0; i<lnlen; ++i) {
+					tmp = line_1[i]-line_2[i];
+					buf += tmp*tmp;
+				}
+				disc += buf * weights[iw[c]];
+				++c;
+			}
 		}
-		disc += buf * weights[iw[c]];
-		++c;
-	    }
+		// select the best value
+		if (disc <= bdisc) {
+			bdisc = disc;
+			bipsi = ipsi;
+		}
+		// update common-lines
+		for (i=0; i<end; i+=2){
+			com[i] += d_psi;
+			if (com[i] >= n_psi) {com[i] = com[i] % n_psi;}
+		}
 	}
-	// select the best value
-	if (disc <= bdisc) {
-	    bdisc = disc;
-	    bipsi = ipsi;
-	}
-	// update common-lines
-	for (i=0; i<end; i+=2){
-	    com[i] += d_psi;
-	    if (com[i] >= n_psi) {com[i] = com[i] % n_psi;}
-	}
-    }
-    res[0] = bdisc;
-    res[1] = float(bipsi);
+	res[0] = bdisc;
+	res[1] = float(bipsi);
 
-    return res;
+	return res;
 }
 
 #undef	QUADPI
