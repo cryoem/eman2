@@ -9896,7 +9896,8 @@ def cml_find_structure_MPI2(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 			cml_export_txtagls(out_dir, 'angles_%03i' % itrial, Ori, disc_init, 'Init')
 		# Find structure
 		Ori, disc, ite = cml_find_structure2(Prj, Ori, Rot, out_dir, 'angles_%03i' % itrial, maxit, first_zero, flag_weights, myid, main_node, number_of_proc)
-		print_msg('Trial %03i\tdiscrepancy init: %10.7f\tnb ite: %i\tdiscrepancy end: %10.7f\n' % (itrial, disc_init, ite + 1, disc))
+		if myid == main_node:
+			print_msg('Trial %03i\tdiscrepancy init: %10.7f\tnb ite: %i\tdiscrepancy end: %10.7f\n' % (itrial, disc_init, ite + 1, disc))
 		if disc < bestdisc:
 			bestdisc = disc
 			ibest    = itrial
