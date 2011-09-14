@@ -868,7 +868,7 @@ def cml_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_w
 			period_ct = 0
 
 	return Ori, disc, ite
-	
+
 # find structure
 def cml_find_structure2(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_weights, myid, main_node, number_of_proc):
 	from projection import cml_export_progress, cml_disc, cml_export_txtagls
@@ -893,6 +893,7 @@ def cml_find_structure2(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_
 	period_disc = [0, 0, 0]
 	period_ct   = 0
 	period_th   = 2
+	#if not flag_weights:   weights = [1.0] * g_n_lines
 
 	# iteration loop
 	for ite in xrange(maxit):
@@ -971,11 +972,13 @@ def cml_find_structure2(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_
 							for i in xrange(g_n_lines):
 								weights[i] /= sw
 								weights[i] *= weights[i]
-					else:   weights = [1.0] * g_n_lines
 
 					# spin all psi
 					com = Util.cml_line_insino(Rot, iprj, g_n_prj)
-					res = Util.cml_spin_psi(Prj, com, weights, iprj, iw, g_n_psi, g_d_psi, g_n_prj)
+					if flag_weights:
+						res = Util.cml_spin_psi(Prj, com, weights, iprj, iw, g_n_psi, g_d_psi, g_n_prj)
+					else:
+						res = Util.cml_spin_psi_now(Prj, com, iprj, iw, g_n_psi, g_d_psi, g_n_prj)
 
 					# select the best
 					best_disc_list[iagl] = res[0]

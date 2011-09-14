@@ -818,7 +818,7 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 		list_proj  - list of projections to be used in the reconstruction
 		method - "general" Rademacher's Gaussian, "exact" MvHs triangle
 		const  - for "general" 1.0e4 works well, for "exact" it should be the diameter of the object
-		symmtry - point group symmetry of the object
+		symmetry - point group symmetry of the object
 	""" 
 	import types
 
@@ -869,6 +869,47 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 
 	return CUBE
 
+def prepare_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetry="c1"): 
+	"""
+		Prepare auxiliary arrays dm and ss.
+		Weigthed back-projection algorithm.
+		stack_name - disk stack with projections or in-core list of images
+		list_proj  - list of projections to be used in the reconstruction
+		method - "general" Rademacher's Gaussian, "exact" MvHs triangle
+		const  - for "general" 1.0e4 works well, for "exact" it should be the diameter of the object
+		symmetry - point group symmetry of the object
+	""" 
+	import types
+
+	if type(stack_name) == types.StringType:
+		B = EMData()
+		B.read_image(stack_name,list_proj[0])
+	else : B = stack_name[list_proj[0]].copy()
+
+	nx = B.get_xsize()
+
+	RA = Transform()
+	nsym = RA.get_nsym(symmetry)
+
+	nimages = len(list_proj)
+	ntripletsWnsym = nsym*nimages
+	dm=[0.0]*(9*ntripletsWnsym)
+	ss=[0.0]*(6*ntripletsWnsym)
+	count = 0
+	from utilities import get_params_proj
+	for i in xrange(nimages):
+		if type(stack_name) == types.StringType:
+			B.read_image(stack_name,list_proj[i], True)
+			PHI, THETA, PSI, s2x, s2y = get_params_proj( B )
+		else:  
+			PHI, THETA, PSI, s2x, s2y = get_params_proj( stack_name[list_proj[i]] )
+		DMnSS = Util.CANG(PHI,THETA,PSI)
+		dm[(count*9) :(count+1)*9] = DMnSS["DM"]
+		ss[(count*6) :(count+1)*6] = DMnSS["SS"]
+		count += 1
+	return dm,ss
+
+
 def recons3d_swbp(B, L, dm, ss, method = "general", const=1.0E4, symmetry="c1"): 
 	"""
 	        Take one projection, but angles form the entire set.  Build the weighting function for the given projection taking into account all,
@@ -916,9 +957,6 @@ def weight_swbp(B, L, dm, ss, method = "general", const=1.0E4, symmetry="c1"):
 	RA = Transform()
 	if(method=="exact"  ):    const = int(const)
 	nsym = 1
-	CUBE = EMData()
-	CUBE.set_size(nx, nx, nx)
-	CUBE.to_zero()
 
 	count = 0
 	for j in xrange(1):
