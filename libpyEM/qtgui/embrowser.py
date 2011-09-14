@@ -32,7 +32,8 @@
 #
 
 import PyQt4
-from PyQt4 import QtCore, QtGui,Qt
+from PyQt4 import QtCore, QtGui
+from PyQt4.QtCore import Qt
 from emapplication import EMApp
 from EMAN2 import *
 import os.path
@@ -230,7 +231,7 @@ class EMBrowserWidget(QtGui.QWidget):
 		
 		self.gbl = QtGui.QGridLayout(self)
 		
-		# Top Toolbar area
+		2# Top Toolbar area
 		self.wtools=QtGui.QWidget()
 		self.wtoolhbl=QtGui.QHBoxLayout(self.wtools)
 		self.wtoolhbl.setContentsMargins(0,0,0,0)
@@ -331,7 +332,7 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.curpath=None
 
 	def editPath(self):
-		"Return pressed in path editor"
+		print "Return pressed in path editor"
 
 	def buttonOk(self,tog):
 		"Button press"
@@ -375,7 +376,8 @@ class EMBrowserWidget(QtGui.QWidget):
 		newpath=action.data().toString()
 		self.curpath=newpath
 		self.curmodel=EMFileItemModel(newpath)
-		self.wpath.setModel(self.curmodel)
+		self.wpath.setText(newpath)
+		self.wtree.setModel(self.curmodel)
 		
 # This is just for testing, of course
 if __name__ == '__main__':

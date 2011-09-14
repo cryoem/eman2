@@ -189,7 +189,7 @@ class EMClassPtclTool(QtGui.QWidget):
 		# determine which types are available
 		avail=db_list_dicts("bdb:particles")
 		
-		ftypes=[("","_original_data","Original Data"),("_ctf_flip","_phase_flipped","Phase Flipped"),("_ctf_wiener","_wiener_filtered","Wiener Filtered"),("_ctf_flip_hp","_phase_flipped-hp","Phase flipped-hp")]
+		ftypes=[("","_original_data","Original Data"),("_ctf_flip","_phase_flipped","Phase flipped"),("_ctf_wiener","_wiener_filtered","Wiener filtered"),("_ctf_flip_hp","_phase_flipped-hp","Phase flipped-hp")]
 		usetypes=[]
 		
 		for fn,sn,hn in ftypes:
