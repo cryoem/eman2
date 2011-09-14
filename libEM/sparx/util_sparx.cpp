@@ -5093,7 +5093,57 @@ vector<double> Util::cml_spin_psi(const vector<EMData*>& data, vector<int> com, 
 		// update common-lines
 		for (i=0; i<end; i+=2){
 			com[i] += d_psi;
-			if (com[i] >= n_psi) {com[i] = com[i] % n_psi;}
+			if (com[i] >= n_psi) com[i] = com[i] - n_psi;
+		}
+	}
+	res[0] = bdisc;
+	res[1] = float(bipsi);
+
+	return res;
+}
+
+vector<double> Util::cml_spin_psi_now(const vector<EMData*>& data, vector<int> com, \
+				 int iprj, vector<int> iw, int n_psi, int d_psi, int n_prj){
+	// res: [best_disc, best_ipsi]
+	// seq: pairwise indexes ij, 0, 1, 0, 2, 0, 3, 1, 2, 1, 3, 2, 3
+	// iw : index to know where is the weight for the common-lines on the current projection in the all weights, [12, 4, 2, 7]
+	vector<double> res(2);
+	int lnlen = data[0]->get_xsize();
+	int end = 2*(n_prj-1);
+	double disc, buf, bdisc, tmp;
+	int n, i, ipsi, ind, bipsi, c;
+	float* line_1;
+	float* line_2;
+	bdisc = 1.0e6;
+	bipsi = -1;
+	// loop psi
+	for(ipsi=0; ipsi<n_psi; ipsi += d_psi) {
+		// discrepancy
+		disc = 0;
+		c = 0;
+		for (n=0; n<n_prj; ++n) {
+			if(n!=iprj) {
+				ind = 2*c;
+				line_1 = data[iprj]->get_data() + com[ind] * lnlen;
+				line_2 = data[n]->get_data() + com[ind+1] * lnlen;
+				buf = 0;
+				for (i=0; i<lnlen; ++i) {
+					tmp = line_1[i]-line_2[i];
+					buf += tmp*tmp;
+				}
+				disc += buf;
+				++c;
+			}
+		}
+		// select the best value
+		if (disc <= bdisc) {
+			bdisc = disc;
+			bipsi = ipsi;
+		}
+		// update common-lines
+		for (i=0; i<end; i+=2){
+			com[i] += d_psi;
+			if (com[i] >= n_psi) com[i] = com[i] - n_psi;
 		}
 	}
 	res[0] = bdisc;

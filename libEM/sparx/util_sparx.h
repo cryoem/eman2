@@ -697,6 +697,7 @@ costlist, int* curbranch);
 
 	/** 2009-03-26 11:37:53 JB. This function spin all angle psi and evaluate the partial discrepancy belong common-lines */
 	static vector<double> cml_spin_psi(const vector<EMData*>& data, vector<int> com, vector<float> weights, int iprj, vector<int> iw, int n_psi, int d_psi, int n_prj);
+	static vector<double> cml_spin_psi_now(const vector<EMData*>& data, vector<int> com, int iprj, vector<int> iw, int n_psi, int d_psi, int n_prj);
 
 	/** 2009-03-30 15:44:05 JB. Compute the discrepancy belong all common-lines */
 	static double cml_disc(const vector<EMData*>& data, vector<int> com, vector<int> seq, vector<float> weights, int n_lines);
