@@ -1406,7 +1406,9 @@ class GUIctf(QtGui.QWidget):
 		self.guiim=EMImage2DWidget(application=self.app())
 		self.guiiminit = True # a flag that's used to auto resize the first time the gui's set_data function is called
 		self.guiplot=EMPlot2DWidget(application=self.app())
+		self.guirealim=EMImage2DWidget(application=self.app())	# This will show the original particle images
 		
+		self.guirealim.connect(self.guirealim,QtCore.SIGNAL("keypress"),self.realimgkey)
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedown"),self.imgmousedown)
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedrag"),self.imgmousedrag)
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mouseup")  ,self.imgmouseup)
@@ -1589,6 +1591,8 @@ class GUIctf(QtGui.QWidget):
 			self.app().show_specific(self.guiim)
 		if self.guiplot != None:
 			self.app().show_specific(self.guiplot)
+		if self.guirealim != None:
+			self.app().show_specific(self.guirealim)
 		
 		self.show()
 		
@@ -1600,6 +1604,9 @@ class GUIctf(QtGui.QWidget):
 			self.guiim = None 
 		if self.guiplot != None:
 			self.app().close_specific(self.guiplot)
+		if self.guirealim != None:
+			self.app().close_specific(self.guirealim)
+
 		event.accept()
 		self.app().close_specific(self)
 		self.emit(QtCore.SIGNAL("module_closed")) # this signal is important when e2ctf is being used by a program running its own event loop
@@ -1831,6 +1838,9 @@ class GUIctf(QtGui.QWidget):
 				self.guiiminit = False
 			self.guiim.updateGL()
 		self.update_plot()
+		
+		self.ptcldata=EMData.read_images(self.data[val][0],range(0,20))
+		self.guirealim.set_data(self.ptcldata)
 
 	def newPlotMode(self,mode):
 		self.plotmode=mode
@@ -1858,6 +1868,22 @@ class GUIctf(QtGui.QWidget):
 		tmp=db_parms[name]
 		tmp[3]=self.data[val][6]
 		db_parms[name] = tmp
+
+	def realimgkey(self,event):
+		"""Keypress in the image display window"""
+		print event
+		if event.key()==Qt.Key_I:			# if user presses I in this window we invert the stack on disk
+			n=EMUtil.get_image_count(fsp)
+			fsp=self.data[self.curset][0]
+			print "Inverting images in %s"%fsp
+			for i in xrange(n):
+				img=EMData(fsp,i)
+				img.mult(-1.0)
+				img.write_image(fsp,i)
+				
+			self.ptcldata=EMData.read_images(fsp,range(0,20))
+			self.guirealim.set_data(self.ptcldata)
+
 
 	def imgmousedown(self,event) :
 		m=self.guiim.scr_to_img((event.x(),event.y()))

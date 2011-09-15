@@ -1563,18 +1563,20 @@ class EMImage2DWidget(EMGLWidget):
 			self.__key_mvt_animation(self.width()*.1,0)
 		elif event.key() == Qt.Key_Left:
 			self.__key_mvt_animation(-self.width()*.1,0)
-		elif event.key()==Qt.Key_W or event.key()==Qt.Key_PageUp or event.key()==Qt.Key_O :
+		elif event.key()==Qt.Key_W :
 			self.__key_mvt_animation(0,self.height())
-		elif event.key()==Qt.Key_S or event.key()==Qt.Key_PageDown or event.key()==Qt.Key_L:
+		elif event.key()==Qt.Key_S :
 			self.__key_mvt_animation(0,-self.height())
-		elif event.key()==Qt.Key_D  or event.key()==Qt.Key_Colon or event.key()==Qt.Key_Semicolon:
+		elif event.key()==Qt.Key_D  :
 			self.__key_mvt_animation(self.width(),0)
-		elif event.key()==Qt.Key_A or event.key()== Qt.Key_K:
+		elif event.key()==Qt.Key_A :
 			self.__key_mvt_animation(-self.width(),0)
 		elif event.key()==Qt.Key_Space:
 			self.display_shapes = not self.display_shapes
 			self.updateGL()
 	
+		else:
+			self.emit(QtCore.SIGNAL("keypress"), event)
 		
 	
 

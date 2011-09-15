@@ -37,6 +37,7 @@ from PyQt4.QtCore import Qt
 from emapplication import EMApp
 from EMAN2 import *
 import os.path
+import traceback
 
 class EMDirEntry:
 	"""Represents a directory entry in the filesystem"""
@@ -88,6 +89,8 @@ class EMDirEntry:
 				self.nimg=-1
 				self.dim="-"
 		
+		print "Init DirEntry ",self,self.__dict__
+		
 	def sort(self,column,order):
 		"Recursive sorting"
 		if self.__children==None or len(self.__children)==0 or isinstance(self.__children[0],str): return
@@ -101,27 +104,30 @@ class EMDirEntry:
 	def child(self,n):
 		"""Returns nth child or None"""
 		self.fillChildEntries()
-		return self.__children(n)
+		return self.__children[n]
 	
 	def nChildren(self):
 		"""Count of children"""
 		self.fillChildNames()
+		print "EMDirEntry.nChildren(%s) = %d"%(self.filepath,len(self.__children))
 		return len(self.__children)
 	
 	def fillChildNames(self):
 		"""Makes sure that __children contains at LEAST a list of names"""
-		if self.root==None:
+		if self.__children==None:
 			
-			if not os.path.isdir(path) :
+			if not os.path.isdir(self.filepath) :
 				self.__children=[]
 				return
 			
-			self.__children=os.listdir(path)
+			self.__children=os.listdir(self.filepath)
 			if "EMAN2DIR" in self.__children :
 				self.__children.remove("EMAN2DIR")
 				
-				t=["bdb:"+i for i in db_list_dicts(path)]
+				t=["bdb:"+i for i in db_list_dicts(self.filepath)]
 				self.__children.extend(t)
+				
+			self.__children.sort()
 				
 	def fillChildEntries(self):
 		"""Makes sure that __children have been filled with EMDirEntries when appropriate"""
@@ -148,16 +154,22 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 		QtCore.QAbstractItemModel.__init__(self)
 		self.root=EMDirEntry(startpath,"")					# EMDirEntry as a parent for the root path
 		self.rootpath=startpath			# root path for current browser
+		print "Init FileItemModel ",self,self.__dict__
 
 	def canFetchMore(self,idx):
 		return False
 		
 	def columnCount(self,parent):
+		print "EMFileItemModel.columnCount()=6"
 		return 6
 		
 	def rowCount(self,parent):
-		if parent.isValid() : return parent.internalPointer().nChildren()
-		return root.nChildren()
+		if parent.isValid() : 
+			print "rowCount(%s) = %d"%(str(parent),parent.internalPointer().nChildren())
+			return parent.internalPointer().nChildren()
+			
+		print "rowCount(root) = %d"%self.root.nChildren()
+		return self.root.nChildren()
 		
 	def data(self,index,role):
 		"QModelIndex, Qt::DisplayRole"
@@ -165,7 +177,8 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 		if not index.isValid() : return None
 		if role!=Qt.DisplayRole : return None
 		
-		data=parent.internalPointer()
+		data=index.internalPointer()
+		print "EMFileItemModel.data(%d %d %s)=%s"%(index.row(),index.column(),index.parent(),str(data.__dict__))
 		col=index.column()
 		if col==0 : return str(data.name)
 		elif col==1 : return str(data.filetype)
@@ -184,8 +197,13 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 		return None
 			
 	def hasChildren(self,parent):
-		if parent.internalPointer().nChildren()>0 : return True
-		return False
+		print "EMFileItemModel.hasChildren(%d,%d,%s)"%(parent.row(),parent.column(),str(parent.internalPointer()))
+		try: 
+			if parent.isValid():
+				if parent.internalPointer().nChildren()>0 : return True
+				else : return False
+			return True
+		except: return False
 		
 	def hasIndex(self,row,col,parent):
 		try:
@@ -199,8 +217,10 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 		try:
 			if parent.isValid(): 
 				data=parent.internalPointer().child(row)
-			else: data=self.root.children(row)
-		except: return QtCore.QModelIndex()			# No data, return invalid
+			else: data=self.root.child(row)
+		except:
+			traceback.print_exc()
+			return QtCore.QModelIndex()			# No data, return invalid
 		return self.createIndex(row,column,data)
 		
 	def parent(self,index):
