@@ -18,11 +18,8 @@ import math
 
 class EMDataItem3D(EMItem3D):
 	name = "Data"
-	def __init__(self, data, parent = None, children = set(), transform = None):
-		if not transform: transform = Transform()
+	def __init__(self, data, parent = None, children = set(), transform = Transform()):
 		EMItem3D.__init__(self, parent, children, transform)
-		self.glflags = EMOpenGLFlagsAndTools()		# OpenGL flags - this is a singleton convenience class for testing texture support		
-		self.texture_name = 0
 		self.setData(data)
 		self.renderBoundingBox = False
 		
@@ -31,15 +28,6 @@ class EMDataItem3D(EMItem3D):
 		
 	def setRenderBoundingBox(self, state):
 		self.renderBoundingBox = state
-		
-	def get3DTexture(self):
-		if self.texture_name == 0:
-			#self.texture_name = self.glflags.gen_textureName(self.data)
-			self.texture_name = GL.glGenTextures(1)
-			print "textures == ", self.texture_name
-			GL.glBindTexture(GL.GL_TEXTURE_3D, self.texture_name)
-			GL.glTexImage3D(GL.GL_TEXTURE_3D,0, GL.GL_ALPHA,self.data["nx"], self.data["ny"], self.data["nz"],0, GL.GL_ALPHA, GL.GL_FLOAT, self.data.get_data_as_vector());
-		return self.texture_name
 		
 	def getEvalString(self):
 		if self.transform:
@@ -69,10 +57,6 @@ class EMDataItem3D(EMItem3D):
 		else:
 			self.data = EMData(str(data))
 			self.path = str(data)
-		
-		if self.texture_name != 0:
-			GL.glDeleteTextures(self.texture_name)
-			self.texture_name = 0
 		
 		for child in self.getChildren():
 			try:	# What if child ins't a data type?
@@ -138,11 +122,11 @@ class EMSliceItem3D(EMItem3D):
 	name = "Slice"
 	nodetype = "DataChild" 
 
-	def __init__(self, parent=None, children = set(), transform = None):
-		if not transform: transform = Transform()
+	def __init__(self, parent=None, children = set(), transform = Transform()):
 		EMItem3D.__init__(self, parent, children, transform)
 		self.glflags = EMOpenGLFlagsAndTools()		# OpenGL flags - this is a singleton convenience class for testing texture support		
-		self.texture_name = 0
+		self.texture2d_name = 0
+		self.texture3d_name = 0
 		self.use_3d_texture = False
 
 		self.colors = get_default_gl_colors()
@@ -153,6 +137,8 @@ class EMSliceItem3D(EMItem3D):
 		self.specular = self.colors[self.isocolor]["specular"]
 		self.ambient = self.colors[self.isocolor]["ambient"]		
 		self.shininess = self.colors[self.isocolor]["shininess"]
+		
+		self.dataChanged()
 
 	# I have added these methods so the inspector can set the color John Flanagan
 	def setAmbientColor(self, red, green, blue, alpha=1.0):
@@ -167,11 +153,40 @@ class EMSliceItem3D(EMItem3D):
 	def setShininess(self, shininess):
 		self.shininess = shininess
 	
+	def useDefaultBrightnessContrast(self):
+		data = self.getParent().getData()
+		min = data.get_attr("minimum")
+		max = data.get_attr("maximum")
+		self.brightness = -min
+		if max != min:	
+			self.contrast = 1.0/(max-min)
+		else: 
+			self.contrast = 1
+	
+	def gen3DTexture(self):
+		if self.texture3d_name == 0:
+			data_copy = self.getParent().getData().copy()			
+			data_copy.add(self.brightness)
+			data_copy.mult(self.contrast)
+			#self.texture3d_name = self.glflags.gen_textureName(data_copy)
+			self.texture3d_name = GL.glGenTextures(1)
+			print "Slice Node's 3D texture == ", self.texture3d_name
+			GL.glBindTexture(GL.GL_TEXTURE_3D, self.texture3d_name)
+			GL.glTexImage3D(GL.GL_TEXTURE_3D,0, GL.GL_ALPHA,data_copy["nx"], data_copy["ny"], data_copy["nz"],0, GL.GL_ALPHA, GL.GL_FLOAT, data_copy.get_data_as_vector())
+		return self.texture3d_name
+	
 	def dataChanged(self):
 		"""
 		This method must be implmented in any data child EMItem3D
 		"""
-		data = self.getParent().getData()
+		if self.texture2d_name != 0:
+			GL.glDeleteTextures(self.texture2d_name)
+			self.texture2d_name = 0
+		if self.texture3d_name != 0:
+			GL.glDeleteTextures(self.texture3d_name)
+			self.texture3d_name = 0
+		
+		self.useDefaultBrightnessContrast()
 		
 	def getEvalString(self):
 		if self.transform:
@@ -196,17 +211,19 @@ class EMSliceItem3D(EMItem3D):
 		diag2 = diag/2
 		
 		GL.glDisable(GL.GL_LIGHTING)
-		GL.glColor3f(1.0,1.0,0.0)
+		GL.glColor3f(1.0,1.0,1.0)
 		
 		if not self.use_3d_texture:
 			
 			temp_data = EMData(diag, diag)
 			temp_data.cut_slice(data, self.transform)
+			temp_data.add(self.brightness)
+			temp_data.mult(self.contrast)
 			
-			if self.texture_name != 0:
-				GL.glDeleteTextures(self.texture_name)
+			if self.texture2d_name != 0:
+				GL.glDeleteTextures(self.texture2d_name)
 			
-			self.texture_name = self.glflags.gen_textureName(temp_data)
+			self.texture2d_name = self.glflags.gen_textureName(temp_data)
 			
 			
 			#For debugging purposes, draw an outline
@@ -224,7 +241,7 @@ class EMSliceItem3D(EMItem3D):
 #			GL.glDisable(GL.GL_LIGHTING)
 			
 			GL.glEnable(GL.GL_TEXTURE_2D)
-			GL.glBindTexture(GL.GL_TEXTURE_2D, self.texture_name)
+			GL.glBindTexture(GL.GL_TEXTURE_2D, self.texture2d_name)
 			GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP)
 			GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP)
 			GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR)#GL.GL_NEAREST)
@@ -249,6 +266,8 @@ class EMSliceItem3D(EMItem3D):
 #			GL.glEnable(GL.GL_LIGHTING)
 			GL.glDisable(GL.GL_BLEND)
 		else:
+			self.gen3DTexture()
+			
 			quad_points = [(-diag2, -diag2, 0), (-diag2, diag2, 0), (diag2, diag2, 0), (diag2, -diag2, 0)]
 		
 			#For debugging purposes, draw an outline
@@ -260,11 +279,11 @@ class EMSliceItem3D(EMItem3D):
 			
 			#Now draw the texture on another quad
 			GL.glEnable(GL.GL_BLEND)
-			GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE)
+			GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
 #			GL.glDisable(GL.GL_LIGHTING)
 			
 			GL.glEnable(GL.GL_TEXTURE_3D)
-			GL.glBindTexture(GL.GL_TEXTURE_3D, self.getParent().get3DTexture())
+			GL.glBindTexture(GL.GL_TEXTURE_3D, self.texture3d_name)
 			GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_BORDER)
 			GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_BORDER)
 			GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_R, GL.GL_CLAMP_TO_BORDER)
@@ -379,6 +398,7 @@ class EMVolumeItem3D(EMItem3D):
 	def __init__(self, parent=None, children = set(), transform = Transform()):
 		EMItem3D.__init__(self, parent, children, transform)
 
+		self.texture_name = 0
 		self.colors = get_default_gl_colors()
 		self.isocolor = "bluewhite"
 	
@@ -387,6 +407,8 @@ class EMVolumeItem3D(EMItem3D):
 		self.specular = self.colors[self.isocolor]["specular"]
 		self.ambient = self.colors[self.isocolor]["ambient"]		
 		self.shininess = self.colors[self.isocolor]["shininess"]
+		
+		self.dataChanged()
 
 	# I have added these methods so the inspector can set the color John Flanagan
 	def setAmbientColor(self, red, green, blue, alpha=1.0):
@@ -401,6 +423,11 @@ class EMVolumeItem3D(EMItem3D):
 	def setShininess(self, shininess):
 		self.shininess = shininess
 	
+	def dataChanged(self):
+		if self.texture_name != 0:
+			GL.glDeleteTextures(self.texture_name)
+		self.useDefaultBrightnessThreshold()
+	
 	def getEvalString(self):
 		if self.transform:
 			return "EMVolumeItem3D(transform=Transform())"
@@ -412,7 +439,32 @@ class EMVolumeItem3D(EMItem3D):
 			self.item_inspector = EMVolumeInspector("VOLUME", self)
 		return self.item_inspector
 
+	def gen3DTexture(self):
+		if self.texture_name == 0:
+			data_copy = self.getParent().getData().copy()
+			data_copy.add(self.brightness)
+			data_copy.mult(self.contrast)
+			
+			#self.texture_name = self.glflags.gen_textureName(data_copy)
+			self.texture_name = GL.glGenTextures(1)
+			print "Volume Node's 3D texture ==", self.texture_name
+			GL.glBindTexture(GL.GL_TEXTURE_3D, self.texture_name)
+			GL.glTexImage3D(GL.GL_TEXTURE_3D,0, GL.GL_ALPHA,data_copy["nx"], data_copy["ny"], data_copy["nz"],0, GL.GL_ALPHA, GL.GL_FLOAT, data_copy.get_data_as_vector())
+		return self.texture_name
+
+	def useDefaultBrightnessThreshold(self):
+		data = self.getParent().getData()
+		min = data["minimum"]
+		max = data["maximum"]
+		
+		self.brightness = 0 #-main
+		if max != min:
+			self.contrast = 1.0/(max - min)
+		else:
+			self.contrast = 1
+		
 	def renderNode(self):
+		self.gen3DTexture()
 		(nx, ny, nz) = self.getParent().getBoundingBoxDimensions()
 		interior_diagonal = math.sqrt(nx**2+ny**2+nz**2) #A square with sides this big could hold any slice from the volume
 		diag2 = interior_diagonal/2
@@ -429,7 +481,6 @@ class EMVolumeItem3D(EMItem3D):
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glPushMatrix()
 		GL.glLoadIdentity() #Make the polygon be in the plane of the screen
-#		GL.glTranslate(*transform_std_coords.get_trans())
 		transf = Transform(transform_std_coords) # Get a copy, not a reference, need to use original later
 		transf.set_rotation({"type":"eman"}) #Removing rotation
 		GLUtil.glMultMatrix(transf)
@@ -445,7 +496,7 @@ class EMVolumeItem3D(EMItem3D):
 		
 		#Now draw the texture on another quad
 		GL.glEnable(GL.GL_TEXTURE_3D)
-		GL.glBindTexture(GL.GL_TEXTURE_3D, self.getParent().get3DTexture())
+		GL.glBindTexture(GL.GL_TEXTURE_3D, self.texture_name)
 		GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_BORDER)
 		GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_BORDER)
 		GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_R, GL.GL_CLAMP_TO_BORDER)
@@ -462,7 +513,6 @@ class EMVolumeItem3D(EMItem3D):
 		transf.set_trans((0,0,0)) #Removing translation
 		transf.set_scale(1.0) #Removing scaling
 		GLUtil.glMultMatrix(transf.inverse())
-#		GL.glTranslate(*transform_std_coords.get_trans())
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		
 		GL.glEnable(GL.GL_BLEND)
@@ -471,9 +521,13 @@ class EMVolumeItem3D(EMItem3D):
 		GL.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_REPLACE)
 		
 		GL.glBegin(GL.GL_QUADS)
-		for i in range(4):
-			GL.glTexCoord3f(*quad_points[i])
-			GL.glVertex3f(*quad_points[i])
+		half_depth = int(diag2)
+		for dz in range(-half_depth, half_depth+1):
+			for i in range(4):
+				coords = quad_points[i]
+				GL.glTexCoord3f(coords[0], coords[1], coords[2] + dz)
+				GL.glVertex3f(coords[0], coords[1], coords[2] + dz)
+			
 		glEnd()
 		
 		GL.glPopMatrix()
@@ -590,8 +644,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 class EMIsosurface(EMItem3D):
 	name = "Isosurface"
 	nodetype = "DataChild" 
-	def __init__(self, parent=None, children = set(), transform = None):
-		if not transform: transform = Transform()
+	def __init__(self, parent=None, children = set(), transform = Transform()):
 		EMItem3D.__init__(self, parent, children, transform)
 		
 		self.isothr = None #Will be set in self.dataChanged()
