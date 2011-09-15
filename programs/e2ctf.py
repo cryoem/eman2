@@ -1873,8 +1873,8 @@ class GUIctf(QtGui.QWidget):
 		"""Keypress in the image display window"""
 		print event
 		if event.key()==Qt.Key_I:			# if user presses I in this window we invert the stack on disk
-			n=EMUtil.get_image_count(fsp)
 			fsp=self.data[self.curset][0]
+			n=EMUtil.get_image_count(fsp)
 			print "Inverting images in %s"%fsp
 			for i in xrange(n):
 				img=EMData(fsp,i)
