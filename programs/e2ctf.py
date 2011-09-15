@@ -1871,7 +1871,7 @@ class GUIctf(QtGui.QWidget):
 
 	def realimgkey(self,event):
 		"""Keypress in the image display window"""
-		print event
+
 		if event.key()==Qt.Key_I:			# if user presses I in this window we invert the stack on disk
 			fsp=self.data[self.curset][0]
 			n=EMUtil.get_image_count(fsp)
