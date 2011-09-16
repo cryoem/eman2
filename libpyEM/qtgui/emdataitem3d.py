@@ -228,7 +228,7 @@ class EMSliceItem3D(EMItem3D):
 			if self.texture2d_name != 0:
 				GL.glDeleteTextures(self.texture2d_name)
 			
-			self.texture2d_name = self.glflags.gen_textureName(temp_data)
+			self.texture2d_name = GLUtil.gen_gl_texture(temp_data, GL.GL_ALPHA)
 			
 			
 			#For debugging purposes, draw an outline
@@ -242,7 +242,8 @@ class EMSliceItem3D(EMItem3D):
 			
 			#Now draw the texture on another quad
 			GL.glEnable(GL.GL_BLEND)
-			GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE)
+			#GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE)
+			GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
 #			GL.glDisable(GL.GL_LIGHTING)
 			
 			GL.glEnable(GL.GL_TEXTURE_2D)
@@ -357,7 +358,7 @@ class EMSliceInspector(EMInspectorControlShape):
 		
 		sliceframe = QtGui.QFrame()
 		sliceframe.setFrameShape(QtGui.QFrame.StyledPanel)
-		slicegridbox = QtGui.QGridLayout()
+		slice_grid_layout = QtGui.QGridLayout()
 				
 		self.constrained_group_box = QtGui.QGroupBox("Constrained Slices")
 		self.constrained_group_box.setCheckable(True)
@@ -376,14 +377,15 @@ class EMSliceInspector(EMInspectorControlShape):
 		self.use_3d_texture_checkbox = QtGui.QCheckBox("Use 3D Texture")
 		self.use_3d_texture_checkbox.setChecked(self.item3d().use_3d_texture)
 		
-		self.brightness_slider = ValSlider(label="Brightness:")
-		self.contrast_slider = ValSlider(label="Contrast:")
+		self.brightness_slider = ValSlider(label="Bright:")
+		self.contrast_slider = ValSlider(label="Contr:")
 		
-		slicegridbox.addWidget(self.constrained_group_box, 0, 1, 2, 1)
-		slicegridbox.addWidget(self.use_3d_texture_checkbox, 2, 1, 1, 1)
-		slicegridbox.addWidget(self.brightness_slider, 3, 1, 1, 1)
-		slicegridbox.addWidget(self.contrast_slider, 4, 1, 1, 1)
-		sliceframe.setLayout(slicegridbox)
+		slice_grid_layout.addWidget(self.constrained_group_box, 0, 1, 2, 1)
+		slice_grid_layout.addWidget(self.use_3d_texture_checkbox, 2, 1, 1, 1)
+		slice_grid_layout.addWidget(self.brightness_slider, 3, 1, 1, 1)
+		slice_grid_layout.addWidget(self.contrast_slider, 4, 1, 1, 1)
+		slice_grid_layout.setRowStretch(5,1)
+		sliceframe.setLayout(slice_grid_layout)
 		gridbox.addWidget(sliceframe, 2, 1, 2, 1)
 	
 	def on3DTextureCheckbox(self):
@@ -448,6 +450,7 @@ class EMVolumeItem3D(EMItem3D):
 		self.ambient = self.colors[self.isocolor]["ambient"]		
 		self.shininess = self.colors[self.isocolor]["shininess"]
 		
+		self.force_texture_update = True
 		self.dataChanged()
 
 	# I have added these methods so the inspector can set the color John Flanagan
@@ -507,7 +510,12 @@ class EMVolumeItem3D(EMItem3D):
 			self.contrast = 1
 		
 	def renderNode(self):
+		if self.force_texture_update:
+			GL.glDeleteTextures(self.texture_name)
+			self.texture_name = 0
+		
 		self.gen3DTexture()
+		self.force_texture_update = False
 		(nx, ny, nz) = self.getParent().getBoundingBoxDimensions()
 		interior_diagonal = math.sqrt(nx**2+ny**2+nz**2) #A square with sides this big could hold any slice from the volume
 		diag2 = interior_diagonal/2
@@ -560,7 +568,7 @@ class EMVolumeItem3D(EMItem3D):
 		
 		GL.glEnable(GL.GL_BLEND)
 		#GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE)
-		GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA) #TODO: Need the texture to have an alpha value
+		GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
 		GL.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_REPLACE)
 		
 		GL.glBegin(GL.GL_QUADS)
@@ -586,16 +594,51 @@ class EMVolumeItem3D(EMItem3D):
 class EMVolumeInspector(EMInspectorControlShape):
 	def __init__(self, name, item3d):
 		EMInspectorControlShape.__init__(self, name, item3d)
+		
+		QtCore.QObject.connect(self.brightness_slider, QtCore.SIGNAL("valueChanged"), self.onBrightnessSlider)
+		QtCore.QObject.connect(self.contrast_slider, QtCore.SIGNAL("valueChanged"), self.onContrastSlider)
 
 	def updateItemControls(self):
 		super(EMVolumeInspector, self).updateItemControls()
 		# Anything that needs to be updated when the scene is rendered goes here.....
 		
+		data = self.item3d().getParent().getData()
+		min = data["minimum"]
+		max = data["maximum"]
+		
+		self.brightness_slider.setValue(self.item3d().brightness)
+		self.brightness_slider.setRange(-max, -min)
+		self.contrast_slider.setValue(self.item3d().contrast)
+		self.contrast_slider.setRange(0.001, 1.0)
+		
 	def addControls(self, gridbox):
 		super(EMVolumeInspector, self).addControls(gridbox)
 
+		volframe = QtGui.QFrame()
+		volframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		vol_grid_layout = QtGui.QGridLayout()
+				
+		self.brightness_slider = ValSlider(label="Bright:")
+		self.contrast_slider = ValSlider(label="Contr:")
+		
+		vol_grid_layout.addWidget(self.brightness_slider, 0, 1, 1, 1)
+		vol_grid_layout.addWidget(self.contrast_slider, 1, 1, 1, 1)
+		vol_grid_layout.setRowStretch(2,1)
 
+		volframe.setLayout(vol_grid_layout)
+		gridbox.addWidget(volframe, 2, 1, 2, 1)
 	
+	def onBrightnessSlider(self):
+		self.item3d().brightness = self.brightness_slider.getValue()
+		self.item3d().force_texture_update = True
+		if self.inspector:
+			self.inspector().updateSceneGraph()
+			
+	def onContrastSlider(self):
+		self.item3d().contrast = self.contrast_slider.getValue()
+		self.item3d().force_texture_update = True
+		if self.inspector:
+			self.inspector().updateSceneGraph()	
 			
 
 class EMIsosurfaceInspector(EMInspectorControlShape):
