@@ -85,7 +85,7 @@ unsigned int GLUtil::gen_glu_mipmaps(const EMData* const emdata)
 	return tex_name;
 }
 
-unsigned int GLUtil::gen_gl_texture(const EMData* const emdata)
+unsigned int GLUtil::gen_gl_texture(const EMData* const emdata, GLenum format)
 {
 	if ( emdata->get_data() == 0 ) throw NullPointerException("Error, attempt to create an OpenGL texture without internally stored data");
 	ENTERFUNC;
@@ -96,17 +96,17 @@ unsigned int GLUtil::gen_gl_texture(const EMData* const emdata)
 	if ( emdata->ny == 1 && emdata->nz == 1 )
 	{
 		glBindTexture(GL_TEXTURE_1D, tex_name);
-		glTexImage1D(GL_TEXTURE_1D,0,GL_LUMINANCE,emdata->nx,0,GL_LUMINANCE, GL_FLOAT, (void*)(emdata->get_data()));
+		glTexImage1D(GL_TEXTURE_1D,0,format,emdata->nx,0,format, GL_FLOAT, (void*)(emdata->get_data()));
 	} else if (emdata->nz == 1) {
 		glBindTexture(GL_TEXTURE_2D, tex_name);
-		glTexImage2D(GL_TEXTURE_2D,0,GL_LUMINANCE,emdata->nx,emdata->ny,0,GL_LUMINANCE, GL_FLOAT, (void*)(emdata->get_data()));
+		glTexImage2D(GL_TEXTURE_2D,0,format,emdata->nx,emdata->ny,0,format, GL_FLOAT, (void*)(emdata->get_data()));
 	}
 	else {
 		glBindTexture(GL_TEXTURE_3D, tex_name);
 #ifdef _WIN32
 	PFNGLTEXIMAGE3DPROC glTexImage3D;
 #endif
-		glTexImage3D(GL_TEXTURE_3D,0, GL_LUMINANCE,emdata->nx,emdata->ny,emdata->nz,0,GL_LUMINANCE, GL_FLOAT, (void*)(emdata->get_data()));
+		glTexImage3D(GL_TEXTURE_3D,0, format,emdata->nx,emdata->ny,emdata->nz,0,format, GL_FLOAT, (void*)(emdata->get_data()));
 	}
 
 	EXITFUNC;

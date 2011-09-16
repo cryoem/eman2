@@ -39,6 +39,12 @@
 #include "vec3.h"
 #include "transform.h"
 
+#ifdef __APPLE__
+	#include "OpenGL/gl.h"
+#else // WIN32, LINUX
+	#include "GL/gl.h"
+#endif	//__APPLE__
+
 using std::vector;
 
 namespace EMAN
@@ -56,7 +62,7 @@ namespace EMAN
 		/** create an OpenGL texture
 		 * @return the texture id used in the call to glBindTextures
 		 */
-		static unsigned int gen_gl_texture(const EMData* const emdata);
+		static unsigned int gen_gl_texture(const EMData* const emdata, GLenum format = GL_LUMINANCE);
 
 		/** create an OpenGL texture using render_amp8
 		 * @return the texture id used in the call to glBindTextures

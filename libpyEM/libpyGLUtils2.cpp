@@ -48,6 +48,7 @@ using namespace boost::python;
 namespace {
 	BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_GLUtil_get_isosurface_dl_overloads_1_3, EMAN::GLUtil::get_isosurface_dl, 1, 3)
 	BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_GLUtil_colored_rectangle_overloads_2_3, EMAN::GLUtil::colored_rectangle, 2, 3)
+	BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_GLUtil_gen_gl_texture_overloads_1_2, EMAN::GLUtil::gen_gl_texture, 1, 2)
 }
 
 // Module ======================================================================
@@ -57,7 +58,7 @@ BOOST_PYTHON_MODULE(libpyGLUtils2)
 		 class_< EMAN::GLUtil>("GLUtil", init<  >())
 		.def(init< const EMAN::GLUtil& >())
 		.def("gen_glu_mipmaps", &EMAN::GLUtil::gen_glu_mipmaps)
-		.def("gen_gl_texture", &EMAN::GLUtil::gen_gl_texture)
+		.def("gen_gl_texture", &EMAN::GLUtil::gen_gl_texture, EMAN_GLUtil_gen_gl_texture_overloads_1_2())
 		.def("render_amp8_gl_texture", &EMAN::GLUtil::render_amp8_gl_texture)
 		.def("nearest_projected_points", &EMAN::GLUtil::nearest_projected_points )
 		.def("colored_rectangle", &EMAN::GLUtil::colored_rectangle, EMAN_GLUtil_colored_rectangle_overloads_2_3() )
