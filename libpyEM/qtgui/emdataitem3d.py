@@ -128,6 +128,7 @@ class EMSliceItem3D(EMItem3D):
 		self.texture2d_name = 0
 		self.texture3d_name = 0
 		self.use_3d_texture = False
+		self.force_texture_update = True
 
 		self.colors = get_default_gl_colors()
 		self.isocolor = "bluewhite"
@@ -168,11 +169,15 @@ class EMSliceItem3D(EMItem3D):
 			data_copy = self.getParent().getData().copy()			
 			data_copy.add(self.brightness)
 			data_copy.mult(self.contrast)
-			#self.texture3d_name = self.glflags.gen_textureName(data_copy)
-			self.texture3d_name = GL.glGenTextures(1)
-			print "Slice Node's 3D texture == ", self.texture3d_name
-			GL.glBindTexture(GL.GL_TEXTURE_3D, self.texture3d_name)
-			GL.glTexImage3D(GL.GL_TEXTURE_3D,0, GL.GL_ALPHA,data_copy["nx"], data_copy["ny"], data_copy["nz"],0, GL.GL_ALPHA, GL.GL_FLOAT, data_copy.get_data_as_vector())
+			
+			if True: #MUCH faster than generating texture in Python
+				self.texture3d_name = GLUtil.gen_gl_texture(data_copy, GL.GL_ALPHA)
+			else:
+				self.texture3d_name = GL.glGenTextures(1)
+				GL.glBindTexture(GL.GL_TEXTURE_3D, self.texture3d_name)
+				GL.glTexImage3D(GL.GL_TEXTURE_3D,0, GL.GL_ALPHA,data_copy["nx"], data_copy["ny"], data_copy["nz"],0, GL.GL_ALPHA, GL.GL_FLOAT, data_copy.get_data_as_vector())
+
+			#print "Slice Node's 3D texture == ", self.texture3d_name
 		return self.texture3d_name
 	
 	def dataChanged(self):
@@ -266,6 +271,9 @@ class EMSliceItem3D(EMItem3D):
 #			GL.glEnable(GL.GL_LIGHTING)
 			GL.glDisable(GL.GL_BLEND)
 		else:
+			if self.force_texture_update:
+				GL.glDeleteTextures(self.texture3d_name)
+				self.texture3d_name = 0
 			self.gen3DTexture()
 			
 			quad_points = [(-diag2, -diag2, 0), (-diag2, diag2, 0), (diag2, diag2, 0), (diag2, -diag2, 0)]
@@ -323,11 +331,26 @@ class EMSliceInspector(EMInspectorControlShape):
 		self.constrained_plane_combobox.currentIndexChanged.connect(self.onConstrainedOrientationChanged)
 		self.use_3d_texture_checkbox.clicked.connect(self.on3DTextureCheckbox)
 		QtCore.QObject.connect(self.constrained_slider, QtCore.SIGNAL("valueChanged"), self.onConstraintSlider)
+		QtCore.QObject.connect(self.brightness_slider, QtCore.SIGNAL("valueChanged"), self.onBrightnessSlider)
+		QtCore.QObject.connect(self.contrast_slider, QtCore.SIGNAL("valueChanged"), self.onContrastSlider)
+		
+		self.updateItemControls()
 		
 	def updateItemControls(self):
 		super(EMSliceInspector, self).updateItemControls()
 		# Anything that needs to be updated when the scene is rendered goes here.....
 		self.use_3d_texture_checkbox.setChecked(self.item3d().use_3d_texture)
+		data = self.item3d().getParent().getData()
+		min = data["minimum"]
+		max = data["maximum"]
+		mean = data["mean"]
+		std_dev = data["sigma"]
+		
+		self.brightness_slider.setValue(self.item3d().brightness)
+		self.brightness_slider.setRange(-max, -min)
+		
+		self.contrast_slider.setValue(self.item3d().contrast)
+		self.contrast_slider.setRange(0.001, 1.0)
 		
 	def addControls(self, gridbox):
 		super(EMSliceInspector, self).addControls(gridbox)
@@ -353,8 +376,13 @@ class EMSliceInspector(EMInspectorControlShape):
 		self.use_3d_texture_checkbox = QtGui.QCheckBox("Use 3D Texture")
 		self.use_3d_texture_checkbox.setChecked(self.item3d().use_3d_texture)
 		
+		self.brightness_slider = ValSlider(label="Brightness:")
+		self.contrast_slider = ValSlider(label="Contrast:")
+		
 		slicegridbox.addWidget(self.constrained_group_box, 0, 1, 2, 1)
 		slicegridbox.addWidget(self.use_3d_texture_checkbox, 2, 1, 1, 1)
+		slicegridbox.addWidget(self.brightness_slider, 3, 1, 1, 1)
+		slicegridbox.addWidget(self.contrast_slider, 4, 1, 1, 1)
 		sliceframe.setLayout(slicegridbox)
 		gridbox.addWidget(sliceframe, 2, 1, 2, 1)
 	
@@ -390,7 +418,19 @@ class EMSliceInspector(EMInspectorControlShape):
 		
 		if self.inspector:
 			self.inspector().updateSceneGraph()
-
+			
+	def onBrightnessSlider(self):
+		self.item3d().brightness = self.brightness_slider.getValue()
+		self.item3d().force_texture_update = True
+		if self.inspector:
+			self.inspector().updateSceneGraph()
+			
+	def onContrastSlider(self):
+		self.item3d().contrast = self.contrast_slider.getValue()
+		self.item3d().force_texture_update = True
+		if self.inspector:
+			self.inspector().updateSceneGraph()
+			
 class EMVolumeItem3D(EMItem3D):
 	name = "Volume"
 	nodetype = "DataChild" 
@@ -445,11 +485,14 @@ class EMVolumeItem3D(EMItem3D):
 			data_copy.add(self.brightness)
 			data_copy.mult(self.contrast)
 			
-			#self.texture_name = self.glflags.gen_textureName(data_copy)
-			self.texture_name = GL.glGenTextures(1)
-			print "Volume Node's 3D texture ==", self.texture_name
-			GL.glBindTexture(GL.GL_TEXTURE_3D, self.texture_name)
-			GL.glTexImage3D(GL.GL_TEXTURE_3D,0, GL.GL_ALPHA,data_copy["nx"], data_copy["ny"], data_copy["nz"],0, GL.GL_ALPHA, GL.GL_FLOAT, data_copy.get_data_as_vector())
+			if True: #MUCH faster than generating texture in Python
+				self.texture_name = GLUtil.gen_gl_texture(data_copy, GL.GL_ALPHA)
+			else:
+				self.texture_name = GL.glGenTextures(1)
+				GL.glBindTexture(GL.GL_TEXTURE_3D, self.texture_name)
+				GL.glTexImage3D(GL.GL_TEXTURE_3D,0, GL.GL_ALPHA,data_copy["nx"], data_copy["ny"], data_copy["nz"],0, GL.GL_ALPHA, GL.GL_FLOAT, data_copy.get_data_as_vector())
+			
+			#print "Volume Node's 3D texture ==", self.texture_name
 		return self.texture_name
 
 	def useDefaultBrightnessThreshold(self):
