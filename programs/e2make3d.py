@@ -504,11 +504,13 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 					continue
 				sub=[squal[j][1] for j in xrange(max(0,i-10),min(i+10,len(squal)))]
 				squal[i][2]=sum(sub)/len(sub)
-				try: squal[i][4]["reconstruct_qual"]=squal[i][1]/squal[i][2]
+				try: 
+					squal[i][4]["reconstruct_qual"]=squal[i][1]/squal[i][2]
+					qlist.append(squal[i][1]/squal[i][2])
 				except :
 					print "##############  ",sub, squal[i], i,len(squal)
 					squal[i][4]["reconstruct_qual"]=-1
-				qlist.append(squal[i][1]/squal[i][2])
+					qlist.append(-1)
 #			plot(qlist)
 
 			# set exclusion thresholds

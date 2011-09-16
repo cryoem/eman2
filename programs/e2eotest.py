@@ -143,7 +143,7 @@ def main():
 			for i,p in enumerate(mapping):
 				s += ":"+p+"="+vals[i]
 			options.automask3d = s
-	elif options.automask3d.lower()!="none":
+	elif options.automask3d==None:
 		print "Inheriting automask from refine command"
 		try : db=db_open_dict("bdb:%s#register"%options.path,ro=True)
 		except : 
