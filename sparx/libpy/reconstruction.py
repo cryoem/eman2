@@ -910,7 +910,7 @@ def prepare_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetry
 	return dm,ss
 
 
-def recons3d_swbp(B, L, dm, ss, method = "general", const=1.0E4, symmetry="c1"): 
+def recons3d_swbp(A, L, dm, ss, method = "general", const=1.0E4, symmetry="c1"): 
 	"""
 	        Take one projection, but angles form the entire set.  Build the weighting function for the given projection taking into account all,
 		apply it, and backproject.
@@ -921,7 +921,7 @@ def recons3d_swbp(B, L, dm, ss, method = "general", const=1.0E4, symmetry="c1"):
 		const  - for "general" 1.0e4 works well, for "exact" it should be the diameter of the object
 		symmetry - point group symmetry of the object
 	""" 
-
+	B = A.copy()
 	nx = B.get_xsize()
 	RA = Transform()
 	if(method=="exact"  ):    const = int(const)
@@ -941,7 +941,7 @@ def recons3d_swbp(B, L, dm, ss, method = "general", const=1.0E4, symmetry="c1"):
 
 	return CUBE, B
 
-def weight_swbp(B, L, dm, ss, method = "general", const=1.0E4, symmetry="c1"): 
+def weight_swbp(A, L, dm, ss, method = "general", const=1.0E4, symmetry="c1"): 
 	"""
 	        Take one projection, but angles form the entire set.  Build the weighting function for the given projection taking into account all,
 		apply it, return weighted projection.
@@ -953,11 +953,9 @@ def weight_swbp(B, L, dm, ss, method = "general", const=1.0E4, symmetry="c1"):
 		symmetry - point group symmetry of the object
 	""" 
 
-	nx = B.get_xsize()
-	RA = Transform()
 	if(method=="exact"  ):    const = int(const)
 	nsym = 1
-
+	B = A.copy()
 	count = 0
 	for j in xrange(1):
 	  	DM = dm[((j*nsym+L)*9) :(j*nsym+L+1)*9]

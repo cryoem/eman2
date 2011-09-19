@@ -994,7 +994,7 @@ def cml_find_structure2(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_
 			best_iagl = -1
 
 			if myid == main_node:
-				best_disc = 1e20
+				best_disc = 1.0e20
 				for iagl in xrange(g_n_anglst):
 					if best_disc_list[iagl] > 0.0 and best_disc_list[iagl] < best_disc:
 						best_disc = best_disc_list[iagl]
