@@ -233,7 +233,7 @@ def main():
 
 			if options.automask3d:
 				number_options_file(i,"threed_mask",options,"mask_image")
-				com="e2proc3d.py %s %s %s"%(options.filtered_model,options.mask_image,options.automask3d)
+				com="e2proc3d.py %s %s --process=%s"%(options.filtered_model,options.mask_image,options.automask3d)
 				if ( os.system(com) != 0 ):
 					print "Failed to execute %s" %com
 					exit_refine(1,logid)
