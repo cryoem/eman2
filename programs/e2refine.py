@@ -284,8 +284,11 @@ def exit_refine(n,logid):
 def get_make3d_cmd(options,check=False,nofilecheck=False):
 	e2make3dcmd = "e2make3d.py --input=%s --iter=%d -f" %(options.cafile,options.m3diter)
 
-	if "breaksym=1" in options.orientgen : e2make3dcmd+=" --sym=c1"
-	else : e2make3dcmd+=" --sym=%s"%options.sym
+	try : 
+		if "breaksym=1" in options.orientgen : e2make3dcmd+=" --sym=c1"
+		else: raise Exception
+	except : 
+		e2make3dcmd+=" --sym=%s"%options.sym
 	
 	e2make3dcmd += " --recon=%s --output=%s" %(options.recon,options.model)
 
