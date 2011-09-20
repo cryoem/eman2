@@ -108,6 +108,7 @@ def main():
 	parser.add_option("--m3diter", type=int, default=4, help="The number of times the 3D reconstruction should be iterated")
 	parser.add_option("--m3dpreprocess", type="string", default="normalize.edgemean", help="Normalization processor applied before 3D reconstruction")
 	parser.add_option("--m3dpostprocess", type="string", default=None, help="Post processor to be applied to the 3D volume once the reconstruction is completed")
+	parser.add_option("--m3dpostprocess2", type="string", default=None, help="A second post processor to be applied to the 3D volume once the reconstruction is completed")
 
 	#lowmem!
 	parser.add_option("--lowmem", default=False, action="store_true",help="Make limited use of memory when possible - useful on lower end machines")
@@ -157,7 +158,8 @@ def main():
 	progress = 0.0
 	total_procs = 5*(options.iter-options.startiter)
 	
-	if options.automask3d: automask_parms = parsemodopt(options.automask3d) # this is just so we only ever have to do it
+	# no longer want this behavior
+#	if options.automask3d: automask_parms = parsemodopt(options.automask3d) # this is just so we only ever have to do it
 	
 	apix = get_apix_used(options)
 	
@@ -206,25 +208,41 @@ def main():
 			exit_refine(1,logid)
 		progress += 1.0
 		
+		# User may specify a second postprocessor
+		if options.m3dpostprocess2!=None :
+			com="e2proc3d.py %s %s --process=%s"%(new_model,new_model,options.m3dpostprocess2)
+			if ( os.system(com) != 0 ):
+				print "Failed to execute %s" %com
+				exit_refine(1,logid)
+		
 		
 		a = EMData(previous_model,0)
 		b = EMData(new_model,0)
 		
+		# redid this using e2proc3d commands rather than internally for better logging. Performance will take a very slight hit this way
 		if options.mass:
 			# if options.mass is not none, the check function has already ascertained that it's postivie non zero, and that the 
 			# apix argument has been specified.
-			b.process_inplace("normalize.bymass",{"apix":options.apix, "mass":options.mass})
-			if options.automask3d:
-				number_options_file(i,"threed_mask",options,"mask_image")
-				mask = b.process(automask_parms[0],automask_parms[1])
-				mask.write_image(options.mask_image,0)
-				db_close_dict(options.mask_image)
-				b.mult(mask)
-			
 			number_options_file(i,"threed_filt",options,"filtered_model")
 			b.write_image(options.filtered_model,0)
-			db_close_dict(options.filtered_model)
-		
+			com="e2proc3d.py %s %s --process=normalize.bymass:apix=%1.3f:mass=%1.1f"%(options.filtered_model,options.filtered_model,options.apix,options.mass)
+			if ( os.system(com) != 0 ):
+				print "Failed to execute %s" %com
+				exit_refine(1,logid)
+			
+
+			if options.automask3d:
+				number_options_file(i,"threed_mask",options,"mask_image")
+				com="e2proc3d.py %s %s %s"%(options.filtered_model,options.mask_image,options.automask3d)
+				if ( os.system(com) != 0 ):
+					print "Failed to execute %s" %com
+					exit_refine(1,logid)
+				
+				com="e2proc3d.py %s %s --multfile=%s"%(options.filtered_model,options.filtered_model,options.mask_image)
+				if ( os.system(com) != 0 ):
+					print "Failed to execute %s" %com
+					exit_refine(1,logid)
+				
 		fsc = a.calc_fourier_shell_correlation(b)
 		third = len(fsc)/3
 		xaxis = fsc[0:third]
