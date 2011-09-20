@@ -637,7 +637,9 @@ class EMProjectDataDict:
 #			if self.data_dict_name == spr_ptcls_dict:
 #				self.__convert_ptcls_dict_to_tags()
 			
+			print self.db_name
 			project_db = db_open_dict(self.db_name)
+			print project_db
 			self.data_dict = project_db.get(self.data_dict_name,dfl={})
 		
 		return self.data_dict
@@ -818,6 +820,7 @@ Note that the data cannot be filtered unless it is imported."
 		
 		data_dict = EMProjectDataDict(self.project_list)
 		self.project_data_at_init = data_dict.get_data_dict() # so if the user hits cancel this can be reset
+		print self.project_data_at_init
 		project_names = data_dict.keys()
 		
 		from emform import EM2DFileTable,EMFileTable

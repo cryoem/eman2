@@ -45,6 +45,7 @@ from pyemtbx.imagetypes import *
 from pyemtbx.box import *
 from e2version import *
 import EMAN2db
+import argparse, copy
 #from Sparx import *
 
 HOMEDB=None
@@ -377,6 +378,58 @@ def good_size(size):
 	
 	return Util.calc_best_fft_size(int(size))
 
+class EMArgumentParser(argparse.ArgumentParser):
+	""" subclass of argparser to masquerade as optparser and run the GUI """
+	def __init__(self, prog=None,usage=None,description=None,epilog=None,version=None,parents=[],formatter_class=argparse.HelpFormatter,prefix_chars='-',fromfile_prefix_chars=None,argument_default=None,conflict_handler='error',add_help=True):
+		argparse.ArgumentParser.__init__(self,prog=prog,usage=usage,description=description,epilog=epilog,parents=parents,formatter_class=formatter_class,prefix_chars=prefix_chars,fromfile_prefix_chars=fromfile_prefix_chars,argument_default=argument_default,conflict_handler=conflict_handler,add_help=add_help)
+		
+		# A list of options to add to the GUI
+		self.optionslist = []
+		self.tablist = []
+		
+		# This stuff is to make argparser masquerade as optparser
+		if version: self.add_argument('--version', action='version', version=version)
+		self.add_argument("postionalargs", nargs="*")
+		
+	def parse_args(self):
+		""" Masquerade as optpaser parse options """
+		parsedargs = argparse.ArgumentParser.parse_args(self)
+		return (parsedargs, parsedargs.postionalargs)
+	
+	def add_pos_argument(self, **kwargs):
+		""" Add a position argument, needed only for the GUI """
+		kwargs["guitype"]="filebox"
+		self.optionslist.append(copy.deepcopy(kwargs))
+		
+	def add_header(self, **kwargs):
+		""" for the header, you need, title, row, col"""
+		kwargs["guitype"]="header"
+		self.optionslist.append(copy.deepcopy(kwargs))
+		
+	def add_argument(self, *args, **kwargs):
+		if "guitype" in kwargs:
+			if args[0][:2] == "--":
+				kwargs["name"] = args[0][2:]
+			else:
+				kwargs["name"] = args[1][2:]
+			self.optionslist.append(copy.deepcopy(kwargs))
+			del kwargs["guitype"]
+			del kwargs["row"]
+			del kwargs["col"]
+			del kwargs["name"]
+			if "rowspan" in kwargs: del kwargs["rowspan"]
+			if "colspan" in kwargs: del kwargs["colspan"]
+			if "expert" in kwargs: del kwargs["expert"]
+			if "lrange" in kwargs: del kwargs["lrange"]
+			if "urange" in kwargs: del kwargs["urange"]
+			if "choicelist" in kwargs: del kwargs["choicelist"]
+			
+		# Run arparser function
+		argparse.ArgumentParser.add_argument(self, *args, **kwargs)
+		
+	def getGUIOptions(self):
+		return self.optionslist
+		
 def parsesym(optstr):
 	# FIXME - this function is no longer necessary since I overwrite the Symmetry3D::get function (on the c side). d.woolford
 	[sym, dict] = parsemodopt(optstr)

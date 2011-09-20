@@ -394,9 +394,11 @@ class EMItem3DInspector(QtGui.QWidget):
 		self.setLayout(gridbox)
 		
 	def setInspector(self, inspector):
+		""" This is a reference back to the main inspector, which holds all the item inspectors"""
 		self.inspector = weakref.ref(inspector)
 		
 	def addControls(self, gridbox):
+		""" Construct all the widgets in this Item Inspector """
 		# selection box and label
 		font = QtGui.QFont()
 		font.setBold(True)
@@ -492,6 +494,7 @@ class EMItem3DInspector(QtGui.QWidget):
 		self.inspector().updateSceneGraph()
 		
 	def updateItemControls(self):
+		""" Updates this item inspector. Function is called by the item it observes"""
 		# Translation update
 		stdtransfrom = self.item3d().getTransformStdCoord()
 		translation =  stdtransfrom.get_trans()
@@ -570,6 +573,7 @@ class EMItem3DInspector(QtGui.QWidget):
 			
 		
 	def addRotationWidgets(self):
+		""" Add alll the widgets for the various EMAN2 rotation conventions """
 		EMANwidget = QtGui.QWidget()
 		Imagicwidget = QtGui.QWidget()
 		Spiderwidget = QtGui.QWidget()

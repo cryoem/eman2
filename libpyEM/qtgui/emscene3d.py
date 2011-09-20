@@ -517,29 +517,6 @@ texticon = [
     'ccccccccccccccccc'
 ] 
 
-'''
-isosurfaceicon = [
-    '17 16 2 1',
-    'b c #000055',
-    'c c None',
-    'ccccccccccccccccc',
-    'ccccccccccccccccc',
-    'ccccccccccccccccc',
-    'ccccccccccccccccc',
-    'bbbccbbbbcccbbbbc',
-    'cbccbccccbcbccccb',
-    'cbccbccccbcbccccb',
-    'cbcccbcccccbccccb',
-    'cbccccbccccbccccb',
-    'cbcccccbcccbccccb',
-    'cbccccccbccbccccb',
-    'cbccbccccbcbccccb',
-    'cbccbccccbcbccccb',
-    'bbbccbbbbcccbbbbc',
-    'ccccccccccccccccc',
-    'ccccccccccccccccc'
-] 
-'''
 dataicon = [
     '17 16 2 1',
     'b c #000055',
@@ -1084,11 +1061,12 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.newnode.setRadiusAndHeight(math.fabs(x - self.first_x), math.fabs(y - self.first_y))
 		if event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and self.mousemode == "rotate"):
 			magnitude = math.sqrt(dx*dx + dy*dy)
+			# We want to remove the effect of self.camera.getViewPortWidthScaling() for rotation. For everything else the effect is desired
 			#Check to see if the cursor is in the 'virtual slider pannel'
 			if  self.zrotate: # The lowest 5% of the screen is reserved from the Z spin virtual slider
-				self.updateMatrices([dx,0,0,-1], "rotate")
+				self.updateMatrices([dx/self.camera.getViewPortWidthScaling(),0,0,-1], "rotate")
 			else:
-				self.updateMatrices([magnitude,-dy/magnitude,-dx/magnitude,0], "rotate")
+				self.updateMatrices([magnitude/self.camera.getViewPortWidthScaling(),-dy/magnitude,-dx/magnitude,0], "rotate")
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "selection") and not event.modifiers()&Qt.ControlModifier:
 			self.updateMatrices([dx,-dy,0], "translate")
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "multiselection"):
@@ -1230,7 +1208,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			
 	def copyNodes(self, nodes, parentnode=None, parentidx=None):
 		"""
-		Copy a set nof node(s)
+		Copy a set nof node(s), parentnode and parentidx are only used for recursion
 		"""
 		for node in nodes:
 			if node.name == "Data" or node.name == "SG" or node.nodetype == "DataChild": continue	# Can't copy data nodes
@@ -2299,7 +2277,7 @@ class EMInspector3D(QtGui.QWidget):
 		cwidget = QtGui.QWidget()
 		grid = QtGui.QGridLayout()
 		self.camerawidget = CameraControls(scenegraph=self.scenegraph())
-		grid.addWidget(self.camerawidget, 0, 0, 1, 2)
+		grid.addWidget(self.camerawidget, 0, 0, 1, 3)
 		nlabel = QtGui.QLabel("Near clipping plane", cwidget)
 		nlabel.setMaximumHeight(30.0)
 		nlabel.setAlignment(QtCore.Qt.AlignCenter)
@@ -2316,6 +2294,8 @@ class EMInspector3D(QtGui.QWidget):
 		self.far.setMaximumHeight(40.0)
 		grid.addWidget(flabel, 2, 0)
 		grid.addWidget(self.far, 2, 1)
+		self.lockcb = QtGui.QCheckBox("Link")
+		grid.addWidget(self.lockcb, 1, 2)
 		frame = QtGui.QFrame()
 		frame.setMaximumHeight(40.0)
 		frame.setFrameShape(QtGui.QFrame.StyledPanel)
@@ -2327,7 +2307,7 @@ class EMInspector3D(QtGui.QWidget):
 		hbox.addWidget(self.orthoradio)
 		hbox.addWidget(self.perspectiveradio)
 		frame.setLayout(hbox)
-		grid.addWidget(frame, 3, 0,1,2)
+		grid.addWidget(frame, 3, 0, 1, 3)
 		cwidget.setLayout(grid)
 
 		QtCore.QObject.connect(self.near,QtCore.SIGNAL("valueChanged(int)"),self._on_near)
@@ -2339,30 +2319,34 @@ class EMInspector3D(QtGui.QWidget):
 		
 		return cwidget
 	
-	def _on_near(self, value):
+	def _on_near(self, value, link=True):
 		if not self.scenegraph().camera.usingortho and value <= 0:
 			return
 		if self.scenegraph().camera.getClipFar() > value:
+			if self.lockcb.isChecked() and link: self._on_far(self.scenegraph().camera.getClipFar() + (value - self.scenegraph().camera.getClipNear()), link=False)
 			self.scenegraph().camera.setClipNear(value)
 			self.scenegraph().updateSG()
 	
-	def _on_far(self, value):
+	def _on_far(self, value, link=True):
 		if value > self.scenegraph().camera.getClipNear():
+			if self.lockcb.isChecked() and link: self._on_near(self.scenegraph().camera.getClipNear() + (value - self.scenegraph().camera.getClipFar()), link=False)
 			self.scenegraph().camera.setClipFar(value)
 			self.scenegraph().updateSG()
 		
-	def _on_near_move(self, movement):
+	def _on_near_move(self, movement, link=True):
 		value = self.scenegraph().camera.getClipNear() + movement
 		if not self.scenegraph().camera.usingortho and value <= 0:
 			return
 		if self.scenegraph().camera.getClipFar() > value:
 			self.scenegraph().camera.setClipNear(value)
+			if self.lockcb.isChecked() and link: self._on_far_move(movement, link=False)
 			self.scenegraph().updateSG()
 		
-	def _on_far_move(self, movement):
+	def _on_far_move(self, movement, link=True):
 		value = self.scenegraph().camera.getClipFar() + movement
 		if value > self.scenegraph().camera.getClipNear():
 			self.scenegraph().camera.setClipFar(value)
+			if self.lockcb.isChecked() and link: self._on_near_move(movement, link=False)
 			self.scenegraph().updateSG()
 		
 	def _on_load_camera(self, idx):
@@ -3088,6 +3072,7 @@ class NodeDialog(QtGui.QDialog):
 class GLdemo(QtGui.QWidget):
 	def __init__(self):
 		QtGui.QWidget.__init__(self)
+		
 		self.widget = EMScene3D()
 		#self.widget.camera.usePrespective(50, 0.5)
 		self.cube = EMCube(50.0)
@@ -3096,6 +3081,7 @@ class GLdemo(QtGui.QWidget):
 		self.widget.addChild(self.sphere)
 		self.cylider = EMCylinder(50.0, 50.0)
 		self.widget.addChild(self.cylider)
+		
 		#self.emdata = EMDataItem3D("/home/john/Bo_data/simulated_data/3DmapIP3R1_small.mrc", transform=Transform())
 		#self.emdata = EMDataItem3D("/Users/ross/Work/AVGmonomer96.mrc", transform=Transform())
 		#self.widget.addChild(self.emdata)
@@ -3121,6 +3107,7 @@ class GLdemo(QtGui.QWidget):
 		
 if __name__ == "__main__":
 	import sys
+	from pmwidgets import PMIntEntryWidget, PMStringEntryWidget, PMBoolWidget, PMFileNameWidget, PMComboWidget
 	app = QtGui.QApplication(sys.argv)
 	window = GLdemo()
 	window.show()

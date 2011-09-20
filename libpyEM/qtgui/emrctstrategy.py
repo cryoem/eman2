@@ -232,7 +232,7 @@ class Strategy2IMGPair(Strategy):
 				gamma = math.pi/2
 				
 			self.dgamma = math.degrees(gamma) 
-			print rotA
+			#print rotA
 			
 			self.mediator.control_window.pair_picker_tool.tiltaxis.setText(("%3.2f"%self.dphi)+u'\u00B0')
 			self.mediator.control_window.pair_picker_tool.gamma.setText(("%3.2f"%self.dgamma)+u'\u00B0')

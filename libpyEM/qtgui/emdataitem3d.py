@@ -74,12 +74,14 @@ class EMDataItem3DInspector(EMItem3DInspector):
 		EMItem3DInspector.__init__(self, name, item3d, numgridcols=2)
 	
 	def updateItemControls(self):
+		""" Updates this item inspector. Function is called by the item it observes"""
 		super(EMDataItem3DInspector, self).updateItemControls()
 		# Anything that needs to be updated when the scene is rendered goes here.....
 		if self.item3d().path: self.file_path_label.setText(self.item3d().path)
 		self.data_checkbox.setChecked(self.item3d().getRenderBoundingBox())
 		
 	def addControls(self, gridbox):
+		""" Construct all the widgets in this Item Inspector """
 		super(EMDataItem3DInspector, self).addControls(gridbox)
 		
 		dataframe = QtGui.QFrame()
@@ -338,6 +340,7 @@ class EMSliceInspector(EMInspectorControlShape):
 		self.updateItemControls()
 		
 	def updateItemControls(self):
+		""" Updates this item inspector. Function is called by the item it observes"""
 		super(EMSliceInspector, self).updateItemControls()
 		# Anything that needs to be updated when the scene is rendered goes here.....
 		self.use_3d_texture_checkbox.setChecked(self.item3d().use_3d_texture)
@@ -354,6 +357,7 @@ class EMSliceInspector(EMInspectorControlShape):
 		self.contrast_slider.setRange(0.001, 1.0)
 		
 	def addControls(self, gridbox):
+		""" Construct all the widgets in this Item Inspector """
 		super(EMSliceInspector, self).addControls(gridbox)
 		
 		sliceframe = QtGui.QFrame()
@@ -599,6 +603,7 @@ class EMVolumeInspector(EMInspectorControlShape):
 		QtCore.QObject.connect(self.contrast_slider, QtCore.SIGNAL("valueChanged"), self.onContrastSlider)
 
 	def updateItemControls(self):
+		""" Updates this item inspector. Function is called by the item it observes"""
 		super(EMVolumeInspector, self).updateItemControls()
 		# Anything that needs to be updated when the scene is rendered goes here.....
 		
@@ -652,6 +657,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		self.sampling_spinbox.valueChanged[int].connect(self.onSampling)
 	
 	def updateItemControls(self):
+		""" Updates this item inspector. Function is called by the item it observes"""
 		super(EMIsosurfaceInspector, self).updateItemControls()
 		# Anything that needs to be updated when the scene is rendered goes here.....
 		
@@ -665,6 +671,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		self.setSamplingRange(self.item3d().isorender.get_sampling_range())
 		
 	def addControls(self, gridbox):
+		""" Construct all the widgets in this Item Inspector """
 		super(EMIsosurfaceInspector, self).addControls(gridbox)
 		self.histogram_widget = ImgHistogram(self)
 		self.histogram_widget.setObjectName("hist")

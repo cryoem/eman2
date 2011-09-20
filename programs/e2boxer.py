@@ -31,13 +31,12 @@
 #
 #
 
-from EMAN2 import BoxingTools,gm_time_string,Transform, E2init, E2end, E2progress,db_open_dict
+from EMAN2 import BoxingTools,gm_time_string,Transform, E2init, E2end, E2progress,db_open_dict,EMArgumentParser
 from EMAN2db import db_check_dict
 from pyemtbx.boxertools import CoarsenedFlattenedImageCache,FLCFImageCache
 from copy import deepcopy
 from emboxerbase import *
 SWARM_TEMPLATE_MIN = TEMPLATE_MIN # this comes from emboxerbase
-
 
 def e2boxer_check(options,args):
 	error_message = check(options,args)
@@ -65,7 +64,7 @@ def e2boxer_check(options,args):
 	
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <image> <image2>....
+	usage = """prog [options] <image> <image2>....
 
 The 'new' version of e2boxer. While it is quite usable, it is still in need of some work.
 
@@ -73,23 +72,23 @@ For example:
 
 e2boxer.py ????.mrc --boxsize=256
 """
-
-	parser = OptionParser(usage=usage,version=EMANVERSION)
-	parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)
-	parser.add_option("--write_dbbox",action="store_true",help="Write coordinate file (eman1 dbbox) files",default=False)
-	parser.add_option("--write_ptcls",action="store_true",help="Write particles to disk",default=False)
-	parser.add_option("--force","-f",action="store_true",help="Force overwrite",default=False)
-	parser.add_option("--format", help="Format of the output particles images, should be bdb,img,spi or hdf", default="bdb")
-	parser.add_option("--norm", type="string",help="Normalization processor to apply to written particle images. Should be normalize, normalize.edgemean,etc.Specifc \"None\" to turn this off", default="normalize.edgemean")
-	parser.add_option("--invert",action="store_true",help="If writing outputt inverts pixel intensities",default=False)
-	parser.add_option("--suffix",type="string",help="suffix which is appended to the names of output particle and coordinate files",default="_ptcls")
-	parser.add_option("--dbls",type="string",help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
-	parser.add_option("--autoboxer",type="string",help="A key of the swarm_boxers dict in the local directory, used by the workflow.",default=None)
-	parser.add_option("--gui", dest="dummy", help="Dummy option; used in older version of e2boxer")
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-
-
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
+	parser.add_pos_argument(name="micrographs",help="List the file to process with e2boxer here.", default="", positional=True, row=0, col=0,rowspan=1, colspan=4)
+	parser.add_header(name="boxerheader", help='Options below this label are specific to e2boxer', title="### e2boxer options ###", row=1, col=0, rowspan=1, colspan=4)
+	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=-1, guitype='intbox', row=2, col=0, rowspan=1, colspan=4)
+	parser.add_argument("--write_dbbox",action="store_true",help="Write coordinate file (eman1 dbbox) files",default=False, guitype='boolbox', expert=True, row=3, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--write_ptcls",action="store_true",help="Write particles to disk",default=False, guitype='boolbox', expert=True, row=3, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--force","-f",action="store_true",help="Force overwrite",default=False, guitype='boolbox', expert=True, row=3, col=2, rowspan=1, colspan=1)
+	parser.add_argument("--format", help="Format of the output particles images, should be bdb,img,spi or hdf", default="bdb")
+	parser.add_argument("--norm", type=str,help="Normalization processor to apply to written particle images. Should be normalize, normalize.edgemean,etc.Specifc \"None\" to turn this off", default="normalize.edgemean", guitype='strbox', expert=True, row=4, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--invert",action="store_true",help="If writing outputt inverts pixel intensities",default=False, guitype='boolbox', expert=True, row=3, col=3, rowspan=1, colspan=1)
+	parser.add_argument("--suffix",type=str,help="suffix which is appended to the names of output particle and coordinate files",default="_ptcls", guitype='strbox', expert=True, row=4, col=2, rowspan=1, colspan=2)
+	parser.add_argument("--dbls",type=str,help="data base list storage, used by the workflow. You can ignore this argument.",default=None, guitype='strbox', expert=True, row=5, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--autoboxer",type=str,help="A key of the swarm_boxers dict in the local directory, used by the workflow.",default=None, guitype='strbox', expert=True, row=5, col=2, rowspan=1, colspan=2)
+	parser.add_argument("--gui", dest="dummy", help="Dummy option; used in older version of e2boxer")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+ 
 	(options, args) = parser.parse_args()
 	
 	logid=E2init(sys.argv)

@@ -41,7 +41,7 @@ import sys
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] 
+	usage = """prog [options] 
 	
 	This program is used to produce reference-free class averages from a population of mixed,
 	unaligned particle images. These averages can be used to generate initial models or assess
@@ -57,61 +57,63 @@ def main():
 	
 	Note that it does have the --parallel option, but a few steps of the iterative process
 	are not parallelized, so don't be surprised if multiple cores are not always active."""
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	# we grab all relevant options from e2refine.py for consistency
 	# and snag a bunch of related code from David
 	
 	#options associated with e2refine2d.py
-	parser.add_option("--path",type="string",default=None,help="Path for the refinement, default=auto")
-	parser.add_option("--iter", type = "int", default=8, help = "The total number of refinement iterations to perform")
-	parser.add_option("--automask", default=False, action="store_true",help="This will perform a 2-D automask on class-averages to help with centering. May be useful for negative stain data particularly.")
-	parser.add_option("--check", "-c",default=False, action="store_true",help="Checks the contents of the current directory to verify that e2refine2d.py command will work - checks for the existence of the necessary starting files and checks their dimensions. Performs no work ")
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_option("--input", default="start.hdf",type="string", help="The name of the file containing the particle data")
-	parser.add_option("--ncls", default=32, type="int", help="Number of classes to generate")
-	parser.add_option("--maxshift", default=-1, type="int", help="Maximum particle translation in x and y")
-	parser.add_option("--naliref", default=5, type="int", help="Number of alignment references to when determining particle orientations")
-	parser.add_option("--exclude", type="string",default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude.")
-	parser.add_option("--resume", default=False, action="store_true",help="This will cause a check of the files in the current directory, and the refinement will resume after the last completed iteration. It's ok to alter other parameters.")
+	parser.add_header(name="refine2dheader", help='Options below this label are specific to e2refine2d', title="### e2refine2d options ###", row=1, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--path",type=str,default=None,help="Path for the refinement, default=auto")
+	parser.add_argument("--iter", type=int, default=8, help = "The total number of refinement iterations to perform", guitype='intbox', row=3, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--automask", default=False, action="store_true",help="This will perform a 2-D automask on class-averages to help with centering. May be useful for negative stain data particularly.")
+	parser.add_argument("--check", "-c",default=False, action="store_true",help="Checks the contents of the current directory to verify that e2refine2d.py command will work - checks for the existence of the necessary starting files and checks their dimensions. Performs no work ")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--input", default="start.hdf",type=str, help="The name of the file containing the particle data", guitype='filebox', row=0, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--ncls", default=32, type=int, help="Number of classes to generate", guitype='intbox', row=2, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--maxshift", default=-1, type=int, help="Maximum particle translation in x and y")
+	parser.add_argument("--naliref", default=5, type=int, help="Number of alignment references to when determining particle orientations", guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--exclude", type=str,default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude.")
+	parser.add_argument("--resume", default=False, action="store_true",help="This will cause a check of the files in the current directory, and the refinement will resume after the last completed iteration. It's ok to alter other parameters.")
 	
 	#options associated with generating initial class-averages
-	parser.add_option("--initial",type="string",default=None,help="File containing starting class-averages. If not specified, will generate starting averages automatically")
-	parser.add_option("--nbasisfp",type="int",default=5,help="Number of MSA basis vectors to use when classifying particles")
-	parser.add_option("--minchange", type="int",default=-1,help="Minimum number of particles that change group before deicding to terminate. Default = -1 (auto)")
-	parser.add_option("--fastseed", action="store_true", default=False,help="Will seed the k-means loop quickly, but may produce less consistent results.")
+	parser.add_argument("--initial",type=str,default=None,help="File containing starting class-averages. If not specified, will generate starting averages automatically", guitype='strbox', row=3, col=1, rowspan=1, colspan=2)
+	parser.add_argument("--nbasisfp",type=int,default=5,help="Number of MSA basis vectors to use when classifying particles", guitype='intbox', row=4, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--minchange", type=int,default=-1,help="Minimum number of particles that change group before deicding to terminate. Default = -1 (auto)")
+	parser.add_argument("--fastseed", action="store_true", default=False,help="Will seed the k-means loop quickly, but may produce less consistent results.")
 
+	parser.add_header(name="simmxheader", help='Options below this label are specific to simmx', title="### simmx options ###", row=6, col=0, rowspan=1, colspan=3)
 	# options associated with e2simmx.py
-	parser.add_option("--simalign",type="string",help="The name of an 'aligner' to use prior to comparing the images (default=rotate_translate_flip)", default="rotate_translate_flip")
-	parser.add_option("--simaligncmp",type="string",help="Name of the aligner along with its construction arguments (default=ccc)",default="ccc")
-	parser.add_option("--simralign",type="string",help="The name and parameters of the second stage aligner which refines the results of the first alignment", default=None)
-	parser.add_option("--simraligncmp",type="string",help="The name and parameters of the comparitor used by the second stage aligner. (default=dot).",default="dot")
-#	parser.add_option("--simcmp",type="string",help="The name of a 'cmp' to be used in comparing the aligned images (default=dot:normalize=1)", default="dot:normalize=1")
-	parser.add_option("--simcmp",type="string",help="The name of a 'cmp' to be used in comparing the aligned images (default=ccc)", default="ccc")
-	parser.add_option("--shrink", dest="shrink", type = "int", default=None, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes.")
+	parser.add_argument("--simalign",type=str,help="The name of an 'aligner' to use prior to comparing the images (default=rotate_translate_flip)", default="rotate_translate_flip", guitype='comboparambox', choicelist='dump_aligners_list()', row=9, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--simaligncmp",type=str,help="Name of the aligner along with its construction arguments (default=ccc)",default="ccc", guitype='comboparambox', choicelist='dump_cmps_list()', row=10, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--simralign",type=str,help="The name and parameters of the second stage aligner which refines the results of the first alignment", default=None, guitype='comboparambox', choicelist='dump_aligners_list()', row=11, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--simraligncmp",type=str,help="The name and parameters of the comparitor used by the second stage aligner. (default=dot).",default="dot", guitype='comboparambox', choicelist='dump_cmps_list()', row=12, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--simcmp",type=str,help="The name of a 'cmp' to be used in comparing the aligned images (default=ccc)", default="ccc", guitype='comboparambox', choicelist='dump_cmps_list()', row=8, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--shrink", dest="shrink", type=int, default=1, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes.", guitype='intbox', row=7, col=0, rowspan=1, colspan=1)
 	
+	parser.add_header(name="caheader", help='Options below this label are specific to class averageing', title="### Class averaging options ###", row=13, col=0, rowspan=1, colspan=3)
 	# options associated with e2classaverage
-	parser.add_option("--classkeep",type="float",default=0.85,help="The fraction of particles to keep in each class, based on the similarity score generated by the --cmp argument (default=0.85).")
-	parser.add_option("--classkeepsig", default=False, action="store_true", help="Change the keep (\'--keep\') criterion from fraction-based to sigma-based.")
-	parser.add_option("--classiter", default=5, type="int", help="Number of iterations to use when making class-averages (default=5)")
-	parser.add_option("--classalign",type="string",help="If doing more than one iteration, this is the name and parameters of the 'aligner' used to align particles to the previous class average.", default="rotate_translate_flip")
-	parser.add_option("--classaligncmp",type="string",help="This is the name and parameters of the comparitor used by the fist stage aligner  Default is dot.",default="ccc")
-	parser.add_option("--classralign",type="string",help="The second stage aligner which refines the results of the first alignment in class averaging. Default is None.", default=None)
-	parser.add_option("--classraligncmp",type="string",help="The comparitor used by the second stage aligner in class averageing. Default is dot:normalize=1.",default="ccc")
-	parser.add_option("--classaverager",type="string",help="The averager used to generate the class averages. Default is \'mean\'.",default="mean")
-	parser.add_option("--classcmp",type="string",help="The name and parameters of the comparitor used to generate similarity scores, when class averaging. Default is ccc'", default="ccc")
-	parser.add_option("--classnormproc",type="string",default="normalize.edgemean",help="Normalization applied during class averaging")
-	parser.add_option("--classrefsf",default=False, action="store_true", help="Use the setsfref option in class averaging to produce better filtered averages.")
+	parser.add_argument("--classkeep",type=float,default=0.85,help="The fraction of particles to keep in each class, based on the similarity score generated by the --cmp argument (default=0.85).", guitype='floatbox', row=14, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--classkeepsig", default=False, action="store_true", help="Change the keep (\'--keep\') criterion from fraction-based to sigma-based.", guitype='boolbox', row=14, col=2, rowspan=1, colspan=1)
+	parser.add_argument("--classiter", default=5, type=int, help="Number of iterations to use when making class-averages (default=5)", guitype='intbox', row=14, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--classalign",type=str,help="If doing more than one iteration, this is the name and parameters of the 'aligner' used to align particles to the previous class average.", default="rotate_translate_flip", guitype='comboparambox', choicelist='dump_aligners_list()', row=18, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--classaligncmp",type=str,help="This is the name and parameters of the comparitor used by the fist stage aligner  Default is dot.",default="ccc", guitype='comboparambox', choicelist='dump_cmps_list()', row=19, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--classralign",type=str,help="The second stage aligner which refines the results of the first alignment in class averaging. Default is None.", default=None, guitype='comboparambox', choicelist='dump_aligners_list()', row=20, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--classraligncmp",type=str,help="The comparitor used by the second stage aligner in class averageing. Default is dot:normalize=1.",default="ccc", guitype='comboparambox', choicelist='dump_cmps_list()', row=21, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--classaverager",type=str,help="The averager used to generate the class averages. Default is \'mean\'.",default="mean", guitype='combobox', choicelist='dump_averagers_list()', row=16, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--classcmp",type=str,help="The name and parameters of the comparitor used to generate similarity scores, when class averaging. Default is ccc'", default="ccc", guitype='comboparambox', choicelist='dump_cmps_list()', row=17, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--classnormproc",type=str,default="normalize.edgemean",help="Normalization applied during class averaging", guitype='comboparambox', choicelist='dump_processors_list()', row=15, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--classrefsf",default=False, action="store_true", help="Use the setsfref option in class averaging to produce better filtered averages.", guitype='boolbox', row=16, col=2, rowspan=1, colspan=1)
 	
 	 
 	#options associated with e2basis.py
-	parser.add_option("--normproj", default=False, action="store_true",help="Normalizes each projected vector into the MSA subspace. Note that this is different from normalizing the input images since the subspace is not expected to fully span the image")
+	parser.add_argument("--normproj", default=False, action="store_true",help="Normalizes each projected vector into the MSA subspace. Note that this is different from normalizing the input images since the subspace is not expected to fully span the image", guitype='boolbox', row=2, col=1, rowspan=1, colspan=1)
 
 	# Parallelism
-	parser.add_option("--parallel","-P",type="string",help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None)
+	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None, guitype='strbox', row=5, col=0, rowspan=1, colspan=3)
 	
 	# Database Metadata storage
-	parser.add_option("--dbls",type="string",help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
+	parser.add_argument("--dbls",type=str,help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
 	
 		
 	global options
@@ -260,7 +262,7 @@ def main():
 		e2simmxcmd = "e2simmx.py %s#aliref_%02d %s %s#simmx_%02d -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d %s"%(options.path,it, options.input,options.path,it,options.simcmp,options.simalign,options.simaligncmp,subverbose,excludestr)
 		if options.simralign : e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
 		if options.parallel: e2simmxcmd += " --parallel=%s" %options.parallel
-		if options.shrink: e2simmxcmd += " --shrink=%d" %options.shrink
+		if options.shrink > 1: e2simmxcmd += " --shrink=%d" %options.shrink
 		run(e2simmxcmd)
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)

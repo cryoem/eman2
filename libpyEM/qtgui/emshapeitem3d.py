@@ -729,12 +729,14 @@ class EMInspectorControlShape(EMItem3DInspector):
 		EMItem3DInspector.__init__(self, name, item3d, numgridcols=numgridcols)
 		
 	def updateItemControls(self):
+		""" Updates this item inspector. Function is called by the item it observes"""
 		super(EMInspectorControlShape, self).updateItemControls()
 		self.ambcolorbox.setColor(QtGui.QColor(255*self.item3d().ambient[0],255*self.item3d().ambient[1],255*self.item3d().ambient[2]))
 		self.diffusecolorbox.setColor(QtGui.QColor(255*self.item3d().diffuse[0],255*self.item3d().diffuse[1],255*self.item3d().diffuse[2]))
 		self.specularcolorbox.setColor(QtGui.QColor(255*self.item3d().specular[0],255*self.item3d().specular[1],255*self.item3d().specular[2]))
 		
 	def addControls(self, gridbox):
+		""" Construct all the widgets in this Item Inspector """
 		super(EMInspectorControlShape, self).addControls(gridbox)
 		colorframe = QtGui.QFrame()
 		colorframe.setFrameShape(QtGui.QFrame.StyledPanel)
@@ -820,11 +822,13 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 		EMInspectorControlShape.__init__(self, name, item3d, numgridcols=2)
 
 	def updateItemControls(self):
+		""" Updates this item inspector. Function is called by the item it observes"""
 		super(EMInspectorControl3DText, self).updateItemControls()
 		self.fontDepth.setValue(int(self.item3d().getFontDepth()))
 		self.fontSize.setValue(int(self.item3d().getFontSize()))
 	
 	def updateMetaData(self):
+		""" Updates the items metadata, such as line length, width. Function is called by the item it observes when the items meta data changes """
 		super(EMInspectorControlShape, self).updateMetaData()
 		if self.item3d().getFontMode() == FTGLFontMode.EXTRUDE:
 			self.textModeBox.setCurrentIndex(0)
@@ -836,6 +840,7 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 			self.textModeBox.setCurrentIndex(3)
 		
 	def addControls(self, gridbox):
+		""" Construct all the widgets in this Item Inspector """
 		super(EMInspectorControl3DText, self).addControls(gridbox)
 			
 		textframe = QtGui.QFrame()
@@ -932,9 +937,11 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		EMInspectorControlShape.__init__(self, name, item3d, numgridcols=2)
 		
 	def updateItemControls(self):
+		""" Updates this item inspector. Function is called by the item it observes"""
 		super(EMInspectorControlLine, self).updateItemControls()
 	
 	def updateMetaData(self):
+		""" Updates the items metadata, such as line length, width. Function is called by the item it observes when the items meta data changes """
 		super(EMInspectorControlLine, self).updateMetaData()
 		self.leftArrowSize.setValue(self.item3d().leftArrowSize, quiet=1)
 		self.leftArrowLength.setValue(self.item3d().leftArrowLength, quiet=1)
@@ -945,6 +952,7 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		self.linelength.setValue(int(self.item3d().length), quiet=1)
 		
 	def addControls(self, gridbox):
+		""" Construct all the widgets in this Item Inspector """
 		super(EMInspectorControlLine, self).addControls(gridbox)
 		
 		#frame to control properties of left/right arrows

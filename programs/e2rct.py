@@ -36,6 +36,7 @@ from EMAN2 import *
 from EMAN2db import db_close_dict
 from optparse import OptionParser
 from os import system
+import sys
 
 def main():
   
@@ -72,6 +73,8 @@ def main():
 
 	global options
 	(options, args) = parser.parse_args()
+	logid=E2init(sys.argv)
+	
 	if options.careject: options.careject = options.careject.split(',')
 	
 	if not options.path:
@@ -175,7 +178,8 @@ def main():
 		avged.write_image("%srctrecon_avg" % (options.path), 0)
   
 	db_close_dict(options.classavg)
-
+	E2end(logid)
+	
 def average_rcts(arlist, totalptcls):
 	if options.verbose>0: print "Making final recon using %d class average recons" % len(arlist)
 	avgr = Averagers.get('mean')		    

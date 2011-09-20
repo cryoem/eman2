@@ -28,7 +28,7 @@
     "CHILDREN": [
       {
         "ICON": "green_boxes", 
-        "PROGRAM": "programName", 
+        "PROGRAM": "e2boxer.py", 
         "NAME": "Interactive Boxing-  e2boxer", 
         "CHILDREN": []
       }, 
@@ -121,7 +121,7 @@
     "CHILDREN": [
       {
         "ICON": "web", 
-        "PROGRAM": "programName", 
+        "PROGRAM": "e2refine2d.py", 
         "NAME": "Generate Classes - e2refine2d", 
         "CHILDREN": []
       }

@@ -47,7 +47,7 @@ EMBOXERRCT_DB = "bdb:emboxerrct"
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <image> <image2>....
+	usage = """%prog [options] <untilted micrograph> <tilted micrograph>....
 This is a tilted - untilted particle particle picker, for use in RCT particle picking. A tilted and untilted micrograph are loaded and the user picks a untilted particle and a corresponding tilted particle.
 After atleast 3 particle pairs are picked a transformation matrix is completed which can be used to predict the postion of the tilted or untilted particle from a untilted or tilted particle respectily.
 From the transform matrix, the tilt angle, tilit axis(with respect to Y) and the gamma angle are all computed. 
@@ -85,8 +85,13 @@ Usage: e2RCTboxer.py untilted.hdf tilted.hdf options.
 	# Open Application, setup rct object, and run
 	application = EMApp()
 	rctboxer = RCTboxer(application, options.boxsize)	# Initialize the boxer
-	rctboxer.load_untilt_image(args[0])			# Load the untilted image
-	rctboxer.load_tilt_image(args[1])			# Load the tilted image
+	
+	if len(args) != 2:
+		print "You need to supply both untiled and tilted micrographs.\nUsage: e2RCTboxer.py [options] <untilted micrograph> <tilted micrograph>"
+		sys.exit(1)
+		
+	rctboxer.load_untilt_image(args[0])		# Load the untilted image
+	rctboxer.load_tilt_image(args[1])		# Load the tilted image
 	rctboxer.init_control_pannel_tools()			# Initialize control pannel tools, this needs to be done last as loaded data maybe be used
 	application.execute()
 	
