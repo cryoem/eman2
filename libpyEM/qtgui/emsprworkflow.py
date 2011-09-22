@@ -637,9 +637,9 @@ class EMProjectDataDict:
 #			if self.data_dict_name == spr_ptcls_dict:
 #				self.__convert_ptcls_dict_to_tags()
 			
-			print self.db_name
+#			print self.db_name
 			project_db = db_open_dict(self.db_name)
-			print project_db
+#			print project_db
 			self.data_dict = project_db.get(self.data_dict_name,dfl={})
 		
 		return self.data_dict
