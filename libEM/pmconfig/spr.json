@@ -34,8 +34,8 @@
       }, 
       {
         "ICON": "green_boxes", 
-        "PROGRAM": "programName", 
-        "NAME": "Auto Boxing -e2boxer", 
+        "PROGRAM": "e2RCTboxer.py", 
+        "NAME": "Tilt Pair Boxing-  e2RCTboxer", 
         "CHILDREN": []
       }, 
       {
@@ -102,7 +102,7 @@
       }, 
       {
         "ICON": "multiple_images", 
-        "PROGRAM": "programName", 
+        "PROGRAM": "e2evalparticles.py", 
         "NAME": "Evaluate Particle Sets", 
         "CHILDREN": []
       }, 
@@ -143,6 +143,12 @@
         "PROGRAM": "e2montecarlorecon.py", 
         "NAME": "Make Model - e2montecarlo", 
         "CHILDREN": []
+      },
+      {
+        "ICON": "single_image_3d", 
+        "PROGRAM": "e2rct.py", 
+        "NAME": "Make Model - e2rct", 
+        "CHILDREN": []
       }
     ]
   }, 
@@ -170,19 +176,19 @@
         "CHILDREN": [
           {
             "ICON": "refine", 
-            "PROGRAM": "programName", 
+            "PROGRAM": "e2refinetofrealign.py", 
             "NAME": "Run e2refinetofrealign", 
             "CHILDREN": []
           }, 
           {
             "ICON": "refine", 
-            "PROGRAM": "programName", 
+            "PROGRAM": "e2runfrealign.py", 
             "NAME": "Run e2runfrealign", 
             "CHILDREN": []
           }, 
           {
             "ICON": "refine", 
-            "PROGRAM": "programName", 
+            "PROGRAM": "e2refinefromfrealign.py", 
             "NAME": "Run e2refinefromfrealign", 
             "CHILDREN": []
           }
@@ -197,14 +203,27 @@
     "CHILDREN": [
       {
         "ICON": "resolution", 
-        "PROGRAM": "programName", 
+        "PROGRAM": "e2eotest.py", 
         "NAME": "Run e2eotest", 
         "CHILDREN": []
       }, 
       {
         "ICON": "resolution", 
-        "PROGRAM": "programName", 
+        "PROGRAM": "e2resolution.py", 
         "NAME": "Run e2resolution", 
+        "CHILDREN": []
+      }
+    ]
+  },
+  {
+    "ICON": "single_image_3d", 
+    "PROGRAM": "programName", 
+    "NAME": "Validation", 
+    "CHILDREN": [
+      {
+        "ICON": "single_image_3d", 
+        "PROGRAM": "e2tiltvalidate.py", 
+        "NAME": "Run e2tiltvalidate", 
         "CHILDREN": []
       }
     ]

@@ -32,7 +32,6 @@
 #
 from EMAN2 import *
 from EMAN2db import db_open_dict, db_close_dict, db_remove_dict
-from optparse import OptionParser
 from PyQt4 import QtCore
 from emapplication import EMApp
 from emimagemx import EMImageMXWidget
@@ -47,7 +46,7 @@ EMBOXERRCT_DB = "bdb:emboxerrct"
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <untilted micrograph> <tilted micrograph>....
+	usage = """prog [options] <untilted micrograph> <tilted micrograph>....
 This is a tilted - untilted particle particle picker, for use in RCT particle picking. A tilted and untilted micrograph are loaded and the user picks a untilted particle and a corresponding tilted particle.
 After atleast 3 particle pairs are picked a transformation matrix is completed which can be used to predict the postion of the tilted or untilted particle from a untilted or tilted particle respectily.
 From the transform matrix, the tilt angle, tilit axis(with respect to Y) and the gamma angle are all computed. 
@@ -58,10 +57,14 @@ widget(so there must be one widget for each strategy) and the strategy GUI widge
 Usage: e2RCTboxer.py untilted.hdf tilted.hdf options.
 """
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
-	parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)
-	parser.add_option("--slow","-S",action="store_true",help="High performace",default=False)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+	
+	parser.add_pos_argument(name="untilted micrograph",help="List the untilted micrograph here.", default="", guitype='filebox', positional=True, row=0, col=0,rowspan=1, colspan=1)
+	parser.add_pos_argument(name="tilted micrograph",help="List the tilted micrograph here.", default="", guitype='filebox', positional=True, row=1, col=0,rowspan=1, colspan=1)
+	parser.add_header(name="RCTboxerheader", help='Options below this label are specific to e2RCTboxer', title="### e2RCTboxer options ###", row=2, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=-1, guitype='intbox', row=3, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--slow","-S",action="store_true",help="High performace",default=False)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 
 	# Options need to be accessible, anywhere

@@ -35,7 +35,6 @@ from EMAN2 import *
 from emimagemx import EMImageMXWidget
 
 import sys
-from optparse import OptionParser
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 #from OpenGL import GL,GLU,GLUT
@@ -46,17 +45,18 @@ from valslider import *
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog 
+	usage = """prog 
 	
 	This program provides tools for evaluating particle data in various ways. For example it will allow you to select class-averages
 	containing bad (or good) particles and manipulate the project to in/exclude them.
 	
 """
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive use (default=True)",default=True)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_header(name="runeval", help='Click Launch to run Steve\'s eval particle scheme', title="### Click Launch to run e2evalparticles ###", row=0, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--gui",action="store_true",help="Start the GUI for interactive use (default=True)",default=True)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 	

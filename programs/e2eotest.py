@@ -35,7 +35,6 @@
 
 from EMAN2 import *
 from EMAN2db import db_open_dict, db_close_dict, db_check_dict
-from optparse import OptionParser
 from math import *
 import os
 import sys
@@ -45,7 +44,7 @@ from e2refine import check_make3d_args,get_classaverage_cmd,check_classaverage_a
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] 
+	usage = """prog [options] 
 	EMAN2 even odd test to assess resolution of a single particle reconstruction. Arguments are a subset of the
 	arguments passed to e2refine.py, and should generally be identical to those used during refinement.
 	
@@ -54,70 +53,75 @@ def main():
 	Output is written to the EMAN2 database corresponding to the path argument, specifically it is inserted the fsc.results entry.
 	
 	"""
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_option("--path", default=None, type="string",help="The name the e2refine directory that contains the reconstruction data.")
-	parser.add_option("--iteration",default=None,type="string",help="Advanced. Can be used to perform the eotest using data from specific rounds of iterative refinement. In unspecified that most recently generated class data are used.")
-	parser.add_option("--usefilt", dest="usefilt", type="string",default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used for class alignment (but not averaging).")
-	parser.add_option("--sym", dest = "sym", type="string", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos",default=None)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_option("--lowmem", default=False, action="store_true",help="Make limited use of memory when possible - useful on lower end machines")
-	parser.add_option("--force","-f", default=False, action="store_true",help="Force overwrite previously existing files")
-	parser.add_option("--prefilt",action="store_true",help="Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison",default=False)
-	parser.add_option("--mass", default=None, type="float",help="The mass of the particle in kilodaltons, used to run normalize.bymass. If unspecified nothing happens. Requires the --apix argument.")
-	parser.add_option("--apix", default=None, type="float",help="The angstrom per pixel of the input particles. This argument is required if you specify the --mass argument. If unspecified, the convergence plot is generated using either the project apix, or if not an apix of 1.")
-	parser.add_option("--automask3d", default=None, type="string",help="The 5 parameters of the mask.auto3d processor, applied after 3D reconstruction. These paramaters are, in order, isosurface threshold,radius,nshells and ngaussshells. Specify --automask=none to suppress using the mask from refinement")
+	parser.add_pos_argument(name="dir",help="The refinement directory to use for eotest.", default="", guitype='combobox', choicelist='glob.glob("refine*")', positional=True, row=0, col=0,rowspan=1, colspan=2)
+	parser.add_pos_argument(name="refineiter",help="The refinement iteration to use.", default="", guitype='intbox', positional=True, row=0, col=2,rowspan=1, colspan=1)
+	parser.add_header(name="eotestheader", help='Options below this label are specific to e2eotest', title="### e2eotest options ###", row=1, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--path", default=None, type=str,help="The name the e2refine directory that contains the reconstruction data.")
+	parser.add_argument("--iteration",default=None,type=str,help="Advanced. Can be used to perform the eotest using data from specific rounds of iterative refinement. In unspecified that most recently generated class data are used.")
+	parser.add_argument("--usefilt", dest="usefilt", type=str,default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used for class alignment (but not averaging).")
+	parser.add_argument("--sym", dest = "sym", type=str, help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos",default="c1", guitype='symbox', row=3, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--lowmem", default=False, action="store_true",help="Make limited use of memory when possible - useful on lower end machines", guitype='boolbox', row=2, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--force","-f", default=False, action="store_true",help="Force overwrite previously existing files", guitype='boolbox', row=2, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--prefilt",action="store_true",help="Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison",default=False, guitype='boolbox', row=2, col=2, rowspan=1, colspan=1)
+	parser.add_argument("--mass", default=0, type=float,help="The mass of the particle in kilodaltons, used to run normalize.bymass. If unspecified (set to 0) nothing happens. Requires the --apix argument.")
+	parser.add_argument("--apix", default=0, type=float,help="The angstrom per pixel of the input particles. This argument is required if you specify the --mass argument. If unspecified (set to 0), the convergence plot is generated using either the project apix, or if not an apix of 1.")
+	parser.add_argument("--automask3d", default=None, type=str,help="The 5 parameters of the mask.auto3d processor, applied after 3D reconstruction. These paramaters are, in order, isosurface threshold,radius,nshells and ngaussshells. Specify --automask=none to suppress using the mask from refinement")
 	
 	
 	# options associated with e2classaverage.py
-	parser.add_option("--classkeep",type="float",help="The fraction of particles to keep in each class, based on the similarity score generated by the --cmp argument.")
-	parser.add_option("--classkeepsig", default=False, action="store_true", help="Change the keep (\'--keep\') criterion from fraction-based to sigma-based.")
-	parser.add_option("--classiter", type="int", help="The number of iterations to perform. Default is 1.", default=3)
-	parser.add_option("--classalign",type="string",help="If doing more than one iteration, this is the name and parameters of the 'aligner' used to align particles to the previous class average.", default="rotate_translate")
-	parser.add_option("--classaligncmp",type="string",help="This is the name and parameters of the comparitor used by the fist stage aligner  Default is dot.",default="phase")
-	parser.add_option("--classralign",type="string",help="The second stage aligner which refines the results of the first alignment in class averaging. Default is None.", default=None)
-	parser.add_option("--classraligncmp",type="string",help="The comparitor used by the second stage aligner in class averageing. Default is dot:normalize=1.",default="dot:normalize=1")
-	parser.add_option("--classaverager",type="string",help="The averager used to generate the class averages. Default is \'image\'.",default="image")
-	parser.add_option("--classcmp",type="string",help="The name and parameters of the comparitor used to generate similarity scores, when class averaging. Default is \'dot:normalize=1\'", default="dot:normalize=1")
-	parser.add_option("--classnormproc",type="string",default="normalize.edgemean",help="Normalization applied during class averaging")
-	parser.add_option("--classrefsf",default=False, action="store_true", help="Use the setsfref option in class averaging to produce better filtered averages.")
-	parser.add_option("--classautomask",default=False, action="store_true", help="This will apply an automask to the class-average during iterative alignment for better accuracy. The final class averages are unmasked.")
+	parser.add_header(name="caheader", help='Options below this label are specific to e2classaverage', title="### e2classaverage options ###", row=4, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--classkeep",type=float,help="The fraction of particles to keep in each class, based on the similarity score generated by the --cmp argument.", guitype='floatbox', row=5, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--classkeepsig", default=False, action="store_true", help="Change the keep (\'--keep\') criterion from fraction-based to sigma-based.", guitype='boolbox', row=5, col=2, rowspan=1, colspan=1)
+	parser.add_argument("--classiter", type=int, help="The number of iterations to perform. Default is 1.", default=3, guitype='intbox', row=5, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--classalign",type=str,help="If doing more than one iteration, this is the name and parameters of the 'aligner' used to align particles to the previous class average.", default="rotate_translate", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=9, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--classaligncmp",type=str,help="This is the name and parameters of the comparitor used by the fist stage aligner  Default is dot.",default="phase", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=10, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--classralign",type=str,help="The second stage aligner which refines the results of the first alignment in class averaging. Default is None.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=11, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--classraligncmp",type=str,help="The comparitor used by the second stage aligner in class averageing. Default is dot:normalize=1.",default="dot:normalize=1", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=12, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--classaverager",type=str,help="The averager used to generate the class averages. Default is \'image\'.",default="image", guitype='combobox', choicelist='dump_averagers_list()', row=7, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--classcmp",type=str,help="The name and parameters of the comparitor used to generate similarity scores, when class averaging. Default is \'dot:normalize=1\'", default="dot:normalize=1", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=8, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--classnormproc",type=str,default="normalize.edgemean",help="Normalization applied during class averaging", guitype='combobox', choicelist='re_filter_list(dump_processors_list(),\'normalize\')', row=6, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--classrefsf",default=False, action="store_true", help="Use the setsfref option in class averaging to produce better filtered averages.", guitype='boolbox', row=7, col=2, rowspan=1, colspan=1)
+	parser.add_argument("--classautomask",default=False, action="store_true", help="This will apply an automask to the class-average during iterative alignment for better accuracy. The final class averages are unmasked.")
 	
 	
 	#options associated with e2make3d.py
-	parser.add_option("--pad", type=int, dest="pad", help="To reduce Fourier artifacts, the model is typically padded by ~25% - only applies to Fourier reconstruction", default=0)
-	parser.add_option("--recon", dest="recon", default="fourier", help="Reconstructor to use see e2help.py reconstructors -v")
-	parser.add_option("--m3dkeep", type=float, help="The percentage of slices to keep in e2make3d.py")
-	parser.add_option("--m3dkeepsig", default=False, action="store_true", help="The standard deviation alternative to the --m3dkeep argument")
-	parser.add_option("--m3dsetsf", default=False, action="store_true", help="The standard deviation alternative to the --m3dkeep argument")
-	parser.add_option("--m3diter", type=int, default=4, help="The number of times the 3D reconstruction should be iterated")
-	parser.add_option("--m3dpreprocess", type="string", default="normalize.edgemean", help="Normalization processor applied before 3D reconstruction")
-	parser.add_option("--m3dpostprocess", type="string", default=None, help="Post processor to be applied to the 3D volume once the reconstruction is completed")
+	parser.add_header(name="make3dheader", help='Options below this label are specific to e2make3d', title="### e2make3d options ###", row=13, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--pad", type=int, dest="pad", help="To reduce Fourier artifacts, the model is typically padded by ~25% - only applies to Fourier reconstruction", default=0)
+	parser.add_argument("--recon", dest="recon", default="fourier", help="Reconstructor to use see e2help.py reconstructors -v", guitype='combobox', choicelist='dump_reconstructors_list()', row=14, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--m3dkeep", type=float, help="The percentage of slices to keep in e2make3d.py", default=0.85, guitype='floatbox', row=16, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--m3dkeepsig", default=False, action="store_true", help="The standard deviation alternative to the --m3dkeep argument", guitype='boolbox', row=16, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--m3dsetsf", default=False, action="store_true", help="The standard deviation alternative to the --m3dkeep argument", guitype='boolbox', row=16, col=2, rowspan=1, colspan=1)
+	parser.add_argument("--m3diter", type=int, default=4, help="The number of times the 3D reconstruction should be iterated", guitype='intbox', row=14, col=2, rowspan=1, colspan=1)
+	parser.add_argument("--m3dpreprocess", type=str, default="normalize.edgemean", help="Normalization processor applied before 3D reconstruction", guitype='combobox', choicelist='re_filter_list(dump_processors_list(),\'normalize\')', row=15, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--m3dpostprocess", type=str, default=None, help="Post processor to be applied to the 3D volume once the reconstruction is completed", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter.lowpass|filter.highpass\')', row=17, col=0, rowspan=1, colspan=3)
 	
-	parser.add_option("--parallel","-P",type="string",help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None)
+	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None)
 
 	########################
 	# THESE OPTIONS DO NOTHING, THEY ARE STRICTLY TO PERMIT EOTEST TO RUN using the same options as e2refine
 	########################
-	parser.add_option("--input", dest="input", default=None,type="string", help="This option is for command-line compatibility with e2refine.py. It's value is ignored !")
-	parser.add_option("--model", dest="model", type="string",default="threed.0a.mrc", help="This option is for command-line compatibility with e2refine.py. It's value is ignored !")
+	parser.add_argument("--input", dest="input", default=None,type=str, help="This option is for command-line compatibility with e2refine.py. It's value is ignored !")
+	parser.add_argument("--model", dest="model", type=str,default="threed.0a.mrc", help="This option is for command-line compatibility with e2refine.py. It's value is ignored !")
 
 	# options associated with e2project3d.py
-	parser.add_option("--projector", dest = "projector", default = "standard",help = "This option is for command-line compatibility with e2refine.py. It's value is ignored !")
-	parser.add_option("--orientgen", type = "string",help = "This option is for command-line compatibility with e2refine.py. It's value is ignored !")
+	parser.add_argument("--projector", dest = "projector", default = "standard",help = "This option is for command-line compatibility with e2refine.py. It's value is ignored !")
+	parser.add_argument("--orientgen", type = str,help = "This option is for command-line compatibility with e2refine.py. It's value is ignored !")
 		
 	# options associated with e2simmx.py
-	parser.add_option("--simalign",type="string",help="This option is for command-line compatibility with e2refine.py. It's value is ignored !", default="rotate_translate_flip")
-	parser.add_option("--simaligncmp",type="string",help="This option is for command-line compatibility with e2refine.py. It's value is ignored !",default="dot")
-	parser.add_option("--simralign",type="string",help="This option is for command-line compatibility with e2refine.py. It's value is ignored !", default=None)
-	parser.add_option("--simraligncmp",type="string",help="This option is for command-line compatibility with e2refine.py. It's value is ignored !",default="dot")
-	parser.add_option("--simcmp",type="string",help="This option is for command-line compatibility with e2refine.py. It's value is ignored !", default="dot:normalize=1")
-	parser.add_option("--simmask",type="string",help="This option is for command-line compatibility with e2refine.py. It's value is ignored !", default=None)
-	parser.add_option("--shrink", dest="shrink", type = "int", default=None, help="This option is for command-line compatibility with e2refine.py. It's value is ignored !")
-	parser.add_option("--twostage", dest="twostage", type = "int", help="This option is for command-line compatibility with e2refine.py. It's value is ignored !",default=0)
+	parser.add_argument("--simalign",type=str,help="This option is for command-line compatibility with e2refine.py. It's value is ignored !", default="rotate_translate_flip")
+	parser.add_argument("--simaligncmp",type=str,help="This option is for command-line compatibility with e2refine.py. It's value is ignored !",default="dot")
+	parser.add_argument("--simralign",type=str,help="This option is for command-line compatibility with e2refine.py. It's value is ignored !", default=None)
+	parser.add_argument("--simraligncmp",type=str,help="This option is for command-line compatibility with e2refine.py. It's value is ignored !",default="dot")
+	parser.add_argument("--simcmp",type=str,help="This option is for command-line compatibility with e2refine.py. It's value is ignored !", default="dot:normalize=1")
+	parser.add_argument("--simmask",type=str,help="This option is for command-line compatibility with e2refine.py. It's value is ignored !", default=None)
+	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="This option is for command-line compatibility with e2refine.py. It's value is ignored !")
+	parser.add_argument("--twostage", dest="twostage", type = int, help="This option is for command-line compatibility with e2refine.py. It's value is ignored !",default=0)
 	
 	# options associated with e2classify.py
-	parser.add_option("--sep", type="int", help="This option is for command-line compatibility with e2refine.py. It's value is ignored !", default=1)
+	parser.add_argument("--sep", type=int, help="This option is for command-line compatibility with e2refine.py. It's value is ignored !", default=1)
 
 
 
@@ -342,22 +346,6 @@ def check(options):
 				if not db_check_dict(db_name):
 					print "Error: %s doesn't exist", db_name
 					error= True
-					
-	
-	if options.sym == None or len(options.sym) == 0:
-		print "Error: you must specify the sym argument"
-		error = True
-	else:
-		if options.sym not in ["icos","tet","oct"]:
-			if options.sym[0] in ["c","d","h"]:
-				try:
-					int(options.sym[1:])
-				except:
-					print "Error:unknown symmetry argument %s" %options.sym
-					error = True
-			else:
-				print "Error:unknown symmetry argument %s" %options.sym
-				error = True
 				
 	return error
 

@@ -43,7 +43,7 @@ import sys
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <volume> <mask> <output>
+	usage = """prog [options] <volume> <mask> <output>
 	Note that this method has not yet (2010) been published, and is not yet a reliable
 	scheme for resolution determination, but we have high-hopes for the future.
 
@@ -60,14 +60,15 @@ def main():
 	If your data is undersampled, the resulting curve may also be inaccurate.
 	Models should also not be heavily low-pass filtered
 	"""
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--apix", "-A", type="float", help="A/voxel", default=-1.0)
-	#parser.add_option("--box", "-B", type="string", help="Box size in pixels, <xyz> or <x>,<y>,<z>")
-	#parser.add_option("--het", action="store_true", help="Include HET atoms in the map", default=False)
+	parser.add_pos_argument(name="dir",help="The refinement directory to use for e2resolution.", default="", guitype='combobox', choicelist='glob.glob("refine*")', positional=True, row=0, col=0,rowspan=1, colspan=1)
+	parser.add_pos_argument(name="refineiter",help="The refinement iteration to use.", default="", guitype='intbox', positional=True, row=0, col=1,rowspan=1, colspan=1)
+	parser.add_header(name="eotestheader", help='Options below this label are specific to e2resolution', title="### e2resolution options ###", row=1, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--apix", "-A", type=float, help="A/voxel", default=-1.0, guitype='floatbox', row=2, col=0, rowspan=1, colspan=2)
 	
-	parser.add_option("--path", default=None, type="string",help="The name the e2refine directory that contains the reconstruction data. If specified will place curves generated in bdb:path#convergence.results")
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--path", default=None, type=str,help="The name the e2refine directory that contains the reconstruction data. If specified will place curves generated in bdb:path#convergence.results")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 	

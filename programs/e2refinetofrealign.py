@@ -11,7 +11,6 @@
 #import block
 from EMAN2 import *
 from EMAN2db import db_open_dict
-from optparse import OptionParser
 import pyemtbx.options
 import os
 import sys
@@ -34,7 +33,7 @@ RMAX1 = '200.0'
 RMAX2 = '25.0'
 
 progname = os.path.basename(sys.argv[0])
-usage = progname + """ [options] <name of refinement directory> <iteration number>
+usage = """ prog [options] <name of refinement directory> <iteration number>
 
 This program will extract the necessary parameters from an EMAN2 refinement and create a card file (card.txt)
 and a particle meta data file in the correct formats for FreAlign. 
@@ -46,26 +45,18 @@ e2refinetofrealign.py refine_04 7
 
 """
 
-parser = OptionParser(usage,version=EMANVERSION)
+parser = EMArgumentParser(usage,version=EMANVERSION)
 
-parser.add_option("--fbeaut", action="store_true",
-                  help="(T/F)Apply extra real space symmetry averaging and masking to beautify final map prior to output")
-parser.add_option("--fcref", action="store_true",
-                  help="(T/F)Apply FOM filter to final reconstruction using function SQRT(2.0*FSC/(1.0+FSC))")
-parser.add_option("--fstat", action="store_true",
-                  help="(T/F)Calculate additional statistics in resolution table at end (QFACT, SSNR, CC, etc.). T Uses more than 50% more memory.")
-parser.add_option("--rrec", type="float",
-                  help="Resolution of reconstruction in angstroms. It is the resolution to which the reconstruction is calculated.")
-parser.add_option("--reslow", type="float",
-                  help="Resolution of the data included in the alignment. This is the low resolution value. ex:200")
-parser.add_option("--reshigh", type="float",
-                  help="Resolution of the data included in the alignment. This is the high resolution value. ex:25")
-parser.add_option("--thresh", type="float",
-                  help="Phase Residual cutoff. Particles with a higher phase residual will not be included in the refinement ")
-
-
-
-
+parser.add_pos_argument(name="dir",help="The refinement directory to use for FreAlign.", default="", guitype='combobox', choicelist='glob.glob("refine*")', positional=True, row=0, col=0,rowspan=1, colspan=2)
+parser.add_pos_argument(name="refineiter",help="The refinement iteration to use.", default="", guitype='intbox', positional=True, row=0, col=2,rowspan=1, colspan=1)
+parser.add_header(name="frealignheader", help='Options below this label are specific to e2refinetofrealign', title="### e2refinetofrealign options ###", row=1, col=0, rowspan=1, colspan=3)
+parser.add_argument("--fbeaut", action="store_true", help="(T/F)Apply extra real space symmetry averaging and masking to beautify final map prior to output", default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1)
+parser.add_argument("--fcref", action="store_true", help="(T/F)Apply FOM filter to final reconstruction using function SQRT(2.0*FSC/(1.0+FSC))", default=False, guitype='boolbox', row=2, col=1, rowspan=1, colspan=1)
+parser.add_argument("--fstat", action="store_true", help="(T/F)Calculate additional statistics in resolution table at end (QFACT, SSNR, CC, etc.). T Uses more than 50% more memory.", default=False, guitype='boolbox', row=2, col=2, rowspan=1, colspan=1)
+parser.add_argument("--rrec", type=float, help="Resolution of reconstruction in angstroms. It is the resolution to which the reconstruction is calculated.", default = 10.0, guitype='floatbox', row=4, col=0, rowspan=1, colspan=2)
+parser.add_argument("--reslow", type=float, help="Resolution of the data included in the alignment. This is the low resolution value. ex:200", default=200.0, guitype='floatbox', row=3, col=0, rowspan=1, colspan=2)
+parser.add_argument("--reshigh", type=float, help="Resolution of the data included in the alignment. This is the high resolution value. ex:25", default=25.0, guitype='floatbox', row=3, col=2, rowspan=1, colspan=1)
+parser.add_argument("--thresh", type=float, help="Phase Residual cutoff. Particles with a higher phase residual will not be included in the refinement ", default=90.0, guitype='floatbox', row=4, col=2, rowspan=1, colspan=1)
 
 optionList = pyemtbx.options.get_optionlist(sys.argv[1:])
 

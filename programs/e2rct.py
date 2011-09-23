@@ -34,42 +34,43 @@
 
 from EMAN2 import *
 from EMAN2db import db_close_dict
-from optparse import OptionParser
 from os import system
 import sys
 
 def main():
   
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] 
+	usage = """prog [options] 
 	
 	This program is designed to generate a reconstruction via the random conical tilt technique.
 	Starting from a tilted and untilted dataset. Thce program interfaces with e2refine2d.py to 
 	find the azimuthal angles from the untilited dataset and e2make3d.py to make the 3D model
 	from the untilted dataset combined with the azimuthal angles and stage tilt. A model is made
 	foreach e2refine2d.py class(used for alignment)"""
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	#options associated with e2rctV2.py
-	parser.add_option("--path",type="string",default=None,help="Path for the rct reconstruction, default=auto")
-	parser.add_option("--tiltdata",type="string",default=None,help="Name of the tilted dataset, default=auto")
-	parser.add_option("--untiltdata",type="string",default=None,help="Name of the tilted dataset, default=auto")
-	parser.add_option("--classavg",type="string",default=None,help="Name of classavg file created by e2refine2d.py, default=auto")
-	parser.add_option("--stagetilt",type="float",default=None,help="Amount of tiliting of the cryo stage, default=auto")
-	parser.add_option("--careject",type="string",default=None, help="class averages to reject, default=None")
-	parser.add_option("--minproj",type="int",default=1,help="Minimum number of projections/images in a class average, for a class average to be used for a reconstruction, default=auto")
-	parser.add_option("--align", action="store_true", help="Switch on image alignment.",default=False)
-	parser.add_option("--tiltaxis", action="store_true", help="Do a tiltaxis correction(Takes into account variations in tilt axis from micrograph to micrograph.",default=False)
-	parser.add_option("--maxshift",type="int",help="Maximun amount to shift the images during alignment", default=2)
-	parser.add_option("--process",metavar="processor_name(param1=value1:param2=value2)",type="string",default=None,action="append",help="process recons before Usually used to filter RCTS")
+	parser.add_header(name="rctheader", help='Options below this label are specific to e2rct', title="### e2rct options ###", row=3, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--path",type=str,default=None,help="Path for the rct reconstruction, default=auto")
+	parser.add_argument("--tiltdata",type=str,default=None,help="Name of the tilted dataset", guitype='filebox', row=0, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--untiltdata",type=str,default=None,help="Name of the tilted dataset", guitype='filebox', row=1, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--classavg",type=str,default=None,help="Name of classavg file created by e2refine2d.py", guitype='filebox', row=2, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--stagetilt",type=float,default=0,help="Amount of tiliting of the cryo stage, default=0, get the stage tilt from particle attributes. Only possible if e2RCTboxer was used for particle picking", guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--careject",type=str,default=None, help="class averages to reject, default=None", guitype='strbox', row=5, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--minproj",type=int,default=1,help="Minimum number of projections/images in a class average, for a class average to be used for a reconstruction, default=auto", guitype='intbox', row=5, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--align", action="store_true", help="Switch on image alignment.",default=False, guitype='boolbox', row=6, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--tiltaxis", action="store_true", help="Do a tiltaxis correction(Takes into account variations in tilt axis from micrograph to micrograph. Only possible if e2RCTboxer was used for particle picking",default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--maxshift",type=int,help="Maximun amount to shift the images during alignment", default=2, guitype='intbox', row=6, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--process",metavar="processor_name(param1=value1:param2=value2)",type=str,default=None,action="append",help="process RCT recons. Usually used to filter RCTS")
 	# Options for averaging RCTs
-	parser.add_option("--avgrcts",action="store_true", help="If set recons from each CA will be alinged and averaged.",default=False)
-	parser.add_option("--reference", type="string",default=None,help="Reference used to align RCT recons to, needs to be aligned to symetry axis is --sym is specified")
-	parser.add_option("--sym", dest="sym", default="c1", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct.")
-	parser.add_option("--cuda",action="store_true", help="Use CUDA for the alignment step.",default=False)
-	parser.add_option("--aligngran",type="float",default=10.0,help="Fineness of global search in e2align3d.py, default=10.0")
-	parser.add_option("--weightrecons",action="store_true", help="Weight the reconstruction by particle numbers.",default=False)
-	parser.add_option("--verbose", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_header(name="avgheader", help='Options below this label are specific to e2align3d', title="### e2align3d options ###", row=7, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--avgrcts",action="store_true", help="If set recons from each CA will be alinged and averaged.",default=False, guitype='boolbox', row=8, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--reference", type=str,default=None,help="Reference used to align RCT recons to, needs to be aligned to symetry axis is --sym is specified", guitype='filebox', filecheck=False, row=9, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--sym", dest="sym", default="c1", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct.", guitype='symbox', row=10, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--cuda",action="store_true", help="Use CUDA for the alignment step.",default=False, guitype='boolbox', expert=True, row=12, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--aligngran",type=float,default=10.0,help="Fineness of global search in e2align3d.py, default=10.0", guitype='floatbox', row=11, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--weightrecons",action="store_true", help="Weight the reconstruction by particle numbers.",default=False, guitype='boolbox', row=11, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--verbose", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	global options
 	(options, args) = parser.parse_args()

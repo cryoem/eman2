@@ -15,13 +15,13 @@
       }, 
       {
         "ICON": "green_boxes",
-        "PROGRAM": "programName", 
+        "PROGRAM": "e2tomoboxer.py", 
         "NAME": "Box Tomogram Files", 
         "CHILDREN": [] 
       },
       {
         "ICON": "tomo_hunter",
-        "PROGRAM": "programName", 
+        "PROGRAM": "e2classaverage3d.py", 
         "NAME": "Tomogram Alignment and Averaging", 
         "CHILDREN": [] 
       }

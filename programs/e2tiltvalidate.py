@@ -32,7 +32,6 @@
 #
 
 from EMAN2 import *
-from optparse import OptionParser
 import os, math
 
 def main():
@@ -44,31 +43,47 @@ def main():
 	Optiomal Determination of Particle Orientation, Absolute Hand, and COntrast Loss in Single-particle Electron Cryomicroscopy. Rosenthal, P.B., and Henderson, R. JMB, 333 (2003) pg 721-745
 	"""
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options]"""
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	usage = """prog [options]
+	Tiltvalidation using Richard Hendersons technique. To use a stack of untilted and tiltimages whose set relationship is one-to-one is required along with a
+	volume to validate. A image whose x and y axes show the tiltvalidation result. A valid reconstruction will have a peak at the magnitude of the stagetilt and
+	along the tiltaxis. The tiltaxis can be found using e2RCTboxer. The tiltaxis is computed by it and displayed in the e2RCTboxer GUI.
+	
+	Output is scorematrix, and perparticletilts, a list of angluar distances between tilted and untilted paricles.
+	
+	For more information see:
+	
+	Optimal determination of particle orientation, absolute hand, and contrast loss in 
+	single-particle electron cryomicroscopy.
+	Rosenthal PB, Henderson R.
+	J Mol Biol. 2003 Oct 31;333(4):721-45 
+	"""
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	# options associated with e2tiltvalidate.py
-	parser.add_option("--path", type="string",help="The folder the results are placed", default="TiltValidate")
-	parser.add_option("--volume", type="string",help="3D volume to validate",default=None)
-	parser.add_option("--untiltdata", type="string",help="Stack of untilted images",default=None)
-	parser.add_option("--tiltdata", type="string",help="Stack of tilted images",default=None)
-	parser.add_option("--align", type="string",help="The name of a aligner to be used in comparing the aligned images",default="translational")
-	parser.add_option("--cmp", type="string",help="The name of a 'cmp' to be used in comparing the aligned images",default="ccc")
-	parser.add_option("--tiltrange", type="int",help="The anglular tiltranger to search",default=15)
-	parser.add_option("--sym",  type="string",help="The recon symmetry", default="c1")
-	parser.add_option("--tiltangle", type="float", help="The stage tiltused during data collection", default=None)
+	parser.add_header(name="tvheader", help='Options below this label are specific to e2tiltvalidate', title="### e2tiltvalidate options ###", row=3, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--path", type=str,help="The folder the results are placed", default="TiltValidate")
+	parser.add_argument("--volume", type=str,help="3D volume to validate",default=None, guitype='filebox', row=2, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--untiltdata", type=str,help="Stack of untilted images",default=None, guitype='filebox', row=0, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--tiltdata", type=str,help="Stack of tilted images",default=None, guitype='filebox', row=1, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--align", type=str,help="The name of a aligner to be used in comparing the aligned images",default="translational", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=6, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--cmp", type=str,help="The name of a 'cmp' to be used in comparing the aligned images",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=7, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--tiltrange", type=int,help="The anglular tiltranger to search",default=15, guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--sym",  type=str,help="The recon symmetry", default="c1", guitype='symbox', row=5, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--tiltangle", type=float, help="The stage tilt used during data collection", default=0, guitype='floatbox', row=4, col=1, rowspan=1)
 	# options associated with e2projector3d.py
-	parser.add_option("--delta", type="float",help="The angular step size for alingment", default=20.0)
+	parser.add_header(name="projheader", help='Options below this label are specific to e2project', title="### e2project options ###", row=9, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--delta", type=float,help="The angular step size for alingment", default=20.0, guitype='floatbox', row=10, col=0, rowspan=1, colspan=1)
 	# options associated with e2simmx.py
-	parser.add_option("--simalign",type="string",help="The name of an 'aligner' to use prior to comparing the images (default=rotate_translate)", default="rotate_translate")
-	parser.add_option("--simaligncmp",type="string",help="Name of the aligner along with its construction arguments (default=ccc)",default="ccc")
-	parser.add_option("--simcmp",type="string",help="The name of a 'cmp' to be used in comparing the aligned images (default=ccc)", default="ccc")
-	parser.add_option("--simralign",type="string",help="The name and parameters of the second stage aligner which refines the results of the first alignment", default=None)
-	parser.add_option("--simraligncmp",type="string",help="The name and parameters of the comparitor used by the second stage aligner. (default=dot).",default="dot")
-	parser.add_option("--shrink", dest="shrink", type = "int", default=None, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes.")
+	parser.add_header(name="simmxheader", help='Options below this label are specific to e2simmx', title="### e2simmx options ###", row=11, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--simalign",type=str,help="The name of an 'aligner' to use prior to comparing the images (default=rotate_translate)", default="rotate_translate", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=14, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--simaligncmp",type=str,help="Name of the aligner along with its construction arguments (default=ccc)",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=15, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--simcmp",type=str,help="The name of a 'cmp' to be used in comparing the aligned images (default=ccc)", default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=13, col=0, rowspan=1, colspan=2 )
+	parser.add_argument("--simralign",type=str,help="The name and parameters of the second stage aligner which refines the results of the first alignment", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=16, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--simraligncmp",type=str,help="The name and parameters of the comparitor used by the second stage aligner. (default=dot).",default="dot", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=17, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes. Defulat = 0, no shrinking", guitype='intbox', row=12, col=0, rowspan=1, colspan=1)
 	
-	parser.add_option("--parallel",type="string",help="Parallelism string",default=None)
-	parser.add_option("--verbose", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--parallel",type=str,help="Parallelism string",default=None, guitype='strbox', row=8, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--verbose", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	global options
 	(options, args) = parser.parse_args()

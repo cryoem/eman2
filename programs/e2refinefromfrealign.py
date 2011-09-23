@@ -10,7 +10,6 @@
 # import block
 from EMAN2 import *
 from EMAN2db import db_open_dict
-from optparse import OptionParser
 import pyemtbx.options
 import os
 import sys
@@ -19,19 +18,24 @@ import sys
 IN_META_FILE = "ptcl_meta_data"
 OUTFILE = "diff.txt"
 progname = os.path.basename(sys.argv[0])
-usage = progname + """ [options] <name of frealign directory>
-
+usage = """ [options] <name of frealign directory>
+Help info needs to go here.....
 """
 
+parser = EMArgumentParser(usage,version=EMANVERSION)
 
-if len(sys.argv) != 2:
+parser.add_pos_argument(name="frealigndir",help="The Frealign directory to use.", default="", guitype='filebox', positional=True, row=0, col=0,rowspan=1, colspan=3)
+
+(options, args) = parser.parse_args()
+
+if len(args) != 1:
    print "usage:" + usage
    print "Please run'" + progname + " -h' for detailed options"
    sys.exit(1)
 
-E2n = E2init(sys.argv)
+E2n = E2init(args)
 
-dir = sys.argv[1]
+dir = args[0]
 
 in_img = EMData(dir + "/3DMapInOut.mrc")
 fa_out_img = EMData(dir + "/OutputMap.mrc")

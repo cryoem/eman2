@@ -134,7 +134,7 @@ experticon = [
 from EMAN2 import *
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
-import os, json, re
+import os, json, re, glob
 import subprocess
 from EMAN2db import db_open_dict
 from pmwidgets import *
@@ -640,7 +640,8 @@ class EMProjectManager(QtGui.QMainWindow):
 		parser = EMArgumentParser()
 		f = open(os.getenv("EMAN2DIR")+"/bin/"+e2program,"r")
 		for line in f.xreadlines():
-			if ('parser.add_argument' in line) or ('parser.add_header' in line) or ('parser.add_pos_argument' in line):
+			if (('parser.add_argument' in line) or ('parser.add_header' in line) or ('parser.add_pos_argument' in line)) and not '#parser.add_argument' in line:
+				# I don't know why eval doesn't ignore comments!?
 				eval(line)
 				continue
 			if 'parser.parse_args()' in line:
@@ -789,7 +790,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 			if option['guitype'] == 'header': 
 				widget = PMHeaderWidget(option['name'], option['title'])
 			if option['guitype'] == 'filebox':
-				widget = PMFileNameWidget(option['name'], self.getDefault(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
+				widget = PMFileNameWidget(option['name'], self.getDefault(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True),checkfileexist=self.getFileCheck(option))
 				fileboxwidget = widget
 			if option['guitype'] == 'symbox':
 				widget = PMSymWidget(option['name'], self.getDefault(option), initdefault=self.getDefault(option, nodb=True))
@@ -799,17 +800,17 @@ class PMGUIWidget(QtGui.QScrollArea):
 				widget.update(fileboxwidget.getValue())
 				widget.setValue(self.getDefault(option))
 			if option['guitype'] == 'intbox':
-				widget = PMIntEntryWidget(option['name'], self.getDefault(option), self.getLRange(option), self.getURange(option), initdefault=self.getDefault(option, nodb=True))
+				widget = PMIntEntryWidget(option['name'], self.getDefault(option), self.getLRange(option), self.getURange(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
 			if option['guitype'] == 'floatbox':
-				widget = PMFloatEntryWidget(option['name'], self.getDefault(option), self.getLRange(option), self.getURange(option), initdefault=self.getDefault(option, nodb=True))
+				widget = PMFloatEntryWidget(option['name'], self.getDefault(option), self.getLRange(option), self.getURange(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
 			if option['guitype'] == 'boolbox':
 				widget = PMBoolWidget(option['name'], self.getDefault(option), initdefault=self.getDefault(option, nodb=True))
 			if option['guitype'] == 'strbox':
-				widget = PMStringEntryWidget(option['name'], self.getDefault(option), initdefault=self.getDefault(option, nodb=True))
+				widget = PMStringEntryWidget(option['name'], self.getDefault(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
 			if option['guitype'] == 'comboparambox':
-				widget = PMComboParamsWidget(option['name'], self.getChoices(option), self.getDefault(option), initdefault=self.getDefault(option, nodb=True))
+				widget = PMComboParamsWidget(option['name'], self.getChoices(option), self.getDefault(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
 			if option['guitype'] == 'combobox':
-				widget = PMComboWidget(option['name'], self.getChoices(option), self.getDefault(option), initdefault=self.getDefault(option, nodb=True))
+				widget = PMComboWidget(option['name'], self.getChoices(option), self.getDefault(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
 			if option['guitype'] == 'automask3d':	
 				widget = PMAutoMask3DWidget(option['name'], self.getDefault(option), initdefault=self.getDefault(option, nodb=True))
 			
@@ -864,8 +865,11 @@ class PMGUIWidget(QtGui.QScrollArea):
 	
 	def getChoices(self, option):
 		choices = []
-		if 'choicelist' in option: 
-			choices = eval(option['choicelist']).keys()
+		if 'choicelist' in option:
+			choices = eval(option['choicelist'])
+			# If it is a dict, get the keys
+			if type(choices) == type({}):
+				choices = choices.keys()
 		return choices
 	
 	def getPositional(self, option):
@@ -873,6 +877,11 @@ class PMGUIWidget(QtGui.QScrollArea):
 		if 'positional' in option: positional = option['positional']
 		return positional
 	
+	def getFileCheck(self, option):
+		filecheck = True
+		if 'filecheck' in option: filecheck = option['filecheck']
+		return filecheck
+		
 	def updateWidget(self):
 		# reload the DB if necessary (when projects are changed)
 		thiscwd = self.pm().pm_projects_db[self.pm().pn_project_name]['CWD']

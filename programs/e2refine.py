@@ -62,8 +62,8 @@ def main():
 	parser.add_argument("--model", dest="model", type=str,default="threed.0a.mrc", help="The name 3D image that will seed the refinement", guitype='filebox', row=5, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--usefilt", dest="usefilt", type=str,default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used in projection matching routines, and elsewhere.")
 	parser.add_argument("--path", default=None, type=str,help="The name of a directory where results are placed. If unspecified will generate one automatically of type refine_??.")
-	parser.add_argument("--mass", default=0, type=float,help="The mass of the particle in kilodaltons, used to run normalize.bymass. If unspecified nothing happens. Requires the --apix argument.", guitype='floatbox', row=2, col=1, rowspan=1, colspan=1)
-	parser.add_argument("--apix", default=0, type=float,help="The angstrom per pixel of the input particles. This argument is required if you specify the --mass argument. If unspecified, the convergence plot is generated using either the project apix, or if not an apix of 1.", guitype='floatbox', row=2, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--mass", default=0, type=float,help="The mass of the particle in kilodaltons, used to run normalize.bymass. If unspecified (set to 0) nothing happens. Requires the --apix argument.", guitype='floatbox', row=2, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--apix", default=0, type=float,help="The angstrom per pixel of the input particles. This argument is required if you specify the --mass argument. If unspecified (set to 0), the convergence plot is generated using either the project apix, or if not an apix of 1.", guitype='floatbox', row=2, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--automask3d", default=None, type=str,help="The 5 parameters of the mask.auto3d processor, applied after 3D reconstruction. These paramaters are, in order, isosurface threshold,radius,nshells and ngaussshells. From e2proc3d.py you could achieve the same thing using --process=mask.auto3d:threshold=1.1:radius=30:nshells=5:ngaussshells=5.", guitype='automask3d', row=6, col=0, rowspan=1, colspan=3)
 
 	# options associated with e2project3d.py
@@ -80,7 +80,7 @@ def main():
 	parser.add_argument("--simraligncmp",type=str,help="The name and parameters of the comparator used by the second stage aligner. Default is dot.",default="dot", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=17, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--simcmp",type=str,help="The name of a comparator to be used in comparing the aligned images", default="frc:zeromask=1:snrweight=1", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=13, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--simmask",type=str,help="A file containing a single 0/1 image to apply as a mask before comparison but after alignment", default=None)
-	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes.", guitype='intbox', row=12, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes. Default=0, no shrinking", guitype='intbox', row=12, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--twostage", dest="twostage", type = int, help="Optionally run a faster 2-stage similarity matrix, ~5-10x faster, generally same accuracy. Value specifies shrink factor for first stage, typ 1-3",default=0, guitype='intbox', row=12, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--prefilt",action="store_true",help="Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison",default=False, guitype='boolbox', row=12, col=2, rowspan=1, colspan=1)
 	
@@ -105,7 +105,7 @@ def main():
 	
 	#options associated with e2make3d.py
 	parser.add_header(name="make3dheader", help='Options below this label are specific to e2make3d', title="### e2make3d options ###", row=28, col=0, rowspan=1, colspan=3)
-	parser.add_argument("--pad", type=int, dest="pad", help="To reduce Fourier artifacts, the model is typically padded by ~25% - only applies to Fourier reconstruction", default=0, guitype='intbox', row=30, col=2, rowspan=1, colspan=1)
+	parser.add_argument("--pad", type=int, dest="pad", help="To reduce Fourier artifacts, the model is typically padded by ~25 percent - only applies to Fourier reconstruction", default=0, guitype='intbox', row=30, col=2, rowspan=1, colspan=1)
 	parser.add_argument("--recon", dest="recon", default="fourier", help="Reconstructor to use see e2help.py reconstructors -v", guitype='combobox', choicelist='dump_reconstructors_list()', row=29, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--m3dkeep", type=float, help="The percentage of slices to keep in e2make3d.py", default=0.8, guitype='floatbox', row=31, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--m3dkeepsig", default=False, action="store_true", help="The standard deviation alternative to the --m3dkeep argument", guitype='boolbox', row=31, col=1, rowspan=1, colspan=1)
@@ -114,12 +114,11 @@ def main():
 	parser.add_argument("--m3dpreprocess", type=str, default="normalize.edgemean", help="Normalization processor applied before 3D reconstruction", guitype='combobox', choicelist='re_filter_list(dump_processors_list(),\'normalize\')', row=30, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--m3dpostprocess", type=str, default=None, help="Post processor to be applied to the 3D volume once the reconstruction is completed", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter.lowpass|filter.highpass\')', row=32, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--m3dpostprocess2", type=str, default=None, help="A second post processor to be applied to the 3D volume once the reconstruction is completed")
-
+	
 	#lowmem!
 	parser.add_argument("--lowmem", default=False, action="store_true",help="Make limited use of memory when possible - useful on lower end machines", guitype='boolbox', row=3, col=2, rowspan=1, colspan=1)
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None, guitype='strbox', row=3, col=0, rowspan=1, colspan=2)
 
-	
 	(options, args) = parser.parse_args()
 	error = False
 	if check(options,True) == True : 

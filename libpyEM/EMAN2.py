@@ -408,7 +408,6 @@ class EMArgumentParser(argparse.ArgumentParser):
 	
 	def add_pos_argument(self, **kwargs):
 		""" Add a position argument, needed only for the GUI """
-		kwargs["guitype"]="filebox"
 		self.optionslist.append(copy.deepcopy(kwargs))
 		
 	def add_header(self, **kwargs):
@@ -433,6 +432,7 @@ class EMArgumentParser(argparse.ArgumentParser):
 			if "lrange" in kwargs: del kwargs["lrange"]
 			if "urange" in kwargs: del kwargs["urange"]
 			if "choicelist" in kwargs: del kwargs["choicelist"]
+			if "filecheck" in kwargs: del kwargs["filecheck"]
 			
 		# Run arparser function
 		argparse.ArgumentParser.add_argument(self, *args, **kwargs)

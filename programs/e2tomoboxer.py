@@ -33,7 +33,6 @@
 
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
-from optparse import OptionParser
 import sys
 import os
 import weakref
@@ -183,69 +182,53 @@ def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,output,output
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <Volume file>
+	usage = """prog [options] <Volume file>
 
 	WARNING: This program still under development.
 	
 	Tomography 3-D particle picker and annotation tool. Still under development."""
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=32)
-#	parser.add_option("--shrink",type="int",help="Shrink factor for full-frame view, default=0 (auto)",default=0)
-	parser.add_option("--inmemory",action="store_true",default=False,help="This will read the entire tomogram into memory. Much faster, but you must have enough ram !")
-	parser.add_option("--yshort",action="store_true",default=False,help="This means you have a file where y is the short axis")
-	parser.add_option("--apix",type="float",help="Override the A/pix value stored in the tomogram header",default=0.0)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_header(name="tbheader", help='Options below this label are specific to e2tomoboxer', title="### e2tomoboxer options ###", row=1, col=0, rowspan=1, colspan=3)
+	parser.add_pos_argument(name="tomogram",help="The refinement directory to use for eotest.", default="", guitype='filebox', positional=True, row=0, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=32)
+	#parser.add_argument("--shrink",type=int,help="Shrink factor for full-frame view, default=0 (auto)",default=0)
+	parser.add_argument("--inmemory",action="store_true",default=False,help="This will read the entire tomogram into memory. Much faster, but you must have enough ram !", guitype='boolbox', row=2, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--yshort",action="store_true",default=False,help="This means you have a file where y is the short axis", guitype='boolbox', row=2, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--apix",type=float,help="Override the A/pix value stored in the tomogram header",default=0.0, guitype='floatbox', row=3, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--helixboxer",action="store_true",default=False,help="Helix Boxer Mode", guitype='boolbox', row=2, col=2, rowspan=1, colspan=1)
+		
+	parser.add_argument('--bin', type=int, default=1, help="""Specify the binning/shrinking factor you want to use (for X,Y and Z) when opening the tomogram for boxing. \nDon't worry, the sub-volumes will be extracted from the UNBINNED tomogram. \nIf binx, biny or binz are also specified, they will override the general bin value for the corresponding X, Y or Z directions""")
 	
-	parser.add_option('--bin', type='int', default=1, help="""Specify the binning/shrinking factor you want to use (for X,Y and Z) when opening the tomogram for boxing. 
-								Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram. 
-								If binx, biny or binz are also specified, they will override the general bin value for the corresponding X, Y or Z directions""")
+	parser.add_argument("--lowpass",type=int,help="Resolution (integer, in Angstroms) at which you want to apply a gaussian lowpass filter to the tomogram prior to loading it for boxing",default=0)
+	parser.add_argument("--preprocess",type=str,help="""A processor (as in e2proc3d.py) to be applied to the tomogram before opening it. \nFor example, a specific filter with specific parameters you might like. \nType 'e2proc3d.py --processors' at the commandline to see a list of the available processors and their usage""",default=None)
 	
-	parser.add_option("--lowpass",type="int",help="Resolution (integer, in Angstroms) at which you want to apply a gaussian lowpass filter to the tomogram prior to loading it for boxing",default=0)
-	parser.add_option("--preprocess",type="string",help="""A processor (as in e2proc3d.py) to be applied to the tomogram before opening it. 
-				For example, a specific filter with specific parameters you might like. 
-				Type 'e2proc3d.py --processors' at the commandline to see a list of the available processors and their usage""",default=None)
+	#parser.add_argument('--binx', type=int, default=1, help="Specify the binning/shrinking factor to use in X when opening the tomogram for boxing. Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram")
+	#parser.add_argument('--biny', type=int, default=1, help="Specify the binning/shrinking factor to use in Y when opening the tomogram for boxing. Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram")
+	#parser.add_argument('--binz', type=int, default=1, help="Specify the binning/shrinking factor to use in Z when opening the tomogram for boxing. Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram")
 	
-	#parser.add_option('--binx', type='int', default=1, help="Specify the binning/shrinking factor to use in X when opening the tomogram for boxing. Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram")
-	#parser.add_option('--biny', type='int', default=1, help="Specify the binning/shrinking factor to use in Y when opening the tomogram for boxing. Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram")
-	#parser.add_option('--binz', type='int', default=1, help="Specify the binning/shrinking factor to use in Z when opening the tomogram for boxing. Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram")
-	
-	parser.add_option('--reverse_contrast', action="store_true", default=False, help='''This means you want the contrast to me inverted while boxing, AND for the extracted sub-volumes.
-											Remember that EMAN2 **MUST** work with "white" protein. You can very easily figure out what the original color
-											of the protein is in your data by looking at the gold fiducials or the edge of the carbon hole in your tomogram.
-											If they look black you MUST specify this option''')
+	parser.add_argument('--reverse_contrast', action="store_true", default=False, help='''This means you want the contrast to me inverted while boxing, AND for the extracted sub-volumes.\nRemember that EMAN2 **MUST** work with "white" protein. You can very easily figure out what the original color\nof the protein is in your data by looking at the gold fiducials or the edge of the carbon hole in your tomogram.\nIf they look black you MUST specify this option''')
 	
 	#parameters for commandline boxer
 	
-	parser.add_option('--coords', type='str', default='', help='Provide a coordinates file that contains the center coordinates of the sub-volumes you want to extract, to box from the command line')
+	parser.add_argument('--coords', type=str, default='', help='Provide a coordinates file that contains the center coordinates of the sub-volumes you want to extract, to box from the command line')
 	
-	parser.add_option('--cbin', type='int', default=1, help='''Specifies the scale of the coordinates respect to the actual size of the tomogram where you want to extract the particles from.
-								For example, provide 2 if you recorded the coordinates from a tomogram that was binned by 2, 
-								but want to extract the sub-volumes from the UNbinned version of that tomogram''')
+	parser.add_argument('--cbin', type=int, default=1, help='''Specifies the scale of the coordinates respect to the actual size of the tomogram where you want to extract the particles from.\nFor example, provide 2 if you recorded the coordinates from a tomogram that was binned by 2, \nbut want to extract the sub-volumes from the UNbinned version of that tomogram''')
 	
-	#parser.add_option('--cbinx', type='int', default=1, help="""Binning factor of the X coordinates with respect to the actual size of the tomogram from which you want to extract the subvolumes.
-	#							Sometimes tomograms are not binned equally in all directions for purposes of recording the coordinates of particles""")
+	#parser.add_argument('--cbinx', type=int, default=1, help="""Binning factor of the X coordinates with respect to the actual size of the tomogram from which you want to extract the subvolumes.
+	#Sometimes tomograms are not binned equally in all directions for purposes of recording the coordinates of particles""")
 
-	#parser.add_option('--cbiny', type='int', default=1, help="Binning factor of the Y coordinates with respect to the actual size of the tomogram from which you want to extract the subvolumes")
-	#parser.add_option('--cbinz', type='int', default=1, help="Binning factor of the X coordinates with respect to the actual size of the tomogram from which you want to extract the subvolumes")
+	#parser.add_argument('--cbiny', type=int, default=1, help="Binning factor of the Y coordinates with respect to the actual size of the tomogram from which you want to extract the subvolumes")
+	#parser.add_argument('--cbinz', type=int, default=1, help="Binning factor of the X coordinates with respect to the actual size of the tomogram from which you want to extract the subvolumes")
 
-	parser.add_option('--subset', type='int', default=0, help='''Specify how many sub-volumes from the coordinates file you want to extract; e.g, if you specify 10, the first 10 particles will be boxed.
-								0 means "box them all" because it makes no sense to box none''')
-	parser.add_option('--output', type='str', default='stack.hdf', help="Specify the name of the stack file where to write the extracted sub-volumes")
-	parser.add_option('--output_format', type='str', default='stack', help='''Specify 'single' if you want the sub-volumes to be written to individual files. You MUST still provide an output name in the regular way.
-										For example, if you specify --output=myparticles.hdf\n
-										but also specify --output_format=single\n
-										then the particles will be written as individual files named myparticles_000.hdf myparticles_001.hdf...etc''')
+	parser.add_argument('--subset', type=int, default=0, help='''Specify how many sub-volumes from the coordinates file you want to extract; e.g, if you specify 10, the first 10 particles will be boxed.\n0 means "box them all" because it makes no sense to box none''')
+	parser.add_argument('--output', type=str, default='stack.hdf', help="Specify the name of the stack file where to write the extracted sub-volumes")
+	parser.add_argument('--output_format', type=str, default='stack', help='''Specify 'single' if you want the sub-volumes to be written to individual files. You MUST still provide an output name in the regular way.\nFor example, if you specify --output=myparticles.hdf\nbut also specify --output_format=single\nthen the particles will be written as individual files named myparticles_000.hdf myparticles_001.hdf...etc''')
 	
-	parser.add_option('--swapyz', action="store_true", default=False, help='''This means that the coordinates file and the actual tomogram do not agree regarding which is the "short" direction.
-										For example, the coordinates file migh thave a line like this:\n
-										1243 3412 45\n
-										where clearly the "short" direction is Z; yet, if in the actual tomogram the short direction is Y, as they come out from
-										IMOD by default, then the line should have been:\n
-										1243 45 3412\n''')
-	parser.add_option("--newwidget",action="store_true",default=False,help="Use the new 3D widgetD. Highly recommended!!!!")
-	parser.add_option("--helixboxer",action="store_true",default=False,help="Helix Boxer Mode")
+	parser.add_argument('--swapyz', action="store_true", default=False, help='''This means that the coordinates file and the actual tomogram do not agree regarding which is the "short" direction.\nFor example, the coordinates file migh thave a line like this:\n1243 3412 45\nwhere clearly the "short" direction is Z; yet, if in the actual tomogram the short direction is Y, as they come out fromIMOD by default, then the line should have been:\n1243 45 3412\n''')
+	parser.add_argument("--newwidget",action="store_true",default=False,help="Use the new 3D widgetD. Highly recommended!!!!")
 
 	global options
 	(options, args) = parser.parse_args()
