@@ -33,31 +33,29 @@
 
 from EMAN2 import *
 import math
-from optparse import OptionParser
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] 
-	
-	THIS PROGRAM IS EXPERIMENTAL 
+	usage = """prog [options] 
 	
 	This program is designed to generate an initial reconstruction via monte carlo methodology.
 	Basically, this just reads in class averages and assigns them random Euler angles. Next it computes how
 	well the class avergaes agree with each other, similar to common lines"""
-	parser = OptionParser(usage=usage,version=EMANVERSION)
 	
-	#options associated with e2rctV2.py
-	parser.add_option("--classavg",type="string",default=None,help="Name of classavg file created by e2refine2d.py, default=auto")
-	parser.add_option("--output",type="string",default="mc.mrc",help="Name of computed reconstruction, default=mc.mrc")
-	parser.add_option("--mccoeff",type="float",default=1000.0,help="The number of Monte Carlo trials is: mccoeff*N, where N is the number of CAs, default=1000.0")
-	parser.add_option("--numsasteps",type="float",default=10.0,help="The number of steps at a given temp, default=10.0")
-	parser.add_option("--numtemps",type="float",default=10.0,help="The number of temp steps, default=10.0")
-	parser.add_option("--initemp",type="float",default=0.2,help="Initial temperature, default=0.2")
-	parser.add_option("--cooling",type="float",default=2.0,help="Cooling rate, default=2.0")
-	parser.add_option("--shrink",type="float",default=None,help="Amount to shrink the CAs, default=None")
-	parser.add_option("--cuda",action="store_true", help="Use CUDA for the reconstructors step. (only if compiled with CUDA support.",default=False)
-	parser.add_option("--sym", dest="sym", default="c1", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct.")
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+	
+	parser.add_header(name="montecarloheader", help='Options below this label are specific to e2montecarlorecon', title="### e2montecarlorecon options ###", row=1, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--classavg",type=str,default=None,help="Name of classavg file created by e2refine2d.py, default=auto", guitype='filebox', row=0, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--output",type=str,default="mc.mrc",help="Name of computed reconstruction, default=mc.mrc", guitype='strbox', row=2, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--mccoeff",type=float,default=1000.0,help="The number of Monte Carlo trials is: mccoeff*N, where N is the number of CAs, default=1000.0", guitype='floatbox', row=3, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--numsasteps",type=float,default=10.0,help="The number of steps at a given temp, default=10.0", guitype='floatbox', row=3, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--numtemps",type=float,default=10.0,help="The number of temp steps, default=10.0", guitype='floatbox', row=3, col=2, rowspan=1, colspan=1)
+	parser.add_argument("--initemp",type=float,default=0.2,help="Initial temperature, default=0.2", guitype='floatbox', row=4, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--cooling",type=float,default=2.0,help="Cooling rate, default=2.0", guitype='floatbox', row=4, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--shrink",type=int,default=0,help="Amount to shrink the CAs, default=None", guitype='intbox', row=4, col=2, rowspan=1, colspan=1)
+	parser.add_argument("--cuda",action="store_true", help="Use CUDA for the reconstructors step. (only if compiled with CUDA support.",default=False, guitype='boolbox', expert=True, row=6, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--sym", dest="sym", default="c1", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct.", guitype='symbox', row=5, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	global options
 	(options, args) = parser.parse_args()

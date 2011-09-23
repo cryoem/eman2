@@ -134,8 +134,14 @@
     "CHILDREN": [
       {
         "ICON": "single_image_3d", 
-        "PROGRAM": "programName", 
+        "PROGRAM": "e2initialmodel.py", 
         "NAME": "Make Model - e2initialmodel", 
+        "CHILDREN": []
+      },
+      {
+        "ICON": "single_image_3d", 
+        "PROGRAM": "e2montecarlorecon.py", 
+        "NAME": "Make Model - e2montecarlo", 
         "CHILDREN": []
       }
     ]
@@ -147,13 +153,13 @@
     "CHILDREN": [
       {
         "ICON": "refine", 
-        "PROGRAM": "programName", 
+        "PROGRAM": "e2refine.py", 
         "NAME": "Run e2refine", 
         "CHILDREN": []
       }, 
       {
         "ICON": "refine", 
-        "PROGRAM": "programName", 
+        "PROGRAM": "e2refinemulti.py", 
         "NAME": "Run e2refinemulti", 
         "CHILDREN": []
       }, 

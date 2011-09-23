@@ -378,6 +378,16 @@ def good_size(size):
 	
 	return Util.calc_best_fft_size(int(size))
 
+def re_filter_list(listtofilter, regex, invert=False):
+	"""
+	Filter a list by a regular expression
+	"""
+	r1 = re.compile(regex,flags=re.I)
+	returndict = {}
+	for key in listtofilter:
+		if bool(r1.search(key)) ^ invert: returndict[key] = listtofilter[key]
+	return returndict
+		
 class EMArgumentParser(argparse.ArgumentParser):
 	""" subclass of argparser to masquerade as optparser and run the GUI """
 	def __init__(self, prog=None,usage=None,description=None,epilog=None,version=None,parents=[],formatter_class=argparse.HelpFormatter,prefix_chars='-',fromfile_prefix_chars=None,argument_default=None,conflict_handler='error',add_help=True):

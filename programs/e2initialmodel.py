@@ -33,7 +33,6 @@
 
 
 from EMAN2 import *
-from optparse import OptionParser
 import random
 from math import *
 import os
@@ -43,7 +42,7 @@ from EMAN2db import db_open_dict, db_list_dicts
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] 
+	usage = """prog [options] 
 	This program will take a set of reference-free class-averages (or other projections) and generate a set of possible
 	3-D initial models. It does this by heavily downsampling the data, then running a number of very fast, full iterative
 	refinements, each seeded with a random starting model. The results are sorted in order of apparent agreement with the
@@ -54,18 +53,19 @@ def main():
 	if combined with a strongly preferred orientation, a correct solution using this technique may not be possible, but
 	for most situations it will work well. For other situations, single particle tomography presents a good alternative
 	for generating initial models."""
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--input", dest="input", default=None,type="string", help="The name of the image containing the particle data")
-	parser.add_option("--iter", type = "int", default=8, help = "The total number of refinement iterations to perform")
-	parser.add_option("--tries", type="int", default=10, help="The number of different initial models to generate in search of a good one")
-	parser.add_option("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos",default="c1")
-	parser.add_option("--savemore",action="store_true",help="Will cause intermediate results to be written to flat files",default=False)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_option("--orientgen",type="string", default="eman",help="The type of orientation generator. Default is safe. See e2help.py orientgens")
+	parser.add_header(name="initialmodelheader", help='Options below this label are specific to e2initialmodel', title="### e2initialmodel options ###", row=1, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--input", dest="input", default=None,type=str, help="The name of the image containing the particle data", guitype='filebox', row=0, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--iter", type = int, default=8, help = "The total number of refinement iterations to perform", guitype='intbox', row=2, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--tries", type=int, default=10, help="The number of different initial models to generate in search of a good one", guitype='intbox', row=2, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos",default="c1", guitype='symbox', row=3, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--savemore",action="store_true",help="Will cause intermediate results to be written to flat files",default=False, guitype='boolbox', expert=True, row=4, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--orientgen",type=str, default="eman",help="The type of orientation generator. Default is safe. See e2help.py orientgens", guitype='combobox', choicelist='dump_orientgens_list()', row=2, col=2, rowspan=1, colspan=1)
 
 	# Database Metadata storage
-	parser.add_option("--dbls",type="string",default=None,help="data base list storage, used by the workflow. You can ignore this argument.")
+	parser.add_argument("--dbls",type=str,default=None,help="data base list storage, used by the workflow. You can ignore this argument.")
 	
 	(options, args) = parser.parse_args()
 	verbose=options.verbose
