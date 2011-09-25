@@ -47,6 +47,7 @@ def main():
     parser.add_option("--helix-images", "-x", type="string", help="Save images of the helices. The file name specified will have helix numbers added to it.")
     parser.add_option("--ptcl-coords", "-P", type="string", help="Save coordinates of the centers of particles to the specified formatted text file")
     parser.add_option("--ptcl-images", "-p", type="string", help="Save images of the particles. The file name specified will have helix numbers (and particle numbers if the file type does not support image stacks) added to it.")
+    parser.add_option("--ptcl-images-stack-mode", type="string", default="multiple", help="Options for saving particle images to stack files. 'single' uses one stack file, 'multiple' (default) uses one stack file per helix, 'none' uses a file for each particle and is always used when the output file format does not support image stacks.")
     
     parser.add_option("--db-add-hcoords", type="string", help="Append any unique helix coordinates to the database from the specified file (in EMAN1 *.box format). Use --helix-width to specify a width for all boxes.")
     parser.add_option("--db-set-hcoords", type="string", help="Replaces the helix coordinates in the database with the coordinates from the specified file (in EMAN1 *.box format). Use --helix-width to specify a width for all boxes.")
@@ -107,7 +108,8 @@ def main():
             if options.ptcl_coords:
                 db_save_particle_coords(micrograph_filepath, options.ptcl_coords, px_overlap, px_length, px_width)
             if options.ptcl_images:
-                db_save_particles(micrograph_filepath, options.ptcl_images, px_overlap, px_length, px_width, not options.ptcl_not_rotated, options.ptcl_norm_edge_mean, options.gridding)
+                db_save_particles(micrograph_filepath, options.ptcl_images, px_overlap, px_length, px_width, not options.ptcl_not_rotated, options.ptcl_norm_edge_mean, options.gridding, options.ptcl_images_stack_mode)
+                
             E2end(logid)
         elif len(args) == 0:
             print 'You must specify a micrograph file or use the "--gui" option.'
@@ -236,13 +238,13 @@ def get_rotated_particles( micrograph, helix_coords, px_overlap = None, px_lengt
         gr_alpha = 1.75
         gr_r = gr_M/2
         gr_v = gr_K/2.0/gr_N
-	from EMAN2 import Util
+        from EMAN2 import Util
         gr_kb = Util.KaiserBessel(gr_alpha, gr_K, gr_r, gr_v, gr_N)
-	nx = micrograph.get_xsize()
-	ny = micrograph.get_ysize()
-	micrograph = Util.pad(micrograph,nx +20 , ny +20, 1, 0, 0, 0,"circumference")
-	nx = nx + 20
-	ny = ny + 20
+        nx = micrograph.get_xsize()
+        ny = micrograph.get_ysize()
+        micrograph = Util.pad(micrograph,nx +20 , ny +20, 1, 0, 0, 0,"circumference")
+        nx = nx + 20
+        ny = ny + 20
         
     for centroid in centroids:
         tr = Transform()
@@ -250,31 +252,31 @@ def get_rotated_particles( micrograph, helix_coords, px_overlap = None, px_lengt
         tr.set_rotation({"type":"2d", "alpha":rot_angle})
 
         ptcl_dimensions = ( int(round(px_width)), int(round(px_length)), 1 )
-	
-	    
+        
+            
         # liner interpolation for rotation
         if gridding == False:
         
             ptcl = micrograph.get_rotated_clip( tr, ptcl_dimensions )
         else:
             side1 = int(round(px_width))
-	    side = side1 + 20
+            side = side1 + 20
             from EMAN2 import Util, Processor
             ptcl = Util.window( micrograph, side, side, 1, int (round(centroid[0] + 10 - nx/2)), int (round(centroid[1] +10 - ny/2)), 0) 
             mean1 = ptcl.get_attr('mean')
-	    ptcl = ptcl - mean1
-		# first pad it with zeros in Fourier space
+            ptcl = ptcl - mean1
+                # first pad it with zeros in Fourier space
             gr_q = ptcl.FourInterpol(gr_N, gr_N, 1, 0)
             params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE,
-	    "alpha":gr_alpha, "K":gr_K, "r":gr_r, "v":gr_v, "N":gr_N}
+            "alpha":gr_alpha, "K":gr_K, "r":gr_r, "v":gr_v, "N":gr_N}
             gr_q = Processor.EMFourierFilter(gr_q, params)
             params = {"filter_type" : Processor.fourier_filter_types.TOP_HAT_LOW_PASS,
-		"cutoff_abs" : 0.25, "dopad" : False}
+                "cutoff_abs" : 0.25, "dopad" : False}
             gr_q = Processor.EMFourierFilter(gr_q, params)
-            gr_q2 = gr_q.do_ift()	
+            gr_q2 = gr_q.do_ift()
             ptcl = gr_q2.rot_scale_conv_new_background( -rot_angle*pi/180.0, 0.0, 0.0, gr_kb, 1.0)
             #cut it
-	    ptcl = ptcl + mean1
+            ptcl = ptcl + mean1
             ptcl = Util.window( ptcl, side1, side1, 1, 0, 0, 0) 
         ptcl["ptcl_helix_coords"] = tuple(helix_coords)
         ptcl["ptcl_source_coord"] = tuple(centroid)
@@ -416,33 +418,75 @@ def save_particle_coords(helix_particle_coords_dict, output_filepath, micrograph
             out_file.write(str(ptcl_center[0]) + "\t" + str(ptcl_center[1]) + "\n")
     out_file.close()
 
-def save_particles(particles, helix_num, ptcl_filepath, do_edge_norm=False):
+def save_particles(particles, ptcl_filepath, do_edge_norm=False, stack_file_mode = "multiple"):
     """
     saves the particles in a helix to a stack file
-    @param particles: a list of EMData particles
-    @param helix_num: the number used to identify this helix among all those boxed in the micrograph
-    @param ptcl_filepath: a template for the output file path -- the value of helix_num will be added before the file extension
+    @param particles: [ [helix0_particle0, helix0_particle1, ...], 
+                        [helix1_particle0, helix1_particle1, ...],
+                        ...
+                      ]
+    @param ptcl_filepath: a template for the output file path, will be modified for modes that save multiple files
     @param do_edge_norm: Apply the processor "normalize.edgemean" to each particle before saving
+    @param stack_file_mode: "single" -- saves all particles to a single stack file -- path/filename.extension
+                            "multiple" -- saves a stack file for each helix -- path/filename_0.extension for helix 0
+                            "none" -- saves a file for each particle -- path/filename_0_1.extension for helix 0 particle 1
+                            NOTE: if the file format does not support stack files, the "none" mode is used
     """
     (path, ext) = os.path.splitext(ptcl_filepath)
-    ptcl_filepath = "%s_%i%s" % (path, helix_num, ext)
+    
+    
+    #Testing file writing support
+    #If file type doesn't support writing, use HDF instead
+    #If file type doesn't support stack files, store each particle individually regardless of stack_file_mode
+    testdata = EMData(100,100)
+    testdata.to_value(1)
+    testfilename = ".HelixBoxerTestFile%s" % ext    
     try:
+        testdata.write_image(testfilename, 0) #Test for write support
+    except RuntimeError, e:
+        ext = ".hdf"
+    try:
+        testdata.write_image(testfilename, 1) #Test for stack file support
+    except RuntimeError, e:
+        stack_file_mode = "none"
+    finally:
+    	if os.access(testfilename, os.F_OK):
+            os.remove(testfilename)
+
+
+    
+    if stack_file_mode == "single":
+        ptcl_filepath = "%s%s" % (path, ext) #Note: ext may have been changed to a default type, so this is needed
         if os.access(ptcl_filepath, os.F_OK):
             os.remove(ptcl_filepath)
-        for i in range(len(particles)):
-            ptcl = particles[i]
-            if do_edge_norm:
-                ptcl.process_inplace("normalize.edgemean")
-            ptcl.write_image(ptcl_filepath, i) #appending to the image stack
-    except RuntimeError, e:
-        for i in range(len(particles)):
-            ptcl_filepath = "%s_%i_%i%s" % (path, helix_num, i, ext)
+        for ptcl_lst in particles:
+            for ptcl in ptcl_lst:
+                if do_edge_norm:
+                    ptcl = ptcl.process("normalize.edgemean")
+                ptcl.write_image(ptcl_filepath, -1) #appending to the image stack
+
+    elif stack_file_mode == "multiple":
+        for helix_num in range(len(particles)):
+            ptcl_filepath = "%s_%i%s" % (path, helix_num, ext)
             if os.access(ptcl_filepath, os.F_OK):
                 os.remove(ptcl_filepath)
-            ptcl = particles[i]
-            if do_edge_norm:
-                ptcl.process_inplace("normalize.edgemean")
-            ptcl.write_image(ptcl_filepath)
+            for ptcl_num in range(len(particles[helix_num])):
+                ptcl = particles[helix_num][ptcl_num]
+                if do_edge_norm:
+                    ptcl = ptcl.process("normalize.edgemean")
+                ptcl.write_image(ptcl_filepath, ptcl_num) #appending to the image stack
+
+    elif stack_file_mode == "none":
+        for helix_num in range(len(particles)):
+            ptcl_list = particles[helix_num]
+            for ptcl_num in range(len(ptcl_list)):
+                ptcl_filepath = "%s_%i_%i%s" % (path, helix_num, ptcl_num, ext)
+                if os.access(ptcl_filepath, os.F_OK):
+                    os.remove(ptcl_filepath)
+                ptcl = ptcl_list[ptcl_num]
+                if do_edge_norm:
+                    ptcl = ptcl.process("normalize.edgemean")
+                ptcl.write_image(ptcl_filepath)
 
 def db_get_item(micrograph_filepath, key):
     """
@@ -547,23 +591,25 @@ def db_save_particle_coords(micrograph_filepath, output_filepath = None, px_over
     
     save_particle_coords(helix_particle_coords_dict, output_filepath, micrograph_filepath, px_length, px_width)
     
-def db_save_particles(micrograph_filepath, ptcl_filepath = None, px_overlap = None, px_length = None, px_width = None, rotated = True, do_edge_norm = False, gridding = False ):
+def db_save_particles(micrograph_filepath, ptcl_filepath = None, px_overlap = None, px_length = None, px_width = None, rotated = True, do_edge_norm = False, gridding = False, stack_file_mode = "multiple" ):
     micrograph_filename = os.path.basename(micrograph_filepath)
     micrograph_name = os.path.splitext( micrograph_filename )[0]
     if not ptcl_filepath:
         ptcl_filepath = "%s_helix_ptcl.hdf" % ( os.path.join(os.getcwd(), micrograph_name) )
     (base, ext) = os.path.splitext(ptcl_filepath)
     helices_dict = db_get_helices_dict(micrograph_filepath)
-    i = 0
+    
+    all_particles = []
     micrograph = EMData(micrograph_filepath)
     for coords in helices_dict:
         helix = helices_dict[coords]
         if rotated:
-            particles = get_rotated_particles(micrograph, coords, px_overlap, px_length, px_width, gridding)
+            helix_particles = get_rotated_particles(micrograph, coords, px_overlap, px_length, px_width, gridding)
         else:
-            particles = get_unrotated_particles(micrograph, coords, px_overlap, px_length, px_width)
-        save_particles(particles, i, ptcl_filepath, do_edge_norm)
-        i+=1
+            helix_particles = get_unrotated_particles(micrograph, coords, px_overlap, px_length, px_width)
+        all_particles.append(helix_particles)
+    
+    save_particles(all_particles, ptcl_filepath, do_edge_norm, stack_file_mode)
 
 
 if ENABLE_GUI:
@@ -646,6 +692,7 @@ if ENABLE_GUI:
             self.ptcls_edgenorm_checkbox.setChecked(False)
             self.ptcls_edgenorm_checkbox.setToolTip("Uses normalize.edgemean processor on each particle: pixel-value -> (pixel-value - edge-mean) / standard deviation")
             
+            self.ptcls_rotation_groupbox = QtGui.QGroupBox(self.tr("Rotation"))
             self.ptcls_bilinear_rotation_radiobutton = QtGui.QRadioButton(self.tr("Bilinear Rotation"))
             self.ptcls_bilinear_rotation_radiobutton.setToolTip("Rectangular particles. Rotation angle is the one that makes associated helix vertical. Bilinear rotation algorithm.")
             self.ptcls_bilinear_rotation_radiobutton.setChecked(True)
@@ -653,7 +700,15 @@ if ENABLE_GUI:
             self.ptcls_gridding_rotation_radiobutton.setToolTip("Square particles with sides = max(Length, Width). Rotation angle is the one that makes associated helix vertical. Gridding rotation algorithm.")
             self.ptcls_no_rotation_radiobutton = QtGui.QRadioButton(self.tr("No Rotation"))
             self.ptcls_no_rotation_radiobutton.setToolTip("Particles are not rotated from the micrograph. Square particles with sides = max(length, width)")
-
+            
+            self.ptcls_stack_groupbox = QtGui.QGroupBox(self.tr("Image Stacks"))
+            self.ptcls_single_stack_radiobutton = QtGui.QRadioButton(self.tr("Single image stack"))
+            self.ptcls_single_stack_radiobutton.setChecked(True)
+            self.ptcls_single_stack_radiobutton.setToolTip("Saves a single image stack file for all the helices. Fails for incompatible file formats.")
+            self.ptcls_multiple_stack_radiobutton = QtGui.QRadioButton(self.tr("Image stack per helix"))
+            self.ptcls_multiple_stack_radiobutton.setToolTip("Saves an image stack file for each helix. Fails for incompatible file formats.")
+            self.ptcls_no_stack_radiobutton = QtGui.QRadioButton(self.tr("File for each particle"))
+            
             ptcls_images_label = QtGui.QLabel(self.tr("Path:"))
             self.ptcls_images_line_edit = QtGui.QLineEdit()
             self.ptcls_images_browse_button = QtGui.QPushButton(self.tr("Browse"))
@@ -703,10 +758,21 @@ if ENABLE_GUI:
             ptcls_images_path_layout.addWidget(self.ptcls_images_line_edit)
             ptcls_images_path_layout.addWidget(self.ptcls_images_browse_button)
             
+            ptcls_images_rotation_layout = QtGui.QVBoxLayout()
+            ptcls_images_rotation_layout.addWidget(self.ptcls_bilinear_rotation_radiobutton)
+            ptcls_images_rotation_layout.addWidget(self.ptcls_gridding_rotation_radiobutton)
+            ptcls_images_rotation_layout.addWidget(self.ptcls_no_rotation_radiobutton)
+            self.ptcls_rotation_groupbox.setLayout(ptcls_images_rotation_layout)
+            
+            ptcls_images_rotation_layout = QtGui.QVBoxLayout()
+            ptcls_images_rotation_layout.addWidget(self.ptcls_single_stack_radiobutton)
+            ptcls_images_rotation_layout.addWidget(self.ptcls_multiple_stack_radiobutton)
+            ptcls_images_rotation_layout.addWidget(self.ptcls_no_stack_radiobutton)
+            self.ptcls_stack_groupbox.setLayout(ptcls_images_rotation_layout)
+            
             ptcls_images_layout = QtGui.QVBoxLayout()
-            ptcls_images_layout.addWidget(self.ptcls_bilinear_rotation_radiobutton)
-            ptcls_images_layout.addWidget(self.ptcls_gridding_rotation_radiobutton)
-            ptcls_images_layout.addWidget(self.ptcls_no_rotation_radiobutton)
+            ptcls_images_layout.addWidget(self.ptcls_rotation_groupbox)
+            ptcls_images_layout.addWidget(self.ptcls_stack_groupbox)
             ptcls_images_layout.addWidget(self.ptcls_edgenorm_checkbox)
             ptcls_images_layout.addLayout(ptcls_images_path_layout)
             self.ptcls_images_groupbox.setLayout(ptcls_images_layout)
@@ -802,19 +868,26 @@ if ENABLE_GUI:
                     do_edge_norm = self.ptcls_edgenorm_checkbox.isChecked()
                     ptcl_filepath = str(self.ptcls_images_line_edit.text())
                     
-                    i = 0
+                    if self.ptcls_single_stack_radiobutton.isChecked():
+                        stack_mode = "single"
+                    elif self.ptcls_multiple_stack_radiobutton.isChecked():
+                        stack_mode = "multiple"
+                    elif self.ptcls_no_stack_radiobutton.isChecked():
+                        stack_mode = "none"
+                    
+                    all_particles = []
                     for coords_key in helices_dict:
                         if self.ptcls_bilinear_rotation_radiobutton.isChecked():
-                            particles = get_rotated_particles(micrograph, coords_key, px_overlap, px_length, px_width, gridding=False)
+                            helix_particles = get_rotated_particles(micrograph, coords_key, px_overlap, px_length, px_width, gridding=False)
                         elif self.ptcls_gridding_rotation_radiobutton.isChecked():
                             side = max(px_length, px_width)
                             #need to prepare the fft volume for gridding at here
-                            particles = get_rotated_particles(micrograph, coords_key, px_overlap, side, side, gridding=True )
+                            helix_particles = get_rotated_particles(micrograph, coords_key, px_overlap, side, side, gridding=True )
                         elif self.ptcls_no_rotation_radiobutton.isChecked():
                             side = max(px_length, px_width)
-                            particles = get_unrotated_particles(micrograph, coords_key, px_overlap, side, side)
-                        save_particles(particles, i, ptcl_filepath, do_edge_norm)
-                        i += 1
+                            helix_particles = get_unrotated_particles(micrograph, coords_key, px_overlap, side, side)
+                        all_particles.append(helix_particles)
+                    save_particles(all_particles, ptcl_filepath, do_edge_norm, stack_mode)
                 if self.ptcls_coords_groupbox.isChecked():
                     ptcl_coords_filepath = str(self.ptcls_coords_line_edit.text())
                     micrograph_filepath = self.parentWidget().micrograph_filepath
