@@ -356,7 +356,7 @@ EMData *EMData::do_ift()
 		EMfft::complex_to_real_nd(d, d, nx - offset, ny, nz);
 
 		size_t row_size = (nx - offset) * sizeof(float);
-		for (int i = 1; i < ny * nz; i++) {
+		for (size_t i = 1; i < (size_t)ny * nz; i++) {
 			memmove((char *) &d[i * (nx - offset)], (char *) &d[i * nx], row_size);
 		}
 
