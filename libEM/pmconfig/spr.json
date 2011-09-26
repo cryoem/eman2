@@ -65,25 +65,29 @@
     "CHILDREN": [
       {
         "ICON": "ctf", 
-        "PROGRAM": "programName", 
+        "PROGRAM": "e2ctf.py",
+        "MODE": "autofit", 
         "NAME": "Automated Fitting -e2ctf", 
         "CHILDREN": []
       }, 
       {
         "ICON": "ctf", 
-        "PROGRAM": "programName", 
+        "PROGRAM": "e2ctf.py",
+	"MODE": "tuning", 
         "NAME": "Interactive Tuning -e2ctf", 
         "CHILDREN": []
       }, 
       {
         "ICON": "ctf", 
-        "PROGRAM": "programName", 
+        "PROGRAM": "e2ctf.py", 
+        "MODE": "genoutp",
         "NAME": "Generate Output - e2ctf", 
         "CHILDREN": []
       }, 
       {
         "ICON": "ctf", 
-        "PROGRAM": "programName", 
+        "PROGRAM": "e2ctf.py", 
+        "MODE": "gensf",
         "NAME": "Generate Structure Factor - e2ctf", 
         "CHILDREN": []
       }

@@ -431,8 +431,10 @@ class EMArgumentParser(argparse.ArgumentParser):
 			if "expert" in kwargs: del kwargs["expert"]
 			if "lrange" in kwargs: del kwargs["lrange"]
 			if "urange" in kwargs: del kwargs["urange"]
+			if "guidefault" in kwargs: del kwargs["guidefault"]
 			if "choicelist" in kwargs: del kwargs["choicelist"]
 			if "filecheck" in kwargs: del kwargs["filecheck"]
+			if "mode" in kwargs: del kwargs["mode"]
 			
 		# Run arparser function
 		argparse.ArgumentParser.add_argument(self, *args, **kwargs)

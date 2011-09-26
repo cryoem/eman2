@@ -423,7 +423,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		"""
 		self.expertmode = state
 		if self.gui_stacked_widget.currentIndex() >= 2:	# First two widgets in the stack are the blank and textbox widgets
-			self._set_GUI(self.getProgram())
+			self._set_GUI(self.getProgram(), self.getProgramMode())
 		
 	def _on_helpbutton(self, state):
 		"""
@@ -438,7 +438,7 @@ class EMProjectManager(QtGui.QMainWindow):
 			self.gui_stacked_widget.setCurrentIndex(1)
 		else:
 			# Set the stacked widget to the GUI
-			self._set_GUI(self.getProgram())
+			self._set_GUI(self.getProgram(), self.getProgramMode())
 	
 	def _on_logbutton(self, state):
 		"""Load the log book
@@ -564,6 +564,8 @@ class EMProjectManager(QtGui.QMainWindow):
 			qtreewidget = PMQTreeWidgetItem(QtCore.QStringList(child["NAME"]))
 			qtreewidget.setIcon(0, self.icons[child["ICON"]])
 			qtreewidget.setProgram(child["PROGRAM"])
+			# Optional mode for the program to run in. The default is to have no mode
+			if "MODE" in child: qtreewidget.setMode(child["MODE"])
 			self._add_children(child, qtreewidget)
 			widgetitem.addChild(qtreewidget)
 			
@@ -589,6 +591,8 @@ class EMProjectManager(QtGui.QMainWindow):
 			qtreewidget = PMQTreeWidgetItem(QtCore.QStringList(toplevel["NAME"]))
 			qtreewidget.setIcon(0, self.icons[toplevel["ICON"]])
 			qtreewidget.setProgram(toplevel["PROGRAM"])
+			# Optional mode for the program to run in. The default is to have no mode
+			if "MODE" in toplevel: qtreewidget.setMode(toplevel["MODE"])
 			self._add_children(toplevel, qtreewidget)
 			QTree.addTopLevelItem(qtreewidget)
 		
@@ -607,18 +611,24 @@ class EMProjectManager(QtGui.QMainWindow):
         def _tree_widget_click(self, item, col):
 		# Display the progrma GUI
 		if item.getProgram() != "programName":
-			self._set_GUI(item.getProgram())
+			self._set_GUI(item.getProgram(), item.getMode())
 			self.statusbar.setMessage("GUI '%s' displayed"%str(item.getProgram()))	# Blank Status bar
 			self.updateProject()
+		else:
+			self.gui_stacked_widget.setCurrentIndex(0)
 
 	
-	def _set_GUI(self, program):
+	def _set_GUI(self, program, mode):
 		""" 
 		Set the current GUI widget
 		"""
 		
 		programfile = program
-		if self.expertmode: program = "Expert"+program	# There is a separate widget for the advanced mode
+		# Need a widget for each program for each mode
+		if self.expertmode: 
+			program = "Expert"+program+mode	# There is a separate widget for the advanced mode
+		else:
+			program = program+mode
 		# Only generate the GUI widget once.....
 		if program in self.stackedWidgetHash:
 			# load the widget using value from the correct DB
@@ -627,21 +637,23 @@ class EMProjectManager(QtGui.QMainWindow):
 		else:
 			# OR make the widget
 			self.stackedWidgetHash[program] = self.gui_stacked_widget.count()
-			guioptions = self._read_e2program(programfile)
+			guioptions = self._read_e2program(programfile, mode)
 			# Now actually make the widget
 			widget = PMGUIWidget(guioptions, programfile, self)
 			self.gui_stacked_widget.addWidget(widget)
 			self.gui_stacked_widget.setCurrentIndex(self.stackedWidgetHash[program])
 				
-	def _read_e2program(self, e2program):
+	def _read_e2program(self, e2program, mode):
 		"""
 		This a a pseudo import function to load paser info
 		"""
 		parser = EMArgumentParser()
 		f = open(os.getenv("EMAN2DIR")+"/bin/"+e2program,"r")
+		lineregex = re.compile("^\s*parser\.add_",flags=re.I) # eval parser.add_ lines, which are  not commented out.
+		moderegex = re.compile("mode\s*=\s*[\"'].*%s.*[\"']"%mode,flags=re.I)	# If the program has a mode only eval lines with the right mode.
 		for line in f.xreadlines():
-			if (('parser.add_argument' in line) or ('parser.add_header' in line) or ('parser.add_pos_argument' in line)) and not '#parser.add_argument' in line:
-				# I don't know why eval doesn't ignore comments!?
+			if mode and not re.search(moderegex, line): continue	# If we are running the program in a mode, then only eval mode lines
+			if re.search(lineregex, line):
 				eval(line)
 				continue
 			if 'parser.parse_args()' in line:
@@ -668,6 +680,12 @@ class EMProjectManager(QtGui.QMainWindow):
 		return the current program
 		"""
 		return self.tree_stacked_widget.currentWidget().currentItem().getProgram()
+		
+	def getProgramMode(self):
+		"""
+		return the current mode of the current program
+		"""
+		return self.tree_stacked_widget.currentWidget().currentItem().getMode()
 		
 	def updateProject(self):
 		"""
@@ -844,10 +862,16 @@ class PMGUIWidget(QtGui.QScrollArea):
 		return colspan
 		
 	def getDefault(self, option, nodb = False):
-		""" return the default value """
+		""" return the default value according to the folowing rules"""
 		default = ""
-		if 'default' in option: default = option['default']
+		# Set default to GUI default if available otherwise set to default if available
+		if 'guidefault' in option:
+			default = option['guidefault']
+		else:
+			if 'default' in option: default = option['default']
+		# If there is no DataBase or it isn't desired return
 		if nodb: return default
+		# If there is a DB and its usage is desired the default will be the DB value
 		if self.db[option['name']]: return self.db[option['name']]	# Return the default if it exists in the DB
 		return default
 		
@@ -873,6 +897,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 		return choices
 	
 	def getPositional(self, option):
+		# See if the arugment is positional or not
 		positional = False	# Defult if not provided
 		if 'positional' in option: positional = option['positional']
 		return positional
@@ -923,12 +948,22 @@ class PMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 	"""
 	def __init__(self, qstring):
 		QtGui.QTreeWidgetItem.__init__(self, qstring)
+		self.program = None
+		self.mode = ""
 		
 	def setProgram(self, program):
+		""" The name of the program the tree widget is supposed to run """
 		self.program = program
 		
 	def getProgram(self):
 		return self.program
+		
+	def setMode(self, mode):
+		""" The mode the program is supposed to run in """
+		self.mode = mode
+		
+	def getMode(self):
+		return self.mode
 
 class PMToolButton(QtGui.QToolButton):
 	""" Create a toogle button """

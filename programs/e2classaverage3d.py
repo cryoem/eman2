@@ -61,6 +61,7 @@ def main():
 	"""
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+	
 	parser.add_header(name="caheader", help='Options below this label are specific to e2classaverage3d', title="### e2classaverage3d options ###", default=None, guitype='filebox', row=2, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--input", type=str, help="The name of the input volume stack. MUST be HDF or BDB, since volume stack support is required.", default=None, guitype='filebox', row=0, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--output", type=str, help="The name of the output class-average stack. MUST be HDF or BDB, since volume stack support is required.", default=None, guitype='strbox', row=1, col=0, rowspan=1, colspan=2)

@@ -55,7 +55,7 @@ envelopes=[]		# simplex minimizer needs to use a global at the moment
 def main():
 	global debug,logid
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <input stack/image> ...
+	usage = """prog [options] <input stack/image> ...
 	
 Various CTF-related operations on images, including automatic fitting. Note that automatic fitting is limited to defocuses
 less than ~5 microns. Input particles should be unmasked and unfiltered. A minimum of ~20% padding around the
@@ -68,37 +68,39 @@ so, while oversampling can be useful for fitting, it is not recommended for phas
 Increasing padding during the particle picking process will improve the accuracy of phase-flipping, particularly for
 images far from focus."""
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--allparticles",action="store_true",help="Will process all particle sets stored in BDB in the particles subdirectory witho",default=False)
-	parser.add_option("--minptcl",type="int",help="Files with fewer than the specified number of particles will be skipped",default=0)
-	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive fitting",default=False)
-	parser.add_option("--autofit",action="store_true",help="Runs automated CTF fitting on the input images",default=False)
-	parser.add_option("--curdefocushint",action="store_true",help="Rather than doing the defocus from scratch, use existing values in the project as a starting point",default=False)
-	parser.add_option("--refinebysnr",action="store_true",help="Refines the defocus value by looking at the high resolution smoothed SNR. Important: also replaces the SNR with a smoothed version.",default=False)
-	parser.add_option("--bgmask",type="int",help="Background is computed using a soft mask of the center/edge of each particle with the specified radius. Default radius is boxsize/2.6.",default=0)
-	parser.add_option("--fixnegbg",action="store_true",help="Will perform a final background correction to avoid slight negative values near zeroes")
-	parser.add_option("--computesf",action="store_true",help="Will determine the structure factor*envelope for the aggregate set of images")
-	parser.add_option("--apix",type="float",help="Angstroms per pixel for all images",default=0)
-	parser.add_option("--voltage",type="float",help="Microscope voltage in KV",default=0)
-	parser.add_option("--cs",type="float",help="Microscope Cs (spherical aberation)",default=0)
-	parser.add_option("--ac",type="float",help="Amplitude contrast (percentage, default=10)",default=10)
-	parser.add_option("--dfmax",type="float",help="Maximum defocus for autofitting (default=6.4)",default=None)
-	parser.add_option("--autohp",action="store_true",help="Automatic high pass filter of the SNR only to remove initial sharp peak, phase-flipped data is not directly affected (default false)",default=False)
-	parser.add_option("--invert",action="store_true",help="Invert the contrast of the particles in output files (default false)",default=False)
-	parser.add_option("--nonorm",action="store_true",help="Suppress per image real-space normalization",default=False)
-	parser.add_option("--nosmooth",action="store_true",help="Disable smoothing of the background (running-average of the log with adjustment at the zeroes of the CTF)",default=False)
-	parser.add_option("--phaseflip",action="store_true",help="Perform phase flipping after CTF determination and writes to specified file.",default=False)
-	parser.add_option("--phasefliphp",action="store_true",help="Perform phase flipping with auto-high pass filter",default=False)
-	parser.add_option("--wiener",action="store_true",help="Wiener filter (optionally phaseflipped) particles.",default=False)
-	parser.add_option("--virtualout",type="string",help="Make a virtual stack copy of the input images with CTF parameters stored in the header. BDB only.",default=None)
-	parser.add_option("--storeparm",action="store_true",help="Write the CTF parameters back to the header of the input images. BDB and HDF only.",default=False)
-	parser.add_option("--oversamp",type="int",help="Oversampling factor",default=1)
-	parser.add_option("--sf",type="string",help="The name of a file containing a structure factor curve. Specify 'none' to use the built in generic structure factor. Default=auto",default="auto")
-	parser.add_option("--debug",action="store_true",default=False)
-	parser.add_option("--dbds",type="string",default=None,help="Data base dictionary storage, used by the workflow for storing which files have been filtered. You can ignore this argument")
-	parser.add_option("--source_image",type="string",default=None,help="Filters particles only with matching ptcl_source_image parameters in the header")
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_pos_argument(name="particles",help="List the file to process with e2ctf here.", default="", guitype='filebox', positional=True, row=0, col=0,rowspan=1, colspan=2, mode='autofit,tuning,genoutp,gensf')
+	parser.add_header(name="ctfheader", help='Options below this label are specific to e2ctflassaverage3d', title="### e2ctf options ###", default=None, guitype='filebox', row=1, col=0, rowspan=1, colspan=2, mode="autofit,tuning,genoutp,gensf")
+	parser.add_argument("--allparticles",action="store_true",help="Will process all particle sets stored in BDB in the particles subdirectory witho",default=False)
+	parser.add_argument("--minptcl",type=int,help="Files with fewer than the specified number of particles will be skipped",default=0)
+	parser.add_argument("--gui",action="store_true",help="Start the GUI for interactive fitting",default=False, guidefault=True, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode="tuning")
+	parser.add_argument("--autofit",action="store_true",help="Runs automated CTF fitting on the input images",default=False, guidefault=True, guitype='boolbox', row=6, col=0, rowspan=1, colspan=1, mode='autofit')
+	parser.add_argument("--curdefocushint",action="store_true",help="Rather than doing the defocus from scratch, use existing values in the project as a starting point",default=False, guidefault=True, guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='autofit')
+	parser.add_argument("--refinebysnr",action="store_true",help="Refines the defocus value by looking at the high resolution smoothed SNR. Important: also replaces the SNR with a smoothed version.",default=False)
+	parser.add_argument("--bgmask",type=int,help="Background is computed using a soft mask of the center/edge of each particle with the specified radius. Default radius is boxsize/2.6.",default=0)
+	parser.add_argument("--fixnegbg",action="store_true",help="Will perform a final background correction to avoid slight negative values near zeroes")
+	parser.add_argument("--computesf",action="store_true",help="Will determine the structure factor*envelope for the aggregate set of images", guidefault=True, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="gensf")
+	parser.add_argument("--apix",type=float,help="Angstroms per pixel for all images",default=0, guitype='intbox', row=3, col=0, rowspan=1, colspan=1, mode='autofit')
+	parser.add_argument("--voltage",type=float,help="Microscope voltage in KV",default=0, guitype='intbox', row=3, col=1, rowspan=1, colspan=1, mode='autofit')
+	parser.add_argument("--cs",type=float,help="Microscope Cs (spherical aberation)",default=0, guitype='intbox', row=4, col=0, rowspan=1, colspan=1, mode='autofit')
+	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage, default=10)",default=10, guitype='intbox', row=4, col=1, rowspan=1, colspan=1, mode='autofit')
+	parser.add_argument("--dfmax",type=float,help="Maximum defocus for autofitting (default=6.4)",default=None)
+	parser.add_argument("--autohp",action="store_true",help="Automatic high pass filter of the SNR only to remove initial sharp peak, phase-flipped data is not directly affected (default false)",default=False, guidefault=True, guitype='boolbox', row=5, col=0, rowspan=1, colspan=1, mode='autofit')
+	parser.add_argument("--invert",action="store_true",help="Invert the contrast of the particles in output files (default false)",default=False)
+	parser.add_argument("--nonorm",action="store_true",help="Suppress per image real-space normalization",default=False)
+	parser.add_argument("--nosmooth",action="store_true",help="Disable smoothing of the background (running-average of the log with adjustment at the zeroes of the CTF)",default=False, guitype='boolbox', row=5, col=1, rowspan=1, colspan=1, mode='autofit')
+	parser.add_argument("--phaseflip",action="store_true",help="Perform phase flipping after CTF determination and writes to specified file.",default=False, guidefault=True, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode='genoutp')
+	parser.add_argument("--phasefliphp",action="store_true",help="Perform phase flipping with auto-high pass filter",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='genoutp')
+	parser.add_argument("--wiener",action="store_true",help="Wiener filter (optionally phaseflipped) particles.",default=False, guidefault=True, guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode='genoutp')
+	parser.add_argument("--virtualout",type=str,help="Make a virtual stack copy of the input images with CTF parameters stored in the header. BDB only.",default=None)
+	parser.add_argument("--storeparm",action="store_true",help="Write the CTF parameters back to the header of the input images. BDB and HDF only.",default=False)
+	parser.add_argument("--oversamp",type=int,help="Oversampling factor",default=1, guitype='intbox', row=2, col=0, rowspan=1, colspan=2, mode='autofit')
+	parser.add_argument("--sf",type=str,help="The name of a file containing a structure factor curve. Specify 'none' to use the built in generic structure factor. Default=auto",default="auto")
+	parser.add_argument("--debug",action="store_true",default=False)
+	parser.add_argument("--dbds",type=str,default=None,help="Data base dictionary storage, used by the workflow for storing which files have been filtered. You can ignore this argument")
+	parser.add_argument("--source_image",type=str,default=None,help="Filters particles only with matching ptcl_source_image parameters in the header")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 	
