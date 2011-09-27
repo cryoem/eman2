@@ -468,11 +468,13 @@ class EMProjectManager(QtGui.QMainWindow):
 		f = open(os.getenv("EMAN2DIR")+"/bin/"+program,"r")
 		begin = False
 		helpstr = ""
+		bregex = re.compile('usage\s*=\s*"""')
+		eregex = re.compile('"""')
 		for line in f.xreadlines():
-			if '"""' in line and begin:
-				helpstr = helpstr + line.strip() + " "
+			if re.search(eregex, line) and begin:
+				helpstr = helpstr + line.strip()
 				break
-			if 'usage = """' in line:
+			if re.search(bregex, line):
 				begin = True
 			if begin:
 				helpstr = helpstr + line.strip() + " "
