@@ -234,7 +234,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.hbl2.addWidget(self.sboxsize)
 
 		self.sapix=ValBox(self,(0,500),"A/pix:",1.0,90)
-		if self.defaultapix!=None : sel.sapix.setValue(self.defaultapix)
+		if self.defaultapix!=None : self.sapix.setValue(self.defaultapix)
 		self.hbl2.addWidget(self.sapix)
 
 		self.svoltage=ValBox(self,(0,500),"Voltage (kV):",200,90)

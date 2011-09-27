@@ -44,12 +44,16 @@ class EMDirEntry:
 	
 	# list of lambda functions to extract column values for sorting
 	col=(lambda x:x.name,lambda x:x.filetype,lambda x:x.size,lambda x:x.dim,lambda x:x.nimg,lambda x:x.date)
+#	classcount=0
 	
-	def __init__(self,root,name):
-		self.__parent=None		# single parent
+	def __init__(self,root,name,parent=None):
+		self.__parent=parent	# single parent
 		self.__children=None	# ordered list of children, None indicates no check has been made, empty list means no children, otherwise list of names or list of EMDirEntrys
 		self.root=str(root)		# Path prefixing name
 		self.name=str(name)		# name of this path element (string)
+		#self.seq=EMDirEntry.classcount
+		#EMDirEntry.classcount+=1
+		
 		if name[:4].lower=="bdb:":
 			self.isbdb=True
 			self.name=name[4:]
@@ -89,8 +93,14 @@ class EMDirEntry:
 				self.nimg=-1
 				self.dim="-"
 		
-		print "Init DirEntry ",self,self.__dict__
+#		print "Init DirEntry ",self,self.__dict__
 		
+	#def __repr__(self):
+		#return "<EMDirEntry %d>"%self.seq
+
+	#def __str__(self):
+		#return "<EMDirEntry %d>"%self.seq
+	
 	def sort(self,column,order):
 		"Recursive sorting"
 		if self.__children==None or len(self.__children)==0 or isinstance(self.__children[0],str): return
@@ -109,7 +119,7 @@ class EMDirEntry:
 	def nChildren(self):
 		"""Count of children"""
 		self.fillChildNames()
-		print "EMDirEntry.nChildren(%s) = %d"%(self.filepath,len(self.__children))
+#		print "EMDirEntry.nChildren(%s) = %d"%(self.filepath,len(self.__children))
 		return len(self.__children)
 	
 	def fillChildNames(self):
@@ -136,7 +146,7 @@ class EMDirEntry:
 		if not isinstance(self.__children[0],str) : return 		# this implies entries have already been filled
 		
 		for i,n in enumerate(self.__children):
-			self.__children[i]=EMDirEntry(self.filepath,n)
+			self.__children[i]=EMDirEntry(self.filepath,n,self)
 	
 	def fillDetails(self):
 		"""Fills in the expensive metadata about this entry"""
@@ -154,21 +164,22 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 		QtCore.QAbstractItemModel.__init__(self)
 		self.root=EMDirEntry(startpath,"")					# EMDirEntry as a parent for the root path
 		self.rootpath=startpath			# root path for current browser
-		print "Init FileItemModel ",self,self.__dict__
+		self.last=(0,0)
+#		print "Init FileItemModel ",self,self.__dict__
 
 	def canFetchMore(self,idx):
 		return False
 		
 	def columnCount(self,parent):
-		print "EMFileItemModel.columnCount()=6"
+		#print "EMFileItemModel.columnCount()=6"
 		return 6
 		
 	def rowCount(self,parent):
 		if parent.isValid() : 
-			print "rowCount(%s) = %d"%(str(parent),parent.internalPointer().nChildren())
+#			print "rowCount(%s) = %d"%(str(parent),parent.internalPointer().nChildren())
 			return parent.internalPointer().nChildren()
 			
-		print "rowCount(root) = %d"%self.root.nChildren()
+#		print "rowCount(root) = %d"%self.root.nChildren()
 		return self.root.nChildren()
 		
 	def data(self,index,role):
@@ -178,7 +189,7 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 		if role!=Qt.DisplayRole : return None
 		
 		data=index.internalPointer()
-		print "EMFileItemModel.data(%d %d %s)=%s"%(index.row(),index.column(),index.parent(),str(data.__dict__))
+		#if index.column()==0 : print "EMFileItemModel.data(%d %d %s)=%s"%(index.row(),index.column(),index.parent(),str(data.__dict__))
 		col=index.column()
 		if col==0 : return str(data.name)
 		elif col==1 : return str(data.filetype)
@@ -197,7 +208,7 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 		return None
 			
 	def hasChildren(self,parent):
-		print "EMFileItemModel.hasChildren(%d,%d,%s)"%(parent.row(),parent.column(),str(parent.internalPointer()))
+		#print "EMFileItemModel.hasChildren(%d,%d,%s)"%(parent.row(),parent.column(),str(parent.internalPointer()))
 		try: 
 			if parent.isValid():
 				if parent.internalPointer().nChildren()>0 : return True
@@ -225,19 +236,34 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 		
 	def parent(self,index):
 		"qmodelindex"
+		
 		if index.isValid(): 
 			data=index.internalPointer().parent()
 		else: return QtCore.QModelIndex()
 		if data==None : return QtCore.QModelIndex()			# No data, return invalid
 		
-		return self.createIndex(row,column,data)
+		# Ok, this following statement appears to be crazy. When you select a whole row, the TreeView demands
+		# that all selected indices have the same parent. The trick is that it doesn't just require that the
+		# parent indexes point to the same parent, but that the index objects themselves be identical.
+		# this little hack is intended to return sequential requests for the same linked parent object
+		# as a single index, rather than making a new one each time. If this isn't done, you get a lot of
+		# errors about different parents
+		if index.internalPointer()==self.last[0]: return self.last[1]
+		
+		self.last=(index.internalPointer(),self.createIndex(index.row(),index.column(),data))
+		return self.last[1]
 
 	def sort(self,column,order):
 		"Trigger recursive sorting"
 		self.root.sort(column,order)
 	
 	
-
+class myQItemSelection(QtGui.QItemSelectionModel):
+	
+	def select(self,tl,br):
+		print tl.indexes()[0].row(),tl.indexes()[0].column(),int(br)
+		QtGui.QItemSelectionModel.select(self,tl,QtGui.QItemSelectionModel.SelectionFlags(QtGui.QItemSelectionModel.ClearAndSelect+QtGui.QItemSelectionModel.Rows))
+		
 
 class EMBrowserWidget(QtGui.QWidget):
 	"""This widget is a file browser for EMAN2. In addition to being a regular file browser, it supports:
@@ -303,6 +329,9 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.gbl.addWidget(self.wbookmarkfr,1,0)
 		
 		self.wtree = QtGui.QTreeView()
+		self.wtree.setSelectionMode(1)			# single selection
+		self.wtree.setSelectionBehavior(1)		# select rows
+		self.wtree.setAllColumnsShowFocus(True)
 		self.gbl.addWidget(self.wtree,1,1)
 		
 		# Lower region has buttons for actions
@@ -345,6 +374,7 @@ class EMBrowserWidget(QtGui.QWidget):
 		QtCore.QObject.connect(self.wbutfwd, QtCore.SIGNAL('clicked(bool)'), self.buttonFwd)
 		QtCore.QObject.connect(self.wbutup, QtCore.SIGNAL('clicked(bool)'), self.buttonUp)
 		QtCore.QObject.connect(self.wbutinfo, QtCore.SIGNAL('clicked(bool)'), self.buttonInfo)
+		QtCore.QObject.connect(self.wtree, QtCore.SIGNAL('clicked(const QModelIndex)'), self.itemSel)
 		QtCore.QObject.connect(self.wpath, QtCore.SIGNAL('returnPressed()'), self.editPath)
 		QtCore.QObject.connect(self.wbookmarks, QtCore.SIGNAL('actionTriggered(QAction*)'), self.bookmarkPress)
 
@@ -353,6 +383,11 @@ class EMBrowserWidget(QtGui.QWidget):
 
 	def editPath(self):
 		print "Return pressed in path editor"
+
+	def itemSel(self,qmi):
+		print "Item selected ",qmi.row(),qmi.column()
+		qism=self.wtree.selectionModel()
+		print qism.selectedRows()
 
 	def buttonOk(self,tog):
 		"Button press"
@@ -398,6 +433,7 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.curmodel=EMFileItemModel(newpath)
 		self.wpath.setText(newpath)
 		self.wtree.setModel(self.curmodel)
+#		self.wtree.setSelectionModel(myQItemSelection(self.curmodel))
 		
 # This is just for testing, of course
 if __name__ == '__main__':
