@@ -367,7 +367,9 @@ class EMProjectManager(QtGui.QMainWindow):
 		"""
 		self.gui_stacked_widget = QtGui.QStackedWidget()
 		self.gui_stacked_widget.setFrameShape(QtGui.QFrame.StyledPanel)
+		# Blank screen widget
 		self.gui_stacked_widget.addWidget(QtGui.QWidget())
+		# Textbox widget
 		self.gui_stacked_widget.addWidget(self.getCMDTextEdit())
 		self.stackedWidgetHash = {}
 		
