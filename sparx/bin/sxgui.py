@@ -4692,7 +4692,7 @@ class Popupcenter(QWidget):
 	
 	self.y2 += 30
 	
-	oneDx= QtGui.QLabel('oneDx (Window out central line of 2D cross correlation for \npeak search)', self)
+	oneDx= QtGui.QLabel('oneDx (Window out central line of 2D cross \ncorrelation for peak search)', self)
 	oneDx.move(self.x1,self.y2)
 	self.oneDxchkbx = QtGui.QCheckBox("",self)
 	self.oneDxchkbx.move(self.x2, self.y2)
@@ -5083,7 +5083,7 @@ class MainWindow(QtGui.QWidget):
         #The layout of the Poptwodali window is defined in class Poptwodali(QWidget Window)
         self.w = Popupisac()
 	self.w1 = Popupadvparams_isac_1(self.w.savedparmsdict)
-	intro_string = "Before running sxisac.py, it is recommended that the stack be centered. The centering is performed \nusing sxshftali.py. The alignment parameters calculated by the centering procedure is stored in the \nheaders of the input stack as xform.align2d. \n\nTo apply orientation parameters stored in the file headers, check the 'Apply calculated centering parameters \nto input stack' box below and enter the name of the output stack. The resulting output stack will be the input \nstack after applying the shifts calculated by the centering procedure. The orientation parameters 'sx' and \n'sy' in the header of the transformed stack will be set to 0"
+	intro_string = "Before running sxisac.py, it is recommended that the stack be centered. The centering is performed \nusing sxshftali.py. The alignment parameters calculated by the centering procedure is stored in the \nheaders of the input stack as xform.align2d. \n\nTo apply orientation parameters stored in the file headers, check the 'Apply calculated centering parameters \nto input stack' box below and enter the name of the output stack. The resulting output stack will be the input \nstack after applying the shifts calculated by the centering procedure. The orientation parameters 'sx' and \n'sy' in the header of the transformed stack will be set to 0."
 	self.w2 = Popupcenter(self.w,intro_string)
 	self.w.w1 = self.w1
 	self.w.w2 = self.w2
