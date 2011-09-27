@@ -110,15 +110,15 @@ class PMIntEntryWidget(PMBaseWidget):
 		except ValueError:
 			self.intbox.setText("") 
 			self.setErrorMessage("Invalid type, Int neeeded in %s"%self.getName())
-			self.emit(QtCore.SIGNAL("pmmessage(str)"),"Invalid type, Int neeeded in %s"%self.getName())
+			self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Invalid type, Int neeeded in %s"%self.getName())
 			
 	def _confirm_bounds(self):
 		if self.lrange != None and (self.value < self.lrange):
 			self.intbox.setText(str(self.lrange))
-			self.emit(QtCore.SIGNAL("pmmessage(str)"),"Value too low for '%s', clipping to '%d'"%(self.name,self.lrange))
+			self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Value too low for '%s', clipping to '%d'"%(self.name,self.lrange))
 		if self.urange != None and (self.value > self.urange):
 			self.intbox.setText(str(self.urange))
-			self.emit(QtCore.SIGNAL("pmmessage(str)"),"Value too high for '%s', clipping to '%d'"%(self.name,self.urange))
+			self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Value too high for '%s', clipping to '%d'"%(self.name,self.urange))
 			
 	def getValue(self):
 		return self.value
@@ -162,15 +162,15 @@ class PMFloatEntryWidget(PMBaseWidget):
 		except ValueError:
 			self.floatbox.setText("") 
 			self.setErrorMessage("Invalid type, float needed in '%s'"%self.getName())
-			self.emit(QtCore.SIGNAL("pmmessage(str)"),"Invalid type, float needed in '%s'"%self.getName())
+			self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Invalid type, float needed in '%s'"%self.getName())
 			
 	def _confirm_bounds(self):
 		if self.lrange and (self.value < self.lrange):
 			self.floatbox.setText(str(self.lrange))
-			self.emit(QtCore.SIGNAL("pmmessage(str)"),"Value too low for '%s', clipping to '%f'"%(self.name,self.lrange))
+			self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Value too low for '%s', clipping to '%f'"%(self.name,self.lrange))
 		if self.urange and (self.value > self.urange):
 			self.floatbox.setText(str(self.urange))
-			self.emit(QtCore.SIGNAL("pmmessage(str)"),"Value too high for '%s', clipping to '%f'"%(self.name,self.urange))
+			self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Value too high for '%s', clipping to '%f'"%(self.name,self.urange))
 			
 	def getValue(self):
 		return self.value
@@ -315,7 +315,7 @@ class PMFileNameWidget(PMBaseWidget):
 		self.filename = filename
 		self.filenamebox.setText(filename)
 		self.setErrorMessage(None)
-		self.emit(QtCore.SIGNAL("pmfilename(str)"),self.getValue())
+		self.emit(QtCore.SIGNAL("pmfilename(QString)"),self.getValue())
 	
 	def _checkfiles(self, filename):
 		files = filename.split()
@@ -330,7 +330,7 @@ class PMFileNameWidget(PMBaseWidget):
 	def _onBadFile(self, filename):
 		self.filename = None
 		self.setErrorMessage("File '%s' from field '%s' does not exist"%(filename,self.getName()))
-		self.emit(QtCore.SIGNAL("pmmessage(str)"),"File '%s' from field '%s' does not exist"%(filename,self.getName()))
+		self.emit(QtCore.SIGNAL("pmmessage(QString)"),"File '%s' from field '%s' does not exist"%(filename,self.getName()))
 		
 class PMComboWidget(PMBaseWidget):
 	""" A Widget for combo boxes. Type is checked """
@@ -426,13 +426,13 @@ class PMSymWidget(PMBaseWidget):
 		
 		for i in ['icos','oct','tet','c','d','h']: self.combobox.addItem(i)
 		
-		self.connect(self.symnumbox,QtCore.SIGNAL("pmmessage(str)"),self._on_message)
+		self.connect(self.symnumbox,QtCore.SIGNAL("pmmessage(QString)"),self._on_message)
 		
 		self.initdefault = initdefault
 		self.setValue(default)
 	
 	def _on_message(self, message):
-		self.emit(QtCore.SIGNAL("pmmessage(str)"),message)
+		self.emit(QtCore.SIGNAL("pmmessage(QString)"),message)
 		
 	def getValue(self):
 		""" Return the symmetry value """
@@ -469,6 +469,7 @@ class PMMultiSymWidget(PMBaseWidget):
 		self.gridbox.addWidget(self.stackedwidget)
 		self.setLayout(self.gridbox)
 		self.lastsymvalue = None
+		self.initdefault = initdefault
 	
 	def setValue(self, value):
 		values = value.split(",")
@@ -485,7 +486,8 @@ class PMMultiSymWidget(PMBaseWidget):
 		return multisym
 		
 	def update(self, files):
-		fileslist = files.split()
+		if not files: return
+		fileslist = str(files).split()
 		amount = 0
 		self.multisymwidgetlist = []
 		# First remove the old widget
@@ -536,20 +538,21 @@ class PMAutoMask3DWidget(PMBaseWidget):
 		gridbox.addWidget(self.paramsdict["nshellsgauss"], 2, 1, 1, 2)
 		self.setLayout(gridbox)
 		self.setValue(default)
+		self.initdefault = initdefault
 		
 		QtCore.QObject.connect(self.automask3dbool,QtCore.SIGNAL("stateChanged(int)"),self._on_boolchanged)
-		self.connect(self.paramsdict["threshold"],QtCore.SIGNAL("pmmessage(str)"),self._on_message)
-		self.connect(self.paramsdict["nmaxseed"],QtCore.SIGNAL("pmmessage(str)"),self._on_message)
-		self.connect(self.paramsdict["radius"],QtCore.SIGNAL("pmmessage(str)"),self._on_message)
-		self.connect(self.paramsdict["nshells"],QtCore.SIGNAL("pmmessage(str)"),self._on_message)
-		self.connect(self.paramsdict["nshellsgauss"],QtCore.SIGNAL("pmmessage(str)"),self._on_message)
+		self.connect(self.paramsdict["threshold"],QtCore.SIGNAL("pmmessage(QString)"),self._on_message)
+		self.connect(self.paramsdict["nmaxseed"],QtCore.SIGNAL("pmmessage(QString)"),self._on_message)
+		self.connect(self.paramsdict["radius"],QtCore.SIGNAL("pmmessage(QString)"),self._on_message)
+		self.connect(self.paramsdict["nshells"],QtCore.SIGNAL("pmmessage(QString)"),self._on_message)
+		self.connect(self.paramsdict["nshellsgauss"],QtCore.SIGNAL("pmmessage(QString)"),self._on_message)
 		
 	def _on_boolchanged(self):
 		for widget in self.paramsdict.values():
 			widget.setEnabled(self.automask3dbool.isChecked())
 	
 	def _on_message(self, message):
-		self.emit(QtCore.SIGNAL("pmmessage(str)"),message)
+		self.emit(QtCore.SIGNAL("pmmessage(QString)"),message)
 		
 	def setValue(self, value):
 		# if value is "" of None, set bool to false

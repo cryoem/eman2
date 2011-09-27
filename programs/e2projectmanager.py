@@ -814,7 +814,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 				widget = PMSymWidget(option['name'], self.getDefault(option), initdefault=self.getDefault(option, nodb=True))
 			if option['guitype'] == 'multisymbox':
 				widget = PMMultiSymWidget(option['name'], initdefault=self.getDefault(option, nodb=True))
-				self.connect(fileboxwidget,QtCore.SIGNAL("pmfilename(str)"),widget.update)
+				self.connect(fileboxwidget,QtCore.SIGNAL("pmfilename(QString)"),widget.update)
 				widget.update(fileboxwidget.getValue())
 				widget.setValue(self.getDefault(option))
 			if option['guitype'] == 'intbox':
@@ -833,7 +833,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 				widget = PMAutoMask3DWidget(option['name'], self.getDefault(option), initdefault=self.getDefault(option, nodb=True))
 			
 			# Setup each widget
-			self.connect(widget,QtCore.SIGNAL("pmmessage(str)"),self._on_message)
+			self.connect(widget,QtCore.SIGNAL("pmmessage(QString)"),self._on_message)
 			widget.setToolTip(option['help'])
 			self.widgetlist.append(widget)
 			gridbox.addWidget(widget, option['row'], option['col'], self.getRowSpan(option), self.getColSpan(option))
@@ -913,14 +913,14 @@ class PMGUIWidget(QtGui.QScrollArea):
 		if thiscwd != self.cwd:
 			self.cwd = thiscwd
 			self.db = db_open_dict("bdb:"+str(self.cwd)+"#"+self.program)
-			# Might enable serval dbs to be loaded, but we will implment this later
-			for widget in self.widgetlist:
-				# If this is not a value holding widget continue
-				if widget.getArgument() == None: continue
-				if self.db[widget.getName()] == None:
-					widget.setValue(widget.initdefault)
-				else:
-					widget.setValue(self.db[widget.getName()])
+		# Might enable serval dbs to be loaded, but we will implment this later
+		for widget in self.widgetlist:
+			# If this is not a value holding widget continue
+			if widget.getArgument() == None: continue
+			if self.db[widget.getName()] == None:
+				widget.setValue(widget.initdefault)
+			else:
+				widget.setValue(self.db[widget.getName()])
 		
 	def getCommand(self):
 		#Loop and check for errors and set the DB
@@ -939,8 +939,8 @@ class PMGUIWidget(QtGui.QScrollArea):
 		self.pm().statusbar.setMessage("")	# Blank Status bar
 		return args
 		
-	def _on_message(self, string):
-		self.pm().statusbar.setMessage(string)
+	def _on_message(self, QString):
+		self.pm().statusbar.setMessage(str(QString))
 	
 class PMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 	"""

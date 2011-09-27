@@ -28,6 +28,7 @@
     "CHILDREN": [
       {
         "ICON": "green_boxes", 
+        "MODE": "boxing",
         "PROGRAM": "e2boxer.py", 
         "NAME": "Interactive Boxing-  e2boxer", 
         "CHILDREN": []
@@ -39,8 +40,9 @@
         "CHILDREN": []
       }, 
       {
-        "ICON": "green_boxes", 
-        "PROGRAM": "programName", 
+        "ICON": "green_boxes",
+        "MODE": "extraction", 
+        "PROGRAM": "e2boxer.py", 
         "NAME": "Generate Output -e2boxer", 
         "CHILDREN": []
       }, 
