@@ -325,20 +325,23 @@ class EMProjectManager(QtGui.QMainWindow):
 		tbwidget.setFrameShape(QtGui.QFrame.StyledPanel)
 		grid = QtGui.QGridLayout()
 		self.PMIcon = PMIcon(self.pm_icon, tbwidget)
+		self.PMIcon.setAlignment(QtCore.Qt.AlignLeft)
 		grid.addWidget(self.PMIcon,0 , 0, 2, 1)
 		self.PMTitle = QtGui.QLabel("EMAN2 Project Manager ")
+		self.PMTitle.setAlignment(QtCore.Qt.AlignCenter)
 		self.PMProjectNameBanner = QtGui.QLabel("Project Name: "+self.pn_project_name)
 		self.PMProjectNameBanner.setAlignment(QtCore.Qt.AlignCenter)
 		titlefont = QtGui.QFont()
 		titlefont.setPointSize(30)
 		titlefont.setBold(True)
+		titlefont.setItalic(True)
 		self.PMTitle.setFont(titlefont)
 		self.PMTitle.setAlignment(QtCore.Qt.AlignBottom)
 		pmnamefont = QtGui.QFont()
 		pmnamefont.setBold(True)
 		self.PMProjectNameBanner.setFont(pmnamefont)
-		grid.addWidget(self.PMTitle, 0, 1)
-		grid.addWidget(self.PMProjectNameBanner, 1, 1)
+		grid.addWidget(self.PMTitle, 0, 1, 1, 2)
+		grid.addWidget(self.PMProjectNameBanner, 1, 1, 1, 2)
 		tbwidget.setLayout(grid)
 		
 		return tbwidget
@@ -687,6 +690,18 @@ class EMProjectManager(QtGui.QMainWindow):
 		"""
 		return self.tree_stacked_widget.currentWidget().currentItem().getMode()
 		
+	def getCS(self):
+		""" Return the project CS """
+		return self.pm_projects_db[self.pn_project_name]['CS']
+		
+	def getVoltage(self):
+		""" Return the project Voltage """
+		return self.pm_projects_db[self.pn_project_name]['VOLTAGE']
+		
+	def getAPIX(self):
+		""" Return the project Apix """
+		return self.pm_projects_db[self.pn_project_name]['APIX']
+		
 	def updateProject(self):
 		"""
 		Update the Project. Make sure buttons, DB, title and icon observe the state of the PM
@@ -704,7 +719,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		# Help button should only be down if the textbox widget is displayed
 		if self.gui_stacked_widget.currentIndex() != 1:
 			self.helpbutton.setDown(False, quiet=True)
-		
+	
 class EMAN2StatusBar(QtGui.QLabel):
 	"""
 	The Stats bar for PM
@@ -941,7 +956,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 		
 	def _on_message(self, QString):
 		self.pm().statusbar.setMessage(str(QString))
-	
+		
 class PMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 	"""
 	Custon QTreeWidget for PM
