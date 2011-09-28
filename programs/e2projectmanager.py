@@ -134,7 +134,7 @@ experticon = [
 from EMAN2 import *
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
-import os, json, re, glob
+import os, json, re, glob, signal
 import subprocess
 from EMAN2db import db_open_dict
 from pmwidgets import *
@@ -187,6 +187,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		
 	def closeEvent(self, event):
 		if self.logbook: self.logbook.close()
+		if self.taskmanager: self.taskmanager.close()
 	
 	def loadPMdb(self):
 		"""
@@ -451,7 +452,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		if state:
 			self.loadLogBook()
 		else:
-			self.logbook.close()
+			self.logbook.hide()
 	
 	def _on_taskmgrbutton(self, state):
 		"""Load the log book
@@ -459,7 +460,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		if state:
 			self.loadTaskManager()
 		else:
-			self.taskmanager.close()
+			self.taskmanager.hide()
 	
 	def loadUsage(self, program):
 		"""
@@ -488,7 +489,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		"""
 		if not self.logbook:
 			self.logbook = LogBook(self)
-			self.logbook.show()
+		self.logbook.show()
 			
 	def loadTaskManager(self):
 		"""
@@ -496,7 +497,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		"""
 		if not self.taskmanager:
 			self.taskmanager = TaskManager(self)
-			self.taskmanager.show()		
+		self.taskmanager.show()
 		
 	def makeCMDButtonsWidget(self):
 		"""
@@ -705,6 +706,10 @@ class EMProjectManager(QtGui.QMainWindow):
 	def getAPIX(self):
 		""" Return the project Apix """
 		return self.pm_projects_db[self.pn_project_name]['APIX']
+	
+	def getPMCWD(self):
+		""" return the CWD that the pm is working in """
+		return self.pm_projects_db[self.pn_project_name]['CWD']
 		
 	def updateProject(self):
 		"""
@@ -789,23 +794,187 @@ class TaskManager(QtGui.QWidget):
 		grid = QtGui.QGridLayout()
 		font = QtGui.QFont()
 		font.setBold(True)
-		textlabel = QtGui.QLabel("Task Manager")
+		textlabel = QtGui.QLabel("Running Tasks")
 		textlabel.setFont(font)
 		grid.addWidget(textlabel,0,0)
+		self.list_widget = QtGui.QListWidget()
+		grid.addWidget(self.list_widget,1,0,1,2)
 		self.killpb = QtGui.QPushButton("Kill")
 		self.closepb = QtGui.QPushButton("Close")
-		grid.addWidget(self.killpb, 1,0)
-		grid.addWidget(self.closepb, 1,1)
+		grid.addWidget(self.killpb, 2,0)
+		grid.addWidget(self.closepb, 2,1)
 		self.setLayout(grid)
-			
+		self.resize(400, 200)
+		
+		
 		self.connect(self.closepb, QtCore.SIGNAL('clicked()'), self._on_close)
+		self.connect(self.killpb, QtCore.SIGNAL('clicked()'), self._on_kill)
+		self.tasks=None
+		self.update_tasks()
+		
+		# A timer for updates
+		self.timer = QtCore.QTimer(self);
+ 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.update_tasks)
+ 		self.timer.start(3000)
+	
+	def check_task(self,fin,ptsk):
+		"""Note that this modifies ptsk in-place"""
+		fin.seek(ptsk[0])
+		try : t=fin.readline()
+		except: return False
+		
+		tsk=t.split("\t")
+		ptsk[3]=tsk[1]
+		if self.is_running(tsk) : return True
+		
+		return False
+	
+	def is_running(self,tsk):
+		"""Check to see if the 'tsk' string is actively running"""
+		
+		try:
+			# This means the task must be done
+			if tsk[1][4]=="/" : return False
+			
+			# or not running
+			if '/' in tsk[2] : pid=int(tsk[2].split("/")[0])
+			else : pid=int(tsk[2])
+			
+			if os.name=="posix":
+				# don't do this on windows (may actually kill the process)
+				os.kill(pid,0)			# raises an exception if doesn't exist
+			else :
+				# not a good approach, but the best we have right now on windows
+				tm=time.localtime()
+				mon=int(tsk[0][5:7])
+				yr=int(tsk[0][:4])
+				day=int(tsk[0][8:10])
+				if mon!=tm[1] or yr!=tm[0] or tm[2]-day>1 : raise Exception 
+				
+			if os.name=="nt": tsk[4]=tsk[4].convert("\\","/")
+			command = tsk[4].split()[0].split("/")[-1]
+			if command=="e2projectmanager.py" : raise Exception
+		except:
+#			traceback.print_exc()
+			return False
+
+		return True
+		
+	def parse_new_commands(self,fin):
+		self.last_update=time.time()
+		while True:
+			loc=fin.tell()
+			try: 
+				t=fin.readline()
+				if len(t)==0 : raise Exception
+			except: 
+				self.lastpos=loc
+				break
+				
+			tsk=t.split("\t")
+			if not self.is_running(tsk) : continue
+			
+			# if we get here, then we have a (probably) active task
+			
+			# This contains (file location,process id, status, command name)
+			ppid = None
+			if '/' in tsk[2]: 
+				ids = tsk[2].split("/")
+				pid=int(ids[0])
+				if len(ids) == 2:
+					ppid = int(ids[1].strip())
+			else : pid=int(tsk[2])
+			if os.name=="nt": tsk[4]=tsk[4].convert("\\","/")
+			command = tsk[4].split()[0].split("/")[-1]
+			self.tasks.append([loc,pid,tsk[0],tsk[1],command,ppid])
+			
+	def update_tasks(self):
+		if self.tasks==None:
+			try: fin=file(self.pm().getPMCWD()+"/.eman2log.txt","r")
+			except: return
+			self.prevfin = fin
+			self.tasks=[]
+			self.parse_new_commands(fin)
+			if len(self.tasks)==0 :
+				self.tasks=None
+				return
+		
+		else:
+			try: 
+				if os.stat(self.pm().getPMCWD()+"/.eman2log.txt").st_mtime < self.last_update:
+					# see if any jobs have crashed, if not then do nothing
+					self.tasks=[i for i in self.tasks if self.check_task(self.prevfin,i)]
+					self.update_list()
+					return
+				
+			except:
+				print "Error, couldn't stat(.eman2log.txt)."
+				return
+			
+			# Load in the file
+			try: fin=file(self.pm().getPMCWD()+"/.eman2log.txt","r")
+			except: return
+			self.prevfin = fin
+			
+			# Go through existing entries and see if they've finished
+			self.tasks=[i for i in self.tasks if self.check_task(fin,i)]
+			
+			# now check for new entries
+			fin.seek(self.lastpos)
+			self.parse_new_commands(fin)
+		# Update the list
+		self.update_list()
+
+	def update_list(self):
+		self.list_widget.clear()
+		for t in self.tasks:
+			listwigetitem = PMQListWidgetItem("%s  %s(%s)  %s"%(t[2][5:16],t[3][:4],t[1],t[4]))
+			listwigetitem.setPID(t[1])
+			listwigetitem.setPPID(t[5])
+			listwigetitem.setProgramName(t[4])
+			self.list_widget.addItem(listwigetitem)
+		
+	def reset(self):
+		self.tasks = None
+		self.update_tasks()
 		
 	def _on_close(self):
 		self.close()	
-		
+	
+	def _on_kill(self):
+		selitems = self.list_widget.selectedItems()
+		for item in selitems:
+			print item.getProgramName(), item.getPID(), item.getPPID()
+			os.kill(item.getPID(),signal.SIG_DFL)
+			
 	def closeEvent(self, event):
 		self.pm().taskmanager = None
 		self.pm().updateProject()
+
+class PMQListWidgetItem(QtGui.QListWidgetItem):
+	""" A subclass of the QListWidgetItem for use in the task manger """
+	def __init__(self, text):
+		QtGui.QListWidgetItem.__init__(self, text)
+		self.pid = None
+		self.programname = None
+	
+	def setPID(self, pid):
+		self.pid = pid
+		
+	def getPID(self):
+		return self.pid
+	
+	def setPPID(self, ppid):
+		self.ppid = ppid
+		
+	def getPPID(self):
+		return self.ppid
+		
+	def setProgramName(self, name):
+		self.programname = name
+		
+	def getProgramName(self):
+		return self.programname
 		
 class PMGUIWidget(QtGui.QScrollArea):
 	"""
