@@ -285,7 +285,7 @@ void PDBReader::save_to_pdb(const char *file) const {
 		char liner [200];
 		strcpy (liner, lines[i].c_str());
 		if (strncmp(liner, "ATOM", 4) != 0) {
-			fprintf (fp, liner);
+			fprintf (fp, "%s", liner);
 		}
 		else {
 			string curr = pWords[m];

@@ -2760,7 +2760,7 @@ void FlattenBackgroundProcessor::process_inplace(EMData * image)
 
 void NonConvexProcessor::process_inplace(EMData * image) {
 	if (!image) { LOGWARN("NULL IMAGE"); return; }
-	int isinten=image->get_attr_default("is_intensity",0);
+	//int isinten=image->get_attr_default("is_intensity",0);
 	
 	// 1-D
 	if (image->get_ysize()==1) {

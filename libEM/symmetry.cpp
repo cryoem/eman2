@@ -1602,7 +1602,7 @@ vector<Vec3f> HSym::get_asym_unit_points(bool inc_mirror) const
 Transform HSym::get_sym(const int n) const
 {
 	int nstart=params["nstart"];
-	int nsym=params["nsym"];
+	//int nsym=params["nsym"];
 	float apix = params.set_default("apix",1.0f);
 	float daz= params["daz"];
 	float tz=params["tz"];

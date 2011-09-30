@@ -360,7 +360,7 @@ int ImagicIO::write_header(const Dict & dict, int image_index,
 	if(dict.has_key("ptcl_repr")) new_hed.mrc2 = (int)dict["ptcl_repr"];
 
 	string new_label = dict.has_key("IMAGIC.label") ? (string) dict["IMAGIC.label"] : "";
-	sprintf(new_hed.label, new_label.c_str() );
+	sprintf(new_hed.label, "%s", new_label.c_str() );
 
 	new_hed.lbuf = nx;
 	new_hed.inn = 1;

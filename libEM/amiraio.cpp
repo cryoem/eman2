@@ -240,7 +240,7 @@ int AmiraIO::write_header(const Dict & dict, int image_index, const Region*, EMU
 
 	string type = "float";
 
-	if (fprintf(amira_file,line1.c_str()) <= 0) {
+	if (fprintf(amira_file, "%s", line1.c_str()) <= 0) {
 		LOGERR("cannot write to AmiraMesh file '%s'", filename.c_str());
 		err = 1;
 	}

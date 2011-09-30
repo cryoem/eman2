@@ -565,11 +565,11 @@ int ImagicIO2::write_header(EMAN::Dict const& dict, int image_index,
 	new_hed.iyold = 0;
 
 	string new_label = dict.has_key("IMAGIC.label") ? (string) dict["IMAGIC.label"] : string(80, ' ');
-	sprintf(new_hed.label, new_label.c_str() );
+	sprintf(new_hed.label, "%s", new_label.c_str() );
 
 	string new_history = dict.has_key("IMAGIC.history") ? (string) dict["IMAGIC.history"] : string(228, ' ');
 	new_history = new_history.substr(0, 228);
-	sprintf(new_hed.history, new_history.c_str());
+	sprintf(new_hed.history, "%s", new_history.c_str());
 
 	new_hed.i4lp = nimg;
 
