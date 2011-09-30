@@ -6747,7 +6747,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 		finfo.write("image_start, image_end: %d %d\n" %(image_start, image_end))
 		finfo.flush()
 	
-	mask2D = pad( model_blank( int(2*rmax),nmax,1,bckg=1.0), nmax, nmax, 1,0.0)
+	mask2D = pad( model_blank( int(nmax-20),nmax,1,bckg=1.0), nmax, nmax, 1,0.0)
 
 	data = EMData.read_images(stack, list_of_particles)
 	if fourvar:  original_data = []
@@ -6762,7 +6762,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 				ctf_params = data[im].get_attr("ctf")
 				data[im] = filt_ctf(data[im], ctf_params)
 				data[im].set_attr('ctf_applied', 1)
-		Util.mul_img(data[im], mask2D)  #?????
+		#Util.mul_img(data[im], mask2D)  #?????
 	del mask2D
 
 	if debug:
