@@ -91,6 +91,7 @@ def main():
 	parser.add_option("--shrinkrefine", type="int",default=1,help="Optionally shrink the input volumes by an integer amount for refine alignment.")
 #	parser.add_option("--automask",action="store_true",help="Applies a 3-D automask before centering. Can help with negative stain data, and other cases where centering is poor.")
 	parser.add_option("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:1")
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n",type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
@@ -133,7 +134,7 @@ def main():
 		print "ERROR, input volumes are not cubes"
 		sys.exit(1)
 
-	logger = E2init(sys.argv)
+	logger = E2init(sys.argv,options.ppid)
 	
 	# Initialize parallelism if being used
 	if options.parallel :
@@ -289,7 +290,7 @@ def main():
 		best_pairs_file = open(best_pairs_filename,'w')
 		
 		done_dir = 'done_' + common + new.rstrip('_')
-		os.system('mkdir ' + done_dir)
+		launch_childprocess('mkdir ' + done_dir)
 					
 		new = '_rt' + str(k + 1).zfill(len(str(parameters['rounds']))) + '_'	#Mark particles according to round they were produced in
 		jj = 1
@@ -340,8 +341,8 @@ def main():
 				tried.add(file2)
 				
 		for qq in averaged:
-			os.system('mv ' + qq + ' ' + done_dir)
-		os.system('mv *.lst ' + done_dir)
+			launch_childprocess('mv ' + qq + ' ' + done_dir)
+		launch_childprocess('mv *.lst ' + done_dir)
 
 		for pp in ranks_sorted:
 			pps = set(pp)
@@ -689,8 +690,8 @@ def allvsall(parameters,raw_stack,stack=''):
 				print "The all vs all alignment has finalized and converged into one average"
 				print "TERMINATING"
 
-				#os.system('mkdir ' + parameters['ID'])	
-				os.system('mv *' + parameters['ID'] + '* ' + parameters['ID'])
+				#launch_childprocess('mkdir ' + parameters['ID'])	
+				launch_childprocess('mv *' + parameters['ID'] + '* ' + parameters['ID'])
 				sys.exit()
 				
 			all_names.sort()
@@ -738,7 +739,7 @@ def allvsall(parameters,raw_stack,stack=''):
 		best_pairs_file = open(best_pairs_filename,'w')
 		
 		done_dir = 'done_' + common + new.rstrip('_')
-		os.system('mkdir ' + done_dir)
+		launch_childprocess('mkdir ' + done_dir)
 					
 		new = '_rt' + str(k + 1).zfill(len(str(parameters['rounds']))) + '_'	#Mark particles according to round they were produced in
 		jj = 1
@@ -789,8 +790,8 @@ def allvsall(parameters,raw_stack,stack=''):
 				tried.add(file2)
 				
 		for qq in averaged:
-			os.system('mv ' + qq + ' ' + done_dir)
-		os.system('mv *.lst ' + done_dir)
+			launch_childprocess('mv ' + qq + ' ' + done_dir)
+		launch_childprocess('mv *.lst ' + done_dir)
 
 		for pp in ranks_sorted:
 			pps = set(pp)

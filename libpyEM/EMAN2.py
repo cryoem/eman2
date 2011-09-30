@@ -40,6 +40,7 @@ import re
 import cPickle
 import zlib
 import socket
+import subprocess
 from EMAN2_cppwrap import *
 from pyemtbx.imagetypes import *
 from pyemtbx.box import *
@@ -97,7 +98,7 @@ def timer(fn,n=1):
 	for i in range(n): fn()
 	print time.time()-a
 
-def E2init(argv) :
+def E2init(argv, ppid=-1) :
 	"""E2init(argv)
 This function is called to log information about the current job to the local logfile. The flags stored for each process
 are pid, start, args, progress and end. progress is from 0.0-1.0 and may or may not be updated. end is not set until the process
@@ -111,8 +112,8 @@ is complete. If the process is killed, 'end' may never be set."""
 		try: hist=file(".eman2log.txt","w")
 		except: return -1
 	n=hist.tell()
-	try:    hist.write("%s\tincomplete         \t%6d/%6d\t%s\t%s\n"%(local_datetime(),os.getpid(),os.getppid(),socket.gethostname()," ".join(argv)))
-	except: hist.write("%s\tincomplete         \t%6d\t%s\t%s\n"%(local_datetime(),os.getpid(),socket.gethostname()," ".join(argv)))
+	hist.write("%s\tincomplete         \t%6d/%6d\t%s\t%s\n"%(local_datetime(),os.getpid(),ppid,socket.gethostname()," ".join(argv)))
+
 #	hist.flush()
 	hist.close()
 	
@@ -711,6 +712,15 @@ def kill_process(pid):
 		except:
 			return 0
 
+def launch_childprocess(cmd):
+	'''
+	Convenience function to lauch child processes
+	'''
+	p = subprocess.Popen(str(cmd)+" --ppid=%d"%os.getpid(), shell=True)
+	error = os.waitpid(p.pid, 0)[1]
+	
+	return error
+	
 def process_running(pid):
 	'''
 	Platform independent way of checking if a process is running, based on the pid

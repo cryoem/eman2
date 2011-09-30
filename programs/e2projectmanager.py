@@ -815,7 +815,7 @@ class TaskManager(QtGui.QWidget):
 		# A timer for updates
 		self.timer = QtCore.QTimer(self);
  		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.update_tasks)
- 		self.timer.start(3000)
+ 		self.timer.start(2000)
 	
 	def check_task(self,fin,ptsk):
 		"""Note that this modifies ptsk in-place"""
@@ -834,7 +834,7 @@ class TaskManager(QtGui.QWidget):
 		
 		try:
 			# This means the task must be done
-			if tsk[1][4]=="/" : return False
+			if tsk[1][4]=="/" or tsk[1] == "crashed": return False
 			
 			# or not running
 			if '/' in tsk[2] : pid=int(tsk[2].split("/")[0])
@@ -854,8 +854,14 @@ class TaskManager(QtGui.QWidget):
 			if os.name=="nt": tsk[4]=tsk[4].convert("\\","/")
 			command = tsk[4].split()[0].split("/")[-1]
 			if command=="e2projectmanager.py" : raise Exception
-		except:
-#			traceback.print_exc()
+		except:	
+			# If the process is not running nor complete then list it as crashed
+			try:
+				fout=file(self.pm().getPMCWD()+"/.eman2log.txt","r+")
+				fout.seek(tsk[0]+20)
+				fout.write("crashed            ")
+				fout.close()
+			except: pass
 			return False
 
 		return True
@@ -872,7 +878,8 @@ class TaskManager(QtGui.QWidget):
 				break
 				
 			tsk=t.split("\t")
-			if not self.is_running(tsk) : continue
+
+			if not self.is_running(tsk ) : continue
 			
 			# if we get here, then we have a (probably) active task
 			
@@ -926,14 +933,27 @@ class TaskManager(QtGui.QWidget):
 		self.update_list()
 
 	def update_list(self):
-		self.list_widget.clear()
+		#self.list_widget.clear()
+		listitems = self.getListItems()
 		for t in self.tasks:
+			if t[1] in listitems.keys():
+				del(listitems[t[1]])
+				continue
 			listwigetitem = PMQListWidgetItem("%s  %s(%s)  %s"%(t[2][5:16],t[3][:4],t[1],t[4]))
 			listwigetitem.setPID(t[1])
 			listwigetitem.setPPID(t[5])
 			listwigetitem.setProgramName(t[4])
 			self.list_widget.addItem(listwigetitem)
-		
+		# Remove items that have stopped running
+		for item in listitems.values():
+			self.list_widget.takeItem(self.list_widget.row(item))
+	
+	def getListItems(self):
+		itemdict = {}
+		for i in xrange(self.list_widget.count()):
+			itemdict[self.list_widget.item(i).getPID()] = self.list_widget.item(i)
+		return itemdict
+			
 	def reset(self):
 		self.tasks = None
 		self.update_tasks()
@@ -943,10 +963,29 @@ class TaskManager(QtGui.QWidget):
 	
 	def _on_kill(self):
 		selitems = self.list_widget.selectedItems()
+		self.update_tasks()
 		for item in selitems:
-			print item.getProgramName(), item.getPID(), item.getPPID()
-			os.kill(item.getPID(),signal.SIG_DFL)
-			
+			if os.name == 'posix': # Kill by this method will only work for unix/linux type OS
+				# The PID Mafia occurs below: # Kill all children and siblings
+				for task in self.tasks:
+					if item.getPPID() == task[5]:
+						print "killing self process", task[1]
+						os.kill(task[1],signal.SIGKILL)
+						self._recursivekill(task[1])
+				# kill parent
+				if item.getPPID() != -1:
+					os.kill(item.getPPID(),signal.SIGKILL)
+			else:
+				# Windows kill
+				pass
+	
+	def _recursivekill(self, pid):
+		for task in self.tasks:
+			if pid == task[5]:
+				print "Killing child process", task[1]
+				os.kill(task[1],signal.SIGKILL)
+				self._recursivekill(task[1])
+		
 	def closeEvent(self, event):
 		self.pm().taskmanager = None
 		self.pm().updateProject()
@@ -1321,10 +1360,8 @@ class DialogOpenProject(QtGui.QDialog):
 if __name__ == "__main__":
 	import sys
 	from emapplication import EMApp
-	logid=E2init(sys.argv)
 	app = EMApp()	# God only knows what this does.... the current GUI scheme is overly complex!
 	#app = QtGui.QApplication(sys.argv)
 	pm = EMProjectManager()
 	pm.show()
 	app.exec_()
-	E2end(logid)

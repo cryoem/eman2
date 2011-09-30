@@ -100,6 +100,7 @@ def main():
 	#parser.add_argument("--odd", default=False, help="Used by EMAN2 when running eotests. Includes only odd numbered particles in class averages.", action="store_true")
 	#parser.add_argument("--even", default=False, help="Used by EMAN2 when running eotests. Includes only even numbered particles in class averages.", action="store_true")
 	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:1", guitype='strbox', row=11, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
@@ -156,7 +157,7 @@ def main():
 		print "Error in output name. It must end in a valid format, like '.hdf'; make sure you didn't mistake a comma for a dot"
 		sys.exit(1)
 		
-	logger = E2init(sys.argv)
+	logger = E2init(sys.argv, options.ppid)
 	
 	try: 
 		classmx = EMData.read_images(options.classmx)		# we keep the entire classification matrix in memory, since we need to update it in most cases

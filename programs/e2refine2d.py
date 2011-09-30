@@ -36,7 +36,7 @@ from EMAN2 import *
 from EMAN2db import db_open_dict, db_list_dicts
 from optparse import OptionParser
 from math import *
-from os import system,remove
+from os import remove
 import sys
 
 def main():
@@ -114,7 +114,7 @@ def main():
 	
 	# Database Metadata storage
 	parser.add_argument("--dbls",type=str,help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
-	
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 		
 	global options
 	(options, args) = parser.parse_args()
@@ -146,7 +146,7 @@ def main():
 	if options.path and options.path[:4].lower()!="bdb:" : options.path="bdb:"+options.path
 	if not options.path : options.path="bdb:"+numbered_path("r2d",not options.resume)
 	
-	logid=E2init(sys.argv)
+	logid=E2init(sys.argv,options.ppid)
 
 	fit=1
 	dcts=db_list_dicts(options.path)
@@ -320,10 +320,11 @@ def run(command):
 	"Execute a command with optional verbose output"
 	global options
 	if options.verbose>0 : print "***************",command
-	error = system(command)
+	error = launch_childprocess(command)
+	
 	if error==11 :
 		pass
-#		print "Segfault running %s\nNormal on some platforms, ignoring"%command
+#	#	print "Segfault running %s\nNormal on some platforms, ignoring"%command
 	elif error : 
 		print "Error running:\n%s"%command
 		exit(1)

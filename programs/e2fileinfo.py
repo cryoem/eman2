@@ -62,13 +62,14 @@ def main():
 	parser.add_option("--op",type="string",help="getinfo from file (either defocus, ac (amplitude contrast), or bfactor)",default="")
 	parser.add_option("--outfile",type="string",help="The output file name, may not be required",default="")
 	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists.")
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
 	print """WARNING: Experimental program, not for general use. See e2iminfo.py and e2bdb.py for general image information queries"""
 
-	logid=E2init(sys.argv)
+	logid=E2init(sys.argv, options.ppid)
 
 	if ( options.remove != "" ):
 		checkoutput(options)

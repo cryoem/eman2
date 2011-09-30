@@ -63,7 +63,8 @@ def main():
 	parser.add_argument("--savemore",action="store_true",help="Will cause intermediate results to be written to flat files",default=False, guitype='boolbox', expert=True, row=4, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--orientgen",type=str, default="eman",help="The type of orientation generator. Default is safe. See e2help.py orientgens", guitype='combobox', choicelist='dump_orientgens_list()', row=2, col=2, rowspan=1, colspan=1)
-
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	
 	# Database Metadata storage
 	parser.add_argument("--dbls",type=str,default=None,help="data base list storage, used by the workflow. You can ignore this argument.")
 	
@@ -85,7 +86,7 @@ def main():
 	else:
    		orts = sym_object.gen_orientations(options.orientgen,{"delta":9.0})
 
-	logid=E2init(sys.argv)
+	logid=E2init(sys.argv,options.ppid)
 	results=[]
 	
 	try: os.mkdir("initial_models")

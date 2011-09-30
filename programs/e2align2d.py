@@ -57,6 +57,7 @@ def main():
 	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment. This is usually the \'refine\' aligner.", default=None)
 	parser.add_option("--raligncmp",type="string",help="The comparitor used by the second stage aligner.",default="ccc")
 	parser.add_option("--cmp",type="string",help="The comparitor used to generate quality scores for the purpose of particle exclusion in classes, strongly linked to the keep argument.", default=None)
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n",type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	
@@ -72,7 +73,7 @@ def main():
 	options.raligncmp=parsemodopt(options.raligncmp)
 	options.cmp=parsemodopt(options.cmp)
 
-	logger=E2init(sys.argv)
+	logger=E2init(sys.argv, options.ppid)
 	
 	reference=EMData(options.ref,options.refn)
 	alignstack(args[0],options.output,reference,options.align,options.aligncmp,options.ralign,options.raligncmp,options.cmp,options.verbose)

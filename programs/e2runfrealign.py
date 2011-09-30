@@ -21,6 +21,7 @@ Add Help doc to me...
 """
 
 parser.add_header(name="runfrealign", help='Click Launch to run Frealign', title="### Click Launch to run e2runfrealign ###", row=0, col=0, rowspan=1, colspan=1)
+parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 (options, args) = parser.parse_args()
 
@@ -28,7 +29,7 @@ if len(args) != 0:
    print "Please use e2runfrealign.py with no arguments"
    exit(-1)
 
-E2n=E2init(args)
+E2n=E2init(args,options.ppid)
 
 shutil.copy('3DMapInOut.mrc', '3DMapInOut.mrc.old')
 shutil.copy('ptcl_meta_data', 'ptcl_meta_data.old')

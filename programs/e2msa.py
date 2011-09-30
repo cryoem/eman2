@@ -72,6 +72,7 @@ handled this way."""
 	parser.add_option("--simmx",type="string",help="Will use transformations from simmx on each particle prior to analysis")
 	parser.add_option("--normalize",action="store_true",help="Perform a careful normalization of input images before MSA. Otherwise normalization is not modified until after mean subtraction.",default=False)
 	parser.add_option("--gsl",action="store_true",help="Use gsl SVD algorithm",default=False)
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	#parser.add_option("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
@@ -81,7 +82,7 @@ handled this way."""
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output filenames required")
 
-	logid=E2init(sys.argv)
+	logid=E2init(sys.argv,options.ppid)
 	
 	if options.verbose>0 : print "Beginning MSA"
 	if options.gsl : mode="svd_gsl"

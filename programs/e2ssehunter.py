@@ -56,12 +56,13 @@ def main():
 	parser.add_option("--skeletonwt","-W", type="float",help="skeleton weight",default=1.0)
 	parser.add_option("--helixlength","-L", type="float",help="helix length om angstroms",default=16.2)
 	parser.add_option("--da","-D", type="float",help="helix angular search step",default=5.0)
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	(options, args) = parser.parse_args()
 		
 	if len(args) < 4 : 
 		parser.error("ERROR: supply all 4 required arguments!")
 
-	logid=E2init(sys.argv)
+	logid=E2init(sys.argv,options.ppid)
 
 	apix = float(args[1]) #Angstroms per pixel
 	res = float(args[2]) #Resolution

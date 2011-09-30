@@ -69,6 +69,7 @@ def main():
 	parser.add_option("--nsort",type="int",help="Number of output particles to generate (mainly for reverse mode)",default=0)
 	parser.add_option("--ninput",type="int",help="Number of input particles to read (first n in the file)",default=0)
 	parser.add_option("--shrink",type="int",help="Reduce the particles for comparisons",default=1)
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 #	parser.add_option("--tilt", "-T", type="float", help="Angular spacing between tilts (fixed)",default=0.0)
 #	parser.add_option("--maxshift","-M", type="int", help="Maximum translational error between images (pixels), default=64",default=64.0)
@@ -81,7 +82,7 @@ def main():
 		parser.error("byptcl, iterative and reverse are mututally exclusive")
 
 	print "Beginning image sort/alignment"
-	E2n=E2init(sys.argv)
+	E2n=E2init(sys.argv,options.ppid)
 
 	if options.simalign : options.simalign=parsemodopt(options.simalign)
 	else: options.simalign=[None,None]

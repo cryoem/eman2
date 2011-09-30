@@ -70,11 +70,12 @@ def main():
 	parser.add_argument("--cuda",action="store_true", help="Use CUDA for the alignment step.",default=False, guitype='boolbox', expert=True, row=12, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--aligngran",type=float,default=10.0,help="Fineness of global search in e2align3d.py, default=10.0", guitype='floatbox', row=11, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--weightrecons",action="store_true", help="Weight the reconstruction by particle numbers.",default=False, guitype='boolbox', row=11, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	global options
 	(options, args) = parser.parse_args()
-	logid=E2init(sys.argv)
+	logid=E2init(sys.argv,options.ppid)
 	
 	if options.careject: options.careject = options.careject.split(',')
 	

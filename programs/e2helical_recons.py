@@ -14,6 +14,7 @@ def main():
   usage="""%prog [options] blablabla"""
   parser=OptionParser(usage=usage,version=EMANVERSION)
   parser.add_option("--input",dest="input",default=None,type="string",help="particles data") #need this input as particles set 
+  parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
   parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness") 
   parser.add_option("--parallel",type="string",help="Parallelism string",default=None)
  
@@ -60,7 +61,7 @@ def main():
     try: os.mkdir("simmx")
     except: pass
     
-    os.system("e2simmx.py %s  %s %s -f --saveali --cmp=ccc --align=rotate_translate_flip --aligncmp=ccc --verbose=2  --parallel=thread:4" %(proj1, options.input, simx1)) 
+    launch_childprocess("e2simmx.py %s  %s %s -f --saveali --cmp=ccc --align=rotate_translate_flip --aligncmp=ccc --verbose=2  --parallel=thread:4" %(proj1, options.input, simx1)) 
   # e2simmx.py compare the 90 projections with the particles set to get a similarity matrix to store the similarity score and corresponding transformation parametes xform.projection for the back projection program recons3d_4nn() to use
   ###################################  
     

@@ -60,6 +60,7 @@ def main():
 #	parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=64)
 #	parser.add_option("--shrink",type="int",help="Shrink factor for full-frame view, default=0 (auto)",default=0)
 	parser.add_option("--apix",type="float",help="Override the A/pix value stored in the file header",default=0.0)
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
@@ -70,7 +71,7 @@ def main():
 #	# The program will not run very rapidly at such large box sizes anyhow
 #	if options.boxsize > 2048: parser.error("The boxsize you specified is too large.\nCurrently there is a hard coded max which is 2048.\nPlease contact developers if this is a problem.")
 	
-#	logid=E2init(sys.argv)
+#	logid=E2init(sys.argv,options.ppid)
 	
 	app = EMApp()
 	pix_init()

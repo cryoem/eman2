@@ -81,6 +81,7 @@ def main():
 					help="Output file will be a 180x180 self-common lines map for each image.")
 	parser.add_option("--translate", type="string", action="append", help="Translate by x,y pixels")
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", help="verbose level [0-9], higner number means higher level of verboseness",default=0)
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_option("--writejunk", action="store_true", help="Writes the image even if its sigma is 0.", default=False)
 	
 	append_options = ["clip", "process", "meanshrink", "medianshrink", "scale", "randomize", "rotate", "translate", "multfile"]
@@ -98,7 +99,7 @@ def main():
 		print "Please specify at least one input file to operate on"
 		sys.exit(1)
 	
-	logid=E2init(sys.argv)
+	logid=E2init(sys.argv,options.ppid)
 
 	for infile in args:
 		if options.postfix!=None :

@@ -64,12 +64,13 @@ def main():
 	parser.add_option("--maxpairerr","-E",type="float",help="Maximum error match between pairs of helices, default=50",default=10.0)
 	parser.add_option("--skelpath","-K",type="string",help="Optional (recommended) output from the e2skelpath.py program")
 #	parser.add_option("--lengthmatchmatrix",type="string",help="Writes an image containing an exhaustive comparison of predicted vs SSE helix lengths as a matrix",default=None)
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
 
-	logid=E2init(sys.argv)
+	logid=E2init(sys.argv,options.ppid)
 	
 	ssematch(args[0],args[1],options)
 

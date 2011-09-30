@@ -35,7 +35,7 @@ from PyQt4 import QtGui, QtCore, QtOpenGL
 from PyQt4.QtCore import Qt
 import sys
 from emimageutil import EMParentWin
-from EMAN2 import remove_directories_from_name, get_image_directory,get_3d_font_renderer
+from EMAN2 import remove_directories_from_name, get_image_directory,get_3d_font_renderer, E2end
 import EMAN2db
 import weakref
 from libpyGLUtils2 import *
@@ -276,8 +276,11 @@ class EMApp(QtGui.QApplication):
 			
 		#print "couldn't close",child
 		
-	def execute(self):
-		return sys.exit(self.exec_())
+	def execute(self, logid=None):
+		self.exec_()
+		print logid
+		if logid: E2end(logid) # We need to log the end of the process, don't we....
+		return sys.exit()
 		
 	def hide_specific(self,child,inspector_too=True):
 		for child_ in self.children:

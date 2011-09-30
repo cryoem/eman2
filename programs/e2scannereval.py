@@ -69,11 +69,12 @@ def main():
 	parser.add_option("--box", "-S", type="int", help="size in pixels of the power spectra", default=256)
 	parser.add_option("--norm", "-N", dest="norm", action="store_true", help="Normalize the image before analysis")
 	parser.add_option("--nopad",action="store_true", help="No padding between boxes")
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input file required")
-	logid=E2init(sys.argv)
+	logid=E2init(sys.argv,options.ppid)
 	
 	# read the target and probe
 	target=EMData()

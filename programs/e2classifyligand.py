@@ -75,6 +75,7 @@ ligand/no-ligand contrast in individual images:
 	parser.add_option("--badsepsig",type="float",help="When identifying 'bad' particles, if s1/s2 are the similarities to reference 1/2, then those where |s1-s2| < sigma*badsepsig will be excluded. Default 0.25 ", default=0.25)
 	parser.add_option("--postfix",type="string",default="",help="This string will be appended to each set name to help differentiate the results from multiple runs")
 	parser.add_option("--debug",action="store_true",default=False,help="Enable debugging mode with verbose output and image display. Not suitable for real runs.")
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	#parser.add_option("--ncls","-N",type="int",help="Number of classes to generate",default=-1)
 	#parser.add_option("--average","-A",action="store_true",help="Average the particles within each class",default=False)
@@ -115,7 +116,7 @@ ligand/no-ligand contrast in individual images:
 		print "You must specify either a maskfile or ref1/ref2"
 		sys.exit(1)
 		
-	logid=E2init(sys.argv)
+	logid=E2init(sys.argv, options.ppid)
 	
 	# now we loop over each class, and assess the masked region for each particle in terms of
 	# sigma of the image. Note that we don't have a list of which particle is in each class,

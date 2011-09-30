@@ -70,6 +70,7 @@ def main():
 	parser.add_option("--shrink", type="int",default=None,help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. This will speed the process up but may change classifications.")
 	parser.add_option("--shrinks1", type="int",help="Shrinking performed for first stage classification, default=2",default=2)
 	parser.add_option("--finalstage",action="store_true",help="Assume that existing preliminary particle classifications are correct, and only recompute final local orientations",default=False)
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_option("--parallel",type="string",help="Parallelism string",default="thread:1")
 	parser.add_option("--force", "-f",dest="force",default=True, action="store_true",help="Deprecated. Value ignored")
 
@@ -77,7 +78,7 @@ def main():
 	
 	if len(args)<6 : parser.error("Please specify all filenames : <c input> <r input> <output> <ref simmx> <stg1 refs> <stg1 simmx>")
 	
-	E2n=E2init(sys.argv)
+	E2n=E2init(sys.argv,options.ppid)
 	
 
 	clen=EMUtil.get_image_count(args[0])
@@ -94,7 +95,7 @@ def main():
 		if options.prefilt : cmd+=" --prefilt"
 		if options.parallel!=None : cmd+=" --parallel="+options.parallel
 		print "executing ",cmd
-		os.system(cmd)
+		launch_childprocess(cmd)
 		
 		# Go through the reference self-simmx and determine the most self-dissimilar set of references
 		print "Finding %d dissimilar classification centers"%clen_stg1
@@ -164,7 +165,7 @@ def main():
 		if options.parallel!=None : cmd+=" --parallel="+options.parallel
 		if options.exclude!=None : cmd+=" --exclude="+options.exclude
 		print "executing ",cmd
-		os.system(cmd)
+		launch_childprocess(cmd)
 	else :
 		# reread classification info
 		classes=[i["class_ptcl_idxs"] for i in EMData.read_images(args[4],None,True)]
@@ -216,7 +217,7 @@ def main():
 		cmd += " --shrink="+str(options.shrink)
 		
 	print "executing ",cmd
-	os.system(cmd)
+	launch_childprocess(cmd)
 	
 
 #	E2progress(E2n,float(r-rrange[0])/(rrange[1]-rrange[0]))

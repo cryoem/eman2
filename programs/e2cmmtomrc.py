@@ -60,6 +60,7 @@ def main():
 	parser.add_option("--apix", "-A", type="float", help="A/voxel", default=1.0)
 	parser.add_option("--res", "-R", type="float", help="Resolution in A, equivalent to Gaussian lowpass with 1/e width at 1/res",default=2.8)
 	parser.add_option("--box", "-B", type="int", help="Box size in pixels",default=0)
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")

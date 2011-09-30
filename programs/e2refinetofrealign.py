@@ -57,6 +57,7 @@ parser.add_argument("--rrec", type=float, help="Resolution of reconstruction in 
 parser.add_argument("--reslow", type=float, help="Resolution of the data included in the alignment. This is the low resolution value. ex:200", default=200.0, guitype='floatbox', row=3, col=0, rowspan=1, colspan=2)
 parser.add_argument("--reshigh", type=float, help="Resolution of the data included in the alignment. This is the high resolution value. ex:25", default=25.0, guitype='floatbox', row=3, col=2, rowspan=1, colspan=1)
 parser.add_argument("--thresh", type=float, help="Phase Residual cutoff. Particles with a higher phase residual will not be included in the refinement ", default=90.0, guitype='floatbox', row=4, col=2, rowspan=1, colspan=1)
+parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 optionList = pyemtbx.options.get_optionlist(sys.argv[1:])
 
@@ -68,7 +69,7 @@ if len(args) != 2:
    sys.exit(1)
 
 
-E2n = E2init(sys.argv)
+E2n = E2init(sys.argv,options.ppid)
 # Create the E2FA directory structure if it does not exist
 dir = args[0]
 

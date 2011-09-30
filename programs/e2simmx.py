@@ -302,7 +302,7 @@ class EMParallelSimMX:
 				l=EMData(self.args[2],0,True)
 				rlen=l["ny"]
 				clen=l["nx"]
-#				os.system("e2proc2d.py %s %s"%(self.args[2],self.args[2]+"_x"))
+#				launch_childprocess("e2proc2d.py %s %s"%(self.args[2],self.args[2]+"_x"))
 				print "Filling noncomputed regions in similarity matrix (%dx%d)"%(clen,rlen)
 				l=EMData()
 				for r in range(rlen):
@@ -553,6 +553,7 @@ def main():
 	parser.add_option("--shrink", type="int",default=None,help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. This will speed the process up.")
 	parser.add_option("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
 	parser.add_option("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_option("--parallel",type="string",help="Parallelism string",default=None)
 
 	(options, args) = parser.parse_args()
@@ -576,7 +577,7 @@ def main():
 	if error : exit(1)
 	if options.check: exit(0)
 	
-	E2n=E2init(sys.argv)
+	E2n=E2init(sys.argv, options.ppid)
 	
 	if options.parallel:
 		parsimmx = EMParallelSimMX(options,args,E2n)

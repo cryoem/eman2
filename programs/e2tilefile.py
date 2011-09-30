@@ -54,6 +54,7 @@ def main():
 	parser.add_option("--tilesize", type="int",default=256, help="Build a new tile file from this image")
 	parser.add_option("--dump",action="store_true",default=False,help="Dump the tile dictionary from the file")
 	parser.add_option("--display",type='string',default="",help="Displays a specific tile (level,x,y))")
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()

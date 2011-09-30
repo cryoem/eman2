@@ -63,11 +63,12 @@ def main():
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 	
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 
-	logid=E2init(sys.argv)
+	logid=E2init(sys.argv,options.ppid)
 	
 	
 	app = EMStandAloneApplication()

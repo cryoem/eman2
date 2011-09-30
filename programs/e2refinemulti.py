@@ -117,7 +117,7 @@ def main():
 	#lowmem!
 	parser.add_argument("--lowmem", default=False, action="store_true",help="Make limited use of memory when possible - useful on lower end machines", guitype='boolbox', row=3, col=2, rowspan=1, colspan=1)
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None, guitype='strbox', row=3, col=0, rowspan=1, colspan=2)
-
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	(options, args) = parser.parse_args()
 	error = False
@@ -136,7 +136,7 @@ def main():
 #	if check_make3d_args(options,True) == True:
 #		error = True
 	
-	logid=E2init(sys.argv)
+	logid=E2init(sys.argv,options.ppid)
 	
 	
 	if options.classrefsf : options.classrefsf=" --setsfref"
@@ -611,7 +611,7 @@ def run(command):
 #	print "Run: ",command
 #	return 0
 
-	return os.system(command)
+	return launch_childprocess(command)
 	
 if __name__ == "__main__":
     main()

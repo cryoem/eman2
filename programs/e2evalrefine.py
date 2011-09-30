@@ -49,6 +49,7 @@ def main():
 		
 	parser.add_option("--parmcmp",  default=False, action="store_true",help="Compare parameters used in different refinement rounds")
 	parser.add_option("--parmpair",default=None,type="string",help="Specify iter,iter to compare the parameters used between 2 itertions.")
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	#options associated with e2refine.py
 	#parser.add_option("--iter", dest = "iter", type = "int", default=0, help = "The total number of refinement iterations to perform")
 	#parser.add_option("--check", "-c", dest="check", default=False, action="store_true",help="Checks the contents of the current directory to verify that e2refine.py command will work - checks for the existence of the necessary starting files and checks their dimensions. Performs no work ")

@@ -31,7 +31,7 @@
 #
 
 from optparse import OptionParser
-from EMAN2 import file_exists,EMData,E2init,E2progress,E2end,EMANVERSION,check_eman2_type_string,numbered_bdb,Transform,EMUtil
+from EMAN2 import file_exists,EMData,E2init,E2progress,E2end,EMANVERSION,check_eman2_type_string,numbered_bdb,Transform,EMUtil,launch_childprocess
 import EMAN2
 from EMAN2db import EMTask,db_open_dict
 
@@ -263,7 +263,7 @@ class EMBootStrappedAverages:
 #		all_v_all_cmd += " --output="+all_v_all_output
 #		print "executing",all_v_all_cmd
 #		if self.logger:	E2progress(self.logger,0.01)
-#		if ( os.system(all_v_all_cmd) != 0 ):
+#		if ( launch_childprocess(all_v_all_cmd) != 0 ):
 #			print "Failed to execute %s" %all_v_all_cmd
 #			sys.exit(1)
 #		if self.logger:	E2progress(self.logger,0.02)
@@ -818,6 +818,7 @@ def main():
 	parser.add_option("--dbls",type="string",help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
 	parser.add_option("--shrink",type="int",help="Shrink the data as part of the alignment - for speed purposes but at the potential loss of accuracy",default=None)
 	parser.add_option("--filter",type="string",help="The name and parameters of an EMAN2 processor. Will be applied prior to shrinking.",default=None)
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	if EMUtil.cuda_available():
 		parser.add_option("--cuda",action="store_true",help="GPU acceleration using CUDA. Experimental", default=False)
@@ -834,7 +835,7 @@ def main():
 		parser.error(msg)
 		exit(1)
 	
-	logger=E2init(sys.argv)
+	logger=E2init(sys.argv,options.ppid)
 	
 	if options.bootstrap:
 		module = EMBootStrappedAverages(args,options,logger)

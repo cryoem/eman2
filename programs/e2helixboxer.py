@@ -59,6 +59,7 @@ def main():
     parser.add_option("--ptcl-not-rotated", action="store_true", dest="ptcl_not_rotated", help="Particles are oriented as on the micrograph. They are square with length max(ptcl_length, ptcl_width).")
     parser.add_option("--ptcl-norm-edge-mean", action="store_true", help="Apply the normalize.edgemean processor to each particle.")
     parser.add_option("--gridding",      action="store_true", default=False, help="Use a gridding method for rotation operations on particles. Requires particles to be square.")
+    parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
     (options, args) = parser.parse_args()
     
     if options.helix_width < 1:
@@ -85,7 +86,7 @@ def main():
     
     if options.gui:
         if ENABLE_GUI:
-            logid=E2init(sys.argv)
+            logid=E2init(sys.argv,options.ppid)
             app = EMApp()
             helixboxer = EMHelixBoxerWidget(args, app, options.helix_width)
             helixboxer.show()

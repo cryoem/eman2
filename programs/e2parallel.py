@@ -79,6 +79,7 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 	parser.add_option("--taskin", type="string",help="Internal use only. Used when executing local threaded tasks.")
 	parser.add_option("--taskout", type="string",help="Internal use only. Used when executing local threaded tasks.")
 	parser.add_option("--scratchdir", type="string",help="Internal use only. Used by the MPI client",default="/tmp")
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 #	parser.add_option("--cpus",type="int",help="Number of CPUs/Cores for the clients to use on the local machine")
 #	parser.add_option("--idleonly",action="store_true",help="Will only use CPUs on the local machine when idle",default=False)
 	

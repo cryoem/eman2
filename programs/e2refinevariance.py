@@ -91,7 +91,7 @@ def main():
 	#lowmem!
 	parser.add_option("--lowmem", default=False, action="store_true",help="Make limited use of memory when possible - useful on lower end machines")
 	parser.add_option("--parallel","-P",type="string",help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None)
-
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	(options, args) = parser.parse_args()
 	if options.sym.lower()=="none" : options.sym="c1"
@@ -113,7 +113,7 @@ def main():
 		s+= ":return_mask=1"
 		options.automask3d = s
 
-	logid=E2init(sys.argv)
+	logid=E2init(sys.argv,options.ppid)
 	
 	nprogress=options.nmodels*2.0+1.0
 	# this loops over each of the n models we create to compute the variance
@@ -125,7 +125,7 @@ def main():
 			options.projfile="bdb:%s#projections_%02d"%(options.path,options.iteration)
 			options.cafile="bdb:"+options.path+"#variance_classes_tmp"
 			print get_classaverage_cmd(options)
-			if ( os.system(get_classaverage_cmd(options)) != 0 ):
+			if ( launch_childprocess(get_classaverage_cmd(options)) != 0 ):
 				print "Failed to execute %s" %get_classaverage_cmd(options)
 				sys.exit(1)
 			E2progress(logid,(mod*2.0+1)/nprogress)
@@ -134,7 +134,7 @@ def main():
 			if options.shrink3d : 
 				if options.verbose : print "Shrinking"
 				print "e2proc2d.py %s %s --meanshrink=%d --inplace --writejunk"%(options.cafile,options.cafile+"_s",options.shrink3d)
-				if ( os.system("e2proc2d.py %s %s --meanshrink=%d --inplace --writejunk"%(options.cafile,options.cafile+"_s",options.shrink3d)) != 0 ):
+				if ( launch_childprocess("e2proc2d.py %s %s --meanshrink=%d --inplace --writejunk"%(options.cafile,options.cafile+"_s",options.shrink3d)) != 0 ):
 					print "Failed to execute CA shrink"
 					sys.exit(1)
 				options.cafile=options.cafile+"_s"
@@ -143,14 +143,14 @@ def main():
 			# build a new 3-D map
 			options.model="bdb:"+options.path+"#variance_threed_tmp"
 			print get_make3d_cmd(options)
-			if ( os.system(get_make3d_cmd(options)) != 0 ):
+			if ( launch_childprocess(get_make3d_cmd(options)) != 0 ):
 				print "Failed to execute %s" %get_make3d_cmd(options)
 				sys.exit(1)
 			E2progress(logid,(mod*2.0+2.0)/nprogress)
 
 			# enforce symmetry
 			if options.sym.lower()!="c1" :
-				os.system("e2proc3d.py %s %s --sym=%s"%(options.model,options.model,options.sym))
+				launch_childprocess("e2proc3d.py %s %s --sym=%s"%(options.model,options.model,options.sym))
 
 			if options.verbose : print "Post-processing"
 

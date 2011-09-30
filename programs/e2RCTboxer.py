@@ -64,6 +64,7 @@ Usage: e2RCTboxer.py untilted.hdf tilted.hdf options.
 	parser.add_header(name="RCTboxerheader", help='Options below this label are specific to e2RCTboxer', title="### e2RCTboxer options ###", row=2, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=-1, guitype='intbox', row=3, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--slow","-S",action="store_true",help="High performace",default=False)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 
@@ -71,7 +72,7 @@ Usage: e2RCTboxer.py untilted.hdf tilted.hdf options.
 	global options
 	(options, args) = parser.parse_args()
 	
-	logid=E2init(sys.argv)
+	logid=E2init(sys.argv,options.ppid)
 	
 	# The RCT DB needs to be accessible, anywhere
 	global rctdb 

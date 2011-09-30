@@ -55,11 +55,14 @@ def main():
 	parser.add_argument("--shrink",type=int,default=0,help="Amount to shrink the CAs, default=0, no shrinking", guitype='intbox', row=4, col=2, rowspan=1, colspan=1)
 	parser.add_argument("--cuda",action="store_true", help="Use CUDA for the reconstructors step. (only if compiled with CUDA support.",default=False, guitype='boolbox', expert=True, row=6, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--sym", dest="sym", default="c1", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct.", guitype='symbox', row=5, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	global options
 	(options, args) = parser.parse_args()
 
+	logid=E2init(sys.argv,options.ppid)
+	
 	calist = EMData.read_images(options.classavg)	# Load the CAs
 	
 	# shrink the CAs if needed
@@ -135,7 +138,8 @@ def main():
 	if options.output[-3:] == "mrc":
 		recon.set_attr('UCSF.chimera',1)
 	recon.write_image(options.output)
-
+	E2end(logid)
+	
 # Strategy pattern, allows other algoithms to be plugged in
 class Refine:
 	def __init__(self, name):

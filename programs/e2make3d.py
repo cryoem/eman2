@@ -118,6 +118,7 @@ def main():
 	parser.add_option("--startweight", default=1.0,type="float", help="This is the starting model weight")
 	# Database Metadata storage
 	parser.add_option("--dbls",type="string",default=None,help="data base list storage, used by the workflow. You can ignore this argument.")
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	(options, args) = parser.parse_args()
 
@@ -138,7 +139,7 @@ def main():
 	if options.input_model!=None : options.input_model=int(options.input_model)
 
 	print "e2make3d.py"
-	logger=E2init(sys.argv)
+	logger=E2init(sys.argv,options.ppid)
 
 	# get basic image parameters
 	tmp=EMData()

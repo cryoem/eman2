@@ -56,11 +56,12 @@ def main():
 	
 	parser.add_header(name="runeval", help='Click Launch to run Steve\'s eval particle scheme', title="### Click Launch to run e2evalparticles ###", row=0, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--gui",action="store_true",help="Start the GUI for interactive use (default=True)",default=True)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 	
-	#logid=E2init(sys.argv)
+	#logid=E2init(sys.argv, options.ppid)
 	
 	app = EMApp()
 	control=EMEvalPtclTool(verbose=options.verbose)
@@ -219,7 +220,7 @@ class EMClassPtclTool(QtGui.QWidget):
 				imgpath="'bdb:particles#%s%s?%s'"%(tag,fn,imgnums)	# input path, single quotes prevent the shell from interpreting '?'
 				
 #				print "e2bdb.py %s --appendvstack=%s"%(imgpath,setpath)
-				os.system("e2bdb.py %s --appendvstack=%s"%(imgpath,setpath))
+				launch_childprocess("e2bdb.py %s --appendvstack=%s"%(imgpath,setpath))
 				n+=1
 				progress.setValue(n)
 				QtGui.qApp.processEvents()

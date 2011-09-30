@@ -68,6 +68,7 @@ def main():
 	parser.add_option("-s", "--stat", action="store_true",help="Show statistical information about the image(s).",default=False)
 	parser.add_option("-E", "--euler", action="store_true",help="Show Euler angles from header",default=False)
 	parser.add_option("-a", "--all", action="store_true",help="Show info for all images in file",default=False)
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()

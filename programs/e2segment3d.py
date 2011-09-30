@@ -57,6 +57,7 @@ def main():
 	parser.add_option("--chimeraout", default=None, type="string",help="Name of file to write center of segments in UCSF Chimera marker format.")
 	parser.add_option("--pdbout", default=None, type="string",help="Name of file to write center of segments in PDB format.")
 	parser.add_option("--txtout", default=None, type="string",help="Name of file to write center of segments in text format (n\tx\ty\tz, with coordinates in pixels, 0,0,0 in the corner)")
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	(options, args) = parser.parse_args()
 
@@ -65,7 +66,7 @@ def main():
 		print "You must specify a segment.* processor with any necessary parameters in the form segment.xxxx:parm=value:parm=value"
 		sys.exit(1)
 
-	E2n=E2init(sys.argv)
+	E2n=E2init(sys.argv,options.ppid)
 
 	if options.verbose>0: print "Reading volume"
 	volume=EMData(args[0],0)

@@ -69,6 +69,7 @@ def main():
 	#options associated with  the simplex 3D refiner
 	parser.add_option("--ralign",type="string",default='refine_3d:spin_coeff=1',help="aligner to use for refine alignement, default='refine_3d:spin_coeff=1'")
 	parser.add_option("--rcmp",type="string",default='ccc',help="comparitor and params to use for the 3D refiner, default='ccc'")
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_option("--verbose","-v",type="int",default=0,help="Level of verboseness, default=0")
 
 	global options
@@ -77,6 +78,7 @@ def main():
 	if options.ralign : options.ralign=parsemodopt(options.ralign)
 	if options.rcmp : options.rcmp=parsemodopt(options.rcmp)
                
+	logid=E2init(sys.argv,options.ppid)
 	#read in the input maps and check for sanity
 	fixed = EMData()
 	moving = EMData()
@@ -203,6 +205,7 @@ def main():
   
 	galignedref[bestmodel].write_image(filtoutfile, 0)
 	moving.write_image(outfile, 0)
+	E2end(logid)
 	
 if __name__ == "__main__":
 	main()

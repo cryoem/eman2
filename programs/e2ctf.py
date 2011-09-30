@@ -100,6 +100,7 @@ images far from focus."""
 	parser.add_argument("--debug",action="store_true",default=False)
 	parser.add_argument("--dbds",type=str,default=None,help="Data base dictionary storage, used by the workflow for storing which files have been filtered. You can ignore this argument")
 	parser.add_argument("--source_image",type=str,default=None,help="Filters particles only with matching ptcl_source_image parameters in the header")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
@@ -121,7 +122,7 @@ images far from focus."""
 	global sfcurve,sfcurve2
 	init_sfcurve(options.sf)
 
-	logid=E2init(sys.argv)
+	logid=E2init(sys.argv, options.ppid)
 
  #	if options.oversamp>1 : options.apix/=float(options.oversamp)
 

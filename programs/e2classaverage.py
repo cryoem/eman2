@@ -92,6 +92,7 @@ def main():
 	parser.add_option("--debug","-d",action="store_true",help="Print debugging infromation while the program is running. Default is off.",default=False)
 	parser.add_option("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
 	parser.add_option("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
 
@@ -120,7 +121,7 @@ def main():
 	if error : exit(1)
 	if options.check: exit(0)
 	
-	logger=E2init(sys.argv)
+	logger=E2init(sys.argv,options.ppid)
 	
 	try: 
 		classmx=EMData.read_images(options.classmx)		# we keep the entire classification matrix in memory, since we need to update it in most cases

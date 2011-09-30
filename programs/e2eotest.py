@@ -69,7 +69,7 @@ def main():
 	parser.add_argument("--mass", default=0, type=float,help="The mass of the particle in kilodaltons, used to run normalize.bymass. If unspecified (set to 0) nothing happens. Requires the --apix argument.")
 	parser.add_argument("--apix", default=0, type=float,help="The angstrom per pixel of the input particles. This argument is required if you specify the --mass argument. If unspecified (set to 0), the convergence plot is generated using either the project apix, or if not an apix of 1.")
 	parser.add_argument("--automask3d", default=None, type=str,help="The 5 parameters of the mask.auto3d processor, applied after 3D reconstruction. These paramaters are, in order, isosurface threshold,radius,nshells and ngaussshells. Specify --automask=none to suppress using the mask from refinement")
-	
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	# options associated with e2classaverage.py
 	parser.add_header(name="caheader", help='Options below this label are specific to e2classaverage', title="### e2classaverage options ###", row=4, col=0, rowspan=1, colspan=3)
@@ -122,7 +122,7 @@ def main():
 	
 	# options associated with e2classify.py
 	parser.add_argument("--sep", type=int, help="This option is for command-line compatibility with e2refine.py. It's value is ignored !", default=1)
-
+	
 
 
 	(options, args) = parser.parse_args()
@@ -209,7 +209,7 @@ def main():
 		sys.exit(1)
 		
 	else:
-		logid=E2init(sys.argv)
+		logid=E2init(sys.argv, options.ppid)
 		progress = 0.0
 		total_procs = 4.0
 		for tag in ["even","odd"]:
@@ -220,13 +220,13 @@ def main():
 			
 			cmd = get_classaverage_cmd(options)
 			cmd += " --%s" %tag
-			if ( os.system(cmd) != 0 ):
+			if ( launch_childprocess(cmd) != 0 ):
 				print "Failed to execute %s" %get_classaverage_cmd(options)
 				exit_eotest(1,logid)
 			progress += 1.0
 			E2progress(logid,progress/total_procs)
 				
-			if ( os.system(get_make3d_cmd(options)) != 0 ):
+			if ( launch_childprocess(get_make3d_cmd(options)) != 0 ):
 				print "Failed to execute %s" %get_make3d_cmd(options)
 				exit_eotest(1,logid)
 			progress += 1.0
@@ -256,8 +256,8 @@ def main():
 				cmdb+=" --process=%s"%options.automask3d
 			
 			print "Normalize and mask : ",cmda
-			os.system(cmda)
-			os.system(cmdb)
+			launch_childprocess(cmda)
+			launch_childprocess(cmdb)
 			a.read_image("bdb:"+options.path+"#threed_masked_"+options.iteration+"_even",0)
 			b.read_image("bdb:"+options.path+"#threed_masked_"+options.iteration+"_odd",0)
 

@@ -71,10 +71,11 @@ models are not completely compatible."""
 	parser.add_option( "--dfval", type = "float", help = "Set constant defocus for all images (positive is underfocus).", default = 0. )
 	parser.add_option( "--ctfcoverage", action = "store_true", help = "Create a map showing the integrated SNR for the combined data.", default = False )
 	parser.add_option( "--debug", action = "store_true", help = "Show debugging messages.", default = False )
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	# Get and check command line arguments
 	( options, args ) = parser.parse_args( )
-	pid = E2init( sys.argv )
+	pid = E2init(sys.argv, options.ppid)
 	
 	# Get a list of all images
 	db_parms = db_open_dict( "bdb:e2ctf.parms" )

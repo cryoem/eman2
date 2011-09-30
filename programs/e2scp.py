@@ -72,6 +72,7 @@ def main():
 	#parser.add_option("--cleanup","-c",action="store_true",default=False,help="This option will clean up the database cache so files can safely be moved or accessed on another computer via NFS.")
 	#parser.add_option("--filt",type="string",help="Only include dictionary names containing the specified string",default=None)
 	parser.add_option("--client","-c",action="store_true",default=False,help="This option is for internal use only. Do NOT specify.")
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()

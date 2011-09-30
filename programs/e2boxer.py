@@ -86,12 +86,13 @@ e2boxer.py ????.mrc --boxsize=256
 	parser.add_argument("--suffix",type=str,help="suffix which is appended to the names of output particle and coordinate files",default="_ptcls", guitype='strbox', expert=True, row=4, col=1, rowspan=1, colspan=2, mode="extraction")
 	parser.add_argument("--dbls",type=str,help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
 	parser.add_argument("--autoboxer",type=str,help="A key of the swarm_boxers dict in the local directory, used by the workflow.",default=None)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--gui", dest="dummy", help="Dummy option; used in older version of e2boxer")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
  
 	(options, args) = parser.parse_args()
-	
-	logid=E2init(sys.argv)
+
+	logid=E2init(sys.argv,options.ppid)
 	db = db_open_dict(EMBOXERBASE_DB)
 	cache_box_size = True
 	if options.boxsize == -1:
@@ -125,9 +126,7 @@ e2boxer.py ????.mrc --boxsize=256
 		
 		module.show_interfaces()
 		
-		application.execute()
-		
-	E2end(logid)
+		application.execute(logid)
 	
 def autobox(args,options,logid):
 	

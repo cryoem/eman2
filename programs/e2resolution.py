@@ -68,13 +68,14 @@ def main():
 	parser.add_argument("--apix", "-A", type=float, help="A/voxel", default=-1.0, guitype='floatbox', row=2, col=0, rowspan=1, colspan=2)
 	
 	parser.add_argument("--path", default=None, type=str,help="The name the e2refine directory that contains the reconstruction data. If specified will place curves generated in bdb:path#convergence.results")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 	
 	if len(args)<3 : parser.error("Input and output files required")
 	
-	E2n=E2init(sys.argv)
+	E2n=E2init(sys.argv,options.ppid)
 	
 	#options.align=parsemodopt(options.align)
 

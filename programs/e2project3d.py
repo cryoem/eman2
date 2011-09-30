@@ -241,6 +241,7 @@ def main():
 	parser.add_option("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
 	parser.add_option("--postprocess", metavar="processor_name(param1=value1:param2=value2)", type="string", action="append", help="postprocessor to be applied to each projection. There can be more than one postprocessor, and they are applied in the order in which they are specified. See e2help.py processors for a complete list of available processors.")
 	parser.add_option("--cuda",action="store_true", help="Use CUDA for the projections.",default=False)
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_option("--parallel",help="Parallelism string",default=None,type="string")
 
 	(options, args) = parser.parse_args()
@@ -281,7 +282,7 @@ def main():
 		if ( options.force ):
 			remove_file(options.outfile)
 
-	logger=E2init(sys.argv)
+	logger=E2init(sys.argv,options.ppid)
 	
 		
 	if options.parallel:

@@ -170,7 +170,8 @@ def main():
 	parser.add_option("--threed2twod", action="store_true", help="Process 3D image as a statck of 2D slice, then output as a 2D stack", default=False)
 	parser.add_option("--twod2threed", action="store_true", help="Process a stack of 2D images, then output as a 3D image", default=False)
 	parser.add_option("--unstacking", action="store_true", help="Process a stack of 2D images, then output a a series of numbered single image files", default=False)
-
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	
 	# Parallelism
 	parser.add_option("--parallel","-P",type="string",help="Run in parallel, specify type:n=<proc>:option:option",default=None)
 	
@@ -185,7 +186,7 @@ def main():
 		print "Please run '" + progname + " -h' for detailed options"
 		sys.exit(1)
 	
-	logid=E2init(sys.argv)
+	logid=E2init(sys.argv,options.ppid)
 
 	infile = args[0]
 	outfile = args[1]

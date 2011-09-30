@@ -78,11 +78,12 @@ power spectrum in various ways."""
 	parser.add_option("--voltage",type="float",help="Microscope voltage in KV",default=None)
 	parser.add_option("--cs",type="float",help="Microscope Cs (spherical aberation)",default=None)
 	parser.add_option("--ac",type="float",help="Amplitude contrast (percentage, default=10)",default=10.0)
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 	
-	logid=E2init(sys.argv)
+	logid=E2init(sys.argv,options.ppid)
 
 	from emapplication import EMApp
 	app=EMApp()

@@ -325,6 +325,7 @@ def main():
 	parser.add_option("--nsoln",type="int",help="The number of solutions to report", default=10)
 	parser.add_option("--shrink",type="int",help="Shrink the data as part of the alignment - for speed purposes but at the potential loss of accuracy",default=None)
 	parser.add_option("--filter",type="string",help="The name and parameters of an EMAN2 processor. Will be applied prior to shrinking.",default=None)
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	if EMUtil.cuda_available():
 		parser.add_option("--cuda",action="store_true",help="GPU acceleration using CUDA. Experimental", default=False)
@@ -339,7 +340,7 @@ def main():
 		parser.error(msg)
 		exit(1)
 		
-	logid=E2init(sys.argv)
+	logid=E2init(sys.argv,options.ppid)
 	
 	if options.avgout: # unfortunately this functionality is part of this script.
 		gen_average(options,args,logid)

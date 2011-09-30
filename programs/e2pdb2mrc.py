@@ -71,6 +71,7 @@ def main():
 	parser.add_option("--het", action="store_true", help="Include HET atoms in the map", default=False)
 	parser.add_option("--chains",type="string",help="String list of chain identifiers to include, eg 'ABEFG'")
 	parser.add_option("--quiet",action="store_true",default=False,help="Verbose is the default")
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()

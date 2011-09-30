@@ -83,7 +83,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_option("--list",type="string",help="Specify the name of a file with a list of images to use in creation of virtual stacks. Please see source for details.",default=None)
 	parser.add_option("--restore",type="string",help="Write changes in the derived virtual stack back to the original stack",default=None)
-
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
 

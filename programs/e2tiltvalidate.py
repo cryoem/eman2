@@ -83,6 +83,7 @@ def main():
 	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes. Defulat = 0, no shrinking", guitype='intbox', row=12, col=0, rowspan=1, colspan=1)
 	
 	parser.add_argument("--parallel",type=str,help="Parallelism string",default=None, guitype='strbox', row=8, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	global options
@@ -100,7 +101,9 @@ def main():
 	if not options.tiltangle:
 		print "Error a tiltangle must be entered"
 		exit(1)
-		
+	
+	logid=E2init(sys.argv,options.ppid)
+	
 	options.cmp=parsemodopt(options.cmp)
 	options.align=parsemodopt(options.align)
 	
@@ -225,6 +228,8 @@ def main():
 	avgmx = avgmxavger.finish()
 	avgmx.write_image("%s/contour.hdf"%workingdir)
 	distplot.write_image("%s/distplot.hdf"%workingdir)
+	
+	E2end(logid)
 		
 # Function to compute a similarity map for a given image		
 def compare_to_tilt(volume, tilted, imgnum, eulerxform, zrot, distplot, tiltrange, tiltstep):
@@ -256,7 +261,7 @@ def run(command):
 	print command
 	#exit(1)
 	if options.verbose>0 : print "***************",command
-	error = os.system(command)
+	error = launch_childprocess(command)
 	if error==11 :
 		pass		    
 #		print "Segfault running %s\nNormal on some platforms, ignoring"%command

@@ -229,6 +229,7 @@ def main():
 	
 	parser.add_argument('--swapyz', action="store_true", default=False, help='''This means that the coordinates file and the actual tomogram do not agree regarding which is the "short" direction.\nFor example, the coordinates file migh thave a line like this:\n1243 3412 45\nwhere clearly the "short" direction is Z; yet, if in the actual tomogram the short direction is Y, as they come out fromIMOD by default, then the line should have been:\n1243 45 3412\n''')
 	parser.add_argument("--newwidget",action="store_true",default=False,help="Use the new 3D widgetD. Highly recommended!!!!")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	global options
 	(options, args) = parser.parse_args()
@@ -243,7 +244,7 @@ def main():
 #	# The program will not run very rapidly at such large box sizes anyhow
 #	if options.boxsize > 2048: parser.error("The boxsize you specified is too large.\nCurrently there is a hard coded max which is 2048.\nPlease contact developers if this is a problem.")
 	
-#	logid=E2init(sys.argv)
+#	logid=E2init(sys.argv,options.ppid)
 
 	if options.coords:
 		commandline_tomoboxer(args[0],options.coords,options.subset,options.boxsize,options.cbin,options.output,options.output_format,options.swapyz,options.reverse_contrast)
@@ -259,7 +260,7 @@ def main():
 
 				imgnew = img.replace('.','_bin' + str(options.bin) + '.')
 				cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --process=math.meanshrink:n=' + str(options.bin)
-				os.system(cmd)	
+				launch_childprocess(cmd)	
 				
 				print "Reading tomogram. Please wait."
 											#If the tomogram will be binned, there's no need to load the fulll version
@@ -295,7 +296,7 @@ def main():
 				if '_edtedtemp.' not in img:
 					imgnew = img.replace('.','_editedtemp.')
 				cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --process=math.meanshrink:n=' + str(options.bin)
-				os.system(cmd)
+				launch_childprocess(cmd)
 				img = imgnew
 				modd = True
 				
@@ -304,7 +305,7 @@ def main():
 				if '_edtedtemp.' not in img:
 					imgnew = img.replace('.','_editedtemp.')
 				cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --mult=-1'
-				os.system(cmd)
+				launch_childprocess(cmd)
 				img = imgnew
 				modd = True
 
@@ -314,7 +315,7 @@ def main():
 					imgnew = img.replace('.','_editedtemp.')
 				filt=1.0/options.lowpass
 				cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --process=filter.lowpass.gauss:cutoff_freq=' + str(filt)
-				os.system(cmd)
+				launch_childprocess(cmd)
 				img = imgnew
 				modd = True
 			

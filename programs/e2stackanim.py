@@ -68,6 +68,7 @@ def main():
 	parser.add_option("--last","-M", type="int", help="Number of last image to use",default=0)
 #	parser.add_option("--mode",type="string",help="centering mode 'modeshift', 'censym' or 'region,<x>,<y>,<clipsize>,<alisize>",default="censym")
 #	parser.add_option("--twopass",action="store_true",default=False,help="Skip automatic tilt axis location, use fixed angle from x")
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()

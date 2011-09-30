@@ -118,7 +118,8 @@ def main():
 	#lowmem!
 	parser.add_argument("--lowmem", default=False, action="store_true",help="Make limited use of memory when possible - useful on lower end machines", guitype='boolbox', row=3, col=2, rowspan=1, colspan=1)
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None, guitype='strbox', row=3, col=0, rowspan=1, colspan=2)
-
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	
 	(options, args) = parser.parse_args()
 	error = False
 	if check(options,True) == True : 
@@ -134,7 +135,7 @@ def main():
 #	if check_make3d_args(options,True) == True:
 #		error = True
 	
-	logid=E2init(sys.argv)
+	logid=E2init(sys.argv,options.ppid)
 	
 	
 	if options.classrefsf : options.classrefsf=" --setsfref"
@@ -170,7 +171,7 @@ def main():
 	for i in range(options.startiter,options.iter) :
 		
 		number_options_file(i,"projections",options,"projfile")
-		if ( os.system(get_projection_cmd(options)) != 0 ):
+		if ( launch_childprocess(get_projection_cmd(options)) != 0 ):
 			print "Failed to execute %s" %get_projection_cmd(options)
 			exit_refine(1,logid)
 		progress += 1.0
@@ -182,14 +183,14 @@ def main():
 			number_options_file(i,"proj_stg1",options,"projstg1file")
 			number_options_file(i,"simmx_stg1",options,"simmxstg1file")
 			
-		if ( os.system(get_simmx_cmd(options)) != 0 ):
+		if ( launch_childprocess(get_simmx_cmd(options)) != 0 ):
 			print "Failed to execute %s" %get_simmx_cmd(options)
 			exit_refine(1,logid)
 		progress += 1.0
 		E2progress(logid,progress/total_procs)
 			
 		number_options_file(i,"classify",options,"classifyfile")
-		if ( os.system(get_classify_cmd(options)) != 0 ):
+		if ( launch_childprocess(get_classify_cmd(options)) != 0 ):
 			print "Failed to execute %s" %get_classify_cmd(options)
 			exit_refine(1,logid)
 		progress += 1.0
@@ -197,7 +198,7 @@ def main():
 			
 		number_options_file(i,"classes",options,"cafile")
 		number_options_file(i,"cls_result",options,"resultfile")
-		if ( os.system(get_classaverage_cmd(options)) != 0 ):
+		if ( launch_childprocess(get_classaverage_cmd(options)) != 0 ):
 			print "Failed to execute %s" %get_classaverage_cmd(options)
 			exit_refine(1,logid)
 		progress += 1.0
@@ -207,7 +208,7 @@ def main():
 		except : previous_model = options.model
 		number_options_file(i,"threed",options,"model")
 		new_model = options.model
-		if ( os.system(get_make3d_cmd(options)) != 0 ):
+		if ( launch_childprocess(get_make3d_cmd(options)) != 0 ):
 			print "Failed to execute %s" %get_make3d_cmd(options)
 			exit_refine(1,logid)
 		progress += 1.0
@@ -215,7 +216,7 @@ def main():
 		# User may specify a second postprocessor
 		if options.m3dpostprocess2!=None :
 			com="e2proc3d.py %s %s --process=%s"%(new_model,new_model,options.m3dpostprocess2)
-			if ( os.system(com) != 0 ):
+			if ( launch_childprocess(com) != 0 ):
 				print "Failed to execute %s" %com
 				exit_refine(1,logid)
 		
@@ -230,7 +231,7 @@ def main():
 			number_options_file(i,"threed_filt",options,"filtered_model")
 			b.write_image(options.filtered_model,0)
 			com="e2proc3d.py %s %s --process=normalize.bymass:apix=%1.3f:mass=%1.1f"%(options.filtered_model,options.filtered_model,options.apix,options.mass)
-			if ( os.system(com) != 0 ):
+			if ( launch_childprocess(com) != 0 ):
 				print "Failed to execute %s" %com
 				exit_refine(1,logid)
 			
@@ -238,12 +239,12 @@ def main():
 			if options.automask3d:
 				number_options_file(i,"threed_mask",options,"mask_image")
 				com="e2proc3d.py %s %s --process=%s"%(options.filtered_model,options.mask_image,options.automask3d)
-				if ( os.system(com) != 0 ):
+				if ( launch_childprocess(com) != 0 ):
 					print "Failed to execute %s" %com
 					exit_refine(1,logid)
 				
 				com="e2proc3d.py %s %s --multfile=%s"%(options.filtered_model,options.filtered_model,options.mask_image)
-				if ( os.system(com) != 0 ):
+				if ( launch_childprocess(com) != 0 ):
 					print "Failed to execute %s" %com
 					exit_refine(1,logid)
 				
@@ -349,7 +350,7 @@ def check_make3d_args(options, nofilecheck=False):
 	cmd = get_make3d_cmd(options,True,nofilecheck)
 	print ""
 	print "#### Test executing make3d command: %s" %cmd
-	return ( os.system(cmd) != 0)
+	return ( launch_childprocess(cmd) != 0)
 
 def get_classaverage_cmd(options,check=False,nofilecheck=False):
 	
@@ -399,7 +400,7 @@ def check_classaverage_args(options, nofilecheck=False):
 	cmd = get_classaverage_cmd(options,True,nofilecheck)
 	print ""
 	print "#### Test executing classaverage command: %s" %cmd
-	return ( os.system(cmd) != 0)
+	return ( launch_childprocess(cmd) != 0)
 
 def get_classify_cmd(options,check=False,nofilecheck=False):
 	e2classifycmd = "e2classify.py %s %s --sep=%d -f" %(options.simmxfile,options.classifyfile,options.sep)
@@ -420,7 +421,7 @@ def check_classify_args(options, nofilecheck=False):
 	cmd = get_classify_cmd(options,True,nofilecheck)
 	print ""
 	print "#### Test executing classify command: %s" %cmd
-	return ( os.system(cmd) != 0)
+	return ( launch_childprocess(cmd) != 0)
 
 def get_simmx_cmd(options,check=False,nofilecheck=False):
 	
@@ -471,7 +472,7 @@ def check_simmx_args(options, nofilecheck=False):
 	print ""
 	print "#### Test executing simmx command: %s" %cmd
 	return (False)
-	return ( os.system(cmd) != 0)
+	return ( launch_childprocess(cmd) != 0)
 
 def get_projection_cmd(options,check=False):
 	
@@ -496,7 +497,7 @@ def check_projection_args(options):
 	cmd = get_projection_cmd(options,True)
 	print ""
 	print "#### Test executing projection command: %s" %cmd
-	return ( os.system(cmd) != 0 )
+	return ( launch_childprocess(cmd) != 0 )
 
 def check(options,verbose=0):
 	if (options.verbose>0):
