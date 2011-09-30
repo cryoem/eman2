@@ -7041,14 +7041,37 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 			del modphi
 			if(myid == main_node):
 				recvbuf = map(float, recvbuf)
-				lhist = 30
-				region, histo = hist_list(recvbuf, lhist)
+				phi_value_0 = []
+				phi_value_180 = []
+				for i in xrange ( len ( recvbuf ) ):
+					if ( recvbuf[i] < 180.0):
+						phi_value_0.append( recvbuf[i] )
+					else:
+						phi_value_180.append( recvbuf[i] ) 
+ 				lhist = int( round(max(phi_value_0)/delta[N_step]) )
+								# if delta is big, number of bins (lhist) will be small, leave it as it is
+				# if delta is small, number of bins (lhist) will be big, adjust lhist = lhist/n such as the total 
+				# number of bins close to 30, thus most likely we can see each bin contains particles.
+				from math import ceil
+				if ( len( phi_value_180) > 0):
+					if lhist > 15:
+						lhist = int(   lhist/ceil((lhist/15.0))  ) 
+				else:
+					if lhist > 30:
+						lhist = int(   lhist/ceil((lhist/30.0))  )  
+				region, histo = hist_list(phi_value_0, lhist)
 				msg = "\n      Distribution of phi\n      phi         number of particles\n"
 				print_msg(msg)
 				for lhx in xrange(lhist):
 					msg = " %10.2f     %7d\n"%(region[lhx], histo[lhx])
 					print_msg(msg)
-				del region, histo
+				del region, histo, phi_value_0
+				if ( len( phi_value_180) > 0):
+					region, histo = hist_list(phi_value_180, lhist)
+					for lhx in xrange(lhist):
+						msg = " %10.2f     %7d\n"%(region[lhx], histo[lhx])
+						print_msg(msg)
+					del region, histo, phi_value_180			
 			del recvbuf
 			terminate = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
 			terminate = int(terminate[0])
