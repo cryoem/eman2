@@ -67,9 +67,11 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 	parser.add_option("--recalcmean",action="store_true",help="This will recompute the mean from the input set and subtract before projection. Useful if a different normalization is used than in the original basis file.")
 	parser.add_option("--oneout",action="store_true",help="Output is a single 2-D image rather than a set of 1-D images",default=False)
 	parser.add_option("--nbasis","-n",type="int",help="Will use the first n basis images from the input, excluding the mean if present",default=-1)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n",type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
+	parser.add_option("--basislist","-z",type="string",help="List of basis vectors to use.",default=None)
+
+	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n",type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	
 	#parser.add_option("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
 	#parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)
 	#parser.add_option("--dbin","-D",type="string",help="Filename to read an existing box database from",default=None)
@@ -77,12 +79,17 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 	(options, args) = parser.parse_args()
 #	if len(args)>0 : parser.error("e2basis.py takes no arguments, only options")
 
-	logid=E2init(sys.argv,options.ppid)
+	logid=E2init(sys.argv)
 	
 	# second parameter is always the input basis set
-	if options.nbasis>1 : basis=EMData.read_images(args[1],range(options.nbasis+1))
-	else :basis=EMData.read_images(args[1])
-	
+	if options.basislist:
+		basislist=options.basislist.split(",")
+		basislist=[int(i) for i in basislist]
+		basis=EMData.read_images(args[1],basislist)
+	else:
+		if options.nbasis>1 : basis=EMData.read_images(args[1],range(options.nbasis+1))
+		else :basis=EMData.read_images(args[1])
+		
 	if options.mean1 : 
 		mean=basis[0]
 		del basis[0]
