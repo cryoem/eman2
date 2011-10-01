@@ -39,6 +39,160 @@ from EMAN2 import *
 import os.path
 import traceback
 
+class EMFileType:
+	"""This is an abstract base class for handling interaction with files of different type"""
+
+	# A class dictionary keyed by EMDirEntry filetype string with value beign a single subclass of EMFileType. filetype strings are unique
+	# When you add a new EMFiletype subclass, it must be added to this dictionary to be functional
+	typesbyft = {}
+	
+	# a class dictionary keyed by file extension with values being either a single subclass or a list of possible subclasses for that extension
+	# When you add a new EMFiletype subclass, it must be added to this dictionary to be functional
+	typesbyext = {}
+
+	def __init__(self):
+		self.path=None			# the current path this FileType is representing
+
+	def setFile(self,path):
+		"""Represent a new file. Will update inspector if open. Assumes isValid already checked !"""
+		self.path=path
+
+	@staticmethod
+	def name():
+		"The unique name of this FileType. Stored in EMDirEntry.filetype for each file."
+		return None
+
+	@staticmethod
+	def isValid(path,header):
+		"Returns (size,n,dim) if the referenced path is a file of this type, false if not valid. The first 1k block of data from the file is provided as well to avoid unnecesary file access."
+		return False
+
+	def menuItems(self):
+		"Returns a list of (name,callback) tuples detailing the operations the user can call on the current file"
+		return []
+		
+
+class EMTextFileType(EMFileType):
+	"""FileType for files containing normal ASCII text"""
+	
+	@staticmethod
+	def name():
+		"The unique name of this FileType. Stored in EMDirEntry.filetype for each file."
+		return "Text"
+
+	@staticmethod
+	def isValid(path,header):
+		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 1k block of data from the file is provided as well to avoid unnecesary file access."
+		return False
+
+	def menuItems(self):
+		"Returns a list of (name,callback) tuples detailing the operations the user can call on the current file"
+		return []
+		
+
+class EMPlotFileType(EMFileType):
+	"""FileType for files containing normal ASCII text"""
+	
+	@staticmethod
+	def name():
+		"The unique name of this FileType. Stored in EMDirEntry.filetype for each file."
+		return "Plot"
+
+	@staticmethod
+	def isValid(path,header):
+		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 1k block of data from the file is provided as well to avoid unnecesary file access."
+		return False
+
+	def menuItems(self):
+		"Returns a list of (name,callback) tuples detailing the operations the user can call on the current file"
+		return []
+		
+
+class EMFolderFileType(EMFileType):
+	"""FileType for Folders"""
+
+	@staticmethod
+	def name():
+		"The unique name of this FileType. Stored in EMDirEntry.filetype for each file."
+		return "Folder"
+	@staticmethod
+	def isValid(path,header):
+		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 1k block of data from the file is provided as well to avoid unnecesary file access."
+		return False
+
+	def menuItems(self):
+		"Returns a list of (name,callback) tuples detailing the operations the user can call on the current file"
+		return []
+
+class EMBdbFileType(EMFileType):
+	"""FileType for Folders"""
+
+	@staticmethod
+	def name():
+		"The unique name of this FileType. Stored in EMDirEntry.filetype for each file."
+		return "BDB"
+		
+	@staticmethod
+	def isValid(path,header):
+		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 1k block of data from the file is provided as well to avoid unnecesary file access."
+		return False
+
+	def menuItems(self):
+		"Returns a list of (name,callback) tuples detailing the operations the user can call on the current file"
+		return []
+
+class EMImageFileType(EMFileType):
+	"""FileType for files containing a single 2-D image"""
+
+	@staticmethod
+	def name():
+		"The unique name of this FileType. Stored in EMDirEntry.filetype for each file."
+		return "Image"
+		
+	@staticmethod
+	def isValid(path,header):
+		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 1k block of data from the file is provided as well to avoid unnecesary file access."
+		return False
+
+	def menuItems(self):
+		"Returns a list of (name,callback) tuples detailing the operations the user can call on the current file"
+		return []
+		
+
+class EMStackFileType(EMFileType):
+	"""FileType for files containing a set of 2-D images"""
+
+	@staticmethod
+	def name():
+		"The unique name of this FileType. Stored in EMDirEntry.filetype for each file."
+		return "Text"
+	@staticmethod
+	def isValid(path,header):
+		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 1k block of data from the file is provided as well to avoid unnecesary file access."
+		return False
+
+	def menuItems(self):
+		"Returns a list of (name,callback) tuples detailing the operations the user can call on the current file"
+		return []
+		
+
+# These are set all together at the end rather than after each class for efficiency
+EMFileType.typesbyft = {
+	"Folder":EMFolderFileType,
+	"BDB":EMBdbFileType,
+	"Text":EMTextFileType,
+	"Plot":EMPlotFileType,
+	"Image":EMImageFileType,
+	"Image Stack":EMStackFileType
+}
+
+# Note that image types are not included here, and are handled via a separate mechanism
+EMFileType.extbyft = {
+	"txt":(EMTextFileType,EMPlotFileType),
+	
+}
+
+
 class EMDirEntry:
 	"""Represents a directory entry in the filesystem"""
 	
@@ -46,15 +200,20 @@ class EMDirEntry:
 	col=(lambda x:x.name,lambda x:x.filetype,lambda x:x.size,lambda x:x.dim,lambda x:x.nimg,lambda x:x.date)
 #	classcount=0
 	
-	def __init__(self,root,name,parent=None):
+	def __init__(self,root,name,parent=None,hidedot=True):
+		"""The path for this item is root/name. 
+		Parent (EMDirEntry) must be specified if it exists.
+		hidedot will cause hidden files (starting with .) to be excluded"""
 		self.__parent=parent	# single parent
 		self.__children=None	# ordered list of children, None indicates no check has been made, empty list means no children, otherwise list of names or list of EMDirEntrys
 		self.root=str(root)		# Path prefixing name
 		self.name=str(name)		# name of this path element (string)
+		self.hidedot=hidedot	# If set children beginning with . will be hidden
+		if self.root[-1]=="/" or self.root[-1]=="\\" : self.root=self.root[:-1]
 		#self.seq=EMDirEntry.classcount
 		#EMDirEntry.classcount+=1
 		
-		if name[:4].lower=="bdb:":
+		if name[:4].lower()=="bdb:":
 			self.isbdb=True
 			self.name=name[4:]
 		else:
@@ -63,7 +222,9 @@ class EMDirEntry:
 		if self.isbdb :
 			self.filepath=os.path.join(self.root,"EMAN2DB",self.name+".bdb")
 		else : self.filepath=os.path.join(self.root,self.name)
-		stat=os.stat(self.filepath)
+		
+		try: stat=os.stat(self.filepath)
+		except : stat=(0,0,0,0,0,0,0,0,0)
 		
 		self.size=stat[6]		# file size (integer, bytes)
 		self.date=local_datetime(stat[8])	# modification date (string: yyyy/mm/dd hh:mm:ss)
@@ -79,33 +240,51 @@ class EMDirEntry:
 			self.dim=""
 			self.nimg=""
 			self.size=0			# more convenient to show as zero
-		# BDB details are cached and can be retrieved quickly
+			
+		# BDB details are already cached and can be retrieved quickly
 		elif self.isbdb:
 			self.filetype="BDB"
 			try:
-				d=db_open_dict("bdb:%s#00image_counts",True)
-				p=d[name]
-				self.nimg=p[1]
-				if p[2][1]==1 : self.dim=str(p[2][0])
-				elif p[2][2]==1 : self.dim="%dx%d"%(p[2][0],p[2][1])
-				else : self.dim="%dx%dx%d"%(p[2][0],p[2][1],p[2][2])
+				info=db_get_image_info(self.path())
+				self.nimg=info[0]
+				if self.nimg>0:
+					if info[1][1]==1 : self.dim=str(info[1][0])
+					elif info[1][2]==1 : self.dim="%dx%d"%(info[1][0],info[1][1])
+					else : self.dim="%dx%dx%d"%(info[1][0],info[1][1],info[1][2])
+					self.size=info[1][0]*info[1][1]*info[1][2]*4*self.nimg
+				else:
+					self.dim="-"
+
+				#d=db_open_dict("bdb:%s#00image_counts"%root,True)
+				#p=d[self.name]
+				#print self.name,p,root
+				#self.nimg=p[1]
+				#if p[2][1]==1 : self.dim=str(p[2][0])
+				#elif p[2][2]==1 : self.dim="%dx%d"%(p[2][0],p[2][1])
+				#else : self.dim="%dx%dx%d"%(p[2][0],p[2][1],p[2][2])
 			except:
+				traceback.print_exc()
 				self.nimg=-1
 				self.dim="-"
 		
 #		print "Init DirEntry ",self,self.__dict__
 		
-	#def __repr__(self):
-		#return "<EMDirEntry %d>"%self.seq
+	def __repr__(self):
+		return "<EMDirEntry %s>"%self.path()
 
 	#def __str__(self):
 		#return "<EMDirEntry %d>"%self.seq
+	
+	def path(self):
+		"""The full path of the current item"""
+		if self.isbdb: return "bdb:%s#%s"%(self.root,self.name)
+		return os.path.join(self.root,self.name)
 	
 	def sort(self,column,order):
 		"Recursive sorting"
 		if self.__children==None or len(self.__children)==0 or isinstance(self.__children[0],str): return
 		
-		self.__children.sort(key=EMDirEntry[column])
+		self.__children.sort(key=EMDirEntry.col[column],reverse=order)
 		
 	def parent(self):
 		"""Return the parent"""
@@ -114,7 +293,11 @@ class EMDirEntry:
 	def child(self,n):
 		"""Returns nth child or None"""
 		self.fillChildEntries()
-		return self.__children[n]
+		try: return self.__children[n]
+		except:
+			print "Request for child %d of children %s (%d)"%(n,self.__children,len(self.__children))
+			traceback.print_stack()
+			raise Exception
 	
 	def nChildren(self):
 		"""Count of children"""
@@ -130,15 +313,20 @@ class EMDirEntry:
 				self.__children=[]
 				return
 			
-			self.__children=os.listdir(self.filepath)
-			if "EMAN2DIR" in self.__children :
-				self.__children.remove("EMAN2DIR")
+			# read the child filenames
+			if self.hidedot : self.__children=[i for i in os.listdir(self.filepath) if i[0]!='.']
+			else : self.__children=os.listdir(self.filepath)
+			
+			if "EMAN2DB" in self.__children :
+				self.__children.remove("EMAN2DB")
 				
-				t=["bdb:"+i for i in db_list_dicts(self.filepath)]
+				t=["bdb:"+i for i in db_list_dicts("bdb:"+self.filepath)]
 				self.__children.extend(t)
 				
 			self.__children.sort()
-				
+			
+#			print self.path(),self.__children
+			
 	def fillChildEntries(self):
 		"""Makes sure that __children have been filled with EMDirEntries when appropriate"""
 		if self.__children == None : self.fillChildNames()
@@ -149,11 +337,40 @@ class EMDirEntry:
 			self.__children[i]=EMDirEntry(self.filepath,n,self)
 	
 	def fillDetails(self):
-		"""Fills in the expensive metadata about this entry"""
-		if self.filetype!=None : return
+		"""Fills in the expensive metadata about this entry. Returns False if no update was necessary."""
+		if self.filetype!=None : return False		# must all ready be filled in
 		
-		# FIXME - finish this
-		
+		try: self.nimg=EMUtil.get_image_count(self.path())
+		except: self.nimg=0
+			
+		# we have an image file
+		if self.nimg>0 :
+			try: tmp=EMData(self.path(),0,True)		# try to read an image header for the file
+			except : print "Error : no first image in %s."%self.path()
+			
+			if tmp[ny]==1 : self.dim=str(tmp[ny])
+			elif info[1][2]==1 : self.dim="%dx%d"%(info[1][0],info[1][1])
+			else : self.dim="%dx%dx%d"%(info[1][0],info[1][1],info[1][2])
+
+		return True
+
+def nonone(val):
+	"Returns '-' for None, otherwise the string representation of the passed value"
+	try : 
+		if val!=None: return str(val)
+		return "-"
+	except: return "X"
+
+def humansize(val):
+	"Representation of an integer in readable form"
+	try : val=int(val)
+	except: return val
+	
+	if val>1000000000 : return "%d g"%(val/1000000000)
+	elif val>1000000 : return "%d m"%(val/1000000)
+	elif val>1000 : return "%d k"%(val/1000)
+	return str(val)
+
 class EMFileItemModel(QtCore.QAbstractItemModel):
 	"""This ItemModel represents the local filesystem. We don't use the normal filesystem item model because we want
 	to provide more info on images, and we need to merge BDB: files into the file view."""
@@ -168,35 +385,49 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 #		print "Init FileItemModel ",self,self.__dict__
 
 	def canFetchMore(self,idx):
+		"""The data is loaded lazily for children already. We don't generally 
+	need to worry about there being SO many file that this is necessary, so it always
+	returns False."""
 		return False
 		
 	def columnCount(self,parent):
+		"Always 6 columns"
 		#print "EMFileItemModel.columnCount()=6"
 		return 6
 		
 	def rowCount(self,parent):
+		"Returns the number of children for a given parent"
+#		if parent.column() !=0 : return 0
+
 		if parent.isValid() : 
 #			print "rowCount(%s) = %d"%(str(parent),parent.internalPointer().nChildren())
 			return parent.internalPointer().nChildren()
 			
 #		print "rowCount(root) = %d"%self.root.nChildren()
 		return self.root.nChildren()
-		
+	
 	def data(self,index,role):
-		"QModelIndex, Qt::DisplayRole"
+		"Returns the data for a specific location as a string"
 		
 		if not index.isValid() : return None
 		if role!=Qt.DisplayRole : return None
 		
 		data=index.internalPointer()
+		if data==None : 
+			print "Error with index ",index.row(),index.column()
+			return "XXX"
 		#if index.column()==0 : print "EMFileItemModel.data(%d %d %s)=%s"%(index.row(),index.column(),index.parent(),str(data.__dict__))
 		col=index.column()
-		if col==0 : return str(data.name)
-		elif col==1 : return str(data.filetype)
-		elif col==2 : return str(data.size)
-		elif col==3 : return str(data.dim)
-		elif col==4 : return str(data.nimg)
-		elif col==5 : return str(data.date)
+		if col==0 : 
+			if data.isbdb : return "bdb:"+data.name
+			return nonone(data.name)
+		elif col==1 : return nonone(data.filetype)
+		elif col==2 : return humansize(data.size)
+		elif col==3 :
+			if data.dim==0 : return "-"
+			return nonone(data.dim)
+		elif col==4 : return nonone(data.nimg)
+		elif col==5 : return nonone(data.date)
 		
 	def headerData(self,sec,orient,role):
 		if orient==Qt.Horizontal:
@@ -208,7 +439,9 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 		return None
 			
 	def hasChildren(self,parent):
+		"Returns whether the index 'parent' has any child items"
 		#print "EMFileItemModel.hasChildren(%d,%d,%s)"%(parent.row(),parent.column(),str(parent.internalPointer()))
+#		if parent.column()!=0 : return False
 		try: 
 			if parent.isValid():
 				if parent.internalPointer().nChildren()>0 : return True
@@ -217,46 +450,60 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 		except: return False
 		
 	def hasIndex(self,row,col,parent):
-		try:
-			if parent.isValid(): 
-				data=parent.internalPointer().child(row)
-			else: data=self.root.children(row)
-		except: return False
-		return True
-		
-	def index(self,row,column,parent):
+		"Test if the specified index would exist"
+#		print "EMFileItemModel.hasIndex(%d,%d,%s)"%(row,column,parent.internalPointer())
 		try:
 			if parent.isValid(): 
 				data=parent.internalPointer().child(row)
 			else: data=self.root.child(row)
 		except:
 			traceback.print_exc()
+			return False
+		return True
+		
+	def index(self,row,column,parent):
+		"produces a new QModelIndex for the specified item"
+#		if column==0 : print "Index :",row,column,parent.internalPointer(),
+		try:
+			if parent.isValid(): 
+				data=parent.internalPointer().child(row)
+			else: 
+				data=self.root.child(row)
+		except:
+			traceback.print_exc()
+#			print "None"
 			return QtCore.QModelIndex()			# No data, return invalid
+#		if column==0 :print data
 		return self.createIndex(row,column,data)
 		
 	def parent(self,index):
-		"qmodelindex"
+		"Returns the parent of the specified index"
 		
 		if index.isValid(): 
-			data=index.internalPointer().parent()
+			try: data=index.internalPointer().parent()
+			except:
+				print "Parent index error: ",str(index.__dict__)
+			
 		else: return QtCore.QModelIndex()
 		if data==None : return QtCore.QModelIndex()			# No data, return invalid
-		
-		# Ok, this following statement appears to be crazy. When you select a whole row, the TreeView demands
-		# that all selected indices have the same parent. The trick is that it doesn't just require that the
-		# parent indexes point to the same parent, but that the index objects themselves be identical.
-		# this little hack is intended to return sequential requests for the same linked parent object
-		# as a single index, rather than making a new one each time. If this isn't done, you get a lot of
-		# errors about different parents
-		if index.internalPointer()==self.last[0]: return self.last[1]
-		
-		self.last=(index.internalPointer(),self.createIndex(index.row(),index.column(),data))
-		return self.last[1]
+				
+		return self.createIndex(index.row(),0,data)		# parent is always column 0
 
 	def sort(self,column,order):
 		"Trigger recursive sorting"
+		if column<0 : return
 		self.root.sort(column,order)
-	
+#		self.emit(QtCore.SIGNAL("layoutChanged()"))
+		self.layoutChanged.emit()
+		
+	def details(self,index):
+		"""This will trigger loading the (expensive) details about the specified index, and update the display"""
+		if not index.isValid(): return
+		
+		if index.internalPointer().fillDetails() : 
+			self.dataChanged.emit(index, self.createIndex(index.row(),5,index.internalPointer()))
+		
+			
 	
 class myQItemSelection(QtGui.QItemSelectionModel):
 	
@@ -332,6 +579,7 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.wtree.setSelectionMode(1)			# single selection
 		self.wtree.setSelectionBehavior(1)		# select rows
 		self.wtree.setAllColumnsShowFocus(True)
+		self.wtree.sortByColumn(-1,0)			# start unsorted
 		self.gbl.addWidget(self.wtree,1,1)
 		
 		# Lower region has buttons for actions
@@ -372,22 +620,34 @@ class EMBrowserWidget(QtGui.QWidget):
 		QtCore.QObject.connect(self.wbutsave, QtCore.SIGNAL('clicked(bool)'), self.buttonSave)
 		QtCore.QObject.connect(self.wbutback, QtCore.SIGNAL('clicked(bool)'), self.buttonBack)
 		QtCore.QObject.connect(self.wbutfwd, QtCore.SIGNAL('clicked(bool)'), self.buttonFwd)
-		QtCore.QObject.connect(self.wbutup, QtCore.SIGNAL('clicked(bool)'), self.buttonUp)
+		QtCore.QObject.connect(self.wbutup, QtCore.SIGNAL('hasclicked(bool)'), self.buttonUp)
 		QtCore.QObject.connect(self.wbutinfo, QtCore.SIGNAL('clicked(bool)'), self.buttonInfo)
 		QtCore.QObject.connect(self.wtree, QtCore.SIGNAL('clicked(const QModelIndex)'), self.itemSel)
+		QtCore.QObject.connect(self.wtree, QtCore.SIGNAL('activated(const QModelIndex)'), self.itemActivate)
 		QtCore.QObject.connect(self.wpath, QtCore.SIGNAL('returnPressed()'), self.editPath)
 		QtCore.QObject.connect(self.wbookmarks, QtCore.SIGNAL('actionTriggered(QAction*)'), self.bookmarkPress)
 
 		self.curmodel=None
 		self.curpath=None
+		self.models={}
 
 	def editPath(self):
 		print "Return pressed in path editor"
 
 	def itemSel(self,qmi):
-		print "Item selected ",qmi.row(),qmi.column()
-		qism=self.wtree.selectionModel()
-		print qism.selectedRows()
+#		print "Item selected",qmi.row(),qmi.column(),qmi.internalPointer().path()
+		qism=self.wtree.selectionModel().selectedRows()
+		if len(qism)>1 : self.wpath.setText("<multiple select>")
+		elif len(qism)==1 : 
+			self.wpath.setText(qism[0].internalPointer().path())
+			self.curmodel.details(qism[0])
+		
+	def itemActivate(self,qmi):
+#		print "Item activated",qmi.row(),qmi.column()
+		itm=qmi.internalPointer()
+		if itm.nChildren()>0:
+			self.setPath(itm.path())
+
 
 	def buttonOk(self,tog):
 		"Button press"
@@ -423,16 +683,27 @@ class EMBrowserWidget(QtGui.QWidget):
 		"""Add a new bookmark"""
 		act=self.wbookmarks.addAction(label)
 		act.setData(path)
-	
+
+	def setPath(self,path):
+		"""Sets the current root path for the browser window"""
+		self.curpath=path
+		self.wpath.setText(path)
+
+		if path in self.models :
+			self.curmodel=self.models[path]
+		else : 
+			self.curmodel=EMFileItemModel(path)
+			self.models[self.curpath]=self.curmodel
+
+		self.wtree.setSortingEnabled(False)
+		self.wtree.setModel(self.curmodel)
+		self.wtree.setSortingEnabled(True)
+		
 	def bookmarkPress(self,action):
 		""
 		print "Got action ",action.text(),action.data().toString()
 		
-		newpath=action.data().toString()
-		self.curpath=newpath
-		self.curmodel=EMFileItemModel(newpath)
-		self.wpath.setText(newpath)
-		self.wtree.setModel(self.curmodel)
+		self.setPath(action.data().toString())
 #		self.wtree.setSelectionModel(myQItemSelection(self.curmodel))
 		
 # This is just for testing, of course

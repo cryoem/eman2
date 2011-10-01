@@ -304,6 +304,42 @@ def db_list_dicts(url):
 #### replace a few EMData methods with python versions to intercept 'bdb:' filenames
 ##########
 def db_emd_init(self,*parms):
+	"""
+    __init__( (object)arg1) -> object :
+    
+        C++ signature :
+            void* __init__(_object*)
+    
+    __init__( (object)arg1, (object)that) -> object :
+        Construct from an EMData (copy constructor).
+        Performs a deep copy.
+         
+        that - the EMData to copy
+    
+        C++ signature :
+            void* __init__(_object*,EMAN::EMData)
+    
+    __init__( (object)arg1, (object)filename [[, (object)image_index],header_only]) -> object :
+        Construct from an image file.
+         
+        filename - the image file name
+        image_index the image index for stack image file(default = 0)
+    
+        C++ signature :
+            void* __init__(_object*,std::string [,int])
+    
+    __init__( (object)arg1, (object)nx, (object)ny [, (object)nz [, (object)is_real]]) -> object :
+        makes an image of the specified size, either real or complex.
+        For complex image, the user would specify the real-space dimensions.
+         
+        nx - size for x dimension
+        ny - size for y dimension
+        nz size for z dimension(default=1)
+        is_real - boolean to specify real(true) or complex(false) image(default=True)
+    
+        C++ signature :
+            void* __init__(_object*,int,int [,int [,bool]])
+"""
 	if len(parms)<4 and len(parms)>0 and isinstance(parms[0],str) and parms[0][:4].lower()=="bdb:":
 		self.__initc()
 		self.read_image(*parms)
@@ -463,9 +499,40 @@ Takes a path or bdb: specifier and returns the number of images in the reference
 		
 	return EMUtil.get_image_count_c(fsp)
 
-
 EMUtil.get_image_count_c=staticmethod(EMUtil.get_image_count)
 EMUtil.get_image_count=staticmethod(db_get_image_count)
+
+def db_get_image_info(fsp):
+	"""get_image_info(path)
+
+Takes a bdb: specifier and returns the number of images and image dimensions."""
+	if fsp[:4].lower()=="bdb:" :
+		path,dictname,keys=db_parse_path(fsp)
+		if keys==None :
+			# This dictionary contains image counts for the others in this directory
+			db2=db_open_dict("bdb:%s#%s"%(path,"00image_counts"))
+			
+			# If this is true, we need to update the dictionary
+			if (db2.has_key(dictname) and os.path.getmtime("%s/EMAN2DB/%s.bdb"%(path,dictname))>db2[dictname][0]) or not db2.has_key(dictname) :
+				db=db_open_dict(fsp,True)
+				try: 
+					im=db[0]
+					sz=(im["nx"],im["ny"],im["nz"])
+				except : sz=(0,0,0)
+				db2[dictname]=(time.time(),len(db),sz)
+				
+			return db2[dictname][1:]
+			
+		else :			# if the user specifies the key in fsp, we ignore parms
+			db=db_open_dict(fsp,True)
+			n=0
+			for i in keys:
+				if i in db : n+=1
+			sz=db[keys[0]]
+			sz=(sz["nx"],sz["ny"],sz["nz"])
+			return (n,sz)
+	img=EMData(fsp,0,True)
+	return (EMUtil.get_image_count_c(fsp),(img["nx"],img["ny"],img["nz"]))
 
 
 def db_get_all_attributes(fsp,*parms):
