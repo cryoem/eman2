@@ -456,7 +456,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		"""Load the log book
 		"""
 		if state:
-			self.loadLogBook()
+			self.loadNoteBook()
 		else:
 			self.logbook.hide()
 	
@@ -493,12 +493,12 @@ class EMProjectManager(QtGui.QMainWindow):
 		
 		return helpstr
 		
-	def loadLogBook(self):
+	def loadNoteBook(self):
 		"""
 		Make logbook
 		"""
 		if not self.logbook:
-			self.logbook = LogBook(self)
+			self.logbook = NoteBook(self)
 		self.logbook.show()
 			
 	def loadTaskManager(self):
@@ -782,7 +782,7 @@ class PMIcon(QtGui.QLabel):
 	def setIcon(self, image):
 		self.setText(("<img src=\"%s\" />")%image)
 		
-class LogBook(QtGui.QWidget):
+class NoteBook(QtGui.QWidget):
 	"""
 	The Logbook for PM. The log book will reflect top levels jobs run, even if they were run on the command line
 	"""
@@ -791,11 +791,11 @@ class LogBook(QtGui.QWidget):
 		self.pm = weakref.ref(pm)
 		self.donotsave = False
 		
-		self.setWindowTitle('LogBook')
+		self.setWindowTitle('NoteBook')
 		grid = QtGui.QGridLayout()
 		font = QtGui.QFont()
 		font.setBold(True)
-		textlabel = QtGui.QLabel("EMAN2 LogBook")
+		textlabel = QtGui.QLabel("EMAN2 NoteBook")
 		textlabel.setFont(font)
 		self.texteditbox = PMTextEdit()
 		grid.addWidget(textlabel,0,0)
@@ -808,13 +808,13 @@ class LogBook(QtGui.QWidget):
 		self.setMinimumWidth(600)
 		
 		# Load the logbook and update
-		self.loadLogBook()
+		self.loadNoteBook()
 		self.checkEMAN2LogFile()
 		
 		self.connect(self.savepb, QtCore.SIGNAL('clicked()'), self._on_save)
 		self.connect(self.closepb, QtCore.SIGNAL('clicked()'), self._on_close)
 	
-	def loadLogBook(self):
+	def loadNoteBook(self):
 		""" Load the current log book """
 		try:
 			fin=open(self.pm().getPMCWD()+"/pmlog.html","r")
