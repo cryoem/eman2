@@ -137,7 +137,7 @@ from PyQt4.QtCore import Qt
 import os, json, re, glob, signal
 import subprocess
 from EMAN2db import db_open_dict
-from pmwidgets import *
+from empmwidgets import *
 
 class EMProjectManager(QtGui.QMainWindow):
 	def __init__(self):
@@ -162,6 +162,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		font = QtGui.QFont()
 		font.setBold(True)
 		centralwidget = QtGui.QWidget()
+		splitter = QtGui.QSplitter(QtCore.Qt.Vertical)
 		grid = QtGui.QGridLayout()
 		grid.addWidget(self.makeTilteBarWidget(), 0, 0, 1, 3)
 		workflowcontrollabel = QtGui.QLabel("Workflow Control", centralwidget)
@@ -174,13 +175,16 @@ class EMProjectManager(QtGui.QMainWindow):
 		grid.addWidget(self.makeStackedGUIwidget(),2,1,1,1)
 		grid.addWidget(self.makeGUIToolButtons(),2,2,1,1)
 		grid.addWidget(self.makeCMDButtonsWidget(),3,1,1,1)
-
+		
 		# Make status bar
 		self.statusbar = EMAN2StatusBar("Welcome to the EMAN2 Project Manager")
-		grid.addWidget(self.statusbar, 4,0,1,3)
 		centralwidget.setLayout(grid)
 		# Make status bar
-		self.setCentralWidget(centralwidget)
+		splitter.addWidget(centralwidget)
+		splitter.addWidget(self.statusbar)
+		splitter.setSizes([10,1])
+		
+		self.setCentralWidget(splitter)
 		
 		#Update the project are construction
 		self.updateProject()
@@ -401,6 +405,8 @@ class EMProjectManager(QtGui.QMainWindow):
 		self.wizardbutton = QtGui.QToolButton()
 		self.wizardbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(wizardicon)))
 		self.wizardbutton.setToolTip("Form Wizard")
+		self.wizardbutton.setMinimumWidth(30)
+		self.wizardbutton.setMinimumHeight(30)
 		self.logbutton = PMToolButton()
 		self.logbutton.setToolTip("Display the log book")
 		self.logbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(logicon)))
@@ -466,7 +472,11 @@ class EMProjectManager(QtGui.QMainWindow):
 		"""
 		Read in and return the usage from an e2 program
 		"""
-		f = open(os.getenv("EMAN2DIR")+"/bin/"+program,"r")
+		try:
+			f = open(os.getenv("EMAN2DIR")+"/bin/"+program,"r")
+		except:
+			self.statusbar.setMessage("Can't open usage file '%s'"%program)
+			return
 		begin = False
 		helpstr = ""
 		bregex = re.compile('usage\s*=\s*"""')
@@ -560,8 +570,10 @@ class EMProjectManager(QtGui.QMainWindow):
 		Start the script running 
 		"""
 		if not cmd: return False	# Don't excecute a broken script
-		child = subprocess.Popen(str(cmd), shell=True, cwd=self.pm_projects_db[self.pn_project_name]["CWD"])
+		# --ipd=-2 tells the pm log book that this job is already in the pm
+		child = subprocess.Popen((str(cmd)+" --ppid=-2"), shell=True, cwd=self.pm_projects_db[self.pn_project_name]["CWD"])
 		self.statusbar.setMessage("Program %s Launched!!!!"%str(cmd).split()[0])
+		if self.logbook: self.logbook.insertNewJob(cmd,local_datetime())
 		return True
 		
 	def _add_children(self, toplevel, widgetitem):
@@ -585,14 +597,18 @@ class EMProjectManager(QtGui.QMainWindow):
 		@param treename The name of the QTreWidget
 		@param treewidgetdict the dictionary containing the QtreeWidgets
 		"""
-		jsonfile = open(filename, 'r')
+		try:
+			jsonfile = open(filename, 'r')
+		except:
+			self.statusbar.setMessage("Can't open configureation file '%s'"%filename)
+			return
 		data = jsonfile.read()
 		data = self.json_strip_comments(data)
 		tree = json.loads(data)
 		jsonfile.close()
 		
 		QTree = QtGui.QTreeWidget()
-		QTree.setMinimumHeight(400)
+		#QTree.setMinimumHeight(400)
 		QTree.setHeaderLabel(treename)
 		
 		for toplevel in tree:
@@ -656,7 +672,11 @@ class EMProjectManager(QtGui.QMainWindow):
 		This a a pseudo import function to load paser info
 		"""
 		parser = EMArgumentParser()
-		f = open(os.getenv("EMAN2DIR")+"/bin/"+e2program,"r")
+		try: 
+			f = open(os.getenv("EMAN2DIR")+"/bin/"+e2program,"r")
+		except:
+			self.statusbar.setMessage("Can't open file '%s'"%e2program)
+			return
 		lineregex = re.compile("^\s*parser\.add_",flags=re.I) # eval parser.add_ lines, which are  not commented out.
 		moderegex = re.compile("mode\s*=\s*[\"'].*%s.*[\"']"%mode,flags=re.I)	# If the program has a mode only eval lines with the right mode.
 		for line in f.xreadlines():
@@ -729,19 +749,29 @@ class EMProjectManager(QtGui.QMainWindow):
 		if self.gui_stacked_widget.currentIndex() != 1:
 			self.helpbutton.setDown(False, quiet=True)
 	
-class EMAN2StatusBar(QtGui.QLabel):
+class EMAN2StatusBar(QtGui.QTextEdit):
 	"""
 	The Stats bar for PM
 	"""
 	def __init__(self, text):
-		QtGui.QLabel.__init__(self, text)
+		QtGui.QTextEdit.__init__(self)
 		self.setFrameShape(QtGui.QFrame.Panel | QtGui.QFrame.Sunken)
 		self.setLineWidth(2)
-		self.setMargin(4)
+		#self.setMargin(4)
+		self.setTextInteractionFlags(QtCore.Qt.NoTextInteraction)
+		self.viewport().setCursor(QtCore.Qt.ArrowCursor)
+		self.setMessage(text, prepend="")
+		self.setToolTip("This is the Status Bar")
+		#self.setMaximumHeight(80)
 		
-	def setMessage(self, text):
-		self.setText(text)
+	def setMessage(self, text, prepend="\n"):
+		textcursor = self.textCursor()
+		textcursor.movePosition(QtGui.QTextCursor.End)
+		self.insertPlainText(prepend+text)
+		self.verticalScrollBar().setValue(self.verticalScrollBar().maximum())
+		
 
+		
 class PMIcon(QtGui.QLabel):
 	"""
 	The Icon manager for PM
@@ -754,18 +784,20 @@ class PMIcon(QtGui.QLabel):
 		
 class LogBook(QtGui.QWidget):
 	"""
-	The Logbook for PM
+	The Logbook for PM. The log book will reflect top levels jobs run, even if they were run on the command line
 	"""
 	def __init__(self, pm):
 		QtGui.QWidget.__init__(self)
 		self.pm = weakref.ref(pm)
+		self.donotsave = False
+		
 		self.setWindowTitle('LogBook')
 		grid = QtGui.QGridLayout()
 		font = QtGui.QFont()
 		font.setBold(True)
 		textlabel = QtGui.QLabel("EMAN2 LogBook")
 		textlabel.setFont(font)
-		self.texteditbox = QtGui.QTextEdit()
+		self.texteditbox = PMTextEdit()
 		grid.addWidget(textlabel,0,0)
 		grid.addWidget(self.texteditbox,1,0,1,2)
 		self.savepb = QtGui.QPushButton("Save")
@@ -773,16 +805,104 @@ class LogBook(QtGui.QWidget):
 		grid.addWidget(self.savepb, 2,0)
 		grid.addWidget(self.closepb, 2,1)
 		self.setLayout(grid)
+		self.setMinimumWidth(600)
 		
+		# Load the logbook and update
+		self.loadLogBook()
+		self.checkEMAN2LogFile()
+		
+		self.connect(self.savepb, QtCore.SIGNAL('clicked()'), self._on_save)
 		self.connect(self.closepb, QtCore.SIGNAL('clicked()'), self._on_close)
+	
+	def loadLogBook(self):
+		""" Load the current log book """
+		try:
+			fin=open(self.pm().getPMCWD()+"/pmlog.html","r")
+			self.texteditbox.setHtml(fin.read())
+			fin.close()
+		except: 
+			self.pm().statusbar.setMessage("No pmlog file found, starting a new one...")
+			
+	def checkEMAN2LogFile(self):
+		""" Check the log file for any changes """
+		try:
+			fin=open(self.pm().getPMCWD()+"/.eman2log.txt","r+")
+		except:
+			return
+		lastlineloc = 0
+		while True:
+			try: 
+				line = fin.readline()
+				if len(line) == 0: raise
+			except:
+				break
+			fields = line.split('\t')
+			# For top level jobs ensure that they are in the pmlog file
+			if "-1" in fields[2]:
+				self._checkpmlogforjob(fields[4].strip(), fields[0].strip())
+				# We replace -1 with -2 to indicate that this event has been recorded in the pm log book. So that we don't check over and over again...
+				inipos = fin.tell()
+				fin.seek(lastlineloc+51)
+				fin.write("-2")
+				fin.seek(inipos)
+
+			lastlineloc = fin.tell()
+		fin.close()
+		
+	def insertNewJob(self, job, time):
+		""" Insert a new job into the Html """
+		textcursor = self.texteditbox.textCursor()
+		textcursor.movePosition(QtGui.QTextCursor.End)
+		textcursor.insertText('\n')
+		textcursor.insertHtml("<b>Job Launched on <i>%s</i>:<font color=blue> %s</font></b>"%(time, job))
+		
+	def writeLog(self):
+		""" Write the log file to disk """
+		fout=open(self.pm().getPMCWD()+"/pmlog.html","w")
+		fout.write(self.texteditbox.toHtml())
+		fout.close()
+			
+	def _checkpmlogforjob(self, job, time):
+		""" Check to see if this job is already in the html """
+		if job in self.texteditbox.toHtml():
+			return True
+		else:
+			self.insertNewJob(job, time)
+		return False
+	
+	def _on_save(self):
+		self.writeLog()
 		
 	def _on_close(self):
+		self.donotsave = True
 		self.close()
 		
 	def closeEvent(self, event):
+		if not self.donotsave: self.writeLog()
 		self.pm().logbook = None
 		self.pm().updateProject()
 
+class PMTextEdit(QtGui.QTextEdit):
+	def __init__(self):
+		QtGui.QTextEdit.__init__(self)
+		
+		self.setPMFontWeight(QtGui.QFont.Normal)
+		self.setPMTextColor(QtGui.QColor(0,0,0))
+		
+	def mousePressEvent(self,event):
+		""" Stupidly, TextEdit resets the font based on its context, which I find undesireable """
+		QtGui.QTextEdit.mousePressEvent(self, event)
+		self.setFontWeight(self.pmfontweight)
+		self.setTextColor(self.textcolor)
+		
+	def setPMFontWeight(self, weight):
+		self.pmfontweight = weight
+		self.setFontWeight(weight)
+		
+	def setPMTextColor(self, color):
+		self.textcolor = color
+		self.setTextColor(color)
+		
 class TaskManager(QtGui.QWidget):
 	"""
 	The Logbook for PM
@@ -825,13 +945,12 @@ class TaskManager(QtGui.QWidget):
 		
 		tsk=t.split("\t")
 		ptsk[3]=tsk[1]
-		if self.is_running(tsk) : return True
+		if self.is_running(tsk, ptsk[0]) : return True
 		
 		return False
 	
-	def is_running(self,tsk):
+	def is_running(self,tsk,loc=None):
 		"""Check to see if the 'tsk' string is actively running"""
-		
 		try:
 			# This means the task must be done
 			if tsk[1][4]=="/" or tsk[1] == "crashed": return False
@@ -856,12 +975,11 @@ class TaskManager(QtGui.QWidget):
 			if command=="e2projectmanager.py" : raise Exception
 		except:	
 			# If the process is not running nor complete then list it as crashed
-			try:
-				fout=file(self.pm().getPMCWD()+"/.eman2log.txt","r+")
-				fout.seek(tsk[0]+20)
+			if  loc:
+				fout=open(self.pm().getPMCWD()+"/.eman2log.txt","r+")
+				fout.seek(loc+20)
 				fout.write("crashed            ")
 				fout.close()
-			except: pass
 			return False
 
 		return True
@@ -879,7 +997,7 @@ class TaskManager(QtGui.QWidget):
 				
 			tsk=t.split("\t")
 
-			if not self.is_running(tsk ) : continue
+			if not self.is_running(tsk,loc) : continue
 			
 			# if we get here, then we have a (probably) active task
 			
@@ -897,7 +1015,7 @@ class TaskManager(QtGui.QWidget):
 			
 	def update_tasks(self):
 		if self.tasks==None:
-			try: fin=file(self.pm().getPMCWD()+"/.eman2log.txt","r")
+			try: fin=open(self.pm().getPMCWD()+"/.eman2log.txt","r")
 			except: return
 			self.prevfin = fin
 			self.tasks=[]
@@ -905,7 +1023,6 @@ class TaskManager(QtGui.QWidget):
 			if len(self.tasks)==0 :
 				self.tasks=None
 				return
-		
 		else:
 			try: 
 				if os.stat(self.pm().getPMCWD()+"/.eman2log.txt").st_mtime < self.last_update:
@@ -919,7 +1036,7 @@ class TaskManager(QtGui.QWidget):
 				return
 			
 			# Load in the file
-			try: fin=file(self.pm().getPMCWD()+"/.eman2log.txt","r")
+			try: fin=open(self.pm().getPMCWD()+"/.eman2log.txt","r")
 			except: return
 			self.prevfin = fin
 			
@@ -972,8 +1089,8 @@ class TaskManager(QtGui.QWidget):
 						print "killing self process", task[1]
 						os.kill(task[1],signal.SIGKILL)
 						self._recursivekill(task[1])
-				# kill parent
-				if item.getPPID() != -1:
+				# kill parent (top level item)
+				if item.getPPID() < 0:
 					os.kill(item.getPPID(),signal.SIGKILL)
 			else:
 				# Windows kill
@@ -1196,6 +1313,8 @@ class PMToolButton(QtGui.QToolButton):
 	""" Create a toogle button """
 	def __init__(self):
 		QtGui.QToolButton.__init__(self)
+		self.setMinimumWidth(30)
+		self.setMinimumHeight(30)
 		
 	def setDown(self, state, quiet=False):
 		QtGui.QToolButton.setDown(self, state)

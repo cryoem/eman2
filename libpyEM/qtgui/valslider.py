@@ -1158,6 +1158,8 @@ class EMANToolButton(QtGui.QToolButton):
 	toolpanellist = []
 	def __init__(self):
 		QtGui.QToolButton.__init__(self)
+		self.setMinimumWidth(30)
+		self.setMinimumHeight(30)
 		EMANToolButton.toolpanellist.append(self)
 	
 	def setSelfAsUnique(self):
