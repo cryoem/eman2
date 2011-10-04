@@ -71,6 +71,26 @@ logicon = [
     'ccccccccccccccc'
 ]
 
+noteicon = [
+    '15 14 2 1',
+    'b c #000055',
+    'c c None',
+    'ccccccccbbccccc',
+    'cccccccbbbbbccc',
+    'cccccccbbbbbbcc',
+    'ccccccbbbbbbccc',
+    'ccccccbbbbbbccc',
+    'cccccbbbbbbcccc',
+    'ccccbbbbbbccccc',
+    'ccccbbbbbbccccc',
+    'cccbbbbbbcccccc',
+    'ccbbbbbbccccccc',
+    'ccbccbbbccccccc',
+    'ccbcccbcccccccc',
+    'cccbbbccccccccc',
+    'ccccccccccccccc'
+]
+
 taskicon = [
     '15 14 2 1',
     'b c #000055',
@@ -131,6 +151,65 @@ experticon = [
     'ccccccccccccccc'
 ]
 
+boldicon = [
+    '15 14 2 1',
+    'b c #000055',
+    'c c None',
+    'ccccccccccccccc',
+    'ccbbbbbbbbbcccc',
+    'ccbbbbbbbbbbccc',
+    'ccbbccccccbbccc',
+    'ccbbccccccbbccc',
+    'ccbbccccccbbccc',
+    'ccbbbbbbbbbcccc',
+    'ccbbbbbbbbbcccc',
+    'ccbbccccccbbccc',
+    'ccbbccccccbbccc',
+    'ccbbccccccbbccc',
+    'ccbbbbbbbbbbccc',
+    'ccbbbbbbbbbcccc',
+    'ccccccccccccccc'
+]
+
+italicicon = [
+    '15 14 2 1',
+    'b c #000055',
+    'c c None',
+    'ccccccccccccccc',
+    'cccbbbbbbbbbbbc',
+    'cccbbbbbbbbbbbc',
+    'cccccccbbbccccc',
+    'cccccccbbbccccc',
+    'ccccccbbbcccccc',
+    'ccccccbbbcccccc',
+    'ccccccbbbcccccc',
+    'cccccbbbccccccc',
+    'cccccbbbccccccc',
+    'cccccbbbccccccc',
+    'cbbbbbbbbbbbccc',
+    'cbbbbbbbbbbbccc',
+    'ccccccccccccccc'
+]
+
+underlineicon = [
+    '15 14 2 1',
+    'b c #000055',
+    'c c None',
+    'ccccccccccccccc',
+    'ccbbcccccccbbcc',
+    'ccbbcccccccbbcc',
+    'ccbbcccccccbbcc',
+    'ccbbcccccccbbcc',
+    'ccbbcccccccbbcc',
+    'ccbbcccccccbbcc',
+    'ccbbcccccccbbcc',
+    'ccbbcccccccbbcc',
+    'cccbbbbbbbbbccc',
+    'ccccbbbbbbbcccc',
+    'ccccccccccccccc',
+    'bbbbbbbbbbbbbbb',
+    'bbbbbbbbbbbbbbb'
+]
 from EMAN2 import *
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
@@ -138,6 +217,7 @@ import os, json, re, glob, signal
 import subprocess
 from EMAN2db import db_open_dict
 from empmwidgets import *
+from valslider import EMQTColorWidget
 
 class EMProjectManager(QtGui.QMainWindow):
 	def __init__(self):
@@ -409,7 +489,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		self.wizardbutton.setMinimumHeight(30)
 		self.logbutton = PMToolButton()
 		self.logbutton.setToolTip("Display the log book")
-		self.logbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(logicon)))
+		self.logbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(noteicon)))
 		self.taskmanagerbutton = PMToolButton()
 		self.taskmanagerbutton.setToolTip("Diaplay the task manager")
 		self.taskmanagerbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(taskicon)))
@@ -554,6 +634,8 @@ class EMProjectManager(QtGui.QMainWindow):
 		""" 
 		Launch the command from the GUI 
 		"""
+		if self.gui_stacked_widget.currentIndex() == 0: return	# No cmd to run
+		# Else Run the command
 		cmd = None
 		if self.gui_stacked_widget.currentIndex() == 1:	# Use the command in the textbox
 			if self.helpbutton.isDown(): return	# Don't launch using the help info
@@ -571,9 +653,13 @@ class EMProjectManager(QtGui.QMainWindow):
 		"""
 		if not cmd: return False	# Don't excecute a broken script
 		# --ipd=-2 tells the pm log book that this job is already in the pm
-		child = subprocess.Popen((str(cmd)+" --ppid=-2"), shell=True, cwd=self.pm_projects_db[self.pn_project_name]["CWD"])
+		if self.logbook: 
+			self.logbook.insertNewJob(cmd,local_datetime())
+			child = subprocess.Popen((str(cmd)+" --ppid=-2"), shell=True, cwd=self.pm_projects_db[self.pn_project_name]["CWD"])
+		else:
+			child = subprocess.Popen(str(cmd), shell=True, cwd=self.pm_projects_db[self.pn_project_name]["CWD"])
 		self.statusbar.setMessage("Program %s Launched!!!!"%str(cmd).split()[0])
-		if self.logbook: self.logbook.insertNewJob(cmd,local_datetime())
+		
 		return True
 		
 	def _add_children(self, toplevel, widgetitem):
@@ -784,7 +870,7 @@ class PMIcon(QtGui.QLabel):
 		
 class NoteBook(QtGui.QWidget):
 	"""
-	The Logbook for PM. The log book will reflect top levels jobs run, even if they were run on the command line
+	The Logbook for PM. The note book will reflect top levels jobs run, even if they were run on the command line
 	"""
 	def __init__(self, pm):
 		QtGui.QWidget.__init__(self)
@@ -797,13 +883,14 @@ class NoteBook(QtGui.QWidget):
 		font.setBold(True)
 		textlabel = QtGui.QLabel("EMAN2 NoteBook")
 		textlabel.setFont(font)
-		self.texteditbox = PMTextEdit()
+		self.texteditbox = PMTextEdit(self)
 		grid.addWidget(textlabel,0,0)
-		grid.addWidget(self.texteditbox,1,0,1,2)
+		grid.addWidget(self.getToolBar(),1,0,1,2)
+		grid.addWidget(self.texteditbox,2,0,1,2)
 		self.savepb = QtGui.QPushButton("Save")
 		self.closepb = QtGui.QPushButton("Close")
-		grid.addWidget(self.savepb, 2,0)
-		grid.addWidget(self.closepb, 2,1)
+		grid.addWidget(self.savepb, 3,0)
+		grid.addWidget(self.closepb, 3,1)
 		self.setLayout(grid)
 		self.setMinimumWidth(600)
 		
@@ -814,14 +901,82 @@ class NoteBook(QtGui.QWidget):
 		self.connect(self.savepb, QtCore.SIGNAL('clicked()'), self._on_save)
 		self.connect(self.closepb, QtCore.SIGNAL('clicked()'), self._on_close)
 	
+	def getToolBar(self):
+		""" Return the toolbar widget """
+		tbwidget = QtGui.QWidget()
+		hbox = QtGui.QHBoxLayout()
+		self.dbdict = db_open_dict("bdb:"+self.pm().getPMCWD()+"#notebook")
+		
+		# font type
+		self.fontdb = QtGui.QFontDatabase()
+		self.fontfamily = QtGui.QComboBox()
+		self.fontfamily.addItems(self.fontdb.families())	
+		
+		# font size
+		self.fontsizecb = QtGui.QComboBox()
+		
+		# Bold italic, underline
+		self.boldbutton = PMToolButton()
+		self.italicbutton = PMToolButton()
+		self.underlinebutton = PMToolButton()
+		self.boldbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(boldicon)))
+		self.italicbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(italicicon)))
+		self.underlinebutton.setIcon(QtGui.QIcon(QtGui.QPixmap(underlineicon)))
+		self.fontcolor = EMQTColorWidget(red=0,green=0,blue=0)
+		
+		# Add widgets
+		hbox.addWidget(self.fontfamily)
+		hbox.addWidget(self.fontsizecb)
+		hbox.addWidget(self.boldbutton)
+		hbox.addWidget(self.italicbutton)
+		hbox.addWidget(self.underlinebutton)
+		hbox.addWidget(self.fontcolor)
+		tbwidget.setLayout(hbox)
+		
+		# Set defaults
+		if 'FONTFAMILY' in self.dbdict:
+			idx = self.fontfamily.findText(self.dbdict['FONTFAMILY'])
+			self.fontfamily.setCurrentIndex(idx)
+			self._load_fontsizes()
+			self.fontsizecb.setCurrentIndex(self.fontsizecb.findText(self.dbdict['FONTSIZE']))
+			self.boldbutton.setDown(bool(self.dbdict['BOLDFONT']), quiet=1)
+			self.italicbutton.setDown(bool(self.dbdict['ITALICFONT']), quiet=1)
+			self.underlinebutton.setDown(bool(self.dbdict['UNDERLINE']), quiet=1)
+			self.fontcolor.setColor(QtGui.QColor(self.dbdict['FONTCOLOR'][0],self.dbdict['FONTCOLOR'][1],self.dbdict['FONTCOLOR'][2]))
+			self.texteditbox.updateFont()
+		
+		# Connect signals
+		self.connect(self.fontfamily, QtCore.SIGNAL("activated(int)"), self._fontchange)
+		self.connect(self.fontsizecb, QtCore.SIGNAL("activated(int)"), self._fontchange)
+		self.connect(self.boldbutton, QtCore.SIGNAL("stateChanged(bool)"), self._fontchange)
+		self.connect(self.italicbutton, QtCore.SIGNAL("stateChanged(bool)"), self._fontchange)
+		self.connect(self.underlinebutton, QtCore.SIGNAL("stateChanged(bool)"), self._fontchange)
+		self.connect(self.fontcolor, QtCore.SIGNAL("newcolor(QColor)"), self._fontchange)
+		
+		return tbwidget
+	
+	def _load_fontsizes(self):
+		for i in self.fontdb.pointSizes(self.fontfamily.currentText()):
+			self.fontsizecb.addItem(str(i))
+			
+	def _fontchange(self):
+		self.dbdict['FONTFAMILY'] = self.fontfamily.currentText()
+		self.dbdict['FONTSIZE'] = self.fontsizecb.currentText()
+		self.dbdict['BOLDFONT'] = self.boldbutton.isDown()
+		self.dbdict['ITALICFONT'] = self.italicbutton.isDown()
+		self.dbdict['UNDERLINE'] = self.underlinebutton.isDown()
+		self.dbdict['FONTCOLOR'] = self.fontcolor.getColor().getRgb()
+		self.texteditbox.updateFont()
+		
 	def loadNoteBook(self):
 		""" Load the current log book """
 		try:
-			fin=open(self.pm().getPMCWD()+"/pmlog.html","r")
+			fin=open(self.pm().getPMCWD()+"/pmnotes.html","r")
 			self.texteditbox.setHtml(fin.read())
 			fin.close()
 		except: 
-			self.pm().statusbar.setMessage("No pmlog file found, starting a new one...")
+			self.pm().statusbar.setMessage("No pmnotes file found, starting a new one...")
+			self.texteditbox.insertHtml("<b>Project Name: %s<br>EMAN Version: %s<br>Path: %s<br></b>"%(self.pm().pn_project_name,EMANVERSION,self.pm().pm_projects_db[self.pm().pn_project_name]["CWD"]))
 			
 	def checkEMAN2LogFile(self):
 		""" Check the log file for any changes """
@@ -837,9 +992,9 @@ class NoteBook(QtGui.QWidget):
 			except:
 				break
 			fields = line.split('\t')
-			# For top level jobs ensure that they are in the pmlog file
+			# For top level jobs ensure that they are in the pmnotes file
 			if "-1" in fields[2]:
-				self._checkpmlogforjob(fields[4].strip(), fields[0].strip())
+				self._checklogforjob(fields[4].strip(), fields[0].strip())
 				# We replace -1 with -2 to indicate that this event has been recorded in the pm log book. So that we don't check over and over again...
 				inipos = fin.tell()
 				fin.seek(lastlineloc+51)
@@ -856,35 +1011,36 @@ class NoteBook(QtGui.QWidget):
 		textcursor.insertText('\n')
 		textcursor.insertHtml("<b>Job Launched on <i>%s</i>:<font color=blue> %s</font></b>"%(time, job))
 		
-	def writeLog(self):
+	def writeNotes(self):
 		""" Write the log file to disk """
-		fout=open(self.pm().getPMCWD()+"/pmlog.html","w")
+		fout=open(self.pm().getPMCWD()+"/pmnotes.html","w")
 		fout.write(self.texteditbox.toHtml())
 		fout.close()
 			
-	def _checkpmlogforjob(self, job, time):
+	def _checklogforjob(self, job, time):
 		""" Check to see if this job is already in the html """
-		if job in self.texteditbox.toHtml():
+		if time in self.texteditbox.toHtml():
 			return True
 		else:
 			self.insertNewJob(job, time)
 		return False
 	
 	def _on_save(self):
-		self.writeLog()
+		self.writeNotes()
 		
 	def _on_close(self):
 		self.donotsave = True
 		self.close()
 		
 	def closeEvent(self, event):
-		if not self.donotsave: self.writeLog()
+		if not self.donotsave: self.writeNotes()
 		self.pm().logbook = None
 		self.pm().updateProject()
 
 class PMTextEdit(QtGui.QTextEdit):
-	def __init__(self):
+	def __init__(self, parent):
 		QtGui.QTextEdit.__init__(self)
+		self.parent = weakref.ref(parent)
 		
 		self.setPMFontWeight(QtGui.QFont.Normal)
 		self.setPMTextColor(QtGui.QColor(0,0,0))
@@ -902,6 +1058,33 @@ class PMTextEdit(QtGui.QTextEdit):
 	def setPMTextColor(self, color):
 		self.textcolor = color
 		self.setTextColor(color)
+		
+	def setPMFontSize(self, size):
+		self.fontsize = size
+		self.setFontPointSize(size)
+	
+	def setPMFontFamily(self, family):
+		self.fontfamily = family
+		self.setFontFamily(family)
+		
+	def setPMFontItalic(self, italic):
+		self.italicfont = italic
+		self.setFontItalic(italic)
+		
+	def setPMFontUnderline(self, underline):
+		self.underlinefont = underline
+		self.setFontUnderline(underline)
+		
+	def updateFont(self):
+		if self.parent().boldbutton.isDown():
+			self.setPMFontWeight(QtGui.QFont.Bold)
+		else:
+			self.setPMFontWeight(QtGui.QFont.Normal)
+		self.setPMFontSize(int(self.parent().fontsizecb.currentText()))
+		self.setPMTextColor(self.parent().fontcolor.getColor())
+		self.setPMFontFamily(self.parent().fontfamily.currentText())
+		self.setPMFontItalic(self.parent().italicbutton.isDown())
+		self.setPMFontUnderline(self.parent().underlinebutton.isDown())
 		
 class TaskManager(QtGui.QWidget):
 	"""
