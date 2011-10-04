@@ -158,6 +158,7 @@ bool device_init() {
 			sprintf(filename,"/tmp/cuda%d",i); //Only works for Linux
 			if (fopen(filename,"r") == NULL)
 			{
+				// Found a free CUDA device, now put a lock on it
 				pFile = (fopen(filename,"w");
 				fputs("Running CUDA", pFile);
 				close(pFile);
