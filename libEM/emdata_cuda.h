@@ -157,6 +157,7 @@ private:
 	const mutable EMData* prevlistitem;
 	
 	mutable bool roneedsupdate;
+	int cudadevicenum;
 	
 	static int memused;
 	static int fudgemem;

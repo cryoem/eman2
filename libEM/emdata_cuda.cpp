@@ -420,15 +420,23 @@ void EMData::cuda_cleanup()
 		if(lastinlist->cudarwdata) lastinlist->rw_free();
 		if(lastinlist && lastinlist->cudarodata) lastinlist->ro_free();
 	}
-	
+	//Exit CUDA threads
 	cudaThreadExit();
+	//Free the CUDA device lock
+	if(cudadevicenum >= 0)
+	{
+		char filename[16];
+		sprintf(filename,"/tmp/cuda%d",cudadevicenum); //Only works for Linux
+		remove(filename);
+	}
 
 }
 
 bool EMData::cuda_initialize()
 {
-	if(device_init())
+	if(device_init() != NULL)
 	{
+		cudadevicenum = device;
 		return 1;
 	} else {
 		switchoffcuda();

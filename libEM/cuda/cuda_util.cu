@@ -150,7 +150,30 @@ bool device_init() {
 		cudaGetDeviceProperties(&deviceProp, 0);
 		if (deviceProp.major < 1) exit(2);
 		
-		int device = (getenv("EMANUSECUDA") == NULL || atoi(getenv("EMANUSECUDA")) == 0) ? 0 : atoi(getenv("EMANUSECUDA")) - 1;	
+		//Loop through the available devices and see if any do not have a lock
+		int device = NULL;
+		char filename[16]; // Should never be more than 12 char, but we go to 16, just to be safe. I am paranoid about buffer overflows, though in this case there isn't much risk
+		for(int i = 0; i < deviceCount; i++)
+		{
+			sprintf(filename,"/tmp/cuda%d",i); //Only works for Linux
+			if (fopen(filename,"r") == NULL)
+			{
+				pFile = (fopen(filename,"w");
+				fputs("Running CUDA", pFile);
+				close(pFile);
+				device = i;
+				break;
+			}
+		}
+		
+		//int device = (getenv("EMANUSECUDA") == NULL || atoi(getenv("EMANUSECUDA")) == 0) ? 0 : atoi(getenv("EMANUSECUDA")) - 1;	
+		// If no CUDA devices are free do not use CUDA
+		if (device == NULL)
+		{
+			printf("\nERROR All CUDA devices are occupied");
+			return device;
+		}
+		// Otherwise set the CUDA device and check fo errors
 		cudaError_t cudareturn = cudaSetDevice(device); 
 		if(cudareturn != cudaSuccess) {
 			printf("\nERROR in cudaSetDevice.... %s\n", cudaGetErrorString(cudareturn));
@@ -163,7 +186,7 @@ bool device_init() {
 
 		init = false; //Force init everytime
 	}
-	return 1;
+	return device;
 }
 
 __global__ void get_edgemean_kernal(const float* data, float* edgemean, const int nx, const int ny, const int nz)
