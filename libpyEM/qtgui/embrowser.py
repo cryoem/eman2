@@ -50,7 +50,10 @@ class EMFileType:
 	# When you add a new EMFiletype subclass, it must be added to this dictionary to be functional
 	typesbyext = {}
 
-	def __init__(self):
+	# A list of all types that need to be checked when the file extension can't be interpreted
+	alltocheck=()
+
+	def __init__(self,path,header):
 		self.path=None			# the current path this FileType is representing
 
 	def setFile(self,path):
@@ -64,13 +67,20 @@ class EMFileType:
 
 	@staticmethod
 	def isValid(path,header):
-		"Returns (size,n,dim) if the referenced path is a file of this type, false if not valid. The first 1k block of data from the file is provided as well to avoid unnecesary file access."
+		"Returns (size,n,dim) if the referenced path is a file of this type, false if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."
 		return False
 
 	def menuItems(self):
 		"Returns a list of (name,callback) tuples detailing the operations the user can call on the current file"
 		return []
 		
+def isprint(s):
+	"returns True if the string contains only printable ascii characters"
+	
+	# Seems like no isprint() in python, this does basically the same thing
+	mpd=s.translate("AAAAAAAAAABAABAAAAAAAAAAAAAAAAAA"+"B"*95+"A"*129)
+	if "A" in mpd : return False
+	return True
 
 class EMTextFileType(EMFileType):
 	"""FileType for files containing normal ASCII text"""
@@ -82,8 +92,20 @@ class EMTextFileType(EMFileType):
 
 	@staticmethod
 	def isValid(path,header):
-		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 1k block of data from the file is provided as well to avoid unnecesary file access."
-		return False
+		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."
+
+		if not isprint(header) : return False			# demand printable Ascii. FIXME: what about unicode ?
+
+		try: size=os.stat(path)[6]
+		except: return False
+		
+		if size>5000000 : dim="big"
+		else :
+			f=file(path,"r").read()
+			lns=max(f.count("\n"),f.count("\r"))
+			dim="%d ln"%lns
+
+		return (size,"-",lns)
 
 	def menuItems(self):
 		"Returns a list of (name,callback) tuples detailing the operations the user can call on the current file"
@@ -100,8 +122,17 @@ class EMPlotFileType(EMFileType):
 
 	@staticmethod
 	def isValid(path,header):
-		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 1k block of data from the file is provided as well to avoid unnecesary file access."
-		return False
+		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."
+
+		if not isprint(header): return False
+		
+		hdr=header.splitlines()
+		for l in hdr:
+			if l[0]=="#" : continue		# comment lines ok
+			
+		# TODO : Finish this
+		
+		return True
 
 	def menuItems(self):
 		"Returns a list of (name,callback) tuples detailing the operations the user can call on the current file"
@@ -117,7 +148,7 @@ class EMFolderFileType(EMFileType):
 		return "Folder"
 	@staticmethod
 	def isValid(path,header):
-		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 1k block of data from the file is provided as well to avoid unnecesary file access."
+		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."
 		return False
 
 	def menuItems(self):
@@ -134,7 +165,7 @@ class EMBdbFileType(EMFileType):
 		
 	@staticmethod
 	def isValid(path,header):
-		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 1k block of data from the file is provided as well to avoid unnecesary file access."
+		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."
 		return False
 
 	def menuItems(self):
@@ -151,7 +182,7 @@ class EMImageFileType(EMFileType):
 		
 	@staticmethod
 	def isValid(path,header):
-		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 1k block of data from the file is provided as well to avoid unnecesary file access."
+		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."
 		return False
 
 	def menuItems(self):
@@ -168,7 +199,7 @@ class EMStackFileType(EMFileType):
 		return "Text"
 	@staticmethod
 	def isValid(path,header):
-		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 1k block of data from the file is provided as well to avoid unnecesary file access."
+		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."
 		return False
 
 	def menuItems(self):
@@ -187,10 +218,16 @@ EMFileType.typesbyft = {
 }
 
 # Note that image types are not included here, and are handled via a separate mechanism
+# note that order is important in the tuples. The most specific filetype should go first, and
+# the most general last (they will be checked in order)
 EMFileType.extbyft = {
-	"txt":(EMTextFileType,EMPlotFileType),
+	".txt":(EMPlotFileType,EMTextFileType),
 	
 }
+
+# Default Choices when extension doesn't work
+# We don't need to test for things like Images because they are fully tested outside this mechanism
+EMFileType.alltocheck = (EMPlotFileType, EMTextFileType)
 
 
 class EMDirEntry:
@@ -280,6 +317,11 @@ class EMDirEntry:
 		if self.isbdb: return "bdb:%s#%s"%(self.root,self.name)
 		return os.path.join(self.root,self.name)
 	
+	def fileTypeClass(self):
+		"Returns the FileType class corresponding to the named filetype if it exists. None otherwise"
+		try: return EMFileType.typesbyft[self.filetype]
+		except: return None
+	
 	def sort(self,column,order):
 		"Recursive sorting"
 		if self.__children==None or len(self.__children)==0 or isinstance(self.__children[0],str): return
@@ -351,7 +393,29 @@ class EMDirEntry:
 			if tmp[ny]==1 : self.dim=str(tmp[ny])
 			elif info[1][2]==1 : self.dim="%dx%d"%(info[1][0],info[1][1])
 			else : self.dim="%dx%dx%d"%(info[1][0],info[1][1],info[1][2])
-
+			
+		# Ok, we need to try to figure out what kind of file this is
+		else:
+			head = file(self.path(),"rb").read(4096)		# Most FileTypes should be able to identify themselves using the first 4K block of a file
+			
+			try: guesses=EMFileType.extbyft[os.path.splitext(self.path())[1]]		# This will get us a list of possible FileTypes for this extension
+			except: guesses=EMFileType.alltocheck
+			
+			for guess in guesses:
+				try : size,n,dim=guess.isValid(self.path(),head)		# This will raise an exception if isValid returns False
+				except: continue
+				
+				# If we got here, we found a match
+				self.filetype=guess.name()
+				self.dim=dim
+				self.nimg=n
+				self.size=size
+				break	
+			else:		# this only happens if no match was found
+				self.filetype="-"
+				self.dim="-"
+				self.nimg="-"
+				
 		return True
 
 def nonone(val):
@@ -417,6 +481,7 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 			print "Error with index ",index.row(),index.column()
 			return "XXX"
 		#if index.column()==0 : print "EMFileItemModel.data(%d %d %s)=%s"%(index.row(),index.column(),index.parent(),str(data.__dict__))
+
 		col=index.column()
 		if col==0 : 
 			if data.isbdb : return "bdb:"+data.name
@@ -627,8 +692,9 @@ class EMBrowserWidget(QtGui.QWidget):
 		QtCore.QObject.connect(self.wpath, QtCore.SIGNAL('returnPressed()'), self.editPath)
 		QtCore.QObject.connect(self.wbookmarks, QtCore.SIGNAL('actionTriggered(QAction*)'), self.bookmarkPress)
 
-		self.curmodel=None
-		self.curpath=None
+		self.curmodel=None	# The current data model displayed in the tree
+		self.curpath=None	# The path represented by the current data model
+		self.curft=None		# a fileType instance for the currently hilighted object
 		self.models={}
 
 	def editPath(self):
@@ -639,8 +705,16 @@ class EMBrowserWidget(QtGui.QWidget):
 		qism=self.wtree.selectionModel().selectedRows()
 		if len(qism)>1 : self.wpath.setText("<multiple select>")
 		elif len(qism)==1 : 
-			self.wpath.setText(qism[0].internalPointer().path())
+			obj=qism[0].internalPointer()
+			self.wpath.setText(obj.path())
 			self.curmodel.details(qism[0])
+			
+			# This makes an instance of a FileType for the selected object
+			ftc=obj.fileTypeClass() 
+			if ftc!=None: 
+				self.curft=ftc(obj.path())
+				# TODO continue here
+			
 		
 	def itemActivate(self,qmi):
 #		print "Item activated",qmi.row(),qmi.column()
