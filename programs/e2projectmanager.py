@@ -298,20 +298,20 @@ class EMProjectManager(QtGui.QMainWindow):
 	
 	def _load_icons(self):
 		"""
-		Load icons used for the tree. Additonal icons can be added 
+		Load icons used for the tree. Additonal icons can be added using icsons.json
 		"""
 		self.icons = {}
 		EMAN2DIR = os.getenv("EMAN2DIR")
-		self.icons["single_image"] = QtGui.QIcon(EMAN2DIR+"/images/macimages/single_image.png")
-		self.icons["multiple_images"] = QtGui.QIcon(EMAN2DIR+"/images/macimages/multiple_images.png")
-		self.icons["green_boxes"] = QtGui.QIcon(EMAN2DIR+"/images/macimages/green_boxes.png")
-		self.icons["ctf"] = QtGui.QIcon(EMAN2DIR+"/images/macimages/ctf.png")
-		self.icons["web"] = QtGui.QIcon(EMAN2DIR+"/images/macimages/classes.png")
-		self.icons["single_image_3d"] = QtGui.QIcon(EMAN2DIR+"/images/macimages/single_image_3d.png")
-		self.icons["refine"] = QtGui.QIcon(EMAN2DIR+"/images/macimages/refine.png")
-		self.icons["eulers"] = QtGui.QIcon(EMAN2DIR+"/images/macimages/eulerxplor.png")
-		self.icons["resolution"] = QtGui.QIcon(EMAN2DIR+"/images/macimages/plot.png")
-		self.icons["tomo_hunter"] = QtGui.QIcon(EMAN2DIR+"/images/macimages/tomo_hunter.png")
+
+		jsonfile = open(os.getenv("EMAN2DIR")+'/lib/pmconfig/icons.json', 'r')
+		data = jsonfile.read()
+		data = self.json_strip_comments(data)
+		tree = json.loads(data)
+		jsonfile.close()
+		icons=tree[0]
+		
+		for icon in icons:
+			self.icons[icon] = QtGui.QIcon(EMAN2DIR+icons[icon])
 		
 	def makeMenues(self):
 		"""
