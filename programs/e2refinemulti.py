@@ -105,7 +105,7 @@ def main():
 	
 	#options associated with e2make3d.py
 	parser.add_header(name="make3dheader", help='Options below this label are specific to e2make3d', title="### e2make3d options ###", row=32, col=0, rowspan=1, colspan=3)
-	parser.add_argument("--pad", type=int, dest="pad", help="To reduce Fourier artifacts, the model is typically padded by ~25% - only applies to Fourier reconstruction", default=0, guitype='intbox', row=34, col=2, rowspan=1, colspan=1)
+	parser.add_argument("--pad", type=int, dest="pad", help="To reduce Fourier artifacts, the model is typically padded by ~25 percent - only applies to Fourier reconstruction", default=0, guitype='intbox', row=34, col=2, rowspan=1, colspan=1)
 	parser.add_argument("--recon", dest="recon", default="fourier", help="Reconstructor to use see e2help.py reconstructors -v", guitype='combobox', choicelist='dump_reconstructors_list()', row=33, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--m3dkeep", type=float, help="The percentage of slices to keep in e2make3d.py", default=0.8, guitype='floatbox', row=35, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--m3dkeepsig", default=False, action="store_true", help="The standard deviation alternative to the --m3dkeep argument", guitype='boolbox', row=35, col=1, rowspan=1, colspan=1)

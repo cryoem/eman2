@@ -52,7 +52,7 @@ def main():
 	of the reconstructed particle. The 'mask' input should mask out the particle,
 	and should be a 'soft' mask. Sharp edges on the mask may ruin the results.
 	proc3d (EMAN1) with the automask2 option can produce appropriate masks. The
-	3rd parameter (in automask2) should be about 10% of the box size. This will not
+	3rd parameter (in automask2) should be about 10 percent of the box size. This will not
 	work with particles that have been tightly masked already. If doing an EMAN1
 	reconstruction with the amask= option, you must also use the refmaskali option
 	(in the refine command). Note that the resultant curve is guaranteed to go

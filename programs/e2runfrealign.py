@@ -14,11 +14,11 @@ from subprocess import *
 import shutil
 from EMAN2 import *
 
-parser = EMArgumentParser(usage,version=EMANVERSION)
-
 usage = """prog
 Add Help doc to me...
 """
+
+parser = EMArgumentParser(usage,version=EMANVERSION)
 
 parser.add_header(name="runfrealign", help='Click Launch to run Frealign', title="### Click Launch to run e2runfrealign ###", row=0, col=0, rowspan=1, colspan=1)
 parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
