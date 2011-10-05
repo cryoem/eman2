@@ -55,10 +55,11 @@ envelopes=[]		# simplex minimizer needs to use a global at the moment
 def main():
 	global debug,logid
 	progname = os.path.basename(sys.argv[0])
+	
 	usage = """prog [options] <input stack/image> ...
 	
 Various CTF-related operations on images, including automatic fitting. Note that automatic fitting is limited to defocuses
-less than ~5 microns. Input particles should be unmasked and unfiltered. A minimum of ~20% padding around the
+less than ~5 microns. Input particles should be unmasked and unfiltered. A minimum of ~20 percent padding around the
 particles is required for background extraction, even if this brings the edge of another particle into the box in some cases.
 Particles should be reasonably well centered. Can also optionally phase flip and Wiener filter particles. Wiener filtration comes
 after phase-flipping, so if phase flipping is performed Wiener filtered particles will also be phase-flipped. Note that both
@@ -69,9 +70,10 @@ Increasing padding during the particle picking process will improve the accuracy
 images far from focus."""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-
+	
 	parser.add_pos_argument(name="particles",help="List the file to process with e2ctf here.", default="", guitype='filebox', positional=True, row=0, col=0,rowspan=1, colspan=2, mode='autofit,tuning,genoutp,gensf')
 	parser.add_header(name="ctfheader", help='Options below this label are specific to e2ctflassaverage3d', title="### e2ctf options ###", default=None, row=1, col=0, rowspan=1, colspan=2, mode="autofit,tuning,genoutp,gensf")
+	
 	parser.add_argument("--allparticles",action="store_true",help="Will process all particle sets stored in BDB in the particles subdirectory witho",default=False)
 	parser.add_argument("--minptcl",type=int,help="Files with fewer than the specified number of particles will be skipped",default=0)
 	parser.add_argument("--gui",action="store_true",help="Start the GUI for interactive fitting",default=False, guidefault=True, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode="tuning")

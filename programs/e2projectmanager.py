@@ -1408,6 +1408,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 		# Set default to GUI default if available otherwise set to default if available
 		if 'guidefault' in option:
 			default = option['guidefault']
+			if '()' in default: default = eval(default)
 		else:
 			if 'default' in option: default = option['default']
 		# If there is no DataBase or it isn't desired return
