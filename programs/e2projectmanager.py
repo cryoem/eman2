@@ -944,6 +944,8 @@ class NoteBook(QtGui.QWidget):
 			self.underlinebutton.setDown(bool(self.dbdict['UNDERLINE']), quiet=1)
 			self.fontcolor.setColor(QtGui.QColor(self.dbdict['FONTCOLOR'][0],self.dbdict['FONTCOLOR'][1],self.dbdict['FONTCOLOR'][2]))
 			self.texteditbox.updateFont()
+		else:
+			self._load_fontsizes()
 		
 		# Connect signals
 		self.connect(self.fontfamily, QtCore.SIGNAL("activated(int)"), self._fontchange)
