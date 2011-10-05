@@ -220,6 +220,8 @@ from empmwidgets import *
 from valslider import EMQTColorWidget
 
 class EMProjectManager(QtGui.QMainWindow):
+	""" The EM Project Manager is a QT application to provide a GUI for EMAN2 job managment. 
+	See the wiki for more details """
 	def __init__(self):
 		QtGui.QMainWindow.__init__(self)
 		# default PM attributes
@@ -229,7 +231,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		# Set Defaults
 		self.usingEMEN = False
 		self.expertmode = False
-		self.logbook = None
+		self.notebook = None
 		self.taskmanager = None
 		
 		# Load the project DataBase
@@ -242,7 +244,9 @@ class EMProjectManager(QtGui.QMainWindow):
 		font = QtGui.QFont()
 		font.setBold(True)
 		centralwidget = QtGui.QWidget()
-		splitter = QtGui.QSplitter(QtCore.Qt.Vertical)
+		vsplitter = QtGui.QSplitter(QtCore.Qt.Vertical)
+		
+		# Make the tiltebars
 		grid = QtGui.QGridLayout()
 		grid.addWidget(self.makeTilteBarWidget(), 0, 0, 1, 3)
 		workflowcontrollabel = QtGui.QLabel("Workflow Control", centralwidget)
@@ -251,6 +255,8 @@ class EMProjectManager(QtGui.QMainWindow):
 		guilabel = QtGui.QLabel("EMAN2 program GUI", centralwidget)
 		guilabel.setFont(font)
 		grid.addWidget(guilabel, 1,1)
+		
+		# Make the GUI, Tree and ToolBar
 		grid.addWidget(self.makeStackedWidget(),2,0,2,1)
 		grid.addWidget(self.makeStackedGUIwidget(),2,1,1,1)
 		grid.addWidget(self.makeGUIToolButtons(),2,2,1,1)
@@ -259,23 +265,24 @@ class EMProjectManager(QtGui.QMainWindow):
 		# Make status bar
 		self.statusbar = EMAN2StatusBar("Welcome to the EMAN2 Project Manager")
 		centralwidget.setLayout(grid)
-		# Make status bar
-		splitter.addWidget(centralwidget)
-		splitter.addWidget(self.statusbar)
-		splitter.setSizes([10,1])
+		# Add splitter to adjust statsus bar
+		vsplitter.addWidget(centralwidget)
+		vsplitter.addWidget(self.statusbar)
+		vsplitter.setSizes([10,1])
 		
-		self.setCentralWidget(splitter)
+		self.setCentralWidget(vsplitter)
 		
 		#Update the project are construction
 		self.updateProject()
 		
 	def closeEvent(self, event):
-		if self.logbook: self.logbook.close()
+		""" Upon PM close, close the taskmanager and the logbook """
+		if self.notebook: self.notebook.close()
 		if self.taskmanager: self.taskmanager.close()
 	
 	def loadPMdb(self):
 		"""
-		Load the PM database
+		Load the PM database. This is a global database. Each user on each machine has one
 		"""
 		# This probably wont work on WINDOWS.....
 		self.pm_projects_db = db_open_dict("bdb:"+os.environ['HOME']+"#:pm_projects")
@@ -291,7 +298,7 @@ class EMProjectManager(QtGui.QMainWindow):
 	
 	def _load_icons(self):
 		"""
-		Load icons used for the tree 
+		Load icons used for the tree. Additonal icons can be added 
 		"""
 		self.icons = {}
 		EMAN2DIR = os.getenv("EMAN2DIR")
@@ -437,7 +444,6 @@ class EMProjectManager(QtGui.QMainWindow):
 		"""
 		self.tree_stacked_widget = QtGui.QStackedWidget()
 		self.tree_stacked_widget.setMinimumWidth(300)
-		self.tree_stacked_widget.setMaximumWidth(300)
 		self.tree_stacked_widget.addWidget(self.makeSPRTreeWidget())
 		self.tree_stacked_widget.addWidget(self.makeTomoTreeWidget())
 		
@@ -538,7 +544,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		if state:
 			self.loadNoteBook()
 		else:
-			self.logbook.hide()
+			self.notebook.hide()
 	
 	def _on_taskmgrbutton(self, state):
 		"""Load the log book
@@ -577,9 +583,9 @@ class EMProjectManager(QtGui.QMainWindow):
 		"""
 		Make logbook
 		"""
-		if not self.logbook:
-			self.logbook = NoteBook(self)
-		self.logbook.show()
+		if not self.notebook:
+			self.notebook = NoteBook(self)
+		self.notebook.show()
 			
 	def loadTaskManager(self):
 		"""
@@ -653,8 +659,8 @@ class EMProjectManager(QtGui.QMainWindow):
 		"""
 		if not cmd: return False	# Don't excecute a broken script
 		# --ipd=-2 tells the pm log book that this job is already in the pm
-		if self.logbook: 
-			self.logbook.insertNewJob(cmd,local_datetime())
+		if self.notebook: 
+			self.notebook.insertNewJob(cmd,local_datetime())
 			child = subprocess.Popen((str(cmd)+" --ppid=-2"), shell=True, cwd=self.pm_projects_db[self.pn_project_name]["CWD"])
 		else:
 			child = subprocess.Popen(str(cmd), shell=True, cwd=self.pm_projects_db[self.pn_project_name]["CWD"])
@@ -694,7 +700,6 @@ class EMProjectManager(QtGui.QMainWindow):
 		jsonfile.close()
 		
 		QTree = QtGui.QTreeWidget()
-		#QTree.setMinimumHeight(400)
 		QTree.setHeaderLabel(treename)
 		
 		for toplevel in tree:
@@ -828,7 +833,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		if self.pm_cwd != self.pm_projects_db[self.pn_project_name]["CWD"]:
 			self.pm_cwd = self.pm_projects_db[self.pn_project_name]["CWD"]
 			os.chdir(self.pm_cwd)
-		self.logbutton.setDown(bool(self.logbook), quiet=True)
+		self.logbutton.setDown(bool(self.notebook), quiet=True)
 		self.taskmanagerbutton.setDown(bool(self.taskmanager), quiet=True)
 		# Help button should only be down if the textbox widget is displayed
 		if self.gui_stacked_widget.currentIndex() != 1:
@@ -847,7 +852,6 @@ class EMAN2StatusBar(QtGui.QTextEdit):
 		self.viewport().setCursor(QtCore.Qt.ArrowCursor)
 		self.setMessage(text)
 		self.setToolTip("This is the Status Bar")
-		#self.setMaximumHeight(80)
 		
 	def setMessage(self, text):
 		textcursor = self.textCursor()
@@ -950,7 +954,7 @@ class NoteBook(QtGui.QWidget):
 			self._load_fontsizes()
 		
 		# Connect signals
-		self.connect(self.fontfamily, QtCore.SIGNAL("activated(int)"), self._fontchange)
+		self.connect(self.fontfamily, QtCore.SIGNAL("activated(int)"), self._fontfamilychange)
 		self.connect(self.fontsizecb, QtCore.SIGNAL("activated(int)"), self._fontchange)
 		self.connect(self.boldbutton, QtCore.SIGNAL("stateChanged(bool)"), self._fontchange)
 		self.connect(self.italicbutton, QtCore.SIGNAL("stateChanged(bool)"), self._fontchange)
@@ -962,7 +966,11 @@ class NoteBook(QtGui.QWidget):
 	def _load_fontsizes(self):
 		for i in self.fontdb.pointSizes(self.fontfamily.currentText()):
 			self.fontsizecb.addItem(str(i))
-			
+	
+	def _fontfamilychange(self):
+		self._load_fontsizes()
+		self._fontchange()
+		
 	def _fontchange(self):
 		self.dbdict['FONTFAMILY'] = self.fontfamily.currentText()
 		self.dbdict['FONTSIZE'] = self.fontsizecb.currentText()
