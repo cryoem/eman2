@@ -722,7 +722,6 @@ class EMProjectManager(QtGui.QMainWindow):
 		# Display the progrma GUI
 		if item.getProgram() != "programName":
 			self._set_GUI(item.getProgram(), item.getMode())
-			self.statusbar.setMessage("GUI '%s' displayed"%str(item.getProgram()))	# Blank Status bar
 			self.updateProject()
 		else:
 			self.gui_stacked_widget.setCurrentIndex(0)
@@ -846,14 +845,17 @@ class EMAN2StatusBar(QtGui.QTextEdit):
 		#self.setMargin(4)
 		self.setTextInteractionFlags(QtCore.Qt.NoTextInteraction)
 		self.viewport().setCursor(QtCore.Qt.ArrowCursor)
-		self.setMessage(text, prepend="")
+		self.setMessage(text)
 		self.setToolTip("This is the Status Bar")
 		#self.setMaximumHeight(80)
 		
-	def setMessage(self, text, prepend="\n"):
+	def setMessage(self, text):
 		textcursor = self.textCursor()
 		textcursor.movePosition(QtGui.QTextCursor.End)
-		self.insertPlainText(prepend+text)
+		if textcursor.columnNumber() !=0:
+			self.insertPlainText("\n"+text)
+		else:
+			self.insertPlainText(text)
 		self.verticalScrollBar().setValue(self.verticalScrollBar().maximum())
 		
 
@@ -1040,6 +1042,7 @@ class NoteBook(QtGui.QWidget):
 		self.pm().updateProject()
 
 class PMTextEdit(QtGui.QTextEdit):
+	""" Sub class of the QTextEdit widget to observe the PMNoteBook """
 	def __init__(self, parent):
 		QtGui.QTextEdit.__init__(self)
 		self.parent = weakref.ref(parent)
@@ -1078,6 +1081,7 @@ class PMTextEdit(QtGui.QTextEdit):
 		self.setFontUnderline(underline)
 		
 	def updateFont(self):
+		""" When the NoteBook state is changed this function is called """
 		if self.parent().boldbutton.isDown():
 			self.setPMFontWeight(QtGui.QFont.Bold)
 		else:
