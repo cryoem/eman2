@@ -35,14 +35,13 @@
 # This program computes a similarity matrix between two sets of images
 
 from EMAN2 import *
-from optparse import OptionParser
 from math import *
 import os
 import sys
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <ref imgs> <ref self-simmx> <merged>
+	usage = """prog [options] <ref imgs> <ref self-simmx> <merged>
 
 	This program is used by e2simmx2stage.py
 
@@ -52,16 +51,16 @@ def main():
 	two-stage orientation determination. Each averaged projection will also contain metadata identifying which projections were used to produce
 	it, and thus which should be checked in second-stage classification. This takes what is ordinarily an order n calculation and makes it an
 	3.5*sqrt(3n) calculation."""
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--nmerged",type="int",help="Number of merged references to generate. Default = sqrt(#proj*nbest)",default=0)
-	parser.add_option("--nbest",type="int",help="This will associate each projection with the best N merged references",default=3)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--nmerged",type=int,help="Number of merged references to generate. Default = sqrt(#proj*nbest)",default=0)
+	parser.add_argument("--nbest",type=int,help="This will associate each projection with the best N merged references",default=3)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
-	#parser.add_option("--apix", "-A", type="float", help="A/voxel", default=1.0)
-	#parser.add_option("--box", "-B", type="string", help="Box size in pixels, <xyz> or <x>,<y>,<z>")
-	#parser.add_option("--het", action="store_true", help="Include HET atoms in the map", default=False)
+	#parser.add_argument("--apix", "-A", type="float", help="A/voxel", default=1.0)
+	#parser.add_argument("--box", "-B", type="string", help="Box size in pixels, <xyz> or <x>,<y>,<z>")
+	#parser.add_argument("--het", action="store_true", help="Include HET atoms in the map", default=False)
 
 	(options, args) = parser.parse_args()
 	

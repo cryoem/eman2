@@ -37,7 +37,6 @@
 from EMAN2db import EMTaskQueue, EMTask
 from EMAN2 import *
 from EMAN2PAR import *
-from optparse import OptionParser
 from math import *
 import time
 import os
@@ -53,7 +52,7 @@ def main():
 	global debug,logid
 	progname = os.path.basename(sys.argv[0])
 	commandlist=("dcserver","dcclient","realdcclient","dckill","dckillclients","servmon","rerunall","killall","precache","localclient","mpiclient")
-	usage = """%prog [options] <command> ...
+	usage = """prog [options] <command> ...
 	
 This program implements much of EMAN2's coarse-grained parallelism mechanism. There are several flavors available via
 different options in this program. Note that the simple threaded parallelism used on a single computer with multiple
@@ -70,18 +69,18 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 
 """
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--server",type="string",help="Specifies host of the server to connect to",default="localhost")
-	parser.add_option("--port",type="int",help="Specifies server port, default is automatic assignment",default=-1)
-	parser.add_option("--clientid",type="int",help="Internal use only",default=-1)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_option("--taskin", type="string",help="Internal use only. Used when executing local threaded tasks.")
-	parser.add_option("--taskout", type="string",help="Internal use only. Used when executing local threaded tasks.")
-	parser.add_option("--scratchdir", type="string",help="Internal use only. Used by the MPI client",default="/tmp")
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-#	parser.add_option("--cpus",type="int",help="Number of CPUs/Cores for the clients to use on the local machine")
-#	parser.add_option("--idleonly",action="store_true",help="Will only use CPUs on the local machine when idle",default=False)
+	parser.add_argument("--server",type=str,help="Specifies host of the server to connect to",default="localhost")
+	parser.add_argument("--port",type=int,help="Specifies server port, default is automatic assignment",default=-1)
+	parser.add_argument("--clientid",type=int,help="Internal use only",default=-1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--taskin", type=str,help="Internal use only. Used when executing local threaded tasks.")
+	parser.add_argument("--taskout", type=str,help="Internal use only. Used when executing local threaded tasks.")
+	parser.add_argument("--scratchdir", type=str,help="Internal use only. Used by the MPI client",default="/tmp")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+#	parser.add_argument("--cpus",type=int,help="Number of CPUs/Cores for the clients to use on the local machine")
+#	parser.add_argument("--idleonly",action="store_true",help="Will only use CPUs on the local machine when idle",default=False)
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 or args[0] not in commandlist: parser.error("command required: "+str(commandlist))

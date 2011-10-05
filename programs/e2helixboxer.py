@@ -2,10 +2,9 @@
 
 #Author: Ross Coleman
 
-from EMAN2 import get_image_directory, Transform, Region, EMANVERSION, EMData, E2init, E2end
+from EMAN2 import get_image_directory, Transform, Region, EMANVERSION, EMData, E2init, E2end, EMArgumentParser
 from EMAN2db import db_open_dict, db_check_dict, db_close_dict
 from math import *
-from optparse import OptionParser
 import sys
 import os
 
@@ -40,26 +39,26 @@ def main():
     e2helixboxer.py --gui --helix-width=<width> <micrograph1> <<micrograph2> <micrograph3> ...
     e2helixboxer.py <options (not --gui)> <micrograph>    
     """
-    parser = OptionParser(usage=usage,version=EMANVERSION)
-    parser.add_option("--gui", action="store_true", help="Start the graphic user interface for boxing helices.")
+    parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+    parser.add_argument("--gui", action="store_true", help="Start the graphic user interface for boxing helices.")
     
-    parser.add_option("--helix-coords", "-X", type="string", help="Save coordinates for helices to the file specified, which will have the EMAN1 *.box format:\t\t\tx1-w/2        y1-w/2        w        w        -1                    x2-w/2        y2-w/2        w        w        -2")
-    parser.add_option("--helix-images", "-x", type="string", help="Save images of the helices. The file name specified will have helix numbers added to it.")
-    parser.add_option("--ptcl-coords", "-P", type="string", help="Save coordinates of the centers of particles to the specified formatted text file")
-    parser.add_option("--ptcl-images", "-p", type="string", help="Save images of the particles. The file name specified will have helix numbers (and particle numbers if the file type does not support image stacks) added to it.")
-    parser.add_option("--ptcl-images-stack-mode", type="string", default="multiple", help="Options for saving particle images to stack files. 'single' uses one stack file, 'multiple' (default) uses one stack file per helix, 'none' uses a file for each particle and is always used when the output file format does not support image stacks.")
+    parser.add_argument("--helix-coords", "-X", type=str, help="Save coordinates for helices to the file specified, which will have the EMAN1 *.box format:\t\t\tx1-w/2        y1-w/2        w        w        -1                    x2-w/2        y2-w/2        w        w        -2")
+    parser.add_argument("--helix-images", "-x", type=str, help="Save images of the helices. The file name specified will have helix numbers added to it.")
+    parser.add_argument("--ptcl-coords", "-P", type=str, help="Save coordinates of the centers of particles to the specified formatted text file")
+    parser.add_argument("--ptcl-images", "-p", type=str, help="Save images of the particles. The file name specified will have helix numbers (and particle numbers if the file type does not support image stacks) added to it.")
+    parser.add_argument("--ptcl-images-stack-mode", type=str, default="multiple", help="Options for saving particle images to stack files. 'single' uses one stack file, 'multiple' (default) uses one stack file per helix, 'none' uses a file for each particle and is always used when the output file format does not support image stacks.")
     
-    parser.add_option("--db-add-hcoords", type="string", help="Append any unique helix coordinates to the database from the specified file (in EMAN1 *.box format). Use --helix-width to specify a width for all boxes.")
-    parser.add_option("--db-set-hcoords", type="string", help="Replaces the helix coordinates in the database with the coordinates from the specified file (in EMAN1 *.box format). Use --helix-width to specify a width for all boxes.")
+    parser.add_argument("--db-add-hcoords", type=str, help="Append any unique helix coordinates to the database from the specified file (in EMAN1 *.box format). Use --helix-width to specify a width for all boxes.")
+    parser.add_argument("--db-set-hcoords", type=str, help="Replaces the helix coordinates in the database with the coordinates from the specified file (in EMAN1 *.box format). Use --helix-width to specify a width for all boxes.")
     
-    parser.add_option("--helix-width", "-w", type="int", dest="helix_width", help="Helix width in pixels. Overrides widths saved in the database or in an input file.", default=-1)
-    parser.add_option("--ptcl-overlap", type="int", dest="ptcl_overlap", help="Particle overlap in pixels", default=-1)
-    parser.add_option("--ptcl-length", type="int", dest="ptcl_length", help="Particle length in pixels", default=-1)
-    parser.add_option("--ptcl-width", type="int", dest="ptcl_width", help="Particle width in pixels", default=-1)
-    parser.add_option("--ptcl-not-rotated", action="store_true", dest="ptcl_not_rotated", help="Particles are oriented as on the micrograph. They are square with length max(ptcl_length, ptcl_width).")
-    parser.add_option("--ptcl-norm-edge-mean", action="store_true", help="Apply the normalize.edgemean processor to each particle.")
-    parser.add_option("--gridding",      action="store_true", default=False, help="Use a gridding method for rotation operations on particles. Requires particles to be square.")
-    parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+    parser.add_argument("--helix-width", "-w", type=int, dest="helix_width", help="Helix width in pixels. Overrides widths saved in the database or in an input file.", default=-1)
+    parser.add_argument("--ptcl-overlap", type=int, dest="ptcl_overlap", help="Particle overlap in pixels", default=-1)
+    parser.add_argument("--ptcl-length", type=int, dest="ptcl_length", help="Particle length in pixels", default=-1)
+    parser.add_argument("--ptcl-width", type=int, dest="ptcl_width", help="Particle width in pixels", default=-1)
+    parser.add_argument("--ptcl-not-rotated", action="store_true", dest="ptcl_not_rotated", help="Particles are oriented as on the micrograph. They are square with length max(ptcl_length, ptcl_width).")
+    parser.add_argument("--ptcl-norm-edge-mean", action="store_true", help="Apply the normalize.edgemean processor to each particle.")
+    parser.add_argument("--gridding",      action="store_true", default=False, help="Use a gridding method for rotation operations on particles. Requires particles to be square.")
+    parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
     (options, args) = parser.parse_args()
     
     if options.helix_width < 1:

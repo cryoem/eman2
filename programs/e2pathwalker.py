@@ -360,7 +360,7 @@ class PathWalker(object):
 			'dmin', 
 			'average',
 			'chain',
-			'atomtype',options.edge
+			'atomtype',
 			'solver',
 			'start',
 			'end',
@@ -809,7 +809,7 @@ class CaRMSD(object):
 
 
 def main():
-	usage = """%prog [options] <pdb file>
+	usage = """prog [options] <pdb file>
 	
 	Find paths between two atoms in a PDB model. You can also specify two PDB files to calculate an RMSD.
 	
@@ -818,23 +818,23 @@ def main():
 
 	"""
 
-	parser = optparse.OptionParser(usage=usage, version=EMAN2.EMANVERSION)
-	parser.add_option("--output", type="str",help="Output file")
-	parser.add_option("--start", type="int",help="Start ATOM")
-	parser.add_option("--end", type="int",help="End ATOM")	
-	parser.add_option("--average", type="float",help="Average Ca-Ca length", default=3.78)
-	parser.add_option("--dmin", type="float",help="Mininum Ca-Ca length", default=2.0)
-	parser.add_option("--dmax", type="float",help="Maximum Ca-Ca length", default=4.2)
-	parser.add_option("--noise", type="float",help="Add Gaussian Noise", default=0.0)
-	parser.add_option("--solver", type="str" ,help="Run TSP Solver: concorde or lkh")
-	parser.add_option("--atomtype", type="str" ,help="Load Atom Type. Default: 'CA'. Options: 'C' or 'all'", default="CA")	
-	parser.add_option("--chain", type="str" ,help="Load Chain. Default: load all chains")	
-	parser.add_option("--edgefile", type="str" ,help="Load fixed fragment file; one sequence of forced connections per line, separated by space.")	
-	parser.add_option("-e", "--edge", action="append", help="Forced edge: e.g. -e1,3")
-	parser.add_option("--iterations", type="int",help="Iterations", default=1)
-	parser.add_option("--json", type="int", help="If writing output pdb, also write JSON metadata. Default: 1. Options: 0, 1", default=1)
-	parser.add_option("--overwrite", action="store_true", help="Overwrite files without prompting")
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n",type="int", default=0, help='verbose level [0-9], higher number means higher level of verboseness')
+	parser = EMAN2.EMArgumentParser(usage=usage,version=EMAN2.EMANVERSION)
+	parser.add_argument("--output", type=str,help="Output file")
+	parser.add_argument("--start", type=int,help="Start ATOM")
+	parser.add_argument("--end", type=int,help="End ATOM")	
+	parser.add_argument("--average", type=float,help="Average Ca-Ca length", default=3.78)
+	parser.add_argument("--dmin", type=float,help="Mininum Ca-Ca length", default=2.0)
+	parser.add_argument("--dmax", type=float,help="Maximum Ca-Ca length", default=4.2)
+	parser.add_argument("--noise", type=float,help="Add Gaussian Noise", default=0.0)
+	parser.add_argument("--solver", type=str ,help="Run TSP Solver: concorde or lkh")
+	parser.add_argument("--atomtype", type=str ,help="Load Atom Type. Default: 'CA'. Options: 'C' or 'all'", default="CA")	
+	parser.add_argument("--chain", type=str ,help="Load Chain. Default: load all chains")	
+	parser.add_argument("--edgefile", type=str ,help="Load fixed fragment file; one sequence of forced connections per line, separated by space.")	
+	parser.add_argument("-e", "--edge", action="append", help="Forced edge: e.g. -e1,3")
+	parser.add_argument("--iterations", type=int,help="Iterations", default=1)
+	parser.add_argument("--json", type=int, help="If writing output pdb, also write JSON metadata. Default: 1. Options: 0, 1", default=1)
+	parser.add_argument("--overwrite", action="store_true", help="Overwrite files without prompting")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help='verbose level [0-9], higher number means higher level of verboseness')
 	
 	(options, args) = parser.parse_args()
 

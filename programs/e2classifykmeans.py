@@ -45,11 +45,10 @@ from os import system
 from os import unlink
 from sys import argv
 from EMAN2 import *
-from optparse import OptionParser
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <input stack>
+	usage = """prog [options] <input stack>
 	
 Performs k-means classification on a stack of aligned input images or invariants generated
 from the input images. eg - if images are unaligned one option is to use the --fp option in 
@@ -59,23 +58,23 @@ This program should not be confused with the k-means processor which provides a 
 for grouping pixels in a single map into regions. This program classifies similar images
 together."""
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
-	parser.add_option("--ncls","-N",type="int",help="Number of classes to generate",default=-1)
-	parser.add_option("--average","-A",action="store_true",help="Average the particles within each class",default=False)
-	parser.add_option("--sigma",action="store_true",help="with --average, this will also produce standard deviation images for each average",default=False)
-	parser.add_option("--onein",action="store_true",help="Read 1-d input images from a single 2-D image (oneout in e2basis.py)",default=False)
-	parser.add_option("--oneinali",action="store_true",help="Read 1-d input images from a single 2-D image where the first 4 elements on each row are da,dx,dy,flip",default=False)
-	parser.add_option("--normavg",action="store_true",help="Normalize averages",default=False)
-	parser.add_option("--clsmx",type="string",default=None,help="Standard EMAN2 output suitable for use with e2classaverage, etc.")
-	parser.add_option("--clsfiles","-C",action="store_true",help="Write EMAN 1 style cls files with members of each class",default=False)
-	parser.add_option("--listout","-L",action="store_true",help="Output the results to 'class.list",default=False)
-	parser.add_option("--mininclass",type="int",help="Try to eliminate classes with fewer than specified members. Default=2",default=2)
-	parser.add_option("--original","-O",type="string",help="If the input stack was derived from another stack, you can provide the name of the original stack here",default=None)
-	parser.add_option("--exclude", type="string",default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude.")
-	parser.add_option("--minchange", type="int",default=-1,help="Minimum number of particles that change group before deicding to terminate. Default = len(data)/(#cls*25)")
-	parser.add_option("--fastseed", action="store_true", default=False,help="Will seed the k-means loop quickly, but may produce lest consistent results.")
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+	parser.add_argument("--ncls","-N",type=int,help="Number of classes to generate",default=-1)
+	parser.add_argument("--average","-A",action="store_true",help="Average the particles within each class",default=False)
+	parser.add_argument("--sigma",action="store_true",help="with --average, this will also produce standard deviation images for each average",default=False)
+	parser.add_argument("--onein",action="store_true",help="Read 1-d input images from a single 2-D image (oneout in e2basis.py)",default=False)
+	parser.add_argument("--oneinali",action="store_true",help="Read 1-d input images from a single 2-D image where the first 4 elements on each row are da,dx,dy,flip",default=False)
+	parser.add_argument("--normavg",action="store_true",help="Normalize averages",default=False)
+	parser.add_argument("--clsmx",type=str,default=None,help="Standard EMAN2 output suitable for use with e2classaverage, etc.")
+	parser.add_argument("--clsfiles","-C",action="store_true",help="Write EMAN 1 style cls files with members of each class",default=False)
+	parser.add_argument("--listout","-L",action="store_true",help="Output the results to 'class.list",default=False)
+	parser.add_argument("--mininclass",type=int,help="Try to eliminate classes with fewer than specified members. Default=2",default=2)
+	parser.add_argument("--original","-O",type=str,help="If the input stack was derived from another stack, you can provide the name of the original stack here",default=None)
+	parser.add_argument("--exclude", type=str,default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude.")
+	parser.add_argument("--minchange", type=int,default=-1,help="Minimum number of particles that change group before deicding to terminate. Default = len(data)/(#cls*25)")
+	parser.add_argument("--fastseed", action="store_true", default=False,help="Will seed the k-means loop quickly, but may produce lest consistent results.")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")

@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 from EMAN2 import *
-from optparse import OptionParser
 import random
 from math import *
 import os
@@ -9,14 +8,15 @@ import sys
 from e2simmx import cmponetomany
 from reconstruction import recons3d_4nn
 import numpy # import numpy namespace
+
 def main():
   progname=os.path.basename(sys.argv[0])
-  usage="""%prog [options] blablabla"""
-  parser=OptionParser(usage=usage,version=EMANVERSION)
-  parser.add_option("--input",dest="input",default=None,type="string",help="particles data") #need this input as particles set 
-  parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-  parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness") 
-  parser.add_option("--parallel",type="string",help="Parallelism string",default=None)
+  usage="""prog [options] blablabla"""
+  parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+  parser.add_argument("--input",dest="input",default=None,type=str,help="particles data") #need this input as particles set 
+  parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+  parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness") 
+  parser.add_argument("--parallel",type=str,help="Parallelism string",default=None)
  
   global options
   (options,args)=parser.parse_args()

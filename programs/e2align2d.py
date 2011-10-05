@@ -32,7 +32,6 @@
 #
 
 from EMAN2 import *
-from optparse import OptionParser
 import math
 from copy import deepcopy
 import os
@@ -41,24 +40,24 @@ from random import choice
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog <input> [options]
+	usage = """prog <input> [options]
 
 	Aligns a stack of particle images to a reference. If output is not specified, input file
 	is overwritten with the aligned particles.
 	"""
 		
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_option("--output", type="string", help="The name of the output class stack", default=None)
-	parser.add_option("--ref", type="string", help="Reference imageimage to use for alignment. Required", default=None)
-	parser.add_option("--refn", type="int", help="Number of the reference image in 'ref'. Default=0", default=0)
-	parser.add_option("--align",type="string",help="This is the aligner used to align particles to the previous class average. Default is None.", default="rotate_translate_flip")
-	parser.add_option("--aligncmp",type="string",help="The comparitor used for the --align aligner. Default is dot.",default="ccc")
-	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment. This is usually the \'refine\' aligner.", default=None)
-	parser.add_option("--raligncmp",type="string",help="The comparitor used by the second stage aligner.",default="ccc")
-	parser.add_option("--cmp",type="string",help="The comparitor used to generate quality scores for the purpose of particle exclusion in classes, strongly linked to the keep argument.", default=None)
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n",type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--output", type=str, help="The name of the output class stack", default=None)
+	parser.add_argument("--ref", type=str, help="Reference imageimage to use for alignment. Required", default=None)
+	parser.add_argument("--refn", type=int, help="Number of the reference image in 'ref'. Default=0", default=0)
+	parser.add_argument("--align",type=str,help="This is the aligner used to align particles to the previous class average. Default is None.", default="rotate_translate_flip")
+	parser.add_argument("--aligncmp",type=str,help="The comparitor used for the --align aligner. Default is dot.",default="ccc")
+	parser.add_argument("--ralign",type=str,help="This is the second stage aligner used to refine the first alignment. This is usually the \'refine\' aligner.", default=None)
+	parser.add_argument("--raligncmp",type=str,help="The comparitor used by the second stage aligner.",default="ccc")
+	parser.add_argument("--cmp",type=str,help="The comparitor used to generate quality scores for the purpose of particle exclusion in classes, strongly linked to the keep argument.", default=None)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	
 	(options, args) = parser.parse_args()

@@ -34,7 +34,6 @@
 # e2skelpath.py  09/01/2006  Steven Ludtke, Matt Baker
 
 from EMAN2 import *
-from optparse import OptionParser
 from math import *
 import time
 import os,re
@@ -45,19 +44,19 @@ pl=()
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <skeleton map> <dejavu file> <output>
+	usage = """prog [options] <skeleton map> <dejavu file> <output>
 
 	Experimental program for tracing paths in skeletonized density maps. Contact mbaker@bcm.edu for more details.
 	
 """
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-# 	parser.add_option("--maxbad","-M",type="int",help="Maximumum number of unassigned helices",default=2)
-# 	parser.add_option("--minhelix","-H",type="int",help="Minimum residues in a helix",default=6)
- 	parser.add_option("--apix","-P",type="float",help="A/Pixel",default=1.0)
- 	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
- 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+# 	parser.add_argument("--maxbad","-M",type=int,help="Maximumum number of unassigned helices",default=2)
+# 	parser.add_argument("--minhelix","-H",type=int,help="Minimum residues in a helix",default=6)
+ 	parser.add_argument("--apix","-P",type=float,help="A/Pixel",default=1.0)
+ 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+ 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")

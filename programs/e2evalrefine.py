@@ -34,27 +34,26 @@
 
 from EMAN2 import *
 from EMAN2db import db_open_dict
-from optparse import OptionParser
 from math import *
 import os
 import sys
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] 
+	usage = """prog [options] 
 	This program is still in its early stages. Eventually will provide a variety of tools for 
 	evaluating a single particle reconstruction refinement run. Currently only provides a 
 	single option to compare the parameters used for different refinement runs in a single project."""
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 		
-	parser.add_option("--parmcmp",  default=False, action="store_true",help="Compare parameters used in different refinement rounds")
-	parser.add_option("--parmpair",default=None,type="string",help="Specify iter,iter to compare the parameters used between 2 itertions.")
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--parmcmp",  default=False, action="store_true",help="Compare parameters used in different refinement rounds")
+	parser.add_argument("--parmpair",default=None,type=str,help="Specify iter,iter to compare the parameters used between 2 itertions.")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	#options associated with e2refine.py
-	#parser.add_option("--iter", dest = "iter", type = "int", default=0, help = "The total number of refinement iterations to perform")
-	#parser.add_option("--check", "-c", dest="check", default=False, action="store_true",help="Checks the contents of the current directory to verify that e2refine.py command will work - checks for the existence of the necessary starting files and checks their dimensions. Performs no work ")
-	#parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	#parser.add_option("--input", dest="input", default=None,type="string", help="The name of the image containing the particle data")
+	#parser.add_argument("--iter", dest = "iter", type = int, default=0, help = "The total number of refinement iterations to perform")
+	#parser.add_argument("--check", "-c", dest="check", default=False, action="store_true",help="Checks the contents of the current directory to verify that e2refine.py command will work - checks for the existence of the necessary starting files and checks their dimensions. Performs no work ")
+	#parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	#parser.add_argument("--input", dest="input", default=None,type=str, help="The name of the image containing the particle data")
 
 	(options, args) = parser.parse_args()
 

@@ -35,7 +35,6 @@
 # uses Chao Yang's new PCA implementation in Analyzer 
 
 from EMAN2 import *
-from optparse import OptionParser
 from math import *
 import time
 import os
@@ -43,7 +42,7 @@ import sys
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <input stack> <output basis>
+	usage = """prog [options] <input stack> <output basis>
 At present, this program performs only Principle Components Analysis (PCA),
 but it may be expanded to include other Multivariate Statistical Analysis (MSA)
 algorithms.
@@ -62,22 +61,22 @@ calculation. The mean image is stored as the first image in the output
 file, though it is not part of the orthonormal basis when
 handled this way."""
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--nbasis","-n",type="int",help="Number of basis images to generate.",default=20)
-	parser.add_option("--maskfile","-M",type="string",help="File containing a mask defining the pixels to include in the Eigenimages")
-	parser.add_option("--mask",type="int",help="Mask radius",default=-2)
-	parser.add_option("--varimax",action="store_true",help="Perform a 'rotation' of the basis set to produce a varimax basis",default=False)
-#	parser.add_option("--lowmem","-L",action="store_true",help="Try to use less memory, with a possible speed penalty",default=False)
-	parser.add_option("--simmx",type="string",help="Will use transformations from simmx on each particle prior to analysis")
-	parser.add_option("--normalize",action="store_true",help="Perform a careful normalization of input images before MSA. Otherwise normalization is not modified until after mean subtraction.",default=False)
-	parser.add_option("--gsl",action="store_true",help="Use gsl SVD algorithm",default=False)
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--nbasis","-n",type=int,help="Number of basis images to generate.",default=20)
+	parser.add_argument("--maskfile","-M",type=str,help="File containing a mask defining the pixels to include in the Eigenimages")
+	parser.add_argument("--mask",type=int,help="Mask radius",default=-2)
+	parser.add_argument("--varimax",action="store_true",help="Perform a 'rotation' of the basis set to produce a varimax basis",default=False)
+#	parser.add_argument("--lowmem","-L",action="store_true",help="Try to use less memory, with a possible speed penalty",default=False)
+	parser.add_argument("--simmx",type=str,help="Will use transformations from simmx on each particle prior to analysis")
+	parser.add_argument("--normalize",action="store_true",help="Perform a careful normalization of input images before MSA. Otherwise normalization is not modified until after mean subtraction.",default=False)
+	parser.add_argument("--gsl",action="store_true",help="Use gsl SVD algorithm",default=False)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
-	#parser.add_option("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
-	#parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)
-	#parser.add_option("--dbin","-D",type="string",help="Filename to read an existing box database from",default=None)
+	#parser.add_argument("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
+	#parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=-1)
+	#parser.add_argument("--dbin","-D",type=str,help="Filename to read an existing box database from",default=None)
 	
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output filenames required")

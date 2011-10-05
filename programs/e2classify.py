@@ -31,7 +31,6 @@
 #
 #
 
-from optparse import OptionParser
 from math import *
 import os
 import sys
@@ -41,7 +40,7 @@ from EMAN2 import *
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog <simMatrixIn> <classMatrixOut> [options]
+	usage = """prog <simMatrixIn> <classMatrixOut> [options]
 
 	This program analyzes a similarity matrix as produced by e2simmx.py and produces a classification matrix mapping class
 	membership for each particle, which can in-turn be used with e2classaverage.py.
@@ -56,13 +55,13 @@ def main():
 	See the wiki for more complete documentation of the files.
 	"""
 	
-	parser = OptionParser(usage=usage,version=EMANVERSION)
-	parser.add_option("--sep", type="int", help="The number of classes a particle can contribute towards (default is 1)", default=1)
-	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n",type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_option("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
-	parser.add_option("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+	parser.add_argument("--sep", type=int, help="The number of classes a particle can contribute towards (default is 1)", default=1)
+	parser.add_argument("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
+	parser.add_argument("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
 	

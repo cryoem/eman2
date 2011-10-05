@@ -36,7 +36,6 @@
 
 from EMAN2 import *
 import sys
-from optparse import OptionParser
 import os.path
 
 
@@ -49,18 +48,18 @@ def main(args):
 	WARNING: Experimental progam. Email sludtke@bcm.edu for more info.
 
 	"""
-	parser = OptionParser(usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_option("--nkeep", metavar="N", type="int", help="Number of particles to keep")
-	parser.add_option("--sym", metavar="Cn", type="string", help="Symmetry to search for")
+	parser.add_argument("--nkeep", metavar="N", type=int, help="Number of particles to keep")
+	parser.add_argument("--sym", metavar="Cn", type=str, help="Symmetry to search for")
 
-	parser.add_option("--mirror", metavar="outputfile", type="string", help="search for particles with mirror symmetry and write them out to outputfile.")
-	parser.add_option("--rtp", action="store_true", help="make a rotational footprint")
+	parser.add_argument("--mirror", metavar="outputfile", type=str, help="search for particles with mirror symmetry and write them out to outputfile.")
+	parser.add_argument("--rtp", action="store_true", help="make a rotational footprint")
 
-	parser.add_option("--mask", metavar="rad", type="int", help="Mask radius")
-	parser.add_option("--imask", metavar="rad", type="int", help="Inside mask radius")
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--mask", metavar="rad", type=int, help="Mask radius")
+	parser.add_argument("--imask", metavar="rad", type=int, help="Inside mask radius")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 

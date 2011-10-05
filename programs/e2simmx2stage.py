@@ -35,7 +35,6 @@
 # This program computes a similarity matrix between two sets of images
 
 from EMAN2 import *
-from optparse import OptionParser
 from math import *
 import os
 import sys
@@ -48,31 +47,31 @@ PART_FILE_ATTR = "particle_file" # this attribute important to e2simmxxplor
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <c input> <r input> <output> <ref simmx> <stg1 refs> <stg1 simmx>
+	usage = """prog [options] <c input> <r input> <output> <ref simmx> <stg1 refs> <stg1 simmx>
 	Computes a similarity matrix between c-input (col - projections) and r-input (row - particles) stacks of 2-D images. Unlike
 	e2simmx.py, this will perform classification in two stages, first a coarse classification, then a local classification. Particle
 	association for coarse classification, however, is not assigned based on Euler angle, but rather on mutual similarity in a subsampled
 	reference-image self-classification. Output is the same as e2simmx, with coarsely sampled results inserted in unsampled local regions.
 	When used for classification, c input is the references and r input are the particles."""
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--align",type="string",help="The name of an 'aligner' to use prior to comparing the images", default=None)
-	parser.add_option("--aligncmp",type="string",help="Name of the aligner along with its construction arguments",default="dot")
-	parser.add_option("--ralign",type="string",help="The name and parameters of the second stage aligner which refines the results of the first alignment", default=None)
-	parser.add_option("--raligncmp",type="string",help="The name and parameters of the comparitor used by the second stage aligner. Default is dot.",default="dot")
-	parser.add_option("--cmp",type="string",help="The name of a 'cmp' to be used in comparing the aligned images", default="dot:normalize=1")
-	parser.add_option("--mask",type="string",help="File containing a single mask image to apply before similarity comparison",default=None)
-	parser.add_option("--saveali",action="store_true",help="Save alignment values, output is c x r x 4 instead of c x r x 1",default=False)
-	parser.add_option("--prefilt",action="store_true",help="Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison",default=False)
-	parser.add_option("--verbose", "-v", dest="verbose", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-#	parser.add_option("--lowmem",action="store_true",help="prevent the bulk reading of the reference images - this will save meclen,mory but potentially increase CPU time",default=False)
-	parser.add_option("--exclude", type="string",default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude. Matrix elements will still be created, but will be zeroed.")
-	parser.add_option("--shrink", type="int",default=None,help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. This will speed the process up but may change classifications.")
-	parser.add_option("--shrinks1", type="int",help="Shrinking performed for first stage classification, default=2",default=2)
-	parser.add_option("--finalstage",action="store_true",help="Assume that existing preliminary particle classifications are correct, and only recompute final local orientations",default=False)
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_option("--parallel",type="string",help="Parallelism string",default="thread:1")
-	parser.add_option("--force", "-f",dest="force",default=True, action="store_true",help="Deprecated. Value ignored")
+	parser.add_argument("--align",type=str,help="The name of an 'aligner' to use prior to comparing the images", default=None)
+	parser.add_argument("--aligncmp",type=str,help="Name of the aligner along with its construction arguments",default="dot")
+	parser.add_argument("--ralign",type=str,help="The name and parameters of the second stage aligner which refines the results of the first alignment", default=None)
+	parser.add_argument("--raligncmp",type=str,help="The name and parameters of the comparitor used by the second stage aligner. Default is dot.",default="dot")
+	parser.add_argument("--cmp",type=str,help="The name of a 'cmp' to be used in comparing the aligned images", default="dot:normalize=1")
+	parser.add_argument("--mask",type=str,help="File containing a single mask image to apply before similarity comparison",default=None)
+	parser.add_argument("--saveali",action="store_true",help="Save alignment values, output is c x r x 4 instead of c x r x 1",default=False)
+	parser.add_argument("--prefilt",action="store_true",help="Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison",default=False)
+	parser.add_argument("--verbose", "-v", dest="verbose", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+#	parser.add_argument("--lowmem",action="store_true",help="prevent the bulk reading of the reference images - this will save meclen,mory but potentially increase CPU time",default=False)
+	parser.add_argument("--exclude", type=str,default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude. Matrix elements will still be created, but will be zeroed.")
+	parser.add_argument("--shrink", type=int,default=None,help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. This will speed the process up but may change classifications.")
+	parser.add_argument("--shrinks1", type=int,help="Shrinking performed for first stage classification, default=2",default=2)
+	parser.add_argument("--finalstage",action="store_true",help="Assume that existing preliminary particle classifications are correct, and only recompute final local orientations",default=False)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--parallel",type=str,help="Parallelism string",default="thread:1")
+	parser.add_argument("--force", "-f",dest="force",default=True, action="store_true",help="Deprecated. Value ignored")
 
 	(options, args) = parser.parse_args()
 	

@@ -33,7 +33,6 @@
 
 from EMAN2 import *
 from EMAN2db import db_open_dict, db_close_dict, db_check_dict, db_list_dicts
-from optparse import OptionParser
 from OpenGL import GL,GLUT
 from math import *
 import os
@@ -66,20 +65,20 @@ envelopes=[]		# simplex minimizer needs to use a global at the moment
 def main():
 	global debug,logid
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <single image file> ...
+	usage = """prog [options] <single image file> ...
 
 This program will allow you to evaluate an individual scanned micrograph or CCD frame, by looking at its
 power spectrum in various ways."""
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--gui",action="store_true",help="This is a GUI-only program. This option is provided for self-consistency",default=True)
-	parser.add_option("--apix",type="float",help="Angstroms per pixel for all images",default=None)
-	parser.add_option("--voltage",type="float",help="Microscope voltage in KV",default=None)
-	parser.add_option("--cs",type="float",help="Microscope Cs (spherical aberation)",default=None)
-	parser.add_option("--ac",type="float",help="Amplitude contrast (percentage, default=10)",default=10.0)
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--gui",action="store_true",help="This is a GUI-only program. This option is provided for self-consistency",default=True)
+	parser.add_argument("--apix",type=float,help="Angstroms per pixel for all images",default=None)
+	parser.add_argument("--voltage",type=float,help="Microscope voltage in KV",default=None)
+	parser.add_argument("--cs",type=float,help="Microscope Cs (spherical aberation)",default=None)
+	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage, default=10)",default=10.0)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 	

@@ -37,13 +37,12 @@
 from EMAN2 import *
 from math import *
 from bisect import insort
-from optparse import OptionParser
 from random import random
 
 def main() :
 	global threshold
 	
-        usage = """%prog [options] <input> <output>
+        usage = """prog [options] <input> <output>
 
 
 	This program attempts to extract one subunit from a volume by starting at
@@ -51,13 +50,13 @@ def main() :
 """
 
 	
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--sym", "-S", type="string", help="Symmetry", default="c4")
-	parser.add_option("--thr", "-T", type="float", help="Isosurface threshold", default=1.0)
-	parser.add_option("--random","-R",action="store_true", help="Randomize the starting location", default=False)
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--sym", "-S", type=str, help="Symmetry", default="c4")
+	parser.add_argument("--thr", "-T", type=float, help="Isosurface threshold", default=1.0)
+	parser.add_argument("--random","-R",action="store_true", help="Randomize the starting location", default=False)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	print """WARNING: Experimental program. Contact sludtke@bcm.edu before relying on its results."""
 	

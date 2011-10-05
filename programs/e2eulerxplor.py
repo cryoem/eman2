@@ -44,7 +44,6 @@ from emglobjects import EM3DModel
 from emimage2d import EMImage2DWidget
 from emimage3dsym import EM3DSymModel, EMSymInspector, EMSymViewerWidget
 from emimagemx import EMImageMXWidget, EMLightWeightParticleCache
-from optparse import OptionParser
 import os
 import sys
 import weakref
@@ -66,7 +65,7 @@ def get_eulers_from(filename):
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog 
+	usage = """prog 
 	
 	Presents a graphical representation of the orientation distribution of the particles in a single particle
 	reconstruction. This is displayed as a single asymmetric unit on a sphere, with cylinders of varying height
@@ -78,11 +77,11 @@ def main():
 
 """
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_option("--eulerdata", "-e", type="string",help="File for Eulerdata, Ryan style, if none is given, data is read from the DB.",default=None)
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--eulerdata", "-e", type=str,help="File for Eulerdata, Ryan style, if none is given, data is read from the DB.",default=None)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	global options
 	(options, args) = parser.parse_args()

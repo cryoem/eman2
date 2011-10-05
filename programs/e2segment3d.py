@@ -32,7 +32,6 @@
 #
 
 from EMAN2 import *
-from optparse import OptionParser
 import random
 from math import *
 import os
@@ -42,22 +41,22 @@ import traceback
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog <input volume> [options] 
+	usage = """prog <input volume> [options] 
 	This program provides access to various algorithms for segmenting a 3-D volume into multiple pieces automatically.
 	Note that you MUST have sufficient RAM to hold at least two copies of the volume in memory. Some segmentation algorithms
 	may require more. The actual segmentation is performed using one of the segment.* processors. 'e2help.py processors |grep segment'
 	for more information (-v 1 will give even more)."""
 	
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_option("--process", metavar="processor_name:param1=value1:param2=value2", type="string",default="segment.kmeans:ampweight=1:nseg=50:thr=0.8",
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--process", metavar="processor_name:param1=value1:param2=value2", type=str,default="segment.kmeans:ampweight=1:nseg=50:thr=0.8",
 						help="The name and parameters of a processor to perform the segmentation. 'e2help.py processors -v' for a full list. Default=segment.kmeans:ampweight=1:nseg=50:thr=0.8 ")
-	parser.add_option("--output", default=None, type="string",help="Name of output file for segmented volume")
-	parser.add_option("--chimeraout", default=None, type="string",help="Name of file to write center of segments in UCSF Chimera marker format.")
-	parser.add_option("--pdbout", default=None, type="string",help="Name of file to write center of segments in PDB format.")
-	parser.add_option("--txtout", default=None, type="string",help="Name of file to write center of segments in text format (n\tx\ty\tz, with coordinates in pixels, 0,0,0 in the corner)")
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--output", default=None, type=str,help="Name of output file for segmented volume")
+	parser.add_argument("--chimeraout", default=None, type=str,help="Name of file to write center of segments in UCSF Chimera marker format.")
+	parser.add_argument("--pdbout", default=None, type=str,help="Name of file to write center of segments in PDB format.")
+	parser.add_argument("--txtout", default=None, type=str,help="Name of file to write center of segments in text format (n\tx\ty\tz, with coordinates in pixels, 0,0,0 in the corner)")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	(options, args) = parser.parse_args()
 

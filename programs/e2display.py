@@ -31,11 +31,10 @@
 #
 #
 
-from EMAN2 import EMANVERSION,E2init,E2end,EMData,get_file_tag,file_exists
+from EMAN2 import EMANVERSION,E2init,E2end,EMData,get_file_tag,file_exists,EMArgumentParser
 from emimage import EMImageWidget,EMWidgetFromFile
 
 import sys
-from optparse import OptionParser
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU,GLUT
@@ -46,7 +45,7 @@ import EMAN2db
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <image file> ...
+	usage = """prog [options] <image file> ...
 	
 	This program can be used to visualize most files used in EMAN2. Running it without arguments
 	will open a browser window with more flexible functionality than the command-line.
@@ -54,17 +53,17 @@ def main():
 """
 	global app,win,options
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--classmx",type="string",help="<classmx>,<#> Show particles in one class from a classification matrix. Pass raw particle file as first argument to command.")
-	parser.add_option("--classes",type="string",help="<rawptcl>,<classmx> Show particles associated class-averages")
-	parser.add_option("--singleimage",action="store_true",default=False,help="Display a stack in a single image view")
-	parser.add_option("--plot",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 2-D")
-	parser.add_option("--plot3",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 3-D")
-	parser.add_option("--fullrange",action="store_true",default=False,help="A specialized flag that disables auto contrast for the display of particles stacks and 2D images only.")
-	parser.add_option("--newwidget",action="store_true",default=False,help="Use the new 3D widgetD. Highly recommended!!!!")
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--classmx",type=str,help="<classmx>,<#> Show particles in one class from a classification matrix. Pass raw particle file as first argument to command.")
+	parser.add_argument("--classes",type=str,help="<rawptcl>,<classmx> Show particles associated class-averages")
+	parser.add_argument("--singleimage",action="store_true",default=False,help="Display a stack in a single image view")
+	parser.add_argument("--plot",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 2-D")
+	parser.add_argument("--plot3",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 3-D")
+	parser.add_argument("--fullrange",action="store_true",default=False,help="A specialized flag that disables auto contrast for the display of particles stacks and 2D images only.")
+	parser.add_argument("--newwidget",action="store_true",default=False,help="Use the new 3D widgetD. Highly recommended!!!!")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 	

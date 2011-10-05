@@ -44,18 +44,17 @@ from os import system
 from os import unlink
 from sys import argv
 from EMAN2 import *
-from optparse import OptionParser
 from EMAN2db import db_open_dict
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog <classes file> <output> [options]
+	usage = """prog <classes file> <output> [options]
 	
 Extracts particles associated with specific class-averages and combines them into a new stack/vstack"""
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
-	parser.add_option("--vstack",action="store_true",help="Will output to a bdb virtual stack instead of copying the image data. Input images must have been BDB for this to work.",default=False)
-	parser.add_option("--classes",type="string",help="Comma separated list of class-numbers to extract particles for",default=None)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+	parser.add_argument("--vstack",action="store_true",help="Will output to a bdb virtual stack instead of copying the image data. Input images must have been BDB for this to work.",default=False)
+	parser.add_argument("--classes",type=str,help="Comma separated list of class-numbers to extract particles for",default=None)
 
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Please provide a file containing class-averages and an output file")

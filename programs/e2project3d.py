@@ -39,7 +39,6 @@
 import sys, math, os, random
 from EMAN2 import *
 from EMAN2db import db_check_dict, EMTask
-from optparse import OptionParser
 deg2rad = math.pi / 180.0
 rad2deg = 180.0 / math.pi
 DEBUG = False
@@ -219,30 +218,30 @@ class EMProject3DTaskDC(EMTask):
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog <imagefile> [<imagefile>] [imagefile] [options] 
+	usage = """prog <imagefile> [<imagefile>] [imagefile] [options] 
 	Generates 2-D projections of a 3-D object or multiple 3-D objects. Various options for specifiying distribution of orientations
 	and other options.
 	
 	Typical usage:
 	e2project3d.py map.mrc --outfile=projections.hdf --orientgen=eman:delta=5 --sym=c3 --projector=standard --verbose=2"""
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_option("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos. If multiple input models are specified, multiple comma-separated symmetries may also be specified.",default="c1")
-	parser.add_option("--orientgen", dest="orientgen", help="The orientation generator to use. See e2help.py orientgen. Example: --orientgen=eman:delta=3.0:inc_mirror=0:perturb=1")
-	parser.add_option("--outfile", dest = "outfile", default = "e2proj.hdf", help = "Output file. Default is 'e2proj.img'")
+	parser.add_argument("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos. If multiple input models are specified, multiple comma-separated symmetries may also be specified.",default="c1")
+	parser.add_argument("--orientgen", dest="orientgen", help="The orientation generator to use. See e2help.py orientgen. Example: --orientgen=eman:delta=3.0:inc_mirror=0:perturb=1")
+	parser.add_argument("--outfile", dest = "outfile", default = "e2proj.hdf", help = "Output file. Default is 'e2proj.img'")
 	# add --perturb
-	parser.add_option("--smear", dest = "smear", type = "int", default=0,help="Used in conjunction with --phitoo, this will rotationally smear between phi steps. The user must specify the amount of smearing (typically 2-10)")
-	parser.add_option("--projector", dest = "projector", default = "standard",help = "Projector to use")
-	#parser.add_option("--verifymirror",action="store_true",help="Used for testing the accuracy of mirror projects",default=False)
-	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
-	parser.add_option("--append", "-a",dest="append",default=False, action="store_true",help="Append to the output file")
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_option("--check","-c", default=False, action="store_true",help="Checks to see if the command line arguments will work.")
-	parser.add_option("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
-	parser.add_option("--postprocess", metavar="processor_name(param1=value1:param2=value2)", type="string", action="append", help="postprocessor to be applied to each projection. There can be more than one postprocessor, and they are applied in the order in which they are specified. See e2help.py processors for a complete list of available processors.")
-	parser.add_option("--cuda",action="store_true", help="Use CUDA for the projections.",default=False)
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_option("--parallel",help="Parallelism string",default=None,type="string")
+	parser.add_argument("--smear", dest = "smear", type = int, default=0,help="Used in conjunction with --phitoo, this will rotationally smear between phi steps. The user must specify the amount of smearing (typically 2-10)")
+	parser.add_argument("--projector", dest = "projector", default = "standard",help = "Projector to use")
+	#parser.add_argument("--verifymirror",action="store_true",help="Used for testing the accuracy of mirror projects",default=False)
+	parser.add_argument("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
+	parser.add_argument("--append", "-a",dest="append",default=False, action="store_true",help="Append to the output file")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--check","-c", default=False, action="store_true",help="Checks to see if the command line arguments will work.")
+	parser.add_argument("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
+	parser.add_argument("--postprocess", metavar="processor_name(param1=value1:param2=value2)", type=str, action="append", help="postprocessor to be applied to each projection. There can be more than one postprocessor, and they are applied in the order in which they are specified. See e2help.py processors for a complete list of available processors.")
+	parser.add_argument("--cuda",action="store_true", help="Use CUDA for the projections.",default=False)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--parallel",help="Parallelism string",default=None,type=str)
 
 	(options, args) = parser.parse_args()
 	

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 from EMAN2 import *
-from optparse import OptionParser
 from math import *
 import time
 import os
@@ -14,14 +13,14 @@ resDefs={'ALA':2.0, 'ARG':7.0, 'ASN':4.0, 'ASP':4.0, 'CYS':3.0, 'GLU':5.0, 'GLN'
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <volume input> <PDB input> <apix> <threshold>
+	usage = """prog [options] <volume input> <PDB input> <apix> <threshold>
 	
 Evaluates density at C-alpha positions from a PDB model
 	"""
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 	if len(args)!=4 : parser.error("Input MRC, Input PDB, apix and threshold required")

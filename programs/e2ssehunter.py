@@ -32,7 +32,6 @@
 #
 
 from EMAN2 import *
-from optparse import OptionParser
 from math import *
 import os
 import sys
@@ -40,23 +39,23 @@ import numpy
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <volume file> <Angstroms per pixel> <resolution> <threshold>
+	usage = """prog [options] <volume file> <Angstroms per pixel> <resolution> <threshold>
 	
 	WARNING: This program is still under development
 
 	Identifies alpha helices and beta sheets in maps at subnanometer resolutions"""
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
-	parser.add_option("--atoms", "-A", type="string", help="pseudoatoms file", default="none")
-	parser.add_option("--atomswt", "-P", type="float", help="pseudoatom weight", default=1.0)
-	parser.add_option("--coeff","-C", type="string",help="helix correlation file",default="none")
-	parser.add_option("--coeffwt","-H", type="float",help="helix correlation weight",default=1.0)
-	parser.add_option("--skeleton","-S", type="string",help="skeleton file",default="none")
-#	parser.add_option("--sketype","-T", type="string",help="skeleton type",default="none")
-	parser.add_option("--skeletonwt","-W", type="float",help="skeleton weight",default=1.0)
-	parser.add_option("--helixlength","-L", type="float",help="helix length om angstroms",default=16.2)
-	parser.add_option("--da","-D", type="float",help="helix angular search step",default=5.0)
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+	parser.add_argument("--atoms", "-A", type=str, help="pseudoatoms file", default="none")
+	parser.add_argument("--atomswt", "-P", type=float, help="pseudoatom weight", default=1.0)
+	parser.add_argument("--coeff","-C", type=str,help="helix correlation file",default="none")
+	parser.add_argument("--coeffwt","-H", type=float,help="helix correlation weight",default=1.0)
+	parser.add_argument("--skeleton","-S", type=str,help="skeleton file",default="none")
+#	parser.add_argument("--sketype","-T", type=str,help="skeleton type",default="none")
+	parser.add_argument("--skeletonwt","-W", type=float,help="skeleton weight",default=1.0)
+	parser.add_argument("--helixlength","-L", type=float,help="helix length om angstroms",default=16.2)
+	parser.add_argument("--da","-D", type=float,help="helix angular search step",default=5.0)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	(options, args) = parser.parse_args()
 		
 	if len(args) < 4 : 

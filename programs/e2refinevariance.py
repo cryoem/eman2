@@ -31,67 +31,66 @@
 #
 #
 from EMAN2 import *
-from optparse import OptionParser
 from math import *
 import os
 import sys
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] 
+	usage = """prog [options] 
 	This program will compute a variance map, using the results from an iteration of e2refine.py as a basis
 	for the computation. It uses a bootstrap resampling technique, where random particles are excluded from
 	the model with replacement. This is repeated N times, producing a new 3-D model each time. The variance of
 	the 3-D models is then computed. Note that this program requires a fair bit of memory. If running the entire program
 	on a single machine, you will need enough memory to hold ~5 copies of a 3-D map + whatever is required
 	by e2classaverage.py. It may be best-used on downsampled data (also for speed)."""
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 		
 	#options associated with e2refinevariance.py
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_option("--input", dest="input", default=None,type="string", help="The name of the image containing the particle data")
-	parser.add_option("--usefilt", dest="usefilt", type="string",default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used in projection matching routines, and elsewhere.")
-	parser.add_option("--path", default=None, type="string",help="The name of a directory where results are placed. If unspecified will generate one automatically of type refine_??.")
-	parser.add_option("--mass", default=None, type="float",help="The mass of the particle in kilodaltons, used to run normalize.bymass. If unspecified nothing happens. Requires the --apix argument.")
-	parser.add_option("--apix", default=None, type="float",help="The angstrom per pixel of the input particles. This argument is required if you specify the --mass argument. If unspecified, the convergence plot is generated using either the project apix, or if not an apix of 1.")
-	parser.add_option("--automask3d", default=None, type="string",help="The 5 parameters of the mask.auto3d processor, applied after 3D reconstruction. These paramaters are, in order, isosurface threshold,radius,nshells, ngaussshells and nmaxseed. From e2proc3d.py you could achieve the same thing using --process=mask.auto3d:threshold=1.1:radius=30:nmaxseed=10:nshells=5:ngaussshells=5.")
-	parser.add_option("--nmodels", type="int", help="The number of different bootstrap models to generate for the variance computation. Default=10", default=10)
-	parser.add_option("--iteration", type="int", help="The refinement iteration to use as a basis for the variance map", default=-1)
-	parser.add_option("--volfiles",action="store_true",help="This will bypass the construction of the individual resampled models, and use files previously generated with the --keep3d options",default=False)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--input", dest="input", default=None,type=str, help="The name of the image containing the particle data")
+	parser.add_argument("--usefilt", dest="usefilt", type=str,default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used in projection matching routines, and elsewhere.")
+	parser.add_argument("--path", default=None, type=str,help="The name of a directory where results are placed. If unspecified will generate one automatically of type refine_??.")
+	parser.add_argument("--mass", default=None, type=float,help="The mass of the particle in kilodaltons, used to run normalize.bymass. If unspecified nothing happens. Requires the --apix argument.")
+	parser.add_argument("--apix", default=None, type=float,help="The angstrom per pixel of the input particles. This argument is required if you specify the --mass argument. If unspecified, the convergence plot is generated using either the project apix, or if not an apix of 1.")
+	parser.add_argument("--automask3d", default=None, type=str,help="The 5 parameters of the mask.auto3d processor, applied after 3D reconstruction. These paramaters are, in order, isosurface threshold,radius,nshells, ngaussshells and nmaxseed. From e2proc3d.py you could achieve the same thing using --process=mask.auto3d:threshold=1.1:radius=30:nmaxseed=10:nshells=5:ngaussshells=5.")
+	parser.add_argument("--nmodels", type=int, help="The number of different bootstrap models to generate for the variance computation. Default=10", default=10)
+	parser.add_argument("--iteration", type=int, help="The refinement iteration to use as a basis for the variance map", default=-1)
+	parser.add_argument("--volfiles",action="store_true",help="This will bypass the construction of the individual resampled models, and use files previously generated with the --keep3d options",default=False)
 
 	# options associated with e2project3d.py
-	parser.add_option("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos",default='c1')
+	parser.add_argument("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos",default='c1')
 		
 	# options associated with e2classaverage.py
-	parser.add_option("--classkeep",type="float",help="The fraction of particles to keep in each class, based on the similarity score generated by the --cmp argument.")
-	parser.add_option("--classkeepsig", default=False, action="store_true", help="Change the keep (\'--keep\') criterion from fraction-based to sigma-based.")
-	parser.add_option("--classiter", type="int", help="The number of iterations to perform. Default is 1.", default=3)
-	parser.add_option("--classalign",type="string",help="If doing more than one iteration, this is the name and parameters of the 'aligner' used to align particles to the previous class average.", default="rotate_translate_flip")
-	parser.add_option("--classaligncmp",type="string",help="This is the name and parameters of the comparitor used by the fist stage aligner  Default is dot.",default="phase")
-	parser.add_option("--classralign",type="string",help="The second stage aligner which refines the results of the first alignment in class averaging. Default is None.", default=None)
-	parser.add_option("--classraligncmp",type="string",help="The comparitor used by the second stage aligner in class averageing. Default is dot:normalize=1.",default="dot:normalize=1")
-	parser.add_option("--classaverager",type="string",help="The averager used to generate the class averages. Default is \'mean\'.",default="mean")
-	parser.add_option("--classcmp",type="string",help="The name and parameters of the comparitor used to generate similarity scores, when class averaging. Default is \'dot:normalize=1\'", default="dot:normalize=1")
-	parser.add_option("--classnormproc",type="string",default="normalize.edgemean",help="Normalization applied during class averaging")
-	parser.add_option("--classrefsf",default=False, action="store_true", help="Use the setsfref option in class averaging to produce better filtered averages.")
-	parser.add_option("--prefilt",action="store_true",help="Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison",default=False)
+	parser.add_argument("--classkeep",type=float,help="The fraction of particles to keep in each class, based on the similarity score generated by the --cmp argument.")
+	parser.add_argument("--classkeepsig", default=False, action="store_true", help="Change the keep (\'--keep\') criterion from fraction-based to sigma-based.")
+	parser.add_argument("--classiter", type=int, help="The number of iterations to perform. Default is 1.", default=3)
+	parser.add_argument("--classalign",type=str,help="If doing more than one iteration, this is the name and parameters of the 'aligner' used to align particles to the previous class average.", default="rotate_translate_flip")
+	parser.add_argument("--classaligncmp",type=str,help="This is the name and parameters of the comparitor used by the fist stage aligner  Default is dot.",default="phase")
+	parser.add_argument("--classralign",type=str,help="The second stage aligner which refines the results of the first alignment in class averaging. Default is None.", default=None)
+	parser.add_argument("--classraligncmp",type=str,help="The comparitor used by the second stage aligner in class averageing. Default is dot:normalize=1.",default="dot:normalize=1")
+	parser.add_argument("--classaverager",type=str,help="The averager used to generate the class averages. Default is \'mean\'.",default="mean")
+	parser.add_argument("--classcmp",type=str,help="The name and parameters of the comparitor used to generate similarity scores, when class averaging. Default is \'dot:normalize=1\'", default="dot:normalize=1")
+	parser.add_argument("--classnormproc",type=str,default="normalize.edgemean",help="Normalization applied during class averaging")
+	parser.add_argument("--classrefsf",default=False, action="store_true", help="Use the setsfref option in class averaging to produce better filtered averages.")
+	parser.add_argument("--prefilt",action="store_true",help="Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison",default=False)
 	
 	#options associated with e2make3d.py
-	parser.add_option("--pad", type=int, dest="pad", help="To reduce Fourier artifacts, the model is typically padded by ~25% - only applies to Fourier reconstruction", default=0)
-	parser.add_option("--recon", dest="recon", default="fourier", help="Reconstructor to use see e2help.py reconstructors -v")
-	parser.add_option("--m3dkeep", type=float, help="The percentage of slices to keep in e2make3d.py")
-	parser.add_option("--m3dkeepsig", default=False, action="store_true", help="The standard deviation alternative to the --m3dkeep argument")
-	parser.add_option("--m3dsetsf", default=False, action="store_true", help="The standard deviation alternative to the --m3dkeep argument")
-	parser.add_option("--m3diter", type=int, default=4, help="The number of times the 3D reconstruction should be iterated")
-	parser.add_option("--m3dpreprocess", type="string", default="normalize.edgemean", help="Normalization processor applied before 3D reconstruction")
-	parser.add_option("--m3dpostprocess", type="string", default=None, help="Post processor to be applied to the 3D volume once the reconstruction is completed")
-	parser.add_option("--shrink3d",type="int",help="Shrink the class-averages and make a downsampled variance map",default=0)
-	parser.add_option("--keep3d",action="store_true",help="Keep all of the individual 3-D models used to make the variance map. This make take substantial disk space.")
+	parser.add_argument("--pad", type=int, dest="pad", help="To reduce Fourier artifacts, the model is typically padded by ~25 percent - only applies to Fourier reconstruction", default=0)
+	parser.add_argument("--recon", dest="recon", default="fourier", help="Reconstructor to use see e2help.py reconstructors -v")
+	parser.add_argument("--m3dkeep", type=float, help="The percentage of slices to keep in e2make3d.py")
+	parser.add_argument("--m3dkeepsig", default=False, action="store_true", help="The standard deviation alternative to the --m3dkeep argument")
+	parser.add_argument("--m3dsetsf", default=False, action="store_true", help="The standard deviation alternative to the --m3dkeep argument")
+	parser.add_argument("--m3diter", type=int, default=4, help="The number of times the 3D reconstruction should be iterated")
+	parser.add_argument("--m3dpreprocess", type=str, default="normalize.edgemean", help="Normalization processor applied before 3D reconstruction")
+	parser.add_argument("--m3dpostprocess", type=str, default=None, help="Post processor to be applied to the 3D volume once the reconstruction is completed")
+	parser.add_argument("--shrink3d",type=int,help="Shrink the class-averages and make a downsampled variance map",default=0)
+	parser.add_argument("--keep3d",action="store_true",help="Keep all of the individual 3-D models used to make the variance map. This make take substantial disk space.")
 
 	#lowmem!
-	parser.add_option("--lowmem", default=False, action="store_true",help="Make limited use of memory when possible - useful on lower end machines")
-	parser.add_option("--parallel","-P",type="string",help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None)
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--lowmem", default=False, action="store_true",help="Make limited use of memory when possible - useful on lower end machines")
+	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	(options, args) = parser.parse_args()
 	if options.sym.lower()=="none" : options.sym="c1"

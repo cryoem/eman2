@@ -32,7 +32,6 @@
 #
 
 from EMAN2 import *
-from optparse import OptionParser
 from math import *
 import xml.sax
 import os
@@ -50,17 +49,17 @@ class myhandler(ContentHandler):
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] input.cmm output.mrc
+	usage = """prog [options] input.cmm output.mrc
 
 	This program will read a 'marker file' produced by UCSF Chimera and turn it into an density map.
 	"""
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--apix", "-A", type="float", help="A/voxel", default=1.0)
-	parser.add_option("--res", "-R", type="float", help="Resolution in A, equivalent to Gaussian lowpass with 1/e width at 1/res",default=2.8)
-	parser.add_option("--box", "-B", type="int", help="Box size in pixels",default=0)
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--apix", "-A", type=float, help="A/voxel", default=1.0)
+	parser.add_argument("--res", "-R", type=float, help="Resolution in A, equivalent to Gaussian lowpass with 1/e width at 1/res",default=2.8)
+	parser.add_argument("--box", "-B", type=int, help="Box size in pixels",default=0)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")

@@ -36,7 +36,6 @@
 
 
 from EMAN2 import *
-from optparse import OptionParser
 from math import *
 import os
 import sys
@@ -127,27 +126,27 @@ def mode(vals):
 	
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] input_stack.hed output.hed
+	usage = """prog [options] input_stack.hed output.hed
 	
 	Fiducial-less alignment of tomograms. This program has many limitations, and is still being developed.
 	Not yet recommended for routine use.
 	"""
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--tilt", "-T", type="float", help="Angular spacing between tilts (fixed)",default=0.0)
-	parser.add_option("--maxshift","-M", type="int", help="Maximum translational error between images (pixels), default=64",default=64.0)
-	parser.add_option("--box","-B", type="int", help="Box size for alignment probe (pixels), default=96",default=96.0)
-	parser.add_option("--highpass",type="float",help="Highpass Gaussian processor radius (pixels), default none", default=-1.0)
-	parser.add_option("--lowpass",type="float",help="Lowpass Gaussian processor radius (pixels), default none",default=-1.0)
-	parser.add_option("--mode",type="string",help="centering mode 'modeshift', 'censym' or 'region,<x>,<y>,<clipsize>,<alisize>",default="censym")
-	parser.add_option("--localavg",type="int",help="Average several images for the alignment",default=1)
-	parser.add_option("--tiltaxis",type="float",help="Skip automatic tilt axis location, use fixed angle from x",default=400.0)
-	parser.add_option("--twopass",action="store_true",default=False,help="Skip automatic tilt axis location, use fixed angle from x")
-	parser.add_option("--nozero",action="store_true",default=False,help="Do not allow 0-translations between images")
-	#parser.add_option("--het", action="store_true", help="Include HET atoms in the map", default=False)
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--tilt", "-T", type=float, help="Angular spacing between tilts (fixed)",default=0.0)
+	parser.add_argument("--maxshift","-M", type=int, help="Maximum translational error between images (pixels), default=64",default=64.0)
+	parser.add_argument("--box","-B", type=int, help="Box size for alignment probe (pixels), default=96",default=96.0)
+	parser.add_argument("--highpass",type=float,help="Highpass Gaussian processor radius (pixels), default none", default=-1.0)
+	parser.add_argument("--lowpass",type=float,help="Lowpass Gaussian processor radius (pixels), default none",default=-1.0)
+	parser.add_argument("--mode",type=str,help="centering mode 'modeshift', 'censym' or 'region,<x>,<y>,<clipsize>,<alisize>",default="censym")
+	parser.add_argument("--localavg",type=int,help="Average several images for the alignment",default=1)
+	parser.add_argument("--tiltaxis",type=float,help="Skip automatic tilt axis location, use fixed angle from x",default=400.0)
+	parser.add_argument("--twopass",action="store_true",default=False,help="Skip automatic tilt axis location, use fixed angle from x")
+	parser.add_argument("--nozero",action="store_true",default=False,help="Do not allow 0-translations between images")
+	#parser.add_argument("--het", action="store_true", help="Include HET atoms in the map", default=False)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")

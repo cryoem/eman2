@@ -32,13 +32,12 @@
 #
 
 from EMAN2 import *
-from optparse import OptionParser
 import sys, os
 	
 def main():
   
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog fixed_model moving_model output_model [options] 
+	usage = """prog fixed_model moving_model output_model [options] 
 	
 	This program is designed to rotationally and translationally align two 3D models 
 	Usually the two models are shrunk down to speed things up, then a global exhaustive 
@@ -46,31 +45,32 @@ def main():
 	refine.3d using the full size maps. The refiner is much quicker than the global aligner
 	as it uses a simplex algoritm to bring the alignment downhill, but if your inital global
 	alignmnet is too rough then the refiner might get stuck in a local minima."""
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	#options associated with e2align.py
-	parser.add_option("--shrink",type="int",default=1,help="Fractional amount to shrink the maps by, default=1")
-	parser.add_option("--preprocess",metavar="processor_name(param1=value1:param2=value2)",type="string",default=None,action="append",help="preprocess maps before alignment")
-	parser.add_option("--maskrad",type="int",default=-1,help="Mask the recon using a spherical Gaussian mask (-1 = None), default=-1.0")
-	parser.add_option("--maskfoff",type="float",default=0.1,help="Fall offf of the Gaussian mask, default=0.1")
-	parser.add_option("--nsolns",type="int",default=1,help="number of peaks in the global search to refine, default=1.0")
-	parser.add_option("--famps",type="float",default=1,help="fraction of Fourier amps to exclude from recons. 0 means that this option is not used, default=0.0")
-	parser.add_option("--prec",type="float",default=0.01,help="Precison to determine what solutions are the 'same' used only statistics output, default=0.01")
-	parser.add_option("--cuda",action="store_true", help="Use CUDA for the alignment step.",default=False)
+	parser.add_argument("--shrink",type=int,default=1,help="Fractional amount to shrink the maps by, default=1")
+	parser.add_argument("--preprocess",metavar="processor_name(param1=value1:param2=value2)",type=str,default=None,action="append",help="preprocess maps before alignment")
+	parser.add_argument("--maskrad",type=int,default=-1,help="Mask the recon using a spherical Gaussian mask (-1 = None), default=-1.0")
+	parser.add_argument("--maskfoff",type=float,default=0.1,help="Fall offf of the Gaussian mask, default=0.1")
+	parser.add_argument("--nsolns",type=int,default=1,help="number of peaks in the global search to refine, default=1.0")
+	parser.add_argument("--famps",type=float,default=1,help="fraction of Fourier amps to exclude from recons. 0 means that this option is not used, default=0.0")
+	parser.add_argument("--prec",type=float,default=0.01,help="Precison to determine what solutions are the 'same' used only statistics output, default=0.01")
+	parser.add_argument("--cuda",action="store_true", help="Use CUDA for the alignment step.",default=False)
 	#options form the sphere alinger
-	parser.add_option("--delta",type="float",default=30.0,help="step size for the orrientation generator, default=30.0")
-	parser.add_option("--dphi",type="float",default=30.0,help="step size for the inplane angle phi, default=30.0")
-	parser.add_option("--phi0",type="float",default=0.0,help="lower bound for the inplane angle phi, default=0.0")
-	parser.add_option("--phi1",type="float",default=359.0,help="Upper bound for the inplane angle phi, default=359.0")
-	parser.add_option("--search",type="int",default=10,help="maximum extent of the translational search, default=10")
-	parser.add_option("--sym",type="string",default='c1',help="model symmetry (using sym, if present, speeds thing up a lot), default='c1'")
-	parser.add_option("--cmp",type="string",default='ccc',help="comparitor and params to use for the 3D refiner, default='ccc'")
-	parser.add_option("--dotrans",type="int",default=1,help="Do translational search, default=1")
+	parser.add_argument("--delta",type=float,default=30.0,help="step size for the orrientation generator, default=30.0")
+	parser.add_argument("--dphi",type=float,default=30.0,help="step size for the inplane angle phi, default=30.0")
+	parser.add_argument("--phi0",type=float,default=0.0,help="lower bound for the inplane angle phi, default=0.0")
+	parser.add_argument("--phi1",type=float,default=359.0,help="Upper bound for the inplane angle phi, default=359.0")
+	parser.add_argument("--search",type=int,default=10,help="maximum extent of the translational search, default=10")
+	parser.add_argument("--sym",type=str,default='c1',help="model symmetry (using sym, if present, speeds thing up a lot), default='c1'")
+	parser.add_argument("--cmp",type=str,default='ccc',help="comparitor and params to use for the 3D refiner, default='ccc'")
+	parser.add_argument("--dotrans",type=int,default=1,help="Do translational search, default=1")
 	#options associated with  the simplex 3D refiner
-	parser.add_option("--ralign",type="string",default='refine_3d:spin_coeff=1',help="aligner to use for refine alignement, default='refine_3d:spin_coeff=1'")
-	parser.add_option("--rcmp",type="string",default='ccc',help="comparitor and params to use for the 3D refiner, default='ccc'")
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_option("--verbose","-v",type="int",default=0,help="Level of verboseness, default=0")
+	parser.add_argument("--ralign",type=str,default='refine_3d:spin_coeff=1',help="aligner to use for refine alignement, default='refine_3d:spin_coeff=1'")
+	parser.add_argument("--rcmp",type=str,default='ccc',help="comparitor and params to use for the 3D refiner, default='ccc'")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--verbose","-v",type=int,default=0,help="Level of verboseness, default=0")
 
 	global options
 	(options, args) = parser.parse_args()

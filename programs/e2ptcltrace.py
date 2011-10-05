@@ -36,7 +36,6 @@
 
 
 from EMAN2 import *
-from optparse import OptionParser
 from math import *
 import os
 import sys
@@ -44,16 +43,16 @@ import copy
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options]
+	usage = """prog [options]
 
 	This program traces the orientation of particles through multiple iterations.
 """
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--sym",type="string",help="The symmetry to be used to nearness testing and, if it is specified, reduction", default="c1")
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--sym",type=str,help="The symmetry to be used to nearness testing and, if it is specified, reduction", default="c1")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	print "WARNING: this program may currently be broken. It is on a TODO list to fix..."
 	

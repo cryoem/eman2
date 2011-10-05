@@ -36,7 +36,6 @@
 
 from EMAN2 import *
 from EMAN2db import db_open_dict
-from optparse import OptionParser
 from copy import deepcopy
 from math import ceil
 import os
@@ -86,39 +85,40 @@ def print_usage():
 	print "Please run '" + progname + " -h' for detailed options"
 
 def main():
-	parser=OptionParser(usage=get_usage())
-	parser.add_option("--output", default="threed.hdf", help="Output reconstructed volume file name.")
-	parser.add_option("--input", default=None, help="The input projections. Project should usually have the xform.projection header attribute, which is used for slice insertion")
-	parser.add_option("--input_model", default=None, help="If the class-averages have the model_id parameter (produced by e2refinemulti.py), this will use only class-averages with the specified model_id for the reconstruction.")
-	parser.add_option("--tlt", help="An imod tlt file containing alignment angles. If specified slices will be inserted using these angles in the IMOD convention", type="string", default=None)
-	parser.add_option("--sym", dest="sym", default="c1", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct.")
+	parser = EMArgumentParser(usage=get_usage())
 
-	parser.add_option("--pad", metavar="x or x,y", default=None,type="string", help="Will zero-pad images to the specifed size (x,y) or (x,x) prior to reconstruction. If not specified no padding occurs.")
-	parser.add_option("--padvol", metavar="x or x,y,z", default=None,type="string", help="Defines the dimensions (x,y,z) or (x,x,x) of the reconstructed volume. If ommitted, implied value based on padded 2D images is used.")
-	parser.add_option("--outsize", metavar="x or x,y,z", default=None, type="string", help="Defines the dimensions (x,y,z) or (x,x,x) of the final volume written to disk, if ommitted, size will be based on unpadded input size")
+	parser.add_argument("--output", default="threed.hdf", help="Output reconstructed volume file name.")
+	parser.add_argument("--input", default=None, help="The input projections. Project should usually have the xform.projection header attribute, which is used for slice insertion")
+	parser.add_argument("--input_model", default=None, help="If the class-averages have the model_id parameter (produced by e2refinemulti.py), this will use only class-averages with the specified model_id for the reconstruction.")
+	parser.add_argument("--tlt", help="An imod tlt file containing alignment angles. If specified slices will be inserted using these angles in the IMOD convention", type=str, default=None)
+	parser.add_argument("--sym", dest="sym", default="c1", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct.")
 
-	parser.add_option("--recon", dest="recon_type", default="fourier", help="Reconstructor to use see e2help.py reconstructors -v. Default is fourier:mode=gauss_2")
-	parser.add_option("--keep", type=float, dest="keep", help="The fraction of slices to keep, based on quality scores (1.0 = use all slices). See keepsig.",default=1.0)
-	parser.add_option("--keepsig",action="store_true",default=False, dest="keepsig", help="If set, keep will be interpreted as a standard deviation coefficient instead of as a percentage.")	
-	parser.add_option("--no_wt", action="store_true", dest="no_wt", default=False, help="This argument turns automatic weighting off causing all images to be weighted by 1. If this argument is not specified images inserted into the reconstructed volume are weighted by the number of particles that contributed to them (i.e. as in class averages), which is extracted from the image header (as the ptcl_repr attribute).")
-	parser.add_option("--iter", type=int, dest="iter", default=2, help="Set the number of iterations (default is 2). Iterative reconstruction improves the overall normalization of the 2D images as they are inserted into the reconstructed volume, and allows for the exclusion of the poorer quality images.")
-	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="deprecated")
+	parser.add_argument("--pad", metavar="x or x,y", default=None,type=str, help="Will zero-pad images to the specifed size (x,y) or (x,x) prior to reconstruction. If not specified no padding occurs.")
+	parser.add_argument("--padvol", metavar="x or x,y,z", default=None,type=str, help="Defines the dimensions (x,y,z) or (x,x,x) of the reconstructed volume. If ommitted, implied value based on padded 2D images is used.")
+	parser.add_argument("--outsize", metavar="x or x,y,z", default=None, type=str, help="Defines the dimensions (x,y,z) or (x,x,x) of the final volume written to disk, if ommitted, size will be based on unpadded input size")
+
+	parser.add_argument("--recon", dest="recon_type", default="fourier", help="Reconstructor to use see e2help.py reconstructors -v. Default is fourier:mode=gauss_2")
+	parser.add_argument("--keep", type=float, dest="keep", help="The fraction of slices to keep, based on quality scores (1.0 = use all slices). See keepsig.",default=1.0)
+	parser.add_argument("--keepsig",action="store_true",default=False, dest="keepsig", help="If set, keep will be interpreted as a standard deviation coefficient instead of as a percentage.")	
+	parser.add_argument("--no_wt", action="store_true", dest="no_wt", default=False, help="This argument turns automatic weighting off causing all images to be weighted by 1. If this argument is not specified images inserted into the reconstructed volume are weighted by the number of particles that contributed to them (i.e. as in class averages), which is extracted from the image header (as the ptcl_repr attribute).")
+	parser.add_argument("--iter", type=int, dest="iter", default=2, help="Set the number of iterations (default is 2). Iterative reconstruction improves the overall normalization of the 2D images as they are inserted into the reconstructed volume, and allows for the exclusion of the poorer quality images.")
+	parser.add_argument("--force", "-f",dest="force",default=False, action="store_true",help="deprecated")
 	
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_option("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
-	parser.add_option("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
+	parser.add_argument("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)
 
-	parser.add_option("--lowmem",action="store_true",help="Causes images to be loaded as needed to reduce memory usage at the cost of time.",default=False)
-	parser.add_option("--preprocess", metavar="processor_name(param1=value1:param2=value2)", type="string", action="append", help="preprocessor to be applied to the projections prior to 3D insertion. There can be more than one preprocessor and they are applied in the order in which they are specifed. Applied before padding occurs. See e2help.py processors for a complete list of available processors.")
-	parser.add_option("--setsf",type="string",help="Force the structure factor to match a 'known' curve prior to postprocessing (<filename>, auto or none). default=none",default="none")
-	parser.add_option("--postprocess", metavar="processor_name(param1=value1:param2=value2)", type="string", action="append", help="postprocessor to be applied to the 3D volume once the reconstruction is completed. There can be more than one postprocessor, and they are applied in the order in which they are specified. See e2help.py processors for a complete list of available processors.")
-	parser.add_option("--apix",metavar="A/pix",type="float",help="A/pix value for output, overrides automatic values",default=None)
+	parser.add_argument("--lowmem",action="store_true",help="Causes images to be loaded as needed to reduce memory usage at the cost of time.",default=False)
+	parser.add_argument("--preprocess", metavar="processor_name(param1=value1:param2=value2)", type=str, action="append", help="preprocessor to be applied to the projections prior to 3D insertion. There can be more than one preprocessor and they are applied in the order in which they are specifed. Applied before padding occurs. See e2help.py processors for a complete list of available processors.")
+	parser.add_argument("--setsf",type=str,help="Force the structure factor to match a 'known' curve prior to postprocessing (<filename>, auto or none). default=none",default="none")
+	parser.add_argument("--postprocess", metavar="processor_name(param1=value1:param2=value2)", type=str, action="append", help="postprocessor to be applied to the 3D volume once the reconstruction is completed. There can be more than one postprocessor, and they are applied in the order in which they are specified. See e2help.py processors for a complete list of available processors.")
+	parser.add_argument("--apix",metavar="A/pix",type=float,help="A/pix value for output, overrides automatic values",default=None)
 	
-	parser.add_option("--start", default=None,type="string", help="This is a starting model for FFT reconstruction")
-	parser.add_option("--startweight", default=1.0,type="float", help="This is the starting model weight")
+	parser.add_argument("--start", default=None,type=str, help="This is a starting model for FFT reconstruction")
+	parser.add_argument("--startweight", default=1.0,type=float, help="This is the starting model weight")
 	# Database Metadata storage
-	parser.add_option("--dbls",type="string",default=None,help="data base list storage, used by the workflow. You can ignore this argument.")
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--dbls",type=str,default=None,help="data base list storage, used by the workflow. You can ignore this argument.")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	(options, args) = parser.parse_args()
 

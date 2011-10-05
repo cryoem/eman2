@@ -36,7 +36,6 @@
 
 
 from EMAN2 import *
-from optparse import OptionParser
 from math import *
 import os
 import sys
@@ -45,35 +44,35 @@ import random
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <input_stack> <output_stack>
+	usage = """prog [options] <input_stack> <output_stack>
 	
 	This program will sort a stack of images based on some similarity criterion. Note that byptcl, iterative and reverse are mutually exclusive. 
 
 	It can handle file sequences rather than a single stack file as well, in a limited form. If you have files named var3d_000.mrc, var3d_001.mrc, ...
-	you can specify input (and output) files as (for example) var3d_%03d.mrc. The '3' indicates the number of digits in the value, the '0'
+	you can specify input (and output) files as (for example) var3d_03d.mrc. The '3' indicates the number of digits in the value, the '0'
 	means there should be leading zeroes in the name, and the 'd' means it is a decimal number.
 
 	Note that there is no low-memory option for this command, and all images in the sequence are read in, so make sure you have enough RAM."""
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--simcmp",type="string",help="The name of a 'cmp' to be used in comparing the after optional alignment (default=optvariance:keepzero=1:matchfilt=1)", default="optvariance:keepzero=1:matchfilt=1")
-	parser.add_option("--simalign",type="string",help="The name of an 'aligner' to use prior to comparing the images (default=no alignment)", default=None)
-	parser.add_option("--simmask",type="string", help="A file containing a mask to apply prior to comparisons, to focus the sort on one particular region",default=None)
-	parser.add_option("--reverse",action="store_true",default=False,help="Sort in order of least mutual similarity")
-	parser.add_option("--byptcl",action="store_true",default=False,help="Sort in order of number of particles represented in each class-average. No alignment, shrinking, etc. is performed")
-	parser.add_option("--bykurtosis",action="store_true",default=False,help="Sort by image Kurtosis. No alignment, shrinking, etc. is performed")
-	parser.add_option("--iterative",action="store_true",default=False,help="Iterative approach for achieving a good 'consensus alignment' among the set of particles") 
-	parser.add_option("--useali",action="store_true",default=False,help="Save aligned particles to the output file, note that if used with shrink= this will store the reduced aligned particles")
-	parser.add_option("--center",action="store_true",default=False,help="After alignment, particles are centered via center of mass before comparison")
-	parser.add_option("--nsort",type="int",help="Number of output particles to generate (mainly for reverse mode)",default=0)
-	parser.add_option("--ninput",type="int",help="Number of input particles to read (first n in the file)",default=0)
-	parser.add_option("--shrink",type="int",help="Reduce the particles for comparisons",default=1)
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-#	parser.add_option("--tilt", "-T", type="float", help="Angular spacing between tilts (fixed)",default=0.0)
-#	parser.add_option("--maxshift","-M", type="int", help="Maximum translational error between images (pixels), default=64",default=64.0)
-#	parser.add_option("--mode",type="string",help="centering mode 'modeshift', 'censym' or 'region,<x>,<y>,<clipsize>,<alisize>",default="censym")
+	parser.add_argument("--simcmp",type=str,help="The name of a 'cmp' to be used in comparing the after optional alignment (default=optvariance:keepzero=1:matchfilt=1)", default="optvariance:keepzero=1:matchfilt=1")
+	parser.add_argument("--simalign",type=str,help="The name of an 'aligner' to use prior to comparing the images (default=no alignment)", default=None)
+	parser.add_argument("--simmask",type=str, help="A file containing a mask to apply prior to comparisons, to focus the sort on one particular region",default=None)
+	parser.add_argument("--reverse",action="store_true",default=False,help="Sort in order of least mutual similarity")
+	parser.add_argument("--byptcl",action="store_true",default=False,help="Sort in order of number of particles represented in each class-average. No alignment, shrinking, etc. is performed")
+	parser.add_argument("--bykurtosis",action="store_true",default=False,help="Sort by image Kurtosis. No alignment, shrinking, etc. is performed")
+	parser.add_argument("--iterative",action="store_true",default=False,help="Iterative approach for achieving a good 'consensus alignment' among the set of particles") 
+	parser.add_argument("--useali",action="store_true",default=False,help="Save aligned particles to the output file, note that if used with shrink= this will store the reduced aligned particles")
+	parser.add_argument("--center",action="store_true",default=False,help="After alignment, particles are centered via center of mass before comparison")
+	parser.add_argument("--nsort",type=int,help="Number of output particles to generate (mainly for reverse mode)",default=0)
+	parser.add_argument("--ninput",type=int,help="Number of input particles to read (first n in the file)",default=0)
+	parser.add_argument("--shrink",type=int,help="Reduce the particles for comparisons",default=1)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+#	parser.add_argument("--tilt", "-T", type=float, help="Angular spacing between tilts (fixed)",default=0.0)
+#	parser.add_argument("--maxshift","-M", type=int, help="Maximum translational error between images (pixels), default=64",default=64.0)
+#	parser.add_argument("--mode",type=str,help="centering mode 'modeshift', 'censym' or 'region,<x>,<y>,<clipsize>,<alisize>",default="censym")
 	
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")

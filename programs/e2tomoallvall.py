@@ -30,8 +30,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 
-from optparse import OptionParser
-from EMAN2 import file_exists,EMData,E2init,E2progress,E2end,EMANVERSION,check_eman2_type_string,EMUtil,remove_file,get_file_tag
+from EMAN2 import file_exists,EMData,E2init,E2progress,E2end,EMANVERSION,check_eman2_type_string,EMUtil,remove_file,get_file_tag,EMArgumentParser
 import EMAN2
 from EMAN2db import EMTask
 from e2tomoaverage import *
@@ -139,7 +138,7 @@ class EMTomoAllVAll:
 import os,sys
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <image1> <image2> <image3> <image4> ....
+	usage = """prog [options] <image1> <image2> <image3> <image4> ....
 
 	WARNING: Experimental program. Contact jgmontoy@bcm.edu for more info.
 	
@@ -147,23 +146,23 @@ def main():
 
 """
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--align",type="string",help="The aligner and its parameters. e.g. --align=rt.3d.grid:ralt=180:dalt=10:dphi=10:rphi=180:search=5", default="rt.3d.grid")
-	parser.add_option("--aligncmp",type="string",help="The comparator used for determing the best initial alignment", default="dot.tomo:threshold=0")
-	parser.add_option("--cmp",type="string",help="The comparator used to obtain the final similarity", default="dot.tomo:threshold=0")
-	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment. This is usually the \'refine\' aligner.", default=None)
-	parser.add_option("--raligncmp",type="string",help="The comparator used for determing the refined alignment", default="dot.tomo:threshold=0")
-	parser.add_option("--output",type="string",default="e2tomoallvall.hdf",help="The output image which will store the results matrix")
-	parser.add_option("--force",action="store_true",default=False,help="Force overwrite the output file if it already exists")
-	parser.add_option("--parallel",type="string",default=None,help="Use parallelism")
-	parser.add_option("--nsoln", default=1, type="int",help="If supplied and greater than 1, the nsoln-best alignments will be written to a text file. This is useful for debug but may be left unspecified")
-	parser.add_option("--shrink",type="int",help="Shrink the data as part of the alignment - for speed purposes but at the potential loss of accuracy",default=None)
-	parser.add_option("--filter",type="string",help="The name and parameters of an EMAN2 processor. Will be applied prior to shrinking.",default=None)
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--align",type=str,help="The aligner and its parameters. e.g. --align=rt.3d.grid:ralt=180:dalt=10:dphi=10:rphi=180:search=5", default="rt.3d.grid")
+	parser.add_argument("--aligncmp",type=str,help="The comparator used for determing the best initial alignment", default="dot.tomo:threshold=0")
+	parser.add_argument("--cmp",type=str,help="The comparator used to obtain the final similarity", default="dot.tomo:threshold=0")
+	parser.add_argument("--ralign",type=str,help="This is the second stage aligner used to refine the first alignment. This is usually the \'refine\' aligner.", default=None)
+	parser.add_argument("--raligncmp",type=str,help="The comparator used for determing the refined alignment", default="dot.tomo:threshold=0")
+	parser.add_argument("--output",type=str,default="e2tomoallvall.hdf",help="The output image which will store the results matrix")
+	parser.add_argument("--force",action="store_true",default=False,help="Force overwrite the output file if it already exists")
+	parser.add_argument("--parallel",type=str,default=None,help="Use parallelism")
+	parser.add_argument("--nsoln", default=1, type=int,help="If supplied and greater than 1, the nsoln-best alignments will be written to a text file. This is useful for debug but may be left unspecified")
+	parser.add_argument("--shrink",type=int,help="Shrink the data as part of the alignment - for speed purposes but at the potential loss of accuracy",default=None)
+	parser.add_argument("--filter",type=str,help="The name and parameters of an EMAN2 processor. Will be applied prior to shrinking.",default=None)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	if EMUtil.cuda_available():
-		parser.add_option("--cuda",action="store_true",help="GPU acceleration using CUDA. Experimental", default=False)
+		parser.add_argument("--cuda",action="store_true",help="GPU acceleration using CUDA. Experimental", default=False)
  
 	(options, args) = parser.parse_args()
 	

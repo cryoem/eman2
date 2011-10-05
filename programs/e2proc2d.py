@@ -34,7 +34,6 @@
 # $Id$
 
 from EMAN2 import *
-from optparse import OptionParser
 import sys
 import os.path
 import math
@@ -110,70 +109,70 @@ def main():
 	'e2help.py processors -v 2' for a detailed list of available procesors
 """
 
-	parser = OptionParser(usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--apix", type="float", help="A/pixel for S scaling")
-	parser.add_option("--average", action="store_true",
+	parser.add_argument("--apix", type=float, help="A/pixel for S scaling")
+	parser.add_argument("--average", action="store_true",
 					help="Averages all input images (without alignment) and writes a single output image")
-	parser.add_option("--calcsf", metavar="n outputfile", type="string", nargs=2,
+	parser.add_argument("--calcsf", metavar="n outputfile", type=str, nargs=2,
 					help="calculate a radial structure factor for the image and write it to the output file, must specify apix. divide into <n> angular bins")    
-	parser.add_option("--clip", metavar="xsize,ysize", type="string", action="append",
+	parser.add_argument("--clip", metavar="xsize,ysize", type=str, action="append",
 					help="Specify the output size in pixels xsize,ysize[,xcenter,ycenter], images can be made larger or smaller.")
-	parser.add_option("--exclude", metavar="exclude-list-file",
-					type="string", help="Excludes image numbers in EXCLUDE file")
-	parser.add_option("--fftavg", metavar="filename", type="string",
+	parser.add_argument("--exclude", metavar="exclude-list-file",
+					type=str, help="Excludes image numbers in EXCLUDE file")
+	parser.add_argument("--fftavg", metavar="filename", type=str,
 					help="Incoherent Fourier average of all images and write a single power spectrum image")
-	parser.add_option("--process", metavar="processor_name:param1=value1:param2=value2", type="string",
+	parser.add_argument("--process", metavar="processor_name:param1=value1:param2=value2", type=str,
 					action="append", help="apply a processor named 'processorname' with all its parameters/values.")
-	parser.add_option("--mult", metavar="k", type="float", help="Multiply image by a constant. mult=-1 to invert contrast.")
-	parser.add_option("--first", metavar="n", type="int", default=0, help="the first image in the input to process [0 - n-1])")
-	parser.add_option("--last", metavar="n", type="int", default=-1, help="the last image in the input to process")
-	parser.add_option("--list", metavar="listfile", type="string",
+	parser.add_argument("--mult", metavar="k", type=float, help="Multiply image by a constant. mult=-1 to invert contrast.")
+	parser.add_argument("--first", metavar="n", type=int, default=0, help="the first image in the input to process [0 - n-1])")
+	parser.add_argument("--last", metavar="n", type=int, default=-1, help="the last image in the input to process")
+	parser.add_argument("--list", metavar="listfile", type=str,
 					help="Works only on the image numbers in LIST file")
-	parser.add_option("--inplace", action="store_true",
+	parser.add_argument("--inplace", action="store_true",
 					help="Output overwrites input, USE SAME FILENAME, DO NOT 'clip' images.")
-	parser.add_option("--interlv", metavar="interleave-file",
-					type="string", help="Specifies a 2nd input file. Output will be 2 files interleaved.")
-	parser.add_option("--meanshrink", metavar="n", type="int", action="append",
+	parser.add_argument("--interlv", metavar="interleave-file",
+					type=str, help="Specifies a 2nd input file. Output will be 2 files interleaved.")
+	parser.add_argument("--meanshrink", metavar="n", type=int, action="append",
 					help="Reduce an image size by an integral scaling factor using average. Clip is not required.")
-	parser.add_option("--medianshrink", metavar="n", type="int", action="append",
+	parser.add_argument("--medianshrink", metavar="n", type=int, action="append",
 					help="Reduce an image size by an integral scaling factor, uses median filter. Clip is not required.")
-	parser.add_option("--mraprep",  action="store_true", help="this is an experimental option")
-	parser.add_option("--mrc16bit",  action="store_true", help="output as 16 bit MRC file")
-	parser.add_option("--mrc8bit",  action="store_true", help="output as 8 bit MRC file")
-	parser.add_option("--multfile", type="string", action="append",
+	parser.add_argument("--mraprep",  action="store_true", help="this is an experimental option")
+	parser.add_argument("--mrc16bit",  action="store_true", help="output as 16 bit MRC file")
+	parser.add_argument("--mrc8bit",  action="store_true", help="output as 8 bit MRC file")
+	parser.add_argument("--multfile", type=str, action="append",
 								help="Multiplies the volume by another volume of identical size. This can be used to apply masks, etc.")
 	
-	parser.add_option("--norefs", action="store_true", help="Skip any input images which are marked as references (usually used with classes.*)")
-	parser.add_option("--outtype", metavar="image-type", type="string",
+	parser.add_argument("--norefs", action="store_true", help="Skip any input images which are marked as references (usually used with classes.*)")
+	parser.add_argument("--outtype", metavar="image-type", type=str,
 					help="output image format, 'mrc', 'imagic', 'hdf', etc. if specify spidersingle will output single 2D image rather than 2D stack.")
-	parser.add_option("--radon",  action="store_true", help="Do Radon transform")
-	parser.add_option("--randomize", type="string", action="append",help="Randomly rotate/translate the image. Specify: da,dxy,flip  da is a uniform distribution over +-da degrees, dxy is a uniform distribution on x/y, if flip is 1, random handedness changes will occur")
-	parser.add_option("--rotate", type="float", action="append", help="Rotate clockwise (in degrees)")
-	parser.add_option("--rfp",  action="store_true", help="this is an experimental option")
-	parser.add_option("--fp",  type="int", help="This generates rotational/translational 'footprints' for each input particle, the number indicates which algorithm to use (0-6)")
-	parser.add_option("--scale", metavar="f", type="float", action="append",
+	parser.add_argument("--radon",  action="store_true", help="Do Radon transform")
+	parser.add_argument("--randomize", type=str, action="append",help="Randomly rotate/translate the image. Specify: da,dxy,flip  da is a uniform distribution over +-da degrees, dxy is a uniform distribution on x/y, if flip is 1, random handedness changes will occur")
+	parser.add_argument("--rotate", type=float, action="append", help="Rotate clockwise (in degrees)")
+	parser.add_argument("--rfp",  action="store_true", help="this is an experimental option")
+	parser.add_argument("--fp",  type=int, help="This generates rotational/translational 'footprints' for each input particle, the number indicates which algorithm to use (0-6)")
+	parser.add_argument("--scale", metavar="f", type=float, action="append",
 					help="Scale by specified scaling factor. Clip must also be specified to change the dimensions of the output map.")
-	parser.add_option("--selfcl", metavar="steps mode", type="int", nargs=2,
+	parser.add_argument("--selfcl", metavar="steps mode", type=int, nargs=2,
 					help="Output file will be a 180x180 self-common lines map for each image.")
-	parser.add_option("--setsfpairs",  action="store_true",
+	parser.add_argument("--setsfpairs",  action="store_true",
 					help="Applies the radial structure factor of the 1st image to the 2nd, the 3rd to the 4th, etc") 
-	parser.add_option("--split", metavar="n", type="int",
+	parser.add_argument("--split", metavar="n", type=int,
 					help="Splits the input file into a set of n output files")
-	parser.add_option("--translate", type="string", action="append", help="Translate by x,y pixels")
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", help="verbose level [0-9], higner number means higher level of verboseness",default=1)
-	parser.add_option("--plane", metavar=threedplanes, type="string", default='xy',
+	parser.add_argument("--translate", type=str, action="append", help="Translate by x,y pixels")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higner number means higher level of verboseness",default=1)
+	parser.add_argument("--plane", metavar=threedplanes, type=str, default='xy',
                       help="Change the plane of image processing, useful for processing 3D mrcs as 2D images.")
-	parser.add_option("--writejunk", action="store_true", help="Writes the image even if its sigma is 0.", default=False)
-	parser.add_option("--swap", action="store_true", help="Swap the byte order", default=False)
-	parser.add_option("--threed2threed", action="store_true", help="Process 3D image as a statck of 2D slice, then output as a 3D image", default=False)	
-	parser.add_option("--threed2twod", action="store_true", help="Process 3D image as a statck of 2D slice, then output as a 2D stack", default=False)
-	parser.add_option("--twod2threed", action="store_true", help="Process a stack of 2D images, then output as a 3D image", default=False)
-	parser.add_option("--unstacking", action="store_true", help="Process a stack of 2D images, then output a a series of numbered single image files", default=False)
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--writejunk", action="store_true", help="Writes the image even if its sigma is 0.", default=False)
+	parser.add_argument("--swap", action="store_true", help="Swap the byte order", default=False)
+	parser.add_argument("--threed2threed", action="store_true", help="Process 3D image as a statck of 2D slice, then output as a 3D image", default=False)	
+	parser.add_argument("--threed2twod", action="store_true", help="Process 3D image as a statck of 2D slice, then output as a 2D stack", default=False)
+	parser.add_argument("--twod2threed", action="store_true", help="Process a stack of 2D images, then output as a 3D image", default=False)
+	parser.add_argument("--unstacking", action="store_true", help="Process a stack of 2D images, then output a a series of numbered single image files", default=False)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	# Parallelism
-	parser.add_option("--parallel","-P",type="string",help="Run in parallel, specify type:n=<proc>:option:option",default=None)
+	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:n=<proc>:option:option",default=None)
 	
 	append_options = ["clip", "process", "meanshrink", "medianshrink", "scale", "randomize", "rotate","translate","multfile"]
 

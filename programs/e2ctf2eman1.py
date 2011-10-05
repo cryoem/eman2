@@ -36,7 +36,6 @@
 
 from EMAN2 import *
 from math import *
-from optparse import OptionParser
 import os
 
 
@@ -47,7 +46,7 @@ def main( ) :
 	
 	# Setup command line options parser
 	progname = os.path.basename( sys.argv[0] )
-	usage = """%prog [options]
+	usage = """prog [options]
 	
 Converts EMAN2 CTF model to the EMAN1 CTF model as well as possible.
 Outputs CTF parameters to ctfparm.txt file in the current directory.
@@ -57,21 +56,21 @@ It is recommended that you specify a structure factor file (--sf=<file>).
 
 Always manually check/refine output, since the EMAN1 and EMAN2 CTF
 models are not completely compatible."""
-	parser = OptionParser( usage = usage, version = EMANVERSION )
-	parser.add_option( "--first", type = "int", help = "First image to include in the plot.", default = -1 )
-	parser.add_option( "--last", type = "int", help = "Last image to include in the plot.", default = -1 )
-	parser.add_option( "--sf", type = "string", help = "The name of a file containing a structure factor curve.", default = "NULL" )
-	parser.add_option( "--noisemin", type = "float", help = "Minimum resolution to examine for determining the noise parameters.", default = -1. )
-	parser.add_option( "--noisemax", type = "float", help = "Maximum resolution to examine for determining the noise parameters.", default = -1. )
-	parser.add_option( "--ac", type = "float", help = "Set amplitude contrast (percentage, default=10).", default = 10. )
-	parser.add_option( "--bf", type = "float", help = "Set constant B-factor (as defined in EMAN1) for all images.", default = 0. )
-	parser.add_option( "--df", action = "store_true", help = "Calculate defocus from entire CCD frame.", default = False )
-	parser.add_option( "--dfmin", type = "float", help = "Set minimum possible defocus value (positive is underfocus).", default = 0.5 )
-	parser.add_option( "--dfmax", type = "float", help = "Set maximum possible defocus value (positive is underfocus).", default = 5. )
-	parser.add_option( "--dfval", type = "float", help = "Set constant defocus for all images (positive is underfocus).", default = 0. )
-	parser.add_option( "--ctfcoverage", action = "store_true", help = "Create a map showing the integrated SNR for the combined data.", default = False )
-	parser.add_option( "--debug", action = "store_true", help = "Show debugging messages.", default = False )
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+	parser.add_argument( "--first", type = int, help = "First image to include in the plot.", default = -1 )
+	parser.add_argument( "--last", type = int, help = "Last image to include in the plot.", default = -1 )
+	parser.add_argument( "--sf", type = str, help = "The name of a file containing a structure factor curve.", default = "NULL" )
+	parser.add_argument( "--noisemin", type = float, help = "Minimum resolution to examine for determining the noise parameters.", default = -1. )
+	parser.add_argument( "--noisemax", type = float, help = "Maximum resolution to examine for determining the noise parameters.", default = -1. )
+	parser.add_argument( "--ac", type = float, help = "Set amplitude contrast (percentage, default=10).", default = 10. )
+	parser.add_argument( "--bf", type = float, help = "Set constant B-factor (as defined in EMAN1) for all images.", default = 0. )
+	parser.add_argument( "--df", action = "store_true", help = "Calculate defocus from entire CCD frame.", default = False )
+	parser.add_argument( "--dfmin", type = float, help = "Set minimum possible defocus value (positive is underfocus).", default = 0.5 )
+	parser.add_argument( "--dfmax", type = float, help = "Set maximum possible defocus value (positive is underfocus).", default = 5. )
+	parser.add_argument( "--dfval", type = float, help = "Set constant defocus for all images (positive is underfocus).", default = 0. )
+	parser.add_argument( "--ctfcoverage", action = "store_true", help = "Create a map showing the integrated SNR for the combined data.", default = False )
+	parser.add_argument( "--debug", action = "store_true", help = "Show debugging messages.", default = False )
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	# Get and check command line arguments
 	( options, args ) = parser.parse_args( )

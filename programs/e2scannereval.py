@@ -32,7 +32,6 @@
 #
 
 from EMAN2 import *
-from optparse import OptionParser
 from math import *
 import os
 import sys
@@ -54,7 +53,7 @@ def main():
 	global tdim,pdim
 	global cmp_probe,cmp_target
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] input.mrc
+	usage = """prog [options] input.mrc
 
 	Helps to visually assess large images using localized power spectra. Generally
 	this is used with scanned images to look for position dependent MTF due to
@@ -64,13 +63,13 @@ def main():
 	in the image, with a gap between them so the micrograph is still visible in the
 	background."""
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--box", "-S", type="int", help="size in pixels of the power spectra", default=256)
-	parser.add_option("--norm", "-N", dest="norm", action="store_true", help="Normalize the image before analysis")
-	parser.add_option("--nopad",action="store_true", help="No padding between boxes")
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--box", "-S", type=int, help="size in pixels of the power spectra", default=256)
+	parser.add_argument("--norm", "-N", dest="norm", action="store_true", help="Normalize the image before analysis")
+	parser.add_argument("--nopad",action="store_true", help="No padding between boxes")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input file required")

@@ -41,12 +41,11 @@ from os import system
 from os import unlink
 from sys import argv
 from EMAN2 import *
-from optparse import OptionParser
 from EMAN2db import db_open_dict
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <raw particle file> <class mx> <projections>
+	usage = """prog [options] <raw particle file> <class mx> <projections>
 	
 This program can use either a 3-D binary mask, or a pair of liganded/unliganded volumes to classify particle data into 2
 (or 4) groups. e2refine.py must be run on the data first. The method using a pair of volumes is much more accurate in
@@ -63,22 +62,22 @@ ligand/no-ligand contrast in individual images:
 <class mx> is one of the classification matrix files from the refinement
 <projections> contains the projections used for class mx
 """
-	parser = OptionParser(usage=usage,version=EMANVERSION)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_option("--maskfile",type="string",default=None,help="File containing a 3-D binary mask to use for data separation")
-	parser.add_option("--ref1",type="string",default=None,help="Rather than using a mask, ref1/ref2 permit using a pair of volumes for classification.")
-	parser.add_option("--ref2",type="string",default=None,help="Rather than using a mask, ref1/ref2 permit using a pair of volumes for classification.")
-	parser.add_option("--cmp",type="string",help="The name of a 'cmp' to be used in conjunction with ref1/2", default="dot:normalize=1")
-	parser.add_option("--process",type="string",default=None,help="A processor to apply to the particle data before classifying")
-	parser.add_option("--badgroup",action="store_true",default=False,help="Split the data into 4 groups rather than 2. The extra two groups contain particles more likely to be bad.")
-	parser.add_option("--badqualsig",type="float",help="When identifying 'bad' particles, particles with similarities >mean+sigma*badqualsig will be considered bad. Default 0.5", default=.5)
-	parser.add_option("--badsepsig",type="float",help="When identifying 'bad' particles, if s1/s2 are the similarities to reference 1/2, then those where |s1-s2| < sigma*badsepsig will be excluded. Default 0.25 ", default=0.25)
-	parser.add_option("--postfix",type="string",default="",help="This string will be appended to each set name to help differentiate the results from multiple runs")
-	parser.add_option("--debug",action="store_true",default=False,help="Enable debugging mode with verbose output and image display. Not suitable for real runs.")
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--maskfile",type=str,default=None,help="File containing a 3-D binary mask to use for data separation")
+	parser.add_argument("--ref1",type=str,default=None,help="Rather than using a mask, ref1/ref2 permit using a pair of volumes for classification.")
+	parser.add_argument("--ref2",type=str,default=None,help="Rather than using a mask, ref1/ref2 permit using a pair of volumes for classification.")
+	parser.add_argument("--cmp",type=str,help="The name of a 'cmp' to be used in conjunction with ref1/2", default="dot:normalize=1")
+	parser.add_argument("--process",type=str,default=None,help="A processor to apply to the particle data before classifying")
+	parser.add_argument("--badgroup",action="store_true",default=False,help="Split the data into 4 groups rather than 2. The extra two groups contain particles more likely to be bad.")
+	parser.add_argument("--badqualsig",type=float,help="When identifying 'bad' particles, particles with similarities >mean+sigma*badqualsig will be considered bad. Default 0.5", default=.5)
+	parser.add_argument("--badsepsig",type=float,help="When identifying 'bad' particles, if s1/s2 are the similarities to reference 1/2, then those where |s1-s2| < sigma*badsepsig will be excluded. Default 0.25 ", default=0.25)
+	parser.add_argument("--postfix",type=str,default="",help="This string will be appended to each set name to help differentiate the results from multiple runs")
+	parser.add_argument("--debug",action="store_true",default=False,help="Enable debugging mode with verbose output and image display. Not suitable for real runs.")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
-	#parser.add_option("--ncls","-N",type="int",help="Number of classes to generate",default=-1)
-	#parser.add_option("--average","-A",action="store_true",help="Average the particles within each class",default=False)
+	#parser.add_argument("--ncls","-N",type=int,help="Number of classes to generate",default=-1)
+	#parser.add_argument("--average","-A",action="store_true",help="Average the particles within each class",default=False)
 
 	(options, args) = parser.parse_args()
 #	if len(args)<4 : parser.error("Please specify <raw particle file> <class mx> <projections> <mask> <output file> ")

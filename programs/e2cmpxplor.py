@@ -36,7 +36,6 @@ from emimage3dsym import EM3DSymModel,EMSymInspector
 from e2eulerxplor import InputEventsManager
 import os,sys
 from EMAN2 import *
-from optparse import OptionParser
 from PyQt4 import QtGui,QtCore
 from e2eulerxplor import get_eulers_from
 from emimagemx import EMImageMXModule
@@ -46,13 +45,13 @@ from valslider import ValSlider
 	
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog  <projection file>  <particles file>
+	usage = """prog  <projection file>  <particles file>
 	
 Compare different similarity metrics for a given particle stack. Note that all particles and projections are
 read into memory. Do not use it on large sets of particles !!!
 """
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	(options, args) = parser.parse_args()
 	

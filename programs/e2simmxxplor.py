@@ -33,7 +33,6 @@
 
 
 import os,sys
-from optparse import OptionParser
 from PyQt4 import QtGui,QtCore
 from valslider import ValSlider
 
@@ -48,7 +47,7 @@ from EMAN2 import *
 	
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog  <simmx file> <projection file>  <particles file>
+	usage = """prog  <simmx file> <projection file>  <particles file>
 	
 	This program allows you to look at per-particle classification based on a pre-computed similarity
 	matrix. If a particle seems to be mis-classified, you can use this program to help figure out
@@ -57,10 +56,10 @@ def main():
 	normal middle-click on the asymmetric unit viewer for more options.
 """
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 	

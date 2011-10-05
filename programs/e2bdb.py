@@ -34,7 +34,6 @@
 # e2bdb.py  11/13/2008 Steven Ludtke
 # This program allows manipulation and querying of the local database
 
-from optparse import OptionParser
 from math import *
 import time
 import os
@@ -49,7 +48,7 @@ from EMAN2 import *
 def main():
 	global debug
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <path or db> ...
+	usage = """prog [options] <path or db> ...
 	
 Various utilities related to BDB databases.
 
@@ -60,30 +59,30 @@ e2bdb.py <path> -l    Will give useful summary info about stacks in a directory
 e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a database, even if the database contains no images
 """
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--cleanup","-c",action="store_true",default=False,help="This option will clean up the database cache so files can safely be moved or accessed on another computer via NFS.")
-	parser.add_option("--force","-F",action="store_true",default=False,help="This will force an action that would normally fail due to failed checks.")
-	parser.add_option("--delete",action="store_true",default=False,help="This will delete (or at least empty) the named database(s)")
-	parser.add_option("--all","-a",action="store_true",help="List per-particle info",default=False)
-	parser.add_option("--long","-l",action="store_true",help="Long listing",default=False)
-	parser.add_option("--short","-s",action="store_true",help="Dense listing of names only",default=False)
-	parser.add_option("--filt",type="string",help="Only include dictionary names containing the specified string",default=None)
-	parser.add_option("--filtexclude",type="string",help="Exclude dictionary names containing the specified string",default=None)
-	parser.add_option("--match",type="string",help="Only include dictionaries matching the provided Python regular expression",default=None)
-	parser.add_option("--exclude",type="string",help="The name of a database containing a list of exclusion keys",default=None)
-	parser.add_option("--dump","-D",action="store_true",help="List contents of an entire database, eg 'e2bdb.py -D refine_01#register",default=False)
-	parser.add_option("--smalldump",action="store_true",help="Lists contents of an entire database, but only list 2 items per dictionary to better see headers",default=False)
-	parser.add_option("--extractplots",action="store_true",help="If a database contains sets of plots, such as bdb:refine_xx#convergence.results, this will extract the plots as text files.")
-	parser.add_option("--check",action="store_true",help="Check for self-consistency and errors in the structure of specified databases",default=False)
-	parser.add_option("--nocache",action="store_true",help="Don't use the database cache fof this operation",default=False)
+	parser.add_argument("--cleanup","-c",action="store_true",default=False,help="This option will clean up the database cache so files can safely be moved or accessed on another computer via NFS.")
+	parser.add_argument("--force","-F",action="store_true",default=False,help="This will force an action that would normally fail due to failed checks.")
+	parser.add_argument("--delete",action="store_true",default=False,help="This will delete (or at least empty) the named database(s)")
+	parser.add_argument("--all","-a",action="store_true",help="List per-particle info",default=False)
+	parser.add_argument("--long","-l",action="store_true",help="Long listing",default=False)
+	parser.add_argument("--short","-s",action="store_true",help="Dense listing of names only",default=False)
+	parser.add_argument("--filt",type=str,help="Only include dictionary names containing the specified string",default=None)
+	parser.add_argument("--filtexclude",type=str,help="Exclude dictionary names containing the specified string",default=None)
+	parser.add_argument("--match",type=str,help="Only include dictionaries matching the provided Python regular expression",default=None)
+	parser.add_argument("--exclude",type=str,help="The name of a database containing a list of exclusion keys",default=None)
+	parser.add_argument("--dump","-D",action="store_true",help="List contents of an entire database, eg 'e2bdb.py -D refine_01#register",default=False)
+	parser.add_argument("--smalldump",action="store_true",help="Lists contents of an entire database, but only list 2 items per dictionary to better see headers",default=False)
+	parser.add_argument("--extractplots",action="store_true",help="If a database contains sets of plots, such as bdb:refine_xx#convergence.results, this will extract the plots as text files.")
+	parser.add_argument("--check",action="store_true",help="Check for self-consistency and errors in the structure of specified databases",default=False)
+	parser.add_argument("--nocache",action="store_true",help="Don't use the database cache fof this operation",default=False)
 	
-	parser.add_option("--makevstack",type="string",help="Creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
-	parser.add_option("--appendvstack",type="string",help="Appends to/creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_option("--list",type="string",help="Specify the name of a file with a list of images to use in creation of virtual stacks. Please see source for details.",default=None)
-	parser.add_option("--restore",type="string",help="Write changes in the derived virtual stack back to the original stack",default=None)
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--makevstack",type=str,help="Creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
+	parser.add_argument("--appendvstack",type=str,help="Appends to/creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--list",type=str,help="Specify the name of a file with a list of images to use in creation of virtual stacks. Please see source for details.",default=None)
+	parser.add_argument("--restore",type=str,help="Write changes in the derived virtual stack back to the original stack",default=None)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
 

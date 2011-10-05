@@ -32,7 +32,6 @@
 #
 
 from EMAN2 import *
-from optparse import OptionParser
 from math import *
 import os
 import sys
@@ -86,18 +85,18 @@ def main():
 	global tdim,pdim,tdim2,pdim2,sfac
 	global cmp_probe,cmp_target
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] target.mrc probe.mrc
+	usage = """prog [options] target.mrc probe.mrc
 	
 Locates the best 'docking' locations for a small probe in a large target map. Note that the probe
 should be in a box barely large enough for it. The target may be arbitrarily padded. For best speed
 both box sizes should be multiples of 8."""
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--shrink", "-S", type="int", help="shrink factor for initial search, default=auto", default=0)
-	parser.add_option("--epsilon","-E", type="float",help="final target accuracy, default=.01",default=.01)
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--shrink", "-S", type=int, help="shrink factor for initial search, default=auto", default=0)
+	parser.add_argument("--epsilon","-E", type=float,help="final target accuracy, default=.01",default=.01)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	print "WARNING: This program is currently considered experimental. Contact sludtke@bcm.edu before using it for any serious project"
 	

@@ -31,7 +31,6 @@
 #
 
 from EMAN2 import *
-from optparse import OptionParser
 from math import *
 import os
 import pickle
@@ -42,20 +41,20 @@ def main():
 	global tdim,pdim
 	global cmp_probe,cmp_target
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <tile file>
+	usage = """prog [options] <tile file>
 	
 	Operates on files containing sets of tiled JPEG images representing larger images. Used for 
 	interactive web browsing. Not generally useful to end-users."""
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--build", type="string", help="Build a new tile file from the specified image")
-	parser.add_option("--buildpspec",type="float",help="Builds 1D and 2D power spectra for the images when building, Value is A/pix for image.")
-	parser.add_option("--tilesize", type="int",default=256, help="Build a new tile file from this image")
-	parser.add_option("--dump",action="store_true",default=False,help="Dump the tile dictionary from the file")
-	parser.add_option("--display",type='string',default="",help="Displays a specific tile (level,x,y))")
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--build", type=str, help="Build a new tile file from the specified image")
+	parser.add_argument("--buildpspec",type=float,help="Builds 1D and 2D power spectra for the images when building, Value is A/pix for image.")
+	parser.add_argument("--tilesize", type=int,default=256, help="Build a new tile file from this image")
+	parser.add_argument("--dump",action="store_true",default=False,help="Dump the tile dictionary from the file")
+	parser.add_argument("--display",type=str,default="",help="Displays a specific tile (level,x,y))")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Tile file required")

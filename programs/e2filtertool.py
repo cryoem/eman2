@@ -34,7 +34,6 @@ from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
 from PyQt4.QtCore import QTimer
 
-from optparse import OptionParser
 import sys
 import os
 import weakref
@@ -51,17 +50,17 @@ import traceback
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <image file>
+	usage = """prog [options] <image file>
 
 	Provides a GUI interface for applying a sequence of processors to an image, stack of images or a volume."""
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-#	parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=64)
-#	parser.add_option("--shrink",type="int",help="Shrink factor for full-frame view, default=0 (auto)",default=0)
-	parser.add_option("--apix",type="float",help="Override the A/pix value stored in the file header",default=0.0)
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+#	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=64)
+#	parser.add_argument("--shrink",type=int,help="Shrink factor for full-frame view, default=0 (auto)",default=0)
+	parser.add_argument("--apix",type=float,help="Override the A/pix value stored in the file header",default=0.0)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 		

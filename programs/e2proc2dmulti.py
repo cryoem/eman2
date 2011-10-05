@@ -35,7 +35,6 @@
 
 from EMAN2db import db_list_dicts
 from EMAN2 import *
-from optparse import OptionParser
 import sys
 import os.path
 import math
@@ -51,38 +50,38 @@ def main():
 	on many files.
 """
 
-	parser = OptionParser(usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	
-	parser.add_option("--postfix", type="string", help="Adds this string to each input filename to produce output filename (avoid overwriting)",default=None)
-	parser.add_option("--allparticles",action="store_true",help="Will process all particle sets stored in BDB in the particles subdirectory",default=False)
-	parser.add_option("--apix", type="float", help="A/pixel for S scaling")
-	parser.add_option("--clip", metavar="xsize,ysize", type="string", action="append",
+	parser.add_argument("--postfix", type=str, help="Adds this string to each input filename to produce output filename (avoid overwriting)",default=None)
+	parser.add_argument("--allparticles",action="store_true",help="Will process all particle sets stored in BDB in the particles subdirectory",default=False)
+	parser.add_argument("--apix", type=float, help="A/pixel for S scaling")
+	parser.add_argument("--clip", metavar="xsize,ysize", type=str, action="append",
 					help="Specify the output size in pixels xsize,ysize[,xcenter,ycenter], images can be made larger or smaller.")
-	parser.add_option("--process", metavar="processor_name:param1=value1:param2=value2", type="string",
+	parser.add_argument("--process", metavar="processor_name:param1=value1:param2=value2", type=str,
 					action="append", help="apply a processor named 'processorname' with all its parameters/values.")
-	parser.add_option("--autoinvert", action="store_true",help="Automatically decides whether to invert each stack of images to make particles white (EMAN2 convention). Decision is made for an entire stack. Non-inverted images will NOT BET PROCESSED AT ALL !",default=False)
-	parser.add_option("--mult", metavar="k", type="float", help="Multiply image by a constant. mult=-1 to invert contrast.")
-	parser.add_option("--meanshrink", metavar="n", type="int", action="append",
+	parser.add_argument("--autoinvert", action="store_true",help="Automatically decides whether to invert each stack of images to make particles white (EMAN2 convention). Decision is made for an entire stack. Non-inverted images will NOT BET PROCESSED AT ALL !",default=False)
+	parser.add_argument("--mult", metavar="k", type=float, help="Multiply image by a constant. mult=-1 to invert contrast.")
+	parser.add_argument("--meanshrink", metavar="n", type=int, action="append",
 					help="Reduce an image size by an integral scaling factor using average. Clip is not required.")
-	parser.add_option("--medianshrink", metavar="n", type="int", action="append",
+	parser.add_argument("--medianshrink", metavar="n", type=int, action="append",
 					help="Reduce an image size by an integral scaling factor, uses median filter. Clip is not required.")
-	parser.add_option("--multfile", type="string", action="append",
+	parser.add_argument("--multfile", type=str, action="append",
 								help="Multiplies the volume by another volume of identical size. This can be used to apply masks, etc.")
 	
-	parser.add_option("--norefs", action="store_true", help="Skip any input images which are marked as references (usually used with classes.*)")
-	parser.add_option("--radon",  action="store_true", help="Do Radon transform")
-	parser.add_option("--randomize", type="string", action="append",help="Randomly rotate/translate the image. Specify: da,dxy,flip  da is a uniform distribution over +-da degrees, dxy is a uniform distribution on x/y, if flip is 1, random handedness changes will occur")
-	parser.add_option("--rotate", type="float", action="append", help="Rotate clockwise (in degrees)")
-	parser.add_option("--fp",  type="int", help="This generates rotational/translational 'footprints' for each input particle, the number indicates which algorithm to use (0-6)")
-	parser.add_option("--scale", metavar="f", type="float", action="append",
+	parser.add_argument("--norefs", action="store_true", help="Skip any input images which are marked as references (usually used with classes.*)")
+	parser.add_argument("--radon",  action="store_true", help="Do Radon transform")
+	parser.add_argument("--randomize", type=str, action="append",help="Randomly rotate/translate the image. Specify: da,dxy,flip  da is a uniform distribution over +-da degrees, dxy is a uniform distribution on x/y, if flip is 1, random handedness changes will occur")
+	parser.add_argument("--rotate", type=float, action="append", help="Rotate clockwise (in degrees)")
+	parser.add_argument("--fp",  type=int, help="This generates rotational/translational 'footprints' for each input particle, the number indicates which algorithm to use (0-6)")
+	parser.add_argument("--scale", metavar="f", type=float, action="append",
 					help="Scale by specified scaling factor. Clip must also be specified to change the dimensions of the output map.")
-	parser.add_option("--selfcl", metavar="steps mode", type="int", nargs=2,
+	parser.add_argument("--selfcl", metavar="steps mode", type=int, nargs=2,
 					help="Output file will be a 180x180 self-common lines map for each image.")
-	parser.add_option("--translate", type="string", action="append", help="Translate by x,y pixels")
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", help="verbose level [0-9], higner number means higher level of verboseness",default=0)
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_option("--writejunk", action="store_true", help="Writes the image even if its sigma is 0.", default=False)
+	parser.add_argument("--translate", type=str, action="append", help="Translate by x,y pixels")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higner number means higher level of verboseness",default=0)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--writejunk", action="store_true", help="Writes the image even if its sigma is 0.", default=False)
 	
 	append_options = ["clip", "process", "meanshrink", "medianshrink", "scale", "randomize", "rotate", "translate", "multfile"]
 

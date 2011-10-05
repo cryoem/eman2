@@ -46,7 +46,6 @@ from EMAN2db import db_open_dict
 #import Numeric
 from math import *
 from sys import argv
-from optparse import OptionParser
 
 from e2tomoaverage import check_tomo_options
 
@@ -309,26 +308,26 @@ def main():
 
 	"""
 	
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--probe",type="string",help="The probe. This is the model that the input images will be aligned to", default=None)
-	parser.add_option("--n",type="int",help="0 or 1, multiplication by the reciprocal of the boxsize", default=1)
-	parser.add_option("--dbls",type="string",help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
-	parser.add_option("--aliset",type="string",help="Supplied with avgout. Used to choose different alignment parameters from the local database. Used by workflow.", default=None)
-	parser.add_option("--avgout",type="string",help="If specified will produce an averaged output, only works if you've previously run alignments", default=None)
-	parser.add_option("--parallel",type="string",default=None,help="Use parallelism")
-	parser.add_option("--align",type="string",help="The aligner and its parameters. e.g. --align=rt.3d.grid:ralt=180:dalt=10:dphi=10:rphi=180:search=5", default="rt.3d.grid")
-	parser.add_option("--aligncmp",type="string",help="The comparator used for determing the best initial alignment", default="dot.tomo:threshold=0")
-	parser.add_option("--cmp",type="string",help="The comparator used to obtain the final similarity", default="dot.tomo:threshold=0")
-	parser.add_option("--ralign",type="string",help="This is the second stage aligner used to refine the first alignment. This is usually the \'refine\' aligner.", default=None)
-	parser.add_option("--raligncmp",type="string",help="The comparator used for determing the refined alignment", default="dot.tomo:threshold=0")
-	parser.add_option("--nsoln",type="int",help="The number of solutions to report", default=10)
-	parser.add_option("--shrink",type="int",help="Shrink the data as part of the alignment - for speed purposes but at the potential loss of accuracy",default=None)
-	parser.add_option("--filter",type="string",help="The name and parameters of an EMAN2 processor. Will be applied prior to shrinking.",default=None)
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--probe",type=str,help="The probe. This is the model that the input images will be aligned to", default=None)
+	parser.add_argument("--n",type=int,help="0 or 1, multiplication by the reciprocal of the boxsize", default=1)
+	parser.add_argument("--dbls",type=str,help="data base list storage, used by the workflow. You can ignore this argument.",default=None)
+	parser.add_argument("--aliset",type=str,help="Supplied with avgout. Used to choose different alignment parameters from the local database. Used by workflow.", default=None)
+	parser.add_argument("--avgout",type=str,help="If specified will produce an averaged output, only works if you've previously run alignments", default=None)
+	parser.add_argument("--parallel",type=str,default=None,help="Use parallelism")
+	parser.add_argument("--align",type=str,help="The aligner and its parameters. e.g. --align=rt.3d.grid:ralt=180:dalt=10:dphi=10:rphi=180:search=5", default="rt.3d.grid")
+	parser.add_argument("--aligncmp",type=str,help="The comparator used for determing the best initial alignment", default="dot.tomo:threshold=0")
+	parser.add_argument("--cmp",type=str,help="The comparator used to obtain the final similarity", default="dot.tomo:threshold=0")
+	parser.add_argument("--ralign",type=str,help="This is the second stage aligner used to refine the first alignment. This is usually the \'refine\' aligner.", default=None)
+	parser.add_argument("--raligncmp",type=str,help="The comparator used for determing the refined alignment", default="dot.tomo:threshold=0")
+	parser.add_argument("--nsoln",type=int,help="The number of solutions to report", default=10)
+	parser.add_argument("--shrink",type=int,help="Shrink the data as part of the alignment - for speed purposes but at the potential loss of accuracy",default=None)
+	parser.add_argument("--filter",type=str,help="The name and parameters of an EMAN2 processor. Will be applied prior to shrinking.",default=None)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	if EMUtil.cuda_available():
-		parser.add_option("--cuda",action="store_true",help="GPU acceleration using CUDA. Experimental", default=False)
+		parser.add_argument("--cuda",action="store_true",help="GPU acceleration using CUDA. Experimental", default=False)
    
 	(options, args) = parser.parse_args()
 	

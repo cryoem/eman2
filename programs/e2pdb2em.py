@@ -43,7 +43,6 @@
 
 from EMAN2 import *
 from sparx import *
-from optparse import OptionParser
 from math import *
 from global_def import *
 import os
@@ -76,7 +75,7 @@ def create_Fgaus(nx,ny,nz,pixel_size,C1,B1,C2,B2):
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] input.pdb output.hdf
+	usage = """prog [options] input.pdb output.hdf
 	
 	Converts a pdb file into an electron density map. 0,0,0 in PDB space will 
 	map to the center of the volume. Each atom is represented by a Gaussian with a width 
@@ -86,17 +85,17 @@ def main():
 	Atomic form factors will have little impact until close to atomic resolution at
 	which point molecular orbitals really should also be considered."""
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--apix", "-A", type="float", help="A/voxel", default=1.0)
-	parser.add_option("--box", "-B", type="string", help="Box size in pixels, <xyz> or <x>,<y>,<z>")
-	parser.add_option("--het", action="store_true", help="Include HET atoms in the map", default=False)
-	#parser.add_option("--chains",type="string",help="String list of chain identifiers to include, eg 'ABEFG'")
-	parser.add_option("--center",  type="string",  default="a", help="center: c - coordinates, a - center of gravity, n - no" )
-	parser.add_option("--O",  action="store_true", default=False, help="use O system of coordinates")
-	parser.add_option("--quiet",action="store_true",default=False,help="Verbose is the default")
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--apix", "-A", type=float, help="A/voxel", default=1.0)
+	parser.add_argument("--box", "-B", type=str, help="Box size in pixels, <xyz> or <x>,<y>,<z>")
+	parser.add_argument("--het", action="store_true", help="Include HET atoms in the map", default=False)
+	#parser.add_argument("--chains",type=str,help="String list of chain identifiers to include, eg 'ABEFG'")
+	parser.add_argument("--center",  type=str,  default="a", help="center: c - coordinates, a - center of gravity, n - no" )
+	parser.add_argument("--O",  action="store_true", default=False, help="use O system of coordinates")
+	parser.add_argument("--quiet",action="store_true",default=False,help="Verbose is the default")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")

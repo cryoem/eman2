@@ -32,7 +32,6 @@
 #
 
 from EMAN2 import *
-from optparse import OptionParser
 import sys
 import re
 import os
@@ -45,25 +44,25 @@ ee_expressions = ["expenv","ee"]
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <input file> 
+	usage = """prog [options] <input file> 
 	Experimental program, not for general use. See e2iminfo.py and e2bdb.py for general image information queries"""
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-#	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
-	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: circle, ref, grid",default=[])
-#	parser.add_option("--threshold","-T",type="float",help="Threshold for keeping particles. 0-4, 0 excludes all, 4 keeps all.",default=2.0)
-#	parser.add_option("--maxbad","-M",type="int",help="Maximumum number of unassigned helices",default=2)
-#	parser.add_option("--minhelix","-H",type="int",help="Minimum residues in a helix",default=6)
-#	parser.add_option("--apix","-P",type="float",help="A/Pixel",default=1.0)
+#	parser.add_argument("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
+	parser.add_argument("--auto","-A",type=str,action="append",help="Autobox using specified method: circle, ref, grid",default=[])
+#	parser.add_argument("--threshold","-T",type=float,help="Threshold for keeping particles. 0-4, 0 excludes all, 4 keeps all.",default=2.0)
+#	parser.add_argument("--maxbad","-M",type=int,help="Maximumum number of unassigned helices",default=2)
+#	parser.add_argument("--minhelix","-H",type=int,help="Minimum residues in a helix",default=6)
+#	parser.add_argument("--apix","-P",type=float,help="A/Pixel",default=1.0)
 	
-	parser.add_option("--getinfo",type="string",help="getinfo from file (either defocus, ac (amplitude contrast), or bfactor)",default="")
-	parser.add_option("--remove",type="string",help="getinfo from file (either defocus, ac (amplitude contrast), or bfactor)",default="")
-	parser.add_option("--op",type="string",help="getinfo from file (either defocus, ac (amplitude contrast), or bfactor)",default="")
-	parser.add_option("--outfile",type="string",help="The output file name, may not be required",default="")
-	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists.")
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--getinfo",type=str,help="getinfo from file (either defocus, ac (amplitude contrast), or bfactor)",default="")
+	parser.add_argument("--remove",type=str,help="getinfo from file (either defocus, ac (amplitude contrast), or bfactor)",default="")
+	parser.add_argument("--op",type=str,help="getinfo from file (either defocus, ac (amplitude contrast), or bfactor)",default="")
+	parser.add_argument("--outfile",type=str,help="The output file name, may not be required",default="")
+	parser.add_argument("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists.")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
