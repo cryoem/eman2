@@ -48,7 +48,7 @@ def main():
 		t = Transform({"type":"eman","tz":(map3d.get_zsize()/2 - z)})
 		slice2d = EMData(map3d.get_xsize(), map3d.get_ysize())
 		slice2d.cut_slice(map3d, t, 0)
-		polarslice = slice2d.unwrap(0,-1,180,0,0,1)
+		polarslice = slice2d.unwrap(0,-1,180,0,0,1,0)
 		
 		if unwraped3d == None:
 			unwraped3d = EMData(polarslice.get_xsize(), polarslice.get_ysize(), map3d.get_zsize())
