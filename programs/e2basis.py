@@ -70,6 +70,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 	parser.add_argument("--basislist","-z",type=str,help="List of basis vectors to use.",default=None)
 
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	#parser.add_argument("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
 	#parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=-1)
@@ -78,7 +79,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 	(options, args) = parser.parse_args()
 #	if len(args)>0 : parser.error("e2basis.py takes no arguments, only options")
 
-	logid=E2init(sys.argv)
+	logid=E2init(sys.argv,options.ppid)
 	
 	# second parameter is always the input basis set
 	if options.basislist:

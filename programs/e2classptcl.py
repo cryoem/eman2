@@ -55,7 +55,8 @@ Extracts particles associated with specific class-averages and combines them int
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--vstack",action="store_true",help="Will output to a bdb virtual stack instead of copying the image data. Input images must have been BDB for this to work.",default=False)
 	parser.add_argument("--classes",type=str,help="Comma separated list of class-numbers to extract particles for",default=None)
-
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Please provide a file containing class-averages and an output file")
 	try :
@@ -64,7 +65,7 @@ Extracts particles associated with specific class-averages and combines them int
 		print "Please specify --classes with a list of comma-separated class numbers"
 		sys.exit(1)
 	
-	logid=E2init(sys.argv)
+	logid=E2init(sys.argv,options.ppid)
 
 	if options.vstack : extract_classav_vstack(args[0],options.classes,args[1],verbose=1)
 	else : extract_classav(args[0],options.classes,args[1],verbose=1)

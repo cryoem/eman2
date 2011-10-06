@@ -52,6 +52,7 @@ read into memory. Do not use it on large sets of particles !!!
 """
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
 	
@@ -59,7 +60,7 @@ read into memory. Do not use it on large sets of particles !!!
 		print "Error, please specify projection file and particles file"
 		sys.exit(1)
 	
-	logid=E2init(sys.argv)
+	logid=E2init(sys.argv,options.ppid)
 	
 	em_app = EMApp()
 	window = EM3DGLWidget() #TODO: see if this should be a subclass of EMSymViewerWidget instead

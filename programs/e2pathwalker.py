@@ -835,6 +835,7 @@ def main():
 	parser.add_argument("--json", type=int, help="If writing output pdb, also write JSON metadata. Default: 1. Options: 0, 1", default=1)
 	parser.add_argument("--overwrite", action="store_true", help="Overwrite files without prompting")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help='verbose level [0-9], higher number means higher level of verboseness')
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	(options, args) = parser.parse_args()
 
