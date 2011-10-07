@@ -67,7 +67,7 @@ def main():
 	parser.add_argument("--tiltdata", type=str,help="Stack of tilted images",default=None, guitype='filebox', row=1, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--align", type=str,help="The name of a aligner to be used in comparing the aligned images",default="translational", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=6, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--cmp", type=str,help="The name of a 'cmp' to be used in comparing the aligned images",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=7, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--tiltrange", type=int,help="The anglular tiltranger to search",default=15, guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--tiltrange", type=int,help="The angular tiltranger to search",default=15, guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--sym",  type=str,help="The recon symmetry", default="c1", guitype='symbox', row=5, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--tiltangle", type=float, help="The stage tilt used during data collection", default=0, guitype='floatbox', row=4, col=1, rowspan=1)
 	# options associated with e2projector3d.py

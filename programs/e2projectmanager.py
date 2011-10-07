@@ -210,6 +210,27 @@ underlineicon = [
     'bbbbbbbbbbbbbbb',
     'bbbbbbbbbbbbbbb'
 ]
+
+pmicon = [
+    '15 14 2 1',
+    'b c #000055',
+    'c c None',
+    'cccccccbccccccc',
+    'cccccbbbbbccccc',
+    'cccccbbbbbccccc',
+    'cccccbbbbbccccc',
+    'cccccbbbbbccccc',
+    'cccccbbbbbbbccc',
+    'cccccbbbbbbbccc',
+    'cccccbbbbbccccc',
+    'cccccbbbbbccccc',
+    'cccccbbbbbccccc',
+    'ccccbbbcbbbcccc',
+    'cccbbbcccbbbccc',
+    'cccbbbcccbbbccc',
+    'cccbbbbbbbbbccc'
+]
+
 from EMAN2 import *
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
@@ -227,6 +248,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		# default PM attributes
 		self.pm_cwd = os.getcwd()
 		self.pm_icon = os.getenv("EMAN2DIR")+"/images/EMAN2Icon.png"
+		self.setWindowIcon(QtGui.QIcon(QtGui.QPixmap(pmicon)))
 		
 		# Set Defaults
 		self.usingEMEN = False
