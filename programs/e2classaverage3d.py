@@ -73,6 +73,7 @@ def main():
 	parser.add_argument("--iter", type=int, help="The number of iterations to perform. Default is 1.", default=1, guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--savesteps",action="store_true", help="If set, will save the average after each iteration to class_#.hdf. Each class in a separate file. Appends to existing files.",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--saveali",action="store_true", help="If set, will save the aligned particle volumes in class_ptcl.hdf. Overwrites existing file.",default=False, guitype='boolbox', row=3, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--saveallalign",action="store_true", help="If set, will save the alignment parameters after each iteration",default=False, guitype='boolbox', row=3, col=2, rowspan=1, colspan=1)
 	parser.add_argument("--sym", dest = "sym", default=None, help = "Symmetry to impose - choices are: c<n>, d<n>, h<n>, tet, oct, icos")
 	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=7, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--normproc",type=str,help="Normalization processor applied to particles before alignment. Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'", default="normalize.mask")
@@ -144,7 +145,7 @@ def main():
 		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
 		sys.exit(1)
 	if options.path and options.path[:4].lower()!="bdb:" : options.path="bdb:"+options.path
-	if not options.path : options.path="bdb:"+numbered_path("ca3d",True)
+	if not options.path : options.path="bdb:"+numbered_path("class3d",True)
 	
 	hdr = EMData(options.input,0,True)
 	nx = hdr["nx"]
@@ -292,7 +293,9 @@ def main():
 				print "Results:"
 				pprint(results)
 			
-			ref=make_average(options.input,results,options.averager,options.saveali,options.keep,options.keepsig,options.verbose)		# the reference for the next iteration
+			if options.saveallalign : saveallalign=it
+			else: saveallalign=-1
+			ref=make_average(options.input,options.path,results,options.averager,options.saveali,saveallalign,options.keep,options.keepsig,options.verbose)		# the reference for the next iteration
 			
 			#postprocess(ref,options.mask,options.normproc,options.postprocess) #jesus
 			postprocess(ref,None,options.normproc,options.postprocess) #jesus
@@ -307,7 +310,7 @@ def main():
 		if options.verbose: 
 			print "Preparing final average"
 		# new average
-		ref=make_average(options.input,results,options.averager,options.saveali,options.keep,options.keepsig,options.verbose)		# the reference for the next iteration
+		ref=make_average(options.input,options.path,results,options.averager,options.saveali,saveallalign,options.keep,options.keepsig,options.verbose)		# the reference for the next iteration
 		
 		#if options.postprocess!=None : 
 			#ref.process_inplace(options.postprocess[0],options.postprocess[1])     #jesus - The post process should be applied to the refinment averages. The last one is identical
@@ -343,7 +346,7 @@ def postprocess(img,optmask,optnormproc,optpostprocess):
 		img.process_inplace(optpostprocess[0],optpostprocess[1])
 
 
-def make_average(ptcl_file,align_parms,averager,saveali,keep,keepsig,groups,verbose=1):			#jesus - added the groups parameter
+def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,keepsig,groups,verbose=1):			#jesus - added the groups parameter
 	"""Will take a set of alignments and an input particle stack filename and produce a new class-average.
 	Particles may be excluded based on the keep and keepsig parameters. If keepsig is not set, then keep represents
 	an absolute fraction of particles to keep (0-1). Otherwise it represents a sigma multiplier akin to e2classaverage.py"""
@@ -379,6 +382,9 @@ def make_average(ptcl_file,align_parms,averager,saveali,keep,keepsig,groups,verb
 	
 	avgr=Averagers.get(averager[0], averager[1])
 	included=[]
+	if saveallalign>=0 :
+		db=db_open_dict(%s#ptcl_align_%02d"%(path,saveallalign)
+	else : db=None
 	for i,ptcl_parms in enumerate(align_parms):
 		ptcl=EMData(ptcl_file,i)
 		ptcl.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
@@ -390,7 +396,8 @@ def make_average(ptcl_file,align_parms,averager,saveali,keep,keepsig,groups,verb
 			ptcl['origin_x'] = 0
 			ptcl['origin_y'] = 0		# jesus - the origin needs to be reset to ZERO to avoid display issues in Chimera
 			ptcl['origin_z'] = 0
-			ptcl.write_image("%s#class_ptcl",(options.path,i))
+			ptcl.write_image("%s#class_ptcl"%path,i)
+		if db!=None : db[i]=ptcl_parms[0]["xform.align3d"]
 	
 	if verbose: 
 		print "Kept %d / %d particles in average"%(len(included),len(align_parms))

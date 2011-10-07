@@ -104,11 +104,9 @@ class EMTextFileType(EMFileType):
 		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."
 
 		if not isprint(header) : return False			# demand printable Ascii. FIXME: what about unicode ?
-		print "txt ",path
 
 		try: size=os.stat(path)[6]
 		except: return False
-		print "txt2 ",path
 		
 		if size>5000000 : dim="big"
 		else :
@@ -792,8 +790,12 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.gbl.addWidget(self.wtree,1,1)
 		
 		# Lower region has buttons for actions
-		self.hbl2 = QtGui.QHBoxLayout()
+		self.hbl2 = QtGui.QGridLayout()
 
+		self.wbutmisc=[]
+		
+		
+	
 		self.wbutshow = QtGui.QPushButton("Show")
 		self.hbl2.addWidget(self.wbutshow)
 		
