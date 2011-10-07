@@ -2022,7 +2022,10 @@ class EMBDBDelegate(EMBrowseDelegate):
 			if n > 1:
 				for i in range(n):
 					d = db.get_header(i)
-					if d!=None and d.has_key("nz") : break
+					try:
+						if d!=None and d.has_key("nz") : break
+					except: 
+						return EMBDBItem(self,f[0],real_directory+MDS+f[0])
 				if d["nz"] == 1:
 					#a = EM2DStackItem(self,f[0],"bdb:"+db_directory+"#"+f[0])
 					a = EM2DStackItem(self,f[0],folderize(real_directory)+f[0])
