@@ -144,7 +144,7 @@ def main():
 		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
 		sys.exit(1)
 	if options.path and options.path[:4].lower()!="bdb:" : options.path="bdb:"+options.path
-	if not options.path : options.path="bdb:"+numbered_path("r2d",True)
+	if not options.path : options.path="bdb:"+numbered_path("ca3d",True)
 	
 	hdr = EMData(options.input,0,True)
 	nx = hdr["nx"]

@@ -130,6 +130,7 @@ void unbind_cuda_textureB(const int ndims) {
 
 bool device_init() {
 	static bool init = true;
+	int device = NULL;
 	
 	if (init) {
 		int deviceCount;
@@ -137,7 +138,7 @@ bool device_init() {
 		
 		if (deviceCount == 0){
 			printf("WARNING NO CUDA DEVICES FOUND, NOT USING CUDA\n");
-			return 0;
+			return device;
 		}
 		
  		if (deviceCount > 1) {
@@ -151,7 +152,6 @@ bool device_init() {
 		if (deviceProp.major < 1) exit(2);
 		
 		//Loop through the available devices and see if any do not have a lock
-		int device = NULL;
 		char filename[16]; // Should never be more than 12 char, but we go to 16, just to be safe. I am paranoid about buffer overflows, though in this case there isn't much risk
 		for(int i = 0; i < deviceCount; i++)
 		{
@@ -159,9 +159,9 @@ bool device_init() {
 			if (fopen(filename,"r") == NULL)
 			{
 				// Found a free CUDA device, now put a lock on it
-				pFile = (fopen(filename,"w");
+				FILE* pFile = fopen(filename,"w");
 				fputs("Running CUDA", pFile);
-				close(pFile);
+				fclose(pFile);
 				device = i;
 				break;
 			}

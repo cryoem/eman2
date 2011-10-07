@@ -50,6 +50,7 @@ int EMData::memused = 0;
 int EMData::fudgemem = 1.024E8; //let's leave 10 MB of 'fudge' memory on the device
 int EMData::mempoolused = -1;
 int EMData::mempoolarraysize = 0;
+int EMData::cudadevicenum = -1;
 bool EMData::usemempoolswitch = false;
 bool EMData::usecuda = (getenv("EMANUSECUDA") == NULL) ? 0 : bool(atoi(getenv("EMANUSECUDA")));
 float* EMData::mempool[] = {0};
@@ -434,9 +435,10 @@ void EMData::cuda_cleanup()
 
 bool EMData::cuda_initialize()
 {
-	if(device_init() != NULL)
+	int device = device_init();
+	if(device != NULL)
 	{
-		cudadevicenum = device;
+		EMData::cudadevicenum = device;
 		return 1;
 	} else {
 		switchoffcuda();
