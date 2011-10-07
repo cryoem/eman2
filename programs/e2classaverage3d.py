@@ -63,6 +63,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_header(name="caheader", help='Options below this label are specific to e2classaverage3d', title="### e2classaverage3d options ###", default=None, guitype='filebox', row=2, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--path",type=str,default=None,help="Path for the refinement, default=auto")
 	parser.add_argument("--input", type=str, help="The name of the input volume stack. MUST be HDF or BDB, since volume stack support is required.", default=None, guitype='filebox', row=0, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--output", type=str, help="The name of the output class-average stack. MUST be HDF or BDB, since volume stack support is required.", default=None, guitype='strbox', row=1, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--oneclass", type=int, help="Create only a single class-average. Specify the class number.",default=None)
@@ -138,7 +139,13 @@ def main():
 		print "Sorry, resultmx not implemented yet"
 	if options.resultmx!=None: 
 		options.storebad=True
-
+		
+	if options.path and ("/" in options.path or "#" in options.path) :
+		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
+		sys.exit(1)
+	if options.path and options.path[:4].lower()!="bdb:" : options.path="bdb:"+options.path
+	if not options.path : options.path="bdb:"+numbered_path("r2d",True)
+	
 	hdr = EMData(options.input,0,True)
 	nx = hdr["nx"]
 	ny = hdr["ny"]
@@ -228,12 +235,12 @@ def main():
 			
 			# We copy the particles for this class into bdb:seedtree_0
 			for i,j in enumerate(ptcls[:nseed]):
-				EMData(options.input,j).write_image("bdb:seedtree_0",i)
+				EMData(options.input,j).write_image("%s#seedtree_0"%options.path,i)
 				
 			# Outer loop covering levels in the converging binary tree
 			for i in range(nseediter):
-				infile="bdb:seedtree_%d"%i
-				outfile="bdb:seedtree_%d"%(i+1)
+				infile="%s#seedtree_%d"%(options.path,i)
+				outfile="%s#seedtree_%d"%(options.path,i+1)
 			
 				tasks=[]
 				# loop over volumes in the current level
@@ -261,7 +268,7 @@ def main():
 			ref=EMData(outfile,0)		# result of the last iteration
 			
 			if options.savesteps :
-				ref.write_image("bdb:class_%02d"%ic,-1)
+				ref.write_image("%s#class_%02d"%(options.path,ic),-1)
 		
 		# Now we iteratively refine a single class
 		for it in range(options.iter):
@@ -295,7 +302,7 @@ def main():
 				symmetrize(ref,options.sym)
 			
 			if options.savesteps :
-				ref.write_image("bdb:class_%02d"%ic,it)
+				ref.write_image("%s#class_%02d"%(options.path,ic),it)
 
 		if options.verbose: 
 			print "Preparing final average"
@@ -383,7 +390,7 @@ def make_average(ptcl_file,align_parms,averager,saveali,keep,keepsig,groups,verb
 			ptcl['origin_x'] = 0
 			ptcl['origin_y'] = 0		# jesus - the origin needs to be reset to ZERO to avoid display issues in Chimera
 			ptcl['origin_z'] = 0
-			ptcl.write_image("bdb:class_ptcl",i)
+			ptcl.write_image("%s#class_ptcl",(options.path,i))
 	
 	if verbose: 
 		print "Kept %d / %d particles in average"%(len(included),len(align_parms))
