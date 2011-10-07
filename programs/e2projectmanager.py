@@ -298,7 +298,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		self.updateProject()
 		
 	def closeEvent(self, event):
-		""" Upon PM close, close the taskmanager and the logbook """
+		""" Upon PM close, close the taskmanager and the notebook """
 		if self.notebook: self.notebook.close()
 		if self.taskmanager: self.taskmanager.close()
 	
@@ -411,22 +411,29 @@ class EMProjectManager(QtGui.QMainWindow):
 		helpmenu.addAction(helpdoc)
 	
 	def _on_sprmode(self):
+		""" Called when the user changes modes in the menu """
 		self.tree_stacked_widget.setCurrentIndex(0)
+		self.gui_stacked_widget.setCurrentIndex(0)
 		
 	def _on_tomomode(self):
+		""" Called when the user changes modes in the menu """
 		self.tree_stacked_widget.setCurrentIndex(1)
+		self.gui_stacked_widget.setCurrentIndex(0)
 		
 	def _on_newproject(self):
+		""" Open the new project dialog """
 		np = DialogNewProject(self)
 		np.exec_()
 		self.activateWindow()
 		
 	def _on_openproject(self):
+		""" Open the open project dialog """
 		np = DialogOpenProject(self)
 		np.exec_()
 		self.activateWindow()
 		
 	def _on_editproject(self):
+		""" Open the edit project dialog """
 		np = DialogEditProject(self)
 		np.exec_()
 		self.activateWindow()
@@ -603,7 +610,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		
 	def loadNoteBook(self):
 		"""
-		Make logbook
+		Make notebook
 		"""
 		if not self.notebook:
 			self.notebook = NoteBook(self)
@@ -611,7 +618,7 @@ class EMProjectManager(QtGui.QMainWindow):
 			
 	def loadTaskManager(self):
 		"""
-		Make logbook
+		Make notebook
 		"""
 		if not self.taskmanager:
 			self.taskmanager = TaskManager(self)
@@ -922,7 +929,7 @@ class NoteBook(QtGui.QWidget):
 		self.setLayout(grid)
 		self.setMinimumWidth(600)
 		
-		# Load the logbook and update
+		# Load the notebook and update
 		self.loadNoteBook()
 		self.checkEMAN2LogFile()
 		
@@ -1068,7 +1075,7 @@ class NoteBook(QtGui.QWidget):
 		
 	def closeEvent(self, event):
 		if not self.donotsave: self.writeNotes()
-		self.pm().logbook = None
+		self.pm().notebook = None
 		self.pm().updateProject()
 
 class PMTextEdit(QtGui.QTextEdit):
