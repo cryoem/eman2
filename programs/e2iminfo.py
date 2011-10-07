@@ -63,10 +63,11 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_argument("-H", "--header", action="store_true",help="show all header information",default=False)
-	parser.add_argument("-N", "--number", type=int, help="Image number for single image info",default=0)
+	parser.add_argument("-N", "--number", type=int, help="Image number for single image info",default=-1)
 	parser.add_argument("-s", "--stat", action="store_true",help="Show statistical information about the image(s).",default=False)
 	parser.add_argument("-E", "--euler", action="store_true",help="Show Euler angles from header",default=False)
 	parser.add_argument("-a", "--all", action="store_true",help="Show info for all images in file",default=False)
+	parser.add_argument("-c", "--count", action="store_true",help="Just show a count of the number of particles in each file",default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
@@ -96,6 +97,7 @@ def main():
 			except :
 				print "Image read error (%s)"%imagefile
 				continue
+			if options.count : print "%d\t"%(nimg),
 			if d["nz"]==1 : print "%s\t %d images in %s format\t%d x %d"%(imagefile,nimg,imgtypename,d["nx"],d["ny"])
 			else : print "%s\t %d images in %s format\t%d x %d x %d"%(imagefile,nimg,imgtypename,d["nx"],d["ny"],d["nz"])
 			
@@ -111,7 +113,8 @@ def main():
 			else : print "%s\t %d images in BDB format\t%d x %d x %d"%(imagefile,len(dct),d["nx"],d["ny"],d["nz"])
 
 		if options.all : imgn=xrange(nimg)
-		else : imgn=[options.number]
+		elif options.number>=0 : imgn=[options.number]
+		else: imgn=[]
 
 		nptcl=0
 		d=EMData()

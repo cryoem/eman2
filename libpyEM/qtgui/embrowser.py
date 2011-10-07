@@ -39,6 +39,21 @@ from EMAN2 import *
 import os.path
 import traceback
 
+# This is a floating point number-finding regular expression
+renumfind=re.compile(r"-?[0-9]+\.*[0-9]*e?-?[0-9]*")
+
+
+def isprint(s):
+	"returns True if the string contains only printable ascii characters"
+	
+	# Seems like no isprint() in python, this does basically the same thing
+	mpd=s.translate("AAAAAAAAABBAABAAAAAAAAAAAAAAAAAA"+"B"*95+"A"*129)
+	if "A" in mpd : 
+		ind=mpd.index("A")
+		print "bad chr %d at %d"%(ord(s[ind]),ind)
+		return False
+	return True
+
 class EMFileType:
 	"""This is an abstract base class for handling interaction with files of different type"""
 
@@ -53,8 +68,8 @@ class EMFileType:
 	# A list of all types that need to be checked when the file extension can't be interpreted
 	alltocheck=()
 
-	def __init__(self,path,header):
-		self.path=None			# the current path this FileType is representing
+	def __init__(self,path):
+		self.path=path			# the current path this FileType is representing
 
 	def setFile(self,path):
 		"""Represent a new file. Will update inspector if open. Assumes isValid already checked !"""
@@ -71,16 +86,10 @@ class EMFileType:
 		return False
 
 	def menuItems(self):
-		"Returns a list of (name,callback) tuples detailing the operations the user can call on the current file"
+		"""Returns a list of (name,help,callback) tuples detailing the operations the user can call on the current file.
+		callbacks will also be passed a reference to the browser object."""
 		return []
 		
-def isprint(s):
-	"returns True if the string contains only printable ascii characters"
-	
-	# Seems like no isprint() in python, this does basically the same thing
-	mpd=s.translate("AAAAAAAAAABAABAAAAAAAAAAAAAAAAAA"+"B"*95+"A"*129)
-	if "A" in mpd : return False
-	return True
 
 class EMTextFileType(EMFileType):
 	"""FileType for files containing normal ASCII text"""
@@ -95,9 +104,11 @@ class EMTextFileType(EMFileType):
 		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."
 
 		if not isprint(header) : return False			# demand printable Ascii. FIXME: what about unicode ?
+		print "txt ",path
 
 		try: size=os.stat(path)[6]
 		except: return False
+		print "txt2 ",path
 		
 		if size>5000000 : dim="big"
 		else :
@@ -105,12 +116,13 @@ class EMTextFileType(EMFileType):
 			lns=max(f.count("\n"),f.count("\r"))
 			dim="%d ln"%lns
 
-		return (size,"-",lns)
+		return (size,"-",dim)
 
 	def menuItems(self):
-		"Returns a list of (name,callback) tuples detailing the operations the user can call on the current file"
+		"No actions other than the inspector for text files"
 		return []
 		
+
 
 class EMPlotFileType(EMFileType):
 	"""FileType for files containing normal ASCII text"""
@@ -126,17 +138,79 @@ class EMPlotFileType(EMFileType):
 
 		if not isprint(header): return False
 		
+		# We need to try to count the columns in the file
 		hdr=header.splitlines()
+		numc=0
 		for l in hdr:
 			if l[0]=="#" : continue		# comment lines ok
 			
-		# TODO : Finish this
+			try: numc=len([float(i) for i in renumfind.findall(l)])		# number of numeric columns
+			except: 
+				return False		# shouldn't really happen...
+				
+			if numc>0 : break			# just finding the number of columns
 		
-		return True
+		# If we couldn't find at least one valid line with some numbers, give up
+		if numc==0 : return False
+		
+		try: size=os.stat(path)[6]
+		except: return False
 
+		# Make sure all of the lines have the same number of columns
+		fin=file(path,"r")
+		numr=0
+		for l in fin:
+			if l[0]=="#" : continue
+			
+			lnumc=len([float(i) for i in renumfind.findall(l)])
+			if lnumc!=0 and lnumc!=numc : return False				# 0 means the line contains no numbers, we'll live with that, but if there are numbers, it needs to match
+			if lnumc!=0 : numr+=1
+			
+		return (size,"-","%d x %d"%(numr,numc))
+
+	def __init__(self,path):
+		self.path=path			# the current path this FileType is representing
+
+		# Make sure all of the lines have the same number of columns
+		fin=file(path,"r")
+		numr=0
+		numc=0
+		for l in fin:
+			if l[0]=="#" : continue
+			
+			lnumc=len([float(i) for i in renumfind.findall(l)])
+			if lnumc!=0 and numc==0 : numc=lnumc
+			elif lnumc!=0 and lnumc!=numc : 
+				print "Error: invalid Plot file :",path
+				self.numr=0
+				self.numc=0
+				return
+			elif lnumc!=0 : numr+=1
+			
+			self.numr=numr
+			self.numc=numc
+			
+		
+		
 	def menuItems(self):
-		"Returns a list of (name,callback) tuples detailing the operations the user can call on the current file"
-		return []
+		"""Returns a list of (name,help,callback) tuples detailing the operations the user can call on the current file.
+		callbacks will also be passed a reference to the browser object."""
+		
+		if self.numc>2 : return [("Plot 2D+","Add to current plot",self.plot2dApp),("Plot 2D","Make new plot",self.plot2dNew),
+			("Plot 3D+","Add to current 3-D plot",self.plot3dApp),("Plot 3D","Make new 3-D plot",self.plot3dNew)]
+		return [("Plot 2D+","Add to current plot",self.plot2dApp),("Plot 2D","Make new plot",self.plot2dNew)]
+		
+	def plot2dApp(self,brws):
+		"Append self to current plot"
+		
+	def plot2dNew(self,brws):
+		"Make a new plot"
+		
+	def plot3dApp(self,brws):
+		"Append self to current 3-D plot"
+		
+	def plot3dNew(self,brws):
+		"Make a new 3-D plot"
 		
 
 class EMFolderFileType(EMFileType):
@@ -168,10 +242,74 @@ class EMBdbFileType(EMFileType):
 		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."
 		return False
 
+	def __init__(self,path):
+		self.path=path			# the current path this FileType is representing
+		self.bdb=db_open_dict(path,ro=True)
+		
+		# here we assume the bdb either contains numbered images OR key/value pairs. Not strictly valid,
+		# but typically true
+		self.nimg=len(self.bdb)
+		if self.nimg==0 : self.keys=self.bdb.keys()
+		else: self.keys=None
+		
+		if self.nimg>0:
+			im0=EMData(path,0,True)
+			self.dim=(im0["nx"],im0["ny"],im0["nz"])
+		else : self.dim=(0,0,0)
+			
 	def menuItems(self):
-		"Returns a list of (name,callback) tuples detailing the operations the user can call on the current file"
+		"Returns a list of (name,help,callback) tuples detailing the operations the user can call on the current file"
+		
+		# single 3-D
+		if self.nimg==1 and self.dim[2]>1 :
+			return [("Show 3D+","Add to 3D window",self.show3dApp),("Show 3D","New 3D Window",self.show3DNew),("Show Stack","Show as set of 2-D Z slices",self.show2dStack),
+				("Show 2D","Show in a scrollable 2D image window",self.show2dSingle),("Chimera","Open in chimera (if installed)",self.showChimera),
+				("FilterTool","Open in e2filtertool.py",self.showFilterTool)]
+		# single 2-D
+		elif self.nimg==1 and self.dim[1]>1 :
+			return [("Show 2D","Show in a 2D single image display",self.show2dsingle),("FilterTool","Open in e2filtertool.py",self.showFilterTool)]
+		# single 1-D
+		elif self.nimg==1:
+			return [("Plot 2D+","Add to current plot",self.plot2dApp),("Plot 2D","Make new plot",self.plot2dNew),
+				("Show 2D","Show in a 2D single image display",self.show2dSingle)]
+		# 3-D stack
+		elif self.nimg>1 and self.dim[2]>1 :
+			return [("Show 3D","Show all in a single 3D window",self.show3DNew),("Chimera","Open in chimera (if installed)",self.showChimera)]
+		# 2-D stack
+		elif self.nimg>1 and self.dim[1]>1 :
+			return [("Show Stack","Show all images together in one window",self.show2dStack),
+				("Show 2D","Show all images, one at a time",self.show2dsingle),("FilterTool","Open in e2filtertool.py",self.showFilterTool)]
+		# 1-D stack
+		elif self.nimg>0:
+			return [("Plot 2D","Plot all on a single 2-D plot",self.plot2dNew)]
+		
 		return []
 
+	def plot2dApp(self,brws):
+		"Append self to current plot"
+
+	def plot2dNew(self,brws):
+		"Make new plot"
+
+	def show3dApp(self,brws):
+		"Add to current 3-D window"
+		
+	def show3DNew(self,brws):
+		"New 3-D window"
+		
+	def show2dStack(self,brws):
+		"A set of 2-D images together "
+		
+	def show2dsingle(self,brws):
+		"Show a single 2-D image"
+		
+		
+	def showChimera(self,brws):
+		"Open in Chimera"
+		
+	def showFilterTool(self,brws):
+		"Open in e2filtertool.py"
+		
 class EMImageFileType(EMFileType):
 	"""FileType for files containing a single 2-D image"""
 
@@ -286,8 +424,8 @@ class EMDirEntry:
 				self.nimg=info[0]
 				if self.nimg>0:
 					if info[1][1]==1 : self.dim=str(info[1][0])
-					elif info[1][2]==1 : self.dim="%dx%d"%(info[1][0],info[1][1])
-					else : self.dim="%dx%dx%d"%(info[1][0],info[1][1],info[1][2])
+					elif info[1][2]==1 : self.dim="%d x %d"%(info[1][0],info[1][1])
+					else : self.dim="%d x %d x %d"%(info[1][0],info[1][1],info[1][2])
 					self.size=info[1][0]*info[1][1]*info[1][2]*4*self.nimg
 				else:
 					self.dim="-"
@@ -295,7 +433,7 @@ class EMDirEntry:
 				#d=db_open_dict("bdb:%s#00image_counts"%root,True)
 				#p=d[self.name]
 				#print self.name,p,root
-				#self.nimg=p[1]
+				#self.nimg=p[1]1
 				#if p[2][1]==1 : self.dim=str(p[2][0])
 				#elif p[2][2]==1 : self.dim="%dx%d"%(p[2][0],p[2][1])
 				#else : self.dim="%dx%dx%d"%(p[2][0],p[2][1],p[2][2])
@@ -310,7 +448,7 @@ class EMDirEntry:
 		return "<EMDirEntry %s>"%self.path()
 
 	#def __str__(self):
-		#return "<EMDirEntry %d>"%self.seq
+		#return "<EMDirEntry %d>"%self.1seq
 	
 	def path(self):
 		"""The full path of the current item"""
@@ -382,6 +520,8 @@ class EMDirEntry:
 		"""Fills in the expensive metadata about this entry. Returns False if no update was necessary."""
 		if self.filetype!=None : return False		# must all ready be filled in
 		
+		# we do this this way because there are so many possible image file exensions, and sometimes
+		# people use a non-standard one (esp for MRC files)
 		try: self.nimg=EMUtil.get_image_count(self.path())
 		except: self.nimg=0
 			
@@ -390,9 +530,11 @@ class EMDirEntry:
 			try: tmp=EMData(self.path(),0,True)		# try to read an image header for the file
 			except : print "Error : no first image in %s."%self.path()
 			
-			if tmp[ny]==1 : self.dim=str(tmp[ny])
-			elif info[1][2]==1 : self.dim="%dx%d"%(info[1][0],info[1][1])
-			else : self.dim="%dx%dx%d"%(info[1][0],info[1][1],info[1][2])
+			if tmp["ny"]==1 : self.dim=str(tmp["nx"])
+			elif tmp["nz"]==1 : self.dim="%d x %d"%(tmp["nx"],tmp["ny"])
+			else : self.dim="%d x %d x %d"%(tmp["nx"],tmp["ny"],tmp["nz"])
+			if self.nimg==1 : self.filetype="Image"
+			else : self.filetype="Image Stack"
 			
 		# Ok, we need to try to figure out what kind of file this is
 		else:
@@ -401,6 +543,7 @@ class EMDirEntry:
 			try: guesses=EMFileType.extbyft[os.path.splitext(self.path())[1]]		# This will get us a list of possible FileTypes for this extension
 			except: guesses=EMFileType.alltocheck
 			
+#			print "-------\n",guesses
 			for guess in guesses:
 				try : size,n,dim=guess.isValid(self.path(),head)		# This will raise an exception if isValid returns False
 				except: continue
@@ -571,6 +714,7 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 			
 	
 class myQItemSelection(QtGui.QItemSelectionModel):
+	"""For debugging"""
 	
 	def select(self,tl,br):
 		print tl.indexes()[0].row(),tl.indexes()[0].column(),int(br)
@@ -697,6 +841,9 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.curft=None		# a fileType instance for the currently hilighted object
 		self.models={}
 
+		self.setPath(".")	# start in the local directory
+
+
 	def editPath(self):
 		print "Return pressed in path editor"
 
@@ -708,6 +855,8 @@ class EMBrowserWidget(QtGui.QWidget):
 			obj=qism[0].internalPointer()
 			self.wpath.setText(obj.path())
 			self.curmodel.details(qism[0])
+			self.wtree.resizeColumnToContents(2)
+			self.wtree.resizeColumnToContents(3)
 			
 			# This makes an instance of a FileType for the selected object
 			ftc=obj.fileTypeClass() 
@@ -772,6 +921,9 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.wtree.setSortingEnabled(False)
 		self.wtree.setModel(self.curmodel)
 		self.wtree.setSortingEnabled(True)
+		self.wtree.resizeColumnToContents(0)
+		self.wtree.resizeColumnToContents(2)
+		self.wtree.resizeColumnToContents(3)
 		
 	def bookmarkPress(self,action):
 		""

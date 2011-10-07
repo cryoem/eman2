@@ -452,6 +452,7 @@ def db_write_image(self,fsp,*parms):
 			if isinstance(keys[0],int) and keys[0]<0 : raise Exception,"Negative integer keys not allowed %d"%keys[0]
 			db[keys[0]]=self
 			return
+		if len(parms)==0 : parms=[0]
 		if parms[0]<0 : parms=(len(db),)+parms[1:]
 		
 		key = 0

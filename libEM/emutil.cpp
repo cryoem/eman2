@@ -379,7 +379,8 @@ EMUtil::ImageType EMUtil::get_image_type(const string & in_filename)
 	off_t file_size = portable_ftell(in);
 
 	if (n == 0) {
-		LOGERR("file '%s' is an empty file", filename.c_str());
+//		This produces annoying console messages		
+//		LOGERR("file '%s' is an empty file", filename.c_str());
 		fclose(in);
 		return IMAGE_UNKNOWN;
 	}
