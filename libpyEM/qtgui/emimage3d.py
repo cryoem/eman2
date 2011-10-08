@@ -474,7 +474,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		if data:
 			self.cam.default_z = -1.25*data.get_xsize()
 			self.cam.cam_z = -1.25*data.get_xsize()
-	def set_data(self,data,file_name="",replace=True):
+	def set_data(self,data,file_name="",replace=False):
 		self.busy = True #Prevent updateGL() from doing anything until the end of this method
 		was_previous_data = bool(self.data)
 		
@@ -543,7 +543,17 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 
 					inspector.rotation_sliders.slider_rotate() #Causes a GL update
 			#############
-
+		else:
+			if not self.viewables:
+				self.inspector.add_isosurface()
+			else:
+				for model in self.viewables:
+					model.set_data(self.data)
+					inspector = model.get_inspector()
+					if previous_cam_data:
+						if model.get_type() == "Isosurface":
+							new_threshold = previous_normalized_threshold*data["sigma"] + data["mean"]
+							inspector.thr.setValue(new_threshold) # Causes a GL update
 		
 		if isinstance(self,EMImage3DWidget) and not was_previous_data:
 			#self.resize(self.width(),self.height())
