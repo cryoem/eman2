@@ -1198,7 +1198,8 @@ def openEMDCsock(addr,clientid=0, retry=3):
 	else: raise Exception,"Exceeded max retries in opening socket to "+str(addr)
 
 	# Introduce ourselves
-	addr=socket.inet_aton(socket.gethostbyname(socket.gethostname()))
+	#addr=socket.inet_aton(socket.gethostbyname(socket.gethostname()))	# This often returns 127.0.0.1  :^(
+	addr=socket.inet_aton(sock.getsockname()[0])
 	sockf.write("EMAN")
 	sockf.write(pack("<II",EMAN2PARVER,clientid))
 	sockf.write(addr)
@@ -2024,7 +2025,8 @@ class EMDCTaskClient(EMTaskClient):
 #		signal.signal(signal.SIGALRM,DCclient_alarm2)	# this is used for network timeouts
 
 		chainlist=recvobj(sockf)		# The first thing we get is a list of other clients to send data to
-		try: chainlist.remove(socket.gethostbyname(socket.gethostname()))
+		#try: chainlist.remove(socket.gethostbyname(socket.gethostname()))
+		try: chainlist.remove(sock2.getsockname()[0])
 		except:pass
 #		print "chainlist: ",chainlist
 		sockout,sockoutf=self.connectfromlist(chainlist)		# try to establish a connection to one of them
@@ -2134,7 +2136,8 @@ class EMDCTaskClient(EMTaskClient):
 		#bcast.bind(("",9989))
 		#bcast.setsockopt(socket.SOL_SOCKET,socket.SO_BROADCAST,1)
 		chainlist=recvobj(sockf)		# The first thing we get back is a list of other clients to send data to
-		try: chainlist.remove(socket.gethostbyname(socket.gethostname()))
+		#try: chainlist.remove(socket.gethostbyname(socket.gethostname()))
+		try: chainlist.remove(sock.getsockname()[0])
 		except: pass
 #		print "chainlist (%s): %s"%(socket.gethostbyname(socket.gethostname()),chainlist)
 		sockout,sockoutf=self.connectfromlist(chainlist)		# try to establish a connection to one of them

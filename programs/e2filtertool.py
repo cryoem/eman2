@@ -134,10 +134,10 @@ class EMProcessorWidget(QtGui.QWidget):
 		#button grid
 		self.gbl2=QtGui.QGridLayout()
 		self.gbl.addLayout(self.gbl2,0,0,1,1)
-		self.gbl2.setSpacing(1)
+		self.gbl2.setSpacing(10)
 		
-		self.gbl2.setColumnStretch(0,1)
-		self.gbl2.setColumnStretch(1,1)
+#		self.gbl2.setColumnStretch(0,1)
+#		self.gbl2.setColumnStretch(1,1)
 		
 #		self.wup = QtGui.QPushButton(app.style().standardIcon(QtGui.QStyle.SP_ArrowUp),"")
 		self.wup = QtGui.QPushButton(pix_up,"",self)
