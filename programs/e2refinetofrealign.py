@@ -156,7 +156,7 @@ for i in range(ny):
    mag = APERPIX / ctf_dict['apix']
    class_num = int(ptcl_data[0][i])
    if ptcl_data[5][i]:
-      t = Transform({"type":"eman","az":classes[class_num]['az'],"alt":classes[class_num]['alt']*-1,"phi":ptcl_data[DALPHA][i]+180,"tx":ptcl_data[2][i],"ty":ptcl_data[3][i]})
+      t = Transform({"type":"eman","az":classes[class_num]['az']+180,"alt":180-classes[class_num]['alt'],"phi":ptcl_data[DALPHA][i]*-1,"tx":ptcl_data[2][i],"ty":ptcl_data[3][i]})
    else:
       t = Transform({"type":"eman","az":classes[class_num]['az'],"alt":classes[class_num]['alt'],"phi":ptcl_data[DALPHA][i],"tx":ptcl_data[2][i],"ty":ptcl_data[3][i]})
    t = t.inverse()
