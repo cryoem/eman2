@@ -83,6 +83,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 	parser.add_argument("--list",type=str,help="Specify the name of a file with a list of images to use in creation of virtual stacks. Please see source for details.",default=None)
 	parser.add_argument("--restore",type=str,help="Write changes in the derived virtual stack back to the original stack",default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--checkctf",action="store_true",help="Verfies that all images in the file contain CTF information, and gives some basic statistics",default=False)
 
 	(options, args) = parser.parse_args()
 
@@ -272,7 +273,28 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 						print ""
 					else : print str(v)
 				dct.close()
+		if options.checkctf:
+			for db in dbs:
+				print "##### CTF -> ",db
+				dct=db_open_dict(path+db,ro=True)
+				keys=dct.keys()
+				defocus=set()
+				for k in keys:
+					v=dct.get_header(k)
+					try:
+						ctf=v["ctf"]
+					except:
+						if k!="maxrec" : print "CTF missing on image %s"%k
+						continue
+					
+					defocus.add(ctf.defocus)
 
+				defocus=list(defocus)
+				print "Defocuses found: ",
+				for i in defocus: print "%1.3f, "%i,
+				print "\n\nRange: %1.3f - %1.3f  (%d unique values)"%(min(defocus),max(defocus),len(defocus))
+
+					
 
 		if options.dump :
 			for db in dbs:
