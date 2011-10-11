@@ -6294,7 +6294,8 @@ def k_means_match_clusters_asg_new(asg1, asg2, T=0):
 	for k1 in xrange(K):
 		for k2 in xrange(K):
 			MAT[k1][k2] = Util.k_means_cont_table(asg1[k1], asg2[k2], dummy, asg1[k1].size, asg2[k2].size, 0)
-
+			if MAT[k1][k2] <= T:
+				MAT[k1][k2] = 0
 	for i in xrange(K):
 		for j in xrange(K):
 			cost_MAT[i][j] = sys.maxint - MAT[i][j]
