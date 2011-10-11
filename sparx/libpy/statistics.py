@@ -6281,6 +6281,7 @@ def k_means_match_clusters_asg(asg1, asg2):
 
 # Match two partitions with hungarian algorithm and also return the matches whose corresponding stable sets have size larger than T. Is otherwise identical
 # to k_means_match_clusters_asg
+# 10/11/11: If the number of elements in common between two classes, e.g., asg1[i] and asg2[j], is not greater than threshold T, then their "cost" is set to 0 in MAT, i.e., the cost table which is input to Munkres. 
 def k_means_match_clusters_asg_new(asg1, asg2, T=0):
 	# asg1 and asg2 are numpy array
 	from numpy      import zeros, array
@@ -9645,6 +9646,8 @@ def k_means_stab_bbenum(PART, T=10, nguesses=5, J=50, max_branching=40, stmult=0
 		Output: MATCH, STB_PART, CT_s, CT_t, ST, st
 			
 			If there are exactly two partitions, i.e., len(PART) == 2, then the matching will be computed using Hungarian algorithm, and those matches for which the corresponding stable set has size greater than T will be output. If T==0, then the output matches will be optimal.
+			
+			(EDIT 10/11/11: If there are exactly two partitions, i.e., len(PART) == 2, then the matching will be computed using Hungarian algorithm such that ONLY matches with weights greater than T are considered during the course of the algorithm. This means the matching computed using the Hungarian algorithm will contain only matches with weight greater than T. See k_means_match_clusters_asg_new.) 
 			
 			MATCH: A list of arrays. Each array has len(PART) elements, and the i-th element corresponds to a class in the i-th partition. 
 			       So MATCH[0][0] is an index into PART[0], MATCH[0][1] is an index into PART[1], etc.
