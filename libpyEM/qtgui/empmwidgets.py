@@ -329,7 +329,7 @@ class PMFileNameWidget(PMBaseWidget):
 		
 	def _onBadFile(self, filename):
 		self.filename = None
-		self.setErrorMessage("File '%s' from field '%s' does not exist"%(filename,self.getName()))
+		self.setErrorMessage("File '%s' form field '%s' does not exist"%(filename,self.getName()))
 		self.emit(QtCore.SIGNAL("pmmessage(QString)"),"File '%s' from field '%s' does not exist"%(filename,self.getName()))
 		
 class PMComboWidget(PMBaseWidget):

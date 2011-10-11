@@ -69,7 +69,7 @@ def main():
 	parser.add_argument("--cmp", type=str,help="The name of a 'cmp' to be used in comparing the aligned images",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=7, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--tiltrange", type=int,help="The angular tiltranger to search",default=15, guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--sym",  type=str,help="The recon symmetry", default="c1", guitype='symbox', row=5, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--tiltangle", type=float, help="The stage tilt used during data collection", default=0, guitype='floatbox', row=4, col=1, rowspan=1)
+	parser.add_argument("--planethres", type=float, help="Maximum out of plane threshold for the tiltaxis. 0 = perfectly in plane, 1 = normal to plane", default=0.1, guitype='floatbox', row=4, col=1, rowspan=1)
 	# options associated with e2projector3d.py
 	parser.add_header(name="projheader", help='Options below this label are specific to e2project', title="### e2project options ###", row=9, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--delta", type=float,help="The angular step size for alingment", default=20.0, guitype='floatbox', row=10, col=0, rowspan=1, colspan=1)
@@ -97,9 +97,6 @@ def main():
 		#exit(1)
 	if not options.untiltdata:
 		print "Error a stack of untiled images must be presented"
-		exit(1)
-	if not options.tiltangle:
-		print "Error a tiltangle must be entered"
 		exit(1)
 	
 	logid=E2init(sys.argv,options.ppid)
@@ -149,7 +146,7 @@ def main():
 	symmeties = Symmetries.get(options.sym)
 	
 	# Find the differnces in alignment pars, this is an attempt to do per image validation
-	tdb = db_open_dict("bdb:perparticletilts")
+	tdb = db_open_dict("bdb:%s#perparticletilts"%workingdir)
 	particletilt_list = []
 	for imgnum in xrange(simmx[0].get_ysize()):
 		untiltbestscore = float('inf')
@@ -178,25 +175,25 @@ def main():
 		volume.project("standard", {"transform":tilt_euler_xform}).write_image('tilted_test.hdf', 2*imgnum)
 		tiltimgs[imgnum].write_image('tilted_test.hdf', 2*imgnum+1)
 		
-		# Compute tilt transform, and account for symmetry if needed (the tilt angle must be < symmetryangle/2 for this to work
-		# This is a bit of a cheat b/c it looks for the symmetric position thaty gives the best result. I wish I coould figure out how to do this w/o.....
-		invuntiltxform = untilt_euler_xform.inverse()
-		bestdistance = 129600	# 360**2
-		besttiltangle = 0.0
+		# Compute tiltxis and tiltangle for each particel pair. For symmetric objects the tilttransform is selected as the one that has a tiltaxis
+		# closest to perpidicular to the imaging plane (this is how Richard handles it). 
+		bestinplane = 1.0
 		for sym in symmeties.get_syms():
-			symtilt = tilt_euler_xform*sym
-			tiltxform = symtilt*invuntiltxform
-			currenttiltangle = tiltxform.get_rotation("eman")["alt"]
-			distance = (currenttiltangle - options.tiltangle)**2
-			if distance < bestdistance:
-				bestdistance = distance
-				besttiltangle = currenttiltangle
-		#print untilt_euler_xform.get_rotation("eman"), tilt_euler_xform.get_rotation("eman"), untiltbestrefnum, tiltbestrefnum
-		print "The angluar distance between tilted and untiled is: %3.2f"%besttiltangle
-		particletilt_list.append({imgnum:besttiltangle})
+			tiltxform = tilt_euler_xform*sym.inverse()*untilt_euler_xform.inverse()
+			# Select the symmetry solution whose tiltaxis is in plane
+			if math.fabs(tiltxform.get_rotation("spin")["n3"]) < bestinplane:
+				bestinplane = math.fabs(tiltxform.get_rotation("spin")["n3"])
+				besttiltangle = tiltxform.get_rotation("spin")["Omega"]
+				besttiltaxis = math.degrees(math.atan2(tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n1"]))
+			#print "\t",tiltxform.get_rotation("spin")["Omega"],tiltxform.get_rotation("spin")["n1"],tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n3"]
+		if bestinplane > options.planethres:
+			#print "Rejecting solution"
+			continue
+		print "The best angle is %f with a tiltaxis of %f"%(besttiltangle,besttiltaxis)
+		particletilt_list.append([imgnum, besttiltangle,besttiltaxis])
+
 	tdb["particletilt_list"] = particletilt_list
 	tdb.close()
-	#exit(1)
 	
 	# Make contour plot to validate each particle
 	ac = 0
