@@ -12154,45 +12154,46 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				c += 1
 
 		K_left = nleft/img_per_grp
-		if myid == main_node: 
-			print "**********************************************************************"
-			print "        Generating initial averages for unaccounted for images        "
-			print "**********************************************************************"
-			print "   Number of images unaccounted for = %d     Number of groups = %d"%(nleft, K_left)
+		if K_left > 0:
+			if myid == main_node: 
+				print "**********************************************************************"
+		 		print "        Generating initial averages for unaccounted for images        "
+				print "**********************************************************************"
+				print "   Number of images unaccounted for = %d     Number of groups = %d"%(nleft, K_left)
 
-		# Generate random averages for each group
-		if key == group_main_node:
-			refim_left = generate_random_averages(data_left, K_left)
-			#for j in xrange(K_left):  refim_left[j].write_image("refim_left_%d.hdf"%color, j)
-		else:
-			refim_left = [model_blank(nx, nx) for i in xrange(K_left)]
+			# Generate random averages for each group
+			if key == group_main_node:
+				refim_left = generate_random_averages(data_left, K_left)
+				#for j in xrange(K_left):  refim_left[j].write_image("refim_left_%d.hdf"%color, j)
+			else:
+				refim_left = [model_blank(nx, nx) for i in xrange(K_left)]
 
-		for i in xrange(K_left):
-			bcast_EMData_to_all(refim_left[i], key, group_main_node, group_comm)
+			for i in xrange(K_left):
+				bcast_EMData_to_all(refim_left[i], key, group_main_node, group_comm)
 
-		# Generate initial averages for the unaccouted images
-		refim_left = isac_MPI(data_left, refim_left, maskfile=None, outname=None, ir=ir, ou=ou, rs=rs, xrng=xr, yrng=yr, step=ts, 
-				maxit=maxit, isac_iter=init_iter, CTF=CTF, snr=snr, rand_seed=-1, color=color, comm=group_comm, stability=False, 
-				FL=FL, FH=FH, FF=FF, dst=dst)
+			# Generate initial averages for the unaccouted images
+			refim_left = isac_MPI(data_left, refim_left, maskfile=None, outname=None, ir=ir, ou=ou, rs=rs, xrng=xr, yrng=yr, step=ts, 
+					maxit=maxit, isac_iter=init_iter, CTF=CTF, snr=snr, rand_seed=-1, color=color, comm=group_comm, stability=False, 
+					FL=FL, FH=FH, FF=FF, dst=dst)
 
-		if len(refim) < K:
-			# This will only happen in the first iteration, if applicable
-			for k in xrange(K_left):
-				refim.append(refim_left[k])
-			refim = refim[:K]
-		else:
-			refim = refim[:K]
-			ileft = 0
-			for k in xrange(K):
-				if refim[k].get_attr('n_objects') == 1:
-					refim[k] = refim_left[ileft]
-					ileft += 1
-					if ileft >= K_left:  break
-		mpi_barrier(MPI_COMM_WORLD)
+			if len(refim) < K:
+				# This will only happen in the first iteration, if applicable
+				for k in xrange(K_left):
+					refim.append(refim_left[k])
+				refim = refim[:K]
+			else:
+				refim = refim[:K]
+				ileft = 0
+				for k in xrange(K):
+					if refim[k].get_attr('n_objects') == 1:
+						refim[k] = refim_left[ileft]
+						ileft += 1
+						if ileft >= K_left:  break
+			mpi_barrier(MPI_COMM_WORLD)
 
-		#if key == group_main_node:
-		#	for i in xrange(K):
-		#		refim[i].write_image("init_group%d_2nd_phase_round%d.hdf"%(color, mloop), i)
+			#if key == group_main_node:
+			#	for i in xrange(K):
+			#		refim[i].write_image("init_group%d_2nd_phase_round%d.hdf"%(color, mloop), i)
 
 		# Run ISAC
 		if myid == main_node:
