@@ -715,7 +715,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		#self.SGactivenodeset = SGactivenodeset			# A set of all active nodes (currently not used)
 		self.scalestep = scalestep				# The scale factor stepsize
 		self.toggle_render_selectedarea = False			# Don't render the selection box by default
-		self.mousemode = "selection"				# The mouse mode
+		self.mousemode = "rotate"				# The mouse mode
 		self.zrotatecursor = QtGui.QCursor(QtGui.QPixmap(zrotatecursor),-1,-1)
 		self.xyrotatecursor = QtGui.QCursor(QtGui.QPixmap(xyrotatecursor),-1,-1)
 		self.crosshaircursor = QtGui.QCursor(QtGui.QPixmap(crosshairscursor),-1,-1)
@@ -896,7 +896,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 				if selecteditem.nodetype == "DataChild": selecteditem = selecteditem.parent	# Select the data itself and no the isosurface, slice, etc
 				selecteditem.setSelectedItem(True)
 				# Inspector tree management
-				if self.main_3d_inspector: self.main_3d_inspector.updateSelection(selecteditem)
+				self.updateTreeSelVis(selecteditem)
 			else:
 				if record.near < bestdistance:
 					bestdistance = record.near
@@ -910,7 +910,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			else:
 				selecteditem.setSelectedItem(True)
 			# Inspector tree management
-			if self.main_3d_inspector: self.main_3d_inspector.updateSelection(selecteditem)
+			self.updateTreeSelVis(selecteditem)
 	
 	def clearSelection(self):
 		"""
@@ -985,7 +985,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self._insert_shape("Cone", self.newnode)
 			self.newnode.updateMatrices([90,1,0,0], "rotate")
 			self.updateSG()	
-		if event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and self.mousemode == "rotate"):
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "rotate"):
 			if  event.y() > 0.95*self.size().height(): # The lowest 5% of the screen is reserved from the Z spin virtual slider
 				self.setCursor(self.zrotatecursor)
 				self.zrotate = True
@@ -1017,7 +1017,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 				self.appendselection = True
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "ztranslate"):
 			self.setCursor(self.zhaircursor)
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "xytranslate"):
+		if event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and self.mousemode == "xytranslate"):
 			self.setCursor(self.crosshaircursor)
 		if event.buttons()&Qt.MidButton or (event.buttons()&Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.showInspector()
@@ -1059,7 +1059,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.newnode.setRadiusAndHeight(math.fabs(x - self.first_x), math.fabs(y - self.first_y))
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cone"):
 			self.newnode.setRadiusAndHeight(math.fabs(x - self.first_x), math.fabs(y - self.first_y))
-		if event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and self.mousemode == "rotate"):
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "rotate"):
 			magnitude = math.sqrt(dx*dx + dy*dy)
 			# We want to remove the effect of self.camera.getViewPortWidthScaling() for rotation. For everything else the effect is desired
 			#Check to see if the cursor is in the 'virtual slider pannel'
@@ -1073,7 +1073,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.selectArea(self.first_x, event.x(), self.first_y, event.y())
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "ztranslate"):
 			self.updateMatrices([0,0,(-dy)], "translate")
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "xytranslate"):
+		if event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and self.mousemode == "xytranslate"):
 			self.updateMatrices([dx,-dy,0], "translate")
 		if event.buttons()&Qt.LeftButton and self.mousemode == "scale":
 			self.updateMatrices([self.scalestep*0.1*(dx+dy)], "scale")
@@ -1102,26 +1102,16 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		# Originally the wheel sclaed by zoom the viewport, but that caused all sorts of issues, so I now just scale the SG
 		if event.orientation() & Qt.Vertical:
 			self.cameraNeedsanUpdate()
-			#iniselstate = self.getAllSelectedNodes()
-			#for i in iniselstate:
-			#	i.setSelectedItem(False)
-			#self.setSelectedItem(True)
 			if event.delta() > 0:
-			#	self.updateMatrices([0.05], "scale")
 				if self.camera.getUseOrtho():
 					self.camera.setPseudoFovy(self.camera.getPseudoFovyWidth()+self.camera.getWidth()/20)
 				else:
 					self.camera.setFovy(self.camera.getFovy()+1.0)
 			else:
-			#	self.updateMatrices([-0.05], "scale")
 				if self.camera.getUseOrtho():
 					self.camera.setPseudoFovy(self.camera.getPseudoFovyWidth()-self.camera.getWidth()/20)
 				else:
 					self.camera.setFovy(self.camera.getFovy()-1.0)
-			#self.setSelectedItem(False)
-			#if self.item_inspector: self.item_inspector.updateItemControls()
-			#for i in iniselstate:
-			#	i.setSelectedItem(True)
 			self.updateSG()
 			
 			
@@ -1324,8 +1314,10 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		@param filename The Filename you want to save to
 		@param format The image file format
 		"""
+		if format not in filename: filename = "%s.%s"%(filename,format)
 		image = self.grabFrameBuffer()
 		image.save(filename, format)
+		print "Saved %s to disk"%os.path.basename(str(filename))
 	
 	def insertNewNode(self, name, node, parentnode=None, parentidx=None):
 		"""
@@ -1457,6 +1449,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		Save the SG as a session
 		@param filename The Filename you want to save to
 		"""
+		if ".eman" not in filename: filename = "%s.%s"%(filename,"eman")
 		wfile = open(filename, 'wb')
 		treelist = self.getTreeAsList(self)
 		pickle.dump(treelist, wfile)
@@ -1519,10 +1512,16 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		self.update()
 		if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
-		
+	
+	def updateTreeSelVis(self, selecteditem=None):
+		"""
+		Update the inspector Tree for vis sel attributes. Much faster than updateTree, but only checks vis sel attrs
+		"""
+		if self.main_3d_inspector: self.main_3d_inspector.updateTreeSelVis(selecteditem)
+	
 	def updateTree(self):
 		"""
-		Update the inspector tree if there is one
+		Update the entire inspector tree if there is one
 		"""
 		if self.main_3d_inspector: self.main_3d_inspector.updateTree()
 	
@@ -1895,6 +1894,7 @@ class EMInspector3D(QtGui.QWidget):
 		self.updateGeometry()
 	
 	def closeEvent(self, event):
+		""" Clean up and close """
 		self.scenegraph().main_3d_inspector = None
 		# There is a BUG in QStackedWidget @^#^&#, so it thinks that widgets have been deleted when they haven't!!! (It thinks that when you delete the stacked widget all widgets in the stack have been removed when in fact that is not always the case)
 		for node in self.scenegraph().getAllNodes():
@@ -1939,20 +1939,29 @@ class EMInspector3D(QtGui.QWidget):
 		
 		return tvbox
 	
-	def updateSelection(self, selecteditem):
+	def _recursiveupdatetreeselvis(self, item):
+		for childidx in xrange(item.childCount()):
+			kid = item.child(childidx)
+			kid.setSelectionStateBox()
+			kid.getVisibleState()
+			self._recursiveupdatetreeselvis(kid)
+			
+	def updateTreeSelVis(self, selecteditem=None):
 		"""
-		Update the inspector tree_item
+		Update the selection and visibility states. Makes the Sel Vis states an observer of the SG
 		"""
-		if selecteditem.EMQTreeWidgetItem:
-			selecteditem.EMQTreeWidgetItem.setSelectionStateBox()
-			self.tree_widget.setCurrentItem(selecteditem.EMQTreeWidgetItem)
-		try:
-			self.stacked_widget.setCurrentWidget(selecteditem.getItemInspector())
-			self.tree_widget.setCurrentItem(selecteditem.getItemInspector().treeitem)
-		except:
-			pass
+		# Update the tree
+		self._recursiveupdatetreeselvis(self.tree_widget.topLevelItem(0))
+		# Set the desired item if desired
+		if selecteditem:
+			try:
+				self.stacked_widget.setCurrentWidget(selecteditem.getItemInspector())
+				self.tree_widget.setCurrentItem(selecteditem.EMQTreeWidgetItem)
+			except:
+				pass
+		# Unsure unqiue selection
 		self.ensureUniqueTreeLevelSelection(selecteditem)
-		
+			
 	def ensureUniqueTreeLevelSelection(self, item):
 		"""
 		Make sure that we don't select both an ancestor and child at the same time
@@ -2458,7 +2467,6 @@ class EMInspector3D(QtGui.QWidget):
 		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save Image', os.getcwd(), "*.tiff")
 		if filename: # if we cancel
 			self.scenegraph().saveSnapShot(filename)
-			print "Saved %s to disk"%os.path.basename(str(filename))
 	
 	def _on_bg_color(self, color):
 		rgb = color.getRgb()
@@ -2572,7 +2580,7 @@ class EMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 		
 	def getVisibleState(self):
 		"""
-		Toogle the visble state
+		Set the visible icon to the item state
 		"""
 		if self.item3d().isVisibleItem():
 			self.setIcon(0, self.visible)

@@ -661,6 +661,176 @@ class EMPlot2DWidget(EMGLWidget):
 	def leaveEvent(self,event):
 		pass
 
+class EMPolarPlot2DWidget(EMPlot2DWidget):
+	"""
+	Reimplmetation of the EMPlot2DWidget( to make polar plots:
+	"""
+	def __init__(self):
+		EMPlot2DWidget.__init__(self)
+		
+	def mousePressEvent(self, event):
+		#Save a snapshot of the scene
+		if event.button()==Qt.MidButton:
+			filename = QtGui.QFileDialog.getSaveFileName(self, 'Publish or Perish! Save Plot', os.getcwd(), "*.tiff")
+			if filename: # if we cancel
+				self.saveSnapShot(filename)
+	
+	def mouseMoveEvent(self, event):
+		pass
+	
+	def mouseReleaseEvent(self, event):
+		pass
+	
+	def saveSnapShot(self, filename, format="tiff"):
+		"""
+		Save the frame buffer to an image file
+		@param filename The Filename you want to save to
+		@param format The image file format
+		"""
+		if format not in filename: filename = "%s.%s"%(filename,format)
+		image = self.grabFrameBuffer()
+		image.save(filename, format)
+		print "Saved %s to disk"%os.path.basename(str(filename))
+		
+	def set_data(self,input_data,key="data",replace=False,quiet=False,color=0,linewidth=1,linetype=0,symtype=-1,symsize=4,radcut=-1):
+		"""
+		Reimplemtation to set polar data
+		see set_data in EMPlot2DWidget for details
+		"""
+		if len(input_data) != 2:
+			raise ValueError("The must be Theta and R axes")
+		EMPlot2DWidget.set_data(self,input_data,key=key,replace=replace,quiet=quiet,color=color,linewidth=linewidth,linetype=linetype,symtype=symtype,symsize=symsize)
+		lst = list(self.pparm[key])
+		lst.append(radcut)
+		self.pparm[key] = tuple(lst)
+		
+	def render(self):
+		"""
+		Reimplmentation to plot a plor plot
+		"""
+		init_glut()
+		
+		if not self.data : return
+		
+		render = False
+			
+		if self.needupd or not self.plotimg:
+			self.needupd=0
+			if self.main_display_list != 0:
+				glDeleteLists(self.main_display_list,1)
+				self.main_display_list = 0
+
+		if self.main_display_list == 0:
+			self.main_display_list = glGenLists(1)
+			glNewList(self.main_display_list,GL_COMPILE)
+			render = True
+
+		lighting = glIsEnabled(GL_LIGHTING)
+		glDisable(GL_LIGHTING)
+		
+		EMShape.font_renderer=self.font_renderer		# Important !  Each window has to have its own font_renderer. Only one context active at a time, so this is ok.
+		GL.glPushMatrix()
+		# overcome depth issues
+		glTranslate(0,0,5)
+		for k,s in self.shapes.items():
+#			print k,s
+			s.draw(self.scr2plot)
+			
+		GL.glPopMatrix()
+		
+		if render: 
+	
+			fig=Figure((self.width()/72.0,self.height()/72.0),dpi=72.0)
+			if self.limits :ax=fig.add_axes((.1,.1,.8,.8),autoscale_on=False,Polar=True,xlim=self.limits[0],ylim=self.limits[1],xscale=self.axisparms[2],yscale=self.axisparms[3])
+			else : ax=fig.add_axes((.1,.1,.8,.8),autoscale_on=True,polar=True,xscale=self.axisparms[2],yscale=self.axisparms[3])
+			if self.axisparms[0] and len(self.axisparms[0])>0 : ax.set_xlabel(self.axisparms[0],size="xx-large")
+			if self.axisparms[1] and len(self.axisparms[1])>0 : ax.set_ylabel(self.axisparms[1],size="xx-large")
+			canvas=FigureCanvasAgg(fig)
+			
+			for i in self.axes.keys():
+				if not self.visibility[i]: continue
+				j=self.axes[i]
+				theta=self.data[i][self.axes[i][0]]
+				r=self.data[i][self.axes[i][1]]
+				parm=""
+				if self.pparm[i][1]: 
+					parm+=linetypes[self.pparm[i][2]]
+				if self.pparm[i][4]:
+					parm+=symtypes[self.pparm[i][5]]
+				
+					
+				ax.scatter(theta, r,s=self.pparm[i][3], color=colortypes[self.pparm[i][0]], lw=3)
+			
+			if len(self.pparm[i]) == 8 and self.pparm[i][7] >= 0: 
+				ax.set_rmax(self.pparm[i][7])
+				
+			canvas.draw()
+			self.plotimg = canvas.tostring_rgb()  # save this and convert to bitmap as needed
+			
+			# this try except block is because the developers of matplotlib have been changing their API
+			try: # this would work for matplotlib 0.98
+				self.scrlim=(ax.get_window_extent().xmin,ax.get_window_extent().ymin,ax.get_window_extent().xmax-ax.get_window_extent().xmin,ax.get_window_extent().ymax-ax.get_window_extent().ymin)
+			except:
+				try: # this should work for matplotlib 0.91
+					self.scrlim=(ax.get_window_extent().xmin(),ax.get_window_extent().ymin(),ax.get_window_extent().xmax()-ax.get_window_extent().xmin(),ax.get_window_extent().ymax()-ax.get_window_extent().ymin())
+				except:
+					print 'there is a problem with your matplotlib'
+					return
+			self.plotlim=(ax.get_xlim()[0],ax.get_ylim()[0],ax.get_xlim()[1]-ax.get_xlim()[0],ax.get_ylim()[1]-ax.get_ylim()[0])
+			
+			if not self.glflags.npt_textures_unsupported():
+				self.__texture_plot(self.plotimg)
+			else:
+				GL.glRasterPos(0,self.height()-1)
+				GL.glPixelZoom(1.0,-1.0)
+				GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT,1)
+				GL.glDrawPixels(self.width(),self.height(),GL.GL_RGB,GL.GL_UNSIGNED_BYTE,self.plotimg)
+		else:
+			try:
+				glCallList(self.main_display_list)
+			except: pass
+		
+		if render :
+			glEndList()
+			glCallList(self.main_display_list)
+
+		if lighting : glEnable(GL_LIGHTING)
+		
+	def __texture_plot(self,image_data):
+		
+		
+		texture_2d_was_enabled = GL.glIsEnabled(GL.GL_TEXTURE_2D)
+		if not texture_2d_was_enabled:GL.glEnable(GL.GL_TEXTURE_2D)
+		
+		if self.tex_name != 0: GL.glDeleteTextures(self.tex_name)
+		self.tex_name = GL.glGenTextures(1)
+		GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT,1)
+		GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
+		GL.glTexImage2D(GL.GL_TEXTURE_2D,0,GL.GL_RGB,self.width(),self.height(),0,GL.GL_RGB,GL.GL_UNSIGNED_BYTE, image_data)
+		
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+		
+		# POSITIONING POLICY - the texture occupies the entire screen area
+		glBegin(GL_QUADS)
+		
+		glTexCoord2f(0,0)
+		glVertex2f(0,self.height())
+		
+		glTexCoord2f(1,0)
+		glVertex2f(self.width(),self.height())
+			
+		glTexCoord2f(1,1)
+		glVertex2f(self.width(),0)
+		
+		glTexCoord2f(0,1)
+		glVertex2f(0,0)
+			
+		glEnd()
+		
+		if not texture_2d_was_enabled: GL.glDisable(GL.GL_TEXTURE_2D)
+
 class EMPlot2DInspector(QtGui.QWidget):
 	
 	def __init__(self,target) :

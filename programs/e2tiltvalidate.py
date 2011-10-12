@@ -44,14 +44,11 @@ def main():
 	"""
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options]
-	Tiltvalidation using Richard Hendersons technique. To use a stack of untilted and tiltimages whose set relationship is one-to-one is required along with a
-	volume to validate. A image whose x and y axes show the tiltvalidation result. A valid reconstruction will have a peak at the magnitude of the stagetilt and
-	along the tiltaxis. The tiltaxis can be found using e2RCTboxer. The tiltaxis is computed by it and displayed in the e2RCTboxer GUI.
-	
-	Output is scorematrix, and perparticletilts, a list of angluar distances between tilted and untilted paricles.
-	
+	Tiltvalidation using Richard Henderson's technique. To use a stack of untilted and tiltimages whose set relationship is one-to-one is required along with a
+	volume to validate. This can be generated using e2RCTboxer.py. After running this program two bits of data are products. A contour plot similar to Figure 5 in the Henderson paper(see below), and a list of
+	titlangles and tiltaxes between particle paris, which can be used to makes plot similar to Figure 6 in Hendersons paper. The contour plot is stored as contour.hdf and the tiltpairs data is
+	stored as bdb:perparticletilts.
 	For more information see:
-	
 	Optimal determination of particle orientation, absolute hand, and contrast loss in 
 	single-particle electron cryomicroscopy.
 	Rosenthal PB, Henderson R.
@@ -60,35 +57,42 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	# options associated with e2tiltvalidate.py
-	parser.add_header(name="tvheader", help='Options below this label are specific to e2tiltvalidate', title="### e2tiltvalidate options ###", row=3, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--path", type=str,help="The folder the results are placed", default="TiltValidate")
-	parser.add_argument("--volume", type=str,help="3D volume to validate",default=None, guitype='filebox', row=2, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--untiltdata", type=str,help="Stack of untilted images",default=None, guitype='filebox', row=0, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--tiltdata", type=str,help="Stack of tilted images",default=None, guitype='filebox', row=1, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--align", type=str,help="The name of a aligner to be used in comparing the aligned images",default="translational", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=6, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--cmp", type=str,help="The name of a 'cmp' to be used in comparing the aligned images",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=7, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--tiltrange", type=int,help="The angular tiltranger to search",default=15, guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--sym",  type=str,help="The recon symmetry", default="c1", guitype='symbox', row=5, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--planethres", type=float, help="Maximum out of plane threshold for the tiltaxis. 0 = perfectly in plane, 1 = normal to plane", default=0.1, guitype='floatbox', row=4, col=1, rowspan=1)
+	parser.add_header(name="tvheader", help='Options below this label are specific to e2tiltvalidate', title="### e2tiltvalidate options ###", row=3, col=0, rowspan=1, colspan=2, mode="analysis,gui")
+	parser.add_argument("--path", type=str,help="The folder the results are placed", default="", guitype='combobox', choicelist='glob.glob("TiltValidate*")', row=0, col=0,rowspan=1, colspan=2, mode="gui")
+	parser.add_argument("--volume", type=str,help="3D volume to validate",default=None, guitype='filebox', row=2, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--untiltdata", type=str,help="Stack of untilted images",default=None, guitype='filebox', row=0, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--tiltdata", type=str,help="Stack of tilted images",default=None, guitype='filebox', row=1, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--align", type=str,help="The name of a aligner to be used in comparing the aligned images",default="translational", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=6, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--cmp", type=str,help="The name of a 'cmp' to be used in comparing the aligned images",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=7, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--tiltrange", type=int,help="The angular tiltranger to search",default=15, guitype='intbox', row=4, col=0, rowspan=1, colspan=1, mode="analysis")
+	parser.add_argument("--sym",  type=str,help="The recon symmetry", default="c1", guitype='symbox', row=5, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--planethres", type=float, help="Maximum out of plane threshold for the tiltaxis. 0 = perfectly in plane, 1 = normal to plane", default=0.1, guitype='floatbox', row=4, col=1, rowspan=1, mode="analysis")
+	parser.add_argument("--gui",action="store_true",help="Start the GUI for viewing the tiltvalidate plots",default=False, guidefault=True, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="gui")
+	parser.add_argument("--radcut", type = float, default=-1, help="For use in the GUI, truncate the polar plot after R. -1 = no truncation", guitype='floatbox', row=4, col=1, rowspan=1, colspan=1, mode="gui")
 	# options associated with e2projector3d.py
-	parser.add_header(name="projheader", help='Options below this label are specific to e2project', title="### e2project options ###", row=9, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--delta", type=float,help="The angular step size for alingment", default=20.0, guitype='floatbox', row=10, col=0, rowspan=1, colspan=1)
+	parser.add_header(name="projheader", help='Options below this label are specific to e2project', title="### e2project options ###", row=9, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--delta", type=float,help="The angular step size for alingment", default=20.0, guitype='floatbox', row=10, col=0, rowspan=1, colspan=1, mode="analysis")
 	# options associated with e2simmx.py
-	parser.add_header(name="simmxheader", help='Options below this label are specific to e2simmx', title="### e2simmx options ###", row=11, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--simalign",type=str,help="The name of an 'aligner' to use prior to comparing the images (default=rotate_translate)", default="rotate_translate", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=14, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--simaligncmp",type=str,help="Name of the aligner along with its construction arguments (default=ccc)",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=15, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--simcmp",type=str,help="The name of a 'cmp' to be used in comparing the aligned images (default=ccc)", default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=13, col=0, rowspan=1, colspan=2 )
-	parser.add_argument("--simralign",type=str,help="The name and parameters of the second stage aligner which refines the results of the first alignment", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=16, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--simraligncmp",type=str,help="The name and parameters of the comparitor used by the second stage aligner. (default=dot).",default="dot", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=17, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes. Defulat = 0, no shrinking", guitype='intbox', row=12, col=0, rowspan=1, colspan=1)
+	parser.add_header(name="simmxheader", help='Options below this label are specific to e2simmx', title="### e2simmx options ###", row=11, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--simalign",type=str,help="The name of an 'aligner' to use prior to comparing the images (default=rotate_translate)", default="rotate_translate", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=14, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--simaligncmp",type=str,help="Name of the aligner along with its construction arguments (default=ccc)",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=15, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--simcmp",type=str,help="The name of a 'cmp' to be used in comparing the aligned images (default=ccc)", default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=13, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--simralign",type=str,help="The name and parameters of the second stage aligner which refines the results of the first alignment", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=16, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--simraligncmp",type=str,help="The name and parameters of the comparitor used by the second stage aligner. (default=dot).",default="dot", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=17, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes. Defulat = 0, no shrinking", guitype='intbox', row=12, col=0, rowspan=1, colspan=1, mode="analysis")
 	
-	parser.add_argument("--parallel",type=str,help="Parallelism string",default=None, guitype='strbox', row=8, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--parallel",type=str,help="Parallelism string",default=None, guitype='strbox', row=8, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	global options
 	(options, args) = parser.parse_args()
 
+	# Run the GUI if in GUI mode
+	if options.gui:
+		display_validation_plots(options.path, options.radcut)
+		exit(0)
+		
 	if not options.volume:
 		print "Error a volume to validate must be presented"
 		exit(1)
@@ -112,41 +116,36 @@ def main():
 		exit(1)
 
 	# Make a new dir for each run
-	dirindex = 1
-	while os.path.exists("./%s_%d"%(options.path,dirindex)):
-		dirindex += 1
-	global workingdir
-	workingdir = "%s_%d"%(options.path,dirindex)
-	os.mkdir(workingdir)
-	
+	if not options.path : options.path=numbered_path("TiltValidate",True)
+
 	# Do projections
-	e2projectcmd = "e2project3d.py %s --orientgen=eman:delta=%f:inc_mirror=1:perturb=0 --outfile=bdb:%s#projections --projector=standard --sym=%s" % (options.volume,options.delta,workingdir, options.sym)
+	e2projectcmd = "e2project3d.py %s --orientgen=eman:delta=%f:inc_mirror=1:perturb=0 --outfile=bdb:%s#projections --projector=standard --sym=%s" % (options.volume,options.delta,options.path, options.sym)
 	if options.parallel: e2projectcmd += " --parallel=%s" %options.parallel
 	run(e2projectcmd)
 	
 	# Make simmx
-	e2simmxcmd = "e2simmx.py bdb:%s#projections %s bdb:%s#simmx -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d" % (workingdir,options.untiltdata,workingdir,options.simcmp,options.simalign,options.simaligncmp,options.verbose)
+	e2simmxcmd = "e2simmx.py bdb:%s#projections %s bdb:%s#simmx -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d" % (options.path,options.untiltdata,options.path,options.simcmp,options.simalign,options.simaligncmp,options.verbose)
 	if options.simralign: e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
 	if options.parallel: e2simmxcmd += " --parallel=%s" %options.parallel
 	if options.shrink: e2simmxcmd += " --shrink=%d" %options.shrink
 	run(e2simmxcmd)
 	
-	e2simmxcmd = "e2simmx.py bdb:%s#projections %s bdb:%s#simmx_tilt -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d" % (workingdir,options.tiltdata,workingdir,options.simcmp,options.simalign,options.simaligncmp,options.verbose)
+	e2simmxcmd = "e2simmx.py bdb:%s#projections %s bdb:%s#simmx_tilt -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d" % (options.path,options.tiltdata,options.path,options.simcmp,options.simalign,options.simaligncmp,options.verbose)
 	if options.simralign: e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
 	if options.parallel: e2simmxcmd += " --parallel=%s" %options.parallel
 	if options.shrink: e2simmxcmd += " --shrink=%d" %options.shrink
 	run(e2simmxcmd)
 
 	# Read in the data
-	simmx= EMData.read_images("bdb:%s#simmx"%workingdir)
-	simmx_tilt= EMData.read_images("bdb:%s#simmx_tilt"%workingdir)
-	projections = EMData.read_images("bdb:%s#projections"%workingdir)
+	simmx= EMData.read_images("bdb:%s#simmx"%options.path)
+	simmx_tilt= EMData.read_images("bdb:%s#simmx_tilt"%options.path)
+	projections = EMData.read_images("bdb:%s#projections"%options.path)
 	volume = EMData() 
 	volume.read_image(options.volume) # I don't knwo why I cant EMData.read_image.......
 	symmeties = Symmetries.get(options.sym)
 	
 	# Find the differnces in alignment pars, this is an attempt to do per image validation
-	tdb = db_open_dict("bdb:%s#perparticletilts"%workingdir)
+	tdb = db_open_dict("bdb:%s#perparticletilts"%options.path)
 	particletilt_list = []
 	for imgnum in xrange(simmx[0].get_ysize()):
 		untiltbestscore = float('inf')
@@ -218,13 +217,13 @@ def main():
 		ac+=2
 		
 	# Make scoremx avg
-	scoremxs = EMData.read_images("bdb:%s#scorematrix"%workingdir)
+	scoremxs = EMData.read_images("bdb:%s#scorematrix"%options.path)
 	avgmxavger = Averagers.get('mean')
 	for mx in scoremxs:
 		avgmxavger.add_image(mx)
 	avgmx = avgmxavger.finish()
-	avgmx.write_image("%s/contour.hdf"%workingdir)
-	distplot.write_image("%s/distplot.hdf"%workingdir)
+	avgmx.write_image("%s/contour.hdf"%options.path)
+	distplot.write_image("%s/distplot.hdf"%options.path)
 	
 	E2end(logid)
 		
@@ -244,7 +243,7 @@ def compare_to_tilt(volume, tilted, imgnum, eulerxform, zrot, distplot, tiltrang
 			tiltalign = tilted.align(options.align[0],testprojection,options.align[1],options.cmp[0],options.cmp[1])
 			score = tiltalign.cmp(options.cmp[0], testprojection, options.cmp[1])
 			scoremx.set_value_at(rotx+tiltrange, roty+tiltrange, score)
-	scoremx.write_image("bdb:%s#scorematrix"%workingdir, imgnum)
+	scoremx.write_image("bdb:%s#scorematrix"%options.path, imgnum)
 	# Denoise the contiur plot, I need to experiment around with this
 	radius = 4
 	scoremx_blur = scoremx.process('eman1.filter.median',{'radius':radius})
@@ -265,6 +264,38 @@ def run(command):
 	elif error : 
 		print "Error running:\n%s"%command		    
 		exit(1)
+
+def display_validation_plots(path, radcut):
+	from emplot2d import EMPolarPlot2DWidget
+	from emimage2d import EMImage2DWidget
+	from emapplication import EMApp
+	r = []
+	theta = []
+	try:
+		tpdb = db_open_dict("bdb:%s#perparticletilts"%path)
+		tplist = tpdb["particletilt_list"]
+		for tp in tplist:
+			r.append(tp[1])
+			theta.append(math.radians(tp[2]))
+		tpdb.close()
+	except:
+		print "Couldn't load tp from DB, not showing polar plot"
+	data = None	
+	try:
+		data = EMData("%s/contour.hdf"%path)
+	except:
+		print "Couldn't open contour plot"
+	
+	if not data and not (theta and r): return
+	app = EMApp()
+	if theta and r:
+		plot = EMPolarPlot2DWidget()
+		plot.set_data((theta,r),linewidth=50,radcut=radcut)
+		plot.show()
+	if data:
+		image = EMImage2DWidget(data)
+		image.show()
+	app.exec_()
 		
 if __name__ == "__main__":
 	main()

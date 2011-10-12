@@ -155,6 +155,7 @@ def DataDisplayModuleTemplate(Type,get_data_attr="get_data",data_functors=[],use
 				else: 
 					if usescenegraph:
 						emdata3d = EMDataItem3D(data, transform=Transform())
+						emdata3d.setSelectedItem(True)
 						isosurface = EMIsosurface(emdata3d, transform=Transform())
 						old_module.insertNewNode(name, emdata3d, parentnode=old_module)
 						old_module.insertNewNode("Iso", isosurface, parentnode=emdata3d)
@@ -189,6 +190,7 @@ def DataDisplayModuleTemplate(Type,get_data_attr="get_data",data_functors=[],use
 			else:
 				if usescenegraph:
 					emdata3d = EMDataItem3D(data, transform=Transform())
+					emdata3d.setSelectedItem(True)
 					isosurface = EMIsosurface(emdata3d, transform=Transform())
 					widget.insertNewNode(name, emdata3d, parentnode=widget)
 					widget.insertNewNode("Iso", isosurface, parentnode=emdata3d)	

@@ -228,8 +228,16 @@
     "CHILDREN": [
       {
         "ICON": "single_image_3d", 
+        "MODE": "analysis",
         "PROGRAM": "e2tiltvalidate.py", 
         "NAME": "Run e2tiltvalidate", 
+        "CHILDREN": []
+      },
+      {
+        "ICON": "single_image_3d", 
+        "MODE": "gui",
+        "PROGRAM": "e2tiltvalidate.py", 
+        "NAME": "Plot Validation", 
         "CHILDREN": []
       }
     ]

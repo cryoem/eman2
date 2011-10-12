@@ -1160,12 +1160,16 @@ class EMANToolButton(QtGui.QToolButton):
 		QtGui.QToolButton.__init__(self)
 		self.setMinimumWidth(30)
 		self.setMinimumHeight(30)
-		EMANToolButton.toolpanellist.append(self)
+		self.weakrefself = weakref.ref(self)
+		EMANToolButton.toolpanellist.append(self.weakrefself)
+		
+	def __del__(self):
+		EMANToolButton.toolpanellist.remove(self.weakrefself)
 	
 	def setSelfAsUnique(self):
 		for tool in EMANToolButton.toolpanellist:
-			if tool != self:
-				tool.setDown(False)
+			if tool() != self:
+				tool().setDown(False)
 	
 	def setDown(self, state, quiet=True):
 		QtGui.QToolButton.setDown(self, state)

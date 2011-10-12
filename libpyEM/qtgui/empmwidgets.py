@@ -346,6 +346,7 @@ class PMComboWidget(PMBaseWidget):
 		self.initdefault = initdefault
 		self.datatype=datatype	# Must be int, float or str
 		
+		choices = sorted(choices)
 		for choice in choices:
 			self.combobox.addItem(str(choice))
 		self.setValue(default)
@@ -375,6 +376,7 @@ class PMComboParamsWidget(PMBaseWidget):
 		gridbox.addWidget(self.params, 0, 3)
 		self.setLayout(gridbox)
 
+		choices = sorted(choices)
 		for choice in choices:
 			self.combobox.addItem(str(choice))
 		self.combobox.addItem('None')
@@ -424,7 +426,7 @@ class PMSymWidget(PMBaseWidget):
 		gridbox.addWidget(self.symnumbox, 0, 2, 1, 2)
 		self.setLayout(gridbox)
 		
-		for i in ['icos','oct','tet','c','d','h','None']: self.combobox.addItem(i)
+		for i in ['icos','oct','tet','c','d','h']: self.combobox.addItem(i)
 		
 		self.connect(self.symnumbox,QtCore.SIGNAL("pmmessage(QString)"),self._on_message)
 		
@@ -436,16 +438,10 @@ class PMSymWidget(PMBaseWidget):
 		
 	def getValue(self):
 		""" Return the symmetry value """
-		if str(self.combobox.currentText()) == "None":
-			return ""
-		else:
-			return str(self.combobox.currentText())+str(self.symnumbox.getValue())
+		return str(self.combobox.currentText())+str(self.symnumbox.getValue())
 		
 	def setValue(self, value):
 		""" Set the value. For example c1 is split into c and 1 and then set """
-		if not value: 
-			self.combobox.setCurrentIndex(self.combobox.findText('None'))
-			return
 		defsym = re.findall('[a-zA-Z]+', value)
 		defsymnum = re.findall('[0-9]+', value)
 		defsym = reduce(lambda x, y: x+y, defsym)
