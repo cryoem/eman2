@@ -296,7 +296,7 @@ def main():
 				print "Results:"
 				pprint(results)
 			
-			ref=make_average(options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.verbose)		# the reference for the next iteration
+			ref=make_average(options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.groups,options.verbose)		# the reference for the next iteration
 			
 			#postprocess(ref,options.mask,options.normproc,options.postprocess) #jesus
 			
@@ -306,16 +306,17 @@ def main():
 					postprocess(refc,None,options.normproc,options.postprocess) #jesus
 					
 					if options.savesteps:
-						refc.write_image("%s/bdb:class_%02d"%(options.path,i),it)			
+						refc.write_image("%sclass_%02d"%(options.path,i),it)			
 			else:
-				if len(ref)>1:
-					print "Looks like you have multiple references!!"
-					ref=ref[0]
+				#if type(ref) is list:
+				#	if len(ref) > 1:
+				#		print "Looks like you have multiple references!!"
+				#		ref=ref[0]
 				postprocess(ref,None,options.normproc,options.postprocess) #jesus
 				if options.savesteps:
-						ref.write_image("%s/bdb:class_%02d"%(options.path,ic),it)
+						ref.write_image("%sclass_%02d"%(options.path,ic),it)
 
-			sys.exit()
+			#sys.exit()
 
 			if options.sym!=None : 
 				if options.verbose: 
@@ -336,7 +337,8 @@ def main():
 		ref['origin_x']=0
 		ref['origin_y']=0		#jesus - The origin needs to be reset to ZERO to avoid display issues in Chimera
 		ref['origin_z']=0
-		ref.write_image("%s%s"%(options.path,options.output),ic)
+		#output_pathname=
+		ref.write_image(options.output,ic)
 	E2end(logger)
 
 
@@ -371,8 +373,9 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 	
 	
 	if groups > 1:
-		print "QUIT!"
-		sys.exit()
+		#print "QUIT! Becuase the groups are", groups
+		#print "And their types are", type(groups)
+		#sys.exit()
 		print "This is an example of where I'm getting the score from", align_parms[0][0]						#jesus
 		val=[p[0]["score"] for p in align_parms]
 		
@@ -443,7 +446,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 					groupslist[i][j]['origin_x'] = 0
 					groupslist[i][j]['origin_y'] = 0		# jesus - the origin needs to be reset to ZERO to avoid display issues in Chimera
 					groupslist[i][j]['origin_z'] = 0
-					classname=path+"bdb:class_" + str(i).zfill(len(str(len(groupslist)))) + "_ptcl"
+					classname=path+"class_" + str(i).zfill(len(str(len(groupslist)))) + "_ptcl"
 					groupslist[i][j].write_image(classname,j)
 					
 			avg=avgr.finish()
@@ -476,7 +479,10 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 
 		avgr=Averagers.get(averager[0], averager[1])
 		included=[]
-
+		
+		
+		print "The path is", path
+		#sys.exit()
 
 		for i,ptcl_parms in enumerate(align_parms):
 			ptcl=EMData(ptcl_file,i)
@@ -490,7 +496,8 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 				ptcl['origin_x'] = 0
 				ptcl['origin_y'] = 0		# jesus - the origin needs to be reset to ZERO to avoid display issues in Chimera
 				ptcl['origin_z'] = 0
-				ptcl.write_image("%bdb:class_ptcl"%(path),i)
+				classname=path+"class_ptcl"
+				ptcl.write_image(classname,i)
 
 		if verbose: 
 			print "Kept %d / %d particles in average"%(len(included),len(align_parms))
