@@ -293,24 +293,44 @@ def main():
 				print "Results:"
 				pprint(results)
 			
-			if options.saveallalign : saveallalign=it
-			else: saveallalign=-1
 			ref=make_average(options.input,options.path,results,options.averager,options.saveali,saveallalign,options.keep,options.keepsig,options.verbose)		# the reference for the next iteration
 			
 			#postprocess(ref,options.mask,options.normproc,options.postprocess) #jesus
-			postprocess(ref,None,options.normproc,options.postprocess) #jesus
+			
+			if options.groups > 1:
+				for i in range(len(ref)):
+					refc=ref[i]
+					postprocess(refc,None,options.normproc,options.postprocess) #jesus
+					
+					if options.savesteps:
+						refc.write_image("bdb:class_%02d"%i,it)			
+			else:
+				postprocess(ref,None,options.normproc,options.postprocess) #jesus
+				if options.savesteps:
+						ref.write_image("bdb:class_%02d"%ic,it)
+
+			sys.exit()
 
 			if options.sym!=None : 
-				if options.verbose : print "Apply ",options.sym," symmetry"
+				if options.verbose: 
+					print "Apply ",options.sym," symmetry"
 				symmetrize(ref,options.sym)
 			
+<<<<<<< e2classaverage3d.py
+			
+=======
 			if options.savesteps :
 				ref.write_image("%s#class_%02d"%(options.path,ic),it)
+>>>>>>> 1.35
 
 		if options.verbose: 
 			print "Preparing final average"
 		# new average
+<<<<<<< e2classaverage3d.py
+		ref=make_average(options.input,results,options.averager,options.saveali,options.keep,options.keepsig,options.groups,options.verbose)		# the reference for the next iteration
+=======
 		ref=make_average(options.input,options.path,results,options.averager,options.saveali,saveallalign,options.keep,options.keepsig,options.verbose)		# the reference for the next iteration
+>>>>>>> 1.35
 		
 		#if options.postprocess!=None : 
 			#ref.process_inplace(options.postprocess[0],options.postprocess[1])     #jesus - The post process should be applied to the refinment averages. The last one is identical
@@ -351,16 +371,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 	Particles may be excluded based on the keep and keepsig parameters. If keepsig is not set, then keep represents
 	an absolute fraction of particles to keep (0-1). Otherwise it represents a sigma multiplier akin to e2classaverage.py"""
 	
-	if keepsig:
-		# inefficient memory-wise
-		val=sum([p[0]["score"] for p in align_parms])
-		val2=sum([p[0]["score"]**2 for p in align_parms])
-		
-		mean=val/len(align_parms)
-		sig=sqrt(val2/len(align_parms)-mean*mean)
-		thresh=mean+sig*keep
-		if verbose: 
-			print "Keep threshold : %f (mean=%f  sigma=%f)"%(thresh,mean,sig)
+	
 	
 	if groups > 1:
 		print "This is an example of where I'm getting the score from", align_parms[0][0]						#jesus
@@ -368,16 +379,130 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 		
 		val.sort()
 		threshs = []
+		guinea_particles=[]
 		print "The number of groups you have requested is", groups
 		for i in range(groups - 1):
 			threshs.append(val[int((i+1)*(1.0/groups)*len(align_parms)) -1])
-		print "Therefore, based on the size of the set, the particles whose coefficients will work as thresholds are", threshs	
+			guinea_particles.append(int((i+1)*(1.0/groups)*len(align_parms)) -1)
+		print "Therefore, based on the size of the set, the coefficients that will work as thresholds are", threshs	
+		print "While the guinea particles where these came from were", guinea_particles
+		print "Out of a total of these many particles", len(align_parms)
+		print "Therefor each group will contain approximately these many particles", len(align_parms)/groups
 	
-	if keep:
-		val=[p[0]["score"] for p in align_parms]
-		val.sort()
-		thresh=val[int(keep*len(align_parms))-1]
+		threshs.sort()
+		
+		#avgr=Averagers.get(averager[0], averager[1])
+		
+		groupslist=[]
+		includedlist=[]
+		for i in range(groups):
+			groupslist.append([])
+			includedlist.append([])
+		
+		for i,ptcl_parms in enumerate(align_parms):
+			ptcl=EMData(ptcl_file,i)
+			ptcl.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
+
+			if ptcl_parms[0]["score"] > threshs[-1]: 
+				#avgr.add_image(ptcl)
+				groupslist[-1].append(ptcl)
+				includedlist[-1].append(i)			
+				print "Particle %d assigned to last group!" %(i)
+				print "The threshold criteria was %f, and the particles cc score was %f" %(threshs[-1], ptcl_parms[0]["score"])
+				
+			elif ptcl_parms[0]["score"] < threshs[0]: 
+				groupslist[0].append(ptcl)
+				includedlist[0].append(i)
+				print "Particle %d assigned to first group!" %(i)
+				print "The threshold criteria was %f, and the particles cc score was %f" %(threshs[0], ptcl_parms[0]["score"])
+			
+			else:
+				for kk in range(len(threshs)-1):
+					if ptcl_parms[0]["score"] > threshs[kk] and ptcl_parms[0]["score"] < threshs[kk+1]:
+						groupslist[kk+1].append(ptcl)
+						includedlist[kk+1].append(i)
+						print "Particle %d assigned to group number %d!" %(i,kk+1)
+						print "The threshold criteria was %f, and the particles cc score was %f" %(threshs[kk+1], ptcl_parms[0]["score"])
+
+			#if saveali:
+			#	ptcl['origin_x'] = 0
+			#	ptcl['origin_y'] = 0		
+			#	ptcl['origin_z'] = 0
+			#	
+			#	print "I will write the particle with the origin set to 0. Its type is", type(ptcl)
+			#	ptcl.write_image("bdb:class_ptcl",i)
+		
+		ret=[]
+		
+		for i in range(len(groupslist)):
+			avgr=Averagers.get(averager[0], averager[1])
+			
+			for j in range(len(groupslist[i])):
+				avgr.add_image(groupslist[i][j])
+				
+				if saveali:
+					groupslist[i][j]['origin_x'] = 0
+					groupslist[i][j]['origin_y'] = 0		# jesus - the origin needs to be reset to ZERO to avoid display issues in Chimera
+					groupslist[i][j]['origin_z'] = 0
+					classname="bdb:class_" + str(i).zfill(len(str(len(groupslist)))) + "_ptcl"
+					groupslist[i][j].write_image(classname,j)
+					
+			avg=avgr.finish()
+			avg["class_ptcl_idxs"]=includedlist[i]
+			avg["class_ptcl_src"]=ptcl_file
+			
+			ret.append(avg)
+		
+		#sys.exit()
+		return ret
+
+	else:
+		if keepsig:
+			# inefficient memory-wise
+			val=sum([p[0]["score"] for p in align_parms])
+			val2=sum([p[0]["score"]**2 for p in align_parms])
+
+			mean=val/len(align_parms)
+			sig=sqrt(val2/len(align_parms)-mean*mean)
+			thresh=mean+sig*keep
+			if verbose: 
+				print "Keep threshold : %f (mean=%f  sigma=%f)"%(thresh,mean,sig)
+
+		if keep:
+			val=[p[0]["score"] for p in align_parms]
+			val.sort()
+			thresh=val[int(keep*len(align_parms))-1]
+			if verbose: 
+				print "Keep threshold : %f (min=%f  max=%f)"%(thresh,val[0],val[-1])
+
+		avgr=Averagers.get(averager[0], averager[1])
+		included=[]
+
+
+		for i,ptcl_parms in enumerate(align_parms):
+			ptcl=EMData(ptcl_file,i)
+			ptcl.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
+
+			if ptcl_parms[0]["score"]<=thresh: 
+				avgr.add_image(ptcl)
+				included.append(i)
+
+			if saveali:
+				ptcl['origin_x'] = 0
+				ptcl['origin_y'] = 0		# jesus - the origin needs to be reset to ZERO to avoid display issues in Chimera
+				ptcl['origin_z'] = 0
+				ptcl.write_image("bdb:class_ptcl",i)
+
 		if verbose: 
+<<<<<<< e2classaverage3d.py
+			print "Kept %d / %d particles in average"%(len(included),len(align_parms))
+
+		ret=avgr.finish()
+		ret["class_ptcl_idxs"]=included
+		ret["class_ptcl_src"]=ptcl_file
+
+		return ret
+=======
 			print "Keep threshold : %f (min=%f  max=%f)"%(thresh,val[0],val[-1])
 	
 	avgr=Averagers.get(averager[0], averager[1])
@@ -407,6 +532,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 	ret["class_ptcl_src"]=ptcl_file
 	
 	return ret
+>>>>>>> 1.35
 
 
 def make_average_pairs(ptcl_file,outfile,align_parms,averager,optmask,optnormproc,optpostprocess):
@@ -489,15 +615,18 @@ class Align3DTask(EMTask):
 	def execute(self,callback=None):
 		"""This aligns one volume to a reference and returns the alignment parameters"""
 		options=self.options
-		if options["verbose"] : print "Aligning ",options["label"]
+		if options["verbose"]: 
+			print "Aligning ",options["label"]
 
 		if isinstance(self.data["fixedimage"],EMData) :
 			fixedimage=self.data["fixedimage"]
-		else : fixedimage=EMData(self.data["fixedimage"][1],self.data["fixedimage"][2])
+		else: 
+			fixedimage=EMData(self.data["fixedimage"][1],self.data["fixedimage"][2])
 		
 		if isinstance(self.data["image"],EMData) :
 			image=self.data["image"]
-		else : image=EMData(self.data["image"][1],self.data["image"][2])
+		else: 
+			image=EMData(self.data["image"][1],self.data["image"][2])
 		
 		# Preprocessing currently applied to both volumes. Often 'fixedimage' will be a reference, though, 
 		# so may need to rethink whether it should be treated identically. Similar issues in 2-D single particle
@@ -544,12 +673,15 @@ class Align3DTask(EMTask):
 			s2image=image
 			
 
-		if options["verbose"]: print "Align size %d,  Refine Align size %d"%(sfixedimage["nx"],s2fixedimage["nx"])
+		if options["verbose"]: 
+			print "Align size %d,  Refine Align size %d"%(sfixedimage["nx"],s2fixedimage["nx"])
 
 		# If a Transform was passed in, we skip coarse alignment
 		if isinstance(options["align"],Transform):
 			bestcoarse=[{"score":1.0,"xform.align3d":options["align"]}]
-			if options["shrinkrefine"]>1 : bestcoarse[0]["xform.align3d"].set_trans(bestcoarse[0]["xform.align3d"].get_trans()/float(options["shrinkrefine"]))
+			if options["shrinkrefine"]>1: 
+				bestcoarse[0]["xform.align3d"].set_trans(bestcoarse[0]["xform.align3d"].get_trans()/float(options["shrinkrefine"]))
+		
 		# this is the default behavior, seed orientations come from coarse alignment
 		else:
 			# returns an ordered vector of Dicts of length options.npeakstorefine. The Dicts in the vector have keys "score" and "xform.align3d"
@@ -561,7 +693,8 @@ class Align3DTask(EMTask):
 
 		# verbose printout
 		if options["verbose"]>1 :
-			for i,j in enumerate(bestcoarse): print "coarse %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
+			for i,j in enumerate(bestcoarse): 
+				print "coarse %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
 
 		if options["ralign"]!=None :
 			# Now loop over the individual peaks and refine each
