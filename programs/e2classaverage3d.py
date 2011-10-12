@@ -88,7 +88,7 @@ def main():
 	#parser.add_argument("--cmp",type=str,dest="cmpr",help="The comparitor used to generate quality scores for the purpose of particle exclusion in classes, strongly linked to the keep argument.", default="ccc")
 	parser.add_argument("--keep",type=float,help="The fraction of particles to keep in each class.",default=1.0)
 	
-	parser.add_argument("--groups",type=int,help="This parameter is EXPERIMENTAL. It's the number of final averages you want from the set after ONE iteration of alignment. Particles will be separated in groups based on their correlation to the reference",default=1)
+	parser.add_argument("--groups",type=int,help="This parameter is EXPERIMENTAL. It's the number of final averages you want from the set after ONE iteration of alignment. Particles will be separated in groups based on their correlation to the reference",default=0)
 
 	parser.add_argument("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False)
 	parser.add_argument("--postprocess",type=str,help="A processor to be applied to the volume after averaging the raw volumes, before subsequent iterations begin.",default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=12, col=0, rowspan=1, colspan=3)
@@ -144,8 +144,11 @@ def main():
 	if options.path and ("/" in options.path or "#" in options.path) :
 		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
 		sys.exit(1)
-	if options.path and options.path[:4].lower()!="bdb:" : options.path="bdb:"+options.path
-	if not options.path : options.path="bdb:"+numbered_path("class3d",True)
+		
+	if options.path and options.path[:4].lower()!="bdb:": 
+		options.path="bdb:"+options.path
+	if not options.path: 
+		options.path="bdb:"+numbered_path("class3d",True)
 	
 	hdr = EMData(options.input,0,True)
 	nx = hdr["nx"]
@@ -293,7 +296,7 @@ def main():
 				print "Results:"
 				pprint(results)
 			
-			ref=make_average(options.input,options.path,results,options.averager,options.saveali,saveallalign,options.keep,options.keepsig,options.verbose)		# the reference for the next iteration
+			ref=make_average(options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.verbose)		# the reference for the next iteration
 			
 			#postprocess(ref,options.mask,options.normproc,options.postprocess) #jesus
 			
@@ -303,11 +306,14 @@ def main():
 					postprocess(refc,None,options.normproc,options.postprocess) #jesus
 					
 					if options.savesteps:
-						refc.write_image("bdb:class_%02d"%i,it)			
+						refc.write_image("%s/bdb:class_%02d"%(options.path,i),it)			
 			else:
+				if len(ref)>1:
+					print "Looks like you have multiple references!!"
+					ref=ref[0]
 				postprocess(ref,None,options.normproc,options.postprocess) #jesus
 				if options.savesteps:
-						ref.write_image("bdb:class_%02d"%ic,it)
+						ref.write_image("%s/bdb:class_%02d"%(options.path,ic),it)
 
 			sys.exit()
 
@@ -316,21 +322,12 @@ def main():
 					print "Apply ",options.sym," symmetry"
 				symmetrize(ref,options.sym)
 			
-<<<<<<< e2classaverage3d.py
-			
-=======
-			if options.savesteps :
-				ref.write_image("%s#class_%02d"%(options.path,ic),it)
->>>>>>> 1.35
 
 		if options.verbose: 
 			print "Preparing final average"
 		# new average
-<<<<<<< e2classaverage3d.py
-		ref=make_average(options.input,results,options.averager,options.saveali,options.keep,options.keepsig,options.groups,options.verbose)		# the reference for the next iteration
-=======
-		ref=make_average(options.input,options.path,results,options.averager,options.saveali,saveallalign,options.keep,options.keepsig,options.verbose)		# the reference for the next iteration
->>>>>>> 1.35
+
+		ref=make_average(options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.verbose)		# the reference for the next iteration
 		
 		#if options.postprocess!=None : 
 			#ref.process_inplace(options.postprocess[0],options.postprocess[1])     #jesus - The post process should be applied to the refinment averages. The last one is identical
@@ -339,7 +336,7 @@ def main():
 		ref['origin_x']=0
 		ref['origin_y']=0		#jesus - The origin needs to be reset to ZERO to avoid display issues in Chimera
 		ref['origin_z']=0
-		ref.write_image(options.output,ic)
+		ref.write_image("%s%s"%(options.path,options.output),ic)
 	E2end(logger)
 
 
@@ -374,6 +371,8 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 	
 	
 	if groups > 1:
+		print "QUIT!"
+		sys.exit()
 		print "This is an example of where I'm getting the score from", align_parms[0][0]						#jesus
 		val=[p[0]["score"] for p in align_parms]
 		
@@ -444,7 +443,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 					groupslist[i][j]['origin_x'] = 0
 					groupslist[i][j]['origin_y'] = 0		# jesus - the origin needs to be reset to ZERO to avoid display issues in Chimera
 					groupslist[i][j]['origin_z'] = 0
-					classname="bdb:class_" + str(i).zfill(len(str(len(groupslist)))) + "_ptcl"
+					classname=path+"bdb:class_" + str(i).zfill(len(str(len(groupslist)))) + "_ptcl"
 					groupslist[i][j].write_image(classname,j)
 					
 			avg=avgr.finish()
@@ -491,10 +490,9 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 				ptcl['origin_x'] = 0
 				ptcl['origin_y'] = 0		# jesus - the origin needs to be reset to ZERO to avoid display issues in Chimera
 				ptcl['origin_z'] = 0
-				ptcl.write_image("bdb:class_ptcl",i)
+				ptcl.write_image("%bdb:class_ptcl"%(path),i)
 
 		if verbose: 
-<<<<<<< e2classaverage3d.py
 			print "Kept %d / %d particles in average"%(len(included),len(align_parms))
 
 		ret=avgr.finish()
@@ -502,38 +500,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 		ret["class_ptcl_src"]=ptcl_file
 
 		return ret
-=======
-			print "Keep threshold : %f (min=%f  max=%f)"%(thresh,val[0],val[-1])
-	
-	avgr=Averagers.get(averager[0], averager[1])
-	included=[]
-	if saveallalign>=0 :
-		db=db_open_dict("%s#ptcl_align_%02d"%(path,saveallalign))
-	else : db=None
-	for i,ptcl_parms in enumerate(align_parms):
-		ptcl=EMData(ptcl_file,i)
-		ptcl.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
 		
-		if ptcl_parms[0]["score"]<=thresh: 
-			avgr.add_image(ptcl)
-			included.append(i)
-		if saveali:
-			ptcl['origin_x'] = 0
-			ptcl['origin_y'] = 0		# jesus - the origin needs to be reset to ZERO to avoid display issues in Chimera
-			ptcl['origin_z'] = 0
-			ptcl.write_image("%s#class_ptcl"%path,i)
-		if db!=None : db[i]=ptcl_parms[0]["xform.align3d"]
-	
-	if verbose: 
-		print "Kept %d / %d particles in average"%(len(included),len(align_parms))
-	
-	ret=avgr.finish()
-	ret["class_ptcl_idxs"]=included
-	ret["class_ptcl_src"]=ptcl_file
-	
-	return ret
->>>>>>> 1.35
-
 
 def make_average_pairs(ptcl_file,outfile,align_parms,averager,optmask,optnormproc,optpostprocess):
 	"""Will take a set of alignments and an input particle stack filename and produce a new set of class-averages over pairs"""
