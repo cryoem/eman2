@@ -148,7 +148,7 @@ def main():
 	if options.path and options.path[:4].lower()!="bdb:": 
 		options.path="bdb:"+options.path
 	if not options.path: 
-		options.path="bdb:"+numbered_path("class3d",True)
+		options.path="bdb:"+numbered_path("job3d",True)
 	
 	hdr = EMData(options.input,0,True)
 	nx = hdr["nx"]
@@ -306,15 +306,15 @@ def main():
 					postprocess(refc,None,options.normproc,options.postprocess) #jesus
 					
 					if options.savesteps:
-						refc.write_image("%sclass_%02d"%(options.path,i),it)			
+						refc.write_image("%s/class_%02d"%(options.path,i),it)			
 			else:
-				#if type(ref) is list:
-				#	if len(ref) > 1:
-				#		print "Looks like you have multiple references!!"
-				#		ref=ref[0]
+				if type(ref) is list:
+					if len(ref) > 1:
+						print "Looks like you have multiple references!!"
+						ref=ref[0]
 				postprocess(ref,None,options.normproc,options.postprocess) #jesus
 				if options.savesteps:
-						ref.write_image("%sclass_%02d"%(options.path,ic),it)
+						ref.write_image("%s/class_%02d"%(options.path,ic),it)
 
 			#sys.exit()
 
@@ -328,11 +328,16 @@ def main():
 			print "Preparing final average"
 		# new average
 
-		ref=make_average(options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.verbose)		# the reference for the next iteration
+		ref=make_average(options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.groups,options.verbose)		# the reference for the next iteration
 		
 		#if options.postprocess!=None : 
 			#ref.process_inplace(options.postprocess[0],options.postprocess[1])     #jesus - The post process should be applied to the refinment averages. The last one is identical
 												#to the output final average, so no need to apply it to ref. Plus, you ALWAYS want to have a copy
+		if type(ref) is list:
+			print "You hvae a LIST of references"
+			if len(ref) > 1:
+				print "The first one will be picked"
+				ref=ref[0]
 												#of the average of the raw particles, completley raw
 		ref['origin_x']=0
 		ref['origin_y']=0		#jesus - The origin needs to be reset to ZERO to avoid display issues in Chimera
@@ -446,7 +451,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 					groupslist[i][j]['origin_x'] = 0
 					groupslist[i][j]['origin_y'] = 0		# jesus - the origin needs to be reset to ZERO to avoid display issues in Chimera
 					groupslist[i][j]['origin_z'] = 0
-					classname=path+"class_" + str(i).zfill(len(str(len(groupslist)))) + "_ptcl"
+					classname=path+"/class_" + str(i).zfill(len(str(len(groupslist)))) + "_ptcl"
 					groupslist[i][j].write_image(classname,j)
 					
 			avg=avgr.finish()
@@ -496,7 +501,9 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 				ptcl['origin_x'] = 0
 				ptcl['origin_y'] = 0		# jesus - the origin needs to be reset to ZERO to avoid display issues in Chimera
 				ptcl['origin_z'] = 0
-				classname=path+"class_ptcl"
+				classname=path+"/class_ptcl"
+				#print "The class name is", classname
+				#sys.exit()
 				ptcl.write_image(classname,i)
 
 		if verbose: 
