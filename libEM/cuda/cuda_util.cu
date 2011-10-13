@@ -128,9 +128,9 @@ void unbind_cuda_textureB(const int ndims) {
 	}
 }
 
-bool device_init() {
+int device_init() {
 	static bool init = true;
-	int device = NULL;
+	int device = -1;
 	
 	if (init) {
 		int deviceCount;
@@ -169,9 +169,10 @@ bool device_init() {
 		
 		//int device = (getenv("EMANUSECUDA") == NULL || atoi(getenv("EMANUSECUDA")) == 0) ? 0 : atoi(getenv("EMANUSECUDA")) - 1;	
 		// If no CUDA devices are free do not use CUDA
-		if (device == NULL)
+		
+		if (device == -1)
 		{
-			printf("\nERROR All CUDA devices are occupied");
+			printf("\nAll CUDA devices are occupied\nNOT using CUDA\n");
 			return device;
 		}
 		// Otherwise set the CUDA device and check fo errors

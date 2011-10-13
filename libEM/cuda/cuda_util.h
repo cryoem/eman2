@@ -6,7 +6,7 @@
 /** Initialize the cuda device
  * Can be called any number of times but the actual initialization occurs only the first time
  */
-bool device_init();
+int device_init();
 
 /** A struct for passing EMData objects to and from things like processors
 */
