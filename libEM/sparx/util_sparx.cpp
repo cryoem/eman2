@@ -21092,7 +21092,7 @@ bool Util::explore(vector <vector <int*> > & Parts, int* dimClasses, int nParts,
 
 vector<int> Util::bb_enumerateMPI_(int* argParts, int* dimClasses, int nParts, int K, int T, int n_guesses, int LARGEST_CLASS, int J,
 int max_branching, float stmult, int branchfunc, int LIM) {
-
+	
 	
 	// Indices is an nParts*K int array storing the index (into argparts) of the first element of the i-th class of the j-th partition
 	// So Indices[j*K + i] is the offset from argparts of the first element of the first element  of the i-th class of the j-th partition
@@ -21247,7 +21247,10 @@ return output;
 	if (curlevel==0) branch_all = 0;
 	
 	int nBranches = -1;
-	
+
+	if (branchfunc == 0)
+		nBranches = branch_factor_0(costlist,matchlist,J, T, nParts, curlevel, max_branching, LIM); // branch based on distribution of top J (weighted) matches  with cost > T
+
 	if (branchfunc == 2)
 		nBranches = branch_factor_2(costlist,matchlist,J, T, nParts, curlevel, max_branching, LIM); // branch based on distribution of top J (weighted) matches  with cost > T
 
@@ -21334,13 +21337,11 @@ return output;
 }
 
 int* costlist_global;
-
 // make global costlist
 bool jiafunc(int i, int j){
 	return (costlist_global[j] < costlist_global[i]) ;
 
 }
-
 // Given J matches, branch always on the first one (i.e., the one with the largest weight, so the worst case we just end up doing greedy).
 // Branch on the second one only if it is INFEASIBLE with the first, so you know it will never occur in any branching beginning with the first.
 // Branch on subsequent ones only if its infeasible with ALL the ones which we have previously decided to branch on.
@@ -21600,6 +21601,118 @@ int Util::branch_factor_4(int* costlist, int* matchlist, int J, int T, int nPart
 	if (branch_all < max_branching){
 		if (B>1)
 			{branch_all = branch_all + B-1;}
+	}
+	else B=1;
+	
+	return B;
+	
+
+}
+
+int Util::branch_factor_0(int* costlist, int* matchlist, int J, int T, int nParts, int, int max_branching, int LIM){
+	
+	int ntot=0;
+	for (int jit=0; jit < J; jit++){
+		if (*(costlist+jit) > T) ntot++;
+	}
+
+	int cur;
+	// sort matchlist by cost
+	int* indx = new int[J];
+	for (int jit=0; jit < J; jit++) indx[jit]=jit;
+	vector<int> myindx (indx, indx+J);
+	vector<int>::iterator it;
+	costlist_global=costlist;
+	sort(myindx.begin(), myindx.begin()+J, jiafunc);
+
+	// put matchlist in the order of mycost
+	int* templist = new int[J];
+	int* temp2list = new int[J*nParts];
+	int next = 0;
+	
+	for (it=myindx.begin(); it!=myindx.end();++it){
+		cur = *(costlist + *it);
+		if (cur > T){
+			
+			templist[next] = cur;
+			for (int vt = 0; vt < nParts; vt++) temp2list[next*nParts + vt] = matchlist[ (*it)*nParts + vt];
+			next = next + 1;
+		}
+	}
+	
+	for (int jit=0; jit < ntot; jit++){
+		*(costlist+jit)=*(templist + jit);
+		//cout <<*(costlist+jit)<<", ";
+		for (int vit=0; vit < nParts; vit++) matchlist[jit*nParts + vit]= temp2list[jit*nParts + vit];
+	}
+	//cout <<"\n";
+	
+	for (int jit=1; jit < ntot; jit++){
+	
+	     if ((costlist[jit] == costlist[0]) && costlist[jit] > T){
+	     
+	             for (int vit=0; vit < nParts; vit++){
+		             if ( matchlist[jit*nParts + vit] >  matchlist[vit])
+			     	 break;
+		             if ( matchlist[jit*nParts + vit] ==  matchlist[vit])
+			     	 continue;
+			     if ( matchlist[jit*nParts + vit] <  matchlist[vit])
+			     {
+			         // swap
+				 for (int swp=0; swp < nParts; swp++){
+				       int tmp  = matchlist[swp];
+				       matchlist[swp]= matchlist[jit*nParts + swp];
+				       matchlist[jit*nParts + swp] = tmp;
+				 }
+				 break;
+			     
+			     }	 
+		     }
+	     }
+	
+	}
+	
+	
+	delete [] indx;
+	//compute the average 
+	
+	// partition matches into groups where matches in each group is mutually feasible, and matches from different groups are not feasible
+	// The number of branches to explore are the mutually exclusive matches. Take the largest of these
+	
+	
+	int B=1;
+	int B_init=B;
+	int infeasible=0;
+	
+	for (int i=B_init; i<ntot; i++){
+		if (i==ntot) continue;
+		// look at the i-th match. branch on it only if it is infeasible with ALL previous matches we have decided to
+		// branch on
+		infeasible = 0;
+		if (LIM < 0) LIM = B;
+		for (int j=0; j<B; j++){
+			
+			for (int vit=0; vit<nParts; vit++){
+				if (temp2list[i*nParts+vit] == matchlist[j*nParts+vit]) {infeasible++; break;}
+			}
+			if (infeasible >= LIM) break;
+		}
+		
+		if (infeasible >= LIM){
+			*(costlist+B)=*(templist+i);
+			for (int vit=0; vit < nParts; vit++)
+				*(matchlist+B*nParts + vit)=*(temp2list+i*nParts + vit);
+			B=B+1;	
+		}
+	}
+	
+	delete [] templist;
+	delete [] temp2list;
+	//cout<<"**************************************** "<<B<<" ***************************\n";
+	
+	if (branch_all < max_branching){
+		if (B>1)
+			{branch_all = branch_all + B -1 ; }
 	}
 	else B=1;
 	
