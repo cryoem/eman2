@@ -47,7 +47,7 @@ e2refinetofrealign.py refine_04 7
 
 parser = EMArgumentParser(usage,version=EMANVERSION)
 
-parser.add_pos_argument(name="dir",help="The refinement directory to use for FreAlign.", default="", guitype='combobox', choicelist='glob.glob("refine*")', positional=True, row=0, col=0,rowspan=1, colspan=2)
+parser.add_pos_argument(name="dir",help="The refinement directory to use for FreAlign.", default="", guitype='dirbox', dirbasename='refine', positional=True, row=0, col=0,rowspan=1, colspan=2)
 parser.add_pos_argument(name="refineiter",help="The refinement iteration to use.", default="", guitype='intbox', positional=True, row=0, col=2,rowspan=1, colspan=1)
 parser.add_header(name="frealignheader", help='Options below this label are specific to e2refinetofrealign', title="### e2refinetofrealign options ###", row=1, col=0, rowspan=1, colspan=3)
 parser.add_argument("--fbeaut", action="store_true", help="(T/F)Apply extra real space symmetry averaging and masking to beautify final map prior to output", default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1)

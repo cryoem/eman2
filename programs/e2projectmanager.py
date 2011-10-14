@@ -762,7 +762,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		programfile = program
 		# Need a widget for each program for each mode
 		if self.expertmode: 
-			program = "Expert"+program+mode	# There is a separate widget for the advanced mode
+			program = "Expert"+program+mode# There is a separate widget for the advanced mode
 		else:
 			program = program+mode
 		# Only generate the GUI widget once.....
@@ -1373,6 +1373,8 @@ class PMGUIWidget(QtGui.QScrollArea):
 			if option['guitype'] == 'filebox':
 				widget = PMFileNameWidget(option['name'], self.getDefault(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True),checkfileexist=self.getFileCheck(option))
 				fileboxwidget = widget
+			if option['guitype'] == 'dirbox':
+				widget = PMDirectoryWidget(option['name'], option['dirbasename'], self.getDefault(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
 			if option['guitype'] == 'symbox':
 				widget = PMSymWidget(option['name'], self.getDefault(option), initdefault=self.getDefault(option, nodb=True))
 			if option['guitype'] == 'multisymbox':

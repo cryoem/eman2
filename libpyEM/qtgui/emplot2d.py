@@ -530,7 +530,7 @@ class EMPlot2DWidget(EMGLWidget):
 		This function is called from resizeGL and from the inspector when somebody toggles the display of a line
 		'''
 		self.needupd=1
-		self.del_shapes(("xcross","ycross","lcross"))
+		self.del_shapes(("xcross","ycross","lcross","Circle"))
 
 	def setAxisParms(self,xlabel,ylabel,xlog="linear",ylog="linear"):
 # skip this since we want a guaranteed redraw somewhere
@@ -670,13 +670,26 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 		
 	def mousePressEvent(self, event):
 		#Save a snapshot of the scene
+		lc=self.scr2plot(event.x(),event.y())
+		self.lastcx = self.firstcx = event.x()
+		self.lastcy = self.firstcy = event.y()
 		if event.button()==Qt.MidButton:
 			filename = QtGui.QFileDialog.getSaveFileName(self, 'Publish or Perish! Save Plot', os.getcwd(), "*.tiff")
 			if filename: # if we cancel
 				self.saveSnapShot(filename)
+		else:
+			self.valradius = 1.0
+			self.add_shape("Circle",EMShape(("scrcircle",1,0,0,self.firstcx,self.height()-self.firstcy,self.valradius,2.0)))
+			self.updateGL()
 	
 	def mouseMoveEvent(self, event):
-		pass
+		lc=self.scr2plot(event.x(),event.y())
+		disp = (self.lastcx - event.x()) + (self.lastcy - event.y())
+		self.valradius += disp
+		self.add_shape("Circle",EMShape(("scrcircle",1,0,0,self.firstcx,self.height()-self.firstcy,self.valradius,2.0)))
+		self.updateGL()
+		self.lastcx = event.x()
+		self.lastcy = event.y()
 	
 	def mouseReleaseEvent(self, event):
 		pass

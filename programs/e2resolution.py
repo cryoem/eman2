@@ -62,7 +62,7 @@ def main():
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_pos_argument(name="dir",help="The refinement directory to use for e2resolution.", default="", guitype='combobox', choicelist='glob.glob("refine*")', positional=True, row=0, col=0,rowspan=1, colspan=1)
+	parser.add_pos_argument(name="dir",help="The refinement directory to use for e2resolution.", default="", guitype='dirbox', dirbasename='refine', positional=True, row=0, col=0,rowspan=1, colspan=1)
 	parser.add_pos_argument(name="refineiter",help="The refinement iteration to use.", default="", guitype='intbox', positional=True, row=0, col=1,rowspan=1, colspan=1)
 	parser.add_header(name="eotestheader", help='Options below this label are specific to e2resolution', title="### e2resolution options ###", row=1, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--apix", "-A", type=float, help="A/voxel", default=-1.0, guitype='floatbox', row=2, col=0, rowspan=1, colspan=2)

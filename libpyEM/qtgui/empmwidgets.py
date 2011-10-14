@@ -35,7 +35,7 @@ import sys, math, weakref
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
 from emselector import EMSelectorDialog	# This will be replaced by something more sensible in the future
-import re, os
+import re, os, glob
 
 class PMBaseWidget(QtGui.QWidget):
 	""" A base widget upon which all the other PM widgets are derived """
@@ -331,10 +331,42 @@ class PMFileNameWidget(PMBaseWidget):
 		self.filename = None
 		self.setErrorMessage("File '%s' form field '%s' does not exist"%(filename,self.getName()))
 		self.emit(QtCore.SIGNAL("pmmessage(QString)"),"File '%s' from field '%s' does not exist"%(filename,self.getName()))
+
+class PMDirectoryWidget(PMBaseWidget):
+	""" A Widget for display dircories of a certian type """
+	def __init__(self, name, dirbasename, default, postional=False, initdefault=None):
+		PMBaseWidget.__init__(self, name) 
+		self.dirbasename = dirbasename
+		gridbox = QtGui.QGridLayout()
+		label = QtGui.QLabel(name)
+		self.combobox = QtGui.QComboBox()
+		gridbox.addWidget(label, 0, 0)
+		gridbox.addWidget(self.combobox, 0, 1)
+		self.setLayout(gridbox)
+		
+		self.initdefault = initdefault
+		self.setValue(default)
+		self.setPositional(postional)
+		
+	def updateDirs(self):
+		for idx in xrange(self.combobox.count()):
+			self.combobox.removeItem(self.combobox.count()-1)
+		for directory in sorted(glob.glob("%s*"%self.dirbasename)):
+			self.combobox.addItem(str(directory))
+			
+	def getValue(self):
+		return str(self.combobox.currentText())
+		
+	def setValue(self, value):
+		self.updateDirs()
+		idx = self.combobox.findText(str(value))
+		if idx > -1:
+			self.combobox.setCurrentIndex(idx)
+		self.setErrorMessage(None)
 		
 class PMComboWidget(PMBaseWidget):
 	""" A Widget for combo boxes. Type is checked """
-	def __init__(self, name, choices, default, postional=False, datatype=str, initdefault=None):
+	def __init__(self, name, choices, default, postional=False,  datatype=str, initdefault=None):
 		PMBaseWidget.__init__(self, name) 
 		gridbox = QtGui.QGridLayout()
 		label = QtGui.QLabel(name)

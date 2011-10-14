@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Author: John Flanagan (jfflanag@bcm.edu)
-# Copyright (c) 2000-2006 Baylor College of Medicine
+# Copyright (c) 2000-2011 Baylor College of Medicine
 
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -58,17 +58,17 @@ def main():
 	
 	# options associated with e2tiltvalidate.py
 	parser.add_header(name="tvheader", help='Options below this label are specific to e2tiltvalidate', title="### e2tiltvalidate options ###", row=3, col=0, rowspan=1, colspan=2, mode="analysis,gui")
-	parser.add_argument("--path", type=str,help="The folder the results are placed", default="", guitype='combobox', choicelist='glob.glob("TiltValidate*")', row=0, col=0,rowspan=1, colspan=2, mode="gui")
+	parser.add_argument("--path", type=str,help="The folder the results are placed", default="", guitype='dirbox', dirbasename='TiltValidate', row=0, col=0,rowspan=1, colspan=2, mode="gui")
 	parser.add_argument("--volume", type=str,help="3D volume to validate",default=None, guitype='filebox', row=2, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_argument("--untiltdata", type=str,help="Stack of untilted images",default=None, guitype='filebox', row=0, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_argument("--tiltdata", type=str,help="Stack of tilted images",default=None, guitype='filebox', row=1, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_argument("--align", type=str,help="The name of a aligner to be used in comparing the aligned images",default="translational", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=6, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_argument("--cmp", type=str,help="The name of a 'cmp' to be used in comparing the aligned images",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=7, col=0, rowspan=1, colspan=2, mode="analysis")
-	parser.add_argument("--tiltrange", type=int,help="The angular tiltranger to search",default=15, guitype='intbox', row=4, col=0, rowspan=1, colspan=1, mode="analysis")
-	parser.add_argument("--sym",  type=str,help="The recon symmetry", default="c1", guitype='symbox', row=5, col=0, rowspan=1, colspan=2, mode="analysis")
-	parser.add_argument("--planethres", type=float, help="Maximum out of plane threshold for the tiltaxis. 0 = perfectly in plane, 1 = normal to plane", default=0.1, guitype='floatbox', row=4, col=1, rowspan=1, mode="analysis")
-	parser.add_argument("--gui",action="store_true",help="Start the GUI for viewing the tiltvalidate plots",default=False, guidefault=True, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="gui")
-	parser.add_argument("--radcut", type = float, default=-1, help="For use in the GUI, truncate the polar plot after R. -1 = no truncation", guitype='floatbox', row=4, col=1, rowspan=1, colspan=1, mode="gui")
+	parser.add_argument("--tiltrange", type=int,help="The angular tiltranger to search",default=15, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="analysis")
+	parser.add_argument("--sym",  type=str,help="The recon symmetry", default="c1", guitype='symbox', row=5, col=1, rowspan=1, colspan=1, mode="analysis")
+	parser.add_argument("--planethres", type=float, help="Maximum out of plane threshold for the tiltaxis. 0 = perfectly in plane, 1 = normal to plane", default=0.1, guitype='floatbox', row=5, col=0, rowspan=1, mode="gui")
+	parser.add_argument("--gui",action="store_true",help="Start the GUI for viewing the tiltvalidate plots",default=False, guidefault=True, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode="gui")
+	parser.add_argument("--radcut", type = float, default=-1, help="For use in the GUI, truncate the polar plot after R. -1 = no truncation", guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="gui")
 	# options associated with e2projector3d.py
 	parser.add_header(name="projheader", help='Options below this label are specific to e2project', title="### e2project options ###", row=9, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_argument("--delta", type=float,help="The angular step size for alingment", default=20.0, guitype='floatbox', row=10, col=0, rowspan=1, colspan=1, mode="analysis")
@@ -90,15 +90,17 @@ def main():
 
 	# Run the GUI if in GUI mode
 	if options.gui:
-		display_validation_plots(options.path, options.radcut)
+		display_validation_plots(options.path, options.radcut, options.planethres)
 		exit(0)
 		
 	if not options.volume:
 		print "Error a volume to validate must be presented"
 		exit(1)
+		
 	if not options.tiltdata:
 		print "Error a stack of tilted images must be presented"
-		#exit(1)
+		exit(1)
+		
 	if not options.untiltdata:
 		print "Error a stack of untiled images must be presented"
 		exit(1)
@@ -141,7 +143,7 @@ def main():
 	simmx_tilt= EMData.read_images("bdb:%s#simmx_tilt"%options.path)
 	projections = EMData.read_images("bdb:%s#projections"%options.path)
 	volume = EMData() 
-	volume.read_image(options.volume) # I don't knwo why I cant EMData.read_image.......
+	volume.read_image(options.volume) # I don't know why I cant EMData.read_image.......
 	symmeties = Symmetries.get(options.sym)
 	
 	# Find the differnces in alignment pars, this is an attempt to do per image validation
@@ -185,11 +187,8 @@ def main():
 				besttiltangle = tiltxform.get_rotation("spin")["Omega"]
 				besttiltaxis = math.degrees(math.atan2(tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n1"]))
 			#print "\t",tiltxform.get_rotation("spin")["Omega"],tiltxform.get_rotation("spin")["n1"],tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n3"]
-		if bestinplane > options.planethres:
-			#print "Rejecting solution"
-			continue
 		print "The best angle is %f with a tiltaxis of %f"%(besttiltangle,besttiltaxis)
-		particletilt_list.append([imgnum, besttiltangle,besttiltaxis])
+		particletilt_list.append([imgnum, besttiltangle,besttiltaxis,bestinplane])
 
 	tdb["particletilt_list"] = particletilt_list
 	tdb.close()
@@ -265,7 +264,7 @@ def run(command):
 		print "Error running:\n%s"%command		    
 		exit(1)
 
-def display_validation_plots(path, radcut):
+def display_validation_plots(path, radcut, planethres):
 	from emplot2d import EMPolarPlot2DWidget
 	from emimage2d import EMImage2DWidget
 	from emapplication import EMApp
@@ -275,6 +274,8 @@ def display_validation_plots(path, radcut):
 		tpdb = db_open_dict("bdb:%s#perparticletilts"%path)
 		tplist = tpdb["particletilt_list"]
 		for tp in tplist:
+			if tp[3] > planethres:	# if the out of plane threshold is too much
+				continue
 			r.append(tp[1])
 			theta.append(math.radians(tp[2]))
 		tpdb.close()
