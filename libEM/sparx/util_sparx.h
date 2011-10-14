@@ -671,7 +671,8 @@ costlist, int* curbranch);
 	*/
 	static int* branchMPI(int* argParts, int* Indices, int* dimClasses, int nParts, int K, int T, int curlevel,int n_guesses, int LARGEST_CLASS, int J, int max_branching,
 	float stmult, int branchfunc, int LIM);
-
+	
+	static int branch_factor_0(int* costlist, int* matchlist, int J, int T, int nParts, int curlevel, int max_branching, int LIM);
 	static int branch_factor_2(int* costlist, int* matchlist, int J, int T, int nParts, int curlevel, int max_branching, int LIM);
 	static int branch_factor_3(int* costlist, int* matchlist, int J, int T, int nParts, int curlevel, int max_branching, int K, int LIM);
 	static int branch_factor_4(int* costlist, int* matchlist, int J, int T, int nParts, int curlevel, int max_branching, float stmult);
