@@ -21361,7 +21361,7 @@ int Util::branch_factor_2(int* costlist, int* matchlist, int J, int T, int nPart
 	vector<int> myindx (indx, indx+J);
 	vector<int>::iterator it;
 	costlist_global=costlist;
-	sort(myindx.begin(), myindx.begin()+J, jiafunc);
+	sort(myindx.begin(), myindx.end(), jiafunc);
 
 	// put matchlist in the order of mycost
 	int* templist = new int[J];
