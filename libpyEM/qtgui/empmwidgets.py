@@ -348,6 +348,8 @@ class PMDirectoryWidget(PMBaseWidget):
 		self.setValue(default)
 		self.setPositional(postional)
 		
+		self.connect(self.combobox, QtCore.SIGNAL("activated(const QString &)"), self.setValue)
+				
 	def updateDirs(self):
 		for idx in xrange(self.combobox.count()):
 			self.combobox.removeItem(self.combobox.count()-1)
@@ -384,6 +386,8 @@ class PMComboWidget(PMBaseWidget):
 		self.setValue(default)
 		self.setPositional(postional)
 		
+		self.connect(self.combobox, QtCore.SIGNAL("activated(const QString &)"), self.setValue)
+		
 	def getValue(self):
 		return self.datatype(self.combobox.currentText())
 		
@@ -416,6 +420,8 @@ class PMComboParamsWidget(PMBaseWidget):
 		self.initdefault = initdefault
 		self.setValue(default)
 		self.setPositional(postional)
+		
+		self.connect(self.combobox, QtCore.SIGNAL("activated(const QString &)"), self.setValue)
 	
 	def getValue(self):
 		""" Return the value. Concatenate if necessary """
@@ -426,7 +432,7 @@ class PMComboParamsWidget(PMBaseWidget):
 		
 	def setValue(self, value):
 		# First parse the value, as it may contain both a options and params
-		values = self._parsedefault(value)
+		values = self._parsedefault(str(value))
 		# Next process the parsed value
 		idx = self.combobox.findText(str(values[0]))
 		if idx > -1:
@@ -470,14 +476,21 @@ class PMSymWidget(PMBaseWidget):
 		
 	def getValue(self):
 		""" Return the symmetry value """
-		return str(self.combobox.currentText())+str(self.symnumbox.getValue())
+		if str(self.combobox.currentText()) in ['icos','oct','tet']:
+			return str(self.combobox.currentText())
+		else:
+			return str(self.combobox.currentText())+str(self.symnumbox.getValue())
 		
 	def setValue(self, value):
 		""" Set the value. For example c1 is split into c and 1 and then set """
 		defsym = re.findall('[a-zA-Z]+', value)
 		defsymnum = re.findall('[0-9]+', value)
 		defsym = reduce(lambda x, y: x+y, defsym)
-		defsymnum = reduce(lambda x, y: x+y, defsymnum)
+		# Deal with icos, tet, oct cases
+		if defsymnum: 
+			defsymnum = reduce(lambda x, y: x+y, defsymnum)
+		else:
+			defsymnum = 0
 		
 		idx = self.combobox.findText(defsym)
 		if idx > -1:

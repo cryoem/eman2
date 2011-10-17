@@ -33,6 +33,7 @@
 
 from EMAN2 import *
 import os, math
+from EMAN2db import EMTask
 
 def main():
 	"""Program to validate a reconstruction by the Richard Henderson tilt validation method. A volume to validate, a small stack (~100 imgs) of untilted and ~10-15 degree
@@ -77,7 +78,7 @@ def main():
 	parser.add_argument("--simalign",type=str,help="The name of an 'aligner' to use prior to comparing the images (default=rotate_translate)", default="rotate_translate", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=14, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_argument("--simaligncmp",type=str,help="Name of the aligner along with its construction arguments (default=ccc)",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=15, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_argument("--simcmp",type=str,help="The name of a 'cmp' to be used in comparing the aligned images (default=ccc)", default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=13, col=0, rowspan=1, colspan=2, mode="analysis")
-	parser.add_argument("--simralign",type=str,help="The name and parameters of the second stage aligner which refines the results of the first alignment", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=16, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--simralign",type=str,help="The name and parameters of the second stage aligner which refines the results of the first alignment", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine\', 0)', row=16, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_argument("--simraligncmp",type=str,help="The name and parameters of the comparitor used by the second stage aligner. (default=dot).",default="dot", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=17, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes. Defulat = 0, no shrinking", guitype='intbox', row=12, col=0, rowspan=1, colspan=1, mode="analysis")
 	
@@ -85,7 +86,6 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
-	global options
 	(options, args) = parser.parse_args()
 
 	# Run the GUI if in GUI mode
@@ -117,6 +117,12 @@ def main():
 		print "The untilted image stack is not the same lenght as the tilted stack!!!"
 		exit(1)
 
+	# Initialize parallelism if being used
+	if options.parallel :
+		from EMAN2PAR import EMTaskCustomer
+		etc=EMTaskCustomer(options.parallel)
+		#etc.precache(pclist)
+		
 	# Make a new dir for each run
 	if not options.path : options.path=numbered_path("TiltValidate",True)
 
@@ -179,6 +185,7 @@ def main():
 		# Compute tiltxis and tiltangle for each particel pair. For symmetric objects the tilttransform is selected as the one that has a tiltaxis
 		# closest to perpidicular to the imaging plane (this is how Richard handles it). 
 		bestinplane = 1.0
+		print "####################################"
 		for sym in symmeties.get_syms():
 			tiltxform = tilt_euler_xform*sym.inverse()*untilt_euler_xform.inverse()
 			# Select the symmetry solution whose tiltaxis is in plane
@@ -186,15 +193,15 @@ def main():
 				bestinplane = math.fabs(tiltxform.get_rotation("spin")["n3"])
 				besttiltangle = tiltxform.get_rotation("spin")["Omega"]
 				besttiltaxis = math.degrees(math.atan2(tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n1"]))
-			#print "\t",tiltxform.get_rotation("spin")["Omega"],tiltxform.get_rotation("spin")["n1"],tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n3"]
+			print "\t",tiltxform.get_rotation("spin")["Omega"],tiltxform.get_rotation("spin")["n1"],tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n3"]
 		print "The best angle is %f with a tiltaxis of %f"%(besttiltangle,besttiltaxis)
 		particletilt_list.append([imgnum, besttiltangle,besttiltaxis,bestinplane])
 
 	tdb["particletilt_list"] = particletilt_list
 	tdb.close()
-	
+
 	# Make contour plot to validate each particle
-	ac = 0
+	tasks=[]
 	distplot = EMData(options.tiltrange*2+1,options.tiltrange*2+1)
 	distplot.to_zero()
 	for imgnum in xrange(simmx[0].get_ysize()):
@@ -206,15 +213,17 @@ def main():
 				bestrefnum = refnum
 		# Get the euler angle for this particle and call compare to tilt"bdb:%s#
 		euler_xform = projections[bestrefnum].get_attr('xform.projection')
-		compare_to_tilt(volume, tiltimgs[imgnum], imgnum, euler_xform, simmx[3].get_value_at(bestrefnum, imgnum), distplot, options.tiltrange, 1) # For now only ints
-		#Get 2D xfrom and transform, then add the image to its class avg"bdb:%s#
-		xform = Transform({"type":"2d","alpha":simmx[3].get_value_at(bestrefnum, imgnum),"tx":simmx[1].get_value_at(bestrefnum, imgnum),"ty":simmx[2].get_value_at(bestrefnum, imgnum)})
-		imgprocess = untiltimgs[imgnum].process("xform", {"transform":xform})
-		# add an image to its CA, otherwise make a avger
-		imgprocess.write_image("aligneddata.hdf",ac)
-		projections[bestrefnum].write_image("aligneddata.hdf",ac+1)
-		ac+=2
+		tasks.append(CompareToTiltTask(volume, tiltimgs[imgnum], imgnum, euler_xform, simmx[3].get_value_at(bestrefnum, imgnum), distplot, options.tiltrange, 1, options))
 		
+	# Farm out the work and hang till finished!
+	tids=etc.send_tasks(tasks)
+	while 1:
+		time.sleep(5)
+		proglist=etc.check_task(tids)
+		tids=[j for i,j in enumerate(tids) if proglist[i]!=100]		# remove any completed tasks from the list we ask about
+		if len(tids)==0: break
+		
+	
 	# Make scoremx avg
 	scoremxs = EMData.read_images("bdb:%s#scorematrix"%options.path)
 	avgmxavger = Averagers.get('mean')
@@ -225,37 +234,48 @@ def main():
 	distplot.write_image("%s/distplot.hdf"%options.path)
 	
 	E2end(logid)
+
+
+# Function to compute a similarity map for a given image
+class CompareToTiltTask(EMTask):
+	""" A parallelized version to compute contout plots """
+	def __init__(self, volume, tilted, imgnum, eulerxform, zrot, distplot, tiltrange, tiltstep, options):
+		data = {"volume":volume,"tilted":tilted}
+		EMTask.__init__(self,"CmpTilt",data,options,"")
+		self.imgnum = imgnum
+		self.eulerxform=eulerxform
+		self.zrot=zrot
+		self.distplot=distplot
+		self.tiltrange=tiltrange
+		self.tiltstep=tiltstep
 		
-# Function to compute a similarity map for a given image		
-def compare_to_tilt(volume, tilted, imgnum, eulerxform, zrot, distplot, tiltrange, tiltstep):
-	scoremx = EMData(2*tiltrange+1,2*tiltrange+1)
-	bestscore = float('inf')
-	for rotx in xrange(-tiltrange, tiltrange+1,tiltstep):
-		for roty in xrange(-tiltrange, tiltrange+1,tiltstep):
-			# First make the projection
-			tiltangle = math.sqrt(rotx*rotx + roty*roty)
-			tiltaxis = math.degrees(math.atan2(roty, rotx))
-			tiltxform = Transform({"type":"eman","az":tiltaxis,"alt":tiltangle,"phi":-tiltaxis})
-			inplane = Transform({"type":"eman", "phi":-zrot})
-			totalxform = tiltxform*inplane*eulerxform
-			testprojection = volume.project("standard",totalxform)
-			tiltalign = tilted.align(options.align[0],testprojection,options.align[1],options.cmp[0],options.cmp[1])
-			score = tiltalign.cmp(options.cmp[0], testprojection, options.cmp[1])
-			scoremx.set_value_at(rotx+tiltrange, roty+tiltrange, score)
-	scoremx.write_image("bdb:%s#scorematrix"%options.path, imgnum)
-	# Denoise the contiur plot, I need to experiment around with this
-	radius = 4
-	scoremx_blur = scoremx.process('eman1.filter.median',{'radius':radius})
-	scoremx_blur = scoremx_blur.get_clip(Region(radius, radius, scoremx_blur.get_xsize() - radius*2, scoremx_blur.get_ysize() - radius*2))
-	# Find the peak
-	maxpeak = scoremx_blur.calc_min_location()
-	distplot.set_value_at(maxpeak[0], maxpeak[1], distplot.get_value_at(maxpeak[0], maxpeak[1]) + 1.0)
+	def execute(self,callback=None):
+		scoremx = EMData(2*self.tiltrange+1,2*self.tiltrange+1)
+		bestscore = float('inf')
+		for rotx in xrange(-self.tiltrange, self.tiltrange+1,self.tiltstep):
+			for roty in xrange(-self.tiltrange, self.tiltrange+1,self.tiltstep):
+				# First make the projection
+				tiltangle = math.sqrt(rotx*rotx + roty*roty)
+				tiltaxis = math.degrees(math.atan2(roty, rotx))
+				tiltxform = Transform({"type":"eman","az":tiltaxis,"alt":tiltangle,"phi":-tiltaxis})
+				inplane = Transform({"type":"eman", "phi":-self.zrot})
+				totalxform = tiltxform*inplane*self.eulerxform
+				testprojection = self.data['volume'].project("standard",totalxform)
+				tiltalign = self.data['tilted'].align(self.options.align[0],testprojection,self.options.align[1],self.options.cmp[0],self.options.cmp[1])
+				score = tiltalign.cmp(self.options.cmp[0], testprojection, self.options.cmp[1])
+				scoremx.set_value_at(rotx+self.tiltrange, roty+self.tiltrange, score)
+		scoremx.write_image("bdb:%s#scorematrix"%self.options.path, self.imgnum)
+		# Denoise the contiur plot, I need to experiment around with this
+		radius = 4
+		scoremx_blur = scoremx.process('eman1.filter.median',{'radius':radius})
+		scoremx_blur = scoremx_blur.get_clip(Region(radius, radius, scoremx_blur.get_xsize() - radius*2, scoremx_blur.get_ysize() - radius*2))
+		# Find the peak
+		maxpeak = scoremx_blur.calc_min_location()
+		self.distplot.set_value_at(maxpeak[0], maxpeak[1], self.distplot.get_value_at(maxpeak[0], maxpeak[1]) + 1.0)
 
 def run(command):
 	"Execute a command with optional verbose output"		    
 	print command
-	#exit(1)
-	if options.verbose>0 : print "***************",command
 	error = launch_childprocess(command)
 	if error==11 :
 		pass		    
