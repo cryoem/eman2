@@ -101,12 +101,6 @@ public:
 		return cudarodata;
 	}
 	
-	/** switch to turn on mempool usage */
-	static void usemempool(int size);
-	
-	/** freemempool */
-	static void freemempool();
-	
 	/** allocate RW on GPU device
 	*/
 	bool rw_alloc() const;
@@ -163,12 +157,6 @@ private:
 	static int fudgemem;
 	const static EMData* firstinlist;
 	const static EMData* lastinlist;
-	
-	// mempool stuff
-	static float* mempool[MEMPOOL_SIZE];
-	static int  mempoolused;
-	static int mempoolarraysize;
-	static bool usemempoolswitch;
 	
 #endif // EMAN2_USING_CUDA	
 

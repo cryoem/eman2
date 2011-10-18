@@ -48,12 +48,8 @@ const EMData* EMData::firstinlist = 0;
 const EMData* EMData::lastinlist = 0;
 int EMData::memused = 0;
 int EMData::fudgemem = 1.024E8; //let's leave 10 MB of 'fudge' memory on the device
-int EMData::mempoolused = -1;
-int EMData::mempoolarraysize = 0;
 int EMData::cudadevicenum = -1;
 bool EMData::usecuda = 0;
-bool EMData::usemempoolswitch = false;
-float* EMData::mempool[] = {0};
 
 bool EMData::copy_to_cuda_keepcpu() const
 {
@@ -99,16 +95,8 @@ bool EMData::copy_to_cudaro() const
 bool EMData::rw_alloc() const
 {
 	//cout << "rw_alloc" << endl;
-	num_bytes = nxyz*sizeof(float);
 	if(cudarwdata){return true;} // already exists
-	//use the mempool if available
-	if(usemempoolswitch && mempoolused > -1 && mempoolarraysize >= int(num_bytes))
-	{
-		cudarwdata = mempool[mempoolused];
-		mempool[mempoolused] = 0;
-		mempoolused--;
-		return true;
-	}
+	num_bytes = nxyz*sizeof(float);
 	if(!freeup_devicemem(num_bytes)){return false;}
 	cudaError_t error = cudaMalloc((void**)&cudarwdata,num_bytes);
 	if ( error != cudaSuccess){return false;}
@@ -120,8 +108,8 @@ bool EMData::rw_alloc() const
 bool EMData::ro_alloc() const
 {
 	//cout << "ro_alloc" << endl;
-	num_bytes = nxyz*sizeof(float);
 	if(cudarodata){return true;} // already exists
+	num_bytes = nxyz*sizeof(float);
 	if(!freeup_devicemem(num_bytes)){return false;}
 	cudarodata = get_cuda_array(nx, ny, nz);
 	if(cudarodata == 0) throw UnexpectedBehaviorException("Bad Array alloc");
@@ -211,7 +199,7 @@ bool EMData::copy_from_device(const bool rocpy)
 		}	
 		ro_free(); //we have the data on either the host or device, not both (prevents concurrency issues)
 	} else {
-		 return false;
+		return false;
 	}
 	//cout << "finished copying" << endl;
 	update(); 
@@ -256,12 +244,6 @@ void EMData::runcuda(float * results) const
 void EMData::rw_free() const
 {
 	//cout << "rw_free " << " " << cudarwdata << endl;
-	if(usemempoolswitch && mempoolused < (MEMPOOL_SIZE-1) && mempoolarraysize >= int(num_bytes))
-	{
-		mempoolused++;
-		mempool[mempoolused] = cudarwdata;
-		return;
-	}
 	cudaError_t error = cudaFree(cudarwdata);
 	if ( error != cudaSuccess){
 		cout << rdata << " " << cudarwdata << endl;
@@ -380,27 +362,6 @@ void EMData::removefromlist() const
 		lastinlist = nextlistitem;
 	}
 	
-}
-
-void EMData::usemempool(int size)
-{
-	
-	usemempoolswitch = true;
-	mempoolarraysize = size; // this allow for complex arrays to be stores, but this does waste a little space
-
-}
-
-void EMData::freemempool()
-{
-	for(int i = 0; i < MEMPOOL_SIZE; i ++)
-	{
-		if(mempool[i] == 0)
-		{
-			break;
-		}else{
-			cudaFree(mempool[i]);
-		}
-	}
 }
 
 void EMData::switchoncuda()
