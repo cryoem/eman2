@@ -137,6 +137,10 @@ int getCudaDeviceManually(const int deviceCount) {
 		if (i > deviceCount or i < 0){ printf("RUBBISH CUDA DEVICE NUMBER!!!\n"); exit(1);}
 		sprintf(filename,"/tmp/cuda%d",i); //Only works for Linux
 		if (fopen(filename,"r") == NULL){
+			//Pu a lock on this file...
+			FILE* pFile = fopen(filename,"w");
+			fputs("Running CUDA", pFile);
+			fclose(pFile);
 			return i;
 		} else {
 			printf("DEVICE: %d already occupied\n",i);
