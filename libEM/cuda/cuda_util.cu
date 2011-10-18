@@ -170,6 +170,9 @@ int getCudaDeviceAuto(const int deviceCount) {
 }
 
 int device_init() {
+	// Initialize CUDA device, if the ENV SETCUDADEVICE is set that CUDA device will be set
+	// otherwise it is set based on what device is available starting with 0. If no devices are free
+	// CUDA is truned off
 	static bool init = true;
 	int device = -1;
 	
