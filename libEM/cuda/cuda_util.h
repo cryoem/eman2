@@ -7,6 +7,8 @@
  * Can be called any number of times but the actual initialization occurs only the first time
  */
 int device_init();
+int getCudaDeviceManually(const int deviceCount);
+int getCudaDeviceAuto(const int deviceCount);
 
 /** A struct for passing EMData objects to and from things like processors
 */

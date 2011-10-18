@@ -483,6 +483,7 @@ class PMSymWidget(PMBaseWidget):
 		
 	def setValue(self, value):
 		""" Set the value. For example c1 is split into c and 1 and then set """
+		if not value: return
 		defsym = re.findall('[a-zA-Z]+', value)
 		defsymnum = re.findall('[0-9]+', value)
 		defsym = reduce(lambda x, y: x+y, defsym)

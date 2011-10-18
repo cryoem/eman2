@@ -128,6 +128,43 @@ void unbind_cuda_textureB(const int ndims) {
 	}
 }
 
+int getCudaDeviceManually(const int deviceCount) {
+	//Set CUDA device manually if desired
+	char filename[16]; // Should never be more than 12 char, but we go to 16, just to be safe. I am paranoid about buffer overflows, though in this case there isn't much risk
+	if (getenv("SETCUDADEVICE") != NULL)
+	{
+		int i = atoi(getenv("SETCUDADEVICE"));
+		if (i > deviceCount or i < 0){ printf("RUBBISH CUDA DEVICE NUMBER!!!\n"); exit(1);}
+		sprintf(filename,"/tmp/cuda%d",i); //Only works for Linux
+		if (fopen(filename,"r") == NULL){
+			return i;
+		} else {
+			printf("DEVICE: %d already occupied\n",i);
+		}
+	}
+	return -1;
+}
+
+int getCudaDeviceAuto(const int deviceCount) {
+	//Set CUDA device automatically if desired
+	//Loop through the available devices and see if any do not have a lock
+	char filename[16]; // Should never be more than 12 char, but we go to 16, just to be safe. I am paranoid about buffer overflows, though in this case there isn't much risk	
+	//Loop through the available devices and see if any do not have a lock
+	for(int i = 0; i < deviceCount; i++)
+	{
+		sprintf(filename,"/tmp/cuda%d",i); //Only works for Linux
+		if (fopen(filename,"r") == NULL)
+		{
+			// Found a free CUDA device, now put a lock on it
+			FILE* pFile = fopen(filename,"w");
+			fputs("Running CUDA", pFile);
+			fclose(pFile);
+			return i;
+		}
+	}	
+	return -1;
+}
+
 int device_init() {
 	static bool init = true;
 	int device = -1;
@@ -140,36 +177,20 @@ int device_init() {
 			printf("WARNING NO CUDA DEVICES FOUND, NOT USING CUDA\n");
 			return device;
 		}
-		
+			
  		if (deviceCount > 1) {
  			printf("%d CUDA devices detected\n",deviceCount);
  		} else { // must be one
  			printf("1 CUDA device detected\n");
  		}
 		
-		cudaDeviceProp deviceProp;
-		cudaGetDeviceProperties(&deviceProp, 0);
-		if (deviceProp.major < 1) exit(2);
+		//try manually
+		device = getCudaDeviceManually(deviceCount);
 		
-		//Loop through the available devices and see if any do not have a lock
-		char filename[16]; // Should never be more than 12 char, but we go to 16, just to be safe. I am paranoid about buffer overflows, though in this case there isn't much risk
-		for(int i = 0; i < deviceCount; i++)
-		{
-			sprintf(filename,"/tmp/cuda%d",i); //Only works for Linux
-			if (fopen(filename,"r") == NULL)
-			{
-				// Found a free CUDA device, now put a lock on it
-				FILE* pFile = fopen(filename,"w");
-				fputs("Running CUDA", pFile);
-				fclose(pFile);
-				device = i;
-				break;
-			}
-		}
+		//if that fails then auto
+		if (device == -1){device = getCudaDeviceAuto(deviceCount);}
 		
-		//int device = (getenv("EMANUSECUDA") == NULL || atoi(getenv("EMANUSECUDA")) == 0) ? 0 : atoi(getenv("EMANUSECUDA")) - 1;	
 		// If no CUDA devices are free do not use CUDA
-		
 		if (device == -1)
 		{
 			printf("\nAll CUDA devices are occupied\nNOT using CUDA\n");
