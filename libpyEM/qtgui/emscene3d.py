@@ -878,6 +878,15 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			glPopMatrix()
 			glMatrixMode(GL_MODELVIEW)
 			glPopAttrib()
+	
+	def _IsAncestorSelected(self, item):
+		"""
+		If an Ancestor is selected don't deselct by selecting a decendant
+		"""
+		if item.getSelectedAncestorNodes():
+			return True
+		else:
+			return False
 		
 	def processSelection(self, records):
 		"""
@@ -893,7 +902,10 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		for record in records:
 			if self.multiselect:
 				selecteditem = EMItem3D.selection_idx_dict[record.names[len(record.names)-1]]()
-				if selecteditem.nodetype == "DataChild": selecteditem = selecteditem.parent	# Select the data itself and no the isosurface, slice, etc
+				# If an ancestor is selected consider THIS item to be selected
+				if self._IsAncestorSelected(selecteditem): return
+				# Select the data itself and not the isosurface, slice, etc 
+				if selecteditem.nodetype == "DataChild": selecteditem = selecteditem.parent
 				selecteditem.setSelectedItem(True)
 				# Inspector tree management
 				self.updateTreeSelVis(selecteditem)
@@ -903,7 +915,10 @@ class EMScene3D(EMItem3D, EMGLWidget):
 					closestitem = record
 		if closestitem:
 			selecteditem = EMItem3D.selection_idx_dict[closestitem.names[len(closestitem.names)-1]]()
-			if selecteditem.nodetype == "DataChild": selecteditem = selecteditem.parent	# Select the data itself and no the isosurface, slice, etc
+			# If an ancestor is selected consider THIS item to be selected
+			if self._IsAncestorSelected(selecteditem): return
+			# Select the data itself and no the isosurface, slice, etc
+			if selecteditem.nodetype == "DataChild": selecteditem = selecteditem.parent
 			if not selecteditem.isSelectedItem() and not self.appendselection and not self.toggleselection: self.clearSelection()
 			if self.toggleselection and selecteditem.isSelectedItem(): 
 				selecteditem.setSelectedItem(False)

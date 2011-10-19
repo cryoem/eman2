@@ -1097,7 +1097,12 @@ void Transform::scale(const float& scale)
 	float determinant = get_determinant();
 	if (determinant < 0) determinant *= -1.0f;
 	float newscale = std::pow(determinant,1.0f/3.0f) + scale;
-	if(newscale > 0.0001) set_scale(newscale); // If scale ~ 0 things blowup, so we need a little fudge factor
+	//IF scale is < 0.01 The det can sometime be computed to be 0 (The precission is a bit Rubbish here)
+	if(newscale > 0.01) 
+	{
+		//cout << newscale << endl;
+		set_scale(newscale); // If scale ~ 0 things blowup, so we need a little fudge factor
+	}
 }
 
 void print_matrix(gsl_matrix* M, unsigned int r, unsigned int c, const string& message ) {

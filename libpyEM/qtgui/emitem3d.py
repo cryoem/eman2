@@ -492,6 +492,13 @@ class EMItem3DInspector(QtGui.QWidget):
 		self.item3d().getTransform().set_rotation({"type":"eman","az":0.0,"alt":0.0,"phi":0.0})
 		self.updateItemControls()
 		self.inspector().updateSceneGraph()
+	
+	def _isRotNaN(self, rot1, rot2, rot3):
+		""" Better check to make sure get_rotation did not return Nan, so to prevent a crash """
+		if rot1 != rot1: return True
+		if rot2 != rot2: return True
+		if rot3 != rot3: return True
+		return False
 		
 	def updateItemControls(self):
 		""" Updates this item inspector. Function is called by the item it observes"""
@@ -507,26 +514,32 @@ class EMItem3DInspector(QtGui.QWidget):
 		is_identity = stdtransfrom.is_rot_identity()
 		comboboxidx = self.rotcombobox.currentIndex()
 		if comboboxidx == 0:
+			if self._isRotNaN(rotation["az"],rotation["alt"],rotation["phi"]): return
 			self.emanazslider.setValue(rotation["az"], quiet=1)
 			self.emanaltslider.setValue(rotation["alt"], quiet=1)
 			self.emanphislider.setValue(rotation["phi"], quiet=1)
 		if comboboxidx == 1:
+			if self._isRotNaN(rotation["gamma"],rotation["beta"],rotation["alpha"]): return
 			self.imagicgammaslider.setValue(rotation["gamma"], quiet=1)
 			self.imagicbetaslider.setValue(rotation["beta"], quiet=1)
 			self.imagicalphaslider.setValue(rotation["alpha"], quiet=1)
 		if comboboxidx == 2:
+			if self._isRotNaN(rotation["psi"],rotation["theta"],rotation["phi"]): return
 			self.spiderpsislider.setValue(rotation["psi"], quiet=1)
 			self.spiderthetaslider.setValue(rotation["theta"], quiet=1)
 			self.spiderphislider.setValue(rotation["phi"], quiet=1)
 		if comboboxidx == 3:
+			if self._isRotNaN(rotation["phi"],rotation["theta"],rotation["omega"]): return
 			self.mrcpsislider.setValue(rotation["phi"], quiet=1)
 			self.mrcthetaslider.setValue(rotation["theta"], quiet=1)
 			self.mrcomegaslider.setValue(rotation["omega"], quiet=1)
 		if comboboxidx == 4:
+			if self._isRotNaN(rotation["ztilt"],rotation["ytilt"],rotation["xtilt"]): return
 			self.xyzzslider.setValue(rotation["ztilt"], quiet=1)
 			self.xyzyslider.setValue(rotation["ytilt"], quiet=1)
 			self.xyzxslider.setValue(rotation["xtilt"], quiet=1)
 		if comboboxidx == 5:
+			if self._isRotNaN(rotation["n1"],rotation["n2"],rotation["n3"]): return
 			if is_identity and self.spinn1slider.getValue() == 0.0 and self.spinn2slider.getValue() == 0.0 and self.spinn3slider.getValue() == 0.0:
 				self.spinomegaslider .setValue(0.0, quiet=1)
 				self.spinn1slider.setValue(0.0, quiet=1)
@@ -539,6 +552,7 @@ class EMItem3DInspector(QtGui.QWidget):
 				if rotation["n2"] == rotation["n2"]: self.spinn2slider.setValue(rotation["n2"], quiet=1)
 				if rotation["n3"] == rotation["n3"]: self.spinn3slider.setValue(rotation["n3"], quiet=1)
 		if comboboxidx == 6:
+			if self._isRotNaN(rotation["n1"],rotation["n2"],rotation["n3"]): return
 			if is_identity and self.spinn1slider.getValue() == 0.0 and self.spinn2slider.getValue() == 0.0 and self.spinn3slider.getValue() == 0.0:
 				self.spinomegaslider.setValue(0.0, quiet=1)
 				self.sgirotn1slider.setValue(0.0, quiet=1)
@@ -551,6 +565,7 @@ class EMItem3DInspector(QtGui.QWidget):
 				if rotation["n2"] == rotation["n2"]: self.sgirotn2slider.setValue(rotation["n2"], quiet=1)
 				if rotation["n3"] == rotation["n3"]: self.sgirotn3slider.setValue(rotation["n3"], quiet=1)
 		if comboboxidx == 7:
+			if self._isRotNaN(rotation["e1"],rotation["e2"],rotation["e3"]): return
 			if is_identity:
 				self.quaternione0slider.setValue(1.0, quiet=1)
 				self.quaternione1slider.setValue(0.0, quiet=1)

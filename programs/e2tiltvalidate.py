@@ -65,9 +65,10 @@ def main():
 	parser.add_argument("--tiltdata", type=str,help="Stack of tilted images",default=None, guitype='filebox', row=1, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_argument("--align", type=str,help="The name of a aligner to be used in comparing the aligned images",default="translational", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=6, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_argument("--cmp", type=str,help="The name of a 'cmp' to be used in comparing the aligned images",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=7, col=0, rowspan=1, colspan=2, mode="analysis")
-	parser.add_argument("--tiltrange", type=int,help="The angular tiltranger to search",default=15, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="analysis")
+	parser.add_argument("--tiltrange", type=int,help="The angular tiltrange to search",default=15, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="analysis")
 	parser.add_argument("--sym",  type=str,help="The recon symmetry", default="c1", guitype='symbox', row=5, col=1, rowspan=1, colspan=1, mode="analysis")
 	parser.add_argument("--planethres", type=float, help="Maximum out of plane threshold for the tiltaxis. 0 = perfectly in plane, 1 = normal to plane", default=0.1, guitype='floatbox', row=5, col=0, rowspan=1, mode="gui")
+	parser.add_argument("--maxtiltangle", type=float, help="Maximum tiltangle permitted when finding tilt distances", default=180.0, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="analysis")
 	parser.add_argument("--gui",action="store_true",help="Start the GUI for viewing the tiltvalidate plots",default=False, guidefault=True, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode="gui")
 	parser.add_argument("--radcut", type = float, default=-1, help="For use in the GUI, truncate the polar plot after R. -1 = no truncation", guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="gui")
 	# options associated with e2projector3d.py
@@ -127,7 +128,7 @@ def main():
 	if not options.path : options.path=numbered_path("TiltValidate",True)
 
 	# Do projections
-	e2projectcmd = "e2project3d.py %s --orientgen=eman:delta=%f:inc_mirror=1:perturb=0 --outfile=bdb:%s#projections --projector=standard --sym=%s" % (options.volume,options.delta,options.path, options.sym)
+	e2projectcmd = "e2project3d.py %s --orientgen=eman:delta=%f:inc_mirror=1:perturb=0 --outfile=bdb:%s#projections --projector=standard --sym=%s" % (options.volume,options.delta,options.path, "c1")
 	if options.parallel: e2projectcmd += " --parallel=%s" %options.parallel
 	run(e2projectcmd)
 	
@@ -177,6 +178,7 @@ def main():
 		tiltrot = tilt_euler_xform.get_rotation("eman")
 		tilt_euler_xform.set_rotation({"type":"eman","az":tiltrot["az"],"alt":tiltrot["alt"],"phi":-simmx_tilt[3].get_value_at(tiltbestrefnum, tiltimgnum)})
 		# Write out test results
+		print untilt_euler_xform.get_rotation("eman"), tilt_euler_xform.get_rotation("eman")
 		volume.project("standard", {"transform":untilt_euler_xform}).write_image('untilted_test.hdf', 2*imgnum)
 		untiltimgs[imgnum].write_image('untilted_test.hdf', 2*imgnum+1)
 		volume.project("standard", {"transform":tilt_euler_xform}).write_image('tilted_test.hdf', 2*imgnum)
@@ -189,16 +191,18 @@ def main():
 		for sym in symmeties.get_syms():
 			tiltxform = tilt_euler_xform*sym.inverse()*untilt_euler_xform.inverse()
 			# Select the symmetry solution whose tiltaxis is in plane
-			if math.fabs(tiltxform.get_rotation("spin")["n3"]) < bestinplane:
+			if math.fabs(tiltxform.get_rotation("spin")["n3"]) < bestinplane and tiltxform.get_rotation("spin")["Omega"] < options.maxtiltangle:
 				bestinplane = math.fabs(tiltxform.get_rotation("spin")["n3"])
 				besttiltangle = tiltxform.get_rotation("spin")["Omega"]
 				besttiltaxis = math.degrees(math.atan2(tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n1"]))
 			print "\t",tiltxform.get_rotation("spin")["Omega"],tiltxform.get_rotation("spin")["n1"],tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n3"]
+			#print "\t",tiltxform.get_rotation("eman")["az"],tiltxform.get_rotation("eman")["alt"],tiltxform.get_rotation("eman")["phi"]
 		print "The best angle is %f with a tiltaxis of %f"%(besttiltangle,besttiltaxis)
 		particletilt_list.append([imgnum, besttiltangle,besttiltaxis,bestinplane])
 
 	tdb["particletilt_list"] = particletilt_list
 	tdb.close()
+	exit(1)
 
 	# Make contour plot to validate each particle
 	tasks=[]
