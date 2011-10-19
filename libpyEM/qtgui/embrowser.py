@@ -85,7 +85,7 @@ class EMFileType:
 		"Returns (size,n,dim) if the referenced path is a file of this type, false if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."
 		return False
 
-	def menuItems(self):
+	def actions(self):
 		"""Returns a list of (name,help,callback) tuples detailing the operations the user can call on the current file.
 		callbacks will also be passed a reference to the browser object."""
 		return []
@@ -116,7 +116,7 @@ class EMTextFileType(EMFileType):
 
 		return (size,"-",dim)
 
-	def menuItems(self):
+	def actions(self):
 		"No actions other than the inspector for text files"
 		return []
 		
@@ -190,7 +190,7 @@ class EMPlotFileType(EMFileType):
 			
 		
 		
-	def menuItems(self):
+	def actions(self):
 		"""Returns a list of (name,help,callback) tuples detailing the operations the user can call on the current file.
 		callbacks will also be passed a reference to the browser object."""
 		
@@ -223,7 +223,7 @@ class EMFolderFileType(EMFileType):
 		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."
 		return False
 
-	def menuItems(self):
+	def actions(self):
 		"Returns a list of (name,callback) tuples detailing the operations the user can call on the current file"
 		return []
 
@@ -255,7 +255,7 @@ class EMBdbFileType(EMFileType):
 			self.dim=(im0["nx"],im0["ny"],im0["nz"])
 		else : self.dim=(0,0,0)
 			
-	def menuItems(self):
+	def actions(self):
 		"Returns a list of (name,help,callback) tuples detailing the operations the user can call on the current file"
 		
 		# single 3-D
@@ -276,7 +276,7 @@ class EMBdbFileType(EMFileType):
 		# 2-D stack
 		elif self.nimg>1 and self.dim[1]>1 :
 			return [("Show Stack","Show all images together in one window",self.show2dStack),
-				("Show 2D","Show all images, one at a time",self.show2dsingle),("FilterTool","Open in e2filtertool.py",self.showFilterTool)]
+				("Show 2D","Show all images, one at a time",self.show2dSingle),("FilterTool","Open in e2filtertool.py",self.showFilterTool)]
 		# 1-D stack
 		elif self.nimg>0:
 			return [("Plot 2D","Plot all on a single 2-D plot",self.plot2dNew)]
@@ -298,7 +298,7 @@ class EMBdbFileType(EMFileType):
 	def show2dStack(self,brws):
 		"A set of 2-D images together "
 		
-	def show2dsingle(self,brws):
+	def show2dSingle(self,brws):
 		"Show a single 2-D image"
 		
 		
@@ -321,7 +321,7 @@ class EMImageFileType(EMFileType):
 		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."
 		return False
 
-	def menuItems(self):
+	def actions(self):
 		"Returns a list of (name,callback) tuples detailing the operations the user can call on the current file"
 		return []
 		
@@ -338,7 +338,7 @@ class EMStackFileType(EMFileType):
 		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."
 		return False
 
-	def menuItems(self):
+	def actions(self):
 		"Returns a list of (name,callback) tuples detailing the operations the user can call on the current file"
 		return []
 		
@@ -793,42 +793,40 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.hbl2 = QtGui.QGridLayout()
 
 		self.wbutmisc=[]
-		
-		
 	
-		self.wbutshow = QtGui.QPushButton("Show")
-		self.hbl2.addWidget(self.wbutshow)
+		# 10 buttons for context-dependent actions
+		self.hbl2.setRowStretch(0,1)
+		self.hbl2.setRowStretch(1,1)
 		
-		self.wbutadd = QtGui.QPushButton("Add")
-		self.hbl2.addWidget(self.wbutadd)
-		
-		self.wbutnew = QtGui.QPushButton("New")
-		self.hbl2.addWidget(self.wbutnew)
-
-		self.wbutsave = QtGui.QPushButton("Save")
-		self.hbl2.addWidget(self.wbutsave)
-
+		for i in range(5):
+			self.hbl2.setColumnStretch(i,2)
+			for j in range(2):
+				self.wbutmisc.append(QtGui.QPushButton(""))
+				self.hbl2.addWidget(self.wbutmisc[-1],j,i)
+				self.wbutmisc[-1].hide()
+#				self.wbutmisc[-1].setEnabled(False)
+				QtCore.QObject.connect(self.wbutmisc[-1], QtCore.SIGNAL('clicked(bool)'), lambda x,v=i*2+j:self.buttonMisc(v))
 
 		# buttons for selector use
 		if withmodal :
-			self.wspace1=QtGui.QSpacerItem(100,10,QtGui.QSizePolicy.MinimumExpanding)
-			self.hbl2.addSpacerItem(self.wspace1)
+#			self.wspace1=QtGui.QSpacerItem(100,10,QtGui.QSizePolicy.MinimumExpanding)
+#			self.hbl2.addSpacerItem(self.wspace1)
 			
 			self.wbutcancel=QtGui.QPushButton("Cancel")
-			self.hbl2.addWidget(self.wbutcancel)
+			self.hbl2.addWidget(self.wbutcancel,1,7)
 			
 			self.wbutok=QtGui.QPushButton("OK")
-			self.hbl2.addWidget(self.wbutok)
+			self.hbl2.addWidget(self.wbutok,1,8)
 
+			self.hbl2.setColumnStretch(6,1)
+			self.hbl2.setColumnStretch(7,1)
+			self.hbl2.setColumnStretch(8,1)
+			
 			QtCore.QObject.connect(self.wbutcancel, QtCore.SIGNAL('clicked(bool)'), self.buttonCancel)
 			QtCore.QObject.connect(self.wbutok, QtCore.SIGNAL('clicked(bool)'), self.buttonOk)
 
 		self.gbl.addLayout(self.hbl2,3,1)
 
-		QtCore.QObject.connect(self.wbutshow, QtCore.SIGNAL('clicked(bool)'), self.buttonShow)
-		QtCore.QObject.connect(self.wbutadd, QtCore.SIGNAL('clicked(bool)'), self.buttonAdd)
-		QtCore.QObject.connect(self.wbutnew, QtCore.SIGNAL('clicked(bool)'), self.buttonNew)
-		QtCore.QObject.connect(self.wbutsave, QtCore.SIGNAL('clicked(bool)'), self.buttonSave)
 		QtCore.QObject.connect(self.wbutback, QtCore.SIGNAL('clicked(bool)'), self.buttonBack)
 		QtCore.QObject.connect(self.wbutfwd, QtCore.SIGNAL('clicked(bool)'), self.buttonFwd)
 		QtCore.QObject.connect(self.wbutup, QtCore.SIGNAL('hasclicked(bool)'), self.buttonUp)
@@ -841,13 +839,15 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.curmodel=None	# The current data model displayed in the tree
 		self.curpath=None	# The path represented by the current data model
 		self.curft=None		# a fileType instance for the currently hilighted object
+		self.curactions=[]	# actions returned by the filtetype. Cached for speed
 		self.models={}
 
 		self.setPath(".")	# start in the local directory
 
 
 	def editPath(self):
-		print "Return pressed in path editor"
+		"Set a new path"
+		self.setPath((str)self.wpath.text())
 
 	def itemSel(self,qmi):
 #		print "Item selected",qmi.row(),qmi.column(),qmi.internalPointer().path()
@@ -864,7 +864,18 @@ class EMBrowserWidget(QtGui.QWidget):
 			ftc=obj.fileTypeClass() 
 			if ftc!=None: 
 				self.curft=ftc(obj.path())
-				# TODO continue here
+				
+				self.curactions=self.curft.actions()
+#				print actions
+				for i,b in enumerate(self.wbutmisc):
+					try:
+						b.setText(self.curactions[i][0])
+						b.setToolTip(self.curactions[i][1])
+						b.show()
+#						b.setEnabled(True)
+					except:
+						b.hide()
+#						b.setEnabled(False)
 			
 		
 	def itemActivate(self,qmi):
@@ -873,25 +884,19 @@ class EMBrowserWidget(QtGui.QWidget):
 		if itm.nChildren()>0:
 			self.setPath(itm.path())
 
+	def buttonMisc(self,num):
+		"Misc Button press"
+		
+		print "press ",self.curactions[num][0]
+		
+		self.curactions[num][2](self)				# This calls the action method
 
 	def buttonOk(self,tog):
 		"Button press"
 		
 	def buttonCancel(self,tog):
 		"Button press"
-		
-	def buttonShow(self,tog):
-		"Button press"
-		
-	def buttonNew(self,tog):
-		"Button press"
-
-	def buttonSave(self,tog):
-		"Button press"
-		
-	def buttonAdd(self,tog):
-		"Button press"
-		
+				
 	def buttonBack(self,tog):
 		"Button press"
 		
@@ -911,6 +916,7 @@ class EMBrowserWidget(QtGui.QWidget):
 
 	def setPath(self,path):
 		"""Sets the current root path for the browser window"""
+		
 		self.curpath=path
 		self.wpath.setText(path)
 
