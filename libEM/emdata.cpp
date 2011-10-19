@@ -2888,6 +2888,7 @@ void EMData::update_stat() const
 		EXITFUNC;
 		return;
 	}
+	if (rdata==0) return;
 
 	float* data = get_data();
 	float max = -FLT_MAX;
