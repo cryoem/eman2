@@ -122,13 +122,15 @@ def main():
 	if options.parallel :
 		from EMAN2PAR import EMTaskCustomer
 		etc=EMTaskCustomer(options.parallel)
+	else:
+		etc=EMTaskCustomer("thread:1")
 		#etc.precache(pclist)
 		
 	# Make a new dir for each run
 	if not options.path : options.path=numbered_path("TiltValidate",True)
 
 	# Do projections
-	e2projectcmd = "e2project3d.py %s --orientgen=eman:delta=%f:inc_mirror=1:perturb=0 --outfile=bdb:%s#projections --projector=standard --sym=%s" % (options.volume,options.delta,options.path, "c1")
+	e2projectcmd = "e2project3d.py %s --orientgen=eman:delta=%f:inc_mirror=1:perturb=0 --outfile=bdb:%s#projections --projector=standard --sym=%s" % (options.volume,options.delta,options.path, "c1") # Seems to work better when I check all possibilites
 	if options.parallel: e2projectcmd += " --parallel=%s" %options.parallel
 	run(e2projectcmd)
 	
@@ -156,6 +158,7 @@ def main():
 	# Find the differnces in alignment pars, this is an attempt to do per image validation
 	tdb = db_open_dict("bdb:%s#perparticletilts"%options.path)
 	particletilt_list = []
+	test = open("test.dat","w")
 	for imgnum in xrange(simmx[0].get_ysize()):
 		untiltbestscore = float('inf')
 		tiltbestscore = float('inf')
@@ -195,14 +198,14 @@ def main():
 				bestinplane = math.fabs(tiltxform.get_rotation("spin")["n3"])
 				besttiltangle = tiltxform.get_rotation("spin")["Omega"]
 				besttiltaxis = math.degrees(math.atan2(tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n1"]))
-			print "\t",tiltxform.get_rotation("spin")["Omega"],tiltxform.get_rotation("spin")["n1"],tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n3"]
-			#print "\t",tiltxform.get_rotation("eman")["az"],tiltxform.get_rotation("eman")["alt"],tiltxform.get_rotation("eman")["phi"]
-		print "The best angle is %f with a tiltaxis of %f"%(besttiltangle,besttiltaxis)
+			test.write("\t%f %f %f %f\n"%(tiltxform.get_rotation("spin")["Omega"],tiltxform.get_rotation("spin")["n1"],tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n3"]))
+			test.write("\t%f %f %f\n"%(tiltxform.get_rotation("eman")["az"],tiltxform.get_rotation("eman")["alt"],tiltxform.get_rotation("eman")["phi"]))
+		test.write("The best angle is %f with a tiltaxis of %f\n"%(besttiltangle,besttiltaxis))
 		particletilt_list.append([imgnum, besttiltangle,besttiltaxis,bestinplane])
-
+	test.close()
 	tdb["particletilt_list"] = particletilt_list
 	tdb.close()
-	exit(1)
+#	exit(1)
 
 	# Make contour plot to validate each particle
 	tasks=[]
