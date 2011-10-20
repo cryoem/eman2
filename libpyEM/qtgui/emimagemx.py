@@ -265,8 +265,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.font_size = 11
 		self.font_renderer.set_face_size(self.font_size)
 
-		if data:
-			self.set_data(data,False)
 			
 		self.text_bbs = {} # bounding box cache - key is a string, entry is a list of 6 values defining a 
 		
@@ -280,6 +278,9 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.max_idx = 99999999		# used by emimagemxrotary for display correct image numbers
 		
 		self.reroute_delete = False
+		
+		if data:
+			self.set_data(data)
 		
 	def initializeGL(self):
 		glClearColor(0,0,0,0)
@@ -587,6 +588,12 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		else:
 			self.get_inspector()
 			self.inspector.disable_xyz()
+
+		if filename==None or len(filename)==0:
+			try:
+				filename=obj[0]["data_path"]
+			except:
+				filename=""
 
 		self.file_name = filename
 		if self.file_name != None and len(self.file_name) > 0:self.setWindowTitle(self.file_name)

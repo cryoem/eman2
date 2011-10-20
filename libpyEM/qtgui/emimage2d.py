@@ -67,76 +67,7 @@ from emglobjects import EMOpenGLFlagsAndTools
 class EMImage2DWidget(EMGLWidget):
 	"""
 	"""
-	
-	def initializeGL(self):
-		GL.glClearColor(0,0,0,0)
-		
-		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.1, 0.1, 0.1, 1.0])
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_POSITION,  [.1,.1,1,0.])
-	
-		glEnable(GL_LIGHTING)
-		glEnable(GL_LIGHT0)
-		
-	def paintGL(self):
-		
-		glClear(GL_COLOR_BUFFER_BIT)
-		if glIsEnabled(GL_DEPTH_TEST):
-			glClear(GL_DEPTH_BUFFER_BIT)
-		if glIsEnabled(GL_STENCIL_TEST):
-			glClear(GL_STENCIL_BUFFER_BIT)
 
-		
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
-		
-		#self.cam.position()
-		#context = OpenGL.contextdata.getContext(None)
-		#print "Image2D context is", context
-		glPushMatrix()
-		self.render()
-		glPopMatrix()
-		
-	def resizeGL(self, width, height):
-		if width == 0 or height == 0: return # this is okay, nothing needs to be drawn
-		side = min(width, height)
-		GL.glViewport(0,0,width,height)
-	
-		GL.glMatrixMode(GL.GL_PROJECTION)
-		GL.glLoadIdentity()
-		GLU.gluOrtho2D(0.0,width,0.0,height)
-		GL.glMatrixMode(GL.GL_MODELVIEW)
-		GL.glLoadIdentity()
-		
-		self.resize_event(width,height)
-		#except: pass
-
-	def optimally_resize(self):
-		if self.parent_geometry != None:
-			#self.load_default_scale_origin()
-			self.restoreGeometry(self.parent_geometry)
-		else:
-			new_size = self.get_parent_suggested_size()
-			self.resize(*new_size)
-			self.load_default_scale_origin(new_size)
-		
-	def get_parent_suggested_size(self):
-		
-		data = self.data
-		if data == None: data = self.fft
-		
-		if data != None and  data.get_xsize()<640 and data.get_ysize()<640: 
-			try : return (data.get_xsize()+12,data.get_ysize()+12)
-			except : return (640,640)
-		else:
-			return (640,640)
-	
-	def sizeHint(self):
-#		print self.get_parent_suggested_size()
-		if self.data==None : return QtCore.QSize(512,512)
-		return QtCore.QSize(*self.get_parent_suggested_size())
-	
 	allim=WeakKeyDictionary()
 	
 	def __init__(self, image=None, application=get_application(),winid=None, parent=None):
@@ -249,6 +180,76 @@ class EMImage2DWidget(EMGLWidget):
 #	def __del__(self):
 #		#self.clear_gl_memory() # this is intentionally commented out, it makes sense to clear the memory but not here
 #		self.qt_parent.deleteLater()
+
+	def initializeGL(self):
+		GL.glClearColor(0,0,0,0)
+		
+		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.1, 0.1, 0.1, 1.0])
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_POSITION,  [.1,.1,1,0.])
+	
+		glEnable(GL_LIGHTING)
+		glEnable(GL_LIGHT0)
+		
+	def paintGL(self):
+		
+		glClear(GL_COLOR_BUFFER_BIT)
+		if glIsEnabled(GL_DEPTH_TEST):
+			glClear(GL_DEPTH_BUFFER_BIT)
+		if glIsEnabled(GL_STENCIL_TEST):
+			glClear(GL_STENCIL_BUFFER_BIT)
+
+		
+		glMatrixMode(GL_MODELVIEW)
+		glLoadIdentity()
+		
+		#self.cam.position()
+		#context = OpenGL.contextdata.getContext(None)
+		#print "Image2D context is", context
+		glPushMatrix()
+		self.render()
+		glPopMatrix()
+		
+	def resizeGL(self, width, height):
+		if width == 0 or height == 0: return # this is okay, nothing needs to be drawn
+		side = min(width, height)
+		GL.glViewport(0,0,width,height)
+	
+		GL.glMatrixMode(GL.GL_PROJECTION)
+		GL.glLoadIdentity()
+		GLU.gluOrtho2D(0.0,width,0.0,height)
+		GL.glMatrixMode(GL.GL_MODELVIEW)
+		GL.glLoadIdentity()
+		
+		self.resize_event(width,height)
+		#except: pass
+
+	def optimally_resize(self):
+		if self.parent_geometry != None:
+			#self.load_default_scale_origin()
+			self.restoreGeometry(self.parent_geometry)
+		else:
+			new_size = self.get_parent_suggested_size()
+			self.resize(*new_size)
+			self.load_default_scale_origin(new_size)
+		
+	def get_parent_suggested_size(self):
+		
+		data = self.data
+		if data == None: data = self.fft
+		
+		if data != None and  data.get_xsize()<640 and data.get_ysize()<640: 
+			try : return (data.get_xsize()+12,data.get_ysize()+12)
+			except : return (640,640)
+		else:
+			return (640,640)
+	
+	def sizeHint(self):
+#		print self.get_parent_suggested_size()
+		if self.data==None : return QtCore.QSize(512,512)
+		return QtCore.QSize(*self.get_parent_suggested_size())
+	
 		
 	def set_enable_clip(self,val=True):
 		self.enable_clip = val

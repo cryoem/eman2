@@ -340,7 +340,7 @@ def db_emd_init(self,*parms):
         C++ signature :
             void* __init__(_object*,int,int [,int [,bool]])
 """
-	if len(parms)<4 and len(parms)>0 and isinstance(parms[0],str) and parms[0][:4].lower()=="bdb:":
+	if len(parms)<5 and len(parms)>0 and isinstance(parms[0],str) and parms[0][:4].lower()=="bdb:":
 		self.__initc()
 		self.read_image(*parms)
 		return

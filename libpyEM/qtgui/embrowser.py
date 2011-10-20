@@ -38,6 +38,11 @@ from emapplication import EMApp
 from EMAN2 import *
 import os.path
 import traceback
+from emimage2d import *
+from emimagemx import *
+from emplot2d import *
+from emplot3d import *
+from emscene3d import *
 
 # This is a floating point number-finding regular expression
 renumfind=re.compile(r"-?[0-9]+\.*[0-9]*e?-?[0-9]*")
@@ -260,23 +265,24 @@ class EMBdbFileType(EMFileType):
 		
 		# single 3-D
 		if self.nimg==1 and self.dim[2]>1 :
-			return [("Show 3D+","Add to 3D window",self.show3dApp),("Show 3D","New 3D Window",self.show3DNew),("Show Stack","Show as set of 2-D Z slices",self.show2dStack),
-				("Show 2D","Show in a scrollable 2D image window",self.show2dSingle),("Chimera","Open in chimera (if installed)",self.showChimera),
+			return [("Show 3D","Add to 3D window",self.show3dApp),("Show 3D+","New 3D Window",self.show3DNew),("Show Stack","Show as set of 2-D Z slices",self.show2dStack),
+				("Show Stack+","Show all images together in a new window",self.show2dStackNew),("Show 2D","Show in a scrollable 2D image window",self.show2dSingle),
+				("Show 2D+","Show all images, one at a time in a new window",self.show2dSingleNew),("Chimera","Open in chimera (if installed)",self.showChimera),
 				("FilterTool","Open in e2filtertool.py",self.showFilterTool)]
 		# single 2-D
 		elif self.nimg==1 and self.dim[1]>1 :
-			return [("Show 2D","Show in a 2D single image display",self.show2dsingle),("FilterTool","Open in e2filtertool.py",self.showFilterTool)]
+			return [("Show 2D","Show in a 2D single image display",self.show2dSingle),("Show 2D+","Show in new 2D single image display",self.show2dSingleNew),("FilterTool","Open in e2filtertool.py",self.showFilterTool)]
 		# single 1-D
 		elif self.nimg==1:
-			return [("Plot 2D+","Add to current plot",self.plot2dApp),("Plot 2D","Make new plot",self.plot2dNew),
-				("Show 2D","Show in a 2D single image display",self.show2dSingle)]
+			return [("Plot 2D","Add to current plot",self.plot2dApp),("Plot 2D+","Make new plot",self.plot2dNew),
+				("Show 2D","Replace in 2D single image display",self.show2dSingle),("Show 2D+","New 2D single image display",self.show2dSingleNew)]
 		# 3-D stack
 		elif self.nimg>1 and self.dim[2]>1 :
 			return [("Show 3D","Show all in a single 3D window",self.show3DNew),("Chimera","Open in chimera (if installed)",self.showChimera)]
 		# 2-D stack
 		elif self.nimg>1 and self.dim[1]>1 :
-			return [("Show Stack","Show all images together in one window",self.show2dStack),
-				("Show 2D","Show all images, one at a time",self.show2dSingle),("FilterTool","Open in e2filtertool.py",self.showFilterTool)]
+			return [("Show Stack","Show all images together in one window",self.show2dStack),("Show Stack+","Show all images together in a new window",self.show2dStackNew),
+				("Show 2D","Show all images, one at a time in current window",self.show2dSingle),("Show 2D+","Show all images, one at a time in a new window",self.show2dSingleNew),("FilterTool","Open in e2filtertool.py",self.showFilterTool)]
 		# 1-D stack
 		elif self.nimg>0:
 			return [("Plot 2D","Plot all on a single 2-D plot",self.plot2dNew)]
@@ -296,11 +302,72 @@ class EMBdbFileType(EMFileType):
 		"New 3-D window"
 		
 	def show2dStack(self,brws):
-		"A set of 2-D images together "
+		"A set of 2-D images together in an existing window"
+		brws.busy()
+		if self.dim[2]>1:
+			data=[]
+			for z in range(self.dim[2]):
+				data.append(EMData(self.path,0,False,Region(0,0,z,self.dim[0],self.dim[1],1)))
+		else : data=EMData.read_images(self.path)
+		
+		try: 
+			target=brws.view2ds[-1]
+			target.set_data(data)
+		except: 
+			target=EMImageMXWidget()
+			target.set_data(data)
+			brws.view2ds.append(target)
+			
+		brws.notbusy()
+		target.show()
+		target.raise_()
+		
+	def show2dStackNew(self,brws):
+		"A set of 2-D images together in a new window"
+		brws.busy()
+		if self.dim[2]>1:
+			data=[]
+			for z in range(self.dim[2]):
+				data.append(EMData(self.path,0,False,Region(0,0,z,self.dim[0],self.dim[1],1)))
+		else : data=EMData.read_images(self.path)
+		
+		target=EMImageMXWidget()
+		target.set_data(data)
+		brws.view2ds.append(target)
+
+		brws.notbusy()
+		target.show()
+		target.raise_()
 		
 	def show2dSingle(self,brws):
 		"Show a single 2-D image"
+		brws.busy()
+		if self.nimg>1 : data=EMData.read_images(self.path)
+		else : data=EMData(self.path)
 		
+		try: 
+			target=brws.view2d[-1]
+			target.set_data(data)
+		except: 
+			target=EMImage2DWidget(data)
+			brws.view2d.append(target)
+
+		brws.notbusy()
+		target.show()
+		target.raise_()
+
+	def show2dSingleNew(self,brws):
+		"Show a single 2-D image"
+		brws.busy()
+		if self.nimg>1 : data=EMData.read_images(self.path)
+		else : data=EMData(self.path)
+		
+		target=EMImage2DWidget(data)
+		brws.view2d.append(target)
+
+		brws.notbusy()
+		target.show()
+		target.raise_()
 		
 	def showChimera(self,brws):
 		"Open in Chimera"
@@ -731,7 +798,7 @@ class EMBrowserWidget(QtGui.QWidget):
 		
 		self.gbl = QtGui.QGridLayout(self)
 		
-		2# Top Toolbar area
+		# Top Toolbar area
 		self.wtools=QtGui.QWidget()
 		self.wtoolhbl=QtGui.QHBoxLayout(self.wtools)
 		self.wtoolhbl.setContentsMargins(0,0,0,0)
@@ -840,14 +907,29 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.curpath=None	# The path represented by the current data model
 		self.curft=None		# a fileType instance for the currently hilighted object
 		self.curactions=[]	# actions returned by the filtetype. Cached for speed
-		self.models={}
+		self.models={}		# Cached models to avoid a lot of rereading (not sure if this is really worthwhile)
+
+		# Each of these contains a list of open windows displaying different types of content
+		# The last item in the list is considered the 'current' item for any append operations
+		self.view2d=[]
+		self.view2ds=[]
+		self.view3d=[]
+		self.viewplot2d=[]
+		self.viewplot3d=[]
 
 		self.setPath(".")	# start in the local directory
 
+	def busy(self):
+		"display a busy cursor"
+		QtGui.qApp.setOverrideCursor(Qt.BusyCursor)
+
+	def notbusy(self):
+		"normal arrow cursor"
+		QtGui.qApp.setOverrideCursor(Qt.ArrowCursor)
 
 	def editPath(self):
 		"Set a new path"
-		self.setPath((str)self.wpath.text())
+		self.setPath(str(self.wpath.text()))
 
 	def itemSel(self,qmi):
 #		print "Item selected",qmi.row(),qmi.column(),qmi.internalPointer().path()
@@ -939,7 +1021,16 @@ class EMBrowserWidget(QtGui.QWidget):
 		
 		self.setPath(action.data().toString())
 #		self.wtree.setSelectionModel(myQItemSelection(self.curmodel))
-		
+	
+	def closeEvent(self,event):
+		print "Exiting"
+		for w in self.view2d+self.view2ds+self.view3d+self.viewplot2d+self.viewplot3d:
+			w.close()
+
+		event.accept()
+		#self.app().close_specific(self)
+		self.emit(QtCore.SIGNAL("module_closed")) # this signal is important when e2ctf is being used by a program running its own eve
+
 # This is just for testing, of course
 if __name__ == '__main__':
 	em_app = EMApp()
