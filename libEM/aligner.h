@@ -848,6 +848,52 @@ namespace EMAN
 		static const string NAME;
 	};
 
+	/** Aligns a particle with the specified symmetry into the standard orientation for that
+	 * symmetry.
+	 *@author Steve Ludtke and John Flanagan
+	 *@date February 2011
+	 *@param sym A string specifying the symmetry under which to do the alignment
+	 */
+	class SymAlignProcessor:public Aligner
+	{
+		public:
+			virtual EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name="ccc", const Dict& cmp_params = Dict()) const;
+
+			virtual EMData * align(EMData * this_img, EMData * to_img) const
+			{
+				return align(this_img, to_img, "ccc", Dict());
+			}
+			virtual string get_name() const
+			{
+				return NAME;
+			}
+
+			static Aligner *NEW()
+			{
+				return new SymAlignProcessor();
+			}
+
+			virtual TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("sym", EMObject::STRING, "The symmetry under which to do the alignment, Default=c1" );
+				d.put("delta", EMObject::FLOAT,"Angle the separates points on the sphere. This is exclusive of the \'n\' paramater. Default is 10");
+				d.put("dphi", EMObject::FLOAT,"The angle increment in the phi direction. Default is 10");
+				d.put("lphi", EMObject::FLOAT,"Lower bound for phi. Default it 0");
+				d.put("uphi", EMObject::FLOAT,"Upper bound for phi. Default it 359.9");
+				d.put("avger", EMObject::STRING, "The sort of averager to use, Default=mean" );
+				return d;
+			}
+
+			virtual string get_desc() const
+			{
+				return "The image is centered and rotated to the standard orientation for the specified symmetry";
+			}
+
+			static const string NAME;
+
+	};
+
 	/** refine alignment. Refines a preliminary 2D alignment using a simplex algorithm. Subpixel precision.
      */
 	class RefineAligner:public Aligner
@@ -895,6 +941,55 @@ namespace EMAN
 		static const string NAME;
 	};
 
+	/** Aligns a particle with a specified symetry to its symmetry axis using the simplex multidimensional minimization algorithm
+	 *@author John Flanagan
+	 *@date October 2011
+	 *@param sym The symmetry of the particle in question
+	 *@param xform.align3d The initial guess to align the paricle to its symmetry axis
+	 **/
+	class SymAlignProcessorQuat : public Aligner
+	{
+		public:
+			virtual EMData * align(EMData * this_img, EMData * to_img,
+						   const string & cmp_name="ccc", const Dict& cmp_params = Dict()) const;
+
+			virtual EMData * align(EMData * this_img, EMData * to_img) const
+			{
+				return align(this_img, to_img, "ccc", Dict());
+			}
+		
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+		static Aligner *NEW()
+		{
+			return new SymAlignProcessorQuat();
+		}
+		string get_desc() const
+		{
+			return "Finds the symmetry axis using the simplex algorithm.";
+		}
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("sym", EMObject::STRING, "The symmettry. Default is c1");
+			d.put("xform.align3d", EMObject::TRANSFORM, "The initial guess for to align the particel to sym axis");
+			d.put("stepx", EMObject::FLOAT, "The initial simplex step size in x. Default is 1");
+			d.put("stepy", EMObject::FLOAT, "The initial simplex step size in y. Default is 1");
+			d.put("stepz", EMObject::FLOAT, "The initial simplex step size in z. Default is 1." );
+			d.put("stepn0", EMObject::FLOAT, "The initial simplex step size in the first quaternion vecotr component. Default is 1." );
+			d.put("stepn1", EMObject::FLOAT, "The initial simplex step size in the second quaternion vecotr component. Default is 1." );
+			d.put("stepn2", EMObject::FLOAT, "The initial simplex step size in the third quaternion vecotr component. Default is 1." );
+			d.put("spin_coeff", EMObject::FLOAT,"The multiplier appied to the spin (if it is too small or too large the simplex will not converge).  Default is 10.");
+			d.put("precision", EMObject::FLOAT, "The precision which, if achieved, can stop the iterative refinement before reaching the maximum iterations. Default is 0.01." );
+			d.put("maxiter", EMObject::INT, "The maximum number of iterations that can be performed by the Simplex minimizer. Default is 100.");
+			d.put("maxshift", EMObject::INT,"Maximum translation in pixels in any direction. If the solution yields a shift beyond this value in any direction, then the refinement is judged a failure and the original alignment is used as the solution.");
+			return d;
+		}
+		static const string NAME;	
+	};
+	
 	/** Refine alignment. Refines a preliminary 3D alignment using a sampling grid. This is a port from tomohunter, but the az
 	 * sampling scheme is altered cuch that the points on the sphere are equidistant (Improves speed several hundered times).
 	 * The distance between the points on the sphere is 'delta' and the range(distance from the pole, 0,0,0 position) is

@@ -32,6 +32,7 @@
 #include "processor.h"
 #include "sparx/processor_sparx.h"
 #include "plugins/processor_template.h"
+#include "cmp.h"
 #include "ctf.h"
 #include "xydata.h"
 #include "emdata.h"
@@ -44,6 +45,7 @@
 #include <gsl/gsl_statistics.h>
 #include <gsl/gsl_wavelet.h>
 #include <gsl/gsl_wavelet2d.h>
+#include <gsl/gsl_multimin.h>
 #include <algorithm>
 #include <ctime>
 
@@ -84,7 +86,6 @@ const string TransformProcessor::NAME = "xform";
 const string IntTranslateProcessor::NAME = "math.translate.int";
 const string ScaleTransformProcessor::NAME = "xform.scale";
 const string ApplySymProcessor::NAME = "xform.applysym";
-const string SymAlignProcessor::NAME = "xform.symalign";
 const string ClampingProcessor::NAME = "threshold.clampminmax";
 const string NSigmaClampingProcessor::NAME = "threshold.clampminmax.nsigma";
 const string ToMinvalProcessor::NAME = "threshold.belowtominval";
@@ -275,7 +276,6 @@ template <> Factory < Processor >::Factory()
 	force_add<TransformProcessor>();
 	force_add<ScaleTransformProcessor>();
 	force_add<ApplySymProcessor>();
-	force_add<SymAlignProcessor>();
 	force_add<IntTranslateProcessor>();
 	force_add<InvertCarefullyProcessor>();
 
@@ -895,64 +895,6 @@ EMData* ApplySymProcessor::process(const EMData * const image)
 }
 
 void ApplySymProcessor::process_inplace(EMData* image)
-{
-	cout << "Not implemented yet" << endl;
-}
-
-EMData* SymAlignProcessor::process(const EMData * const image)
-{
-	
-	// Set parms
-	float dphi = params.set_default("dphi",10.f);
-	float lphi = params.set_default("lphi",0.0f);
-	float uphi = params.set_default("uphi",359.9f);
-	
-	Dict d;
-	d["inc_mirror"] = true;
-	d["delta"] = params.set_default("delta",10.f);
-	
-	//Genrate points on a sphere in an asymmetric unit
-	Symmetry3D* sym = Factory<Symmetry3D>::get((string)params.set_default("sym","c1"));
-	vector<Transform> transforms = sym->gen_orientations((string)params.set_default("orientgen","eman"),d);
-	
-	//Genrate symmetry related orritenations
-	vector<Transform> syms = Symmetry3D::get_symmetries((string)params["sym"]);
-	
-	float bestquality = 0.0f;
-	EMData* bestimage = 0;
-	for(vector<Transform>::const_iterator trans_it = transforms.begin(); trans_it != transforms.end(); trans_it++) {
-		Dict tparams = trans_it->get_params("eman");
-		Transform t(tparams);
-		for( float phi = lphi; phi < uphi; phi += dphi ) {
-			tparams["phi"] = phi;
-			t.set_rotation(tparams);
-			
-			//Get the averagaer
-			Averager* imgavg = Factory<Averager>::get((string)params.set_default("avger","mean")); 
-			//Now make the averages
-			for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++it ) {
-				Transform sympos = t*(*it);
-				EMData* transformed = image->process("xform",Dict("transform",&sympos));
-				imgavg->add_image(transformed);
-				delete transformed;
-			}
-			
-			EMData* symptcl=imgavg->finish();
-			delete imgavg;
-			//See which average is the best
-			float quality = symptcl->get_attr("sigma");
-			if(quality > bestquality) {
-				bestquality = quality;
-				bestimage = symptcl;
-			} else {
-				delete symptcl;
-			}
-		}
-	}
-	return bestimage;
-}
-
-void SymAlignProcessor::process_inplace(EMData* image)
 {
 	cout << "Not implemented yet" << endl;
 }

@@ -35,6 +35,7 @@
 #include "emfft.h"
 #include "cmp.h"
 #include "aligner.h"
+#include "averager.h"
 #include "emdata.h"
 #include "processor.h"
 #include "util.h"
@@ -71,6 +72,8 @@ const string RotateTranslateFlipAlignerPawel::NAME = "rotate_translate_flip_resa
 const string RTFExhaustiveAligner::NAME = "rtf_exhaustive";
 const string RTFSlowExhaustiveAligner::NAME = "rtf_slow_exhaustive";
 const string RefineAligner::NAME = "refine";
+const string SymAlignProcessorQuat::NAME = "symalignquat";
+const string SymAlignProcessor::NAME = "symalign";
 const string Refine3DAlignerGrid::NAME = "refine_3d_grid";
 const string Refine3DAlignerQuaternion::NAME = "refine_3d";
 const string RT3DGridAligner::NAME = "rotate_translate_3d_grid";
@@ -95,7 +98,9 @@ template <> Factory < Aligner >::Factory()
 	force_add<RotateTranslateFlipAlignerPawel>();
 	force_add<RTFExhaustiveAligner>();
 	force_add<RTFSlowExhaustiveAligner>();
+	force_add<SymAlignProcessor>();
 	force_add<RefineAligner>();
+	force_add<SymAlignProcessorQuat>();
 	force_add<Refine3DAlignerGrid>();
 	force_add<Refine3DAlignerQuaternion>();
 	force_add<RT3DGridAligner>();
@@ -1318,7 +1323,59 @@ EMData *RTFSlowExhaustiveAligner::align(EMData * this_img, EMData *to,
 	return rslt;
 }
 
-
+EMData* SymAlignProcessor::align(EMData * this_img, EMData *to, const string & cmp_name, const Dict& cmp_params) const
+{
+	
+	// Set parms
+	float dphi = params.set_default("dphi",10.f);
+	float lphi = params.set_default("lphi",0.0f);
+	float uphi = params.set_default("uphi",359.9f);
+	
+	Dict d;
+	d["inc_mirror"] = true;
+	d["delta"] = params.set_default("delta",10.f);
+	
+	//Genrate points on a sphere in an asymmetric unit
+	Symmetry3D* sym = Factory<Symmetry3D>::get((string)params.set_default("sym","c1"));
+	vector<Transform> transforms = sym->gen_orientations((string)params.set_default("orientgen","eman"),d);
+	
+	//Genrate symmetry related orritenations
+	vector<Transform> syms = Symmetry3D::get_symmetries((string)params["sym"]);
+	
+	float bestquality = 0.0f;
+	EMData* bestimage = 0;
+	for(vector<Transform>::const_iterator trans_it = transforms.begin(); trans_it != transforms.end(); trans_it++) {
+		Dict tparams = trans_it->get_params("eman");
+		Transform t(tparams);
+		for( float phi = lphi; phi < uphi; phi += dphi ) {
+			tparams["phi"] = phi;
+			t.set_rotation(tparams);
+			
+			//Get the averagaer
+			Averager* imgavg = Factory<Averager>::get((string)params.set_default("avger","mean")); 
+			//Now make the averages
+			for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++it ) {
+				Transform sympos = (*it)*t;
+				EMData* transformed = this_img->process("xform",Dict("transform",&sympos));
+				imgavg->add_image(transformed);
+				delete transformed;
+			}
+			
+			EMData* symptcl=imgavg->finish();
+			delete imgavg;
+			//See which average is the best
+			float quality = symptcl->get_attr("sigma");
+			cout << quality << " " << phi << endl;
+			if(quality > bestquality) {
+				bestquality = quality;
+				bestimage = symptcl;
+			} else {
+				delete symptcl;
+			}
+		}
+	}
+	return bestimage;
+}
 
 static double refalifn(const gsl_vector * v, void *params)
 {
@@ -1397,7 +1454,6 @@ static double refalifnfast(const gsl_vector * v, void *params)
 // 	cout << result << " x " << x << " y " << y << " az " << a <<  endl;
 	return result;
 }
-
 
 EMData *RefineAligner::align(EMData * this_img, EMData *to,
 	const string & cmp_name, const Dict& cmp_params) const
@@ -1555,6 +1611,34 @@ static Transform refalin3d_perturbquat(const Transform*const t, const float& spi
 	return q;
 }
 
+static double symquat(const gsl_vector * v, void *params)
+{
+	Dict *dict = (Dict *) params;
+
+ 	double n0 = gsl_vector_get(v, 0);
+ 	double n1 = gsl_vector_get(v, 1);
+	double n2 = gsl_vector_get(v, 2);
+	double x = gsl_vector_get(v, 3);
+	double y = gsl_vector_get(v, 4);
+	double z = gsl_vector_get(v, 5);
+
+	EMData* volume = (*dict)["volume"];
+	float spincoeff = (*dict)["spincoeff"];
+	Transform* t = (*dict)["transform"];
+
+	Transform soln = refalin3d_perturbquat(t,spincoeff,(float)n0,(float)n1,(float)n2,(float)x,(float)y,(float)z);
+
+	EMData *tmp = volume->process("xform",Dict("transform",&soln));
+	EMData *symtmp = tmp->process("xform.applysym",Dict("sym",(*dict)["sym"]));
+	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
+	double result = c->cmp(symtmp,tmp);
+	delete tmp;
+	delete symtmp;
+	delete t; t = 0;
+	//cout << result << endl;
+	return result;
+}
+
 static double refalifn3dquat(const gsl_vector * v, void *params)
 {
 	Dict *dict = (Dict *) params;
@@ -1568,7 +1652,6 @@ static double refalifn3dquat(const gsl_vector * v, void *params)
 
 	EMData *this_img = (*dict)["this"];
 	EMData *with = (*dict)["with"];
-// 	bool mirror = (*dict)["mirror"];
 
 	Transform* t = (*dict)["transform"];
 	float spincoeff = (*dict)["spincoeff"];
@@ -1581,6 +1664,121 @@ static double refalifn3dquat(const gsl_vector * v, void *params)
 	if ( tmp != 0 ) delete tmp;
 	delete t; t = 0;
 	//cout << result << endl;
+	return result;
+}
+
+EMData* SymAlignProcessorQuat::align(EMData * volume, EMData *to, const string & cmp_name, const Dict& cmp_params) const
+{
+	//Get pretransform
+	Transform* t;
+	if (params.has_key("xform.align3d") ) {
+		t = params["xform.align3d"];
+	}else {
+		t = new Transform(); // is the identity
+	}
+	
+	float sdi = 0.0;
+	float sdj = 0.0;
+	float sdk = 0.0;
+	float sdx = 0.0;
+	float sdy = 0.0;
+	float sdz = 0.0;
+
+	float spincoeff =  params.set_default("spin_coeff",10.0f); // spin coefficient, controls speed of convergence (sort of)
+	
+	int np = 6; // the number of dimensions
+	Dict gsl_params;
+	gsl_params["volume"] = volume;
+	gsl_params["transform"] = t;
+	gsl_params["sym"] = params.set_default("sym","c1");
+	gsl_params["spincoeff"] = spincoeff;
+	
+	const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
+	gsl_vector *ss = gsl_vector_alloc(np);
+
+	float stepi = params.set_default("stepn0",1.0f); // doesn't really matter b/c the vecor part will be normalized anyway
+	float stepj = params.set_default("stepn1",1.0f); // doesn't really matter b/c the vecor part will be normalized anyway
+	float stepk = params.set_default("stepn2",1.0f); // doesn't really matter b/c the vecor part will be normalized anyway
+	float stepx = params.set_default("stepx",1.0f);
+	float stepy = params.set_default("stepy",1.0f);
+	float stepz = params.set_default("stepz",1.0f);
+
+	gsl_vector_set(ss, 0, stepi);
+	gsl_vector_set(ss, 1, stepj);
+	gsl_vector_set(ss, 2, stepk);
+	gsl_vector_set(ss, 3, stepx);
+	gsl_vector_set(ss, 4, stepy);
+	gsl_vector_set(ss, 5, stepz);
+
+	gsl_vector *x = gsl_vector_alloc(np);
+	gsl_vector_set(x, 0, sdi);
+	gsl_vector_set(x, 1, sdj);
+	gsl_vector_set(x, 2, sdk);
+	gsl_vector_set(x, 3, sdx);
+	gsl_vector_set(x, 4, sdy);
+	gsl_vector_set(x, 5, sdz);
+	
+	gsl_multimin_function minex_func;
+	Cmp *c = Factory < Cmp >::get(cmp_name, cmp_params);
+	gsl_params["cmp"] = (void *) c;
+	minex_func.f = &symquat;
+	minex_func.n = np;
+	minex_func.params = (void *) &gsl_params;
+	gsl_multimin_fminimizer *s = gsl_multimin_fminimizer_alloc(T, np);
+	gsl_multimin_fminimizer_set(s, &minex_func, x, ss);
+	
+	int rval = GSL_CONTINUE;
+	int status = GSL_SUCCESS;
+	int iter = 1;
+	
+	float precision = params.set_default("precision",0.01f);
+	int maxiter = params.set_default("maxiter",100);
+	while (rval == GSL_CONTINUE && iter < maxiter) {
+		iter++;
+		status = gsl_multimin_fminimizer_iterate(s);
+		if (status) {
+			break;
+		}
+		rval = gsl_multimin_test_size(gsl_multimin_fminimizer_size(s), precision);
+	}
+
+	int maxshift = params.set_default("maxshift",-1);
+
+	if (maxshift <= 0) {
+		maxshift = volume->get_xsize() / 4;
+	}
+	float fmaxshift = static_cast<float>(maxshift);
+	
+	EMData *result;
+	if ( fmaxshift >= (float)gsl_vector_get(s->x, 0) && fmaxshift >= (float)gsl_vector_get(s->x, 1)  && fmaxshift >= (float)gsl_vector_get(s->x, 2))
+	{
+		float n0 = (float)gsl_vector_get(s->x, 0);
+		float n1 = (float)gsl_vector_get(s->x, 1);
+		float n2 = (float)gsl_vector_get(s->x, 2);
+		float x = (float)gsl_vector_get(s->x, 3);
+		float y = (float)gsl_vector_get(s->x, 4);
+		float z = (float)gsl_vector_get(s->x, 5);
+		
+		Transform tsoln = refalin3d_perturbquat(t,spincoeff,n0,n1,n2,x,y,z);
+			
+		result = volume->process("xform",Dict("transform",&tsoln));
+		result->set_attr("xform.align3d",&tsoln);
+		EMData *tmpsym = result->process("xform.applysym",Dict("sym",gsl_params["sym"]));
+		result->set_attr("score", result->cmp(cmp_name,tmpsym,cmp_params));
+		delete tmpsym;
+	} else { // The refine aligner failed - this shift went beyond the max shift
+		result = volume->process("xform",Dict("transform",t));
+		result->set_attr("xform.align3d",t);
+		result->set_attr("score",0.0);
+	}
+	
+	gsl_vector_free(x);
+	gsl_vector_free(ss);
+	gsl_multimin_fminimizer_free(s);
+
+	if ( c != 0 ) delete c;
+	delete t;
+				      
 	return result;
 }
 
@@ -1715,7 +1913,6 @@ EMData* Refine3DAlignerQuaternion::align(EMData * this_img, EMData *to,
 	
 	//EMData *result = this_img->process("xform",Dict("transform",t));
 	delete t;
-	t = 0;
 	gsl_vector_free(x);
 	gsl_vector_free(ss);
 	gsl_multimin_fminimizer_free(s);

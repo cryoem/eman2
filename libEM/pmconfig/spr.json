@@ -155,6 +155,12 @@
         "PROGRAM": "e2rct.py", 
         "NAME": "Make Model - e2rct", 
         "CHILDREN": []
+      },
+      {
+        "ICON": "single_image_3d",
+        "PROGRAM": "e2symsearch.py", 
+        "NAME": "Align to Symmetry Axis", 
+        "CHILDREN": [] 
       }
     ]
   }, 

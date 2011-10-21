@@ -24,6 +24,12 @@
         "PROGRAM": "e2classaverage3d.py", 
         "NAME": "Tomogram Alignment and Averaging", 
         "CHILDREN": [] 
+      },
+      {
+        "ICON": "single_image_3d",
+        "PROGRAM": "e2symsearch.py", 
+        "NAME": "Align to Symmetry Axis", 
+        "CHILDREN": [] 
       }
     ] 
   }

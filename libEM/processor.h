@@ -1554,110 +1554,52 @@ The basic design of EMAN Processors: <br>\
 		
 	};
 	
-	/** Aligns a particle with the specified symmetry into the standard orientation for that
-	 * symmetry.
-	 *@author Steve Ludtke and John Flanagan
-	 *@date February 2011
-	 *@param sym A string specifying the symmetry under which to do the alignment
+	/** Scale the image with control over the output dimensions
+	 *@author David Woolford
+	 *@date June 2009
+	 *@param scale The amount by which to scale
+	 *@param cip The length of each output dimension. Non sophisticated, output dimensions can't be different
 	 */
-	class SymAlignProcessor:public Processor
+	class ScaleTransformProcessor:public Processor
 	{
 		public:
 			virtual string get_name() const
 			{
 				return NAME;
 			}
-
 			static Processor *NEW()
 			{
-				return new SymAlignProcessor();
+				return new ScaleTransformProcessor();
 			}
-
+			/**
+			 * @exception ImageDimensionException if the image is not 2D or 3D
+			 * @exception InvalidParameterException if the Transform parameter is not specified
+			 */
 			virtual void process_inplace(EMData* image);
 
+			/**
+			 * @exception ImageDimensionException if the image is not 2D or 3D
+			 * @exception InvalidParameterException if the Transform parameter is not specified
+			 */
 			virtual EMData* process(const EMData* const image);
 
 			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
-				d.put("sym", EMObject::STRING, "The symmetry under which to do the alignment, Default=c1" );
-				d.put("delta", EMObject::FLOAT,"Angle the separates points on the sphere. This is exclusive of the \'n\' paramater. Default is 10");
-				d.put("dphi", EMObject::FLOAT,"The angle increment in the phi direction. Default is 10");
-				d.put("lphi", EMObject::FLOAT,"Lower bound for phi. Default it 0");
-				d.put("uphi", EMObject::FLOAT,"Upper bound for phi. Default it 359.9");
-				d.put("avger", EMObject::STRING, "The sort of averager to use, Default=mean" );
+				d.put("scale", EMObject::FLOAT, "The amount by which to scale" );
+				d.put("clip", EMObject::INT, "The length of each output dimension. Non sophisticated, output dimensions can't be different" );
+				/**d.put("clipx", EMObject::INT, "The length of the output x dimension. Exclusive of the clip.");
+				*/
 				return d;
 			}
 
 			virtual string get_desc() const
 			{
-				return "The image is centered and rotated to the standard orientation for the specified symmetry";
+				return "The image is scaled with the clip variable in mind, being sure to preserve as much pixel information as possible.";
 			}
 
 			static const string NAME;
-
-		private:
-			/** Check that the particular aspect is valid
-		 	* @exception ImageDimensionException if the image is not 1,2 or 3D
-			*/
-			void assert_valid_aspect(const vector<int>& translation, const EMData* const image) const;
-
-			/** Get the clip region that will achieve the desired translation
-			 * @exception ImageDimensionException if the image is not 1,2 or 3D
-			 * @param translation the amount by which to translate
-			 * @param image the image that will eventually used for the translation operation
-			 */
-			Region get_clip_region(vector<int>& translation, const EMData* const image) const;
 	};
-
-	
-		/** Scale the image with control over the output dimensions
-		 *@author David Woolford
-		 *@date June 2009
-		 *@param scale The amount by which to scale
-		 *@param cip The length of each output dimension. Non sophisticated, output dimensions can't be different
-		 */
-		class ScaleTransformProcessor:public Processor
-		{
-			public:
-				virtual string get_name() const
-				{
-					return NAME;
-				}
-				static Processor *NEW()
-				{
-					return new ScaleTransformProcessor();
-				}
-
-				/**
-				 * @exception ImageDimensionException if the image is not 2D or 3D
-				 * @exception InvalidParameterException if the Transform parameter is not specified
-				 */
-				virtual void process_inplace(EMData* image);
-
-				/**
-				 * @exception ImageDimensionException if the image is not 2D or 3D
-				 * @exception InvalidParameterException if the Transform parameter is not specified
-				 */
-				virtual EMData* process(const EMData* const image);
-
-				virtual TypeDict get_param_types() const
-				{
-					TypeDict d;
-					d.put("scale", EMObject::FLOAT, "The amount by which to scale" );
-					d.put("clip", EMObject::INT, "The length of each output dimension. Non sophisticated, output dimensions can't be different" );
-					/**d.put("clipx", EMObject::INT, "The length of the output x dimension. Exclusive of the clip.");
-					*/
-					return d;
-				}
-
-				virtual string get_desc() const
-				{
-					return "The image is scaled with the clip variable in mind, being sure to preserve as much pixel information as possible.";
-				}
-
-				static const string NAME;
-		};
 
 	/**f(x) = maxval if f(x) > maxval;
 	  * f(x) = minval if f(x) < minval

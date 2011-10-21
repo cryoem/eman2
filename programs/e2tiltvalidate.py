@@ -119,8 +119,8 @@ def main():
 		exit(1)
 
 	# Initialize parallelism if being used
+	from EMAN2PAR import EMTaskCustomer
 	if options.parallel :
-		from EMAN2PAR import EMTaskCustomer
 		etc=EMTaskCustomer(options.parallel)
 	else:
 		etc=EMTaskCustomer("thread:1")
