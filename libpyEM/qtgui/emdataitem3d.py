@@ -12,11 +12,17 @@ from emitem3d import EMItem3D, EMItem3DInspector, drawBoundingBox
 from emimageutil import ImgHistogram
 from valslider import ValSlider
 from emshapeitem3d import EMInspectorControlShape
-from emglobjects import get_default_gl_colors, EMOpenGLFlagsAndTools
+from emglobjects import get_default_gl_colors
 import os.path
 import math
 
+
+
 class EMDataItem3D(EMItem3D):
+	"""
+	This class is the scene graph node that has a reference to an EMData object. Though it has an orientation, it can not be displayed directly.
+	Instead, its children are displayable, and are sized, postioned, and oriented relative to this node.
+	"""
 	name = "Data"
 	def __init__(self, data, parent = None, children = set(), transform = Transform()):
 		EMItem3D.__init__(self, parent, children, transform)
@@ -121,12 +127,18 @@ class EMDataItem3DInspector(EMItem3DInspector):
 		self.inspector().updateSceneGraph()
 
 class EMSliceItem3D(EMItem3D):
+	"""
+	This displays a slice of the volume that can be oriented any direction. 
+	Its parent in the tree data structure that forms the scene graph must be an EMDataItem3D instance.
+	"""
 	name = "Slice"
 	nodetype = "DataChild" 
 
 	def __init__(self, parent=None, children = set(), transform = Transform()):
+		"""
+		@param parent: should be an EMDataItem3D instance for proper functionality.
+		"""
 		EMItem3D.__init__(self, parent, children, transform)
-		self.glflags = EMOpenGLFlagsAndTools()		# OpenGL flags - this is a singleton convenience class for testing texture support		
 		self.texture2d_name = 0
 		self.texture3d_name = 0
 		self.use_3d_texture = False
@@ -157,6 +169,10 @@ class EMSliceItem3D(EMItem3D):
 		self.shininess = shininess
 	
 	def useDefaultBrightnessContrast(self):
+		"""
+		This applies default settings for brightness and contrast.
+		"""
+		
 		data = self.getParent().getData()
 		min = data.get_attr("minimum")
 		max = data.get_attr("maximum")
@@ -167,6 +183,9 @@ class EMSliceItem3D(EMItem3D):
 			self.contrast = 1
 	
 	def gen3DTexture(self):
+		"""
+		If no 3D texture exists, this creates one. It always returns the number that identifies the current 3D texture. 
+		"""
 		if self.texture3d_name == 0:
 			data_copy = self.getParent().getData().copy()			
 			data_copy.add(self.brightness)
@@ -184,7 +203,7 @@ class EMSliceItem3D(EMItem3D):
 	
 	def dataChanged(self):
 		"""
-		This method must be implmented in any data child EMItem3D
+		When the EMData changes for EMDataItem3D parent node, this method is called. It is responsible for updating the state of the slice node.
 		"""
 		if self.texture2d_name != 0:
 			GL.glDeleteTextures(self.texture2d_name)
@@ -220,7 +239,11 @@ class EMSliceItem3D(EMItem3D):
 		GL.glDisable(GL.GL_LIGHTING)
 		GL.glColor3f(1.0,1.0,1.0)
 		
-		if not self.use_3d_texture:
+		if not self.use_3d_texture: #Use 2D texture
+			
+			# Any time self.transform changes, a new 2D texture is REQUIRED.
+			# It is easiest to create a new 2D texture every time this is called, and seems fast enough.
+			# Thus, a new 2D texture is created whether it is needed or not.
 			
 			temp_data = EMData(diag, diag)
 			temp_data.cut_slice(data, self.transform)
@@ -244,9 +267,7 @@ class EMSliceItem3D(EMItem3D):
 			
 			#Now draw the texture on another quad
 			GL.glEnable(GL.GL_BLEND)
-			#GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE)
 			GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
-#			GL.glDisable(GL.GL_LIGHTING)
 			
 			GL.glEnable(GL.GL_TEXTURE_2D)
 			GL.glBindTexture(GL.GL_TEXTURE_2D, self.texture2d_name)
@@ -271,9 +292,12 @@ class EMSliceItem3D(EMItem3D):
 			GL.glDisable(GL.GL_TEXTURE_2D)
 			
 			GL.glDisable(GL.GL_TEXTURE_3D)
-#			GL.glEnable(GL.GL_LIGHTING)
 			GL.glDisable(GL.GL_BLEND)
-		else:
+		else: #Using a 3D texture
+			
+			# Generating a new 3D texture is slower than a new 2D texture.
+			# Creating a new texture is needed if brightness or contrast change or if the EMData in self.getParent().getData() has changed.
+			
 			if self.force_texture_update:
 				GL.glDeleteTextures(self.texture3d_name)
 				self.texture3d_name = 0
@@ -291,7 +315,6 @@ class EMSliceItem3D(EMItem3D):
 			#Now draw the texture on another quad
 			GL.glEnable(GL.GL_BLEND)
 			GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
-#			GL.glDisable(GL.GL_LIGHTING)
 			
 			GL.glEnable(GL.GL_TEXTURE_3D)
 			GL.glBindTexture(GL.GL_TEXTURE_3D, self.texture3d_name)
@@ -307,7 +330,7 @@ class EMSliceItem3D(EMItem3D):
 			GL.glLoadIdentity()
 			GL.glTranslatef(0.5, 0.5, 0.5) #Put the origin at the center of the 3D texture
 			GL.glScalef(1.0/nx, 1.0/ny, 1.0/nz) #Scale to make the texture coords the same as data coords
-			GLUtil.glMultMatrix(self.transform) #Make texture coord the same as Volume coords
+			GLUtil.glMultMatrix(self.transform) #Make texture coords the same as EMSliceItem3D coords
 			GL.glMatrixMode(GL.GL_MODELVIEW)
 			
 			GL.glBegin(GL.GL_QUADS)
@@ -321,7 +344,6 @@ class EMSliceItem3D(EMItem3D):
 			GL.glMatrixMode(GL.GL_MODELVIEW)
 			
 			GL.glDisable(GL.GL_TEXTURE_3D)
-#			GL.glEnable(GL.GL_LIGHTING)
 			GL.glDisable(GL.GL_BLEND)
 		
 		GL.glEnable(GL.GL_LIGHTING)
@@ -438,10 +460,18 @@ class EMSliceInspector(EMInspectorControlShape):
 			self.inspector().updateSceneGraph()
 			
 class EMVolumeItem3D(EMItem3D):
+	"""
+	This displays a partially transparent view through the EMData. 
+	Its parent in the tree data structure that forms the scene graph must be an EMDataItem3D instance.
+	"""
+	
 	name = "Volume"
 	nodetype = "DataChild" 
 
 	def __init__(self, parent=None, children = set(), transform = Transform()):
+		"""
+		@param parent: should be an EMDataItem3D instance for proper functionality.
+		"""
 		EMItem3D.__init__(self, parent, children, transform)
 
 		self.texture_name = 0
@@ -471,6 +501,9 @@ class EMVolumeItem3D(EMItem3D):
 		self.shininess = shininess
 	
 	def dataChanged(self):
+		"""
+		When the EMData changes for EMDataItem3D parent node, this method is called. It is responsible for updating the state of the slice node.
+		"""
 		if self.texture_name != 0:
 			GL.glDeleteTextures(self.texture_name)
 		self.useDefaultBrightnessThreshold()
@@ -487,6 +520,9 @@ class EMVolumeItem3D(EMItem3D):
 		return self.item_inspector
 
 	def gen3DTexture(self):
+		"""
+		Creates 3D texture if none exists. Returns the number that identifies the current texture.
+		"""
 		if self.texture_name == 0:
 			data_copy = self.getParent().getData().copy()
 			data_copy.add(self.brightness)
@@ -503,6 +539,10 @@ class EMVolumeItem3D(EMItem3D):
 		return self.texture_name
 
 	def useDefaultBrightnessThreshold(self):
+		"""
+		Applies default brightness and contrast.
+		"""
+		
 		data = self.getParent().getData()
 		min = data["minimum"]
 		max = data["maximum"]
@@ -514,6 +554,12 @@ class EMVolumeItem3D(EMItem3D):
 			self.contrast = 1
 		
 	def renderNode(self):
+		"""
+		This creates a 3D texture if needed. Then, it uses transformed texture coordinates to apply the needed image data to a stack of rectangles that are slices of the volume.
+		The rectangles are created parallel to the plane of the screen. Each one has partly transparent texture data applied to it.
+		The rectangles are created from back to front (near the viewer) because a background color is needed before the newest slice can be blended with it.
+		"""
+		
 		if self.force_texture_update:
 			GL.glDeleteTextures(self.texture_name)
 			self.texture_name = 0
@@ -570,8 +616,8 @@ class EMVolumeItem3D(EMItem3D):
 		GLUtil.glMultMatrix(transf.inverse())
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		
+		# Draw the volume by drawing a stack of semi-transparent slices oriented in the plane of the screen. Order is important: back to front.
 		GL.glEnable(GL.GL_BLEND)
-		#GL.glBlendFunc(GL.GL_ONE, GL.GL_ONE)
 		GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
 		GL.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_REPLACE)
 		
@@ -582,7 +628,6 @@ class EMVolumeItem3D(EMItem3D):
 				coords = quad_points[i]
 				GL.glTexCoord3f(coords[0], coords[1], coords[2] + dz)
 				GL.glVertex3f(coords[0], coords[1], coords[2] + dz)
-			
 		glEnd()
 		
 		GL.glPopMatrix()
@@ -735,9 +780,16 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		self.sampling_spinbox.setMaximum(1+range-1)
 
 class EMIsosurface(EMItem3D):
+	"""
+	This displays an isosurface, which is a surface containing all the voxels that have the value of the given threshold.
+	It must have an EMDataItem3D as its parent in the tree data structure for the scene graph.
+	"""
 	name = "Isosurface"
 	nodetype = "DataChild" 
 	def __init__(self, parent=None, children = set(), transform = Transform()):
+		"""
+		@param parent: should be an EMDataItem3D instance for proper functionality.
+		"""
 		EMItem3D.__init__(self, parent, children, transform)
 		
 		self.isothr = None #Will be set in self.dataChanged()
@@ -771,7 +823,7 @@ class EMIsosurface(EMItem3D):
 	
 	def dataChanged(self):
 		"""
-		This method must be implmented in any data child EMItem3D
+		When the EMData changes for EMDataItem3D parent node, this method is called. It is responsible for updating the state of the slice node.
 		"""
 		data = self.getParent().getData()
 		
