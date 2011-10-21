@@ -70,11 +70,13 @@ def drawBoundingBox(width, height, depth):
 						2, 6
 						])
 	
+	GL.glPushAttrib(GL.GL_LIGHTING_BIT)
+	GL.glMaterialfv(GL.GL_FRONT, GL.GL_EMISSION, [1.0,1.0,1.0,1.0])
 	GL.glEnableClientState(GL.GL_VERTEX_ARRAY)
 	GL.glVertexPointerf(vertices)
 	GL.glDrawElements(GL.GL_LINES, 24, GL.GL_UNSIGNED_INT, indices)
+	GL.glPopAttrib()
 	
-
 class EMItem3D(object): #inherit object for new-style class (new-stype classes required for super() and Python properties)
 	"""
 	The base class for nodes in our scene graph, which is used in our 3D scene viewer.

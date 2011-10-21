@@ -191,6 +191,7 @@ def main():
 		# closest to perpidicular to the imaging plane (this is how Richard handles it). 
 		bestinplane = 1.0
 		print "####################################"
+		print tilt_euler_xform*untilt_euler_xform.inverse()
 		for sym in symmeties.get_syms():
 			tiltxform = tilt_euler_xform*sym.inverse()*untilt_euler_xform.inverse()
 			# Select the symmetry solution whose tiltaxis is in plane
