@@ -60,6 +60,8 @@ namespace EMAN
 		static unsigned int gen_glu_mipmaps(const EMData* const emdata);
 
 		/** create an OpenGL texture
+		 * @param emdata: The image data that will be used to create the texture
+		 * @param format: glTexImage() sets its internalFormat and format parameters to this value. Can be GL_COLOR_INDEX, GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA, GL_RGB, GL_BGR, GL_RGBA, GL_BGRA, GL_LUMINANCE, or GL_LUMINANCE_ALPHA
 		 * @return the texture id used in the call to glBindTextures
 		 */
 		static unsigned int gen_gl_texture(const EMData* const emdata, GLenum format = GL_LUMINANCE);
