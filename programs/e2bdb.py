@@ -331,7 +331,10 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 				### Info on all particles
 				if options.all :
 					for i in range(len(dct)):
-						im=dct[i]
+						try: 
+							im=dct[i]
+							if im==None : raise Exception
+						except: continue
 						print "%d. %d x %d x %d\tA/pix=%1.2f\tM=%1.4f\tS=%1.4f\tSk=%1.4f"%(i,im["nx"],im["ny"],im["nz"],im["apix_x"],im["mean"],im["sigma"],im["skewness"]),
 						try:
 							print "\tdf=%1.3f\tB=%1.1f"%(im["ctf"].defocus,im["ctf"].bfactor)
