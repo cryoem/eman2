@@ -1145,9 +1145,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		# Delete nodes
 		if event.key() == QtCore.Qt.Key_Delete:
 			for node in self.getAllSelectedNodes():
-				if node.parent:
-					if self.main_3d_inspector: self.main_3d_inspector.removeTreeNode(node.parent.EMQTreeWidgetItem, node.parent.EMQTreeWidgetItem.indexOfChild(node.EMQTreeWidgetItem))
-					node.parent.removeChild(node)
+				self.deleteNode(node)
 			self.updateSG()
 		# Hide selections
 		if event.key() == QtCore.Qt.Key_H:
@@ -1210,6 +1208,15 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			nodes = self.getAllSelectedNodes()
 			if not nodes: return
 			self.unGroupNodes(nodes)
+	
+	def deleteNode(self, node):
+		"""
+		Remove a node from the SG
+		@param node, the EMItem3D to remove
+		"""
+		if node.parent:
+			if self.main_3d_inspector: self.main_3d_inspector.removeTreeNode(node.parent.EMQTreeWidgetItem, node.parent.EMQTreeWidgetItem.indexOfChild(node.EMQTreeWidgetItem))
+			node.parent.removeChild(node)
 			
 	def copyNodes(self, nodes, parentnode=None, parentidx=None):
 		"""

@@ -119,8 +119,8 @@ def main():
 		exit(1)
 
 	# Initialize parallelism if being used
-	from EMAN2PAR import EMTaskCustomer
 	if options.parallel :
+		from EMAN2PAR import EMTaskCustomer
 		etc=EMTaskCustomer(options.parallel)
 	else:
 		etc=EMTaskCustomer("thread:1")
@@ -130,7 +130,7 @@ def main():
 	if not options.path : options.path=numbered_path("TiltValidate",True)
 
 	# Do projections
-	e2projectcmd = "e2project3d.py %s --orientgen=eman:delta=%f:inc_mirror=1:perturb=0 --outfile=bdb:%s#projections --projector=standard --sym=%s" % (options.volume,options.delta,options.path, "c1") # Seems to work better when I check all possibilites
+	e2projectcmd = "e2project3d.py %s --orientgen=eman:delta=%f:inc_mirror=1:perturb=0 --outfile=bdb:%s#projections --projector=standard --sym=%s" % (options.volume,options.delta,options.path, options.sym) # Seems to work better when I check all possibilites
 	if options.parallel: e2projectcmd += " --parallel=%s" %options.parallel
 	run(e2projectcmd)
 	
@@ -182,16 +182,16 @@ def main():
 		tilt_euler_xform.set_rotation({"type":"eman","az":tiltrot["az"],"alt":tiltrot["alt"],"phi":-simmx_tilt[3].get_value_at(tiltbestrefnum, tiltimgnum)})
 		# Write out test results
 		print untilt_euler_xform.get_rotation("eman"), tilt_euler_xform.get_rotation("eman")
-		volume.project("standard", {"transform":untilt_euler_xform}).write_image('untilted_test.hdf', 2*imgnum)
-		untiltimgs[imgnum].write_image('untilted_test.hdf', 2*imgnum+1)
-		volume.project("standard", {"transform":tilt_euler_xform}).write_image('tilted_test.hdf', 2*imgnum)
-		tiltimgs[imgnum].write_image('tilted_test.hdf', 2*imgnum+1)
+		
+		volume.project('standard', untilt_euler_xform).write_image("untiltaligned.hdf", imgnum*2)
+		untiltimgs[imgnum].write_image("untiltaligned.hdf", imgnum*2+1)
+		volume.project('standard', tilt_euler_xform).write_image("tiltaligned.hdf", imgnum*2)
+		tiltimgs[imgnum].write_image("tiltaligned.hdf", imgnum*2+1)
 		
 		# Compute tiltxis and tiltangle for each particel pair. For symmetric objects the tilttransform is selected as the one that has a tiltaxis
 		# closest to perpidicular to the imaging plane (this is how Richard handles it). 
 		bestinplane = 1.0
-		print "####################################"
-		print tilt_euler_xform*untilt_euler_xform.inverse()
+		#print "####################################"
 		for sym in symmeties.get_syms():
 			tiltxform = tilt_euler_xform*sym.inverse()*untilt_euler_xform.inverse()
 			# Select the symmetry solution whose tiltaxis is in plane
@@ -206,7 +206,7 @@ def main():
 	test.close()
 	tdb["particletilt_list"] = particletilt_list
 	tdb.close()
-#	exit(1)
+	exit(1)
 
 	# Make contour plot to validate each particle
 	tasks=[]

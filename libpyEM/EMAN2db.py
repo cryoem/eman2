@@ -811,6 +811,7 @@ class EMTask:
 		self.wait_for=None		# in the active queue, this identifies an exited class which needs to be rerun when all wait_for jobs are complete
 		self.failcount=0		# Number of times this task failed to reach completion after starting
 		self.errors=[]			# a list of errors (strings) that occured during task execution. Normally empty !
+		self.ppid = os.getpid()		# Rrcords the PID to send to to children as PPID (sent to e2parallel.py)
 
 	def execute(self): return
 

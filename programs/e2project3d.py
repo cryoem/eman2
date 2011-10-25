@@ -246,7 +246,6 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	if ( options.check ): options.verbose = 9
-	if options.cuda: initializeCUDAdevice()
 	
 	print "project3d: ",str(options)
 
