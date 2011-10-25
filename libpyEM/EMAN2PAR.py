@@ -469,6 +469,7 @@ class EMLocalTaskHandler():
 		self.maxid=0
 		self.nextid=0
 		self.doexit=0
+		self.ppid = -1
 
 	
 		os.makedirs(self.scratchdir)
@@ -484,6 +485,7 @@ class EMLocalTaskHandler():
 	def add_task(self,task):
 		EMLocalTaskHandler.lock.acquire()
 		if not isinstance(task,EMTask) : raise Exception,"Non-task object passed to EMLocalTaskHandler for execution"
+		self.ppid = task.ppid
 		dump(task,file("%s/%07d"%(self.scratchdir,self.maxid),"wb"),-1)
 		ret=self.maxid
 		self.maxid+=1
@@ -543,7 +545,7 @@ class EMLocalTaskHandler():
 			while self.nextid<self.maxid and len(self.running)<self.maxthreads:
 #				print "Launch task ",self.nextid
 				EMLocalTaskHandler.lock.acquire()
-				proc=subprocess.Popen("e2parallel.py" + " localclient" + " --taskin=%s/%07d"%(self.scratchdir,self.nextid) + " --taskout=%s/%07d.out"%(self.scratchdir,self.nextid), shell=True)
+				proc=subprocess.Popen("e2parallel.py" + " localclient" + " --taskin=%s/%07d"%(self.scratchdir,self.nextid) + " --taskout=%s/%07d.out"%(self.scratchdir,self.nextid) + " --ppid=%s"%self.ppid, shell=True)
 				self.running.append((proc,self.nextid))
 				self.nextid+=1
 				EMLocalTaskHandler.lock.release()

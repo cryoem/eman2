@@ -34,6 +34,7 @@
 
 from EMAN2 import *
 import math
+import os
 from EMAN2db import EMTask
 
 def main():
@@ -153,6 +154,8 @@ class SymAlignTask(EMTask):
 	def __init__(self, volume, sym, comp, xform):
 		data = {"volume":volume}
 		EMTask.__init__(self,"CmpTilt",data,{},"")
+		self.ppid = os.getpid()
+		
 		self.sym = sym
 		self.cmp=comp
 		self.xform=xform

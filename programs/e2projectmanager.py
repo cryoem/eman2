@@ -1309,7 +1309,8 @@ class TaskManager(QtGui.QWidget):
 						os.kill(task[1],signal.SIGKILL)
 						self._recursivekill(task[1])
 				# kill parent (top level item)
-				if item.getPPID() < 0:
+				if item.getPPID() > 0:
+					print "KIlling parent"
 					os.kill(item.getPPID(),signal.SIGKILL)
 			else:
 				# Windows kill

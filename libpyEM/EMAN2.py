@@ -1653,11 +1653,12 @@ def clear_dead_cudajobs():
 	locks = glob.glob("%s*"%EMData.getcudalock())
 	for lock in locks:
 		f = open(lock,"r")
-		cpid = f.readline()
+		cpid = int(f.readline())
 		f.close()
 		try:
 			os.kill(cpid, 0)
-		except:
+		except OSError:
+			print "removing deadfile ", lock
 			os.unlink(lock)
 	
 def set_emdata_array(img, array):
@@ -1679,12 +1680,13 @@ def set_emdata_array(img, array):
 	new_img.set_attr_dict(dict)
 	return new_img
 
-# Initialize CUDA upon EMAN2 import. If cuda is not compiled an error will be thrown an nothing will happen
-try:
-	clear_dead_cudajobs()
-	EMData.cuda_initialize()
-except:
-	pass
+def initializeCUDAdevice():
+	# Initialize CUDA upon EMAN2 import. If cuda is not compiled an error will be thrown an nothing will happen
+	try:
+		clear_dead_cudajobs()
+		EMData.cuda_initialize()
+	except:
+		pass
 
 __doc__ = \
 "EMAN classes and routines for image/volume processing in \n\

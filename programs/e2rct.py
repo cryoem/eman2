@@ -78,6 +78,8 @@ def main():
 	logid=E2init(sys.argv,options.ppid)
 	
 	if options.careject: options.careject = options.careject.split(',')
+	# initialize CUDA if desired
+	if options.cuda: initializeCUDAdevice()
 	
 	if not options.path:
 		options.path = "bdb:rct/"

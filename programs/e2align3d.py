@@ -77,6 +77,7 @@ def main():
 	if options.cmp : options.cmp=parsemodopt(options.cmp)
 	if options.ralign : options.ralign=parsemodopt(options.ralign)
 	if options.rcmp : options.rcmp=parsemodopt(options.rcmp)
+	if options.cuda: initializeCUDAdevice()
                
 	logid=E2init(sys.argv,options.ppid)
 	#read in the input maps and check for sanity

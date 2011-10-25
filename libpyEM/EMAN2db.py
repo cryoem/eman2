@@ -83,10 +83,6 @@ cachesize=80000000
 
 
 def DB_cleanup(signum=None,stack=None):
-	try:	# will fail if cuda is not installed
-		EMData.cuda_cleanup()
-	except:
-		pass
 	if signum in (2,15) :
 		if len(DBDict.alldicts)>0 : 
 			try: nopen=len([i for i in DBDict.alldicts if i.bdb!=None])
@@ -104,8 +100,17 @@ def DB_cleanup(signum=None,stack=None):
 		print "Shutdown complete, exiting" 
 		sys.stderr.flush()
 		sys.stdout.flush()
+		cuda_exit()
 		os._exit(1)
+	else:
+		cuda_exit()
 
+def cuda_exit():
+	try:	# will fail if cuda is not installed
+		EMData.cuda_cleanup()
+	except:
+		pass
+	
 # if the program exits nicely, close all of the databases
 atexit.register(DB_cleanup)
 

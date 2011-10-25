@@ -280,7 +280,8 @@ class ClassAvTask(EMTask):
 		data={"images":["cache",imagefile,imagenums],"usefilt":["cache",usefilt,imagenums]}
 		if ref!=None : data["ref"]=["cache",ref,n]
 		EMTask.__init__(self,"ClassAv",data,{},"")
-
+		self.ppid = os.getpid()
+		
 		self.options={"niter":niter, "normproc":normproc, "prefilt":prefilt, "align":align, "aligncmp":aligncmp,
 			"ralign":ralign,"raligncmp":raligncmp,"averager":averager,"scmp":scmp,"keep":keep,"keepsig":keepsig,
 			"automask":automask,"verbose":verbose,"n":n}

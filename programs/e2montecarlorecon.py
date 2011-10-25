@@ -60,6 +60,8 @@ def main():
 	
 	global options
 	(options, args) = parser.parse_args()
+	# Initialize CUDA iof needed
+	if options.cuda: initializeCUDAdevice()
 
 	logid=E2init(sys.argv,options.ppid)
 	

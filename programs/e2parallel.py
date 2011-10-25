@@ -83,6 +83,11 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 #	parser.add_argument("--idleonly",action="store_true",help="Will only use CPUs on the local machine when idle",default=False)
 	
 	(options, args) = parser.parse_args()
+	# Initialize CUDA iof needed
+	initializeCUDAdevice()
+	# Record in the log file so that we know what jobs to kill
+	logid=E2init(sys.argv,options.ppid)
+	
 	if len(args)<1 or args[0] not in commandlist: parser.error("command required: "+str(commandlist))
 
 	if args[0]=="dcserver" :
@@ -117,7 +122,10 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 
 	elif args[0]=="servmon" :
 		runservmon()
-		
+	
+	E2end(logid)
+	sys.exit(0)
+	
 def progcb(val):
 	return True
 
@@ -126,8 +134,6 @@ def runinmpi(scratchdir,verbose):
 	client=EMMpiClient(scratchdir)
 	client.test(verbose)		# don't skip this. It's necessary to identify node names
 	client.run(verbose)
-
-	sys.exit(0)
 
 def runlocaltask(taskin,taskout):
 	"""Exectues a task on the local machine. Reads the pickled task from 'taskfile'. Returns results to taskout. """
@@ -147,8 +153,6 @@ def runlocaltask(taskin,taskout):
 		sys.exit(1)		# Error !
 #	print "Done %s (%s)"%(taskin,taskout)
 	
-	sys.exit(0)
-
 def rundcserver(port,verbose):
 	"""Launches a DCServer. If port is <1 or None, will autodetermine. Does not return."""
 	import EMAN2db
