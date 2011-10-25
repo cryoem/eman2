@@ -205,9 +205,53 @@ class EMPlotFileType(EMFileType):
 		
 	def plot2dApp(self,brws):
 		"Append self to current plot"
+		brws.busy()
+
+		data1=[]
+		fin=file(self.path,"r")
+		numr=0
+		for l in fin:
+			if l[0]=="#" : continue
+			data1.append([float(i) for i in renumfind.findall(l)])
+		
+		data=[]
+		for c in xrange(self.numc):
+			data.append([i[c] for i in data1])
+		
+		try: 
+			target=brws.viewplot2d[-1]
+			target.set_data(data,self.path.split("/")[-1].split("#")[-1])
+		except: 
+			target=EMPlot2DWidget()
+			brws.viewplot2d.append(target)
+			target.set_data(data,self.path.split("/")[-1].split("#")[-1])
+
+		brws.notbusy()
+		target.show()
+		target.raise_()
 		
 	def plot2dNew(self,brws):
 		"Make a new plot"
+		brws.busy()
+
+		data1=[]
+		fin=file(self.path,"r")
+		numr=0
+		for l in fin:
+			if l[0]=="#" : continue
+			data1.append([float(i) for i in renumfind.findall(l)])
+		
+		data=[]
+		for c in xrange(self.numc):
+			data.append([i[c] for i in data1])
+		
+		target=EMPlot2DWidget()
+		brws.viewplot2d.append(target)
+		target.set_data(data,self.path.split("/")[-1].split("#")[-1])
+
+		brws.notbusy()
+		target.show()
+		target.raise_()
 		
 	def plot3dApp(self,brws):
 		"Append self to current 3-D plot"
@@ -796,6 +840,7 @@ class EMBrowserWidget(QtGui.QWidget):
 	def __init__(self,parent=None,withmodal=False):
 		QtGui.QWidget.__init__(self,parent)
 		
+		self.resize(780,580)
 		self.gbl = QtGui.QGridLayout(self)
 		
 		# Top Toolbar area
@@ -873,6 +918,13 @@ class EMBrowserWidget(QtGui.QWidget):
 				self.wbutmisc[-1].hide()
 #				self.wbutmisc[-1].setEnabled(False)
 				QtCore.QObject.connect(self.wbutmisc[-1], QtCore.SIGNAL('clicked(bool)'), lambda x,v=i*2+j:self.buttonMisc(v))
+
+		self.wbutxx=QtGui.QLabel("")
+		self.wbutxx.setMaximumHeight(12)
+		self.hbl2.addWidget(self.wbutxx,0,6)
+		self.wbutyy=QtGui.QLabel("")
+		self.wbutyy.setMaximumHeight(12)
+		self.hbl2.addWidget(self.wbutyy,1,6)
 
 		# buttons for selector use
 		if withmodal :

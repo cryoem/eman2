@@ -194,6 +194,9 @@ class EMImage2DWidget(EMGLWidget):
 		
 	def paintGL(self):
 		
+		glMatrixMode(GL_MODELVIEW)
+		glLoadIdentity()
+		
 		glClear(GL_COLOR_BUFFER_BIT)
 		if glIsEnabled(GL_DEPTH_TEST):
 			glClear(GL_DEPTH_BUFFER_BIT)
@@ -201,8 +204,6 @@ class EMImage2DWidget(EMGLWidget):
 			glClear(GL_STENCIL_BUFFER_BIT)
 
 		
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
 		
 		#self.cam.position()
 		#context = OpenGL.contextdata.getContext(None)

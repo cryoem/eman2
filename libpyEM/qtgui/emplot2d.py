@@ -69,6 +69,32 @@ class EMPlot2DWidget(EMGLWidget):
 	"""A QT widget for drawing 2-D plots using matplotlib
 	"""
 
+	def __init__(self,application=None,winid=None):
+		
+		fmt=QtOpenGL.QGLFormat()
+		fmt.setDoubleBuffer(True);
+		EMGLWidget.__init__(self, winid=winid)
+		self.setFormat(fmt)
+		self.resize(640,480)
+		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"plot.png"))
+		
+		self.axes={}
+		self.pparm={}			# color,line,linetype,linewidth,sym,symtype,symsize
+		self.inspector=None
+		self.needupd=1
+		self.plotimg=None
+		self.shapes={}
+		self.limits=None
+		self.rmousedrag=None
+		self.axisparms=(None,None,"linear","linear")
+		
+		self.data={}				# List of Lists to plot 
+		self.visibility = {}  	   	# Same entries as in self.data, but entries are true or False to indicate visibility
+		self.glflags = EMOpenGLFlagsAndTools() 	# supplies power of two texturing flags
+		
+		self.tex_name = 0
+		self.main_display_list = 0
+	
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
 		GL.glEnable(GL_DEPTH_TEST)
@@ -114,32 +140,6 @@ class EMPlot2DWidget(EMGLWidget):
 
 	def setWindowTitle(self,filename):
 		EMGLWidget.setWindowTitle(self, remove_directories_from_name(filename))
-	
-	def __init__(self,application=None,winid=None):
-		
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True);
-		EMGLWidget.__init__(self, winid=winid)
-		self.setFormat(fmt)
-		self.resize(480,480)
-		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"plot.png"))
-		
-		self.axes={}
-		self.pparm={}			# color,line,linetype,linewidth,sym,symtype,symsize
-		self.inspector=None
-		self.needupd=1
-		self.plotimg=None
-		self.shapes={}
-		self.limits=None
-		self.rmousedrag=None
-		self.axisparms=(None,None,"linear","linear")
-		
-		self.data={}				# List of Lists to plot 
-		self.visibility = {}  	   	# Same entries as in self.data, but entries are true or False to indicate visibility
-		self.glflags = EMOpenGLFlagsAndTools() 	# supplies power of two texturing flags
-		
-		self.tex_name = 0
-		self.main_display_list = 0
 	
 	def clear_gl_memory(self):
 		if self.tex_name != 0: 
