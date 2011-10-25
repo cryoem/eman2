@@ -346,7 +346,7 @@ EMData *EMData::do_ift()
 	/* Do inplace IFT on a image copy, because the complex to real transform of
 	 * nd will destroy its input array even for out-of-place transforms.
 	 */
-	memcpy((char *) d, (char *) rdata, nx * ny * nz * sizeof(float));
+	memcpy((char *) d, (char *) rdata, (size_t)nx * ny * nz * sizeof(float));
 
 	int offset = is_fftodd() ? 1 : 2;
 	//cout << "Sending offset " << offset << " " << nx-offset << endl;
@@ -359,7 +359,6 @@ EMData *EMData::do_ift()
 		for (size_t i = 1; i < (size_t)ny * nz; i++) {
 			memmove((char *) &d[i * (nx - offset)], (char *) &d[i * nx], row_size);
 		}
-
 	}
 
 	dat->set_size(nx - offset, ny, nz);	//remove the padding
