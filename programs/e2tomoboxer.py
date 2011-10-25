@@ -1434,7 +1434,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		"""After adjusting a box, call this"""
 #		print "upd ",n,quiet
 		
-		box=self.boxes[n]
+		try:
+			box=self.boxes[n]
+		except IndexError:
+			return
 		bs2=self.boxsize()/2
 
 		#if self.curbox!=n :
