@@ -179,7 +179,6 @@ from EMAN2db import EMTask
 class EMProject3DTaskDC(EMTask):
 	def __init__(self,command="e2project3d.py",data=None,options=None):
 		EMTask.__init__(self,command,data,options)
-		self.ppid = os.getpid()
 		
 		# data has these keys:
 		# input - which is the name of the threed model - a Task-style cache

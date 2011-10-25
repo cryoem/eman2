@@ -250,7 +250,6 @@ class CompareToTiltTask(EMTask):
 	def __init__(self, volume, tilted, imgnum, eulerxform, zrot, distplot, tiltrange, tiltstep, options):
 		data = {"volume":volume,"tilted":tilted}
 		EMTask.__init__(self,"CmpTilt",data,options,"")
-		self.ppid = os.getpid()
 		
 		self.imgnum = imgnum
 		self.eulerxform=eulerxform

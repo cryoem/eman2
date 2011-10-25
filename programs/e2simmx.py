@@ -343,7 +343,6 @@ class EMSimTaskDC(EMTask):
 	'''
 	def __init__(self,command="e2simmx.py",data=None,options=None):
 		EMTask.__init__(self,command,data,options)
-		self.ppid = os.getpid()
 		# options should have these keys:
 		# align - the main aligner, a list of two strings
 		# alligncmp - the main align cmp - a list of two strings

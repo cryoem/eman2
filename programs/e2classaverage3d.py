@@ -590,7 +590,6 @@ class Align3DTask(EMTask):
 		data={}
 		data={"fixedimage":fixedimage,"image":image}
 		EMTask.__init__(self,"ClassAv3d",data,{},"")
-		self.ppid = os.getpid()
 
 		self.options={"ptcl":ptcl,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"npeakstorefine":npeakstorefine,"align":align,"aligncmp":aligncmp,"ralign":ralign,"raligncmp":raligncmp,"shrink":shrink,"shrinkrefine":shrinkrefine,"verbose":verbose}
 	
