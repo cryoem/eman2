@@ -1,6 +1,8 @@
 
 #include <cuda.h>
 #include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "cuda_defs.h"
 #include "cuda_emfft.h"
@@ -135,11 +137,11 @@ int getCudaDeviceManually(const int deviceCount) {
 	{
 		int i = atoi(getenv("SETCUDADEVICE"));
 		if (i > deviceCount or i < 0){ printf("RUBBISH CUDA DEVICE NUMBER!!!\n"); exit(1);}
-		sprintf(filename,"/tmp/cuda%d",i); //Only works for Linux
+		sprintf(filename,"%s%d",cudalockfile,i); //Only works for Linux
 		if (fopen(filename,"r") == NULL){
-			//Pu a lock on this file...
+			//Put a lock on this file...
 			FILE* pFile = fopen(filename,"w");
-			fputs("Running CUDA", pFile);
+			fprintf(pFile,"%d", getpid()); // again only good for POSIX systems
 			fclose(pFile);
 			return i;
 		} else {
@@ -156,12 +158,12 @@ int getCudaDeviceAuto(const int deviceCount) {
 	//Loop through the available devices and see if any do not have a lock
 	for(int i = 0; i < deviceCount; i++)
 	{
-		sprintf(filename,"/tmp/cuda%d",i); //Only works for Linux
+		sprintf(filename,"%s%d",cudalockfile,i); //Only works for Linux
 		if (fopen(filename,"r") == NULL)
 		{
 			// Found a free CUDA device, now put a lock on it
 			FILE* pFile = fopen(filename,"w");
-			fputs("Running CUDA", pFile);
+			fprintf(pFile,"%d", getpid()); // again only good for POSIX systems
 			fclose(pFile);
 			return i;
 		}

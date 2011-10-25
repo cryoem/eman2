@@ -138,6 +138,8 @@ public:
 	static bool cuda_initialize();
 	
 	static bool usecuda;
+	
+	static const char* getcudalock();
 
 private:
 	//pointers to cuda data

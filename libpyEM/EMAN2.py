@@ -47,6 +47,7 @@ from pyemtbx.box import *
 from e2version import *
 import EMAN2db
 import argparse, copy
+import glob
 #from Sparx import *
 
 HOMEDB=None
@@ -1647,6 +1648,18 @@ def regionprint(self) :
 Region.__repr__=regionprint
 Region.__str__=regionprint
 
+def clear_dead_cudajobs():
+	# obviously this only works for POSIX system, but then again we don't support CUDA on windows
+	locks = glob.glob("%s*"%EMData.getcudalock())
+	for lock in locks:
+		f = open(lock,"r")
+		cpid = f.readline()
+		f.close()
+		try:
+			os.kill(cpid, 0)
+		except:
+			os.unlink(lock)
+	
 def set_emdata_array(img, array):
 	"""
 	Return a new EMData object, set its data with a list of float, all all attribute are the same as input image. 
@@ -1666,8 +1679,9 @@ def set_emdata_array(img, array):
 	new_img.set_attr_dict(dict)
 	return new_img
 
-# Initialize CUDA upon EMAN2 import
+# Initialize CUDA upon EMAN2 import. If cuda is not compiled an error will be thrown an nothing will happen
 try:
+	clear_dead_cudajobs()
 	EMData.cuda_initialize()
 except:
 	pass

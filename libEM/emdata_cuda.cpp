@@ -388,7 +388,7 @@ void EMData::cuda_cleanup()
 	if(EMData::cudadevicenum >= 0)
 	{
 		char filename[16];
-		sprintf(filename,"/tmp/cuda%d",EMData::cudadevicenum); //Only works for Linux
+		sprintf(filename,"%s%d",cudalockfile,EMData::cudadevicenum); //Only works for Linux
 		remove(filename);
 	}
 
@@ -397,7 +397,7 @@ void EMData::cuda_cleanup()
 bool EMData::cuda_initialize()
 {
 	int device = device_init();
-	
+
 	if(device != -1)
 	{
 		EMData::cudadevicenum = device;
@@ -408,4 +408,10 @@ bool EMData::cuda_initialize()
 		return 0;
 	}
 }
+
+const char* EMData::getcudalock()
+{
+	return cudalockfile;
+}
+
 #endif //EMAN2_USING_CUDA
