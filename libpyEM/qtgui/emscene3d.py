@@ -707,6 +707,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		EMGLWidget.__init__(self,parentwidget)
 		QtOpenGL.QGLFormat().setDoubleBuffer(True)
 		QtOpenGL.QGLFormat().setDepth(True)
+		self.setSelectedItem(True)
 		self.camera = EMCamera(1.0, 500.0)	# Default near,far
 		self.clearcolor = [0.0, 0.0, 0.0, 0.0]	# Back ground color
 		self.main_3d_inspector = None

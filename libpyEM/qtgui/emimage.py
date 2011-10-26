@@ -125,7 +125,7 @@ class EMImageWidget(object):
 				from emscene3d import EMScene3D
 				from emdataitem3d import EMDataItem3D, EMIsosurface
 				data = EMDataItem3D(data, transform=Transform())
-				data.setSelectedItem(True)
+				#data.setSelectedItem(True)
 				isosurface = EMIsosurface(data, transform=Transform())
 				if old:
 					if isinstance(old,EMScene3D):
@@ -241,7 +241,7 @@ class EMWidgetFromFile(object):
 					if isinstance(old,EMScene3D): widget = old
 					else: widget = EMScene3D()
 					data = EMDataItem3D(data, transform=Transform())
-					data.setSelectedItem(True)
+					#data.setSelectedItem(True)
 					isosurface = EMIsosurface(data, transform=Transform())
 					widget.insertNewNode(os.path.basename(filename), data, parentnode=widget)
 					widget.insertNewNode("Iso", isosurface, parentnode=data)

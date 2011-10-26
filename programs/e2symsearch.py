@@ -94,7 +94,7 @@ def main():
 	
 	E2end(logid)
 
-# Use strategy pattern here
+# Use strategy pattern here. Any new stategy needs to inherit this
 class Strategy:
 	def __init__(self, volume, sym, steps, comp, etc):
 		self.volume = volume
