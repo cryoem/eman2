@@ -189,6 +189,12 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		@param node: test whether this node is a child node of self 
 		"""
 		return node in self.children
+		
+	def getChildIndex(self, node):
+		"""
+		Returns the index of child in the list of children. Raises an execption if not found
+		"""
+		return self.children.index(node)
 	
 	def displayTree(self, level = 1):
 		"""

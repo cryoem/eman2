@@ -707,16 +707,17 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		EMGLWidget.__init__(self,parentwidget)
 		QtOpenGL.QGLFormat().setDoubleBuffer(True)
 		QtOpenGL.QGLFormat().setDepth(True)
-		self.setSelectedItem(True)
-		self.camera = EMCamera(1.0, 500.0)	# Default near,far
-		self.clearcolor = [0.0, 0.0, 0.0, 0.0]	# Back ground color
-		self.main_3d_inspector = None
-		self.item_inspector = None				# Get the inspector GUI
-		self.reset_camera = False				# Toogle flag to deterine if the clipping plane has changed and needs redrawing
-		#self.SGactivenodeset = SGactivenodeset			# A set of all active nodes (currently not used)
-		self.scalestep = scalestep				# The scale factor stepsize
-		self.toggle_render_selectedarea = False			# Don't render the selection box by default
-		self.mousemode = "rotate"				# The mouse mode
+		self.setSelectedItem(True)			# The root is selected by default
+		self.currentselecteditem = self
+		self.camera = EMCamera(1.0, 500.0)		# Default near,far
+		self.clearcolor = [0.0, 0.0, 0.0, 0.0]		# Back ground color	
+		self.main_3d_inspector = None			# No inspector by default
+		self.item_inspector = None			# Get the inspector GUI
+		self.reset_camera = False			# Toogle flag to deterine if the clipping plane has changed and needs redrawing
+		#self.SGactivenodeset = SGactivenodeset		# A set of all active nodes (currently not used)
+		self.scalestep = scalestep			# The scale factor stepsize
+		self.toggle_render_selectedarea = False		# Don't render the selection box by default
+		self.mousemode = "rotate"			# The mouse mode
 		self.zrotatecursor = QtGui.QCursor(QtGui.QPixmap(zrotatecursor),-1,-1)
 		self.xyrotatecursor = QtGui.QCursor(QtGui.QPixmap(xyrotatecursor),-1,-1)
 		self.crosshaircursor = QtGui.QCursor(QtGui.QPixmap(crosshairscursor),-1,-1)
@@ -758,7 +759,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		
 	def resizeGL(self, width, height):
 		self.camera.update(width, height)
-		if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+		self.updateInspector()
 	
 	def renderNode(self):
 		pass
@@ -782,7 +783,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		if not self.main_3d_inspector:
 			self.main_3d_inspector = EMInspector3D(self)
-			self.main_3d_inspector.loadSG()
+			self.main_3d_inspector.updateTree()
 			self.main_3d_inspector.updateInspector()
 			self.main_3d_inspector.show()
 			
@@ -910,6 +911,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 				selecteditem.setSelectedItem(True)
 				# Inspector tree management
 				self.updateTreeSelVis(selecteditem)
+				self.setCurrentSelection(selecteditem)
 			else:
 				if record.near < bestdistance:
 					bestdistance = record.near
@@ -927,6 +929,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 				selecteditem.setSelectedItem(True)
 			# Inspector tree management
 			self.updateTreeSelVis(selecteditem)
+			self.setCurrentSelection(selecteditem)
 	
 	def clearSelection(self):
 		"""
@@ -935,9 +938,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		for selected in self.getAllSelectedNodes():
 			selected.setSelectedItem(False)
 			# Inspector tree management
-			if self.main_3d_inspector:
-				if selected.EMQTreeWidgetItem:
-					selected.EMQTreeWidgetItem.setSelectionStateBox()
+			self.updateTreeSelVis()
 
 	# Event subclassing
 	def mousePressEvent(self, event):
@@ -1157,46 +1158,46 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		# Now toolbar hot keys
 		if event.key() == QtCore.Qt.Key_Escape:
 			self.setMouseMode("selection")
-			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+			self.updateInspector()
 		if event.key() == QtCore.Qt.Key_M:
 			self.setMouseMode("multiselection")
-			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+			self.updateInspector()
 		if event.key() == QtCore.Qt.Key_T:
 			self.setMouseMode("xytranslate")
-			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+			self.updateInspector()
 		if event.key() == QtCore.Qt.Key_Z:
 			self.setMouseMode("ztranslate")
-			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+			self.updateInspector()
 		if event.key() == QtCore.Qt.Key_R:
 			self.setMouseMode("rotate")
-			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+			self.updateInspector()
 		if event.key() == QtCore.Qt.Key_S:
 			self.setMouseMode("scale")
-			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+			self.updateInspector()
 		if event.key() == QtCore.Qt.Key_L:
 			self.setMouseMode("line")
-			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+			self.updateInspector()
 		if event.key() == QtCore.Qt.Key_C and not event.modifiers()&Qt.ControlModifier:
 			self.setMouseMode("cube")
-			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+			self.updateInspector()
 		if event.key() == QtCore.Qt.Key_P:
 			self.setMouseMode("sphere")
-			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+			self.updateInspector()
 		if event.key() == QtCore.Qt.Key_Y:
 			self.setMouseMode("cylinder")
-			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+			self.updateInspector()
 		if event.key() == QtCore.Qt.Key_O:
 			self.setMouseMode("cone")
-			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+			self.updateInspector()
 		if event.key() == QtCore.Qt.Key_X:
 			self.setMouseMode("text")
-			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+			self.updateInspector()
 		if event.key() == QtCore.Qt.Key_E:
 			self.setMouseMode("data")
-			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+			self.updateInspector()
 		if event.key() == QtCore.Qt.Key_A:
 			self.setMouseMode("app")
-			if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+			self.updateInspector()
 		if event.key() == QtCore.Qt.Key_C and event.modifiers()&Qt.ControlModifier:
 			nodes = self.getAllSelectedNodes()
 			if not nodes: return
@@ -1216,8 +1217,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		@param node, the EMItem3D to remove
 		"""
 		if node.parent:
-			if self.main_3d_inspector: self.main_3d_inspector.removeTreeNode(node.parent.EMQTreeWidgetItem, node.parent.EMQTreeWidgetItem.indexOfChild(node.EMQTreeWidgetItem))
 			node.parent.removeChild(node)
+			self.updateTree()	# Update the inspector tree
 			
 	def copyNodes(self, nodes, parentnode=None, parentidx=None):
 		"""
@@ -1251,10 +1252,9 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			if node.name == "SG": 
 				skipped +=1
 				continue	# Don't group these 
-			if self.main_3d_inspector: self.main_3d_inspector.removeTreeNode(node.parent.EMQTreeWidgetItem, node.parent.EMQTreeWidgetItem.indexOfChild(node.EMQTreeWidgetItem))
 			node.parent.getChildren().remove(node)
 			newbasenode.addChild(node)
-			if self.main_3d_inspector: self.main_3d_inspector.insertNewNode(node, newbasenode, thisnode_index=i-skipped)
+			self.updateTree()	# Update the inspector tree
 	
 	def unGroupNodes(self, nodes):
 		"""
@@ -1267,16 +1267,12 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			if parentnode.name == "SG": 
 				skipped +=1
 				continue
-			if self.main_3d_inspector: self.main_3d_inspector.removeTreeNode(parentnode.EMQTreeWidgetItem, parentnode.EMQTreeWidgetItem.indexOfChild(node.EMQTreeWidgetItem))
 			parentnode.getChildren().remove(node)
 			parentnode.parent.addChild(node)
-			if self.main_3d_inspector: 
-				parentnodeidx = parentnode.parent.EMQTreeWidgetItem.indexOfChild(parentnode.EMQTreeWidgetItem)
-				self.main_3d_inspector.insertNewNode(node, parentnode.parent, parentnodeidx+i-skipped)
 		
 		if not parentnode.getChildren():
-			if self.main_3d_inspector: self.main_3d_inspector.removeTreeNode(parentnode.parent.EMQTreeWidgetItem, parentnode.parent.EMQTreeWidgetItem.indexOfChild(parentnode.EMQTreeWidgetItem))
 			parentnode.parent.getChildren().remove(parentnode)
+		self.updateTree()	# Update the inspector tree
 			
 	def setMouseMode(self, mousemode):
 		"""
@@ -1354,15 +1350,18 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		insertionpoint = None
 		node.setLabel(name)
-		if self.main_3d_inspector: insertionpoint = self.main_3d_inspector.insertNewNode(node, parentnode, thisnode_index=parentidx) # This is used to find out where we want the item inserted
-		if insertionpoint:
-			insertionpoint[0].insertChild(node, insertionpoint[1]) # We will insert AFTER node xxxx
-		else:
-			if not parentnode: parentnode = self
-			if parentidx == None:
-				parentnode.addChild(node)
+		if parentnode:
+			if parentidx:
+				parentnode.insertChild(node, parentidx)
 			else:
-				parentnode.insertChild(node, parentidx) # We will insert AFTER node xxxx
+				parentnode.addChild(node)
+		else:
+			insertionpointitem = self.getCurrentSelection()
+			if insertionpointitem.getParent():
+				insertionpointitem.getParent().insertChild(node, insertionpointitem.getParent().getChildIndex(insertionpointitem)+1)
+			else:
+				insertionpointitem.addChild(node)
+		self.updateTree(node)
 				
 	def loadSession(self, filename):
 		"""
@@ -1400,7 +1399,6 @@ class EMScene3D(EMItem3D, EMGLWidget):
 				for cline in line:
 					self._process_session_load(cline)
 				self.parentnodestack.pop()
-				#if self.main_3d_inspector: self.parentitemstack.pop()
 				
 			else:
 				# These nodes are leaves
@@ -1528,25 +1526,43 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		Return the clear color
 		"""
 		return self.clearcolor
+	
+	def setCurrentSelection(self, item):
+		"""
+		This is called by the inspector or the selector to record the current selected item
+		"""
+		self.currentselecteditem = item
+	
+	def getCurrentSelection(self):
+		"""
+		Return the currently selected item
+		"""
+		return self.currentselecteditem
 		
 	def updateSG(self):
 		"""
 		Update the SG
 		"""
 		self.update()
-		if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+		self.updateInspector()
 	
+	def updateInspector(self):
+		"""
+		Update the inspector, if there is one
+		"""
+		if self.main_3d_inspector: self.main_3d_inspector.updateInspector()
+		
 	def updateTreeSelVis(self, selecteditem=None):
 		"""
 		Update the inspector Tree for vis sel attributes. Much faster than updateTree, but only checks vis sel attrs
 		"""
 		if self.main_3d_inspector: self.main_3d_inspector.updateTreeSelVis(selecteditem)
 	
-	def updateTree(self):
+	def updateTree(self, currentnode=None):
 		"""
 		Update the entire inspector tree if there is one
 		"""
-		if self.main_3d_inspector: self.main_3d_inspector.updateTree()
+		if self.main_3d_inspector: self.main_3d_inspector.updateTree(currentnode)
 	
 	def closeEvent(self, event):
 		"""
@@ -1963,11 +1979,10 @@ class EMInspector3D(QtGui.QWidget):
 		return tvbox
 	
 	def _recursiveupdatetreeselvis(self, item):
+		item.setSelectionStateBox()
+		item.getVisibleState()
 		for childidx in xrange(item.childCount()):
-			kid = item.child(childidx)
-			kid.setSelectionStateBox()
-			kid.getVisibleState()
-			self._recursiveupdatetreeselvis(kid)
+			self._recursiveupdatetreeselvis(item.child(childidx))
 			
 	def updateTreeSelVis(self, selecteditem=None):
 		"""
@@ -1980,10 +1995,11 @@ class EMInspector3D(QtGui.QWidget):
 			try:
 				self.stacked_widget.setCurrentWidget(selecteditem.getItemInspector())
 				self.tree_widget.setCurrentItem(selecteditem.EMQTreeWidgetItem)
+				if selecteditem: self.scenegraph().setCurrentSelection(selecteditem)
 			except:
 				pass
-		# Unsure unqiue selection
-		self.ensureUniqueTreeLevelSelection(selecteditem)
+			# Unsure unqiue selection
+			self.ensureUniqueTreeLevelSelection(selecteditem)
 			
 	def ensureUniqueTreeLevelSelection(self, item):
 		"""
@@ -2045,37 +2061,13 @@ class EMInspector3D(QtGui.QWidget):
 			self.stacked_widget.removeWidget(parentitem.child(childindex).item3d().getItemInspector())
 		parentitem.takeChild(childindex)
 	
-	def insertNewNode(self, insertion_node, parentnode=None, thisnode_index=None):
-		"""
-		Insert a node at the highlighted location. If an item is highlighted the item3d who had a child is retured along with its order in the children
-		"""
-		currentitem = self.tree_widget.currentItem()
-		itemparentnode = None
-
-		if currentitem:
-			if not parentnode:
-				if currentitem.parent: itemparentnode = currentitem.parent()
-			else:
-				itemparentnode = parentnode.EMQTreeWidgetItem
-			if itemparentnode:
-				if not thisnode_index: thisnode_index = itemparentnode.indexOfChild(currentitem) + 1 # Insert after the this node
-				addeditem = self.addTreeNode(insertion_node.getLabel(), insertion_node, parentitem=itemparentnode, insertionindex=thisnode_index)
-				self.tree_widget.setCurrentItem(addeditem)
-				self._tree_widget_click(addeditem, 0)
-				return [itemparentnode.item3d(), thisnode_index]
-		# Otherwise add the node to the Root
-		addeditem = self.addTreeNode(insertion_node.getLabel(), insertion_node, parentitem=self.tree_widget.topLevelItem(0))
-		self.tree_widget.setCurrentItem(addeditem)
-		self._tree_widget_click(addeditem, 0, quiet=True)
-		
-		return None
-	
 	def clearTree(self):
 		"""
 		Clear the entire tree
 		"""
-		self.tree_widget.topLevelItem(0).removeAllChildren(self)
-		self.tree_widget.takeTopLevelItem(0)
+		if self.tree_widget.topLevelItem(0):
+			self.tree_widget.topLevelItem(0).removeAllChildren(self)
+			self.tree_widget.takeTopLevelItem(0)
 		
 	def _tree_widget_click(self, item, col, quiet=False):
 		"""
@@ -2086,6 +2078,7 @@ class EMInspector3D(QtGui.QWidget):
 		# This code is to prevent both decendents and childer from being selected....
 		if item.checkState(0) == QtCore.Qt.Checked: self.ensureUniqueTreeLevelSelection(item.item3d())
 		if not item.item3d().isSelectedItem(): item.item3d().getItemInspector().updateItemControls() # This is too update a widget, translation and rotation may change in parent nodes change
+		self.scenegraph().setCurrentSelection(item.item3d())
 		if not quiet: self.updateSceneGraph()
 		
 	def _tree_widget_visible(self, item):
@@ -2545,6 +2538,7 @@ class EMInspector3D(QtGui.QWidget):
 		self.loadSG()
 		if currentnode:
 			self.tree_widget.setCurrentItem(currentnode.EMQTreeWidgetItem)
+			self.scenegraph().setCurrentSelection(currentnode)
 		
 	def updateSceneGraph(self):
 		""" 
@@ -2727,7 +2721,7 @@ class NodeDialog(QtGui.QDialog):
 		cubewidget = QtGui.QWidget()
 		grid = QtGui.QGridLayout()
 		cube_dim_label = QtGui.QLabel("Cube Dimension")
-		self.cube_dim = QtGui.QLineEdit()
+		self.cube_dim = QtGui.QLineEdit("50")
 		node_name_label = QtGui.QLabel("Cube Name")
 		self.node_name_cube = QtGui.QLineEdit()
 		grid.addWidget(cube_dim_label, 0, 0, 1, 2)
@@ -2745,7 +2739,7 @@ class NodeDialog(QtGui.QDialog):
 		spherewidget = QtGui.QWidget()
 		grid = QtGui.QGridLayout()
 		sphere_dim_label = QtGui.QLabel("Sphere Dimension")
-		self.sphere_dim = QtGui.QLineEdit()
+		self.sphere_dim = QtGui.QLineEdit("50")
 		node_name_label = QtGui.QLabel("Sphere Name")
 		self.node_name_sphere = QtGui.QLineEdit()
 		grid.addWidget(sphere_dim_label, 0, 0, 1, 2)
@@ -2763,11 +2757,11 @@ class NodeDialog(QtGui.QDialog):
 		cyliderwidget = QtGui.QWidget()
 		grid = QtGui.QGridLayout()
 		cylider_radius_label = QtGui.QLabel("Cylider Radius")
-		self.cylider_radius = QtGui.QLineEdit()
+		self.cylider_radius = QtGui.QLineEdit("50")
 		grid.addWidget(cylider_radius_label, 0, 0, 1, 2)
 		grid.addWidget(self.cylider_radius, 0, 2, 1, 2)
 		cylider_height_label = QtGui.QLabel("Cylider Height")
-		self.cylider_height = QtGui.QLineEdit()
+		self.cylider_height = QtGui.QLineEdit("50")
 		node_name_label = QtGui.QLabel("Cylider Name")
 		self.node_name_cylinder = QtGui.QLineEdit()
 		grid.addWidget(cylider_height_label, 1, 0, 1, 2)
@@ -2786,11 +2780,11 @@ class NodeDialog(QtGui.QDialog):
 		conewidget = QtGui.QWidget()
 		grid = QtGui.QGridLayout()
 		cone_radius_label = QtGui.QLabel("Cone Radius")
-		self.cone_radius = QtGui.QLineEdit()
+		self.cone_radius = QtGui.QLineEdit("50")
 		grid.addWidget(cone_radius_label, 0, 0, 1, 2)
 		grid.addWidget(self.cone_radius, 0, 2, 1, 2)
 		cone_height_label = QtGui.QLabel("Cone Height")
-		self.cone_height = QtGui.QLineEdit()
+		self.cone_height = QtGui.QLineEdit("50")
 		node_name_label = QtGui.QLabel("Cone Name")
 		self.node_name_cone = QtGui.QLineEdit()
 		grid.addWidget(cone_height_label, 1, 0, 1, 2)
