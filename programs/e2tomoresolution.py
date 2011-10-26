@@ -49,14 +49,18 @@ def main():
 	parser.add_pos_argument(name="tomodir",help="The refinement directory to use for tomoresolution.", default="", guitype='dirbox', dirbasename='job3d_03', positional=True, row=0, col=0,rowspan=1, colspan=2)
 	parser.add_header(name="tomoresoheader", help='Options below this label are specific to e2tomoresolution', title="### e2tomoresolution options ###", row=1, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--averager",type=str,help="The averager used to generate the averages. Default is \'mean\'.",default="mean", guitype='combobox', choicelist='dump_averagers_list()', row=2, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--sym",  type=str,help="The recon symmetry", default="c1", guitype='symbox', row=3, col=1, rowspan=1, colspan=2)
+	parser.add_argument("--sym",  type=str,help="The recon symmetry", default="c1", guitype='symbox', row=3, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	(options, args) = parser.parse_args()
 	
+	logid=E2init(sys.argv,options.ppid)
+	
 	fscstrategy = EvenOddReso(args[0], options)
 	fscstrategy.execute()
 
+	E2end(logid)
+	
 	# Plot FSC
 	app = EMApp()
 	plot = EMPlot2DWidget()
@@ -105,8 +109,8 @@ class EvenOddReso(Strategy):
 		if self.options.sym != "c1":
 			evenavg = evenavg.process('xform.applysym',{'sym':self.options.sym})
 			oddavg = oddavg.process('xform.applysym',{'sym':self.options.sym})
-		evenavg.write_image('evenvol.hdf')
-		oddavg.write_image('oddvol.hdf')
+		evenavg.write_image('bdb:%s#evenvol'%self.jobdir)
+		oddavg.write_image('bdb:%s#oddvol'%self.jobdir)
 		
 		fscdata = evenavg.calc_fourier_shell_correlation(oddavg)
 		
@@ -115,6 +119,7 @@ class EvenOddReso(Strategy):
 		self.fsc = fscdata[size:size*2]
 		self.error = fscdata[size*2:size*3]
 		
-	
+		tomo_db.close()
+		
 if __name__ == "__main__":
     main()

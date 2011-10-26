@@ -30,6 +30,12 @@
         "PROGRAM": "e2symsearch.py", 
         "NAME": "Align to Symmetry Axis", 
         "CHILDREN": [] 
+      },
+      {
+        "ICON": "single_image_3d",
+        "PROGRAM": "e2tomoresolution.py", 
+        "NAME": "Estimate Resolution via FSC", 
+        "CHILDREN": [] 
       }
     ] 
   }
