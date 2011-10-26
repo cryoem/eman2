@@ -714,10 +714,11 @@ class RangeSlider(QtGui.QWidget):
 		
 class EMSpinWidget(QtGui.QWidget):
 	"""
-	Widget for a unbounded spin box using left and right arrow keys
-	value is the starting value
-	coeff is controls the exponential growth rate when the arrow is held down
-	maxarrowwidth is the size of the arrow buttons
+	Widget for a unbounded spin box using left and right arrow keys. When the value is changed
+	valueChanged(int) is emited
+	@param value is the starting value
+	@param coeff is controls the exponential growth rate when the arrow is held down
+	@param maxarrowwidth is the size of the arrow buttons
 	"""
 	def __init__(self, value, coeff, rounding=2, maxarrowwidth=20, postivemode=False, wheelstep=1):
 		QtGui.QWidget.__init__(self)
@@ -927,6 +928,7 @@ class EMLightControls(QtOpenGL.QGLWidget):
 	Widget to set the postion of a light in 3D. When the light position is moved  it emits
 	its position in spherical corridinants (theta and phi) as the signal: lightPositionMoved
 	Its position can be set via: setAngularPosition
+	@param light, the glLight the this widget uses
 	"""
 	def __init__(self, light, parent=None):
 		QtOpenGL.QGLWidget.__init__(self, parent)
@@ -1054,7 +1056,8 @@ class EMLightControls(QtOpenGL.QGLWidget):
 class CameraControls(QtOpenGL.QGLWidget):
 	"""
 	Widget to set the camera position. When clipping planes are moved a farMoved(float) or nearMoved(float) signal is emmited.
-	This widget is an observer of the Camera object of the Scenegraph. To update call updateWidget
+	This widget is an observer of the Camera object (used in the Scenegraph). To update call updateWidget
+	@param scenegraph, the scenegraph this widget oberrves
 	"""
 	def __init__(self, parent=None, scenegraph=None):
 		QtOpenGL.QGLWidget.__init__(self, parent)
