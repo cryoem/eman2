@@ -89,7 +89,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 	name = "General 3D Item"
 	nodetype = "BaseNode"
 	
-	def __init__(self, parent = None, children = [], transform = Transform()):
+	def __init__(self, parent = None, children = [], transform=None):
 		"""
 		@type parent: EMItem3D
 		@param parent: the parent node to the current node or None for the root node
@@ -101,6 +101,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		self.label = None	# Customisabl label, used to label the inspector in the tree
 		self.setParent(parent)
 		self.setChildren(children)
+		if not transform: transform = Transform()
 		self.transform = transform
 		self.is_visible = True 
 		self.is_selected = False
