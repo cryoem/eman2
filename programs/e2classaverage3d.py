@@ -431,11 +431,13 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 						print "Particle %d assigned to group number %d!" %(i,kk+1)
 						print "The threshold criteria was %f, and the particles cc score was %f" %(threshs[kk+1], ptcl_parms[0]["score"])
 
-			#if saveali:
-			#	ptcl['origin_x'] = 0
-			#	ptcl['origin_y'] = 0		
-			#	ptcl['origin_z'] = 0
-			#	
+			if saveali:
+				ptcl['origin_x'] = 0
+				ptcl['origin_y'] = 0		
+				ptcl['origin_z'] = 0
+				ptcl['spt_score'] = ptcl_parms[0]['score']
+				ptcl['spt_ali_param'] = ptcl_parms[0]['xform.align3d']
+				
 			#	print "I will write the particle with the origin set to 0. Its type is", type(ptcl)
 			#	ptcl.write_image("bdb:class_ptcl",i)
 		
@@ -451,6 +453,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 					groupslist[i][j]['origin_x'] = 0
 					groupslist[i][j]['origin_y'] = 0		# jesus - the origin needs to be reset to ZERO to avoid display issues in Chimera
 					groupslist[i][j]['origin_z'] = 0
+					
 					classname=path+"/class_" + str(i).zfill(len(str(len(groupslist)))) + "_ptcl"
 					groupslist[i][j].write_image(classname,j)
 					
@@ -492,7 +495,9 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 		for i,ptcl_parms in enumerate(align_parms):
 			ptcl=EMData(ptcl_file,i)
 			ptcl.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
-
+			
+			print "\n@@@@@\n@@@@@\n@@@@@Align_parms for this particle are ptcl_parms and are\n@@@@@\n@@@@@\n@@@@@", ptcl_parms
+			
 			if ptcl_parms[0]["score"]<=thresh: 
 				avgr.add_image(ptcl)
 				included.append(i)
@@ -501,6 +506,11 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 				ptcl['origin_x'] = 0
 				ptcl['origin_y'] = 0		# jesus - the origin needs to be reset to ZERO to avoid display issues in Chimera
 				ptcl['origin_z'] = 0
+				ptcl['spt_score'] = ptcl_parms[0]['score']
+				print "\nThe score is", ptcl_parms[0]['score']
+				print "Because the zero element is", ptcl_parms[0]
+				ptcl['spt_ali_param'] = ptcl_parms[0]['xform.align3d']
+				
 				classname=path+"/class_ptcl"
 				#print "The class name is", classname
 				#sys.exit()
