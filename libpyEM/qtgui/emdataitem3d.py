@@ -24,8 +24,9 @@ class EMDataItem3D(EMItem3D):
 	Instead, its children are displayable, and are sized, postioned, and oriented relative to this node.
 	"""
 	name = "Data"
-	def __init__(self, data, parent = None, children = set(), transform = Transform()):
-		EMItem3D.__init__(self, parent, children, transform)
+	def __init__(self, data, parent = None, children = set(), transform=None):
+		if not transform: transform = Transform()	# Object initialization should not be put in the constructor. Causes issues 
+		EMItem3D.__init__(self, parent, children, transform=transform)
 		self.setData(data)
 		self.renderBoundingBox = False
 		
@@ -134,11 +135,12 @@ class EMSliceItem3D(EMItem3D):
 	name = "Slice"
 	nodetype = "DataChild" 
 
-	def __init__(self, parent=None, children = set(), transform = Transform()):
+	def __init__(self, parent=None, children = set(), transform=None):
 		"""
 		@param parent: should be an EMDataItem3D instance for proper functionality.
 		"""
-		EMItem3D.__init__(self, parent, children, transform)
+		if not transform: transform = Transform()	# Object initialization should not be put in the constructor. Causes issues
+		EMItem3D.__init__(self, parent, children, transform=transform)
 		self.texture2d_name = 0
 		self.texture3d_name = 0
 		self.use_3d_texture = False
@@ -468,11 +470,12 @@ class EMVolumeItem3D(EMItem3D):
 	name = "Volume"
 	nodetype = "DataChild" 
 
-	def __init__(self, parent=None, children = set(), transform = Transform()):
+	def __init__(self, parent=None, children = set(), transform=None):
 		"""
 		@param parent: should be an EMDataItem3D instance for proper functionality.
 		"""
-		EMItem3D.__init__(self, parent, children, transform)
+		if not transform: transform = Transform()	# Object initialization should not be put in the constructor. Causes issues
+		EMItem3D.__init__(self, parent, children, transform=transform)
 
 		self.texture_name = 0
 		self.colors = get_default_gl_colors()
@@ -786,11 +789,12 @@ class EMIsosurface(EMItem3D):
 	"""
 	name = "Isosurface"
 	nodetype = "DataChild" 
-	def __init__(self, parent=None, children = set(), transform = Transform()):
+	def __init__(self, parent=None, children = set(), transform=None):
 		"""
 		@param parent: should be an EMDataItem3D instance for proper functionality.
 		"""
-		EMItem3D.__init__(self, parent, children, transform)
+		if not transform: transform = Transform()	# Object initialization should not be put in the constructor. Causes issues
+		EMItem3D.__init__(self, parent, children, transform=transform)
 		
 		self.isothr = None #Will be set in self.dataChanged()
 		self.isodl = 0
