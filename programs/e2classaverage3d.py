@@ -148,7 +148,7 @@ def main():
 	if options.path and options.path[:4].lower()!="bdb:": 
 		options.path="bdb:"+options.path
 	if not options.path: 
-		options.path="bdb:"+numbered_path("job3d",True)
+		options.path="bdb:"+numbered_path("spt",True)
 	
 	hdr = EMData(options.input,0,True)
 	nx = hdr["nx"]
