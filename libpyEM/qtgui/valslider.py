@@ -924,7 +924,9 @@ class EMQtColorDialog(QtGui.QColorDialog):
 
 class EMLightControls(QtOpenGL.QGLWidget):
 	"""
-	Widget to set the postion of a light in 3D
+	Widget to set the postion of a light in 3D. When the light position is moved  it emits
+	its position in spherical corridinants (theta and phi) as the signal: lightPositionMoved
+	Its position can be set via: setAngularPosition
 	"""
 	def __init__(self, light, parent=None):
 		QtOpenGL.QGLWidget.__init__(self, parent)
@@ -1051,7 +1053,8 @@ class EMLightControls(QtOpenGL.QGLWidget):
 		
 class CameraControls(QtOpenGL.QGLWidget):
 	"""
-	Widget to set the camera position
+	Widget to set the camera position. When clipping planes are moved a farMoved(float) or nearMoved(float) signal is emmited.
+	This widget is an observer of the Camera object of the Scenegraph. To update call updateWidget
 	"""
 	def __init__(self, parent=None, scenegraph=None):
 		QtOpenGL.QGLWidget.__init__(self, parent)
@@ -1155,6 +1158,11 @@ class CameraControls(QtOpenGL.QGLWidget):
 		self.update()
 		
 class EMANToolButton(QtGui.QToolButton):
+	"""
+	This widget is a toolbutton that is toogleable. Only one button can be down at any given point.
+	The only weakness is only one of these button groups can be used at any given time. It is possible 
+	to fix this, but when I need such functionality
+	"""
 	toolpanellist = []
 	def __init__(self):
 		QtGui.QToolButton.__init__(self)

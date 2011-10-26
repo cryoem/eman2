@@ -77,7 +77,13 @@ namespace EMAN
 	};
 
 
-
+	/** Base class for Fourier processors
+	 *@param sigma Gaussian sigma (0-.5)
+	 *@param cutoff_abs Processor radius in terms of Nyquist (0-.5)
+	 *@param cutoff_pixels Width in Fourier pixels (0 - size()/2
+	 *@param cutoff_freq Resolution in 1/A (0 - 1 / size*apix)
+	 *@param apix Override A/pix in the image header (changes x,y and z)
+	 */
 	class NewFourierProcessor:public Processor
 	{
 	  public:
