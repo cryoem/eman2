@@ -395,11 +395,11 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("set_value_at", (void (EMAN::EMData::*)(int, int, float) )&EMAN::EMData::set_value_at, args("x", "y", "v"), "Set the pixel density value at coordinates (x,y).\n2D image only.\n \nx - The x cooridinate.\ny - The y cooridinate.\nv - The pixel density value at coordinates (x,y).\n \nexception - OutofRangeException wehn index out of image data's range.")
 	.def("set_value_at_fast", (void (EMAN::EMData::*)(int, int, float) )&EMAN::EMData::set_value_at_fast, args("x", "y", "v"), "Set the pixel density value at coordinates (x,y).\n2D image only. The validity of x, y, is not checked.\n \nx - The x cooridinate.\ny - The y cooridinate.\nv - The pixel density value at coordinates (x,y).")
 	.def("set_value_at", (void (EMAN::EMData::*)(int, float) )&EMAN::EMData::set_value_at, args("x", "v"), "Set the pixel density value at coordinate (x).\n1D image only.\n \nx - The x cooridinate.\nv The pixel density value at coordinate (x).\n \nexception - OutofRangeException wehn index out of image data's range.")
-#ifndef	_WIN32
-	.def("set_array_offsets", (void (EMAN::EMData::*)(const int, const int, const int) )&EMAN::EMData::set_array_offsets, EMAN_EMData_set_array_offsets_overloads_0_3(args("xoff", "yoff", "zoff"), "Set the array offset by three integers."))
-	.def("set_array_offsets", (void (EMAN::EMData::*)(std::vector<int,std::allocator<int> >) )&EMAN::EMData::set_array_offsets, args("offsets"), "Set the array offset by a vector of three integers.")
-#endif
-	.def("get_array_offsets", &EMAN::EMData::get_array_offsets)
+//#ifndef	_WIN32
+//	.def("set_array_offsets", (void (EMAN::EMData::*)(const int, const int, const int) )&EMAN::EMData::set_array_offsets, EMAN_EMData_set_array_offsets_overloads_0_3(args("xoff", "yoff", "zoff"), "Set the array offset by three integers."))
+//	.def("set_array_offsets", (void (EMAN::EMData::*)(std::vector<int,std::allocator<int> >) )&EMAN::EMData::set_array_offsets, args("offsets"), "Set the array offset by a vector of three integers.")
+//#endif
+	//.def("get_array_offsets", &EMAN::EMData::get_array_offsets)
 	.def("power", &EMAN::EMData::power, return_value_policy< manage_new_object >(), args("n"), "return a image to the power of n.\n \nn	- the power of this image\n \nreturn a image which is the nth power of this image\nexception - InvalidValueException n must be >= 0")
 	.def("sqrt", &EMAN::EMData::sqrt, return_value_policy< manage_new_object >(), "return square root of current image\n \nreturn a image which is the square root of this image\nexception - ImageFormatException real image only")
 	.def("log", &EMAN::EMData::log, return_value_policy< manage_new_object >(), "return natural logarithm image for a image\n \nreturn a image which is the natural logarithm of this image\nexception - InvalidValueException pixel value must be >= 0\n")
