@@ -7950,11 +7950,11 @@ int i_dnnt(double *x)
     static int i__, j;
     static double d1, d2, d3;
     static int i0, lp, kt, ku, lpl, nku;
-    extern long int left_(double *, double *, double *, double
+    long int left_(double *, double *, double *, double
 	    *, double *, double *, double *, double *,
 	    double *);
     static int nexti;
-    extern /* Subroutine */ int addnod_(int *, int *, double *,
+    /* Subroutine */ int addnod_(int *, int *, double *,
 	    double *, double *, int *, int *, int *,
 	    int *, int *);
 
@@ -8384,10 +8384,10 @@ L6:
     static int l;
     static double p[3], b1, b2, b3;
     static int i1, i2, i3, kk, lp, in1, io1, io2, km1, lpf, ist, lpo1;
-    extern /* Subroutine */ int swap_(int *, int *, int *,
+    /* Subroutine */ int swap_(int *, int *, int *,
 	    int *, int *, int *, int *, int *);
     static int lpo1s;
-    extern /* Subroutine */ int bdyadd_(int *, int *, int *,
+    /* Subroutine */ int bdyadd_(int *, int *, int *,
 	    int *, int *, int *, int *), intadd_(int *,
 	    int *, int *, int *, int *, int *, int *,
 	    int *), trfind_(int *, double *, int *,
@@ -8395,8 +8395,8 @@ L6:
 	    int *, double *, double *, double *, int *,
 	    int *, int *), covsph_(int *, int *, int *,
 	    int *, int *, int *);
-    extern int lstptr_(int *, int *, int *, int *);
-    extern long int swptst_(int *, int *, int *, int *,
+    int lstptr_(int *, int *, int *, int *);
+    long int swptst_(int *, int *, int *, int *,
 	    double *, double *, double *);
 
 
@@ -8640,7 +8640,7 @@ double angle_(double *v1, double *v2, double *v3)
     static double a;
     static int i__;
     static double ca, s21, s23, u21[3], u23[3];
-    extern long int left_(double *, double *, double *, double
+    long int left_(double *, double *, double *, double
 	    *, double *, double *, double *, double *,
 	    double *);
 
@@ -8932,9 +8932,9 @@ double Util::areav_(int *k, int *n, double *x, double *y,
     static double v1[3], v2[3], v3[3];
     static int lp, lpl, ierr;
     static double asum;
-    extern double areas_(double *, double *, double *);
+    double areas_(double *, double *, double *);
     static long int first;
-    extern /* Subroutine */ int circum_(double *, double *,
+    /* Subroutine */ int circum_(double *, double *,
 	    double *, double *, int *);
 
 
@@ -9138,9 +9138,9 @@ double areav_new__(int *k, int *n, double *x, double *y,
     static double c1s[3], c2s[3];
     static int lpl, ierr;
     static double asum;
-    extern double angle_(double *, double *, double *);
+    double angle_(double *, double *, double *);
     static float areav;
-    extern /* Subroutine */ int circum_(double *, double *,
+    /* Subroutine */ int circum_(double *, double *,
 	    double *, double *, int *);
 
 
@@ -9336,7 +9336,7 @@ L13:
 	list, int *lptr, int *lend, int *lnew)
 {
     static int k, n1, n2, lp, lsav, nsav, next;
-    extern /* Subroutine */ int insert_(int *, int *, int *,
+    /* Subroutine */ int insert_(int *, int *, int *,
 	    int *, int *);
 
 
@@ -9849,7 +9849,7 @@ L2:
 	*lptr, int *lend, int *lnew)
 {
     static int k, lp, nst, lsav, next;
-    extern /* Subroutine */ int insert_(int *, int *, int *,
+    /* Subroutine */ int insert_(int *, int *, int *,
 	    int *, int *);
 
 
@@ -9969,10 +9969,10 @@ L2:
 	     lpn;
     static long int swp;
     static int ierr;
-    extern /* Subroutine */ int circum_(double *, double *,
+    /* Subroutine */ int circum_(double *, double *,
 	    double *, double *, int *);
-    extern int lstptr_(int *, int *, int *, int *);
-    extern long int swptst_(int *, int *, int *, int *,
+    int lstptr_(int *, int *, int *, int *);
+    long int swptst_(int *, int *, int *, int *,
 	    double *, double *, double *);
 
 
@@ -10587,9 +10587,9 @@ L23:
 
     /* Local variables */
     static int n1, n2, n3, lp, lph, lpl;
-    extern /* Subroutine */ int delnb_(int *, int *, int *,
+    /* Subroutine */ int delnb_(int *, int *, int *,
 	    int *, int *, int *, int *, int *);
-    extern int lstptr_(int *, int *, int *, int *);
+    int lstptr_(int *, int *, int *, int *);
 
 
 /* *********************************************************** */
@@ -10920,21 +10920,21 @@ L5:
     static int nl, lp, nn, nr;
     static double xl, yl, zl, xr, yr, zr;
     static int nnb, lp21, lpf, lph, lpl, lpn, iwl, nit, lnw, lpl2;
-    extern long int left_(double *, double *, double *, double
+    long int left_(double *, double *, double *, double
 	    *, double *, double *, double *, double *,
 	    double *);
     static long int bdry;
     static int ierr, lwkl;
-    extern /* Subroutine */ int swap_(int *, int *, int *,
+    /* Subroutine */ int swap_(int *, int *, int *,
 	    int *, int *, int *, int *, int *), delnb_(
 	    int *, int *, int *, int *, int *, int *,
 	    int *, int *);
-    extern int nbcnt_(int *, int *);
-    extern /* Subroutine */ int optim_(double *, double *, double
+    int nbcnt_(int *, int *);
+    /* Subroutine */ int optim_(double *, double *, double
 	    *, int *, int *, int *, int *, int *, int
 	    *, int *);
     static int nfrst;
-    extern int lstptr_(int *, int *, int *, int *);
+    int lstptr_(int *, int *, int *, int *);
 
 
 /* *********************************************************** */
@@ -11651,14 +11651,14 @@ L5:
     static double dp12;
     static int lp21, iwc, iwf, lft, lpl, iwl, nit;
     static double dp1l, dp2l, dp1r, dp2r;
-    extern long int left_(double *, double *, double *, double
+    long int left_(double *, double *, double *, double
 	    *, double *, double *, double *, double *,
 	    double *);
     static int ierr;
-    extern /* Subroutine */ int swap_(int *, int *, int *,
+    /* Subroutine */ int swap_(int *, int *, int *,
 	    int *, int *, int *, int *, int *);
     static int next, iwcp1, n1lst, iwend;
-    extern /* Subroutine */ int optim_(double *, double *, double
+    /* Subroutine */ int optim_(double *, double *, double
 	    *, int *, int *, int *, int *, int *, int
 	    *, int *);
     static int n1frst;
@@ -12551,7 +12551,7 @@ long int inside_(double *p, int *lv, double *xv, double *yv,
     static int ierr;
     static long int pinr, qinr;
     static double qnrm, vnrm;
-    extern /* Subroutine */ int intrsc_(double *, double *,
+    /* Subroutine */ int intrsc_(double *, double *,
 	    double *, double *, int *);
 
 
@@ -12889,9 +12889,9 @@ L14:
 	i3, int *list, int *lptr, int *lend, int *lnew)
 {
     static int k, n1, n2, n3, lp;
-    extern /* Subroutine */ int insert_(int *, int *, int *,
+    /* Subroutine */ int insert_(int *, int *, int *,
 	    int *, int *);
-    extern int lstptr_(int *, int *, int *, int *);
+    int lstptr_(int *, int *, int *, int *);
 
 
 /* *********************************************************** */
@@ -13387,11 +13387,11 @@ int nearnd_(double *p, int *ist, int *n, double *x,
     static int lpl;
     static double dsr;
     static int nst, listp[25], lptrp[25];
-    extern /* Subroutine */ int trfind_(int *, double *, int *,
+    /* Subroutine */ int trfind_(int *, double *, int *,
 	    double *, double *, double *, int *, int *,
 	    int *, double *, double *, double *, int *,
 	    int *, int *);
-    extern int lstptr_(int *, int *, int *, int *);
+    int lstptr_(int *, int *, int *, int *);
 
 
 /* *********************************************************** */
@@ -13673,10 +13673,10 @@ L6:
     static int i__, n1, n2, lp, io1, io2, nna, lp21, lpl, lpp;
     static long int swp;
     static int iter;
-    extern /* Subroutine */ int swap_(int *, int *, int *,
+    /* Subroutine */ int swap_(int *, int *, int *,
 	    int *, int *, int *, int *, int *);
     static int maxit;
-    extern long int swptst_(int *, int *, int *, int *,
+    long int swptst_(int *, int *, int *, int *,
 	    double *, double *, double *);
 
 
@@ -14239,7 +14239,7 @@ double store_(double *x)
 
     /* Local variables */
     static int lp, lph, lpsav;
-    extern int lstptr_(int *, int *, int *, int *);
+    int lstptr_(int *, int *, int *, int *);
 
 
 /* *********************************************************** */
@@ -14559,9 +14559,9 @@ long int swptst_(int *n1, int *n2, int *n3, int *n4,
     static int n1s, n2s;
     static double eps, tol, ptn1, ptn2;
     static int next;
-    extern int jrand_(int *, int *, int *, int *);
-    extern double store_(double *);
-    extern int lstptr_(int *, int *, int *, int *);
+    int jrand_(int *, int *, int *, int *);
+    double store_(double *);
+    int lstptr_(int *, int *, int *, int *);
 
 
 /* *********************************************************** */
@@ -15588,11 +15588,11 @@ L12:
     static int i__, j, k;
     static double d1, d2, d3;
     static int i0, lp, nn, lpl;
-    extern long int left_(double *, double *, double *, double
+    long int left_(double *, double *, double *, double
 	    *, double *, double *, double *, double *,
 	    double *);
     static int nexti;
-    extern /* Subroutine */ int addnod_(int *, int *, double *,
+     /* Subroutine */ int addnod_(int *, int *, double *,
 	    double *, double *, int *, int *, int *,
 	    int *, int *);
 
@@ -16074,7 +16074,7 @@ L5:
     static int lpl;
     static double wrs;
     static int ipx1, ipx2, ipy1, ipy2, nseg;
-    extern /* Subroutine */ int drwarc_(int *, double *, double *,
+    /* Subroutine */ int drwarc_(int *, double *, double *,
 	     double *, int *);
 
 
@@ -16868,7 +16868,7 @@ L5:
     static int kv1, kv2, lpl;
     static double wrs;
     static int ipx1, ipx2, ipy1, ipy2, nseg;
-    extern /* Subroutine */ int drwarc_(int *, double *, double *,
+    /* Subroutine */ int drwarc_(int *, double *, double *,
 	     double *, int *);
 
 
