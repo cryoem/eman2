@@ -156,20 +156,18 @@ int JpegIO::write_data(float *data, int image_index, const Region* area,
 		 throw ImageWriteException("N/A", "No region writing for JPEG images");
 	int nx=cinfo.image_width,ny=cinfo.image_height;
 
-	/**Flip the image vertically, since EMAN use top-left corner as image origin
-	* But PNG use bottom-left corner as image origin */
-	Util::flip_image(data, nx, ny);
-
 	// If we didn't get any parameters in 'render_min' or 'render_max', we need to find some good ones
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax);
 
 	unsigned char *cdata=(unsigned char *)malloc(nx+1);
 
+	/**Flip the image vertically, since EMAN use top-left corner as image origin
+	* But PNG use bottom-left corner as image origin */
 	// convert and write the data 1 scanline at a time
 	JSAMPROW rp[1];
 	rp[0]=cdata;
 	jpeg_start_compress(&cinfo, TRUE);
-	for (int i=0; i<ny; i++) {
+	for (int i=ny-1; i>=0; i--) {
 		for (int j=0; j<nx; j++) {
 			if (data[i*nx+j]<=rendermin) cdata[j]=0;
 			else if (data[i*nx+j]>=rendermax) cdata[j]=255;
