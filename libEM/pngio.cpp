@@ -327,10 +327,6 @@ int PngIO::write_data(float *data, int image_index, const Region*,
 {
 	ENTERFUNC;
 
-	/**Flip the image vertically, since EMAN use top-left corner as image origin
-	* But PNG use bottom-left corner as image origin */
-	Util::flip_image(data, nx, ny);
-
 	//single image format, index can only be zero
 	image_index = 0;
 	check_write_access(rw_mode, image_index, 1, data);
@@ -338,11 +334,13 @@ int PngIO::write_data(float *data, int image_index, const Region*,
 	// If we didn't get any parameters in 'render_min' or 'render_max', we need to find some good ones
 	if (!rendermin && !rendermax) EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax);
 
+	/**Flip the image vertically, since EMAN use top-left corner as image origin
+	* But PNG use bottom-left corner as image origin */
 	if (depth_type == PNG_CHAR_DEPTH) {
 		unsigned char *cdata = new unsigned char[nx];
 
-		for (unsigned int y = 0; y < ny; y++) {
-			for (unsigned int x = 0; x < nx; x++) {
+		for (int y = (int)ny-1; y >= 0; y--) {
+			for (int x = 0; x < (int)nx; x++) {
 				if(data[y * nx + x] <= rendermin){
 					cdata[x] = 0;
 				}
@@ -365,8 +363,8 @@ int PngIO::write_data(float *data, int image_index, const Region*,
 	else if (depth_type == PNG_SHORT_DEPTH) {
 		unsigned short *sdata = new unsigned short[nx];
 
-		for (unsigned int y = 0; y < ny; y++) {
-			for (unsigned int x = 0; x < nx; x++) {
+		for (int y = (int)ny-1; y >= 0 ; y--) {
+			for (int x = 0; x < (int)nx; x++) {
 				if(data[y * nx + x] <= rendermin){
 					sdata[x] = 0;
 				}
