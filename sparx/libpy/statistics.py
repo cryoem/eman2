@@ -9125,6 +9125,8 @@ class pcanalyzer:
  
 			sumnimg = mpi_reduce( self.nimg, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD )
 			sumnimg = mpi_bcast(  sumnimg,   1, MPI_INT, 0, MPI_COMM_WORLD )
+		else:
+			sumnimg = self.nimg
 
 		self.file = shfflfile
 		self.avgdat = sumdata[:]/float(sumnimg)
@@ -9169,7 +9171,7 @@ class pcanalyzer:
 		#print 'time for lanczos: ', time() - lanczos_start
 
 		if not self.MPI or self.myid==0:
-                	qmat = zeros( (kstep,kstep), float32 )
+			qmat = zeros( (kstep,kstep), float32 )
 			lfwrk = 100 + 4*kstep + kstep*kstep
 			liwrk =   3 + 5*kstep
 
