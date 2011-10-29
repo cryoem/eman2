@@ -43,9 +43,11 @@ from emimagemx import *
 from emplot2d import *
 from emplot3d import *
 from emscene3d import *
+from emdataitem3d import *
+import re
 
 # This is a floating point number-finding regular expression
-renumfind=re.compile(r"-?[0-9]+\.*[0-9]*e?-?[0-9]*")
+renumfind=re.compile(r"-?[0-9]+\.*[0-9]*[eE]?[-+]?[0-9]*")
 
 
 def isprint(s):
@@ -199,9 +201,9 @@ class EMPlotFileType(EMFileType):
 		"""Returns a list of (name,help,callback) tuples detailing the operations the user can call on the current file.
 		callbacks will also be passed a reference to the browser object."""
 		
-		if self.numc>2 : return [("Plot 2D+","Add to current plot",self.plot2dApp),("Plot 2D","Make new plot",self.plot2dNew),
-			("Plot 3D+","Add to current 3-D plot",self.plot3dApp),("Plot 3D","Make new 3-D plot",self.plot3dNew)]
-		return [("Plot 2D+","Add to current plot",self.plot2dApp),("Plot 2D","Make new plot",self.plot2dNew)]
+		if self.numc>2 : return [("Plot 2D+","Make new plot",self.plot2dNew),("Plot 2D","Add to current plot",self.plot2dApp),
+			("Plot 3D+","Make new 3-D plot",self.plot3dNew),("Plot 3D","Add to current 3-D plot",self.plot3dApp)]
+		return [("Plot 2D+","Make new plot",self.plot2dNew),("Plot 2D","Add to current plot",self.plot2dApp)]
 		
 	def plot2dApp(self,brws):
 		"Append self to current plot"
@@ -335,15 +337,72 @@ class EMBdbFileType(EMFileType):
 
 	def plot2dApp(self,brws):
 		"Append self to current plot"
+		brws.busy()
 
+		data=EMData(self.path)
+
+		try: 
+			target=brws.viewplot2d[-1]
+			target.set_data(data,self.path.split("/")[-1].split("#")[-1])
+		except: 
+			target=EMPlot2DWidget()
+			brws.viewplot2d.append(target)
+			target.set_data(data,self.path.split("/")[-1].split("#")[-1])
+
+		brws.notbusy()
+		target.show()
+		target.raise_()
+		
 	def plot2dNew(self,brws):
-		"Make new plot"
+		"Make a new plot"
+		brws.busy()
+
+		data=EMData(self.path)
+		
+		target=EMPlot2DWidget()
+		brws.viewplot2d.append(target)
+		target.set_data(data,self.path.split("/")[-1].split("#")[-1])
+
+		brws.notbusy()
+		target.show()
+		target.raise_()
+		
 
 	def show3dApp(self,brws):
 		"Add to current 3-D window"
-		
+		brws.busy()
+
+		data=EMDataItem3D(self.path)
+
+		try: 
+			target=brws.view3d[-1]
+		except: 
+			target=EMScene3D()
+			brws.view3d.append(target)
+
+		target.insertNewNode(self.path.split("/")[-1].split("#")[-1],data)
+		iso = EMIsosurface(data)
+		target.insertNewNode('Isosurface', iso, parentnode=data)
+		brws.notbusy()
+		target.show()
+		target.raise_()
+
 	def show3DNew(self,brws):
 		"New 3-D window"
+		brws.busy()
+
+		data=EMDataItem3D(self.path)
+
+		target=EMScene3D()
+		brws.view3ds.append(target)
+		
+		target.insertNewNode(self.path.split("/")[-1].split("#")[-1],data)
+		iso = EMIsosurface(data)
+		target.insertNewNode('Isosurface', iso, parentnode=data)
+		brws.notbusy()
+		
+		target.show()
+		target.raise_()
 		
 	def show2dStack(self,brws):
 		"A set of 2-D images together in an existing window"
@@ -422,6 +481,12 @@ class EMBdbFileType(EMFileType):
 class EMImageFileType(EMFileType):
 	"""FileType for files containing a single 2-D image"""
 
+	def __init__(self,path):
+		self.path=path			# the current path this FileType is representing
+		self.nimg=get_image_count(path)
+		im0=EMData(path,0,True)
+		self.dim=(im0["nx"],im0["ny"],im0["nz"])
+		
 	@staticmethod
 	def name():
 		"The unique name of this FileType. Stored in EMDirEntry.filetype for each file."
@@ -434,7 +499,30 @@ class EMImageFileType(EMFileType):
 
 	def actions(self):
 		"Returns a list of (name,callback) tuples detailing the operations the user can call on the current file"
-		return []
+		# single 3-D
+		if self.nimg==1 and self.dim[2]>1 :
+			return [("Show 3D","Add to 3D window",self.show3dApp),("Show 3D+","New 3D Window",self.show3DNew),("Show Stack","Show as set of 2-D Z slices",self.show2dStack),
+				("Show Stack+","Show all images together in a new window",self.show2dStackNew),("Show 2D","Show in a scrollable 2D image window",self.show2dSingle),
+				("Show 2D+","Show all images, one at a time in a new window",self.show2dSingleNew),("Chimera","Open in chimera (if installed)",self.showChimera),
+				("FilterTool","Open in e2filtertool.py",self.showFilterTool)]
+		# single 2-D
+		elif self.nimg==1 and self.dim[1]>1 :
+			return [("Show 2D","Show in a 2D single image display",self.show2dSingle),("Show 2D+","Show in new 2D single image display",self.show2dSingleNew),("FilterTool","Open in e2filtertool.py",self.showFilterTool)]
+		# single 1-D
+		elif self.nimg==1:
+			return [("Plot 2D","Add to current plot",self.plot2dApp),("Plot 2D+","Make new plot",self.plot2dNew),
+				("Show 2D","Replace in 2D single image display",self.show2dSingle),("Show 2D+","New 2D single image display",self.show2dSingleNew)]
+		# 3-D stack
+		elif self.nimg>1 and self.dim[2]>1 :
+			return [("Show 3D","Show all in a single 3D window",self.show3DNew),("Chimera","Open in chimera (if installed)",self.showChimera)]
+		# 2-D stack
+		elif self.nimg>1 and self.dim[1]>1 :
+			return [("Show Stack","Show all images together in one window",self.show2dStack),("Show Stack+","Show all images together in a new window",self.show2dStackNew),
+				("Show 2D","Show all images, one at a time in current window",self.show2dSingle),("Show 2D+","Show all images, one at a time in a new window",self.show2dSingleNew),("FilterTool","Open in e2filtertool.py",self.showFilterTool)]
+		# 1-D stack
+		elif self.nimg>0:
+			return [("Plot 2D","Plot all on a single 2-D plot",self.plot2dNew)]
+		
 		
 
 class EMStackFileType(EMFileType):

@@ -59,6 +59,11 @@ using namespace EMAN;
 using namespace std;
 using std::complex;
 
+/* Subroutine */ 
+int circum_(double *, double *, double *, double *, int *);
+long int left_(double *, double *, double *, double *, double *, double *, double *, double *, double *);
+int addnod_(int *, int *, double *, double *, double *, int *, int *, int *, int *, int *);
+
 vector<float> Util::infomask(EMData* Vol, EMData* mask, bool flip = false)
 //  flip true:  find statistics under the mask (mask >0.5)
 //  flip false: find statistics ourside the mask (mask <0.5)
@@ -7950,13 +7955,7 @@ int i_dnnt(double *x)
     static int i__, j;
     static double d1, d2, d3;
     static int i0, lp, kt, ku, lpl, nku;
-    long int left_(double *, double *, double *, double
-	    *, double *, double *, double *, double *,
-	    double *);
     static int nexti;
-    /* Subroutine */ int addnod_(int *, int *, double *,
-	    double *, double *, int *, int *, int *,
-	    int *, int *);
 
 
 /* *********************************************************** */
@@ -8640,9 +8639,6 @@ double angle_(double *v1, double *v2, double *v3)
     static double a;
     static int i__;
     static double ca, s21, s23, u21[3], u23[3];
-    long int left_(double *, double *, double *, double
-	    *, double *, double *, double *, double *,
-	    double *);
 
 
 /* *********************************************************** */
@@ -8915,6 +8911,8 @@ double areas_(double *v1, double *v2, double *v3)
     return ret_val;
 } /* areas_ */
 
+//double areas_(double *, double *, double *);
+
 double Util::areav_(int *k, int *n, double *x, double *y,
 	double *z__, int *list, int *lptr, int *lend, int
 	*ier)
@@ -8932,10 +8930,7 @@ double Util::areav_(int *k, int *n, double *x, double *y,
     static double v1[3], v2[3], v3[3];
     static int lp, lpl, ierr;
     static double asum;
-    double areas_(double *, double *, double *);
     static long int first;
-    /* Subroutine */ int circum_(double *, double *,
-	    double *, double *, int *);
 
 
 /* *********************************************************** */
@@ -9140,8 +9135,6 @@ double areav_new__(int *k, int *n, double *x, double *y,
     static double asum;
     double angle_(double *, double *, double *);
     static float areav;
-    /* Subroutine */ int circum_(double *, double *,
-	    double *, double *, int *);
 
 
 /* *********************************************************** */
@@ -9949,6 +9942,7 @@ L2:
     return 0;
 } /* covsph_ */
 
+
 /* Subroutine */ int crlist_(int *n, int *ncol, double *x,
 	double *y, double *z__, int *list, int *lend, int
 	*lptr, int *lnew, int *ltri, int *listc, int *nb,
@@ -9969,8 +9963,6 @@ L2:
 	     lpn;
     static long int swp;
     static int ierr;
-    /* Subroutine */ int circum_(double *, double *,
-	    double *, double *, int *);
     int lstptr_(int *, int *, int *, int *);
     long int swptst_(int *, int *, int *, int *,
 	    double *, double *, double *);
@@ -10920,9 +10912,6 @@ L5:
     static int nl, lp, nn, nr;
     static double xl, yl, zl, xr, yr, zr;
     static int nnb, lp21, lpf, lph, lpl, lpn, iwl, nit, lnw, lpl2;
-    long int left_(double *, double *, double *, double
-	    *, double *, double *, double *, double *,
-	    double *);
     static long int bdry;
     static int ierr, lwkl;
     /* Subroutine */ int swap_(int *, int *, int *,
@@ -11651,9 +11640,6 @@ L5:
     static double dp12;
     static int lp21, iwc, iwf, lft, lpl, iwl, nit;
     static double dp1l, dp2l, dp1r, dp2r;
-    long int left_(double *, double *, double *, double
-	    *, double *, double *, double *, double *,
-	    double *);
     static int ierr;
     /* Subroutine */ int swap_(int *, int *, int *,
 	    int *, int *, int *, int *, int *);
@@ -15592,9 +15578,6 @@ L12:
 	    *, double *, double *, double *, double *,
 	    double *);
     static int nexti;
-     /* Subroutine */ int addnod_(int *, int *, double *,
-	    double *, double *, int *, int *, int *,
-	    int *, int *);
 
 
 /* *********************************************************** */

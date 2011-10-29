@@ -238,11 +238,11 @@ class GUIEvalImage(QtGui.QWidget):
 		self.hbl2.addWidget(self.sapix)
 
 		self.svoltage=ValBox(self,(0,500),"Voltage (kV):",200,90)
-		if self.defaultvoltage!=None : sel.svoltage.setValue(self.defaultvoltage)
+		if self.defaultvoltage!=None : self.svoltage.setValue(self.defaultvoltage)
 		self.hbl2.addWidget(self.svoltage)
 		
 		self.scs=ValBox(self,(0,5),"Cs (mm):",4.1,90)
-		if self.defaultcs!=None : sel.scs.setValue(self.defaultcs)
+		if self.defaultcs!=None : self.scs.setValue(self.defaultcs)
 		self.hbl2.addWidget(self.scs)		
 		
 		self.vbl.addLayout(self.hbl2)
@@ -416,9 +416,11 @@ class GUIEvalImage(QtGui.QWidget):
 		ctf=self.parms[val][1]
 		# if voltage is 0, we need to initialize
 		if ctf.voltage==0:
-			ctf.voltage=self.data["microscope_voltage"]
+			try: ctf.voltage=self.data["microscope_voltage"]
+			except: pass
 			if ctf.voltage==0 : ctf.voltage=200.0
-			ctf.cs=self.data["microscope_cs"]
+			try: ctf.cs=self.data["microscope_cs"]
+			except: pass
 			if ctf.cs==0 : ctf.cs=4.1
 			ctf.apix=self.data["apix_x"]
 			ctf.defocus=0.0		#triggers fitting
