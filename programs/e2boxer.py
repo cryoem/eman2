@@ -35,6 +35,7 @@ from EMAN2 import BoxingTools,gm_time_string,Transform, E2init, E2end, E2progres
 from EMAN2db import db_check_dict
 from pyemtbx.boxertools import CoarsenedFlattenedImageCache,FLCFImageCache
 from copy import deepcopy
+from EMAN2 import *
 from emboxerbase import *
 SWARM_TEMPLATE_MIN = TEMPLATE_MIN # this comes from emboxerbase
 
@@ -116,6 +117,8 @@ e2boxer.py ????.mrc --boxsize=256
 	else:
 		application = EMApp()
 		module = EMBoxerModule(args,options.boxsize)
+		
+		
 		# this is an example of how to add your own custom tools:
 		module.add_tool(SwarmTool,particle_diameter=options.boxsize)
 		
@@ -123,6 +126,12 @@ e2boxer.py ????.mrc --boxsize=256
 		swarm_tool_instance = SwarmTool(object)
 		swarm_tool_name = swarm_tool_instance.unique_name()
 		module.set_inspector_tool_mode(swarm_tool_name) #Set current tool to Swarm mode
+		
+		
+		module.add_tool(GaussTool,particle_diameter=options.boxsize)
+		gauss_tool_instance = GaussTool(object)
+		gauss_tool_name = gauss_tool_instance.unique_name()
+		(module.tools[gauss_tool_name]).get_alternate(args[0])
 		
 		module.show_interfaces()
 		
@@ -1720,7 +1729,1096 @@ class SwarmTool(SwarmBoxer,EMBoxingTool):
 	
 	def boxes_erased(self,list_of_boxes):
 		SwarmBoxer.boxes_erased(self,list_of_boxes,self.target().current_file())
+
+
+
+############################################################################################################################################
+# Add path for boxing using gauss convolution method (in pawelautoboxer used in sxboxer.py)
+
+def histogram1d( data, nbin, presize=0 ) :
+	fmax = max( data )
+	fmin = min( data )
+	binsize = (fmax - fmin)/(nbin-2*presize)
+	start = fmin - binsize*presize
+	region = [None]*nbin
+	hist = [None]*nbin
+	for i in xrange(nbin):
+		region[i] = start + (i+0.5)*binsize
+		hist[i] = 0
+
+	for d in data:
+		id = int( (d-start)/binsize )
+		hist[id]+=1
+
+	return region,hist
+
+class GaussPanel:
+	DB_NAME = "bdb:gauss_panel"
+	
+	def __init__(self,target,particle_diameter=128):
+		self.busy = True
+		self.target = weakref.ref(target)
+		self.widget = None
+		self.busy = False
+		self.ccfs = None
+		self.data = None
+		self.PRESIZE = 28
+		self.gbdbname='bdb:e2boxercache#gauss_box_DB'# cache for putting params related to gauss method autoboxer
+		self.THRNA='N/A'
+		self.INVCONT=False
+		self.USEVAR=True
+		self.SLVAL=0
+		self.GW = "1.0"
+		self.ctf_inspector = None
+		self.ctf_inspector_gone = True
+		
+	def set_data( self, data ):
+		self.ccfs = data
+		#self.nbin = self.width()
+		# hardcode nbin to 256 for now, which is the hardcoded width of the ccf histogram widget in sxboxer...
+		self.nbin = 256
+                self.data = histogram1d( data, self.nbin, self.PRESIZE )
+
+		hmin = self.data[0][0]
+		hmax = self.data[0][-1]
+
+		self.thr_low_edit.setText(str(hmin))
+		self.thr_hi_edit.setText(str(hmax))
+		self.new_thr_low()
+		self.new_thr_hi()
+		
+	def get_widget(self):
+		if self.widget == None:
+		
+			gbdb = db_open_dict(self.gbdbname)
+			
+			from PyQt4 import QtCore, QtGui, Qt
+			self.widget = QtGui.QWidget()
+			vbl = QtGui.QVBoxLayout(self.widget)
+			vbl.setMargin(0)
+			vbl.setSpacing(6)
+			vbl.setObjectName("vbl")
+			
+			hgc = QtGui.QHBoxLayout()
+			gconvheader = QtGui.QLabel("<b>Parameters of Gauss convolution</b>")
+			hgc.addWidget(gconvheader)
+			vbl.addLayout(hgc)
+			
+			hbl = QtGui.QHBoxLayout()
+			pixel_input_label = QtGui.QLabel("Input Pixel Size:")
+			pixel_input_label.setToolTip("Input pixel size")
+			hbl.addWidget(pixel_input_label)
+			
+			pixin = gbdb['pixel_input']
+			if pixin == None:
+				self.pixel_input_edit = QtGui.QLineEdit('1.0')
+			else:
+				self.pixel_input_edit = QtGui.QLineEdit(str(gbdb['pixel_input']))
+			hbl.addWidget(self.pixel_input_edit)
+			
+			#vbl.addLayout(hbl)
+
+			pixel_output_label = QtGui.QLabel("Output Pixel Size:")
+			pixel_output_label.setToolTip("Output pixel size")
+			hbl.addWidget(pixel_output_label)
+			
+			pixout_cache = gbdb['pixel_output']
+			if pixout_cache == None:
+				self.pixel_output_edit = QtGui.QLineEdit('1.0')
+			else:
+				self.pixel_output_edit = QtGui.QLineEdit(str(gbdb['pixel_output']))
+			hbl.addWidget(self.pixel_output_edit)
+			self.new_pixel_output()
+			self.new_pixel_input()
+			vbl.addLayout(hbl)
+			
+			hbl_invcont = QtGui.QHBoxLayout()
+			self.invert_contrast_chk = QtGui.QCheckBox("Invert Contrast")
+			self.invert_contrast_chk.setToolTip("Invert contrast")
+			invert_cache = gbdb['invert_contrast']
+			if invert_cache == None:
+				self.invert_contrast_chk.setChecked(self.INVCONT)
+				self.invert_contrast_checked(self.INVCONT)
+			else:
+				self.invert_contrast_chk.setChecked(invert_cache)
+				self.invert_contrast_checked(invert_cache)
+			hbl_invcont.addWidget(self.invert_contrast_chk)
+			
+			self.use_variance_chk = QtGui.QCheckBox("Use Variance")
+			self.use_variance_chk.setToolTip("Use the variance image")
+			use_variance_cache = gbdb['use_variance']
+			if use_variance_cache == None:
+				self.use_variance_chk.setChecked(self.USEVAR)
+				self.use_variance_checked(self.USEVAR)
+			else:
+				self.use_variance_chk.setChecked(use_variance_cache)
+				self.use_variance_checked(use_variance_cache)
+			hbl_invcont.addWidget(self.use_variance_chk)
+			
+			vbl.addLayout(hbl_invcont)
+			
+			hbl_gwidth = QtGui.QHBoxLayout()
+			self.gauss_width_slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+			self.gauss_width_slider.setRange( -100, 100 )
+			self.gauss_width_slider.setValue( self.SLVAL )
+			hbl_gwidth.addWidget( self.gauss_width_slider)
+			hbl_gwidth.addWidget(QtGui.QLabel("Gauss Width Adjust:"))
+			self.gauss_width = QtGui.QLineEdit(self.GW)
+			gauss_width_cache = gbdb['gauss_width']
+			if not(gauss_width_cache == None):
+				self.gauss_width = QtGui.QLineEdit(str(gauss_width_cache))
+			hbl_gwidth.addWidget( self.gauss_width)
+			
+			
+			self.gauss_width_changed(self.SLVAL)
+			self.gauss_width_edited()
+			vbl.addLayout(hbl_gwidth)
+			
+			hbl_thr = QtGui.QHBoxLayout()
+			thr_low_label = QtGui.QLabel("Threshold Low:")
+			hbl_thr.addWidget(thr_low_label)
+			self.thr_low_edit = QtGui.QLineEdit(self.THRNA)
+			thrlow_cache = gbdb['thr_low']
+			if not(thrlow_cache == None):
+				self.thr_low_edit = QtGui.QLineEdit(str(thrlow_cache))
+			self.new_thr_low()
+			hbl_thr.addWidget(self.thr_low_edit)
+			thr_hi_label = QtGui.QLabel("Threshold High:")
+			hbl_thr.addWidget(thr_hi_label)
+			
+			thrhi_cache = gbdb['thr_hi']
+			if thrhi_cache == None:
+				self.thr_hi_edit = QtGui.QLineEdit(self.THRNA)
+			else:
+				self.thr_hi_edit = QtGui.QLineEdit(str(thrhi_cache))
+			self.new_thr_hi()
+			hbl_thr.addWidget(self.thr_hi_edit)
+			vbl.addLayout(hbl_thr)
+			
+			hbl_ww = QtGui.QHBoxLayout()
+			self.clear=QtGui.QPushButton("Clear Boxes")
+			self.clear.setToolTip("Clear boxes generated by the Gauss mode.")
+			hbl_ww.addWidget(self.clear)
+			
+			self.autobox=QtGui.QPushButton(QtGui.QIcon(get_image_directory() + "green_boxes.png"),"Run")
+			self.autobox.setEnabled(True)
+			self.autobox.setToolTip("Autobox using Gauss method")
+			hbl_ww.addWidget(self.autobox)
+			
+			vbl.addLayout(hbl_ww)
+			
+			# add input fields for CTF estimation
+			hgctf = QtGui.QHBoxLayout()
+			ctftitle = QtGui.QLabel("<b>Parameters of CTF estimation</b>")
+			hgctf.addWidget(ctftitle)
+			vbl.addLayout(hgctf)
+			
+			hbl_wscs = QtGui.QHBoxLayout()
+			
+			window_size_label = QtGui.QLabel("Window size:")
+			hbl_wscs.addWidget(window_size_label)
+			self.ctf_window_size = QtGui.QLineEdit('512')
+			hbl_wscs.addWidget(self.ctf_window_size)
+			
+			cs_label = QtGui.QLabel("Cs:")
+			hbl_wscs.addWidget(cs_label)
+			self.ctf_cs = QtGui.QLineEdit('2.0')
+			hbl_wscs.addWidget(self.ctf_cs)
+			
+			vbl.addLayout(hbl_wscs)
+			
+			
+			hbl_esv = QtGui.QHBoxLayout()
+			
+			edge_size_label = QtGui.QLabel("Edge size:")
+			hbl_esv.addWidget(edge_size_label)
+			self.ctf_edge_size = QtGui.QLineEdit('0')
+			hbl_esv.addWidget(self.ctf_edge_size)
+			
+			voltage_label = QtGui.QLabel("Voltage:")
+			hbl_esv.addWidget(voltage_label)
+			self.ctf_volt = QtGui.QLineEdit('200.0')
+			hbl_esv.addWidget(self.ctf_volt)
+			
+			vbl.addLayout(hbl_esv)
+			
+			hbl_oac = QtGui.QHBoxLayout()
+			
+			overlap_label = QtGui.QLabel("Overlap:")
+			hbl_oac.addWidget(overlap_label)
+			self.ctf_overlap_size = QtGui.QLineEdit('50')
+			hbl_oac.addWidget(self.ctf_overlap_size)
+			
+			amplitude_contrast_label = QtGui.QLabel("Amplitude Contrast:")
+			hbl_oac.addWidget(amplitude_contrast_label)
+			self.ctf_ampcont = QtGui.QLineEdit('10.0')
+			hbl_oac.addWidget(self.ctf_ampcont)
+			
+			vbl.addLayout(hbl_oac)
+			
+			
+			hbl_fed = QtGui.QHBoxLayout()
+			
+			fstart_label = QtGui.QLabel("F_start:")
+			hbl_fed.addWidget(fstart_label)
+			self.ctf_f_start = QtGui.QLineEdit('0.020')
+			hbl_fed.addWidget(self.ctf_f_start)
+			
+			estimated_defocus_label = QtGui.QLabel("Estimated defocus:")
+			hbl_fed.addWidget(estimated_defocus_label)
+			self.estdef = QtGui.QLineEdit('')
+			hbl_fed.addWidget(self.estdef)
+			
+			vbl.addLayout(hbl_fed)
+		
+			hbl_fs = QtGui.QHBoxLayout()
+			
+			fstop_label = QtGui.QLabel("F_stop:")
+			hbl_fs.addWidget(fstop_label)
+			self.ctf_f_stop = QtGui.QLineEdit('0.500')
+			hbl_fs.addWidget(self.ctf_f_stop)
+			
+			vbl.addLayout(hbl_fs)
+			hbl_ctf = QtGui.QHBoxLayout()
+			self.estimate_ctf=QtGui.QPushButton("Estimate CTF")
+			hbl_ctf.addWidget(self.estimate_ctf)
+			
+			self.inspect_button=QtGui.QPushButton("Inspect CTF")
+			hbl_ctf.addWidget(self.inspect_button)
+			
+			vbl.addLayout(hbl_ctf)
+					
+			QtCore.QObject.connect(self.pixel_input_edit,QtCore.SIGNAL("editingFinished()"),self.new_pixel_input)
+			QtCore.QObject.connect(self.pixel_output_edit,QtCore.SIGNAL("editingFinished()"),self.new_pixel_output)
+			QtCore.QObject.connect(self.autobox, QtCore.SIGNAL("clicked(bool)"), self.auto_box_clicked)
+			QtCore.QObject.connect(self.clear, QtCore.SIGNAL("clicked(bool)"), self.clear_clicked)
+			QtCore.QObject.connect(self.invert_contrast_chk,QtCore.SIGNAL("clicked(bool)"),self.invert_contrast_checked)
+			QtCore.QObject.connect(self.use_variance_chk,QtCore.SIGNAL("clicked(bool)"),self.use_variance_checked)
+			QtCore.QObject.connect(self.gauss_width_slider, QtCore.SIGNAL("valueChanged(int)"), self.gauss_width_changed)
+			QtCore.QObject.connect(self.gauss_width, QtCore.SIGNAL("editingFinished()"), self.gauss_width_edited)
+			QtCore.QObject.connect(self.thr_low_edit,QtCore.SIGNAL("editingFinished()"),self.new_thr_low)
+			QtCore.QObject.connect(self.thr_hi_edit,QtCore.SIGNAL("editingFinished()"),self.new_thr_hi)
+			
+			
+			QtCore.QObject.connect(self.estimate_ctf,QtCore.SIGNAL("clicked(bool)"), self.calc_ctf)
+			QtCore.QObject.connect(self.inspect_button,QtCore.SIGNAL("clicked(bool)"), self.inspect_ctf)
+			
+		return self.widget
+	
+	def gauss_width_changed(self, v):
+		from math import pow
+		s = "%.3f" % pow(10.0, v*0.01)
+		self.gauss_width.setText( s )
+		self.target().set_gauss_width(float(self.gauss_width.text()))
+		
+	def gauss_width_edited(self):
+		from string import atof
+		from math import log10
+		text = self.gauss_width.text()
+		v = int( log10(atof(text)) * 100)
+		self.gauss_width_slider.setValue( v )
+		self.target().set_gauss_width(float(text))
+		
+		gbdb = db_open_dict(self.gbdbname)
+		gbdb['gauss_width']=float(text)
+		
+	def update_states(self,gauss_boxer):
+		self.busy = True
+		self.pixel_input_edit.setText(str(gauss_boxer.pixel_input))
+		
+		self.busy = False
+
+	def new_pixel_input(self):
+		if self.busy: return
+		pixin = float(self.pixel_input_edit.text())
+		pixout=float(self.pixel_output_edit.text())
+		if pixout < pixin:
+			print "output pixel size cannot be smaller than input pixel size"
+			self.pixel_input_edit.setText(str(self.target().pixel_input))	
+			return
+		self.target().set_pixel_input(pixin)
+		gbdb = db_open_dict(self.gbdbname)
+		gbdb['pixel_input']=pixin
+		
+	def new_pixel_output(self):
+		if self.busy: return
+		pixout=float(self.pixel_output_edit.text())
+		pixin = float(self.pixel_input_edit.text())
+		if pixout < pixin:
+			self.pixel_output_edit.setText(str(self.target().pixel_output))
+			print "output pixel size cannot be smaller than input pixel size"
+			return
+		self.target().set_pixel_output(pixout)	
+		gbdb = db_open_dict(self.gbdbname)
+		gbdb['pixel_output']=pixout
+		
+	def new_thr_low(self):
+		if self.busy: return
+		thrlow=self.thr_low_edit.text()
+		if thrlow != self.THRNA:
+			thrlow= float(thrlow)
+		else:
+			thrlow = None	
+		self.target().set_thr_low(thrlow)
+		gbdb = db_open_dict(self.gbdbname)
+		gbdb['thr_low']=thrlow
+		
+		
+	def new_thr_hi(self):
+		if self.busy: return
+		thrhi=self.thr_hi_edit.text()
+		if thrhi != self.THRNA:
+			thrhi=float(thrhi)
+		else:
+			thrhi=None
+		self.target().set_thr_hi(thrhi)
+		gbdb = db_open_dict(self.gbdbname)
+		gbdb['thr_hi']=thrhi	
+			
+	def auto_box_clicked(self,val):
+		self.target().auto_box_clicked()
+		
+	def clear_clicked(self,val):
+		self.target().clear_all()
+	
+	def enable_auto_box(self,val):
+		self.autobox.setEnabled(val)
+	
+	def invert_contrast_checked(self,val):
+		if self.busy: return
+		gbdb = db_open_dict(self.gbdbname)
+		gbdb["invert_contrast"] = val
+		self.target().set_invert_contrast(val)
+		
+	def use_variance_checked(self,val):
+		if self.busy: return
+		gbdb = db_open_dict(self.gbdbname)
+		gbdb["use_variance"] = val
+		self.target().set_use_variance(val)
+	
+	# sxboxer's calc_ctf (from class EMBoxerModulePanel)
+	# ctf is always calculated from original input micrograph
+	def calc_ctf(self):
+		# calculate power spectrum of image with welch method (welch_pw2)
+		# calculate rotational average of power spectrum (rot_avg_table)
+		# calculate ctf values with ctf_get
+		#print "starting CTF estimation"
+		# get the current image
+		from utilities import get_im
+		#image_name = self.target().boxable.get_image_name()
+		#img = BigImageCache.get_image_directly( image_name )
+		image_name = self.target().target().file_names[0]
+		img = get_im(image_name)
+
+		# conversion from text necessary
+		try:
+			ctf_window_size  = int(self.ctf_window_size.text())
+			ctf_edge_size    = int(self.ctf_edge_size.text())
+			ctf_overlap_size = int(self.ctf_overlap_size.text())
+			ctf_f_start      = float(self.ctf_f_start.text())
+			ctf_f_stop       = float(self.ctf_f_stop.text())
+			ctf_volt         = float(self.ctf_volt.text())
+			ctf_cs           = float(self.ctf_cs.text())
+			ctf_ampcont      = float(self.ctf_ampcont.text())
+			
+		except ValueError,extras:
+			# conversion of a value failed!
+			print "integer conversion failed."
+			if not(extras.args is None):
+				print extras.args[0]
+			return
+		except:
+			print "error"
+			print self.ctf_window_size.text()
+			print self.ctf_overlap_size.text()
+			print self.ctf_edge_size.text()
+			return
+
+		# print "determine power spectrum"
+		from fundamentals import welch_pw2
+		# XXX: check image dimensions, especially box size for welch_pw2!
+		power_sp = welch_pw2(img, win_size=ctf_window_size, overlp_x=ctf_overlap_size, overlp_y=ctf_overlap_size,
+				     edge_x=ctf_edge_size, edge_y=ctf_edge_size)
+
+		# print "averaging power spectrum"
+		from fundamentals import rot_avg_table
+		avg_sp = rot_avg_table(power_sp)
+		del power_sp
+
+		# print "determine ctf"
+		from morphology import defocus_gett
+
+
+		input_pixel_size = float(self.pixel_input_edit.text())
+		output_pixel_size = float(self.pixel_output_edit.text())
+		#print "Input pixel size: ", input_pixel_size 
+		#print "Output pixel size: ", output_pixel_size 
+
+		defocus = defocus_gett(avg_sp, voltage=ctf_volt, Pixel_size=input_pixel_size, Cs=ctf_cs, wgh=ctf_cs,
+				       f_start=ctf_f_start, f_stop=ctf_f_stop, parent=self)
+	 	
+		self.estdef.setText(str(defocus/10000.0))
+		self.estdef.setEnabled(False)
+		
+		
+		# update ctf inspector values
+		
+		if (self.ctf_inspector is not None):
+			self.ctf_inspector.setData(self.ctf_data)
+			self.ctf_inspector.i_start = self.i_start
+			self.ctf_inspector.i_stop = self.i_stop
+			if not(self.ctf_inspector_gone):
+				self.ctf_inspector.update()
+		else:
+			global i_start_initial
+			global i_stop_initial
+			i_start_initial = self.i_start
+			i_stop_initial = self.i_stop
+		
+		# XXX: wgh?? amp_cont static to 0?
+		# set image properties, in order to save ctf values
+		from utilities import set_ctf
+		set_ctf(img, [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont])
+		# and rewrite image 
+		img.write_image(image_name)
+		
+		# get alternate, and set its ctf
+		altimg=BigImageCache.get_object(image_name).get_image(use_alternate=True)
+		set_ctf(altimg, [defocus, ctf_cs, ctf_volt, output_pixel_size, 0, ctf_ampcont])
+		BigImageCache.get_object(image_name).register_alternate(altimg)
+		
+ 		print "CTF estimation done."
+ 		#print "Estimated defocus value: ", defocus
+	
+	
+	def inspect_ctf(self):
+		#display(self.ctf_data)
+			
+		if not(self.ctf_inspector):
+			self.ctf_inspector = CTFInspectorWidget(self,self.ctf_data)
+			self.ctf_inspector.show()
+			self.ctf_inspector_gone=False
+		else:
+			if (self.ctf_inspector_gone):
+				self.ctf_inspector.show()
+				self.ctf_inspector_gone=False
+			else:
+				pass
 				
+						
+class GaussBoxer:
+	
+	CACHE_MAX = 10 # Each image has its last CACHE_MAX SwarmBoxer instance stored (or retrievable) automatically 
+	PROFILE_MAX = 0.8 # this is a percentage - it stops the profile trough point from going to the end
+	REF_NAME = "gauss_ref"
+	AUTO_NAME = "gauss_auto"
+	WEAK_REF_NAME = "gauss_weak_ref"
+	INIT = True
+	MVT_THRESHOLD = 200 # a squared distance - used by the movement cache to automatically update using previously supplied user movement data
+	GAUSS_BOXERS = "gauss_boxers"
+	GAUSS_FWD_BOXERS = "gauss_fwd_boxers"
+	GAUSS_USER_MVT = "gauss_user_mvt"
+	def __init__(self,particle_diameter=128):
+		if GaussBoxer.INIT: # this solved a strange problem with databases
+			GaussBoxer.INIT = False
+			EMBox.set_box_color(GaussBoxer.REF_NAME,[0,0,0])
+			EMBox.set_box_color(GaussBoxer.WEAK_REF_NAME,[0.2,0.2,0.4])
+			EMBox.set_box_color(GaussBoxer.AUTO_NAME,[0.4,.9,.4]) # Classic green, always was this one ;)
+		
+		self.panel_object = None # maybe it doesn't exist
+		
+                self.pixel_input = 1.0
+                self.pixel_output = 1.0
+                self.frequency_cutoff = 0
+                self.window_size_min = 15
+                self.gauss_width = 1.0
+                self.use_variance = True
+                self.invert = False
+                self.thr_low = None
+                self.thr_hgh = None		
+		self.gui_mode = False # set this to False to stop any calls to Qt - such as the act of making the cursor busy...
+		
+		self.small_img=None
+		
+		self.mvt_cache = [] # we have to remember if any of the auto selected boxes were moved, so if the user reboxes then the movements they previously supplied will be applied
+		
+		
+	def __del__(self):
+		'''
+		Closes the template viewer if it exists
+		'''
+		#if self.template_viewer != None:
+		#	self.template_viewer.close()
+		#	self.template_viewer = None
+	
+	def set_invert_contrast(self,val):
+		'''
+		Whether or not to invert contrast 
+		@param val a boolean 
+		'''
+		self.invert = val
+			
+	def set_use_variance(self,val):
+		'''
+		Whether or not to use variance image
+		@param val a boolean 
+		'''
+		self.use_variance = val
+	
+	def set_gauss_width(self,gwidth):
+		'''
+		set gauss width, which should be a float
+		@param gwidth the gauss width
+		'''
+		if gwidth != self.gauss_width:
+			self.gauss_width = gwidth
+
+		
+	def set_pixel_input(self,inpix):
+		'''
+		set the input pixel size, which should be a float
+		@param inpix the input pixel size
+		'''
+		if inpix != self.pixel_input:
+			self.pixel_input = inpix
+		
+	def set_pixel_output(self,outpix):
+		'''
+		set the output pixel size, which should be a float
+		@param inpix the output pixel size
+		'''
+		if outpix != self.pixel_output:
+			self.pixel_output = outpix
+			
+	def set_thr_low(self,thrlow):
+		'''
+		set the low threshold, which should be a float
+		@param thrlow the low threshold
+		'''
+		if thrlow != self.thr_low:
+			self.thr_low = thrlow
+	
+	def set_thr_hi(self,thrhi):
+		'''
+		set the high threshold, which should be a float
+		@param thrhi the hi threshold
+		'''
+		if thrhi != self.thr_hgh:
+			self.thr_hgh = thrhi
+	
+	def auto_box_clicked(self):
+		'''
+		When the autobox button is clicked then we force an autobox.
+		'''
+		print 'file to be processed: ', self.target().current_file()
+		self.auto_box(self.target().current_file(),force_remove_auto_boxes=True)
+		
+	def auto_box(self, imgname, parameter_update=True, force_remove_auto_boxes=False, cache=True):
+		'''
+		Autoboxing method using gauss convolution method (also used in sxboxer). Core of the implementation is taken from PawelAutoBoxer and modified to fit in the new framework.
+		@param image_name the image that we're boxing
+		@param parameter_update, should generally be True,but may be False if the current parameters are known to be current (see self.load_from_last_state) 
+		@param force_remove_auto_boxes if True all of the autoboxed boxes in the EMBoxerModule are removed and the 'entire' image is autoboxed again. This might be False if you know the template has not changed
+		@param cache whether or not the newly establish state, i.e. at the end of this function, should be cached to the database and internally. Generally True but sometimes False (see self.load_from_last_state) .
+		'''
+		from sparx import filt_gaussl
+		print "Gauss method............start autboxing"
+		self.proximal_boxes = [] # this is always res
+		if self.gui_mode:
+			from PyQt4 import QtCore 
+			get_application().setOverrideCursor(QtCore.Qt.BusyCursor)
+		
+		# user pawelautoboxer (gauss method) to compute soln
+		# downsample input image.
+		self.get_small_image(imgname)
+		#set_idd_image_entry(imgname,'subsampled_image',self.small_img)
+		BigImageCache.get_object(imgname).register_alternate(self.small_img)
+		#this causes the alternate image to be picked up and update micrograph window using the small image
+		self.target().set_current_file(imgname)
+		
+		[avg,sigma,fmin,fmax] = Util.infomask( self.small_img, None, True )
+		self.small_img -= avg
+		self.small_img /= sigma
+		
+		if(self.use_variance):
+			from morphology import power
+			self.small_img = power(self.small_img, 2.0)
+			print "using variance"
+		
+		boxsize = self.target().get_box_size()
+		ccf = filt_gaussl( self.small_img, self.gauss_width/boxsize )
+		peaks = ccf.peak_ccf( boxsize/2-1)
+		npeak = len(peaks)/3
+		print "npeak: ", npeak
+		
+		boxes = []
+		ccfs = [] # ccfs are used to set threshold_low adn threshold_high after the particles have been picked. see set_data in CcfHistogram in sxboxer and set_params_of_gui in pawelautoboxer in boxertools.py
+		#print "current thr low: ", self.thr_low
+		#print "current thr hi: ", self.thr_hgh
+		for i in xrange(npeak):
+			cx = peaks[3*i+1]
+			cy = peaks[3*i+2]
+			
+			corr_score= peaks[3*i] 
+			skip = False
+			if not(self.thr_low is None) and corr_score < self.thr_low:
+				skip = True
+	
+			if not(self.thr_hgh is None) and corr_score > self.thr_hgh:
+				skip = True
+
+			if not skip:
+				ccfs.append( peaks[3*i] )
+				type = GaussBoxer.AUTO_NAME
+				box = [cx,cy,type,corr_score]
+				boxes.append(box)
+		
+		# Need to do: handle npeak when npeak = 1
+		if npeak > 1:		
+			self.panel_object.set_data(ccfs)	
+		
+		if self.gui_mode: self.target().set_status_message("Auboxing Done",1000)
+		
+		if self.gui_mode: self.target().set_status_message("Updating Positions",0)
+		if self.gui_mode: self.target().set_status_message("Done",1000)
+		
+		#self.target().set_box_size(boxsize/shrinkby) 
+		self.target().add_boxes(boxes, True)
+		
+		if self.gui_mode:
+			from PyQt4 import QtCore 
+			get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
+			self.target().set_status_message("Autoboxed %d Particles" %len(boxes), 10000)
+		else:
+			print "Autoboxed %d Particles" %len(boxes)
+
+		self.panel_object.enable_auto_box(False)
+		gbdb = db_open_dict(self.panel_object.gbdbname)
+		gbdb['clear']=False
+		return boxes
+
+
+	def clear_all(self):
+		'''
+		Clears all boxes calculated in Gauss mode and start from clean slate by setting the current file (i.e., the micrograph being picked) to the commandline one. Otherwise, the already normalized micrograph will get normalized again.
+		'''
+		
+		self.target().clear_boxes([GaussBoxer.REF_NAME,GaussBoxer.AUTO_NAME,GaussBoxer.WEAK_REF_NAME],cache=True)
+		
+		self.panel_object.pixel_output_edit.setText('1.0')
+		self.panel_object.pixel_input_edit.setText('1.0')
+		self.panel_object.invert_contrast_chk.setChecked(self.panel_object.INVCONT)
+		self.panel_object.gauss_width_slider.setValue( self.panel_object.SLVAL )
+		self.panel_object.gauss_width.setText(self.panel_object.GW)
+		self.panel_object.thr_low_edit.setText('N/A')
+                self.panel_object.thr_hi_edit.setText('N/A')
+		self.thr_low = None
+		self.thr_hgh = None
+		BigImageCache.get_object(self.target().file_names[0]).register_alternate(None)
+		self.target().set_current_file_by_idx(0)
+		self.target().set_current_file(self.target().file_names[0])
+		self.panel_object.enable_auto_box(True)
+		
+		gbdb = db_open_dict(self.panel_object.gbdbname)
+		gbdb['clear']=True
+		
+	def get_small_image(self,imgname):
+		
+		from sparx import get_im, filt_gaussl, filt_gaussh
+		subsample_rate = self.get_subsample_rate()
+		frequency_cutoff = self.get_frequency_cutoff()
+		template_min = self.get_window_size_min()
+		gaussh_param = self.get_gaussh_param()
+		invert = self.get_invert()
+		
+		img = get_im( imgname )
+		
+		# first invert image if invert is true. code taken from invert_contrast_mic_toggled in sxboxer.py
+		if invert:
+			[avg,sigma,fmin,fmax] = Util.infomask( img, None, True )
+			img -= avg
+			img *= -1
+			img += avg
+		
+		img = filt_gaussh( img, gaussh_param )
+		if subsample_rate != 1.0:
+			print "Generating downsampled image\n"
+			sb = Util.sincBlackman(template_min, frequency_cutoff,1999) # 1999 taken directly from util_sparx.h
+			self.small_img = img.downsample(sb,subsample_rate)
+		else:
+			self.small_img = img.copy()
+		self.small_img.set_attr("invert", invert)
+		self.small_img.set_attr("gaussh_param", gaussh_param)
+		self.small_img.set_attr("subsample_rate",subsample_rate)
+		self.small_img.set_attr("frequency_cutoff",frequency_cutoff)
+		self.small_img.set_attr("template_min",template_min)
+		from utilities import generate_ctf
+		try:
+			ctf_dict = img.get_attr("ctf")
+		except:
+			ctf_dict = EMAN2Ctf()
+		
+		ctf_dict2 = generate_ctf([ctf_dict.defocus, ctf_dict.cs, ctf_dict.voltage, self.pixel_output, ctf_dict.bfactor, ctf_dict.ampcont])
+		self.small_img.set_attr("ctf",ctf_dict2)
+	#############################################################################
+	# parameter access functions from pawelautoboxer class
+	def get_subsample_rate(self):
+		return self.pixel_input/self.pixel_output
+		
+	def get_window_size_min(self):
+		return 15
+	
+	def get_frequency_cutoff(self):
+		return 0.5*self.get_subsample_rate()
+	
+	def get_gaussh_param(self):
+		ratio = self.pixel_input/self.pixel_output
+		return ratio/self.target().get_box_size()
+	
+	def get_invert(self):
+		return self.invert
+	#############################################################################
+	
+	def move_auto_box(self,box_number,image_name,dx,dy):
+		'''
+		This is the solution to a conundrum - what if the user moves an auto box (a green one) but then reboxes, subsequently
+		losing this "centering" metadata? The solution implemented here is to store the movement metadata and perform collision
+		detection whenever autoboxing happens again.
+		
+		Here we update the "movement cache" to reflect the new metadata
+		@param box_number the index corresponding to the stored box of the EMBoxList in the EMBoxerModule
+		@param image_name the name of the image we're currently operating on - this is important because its used to store data in the local database
+		@param dx the movement in the x direction (float)
+		@param dy the movement in the y direction
+		'''
+		box = self.target().get_box(box_number)
+		for i,[old,new] in enumerate(self.mvt_cache):
+			dist = (new[0]-box.x)**2 + (new[1]-box.y)**2
+			if dist < GaussBoxer.MVT_THRESHOLD:
+				self.mvt_cache[i][1] = [box.x+dx,box.y+dy]
+				break
+		else:
+			self.mvt_cache.append([[box.x,box.y],[box.x+dx,box.y+dy]])
+		
+		set_database_entry(image_name,GaussBoxer.GAUSS_USER_MVT,self.mvt_cache)
+		self.target().move_box(box_number,dx,dy)
+		
+	def get_alternate(self,filename):
+		# if there is a subsampled image in cache then user was probably using that the last time
+		# if we use subsampled image from cache then also have to reload all the previous parameters, mosti mportantly box size and in/output pixel size
+		
+		#self.small_img = get_idd_image_entry(filename,'subsampled_image')
+		
+		# look at parameters stored in cache to determine if users ended previous session not from a blank slate
+		# if that is the case then pre-process/downsample input micrograph and set it to alternate
+		
+		gbdb = db_open_dict(self.panel_object.gbdbname)
+		
+		if gbdb['clear'] == False:	
+			print "Restoring micrograph and particles window for Gauss mode..."
+			# set parameters from cache so get_small image work from the correct parameters
+			self.pixel_input = gbdb['pixel_input']
+			self.pixel_output = gbdb['pixel_output']
+			self.invert = gbdb['invert_contrast']
+			self.get_small_image(filename)
+			BigImageCache.get_object(filename).register_alternate(self.small_img)
+			#this causes the alternate image to be picked up by micrograph window 
+			self.target().current_idx=0
+			self.target().set_current_file(filename)
+			self.panel_object.enable_auto_box(False)
+						
+class GaussTool(GaussBoxer,EMBoxingTool):
+	'''
+	A class that knows how to handle mouse erase events for a GUIBox
+	'''	
+	
+	def __init__(self,target,particle_diameter=128):
+		GaussBoxer.__init__(self,particle_diameter)
+		self.target = weakref.ref(target) # module can be accessed through self.target. So self.target.get_main_2D_window can be used to get the micrograph window
+		self.panel_object = GaussPanel(self,self.pixel_input)
+		self.current_file = None # the name of the file that is being studied in the main viewer
+		self.moving = None # keeps track of the moving box, will be a list in the format [[int,int],int,str] = [[x,y],box_number,box_type]
+		self.ptcl_moving_data = None # keeps track of movement that's occuring in the particles (mx) viewer
+		self.gui_mode = True
+		
+	def unique_name(self): return "Gauss"
+	
+	def get_widget(self):
+		if self.panel_object == None:
+			self.panel_object = GaussPanel(self,self.particle_diameter)
+		return self.panel_object.get_widget()
+	
+	def icon(self):
+		from PyQt4 import QtGui
+		return QtGui.QIcon(get_image_directory() + "swarm_icon.png")
+	
+	def get_2d_window(self): return self.target().get_2d_window()
+	
+	def mouse_move(self,event):
+		pass
+		
+	def mouse_wheel(self,event):
+		pass
+	
+	def mouse_down(self,event):
+		# User clicking on micrograph does nothing (currently) in Gauss mode
+		return
+		
+	def handle_box_delete(self,box,box_num):
+		if box.type == GaussBoxer.AUTO_NAME:
+			self.target().remove_box(box_num,exclude_region=True)
+		elif box.type == GaussBoxer.REF_NAME or box.type == GaussBoxer.WEAK_REF_NAME:
+			self.target().remove_box(box_num)
+			self.remove_ref(box,self.target().current_file())
+		else:
+			raise EMUnknownBoxType,box.type
+	
+	def mouse_drag(self,event) :
+		m=self.get_2d_window().scr_to_img((event.x(),event.y()))
+		from PyQt4.QtCore import Qt
+		if event.modifiers()&Qt.ShiftModifier:
+			box_num = self.target().detect_box_collision(m)
+			box = self.target().get_box(box_num)
+			if ( box_num != -1):
+				if box.type in [GaussBoxer.REF_NAME,GaussBoxer.AUTO_NAME,GaussBoxer.WEAK_REF_NAME]:
+					self.handle_box_delete(box,box_num)
+		elif self.moving != None:
+			oldm = self.moving[0]
+			dx = m[0]-oldm[0]
+			dy = m[1]-oldm[1]
+
+			if self.moving[2] in [GaussBoxer.REF_NAME,GaussBoxer.WEAK_REF_NAME]:
+				self.move_ref(self.moving[1],self.target().current_file(),dx,dy)
+			else:
+				self.move_auto_box(self.moving[1],self.target().current_file(),dx,dy)
+				
+			self.moving[0] = m
+			
+	def mouse_up(self,event) :
+		if self.moving != None:
+			self.target().box_released(self.moving[1])
+			if self.moving[2] in [GaussBoxer.REF_NAME,GaussBoxer.WEAK_REF_NAME]:
+				self.ref_released(self.target().current_file(),self.moving[1])
+			
+		self.moving= None
+	
+	def moving_ptcl_established(self,box_num,x,y):
+		box = self.target().get_box(box_num)
+		if box.type not in [GaussBoxer.REF_NAME,GaussBoxer.AUTO_NAME,GaussBoxer.WEAK_REF_NAME]:
+			raise EMUnknownBoxType,box.type
+		
+		self.ptcl_moving_data = [x,y,box_num]
+	
+	def move_ptcl(self,box_num,x,y,ptcls):
+		if self.ptcl_moving_data == None: return
+		
+		dx = self.ptcl_moving_data[0] - x
+		dy = y - self.ptcl_moving_data[1]
+		box = self.target().get_box(box_num)
+		
+		if box.type in [GaussBoxer.REF_NAME,GaussBoxer.WEAK_REF_NAME]:
+			self.move_ref(box_num,self.target().current_file(),dx,dy)
+		else:
+			self.move_auto_box(box_num,self.target().current_file(),dx,dy)
+			
+		self.ptcl_moving_data = [x,y,self.ptcl_moving_data[2]]
+		
+	def release_moving_ptcl(self,box_num,x,y):
+		if self.ptcl_moving_data == None: return
+		self.target().box_placement_update_exclusion_image_n(box_num)
+		box = self.target().get_box(box_num)
+		if box.type in [GaussBoxer.REF_NAME,GaussBoxer.WEAK_REF_NAME]:
+			self.ref_released(self.target().current_file(),box_num)
+		
+		self.ptcl_moving_data = None
+
+	def delete_ptcl(self,box_num):
+		box = self.target().get_box(box_num)
+		if box.type not in [GaussBoxer.REF_NAME,GaussBoxer.AUTO_NAME,GaussBoxer.WEAK_REF_NAME]:
+			raise EMUnknownBoxType,box.type
+		
+		self.handle_box_delete(self.target().get_box(box_num),box_num)
+		
+	def get_unique_box_types(self):
+		return [GaussBoxer.REF_NAME,GaussBoxer.AUTO_NAME,GaussBoxer.WEAK_REF_NAME]
+	
+	def boxes_erased(self,list_of_boxes):
+		GaussBoxer.boxes_erased(self,list_of_boxes,self.target().current_file())
+
+# this is class CTFInspector from sxboxer.py with very slight modifications
+class CTFInspectorWidget(QtGui.QWidget):
+
+	def __init__(self,parent,data=None) :
+		QtGui.QWidget.__init__(self) 
+		# we need to keep track of our parent to signal when we are gone again....
+		self.parent = weakref.ref(parent) # this needs to be a weakref ask David Woolford for details, but otherwise just call self.parent() in place of self.parent
+		self.setGeometry(300, 300, 250, 150)
+		self.setWindowTitle("CTF Inspector")
+
+		self.i_start = None
+		self.i_stop = None
+		
+		if (data is None):
+			# test data, to ensure something is displayed even if no data is set yet. this is
+			#    for development only and can be removed later.....
+			self.data = [[80,20,10,9,8,7,6,5,4,3,2,1,0,0,0,0,0],]
+		else:
+			# assume we got a triple of lists. assign it for now.
+			self.data=data
+		
+
+	def setData(self,data):
+		# check data type is a list and break, if not
+		if not(type(data) is list):
+			return False
+		
+		# free previous and reset our data to the passed list
+		del self.data
+		self.data = data
+		# return success
+		return True
+
+	def update(self):
+		QtGui.QWidget.update(self) #self.paintEvent(None)
+		# print "update..."
+		
+	def paintEvent(self,event):
+		from PyQt4 import QtCore
+		from PyQt4.QtCore import Qt
+		if (self.i_start is None and (i_start_initial > 0)):
+			self.i_start = i_start_initial
+		if (self.i_stop is None and (i_stop_initial > 0)):
+			self.i_stop = i_stop_initial
+		
+			
+		h=self.height()
+		w=self.width()
+
+		hborder = ( min((h / 15.0),20.0))
+		wborder = ( min((w / 15.0),20.0))
+
+		# accessible height and width....
+		ah = int(h-2*hborder)
+		aw = int(w-2*wborder)
+
+		p=QtGui.QPainter()
+		p.begin(self)
+		p.setBackground(QtGui.QColor(16,16,16))
+		p.eraseRect(0,0,self.width(),self.height())
+		p.setPen(Qt.white)
+
+		# labels
+		# spectrum
+		# background
+		# ctf
+
+		# draw axes
+		p.drawLine(int(wborder),int(hborder),int(wborder),int(h-hborder))
+		p.drawLine(int(wborder),int(h-hborder),int(w-wborder),int(h-hborder))
+
+		color = [Qt.yellow,Qt.red,Qt.blue]
+		labels= ["Roo","Back","CTF"]
+
+		if (not(self.data == []) and not(self.data is None)):
+
+			# scaling factors in x and y, respectively. margins are left around the plot,
+			#    stepw along x and 10% of height in y... explicit conversion is necessary,
+			#    since we are working with ints....			
+			if ((self.i_start is not None) and (self.i_stop is not None)):
+				sizew = self.i_stop - self.i_start + 1
+			else:
+				sizew = max([len(i) for i in self.data])
+				self.i_start = 0
+				self.i_stop = sizew-1
+				sizew=float(sizew)
+
+			# print "range: ",self.i_start," - ",self.i_stop
+				
+			stepw = float(w-2*wborder) / float(sizew)
+			
+			
+
+			if ((self.i_start is not None) and (self.i_stop is not None)):
+				sizeh = max([max(self.data[i][self.i_start:self.i_stop]) for i in xrange(len(self.data)-1)])
+			else:
+				sizeh = max([max(self.data[i]) for i in xrange(len(self.data)-1)])
+				
+		
+			sizeh = float(sizeh)
+			steph = float(h-2*hborder) / float(sizeh) 
+			
+			import math
+			from utilities import read_text_file
+			ctfdata2 = read_text_file("procpw.txt",3)
+			
+			if ((self.i_start is not None) and (self.i_stop is not None)):
+				sizehctf = max(ctfdata2[self.i_start:self.i_stop])
+				
+			else:
+				sizehctf = max(ctfdata2)
+			
+			sizehctf = float(sizehctf)
+			
+			tickspacing = min(int(sizew/30)+1, 5)
+			
+			for list_index in xrange(len(self.data)):
+				
+				p.setPen(color[list_index])
+				metrics = p.fontMetrics()
+				fw = metrics.width(str(labels[list_index]))
+				fh = metrics.height()+4
+				p.drawText(w-wborder-fw/2, hborder+(list_index)*fh, str(labels[list_index]))
+				
+			
+				for index in xrange(self.i_start,self.i_stop):
+					
+					
+					p.setPen(color[list_index])
+					# skip first point, since there is no previous point to connect to
+					if (0 == index):
+						continue
+					else:
+						# x is normal, y is flipped (i.e. top left is (0,0))
+						#oldx = int(wborder+ (stepw*(index-1)))
+						oldx=int(wborder + ((w-2*wborder) / sizew * (index-1-self.i_start)))
+						#newx = int(wborder+ (stepw*(index)))
+						newx=int(wborder + ((w-2*wborder) / sizew * (index-self.i_start)))
+						
+						#oldy = int(h-hborder-steph*self.data[list_index][index-1])
+						if (list_index == 2):
+							oldy=int(h-hborder-(h-2*hborder)*ctfdata2[index-1]/sizehctf)
+						else:
+							oldy=int(h-hborder-(h-2*hborder)*self.data[list_index][index-1]/sizeh)
+						#newy = int(h-hborder-steph*self.data[list_index][index])
+						if (list_index == 2):
+							newy=int(h-hborder-(h-2*hborder)*ctfdata2[index]/sizehctf)
+						else:
+							newy=int(h-hborder-(h-2*hborder)*self.data[list_index][index]/sizeh)
+						
+						p.drawLine(oldx,oldy,newx,newy)
+						
+						
+					if (len(self.data)-1 == list_index):
+						if index % tickspacing == 0:
+							p.setPen(Qt.white)
+							p.setFont(QtGui.QFont('Times',10))
+							p.drawLine(newx, h-hborder, newx, h-hborder+5)
+							metrics = p.fontMetrics()
+							fw = metrics.width(str(index))
+							p.drawText(newx-fw/2, h-hborder+14, str(index))
+					
+		p.end()
+
+	# closing the window is tricky: we need to notify the parent window we are gone, but
+	#    cannot set parent.ctf_inspector directly, since that would destroy ourselves in
+	#    the middle of the event handler, prompting an error. instead, we set a flag in
+	#    the parent object and let it handle destroying, resetting or updating when
+	#    it becomes necessary....
+	def closeEvent(self,event):
+		# set the flag of our parent object
+		self.parent().ctf_inspector_gone=True
+		# and close ourselves by accepting the event....
+		event.accept()
 
 if __name__ == "__main__":
 	main()
