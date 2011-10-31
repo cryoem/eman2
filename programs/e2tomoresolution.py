@@ -46,19 +46,25 @@ def main():
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_pos_argument(name="tomodir",help="The refinement directory to use for tomoresolution.", default="", guitype='dirbox', dirbasename='job3d_03', positional=True, row=0, col=0,rowspan=1, colspan=2)
+	parser.add_pos_argument(name="tomodir",help="The refinement directory to use for tomoresolution.", default="", guitype='dirbox', dirbasename='spt_', positional=True, row=0, col=0,rowspan=1, colspan=2)
 	parser.add_header(name="tomoresoheader", help='Options below this label are specific to e2tomoresolution', title="### e2tomoresolution options ###", row=1, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--averager",type=str,help="The averager used to generate the averages. Default is \'mean\'.",default="mean", guitype='combobox', choicelist='dump_averagers_list()', row=2, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--sym",  type=str,help="The recon symmetry", default="c1", guitype='symbox', row=3, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--mask", type=str,help="The mask to apply before FSC calculation", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=4, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	(options, args) = parser.parse_args()
+	if options.mask: options.mask = parsemodopt(options.mask)
 	
 	logid=E2init(sys.argv,options.ppid)
 	
 	fscstrategy = EvenOddReso(args[0], options)
 	fscstrategy.execute()
-
+	
+	results_db = db_open_dict("bdb:%s#convergence.results"%args[0])
+	results_db["tomo_fsc"] = [fscstrategy.getFreq(),fscstrategy.getFSC(),fscstrategy.getError()]
+	results_db.close()
+	
 	E2end(logid)
 	
 	# Plot FSC
@@ -109,6 +115,11 @@ class EvenOddReso(Strategy):
 		if self.options.sym != "c1":
 			evenavg = evenavg.process('xform.applysym',{'sym':self.options.sym})
 			oddavg = oddavg.process('xform.applysym',{'sym':self.options.sym})
+			
+		if self.options.mask:
+			evenavg = evenavg.process(self.options.mask[0],self.options.mask[1])
+			oddavg = oddavg.process(self.options.mask[0],self.options.mask[1])
+		
 		evenavg.write_image('bdb:%s#evenvol'%self.jobdir)
 		oddavg.write_image('bdb:%s#oddvol'%self.jobdir)
 		
