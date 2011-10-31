@@ -70,7 +70,7 @@ class EMDataItem3D(EMItem3D):
 				child.dataChanged()
 			except:
 				pass
-		self.boundingboxsize = str(self.getBoundingBoxDimensions()[0])+'x'+str(self.getBoundingBoxDimensions()[1])+'x'+str(self.getBoundingBoxDimensions()[2])
+		self.boundingboxsize = "%dx%dx%d\tApix: %5.2f"%(self.getBoundingBoxDimensions()[0],self.getBoundingBoxDimensions()[1],self.getBoundingBoxDimensions()[2],round(data['apix_x'],3))
 		if self.item_inspector: self.item_inspector.updateMetaData()
 
 	def renderNode(self):

@@ -36,7 +36,9 @@ from EMAN2db import db_open_dict
 import os
 
 class ControlPannel(QtGui.QWidget):
-	'''This controls the RCT boxer'''
+	'''This controls the RCT boxer. Normally this will not need to be midified. If a new pair pciking strategy is to be implmented, then
+	A new GUI class should be added as decribed below and the new tool needs to be added to __init__ and the functions: current_tool_combobox_changed 
+	and add_picker_tools'''
 	def __init__(self, mediator):
 		QtGui.QWidget.__init__(self)
 		self.mediator = mediator
@@ -367,7 +369,8 @@ class ControlPannel(QtGui.QWidget):
 			if wid != None:
 				wid.close()
 
-# Current tools
+# Current tools. Other tools can be added by simply adding a Pciker GUi and then building a 
+# corresponding Strategy based by subclassing Strategy in emrctstrategy
 class ManualPicker(QtGui.QWidget):
 	def __init__(self, mediator, db):
 		QtGui.QWidget.__init__(self)

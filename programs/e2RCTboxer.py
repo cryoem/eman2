@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Author: John Flanagan (jfflanag@bcm.edu)
-# Copyright (c) 2000-2006 Baylor College of Medicine
+# Copyright (c) 2000-2011 Baylor College of Medicine
 
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -59,23 +59,26 @@ Usage: e2RCTboxer.py untilted.hdf tilted.hdf options.
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_pos_argument(name="untilted micrograph",help="List the untilted micrograph here.", default="", guitype='filebox', positional=True, row=0, col=0,rowspan=1, colspan=1)
-	parser.add_pos_argument(name="tilted micrograph",help="List the tilted micrograph here.", default="", guitype='filebox', positional=True, row=1, col=0,rowspan=1, colspan=1)
-	parser.add_header(name="RCTboxerheader", help='Options below this label are specific to e2RCTboxer', title="### e2RCTboxer options ###", row=2, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=-1, guitype='intbox', row=3, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--slow","-S",action="store_true",help="High performace",default=False)
+	parser.add_pos_argument(name="untilted micrograph",help="List the untilted micrograph here.", default="", guitype='filebox', positional=True, row=0, col=0,rowspan=1, colspan=3, mode="boxing,extraction")
+	parser.add_pos_argument(name="tilted micrograph",help="List the tilted micrograph here.", default="", guitype='filebox', positional=True, row=1, col=0,rowspan=1, colspan=3, mode="boxing,extraction")
+	parser.add_header(name="RCTboxerheader", help='Options below this label are specific to e2RCTboxer', title="### e2RCTboxer options ###", row=2, col=0, rowspan=1, colspan=3, mode="boxing,extraction")
+	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=-1, guitype='intbox', row=3, col=0, rowspan=1, colspan=3, mode="boxing,extraction")
+	parser.add_argument("--write_boxes",action="store_true",help="Write coordinate file (eman1 dbbox) files",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="extraction")
+	parser.add_argument("--write_ptcls",action="store_true",help="Write particles to disk",default=False, guidefault=True, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode="extraction")
+	parser.add_argument("--format", help="Format of the output particles images, should be bdb,img,spi or hdf", default="bdb", guitype='combobox', choicelist="['bdb','hdf','img','spi']", row=7, col=0, rowspan=1, colspan=2, mode="extraction")
+	parser.add_argument("--norm", type=str,help="Normalization processor to apply to written particle images. Should be normalize, normalize.edgemean,etc.Specifc \"None\" to turn this off", default="normalize.edgemean", guitype='combobox', choicelist='re_filter_list(dump_processors_list(),\'normalize\')', row=6, col=0, rowspan=1, colspan=2, mode="extraction")
+	parser.add_argument("--invert",action="store_true",help="If writing outputt inverts pixel intensities",default=False, guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode="extraction")
+	parser.add_argument("--suffix",type=str,help="suffix which is appended to the names of output particle and coordinate files",default="_ptcls", guitype='strbox', expert=True, row=5, col=1, rowspan=1, colspan=2, mode="extraction")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 
 	# Options need to be accessible, anywhere
-	global options
 	(options, args) = parser.parse_args()
 	
 	logid=E2init(sys.argv,options.ppid)
 	
 	# The RCT DB needs to be accessible, anywhere
-	global rctdb 
 	rctdb = db_open_dict(EMBOXERRCT_DB)
 	
 	# Get and set the boxsize
@@ -85,24 +88,96 @@ Usage: e2RCTboxer.py untilted.hdf tilted.hdf options.
 		options.boxsize = rctdb.get("box_size",dfl=128)
 	if cache_box_size: rctdb["box_size"] = options.boxsize
 	
-		
-	# Open Application, setup rct object, and run
-	application = EMApp()
-	rctboxer = RCTboxer(application, options.boxsize)	# Initialize the boxer
-	
 	if len(args) != 2:
 		print "You need to supply both untiled and tilted micrographs.\nUsage: e2RCTboxer.py [options] <untilted micrograph> <tilted micrograph>"
 		sys.exit(1)
-		
-	rctboxer.load_untilt_image(args[0])		# Load the untilted image
-	rctboxer.load_tilt_image(args[1])		# Load the tilted image
-	rctboxer.init_control_pannel_tools()			# Initialize control pannel tools, this needs to be done last as loaded data maybe be used
-	application.execute()
+	
+	if options.write_boxes or options.write_ptcls:
+		# Just write output and don't move to GUI mode
+		rctproc = RCTprocessor(args,options)
+		if options.write_ptcls: rctproc.write_particles()
+		if options.write_boxes: rctproc.write_boxes()
+	else:
+		# Open Application, setup rct object, and run
+		application = EMApp()
+		rctboxer = RCTboxer(application, options.boxsize)	# Initialize the boxertools
+		rctboxer.load_untilt_image(args[0])		# Load the untilted image
+		rctboxer.load_tilt_image(args[1])		# Load the tilted image
+		rctboxer.init_control_pannel_tools()			# Initialize control pannel tools, this needs to be done last as loaded data maybe be used
+		application.execute()
 	
 	# Clean up
 	E2end(logid)
-	rctdb.close_Dict(EMBOXERRCT_DB)
+	db_close_dict(EMBOXERRCT_DB)
 
+class RCTprocessor:
+	"""
+	Class to write partiucles and coords including some processing options
+	"""
+	def __init__(self, args, options):
+		self.args = args
+		self.options = options
+			
+	def write_particles(self):
+		self.get_ptcl_names()
+		for i,output in enumerate(self.names):
+			input = self.args[i]
+			tiltbox_list = EMBoxList()
+			tiltbox_list.set_boxes_db('tilted',input)
+			if tiltbox_list.load_boxes_from_db():
+				for i,box in enumerate(tiltbox_list.boxlist):
+					image = box.get_image(input,self.options.boxsize)
+					if self.options.invert: image.mult(-1)
+					if self.options.norm: image.process_inplace(self.options.norm)
+					image.write_image(output, i)
+	
+			untiltbox_list = EMBoxList()
+			untiltbox_list.set_boxes_db('untilted',input)
+			if untiltbox_list.load_boxes_from_db():
+				for i,box in enumerate(untiltbox_list.boxlist):
+					image = box.get_image(input,self.options.boxsize)
+					if self.options.invert: image.mult(-1)
+					if self.options.norm: image.process_inplace(self.options.norm)
+					image.write_image(output, i)
+		print "Done writing particles :)"
+	
+	def get_ptcl_names(self):
+		self.names = []
+		for name in self.args:
+			if self.options.format == "bdb":
+				out = "bdb:RCTparticles#" + get_file_tag(name) + self.options.suffix
+			else:
+				out = get_file_tag(name)+self.options.suffix+"."+self.options.format
+			self.names.append(out)
+			
+	def write_boxes(self):
+		self.get_box_names()
+		for i,output in enumerate(self.names):
+			input = self.args[i]
+			tiltbox_list = EMBoxList()
+			tiltbox_list.set_boxes_db('tilted',input)
+			if tiltbox_list.load_boxes_from_db():
+				boxfile = open(output, 'w')
+				for i,box in enumerate(tiltbox_list.boxlist):
+					boxfile.write("%d\t%d\t%d\t%d\n" % (int(box.x - self.options.boxsize/2),int(box.y - self.options.boxsize/2),self.options.boxsize,self.options.boxsize))
+				boxfile.close()
+			untiltbox_list = EMBoxList()
+			untiltbox_list.set_boxes_db('untilted',input)
+			if untiltbox_list.load_boxes_from_db():
+				boxfile = open(output, 'w')
+				for i,box in enumerate(untiltbox_list.boxlist):
+					boxfile.write("%d\t%d\t%d\t%d\n" % (int(box.x - self.options.boxsize/2),int(box.y - self.options.boxsize/2),self.options.boxsize,self.options.boxsize))
+				boxfile.close()
+				
+	def get_box_names(self):
+		self.names = []
+		for name in self.args:
+			#if self.options.format == "bdb":
+			#	out = "bdb:RCTparticles#" + get_file_tag(name) + self.options.suffix + "_boxes"
+			#else:
+			out = get_file_tag(name)+self.options.suffix+".box"
+			self.names.append(out)
+			
 class RCTboxer:
 	'''
 	The is the main command and control center for the RCT particle picker.
@@ -161,7 +236,7 @@ class RCTboxer:
 	def init_control_pannel_tools(self):
 		self.control_window.configure_tools()
 	
-	############################ Functions to support Mediator ####################################
+	############################ Functions to support Mediator pattern ####################################
 	
 	def set_strategy(self, strategy):
 		self.strategy = strategy(self)
@@ -224,7 +299,6 @@ class ParticlesWindow:
 		listlength = 100000000000000	# It would be nice to have something elegant like Math.Inf, but sometime python can be a PoS
 		for lst in self.listsofparts:
 			listlength = min(listlength, lst[1])
-		#print listlength
 		
 		i = 0
 		self.totparts = []
@@ -296,6 +370,7 @@ class MainWin:
 		self.data = None
 		self.win_xsize = 0
 		self.win_ysize = 0
+		self.slow = False
 		self.masktype = "None"
 		
 	def connect_signals(self):
@@ -377,7 +452,7 @@ class MainWin:
 			self.moving[0] = m
 			self.window.update_shapes(self.boxes.get_box_shapes(self.rctwidget.boxsize))
 			self.window.updateGL()
-			if options.slow:
+			if self.slow:
 				self.update_particles()	# slows things down too much
 		
 	def mouse_up(self, event):

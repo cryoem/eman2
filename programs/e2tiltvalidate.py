@@ -123,6 +123,7 @@ def main():
 		from EMAN2PAR import EMTaskCustomer
 		etc=EMTaskCustomer(options.parallel)
 	else:
+		from EMAN2PAR import EMTaskCustomer
 		etc=EMTaskCustomer("thread:1")
 		#etc.precache(pclist)
 		
@@ -181,7 +182,7 @@ def main():
 		tiltrot = tilt_euler_xform.get_rotation("eman")
 		tilt_euler_xform.set_rotation({"type":"eman","az":tiltrot["az"],"alt":tiltrot["alt"],"phi":-simmx_tilt[3].get_value_at(tiltbestrefnum, tiltimgnum)})
 		# Write out test results
-		print untilt_euler_xform.get_rotation("eman"), tilt_euler_xform.get_rotation("eman")
+		#print untilt_euler_xform.get_rotation("eman"), tilt_euler_xform.get_rotation("eman")
 		
 		volume.project('standard', untilt_euler_xform).write_image("untiltaligned.hdf", imgnum*2)
 		untiltimgs[imgnum].write_image("untiltaligned.hdf", imgnum*2+1)
@@ -191,18 +192,24 @@ def main():
 		# Compute tiltxis and tiltangle for each particel pair. For symmetric objects the tilttransform is selected as the one that has a tiltaxis
 		# closest to perpidicular to the imaging plane (this is how Richard handles it). 
 		bestinplane = 1.0
+		anglefound = False
 		#print "####################################"
 		for sym in symmeties.get_syms():
 			tiltxform = tilt_euler_xform*sym.inverse()*untilt_euler_xform.inverse()
 			# Select the symmetry solution whose tiltaxis is in plane
-			if math.fabs(tiltxform.get_rotation("spin")["n3"]) < bestinplane and tiltxform.get_rotation("spin")["Omega"] < options.maxtiltangle:
-				bestinplane = math.fabs(tiltxform.get_rotation("spin")["n3"])
-				besttiltangle = tiltxform.get_rotation("spin")["Omega"]
-				besttiltaxis = math.degrees(math.atan2(tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n1"]))
+			if math.fabs(tiltxform.get_rotation("spin")["n3"]) < bestinplane:
+				if tiltxform.get_rotation("spin")["Omega"] < options.maxtiltangle:
+					bestinplane = math.fabs(tiltxform.get_rotation("spin")["n3"])
+					besttiltangle = tiltxform.get_rotation("spin")["Omega"]
+					besttiltaxis = math.degrees(math.atan2(tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n1"]))
+					anglefound = True
+					
 			test.write("\t%f %f %f %f\n"%(tiltxform.get_rotation("spin")["Omega"],tiltxform.get_rotation("spin")["n1"],tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n3"]))
 			test.write("\t%f %f %f\n"%(tiltxform.get_rotation("eman")["az"],tiltxform.get_rotation("eman")["alt"],tiltxform.get_rotation("eman")["phi"]))
-		test.write("The best angle is %f with a tiltaxis of %f\n"%(besttiltangle,besttiltaxis))
-		particletilt_list.append([imgnum, besttiltangle,besttiltaxis,bestinplane])
+
+		if anglefound:
+			test.write("The best angle is %f with a tiltaxis of %f\n"%(besttiltangle,besttiltaxis))
+			particletilt_list.append([imgnum, besttiltangle,besttiltaxis,bestinplane])
 	test.close()
 	tdb["particletilt_list"] = particletilt_list
 	tdb.close()
@@ -248,6 +255,9 @@ def main():
 class CompareToTiltTask(EMTask):
 	""" A parallelized version to compute contout plots """
 	def __init__(self, volume, tilted, imgnum, eulerxform, zrot, distplot, tiltrange, tiltstep, options):
+		if options.shrink:
+			volume.process_inplace("math.meanshrink",{"n":options["shrink"]})
+			tilted.process_inplace("math.meanshrink",{"n":options["shrink"]})
 		data = {"volume":volume,"tilted":tilted}
 		EMTask.__init__(self,"CmpTilt",data,options,"")
 		

@@ -34,7 +34,15 @@
         "CHILDREN": []
       }, 
       {
-        "ICON": "green_boxes", 
+        "ICON": "green_boxes",
+        "MODE": "extraction", 
+        "PROGRAM": "e2boxer.py", 
+        "NAME": "Generate Output -e2boxer", 
+        "CHILDREN": []
+      }, 
+      {
+        "ICON": "green_boxes",
+        "MODE": "boxing", 
         "PROGRAM": "e2RCTboxer.py", 
         "NAME": "Tilt Pair Boxing-  e2RCTboxer", 
         "CHILDREN": []
@@ -42,8 +50,8 @@
       {
         "ICON": "green_boxes",
         "MODE": "extraction", 
-        "PROGRAM": "e2boxer.py", 
-        "NAME": "Generate Output -e2boxer", 
+        "PROGRAM": "e2RCTboxer.py", 
+        "NAME": "Generate Output -e2RCTboxer", 
         "CHILDREN": []
       }, 
       {
