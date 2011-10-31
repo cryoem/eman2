@@ -3137,7 +3137,7 @@ def k_means_SSE_collect(Cls, assign, Je, N, K, ncpu, myid, main_node):
 				(r_cls[n])['n'] = mpi_recv(K,MPI_INT, n, MPI_TAG_UB, MPI_COMM_WORLD)
 		
 		else:
-			if myid == n: 
+			if myid == n:
 				mpi_send(Cls['n'], K, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)	
 		mpi_barrier(MPI_COMM_WORLD)
 	'''if myid == main_node:
@@ -4699,7 +4699,7 @@ def k_means_groups_serial(stack, outdir, maskname, opt_method, K1, K2, rand_seed
 			else:			  ERROR('Kind of k-means unknown', 'k_means_groups', 1)
 
 		except SystemExit:
-			ERROR('Empty cluster, number of groups to high', 'k_means_groups', 1)
+			ERROR('Empty cluster, number of groups too high %d'%K, 'k_means_groups', 1)
 		
 		crit = k_means_criterion(Cls, 'CHD')
 
