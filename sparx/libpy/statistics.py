@@ -2084,71 +2084,66 @@ def k_means_criterion(Cls, crit_name=''):
 	# Criterion
 	Crit         = {}
 	Crit['name'] = crit_name
-	Crit['C']    = 0
-	Crit['H']    = 0
-	Crit['D']    = 0
+	Crit['C']    = 0.0
+	Crit['H']    = 0.0
+	Crit['D']    = 0.0
 			
+	ch = True
+	try:
+		name = Crit['name'].index("C")
+	except:
+		try:
+			name = Crit['name'].index("H")
+		except:
+			ch = False
+	if ch:
+		Tr, Je = 0.0, 0.0
+		buf.to_zero()
+		nob = 0
+		for k in xrange(Cls['k']):
+			Util.add_img(buf, Cls['ave'][k]*Cls['n'][k])
+			nob += Cls['n'][k]
+			Je += Cls['Ji'][k]
+		Util.mul_scalar(buf, 1.0/float(nob))
+		for k in xrange(Cls['k']):	Tr += buf.cmp("SqEuclidean", Cls['ave'][k])
+	
 	# Compute the criterion required
 	for name in Crit['name']:
-		
+	
 		# Coleman criterion C = Tr(Cls) * S Tr(Cls(im)) -> C = S (ave-m_ave)**2  *  Je
 		if name == 'C':
-			Tr, Je = 0, 0
-			buf.to_zero()
-			for k in xrange(Cls['k']):
-				Util.add_img(buf, Cls['ave'][k])
-				Je += Cls['Ji'][k]
-			Util.mul_scalar(buf, 1.0/float(Cls['k']))
-			for k in xrange(Cls['k']):	Tr += buf.cmp("SqEuclidean", Cls['ave'][k])
 			Crit['C'] = Tr * Je
-		
+
 		# Harabasz criterion H = [Tr(Cls)/(K-1)] / [S Tr(Cls(im))/(N-K)]
 		elif name == 'H':
-			Tr, Je = 0, 0
-			
-			if Crit['C'] == 0:			
-				buf.to_zero()
-				for k in xrange(Cls['k']):
-					Util.add_img(buf, Cls['ave'][k])
-					Je += Cls['Ji'][k]
-				Util.mul_scalar(buf, 1.0/float(Cls['k']))
-				for k in xrange(Cls['k']):	Tr += buf.cmp("SqEuclidean", Cls['ave'][k])
-				if Je > 0:
-					Crit['H'] = (Tr / (Cls['k'] - 1)) / (Je / (N - Cls['k']))
-				else:
-					Crit['H'] = 1e20
+
+			if Je > 0.0:
+				Crit['H'] = (Tr / (Cls['k'] - 1)) / (Je / (N - Cls['k']))
 			else:
-				# Tr already compute in Crit['C']
-				for k in xrange(Cls['k']):	Je += Cls['Ji'][k]							
-				if Je > 0:
-					Tr = Crit['C'] / Je
-					Crit['H'] = (Tr / (Cls['k'] - 1)) / (Je / (N - Cls['k']))
-				else:
-					Crit['H'] = 1e20				
-		
+				Crit['H'] = 1.0e20
+
 		# Davies-Bouldin criterion DB = 1/K S_i[max all(i>j) ((Ji/n) + (Jj/n))/(ave_j-ave_i)**2]
 		elif name == 'D':
-			db, DB, err, ji, jj = 0, 0, 0, 0, 0
+			db, DB, err, ji, jj = 0.0, 0.0, 0.0, 0, 0
 			for i in xrange(Cls['k']):
-				val_max = 0
+				val_max = 0.0
 				for j in xrange(Cls['k']):
 					if i != j:		
 						err = Cls['ave'][j].cmp("SqEuclidean",Cls['ave'][i])
-						if err > 0:
+						if err > 0.0:
 							if Cls['n'][i] > 0:	ji = Cls['Ji'][i] / Cls['n'][i]
 							else:			ji = 0
 							if Cls['n'][j] > 0:	jj = Cls['Ji'][j] / Cls['n'][j]
 							else:			jj = 0
 							db = (ji + jj) / err
 						else:
-							db = 1e20													
+							db = 1.0e20													
 					if db > val_max:	val_max = db					
-				DB += val_max				
+				DB += val_max
 			Crit['D'] = DB / Cls['k']			
-			
+
 		else:
-			ERROR("Kind of criterion k-means unknown","k_means_criterion",1)
-	
+			ERROR("Criterion type for K-means unknown","k_means_criterion",1)
 	# return the results
 	return Crit
 
@@ -4680,7 +4675,7 @@ def k_means_groups_serial(stack, outdir, maskname, opt_method, K1, K2, rand_seed
 	KK       = range(K1, K2 + 1)	# Range of works
 	C, DB, H = [], [], []
 	sp       = 15                   # cst space to format file
-	
+
 	# init the file result
 	file_crit = open(outdir + '/' + outdir, 'w')
 	file_crit.write('# Criterion of k-means group\n')
