@@ -3156,7 +3156,7 @@ def get_pixel_size(img):
 	  We check attribute Pixel_size and also pixel size from ctf object, if exisits.
 	  If the two are different or if the pixel size is not set, return -1.0 and print a warning.
 	"""
-	p1 = img.get_attr_default("Pixel_size", -1.0)
+	p1 = img.get_attr_default("apix_x", -1.0)
 	cc = img.get_attr_default("ctf", None)
 	if cc == None:
 		p2 = -1.0
@@ -3178,7 +3178,10 @@ def set_pixel_size(img, pixel_size):
 	  Set pixel size in the header.
 	  Set attribute Pixel_size and also pixel size in ctf object, if exists.
 	"""
-	img.set_attr("Pixel_size", round(pixel_size, 3))
+	nz = img.get_zsize()
+	img.set_attr("apix_x", round(pixel_size, 3))
+	img.set_attr("apix_y", round(pixel_size, 3))
+	img.set_attr("apix_z", round(pixel_size, 3))
 	cc = img.get_attr_default("ctf", None)
 	if(cc):
 		cc.apix = pixel_size

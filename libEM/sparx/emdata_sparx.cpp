@@ -3211,12 +3211,29 @@ EMData* EMData::downsample(Util::sincBlackman& kb, float scale) {
 	ret->to_zero();  //we will leave margins zeroed.
 
 	// scan new, find pixels in old
-	for (int iy =0; iy < nyn; iy++) {
-		float y = float(iy)/scale;
-		for (int ix = 0; ix < nxn; ix++) {
-			float x = float(ix)/scale;
-			(*ret)(ix,iy) = this->get_pixel_filtered(x, y, 1.0f, kb);
+	if(nz == 1)
+	{
+		for (int iy =0; iy < nyn; iy++) {
+			float y = float(iy)/scale;
+			for (int ix = 0; ix < nxn; ix++) {
+				float x = float(ix)/scale;
+				(*ret)(ix,iy) = this->get_pixel_filtered(x, y, 1.0f, kb);
+			}
 		}
+	}
+	else{
+		
+		for (int iz =0; iz < nzn; iz++) {
+			float z = float(iz)/scale;
+			for (int iy =0; iy < nyn; iy++) {
+				float y = float(iy)/scale;
+				for (int ix = 0; ix < nxn; ix++) {
+					float x = float(ix)/scale;
+					(*ret)(ix,iy,iz) = this->get_pixel_filtered(x, y, z, kb);
+				}
+			}
+		}
+	
 	}
 	set_array_offsets(saved_offsets);
 	return ret;
@@ -3584,7 +3601,7 @@ float  EMData::get_pixel_conv(float delx, float dely, float delz, Util::KaiserBe
 }
 
 
-float  EMData::get_pixel_filtered(float delx, float dely, float, Util::sincBlackman& kb) {
+float  EMData::get_pixel_filtered(float delx, float dely, float delz, Util::sincBlackman& kb) {
 //  here counting is in C style, so coordinates of the pixel delx should be [0-nx-1]
 
 	int K     = kb.get_sB_size();
@@ -3611,7 +3628,8 @@ float  EMData::get_pixel_filtered(float delx, float dely, float, Util::sincBlack
 			}
 	 	}
 
-	} else if(nz<2) {  // 2D*/
+	} else */
+	if(nz<2) {  
 		//dely = restrict2(dely, ny);
 		int inyold = int(Util::round(dely));
 	 	if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2 )  {
@@ -3634,7 +3652,8 @@ float  EMData::get_pixel_filtered(float delx, float dely, float, Util::sincBlack
 				}
 			}
 	 	}
-	/*} else {  //  3D
+	} else {  //  3D
+		//std::cout<<"pixel_filtered 3D"<<std::endl;
 		dely = restrict2(dely, ny);
 		int inyold = int(Util::round(dely));
 		delz = restrict2(delz, nz);
@@ -3654,7 +3673,7 @@ float  EMData::get_pixel_filtered(float delx, float dely, float, Util::sincBlack
 	 			pixel += (*this)(inxold+m1,inyold+m2,inzold+m3)*q; w+=q;}}
 			}
 	 	}
-	}*/
+	}
         return pixel/w;
 }
 

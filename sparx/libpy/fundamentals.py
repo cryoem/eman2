@@ -517,23 +517,36 @@ def resample(img, sub_rate=0.5):
 	nx = img.get_xsize()
 	ny = img.get_ysize()
 	nz = img.get_zsize()
-	if(nz > 1 or ny == 1):  ERROR("Only 2D images allowed","resample",1)
-	apix = get_pixel_size(img)
+	if( ny == 1):  ERROR("Only 2D or 3D images allowed","resample",1)
 	if sub_rate == 1.0: return  img.copy()
 	elif sub_rate < 1.0:
 		e = subsample(img, sub_rate)
 	else:  #  sub_rate>1
 		new_nx = int(nx*sub_rate+0.5)
 		new_ny = int(ny*sub_rate+0.5)
-		if nx != ny:
-			#  rtshg  will  not  work  for  rectangular  images
+		if nz==1: 
+			new_nz = 1
+		else: 
+			new_nz = int(ny*sub_rate+0.5)
+		if ( nx!=ny and nz==1 ):
 			nn = max(new_nx, new_ny)
 			e = Util.pad(img, nn, nn,  1, 0, 0, 0, "circumference")
 			e, kb = prepi(e)
 			e = Util.window( e.rot_scale_conv_new(0.0, 0.0, 0.0, kb, sub_rate), new_nx, new_ny, 1, 0,0,0)
+		 
+		elif ((nx!=ny or nx!=nz or ny!=nz) and nz>1):
+			nn = max(new_nx, new_ny,new_nz)
+			e = Util.pad(img, nn, nn,  nn, 0, 0, 0, "circumference")
+			e, kb = prepi3D(e)
+			e = Util.window( e.rot_scale_conv_new_3D(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, kb, sub_rate), new_nx, new_ny, new_nz, 0,0,0)
+			
 		else:
-			e, kb = prepi(Util.pad(img, new_nx, new_ny, 1, 0, 0, 0, "circumference"))
-			e = e.rot_scale_conv_new(0.0, 0.0, 0.0, kb, sub_rate)
+			if nz==1:
+				e, kb = prepi(Util.pad(img, new_nx, new_ny, 1, 0, 0, 0, "circumference"))
+				e = e.rot_scale_conv_new(0.0, 0.0, 0.0, kb, sub_rate)
+			else:
+				e, kb = prepi3D(Util.pad(img, new_nx, new_ny, new_nz, 0, 0, 0, "circumference"))
+				e = e.rot_scale_conv_new_3D(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, kb, sub_rate)
 
 	# Automatically adjust pixel size for ctf parameters
 	from utilities import get_pixel_size, set_pixel_size
@@ -542,6 +555,7 @@ def resample(img, sub_rate=0.5):
 	set_pixel_size(e, apix)
 
 	return 	e
+	
 
 def prepi(image):
 	"""
