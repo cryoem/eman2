@@ -113,6 +113,9 @@ def main():
 	
 	if options.align: 
 		options.align=parsemodopt(options.align)
+		# If symmetry is being specified, then we need to use it for the aligner too
+		if options.sym:
+			options.align[1]['sym'] = options.sym
 	if options.ralign: 
 		options.ralign=parsemodopt(options.ralign)
 	
@@ -296,7 +299,7 @@ def main():
 				print "Results:"
 				pprint(results)
 			
-			ref=make_average(options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.groups,options.verbose)		# the reference for the next iteration
+			ref=make_average(options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.sym,options.groups,options.verbose)		# the reference for the next iteration
 			
 			#postprocess(ref,options.mask,options.normproc,options.postprocess) #jesus
 			
@@ -318,17 +321,17 @@ def main():
 
 			#sys.exit()
 
-			if options.sym!=None : 
-				if options.verbose: 
-					print "Apply ",options.sym," symmetry"
-				symmetrize(ref,options.sym)
+			#if options.sym!=None : 
+			#	if options.verbose: 
+			#		print "Apply ",options.sym," symmetry"
+			#	symmetrize(ref,options.sym)
 			
 
 		if options.verbose: 
 			print "Preparing final average"
-		# new average
-
-		ref=make_average(options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.groups,options.verbose)		# the reference for the next iteration
+			
+		# new average, why does make average need to be repeated?
+		#ref=make_average(options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.sym,options.groups,options.verbose)		# the reference for the next iteration
 		
 		#if options.postprocess!=None : 
 			#ref.process_inplace(options.postprocess[0],options.postprocess[1])     #jesus - The post process should be applied to the refinment averages. The last one is identical
@@ -370,7 +373,7 @@ def postprocess(img,optmask,optnormproc,optpostprocess):
 		img.process_inplace(optpostprocess[0],optpostprocess[1])
 
 
-def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,keepsig,groups,verbose=1):			#jesus - added the groups parameter
+def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,keepsig,symmetry,groups,verbose=1):			#jesus - added the groups parameter
 	"""Will take a set of alignments and an input particle stack filename and produce a new class-average.
 	Particles may be excluded based on the keep and keepsig parameters. If keepsig is not set, then keep represents
 	an absolute fraction of particles to keep (0-1). Otherwise it represents a sigma multiplier akin to e2classaverage.py"""
@@ -458,6 +461,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 					groupslist[i][j].write_image(classname,j)
 					
 			avg=avgr.finish()
+			avg=avg.process('xform.applysym',{'sym':symmetry})
 			avg["class_ptcl_idxs"]=includedlist[i]
 			avg["class_ptcl_src"]=ptcl_file
 			
@@ -520,8 +524,10 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 			print "Kept %d / %d particles in average"%(len(included),len(align_parms))
 
 		ret=avgr.finish()
+		ret=ret.process('xform.applysym',{'sym':symmetry})
 		ret["class_ptcl_idxs"]=included
 		ret["class_ptcl_src"]=ptcl_file
+		
 
 		return ret
 		
@@ -543,7 +549,7 @@ def make_average_pairs(ptcl_file,outfile,align_parms,averager,optmask,optnormpro
 		postprocess(avg,optmask,optnormproc,optpostprocess)		# we treat these intermediate averages just like the final average
 		avg.write_image(outfile,i)
 
-
+'''
 def symmetrize(ptcl,sym):
 	"Impose symmetry in the standard orientation in-place. Does not reorient particle before symmetrization"
 	xf = Transform()
@@ -557,6 +563,7 @@ def symmetrize(ptcl,sym):
 	ptcl.mult(1.0/nsym)	
 	
 	return
+'''
 
 def get_results(etc,tids,verbose):
 	"""This will get results for a list of submitted tasks. Won't return until it has all requested results.
