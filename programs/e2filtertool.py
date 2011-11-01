@@ -135,7 +135,7 @@ class EMProcessorWidget(QtGui.QWidget):
 		self.gbl2=QtGui.QGridLayout()
 		self.gbl.addLayout(self.gbl2,0,0,1,1)
 		if get_platform().lower()=="darwin": self.gbl2.setSpacing(10)
-		else: self.gbl2.set_spacing(1)
+		else: self.gbl2.setSpacing(1)
 		
 #		self.gbl2.setColumnStretch(0,1)
 #		self.gbl2.setColumnStretch(1,1)

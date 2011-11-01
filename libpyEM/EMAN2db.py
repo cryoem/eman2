@@ -520,6 +520,7 @@ Takes a bdb: specifier and returns the number of images and image dimensions."""
 			
 			# If this is true, we need to update the dictionary
 			if (db2.has_key(dictname) and os.path.getmtime("%s/EMAN2DB/%s.bdb"%(path,dictname))>db2[dictname][0]) or not db2.has_key(dictname) :
+#				print "update ",dictname,os.path.getmtime("%s/EMAN2DB/%s.bdb"%(path,dictname)),db2[dictname][0],db2.has_key(dictname)
 				db=db_open_dict(fsp,True)
 				try: 
 					im=db[0]
@@ -1310,6 +1311,12 @@ of these occasional errors"""
 					sz=(im["nx"],im["ny"],im["nz"])
 				except : sz=(0,0,0)
 				db2[self.name]=(time.time(),len(self),sz)
+			else:
+				# Updates the count cache time, to show it's up to date
+				try:
+					db2=db_open_dict("bdb:%s#%s"%(self.path[:-8],"00image_counts"))
+					db2[self.name]=(time.time(),db2[self.name][1],db2[self.name][2])
+				except : pass
 
 			# write the binary data
 			val.write_data(pkey+fkey,n*4*ad["nx"]*ad["ny"]*ad["nz"])
@@ -1504,6 +1511,12 @@ of these occasional errors"""
 					sz=(im["nx"],im["ny"],im["nz"])
 				except : sz=(0,0,0)
 				db2[self.name]=(time.time(),len(self),sz)
+			else:
+				# Updates the count cache time, to show it's up to date
+				try:
+					db2=db_open_dict("bdb:%s#%s"%(self.path[:-8],"00image_counts"))
+					db2[self.name]=(time.time(),db2[self.name][1],db2[self.name][2])
+				except : pass
 
 			# write the binary data
 			if region:

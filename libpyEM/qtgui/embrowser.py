@@ -45,6 +45,7 @@ from emplot3d import *
 from emscene3d import *
 from emdataitem3d import *
 import re
+import threading
 
 # This is a floating point number-finding regular expression
 renumfind=re.compile(r"-?[0-9]+\.*[0-9]*[eE]?[-+]?[0-9]*")
@@ -475,15 +476,22 @@ class EMBdbFileType(EMFileType):
 	def showChimera(self,brws):
 		"Open in Chimera"
 		
+		if get_platform()=="Linux":
+			os.system("e2proc3d.py %s /tmp/vol.hdf"%self.path)		# Probably not a good hack to use, but it will do for now...
+			os.system("chimera /tmp/vol.hdf&")
+		else : print "Sorry, I don't know how to run Chimera on this platform"
+		
 	def showFilterTool(self,brws):
 		"Open in e2filtertool.py"
+		
+		os.system("e2filtertool.py %s &"%self.path)
 		
 class EMImageFileType(EMFileType):
 	"""FileType for files containing a single 2-D image"""
 
 	def __init__(self,path):
 		self.path=path			# the current path this FileType is representing
-		self.nimg=get_image_count(path)
+		self.nimg=EMUtil.get_image_count(path)
 		im0=EMData(path,0,True)
 		self.dim=(im0["nx"],im0["ny"],im0["nz"])
 		
@@ -598,8 +606,9 @@ class EMDirEntry:
 		try: stat=os.stat(self.filepath)
 		except : stat=(0,0,0,0,0,0,0,0,0)
 		
-		self.size=stat[6]		# file size (integer, bytes)
-		self.date=local_datetime(stat[8])	# modification date (string: yyyy/mm/dd hh:mm:ss)
+		if not self.isbdb : self.size=stat[6]		# file size (integer, bytes)
+		else: self.size="-"
+		self.date=local_datetime(stat[8])			# modification date (string: yyyy/mm/dd hh:mm:ss)
 
 		# These can be expensive so we only get them on request, or if they are fast 
 		self.dim=None			# dimensions (string)
@@ -611,33 +620,8 @@ class EMDirEntry:
 			self.filetype="Folder"
 			self.dim=""
 			self.nimg=""
-			self.size=0			# more convenient to show as zero
+			self.size=""
 			
-		# BDB details are already cached and can be retrieved quickly
-		elif self.isbdb:
-			self.filetype="BDB"
-			try:
-				info=db_get_image_info(self.path())
-				self.nimg=info[0]
-				if self.nimg>0:
-					if info[1][1]==1 : self.dim=str(info[1][0])
-					elif info[1][2]==1 : self.dim="%d x %d"%(info[1][0],info[1][1])
-					else : self.dim="%d x %d x %d"%(info[1][0],info[1][1],info[1][2])
-					self.size=info[1][0]*info[1][1]*info[1][2]*4*self.nimg
-				else:
-					self.dim="-"
-
-				#d=db_open_dict("bdb:%s#00image_counts"%root,True)
-				#p=d[self.name]
-				#print self.name,p,root
-				#self.nimg=p[1]1
-				#if p[2][1]==1 : self.dim=str(p[2][0])
-				#elif p[2][2]==1 : self.dim="%dx%d"%(p[2][0],p[2][1])
-				#else : self.dim="%dx%dx%d"%(p[2][0],p[2][1],p[2][2])
-			except:
-				traceback.print_exc()
-				self.nimg=-1
-				self.dim="-"
 		
 #		print "Init DirEntry ",self,self.__dict__
 		
@@ -716,6 +700,27 @@ class EMDirEntry:
 	def fillDetails(self):
 		"""Fills in the expensive metadata about this entry. Returns False if no update was necessary."""
 		if self.filetype!=None : return False		# must all ready be filled in
+		
+		# BDB details are already cached and can often be retrieved quickly
+		if self.isbdb:
+			self.filetype="BDB"
+			try:
+				info=db_get_image_info(self.path())
+				self.nimg=info[0]
+				if self.nimg>0:
+					if info[1][1]==1 : self.dim=str(info[1][0])
+					elif info[1][2]==1 : self.dim="%d x %d"%(info[1][0],info[1][1])
+					else : self.dim="%d x %d x %d"%(info[1][0],info[1][1],info[1][2])
+					self.size=info[1][0]*info[1][1]*info[1][2]*4*self.nimg
+				else:
+					self.dim="-"
+
+			except:
+				traceback.print_exc()
+				self.nimg=-1
+				self.dim="-"
+
+			return True
 		
 		# we do this this way because there are so many possible image file exensions, and sometimes
 		# people use a non-standard one (esp for MRC files)
@@ -803,7 +808,7 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 		"Returns the number of children for a given parent"
 #		if parent.column() !=0 : return 0
 
-		if parent.isValid() : 
+		if parent!=None and parent.isValid() : 
 #			print "rowCount(%s) = %d"%(str(parent),parent.internalPointer().nChildren())
 			return parent.internalPointer().nChildren()
 			
@@ -848,7 +853,7 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 		#print "EMFileItemModel.hasChildren(%d,%d,%s)"%(parent.row(),parent.column(),str(parent.internalPointer()))
 #		if parent.column()!=0 : return False
 		try: 
-			if parent.isValid():
+			if parent!=None and parent.isValid():
 				if parent.internalPointer().nChildren()>0 : return True
 				else : return False
 			return True
@@ -858,7 +863,7 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 		"Test if the specified index would exist"
 #		print "EMFileItemModel.hasIndex(%d,%d,%s)"%(row,column,parent.internalPointer())
 		try:
-			if parent.isValid(): 
+			if parent!=None and parent.isValid(): 
 				data=parent.internalPointer().child(row)
 			else: data=self.root.child(row)
 		except:
@@ -870,7 +875,7 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 		"produces a new QModelIndex for the specified item"
 #		if column==0 : print "Index :",row,column,parent.internalPointer(),
 		try:
-			if parent.isValid(): 
+			if parent!=None and parent.isValid(): 
 				data=parent.internalPointer().child(row)
 			else: 
 				data=self.root.child(row)
@@ -900,7 +905,7 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 		self.root.sort(column,order)
 #		self.emit(QtCore.SIGNAL("layoutChanged()"))
 		self.layoutChanged.emit()
-		
+	
 	def details(self,index):
 		"""This will trigger loading the (expensive) details about the specified index, and update the display"""
 		if not index.isValid(): return
@@ -1040,6 +1045,7 @@ class EMBrowserWidget(QtGui.QWidget):
 		QtCore.QObject.connect(self.wbutinfo, QtCore.SIGNAL('clicked(bool)'), self.buttonInfo)
 		QtCore.QObject.connect(self.wtree, QtCore.SIGNAL('clicked(const QModelIndex)'), self.itemSel)
 		QtCore.QObject.connect(self.wtree, QtCore.SIGNAL('activated(const QModelIndex)'), self.itemActivate)
+		QtCore.QObject.connect(self.wtree, QtCore.SIGNAL('expanded(const QModelIndex)'), self.itemExpand)
 		QtCore.QObject.connect(self.wpath, QtCore.SIGNAL('returnPressed()'), self.editPath)
 		QtCore.QObject.connect(self.wbookmarks, QtCore.SIGNAL('actionTriggered(QAction*)'), self.bookmarkPress)
 
@@ -1057,7 +1063,18 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.viewplot2d=[]
 		self.viewplot3d=[]
 
+		# These items are used to do gradually filling in of file details for better interactivity
+		self.updtimer=QTimer()		# This causes the actual display updates, which can't be done from a python thread
+		QtCore.QObject.connect(self.updtimer, QtCore.SIGNAL('timeout()'), self.updateDetailsDisplay)
+		self.updthreadexit=False		# when set, this triggers the update thread to exit
+		self.updthread=threading.Thread(target=self.updateDetails)	# The actual thread
+		self.updlist=[]				# List of QModelIndex items in need of updating
+		self.redrawlist=[]			# List of QModelIndex items in need of redisplay
+		self.expanded=set()			# We get multiple expand events for each path element, so we need to keep track of which ones we've updated
+
 		self.setPath(".")	# start in the local directory
+		self.updthread.start()
+		self.updtimer.start(300)
 
 	def busy(self):
 		"display a busy cursor"
@@ -1066,6 +1083,29 @@ class EMBrowserWidget(QtGui.QWidget):
 	def notbusy(self):
 		"normal arrow cursor"
 		QtGui.qApp.setOverrideCursor(Qt.ArrowCursor)
+
+	def updateDetails(self):
+		"""This is spawned as a thread to gradually fill in file details in the background"""
+		
+		while 1:
+			if self.updthreadexit : break
+			if len(self.updlist)==0 :
+				time.sleep(1.0)				# If there is nothing to update at the moment, we don't need to spin our wheels as much
+			else:
+				de=self.updlist.pop()
+				if de.internalPointer().fillDetails() : 
+					self.redrawlist.append(de)		# if the update changed anything, we trigger a redisplay of this entry
+					time.sleep(0.07)					# prevents updates from happening too fast and slowing the machine down
+#				print "### ",de.internalPointer().path()
+
+	def updateDetailsDisplay(self):
+		"""Since we can't do GUI updates from a thread, this is a timer event to update the display after the beckground thread
+		gets the details for each item"""
+		
+		if len(self.redrawlist)==0 : return
+		
+		# we emit a datachanged event for each item
+		for i in self.redrawlist : self.curmodel.dataChanged.emit(i,self.curmodel.createIndex(i.row(),5,i.internalPointer()))
 
 	def editPath(self):
 		"Set a new path"
@@ -1105,6 +1145,20 @@ class EMBrowserWidget(QtGui.QWidget):
 		itm=qmi.internalPointer()
 		if itm.nChildren()>0:
 			self.setPath(itm.path())
+	
+	def itemExpand(self,qmi):
+		"Called when an item is expanded"
+	
+		if qmi.internalPointer().path() in self.expanded: return
+		self.expanded.add(qmi.internalPointer().path())
+#		print "expand ",qmi.internalPointer().path()
+	
+		# Otherwise we get expand events on a single-click
+		if qmi.internalPointer().filetype!="Folder" : return
+		
+		# we add the child items to the list needing updates
+		for i in xrange(self.curmodel.rowCount(qmi)-1,-1,-1):
+			self.updlist.append(self.curmodel.index(i,0,qmi))
 
 	def buttonMisc(self,num):
 		"Misc Button press"
@@ -1139,6 +1193,8 @@ class EMBrowserWidget(QtGui.QWidget):
 	def setPath(self,path):
 		"""Sets the current root path for the browser window"""
 		
+		self.updlist=[]
+		
 		self.curpath=path
 		self.wpath.setText(path)
 
@@ -1154,7 +1210,13 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.wtree.resizeColumnToContents(0)
 		self.wtree.resizeColumnToContents(2)
 		self.wtree.resizeColumnToContents(3)
-		
+
+		self.expanded=set()
+		# we add the child items to the list needing updates
+		for i in xrange(self.curmodel.rowCount(None)-1,-1,-1):
+			self.updlist.append(self.curmodel.index(i,0,None))
+
+
 	def bookmarkPress(self,action):
 		""
 		print "Got action ",action.text(),action.data().toString()
@@ -1164,6 +1226,8 @@ class EMBrowserWidget(QtGui.QWidget):
 	
 	def closeEvent(self,event):
 		print "Exiting"
+		try: window.updthreadexit=True
+		except:pass
 		for w in self.view2d+self.view2ds+self.view3d+self.viewplot2d+self.viewplot3d:
 			w.close()
 
@@ -1177,5 +1241,8 @@ if __name__ == '__main__':
 	window = EMBrowserWidget(withmodal=True)
 		
 	window.show()
-	sys.exit(em_app.exec_())
+	ret=em_app.exec_()
+	try: window.updthreadexit=True
+	except:pass
+	sys.exit(ret)
 		

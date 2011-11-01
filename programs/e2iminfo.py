@@ -93,7 +93,7 @@ def main():
 				image_index = -1
 				
 			d=EMData()
-			try: d.read_image(imagefile, options.number, True)
+			try: d.read_image(imagefile, max(options.number,0), True)
 			except :
 				print "Image read error (%s)"%imagefile
 				continue
@@ -108,7 +108,7 @@ def main():
 			nimg=len(dct)
 			nimgs+=nimg
 			
-			d=EMData(imagefile, options.number, True)
+			d=EMData(imagefile, max(options.number,0), True)
 			if d["nz"]==1 : print "%s\t %d images in BDB format\t%d x %d"%(imagefile,len(dct),d["nx"],d["ny"])
 			else : print "%s\t %d images in BDB format\t%d x %d x %d"%(imagefile,len(dct),d["nx"],d["ny"],d["nz"])
 
