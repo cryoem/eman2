@@ -359,20 +359,16 @@ int MrcIO::read_fei_header(Dict & dict, int image_index, const Region * area, bo
 		image_index = 0;
 	}
 
-	if(area && area->get_depth() > 1) {
-		throw ImageDimensionException("FEI MRC image is 2D tile series, only 2D regional reading accepted.");
-	}
-
 	init();
 
-	check_region(area, FloatSize(feimrch.nx, feimrch.ny, feimrch.nz), is_new_file,false);
+	check_region(area, FloatSize(feimrch.nx, feimrch.ny, feimrch.nz), is_new_file, false);
 
 	int xlen = 0, ylen = 0, zlen = 0;
 	EMUtil::get_region_dims(area, feimrch.nx, &xlen, feimrch.ny, &ylen, feimrch.nz, &zlen);
 
 	dict["nx"] = xlen;
 	dict["ny"] = ylen;
-	dict["nz"] = 1;	//only read one 2D image from a tilt series
+	dict["nz"] = zlen;
 	dict["FEIMRC.nx"] = feimrch.nx;
 	dict["FEIMRC.ny"] = feimrch.ny;
 	dict["FEIMRC.nz"] = feimrch.nz;
@@ -717,26 +713,17 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool )
 
 	size_t size = 0;
 	int xlen = 0, ylen = 0, zlen = 0;
-	if(isFEI) {	//FEI extended MRC, read one 2D image from a tilt series
-		check_region(area, FloatSize(mrch.nx, mrch.ny, 1), is_new_file, false);
+	if(isFEI) {	//FEI extended MRC
+		check_region(area, FloatSize(feimrch.nx, feimrch.ny, feimrch.nz), is_new_file, false);
 		portable_fseek(mrcfile, sizeof(MrcHeader)+feimrch.next, SEEK_SET);
 
-		Region * new_area;
-		if(area) {
-			new_area = new Region(area->x_origin(), area->y_origin(), (float)image_index, area->get_width(), area->get_height(), 1.0f);
-		}
-		else {
-			new_area = new Region(0, 0, image_index, feimrch.nx, feimrch.ny, 1);
-		}
 		EMUtil::process_region_io(cdata, mrcfile, READ_ONLY,
 								  image_index, mode_size,
-								  feimrch.nx, feimrch.ny, feimrch.nz, new_area);
+								  feimrch.nx, feimrch.ny, feimrch.nz, area);
 
-		EMUtil::get_region_dims(new_area, feimrch.nx, &xlen, feimrch.ny, &ylen, feimrch.nz, &zlen);
+		EMUtil::get_region_dims(area, feimrch.nx, &xlen, feimrch.ny, &ylen, feimrch.nz, &zlen);
 
 		size = (size_t)xlen * ylen * zlen;
-
-		delete new_area;
 	}
 	else {	//regular MRC
 		check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file, false);
@@ -1270,12 +1257,7 @@ int MrcIO::get_nimg()
 {
 	init();
 
-	if(isFEI) {
-		return feimrch.nz;
-	}
-	else {
-		return 1;
-	}
+	return 1;
 }
 
 int MrcIO::transpose(float *data, int xlen, int ylen, int zlen) const
