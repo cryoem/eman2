@@ -1043,6 +1043,29 @@ def adaptive_mask(vol, nsigma = 1.0, ndilation = 3, kernel_size = 11, gauss_stan
 	for i in xrange(ndilation):   mask = dilation(mask)
 	mask = gauss_edge(mask, kernel_size, gauss_standard_dev)
 	return mask
+
+def adaptive_mask2D(img, nsigma = 1.0, ndilation = 3, kernel_size = 11, gauss_standard_dev =9):
+	"""
+		Name
+			adaptive_mask - create a mask from a given image.
+		Input
+			img: input image
+			nsigma: value for initial thresholding of the image.
+		Output
+			mask: The mask will have values one, zero, with Gaussian smooth transition between two regions.
+	"""
+	from utilities  import gauss_edge, model_circle
+	from morphology import binarize, dilation
+	nx = img.get_xsize()
+	ny = img.get_ysize()
+	mc = model_circle(nx//2, nx, ny) - model_circle(nx//3, nx, ny)
+	s1 = Util.infomask(img, mc, True)
+	mask = Util.get_biggest_cluster(binarize(img, s1[0]+s1[1]*nsigma))
+	for i in xrange(ndilation):   mask = dilation(mask)
+	#mask = gauss_edge(mask, kernel_size, gauss_standard_dev)
+	return mask
+
+
 '''
 
 def get_biggest_cluster(mg):
