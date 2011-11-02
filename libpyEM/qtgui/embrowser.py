@@ -63,7 +63,8 @@ def isprint(s):
 	return True
 
 class EMFileType:
-	"""This is an abstract base class for handling interaction with files of different type"""
+	"""This is a base class for handling interaction with files of different type. It includes a number of excution methods common to
+	several different subclasses"""
 
 	# A class dictionary keyed by EMDirEntry filetype string with value beign a single subclass of EMFileType. filetype strings are unique
 	# When you add a new EMFiletype subclass, it must be added to this dictionary to be functional
@@ -97,7 +98,150 @@ class EMFileType:
 		"""Returns a list of (name,help,callback) tuples detailing the operations the user can call on the current file.
 		callbacks will also be passed a reference to the browser object."""
 		return []
+
+	def plot2dApp(self,brws):
+		"Append self to current plot"
+		brws.busy()
+
+		data=EMData(self.path)
+
+		try: 
+			target=brws.viewplot2d[-1]
+			target.set_data(data,self.path.split("/")[-1].split("#")[-1])
+		except: 
+			target=EMPlot2DWidget()
+			brws.viewplot2d.append(target)
+			target.set_data(data,self.path.split("/")[-1].split("#")[-1])
+
+		brws.notbusy()
+		target.show()
+		target.raise_()
 		
+	def plot2dNew(self,brws):
+		"Make a new plot"
+		brws.busy()
+
+		data=EMData(self.path)
+		
+		target=EMPlot2DWidget()
+		brws.viewplot2d.append(target)
+		target.set_data(data,self.path.split("/")[-1].split("#")[-1])
+
+		brws.notbusy()
+		target.show()
+		target.raise_()
+		
+
+	def show3dApp(self,brws):
+		"Add to current 3-D window"
+		brws.busy()
+
+		data=EMDataItem3D(self.path)
+
+		try: 
+			target=brws.view3d[-1]
+		except: 
+			target=EMScene3D()
+			brws.view3d.append(target)
+
+		target.insertNewNode(self.path.split("/")[-1].split("#")[-1],data)
+		iso = EMIsosurface(data)
+		target.insertNewNode('Isosurface', iso, parentnode=data)
+		brws.notbusy()
+		target.show()
+		target.raise_()
+
+	def show3DNew(self,brws):
+		"New 3-D window"
+		brws.busy()
+
+		data=EMDataItem3D(self.path)
+
+		target=EMScene3D()
+		brws.view3ds.append(target)
+		
+		target.insertNewNode(self.path.split("/")[-1].split("#")[-1],data)
+		iso = EMIsosurface(data)
+		target.insertNewNode('Isosurface', iso, parentnode=data)
+		brws.notbusy()
+		
+		target.show()
+		target.raise_()
+		
+	def show2dStack(self,brws):
+		"A set of 2-D images together in an existing window"
+		brws.busy()
+		if self.dim[2]>1:
+			data=[]
+			for z in range(self.dim[2]):
+				data.append(EMData(self.path,0,False,Region(0,0,z,self.dim[0],self.dim[1],1)))
+		else : data=EMData.read_images(self.path)
+		
+		try: 
+			target=brws.view2ds[-1]
+			target.set_data(data)
+		except: 
+			target=EMImageMXWidget()
+			target.set_data(data)
+			brws.view2ds.append(target)
+			
+		brws.notbusy()
+		target.show()
+		target.raise_()
+		
+	def show2dStackNew(self,brws):
+		"A set of 2-D images together in a new window"
+		brws.busy()
+		if self.dim[2]>1:
+			data=[]
+			for z in range(self.dim[2]):
+				data.append(EMData(self.path,0,False,Region(0,0,z,self.dim[0],self.dim[1],1)))
+		else : data=EMData.read_images(self.path)
+		
+		target=EMImageMXWidget()
+		target.set_data(data)
+		brws.view2ds.append(target)
+
+		brws.notbusy()
+		target.show()
+		target.raise_()
+		
+	def show2dSingle(self,brws):
+		"Show a single 2-D image"
+		brws.busy()
+		if self.nimg>1 : data=EMData.read_images(self.path)
+		else : data=EMData(self.path)
+		
+		try: 
+			target=brws.view2d[-1]
+			target.set_data(data)
+		except: 
+			target=EMImage2DWidget(data)
+			brws.view2d.append(target)
+
+		brws.notbusy()
+		target.show()
+		target.raise_()
+
+	def show2dSingleNew(self,brws):
+		"Show a single 2-D image"
+		brws.busy()
+		if self.nimg>1 : data=EMData.read_images(self.path)
+		else : data=EMData(self.path)
+		
+		target=EMImage2DWidget(data)
+		brws.view2d.append(target)
+
+		brws.notbusy()
+		target.show()
+		target.raise_()
+		
+		
+	def showFilterTool(self,brws):
+		"Open in e2filtertool.py"
+		
+		os.system("e2filtertool.py %s &"%self.path)
+
 
 class EMTextFileType(EMFileType):
 	"""FileType for files containing normal ASCII text"""
@@ -336,143 +480,6 @@ class EMBdbFileType(EMFileType):
 		
 		return []
 
-	def plot2dApp(self,brws):
-		"Append self to current plot"
-		brws.busy()
-
-		data=EMData(self.path)
-
-		try: 
-			target=brws.viewplot2d[-1]
-			target.set_data(data,self.path.split("/")[-1].split("#")[-1])
-		except: 
-			target=EMPlot2DWidget()
-			brws.viewplot2d.append(target)
-			target.set_data(data,self.path.split("/")[-1].split("#")[-1])
-
-		brws.notbusy()
-		target.show()
-		target.raise_()
-		
-	def plot2dNew(self,brws):
-		"Make a new plot"
-		brws.busy()
-
-		data=EMData(self.path)
-		
-		target=EMPlot2DWidget()
-		brws.viewplot2d.append(target)
-		target.set_data(data,self.path.split("/")[-1].split("#")[-1])
-
-		brws.notbusy()
-		target.show()
-		target.raise_()
-		
-
-	def show3dApp(self,brws):
-		"Add to current 3-D window"
-		brws.busy()
-
-		data=EMDataItem3D(self.path)
-
-		try: 
-			target=brws.view3d[-1]
-		except: 
-			target=EMScene3D()
-			brws.view3d.append(target)
-
-		target.insertNewNode(self.path.split("/")[-1].split("#")[-1],data)
-		iso = EMIsosurface(data)
-		target.insertNewNode('Isosurface', iso, parentnode=data)
-		brws.notbusy()
-		target.show()
-		target.raise_()
-
-	def show3DNew(self,brws):
-		"New 3-D window"
-		brws.busy()
-
-		data=EMDataItem3D(self.path)
-
-		target=EMScene3D()
-		brws.view3ds.append(target)
-		
-		target.insertNewNode(self.path.split("/")[-1].split("#")[-1],data)
-		iso = EMIsosurface(data)
-		target.insertNewNode('Isosurface', iso, parentnode=data)
-		brws.notbusy()
-		
-		target.show()
-		target.raise_()
-		
-	def show2dStack(self,brws):
-		"A set of 2-D images together in an existing window"
-		brws.busy()
-		if self.dim[2]>1:
-			data=[]
-			for z in range(self.dim[2]):
-				data.append(EMData(self.path,0,False,Region(0,0,z,self.dim[0],self.dim[1],1)))
-		else : data=EMData.read_images(self.path)
-		
-		try: 
-			target=brws.view2ds[-1]
-			target.set_data(data)
-		except: 
-			target=EMImageMXWidget()
-			target.set_data(data)
-			brws.view2ds.append(target)
-			
-		brws.notbusy()
-		target.show()
-		target.raise_()
-		
-	def show2dStackNew(self,brws):
-		"A set of 2-D images together in a new window"
-		brws.busy()
-		if self.dim[2]>1:
-			data=[]
-			for z in range(self.dim[2]):
-				data.append(EMData(self.path,0,False,Region(0,0,z,self.dim[0],self.dim[1],1)))
-		else : data=EMData.read_images(self.path)
-		
-		target=EMImageMXWidget()
-		target.set_data(data)
-		brws.view2ds.append(target)
-
-		brws.notbusy()
-		target.show()
-		target.raise_()
-		
-	def show2dSingle(self,brws):
-		"Show a single 2-D image"
-		brws.busy()
-		if self.nimg>1 : data=EMData.read_images(self.path)
-		else : data=EMData(self.path)
-		
-		try: 
-			target=brws.view2d[-1]
-			target.set_data(data)
-		except: 
-			target=EMImage2DWidget(data)
-			brws.view2d.append(target)
-
-		brws.notbusy()
-		target.show()
-		target.raise_()
-
-	def show2dSingleNew(self,brws):
-		"Show a single 2-D image"
-		brws.busy()
-		if self.nimg>1 : data=EMData.read_images(self.path)
-		else : data=EMData(self.path)
-		
-		target=EMImage2DWidget(data)
-		brws.view2d.append(target)
-
-		brws.notbusy()
-		target.show()
-		target.raise_()
-		
 	def showChimera(self,brws):
 		"Open in Chimera"
 		
@@ -481,10 +488,6 @@ class EMBdbFileType(EMFileType):
 			os.system("chimera /tmp/vol.hdf&")
 		else : print "Sorry, I don't know how to run Chimera on this platform"
 		
-	def showFilterTool(self,brws):
-		"Open in e2filtertool.py"
-		
-		os.system("e2filtertool.py %s &"%self.path)
 		
 class EMImageFileType(EMFileType):
 	"""FileType for files containing a single 2-D image"""
@@ -508,33 +511,34 @@ class EMImageFileType(EMFileType):
 	def actions(self):
 		"Returns a list of (name,callback) tuples detailing the operations the user can call on the current file"
 		# single 3-D
-		if self.nimg==1 and self.dim[2]>1 :
+		if  self.dim[2]>1 :
 			return [("Show 3D","Add to 3D window",self.show3dApp),("Show 3D+","New 3D Window",self.show3DNew),("Show Stack","Show as set of 2-D Z slices",self.show2dStack),
 				("Show Stack+","Show all images together in a new window",self.show2dStackNew),("Show 2D","Show in a scrollable 2D image window",self.show2dSingle),
 				("Show 2D+","Show all images, one at a time in a new window",self.show2dSingleNew),("Chimera","Open in chimera (if installed)",self.showChimera),
 				("FilterTool","Open in e2filtertool.py",self.showFilterTool)]
 		# single 2-D
-		elif self.nimg==1 and self.dim[1]>1 :
+		elif  self.dim[1]>1 :
 			return [("Show 2D","Show in a 2D single image display",self.show2dSingle),("Show 2D+","Show in new 2D single image display",self.show2dSingleNew),("FilterTool","Open in e2filtertool.py",self.showFilterTool)]
 		# single 1-D
-		elif self.nimg==1:
+		else:
 			return [("Plot 2D","Add to current plot",self.plot2dApp),("Plot 2D+","Make new plot",self.plot2dNew),
 				("Show 2D","Replace in 2D single image display",self.show2dSingle),("Show 2D+","New 2D single image display",self.show2dSingleNew)]
-		# 3-D stack
-		elif self.nimg>1 and self.dim[2]>1 :
-			return [("Show 3D","Show all in a single 3D window",self.show3DNew),("Chimera","Open in chimera (if installed)",self.showChimera)]
-		# 2-D stack
-		elif self.nimg>1 and self.dim[1]>1 :
-			return [("Show Stack","Show all images together in one window",self.show2dStack),("Show Stack+","Show all images together in a new window",self.show2dStackNew),
-				("Show 2D","Show all images, one at a time in current window",self.show2dSingle),("Show 2D+","Show all images, one at a time in a new window",self.show2dSingleNew),("FilterTool","Open in e2filtertool.py",self.showFilterTool)]
-		# 1-D stack
-		elif self.nimg>0:
-			return [("Plot 2D","Plot all on a single 2-D plot",self.plot2dNew)]
 		
+	def showChimera(self,brws):
+		"Open in Chimera"
+		
+		if get_platform()=="Linux":
+			# these types are supported natively in Chimera
+			if EMUtil.get_image_type("tst.hdf") in (IMAGE_HDF,IMAGE_MRC,IMAGE_SPIDER,IMAGE_SINGLE_SPIDER):
+				os.system("chimera %s &"%self.path)
+			else :
+				os.system("e2proc3d.py %s /tmp/vol.hdf"%self.path)		# Probably not a good hack to use, but it will do for now...
+				os.system("chimera /tmp/vol.hdf&")
+		else : print "Sorry, I don't know how to run Chimera on this platform"
 		
 
 class EMStackFileType(EMFileType):
-	"""FileType for files containing a set of 2-D images"""
+	"""FileType for files containing a set of 1-3D images"""
 
 	@staticmethod
 	def name():
@@ -545,10 +549,39 @@ class EMStackFileType(EMFileType):
 		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."
 		return False
 
+	def __init__(self,path):
+		self.path=path			# the current path this FileType is representing
+		self.nimg=EMUtil.get_image_count(path)
+		im0=EMData(path,0,True)
+		self.dim=(im0["nx"],im0["ny"],im0["nz"])
+		
 	def actions(self):
 		"Returns a list of (name,callback) tuples detailing the operations the user can call on the current file"
+		# 3-D stack
+		if self.nimg>1 and self.dim[2]>1 :
+			return [("Show 3D","Show all in a single 3D window",self.show3DNew),("Chimera","Open in chimera (if installed)",self.showChimera)]
+		# 2-D stack
+		elif self.nimg>1 and self.dim[1]>1 :
+			return [("Show Stack","Show all images together in one window",self.show2dStack),("Show Stack+","Show all images together in a new window",self.show2dStackNew),
+				("Show 2D","Show all images, one at a time in current window",self.show2dSingle),("Show 2D+","Show all images, one at a time in a new window",self.show2dSingleNew),("FilterTool","Open in e2filtertool.py",self.showFilterTool)]
+		# 1-D stack
+		elif self.nimg>1:
+			return [("Plot 2D","Plot all on a single 2-D plot",self.plot2dNew)]
+		else : print "Error: stackfile with <2 images ? (%s)"%self.path
+		
 		return []
 		
+	def showChimera(self,brws):
+		"Open in Chimera"
+		
+		if get_platform()=="Linux":
+			# these types are supported natively in Chimera
+			if EMUtil.get_image_type("tst.hdf") in (IMAGE_HDF,IMAGE_MRC,IMAGE_SPIDER,IMAGE_SINGLE_SPIDER):
+				os.system("chimera %s &"%self.path)
+			else :
+				os.system("e2proc3d.py %s /tmp/vol.hdf"%self.path)		# Probably not a good hack to use, but it will do for now...
+				os.system("chimera /tmp/vol.hdf&")
+		else : print "Sorry, I don't know how to run Chimera on this platform"
 
 # These are set all together at the end rather than after each class for efficiency
 EMFileType.typesbyft = {

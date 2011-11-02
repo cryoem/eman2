@@ -610,12 +610,24 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		auto_contrast = db.get("display_stack_auto_contrast",dfl=True)
 		start_guess = db.get("display_stack_np_for_auto",dfl=20)
 		
-		d = self.data[0]
-
-	   	mean = d.get_attr("mean")
-	   	sigma = d.get_attr("sigma")
-		m0=d.get_attr("minimum")
-		m1=d.get_attr("maximum")
+			
+		mean=0
+		sigma=0
+		m0=1.0e10
+		m1=-1.0e10
+		nav=0
+		
+		stp=max(len(self.data)/32,1)
+		for i in range(1,len(self.data),stp):		# we check ~32 images randomly spaced in the set
+			d = self.data.get_image_header(i)
+			if d == None: continue
+			mean+=d["mean"]
+			nav+=1
+			sigma=max(sigma,d["sigma"])
+			m0=min(m0,d["minimum"])
+			m1=max(m1,d["maximum"])
+			
+		mean/=float(nav)
 		
 		if auto_contrast:
 			mn=max(m0,mean-3.0*sigma)
@@ -628,39 +640,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.maxden=mx
 		self.mindeng=m0
 		self.maxdeng=m1
-
-		if start_guess > len(self.data) or start_guess < 0 :start_guess = len(self.data)
-		for j in range(1,start_guess): #
-			d = self.data.get_image_header(j)
-			if d == None: continue
-			if d["nz"] !=1 :
-				self.data=None
-				if update_gl: self.updateGL()
-				return
-			try:
-				mean=d["mean"]
-				sigma=d["sigma"]
-				m0=d["minimum"]
-				m1=d["maximum"]
-			except:
-				print d
-				print "failed key"
-			
-			if sigma == 0: continue
-
-
-			if auto_contrast:
-				mn=max(m0,mean-3.0*sigma)
-				mx=min(m1,mean+3.0*sigma)
-			else:
-				mn=m0
-				mx=m1
-		
-			
-			self.minden=min(self.minden,mn)
-			self.maxden=max(self.maxden,mx)
-			self.mindeng=min(self.mindeng,m0)
-			self.maxdeng=max(self.maxdeng,m1)
 
 		if self.inspector: self.inspector.set_limits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 		
@@ -1562,9 +1541,9 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 				
 				data = []
 				idxs = d["class_ptcl_idxs"]
-				#try: 
-				idxse = d["exc_class_ptcl_idxs"]
-				#except: idxse = []
+				try: 
+					idxse = d["exc_class_ptcl_idxs"]
+				except: idxse = []
 				name = d["class_ptcl_src"]
 				progress = QtGui.QProgressDialog("Reading images from %s" %get_file_tag(name), "Cancel", 0, len(idxs)+len(idxse),None)
 				progress.show()
