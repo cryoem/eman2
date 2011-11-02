@@ -5448,9 +5448,9 @@ EMData *Util::pad(EMData* img,int new_nx, int new_ny, int new_nz, int x_offset, 
 	if(new_nx<nx || new_ny<ny || new_nz<nz)
 		throw ImageDimensionException("The size of the padded image cannot be lower than the input image size.");
 	if((new_nx/2)-(nx/2)+x_offset<0 || (new_ny/2)-(ny/2)+y_offset<0 || (new_nz/2)-(nz/2)+z_offset<0)
-		throw ImageDimensionException("The offset imconsistent with the input image size. Solution: Change the offset parameters");
+		throw ImageDimensionException("The offset inconsistent with the input image size. Solution: Change the offset parameters");
 	if(x_offset>((new_nx-(new_nx/2))-(nx-(nx/2))) || y_offset>((new_ny-(new_ny/2))-(ny-(ny/2))) || z_offset>((new_nz-(new_nz/2))-(nz-(nz/2))))
-		throw ImageDimensionException("The offset imconsistent with the input image size. Solution: Change the offset parameters");
+		throw ImageDimensionException("The offset inconsistent with the input image size. Solution: Change the offset parameters");
 	/* ============================== */
 
 	EMData* pading = img->copy_head();
