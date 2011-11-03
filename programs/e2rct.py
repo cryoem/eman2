@@ -58,7 +58,7 @@ def main():
 	parser.add_argument("--stagetilt",type=float,default=0,help="Amount of tiliting of the cryo stage, default=0, get the stage tilt from particle attributes. Only possible if e2RCTboxer was used for particle picking", guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--careject",type=str,default=None, help="class averages to reject, default=None", guitype='strbox', row=5, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--minproj",type=int,default=1,help="Minimum number of projections/images in a class average, for a class average to be used for a reconstruction, default=auto", guitype='intbox', row=5, col=1, rowspan=1, colspan=1)
-	parser.add_argument("--align", action="store_true", help="Switch on image alignment.",default=False, guitype='boolbox', row=6, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--align", action="store_true", help="Switch on image alignment. This is only translational alignment for the tilted images, and uses a iterative method similar to EMAN1 centalignint",default=False, guitype='boolbox', row=6, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--tiltaxis", action="store_true", help="Do a tiltaxis correction(Takes into account variations in tilt axis from micrograph to micrograph. Only possible if e2RCTboxer was used for particle picking",default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--maxshift",type=int,help="Maximun amount to shift the images during alignment", default=2, guitype='intbox', row=6, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--process",metavar="processor_name(param1=value1:param2=value2)",type=str,default=None,action="append",help="process RCT recons. Usually used to filter RCTS")

@@ -89,6 +89,24 @@ class EMCube(EMItem3D):
 		if not self.item_inspector: self.item_inspector = EMInspectorControlShape("CUBE", self)
 		return self.item_inspector
 	
+	def getItemDictionary(self):
+		"""
+		Return a dictionary of item parameters (used for restoring sessions
+		"""
+		dictionary = super(EMCube, self).getItemDictionary()
+		dictionary.update({"COLOR":[self.ambient, self.diffuse, self.specular, self.shininess]})
+		return dictionary
+	
+	def setUsingDictionary(self, dictionary):
+		"""
+		Set item attributes using a dictionary, used in session restoration
+		"""
+		super(EMCube, self).setUsingDictionary(dictionary)
+		self.setAmbientColor(dictionary["COLOR"][0][0], dictionary["COLOR"][0][1], dictionary["COLOR"][0][2], dictionary["COLOR"][0][3])
+		self.setDiffuseColor(dictionary["COLOR"][1][0], dictionary["COLOR"][1][1], dictionary["COLOR"][1][2], dictionary["COLOR"][1][3])
+		self.setSpecularColor(dictionary["COLOR"][2][0], dictionary["COLOR"][2][1], dictionary["COLOR"][2][2], dictionary["COLOR"][2][3])
+		self.setShininess(dictionary["COLOR"][3])
+		
 	def renderNode(self):
 		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded(): # No need to draw outline in selection mode
 			'''
@@ -214,7 +232,25 @@ class EMSphere(EMItem3D):
 		"""
 		if not self.item_inspector: self.item_inspector = EMInspectorControlShape("SPHERE", self)
 		return self.item_inspector
+		
+	def getItemDictionary(self):
+		"""
+		Return a dictionary of item parameters (used for restoring sessions
+		"""
+		dictionary = super(EMSphere, self).getItemDictionary()
+		dictionary.update({"COLOR":[self.ambient, self.diffuse, self.specular, self.shininess]})
+		return dictionary
 	
+	def setUsingDictionary(self, dictionary):
+		"""
+		Set item attributes using a dictionary, used in session restoration
+		"""
+		super(EMSphere, self).setUsingDictionary(dictionary)
+		self.setAmbientColor(dictionary["COLOR"][0][0], dictionary["COLOR"][0][1], dictionary["COLOR"][0][2], dictionary["COLOR"][0][3])
+		self.setDiffuseColor(dictionary["COLOR"][1][0], dictionary["COLOR"][1][1], dictionary["COLOR"][1][2], dictionary["COLOR"][1][3])
+		self.setSpecularColor(dictionary["COLOR"][2][0], dictionary["COLOR"][2][1], dictionary["COLOR"][2][2], dictionary["COLOR"][2][3])
+		self.setShininess(dictionary["COLOR"][3])
+		
 	def renderNode(self):
 		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded():
 			glPushAttrib( GL_ALL_ATTRIB_BITS )
@@ -297,7 +333,25 @@ class EMCylinder(EMItem3D):
 		"""
 		if not self.item_inspector: self.item_inspector = EMInspectorControlShape("CYLINDER", self)
 		return self.item_inspector
+		
+	def getItemDictionary(self):
+		"""
+		Return a dictionary of item parameters (used for restoring sessions
+		"""
+		dictionary = super(EMCylinder, self).getItemDictionary()
+		dictionary.update({"COLOR":[self.ambient, self.diffuse, self.specular, self.shininess]})
+		return dictionary
 	
+	def setUsingDictionary(self, dictionary):
+		"""
+		Set item attributes using a dictionary, used in session restoration
+		"""
+		super(EMCylinder, self).setUsingDictionary(dictionary)
+		self.setAmbientColor(dictionary["COLOR"][0][0], dictionary["COLOR"][0][1], dictionary["COLOR"][0][2], dictionary["COLOR"][0][3])
+		self.setDiffuseColor(dictionary["COLOR"][1][0], dictionary["COLOR"][1][1], dictionary["COLOR"][1][2], dictionary["COLOR"][1][3])
+		self.setSpecularColor(dictionary["COLOR"][2][0], dictionary["COLOR"][2][1], dictionary["COLOR"][2][2], dictionary["COLOR"][2][3])
+		self.setShininess(dictionary["COLOR"][3])
+		
 	def renderNode(self):
 		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded():
 			glPushAttrib( GL_ALL_ATTRIB_BITS )
@@ -437,7 +491,34 @@ class EMLine(EMItem3D):
 		"""
 		if not self.item_inspector: self.item_inspector = EMInspectorControlLine("LINE", self)
 		return self.item_inspector
-	
+		
+	def getItemDictionary(self):
+		"""
+		Return a dictionary of item parameters (used for restoring sessions
+		"""
+		dictionary = super(EMLine, self).getItemDictionary()
+		dictionary.update({"LINEPARS":[self.leftArrowSize, self.leftArrowLength, self.showLeftArrow, self.rightArrowSize, self.rightArrowLength, self.showRightArrow, self.slices, self.stacks, self.width],"COLOR":[self.ambient, self.diffuse, self.specular, self.shininess]})
+		return dictionary
+		
+	def setUsingDictionary(self, dictionary):
+		"""
+		Set item attributes using a dictionary, used in session restoration
+		"""
+		super(EMLine, self).setUsingDictionary(dictionary)
+		self.setAmbientColor(dictionary["COLOR"][0][0], dictionary["COLOR"][0][1], dictionary["COLOR"][0][2], dictionary["COLOR"][0][3])
+		self.setDiffuseColor(dictionary["COLOR"][1][0], dictionary["COLOR"][1][1], dictionary["COLOR"][1][2], dictionary["COLOR"][1][3])
+		self.setSpecularColor(dictionary["COLOR"][2][0], dictionary["COLOR"][2][1], dictionary["COLOR"][2][2], dictionary["COLOR"][2][3])
+		self.setShininess(dictionary["COLOR"][3])
+		self.leftArrowSize = dictionary["LINEPARS"][0]
+		self.leftArrowLength = dictionary["LINEPARS"][1]
+		self.showLeftArrow = dictionary["LINEPARS"][2]
+		self.rightArrowSize = dictionary["LINEPARS"][3]
+		self.rightArrowLength = dictionary["LINEPARS"][4]
+		self.showRightArrow = dictionary["LINEPARS"][5]
+		self.setSlices(dictionary["LINEPARS"][6])
+		self.setStacks(dictionary["LINEPARS"][7])
+		self.setWidth(dictionary["LINEPARS"][8])
+		
 	def renderNode(self):
 		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded():
 			glPushAttrib( GL_ALL_ATTRIB_BITS )
@@ -558,7 +639,25 @@ class EMCone(EMItem3D):
 		"""
 		if not self.item_inspector: self.item_inspector = EMInspectorControlShape("CONE", self)
 		return self.item_inspector
+		
+	def getItemDictionary(self):
+		"""
+		Return a dictionary of item parameters (used for restoring sessions
+		"""
+		dictionary = super(EMCone, self).getItemDictionary()
+		dictionary.update({"COLOR":[self.ambient, self.diffuse, self.specular, self.shininess]})
+		return dictionary
 	
+	def setUsingDictionary(self, dictionary):
+		"""
+		Set item attributes using a dictionary, used in session restoration
+		"""
+		super(EMCone, self).setUsingDictionary(dictionary)
+		self.setAmbientColor(dictionary["COLOR"][0][0], dictionary["COLOR"][0][1], dictionary["COLOR"][0][2], dictionary["COLOR"][0][3])
+		self.setDiffuseColor(dictionary["COLOR"][1][0], dictionary["COLOR"][1][1], dictionary["COLOR"][1][2], dictionary["COLOR"][1][3])
+		self.setSpecularColor(dictionary["COLOR"][2][0], dictionary["COLOR"][2][1], dictionary["COLOR"][2][2], dictionary["COLOR"][2][3])
+		self.setShininess(dictionary["COLOR"][3])
+		
 	def renderNode(self):
 		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded():
 			glPushAttrib( GL_ALL_ATTRIB_BITS )
@@ -671,7 +770,25 @@ class EM3DText(EMItem3D):
 		"""
 		if not self.item_inspector: self.item_inspector = EMInspectorControl3DText("3DText", self)
 		return self.item_inspector
+		
+	def getItemDictionary(self):
+		"""
+		Return a dictionary of item parameters (used for restoring sessions
+		"""
+		dictionary = super(EM3DText, self).getItemDictionary()
+		dictionary.update({"COLOR":[self.ambient, self.diffuse, self.specular, self.shininess]})
+		return dictionary
 	
+	def setUsingDictionary(self, dictionary):
+		"""
+		Set item attributes using a dictionary, used in session restoration
+		"""
+		super(EM3DText, self).setUsingDictionary(dictionary)
+		self.setAmbientColor(dictionary["COLOR"][0][0], dictionary["COLOR"][0][1], dictionary["COLOR"][0][2], dictionary["COLOR"][0][3])
+		self.setDiffuseColor(dictionary["COLOR"][1][0], dictionary["COLOR"][1][1], dictionary["COLOR"][1][2], dictionary["COLOR"][1][3])
+		self.setSpecularColor(dictionary["COLOR"][2][0], dictionary["COLOR"][2][1], dictionary["COLOR"][2][2], dictionary["COLOR"][2][3])
+		self.setShininess(dictionary["COLOR"][3])
+		
 	def renderNode(self):
 		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded():
 			glPushAttrib( GL_ALL_ATTRIB_BITS )

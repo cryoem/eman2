@@ -953,10 +953,10 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.first_y = self.previous_y
 		# Process mouse events
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "app"):
-			self.setCursor(self.appcursor)
+			QtGui.qApp.setOverrideCursor(self.appcursor)
 			self.emit(QtCore.SIGNAL("sgmousepress()"), [event.x(), event.y()])
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "data"):
-			self.setCursor(self.datacursor)
+			QtGui.qApp.setOverrideCursor(self.datacursor)
 			filename = QtGui.QFileDialog.getOpenFileName(self, 'Get file', os.getcwd())
 			if not filename: return
 			name = os.path.basename(str(filename))
@@ -969,50 +969,50 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.insertNewNode("Isosurface", self.isonode, parentnode=self.newnode)
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "text"):
-			self.setCursor(self.textcursor)
+			QtGui.qApp.setOverrideCursor(self.textcursor)
 			text, ok = QtGui.QInputDialog.getText(self, 'Enter Text', '')
 			if ok:
 				self.newnode = EM3DText(str(text), 32.0, transform=self._gettransformbasedonscreen(event))
 				self._insert_shape(text, self.newnode)
 				self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "line"):
-			self.setCursor(self.linecursor)
+			QtGui.qApp.setOverrideCursor(self.linecursor)
 			self.newnode = EMLine(0.0, 0.0, 0.0, 2.0, 2.0, 0.0, 20.0, transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Line", self.newnode)
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cube"):
-			self.setCursor(self.cubecursor)
+			QtGui.qApp.setOverrideCursor(self.cubecursor)
 			self.newnode = EMCube(2.0, transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Cube", self.newnode)
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "sphere"):
-			self.setCursor(self.spherecursor)
+			QtGui.qApp.setOverrideCursor(self.spherecursor)
 			self.newnode = EMSphere(2.0, transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Sphere", self.newnode)
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cylinder"):
-			self.setCursor(self.cylindercursor)
+			QtGui.qApp.setOverrideCursor(self.cylindercursor)
 			self.newnode = EMCylinder(2.0,2.0, transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Cylinder", self.newnode)
 			self.newnode.updateMatrices([90,1,0,0], "rotate")
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cone"):
-			self.setCursor(self.conecursor)
+			QtGui.qApp.setOverrideCursor(self.conecursor)
 			self.newnode = EMCone(2.0,2.0, transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Cone", self.newnode)
 			self.newnode.updateMatrices([90,1,0,0], "rotate")
 			self.updateSG()	
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "rotate"):
 			if  event.y() > 0.95*self.size().height(): # The lowest 5% of the screen is reserved from the Z spin virtual slider
-				self.setCursor(self.zrotatecursor)
+				QtGui.qApp.setOverrideCursor(self.zrotatecursor)
 				self.zrotate = True
 			else:
-				self.setCursor(self.xyrotatecursor)
+				QtGui.qApp.setOverrideCursor(self.xyrotatecursor)
 				self.zrotate = False
 		if event.buttons()&Qt.LeftButton and self.mousemode == "scale":
-			self.setCursor(self.scalecursor)
+			QtGui.qApp.setOverrideCursor(self.scalecursor)
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "selection"): 
-			#self.setCursor(self.selectorcursor)
+			#QtGui.qApp.setOverrideCursor(self.selectorcursor)
 			self.multiselect = False
 			self.appendselection = False
 			self.toggleselection = False
@@ -1025,7 +1025,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.pickItem()
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "multiselection"):
-			#self.setCursor(self.selectorcursor)
+			#QtGui.qApp.setOverrideCursor(self.selectorcursor)
 			self.multiselect = True
 			self.appendselection = False
 			self.toggleselection = False
@@ -1033,9 +1033,9 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			if event.modifiers()&Qt.ShiftModifier:
 				self.appendselection = True
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "ztranslate"):
-			self.setCursor(self.zhaircursor)
+			QtGui.qApp.setOverrideCursor(self.zhaircursor)
 		if event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and self.mousemode == "xytranslate"):
-			self.setCursor(self.crosshaircursor)
+			QtGui.qApp.setOverrideCursor(self.crosshaircursor)
 		if event.buttons()&Qt.MidButton or (event.buttons()&Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.showInspector()
 	
@@ -1105,7 +1105,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "app"):
 			self.emit(QtCore.SIGNAL("sgmouserelease()"), [event.x(), event.y()])
 			
-		self.setCursor(Qt.ArrowCursor)
+		QtGui.qApp.setOverrideCursor(Qt.ArrowCursor)
 		# Select using the selection box
 		if self.toggle_render_selectedarea:
 			self.pickItem()
@@ -1406,64 +1406,19 @@ class EMScene3D(EMItem3D, EMGLWidget):
 				if line[0]["NODETYPE"] == "DataChild": # Data child need to have a parent set
 					item3dobject.setParent(self.parentnodestack[-1:][0])
 					item3dobject.dataChanged()
-				self._constructitem3d(line[0], item3dobject)
+				item3dobject.setUsingDictionary(line[0])
+				self.parentnodestack[-1:][0].addChild(item3dobject)
 
 		else:
 			# These nodes have children to process
 			if line["CONSTRUCTOR"] != "SG": 
 				item3dobject = eval(line["CONSTRUCTOR"])
-				self._constructitem3d(line, item3dobject)
+				item3dobject.setUsingDictionary(line)
+				self.parentnodestack[-1:][0].addChild(item3dobject)
 				self.parentnodestack.append(item3dobject)
 			else:
 				# This is the SG, so treat special
-				self.setTransform(Transform(line["TRANSFORMATION"]))
-				self.setVisibleItem(line["VISIBLE"])
-				self.setSelectedItem(line["SELECTED"])
-				# Set up the light
-				self.firstlight.setAmbient(line["AMBIENTLIGHT"][0],line["AMBIENTLIGHT"][1],line["AMBIENTLIGHT"][2],line["AMBIENTLIGHT"][3])
-				self.firstlight.setAngularPosition(line["ANGULARLIGHTPOSITION"][0], line["ANGULARLIGHTPOSITION"][1])
-				# Set up the Camera
-				self.camera.setClipNear(line["CAMERACLIP"][0])
-				self.camera.setClipFar(line["CAMERACLIP"][1])
-				if line["CAMERAPM"]: 
-					self.camera.useOrtho(self.camera.getZclip(disregardvv=True))
-				else:
-					objectsize = 50
-					self.camera.usePrespective(objectsize, 0.25, 60.0)
-				self.cameraNeedsanUpdate()
-				# Set up the utils
-				self.setClearColor(line["CLEARCOLOR"][0],line["CLEARCOLOR"][1],line["CLEARCOLOR"][2])
-			
-	def _constructitem3d(self, datadict, item3dobject):
-		"""
-		Helper function for _process_session_load
-		"""
-		if datadict.has_key("TRANSFORMATION"):
-			item3dobject.setTransform(Transform(datadict["TRANSFORMATION"]))
-		if datadict.has_key("COLOR"):
-			item3dobject.setAmbientColor(datadict["COLOR"][0][0], datadict["COLOR"][0][1], datadict["COLOR"][0][2], datadict["COLOR"][0][3])
-			item3dobject.setDiffuseColor(datadict["COLOR"][1][0], datadict["COLOR"][1][1], datadict["COLOR"][1][2], datadict["COLOR"][1][3])
-			item3dobject.setSpecularColor(datadict["COLOR"][2][0], datadict["COLOR"][2][1], datadict["COLOR"][2][2], datadict["COLOR"][2][3])
-			item3dobject.setShininess(datadict["COLOR"][3])
-		if datadict.has_key("ISOPARS"):
-			item3dobject.wire = datadict["ISOPARS"][0]
-			item3dobject.cullbackfaces = datadict["ISOPARS"][0]
-			item3dobject.cullbackfaces = datadict["ISOPARS"][1]
-			item3dobject.setThreshold(datadict["ISOPARS"][2])
-		if datadict.has_key("LINEPARS"):
-			item3dobject.leftArrowSize = datadict["LINEPARS"][0]
-			item3dobject.leftArrowLength = datadict["LINEPARS"][1]
-			item3dobject.showLeftArrow = datadict["LINEPARS"][2]
-			item3dobject.rightArrowSize = datadict["LINEPARS"][3]
-			item3dobject.rightArrowLength = datadict["LINEPARS"][4]
-			item3dobject.showRightArrow = datadict["LINEPARS"][5]
-			item3dobject.setSlices(datadict["LINEPARS"][6])
-			item3dobject.setStacks(datadict["LINEPARS"][7])
-			item3dobject.setWidth(datadict["LINEPARS"][8])
-		item3dobject.setVisibleItem(datadict["VISIBLE"])
-		item3dobject.setSelectedItem(datadict["SELECTED"])
-		self.parentnodestack[-1:][0].addChild(item3dobject)
-		item3dobject.setLabel(datadict["NAME"])
+				self.setUsingDictionary(line)
 	
 	def saveSession(self, filename):
 		"""
@@ -1478,35 +1433,47 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		
 	def getTreeAsList(self, item):
 		"""
-		Returns the SG as a list along with all metadata. Used for saving a session
+		Returns the SG as a list of lists along with all metadata. Used for saving a session
 		item is the item you want to start at.
-		This is a recursive function
+		This is a recursive function.
 		@param item, the emItem that you want to transverse (grabs its subtree)
 		"""
 		childlist = []
-		dictionary = {"CONSTRUCTOR":item.getEvalString(),"NAME":str(item.getLabel()),"VISIBLE":item.isVisibleItem(),"SELECTED":item.isSelectedItem(),"NODETYPE":item.nodetype}
-		if item.getTransform(): dictionary["TRANSFORMATION"] = item.getTransform().get_params("eman")
-		# Process specific node types
-		if item.nodetype == "ShapeNode" or item.nodetype == "DataChild":
-			dictionary["COLOR"] = [item.ambient, item.diffuse, item.specular, item.shininess]
-		if item.name == "Isosurface": dictionary["ISOPARS"] = [item.wire, item.cullbackfaces, item.isothr]
-		if item.name == "Line": dictionary["LINEPARS"] = [item.leftArrowSize, item.leftArrowLength, item.showLeftArrow, item.rightArrowSize, item.rightArrowLength, item.showRightArrow, item.slices, item.stacks, item.width] 
-		
-		# Process a SceneGraph if needed
-		if item.getEvalString() == "SG":	
-			dictionary["AMBIENTLIGHT"] = self.firstlight.getAmbient()
-			dictionary["ANGULARLIGHTPOSITION"] = self.firstlight.getAngularPosition()
-			dictionary["CAMERACLIP"] = [self.camera.getClipNear(), self.camera.getClipFar()]
-			dictionary["CAMERAPM"] = self.camera.getUseOrtho()
-			dictionary["CLEARCOLOR"] = self.getClearColor()
-			
 		# Now do the recursion to build tree
-		childlist.append(dictionary)
+		childlist.append(item.getItemDictionary()) # This gets a data dictionary of attributes pertaining to each item
 		for ichild in item.getChildren():
 			ichildlist = self.getTreeAsList(ichild)
 			childlist.append(ichildlist)
 		
 		return childlist
+	
+	def getItemDictionary(self):
+		"""
+		Return a dictionary of item parameters (used for restoring sessions
+		"""
+		dictionary = super(EMScene3D, self).getItemDictionary()
+		dictionary.update({"AMBIENTLIGHT":self.firstlight.getAmbient(),"ANGULARLIGHTPOSITION":self.firstlight.getAngularPosition(),"CAMERACLIP":[self.camera.getClipNear(), self.camera.getClipFar()],"CAMERAPM":self.camera.getUseOrtho(),"CLEARCOLOR":self.getClearColor()})
+		return dictionary
+	
+	def setUsingDictionary(self, dictionary):
+		"""
+		Set item attributes using a dictionary, used in session restoration
+		"""
+		super(EMScene3D, self).setUsingDictionary(dictionary)
+		# Set up the light
+		self.firstlight.setAmbient(dictionary["AMBIENTLIGHT"][0],dictionary["AMBIENTLIGHT"][1],dictionary["AMBIENTLIGHT"][2],dictionary["AMBIENTLIGHT"][3])
+		self.firstlight.setAngularPosition(dictionary["ANGULARLIGHTPOSITION"][0], dictionary["ANGULARLIGHTPOSITION"][1])
+		# Set up the Camera
+		self.camera.setClipNear(dictionary["CAMERACLIP"][0])
+		self.camera.setClipFar(dictionary["CAMERACLIP"][1])
+		if dictionary["CAMERAPM"]: 
+			self.camera.useOrtho(self.camera.getZclip(disregardvv=True))
+		else:
+			objectsize = 50
+			self.camera.usePrespective(objectsize, 0.25, 60.0)
+		self.cameraNeedsanUpdate()
+		# Set up the utils
+		self.setClearColor(dictionary["CLEARCOLOR"][0],dictionary["CLEARCOLOR"][1],dictionary["CLEARCOLOR"][2])
 		
 	def cameraNeedsanUpdate(self):
 		"""

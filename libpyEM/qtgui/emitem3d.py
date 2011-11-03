@@ -367,7 +367,22 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		#        instead, the calling function would get a list of all selected nodes, and apply transformations to each
 		for child in self.children:
 			child.updateMatrices(params, xformtype) #Note: the transformation is only applied to SELECTED nodes
-			
+	
+	def getItemDictionary(self):
+		"""
+		Return a dictionary of item parameters (used for restoring sessions
+		"""
+		return {"TRANSFORMATION":self.transform.get_params("eman"),"CONSTRUCTOR":self.getEvalString(),"NAME":str(self.getLabel()),"VISIBLE":self.isVisibleItem(),"SELECTED":self.isSelectedItem(),"NODETYPE":self.nodetype}
+	
+	def setUsingDictionary(self, dictionary):
+		"""
+		Set item attributes using a dictionary, used in session restoration
+		"""
+		self.setTransform(Transform(dictionary["TRANSFORMATION"]))
+		self.setVisibleItem(dictionary["VISIBLE"])
+		self.setSelectedItem(dictionary["SELECTED"])
+		self.setLabel(dictionary["NAME"])
+		
 	def render(self):
 		"""
 		This is the method to call to render the node and its child nodes. 

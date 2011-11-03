@@ -70,9 +70,21 @@ class EMDataItem3D(EMItem3D):
 				child.dataChanged()
 			except:
 				pass
-		self.boundingboxsize = "%dx%dx%d\tApix: %5.2f"%(self.getBoundingBoxDimensions()[0],self.getBoundingBoxDimensions()[1],self.getBoundingBoxDimensions()[2],round(data['apix_x'],3))
+		
+		# Get header info, get Apix info if this is available
+		try:
+			self.boundingboxsize = "%dx%dx%d\tApix: %5.2f"%(self.getBoundingBoxDimensions()[0],self.getBoundingBoxDimensions()[1],self.getBoundingBoxDimensions()[2],round(data['apix_x'],3))
+		except:
+			self.boundingboxsize = "%dx%dx%d"%(self.getBoundingBoxDimensions()[0],self.getBoundingBoxDimensions()[1],self.getBoundingBoxDimensions()[2])
+		
 		if self.item_inspector: self.item_inspector.updateMetaData()
 
+	def getItemDictionary(self):
+		"""
+		Return a dictionary of item parameters (used for restoring sessions
+		"""
+		return super(EMDataItem3D, self).getItemDictionary()
+		
 	def renderNode(self):
 		if self.renderBoundingBox: drawBoundingBox(*self.getBoundingBoxDimensions())
 	
@@ -227,6 +239,23 @@ class EMSliceItem3D(EMItem3D):
 			self.item_inspector = EMSliceInspector("SLICE", self)
 		return self.item_inspector
 
+	def getItemDictionary(self):
+		"""
+		Return a dictionary of item parameters (used for restoring sessions
+		"""
+		dictionary = super(EMSliceItem3D, self).getItemDictionary()
+		dictionary.update({"COLOR":[self.ambient, self.diffuse, self.specular, self.shininess]})
+		return dictionary
+	
+	def setUsingDictionary(self, dictionary):
+		"""
+		Set item attributes using a dictionary, used in session restoration
+		"""
+		super(EMSliceItem3D, self).setUsingDictionary(dictionary)
+		self.setAmbientColor(dictionary["COLOR"][0][0], dictionary["COLOR"][0][1], dictionary["COLOR"][0][2], dictionary["COLOR"][0][3])
+		self.setDiffuseColor(dictionary["COLOR"][1][0], dictionary["COLOR"][1][1], dictionary["COLOR"][1][2], dictionary["COLOR"][1][3])
+		self.setSpecularColor(dictionary["COLOR"][2][0], dictionary["COLOR"][2][1], dictionary["COLOR"][2][2], dictionary["COLOR"][2][3])
+		
 	def renderNode(self):
 		data = self.getParent().getData()
 		
@@ -522,6 +551,23 @@ class EMVolumeItem3D(EMItem3D):
 			self.item_inspector = EMVolumeInspector("VOLUME", self)
 		return self.item_inspector
 
+	def getItemDictionary(self):
+		"""
+		Return a dictionary of item parameters (used for restoring sessions
+		"""
+		dictionary = super(EMVolumeItem3D, self).getItemDictionary()
+		dictionary.update({"COLOR":[self.ambient, self.diffuse, self.specular, self.shininess]})
+		return dictionary
+	
+	def setUsingDictionary(self, dictionary):
+		"""
+		Set item attributes using a dictionary, used in session restoration
+		"""
+		super(EMVolumeItem3D, self).setUsingDictionary(dictionary)
+		self.setAmbientColor(dictionary["COLOR"][0][0], dictionary["COLOR"][0][1], dictionary["COLOR"][0][2], dictionary["COLOR"][0][3])
+		self.setDiffuseColor(dictionary["COLOR"][1][0], dictionary["COLOR"][1][1], dictionary["COLOR"][1][2], dictionary["COLOR"][1][3])
+		self.setSpecularColor(dictionary["COLOR"][2][0], dictionary["COLOR"][2][1], dictionary["COLOR"][2][2], dictionary["COLOR"][2][3])
+		
 	def gen3DTexture(self):
 		"""
 		Creates 3D texture if none exists. Returns the number that identifies the current texture.
@@ -868,6 +914,27 @@ class EMIsosurface(EMItem3D):
 			self.item_inspector = EMIsosurfaceInspector("ISOSURFACE", self)
 		return self.item_inspector
 	
+	def getItemDictionary(self):
+		"""
+		Return a dictionary of item parameters (used for restoring sessions
+		"""
+		dictionary = super(EMIsosurface, self).getItemDictionary()
+		dictionary.update({"ISOPARS":[self.wire, self.cullbackfaces, self.isothr],"COLOR":[self.ambient, self.diffuse, self.specular, self.shininess]})
+		return dictionary
+		
+	def setUsingDictionary(self, dictionary):
+		"""
+		Set item attributes using a dictionary, used in session restoration
+		"""
+		super(EMIsosurface, self).setUsingDictionary(dictionary)
+		self.setAmbientColor(dictionary["COLOR"][0][0], dictionary["COLOR"][0][1], dictionary["COLOR"][0][2], dictionary["COLOR"][0][3])
+		self.setDiffuseColor(dictionary["COLOR"][1][0], dictionary["COLOR"][1][1], dictionary["COLOR"][1][2], dictionary["COLOR"][1][3])
+		self.setSpecularColor(dictionary["COLOR"][2][0], dictionary["COLOR"][2][1], dictionary["COLOR"][2][2], dictionary["COLOR"][2][3])
+		self.setShininess(dictionary["COLOR"][3])
+		self.wire = dictionary["ISOPARS"][0]
+		self.cullbackfaces = dictionary["ISOPARS"][1]
+		self.setThreshold(dictionary["ISOPARS"][2])
+		
 	def getBoundingBoxDimensions(self):
 		return self.getParent().getBoundingBoxDimensions()
 	

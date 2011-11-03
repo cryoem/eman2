@@ -71,6 +71,8 @@ def main():
 	parser.add_argument("--maxtiltangle", type=float, help="Maximum tiltangle permitted when finding tilt distances", default=180.0, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="analysis")
 	parser.add_argument("--gui",action="store_true",help="Start the GUI for viewing the tiltvalidate plots",default=False, guidefault=True, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode="gui")
 	parser.add_argument("--radcut", type = float, default=-1, help="For use in the GUI, truncate the polar plot after R. -1 = no truncation", guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="gui")
+	parser.add_argument("--quaternion",action="store_true",help="Use Quaterions for tilt distance computation",default=False)
+	parser.add_argument("--eulerfile",type=str,help="Euler angles file, to create tiltdistance from pre-aligned particles. Format is: imgnum, name, az, alt, phi",default=None)
 	# options associated with e2projector3d.py
 	parser.add_header(name="projheader", help='Options below this label are specific to e2project', title="### e2project options ###", row=9, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_argument("--delta", type=float,help="The angular step size for alingment", default=20.0, guitype='floatbox', row=10, col=0, rowspan=1, colspan=1, mode="analysis")
@@ -94,15 +96,15 @@ def main():
 		display_validation_plots(options.path, options.radcut, options.planethres)
 		exit(0)
 		
-	if not options.volume:
+	if not (options.volume or options.eulerfile):
 		print "Error a volume to validate must be presented"
 		exit(1)
 		
-	if not options.tiltdata:
+	if not (options.tiltdata or options.eulerfile):
 		print "Error a stack of tilted images must be presented"
 		exit(1)
 		
-	if not options.untiltdata:
+	if not (options.untiltdata or options.eulerfile):
 		print "Error a stack of untiled images must be presented"
 		exit(1)
 	
@@ -111,12 +113,30 @@ def main():
 	options.cmp=parsemodopt(options.cmp)
 	options.align=parsemodopt(options.align)
 	
-	#Read in the images
-	tiltimgs = EMData.read_images(options.tiltdata)
-	untiltimgs = EMData.read_images(options.untiltdata)
-	if len(tiltimgs) != len(untiltimgs):
-		print "The untilted image stack is not the same lenght as the tilted stack!!!"
-		exit(1)
+	# Make a new dir for each run
+	if not options.path : options.path=numbered_path("TiltValidate",True)
+	
+	#Make tilt distance generator
+	tiltgenerator = ComputeTilts(options)
+	
+	# Compute tilt distances from file if desired. 
+	if options.eulerfile:
+		# Format is:
+		# untilt_imgnum name az alt phi
+		# tilt_imgnum name az alt phi
+		eulerfile = open(options.eulerfile,"r")
+		eulers = eulerfile.readlines()
+		eulerfile.close()
+		untilteulerlist = []
+		tilteulerlist = []
+		for i, euler in enumerate(eulers):
+			fields = euler.split()
+			if i % 2:
+				tilteulerlist.append({'alt':float(fields[2]),'az':float(fields[3]),'phi':float(fields[4])})
+			else:
+				untilteulerlist.append({'alt':float(fields[2]),'az':float(fields[3]),'phi':float(fields[4])})
+		tiltgenerator.findtilts_fromeulers(untilteulerlist, tilteulerlist)
+		exit(0)
 
 	# Initialize parallelism if being used
 	if options.parallel :
@@ -126,10 +146,15 @@ def main():
 		from EMAN2PAR import EMTaskCustomer
 		etc=EMTaskCustomer("thread:1")
 		#etc.precache(pclist)
+	
+	# Otherwise compute tilt distances from data
+	#Read in the images
+	tiltimgs = EMData.read_images(options.tiltdata)
+	untiltimgs = EMData.read_images(options.untiltdata)
+	if len(tiltimgs) != len(untiltimgs):
+		print "The untilted image stack is not the same lenght as the tilted stack!!!"
+		exit(1)
 		
-	# Make a new dir for each run
-	if not options.path : options.path=numbered_path("TiltValidate",True)
-
 	# Do projections
 	e2projectcmd = "e2project3d.py %s --orientgen=eman:delta=%f:inc_mirror=1:perturb=0 --outfile=bdb:%s#projections --projector=standard --sym=%s" % (options.volume,options.delta,options.path, options.sym) # Seems to work better when I check all possibilites
 	if options.parallel: e2projectcmd += " --parallel=%s" %options.parallel
@@ -154,65 +179,9 @@ def main():
 	projections = EMData.read_images("bdb:%s#projections"%options.path)
 	volume = EMData() 
 	volume.read_image(options.volume) # I don't know why I cant EMData.read_image.......
-	symmeties = Symmetries.get(options.sym)
 	
-	# Find the differnces in alignment pars, this is an attempt to do per image validation
-	tdb = db_open_dict("bdb:%s#perparticletilts"%options.path)
-	particletilt_list = []
-	test = open("test.dat","w")
-	for imgnum in xrange(simmx[0].get_ysize()):
-		untiltbestscore = float('inf')
-		tiltbestscore = float('inf')
-		untiltbestrefnum = 0
-		tiltbestrefnum = 0
-		tiltimgnum = imgnum
-		for refnum in xrange(simmx[0].get_xsize()):
-			if simmx[0].get_value_at(refnum, imgnum) < untiltbestscore:
-				untiltbestscore = simmx[0].get_value_at(refnum, imgnum)
-				untiltbestrefnum = refnum		
-			if simmx_tilt[0].get_value_at(refnum, tiltimgnum) < tiltbestscore:
-				tiltbestscore = simmx_tilt[0].get_value_at(refnum, tiltimgnum)
-				tiltbestrefnum = refnum
-		# Untilt
-		untilt_euler_xform = projections[untiltbestrefnum].get_attr('xform.projection')
-		untiltrot = untilt_euler_xform.get_rotation("eman")
-		untilt_euler_xform.set_rotation({"type":"eman","az":untiltrot["az"],"alt":untiltrot["alt"],"phi":-simmx[3].get_value_at(untiltbestrefnum, imgnum)})
-		# Tilt
-		tilt_euler_xform = projections[tiltbestrefnum].get_attr('xform.projection')
-		tiltrot = tilt_euler_xform.get_rotation("eman")
-		tilt_euler_xform.set_rotation({"type":"eman","az":tiltrot["az"],"alt":tiltrot["alt"],"phi":-simmx_tilt[3].get_value_at(tiltbestrefnum, tiltimgnum)})
-		# Write out test results
-		#print untilt_euler_xform.get_rotation("eman"), tilt_euler_xform.get_rotation("eman")
-		
-		volume.project('standard', untilt_euler_xform).write_image("untiltaligned.hdf", imgnum*2)
-		untiltimgs[imgnum].write_image("untiltaligned.hdf", imgnum*2+1)
-		volume.project('standard', tilt_euler_xform).write_image("tiltaligned.hdf", imgnum*2)
-		tiltimgs[imgnum].write_image("tiltaligned.hdf", imgnum*2+1)
-		
-		# Compute tiltxis and tiltangle for each particel pair. For symmetric objects the tilttransform is selected as the one that has a tiltaxis
-		# closest to perpidicular to the imaging plane (this is how Richard handles it). 
-		bestinplane = 1.0
-		anglefound = False
-		#print "####################################"
-		for sym in symmeties.get_syms():
-			tiltxform = tilt_euler_xform*sym.inverse()*untilt_euler_xform.inverse()
-			# Select the symmetry solution whose tiltaxis is in plane
-			if math.fabs(tiltxform.get_rotation("spin")["n3"]) < bestinplane:
-				if tiltxform.get_rotation("spin")["Omega"] < options.maxtiltangle:
-					bestinplane = math.fabs(tiltxform.get_rotation("spin")["n3"])
-					besttiltangle = tiltxform.get_rotation("spin")["Omega"]
-					besttiltaxis = math.degrees(math.atan2(tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n1"]))
-					anglefound = True
-					
-			test.write("\t%f %f %f %f\n"%(tiltxform.get_rotation("spin")["Omega"],tiltxform.get_rotation("spin")["n1"],tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n3"]))
-			test.write("\t%f %f %f\n"%(tiltxform.get_rotation("eman")["az"],tiltxform.get_rotation("eman")["alt"],tiltxform.get_rotation("eman")["phi"]))
-
-		if anglefound:
-			test.write("The best angle is %f with a tiltaxis of %f\n"%(besttiltangle,besttiltaxis))
-			particletilt_list.append([imgnum, besttiltangle,besttiltaxis,bestinplane])
-	test.close()
-	tdb["particletilt_list"] = particletilt_list
-	tdb.close()
+	# Generate tilts from data
+	tiltgenerator.findtilts_fromdata(simmx, simmx_tilt, projections, volume, untiltimgs, tiltimgs) 
 	exit(1)
 
 	# Make contour plot to validate each particle
@@ -250,7 +219,106 @@ def main():
 	
 	E2end(logid)
 
-
+class ComputeTilts:
+	def __init__(self, options):
+		self.options = options
+		self.symmeties = Symmetries.get(self.options.sym)
+		self.particletilt_list = []
+		self.tdb = db_open_dict("bdb:%s#perparticletilts"%self.options.path)
+		self.test = open("test.dat","w")
+		
+	def findtilts_fromdata(self, simmx, simmx_tilt, projections, volume, untiltimgs, tiltimgs):
+		""" Compute tiltdistances based on data """
+		for imgnum in xrange(simmx[0].get_ysize()):
+			untiltbestscore = float('inf')
+			tiltbestscore = float('inf')
+			untiltbestrefnum = 0
+			tiltbestrefnum = 0
+			tiltimgnum = imgnum
+			for refnum in xrange(simmx[0].get_xsize()):
+				if simmx[0].get_value_at(refnum, imgnum) < untiltbestscore:
+					untiltbestscore = simmx[0].get_value_at(refnum, imgnum)
+					untiltbestrefnum = refnum		
+				if simmx_tilt[0].get_value_at(refnum, tiltimgnum) < tiltbestscore:
+					tiltbestscore = simmx_tilt[0].get_value_at(refnum, tiltimgnum)
+					tiltbestrefnum = refnum
+			# Untilt
+			untilt_euler_xform = projections[untiltbestrefnum].get_attr('xform.projection')
+			untiltrot = untilt_euler_xform.get_rotation("eman")
+			untilt_euler_xform.set_rotation({"type":"eman","az":untiltrot["az"],"alt":untiltrot["alt"],"phi":-simmx[3].get_value_at(untiltbestrefnum, imgnum)})
+			# Tilt
+			tilt_euler_xform = projections[tiltbestrefnum].get_attr('xform.projection')
+			tiltrot = tilt_euler_xform.get_rotation("eman")
+			tilt_euler_xform.set_rotation({"type":"eman","az":tiltrot["az"],"alt":tiltrot["alt"],"phi":-simmx_tilt[3].get_value_at(tiltbestrefnum, tiltimgnum)})
+			# Write out test results
+			
+			#print untilt_euler_xform.get_rotation("eman"), tilt_euler_xform.get_rotation("eman")
+			volume.project('standard', untilt_euler_xform).write_image("untiltaligned.hdf", imgnum*2)
+			untiltimgs[imgnum].write_image("untiltaligned.hdf", imgnum*2+1)
+			volume.project('standard', tilt_euler_xform).write_image("tiltaligned.hdf", imgnum*2)
+			tiltimgs[imgnum].write_image("tiltaligned.hdf", imgnum*2+1)
+			
+			#Find best solultion takeing sym into accout
+			self.find_bestsymsoln(imgnum, untilt_euler_xform, tilt_euler_xform)
+			
+		self.finish()
+	
+	def findtilts_fromeulers(self, untilteulers, tilteulers):
+		"""
+		untilteulers and tilteulers are a list of dicts, each dict contyaining az, alt and phi
+		"""
+		if len(untilteulers) != len(tilteulers):
+			raise ValueError("untilteulers and tilteulers list is not the same length")
+		
+		for num in xrange(len(untilteulers)):
+			untilt_euler_xform = Transform({'type':'eman','az':untilteulers[num]['az'],'alt':untilteulers[num]['alt'],'phi':untilteulers[num]['phi']})
+			tilt_euler_xform = Transform({'type':'eman','az':tilteulers[num]['az'],'alt':tilteulers[num]['alt'],'phi':tilteulers[num]['phi']})
+			self.find_bestsymsoln(num, untilt_euler_xform, tilt_euler_xform)
+			
+		self.tdb["junk"] = 1 # The Stupid DB doesn't write my list unless I don't this!!
+		self.finish()
+					
+	def find_bestsymsoln(self, imgnum, untilt_euler_xform, tilt_euler_xform):
+		# Compute tiltxis and tiltangle for each particel pair. For symmetric objects the tilttransform is selected as the one that has a tiltaxis
+		# closest to perpidicular to the imaging plane (this is how Richard handles it). 
+		anglefound = False
+		if self.options.quaternion:
+			bestinplane = 1.0
+			for sym in self.symmeties.get_syms():
+				tiltxform = tilt_euler_xform*sym.inverse()*untilt_euler_xform.inverse()
+				# Select the symmetry solution whose tiltaxis is in plane
+				if math.fabs(tiltxform.get_rotation("spin")["n3"]) < bestinplane:
+					if tiltxform.get_rotation("spin")["Omega"] < self.options.maxtiltangle:
+						bestinplane = math.fabs(tiltxform.get_rotation("spin")["n3"])
+						besttiltangle = tiltxform.get_rotation("spin")["Omega"]
+						besttiltaxis = math.degrees(math.atan2(tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n1"]))
+						anglefound = True
+					
+				self.test.write("\t%f %f %f %f\n"%(tiltxform.get_rotation("spin")["Omega"],tiltxform.get_rotation("spin")["n1"],tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n3"]))
+				self.test.write("\t%f %f %f\n"%(tiltxform.get_rotation("eman")["az"],tiltxform.get_rotation("eman")["alt"],tiltxform.get_rotation("eman")["phi"]))
+		else:
+			bestinplane = 2.0
+			for sym in self.symmeties.get_syms():
+				tiltxform = tilt_euler_xform*sym.inverse()*untilt_euler_xform.inverse()
+				if math.fabs(math.sin(math.radians(tiltxform.get_rotation("eman")['az']))+math.sin(math.radians(tiltxform.get_rotation("eman")['phi']))) < bestinplane:
+					if tiltxform.get_rotation("eman")["alt"] < self.options.maxtiltangle:
+						bestinplane = math.fabs(math.sin(math.radians(tiltxform.get_rotation("eman")['az']))+math.sin(math.radians(tiltxform.get_rotation("eman")['phi'])))
+						besttiltangle = tiltxform.get_rotation("eman")["alt"]
+						besttiltaxis = tiltxform.get_rotation("eman")["az"]
+						anglefound = True
+				
+				self.test.write("\t%f %f %f %f\n"%(tiltxform.get_rotation("spin")["Omega"],tiltxform.get_rotation("spin")["n1"],tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n3"]))
+				self.test.write("\t%f %f %f Ip %f\n"%(tiltxform.get_rotation("eman")["az"],tiltxform.get_rotation("eman")["alt"],tiltxform.get_rotation("eman")["phi"], bestinplane))
+			
+		if anglefound:
+			self.test.write("The best angle is %f with a tiltaxis of %f\n"%(besttiltangle,besttiltaxis))
+			self.particletilt_list.append([imgnum, besttiltangle,besttiltaxis,bestinplane])
+	
+	def finish(self):
+		self.test.close()
+		self.tdb["particletilt_list"] = self.particletilt_list
+		self.tdb.close()
+	
 # Function to compute a similarity map for a given image
 class CompareToTiltTask(EMTask):
 	""" A parallelized version to compute contout plots """
