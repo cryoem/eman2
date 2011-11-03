@@ -784,14 +784,14 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("defocus", EMObject::float, "Defocus in microns (underfocus positive)");
-			d.put("ampcont", EMObject::float, "% amplitude contrast (0-100)");
-			d.put("bfactor", EMObject::float, "B-factor in A^2, uses MRC convention rather than EMAN1 convention");
-			d.put("noiseamp", EMObject::float, "Amplitude of the added empirical pink noise");
-			d.put("noiseampwhite", EMObject::float, "Amplitude of added white noise");
-			d.put("voltage", EMObject::float, "Microscope voltage in KV");
-			d.put("cs", EMObject::float, "Cs of microscope in mm");
-			d.put("apix", EMObject::float, "A/pix of data");
+			d.put("defocus", EMObject::FLOAT, "Defocus in microns (underfocus positive)");
+			d.put("ampcont", EMObject::FLOAT, "% amplitude contrast (0-100)");
+			d.put("bfactor", EMObject::FLOAT, "B-factor in A^2, uses MRC convention rather than EMAN1 convention");
+			d.put("noiseamp", EMObject::FLOAT, "Amplitude of the added empirical pink noise");
+			d.put("noiseampwhite", EMObject::FLOAT, "Amplitude of added white noise");
+			d.put("voltage", EMObject::FLOAT, "Microscope voltage in KV");
+			d.put("cs", EMObject::FLOAT, "Cs of microscope in mm");
+			d.put("apix", EMObject::FLOAT, "A/pix of data");
 			return d;
 		}
 
@@ -802,8 +802,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return """Applies a simulated CTF with noise to an image. The added noise is either white or based
-	on an empirical curve generated from cryoEM data. """;
+			return "Applies a simulated CTF with noise to an image. The added noise is either white or based on an empirical curve generated from cryoEM data. ";
 		}
 
 		static const string NAME;
