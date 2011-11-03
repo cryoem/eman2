@@ -539,7 +539,6 @@ def resample(img, sub_rate=0.5):
 			e = Util.pad(img, nn, nn,  nn, 0, 0, 0, "circumference")
 			e, kb = prepi3D(e)
 			e = Util.window( e.rot_scale_conv_new_3D(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, kb, sub_rate), new_nx, new_ny, new_nz, 0,0,0)
-			
 		else:
 			if nz==1:
 				e, kb = prepi(Util.pad(img, new_nx, new_ny, 1, 0, 0, 0, "circumference"))
