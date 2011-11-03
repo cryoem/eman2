@@ -756,6 +756,61 @@ The basic design of EMAN Processors: <br>\
 
 	};
 
+	/** CTF simulation processor. Takes individual CTF parameters, suitable for use with programs like
+	 * e2filtertool.py. Can use an internal noise profile or an external profile from a text file.
+	 *@param defocus[in]	Defocus in microns (underfocus positive)
+	 *@param ampcont[in]	% amplitude contrast (0-100)
+	 *@param bfactor[in]	B-factor in A^2, uses MRC convention rather than EMAN1 convention
+	 *@param noiseamp[in]	Amplitude of the added empirical pink noise
+	 *@param noiseampwhite[in]	Amplitude of added white noise
+	 *@param voltage[in]	Microscope voltage in KV
+	 *@param cs[in]	Cs of microscope in mm
+	 *@param apix[in]	A/pix of data
+	 *@author Steve Ludtke
+	 *@date 2011/11/03
+	 */
+	class CtfSimProcessor:public Processor
+	{
+	  public:
+		string get_name() const			
+		{
+			return NAME;
+		}
+
+		virtual EMData* process(const EMData * const image);
+
+		void process_inplace(EMData *image);
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("defocus", EMObject::float, "Defocus in microns (underfocus positive)");
+			d.put("ampcont", EMObject::float, "% amplitude contrast (0-100)");
+			d.put("bfactor", EMObject::float, "B-factor in A^2, uses MRC convention rather than EMAN1 convention");
+			d.put("noiseamp", EMObject::float, "Amplitude of the added empirical pink noise");
+			d.put("noiseampwhite", EMObject::float, "Amplitude of added white noise");
+			d.put("voltage", EMObject::float, "Microscope voltage in KV");
+			d.put("cs", EMObject::float, "Cs of microscope in mm");
+			d.put("apix", EMObject::float, "A/pix of data");
+			return d;
+		}
+
+		static Processor *NEW()
+		{
+			return new CtfSimProcessor();
+		}
+
+		string get_desc() const
+		{
+			return """Applies a simulated CTF with noise to an image. The added noise is either white or based
+	on an empirical curve generated from cryoEM data. """;
+		}
+
+		static const string NAME;
+
+//		protected:
+	};
+
 
 	/**Wiener filter based on a Ctf object either in the image header
 	 *@param ctf[in] A Ctf object to use

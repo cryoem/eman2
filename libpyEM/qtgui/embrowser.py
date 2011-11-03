@@ -44,6 +44,7 @@ from emplot2d import *
 from emplot3d import *
 from emscene3d import *
 from emdataitem3d import *
+from valslider import StringBox
 import re
 import threading
 
@@ -58,7 +59,7 @@ def isprint(s):
 	mpd=s.translate("AAAAAAAAABBAABAAAAAAAAAAAAAAAAAA"+"B"*95+"A"*129)
 	if "A" in mpd : 
 		ind=mpd.index("A")
-		print "bad chr %d at %d"%(ord(s[ind]),ind)
+#		print "bad chr %d at %d"%(ord(s[ind]),ind)
 		return False
 	return True
 
@@ -93,6 +94,11 @@ class EMFileType:
 	def isValid(path,header):
 		"Returns (size,n,dim) if the referenced path is a file of this type, false if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."
 		return False
+
+	@staticmethod
+	def infoClass():
+		"Returns a reference to the QWidget subclass for displaying information about this file"
+		return EMInfoPane
 
 	def actions(self):
 		"""Returns a list of (name,help,callback) tuples detailing the operations the user can call on the current file.
@@ -268,10 +274,58 @@ class EMTextFileType(EMFileType):
 
 		return (size,"-",dim)
 
+	@staticmethod
+	def infoClass():
+		"Returns a reference to the QWidget subclass for displaying information about this file"
+		return EMTextInfoPane
+		
 	def actions(self):
 		"No actions other than the inspector for text files"
 		return []
 		
+class EMHTMLFileType(EMFileType):
+	"""FileType for files containing HTML text"""
+	
+	@staticmethod
+	def name():
+		"The unique name of this FileType. Stored in EMDirEntry.filetype for each file."
+		return "HTML"
+
+	@staticmethod
+	def isValid(path,header):
+		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."
+
+		if not isprint(header) : return False			# demand printable Ascii. FIXME: what about unicode ?
+		if not "<html>" in header.lower() : return False # For the moment, we demand an <html> tag somewhere in the first 4k
+
+		try: 
+			size=os.stat(path)[6]
+		except: return False
+		
+		if size>5000000 : dim="big"
+		else :
+			f=file(path,"r").read()
+			lns=max(f.count("\n"),f.count("\r"))
+			dim="%d ln"%lns
+
+		return (size,"-",dim)
+
+	@staticmethod
+	def infoClass():
+		"Returns a reference to the QWidget subclass for displaying information about this file"
+		return EMHTMLInfoPane
+		
+	def actions(self):
+		"No actions other than the inspector for HTML files"
+		return [("Firefox","Open in Firefox",self.showFirefox)]
+
+	def showFirefox(self,brws):
+		"""Try to open file in firefox"""
+		
+		if get_platform()=="Linux":
+				os.system("firefox -new-tab file://%s"%self.path)
+
+		else : print "Sorry, I don't know how to run Firefox on this platform"
 
 
 class EMPlotFileType(EMFileType):
@@ -317,6 +371,11 @@ class EMPlotFileType(EMFileType):
 			if lnumc!=0 : numr+=1
 			
 		return (size,"-","%d x %d"%(numr,numc))
+		
+	@staticmethod
+	def infoClass():
+		"Returns a reference to the QWidget subclass for displaying information about this file"
+		return EMPlotInfoPane
 
 	def __init__(self,path):
 		self.path=path			# the current path this FileType is representing
@@ -419,6 +478,12 @@ class EMFolderFileType(EMFileType):
 		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."
 		return False
 
+	@staticmethod
+	def infoClass():
+		"Returns a reference to the QWidget subclass for displaying information about this file"
+		return EMFolderInfoPane
+
+
 	def actions(self):
 		"Returns a list of (name,callback) tuples detailing the operations the user can call on the current file"
 		return []
@@ -435,6 +500,11 @@ class EMBdbFileType(EMFileType):
 	def isValid(path,header):
 		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."
 		return False
+
+	@staticmethod
+	def infoClass():
+		"Returns a reference to the QWidget subclass for displaying information about this file"
+		return EMBDBInfoPane
 
 	def __init__(self,path):
 		self.path=path			# the current path this FileType is representing
@@ -508,6 +578,11 @@ class EMImageFileType(EMFileType):
 		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."
 		return False
 
+	@staticmethod
+	def infoClass():
+		"Returns a reference to the QWidget subclass for displaying information about this file"
+		return EMImageInfoPane
+
 	def actions(self):
 		"Returns a list of (name,callback) tuples detailing the operations the user can call on the current file"
 		# single 3-D
@@ -548,6 +623,11 @@ class EMStackFileType(EMFileType):
 	def isValid(path,header):
 		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."
 		return False
+
+	@staticmethod
+	def infoClass():
+		"Returns a reference to the QWidget subclass for displaying information about this file"
+		return EMStackInfoPane
 
 	def __init__(self,path):
 		self.path=path			# the current path this FileType is representing
@@ -590,7 +670,8 @@ EMFileType.typesbyft = {
 	"Text":EMTextFileType,
 	"Plot":EMPlotFileType,
 	"Image":EMImageFileType,
-	"Image Stack":EMStackFileType
+	"Image Stack":EMStackFileType,
+	"HTML":EMHTMLFileType
 }
 
 # Note that image types are not included here, and are handled via a separate mechanism
@@ -598,7 +679,8 @@ EMFileType.typesbyft = {
 # the most general last (they will be checked in order)
 EMFileType.extbyft = {
 	".txt":(EMPlotFileType,EMTextFileType),
-	
+	".htm":(EMHTMLFileType,EMTextFileType),
+	".html":(EMHTMLFileType,EMTextFileType),
 }
 
 # Default Choices when extension doesn't work
@@ -947,14 +1029,267 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 			self.dataChanged.emit(index, self.createIndex(index.row(),5,index.internalPointer()))
 		
 			
-	
 class myQItemSelection(QtGui.QItemSelectionModel):
 	"""For debugging"""
 	
 	def select(self,tl,br):
 		print tl.indexes()[0].row(),tl.indexes()[0].column(),int(br)
 		QtGui.QItemSelectionModel.select(self,tl,QtGui.QItemSelectionModel.SelectionFlags(QtGui.QItemSelectionModel.ClearAndSelect+QtGui.QItemSelectionModel.Rows))
+
+class EMInfoPane(QtGui.QWidget):
+	"""Subclasses of this class will be used to display information about specific files. Each EMFileType class will return the
+	pointer to the appropriate infoPane subclass for displaying information about the file it represents. The subclass instances
+	are allocated by the infoWin class"""
+	
+	def __init__(self,parent=None):
+		"Set our GUI up"
+		QtGui.QWidget.__init__(self,parent)
 		
+		# Root class represents no target
+		self.hbl=QtGui.QHBoxLayout(self)
+		self.lbl=QtGui.QLabel("No Information Available")
+		self.hbl.addWidget(self.lbl)
+
+	def display(self,target):
+		"display information for the target EMDirEntry with EMFileType ftype"
+		
+		self.target=target
+		
+		
+		return
+		
+class EMTextInfoPane(EMInfoPane):
+	
+	def __init__(self,parent=None):
+		QtGui.QWidget.__init__(self,parent)
+		
+		self.vbl=QtGui.QVBoxLayout(self)
+		
+		# text editing widget
+		self.text=QtGui.QTextEdit()
+		self.text.setAcceptRichText(False)
+		self.text.setReadOnly(True)
+		self.vbl.addWidget(self.text)
+		
+		# Find box
+		self.wfind=StringBox(label="Find:")
+		self.vbl.addWidget(self.wfind)
+		
+		# Buttons
+		self.hbl=QtGui.QHBoxLayout()
+		
+		self.wbutedit=QtGui.QPushButton("Edit")
+		self.hbl.addWidget(self.wbutedit)
+		
+		self.wbutcancel=QtGui.QPushButton("Revert")
+		self.wbutcancel.setEnabled(False)
+		self.hbl.addWidget(self.wbutcancel)
+		
+		self.wbutok=QtGui.QPushButton("Save")
+		self.wbutok.setEnabled(False)
+		self.hbl.addWidget(self.wbutok)
+		
+		self.vbl.addLayout(self.hbl)
+		
+		QtCore.QObject.connect(self.wfind, QtCore.SIGNAL("valueChanged"),self.find)
+		QtCore.QObject.connect(self.wbutedit, QtCore.SIGNAL('clicked(bool)'), self.buttonEdit)
+		QtCore.QObject.connect(self.wbutcancel, QtCore.SIGNAL('clicked(bool)'), self.buttonCancel)
+		QtCore.QObject.connect(self.wbutok, QtCore.SIGNAL('clicked(bool)'), self.buttonOk)
+		
+	def display(self,data):
+		"display information for the target EMDirEntry"
+		self.target=data
+		
+		self.text.setPlainText(file(self.target.path(),"r").read())
+		
+		self.text.setReadOnly(True)
+		self.wbutedit.setEnabled(True)
+		self.wbutcancel.setEnabled(False)
+		self.wbutok.setEnabled(False)
+
+	def find(self,value):
+		"Find a string"
+		
+		if not self.text.find(value):
+			# this implements wrapping
+			self.text.moveCursor(1,0)
+			self.text.find(value)
+
+	def buttonEdit(self,tog):
+		self.text.setReadOnly(False)
+		self.wbutedit.setEnabled(False)
+		self.wbutcancel.setEnabled(True)
+		self.wbutok.setEnabled(True)
+		
+	def buttonCancel(self,tog):
+		self.display(self.target)
+
+	def buttonOk(self,tog):
+		try: file(self.target.path(),"w").write(str(self.text.toPlainText()))
+		except: QtGui.QMessageBox.warning(self,"Error !","File write failed")
+
+class EMHTMLInfoPane(EMInfoPane):
+	
+	def __init__(self,parent=None):
+		QtGui.QWidget.__init__(self,parent)
+		
+		self.vbl=QtGui.QVBoxLayout(self)
+		
+		# text editing widget
+		self.text=QtGui.QTextEdit()
+		self.text.setAcceptRichText(True)
+		self.text.setReadOnly(True)
+		self.vbl.addWidget(self.text)
+		
+		# Find box
+		self.wfind=StringBox(label="Find:")
+		self.vbl.addWidget(self.wfind)
+		
+		# Buttons
+		self.hbl=QtGui.QHBoxLayout()
+		
+		self.wbutedit=QtGui.QPushButton("Edit")
+		self.hbl.addWidget(self.wbutedit)
+		
+		self.wbutcancel=QtGui.QPushButton("Revert")
+		self.wbutcancel.setEnabled(False)
+		self.hbl.addWidget(self.wbutcancel)
+		
+		self.wbutok=QtGui.QPushButton("Save")
+		self.wbutok.setEnabled(False)
+		self.hbl.addWidget(self.wbutok)
+		
+		self.vbl.addLayout(self.hbl)
+		
+		QtCore.QObject.connect(self.wfind, QtCore.SIGNAL("valueChanged"),self.find)
+		QtCore.QObject.connect(self.wbutedit, QtCore.SIGNAL('clicked(bool)'), self.buttonEdit)
+		QtCore.QObject.connect(self.wbutcancel, QtCore.SIGNAL('clicked(bool)'), self.buttonCancel)
+		QtCore.QObject.connect(self.wbutok, QtCore.SIGNAL('clicked(bool)'), self.buttonOk)
+		
+	def display(self,data):
+		"display information for the target EMDirEntry"
+		self.target=data
+		
+		self.text.setHtml(file(self.target.path(),"r").read())
+		
+		self.text.setReadOnly(True)
+		self.wbutedit.setEnabled(True)
+		self.wbutcancel.setEnabled(False)
+		self.wbutok.setEnabled(False)
+
+	def find(self,value):
+		"Find a string"
+		
+		if not self.text.find(value):
+			# this implements wrapping
+			self.text.moveCursor(1,0)
+			self.text.find(value)
+
+	def buttonEdit(self,tog):
+		self.text.setReadOnly(False)
+		self.wbutedit.setEnabled(False)
+		self.wbutcancel.setEnabled(True)
+		self.wbutok.setEnabled(True)
+		
+	def buttonCancel(self,tog):
+		self.display(self.target)
+
+	def buttonOk(self,tog):
+		try: file(self.target.path(),"w").write(str(self.text.toHtml()))
+		except: QtGui.QMessageBox.warning(self,"Error !","File write failed")
+
+class EMPlotInfoPane(EMInfoPane):
+	
+	def __init__(self,parent=None):
+		QtGui.QWidget.__init__(self,parent)
+		
+		self.vbl=QtGui.QVBoxLayout(self)
+
+	def display(self,target):
+		"display information for the target EMDirEntry"
+		self.target=target
+
+class EMFolderInfoPane(EMInfoPane):
+	
+	def __init__(self,parent=None):
+		QtGui.QWidget.__init__(self,parent)
+		
+		self.vbl=QtGui.QVBoxLayout(self)
+
+	def display(self,target):
+		"display information for the target EMDirEntry"
+		self.target=target
+
+class EMBDBInfoPane(EMInfoPane):
+	
+	def __init__(self,parent=None):
+		QtGui.QWidget.__init__(self,parent)
+		
+		self.vbl=QtGui.QVBoxLayout(self)
+
+	def display(self,target):
+		"display information for the target EMDirEntry"
+		self.target=target
+
+class EMImageInfoPane(EMInfoPane):
+	
+	def __init__(self,parent=None):
+		QtGui.QWidget.__init__(self,parent)
+		
+		self.vbl=QtGui.QVBoxLayout(self)
+
+	def display(self,target):
+		"display information for the target EMDirEntry"
+		self.target=target
+
+class EMStackInfoPane(EMInfoPane):
+	
+	def __init__(self,parent=None):
+		QtGui.QWidget.__init__(self,parent)
+		
+		self.vbl=QtGui.QVBoxLayout(self)
+
+	def display(self,target):
+		"display information for the target EMDirEntry"
+		self.target=target
+
+
+
+class EMInfoWin(QtGui.QWidget):
+	"""The info window"""
+	
+	def __init__(self,parent=None):
+		QtGui.QWidget.__init__(self,parent)
+		
+		self.target=None
+		
+		self.stack=QtGui.QStackedLayout(self)
+		
+		# We add one instance of 'infoPane' parent class to represent nothing
+		
+		self.stack.addWidget(EMInfoPane())
+		
+	def set_target(self,target,ftype):
+		"""Display the info pane for target EMDirEntry with EMFileType instance ftype"""
+		self.target=target
+		self.ftype=ftype
+		
+		cls=ftype.infoClass()
+		
+		for i in range(self.stack.count()):
+			if isinstance(self.stack.itemAt(i),cls) :
+				self.stack.setCurrentIndex(i)
+				pane=self.stack.itemAt(i)
+				pane.display(target)
+				break
+		else:
+			# If we got here, then we need to make a new instance of the appropriate pane
+			if cls==None : print "No class ! (%s)"%str(ftype)
+			pane=cls()
+			i=self.stack.addWidget(pane)		# add the new pane and get its index
+			pane.display(target)
+			self.stack.setCurrentIndex(i)		# put the new pane on top
+			
 
 class EMBrowserWidget(QtGui.QWidget):
 	"""This widget is a file browser for EMAN2. In addition to being a regular file browser, it supports:
@@ -1074,7 +1409,7 @@ class EMBrowserWidget(QtGui.QWidget):
 
 		QtCore.QObject.connect(self.wbutback, QtCore.SIGNAL('clicked(bool)'), self.buttonBack)
 		QtCore.QObject.connect(self.wbutfwd, QtCore.SIGNAL('clicked(bool)'), self.buttonFwd)
-		QtCore.QObject.connect(self.wbutup, QtCore.SIGNAL('hasclicked(bool)'), self.buttonUp)
+		QtCore.QObject.connect(self.wbutup, QtCore.SIGNAL('clicked(bool)'), self.buttonUp)
 		QtCore.QObject.connect(self.wbutinfo, QtCore.SIGNAL('clicked(bool)'), self.buttonInfo)
 		QtCore.QObject.connect(self.wtree, QtCore.SIGNAL('clicked(const QModelIndex)'), self.itemSel)
 		QtCore.QObject.connect(self.wtree, QtCore.SIGNAL('activated(const QModelIndex)'), self.itemActivate)
@@ -1087,6 +1422,8 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.curft=None		# a fileType instance for the currently hilighted object
 		self.curactions=[]	# actions returned by the filtetype. Cached for speed
 		self.models={}		# Cached models to avoid a lot of rereading (not sure if this is really worthwhile)
+		self.pathstack=[]	# A stack of previous viewed paths
+		self.infowin=None	# The 'info' window instance
 
 		# Each of these contains a list of open windows displaying different types of content
 		# The last item in the list is considered the 'current' item for any append operations
@@ -1147,7 +1484,11 @@ class EMBrowserWidget(QtGui.QWidget):
 	def itemSel(self,qmi):
 #		print "Item selected",qmi.row(),qmi.column(),qmi.internalPointer().path()
 		qism=self.wtree.selectionModel().selectedRows()
-		if len(qism)>1 : self.wpath.setText("<multiple select>")
+		if len(qism)>1 : 
+			self.wpath.setText("<multiple select>")
+			if self.infowin!=None and not self.infowin.isHidden() :
+				self.infowin.set_target(None)
+			
 		elif len(qism)==1 : 
 			obj=qism[0].internalPointer()
 			self.wpath.setText(obj.path())
@@ -1155,6 +1496,7 @@ class EMBrowserWidget(QtGui.QWidget):
 			self.wtree.resizeColumnToContents(2)
 			self.wtree.resizeColumnToContents(3)
 			
+				
 			# This makes an instance of a FileType for the selected object
 			ftc=obj.fileTypeClass() 
 			if ftc!=None: 
@@ -1172,6 +1514,8 @@ class EMBrowserWidget(QtGui.QWidget):
 						b.hide()
 #						b.setEnabled(False)
 			
+			if self.infowin!=None and not self.infowin.isHidden() :
+				self.infowin.set_target(obj,ftc)
 		
 	def itemActivate(self,qmi):
 #		print "Item activated",qmi.row(),qmi.column()
@@ -1194,9 +1538,9 @@ class EMBrowserWidget(QtGui.QWidget):
 			self.updlist.append(self.curmodel.index(i,0,qmi))
 
 	def buttonMisc(self,num):
-		"Misc Button press"
+		"One of the programmable action buttons was pressed"
 		
-		print "press ",self.curactions[num][0]
+#		print "press ",self.curactions[num][0]
 		
 		self.curactions[num][2](self)				# This calls the action method
 
@@ -1208,23 +1552,50 @@ class EMBrowserWidget(QtGui.QWidget):
 				
 	def buttonBack(self,tog):
 		"Button press"
+		try : 
+			l=self.pathstack.index(self.curpath)
+			if l==0 : raise Exception
+		except : return
+		
+		self.setPath(self.pathstack[l-1],True)
 		
 	def buttonFwd(self,tog):
 		"Button press"
+		try : 
+			l=self.pathstack.index(self.curpath)
+			if l==len(self.pathstack)-1 : raise Exception
+		except : return
+		
+		self.setPath(self.pathstack[l+1],True)
 		
 	def buttonUp(self,tog):
 		"Button press"
+		newpath=self.curpath.rsplit("/",1)[0]
+		print "Newpath: ",newpath
+		if len(newpath)>1 : self.setPath(newpath)
 		
 	def buttonInfo(self,tog):
-		"Button press"
+		if tog :
+			if self.infowin==None :
+				self.infowin=EMInfoWin()
+			self.infowin.show()
+			self.infowin.raise_()
+			qism=self.wtree.selectionModel().selectedRows()
+			if len(qism)==1 : 
+				self.infowin.set_target(qism[0].internalPointer(),self.curft)
+			else : self.infowin.set_target(None)
+		else :
+			if self.infowin!=None:
+				self.infowin.hide()
 
 	def addBookmark(self,label,path):
 		"""Add a new bookmark"""
 		act=self.wbookmarks.addAction(label)
 		act.setData(path)
 
-	def setPath(self,path):
-		"""Sets the current root path for the browser window"""
+	def setPath(self,path,silent=False):
+		"""Sets the current root path for the browser window. If silent is true,
+		the path history will not be updated."""
 		
 		self.updlist=[]
 		
@@ -1249,6 +1620,10 @@ class EMBrowserWidget(QtGui.QWidget):
 		for i in xrange(self.curmodel.rowCount(None)-1,-1,-1):
 			self.updlist.append(self.curmodel.index(i,0,None))
 
+		if not silent:
+			try: self.pathstack.remove(self.curpath)
+			except: pass
+			self.pathstack.append(self.curpath)
 
 	def bookmarkPress(self,action):
 		""
