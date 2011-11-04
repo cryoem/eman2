@@ -65,7 +65,7 @@ const string YGradientProcessor::NAME = "math.edge.ygradient";
 const string ZGradientProcessor::NAME = "math.edge.zgradient";
 const string Wiener2DAutoAreaProcessor::NAME = "filter.wiener2dauto";
 const string Wiener2DFourierProcessor::NAME = "filter.wiener2d";
-const string CtfSimProcessor::Name = "math.simulatectf"
+const string CtfSimProcessor::NAME = "math.simulatectf";
 const string LinearRampFourierProcessor::NAME = "filter.linearfourier";
 const string LoGFourierProcessor::NAME = "filter.loG";
 const string DoGFourierProcessor::NAME = "filter.doG";
@@ -5427,98 +5427,70 @@ void AutoMask2DProcessor::process_inplace(EMData * image)
 	delete amask;
 }
 
-EMData* process(const EMData * const image) {
+void CtfSimProcessor::process_inplace(EMData *image) {
+	EMData *tmp=process(image);
+	memcpy(image->get_data(),tmp->get_data(),image->get_xsize()*image->get_ysize()*image->get_zsize()*sizeof(float));
+	delete tmp;
+	image->update();
+	return;
+}
+
+EMData* CtfSimProcessor::process(const EMData * const image) {
 	if (!image) {
 		LOGWARN("NULL Image");
-		return;
+		return NULL;
 	}
 
 	EMData *fft;
 	if (!image->is_complex()) fft=image->do_fft();
-	else fft=image->copy()
+	else fft=image->copy();
 
 	EMAN2Ctf ctf;
-	ctf.defocus=parms["defocus"];
-	ctf.bfactor=parms["bfactor"];
-	ctf.ampcont=parms.set_default("ampcont",10.0);
-	ctf.voltage=parms.set_default("voltage",200.0);
-	ctf.cs=parms.set_default("cs",2.0);
-	ctf.apix=parms.set_default("apix",image.get_attr_default("apix_x",1.0));
-	ctf.dsbg=1.0/(ctf.apix*fft.get_ysize()*4.0);		//4x oversampling
+	ctf.defocus=params["defocus"];
+	ctf.bfactor=params["bfactor"];
+	ctf.ampcont=params.set_default("ampcont",10.0);
+	ctf.voltage=params.set_default("voltage",200.0);
+	ctf.cs=params.set_default("cs",2.0);
+	ctf.apix=params.set_default("apix",image->get_attr_default("apix_x",1.0));
+	ctf.dsbg=1.0/(ctf.apix*fft->get_ysize()*4.0);		//4x oversampling
 	
-	float noiseamp=parms.set_default("noiseamp",0.0);
-	float noiseampwhite=parms.set_default("noiseampwhite",0.0);
+	float noiseamp=params.set_default("noiseamp",0.0);
+	float noiseampwhite=params.set_default("noiseampwhite",0.0);
 	
-	vector <float> ctfc = ctf.compute_1d(fft.get_ysize()*2.0,ctf.dsbg,CTF_AMP,NULL);
+	// compute and apply the CTF
+	vector <float> ctfc = ctf.compute_1d(fft->get_ysize()*3.0,ctf.dsbg,ctf.CTF_AMP,NULL); // (go out to the corners)
 	
-	fft->process_inplace("filter.radialtable
-	int interpolation = 1;
-	if (params.has_key("interpolation")) {
-		interpolation = params["interpolation"];
-	}
-
-	Randnum * randnum = Randnum::Instance();
-	if(params.has_key("seed")) {
-		randnum->set_seed((int)params["seed"]);
-	}
-
-	int nx = image->get_xsize();
-	int ny = image->get_ysize();
-	int nz = image->get_zsize();
-
-	image->ap2ri();
-	float *rdata = image->get_data();
-
-	size_t k = 0;
-	float half_nz = 0;
-	if (nz > 1) {
-		half_nz = nz / 2.0f;
-	}
-
-	const float sqrt_2 = sqrt((float) 2);
-
-	float r;
-	for (int h = 0; h < nz; h++) {
-		for (int j = 0; j < ny; j++) {
-			for (int i = 0; i < nx; i += 2, k += 2) {
-				r = (Util::hypot3(i / 2.0f, j - ny / 2.0f, h - half_nz));
-//				r = sqrt(Util::hypot3(i / 2.0f, j - ny / 2.0f, h - half_nz)); // I don't think this sqrt was supposed to be here --steve
-				r = (r - x0) / dx;
-				int l = 0;
-				if (interpolation) {
-					l = Util::fast_floor(r);
-				}
-				else {
-					l = Util::fast_floor(r + 0.5f);
-				}
-				r -= l;
-				float f = 0;
-				if (l >= n - 2) {
-					f = y[n - 1];
-				}
-				else if (l < 0) {
-					l = 0;
-				}
-				else {
-					if (interpolation) {
-						f = (y[l] * (1 - r) + y[l + 1] * r);
-					}
-					else {
-						f = y[l];
-					}
-				}
-				f = randnum->get_gauss_rand(sqrt(f), sqrt(f) / 3);
-				float a = randnum->get_frand(0.0f, (float)(2 * M_PI));
-				if (i == 0) {
-					f *= sqrt_2;
-				}
-				rdata[k] += f * cos(a);
-				rdata[k + 1] += f * sin(a);
-			}
+	fft->apply_radial_func(0,1.0/fft->get_ysize(),ctfc,1);
+	
+	// Add noise
+	if (noiseamp!=0 or noiseampwhite!=0) {
+		EMData *noise = new EMData(image->get_ysize(),image->get_ysize(),1);
+		noise->process_inplace("testimage.noise.gauss");
+		noise->do_fft_inplace();
+	
+		// White noise
+		if (noiseampwhite!=0) {
+			noise->mult((float)noiseampwhite);
+			fft->add(*noise);
+			noise->mult((float)1.0/noiseampwhite);
 		}
+		
+		// Pink noise
+		if (noiseamp!=0) {
+			vector <float> pinkbg;
+			pinkbg.resize(500);
+			float nyimg=0.5/ctf.apix;	// image nyquist
+			// This pink curve came from a typical image in the GroEL 4A data set
+			for (int i=0; i<500; i++) pinkbg[i]=44.0*exp(-5.0*nyimg*i/250.0)+10.0*exp(-90.0*nyimg*i/250.0);		// compute curve to image Nyquist*2
+			noise->apply_radial_func(0,.002,pinkbg,1);		// Image nyquist is at 250 -> 0.5
+			fft->add(*noise);
+		}
+		
 	}
-
-	image->update();
+	
+	fft->do_ift_inplace();
+	
+	return fft;
 }
 
 
