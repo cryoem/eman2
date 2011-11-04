@@ -5459,6 +5459,7 @@ EMData* CtfSimProcessor::process(const EMData * const image) {
 	
 	// compute and apply the CTF
 	vector <float> ctfc = ctf.compute_1d(fft->get_ysize()*3.0,ctf.dsbg,ctf.CTF_AMP,NULL); // (go out to the corners)
+//	for (int i=0; i<fft->get_ysize()*3; i++) printf("%d\t%1.3f\n",i,ctfc[i]);
 	
 	fft->apply_radial_func(0,1.0/fft->get_ysize(),ctfc,1);
 	
@@ -5481,7 +5482,7 @@ EMData* CtfSimProcessor::process(const EMData * const image) {
 			pinkbg.resize(500);
 			float nyimg=0.5/ctf.apix;	// image nyquist
 			// This pink curve came from a typical image in the GroEL 4A data set
-			for (int i=0; i<500; i++) pinkbg[i]=44.0*exp(-5.0*nyimg*i/250.0)+10.0*exp(-90.0*nyimg*i/250.0);		// compute curve to image Nyquist*2
+			for (int i=0; i<500; i++) pinkbg[i]=noiseamp*(44.0*exp(-5.0*nyimg*i/250.0)+10.0*exp(-90.0*nyimg*i/250.0));		// compute curve to image Nyquist*2
 			noise->apply_radial_func(0,.002,pinkbg,1);		// Image nyquist is at 250 -> 0.5
 			fft->add(*noise);
 		}
