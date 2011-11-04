@@ -67,8 +67,8 @@ const string Wiener2DAutoAreaProcessor::NAME = "filter.wiener2dauto";
 const string Wiener2DFourierProcessor::NAME = "filter.wiener2d";
 const string CtfSimProcessor::NAME = "math.simulatectf";
 const string LinearRampFourierProcessor::NAME = "filter.linearfourier";
-const string LoGFourierProcessor::NAME = "filter.loG";
-const string DoGFourierProcessor::NAME = "filter.doG";
+const string LoGFourierProcessor::NAME = "filter.LoG";
+const string DoGFourierProcessor::NAME = "filter.DoG";
 const string HighpassAutoPeakProcessor::NAME = "filter.highpass.autopeak";
 const string LinearRampProcessor::NAME = "eman1.filter.ramp";
 const string AbsoluateValueProcessor::NAME = "math.absvalue";
@@ -5488,9 +5488,10 @@ EMData* CtfSimProcessor::process(const EMData * const image) {
 		
 	}
 	
-	fft->do_ift_inplace();
+	EMData *ret=fft->do_ift();
+	delete fft;
 	
-	return fft;
+	return ret;
 }
 
 

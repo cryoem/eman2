@@ -618,7 +618,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		nav=0
 		
 		stp=max(len(self.data)/32,1)
-		for i in range(1,len(self.data),stp):		# we check ~32 images randomly spaced in the set
+		for i in range(0,len(self.data),stp):		# we check ~32 images randomly spaced in the set
 			d = self.data.get_image_header(i)
 			if d == None: continue
 			mean+=d["mean"]

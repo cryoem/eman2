@@ -584,11 +584,11 @@ class EMFilterTool(QtGui.QMainWindow):
 			
 			self.origdata=EMData(data,0)
 			
-			if self.nz==1:
-				if self.n>20 : 
-					self.origdata=EMData.read_images(data,range(20))
-				elif self.n>1 :
-					self.origdata=EMData.read_images(data,range(self.n))
+			if self.origdata["nz"]==1:
+				if self.nimg>20 : 
+					self.origdata=EMData.read_images(data,range(0,self.nimg,self.nimg/20))		# read regularly separated images from the file totalling ~20
+				elif self.nimg>1 :
+					self.origdata=EMData.read_images(data,range(self.nimg))
 				else: self.origdata=[self.origdata]
 			else :
 				self.origdata=[self.origdata]
