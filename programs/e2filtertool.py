@@ -688,7 +688,7 @@ class EMFilterTool(QtGui.QMainWindow):
 			try: os.unlink("processed_images.hdf")
 			except: pass
 			for i in self.procdata: i.write_image("processed_images.hdf",-1)
-			QtGui.QMessageBox.warning(None,"Saved","The processed image(s) has been saved as processed_images.hdf. Note that this may include only be a subset of a large image stack.")
+			QtGui.QMessageBox.warning(None,"Saved","The processed image(s) has been saved as processed_images.hdf. WARNING: this will include only be a subset of the images in a large image stack. To process the full stack, use e2proc2d.py with the options in filtertool_<filtername>.txt")
 
 	def menu_file_quit(self):
 		self.close()
