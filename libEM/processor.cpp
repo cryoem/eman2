@@ -5458,10 +5458,14 @@ EMData* CtfSimProcessor::process(const EMData * const image) {
 	float noiseampwhite=params.set_default("noiseampwhite",0.0);
 	
 	// compute and apply the CTF
-	vector <float> ctfc = ctf.compute_1d(fft->get_ysize()*3.0,ctf.dsbg,ctf.CTF_AMP,NULL); // (go out to the corners)
-//	for (int i=0; i<fft->get_ysize()*3; i++) printf("%d\t%1.3f\n",i,ctfc[i]);
+	vector <float> ctfc = ctf.compute_1d(fft->get_ysize()*6,ctf.dsbg,ctf.CTF_AMP,NULL); // *6 goes to corner, remember you provide 2x the number of points you need
+
+// 	printf("%1.3f\t%1.3f\t%1.3f\t%1.3f\t%1.3f\t%d\n",ctf.defocus,ctf.bfactor,ctf.ampcont,ctf.dsbg,ctf.apix,fft->get_ysize());
+// 	FILE *out=fopen("x.txt","w");
+// 	for (int i=0; i<ctfc.size(); i++) fprintf(out,"%f\t%1.3g\n",0.25*i/(float)fft->get_ysize(),ctfc[i]);
+// 	fclose(out);
 	
-	fft->apply_radial_func(0,1.0/fft->get_ysize(),ctfc,1);
+	fft->apply_radial_func(0,0.25/fft->get_ysize(),ctfc,1);
 	
 	// Add noise
 	if (noiseamp!=0 or noiseampwhite!=0) {
@@ -5471,9 +5475,9 @@ EMData* CtfSimProcessor::process(const EMData * const image) {
 	
 		// White noise
 		if (noiseampwhite!=0) {
-			noise->mult((float)noiseampwhite);
+			noise->mult((float)noiseampwhite*15.0f);		// The 15.0 is to roughly compensate for the stronger pink noise curve
 			fft->add(*noise);
-			noise->mult((float)1.0/noiseampwhite);
+			noise->mult((float)1.0/(noiseampwhite*15.0f));
 		}
 		
 		// Pink noise
