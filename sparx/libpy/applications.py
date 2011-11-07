@@ -6693,7 +6693,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 		print_msg("Ring step                                 : %i\n"%(rstep))
 		print_msg("X search range                            : %s\n"%(xrng))
 		print_msg("Y number                                  : %s\n"%(ynumber))
-		print_msg("Translational stepx                        : %s\n"%(stepx))
+		print_msg("Translational stepx                       : %s\n"%(stepx))
 		print_msg("Angular step                              : %s\n"%(delta))
 		print_msg("Angular search range                      : %s\n"%(an))
 		print_msg("min radius for helical search (in pix)    : %5.4f\n"%(rmin))
