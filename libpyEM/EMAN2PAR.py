@@ -461,6 +461,7 @@ class EMLocalTaskHandler():
 	"""Local threaded Taskserver. This runs as a thread in the 'Customer' and executes tasks. Not a
 	subclass of EMTaskHandler for efficient local processing and to avoid data name translation."""
 	lock=threading.Lock()
+	allrunning = {}
 	def __init__(self,nthreads=2,scratchdir="/tmp"):
 		self.maxthreads=nthreads
 		self.running=[]			# running subprocesses
@@ -469,7 +470,6 @@ class EMLocalTaskHandler():
 		self.maxid=0
 		self.nextid=0
 		self.doexit=0
-		self.ppid = -1
 
 	
 		os.makedirs(self.scratchdir)
@@ -485,7 +485,6 @@ class EMLocalTaskHandler():
 	def add_task(self,task):
 		EMLocalTaskHandler.lock.acquire()
 		if not isinstance(task,EMTask) : raise Exception,"Non-task object passed to EMLocalTaskHandler for execution"
-		self.ppid = task.ppid
 		dump(task,file("%s/%07d"%(self.scratchdir,self.maxid),"wb"),-1)
 		ret=self.maxid
 		self.maxid+=1
@@ -539,14 +538,18 @@ class EMLocalTaskHandler():
 #					print "Task complete ",p[1]
 					# if we get here, the task completed
 					self.completed.add(p[1])
+					del(EMLocalTaskHandler.allrunning[p[1]])
 			
 			self.running=[i for i in self.running if i[1] not in self.completed]	# remove completed tasks
 			
 			while self.nextid<self.maxid and len(self.running)<self.maxthreads:
 #				print "Launch task ",self.nextid
 				EMLocalTaskHandler.lock.acquire()
-				proc=subprocess.Popen("e2parallel.py" + " localclient" + " --taskin=%s/%07d"%(self.scratchdir,self.nextid) + " --taskout=%s/%07d.out"%(self.scratchdir,self.nextid) + " --ppid=%s"%self.ppid, shell=True)
+				#There is the issue that when shell=True, popen.pid return shell pid and not process, so we set shell=false (there will be issues on Windows, but we don't support paralellization on windows
+				#proc=subprocess.Popen("e2parallel.py" + " localclient" + " --taskin=%s/%07d"%(self.scratchdir,self.nextid) + " --taskout=%s/%07d.out"%(self.scratchdir,self.nextid), shell=True)
+				proc=subprocess.Popen(["e2parallel.py","localclient","--taskin=%s/%07d"%(self.scratchdir,self.nextid),"--taskout=%s/%07d.out"%(self.scratchdir,self.nextid)])
 				self.running.append((proc,self.nextid))
+				EMLocalTaskHandler.allrunning[self.nextid] = proc
 				self.nextid+=1
 				EMLocalTaskHandler.lock.release()
 			

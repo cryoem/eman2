@@ -100,9 +100,11 @@ def DB_cleanup(signum=None,stack=None):
 		print "Shutdown complete, exiting" 
 		sys.stderr.flush()
 		sys.stdout.flush()
+		parallel_process_exit()
 		cuda_exit()
 		os._exit(1)
 	else:
+		parallel_process_exit()
 		cuda_exit()
 
 def cuda_exit():
@@ -110,7 +112,13 @@ def cuda_exit():
 		EMData.cuda_cleanup()
 	except:
 		pass
-	
+
+def parallel_process_exit():
+	from EMAN2PAR import EMLocalTaskHandler
+	for proc in EMLocalTaskHandler.allrunning.values():
+		proc.terminate()
+		os.kill(proc.pid,signal.SIGKILL)
+		
 # if the program exits nicely, close all of the databases
 atexit.register(DB_cleanup)
 

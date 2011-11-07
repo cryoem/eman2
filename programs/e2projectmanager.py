@@ -1306,12 +1306,12 @@ class TaskManager(QtGui.QWidget):
 				for task in self.tasks:
 					if item.getPPID() == task[5]:
 						print "killing self process", task[1]
-						os.kill(task[1],signal.SIGKILL)
+						os.kill(task[1],signal.SIGTERM)
 						self._recursivekill(task[1])
 				# kill parent (top level item)
 				if item.getPPID() > 0:
 					print "KIlling parent"
-					os.kill(item.getPPID(),signal.SIGKILL)
+					os.kill(item.getPPID(),signal.SIGTERM)
 			else:
 				# Windows kill
 				pass
@@ -1320,7 +1320,7 @@ class TaskManager(QtGui.QWidget):
 		for task in self.tasks:
 			if pid == task[5]:
 				print "Killing child process", task[1]
-				os.kill(task[1],signal.SIGKILL)
+				os.kill(task[1],signal.SIGTERM)
 				self._recursivekill(task[1])
 		
 	def closeEvent(self, event):
