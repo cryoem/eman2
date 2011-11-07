@@ -461,7 +461,7 @@ class EMLocalTaskHandler():
 	"""Local threaded Taskserver. This runs as a thread in the 'Customer' and executes tasks. Not a
 	subclass of EMTaskHandler for efficient local processing and to avoid data name translation."""
 	lock=threading.Lock()
-	allrunning = {}
+	allrunning = {}	# Static dict of running local tasks. Used for killing thses task upon parent kill
 	def __init__(self,nthreads=2,scratchdir="/tmp"):
 		self.maxthreads=nthreads
 		self.running=[]			# running subprocesses

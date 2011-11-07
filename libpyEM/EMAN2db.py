@@ -114,6 +114,7 @@ def cuda_exit():
 		pass
 
 def parallel_process_exit():
+	# Kill any running process from e2paralle.py running on localhost. If none are running nothing happens
 	from EMAN2PAR import EMLocalTaskHandler
 	for proc in EMLocalTaskHandler.allrunning.values():
 		proc.terminate()
