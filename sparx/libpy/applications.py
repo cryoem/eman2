@@ -6887,30 +6887,33 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 				#peak, phihi, theta, psi, sxi, syi, t1 = proj_ali_helical(data[im],refrings,numr,xrng[N_step],yrng[N_step],stepx[N_step],ynumber[N_step],psi_max,finfo,)
 				if(peak > -1.0e22):
 					#Guozhi Tao: wrap y-shifts back into box within rise of one helical unit by changing phi
-					jdelta=0.0
 					dpp = (float(dp)/pixel_size)
-					
 					tp = Transform({"type":"spider","phi":phihi,"theta":theta,"psi":psi})
 					tp.set_trans( Vec2f( -sxi, -syi ) )
-					trans1 = tp.get_pre_trans()
-					dyi = (float(trans1[2])/dpp)-int(trans1[2]/dpp)
-
-					if dyi < -0.5-jdelta:  eyi = dyi+1.0
-					elif dyi > 0.5+jdelta:  eyi = dyi-1.0
-					else:                   eyi = dyi
-	       	
-					nperiod = float(eyi*dpp-trans1[2])/dpp
-					th = Transform({"type":"spider","phi": -nperiod*dphi, "tz":nperiod*dpp})
-					tfinal = tp*th
-					ddd = tfinal.get_params("spider")
-					sxnew = - ddd["tx"]
-					synew = - ddd["ty"]
-					phinew  = ddd["phi"]
-					
-					phihi = phinew
-					sxi   = sxnew
-					syi   = synew
-					
+					dtp = tp.get_params("spider")
+					dtp_ty = float( dtp["ty"] )
+					del dtp
+					if( abs(dtp_ty) >dpp/2.0):
+						dtp_ty_temp = dtp_ty
+						if( abs(psi-90) < 90  ):
+							sign_psi = 1
+						else:
+							sign_psi = -1
+						if( dtp_ty > 0):
+							period_step = -1*sign_psi
+						else:
+							period_step = 1*sign_psi
+						nperiod = 0
+						while( abs( dtp_ty_temp ) > dpp/2.0 ):
+							nperiod += period_step
+							th = Transform({"type":"spider","phi": -nperiod*dphi, "tz":nperiod*dpp})
+							tfinal = tp*th
+							df = tfinal.get_params("spider")
+							dtp_ty_temp = float( df["ty"] )
+						phihi = float(df["phi"])
+						sxi   = float(-df["tx"])
+						syi   = float(-df["ty"])
+		
 					# unique range identified by [k0,k1], [k2,k3]
 					tp = Transform({"type":"spider","phi":phihi,"theta":theta,"psi":psi})
 					tp.set_trans( Vec2f( -sxi, -syi ) )
