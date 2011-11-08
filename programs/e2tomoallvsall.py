@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus Galaz, 07/2011
+# Author: Jesus Galaz (with adapted code from e2classaverage3d), 07/2011
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -49,9 +49,10 @@ def main():
 	STILL HEAVILY UNDER DEVELOPMENT.
 	This program produces a final average of a dataset (and mutually exclusive classes of a given size [in terms of a minimum # of particles in each class]),
 	where all particles have been subjected to all vs all alignments and hierarchical ascendent classification.
+	
 	See the e2spt Users Guide downloadable in PDF format from the EMAN2 Wiki for an explanation of this procedure.
 
-	Three pre-processing operations are provided for, mask, normproc and preprocess. They are executed in that order. Each takes
+	Three pre-processing operations are provided: mask, normproc and preprocess. They are executed in that order. Each takes
 	a generic <processor>:<parm>=<value>:...  string. While you could provide any valid processor for any of these options, if
 	the mask processor does not produce a valid mask, then the default normalization will fail. It is recommended that you
 	specify the following, unless you really know what you're doing:
@@ -62,6 +63,9 @@ def main():
 	"""
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+	
+	parser.add_argument("--path",type=str,default=None,help="Path for the refinement, default=auto")
+
 	
 	parser.add_argument("--input", type=str, help="The name of the input volume stack. MUST be HDF or BDB, since volume stack support is required.", default=None)
 	parser.add_argument("--output", type=str, help="The name of the output class-average stack. MUST be HDF or BDB, since volume stack support is required.", default=None)
@@ -116,14 +120,14 @@ def main():
 	if options.postprocess: 
 		options.postprocess=parsemodopt(options.postprocess)
 		
-#	if options.cmpr: 
-#		options.cmpr=parsemodopt(options.cmpr)
-
-
-#	if options.resultmx : 
-#		print "Sorry, resultmx not implemented yet"
-#	if options.resultmx!=None: 
-#		options.storebad=True
+	if options.path and ("/" in options.path or "#" in options.path) :
+		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
+		sys.exit(1)
+		
+	if options.path and options.path[:4].lower()!="bdb:": 
+		options.path="bdb:"+options.path
+	if not options.path: 
+		options.path="bdb:"+numbered_path("spt",True)
 
 	hdr = EMData(options.input,0,True)
 	nx = hdr["nx"]
@@ -145,14 +149,32 @@ def main():
 	
 	nptcl = EMUtil.get_image_count(options.input)
 	if nptcl<3: 
-		print "ERROR: at least 3 particles are required in the input stack for all vs all. Otherwise, to align 2 particles use e2classaverage3d.py"
+		print "ERROR: at least 3 particles are required in the input stack for all vs all. Otherwise, to align 2 particles (one to the other) use e2classaverage3d.py"
 		sys.exit(1)
+	
+	newptcls=[]
+	allptcls=[]
+	for i in range(nptcl):
+		#a=EMData(options.input,i,True)				#Read the header only for each particle and set the "multiplicity" parameter to 1 if there is no such parameter
+		a=EMData(options.input,i)
+		if 'spt_multiplicity' not in a.get_attr_dict():
+			a['spt_multiplicity']=1
+			a.write_image(options.input,i)
+		if 'spt_ptcl_indxs' not in a.get_attr_dict():		#Set the spt_ptcl_indxs header parameter to keep track of what particles the current particle is an average of
+			a['spt_ptcl_indxs']=i				#In this case, the fresh/new stack should contain particles where this parameter is the particle number itself
+			a.write_image(options.input,i)
+		newptcls.append(a)
+		allptcls.append(a)
 		
-	allptcls = range(nptcl)
-	newptcls = range(nptcl)
+	#allptcls = range(nptcl)
+	#nptcls = range(nptcl)
+	
+	setOLD = set([])
+	oldptcls = []
+
 	for k in range(options.iter):
 		'''
-		Make ALL vs ALL comparisons among all NEW particles.
+		Make ALL vs ALL comparisons among all NEW particle INDEXES.
 		NOTE: In the first round all the particles are "new"
 		'''
 		
@@ -170,9 +192,16 @@ def main():
 		for ptcl1, compare in newptclsmap:
 			for ptcl2 in compare:
 				
-				ref = EMData(options.input,ptcl1)
-				task = Align3DTask(ref,["cache",options.input,ptcl2],jj,ptcl1,ptcl2,"Aligning particle#%d VS particle#%d in iteration %d" % (ptcl1,ptcl2,k),options.mask,options.normproc,options.preprocess,
+				#ref = EMData(options.input,ptcl1)
+				
+				ref = newptcls[ptcl1]
+				
+				#task = Align3DTask(ref,["cache",options.input,ptcl2],jj,ptcl1,ptcl2,"Aligning particle#%d VS particle#%d in iteration %d" % (ptcl1,ptcl2,k),options.mask,options.normproc,options.preprocess,
+				#options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
+				
+				task = Align3DTask(ref,["cache",newptcls[ptcl2]],jj,'new_' + str(ptcl1),'new_' +str(ptcl2),"Aligning particle#%d VS particle#%d of the 'NEW SET' in iteration %d" % (ptcl1,ptcl2,k),options.mask,options.normproc,options.preprocess,
 				options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
+				
 				tasks.append(task)
 				
 				jj+=1
@@ -181,9 +210,10 @@ def main():
 				#ranks.append(info)							#Add comparison to a list that will shortly be sorted by ccc score, to determine the "UNIQUE best pairs"
 		
 		'''
-		Make comparisons for all NEW VS all OLD particles. "NEW" means particles that didn't exist in the previous round
-		There are no "new" and "old" particles in the first round; thus this is needed only for k>0
+		Make comparisons for all NEW VS all OLD particles. "NEW" means particles that didn't exist in the previous round.
+		There are no "new" and "old" particles in the first round; thus the loop below is needed only for k>0
 		'''
+				
 		if k > 0:		
 			if len(allptcls) == 1:
 				print "The all vs all alignment has finalized and converged into one average"
@@ -192,32 +222,32 @@ def main():
 				
 			setNEW = set(newptcls)
 			setALL = set(allptcls)
+			setOLD = setALL - setNEW
+			
+			oldptcls = list(setOLD)
 
 			if options.verbose:
-				print "The set of NEW particles is", setNEW
-				print "The set of ALL particles is", setALL
-				setOLD = setALL - setNEW
-				print "Therefore, the set of all OLD particles is their difference", setOLD
+				print "The set of NEW particles has these many in it", len(setNEW)
+				print "The set of ALL particles has these many in it", len(setALL)
+				print "Therefore, the difference is the amount of old particles remaining", len(setOLD)
 
-			for ptcl1 in setNEW:
-				for ptcl2 in setOLD:
-					ref = EMData(options.input,ptcl1)
-					task = Align3DTask(ref,["cache",options.input,ptcl2],comparison,ptcl1,ptcl2,"Aligning particle#%d VS particle#%d in iteration %d" % (ptcl1,ptcl2,k),options.mask,options.normproc,options.preprocess,
-					options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
-					tasks.append(task)
+			xx=0
+			for ptcl1 in newptcls:
+				yy=0
+				for ptcl2 in oldptcls:
 					
-					particle1 = EMData(np,0)		#Load the particles
-					particle2 = EMData(op,0)
-
-					particle1_ed = editor(parameters, particle1,'no')[0]		#Preprocess the particles to prepare them for alignment
-					particle2_ed = editor(parameters, particle2,'no')[0]
-
-					rtresults = tomohunt(parameters, particle1, particle2)		#Actual alignment; get back only the returned transform
-					rt2apply = rtresults['xform.align3d']
-					score = rtresults['score']					
-					info = [np, op, rt2apply, score]
-					ranks.append(info)						#Add comparison to a list that will shortly be sorted by ccc score	
-		
+					#ref = EMData(ptcl1)	
+					#task = Align3DTask(ref,["cache",options.input,ptcl2],comparison,ptcl1,ptcl2,"Aligning particle#%d VS particle#%d in iteration %d" % (ptcl1,ptcl2,k),options.mask,options.normproc,options.preprocess,
+					#options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
+					
+					task = Align3DTask(ptcl1,["cache",ptcl2],jj,'new_'+str(xx),'old_'+str(yy),"Aligning particle#%d of the OLD set VS particle#%d of the NEW set, in iteration %d" % (xx,yy,k),options.mask,options.normproc,options.preprocess,
+					options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
+					
+					tasks.append(task)
+										
+					yy+=1
+				xx+=1
+				jj+=1	
 		
 		# start the alignments running
 		tids=etc.send_tasks(tasks)
@@ -225,203 +255,120 @@ def main():
 			print "%d tasks queued in iteration %d"%(len(tids),k) 
 
 		# Wait for alignments to finish and get results
-		results=get_results(etc,tids,options.verbose)
+		results = get_results(etc,tids,options.verbose)
 		
 		results = sorted(results, key=itemgetter('score'))
 
 		if options.verbose>2 : 
 			print "The SORTED results are:"
-			pprint(results)
+			print results
+			
+			coeffs=[]
+			for i in results:
+				coeffs.append(i['score'])
+
+			print "Therefore the ordered coefficients are", coeffs
 		
 		print "This many comparisons were made", len(results)
 		
-		coeffs=[]
-		for i in results:
-			coeffs.append(i['score'])
-
-		print "Therefore the coefficients are", coeffs
-		
-		
-		'''
-		newaverages=make_averages(options.input,results,options.averager,options.saveali,options.keep,options.keepsig,options.verbose)		# the reference for the next iteration
-
-		#postprocess(ref,options.mask,options.normproc,options.postprocess) #jesus
-		postprocess(ref,None,options.normproc,options.postprocess) #jesus
-
-		if options.sym!=None : 
-			if options.verbose : print "Apply ",options.sym," symmetry"
-			symmetrize(ref,options.sym)
-
-		if options.savesteps :
-			ref.write_image("bdb:class_%02d"%ic,it)
-
-	if options.verbose: 
-		print "Preparing final average"		
-	# new average
-	ref=make_average(options.input,results,options.averager,options.saveali,options.keep,options.keepsig,options.verbose)		# the reference for the next iteration
-
-	#if options.postprocess!=None: 
-		#ref.process_inplace(options.postprocess[0],options.postprocess[1])     #jesus - The post process should be applied to the refinment averages. The last one is identical
-												#to the output final average, so no need to apply it to ref. Plus, you ALWAYS want to have a copy
-												#of the average of the raw particles, completley raw
-	ref['origin_x']=0
-	ref['origin_y']=0		#jesus - The origin needs to be reset to ZERO to avoid display issues in Chimera
-	ref['origin_z']=0
-	ref.write_image(options.output,ic)
-		'''
-		
-		
-		
-		
-		
-		
-		'''
-		ranks_sorted = sorted(ranks, key=operator.itemgetter(-1), reverse=True)		#Sort pairs by ccc score
-		
-		ranks_filename = 'ranks_' + common + new.rstrip('_') + '.lst'			#Store the ordered rank of ALL PAIRS to a file
-		ranks_file = open(ranks_filename,'w')
-		
-		#
-		#Determine WHICH PAIRS TO AVERAGE
-		#
-		
-		best_pairs_filename = 'best_pairs_' + common + new.rstrip('_')  + '.lst'	#Store AVERAGED PAIRS in the round for fast reference/verification
-		best_pairs_file = open(best_pairs_filename,'w')
-		
-		done_dir = 'done_' + common + new.rstrip('_')
-		launch_childprocess('mkdir ' + done_dir)
-					
-		new = '_rt' + str(k + 1).zfill(len(str(parameters['rounds']))) + '_'	#Mark particles according to round they were produced in
-		jj = 1
 		tried = set()
 		averaged = set()
-		ranks = []
-		for rs in ranks_sorted:
-			rotations = rs[2].get_rotation()
-			translations = rs[2].get_trans()
-			az = str(int(rotations['az']*100)/100.0).zfill(6)
-			alt = str(int(rotations['alt']*100)/100.0).zfill(6)
-			phi = str(int(rotations['phi']*100)/100.0).zfill(6)
-			x = str(int(translations[0]*100)/100.0).zfill(6)
-			y = str(int(translations[1]*100)/100.0).zfill(6)
-			z = str(int(translations[2]*100)/100.0).zfill(6)
-			score = str(int(rs[3]*1000000)/1000000.0).zfill(6)
-			
-			pair = rs[0] + ' vs ' + rs[1]
-			line =  pair + ' az=%s alt=%s phi=%s tx=%s ty=%s tz=%s score=%s\n' %(az,alt,phi,x,y,z,score)
-			ranks_file.write(line)
-			
-			file1 = rs[0]
-			file2 = rs[1]
-			if file1 not in tried and file2 not in tried:
-				a = EMData(file1,0)
-				b = EMData(file2,0)
-				print "\n\n\n===========File 1 and 2 are", file1, file2
-				am = int(file1.split('.hdf')[0].split('_m')[1])		#To average appropriately you need to account for the "multiplicity"
-				bm = int(file2.split('.hdf')[0].split('_m')[1])		#of the particles being averaged. That is, consider how many particles
-				multiplicity = am + bm					#they themselves are an average of. The filenames' "m" tags determines this.
-
-				average = (a + b)/multiplicity
-				average = average.process(parameters['normalization'])
+		averages =[]
+		
+		mm=0
+		for pair in results:
+			if pair['ptcl1'] not in tried and pair['ptcl2'] not in tried:
 				
-				avgnum = str(jj).zfill(len(str(n)))
-				avgname = common + new + '#' + avgnum + '_m' + str(multiplicity) + '.hdf'
-				a.write_image(avgname,0)
-				jj += 1
+				tried.add(pair['ptcl1'])		
+				tried.add(pair['ptcl2'])						#Add both of the scanned particles to both groups of scanned/tried AND averaged particles, 
+													#since all particle pairs that aren't already in the 'tried' group MUST be averaged
+				averaged.add(pair['ptcl1'])
+				averaged.add(pair['ptcl2'])
 				
-				best_pairs_file.write(pair + ' ' + score + '\n')
-				print "In round", k
-				print "I have averaged %s and %s into %s" % (file1, file2,avgname)
-				averaged.add(file1)
-				averaged.add(file2)
-			if file1 not in tried:
-				tried.add(file1)
-			if file2 not in tried:
-				tried.add(file2)
+				avgr=Averagers.get(averager[0], averager[1])				#Call the averager
 				
-		for qq in averaged:
-			launch_childprocess('mv ' + qq + ' ' + done_dir)
-		launch_childprocess('mv *.lst ' + done_dir)
-
-		for pp in ranks_sorted:
-			pps = set(pp)
-			dif = pps - averaged
-			if len(dif) == 4:
-				ranks.append(pp)
-		k += 1
-		'''
-		
-		
-		
+				ptcl1=EMAN2.EMData()
 				
+				if 'new' in pair['ptcl1']:
+					ptcl1 = newptcls[int(pair['ptcl1'].split('_')[-1])]				
+				elif 'old' in pair['ptcl1']:
+					ptcl1 = oldptcls[int(pair['ptcl1'].split('_')[-1])]
+				
+				ptcl1 = ptcl1 * ptcl1['spt_multiplicity']				#Take the multiplicity of ptcl1 into account
+					
+				avgr.add_image(ptcl1)							#Add particle 1 to the average
+				
+				ptcl2=EMAN2.EMData()
+				
+				if 'new' in pair['ptcl2']:
+					ptcl2 = newptcls[int(pair['ptcl2'].split('_')[-1])]				
+				elif 'old' in pair['ptcl2']:
+					ptcl2 = oldptcls[int(pair['ptcl2'].split('_')[-1])]
+				
+				ptcl2 = ptcl2 * ptcl2['spt_multiplicity']				#Take the multiplicity of ptcl1 into account				
+				
+				ptcl2.process_inplace("xform",{"transform":pair["xform.align3d"]})	#Apply the relative alignment between particles 1 and 2 to particle 2,
+													#since particle 1 is always the "fixed" one and particle 2 the "moving" one during alignment
+				
+				avgr.add_image(ptcl2)							#Add the transformed (rotated and translated) particle 2 to the average
 		
-		
-		
+				avg=avgr.finish()
+				avg["spt_ptcl_indxs"] = list(set(ptcl1["spt_ptcl_indxs"]).union(set(ptcl2["spt_ptcl_indxs"])))	#Keep track of what particles go into each average or "new particle"				
+				avg["spt_ptcl_src"] = options.input
+				
+				avg['origin_x'] = 0							#The origin needs to be reset to ZERO to avoid display issues in Chimera
+				avg['origin_y'] = 0
+				avg['origin_z'] = 0
+				
+				#avg.write_image("bdb:new%02d_ptcl"%(k),mm)
+				avg.write_image("%s/new%02d_ptcl"%(options.path,k),mm)			#Particles from a "new round" need to be in a "new stack" defined by counter k; the number
+													#of particles in it is determined by counter mm, which increments when a pair is averaged
+				averages.append(avg)	   #The list of averages will become the new set of "newptcls"
+				
+				mm+=1
+				
+			if pair['ptcl1'] not in tried:
+				tried.add(pair['ptcl1'])
+				
+			if pair['ptcl2'] not in tried:
+				tried.add(pair['ptcl2'])
+						
+		for particle in averaged:
+			if particle in newptcls:
+				newptcls.remove(particle)				
+			if particle in oldptcls:
+				oldptcls.remove(particle)
+				
+		oldptcls.append(newptcls)			#All the particles from the newptcls list that were not averaged become "old"
+		newptcls=averages				#All the new averages become part of the new "newptcls" list
+	
 		E2end(logger)
 
 		return()
 
 
-
-
-
-
 '''
-
 def make_averages(ptcl_file,align_parms,averager,saveali,verbose=1):
 	"""Will take a set of alignments and an input particle stack filename and produce a new class-average.
 	Particles may be excluded based on the keep and keepsig parameters. If keepsig is not set, then keep represents
 	an absolute fraction of particles to keep (0-1). Otherwise it represents a sigma multiplier akin to e2classaverage.py"""
 	
-	if keepsig:
-		# inefficient memory-wise
-		val=sum([p[0]["score"] for p in align_parms])
-		val2=sum([p[0]["score"]**2 for p in align_parms])
-		
-		mean=val/len(align_parms)
-		sig=sqrt(val2/len(align_parms)-mean*mean)
-		thresh=mean+sig*keep
-		if verbose: 
-			print "Keep threshold : %f (mean=%f  sigma=%f)"%(thresh,mean,sig)
-	
-	if groups > 1:
-		print "This is an example of where I'm getting the score from", align_parms[0][0]						#jesus
-		val=[p[0]["score"] for p in align_parms]
-		
-		val.sort()
-		threshs = []
-		print "The number of groups you have requested is", groups
-		for i in range(groups - 1):
-			threshs.append(val[int((i+1)*(1.0/groups)*len(align_parms)) -1])
-		print "Therefore, based on the size of the set, the particles whose coefficients will work as thresholds are", threshs	
-	
-	if keep:
-		val=[p[0]["score"] for p in align_parms]
-		val.sort()
-		thresh=val[int(keep*len(align_parms))-1]
-		if verbose: 
-			print "Keep threshold : %f (min=%f  max=%f)"%(thresh,val[0],val[-1])
-	
 	avgr=Averagers.get(averager[0], averager[1])
-	included=[]
+
 	for i,ptcl_parms in enumerate(align_parms):
 		ptcl=EMData(ptcl_file,i)
 		ptcl.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
 		
-		if ptcl_parms[0]["score"]<=thresh: 
-			avgr.add_image(ptcl)
-			included.append(i)
+		avgr.add_image(ptcl)
+		
 		if saveali:
 			ptcl['origin_x'] = 0
 			ptcl['origin_y'] = 0		# jesus - the origin needs to be reset to ZERO to avoid display issues in Chimera
 			ptcl['origin_z'] = 0
 			ptcl.write_image("bdb:class_ptcl",i)
 	
-	if verbose: 
-		print "Kept %d / %d particles in average"%(len(included),len(align_parms))
-	
 	ret=avgr.finish()
-	ret["class_ptcl_idxs"]=included
+	ret["class_ptcl_idxs"]=range(align_parms)
 	ret["class_ptcl_src"]=ptcl_file
 	
 	return ret
@@ -448,7 +395,7 @@ def get_results(etc,tids,verbose):
 			if prog==-1 : nwait+=1
 			if prog==100 :
 				r=etc.get_results(tidsleft[i])						# results for a completed task
-				print "\n@@@@@@The results for the completed task are", r
+				#print "\n@@@@@@The results for the completed task are", r
 				comparison=r[0].options["comparison"]					# get the comparison number from the task rather than trying to work back to it
 				results[comparison]=r[1]["final"][0]					# this will be a list of (qual,Transform), containing the BEST peak ONLY
 				
@@ -483,20 +430,27 @@ class Align3DTask(EMTask):
 
 		self.options={"comparison":comparison,"ptcl1":ptcl1,"ptcl2":ptcl2,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"npeakstorefine":npeakstorefine,"align":align,"aligncmp":aligncmp,"ralign":ralign,"raligncmp":raligncmp,"shrink":shrink,"shrinkrefine":shrinkrefine,"verbose":verbose}
 	
+		#self.options={"comparison":comparison,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"npeakstorefine":npeakstorefine,"align":align,"aligncmp":aligncmp,"ralign":ralign,"raligncmp":raligncmp,"shrink":shrink,"shrinkrefine":shrinkrefine,"verbose":verbose}
+
 	def execute(self,callback=None):
 		"""This aligns one volume to a reference and returns the alignment parameters"""
 		options=self.options
-		if options["verbose"]: 
+		if options["verbose"]>1: 
 			print "Aligning ",options["label"]
 
 		if isinstance(self.data["fixedimage"],EMData):
 			fixedimage=self.data["fixedimage"]
 		else: 
-			fixedimage=EMData(self.data["fixedimage"][1],self.data["fixedimage"][2])
+			print "You are not passing in an EMData REFERENCE!"
+
+			#fixedimage=EMData(self.data["fixedimage"][1],self.data["fixedimage"][2])
 		
 		if isinstance(self.data["image"],EMData):
 			image=self.data["image"]
-		else : image=EMData(self.data["image"][1],self.data["image"][2])
+		else: 
+			print "You are not passing in an EMData PARTICLE!"
+			
+			#image=EMData(self.data["image"][1],self.data["image"][2])
 		
 		# Preprocessing applied to both volumes.
 		# Make the mask first, use it to normalize (optionally), then apply it 
@@ -540,7 +494,7 @@ class Align3DTask(EMTask):
 			s2image=image
 			
 
-		if options["verbose"]: 
+		if options["verbose"]>1: 
 			print "Align size %d,  Refine Align size %d"%(sfixedimage["nx"],s2fixedimage["nx"])
 
 		#If a Transform was passed in, we skip coarse alignment
@@ -591,10 +545,10 @@ class Align3DTask(EMTask):
 		
 		bestfinal = sorted(bestfinal, key=itemgetter('score'))
 		
-		print "\n$$$$\n$$$$\n$$$$\n$$$$\n$$$$\n$$$$The best peaks sorted are" 
-		
-		for i in bestfinal:
-			print bestfinal
+		#print "\n$$$$\n$$$$\n$$$$\n$$$$\n$$$$\n$$$$The best peaks sorted are" 
+		#
+		#for i in bestfinal:
+		#	print bestfinal
 		
 		if bestfinal[0]["score"] == 1.0e10 :
 			print "Error: all refine alignments failed for %s. May need to consider altering filter/shrink parameters. Using coarse alignment, but results are likely invalid."%self.options["label"]
