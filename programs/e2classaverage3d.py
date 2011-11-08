@@ -346,7 +346,7 @@ def main():
 		ref['origin_y']=0		#jesus - The origin needs to be reset to ZERO to avoid display issues in Chimera
 		ref['origin_z']=0
 		#output_pathname=
-		ref.write_image(options.output,ic)
+		ref.write_image("%s/%s" % (options.path.replace('bdb:',''),options.output),ic)
 	E2end(logger)
 
 
@@ -461,7 +461,8 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 					groupslist[i][j].write_image(classname,j)
 					
 			avg=avgr.finish()
-			avg=avg.process('xform.applysym',{'sym':symmetry})
+			if symmetry:
+				avg=avg.process('xform.applysym',{'sym':symmetry})
 			avg["class_ptcl_idxs"]=includedlist[i]
 			avg["class_ptcl_src"]=ptcl_file
 			
@@ -524,7 +525,8 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 			print "Kept %d / %d particles in average"%(len(included),len(align_parms))
 
 		ret=avgr.finish()
-		ret=ret.process('xform.applysym',{'sym':symmetry})
+		if symmetry:
+			ret=ret.process('xform.applysym',{'sym':symmetry})
 		ret["class_ptcl_idxs"]=included
 		ret["class_ptcl_src"]=ptcl_file
 		
