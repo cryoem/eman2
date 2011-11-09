@@ -117,7 +117,7 @@ class EMTaskCustomer:
 				if target.split(":")[3].lower()=="nocache" : 
 					self.cache=False
 					print "Caching disabled at user request"
-				else self.cache=True
+				else: self.cache=True
 			except: self.cache=True
 			self.handler=EMMpiTaskHandler(self.maxthreads,self.scratchdir,self.cache)
 		else : raise Exception,"Only 'dc', 'thread' and 'mpi' servertypes currently supported"
