@@ -161,7 +161,7 @@ def main():
 			a['spt_multiplicity']=1
 			a.write_image(options.input,i)
 		if 'spt_ptcl_indxs' not in a.get_attr_dict():		#Set the spt_ptcl_indxs header parameter to keep track of what particles the current particle is an average of
-			a['spt_ptcl_indxs']=i				#In this case, the fresh/new stack should contain particles where this parameter is the particle number itself
+			a['spt_ptcl_indxs']=[i]				#In this case, the fresh/new stack should contain particles where this parameter is the particle number itself
 			a.write_image(options.input,i)
 		newptcls.append(a)
 		allptcls.append(a)
@@ -196,10 +196,13 @@ def main():
 				
 				ref = newptcls[ptcl1]
 				
+				#print "The ref and ptcl2 to be sent are EMData type, see!!", type(ref), type(newptcls[ptcl2])
+				#print "And their dimensions are integers, see", ref['nx'], type(ref['nx']), newptcls[ptcl2]['nx'], type(newptcls[ptcl2]['nx'])
+				
 				#task = Align3DTask(ref,["cache",options.input,ptcl2],jj,ptcl1,ptcl2,"Aligning particle#%d VS particle#%d in iteration %d" % (ptcl1,ptcl2,k),options.mask,options.normproc,options.preprocess,
 				#options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
 				
-				task = Align3DTask(ref,["cache",newptcls[ptcl2]],jj,'new_' + str(ptcl1),'new_' +str(ptcl2),"Aligning particle#%d VS particle#%d of the 'NEW SET' in iteration %d" % (ptcl1,ptcl2,k),options.mask,options.normproc,options.preprocess,
+				task = Align3DTaskAVSA(ref,["cache",newptcls[ptcl2]],jj,'new_' + str(ptcl1),'new_' +str(ptcl2),"Aligning particle#%d VS particle#%d of the 'NEW SET' in iteration %d" % (ptcl1,ptcl2,k),options.mask,options.normproc,options.preprocess,
 				options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
 				
 				tasks.append(task)
@@ -240,7 +243,10 @@ def main():
 					#task = Align3DTask(ref,["cache",options.input,ptcl2],comparison,ptcl1,ptcl2,"Aligning particle#%d VS particle#%d in iteration %d" % (ptcl1,ptcl2,k),options.mask,options.normproc,options.preprocess,
 					#options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
 					
-					task = Align3DTask(ptcl1,["cache",ptcl2],jj,'new_'+str(xx),'old_'+str(yy),"Aligning particle#%d of the OLD set VS particle#%d of the NEW set, in iteration %d" % (xx,yy,k),options.mask,options.normproc,options.preprocess,
+					#print "The ref and ptcl2 to be sent are EMData type, see!!", type(ptcl1), type(ptcl2)
+					#print "And their dimensions are integers, see", ptcl1['nx'], type(ptcl1['nx']), ptcl2['nx'], type(ptcl2['nx'])
+					
+					task = Align3DTaskAVSA(ptcl1,["cache",ptcl2],jj,'new_'+str(xx),'old_'+str(yy),"Aligning particle#%d of the OLD set VS particle#%d of the NEW set, in iteration %d" % (xx,yy,k),options.mask,options.normproc,options.preprocess,
 					options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
 					
 					tasks.append(task)
@@ -285,9 +291,9 @@ def main():
 				averaged.add(pair['ptcl1'])
 				averaged.add(pair['ptcl2'])
 				
-				avgr=Averagers.get(averager[0], averager[1])				#Call the averager
+				avgr=Averagers.get(options.averager[0], options.averager[1])				#Call the averager
 				
-				ptcl1=EMAN2.EMData()
+				ptcl1=EMData()
 				
 				if 'new' in pair['ptcl1']:
 					ptcl1 = newptcls[int(pair['ptcl1'].split('_')[-1])]				
@@ -298,7 +304,7 @@ def main():
 					
 				avgr.add_image(ptcl1)							#Add particle 1 to the average
 				
-				ptcl2=EMAN2.EMData()
+				ptcl2=EMData()
 				
 				if 'new' in pair['ptcl2']:
 					ptcl2 = newptcls[int(pair['ptcl2'].split('_')[-1])]				
@@ -313,7 +319,7 @@ def main():
 				avgr.add_image(ptcl2)							#Add the transformed (rotated and translated) particle 2 to the average
 		
 				avg=avgr.finish()
-				avg["spt_ptcl_indxs"] = list(set(ptcl1["spt_ptcl_indxs"]).union(set(ptcl2["spt_ptcl_indxs"])))	#Keep track of what particles go into each average or "new particle"				
+				avg["spt_ptcl_indxs"] = list(set([ptcl1"spt_ptcl_indxs"]).union(set(ptcl2["spt_ptcl_indxs"])))	#Keep track of what particles go into each average or "new particle"				
 				avg["spt_ptcl_src"] = options.input
 				
 				avg['origin_x'] = 0							#The origin needs to be reset to ZERO to avoid display issues in Chimera
@@ -415,7 +421,7 @@ def get_results(etc,tids,verbose):
 	return results
 
 
-class Align3DTask(EMTask):
+class Align3DTaskAVSA(EMTask):
 	"""This is a task object for the parallelism system. It is responsible for aligning one 3-D volume to another, with a variety of options"""
 
 	def __init__(self,fixedimage,image,comparison,ptcl1,ptcl2,label,mask,normproc,preprocess,npeakstorefine,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,verbose):
@@ -438,24 +444,33 @@ class Align3DTask(EMTask):
 		if options["verbose"]>1: 
 			print "Aligning ",options["label"]
 
-		if isinstance(self.data["fixedimage"],EMData):
-			fixedimage=self.data["fixedimage"]
-		else: 
-			print "You are not passing in an EMData REFERENCE!"
-
-			#fixedimage=EMData(self.data["fixedimage"][1],self.data["fixedimage"][2])
+		#if isinstance(self.data["fixedimage"],EMData):
 		
-		if isinstance(self.data["image"],EMData):
-			image=self.data["image"]
-		else: 
-			print "You are not passing in an EMData PARTICLE!"
-			
-			#image=EMData(self.data["image"][1],self.data["image"][2])
+		fixedimage=self.data["fixedimage"]
+		print "Inside the class, the fixedimage received is of type", type(fixedimage)
+		print "And its dimensions are of type", fixedimage['nx'], type(fixedimage['nx'])
+		
+		#else: 
+		#	print "You are not passing in an EMData REFERENCE!"
+		#	fixedimage=EMData(self.data["fixedimage"][1],self.data["fixedimage"][2])
+		
+		#if isinstance(self.data["image"],EMData):
+		
+		image=self.data["image"][-1]
+		print "Inside the class, the image received is of type", type(image)
+		print "And its dimensions are of type", image['nx'], type(image['nx'])
+
+		
+		#else: 
+		#	print "You are not passing in an EMData PARTICLE!"
+		#	image=EMData(self.data["image"][1],self.data["image"][2])
 		
 		# Preprocessing applied to both volumes.
 		# Make the mask first, use it to normalize (optionally), then apply it 
-		mask=EMData(image["nx"],image["ny"],image["nz"])
+		
+		mask=EMData(int(image['nx']),int(image['ny']),int(image['nz']))
 		mask.to_one()
+		
 		if options["mask"] != None:
 			print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options["mask"][0],options["mask"][1]) 
 			mask.process_inplace(options["mask"][0],options["mask"][1])
