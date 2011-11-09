@@ -255,7 +255,8 @@ class ComputeTilts:
 			tiltpars = self.find_bestsymsoln(imgnum, untilt_euler_xform, tilt_euler_xform)
 			
 			# Write out test results
-			volume.project('standard', untilt_euler_xform).write_image("projections.hdf", imgnum)
+			volume.project('standard', untilt_euler_xform).write_image("projections_ut.hdf", imgnum)
+			volume.project('standard', tilt_euler_xform).write_image("projections_t.hdf", imgnum)
 			untiltimgs[imgnum].set_attr('tiltangle',round(tiltpars[0],2))
 			untiltimgs[imgnum].set_attr('tiltaxis',round(tiltpars[1],2))
 			untiltimgs[imgnum].write_image("untiltaligned.hdf", imgnum)

@@ -67,7 +67,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 	parser.add_argument("--oneout",action="store_true",help="Output is a single 2-D image rather than a set of 1-D images",default=False)
 	parser.add_argument("--nbasis","-n",type=int,help="Will use the first n basis images from the input, excluding the mean if present",default=-1)
 
-	parser.add_argument("--basislist","-z",type=str,help="List of basis vectors to use.",default=None)
+	parser.add_argument("--basislist","-z",type=str,help="List of basis vectors to use, comma delimited.",default=None)
 
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
