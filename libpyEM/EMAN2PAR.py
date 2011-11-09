@@ -49,13 +49,11 @@ from EMAN2 import test_image,EMData,abs_path,local_datetime,EMUtil,Util
 from EMAN2db import EMTask,EMTaskQueue,db_open_dict,db_remove_dict,e2filemodtime,db_check_dict
 from e2classaverage import ClassAvTask
 from e2classaverage3d import Align3DTask
-
-from e2tomoallvsall import Align3DTaskAVSA
-
 from e2tiltvalidate import CompareToTiltTask
 from e2symsearch import SymAlignTask
 from e2simmx import EMSimTaskDC
 from e2project3d import EMProject3DTaskDC
+#from e2tomoallvsall import Align3DTaskAVSA
 #from e2tomoaverage import EMTomoAlignTaskDC
 import SocketServer
 from cPickle import dumps,loads,dump,load
