@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 #
 # Author: Grant Tang (gtang@bcm.edu)
-# Copyright (c) 2000-2006 Baylor College of Medicine
+# 2nd Author: John Flanagan (jfflanag@bcm.edu)
+# Copyright (c) 2011- Baylor College of Medicine
 
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -44,6 +45,33 @@ from libpyGLUtils2 import FTGLFontMode
 class EMCube(EMItem3D):
 	name = "Cube"
 	nodetype = "ShapeNode"
+	
+	@staticmethod
+	def getNodeDialogWidget(attribdict):
+		"""
+		Return a cube control widget for the stacked_widget
+		"""
+		cubewidget = QtGui.QWidget()
+		grid = QtGui.QGridLayout()
+		cube_dim_label = QtGui.QLabel("Cube Dimension")
+		attribdict["cube_dim"] = QtGui.QLineEdit("50")
+		node_name_label = QtGui.QLabel("Cube Name")
+		attribdict["node_name"] = QtGui.QLineEdit(str(EMCube.name))
+		grid.addWidget(cube_dim_label, 0, 0, 1, 2)
+		grid.addWidget(attribdict["cube_dim"], 0, 2, 1, 2)
+		grid.addWidget(node_name_label , 1, 0, 1, 2)
+		grid.addWidget(attribdict["node_name"], 1, 2, 1, 2)
+		EMItem3D.get_transformlayout(grid, 2, attribdict)
+		cubewidget.setLayout(grid)
+		return cubewidget
+	
+	@staticmethod
+	def getNodeForDialog(attribdict):
+		"""
+		Create a new node using a attribdict
+		"""
+		return EMCube(float(attribdict["cube_dim"].text()), transform=EMItem3D.getTransformFromDict(attribdict))
+		
 	def __init__(self, size, transform=None):
 		if not transform: transform = Transform()
 		EMItem3D.__init__(self, parent=None, children=set(), transform=transform)
@@ -192,6 +220,33 @@ class EMCube(EMItem3D):
 class EMSphere(EMItem3D):
 	name = "Sphere"
 	nodetype = "ShapeNode"
+	
+	@staticmethod
+	def getNodeDialogWidget(attribdict):
+		"""
+		Return a sphere control widget for the stacked_widget
+		"""
+		spherewidget = QtGui.QWidget()
+		grid = QtGui.QGridLayout()
+		sphere_dim_label = QtGui.QLabel("Sphere Dimension")
+		attribdict["sphere_dim"] = QtGui.QLineEdit("50")
+		node_name_label = QtGui.QLabel("Sphere Name")
+		attribdict["node_name"] = QtGui.QLineEdit(str(EMSphere.name))
+		grid.addWidget(sphere_dim_label, 0, 0, 1, 2)
+		grid.addWidget(attribdict["sphere_dim"], 0, 2, 1, 2)
+		grid.addWidget(node_name_label , 1, 0, 1, 2)
+		grid.addWidget(attribdict["node_name"], 1, 2, 1, 2)
+		EMItem3D.get_transformlayout(grid, 2, attribdict)
+		spherewidget.setLayout(grid)
+		return spherewidget
+	
+	@staticmethod
+	def getNodeForDialog(attribdict):
+		"""
+		Create a new node using a attribdict
+		"""
+		return EMSphere(float(attribdict["sphere_dim"].text()), transform=EMItem3D.getTransformFromDict(attribdict))
+		
 	def __init__(self, radius, transform=None):
 		if not transform: transform = Transform()
 		EMItem3D.__init__(self, parent=None, children=set(), transform=transform)
@@ -292,6 +347,37 @@ class EMSphere(EMItem3D):
 class EMCylinder(EMItem3D):
 	name = "Cylinder"
 	nodetype = "ShapeNode"
+	
+	@staticmethod
+	def getNodeDialogWidget(attribdict):
+		"""
+		Return a cylinder control widget for the stacked_widget
+		"""
+		cyliderwidget = QtGui.QWidget()
+		grid = QtGui.QGridLayout()
+		cylider_radius_label = QtGui.QLabel("Cylider Radius")
+		attribdict["cylider_radius"] = QtGui.QLineEdit("50")
+		grid.addWidget(cylider_radius_label, 0, 0, 1, 2)
+		grid.addWidget(attribdict["cylider_radius"], 0, 2, 1, 2)
+		cylider_height_label = QtGui.QLabel("Cylider Height")
+		attribdict["cylider_height"] = QtGui.QLineEdit("50")
+		node_name_label = QtGui.QLabel("Cylider Name")
+		attribdict["node_name"] = QtGui.QLineEdit(str(EMCylinder.name))
+		grid.addWidget(cylider_height_label, 1, 0, 1, 2)
+		grid.addWidget(attribdict["cylider_height"], 1, 2, 1, 2)
+		grid.addWidget(node_name_label , 2, 0, 1, 2)
+		grid.addWidget(attribdict["node_name"], 2, 2, 1, 2)
+		EMItem3D.get_transformlayout(grid, 4, attribdict)
+		cyliderwidget.setLayout(grid)
+		return cyliderwidget
+	
+	@staticmethod
+	def getNodeForDialog(attribdict):
+		"""
+		Create a new node using a attribdict
+		"""
+		return EMCylinder(float(attribdict["cylider_radius"].text()), float(attribdict["cylider_height"].text()), transform=EMItem3D.getTransformFromDict(attribdict))
+		
 	def __init__(self, radius, height, transform=None):
 		if not transform: transform = Transform()
 		EMItem3D.__init__(self, parent=None, children=set(), transform=transform)
@@ -404,6 +490,50 @@ class EMCylinder(EMItem3D):
 class EMLine(EMItem3D):
 	name = "Line"
 	nodetype = "ShapeNode"
+	
+	@staticmethod
+	def getNodeDialogWidget(attribdict):
+		"""
+		Return a line control widget for the stacked_widget
+		"""
+		linewidget = QtGui.QWidget()
+		grid = QtGui.QGridLayout()
+		line_xyzi_label = QtGui.QLabel("Line start, X, Y, Z")
+		attribdict["linexi"] = QtGui.QLineEdit("0.0")
+		attribdict["lineyi"] = QtGui.QLineEdit("0.0")
+		attribdict["linezi"] = QtGui.QLineEdit("0.0")
+		grid.addWidget(line_xyzi_label, 0, 0, 1, 3)
+		grid.addWidget(attribdict["linexi"], 1, 0, 1, 1)
+		grid.addWidget(attribdict["lineyi"], 1, 1, 1, 1)
+		grid.addWidget(attribdict["linezi"], 1, 2, 1, 1)
+		line_xyzf_label = QtGui.QLabel("Line end, X, Y, Z")
+		attribdict["linexf"] = QtGui.QLineEdit("0.0")
+		attribdict["lineyf"] = QtGui.QLineEdit("0.0")
+		attribdict["linezf"] = QtGui.QLineEdit("0.0")
+		grid.addWidget(line_xyzf_label, 2, 0, 1, 3)
+		grid.addWidget(attribdict["linexf"], 3, 0, 1, 1)
+		grid.addWidget(attribdict["lineyf"], 3, 1, 1, 1)
+		grid.addWidget(attribdict["linezf"], 3, 2, 1, 1)
+		line_width = QtGui.QLabel("Line Width")
+		line_width.setAlignment(QtCore.Qt.AlignCenter)
+		attribdict["linewidth"] = QtGui.QLineEdit("10.0")
+		grid.addWidget(line_width, 4, 0, 1, 2)
+		grid.addWidget(attribdict["linewidth"], 4, 2, 1, 1)
+		node_name_label = QtGui.QLabel("Line Name")
+		attribdict["node_name"] = QtGui.QLineEdit(str(EMLine.name))
+		grid.addWidget(node_name_label , 5, 0, 1, 3)
+		grid.addWidget(attribdict["node_name"], 6, 0, 1, 3)
+		linewidget.setLayout(grid)
+		return linewidget
+	
+	@staticmethod
+	def getNodeForDialog(attribdict):
+		"""
+		Create a new node using a attribdict
+		"""
+		transform=Transform()
+		return EMLine(float(attribdict["linexi"].text()), float(attribdict["lineyi"].text()), float(attribdict["linezi"].text()), float(attribdict["linexf"].text()), float(attribdict["lineyf"].text()), float(attribdict["linezf"].text()), float(attribdict["linewidth"].text()), transform=transform)
+		
 	def __init__(self, x1, y1, z1, x2, y2, z2, linewidth, transform=None):
 		if not transform: transform = Transform()
 		EMItem3D.__init__(self, parent=None, children=set(), transform=transform)
@@ -598,6 +728,37 @@ class EMLine(EMItem3D):
 class EMCone(EMItem3D):
 	name = "Cone"
 	nodetype = "ShapeNode"
+	
+	@staticmethod
+	def getNodeDialogWidget(attribdict):
+		"""
+		Return a cone control widget for the stacked_widget
+		"""
+		conewidget = QtGui.QWidget()
+		grid = QtGui.QGridLayout()
+		cone_radius_label = QtGui.QLabel("Cone Radius")
+		attribdict["cone_radius"] = QtGui.QLineEdit("50")
+		grid.addWidget(cone_radius_label, 0, 0, 1, 2)
+		grid.addWidget(attribdict["cone_radius"], 0, 2, 1, 2)
+		cone_height_label = QtGui.QLabel("Cone Height")
+		attribdict["cone_height"] = QtGui.QLineEdit("50")
+		node_name_label = QtGui.QLabel("Cone Name")
+		attribdict["node_name"] = QtGui.QLineEdit(str(EMCone.name))
+		grid.addWidget(cone_height_label, 1, 0, 1, 2)
+		grid.addWidget(attribdict["cone_height"], 1, 2, 1, 2)
+		grid.addWidget(node_name_label , 2, 0, 1, 2)
+		grid.addWidget(attribdict["node_name"], 2, 2, 1, 2)
+		EMItem3D.get_transformlayout(grid, 4, attribdict)
+		conewidget.setLayout(grid)
+		return conewidget
+	
+	@staticmethod
+	def getNodeForDialog(attribdict):
+		"""
+		Create a new node using a attribdict
+		"""
+		return EMCone(float(attribdict["cone_radius"].text()), float(attribdict["cone_height"].text()), transform=EMItem3D.getTransformFromDict(attribdict))
+		
 	def __init__(self, radius, height, transform=None):
 		if not transform: transform = Transform()
 		EMItem3D.__init__(self, parent=None, children=set(), transform=transform)
@@ -708,6 +869,37 @@ class EMCone(EMItem3D):
 class EM3DText(EMItem3D):
 	name = "3DText"
 	nodetype = "ShapeNode"
+	
+	@staticmethod
+	def getNodeDialogWidget(attribdict):
+		"""
+		Return a text control widget for the stacked_widget
+		"""
+		textwidget = QtGui.QWidget()
+		grid = QtGui.QGridLayout()
+		text_label = QtGui.QLabel("Text")
+		attribdict["text_content"] = QtGui.QLineEdit()
+		grid.addWidget(text_label, 0, 0, 1, 2)
+		grid.addWidget(attribdict["text_content"], 0, 2, 1, 2)
+		fontsize_label = QtGui.QLabel("Font Size")
+		attribdict["fontsize"] = QtGui.QLineEdit("32.0")
+		grid.addWidget(fontsize_label , 1, 0, 1, 2)
+		grid.addWidget(attribdict["fontsize"], 1, 2, 1, 2)
+		node_name_label = QtGui.QLabel("Text Name")
+		attribdict["node_name"] = QtGui.QLineEdit(str(EM3DText.name))
+		grid.addWidget(node_name_label , 2, 0, 1, 2)
+		grid.addWidget(attribdict["node_name"], 2, 2, 1, 2)
+		EMItem3D.get_transformlayout(grid, 4, attribdict)
+		textwidget.setLayout(grid)
+		return textwidget
+	
+	@staticmethod
+	def getNodeForDialog(attribdict):
+		"""
+		Create a new node using a attribdict
+		"""
+		return EM3DText(str(attribdict["text_content"].text()), float(attribdict["fontsize"].text()), transform=EMItem3D.getTransformFromDict(attribdict))
+		
 	def __init__(self, string, fontSize, fontMode=FTGLFontMode.TEXTURE, depth=10, transform=None):
 		if not transform: transform = Transform()
 		EMItem3D.__init__(self, parent=None, children=set(), transform=transform)

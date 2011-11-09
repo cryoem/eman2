@@ -262,7 +262,6 @@ template <> Factory < Processor >::Factory()
 	force_add<AmpweightFourierProcessor>();
 	force_add<Wiener2DFourierProcessor>();
 	force_add<LowpassAutoBProcessor>();
-	force_add<CtfSimProcessor>();
 	
 	force_add<LinearPyramidProcessor>();
 	force_add<LinearRampProcessor>();
@@ -5498,7 +5497,6 @@ EMData* CtfSimProcessor::process(const EMData * const image) {
 	
 	return ret;
 }
-
 
 void AddRandomNoiseProcessor::process_inplace(EMData * image)
 {

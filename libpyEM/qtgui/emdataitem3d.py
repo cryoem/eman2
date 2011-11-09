@@ -1,7 +1,34 @@
 #!/usr/bin/env python
 #
 # Author: Ross Coleman (racolema@bcm.edu)
-# Copyright (c) 2000-2011 Baylor College of Medicine
+# Copyright (c) 2011- Baylor College of Medicine
+#
+# This software is issued under a joint BSD/GNU license. You may use the
+# source code in this file under either license. However, note that the
+# complete EMAN2 and SPARX software packages have some GPL dependencies,
+# so you are responsible for compliance with the licenses of these packages
+# if you opt to use BSD licensing. The warranty disclaimer below holds
+# in either instance.
+#
+# This complete copyright notice must be included in any revised version of the
+# source code. Additional authorship citations may be added, but existing
+# author citations must be preserved.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
+#
+#
 
 from OpenGL import GL
 from OpenGL.GL import *
@@ -24,6 +51,47 @@ class EMDataItem3D(EMItem3D):
 	Instead, its children are displayable, and are sized, postioned, and oriented relative to this node.
 	"""
 	name = "Data"
+	
+	@staticmethod
+	def getNodeDialogWidget(attribdict):
+		"""
+		Get Data Widget
+		"""
+		datawidget = QtGui.QWidget()
+		grid = QtGui.QGridLayout()
+		node_name_data_label = QtGui.QLabel("Data Label")
+		attribdict["node_name"] = QtGui.QLineEdit()
+		data_path_label = QtGui.QLabel("Data Path")
+		attribdict["data_path"] = QtGui.QLineEdit()
+		browse_button = QtGui.QPushButton("Browse")
+		grid.addWidget(node_name_data_label, 0, 0, 1, 2)
+		grid.addWidget(attribdict["node_name"], 0, 2, 1, 2)
+		grid.addWidget(data_path_label, 1, 0, 1, 2)
+		grid.addWidget(attribdict["data_path"], 1, 2, 1, 2)
+		grid.addWidget(browse_button, 2, 0, 1, 4)
+		EMItem3D.get_transformlayout(grid, 4, attribdict)
+		datawidget.setLayout(grid)
+		
+		EMDataItem3D.attribdict = attribdict
+		QtCore.QObject.connect(browse_button, QtCore.SIGNAL('clicked()'), EMDataItem3D._on_browse)
+		
+		return datawidget
+	
+	@staticmethod
+	def _on_browse():
+		filename = QtGui.QFileDialog.getOpenFileName(None, 'Get file', os.getcwd())
+		if filename:
+			EMDataItem3D.attribdict["data_path"].setText(filename)
+			name = os.path.basename(str(filename))
+			EMDataItem3D.attribdict["node_name"].setText(str(name))
+			
+	@staticmethod
+	def getNodeForDialog(attribdict):
+		"""
+		Create a new node using a attribdict
+		"""
+		return EMDataItem3D(str(attribdict["data_path"].text()), transform=EMItem3D.getTransformFromDict(attribdict))
+		
 	def __init__(self, data, parent = None, children = set(), transform=None):
 		if not transform: transform = Transform()	# Object initialization should not be put in the constructor. Causes issues 
 		EMItem3D.__init__(self, parent, children, transform=transform)
@@ -147,6 +215,29 @@ class EMSliceItem3D(EMItem3D):
 	name = "Slice"
 	nodetype = "DataChild" 
 
+	@staticmethod
+	def getNodeDialogWidget(attribdict):
+		"""
+		Get Slice Widget
+		"""
+		slicewidget = QtGui.QWidget()
+		grid = QtGui.QGridLayout()
+		node_name_slice_label = QtGui.QLabel("Slice Name")
+		attribdict["node_name"] = QtGui.QLineEdit(str(EMSliceItem3D.name))
+		grid.addWidget(node_name_slice_label, 0, 0, 1, 2)
+		grid.addWidget(attribdict["node_name"], 0, 2, 1, 2)
+		EMItem3D.get_transformlayout(grid, 2, attribdict)
+		slicewidget.setLayout(grid)
+		
+		return slicewidget
+	
+	@staticmethod
+	def getNodeForDialog(attribdict):
+		"""
+		Create a new node using a attribdict
+		"""
+		return EMSliceItem3D(attribdict["parent"], transform=EMItem3D.getTransformFromDict(attribdict))
+		
 	def __init__(self, parent=None, children = set(), transform=None):
 		"""
 		@param parent: should be an EMDataItem3D instance for proper functionality.
@@ -499,6 +590,29 @@ class EMVolumeItem3D(EMItem3D):
 	name = "Volume"
 	nodetype = "DataChild" 
 
+	@staticmethod
+	def getNodeDialogWidget(attribdict):
+		"""
+		Get Volume Widget
+		"""
+		volumewidget = QtGui.QWidget()
+		grid = QtGui.QGridLayout()
+		node_name_volume_label = QtGui.QLabel("Volume Name")
+		attribdict["node_name"] = QtGui.QLineEdit(str(EMVolumeItem3D.name))
+		grid.addWidget(node_name_volume_label, 0, 0, 1, 2)
+		grid.addWidget(attribdict["node_name"], 0, 2, 1, 2)
+		EMItem3D.get_transformlayout(grid, 2, attribdict)
+		volumewidget.setLayout(grid)
+		
+		return volumewidget
+	
+	@staticmethod
+	def getNodeForDialog(attribdict):
+		"""
+		Create a new node using a attribdict
+		"""
+		return EMVolumeItem3D(attribdict["parent"], transform=EMItem3D.getTransformFromDict(attribdict))
+		
 	def __init__(self, parent=None, children = set(), transform=None):
 		"""
 		@param parent: should be an EMDataItem3D instance for proper functionality.
@@ -835,6 +949,30 @@ class EMIsosurface(EMItem3D):
 	"""
 	name = "Isosurface"
 	nodetype = "DataChild" 
+	
+	@staticmethod
+	def getNodeDialogWidget(attribdict):
+		"""
+		Get Isosurface Widget
+		"""
+		isosurfacewidget = QtGui.QWidget()
+		grid = QtGui.QGridLayout()
+		node_name_data_label = QtGui.QLabel("Isosurface Name")
+		attribdict["node_name"] = QtGui.QLineEdit(str(EMIsosurface.name))
+		grid.addWidget(node_name_data_label, 0, 0, 1, 2)
+		grid.addWidget(attribdict["node_name"], 0, 2, 1, 2)
+		EMItem3D.get_transformlayout(grid, 2, attribdict)
+		isosurfacewidget.setLayout(grid)
+		
+		return isosurfacewidget
+	
+	@staticmethod
+	def getNodeForDialog(attribdict):
+		"""
+		Create a new node using a attribdict
+		"""
+		return EMIsosurface(attribdict["parent"], transform=EMItem3D.getTransformFromDict(attribdict))
+		
 	def __init__(self, parent=None, children = set(), transform=None):
 		"""
 		@param parent: should be an EMDataItem3D instance for proper functionality.

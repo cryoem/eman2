@@ -1068,7 +1068,7 @@ class NoteBook(QtGui.QWidget):
 		
 	def closeEvent(self, event):
 		if not self.donotsave: self.writeNotes()
-		self.pm().logbook = None
+		self.pm().notebook = None
 		self.pm().updateProject()
 
 class PMTextEdit(QtGui.QTextEdit):
@@ -1306,12 +1306,12 @@ class TaskManager(QtGui.QWidget):
 				for task in self.tasks:
 					if item.getPPID() == task[5]:
 						print "killing self process", task[1]
-						os.kill(task[1],signal.SIGTERM)
+						os.kill(task[1],signal.SIGKILL)
 						self._recursivekill(task[1])
 				# kill parent (top level item)
 				if item.getPPID() > 0:
 					print "KIlling parent"
-					os.kill(item.getPPID(),signal.SIGTERM)
+					os.kill(item.getPPID(),signal.SIGKILL)
 			else:
 				# Windows kill
 				pass
@@ -1320,7 +1320,7 @@ class TaskManager(QtGui.QWidget):
 		for task in self.tasks:
 			if pid == task[5]:
 				print "Killing child process", task[1]
-				os.kill(task[1],signal.SIGTERM)
+				os.kill(task[1],signal.SIGKILL)
 				self._recursivekill(task[1])
 		
 	def closeEvent(self, event):

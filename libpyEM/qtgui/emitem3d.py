@@ -89,6 +89,93 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 	name = "General 3D Item"
 	nodetype = "BaseNode"
 	
+	@staticmethod
+	def get_transformlayout(layout, idx, attribdict):
+		"""
+		Adds a transform layout to a dialog
+		@param layout, the layout to append to
+		@param idx, the row to being appnding to
+		"""
+		font = QtGui.QFont()
+		font.setBold(True)
+		translatelabel = QtGui.QLabel("Translation")
+		translatelabel.setFont(font)
+		translatelabel.setAlignment(QtCore.Qt.AlignCenter)
+		layout.addWidget(translatelabel, idx, 0, 1, 4)
+		txlabel = QtGui.QLabel("Tx")
+		tylabel = QtGui.QLabel("Ty")
+		txlabel.setAlignment(QtCore.Qt.AlignRight)
+		tylabel.setAlignment(QtCore.Qt.AlignRight)
+		attribdict["tx"] = QtGui.QLineEdit("0.0")
+		attribdict["ty"] = QtGui.QLineEdit("0.0")
+		attribdict["tx"].setMinimumWidth(100.0)
+		attribdict["ty"].setMinimumWidth(100.0)
+		layout.addWidget(txlabel, idx+1, 0, 1, 1)
+		layout.addWidget(attribdict["tx"], idx+1, 1, 1, 1)
+		layout.addWidget(tylabel, idx+1, 2, 1, 1)
+		layout.addWidget(attribdict["ty"], idx+1, 3, 1, 1)
+		tzlabel = QtGui.QLabel("Tz")
+		zoomlabel = QtGui.QLabel("Zm")
+		tylabel.setAlignment(QtCore.Qt.AlignRight)
+		zoomlabel.setAlignment(QtCore.Qt.AlignRight)
+		attribdict["tz"] = QtGui.QLineEdit("0.0")
+		attribdict["zoom"] = QtGui.QLineEdit("1.0")
+		attribdict["tz"].setMinimumWidth(100.0)
+		attribdict["zoom"].setMinimumWidth(100.0)
+		layout.addWidget(tzlabel, idx+2, 0, 1, 1)
+		layout.addWidget(attribdict["tz"], idx+2, 1, 1, 1)
+		layout.addWidget(zoomlabel, idx+2, 2, 1, 1)
+		layout.addWidget(attribdict["zoom"], idx+2, 3, 1, 1)
+		rotatelabel = QtGui.QLabel("EMAN Rotation")
+		rotatelabel.setFont(font)
+		rotatelabel.setAlignment(QtCore.Qt.AlignCenter)
+		layout.addWidget(rotatelabel, idx+3, 0, 1, 4)
+		azlabel = QtGui.QLabel("Az")
+		azlabel.setAlignment(QtCore.Qt.AlignRight)
+		attribdict["az"] = QtGui.QLineEdit("0.0")
+		altlabel = QtGui.QLabel("Alt")
+		altlabel.setAlignment(QtCore.Qt.AlignRight)
+		attribdict["alt"] = QtGui.QLineEdit("0.0")
+		attribdict["az"] .setMinimumWidth(100.0)
+		attribdict["alt"].setMinimumWidth(100.0)
+		layout.addWidget(azlabel, idx+4, 0, 1, 1)
+		layout.addWidget(attribdict["az"], idx+4, 1, 1, 1)
+		layout.addWidget(altlabel, idx+4, 2, 1, 1)
+		layout.addWidget(attribdict["alt"], idx+4, 3, 1, 1)
+		philabel = QtGui.QLabel("Phi")
+		philabel.setAlignment(QtCore.Qt.AlignRight)
+		attribdict["phi"] = QtGui.QLineEdit("0.0")
+		layout.addWidget(philabel, idx+5, 0, 1, 1)
+		layout.addWidget(attribdict["phi"], idx+5, 1, 1, 1)
+	
+	@staticmethod
+	def getTransformFromDict(attribdict):
+		""" Return a transform using a dict created using the above function"""
+		return Transform({"type":"eman","az":float(attribdict["az"].text()),"alt":float(attribdict["alt"].text()),"phi":float(attribdict["phi"].text()),"tx":float(attribdict["tx"].text()),"ty":float(attribdict["ty"].text()),"tz":float(attribdict["tz"].text()),"scale":float(attribdict["zoom"].text())})
+	
+	@staticmethod
+	def getNodeDialogWidget(attribdict):
+		"""
+		Get Data Widget
+		"""
+		nodewidget = QtGui.QWidget()
+		grid = QtGui.QGridLayout()
+		node_name_label = QtGui.QLabel("Node Name")
+		attribdict["node_name"] = QtGui.QLineEdit()
+		grid.addWidget(node_name_label , 0, 0, 1, 2)
+		grid.addWidget(attribdict["node_name"], 0, 2, 1, 2)
+		EMItem3D.get_transformlayout(grid, 2, attribdict)
+		nodewidget.setLayout(grid)
+		
+		return nodewidget
+	
+	@staticmethod
+	def getNodeForDialog(attribdict):
+		"""
+		Create a new node using a attribdict
+		"""
+		return EMItem3D(attribdict["parent"], transform=EMItem3D.getTransformFromDict(attribdict))
+		
 	def __init__(self, parent = None, children = [], transform=None):
 		"""
 		@type parent: EMItem3D
@@ -426,7 +513,6 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 	def mousePressEvent(self, event): pass
 	def mouseReleaseEvent(self, event): pass
 	def wheelEvent(self, event): pass
-
 		
 class EMItem3DInspector(QtGui.QWidget):
 	"""

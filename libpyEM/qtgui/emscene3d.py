@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Author: John Flanagan (jfflanag@bcm.edu)
-# Copyright (c) 2000-2006 Baylor College of Medicine
+# Copyright (c) 2011- Baylor College of Medicine
 
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -2654,321 +2654,40 @@ class NodeDialog(QtGui.QDialog):
 		
 		# Populate node types		
 		self.node_type_combo.addItem("Cube")
-		self.node_stacked_widget.addWidget(self.getCubeWidget())
+		self.cubewidgetdict = {}
+		self.node_stacked_widget.addWidget(EMCube.getNodeDialogWidget(self.cubewidgetdict))
 		self.node_type_combo.addItem("Sphere")
-		self.node_stacked_widget.addWidget(self.getSphereWidget())
+		self.spherewidgetdict = {}
+		self.node_stacked_widget.addWidget(EMSphere.getNodeDialogWidget(self.spherewidgetdict))
 		self.node_type_combo.addItem("Cylinder")
-		self.node_stacked_widget.addWidget(self.getCylinderWidget())
+		self.cylinderwidgetdict = {}
+		self.node_stacked_widget.addWidget(EMCylinder.getNodeDialogWidget(self.cylinderwidgetdict))
 		self.node_type_combo.addItem("Cone")
-		self.node_stacked_widget.addWidget(self.getConeWidget())
+		self.conewidgetdict = {}
+		self.node_stacked_widget.addWidget(EMCone.getNodeDialogWidget(self.conewidgetdict))
 		self.node_type_combo.addItem("Line")
-		self.node_stacked_widget.addWidget(self.getLineWidget())
+		self.linewidgetdict = {}
+		self.node_stacked_widget.addWidget(EMLine.getNodeDialogWidget(self.linewidgetdict))
 		self.node_type_combo.addItem("Text")
-		self.node_stacked_widget.addWidget(self.getTextWidget())
+		self.textwidgetdict = {}
+		self.node_stacked_widget.addWidget(EM3DText.getNodeDialogWidget(self.textwidgetdict))
 		self.node_type_combo.addItem("Data")
-		self.node_stacked_widget.addWidget(self.getDataWidget())
-		#self.node_type_combo.addItem("Node")
-		#self.node_stacked_widget.addWidget(self.getNodeWidget())
+		self.datawidgetdict = {}
+		self.node_stacked_widget.addWidget(EMDataItem3D.getNodeDialogWidget(self.datawidgetdict))
 		if self.item and self.item.item3d().name == "Data":
 			self.node_type_combo.addItem("Isosurface")
-			self.node_stacked_widget.addWidget(self.getIsosurfaceWidget())
+			self.isosurfacewidgetdict = {}
+			self.node_stacked_widget.addWidget(EMIsosurface.getNodeDialogWidget(self.isosurfacewidgetdict))
 			self.node_type_combo.addItem("Slice")
-			self.node_stacked_widget.addWidget(self.getSliceWidget())
+			self.slicewidgetdict = {}
+			self.node_stacked_widget.addWidget(EMSliceItem3D.getNodeDialogWidget(self.slicewidgetdict))
 			self.node_type_combo.addItem("Volume")
-			self.node_stacked_widget.addWidget(self.getVolumeWidget())
+			self.volumewidgetdict = {}
+			self.node_stacked_widget.addWidget(EMVolumeItem3D.getNodeDialogWidget(self.volumewidgetdict))
 		
 		self.connect(self.addnode_button, QtCore.SIGNAL('clicked()'), self._on_add_node)
 		self.connect(self.cancel_button, QtCore.SIGNAL('clicked()'), self._on_cancel)
 		self.connect(self.node_type_combo, QtCore.SIGNAL("activated(int)"), self._node_combobox_changed)
-	
-	def getCubeWidget(self):
-		"""
-		Return a cube control widget for the stacked_widget
-		"""
-		cubewidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
-		cube_dim_label = QtGui.QLabel("Cube Dimension")
-		self.cube_dim = QtGui.QLineEdit("50")
-		node_name_label = QtGui.QLabel("Cube Name")
-		self.node_name_cube = QtGui.QLineEdit()
-		grid.addWidget(cube_dim_label, 0, 0, 1, 2)
-		grid.addWidget(self.cube_dim, 0, 2, 1, 2)
-		grid.addWidget(node_name_label , 1, 0, 1, 2)
-		grid.addWidget(self.node_name_cube, 1, 2, 1, 2)
-		self._get_transformlayout(grid, 2, "CUBE")
-		cubewidget.setLayout(grid)
-		return cubewidget
-		
-	def getSphereWidget(self):
-		"""
-		Return a sphere control widget for the stacked_widget
-		"""
-		spherewidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
-		sphere_dim_label = QtGui.QLabel("Sphere Dimension")
-		self.sphere_dim = QtGui.QLineEdit("50")
-		node_name_label = QtGui.QLabel("Sphere Name")
-		self.node_name_sphere = QtGui.QLineEdit()
-		grid.addWidget(sphere_dim_label, 0, 0, 1, 2)
-		grid.addWidget(self.sphere_dim, 0, 2, 1, 2)
-		grid.addWidget(node_name_label , 1, 0, 1, 2)
-		grid.addWidget(self.node_name_sphere, 1, 2, 1, 2)
-		self._get_transformlayout(grid, 2, "SPHERE")
-		spherewidget.setLayout(grid)
-		return spherewidget
-		
-	def getCylinderWidget(self):
-		"""
-		Return a cylider control widget for the stacked_widget
-		"""
-		cyliderwidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
-		cylider_radius_label = QtGui.QLabel("Cylider Radius")
-		self.cylider_radius = QtGui.QLineEdit("50")
-		grid.addWidget(cylider_radius_label, 0, 0, 1, 2)
-		grid.addWidget(self.cylider_radius, 0, 2, 1, 2)
-		cylider_height_label = QtGui.QLabel("Cylider Height")
-		self.cylider_height = QtGui.QLineEdit("50")
-		node_name_label = QtGui.QLabel("Cylider Name")
-		self.node_name_cylinder = QtGui.QLineEdit()
-		grid.addWidget(cylider_height_label, 1, 0, 1, 2)
-		grid.addWidget(self.cylider_height, 1, 2, 1, 2)
-		grid.addWidget(node_name_label , 2, 0, 1, 2)
-		grid.addWidget(self.node_name_cylinder, 2, 2, 1, 2)
-		self._get_transformlayout(grid, 3, "CYLINDER")
-		cyliderwidget.setLayout(grid)
-		return cyliderwidget
-	
-			
-	def getConeWidget(self):
-		"""
-		Return a cylider control widget for the stacked_widget
-		"""
-		conewidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
-		cone_radius_label = QtGui.QLabel("Cone Radius")
-		self.cone_radius = QtGui.QLineEdit("50")
-		grid.addWidget(cone_radius_label, 0, 0, 1, 2)
-		grid.addWidget(self.cone_radius, 0, 2, 1, 2)
-		cone_height_label = QtGui.QLabel("Cone Height")
-		self.cone_height = QtGui.QLineEdit("50")
-		node_name_label = QtGui.QLabel("Cone Name")
-		self.node_name_cone = QtGui.QLineEdit()
-		grid.addWidget(cone_height_label, 1, 0, 1, 2)
-		grid.addWidget(self.cone_height, 1, 2, 1, 2)
-		grid.addWidget(node_name_label , 2, 0, 1, 2)
-		grid.addWidget(self.node_name_cone, 2, 2, 1, 2)
-		self._get_transformlayout(grid, 3, "CONE")
-		conewidget.setLayout(grid)
-		return conewidget
-	
-	def getLineWidget(self):
-		"""
-		Return a cylider control widget for the stacked_widget
-		"""
-		linewidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
-		line_xyzi_label = QtGui.QLabel("Line start, X, Y, Z")
-		self.linexi = QtGui.QLineEdit("0.0")
-		self.lineyi = QtGui.QLineEdit("0.0")
-		self.linezi = QtGui.QLineEdit("0.0")
-		grid.addWidget(line_xyzi_label, 0, 0, 1, 3)
-		grid.addWidget(self.linexi, 1, 0, 1, 1)
-		grid.addWidget(self.lineyi, 1, 1, 1, 1)
-		grid.addWidget(self.linezi, 1, 2, 1, 1)
-		line_xyzf_label = QtGui.QLabel("Line end, X, Y, Z")
-		self.linexf = QtGui.QLineEdit("0.0")
-		self.lineyf = QtGui.QLineEdit("0.0")
-		self.linezf = QtGui.QLineEdit("0.0")
-		grid.addWidget(line_xyzf_label, 2, 0, 1, 3)
-		grid.addWidget(self.linexf, 3, 0, 1, 1)
-		grid.addWidget(self.lineyf, 3, 1, 1, 1)
-		grid.addWidget(self.linezf, 3, 2, 1, 1)
-		line_width = QtGui.QLabel("Line Width")
-		line_width.setAlignment(QtCore.Qt.AlignCenter)
-		self.linewidth = QtGui.QLineEdit("10.0")
-		grid.addWidget(line_width, 4, 0, 1, 2)
-		grid.addWidget(self.linewidth, 4, 2, 1, 1)
-		node_name_label = QtGui.QLabel("Line Name")
-		self.node_name_line = QtGui.QLineEdit()
-		grid.addWidget(node_name_label , 5, 0, 1, 3)
-		grid.addWidget(self.node_name_line, 6, 0, 1, 3)
-		linewidget.setLayout(grid)
-		return linewidget
-	
-	def getTextWidget(self):
-		"""
-		Return a sphere control widget for the stacked_widget
-		"""
-		textwidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
-		text_label = QtGui.QLabel("Text")
-		self.text_content = QtGui.QLineEdit()
-		grid.addWidget(text_label, 0, 0, 1, 2)
-		grid.addWidget(self.text_content, 0, 2, 1, 2)
-		fontsize_label = QtGui.QLabel("Font Size")
-		self.fontsize = QtGui.QLineEdit("32.0")
-		grid.addWidget(fontsize_label , 1, 0, 1, 2)
-		grid.addWidget(self.fontsize, 1, 2, 1, 2)
-		node_name_label = QtGui.QLabel("Text Name")
-		self.node_name_text = QtGui.QLineEdit()
-		grid.addWidget(node_name_label , 2, 0, 1, 2)
-		grid.addWidget(self.node_name_text, 2, 2, 1, 2)
-		self._get_transformlayout(grid, 3, "TEXT")
-		textwidget.setLayout(grid)
-		return textwidget
-		
-	def getDataWidget(self):
-		"""
-		Get Data Widget
-		"""
-		datawidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
-		node_name_data_label = QtGui.QLabel("Data Label")
-		self.node_name_data = QtGui.QLineEdit()
-		data_path_label = QtGui.QLabel("Data Path")
-		self.data_path = QtGui.QLineEdit()
-		self.browse_button = QtGui.QPushButton("Browse")
-		grid.addWidget(node_name_data_label, 0, 0, 1, 2)
-		grid.addWidget(self.node_name_data, 0, 2, 1, 2)
-		grid.addWidget(data_path_label, 1, 0, 1, 2)
-		grid.addWidget(self.data_path, 1, 2, 1, 2)
-		grid.addWidget(self.browse_button, 2, 0, 1, 4)
-		self._get_transformlayout(grid, 3, "DATA")
-		datawidget.setLayout(grid)
-		
-		self.connect(self.browse_button, QtCore.SIGNAL('clicked()'), self._on_browse)
-		
-		return datawidget
-		
-	def getNodeWidget(self):
-		"""
-		Get Data Widget
-		"""
-		nodewidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
-		node_name_label = QtGui.QLabel("Node Name")
-		self.node_name_node = QtGui.QLineEdit()
-		grid.addWidget(node_name_label , 0, 0, 1, 2)
-		grid.addWidget(self.node_name_node, 0, 2, 1, 2)
-		self._get_transformlayout(grid, 1, "NODE")
-		nodewidget.setLayout(grid)
-		
-		return nodewidget
-		
-	def getIsosurfaceWidget(self):
-		"""
-		Get Isosurface Widget
-		"""
-		isosurfacewidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
-		node_name_data_label = QtGui.QLabel("Isosurface Name")
-		self.node_name_iso = QtGui.QLineEdit()
-		grid.addWidget(node_name_data_label, 0, 0, 1, 2)
-		grid.addWidget(self.node_name_iso, 0, 2, 1, 2)
-		self._get_transformlayout(grid, 2, "ISO")
-		isosurfacewidget.setLayout(grid)
-		
-		return isosurfacewidget
-		
-	def getSliceWidget(self):
-		"""
-		Get Slice Widget
-		"""
-		slicewidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
-		node_name_slice_label = QtGui.QLabel("Slice Name")
-		self.node_name_slice = QtGui.QLineEdit()
-		grid.addWidget(node_name_slice_label, 0, 0, 1, 2)
-		grid.addWidget(self.node_name_slice, 0, 2, 1, 2)
-		self._get_transformlayout(grid, 2, "SLICE")
-		slicewidget.setLayout(grid)
-		
-		return slicewidget
-	
-	def getVolumeWidget(self):
-		"""
-		Get Volume Widget
-		"""
-		volumewidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
-		node_name_volume_label = QtGui.QLabel("Volume Name")
-		self.node_name_volume = QtGui.QLineEdit()
-		grid.addWidget(node_name_volume_label, 0, 0, 1, 2)
-		grid.addWidget(self.node_name_volume, 0, 2, 1, 2)
-		self._get_transformlayout(grid, 2, "VOLUME")
-		volumewidget.setLayout(grid)
-		
-		return volumewidget
-		
-	def _get_transformlayout(self, layout, idx, name):
-		self.transformgroup[name] = []
-		font = QtGui.QFont()
-		font.setBold(True)
-		translatelabel = QtGui.QLabel("Translation")
-		translatelabel.setFont(font)
-		translatelabel.setAlignment(QtCore.Qt.AlignCenter)
-		layout.addWidget(translatelabel, idx, 0, 1, 4)
-		txlabel = QtGui.QLabel("Tx")
-		tylabel = QtGui.QLabel("Ty")
-		txlabel.setAlignment(QtCore.Qt.AlignRight)
-		tylabel.setAlignment(QtCore.Qt.AlignRight)
-		txlineedit = QtGui.QLineEdit("0.0")
-		tylineedit = QtGui.QLineEdit("0.0")
-		txlineedit.setMinimumWidth(100.0)
-		tylineedit.setMinimumWidth(100.0)
-		self.transformgroup[name].append(txlineedit)
-		self.transformgroup[name].append(tylineedit)
-		layout.addWidget(txlabel, idx+1, 0, 1, 1)
-		layout.addWidget(txlineedit, idx+1, 1, 1, 1)
-		layout.addWidget(tylabel, idx+1, 2, 1, 1)
-		layout.addWidget(tylineedit, idx+1, 3, 1, 1)
-		tzlabel = QtGui.QLabel("Tz")
-		zoomlabel = QtGui.QLabel("Zm")
-		tylabel.setAlignment(QtCore.Qt.AlignRight)
-		zoomlabel.setAlignment(QtCore.Qt.AlignRight)
-		tzlineedit = QtGui.QLineEdit("0.0")
-		zoomlineedit = QtGui.QLineEdit("1.0")
-		tzlineedit.setMinimumWidth(100.0)
-		zoomlineedit.setMinimumWidth(100.0)
-		self.transformgroup[name].append(tzlineedit)
-		self.transformgroup[name].append(zoomlineedit)
-		layout.addWidget(tzlabel, idx+2, 0, 1, 1)
-		layout.addWidget(tzlineedit, idx+2, 1, 1, 1)
-		layout.addWidget(zoomlabel, idx+2, 2, 1, 1)
-		layout.addWidget(zoomlineedit, idx+2, 3, 1, 1)
-		rotatelabel = QtGui.QLabel("EMAN Rotation")
-		rotatelabel.setFont(font)
-		rotatelabel.setAlignment(QtCore.Qt.AlignCenter)
-		layout.addWidget(rotatelabel, idx+3, 0, 1, 4)
-		azlabel = QtGui.QLabel("Az")
-		azlabel.setAlignment(QtCore.Qt.AlignRight)
-		azlineedit = QtGui.QLineEdit("0.0")
-		altlabel = QtGui.QLabel("Alt")
-		altlabel.setAlignment(QtCore.Qt.AlignRight)
-		altlineedit = QtGui.QLineEdit("0.0")
-		azlineedit .setMinimumWidth(100.0)
-		altlineedit.setMinimumWidth(100.0)
-		layout.addWidget(azlabel, idx+4, 0, 1, 1)
-		layout.addWidget(azlineedit, idx+4, 1, 1, 1)
-		layout.addWidget(altlabel, idx+4, 2, 1, 1)
-		layout.addWidget(altlineedit, idx+4, 3, 1, 1)
-		philabel = QtGui.QLabel("Phi")
-		philabel.setAlignment(QtCore.Qt.AlignRight)
-		philineedit = QtGui.QLineEdit("0.0")
-		#self.philineedit.setMinimumWidth(100.0)
-		layout.addWidget(philabel, idx+5, 0, 1, 1)
-		layout.addWidget(philineedit, idx+5, 1, 1, 1)
-		self.transformgroup[name].append(azlineedit)
-		self.transformgroup[name].append(altlineedit)
-		self.transformgroup[name].append(philineedit)
-		
-	def _on_browse(self):
-		filename = QtGui.QFileDialog.getOpenFileName(self, 'Get file', os.getcwd())
-		if filename:
-			self.data_path.setText(filename)
-			name = os.path.basename(str(filename))
-			self.node_name_data.setText(str(name))
 	
 	def _on_add_node(self):
 		insertion_node = None
@@ -2978,76 +2697,56 @@ class NodeDialog(QtGui.QDialog):
 		reverttrans = False
 		# Cube
 		if self.node_type_combo.currentText() == "Cube":
-			d = self.transformgroup["CUBE"]
-			transform = Transform({"type":"eman","az":float(d[4].text()),"alt":float(d[5].text()),"phi":float(d[6].text()),"tx":float(d[0].text()),"ty":float(d[1].text()),"tz":float(d[2].text()),"scale":float(d[3].text())})
-			insertion_node = EMCube(float(self.cube_dim.text()), transform=transform)
-			if self.node_name_cube.text() != "": node_name = self.node_name_cube.text()
+			insertion_node = EMCube.getNodeForDialog(self.cubewidgetdict)
+			node_name = str(self.cubewidgetdict["node_name"].text())
 		# Sphere
 		if self.node_type_combo.currentText() == "Sphere":
-			d = self.transformgroup["SPHERE"]
-			transform = Transform({"type":"eman","az":float(d[4].text()),"alt":float(d[5].text()),"phi":float(d[6].text()),"tx":float(d[0].text()),"ty":float(d[1].text()),"tz":float(d[2].text()),"scale":float(d[3].text())})
-			insertion_node = EMSphere(float(self.sphere_dim.text()), transform=transform)
-			if self.node_name_sphere.text() != "": node_name = self.node_name_sphere.text()
+			insertion_node = EMSphere.getNodeForDialog(self.spherewidgetdict)
+			node_name = str(self.spherewidgetdict["node_name"].text())
 		# Cylinder
 		if self.node_type_combo.currentText() == "Cylinder":
-			d = self.transformgroup["CYLINDER"]
-			transform = Transform({"type":"eman","az":float(d[4].text()),"alt":float(d[5].text()),"phi":float(d[6].text()),"tx":float(d[0].text()),"ty":float(d[1].text()),"tz":float(d[2].text()),"scale":float(d[3].text())})
-			insertion_node = EMCylinder(float(self.cylider_radius.text()), float(self.cylider_height.text()), transform=transform)
-			if self.node_name_cylinder.text() != "": node_name = self.node_name_cylinder.text()
+			insertion_node = EMCylinder.getNodeForDialog(self.cylinderwidgetdict)
+			node_name = str(self.cylinderwidgetdict["node_name"].text())
 		# Cone
 		if self.node_type_combo.currentText() == "Cone":
-			d = self.transformgroup["CONE"]
-			transform = Transform({"type":"eman","az":float(d[4].text()),"alt":float(d[5].text()),"phi":float(d[6].text()),"tx":float(d[0].text()),"ty":float(d[1].text()),"tz":float(d[2].text()),"scale":float(d[3].text())})
-			insertion_node = EMCone(float(self.cone_radius.text()), float(self.cone_height.text()), transform=transform)
-			if self.node_name_cone.text() != "": node_name = self.node_name_cone.text()
+			insertion_node = EMCone.getNodeForDialog(self.conewidgetdict)
+			node_name = str(self.conewidgetdict["node_name"].text())
 		# Line
 		if self.node_type_combo.currentText() == "Line":
-			transform = Transform()
-			insertion_node = EMLine(float(self.linexi.text()), float(self.lineyi.text()), float(self.linezi.text()), float(self.linexf.text()), float(self.lineyf.text()), float(self.linezf.text()), float(self.linewidth.text()), transform=transform)
-			if self.node_name_cone.text() != "": node_name = self.node_name_cone.text()
+			insertion_node = EMLine.getNodeForDialog(self.linewidgetdict)
+			node_name = str(self.linewidgetdict["node_name"].text())
 		# Text
 		if self.node_type_combo.currentText() == "Text":
-			d = self.transformgroup["TEXT"]
-			transform = Transform({"type":"eman","az":float(d[4].text()),"alt":float(d[5].text()),"phi":float(d[6].text()),"tx":float(d[0].text()),"ty":float(d[1].text()),"tz":float(d[2].text()),"scale":float(d[3].text())})
-			insertion_node = EM3DText(str(self.text_content.text()), float(self.fontsize.text()), transform=transform)
-			if self.node_name_text.text() != "": node_name = self.node_name_text.text()
+			insertion_node = EM3DText.getNodeForDialog(self.textwidgetdict)
+			node_name = str(self.textwidgetdict["node_name"].text())
 		# Data
 		if self.node_type_combo.currentText() == "Data": 
-			d = self.transformgroup["DATA"]
-			transform = Transform({"type":"eman","az":float(d[4].text()),"alt":float(d[5].text()),"phi":float(d[6].text()),"tx":float(d[0].text()),"ty":float(d[1].text()),"tz":float(d[2].text()),"scale":float(d[3].text())})
-			if str(self.data_path.text()) == "": self._on_browse()
-			insertion_node =  EMDataItem3D(str(self.data_path.text()), transform=transform)
-			if self.node_name_data.text() != "": node_name = self.node_name_data.text()
+			insertion_node = EMDataItem3D.getNodeForDialog(self.datawidgetdict)
+			node_name = str(self.datawidgetdict["node_name"].text())
 		# Isosurface
 		if self.node_type_combo.currentText() == "Isosurface": 
-			d = self.transformgroup["ISO"]
-			transform = Transform({"type":"eman","az":float(d[4].text()),"alt":float(d[5].text()),"phi":float(d[6].text()),"tx":float(d[0].text()),"ty":float(d[1].text()),"tz":float(d[2].text()),"scale":float(d[3].text())})
-			insertion_node =  EMIsosurface(self.item.item3d(), transform=transform)
-			if self.node_name_iso.text() != "": node_name = self.node_name_iso.text()
-			parentnode = self.item.item3d()
+			self.isosurfacewidgetdict["parent"] = parentnode = self.item.item3d()
+			insertion_node = EMIsosurface.getNodeForDialog(self.isosurfacewidgetdict)
+			node_name = str(self.isosurfacewidgetdict["node_name"].text())
 			reverttrans = True
 		# Slice
 		if self.node_type_combo.currentText() == "Slice": 
-			d = self.transformgroup["SLICE"]
-			transform = Transform({"type":"eman","az":float(d[4].text()),"alt":float(d[5].text()),"phi":float(d[6].text()),"tx":float(d[0].text()),"ty":float(d[1].text()),"tz":float(d[2].text()),"scale":float(d[3].text())})
-			insertion_node =  EMSliceItem3D(self.item.item3d(), transform=transform)
-			if self.node_name_slice.text() != "": node_name = self.node_name_slice.text()
-			parentnode = self.item.item3d()
+			self.slicewidgetdict["parent"] = parentnode = self.item.item3d()
+			insertion_node = EMSliceItem3D.getNodeForDialog(self.slicewidgetdict)
+			node_name = str(self.slicewidgetdict["node_name"].text())
 			reverttrans = True
 		# Volume
 		if self.node_type_combo.currentText() == "Volume": 
-			d = self.transformgroup["VOLUME"]
-			transform = Transform({"type":"eman","az":float(d[4].text()),"alt":float(d[5].text()),"phi":float(d[6].text()),"tx":float(d[0].text()),"ty":float(d[1].text()),"tz":float(d[2].text()),"scale":float(d[3].text())})
-			insertion_node =  EMVolumeItem3D(self.item.item3d(), transform=transform)
-			if self.node_name_volume.text() != "": node_name = self.node_name_volume.text()
-			parentnode = self.item.item3d()
+			self.volumewidgetdict["parent"] = parentnode = self.item.item3d()
+			insertion_node = EMVolumeItem3D.getNodeForDialog(self.volumewidgetdict)
+			node_name = str(self.volumewidgetdict["node_name"].text())
 			reverttrans = True
 		
 		insertion_node.setLabel(node_name)
 		self.inspector().scenegraph().insertNewNode(node_name, insertion_node, parentnode=parentnode)
 		insertion_node.setTransform(insertion_node.getParentMatrixProduct().inverse()*insertion_node.getTransform()) # Move to standard coordinatre system
 		insertion_node.getTransform().set_scale(1.0)	# The scale can be adverly affected by the above line of code. This may or may not be optimal I'll have to think about it....
-		if reverttrans: insertion_node.getTransform().set_trans(float(d[0].text()),float(d[1].text()),float(d[2].text()))
+		#if reverttrans: insertion_node.getTransform().set_trans(float(d[0].text()),float(d[1].text()),float(d[2].text()))
 		self.inspector().updateSceneGraph()
 		self.done(0)
 		
@@ -3073,18 +2772,6 @@ class GLdemo(QtGui.QWidget):
 		self.widget.addChild(self.sphere)
 		self.cylider = EMCylinder(50.0, 50.0)
 		self.widget.addChild(self.cylider)
-		
-		#self.emdata = EMDataItem3D("/home/john/Bo_data/simulated_data/3DmapIP3R1_small.mrc", transform=Transform())
-		#self.emdata = EMDataItem3D("/Users/ross/Work/AVGmonomer96.mrc", transform=Transform())
-		#self.widget.addChild(self.emdata)
-		#self.isosurface = EMIsosurface(self.emdata, transform=Transform())
-		#self.emdata.addChild(self.isosurface)
-		#self.slice = EMSliceItem3D(self.emdata, transform = Transform())
-		#self.emdata.addChild(self.slice)
-		
-		#self.inspector = EMInspector3D(self.widget)
-		#self.widget.setInspector(self.inspector)
-		#self.inspector.loadSG()
 		
 		# QT stuff to display the widget
 		vbox = QtGui.QVBoxLayout()

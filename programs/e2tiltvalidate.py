@@ -71,7 +71,7 @@ def main():
 	parser.add_argument("--maxtiltangle", type=float, help="Maximum tiltangle permitted when finding tilt distances", default=180.0, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="analysis")
 	parser.add_argument("--gui",action="store_true",help="Start the GUI for viewing the tiltvalidate plots",default=False, guidefault=True, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode="gui")
 	parser.add_argument("--radcut", type = float, default=-1, help="For use in the GUI, truncate the polar plot after R. -1 = no truncation", guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="gui")
-	parser.add_argument("--quaternion",action="store_true",help="Use Quaterions for tilt distance computation",default=False)
+	parser.add_argument("--quaternion",action="store_true",help="Use Quaterions for tilt distance computation",default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode='analysis')
 	parser.add_argument("--eulerfile",type=str,help="Euler angles file, to create tiltdistance from pre-aligned particles. Format is: imgnum, name, az, alt, phi",default=None)
 	# options associated with e2projector3d.py
 	parser.add_header(name="projheader", help='Options below this label are specific to e2project', title="### e2project options ###", row=9, col=0, rowspan=1, colspan=2, mode="analysis")
@@ -250,17 +250,20 @@ class ComputeTilts:
 			tilt_euler_xform = projections[tiltbestrefnum].get_attr('xform.projection')
 			tiltrot = tilt_euler_xform.get_rotation("eman")
 			tilt_euler_xform.set_rotation({"type":"eman","az":tiltrot["az"],"alt":tiltrot["alt"],"phi":-simmx_tilt[3].get_value_at(tiltbestrefnum, tiltimgnum)})
-			# Write out test results
-			
-			#print untilt_euler_xform.get_rotation("eman"), tilt_euler_xform.get_rotation("eman")
-			volume.project('standard', untilt_euler_xform).write_image("untiltaligned.hdf", imgnum*2)
-			untiltimgs[imgnum].write_image("untiltaligned.hdf", imgnum*2+1)
-			volume.project('standard', tilt_euler_xform).write_image("tiltaligned.hdf", imgnum*2)
-			tiltimgs[imgnum].write_image("tiltaligned.hdf", imgnum*2+1)
 			
 			#Find best solultion takeing sym into accout
-			self.find_bestsymsoln(imgnum, untilt_euler_xform, tilt_euler_xform)
+			tiltpars = self.find_bestsymsoln(imgnum, untilt_euler_xform, tilt_euler_xform)
 			
+			# Write out test results
+			volume.project('standard', untilt_euler_xform).write_image("projections.hdf", imgnum)
+			untiltimgs[imgnum].set_attr('tiltangle',round(tiltpars[0],2))
+			untiltimgs[imgnum].set_attr('tiltaxis',round(tiltpars[1],2))
+			untiltimgs[imgnum].write_image("untiltaligned.hdf", imgnum)
+			tiltimgs[imgnum].set_attr('tiltangle',round(tiltpars[0],2))
+			tiltimgs[imgnum].set_attr('tiltaxis',round(tiltpars[1],2))
+			tiltimgs[imgnum].write_image("tiltaligned.hdf", imgnum)
+			
+		self.tdb["junk"] = 1 # The Stupid DB doesn't write my list unless I don't this!!	
 		self.finish()
 	
 	def findtilts_fromeulers(self, untilteulers, tilteulers):
@@ -304,7 +307,7 @@ class ComputeTilts:
 					if tiltxform.get_rotation("eman")["alt"] < self.options.maxtiltangle:
 						bestinplane = math.fabs(math.sin(math.radians(tiltxform.get_rotation("eman")['az']))+math.sin(math.radians(tiltxform.get_rotation("eman")['phi'])))
 						besttiltangle = tiltxform.get_rotation("eman")["alt"]
-						besttiltaxis = tiltxform.get_rotation("eman")["az"]
+						besttiltaxis = math.asin((math.sin(tiltxform.get_rotation("eman")["az"])-math.sin(tiltxform.get_rotation("eman")["phi"]))/2.0)
 						anglefound = True
 				
 				self.test.write("\t%f %f %f %f\n"%(tiltxform.get_rotation("spin")["Omega"],tiltxform.get_rotation("spin")["n1"],tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n3"]))
@@ -313,6 +316,9 @@ class ComputeTilts:
 		if anglefound:
 			self.test.write("The best angle is %f with a tiltaxis of %f\n"%(besttiltangle,besttiltaxis))
 			self.particletilt_list.append([imgnum, besttiltangle,besttiltaxis,bestinplane])
+			return [besttiltangle,besttiltaxis,bestinplane]
+		else:
+			return [0.0, 0.0, 0.0]
 	
 	def finish(self):
 		self.test.close()
