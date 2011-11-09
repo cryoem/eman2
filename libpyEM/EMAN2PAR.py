@@ -903,7 +903,7 @@ class EMMpiClient():
 						if self.cachedir!=None :
 							### make a list of data objects we need to get from rank 0
 							needlst=[]
-							for k in range(len(task.data)):
+							for k in task.data:
 								i=task.data[k]
 								try: 
 									if i[0]!="cache" : raise Exception
@@ -950,7 +950,7 @@ class EMMpiClient():
 							### Ok, we should have everything we need. Let's get the actual job started now
 							
 							# Fix the cache filenames in our task
-							for i in range(len(task.data)):
+							for i in task.data:
 								j=task.data[i]
 								try: 
 									if j[0]!="cache" : raise Exception
