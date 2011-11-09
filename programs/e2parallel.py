@@ -78,6 +78,7 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 	parser.add_argument("--taskin", type=str,help="Internal use only. Used when executing local threaded tasks.")
 	parser.add_argument("--taskout", type=str,help="Internal use only. Used when executing local threaded tasks.")
 	parser.add_argument("--scratchdir", type=str,help="Internal use only. Used by the MPI client",default="/tmp")
+	parser.add_argument("--cache", action="store_true",help="Internal use only. Used by the MPI client",default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 #	parser.add_argument("--cpus",type=int,help="Number of CPUs/Cores for the clients to use on the local machine")
 #	parser.add_argument("--idleonly",action="store_true",help="Will only use CPUs on the local machine when idle",default=False)
@@ -110,7 +111,7 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 		runlocaltask(options.taskin,options.taskout)
 
 	elif args[0]=="mpiclient" :
-		runinmpi(options.scratchdir,options.verbose)
+		runinmpi(options.scratchdir,options.cache,options.verbose)
 		
 	elif args[0]=="rerunall":
 		rerunall()
@@ -126,9 +127,9 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 def progcb(val):
 	return True
 
-def runinmpi(scratchdir,verbose):
+def runinmpi(scratchdir,cache,verbose):
 	"""This function can only be used when called by mpirun from a valid MPI environment"""
-	client=EMMpiClient(scratchdir)
+	client=EMMpiClient(scratchdir,cache)
 	client.test(verbose)		# don't skip this. It's necessary to identify node names
 	client.run(verbose)
 

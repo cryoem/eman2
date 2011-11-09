@@ -113,7 +113,13 @@ class EMTaskCustomer:
 			self.maxthreads=int(target.split(":")[1])
 			try: self.scratchdir=target.split(":")[2]
 			except: self.scratchdir="/tmp"
-			self.handler=EMMpiTaskHandler(self.maxthreads,self.scratchdir)
+			try: 
+				if target.split(":")[3].lower()=="nocache" : 
+					self.cache=False
+					print "Caching disabled at user request"
+				else self.cache=True
+			except: self.cache=True
+			self.handler=EMMpiTaskHandler(self.maxthreads,self.scratchdir,self.cache)
 		else : raise Exception,"Only 'dc', 'thread' and 'mpi' servertypes currently supported"
 
 	def __del__(self):
@@ -571,14 +577,17 @@ class EMMpiClient():
 	as a wrapper for the mpirun command, which we cannot do at a higher level due to the modular parallelism
 	system."""
 
-	def __init__(self,scratchdir="/tmp"):
+	def __init__(self,scratchdir="/tmp",cache=True):
 		self.rank,self.nrank=mpi_init()
 		self.scratchdir=scratchdir
 
 		self.queuedir=self.scratchdir+"/queue"
-		self.cachedir=self.scratchdir+"/cache"
-		try: os.makedirs(self.cachedir)
-		except: pass
+		if cache: 
+			self.cachedir=self.scratchdir+"/cache"
+			try: os.makedirs(self.cachedir)
+			except: pass
+		else: self.cachedir=None
+		
 		
 		self.lastupdate=0		# last time we sent an update to rank 0
 		if self.rank==0 : self.logfile=file(self.scratchdir+"/rank0.log","a")
@@ -693,50 +702,52 @@ class EMMpiClient():
 						if verbose>1 : print "Cache request from customer: ",data
 						dump("OK",self.tocon,-1)
 						
-						# check each node to see if it needs the data
-						needed=False
-						cacheinfo=(data,e2filemodtime(data),EMUtil.get_image_count(data))	# we send the client (name,date,#images)
-						for i in self.noderanks.values():
-							r=self.mpi_send_com(i,"CHKC",cacheinfo)
-							if r=="NEED" :
-								if verbose>1: print "Rank %d needs the data"%i
-								needed=True
-								break
-						if not needed and verbose>1: print "Nobody needs the data"
-						
-						# broadcast the data if necessary
-						if needed:
-							writers=set(self.noderanks.values())
-							if verbose>1 : print "These ranks will write: ",writers
+						if self.cachedir!=None :
+							# check each node to see if it needs the data
+							needed=False
+							cacheinfo=(data,e2filemodtime(data),EMUtil.get_image_count(data))	# we send the client (name,date,#images)
+							for i in self.noderanks.values():
+								r=self.mpi_send_com(i,"CHKC",cacheinfo)
+								if r=="NEED" :
+									if verbose>1: print "Rank %d needs the data"%i
+									needed=True
+									break
+							if not needed and verbose>1: print "Nobody needs the data"
 							
-							# start by putting all of the ranks in caching mode
-							for i in xrange(1,self.nrank):
-								r=self.mpi_send_com(i,"CACH",(data,writers))
-								if r!="OK" : print "ERROR: Rank %d won't cache !"%i
-#								if verbose>1 : print "rank %d ready"%i
+							# broadcast the data if necessary
+							if needed:
+								writers=set(self.noderanks.values())
+								if verbose>1 : print "These ranks will write: ",writers
 								
-							# now send the actual cache data
-							im0=EMData(data,0)
-							ningrp=max(1,50000000/(im0["nx"]*im0["ny"]*im0["nz"]))	# how many images will it take to get 200 megs
-						
-							if verbose>1 : print "Caching %d images in chunks of %d"%(cacheinfo[2],ningrp)
-							# send in ~200 meg chunks
-							strt=time.time()
-							for i in xrange(0,cacheinfo[2],ningrp):
-								if verbose>1: 
-									print " %d - %d\t%d\t%d\t"%(i,i+ningrp,i/ningrp,int(time.time()-strt)),
-								dts=EMData.read_images(data,range(i,i+ningrp))
-								if verbose>1: 
-									print "%d\t"%(time.time()-strt),
-								mpi_bcast_send(dts)
-								if verbose>1: 
-									print "%d"%(time.time()-strt)
-								mpi_barrier()
-							dts=None	
-							mpi_bcast_send("DONE")
-							mpi_barrier()
+								# start by putting all of the ranks in caching mode
+								for i in xrange(1,self.nrank):
+									r=self.mpi_send_com(i,"CACH",(data,writers))
+									if r!="OK" : print "ERROR: Rank %d won't cache !"%i
+	#								if verbose>1 : print "rank %d ready"%i
+									
+								# now send the actual cache data
+								im0=EMData(data,0)
+								ningrp=max(1,50000000/(im0["nx"]*im0["ny"]*im0["nz"]))	# how many images will it take to get 200 megs
 							
-							print "Caching %s done in %d seconds"%(data,time.time()-strt)
+								if verbose>1 : print "Caching %d images in chunks of %d"%(cacheinfo[2],ningrp)
+								# send in ~200 meg chunks
+								strt=time.time()
+								for i in xrange(0,cacheinfo[2],ningrp):
+									if verbose>1: 
+										print " %d - %d\t%d\t%d\t"%(i,i+ningrp,i/ningrp,int(time.time()-strt)),
+									dts=EMData.read_images(data,range(i,i+ningrp))
+									if verbose>1: 
+										print "%d\t"%(time.time()-strt),
+									mpi_bcast_send(dts)
+									if verbose>1: 
+										print "%d"%(time.time()-strt)
+									mpi_barrier()
+								dts=None	
+								mpi_bcast_send("DONE")
+								mpi_barrier()
+								
+								print "Caching %s done in %d seconds"%(data,time.time()-strt)
+						elif verbose>1 : print "Caching disabled, request ignored"
 							
 					else : print "Unknown command from client '%s'"%com
 					continue
@@ -839,22 +850,25 @@ class EMMpiClient():
 
 					if com=="CHKC":				# check cache for complete file
 						if self.logfile!=None : self.logfile.write( "CHKC\n")
-						# data will contain (name,date,#images)
-						lname=self.pathtocache(data[0])
-						try:
-							mtime=e2filemodtime(lname)
-							numim=EMUtil.get_image_count(lname)
-							#cdict=db_open_dict("bdb:%s#00image_counts"%self.cachedir,ro=True)
-							#parm=cdict[lname]
-							#if parm[0]<data[1] or parm[1]!=data[2] : mpi_send("NEED",0,2)		# if host data is newer or file count doesn't match then request it
-							if mtime<data[1] or numim<data[2] : 
+						if self.cachedir==None :		# caching disabled
+							mpi_send("DONT",0,2)
+						else :
+							# data will contain (name,date,#images)
+							lname=self.pathtocache(data[0])
+							try:
+								mtime=e2filemodtime(lname)
+								numim=EMUtil.get_image_count(lname)
+								#cdict=db_open_dict("bdb:%s#00image_counts"%self.cachedir,ro=True)
+								#parm=cdict[lname]
+								#if parm[0]<data[1] or parm[1]!=data[2] : mpi_send("NEED",0,2)		# if host data is newer or file count doesn't match then request it
+								if mtime<data[1] or numim<data[2] : 
+									mpi_send("NEED",0,2)
+									print "need ",data[0],lname,mtime,data[1],numim,data[2]	
+								else : mpi_send("DONT",0,2)											# otherwise don't
+							except:
 								mpi_send("NEED",0,2)
-								print "need ",data[0],lname,mtime,data[1],numim,data[2]	
-							else : mpi_send("DONT",0,2)											# otherwise don't
-						except:
-							mpi_send("NEED",0,2)
 
-					if com=="CACH":				# precaching stage
+					if com=="CACH":				# precaching stage, this will never get called if caching is disabled... hopefully
 						if self.logfile!=None : self.logfile.write( "CACH\n")
 						mpi_send("OK",0,2)		# say we're entering cache reception mode
 						# data is (filename,rankwriters)
@@ -888,63 +902,64 @@ class EMMpiClient():
 						self.taskfile="%s/taskexe.%d"%(self.queuedir,os.getpid())
 						self.taskout="%s/taskout.%d"%(self.queuedir,os.getpid())
 
-						### make a list of data objects we need to get from rank 0
-						needlst=[]
-						for k in task.data:
-							i=task.data[k]
-							try: 
-								if i[0]!="cache" : raise Exception
-							except: continue
-							
-							# if we're here, then we have a 'cache' object
-							# if true, we need to ask for everything in this file
-							try : 
-								if not db_check_dict(self.pathtocache(i[1])) or task.modtimes[i[1]]>e2filemodtime(self.pathtocache(i[1])):	raise Exception
-							except:
-								needlst.append(i[1:])
-								continue
-							
-							# enumerate all individual images in the specified list and check the cache for them
-							db=db_open_dict(self.pathtocache(i[1]))
-							neednums=[j for j in imgnumenum(i[1:]) if not db.has_key(j)]	# list of images missing in the cache
-							if len(neednums)>0 :
-								if neednums[-1]-neednums[0]==len(neednums)-1 : 			# if we have a complete range, convert to min/max
-									needlst.append((i[1],neednums[0],neednums[-1]+1))
-								else : needlst.append((i[1],tuple(neednums)))
-						
-						### Send the request for specific needed image data back to the server
-						# and write the returned data to the cache
-						if len(needlst)>0 : 
-							mpi_send(("NEED",needlst),0,2)
-							if verbose>2 : print "rank %d: I need data :"%self.rank,needlst
-
-
-							while 1:
-								ncom,ndata=mpi_recv(0,-1)[0]
-								mpi_send("OK",0,2)				# MPI may receive some of the new data while we write to disk
+						if self.cachedir!=None :
+							### make a list of data objects we need to get from rank 0
+							needlst=[]
+							for k in range(len(task.data)):
+								i=task.data[k]
+								try: 
+									if i[0]!="cache" : raise Exception
+								except: continue
 								
-								# unpack the received data into the appropriate cache file
-								for fsp,num,img in ndata:
-									img.write_image(self.pathtocache(fsp),num)
+								# if we're here, then we have a 'cache' object
+								# if true, we need to ask for everything in this file
+								try : 
+									if not db_check_dict(self.pathtocache(i[1])) or task.modtimes[i[1]]>e2filemodtime(self.pathtocache(i[1])):	raise Exception
+								except:
+									needlst.append(i[1:])
+									continue
+								
+								# enumerate all individual images in the specified list and check the cache for them
+								db=db_open_dict(self.pathtocache(i[1]))
+								neednums=[j for j in imgnumenum(i[1:]) if not db.has_key(j)]	# list of images missing in the cache
+								if len(neednums)>0 :
+									if neednums[-1]-neednums[0]==len(neednums)-1 : 			# if we have a complete range, convert to min/max
+										needlst.append((i[1],neednums[0],neednums[-1]+1))
+									else : needlst.append((i[1],tuple(neednums)))
+							
+							### Send the request for specific needed image data back to the server
+							# and write the returned data to the cache
+							if len(needlst)>0 : 
+								mpi_send(("NEED",needlst),0,2)
+								if verbose>2 : print "rank %d: I need data :"%self.rank,needlst
+
+
+								while 1:
+									ncom,ndata=mpi_recv(0,-1)[0]
+									mpi_send("OK",0,2)				# MPI may receive some of the new data while we write to disk
 									
-								if ncom=="LAST" : break			# the data we just wrote must have been the end of what we requested
+									# unpack the received data into the appropriate cache file
+									for fsp,num,img in ndata:
+										img.write_image(self.pathtocache(fsp),num)
+										
+									if ncom=="LAST" : break			# the data we just wrote must have been the end of what we requested
+									
+							else :
+								mpi_send("OK",0,2)			# immediate reply so rank 0 can move on
 								
-						else :
-							mpi_send("OK",0,2)			# immediate reply so rank 0 can move on
-							
-						if verbose>2 : print "rank %d: I have the data I need"%self.rank
+							if verbose>2 : print "rank %d: I have the data I need"%self.rank
 						
-						### Ok, we should have everything we need. Let's get the actual job started now
-						
-						# Fix the cache filenames in our task
-						for i in task.data:
-							j=task.data[i]
-							try: 
-								if j[0]!="cache" : raise Exception
-							except: continue
+							### Ok, we should have everything we need. Let's get the actual job started now
 							
-							task.data[i]=list(task.data[i])
-							task.data[i][1]=self.pathtocache(task.data[i][1])
+							# Fix the cache filenames in our task
+							for i in range(len(task.data)):
+								j=task.data[i]
+								try: 
+									if j[0]!="cache" : raise Exception
+								except: continue
+								
+								task.data[i]=list(task.data[i])
+								task.data[i][1]=self.pathtocache(task.data[i][1])		# if caching is disabled this just returns the original filename
 							
 						# Execute the task
 						self.task=task	# for the callback
@@ -1007,6 +1022,8 @@ class EMMpiClient():
 	def pathtocache(self,path):
 		"""This will convert a remote filename to a local (unique) cache-file bdb:path"""
 		
+		if self.cachedir==None : return path	# caching disabled, return original filename
+		
 		# We strip out any punctuation, particularly '/', and take the last 40 characters, which hopefully gives us something unique
 		return "%s/%s.hdf"%(self.cachedir,path.translate(None,"#/\\:.!@$%^&*()-_=+")[-40:])
 
@@ -1062,13 +1079,14 @@ class EMMpiTaskHandler():
 	file caching naming scheme here, since the MPI task is not persistent across jobs. If this handler dies,
 	all knowledge of running processes dies with it."""
 	lock=threading.Lock()
-	def __init__(self,ncpus=2,scratchdir="/tmp"):
+	def __init__(self,ncpus=2,scratchdir="/tmp",cache=True):
 		try: user=getpass.getuser()
 		except: user="anyone"
 		
 		self.scratchdir="%s/eman2mpi-%s"%(scratchdir,user)
 		self.queuedir=self.scratchdir+"/queue"
-		self.cachedir=self.scratchdir+"/cache"
+		if cache: self.cachedir=self.scratchdir+"/cache"
+		else: self.cachedir=None
 		try: os.makedirs(self.queuedir)
 		except: 
 			print "makedirs queue failed (%s). May have failed because already exists. "%self.queuedir
@@ -1088,7 +1106,9 @@ class EMMpiTaskHandler():
 		os.mkfifo("%s/tompi"%self.scratchdir)
 		os.mkfifo("%s/fmmpi"%self.scratchdir)
 
-		cmd="mpirun -n %d e2parallel.py mpiclient --scratchdir=%s -v 2 </dev/null"%(ncpus,self.scratchdir)
+		if cache : cache=" --cache"
+		else: cache=""
+		cmd="mpirun -n %d e2parallel.py mpiclient --scratchdir=%s %s -v 2 </dev/null"%(ncpus,self.scratchdir,cache)
 		
 		self.mpitask=subprocess.Popen(cmd, stdin=None, stdout=mpiout, stderr=mpierr, shell=True)
 
