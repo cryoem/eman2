@@ -137,15 +137,7 @@ def main():
 		print "ERROR, input volumes are not cubes"
 		sys.exit(1)
 
-	logger = E2init(sys.argv,options.ppid)
-	
-	# Initialize parallelism if being used
-	if options.parallel :
-		from EMAN2PAR import EMTaskCustomer
-		etc=EMTaskCustomer(options.parallel)
-		pclist=[options.input]
-	
-		etc.precache(pclist)
+	#Parallelization initialization used to be here
 	
 	nptcl = EMUtil.get_image_count(options.input)
 	if nptcl<3: 
@@ -153,7 +145,6 @@ def main():
 		sys.exit(1)
 	
 	newptcls=[]
-	allptcls=[]
 	for i in range(nptcl):
 		#a=EMData(options.input,i,True)				#Read the header only for each particle and set the "multiplicity" parameter to 1 if there is no such parameter
 		a=EMData(options.input,i)
@@ -163,16 +154,31 @@ def main():
 		if 'spt_ptcl_indxs' not in a.get_attr_dict():		#Set the spt_ptcl_indxs header parameter to keep track of what particles the current particle is an average of
 			a['spt_ptcl_indxs']=[i]				#In this case, the fresh/new stack should contain particles where this parameter is the particle number itself
 			a.write_image(options.input,i)
+		else:
+			if type(a['spt_ptcl_indxs']) is int:
+				a['spt_ptcl_indxs'] = [a['spt_ptcl_indxs']]
 		newptcls.append(a)
-		allptcls.append(a)
 		
 	#allptcls = range(nptcl)
 	#nptcls = range(nptcl)
 	
 	setOLD = set([])
 	oldptcls = []
+	allptcls=[]
+	surviving_results = []
 
 	for k in range(options.iter):
+	
+		logger = E2init(sys.argv,options.ppid)
+
+		# Initialize parallelism if being used
+		if options.parallel :
+			from EMAN2PAR import EMTaskCustomer
+			etc=EMTaskCustomer(options.parallel)
+			pclist=[options.input]
+
+			etc.precache(pclist)
+		
 		'''
 		Make ALL vs ALL comparisons among all NEW particle INDEXES.
 		NOTE: In the first round all the particles are "new"
@@ -181,36 +187,24 @@ def main():
 		nnew = len(newptcls)
 		newptclsmap = list(enumerate([range(i,nnew) for i in range(1,nnew)]))
 		
-		#file_map = [ (newptcls[x[0]] , [newptcls[z] for z in x[1]] ) for x in enum ]
-		#numbers = [i +1 for i in range(total)]
-		#num_map = [ (numbers[x(0)]] , [numbers[z] for z in x[1]] ) for x in enum ]
-		
 		ranks = []
 		tasks = []
 		
 		jj=0					#counter to keep track of the number of comparisons
 		for ptcl1, compare in newptclsmap:
 			for ptcl2 in compare:
-				
-				#ref = EMData(options.input,ptcl1)
-				
+				print "Comparing newptcl %d vs newptcl %d in the ALL VS ALL" %(ptcl1,ptcl2)
+								
 				ref = newptcls[ptcl1]
+				roundnumber = str(k).zfill(3)
+				roundtag = 'round' + roundnumber + '_'
 				
-				#print "The ref and ptcl2 to be sent are EMData type, see!!", type(ref), type(newptcls[ptcl2])
-				#print "And their dimensions are integers, see", ref['nx'], type(ref['nx']), newptcls[ptcl2]['nx'], type(newptcls[ptcl2]['nx'])
-				
-				#task = Align3DTask(ref,["cache",options.input,ptcl2],jj,ptcl1,ptcl2,"Aligning particle#%d VS particle#%d in iteration %d" % (ptcl1,ptcl2,k),options.mask,options.normproc,options.preprocess,
-				#options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
-				
-				task = Align3DTaskAVSA(ref,["cache",newptcls[ptcl2]],jj,'new_' + str(ptcl1),'new_' +str(ptcl2),"Aligning particle#%d VS particle#%d of the 'NEW SET' in iteration %d" % (ptcl1,ptcl2,k),options.mask,options.normproc,options.preprocess,
+				task = Align3DTaskAVSA(ref,["cache",newptcls[ptcl2]],jj, roundtag + str(ptcl1).zfill(4), roundtag + str(ptcl2).zfill(4),"Aligning particle#%d VS particle#%d of the 'NEW SET' in iteration %d" % (ptcl1,ptcl2,k),options.mask,options.normproc,options.preprocess,
 				options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
 				
 				tasks.append(task)
 				
 				jj+=1
-				
-				#info = [name1, name2, rt2apply, score]
-				#ranks.append(info)							#Add comparison to a list that will shortly be sorted by ccc score, to determine the "UNIQUE best pairs"
 		
 		'''
 		Make comparisons for all NEW VS all OLD particles. "NEW" means particles that didn't exist in the previous round.
@@ -223,30 +217,17 @@ def main():
 				print "TERMINATING"
 				sys.exit()
 				
-			setNEW = set(newptcls)
-			setALL = set(allptcls)
-			setOLD = setALL - setNEW
-			
-			oldptcls = list(setOLD)
-
-			if options.verbose:
-				print "The set of NEW particles has these many in it", len(setNEW)
-				print "The set of ALL particles has these many in it", len(setALL)
-				print "Therefore, the difference is the amount of old particles remaining", len(setOLD)
+			print "The set of NEW particles has these many in it", len(newptcls)
+			print "The set of ALL particles has these many in it", len(newptcls + oldptcls)
+			print "Therefore, the difference is the amount of old particles remaining", len(oldptcls)
 
 			xx=0
 			for ptcl1 in newptcls:
 				yy=0
 				for ptcl2 in oldptcls:
+					print "Comparing newptcl %d vs old ptcl %d" %(xx,yy)
 					
-					#ref = EMData(ptcl1)	
-					#task = Align3DTask(ref,["cache",options.input,ptcl2],comparison,ptcl1,ptcl2,"Aligning particle#%d VS particle#%d in iteration %d" % (ptcl1,ptcl2,k),options.mask,options.normproc,options.preprocess,
-					#options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
-					
-					#print "The ref and ptcl2 to be sent are EMData type, see!!", type(ptcl1), type(ptcl2)
-					#print "And their dimensions are integers, see", ptcl1['nx'], type(ptcl1['nx']), ptcl2['nx'], type(ptcl2['nx'])
-					
-					task = Align3DTaskAVSA(ptcl1,["cache",ptcl2],jj,'new_'+str(xx),'old_'+str(yy),"Aligning particle#%d of the OLD set VS particle#%d of the NEW set, in iteration %d" % (xx,yy,k),options.mask,options.normproc,options.preprocess,
+					task = Align3DTaskAVSA(ptcl1,["cache",ptcl2],jj,roundtag + str(xx).zfill(4), roundtag + str(yy).zfill(4),"Aligning particle#%d of the OLD set VS particle#%d of the NEW set, in iteration %d" % (xx,yy,k),options.mask,options.normproc,options.preprocess,
 					options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
 					
 					tasks.append(task)
@@ -257,15 +238,28 @@ def main():
 		
 		# start the alignments running
 		tids=etc.send_tasks(tasks)
-		if options.verbose: 
+		if options.verbose > 0: 
 			print "%d tasks queued in iteration %d"%(len(tids),k) 
 
 		# Wait for alignments to finish and get results
+		
+		print "Etc is", etc
+		print "Tids is", tids
+		print "Options.verbose is", options.verbose
+		
 		results = get_results(etc,tids,options.verbose)
+		
+		results = results + surviving_results
+		
+		print "This is the TYPE of the results", type(results)
+		print "Which are", results
 		
 		results = sorted(results, key=itemgetter('score'))
 
-		if options.verbose>2 : 
+		print "This is the value and type of options.verbose", options.verbose, type(options.verbose)
+		print "in iteration", k
+		
+		if options.verbose > 2:
 			print "The SORTED results are:"
 			print results
 			
@@ -275,30 +269,39 @@ def main():
 
 			print "Therefore the ordered coefficients are", coeffs
 		
-		print "This many comparisons were made", len(results)
+		print "The total number of comparisons in the ranking list, either new or old that survived, is", len(results)
 		
 		tried = set()
-		averaged = set()
+		averaged = []
 		averages =[]
+		used = []
 		
 		mm=0
-		for pair in results:
-			if pair['ptcl1'] not in tried and pair['ptcl2'] not in tried:
+		for z in range(len(results)):
+			if results[z]['ptcl1'] not in tried and results[z]['ptcl2'] not in tried:
+				used.append(results[z])
 				
-				tried.add(pair['ptcl1'])		
-				tried.add(pair['ptcl2'])						#Add both of the scanned particles to both groups of scanned/tried AND averaged particles, 
+				tried.add(results[z]['ptcl1'])		
+				tried.add(results[z]['ptcl2'])						#Add both of the scanned particles to both groups of scanned/tried AND averaged particles, 
 													#since all particle pairs that aren't already in the 'tried' group MUST be averaged
-				averaged.add(pair['ptcl1'])
-				averaged.add(pair['ptcl2'])
-				
 				avgr=Averagers.get(options.averager[0], options.averager[1])				#Call the averager
 				
 				ptcl1=EMData()
 				
-				if 'new' in pair['ptcl1']:
-					ptcl1 = newptcls[int(pair['ptcl1'].split('_')[-1])]				
-				elif 'old' in pair['ptcl1']:
-					ptcl1 = oldptcls[int(pair['ptcl1'].split('_')[-1])]
+				#print "The filter for particle 1 is", int(results[z]['ptcl1'].split('_')[-1])
+				#print "And it should be either equal or smaller than k!!!", int(results[z]['ptcl1'].split('_')[-1]) <= k
+				
+				if int(results[z]['ptcl1'].split('_')[0].replace('round','')) == k:
+					print "\nThe first particle to average was in newptcls list\n"
+					ptcl1 = newptcls[int(results[z]['ptcl1'].split('_')[-1])]				
+				elif int(results[z]['ptcl1'].split('_')[0].replace('round','')) < k:
+					print "\nThe first particle to average was in oldptcls list\n"
+					ptcl1 = oldptcls[int(results[z]['ptcl1'].split('_')[-1])]
+				else:
+					print "\@@@@\@@@@Warning!! Particle 1 was NOT found and empty garbage is being added to the average!\n\n"
+				
+				averaged.append(ptcl1)
+			
 				
 				ptcl1 = ptcl1 * ptcl1['spt_multiplicity']				#Take the multiplicity of ptcl1 into account
 					
@@ -306,20 +309,53 @@ def main():
 				
 				ptcl2=EMData()
 				
-				if 'new' in pair['ptcl2']:
-					ptcl2 = newptcls[int(pair['ptcl2'].split('_')[-1])]				
-				elif 'old' in pair['ptcl2']:
-					ptcl2 = oldptcls[int(pair['ptcl2'].split('_')[-1])]
+				if int(results[z]['ptcl2'].split('_')[0].replace('round','')) == k:
+					#print "\nThe second particle to average was in newptcls list\n"
+					ptcl2 = newptcls[int(results[z]['ptcl2'].split('_')[-1])]				
+				elif int(results[z]['ptcl1'].split('_')[0].replace('round','')) < k:
+					#print "\nThe second particle to average was in oldptcls list\n"
+					ptcl2 = oldptcls[int(results[z]['ptcl2'].split('_')[-1])]
+				else:
+					print "\@@@@\@@@@Warning!! Particle 2 was NOT found and empty garbage is being added to the average!"
 				
+				averaged.append(ptcl2)
+				
+				#print "I have appened particle2 to averaged", ptcl2
+				#print "see", averaged
+				#print "And of course it came from newptcls", ptcl2 in newptcls
+
 				ptcl2 = ptcl2 * ptcl2['spt_multiplicity']				#Take the multiplicity of ptcl1 into account				
 				
-				ptcl2.process_inplace("xform",{"transform":pair["xform.align3d"]})	#Apply the relative alignment between particles 1 and 2 to particle 2,
+				ptcl2.process_inplace("xform",{"transform":results[z]["xform.align3d"]})	#Apply the relative alignment between particles 1 and 2 to particle 2,
 													#since particle 1 is always the "fixed" one and particle 2 the "moving" one during alignment
 				
 				avgr.add_image(ptcl2)							#Add the transformed (rotated and translated) particle 2 to the average
 		
 				avg=avgr.finish()
-				avg["spt_ptcl_indxs"] = list(set([ptcl1"spt_ptcl_indxs"]).union(set(ptcl2["spt_ptcl_indxs"])))	#Keep track of what particles go into each average or "new particle"				
+				
+				avgmultiplicity = ptcl1['spt_multiplicity'] + ptcl2['spt_multiplicity']
+				
+				avg['spt_multiplicity'] = avgmultiplicity
+				
+				indexes1 = ptcl1["spt_ptcl_indxs"]
+				indexes2 = ptcl2["spt_ptcl_indxs"]
+				print "The type for indexes1 is", type(ptcl1["spt_ptcl_indxs"])
+				print "The type for indexes2 is", type(ptcl2["spt_ptcl_indxs"])
+				
+				if type(indexes1) is int:
+					indexes1 = [indexes1]
+					print "Indexes1 was int, had to change it!"
+					sys.exit()	
+				if type(indexes2) is int:
+					indexes2 = [indexes2]
+					print "Indexes2 was int, had to change it!"
+					sys.exit()	
+				
+				print "Indexes 1 and 2 are", indexes1, indexes2
+				print "Therefore their sum is", indexes1 + indexes2					
+				
+				avg["spt_ptcl_indxs"] = indexes1 + indexes2				#Keep track of what particles go into each average or "new particle"				
+				
 				avg["spt_ptcl_src"] = options.input
 				
 				avg['origin_x'] = 0							#The origin needs to be reset to ZERO to avoid display issues in Chimera
@@ -333,24 +369,65 @@ def main():
 				
 				mm+=1
 				
-			if pair['ptcl1'] not in tried:
-				tried.add(pair['ptcl1'])
+			if results[z]['ptcl1'] not in tried:
+				tried.add(results[z]['ptcl1'])
 				
-			if pair['ptcl2'] not in tried:
-				tried.add(pair['ptcl2'])
-						
-		for particle in averaged:
-			if particle in newptcls:
-				newptcls.remove(particle)				
-			if particle in oldptcls:
-				oldptcls.remove(particle)
+			if results[z]['ptcl2'] not in tried:
+				tried.add(results[z]['ptcl2'])
+		
+		surviving_results = []
+		for z in range(len(results)):
+			if results[z] not in used:
+				results[z]['ptcl1'] = 'old_' + results[z]['ptcl1'].split('_')[-1]
+				results[z]['ptcl1'] = 'old_' + results[z]['ptcl2'].split('_')[-1]
+				surviving_results.append(results[z])			
+		
+		surviving_newptcls = []
+		surviving_oldptcls = []
 				
-		oldptcls.append(newptcls)			#All the particles from the newptcls list that were not averaged become "old"
-		newptcls=averages				#All the new averages become part of the new "newptcls" list
-	
+		
+		for particle in averages:
+			if 'spt_multiplicity' not in particle.get_attr_dict():
+				print "\n$$$$$$$$$$\n$$$$$$$$$$$$Warning!!! After round %d a new average doesn't have spt_multiplicity!"
+		
+		
+		for particle in newptcls:
+			if particle not in averaged:
+				surviving_newptcls.append(particle)
+			else:
+				print "This particle was averaged", particle
+				#print "and was found in newptcls", newptcls 								
+		for particle in oldptcls:
+			if particle not in averaged:
+				surviving_oldptcls.append(particle)
+			else:
+				print "This particle was averaged", particle
+				#print "and was found in oldptcls", oldptcls 
+				
+		print "At the end of iteration", k
+		print "There were these many old ptcls NOT averaged", len(surviving_oldptcls)
+		print "And these many 'new ptcls' not averaged that need to become old", len(surviving_newptcls)
+		
+		oldptcls = surviving_oldptcls + surviving_newptcls			#All the particles from the newptcls list that were not averaged become "old"
+		newptcls = averages							#All the new averages become part of the new "newptcls" list
+		
+		print "And these many new averages", len(newptcls), len(averages)
+		
+		print "So there are these many old particles for the next round", len(oldptcls)
+		print "And these many new-new ones", len(newptcls)
+		
+		allptcls = oldptcls + newptcls
+		
+		for particle in allptcls:
+			if 'spt_multiplicity' not in particle.get_attr_dict():
+				print "\n$$$$$$$$$$\n$$$$$$$$$$$$Warning!!! After round %d a particle doesn't have spt_multiplicity!"
+		
+		
+		print "Therefore ALL the particles for the next round should be their sum", len(allptcls)
+		
 		E2end(logger)
 
-		return()
+	return()
 
 
 '''
@@ -447,8 +524,8 @@ class Align3DTaskAVSA(EMTask):
 		#if isinstance(self.data["fixedimage"],EMData):
 		
 		fixedimage=self.data["fixedimage"]
-		print "Inside the class, the fixedimage received is of type", type(fixedimage)
-		print "And its dimensions are of type", fixedimage['nx'], type(fixedimage['nx'])
+		#print "Inside the class, the fixedimage received is of type", type(fixedimage)
+		#print "And its dimensions are of type", fixedimage['nx'], type(fixedimage['nx'])
 		
 		#else: 
 		#	print "You are not passing in an EMData REFERENCE!"
@@ -457,8 +534,8 @@ class Align3DTaskAVSA(EMTask):
 		#if isinstance(self.data["image"],EMData):
 		
 		image=self.data["image"][-1]
-		print "Inside the class, the image received is of type", type(image)
-		print "And its dimensions are of type", image['nx'], type(image['nx'])
+		#print "Inside the class, the image received is of type", type(image)
+		#print "And its dimensions are of type", image['nx'], type(image['nx'])
 
 		
 		#else: 
@@ -472,12 +549,13 @@ class Align3DTaskAVSA(EMTask):
 		mask.to_one()
 		
 		if options["mask"] != None:
-			print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options["mask"][0],options["mask"][1]) 
+			#print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options["mask"][0],options["mask"][1]) 
 			mask.process_inplace(options["mask"][0],options["mask"][1])
 		
 		# normalize
 		if options["normproc"] != None:
-			if options["normproc"][0]=="normalize.mask" : options["normproc"][1]["mask"]=mask
+			if options["normproc"][0]=="normalize.mask": 
+				options["normproc"][1]["mask"]=mask
 			fixedimage.process_inplace(options["normproc"][0],options["normproc"][1])
 			image.process_inplace(options["normproc"][0],options["normproc"][1])
 		
@@ -508,8 +586,13 @@ class Align3DTaskAVSA(EMTask):
 			s2fixedimage=fixedimage
 			s2image=image
 			
-
-		if options["verbose"]>1: 
+			
+			
+		#print "This is the value and type of options.verbose inside the ALIGN class", options['verbose'], type(options['verbose'])
+			 
+		if options["verbose"] >2:
+			print "Because it was greater than 2 or not integer, I will exit"
+			sys.exit()  
 			print "Align size %d,  Refine Align size %d"%(sfixedimage["nx"],s2fixedimage["nx"])
 
 		#If a Transform was passed in, we skip coarse alignment
@@ -568,10 +651,8 @@ class Align3DTaskAVSA(EMTask):
 		if bestfinal[0]["score"] == 1.0e10 :
 			print "Error: all refine alignments failed for %s. May need to consider altering filter/shrink parameters. Using coarse alignment, but results are likely invalid."%self.options["label"]
 		
-		if options["verbose"]: 
-			print "Best %1.5g\t %s"%(bestfinal[0]["score"],str(bestfinal[0]["xform.align3d"]))
-
-		if options["verbose"]: 
+		if options["verbose"]>1: 
+			print "Best %1.5g\t %s"%(bestfinal[0]["score"],str(bestfinal[0]["xform.align3d"])) 
 			print "Done aligning ",options["label"]
 		
 		return {"final":bestfinal,"coarse":bestcoarse}
