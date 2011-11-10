@@ -1072,9 +1072,6 @@ class EMIsosurface(EMItem3D):
 		self.wire = dictionary["ISOPARS"][0]
 		self.cullbackfaces = dictionary["ISOPARS"][1]
 		self.setThreshold(dictionary["ISOPARS"][2])
-		
-	def getBoundingBoxDimensions(self):
-		return self.getParent().getBoundingBoxDimensions()
 	
 	def loadColors(self):
 		self.colors = get_default_gl_colors()

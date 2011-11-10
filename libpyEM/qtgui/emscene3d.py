@@ -768,7 +768,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		Return a Qt widget that controls the scene item
 		"""	
-		if not self.item_inspector: self.item_inspector = EMItem3DInspector("All Objects", self)
+		if not self.item_inspector: self.item_inspector = EMSGNodeInspector("All Objects", self)
 		return self.item_inspector
 		
 	def setInspector(self, inspector):
@@ -1080,10 +1080,13 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			magnitude = math.sqrt(dx*dx + dy*dy)
 			# We want to remove the effect of self.camera.getViewPortWidthScaling() for rotation. For everything else the effect is desired
 			#Check to see if the cursor is in the 'virtual slider pannel'
-			if  self.zrotate: # The lowest 5% of the screen is reserved from the Z spin virtual slider
-				self.updateMatrices([dx/self.camera.getViewPortWidthScaling(),0,0,-1], "rotate")
-			else:
-				self.updateMatrices([magnitude/self.camera.getViewPortWidthScaling(),-dy/magnitude,-dx/magnitude,0], "rotate")
+			try:
+				if  self.zrotate: # The lowest 5% of the screen is reserved from the Z spin virtual slider
+					self.updateMatrices([dx/self.camera.getViewPortWidthScaling(),0,0,-1], "rotate")
+				else:
+					self.updateMatrices([magnitude/self.camera.getViewPortWidthScaling(),-dy/magnitude,-dx/magnitude,0], "rotate")
+			except ValueError:
+				pass	# In some pathological circumstances, we can get divide by zero errors
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "selection") and not event.modifiers()&Qt.ControlModifier:
 			self.updateMatrices([dx,-dy,0], "translate")
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "multiselection"):
@@ -2513,6 +2516,105 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		self.scenegraph().updateSG()
 
+class EMSGNodeInspector(EMItem3DInspector):
+	"""
+	Inspector for the SG node, allows special fucntionality for the SG node
+	"""
+	def __init__(self, name, item3d):
+		EMItem3DInspector.__init__(self, name, item3d)
+		
+	def addControls(self, gridbox):
+		super(EMSGNodeInspector, self).addControls(gridbox)
+		buttonframe = QtGui.QFrame()
+		buttonframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		buttongrid = QtGui.QGridLayout()
+		# Make buttons
+		centerall = QtGui.QPushButton("Center All")
+		distributeall =  QtGui.QPushButton("Distribute All")
+		distributeall.setToolTip('Only works for data objects')
+		selectall = QtGui.QPushButton("Select All")
+		addaxes = QtGui.QPushButton("Add Axes")
+		# Set layouts
+		buttongrid.addWidget(centerall, 0, 0)
+		buttongrid.addWidget(distributeall, 0, 1)
+		buttongrid.addWidget(selectall, 1, 0)
+		buttongrid.addWidget(addaxes, 1, 1)
+		buttonframe.setLayout(buttongrid)
+		gridbox.addWidget(buttonframe, 3, 0, 1, 1)
+		# Add connections
+		QtCore.QObject.connect(centerall, QtCore.SIGNAL("clicked()"), self._on_centerall)
+		QtCore.QObject.connect(distributeall, QtCore.SIGNAL("clicked()"), self._on_distributeall)
+		QtCore.QObject.connect(selectall, QtCore.SIGNAL("clicked()"), self._on_selectall)
+		QtCore.QObject.connect(addaxes, QtCore.SIGNAL("clicked()"), self._on_addaxes)
+		
+	def _on_centerall(self):
+		for child in self.item3d().getChildren():
+			child.getTransform().set_trans(0.0, 0.0, 0.0)
+		self.inspector().updateSceneGraph()
+	
+	def _on_distributeall(self):
+		count = 0
+		distcount = 0
+		for child in self.item3d().getChildren():
+			# Use modulo arith to distribute
+			if hasattr(child, 'getBoundingBoxDimensions'):
+				dims = child.getBoundingBoxDimensions()
+				# distribute alogn X not matter what the SG root matrix
+				self._set_transformSTDCorrd(child, math.pow(-1,(count%2))*distcount*dims[0], 0.0, 0.0)
+				if (count + 1) % 2: distcount += 1
+				count += 1
+		self.inspector().updateSceneGraph()
+				
+	def _on_selectall(self):
+		haschildren = False
+		for child in self.item3d().getChildren():
+			child.setSelectedItem(True)
+			haschildren = True
+		if haschildren:	
+			self.item3d().setSelectedItem(False)
+			self.inspector().updateTreeSelVis()
+			self.inspector().updateSceneGraph()
+	
+	def _on_addaxes(self):
+		# define axes size
+		length = 50
+		margin = 50
+		linewidth = 20
+		# define axes location
+		xi = -self.item3d().camera.getViewPortWidthScaling()*self.item3d().camera.getWidth()/2 + margin*self.item3d().camera.getViewPortWidthScaling()
+		yi = self.item3d().camera.getViewPortHeightScaling()*self.item3d().camera.getHeight()/2 - (length+margin)*self.item3d().camera.getViewPortHeightScaling()
+		zi = 0
+		transform=Transform({'type':'eman','tx':xi,'ty':yi,'tz':zi,'scale':self.item3d().camera.getViewPortWidthScaling()})
+		# create axes
+		xaxis = EMLine(0,0,0,length,0,0,linewidth)
+		xaxis.setShowLeftArrow(False)
+		xaxis.setRightArrowLength(length/5)
+		xaxis.setAmbientColor(1.0,0.0,0.0)
+		yaxis = EMLine(0,0,0,0,length,0,linewidth)
+		yaxis.setShowLeftArrow(False)
+		yaxis.setRightArrowLength(length/5)
+		yaxis.setAmbientColor(0.0,1.0,0.0)
+		zaxis = EMLine(0,0,0,0,0,-length,linewidth)
+		zaxis.setShowLeftArrow(False)
+		zaxis.setRightArrowLength(length/5)
+		zaxis.setAmbientColor(0.0,0.0,1.0)
+		# Make the axes root node
+		axesnode = EMItem3D(transform=transform)
+		self.item3d().insertNewNode("Axes", axesnode, self.item3d())
+		# added the axes to root node
+		self.item3d().insertNewNode("X Axis (red)", xaxis, axesnode)
+		self.item3d().insertNewNode("Y Axis (green)", yaxis, axesnode)
+		self.item3d().insertNewNode("Z Axis (blue)", zaxis, axesnode)
+		self.inspector().updateTree()
+		self.inspector().updateSceneGraph()
+	
+	def _set_transformSTDCorrd(self, child, tx, ty, tz):
+		""" Helper function to set transform in standard coord system """
+		tt = t = Transform({"tx":tx,"ty":ty,"tz":tz})
+		tp = child.getParentMatrixProduct()
+		if tp: tt = tp.inverse()*t
+		child.getTransform().set_trans(tt.get_trans())
+		
 class EMQTreeWidget(QtGui.QTreeWidget):
 	"""
 	Subclassing the QTreeWidget to enable is_visible toggling

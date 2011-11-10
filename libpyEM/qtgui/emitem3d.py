@@ -607,7 +607,7 @@ class EMItem3DInspector(QtGui.QWidget):
 	
 	def _on_translation(self, value):
 		"""
-		Need to contain the right coords
+		Need to contain the right coords. And do translation in the correct corrd system
 		"""
 		tt = t = Transform({"tx":self.tx.getValue(),"ty":self.ty.getValue(),"tz":self.tz.getValue()})
 		tp = self.item3d().getParentMatrixProduct()
@@ -904,6 +904,8 @@ class EMItem3DInspector(QtGui.QWidget):
 		self.inspector().updateSceneGraph()
 		
 	def _set_rotation_std_coords(self, rotation):
+		""" This function sets the rotation as if there were no preceeding ones, otherwise a rot around Z could be arounf y,x, etc.
+		Works by transforming local coords into global corrds"""
 		tt = rotation
 		tp = self.item3d().getParentMatrixProduct()
 		if tp: tt = tp.inverse()*rotation

@@ -614,7 +614,19 @@ class EMLine(EMItem3D):
 
 	def setShowRightArrow(self, state):
 		self.showRightArrow = state
+		
+	def setLeftArrowSize(self, size):
+		self.leftArrowSize = size
+		
+	def setLeftArrowLength(self, length):
+		self.leftArrowLength = length
 
+	def setRightArrowSize(self, size):
+		self.rightArrowSize = size
+		
+	def setRightArrowLength(self, length):
+		self.rightArrowLength = length
+		
 	def getItemInspector(self):
 		"""
 		Return a Qt widget that controls the scene item
