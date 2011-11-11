@@ -1682,7 +1682,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.stlay = QtGui.QGridLayout(self.savetab)
 		
 		self.stsnapbut = QtGui.QPushButton("Snapshot")
-		self.stsnapbut.setToolTip(".pgm, .ppm or .tiff format only")
+		self.stsnapbut.setToolTip(".pgm, .ppm, .jpeg, .png, or .tiff format only")
 		self.stwholebut = QtGui.QPushButton("Save Img")
 		self.stwholebut.setToolTip("save EMData in any EMAN2 format") 
 		self.ststackbut = QtGui.QPushButton("Save Stack")
@@ -1926,12 +1926,16 @@ class EMImageInspector2D(QtGui.QWidget):
 
 	def do_snapshot(self,du) :
 		if self.target().data==None : return
-		fsp=QtGui.QFileDialog.getSaveFileName(self, "Select output file, .pgm, .ppm or .tiff only")
+		fsp=QtGui.QFileDialog.getSaveFileName(self, "Select output file, .pgm, .ppm, .jpeg, .png or .tiff only")
 		fsp=str(fsp)
 		# Just grab the framebuffer, as a QTImage, and save as tiff
-		if fsp[-4:]==".tif" or fsp[-5:]==".tiff":
+		if fsp[-5:]==".jpeg" or fsp[-5:]==".tiff":
 			image = self.target().grabFrameBuffer()
-			image.save(fsp,"tiff")
+			image.save(fsp,str(fsp[-4:]))
+			return
+		if fsp[-4:]==".png" or fsp[-4:]==".tif" or fsp[-4:]==".jpg":
+			image = self.target().grabFrameBuffer()
+			image.save(fsp,str(fsp[-3:]))
 			return
 		if fsp[-4:]==".pgm" or fsp[-4:]==".ppm" : fsp=fsp[:-4]
 		(depth,w,h,bmap)=self.target().render_bitmap()

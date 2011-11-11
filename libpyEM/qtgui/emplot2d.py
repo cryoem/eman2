@@ -674,7 +674,7 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 		self.lastcx = self.firstcx = event.x()
 		self.lastcy = self.firstcy = event.y()
 		if event.button()==Qt.MidButton:
-			filename = QtGui.QFileDialog.getSaveFileName(self, 'Publish or Perish! Save Plot', os.getcwd(), "*.tiff")
+			filename = QtGui.QFileDialog.getSaveFileName(self, 'Publish or Perish! Save Plot', os.getcwd(), "(*.tiff *.jpeg, *.png)")
 			if filename: # if we cancel
 				self.saveSnapShot(filename)
 		else:
@@ -700,9 +700,13 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 		@param filename The Filename you want to save to
 		@param format The image file format
 		"""
-		if format not in filename: filename = "%s.%s"%(filename,format)
 		image = self.grabFrameBuffer()
-		image.save(filename, format)
+		fregex = re.compile('\.\w{3,4}$')
+		if re.findall(fregex, filename):
+			image.save(filename, re.findall(fregex, filename)[0][1:])
+		else:
+			filename = "%s.%s"%(filename,format)
+			image.save(filename, format)
 		print "Saved %s to disk"%os.path.basename(str(filename))
 		
 	def set_data(self,input_data,key="data",replace=False,quiet=False,color=0,linewidth=1,linetype=0,symtype=-1,symsize=4,radcut=-1):

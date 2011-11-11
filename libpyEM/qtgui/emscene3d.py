@@ -2584,7 +2584,7 @@ class EMSGNodeInspector(EMItem3DInspector):
 		xi = -self.item3d().camera.getViewPortWidthScaling()*self.item3d().camera.getWidth()/2 + margin*self.item3d().camera.getViewPortWidthScaling()
 		yi = self.item3d().camera.getViewPortHeightScaling()*self.item3d().camera.getHeight()/2 - (length+margin)*self.item3d().camera.getViewPortHeightScaling()
 		zi = 0
-		transform=Transform({'type':'eman','tx':xi,'ty':yi,'tz':zi,'scale':self.item3d().camera.getViewPortWidthScaling()})
+		#transform=Transform({'type':'eman','tx':xi,'ty':yi,'tz':zi,'scale':self.item3d().camera.getViewPortWidthScaling()})
 		# create axes
 		xaxis = EMLine(0,0,0,length,0,0,linewidth)
 		xaxis.setShowLeftArrow(False)
@@ -2599,7 +2599,9 @@ class EMSGNodeInspector(EMItem3DInspector):
 		zaxis.setRightArrowLength(length/5)
 		zaxis.setAmbientColor(0.0,0.0,1.0)
 		# Make the axes root node
-		axesnode = EMItem3D(transform=transform)
+		axesnode = EMItem3D()
+		self._set_transformSTDCorrd(axesnode, xi, yi, zi)
+		axesnode.getTransform().set_scale(self.item3d().camera.getViewPortWidthScaling())
 		self.item3d().insertNewNode("Axes", axesnode, self.item3d())
 		# added the axes to root node
 		self.item3d().insertNewNode("X Axis (red)", xaxis, axesnode)
