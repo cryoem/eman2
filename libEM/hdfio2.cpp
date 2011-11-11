@@ -935,7 +935,8 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 		igrp=H5Gcreate(file,ipath,64);		// The image is a group, with attributes on the group
 		if (igrp<0) throw ImageWriteException(filename,"Unable to add /MDF/images/# to HDF5 file");
 	}
-	//if group already existed, erase the header and unlink the existing dataset first
+	/**If group already existed, erase the header and unlink the existing dataset first
+	 * Keep the header and dataset intact for region writing*/
 	else {
 		is_exist = true;
 		int nattr=H5Aget_num_attrs(igrp);
@@ -957,29 +958,32 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 			}
 		}
 
-		erase_header(image_index);
+		if(area) {
+			check_region(area, IntSize(dict2["nx"], dict2["ny"], dict2["nz"]), false, true);
+		}
+		else {
+			erase_header(image_index);
 
-		//change the size or data type of a image,
-		//the existing data set is invalid, unlink it
-		if( (int)dict["nx"]*(int)dict["ny"]*(int)dict["nz"] !=
-			(int)dict2["nx"]*(int)dict2["ny"]*(int)dict2["nz"] ||
-			dict["datatype"] != dict2["datatype"] ) {
-			sprintf(ipath,"/MDF/images/%d/image",image_index);
-			H5Gunlink(igrp, ipath);
+			//change the size or data type of a image,
+			//the existing data set is invalid, unlink it
+			if( (int)dict["nx"]*(int)dict["ny"]*(int)dict["nz"] !=
+				(int)dict2["nx"]*(int)dict2["ny"]*(int)dict2["nz"] ||
+				dict["datatype"] != dict2["datatype"] ) {
+				sprintf(ipath,"/MDF/images/%d/image",image_index);
+				H5Gunlink(igrp, ipath);
+			}
 		}
 	}
 
-	if(area) {
-		check_region(area, IntSize(dict["nx"], dict["ny"], dict["nz"]), false, true);
-	}
+	if(!area) {
+		// Write the attributes to the group
+		vector <string> keys=dict.keys();
 
-	// Write the attributes to the group
-	vector <string> keys=dict.keys();
-
-	for (i=0; i<keys.size(); i++) {
-		string s("EMAN.");
-		s+=keys[i];
-		write_attr(igrp,s.c_str(),dict[keys[i]]);
+		for (i=0; i<keys.size(); i++) {
+			string s("EMAN.");
+			s+=keys[i];
+			write_attr(igrp,s.c_str(),dict[keys[i]]);
+		}
 	}
 
 	H5Gclose(igrp);
