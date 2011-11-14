@@ -42,7 +42,7 @@ import sys
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack outdir <maskfile> --search_rng --ou=outer_radius --maxit=max_iteration --CTF --snr=SNR --Fourvar=Fourier_variance --oneDx --Applyparams --outstack=outputstackname --MPI"
+	usage = progname + " stack outdir <maskfile> --search_rng --ou=outer_radius --maxit=max_iteration --CTF --snr=SNR --Fourvar=Fourier_variance --oneDx --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--search_rng",       type="int",  default=-1,             help="Used to compute the dimension of a \nnwx by nwx section of the 2D ccf which is \nwindowed out for peak search: \nnwx=2*search_rng+1 (nwx=nx if search_rng is -1))")
 	parser.add_option("--ou",       type="float",  default=-1,            help="radius of the particle - used for constructing the default mask. If ou is -1, then the mask is a circle with radius nx/2 - 2")
@@ -51,11 +51,14 @@ def main():
 	parser.add_option("--snr",      type="float",  default=1.0,           help="signal-to-noise ratio of the data (default is 1.0)")
 	parser.add_option("--Fourvar",  action="store_true", default=False,   help="compute Fourier variance")
 	parser.add_option("--oneDx",  action="store_true", default=False,   help="Window out central line of 2D cross correlation for peak search")
-	parser.add_option("--Applyparams",  action="store_true", default=False,   help="apply calculated centering parameters to input stack and save results to output stack")
-	parser.add_option("--outstack",       type="string", default="",     help="name of transformed stack after applying calculated centering parameters")
 	parser.add_option("--MPI",      action="store_true", default=False,   help="use multiple processors ")
 	(options, args) = parser.parse_args()
 	
+	if not(options.MPI):
+			print "Only MPI version is currently implemented."
+			print "Please run '" + progname + " -h' for detailed options"
+			return
+			
 	if len(args) < 2 or len(args) > 3:
     		print "usage: " + usage
     		print "Please run '" + progname + " -h' for detailed options"
@@ -74,13 +77,13 @@ def main():
 		sys.argv = mpi_init(len(sys.argv),sys.argv)
 
 		global_def.BATCH = True
-		shiftali_MPI(args[0], outdir, mask,options.ou, options.maxit, options.CTF, options.snr, options.Fourvar,options.search_rng,options.oneDx,options.Applyparams,options.outstack)
+		shiftali_MPI(args[0], outdir, mask,options.ou, options.maxit, options.CTF, options.snr, options.Fourvar,options.search_rng,options.oneDx)
 		global_def.BATCH = False
 		
 		from mpi import mpi_finalize
 		mpi_finalize()
 
-def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=1.0, Fourvar=False, search_rng=-1, oneDx=False,Applyparams=False,outstack=''):  
+def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=1.0, Fourvar=False, search_rng=-1, oneDx=False):  
 	from applications import MPI_start_end
 	from utilities    import model_circle, model_blank, get_image, peak_search
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
@@ -98,7 +101,7 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
-
+		
 	ftp = file_type(stack)
 	if outdir:
 		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "shftali_MPI", 1, myid)
@@ -127,10 +130,10 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 	if myid != main_node:
 		list_of_particles = [-1]*nima
 	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
-
+	
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
 	list_of_particles = list_of_particles[image_start: image_end]
-
+	
 	# read nx and ctf_app (if CTF) and broadcast to all nodes
 	if myid == main_node:
 		ima = EMData()
@@ -144,7 +147,7 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 	nx = bcast_number_to_all(nx, source_node = main_node)
 	if CTF:
 		ctf_app = bcast_number_to_all(ctf_app, source_node = main_node)
-		if ctf_app > 0:	ERROR("data cannot be ctf-applied", "ali2d_MPI", 1, myid)
+		if ctf_app > 0:	ERROR("data cannot be ctf-applied", "shiftali_MPI", 1, myid)
 
 	if maskfile:
 		import  types
@@ -304,6 +307,10 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 			data[im] = Processor.EMFourierFilter(data[im], params2)
 			shift_x[im] += p1_x
 			shift_y[im] += p1_y
+	
+	for im in xrange(len(data)):
+		data[im] = fft(data[im])
+	
 	for im in xrange(len(data)):		
 		dummy1, sx, sy, dummy2, dummy3 = get_params2D(data[im], 'xform.align2d')
 		set_params2D(data[im], [0, shift_x[im], shift_y[im], 0, dummy3], 'xform.align2d')
@@ -318,9 +325,7 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 		else:
 			from utilities import recv_attr_dict
 			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-		if Applyparams:
-			from applications import transform2d
-			transform2d(stack,outstack)
+		
 	else:           send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node: print_end_msg("shftali_MPI")				
 
