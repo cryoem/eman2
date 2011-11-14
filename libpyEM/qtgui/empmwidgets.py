@@ -267,7 +267,11 @@ class PMBoolWidget(PMBaseWidget):
 		self.setErrorMessage(None)
 		
 	def getArgument(self):
-		return "--%s"%(self.getName())
+		""" Only return argument if set to true"""
+		if self.getValue():
+			return "--%s"%(self.getName())
+		else:
+			return ""
 		
 class PMFileNameWidget(PMBaseWidget):
 	""" A Widget for geting filenames. Type is checked """
