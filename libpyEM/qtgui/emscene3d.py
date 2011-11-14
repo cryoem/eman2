@@ -1336,9 +1336,13 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		@param filename The Filename you want to save to
 		@param format The image file format
 		"""
-		if format not in filename: filename = "%s.%s"%(filename,format)
 		image = self.grabFrameBuffer()
-		image.save(filename, format)
+		fregex = re.compile('\.\w{3,4}$')
+		if re.findall(fregex, filename):
+			image.save(filename, re.findall(fregex, filename)[0][1:])
+		else:
+			filename = "%s.%s"%(filename,format)
+			image.save(filename, format)
 		print "Saved %s to disk"%os.path.basename(str(filename))
 	
 	def insertNewNode(self, name, node, parentnode=None, parentidx=None):
@@ -2450,7 +2454,7 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		Save a snapshot of the scene
 		"""
-		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save Image', os.getcwd(), "*.tiff")
+		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save Image', os.getcwd(), "(*.tiff *.jpeg *.png)")
 		if filename: # if we cancel
 			self.scenegraph().saveSnapShot(filename)
 	

@@ -847,9 +847,10 @@ namespace EMAN
 		
 		static const string NAME;
 	};
-
+	
 	/** Aligns a particle with the specified symmetry into the standard orientation for that
-	 * symmetry.
+	 * symmetry. Works by searching over a Grid and maximizing the recon variance after symmetrization.
+	 * NOTE: This function is depricated. Use the SymAlignProcessorQuat procssor instead.
 	 *@author Steve Ludtke and John Flanagan
 	 *@date February 2011
 	 *@param sym A string specifying the symmetry under which to do the alignment

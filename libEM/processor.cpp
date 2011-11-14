@@ -882,12 +882,10 @@ EMData* ApplySymProcessor::process(const EMData * const image)
 {
 	Symmetry3D* sym = Factory<Symmetry3D>::get((string)params.set_default("sym","c1"));
 	vector<Transform> transforms = sym->get_syms();
-	//vector<Transform> transforms = sym->gen_orientations((string)params.set_default("orientgen","eman"),d);
 	
 	Averager* imgavg = Factory<Averager>::get((string)params.set_default("avger","mean"));
 	for(vector<Transform>::const_iterator trans_it = transforms.begin(); trans_it != transforms.end(); trans_it++) {
-		Dict tparams = trans_it->get_params("eman");
-		Transform t(tparams);
+		Transform t = *trans_it;
 		EMData* transformed = image->process("xform",Dict("transform",&t));
 		imgavg->add_image(transformed);
 		delete transformed;

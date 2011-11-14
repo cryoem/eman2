@@ -1993,6 +1993,7 @@ EMData*Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 	best["score"] = 0.0f;
 	bool use_cpu = true;
 	Transform tran = Transform();
+	Cmp* c = Factory <Cmp>::get(cmp_name, cmp_params);
 	for ( float alt = 0; alt < range; alt += delta) {
 		// now compute a sane az step size 
 		float saz = 360;
@@ -2049,7 +2050,7 @@ EMData*Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 
 				if(!tomography){
 					if(!transformed) transformed = this_img->process("xform",Dict("transform",&tr)); // we are returning a map
-					score = transformed->cmp(cmp_name,to,cmp_params); //this is not very efficient as it creates a new cmp object for each iteration
+					score = c->cmp(to,transformed);
 					delete transformed; transformed = 0;// this is to stop a mem leak
 				}
 				
@@ -2176,6 +2177,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	Dict d;
 	d["type"] = "eman"; // d is used in the loop below
 	Transform trans = Transform();
+	Cmp* c = Factory <Cmp>::get(cmp_name, cmp_params);
 	bool use_cpu = true;
 	for ( float alt = lalt; alt <= ualt; alt += dalt) {
 		// An optimization for the range of az is made at the top of the sphere
@@ -2223,7 +2225,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 
 				if(!tomography){
 					if(!transformed) transformed = this_img->process("xform",Dict("transform",&t));
-					best_score = transformed->cmp(cmp_name,to,cmp_params); //this is not very efficient as it creates a new cmp object for each iteration
+					best_score = c->cmp(to,transformed);
 					delete transformed; transformed = 0;
 				}
 				
@@ -2358,6 +2360,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 #endif
 
 	Transform trans = Transform();
+	Cmp* c = Factory <Cmp>::get(cmp_name, cmp_params);
 	bool use_cpu = true;
 	for(vector<Transform>::const_iterator trans_it = transforms.begin(); trans_it != transforms.end(); trans_it++) {
 		Dict params = trans_it->get_params("eman");
@@ -2381,6 +2384,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 				EMData* ccf = transformed->calc_ccf(this_imgfft);
 #ifdef EMAN2_USING_CUDA	
 				if(this_img->getcudarwdata()){
+					// I use the following code rather than ccc.tomo to avoid doing two CCCs
 					use_cpu = false;
 					CudaPeakInfo* data = calc_max_location_wrap_cuda(ccf->getcudarwdata(), ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
 					trans.set_trans((float)-data->px, (float)-data->py, (float)-data->pz);
@@ -2395,6 +2399,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 				}
 #endif
 				if(use_cpu){
+					// I use the following code rather than ccc.tomo to avoid doing two CCCs
 					if(tomography) ccf->process_inplace("normalize");
 					IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
 					trans.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
@@ -2407,7 +2412,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 
 			if(!tomography){
 				if(!transformed) transformed = to->process("xform",Dict("transform",&t));
-				best_score = transformed->cmp(cmp_name,this_img,cmp_params); //this is not very efficient as it creates a new cmp object for each iteration
+				best_score = c->cmp(this_img,transformed);
 				delete transformed; transformed = 0;
 			}
 
@@ -2446,10 +2451,8 @@ EMData* RT3DSymmetryAligner::align(EMData * this_img, EMData *to, const string &
 
 	vector<Dict> alis = xform_align_nbest(this_img,to,1,cmp_name,cmp_params);
 
-	Dict t;
 	Transform* tr = (Transform*) alis[0]["xform.align3d"];
-	t["transform"] = tr;
-	EMData* soln = this_img->process("xform",t);
+	EMData* soln = this_img->process("xform",Dict("transform",tr));
 	soln->set_attr("xform.align3d",tr);
 	delete tr; tr = 0;
 
@@ -2472,15 +2475,24 @@ vector<Dict> RT3DSymmetryAligner::xform_align_nbest(EMData * this_img, EMData * 
 		solns.push_back(d);
 	}
 	
+	#ifdef EMAN2_USING_CUDA 
+	if(EMData::usecuda == 1) {
+		cout << "Using CUDA for 3D sym alignment" << endl;
+		if(!this_img->getcudarwdata()) this_img->copy_to_cuda();
+		if(!to->getcudarwdata()) to->copy_to_cuda();
+	}
+	#endif
+
 	//Genrate symmetry related orritenations
 	vector<Transform> syms = Symmetry3D::get_symmetries((string)params.set_default("sym","icos"));
+	Cmp* c = Factory <Cmp>::get(cmp_name, cmp_params);
 	
 	float score = 0.0f;
 	for ( vector<Transform>::const_iterator symit = syms.begin(); symit != syms.end(); ++symit ) {
-		Transform sympos = *symit; //stupidly this is necessary!!!
 		//Here move to sym position and compute the score
-		EMData* transformed = this_img->process("xform",Dict("transform",&sympos));
-		score = transformed->cmp(cmp_name,to,cmp_params);
+		Transform sympos = *symit;
+		EMData* transformed = this_img->process("xform",Dict("transform", &sympos));
+		score = c->cmp(transformed,to);
 		delete transformed; transformed = 0;
 		
 		if (verbose) {
@@ -2500,6 +2512,14 @@ vector<Dict> RT3DSymmetryAligner::xform_align_nbest(EMData * this_img, EMData * 
 			}
 		}
 	}
+	
+	//Free up resources (for an expensive opperation like this move data to and from device is a small % of time)
+	#ifdef EMAN2_USING_CUDA
+		this_img->ro_free();
+		this_img->rw_free();
+		to->rw_free();
+	#endif
+		
 	return solns;
 }
 

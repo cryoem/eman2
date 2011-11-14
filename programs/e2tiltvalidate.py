@@ -243,13 +243,13 @@ class ComputeTilts:
 					tiltbestscore = simmx_tilt[0].get_value_at(refnum, tiltimgnum)
 					tiltbestrefnum = refnum
 			# Untilt
-			untilt_euler_xform = projections[untiltbestrefnum].get_attr('xform.projection')
-			untiltrot = untilt_euler_xform.get_rotation("eman")
-			untilt_euler_xform.set_rotation({"type":"eman","az":untiltrot["az"],"alt":untiltrot["alt"],"phi":-simmx[3].get_value_at(untiltbestrefnum, imgnum)})
+			untilt_euler_xform = Transform({"type":"eman","phi":-simmx[3].get_value_at(untiltbestrefnum, imgnum)})*projections[untiltbestrefnum].get_attr('xform.projection')
+			#untiltrot = untilt_euler_xform.get_rotation("eman")
+			#untilt_euler_xform.set_rotation({"type":"eman","az":untiltrot["az"],"alt":untiltrot["alt"],"phi":-simmx[3].get_value_at(untiltbestrefnum, imgnum)})
 			# Tilt
-			tilt_euler_xform = projections[tiltbestrefnum].get_attr('xform.projection')
-			tiltrot = tilt_euler_xform.get_rotation("eman")
-			tilt_euler_xform.set_rotation({"type":"eman","az":tiltrot["az"],"alt":tiltrot["alt"],"phi":-simmx_tilt[3].get_value_at(tiltbestrefnum, tiltimgnum)})
+			tilt_euler_xform = Transform({"type":"eman","phi":-simmx_tilt[3].get_value_at(tiltbestrefnum, tiltimgnum)})*projections[tiltbestrefnum].get_attr('xform.projection')
+			#tiltrot = tilt_euler_xform.get_rotation("eman")
+			#tilt_euler_xform.set_rotation({"type":"eman","az":tiltrot["az"],"alt":tiltrot["alt"],"phi":-simmx_tilt[3].get_value_at(tiltbestrefnum, tiltimgnum)})
 			
 			#Find best solultion takeing sym into accout
 			tiltpars = self.find_bestsymsoln(imgnum, untilt_euler_xform, tilt_euler_xform)

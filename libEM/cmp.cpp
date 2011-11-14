@@ -39,6 +39,7 @@
 #include "plugins/cmp_template.h"
 
 #ifdef EMAN2_USING_CUDA
+// Only CCC, DOT  and CCC.TOMO are cuda enabled
 #include "cuda/cuda_processor.h"
 #include "cuda/cuda_cmp.h"
 #endif // EMAN2_USING_CUDA
@@ -939,14 +940,6 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 
 	if (snrweight && snrfn) throw InvalidCallException("SNR weight and SNRfn cannot both be set in the phase comparator");
 
-//#ifdef EMAN2_USING_CUDA
-// 	if (image->gpu_operation_preferred()) {
-// 		cout << "Cuda cmp" << endl;
-// 		EXITFUNC;
-// 		return cuda_cmp(image,with);
-// 	}
-//#endif
-
 	EMData *image_fft = NULL;
 	EMData *with_fft = NULL;
 
@@ -1138,32 +1131,7 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 
 	vector < float >fsc;
 	bool use_cpu = true;
-//#ifdef EMAN2_USING_CUDA
-	//if(image->getcudarwdata() && with->getcudarwdata()) {
-		//throw UnexpectedBehaviorException("CUDA FRC cmp under construction....");
-		/*
-		if (zeromask) throw UnexpectedBehaviorException("ZeroMask is not yet supported in CUDA"); 
-			
-		if (!image->is_complex()) {
-			image=image->do_fft_cuda(); 
-			image->set_attr("free_me",1); 
-		}
-		if (!with->is_complex()) { 
-			with=with->do_fft_cuda(); 
-			with->set_attr("free_me",1); 
-		}
-		image->copy_rw_to_ro();
-		image->bindcudaarrayA(true);
-		with->copy_rw_to_ro();
-		with->bindcudaarrayB(true);
-		
-		float* fscarr = calc_fourier_shell_correlation_cuda(image->get_xsize(), image->get_ysize(), image->get_zsize(), 1);
-		
-		use_cpu = false;
-		*/
-	//}
-	
-//#endif
+
 	if (use_cpu) {
 		if (zeromask) {
 			image=image->copy();
