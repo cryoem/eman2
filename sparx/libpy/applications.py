@@ -10589,24 +10589,13 @@ def imgstat_inf( stacks, rad ):
 		else:			mask = model_circle( rad, nx, ny, nz )
 
 
-	if(mask == None):
-		for i in xrange(nimg):
-			img = EMData()
-			img.read_image( stacks[0], i, True )  # Does not work!
-			avg = img.get_attr("mean")
-			sigma = img.get_attr("sigma")
-			fmin = img.get_attr("minimum")
-			fmax = img.get_attr("maximum")
+	for i in xrange(nimg):
 
-			print "nx,ny,nz,avg,sigma,min,max: %6d %6d %6d %11.4e %10.5f %10.5f %10.5f" % (nx, ny, nz, avg, sigma, fmin, fmax )
-	else:	
-		for i in xrange(nimg):
+		img = get_im( stacks[0], i )
 
-			img = get_im( stacks[0], i )
+		[avg,sigma,fmin,fmax] = Util.infomask( img, mask, True )
 
-			[avg,sigma,fmin,fmax] = Util.infomask( img, mask, True )
-
-			print "nx,ny,nz,avg,sigma,min,max: %6d %6d %6d %11.4e %10.5f %10.5f %10.5f" % (nx, ny, nz, avg, sigma, fmin, fmax )
+		print "nx,ny,nz,avg,sigma,min,max: %6d %6d %6d %11.4e %10.5f %10.5f %10.5f" % (nx, ny, nz, avg, sigma, fmin, fmax )
 
 def imgstat( stacks, ifccc, fscfile, pinf, rad ):
 	if ifccc:

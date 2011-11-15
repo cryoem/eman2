@@ -130,10 +130,10 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 	if myid != main_node:
 		list_of_particles = [-1]*nima
 	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
-	
+
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
 	list_of_particles = list_of_particles[image_start: image_end]
-	
+
 	# read nx and ctf_app (if CTF) and broadcast to all nodes
 	if myid == main_node:
 		ima = EMData()
@@ -149,20 +149,7 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 		ctf_app = bcast_number_to_all(ctf_app, source_node = main_node)
 		if ctf_app > 0:	ERROR("data cannot be ctf-applied", "shiftali_MPI", 1, myid)
 
-	if maskfile:
-		import  types
-		if type(maskfile) is types.StringType:
-			if myid == main_node:		print_msg("Maskfile                    : %s\n\n"%(maskfile))
-			mask = get_image(maskfile)
-		else:
-			if myid == main_node: 		print_msg("Maskfile                    : user provided in-core mask\n\n")
-			mask = maskfile
-	else:
-		last_ring=int(ou)
-		if myid == main_node: 	print_msg("Maskfile                    : default, a circle with radius %i\n\n"%(last_ring))
-		# default value for the last ring
-		if last_ring == -1: last_ring = nx/2-2
-		mask = model_circle(last_ring, nx, nx)
+	mask = model_circle(nx//2-2, nx, nx)
 
 	cnx  = nx/2+1
  	cny  = cnx
@@ -202,16 +189,14 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 
 	total_iter = 0
 	cs = [0.0]*2
-	
-	
+
+
 	# apply initial xform.align2d parameters stored in header
 	init_params = []
 	for im in xrange(len(data)):
-		alpha, sx, sy, mirror, scale = get_params2D(data[im], 'xform.align2d')
-		# make Transform object and save 
-		t = Transform()
-		t.set_params({"type":"2d","alpha":alpha,"scale":scale,"mirror":mirror,"tx":sx,"ty":sy})
+		t = data[im].get_attr(data[im], 'xform.align2d')
 		init_params.append(t)
+		!!alpha, sx, sy, mirror, scale =  t.get_params({"type":"2d","alpha":alpha,"scale":scale,"mirror":mirror,"tx":sx,"ty":sy})  #  PLEASE CHECK HOW TO DO IT
 		data[im] = rot_shift2D(data[im], alpha, sx, sy, mirror)		
 	
 	# fourier transform all images, and apply ctf if CTF
@@ -242,9 +227,9 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 			print_msg("Iteration #%4d\n"%(total_iter))
 			if CTF:
 				tavg = Util.divn_filter(avg, ctf_2_sum)
-			else:	 tavg = Util.mult_scalar(avg, 1.0/float(nima))  
+			else:	 tavg = Util.mult_scalar(avg, 1.0/float(nima))
 		else:
-			tavg =  fft(model_blank(nx, nx))
+			tavg =  fft(model_blank(nx, nx))                                  #  shouldn't it read: tavg = EMData(nx, nx, 1, False) ???
 			cs = [0.0]*2
 
 		if Fourvar:
@@ -257,7 +242,7 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 				vav_r	= Util.pack_complex_to_real(vav)
 				if outdir:
 					vav_r.write_image(os.path.join(outdir, "varf.hdf"), total_iter-1)
-				
+
 			# normalize and mask tavg in real space
 			tavg = fft(tavg)
 			stat = Util.infomask( tavg, mask, False ) 
@@ -277,12 +262,12 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 
 		for im in xrange(len(data)):
 			if oneDx:
-				ctx =Util.window(ccf(data[im],tavg),nwx,1)
-				p1 = peak_search(ctx)
+				ctx = Util.window(ccf(data[im],tavg),nwx,1)
+				p1  = peak_search(ctx)
 				p1_x = -int(p1[0][3])
 				ishift_x[im] = p1_x
 				sx_sum += p1_x
-				
+
 			else:
 				p1 = peak_search(Util.window(ccf(data[im],tavg), nwx,nwx))
 				p1_x = -int(p1[0][4])
@@ -291,7 +276,7 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 				ishift_y[im] = p1_y
 				sx_sum += p1_x
 				sy_sum += p1_y
-		
+
 		sx_sum = mpi_reduce(sx_sum, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)  
 		
 		if not oneDx:
@@ -304,17 +289,14 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 		else:
 			sx_sum_total = 0	
 			sy_sum_total = 0
-		
+
 		sx_sum_total = bcast_number_to_all(sx_sum_total, source_node = main_node)
-		
+
 		if not oneDx:
 			sy_sum_total = bcast_number_to_all(sy_sum_total, source_node = main_node)
-		
+
 		sx_ave = round(float(sx_sum_total)/nima)
 		sy_ave = round(float(sy_sum_total)/nima)
-		# for testing purposes
-		#sx_ave =float(sx_sum_total)/nima
-		#sy_ave =float(sy_sum_total)/nima
 		for im in xrange(len(data)): 
 			p1_x = ishift_x[im] - sx_ave
 			p1_y = ishift_y[im] - sy_ave
@@ -322,20 +304,19 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 			data[im] = Processor.EMFourierFilter(data[im], params2)
 			shift_x[im] += p1_x
 			shift_y[im] += p1_y
-	
+
 	for im in xrange(len(data)):
 		data[im] = fft(data[im])
-	
-	scale = ((init_params[0]).get_params("2D"))["scale"]
+
+	scale = ((init_params[0]).get_params("2D"))["scale"]        #  I DO NOT UNDERSTAND THIS LINE, LOOKS FUNKY.  INIT_PARAMS CONTAINS TRANFORM OBJECTS, SO THERE IS A PROPER WAY TO RETRIEVE PARAMS
 	for im in xrange(len(data)):		
 		t0 = init_params[im]
 		t1 = Transform()
-		t1.set_params({"type":"2D","alpha":0,"scale":scale,"mirror":1,"tx":shift_x[im],"ty":shift_y[im]})
+		t1.set_params({"type":"2D","alpha":0,"scale":scale,"mirror":0,"tx":shift_x[im],"ty":shift_y[im]})
 		# combine t0 and t1
 		tt = t1*t0
-		d = tt.get_params("2D")
-		set_params2D(data[im], [d["alpha"], d["tx"],d["ty"], d["mirror"], scale], 'xform.align2d')
-		
+		data[im].set_attr("xform.align2d", tt)   #  I CHANGED HERE,  TRANS OBJ SHOULD BE SET< READ DIRECTLY
+
 	# write out headers and STOP, under MPI writing has to be done sequentially
 	mpi_barrier(MPI_COMM_WORLD)
 	par_str = ["xform.align2d", "ID"]
@@ -349,7 +330,7 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 		
 	else:           send_attr_dict(main_node, data, par_str, image_start, image_end)
-	if myid == main_node: print_end_msg("shftali_MPI")				
+	if myid == main_node: print_end_msg("shiftali_MPI")				
 
 if __name__ == "__main__":
 	main()
