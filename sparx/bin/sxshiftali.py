@@ -260,7 +260,7 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 		sy_sum=0 
 		if search_rng > 0: nwx = 2*search_rng+1
 		else:              nwx=nx
-
+		
 		for im in xrange(len(data)):
 			if oneDx:
 				ctx = Util.window(ccf(data[im],tavg),nwx,1)
@@ -277,7 +277,13 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 				ishift_y[im] = p1_y
 				sx_sum += p1_x
 				sy_sum += p1_y
-
+		
+		not_zero = 0
+		for im in xrange(len(data)):
+			if (not(ishift_x[im] == 0)) or (not(ishift_y[im] == 0)):
+				not_zero = 1
+				break
+		
 		sx_sum = mpi_reduce(sx_sum, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)  
 		
 		if not oneDx:
@@ -307,6 +313,15 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 			shift_y[im] += p1_y
 		
 		# stop if all shifts are zero
+		not_zero = mpi_reduce(not_zero, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)  
+		if myid == main_node:
+			not_zero_all = int(not_zero[0])
+		else:
+			not_zero_all = 0
+		not_zero_all = bcast_number_to_all(not_zero_all, source_node = main_node)
+		
+		if not_zero_all == 0:
+			break
 		
 	for im in xrange(len(data)):
 		data[im] = fft(data[im])
