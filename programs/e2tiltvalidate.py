@@ -304,11 +304,12 @@ class ComputeTilts:
 			bestinplane = 2.0
 			for sym in self.symmeties.get_syms():
 				tiltxform = tilt_euler_xform*sym.inverse()*untilt_euler_xform.inverse()
-				if math.fabs(math.sin(math.radians(tiltxform.get_rotation("eman")['az']))+math.sin(math.radians(tiltxform.get_rotation("eman")['phi']))) < bestinplane:
+				if math.fabs(tiltxform.get_rotation("eman")['az'] - (-tiltxform.get_rotation("eman")['phi'] % 360)) < bestinplane:
 					if tiltxform.get_rotation("eman")["alt"] < self.options.maxtiltangle:
-						bestinplane = math.fabs(math.sin(math.radians(tiltxform.get_rotation("eman")['az']))+math.sin(math.radians(tiltxform.get_rotation("eman")['phi'])))
+						bestinplane = math.fabs(tiltxform.get_rotation("eman")['az'] - (-tiltxform.get_rotation("eman")['phi'] % 360))
 						besttiltangle = tiltxform.get_rotation("eman")["alt"]
-						besttiltaxis = math.asin((math.sin(tiltxform.get_rotation("eman")["az"])-math.sin(tiltxform.get_rotation("eman")["phi"]))/2.0)
+						besttiltaxis = (tiltxform.get_rotation("eman")['az'] + (-tiltxform.get_rotation("eman")['phi'] % 360))/2.0
+						#print besttiltaxis, tiltxform.get_rotation("eman")['az'], tiltxform.get_rotation("eman")["phi"]
 						anglefound = True
 				
 				self.test.write("\t%f %f %f %f\n"%(tiltxform.get_rotation("spin")["Omega"],tiltxform.get_rotation("spin")["n1"],tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n3"]))
@@ -320,7 +321,7 @@ class ComputeTilts:
 			return [besttiltangle,besttiltaxis,bestinplane]
 		else:
 			return [0.0, 0.0, 0.0]
-	
+		
 	def finish(self):
 		self.test.close()
 		self.tdb["particletilt_list"] = self.particletilt_list
