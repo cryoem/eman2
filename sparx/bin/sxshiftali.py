@@ -196,9 +196,8 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 	for im in xrange(len(data)):
 		t = data[im].get_attr('xform.align2d')
 		init_params.append(t)
-		#!!alpha, sx, sy, mirror, scale =  t.get_params({"type":"2d","alpha":alpha,"scale":scale,"mirror":mirror,"tx":sx,"ty":sy})  #  PLEASE CHECK HOW TO DO IT
-		alpha, sx,sy,mirror,scale = get_params2D(data[im])
-		data[im] = rot_shift2D(data[im], alpha, sx=sx, sy=sy, mirror=mirror, scale=scale)		
+		p = t.get_params("2d")
+		data[im] = rot_shift2D(data[im], p['alpha'], sx=p['tx'], sy=p['ty'], mirror=p['mirror'], scale=p['scale'])		
 	
 	# fourier transform all images, and apply ctf if CTF
 	for im in xrange(len(data)):
@@ -230,7 +229,7 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 				tavg = Util.divn_filter(avg, ctf_2_sum)
 			else:	 tavg = Util.mult_scalar(avg, 1.0/float(nima))
 		else:
-			tavg = EMData(nx, nx, 1, False)                                #  shouldn't it read: tavg = EMData(nx, nx, 1, False) ???
+			tavg = EMData(nx, nx, 1, False)                               
 			cs = [0.0]*2
 
 		if Fourvar:
@@ -261,6 +260,7 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 		if search_rng > 0: nwx = 2*search_rng+1
 		else:              nwx=nx
 		
+		not_zero = 0
 		for im in xrange(len(data)):
 			if oneDx:
 				ctx = Util.window(ccf(data[im],tavg),nwx,1)
@@ -277,12 +277,10 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 				ishift_y[im] = p1_y
 				sx_sum += p1_x
 				sy_sum += p1_y
-		
-		#   WHAT FOLLOWS SHOULD BE A PART OF PREVIOUS LOOP   not_zero = 0
-		for im in xrange(len(data)):
-			if (not(ishift_x[im] == 0)) or (not(ishift_y[im] == 0)):
-				not_zero = 1
-				break
+			
+			if not_zero == 0:
+				if (not(ishift_x[im] == 0.0)) or (not(ishift_y[im] == 0.0)):
+					not_zero = 1
 		
 		sx_sum = mpi_reduce(sx_sum, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)  
 		
@@ -332,7 +330,7 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 		t1.set_params({"type":"2D","alpha":0,"scale":t0.get_scale(),"mirror":0,"tx":shift_x[im],"ty":shift_y[im]})
 		# combine t0 and t1
 		tt = t1*t0
-		data[im].set_attr("xform.align2d", tt)   #  I CHANGED HERE,  TRANS OBJ SHOULD BE SET< READ DIRECTLY
+		data[im].set_attr("xform.align2d", tt)  
 
 	# write out headers and STOP, under MPI writing has to be done sequentially
 	mpi_barrier(MPI_COMM_WORLD)
