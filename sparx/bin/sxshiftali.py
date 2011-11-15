@@ -194,10 +194,11 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 	# apply initial xform.align2d parameters stored in header
 	init_params = []
 	for im in xrange(len(data)):
-		t = data[im].get_attr(data[im], 'xform.align2d')
+		t = data[im].get_attr('xform.align2d')
 		init_params.append(t)
-		!!alpha, sx, sy, mirror, scale =  t.get_params({"type":"2d","alpha":alpha,"scale":scale,"mirror":mirror,"tx":sx,"ty":sy})  #  PLEASE CHECK HOW TO DO IT
-		data[im] = rot_shift2D(data[im], alpha, sx, sy, mirror)		
+		#!!alpha, sx, sy, mirror, scale =  t.get_params({"type":"2d","alpha":alpha,"scale":scale,"mirror":mirror,"tx":sx,"ty":sy})  #  PLEASE CHECK HOW TO DO IT
+		alpha, sx,sy,mirror,scale = get_params2D(data[im])
+		data[im] = rot_shift2D(data[im], alpha, sx=sx, sy=sy, mirror=mirror, scale=scale)		
 	
 	# fourier transform all images, and apply ctf if CTF
 	for im in xrange(len(data)):
@@ -229,7 +230,7 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 				tavg = Util.divn_filter(avg, ctf_2_sum)
 			else:	 tavg = Util.mult_scalar(avg, 1.0/float(nima))
 		else:
-			tavg =  fft(model_blank(nx, nx))                                  #  shouldn't it read: tavg = EMData(nx, nx, 1, False) ???
+			tavg = EMData(nx, nx, 1, False)                                #  shouldn't it read: tavg = EMData(nx, nx, 1, False) ???
 			cs = [0.0]*2
 
 		if Fourvar:
@@ -304,15 +305,16 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 			data[im] = Processor.EMFourierFilter(data[im], params2)
 			shift_x[im] += p1_x
 			shift_y[im] += p1_y
-
+		
+		# stop if all shifts are zero
+		
 	for im in xrange(len(data)):
 		data[im] = fft(data[im])
 
-	scale = ((init_params[0]).get_params("2D"))["scale"]        #  I DO NOT UNDERSTAND THIS LINE, LOOKS FUNKY.  INIT_PARAMS CONTAINS TRANFORM OBJECTS, SO THERE IS A PROPER WAY TO RETRIEVE PARAMS
 	for im in xrange(len(data)):		
 		t0 = init_params[im]
 		t1 = Transform()
-		t1.set_params({"type":"2D","alpha":0,"scale":scale,"mirror":0,"tx":shift_x[im],"ty":shift_y[im]})
+		t1.set_params({"type":"2D","alpha":0,"scale":t0.get_scale(),"mirror":0,"tx":shift_x[im],"ty":shift_y[im]})
 		# combine t0 and t1
 		tt = t1*t0
 		data[im].set_attr("xform.align2d", tt)   #  I CHANGED HERE,  TRANS OBJ SHOULD BE SET< READ DIRECTLY
