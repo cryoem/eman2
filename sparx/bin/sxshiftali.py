@@ -278,7 +278,7 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 				sx_sum += p1_x
 				sy_sum += p1_y
 		
-		not_zero = 0
+		#   WHAT FOLLOWS SHOULD BE A PART OF PREVIOUS LOOP   not_zero = 0
 		for im in xrange(len(data)):
 			if (not(ishift_x[im] == 0)) or (not(ishift_y[im] == 0)):
 				not_zero = 1
