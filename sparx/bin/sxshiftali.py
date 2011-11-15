@@ -88,7 +88,7 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 	from utilities    import model_circle, model_blank, get_image, peak_search
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
 	from statistics   import varf2d_MPI
-	from fundamentals import fft, ccf, rot_shift3D
+	from fundamentals import fft, ccf, rot_shift3D, rot_shift2D
 	from utilities    import get_params2D, set_params2D
 	from utilities    import print_msg, print_begin_msg, print_end_msg
 	import os
@@ -202,7 +202,18 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 
 	total_iter = 0
 	cs = [0.0]*2
-
+	
+	
+	# apply initial xform.align2d parameters stored in header
+	init_params = []
+	for im in xrange(len(data)):
+		alpha, sx, sy, mirror, scale = get_params2D(data[im], 'xform.align2d')
+		# make Transform object and save 
+		t = Transform()
+		t.set_params({"type":"2d","alpha":alpha,"scale":scale,"mirror":mirror,"tx":sx,"ty":sy})
+		init_params.append(t)
+		data[im] = rot_shift2D(data[im], alpha, sx, sy, mirror)		
+	
 	# fourier transform all images, and apply ctf if CTF
 	for im in xrange(len(data)):
 		if CTF:
@@ -219,6 +230,7 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 	shift_y = [0.0]*len(data)
 	ishift_x = [0.0]*len(data)
 	ishift_y = [0.0]*len(data)
+	
 	for Iter in xrange(max_iter):
 		total_iter += 1
 		avg = EMData(nx, nx, 1, False)
@@ -300,6 +312,9 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 		
 		sx_ave = round(float(sx_sum_total)/nima)
 		sy_ave = round(float(sy_sum_total)/nima)
+		# for testing purposes
+		#sx_ave =float(sx_sum_total)/nima
+		#sy_ave =float(sy_sum_total)/nima
 		for im in xrange(len(data)): 
 			p1_x = ishift_x[im] - sx_ave
 			p1_y = ishift_y[im] - sy_ave
@@ -311,9 +326,16 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 	for im in xrange(len(data)):
 		data[im] = fft(data[im])
 	
+	scale = ((init_params[0]).get_params("2D"))["scale"]
 	for im in xrange(len(data)):		
-		dummy1, sx, sy, dummy2, dummy3 = get_params2D(data[im], 'xform.align2d')
-		set_params2D(data[im], [0, shift_x[im], shift_y[im], 0, dummy3], 'xform.align2d')
+		t0 = init_params[im]
+		t1 = Transform()
+		t1.set_params({"type":"2D","alpha":0,"scale":scale,"mirror":1,"tx":shift_x[im],"ty":shift_y[im]})
+		# combine t0 and t1
+		tt = t1*t0
+		d = tt.get_params("2D")
+		set_params2D(data[im], [d["alpha"], d["tx"],d["ty"], d["mirror"], scale], 'xform.align2d')
+		
 	# write out headers and STOP, under MPI writing has to be done sequentially
 	mpi_barrier(MPI_COMM_WORLD)
 	par_str = ["xform.align2d", "ID"]
