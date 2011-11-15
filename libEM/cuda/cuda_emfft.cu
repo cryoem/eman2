@@ -158,15 +158,16 @@ int cuda_dd_fft_real_to_complex_nd(float *real_data, float *complex_data, int nx
 	bool ip;
 	cufft_dd_plan_cache* cache = 0;
 	//printf("Step 1, nx %d, ny %d, nz %d, rank %d\n",nx,ny,nz,rank);
-
+	//cudaError_t error = cudaGetLastError();
+	
 	ip = ( complex_data == real_data );
-			
+
 	if ( !ip ) {
 		cache = get_cuda_fft_dd_plan_cache(rank,nx,ny,nz,real_2_complex,ip,batch);
 		cufftResult result = cufftExecR2C(cache->handle, real_data, (cufftComplex*)complex_data );
 		print_cuda_fft_fail(result);
 		cudaThreadSynchronize();
-			}
+	}
 	else {
 		cache = get_cuda_fft_dd_plan_cache(rank,nx,ny,nz,real_2_complex,ip,batch);
 		/// CHECK LATER - Not sure if this will work
