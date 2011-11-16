@@ -2992,7 +2992,7 @@ int nnSSNR_Reconstructor::insert_padfft_slice( EMData* padfft, const Transform& 
 EMData* nnSSNR_Reconstructor::finish(bool)
 {
 /*
-  I changed the code on 05/15 so it only returns variance.
+  I changed the code on 05/15/2008 so it only returns variance.
   Lines commented out are marked by //#
   The version prior to the currect changes is r1.190
   PAP
@@ -3909,7 +3909,7 @@ int nnSSNR_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transfor
 EMData* nnSSNR_ctfReconstructor::finish(bool)
 {
 /*
-  I changed the code on 05/15 so it only returns variance.
+  I changed the code on 05/15/2008 so it only returns variance.
   Lines commented out are marked by //#
   The version prior to the currect changes is r1.190
   PAP
