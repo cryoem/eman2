@@ -1236,6 +1236,27 @@ class EMImageInfoPane(EMInfoPane):
 	def __init__(self,parent=None):
 		QtGui.QWidget.__init__(self,parent)
 		
+		self.gbl=QtGui.QGridLayout(self)
+		
+		# Spinbox for selecting image number
+		self.wimnum=QtGui.QSpinBox()
+		self.setRange(0,0)
+		self.gbl.addWidget(self.wimnum,0,0)
+		
+		# List as alternate mechanism for selecting image number(s)
+		self.wimlist=QtGui.QListWidget()
+		self.gbl.addWidget(self.wimlist,1,0)
+		
+		# Actual header contents
+		self.wheadtree=QTreeWidget()
+		self.gbl.addWidget(self.wheadtree,0,1,2,1)
+		
+		QtCore.QObject.connect(self.wimnum, QtCore.SIGNAL("valueChanged(int)"),self.ImNumChange)
+		QtCore.QObject.connect(self.wimlist, QtCore.SIGNAL("itemSelectionChanged()"),self.ImSelChange)
+#		QtCore.QObject.connect(self.wbutedit, QtCore.SIGNAL('clicked(bool)'), self.buttonEdit)
+		
+		
+		
 		self.vbl=QtGui.QVBoxLayout(self)
 
 	def display(self,target):
@@ -1481,6 +1502,12 @@ class EMBrowserWidget(QtGui.QWidget):
 		"Set a new path"
 		self.setPath(str(self.wpath.text()))
 
+# 	def keyPressEvent(self,event):
+# 		"""Make sure we update selection when keyboard is pressed"""
+# 		print "key",event.__dict__
+# 		QtGui.QTreeView.keyPressEvent(self.wtree,event)
+# 		self.itemSel(None)
+
 	def itemSel(self,qmi):
 #		print "Item selected",qmi.row(),qmi.column(),qmi.internalPointer().path()
 		qism=self.wtree.selectionModel().selectedRows()
@@ -1638,6 +1665,9 @@ class EMBrowserWidget(QtGui.QWidget):
 		except:pass
 		for w in self.view2d+self.view2ds+self.view3d+self.viewplot2d+self.viewplot3d:
 			w.close()
+
+		if self.infowin!=None:
+			self.infowin.close()
 
 		event.accept()
 		#self.app().close_specific(self)
