@@ -12933,22 +12933,22 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	l_STB = int(l_STB[0])
 
 	if myid == main_node:
+		for i in xrange(l_STB):
+			node_to_run = i%(number_of_proc-1)+1
+			mpi_send(len(STB_PART[i]), 1, MPI_INT, node_to_run, i+10000, MPI_COMM_WORLD)
+			mpi_send(STB_PART[i], len(STB_PART[i]), MPI_INT, node_to_run, i+20000, MPI_COMM_WORLD)
+
 		members_acc = []
-		ave_num = 0
+		ave_num = 0	
 		for i in xrange(l_STB):
 			node_to_run = i%(number_of_proc-1)+1
-			mpi_send(len(STB_PART[i]), 1, MPI_INT, node_to_run, MPI_TAG_UB, MPI_COMM_WORLD)
-			mpi_send(STB_PART[i], len(STB_PART[i]), MPI_INT, node_to_run, MPI_TAG_UB, MPI_COMM_WORLD)
-	
-		for i in xrange(l_STB):
-			node_to_run = i%(number_of_proc-1)+1
-			l_stable_members = mpi_recv(1, MPI_INT, node_to_run, MPI_TAG_UB, MPI_COMM_WORLD)
+			l_stable_members = mpi_recv(1, MPI_INT, node_to_run, i+30000, MPI_COMM_WORLD)
 			l_stable_members = int(l_stable_members[0])
-			stable_members = mpi_recv(l_stable_members, MPI_INT, node_to_run, MPI_TAG_UB, MPI_COMM_WORLD)
+			stable_members = mpi_recv(l_stable_members, MPI_INT, node_to_run, i+40000, MPI_COMM_WORLD)
 			stable_members = map(int, stable_members)
-			mirror_consistent_rate = mpi_recv(1, MPI_FLOAT, node_to_run, MPI_TAG_UB, MPI_COMM_WORLD)
+			mirror_consistent_rate = mpi_recv(1, MPI_FLOAT, node_to_run, i+50000, MPI_COMM_WORLD)
 			mirror_consistend_rate = float(mirror_consistent_rate[0])
-			pix_err = mpi_recv(1, MPI_FLOAT, node_to_run, MPI_TAG_UB, MPI_COMM_WORLD)
+			pix_err = mpi_recv(1, MPI_FLOAT, node_to_run, i+60000, MPI_COMM_WORLD)
 			pix_err = float(pix_err[0])
 	
 			print  "Group %d ...... Mirror consistent rate = %f"%(i, mirror_consistent_rate)
@@ -12961,12 +12961,12 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				continue
 			print "Size of stable subset larger than threshold, kept\n"
 
-			ave = recv_EMData(node_to_run, i*100)
+			ave = recv_EMData(node_to_run, i+70000)
 			stable_members_ori = [0]*l_stable_members
 			for j in xrange(l_stable_members): stable_members_ori[j] = alldata_n[stable_members[j]]
 			ave.set_attr_dict({"members": stable_members_ori, "n_objects": l_stable_members})
 			ave.write_image("class_averages_generation_%d.hdf"%generation, ave_num)
-			mpi_send(ave_num, 1, MPI_INT, node_to_run, MPI_TAG_UB, MPI_COMM_WORLD)
+			mpi_send(ave_num, 1, MPI_INT, node_to_run, i+80000, MPI_COMM_WORLD)
 			ave_num += 1
 			members_acc.extend(stable_members_ori)
 			
@@ -12990,9 +12990,9 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		for i in xrange(l_STB):
 			node_to_run = i%(number_of_proc-1)+1
 			if myid != node_to_run: continue
-			l_STB_PART = mpi_recv(1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+			l_STB_PART = mpi_recv(1, MPI_INT, main_node, i+10000, MPI_COMM_WORLD)
 			l_STB_PART = int(l_STB_PART[0])
-			STB_PART = mpi_recv(l_STB_PART, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+			STB_PART = mpi_recv(l_STB_PART, MPI_INT, main_node, i+20000, MPI_COMM_WORLD)
 			STB_PART = map(int, STB_PART)
 			STB_PART.sort()
 
@@ -13027,14 +13027,14 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				all_sy[j] = ali_params[stab_ali-1][stable_set[j][1]*4+2]
 				all_mirror[j] = ali_params[stab_ali-1][stable_set[j][1]*4+3]
 
-			mpi_send(l_stable_set, 1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
-			mpi_send(stable_set_id, l_stable_set, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
-			mpi_send(mirror_consistent_rate, 1, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
-			mpi_send(pix_err, 1, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+			mpi_send(l_stable_set, 1, MPI_INT, main_node, i+30000, MPI_COMM_WORLD)
+			mpi_send(stable_set_id, l_stable_set, MPI_INT, main_node, i+40000, MPI_COMM_WORLD)
+			mpi_send(mirror_consistent_rate, 1, MPI_FLOAT, main_node, i+50000, MPI_COMM_WORLD)
+			mpi_send(pix_err, 1, MPI_FLOAT, main_node, i+60000, MPI_COMM_WORLD)
 			
 			if l_stable_set > thld_grp:
-				send_EMData(ave, main_node, i*100)			
-				ave_num = mpi_recv(1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+				send_EMData(ave, main_node, i+70000)		
+				ave_num = mpi_recv(1, MPI_INT, main_node, i+80000, MPI_COMM_WORLD)
 				ave_num = int(ave_num[0])
 				write_text_file([all_alpha, all_sx, all_sy, all_mirror, all_scale], "%s/ali_params_%03d"%(ali_params_dir, ave_num))
 	
