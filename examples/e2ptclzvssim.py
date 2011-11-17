@@ -93,6 +93,7 @@ similarity score."""
 			Qs.append(Q)
 			N=im.calc_min_index()
 			Ns.append(N)
+		out.write("%d\t"%y)
 
 		for q in Qs : out.write("%1.4g\t"%q)
 		for z in Zs : out.write("%1.4g\t"%z)

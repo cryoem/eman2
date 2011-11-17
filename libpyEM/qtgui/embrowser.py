@@ -1225,11 +1225,54 @@ class EMBDBInfoPane(EMInfoPane):
 	def __init__(self,parent=None):
 		QtGui.QWidget.__init__(self,parent)
 		
-		self.vbl=QtGui.QVBoxLayout(self)
+		self.gbl=QtGui.QGridLayout(self)
+		
+		# Spinbox for selecting image number
+		self.wimnum=QtGui.QSpinBox()
+		self.wimnum.setRange(0,0)
+		self.gbl.addWidget(self.wimnum,0,0)
+		
+		# List as alternate mechanism for selecting image number(s)
+		self.wimlist=QtGui.QListWidget()
+		self.gbl.addWidget(self.wimlist,1,0)
+		
+		# Actual header contents
+		self.wheadtree=QtGui.QTreeWidget()
+		self.gbl.addWidget(self.wheadtree,0,1,2,1)
+		
+		QtCore.QObject.connect(self.wimnum, QtCore.SIGNAL("valueChanged(int)"),self.imNumChange)
+		QtCore.QObject.connect(self.wimlist, QtCore.SIGNAL("itemSelectionChanged()"),self.imSelChange)
+#		QtCore.QObject.connect(self.wbutedit, QtCore.SIGNAL('clicked(bool)'), self.buttonEdit)
+		
 
 	def display(self,target):
 		"display information for the target EMDirEntry"
 		self.target=target
+		self.bdb=db_open_dict(self.target.path())
+		
+		# Set up image selectors for stacks
+		if target.nimg==0 :
+			self.wimnum.hide()
+			k=self.bdb.keys()
+			k.sort()
+			self.wimlist.addItems(k)
+			self.wimlist.show()
+			self.curim=0
+		else:
+			self.wimnum.setRange(0,target.nimg)
+			self.wimlist.clear()
+			self.wimlist.addItems([str(i) for i in range(0,min(target.nimg,500))])
+			self.wimnum.show()
+			self.wimlist.show()
+
+		self.wheadtree.clear()
+
+	def imNumChange(self,num):
+		"New image number"
+		
+	def imSelChange(self):
+		"New image selection"
+		
 
 class EMImageInfoPane(EMInfoPane):
 	
@@ -1240,7 +1283,7 @@ class EMImageInfoPane(EMInfoPane):
 		
 		# Spinbox for selecting image number
 		self.wimnum=QtGui.QSpinBox()
-		self.setRange(0,0)
+		self.wimnum.setRange(0,0)
 		self.gbl.addWidget(self.wimnum,0,0)
 		
 		# List as alternate mechanism for selecting image number(s)
@@ -1251,8 +1294,8 @@ class EMImageInfoPane(EMInfoPane):
 		self.wheadtree=QTreeWidget()
 		self.gbl.addWidget(self.wheadtree,0,1,2,1)
 		
-		QtCore.QObject.connect(self.wimnum, QtCore.SIGNAL("valueChanged(int)"),self.ImNumChange)
-		QtCore.QObject.connect(self.wimlist, QtCore.SIGNAL("itemSelectionChanged()"),self.ImSelChange)
+		QtCore.QObject.connect(self.wimnum, QtCore.SIGNAL("valueChanged(int)"),self.imNumChange)
+		QtCore.QObject.connect(self.wimlist, QtCore.SIGNAL("itemSelectionChanged()"),self.imSelChange)
 #		QtCore.QObject.connect(self.wbutedit, QtCore.SIGNAL('clicked(bool)'), self.buttonEdit)
 		
 		
@@ -1262,19 +1305,74 @@ class EMImageInfoPane(EMInfoPane):
 	def display(self,target):
 		"display information for the target EMDirEntry"
 		self.target=target
+		
+		# Set up image selectors for stacks
+		if target.nimg<2 :
+			self.wimnum.hide()
+			self.wimlist.hide()
+			self.curim=0
+		else:
+			self.wimnum.setRange(0,target.nimg)
+			self.wimlist.clear()
+			self.wimlist.addItems([str(i) for i in range(0,min(target.nimg,500))])
+			self.wimnum.show()
+			self.wimlist.show()
+		
+	def imNumChange(self,num):
+		"New image number"
+		
+	def imSelChange(self):
+		"New image selection"
 
 class EMStackInfoPane(EMInfoPane):
 	
 	def __init__(self,parent=None):
 		QtGui.QWidget.__init__(self,parent)
 		
+		self.gbl=QtGui.QGridLayout(self)
+		
+		# Spinbox for selecting image number
+		self.wimnum=QtGui.QSpinBox()
+		self.wimnum.setRange(0,0)
+		self.gbl.addWidget(self.wimnum,0,0)
+		
+		# List as alternate mechanism for selecting image number(s)
+		self.wimlist=QtGui.QListWidget()
+		self.gbl.addWidget(self.wimlist,1,0)
+		
+		# Actual header contents
+		self.wheadtree=QTreeWidget()
+		self.gbl.addWidget(self.wheadtree,0,1,2,1)
+		
+		QtCore.QObject.connect(self.wimnum, QtCore.SIGNAL("valueChanged(int)"),self.imNumChange)
+		QtCore.QObject.connect(self.wimlist, QtCore.SIGNAL("itemSelectionChanged()"),self.imSelChange)
+#		QtCore.QObject.connect(self.wbutedit, QtCore.SIGNAL('clicked(bool)'), self.buttonEdit)
+		
+		
+		
 		self.vbl=QtGui.QVBoxLayout(self)
 
 	def display(self,target):
 		"display information for the target EMDirEntry"
 		self.target=target
+		
+		# Set up image selectors for stacks
+		if target.nimg<2 :
+			self.wimnum.hide()
+			self.wimlist.hide()
+			self.curim=0
+		else:
+			self.wimnum.setRange(0,target.nimg)
+			self.wimlist.clear()
+			self.wimlist.addItems([str(i) for i in range(0,min(target.nimg,500))])
+			self.wimnum.show()
+			self.wimlist.show()
 
-
+	def imNumChange(self,num):
+		"New image number"
+		
+	def imSelChange(self):
+		"New image selection"
 
 class EMInfoWin(QtGui.QWidget):
 	"""The info window"""
@@ -1292,8 +1390,13 @@ class EMInfoWin(QtGui.QWidget):
 		
 	def set_target(self,target,ftype):
 		"""Display the info pane for target EMDirEntry with EMFileType instance ftype"""
+		
 		self.target=target
 		self.ftype=ftype
+		
+		if target==None :
+			self.stack.setCurrentIndex(0)
+			return
 		
 		cls=ftype.infoClass()
 		
@@ -1610,7 +1713,7 @@ class EMBrowserWidget(QtGui.QWidget):
 			qism=self.wtree.selectionModel().selectedRows()
 			if len(qism)==1 : 
 				self.infowin.set_target(qism[0].internalPointer(),self.curft)
-			else : self.infowin.set_target(None)
+			else : self.infowin.set_target(None,None)
 		else :
 			if self.infowin!=None:
 				self.infowin.hide()
