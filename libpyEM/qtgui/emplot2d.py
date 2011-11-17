@@ -31,6 +31,26 @@
 #
 #
 
+ploticon = [
+    '15 14 2 1',
+    'b c #000055',
+    'c c None',
+    'ccccccccccccccc',
+    'ccccccccccccccc',
+    'ccccccbbbbccccc',
+    'ccccbbccccbbccc',
+    'cccbccccccccbcc',
+    'ccbccccccccccbc',
+    'ccbccccccccccbc',
+    'ccbccccccccccbc',
+    'ccbccccccccccbc',
+    'cccbccccccccbcc',
+    'ccccbbccccbbccc',
+    'ccccccbbbbccccc',
+    'ccccccccccccccc',
+    'ccccccccccccccc'
+]
+
 import PyQt4
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
@@ -667,6 +687,7 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 	"""
 	def __init__(self):
 		EMPlot2DWidget.__init__(self)
+		self.setWindowIcon(QtGui.QIcon(QtGui.QPixmap(ploticon)))
 		
 	def mousePressEvent(self, event):
 		#Save a snapshot of the scene

@@ -114,11 +114,13 @@ def cuda_exit():
 		pass
 
 def parallel_process_exit():
-	# Kill any running process from e2paralle.py running on localhost. If none are running nothing happens
-	from EMAN2PAR import EMLocalTaskHandler
-	for proc in EMLocalTaskHandler.allrunning.values():
-		proc.terminate()
-		os.kill(proc.pid,signal.SIGKILL)
+	# Compete HACK to prevent EMAN2DB creation if one deosn't already exisit. Need to do this b/c when anything in EMAN2PAR gets improted, and EMAN2DB is created!!! 
+	if os.access('EMAN2DB',os.R_OK):
+		# Kill any running process from e2paralle.py running on localhost. If none are running nothing happens
+		from EMAN2PAR import EMLocalTaskHandler
+		for proc in EMLocalTaskHandler.allrunning.values():
+			proc.terminate()
+			os.kill(proc.pid,signal.SIGKILL)
 		
 # if the program exits nicely, close all of the databases
 atexit.register(DB_cleanup)
