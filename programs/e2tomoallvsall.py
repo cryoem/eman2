@@ -140,28 +140,48 @@ def main():
 		sys.exit(1)
 	
 	roundtag='round' + str(0).zfill(3)						#We need to keep track of what round we're in
-	newptcls={}									#This dictionary will list all the 'new particles' produced in each round as id:data pairs, {particle_id:particle_data}
-	
+	newptcls={}									#This dictionary will list all the 'new particles' produced in each round as {particle_id : [EMData,{index:total_transform}]} elements
+	allptclsRound={}								#The total_transform needs to be calculated for each particle after each round, to avoid multiple interpolations
 	for i in range(nptcl):
 		a=EMData(options.input,i)
-		
+		totalt=Transform()
+
 		if 'spt_multiplicity' not in a.get_attr_dict():				#The spt_multiplicity parameter keeps track of how many particles were averaged to make any given new particle. For the raw data, this should be 1
 			a['spt_multiplicity']=1
-			a.write_image(options.input,i)
+			#a.write_image(options.input,i)
 		
 		if 'spt_ptcl_indxs' not in a.get_attr_dict():				#Set the spt_ptcl_indxs header parameter to keep track of what particles from the original stack a particle is an average of
 			a['spt_ptcl_indxs']=[i]						#In this case, the fresh/new stack should contain particles where this parameter is the particle number itself
-			a.write_image(options.input,i)
+			#a.write_image(options.input,i)
 		else:
 			if type(a['spt_ptcl_indxs']) is int:
 				a['spt_ptcl_indxs'] = [a['spt_ptcl_indxs']]		#The spt_ptcl_indxs parameter should be of type 'list', to easily 'append' new particle values
 		
-		newptcls.update({roundtag + '_' + str(i).zfill(4) : a})			#In the first round, all the particles in the input stack are "new"
+		if 'spt_original_indx' not in a.get_attr_dict():				#Set the spt_ptcl_indxs header parameter to keep track of what particles from the original stack a particle is an average of
+			a['spt_original_indx']=[i]						#In this case, the fresh/new stack should contain particles where this parameter is the particle number itself
+		
+		a.write_image(options.input,i)
+		
+		particletag = roundtag + '_' + str(i).zfill(4)
+		newptcls.update({particletag :a})
+		allptclsRound.update({particletag : [a,{i:totalt}]})				#In the first round, all the particles in the input stack are "new" and have an identity transform associated to them
 		
 	oldptcls = {}									#'Unused' particles (that is, those that weren't part of any unique-best-pair) will be tossed into the 'oldptcls' dictionary, to go on to the next round
 	surviving_results = []								#This list will store the results for previous alignment pairs that weren't used, so you don't have to recompute them
-
+	
+	#averages = [newptcls]
+	
+	allptclsMatrix = []	
+	
+	print "allptclsRound in iteration 0 should be a dictionary!!, lets see", type(allptclsRound), allptclsRound
+	if type(allptclsRound) is not dict:
+		print "it is not, so i will QUIT!!!"
+		sys.exit()
+		
+	allptclsMatrix.append(allptclsRound)
+	
 	for k in range(options.iter):
+		allptclsRound = {}
 	
 		logger = E2init(sys.argv,options.ppid)
 
@@ -198,7 +218,7 @@ def main():
 				if options.verbose > 2:
 					print "Setting the following comparison: %s vs %s in the ALL VS ALL" %(reftag,particletag)
 				
-				task = Align3DTaskAVSA(ref,["cache",particle], jj, reftag, particletag,"Aligning particle#%d VS particle#%d of the 'NEW SET' in iteration %d" % (ptcl1,ptcl2,k),options.mask,options.normproc,options.preprocess,
+				task = Align3DTaskAVSA(ref,["cache",particle], jj, reftag, particletag,"Aligning particle#%s VS particle#%s in iteration %d" % (reftag,particletag,k),options.mask,options.normproc,options.preprocess,
 				options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
 				
 				tasks.append(task)
@@ -210,7 +230,7 @@ def main():
 		There are no "new" and "old" particles in the first round; thus the loop below is needed only for k>0
 		'''
 				
-		if k > 0:		
+		if k > 0:
 			if len(newptcls) + len(oldptcls) == 1:
 				print "The all vs all alignment has finalized and converged into one average"
 				print "TERMINATING"
@@ -227,7 +247,7 @@ def main():
 					if options.verbose > 2:
 						print "Setting the following comparison: %s vs %s" %(refkey,particlekey)
 					
-					task = Align3DTaskAVSA(refvalue,["cache",particlevalue],jj,refkey,particlekey,"Aligning particle#%d of the OLD set VS particle#%d of the NEW set, in iteration %d" % (xx,yy,k),options.mask,options.normproc,options.preprocess,
+					task = Align3DTaskAVSA(refvalue,["cache",particlevalue],jj,refkey,particlekey,"Aligning particle#%s VS particle#%s, in iteration %d" % (refkey,particlekey,k),options.mask,options.normproc,options.preprocess,
 					options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
 					
 					tasks.append(task)
@@ -249,7 +269,7 @@ def main():
 			for i in results:
 				print "%s VS %s , score=%f" %(['ptcl1'], i['ptcl2'], i['score'])
 		
-		print "In iteration %d, the total number of comparisons in the ranking list, either new or old that survived, is" % (k, len(results))
+		print "\n\n\n\nIn iteration %d, the total number of comparisons in the ranking list, either new or old that survived, is %d" % (k, len(results))
 		
 		tried = set()											#Store the ID of the tried particles
 		averages = {}											#Store the new averages; you need a different dict because you still need to 'fetch' data from newptcls in the loop below
@@ -264,6 +284,15 @@ def main():
 				used.add(results[z]['ptcl2'])
 													
 				avgr=Averagers.get(options.averager[0], options.averager[1])			#Call the averager
+				
+				
+				
+				
+				
+				
+				
+				
+				
 				
 				ptcl1=EMData()
 				
@@ -280,8 +309,34 @@ def main():
 					sys.exit()
 							
 				ptcl1 = ptcl1 * ptcl1['spt_multiplicity']					#Take the multiplicity of ptcl1 into account
+				
+				indx_trans_pairs = {}
+
+				
+				
+				print "The indexes in particle 1 are", ptcl1['spt_ptcl_indxs']
+				
+				row = allptclsMatrix[k]
+				ptclinfo = row[results[z]['ptcl1']]
+				print "The ptcl info of which it is part is", ptclinfo
+					
+				ptcl_indxs_transforms = ptclinfo[-1]
+				print "All the particle indexes in this particle infor are", ptcl_indxs_transforms
+				
+				for p in ptcl1['spt_ptcl_indxs']:						#All the particles in ptcl2's history need to undergo the new transformation before averaging (multiplied by any old transforms, all in one step, to avoid multiple interpolations))
+					print "I'm passing on this transform index and its transform to the average", p	
+					pastt = Transform()
+					if p in ptcl_indxs_transforms:
+						pastt = ptcl_indxs_transforms[p]
+						print "Therefore the past transform for this index is", pastt
+					else:
+						print "WARNING!!!!!!!!!!!!!!!!!!!!! In round %d Couldn't find the transform for index %d in particle %s" % (k,p,results[z]['ptcl2'])
+						sys.exit()
+					indx_trans_pairs.update({p:pastt})
 					
 				avgr.add_image(ptcl1)								#Add particle 1 to the average
+				
+				
 				
 				ptcl2=EMData()
 				
@@ -296,10 +351,54 @@ def main():
 				else:
 					print "\@@@@\@@@@Warning!! Particle 2 was NOT found and empty garbage is being added to the average!"
 					sys.exit()
-
+				
+				#for p in ptcl2['spt_ptcl_indxs']:						#All the particles in ptcl2's history need to undergo the new transformation before averaging (multiplied by any old transforms, all in one step, to avoid multiple interpolations))
+				#	print "I'm fixing the transform for this index", p	
+				#	pastt = Transform()
+				#	if p in ptcl_indxs_transforms:
+				#		pastt = ptcl_indxs_transforms[p]
+				#		print "Therefore the past transform for this index is", pastt
+				#	else:
+				#		print "WARNING!!!!!!!!!!!!!!!!!!!!! In round %d Couldn't find the transform for index %d in particle %s" % (k,p,results[z]['ptcl2'])
+				#		sys.exit()
+				#	totalt = resultingt * pastt
+				#	indx_trans_pairs.update({p:totalt})
+				
 				ptcl2 = ptcl2 * ptcl2['spt_multiplicity']					#Take the multiplicity of ptcl1 into account				
 				
-				ptcl2.process_inplace("xform",{"transform":results[z]["xform.align3d"]})	#Apply the relative alignment between particles 1 and 2 to particle 2, (particle 1 is always "fixed" and particle 2 "moving")
+				resultingt = results[z]["xform.align3d"]
+				
+				totalt = Transform()
+								
+				#print "allptclsMatrix[k] should be a dictionary, and.... ist it? Lets see", type(allptclsMatrix[k])
+				#if type(allptclsMatrix[k]) is not dict:
+				#	print "NO! So I'll QUIT!"
+				#
+				#	sys.exit()
+				
+				print "The indexes in particle 2 are", ptcl2['spt_ptcl_indxs']
+				
+				row = allptclsMatrix[k]
+				ptclinfo = row[results[z]['ptcl2']]
+				print "The ptcl info of which it is part is", ptclinfo
+					
+				ptcl_indxs_transforms = ptclinfo[-1]
+				print "All the particle indexes in this particle infor are", ptcl_indxs_transforms
+				
+				for p in ptcl2['spt_ptcl_indxs']:						#All the particles in ptcl2's history need to undergo the new transformation before averaging (multiplied by any old transforms, all in one step, to avoid multiple interpolations))
+					print "I'm fixing the transform for this index", p	
+					pastt = Transform()
+					if p in ptcl_indxs_transforms:
+						pastt = ptcl_indxs_transforms[p]
+						print "Therefore the past transform for this index is", pastt
+					else:
+						print "WARNING!!!!!!!!!!!!!!!!!!!!! In round %d Couldn't find the transform for index %d in particle %s" % (k,p,results[z]['ptcl2'])
+						sys.exit()
+					totalt = resultingt * pastt
+					indx_trans_pairs.update({p:totalt})
+				
+				print "\n$$$$$$$$$\n$$$$$$$$$\n$$$$$$$$$The index transform pairs are\n", indx_trans_pairs
+				ptcl2.process_inplace("xform",{"transform":totalt})				#Apply the relative alignment between particles 1 and 2 to particle 2, (particle 1 is always "fixed" and particle 2 "moving")
 				
 				avgr.add_image(ptcl2)								#Add the transformed (rotated and translated) particle 2 to the average
 		
@@ -319,13 +418,14 @@ def main():
 				avg['origin_y'] = 0
 				avg['origin_z'] = 0
 				
-				
 				if options.savesteps:
 					avg.write_image("%s/round%03d_averages"%(options.path,k),mm)		#Particles from a "new round" need to be in a "new stack" defined by counter k; the number
 				
 				newroundtag = 'round' + str(k+1).zfill(3) + '_'
 				avgtag = newroundtag + str(mm).zfill(4)
+				
 				averages.update({avgtag:avg})	   						#The list of averages will become the new set of "newptcls"
+				allptclsRound.update({avgtag : [avg,indx_trans_pairs]})
 				
 				mm+=1
 				
@@ -334,7 +434,7 @@ def main():
 													#We only average "UNIQUE BEST PAIRS" (the first occurance in the ranking list of BOTH particles in a pair).
 			if results[z]['ptcl2'] not in tried:
 				tried.add(results[z]['ptcl2'])
-		
+				
 		surviving_results = []
 		for z in range(len(results)):
 			if results[z]['ptcl1'] not in used and results[z]['ptcl2'] not in used:
@@ -345,6 +445,7 @@ def main():
 		
 		if options.verbose > 2:
 			print "These were the particles in iteration", k
+		
 		for particlekey,particlevalue in newptcls.iteritems():
 			
 			if options.verbose > 2:
@@ -352,6 +453,7 @@ def main():
 			
 			if particlekey not in used:
 				surviving_newptcls.update({particlekey:particlevalue})
+
 			else:
 				if options.verbose > 1:
 					print "This particle from newptcls was averaged", particlekey
@@ -372,7 +474,12 @@ def main():
 		oldptcls.update(surviving_oldptcls)  
 		oldptcls.update(surviving_newptcls)					#All the particles from the newptcls list that were not averaged become "old"
 		newptcls = averages							#All the new averages become part of the new "newptcls" list
-		
+				
+		for particlekey,particlevalue in oldptcls.iteritems():
+			allptclsRound.update({ particlekey: [particlevalue,allptclsMatrix[k][particlekey][-1]]})
+
+		allptclsMatrix.append(allptclsRound)
+
 		print "And these many new averages", len(newptcls), len(averages)
 		
 		print "So there are these many old particles for the next round", len(oldptcls)
