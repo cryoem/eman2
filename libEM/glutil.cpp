@@ -35,6 +35,10 @@
 
 #ifdef EMAN2_USING_OPENGL
 
+#ifdef _WIN32
+	#include <windows.h>
+#endif
+
 #include "glutil.h"
 #include "emdata.h"
 #include "marchingcubes.h"

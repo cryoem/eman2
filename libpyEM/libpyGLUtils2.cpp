@@ -30,6 +30,10 @@
 
 #ifdef EMAN2_USING_OPENGL
 
+#ifdef _WIN32
+	#include <windows.h>
+#endif
+
 // Boost Includes ==============================================================
 #include <boost/python.hpp>
 #include <boost/cstdint.hpp>

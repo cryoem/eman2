@@ -5465,7 +5465,7 @@ EMData* CtfSimProcessor::process(const EMData * const image) {
 	fft->apply_radial_func(0,0.25/fft->get_ysize(),ctfc,1);
 	
 	// Add noise
-	if (noiseamp!=0 or noiseampwhite!=0) {
+	if (noiseamp!=0 || noiseampwhite!=0) {
 		EMData *noise = new EMData(image->get_ysize(),image->get_ysize(),1);
 		noise->process_inplace("testimage.noise.gauss");
 		noise->do_fft_inplace();
