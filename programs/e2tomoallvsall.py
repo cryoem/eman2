@@ -126,6 +126,7 @@ def main():
 	if not options.path: 
 		options.path="bdb:"+numbered_path("spt",True)
 
+
 	hdr = EMData(options.input,0,True)
 	nx = hdr["nx"]
 	ny = hdr["ny"]
@@ -139,84 +140,76 @@ def main():
 		print "ERROR: at least 3 particles are required in the input stack for all vs all. Otherwise, to align 2 particles (one to the other or to a model) use e2classaverage3d.py"
 		sys.exit(1)
 	
-	roundtag='round' + str(0).zfill(3)						#We need to keep track of what round we're in
-	newptcls={}									#This dictionary will list all the 'new particles' produced in each round as {particle_id : [EMData,{index:total_transform}]} elements
-	allptclsRound={}								#The total_transform needs to be calculated for each particle after each round, to avoid multiple interpolations
-	for i in range(nptcl):
+	fillfactor = len(str(nptcl))							#Calculate this based on the number of particles so that tags are adequate ("pretty") and ordered
+	roundtag='round' + str(0).zfill(fillfactor)					#We need to keep track of what round we're in
+	newptcls={}									#This dictionary stores 'new particles' produced in each round as { particleID : particleDATA } elements
+	allptclsRound={}								#This dictionary stores all particlces in a round ("new" and "old") as 
+											#{particle_id : [EMData,{index1:totalTransform1, index2:totalTransform2...}]} elements
+											#The totalTransform needs to be calculated for each particle after each round, to avoid multiple interpolations
+	
+	for i in range(nptcl):								#In the first round, all the particles in the input stack are "new" and should have an identity transform associated to them
 		a=EMData(options.input,i)
 		totalt=Transform()
 
-		if 'spt_multiplicity' not in a.get_attr_dict():				#The spt_multiplicity parameter keeps track of how many particles were averaged to make any given new particle. For the raw data, this should be 1
+		if 'spt_multiplicity' not in a.get_attr_dict():				#spt_multiplicity keeps track of how many particles were averaged to make any given new particle (set to 1 for the raw data)
 			a['spt_multiplicity']=1
-			#a.write_image(options.input,i)
-		
-		if 'spt_ptcl_indxs' not in a.get_attr_dict():				#Set the spt_ptcl_indxs header parameter to keep track of what particles from the original stack a particle is an average of
-			a['spt_ptcl_indxs']=[i]						#In this case, the fresh/new stack should contain particles where this parameter is the particle number itself
-			#a.write_image(options.input,i)
+		if 'spt_ptcl_indxs' not in a.get_attr_dict():				#spt_ptcl_indxs keeps track of what particles from the original stack went into a particular average or "new particle"
+			a['spt_ptcl_indxs']=[i]						#The raw stack should contain particles where this parameter is the particle number itself
 		else:
 			if type(a['spt_ptcl_indxs']) is int:
-				a['spt_ptcl_indxs'] = [a['spt_ptcl_indxs']]		#The spt_ptcl_indxs parameter should be of type 'list', to easily 'append' new particle values
+				a['spt_ptcl_indxs'] = [a['spt_ptcl_indxs']]		#The spt_ptcl_indxs parameter should be of type 'list', to easily 'append' new particle indexes
 		
-		if 'spt_original_indx' not in a.get_attr_dict():				#Set the spt_ptcl_indxs header parameter to keep track of what particles from the original stack a particle is an average of
-			a['spt_original_indx']=[i]						#In this case, the fresh/new stack should contain particles where this parameter is the particle number itself
+		a.write_image(options.input,i)						#Overwrite the raw stack with one that has the appropriate header parameters set to work with e2sptallvsall
 		
-		a.write_image(options.input,i)
-		
-		particletag = roundtag + '_' + str(i).zfill(4)
+		particletag = roundtag + '_' + str(i).zfill(fillfactor)
 		newptcls.update({particletag :a})
-		allptclsRound.update({particletag : [a,{i:totalt}]})				#In the first round, all the particles in the input stack are "new" and have an identity transform associated to them
+		allptclsRound.update({particletag : [a,{i:totalt}]})			
 		
-	oldptcls = {}									#'Unused' particles (that is, those that weren't part of any unique-best-pair) will be tossed into the 'oldptcls' dictionary, to go on to the next round
-	surviving_results = []								#This list will store the results for previous alignment pairs that weren't used, so you don't have to recompute them
-	
-	#averages = [newptcls]
-	
-	allptclsMatrix = []	
-	
-	print "allptclsRound in iteration 0 should be a dictionary!!, lets see", type(allptclsRound), allptclsRound
-	if type(allptclsRound) is not dict:
-		print "it is not, so i will QUIT!!!"
-		sys.exit()
+	oldptcls = {}									#'Unused' particles (those that weren't part of any unique-best-pair) join the 'oldptcls' dictionary onto the next round
+	surviving_results = []								#This list stores the results for previous alignment pairs that weren't used, so you don't have to recompute them
 		
+	allptclsMatrix = []								#Massive matrix listing all the allptclsRound dictionaries produced after each iteration
 	allptclsMatrix.append(allptclsRound)
-	
-	for k in range(options.iter):
-		allptclsRound = {}
-	
-		logger = E2init(sys.argv,options.ppid)
 
+	for k in range(options.iter):							#Start the loop over the user-defined number of iterations
+		
+		nnew = len(newptcls)
+		if nnew + len(oldptcls) == 1:						#Stop the loop if the data has converged and you're left with one final particle (an average of all)
+				print "The all vs all algorithm has converged into one average\nTERMINATING."
+				sys.exit()
+		
+		allptclsRound = {}							
+		
+		logger = E2init(sys.argv,options.ppid)
 		if options.parallel:							# Initialize parallelism if being used
 			from EMAN2PAR import EMTaskCustomer
 			etc=EMTaskCustomer(options.parallel)
 			pclist=[options.input]
 
 			etc.precache(pclist)
+		tasks = []
 		
 		'''
 		Make ALL vs ALL comparisons among all NEW particle INDEXES.
 		NOTE: In the first round all the particles are "new"
 		'''
 		
-		nnew = len(newptcls)
 		newptclsmap = list(enumerate([range(i,nnew) for i in range(1,nnew)]))
 		
-		tasks = []
-		
-		jj=0									#counter to keep track of the number of comparisons (which will be the number of tasks to parallelize too)
-		
-		roundtag = 'round' + str(k).zfill(3) + '_'				#The round tag needs to change as the iterations/rounds progress
+		jj=0									#Counter to track the number of comparisons (also the number of tasks to parallelize)
+		roundtag = 'round' + str(k).zfill(fillfactor) + '_'			#The round tag needs to change as the iterations/rounds progress
 		
 		for ptcl1, compare in newptclsmap:
 			for ptcl2 in compare:
 				
-				reftag = roundtag + str(ptcl1).zfill(4)				
+				reftag = roundtag + str(ptcl1).zfill(fillfactor)				
 				ref = newptcls[reftag]
 				
-				particletag = roundtag + str(ptcl2).zfill(4)
+				particletag = roundtag + str(ptcl2).zfill(fillfactor)
 				particle = newptcls[particletag]
 				
 				if options.verbose > 2:
-					print "Setting the following comparison: %s vs %s in the ALL VS ALL" %(reftag,particletag)
+					print "Setting the following comparison: %s vs %s in ALL VS ALL" %(reftag,particletag)
 				
 				task = Align3DTaskAVSA(ref,["cache",particle], jj, reftag, particletag,"Aligning particle#%s VS particle#%s in iteration %d" % (reftag,particletag,k),options.mask,options.normproc,options.preprocess,
 				options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
@@ -226,73 +219,51 @@ def main():
 				jj+=1
 		
 		'''
-		Make comparisons for all NEW VS all OLD particles. "NEW" means particles that didn't exist in the previous round.
+		Make comparisons for all NEW VS all OLD particles. "NEW" means a particle that didn't exist in the previous round.
 		There are no "new" and "old" particles in the first round; thus the loop below is needed only for k>0
 		'''
 				
 		if k > 0:
-			if len(newptcls) + len(oldptcls) == 1:
-				print "The all vs all alignment has finalized and converged into one average"
-				print "TERMINATING"
-				sys.exit()
-				
-			#print "The set of NEW particles has these many in it", len(newptcls)
-			#print "The set of ALL particles has these many in it", len(newptcls) + len(oldptcls)
-			#print "Therefore, the difference is the amount of old particles remaining", len(oldptcls)
-
-			xx=0
 			for refkey,refvalue in newptcls.iteritems():
-				yy=0
 				for particlekey,particlevalue in oldptcls.iteritems():
 					if options.verbose > 2:
-						print "Setting the following comparison: %s vs %s" %(refkey,particlekey)
+						print "Setting the following comparison: %s vs %s in ALL VS ALL" %(refkey,particlekey)
 					
 					task = Align3DTaskAVSA(refvalue,["cache",particlevalue],jj,refkey,particlekey,"Aligning particle#%s VS particle#%s, in iteration %d" % (refkey,particlekey,k),options.mask,options.normproc,options.preprocess,
 					options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
 					
 					tasks.append(task)
 										
-					yy+=1
 					jj+=1	
-				xx+=1
 		
-		tids=etc.send_tasks(tasks)						# start the alignments running
+		tids=etc.send_tasks(tasks)						#Start the alignments running
 		if options.verbose > 0: 
 			print "%d tasks queued in iteration %d"%(len(tids),k) 
 		
-		results = get_results(etc,tids,options.verbose)				# Wait for alignments to finish and get results
-		results = results + surviving_results
-		results = sorted(results, key=itemgetter('score'))
+		results = get_results(etc,tids,options.verbose)				#Wait for alignments to finish and get results
+		results = results + surviving_results					#Your total results to process/analyze includes results (comparisons) from previous rounds that were not used
+		results = sorted(results, key=itemgetter('score'))			#Sort/rank the results by score
 		
-		if options.verbose > 1:
+		if options.verbose > 0:
 			print "In iteration %d the SORTED results are:", k
 			for i in results:
 				print "%s VS %s , score=%f" %(['ptcl1'], i['ptcl2'], i['score'])
 		
 		print "\n\n\n\nIn iteration %d, the total number of comparisons in the ranking list, either new or old that survived, is %d" % (k, len(results))
 		
-		tried = set()											#Store the ID of the tried particles
-		averages = {}											#Store the new averages; you need a different dict because you still need to 'fetch' data from newptcls in the loop below
-		used = set()
+		tried = set()											#Tracks what particles have "appeared" on the list, whether averaged or not
+		averages = {}											#Stores the new averages; you need a dict different from newptcls because you'll need to 'fetch' data from the previous version of newptcls
+		used = set()											#Tracks what particles WERE actually averaged
 		
-		mm=0
+		mm=0												#Counter to track new particles/averages produced and write them to output
 		for z in range(len(results)):
 			if results[z]['ptcl1'] not in tried and results[z]['ptcl2'] not in tried:
-				tried.add(results[z]['ptcl1'])							#Add both of the particles averaged to "tried" AND "averages", if the two particles in the pair have not been tried, and they're the
-				tried.add(results[z]['ptcl2'])							#next "best pair", they MUST be averaged
+				tried.add(results[z]['ptcl1'])							#If the two particles in the pair have not been tried, and they're the next "best pair", they MUST be averaged
+				tried.add(results[z]['ptcl2'])							#Add both to "tried" AND "averages" 
 				used.add(results[z]['ptcl1'])		
 				used.add(results[z]['ptcl2'])
 													
 				avgr=Averagers.get(options.averager[0], options.averager[1])			#Call the averager
-				
-				
-				
-				
-				
-				
-				
-				
-				
 				
 				ptcl1=EMData()
 				
@@ -352,30 +323,12 @@ def main():
 					print "\@@@@\@@@@Warning!! Particle 2 was NOT found and empty garbage is being added to the average!"
 					sys.exit()
 				
-				#for p in ptcl2['spt_ptcl_indxs']:						#All the particles in ptcl2's history need to undergo the new transformation before averaging (multiplied by any old transforms, all in one step, to avoid multiple interpolations))
-				#	print "I'm fixing the transform for this index", p	
-				#	pastt = Transform()
-				#	if p in ptcl_indxs_transforms:
-				#		pastt = ptcl_indxs_transforms[p]
-				#		print "Therefore the past transform for this index is", pastt
-				#	else:
-				#		print "WARNING!!!!!!!!!!!!!!!!!!!!! In round %d Couldn't find the transform for index %d in particle %s" % (k,p,results[z]['ptcl2'])
-				#		sys.exit()
-				#	totalt = resultingt * pastt
-				#	indx_trans_pairs.update({p:totalt})
-				
 				ptcl2 = ptcl2 * ptcl2['spt_multiplicity']					#Take the multiplicity of ptcl1 into account				
 				
 				resultingt = results[z]["xform.align3d"]
 				
 				totalt = Transform()
-								
-				#print "allptclsMatrix[k] should be a dictionary, and.... ist it? Lets see", type(allptclsMatrix[k])
-				#if type(allptclsMatrix[k]) is not dict:
-				#	print "NO! So I'll QUIT!"
-				#
-				#	sys.exit()
-				
+			
 				print "The indexes in particle 2 are", ptcl2['spt_ptcl_indxs']
 				
 				row = allptclsMatrix[k]
@@ -421,8 +374,8 @@ def main():
 				if options.savesteps:
 					avg.write_image("%s/round%03d_averages"%(options.path,k),mm)		#Particles from a "new round" need to be in a "new stack" defined by counter k; the number
 				
-				newroundtag = 'round' + str(k+1).zfill(3) + '_'
-				avgtag = newroundtag + str(mm).zfill(4)
+				newroundtag = 'round' + str(k+1).zfill(fillfactor) + '_'
+				avgtag = newroundtag + str(mm).zfill(fillfactor)
 				
 				averages.update({avgtag:avg})	   						#The list of averages will become the new set of "newptcls"
 				allptclsRound.update({avgtag : [avg,indx_trans_pairs]})
