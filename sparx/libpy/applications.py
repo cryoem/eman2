@@ -10426,10 +10426,10 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 					#t = img.get_attr(p)
 					#img.set_attr(p+suffix, t)
 					if ext == "bdb":
-						t= DB.get_attr(i,p)
+						t= DB.get_attr(i, p)
 						DB.set_attr(i, p+suffix, t)
 					elif ext == "hdf":
-						t= EMUtil.read_hdf_attribute(stack,p)
+						t= EMUtil.read_hdf_attribute(stack, p, i)
 						EMUtil.write_hdf_attribute(stack,p+suffix, t, i)
 				
 				elif restore:
