@@ -1921,14 +1921,14 @@ EMData* Refine3DAlignerQuaternion::align(EMData * this_img, EMData *to,
 	
 	//Free up resources (for an expensive opperation like this move data to and from device is a small % of time)
 	#ifdef EMAN2_USING_CUDA
-		to->copy_from_device();
+		to->rw_free();
 		this_img->ro_free();
 	#endif
 	
 	return result;
 }
 
-EMData*Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
+EMData* Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 	const string & cmp_name, const Dict& cmp_params) const
 {
 	if ( this_img->get_ndim() != 3 || to->get_ndim() != 3 ) {
@@ -2071,7 +2071,7 @@ EMData*Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 	
 	//Free up resources (for an expensive opperation like this move data to and from device is a small % of time)
 	#ifdef EMAN2_USING_CUDA
-		to->copy_from_device();
+		to->rw_free();
 		this_img->ro_free();
 		// May move best_match to device?
 	#endif
@@ -2246,7 +2246,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 
 	//Free up resources (for an expensive opperation like this move data to and from device is a small % of time)
 	#ifdef EMAN2_USING_CUDA
-		to->copy_from_device();
+		to->rw_free();
 		this_img->ro_free();
 	#endif
 	
@@ -2437,7 +2437,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	
 	//Free up resources (for an expensive opperation like this move data to and from device is a small % of time)
 	#ifdef EMAN2_USING_CUDA
-		this_img->copy_from_device();
+		this_img->rw_free();
 		to->ro_free();
 	#endif
 	
@@ -2478,7 +2478,7 @@ vector<Dict> RT3DSymmetryAligner::xform_align_nbest(EMData * this_img, EMData * 
 	#ifdef EMAN2_USING_CUDA 
 	if(EMData::usecuda == 1) {
 		cout << "Using CUDA for 3D sym alignment" << endl;
-		if(!this_img->getcudarwdata()) this_img->copy_to_cuda();
+		if(!this_img->getcudarwdata()) this_img->copy_to_cudaro();
 		if(!to->getcudarwdata()) to->copy_to_cuda();
 	}
 	#endif
@@ -2516,7 +2516,6 @@ vector<Dict> RT3DSymmetryAligner::xform_align_nbest(EMData * this_img, EMData * 
 	//Free up resources (for an expensive opperation like this move data to and from device is a small % of time)
 	#ifdef EMAN2_USING_CUDA
 		this_img->ro_free();
-		this_img->rw_free();
 		to->rw_free();
 	#endif
 		
