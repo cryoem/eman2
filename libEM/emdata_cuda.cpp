@@ -29,7 +29,22 @@
  *
  * */
 
-
+/*
+ * This code is for a CUDA memory managment scheme. EMData rdata arrays are copied to CUDA DDRAM memory via
+ * copy_to_cuda() and to texture memory via copy_to_cudaro(). EMData is copied back using copy_from_device(), 
+ * and DDRAM data can be freed via rw_free() and ro_free(). When data is copied to CUDA DDRAM, memory is managed
+ * via a doubly linked list. When copy_tocuda*() is called there is first a check to ensure that there is enough
+ * memory available. If so , the copy is made and a call to addlist() is made, adding this EMData item to the
+ * doubly linked list. If there is not enough memory, then the function, freeup_devicemem(), is called and the
+ * last item on the linked list is removed. If there is still not enough room, then the next last item is removed, etc, etc
+ * If there is still no room after the last item is removed, then no copy is made. Items are removed from the list via:
+ * reomvefromlist(). Used in this maner the meory managment algorithm is a FILO(first in last out), HOWEVER, when CUDA is
+ * used in applications a call to elementaccessed() can be made, which moves the item to the top of the list. When this
+ * scheme is used, the memory management algorithm becomes, LRU(least recently used), which should give better results in 
+ * almost all cases. As a side note, to actutally use texture memory, a call to bindcudaarray?() should be made, when needed
+ * A corresponding call to unbindcudaarray?() needs to be made after texture memory is not needed. These operations do not actually
+ * move data around, just bind it to a Texture object, which are very limited resources!!!.
+*/
 
 #ifdef EMAN2_USING_CUDA
 
