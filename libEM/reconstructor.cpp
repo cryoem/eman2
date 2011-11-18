@@ -786,7 +786,11 @@ void FourierReconstructor::do_compare_slice_work(EMData* input_slice, const Tran
 	
 #ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
-		if(!input_slice->getcudarwdata()) input_slice->copy_to_cuda();
+		if(!input_slice->getcudarwdata()){
+			input_slice->copy_to_cuda();
+		else{
+			input_slice->elementaccessed();
+		}
 		if(!image->getcudarwdata()){
 			image->copy_to_cuda();
 			tmp_data->copy_to_cuda();
