@@ -1429,14 +1429,14 @@ of these occasional errors"""
 				nx,ny,nz = int(size[0]),int(size[1]),int(size[2])
 			else:
 				nx,ny,nz = rnx,rny,rnz
-			ret = EMData()
+
 			if target : ret = target
-			ret.set_size(nx,ny,nz)
+			else: ret = EMData()
 			
 			# metadata
 			k=set(r.keys())
-			k-=DBDict.fixedkeys
-			for i in k: 
+#			k-=DBDict.fixedkeys
+			for i in k:
 				ret.set_attr(i,r[i])
 			ret.set_attr("nx",nx)
 			ret.set_attr("ny",ny)
@@ -1446,7 +1446,7 @@ of these occasional errors"""
 				
 			# binary data
 			if not nodata:
-				
+				ret.set_size(nx,ny,nz)
 
 				if region != None: ret.to_zero() # this has to occur in situations where the clip region goes outside the image
 				if r.has_key("data_path"):

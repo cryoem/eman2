@@ -1117,9 +1117,18 @@ EMObject EMData::get_attr(const string & key) const
 		return median;
 	}
 	else if (key == "changecount") return EMObject(changecount);
-	else if (key == "nx") return nx;
-	else if (key == "ny") return ny;
-	else if (key == "nz") return nz;
+	else if (key == "nx") {
+		if(rdata) return nx;
+		else	return attr_dict["nx"];	//header only situation
+	}
+	else if (key == "ny") {
+		if(rdata) return ny;
+		else	return attr_dict["ny"]; //header only situation
+	}
+	else if (key == "nz") {
+		if(rdata)	return nz;
+		else	return attr_dict["nz"]; //header only situation
+	}
 
 	if(attr_dict.has_key(key)) {
 		return attr_dict[key];
@@ -1149,13 +1158,17 @@ Dict EMData::get_attr_dict() const
 {
 	update_stat();
 	
-   	Dict tmp=Dict(attr_dict);
-	tmp["nx"]=nx;
-	tmp["ny"]=ny;
-	tmp["nz"]=nz;
-	tmp["changecount"]=changecount;
-
-	return tmp;
+	if(rdata) {
+		Dict tmp=Dict(attr_dict);
+		tmp["nx"]=nx;
+		tmp["ny"]=ny;
+		tmp["nz"]=nz;
+		tmp["changecount"]=changecount;
+		return tmp;
+	}
+	else {	//header only situation
+		return attr_dict;
+	}
 }
 
 void EMData::set_attr_dict(const Dict & new_dict)
@@ -1208,27 +1221,26 @@ void EMData::del_attr_dict(const vector<string> & del_keys)
 
 void EMData::set_attr(const string & key, EMObject val)
 {
-	if( key == "nx" && nx != (int)val) { set_size((int)val,ny,nz); return; }
-	if( key == "ny" && ny != (int)val) { set_size(nx,(int)val,nz); return; }
-	if( key == "nz" && nz != (int)val) { set_size(nx,ny,(int)val); return; }
+	if(rdata) {	//skip following for header only image
+		if( key == "nx" && nx != (int)val) { set_size((int)val,ny,nz); return; }
+		if( key == "ny" && ny != (int)val) { set_size(nx,(int)val,nz); return; }
+		if( key == "nz" && nz != (int)val) { set_size(nx,ny,(int)val); return; }
 
-	/* Ignore 'read only' attribute. */
-	if(key == "sigma" ||
-		key == "sigma_nonzero" ||
-		key == "square_sum" ||
-		key == "maximum" ||
-		key == "minimum" ||
-		key == "mean" ||
-		key == "mean_nonzero" )
-	{
-		LOGWARN("Ignore setting read only attribute %s", key.c_str());
-		return;
+		/* Ignore 'read only' attribute. */
+		if(key == "sigma" ||
+			key == "sigma_nonzero" ||
+			key == "square_sum" ||
+			key == "maximum" ||
+			key == "minimum" ||
+			key == "mean" ||
+			key == "mean_nonzero" )
+		{
+			LOGWARN("Ignore setting read only attribute %s", key.c_str());
+			return;
+		}
 	}
 
 	attr_dict[key] = val;
-
-
-
 }
 
 void EMData::set_attr_python(const string & key, EMObject val)
