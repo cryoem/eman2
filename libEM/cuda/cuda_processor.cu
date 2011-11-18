@@ -6,27 +6,26 @@ typedef unsigned int uint;
 	#define M_PI 3.14159265358979323846f
 #endif	//WIN32
 
-__global__ void transform_kernel_3D(float *out,int nx,int ny,int nz,int num_threads, float3 mxx,float3 mxy, float3 mxz, float3 trans,int offset)
+__global__ void transform_kernel_3D(float *out,int nx,int ny,int nz, float3 mxx,float3 mxy, float3 mxz, float3 trans, int totaltc)
 {
-	const uint x=threadIdx.x;
-	const uint y=blockIdx.x;
+	const uint idx = threadIdx.x + (blockIdx.x + blockIdx.y*gridDim.x)*MAX_THREADS;
 
-	const uint idx = x + y*num_threads + offset;
+	if (idx < totaltc){
+		const uint nxy = nx*ny;
+		const float fx = idx % nx - nx/2.0;
+		float fz = idx / nxy;
+		const float fy = (idx - ((int)fz)*nxy)/nx - ny/2.0;
+		fz -= nz/2.0;
 
-	const uint nxy = nx*ny;
-	const float fx = idx % nx - nx/2.0;
-	float fz = idx / nxy;
-	const float fy = (idx - ((int)fz)*nxy)/nx - ny/2.0;
-	fz -= nz/2.0;
+		// The 0.5f offsets for x,y and z are required - Read section D.2 in Appendix D of the CUDA
+		// Programming Guide (version 2.0).
+		// Thankyou http://sites.google.com/site/cudaiap2009/cookbook-1
+		float tx=fx*mxx.x+fy*mxx.y+fz*mxx.z+nx/2.0+trans.x+0.5;
+		float ty=fx*mxy.x+fy*mxy.y+fz*mxy.z+ny/2.0+trans.y+0.5;
+		float tz=fx*mxz.x+fy*mxz.y+fz*mxz.z+nz/2.0+trans.z+0.5;
 
-	// The 0.5f offsets for x,y and z are required - Read section D.2 in Appendix D of the CUDA
-	// Programming Guide (version 2.0).
-	// Thankyou http://sites.google.com/site/cudaiap2009/cookbook-1
-	float tx=fx*mxx.x+fy*mxx.y+fz*mxx.z+nx/2.0+trans.x+0.5;
-	float ty=fx*mxy.x+fy*mxy.y+fz*mxy.z+ny/2.0+trans.y+0.5;
-	float tz=fx*mxz.x+fy*mxz.y+fz*mxz.z+nz/2.0+trans.z+0.5;
-
-	out[idx]=tex3D(texA, tx,ty,tz);
+		out[idx]=tex3D(texA, tx,ty,tz);
+	}
 }
 
 __global__ void transform_kernel_2D(float *out,int nx,int ny,int num_threads, float3 mxx,float3 mxy, float3 mxz, float3 trans,int offset)
@@ -67,7 +66,6 @@ float* emdata_transform_cuda(const float* const matrix,const int nx,const int ny
 	trans.z =matrix[11];
 
 	int num_calcs = ny*nx*nz;
-
 	int grid_y = num_calcs/(MAX_THREADS);
 	int res_y = num_calcs - grid_y*MAX_THREADS;
 
@@ -77,104 +75,93 @@ float* emdata_transform_cuda(const float* const matrix,const int nx,const int ny
 		return 0; //Calling function should know something went wrong
 	}
 
+	if ( nz > 1 ) {
+		int grid = int(ceil(sqrt(nx*ny*nz/MAX_THREADS)));
+		const dim3 blockSize(MAX_THREADS,1, 1);
+		const dim3 gridSize(grid,grid,1);
+		transform_kernel_3D<<<gridSize,blockSize>>>(data,nx,ny,nz,mxx,mxy,mxz,trans,nx*ny*nz);
+		cudaThreadSynchronize();
+		
+		return data;
+	}
+		
 	if (grid_y > 0) {
 		const dim3 blockSize(MAX_THREADS,1, 1);
 		const dim3 gridSize(grid_y,1,1);
-		if ( nz > 1 ) {
-			transform_kernel_3D<<<gridSize,blockSize>>>(data,nx,ny,nz,MAX_THREADS,mxx,mxy,mxz,trans,0);
-		}
-		else if ( ny > 1 ) {
-			transform_kernel_2D<<<gridSize,blockSize>>>(data,nx,ny,MAX_THREADS,mxx,mxy,mxz,trans,0);
-		} else throw;
+		transform_kernel_2D<<<gridSize,blockSize>>>(data,nx,ny,MAX_THREADS,mxx,mxy,mxz,trans,0);
 	}
 
 	if (res_y) {
 		const dim3 blockSize(res_y,1, 1);
 		const dim3 gridSize(1,1,1);
-		if ( nz > 1 ) {
-			transform_kernel_3D<<<gridSize,blockSize>>>(data,nx,ny,nz,MAX_THREADS,mxx,mxy,mxz,trans,grid_y*MAX_THREADS);
-		}
-		else if ( ny > 1 ) {
-			transform_kernel_2D<<<gridSize,blockSize>>>(data,nx,ny,MAX_THREADS,mxx,mxy,mxz,trans,grid_y*MAX_THREADS);
-		} else throw;
+		transform_kernel_2D<<<gridSize,blockSize>>>(data,nx,ny,MAX_THREADS,mxx,mxy,mxz,trans,grid_y*MAX_THREADS);
 	}
 	cudaThreadSynchronize();
 
 	return data;
 }
 
-__global__ void complexmult_conj_kernal(float *afft, const float *bfft, int num_threads, int offset)
+__global__ void complexmult_conj_kernal(float *afft, const float *bfft, int totaltc)
 {
 
-	const uint ridx = 2*(threadIdx.x + blockIdx.x*num_threads + offset);
-	const uint iidx = ridx + 1;
+	const uint ridx = 2*(threadIdx.x + (blockIdx.x + blockIdx.y*gridDim.x)*MAX_THREADS);
+	
 	//maybe use float2 to improve coalessing....
-
-	float afftr = afft[ridx];
-	float affti = afft[iidx];
-	float bfftr = bfft[ridx];
-	float bffti = bfft[iidx];
-
-	afft[ridx] = afftr*bfftr + affti*bffti;  //real portion
-	afft[iidx] = affti*bfftr - afftr*bffti; //imaginary portion
+	if (ridx < totaltc){
+		const uint iidx = ridx + 1;
+		float afftr = afft[ridx];
+		float affti = afft[iidx];
+		float bfftr = bfft[ridx];
+		float bffti = bfft[iidx];
+	
+		afft[ridx] = afftr*bfftr + affti*bffti;  //real portion
+		afft[iidx] = affti*bfftr - afftr*bffti; //imaginary portion
+	}
 
 }
 
 void calc_ccf_cuda(float* afft, const float* bfft, const int nx, const int ny, const int nz)
 {
 
-	int num_calcs = ny*(nx/2)*nz;
-	int grid_y = num_calcs/(MAX_THREADS);
-	int res_y = num_calcs - grid_y*MAX_THREADS;
+	int grid = int(ceil(sqrt((nx/2)*ny*nz/MAX_THREADS)));
+	
+	const dim3 blockSize(MAX_THREADS,1, 1);
+	const dim3 gridSize(grid,grid,1);
+	complexmult_conj_kernal<<<gridSize,blockSize>>>(afft, bfft, nx*ny*nz);
 
-	if (grid_y > 0) {
-		const dim3 blockSize(MAX_THREADS,1, 1);
-		const dim3 gridSize(grid_y,1,1);
-		complexmult_conj_kernal<<<gridSize,blockSize>>>(afft, bfft, MAX_THREADS, 0);
-	}
-	if (res_y) {
-		const dim3 blockSize(res_y,1, 1);
-		const dim3 gridSize(1,1,1);
-		complexmult_conj_kernal<<<gridSize,blockSize>>>(afft, bfft, MAX_THREADS, grid_y*MAX_THREADS);
-	}
 	cudaThreadSynchronize();
 
 }
 
-__global__ void complexmult_kernal(float *afft, const float *bfft, int num_threads, int offset)
+__global__ void complexmult_kernal(float *afft, const float *bfft, int totaltc)
 {
 
-	const uint ridx = 2*(threadIdx.x + blockIdx.x*num_threads + offset);
-	const uint iidx = ridx + 1;
-	//maybe use float2 to improve coalessing....
+	const uint ridx = 2*(threadIdx.x + (blockIdx.x + blockIdx.y*gridDim.x)*MAX_THREADS);
+	
+	if(ridx < totaltc){
+		const uint iidx = ridx + 1;
+		//maybe use float2 to improve coalessing....
 
-	float afftr = afft[ridx];
-	float affti = afft[iidx];
-	float bfftr = bfft[ridx];
-	float bffti = bfft[iidx];
+		float afftr = afft[ridx];
+		float affti = afft[iidx];
+		float bfftr = bfft[ridx];
+		float bffti = bfft[iidx];
 
-	afft[ridx] = afftr*bfftr - affti*bffti;  //real portion
-	afft[iidx] = affti*bfftr + afftr*bffti; //imaginary portion
+		afft[ridx] = afftr*bfftr - affti*bffti;  //real portion
+		afft[iidx] = affti*bfftr + afftr*bffti; //imaginary portion
+	}
 
 }
 
 void calc_conv_cuda(float* afft, const float* bfft, const int nx, const int ny, const int nz)
 {
 
-	int num_calcs = ny*(nx/2)*nz;
-	int grid_y = num_calcs/(MAX_THREADS);
-	int res_y = num_calcs - grid_y*MAX_THREADS;
+	int grid = int(ceil(sqrt((nx/2)*ny*nz/MAX_THREADS)));
 
-	if (grid_y > 0) {
-		const dim3 blockSize(MAX_THREADS,1, 1);
-		const dim3 gridSize(grid_y,1,1);
-		complexmult_kernal<<<gridSize,blockSize>>>(afft, bfft, MAX_THREADS, 0);
-	}
-	if (res_y) {
-		const dim3 blockSize(res_y,1, 1);
-		const dim3 gridSize(1,1,1);
-		complexmult_kernal<<<gridSize,blockSize>>>(afft, bfft, MAX_THREADS, grid_y*MAX_THREADS);
-	}
+	const dim3 blockSize(MAX_THREADS,1, 1);
+	const dim3 gridSize(grid,grid,1);
+	complexmult_kernal<<<gridSize,blockSize>>>(afft, bfft, nx*ny*nz);
+
 	cudaThreadSynchronize();
 
 }
@@ -509,34 +496,23 @@ CudaPeakInfoFloat* calc_max_location_wrap_intp_cuda(const float* in, const int n
 	}
 }
 
-__global__ void mult_kernel(float* data, const float scale, const int num_threads)
+__global__ void mult_kernel(float* data, const float scale, const int realtc)
 {
 
-	const uint x=threadIdx.x;
-	const uint y=blockIdx.x;
-
-	data[x+y*num_threads] *= scale;
+	const uint index = threadIdx.x + (blockIdx.x + gridDim.x*blockIdx.y)*MAX_THREADS;
+	
+	if (index < realtc){
+		data[index] *= scale;
+	}
 }
 
 void emdata_processor_mult(float* data, const float& mult, const int nx, const int ny, const int nz) {
 
-	int num_calcs = nx*ny*nz;
-
-	int grid_y = num_calcs/MAX_THREADS;
-	int res_y = num_calcs - (grid_y*MAX_THREADS);
-
-	if ( grid_y > 0 ) {
-		const dim3 blockSize(MAX_THREADS,1, 1);
-		const dim3 gridSize(grid_y,1,1);
-		mult_kernel<<<gridSize,blockSize>>>(data,mult,MAX_THREADS);
-	}
-
-	if ( res_y > 0 ) {
-		const dim3 blockSize(res_y,1, 1);
-		const dim3 gridSize(1,1,1);
-		mult_kernel<<<gridSize,blockSize>>>(data+grid_y*MAX_THREADS,mult,0);
-	}
-
+	int grid = int(ceil(sqrt(nx*ny*nz/MAX_THREADS)));
+	const dim3 blockSize(MAX_THREADS,1, 1);
+	const dim3 gridSize(grid,grid,1);
+	mult_kernel<<<gridSize,blockSize>>>(data,mult,nx*ny*nz);
+	
 	cudaThreadSynchronize();
 }
 
@@ -1060,691 +1036,3 @@ void emdata_rotate_180(float* data, const int nx, const int ny) {
 
 	cudaThreadSynchronize();
 }
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//NOTHING BUT RUBBISH BELOW HERE
-
-/*
-__global__ void add_kernel(float *data,const float add,const int num_threads)
-{
-
-	const uint x=threadIdx.x;
-	const uint y=blockIdx.x;
-
-	data[x+y*num_threads] += add;
-}
-
-void emdata_processor_add( EMDataForCuda* cuda_data, const float& add) {
-
-
-	int num_calcs = cuda_data->nx*cuda_data->ny*cuda_data->nz;
-
-	int grid_y = num_calcs/MAX_THREADS;
-	int res_y = num_calcs - (grid_y*MAX_THREADS);
-
-	if ( grid_y > 0 ) {
-		const dim3 blockSize(MAX_THREADS,1, 1);
-		const dim3 gridSize(grid_y,1,1);
-		add_kernel<<<gridSize,blockSize>>>(cuda_data->data,add,MAX_THREADS);
-	}
-
-	if ( res_y > 0 ) {
-		const dim3 blockSize(res_y,1, 1);
-		const dim3 gridSize(1,1,1);
-		add_kernel<<<gridSize,blockSize>>>(cuda_data->data+grid_y*MAX_THREADS,add,0);
-	}
-
-	cudaThreadSynchronize();
-}
-
-__global__ void assignment_kernel(float *data,const float value,const int num_threads)
-{
-
-	const uint x=threadIdx.x;
-	const uint y=blockIdx.x;
-
-	data[x+y*num_threads] = value;
-}
-
-void emdata_processor_to_value( EMDataForCuda* cuda_data, const float& value) {
-
-	int num_calcs = cuda_data->nx*cuda_data->ny*cuda_data->nz;
-
-	int grid_y = num_calcs/MAX_THREADS;
-	int res_y = num_calcs - (grid_y*MAX_THREADS);
-
-	if ( grid_y > 0 ) {
-		const dim3 blockSize(MAX_THREADS,1, 1);
-		const dim3 gridSize(grid_y,1,1);
-		assignment_kernel<<<gridSize,blockSize>>>(cuda_data->data,value,MAX_THREADS);
-	}
-
-	if ( res_y > 0 ) {
-		const dim3 blockSize(res_y,1, 1);
-		const dim3 gridSize(1,1,1);
-		assignment_kernel<<<gridSize,blockSize>>>(cuda_data->data+grid_y*MAX_THREADS,value,0);
-	}
-
-	cudaThreadSynchronize();
-}
-
-__global__ void correlation_kernel(float *ldata, float* rdata,const int num_threads)
-{
-
-	const uint x=threadIdx.x;
-	const uint y=blockIdx.x;
-
-	__shared__ float shared_rdata[MAX_THREADS];
-	__shared__ float shared_ldata[MAX_THREADS];
-
-	shared_ldata[x] = ldata[x+y*num_threads];
-// 	__syncthreads(); // Not sure if this is necessary
-	shared_rdata[x] = rdata[x+y*num_threads];
-	__syncthreads();
-
-
-	if (x % 2 == 0) {
-		float v1 = shared_ldata[x];
-		float v2 = shared_ldata[x+1];
-
-		float u1 = shared_rdata[x];
-		float u2 = shared_rdata[x+1];
-
-		shared_ldata[x] = v1*u1 + v2*u2;
-		shared_ldata[x+1] = v2*u1 - v1*u2;
-	}
-	__syncthreads();
-
-	ldata[x+y*num_threads] = shared_ldata[x];
-}
-
-__global__ void auto_correlation_kernel(float *ldata, float* rdata,const int num_threads)
-{
-
-	const uint x=threadIdx.x;
-	const uint y=blockIdx.x;
-
-	__shared__ float shared_rdata[MAX_THREADS];
-	__shared__ float shared_ldata[MAX_THREADS];
-
-	shared_ldata[x] = ldata[x+y*num_threads];
-	shared_rdata[x] = rdata[x+y*num_threads];
-
-	__syncthreads();
-
-
-	if (x % 2 == 0) {
-		float v1 = shared_ldata[x];
-		float v2 = shared_ldata[x+1];
-
-		float u1 = shared_rdata[x];
-		float u2 = shared_rdata[x+1];
-
-		shared_ldata[x] = v1*u1 + v2*u2;
-		shared_ldata[x+1] = 0;
-	}
-	__syncthreads();
-
-	ldata[x+y*num_threads] = shared_ldata[x];
-// 	const uint x=threadIdx.x;
-// 	const uint y=blockIdx.x;
-//
-// 	const uint idx = 2*x + y*num_threads;
-// 	const uint idxp1 = idx+1;
-//
-// 	const float v1 = ldata[idx];
-// 	const float v2 = ldata[idxp1];
-// 	const float u1 = rdata[idx];
-// 	const float u2 = rdata[idxp1];
-//
-// 	ldata[idx] = v1*u1 + v2*u2;
-// 	ldata[idxp1] = 0;
-}
-
-
-__global__ void correlation_kernel_texture_2D(float *ldata,const int num_threads,const int xsize,const int offset)
-{
-	const uint x=threadIdx.x;
-	const uint y=blockIdx.x;
-
-	__shared__ float shared_ldata[MAX_THREADS];
-
-	shared_ldata[x] = ldata[x+y*num_threads+offset];
-
-	__syncthreads();
-
-
-	if (x % 2 == 0) {
-		float v1 = shared_ldata[x];
-		float v2 = shared_ldata[x+1];
-
-		const uint idx = x + y*num_threads+offset;
-// 		const uint idxp1 = idx+1;
-
-		const uint tx = idx % xsize;
-		const uint ty = idx / xsize;
-
-		const float u1 = tex2D(tex2d,tx,ty);
-		const float u2 =  tex2D(tex2d,tx+1,ty);
-
-		shared_ldata[x] = v1*u1 + v2*u2;
-		shared_ldata[x+1] = v2*u1 - v1*u2;
-	}
-	__syncthreads();
-
-	ldata[x+y*num_threads+offset] = shared_ldata[x];
-}
-
-
-__global__ void correlation_kernel_texture_3D(float *ldata,const int num_threads, const int xsize, const int xysize, const int offset)
-{
-
-	const uint x=threadIdx.x;
-	const uint y=blockIdx.x;
-
-	__shared__ float shared_ldata[MAX_THREADS];
-
-	shared_ldata[x] = ldata[x+y*num_threads+offset];
-
-	__syncthreads();
-
-
-	if (x % 2 == 0) {
-		float v1 = shared_ldata[x];
-		float v2 = shared_ldata[x+1];
-
-		const uint idx = x + y*num_threads+offset;
-// 		const uint idxp1 = idx+1;
-
-		const uint tx = idx % xsize;
-		const uint tz = idx / xysize;
-		const uint ty = (idx - tz*xysize)/xsize;
-
-		const float u1 = tex3D(tex,tx,ty,tz);
-		const float u2 = tex3D(tex,tx+1,ty,tz);
-
-		shared_ldata[x] = v1*u1 + v2*u2;
-		shared_ldata[x+1] = v2*u1 - v1*u2;
-	}
-	__syncthreads();
-
-	ldata[x+y*num_threads+offset] = shared_ldata[x];
-
-// 	const uint idx = 2*x + y*num_threads + offset;
-// 	const uint idxp1 = idx+1;
-//
-// 	const uint tx = idx % xsize;
-// 	const uint tz = idx / xysize;
-// 	const uint ty = (idx - tz*xysize)/xsize;
-//
-// 	const float v1 = ldata[idx];
-// 	const float v2 = ldata[idxp1];
-// 	const float u1 = tex3D(tex,tx,ty,tz);
-// 	const float u2 = tex3D(tex,tx+1,ty,tz);
-//
-// 	ldata[idx] = v1*u1 + v2*u2;
-// 	ldata[idxp1] = v2*u1 - v1*u2;
-}
-
-void emdata_processor_correlation_texture( const EMDataForCuda* cuda_data, const int center ) {
-	int num_calcs = cuda_data->nx*cuda_data->ny*cuda_data->nz;
-
-	int grid_y = num_calcs/(MAX_THREADS);
-	int res_y = num_calcs - grid_y*MAX_THREADS;
-
-// 	printf("Grid %d, Res %d, dims %d %d %d\n",grid_y,res_y,cuda_data->nx,cuda_data->ny,cuda_data->nz);
-
-	if ( grid_y > 0 ) {
-		const dim3 blockSize(MAX_THREADS,1, 1);
-		const dim3 gridSize(grid_y,1,1);
-		if (cuda_data->nz == 1) {
-			correlation_kernel_texture_2D<<<gridSize,blockSize>>>(cuda_data->data,MAX_THREADS,cuda_data->nx,0);
-		} else {
-			correlation_kernel_texture_3D<<<gridSize,blockSize>>>(cuda_data->data,MAX_THREADS,cuda_data->nx,cuda_data->nx*cuda_data->ny,0);
-		}
-	}
-// 	res_y = 0;
-	if ( res_y > 0 ) {
-		const dim3 blockSize(res_y,1,1);
-		const dim3 gridSize(1,1,1);
-		int inc = grid_y*MAX_THREADS;
-// 		printf("Res %d, inc %d\n",res_y,inc);
-		if (cuda_data->nz == 1) {
-			correlation_kernel_texture_2D<<<gridSize,blockSize>>>(cuda_data->data,0,cuda_data->nx,inc);
-		} else {
-			correlation_kernel_texture_3D<<<gridSize,blockSize>>>(cuda_data->data,0,cuda_data->nx,cuda_data->nx*cuda_data->ny,inc);
-		}
-	}
-
-	cudaThreadSynchronize();
-	if (center) {
-		emdata_phaseorigin_to_center_fourier(cuda_data);
-	}
-}
-
-
-void emdata_processor_correlation( const EMDataForCuda* left, const EMDataForCuda* right, const int center) {
-
-	int num_calcs = left->nx*left->ny*left->nz;
-
-	int grid_y = num_calcs/(MAX_THREADS);
-	int res_y = num_calcs - grid_y*MAX_THREADS;
-
-	//printf("Grid y %d, res %d, dims %d %d %d\n", grid_y,res_y,left->nx,left->ny,left->nz);
-
-	if ( grid_y > 0 ) {
-		const dim3 blockSize(MAX_THREADS,1, 1);
-		const dim3 gridSize(grid_y,1,1);
-		if (left->data != right->data) {
-			correlation_kernel<<<gridSize,blockSize>>>(left->data,right->data,MAX_THREADS);
-		} else {
-			auto_correlation_kernel<<<gridSize,blockSize>>>(left->data,right->data,MAX_THREADS);
-		}
-	}
-
-	if ( res_y > 0 ) {
-		const dim3 blockSize(res_y,1, 1);
-		const dim3 gridSize(1,1,1);
-		int inc = grid_y*MAX_THREADS;
-		if (left->data != right->data) {
-			correlation_kernel<<<gridSize,blockSize>>>(left->data+inc,right->data+inc,0);
-		} else {
-			auto_correlation_kernel<<<gridSize,blockSize>>>(left->data+inc,right->data+inc,0);
-		}
-	}
-	cudaThreadSynchronize();
-
-	if (center) {
-		emdata_phaseorigin_to_center_fourier(left);
-	}
-}
-
-void swap_central_slices_180(EMDataForCuda* cuda_data)
-{
-	int nx = cuda_data->nx;
-	int ny = cuda_data->ny;
-	int nz = cuda_data->nz;
-
-	int xodd = (nx % 2) == 1;
-	int yodd = (ny % 2) == 1;
-	//int zodd = (nz % 2) == 1;
-
-	//int nxy = nx * ny;
-	float *data = cuda_data->data;
-
-	if ( ny == 1 && nz == 1 ){
-		throw;
-	}
-	else if ( nz == 1 ) {
-		if ( yodd ) {
-			// Iterate along middle row, swapping values where appropriate
-			int num_calcs = nx/2;
-
-			int grid_y = num_calcs/(MAX_THREADS);
-			int res_y = num_calcs - grid_y*MAX_THREADS;
-
-			if (grid_y > 0) {
-				const dim3 blockSize(MAX_THREADS,1, 1);
-				const dim3 gridSize(grid_y,1,1);
-				swap_middle_row<<<gridSize,blockSize>>>(data,MAX_THREADS,nx,ny,xodd,yodd,0);
-			}
-
-			if (res_y) {
-				const dim3 blockSize(res_y,1, 1);
-				const dim3 gridSize(1,1,1);
-				swap_middle_row<<<gridSize,blockSize>>>(data,MAX_THREADS,nx,ny,xodd,yodd,grid_y*MAX_THREADS);
-			}
-		}
-
-		if ( xodd )	{
-			// Iterate along the central column, swapping values where appropriate
-			int num_calcs = ny/2;
-
-			int grid_y = num_calcs/(MAX_THREADS);
-			int res_y = num_calcs - grid_y*MAX_THREADS;
-
-			if (grid_y > 0) {
-				const dim3 blockSize(MAX_THREADS,1, 1);
-				const dim3 gridSize(grid_y,1,1);
-				swap_middle_column<<<gridSize,blockSize>>>(data,MAX_THREADS,nx,ny,xodd,yodd,0);
-			}
-
-			if (res_y) {
-				const dim3 blockSize(res_y,1, 1);
-				const dim3 gridSize(1,1,1);
-				swap_middle_column<<<gridSize,blockSize>>>(data,MAX_THREADS,nx,ny,xodd,yodd,grid_y*MAX_THREADS);
-			}
-
-		}
-	}
-	else // nx && ny && nz are greater than 1
-	{
-		throw;
-	}
-}
-
-void swap_corners_180(EMDataForCuda* cuda_data)
-{
-	int nx = cuda_data->nx;
-	int ny = cuda_data->ny;
-	int nz = cuda_data->nz;
-
-	int xodd = (nx % 2) == 1;
-	int yodd = (ny % 2) == 1;
-	//int zodd = (nz % 2) == 1;
-
-	//int nxy = nx * ny;
-
-	float *data = cuda_data->data;
-
-	if ( ny == 1 && nz == 1 ){
-		throw;
-	}
-	else if ( nz == 1 ) {
-		int num_calcs = ny/2*nx/2;
-
-		int grid_y = num_calcs/(MAX_THREADS);
-		int res_y = num_calcs - grid_y*MAX_THREADS;
-
-		//printf("Grid %d, res %d, n %d\n",grid_y,res_y,num_calcs );
-		// Swap bottom left and top right
-		if (grid_y > 0) {
-			const dim3 blockSize(MAX_THREADS,1, 1);
-			const dim3 gridSize(grid_y,1,1);
-			swap_bot_left_top_right<<<gridSize,blockSize>>>(data,MAX_THREADS,nx,ny,xodd,yodd,0);
-		}
-
-		if (res_y) {
-			const dim3 blockSize(res_y,1, 1);
-			const dim3 gridSize(1,1,1);
-			swap_bot_left_top_right<<<gridSize,blockSize>>>(data,MAX_THREADS,nx,ny,xodd,yodd,grid_y*MAX_THREADS);
-		}
-
-		num_calcs = (ny-ny/2+yodd)*nx/2;
-		//printf("Grid %d, res %d, n %d\n",grid_y,res_y,num_calcs );
-
-		grid_y = num_calcs/(MAX_THREADS);
-		res_y = num_calcs - grid_y*MAX_THREADS;
-		// Swap the top left and bottom right corners
-		if (grid_y > 0) {
-			const dim3 blockSize(MAX_THREADS,1, 1);
-			const dim3 gridSize(grid_y,1,1);
-			swap_top_left_bot_right<<<gridSize,blockSize>>>(data,MAX_THREADS,nx,ny,xodd,yodd,0);
-		}
-
-		if (res_y) {
-			const dim3 blockSize(res_y,1, 1);
-			const dim3 gridSize(1,1,1);
-			swap_top_left_bot_right<<<gridSize,blockSize>>>(data,MAX_THREADS,nx,ny,xodd,yodd,grid_y*MAX_THREADS);
-
-		}
-	}
-	else // nx && ny && nz are greater than 1
-	{
-		throw;
-	}
-}
-
-__global__ void ri2inten_kernel(float *data,const int num_threads)
-{
-
-	const uint x=threadIdx.x;
-	const uint y=blockIdx.x;
-
-	__shared__ float shared_data[MAX_THREADS];
-
-	shared_data[x] = data[x+y*num_threads];
-
-	__syncthreads();
-
-	if (x % 2 == 0) {
-		float a = shared_data[x];
-		float b = shared_data[x+1];
-		shared_data[x]= a*a + b*b;
-		shared_data[x+1] = 0;
-	}
-
-	__syncthreads();
-
-	data[x+y*num_threads] = shared_data[x];
-}
-
-void emdata_ri2inten( EMDataForCuda* cuda_data) {
-
-	int num_calcs = cuda_data->nx*cuda_data->ny*cuda_data->nz;
-
-	int grid_y = num_calcs/MAX_THREADS;
-	int res_y = num_calcs - (grid_y*MAX_THREADS);
-
-	if ( grid_y > 0 ) {
-		const dim3 blockSize(MAX_THREADS,1, 1);
-		const dim3 gridSize(grid_y,1,1);
-		ri2inten_kernel<<<gridSize,blockSize>>>(cuda_data->data,MAX_THREADS);
-	}
-
-	if ( res_y > 0 ) {
-		const dim3 blockSize(res_y,1, 1);
-		const dim3 gridSize(1,1,1);
-		ri2inten_kernel<<<gridSize,blockSize>>>(cuda_data->data+grid_y*MAX_THREADS,0);
-	}
-
-	cudaThreadSynchronize();
-}
-
-
-
-__global__ void ap2ri_kernel(float *data,const int num_threads)
-{
-
-	const uint x=threadIdx.x;
-	const uint y=blockIdx.x;
-
-	__shared__ float shared_data[MAX_THREADS];
-
-	shared_data[x] = data[x+y*num_threads];
-
-	__syncthreads();
-
-	if (x % 2 == 0) {
-		float a = shared_data[x];
-		float b = shared_data[x+1];
-
-		shared_data[x+1]= a*sin(b);
-		shared_data[x] =a*cos(b);
-	}
-
-	__syncthreads();
-
-	data[x+y*num_threads] = shared_data[x];
-}
-
-
-void emdata_ap2ri( EMDataForCuda* cuda_data) {
-
-	int num_calcs = cuda_data->nx*cuda_data->ny*cuda_data->nz;
-
-	int grid_y = num_calcs/MAX_THREADS;
-	int res_y = num_calcs - (grid_y*MAX_THREADS);
-
-	if ( grid_y > 0 ) {
-		const dim3 blockSize(MAX_THREADS,1, 1);
-		const dim3 gridSize(grid_y,1,1);
-		ap2ri_kernel<<<gridSize,blockSize>>>(cuda_data->data,MAX_THREADS);
-	}
-
-	if ( res_y > 0 ) {
-		const dim3 blockSize(res_y,1, 1);
-		const dim3 gridSize(1,1,1);
-		ap2ri_kernel<<<gridSize,blockSize>>>(cuda_data->data+grid_y*MAX_THREADS,0);
-	}
-
-	cudaThreadSynchronize();
-}
-
-
-__global__ void ri2ap_kernel(float *data,const int num_threads)
-{
-
-	const uint x=threadIdx.x;
-	const uint y=blockIdx.x;
-
-	__shared__ float shared_data[MAX_THREADS];
-
-	shared_data[x] = data[x+y*num_threads];
-
-	__syncthreads();
-
-	if (x % 2 == 0) {
-		float a = shared_data[x];
-		float b = shared_data[x+1];
-
-		float amp = hypotf(a,b);
-		float phase = atan2(b, a);
-		shared_data[x] = amp;
-		shared_data[x+1] = phase;
-	}
-
-	__syncthreads();
-
-	data[x+y*num_threads] = shared_data[x];
-}
-
-void emdata_ri2ap( EMDataForCuda* cuda_data) {
-
-	int num_calcs = cuda_data->nx*cuda_data->ny*cuda_data->nz;
-
-	int grid_y = num_calcs/MAX_THREADS;
-	int res_y = num_calcs - (grid_y*MAX_THREADS);
-
-	if ( grid_y > 0 ) {
-		const dim3 blockSize(MAX_THREADS,1, 1);
-		const dim3 gridSize(grid_y,1,1);
-		ri2ap_kernel<<<gridSize,blockSize>>>(cuda_data->data,MAX_THREADS);
-	}
-
-	if ( res_y > 0 ) {
-		const dim3 blockSize(res_y,1, 1);
-		const dim3 gridSize(1,1,1);
-		ri2ap_kernel<<<gridSize,blockSize>>>(cuda_data->data+grid_y*MAX_THREADS,0);
-	}
-
-	cudaThreadSynchronize();
-}
-
-__global__ void binarize_fourier_kernel(float *data,const int num_threads, const float threshold)
-{
-	const uint x=threadIdx.x;
-	const uint y=blockIdx.x;
-
-	__shared__ float shared_data[MAX_THREADS];
-
-	shared_data[x] = data[x+y*num_threads];
-
-	__syncthreads();
-
-	if (x % 2 == 0) {
-		float a = shared_data[x];
-		shared_data[x+1] = 0;
-		if ( a >= threshold ) {
-			shared_data[x] = 1;
-		} else {
-			shared_data[x] = 0;
-		}
-	}
-
-	__syncthreads();
-
-	data[x+y*num_threads] = shared_data[x];
-}
-
-
-void binarize_fourier_amp_processor(EMDataForCuda* cuda_data,const float& threshold)
-{
-	int num_calcs = cuda_data->nx*cuda_data->ny*cuda_data->nz;
-
-	int grid_y = num_calcs/MAX_THREADS;
-	int res_y = num_calcs - (grid_y*MAX_THREADS);
-
-	if ( grid_y > 0 ) {
-		const dim3 blockSize(MAX_THREADS,1, 1);
-		const dim3 gridSize(grid_y,1,1);
-		binarize_fourier_kernel<<<gridSize,blockSize>>>(cuda_data->data,MAX_THREADS,threshold);
-	}
-
-	if ( res_y > 0 ) {
-		const dim3 blockSize(res_y,1, 1);
-		const dim3 gridSize(1,1,1);
-		binarize_fourier_kernel<<<gridSize,blockSize>>>(cuda_data->data+grid_y*MAX_THREADS,MAX_THREADS,threshold);
-	}
-
-	cudaThreadSynchronize();
-}
-
-__global__ void phaseorigin_to_center_fourier(float* data, const int num_threads, const int nx, const int ny, const int nz, const int offset)
-{
-	const uint x=threadIdx.x;
-	const uint y=blockIdx.x;
-	// This optimization didn't seem to make much difference - the advantage was that shared memory was being used, essentially as a way force colesced memory accesses
-//
-// 	__shared__ float shared_data[MAX_THREADS];
-//
-// 	uint idx = x+y*num_threads+offset;
-// 	shared_data[x] = data[idx];
-// 	__syncthreads();
-//
-// 	const uint nxy = nx*ny;
-// 	if ( idx % 4 == 0 ) {
-// 		uint zz = idx/(nxy);
-// 		uint yy = (idx-zz*nxy)/nx;
-// 		uint xoff = ((yy+zz)%2==0?2:0);
-// 		shared_data[x+xoff] *= -1;
-// 		shared_data[x+xoff+1] *= -1;
-//
-// 	}
-// 	__syncthreads();
-// 	data[idx] = shared_data[x];
-
-	uint idx = x+y*num_threads+offset;
-	uint nxon4 = nx/4;
-	const uint nxy = nxon4*ny;
-	uint zz = idx/(nxy);
-	uint yy = (idx-zz*nxy)/(nxon4);
-
-	const uint xx = 4*(idx%(nxon4));
-
-	const uint rnxy = nx*ny;
-	const uint xoff = ((yy+zz)%2==0?2:0);
-	const uint didx = zz*rnxy+yy*nx+xx+xoff;
-	data[didx] *= -1;
-	data[didx+1] *= -1;
-}
-
-void emdata_phaseorigin_to_center_fourier(float* data, const int nx, const int ny, const int nz) {
-
-	if ( nx%2==0 && (ny%2==0 || ny==1 ) && (nz%2==0 || nz==1 ) ) {
-
-		int num_calcs = nz*ny*(nx/4);
-
-		int grid_y = num_calcs/(MAX_THREADS);
-		int res_y = num_calcs - grid_y*MAX_THREADS;
-
-		//int odd_offset=0;
-		//if (((ny/2)%2)+((nz/2)%2)==1) odd_offset=1;
-		if (grid_y > 0) {
-			const dim3 blockSize(MAX_THREADS,1, 1);
-			const dim3 gridSize(grid_y,1,1);
-			phaseorigin_to_center_fourier<<<gridSize,blockSize>>>(data,MAX_THREADS,nx,ny,nz,0);
-		}
-
-		if (res_y > 0) {
-			const dim3 blockSize(res_y,1, 1);
-			const dim3 gridSize(1,1,1);
-			phaseorigin_to_center_fourier<<<gridSize,blockSize>>>(data,MAX_THREADS,nx,ny,nz,grid_y*MAX_THREADS);
-		}
-		cudaThreadSynchronize();
-	} else {
-		throw;
-	}
-}
-
-*/

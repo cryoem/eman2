@@ -221,7 +221,6 @@ bool EMData::copy_rw_to_ro() const
 	copy_to_array(cudarwdata, cudarodata, nx, ny, nz, cudaMemcpyDeviceToDevice);
 	roneedsupdate = 0; //just copied, so no longer need an update
 	elementaccessed(); //To move the image to the top of the stack, prevents deletion before useage(If the image is at the stack bottom, and then anoth image is moved on....)
-	
 	return true;
 	
 }
@@ -319,7 +318,8 @@ bool EMData::freeup_devicemem(const int& num_bytes) const
 
 void EMData::addtolist() const
 {
-	if(firstinlist == 0){ //if this is the first item in the list (first object in list)
+	//Adds item to top of list
+	if(firstinlist == 0){ //if this is the first item in the list (first object in list), then make a new list
 		firstinlist = this;
 		lastinlist = this;
 		nextlistitem = 0;
@@ -336,11 +336,9 @@ void EMData::addtolist() const
 
 void EMData::elementaccessed() const
 {
+	if(firstinlist == lastinlist){return;}
         removefromlist();
-	//now insert at top (there is no case where we call this function, but there is nothing in the list)
-	firstinlist->nextlistitem = this;
-	prevlistitem = firstinlist;
-	firstinlist = this;
+	addtolist();
 }
 
 void EMData::removefromlist() const
