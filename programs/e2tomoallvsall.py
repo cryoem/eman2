@@ -124,7 +124,7 @@ def main():
 	if options.path and options.path[:4].lower()!="bdb:": 
 		options.path="bdb:"+options.path
 	if not options.path: 
-		options.path="bdb:"+numbered_path("spt",True)
+		options.path="bdb:"+numbered_path("sptavsa",True)
 
 
 	hdr = EMData(options.input,0,True)
@@ -241,7 +241,7 @@ def main():
 			print "%d tasks queued in iteration %d"%(len(tids),k) 
 		
 		results = get_results(etc,tids,options.verbose)				#Wait for alignments to finish and get results
-		results = results + surviving_results					#Your total results to process/analyze includes results (comparisons) from previous rounds that were not used
+		results = results + surviving_results					#The total results to process/analyze includes results (comparisons) from previous rounds that were not used
 		results = sorted(results, key=itemgetter('score'))			#Sort/rank the results by score
 		
 		if options.verbose > 0:
@@ -265,34 +265,37 @@ def main():
 													
 				avgr=Averagers.get(options.averager[0], options.averager[1])			#Call the averager
 				
-				ptcl1=EMData()
+				#ptcl1=EMData()
 				
 				if int(results[z]['ptcl1'].split('_')[0].replace('round','')) == k:
-					#print "\nThe first particle to average was in newptcls list\n"
-					ptcl1 = newptcls[results[z]['ptcl1']]				
+					print "\nThe first particle to average was in newptcls list, with this ID %s\n" % results[z]['ptcl1']
+					#ptcl1 = newptcls[results[z]['ptcl1']]				
 				
 				elif int(results[z]['ptcl1'].split('_')[0].replace('round','')) < k:
-					#print "\nThe first particle to average was in oldptcls list\n"
-					ptcl1 = oldptcls[results[z]['ptcl1']]				
+					print "\nThe first particle to average was in oldptcls list, with this ID %s\n" % results[z]['ptcl1']
+					#ptcl1 = oldptcls[results[z]['ptcl1']]				
 				
 				else:
 					print "\@@@@\@@@@Warning!! Particle 1 was NOT found and empty garbage is being added to the average!\n\n"
 					sys.exit()
+				
+				print "Which MATCHES the particle you'd fetch from the allptclsMatrix, see"
+				
+				ptcl1 = allptclsMatrix[k][results[z]['ptcl1']][0]
 							
 				ptcl1 = ptcl1 * ptcl1['spt_multiplicity']					#Take the multiplicity of ptcl1 into account
 				
 				indx_trans_pairs = {}
 
 				
-				
 				print "The indexes in particle 1 are", ptcl1['spt_ptcl_indxs']
 				
 				row = allptclsMatrix[k]
 				ptclinfo = row[results[z]['ptcl1']]
 				print "The ptcl info of which it is part is", ptclinfo
-					
 				ptcl_indxs_transforms = ptclinfo[-1]
-				print "All the particle indexes in this particle infor are", ptcl_indxs_transforms
+				
+				print "All the particle indexes in this particle info are", ptcl_indxs_transforms
 				
 				for p in ptcl1['spt_ptcl_indxs']:						#All the particles in ptcl2's history need to undergo the new transformation before averaging (multiplied by any old transforms, all in one step, to avoid multiple interpolations))
 					print "I'm passing on this transform index and its transform to the average", p	
@@ -309,22 +312,24 @@ def main():
 				
 				
 				
-				ptcl2=EMData()
+				#ptcl2=EMData()
 				
 				if int(results[z]['ptcl2'].split('_')[0].replace('round','')) == k:
-					#print "\nThe second particle to average was in newptcls list\n"
-					ptcl2 = newptcls[results[z]['ptcl2']]				
+					print "\nThe second particle to average was in newptcls list, with this ID %s\n" % results[z]['ptcl2']
+					#ptcl2 = newptcls[results[z]['ptcl2']]				
 
 				elif int(results[z]['ptcl2'].split('_')[0].replace('round','')) < k:
-					#print "\nThe second particle to average was in oldptcls list\n"
-					ptcl2 = oldptcls[results[z]['ptcl2']]				
+					print "\nThe second particle to average was in oldptcls list, with this ID %s\n" % results[z]['ptcl2']
+					#ptcl2 = oldptcls[results[z]['ptcl2']]				
 
 				else:
 					print "\@@@@\@@@@Warning!! Particle 2 was NOT found and empty garbage is being added to the average!"
 					sys.exit()
 				
-				ptcl2 = ptcl2 * ptcl2['spt_multiplicity']					#Take the multiplicity of ptcl1 into account				
+				ptcl2 = allptclsMatrix[k][results[z]['ptcl2']][0]
 				
+				#ptcl2 = ptcl2 * ptcl2['spt_multiplicity']						
+		
 				resultingt = results[z]["xform.align3d"]
 				
 				totalt = Transform()
@@ -338,22 +343,37 @@ def main():
 				ptcl_indxs_transforms = ptclinfo[-1]
 				print "All the particle indexes in this particle infor are", ptcl_indxs_transforms
 				
-				for p in ptcl2['spt_ptcl_indxs']:						#All the particles in ptcl2's history need to undergo the new transformation before averaging (multiplied by any old transforms, all in one step, to avoid multiple interpolations))
-					print "I'm fixing the transform for this index", p	
+				
+				ptcl2avgr = avgr=Averagers.get(options.averager[0], options.averager[1])		#You need to recompute ptcl2 "fresh" from the raw data to avoid multiple interpolations
+				
+				for p in ptcl2['spt_ptcl_indxs']:						#All the particles in ptcl2's history need to undergo the new transformation before averaging
+					print "I'm fixing the transform for this index", p			#(multiplied by any old transforms, all in one step, to avoid multiple interpolations)
 					pastt = Transform()
 					if p in ptcl_indxs_transforms:
 						pastt = ptcl_indxs_transforms[p]
 						print "Therefore the past transform for this index is", pastt
-					else:
-						print "WARNING!!!!!!!!!!!!!!!!!!!!! In round %d Couldn't find the transform for index %d in particle %s" % (k,p,results[z]['ptcl2'])
-						sys.exit()
+					#else:
+					#	print "WARNING!!!!!!!!!!!!!!!!!!!!! In round %d Couldn't find the transform for index %d in particle %s" % (k,p,results[z]['ptcl2'])
+					#	sys.exit()
+					
 					totalt = resultingt * pastt
+					subp2 = EMData(options.input,p)
+					subp2.process_inplace("xform",{"transform":totalt})
+					
+					ptcl2avgr.add_image(subp2)
+					
 					indx_trans_pairs.update({p:totalt})
+
+				ptcl2avg =  ptcl2avgr.finish()
+				ptcl2avg = ptcl2avg * ptcl2['spt_multiplicity']					#Take the multiplicity of ptcl2 into account
 				
-				print "\n$$$$$$$$$\n$$$$$$$$$\n$$$$$$$$$The index transform pairs are\n", indx_trans_pairs
-				ptcl2.process_inplace("xform",{"transform":totalt})				#Apply the relative alignment between particles 1 and 2 to particle 2, (particle 1 is always "fixed" and particle 2 "moving")
+				print "\n%%%\n%%%\n%%%\n%%%Ptcl2 multiplicity should be the same as the length of ptcl2 indexes", ptcl2['spt_ptcl_indxs'], ptcl2['spt_multiplicity'], len(ptcl2['spt_ptcl_indxs']) == ptcl2['spt_multiplicity'], 
 				
-				avgr.add_image(ptcl2)								#Add the transformed (rotated and translated) particle 2 to the average
+								
+				#print "\n$$$$$$$$$\n$$$$$$$$$\n$$$$$$$$$The index transform pairs are\n", indx_trans_pairs
+				#ptcl2.process_inplace("xform",{"transform":totalt})				#Apply the relative alignment between particles 1 and 2 to particle 2, (particle 1 is always "fixed" and particle 2 "moving")
+				
+				avgr.add_image(ptcl2avg)								#Add the transformed (rotated and translated) particle 2 to the average
 		
 				avg=avgr.finish()
 				
@@ -451,9 +471,6 @@ def get_results(etc,tids,verbose):
 	results=[0]*len(tids)		# storage for results
 	ncomplete=0
 	
-	#print "\n\n\n\n\n\n###\n###\n###\n###\n###\n###\n###The number of received tids is\n", len(tids)
-	#print "Therefore the empty results list is, or full of zeroes, is", results
-	
 	tidsleft=tids[:]
 	
 	numtides = len(tids)
@@ -465,11 +482,8 @@ def get_results(etc,tids,verbose):
 			if prog==-1 : nwait+=1
 			if prog==100 :
 				r=etc.get_results(tidsleft[i])						# results for a completed task
-				#print "\n@@@@@@The results for the completed task are", r
 				comparison=r[0].options["comparison"]					# get the comparison number from the task rather than trying to work back to it
 				
-				#print "\n!!!!!!!!!!!!!!!Comparison is\n!!!!!!!!!!!!!!!\n!!!!!!!!!!!!!!!\n!!!!!!!!!!!!!!!", comparison
-				#print "\n\n\n\n"
 				results[comparison]=r[1]["final"][0]					# this will be a list of (qual,Transform), containing the BEST peak ONLY
 				
 				results[comparison]['ptcl1']=r[0].options['ptcl1']			#Associate the result with the pair of particles involved
@@ -507,37 +521,15 @@ class Align3DTaskAVSA(EMTask):
 
 		self.options={"comparison":comparison,"ptcl1":ptcl1,"ptcl2":ptcl2,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"npeakstorefine":npeakstorefine,"align":align,"aligncmp":aligncmp,"ralign":ralign,"raligncmp":raligncmp,"shrink":shrink,"shrinkrefine":shrinkrefine,"verbose":verbose}
 	
-		#self.options={"comparison":comparison,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"npeakstorefine":npeakstorefine,"align":align,"aligncmp":aligncmp,"ralign":ralign,"raligncmp":raligncmp,"shrink":shrink,"shrinkrefine":shrinkrefine,"verbose":verbose}
-
 	def execute(self,callback=None):
 		"""This aligns one volume to a reference and returns the alignment parameters"""
 		options=self.options
 		if options["verbose"]>1: 
 			print "Aligning ",options["label"]
-
-		#if isinstance(self.data["fixedimage"],EMData):
 		
 		fixedimage=self.data["fixedimage"]
-		#print "Inside the class, the fixedimage received is of type", type(fixedimage)
-		#print "And its dimensions are of type", fixedimage['nx'], type(fixedimage['nx'])
-		
-		#else: 
-		#	print "You are not passing in an EMData REFERENCE!"
-		#	fixedimage=EMData(self.data["fixedimage"][1],self.data["fixedimage"][2])
-		
-		#if isinstance(self.data["image"],EMData):
 		
 		image=self.data["image"][-1]
-		#print "Inside the class, the image received is of type", type(image)
-		#print "And its dimensions are of type", image['nx'], type(image['nx'])
-
-		
-		#else: 
-		#	print "You are not passing in an EMData PARTICLE!"
-		#	image=EMData(self.data["image"][1],self.data["image"][2])
-		
-		# Preprocessing applied to both volumes.
-		# Make the mask first, use it to normalize (optionally), then apply it 
 		
 		mask=EMData(int(image['nx']),int(image['ny']),int(image['nz']))
 		mask.to_one()
@@ -579,11 +571,7 @@ class Align3DTaskAVSA(EMTask):
 		else :
 			s2fixedimage=fixedimage
 			s2image=image
-			
-			
-			
-		#print "This is the value and type of options.verbose inside the ALIGN class", options['verbose'], type(options['verbose'])
-			 
+						 
 		if options["verbose"] >2:
 			print "Because it was greater than 2 or not integer, I will exit"
 			sys.exit()  
@@ -636,11 +624,6 @@ class Align3DTaskAVSA(EMTask):
 		#because they come before the 'score' key of the dictionary (alphabetically)
 		
 		bestfinal = sorted(bestfinal, key=itemgetter('score'))
-		
-		#print "\n$$$$\n$$$$\n$$$$\n$$$$\n$$$$\n$$$$The best peaks sorted are" 
-		#
-		#for i in bestfinal:
-		#	print bestfinal
 		
 		if bestfinal[0]["score"] == 1.0e10 :
 			print "Error: all refine alignments failed for %s. May need to consider altering filter/shrink parameters. Using coarse alignment, but results are likely invalid."%self.options["label"]
