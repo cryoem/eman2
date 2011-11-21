@@ -963,18 +963,7 @@ void EMData::ap2ri()
 	if (!is_complex() || is_ri()) {
 		return;
 	}
-
-//#ifdef EMAN2_USING_CUDA
-//	if (gpu_operation_preferred()) {
-//		EMDataForCuda tmp = get_data_struct_for_cuda();
-//		emdata_ap2ri(&tmp);
-//		set_ri(true);
-//		gpu_update();
-//		EXITFUNC;
-//		return;
-//	}
-//#endif
-
+	
 	Util::ap2ri(get_data(), (size_t)nx * ny * nz);
 	set_ri(true);
 	update();
@@ -987,17 +976,6 @@ void EMData::ri2inten()
 
 	if (!is_complex()) return;
 	if (!is_ri()) ap2ri();
-
-//#ifdef EMAN2_USING_CUDA
-//	if (gpu_operation_preferred()) {
-//		EMDataForCuda tmp = get_data_struct_for_cuda();
-//		emdata_ri2inten(&tmp);
-//		set_attr("is_intensity", int(1));
-//		gpu_update();
-//		EXITFUNC;
-//		return;
-//	}
-//#endif
 
 	float * data = get_data();
 	size_t size = (size_t)nx * ny * nz;
@@ -1019,16 +997,6 @@ void EMData::ri2ap()
 	if (!is_complex() || !is_ri()) {
 		return;
 	}
-//#ifdef EMAN2_USING_CUDA
-//	if (gpu_operation_preferred()) {
-//		EMDataForCuda tmp = get_data_struct_for_cuda();
-//		emdata_ri2ap(&tmp);
-//		set_ri(false);
-//		gpu_update();
-//		EXITFUNC;
-//		return;
-//	}
-//#endif
 
 	float * data = get_data();
 

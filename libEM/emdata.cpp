@@ -953,11 +953,7 @@ float EMData::max_3D_pixel_error(const Transform &t1, const Transform & t2, floa
 		float ang = (float)i/r;
 		Vec3f v = Vec3f(r0*cos(ang), r0*sin(ang), 0.0f);
 		Vec3f d = t*v-v;
-#ifdef	_WIN32
-		ddmax = _cpp_max(ddmax,d[0]*d[0]+d[1]*d[1]+d[2]*d[2]);
-#else
 		ddmax = std::max(ddmax,d[0]*d[0]+d[1]*d[1]+d[2]*d[2]);
-#endif	_WIN32
 	}
 	return std::sqrt(ddmax);
 }
@@ -1856,17 +1852,21 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 		filt->to_one();
 		filt->process_inplace("filter.highpass.gauss", Dict("cutoff_abs", 1.5f/nx));
 #ifdef EMAN2_USING_CUDA
+		/*
 		if(EMData::usecuda == 1 && big_clip.cudarwdata)
 		{
 			filt->copy_to_cuda(); // since this occurs just once for many images, we don't pay much of a speed pentalty here, and we avoid the hassel of messing with sparx
 		}
+		*/
 #endif
 	}
 #ifdef EMAN2_USING_CUDA
+	/*
 	if(EMData::usecuda == 1 && big_clip.cudarwdata && !filt->cudarwdata)
 	{
 		filt->copy_to_cuda(); // since this occurs just once for many images, we don't pay much of a speed pentalty here, and we avoid the hassel of messing with sparx
 	}
+	*/
 #endif
 	
 	EMData *mc = big_clip.calc_mutual_correlation(&big_clip, true,filt);
@@ -1894,7 +1894,7 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 	if (nz == 1) {
 		if (!unwrap) {
 #ifdef EMAN2_USING_CUDA
-			if(EMData::usecuda == 1 && sml_clip.cudarwdata) throw UnexpectedBehaviorException("shap masking is not yet supported by CUDA");
+			//if(EMData::usecuda == 1 && sml_clip.cudarwdata) throw UnexpectedBehaviorException("shap masking is not yet supported by CUDA");
 #endif
 			result = sml_clip.process("mask.sharp", Dict("outer_radius", -1, "value", 0));
 
@@ -1911,7 +1911,7 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 	}
 	
 #ifdef EMAN2_USING_CUDA
-	if (EMData::usecuda == 1) sml_clip.roneedsanupdate(); //If we didn't do this then unwrap would use data from the previous call of this function, happens b/c sml_clip is static
+	//if (EMData::usecuda == 1) sml_clip.roneedsanupdate(); //If we didn't do this then unwrap would use data from the previous call of this function, happens b/c sml_clip is static
 #endif
 	EXITFUNC;
 	if ( unwrap == true)
@@ -2870,18 +2870,6 @@ void EMData::cconj() {
 				cmplx(ix,iy,iz) = conj(cmplx(ix,iy,iz));
 	EXITFUNC;
 }
-
-//#ifdef EMAN2_USING_CUDA
-//void EMData::update_stat_cuda() const
-//{
-//	float* stats = update_stats_cuda(cudarwdata);
-	
-//	attr_dict["mean"] = stats[0];
-//	attr_dict["sigma"] = stats[1];
-	
-//	free(stats);
-//}
-//#endif
 
 void EMData::update_stat() const
 {
@@ -4042,39 +4030,6 @@ EMData *EMData::oneDfftPolar(int size, float rmax, float MAXR){		// sent MAXR va
 	delete data_in;
 	return imagepcsfft;
 }
-
-
-
-//#ifdef EMAN2_USING_CUDA
-//EMData* EMData::cut_slice_cuda(const Transform& transform)
-//{
-//	ENTERFUNC;
-//
-	// These restrictions should be ultimately restricted so that all that matters is get_ndim() = (map->get_ndim() -1)
-//	if ( get_ndim() != 3 ) throw ImageDimensionException("Can not cut slice from an image that is not 3D");
-	// Now check for complex images - this is really just being thorough
-//	if ( is_complex() ) throw ImageFormatException("Can not call cut slice an image that is complex");
-//
-
-//	EMData* ret = new EMData();
-//	ret->set_size_cuda(nx,ny,1);
-
-//	float * m = new float[12];
-//	transform.copy_matrix_into_array(m);
-
-//	EMDataForCuda tmp = ret->get_data_struct_for_cuda();
-//	bind_cuda_texture(); // Binds this image to the global texture
-//	cut_slice_cuda_(&tmp,m);
-
-//	ret->gpu_update();
-//	delete [] m;
-
-//	EXITFUNC;
-//	return ret;
-//}
-
-//#endif // EMAN2_USING_CUDA
-
 
 void EMData::uncut_slice(EMData * const map, const Transform& transform) const
 {

@@ -277,16 +277,6 @@ void EMData::add(float f,int keepzero)
 	{
 		if (f != 0) {
 
-
-//#ifdef EMAN2_USING_CUDA
-//			if ( gpu_operation_preferred () && !keepzero ) {
-//				EMDataForCuda tmp = get_data_struct_for_cuda();
-//				emdata_processor_add(&tmp,f);
-//				gpu_update();
-//				EXITFUNC;
-//				return;
-//			}
-//#endif // EMAN2_USING_CUDA
 			size_t size = nxyz;
 			if (keepzero) {
 				for (size_t i = 0; i < size; i++) {

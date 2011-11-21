@@ -879,11 +879,7 @@ EMData *StandardProjector::project3d(EMData * image) const
 
 #ifdef EMAN2_USING_CUDA
 		if(EMData::usecuda == 1) {
-			if(!image->isrodataongpu()){
-				image->copy_to_cudaro();
-			}else{
-				image->elementaccessed();
-			}
+			if(!image->isrodataongpu()) image->copy_to_cudaro();
 			//cout << "CUDA PROJ" << endl;
 			Transform* t3d = params["transform"];
 			if ( t3d == NULL ) throw NullPointerException("The transform object containing the angles(required for projection), was not specified");

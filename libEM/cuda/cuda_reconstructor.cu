@@ -167,8 +167,6 @@ __global__ void stevens_insert_slice_kernal(const float* const slice_data, float
 void insert_slice_cuda(const float* const matrix, const float* const slice_data, float* vol, float* tmp_data, const int inx, const int iny, const int nx, const int ny, const int nz, const float weight)
 {
 
-	//const dim3 gridSize(iny,1, 1);
-	//const dim3 blockSize((inx/2 + 1),1,1);
 	const dim3 gridSize(iny/2,1, 1);
 	const dim3 blockSize((inx/2 + 1)/2,1,1);
 
@@ -184,7 +182,6 @@ void insert_slice_cuda(const float* const matrix, const float* const slice_data,
 	mzz.y=matrix[6];
 	mzz.z=matrix[10];
 
-	//insert_slice_kernal<<<gridSize,blockSize>>>(slice_data, vol, tmp_data, inx ,iny, nx, ny, nz, mxx, myy, mzz, weight);
 	stevens_insert_slice_kernal<<<gridSize,blockSize>>>(slice_data, vol, tmp_data, inx ,iny, nx, ny, nz, mxx, myy, mzz, weight);
 	cudaThreadSynchronize();
 }

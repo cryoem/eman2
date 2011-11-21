@@ -546,32 +546,25 @@ void mult_complex_efficient_cuda(float* data, const float* src_data, const int n
 
 }
 
-__global__ void mcfauto_kernal(const float* data1, float* data2, const int num_threads, const int offset)
+__global__ void mcfauto_kernal(const float* data1, float* data2, const int totaltc)
 {
-	int idx = 2*(threadIdx.x + blockIdx.x*num_threads + offset);
+	int idx = 2*(threadIdx.x + (blockIdx.x + blockIdx.y*gridDim.x)*MAX_THREADS);
 	
-	data2[idx] = sqrt(data1[idx] * data2[idx] + data1[idx + 1] * data2[idx + 1]);
-	data2[idx + 1] = 0;
+	if(idx < totaltc){
+		data2[idx] = sqrt(data1[idx] * data2[idx] + data1[idx + 1] * data2[idx + 1]);
+		data2[idx + 1] = 0;
+	}
 }
 
 void mcf_cuda(const float* data1, float* data2, const int nx, const int ny, const int nz)
 {
 	
-	int num_calcs = nx*ny*nz/2;
+	int grid = int(ceil(sqrt((nx/2)*ny*nz/MAX_THREADS)));
 
-	int grid_y = num_calcs/MAX_THREADS;
-	int res_y = num_calcs - (grid_y*MAX_THREADS);
+	const dim3 blockSize(MAX_THREADS,1, 1);
+	const dim3 gridSize(grid,grid,1);
+	mcfauto_kernal<<<gridSize,blockSize>>>(data1,data2,nx*ny*nz);
 
-	if ( grid_y > 0 ) {
-		const dim3 blockSize(MAX_THREADS,1, 1);
-		const dim3 gridSize(grid_y,1,1);
-		mcfauto_kernal<<<gridSize,blockSize>>>(data1,data2,MAX_THREADS,0);
-	}
-	if ( res_y > 0 ) {
-		const dim3 blockSize(res_y,1, 1);
-		const dim3 gridSize(1,1,1);
-		mcfauto_kernal<<<gridSize,blockSize>>>(data1,data2,MAX_THREADS,grid_y*MAX_THREADS);
-	}
 	cudaThreadSynchronize();
 	
 }
@@ -842,32 +835,25 @@ void emdata_phaseorigin_to_corner(float* data, const int nx, const int ny, const
 	}
 }
 
-__global__ void subtract_kernal(float* data, float f, const int num_threads, const int offset)
+__global__ void subtract_kernal(float* data, float f, const int totaltc)
 {
-
-	int idx = threadIdx.x + blockIdx.x*num_threads + offset;
 	
-	data[idx] = data[idx] - f;
+	int idx = threadIdx.x + (blockIdx.x + blockIdx.y*gridDim.x)*MAX_THREADS;
+	
+	if(idx < totaltc){
+		data[idx] = data[idx] - f;
+	}
 }
 
 void subtract_cuda(float* data, float f, const int nx, const int ny, const int nz)
 {
 
-	int num_calcs = nx*ny*nz;
+	int grid = int(ceil(sqrt(nx*ny*nz/MAX_THREADS)));
 
-	int grid_y = num_calcs/MAX_THREADS;
-	int res_y = num_calcs - (grid_y*MAX_THREADS);
+	const dim3 blockSize(MAX_THREADS,1, 1);
+	const dim3 gridSize(grid,grid,1);
+	subtract_kernal<<<gridSize,blockSize>>>(data,f,nx*ny*nz);
 
-	if ( grid_y > 0 ) {
-		const dim3 blockSize(MAX_THREADS,1, 1);
-		const dim3 gridSize(grid_y,1,1);
-		subtract_kernal<<<gridSize,blockSize>>>(data,f,MAX_THREADS,0);
-	}
-	if ( res_y > 0 ) {
-		const dim3 blockSize(res_y,1, 1);
-		const dim3 gridSize(1,1,1);
-		subtract_kernal<<<gridSize,blockSize>>>(data,f,MAX_THREADS,grid_y*MAX_THREADS);
-	}
 	cudaThreadSynchronize();
 
 }

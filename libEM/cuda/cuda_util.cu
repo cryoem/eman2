@@ -290,34 +290,26 @@ float get_edgemean_cuda(const float* data, const int nx, const int ny, const int
 	return result;
 }
 
-__global__ void tovalue_kernal(float* data, const float value, const int num_threads, const int offset)
+__global__ void tovalue_kernal(float* data, const float value, const int totaltc)
 {
 
-	const uint idx = threadIdx.x + blockIdx.x*num_threads + offset;
+	const uint idx = threadIdx.x + (blockIdx.x + blockIdx.y*gridDim.x)*MAX_THREADS;
 
-	data[idx] = value;
+	if(idx < totaltc){
+		data[idx] = value;
+	}
 
 }
 
 void to_value_cuda(float* data, const float value, const int nx, const int ny, const int nz)
 {
 
-	int num_calcs = ny*nx*nz;
+	int grid = int(ceil(sqrt(nx*ny*nz/MAX_THREADS)));
+	
+	const dim3 blockSize(MAX_THREADS,1, 1);
+	const dim3 gridSize(grid,grid,1);
+	tovalue_kernal<<<gridSize,blockSize>>>(data, value, nx*ny*nz);
 
-	int grid_y = num_calcs/(MAX_THREADS);
-	int res_y = num_calcs - grid_y*MAX_THREADS;
-
-	if (grid_y > 0) {
-		const dim3 blockSize(MAX_THREADS,1, 1);
-		const dim3 gridSize(grid_y,1,1);
-		tovalue_kernal<<<gridSize,blockSize>>>(data, value, MAX_THREADS,0);
-	}
-	if (res_y) {
-		const dim3 blockSize(res_y,1, 1);
-		const dim3 gridSize(1,1,1);
-		int offset = grid_y*MAX_THREADS;
-		tovalue_kernal<<<gridSize,blockSize>>>(data, value, MAX_THREADS,offset);
-	}
 	cudaThreadSynchronize();
 
 	return;

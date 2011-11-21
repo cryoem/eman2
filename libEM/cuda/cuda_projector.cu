@@ -1,12 +1,7 @@
-// Currently an empty file
 
 typedef unsigned int uint;
 __global__ void proj_kernel(float *out,float size, float size_on_two, float3 mxx,float3 mxy, float3 mxz)
 {
-//	uint x=(threadIdx.x&0xfffe)+(blockIdx.x&1);
-//	uint y=(blockIdx.x&0xfffe)+(threadIdx.x&1);
-//	uint x=(threadIdx.x>>1)+((blockIdx.x&1)<<7);
-//	uint y=(blockIdx.x&0xfffe)+(threadIdx.x&1);
 	uint x=threadIdx.x;
 	uint y=blockIdx.x;
 	
@@ -31,10 +26,6 @@ __global__ void proj_kernel(float *out,float size, float size_on_two, float3 mxx
 
 void standard_project(const float* const matrix, float* data, const int nx, const int ny) 
 {
-	//device_init();
-	
-	//int idx = stored_cuda_array(rdata,nx,ny,nz);
-	//bind_cuda_texture(idx);
 	
 	const dim3 blockSize(ny,1, 1);
 	const dim3 gridSize(nx,1,1);
@@ -52,7 +43,7 @@ void standard_project(const float* const matrix, float* data, const int nx, cons
 	mxz.z=matrix[10];
 		
 	proj_kernel<<<blockSize,gridSize>>>(data,(float)nx,(float)nx/2,mxx,mxy,mxz);
-	//CUDA_SAFE_CALL(cuCtxSynchronize());
+
 	cudaThreadSynchronize();
 }
 
