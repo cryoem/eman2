@@ -2154,7 +2154,7 @@ class GaussPanel:
 		#print "Input pixel size: ", input_pixel_size 
 		#print "Output pixel size: ", output_pixel_size 
 
-		defocus = defocus_gett(avg_sp, voltage=ctf_volt, Pixel_size=input_pixel_size, Cs=ctf_cs, wgh=ctf_cs,
+		defocus = defocus_gett(avg_sp, voltage=ctf_volt, Pixel_size=input_pixel_size, Cs=ctf_cs, wgh=ctf_ampcont,
 				       f_start=ctf_f_start, f_stop=ctf_f_stop, parent=self)
 	 	
 		self.estdef.setText(str(defocus/10000.0))
