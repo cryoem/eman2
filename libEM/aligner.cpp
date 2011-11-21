@@ -1919,12 +1919,6 @@ EMData* Refine3DAlignerQuaternion::align(EMData * this_img, EMData *to,
 
 	if ( c != 0 ) delete c;
 	
-	//Free up resources (for an expensive opperation like this move data to and from device is a small % of time)
-	#ifdef EMAN2_USING_CUDA
-		to->rw_free();
-		this_img->ro_free();
-	#endif
-	
 	return result;
 }
 
@@ -2017,7 +2011,7 @@ EMData* Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 				if(dotrans || tomography){
 					EMData* ccf = transformed->calc_ccf(tofft);
 #ifdef EMAN2_USING_CUDA	
-					if(to->getcudarwdata()){
+					if(EMData::usecuda == 1){
 						use_cpu = false;
 						CudaPeakInfo* data = calc_max_location_wrap_cuda(ccf->getcudarwdata(), ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
 						tran.set_trans((float)-data->px, (float)-data->py, (float)-data->pz);
@@ -2068,18 +2062,6 @@ EMData* Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 	EMData* best_match = this_img->process("xform",Dict("transform", best["xform.align3d"])); // we are returning a map
 	best_match->set_attr("xform.align3d", best["xform.align3d"]);
 	best_match->set_attr("score", float(best["score"]));
-	
-	//Free up resources (for an expensive opperation like this move data to and from device is a small % of time)
-	#ifdef EMAN2_USING_CUDA
-		to->rw_free();
-		this_img->ro_free();
-		// May move best_match to device?
-	#endif
-	
-	//debug....
-	//Transform* zz = best_match->get_attr("xform.align3d");
-	//Vec3f zzz = zz->get_trans();
-	//cout << "x " << float(zzz[0]) << " y " << float(zzz[1]) << " z " << float(zzz[2]) << endl;
 	
 	return best_match;
 	
@@ -2198,7 +2180,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				if(dotrans || tomography){
 					EMData* ccf = transformed->calc_ccf(tofft);
 #ifdef EMAN2_USING_CUDA	
-					if(to->getcudarwdata()){
+					if(EMData::usecuda == 1){
 						use_cpu = false;;
 						CudaPeakInfo* data = calc_max_location_wrap_cuda(ccf->getcudarwdata(), ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
 						trans.set_trans((float)-data->px, (float)-data->py, (float)-data->pz);
@@ -2243,12 +2225,6 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 			}
 		}
 	}
-
-	//Free up resources (for an expensive opperation like this move data to and from device is a small % of time)
-	#ifdef EMAN2_USING_CUDA
-		to->rw_free();
-		this_img->ro_free();
-	#endif
 	
 	if(tofft) {delete tofft; tofft = 0;}
 	return solns;
@@ -2383,7 +2359,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 			if(dotrans || tomography){
 				EMData* ccf = transformed->calc_ccf(this_imgfft);
 #ifdef EMAN2_USING_CUDA	
-				if(this_img->getcudarwdata()){
+				if(EMData::usecuda == 1){
 					// I use the following code rather than ccc.tomo to avoid doing two CCCs
 					use_cpu = false;
 					CudaPeakInfo* data = calc_max_location_wrap_cuda(ccf->getcudarwdata(), ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
@@ -2434,12 +2410,6 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	}
 	delete sym; sym = 0;
 	if(this_imgfft) {delete this_imgfft; this_imgfft = 0;}
-	
-	//Free up resources (for an expensive opperation like this move data to and from device is a small % of time)
-	#ifdef EMAN2_USING_CUDA
-		this_img->rw_free();
-		to->ro_free();
-	#endif
 	
 	return solns;
 
@@ -2512,12 +2482,6 @@ vector<Dict> RT3DSymmetryAligner::xform_align_nbest(EMData * this_img, EMData * 
 			}
 		}
 	}
-	
-	//Free up resources (for an expensive opperation like this move data to and from device is a small % of time)
-	#ifdef EMAN2_USING_CUDA
-		this_img->ro_free();
-		to->rw_free();
-	#endif
 		
 	return solns;
 }

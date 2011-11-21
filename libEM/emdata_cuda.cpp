@@ -43,7 +43,14 @@
  * scheme is used, the memory management algorithm becomes, LRU(least recently used), which should give better results in 
  * almost all cases. As a side note, to actutally use texture memory, a call to bindcudaarray?() should be made, when needed
  * A corresponding call to unbindcudaarray?() needs to be made after texture memory is not needed. These operations do not actually
- * move data around, just bind it to a Texture object, which are very limited resources!!!.
+ * move data around, just bind it to a Texture object, which are very limited resources!!!. Note that elementacessed is called 
+ * every time getcudarwdata(), getcudarodata() or isroongpu() called. Hence LRU is used by default, and you are forced to useage
+ * these getter function b/c cudarwdata and cudarodata are private. You could get arround this in EMData functions, and most
+ * functions in the EMData class just grab the cudarwdata pointer rather than calling the getcudarwdata() function. This is done to
+ * avod unnecessary pointer arithmatic, but may cause issues. I haven't decided what the best call is....
+ * Note that possible concurrency issues can arise, because when datra is copied bewteen the Host and GPU, there are two copies. 
+ * To accout for this possible problem, CUDA functions need to call setdirtybit() which will copy back fron GPU to host whenever
+ * get_data() is called(This function is a getter for EMData's rdata) 
 */
 
 #ifdef EMAN2_USING_CUDA
@@ -66,19 +73,7 @@ int EMData::fudgemem = 1.024E8; //let's leave 10 MB of 'fudge' memory on the dev
 int EMData::cudadevicenum = -1;
 bool EMData::usecuda = 0;
 
-bool EMData::copy_to_cuda_keepcpu() const
-{
-	//cout << "copying from host to device RW" << " " << num_bytes << endl;
-	if(rw_alloc()) {
-		memused += num_bytes;	
-		cudaError_t error = cudaMemcpy(cudarwdata,rdata,num_bytes,cudaMemcpyHostToDevice);
-		if ( error != cudaSuccess) throw UnexpectedBehaviorException( "CudaMemcpy (device to host) failed:" + string(cudaGetErrorString(error)));
-	}else{return false;}
-	
-	return true;
-}
-
-bool EMData::copy_to_cuda()
+bool EMData::copy_to_cuda() const
 {
 	//cout << "copying from host to device RW" << " " << num_bytes << endl;
 	if(rw_alloc()) {
@@ -86,11 +81,10 @@ bool EMData::copy_to_cuda()
 		cudaError_t error = cudaMemcpy(cudarwdata,rdata,num_bytes,cudaMemcpyHostToDevice);
 		if ( error != cudaSuccess) {
 			//cout << rdata << " " << cudarwdata << endl;
-			throw UnexpectedBehaviorException( "CudaMemcpy (host to device) failed:" + string(cudaGetErrorString(error)));
+			throw UnexpectedBehaviorException("CudaMemcpy (host to device) failed:" + string(cudaGetErrorString(error)));
 		}
 	}else{return false;}
-	//Temporaly disabled, causes LOTS of bugs......
-	//free_rdata(); //we have the data on either the host or device, not both (prevents concurrency issues)
+	//setdirtybit() //uncomment this line if you want to ensure that only one effective copy exists on either the host or GPU
 	
 	return true;
 }
@@ -103,33 +97,39 @@ bool EMData::copy_to_cudaro() const
 		memused += num_bytes;
 		copy_to_array(rdata, cudarodata, nx, ny, nz, cudaMemcpyHostToDevice);
 	}else{return false;}
+	//setdirtybit() //uncomment this line if you want to ensure that only one effective copy exists on either the host or GPU
 	
 	return true;
 }
 
 bool EMData::rw_alloc() const
 {
-	//cout << "rw_alloc" << endl;
 	if(cudarwdata){return true;} // already exists
 	num_bytes = nxyz*sizeof(float);
 	if(!freeup_devicemem(num_bytes)){return false;}
 	cudaError_t error = cudaMalloc((void**)&cudarwdata,num_bytes);
 	if ( error != cudaSuccess){return false;}
-	if(!cudarodata){addtolist();}
-	//cout << "rw alloc finish" << endl;
+	if(!cudarodata){
+		addtolist();
+	}else{
+		elementaccessed();
+	}
 	return true;
 }
 
 bool EMData::ro_alloc() const
 {
-	//cout << "ro_alloc" << endl;
 	if(cudarodata){return true;} // already exists
 	num_bytes = nxyz*sizeof(float);
 	if(!freeup_devicemem(num_bytes)){return false;}
 	cudarodata = get_cuda_array(nx, ny, nz);
 	if(cudarodata == 0) throw UnexpectedBehaviorException("Bad Array alloc");
-	if(!cudarwdata){addtolist();}
-	//cout << "ro alloc finish " << " " <<  cudarodata << endl;
+	if(!cudarwdata){
+		addtolist();
+	}else{
+		elementaccessed();
+	}
+
 	return true;
 	
 }
@@ -138,10 +138,8 @@ void EMData::bindcudaarrayA(const bool intp_mode) const
 {
 	if(cudarodata == 0){throw UnexpectedBehaviorException( "Cuda Array not allocated!!");}
 	if(nz > 1){
-		//cout << "3d bind" << endl;
 		bind_cuda_array_to_textureA(cudarodata, 3, intp_mode);
 	}else{
-		//cout << "2d bind" << endl;
 		bind_cuda_array_to_textureA(cudarodata, 2, intp_mode);
 	}
 	
@@ -162,10 +160,8 @@ void EMData::bindcudaarrayB(const bool intp_mode) const
 {
 	if(cudarodata == 0){throw UnexpectedBehaviorException( "Cuda Array not allocated!!");}
 	if(nz > 1){
-		//cout << "3d bind" << endl;
 		bind_cuda_array_to_textureB(cudarodata, 3, intp_mode);
 	}else{
-		//cout << "2d bind" << endl;
 		bind_cuda_array_to_textureB(cudarodata, 2, intp_mode);
 	}
 	
@@ -184,18 +180,15 @@ void EMData::unbindcudaarryB() const
 
 bool EMData::copy_from_device(const bool rocpy)
 {
-	//cout << "copy from device to host " << cudarwdata << " " << rocpy << endl;
-	//maybe we should check to see if rdata is still allocated? If not we would need to do either a malloc or new (also assumes that the size of rdata has not changed)
 	if(cudarwdata && !rocpy){
-		//cout << "rw copy back " << rdata << " numbytes " << num_bytes << endl;
 		if(rdata == 0){rdata = (float*)malloc(num_bytes);} //allocate space if needed, assumes size hasn't changed(Which is hasn't so far)
 		cudaError_t error = cudaMemcpy(rdata,cudarwdata,num_bytes,cudaMemcpyDeviceToHost);
 		if ( error != cudaSuccess) throw UnexpectedBehaviorException( "CudaMemcpy (device to host) failed:" + string(cudaGetErrorString(error)));
 		rw_free(); //we have the data on either the host or device, not both (prevents concurrency issues)
 		if(cudarodata) ro_free(); // clear any RO data, for call safety
 	} else if (cudarodata && rocpy) {
+		if(rdata == 0){rdata = (float*)malloc(num_bytes);} //allocate space if needed
 		if (nz > 1){
-			//cout << "ro copy back 3D" << endl;
 			cudaExtent extent;
 			extent.width  = nx;
 			extent.height = ny;
@@ -208,15 +201,15 @@ bool EMData::copy_from_device(const bool rocpy)
 			cudaError_t error = cudaMemcpy3D(&copyParams);
 			if ( error != cudaSuccess) throw UnexpectedBehaviorException( "RO CudaMemcpy (device to host) failed:" + string(cudaGetErrorString(error)));
 		} else{
-			//cout << "ro copy back 2D" << endl;
 			cudaError_t error = cudaMemcpyFromArray(rdata,cudarodata,0,0,num_bytes,cudaMemcpyDeviceToHost);
 			if ( error != cudaSuccess) throw UnexpectedBehaviorException( "RO CudaMemcpy (device to host) failed:" + string(cudaGetErrorString(error)));
 		}	
 		ro_free(); //we have the data on either the host or device, not both (prevents concurrency issues)
+		if(cudarwdata) rw_free(); // clear any RW data, for call safety
 	} else {
 		return false;
 	}
-	//cout << "finished copying" << endl;
+
 	update(); 
 	return true;
 }
@@ -257,7 +250,6 @@ void EMData::runcuda(float * results) const
 
 void EMData::rw_free() const
 {
-	//cout << "rw_free " << " " << cudarwdata << endl;
 	cudaError_t error = cudaFree(cudarwdata);
 	if ( error != cudaSuccess){
 		cout << rdata << " " << cudarwdata << endl;
@@ -271,7 +263,6 @@ void EMData::rw_free() const
 
 void EMData::ro_free() const
 {
-	//cout << "ro_free " << " " << cudarodata << endl;
 	cudaError_t error = cudaFreeArray(cudarodata);
 	if ( error != cudaSuccess) throw UnexpectedBehaviorException( "CudaFreeArray failed:" + string(cudaGetErrorString(error)));
 	cudarodata = 0;
@@ -282,7 +273,10 @@ void EMData::ro_free() const
 
 bool EMData::isrodataongpu() const
 {
-	if(cudarodata != 0 && !roneedsupdate){return true;}
+	if(cudarodata != 0 && !roneedsupdate){
+		if(cudarodata !=0) elementaccessed();
+		return true;
+	}
 	if(cudarwdata != 0){
 		if(copy_rw_to_ro()){;
 			return true;
@@ -294,6 +288,7 @@ bool EMData::isrodataongpu() const
 	}
 	
 }
+
 bool EMData::freeup_devicemem(const int& num_bytes) const
 {
 	size_t freemem=0, totalmem=0; //initialize to prevent undefined behaviour
@@ -301,34 +296,27 @@ bool EMData::freeup_devicemem(const int& num_bytes) const
 	//cout  << "memusage" << " " << freemem << " " << totalmem << endl;
 	if ((ptrdiff_t(freemem) - ptrdiff_t(fudgemem)) > ptrdiff_t(num_bytes)){
 		return true;
-	}else{
-		//if(num_bytes > memused){return false;} //it is not possible to free up enough memory!!	
+	}else{	
 		//keep on removing stuff until enough memory is available
 		while(lastinlist != 0){
 			if(lastinlist->cudarwdata){
-				cudaFree(lastinlist->cudarwdata);
-				lastinlist->cudarwdata = 0;
-				memused -= lastinlist->nxyz*sizeof(float);
-				cudaMemGetInfo(&freemem, &totalmem); //update free memory
+				//screw the constness, always copy from GPU to host rather than throwing stuff away!!!
+				const_cast<EMData*>(lastinlist)->copy_from_device();
 			}
 			if(lastinlist->cudarodata){
-				cudaFreeArray(lastinlist->cudarodata);
-				lastinlist->cudarodata = 0;
-				memused -= lastinlist->nxyz*sizeof(float);
-				cudaMemGetInfo(&freemem, &totalmem); //update free memory
+				const_cast<EMData*>(lastinlist)->copy_from_device(1);
 			}
-			if(lastinlist != firstinlist){ //if there is more than one itme on the list
-				lastinlist->nextlistitem->prevlistitem = 0;	// set the previtem link in the next item to zero
-				lastinlist = lastinlist->nextlistitem;		// chop the last item in the list off and set to next item
-			}else{
-				firstinlist = 0;	// we have deleted everything on the list
-				lastinlist = 0;
-			}
+			cudaMemGetInfo(&freemem, &totalmem); //update free memory
 			if((ptrdiff_t(freemem) - ptrdiff_t(fudgemem)) > ptrdiff_t(num_bytes)){return true;}	//this should break the loop....
 		}
 	}	
 	
 	return false;	//if we failed :(
+}
+
+void EMData::setdirtybit() const
+{
+	cudadirtybit = 1;
 }
 
 void EMData::addtolist() const
@@ -345,23 +333,27 @@ void EMData::addtolist() const
 		prevlistitem = firstinlist;
 		nextlistitem = 0;
 		firstinlist = this;
-	}	
+	}
 	
 }
 
 void EMData::elementaccessed() const
 {
-	if(firstinlist == lastinlist){return;}
+	//DO not move item to top of list if already at top of list
+	if(firstinlist == this){return;}
         removefromlist();
 	addtolist();
 }
 
 void EMData::removefromlist() const
 {
+
 	//remove from list
 	if(firstinlist == lastinlist){ //last item in list....
 		firstinlist = 0;
 		lastinlist = 0;
+		nextlistitem = 0;
+		prevlistitem = 0;
 		return;
 	}
 	if(nextlistitem !=0){
@@ -374,6 +366,8 @@ void EMData::removefromlist() const
 	}else{
 		lastinlist = nextlistitem;
 	}
+	nextlistitem = 0;
+	prevlistitem = 0;
 	
 }
 

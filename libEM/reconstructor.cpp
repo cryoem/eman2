@@ -559,7 +559,7 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice,  cons
 {
 #ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
-		if(!slice->getcudarwdata()) slice->copy_to_cuda_keepcpu(); //copy slice to cuda using the const version
+		if(!slice->getcudarwdata()) slice->copy_to_cuda(); //copy slice to cuda using the const version
 	}
 #endif
 	// Shift the image pixels so the real space origin is now located at the phase origin (at the bottom left of the image)
@@ -576,7 +576,7 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice,  cons
 	// Fourier transform the slice
 	
 #ifdef EMAN2_USING_CUDA
-	if(return_slice->getcudarwdata()) {
+	if(EMData::usecuda == 1 && return_slice->getcudarwdata()) {
 		return_slice->do_fft_inplace_cuda(); //a CUDA FFT inplace is quite slow as there is a lot of mem copying.
 	}else{
 		return_slice->do_fft_inplace();
@@ -604,7 +604,7 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 
 #ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
-		if(!input_slice->getcudarwdata()) input_slice->copy_to_cuda_keepcpu(); //copy slice to cuda using the const version
+		if(!input_slice->getcudarwdata()) input_slice->copy_to_cuda(); //copy slice to cuda using the const version
 	}
 #endif
 
@@ -924,7 +924,7 @@ EMData *FourierReconstructor::finish(bool doift)
 // 	float *norm = tmp_data->get_data();
 // 	float *rdata = image->get_data();
 #ifdef EMAN2_USING_CUDA
-	if(image->getcudarwdata()){
+	if(EMData::usecuda == 1 && image->getcudarwdata()){
 		cout << "copy back from CUDA" << endl;
 		image->copy_from_device();
 		tmp_data->copy_from_device();

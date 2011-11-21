@@ -39,11 +39,7 @@ public:
 	
 	/** Copy data from host to GPU device (RW)
 	*/
-	bool copy_to_cuda_keepcpu() const;
-	
-	/** Overloaded version of the above but does not use const data
-	The diff being that in the const version rdata is not freed. */
-	bool copy_to_cuda();
+	bool copy_to_cuda() const;
 	
 	/** Copy data from host to GPU device (RO)
 	*/
@@ -93,11 +89,13 @@ public:
 
 	inline float* getcudarwdata() const
 	{
+		if(cudarwdata != 0) elementaccessed();
 		return cudarwdata;
 	}
 	
 	inline cudaArray* getcudarodata() const
 	{
+		if(cudarodata != 0) elementaccessed();
 		return cudarodata;
 	}
 	
@@ -129,6 +127,8 @@ public:
 	*/
 	bool freeup_devicemem(const int& num_bytes) const;
 	
+	void setdirtybit() const;
+	
 	static void switchoncuda();
 	
 	static void switchoffcuda();
@@ -153,6 +153,7 @@ private:
 	const mutable EMData* prevlistitem;
 	
 	mutable bool roneedsupdate;
+	mutable bool cudadirtybit;
 	
 	static int cudadevicenum;
 	static int memused;

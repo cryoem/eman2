@@ -72,7 +72,7 @@ int EMData::totalalloc=0;		// mainly used for debugging/memory leak purposes
 
 EMData::EMData() :
 #ifdef EMAN2_USING_CUDA
-		cudarwdata(0), cudarodata(0), num_bytes(0), nextlistitem(0), prevlistitem(0), roneedsupdate(0),
+		cudarwdata(0), cudarodata(0), num_bytes(0), nextlistitem(0), prevlistitem(0), roneedsupdate(0), cudadirtybit(0),
 #endif //EMAN2_USING_CUDA
 		attr_dict(), rdata(0), supp(0), flags(0), changecount(0), nx(0), ny(0), nz(0), nxy(0), nxyz(0), xoff(0), yoff(0),
 		zoff(0), all_translation(),	path(""), pathnum(0), rot_fp(0)
@@ -100,7 +100,7 @@ EMData::EMData() :
 
 EMData::EMData(const string& filename, int image_index) :
 #ifdef EMAN2_USING_CUDA
-		cudarwdata(0), cudarodata(0), num_bytes(0), nextlistitem(0), prevlistitem(0), roneedsupdate(0),
+		cudarwdata(0), cudarodata(0), num_bytes(0), nextlistitem(0), prevlistitem(0), roneedsupdate(0), cudadirtybit(0),
 #endif //EMAN2_USING_CUDA
 		attr_dict(), rdata(0), supp(0), flags(0), changecount(0), nx(0), ny(0), nz(0), nxy(0), nxyz(0), xoff(0), yoff(0), zoff(0),
 		all_translation(),	path(filename), pathnum(image_index), rot_fp(0)
@@ -130,7 +130,7 @@ EMData::EMData(const string& filename, int image_index) :
 
 EMData::EMData(const EMData& that) :
 #ifdef EMAN2_USING_CUDA
-		cudarwdata(0), cudarodata(0), num_bytes(0), nextlistitem(0), prevlistitem(0), roneedsupdate(0),
+		cudarwdata(0), cudarodata(0), num_bytes(0), nextlistitem(0), prevlistitem(0), roneedsupdate(0), cudadirtybit(0),
 #endif //EMAN2_USING_CUDA
 		attr_dict(that.attr_dict), rdata(0), supp(0), flags(that.flags), changecount(that.changecount), nx(that.nx), ny(that.ny), nz(that.nz),
 		nxy(that.nx*that.ny), nxyz((size_t)that.nx*that.ny*that.nz), xoff(that.xoff), yoff(that.yoff), zoff(that.zoff),all_translation(that.all_translation),	path(that.path),
@@ -200,7 +200,6 @@ EMData& EMData::operator=(const EMData& that)
 			if(!rw_alloc()) throw UnexpectedBehaviorException("Bad alloc");;
 			cudaError_t error = cudaMemcpy(cudarwdata,that.cudarwdata,num_bytes,cudaMemcpyDeviceToDevice);
 			if ( error != cudaSuccess ) throw UnexpectedBehaviorException("cudaMemcpy failed in EMData copy construction with error: " + string(cudaGetErrorString(error)));
-			
 		}
 #endif //EMAN2_USING_CUDA
 
@@ -215,7 +214,7 @@ EMData& EMData::operator=(const EMData& that)
 
 EMData::EMData(int nx, int ny, int nz, bool is_real) :
 #ifdef EMAN2_USING_CUDA
-		cudarwdata(0), cudarodata(0), num_bytes(0), nextlistitem(0), prevlistitem(0), roneedsupdate(0),
+		cudarwdata(0), cudarodata(0), num_bytes(0), nextlistitem(0), prevlistitem(0), roneedsupdate(0), cudadirtybit(0),
 #endif //EMAN2_USING_CUDA
 		attr_dict(), rdata(0), supp(0), flags(0), changecount(0), nx(0), ny(0), nz(0), nxy(0), nxyz(0), xoff(0), yoff(0), zoff(0),
 		all_translation(),	path(""), pathnum(0), rot_fp(0)
@@ -267,7 +266,7 @@ EMData::EMData(int nx, int ny, int nz, bool is_real) :
 
 EMData::EMData(float* data, const int x, const int y, const int z, const Dict& attr_dict) :
 #ifdef EMAN2_USING_CUDA
-		cudarwdata(0), cudarodata(0), num_bytes(0), nextlistitem(0), prevlistitem(0), roneedsupdate(0),
+		cudarwdata(0), cudarodata(0), num_bytes(0), nextlistitem(0), prevlistitem(0), roneedsupdate(0), cudadirtybit(0),
 #endif //EMAN2_USING_CUDA
 		attr_dict(attr_dict), rdata(data), supp(0), flags(0), changecount(0), nx(x), ny(y), nz(z), nxy(x*y), nxyz((size_t)x*y*z), xoff(0),
 		yoff(0), zoff(0), all_translation(), path(""), pathnum(0), rot_fp(0)
@@ -290,7 +289,7 @@ EMData::EMData(float* data, const int x, const int y, const int z, const Dict& a
 #ifdef EMAN2_USING_CUDA
 
 EMData::EMData(float* data, float* cudadata, const int x, const int y, const int z, const Dict& attr_dict) :
-		cudarwdata(cudadata), cudarodata(0), num_bytes(x*y*z*sizeof(float)), nextlistitem(0), prevlistitem(0), roneedsupdate(0),
+		cudarwdata(cudadata), cudarodata(0), num_bytes(x*y*z*sizeof(float)), nextlistitem(0), prevlistitem(0), roneedsupdate(0), cudadirtybit(1),
 		attr_dict(attr_dict), rdata(data), supp(0), flags(0), changecount(0), nx(x), ny(y), nz(z), nxy(x*y), nxyz((size_t)x*y*z), xoff(0),
 		yoff(0), zoff(0), all_translation(), path(""), pathnum(0), rot_fp(0)
 {
