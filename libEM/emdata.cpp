@@ -2951,25 +2951,29 @@ void EMData::update_stat() const
  * only when they are same object from the same memory address.
  */
 bool EMData::operator==(const EMData& that) const {
-//	if (that.get_xsize() != nx || that.get_ysize() != ny || that.get_zsize() != nz ) return false;
-//
-//	const float*  d1 = that.get_const_data();
-//	float* d2 = get_data();
-//
-//	for(size_t i =0; i < get_size(); ++i,++d1,++d2) {
-//		if ((*d1) != (*d2)) return false;
-//	}
-//
-//	if(attr_dict != that.attr_dict) {
-//		return false;
-//	}
-
 	if(this != &that) {
 		return false;
 	}
 	else {
 		return true;
 	}
+}
+
+bool EMData::equal(const EMData& that) const {
+	if (that.get_xsize() != nx || that.get_ysize() != ny || that.get_zsize() != nz ) return false;
+
+	const float*  d1 = that.get_const_data();
+	float* d2 = get_data();
+
+	for(size_t i =0; i < get_size(); ++i,++d1,++d2) {
+		if ((*d1) != (*d2)) return false;
+	}
+
+//	if(attr_dict != that.attr_dict) {
+//		return false;
+//	}
+
+	return true;
 }
 
 EMData * EMAN::operator+(const EMData & em, float n)

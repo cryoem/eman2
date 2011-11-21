@@ -46,7 +46,7 @@ class TestProcessor(unittest.TestCase):
     def test_get_processor_list(self):
         """test get processor list .........................."""
         processor_names = Processors.get_list()
-        self.assertEqual(len(processor_names), 178)
+        self.assertEqual(len(processor_names), 177)
         
         if(IS_TEST_EXCEPTION):
             try:
@@ -63,12 +63,12 @@ class TestProcessor(unittest.TestCase):
         		e = EMData(x,y,1)
                 f = e.process('xform.transpose')
                 f.process_inplace('xform.transpose')
-                self.assertEqual(f==e,True)
+                self.assertEqual(f.equal(e),True)
                 
                 g = e.copy()
                 g.process_inplace('xform.transpose')
                 g.process_inplace('xform.transpose')
-                self.assertEqual(g==e,True)
+                self.assertEqual(g.equal(e),True)
                 
         if(IS_TEST_EXCEPTION):
         	# Check to make we throw for 3D and complex images
@@ -1412,8 +1412,8 @@ class TestProcessor(unittest.TestCase):
 				r = Region(1,0,n,n)
 				aa = a.get_clip(r)
 				bb = b.get_clip(r)
-				self.assertEqual(aa==bb,True)
-			self.assertEqual(a==b, True)
+				self.assertEqual(aa.equal(bb),True)
+			self.assertEqual(a.equal(b), True)
 				
 		# The 3D test is not as important as the 2D case (above), but it being true means we're in good shape - future
 		# developers won't inadvertently make mistakes by interchanging the xform.flip and xform processors
@@ -1426,8 +1426,8 @@ class TestProcessor(unittest.TestCase):
 				r = Region(1,0,0,n,n,n)
 				aa = a.get_clip(r)
 				bb = b.get_clip(r)
-				self.assertEqual(aa==bb,True)
-			self.assertEqual(a==b, True)
+				self.assertEqual(aa.equal(bb),True)
+			self.assertEqual(a.equal(b), True)
 	
 		# ODD INVERTIBILITY
 		a = EMData(33,1,1)
@@ -1435,28 +1435,28 @@ class TestProcessor(unittest.TestCase):
 		b = a.copy()
 		b.process_inplace("xform.flip",{"axis":"x"})
 		b.process_inplace("xform.flip",{"axis":"x"})
-		self.assertEqual(a==b, True)
+		self.assertEqual(a.equal(b), True)
 		  
 		a = test_image(1,size=(33,33))
 		b = a.copy()
 		b.process_inplace("xform.flip",{"axis":"x"})
 		b.process_inplace("xform.flip",{"axis":"x"})
-		self.assertEqual(a==b, True)
+		self.assertEqual(a.equal(b), True)
 		b.process_inplace("xform.flip",{"axis":"y"})
 		b.process_inplace("xform.flip",{"axis":"y"})
-		self.assertEqual(a==b, True)
+		self.assertEqual(a.equal(b), True)
 		
 		a = test_image_3d(6,size=(33,33,33))
 		b = a.copy()
 		b.process_inplace("xform.flip",{"axis":"x"})
 		b.process_inplace("xform.flip",{"axis":"x"})
-		self.assertEqual(a==b, True)
+		self.assertEqual(a.equal(b), True)
 		b.process_inplace("xform.flip",{"axis":"y"})
 		b.process_inplace("xform.flip",{"axis":"y"})
-		self.assertEqual(a==b, True)
+		self.assertEqual(a.equal(b), True)
 		b.process_inplace("xform.flip",{"axis":"z"})
 		b.process_inplace("xform.flip",{"axis":"z"})
-		self.assertEqual(a==b, True)
+		self.assertEqual(a.equal(b), True)
     
     	# EVEN INVERTIBILITY
     	# We have to do clipping in cases where the dimension is even, because 
@@ -1469,7 +1469,7 @@ class TestProcessor(unittest.TestCase):
 		r = Region(1,31)
 		aa = a.get_clip(r)
 		bb = b.get_clip(r)
-		self.assertEqual(aa==bb, True)
+		self.assertEqual(aa.equal(bb), True)
 		
 		
 		a = test_image(1,size=(32,32))
@@ -1479,7 +1479,7 @@ class TestProcessor(unittest.TestCase):
 		r = Region(1,0,31,32)
 		aa = a.get_clip(r)
 		bb = b.get_clip(r)
-		self.assertEqual(aa==bb, True)
+		self.assertEqual(aa.equal(bb), True)
 		a = test_image(1,size=(32,32))
 		b = a.copy()
 		b.process_inplace("xform.flip",{"axis":"y"})
@@ -1487,7 +1487,7 @@ class TestProcessor(unittest.TestCase):
 		r = Region(0,1,32,31)
 		aa = a.get_clip(r)
 		bb = b.get_clip(r)
-		self.assertEqual(aa==bb, True)
+		self.assertEqual(aa.equal(bb), True)
 		a = test_image_3d(6,size=(32,32,32))
 		b = a.copy()
 		b.process_inplace("xform.flip",{"axis":"x"})
@@ -1495,7 +1495,7 @@ class TestProcessor(unittest.TestCase):
 		r = Region(1,0,0,31,32,32)
 		aa = a.get_clip(r)
 		bb = b.get_clip(r)
-		self.assertEqual(aa==bb, True)
+		self.assertEqual(aa.equal(bb), True)
 		a = test_image_3d(6,size=(32,32,32))
 		b = a.copy()
 		b.process_inplace("xform.flip",{"axis":"y"})
@@ -1503,7 +1503,7 @@ class TestProcessor(unittest.TestCase):
 		r = Region(0,1,0,32,31,32)
 		aa = a.get_clip(r)
 		bb = b.get_clip(r)
-		self.assertEqual(aa==bb, True)
+		self.assertEqual(aa.equal(bb), True)
 		a = test_image_3d(6,size=(32,32,32))
 		b = a.copy()
 		b.process_inplace("xform.flip",{"axis":"z"})
@@ -1511,7 +1511,7 @@ class TestProcessor(unittest.TestCase):
 		r = Region(0,0,1,32,32,31)
 		aa = a.get_clip(r)
 		bb = b.get_clip(r)
-		self.assertEqual(aa==bb, True)
+		self.assertEqual(aa.equal(bb), True)
     
     def test_math_addnoise(self):
         """test math.addnoise processor ....................."""

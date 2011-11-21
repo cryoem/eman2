@@ -610,6 +610,8 @@ EMData & operator*=(const EMData & em);
 EMData & operator/=(const EMData & em);
 
 bool operator==(const EMData& that) const;
+/**compare the equality of two EMData object based on their pixel values*/
+bool equal(const EMData& that) const;
 
 /** Overload operator() for array indexing. */
 inline float& operator()(const int ix, const int iy, const int iz) const {

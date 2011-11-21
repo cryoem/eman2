@@ -70,7 +70,7 @@ class ImageIOTester(unittest.TestCase):
 			else:
 				f.read_image(filename,0)
 			try:
-				self.assertEqual(e==f,True)
+				self.assertEqual(e.equal(f),True)
 			finally:
 				remove_file(filename)
 		
@@ -89,7 +89,7 @@ class ImageIOTester(unittest.TestCase):
 					e.write_image(filename,i)
 					f = EMData()
 					f.read_image(filename,i)
-					self.assertEqual(e==f,True)
+					self.assertEqual(e.equal(f),True)
 			finally:
 				remove_file(filename)	
 				
@@ -1259,7 +1259,7 @@ class TestImageIO(unittest.TestCase):
 									f = EMData()
 									f.read_image(name,0,False,region)
 									g = e.get_clip(region)
-									self.assertEqual(f==g,True)
+									self.assertEqual(f.equal(g),True)
 			finally:
 				remove_file(name)
 		
@@ -1286,7 +1286,7 @@ class TestImageIO(unittest.TestCase):
 										f = EMData()
 										f.read_image(name,0,False,region)
 										g = e.get_clip(region)
-										self.assertEqual(f==g,True)
+										self.assertEqual(f.equal(g),True)
 			finally:
 				remove_file(name)
 		
