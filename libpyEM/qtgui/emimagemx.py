@@ -1710,7 +1710,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			self.mousedrag=None
 			
 	def get_frame_buffer(self):
-		return self.get_frame_buffer()
+		return self.grabFrameBuffer()
 	
 	def draw_scroll_bar(self):
 		width = self.width()
