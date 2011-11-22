@@ -6845,6 +6845,11 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 			if myid == main_node:
 				print_msg("\nlen(ref1) = %4d, len(ref2) = %4d\n"%(len(refrings1), len(refrings2)) )'''		
 			del refrings
+			from numpy import float32
+			dpp = float32(float(dp)/pixel_size)
+			dpp = float( dpp )
+			dpp_half = dpp/2.0
+			
 			for im in xrange( nima ):
 				peak1 = None
 				peak2 = None
@@ -6894,13 +6899,13 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 				#peak, phihi, theta, psi, sxi, syi, t1 = proj_ali_helical(data[im],refrings,numr,xrng[N_step],yrng[N_step],stepx[N_step],ynumber[N_step],psi_max,finfo,)
 				if(peak > -1.0e22):
 					#Guozhi Tao: wrap y-shifts back into box within rise of one helical unit by changing phi
-					dpp = (float(dp)/pixel_size)
+					
 					tp = Transform({"type":"spider","phi":phihi,"theta":theta,"psi":psi})
 					tp.set_trans( Vec2f( -sxi, -syi ) )
 					dtp = tp.get_params("spider")
 					dtp_ty = float( dtp["ty"] )
 					del dtp
-					if( abs(dtp_ty) >dpp/2.0):
+					if( abs(dtp_ty) >dpp_half):
 						dtp_ty_temp = dtp_ty
 						if( abs(psi-90) < 90  ):
 							sign_psi = 1
@@ -6911,12 +6916,13 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 						else:
 							period_step = 1*sign_psi
 						nperiod = 0
-						while( abs( dtp_ty_temp ) > dpp/2.0 ):
+						while( abs( dtp_ty_temp ) > dpp_half ):
 							nperiod += period_step
 							th = Transform({"type":"spider","phi": -nperiod*dphi, "tz":nperiod*dpp})
 							tfinal = tp*th
 							df = tfinal.get_params("spider")
 							dtp_ty_temp = float( df["ty"] )
+							
 						phihi = float(df["phi"])
 						sxi   = float(-df["tx"])
 						syi   = float(-df["ty"])
