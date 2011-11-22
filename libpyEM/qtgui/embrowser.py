@@ -150,7 +150,7 @@ class EMFileType:
 			target=EMScene3D()
 			brws.view3d.append(target)
 
-		target.insertNewNode(self.path.split("/")[-1].split("#")[-1],data)
+		target.insertNewNode(self.path.split("/")[-1].split("#")[-1],data,parentnode=target)
 		iso = EMIsosurface(data)
 		target.insertNewNode('Isosurface', iso, parentnode=data)
 		brws.notbusy()
@@ -164,7 +164,7 @@ class EMFileType:
 		data=EMDataItem3D(self.path)
 
 		target=EMScene3D()
-		brws.view3ds.append(target)
+		brws.view3d.append(target)
 		
 		target.insertNewNode(self.path.split("/")[-1].split("#")[-1],data)
 		iso = EMIsosurface(data)
@@ -604,7 +604,7 @@ class EMImageFileType(EMFileType):
 		
 		if get_platform()=="Linux":
 			# these types are supported natively in Chimera
-			if EMUtil.get_image_type("tst.hdf") in (IMAGE_HDF,IMAGE_MRC,IMAGE_SPIDER,IMAGE_SINGLE_SPIDER):
+			if EMUtil.get_image_type(self.path) in (IMAGE_HDF,IMAGE_MRC,IMAGE_SPIDER,IMAGE_SINGLE_SPIDER):
 				os.system("chimera %s &"%self.path)
 			else :
 				os.system("e2proc3d.py %s /tmp/vol.hdf"%self.path)		# Probably not a good hack to use, but it will do for now...
@@ -1203,11 +1203,45 @@ class EMPlotInfoPane(EMInfoPane):
 	def __init__(self,parent=None):
 		QtGui.QWidget.__init__(self,parent)
 		
-		self.vbl=QtGui.QVBoxLayout(self)
+		self.gbl=QtGui.QGridLayout(self)
+		
+		# List as alternate mechanism for selecting image number(s)
+		self.plotdata=QtGui.QTableWidget()
+		self.gbl.addWidget(self.plotdata,0,0)
 
 	def display(self,target):
 		"display information for the target EMDirEntry"
 		self.target=target
+		self.plotdata.clear()
+
+
+		# read the data into a list of lists
+		numc=0
+		data=[]
+		for l in file(target.path(),"r"):
+			if l[0]=="#" : continue
+			
+			vals=[float(i) for i in renumfind.findall(l)]
+			if len(vals)==0 : continue 
+			
+			if numc==0 : numc=len(vals)
+			elif numc!=len(vals) : break
+			data.append(vals)
+			
+			if len(data)==2500 : break			# if the table is too big, we just do a ...
+
+		if len(data)==2500: self.plotdata.setRowCount(2501)
+		else : self.plotdata.setRowCount(len(data))
+		self.plotdata.setColumnCount(numc)
+		self.plotdata.setVerticalHeaderLabels([str(i) for i in xrange(len(data))])
+		self.plotdata.setHorizontalHeaderLabels([str(i) for i in xrange(numc)])
+		
+		for r in xrange(len(data)):
+			for c in xrange(numc):
+				self.plotdata.setItem(r,c,QtGui.QTableWidgetItem("%1.4g"%data[r][c]))
+
+		if len(data)==2500:
+			self.plotdata.setVerticalHeaderItem(2500,QtGui.QTableWidgetItem("..."))
 
 class EMFolderInfoPane(EMInfoPane):
 	
@@ -1222,6 +1256,7 @@ class EMFolderInfoPane(EMInfoPane):
 
 class EMBDBInfoPane(EMInfoPane):
 	
+	maxim=500
 	def __init__(self,parent=None):
 		QtGui.QWidget.__init__(self,parent)
 		
@@ -1238,7 +1273,12 @@ class EMBDBInfoPane(EMInfoPane):
 		
 		# Actual header contents
 		self.wheadtree=QtGui.QTreeWidget()
+		self.wheadtree.setColumnCount(2)
+		self.wheadtree.setHeaderLabels(["Item","Value"])
 		self.gbl.addWidget(self.wheadtree,0,1,2,1)
+		
+		self.gbl.setColumnStretch(0,1)
+		self.gbl.setColumnStretch(1,4)
 		
 		QtCore.QObject.connect(self.wimnum, QtCore.SIGNAL("valueChanged(int)"),self.imNumChange)
 		QtCore.QObject.connect(self.wimlist, QtCore.SIGNAL("itemSelectionChanged()"),self.imSelChange)
@@ -1261,7 +1301,8 @@ class EMBDBInfoPane(EMInfoPane):
 		else:
 			self.wimnum.setRange(0,target.nimg)
 			self.wimlist.clear()
-			self.wimlist.addItems([str(i) for i in range(0,min(target.nimg,500))])
+			self.wimlist.addItems([str(i) for i in range(0,min(target.nimg,self.maxim))])
+			if target.nimg>self.maxim: self.wimlist.addItem("...")
 			self.wimnum.show()
 			self.wimlist.show()
 
@@ -1269,63 +1310,123 @@ class EMBDBInfoPane(EMInfoPane):
 
 	def imNumChange(self,num):
 		"New image number"
+		if num<500 : self.wimlist.setCurrentRow(num)
+		else : self.showItem(num)
 		
 	def imSelChange(self):
 		"New image selection"
 		
+		val=self.wimlist.currentItem().text()
+		try:
+			val=int(val)
+			self.wimnum.setValue(val)
+		except:
+			val=str(val)
+		
+		self.showItem(val)
+		
+	def showItem(self,key):
+		"""Shows header information for the selected item"""
+		self.wheadtree.clear()
+		trg=self.bdb.get_header(key)
+		
+		if trg==None :
+			print "Warning: tried to read unavailable key: %s"%key
+			#print self.bdb.keys()
+			return
+		
+		self.addTreeItem(trg)
+		
+	def addTreeItem(self,trg,parent=None):
+		"""(recursively) add an item to the tree"""
+		itms=[]
+		# Dictionaries may require recursion
+		if isinstance(trg,dict):
+			for k in trg.keys():
+				itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k),str(trg[k])))))
+				if isinstance(trg[k],list) or isinstance(trg[k],tuple) or isinstance(trg[k],set) or isinstance(trg[k],dict):
+					self.addTreeItem(trg[k],itms[-1])
+
+		elif isinstance(trg,list) or isinstance(trg,tuple) or isinstance(trg,set):
+			for k in trg:
+				if isinstance(k,list) or isinstance(k,tuple) or isinstance(k,set) or isinstance(k,dict):
+					try: itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((k.__class__.__name__,""))))
+					except: itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList(("??",""))))
+					self.addTreeItem(k,itms[-1])
+				else:
+					itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k),""))))
+			
+		else:
+			itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(trg),""))))
+
+		if parent==None: 
+			self.wheadtree.addTopLevelItems(itms)
+			self.wheadtree.resizeColumnToContents(0)
+		else : parent.addChildren(itms)
+
 
 class EMImageInfoPane(EMInfoPane):
 	
+	maxim=500
 	def __init__(self,parent=None):
 		QtGui.QWidget.__init__(self,parent)
 		
 		self.gbl=QtGui.QGridLayout(self)
 		
-		# Spinbox for selecting image number
-		self.wimnum=QtGui.QSpinBox()
-		self.wimnum.setRange(0,0)
-		self.gbl.addWidget(self.wimnum,0,0)
-		
-		# List as alternate mechanism for selecting image number(s)
-		self.wimlist=QtGui.QListWidget()
-		self.gbl.addWidget(self.wimlist,1,0)
-		
 		# Actual header contents
-		self.wheadtree=QTreeWidget()
-		self.gbl.addWidget(self.wheadtree,0,1,2,1)
-		
-		QtCore.QObject.connect(self.wimnum, QtCore.SIGNAL("valueChanged(int)"),self.imNumChange)
-		QtCore.QObject.connect(self.wimlist, QtCore.SIGNAL("itemSelectionChanged()"),self.imSelChange)
-#		QtCore.QObject.connect(self.wbutedit, QtCore.SIGNAL('clicked(bool)'), self.buttonEdit)
+		self.wheadtree=QtGui.QTreeWidget()
+		self.wheadtree.setColumnCount(2)
+		self.wheadtree.setHeaderLabels(["Item","Value"])
+		self.gbl.addWidget(self.wheadtree,0,0)
 		
 		
-		
-		self.vbl=QtGui.QVBoxLayout(self)
 
 	def display(self,target):
 		"display information for the target EMDirEntry"
 		self.target=target
 		
-		# Set up image selectors for stacks
-		if target.nimg<2 :
-			self.wimnum.hide()
-			self.wimlist.hide()
-			self.curim=0
+		self.wheadtree.clear()
+		try: trg=EMData(self.target.path(),0,True).get_attr_dict()		# read the header only, discard the emdata object
+		except:
+			print "Error reading: ",self.target.path(),key
+			
+		if trg==None :
+			print "Warning: tried to read unavailable key: %s"%key
+			#print self.bdb.keys()
+			return
+		
+		self.addTreeItem(trg)
+		
+	def addTreeItem(self,trg,parent=None):
+		"""(recursively) add an item to the tree"""
+		itms=[]
+		# Dictionaries may require recursion
+		if isinstance(trg,dict):
+			for k in trg.keys():
+				itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k),str(trg[k])))))
+				if isinstance(trg[k],list) or isinstance(trg[k],tuple) or isinstance(trg[k],set) or isinstance(trg[k],dict):
+					self.addTreeItem(trg[k],itms[-1])
+
+		elif isinstance(trg,list) or isinstance(trg,tuple) or isinstance(trg,set):
+			for k in trg:
+				if isinstance(k,list) or isinstance(k,tuple) or isinstance(k,set) or isinstance(k,dict):
+					try: itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((k.__class__.__name__,""))))
+					except: itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList(("??",""))))
+					self.addTreeItem(k,itms[-1])
+				else:
+					itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k),""))))
+			
 		else:
-			self.wimnum.setRange(0,target.nimg)
-			self.wimlist.clear()
-			self.wimlist.addItems([str(i) for i in range(0,min(target.nimg,500))])
-			self.wimnum.show()
-			self.wimlist.show()
-		
-	def imNumChange(self,num):
-		"New image number"
-		
-	def imSelChange(self):
-		"New image selection"
+			itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(trg),""))))
+
+		if parent==None: 
+			self.wheadtree.addTopLevelItems(itms)
+			self.wheadtree.resizeColumnToContents(0)
+		else : parent.addChildren(itms)
 
 class EMStackInfoPane(EMInfoPane):
 	
+	maxim=500
 	def __init__(self,parent=None):
 		QtGui.QWidget.__init__(self,parent)
 		
@@ -1341,38 +1442,91 @@ class EMStackInfoPane(EMInfoPane):
 		self.gbl.addWidget(self.wimlist,1,0)
 		
 		# Actual header contents
-		self.wheadtree=QTreeWidget()
+		self.wheadtree=QtGui.QTreeWidget()
+		self.wheadtree.setColumnCount(2)
+		self.wheadtree.setHeaderLabels(["Item","Value"])
 		self.gbl.addWidget(self.wheadtree,0,1,2,1)
+		
+		self.gbl.setColumnStretch(0,1)
+		self.gbl.setColumnStretch(1,4)
 		
 		QtCore.QObject.connect(self.wimnum, QtCore.SIGNAL("valueChanged(int)"),self.imNumChange)
 		QtCore.QObject.connect(self.wimlist, QtCore.SIGNAL("itemSelectionChanged()"),self.imSelChange)
 #		QtCore.QObject.connect(self.wbutedit, QtCore.SIGNAL('clicked(bool)'), self.buttonEdit)
 		
-		
-		
-		self.vbl=QtGui.QVBoxLayout(self)
 
 	def display(self,target):
 		"display information for the target EMDirEntry"
 		self.target=target
 		
 		# Set up image selectors for stacks
-		if target.nimg<2 :
-			self.wimnum.hide()
-			self.wimlist.hide()
-			self.curim=0
-		else:
-			self.wimnum.setRange(0,target.nimg)
-			self.wimlist.clear()
-			self.wimlist.addItems([str(i) for i in range(0,min(target.nimg,500))])
-			self.wimnum.show()
-			self.wimlist.show()
+		self.wimnum.setRange(0,target.nimg)
+		self.wimlist.clear()
+		self.wimlist.addItems([str(i) for i in range(0,min(target.nimg,self.maxim))])
+		if target.nimg>self.maxim: self.wimlist.addItem("...")
+		self.wimnum.show()
+		self.wimlist.show()
+
+		self.wheadtree.clear()
 
 	def imNumChange(self,num):
 		"New image number"
+		if num<500 : self.wimlist.setCurrentRow(num)
+		else : self.showItem(num)
 		
 	def imSelChange(self):
 		"New image selection"
+		
+		val=self.wimlist.currentItem().text()
+		try:
+			val=int(val)
+			self.wimnum.setValue(val)
+		except:
+			print "Error with key :",val
+			return
+		
+		self.showItem(val)
+		
+	def showItem(self,key):
+		"""Shows header information for the selected item"""
+		self.wheadtree.clear()
+		try: trg=EMData(self.target.path(),key,True).get_attr_dict()		# read the header only, discard the emdata object
+		except:
+			print "Error reading: ",self.target.path(),key
+			
+		if trg==None :
+			print "Warning: tried to read unavailable key: %s"%key
+			#print self.bdb.keys()
+			return
+		
+		self.addTreeItem(trg)
+		
+	def addTreeItem(self,trg,parent=None):
+		"""(recursively) add an item to the tree"""
+		itms=[]
+		# Dictionaries may require recursion
+		if isinstance(trg,dict):
+			for k in trg.keys():
+				itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k),str(trg[k])))))
+				if isinstance(trg[k],list) or isinstance(trg[k],tuple) or isinstance(trg[k],set) or isinstance(trg[k],dict):
+					self.addTreeItem(trg[k],itms[-1])
+
+		elif isinstance(trg,list) or isinstance(trg,tuple) or isinstance(trg,set):
+			for k in trg:
+				if isinstance(k,list) or isinstance(k,tuple) or isinstance(k,set) or isinstance(k,dict):
+					try: itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((k.__class__.__name__,""))))
+					except: itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList(("??",""))))
+					self.addTreeItem(k,itms[-1])
+				else:
+					itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k),""))))
+			
+		else:
+			itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(trg),""))))
+
+		if parent==None: 
+			self.wheadtree.addTopLevelItems(itms)
+			self.wheadtree.resizeColumnToContents(0)
+		else : parent.addChildren(itms)
 
 class EMInfoWin(QtGui.QWidget):
 	"""The info window"""
@@ -1470,7 +1624,9 @@ class EMBrowserWidget(QtGui.QWidget):
 		#self.wbookmarks.setAutoFillBackground(True)
 		#self.wbookmarks.setBackgroundRole(QtGui.QPalette.Dark)
 		self.wbookmarks.setOrientation(2)
-		self.addBookmark("EMEN2","emen2")
+		self.addBookmark("EMEN2","emen2:")
+		self.wbookmarks.addSeparator()
+		self.addBookmark("SSH","ssh:")
 		self.wbookmarks.addSeparator()
 		self.addBookmark("Root","/")
 		self.addBookmark("Current",".")
@@ -1708,6 +1864,7 @@ class EMBrowserWidget(QtGui.QWidget):
 		if tog :
 			if self.infowin==None :
 				self.infowin=EMInfoWin()
+				self.infowin.resize(500,600)
 			self.infowin.show()
 			self.infowin.raise_()
 			qism=self.wtree.selectionModel().selectedRows()
