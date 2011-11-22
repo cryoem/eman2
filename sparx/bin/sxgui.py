@@ -6087,6 +6087,7 @@ class App(QApplication):
         QApplication.__init__(self, *args)
         #here we define the main window (class MainWindow)
         self.main = MainWindow()
+	self.main.resize(400,450)
         #here we define that when all windows are closed, function byebye of class App will be started
         self.connect(self, SIGNAL("lastWindowClosed()"), self.byebye )
         #hshows main window
