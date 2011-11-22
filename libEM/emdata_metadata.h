@@ -69,9 +69,12 @@ EMData *get_fft_phase();
 #ifdef EMAN2_USING_CUDA
 inline float *get_data() const
 {
-	if(cudadirtybit == 1 || rdata == 0){
+	if(rdata == 0){
+		rdata = (float*)malloc(num_bytes);
+		cudadirtybit = 1;
+	}
+	if(cudadirtybit == 1){
 		cudadirtybit = 0;
-		if(rdata == 0) rdata = (float*)malloc(num_bytes);
 		cudaMemcpy(rdata,cudarwdata,num_bytes,cudaMemcpyDeviceToHost);
 	}
 	return rdata;

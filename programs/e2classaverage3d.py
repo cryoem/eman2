@@ -409,6 +409,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 			groupslist.append([])
 			includedlist.append([])
 		
+		db = db_open_dict("bdb:%s#%s"%(path,"tomo_xforms"))
 		for i,ptcl_parms in enumerate(align_parms):
 			ptcl=EMData(ptcl_file,i)
 			ptcl.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
@@ -434,6 +435,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 						print "Particle %d assigned to group number %d!" %(i,kk+1)
 						print "The threshold criteria was %f, and the particles cc score was %f" %(threshs[kk+1], ptcl_parms[0]["score"])
 
+			db["tomo_%04d"%i] = ptcl_parms[0]['xform.align3d']
 			if saveali:
 				ptcl['origin_x'] = 0
 				ptcl['origin_y'] = 0		
@@ -443,7 +445,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 				
 			#	print "I will write the particle with the origin set to 0. Its type is", type(ptcl)
 			#	ptcl.write_image("bdb:class_ptcl",i)
-		
+		db_close_dict(db)
 		ret=[]
 		
 		for i in range(len(groupslist)):
@@ -496,7 +498,8 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 		
 		print "The path is", path
 		#sys.exit()
-
+		
+		db = db_open_dict("bdb:%s#%s"%(path,"tomo_xforms"))
 		for i,ptcl_parms in enumerate(align_parms):
 			ptcl=EMData(ptcl_file,i)
 			ptcl.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
@@ -507,6 +510,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 				avgr.add_image(ptcl)
 				included.append(i)
 
+			db["tomo_%04d"%i] = ptcl_parms[0]['xform.align3d']
 			if saveali:
 				ptcl['origin_x'] = 0
 				ptcl['origin_y'] = 0		# jesus - the origin needs to be reset to ZERO to avoid display issues in Chimera
@@ -519,8 +523,9 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 				classname=path+"/class_ptcl"
 				#print "The class name is", classname
 				#sys.exit()
-				ptcl.write_image(classname,i)
-
+				ptcl.write_image(classname,i)	
+		db_close_dict(db)
+		
 		if verbose: 
 			print "Kept %d / %d particles in average"%(len(included),len(align_parms))
 
