@@ -23,18 +23,21 @@
         "ICON": "tomo_hunter",
         "PROGRAM": "e2classaverage3d.py", 
         "NAME": "Tomogram Alignment and Averaging", 
+	"NOTELEVEL": "1",
         "CHILDREN": [] 
       },
       {
         "ICON": "single_image_3d",
         "PROGRAM": "e2symsearch.py", 
-        "NAME": "Align to Symmetry Axis", 
+        "NAME": "Align to Symmetry Axis",
+	"NOTELEVEL": "1",
         "CHILDREN": [] 
       },
       {
         "ICON": "single_image_3d",
         "PROGRAM": "e2tomoresolution.py", 
-        "NAME": "Estimate Resolution via FSC", 
+        "NAME": "Estimate Resolution via FSC",
+	"NOTELEVEL": "1",
         "CHILDREN": [] 
       }
     ] 

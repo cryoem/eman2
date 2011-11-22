@@ -681,11 +681,16 @@ class EMProjectManager(QtGui.QMainWindow):
 		"""
 		if not cmd: return False	# Don't excecute a broken script
 		# --ipd=-2 tells the pm log book that this job is already in the pm
-		if self.notebook: 
+		if self.notebook and self.getProgramNoteLevel() > 0:
+			# Only take notes if note level is greater than 0
 			self.notebook.insertNewJob(cmd,local_datetime())
+			self.notebook.writeNotes()
 			child = subprocess.Popen((str(cmd)+" --ppid=-2"), shell=True, cwd=self.pm_projects_db[self.pn_project_name]["CWD"])
 		else:
-			child = subprocess.Popen(str(cmd), shell=True, cwd=self.pm_projects_db[self.pn_project_name]["CWD"])
+			if self.getProgramNoteLevel() > 0:
+				child = subprocess.Popen(str(cmd), shell=True, cwd=self.pm_projects_db[self.pn_project_name]["CWD"])
+			else:
+				child = subprocess.Popen((str(cmd)+" --ppid=-2"), shell=True, cwd=self.pm_projects_db[self.pn_project_name]["CWD"])
 		self.statusbar.setMessage("Program %s Launched!!!!"%str(cmd).split()[0])
 		
 		return True
@@ -700,6 +705,8 @@ class EMProjectManager(QtGui.QMainWindow):
 			qtreewidget.setProgram(child["PROGRAM"])
 			# Optional mode for the program to run in. The default is to have no mode
 			if "MODE" in child: qtreewidget.setMode(child["MODE"])
+			# Option note level and note elevel > 0 means add job to notebook. Good to prevent a lot of crap from piling up!
+			if "NOTELEVEL" in child: qtreewidget.setNoteLevel(child["NOTELEVEL"])
 			self._add_children(child, qtreewidget)
 			widgetitem.addChild(qtreewidget)
 			
@@ -730,6 +737,8 @@ class EMProjectManager(QtGui.QMainWindow):
 			qtreewidget.setProgram(toplevel["PROGRAM"])
 			# Optional mode for the program to run in. The default is to have no mode
 			if "MODE" in toplevel: qtreewidget.setMode(toplevel["MODE"])
+			# Option note level and note elevel > 0 means add job to notebook. Good to prevent a lot of crap from piling up!
+			if "NOTELEVEL" in toplevel: qtreewidget.setNoteLevel(toplevel["NOTELEVEL"])
 			self._add_children(toplevel, qtreewidget)
 			QTree.addTopLevelItem(qtreewidget)
 		
@@ -827,17 +836,32 @@ class EMProjectManager(QtGui.QMainWindow):
 		"""
 		return self.tree_stacked_widget.currentWidget().currentItem().getMode()
 		
+	def getProgramNoteLevel(self):
+		"""
+		return the program note level, used for noting
+		"""
+		return self.tree_stacked_widget.currentWidget().currentItem().getNoteLevel()
+		
 	def getCS(self):
 		""" Return the project CS """
-		return self.pm_projects_db[self.pn_project_name]['CS']
+		try:
+			return self.pm_projects_db[self.pn_project_name]['CS']
+		except:
+			return ""
 		
 	def getVoltage(self):
 		""" Return the project Voltage """
-		return self.pm_projects_db[self.pn_project_name]['VOLTAGE']
+		try:
+			return self.pm_projects_db[self.pn_project_name]['VOLTAGE']
+		except:
+			return ""
 		
 	def getAPIX(self):
 		""" Return the project Apix """
-		return self.pm_projects_db[self.pn_project_name]['APIX']
+		try:
+			return self.pm_projects_db[self.pn_project_name]['APIX']
+		except:
+			return ""
 	
 	def getPMCWD(self):
 		""" return the CWD that the pm is working in """
@@ -855,6 +879,9 @@ class EMProjectManager(QtGui.QMainWindow):
 		if self.pm_cwd != self.pm_projects_db[self.pn_project_name]["CWD"]:
 			self.pm_cwd = self.pm_projects_db[self.pn_project_name]["CWD"]
 			os.chdir(self.pm_cwd)
+			# update widget to reflect new CWD
+			if self.gui_stacked_widget.currentIndex() > 1:
+				self.gui_stacked_widget.currentWidget().updateWidget()
 		self.logbutton.setDown(bool(self.notebook), quiet=True)
 		self.taskmanagerbutton.setDown(bool(self.taskmanager), quiet=True)
 		# Help button should only be down if the textbox widget is displayed
@@ -1517,6 +1544,7 @@ class PMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 		QtGui.QTreeWidgetItem.__init__(self, qstring)
 		self.program = None
 		self.mode = ""
+		self.notelevel = 0
 		
 	def setProgram(self, program):
 		""" The name of the program the tree widget is supposed to run """
@@ -1531,6 +1559,13 @@ class PMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 		
 	def getMode(self):
 		return self.mode
+		
+	def setNoteLevel(self, notelevel):
+		""" The note level of a program """
+		self.notelevel = int(notelevel)
+		
+	def getNoteLevel(self):
+		return self.notelevel
 
 class PMToolButton(QtGui.QToolButton):
 	""" Create a toogle button """

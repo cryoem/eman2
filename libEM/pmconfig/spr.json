@@ -78,6 +78,7 @@
         "PROGRAM": "e2ctf.py",
         "MODE": "autofit", 
         "NAME": "Automated Fitting -e2ctf", 
+	"NOTELEVEL": "1",
         "CHILDREN": []
       }, 
       {
@@ -92,6 +93,7 @@
         "PROGRAM": "e2ctf.py", 
         "MODE": "genoutp",
         "NAME": "Generate Output - e2ctf", 
+	"NOTELEVEL": "1",
         "CHILDREN": []
       }, 
       {
@@ -99,6 +101,7 @@
         "PROGRAM": "e2ctf.py", 
         "MODE": "gensf",
         "NAME": "Generate Structure Factor - e2ctf", 
+	"NOTELEVEL": "1",
         "CHILDREN": []
       }
     ]
@@ -112,18 +115,21 @@
         "ICON": "multiple_images", 
         "PROGRAM": "programName", 
         "NAME": "Build Particle Sets", 
+	"NOTELEVEL": "1",
         "CHILDREN": []
       }, 
       {
         "ICON": "multiple_images", 
         "PROGRAM": "e2evalparticles.py", 
-        "NAME": "Evaluate Particle Sets", 
+        "NAME": "Evaluate Particle Sets",
+	"NOTELEVEL": "1",
         "CHILDREN": []
       }, 
       {
         "ICON": "multiple_images", 
         "PROGRAM": "programName", 
-        "NAME": "multiple_images", 
+        "NAME": "multiple_images",
+	"NOTELEVEL": "1", 
         "CHILDREN": []
       }
     ]
@@ -150,24 +156,28 @@
         "ICON": "single_image_3d", 
         "PROGRAM": "e2initialmodel.py", 
         "NAME": "Make Model - e2initialmodel", 
+	"NOTELEVEL": "1",
         "CHILDREN": []
       },
       {
         "ICON": "single_image_3d", 
         "PROGRAM": "e2montecarlorecon.py", 
-        "NAME": "Make Model - e2montecarlo", 
+        "NAME": "Make Model - e2montecarlo",
+	"NOTELEVEL": "1",
         "CHILDREN": []
       },
       {
         "ICON": "single_image_3d", 
         "PROGRAM": "e2rct.py", 
-        "NAME": "Make Model - e2rct", 
+        "NAME": "Make Model - e2rct",
+	"NOTELEVEL": "1",
         "CHILDREN": []
       },
       {
         "ICON": "single_image_3d",
         "PROGRAM": "e2symsearch.py", 
-        "NAME": "Align to Symmetry Axis", 
+        "NAME": "Align to Symmetry Axis",
+	"NOTELEVEL": "1",
         "CHILDREN": [] 
       }
     ]
@@ -181,12 +191,14 @@
         "ICON": "refine", 
         "PROGRAM": "e2refine.py", 
         "NAME": "Run e2refine", 
+	"NOTELEVEL": "1",
         "CHILDREN": []
       }, 
       {
         "ICON": "refine", 
         "PROGRAM": "e2refinemulti.py", 
-        "NAME": "Run e2refinemulti", 
+        "NAME": "Run e2refinemulti",
+	"NOTELEVEL": "1",
         "CHILDREN": []
       }, 
       {
@@ -197,19 +209,22 @@
           {
             "ICON": "refine", 
             "PROGRAM": "e2refinetofrealign.py", 
-            "NAME": "Run e2refinetofrealign", 
+            "NAME": "Run e2refinetofrealign",
+	    "NOTELEVEL": "1",
             "CHILDREN": []
           }, 
           {
             "ICON": "refine", 
             "PROGRAM": "e2runfrealign.py", 
-            "NAME": "Run e2runfrealign", 
+            "NAME": "Run e2runfrealign",
+	    "NOTELEVEL": "1",
             "CHILDREN": []
           }, 
           {
             "ICON": "refine", 
             "PROGRAM": "e2refinefromfrealign.py", 
-            "NAME": "Run e2refinefromfrealign", 
+            "NAME": "Run e2refinefromfrealign",
+	    "NOTELEVEL": "1",
             "CHILDREN": []
           }
         ]
@@ -224,13 +239,15 @@
       {
         "ICON": "resolution", 
         "PROGRAM": "e2eotest.py", 
-        "NAME": "Run e2eotest", 
+        "NAME": "Run e2eotest",
+	"NOTELEVEL": "1",
         "CHILDREN": []
       }, 
       {
         "ICON": "resolution", 
         "PROGRAM": "e2resolution.py", 
-        "NAME": "Run e2resolution", 
+        "NAME": "Run e2resolution",
+	"NOTELEVEL": "1",
         "CHILDREN": []
       }
     ]
@@ -244,7 +261,8 @@
         "ICON": "single_image_3d", 
         "MODE": "analysis",
         "PROGRAM": "e2tiltvalidate.py", 
-        "NAME": "Run e2tiltvalidate", 
+        "NAME": "Run e2tiltvalidate",
+	"NOTELEVEL": "1",
         "CHILDREN": []
       },
       {

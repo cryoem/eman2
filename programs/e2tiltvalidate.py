@@ -331,6 +331,7 @@ class CompareToTiltTask(EMTask):
 	""" A parallelized version to compute contout plots """
 	def __init__(self, volume, tilted, imgnum, eulerxform, zrot, distplot, tiltrange, tiltstep, options):
 		if options.shrink:
+			print volume
 			volume.process_inplace("math.meanshrink",{"n":options.shrink})
 			tilted.process_inplace("math.meanshrink",{"n":options.shrink})
 		data = {"volume":volume,"tilted":tilted}
