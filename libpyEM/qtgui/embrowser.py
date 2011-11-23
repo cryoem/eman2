@@ -37,6 +37,7 @@ from PyQt4.QtCore import Qt
 from emapplication import EMApp
 from EMAN2 import *
 import os.path
+import os
 import traceback
 from emimage2d import *
 from emimagemx import *
@@ -1576,7 +1577,7 @@ class EMBrowserWidget(QtGui.QWidget):
 	- remote database access (EMEN2)
 	"""
 	
-	def __init__(self,parent=None,withmodal=False):
+	def __init__(self,parent=None,withmodal=False,multiselect=False):
 		QtGui.QWidget.__init__(self,parent)
 		
 		self.resize(780,580)
@@ -1629,14 +1630,16 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.addBookmark("SSH","ssh:")
 		self.wbookmarks.addSeparator()
 		self.addBookmark("Root","/")
-		self.addBookmark("Current",".")
+		self.addBookmark("Current",os.getcwd())
 		self.addBookmark("Home",e2gethome())
 		self.wbmfrbl.addWidget(self.wbookmarks)
 		
 		self.gbl.addWidget(self.wbookmarkfr,1,0)
 		
+		# This is the main window listing files and metadata
 		self.wtree = QtGui.QTreeView()
-		self.wtree.setSelectionMode(1)			# single selection
+		if multiselect: self.wtree.setSelectionMode(3)	# extended selection
+		else : self.wtree.setSelectionMode(1)			# single selection
 		self.wtree.setSelectionBehavior(1)		# select rows
 		self.wtree.setAllColumnsShowFocus(True)
 		self.wtree.sortByColumn(-1,0)			# start unsorted
@@ -1725,6 +1728,8 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.setPath(".")	# start in the local directory
 		self.updthread.start()
 		self.updtimer.start(300)
+
+		self.result=None			# used in modal mode. Holds final selection
 
 	def busy(self):
 		"display a busy cursor"
@@ -1832,10 +1837,15 @@ class EMBrowserWidget(QtGui.QWidget):
 
 	def buttonOk(self,tog):
 		"Button press"
+		qism=self.wtree.selectionModel().selectedRows()
+		self.result=[i.internalPointer().path().replace(os.getcwd(),".") for i in qism]
+		self.emit(QtCore.SIGNAL("ok")) # this signal is important when e2ctf is being used by a program running its own eve
 		
 	def buttonCancel(self,tog):
 		"Button press"
-				
+		self.result=[]
+		self.emit(QtCore.SIGNAL("cancel")) # this signal is important when e2ctf is being used by a program running its own eve
+		
 	def buttonBack(self,tog):
 		"Button press"
 		try : 
@@ -1874,6 +1884,17 @@ class EMBrowserWidget(QtGui.QWidget):
 		else :
 			if self.infowin!=None:
 				self.infowin.hide()
+
+	def getResult(self):
+		"""In modal mode, this will return the result of a selection. Returns None before
+		ok/cancel have been pressed. If cancel is pressed or ok is pressed with no selection,
+		returns an empty list []. With a valid selection, returns a list of path strings.
+		When called after ok/cancel, also closes the dialog."""
+
+		if self.result==None: return None
+		
+		self.close()
+		return self.result
 
 	def addBookmark(self,label,path):
 		"""Add a new bookmark"""
@@ -1914,13 +1935,13 @@ class EMBrowserWidget(QtGui.QWidget):
 
 	def bookmarkPress(self,action):
 		""
-		print "Got action ",action.text(),action.data().toString()
+#		print "Got action ",action.text(),action.data().toString()
 		
 		self.setPath(action.data().toString())
 #		self.wtree.setSelectionModel(myQItemSelection(self.curmodel))
 	
 	def closeEvent(self,event):
-		print "Exiting"
+#		print "Exiting"
 		try: window.updthreadexit=True
 		except:pass
 		for w in self.view2d+self.view2ds+self.view3d+self.viewplot2d+self.viewplot3d:
@@ -1934,13 +1955,21 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.emit(QtCore.SIGNAL("module_closed")) # this signal is important when e2ctf is being used by a program running its own eve
 
 # This is just for testing, of course
+def test_result():
+	global window
+	print "Returned"
+	print window.getResult()
+
 if __name__ == '__main__':
 	em_app = EMApp()
-	window = EMBrowserWidget(withmodal=True)
-		
+	window = EMBrowserWidget(withmodal=True,multiselect=True)
+	QtCore.QObject.connect(window, QtCore.SIGNAL("ok"),test_result)
+	QtCore.QObject.connect(window, QtCore.SIGNAL("cancel"),test_result)
+
 	window.show()
 	ret=em_app.exec_()
 	try: window.updthreadexit=True
 	except:pass
 	sys.exit(ret)
-		
+
+	
