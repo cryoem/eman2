@@ -956,7 +956,7 @@ float EMData::max_3D_pixel_error(const Transform &t1, const Transform & t2, floa
 		ddmax = _cpp_max(ddmax,d[0]*d[0]+d[1]*d[1]+d[2]*d[2]);
 #else
 		ddmax = std::max(ddmax,d[0]*d[0]+d[1]*d[1]+d[2]*d[2]);
-#endif	_WIN32
+#endif	//_WIN32
 	}
 	return std::sqrt(ddmax);
 }
