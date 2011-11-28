@@ -784,7 +784,7 @@ class EMProjectManager(QtGui.QMainWindow):
 			self.stackedWidgetHash[program] = self.gui_stacked_widget.count()
 			guioptions = self._read_e2program(programfile, mode)
 			# Now actually make the widget
-			widget = PMGUIWidget(guioptions, programfile, self)
+			widget = PMGUIWidget(guioptions, programfile, self, mode)
 			self.gui_stacked_widget.addWidget(widget)
 			self.gui_stacked_widget.setCurrentIndex(self.stackedWidgetHash[program])
 				
@@ -798,10 +798,33 @@ class EMProjectManager(QtGui.QMainWindow):
 		except:
 			self.statusbar.setMessage("Can't open file '%s'"%e2program)
 			return
+		# Regex objects
 		lineregex = re.compile("^\s*parser\.add_",flags=re.I) # eval parser.add_ lines, which are  not commented out.
-		moderegex = re.compile("mode\s*=\s*[\"'].*%s.*[\"']"%mode,flags=re.I)	# If the program has a mode only eval lines with the right mode.
+		moderegex = re.compile("mode\s*=\s*[\"'].*%s[{0,1}.*]{0,1}.*[\"']"%mode,flags=re.I)	# If the program has a mode only eval lines with the right mode.
+		modedefre = re.compile("%s\[([\w\.]*)\]"%mode,flags=re.I)
+		defaultre = re.compile("[^g][^u][^i]default\s*=\s*[^,]*",flags=re.I)
+		gdefaultre = re.compile("guidefault\s*=\s*[^,]*",flags=re.I)
+		
+		# Read line and do preprocessing(set mode defaults if desired)
 		for line in f.xreadlines():
-			if mode and not re.search(moderegex, line): continue	# If we are running the program in a mode, then only eval mode lines
+			if mode:
+				if not re.search(moderegex, line): continue	# If we are running the program in a mode, then only eval mode lines
+				string = re.findall(modedefre, re.findall(moderegex, line)[0])
+				print string
+				if string:
+					guidefault = re.findall(gdefaultre, line)
+					if guidefault:
+						key,value = guidefault[0].split('=')
+						repl = "%s=%s"%(key,string[0])
+						line = re.sub(gdefaultre, repl, line) 
+					else:
+						default = re.findall(defaultre, line)
+						if default:
+							key,value = default[0].split('=')
+							repl = "%s=%s"%(key,string[0])
+							line = re.sub(defaultre, repl, line) 
+						
+			print line			
 			if re.search(lineregex, line):
 				eval(line)
 				continue
@@ -1383,13 +1406,14 @@ class PMGUIWidget(QtGui.QScrollArea):
 	"""
 	Creates a GUI widget using a dict derived from the e2program options
 	"""
-	def __init__(self, options, program, pm):
+	def __init__(self, options, program, pm, mode):
 		QtGui.QScrollArea.__init__(self)
 		self.widgetlist = []
 		self.cwd  = pm.pm_projects_db[pm.pn_project_name]['CWD']	# The working directory that were in
 		self.program = program
 		self.db = db_open_dict("bdb:"+str(self.cwd)+"#"+program)
 		self.pm = weakref.ref(pm)
+		self.mode = mode
 		
 		gridbox = QtGui.QGridLayout()
 		for option in options:
@@ -1399,31 +1423,31 @@ class PMGUIWidget(QtGui.QScrollArea):
 			if option['guitype'] == 'header': 
 				widget = PMHeaderWidget(option['name'], option['title'])
 			if option['guitype'] == 'filebox':
-				widget = PMFileNameWidget(option['name'], self.getDefault(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True),checkfileexist=self.getFileCheck(option))
+				widget = PMFileNameWidget(option['name'], self.getDefault(option), self.getSharingMode(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True),checkfileexist=self.getFileCheck(option))
 				fileboxwidget = widget
 			if option['guitype'] == 'dirbox':
-				widget = PMDirectoryWidget(option['name'], option['dirbasename'], self.getDefault(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
+				widget = PMDirectoryWidget(option['name'], option['dirbasename'], self.getDefault(option), self.getSharingMode(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
 			if option['guitype'] == 'symbox':
-				widget = PMSymWidget(option['name'], self.getDefault(option), initdefault=self.getDefault(option, nodb=True))
+				widget = PMSymWidget(option['name'], self.getDefault(option), self.getSharingMode(option), initdefault=self.getDefault(option, nodb=True))
 			if option['guitype'] == 'multisymbox':
-				widget = PMMultiSymWidget(option['name'], initdefault=self.getDefault(option, nodb=True))
+				widget = PMMultiSymWidget(option['name'], self.getSharingMode(option), initdefault=self.getDefault(option, nodb=True))
 				self.connect(fileboxwidget,QtCore.SIGNAL("pmfilename(QString)"),widget.update)
 				widget.update(fileboxwidget.getValue())
 				widget.setValue(self.getDefault(option))
 			if option['guitype'] == 'intbox':
-				widget = PMIntEntryWidget(option['name'], self.getDefault(option), self.getLRange(option), self.getURange(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
+				widget = PMIntEntryWidget(option['name'], self.getDefault(option), self.getSharingMode(option), self.getLRange(option), self.getURange(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
 			if option['guitype'] == 'floatbox':
-				widget = PMFloatEntryWidget(option['name'], self.getDefault(option), self.getLRange(option), self.getURange(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
+				widget = PMFloatEntryWidget(option['name'], self.getDefault(option), self.getSharingMode(option), self.getLRange(option), self.getURange(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
 			if option['guitype'] == 'boolbox':
-				widget = PMBoolWidget(option['name'], self.getDefault(option), initdefault=self.getDefault(option, nodb=True))
+				widget = PMBoolWidget(option['name'], self.getDefault(option), self.getSharingMode(option), initdefault=self.getDefault(option, nodb=True))
 			if option['guitype'] == 'strbox':
-				widget = PMStringEntryWidget(option['name'], self.getDefault(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
+				widget = PMStringEntryWidget(option['name'], self.getDefault(option), self.getSharingMode(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
 			if option['guitype'] == 'comboparambox':
-				widget = PMComboParamsWidget(option['name'], self.getChoices(option), self.getDefault(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
+				widget = PMComboParamsWidget(option['name'], self.getChoices(option), self.getDefault(option), self.getSharingMode(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
 			if option['guitype'] == 'combobox':
-				widget = PMComboWidget(option['name'], self.getChoices(option), self.getDefault(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
+				widget = PMComboWidget(option['name'], self.getChoices(option), self.getDefault(option), self.getSharingMode(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
 			if option['guitype'] == 'automask3d':	
-				widget = PMAutoMask3DWidget(option['name'], self.getDefault(option), initdefault=self.getDefault(option, nodb=True))
+				widget = PMAutoMask3DWidget(option['name'], self.getDefault(option), self.getSharingMode(option), initdefault=self.getDefault(option, nodb=True))
 			
 			# Setup each widget
 			self.connect(widget,QtCore.SIGNAL("pmmessage(QString)"),self._on_message)
@@ -1456,6 +1480,9 @@ class PMGUIWidget(QtGui.QScrollArea):
 		
 	def getDefault(self, option, nodb = False):
 		""" return the default value according to the folowing rules"""
+		# If there is a DB and its usage is desired the default will be the DB value
+		if not nodb and self.db[option['name']+self.getSharingMode(option)]: return self.db[option['name']+self.getSharingMode(option)]	# Return the default if it exists in the DB
+		
 		default = ""
 		# Set default to GUI default if available otherwise set to default if available
 		if 'guidefault' in option:
@@ -1463,10 +1490,6 @@ class PMGUIWidget(QtGui.QScrollArea):
 			if type(default) == str and 'self.' in default: default = eval(default)
 		else:
 			if 'default' in option: default = option['default']
-		# If there is no DataBase or it isn't desired return
-		if nodb: return default
-		# If there is a DB and its usage is desired the default will be the DB value
-		if self.db[option['name']]: return self.db[option['name']]	# Return the default if it exists in the DB
 		return default
 		
 	def getLRange(self, option):
@@ -1500,7 +1523,13 @@ class PMGUIWidget(QtGui.QScrollArea):
 		filecheck = True
 		if 'filecheck' in option: filecheck = option['filecheck']
 		return filecheck
-		
+	
+	def getSharingMode(self, option):
+		if 'nosharedb' in option: 
+			return self.mode
+		else:
+			return ""
+			
 	def updateWidget(self):
 		# reload the DB if necessary (when projects are changed)
 		thiscwd = self.pm().pm_projects_db[self.pm().pn_project_name]['CWD']
@@ -1511,10 +1540,10 @@ class PMGUIWidget(QtGui.QScrollArea):
 		for widget in self.widgetlist:
 			# If this is not a value holding widget continue
 			if widget.getArgument() == None: continue
-			if self.db[widget.getName()] == None:
+			if self.db[widget.getName()+widget.getMode()] == None:
 				widget.setValue(widget.initdefault)
 			else:
-				widget.setValue(self.db[widget.getName()])
+				widget.setValue(self.db[widget.getName()+widget.getMode()])
 		
 	def getCommand(self):
 		#Loop and check for errors and set the DB
@@ -1527,12 +1556,12 @@ class PMGUIWidget(QtGui.QScrollArea):
 				self.pm().statusbar.setMessage(widget.getErrorMessage())
 				return None
 			# Save the value
-			self.db[widget.getName()] = widget.getValue()
+			self.db[widget.getName()+widget.getMode()] = widget.getValue()
 			args += " "+widget.getArgument()
 			
 		self.pm().statusbar.setMessage("")	# Blank Status bar
 		return args
-		
+			
 	def _on_message(self, QString):
 		self.pm().statusbar.setMessage(str(QString))
 		

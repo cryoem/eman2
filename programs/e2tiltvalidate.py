@@ -182,7 +182,7 @@ def main():
 	
 	# Generate tilts from data
 	tiltgenerator.findtilts_fromdata(simmx, simmx_tilt, projections, volume, untiltimgs, tiltimgs) 
-	#exit(1)
+	exit(1)
 
 	# Make contour plot to validate each particle
 	tasks=[]
@@ -301,7 +301,7 @@ class ComputeTilts:
 				self.test.write("\t%f %f %f %f\n"%(tiltxform.get_rotation("spin")["Omega"],tiltxform.get_rotation("spin")["n1"],tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n3"]))
 				self.test.write("\t%f %f %f\n"%(tiltxform.get_rotation("eman")["az"],tiltxform.get_rotation("eman")["alt"],tiltxform.get_rotation("eman")["phi"]))
 		else:
-			bestinplane = 2.0
+			bestinplane = 180.0
 			for sym in self.symmeties.get_syms():
 				tiltxform = tilt_euler_xform*sym.inverse()*untilt_euler_xform.inverse()
 				if math.fabs(tiltxform.get_rotation("eman")['az'] - (-tiltxform.get_rotation("eman")['phi'] % 360)) < bestinplane:
@@ -331,10 +331,11 @@ class CompareToTiltTask(EMTask):
 	""" A parallelized version to compute contout plots """
 	def __init__(self, volume, tilted, imgnum, eulerxform, zrot, distplot, tiltrange, tiltstep, options):
 		if options.shrink:
-			print volume
-			volume.process_inplace("math.meanshrink",{"n":options.shrink})
-			tilted.process_inplace("math.meanshrink",{"n":options.shrink})
-		data = {"volume":volume,"tilted":tilted}
+			shrunkvol = volume.process("math.meanshrink",{"n":options.shrink})
+			shrunktilted = tilted.process("math.meanshrink",{"n":options.shrink})
+			data = {"volume":shrunkvol,"tilted":shrunktilted}
+		else:
+			data = {"volume":volume,"tilted":tilted}
 		EMTask.__init__(self,"CmpTilt",data,options,"")
 		
 		self.imgnum = imgnum

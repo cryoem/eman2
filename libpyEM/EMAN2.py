@@ -438,6 +438,7 @@ class EMArgumentParser(argparse.ArgumentParser):
 			if "filecheck" in kwargs: del kwargs["filecheck"]
 			if "mode" in kwargs: del kwargs["mode"]
 			if "dirbasename" in kwargs: del kwargs["dirbasename"]
+			if "nosharedb" in kwargs: del kwargs["nosharedb"]
 			
 		# Run arparser function
 		argparse.ArgumentParser.add_argument(self, *args, **kwargs)

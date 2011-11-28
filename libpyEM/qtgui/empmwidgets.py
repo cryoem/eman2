@@ -39,11 +39,12 @@ import re, os, glob
 
 class PMBaseWidget(QtGui.QWidget):
 	""" A base widget upon which all the other PM widgets are derived """
-	def __init__(self, name):
+	def __init__(self, name, mode=""):
 		QtGui.QWidget.__init__(self)
 		
 		self.postional = False
 		self.name = name
+		self.setMode(mode)
 		self.errormessage = None
 		
 	def getValue(self):
@@ -60,6 +61,12 @@ class PMBaseWidget(QtGui.QWidget):
 		
 	def getPositional(self):
 		return self.postional
+	
+	def setMode(self, mode):
+		self.mode = mode
+	
+	def getMode(self):
+		return self.mode
 		
 	def getArgument(self):
 		# If the value is None or blank then do not yeild an option. Obviously this will nver happen for Int bool or float
@@ -80,8 +87,8 @@ class PMBaseWidget(QtGui.QWidget):
 	
 class PMIntEntryWidget(PMBaseWidget):
 	""" A Widget for geting Int values. Type and range is checked """
-	def __init__(self, name, value, lrange=None, urange=None, postional=False, initdefault=None):
-		PMBaseWidget.__init__(self, name) 
+	def __init__(self, name, value, mode, lrange=None, urange=None, postional=False, initdefault=None):
+		PMBaseWidget.__init__(self, name, mode) 
 		gridbox = QtGui.QGridLayout()
 		label = QtGui.QLabel(name)
 		self.intbox = QtGui.QLineEdit()
@@ -132,8 +139,8 @@ class PMIntEntryWidget(PMBaseWidget):
 		
 class PMFloatEntryWidget(PMBaseWidget):
 	""" A Widget for geting Float values. Type and range is checked """
-	def __init__(self, name, value, lrange=None, urange=None, postional=False, initdefault=None):
-		PMBaseWidget.__init__(self, name) 
+	def __init__(self, name, value, mode, lrange=None, urange=None, postional=False, initdefault=None):
+		PMBaseWidget.__init__(self, name, mode) 
 		gridbox = QtGui.QGridLayout()
 		label = QtGui.QLabel(name)
 		self.floatbox = QtGui.QLineEdit()
@@ -184,8 +191,8 @@ class PMFloatEntryWidget(PMBaseWidget):
 		
 class PMStringEntryWidget(PMBaseWidget):
 	""" A Widget for geting String values. Type is checked """
-	def __init__(self, name, string, postional=False, initdefault=None):
-		PMBaseWidget.__init__(self, name) 
+	def __init__(self, name, string, mode, postional=False, initdefault=None):
+		PMBaseWidget.__init__(self, name, mode) 
 		gridbox = QtGui.QGridLayout()
 		label = QtGui.QLabel(name)
 		self.stringbox = QtGui.QLineEdit()
@@ -241,8 +248,8 @@ class PMHeaderWidget(PMBaseWidget):
 
 class PMBoolWidget(PMBaseWidget):
 	""" A Widget for getting Bool values. Type is checked """
-	def __init__(self, name, boolvalue, initdefault=None):
-		PMBaseWidget.__init__(self, name)
+	def __init__(self, name, boolvalue, mode, initdefault=None):
+		PMBaseWidget.__init__(self, name, mode)
 		gridbox = QtGui.QGridLayout()
 		self.boolbox = QtGui.QCheckBox(name)
 		gridbox.addWidget(self.boolbox, 0, 0)
@@ -275,8 +282,8 @@ class PMBoolWidget(PMBaseWidget):
 		
 class PMFileNameWidget(PMBaseWidget):
 	""" A Widget for geting filenames. Type is checked """
-	def __init__(self, name, filename, postional=True, initdefault=None, checkfileexist=True):
-		PMBaseWidget.__init__(self, name) 
+	def __init__(self, name, filename, mode, postional=True, initdefault=None, checkfileexist=True):
+		PMBaseWidget.__init__(self, name, mode) 
 		gridbox = QtGui.QGridLayout()
 		label = QtGui.QLabel(name)
 		self.filenamebox = QtGui.QLineEdit()
@@ -338,8 +345,8 @@ class PMFileNameWidget(PMBaseWidget):
 
 class PMDirectoryWidget(PMBaseWidget):
 	""" A Widget for display dircories of a certian type """
-	def __init__(self, name, dirbasename, default, postional=False, initdefault=None):
-		PMBaseWidget.__init__(self, name) 
+	def __init__(self, name, dirbasename, default, mode, postional=False, initdefault=None):
+		PMBaseWidget.__init__(self, name, mode) 
 		self.dirbasename = dirbasename
 		gridbox = QtGui.QGridLayout()
 		label = QtGui.QLabel(name)
@@ -372,8 +379,8 @@ class PMDirectoryWidget(PMBaseWidget):
 		
 class PMComboWidget(PMBaseWidget):
 	""" A Widget for combo boxes. Type is checked """
-	def __init__(self, name, choices, default, postional=False,  datatype=str, initdefault=None):
-		PMBaseWidget.__init__(self, name) 
+	def __init__(self, name, choices, default, mode, postional=False,  datatype=str, initdefault=None):
+		PMBaseWidget.__init__(self, name, mode) 
 		gridbox = QtGui.QGridLayout()
 		label = QtGui.QLabel(name)
 		self.combobox = QtGui.QComboBox()
@@ -403,8 +410,8 @@ class PMComboWidget(PMBaseWidget):
 			
 class PMComboParamsWidget(PMBaseWidget):
 	""" A Widget for combo boxes. Type is checked. For the combobox with params the datatype is always str """
-	def __init__(self, name, choices, default, postional=False, initdefault=None):
-		PMBaseWidget.__init__(self, name) 
+	def __init__(self, name, choices, default, mode, postional=False, initdefault=None):
+		PMBaseWidget.__init__(self, name, mode) 
 		gridbox = QtGui.QGridLayout()
 		label = QtGui.QLabel(name)
 		self.combobox = QtGui.QComboBox()
@@ -456,8 +463,8 @@ class PMComboParamsWidget(PMBaseWidget):
 		
 class PMSymWidget(PMBaseWidget):
 	""" A widget for getting/setting symmetry input """
-	def __init__(self, name, default, initdefault=None):
-		PMBaseWidget.__init__(self, name)
+	def __init__(self, name, default, mode, initdefault=None):
+		PMBaseWidget.__init__(self, name, mode)
 		gridbox = QtGui.QGridLayout()
 		label = QtGui.QLabel(name)
 		label.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight)
@@ -512,8 +519,8 @@ class PMSymWidget(PMBaseWidget):
 
 class PMMultiSymWidget(PMBaseWidget):
 	""" A widget for getting/setting symmetry input from multiple models and this widget is runtime dynamic """
-	def __init__(self, name, initdefault=None):
-		PMBaseWidget.__init__(self, name)
+	def __init__(self, name, mode, initdefault=None):
+		PMBaseWidget.__init__(self, name, mode)
 		self.gridbox = QtGui.QVBoxLayout()
 		self.gridbox.setContentsMargins(0,0,0,0)
 		self.stackedwidget = QtGui.QStackedWidget()
@@ -571,8 +578,8 @@ class PMMultiSymWidget(PMBaseWidget):
 			
 class PMAutoMask3DWidget(PMBaseWidget):
 	""" A Widget for getting automask 3D input """
-	def __init__(self, name, default, initdefault=None):
-		PMBaseWidget.__init__(self, name)
+	def __init__(self, name, default, mode, initdefault=None):
+		PMBaseWidget.__init__(self, name, mode)
 		gridbox = QtGui.QGridLayout()
 		self.automask3dbool = QtGui.QCheckBox("Auto Mask 3D")
 		self.paramsdict = {}
