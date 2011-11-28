@@ -612,7 +612,8 @@ void set_attr_dict(const Dict & new_dict);
  */
 inline int get_xsize() const
 {
-	return nx;
+	if(rdata) return nx;
+	else	return attr_dict["nx"];	//header only situation
 }
 
 
@@ -621,7 +622,8 @@ inline int get_xsize() const
  */
 inline int get_ysize() const
 {
-	return ny;
+	if(rdata) return ny;
+	else	return attr_dict["ny"];	//header only situation
 }
 
 
@@ -630,7 +632,8 @@ inline int get_ysize() const
  */
 inline int get_zsize() const
 {
-	return nz;
+	if(rdata) return nz;
+	else	return attr_dict["nz"];	//header only situation
 }
 
 
@@ -639,7 +642,8 @@ inline int get_zsize() const
  */
 inline size_t get_size() const
 {
-	return (size_t)nx*(size_t)ny*(size_t)nz;
+	if(rdata) return (size_t)nx*(size_t)ny*(size_t)nz;
+	else	return (size_t)((int)attr_dict["nx"]*(int)attr_dict["ny"])*(int)attr_dict["nz"];	//header only situation
 }
 
 /** Get the pixel data as a vector
