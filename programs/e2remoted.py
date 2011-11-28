@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 #
-# Author: Steven Ludtke, 3/1/2010 (sludtke@bcm.edu)
-# Copyright (c) 2010- Baylor College of Medicine
+# Author: Steven Ludtke, 11/25/2011 (sludtke@bcm.edu)
+# Copyright (c) 2011- Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -43,112 +43,77 @@ from zlib import compress,decompress
 from subprocess import Popen,PIPE
 import traceback
 import atexit
+import random
+import string
 
 def main():
 	global debug
 	progname = os.path.basename(sys.argv[0])
-	usage = """prog [options] <base path> <path or db> ... <target>
+	usage = """prog [options]
 
-	WARNING: While this program can be made to work, as long as you have exactly the same binary EMAN2 on both computers,
-	and run 'e2bdb.py -c' on the source machine, using regular scp or rsync should work fine.
-	
-	
-	This program is used to copy directories or files including BDB databases between machines. Requires a
-	properly configured SSH client on the local machine, and SSH server running on target machine. EMAN2
-	must be installed on both machines. Syntax is not quite the same as scp.
-
-- The first argument is a 'base path' for the source. Other source paths are relative to this path
-- Sources may be of the form: path, bdb:path
-- Target may not include bdb: specifiers, but must be a directory (local or remote)
-- If target is remote it should be user@host:path
-- If sources are remote, first arg should be user@host:path. Sources are implicitly referenced against this path
-- Only one of source/target may be remote
-- user is not optional in remote specification
-"""
+	This program supports remote access of images and metadata from other machines. It is launched as a daemon
+	and maintains open connections to databases and other computers for transfers.
+	"""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	#parser.add_argument("--cleanup","-c",action="store_true",default=False,help="This option will clean up the database cache so files can safely be moved or accessed on another computer via NFS.")
-	#parser.add_argument("--filt",type=str,help="Only include dictionary names containing the specified string",default=None)
-	parser.add_argument("--client","-c",action="store_true",default=False,help="This option is for internal use only. Do NOT specify.")
-	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--ssh",type=str,help="Connect to a remote ssh server",default=None)
+	parser.add_argument("--emen2",type=str,help="Connect to a remote EMEN2 server",default=None)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 
-	print "This program has been deprecated in favor of running 'e2bdb.py -c' followed by using regular scp"
+	run_daemon(options,args)
 	
-	if options.client : 
-		scp_client()
-		sys.exit(0)
+def run_daemon(options,args):
+	import sys, os 
 
-	# Make sure at most one of source or dest is remote
-	if '@' in args[-1] and '@' in args[0] :
-		print "Remote specification may not be in both source and target"
-		sys.exit(1)
-	
-	if "bdb:" in args[0].lower() or "bdb:" in args[-1].lower():
-		print "Neither source base path or destination path  may be a bdb specifier"
-		sys.exit(1)
-	
-	# source is remote
-	if '@' in args[0] : 
-		userhost=args[0].split(":")[0]
-		ssh=scp_proxy(userhost)
-		
-		# remote basepath
-		try: remotepath=args[0].split(":")[1]
-		except: remotepath="."
-		
-		# local base path
-		basepath=args[-1]
-		
-		for a in args[1:-1]:
-			print a,remotepath
-			sources=ssh.listrecurse(a,remotepath)
-			
-			if options.verbose : print len(sources)," source files in ",a
-			
-			for s in sources:
-				if s[:4].lower()=="bdb:" :
-					if options.verbose>1 : print "Read %s as %s"%("bdb:"+remotepath+"/"+s[4:],"bdb:"+basepath+"/"+s[4:])
-					ssh.getbdb("bdb:"+remotepath+"/"+s[4:],"bdb:"+basepath+"/"+s[4:])
-				else:
-					if options.verbose>1 : print "Read %s as %s"%(remotepath+"/"+s,basepath+"/"+s)
-					ssh.getfile(remotepath+"/"+s,basepath+"/"+s)
-		
+    # UNIX double-fork magic
+    try: 
+        pid = os.fork() 
+        if pid > 0: sys.exit(0) # exit parent once
+    except OSError, e: 
+        print "Daemon error" 
+        sys.exit(1)
 
-	# target is remote
-	elif '@' in args[-1] :
-		userhost=args[-1].split(":")[0]
-		ssh=scp_proxy(userhost)
-		
-		# create the target path
-		remotepath=args[-1][args[-1].find(":")+1:]
-		if options.verbose>1 : print "Create remote path: ",remotepath
-		ssh.mkdir(remotepath)
-		
-		# local base path
-		basepath= args[0]
-		
-		for a in args[1:-1]:
-			sources=get_dir_list_recurse(a,basepath)
-			
-			if options.verbose : print len(sources)," source files in ",a
-		
-			for s in sources:
-				if s[:4].lower()=="bdb:" :
-					if options.verbose>1 : print "Write %s as %s"%("bdb:"+basepath+s[4:],"bdb:"+remotepath+"/"+s[4:])
-					ssh.putbdb("bdb:"+basepath+"/"+s[4:],"bdb:"+remotepath+"/"+s[4:])
-				else:
-					if options.verbose>1 : print "Write %s as %s"%(basepath+"/"+s,remotepath+"/"+s)
-					ssh.putfile(basepath+"/"+s,remotepath+"/"+s)
-				
-					
-	else: 
-		print "Local copying not supported, at least one of source/target must be user@hostname:path"
-	
+    try: 
+		os.setsid() 
+		os.umask(0) 	# do we really want this
+		os.chdir("/") 	# or this ?
+	except:
+		pass
 
+    # do second fork
+    try: 
+        pid = os.fork() 
+        if pid > 0: sys.exit(0) 	# exit the second time
+    except OSError, e: 
+        print "Daemon error 2" 
+        sys.exit(1) 
+
+	# ok, we got here, so we should be running in a parentless daemon now
+    
+class daemon:
+	
+	def __init__(self,options,args):
+		
+		self.listen_sock=None
+		
+		# Find a good random port and bind to it
+		while self.listen_sock==None:
+			self.listen_port=random.randint(10000,15000)
+			self.listen_sock=socket()
+			try: self.listen_sock.bind(("",self.listen_port))
+			except: continue
+			
+		# This is a magic string for basic security
+		self.magic="".join([random.choice(string.letters) for i in xrange(20)])
+		
+		out=file(path=e2gethome()+"/.eman2/remoted.txt","w")
+
+    
+    
 def client_error(stdout,msg):
 	"Return an error to the server in the form of !!!!message\n"
 	msg=msg.replace("\n","")
