@@ -810,7 +810,6 @@ class EMProjectManager(QtGui.QMainWindow):
 			if mode:
 				if not re.search(moderegex, line): continue	# If we are running the program in a mode, then only eval mode lines
 				string = re.findall(modedefre, re.findall(moderegex, line)[0])
-				print string
 				if string:
 					guidefault = re.findall(gdefaultre, line)
 					if guidefault:
