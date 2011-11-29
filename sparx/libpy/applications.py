@@ -3506,8 +3506,8 @@ def mref_ali3d(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1, ir=
 	from utilities      import model_circle, drop_image, get_image, get_input_from_string
 	from utilities      import get_arb_params, set_arb_params, get_im, write_headers
 	from projection     import prep_vol, prgs
-	from utilities      import get_params_proj
-	from alignment      import proj_ali_incore,proj_ali_incore_local,Numrinit,prepare_refrings
+	from utilities      import get_params_proj, estimate_3D_center
+	from alignment      import proj_ali_incore, proj_ali_incore_local, Numrinit, prepare_refrings
 	from filter	    import filt_params, filt_tanl
 	from fundamentals   import fshift
 	from statistics     import fsc_mask
@@ -3679,7 +3679,7 @@ def mref_ali3d(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1, ir=
 			for im in xrange(nima):
 				data[im].set_attr('xform.projection', trans[im])
 
-			if(center == -1):
+			if center == -1:
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center(data, total_nima, myid, number_of_proc, main_node)
 				msg = " Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
 				print_msg(msg)

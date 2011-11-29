@@ -153,6 +153,7 @@ def ref_ali3dm( refdata ):
 	from filter import fit_tanh, filt_tanl
 	from utilities import get_im
 	from fundamentals import rot_shift3D
+	import os
 
 	numref = refdata[0]
 	outdir = refdata[1]
