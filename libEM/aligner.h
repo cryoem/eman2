@@ -1331,6 +1331,7 @@ namespace EMAN
 			{
 				TypeDict d;
 				d.put("sym", EMObject::FLOAT,"The symmetry. Default is icos");
+				d.put("transform", EMObject::TRANSFORM,"The transform to move to symmetry axis");
 				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
 				return d;
 			}

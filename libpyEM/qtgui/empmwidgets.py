@@ -400,9 +400,12 @@ class PMComboWidget(PMBaseWidget):
 		self.connect(self.combobox, QtCore.SIGNAL("activated(const QString &)"), self.setValue)
 		
 	def getValue(self):
+		if str(self.combobox.currentText()) == "None":
+			return ""
 		return self.datatype(self.combobox.currentText())
 		
 	def setValue(self, value):
+		if value == '': value = "None"
 		idx = self.combobox.findText(str(value))
 		if idx > -1:
 			self.combobox.setCurrentIndex(idx)
@@ -436,6 +439,8 @@ class PMComboParamsWidget(PMBaseWidget):
 	
 	def getValue(self):
 		""" Return the value. Concatenate if necessary """
+		if str(self.combobox.currentText()) == "None":
+			return ""
 		if self.params.text() == "":
 			return str(self.combobox.currentText())
 		else:
@@ -443,6 +448,7 @@ class PMComboParamsWidget(PMBaseWidget):
 		
 	def setValue(self, value):
 		# First parse the value, as it may contain both a options and params
+		if value == '': value = "None"
 		values = self._parsedefault(str(value))
 		# Next process the parsed value
 		idx = self.combobox.findText(str(values[0]))
@@ -469,7 +475,7 @@ class PMSymWidget(PMBaseWidget):
 		label = QtGui.QLabel(name)
 		label.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight)
 		self.combobox = QtGui.QComboBox()
-		self.symnumbox = PMIntEntryWidget("Symmetry Number", 0, lrange=0)
+		self.symnumbox = PMIntEntryWidget("Symmetry Number", 0, mode, lrange=0)
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.combobox, 0, 1)
 		gridbox.addWidget(self.symnumbox, 0, 2, 1, 2)
@@ -583,11 +589,11 @@ class PMAutoMask3DWidget(PMBaseWidget):
 		gridbox = QtGui.QGridLayout()
 		self.automask3dbool = QtGui.QCheckBox("Auto Mask 3D")
 		self.paramsdict = {}
-		self.paramsdict["threshold"] = PMFloatEntryWidget("Threshold", 0.8)
-		self.paramsdict["nmaxseed"] = PMIntEntryWidget("NMax", 30)
-		self.paramsdict["radius"] = PMIntEntryWidget("Radius", 30)
-		self.paramsdict["nshells"] = PMIntEntryWidget("Mask Dilations", 5)
-		self.paramsdict["nshellsgauss"] = PMIntEntryWidget("Post Gaussian Dialations", 5)
+		self.paramsdict["threshold"] = PMFloatEntryWidget("Threshold", 0.8, mode)
+		self.paramsdict["nmaxseed"] = PMIntEntryWidget("NMax", 30, mode)
+		self.paramsdict["radius"] = PMIntEntryWidget("Radius", 30, mode)
+		self.paramsdict["nshells"] = PMIntEntryWidget("Mask Dilations", 5, mode)
+		self.paramsdict["nshellsgauss"] = PMIntEntryWidget("Post Gaussian Dialations", 5, mode)
 		gridbox.addWidget(self.automask3dbool, 0, 0)
 		gridbox.addWidget(self.paramsdict["threshold"], 1, 0)
 		gridbox.addWidget(self.paramsdict["nmaxseed"], 1, 1)

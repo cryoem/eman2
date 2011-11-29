@@ -2434,6 +2434,13 @@ vector<Dict> RT3DSymmetryAligner::xform_align_nbest(EMData * this_img, EMData * 
 {
 	
 	bool verbose = params.set_default("verbose",false);
+	Transform* ixform;
+	if (params.has_key("transform") ) {
+		ixform = params["transform"];
+	}else{
+		ixform = new Transform(); // is the identity
+	}
+	
 	//Initialize a soln dict
 	vector<Dict> solns;
 	if (nsoln == 0) return solns; // What was the user thinking?
@@ -2460,7 +2467,7 @@ vector<Dict> RT3DSymmetryAligner::xform_align_nbest(EMData * this_img, EMData * 
 	float score = 0.0f;
 	for ( vector<Transform>::const_iterator symit = syms.begin(); symit != syms.end(); ++symit ) {
 		//Here move to sym position and compute the score
-		Transform sympos = *symit;
+		Transform sympos = (*symit)*(*ixform);
 		EMData* transformed = this_img->process("xform",Dict("transform", &sympos));
 		score = c->cmp(transformed,to);
 		delete transformed; transformed = 0;

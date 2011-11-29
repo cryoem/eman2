@@ -21,8 +21,17 @@
       },
       {
         "ICON": "tomo_hunter",
-        "PROGRAM": "e2classaverage3d.py", 
+        "PROGRAM": "e2classaverage3d.py",
+	"MODE": "alignment", 
         "NAME": "Tomogram Alignment and Averaging", 
+	"NOTELEVEL": "1",
+        "CHILDREN": [] 
+      },
+      {
+        "ICON": "tomo_hunter",
+        "PROGRAM": "e2classaverage3d.py",
+	"MODE": "breaksym", 
+        "NAME": "Tomogram Alignment, Break Sym", 
 	"NOTELEVEL": "1",
         "CHILDREN": [] 
       },

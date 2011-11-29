@@ -802,7 +802,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		lineregex = re.compile("^\s*parser\.add_",flags=re.I) # eval parser.add_ lines, which are  not commented out.
 		moderegex = re.compile("mode\s*=\s*[\"'].*%s[{0,1}.*]{0,1}.*[\"']"%mode,flags=re.I)	# If the program has a mode only eval lines with the right mode.
 		modedefre = re.compile("%s\[([\w\.\(\)\']*)\]"%mode,flags=re.I)
-		defaultre = re.compile("[^g][^u][^i]default\s*=\s*[^,]*",flags=re.I)
+		defaultre = re.compile("default\s*=\s*[^,]*")
 		
 		# Read line and do preprocessing(set mode defaults if desired)
 		for line in f.xreadlines():
@@ -812,10 +812,8 @@ class EMProjectManager(QtGui.QMainWindow):
 				if string:
 					default = re.findall(defaultre, line)
 					if default:
-						key,value = default[0].split('=')
-						repl = "%s=%s"%(key,string[0])
+						repl = "default=%s"%string[0]
 						line = re.sub(defaultre, repl, line) 
-					print line
 			if re.search(lineregex, line):
 				eval(line)
 				continue
@@ -1213,7 +1211,7 @@ class TaskManager(QtGui.QWidget):
 		"""Check to see if the 'tsk' string is actively running"""
 		try:
 			# This means the task must be done
-			if tsk[1][4]=="/" or tsk[1] == "crashed": return False
+			if tsk[1][4]=="/" or "crashed" in tsk[1]: return False
 			
 			# or not running
 			if '/' in tsk[2] : pid=int(tsk[2].split("/")[0])
