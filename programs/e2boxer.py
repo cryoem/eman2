@@ -79,7 +79,7 @@ e2boxer.py ????.mrc --boxsize=256
 	parser.add_header(name="boxerheader", help='Options below this label are specific to e2boxer', title="### e2boxer options ###", row=1, col=0, rowspan=1, colspan=3, mode="boxing,extraction")
 	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=-1, guitype='intbox', row=2, col=0, rowspan=1, colspan=3, mode="boxing,extraction")
 	parser.add_argument("--write_dbbox",action="store_true",help="Write coordinate file (eman1 dbbox) files",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="extraction")
-	parser.add_argument("--write_ptcls",action="store_true",help="Write particles to disk",default=False, guidefault=True, guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode="extraction")
+	parser.add_argument("--write_ptcls",action="store_true",help="Write particles to disk",default=False, guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode="extraction[True]")
 	parser.add_argument("--force","-f",action="store_true",help="Force overwrite",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="extraction")
 	parser.add_argument("--format", help="Format of the output particles images, should be bdb,img,spi or hdf", default="bdb", guitype='combobox', choicelist="['bdb','hdf','img','spi']", row=6, col=0, rowspan=1, colspan=2, mode="extraction")
 	parser.add_argument("--norm", type=str,help="Normalization processor to apply to written particle images. Should be normalize, normalize.edgemean,etc.Specifc \"None\" to turn this off", default="normalize.edgemean", guitype='combobox', choicelist='re_filter_list(dump_processors_list(),\'normalize\')', row=5, col=0, rowspan=1, colspan=2, mode="extraction")

@@ -801,9 +801,8 @@ class EMProjectManager(QtGui.QMainWindow):
 		# Regex objects
 		lineregex = re.compile("^\s*parser\.add_",flags=re.I) # eval parser.add_ lines, which are  not commented out.
 		moderegex = re.compile("mode\s*=\s*[\"'].*%s[{0,1}.*]{0,1}.*[\"']"%mode,flags=re.I)	# If the program has a mode only eval lines with the right mode.
-		modedefre = re.compile("%s\[([\w\.]*)\]"%mode,flags=re.I)
+		modedefre = re.compile("%s\[([\w\.\(\)\']*)\]"%mode,flags=re.I)
 		defaultre = re.compile("[^g][^u][^i]default\s*=\s*[^,]*",flags=re.I)
-		gdefaultre = re.compile("guidefault\s*=\s*[^,]*",flags=re.I)
 		
 		# Read line and do preprocessing(set mode defaults if desired)
 		for line in f.xreadlines():
@@ -811,19 +810,12 @@ class EMProjectManager(QtGui.QMainWindow):
 				if not re.search(moderegex, line): continue	# If we are running the program in a mode, then only eval mode lines
 				string = re.findall(modedefre, re.findall(moderegex, line)[0])
 				if string:
-					guidefault = re.findall(gdefaultre, line)
-					if guidefault:
-						key,value = guidefault[0].split('=')
+					default = re.findall(defaultre, line)
+					if default:
+						key,value = default[0].split('=')
 						repl = "%s=%s"%(key,string[0])
-						line = re.sub(gdefaultre, repl, line) 
-					else:
-						default = re.findall(defaultre, line)
-						if default:
-							key,value = default[0].split('=')
-							repl = "%s=%s"%(key,string[0])
-							line = re.sub(defaultre, repl, line) 
-						
-			print line			
+						line = re.sub(defaultre, repl, line) 
+					print line
 			if re.search(lineregex, line):
 				eval(line)
 				continue
@@ -1481,14 +1473,8 @@ class PMGUIWidget(QtGui.QScrollArea):
 		""" return the default value according to the folowing rules"""
 		# If there is a DB and its usage is desired the default will be the DB value
 		if not nodb and self.db[option['name']+self.getSharingMode(option)]: return self.db[option['name']+self.getSharingMode(option)]	# Return the default if it exists in the DB
-		
 		default = ""
-		# Set default to GUI default if available otherwise set to default if available
-		if 'guidefault' in option:
-			default = option['guidefault']
-			if type(default) == str and 'self.' in default: default = eval(default)
-		else:
-			if 'default' in option: default = option['default']
+		if 'default' in option: default = option['default']
 		return default
 		
 	def getLRange(self, option):
@@ -1524,6 +1510,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 		return filecheck
 	
 	def getSharingMode(self, option):
+		""" Returns whether or not the widget desires DB sharing with other modes """
 		if 'nosharedb' in option: 
 			return self.mode
 		else:
