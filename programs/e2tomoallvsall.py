@@ -336,11 +336,16 @@ def main():
 				for p in ptcl1['spt_ptcl_indxs']:											
 					pastt = ptcl_indxs_transforms[p]
 					
+					subp1 = EMData(options.input,p)
+					subp1.process_inplace("xform",{"transform":pastt})
+					
+					avgr.add_image(subp1)
+					
 					indx_trans_pairs.update({p:pastt})
 					
 					kk+=1
 						
-				avgr.add_image(ptcl1)								#Add particle 1 to the average
+				#avgr.add_image(ptcl1)								#Add particle 1 to the average
 				
 				ptcl2 = allptclsMatrix[k][results[z]['ptcl2']][0]
 						
@@ -352,7 +357,7 @@ def main():
 					
 				ptcl_indxs_transforms = ptclinfo[-1]
 								
-				ptcl2avgr = Averagers.get(options.averager[0], options.averager[1])		#You need to recompute ptcl2 "fresh" from the raw data to avoid multiple interpolations
+				#ptcl2avgr = Averagers.get(options.averager[0], options.averager[1])		#You need to recompute ptcl2 "fresh" from the raw data to avoid multiple interpolations
 				
 				for p in ptcl2['spt_ptcl_indxs']:						#All the particles in ptcl2's history need to undergo the new transformation before averaging
 					#print "I'm fixing the transform for this index", p			#(multiplied by any old transforms, all in one step, to avoid multiple interpolations)
@@ -366,16 +371,17 @@ def main():
 					#if options.saveali:
 					#	subp2.write_image(avgname.replace('averages','average' + str(mm))  + '_ptcls',kk)
 					
-					ptcl2avgr.add_image(subp2)
+					avgr.add_image(subp2)
 					
 					indx_trans_pairs.update({p:totalt})
 					
 					kk+=1
 
-				ptcl2avg =  ptcl2avgr.finish()
-				ptcl2avg = ptcl2avg * ptcl2['spt_multiplicity']					#Take the multiplicity of ptcl2 into account
+				#ptcl2avg =  ptcl2avgr.finish()
+				
+				#ptcl2avg = ptcl2avg * ptcl2['spt_multiplicity']				#Take the multiplicity of ptcl2 into account
 												
-				avgr.add_image(ptcl2avg)							#Add the transformed (rotated and translated) particle 2 to the average
+				#avgr.add_image(ptcl2avg)							#Add the transformed (rotated and translated) particle 2 to the average
 		
 				avg=avgr.finish()
 				
