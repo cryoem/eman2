@@ -121,12 +121,22 @@ def main():
 		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
 		sys.exit(1)
 		
-	if options.path and options.path[:4].lower()!="bdb:": 
-		options.path="bdb:"+options.path
+	#if options.path and options.path[:4].lower()!="bdb:": 
+	#	options.path="bdb:"+options.path
+	
+	files=os.listdir(os.getcwd())
+
 	if not options.path: 
-		options.path="bdb:"+numbered_path("sptavsa",True)
-
-
+		#options.path="bdb:"+numbered_path("sptavsa",True)
+		options.path = "sptavsa_01"
+	
+		while options.path in files:
+			options.path = options.path.split('_')[0] + '_' + str(int(options.path.split('_')[-1]) + 1).zfill(2)
+			print "The new options.path is", options.path
+		
+	if options.path not in files:
+		os.system('mkdir ' + options.path)
+			
 	hdr = EMData(options.input,0,True)
 	nx = hdr["nx"]
 	ny = hdr["ny"]
@@ -163,6 +173,9 @@ def main():
 		
 		particletag = roundtag + '_' + str(i).zfill(fillfactor)
 		newptcls.update({particletag :a})
+		
+		if 'sptID' not in a.get_attr_dict():					#spt_multiplicity keeps track of how many particles were averaged to make any given new particle (set to 1 for the raw data)
+			a['sptID'] = particletag
 		allptclsRound.update({particletag : [a,{i:totalt}]})			
 		
 	oldptcls = {}									#'Unused' particles (those that weren't part of any unique-best-pair) join the 'oldptcls' dictionary onto the next round
@@ -172,6 +185,10 @@ def main():
 	allptclsMatrix.append(allptclsRound)
 
 	for k in range(options.iter):							#Start the loop over the user-defined number of iterations
+		avgname = options.path + '/round' + str(k).zfill(fillfactor) + '_averages.hdf'
+		newstack = options.path + '/round' + str(k-1).zfill(fillfactor) + '_averages.hdf'
+		if k== 0:
+			newstack =options.input
 		
 		nnew = len(newptcls)
 		if nnew + len(oldptcls) == 1:						#Stop the loop if the data has converged and you're left with one final particle (an average of all)
@@ -203,15 +220,20 @@ def main():
 			for ptcl2 in compare:
 				
 				reftag = roundtag + str(ptcl1).zfill(fillfactor)				
-				ref = newptcls[reftag]
+				#ref = newptcls[reftag]
 				
 				particletag = roundtag + str(ptcl2).zfill(fillfactor)
-				particle = newptcls[particletag]
+				#particle = newptcls[particletag]
 				
 				#if options.verbose > 2:
 				print "Setting the following comparison: %s vs %s in ALL VS ALL" %(reftag,particletag)
 				
-				task = Align3DTaskAVSA(ref,["cache",particle], jj, reftag, particletag,"Aligning particle#%s VS particle#%s in iteration %d" % (reftag,particletag,k),options.mask,options.normproc,options.preprocess,
+				#task = Align3DTaskAVSA(ref,["cache",particle], jj, reftag, particletag,"Aligning particle#%s VS particle#%s in iteration %d" % (reftag,particletag,k),options.mask,options.normproc,options.preprocess,
+				#options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
+				
+				#print "I'm passing this stack to the task!!!!", newstack
+				
+				task = Align3DTaskAVSA(newstack,newstack, jj, reftag, particletag, ptcl1, ptcl2,"Aligning particle#%s VS particle#%s in iteration %d" % (reftag,particletag,k),options.mask,options.normproc,options.preprocess,
 				options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
 				
 				tasks.append(task)
@@ -224,17 +246,50 @@ def main():
 		'''
 				
 		if k > 0:
+		
+			oldtags = {}
+			nold = EMUtil.get_image_count(options.path + '/oldptclstack.hdf')
+			
+			for i in range(nold):
+				oldtags.update({EMData(options.path + '/oldptclstack.hdf',i,True)['sptID'] : i})
+			
+			
+			print "Old tagas are:\n", oldtags
+			nnn = 0
 			for refkey,refvalue in newptcls.iteritems():
+			#for ptcl1 in range(len(newptcls)):
+				ptcl1 = nnn
 				for particlekey,particlevalue in oldptcls.iteritems():
+				#for ptcl2 in range(len(oldptcls)):	
+					#oldptclstack = 'round' + str(k).zfill(fillfactor) + '_old.hdf'
+					
+					#roundID = particlekey.split('_')[0]
+					#roundnumber = int(roundID.replace('round',''))
+					
+					#oldptclstack =  options.path + '/' + roundID + '_averages.hdf'
+					#oldptclstack =  options.path + '/oldptclstack.hdf'
+
+
+					#if roundnumber == '0' or roundnumber == 0:
+					#	oldptclstack = options.input
+					
+					#ptcl2 = int(particlekey.split('_')[-1])
+					
+					ptcl2 = oldtags[particlekey]
+					
 					#if options.verbose > 2:
 					print "Setting the following comparison: %s vs %s in ALL VS ALL" %(refkey,particlekey)
 					
-					task = Align3DTaskAVSA(refvalue,["cache",particlevalue],jj,refkey,particlekey,"Aligning particle#%s VS particle#%s, in iteration %d" % (refkey,particlekey,k),options.mask,options.normproc,options.preprocess,
+					#task = Align3DTaskAVSA(refvalue,["cache",particlevalue],jj,refkey,particlekey,"Aligning particle#%s VS particle#%s, in iteration %d" % (refkey,particlekey,k),options.mask,options.normproc,options.preprocess,
+					#options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
+					
+					task = Align3DTaskAVSA(newstack,options.path + '/oldptclstack.hdf',jj , refkey, particlekey, ptcl1, ptcl2,"Aligning particle round#%d_%d VS particle#%s, in iteration %d" % (k,ptcl1,particlekey.split('_')[0] + str(ptcl2),k),options.mask,options.normproc,options.preprocess,
 					options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
 					
 					tasks.append(task)
 										
-					jj+=1	
+					jj+=1
+				nnn+=1	
 		
 		tids=etc.send_tasks(tasks)						#Start the alignments running
 		#if options.verbose > 0: 
@@ -247,7 +302,7 @@ def main():
 		if options.verbose > 0:
 			print "In iteration %d the SORTED results are:", k
 			for i in results:
-				print "%s VS %s , score=%f" %(['ptcl1'], i['ptcl2'], i['score'])
+				print "%s VS %s , score=%f" %(i['ptcl1'], i['ptcl2'], i['score'])
 		
 		print "\n\n\n\nIn iteration %d, the total number of comparisons in the ranking list, either new or old that survived, is %d" % (k, len(results))
 		
@@ -264,8 +319,6 @@ def main():
 				used.add(results[z]['ptcl2'])
 													
 				avgr=Averagers.get(options.averager[0], options.averager[1])			#Call the averager
-				
-				avgname= "%s/round%03d_averages"%(options.path,k)
 								
 				ptcl1 = allptclsMatrix[k][results[z]['ptcl1']][0]
 							
@@ -285,11 +338,6 @@ def main():
 					
 					indx_trans_pairs.update({p:pastt})
 					
-					if options.saveali:
-						subp1 = EMData(options.input,p)
-						subp1.process_inplace("xform",{"transform":pastt})
-						
-						subp1.write_image(avgname.replace('averages','average' + str(mm)) + '_ptcls',kk)
 					kk+=1
 						
 				avgr.add_image(ptcl1)								#Add particle 1 to the average
@@ -304,10 +352,10 @@ def main():
 					
 				ptcl_indxs_transforms = ptclinfo[-1]
 								
-				ptcl2avgr = avgr=Averagers.get(options.averager[0], options.averager[1])		#You need to recompute ptcl2 "fresh" from the raw data to avoid multiple interpolations
+				ptcl2avgr = Averagers.get(options.averager[0], options.averager[1])		#You need to recompute ptcl2 "fresh" from the raw data to avoid multiple interpolations
 				
 				for p in ptcl2['spt_ptcl_indxs']:						#All the particles in ptcl2's history need to undergo the new transformation before averaging
-					print "I'm fixing the transform for this index", p			#(multiplied by any old transforms, all in one step, to avoid multiple interpolations)
+					#print "I'm fixing the transform for this index", p			#(multiplied by any old transforms, all in one step, to avoid multiple interpolations)
 					
 					pastt = ptcl_indxs_transforms[p]
 					
@@ -315,8 +363,8 @@ def main():
 					subp2 = EMData(options.input,p)
 					subp2.process_inplace("xform",{"transform":totalt})
 					
-					if options.saveali:
-						subp2.write_image(avgname.replace('averages','average' + str(mm))  + '_ptcls',kk)
+					#if options.saveali:
+					#	subp2.write_image(avgname.replace('averages','average' + str(mm))  + '_ptcls',kk)
 					
 					ptcl2avgr.add_image(subp2)
 					
@@ -345,16 +393,23 @@ def main():
 				avg['origin_y'] = 0
 				avg['origin_z'] = 0
 				
-				if options.savesteps:
-					avg.write_image(avgname,mm)						#Particles from a "new round" need to be in a "new stack" defined by counter k; the number
 				
-					if options.postprocess!=None : 
-						avg.process_inplace(options.postprocess[0],options.postprocess[1])
-						avg.write_image(avgname + '_postp',mm)
 				
 				newroundtag = 'round' + str(k+1).zfill(fillfactor) + '_'
 				avgtag = newroundtag + str(mm).zfill(fillfactor)
 				
+				avg['sptID'] = avgtag
+				
+				
+				avg.write_image(options.path + '/round' + str(k).zfill(fillfactor) + '_averages.hdf',mm)
+				
+				#if options.savesteps:
+				#	avg.write_image(avgname,mm)						#Particles from a "new round" need to be in a "new stack" defined by counter k; the number
+				
+				if options.postprocess!=None : 
+					avgp=avg.process(options.postprocess[0],options.postprocess[1])
+					avgp.write_image(options.path + '/round' + str(k).zfill(fillfactor) + '_averages_postp.hdf',mm)
+										
 				averages.update({avgtag:avg})	   						#The list of averages will become the new set of "newptcls"
 				allptclsRound.update({avgtag : [avg,indx_trans_pairs]})
 				
@@ -365,7 +420,7 @@ def main():
 													#We only average "UNIQUE BEST PAIRS" (the first occurance in the ranking list of BOTH particles in a pair).
 			if results[z]['ptcl2'] not in tried:
 				tried.add(results[z]['ptcl2'])
-				
+		
 		surviving_results = []
 		for z in range(len(results)):
 			if results[z]['ptcl1'] not in used and results[z]['ptcl2'] not in used:
@@ -404,11 +459,17 @@ def main():
 		oldptcls = {}
 		oldptcls.update(surviving_oldptcls)  
 		oldptcls.update(surviving_newptcls)					#All the particles from the newptcls list that were not averaged become "old"
-		newptcls = averages							#All the new averages become part of the new "newptcls" list
 				
+		newptcls = averages							#All the new averages become part of the new "newptcls" list
+		
+		os.system('rm ' + options.path + '/oldptclstack.hdf')
+		
+		gg=0
 		for particlekey,particlevalue in oldptcls.iteritems():
 			allptclsRound.update({ particlekey: [particlevalue,allptclsMatrix[k][particlekey][-1]]})
-
+			particlevalue.write_image(options.path + '/oldptclstack.hdf',gg)
+			gg+=1
+			
 		allptclsMatrix.append(allptclsRound)
 
 		print "And these many new averages", len(newptcls), len(averages)
@@ -416,6 +477,9 @@ def main():
 		print "So there are these many old particles for the next round", len(oldptcls)
 		print "And these many new-new ones", len(newptcls)
 		
+		#if k>0:
+		#	os.system('rm ' + newstack)
+
 		E2end(logger)
 
 	return()
@@ -466,17 +530,17 @@ def get_results(etc,tids,verbose):
 class Align3DTaskAVSA(EMTask):
 	"""This is a task object for the parallelism system. It is responsible for aligning one 3-D volume to another, with a variety of options"""
 
-	def __init__(self,fixedimage,image,comparison,ptcl1,ptcl2,label,mask,normproc,preprocess,npeakstorefine,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,verbose):
+	def __init__(self,fixedimagestack,imagestack,comparison,ptcl1,ptcl2,p1n,p2n,label,mask,normproc,preprocess,npeakstorefine,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,verbose):
 		"""fixedimage and image may be actual EMData objects, or ["cache",path,number]
 	label is a descriptive string, not actually used in processing
 	ptcl is not used in executing the task, but is for reference
 	other parameters match command-line options from e2classaverage3d.py
 	Rather than being a string specifying an aligner, 'align' may be passed in as a Transform object, representing a starting orientation for refinement"""
 		data={}
-		data={"fixedimage":fixedimage,"image":image}
+		data={"fixedimage":fixedimagestack,"image":imagestack}
 		EMTask.__init__(self,"ClassAv3d",data,{},"")
 
-		self.options={"comparison":comparison,"ptcl1":ptcl1,"ptcl2":ptcl2,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"npeakstorefine":npeakstorefine,"align":align,"aligncmp":aligncmp,"ralign":ralign,"raligncmp":raligncmp,"shrink":shrink,"shrinkrefine":shrinkrefine,"verbose":verbose}
+		self.options={"comparison":comparison,"ptcl1":ptcl1,"ptcl2":ptcl2,"p1number":p1n,"p2number":p2n,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"npeakstorefine":npeakstorefine,"align":align,"aligncmp":aligncmp,"ralign":ralign,"raligncmp":raligncmp,"shrink":shrink,"shrinkrefine":shrinkrefine,"verbose":verbose}
 	
 	def execute(self,callback=None):
 		"""This aligns one volume to a reference and returns the alignment parameters"""
@@ -484,9 +548,14 @@ class Align3DTaskAVSA(EMTask):
 		if options["verbose"]>1: 
 			print "Aligning ",options["label"]
 		
-		fixedimage=self.data["fixedimage"]
+		fixedimage=EMData(self.data["fixedimage"],options['p1number'])
+		fn=EMUtil.get_image_count(self.data["fixedimage"])
 		
-		image=self.data["image"][-1]
+		#if type(self.data) != libpyEMData2.EMData:
+		#	print 
+		
+		image=EMData(self.data["image"],options['p2number'])
+		iin=EMUtil.get_image_count(self.data["image"])
 		
 		mask=EMData(int(image['nx']),int(image['ny']),int(image['nz']))
 		mask.to_one()
