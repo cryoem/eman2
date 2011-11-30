@@ -392,14 +392,13 @@ def main():
 				avg['origin_x'] = 0								#The origin needs to be set to ZERO to avoid display issues in Chimera
 				avg['origin_y'] = 0
 				avg['origin_z'] = 0
-				
-				
-				
+								
 				newroundtag = 'round' + str(k+1).zfill(fillfactor) + '_'
 				avgtag = newroundtag + str(mm).zfill(fillfactor)
 				
 				avg['sptID'] = avgtag
 				
+				avg.process_inplace("normalize.edgemean")
 				
 				avg.write_image(options.path + '/round' + str(k).zfill(fillfactor) + '_averages.hdf',mm)
 				
