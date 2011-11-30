@@ -160,6 +160,7 @@ private:
 	static int fudgemem;
 	const static EMData* firstinlist;
 	const static EMData* lastinlist;
+	static bool nocudainit;
 	
 #endif // EMAN2_USING_CUDA	
 

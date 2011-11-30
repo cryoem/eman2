@@ -239,6 +239,7 @@ import subprocess
 from EMAN2db import db_open_dict
 from empmwidgets import *
 from valslider import EMQTColorWidget
+from embrowser import EMBrowserWidget
 
 class EMProjectManager(QtGui.QMainWindow):
 	""" The EM Project Manager is a QT application to provide a GUI for EMAN2 job managment. 
@@ -277,9 +278,10 @@ class EMProjectManager(QtGui.QMainWindow):
 		guilabel = QtGui.QLabel("EMAN2 program GUI", centralwidget)
 		guilabel.setFont(font)
 		grid.addWidget(guilabel, 1,1)
-		
+				
 		# Make the GUI, Tree and ToolBar
-		grid.addWidget(self.makeStackedWidget(),2,0,2,1)
+		grid.addWidget(self.makeStackedWidget(),2,0,1,1)
+		grid.addWidget(self.makeBrowseButtonWidget(),3,0,1,1)
 		grid.addWidget(self.makeStackedGUIwidget(),2,1,1,1)
 		grid.addWidget(self.makeGUIToolButtons(),2,2,1,1)
 		grid.addWidget(self.makeCMDButtonsWidget(),3,1,1,1)
@@ -395,6 +397,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		filebrowser = QtGui.QAction('File Browser', self)
 		filebrowser.setShortcut('Ctrl+F')
 		filebrowser.setStatusTip('File Browser')
+		self.connect(filebrowser, QtCore.SIGNAL('triggered()'), self._on_browse)
 		configureEMEN = QtGui.QAction('Configure EMEN', self)
 		configureEMEN.setShortcut('Ctrl+C')
 		configureEMEN.setStatusTip('Configure EMEN')
@@ -617,6 +620,24 @@ class EMProjectManager(QtGui.QMainWindow):
 			self.taskmanager = TaskManager(self)
 		self.taskmanager.show()
 		
+	def makeBrowseButtonWidget(self):
+		# Make the browse buttonv
+		browsewidget = QtGui.QFrame()
+		browsewidget.setFrameShape(QtGui.QFrame.StyledPanel)
+		hbox = QtGui.QHBoxLayout()
+		self.browsebutton = QtGui.QPushButton('Browse')
+		hbox.addWidget(self.browsebutton)
+		browsewidget.setLayout(hbox)
+		hbox.setContentsMargins(4,4,4,4)
+		
+		QtCore.QObject.connect(self.browsebutton,QtCore.SIGNAL("clicked()"),self._on_browse)
+		
+		return browsewidget
+		
+	def _on_browse(self):
+		self.window = EMBrowserWidget(withmodal=False,multiselect=False)
+		self.window.show()
+	
 	def makeCMDButtonsWidget(self):
 		"""
 		Get the GUI command buttons widget

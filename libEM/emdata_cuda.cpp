@@ -72,6 +72,7 @@ int EMData::memused = 0;
 int EMData::fudgemem = 1.024E8; //let's leave 10 MB of 'fudge' memory on the device
 int EMData::cudadevicenum = -1;
 bool EMData::usecuda = 0;
+bool EMData::nocudainit = (getenv("NOCUDAINIT") == NULL) ? 0 : bool(atoi(getenv("NOCUDAINIT")));
 
 bool EMData::copy_to_cuda() const
 {
@@ -403,6 +404,7 @@ void EMData::cuda_cleanup()
 
 bool EMData::cuda_initialize()
 {
+	if(EMData::nocudainit) return;
 	int device = device_init();
 
 	if(device != -1)

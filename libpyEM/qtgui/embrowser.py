@@ -1941,9 +1941,7 @@ class EMBrowserWidget(QtGui.QWidget):
 #		self.wtree.setSelectionModel(myQItemSelection(self.curmodel))
 	
 	def closeEvent(self,event):
-#		print "Exiting"
-		try: window.updthreadexit=True
-		except:pass
+		self.updthreadexit=True
 		for w in self.view2d+self.view2ds+self.view3d+self.viewplot2d+self.viewplot3d:
 			w.close()
 
