@@ -39,13 +39,13 @@
 	#include <windows.h>
 #endif
 
-#include "glutil.h"
-#include "emdata.h"
-#include "marchingcubes.h"
-
 #ifndef GL_GLEXT_PROTOTYPES
 	#define GL_GLEXT_PROTOTYPES
 #endif	//GL_GLEXT_PROTOTYPES
+
+#include "glutil.h"
+#include "emdata.h"
+#include "marchingcubes.h"
 
 #ifdef __APPLE__
 	#include "OpenGL/gl.h"
