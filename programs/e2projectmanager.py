@@ -482,6 +482,8 @@ class EMProjectManager(QtGui.QMainWindow):
 		The Second Widget on the stack is the text edit widget for displaying comand line info and help
 		"""
 		self.gui_stacked_widget = QtGui.QStackedWidget()
+		# Set the initial height of the browser
+		self.gui_stacked_widget.setMinimumHeight(250)
 		self.gui_stacked_widget.setFrameShape(QtGui.QFrame.StyledPanel)
 		# Blank screen widget
 		self.gui_stacked_widget.addWidget(QtGui.QWidget())
@@ -1433,7 +1435,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 			if option['guitype'] == 'header': 
 				widget = PMHeaderWidget(option['name'], option['title'])
 			if option['guitype'] == 'filebox':
-				widget = PMFileNameWidget(option['name'], self.getDefault(option), self.getSharingMode(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True),checkfileexist=self.getFileCheck(option))
+				widget = PMFileNameWidget(option['name'], self.getDefault(option), self.getSharingMode(option), self.getBrowser(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True),checkfileexist=self.getFileCheck(option))
 				fileboxwidget = widget
 			if option['guitype'] == 'dirbox':
 				widget = PMDirectoryWidget(option['name'], option['dirbasename'], self.getDefault(option), self.getSharingMode(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
@@ -1534,7 +1536,14 @@ class PMGUIWidget(QtGui.QScrollArea):
 			return self.mode
 		else:
 			return ""
-			
+	
+	def getBrowser(self, option):
+		""" Returns the sort of browser to use """
+		browser = "EMBrowserWidget(withmodal=True,multiselect=True)"
+		if 'browser' in option:
+			browser = option['browser']
+		return browser
+		
 	def updateWidget(self):
 		# reload the DB if necessary (when projects are changed)
 		thiscwd = self.pm().pm_projects_db[self.pm().pn_project_name]['CWD']

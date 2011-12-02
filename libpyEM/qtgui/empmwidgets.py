@@ -36,6 +36,8 @@ from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
 from emselector import EMSelectorDialog	# This will be replaced by something more sensible in the future
 import re, os, glob
+from embrowser import EMBrowserWidget
+from empmtabwidgets import *
 
 class PMBaseWidget(QtGui.QWidget):
 	""" A base widget upon which all the other PM widgets are derived """
@@ -282,10 +284,11 @@ class PMBoolWidget(PMBaseWidget):
 		
 class PMFileNameWidget(PMBaseWidget):
 	""" A Widget for geting filenames. Type is checked """
-	def __init__(self, name, filename, mode, postional=True, initdefault=None, checkfileexist=True):
+	def __init__(self, name, filename, mode, browser, postional=True, initdefault=None, checkfileexist=True):
 		PMBaseWidget.__init__(self, name, mode) 
 		gridbox = QtGui.QGridLayout()
 		label = QtGui.QLabel(name)
+		self.browser = browser
 		self.filenamebox = QtGui.QLineEdit()
 		self.browsebutton = QtGui.QPushButton("Browse")
 		gridbox.addWidget(label, 0, 0)
@@ -304,8 +307,21 @@ class PMFileNameWidget(PMBaseWidget):
 	def _on_filenamechanged(self):
 		self.setValue(str(self.filenamebox.text()))
 		
+	def _on_cancel(self):
+		self.window.close()
+		
+	def _on_ok(self):
+		filename = ""
+		for f in self.window.getResult():
+			filename += (" "+f)
+		self.setValue(filename[1:])
+		self.window.close()
+		
 	def _on_clicked(self):
-		print "Clicked"
+		self.window = eval(self.browser)
+		QtCore.QObject.connect(self.window, QtCore.SIGNAL("ok"),self._on_ok)
+		QtCore.QObject.connect(self.window, QtCore.SIGNAL("cancel"),self._on_cancel)
+		self.window.show()
 		
 	def getValue(self):
 		return self.filename

@@ -225,7 +225,7 @@ class EMRawDataTable(EMBrowserWidget):
 		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath="./micrographs")
 	
 	def setPath(self,path,silent=False):
-		super(EMBoxesTable, self).setPath(path,silent=False,inimodel=EMRawDataModel)
+		super(EMRawDataTable, self).setPath(path,silent=False,inimodel=EMRawDataModel)
 
 			
 class EMRawDataModel(EMFileItemModel):

@@ -64,7 +64,7 @@ def isprint(s):
 		return False
 	return True
 
-class EMFileType:
+class EMFileType(object):
 	"""This is a base class for handling interaction with files of different type. It includes a number of excution methods common to
 	several different subclasses"""
 
@@ -689,7 +689,7 @@ EMFileType.extbyft = {
 EMFileType.alltocheck = (EMPlotFileType, EMTextFileType)
 
 
-class EMDirEntry:
+class EMDirEntry(object):
 	"""Represents a directory entry in the filesystem"""
 	
 	# list of lambda functions to extract column values for sorting
@@ -742,10 +742,7 @@ class EMDirEntry:
 #		print "Init DirEntry ",self,self.__dict__
 		
 	def __repr__(self):
-		return "<EMDirEntry %s>"%self.path()
-
-	#def __str__(self):
-		#return "<EMDirEntry %d>"%self.1seq
+		return "<%s %s>"%(self.__class__.__name__ ,self.path())
 	
 	def path(self):
 		"""The full path of the current item"""
@@ -761,7 +758,7 @@ class EMDirEntry:
 		"Recursive sorting"
 		if self.__children==None or len(self.__children)==0 or isinstance(self.__children[0],str): return
 		
-		self.__children.sort(key=EMDirEntry.col[column],reverse=order)
+		self.__children.sort(key=self.__class__.col[column],reverse=order)
 		
 	def parent(self):
 		"""Return the parent"""
@@ -811,7 +808,7 @@ class EMDirEntry:
 		if not isinstance(self.__children[0],str) : return 		# this implies entries have already been filled
 		
 		for i,n in enumerate(self.__children):
-			self.__children[i]=EMDirEntry(self.filepath,n,self)
+			self.__children[i]=self.__class__(self.filepath,n,self)
 	
 	def fillDetails(self):
 		"""Fills in the expensive metadata about this entry. Returns False if no update was necessary."""
@@ -902,9 +899,9 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 	
 	headers=("Name","Type","Size","Dim","N","Date")
 	
-	def __init__(self,startpath=None):
+	def __init__(self,startpath=None,direntryclass=EMDirEntry):
 		QtCore.QAbstractItemModel.__init__(self)
-		self.root=EMDirEntry(startpath,"")					# EMDirEntry as a parent for the root path
+		self.root=direntryclass(startpath,"")					# EMDirEntry as a parent for the root path
 		self.rootpath=startpath			# root path for current browser
 		self.last=(0,0)
 #		print "Init FileItemModel ",self,self.__dict__
@@ -1577,7 +1574,7 @@ class EMBrowserWidget(QtGui.QWidget):
 	- remote database access (EMEN2)
 	"""
 	
-	def __init__(self,parent=None,withmodal=False,multiselect=False):
+	def __init__(self,parent=None,withmodal=False,multiselect=False,startpath="."):
 		QtGui.QWidget.__init__(self,parent)
 		
 		self.resize(780,580)
@@ -1725,7 +1722,7 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.redrawlist=[]			# List of QModelIndex items in need of redisplay
 		self.expanded=set()			# We get multiple expand events for each path element, so we need to keep track of which ones we've updated
 
-		self.setPath(".")	# start in the local directory
+		self.setPath(startpath)	# start in the local directory
 		self.updthread.start()
 		self.updtimer.start(300)
 
@@ -1901,7 +1898,7 @@ class EMBrowserWidget(QtGui.QWidget):
 		act=self.wbookmarks.addAction(label)
 		act.setData(path)
 
-	def setPath(self,path,silent=False):
+	def setPath(self,path,silent=False,inimodel=EMFileItemModel):
 		"""Sets the current root path for the browser window. If silent is true,
 		the path history will not be updated."""
 		
@@ -1913,7 +1910,7 @@ class EMBrowserWidget(QtGui.QWidget):
 		if path in self.models :
 			self.curmodel=self.models[path]
 		else : 
-			self.curmodel=EMFileItemModel(path)
+			self.curmodel=inimodel(path)
 			self.models[self.curpath]=self.curmodel
 
 		self.wtree.setSortingEnabled(False)

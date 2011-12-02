@@ -43,6 +43,7 @@ class ControlPannel(QtGui.QWidget):
 		QtGui.QWidget.__init__(self)
 		self.mediator = mediator
 		self.db = db_open_dict("bdb:emboxerrctgui")
+		self.qualitydb = db_open_dict("bdb:e2boxercache#quality")
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"green_boxes.png"))
 		self.setWindowTitle("e2RCTboxer")
 		
@@ -68,7 +69,7 @@ class ControlPannel(QtGui.QWidget):
 		# Initialize tools
 		self.tools_stacked_widget.setCurrentIndex(self.db.get("toolidx",dfl=0))
 		self.current_tool_combobox.setCurrentIndex(self.db.get("toolidx",dfl=0))
-
+		
 	def get_main_tab(self):
 		
 		mainwidget = QtGui.QWidget()
@@ -286,21 +287,26 @@ class ControlPannel(QtGui.QWidget):
 		
 	def add_boxing_button_group(self,layout):
 		self.tool_button_group_box = QtGui.QGroupBox("Tools")
-		self.tool_dynamic_vbl = QtGui.QVBoxLayout()
 		
-		hbl = QtGui.QHBoxLayout()
-		current_tool_label = QtGui.QLabel("Current Boxing Tool:")
+		grid = QtGui.QGridLayout()
 		self.current_tool_combobox = QtGui.QComboBox()
-		hbl.addWidget(current_tool_label)
-		hbl.addWidget(self.current_tool_combobox)
-		
+		grid.addWidget(QtGui.QLabel("Current Boxing Tool:"),0,0)
+		grid.addWidget(self.current_tool_combobox,0,1)
+		# Add stacked widget
 		self.tools_stacked_widget = QtGui.QStackedWidget()
-		self.tool_dynamic_vbl.addLayout(hbl)
-		self.tool_dynamic_vbl.addWidget(self.tools_stacked_widget)
-		self.tool_button_group_box.setLayout(self.tool_dynamic_vbl)
+		grid.addWidget(self.tools_stacked_widget,1,0,1,2)
+		# Add quality combobox
+		self.quality = QtGui.QComboBox()
+		for i in xrange(5): self.quality.addItem(str(i))
+		self.quality.setCurrentIndex(self.qualitydb.get(os.path.basename(self.mediator.windowlist[0].filename),dfl=0))
+		grid.addWidget(QtGui.QLabel("Quality Score"),2,0)
+		grid.addWidget(self.quality, 2,1)
+		# add to layout
+		self.tool_button_group_box.setLayout(grid)
 		layout.addWidget(self.tool_button_group_box,0,)
 		
 		QtCore.QObject.connect(self.current_tool_combobox, QtCore.SIGNAL("activated(int)"), self.current_tool_combobox_changed)
+		QtCore.QObject.connect(self.quality, QtCore.SIGNAL("activated(int)"), self.quality_score_changed)
 	
 	def add_controls(self, layout):
 		butbox = QtGui.QHBoxLayout()
@@ -327,6 +333,10 @@ class ControlPannel(QtGui.QWidget):
 			self.pair_picker_tool.configure_widget()
 			#print "Set strategy to Pair Picker"
 	
+	def quality_score_changed(self, idx):
+		for window in self.mediator.windowlist:
+			self.qualitydb[os.path.basename(window.filename)] = idx
+		
 	# Here is where additional tools can be added
 	def add_picker_tools(self):
 		self.tools_stacked_widget.addWidget(self.manual_tool.get_widget())

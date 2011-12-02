@@ -126,11 +126,14 @@ def check(options,args):
 	return error_message
 
 def get_database_entry(image_name,key,database="bdb:e2boxercache",dfl=None):
-	if not db_check_dict(database+"#"+key) and dfl==None:  return None
+	if not db_check_dict(database+"#"+key) and dfl==None: return None
 	
 	db = db_open_dict(database+"#"+key)
 	
-	if db.has_key(image_name):
+	if db.has_key(os.path.basename(image_name)):
+		return db[os.path.basename(image_name)]
+	# backwards compatibility
+	elif db.has_key(image_name):
 		return db[image_name]
 	elif dfl != None:
 		db[image_name] = dfl
@@ -142,7 +145,7 @@ def set_database_entry(image_name,key,value,database="bdb:e2boxercache"):
 	write a key/object pair to the Image Database Dictionary associat
 	'''
 	db = db_open_dict(database+"#"+key)
-	db[image_name] = value
+	db[os.path.basename(image_name)] = value
 	
 def set_idd_image_entry(image_name,key,image,db_title="bdb:e2boxercache#"):
 	'''

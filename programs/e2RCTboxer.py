@@ -59,8 +59,8 @@ Usage: e2RCTboxer.py untilted.hdf tilted.hdf options.
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_pos_argument(name="untilted micrograph",help="List the untilted micrograph here.", default="", guitype='filebox', positional=True, row=0, col=0,rowspan=1, colspan=3, mode="boxing,extraction")
-	parser.add_pos_argument(name="tilted micrograph",help="List the tilted micrograph here.", default="", guitype='filebox', positional=True, row=1, col=0,rowspan=1, colspan=3, mode="boxing,extraction")
+	parser.add_pos_argument(name="untilted micrograph",help="List the untilted micrograph here.", default="", guitype='filebox', browser="EMRCTBoxesTable(withmodal=True,multiselect=False)" , positional=True, row=0, col=0,rowspan=1, colspan=3, mode="boxing,extraction")
+	parser.add_pos_argument(name="tilted micrograph",help="List the tilted micrograph here.", default="", guitype='filebox', browser="EMRCTBoxesTable(withmodal=True,multiselect=False)", positional=True, row=1, col=0,rowspan=1, colspan=3, mode="boxing,extraction")
 	parser.add_header(name="RCTboxerheader", help='Options below this label are specific to e2RCTboxer', title="### e2RCTboxer options ###", row=2, col=0, rowspan=1, colspan=3, mode="boxing,extraction")
 	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=-1, guitype='intbox', row=3, col=0, rowspan=1, colspan=3, mode="boxing,extraction")
 	parser.add_argument("--write_boxes",action="store_true",help="Write coordinate file (eman1 dbbox) files",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="extraction")
@@ -104,6 +104,7 @@ Usage: e2RCTboxer.py untilted.hdf tilted.hdf options.
 		rctboxer = RCTboxer(application, options.boxsize)	# Initialize the boxertools
 		rctboxer.load_untilt_image(args[0])		# Load the untilted image
 		rctboxer.load_tilt_image(args[1])		# Load the tilted image
+		rctboxer.init_control_pannel()
 		rctboxer.init_control_pannel_tools()			# Initialize control pannel tools, this needs to be done last as loaded data maybe be used
 		application.execute()
 	
@@ -196,7 +197,7 @@ class RCTboxer:
 		self.init_particles_window()
 		self.init_main_window()
 		self.init_tilted_window()
-		self.init_control_pannel()
+		#self.init_control_pannel()
 		
 		EMBox.set_box_color("untilted",[0,0,1])
 		EMBox.set_box_color("tilted",[0,1,0])
@@ -525,7 +526,8 @@ class EMBoxList:
 		db_close_dict(self.db)
 		
 	def load_boxes_from_db(self):
-		data = self.db[self.entry]
+		data = self.db[os.path.basename(self.entry)]
+		if data == None: data = self.db[self.entry]	# Backward compability
 
 		if data != None:
 			for box in data:
@@ -534,7 +536,7 @@ class EMBoxList:
 		return False
 				
 	def save_boxes_to_db(self):
-		self.db[self.entry] = [[box.x,box.y,box.type] for box in self.boxlist]
+		self.db[os.path.basename(self.entry)] = [[box.x,box.y,box.type] for box in self.boxlist]
 	
 	def get_particle_images(self,image_name,box_size):
 		return [box.get_image(image_name,box_size,"normalize.edgemean") for box in self.boxlist]

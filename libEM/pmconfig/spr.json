@@ -9,13 +9,15 @@
     "CHILDREN": [
       {
         "ICON": "single_image", 
-        "PROGRAM": "programName", 
-        "NAME": "Import Data", 
+        "MODE": "import",
+        "PROGRAM": "e2rawdata.py", 
+        "NAME": "Import Raw Data", 
         "CHILDREN": []
-      }, 
+      },
       {
         "ICON": "single_image", 
-        "PROGRAM": "programName", 
+        "MODE": "filter",
+        "PROGRAM": "e2rawdata.py", 
         "NAME": "Filter Raw Data", 
         "CHILDREN": []
       }
@@ -56,14 +58,16 @@
       }, 
       {
         "ICON": "green_boxes", 
-        "PROGRAM": "programName", 
-        "NAME": "Particle Import", 
+	"MODE": "parts", 
+        "PROGRAM": "e2import.py", 
+        "NAME": "Particle Import -e2import.py", 
         "CHILDREN": []
       }, 
       {
-        "ICON": "green_boxes", 
-        "PROGRAM": "programName", 
-        "NAME": "Coordinate Import", 
+        "ICON": "green_boxes",
+	"MODE": "coords",
+        "PROGRAM": "e2import.py", 
+        "NAME": "Coordinate Import -e2import.py", 
         "CHILDREN": []
       }
     ]
