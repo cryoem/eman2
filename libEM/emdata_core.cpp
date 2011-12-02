@@ -769,7 +769,7 @@ float& EMData::get_value_at_wrap(int x, int y, int z)
 	if (ly < 0) ly = ny + ly;
 	if (lz < 0) lz = nz + lz;
 
-	return get_data()[lx + ly * nx + lz * nxy];
+	return get_data()[lx + ly * (size_t)nx + lz * (size_t)nxy];
 }
 
 float EMData::get_value_at_wrap(int x) const
