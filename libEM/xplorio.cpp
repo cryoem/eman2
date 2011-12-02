@@ -247,7 +247,9 @@ int XplorIO::write_header(const Dict & dict, int image_index, const Region* area
 	nx = dict["nx"];
 	ny = dict["ny"];
 	nz = dict["nz"];
-	float pixel = dict["pixel"];
+	apix_x = dict["apix_x"];
+	apix_y = dict["apix_y"];
+	apix_z = dict["apix_z"];
 
 	nlines_in_header = 0;
 	time_t t0 = time(0);
@@ -275,7 +277,7 @@ int XplorIO::write_header(const Dict & dict, int image_index, const Region* area
 			OUTFORMAT, OUTFORMAT,OUTFORMAT, OUTFORMAT, OUTFORMAT,OUTFORMAT);
 
 	fprintf(xplor_file, fformat,
-			nx * pixel, ny * pixel, nz * pixel, 90.0, 90.0, 90.0);
+			nx * apix_x, ny * apix_y, nz * apix_z, 90.0, 90.0, 90.0);
 	fprintf(xplor_file, "ZYX\n");
 	nlines_in_header = 5;
 	flush();
