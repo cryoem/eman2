@@ -732,7 +732,7 @@ class EMMpiClient():
 								for i in xrange(0,cacheinfo[2],ningrp):
 									if verbose>1: 
 										print " %d - %d\t%d\t%d\t"%(i,i+ningrp,i/ningrp,int(time.time()-strt)),
-									dts=EMData.read_images(data,range(i,i+ningrp))
+									dts=EMData.read_images(data,range(i,min(i+ningrp,cacheinfo[2])))
 									if verbose>1: 
 										print "%d\t"%(time.time()-strt),
 									mpi_bcast_send(dts)

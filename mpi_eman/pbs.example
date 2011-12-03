@@ -3,13 +3,16 @@
 # This is an example PBS/Torque script for testing your EMAN2 MPI installation. Clearly you should
 # modify the number of nodes and ppn (processors per node) before running it on a cluster.
 #
-#PBS -l nodes=30:ppn=8
+#PBS -l nodes=18:ppn=1
 #PBS -l walltime=24:00:00
 
 cd $PBS_O_WORKDIR
 
+which python
 #mpirun python mpi_test_basic.py 
+mpirun hostname
 mpirun python mpi_test.py 
+#mpirun -n 20 hostname
 
 # NOTE : if you want to run an EMAN2 refinement or somesuch using PBS, you do NOT call mpirun directly
 # as in the above statment. Instead, you use the native --parallel option, and EMAN2 will call
