@@ -757,7 +757,7 @@ class EMDirEntry(object):
 	def sort(self,column,order):
 		"Recursive sorting"
 		if self.__children==None or len(self.__children)==0 or isinstance(self.__children[0],str): return
-		
+		print column
 		self.__children.sort(key=self.__class__.col[column],reverse=order)
 		
 	def parent(self):
