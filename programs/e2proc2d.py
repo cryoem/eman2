@@ -222,7 +222,8 @@ def main():
 			print 'Error: need 3D image to use this option'
 			return
 		else:
-			print "Process 3D as a stack of %d 2D images" % d.get_zsize()
+			if options.verbose>0:
+				print "Process 3D as a stack of %d 2D images" % d.get_zsize()
 			nimg = d.get_zsize()
 			threed_xsize = d.get_xsize()
 			threed_ysize = d.get_ysize()
@@ -253,7 +254,8 @@ def main():
 		
 
 	ld = EMData()
-	print "%d images, processing %d-%d"%(nimg,n0,n1)
+	if options.verbose>0:
+		print "%d images, processing %d-%d"%(nimg,n0,n1)
 
 	imagelist = read_listfile(options.list, options.exclude, nimg)
 	sfcurve1 = None
@@ -303,9 +305,11 @@ def main():
 			if options.threed2threed or options.threed2twod:
 				pass
 			else:
-				print "Warning: sigma = 0 for image ",i
+				if options.verbose>0:
+					print "Warning: sigma = 0 for image ",i
 				if options.writejunk == False:
-					print "Use the writejunk option to force writing this image to disk"
+					if options.verbose>0:
+						print "Use the writejunk option to force writing this image to disk"
 					continue
 
 		if not "outtype" in optionlist:
@@ -326,7 +330,8 @@ def main():
 				d.set_attr('apix_z', apix)
 				try:
 					if i==n0 and d["ctf"].apix!=apix :
-						print "Warning: A/pix value in CTF was %1.2f, changing to %1.2f. May impact CTF parameters."%(d["ctf"].apix,apix)
+						if options.verbose>0:
+							print "Warning: A/pix value in CTF was %1.2f, changing to %1.2f. May impact CTF parameters."%(d["ctf"].apix,apix)
 					d["ctf"].apix=apix
 				except: pass
 			
@@ -447,7 +452,8 @@ def main():
 					elif sclmd == 2:
 						sc.common_lines(e, e, sclmd, scl, true)
 					else:
-						print "Error: invalid common-line mode '" + sclmd + "'"
+						if options.verbose>0:
+							print "Error: invalid common-line mode '" + sclmd + "'"
 						sys.exit(1)
 				
 			elif option1 == "radon":
@@ -585,7 +591,8 @@ def main():
 	
 	try:
 		n_outimg = EMUtil.get_image_count(outfile)
-		print str(n_outimg) + " images"
+		if options.verbose>0:
+			print str(n_outimg) + " images"
 	except:
 		pass	
 	
