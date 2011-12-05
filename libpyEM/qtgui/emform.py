@@ -852,6 +852,7 @@ class EM2DStackExamineTable(EM2DStackTable):
 		'''
 		See EMFileTable.table_item_double_clicked for comments
 		'''
+		print "X"
 		if item.column() != 0: return # only can display files from the first column
 		filename = self.convert_text(str(item.text()))
 		if not file_exists(filename): return # this happens sometimes when there is filtered data but no raw data
@@ -860,7 +861,7 @@ class EM2DStackExamineTable(EM2DStackTable):
 			from emimagemx import EMImageMXWidget
 			self.display_module = EMImageMXWidget(None,get_application())
 			from emapplication import ModuleEventsManager
-			self.module_events_manager = ModuleEventsManager(self,self.display_module)
+			#self.module_events_manager = ModuleEventsManager(self,self.display_module)
 		
 		self.display_module.set_data(filename,filename) #  I know this looks stupid, but c'est la vie
 		self.display_module.updateGL()

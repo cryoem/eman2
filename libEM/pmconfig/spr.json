@@ -117,7 +117,7 @@
     "CHILDREN": [
       {
         "ICON": "multiple_images", 
-        "PROGRAM": "programName", 
+        "PROGRAM": "e2buildstacks.py", 
         "NAME": "Build Particle Sets", 
 	"NOTELEVEL": "1",
         "CHILDREN": []
@@ -127,13 +127,6 @@
         "PROGRAM": "e2evalparticles.py", 
         "NAME": "Evaluate Particle Sets",
 	"NOTELEVEL": "1",
-        "CHILDREN": []
-      }, 
-      {
-        "ICON": "multiple_images", 
-        "PROGRAM": "programName", 
-        "NAME": "multiple_images",
-	"NOTELEVEL": "1", 
         "CHILDREN": []
       }
     ]

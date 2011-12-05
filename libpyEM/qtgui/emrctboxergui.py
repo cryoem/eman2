@@ -367,9 +367,9 @@ class ControlPannel(QtGui.QWidget):
 		for window in self.mediator.windowlist:
 			splitpath = os.path.split(os.path.splitext(window.filename)[0])
 			if splitpath[0] == '':
-				window.write_particles(window.filename, ("bdb:RCTparticles#"+splitpath[1]),self.mediator.boxsize,normproc="normalize.edgemean")
+				window.write_particles(window.filename, ("bdb:particles#"+splitpath[1]),self.mediator.boxsize,normproc="normalize.edgemean")
 			else:
-				window.write_particles(window.filename, ("bdb:"+splitpath[0]+"/RCTparticles#"+splitpath[1]),self.mediator.boxsize,normproc="normalize.edgemean")
+				window.write_particles(window.filename, ("bdb:"+splitpath[0]+"/particles#"+splitpath[1]),self.mediator.boxsize,normproc="normalize.edgemean")
 	def on_write_box(self):
 		for window in self.mediator.windowlist:
 			window.write_boxes(os.path.splitext(window.filename)[0]+".box",self.mediator.boxsize)

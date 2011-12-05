@@ -79,8 +79,11 @@ class EMFileType(object):
 	# A list of all types that need to be checked when the file extension can't be interpreted
 	alltocheck=()
 
+	setsmode = False
+	
 	def __init__(self,path):
 		self.path=path			# the current path this FileType is representing
+		self.setsdb=None		# The bad particles DB 
 
 	def setFile(self,path):
 		"""Represent a new file. Will update inspector if open. Assumes isValid already checked !"""
@@ -100,6 +103,17 @@ class EMFileType(object):
 	def infoClass():
 		"Returns a reference to the QWidget subclass for displaying information about this file"
 		return EMInfoPane
+		
+	def setSetsDB(self, db_name):
+		"Sets the emmxwidget to sets dbname"
+		if db_name[:4].lower()!="bdb:": 
+			self.setsdb = os.path.splitext(os.path.basename(db_name))[0]
+		else:
+			self.setsdb = db_parse_path(db_name)[1]
+		
+	def getSetsDB(self):
+		"Returns the sets mode"
+		return self.setsdb
 
 	def actions(self):
 		"""Returns a list of (name,help,callback) tuples detailing the operations the user can call on the current file.
@@ -187,9 +201,11 @@ class EMFileType(object):
 		try: 
 			target=brws.view2ds[-1]
 			target.set_data(data)
+			if self.getSetsDB(): target.set_single_active_set(self.getSetsDB())
 		except: 
 			target=EMImageMXWidget()
 			target.set_data(data)
+			if self.getSetsDB(): target.set_single_active_set(self.getSetsDB())
 			brws.view2ds.append(target)
 			
 		brws.notbusy()
@@ -207,6 +223,7 @@ class EMFileType(object):
 		
 		target=EMImageMXWidget()
 		target.set_data(data)
+		if self.getSetsDB(): target.set_single_active_set(self.getSetsDB())
 		brws.view2ds.append(target)
 
 		brws.notbusy()
@@ -379,7 +396,7 @@ class EMPlotFileType(EMFileType):
 		return EMPlotInfoPane
 
 	def __init__(self,path):
-		self.path=path			# the current path this FileType is representing
+		EMFileType.__init__(self,path)	# the current path this FileType is representing
 
 		# Make sure all of the lines have the same number of columns
 		fin=file(path,"r")
@@ -508,7 +525,7 @@ class EMBdbFileType(EMFileType):
 		return EMBDBInfoPane
 
 	def __init__(self,path):
-		self.path=path			# the current path this FileType is representing
+		EMFileType.__init__(self,path)	# the current path this FileType is representing
 		self.bdb=db_open_dict(path,ro=True)
 		
 		# here we assume the bdb either contains numbered images OR key/value pairs. Not strictly valid,
@@ -564,7 +581,7 @@ class EMImageFileType(EMFileType):
 	"""FileType for files containing a single 2-D image"""
 
 	def __init__(self,path):
-		self.path=path			# the current path this FileType is representing
+		EMFileType.__init__(self,path)	# the current path this FileType is representing
 		self.nimg=EMUtil.get_image_count(path)
 		im0=EMData(path,0,True)
 		self.dim=(im0["nx"],im0["ny"],im0["nz"])
@@ -631,7 +648,7 @@ class EMStackFileType(EMFileType):
 		return EMStackInfoPane
 
 	def __init__(self,path):
-		self.path=path			# the current path this FileType is representing
+		EMFileType.__init__(self,path)	# the current path this FileType is representing
 		self.nimg=EMUtil.get_image_count(path)
 		im0=EMData(path,0,True)
 		self.dim=(im0["nx"],im0["ny"],im0["nz"])
@@ -757,7 +774,6 @@ class EMDirEntry(object):
 	def sort(self,column,order):
 		"Recursive sorting"
 		if self.__children==None or len(self.__children)==0 or isinstance(self.__children[0],str): return
-		print column
 		self.__children.sort(key=self.__class__.col[column],reverse=order)
 		
 	def parent(self):
@@ -876,6 +892,13 @@ class EMDirEntry(object):
 				
 		return True
 
+	def getBaseName(self, name):
+		""" return a sensible basename """
+		if name[:4].lower()!="bdb:": 
+			return os.path.splitext(os.path.basename(name))[0]
+		else:
+			return db_parse_path(name)[1]
+			
 def nonone(val):
 	"Returns '-' for None, otherwise the string representation of the passed value"
 	try : 
@@ -955,7 +978,7 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 	def headerData(self,sec,orient,role):
 		if orient==Qt.Horizontal:
 			if role==Qt.DisplayRole :
-				return EMFileItemModel.headers[sec]
+				return self.__class__.headers[sec]
 			elif role==Qt.ToolTipRole:
 				return None								# May fill this in later
 			
@@ -1574,7 +1597,7 @@ class EMBrowserWidget(QtGui.QWidget):
 	- remote database access (EMEN2)
 	"""
 	
-	def __init__(self,parent=None,withmodal=False,multiselect=False,startpath="."):
+	def __init__(self,parent=None,withmodal=False,multiselect=False,startpath=".",setsmode=None):
 		QtGui.QWidget.__init__(self,parent)
 		
 		self.resize(780,580)
@@ -1697,6 +1720,7 @@ class EMBrowserWidget(QtGui.QWidget):
 		QtCore.QObject.connect(self.wpath, QtCore.SIGNAL('returnPressed()'), self.editPath)
 		QtCore.QObject.connect(self.wbookmarks, QtCore.SIGNAL('actionTriggered(QAction*)'), self.bookmarkPress)
 
+		self.setsmode=setsmode	# The sets mode is used when selecting bad particles 
 		self.curmodel=None	# The current data model displayed in the tree
 		self.curpath=None	# The path represented by the current data model
 		self.curft=None		# a fileType instance for the currently hilighted object
@@ -1786,10 +1810,10 @@ class EMBrowserWidget(QtGui.QWidget):
 			
 				
 			# This makes an instance of a FileType for the selected object
-			ftc=obj.fileTypeClass() 
+			ftc=obj.fileTypeClass()
 			if ftc!=None: 
 				self.curft=ftc(obj.path())
-				
+				if self.setsmode: self.curft.setSetsDB(obj.path())	# If we want to enable bad particel picking
 				self.curactions=self.curft.actions()
 #				print actions
 				for i,b in enumerate(self.wbutmisc):
@@ -1801,6 +1825,15 @@ class EMBrowserWidget(QtGui.QWidget):
 					except:
 						b.hide()
 #						b.setEnabled(False)
+			# Bug fix by JFF (What if filetype is None????)
+			else:
+				self.curft=None
+				self.curactions=[]
+				for i,b in enumerate(self.wbutmisc):
+					try:
+						b.hide()
+					except:
+						pass
 			
 			if self.infowin!=None and not self.infowin.isHidden() :
 				self.infowin.set_target(obj,ftc)

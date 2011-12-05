@@ -149,7 +149,7 @@ class RCTprocessor:
 		self.names = []
 		for name in self.args:
 			if self.options.format == "bdb":
-				out = "bdb:RCTparticles#" + get_file_tag(name) + self.options.suffix
+				out = "bdb:particles#" + get_file_tag(name) + self.options.suffix
 			else:
 				out = get_file_tag(name)+self.options.suffix+"."+self.options.format
 			self.names.append(out)

@@ -36,7 +36,7 @@ from EMAN2 import *
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <micrgrpah1, microgaph2....
-	Import partivles coordinats from box files. To work the box file name must be the same as the microgrpah name save the extension.
+	Import particles coordinats from box files. To work the box file name must be the same as the microgrpah name save the extension.
 	>"""
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
@@ -46,7 +46,7 @@ def main():
 	parser.add_argument("--import_particles",action="store_true",help="Import particles",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='parts[True]')
 	parser.add_argument("--importaction",help="import particles",default='move',guitype='combobox',choicelist='["move","copy","link"]',row=2,col=1,rowspan=1,colspan=1, mode="parts")
 	parser.add_argument("--import_boxes",action="store_true",help="Import boxes",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='coords[True]')
-	parser.add_argument("--extension",type=str,help="Extesnion of the microgeaphs that the boxes match", default='dm3', guitype='strbox',row=3, col=0, rowspan=1, colspan=1, mode='coords')
+	parser.add_argument("--extension",type=str,help="Extesnion of the micrographs that the boxes match", default='dm3', guitype='strbox',row=3, col=0, rowspan=1, colspan=1, mode='coords')
 	parser.add_argument("--box_type",help="import particles",default=None,guitype='combobox',choicelist='["boxes","tiltedboxes","untiltedboxes"]',row=2,col=1,rowspan=1,colspan=1, mode="coords['boxes']")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
