@@ -12997,7 +12997,8 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		print "In the second phase, we found %d stable and reproducible averages that account for %d particles.  "%(ave_num, len(members_acc))
 		if members_acc != []:
 			write_text_file(members_acc, "generation_%d_accounted.txt"%generation)
-		write_text_file(members_unacc, "generation_%d_unaccounted.txt"%generation)
+		if members_unacc != []:
+			write_text_file(members_unacc, "generation_%d_unaccounted.txt"%generation)
 		print "******************************************************************************************"
 		print "*             End of the second phase             "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"              *"
 		print "******************************************************************************************"
