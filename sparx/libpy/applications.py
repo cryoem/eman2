@@ -12454,7 +12454,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	from filter 	  import filt_tanl
 	from pixel_error  import multi_align_stability
 	from statistics   import ave_series
-	from utilities    import model_blank, write_text_file set_params2D, get_params2D
+	from utilities    import model_blank, write_text_file, set_params2D, get_params2D
 	from utilities    import gather_EMData, bcast_EMData_to_all, bcast_list_to_all
 	from utilities    import send_EMData, recv_EMData
 
