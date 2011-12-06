@@ -128,7 +128,7 @@ class EMSetsTable(EMBrowserWidget):
 class EMSetsModel(EMFileItemModel):
 	""" Item model for the raw data """
 	
-	headers=("Particles","NUm Particles", "Dims")
+	headers=("Particles","Num Particles", "Dims")
 	
 	def __init__(self,startpath=None):
 		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMSetsEntry)
@@ -593,7 +593,7 @@ class EMSubTomosTable(EMBrowserWidget):
 class EMSubTomosModel(EMFileItemModel):
 	""" Item model for the raw data """
 	
-	headers=("Subtomograms","num subtomos", "dims")
+	headers=("Subtomograms","Num Subtomos", "Dims")
 	
 	def __init__(self,startpath=None):
 		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMSubTomosEntry)

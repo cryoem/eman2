@@ -46,7 +46,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_header(name="montecarloheader", help='Options below this label are specific to e2montecarlorecon', title="### e2montecarlorecon options ###", row=1, col=0, rowspan=1, colspan=3)
-	parser.add_argument("--classavg",type=str,default=None,help="Name of classavg file created by e2refine2d.py, default=auto",browser="EEMBrowserWidget(withmodal=True,multiselect=False)", guitype='filebox', row=0, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--classavg",type=str,default=None,help="Name of classavg file created by e2refine2d.py, default=auto",browser="EMBrowserWidget(withmodal=True,multiselect=False)", guitype='filebox', row=0, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--path",type=str,help="Name of path for output file",default='initial_models')
 	parser.add_argument("--output",type=str,default="mc.mrc",help="Name of computed reconstruction, default=mc.mrc", guitype='strbox', row=2, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--mccoeff",type=float,default=1000.0,help="The number of Monte Carlo trials is: mccoeff*N, where N is the number of CAs, default=1000.0", guitype='floatbox', row=3, col=0, rowspan=1, colspan=1)
