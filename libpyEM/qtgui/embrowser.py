@@ -892,10 +892,13 @@ class EMDirEntry(object):
 				
 		return True
 
-	def getBaseName(self, name):
+	def getBaseName(self, name, extension=False):
 		""" return a sensible basename """
-		if name[:4].lower()!="bdb:": 
-			return os.path.splitext(os.path.basename(name))[0]
+		if name[:4].lower()!="bdb:":
+			if extension:
+				return os.path.basename(name)
+			else:
+				return os.path.splitext(os.path.basename(name))[0]
 		else:
 			return db_parse_path(name)[1]
 			

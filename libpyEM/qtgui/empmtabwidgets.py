@@ -407,7 +407,6 @@ class EMParticlesEditEntry(EMParticlesEntry):
 		if db_check_dict("bdb:select"):
 			select_db = db_open_dict("bdb:select",ro=True)
 			try:
-			#print self.getBaseName(self.path())
 				self.badparticlecount = len(select_db[self.getBaseName(self.path())])
 			except:
 				pass
@@ -482,11 +481,11 @@ class EMBoxesEntry(EMDirEntry):
 		# get quality and box numbers
 		if db_check_dict('bdb:e2boxercache#quality'):
 			qdb = db_open_dict('bdb:e2boxercache#quality')
-			self.quality = qdb[self.getBaseName(self.path())]
+			self.quality = qdb[self.getBaseName(self.path(),extension=True)]
 			
 		if db_check_dict('bdb:e2boxercache#boxes'):
 			db = db_open_dict('bdb:e2boxercache#boxes')
-			bc = db[self.getBaseName(self.path())]
+			bc = db[self.getBaseName(self.path(),extension=True)]
 			if bc:
 				self.boxcount = len(bc)
 				return True
@@ -563,18 +562,18 @@ class EMRCTBoxesEntry(EMDirEntry):
 		# get quality and box numbers
 		if db_check_dict('bdb:e2boxercache#quality'):
 			qdb = db_open_dict('bdb:e2boxercache#quality')
-			self.quality = qdb[self.getBaseName(self.path())]
+			self.quality = qdb[self.getBaseName(self.path(),extension=True)]
 			
 		if db_check_dict('bdb:e2boxercache#boxestilted'):
 			db = db_open_dict('bdb:e2boxercache#boxestilted')
-			bc = db[self.getBaseName(self.path())]
+			bc = db[self.getBaseName(self.path(),extension=True)]
 			if bc:
 				self.boxcount = len(bc)
 				return True
 			
 		if db_check_dict('bdb:e2boxercache#boxesuntilted'):
 			db = db_open_dict('bdb:e2boxercache#boxesuntilted')
-			bc = db[self.getBaseName(self.path())]
+			bc = db[self.getBaseName(self.path(),extension=True)]
 			if bc:
 				self.boxcount = len(bc)
 				return True
