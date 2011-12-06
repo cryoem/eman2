@@ -875,6 +875,9 @@ void EMData::set_size(int x, int y, int z)
 	nz = z;
 	nxy = nx*ny;
 	nxyz = (size_t)nx*ny*nz;
+	attr_dict["nx"] = nx;
+	attr_dict["ny"] = ny;
+	attr_dict["nz"] = nz;
 
 // once the object is resized, the CUDA need to be updated
 #ifdef EMAN2_USING_CUDA
