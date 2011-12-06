@@ -35,8 +35,167 @@ import os
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
 from embrowser import EMBrowserWidget, EMFileItemModel, EMDirEntry, nonone
+
+
+class EMModelsTable(EMBrowserWidget):
+	""" Widget to display junk from e2boxercache """
+	def __init__(self, withmodal=False, multiselect=False):
+		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath="./initial_models")
+	
+	def setPath(self,path,silent=False):
+		super(EMModelsTable, self).setPath(path,silent=False,inimodel=EMModelsModel)
 		
+
+class EMModelsModel(EMFileItemModel):
+	""" Item model for the raw data """
+	
+	headers=("3D Models","Quality", "Dims")
+	
+	def __init__(self,startpath=None):
+		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMModelsEntry)
 		
+	def columnCount(self,parent):
+		"Always 3 columns"
+		#print "EMFileItemModel.columnCount()=6"
+		return 3
+		
+	def data(self,index,role):
+		"Returns the data for a specific location as a string"
+		
+		if not index.isValid() : return None
+		if role!=Qt.DisplayRole : return None
+		
+		data=index.internalPointer()
+		if data==None : 
+			print "Error with index ",index.row(),index.column()
+			return "XXX"
+		#if index.column()==0 : print "EMFileItemModel.data(%d %d %s)=%s"%(index.row(),index.column(),index.parent(),str(data.__dict__))
+
+		col=index.column()
+		if col==0 : 
+			if data.isbdb : return "bdb:"+data.name
+			return nonone(data.name)
+		elif col==1 :
+			if data.quality==0 : return "-"
+			return nonone(data.quality)
+		elif col==2 :
+			if data.dims==0 : return "-"
+			return nonone(data.dims)
+
+class EMModelsEntry(EMDirEntry):
+	""" Subclassing of EMDirEntry to provide functionality"""
+	
+	col=(lambda x:x.name,lambda x:x.quality, lambda x:x.dims)
+	
+	def __init__(self,root,name,parent=None,hidedot=True):
+		EMDirEntry.__init__(self,root,name,parent=parent,hidedot=hidedot)
+		self.quality=None
+		self.dims=None
+		
+	def fillDetails(self):
+		"""Fills in the expensive metadata about this entry. Returns False if no update was necessary."""
+		if self.filetype!=None : return False		# must all ready be filled in
+
+		# Should only be this:
+		self.filetype="Image"
+			
+		# Get particle stack headers
+		a = None
+		try:
+			a = EMData(self.path(),0,True)
+		except:
+			pass	
+		if a:
+			self.dims = "%dx%dx%d"%(a.get_xsize(),a.get_ysize(),a.get_zsize())
+			try:
+				self.quality = a['quality']
+			except:
+				pass
+			
+		return True
+		
+################################################################################################################
+
+class EMSetsTable(EMBrowserWidget):
+	""" Widget to display junk from e2boxercache """
+	def __init__(self, withmodal=False, multiselect=False):
+		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath="./sets")
+	
+	def setPath(self,path,silent=False):
+		super(EMSetsTable, self).setPath(path,silent=False,inimodel=EMSetsModel)
+
+
+class EMSetsModel(EMFileItemModel):
+	""" Item model for the raw data """
+	
+	headers=("Particles","NUm Particles", "Dims")
+	
+	def __init__(self,startpath=None):
+		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMSetsEntry)
+		
+	def columnCount(self,parent):
+		"Always 3 columns"
+		#print "EMFileItemModel.columnCount()=6"
+		return 3
+		
+	def data(self,index,role):
+		"Returns the data for a specific location as a string"
+		
+		if not index.isValid() : return None
+		if role!=Qt.DisplayRole : return None
+		
+		data=index.internalPointer()
+		if data==None : 
+			print "Error with index ",index.row(),index.column()
+			return "XXX"
+		#if index.column()==0 : print "EMFileItemModel.data(%d %d %s)=%s"%(index.row(),index.column(),index.parent(),str(data.__dict__))
+
+		col=index.column()
+		if col==0 : 
+			if data.isbdb : return "bdb:"+data.name
+			return nonone(data.name)
+		elif col==1 :
+			if data.partcount==0 : return "-"
+			return nonone(data.partcount)
+		elif col==2 :
+			if data.dims==0 : return "-"
+			return nonone(data.dims)
+
+class EMSetsEntry(EMDirEntry):
+	""" Subclassing of EMDirEntry to provide functionality"""
+	
+	col=(lambda x:x.name,lambda x:x.partcount, lambda x:x.dims)
+	
+	def __init__(self,root,name,parent=None,hidedot=True):
+		EMDirEntry.__init__(self,root,name,parent=parent,hidedot=hidedot)
+		self.partcount=None
+		self.dims=None
+		
+	def fillDetails(self):
+		"""Fills in the expensive metadata about this entry. Returns False if no update was necessary."""
+		if self.filetype!=None : return False		# must all ready be filled in
+		
+		# get image counts
+		try:
+			self.partcount = EMUtil.get_image_count(self.path())
+			if self.partcount == 1 : self.filetype="Image"
+			if int(self.partcount) > 1 : self.filetype="Image Stack"
+		except:
+			self.filetype="-"
+		
+
+		# Get particle stack headers
+		a = None
+		try:
+			a = EMData(self.path(),0,True)
+		except:
+			pass	
+		if a:
+			self.dims = "%dx%dx%d"%(a.get_xsize(),a.get_ysize(),a.get_zsize())
+			
+		return True
+
+
 ###########################################################################################################################
 
 class EMParticlesTable(EMBrowserWidget):
@@ -421,13 +580,70 @@ class EMRCTBoxesEntry(EMDirEntry):
 				return True
 			
 		return True
+#################################################################################################################################
+
+class EMSubTomosTable(EMBrowserWidget):
+	""" Widget to display Raw Data """
+	def __init__(self, withmodal=False, multiselect=False):
+		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath="./subtomograms")
+	
+	def setPath(self,path,silent=False):
+		super(EMSubTomosTable, self).setPath(path,silent=False,inimodel=EMSubTomosModel)
+	
+class EMSubTomosModel(EMFileItemModel):
+	""" Item model for the raw data """
+	
+	headers=("Subtomograms","num subtomos", "dims")
+	
+	def __init__(self,startpath=None):
+		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMRCTBoxesEntry)
 		
+	def columnCount(self,parent):
+		"Always 3 columns"
+		#print "EMFileItemModel.columnCount()=6"
+		return 3
+		
+	def data(self,index,role):
+		"Returns the data for a specific location as a string"
+		
+		if not index.isValid() : return None
+		if role!=Qt.DisplayRole : return None
+		
+		data=index.internalPointer()
+		if data==None : 
+			print "Error with index ",index.row(),index.column()
+			return "XXX"
+		#if index.column()==0 : print "EMFileItemModel.data(%d %d %s)=%s"%(index.row(),index.column(),index.parent(),str(data.__dict__))
+
+		col=index.column()
+		if col==0 : 
+			if data.isbdb : return "bdb:"+data.name
+			return nonone(data.name)
+		elif col==1 :
+			if data.nimg==0 : return "-"
+			return nonone(data.nimg)
+		elif col==2 :
+			if data.quality==0 : return "-"
+			return nonone(data.dims)
+
+class EMSubTomosEntry(EMDirEntry):
+	""" Subclassing of EMDirEntry to provide functionality"""
+	
+	col=(lambda x:x.name,lambda x:x.nimg, lambda x:x.dims)
+	
+	def __init__(self,root,name,parent=None,hidedot=True):
+		EMDirEntry.__init__(self,root,name,parent=parent,hidedot=hidedot)
+		
+	def fillDetails(self):
+		# Maybe add code to cache results.....
+		super(EMSubTomosEntry, self).fillDetails()
+
 #################################################################################################################################
 
 class EMRawDataTable(EMBrowserWidget):
 	""" Widget to display Raw Data """
-	def __init__(self, withmodal=False, multiselect=False):
-		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath="./micrographs")
+	def __init__(self, withmodal=False, multiselect=False, startpath="./micrographs"):
+		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath=startpath)
 	
 	def setPath(self,path,silent=False):
 		super(EMRawDataTable, self).setPath(path,silent=False,inimodel=EMRawDataModel)
@@ -465,7 +681,6 @@ class EMRawDataModel(EMFileItemModel):
 		elif col==1 :
 			if data.dim==0 : return "-"
 			return nonone(data.dim)
-
 		
 class EMRawDataEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
@@ -479,4 +694,12 @@ class EMRawDataEntry(EMDirEntry):
 		# Maybe add code to cache results.....
 		super(EMRawDataEntry, self).fillDetails()
 		
-		
+#################################################################################################################################
+
+class EMTomoDataTable(EMRawDataTable):
+	""" Widget to display Raw Data """
+	def __init__(self, withmodal=False, multiselect=False):
+		EMRawDataTable.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath="./rawtomograms")
+	
+	def setPath(self,path,silent=False):
+		super(EMTomoDataTable, self).setPath(path,silent=False)	

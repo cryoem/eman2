@@ -60,9 +60,9 @@ def main():
 	# options associated with e2tiltvalidate.py
 	parser.add_header(name="tvheader", help='Options below this label are specific to e2tiltvalidate', title="### e2tiltvalidate options ###", row=3, col=0, rowspan=1, colspan=2, mode="analysis,gui")
 	parser.add_argument("--path", type=str,help="The folder the results are placed", default="", guitype='dirbox', dirbasename='TiltValidate', row=0, col=0,rowspan=1, colspan=2, mode="gui")
-	parser.add_argument("--volume", type=str,help="3D volume to validate",default=None, guitype='filebox', row=2, col=0, rowspan=1, colspan=2, mode="analysis")
-	parser.add_argument("--untiltdata", type=str,help="Stack of untilted images",default=None, guitype='filebox', row=0, col=0, rowspan=1, colspan=2, mode="analysis")
-	parser.add_argument("--tiltdata", type=str,help="Stack of tilted images",default=None, guitype='filebox', row=1, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--volume", type=str,help="3D volume to validate",default=None, guitype='filebox', browser='EMModelsTable(withmodal=True,multiselect=False)', row=2, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--untiltdata", type=str,help="Stack of untilted images",default=None, guitype='filebox', browser='EMSetsTable(withmodal=True,multiselect=False)', row=0, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--tiltdata", type=str,help="Stack of tilted images",default=None, guitype='filebox', browser='EMSetsTable(withmodal=True,multiselect=False)', row=1, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_argument("--align", type=str,help="The name of a aligner to be used in comparing the aligned images",default="translational", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=6, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_argument("--cmp", type=str,help="The name of a 'cmp' to be used in comparing the aligned images",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=7, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_argument("--tiltrange", type=int,help="The angular tiltrange to search",default=15, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="analysis")

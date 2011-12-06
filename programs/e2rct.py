@@ -52,9 +52,9 @@ def main():
 	#options associated with e2rctV2.py
 	parser.add_header(name="rctheader", help='Options below this label are specific to e2rct', title="### e2rct options ###", row=3, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--path",type=str,default=None,help="Path for the rct reconstruction, default=auto")
-	parser.add_argument("--tiltdata",type=str,default=None,help="Name of the tilted dataset", guitype='filebox', row=0, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--untiltdata",type=str,default=None,help="Name of the tilted dataset", guitype='filebox', row=1, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--classavg",type=str,default=None,help="Name of classavg file created by e2refine2d.py", guitype='filebox', row=2, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--tiltdata",type=str,default=None,help="Name of the tilted dataset", guitype='filebox', browser="EMSetsTable(withmodal=True,multiselect=False)", row=0, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--untiltdata",type=str,default=None,help="Name of the tilted dataset", guitype='filebox', browser="EMSetsTable(withmodal=True,multiselect=False)", row=1, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--classavg",type=str,default=None,help="Name of classavg file created by e2refine2d.py",browser="EMBrowserWidget(withmodal=True,multiselect=False)", guitype='filebox', row=2, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--stagetilt",type=float,default=0,help="Amount of tiliting of the cryo stage, default=0, get the stage tilt from particle attributes. Only possible if e2RCTboxer was used for particle picking", guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--careject",type=str,default=None, help="class averages to reject, default=None", guitype='strbox', row=5, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--minproj",type=int,default=1,help="Minimum number of projections/images in a class average, for a class average to be used for a reconstruction, default=auto", guitype='intbox', row=5, col=1, rowspan=1, colspan=1)

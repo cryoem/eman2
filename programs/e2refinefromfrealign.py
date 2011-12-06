@@ -24,7 +24,7 @@ Help info needs to go here.....
 
 parser = EMArgumentParser(usage,version=EMANVERSION)
 
-parser.add_pos_argument(name="frealigndir",help="The Frealign directory to use.", default="", guitype='filebox', positional=True, row=0, col=0,rowspan=1, colspan=3)
+parser.add_pos_argument(name="frealigndir",help="The Frealign directory to use.", default="", guitype='dirbox', dirbasename='frealign', positional=True, row=0, col=0,rowspan=1, colspan=3)
 parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 (options, args) = parser.parse_args()

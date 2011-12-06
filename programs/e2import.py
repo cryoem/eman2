@@ -41,9 +41,10 @@ def main():
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_pos_argument(name="import_files",help="List the files to import here.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)", positional=True, row=0, col=0,rowspan=1, colspan=2, nosharedb=True, mode='coords,parts')
-	parser.add_header(name="filterheader", help='Options below this label are specific to e2import', title="### e2import options ###", row=1, col=0, rowspan=1, colspan=2, mode='coords,parts')
+	parser.add_pos_argument(name="import_files",help="List the files to import here.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)", positional=True, row=0, col=0,rowspan=1, colspan=2, nosharedb=True, mode='coords,parts,tomos')
+	parser.add_header(name="filterheader", help='Options below this label are specific to e2import', title="### e2import options ###", row=1, col=0, rowspan=1, colspan=2, mode='coords,parts,tomos')
 	parser.add_argument("--import_particles",action="store_true",help="Import particles",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='parts[True]')
+	parser.add_argument("--import_tomos",action="store_true",help="Import tomograms",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='tomos[True]')
 	parser.add_argument("--importaction",help="import particles",default='move',guitype='combobox',choicelist='["move","copy","link"]',row=2,col=1,rowspan=1,colspan=1, mode="parts")
 	parser.add_argument("--import_boxes",action="store_true",help="Import boxes",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='coords[True]')
 	parser.add_argument("--extension",type=str,help="Extesnion of the micrographs that the boxes match", default='dm3', guitype='strbox',row=3, col=0, rowspan=1, colspan=1, mode='coords')
@@ -94,7 +95,7 @@ def main():
 	# Import particles
 	if options.import_particles:
 		partsdir = os.path.join(".","particles")
-		if not os.access(boxesdir, os.R_OK):
+		if not os.access(partsdir, os.R_OK):
 			os.mkdir("particles")
 		for filename in args:
 			if options.importaction == "move":
@@ -103,6 +104,19 @@ def main():
 				shutil.copy(arg,partsdir)
 			if options.importaction == "link":
 				os.symlink(arg,os.path.join(partsdir,os.path.basename(arg)))
+				
+	# Import tomograms
+	if options.import_tomos:
+		tomosdir = os.path.join(".","rawtomograms")
+		if not os.access(tomosdir, os.R_OK):
+			os.mkdir("rawtomograms")
+		for filename in args:
+			if options.importaction == "move":
+				os.rename(arg,os.path.join(tomosdir,os.path.basename(arg)))
+			if options.importaction == "copy":
+				shutil.copy(arg,partsdir)
+			if options.importaction == "link":
+				os.symlink(arg,os.path.join(tomosdir,os.path.basename(arg)))
 			
 if __name__ == "__main__":
 	main()

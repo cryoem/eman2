@@ -550,6 +550,7 @@ class PMMultiSymWidget(PMBaseWidget):
 		self.gridbox.addWidget(self.stackedwidget)
 		self.setLayout(self.gridbox)
 		self.lastsymvalue = None
+		self.initdefault = initdefault
 	
 	def setValue(self, value):
 		if not value: return
@@ -618,6 +619,7 @@ class PMAutoMask3DWidget(PMBaseWidget):
 		gridbox.addWidget(self.paramsdict["nshellsgauss"], 2, 1, 1, 2)
 		self.setLayout(gridbox)
 		self.setValue(default)
+		self.initdefault = initdefault
 		
 		QtCore.QObject.connect(self.automask3dbool,QtCore.SIGNAL("stateChanged(int)"),self._on_boolchanged)
 		self.connect(self.paramsdict["threshold"],QtCore.SIGNAL("pmmessage(QString)"),self._on_message)
@@ -663,38 +665,3 @@ class PMAutoMask3DWidget(PMBaseWidget):
 		if self.paramsdict["nshells"].getErrorMessage(): return self.paramsdict["nshells"].getErrorMessage()
 		if self.paramsdict["nshellsgauss"].getErrorMessage(): return self.paramsdict["nshellsgauss"].getErrorMessage()
 		
-		
-		
-'''
-class PMTableWidget(QtGui.QWidget):
-	""" A Widget for generating a table """
-	def __init__(self, name, columns, cwd):
-		QtGui.QWidget.__init__(self) 
-		self.cwd = cwd
-		
-		gridbox = QtGui.QGridLayout()
-		boldfont = QtGui.QFont()
-		boldfont.setBold(True)
-		label = QtGui.QLabel(name)
-		label.setFont(boldfont)
-		gridbox.addWidget(label, 0, 0)
-		
-		# Build the table
-		self.qttable = QtGui.QTableWidget(2,len(columns))
-		colheaderlist = QtCore.QStringList()
-		for col in columns:
-			colheaderlist.append(str(col))
-			
-		self.qttable.setHorizontalHeaderLabels(colheaderlist)
-		
-		gridbox.addWidget(self.qttable, 1, 0)
-		self.browsebutton = QtGui.QPushButton("Browse To Add")
-		gridbox.addWidget(self.browsebutton, 2, 0)
-		self.setLayout(gridbox)
-		
-		self.connect(self.browsebutton,QtCore.SIGNAL("clicked(bool)"),self._on_browse)
-		
-	def _on_browse(self):
-		dd = EMSelectorDialog()
-		dataitem = dd.exec_()
-'''

@@ -925,7 +925,7 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 	def __init__(self,startpath=None,direntryclass=EMDirEntry):
 		QtCore.QAbstractItemModel.__init__(self)
 		self.root=direntryclass(startpath,"")					# EMDirEntry as a parent for the root path
-		self.rootpath=startpath			# root path for current browser
+		self.rootpath=startpath							# root path for current browser
 		self.last=(0,0)
 #		print "Init FileItemModel ",self,self.__dict__
 

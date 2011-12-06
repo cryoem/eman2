@@ -191,8 +191,9 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_header(name="tbheader", help='Options below this label are specific to e2tomoboxer', title="### e2tomoboxer options ###", row=1, col=0, rowspan=1, colspan=3)
-	parser.add_pos_argument(name="tomogram",help="The refinement directory to use for eotest.", default="", guitype='filebox', positional=True, row=0, col=0, rowspan=1, colspan=3)
+	parser.add_pos_argument(name="tomogram",help="The tomogram to use for boxing.", default="", guitype='filebox', browser="EMTomoDataTable(withmodal=True,multiselect=False)", positional=True, row=0, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=32)
+	parser.add_argument("--path",type=str,help="Pathname to save data to",default="subtomograms")
 	#parser.add_argument("--shrink",type=int,help="Shrink factor for full-frame view, default=0 (auto)",default=0)
 	parser.add_argument("--inmemory",action="store_true",default=False,help="This will read the entire tomogram into memory. Much faster, but you must have enough ram !", guitype='boolbox', row=2, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--yshort",action="store_true",default=False,help="This means you have a file where y is the short axis", guitype='boolbox', row=2, col=0, rowspan=1, colspan=1)
@@ -239,7 +240,11 @@ def main():
 	if not file_exists(args[0]): 
 		parser.error("%s does not exist" %args[0])
 
-
+	# Lets save our subtomograms to a diectory called 'subtomogRAMS'
+	subtomosdir = os.path.join(".",options.path)
+	if not os.access(subtomosdir, os.R_OK):
+		os.mkdir(options.path)
+		
 #	if options.boxsize < 2: parser.error("The boxsize you specified is too small")
 #	# The program will not run very rapidly at such large box sizes anyhow
 #	if options.boxsize > 2048: parser.error("The boxsize you specified is too large.\nCurrently there is a hard coded max which is 2048.\nPlease contact developers if this is a problem.")
@@ -976,9 +981,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				img=img.process('normalize.edgemean')
 
 				if fsp[:4].lower()=="bdb:": 
-					img.write_image("%s_%03d"%(fsp,i),0)
+					img.write_image(os.path.join(options.path,"%s_%03d"%(fsp,i)),0)
 				elif "." in fsp: 
-					img.write_image("%s_%03d.%s"%(fsp.rsplit(".",1)[0],i,fsp.rsplit(".",1)[1]))
+					img.write_image(os.path.join(options.path,"%s_%03d.%s"%(fsp.rsplit(".",1)[0],i,fsp.rsplit(".",1)[1])))
 				else:
 					QtGui.QMessageBox.warning(None,"Error","Please provide a valid image file extension. The numerical sequence will be inserted before the extension.")
 					return
@@ -1004,9 +1009,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				img=img.process('normalize.edgemean')
 
 				if fsp[:4].lower()=="bdb:": 
-					img.write_image("%s_%03d"%(fsp,i),0)
+					img.write_image(os.path.join(options.path,"%s_%03d"%(fsp,i),0))
 				elif "." in fsp: 
-					img.write_image("%s_%03d.%s"%(fsp.rsplit(".",1)[0],i,fsp.rsplit(".",1)[1]))
+					img.write_image(os.path.join(options.path,"%s_%03d.%s"%(fsp.rsplit(".",1)[0],i,fsp.rsplit(".",1)[1])))
 				else:
 					QtGui.QMessageBox.warning(None,"Error","Please provide a valid image file extension. The numerical sequence will be inserted before the extension.")
 					return
@@ -1015,7 +1020,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				if progress.wasCanceled() : break
 		
 	def menu_file_save_boxes_stack(self):
-		fsp=str(QtGui.QFileDialog.getSaveFileName(self, "Select output file (bdb and hdf only)"))
+		fsp=os.path.join(options.path,str(QtGui.QFileDialog.getSaveFileName(self, "Select output file (bdb and hdf only)")))
 		
 		if fsp[:4].lower()!="bdb:" and fsp[-4:].lower()!=".hdf" :
 			QtGui.QMessageBox.warning(None,"Error","3-D stacks supported only for bdb: and .hdf files")

@@ -31,6 +31,7 @@
 #
 #
 
+import os
 from EMAN2 import *
 import math
 
@@ -45,7 +46,8 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_header(name="montecarloheader", help='Options below this label are specific to e2montecarlorecon', title="### e2montecarlorecon options ###", row=1, col=0, rowspan=1, colspan=3)
-	parser.add_argument("--classavg",type=str,default=None,help="Name of classavg file created by e2refine2d.py, default=auto", guitype='filebox', row=0, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--classavg",type=str,default=None,help="Name of classavg file created by e2refine2d.py, default=auto",browser="EEMBrowserWidget(withmodal=True,multiselect=False)", guitype='filebox', row=0, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--path",type=str,help="Name of path for output file",default='initial_models')
 	parser.add_argument("--output",type=str,default="mc.mrc",help="Name of computed reconstruction, default=mc.mrc", guitype='strbox', row=2, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--mccoeff",type=float,default=1000.0,help="The number of Monte Carlo trials is: mccoeff*N, where N is the number of CAs, default=1000.0", guitype='floatbox', row=3, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--numsasteps",type=float,default=10.0,help="The number of steps at a given temp, default=10.0", guitype='floatbox', row=3, col=1, rowspan=1, colspan=1)
@@ -63,6 +65,10 @@ def main():
 	# Initialize CUDA iof needed
 	if options.cuda: initializeCUDAdevice()
 
+	inimodeldir = os.path.join(".",options.path)
+	if not os.access(inimodeldir, os.R_OK):
+		os.mkdir(options.path)
+			
 	logid=E2init(sys.argv,options.ppid)
 	
 	calist = EMData.read_images(options.classavg)	# Load the CAs
@@ -139,7 +145,7 @@ def main():
 	#write output
 	if options.output[-3:] == "mrc":
 		recon.set_attr('UCSF.chimera',1)
-	recon.write_image(options.output)
+	recon.write_image(os.path.join(inimodeldir,options.output))
 	E2end(logid)
 	
 # Strategy pattern, allows other algoithms to be plugged in

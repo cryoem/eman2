@@ -49,8 +49,9 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_header(name="refineheader", help='Options below this label are specific to e2refine', title="### e2refine options ###", row=2, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--input", dest="input", default=None,type=str, help="The name of input volume", guitype='filebox', row=0, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--output", dest="output", default=None,type=str, help="The name of the output volume", guitype='filebox', filecheck=False, row=1, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--input", dest="input", default=None,type=str, help="The name of input volume", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=0, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--output", dest="output", default=None,type=str, help="The name of the output volume", guitype='strbox', filecheck=False, row=1, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--path",type=str,help="Name of path for output file",default='initial_models')
 	parser.add_argument("--sym", dest = "sym", default="c1", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos. For asymmetric reconstruction omit this option or specify c1.", guitype='symbox', row=3, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes. Default=0, no shrinking", guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--steps", dest="steps", type = int, default=10, help="Number of steps (for the MC)", guitype='intbox', row=4, col=1, rowspan=1, colspan=1)
@@ -67,6 +68,10 @@ def main():
 		etc=EMTaskCustomer(options.parallel)
 	else:
 		etc=EMTaskCustomer("thread:1")
+		
+	inimodeldir = os.path.join(".",options.path)
+	if not os.access(inimodeldir, os.R_OK):
+		os.mkdir(options.path)
 		
 	logid=E2init(sys.argv,options.ppid)
 	
@@ -90,7 +95,7 @@ def main():
 		if options.symmetrize:
 			output = output.process('xform.applysym',{'sym':options.sym})
 	
-	output.write_image(options.output)
+	output.write_image(os.path.join(inimodeldir, options.output))
 	
 	E2end(logid)
 

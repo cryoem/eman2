@@ -398,11 +398,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		filebrowser.setShortcut('Ctrl+F')
 		filebrowser.setStatusTip('File Browser')
 		self.connect(filebrowser, QtCore.SIGNAL('triggered()'), self._on_browse)
-		configureEMEN = QtGui.QAction('Configure EMEN', self)
-		configureEMEN.setShortcut('Ctrl+C')
-		configureEMEN.setStatusTip('Configure EMEN')
 		utilsmenu.addAction(filebrowser)
-		utilsmenu.addAction(configureEMEN)
 	
 		# Help
 		helpmenu = menubar.addMenu('&Help')

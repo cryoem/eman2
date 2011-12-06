@@ -9,8 +9,9 @@
     "CHILDREN": [
       {
         "ICON": "single_image_3d",
-        "PROGRAM": "programName", 
-        "NAME": "Raw Tomogram Files",
+        "PROGRAM": "e2import.py", 
+        "MODE": "tomos", 
+        "NAME": "Import Tomogram Files",
         "CHILDREN": [] 
       }, 
       {
