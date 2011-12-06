@@ -596,7 +596,7 @@ class EMSubTomosModel(EMFileItemModel):
 	headers=("Subtomograms","num subtomos", "dims")
 	
 	def __init__(self,startpath=None):
-		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMRCTBoxesEntry)
+		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMSubTomosEntry)
 		
 	def columnCount(self,parent):
 		"Always 3 columns"
@@ -623,13 +623,13 @@ class EMSubTomosModel(EMFileItemModel):
 			if data.nimg==0 : return "-"
 			return nonone(data.nimg)
 		elif col==2 :
-			if data.quality==0 : return "-"
-			return nonone(data.dims)
+			if data.dim==0 : return "-"
+			return nonone(data.dim)
 
 class EMSubTomosEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:x.name,lambda x:x.nimg, lambda x:x.dims)
+	col=(lambda x:x.name,lambda x:x.nimg, lambda x:x.dim)
 	
 	def __init__(self,root,name,parent=None,hidedot=True):
 		EMDirEntry.__init__(self,root,name,parent=parent,hidedot=hidedot)

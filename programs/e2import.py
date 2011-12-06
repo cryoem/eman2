@@ -99,11 +99,11 @@ def main():
 			os.mkdir("particles")
 		for filename in args:
 			if options.importaction == "move":
-				os.rename(arg,os.path.join(partsdir,os.path.basename(arg)))
+				os.rename(filename,os.path.join(partsdir,os.path.basename(filename)))
 			if options.importaction == "copy":
-				shutil.copy(arg,partsdir)
+				shutil.copy(filename,partsdir)
 			if options.importaction == "link":
-				os.symlink(arg,os.path.join(partsdir,os.path.basename(arg)))
+				os.symlink(filename,os.path.join(partsdir,os.path.basename(filename)))
 				
 	# Import tomograms
 	if options.import_tomos:
@@ -112,11 +112,11 @@ def main():
 			os.mkdir("rawtomograms")
 		for filename in args:
 			if options.importaction == "move":
-				os.rename(arg,os.path.join(tomosdir,os.path.basename(arg)))
+				os.rename(filename,os.path.join(tomosdir,os.path.basename(filename)))
 			if options.importaction == "copy":
-				shutil.copy(arg,partsdir)
+				shutil.copy(filename,partsdir)
 			if options.importaction == "link":
-				os.symlink(arg,os.path.join(tomosdir,os.path.basename(arg)))
+				os.symlink(filename,os.path.join(tomosdir,os.path.basename(filename)))
 			
 if __name__ == "__main__":
 	main()

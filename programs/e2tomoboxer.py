@@ -967,8 +967,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		out.close()
 		
 	def menu_file_save_boxes(self):
-		fsp=str(QtGui.QFileDialog.getSaveFileName(self, "Select output file (numbers added)"))
-		
+		fsp=os.path.basename(str(QtGui.QFileDialog.getSaveFileName(self, "Select output file (numbers added)")))
+
 		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
 		if options.helixboxer:
 			for i,b in enumerate(self.helixboxes):
@@ -1020,8 +1020,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				if progress.wasCanceled() : break
 		
 	def menu_file_save_boxes_stack(self):
-		fsp=os.path.join(options.path,str(QtGui.QFileDialog.getSaveFileName(self, "Select output file (bdb and hdf only)")))
 		
+		fsp=os.path.join(options.path,os.path.basename(str(QtGui.QFileDialog.getSaveFileName(self, "Select output file (bdb and hdf only)"))))
 		if fsp[:4].lower()!="bdb:" and fsp[-4:].lower()!=".hdf" :
 			QtGui.QMessageBox.warning(None,"Error","3-D stacks supported only for bdb: and .hdf files")
 			return

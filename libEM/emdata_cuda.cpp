@@ -404,7 +404,7 @@ void EMData::cuda_cleanup()
 
 bool EMData::cuda_initialize()
 {
-	if(EMData::nocudainit) return;
+	if(EMData::nocudainit) return 0;
 	int device = device_init();
 
 	if(device != -1)

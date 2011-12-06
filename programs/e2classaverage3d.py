@@ -544,7 +544,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 			print "Kept %d / %d particles in average"%(len(included),len(align_parms))
 
 		ret=avgr.finish()
-		if symmetry:
+		if symmetry and not breaksym:
 			ret=ret.process('xform.applysym',{'sym':symmetry})
 		ret["class_ptcl_idxs"]=included
 		ret["class_ptcl_src"]=ptcl_file
