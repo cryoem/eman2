@@ -12458,10 +12458,10 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	from utilities    import gather_EMData, bcast_EMData_to_all, bcast_list_to_all
 	from utilities    import send_EMData, recv_EMData
 
-	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-	from mpi 	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_send, mpi_recv, mpi_gatherv, mpi_scatterv
-	from mpi 	  import MPI_FLOAT, MPI_SUM, MPI_INT, MPI_TAG_UB
-	from mpi      import mpi_comm_split
+	from mpi	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from mpi	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_send, mpi_recv, mpi_gatherv, mpi_scatterv
+	from mpi	  import MPI_FLOAT, MPI_SUM, MPI_INT, MPI_TAG_UB
+	from mpi	  import mpi_comm_split
 
 	from random       import randint
 	from sys          import exit
@@ -12474,12 +12474,12 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	main_node = 0
 
 	if main_iter%iter_reali != 0:
-		ERROR("main_iter should be a multiple of iter_reali! Please reset them!", "iter_isac", 1, myid)
+		ERROR("main_iter should be a multiple of iter_reali, please reset them and restart and program", "iter_isac", 1, myid)
 	mpi_barrier(MPI_COMM_WORLD)
 
 	ali_params_dir = "ali_params_generation_%d"%generation
 	if os.path.exists(ali_params_dir):  
-		ERROR('Output directory for alignment parameters exists, please change the name and restart the program', "iter_isac", 1, myid)
+		ERROR('Output directory for alignment parameters exists, please either change its name or delete it and restart the program', "iter_isac", 1, myid)
 	mpi_barrier(MPI_COMM_WORLD)
 
 	if myid == main_node:
