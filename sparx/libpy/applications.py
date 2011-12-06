@@ -12451,31 +12451,36 @@ def ave_ali(name_stack, name_out = None, ali = False, active = False):
 
 def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, init_iter, main_iter, iter_reali, match_first, max_round, match_second, stab_ali, thld_err, indep_run, thld_grp, img_per_grp, generation):
 
-	from utilities    import model_blank, gather_EMData, bcast_EMData_to_all, set_params2D, bcast_list_to_all
-	from utilities    import send_EMData, recv_EMData
 	from filter 	  import filt_tanl
 	from pixel_error  import multi_align_stability
 	from statistics   import ave_series
-	from utilities    import get_params2D
+	from utilities    import model_blank, write_text_file set_params2D, get_params2D
+	from utilities    import gather_EMData, bcast_EMData_to_all, bcast_list_to_all
+	from utilities    import send_EMData, recv_EMData
 
 	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 	from mpi 	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_send, mpi_recv, mpi_gatherv, mpi_scatterv
 	from mpi 	  import MPI_FLOAT, MPI_SUM, MPI_INT, MPI_TAG_UB
-	from mpi          import mpi_comm_split
+	from mpi      import mpi_comm_split
+
 	from random       import randint
 	from sys          import exit
-	from time import localtime
-
-	from utilities import write_text_file, get_params2D
-	from subprocess import call
+	from time         import localtime
+	from subprocess   import call
+	import os
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 
 	if main_iter%iter_reali != 0:
-		print "main_iter should be a multiple of iter_reali! Please reset them!"
-		exit()
+		ERROR("main_iter should be a multiple of iter_reali! Please reset them!", "iter_isac", 1, myid)
+	mpi_barrier(MPI_COMM_WORLD)
+
+	ali_params_dir = "ali_params_generation_%d"%generation
+	if os.path.exists(ali_params_dir):  
+		ERROR('Output directory for alignment parameters exists, please change the name and restart the program', "iter_isac", 1, myid)
+	mpi_barrier(MPI_COMM_WORLD)
 
 	if myid == main_node:
 		print "****************************************************************************************************"
@@ -12932,7 +12937,6 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	# I have decided that main node should not do realignment, otherwise it could clog the whole operation if it happened to have
 	# a very large group.  The main node is used to send and collect information.
 	
-	ali_params_dir = "ali_params_generation_%d"%generation
 	if myid == main_node:
 		STB_PART = match_independent_runs(alldata, refim, indep_run, thld_grp)
 		l_STB = len(STB_PART)
