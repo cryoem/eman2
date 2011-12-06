@@ -6703,6 +6703,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 		print_msg("Translational stepx                       : %s\n"%(stepx))
 		print_msg("Angular step                              : %s\n"%(delta))
 		print_msg("Angular search range                      : %s\n"%(an))
+		print_msg("Initial Theta                             : %s\n"%(initial_theta))
 		print_msg("min radius for helical search (in pix)    : %5.4f\n"%(rmin))
 		print_msg("max radius for helical search (in pix)    : %5.4f\n"%(rmax))
 		print_msg("fraction of volume used for helical search: %5.4f\n"%(fract))
@@ -6781,7 +6782,11 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 		pixel_size = data[0].get_attr('pixel_size')
 	for i in xrange(len(xrng)):
 		yrng[i]=dp/(2*pixel_size)
-
+	from math import sin, pi
+	ou_max = ( nmax/2.0)*sin( initial_theta*pi/180) - dp/2.0/pixel_size -1.0
+	if ( ou > ou_max):
+		ERROR('ou should be less than----( nmax/2.0)*sin( initial_theta*pi/180) - dp/2.0/pixel_size -2.0 ', "ihrsr_MPI", 1,myid)
+	del ou_max
 	if myid == main_node:
 		print_msg("Pixel size in Angstroms                   : %5.4f\n\n"%(pixel_size))
 		print_msg("Y search range (pix) initialized as       : %s\n\n"%(yrng))
