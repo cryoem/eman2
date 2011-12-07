@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: John Flanagan Oct 20th 2011 (jfflanag@bcm.edu)
+# Author: John Flanagan Sept 2011 (jfflanag@bcm.edu)
 # Copyright (c) 2000-2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the

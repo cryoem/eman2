@@ -72,11 +72,14 @@ power spectrum in various ways."""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
+	parser.add_pos_argument(name="image",help="Image to process with e2evalimage.", default="", guitype='filebox', browser="EMRawDataTable(withmodal=True,multiselect=False)", positional=True, row=0, col=0,rowspan=1, colspan=2, mode="eval")
+	parser.add_header(name="evalimageheader", help='Options below this label are specific to e2evalimage', title="### e2evalimage options ###", default=None, row=1, col=0, rowspan=1, colspan=2, mode="eval")
+	
 	parser.add_argument("--gui",action="store_true",help="This is a GUI-only program. This option is provided for self-consistency",default=True)
-	parser.add_argument("--apix",type=float,help="Angstroms per pixel for all images",default=None)
-	parser.add_argument("--voltage",type=float,help="Microscope voltage in KV",default=None)
-	parser.add_argument("--cs",type=float,help="Microscope Cs (spherical aberation)",default=None)
-	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage, default=10)",default=10.0)
+	parser.add_argument("--apix",type=float,help="Angstroms per pixel for all images",default=None, guitype='floatbox', row=3, col=0, rowspan=1, colspan=1, mode="eval['self.pm().getAPIX()']")
+	parser.add_argument("--voltage",type=float,help="Microscope voltage in KV",default=None, guitype='floatbox', row=3, col=1, rowspan=1, colspan=1, mode="eval['self.pm().getVoltage()']")
+	parser.add_argument("--cs",type=float,help="Microscope Cs (spherical aberation)",default=None, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="eval['self.pm().getCS()']")
+	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage, default=10)",default=10, guitype='floatbox', row=4, col=1, rowspan=1, colspan=1, mode="eval")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	

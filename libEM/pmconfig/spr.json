@@ -20,6 +20,13 @@
         "PROGRAM": "e2rawdata.py", 
         "NAME": "Filter Raw Data", 
         "CHILDREN": []
+      },
+      {
+        "ICON": "single_image", 
+        "MODE": "eval",
+        "PROGRAM": "e2evalimage.py", 
+        "NAME": "Evaluate Raw Data", 
+        "CHILDREN": []
       }
     ]
   }, 

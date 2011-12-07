@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
-# Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
-# Copyright (c) 2000-2006 Baylor College of Medicine
+# Author: John Flanagan Dec 1st 2011 (jfflanag@bcm.edu)
+# Copyright (c) 2000-2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -29,6 +29,8 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 #
+
+# These classes are subclasses of EMBrowserWidget to provide additonal models to represent various files in the GUI
 
 from EMAN2 import *
 import os
@@ -92,13 +94,17 @@ class EMModelsEntry(EMDirEntry):
 		self.quality=None
 		self.dims=None
 		
-	def fillDetails(self):
+	def fillDetails(self, db):
 		"""Fills in the expensive metadata about this entry. Returns False if no update was necessary."""
 		if self.filetype!=None : return False		# must all ready be filled in
 
+		# Check the cache for metadata
+		cache = self.checkCache(db,name='models')
+		if not self.cacheMiss(cache,'quality','dims','filetype'): return 
+		
 		# Should only be this:
 		self.filetype="Image"
-			
+		
 		# Get particle stack headers
 		a = None
 		try:
@@ -111,7 +117,13 @@ class EMModelsEntry(EMDirEntry):
 				self.quality = a['quality']
 			except:
 				pass
-			
+		
+		# Set Cache
+		cache['quality'] = self.quality
+		cache['dims'] = self.dims
+		cache['filetype'] = self.filetype
+		self.setCache(db, cache, name='models')
+		
 		return True
 		
 ################################################################################################################
@@ -171,9 +183,13 @@ class EMSetsEntry(EMDirEntry):
 		self.partcount=None
 		self.dims=None
 		
-	def fillDetails(self):
+	def fillDetails(self, db):
 		"""Fills in the expensive metadata about this entry. Returns False if no update was necessary."""
 		if self.filetype!=None : return False		# must all ready be filled in
+		
+		# Check the cache for metadata
+		cache = self.checkCache(db,name='sets')
+		if not self.cacheMiss(cache,'partcount','dims','filetype'): return 
 		
 		# get image counts
 		try:
@@ -183,7 +199,6 @@ class EMSetsEntry(EMDirEntry):
 		except:
 			self.filetype="-"
 		
-
 		# Get particle stack headers
 		a = None
 		try:
@@ -192,7 +207,13 @@ class EMSetsEntry(EMDirEntry):
 			pass	
 		if a:
 			self.dims = "%dx%dx%d"%(a.get_xsize(),a.get_ysize(),a.get_zsize())
-			
+		
+		# Set Cache
+		cache['partcount'] = self.partcount
+		cache['dims'] = self.dims
+		cache['filetype'] = self.filetype
+		self.setCache(db, cache, name='sets')
+				
 		return True
 
 
@@ -276,10 +297,23 @@ class EMParticlesEntry(EMDirEntry):
 		self.quality=None
 		self.sampling=None
 		
-	def fillDetails(self):
+	def fillDetails(self, db):
 		"""Fills in the expensive metadata about this entry. Returns False if no update was necessary."""
 		if self.filetype!=None : return False		# must all ready be filled in
+
+		# get quality (this is not cached b/c of access time modify time issues)
+		if db_check_dict("bdb:e2ctf.parms"):
+			ctf_db = db_open_dict("bdb:e2ctf.parms",ro=True)
+			try:
+				quality = ctf_db[get_file_tag(self.path()).split("_ctf")[0]][3]
+				self.quality = "%d" %quality
+			except:
+				pass
 		
+		# Check the cache for metadata
+		cache = self.checkCache(db)
+		if not self.cacheMiss(cache,'particlecount','particledim','defocus','bfactor','snr','sampling','type','filetype'): return 
+
 		# get image counts
 		try:
 			self.particlecount = str(EMUtil.get_image_count(self.path()))
@@ -313,15 +347,18 @@ class EMParticlesEntry(EMDirEntry):
 				self.bfactor = "%.3f" %ctf.bfactor
 				self.snr = "%.3f" %(sum(ctf.snr)/len(ctf.snr))
 				self.sampling = str(len(ctf.background))
-		# get quality
-		if db_check_dict("bdb:e2ctf.parms"):
-			ctf_db = db_open_dict("bdb:e2ctf.parms",ro=True)
-			try:
-				quality = ctf_db[get_file_tag(self.path()).split("_ctf")[0]][3]
-				self.quality = "%d" %quality
-			except:
-				pass
-								
+		
+		# Update the cache
+		cache["filetype"] = self.filetype
+		cache["particlecount"] = self.particlecount
+		cache["particledim"] = self.particledim
+		cache["type"] = self.type
+		cache["defocus"] = self.defocus
+		cache["bfactor"] = self.bfactor
+		cache["snr"] = self.snr
+		cache["sampling"] = self.sampling
+		self.setCache(db, cache)
+		
 		return True
 		
 ######################################################################################################################
@@ -400,9 +437,9 @@ class EMParticlesEditEntry(EMParticlesEntry):
 		EMParticlesEntry.__init__(self,root=root,name=name,parent=parent,hidedot=hidedot)
 		self.badparticlecount = None
 		
-	def fillDetails(self):
-		super(EMParticlesEditEntry, self).fillDetails()
-		
+	def fillDetails(self, db):
+		super(EMParticlesEditEntry, self).fillDetails(db)
+			
 		# bad particles
 		if db_check_dict("bdb:select"):
 			select_db = db_open_dict("bdb:select",ro=True)
@@ -468,15 +505,9 @@ class EMBoxesEntry(EMDirEntry):
 		self.boxcount=None
 		self.quality=None
 		
-	def fillDetails(self):
+	def fillDetails(self, db):
 		"""Fills in the expensive metadata about this entry. Returns False if no update was necessary."""
 		if self.filetype!=None : return False		# must all ready be filled in
-		
-		# get image counts
-		try:
-			if EMUtil.get_image_count(self.path())==1 : self.filetype="Image"
-		except:
-			self.filetype="-"
 		
 		# get quality and box numbers
 		if db_check_dict('bdb:e2boxercache#quality'):
@@ -488,8 +519,21 @@ class EMBoxesEntry(EMDirEntry):
 			bc = db[self.getBaseName(self.path(),extension=True)]
 			if bc:
 				self.boxcount = len(bc)
-				return True
-			
+		
+		# Cehck cahce for metadata
+		cache = self.checkCache(db,name='boxing')
+		if not self.cacheMiss(cache,'filetype'): return 
+		
+		# get image counts
+		try:
+			if EMUtil.get_image_count(self.path())==1 : self.filetype="Image"
+		except:
+			self.filetype="-"
+		
+		# Set cache
+		cache["filetype"] = self.filetype
+		self.setCache(db,cache,name='boxing')
+		
 		return True
 
 #############################################################################################################################
@@ -549,15 +593,9 @@ class EMRCTBoxesEntry(EMDirEntry):
 		self.boxcount=None
 		self.quality=None
 		
-	def fillDetails(self):
+	def fillDetails(self, db):
 		"""Fills in the expensive metadata about this entry. Returns False if no update was necessary."""
 		if self.filetype!=None : return False		# must all ready be filled in
-		
-		# get image counts
-		try:
-			if EMUtil.get_image_count(self.path())==1 : self.filetype="Image"
-		except:
-			pass
 		
 		# get quality and box numbers
 		if db_check_dict('bdb:e2boxercache#quality'):
@@ -576,9 +614,24 @@ class EMRCTBoxesEntry(EMDirEntry):
 			bc = db[self.getBaseName(self.path(),extension=True)]
 			if bc:
 				self.boxcount = len(bc)
-				return True
-			
+		
+				cache = self.checkCache(db)
+		
+		# check cache for metadata
+		cache = self.checkCache(db,name='rctboxing')
+		if not self.cacheMiss(cache,'filetype'): return 
+		
+		# get image counts
+		try:
+			if EMUtil.get_image_count(self.path())==1 : self.filetype="Image"
+		except:
+			self.filetype="-"
+		
+		cache["filetype"] = self.filetype
+		self.setCache(db,cache,name='rctboxing')
+		
 		return True
+		
 #################################################################################################################################
 
 class EMSubTomosTable(EMBrowserWidget):
@@ -633,9 +686,9 @@ class EMSubTomosEntry(EMDirEntry):
 	def __init__(self,root,name,parent=None,hidedot=True):
 		EMDirEntry.__init__(self,root,name,parent=parent,hidedot=hidedot)
 		
-	def fillDetails(self):
+	def fillDetails(self, db):
 		# Maybe add code to cache results.....
-		super(EMSubTomosEntry, self).fillDetails()
+		super(EMSubTomosEntry, self).fillDetails(db)
 
 #################################################################################################################################
 
@@ -689,9 +742,9 @@ class EMRawDataEntry(EMDirEntry):
 	def __init__(self,root,name,parent=None,hidedot=True):
 		EMDirEntry.__init__(self,root,name,parent=parent,hidedot=hidedot)
 		
-	def fillDetails(self):
+	def fillDetails(self, db):
 		# Maybe add code to cache results.....
-		super(EMRawDataEntry, self).fillDetails()
+		super(EMRawDataEntry, self).fillDetails(db)
 		
 #################################################################################################################################
 

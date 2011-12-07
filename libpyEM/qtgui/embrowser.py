@@ -826,7 +826,45 @@ class EMDirEntry(object):
 		for i,n in enumerate(self.__children):
 			self.__children[i]=self.__class__(self.filepath,n,self)
 	
-	def fillDetails(self):
+	def checkCache(self, db, name=""):
+		""" Returns a dict from the cache if it exists AND self.path() has an access time equal to cache.
+		If the cache is used by more than one browser, then a name for the nth browser must be given otherwise 
+		cache info may be out of date."""
+		
+		# modify time is used rather than access time b/c access time only has 24 hour resolution.
+		# This means that ONLY file metadata should be cached and NOT associated data in DBs which will
+		# not necessarily modify the original file!!!!!
+		if db.has_key(self.path()) and db[self.path()+name+'lastaccesstime'] == self.statFile(self.path())[8]: 
+			return db[self.path()]
+		else:
+			return {}
+			
+	def setCache(self, db, dbdict, name=""):
+		""" Sets a cache """
+		db[self.path()] = dbdict
+		db[self.path()+name+'lastaccesstime'] = self.statFile(self.path())[8]
+	
+	def cacheMiss(self, cache, *args):
+		""" Check the cahce generate a miss is some data is missing """
+		if not cache: return True
+		miss = False	# Basicaly a dirty bit
+		for arg in args:
+			if cache.has_key(arg): 
+				self.__setattr__(arg, cache[arg])
+			else:
+				miss = True
+		return miss
+		
+	def statFile(self, filename):
+		""" Stat either a file or BDB """
+		if filename[:4].lower()=="bdb:":
+			path,dictname,keys=db_parse_path(filename)
+			path=path+"/EMAN2DB/"+dictname+".bdb"
+			return os.stat(path)
+		else:
+			return os.stat(filename)
+			
+	def fillDetails(self, db):
 		"""Fills in the expensive metadata about this entry. Returns False if no update was necessary."""
 		if self.filetype!=None : return False		# must all ready be filled in
 		
@@ -930,6 +968,7 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 		self.root=direntryclass(startpath,"")					# EMDirEntry as a parent for the root path
 		self.rootpath=startpath							# root path for current browser
 		self.last=(0,0)
+		self.db=None
 #		print "Init FileItemModel ",self,self.__dict__
 
 	def canFetchMore(self,idx):
@@ -1045,11 +1084,16 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 #		self.emit(QtCore.SIGNAL("layoutChanged()"))
 		self.layoutChanged.emit()
 	
+	def getCacheDB(self):
+		if not self.db:
+			self.db=db_open_dict("bdb:browsercache")
+		return self.db
+					
 	def details(self,index):
 		"""This will trigger loading the (expensive) details about the specified index, and update the display"""
 		if not index.isValid(): return
 		
-		if index.internalPointer().fillDetails() : 
+		if index.internalPointer().fillDetails(self.getCacheDB()) : 
 			self.dataChanged.emit(index, self.createIndex(index.row(),5,index.internalPointer()))
 		
 			
@@ -1772,7 +1816,7 @@ class EMBrowserWidget(QtGui.QWidget):
 				time.sleep(1.0)				# If there is nothing to update at the moment, we don't need to spin our wheels as much
 			else:
 				de=self.updlist.pop()
-				if de.internalPointer().fillDetails() : 
+				if de.internalPointer().fillDetails(self.curmodel.getCacheDB()) : 
 					self.redrawlist.append(de)		# if the update changed anything, we trigger a redisplay of this entry
 					time.sleep(0.07)					# prevents updates from happening too fast and slowing the machine down
 #				print "### ",de.internalPointer().path()

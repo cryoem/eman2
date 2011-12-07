@@ -56,7 +56,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_header(name="initialmodelheader", help='Options below this label are specific to e2initialmodel', title="### e2initialmodel options ###", row=1, col=0, rowspan=1, colspan=3)
-	parser.add_argument("--input", dest="input", default=None,type=str, help="The name of the image containing the particle data", browser='EMSetsTable(withmodal=True,multiselect=False)', guitype='filebox', row=0, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--input", dest="input", default=None,type=str, help="The name of the image containing the particle data", browser='EMBrowserWidget(withmodal=True,multiselect=False)', guitype='filebox', row=0, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--iter", type = int, default=8, help = "The total number of refinement iterations to perform", guitype='intbox', row=2, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--tries", type=int, default=10, help="The number of different initial models to generate in search of a good one", guitype='intbox', row=2, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos",default="c1", guitype='symbox', row=3, col=0, rowspan=1, colspan=3)

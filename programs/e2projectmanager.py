@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 #
-# Author: John Flanagan (jfflanag@bcm.edu)
-# Copyright (c) 2000-2006 Baylor College of Medicine
-
+# Author: John Flanagan Oct 20th 2011 (jfflanag@bcm.edu)
+# Copyright (c) 2000-2011 Baylor College of Medicine
 
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -1492,6 +1491,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 		if not nodb and self.db[option['name']+self.getSharingMode(option)]: return self.db[option['name']+self.getSharingMode(option)]	# Return the default if it exists in the DB
 		default = ""
 		if 'default' in option: default = option['default']
+		if type(default) == str and "self.pm()" in default: default = eval(default)
 		return default
 		
 	def getLRange(self, option):
