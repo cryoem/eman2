@@ -6144,7 +6144,6 @@ class App(QApplication):
         self.connect(self, SIGNAL("lastWindowClosed()"), self.byebye )
         #hshows main window
         self.main.show()
-        print options.demo
     #function byebye (just quit)  
     def byebye( self ):
         print' bye bye!'
