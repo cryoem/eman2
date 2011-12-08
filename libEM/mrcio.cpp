@@ -333,9 +333,11 @@ int MrcIO::read_mrc_header(Dict & dict, int image_index, const Region * area, bo
 	Transform * trans = new Transform();
 	if(is_transpose) {
 		trans->set_trans(mrch.nystart, mrch.nxstart, mrch.nzstart);
+		trans->set_rotation(Dict("type", "imagic", "alpha", mrch.alpha, "beta", mrch.beta, "gamma", mrch.gamma));
 	}
 	else {
 		trans->set_trans(mrch.nxstart, mrch.nystart, mrch.nzstart);
+		trans->set_rotation(Dict("type", "imagic", "alpha", mrch.alpha, "beta", mrch.beta, "gamma", mrch.gamma));
 	}
 	
 	if(zlen<=1) {
