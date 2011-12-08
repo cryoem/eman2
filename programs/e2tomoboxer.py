@@ -38,7 +38,6 @@ import os
 import weakref
 import threading
 import math
-
 from EMAN2 import *
 from emapplication import get_application, EMApp
 from emimage2d import EMImage2DWidget
@@ -48,7 +47,6 @@ from emscene3d import EMScene3D
 from emdataitem3d import EMDataItem3D, EMIsosurface
 from emshape import EMShape
 from valslider import *
-
 from sys import argv #jesus
 
 
@@ -265,12 +263,12 @@ def main():
 
 				imgnew = img.replace('.','_bin' + str(options.bin) + '.')
 				cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --process=math.meanshrink:n=' + str(options.bin)
-				launch_childprocess(cmd)	
+				os.system(cmd)	
 				
 				print "Reading tomogram. Please wait."
 											#If the tomogram will be binned, there's no need to load the fulll version
 				img = EMData(imgnew,0)					#and bin it here. That's TOO slow. It's best to do so at the commandline.
-				cmd = 'rm ' + imgnew		#Remove "temporary" binned tomogram after loading it to memory.
+				cmd = 'rm ' + imgnew					#Remove "temporary" binned tomogram after loading it to memory.
 			else:
 				print "You better have A LOT of memory (more than 8GB) if this is an unbinned 4k x 4k x 0.5k tomogram, because I'm loading it UNBINNED/un-shrunk. Please wait"
 				img = EMData(img,0)
@@ -281,7 +279,7 @@ def main():
 				
 			if options.lowpass:
 				filt=1.0/options.lowpass
-				print "The tomogram is being low pass filtered to %d anstroms resolution" %(options.lowpass)
+				print "The tomogram is being low pass filtered to %d Angstroms resolution" %(options.lowpass)
 				img = img.process('filter.lowpass.gauss',{'cutoff_freq':filt})
 				
 			print "Done !"
@@ -292,16 +290,16 @@ def main():
 			img=args[0]
 			
 			
-			'''The modd variable is used as a "filter" that determines whether a "modified" tomogram needs to be deleted prior to boxing from disk.
+			'''The modd variable is used as a "filter" that determines whether a "modified" tomogram needs to be deleted prior to extracting boxes from disk.
 			Because boxing from disk does NOT open the whole tomogram, a modified copy needs to be generated and written to file when you want to find
-			particles in a bined or pre-low pass filtered tomogram'''
+			particles in a bined or pre-low pass filtered tomogram, BUT still extract from the raw tomogram'''
 			modd = False
 			if options.bin > 1:
 				imgnew = img
 				if '_edtedtemp.' not in img:
 					imgnew = img.replace('.','_editedtemp.')
 				cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --process=math.meanshrink:n=' + str(options.bin)
-				launch_childprocess(cmd)
+				os.system(cmd)
 				img = imgnew
 				modd = True
 				
@@ -310,7 +308,7 @@ def main():
 				if '_edtedtemp.' not in img:
 					imgnew = img.replace('.','_editedtemp.')
 				cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --mult=-1'
-				launch_childprocess(cmd)
+				os.system(cmd)
 				img = imgnew
 				modd = True
 
@@ -320,7 +318,7 @@ def main():
 					imgnew = img.replace('.','_editedtemp.')
 				filt=1.0/options.lowpass
 				cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --process=filter.lowpass.gauss:cutoff_freq=' + str(filt)
-				launch_childprocess(cmd)
+				os.system(cmd)
 				img = imgnew
 				modd = True
 			
