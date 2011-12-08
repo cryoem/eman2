@@ -192,7 +192,6 @@ def main():
 	parser.add_pos_argument(name="tomogram",help="The tomogram to use for boxing.", default="", guitype='filebox', browser="EMTomoDataTable(withmodal=True,multiselect=False)", positional=True, row=0, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=32)
 	parser.add_argument("--path",type=str,help="Pathname to save data to",default="subtomograms")
-	#parser.add_argument("--shrink",type=int,help="Shrink factor for full-frame view, default=0 (auto)",default=0)
 	parser.add_argument("--inmemory",action="store_true",default=False,help="This will read the entire tomogram into memory. Much faster, but you must have enough ram !", guitype='boolbox', row=2, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--yshort",action="store_true",default=False,help="This means you have a file where y is the short axis", guitype='boolbox', row=2, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--apix",type=float,help="Override the A/pix value stored in the tomogram header",default=0.0, guitype='floatbox', row=3, col=0, rowspan=1, colspan=1)
@@ -218,7 +217,6 @@ def main():
 	
 	#parser.add_argument('--cbinx', type=int, default=1, help="""Binning factor of the X coordinates with respect to the actual size of the tomogram from which you want to extract the subvolumes.
 	#Sometimes tomograms are not binned equally in all directions for purposes of recording the coordinates of particles""")
-
 	#parser.add_argument('--cbiny', type=int, default=1, help="Binning factor of the Y coordinates with respect to the actual size of the tomogram from which you want to extract the subvolumes")
 	#parser.add_argument('--cbinz', type=int, default=1, help="Binning factor of the X coordinates with respect to the actual size of the tomogram from which you want to extract the subvolumes")
 
