@@ -317,7 +317,13 @@ def main():
 				if '_edtedtemp.' not in img:
 					imgnew = img.replace('.','_editedtemp.')
 				filt=1.0/options.lowpass
-				cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --process=filter.lowpass.gauss:cutoff_freq=' + str(filt)
+				
+				imghdr = EMData(img,1,True)
+				tapix = imghdr['apix_x']
+				if options.apix:
+					tapix = options.apix
+				
+				cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --process=filter.lowpass.gauss:cutoff_freq=' + str(filt) + ':apix=' + str(tapix)
 				os.system(cmd)
 				img = imgnew
 				modd = True
