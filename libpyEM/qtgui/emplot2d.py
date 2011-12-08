@@ -655,18 +655,23 @@ class EMPlot2DWidget(EMGLWidget):
 		lc =self.scr2plot(event.x(),event.y())
 		if self.rmousedrag:
 			lc2=self.scr2plot(*self.rmousedrag)
-			if fabs(event.x()-self.rmousedrag[0])+fabs(event.y()-self.rmousedrag[1])<3 : self.limits=None
-			else : self.limits=((min(lc[0],lc2[0]),max(lc[0],lc2[0])),(min(lc[1],lc2[1]),max(lc[1],lc2[1])))
+			if fabs(event.x()-self.rmousedrag[0])+fabs(event.y()-self.rmousedrag[1])<3 : self.rescale(0,0,0,0)
+			else : self.rescale(min(lc[0],lc2[0]),max(lc[0],lc2[0]),min(lc[1],lc2[1]),max(lc[1],lc2[1]))
 			self.rmousedrag=None
-			self.needupd=1
-			self.del_shapes()  # also triggers an update
-			self.updateGL()
 		#elif event.button()==Qt.LeftButton:
 			#if self.mmode==0:
 				#self.emit(QtCore.SIGNAL("mouseup"), event)
 				#return
 			#elif self.mmode==1 :
 				#self.add_shape("MEAS",("line",.5,.1,.5,self.shapes["MEAS"][4],self.shapes["MEAS"][5],lc[0],lc[1],2))
+
+	def rescale(self,x0,x1,y0,y1,quiet=False):
+		if x0>=x1 or y0>=y1 : self.limits=None
+		else: self.limits=((x0,x1),(y0,y1))
+		self.needupd=1
+		self.del_shapes()  # also triggers an update
+		self.updateGL()
+		if self.inspector!=0 : self.inspector.update()
 
 	def wheelEvent(self, event):
 		pass
@@ -1037,6 +1042,27 @@ class EMPlot2DInspector(QtGui.QWidget):
 
 		vbl0.addLayout(hbl)
 		
+		hbl2=QtGui.QHBoxLayout()
+		
+		hbl2.addWidget(QtGui.QLabel("X:",self))
+		self.wxmin=QtGui.QLineEdit(self)
+		hbl2.addWidget(self.wxmin)
+		hbl2.addWidget(QtGui.QLabel("-",self))
+		self.wxmax=QtGui.QLineEdit(self)
+		hbl2.addWidget(self.wxmax)
+		
+		hbl2.addWidget(QtGui.QLabel("Y:",self))
+		self.wymin=QtGui.QLineEdit(self)
+		hbl2.addWidget(self.wymin)
+		hbl2.addWidget(QtGui.QLabel("-",self))
+		self.wymax=QtGui.QLineEdit(self)
+		hbl2.addWidget(self.wymax)
+
+		self.wrescale=QtGui.QPushButton(self)
+		self.wrescale.setText("Rescale")
+		hbl2.addWidget(self.wrescale)
+		vbl0.addLayout(hbl2)
+		
 		hbl2 = QtGui.QHBoxLayout()	
 		hbl2.addWidget(QtGui.QLabel("X Label:",self))
 		self.xlabel=QtGui.QLineEdit(self)
@@ -1072,6 +1098,12 @@ class EMPlot2DInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.ylabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
 		QtCore.QObject.connect(self.saveb,QtCore.SIGNAL("clicked()"),self.savePlot)
 		QtCore.QObject.connect(self.concatb,QtCore.SIGNAL("clicked()"),self.saveConcatPlot)
+		QtCore.QObject.connect(self.wxmin,QtCore.SIGNAL("returnPressed()"),self.newLimits)
+		QtCore.QObject.connect(self.wxmax,QtCore.SIGNAL("returnPressed()"),self.newLimits)
+		QtCore.QObject.connect(self.wymin,QtCore.SIGNAL("returnPressed()"),self.newLimits)
+		QtCore.QObject.connect(self.wymax,QtCore.SIGNAL("returnPressed()"),self.newLimits)
+		QtCore.QObject.connect(self.wrescale,QtCore.SIGNAL("clicked()"),self.autoScale)
+		
 		self.datachange()
 		
 	def on_bad_button(self,unused=False):
@@ -1218,6 +1250,34 @@ class EMPlot2DInspector(QtGui.QWidget):
 	def newCols(self,val):
 		if self.target: 
 			self.target().setAxes(str(self.setlist.currentItem().text()),self.slidex.value(),self.slidey.value(),self.slidec.value())
+	
+	def newLimits(self,val=None):
+		if self.busy: return
+		try:
+			xmin=float(str(self.wxmin.text()))
+			xmax=float(str(self.wxmax.text()))
+			ymin=float(str(self.wymin.text()))
+			ymax=float(str(self.wymax.text()))
+			self.target().rescale(xmin,xmax,ymin,ymax,True)
+		except:
+			self.target().rescale(0,0,0,0)
+	
+	def update(self):
+		self.busy=1
+		try:
+			self.wxmin.setText(str(self.target().limits[0][0]))		
+			self.wxmax.setText(str(self.target().limits[0][1]))		
+			self.wymin.setText(str(self.target().limits[1][0]))		
+			self.wymax.setText(str(self.target().limits[1][1]))		
+		except:
+			self.wxmin.setText("Auto")
+			self.wxmax.setText("Auto")
+			self.wymin.setText("Auto")
+			self.wymax.setText("Auto")
+		self.busy=0
+	
+	def autoScale(self):
+		self.target().rescale(0,0,0,0)
 	
 	def datachange(self):
 		

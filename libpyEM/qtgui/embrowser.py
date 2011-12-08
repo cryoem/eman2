@@ -372,6 +372,7 @@ class EMPlotFileType(EMFileType):
 				
 			if numc>0 : break			# just finding the number of columns
 		
+		
 		# If we couldn't find at least one valid line with some numbers, give up
 		if numc==0 : return False
 		
@@ -382,12 +383,13 @@ class EMPlotFileType(EMFileType):
 		fin=file(path,"r")
 		numr=0
 		for l in fin:
-			if l[0]=="#" : continue
+				
+			if l[0]=="#" or len(l)<2 or "nan" in l : continue
 			
 			lnumc=len([float(i) for i in renumfind.findall(l)])
 			if lnumc!=0 and lnumc!=numc : return False				# 0 means the line contains no numbers, we'll live with that, but if there are numbers, it needs to match
 			if lnumc!=0 : numr+=1
-			
+		
 		return (size,"-","%d x %d"%(numr,numc))
 		
 	@staticmethod
@@ -403,6 +405,9 @@ class EMPlotFileType(EMFileType):
 		numr=0
 		numc=0
 		for l in fin:
+			if "nan" in l : 
+				print "Warning, NaN present in file"
+				continue
 			if l[0]=="#" : continue
 			
 			lnumc=len([float(i) for i in renumfind.findall(l)])
@@ -435,7 +440,7 @@ class EMPlotFileType(EMFileType):
 		fin=file(self.path,"r")
 		numr=0
 		for l in fin:
-			if l[0]=="#" : continue
+			if l[0]=="#" or "nan" in l: continue
 			data1.append([float(i) for i in renumfind.findall(l)])
 		
 		data=[]
@@ -462,7 +467,7 @@ class EMPlotFileType(EMFileType):
 		fin=file(self.path,"r")
 		numr=0
 		for l in fin:
-			if l[0]=="#" : continue
+			if l[0]=="#" or "nan" in l: continue
 			data1.append([float(i) for i in renumfind.findall(l)])
 		
 		data=[]
@@ -1943,7 +1948,10 @@ class EMBrowserWidget(QtGui.QWidget):
 		
 	def buttonUp(self,tog):
 		"Button press"
-		newpath=self.curpath.rsplit("/",1)[0]
+
+		if "/" in self.curpath : newpath=self.curpath.rsplit("/",1)[0]
+		else: newpath=os.path.realpath(self.curpath).rsplit("/",1)[0]
+
 		print "Newpath: ",newpath
 		if len(newpath)>1 : self.setPath(newpath)
 		
@@ -1984,7 +1992,7 @@ class EMBrowserWidget(QtGui.QWidget):
 		
 		self.updlist=[]
 		
-		self.curpath=path
+		self.curpath=str(path)
 		self.wpath.setText(path)
 
 		if path in self.models :
