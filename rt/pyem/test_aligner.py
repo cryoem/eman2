@@ -77,7 +77,7 @@ class TestAligner(unittest.TestCase):
 						self.failIf(fabs(params["tz"] + dz) > 1)
 						
 						f = e.process("xform",{"transform":t})
-						self.assertEqual(f==g,True)
+						self.assertEqual(f.equal(g),True)
 						
 								
 		# Test 2D behavior
@@ -98,7 +98,7 @@ class TestAligner(unittest.TestCase):
 					self.failIf(fabs(params["ty"] + dy) > 1)
 					
 					f = e.process("xform",{"transform":t})
-					self.assertEqual(f==g,True)
+					self.assertEqual(f.equal(g),True)
 
 
 	def test_RotationalAligner(self):
