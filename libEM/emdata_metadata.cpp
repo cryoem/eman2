@@ -875,9 +875,6 @@ void EMData::set_size(int x, int y, int z)
 	nz = z;
 	nxy = nx*ny;
 	nxyz = (size_t)nx*ny*nz;
-	attr_dict["nx"] = nx;
-	attr_dict["ny"] = ny;
-	attr_dict["nz"] = nz;
 
 // once the object is resized, the CUDA need to be updated
 #ifdef EMAN2_USING_CUDA
@@ -1121,16 +1118,13 @@ EMObject EMData::get_attr(const string & key) const
 	}
 	else if (key == "changecount") return EMObject(changecount);
 	else if (key == "nx") {
-		if(rdata) return nx;
-		else	return attr_dict["nx"];	//header only situation
+		return nx;
 	}
 	else if (key == "ny") {
-		if(rdata) return ny;
-		else	return attr_dict["ny"]; //header only situation
+		return ny;
 	}
 	else if (key == "nz") {
-		if(rdata)	return nz;
-		else	return attr_dict["nz"]; //header only situation
+		return nz;
 	}
 
 	if(attr_dict.has_key(key)) {
@@ -1159,42 +1153,28 @@ EMObject EMData::get_attr_default(const string & key, const EMObject & em_obj) c
 
 Dict EMData::get_attr_dict() const
 {
-	update_stat();
-	
 	if(rdata) {
-		Dict tmp=Dict(attr_dict);
-		tmp["nx"]=nx;
-		tmp["ny"]=ny;
-		tmp["nz"]=nz;
-		tmp["changecount"]=changecount;
-		return tmp;
+		update_stat();
 	}
-	else {	//header only situation
-		return attr_dict;
-	}
+
+	Dict tmp=Dict(attr_dict);
+	tmp["nx"]=nx;
+	tmp["ny"]=ny;
+	tmp["nz"]=nz;
+	tmp["changecount"]=changecount;
+
+	return tmp;
 }
 
 void EMData::set_attr_dict(const Dict & new_dict)
 {
 	/*set nx, ny nz may resize the image*/
 	// This wasn't supposed to 'clip' the image, but just redefine the size --steve
-	if( ( new_dict.has_key("nx") && nx!=(int)new_dict["nx"] )
-		|| ( new_dict.has_key("ny") && ny!=(int)new_dict["ny"] )
-		|| ( new_dict.has_key("nz") && nz!=(int)new_dict["nz"] ) ) {
-
-		int newx, newy, newz;
-		newx = new_dict.has_key("nx") ? (int)new_dict["nx"] : nx;
-		newy = new_dict.has_key("ny") ? (int)new_dict["ny"] : ny;
-		newz = new_dict.has_key("nz") ? (int)new_dict["nz"] : nz;
-
-		set_size(newx,newy,newz);
-
-//		EMData * new_image = get_clip(Region((nx-newx)/2, (ny-newy)/2, (nz=newz)/2, newx, newy, newz));
-//		if(new_image) {
-//			this->operator=(*new_image);
-//			delete new_image;
-//			new_image = 0;
-//		}
+	if( new_dict.has_key("nx") || new_dict.has_key("ny") || new_dict.has_key("nz") ) {
+		LOGWARN("Warning: Ignored setting dimension size by modifying attribute!!!");
+		const_cast<Dict&>(new_dict).erase("nx");
+		const_cast<Dict&>(new_dict).erase("ny");
+		const_cast<Dict&>(new_dict).erase("nz");
 	}
 
 	vector<string> new_keys = new_dict.keys();
@@ -1224,11 +1204,14 @@ void EMData::del_attr_dict(const vector<string> & del_keys)
 
 void EMData::set_attr(const string & key, EMObject val)
 {
-	if(rdata) {	//skip following for header only image
-		if( key == "nx" && nx != (int)val) { set_size((int)val,ny,nz); return; }
-		if( key == "ny" && ny != (int)val) { set_size(nx,(int)val,nz); return; }
-		if( key == "nz" && nz != (int)val) { set_size(nx,ny,(int)val); return; }
+	/* Ignore dimension attribute. */
+	if(key == "nx" || key == "ny" || key == "nz")
+	{
+		printf("Ignore setting dimension attribute %s. Use set_size if you need resize this EMData object.", key.c_str());
+		return;
+	}
 
+	if(rdata) {	//skip following for header only image
 		/* Ignore 'read only' attribute. */
 		if(key == "sigma" ||
 			key == "sigma_nonzero" ||
@@ -1248,9 +1231,12 @@ void EMData::set_attr(const string & key, EMObject val)
 
 void EMData::set_attr_python(const string & key, EMObject val)
 {
-	if( key == "nx" && nx != (int)val) { set_size((int)val,ny,nz); return; }
-	if( key == "ny" && ny != (int)val) { set_size(nx,(int)val,nz); return; }
-	if( key == "nz" && nz != (int)val) { set_size(nx,ny,(int)val); return; }
+	/* Ignore dimension attribute. */
+	if(key == "nx" || key == "ny" || key == "nz")
+	{
+		printf("Ignore setting dimension attribute %s. Use set_size if you need resize this EMData object.", key.c_str());
+		return;
+	}
 
 	/* Ignore 'read only' attribute. */
 	if(key == "sigma" ||
@@ -1315,7 +1301,7 @@ void EMData::set_data_pickle(std::string vf)
 //	if (rdata) printf("rdata exists\n");
 //	rdata = (float *)malloc(nx*ny*nz*sizeof(float));
 //	std::copy(vf.begin(), vf.end(), rdata);
-	EMUtil::em_memcpy(get_data(),vf.data(),nx*ny*nz*sizeof(float));
+	EMUtil::em_memcpy(get_data(),vf.data(),(size_t)nx*ny*nz*sizeof(float));
 
 }
 

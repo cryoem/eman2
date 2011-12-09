@@ -81,13 +81,9 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 			nx = attr_dict["nx"];
 			ny = attr_dict["ny"];
 			nz = attr_dict["nz"];
-
-//			if(attr_dict.has_key("ctf")) {
-//				flags |= EMDATA_HASCTFF;
-//			}
-//			else {
-//				flags &= ~EMDATA_HASCTFF;
-//			}
+			attr_dict.erase("nx");
+			attr_dict.erase("ny");
+			attr_dict.erase("nz");
 
 			if (!nodata) {
 
