@@ -90,7 +90,9 @@ e2boxer.py ????.mrc --boxsize=256
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--gui", dest="dummy", help="Dummy option; used in older version of e2boxer")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
- 
+ 	parser.add_argument("--gauss_autoboxer",type=str,help="Name of autoboxed file whose autoboxing parameters (obtained via some previous run of Gauss autoboxer via the GUI) should be used for automatic boxing.",default=None)
+	parser.add_argument("--do_ctf",type=str,help="Name of file whose ctf estimation parameters (obtained via some previous run of Gauss autoboxer via the GUI) should be used for automatic ctf estimation.",default=None)
+
 	(options, args) = parser.parse_args()
 
 	logid=E2init(sys.argv,options.ppid)
@@ -112,6 +114,16 @@ e2boxer.py ????.mrc --boxsize=256
 	if options.autoboxer:
 		autobox(args,options,logid)
 		return
+		
+	if options.gauss_autoboxer or options.do_ctf:
+		err = gauss_cmd_line_autobox(args, options,logid)
+		if len(err) > 0:
+			print err
+			return
+		if options.write_ptcls or options.write_dbbox:
+			write_output(args,options,logid)
+		return
+				
 	if options.write_dbbox or options.write_ptcls:
 		write_output(args,options,logid)
 	else:
@@ -136,6 +148,67 @@ e2boxer.py ????.mrc --boxsize=256
 		module.show_interfaces()
 		
 		application.execute(logid)
+
+def gauss_cmd_line_autobox(args,options,logid):
+	err = ''
+	boxkey = options.gauss_autoboxer
+	ctfkey = options.do_ctf
+	if boxkey == None:
+		boxkey = ctfkey
+	if ctfkey == None:
+		ctfkey = boxkey
+	gdb_name = GaussPanel.GDB_NAME
+	if not db_check_dict(gdb_name): 
+		err = "There is no gausse method autoboxing information present in the current directory"
+		return err
+	gbdb = db_open_dict(gdb_name)
+	if (not gbdb.has_key(boxkey)):
+		err = "There is no autoboxing information present for %s." %boxkey
+		return err
+
+	gboxer = GaussBoxer()
+	if options.boxsize == -1:
+		print "box size must be set! Exiting ..."
+		sys.exit(1)
+	boxsize=int(options.boxsize)
+	do_autobox=False
+	
+	if options.gauss_autoboxer:
+		do_autobox=True
+		try:
+			autoboxdict = gbdb[boxkey]
+			gboxer.set_pixel_input(float(autoboxdict['pixel_input']))
+			gboxer.set_pixel_output(float(autoboxdict['pixel_output']))
+			gboxer.set_invert_contrast(autoboxdict['invert_contrast'])
+			gboxer.set_use_variance(autoboxdict['use_variance'])
+			gboxer.set_gauss_width(float(autoboxdict['gauss_width']))
+			gboxer.set_thr_low(float(autoboxdict['thr_low']))
+			gboxer.set_thr_hi(float(autoboxdict['thr_hi']))	
+		except:
+			print 'no autoboxing parameters were found in database...will not autobox'
+			do_autobox=False # maybe user just want to estimate ctf in batch mode...
+	
+	do_ctfest = False	
+	if options.do_ctf:
+		do_ctfest = True
+		ctfdict = gbdb[ctfkey]
+		try:
+			ctf_params={'ctf_fstart':float(ctfdict['ctf_fstart']),'ctf_fstop':float(ctfdict['ctf_fstop']), 'ctf_window':int(ctfdict['ctf_window']),'ctf_edge':int(ctfdict['ctf_edge']),'ctf_overlap':int(ctfdict['ctf_overlap']),'ctf_ampcont':float(ctfdict['ctf_ampcont']),'ctf_volt':float(ctfdict['ctf_volt']),'ctf_cs':float(ctfdict['ctf_cs'])}
+		except:
+			print 'no ctf parameters stored in current directory! Estimate ctf in the GUI in gauss mode first!'
+			do_ctfest = False
+			
+	for i,arg in enumerate(args):
+		boxer_vitals = EMBoxerModuleVitals(file_names=[arg], box_size=boxsize)
+		boxer_vitals.current_idx=0
+		gboxer.target = boxer_vitals
+		# Estimate ctf first and then autobox so ctf parametes need not be separately set in alternate image (i.e., the filtered and possibly downsampled image)
+		if do_ctfest:
+			gboxer.auto_ctf(arg,ctf_params)
+		if do_autobox:
+			gboxer.auto_box_cmdline(arg,boxsize=boxsize)
+		E2progress(logid,float(i+1)/len(args))	
+	return err
 	
 def autobox(args,options,logid):
 	
@@ -143,6 +216,7 @@ def autobox(args,options,logid):
 	boxer.handle_file_change(options.autoboxer)
 	for i,arg in enumerate(args):
 		boxer_vitals = EMBoxerModuleVitals(file_names=[arg])
+		boxer_vitals.current_idx=0
 		boxer.target = weakref.ref(boxer_vitals)
 		boxer.auto_box(arg, False, True, True)
 		E2progress(logid,float(i+1)/len(args))
@@ -165,6 +239,53 @@ def write_output(args,options,logid):
 			input = args[i]
 			box_list = EMBoxList()
 			box_list.load_boxes_from_database(input)
+			
+			# if box type is GaussBoxer.AUTO_NAME, the pre-process and possibly decimate image using params in db
+			# only need to do this if write_ptcls is called on its own
+			if (len(box_list) > 0) and (options.gauss_autoboxer == None):
+				bx = box_list[0]
+				if bx.type == GaussBoxer.AUTO_NAME and options.gauss_autoboxer == None:
+					print 'For automatic boxing using Gauss Boxer, particles should be written at the time of autoboxing either by 1) activating "Write Output" button in GUI mode, or 2) adding --write_ptcls when autoboxing in command line mode'
+					print 'Nothing will be written. Exiting...'
+					return
+			
+			# if box type is GaussBoxer.AUTO_NAME, the pre-process and possibly decimate image using params in db
+			# only need to do this if write_ptcls is called on its own
+			if (len(box_list) > 0) and (options.gauss_autoboxer != None):
+				bx = box_list[0]
+				boxkey = options.gauss_autoboxer
+				if bx.type == GaussBoxer.AUTO_NAME:
+					# these were boxed in gauss mode, so we have to process and possibly decimate image before writing
+					
+					gdb_name = GaussPanel.GDB_NAME
+					if not db_check_dict(gdb_name): 
+						print "no gauss mode autoboxing parameters were found in database...this should not happen"
+						print 'exiting...'
+						return
+					gbdb = db_open_dict(gdb_name)
+					if not gbdb.has_key(boxkey):
+						print "no gauss mode autoboxing parameters were found in database for %s...this should not happen"%boxkey
+						print 'exiting...'
+						return
+					autoboxdict = gbdb[boxkey]
+					
+					gboxer = GaussBoxer()
+					boxsize=int(options.boxsize)
+					try:
+						gboxer.set_pixel_input(float(autoboxdict['pixel_input']))
+						gboxer.set_pixel_output(float(autoboxdict['pixel_output']))
+						gboxer.set_invert_contrast(autoboxdict['invert_contrast'])
+						gboxer.set_use_variance(autoboxdict['use_variance'])
+						gboxer.set_gauss_width(float(autoboxdict['gauss_width']))
+						gboxer.set_thr_low(float(autoboxdict['thr_low']))
+						gboxer.set_thr_hi(float(autoboxdict['thr_hi']))			
+					except:
+						print 'no gauss mode autoboxing parameters were found in database...this should not happen'
+						print 'exiting...'
+						return
+						
+					gboxer.get_small_image(input,modecmd=True,boxsize=boxsize,ret_dummy=True)
+					
 			box_list.write_particles(input,output,options.boxsize,options.invert,options.norm)
 			if options.dbls and len(box_list)>0:
 				from EMAN2 import get_file_tag
@@ -199,7 +320,7 @@ def write_output(args,options,logid):
 	
 			progress += 1.0
 			E2progress(logid,progress/total_progress)
-			
+
 def gen_rot_ave_template(image_name,ref_boxes,shrink,box_size,iter=4):
 	
 	ptcls = []
@@ -1754,6 +1875,7 @@ def histogram1d( data, nbin, presize=0 ) :
 
 class GaussPanel:
 	DB_NAME = "bdb:gauss_panel"
+	GDB_NAME = 'bdb:e2boxercache#gauss_box_DB' # cache for putting params related to gauss method autoboxer
 	
 	def __init__(self,target,particle_diameter=128):
 		self.busy = True
@@ -1763,7 +1885,6 @@ class GaussPanel:
 		self.ccfs = None
 		self.data = None
 		self.PRESIZE = 28
-		self.gbdbname='bdb:e2boxercache#gauss_box_DB'# cache for putting params related to gauss method autoboxer
 		self.THRNA='N/A'
 		self.INVCONT=False
 		self.USEVAR=True
@@ -1790,7 +1911,7 @@ class GaussPanel:
 	def get_widget(self):
 		if self.widget == None:
 		
-			gbdb = db_open_dict(self.gbdbname)
+			gbdb = db_open_dict(GaussPanel.GDB_NAME)
 			
 			from PyQt4 import QtCore, QtGui, Qt
 			self.widget = QtGui.QWidget()
@@ -1917,12 +2038,18 @@ class GaussPanel:
 			
 			window_size_label = QtGui.QLabel("Window size:")
 			hbl_wscs.addWidget(window_size_label)
-			self.ctf_window_size = QtGui.QLineEdit('512')
+			if gbdb['ctf_window'] == None:
+				self.ctf_window_size = QtGui.QLineEdit('512')
+			else:
+				self.ctf_window_size = QtGui.QLineEdit(str(gbdb['ctf_window']))
 			hbl_wscs.addWidget(self.ctf_window_size)
 			
 			cs_label = QtGui.QLabel("Cs:")
 			hbl_wscs.addWidget(cs_label)
-			self.ctf_cs = QtGui.QLineEdit('2.0')
+			if gbdb['ctf_cs'] == None:
+				self.ctf_cs = QtGui.QLineEdit('2.0')
+			else:
+				self.ctf_cs = QtGui.QLineEdit(str(gbdb['ctf_cs']))
 			hbl_wscs.addWidget(self.ctf_cs)
 			
 			vbl.addLayout(hbl_wscs)
@@ -1932,12 +2059,18 @@ class GaussPanel:
 			
 			edge_size_label = QtGui.QLabel("Edge size:")
 			hbl_esv.addWidget(edge_size_label)
-			self.ctf_edge_size = QtGui.QLineEdit('0')
+			if gbdb['ctf_edge'] == None:
+				self.ctf_edge_size = QtGui.QLineEdit('0')
+			else:
+				self.ctf_edge_size = QtGui.QLineEdit(str(gbdb['ctf_edge']))
 			hbl_esv.addWidget(self.ctf_edge_size)
 			
 			voltage_label = QtGui.QLabel("Voltage:")
 			hbl_esv.addWidget(voltage_label)
-			self.ctf_volt = QtGui.QLineEdit('200.0')
+			if gbdb['ctf_volt'] == None:
+				self.ctf_volt = QtGui.QLineEdit('200.0')
+			else:
+				self.ctf_volt = QtGui.QLineEdit(str(gbdb['ctf_volt']))
 			hbl_esv.addWidget(self.ctf_volt)
 			
 			vbl.addLayout(hbl_esv)
@@ -1946,12 +2079,18 @@ class GaussPanel:
 			
 			overlap_label = QtGui.QLabel("Overlap:")
 			hbl_oac.addWidget(overlap_label)
-			self.ctf_overlap_size = QtGui.QLineEdit('50')
+			if gbdb['ctf_overlap'] == None:
+				self.ctf_overlap_size = QtGui.QLineEdit('50')
+			else:
+				self.ctf_overlap_size = QtGui.QLineEdit(str(gbdb['ctf_overlap']))
 			hbl_oac.addWidget(self.ctf_overlap_size)
 			
 			amplitude_contrast_label = QtGui.QLabel("Amplitude Contrast:")
 			hbl_oac.addWidget(amplitude_contrast_label)
-			self.ctf_ampcont = QtGui.QLineEdit('10.0')
+			if gbdb['ctf_ampcont'] == None:
+				self.ctf_ampcont = QtGui.QLineEdit('10.0')
+			else:
+				self.ctf_ampcont = QtGui.QLineEdit(str(gbdb['ctf_ampcont']))
 			hbl_oac.addWidget(self.ctf_ampcont)
 			
 			vbl.addLayout(hbl_oac)
@@ -1961,7 +2100,10 @@ class GaussPanel:
 			
 			fstart_label = QtGui.QLabel("F_start:")
 			hbl_fed.addWidget(fstart_label)
-			self.ctf_f_start = QtGui.QLineEdit('0.020')
+			if gbdb['ctf_fstart'] == None:
+				self.ctf_f_start = QtGui.QLineEdit('0.020')
+			else:
+				self.ctf_f_start = QtGui.QLineEdit(str(gbdb['ctf_fstart']))
 			hbl_fed.addWidget(self.ctf_f_start)
 			
 			estimated_defocus_label = QtGui.QLabel("Estimated defocus:")
@@ -1975,7 +2117,10 @@ class GaussPanel:
 			
 			fstop_label = QtGui.QLabel("F_stop:")
 			hbl_fs.addWidget(fstop_label)
-			self.ctf_f_stop = QtGui.QLineEdit('0.500')
+			if gbdb['ctf_fstop'] == None:
+				self.ctf_f_stop = QtGui.QLineEdit('0.500')
+			else:
+				self.ctf_f_stop = QtGui.QLineEdit(str(gbdb['ctf_fstop']))
 			hbl_fs.addWidget(self.ctf_f_stop)
 			
 			vbl.addLayout(hbl_fs)
@@ -2002,7 +2147,14 @@ class GaussPanel:
 			
 			QtCore.QObject.connect(self.estimate_ctf,QtCore.SIGNAL("clicked(bool)"), self.calc_ctf)
 			QtCore.QObject.connect(self.inspect_button,QtCore.SIGNAL("clicked(bool)"), self.inspect_ctf)
-			
+			QtCore.QObject.connect(self.ctf_window_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_window)
+			QtCore.QObject.connect(self.ctf_cs,QtCore.SIGNAL("editingFinished()"),self.new_ctf_cs)
+			QtCore.QObject.connect(self.ctf_edge_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_edge)
+			QtCore.QObject.connect(self.ctf_volt,QtCore.SIGNAL("editingFinished()"),self.new_ctf_volt)
+			QtCore.QObject.connect(self.ctf_overlap_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_overlap_size)
+			QtCore.QObject.connect(self.ctf_ampcont,QtCore.SIGNAL("editingFinished()"),self.new_ctf_ampcont)
+			QtCore.QObject.connect(self.ctf_f_start,QtCore.SIGNAL("editingFinished()"),self.new_ctf_f_start)
+			QtCore.QObject.connect(self.ctf_f_stop,QtCore.SIGNAL("editingFinished()"),self.new_ctf_f_stop)
 		return self.widget
 	
 	def gauss_width_changed(self, v):
@@ -2019,7 +2171,7 @@ class GaussPanel:
 		self.gauss_width_slider.setValue( v )
 		self.target().set_gauss_width(float(text))
 		
-		gbdb = db_open_dict(self.gbdbname)
+		gbdb = db_open_dict(GaussPanel.GDB_NAME)
 		gbdb['gauss_width']=float(text)
 		
 	def update_states(self,gauss_boxer):
@@ -2037,7 +2189,7 @@ class GaussPanel:
 			self.pixel_input_edit.setText(str(self.target().pixel_input))	
 			return
 		self.target().set_pixel_input(pixin)
-		gbdb = db_open_dict(self.gbdbname)
+		gbdb = db_open_dict(GaussPanel.GDB_NAME)
 		gbdb['pixel_input']=pixin
 		
 	def new_pixel_output(self):
@@ -2049,7 +2201,7 @@ class GaussPanel:
 			print "output pixel size cannot be smaller than input pixel size"
 			return
 		self.target().set_pixel_output(pixout)	
-		gbdb = db_open_dict(self.gbdbname)
+		gbdb = db_open_dict(GaussPanel.GDB_NAME)
 		gbdb['pixel_output']=pixout
 		
 	def new_thr_low(self):
@@ -2060,7 +2212,7 @@ class GaussPanel:
 		else:
 			thrlow = None	
 		self.target().set_thr_low(thrlow)
-		gbdb = db_open_dict(self.gbdbname)
+		gbdb = db_open_dict(GaussPanel.GDB_NAME)
 		gbdb['thr_low']=thrlow
 		
 		
@@ -2072,7 +2224,7 @@ class GaussPanel:
 		else:
 			thrhi=None
 		self.target().set_thr_hi(thrhi)
-		gbdb = db_open_dict(self.gbdbname)
+		gbdb = db_open_dict(GaussPanel.GDB_NAME)
 		gbdb['thr_hi']=thrhi	
 			
 	def auto_box_clicked(self,val):
@@ -2086,16 +2238,65 @@ class GaussPanel:
 	
 	def invert_contrast_checked(self,val):
 		if self.busy: return
-		gbdb = db_open_dict(self.gbdbname)
+		gbdb = db_open_dict(GaussPanel.GDB_NAME)
 		gbdb["invert_contrast"] = val
 		self.target().set_invert_contrast(val)
 		
 	def use_variance_checked(self,val):
 		if self.busy: return
-		gbdb = db_open_dict(self.gbdbname)
+		gbdb = db_open_dict(GaussPanel.GDB_NAME)
 		gbdb["use_variance"] = val
 		self.target().set_use_variance(val)
 	
+	
+	def new_ctf_window(self):
+		if self.busy: return
+		winsize=self.ctf_window_size.text()
+		gbdb = db_open_dict(GaussPanel.GDB_NAME)
+		gbdb['ctf_window']=int(winsize)
+	
+	def new_ctf_cs(self):
+		if self.busy: return
+		cs=self.ctf_cs.text()
+		gbdb = db_open_dict(GaussPanel.GDB_NAME)
+		gbdb['ctf_cs']=float(cs)
+		
+	def new_ctf_edge(self):
+		if self.busy: return
+		edge=self.ctf_edge_size.text()
+		gbdb = db_open_dict(GaussPanel.GDB_NAME)
+		gbdb['ctf_edge']=int(edge)	
+	
+	def new_ctf_volt(self):
+		if self.busy: return
+		volt=self.ctf_volt.text()
+		gbdb = db_open_dict(GaussPanel.GDB_NAME)
+		gbdb['ctf_volt']=float(volt)
+	
+	def new_ctf_overlap_size(self):
+		if self.busy: return
+		ov=self.ctf_overlap_size.text()
+		gbdb = db_open_dict(GaussPanel.GDB_NAME)
+		gbdb['ctf_overlap']=int(ov)
+	
+	def new_ctf_ampcont(self):
+		if self.busy: return
+		ac=self.ctf_ampcont.text()
+		gbdb = db_open_dict(GaussPanel.GDB_NAME)
+		gbdb['ctf_ampcont']=float(ac)
+	
+	def new_ctf_f_start(self):
+		if self.busy: return
+		fstart=self.ctf_f_start.text()
+		gbdb = db_open_dict(GaussPanel.GDB_NAME)
+		gbdb['ctf_fstart']=float(fstart)
+	
+	def new_ctf_f_stop(self):
+		if self.busy: return
+		fstop=self.ctf_f_stop.text()
+		gbdb = db_open_dict(GaussPanel.GDB_NAME)
+		gbdb['ctf_fstop']=float(fstop)
+						
 	# sxboxer's calc_ctf (from class EMBoxerModulePanel)
 	# ctf is always calculated from original input micrograph
 	def calc_ctf(self):
@@ -2139,8 +2340,6 @@ class GaussPanel:
 		# XXX: check image dimensions, especially box size for welch_pw2!
 		power_sp = welch_pw2(img, win_size=ctf_window_size, overlp_x=ctf_overlap_size, overlp_y=ctf_overlap_size,
 				     edge_x=ctf_edge_size, edge_y=ctf_edge_size)
-
-		# print "averaging power spectrum"
 		from fundamentals import rot_avg_table
 		avg_sp = rot_avg_table(power_sp)
 		del power_sp
@@ -2153,10 +2352,10 @@ class GaussPanel:
 		output_pixel_size = float(self.pixel_output_edit.text())
 		#print "Input pixel size: ", input_pixel_size 
 		#print "Output pixel size: ", output_pixel_size 
-
-		defocus = defocus_gett(avg_sp, voltage=ctf_volt, Pixel_size=input_pixel_size, Cs=ctf_cs, wgh=ctf_ampcont,
-				       f_start=ctf_f_start, f_stop=ctf_f_stop, parent=self)
-	 	
+		
+		# this is wrong from sxboxer. wgh should be amplitude contrast
+		#defocus = defocus_gett(avg_sp, voltage=ctf_volt, Pixel_size=input_pixel_size, Cs=ctf_cs, wgh=ctf_cs,f_start=ctf_f_start, f_stop=ctf_f_stop, parent=self)
+		defocus = defocus_gett(avg_sp, voltage=ctf_volt, Pixel_size=input_pixel_size, Cs=ctf_cs, wgh=ctf_ampcont,f_start=ctf_f_start, f_stop=ctf_f_stop, parent=self)	
 		self.estdef.setText(str(defocus/10000.0))
 		self.estdef.setEnabled(False)
 		
@@ -2181,16 +2380,29 @@ class GaussPanel:
 		set_ctf(img, [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont])
 		# and rewrite image 
 		img.write_image(image_name)
-		
+		print [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont]
 		# get alternate, and set its ctf
 		altimg=BigImageCache.get_object(image_name).get_image(use_alternate=True)
 		set_ctf(altimg, [defocus, ctf_cs, ctf_volt, output_pixel_size, 0, ctf_ampcont])
 		BigImageCache.get_object(image_name).register_alternate(altimg)
-		
+		print [defocus, ctf_cs, ctf_volt, output_pixel_size, 0, ctf_ampcont]
  		print "CTF estimation done."
  		#print "Estimated defocus value: ", defocus
-	
-	
+		
+		##############################################################################
+		#### save ctf estimation parameters to db for command line batch processing
+		gbdb = db_open_dict(GaussPanel.GDB_NAME)
+		ctfdict = {'pixel_input':input_pixel_size,'pixel_output':output_pixel_size,'ctf_fstart':ctf_f_start,'ctf_fstop':ctf_f_stop, 'ctf_window':ctf_window_size,'ctf_edge':ctf_edge_size,'ctf_overlap':ctf_overlap_size,'ctf_ampcont':ctf_ampcont,'ctf_volt':ctf_volt,'ctf_cs':ctf_cs}
+		#print "calc_ctf image_name: ", image_name
+		if gbdb.has_key(image_name):
+			olddict=gbdb[image_name]
+			gbdb[image_name] = dict((olddict).items() + ctfdict.items() ) # merge the two dictionaries with conflict resolution resolved in favorr of the latest ctf parameters
+		else:
+			gbdb[image_name]=ctfdict
+		
+		del img
+		del altimg
+			
 	def inspect_ctf(self):
 		#display(self.ctf_data)
 			
@@ -2237,8 +2449,6 @@ class GaussBoxer:
                 self.thr_low = None
                 self.thr_hgh = None		
 		self.gui_mode = False # set this to False to stop any calls to Qt - such as the act of making the cursor busy...
-		
-		self.small_img=None
 		
 		self.mvt_cache = [] # we have to remember if any of the auto selected boxes were moved, so if the user reboxes then the movements they previously supplied will be applied
 		
@@ -2323,38 +2533,38 @@ class GaussBoxer:
 		'''
 		from sparx import filt_gaussl
 		print "Gauss method............start autboxing"
-		self.proximal_boxes = [] # this is always res
 		if self.gui_mode:
 			from PyQt4 import QtCore 
 			get_application().setOverrideCursor(QtCore.Qt.BusyCursor)
 		
 		# user pawelautoboxer (gauss method) to compute soln
 		# downsample input image.
-		self.get_small_image(imgname)
+		small_img = self.get_small_image(imgname)
 		#set_idd_image_entry(imgname,'subsampled_image',self.small_img)
-		BigImageCache.get_object(imgname).register_alternate(self.small_img)
+		BigImageCache.get_object(imgname).register_alternate(small_img)
 		#this causes the alternate image to be picked up and update micrograph window using the small image
 		self.target().set_current_file(imgname)
-		
-		[avg,sigma,fmin,fmax] = Util.infomask( self.small_img, None, True )
-		self.small_img -= avg
-		self.small_img /= sigma
+		[avg,sigma,fmin,fmax] = Util.infomask(small_img, None, True )
+		small_img -= avg
+		small_img /= sigma
 		
 		if(self.use_variance):
 			from morphology import power
-			self.small_img = power(self.small_img, 2.0)
+			small_img = power(small_img, 2.0)
 			print "using variance"
 		
 		boxsize = self.target().get_box_size()
-		ccf = filt_gaussl( self.small_img, self.gauss_width/boxsize )
+		ccf = filt_gaussl( small_img, self.gauss_width/boxsize )
+		del small_img
 		peaks = ccf.peak_ccf( boxsize/2-1)
+		del ccf
 		npeak = len(peaks)/3
 		print "npeak: ", npeak
-		
 		boxes = []
 		ccfs = [] # ccfs are used to set threshold_low adn threshold_high after the particles have been picked. see set_data in CcfHistogram in sxboxer and set_params_of_gui in pawelautoboxer in boxertools.py
 		#print "current thr low: ", self.thr_low
 		#print "current thr hi: ", self.thr_hgh
+		
 		for i in xrange(npeak):
 			cx = peaks[3*i+1]
 			cy = peaks[3*i+2]
@@ -2373,9 +2583,13 @@ class GaussBoxer:
 				box = [cx,cy,type,corr_score]
 				boxes.append(box)
 		
+		del peaks
+		
 		# Need to do: handle npeak when npeak = 1
 		if npeak > 1:		
 			self.panel_object.set_data(ccfs)	
+		
+		del ccfs
 		
 		if self.gui_mode: self.target().set_status_message("Auboxing Done",1000)
 		
@@ -2393,8 +2607,21 @@ class GaussBoxer:
 			print "Autoboxed %d Particles" %len(boxes)
 
 		self.panel_object.enable_auto_box(False)
-		gbdb = db_open_dict(self.panel_object.gbdbname)
+		gbdb = db_open_dict(GaussPanel.GDB_NAME)
 		gbdb['clear']=False
+		gbdb['boxsize']=boxsize
+		gbdb['filename']=imgname
+		####################################################### 
+		# save parameters in case user later want to do cmdline autoboxing
+		
+		autoboxdict = {'boxsize':boxsize, 'pixel_input':self.pixel_input, 'pixel_output':self.pixel_output, 'invert_contrast':self.invert, 'use_variance':self.use_variance, 'gauss_width':self.gauss_width,'thr_low':self.thr_low,'thr_hi':self.thr_hgh}
+		
+		if gbdb.has_key(imgname):
+			oldautoboxdict = gbdb[imgname]
+			gbdb[imgname] = dict(oldautoboxdict.items() + autoboxdict.items()) # resolve conflicts in favor of new autoboxdict
+		else:
+			gbdb[imgname] = autoboxdict
+		####################################################### 
 		return boxes
 
 
@@ -2412,23 +2639,32 @@ class GaussBoxer:
 		self.panel_object.gauss_width.setText(self.panel_object.GW)
 		self.panel_object.thr_low_edit.setText('N/A')
                 self.panel_object.thr_hi_edit.setText('N/A')
-		self.thr_low = None
-		self.thr_hgh = None
+		self.panel_object.use_variance_chk.setChecked(self.panel_object.USEVAR)
+		self.panel_object.new_thr_hi()
+		self.panel_object.new_thr_low()
+		self.panel_object.new_pixel_input()
+                self.panel_object.new_pixel_output()
+		self.panel_object.invert_contrast_checked(self.panel_object.INVCONT)
+		self.panel_object.use_variance_checked( self.panel_object.USEVAR)
+		self.panel_object.gauss_width_edited()
+		
 		BigImageCache.get_object(self.target().file_names[0]).register_alternate(None)
 		self.target().set_current_file_by_idx(0)
 		self.target().set_current_file(self.target().file_names[0])
 		self.panel_object.enable_auto_box(True)
 		
-		gbdb = db_open_dict(self.panel_object.gbdbname)
+		gbdb = db_open_dict(GaussPanel.GDB_NAME)
+		# Don't set gbdb to None but just set it's 'clear' flag to true.
+		# If GUI is invoked next time, alternate image will NOT be generated adn GUI will start from clean slate. However, if gauss mode autoboxing or ctf is invoked via command line, the paramters used for boxing will still be there for autoboxing and ctf est to work.
 		gbdb['clear']=True
 		
-	def get_small_image(self,imgname):
+	def get_small_image(self,imgname,modecmd=False,boxsize=128,ret_dummy=False):
 		
 		from sparx import get_im, filt_gaussl, filt_gaussh
 		subsample_rate = self.get_subsample_rate()
 		frequency_cutoff = self.get_frequency_cutoff()
 		template_min = self.get_window_size_min()
-		gaussh_param = self.get_gaussh_param()
+		gaussh_param = self.get_gaussh_param(modecmd=modecmd,boxsize=boxsize)
 		invert = self.get_invert()
 		
 		img = get_im( imgname )
@@ -2440,26 +2676,39 @@ class GaussBoxer:
 			img *= -1
 			img += avg
 		
-		img = filt_gaussh( img, gaussh_param )
+		img_filt = filt_gaussh( img, gaussh_param )
+		
 		if subsample_rate != 1.0:
 			print "Generating downsampled image\n"
 			sb = Util.sincBlackman(template_min, frequency_cutoff,1999) # 1999 taken directly from util_sparx.h
-			self.small_img = img.downsample(sb,subsample_rate)
+			small_img = img_filt.downsample(sb,subsample_rate)
+			del sb
 		else:
-			self.small_img = img.copy()
-		self.small_img.set_attr("invert", invert)
-		self.small_img.set_attr("gaussh_param", gaussh_param)
-		self.small_img.set_attr("subsample_rate",subsample_rate)
-		self.small_img.set_attr("frequency_cutoff",frequency_cutoff)
-		self.small_img.set_attr("template_min",template_min)
+			small_img = img_filt.copy()
+		
+		del img_filt
+		
+		small_img.set_attr("invert", invert)
+		small_img.set_attr("gaussh_param", gaussh_param)
+		small_img.set_attr("subsample_rate",subsample_rate)
+		small_img.set_attr("frequency_cutoff",frequency_cutoff)
+		small_img.set_attr("template_min",template_min)
 		from utilities import generate_ctf
 		try:
 			ctf_dict = img.get_attr("ctf")
+			ctf_dict.apix = self.pixel_output
+			small_img.set_attr("ctf",ctf_dict)
 		except:
-			ctf_dict = EMAN2Ctf()
+			pass
 		
-		ctf_dict2 = generate_ctf([ctf_dict.defocus, ctf_dict.cs, ctf_dict.voltage, self.pixel_output, ctf_dict.bfactor, ctf_dict.ampcont])
-		self.small_img.set_attr("ctf",ctf_dict2)
+		del img
+			
+		if ret_dummy:
+			BigImageCache.get_object(imgname).register_alternate(small_img)
+			del small_img
+			return None
+			
+		return small_img		
 	#############################################################################
 	# parameter access functions from pawelautoboxer class
 	def get_subsample_rate(self):
@@ -2471,8 +2720,10 @@ class GaussBoxer:
 	def get_frequency_cutoff(self):
 		return 0.5*self.get_subsample_rate()
 	
-	def get_gaussh_param(self):
+	def get_gaussh_param(self,modecmd=False,boxsize=128):
 		ratio = self.pixel_input/self.pixel_output
+		if modecmd:
+			return ratio/boxsize
 		return ratio/self.target().get_box_size()
 	
 	def get_invert(self):
@@ -2512,20 +2763,102 @@ class GaussBoxer:
 		# look at parameters stored in cache to determine if users ended previous session not from a blank slate
 		# if that is the case then pre-process/downsample input micrograph and set it to alternate
 		
-		gbdb = db_open_dict(self.panel_object.gbdbname)
+		gbdb = db_open_dict(GaussPanel.GDB_NAME)
 		
-		if gbdb['clear'] == False:	
+		if gbdb['clear'] == False and gbdb['filename']==filename:	
 			print "Restoring micrograph and particles window for Gauss mode..."
 			# set parameters from cache so get_small image work from the correct parameters
 			self.pixel_input = gbdb['pixel_input']
 			self.pixel_output = gbdb['pixel_output']
 			self.invert = gbdb['invert_contrast']
-			self.get_small_image(filename)
-			BigImageCache.get_object(filename).register_alternate(self.small_img)
+			self.use_variance = gbdb['use_variance']
+			small_img = self.get_small_image(filename)
+			BigImageCache.get_object(filename).register_alternate(small_img)
+			del small_img
 			#this causes the alternate image to be picked up by micrograph window 
 			self.target().current_idx=0
 			self.target().set_current_file(filename)
 			self.panel_object.enable_auto_box(False)
+			
+	# this is for automated particle picking from command line
+	def auto_box_cmdline(self, imgname,boxsize=128,norm="normalize.edgemean"):
+		
+		from sparx import filt_gaussl
+		print "Gauss method............start command line autboxing"
+		# user pawelautoboxer (gauss method) to compute soln
+		# downsample input image.
+		small_img = self.get_small_image(imgname,modecmd=True,boxsize=boxsize)
+		BigImageCache.get_object(imgname).register_alternate(small_img)
+		[avg,sigma,fmin,fmax] = Util.infomask( small_img, None, True )
+		small_img -= avg
+		small_img /= sigma
+		
+		if(self.use_variance):
+			from morphology import power
+			small_img = power(small_img, 2.0)
+			print "using variance"
+		
+		ccf = filt_gaussl( small_img, self.gauss_width/boxsize )
+		del small_img
+		peaks = ccf.peak_ccf( boxsize/2-1)
+		del ccf
+		npeak = len(peaks)/3
+		print "npeak: ", npeak
+		boxes = []
+		for i in xrange(npeak):
+			cx = peaks[3*i+1]
+			cy = peaks[3*i+2]
+			
+			corr_score= peaks[3*i] 
+			skip = False
+			if not(self.thr_low is None) and corr_score < self.thr_low:
+				skip = True
+	
+			if not(self.thr_hgh is None) and corr_score > self.thr_hgh:
+				skip = True
+
+			if not skip:
+				type = GaussBoxer.AUTO_NAME
+				box = [cx,cy,type,corr_score]
+				boxes.append(box)
+		del peaks
+		# adds boxes and write to database
+		self.target.add_boxes(boxes, True)
+		print "Autoboxed %d Particles" %len(boxes)
+		
+	# auto_ctf is meant to be called for batch only...
+	# take care of case where estimated ctf is saved into downsampled micrograph from which particles are picked.
+	def auto_ctf(self,image_name,ctf_params):
+		
+		from utilities import get_im
+		img = get_im(image_name)
+		ctf_volt = ctf_params['ctf_volt']
+		ctf_window = ctf_params['ctf_window']
+		ctf_overlap = ctf_params['ctf_overlap']
+		ctf_edge = ctf_params['ctf_edge']
+		ctf_Cs = ctf_params['ctf_cs']
+		ctf_ampcont = ctf_params['ctf_ampcont']
+		ctf_fstart = ctf_params['ctf_fstart']
+		ctf_fstop = ctf_params['ctf_fstop']
+		
+		from fundamentals import welch_pw2
+		# XXX: check image dimensions, especially box size for welch_pw2!
+		power_sp = welch_pw2(img,win_size=ctf_window,overlp_x=ctf_overlap,overlp_y=ctf_overlap,edge_x=ctf_edge,edge_y=ctf_edge)
+		
+		from fundamentals import rot_avg_table
+		avg_sp = rot_avg_table(power_sp)
+		del power_sp
+		
+		from morphology import defocus_gett
+		defocus = defocus_gett(avg_sp,voltage=ctf_volt,Pixel_size=self.pixel_input,Cs=ctf_Cs,wgh=ctf_ampcont, f_start=ctf_fstart,f_stop=ctf_fstop)
+		
+		# set image properties, in order to save ctf values
+		from utilities import set_ctf, generate_ctf
+		ctf_tuple = [defocus,ctf_Cs,ctf_volt,self.pixel_input,0,ctf_ampcont]
+		set_ctf(img, ctf_tuple)
+		img.write_image(image_name, 0)
+		print "        CTF parameters for original micrograph:", ctf_tuple
+		del img
 						
 class GaussTool(GaussBoxer,EMBoxingTool):
 	'''
