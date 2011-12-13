@@ -2,6 +2,7 @@
 
 import os
 import sys
+import platform
 
 EMANVERSION="EMAN 2.0.4"
 CVSDATESTAMP="$Date$"
@@ -9,12 +10,14 @@ CVSDATESTAMP="$Date$"
 def main():
     print EMANVERSION + ' (CVS' + CVSDATESTAMP[6:-2] +')' 
     
-    if os.name=='posix':
+    if sys.platform=='linux2':
     	cmd = 'cat /etc/system-release'
     	fin,fout = os.popen4(cmd)
     	result = fout.read().strip()
     	print 'Your EMAN2 is running on: ', result, os.uname()[2], os.uname()[-1]
-    elif os.name=='nt':
+    elif sys.platform=='darwin':
+        print 'Your EMAN2 is running on: Mac OS', platform.mac_ver()[0], platform.mac_ver()[2]
+    elif sys.platform=='win32':
 		ver = sys.getwindowsversion()
 		ver_format = ver[3], ver[0], ver[1]
 		win_version = {
