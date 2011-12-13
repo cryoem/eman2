@@ -404,7 +404,7 @@ def db_read_image(self,fsp,*parms,**kparms):
 		else: 
 			try: key=parms[0]
 			except: key=0
-        
+		
 		x=db.get(key,target=self,nodata=nodata,region=region)
 		if x==None : raise Exception("Could not access "+str(fsp)+" "+str(key))
 #		except: 
@@ -1437,10 +1437,8 @@ of these occasional errors"""
 			k=set(r.keys())
 #			k-=DBDict.fixedkeys
 			for i in k:
-				ret.set_attr(i,r[i])
-			ret.set_attr("nx",nx)
-			ret.set_attr("ny",ny)
-			ret.set_attr("nz",nz)
+				if i not in ('nx', 'ny', 'nz'):
+					ret.set_attr(i,r[i])
 			ret["source_path"]=pkey[:-1]
 			ret["source_n"]=key
 				
