@@ -364,7 +364,7 @@ class EMClassPtclTool(QtGui.QWidget):
 	
 	def updateFiles(self):
 		"Updates the list of classes files"
-		subdir=sorted([i for i in os.listdir(e2getcwd()) if "r2d_" in i or "refine_" in i or "multi_" in i])
+		subdir=sorted([i for i in os.listdir(e2getcwd()) if "r2d_" in i or "relion2d_" in i or "refine_" in i or "multi_" in i])
 		for d in subdir:
 			dbs=db_list_dicts("bdb:"+d)
 			dbs.sort()
