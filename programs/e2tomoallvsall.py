@@ -66,8 +66,6 @@ def main():
 	parser.add_argument("--path",type=str,default=None,help="Path for the refinement, default=auto")
 	
 	parser.add_argument("--input", type=str, help="The name of the input volume stack. MUST be HDF or BDB, since volume stack support is required.", default=None)
-	parser.add_argument("--output", type=str, help="""The 'stem-name' used to name the averages produced in the last iteration which contain more than the number of particles specified in the '--minnum' parameter. 
-				For example, if you choose 'groelP' your average files will be named groelP01;hdf groelP02.hdf...etc""", default='avg')
 		
 	parser.add_argument("--iter", type=int, help="The number of iterations to perform. Default is 1.", default=1)
 	
