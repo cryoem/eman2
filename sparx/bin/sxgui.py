@@ -1373,9 +1373,9 @@ class Popupthreedali(QWidget):
 	# populate with default values
 	self.savedparmsdict = {'stackname':'','refname':'','foldername':'','partradius':'-1','xyrange':'4 2 1 1','trans':'2 1 0.5 0.25', 'delta':'15 5 2','nriter':'3','nproc':'1','maskname':'','center':'-1',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","fourvar":Qt.Unchecked,"usrfunc":"ref_ali3d","usrfuncfile":"","an":'-1',"ref_a":'S',"sym":'c1',"npad":'4',"deltapsi":'-1',"startpsi":'-1',"stoprnct":'0.0',"debug":False,"nch":False,"chunk":'0.2',"rantest":False}
 	
-	if options.demo:
+	if options.demo == DEMO_mpibdbctf:
 		self.savedparmsdict['stackname']='bdb:data'
-		self.savedparmsdict['refname']='../model_structure.hdf'
+		self.savedparmsdict['refname']='ab_initio_volf.hdf'
 		self.savedparmsdict['foldername']='ali3d_d'
 		self.savedparmsdict['partradius']='30'
 		self.savedparmsdict['xyrange']='2.0 1.0 0.5'
@@ -1386,6 +1386,20 @@ class Popupthreedali(QWidget):
 		self.savedparmsdict['ref_a']='P'
 		self.savedparmsdict['usrfunc']='reference3'
 		self.savedparmsdict['ctf']=Qt.Checked
+		self.savedparmsdict['nproc']='4'
+	
+	if options.demo == DEMO_mpibdb:
+		self.savedparmsdict['stackname']='bdb:data'
+		self.savedparmsdict['refname']='ab_initio_volf.hdf'
+		self.savedparmsdict['foldername']='ali3d_d'
+		self.savedparmsdict['partradius']='30'
+		self.savedparmsdict['xyrange']='2.0 1.0 0.5'
+		self.savedparmsdict['trans']='1.0 1 0.5'
+		self.savedparmsdict['delta']='31 10 2'
+		self.savedparmsdict['an']='-1 12 6'
+		self.savedparmsdict['nriter']='2'
+		self.savedparmsdict['ref_a']='P'
+		self.savedparmsdict['usrfunc']='reference3'
 		self.savedparmsdict['nproc']='4'
 	########################################################################################
 	# layout parameters
@@ -2784,7 +2798,7 @@ class Popuppdb2em(QWidget):
 	self.cmd = ""
 	# populate with default values
 	self.savedparmsdict = {'pdbfile':'','output':'','apix':'1.0','box':'150','het':Qt.Unchecked,'center':'n','Och':Qt.Unchecked,'quiet':Qt.Unchecked,'tr0':''}
-	if options.demo:
+	if (options.demo == DEMO_mpibdbctf) or (options.demo == DEMO_mpibdb):
 		self.savedparmsdict['pdbfile'] = '../tteftu_with_tRNA.pdb'
 		self.savedparmsdict['output']='tmp.hdf'
 		self.savedparmsdict['apix']='5.2'
@@ -4064,7 +4078,7 @@ class Popupisac(QWidget):
 	# populate with default values
 	self.savedparmsdict = {'stackname':'','partradius':'-1','xyrange':'1','trans':'1','nriter':'30','nproc':'2',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","dst":"90.0","FL":"0.1","FH":"0.3","FF":"0.2","init_iter":"3","main_iter":"3","iter_reali":"1","match_first":"1","max_round":"20","match_second":"5","stab_ali":"5","thld_err":"1.732","indep_run":"4","thld_grp":"10","img_per_grp":"100","generation":"1",'stackname_prectr':'','outdir_prectr':'','mask_prectr':'','search_rng_prectr':'-1','ou_prectr':'-1','maxit_prectr':'100','snr_prectr':'1','fourvar_prectr':Qt.Unchecked,'ctf_prectr':Qt.Unchecked,'oneDx_prectr':Qt.Unchecked,'nproc_prectr':'2','applyparams_prectr':Qt.Unchecked,'outstackname_prectr':''}
 
-	if options.demo:
+	if (options.demo == DEMO_mpibdbctf) or (options.demo == DEMO_mpibdb):
 		self.savedparmsdict['stackname'] = 'bdb:data'
 		self.savedparmsdict['stab_ali']='2'
 		self.savedparmsdict['init_iter']='1'
@@ -4880,7 +4894,7 @@ class Popuplocalthreedali(QWidget):
 	# populate with default values
 	self.savedparmsdict = {'stackname':'','foldername':'','partradius':'-1', 'delta':'2','trans':'0.25','nriter':'10','nproc':'1','maskname':'','center':'-1',"ctf":Qt.Unchecked,"snr":"1.0","fourvar":Qt.Unchecked,"usrfunc":"ref_ali3d","usrfuncfile":"","sym":'c1',"npad":'4',"debug":False,"chunk":'1.0'}
 	
-	if options.demo:
+	if options.demo == DEMO_mpibdbctf:
 		self.savedparmsdict['stackname']='bdb:data'
 		self.savedparmsdict['foldername']='ali3d_e'
 		self.savedparmsdict['partradius']='30'
@@ -4893,7 +4907,17 @@ class Popuplocalthreedali(QWidget):
 		self.savedparmsdict['nproc']='4'
 		self.savedparmsdict['ctf']=Qt.Checked
 		self.savedparmsdict['debug']=Qt.Checked
-	
+		
+	if options.demo == DEMO_mpibdb:
+		self.savedparmsdict['stackname']='bdb:data'
+		self.savedparmsdict['foldername']='ali3d_e'
+		self.savedparmsdict['partradius']='30'
+		self.savedparmsdict['delta']='2'
+		self.savedparmsdict['nriter']='1'
+		self.savedparmsdict['chunk']='0.25'
+		self.savedparmsdict['usrfunc']='reference4'
+		self.savedparmsdict['nproc']='4'
+		self.savedparmsdict['debug']=Qt.Checked
 	########################################################################################
 	# layout parameters
 	
@@ -5412,7 +5436,7 @@ class Popupfindstruct(QWidget):
 	# populate with default values
 	self.savedparmsdict = {'stackname':'','foldername':'','partradius':'-1','delta':'5.0','maxit':'100','dpsi':'1','lf':'0.0','hf':'0.5','nproc':'1',"innerradius":"-1","debug":False,"given":False,"rand_seed":"-1","first_zero":False,"noweights":False,"pcross":"0.95","pmut":"0.05","maxgen":"10"}
 	
-	if options.demo:
+	if options.demo == DEMO_mpibdbctf:
 		self.savedparmsdict['stackname']='class_averages_generation_1.hdf'
 		self.savedparmsdict['foldername']='structure'
 		self.savedparmsdict['partradius']='30'
@@ -5421,6 +5445,17 @@ class Popupfindstruct(QWidget):
 		self.savedparmsdict['hf']='0.25'
 		self.savedparmsdict['maxit']='20'
 		self.savedparmsdict['rand_seed']='10'
+		self.savedparmsdict['nproc']='4'
+	
+	if options.demo == DEMO_mpibdb:
+		self.savedparmsdict['stackname']='class_averages_generation_1.hdf'
+		self.savedparmsdict['foldername']='structure'
+		self.savedparmsdict['partradius']='30'
+		self.savedparmsdict['delta']='6'
+		self.savedparmsdict['lf']='0.05'
+		self.savedparmsdict['hf']='0.3'
+		self.savedparmsdict['maxit']='20'
+		self.savedparmsdict['rand_seed']='200'
 		self.savedparmsdict['nproc']='4'
 	########################################################################################
 	# layout parameters
@@ -6160,10 +6195,13 @@ Automatic and manual particle selection. This version is specifically aimed at s
 for single particle analysis."""
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--demo", action="store_true",help="Start the GUI with input fields initialized for demo data",default=False)
-
+	parser.add_option("--demo", type="string", default="",   help="Name of the demo whose input parameters should be used to initialize the GUI fields: --demo=mpibdb means the input parameters in demo/mpi_bdb will be used, --demo=mpibdbctf means the input parameters in demo/mpi_bdb_ctf will be used")
 	global options
 	(options, args) = parser.parse_args()
+	global DEMO_mpibdbctf
+	DEMO_mpibdbctf = 'mpibdbctf'
+	global DEMO_mpibdb
+	DEMO_mpibdb = 'mpibdb'
 	global app
 	app = App(args)
 	app.exec_()
