@@ -513,10 +513,11 @@ def main():
 			elif option1 == "outtype":
 				if not options.outtype:
 					options.outtype = "unknown"
-					
+				if i==0:
+					original_outfile = outfile	
 				if options.outtype in ["mrc", "pif", "png", "pgm"]:
 					if n1 != 0:
-						outfile = "%03d." % (i + 100) + outfile
+						outfile = "%03d." % (i + 100) + original_outfile
 				elif options.outtype == "spidersingle":
 					if n1 != 0:
 						if i==0:
