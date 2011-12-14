@@ -1356,7 +1356,11 @@ of these occasional errors"""
 				ret.read_data(pkey+fkey,n*4*r["nx"]*r["ny"]*r["nz"])
 			k=set(r.keys())
 			k-=DBDict.fixedkeys
-			for i in k: ret.set_attr(i,r[i])
+
+			for i in k:
+				if i not in ('nx', 'ny', 'nz'):
+					ret.set_attr(i,r[i])
+
 			ret["source_path"]=pkey[:-1]
 			ret["source_n"]=key
 			return ret
@@ -1379,7 +1383,11 @@ of these occasional errors"""
 
 	def keys(self):
 		self.realopen(self.rohint)
-		return [loads(x) for x in self.bdb.keys() if x[0]=='\x80']
+		try: return [loads(x) for x in self.bdb.keys() if x[0]=='\x80']
+		except:
+			traceback.print_exc()
+			print "This is a serious error, which should never occur during normal usage.\n Please report it (with the error text above) to sludtke@bcm.edu. Please also read the database warning page in the Wiki."
+			sys.exit(1)
 
 	def values(self):
 		self.realopen(self.rohint)
@@ -1443,8 +1451,8 @@ of these occasional errors"""
 			ret["source_n"]=key
 				
 			# binary data
+			ret.set_size(nx,ny,nz,nodata)
 			if not nodata:
-				ret.set_size(nx,ny,nz)
 
 				if region != None: ret.to_zero() # this has to occur in situations where the clip region goes outside the image
 				if r.has_key("data_path"):

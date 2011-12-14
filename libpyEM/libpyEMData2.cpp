@@ -71,7 +71,7 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_read_images_overloads_1_3, EMAN::EMD
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_read_images_ext_overloads_3_5, EMAN::EMData::read_images_ext, 3, 5)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_set_size_overloads_1_3, EMAN::EMData::set_size, 1, 3)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_set_size_overloads_1_4, EMAN::EMData::set_size, 1, 4)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_set_complex_size_overloads_1_3, EMAN::EMData::set_complex_size, 1, 3)
 
@@ -261,7 +261,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("get_transform", &EMAN::EMData::get_transform, "Get the 3D orientation of 'this' image.\n \nreturn The 3D orientation of 'this' image.")
 	.def("set_rotation", (void (EMAN::EMData::*)(float, float, float) )&EMAN::EMData::set_rotation, args("az", "alt", "phi"), "Define the 3D orientation of this particle, also\nused to indicate relative rotations for reconstructions.\n \naz - 'az' Euler angle in EMAN convention.\nalt - 'alt' Euler angle in EMAN convention.\nphi - 'phi' Euler angle in EMAN convention.")
 	.def("set_rotation", (void (EMAN::EMData::*)(const EMAN::Transform&) )&EMAN::EMData::set_rotation, args("t3d"), "Define the 3D orientation of this particle Orientation\ninformation is extracted from a Transform object and\nstored internally in EMAN (az,alt,phi) format.\n \nt3d - a Transform object containing the particle orientation.")
-	.def("set_size", &EMAN::EMData::set_size, EMAN_EMData_set_size_overloads_1_3(args("nx", "ny", "nz"), "Resize this EMData's main board memory pointer.\n \nnx - x size of this image.\nny - y size of this image. default to 1.\nnz - z size of this image. default to 1.\n \nBadAllocException if memory allocation returns a null pointer."))
+	.def("set_size", &EMAN::EMData::set_size, EMAN_EMData_set_size_overloads_1_4(args("nx", "ny", "nz","noalloc"), "Resize this EMData's main board memory pointer.\n \nnx - x size of this image.\nny - y size of this image. default to 1.\nnz - z size of this image. default to 1.\nnoalloc - if true, memory will not be allocated \n\nBadAllocException if memory allocation returns a null pointer."))
 	.def("set_complex_size", &EMAN::EMData::set_complex_size, EMAN_EMData_set_complex_size_overloads_1_3(args("nx", "ny", "nz"), "Resize 'this' complex image.\n \nnx - x size of this image.\nny - y size of this image. deault to 1.\nnz - z size of this image. default to 1."))
 //	.def("set_path", &EMAN::EMData::set_path, args("new_path"), "Set the path.\n \nnew_path - The new path.")
 //	.def("set_pathnum", &EMAN::EMData::set_pathnum, args("n"), "Set the number of paths.\n \nn - The number of paths.")

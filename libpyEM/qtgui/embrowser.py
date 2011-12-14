@@ -935,6 +935,196 @@ class EMDirEntry(object):
 				
 		return True
 
+class EMSSHDirEntry:
+	"""This is a directory entry from a remote filesystem via an SSH connection"""
+	
+	# list of lambda functions to extract column values for sorting
+	col=(lambda x:x.name,lambda x:x.filetype,lambda x:x.size,lambda x:x.dim,lambda x:x.nimg,lambda x:x.date)
+#	classcount=0
+	
+	def __init__(self,root,name,parent=None,hidedot=True):
+		"""The path for this item is root/name. 
+		Parent (EMDirEntry) must be specified if it exists.
+		hidedot will cause hidden files (starting with .) to be excluded"""
+		self.__parent=parent	# single parent
+		self.__children=None	# ordered list of children, None indicates no check has been made, empty list means no children, otherwise list of names or list of EMDirEntrys
+		self.root=str(root)		# Path prefixing name
+		self.name=str(name)		# name of this path element (string)
+		self.hidedot=hidedot	# If set children beginning with . will be hidden
+		if self.root[-1]=="/" or self.root[-1]=="\\" : self.root=self.root[:-1]
+		#self.seq=EMDirEntry.classcount
+		#EMDirEntry.classcount+=1
+		
+		if name[:4].lower()=="bdb:":
+			self.isbdb=True
+			self.name=name[4:]
+		else:
+			self.isbdb=False
+			
+		if self.isbdb :
+			self.filepath=os.path.join(self.root,"EMAN2DB",self.name+".bdb")
+		else : self.filepath=os.path.join(self.root,self.name)
+		
+		try: stat=os.stat(self.filepath)
+		except : stat=(0,0,0,0,0,0,0,0,0)
+		
+		if not self.isbdb : self.size=stat[6]		# file size (integer, bytes)
+		else: self.size="-"
+		self.date=local_datetime(stat[8])			# modification date (string: yyyy/mm/dd hh:mm:ss)
+
+		# These can be expensive so we only get them on request, or if they are fast 
+		self.dim=None			# dimensions (string)
+		self.filetype=None		# file type (string, "Folder" for directory)
+		self.nimg=None			# number of images in file (int)
+
+		# Directories don't really have extra info
+		if os.path.isdir(self.filepath) :
+			self.filetype="Folder"
+			self.dim=""
+			self.nimg=""
+			self.size=""
+			
+		
+#		print "Init DirEntry ",self,self.__dict__
+		
+	def __repr__(self):
+		return "<EMDirEntry %s>"%self.path()
+
+	#def __str__(self):
+		#return "<EMDirEntry %d>"%self.1seq
+	
+	def path(self):
+		"""The full path of the current item"""
+		if self.isbdb: return "bdb:%s#%s"%(self.root,self.name)
+		return os.path.join(self.root,self.name)
+	
+	def fileTypeClass(self):
+		"Returns the FileType class corresponding to the named filetype if it exists. None otherwise"
+		try: return EMFileType.typesbyft[self.filetype]
+		except: return None
+	
+	def sort(self,column,order):
+		"Recursive sorting"
+		if self.__children==None or len(self.__children)==0 or isinstance(self.__children[0],str): return
+		
+		self.__children.sort(key=EMDirEntry.col[column],reverse=order)
+		
+	def parent(self):
+		"""Return the parent"""
+		return self.__parent
+
+	def child(self,n):
+		"""Returns nth child or None"""
+		self.fillChildEntries()
+		try: return self.__children[n]
+		except:
+			print "Request for child %d of children %s (%d)"%(n,self.__children,len(self.__children))
+			traceback.print_stack()
+			raise Exception
+	
+	def nChildren(self):
+		"""Count of children"""
+		self.fillChildNames()
+#		print "EMDirEntry.nChildren(%s) = %d"%(self.filepath,len(self.__children))
+		return len(self.__children)
+	
+	def fillChildNames(self):
+		"""Makes sure that __children contains at LEAST a list of names"""
+		if self.__children==None:
+			
+			if not os.path.isdir(self.filepath) :
+				self.__children=[]
+				return
+			
+			# read the child filenames
+			if self.hidedot : self.__children=[i for i in os.listdir(self.filepath) if i[0]!='.']
+			else : self.__children=os.listdir(self.filepath)
+			
+			if "EMAN2DB" in self.__children :
+				self.__children.remove("EMAN2DB")
+				
+				t=["bdb:"+i for i in db_list_dicts("bdb:"+self.filepath)]
+				self.__children.extend(t)
+				
+			self.__children.sort()
+			
+#			print self.path(),self.__children
+			
+	def fillChildEntries(self):
+		"""Makes sure that __children have been filled with EMDirEntries when appropriate"""
+		if self.__children == None : self.fillChildNames()
+		if len(self.__children)==0 : return		# nothing to do. No children
+		if not isinstance(self.__children[0],str) : return 		# this implies entries have already been filled
+		
+		for i,n in enumerate(self.__children):
+			self.__children[i]=EMDirEntry(self.filepath,n,self)
+	
+	def fillDetails(self):
+		"""Fills in the expensive metadata about this entry. Returns False if no update was necessary."""
+		if self.filetype!=None : return False		# must all ready be filled in
+		
+		# BDB details are already cached and can often be retrieved quickly
+		if self.isbdb:
+			self.filetype="BDB"
+			try:
+				info=db_get_image_info(self.path())
+				self.nimg=info[0]
+				if self.nimg>0:
+					if info[1][1]==1 : self.dim=str(info[1][0])
+					elif info[1][2]==1 : self.dim="%d x %d"%(info[1][0],info[1][1])
+					else : self.dim="%d x %d x %d"%(info[1][0],info[1][1],info[1][2])
+					self.size=info[1][0]*info[1][1]*info[1][2]*4*self.nimg
+				else:
+					self.dim="-"
+
+			except:
+				traceback.print_exc()
+				self.nimg=-1
+				self.dim="-"
+
+			return True
+		
+		# we do this this way because there are so many possible image file exensions, and sometimes
+		# people use a non-standard one (esp for MRC files)
+		try: self.nimg=EMUtil.get_image_count(self.path())
+		except: self.nimg=0
+			
+		# we have an image file
+		if self.nimg>0 :
+			try: tmp=EMData(self.path(),0,True)		# try to read an image header for the file
+			except : print "Error : no first image in %s."%self.path()
+			
+			if tmp["ny"]==1 : self.dim=str(tmp["nx"])
+			elif tmp["nz"]==1 : self.dim="%d x %d"%(tmp["nx"],tmp["ny"])
+			else : self.dim="%d x %d x %d"%(tmp["nx"],tmp["ny"],tmp["nz"])
+			if self.nimg==1 : self.filetype="Image"
+			else : self.filetype="Image Stack"
+			
+		# Ok, we need to try to figure out what kind of file this is
+		else:
+			head = file(self.path(),"rb").read(4096)		# Most FileTypes should be able to identify themselves using the first 4K block of a file
+			
+			try: guesses=EMFileType.extbyft[os.path.splitext(self.path())[1]]		# This will get us a list of possible FileTypes for this extension
+			except: guesses=EMFileType.alltocheck
+			
+#			print "-------\n",guesses
+			for guess in guesses:
+				try : size,n,dim=guess.isValid(self.path(),head)		# This will raise an exception if isValid returns False
+				except: continue
+				
+				# If we got here, we found a match
+				self.filetype=guess.name()
+				self.dim=dim
+				self.nimg=n
+				self.size=size
+				break	
+			else:		# this only happens if no match was found
+				self.filetype="-"
+				self.dim="-"
+				self.nimg="-"
+				
+		return True
+
 	def getBaseName(self, name, extension=False):
 		""" return a sensible basename """
 		if name[:4].lower()!="bdb:":
@@ -1099,6 +1289,138 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 		if not index.isValid(): return
 		
 		if index.internalPointer().fillDetails(self.getCacheDB()) : 
+			self.dataChanged.emit(index, self.createIndex(index.row(),5,index.internalPointer()))
+		
+class EMSSHItemModel(QtCore.QAbstractItemModel):
+	"""This ItemModel represents a remote filesystem via SSH."""
+	
+	headers=("Name","Type","Size","Dim","N","Date")
+	
+	def __init__(self,startpath=None):
+		QtCore.QAbstractItemModel.__init__(self)
+		self.root=EMSSHDirEntry(startpath,"")					# EMDirEntry as a parent for the root path
+		self.rootpath=startpath			# root path for current browser
+		self.last=(0,0)
+#		print "Init FileItemModel ",self,self.__dict__
+
+	def canFetchMore(self,idx):
+		"""The data is loaded lazily for children already. We don't generally 
+	need to worry about there being SO many file that this is necessary, so it always
+	returns False."""
+		return False
+		
+	def columnCount(self,parent):
+		"Always 6 columns"
+		#print "EMFileItemModel.columnCount()=6"
+		return 6
+		
+	def rowCount(self,parent):
+		"Returns the number of children for a given parent"
+#		if parent.column() !=0 : return 0
+
+		if parent!=None and parent.isValid() : 
+#			print "rowCount(%s) = %d"%(str(parent),parent.internalPointer().nChildren())
+			return parent.internalPointer().nChildren()
+			
+#		print "rowCount(root) = %d"%self.root.nChildren()
+		return self.root.nChildren()
+	
+	def data(self,index,role):
+		"Returns the data for a specific location as a string"
+		
+		if not index.isValid() : return None
+		if role!=Qt.DisplayRole : return None
+		
+		data=index.internalPointer()
+		if data==None : 
+			print "Error with index ",index.row(),index.column()
+			return "XXX"
+		#if index.column()==0 : print "EMFileItemModel.data(%d %d %s)=%s"%(index.row(),index.column(),index.parent(),str(data.__dict__))
+
+		col=index.column()
+		if col==0 : 
+			if data.isbdb : return "bdb:"+data.name
+			return nonone(data.name)
+		elif col==1 : return nonone(data.filetype)
+		elif col==2 : return humansize(data.size)
+		elif col==3 :
+			if data.dim==0 : return "-"
+			return nonone(data.dim)
+		elif col==4 : return nonone(data.nimg)
+		elif col==5 : return nonone(data.date)
+		
+	def headerData(self,sec,orient,role):
+		if orient==Qt.Horizontal:
+			if role==Qt.DisplayRole :
+				return EMFileItemModel.headers[sec]
+			elif role==Qt.ToolTipRole:
+				return None								# May fill this in later
+			
+		return None
+			
+	def hasChildren(self,parent):
+		"Returns whether the index 'parent' has any child items"
+		#print "EMFileItemModel.hasChildren(%d,%d,%s)"%(parent.row(),parent.column(),str(parent.internalPointer()))
+#		if parent.column()!=0 : return False
+		try: 
+			if parent!=None and parent.isValid():
+				if parent.internalPointer().nChildren()>0 : return True
+				else : return False
+			return True
+		except: return False
+		
+	def hasIndex(self,row,col,parent):
+		"Test if the specified index would exist"
+#		print "EMFileItemModel.hasIndex(%d,%d,%s)"%(row,column,parent.internalPointer())
+		try:
+			if parent!=None and parent.isValid(): 
+				data=parent.internalPointer().child(row)
+			else: data=self.root.child(row)
+		except:
+			traceback.print_exc()
+			return False
+		return True
+		
+	def index(self,row,column,parent):
+		"produces a new QModelIndex for the specified item"
+#		if column==0 : print "Index :",row,column,parent.internalPointer(),
+		try:
+			if parent!=None and parent.isValid(): 
+				data=parent.internalPointer().child(row)
+			else: 
+				data=self.root.child(row)
+		except:
+			traceback.print_exc()
+#			print "None"
+			return QtCore.QModelIndex()			# No data, return invalid
+#		if column==0 :print data
+		return self.createIndex(row,column,data)
+		
+	def parent(self,index):
+		"Returns the parent of the specified index"
+		
+		if index.isValid(): 
+			try: data=index.internalPointer().parent()
+			except:
+				print "Parent index error: ",str(index.__dict__)
+			
+		else: return QtCore.QModelIndex()
+		if data==None : return QtCore.QModelIndex()			# No data, return invalid
+				
+		return self.createIndex(index.row(),0,data)		# parent is always column 0
+
+	def sort(self,column,order):
+		"Trigger recursive sorting"
+		if column<0 : return
+		self.root.sort(column,order)
+#		self.emit(QtCore.SIGNAL("layoutChanged()"))
+		self.layoutChanged.emit()
+	
+	def details(self,index):
+		"""This will trigger loading the (expensive) details about the specified index, and update the display"""
+		if not index.isValid(): return
+		
+		if index.internalPointer().fillDetails() : 
 			self.dataChanged.emit(index, self.createIndex(index.row(),5,index.internalPointer()))
 		
 			

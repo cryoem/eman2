@@ -830,7 +830,7 @@ Ctf * EMData::get_ctf() const
 using std::cout;
 using std::endl;
 
-void EMData::set_size(int x, int y, int z)
+void EMData::set_size(int x, int y, int z, bool noalloc)
 {
 	ENTERFUNC;
 
@@ -852,7 +852,16 @@ void EMData::set_size(int x, int y, int z)
 	int old_nx = nx;
 
 	size_t size = (size_t)x*y*z*sizeof(float);
-
+	
+	if (noalloc) {
+		nx = x;
+		ny = y;
+		nz = z;
+		nxy = nx*ny;
+		nxyz = (size_t)nx*ny*nz;
+		return;
+	}
+	
 	if (rdata != 0) {
 		rdata = (float*)EMUtil::em_realloc(rdata,size);
 	} else {

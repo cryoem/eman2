@@ -1,5 +1,5 @@
 FILE(GLOB e2programs "${CMAKE_CURRENT_SOURCE_DIR}/*.py")
-FILE(GLOB exclusion_list "e2ali2img.py" "e2avg_ffts.py" "e2fileinfo.py"  "e2flick.py" "e2findsubunit.py" "e2foldfitter.py" "e2helical_recons.py" "e2modeleval.py" "e2preferences.py" "e2proc3d_huge.py" "e2ptcltrace.py" "e2scp.py" "e2tomoallvall.py" "e2tomoaverage.py" "e2tomohunter.py")
+FILE(GLOB exclusion_list "e2ali2img.py" "e2avg_ffts.py" "e2fileinfo.py"  "e2flick.py" "e2findsubunit.py" "e2foldfitter.py" "e2helical_recons.py" "e2modeleval.py" "e2preferences.py" "e2proc3d_huge.py" "e2ptcltrace.py" "e2scp.py" "e2tomoallvall.py" "e2tomoaverage.py" "e2tomohunter.py" "e2remoted.py")
 LIST(REMOVE_ITEM e2programs ${exclusion_list})
 #######MESSAGE(SEND_ERROR "${e2programs}")    #for debug purpose ######
 INSTALL(PROGRAMS ${e2programs}

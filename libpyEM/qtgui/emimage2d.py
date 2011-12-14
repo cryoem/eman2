@@ -1747,7 +1747,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.mtlay.addWidget(self.mtshowlen,2,0,Qt.AlignLeft)
 
 		self.mtshowlen2= QtGui.QLabel("Length: 0")
-		self.mtlay.addWidget(self.mtshowlen,2,1,Qt.AlignLeft)
+		self.mtlay.addWidget(self.mtshowlen2,2,1,Qt.AlignLeft)
 
 		self.mtshowval= QtGui.QLabel("Value: ?")
 		self.mtlay.addWidget(self.mtshowval,3,0,1,2,Qt.AlignLeft)

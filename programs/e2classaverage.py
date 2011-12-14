@@ -437,6 +437,8 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 	if nimg==1:
 		if averager[0]!="mean" : raise Exception,"Cannot perform correct average of single particle"
 		ali=align_one(get_image(images,0,normproc),ref,prefilt,align,aligncmp,ralign,raligncmp)
+		try: ali["model_id"]=ref["model_id"]
+		except: pass
 		sim=ali.cmp(scmp[0],ref,scmp[1])			# compare similarity to reference (may use a different cmp() than the aligner)
 		return (ali,[(sim,ali["xform.align2d"],1)])
 	

@@ -58,6 +58,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	#parser.add_argument("--cleanup","-c",action="store_true",default=False,help="This option will clean up the database cache so files can safely be moved or accessed on another computer via NFS.")
+	parser.add_argument("--kill",action="store_true",default=False,help="This will kill an existing server instance before any other operations.")
 	parser.add_argument("--ssh",type=str,help="Connect to a remote ssh server",default=None)
 	parser.add_argument("--emen2",type=str,help="Connect to a remote EMEN2 server",default=None)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -110,8 +111,11 @@ class daemon:
 		# This is a magic string for basic security
 		self.magic="".join([random.choice(string.letters) for i in xrange(20)])
 		
+		# This file should be readable by the user only, and contains
+		# "magic" string for security, port number, and PID
 		out=file(path=e2gethome()+"/.eman2/remoted.txt","w")
-
+		out.write("%s\n%d\n%d\n"%(self.magic,self.listen_port,os.getpid()))
+		out.close()
     
     
 def client_error(stdout,msg):

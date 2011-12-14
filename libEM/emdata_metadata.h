@@ -367,7 +367,7 @@ inline void set_rotation(const Transform& t3d)
  * @param nz  z size of this image.
  * @exception BadAllocException if memory allocation returns a null pointer
  */
-void set_size(int nx, int ny=1, int nz=1);
+void set_size(int nx, int ny=1, int nz=1, bool noalloc=false);
 
 #ifdef EMAN2_USING_CUDA
 /** Resize this EMData's gpu memory pointer.
