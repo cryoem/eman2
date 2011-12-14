@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-
-#!/usr/bin/env python
-
 #
 # Author: Jesus Galaz, 12/08/2011
 # Copyright (c) 2011 Baylor College of Medicine
@@ -35,10 +32,12 @@
 from EMAN2 import *
 from sys import argv
 import os
+from e2classaverage3d import *
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """prog <stack of particles> [options] """
+	usage = """prog <stack of particles> [options] . This programs averages a set of particles, performs the spherical average of the average, 
+		and translationally aligns all the particles to it to re-center them."""
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
@@ -47,14 +46,16 @@ def main():
 	parser.add_argument("--iter", type=int, help="The number of iterations to perform. Default is 1.", default=1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:1")
-	parser.add_argument("--mask",type=str,default="mask.sharp.outer_radius=-2",help="Mask to apply to particles before spherically averaging each and centering them")
+	parser.add_argument("--mask",type=str,default="mask.sharp:outer_radius=-2",help="Mask to apply to particles before spherically averaging each and centering them")
 	parser.add_argument("--shrink",type=int,default=1,help="Optionally shrink the volume(s) to have the FFTs go faster")
 	parser.add_argument("--preprocess",type=str,help="A processor (as in e2proc3d.py) to be applied to each volume prior to alignment", default=None)
 	parser.add_argument("--averager",type=str,help="The type of averager used to produce the class average. Default=mean",default="mean.tomo")
 	parser.add_argument("--normproc",type=str,help="Normalization processor applied to particles before alignment. Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'", default="normalize.mask")
 	parser.add_argument("--savesteps",action="store_true", help="If set, will save the average after each iteration to class_#.hdf. Each class in a separate file. Appends to existing files.",default=False)
 	parser.add_argument("--saveali",action="store_true", help="If set, will save the aligned particle volumes in class_ptcl.hdf. Overwrites existing file.",default=False)
-
+	#parser.add_argument("--align", help="Set by default",default="translational:intonly=1")
+	parser.add_argument("--aligncmp",type=str,help="The comparator used for the --align aligner. Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.",default="ccc.tomo")
+	
 	data = argv[1]
 
 	hdr = EMData(data,0,True)
@@ -64,6 +65,11 @@ def main():
 	if nx!=ny or ny!=nz :
 		print "ERROR, input volumes are not cubes"
 		sys.exit(1)
+	box=nx
+	
+	parser.add_argument("--align", help="Set by default",default="rotate_translate_3d_grid:alt0=0:alt1=1:az0=0:az1=1:dalt=2:daz=2:dotrans=1:dphi=2:phi0=0:phi1=1:search=10:verbose=1")
+
+	(options, args) = parser.parse_args()
 
 	if options.path and ("/" in options.path or "#" in options.path) :
 		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
@@ -71,6 +77,7 @@ def main():
 		
 	if options.path and options.path[:4].lower()!="bdb:": 
 		options.path="bdb:"+options.path
+	
 	if not options.path: 
 		options.path="bdb:"+numbered_path("sptautoc",True)
 
@@ -78,10 +85,18 @@ def main():
 		options.averager=parsemodopt(options.averager)
 	if options.mask: 
 		options.mask=parsemodopt(options.mask)
+
 	if options.preprocess: 
 		options.preprocess=parsemodopt(options.preprocess)
+
 	if options.normproc: 
 		options.normproc=parsemodopt(options.normproc)
+	
+	if options.align: 
+		options.align=parsemodopt(options.align)
+	
+	if options.aligncmp: 
+		options.aligncmp=parsemodopt(options.aligncmp)
 	
 	n=EMUtil.get_image_count(data)
 	
@@ -94,25 +109,25 @@ def main():
 			avg=avgr.finish()
 		
 		# mask
-		mask = EMData(int(image['nx']),int(image['ny']),int(image['nz']))
+		mask = EMData(int(hdr['nx']),int(hdr['ny']),int(hdr['nz']))
 		mask.to_one()
 		
-		if options["mask"] != None:
-			mask.process_inplace(options["mask"][0],options["mask"][1])
+		if options.mask != None:
+			mask.process_inplace(options.mask[0],options.mask[1])
 	
 		# normalize
 		if options.normproc != None:
 			if options.normproc[0]=="normalize.mask": 
 				options.normproc[1]["mask"]=mask
-			avg.process_inplace(options["normproc"][0],options["normproc"][1])
+			avg.process_inplace(options.normproc[0],options.normproc[1])
 
 		# preprocess
-		if options["preprocess"] != None:
-			avg.process_inplace(options["preprocess"][0],options["preprocess"][1])
+		if options.preprocess != None:
+			avg.process_inplace(options.preprocess[0],options.preprocess[1])
 			
 		# Shrinking both for initial alignment and reference
-		if options["shrink"]!=None and options["shrink"]>1 :
-			avg=avg.process("math.meanshrink",{"n":options["shrink"]})
+		if options.shrink!=None and options.shrink > 1 :
+			avg=avg.process("math.meanshrink",{"n":options.shrink})
 
 		avg_sph=avg.rotavg_i()
 		
@@ -124,18 +139,20 @@ def main():
 		if options.parallel:
 			from EMAN2PAR import EMTaskCustomer
 			etc=EMTaskCustomer(options.parallel)
-			pclist=[options.input]
+			pclist=[data]
 		
 		tasks = []
-
 		for j in range(n):
 			task=Align3DTask(avg_sph,["cache",data,j],j,"Ptcl %d in iter %d"%(j,i),options.mask,options.normproc,options.preprocess,
-					options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,transform,options.verbose)
+					1,options.align,options.aligncmp,None,None,1,1,None,options.verbose-1)
+			#task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options.mask,options.normproc,options.preprocess,
+			#options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,transform,options.verbose-1)		
+				
 			tasks.append(task)
 
 		tids=etc.send_tasks(tasks)						#Start the alignments running
 		
-		#if options.verbose > 0:
+		if options.verbose > 0:
 			print "%d tasks queued in iteration %d"%(len(tids),k) 
 		
 		results = get_results(etc,tids,options.verbose)				#Wait for alignments to finish and get results
@@ -149,10 +166,10 @@ def main():
 			avgr.add_image(ptcl)
 			
 			if options.saveali:
-				ptcl.write_image('%s#particles_round%02d" % (options.path,i),-1)
+				ptcl.write_image('%s#particles_round%02d' % (options.path,i),-1)
 			
 			if not options.saveali and i == options.iter -1:
-				ptcl.write_image('%s#particles" % (options.path),-1)
+				ptcl.write_image('%s#particles' % (options.path),-1)
 		
 		avg=avgr.finish()
 	
