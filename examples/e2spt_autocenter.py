@@ -33,6 +33,7 @@ from EMAN2 import *
 from sys import argv
 import os
 from e2classaverage3d import *
+import sys
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -42,13 +43,14 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_argument("--path",type=str,default=None,help="Path for the refinement, default=auto")
-	parser.add_argument("--clip", type=int, help="The number of iterations to perform. Default is 1.", default=1)
+	parser.add_argument("--boxclip", type=int, help="The boxsize to clip the FINAL boxes down to after auto-centering, so that they contain no empty pixels", default=None)
 	parser.add_argument("--iter", type=int, help="The number of iterations to perform. Default is 1.", default=1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:1")
-	parser.add_argument("--mask",type=str,default="mask.sharp:outer_radius=-2",help="Mask to apply to particles before spherically averaging each and centering them")
+	parser.add_argument("--mask",type=str,default="mask.sharp:outer_radius=-2",help="Mask to apply to the dataset average before spherically averaging it.")
 	parser.add_argument("--shrink",type=int,default=1,help="Optionally shrink the volume(s) to have the FFTs go faster")
-	parser.add_argument("--preprocess",type=str,help="A processor (as in e2proc3d.py) to be applied to each volume prior to alignment", default=None)
+	parser.add_argument("--filter",type=str,help="A filter applied to the average of the dataset before spherically averaging it", default=None)
+	parser.add_argument("--processptcls",type=int,default=0,help="Apply all pre-processing (mask, shrink, filter, etc...) on the particles before aligning them to the previous spherical average.")
 	parser.add_argument("--averager",type=str,help="The type of averager used to produce the class average. Default=mean",default="mean.tomo")
 	parser.add_argument("--normproc",type=str,help="Normalization processor applied to particles before alignment. Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'", default="normalize.mask")
 	parser.add_argument("--savesteps",action="store_true", help="If set, will save the average after each iteration to class_#.hdf. Each class in a separate file. Appends to existing files.",default=False)
@@ -65,7 +67,7 @@ def main():
 	if nx!=ny or ny!=nz :
 		print "ERROR, input volumes are not cubes"
 		sys.exit(1)
-	box=nx
+	oldbox=nx
 	
 	parser.add_argument("--align", help="Set by default",default="rotate_translate_3d_grid:alt0=0:alt1=1:az0=0:az1=1:dalt=2:daz=2:dotrans=1:dphi=2:phi0=0:phi1=1:search=10:verbose=1")
 
@@ -86,8 +88,8 @@ def main():
 	if options.mask: 
 		options.mask=parsemodopt(options.mask)
 
-	if options.preprocess: 
-		options.preprocess=parsemodopt(options.preprocess)
+	if options.filter: 
+		options.filter=parsemodopt(options.filter)
 
 	if options.normproc: 
 		options.normproc=parsemodopt(options.normproc)
@@ -105,31 +107,18 @@ def main():
 		if i == 0:
 			for k in range(n):
 				a=EMData(data,k)
+				a.process_inplace("normalize.edgemean")
 				avgr.add_image(a)
 			avg=avgr.finish()
 		
-		# mask
-		mask = EMData(int(hdr['nx']),int(hdr['ny']),int(hdr['nz']))
-		mask.to_one()
+		#avg = process(avg,options.mask,options.normproc,options.filter,options.shrink)
 		
-		if options.mask != None:
-			mask.process_inplace(options.mask[0],options.mask[1])
-	
-		# normalize
-		if options.normproc != None:
-			if options.normproc[0]=="normalize.mask": 
-				options.normproc[1]["mask"]=mask
-			avg.process_inplace(options.normproc[0],options.normproc[1])
-
-		# preprocess
-		if options.preprocess != None:
-			avg.process_inplace(options.preprocess[0],options.preprocess[1])
-			
-		# Shrinking both for initial alignment and reference
-		if options.shrink!=None and options.shrink > 1 :
-			avg=avg.process("math.meanshrink",{"n":options.shrink})
-
 		avg_sph=avg.rotavg_i()
+		
+		#if options.boxclip:
+		#	box=options.boxclip
+		#	R = Region((oldbox - box)/2, (oldbox - box)/2, (oldbox - box)/2, box, box, box)
+		#	avg.clip_inplace(R)
 		
 		if options.savesteps :
 			avg.write_image("%s#averages" % (options.path),-1)
@@ -142,9 +131,21 @@ def main():
 			pclist=[data]
 		
 		tasks = []
+		
+		print "Before alignment, the size of the avg is", avg['nx']
+		print "And the size of the particles is", EMData(data,0,True)['nx']
+		if avg['nx'] != EMData(data,0,True)['nx']:
+			sys.exit()
+			
 		for j in range(n):
-			task=Align3DTask(avg_sph,["cache",data,j],j,"Ptcl %d in iter %d"%(j,i),options.mask,options.normproc,options.preprocess,
+			
+			if options.processptcls:
+				task=Align3DTask(avg_sph,["cache",data,j],j,"Ptcl %d in iter %d"%(j,i),options.mask,options.normproc,options.filter,
 					1,options.align,options.aligncmp,None,None,1,1,None,options.verbose-1)
+			else:
+				task=Align3DTask(avg_sph,["cache",data,j],j,"Ptcl %d in iter %d"%(j,i),None,None,None,
+					1,options.align,options.aligncmp,None,None,1,1,None,options.verbose-1)
+					
 			#task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options.mask,options.normproc,options.preprocess,
 			#options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,transform,options.verbose-1)		
 				
@@ -156,24 +157,65 @@ def main():
 			print "%d tasks queued in iteration %d"%(len(tids),k) 
 		
 		results = get_results(etc,tids,options.verbose)				#Wait for alignments to finish and get results
-				
+		
 		#avgr=Averagers.get(options.averager[0], options.averager[1])			#Call the averager
-
+		
 		for z in range(len(results)):					
 			t = results[z][0]['xform.align3d']
-			ptcl = EMData(data,z)
+			ptcl = EMData(argv[1],z)
+			ptcl.process_inplace("normalize.edgemean")
 			ptcl.process_inplace('xform',{'transform':t})			
+			
+			ptcl.write_image('temp_stack2.hdf',-1)
 			avgr.add_image(ptcl)
 			
+			if options.boxclip:
+				oldbox=ptcl['nx']
+				box=options.boxclip
+				R = Region((oldbox - box)/2, (oldbox - box)/2, (oldbox - box)/2, box, box, box)
+				ptcl.clip_inplace(R)
+						
 			if options.saveali:
 				ptcl.write_image('%s#particles_round%02d' % (options.path,i),-1)
 			
 			if not options.saveali and i == options.iter -1:
 				ptcl.write_image('%s#particles' % (options.path),-1)
 		
+		os.system('mv temp_stack2.hdf temp_stack.hdf')
+		data='temp_stack.hdf'
+		
 		avg=avgr.finish()
-	
+		
+		if i == options.iter -1:
+			os.system('rm temp_stack.hdf')	
 	return()
+
+'''
+def process(ptcl,mask,normproc,filt,shrink):
+	# mask
+	box = int(ptcl['nx'])
+	mask = EMData(box,box,box)
+	mask.to_one()
+
+	if mask != None:
+		mask.process_inplace(mask[0],mask[1])
+		if normproc[0] != "normalize.mask":
+			ptcl = ptcl * mask
+			ptcl.write_image('masked_particle.hdf',0)
+
+	if normproc != None:
+		if normproc[0] == "normalize.mask": 
+			normproc[1]["mask"]=mask
+		ptcl.process_inplace(normproc[0],normproc[1])
+
+	if filt != None:
+		ptcl.process_inplace(filt[0],filt[1])
+
+	if shrink!=None and shrink > 1 :
+		ptcl=ptcl.process("math.meanshrink",{"n":shrink})
+
+	return(ptcl)
+'''
 
 if __name__ == "__main__":
 	main()
