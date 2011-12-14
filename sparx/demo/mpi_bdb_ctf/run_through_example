@@ -1,0 +1,82 @@
+#!/bin/csh
+
+set echo on
+
+gunzip ../tteftu_with_tRNA.pdb.gz
+
+sxpdb2em.py ../tteftu_with_tRNA.pdb tmp.hdf --apix=5.2 --box=64
+###################################################################
+# To run gui version, enter the following in the command line:
+# 	sxgui.py --demo=mpibdbctf &
+# and then press the 'sxpdb2em' button in the main menu. A separate window will pop up with the input fields already initialized to the proper values. 
+# Press the green 'Run sxpdb2em' button to execute the command.
+# Note thatif sxgui.py is invoked without the --demo option, the input fields will not be automatically initialized with the approprite values, in 
+# which case the proper values must be entered manually.
+###################################################################
+
+e2proc3d.py tmp.hdf ../fmodel_structure.hdf --process=filter.lowpass.tanh:cutoff_abs=0.15:fall_off=0.2
+
+e2proc3d.py tmp.hdf ../model_structure.hdf --process=filter.lowpass.tanh:cutoff_abs=0.45:fall_off=0.1
+rm tmp.hdf
+
+../generate_projections.py --CTF --format="bdb"  --apix=5.2 
+
+../filldb_demo.py demoparms
+e2boxer.py --gauss_autoboxer=demoparms --do_ctf=demoparms --write_ptcl --boxsize=64 mic*.hdf
+sxcpy.py bdb:particles/mic0_ptcls bdb:particles/mic1_ptcls bdb:particles/mic2_ptcls bdb:particles/mic3_ptcls bdb:particles/mic4_ptcls bdb:data2
+
+# To be done: phase flip the data set before processing with sxisac since bdb:data has CTF but sxisac currently does not correct for CTF.
+
+sxheader.py bdb:data --params=active --one
+sxheader.py bdb:data --params=xform.align2d --zero
+mpirun -np 4 sxisac.py bdb:data --stab_ali=2 --init_iter=1 --main_iter=1 --match_second=1 --ou=30 --max_round=5 --img_per_grp=120 --thld_err=5.1 --generation=1 --MPI
+###################################################################
+# To run gui version of sxisac, enter the following in the command line:
+# 	sxgui.py --demo=mpibdbctf &
+# and then press the 'sxisac' button in the main menu. A separate window will pop up with the input fields already initialized to the proper values. 
+# Press the green 'Run sxisac' button to execute the command.
+# Note thatif sxgui.py is invoked without the --demo option, the input fields will not be automatically initialized with the approprite values, in 
+# which case the proper values must be entered manually.
+###################################################################
+
+# Determination of the initial structure using class averages and common-lines
+mpirun -np 4 sxfind_struct.py class_averages_generation_1.hdf structure --ou=30 --delta=6 --lf=0.05 --hf=0.25 --maxit=20 --rand_seed=10 --trials=4 --MPI 
+###################################################################
+# To run gui version, enter the following in the command line:
+# 	sxgui.py --demo=mpibdbctf &
+# and then press the 'sxfind_struct' button in the main menu. A separate window will pop up with the input fields already initialized to the proper values. 
+# Press the green 'Run sxfind_struct' button to execute the command.
+# Note thatif sxgui.py is invoked without the --demo option, the input fields will not be automatically initialized with the approprite values, in 
+# which case the proper values must be entered manually.
+###################################################################
+
+# 3D reconstruction to compute initial structure based on Euler angles determined in the previous step 
+mpirun -np 4 sxrecons3d_n.py structure/structure.hdf ab_initio_vol.hdf --MPI 
+
+# Low-pass filtration of the initial structure
+e2proc3d.py ab_initio_vol.hdf ab_initio_volf.hdf --process=filter.lowpass.tanh:cutoff_abs=0.15:fall_off=0.2 
+
+# 2D alignment parameters are transformed to 3D alignment parameters
+sxparams_2D_to_3D.py bdb:data 
+
+# 3D projection alignment - refinement of the initial structure
+mpirun -np 4 sxali3d.py bdb:data ab_initio_volf.hdf ali3d_d --ou=30 --xr='2.0 1.0 0.5' --ts='1.0 1 0.5' --delta='31 10 2' --an='-1 12 6' --maxit=2 --ref_a=P  --function=reference3 --CTF --MPI 
+###################################################################
+# To run gui version, enter the following in the command line:
+# 	sxgui.py --demo=mpibdbctf &
+# and then press the 'sxali3d' button in the main menu. A separate window will pop up with the input fields already initialized to the proper values. 
+# Press the green 'Run sxali3d' button to execute the command.
+# Note thatif sxgui.py is invoked without the --demo option, the input fields will not be automatically initialized with the approprite values, in 
+# which case the proper values must be entered manually.
+###################################################################
+
+# Refinement of the 3D structure using high accuracy alignment
+mpirun -np 4 sxlocal_ali3d.py bdb:data ali3d_e --ou=30 --delta=2 --ts=2 --maxit=1 --chunk=0.25 --function=reference3 --center=0 --MPI --CTF --debug 
+###################################################################
+# To run gui version, enter the following in the command line:
+# 	sxgui.py --demo=mpibdbctf &
+# and then press the 'sxlocal_ali3d' button in the main menu. A separate window will pop up with the input fields already initialized to the proper values. 
+# Press the green 'Run sxlocal_ali3d' button to execute the command.
+# Note thatif sxgui.py is invoked without the --demo option, the input fields will not be automatically initialized with the approprite values, in 
+# which case the proper values must be entered manually.
+###################################################################
