@@ -1455,10 +1455,16 @@ class EMBoxList:
 		for i in l: self.pop(i)
 	
 	def write_particles(self,input_file_name,out_file_name,box_size,invert=False,normproc=None):
+		db = db_open_dict('bdb:project')
+		apix = db.get('global.apix')
 		for i,box in enumerate(self.boxes):
 			image = box.get_image(input_file_name,box_size)
 			if invert: image.mult(-1)
 			if str(normproc) != "None": image.process_inplace(normproc)
+			if apix != 1.0:
+				image.set_attr('apix_x', apix)
+				image.set_attr('apix_y', apix)
+				image.set_attr('apix_z', apix)
 			image.write_image(out_file_name,i)
 			
 	

@@ -329,9 +329,9 @@ int ImagicIO2::read_header(Dict & dict, int image_index, const Region * area, bo
 	dict["IMAGIC.INFORMAT"] = hed.informat;
 	dict["IMAGIC.NUMEIGEN"] = hed.numeigen;
 	dict["IMAGIC.NIACTIVE"] = hed.niactive;
-	dict["IMAGIC.RESOLX"] = hed.resolx;
-	dict["IMAGIC.RESOLY"] = hed.resoly;
-	dict["IMAGIC.RESOLZ"] = hed.resolz;
+	dict["apix_x"] = hed.resolx;
+	dict["apix_y"] = hed.resoly;
+	dict["apix_z"] = hed.resolz;
 	if(hed.errar==-1.0) {
 		dict["IMAGIC.FABOSA1"] = hed.alpha2;
 		dict["IMAGIC.FABOSA2"] = hed.beta2;
