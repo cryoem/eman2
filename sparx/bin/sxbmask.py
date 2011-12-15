@@ -37,11 +37,11 @@ from   global_def import *
 from   optparse import OptionParser
 def main():
 
-	import sys
+	import os,sys
 
-        arglist = []
-        for arg in sys.argv:
-	    arglist.append( arg )
+	arglist = []
+	for arg in sys.argv:
+		arglist.append( arg )
 
 	progname = os.path.basename(arglist[0])
 	usage = progname + " volume binarymask smoothmask --variance --repair"
