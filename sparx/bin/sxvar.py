@@ -82,13 +82,14 @@ def main():
 			else:
 				from applications import var_mpi
 				var_mpi( files, outdir, options.fl, options.aa, options.radccc, options.repair, options.pca, options.pcamask, options.pcanvec)
-			
+
 			global_def.BATCH = False
 			from mpi import mpi_finalize
 			mpi_finalize()
 		else:
-			from applications import defvar
 			global_def.BATCH = True
+			ERROR("Please use MPI version","sxvar",1)
+			from applications import defvar
 			defvar(  files, outdir, options.fl, options.aa, options.radccc, options.repair, options.pca, options.pcamask, options.pcanvec)
 			global_def.BATCH = False
 
