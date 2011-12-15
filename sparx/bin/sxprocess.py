@@ -73,6 +73,7 @@ def main():
 	
 	(options, args) = parser.parse_args()
 	
+	
 	if options.phase_flip:
 		nargs = len(args)
 		if nargs != 2:
@@ -93,8 +94,43 @@ def main():
 			except:
 				print "no ctf information in input stack! Exiting..."
 				return
-			flip_img = filt_ctf(img,ctf,binary=1)
-			flip_img.write_image(outstack, i)
+			
+			dopad = True
+			sign = 1
+			binary = 1 # phase flip
+				
+			assert img.get_ysize() > 1	
+			dict = ctf.to_dict()
+			dz = dict["defocus"]
+			cs = dict["cs"]
+			voltage = dict["voltage"]
+			pixel_size = dict["apix"]
+			b_factor = dict["bfactor"]
+			ampcont = dict["ampcont"]
+			dza = dict["dfdiff"]
+			azz = dict["dfang"]
+			
+			if dopad and not img.is_complex():  ip = 1
+			else:                             ip = 0
+	
+	
+			params = {"filter_type": Processor.fourier_filter_types.CTF_,
+	 			"defocus" : dz,
+				"Cs": cs,
+				"voltage": voltage,
+				"Pixel_size": pixel_size,
+				"B_factor": b_factor,
+				"amp_contrast": ampcont,
+				"dopad": ip,
+				"binary": binary,
+				"sign": sign,
+				"dza": dza,
+				"azz":azz}
+			
+			tmp = Processor.EMFourierFilter(img, params)
+			tmp.set_attr_dict({"ctf":ctf})
+			
+			tmp.write_image(outstack, i)
 			
 	if options.makedb != None:
 		nargs = len(args)
