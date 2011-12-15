@@ -7012,6 +7012,36 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		static const string NAME;	
 	};
 	
+	class RotateInFSProcessor : public Processor
+		{
+		public:
+			//virtual EMData* process(const EMData* const image);
+			virtual void process_inplace(EMData * image);
+
+			virtual string get_name() const
+			{
+				return NAME;
+			}
+			static Processor *NEW()
+			{
+				return new RotateInFSProcessor( );
+			}
+			string get_desc() const
+			{
+				return "Rotates a Fourier object using a kernel.";
+			}
+			virtual TypeDict get_param_types() const
+			{
+				TypeDict d;	
+				d.put("transform", EMObject::TRANSFORM, "transform");
+//				d.put("interpCutoff", EMObject::TRANSFORM, "cutoff for interpolation");
+//				d.put("offset", EMObject::FLOAT, "offset for FT centering");
+//				d.put("angle", EMObject::FLOAT, "angle");
+				return d;
+			}
+			static const string NAME;
+		};
+	
 #ifdef SPARX_USING_CUDA
 	/* class MPI CUDA kmeans processor
 	 * 2009-02-13 17:34:45 JB first version

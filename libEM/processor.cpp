@@ -241,6 +241,7 @@ const string NewHomomorphicTanhProcessor::NAME = "filter.homomorphic.tanh";
 const string NewBandpassTanhProcessor::NAME = "filter.bandpass.tanh";
 const string CTF_Processor::NAME = "filter.CTF_";
 const string ConvolutionKernelProcessor::NAME = "filter.convolution.kernel";
+const string RotateInFSProcessor::NAME = "filter.rotateinfs";
 
 //#ifdef EMAN2_USING_CUDA
 //const string CudaMultProcessor::NAME = "cuda.math.mult";
@@ -470,6 +471,7 @@ template <> Factory < Processor >::Factory()
 	force_add<ModelEMCylinderProcessor>();
 	force_add<ApplyPolynomialProfileToHelix>();
 	force_add<BinarySkeletonizerProcessor>();
+	force_add<RotateInFSProcessor>();
 
 //#ifdef EMAN2_USING_CUDA
 //	force_add<CudaMultProcessor>();
@@ -9878,16 +9880,246 @@ EMData* ConvolutionKernelProcessor::process(const EMData* const image)
 			cdata[i + j * nx] = cpixel;
 		}
 	}
-	
+	  
 	return conv;
 }
 
-void ConvolutionKernelProcessor::process_inplace(EMData * image)
+void ConvolutionKernelProcessor::process_inplace(EMData * image )
 {
 	throw UnexpectedBehaviorException("Not implemented yet");
 	
 	return;
 }
+
+void RotateInFSProcessor::process_inplace(EMData * image) // right now for 2d images
+{
+//	float angle = params["angle"];
+	
+
+	Transform *rotNow = params["transform"];
+	
+	int debug=1;
+	
+//	error: conversion from ‘EMAN::EMObject’ to non-scalar type ‘EMAN::Transform’ requested
+	
+	float interpCutoff =.8;
+	
+	// if 2N is size of image, then sizes of FFT are (2N+2,2N,2N) or  (2N+2,2N,1)
+	// if 2N+1 is size of image, then sizes of FFT are (2N+2,2N+1,2N+1) or  (2N+2,2N+1,1)
+	
+	int x_size = image->get_xsize();  //16
+	int y_size = image->get_ysize();  int y_odd=  (y_size%2);
+	int z_size = image->get_zsize();
+	
+//	float size_check = abs(y_size-z_size)+abs(x_size-y_size-2+y_odd);
+//	if (size_check!=0) throw ImageDimensionException("Only cubic images");
+	int size_check = abs(x_size-y_size-2+y_odd)+ abs(z_size-1)*abs(z_size-y_size);
+	int N = x_size/2-1;
+	int Mid = N+1;
+	if (size_check!=0) throw ImageDimensionException("Only square or cubic  images for now");
+	if (image->is_real()) throw ImageDimensionException("Only for Fourier images");
+//	if (y_odd==0) throw ImageDimensionException("Only use odd images for now");
+	
+	if (debug) printf("Mid=%d, x_size=%d, y_size=%d, N=%d, z_size=%d \n", Mid,x_size,y_size, N, z_size );
+	
+	EMData* RotIm        = image -> copy(); // This is the rotated image
+	EMData* WeightIm     = image -> copy(); WeightIm     ->to_zero();// This is the Weight image for rotated image
+	EMData* PhaseOrigIm  = new EMData(N+1,2*N+1,z_size) ; PhaseOrigIm  ->to_zero();// This is the Weight image for rotated image
+	EMData* PhaseFinalIm = PhaseOrigIm -> copy(); PhaseFinalIm ->to_zero();// This is the Weight image for rotated image
+	EMData* MagFinalIm   = PhaseOrigIm -> copy(); MagFinalIm   ->to_zero();// This is the Weight image for rotated image
+	
+//	float*   data      = image    -> get_data();
+//	float* Rotdata     = RotIm    -> get_data();  // This is the data of the rotated image
+//	float* WeightData  = WeightIm -> get_data();  //
+	
+	float  WeightNowX, WeightNowY, WeightNowZ ;
+	int    kxMin,kxMax, kyMin, kyMax,  kzMin, kzMax, kxBefore, kyBefore, kzBefore ;
+	float  kxRT, kyRT, kzRT ;
+	
+	Vec3f PosAfter;
+	Vec3f PosBefore;
+	Transform invRotNow;
+	// Fill out real and imaginary full images
+
+	int kz=0;
+
+	if (debug) {image -> write_image("OrigImageFFT.hdf"); 	
+	            printf("Just wrote OrigImageFFT.hdf \n"); }
+	
+
+	for (kxBefore = 0; kxBefore <=  N      ; ++kxBefore) {  // These are the  kx, ky coordinates of the original image
+	   for (kyBefore = 0; kyBefore < y_size ; ++kyBefore)  {         //  We need to rephase
+	      for (kzBefore = 0; kzBefore < z_size ; ++kzBefore)  {         //  We need to rephase
+
+	    // Now we need a 
+	      float CurrentReal = RotIm -> get_value_at(2*kxBefore  ,kyBefore, kzBefore);
+	      float CurrentImag = RotIm -> get_value_at(2*kxBefore+1,kyBefore, kzBefore);
+	      
+//         fftOfxPRB3(1+mod(ik-Mid,N))=Grand*exp(-2*pi*1i*Mid*(ik-Mid)/x_size); % Phase to apply to centered version
+	      
+//	      float Phase    = -2*pi*(kxBefore+kyBefore + kzBefore)*(Mid)/y_size;
+	      float Phase    = -pi*(kxBefore+kyBefore + kzBefore)*x_size/y_size;
+	      // Phase    = 0;
+	      float CosPhase = cos( Phase);
+	      float SinPhase = sin( Phase);
+	     
+	      float NewRealValue = CosPhase*CurrentReal -SinPhase*CurrentImag;
+	      float NewImagValue = SinPhase*CurrentReal +CosPhase*CurrentImag;
+	      
+	      RotIm ->set_value_at(2*kxBefore  ,kyBefore, kzBefore, NewRealValue);
+	      RotIm ->set_value_at(2*kxBefore+1,kyBefore, kzBefore, NewImagValue);
+	}}}
+	
+	if (debug) {RotIm  -> write_image("OrigImageFFTAfterPhaseCorrection.hdf"); 
+	            printf("  Just wrote OrigImageFFTAfterPhaseCorrection.hdf \n");}
+	
+        // RotIm ->set_value_at(2*Mid-1,0, 0, 0);
+        if (debug) printf("  Just about to start second loop  \n");
+	
+	image ->to_zero();
+        invRotNow = rotNow->inverse(); //  no match for ‘operator=’ in ‘PosBefore = EMAN::operator*(const EMAN::Transform&, const EMAN::Transform&)((
+         
+	
+	for (int kxAfter = 0; kxAfter <= N  ; ++kxAfter) {  // These are the  kx, ky, kz coordinates of the rotated image
+	  for (int kyAfter = -N; kyAfter < y_size-N     ; ++kyAfter)  {     // referring to a properly centered version
+	     for (int kzAfter = -z_size/2; kzAfter <= z_size/2  ; ++kzAfter)  {   
+
+	    // Now we need a 
+
+	      PosAfter = Vec3f(kxAfter, kyAfter, kzAfter);
+	      PosBefore = invRotNow*PosAfter;
+	      kxRT = PosBefore[0]; // This will be the off-lattice site, where the point was rotated from
+	      kyRT = PosBefore[1]; //  
+	      kzRT = PosBefore[2]; //  
+	      
+	      
+	      kxMin = ceil( kxRT-interpCutoff); kxMax = floor(kxRT+interpCutoff);
+	      kyMin = ceil( kyRT-interpCutoff); kyMax = floor(kyRT+interpCutoff);
+	      kzMin = ceil( kzRT-interpCutoff); kzMax = floor(kzRT+interpCutoff);
+
+    
+//              printf("Block 0,kx=%d, ky=%d,kxMin=%d, kyMin=%d, kxMax=%d, kyMax=%d, kyAfter=%d  \n",kxAfter,kyAfter,kxMin,kyMin, kxMax, kyMax, kyAfter); 
+	      //continue; 
+	      for (int kxI= kxMin; kxI <= kxMax; ++kxI){  // go through this
+		for (int kyI= kyMin; kyI <= kyMax; ++kyI){  // and get values to interp
+		   for (int kzI= kzMin; kzI <= kzMax; ++kzI){ //  
+
+// 
+		     if (abs(kxI) >N) continue; // don't go off the lattice
+		     if (abs(kyI) >N) continue;
+		     if (abs(kzI) >z_size/2) continue;
+		     
+		     float distx= abs(kxI-kxRT);
+		     float disty= abs(kyI-kyRT);
+		     float distz= abs(kzI-kzRT);
+
+		     // fold kxI, kyI back into lattice if possible
+		     int IsComplexConj= 1;
+		     
+		     if (kxI<0) IsComplexConj=-1;
+		     kxBefore= IsComplexConj*kxI; // The Proper coordinates will be
+		     kyBefore= IsComplexConj*kyI; // where the original data is stored 
+		     kzBefore= IsComplexConj*kzI; // At this point kxBefore >=0, but not necessarily kyBefore
+		     
+		     if ( kyBefore<0 ) kyBefore += y_size; // makes sure kyBefore is also >0
+		     if ( kzBefore<0 ) kzBefore += y_size; // makes sure kzBefore is also >0
+		     
+		     WeightNowX  = (distx ==0)? 1: (sin(pi*distx) /(pi*distx)) ;
+		     WeightNowY  = (disty ==0)? 1: (sin(pi*disty) /(pi*disty)) ;
+		     WeightNowZ  = (distz ==0)? 1: (sin(pi*distz) /(pi*distz)) ;
+		     
+		     
+		     float CurrentValue;
+		     float ToAdd;
+		     int kyAfterInd = (kyAfter+y_size)%(y_size);
+		     int kzAfterInd = (kzAfter+z_size)%(z_size);
+		     
+		    // if (kxAfter==0) IsComplexConj*=-1;
+		     
+//		     if ((kxI+kyI)%1 ==0)
+//		         printf("Block5,kx=%d, ky=%d,kxI=%d, kyI=%d, kxBefore=%d, kyBefore=%d  \n",kxAfter,kyAfter,kxI,kyI, kxBefore,kyBefore);
+//		         printf("  %d,     %d,  %d,  %d,        %d,  %d,       %d, %d \n",IsComplexConj,kxAfter,kyAfter, kyAfterInd,kxI,kyI, kxBefore,kyBefore);
+		     
+		     CurrentValue =   image -> get_value_at(2*kxAfter,kyAfterInd, kzAfterInd);  // Update real part of Image
+		     ToAdd =   WeightNowX*WeightNowY*WeightNowZ*(RotIm -> get_value_at(2*kxBefore,kyBefore, kzBefore));
+		     image -> set_value_at(2*kxAfter  ,kyAfterInd  , kzAfterInd,  ToAdd   + CurrentValue );
+		     
+		     
+		     CurrentValue =   WeightIm -> get_value_at(kxAfter,kyAfterInd, kzAfterInd);    // Update real  part of Weight image
+		     ToAdd =   WeightNowX*WeightNowY;
+		     WeightIm -> set_value_at(kxAfter  , kyAfterInd , kzAfterInd,  abs(ToAdd)   + CurrentValue );
+		     
+		     CurrentValue = image -> get_value_at(2*kxAfter+1,kyAfterInd);    // Update imaginary   part of image
+		     ToAdd =   IsComplexConj*WeightNowX*WeightNowY*RotIm -> get_value_at(2*kxBefore+1,kyBefore, kzBefore );
+		     image -> set_value_at(2*kxAfter+1  , kyAfterInd , kzAfterInd,  ToAdd   + CurrentValue );
+		     
+		      
+		}}}
+
+	    
+	  }}}
+
+//        Set the image values to the rotated image, because we do it in place
+
+
+	if (debug) { image        -> write_image("RotImageBeforeFinalPhaseCorrection.hdf"); 
+	             printf("  Just wrote RotImageBeforeFinalPhaseCorrection.hdf \n");   }
+
+
+	for (kxBefore = 0; kxBefore <= N     ; ++kxBefore) {      // This is  the normalization step
+	  for (kyBefore = 0; kyBefore < y_size   ; ++kyBefore)  {  // These are the  kx, ky, kz coordinates of the original image       
+              for (kzBefore = 0; kzBefore < z_size   ; ++kzBefore)  {       
+
+	      float CurrentReal = image -> get_value_at(2*kxBefore   , kyBefore, kzBefore);
+	      float CurrentImag = image -> get_value_at(2*kxBefore+1 , kyBefore, kzBefore);
+	      
+              PhaseFinalIm -> set_value_at(kxBefore,kyBefore, kzBefore, atan2(CurrentImag,CurrentReal));
+              MagFinalIm   -> set_value_at(kxBefore,kyBefore, kzBefore, sqrt(CurrentImag*CurrentImag+CurrentReal*CurrentReal) );
+	      float WeightNow    = WeightIm -> get_value_at(kxBefore,kyBefore, kzBefore);
+	      if (WeightNow>0) {
+		 float val =  (image->get_value_at(2*kxBefore   , kyBefore, kzBefore))/WeightNow;
+	         image -> set_value_at(2*kxBefore   , kyBefore, kzBefore, val);
+		 val      =  (image->get_value_at(2*kxBefore +1  , kyBefore, kzBefore))/WeightNow;
+	         image -> set_value_at(2*kxBefore +1  , kyBefore, kzBefore,  val);
+	      }
+	
+	}}}
+	
+	if (debug) { printf("  Just did normalization step \n");}
+	
+
+	for ( kxBefore = 0; kxBefore < Mid     ; ++kxBefore) {     //  This is the rephase step
+	  for ( kyBefore = 0; kyBefore < y_size   ; ++kyBefore)  {     
+  	    for ( kzBefore = 0; kzBefore < z_size   ; ++kzBefore)  {     
+
+	      float CurrentReal = image -> get_value_at(2*kxBefore  ,kyBefore, kzBefore);
+	      float CurrentImag = image -> get_value_at(2*kxBefore+1,kyBefore, kzBefore);
+	      
+//	      float Phase    = +2*pi*(kxBefore+kyBefore+kzBefore)*(Mid)/y_size;
+	      float Phase    =  pi*(kxBefore + kyBefore + kzBefore)*x_size/y_size;
+	      // Phase    = 0; // Offset should be Mid-1
+	      float CosPhase = cos( Phase);
+	      float SinPhase = sin( Phase);
+	     
+	      float NewRealValue = CosPhase*CurrentReal -SinPhase*CurrentImag;
+	      float NewImagValue = SinPhase*CurrentReal +CosPhase*CurrentImag;
+	      
+	      image ->set_value_at(2*kxBefore,  kyBefore,  kzBefore, NewRealValue);
+	      image ->set_value_at(2*kxBefore+1,kyBefore,  kzBefore, NewImagValue);
+	}}}
+	
+	if (debug) {
+	   image        -> write_image("RotatedImageFFT.hdf");
+	   PhaseFinalIm -> write_image("PhaseImInFS.hdf");   // These are the phases,mags of the image when properly centered
+	   MagFinalIm   -> write_image("MagFinalImInFS.hdf"); 
+	   WeightIm     -> write_image("WeightIm.hdf");
+	   printf("  Just wrote RotatedImageFFT.hdf \n");
+	}
+
+	image -> update();
+	
+}
+
 
 #ifdef SPARX_USING_CUDA
 
