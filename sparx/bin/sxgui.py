@@ -64,7 +64,7 @@ class PopupHelicalRefinement(QWidget):
 	
 	
 	# populate with default values
-	self.savedparmsdict ={'stackname':'NONE','initialprojectionparameter':'NONE','referencevolume':'NONE','foldername':'NONE','outradius':'-1','xrange':'1.0','xtrans':'1.0','ynumber':"2",'nriter':'3','nproc':'3','dp':'NONE','dphi':'NONE','rmax':'NONE','maskname':'',"delta":"1.0","ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","initial_theta":"90.0", "delta_theta":"1.0","nise":"2","nise":"2","rmin":"0.0","fract":"0.7","dp_step":"0.1","ndp":"12","dphi_step":"0.1","ndphi":"12","psi_max":"15","an":"-1", "npad":"2", "chunk":"-1.0", "sym":"c1","datasym":"symdoc.dat","usrfunc":"helical","usrfuncfile":"",'stackname_prectr':'','outdir_prectr':'','mask_prectr':'','search_rng_prectr':'-1','ou_prectr':'-1','maxit_prectr':'100','snr_prectr':'1','fourvar_prectr':Qt.Unchecked,'ctf_prectr':Qt.Unchecked,'oneDx_prectr':Qt.Unchecked,'nproc_prectr':'2','applyparams_prectr':Qt.Unchecked,'outstackname_prectr':''}
+	self.savedparmsdict ={'stackname':'NONE','initialprojectionparameter':'NONE','referencevolume':'NONE','foldername':'NONE','outradius':'-1','xrange':'1.0','xtrans':'1.0','ynumber':"2",'nriter':'3','nproc':'3','dp':'NONE','dphi':'NONE','rmax':'NONE','maskname':'',"delta":"1.0","ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","initial_theta":"90.0", "delta_theta":"1.0","nise":"2","nise":"2","rmin":"0.0","fract":"0.7","dp_step":"0.1","ndp":"12","dphi_step":"0.1","ndphi":"12","psi_max":"15","an":"-1", "npad":"2", "chunk":"-1.0", "sym":"c1","datasym":"symdoc.dat","usrfunc":"helical","usrfuncfile":"",'stackname_prectr':'','outdir_prectr':'','mask_prectr':'','search_rng_prectr':'-1','ou_prectr':'-1','maxit_prectr':'100','snr_prectr':'1','fourvar_prectr':Qt.Unchecked,'ctf_prectr':Qt.Unchecked,'oneDx_prectr':Qt.Unchecked,'nproc_prectr':'2'}
 	
 	
 	self.setadv=False
@@ -549,8 +549,7 @@ class PopupHelicalRefinement(QWidget):
 		self.w3.fourvarchkbx.setCheckState(self.savedparmsdict['fourvar_prectr'])
 		self.w3.oneDxchkbx.setCheckState(self.savedparmsdict['oneDx_prectr'])
 		self.w3.nprocedit.setText(self.savedparmsdict['nproc_prectr'])
-		self.w3.outstackname = self.savedparmsdict['outstackname_prectr']
-		self.w3.applyparamschkbx.setCheckState(self.savedparmsdict['applyparams_prectr'])
+		
 
     def setactiveheader(self):
 	stack = self.stacknameedit.text()
@@ -4076,7 +4075,7 @@ class Popupisac(QWidget):
 	
 	self.cmd = ""
 	# populate with default values
-	self.savedparmsdict = {'stackname':'','partradius':'-1','xyrange':'1','trans':'1','nriter':'30','nproc':'2',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","dst":"90.0","FL":"0.1","FH":"0.3","FF":"0.2","init_iter":"3","main_iter":"3","iter_reali":"1","match_first":"1","max_round":"20","match_second":"5","stab_ali":"5","thld_err":"1.732","indep_run":"4","thld_grp":"10","img_per_grp":"100","generation":"1",'stackname_prectr':'','outdir_prectr':'','mask_prectr':'','search_rng_prectr':'-1','ou_prectr':'-1','maxit_prectr':'100','snr_prectr':'1','fourvar_prectr':Qt.Unchecked,'ctf_prectr':Qt.Unchecked,'oneDx_prectr':Qt.Unchecked,'nproc_prectr':'2','applyparams_prectr':Qt.Unchecked,'outstackname_prectr':''}
+	self.savedparmsdict = {'stackname':'','partradius':'-1','xyrange':'1','trans':'1','nriter':'30','nproc':'2',"ringstep":"1","innerradius":"1","ctf":Qt.Unchecked,"snr":"1.0","dst":"90.0","FL":"0.1","FH":"0.3","FF":"0.2","init_iter":"3","main_iter":"3","iter_reali":"1","match_first":"1","max_round":"20","match_second":"5","stab_ali":"5","thld_err":"1.732","indep_run":"4","thld_grp":"10","img_per_grp":"100","generation":"1",'stackname_prectr':'','outdir_prectr':'','mask_prectr':'','search_rng_prectr':'-1','ou_prectr':'-1','maxit_prectr':'100','snr_prectr':'1','fourvar_prectr':Qt.Unchecked,'ctf_prectr':Qt.Unchecked,'oneDx_prectr':Qt.Unchecked,'nproc_prectr':'2'}
 
 	if (options.demo == DEMO_mpibdbctf) or (options.demo == DEMO_mpibdb):
 		self.savedparmsdict['stackname'] = 'bdb:data'
@@ -4408,8 +4407,7 @@ class Popupisac(QWidget):
 		self.w2.fourvarchkbx.setCheckState(self.savedparmsdict['fourvar_prectr'])
 		self.w2.oneDxchkbx.setCheckState(self.savedparmsdict['oneDx_prectr'])
 		self.w2.nprocedit.setText(self.savedparmsdict['nproc_prectr'])
-		self.w2.outstackname = self.savedparmsdict['outstackname_prectr']
-		self.w2.applyparamschkbx.setCheckState(self.savedparmsdict['applyparams_prectr'])
+		
 		
 	#Function choose_file started when  the  open_file of the  Poptwodali window is clicked
     def choose_file(self):
@@ -4615,7 +4613,6 @@ class Popupcenter(QWidget):
 	
 	self.cmd = ""
 	self.winmain=winmain
-	self.outstackname= ""
 	self.intro_string = intro_string
 	#######################################################################################
 	# Layout parameters
@@ -4634,7 +4631,7 @@ class Popupcenter(QWidget):
 	#######################################################################################
 	
         #Here we just set the window title
-	self.setWindowTitle('sxisac')
+	self.setWindowTitle('sxshiftali')
         #Here we just set a label and its position in the window
 	title1=QtGui.QLabel(self.intro_string, self)
 	title1.move(self.x1,self.y1)
@@ -4751,14 +4748,6 @@ class Popupcenter(QWidget):
 	
 	self.y2 += 50
 	
-	applyparams= QtGui.QLabel('Apply calculated centering parameters to input stack', self)
-	applyparams.move(self.x1,self.y2)
-	self.applyparamschkbx = QtGui.QCheckBox("",self)
-	self.applyparamschkbx.move(self.x2, self.y2)
-	self.applyparamschkbx.setCheckState(self.winmain.savedparmsdict['applyparams_prectr'])
-	self.connect(self.applyparamschkbx, QtCore.SIGNAL('stateChanged(int)'), self.getoutstack)
-	#self.y2 += 50
-	
 	self.cmdlinebtn = QPushButton("Generate command line from input parameters", self)
         self.cmdlinebtn.move(self.x1-5, self.y3)
         #sets an infotip for this Pushbutton
@@ -4778,13 +4767,6 @@ class Popupcenter(QWidget):
         self.connect(self.RUN_button, SIGNAL("clicked()"), self.runsxshftali)
         #Labels and Line Edits for User Input	
 
-    def getoutstack(self):
-    	if self.applyparamschkbx.checkState() == Qt.Checked:
-		(fname,stat)= QInputDialog.getText(self,"Output stack","You chose to apply centering paramters to input stack. \nPlease enter file name to save transformed stack to",QLineEdit.Normal,(self.winmain.savedparmsdict)['outstackname_prectr'])
-		if stat:
-			print fname
-			self.outstackname=fname
-		
     def gencmdline_shftali(self,writefile=True):
 	#Here we just read in all user inputs in the line edits of the Poptwodali window
    	stackname_prectr = self.stacknameedit.text()
@@ -4799,9 +4781,8 @@ class Popupcenter(QWidget):
 	oneDx_prectr=self.oneDxchkbx.checkState()
 	nproc_prectr = self.nprocedit.text()
 	
-	applyparams_prectr=self.applyparamschkbx.checkState()
 	
-	cmd1 = "sxshftali.py "+str(stackname_prectr)+" "+str(outdir_prectr)
+	cmd1 = "sxshiftali.py "+str(stackname_prectr)+" "+str(outdir_prectr)
 	if len(str(mask_prectr))>0:
 		print 'has mask'
 		cmd1 = cmd1+" "+str(mask_prectr)
@@ -4813,11 +4794,6 @@ class Popupcenter(QWidget):
 		cmd1 = cmd1 + " --CTF"
 	if oneDx_prectr == Qt.Checked:
 		cmd1 = cmd1 + " --oneDx"
-	
-	if applyparams_prectr == Qt.Checked:
-		cmd1 = cmd1 + " --Applyparams" + " --outstack='"+str(self.outstackname)+"'"
-	else:
-		self.outstackname=""	
 		
 	nproc_prectr = self.nprocedit.text()
 	
@@ -4832,8 +4808,6 @@ class Popupcenter(QWidget):
 	(self.winmain.savedparmsdict)['fourvar_prectr']=fourvar_prectr
 	(self.winmain.savedparmsdict)['oneDx_prectr']=oneDx_prectr
 	(self.winmain.savedparmsdict)['nproc_prectr']=str(nproc_prectr)
-	(self.winmain.savedparmsdict)['applyparams_prectr']=applyparams_prectr
-	(self.winmain.savedparmsdict)['outstackname_prectr']=str(self.outstackname)
 	
 	if int(str(nproc_prectr)) > 1:
 		cmd1="mpirun -np "+ str(nproc_prectr) + " "+ cmd1+" --MPI" 
