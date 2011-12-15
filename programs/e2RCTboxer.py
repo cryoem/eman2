@@ -521,7 +521,7 @@ class EMBoxList:
 		self.entry = entry
 		self.box_type = name
 		self.db = db_open_dict("bdb:e2boxercache"+"#boxes"+name)	#db for data in this window
-		
+
 	def close_db(self):
 		db_close_dict(self.db)
 		
@@ -531,7 +531,7 @@ class EMBoxList:
 
 		if data != None:
 			for box in data:
-				self.append_box(box[0],box[1],box[2])
+				self.append_box(int(box[0]),int(box[1]),box[2])
 			return True
 		return False
 				
@@ -668,6 +668,7 @@ class EMBox:
 			r,g,b = EMBox.BOX_COLORS[self.type]
 		else:
 			r,g,b = 1.0,0.42,0.71 # hot pink, apparently ;)
+		print type(box_size), type(self.x), type(self.y)
 		shape = EMShape([shape_string,r,g,b,self.x-box_size/2,self.y-box_size/2,self.x+box_size/2,self.y+box_size/2,2.0])
 		return shape
 	

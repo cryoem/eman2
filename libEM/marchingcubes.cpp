@@ -41,6 +41,7 @@
 #include "marchingcubes.h"
 
 #include <time.h>
+#include <math.h>
 
 using namespace EMAN;
 #include "transform.h"
@@ -435,14 +436,70 @@ int a2iTriangleConnectionTable[256][16] =
         {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 };
 
+ColorRGBGenerator::ColorRGBGenerator()
+	: rgbmode(0), originx(0), originy(0), originz(0), inner(0.0), outer(0.0), em_data(0)
+{
+}
+
+ColorRGBGenerator::ColorRGBGenerator(EMData* data)
+	: rgbmode(0)
+{
+	set_data(data);
+}
+
+void ColorRGBGenerator::set_data(EMData* data)
+{
+	em_data = data;
+	originx = data->get_xsize()/2;
+	originy = data->get_ysize()/2;
+	originz = data->get_zsize()/2;
+	inner = 0;
+	outer = originx;
+}
+
+float* ColorRGBGenerator::getRGBColor(int x, int y, int z)
+{
+	//calculate radius
+	float rad = sqrt(float(pow(x-originx,2) + pow(y-originy,2) + pow(z-originz,2)));
+	// Algorithm to convert HSI to RGB. Hue is dependent on radius, S = 1 and I = 0.5
+	float normrad = 4.189*(rad - inner)/(outer - inner);
+	//cout << rad << " " << inner << " " << outer << " " << normrad << endl;
+	if(normrad < 2.094){
+		if (normrad < 0.0) normrad = 0.0;
+		rgb[0] = 0.5*(1 + cos(normrad)/cos(1.047 - normrad));
+		rgb[1] = 1.5 - rgb[0];
+		rgb[2] = 0.0;
+	}
+	if(normrad >= 2.094 and normrad < 4.189){
+		if (normrad > 4.189) normrad = 4.189;
+		normrad =- 2.094;
+		rgb[0] = 0.0;
+		rgb[1] = 0.5*(1 + cos(normrad)/cos(1.047 - normrad));
+		rgb[2] = 1.5 - rgb[1];
+	}
+	//chop at Blues
+	/*
+	if(normrad >= 4.189){
+		if (normrad > 6.28318) normrad = 6.28318;
+		normrad =- 4.189;
+		rgb[2] = 0.5*(1 + cos(normrad)/cos(1.047 - normrad));
+		rgb[1] = 0.0;
+		rgb[0] = 1.5 - rgb[2];
+	}
+	*/
+	return &rgb[0];
+}
+
 MarchingCubes::MarchingCubes()
 	: _isodl(0)
 {
+	rgbgenerator = ColorRGBGenerator();
 }
 
 MarchingCubes::MarchingCubes(EMData * em)
 	: _isodl(0)
 {
+	rgbgenerator = ColorRGBGenerator();
 	set_data(em);
 }
 
@@ -554,6 +611,7 @@ void MarchingCubes::set_data(EMData* data)
 	if ( data->get_zsize() == 1 ) throw ImageDimensionException("The z dimension of the image must be greater than 1");
 	_emdata = data;
 	calculate_min_max_vals();
+	rgbgenerator.set_data(data);
 }
 
 void MarchingCubes::set_surface_value(const float value) {
@@ -573,6 +631,7 @@ void MarchingCubes::calculate_surface() {
 	pp.clear();
 	nn.clear();
 	ff.clear();
+	cc.clear();
 
 #if MARCHING_CUBES_DEBUG
 	int time0 = clock();
@@ -782,7 +841,9 @@ void MarchingCubes::marching_cube(int fX, int fY, int fZ, int cur_level)
 			pointIndex[iEdge] = get_edge_num(fX+edgeLookUp[iEdge][0], fY+edgeLookUp[iEdge][1], fZ+edgeLookUp[iEdge][2], edgeLookUp[iEdge][3]);
 		}
 	}
-
+	
+	float* color = rgbgenerator.getRGBColor(fX, fY, fZ);
+	
 	//Draw the triangles that were found.  There can be up to five per cube
 	for(iTriangle = 0; iTriangle < 5; iTriangle++)
 	{
@@ -802,6 +863,7 @@ void MarchingCubes::marching_cube(int fX, int fY, int fZ, int cur_level)
 		float v2[3] = {pts[2][0]-pts[1][0],pts[2][1]-pts[1][1],pts[2][2]-pts[1][2]};
 		
 		float n[3] = { v1[1]*v2[2] - v1[2]*v2[1], v1[2]*v2[0] - v1[0]*v2[2], v1[0]*v2[1] - v1[1]*v2[0] };
+			
 		
 		for(iCorner = 0; iCorner < 3; iCorner++)
 		{
@@ -816,6 +878,7 @@ void MarchingCubes::marching_cube(int fX, int fY, int fZ, int cur_level)
 			iVertex = a2iTriangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
 			map<int,int>::iterator it = point_map.find(pointIndex[iVertex]);
 			if ( it == point_map.end() ){
+				cc.push_back_3(color);
 				int ss = pp.elem();
 				pp.push_back_3(&pts[iCorner][0]);
 				nn.push_back_3(&n[0]);

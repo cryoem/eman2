@@ -73,6 +73,12 @@ namespace EMAN
 		virtual int get_sampling_range() = 0;
 
 		virtual Dict get_isosurface()  = 0;
+		
+		virtual void setRGBorigin(int x, int y, int z) = 0;
+		
+		virtual void setRGBscale(float i, float o) = 0;
+		
+		virtual void setRGBmode(int mode) = 0;
 
 	protected:
 		EMData * _emdata;

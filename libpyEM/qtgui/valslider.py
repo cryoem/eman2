@@ -797,8 +797,8 @@ class EMSpinWidget(QtGui.QWidget):
 			
 	def _on_editfinish(self):
 		try:
+			if self.value != float(self.numbox.text()): self.emit(QtCore.SIGNAL("valueChanged(int)"),float(self.numbox.text()))
 			self.value = float(self.numbox.text())
-			self.emit(QtCore.SIGNAL("valueChanged(int)"),self.value)
 		except ValueError:
 			self.numbox.setText(str(self.value))
 			print "ERROR!!! You must enter a number"

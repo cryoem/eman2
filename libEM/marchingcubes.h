@@ -178,6 +178,55 @@ namespace EMAN
 			unsigned int elements;
 	};
 
+	/** Class to encapsulate an RGB color generator for marching cubes isosurface generator
+	For now you can only color by radius, but in the near future you will be able to color by map, etc
+	 **/
+	class ColorRGBGenerator{
+	public:
+		ColorRGBGenerator();
+		/** Constructor */
+		ColorRGBGenerator(EMData* emdata);
+		
+		/** Generate a color based on pixel coords*/
+		float* getRGBColor(int x, int y, int z);
+		
+		/** set the emdata */
+		void set_data(EMData* data);
+				
+		/** Set origin */
+		inline void setOrigin(int orix, int oriy, int oriz)
+		{
+			originx = orix;
+			originy = oriy;
+			originz = oriz;
+		}
+		/** Set scaling */
+		inline void setScale(float i, float o)
+		{
+			inner = i;
+			outer = o;
+		}
+		/** Set RGB mode 0 = none, 1 = color by radius, more to come :) */
+		inline void setRGBmode(int mode)
+		{
+			rgbmode = mode;
+		}
+		/** Return RGB mode */
+		inline int getRGBmode()
+		{
+			return rgbmode;
+		}
+	private:
+		int rgbmode;
+		int originx;
+		int originy;
+		int originz;
+		float inner;
+		float outer;
+		float rgb[3];
+		EMData* em_data;
+	};
+	
 	class MarchingCubes : public Isosurface {
 		friend class GLUtil;
 	public:
@@ -235,6 +284,22 @@ namespace EMAN
 		Dict get_isosurface();
 
 		void surface_face_z();
+		
+		inline void setRGBorigin(int x, int y, int z)
+		{
+			rgbgenerator.setOrigin(x, y, z);
+		}
+		
+		inline void setRGBscale(float i, float o)
+		{
+			rgbgenerator.setScale(i, o);
+		}
+		
+		inline void setRGBmode(int mode)
+		{
+			rgbgenerator.setRGBmode(mode);
+		}
+		
 	private:
 		map<int, int> point_map;
 		unsigned long _isodl;
@@ -313,8 +378,12 @@ namespace EMAN
 
 		///.Custom vectors for storing points, normals and faces
 		CustomVector<float> pp;
+		CustomVector<float> cc;
 		CustomVector<float> nn;
 		CustomVector<unsigned int> ff;
+		
+		/** COlor by radius generator */
+		ColorRGBGenerator rgbgenerator;
 	};
 
 	/** @author David Woolford
@@ -358,7 +427,7 @@ namespace EMAN
 //			virtual Dict get_isosurface()  { return Dict;}
 //
 //	}
-
+	
 	/** A work in progress by David Woolford
 	*/
 	class U3DWriter{

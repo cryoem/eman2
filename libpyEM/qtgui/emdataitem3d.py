@@ -37,7 +37,7 @@ from libpyGLUtils2 import GLUtil
 from EMAN2 import EMData, MarchingCubes, Transform
 from emitem3d import EMItem3D, EMItem3DInspector, drawBoundingBox
 from emimageutil import ImgHistogram
-from valslider import ValSlider
+from valslider import ValSlider, EMSpinWidget
 from emshapeitem3d import EMInspectorControlShape
 from emglobjects import get_default_gl_colors
 import os.path
@@ -862,7 +862,10 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		QtCore.QObject.connect(self.histogram_widget, QtCore.SIGNAL("thresholdChanged(float)"), self.onHistogram)
 		self.cullbackface.toggled.connect(self.onCullFaces)
 		self.wireframe.toggled.connect(self.onWireframe)
+		self.colorbyradius.toggled.connect(self.onColorByRadius)
 		self.sampling_spinbox.valueChanged[int].connect(self.onSampling)
+		QtCore.QObject.connect(self.innercolorscaling, QtCore.SIGNAL("valueChanged(int)"), self.reColorScale)
+		QtCore.QObject.connect(self.outercolorscaling, QtCore.SIGNAL("valueChanged(int)"), self.reColorScale)
 	
 	def updateItemControls(self):
 		""" Updates this item inspector. Function is called by the item it observes"""
@@ -899,14 +902,38 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		self.sampling_label = QtGui.QLabel("Sample Level:")
 		self.sampling_spinbox = QtGui.QSpinBox()
 		self.sampling_spinbox.setValue(1)
+
 		sampling_hbox_layout = QtGui.QHBoxLayout()
 		sampling_hbox_layout.addWidget(self.sampling_label)
 		sampling_hbox_layout.addWidget(self.sampling_spinbox)
 
+		# Color by radius frame
+		cbrframe = QtGui.QFrame()
+		cbrframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		cbrlayout = QtGui.QGridLayout()
+		cbrlayout.setAlignment(QtCore.Qt.AlignTop)
+		self.colorbyradius = QtGui.QCheckBox("Color By Radius")
+		self.colorbyradius.setChecked(False)
+		self.innercolorscaling = EMSpinWidget(0.0, 1.0, rounding=0)
+		self.innercolorscaling.setMinimumWidth(120)
+		self.outercolorscaling = EMSpinWidget(self.item3d().getParent().getData().get_xsize()/2, 1.0, rounding=0)
+		self.outercolorscaling.setMinimumWidth(120)
+		cbrlayout.addWidget(self.colorbyradius, 0, 0, 1, 2)
+		cbrlabelinner = QtGui.QLabel("Inner Shell")
+		cbrlabelinner.setAlignment(QtCore.Qt.AlignCenter)
+		cbrlabelouter = QtGui.QLabel("Outer Shell")
+		cbrlabelouter.setAlignment(QtCore.Qt.AlignCenter)
+		cbrlayout.addWidget(cbrlabelinner, 1, 0, 1, 1)
+		cbrlayout.addWidget(cbrlabelouter, 1, 1, 1, 1)
+		cbrlayout.addWidget(self.innercolorscaling, 2, 0, 1, 1)
+		cbrlayout.addWidget(self.outercolorscaling, 2, 1, 1, 1)
+		cbrframe.setLayout(cbrlayout)
+		
 		isogridbox.addWidget(self.histogram_widget, 0, 0, 1, 1)
 		isogridbox.addWidget(self.cullbackface, 1, 0, 1, 1)
 		isogridbox.addWidget(self.wireframe, 2,0,1,1)
 		isogridbox.addLayout(sampling_hbox_layout, 3,0,1,1)
+		isogridbox.addWidget(cbrframe, 4, 0, 1, 1)
 		isogridbox.setRowStretch(4,1)
 		isoframe.setLayout(isogridbox)
 		gridbox.addWidget(isoframe, 2, 1, 2, 1)
@@ -936,6 +963,17 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 	
 	def onWireframe(self):
 		self.item3d().wire = self.wireframe.isChecked()
+		self.inspector().updateSceneGraph()
+	
+	def onColorByRadius(self):
+		if self.colorbyradius.isChecked():
+			self.item3d().setRGBmode(1)
+		else:
+			self.item3d().setRGBmode(0)
+		self.inspector().updateSceneGraph()
+		
+	def reColorScale(self):
+		self.item3d().setRGBcolorScaling(self.innercolorscaling.getValue(), self.outercolorscaling.getValue())
 		self.inspector().updateSceneGraph()
 	
 	def setSamplingRange(self,range):
@@ -1057,7 +1095,7 @@ class EMIsosurface(EMItem3D):
 		Return a dictionary of item parameters (used for restoring sessions
 		"""
 		dictionary = super(EMIsosurface, self).getItemDictionary()
-		dictionary.update({"ISOPARS":[self.wire, self.cullbackfaces, self.isothr],"COLOR":[self.ambient, self.diffuse, self.specular, self.shininess]})
+		dictionary.update({"ISOPARS":[self.wire, self.cullbackfaces, self.isothr, self.rgbmode, self.innerrad, self.outerrad],"COLOR":[self.ambient, self.diffuse, self.specular, self.shininess]})
 		return dictionary
 		
 	def setUsingDictionary(self, dictionary):
@@ -1072,7 +1110,11 @@ class EMIsosurface(EMItem3D):
 		self.wire = dictionary["ISOPARS"][0]
 		self.cullbackfaces = dictionary["ISOPARS"][1]
 		self.setThreshold(dictionary["ISOPARS"][2])
-	
+		try:
+			self.setRGBmode(dictionary["ISOPARS"][3])
+			self.setRGBcolorScaling(dictionary["ISOPARS"][4], dictionary["ISOPARS"][5])
+		except:
+			pass
 	def loadColors(self):
 		self.colors = get_default_gl_colors()
 		
@@ -1084,7 +1126,25 @@ class EMIsosurface(EMItem3D):
 			# However the user wants the highest level of detail to be 1, and the next best to be 2 and then 3 etc
 			self.smpval = int(val)-2
 			self.getIsosurfaceDisplayList()
-		
+	
+	def setRGBmode(self, mode):
+		""" Set the RGB mode """
+		self.rgbmode = mode
+		self.isorender.set_rgb_mode(mode)
+		if mode != 0:
+			glEnable(GL_COLOR_MATERIAL)	
+			glColorMaterial(GL_FRONT, GL_AMBIENT)
+			glColorMaterial(GL_FRONT, GL_DIFFUSE)
+			self.getIsosurfaceDisplayList()
+		else:
+			glDisable(GL_COLOR_MATERIAL)
+			
+	def setRGBcolorScaling(self, inner, outer):
+		self.innerrad = inner
+		self.outerrad = outer
+		self.isorender.set_rgb_scale(inner, outer)
+		self.getIsosurfaceDisplayList()
+			
 	def getIsosurfaceDisplayList(self):
 		# create the isosurface display list
 		self.isorender.set_surface_value(self.isothr)

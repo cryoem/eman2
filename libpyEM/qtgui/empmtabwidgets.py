@@ -30,7 +30,7 @@
 #
 #
 
-# These classes are subclasses of EMBrowserWidget to provide additonal models to represent various files in the GUI
+# These classes are subclasses of EMBrowserWidget to provide additonal models to represent various types of files in the GUI.
 
 from EMAN2 import *
 import os
@@ -119,10 +119,7 @@ class EMModelsEntry(EMDirEntry):
 				pass
 		
 		# Set Cache
-		cache['quality'] = self.quality
-		cache['dims'] = self.dims
-		cache['filetype'] = self.filetype
-		self.setCache(db, cache, name='models')
+		self.updateCache(db, cache, 'quality', 'dims', 'filetype')
 		
 		return True
 		
@@ -209,10 +206,7 @@ class EMSetsEntry(EMDirEntry):
 			self.dims = "%dx%dx%d"%(a.get_xsize(),a.get_ysize(),a.get_zsize())
 		
 		# Set Cache
-		cache['partcount'] = self.partcount
-		cache['dims'] = self.dims
-		cache['filetype'] = self.filetype
-		self.setCache(db, cache, name='sets')
+		self.updateCache(db, cache, 'partcount', 'dims', 'filetype')
 				
 		return True
 
@@ -349,15 +343,7 @@ class EMParticlesEntry(EMDirEntry):
 				self.sampling = str(len(ctf.background))
 		
 		# Update the cache
-		cache["filetype"] = self.filetype
-		cache["particlecount"] = self.particlecount
-		cache["particledim"] = self.particledim
-		cache["type"] = self.type
-		cache["defocus"] = self.defocus
-		cache["bfactor"] = self.bfactor
-		cache["snr"] = self.snr
-		cache["sampling"] = self.sampling
-		self.setCache(db, cache)
+		self.updateCache(db, cache, "filetype", "particlecount", "particledim", "type", "defocus", "bfactor", "snr", "sampling")
 		
 		return True
 		
@@ -462,15 +448,15 @@ class EMBoxesTable(EMBrowserWidget):
 class EMBoxesModel(EMFileItemModel):
 	""" Item model for the raw data """
 	
-	headers=("Raw Data Files","Stored Boxes", "Quality")
+	headers=("Raw Data Files","Stored Boxes", "Box Quality", "Micro Quality")
 	
 	def __init__(self,startpath=None):
 		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMBoxesEntry)
 		
 	def columnCount(self,parent):
-		"Always 3 columns"
+		"Always 4 columns"
 		#print "EMFileItemModel.columnCount()=6"
-		return 3
+		return 4
 		
 	def data(self,index,role):
 		"Returns the data for a specific location as a string"
@@ -494,16 +480,20 @@ class EMBoxesModel(EMFileItemModel):
 		elif col==2 :
 			if data.quality==0 : return "-"
 			return nonone(data.quality)
+		elif col==3 :
+			if data.mgquality==0 : return "-"
+			return nonone(data.mgquality)
 
 class EMBoxesEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:x.name,lambda x:x.boxcount, lambda x:x.quality)
+	col=(lambda x:x.name,lambda x:x.boxcount, lambda x:x.quality, lambda x:x.mgquality)
 	
 	def __init__(self,root,name,parent=None,hidedot=True):
 		EMDirEntry.__init__(self,root,name,parent=parent,hidedot=hidedot)
 		self.boxcount=None
 		self.quality=None
+		self.mgquality=None
 		
 	def fillDetails(self, db):
 		"""Fills in the expensive metadata about this entry. Returns False if no update was necessary."""
@@ -512,14 +502,22 @@ class EMBoxesEntry(EMDirEntry):
 		# get quality and box numbers
 		if db_check_dict('bdb:e2boxercache#quality'):
 			qdb = db_open_dict('bdb:e2boxercache#quality')
-			self.quality = qdb[self.getBaseName(self.path(),extension=True)]
+			quality = qdb[self.getBaseName(self.path(),extension=True)]
+			if quality != None:
+				self.quality = quality
 			
 		if db_check_dict('bdb:e2boxercache#boxes'):
-			db = db_open_dict('bdb:e2boxercache#boxes')
-			bc = db[self.getBaseName(self.path(),extension=True)]
+			boxdb = db_open_dict('bdb:e2boxercache#boxes')
+			bc = boxdb[self.getBaseName(self.path(),extension=True)]
 			if bc:
 				self.boxcount = len(bc)
 		
+		if db_check_dict('bdb:mgquality'):
+			mgqdb = db_open_dict('bdb:mgquality')
+			mgquality = mgqdb[self.getBaseName(self.path(),extension=True)]
+			if mgquality != None:
+				self.mgquality=str(mgquality)
+			
 		# Cehck cahce for metadata
 		cache = self.checkCache(db,name='boxing')
 		if not self.cacheMiss(cache,'filetype'): return 
@@ -531,8 +529,7 @@ class EMBoxesEntry(EMDirEntry):
 			self.filetype="-"
 		
 		# Set cache
-		cache["filetype"] = self.filetype
-		self.setCache(db,cache,name='boxing')
+		self.updateCache(db, cache, "filetype")
 		
 		return True
 
@@ -550,15 +547,15 @@ class EMRCTBoxesTable(EMBrowserWidget):
 class EMRCTBoxesModel(EMFileItemModel):
 	""" Item model for the raw data """
 	
-	headers=("Raw Data Files","Stored Boxes", "Quality")
+	headers=("Raw Data Files","Stored Boxes", "Box Quality", "Micro Quality")
 	
 	def __init__(self,startpath=None):
 		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMRCTBoxesEntry)
 		
 	def columnCount(self,parent):
-		"Always 3 columns"
+		"Always 4 columns"
 		#print "EMFileItemModel.columnCount()=6"
-		return 3
+		return 4
 		
 	def data(self,index,role):
 		"Returns the data for a specific location as a string"
@@ -582,16 +579,20 @@ class EMRCTBoxesModel(EMFileItemModel):
 		elif col==2 :
 			if data.quality==0 : return "-"
 			return nonone(data.quality)
+		elif col==3 :
+			if data.mgquality==0 : return "-"
+			return nonone(data.mgquality)
 
 class EMRCTBoxesEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:x.name,lambda x:x.boxcount, lambda x:x.quality)
+	col=(lambda x:x.name,lambda x:x.boxcount, lambda x:x.quality, lambda x:x.mgquality)
 	
 	def __init__(self,root,name,parent=None,hidedot=True):
 		EMDirEntry.__init__(self,root,name,parent=parent,hidedot=hidedot)
 		self.boxcount=None
 		self.quality=None
+		self.mgquality=None
 		
 	def fillDetails(self, db):
 		"""Fills in the expensive metadata about this entry. Returns False if no update was necessary."""
@@ -600,23 +601,28 @@ class EMRCTBoxesEntry(EMDirEntry):
 		# get quality and box numbers
 		if db_check_dict('bdb:e2boxercache#quality'):
 			qdb = db_open_dict('bdb:e2boxercache#quality')
-			self.quality = qdb[self.getBaseName(self.path(),extension=True)]
+			quality = qdb[self.getBaseName(self.path(),extension=True)]
+			if quality != None:
+				self.quality = quality
 			
 		if db_check_dict('bdb:e2boxercache#boxestilted'):
-			db = db_open_dict('bdb:e2boxercache#boxestilted')
-			bc = db[self.getBaseName(self.path(),extension=True)]
+			tboxdb = db_open_dict('bdb:e2boxercache#boxestilted')
+			bc = tboxdb[self.getBaseName(self.path(),extension=True)]
 			if bc:
 				self.boxcount = len(bc)
-				return True
 			
 		if db_check_dict('bdb:e2boxercache#boxesuntilted'):
-			db = db_open_dict('bdb:e2boxercache#boxesuntilted')
-			bc = db[self.getBaseName(self.path(),extension=True)]
+			utboxdb = db_open_dict('bdb:e2boxercache#boxesuntilted')
+			bc = utboxdb[self.getBaseName(self.path(),extension=True)]
 			if bc:
 				self.boxcount = len(bc)
-		
-				cache = self.checkCache(db)
-		
+				
+		if db_check_dict('bdb:mgquality'):
+			mgqdb = db_open_dict('bdb:mgquality')
+			mgquality = mgqdb[self.getBaseName(self.path(),extension=True)]
+			if mgquality != None:
+				self.mgquality=str(mgquality)
+				
 		# check cache for metadata
 		cache = self.checkCache(db,name='rctboxing')
 		if not self.cacheMiss(cache,'filetype'): return 
@@ -627,8 +633,8 @@ class EMRCTBoxesEntry(EMDirEntry):
 		except:
 			self.filetype="-"
 		
-		cache["filetype"] = self.filetype
-		self.setCache(db,cache,name='rctboxing')
+		# update cache
+		self.updateCache(db, cache, "filetype")
 		
 		return True
 		
@@ -704,15 +710,15 @@ class EMRawDataTable(EMBrowserWidget):
 class EMRawDataModel(EMFileItemModel):
 	""" Item model for the raw data """
 	
-	headers=("Raw Data Files","Dimensions")
+	headers=("Raw Data Files","Dimensions", "Quality")
 	
 	def __init__(self,startpath=None):
 		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMRawDataEntry)
 		
 	def columnCount(self,parent):
-		"Always 2 columns"
+		"Always 3 columns"
 		#print "EMFileItemModel.columnCount()=6"
-		return 2
+		return 3
 		
 	def data(self,index,role):
 		"Returns the data for a specific location as a string"
@@ -733,25 +739,83 @@ class EMRawDataModel(EMFileItemModel):
 		elif col==1 :
 			if data.dim==0 : return "-"
 			return nonone(data.dim)
+		elif col==2 :
+			if data.mgquality==0 : return "-"
+			return nonone(data.mgquality)		
 		
 class EMRawDataEntry(EMDirEntry):
+	""" Subclassing of EMDirEntry to provide functionality"""
+	
+	col=(lambda x:x.name,lambda x:x.dim, lambda x:x.mgquality)
+	
+	def __init__(self,root,name,parent=None,hidedot=True):
+		EMDirEntry.__init__(self,root,name,parent=parent,hidedot=hidedot)
+		self.mgquality = None
+		
+	def fillDetails(self, db):
+		# Maybe add code to cache results.....
+		super(EMRawDataEntry, self).fillDetails(db)
+		
+		if db_check_dict('bdb:mgquality'):
+			qdb = db_open_dict('bdb:mgquality')
+			mgquality = qdb[self.getBaseName(self.path(),extension=True)]
+			if mgquality != None:
+				self.mgquality=str(mgquality)
+		
+#################################################################################################################################
+
+class EMTomoDataTable(EMBrowserWidget):
+	""" Widget to display Raw Data """
+	def __init__(self, withmodal=False, multiselect=False):
+		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath="./rawtomograms")
+	
+	def setPath(self,path,silent=False):
+		super(EMTomoDataTable, self).setPath(path,silent=False,inimodel=EMTomoDataModel)
+		
+class EMTomoDataModel(EMFileItemModel):
+	""" Item model for the raw data """
+	
+	headers=("Raw Data Files","Dimensions")
+	
+	def __init__(self,startpath=None):
+		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMTomoDataEntry)
+		
+	def columnCount(self,parent):
+		"Always 2 columns"
+		#print "EMFileItemModel.columnCount()=6"
+		return 2
+		
+	def data(self,index,role):
+		"Returns the data for a specific location as a string"
+		
+		if not index.isValid() : return None
+		if role!=Qt.DisplayRole : return None
+		
+		data=index.internalPointer()
+		if data==None : 
+			print "Error with index ",index.row(),index.column()
+			return "XXX"
+
+		col=index.column()
+		if col==0 : 
+			if data.isbdb : return "bdb:"+data.name
+			return nonone(data.name)
+		elif col==1 :
+			if data.dim==0 : return "-"
+			return nonone(data.dim)
+		
+class EMTomoDataEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
 	col=(lambda x:x.name,lambda x:x.dim)
 	
 	def __init__(self,root,name,parent=None,hidedot=True):
 		EMDirEntry.__init__(self,root,name,parent=parent,hidedot=hidedot)
+		self.mgquality = None
 		
 	def fillDetails(self, db):
 		# Maybe add code to cache results.....
-		super(EMRawDataEntry, self).fillDetails(db)
+		super(EMTomoDataEntry, self).fillDetails(db)
 		
-#################################################################################################################################
-
-class EMTomoDataTable(EMRawDataTable):
-	""" Widget to display Raw Data """
-	def __init__(self, withmodal=False, multiselect=False):
-		EMRawDataTable.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath="./rawtomograms")
+		
 	
-	def setPath(self,path,silent=False):
-		super(EMTomoDataTable, self).setPath(path,silent=False)	

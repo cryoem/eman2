@@ -1988,6 +1988,7 @@ EMData* Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 	bool use_cpu = true;
 	Transform tran = Transform();
 	Cmp* c = Factory <Cmp>::get(cmp_name, cmp_params);
+	
 	for ( float alt = 0; alt < range; alt += delta) {
 		// now compute a sane az step size 
 		float saz = 360;
@@ -2174,7 +2175,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				d["az"] = az;
 				Transform t(d);
 				EMData* transformed = this_img->process("xform",Dict("transform",&t));
-				
+			
 				//need to do things a bit diffrent if we want to compare two tomos
 				float best_score = 0.0f;
 				if(dotrans || tomography){
@@ -2258,6 +2259,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	int searchz = 0;
          
 	bool dotrans = params.set_default("dotrans",1);
+	bool fsrotate = params.set_default("fsrotate",0);
 	if (params.has_key("search")) {
 		vector<string> check;
 		check.push_back("searchx");
@@ -2324,6 +2326,10 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	if(dotrans || tomography){
 		this_imgfft = this_img->do_fft();
 	}
+	//EMData * to_fft = 0;
+	//if(fsrotate){
+	//	to_fft = to->do_fft();
+	//}
 	
 	
 #ifdef EMAN2_USING_CUDA 
@@ -2337,6 +2343,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 
 	Transform trans = Transform();
 	Cmp* c = Factory <Cmp>::get(cmp_name, cmp_params);
+	
 	bool use_cpu = true;
 	for(vector<Transform>::const_iterator trans_it = transforms.begin(); trans_it != transforms.end(); trans_it++) {
 		Dict params = trans_it->get_params("eman");
@@ -2348,9 +2355,9 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 		}
 
 		for( float phi = lphi; phi < uphi; phi += dphi ) { 
-			Transform t(params);
 			params["phi"] = phi;
-			t.set_rotation(params);
+			Transform t(params);
+			
 			EMData* transformed = to->process("xform",Dict("transform",&t));
 			
 			//need to do things a bit diffrent if we want to compare two tomos

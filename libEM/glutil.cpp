@@ -674,6 +674,11 @@ unsigned long GLUtil::get_isosurface_dl(MarchingCubes* mc, unsigned int tex_id,b
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glVertexPointer(3,GL_FLOAT,0,mc->pp.get_data());
 
+	if (mc->rgbgenerator.getRGBmode() != 0){
+		glEnableClientState(GL_COLOR_ARRAY);
+		glColorPointer(3,GL_FLOAT,0, mc->cc.get_data());
+	}
+	
 	mc->_isodl = glGenLists(1);
 
 #if MARCHING_CUBES_DEBUG

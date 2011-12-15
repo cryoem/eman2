@@ -30,6 +30,26 @@
 #
 #
 
+wikiicon = [
+    '15 14 2 1',
+    'b c #000055',
+    'c c None',
+    'ccccccccccccccc',
+    'ccccccccccccccc',
+    'bcccbcbcbccbccb',
+    'bcccbcccbccbccc',
+    'bcccbcbcbcbcccb',
+    'bcccbcbcbcbcccb',
+    'bcbcbcbcbbccccb',
+    'bcbcbcbcbbccccb',
+    'bcbcbcbcbcbcccb',
+    'bcbcbcbcbcbcccb',
+    'bcbcbcbcbccbccb',
+    'cbcbccbcbccbccb',
+    'ccccccccccccccc',
+    'ccccccccccccccc'
+]
+
 helpicon = [
     '15 14 2 1',
     'b c #000055',
@@ -255,6 +275,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		self.expertmode = False
 		self.notebook = None
 		self.taskmanager = None
+		self.wikipage = None
 		
 		# Load the project DataBase
 		self.loadPMdb()
@@ -503,6 +524,9 @@ class EMProjectManager(QtGui.QMainWindow):
 		toolwidget = QtGui.QFrame()
 		#toolwidget.setFrameShape(QtGui.QFrame.StyledPanel)
 		tbox = QtGui.QVBoxLayout()
+		self.wikibutton = PMToolButton()
+		self.wikibutton.setIcon(QtGui.QIcon(QtGui.QPixmap(wikiicon)))
+		self.wikibutton.setToolTip("Show Wiki button")
 		self.helpbutton = PMToolButton()
 		self.helpbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(helpicon)))
 		self.helpbutton.setToolTip("Help button")
@@ -516,11 +540,12 @@ class EMProjectManager(QtGui.QMainWindow):
 		self.wizardbutton.setMinimumWidth(30)
 		self.wizardbutton.setMinimumHeight(30)
 		self.logbutton = PMToolButton()
-		self.logbutton.setToolTip("Display the log book")
+		self.logbutton.setToolTip("Display the note book")
 		self.logbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(noteicon)))
 		self.taskmanagerbutton = PMToolButton()
 		self.taskmanagerbutton.setToolTip("Diaplay the task manager")
 		self.taskmanagerbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(taskicon)))
+		tbox.addWidget(self.wikibutton)
 		tbox.addWidget(self.helpbutton)
 		tbox.addWidget(self.logbutton)
 		tbox.addWidget(self.taskmanagerbutton)
@@ -532,6 +557,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		
 		QtCore.QObject.connect(self.expertbutton,QtCore.SIGNAL("stateChanged(bool)"),self._on_expertmodechanged)
 		QtCore.QObject.connect(self.helpbutton,QtCore.SIGNAL("stateChanged(bool)"),self._on_helpbutton)
+		QtCore.QObject.connect(self.wikibutton,QtCore.SIGNAL("stateChanged(bool)"),self._on_wikibutton)
 		QtCore.QObject.connect(self.logbutton,QtCore.SIGNAL("stateChanged(bool)"),self._on_logbutton)
 		QtCore.QObject.connect(self.taskmanagerbutton,QtCore.SIGNAL("stateChanged(bool)"),self._on_taskmgrbutton)
 		
@@ -568,6 +594,13 @@ class EMProjectManager(QtGui.QMainWindow):
 		else:
 			self.notebook.hide()
 	
+	def _on_wikibutton(self, state):
+		""" Load the wiki help """
+		if state:
+			self.loadWiki()
+		else:
+			pass
+			
 	def _on_taskmgrbutton(self, state):
 		"""Load the log book
 		"""
@@ -611,11 +644,19 @@ class EMProjectManager(QtGui.QMainWindow):
 			
 	def loadTaskManager(self):
 		"""
-		Make logbook
+		Make notebook
 		"""
 		if not self.taskmanager:
 			self.taskmanager = TaskManager(self)
 		self.taskmanager.show()
+	
+	def loadWiki(self):
+		"""
+		Make wiki
+		"""
+		if not self.wikipage:
+			self.wikipage = WikiPage(self)
+		self.wikipage.update()
 		
 	def makeBrowseButtonWidget(self):
 		# Make the browse buttonv
@@ -952,6 +993,27 @@ class PMIcon(QtGui.QLabel):
 	
 	def setIcon(self, image):
 		self.setText(("<img src=\"%s\" />")%image)
+
+class WikiPage():
+	"""
+	Load the wikipage
+	"""
+	def __init__(self, pm):
+		self.pm = weakref.ref(pm)
+	
+		
+		self.downloadHTML('xx')
+	
+	def downloadHTML(self, page):
+		import webbrowser
+		webbrowser.open('http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2proc2d')
+		#self.wikibox.setHtml(wiki.read())
+		
+	def update(self):
+		pass
+	
+	def _on_close(self):
+		self.close()
 		
 class NoteBook(QtGui.QWidget):
 	"""
@@ -1491,7 +1553,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 		if not nodb and self.db[option['name']+self.getSharingMode(option)]: return self.db[option['name']+self.getSharingMode(option)]	# Return the default if it exists in the DB
 		default = ""
 		if 'default' in option: default = option['default']
-		if type(default) == str and "self.pm()" in default: default = eval(default)
+		if type(default) == str and "self.pm()" in default: default = eval(default)	# eval CS, apix, voltage, etc, a bit of a HACK, but it works
 		return default
 		
 	def getLRange(self, option):

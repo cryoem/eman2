@@ -52,7 +52,7 @@ struct EMAN_Isosurface_Wrapper: EMAN::Isosurface, wrapper<EMAN::Isosurface>
         EMAN::Isosurface::set_data(p0);
     }
 
-	void set_data(EMAN::EMData* p0) {
+    void set_data(EMAN::EMData* p0) {
         if(override set_data = this->get_override("set_data")) {
         	EMAN::Isosurface::set_data(p0);
         }
@@ -70,6 +70,18 @@ struct EMAN_Isosurface_Wrapper: EMAN::Isosurface, wrapper<EMAN::Isosurface>
         this->get_override("set_sample_density")(p0);
     }
 
+    void setRGBorigin(int x, int y, int z) {
+        this->get_override("set_rgb_scale")(x,y,z);
+    }
+    
+    void set_rgb_scale(float i, float o) {
+        this->get_override("set_rgb_scale")(i, o);
+    }
+    
+    void set_rgb_mode(int mode) {
+        this->get_override("set_rgb_mode")(mode);
+    }
+    
     EMAN::Dict get_isosurface() {
        return this->get_override("get_isosurface")();
     }
@@ -93,6 +105,10 @@ BOOST_PYTHON_MODULE(libpyMarchingCubes2)
 		.def("get_sampling", pure_virtual(&EMAN::Isosurface::get_sampling))
 		.def("get_isosurface", pure_virtual(&EMAN::Isosurface::get_isosurface))
 		.def("get_sampling_range", pure_virtual(&EMAN::Isosurface::get_sampling_range))
+		.def("set_rgb_origin", pure_virtual(&EMAN::Isosurface::setRGBorigin))
+		.def("set_rgb_scale", pure_virtual(&EMAN::Isosurface::setRGBscale))
+		.def("set_rgb_mode",  pure_virtual(&EMAN::Isosurface::setRGBmode))
+		
 		;
 
 	/* We do not wrap default constructor of MarchingCubes into Python */

@@ -72,7 +72,7 @@ power spectrum in various ways."""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_pos_argument(name="image",help="Image to process with e2evalimage.", default="", guitype='filebox', browser="EMRawDataTable(withmodal=True,multiselect=False)", positional=True, row=0, col=0,rowspan=1, colspan=2, mode="eval")
+	parser.add_pos_argument(name="image",help="Image to process with e2evalimage.", default="", guitype='filebox', browser="EMRawDataTable(withmodal=True,multiselect=True)", positional=True, row=0, col=0,rowspan=1, colspan=2, mode="eval")
 	parser.add_header(name="evalimageheader", help='Options below this label are specific to e2evalimage', title="### e2evalimage options ###", default=None, row=1, col=0, rowspan=1, colspan=2, mode="eval")
 	
 	parser.add_argument("--gui",action="store_true",help="This is a GUI-only program. This option is provided for self-consistency",default=True)
@@ -122,10 +122,12 @@ class GUIEvalImage(QtGui.QWidget):
 		self.f2dmode=0
 		self.f2danmode=0
 		self.plotmode=0
+		self.curfilename = None
 		
 		self.ringrad=1
 		self.xpos1=(10,0)
 		self.xpos2=(0,10)
+		self.db = db_open_dict('bdb:mgquality')
 		
 		self.defaultvoltage=voltage
 		self.defaultapix=apix
@@ -155,7 +157,7 @@ class GUIEvalImage(QtGui.QWidget):
 
 		# This object is itself a widget we need to set up
 		self.hbl = QtGui.QHBoxLayout(self)
-		self.hbl.setMargin(0)
+		self.hbl.setMargin(8)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
 		
@@ -209,7 +211,7 @@ class GUIEvalImage(QtGui.QWidget):
 		
 		# ValSliders for CTF parameters
 		self.vbl = QtGui.QVBoxLayout()
-		self.vbl.setMargin(0)
+		self.vbl.setMargin(8)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		self.hbl.addLayout(self.vbl)
@@ -232,10 +234,6 @@ class GUIEvalImage(QtGui.QWidget):
 
 		self.hbl2 = QtGui.QHBoxLayout()
 
-		self.sboxsize=ValBox(self,(0,500),"Box Size:",256,90)
-		self.sboxsize.intonly=True
-		self.hbl2.addWidget(self.sboxsize)
-
 		self.sapix=ValBox(self,(0,500),"A/pix:",1.0,90)
 		if self.defaultapix!=None : self.sapix.setValue(self.defaultapix)
 		self.hbl2.addWidget(self.sapix)
@@ -250,6 +248,19 @@ class GUIEvalImage(QtGui.QWidget):
 		
 		self.vbl.addLayout(self.hbl2)
 		
+		self.hbl3 = QtGui.QHBoxLayout()
+		
+		self.sboxsize=ValBox(self,(0,500),"Box Size:",256,90)
+		self.sboxsize.intonly=True
+		self.hbl3.addWidget(self.sboxsize)
+		
+		self.hbl3.addWidget(QtGui.QLabel("Quality Factor"))
+		self.quality = QtGui.QComboBox()
+		for i in xrange(6): self.quality.addItem(str(i))
+		self.quality.setMinimumWidth(80)
+		self.hbl3.addWidget(self.quality)
+		
+		self.vbl.addLayout(self.hbl3)
 		#self.hbl_buttons = QtGui.QHBoxLayout()
 		#self.saveparms = QtGui.QPushButton("Save parms")
 		#self.recallparms = QtGui.QPushButton("Recall")
@@ -270,6 +281,7 @@ class GUIEvalImage(QtGui.QWidget):
 		QtCore.QObject.connect(self.svoltage, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.scs, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.sboxsize, QtCore.SIGNAL("valueChanged"), self.newBox)
+		QtCore.QObject.connect(self.quality,QtCore.SIGNAL("activated(int)"),self.newQualityFactor)
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
 		QtCore.QObject.connect(self.scalcmode,QtCore.SIGNAL("currentIndexChanged(int)"),self.newCalcMode)
 		QtCore.QObject.connect(self.s2dmode,QtCore.SIGNAL("currentIndexChanged(int)"),self.new2DMode)
@@ -415,6 +427,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.curset=val
 		self.data=EMData(str(self.setlist.item(val).text()),0)	# read the image from disk
 		self.wimage.set_data(self.data)
+		self.curfilename = str(self.setlist.item(val).text())
 
 		ctf=self.parms[val][1]
 		# if voltage is 0, we need to initialize
@@ -510,6 +523,12 @@ class GUIEvalImage(QtGui.QWidget):
 		self.incalc=False
 		time.sleep(.2)			# help make sure update has a chance
 		self.procthread=None
+		dbquality = self.db[os.path.basename(self.curfilename)]
+		print dbquality
+		if dbquality != None:
+			self.quality.setCurrentIndex(dbquality)
+		else:
+			self.quality.setCurrentIndex(2)
 		
 	def redisplay(self):
 		self.needredisp=False
@@ -584,6 +603,9 @@ class GUIEvalImage(QtGui.QWidget):
 		self.plotmode=mode
 		self.needredisp=True
 
+	def newQualityFactor(self, factor):
+		self.db[os.path.basename(self.curfilename)] = factor
+		
 	def newBox(self):
 		parms=self.parms[self.curset]
 		parms[0]=self.sboxsize.value

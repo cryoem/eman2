@@ -40,9 +40,9 @@ from EMAN2db import EMTask
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] 
-	This program aligns a paricle to its symmetry axis. There are tow algorithmic modes. A course search followed by simplex
-	minizization OR monte carlo course search followed by simplex minizization. The Goal is to align the paricle to its 
-	symmetry axis so symmetry can be applied for avergaing and for alignment spped up(it is only necessary to search over the
+	This program aligns a paricle to its symmetry axis. There are two algorithmic modes. A coarse search followed by simplex
+	minimization(not yet implimented) OR monte carlo course search followed by simplex minimization. The Goal is to align the paricle to its 
+	symmetry axis so symmetry can be applied for avergaing and for alignment speed up(it is only necessary to search over the
 	assymetric unit!
 	"""
 	
@@ -112,6 +112,7 @@ class Strategy:
 		raise NotImplementedError("Subclass must implement abstract method")
 
 class SymALignStrategy(Strategy):
+	""" MC followed by minimization """
 	def __init__(self, volume, sym, steps, comp, etc):
 		Strategy.__init__(self, volume, sym, steps, comp, etc)
 		

@@ -1271,6 +1271,7 @@ namespace EMAN
 				d.put("phi0", EMObject::FLOAT,"Lower bound for phi. Default it 0");
 				d.put("phi1", EMObject::FLOAT,"Upper bound for phi. Default it 360");
 				d.put("dotrans", EMObject::BOOL,"Do a translational search. Default is True(1)");
+				d.put("fsrotate", EMObject::BOOL,"Do rotations in Fourier space");
 				d.put("search", EMObject::INT,"The maximum length of the detectable translational shift - if you supply this parameter you can not supply the maxshiftx, maxshifty or maxshiftz parameters. Each approach is mutually exclusive.");
 				d.put("searchx", EMObject::INT,"The maximum length of the detectable translational shift in the x direction- if you supply this parameter you can not supply the maxshift parameters. Default is 3.");
 				d.put("searchy", EMObject::INT,"The maximum length of the detectable translational shift in the y direction- if you supply this parameter you can not supply the maxshift parameters. Default is 3.");
