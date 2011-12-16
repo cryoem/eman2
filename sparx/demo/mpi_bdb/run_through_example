@@ -14,7 +14,7 @@ rm tmp.hdf
 
 sxprocess.py --generate_projections --format="bdb"  || exit
 
-sxprocess.py demoparms --makedb=mpibdbctf
+sxprocess.py demoparms --makedb=mpibdb
 e2boxer.py --gauss_autoboxer=demoparms --write_ptcl --boxsize=64 mic*.hdf
 sxcpy.py bdb:particles/mic0_ptcls bdb:particles/mic1_ptcls bdb:particles/mic2_ptcls bdb:particles/mic3_ptcls bdb:particles/mic4_ptcls bdb:data2
 
