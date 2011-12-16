@@ -460,7 +460,11 @@ void ColorRGBGenerator::set_data(EMData* data)
 float* ColorRGBGenerator::getRGBColor(int x, int y, int z)
 {
 	//calculate radius
+#ifdef _WIN32
+	float rad = sqrt(pow(double(x-originx),2) + pow(double(y-originy),2) + pow(double(z-originz),2));
+#else
 	float rad = sqrt(float(pow(x-originx,2) + pow(y-originy,2) + pow(z-originz,2)));
+#endif	//_WIN32
 	// Algorithm to convert HSI to RGB. Hue is dependent on radius, S = 1 and I = 0.5
 	float normrad = 4.189*(rad - inner)/(outer - inner);
 	//cout << rad << " " << inner << " " << outer << " " << normrad << endl;
@@ -470,7 +474,7 @@ float* ColorRGBGenerator::getRGBColor(int x, int y, int z)
 		rgb[1] = 1.5 - rgb[0];
 		rgb[2] = 0.0;
 	}
-	if(normrad >= 2.094 and normrad < 4.189){
+	if(normrad >= 2.094 && normrad < 4.189){
 		if (normrad > 4.189) normrad = 4.189;
 		normrad =- 2.094;
 		rgb[0] = 0.0;
