@@ -19,9 +19,9 @@ e2proc3d.py tmp.hdf ../fmodel_structure.hdf --process=filter.lowpass.tanh:cutoff
 e2proc3d.py tmp.hdf ../model_structure.hdf --process=filter.lowpass.tanh:cutoff_abs=0.45:fall_off=0.1
 rm tmp.hdf
 
-../generate_projections.py --CTF --format="bdb"  --apix=5.2 
+sxprocess.py --generate_projections --CTF --format="bdb"  --apix=5.2 
 
-../filldb_demo.py demoparms
+sxprocess.py demoparms --makedb=mpibdbctf
 e2boxer.py --gauss_autoboxer=demoparms --do_ctf=demoparms --write_ptcl --boxsize=64 mic*.hdf
 sxcpy.py bdb:particles/mic0_ptcls bdb:particles/mic1_ptcls bdb:particles/mic2_ptcls bdb:particles/mic3_ptcls bdb:particles/mic4_ptcls bdb:data2
 
