@@ -2467,7 +2467,7 @@ vector<Dict> RT3DSymmetryAligner::xform_align_nbest(EMData * this_img, EMData * 
 	}
 	#endif
 
-	//Genrate symmetry related orritenations
+	//Generate symmetry related orientations
 	vector<Transform> syms = Symmetry3D::get_symmetries((string)params.set_default("sym","icos"));
 	Cmp* c = Factory <Cmp>::get(cmp_name, cmp_params);
 	
