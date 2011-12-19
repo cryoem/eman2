@@ -22,7 +22,7 @@ rm tmp.hdf
 sxprocess.py --generate_projections --CTF --format="bdb"  --apix=5.2 
 
 sxprocess.py demoparms --makedb=mpibdbctf
-e2boxer.py --gauss_autoboxer=demoparms --do_ctf=demoparms --write_ptcl --boxsize=64 mic*.hdf
+e2boxer.py --gauss_autoboxer=demoparms --do_ctf=demoparms --write_ptcl --boxsize=64 --norm=normalize.ramp.normvar mic*.hdf
 sxcpy.py bdb:particles/mic0_ptcls bdb:particles/mic1_ptcls bdb:particles/mic2_ptcls bdb:particles/mic3_ptcls bdb:particles/mic4_ptcls bdb:data2
 
 # To be done: phase flip the data set before processing with sxisac since bdb:data has CTF but sxisac currently does not correct for CTF.
