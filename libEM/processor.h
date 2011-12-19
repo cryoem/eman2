@@ -7017,6 +7017,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		public:
 			//virtual EMData* process(const EMData* const image);
 			virtual void process_inplace(EMData * image);
+			virtual EMData* process(const EMData* const image);
 
 			virtual string get_name() const
 			{
@@ -7034,7 +7035,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			{
 				TypeDict d;	
 				d.put("transform", EMObject::TRANSFORM, "transform");
-//				d.put("interpCutoff", EMObject::TRANSFORM, "cutoff for interpolation");
+				d.put("interpCutoff", EMObject::FLOAT, "cutoff for interpolation");
 //				d.put("offset", EMObject::FLOAT, "offset for FT centering");
 //				d.put("angle", EMObject::FLOAT, "angle");
 				return d;

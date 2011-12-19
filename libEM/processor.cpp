@@ -241,7 +241,7 @@ const string NewHomomorphicTanhProcessor::NAME = "filter.homomorphic.tanh";
 const string NewBandpassTanhProcessor::NAME = "filter.bandpass.tanh";
 const string CTF_Processor::NAME = "filter.CTF_";
 const string ConvolutionKernelProcessor::NAME = "filter.convolution.kernel";
-const string RotateInFSProcessor::NAME = "filter.rotateinfs";
+const string RotateInFSProcessor::NAME = "rotateinfs";
 
 //#ifdef EMAN2_USING_CUDA
 //const string CudaMultProcessor::NAME = "cuda.math.mult";
@@ -9891,18 +9891,33 @@ void ConvolutionKernelProcessor::process_inplace(EMData * image )
 	return;
 }
 
+
+EMData* RotateInFSProcessor::process(const EMData* const image) // 
+{
+
+    EMData* imageCp        = image -> copy(); // This is the rotated image
+    process_inplace(imageCp);
+    
+    return imageCp;
+}
+
+
 void RotateInFSProcessor::process_inplace(EMData * image) // right now for 2d images
 {
 //	float angle = params["angle"];
 	
 
-	Transform *rotNow = params["transform"];
+//	Transform *rotNow  = params.set_default("transform",&Transform());
+	Transform *rotNow  = params["transform"];
+	float interpCutoff = params.set_default("interpCutoff",0.8);   // JFF, can you move this to input parameter? 
+//	float interpCutoff = params["interpCutoff"];   // JFF, can you move this to input parameter? 
+//	float interpCutoff =.8;   // JFF, can you move this to input parameter? 
+	
 	
 	int debug=1;
 	
 //	error: conversion from ‘EMAN::EMObject’ to non-scalar type ‘EMAN::Transform’ requested
 	
-	float interpCutoff =.8;
 	
 	// if 2N is size of image, then sizes of FFT are (2N+2,2N,2N) or  (2N+2,2N,1)
 	// if 2N+1 is size of image, then sizes of FFT are (2N+2,2N+1,2N+1) or  (2N+2,2N+1,1)
@@ -9977,7 +9992,7 @@ void RotateInFSProcessor::process_inplace(EMData * image) // right now for 2d im
         if (debug) printf("  Just about to start second loop  \n");
 	
 	image ->to_zero();
-        invRotNow = rotNow->inverse(); //  no match for ‘operator=’ in ‘PosBefore = EMAN::operator*(const EMAN::Transform&, const EMAN::Transform&)((
+        invRotNow = rotNow ->inverse(); //  no match for ‘operator=’ in ‘PosBefore = EMAN::operator*(const EMAN::Transform&, const EMAN::Transform&)((
          
 	
 	for (int kxAfter = 0; kxAfter <= N  ; ++kxAfter) {  // These are the  kx, ky, kz coordinates of the rotated image
