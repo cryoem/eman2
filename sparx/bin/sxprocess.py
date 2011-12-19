@@ -47,30 +47,22 @@ def main():
 	usage = progname + """ [options] <inputfile> <outputfile>
 
 	Generic 2-D image processing and file format conversion program. Acts on stacks of 2-D images
-	(multiple images in one file). All EMAN2 recognized file formats accepted (see Wiki for list).
+	(multiple images in one file). 
 
 	Examples:
 
-	convert IMAGIC format test.hed to HDF format:
-	e2proc2d.py test.hed test.hdf		
-
-	apply a 10 A low-pass filter to a stack of particles and write output to a new file. 
-	e2proc2d.py ptcl.hdf ptcl.filt.hdf --process=filter.lowpass.gauss:cutoff_freq=0.1
-
-	invert the contrast in a BDB database. Overwrite the original images
-	e2proc2d.py bdb:particles#set1 bdb:particles#set1 --inplace --mult=-1
-
-	'e2help.py processors -v 2' for a detailed list of available procesors
+	phase flip a stack of images and write output to new file:
+	sxprocess.py input_stack.hdf output_stack.hdf --phase_flip	
+	
+	generate stack of projections:
+	sxprocess.py --generate_projections format="bdb":apix=5.2:CTF=True 	
 """
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--phase_flip", action="store_true", help="Phase flip the input stack", default=False)
 	parser.add_argument("--makedb", type=str, help="Fill in database with appropriate input parameters: --makedb=mpibdb means the input parameters will be those in 5_mpi_bdb, --makedb=mpibdbctf means the input parameters will be those in 7_mpi_bdb_ctf", default=None)
-	parser.add_argument("--generate_projections", action="store_true", help="Generate projections", default=False)
-	parser.add_argument("--CTF", action="store_true", help="Generate projections with CTF effects. Only to be used with --generate_projections option", default=False)
-	parser.add_argument("--format", type=str, help="Format of generated data: bdb or hdf. Only to be used with --generate_projections option", default='bdb')
-	parser.add_argument("--apix", type=float, help="Pixel size. Only to be used with --generate_projections option", default='2.5')
-	
+	parser.add_argument("--generate_projections", metavar="param1=value1:param2=value2", type=str,
+					action="append", help="apply a processor named 'processorname' with all its parameters/values.")
 	(options, args) = parser.parse_args()
 	
 	
@@ -147,6 +139,24 @@ def main():
 			gbdb[dbkey] = {'gauss_width':1.0,'pixel_input':5.2,'pixel_output':5.2,'thr_low':4.0,'thr_hi':60.0,"invert_contrast":False,"use_variance":True,"boxsize":64}
 	
 	if options.generate_projections:
+		parmstr= 'dummy:'+options.generate_projections[0]
+		(processorname, param_dict) = parsemodopt(parmstr)
+		
+		parm_CTF = False
+		parm_format = 'bdb'
+		parm_apix = 2.5
+		
+		if 'CTF' in param_dict:
+			if param_dict['CTF'] == 'True':
+				parm_CTF = True
+		
+		if 'format' in param_dict:
+			parm_format = param_dict['format'] 
+		
+		if 'apix' in param_dict:
+			parm_apix = float(param_dict['apix'])
+						
+		print "pixel size: ", parm_apix," format: ", parm_format," add CTF: ",parm_CTF
 		from filter import filt_gaussl, filt_ctf
 		from utilities import drop_spider_doc, even_angles, model_gauss, delete_bdb, model_blank,pad,model_gauss_noise,set_params2D, set_params_proj
 		from projection import prep_vol,prgs
@@ -169,13 +179,13 @@ def main():
 			model = modelvol + scale*addon
 			volfts[i],kb = prep_vol(modelvol + scale*addon)
 			
-		if options.format=="bdb":
+		if parm_format=="bdb":
 			stack_data = "bdb:data"
 			delete_bdb(stack_data)
 		else:
 			stack_data = "data.hdf"
 		Cs      = 2.0
-		pixel   = options.apix
+		pixel   = parm_apix
 		voltage = 120.0
 		ampcont = 10.0
 		ibd     = 4096/2-64
@@ -194,7 +204,7 @@ def main():
 
 			mic = model_blank(4096, 4096)
 			defocus = idef*0.2
-			if options.CTF :
+			if parm_CTF :
 				ctf = EMAN2Ctf()
 				ctf.from_dict( {"defocus":defocus, "cs":Cs, "voltage":voltage, "apix":pixel, "ampcont":ampcont, "bfactor":0.0} )
 		
@@ -223,7 +233,7 @@ def main():
 					mic += pad(proj, 4096, 4096, 1, 0.0, x-2048, y-2048, 0)
 			
 					proj = proj + model_gauss_noise( 30.0, nx, nx )
-					if options.CTF :
+					if parm_CTF :
 						proj = filt_ctf(proj, ctf)
 						proj.set_attr_dict({"ctf":ctf, "ctf_applied":0})
 			
@@ -243,7 +253,7 @@ def main():
 					iprj += 1
 
 			mic += model_gauss_noise(30.0,4096,4096)
-			if options.CTF :
+			if parm_CTF :
 				#apply CTF
 				mic = filt_ctf(mic, ctf)
 			mic += filt_gaussl(model_gauss_noise(17.5,4096,4096), 0.3)
@@ -252,5 +262,6 @@ def main():
 		
 		drop_spider_doc("params.txt", params)
 	
+			
 if __name__ == "__main__":
 	main()
