@@ -51,6 +51,7 @@ using namespace boost::python;
 
 namespace {
 	BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_GLUtil_get_isosurface_dl_overloads_1_4, EMAN::GLUtil::get_isosurface_dl, 1, 4)
+	BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_GLUtil_render_using_VBOs_overloads_1_3, EMAN::GLUtil::render_using_VBOs, 1, 3)
 	BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_GLUtil_colored_rectangle_overloads_2_3, EMAN::GLUtil::colored_rectangle, 2, 3)
 	BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_GLUtil_gen_gl_texture_overloads_1_2, EMAN::GLUtil::gen_gl_texture, 1, 2)
 }
@@ -69,6 +70,8 @@ BOOST_PYTHON_MODULE(libpyGLUtils2)
 		.def("mx_bbox", &EMAN::GLUtil::mx_bbox )
 		.def("render_amp8", &EMAN::GLUtil::render_amp8)
 		.def("get_isosurface_dl", &EMAN::GLUtil::get_isosurface_dl, EMAN_GLUtil_get_isosurface_dl_overloads_1_4())
+		.def("render_using_VBOs", &EMAN::GLUtil::render_using_VBOs, EMAN_GLUtil_render_using_VBOs_overloads_1_3())
+		.def("contour_isosurface", &EMAN::GLUtil::contour_isosurface)
 		.def("glLoadMatrix", &EMAN::GLUtil::glLoadMatrix)
 		.def("glMultMatrix", &EMAN::GLUtil::glMultMatrix)
 		.staticmethod("gen_glu_mipmaps")
@@ -79,8 +82,10 @@ BOOST_PYTHON_MODULE(libpyGLUtils2)
 		.staticmethod("mx_bbox")
 		.staticmethod("render_amp8")
 		.staticmethod("get_isosurface_dl")
+		.staticmethod("render_using_VBOs")
 		.staticmethod("glLoadMatrix")
 		.staticmethod("glMultMatrix")
+		.staticmethod("contour_isosurface")
 		
 	);
 

@@ -433,12 +433,12 @@ int a2iTriangleConnectionTable[256][16] =
 };
 
 ColorRGBGenerator::ColorRGBGenerator()
-	: rgbmode(0), originx(0), originy(0), originz(0), inner(0.0), outer(0.0), em_data(0)
+	: rgbmode(0), originx(0), originy(0), originz(0), inner(0.0), outer(0.0), em_data(0), needtorecolor(1)
 {
 }
 
 ColorRGBGenerator::ColorRGBGenerator(EMData* data)
-	: rgbmode(0)
+	: rgbmode(0), needtorecolor(1)
 {
 	set_data(data);
 }
@@ -476,16 +476,11 @@ float* ColorRGBGenerator::getRGBColor(int x, int y, int z)
 		rgb[1] = 0.5*(1 + cos(normrad)/cos(1.047 - normrad));
 		rgb[2] = 1.5 - rgb[1];
 	}
-	//chop at Blues
-	/*
-	if(normrad >= 4.189){
-		if (normrad > 6.28318) normrad = 6.28318;
-		normrad =- 4.189;
-		rgb[2] = 0.5*(1 + cos(normrad)/cos(1.047 - normrad));
-		rgb[1] = 0.0;
-		rgb[0] = 1.5 - rgb[2];
-	}
-	*/
+	//chop at Blues.....
+
+	//This indicates that new color info needs to be bound (to the GPU)
+	needtorecolor = false;
+	
 	return &rgb[0];
 }
 
@@ -625,15 +620,6 @@ void MarchingCubes::calculate_surface() {
 
 	if ( _emdata == 0 ) throw NullPointerException("Error, attempt to generate isosurface, but the emdata image object has not been set");
 	if ( minvals.size() == 0 || maxvals.size() == 0 ) throw NotExistingObjectException("Vector of EMData pointers", "Error, the min and max val search trees have not been created");
-
-	if ( buffer == 0 ){
-		//glGenBuffers(4, buffer);
-		//glBindBuffer(GL_ARRAY_BUFFER, buffer[0]);
-		//glBindBuffer(GL_ARRAY_BUFFER, buffer[1]);
-		//glBindBuffer(GL_ARRAY_BUFFER, buffer[2]);
-		//glBindBuffer(GL_ARRAY_BUFFER, buffer[3]);
-		//glBindBuffer(GL_ARRAY_BUFFER, mc->buffer[4]);
-	}
 	
 	point_map.clear();
 	pp.clear();
@@ -648,11 +634,6 @@ void MarchingCubes::calculate_surface() {
 	float min = minvals[minvals.size()-1]->get_value_at(0,0,0);
 	float max = maxvals[minvals.size()-1]->get_value_at(0,0,0);
 	if ( min < _surf_value &&  max > _surf_value) draw_cube(0,0,0,minvals.size()-1);
-
-	//glBufferData(GL_ARRAY_BUFFER, 4*ff.elem(), ff.get_data(), GL_STATIC_DRAW);
-	//glBufferData(GL_ARRAY_BUFFER, 4*pp.elem(), pp.get_data(), GL_STATIC_DRAW);
-	//glBufferData(GL_ARRAY_BUFFER, 4*nn.elem(), nn.get_data(), GL_STATIC_DRAW);
-	//glBufferData(GL_ARRAY_BUFFER, 4*vv.elem(), vv.get_data(), GL_STATIC_DRAW);
 	
 #if MARCHING_CUBES_DEBUG
 	int time1 = clock();

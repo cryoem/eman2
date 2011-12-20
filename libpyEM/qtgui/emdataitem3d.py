@@ -874,7 +874,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		if self.item3d().rgbmode == 1:
 			self.colorbyradius.setChecked(True)
 		self.innercolorscaling.setValue(self.item3d().innerrad)
-		self.outercolorscaling.setValue(self.item3d().outerrad)
+		self.outercolorscaling.setValue(self.item3d().outerrad/2)
 		
 		
 	def addControls(self, gridbox):
@@ -1132,7 +1132,6 @@ class EMIsosurface(EMItem3D):
 			glEnable(GL_COLOR_MATERIAL)	
 			glColorMaterial(GL_FRONT, GL_AMBIENT)
 			glColorMaterial(GL_FRONT, GL_DIFFUSE)
-			self.reColorIsosurface()
 		else:
 			glDisable(GL_COLOR_MATERIAL)
 			
@@ -1140,43 +1139,14 @@ class EMIsosurface(EMItem3D):
 		self.innerrad = inner
 		self.outerrad = outer
 		self.isorender.set_rgb_scale(inner, outer)
-		self.reColorIsosurface()
 			
-	def getIsosurfaceDisplayList(self):
+	def getIsosurfaceContours(self):
 		# create the isosurface display list
 		self.isorender.set_surface_value(self.isothr)
 		self.isorender.set_sampling(self.smpval)
 		
-		if ( self.texture ):
-			if ( self.tex_name == 0 ):
-				self.update_data_and_texture()
-		
-		face_z = False
-		if self.parent.data.get_zsize() <= 2:
-			face_z = True
-		
-		if ( self.texture  ):
-			self.isodl = GLUtil.get_isosurface_dl(self.isorender, self.tex_name,face_z)
-		else:
-			self.isodl = GLUtil.get_isosurface_dl(self.isorender, 0,face_z)
-		#time2 = clock()
-		#dt1 = time2 - time1
-		#print "It took %f to render the isosurface" %dt1
+		GLUtil.contour_isosurface(self.isorender)
 	
-	def reColorIsosurface(self):
-		# Recolor isosurface, but DO not rerun marching cubes
-		if ( self.texture ):
-			if ( self.tex_name == 0 ):
-				self.update_data_and_texture()
-		
-		face_z = False
-		if self.parent.data.get_zsize() <= 2:
-			face_z = True
-		
-		if ( self.texture  ):
-			self.isodl = GLUtil.get_isosurface_dl(self.isorender, self.tex_name,face_z, 0)
-		else:
-			self.isodl = GLUtil.get_isosurface_dl(self.isorender, 0, 0, 0)
 
 	def renderNode(self):
 		if (not isinstance(self.parent.data,EMData)): return
@@ -1198,8 +1168,8 @@ class EMIsosurface(EMItem3D):
 		
 
 		glShadeModel(GL_SMOOTH)
-		if ( self.isodl == 0 or self.force_update):
-			self.getIsosurfaceDisplayList()
+		if (self.force_update):
+			self.getIsosurfaceContours()
 			self.force_update = False
 		
 		# This code draws an outline around the isosurface
@@ -1256,7 +1226,8 @@ class EMIsosurface(EMItem3D):
 		glTranslate(-self.parent.data.get_xsize()/2.0,-self.parent.data.get_ysize()/2.0,-self.parent.data.get_zsize()/2.0)
 		if ( self.texture ):
 			glScalef(self.parent.data.get_xsize(),self.parent.data.get_ysize(),self.parent.data.get_zsize())
-		glCallList(self.isodl)
+			
+		GLUtil.render_using_VBOs(self.isorender, 0, 0)
 		
 		glPopMatrix()
 	
@@ -1264,10 +1235,7 @@ class EMIsosurface(EMItem3D):
 		if (self.isothr != val):
 			self.isothr = val
 #			self.brightness = -val
-#			if ( self.texture ):
-#				self.update_data_and_texture()
-			self.getIsosurfaceDisplayList()
+
+			self.getIsosurfaceContours()
 		
-#			if self.emit_events: self.emit(QtCore.SIGNAL("set_threshold"),val)
-#			self.updateGL()
 		

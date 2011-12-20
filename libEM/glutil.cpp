@@ -59,6 +59,9 @@
 
 using namespace EMAN;
 
+//By depfault we need to first bind data to the GPU
+bool GLUtil::needtobind = 1;
+
 unsigned int GLUtil::gen_glu_mipmaps(const EMData* const emdata)
 {
 	if ( emdata->get_data() == 0 ) throw NullPointerException("Error, attempt to create an OpenGL mipmap without internally stored data");
@@ -627,16 +630,15 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 	return ret;
 }
 
-
+//DEPRECATED
 unsigned long GLUtil::get_isosurface_dl(MarchingCubes* mc, unsigned int tex_id,bool surface_face_z, bool recontour)
 {
 	if ( mc->_isodl != 0 ) glDeleteLists(mc->_isodl,1);
-
-	//glGenBuffers(4, mc->buffer);
-	
+		
 	if ( recontour ) mc->calculate_surface();
 	if ( surface_face_z ) mc->surface_face_z();
 	if( mc->getRGBmode() ) mc->color_vertices();
+	
 #if MARCHING_CUBES_DEBUG
 	cout << "There are " << ff.elem()/3 << " faces and " << pp.elem() << " points and " << nn.elem() << " normals to render in generate dl" << endl;
 #endif
@@ -670,22 +672,23 @@ unsigned long GLUtil::get_isosurface_dl(MarchingCubes* mc, unsigned int tex_id,b
 	else {
 		glEnableClientState(GL_NORMAL_ARRAY);
 		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-		glNormalPointer(GL_FLOAT,0,mc->nn.get_data());
+		glNormalPointer(GL_FLOAT,0, mc->nn.get_data());
 	}
 
 	glEnableClientState(GL_VERTEX_ARRAY);
-	glVertexPointer(3,GL_FLOAT,0,mc->pp.get_data());
-
-	if (mc->rgbgenerator.getRGBmode() != 0){
+	glVertexPointer(3,GL_FLOAT,0, mc->pp.get_data());
+	
+	if (mc->getRGBmode()){
 		glEnableClientState(GL_COLOR_ARRAY);
 		glColorPointer(3,GL_FLOAT,0, mc->cc.get_data());
 	}
 	
 	mc->_isodl = glGenLists(1);
-
+	
 #if MARCHING_CUBES_DEBUG
 	int time0 = clock();
 #endif
+	
 	glNewList(mc->_isodl,GL_COMPILE);
 
 	if ( tex_id != 0 ) {
@@ -698,12 +701,12 @@ unsigned long GLUtil::get_isosurface_dl(MarchingCubes* mc, unsigned int tex_id,b
 		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	}
+	
 	// Drawing range elements based on the output of glGetIntegerv(GL_MAX_ELEMENTS_INDICES,&maxf);
 	// Saved about 60% of the time... drawRange should probably always be true
-
 	bool drawRange = true;
 	if ( drawRange == false ) {
-		glDrawElements(GL_TRIANGLES,mc->ff.elem(),GL_UNSIGNED_INT,mc->ff.get_data());
+		glDrawElements(GL_TRIANGLES,mc->ff.elem(),GL_UNSIGNED_INT, mc->ff.get_data());
 	} else {
 		for(unsigned int i = 0; i < mc->ff.elem(); i+=maxf)
 		{
@@ -721,11 +724,77 @@ unsigned long GLUtil::get_isosurface_dl(MarchingCubes* mc, unsigned int tex_id,b
 	if ( tex_id != 0 ) glDisable(GL_TEXTURE_3D);
 
 	glEndList();
+	
 #if MARCHING_CUBES_DEBUG
 	int time1 = clock();
 	cout << "It took " << (time1-time0) << " " << (float)(time1-time0)/CLOCKS_PER_SEC << " to draw elements" << endl;
 #endif
 	return mc->_isodl;
+}
+
+void GLUtil::contour_isosurface(MarchingCubes* mc)
+{
+	mc->calculate_surface();
+	//What does this do???
+	for (unsigned int i = 0; i < mc->ff.elem(); ++i ) mc->ff[i] /= 3;
+	//Need to rebind data (to the GPU)
+	GLUtil::needtobind = true;
+}
+
+void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,bool surface_face_z)
+{
+	// In current version Texture is not supported b/c it is not used... EVER
+	// Generate buffers as needed
+
+	if ( glIsBuffer(mc->buffer[0])  == GL_FALSE ){
+		glGenBuffers(4, mc->buffer);
+		GLUtil::needtobind = true;
+	}
+	
+	if ( surface_face_z ) mc->surface_face_z();
+	
+	if( mc->getRGBmode() && (mc->rgbgenerator.getNeedToRecolor() || GLUtil::needtobind)){
+		mc->color_vertices();
+		GLUtil::needtobind = true;
+	}
+	
+	int maxf;
+	glGetIntegerv(GL_MAX_ELEMENTS_INDICES,&maxf);
+
+	if ( maxf % 3 != 0 )
+	{
+		maxf = maxf - (maxf%3);
+	}
+
+	//Normal vectors
+	glEnableClientState(GL_NORMAL_ARRAY);
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	glBindBuffer(GL_ARRAY_BUFFER, mc->buffer[2]);
+	if (GLUtil::needtobind) glBufferData(GL_ARRAY_BUFFER, 4*mc->nn.elem(), mc->nn.get_data(), GL_STATIC_DRAW);
+	glNormalPointer(GL_FLOAT,0,0);
+
+	//Vertex vectors
+	glBindBuffer(GL_ARRAY_BUFFER, mc->buffer[0]);
+	if (GLUtil::needtobind) glBufferData(GL_ARRAY_BUFFER, 4*mc->pp.elem(), mc->pp.get_data(), GL_STATIC_DRAW);
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glVertexPointer(3,GL_FLOAT,0,0);
+	
+	//Color vectors
+	if (mc->getRGBmode()){
+		glEnableClientState(GL_COLOR_ARRAY);
+		glBindBuffer(GL_ARRAY_BUFFER, mc->buffer[3]);
+		if (GLUtil::needtobind) glBufferData(GL_ARRAY_BUFFER, 4*mc->cc.elem(), mc->cc.get_data(), GL_STATIC_DRAW);
+		glColorPointer(3,GL_FLOAT,0, 0);
+	}
+
+	//Indices
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mc->buffer[1]);
+	if (GLUtil::needtobind) glBufferData(GL_ELEMENT_ARRAY_BUFFER, 4*mc->ff.elem(), mc->ff.get_data(), GL_STATIC_DRAW);	
+	glDrawElements(GL_TRIANGLES,mc->ff.elem(),GL_UNSIGNED_INT,0);
+	
+	// No longer need to bind data to the GPU
+	GLUtil::needtobind = false;
+
 }
 
 // This crap could be avoided and speed up(A lot) if we implemented an openGL shader........

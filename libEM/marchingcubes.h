@@ -53,12 +53,8 @@ using std::ostream;
 
 #ifdef __APPLE__
 	#include "OpenGL/gl.h"
-	#include "OpenGL/glu.h"
-	#include "OpenGL/glext.h"
 #else // WIN32, LINUX
 	#include "GL/gl.h"
-	#include "GL/glu.h"
-	#include "GL/glext.h"
 #endif	//__APPLE__
 
 namespace EMAN
@@ -209,23 +205,33 @@ namespace EMAN
 			originx = orix;
 			originy = oriy;
 			originz = oriz;
+			needtorecolor = true;
 		}
 		/** Set scaling */
 		inline void setScale(float i, float o)
 		{
 			inner = i;
 			outer = o;
+			needtorecolor = true;
 		}
 		/** Set RGB mode 0 = none, 1 = color by radius, more to come :) */
 		inline void setRGBmode(int mode)
 		{
 			rgbmode = mode;
+			needtorecolor = true;
 		}
 		/** Return RGB mode */
 		inline int getRGBmode()
 		{
 			return rgbmode;
 		}
+		
+		/** Lets us know if we need to recalclate colors*/
+		inline bool getNeedToRecolor()
+		{
+			return needtorecolor;
+		}
+		
 	private:
 		int rgbmode;
 		int originx;
@@ -234,6 +240,7 @@ namespace EMAN
 		float inner;
 		float outer;
 		float rgb[3];
+		bool needtorecolor; // dirty bit to let the sytem know when we need to recolor
 		EMData* em_data;
 	};
 	
