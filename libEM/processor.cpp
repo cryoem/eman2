@@ -9914,7 +9914,7 @@ void RotateInFSProcessor::process_inplace(EMData * image) // right now for 2d im
 //	float interpCutoff =.8;   // JFF, can you move this to input parameter? 
 	
 	
-	int debug=1;
+	int debug=0;
 	
 //	error: conversion from ‘EMAN::EMObject’ to non-scalar type ‘EMAN::Transform’ requested
 	

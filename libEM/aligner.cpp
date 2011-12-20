@@ -1939,11 +1939,10 @@ EMData* Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 	}else {
 		t = new Transform(); // is the identity
 	}
-	
+
 	int searchx = 0;
 	int searchy = 0;
 	int searchz = 0;
-	
 	bool dotrans = params.set_default("dotrans",1);
 	if (params.has_key("search")) {
 		vector<string> check;
@@ -1962,17 +1961,22 @@ EMData* Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 		searchy = params.set_default("searchy",3);
 		searchz = params.set_default("searchz",3);
 	}	
-	
+
 	float delta = params.set_default("delta",1.0f);
 	float range = params.set_default("range",10.0f);
 	bool verbose = params.set_default("verbose",false);
+	bool fsrotate = params.set_default("fsrotate",0);
 	
 	bool tomography = (cmp_name == "ccc.tomo") ? 1 : 0;
 	EMData * tofft = 0;
 	if(dotrans || tomography){
 		tofft = to->do_fft();
 	}
-	
+	EMData * this_imgfft = 0;
+	if(fsrotate){
+		this_imgfft = this_img->do_fft();
+	}
+
 #ifdef EMAN2_USING_CUDA 
 	if(EMData::usecuda == 1) {
 		if(!this_img->getcudarodata()) this_img->copy_to_cudaro(); // This is safer
@@ -1984,7 +1988,7 @@ EMData* Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 	Dict d;
 	d["type"] = "eman"; // d is used in the loop below
 	Dict best;
-	best["score"] = 0.0f;
+	best["score"] = numeric_limits<float>::infinity();
 	bool use_cpu = true;
 	Transform tran = Transform();
 	Cmp* c = Factory <Cmp>::get(cmp_name, cmp_params);
@@ -2005,7 +2009,13 @@ EMData* Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 				Transform tr(d);
 				tr = tr*(*t);	// compose transforms, this moves to the pole (aprox)
 				
-				EMData* transformed = this_img->process("xform",Dict("transform",&tr));
+				//EMData* transformed = this_img->process("xform",Dict("transform",&tr));
+				EMData* transformed;
+				if(fsrotate){
+					transformed = this_imgfft->process("rotateinfs",Dict("transform",&tr));
+				} else {
+					transformed = this_img->process("xform",Dict("transform",&tr));
+				}
 				
 				//need to do things a bit diffrent if we want to compare two tomos
 				float score = 0.0f;
@@ -2058,7 +2068,7 @@ EMData* Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 	}
 
 	if(tofft) {delete tofft; tofft = 0;}
-	
+	if(fsrotate) {delete this_imgfft;}
 	//make aligned map;
 	EMData* best_match = this_img->process("xform",Dict("transform", best["xform.align3d"])); // we are returning a map
 	best_match->set_attr("xform.align3d", best["xform.align3d"]);
