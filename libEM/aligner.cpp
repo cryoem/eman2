@@ -2060,6 +2060,7 @@ EMData* Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 				}
 				
 				if(score < float(best["score"])) {
+					cout << "ZZZ" << endl;
 					best["score"] = score;
 					best["xform.align3d"] = &tr; // I wonder if this will cause a mem leak?
 				} 	
