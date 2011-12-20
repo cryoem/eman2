@@ -124,15 +124,15 @@ class PMIntEntryWidget(PMBaseWidget):
 		except ValueError:
 			self.intbox.setText("") 
 			self.setErrorMessage("Invalid type, Int neeeded in %s"%self.getName())
-			self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Invalid type, Int neeeded in %s"%self.getName())
+			if self.isVisible(): self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Invalid type, Int neeeded in %s"%self.getName())
 			
 	def _confirm_bounds(self):
 		if self.lrange != None and (self.value < self.lrange):
 			self.intbox.setText(str(self.lrange))
-			self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Value too low for '%s', clipping to '%d'"%(self.name,self.lrange))
+			if self.isVisible(): self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Value too low for '%s', clipping to '%d'"%(self.name,self.lrange))
 		if self.urange != None and (self.value > self.urange):
 			self.intbox.setText(str(self.urange))
-			self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Value too high for '%s', clipping to '%d'"%(self.name,self.urange))
+			if self.isVisible(): self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Value too high for '%s', clipping to '%d'"%(self.name,self.urange))
 			
 	def getValue(self):
 		return self.value
@@ -176,15 +176,15 @@ class PMFloatEntryWidget(PMBaseWidget):
 		except ValueError:
 			self.floatbox.setText("") 
 			self.setErrorMessage("Invalid type, float needed in '%s'"%self.getName())
-			self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Invalid type, float needed in '%s'"%self.getName())
+			if self.isVisible(): self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Invalid type, float needed in '%s'"%self.getName())
 			
 	def _confirm_bounds(self):
 		if self.lrange and (self.value < self.lrange):
 			self.floatbox.setText(str(self.lrange))
-			self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Value too low for '%s', clipping to '%f'"%(self.name,self.lrange))
+			if self.isVisible(): self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Value too low for '%s', clipping to '%f'"%(self.name,self.lrange))
 		if self.urange and (self.value > self.urange):
 			self.floatbox.setText(str(self.urange))
-			self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Value too high for '%s', clipping to '%f'"%(self.name,self.urange))
+			if self.isVisible(): self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Value too high for '%s', clipping to '%f'"%(self.name,self.urange))
 			
 	def getValue(self):
 		return self.value
@@ -361,8 +361,8 @@ class PMFileNameWidget(PMBaseWidget):
 		
 	def _onBadFile(self, filename):
 		self.filename = None
-		self.setErrorMessage("File '%s' form field '%s' does not exist"%(filename,self.getName()))
-		self.emit(QtCore.SIGNAL("pmmessage(QString)"),"File '%s' from field '%s' does not exist"%(filename,self.getName()))
+		self.setErrorMessage("File '%s' from field '%s' does not exist"%(filename,self.getName()))
+		if self.isVisible(): self.emit(QtCore.SIGNAL("pmmessage(QString)"),"File '%s' from field '%s' does not exist"%(filename,self.getName()))
 
 class PMDirectoryWidget(PMBaseWidget):
 	""" A Widget for display dircories of a certian type """

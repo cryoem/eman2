@@ -460,7 +460,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		Return a dictionary of item parameters (used for restoring sessions
 		"""
 		return {"TRANSFORMATION":self.transform.get_params("eman"),"CONSTRUCTOR":self.getEvalString(),"NAME":str(self.getLabel()),"VISIBLE":self.isVisibleItem(),"SELECTED":self.isSelectedItem(),"NODETYPE":self.nodetype}
-	
+		
 	def setUsingDictionary(self, dictionary):
 		"""
 		Set item attributes using a dictionary, used in session restoration

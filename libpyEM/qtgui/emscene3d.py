@@ -904,8 +904,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		for record in records:
 			if self.multiselect:
 				selecteditem = EMItem3D.selection_idx_dict[record.names[len(record.names)-1]]()
-				# If an ancestor is selected consider THIS item to be selected
-				if self._IsAncestorSelected(selecteditem): return
+				# If an ancestor is selected consider THIS item to be selected, WHY????
+				#if self._IsAncestorSelected(selecteditem): return
 				# Select the data itself and not the isosurface, slice, etc 
 				if selecteditem.nodetype == "DataChild": selecteditem = selecteditem.parent
 				selecteditem.setSelectedItem(True)
@@ -918,12 +918,12 @@ class EMScene3D(EMItem3D, EMGLWidget):
 					closestitem = record
 		if closestitem:
 			selecteditem = EMItem3D.selection_idx_dict[closestitem.names[len(closestitem.names)-1]]()
-			# If an ancestor is selected consider THIS item to be selected
-			if self._IsAncestorSelected(selecteditem): return
+			# If an ancestor is selected consider THIS item to be selected, WHY?????
+			#if self._IsAncestorSelected(selecteditem): return
 			# Select the data itself and no the isosurface, slice, etc
 			if selecteditem.nodetype == "DataChild": selecteditem = selecteditem.parent
 			if not selecteditem.isSelectedItem() and not self.appendselection and not self.toggleselection: self.clearSelection()
-			if self.toggleselection and selecteditem.isSelectedItem(): 
+			if self.toggleselection and selecteditem.isSelectedItem():
 				selecteditem.setSelectedItem(False)
 			else:
 				selecteditem.setSelectedItem(True)
@@ -2013,6 +2013,7 @@ class EMInspector3D(QtGui.QWidget):
 		tree_item = EMQTreeWidgetItem(QtCore.QStringList(name), item3d, parentitem)	# Make a QTreeItem widget, and let the TreeItem talk to the scenegraph node and its GUI
 		item3d.setEMQTreeWidgetItem(tree_item)				# Reference to the EMQTreeWidgetItem
 		item_inspector = item3d.getItemInspector()				# Get the node GUI controls 
+		#return tree_item
 		item_inspector.setInspector(self)					# Associate the item GUI with the inspector
 		self.stacked_widget.addWidget(item_inspector)			# Add a widget to the stack
 		item3d.setLabel(name)						# Set the label

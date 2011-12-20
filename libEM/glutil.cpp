@@ -628,13 +628,15 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 }
 
 
-unsigned long GLUtil::get_isosurface_dl(MarchingCubes* mc, unsigned int tex_id,bool surface_face_z)
+unsigned long GLUtil::get_isosurface_dl(MarchingCubes* mc, unsigned int tex_id,bool surface_face_z, bool recontour)
 {
 	if ( mc->_isodl != 0 ) glDeleteLists(mc->_isodl,1);
 
-
-	mc->calculate_surface();
+	//glGenBuffers(4, mc->buffer);
+	
+	if ( recontour ) mc->calculate_surface();
 	if ( surface_face_z ) mc->surface_face_z();
+	if( mc->getRGBmode() ) mc->color_vertices();
 #if MARCHING_CUBES_DEBUG
 	cout << "There are " << ff.elem()/3 << " faces and " << pp.elem() << " points and " << nn.elem() << " normals to render in generate dl" << endl;
 #endif
@@ -651,7 +653,7 @@ unsigned long GLUtil::get_isosurface_dl(MarchingCubes* mc, unsigned int tex_id,b
 	cout << "Using OpenGL " << glGetString(GL_VERSION) << endl;
 #endif
 
-	for (unsigned int i = 0; i < mc->ff.elem(); ++i ) mc->ff[i] /= 3;
+	if ( recontour ) for (unsigned int i = 0; i < mc->ff.elem(); ++i ) mc->ff[i] /= 3;
 
 	if ( maxf % 3 != 0 )
 	{
@@ -698,6 +700,7 @@ unsigned long GLUtil::get_isosurface_dl(MarchingCubes* mc, unsigned int tex_id,b
 	}
 	// Drawing range elements based on the output of glGetIntegerv(GL_MAX_ELEMENTS_INDICES,&maxf);
 	// Saved about 60% of the time... drawRange should probably always be true
+
 	bool drawRange = true;
 	if ( drawRange == false ) {
 		glDrawElements(GL_TRIANGLES,mc->ff.elem(),GL_UNSIGNED_INT,mc->ff.get_data());

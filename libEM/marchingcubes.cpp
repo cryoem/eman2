@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Tao Ju, 5/16/2007 <taoju@cs.wustl.edu>, code ported by Grant Tang
  * code extensively modified and optimized by David Woolford
@@ -467,7 +463,6 @@ float* ColorRGBGenerator::getRGBColor(int x, int y, int z)
 #endif	//_WIN32
 	// Algorithm to convert HSI to RGB. Hue is dependent on radius, S = 1 and I = 0.5
 	float normrad = 4.189*(rad - inner)/(outer - inner);
-	//cout << rad << " " << inner << " " << outer << " " << normrad << endl;
 	if(normrad < 2.094){
 		if (normrad < 0.0) normrad = 0.0;
 		rgb[0] = 0.5*(1 + cos(normrad)/cos(1.047 - normrad));
@@ -631,11 +626,20 @@ void MarchingCubes::calculate_surface() {
 	if ( _emdata == 0 ) throw NullPointerException("Error, attempt to generate isosurface, but the emdata image object has not been set");
 	if ( minvals.size() == 0 || maxvals.size() == 0 ) throw NotExistingObjectException("Vector of EMData pointers", "Error, the min and max val search trees have not been created");
 
+	if ( buffer == 0 ){
+		//glGenBuffers(4, buffer);
+		//glBindBuffer(GL_ARRAY_BUFFER, buffer[0]);
+		//glBindBuffer(GL_ARRAY_BUFFER, buffer[1]);
+		//glBindBuffer(GL_ARRAY_BUFFER, buffer[2]);
+		//glBindBuffer(GL_ARRAY_BUFFER, buffer[3]);
+		//glBindBuffer(GL_ARRAY_BUFFER, mc->buffer[4]);
+	}
+	
 	point_map.clear();
 	pp.clear();
 	nn.clear();
 	ff.clear();
-	cc.clear();
+	vv.clear();
 
 #if MARCHING_CUBES_DEBUG
 	int time0 = clock();
@@ -645,6 +649,11 @@ void MarchingCubes::calculate_surface() {
 	float max = maxvals[minvals.size()-1]->get_value_at(0,0,0);
 	if ( min < _surf_value &&  max > _surf_value) draw_cube(0,0,0,minvals.size()-1);
 
+	//glBufferData(GL_ARRAY_BUFFER, 4*ff.elem(), ff.get_data(), GL_STATIC_DRAW);
+	//glBufferData(GL_ARRAY_BUFFER, 4*pp.elem(), pp.get_data(), GL_STATIC_DRAW);
+	//glBufferData(GL_ARRAY_BUFFER, 4*nn.elem(), nn.get_data(), GL_STATIC_DRAW);
+	//glBufferData(GL_ARRAY_BUFFER, 4*vv.elem(), vv.get_data(), GL_STATIC_DRAW);
+	
 #if MARCHING_CUBES_DEBUG
 	int time1 = clock();
 	cout << "It took " << (time1-time0) << " " << (float)(time1-time0)/CLOCKS_PER_SEC << " to traverse the search tree and generate polygons" << endl;
@@ -768,6 +777,16 @@ int MarchingCubes::get_edge_num(int x, int y, int z, int edge) {
 	return index;
 }
 
+void MarchingCubes::color_vertices()
+{
+	cc.clear();
+	//Color vertices. We don't need to rerun marching cubes on color vertices, so this method improves effciency
+	for(unsigned int i = 0; i < vv.elem(); i+=3){
+		float* color = rgbgenerator.getRGBColor(vv[i], vv[i+1], vv[i+2]);
+		cc.push_back_3(color);
+	}
+}
+		
 void MarchingCubes::marching_cube(int fX, int fY, int fZ, int cur_level)
 {
 //	extern int aiCubeEdgeFlags[256];
@@ -846,7 +865,8 @@ void MarchingCubes::marching_cube(int fX, int fY, int fZ, int cur_level)
 		}
 	}
 	
-	float* color = rgbgenerator.getRGBColor(fX, fY, fZ);
+	//Save voxel coords for later color processing
+	int vox[3] = {fX, fY, fZ};
 	
 	//Draw the triangles that were found.  There can be up to five per cube
 	for(iTriangle = 0; iTriangle < 5; iTriangle++)
@@ -882,7 +902,7 @@ void MarchingCubes::marching_cube(int fX, int fY, int fZ, int cur_level)
 			iVertex = a2iTriangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
 			map<int,int>::iterator it = point_map.find(pointIndex[iVertex]);
 			if ( it == point_map.end() ){
-				cc.push_back_3(color);
+				vv.push_back_3(&vox[0]);
 				int ss = pp.elem();
 				pp.push_back_3(&pts[iCorner][0]);
 				nn.push_back_3(&n[0]);

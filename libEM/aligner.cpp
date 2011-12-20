@@ -2326,10 +2326,10 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	if(dotrans || tomography){
 		this_imgfft = this_img->do_fft();
 	}
-	//EMData * to_fft = 0;
-	//if(fsrotate){
-	//	to_fft = to->do_fft();
-	//}
+	EMData * to_fft = 0;
+	if(fsrotate){
+		to_fft = to->do_fft();
+	}
 	
 	
 #ifdef EMAN2_USING_CUDA 
@@ -2358,8 +2358,13 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 			params["phi"] = phi;
 			Transform t(params);
 			
-			EMData* transformed = to->process("xform",Dict("transform",&t));
-			
+			EMData* transformed;
+			if(fsrotate){
+				transformed = to_fft->process("rotateinfs",Dict("transform",&t));
+			} else {
+				transformed = to->process("xform",Dict("transform",&t));
+			}
+				
 			//need to do things a bit diffrent if we want to compare two tomos
 			float best_score = 0.0f;
 			// Dotrans is effectievly ignored for tomography
@@ -2417,6 +2422,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	}
 	delete sym; sym = 0;
 	if(this_imgfft) {delete this_imgfft; this_imgfft = 0;}
+	if(fsrotate){delete to_fft;}
 	
 	return solns;
 

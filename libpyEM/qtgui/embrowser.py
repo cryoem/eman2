@@ -2001,6 +2001,20 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.close()
 		return self.result
 
+	def getCWD(self):
+		""" In modal mode, this will return the directory the browser is in. This is useful for 
+		using the browser to select a directory of interest. """
+		
+		# If a directory is selected, return this
+		if self.result and os.path.isdir(self.result[0]):
+			self.close()
+			return self.result[0]
+		# If there is no current path and no result dir
+		if self.curpath==None: return None
+		# Return current path
+		self.close()
+		return self.curpath
+		
 	def addBookmark(self,label,path):
 		"""Add a new bookmark"""
 		act=self.wbookmarks.addAction(label)

@@ -105,10 +105,7 @@ class EMDataItem3D(EMItem3D):
 		self.renderBoundingBox = state
 		
 	def getEvalString(self):
-		if self.transform:
-			return "EMDataItem3D(\"%s\", transform=Transform())"%self.path
-		else:
-			return "EMDataItem3D(\"%s\")"%self.path
+		return "EMDataItem3D(\"%s\")"%self.path
 		
 	def getItemInspector(self):
 		if not self.item_inspector:
@@ -258,7 +255,7 @@ class EMSliceItem3D(EMItem3D):
 		self.ambient = self.colors[self.isocolor]["ambient"]		
 		self.shininess = self.colors[self.isocolor]["shininess"]
 		
-		self.dataChanged()
+		if parent: self.dataChanged()
 
 	# I have added these methods so the inspector can set the color John Flanagan
 	def setAmbientColor(self, red, green, blue, alpha=1.0):
@@ -320,10 +317,7 @@ class EMSliceItem3D(EMItem3D):
 		self.useDefaultBrightnessContrast()
 		
 	def getEvalString(self):
-		if self.transform:
-			return "EMSliceItem3D(transform=Transform())"
-		else:
-			return "EMSliceItem3D()"
+		return "EMSliceItem3D()"
 			
 	def getItemInspector(self):
 		if not self.item_inspector:
@@ -474,7 +468,6 @@ class EMSliceInspector(EMInspectorControlShape):
 	def __init__(self, name, item3d):
 		EMInspectorControlShape.__init__(self, name, item3d, numgridcols=2)
 		
-		self.onConstrainedOrientationChanged()
 		self.constrained_plane_combobox.currentIndexChanged.connect(self.onConstrainedOrientationChanged)
 		self.use_3d_texture_checkbox.clicked.connect(self.on3DTextureCheckbox)
 		QtCore.QObject.connect(self.constrained_slider, QtCore.SIGNAL("valueChanged"), self.onConstraintSlider)
@@ -503,7 +496,6 @@ class EMSliceInspector(EMInspectorControlShape):
 	def addControls(self, gridbox):
 		""" Construct all the widgets in this Item Inspector """
 		super(EMSliceInspector, self).addControls(gridbox)
-		
 		sliceframe = QtGui.QFrame()
 		sliceframe.setFrameShape(QtGui.QFrame.StyledPanel)
 		slice_grid_layout = QtGui.QGridLayout()
@@ -631,7 +623,7 @@ class EMVolumeItem3D(EMItem3D):
 		self.shininess = self.colors[self.isocolor]["shininess"]
 		
 		self.force_texture_update = True
-		self.dataChanged()
+		if parent: self.dataChanged()
 
 	# I have added these methods so the inspector can set the color John Flanagan
 	def setAmbientColor(self, red, green, blue, alpha=1.0):
@@ -655,10 +647,7 @@ class EMVolumeItem3D(EMItem3D):
 		self.useDefaultBrightnessThreshold()
 	
 	def getEvalString(self):
-		if self.transform:
-			return "EMVolumeItem3D(transform=Transform())"
-		else:
-			return "EMVolumeItem3D()"
+		return "EMVolumeItem3D()"
 		
 	def getItemInspector(self):
 		if not self.item_inspector:
@@ -881,6 +870,13 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		self.histogram_widget.set_data(self.item3d().histogram_data,minden,maxden)
 		self.setSamplingRange(self.item3d().isorender.get_sampling_range())
 		
+		#Set color radius 
+		if self.item3d().rgbmode == 1:
+			self.colorbyradius.setChecked(True)
+		self.innercolorscaling.setValue(self.item3d().innerrad)
+		self.outercolorscaling.setValue(self.item3d().outerrad)
+		
+		
 	def addControls(self, gridbox):
 		""" Construct all the widgets in this Item Inspector """
 		super(EMIsosurfaceInspector, self).addControls(gridbox)
@@ -916,7 +912,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		self.colorbyradius.setChecked(False)
 		self.innercolorscaling = EMSpinWidget(0.0, 1.0, rounding=0)
 		self.innercolorscaling.setMinimumWidth(120)
-		self.outercolorscaling = EMSpinWidget(self.item3d().getParent().getData().get_xsize()/2, 1.0, rounding=0)
+		self.outercolorscaling = EMSpinWidget(0.0, 1.0, rounding=0)
 		self.outercolorscaling.setMinimumWidth(120)
 		cbrlayout.addWidget(self.colorbyradius, 0, 0, 1, 2)
 		cbrlabelinner = QtGui.QLabel("Inner Shell")
@@ -1025,6 +1021,9 @@ class EMIsosurface(EMItem3D):
 		self.cullbackfaces = True
 		self.tex_name = 0
 		self.texture = False
+		self.rgbmode = 0
+		self.innerrad = 0.0
+		self.outerrad = 0.0
 
 #		self.brightness = 0
 #		self.contrast = 10
@@ -1042,10 +1041,7 @@ class EMIsosurface(EMItem3D):
 		if parent: self.dataChanged()
 		
 	def getEvalString(self):
-		if self.transform:
-			return "EMIsosurface(transform=Transform())"
-		else:
-			return "EMIsosurface()"
+		return "EMIsosurface()"
 	
 	def dataChanged(self):
 		"""
@@ -1068,6 +1064,7 @@ class EMIsosurface(EMItem3D):
 		
 		self.force_update = True
 		self.isorender = MarchingCubes(data)
+		self.outerrad = data.get_xsize()
 		
 		if self.item_inspector: self.getItemInspector().updateItemControls() # The idea is to use lazy evaluation for the item inspectors. Forcing inspector creation too early causes bugs!
 	
@@ -1135,7 +1132,7 @@ class EMIsosurface(EMItem3D):
 			glEnable(GL_COLOR_MATERIAL)	
 			glColorMaterial(GL_FRONT, GL_AMBIENT)
 			glColorMaterial(GL_FRONT, GL_DIFFUSE)
-			self.getIsosurfaceDisplayList()
+			self.reColorIsosurface()
 		else:
 			glDisable(GL_COLOR_MATERIAL)
 			
@@ -1143,7 +1140,7 @@ class EMIsosurface(EMItem3D):
 		self.innerrad = inner
 		self.outerrad = outer
 		self.isorender.set_rgb_scale(inner, outer)
-		self.getIsosurfaceDisplayList()
+		self.reColorIsosurface()
 			
 	def getIsosurfaceDisplayList(self):
 		# create the isosurface display list
@@ -1166,6 +1163,21 @@ class EMIsosurface(EMItem3D):
 		#dt1 = time2 - time1
 		#print "It took %f to render the isosurface" %dt1
 	
+	def reColorIsosurface(self):
+		# Recolor isosurface, but DO not rerun marching cubes
+		if ( self.texture ):
+			if ( self.tex_name == 0 ):
+				self.update_data_and_texture()
+		
+		face_z = False
+		if self.parent.data.get_zsize() <= 2:
+			face_z = True
+		
+		if ( self.texture  ):
+			self.isodl = GLUtil.get_isosurface_dl(self.isorender, self.tex_name,face_z, 0)
+		else:
+			self.isodl = GLUtil.get_isosurface_dl(self.isorender, 0, 0, 0)
+
 	def renderNode(self):
 		if (not isinstance(self.parent.data,EMData)): return
 		#a = time()
@@ -1245,6 +1257,7 @@ class EMIsosurface(EMItem3D):
 		if ( self.texture ):
 			glScalef(self.parent.data.get_xsize(),self.parent.data.get_ysize(),self.parent.data.get_zsize())
 		glCallList(self.isodl)
+		
 		glPopMatrix()
 	
 	def setThreshold(self, val):

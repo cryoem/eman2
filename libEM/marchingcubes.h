@@ -51,6 +51,16 @@ using std::ostream;
 #include <climits>
 // for CHAR_BIT
 
+#ifdef __APPLE__
+	#include "OpenGL/gl.h"
+	#include "OpenGL/glu.h"
+	#include "OpenGL/glext.h"
+#else // WIN32, LINUX
+	#include "GL/gl.h"
+	#include "GL/glu.h"
+	#include "GL/glext.h"
+#endif	//__APPLE__
+
 namespace EMAN
 {
 	/** CustomVector has some trivial optimizations of the STL vector.
@@ -277,6 +287,10 @@ namespace EMAN
 		*/
 		int get_sampling_range() { return minvals.size()-1; }
 
+		/** Color the vertices
+		 */
+		void color_vertices();
+		
 		/** Get the isosurface as dictionary
 		* Traverses the tree and marches the cubes
 		* @return a dictionary object containing to float pointers (to vertex and normal data), and an int pointer (to face data)
@@ -285,6 +299,8 @@ namespace EMAN
 
 		void surface_face_z();
 		
+		/** Functions to control colroing mode
+		 * */
 		inline void setRGBorigin(int x, int y, int z)
 		{
 			rgbgenerator.setOrigin(x, y, z);
@@ -300,9 +316,16 @@ namespace EMAN
 			rgbgenerator.setRGBmode(mode);
 		}
 		
+		/** Return RGB mode */
+		inline int getRGBmode()
+		{
+			return rgbgenerator.getRGBmode();
+		}
+		
 	private:
 		map<int, int> point_map;
 		unsigned long _isodl;
+		GLuint buffer[4];
 
 		/** Calculate the min and max value trees
 		* Stores minimum and maximum cube neighborhood values in a tree structure
@@ -348,7 +371,7 @@ namespace EMAN
 		 * Calls draw_cube(0,0,0,minvals.size()-1)
 		*/
 		void calculate_surface();
-
+		
 		/** Find the approximate point of intersection of the surface between two
 		 * points with the values fValue1 and fValue2
 		 *
@@ -379,6 +402,7 @@ namespace EMAN
 		///.Custom vectors for storing points, normals and faces
 		CustomVector<float> pp;
 		CustomVector<float> cc;
+		CustomVector<int> vv;
 		CustomVector<float> nn;
 		CustomVector<unsigned int> ff;
 		

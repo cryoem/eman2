@@ -16,12 +16,14 @@
       }, 
       {
         "ICON": "green_boxes",
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2tomoboxer",
         "PROGRAM": "e2tomoboxer.py", 
         "NAME": "Box Tomogram Files", 
         "CHILDREN": [] 
       },
       {
         "ICON": "tomo_hunter",
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2classaverage3d",
         "PROGRAM": "e2classaverage3d.py",
 	"MODE": "alignment", 
         "NAME": "Tomogram Alignment and Averaging", 
@@ -30,6 +32,7 @@
       },
       {
         "ICON": "tomo_hunter",
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2classaverage3d",
         "PROGRAM": "e2classaverage3d.py",
 	"MODE": "breaksym", 
         "NAME": "Tomogram Alignment, Break Sym", 

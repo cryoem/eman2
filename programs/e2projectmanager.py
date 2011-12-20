@@ -267,12 +267,12 @@ class EMProjectManager(QtGui.QMainWindow):
 		QtGui.QMainWindow.__init__(self)
 		# default PM attributes
 		self.pm_cwd = os.getcwd()
-		self.pm_icon = os.getenv("EMAN2DIR")+"/images/EMAN2Icon.png"
+		self.pn_project_name_default='Unknown'
+		self.pm_icon = self.pm_icon_default = os.getenv("EMAN2DIR")+"/images/EMAN2Icon.png"
 		self.setWindowIcon(QtGui.QIcon(QtGui.QPixmap(pmicon)))
 		
 		# Set Defaults
 		self.usingEMEN = False
-		self.expertmode = False
 		self.notebook = None
 		self.taskmanager = None
 		self.wikipage = None
@@ -295,7 +295,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		workflowcontrollabel = QtGui.QLabel("Workflow Control", centralwidget)
 		workflowcontrollabel.setFont(font)
 		grid.addWidget(workflowcontrollabel, 1,0)
-		guilabel = QtGui.QLabel("EMAN2 program GUI", centralwidget)
+		guilabel = QtGui.QLabel("EMAN2 Program Interface", centralwidget)
 		guilabel.setFont(font)
 		grid.addWidget(guilabel, 1,1)
 				
@@ -328,21 +328,12 @@ class EMProjectManager(QtGui.QMainWindow):
 		"""
 		Load the PM database. This is a global database. Each user on each machine has one
 		"""
-		# This probably wont work on WINDOWS.....
-		self.pm_projects_db = db_open_dict("bdb:"+os.environ['HOME']+"#:pm_projects")
-		# Load the project if we are already in the right dir
-		self.pn_project_name = "Unknown"
-		for project in self.pm_projects_db.keys():
-			if project == "Unknown": continue	# Don't load the default project
-			if self.pm_projects_db[project]["CWD"] == self.pm_cwd:
-				self.pn_project_name = project
-				return
-		# Default, if nothing is found
-		self.pm_projects_db["Unknown"] = {"CWD":self.pm_cwd,"ICON":self.pm_icon}
+		self.pm_projects_db = db_open_dict("bdb:project")
+		self.pn_project_name = self.pm_projects_db.get("project_name",dfl=self.pn_project_name_default)
 	
 	def _load_icons(self):
 		"""
-		Load icons used for the tree. Additonal icons can be added using icsons.json
+		Load icons used for the tree. Additonal icons can be added using icons.json
 		"""
 		self.icons = {}
 		EMAN2DIR = os.getenv("EMAN2DIR")
@@ -374,12 +365,6 @@ class EMProjectManager(QtGui.QMainWindow):
 		
 		# Project
 		projectmenu = menubar.addMenu('&Project')
-		newproject = QtGui.QAction('New Project', self)
-		newproject.setShortcut('Ctrl+N')
-		newproject.setStatusTip('Create New Project')
-		self.connect(newproject, QtCore.SIGNAL('triggered()'), self._on_newproject)
-		projectmenu.addAction(newproject)
-		newproject.setStatusTip('New Project')
 		openproject = QtGui.QAction('Open Project', self)
 		openproject.setShortcut('Ctrl+O')
 		openproject.setStatusTip('Open Project')
@@ -390,11 +375,6 @@ class EMProjectManager(QtGui.QMainWindow):
 		editproject.setStatusTip('Edit Project')
 		self.connect(editproject, QtCore.SIGNAL('triggered()'), self._on_editproject)
 		projectmenu.addAction(editproject)
-		importdataproject = QtGui.QAction('Import data', self)
-		importdataproject.setShortcut('Ctrl+I')
-		importdataproject.setStatusTip('Import data from EMEN or Disk')
-		projectmenu.addAction(importdataproject)
-		
 		# Options
 		#optionsmenu = menubar.addMenu('&Options')
 		
@@ -431,28 +411,39 @@ class EMProjectManager(QtGui.QMainWindow):
 	
 	def _on_sprmode(self):
 		self.tree_stacked_widget.setCurrentIndex(0)
+		self._on_cmd_cancel()
 		
 	def _on_tomomode(self):
 		self.tree_stacked_widget.setCurrentIndex(1)
-		
-	def _on_newproject(self):
-		np = DialogNewProject(self)
-		np.exec_()
-		self.activateWindow()
-		
+		self._on_cmd_cancel()
+	
 	def _on_openproject(self):
-		np = DialogOpenProject(self)
-		np.exec_()
+		self.openbrowser = EMBrowserWidget(withmodal=True,multiselect=False)
+		QtCore.QObject.connect(self.openbrowser, QtCore.SIGNAL("ok"),self._onopen_ok)
+		QtCore.QObject.connect(self.openbrowser, QtCore.SIGNAL("cancel"),self._onopen_cancel)
+		self.openbrowser.show()
 		self.activateWindow()
+		
+	def _onopen_cancel(self):
+		self.openbrowser.close()
+		
+	def _onopen_ok(self):
+		# Here we need to get a new dir and change to it.
+
+		self.changeDirectory(self.openbrowser.getCWD())
+		self.loadPMdb()
+		self.updateProject()
+		self.statusbar.setMessage("Project Name is Now: '%s'"%self.pn_project_name)
 		
 	def _on_editproject(self):
-		np = DialogEditProject(self)
+		""" Open edit dialog """
+		np = ProjectDialog(self)
 		np.exec_()
 		self.activateWindow()
 		
 	def makeTilteBarWidget(self):
 		"""
-		Make the title bar widget (ICON + label)
+		Make the title bar widget (Project ICON + label)
 		"""
 		tbwidget = QtGui.QFrame()
 		tbwidget.setFrameShape(QtGui.QFrame.StyledPanel)
@@ -494,8 +485,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		"""
 		Make a stacked widget
 		When a python script is called for the first time a GUI widget is made and added to the stack
-		The First Widget on the stack is the blank widget
-		The Second Widget on the stack is the text edit widget for displaying comand line info and help
+		The First Widget on the stack is the blank widget, the rest are e2program widgets
 		"""
 		self.gui_stacked_widget = QtGui.QStackedWidget()
 		# Set the initial height of the browser
@@ -503,19 +493,9 @@ class EMProjectManager(QtGui.QMainWindow):
 		self.gui_stacked_widget.setFrameShape(QtGui.QFrame.StyledPanel)
 		# Blank screen widget
 		self.gui_stacked_widget.addWidget(QtGui.QWidget())
-		# Textbox widget
-		self.gui_stacked_widget.addWidget(self.getCMDTextEdit())
 		self.stackedWidgetHash = {}
 		
 		return self.gui_stacked_widget
-	
-	def getCMDTextEdit(self):
-		"""
-		Get the Command Text edit Widget. This is incorperated into the GUI Widget Stack 
-		"""
-		self.guitexteditbox = QtGui.QTextEdit("")
-		self.guitexteditbox.setWordWrapMode(QtGui.QTextOption.WrapAnywhere)
-		return self.guitexteditbox
 		
 	def makeGUIToolButtons(self):
 		"""
@@ -524,21 +504,26 @@ class EMProjectManager(QtGui.QMainWindow):
 		toolwidget = QtGui.QFrame()
 		#toolwidget.setFrameShape(QtGui.QFrame.StyledPanel)
 		tbox = QtGui.QVBoxLayout()
-		self.wikibutton = PMToolButton()
+		self.wikibutton = QtGui.QToolButton()
 		self.wikibutton.setIcon(QtGui.QIcon(QtGui.QPixmap(wikiicon)))
 		self.wikibutton.setToolTip("Show Wiki button")
-		self.helpbutton = PMToolButton()
-		self.helpbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(helpicon)))
-		self.helpbutton.setToolTip("Help button")
+		self.wikibutton.setMinimumWidth(30)
+		self.wikibutton.setMinimumHeight(30)
+		self.wikibutton.setEnabled(False)
+		#self.helpbutton = PMToolButton()
+		#self.helpbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(helpicon)))
+		#self.helpbutton.setToolTip("Help button")
 		self.expertbutton = PMToolButton()
-		self.expertbutton.setDown(self.expertmode, quiet=True)
+		self.expertbutton.setDown(False, quiet=True)
 		self.expertbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(experticon)))
 		self.expertbutton.setToolTip("ExpertMode")
+		self.expertbutton.setEnabled(False)
 		self.wizardbutton = QtGui.QToolButton()
 		self.wizardbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(wizardicon)))
 		self.wizardbutton.setToolTip("Form Wizard")
 		self.wizardbutton.setMinimumWidth(30)
 		self.wizardbutton.setMinimumHeight(30)
+		self.wizardbutton.setEnabled(False)
 		self.logbutton = PMToolButton()
 		self.logbutton.setToolTip("Display the note book")
 		self.logbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(noteicon)))
@@ -546,7 +531,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		self.taskmanagerbutton.setToolTip("Diaplay the task manager")
 		self.taskmanagerbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(taskicon)))
 		tbox.addWidget(self.wikibutton)
-		tbox.addWidget(self.helpbutton)
+		#tbox.addWidget(self.helpbutton)
 		tbox.addWidget(self.logbutton)
 		tbox.addWidget(self.taskmanagerbutton)
 		tbox.addWidget(self.wizardbutton)
@@ -556,8 +541,8 @@ class EMProjectManager(QtGui.QMainWindow):
 		toolwidget.setLayout(tbox)
 		
 		QtCore.QObject.connect(self.expertbutton,QtCore.SIGNAL("stateChanged(bool)"),self._on_expertmodechanged)
-		QtCore.QObject.connect(self.helpbutton,QtCore.SIGNAL("stateChanged(bool)"),self._on_helpbutton)
-		QtCore.QObject.connect(self.wikibutton,QtCore.SIGNAL("stateChanged(bool)"),self._on_wikibutton)
+		#QtCore.QObject.connect(self.helpbutton,QtCore.SIGNAL("stateChanged(bool)"),self._on_helpbutton)
+		QtCore.QObject.connect(self.wikibutton,QtCore.SIGNAL("clicked()"),self._on_wikibutton)
 		QtCore.QObject.connect(self.logbutton,QtCore.SIGNAL("stateChanged(bool)"),self._on_logbutton)
 		QtCore.QObject.connect(self.taskmanagerbutton,QtCore.SIGNAL("stateChanged(bool)"),self._on_taskmgrbutton)
 		
@@ -565,12 +550,13 @@ class EMProjectManager(QtGui.QMainWindow):
 
 	def _on_expertmodechanged(self, state):
 		""" 
-		Change the GUI upon expert mode
-		"""
-		self.expertmode = state
-		if self.gui_stacked_widget.currentIndex() >= 2:	# First two widgets in the stack are the blank and textbox widgets
+		Change the GUI upon expert mode toogling
+		""" 
+		if self.gui_stacked_widget.currentIndex() >= 1:	# First widget in the stack is the blank widget
+			self.setProgramExpertMode(int(state)+1)	# If we are able to set the state, then button is avaialble(state = 0), hence we toggle betwen '1', availible and OFF or '2', availible and ON
 			self._set_GUI(self.getProgram(), self.getProgramMode())
-		
+	
+	'''
 	def _on_helpbutton(self, state):
 		"""
 		Load help info for the current GUI widgetitem
@@ -585,24 +571,26 @@ class EMProjectManager(QtGui.QMainWindow):
 		else:
 			# Set the stacked widget to the GUI
 			self._set_GUI(self.getProgram(), self.getProgramMode())
+	'''
 	
 	def _on_logbutton(self, state):
-		"""Load the log book
+		"""
+		Load the log book
 		"""
 		if state:
 			self.loadNoteBook()
 		else:
 			self.notebook.hide()
 	
-	def _on_wikibutton(self, state):
-		""" Load the wiki help """
-		if state:
-			self.loadWiki()
-		else:
-			pass
+	def _on_wikibutton(self):
+		""" 
+		Load the wiki help
+		"""
+		self.loadWiki()
 			
 	def _on_taskmgrbutton(self, state):
-		"""Load the log book
+		"""
+		Load the log book
 		"""
 		if state:
 			self.loadTaskManager()
@@ -611,7 +599,7 @@ class EMProjectManager(QtGui.QMainWindow):
 	
 	def loadUsage(self, program):
 		"""
-		Read in and return the usage from an e2 program
+		Read in and return the usage from an e2program
 		"""
 		try:
 			f = open(os.getenv("EMAN2DIR")+"/bin/"+program,"r")
@@ -654,12 +642,13 @@ class EMProjectManager(QtGui.QMainWindow):
 		"""
 		Make wiki
 		"""
-		if not self.wikipage:
-			self.wikipage = WikiPage(self)
-		self.wikipage.update()
+		import webbrowser
+		webbrowser.open(self.getProgramWikiPage())
 		
 	def makeBrowseButtonWidget(self):
-		# Make the browse buttonv
+		"""
+		Make the browse button
+		"""
 		browsewidget = QtGui.QFrame()
 		browsewidget.setFrameShape(QtGui.QFrame.StyledPanel)
 		hbox = QtGui.QHBoxLayout()
@@ -673,90 +662,80 @@ class EMProjectManager(QtGui.QMainWindow):
 		return browsewidget
 		
 	def _on_browse(self):
+		""" 
+		Launch the browser 
+		"""
 		self.window = EMBrowserWidget(withmodal=False,multiselect=False)
 		self.window.show()
 	
 	def makeCMDButtonsWidget(self):
 		"""
-		Get the GUI command buttons widget
+		Get the e2program interface command buttons widget
 		"""
 		cmdwidget = QtGui.QFrame()
 		cmdwidget.setFrameShape(QtGui.QFrame.StyledPanel)
 		hbox = QtGui.QHBoxLayout()
 		self.cancelbutton = QtGui.QPushButton("Cancel")
-		self.cmdlinebutton = QtGui.QPushButton("Get CMD")
 		self.launchbutton = QtGui.QPushButton("Launch")
 		hbox.addWidget(self.cancelbutton)
-		hbox.addWidget(self.cmdlinebutton)
 		hbox.addWidget(self.launchbutton)
 		hbox.setContentsMargins(4,4,4,4)
 		cmdwidget.setLayout(hbox)
 		
 		QtCore.QObject.connect(self.cancelbutton,QtCore.SIGNAL("clicked()"),self._on_cmd_cancel)
-		QtCore.QObject.connect(self.cmdlinebutton,QtCore.SIGNAL("clicked()"),self._on_cmd_getcmd)
 		QtCore.QObject.connect(self.launchbutton,QtCore.SIGNAL("clicked()"),self._on_cmd_launch)
 		
 		return cmdwidget
 	
+	def clearE2Interface(self):
+		"""
+		Clear the e2program interface
+		"""
+		self.getCurrentTree().clearSelection()
+		self.tree_stacked_widget.currentWidget().setCurrentItem(None)
+		self.gui_stacked_widget.setCurrentIndex(0)	# blank screen
+		self.updateProject()
+		
 	def _on_cmd_cancel(self):
 		"""
 		'cancel' the present form'. This just pulls up the blank screen and updates the project
 		"""
-		self.gui_stacked_widget.setCurrentIndex(0)
-		self.updateProject()
-		
-	def _on_cmd_getcmd(self):
-		""" 
-		Dispaly the command generated from the GUI 
-		"""
-		if self.gui_stacked_widget.currentIndex() <= 1: return	# Obviously we dnot want to run get command on the blank of cmd widgets
-		cmd = self.gui_stacked_widget.currentWidget().getCommand()
-		if not cmd: return					# The command has some errors
-		self.guitexteditbox.setWordWrapMode(QtGui.QTextOption.WrapAnywhere)
-		self.guitexteditbox.setText(cmd)
-		self.gui_stacked_widget.setCurrentIndex(1)
+		self.clearE2Interface()
 
-	
 	def _on_cmd_launch(self):
 		""" 
 		Launch the command from the GUI 
 		"""
 		if self.gui_stacked_widget.currentIndex() == 0: return	# No cmd to run
+		
 		# Else Run the command
-		cmd = None
-		if self.gui_stacked_widget.currentIndex() == 1:	# Use the command in the textbox
-			if self.helpbutton.isDown(): return	# Don't launch using the help info
-			cmd = self.gui_stacked_widget.widget(1).toPlainText()
-			
-		else:						# Get the command from the GUI
-			cmd = self.gui_stacked_widget.currentWidget().getCommand()
+		cmd = self.gui_stacked_widget.currentWidget().getCommand()
 		if self.launchScript(cmd): 
-			self.gui_stacked_widget.setCurrentIndex(0)
-			self.updateProject()	
+			self.clearE2Interface()
 	
 	def launchScript(self, cmd):
 		"""
 		Start the script running 
 		"""
 		if not cmd: return False	# Don't excecute a broken script
-		# --ipd=-2 tells the pm log book that this job is already in the pm
+		# --ipd=-2 ; tell .eman2log.txt that this job is already in the pm note book
 		if self.notebook and self.getProgramNoteLevel() > 0:
 			# Only take notes if note level is greater than 0
 			self.notebook.insertNewJob(cmd,local_datetime())
 			self.notebook.writeNotes()
-			child = subprocess.Popen((str(cmd)+" --ppid=-2"), shell=True, cwd=self.pm_projects_db[self.pn_project_name]["CWD"])
+			child = subprocess.Popen((str(cmd)+" --ppid=-2"), shell=True, cwd=self.pm_cwd)
 		else:
 			if self.getProgramNoteLevel() > 0:
-				child = subprocess.Popen(str(cmd), shell=True, cwd=self.pm_projects_db[self.pn_project_name]["CWD"])
+				child = subprocess.Popen(str(cmd), shell=True, cwd=self.pm_cwd)
 			else:
-				child = subprocess.Popen((str(cmd)+" --ppid=-2"), shell=True, cwd=self.pm_projects_db[self.pn_project_name]["CWD"])
+				child = subprocess.Popen((str(cmd)+" --ppid=-2"), shell=True, cwd=self.pm_cwd)
 		self.statusbar.setMessage("Program %s Launched!!!!"%str(cmd).split()[0])
 		
 		return True
 		
 	def _add_children(self, toplevel, widgetitem):
 		""" 
-		recursive hlper function for loadTree
+		recursive helper function for loadTree
 		"""
 		for child in toplevel["CHILDREN"]:
 			qtreewidget = PMQTreeWidgetItem(QtCore.QStringList(child["NAME"]))
@@ -766,6 +745,10 @@ class EMProjectManager(QtGui.QMainWindow):
 			if "MODE" in child: qtreewidget.setMode(child["MODE"])
 			# Option note level and note elevel > 0 means add job to notebook. Good to prevent a lot of crap from piling up!
 			if "NOTELEVEL" in child: qtreewidget.setNoteLevel(child["NOTELEVEL"])
+			# Optional wikipage, to load info about the program from the wiki
+			if "WIKIPAGE" in child: qtreewidget.setWikiPage(child["WIKIPAGE"])
+			# Optional expertmode, to enable expert mode GUI widgets
+			if "EXPERT" in child:  qtreewidget.setExpertMode(child["EXPERT"])
 			self._add_children(child, qtreewidget)
 			widgetitem.addChild(qtreewidget)
 			
@@ -798,13 +781,17 @@ class EMProjectManager(QtGui.QMainWindow):
 			if "MODE" in toplevel: qtreewidget.setMode(toplevel["MODE"])
 			# Option note level and note elevel > 0 means add job to notebook. Good to prevent a lot of crap from piling up!
 			if "NOTELEVEL" in toplevel: qtreewidget.setNoteLevel(toplevel["NOTELEVEL"])
+			# Optional wikipage, to load info about the program from the wiki
+			if "WIKIPAGE" in toplevel: qtreewidget.setWikiPage(toplevel["WIKIPAGE"])
+			# Optional expertmode, to enable expert mode GUI widgets
+			if "EXPERT" in toplevel:  qtreewidget.setExpertMode(toplevel["EXPERT"])
 			self._add_children(toplevel, qtreewidget)
 			QTree.addTopLevelItem(qtreewidget)
 		
 		QtCore.QObject.connect(QTree, QtCore.SIGNAL("itemClicked(QTreeWidgetItem*,int)"), self._tree_widget_click)
 		
 		return QTree
-	
+		
 	def json_strip_comments(self, data):
 		"""This method takes a JSON-serialized string and removes
 		JavaScript-style comments. These include // and /* */"""
@@ -829,7 +816,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		
 		programfile = program
 		# Need a widget for each program for each mode
-		if self.expertmode: 
+		if self.getProgramExpertMode() == 2: 
 			program = "Expert"+program+mode# There is a separate widget for the advanced mode
 		else:
 			program = program+mode
@@ -843,7 +830,7 @@ class EMProjectManager(QtGui.QMainWindow):
 			self.stackedWidgetHash[program] = self.gui_stacked_widget.count()
 			guioptions = self._read_e2program(programfile, mode)
 			# Now actually make the widget
-			widget = PMGUIWidget(guioptions, programfile, self, mode)
+			widget = PMProgramWidget(guioptions, programfile, self, mode)
 			self.gui_stacked_widget.addWidget(widget)
 			self.gui_stacked_widget.setCurrentIndex(self.stackedWidgetHash[program])
 				
@@ -894,70 +881,139 @@ class EMProjectManager(QtGui.QMainWindow):
 		"""
 		self.TOMOtree = self.loadTree(os.getenv("EMAN2DIR")+'/lib/pmconfig/tomo.json', 'Tomography')
 		return self.TOMOtree
+	
+	def getCurrentTree(self):
+		""" 
+		Return Current Tree
+		"""
+		return self.tree_stacked_widget.currentWidget()
 		
 	def getProgram(self):
 		"""
 		return the current program
 		"""
-		return self.tree_stacked_widget.currentWidget().currentItem().getProgram()
-		
+		try:
+			return self.tree_stacked_widget.currentWidget().currentItem().getProgram()
+		except:
+			return None
+			
 	def getProgramMode(self):
 		"""
 		return the current mode of the current program
 		"""
-		return self.tree_stacked_widget.currentWidget().currentItem().getMode()
-		
+		try:
+			return self.tree_stacked_widget.currentWidget().currentItem().getMode()
+		except:
+			return None
+			
 	def getProgramNoteLevel(self):
 		"""
 		return the program note level, used for noting
 		"""
-		return self.tree_stacked_widget.currentWidget().currentItem().getNoteLevel()
-		
+		try:
+			return self.tree_stacked_widget.currentWidget().currentItem().getNoteLevel()
+		except:
+			return None
+			
+	def getProgramWikiPage(self):
+		"""
+		Return the program wiki page
+		"""
+		try:
+			return self.tree_stacked_widget.currentWidget().currentItem().getWikiPage()
+		except:
+			return None
+			
+	def getProgramExpertMode(self):
+		"""
+		Return expert mode 0 = not available, 1 = availble but not used, 2 = available and used
+		"""
+		try:
+			return self.tree_stacked_widget.currentWidget().currentItem().getExpertMode()
+		except:
+			return None
+	
+	def setProgramExpertMode(self, state):
+		"""
+		Set expert mode 
+		"""
+		self.tree_stacked_widget.currentWidget().currentItem().setExpertMode(state)
+			
 	def getCS(self):
 		""" Return the project CS """
 		try:
-			return self.pm_projects_db[self.pn_project_name]['CS']
+			return self.pm_projects_db.get("global.microscope_cs",dfl=0.0)
 		except:
 			return ""
 		
 	def getVoltage(self):
 		""" Return the project Voltage """
 		try:
-			return self.pm_projects_db[self.pn_project_name]['VOLTAGE']
+			return self.pm_projects_db.get("global.microscope_voltage",dfl=0.0)
 		except:
 			return ""
 		
 	def getAPIX(self):
 		""" Return the project Apix """
 		try:
-			return self.pm_projects_db[self.pn_project_name]['APIX']
+			return self.pm_projects_db.get("global.apix",dfl=1.0)
 		except:
 			return ""
 	
+	def getMass(self):
+		""" Return the particle mass """
+		try:
+			return self.pm_projects_db.get("global.particle_mass", dfl=800.0)
+		except:
+			return ""
 	def getPMCWD(self):
 		""" return the CWD that the pm is working in """
-		return self.pm_projects_db[self.pn_project_name]['CWD']
-		
+		return self.pm_cwd
+	
+	def changeDirectory(self, directory):
+		"""
+		Change directory we are working in
+		"""
+		os.chdir(directory)
+		self.pm_cwd = directory
+		# update widget to reflect new CWD
+		if self.gui_stacked_widget.currentIndex() > 0:
+			self.gui_stacked_widget.currentWidget().updateWidget()
+				
 	def updateProject(self):
 		"""
 		Update the Project. Make sure buttons, DB, title and icon observe the state of the PM
 		"""
+		# Set Name, use db value, otherwise whatever the default is set to 
+		self.pn_project_name = self.pm_projects_db.get("project_name", dfl=self.pn_project_name_default)
 		self.PMProjectNameBanner.setText("Project Name: "+self.pn_project_name)
-		# Icon loading may be a bit slow
-		if self.pm_icon != self.pm_projects_db[self.pn_project_name]['ICON']:
-			self.PMIcon.setIcon(self.pm_projects_db[self.pn_project_name]['ICON'])
-		self.pm_icon = self.pm_projects_db[self.pn_project_name]['ICON']
-		if self.pm_cwd != self.pm_projects_db[self.pn_project_name]["CWD"]:
-			self.pm_cwd = self.pm_projects_db[self.pn_project_name]["CWD"]
-			os.chdir(self.pm_cwd)
-			# update widget to reflect new CWD
-			if self.gui_stacked_widget.currentIndex() > 1:
-				self.gui_stacked_widget.currentWidget().updateWidget()
+
+		# Set Icon, use db value, otherwise whatever the default is set to 
+		self.pm_icon = self.pm_projects_db.get("project_icon", dfl=self.pm_icon_default)
+		self.PMIcon.setIcon(self.pm_icon)
+
+		# Set buttons
 		self.logbutton.setDown(bool(self.notebook), quiet=True)
 		self.taskmanagerbutton.setDown(bool(self.taskmanager), quiet=True)
+		
+		# Wikipage
+		if self.getProgramWikiPage():
+			self.wikibutton.setEnabled(True)
+		else:
+			self.wikibutton.setEnabled(False)
+			
+		# Set Expert mode button
+		if self.getProgramExpertMode() > 0:
+			self.expertbutton.setEnabled(True)
+			if self.getProgramExpertMode() == 2:
+				self.expertbutton.setDown(True)
+			else:
+				self.expertbutton.setDown(False)
+		else:
+			self.expertbutton.setEnabled(False)
 		# Help button should only be down if the textbox widget is displayed
-		if self.gui_stacked_widget.currentIndex() != 1:
-			self.helpbutton.setDown(False, quiet=True)
+		#if self.gui_stacked_widget.currentIndex() != 0:
+		#	self.helpbutton.setDown(False, quiet=True)
 	
 class EMAN2StatusBar(QtGui.QTextEdit):
 	"""
@@ -977,9 +1033,9 @@ class EMAN2StatusBar(QtGui.QTextEdit):
 		textcursor = self.textCursor()
 		textcursor.movePosition(QtGui.QTextCursor.End)
 		if textcursor.columnNumber() !=0:
-			self.insertPlainText("\n"+text)
+			self.insertHtml("<br>"+text)
 		else:
-			self.insertPlainText(text)
+			self.insertHtml(text)
 		self.verticalScrollBar().setValue(self.verticalScrollBar().maximum())
 		
 
@@ -993,27 +1049,6 @@ class PMIcon(QtGui.QLabel):
 	
 	def setIcon(self, image):
 		self.setText(("<img src=\"%s\" />")%image)
-
-class WikiPage():
-	"""
-	Load the wikipage
-	"""
-	def __init__(self, pm):
-		self.pm = weakref.ref(pm)
-	
-		
-		self.downloadHTML('xx')
-	
-	def downloadHTML(self, page):
-		import webbrowser
-		webbrowser.open('http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2proc2d')
-		#self.wikibox.setHtml(wiki.read())
-		
-	def update(self):
-		pass
-	
-	def _on_close(self):
-		self.close()
 		
 class NoteBook(QtGui.QWidget):
 	"""
@@ -1243,7 +1278,7 @@ class PMTextEdit(QtGui.QTextEdit):
 		
 class TaskManager(QtGui.QWidget):
 	"""
-	The Logbook for PM
+	The Task manager for PM, unlike e2workflow.py, this actualy works
 	"""
 	def __init__(self, pm):
 		QtGui.QWidget.__init__(self)
@@ -1471,6 +1506,62 @@ class PMQListWidgetItem(QtGui.QListWidgetItem):
 	def getProgramName(self):
 		return self.programname
 		
+class PMProgramWidget(QtGui.QTabWidget):
+	"""
+	Creates a program interface for each e2 program, for each mode, etc
+	"""
+	def __init__(self, options, program, pm, mode):
+		QtGui.QTabWidget.__init__(self)
+		self.pm = weakref.ref(pm)
+		self.cmderrorstate = False
+		
+		# Add GUI tab
+		self.guiwidget = PMGUIWidget(options, program, pm, mode)
+		self.addTab(self.guiwidget, "GUI")
+		
+		# Add command tab
+		self.guitexteditbox = QtGui.QTextEdit("")
+		self.guitexteditbox.setWordWrapMode(QtGui.QTextOption.WrapAnywhere)
+		self.addTab(self.guitexteditbox, "Command")
+	
+		# Add help tab
+		self.helptexteditbox = QtGui.QTextEdit("")
+		self.helptexteditbox.setWordWrapMode(QtGui.QTextOption.WordWrap)
+		self.helptexteditbox.setReadOnly(True)
+		self.helptexteditbox.viewport().setCursor(QtCore.Qt.ArrowCursor)
+		self.helptexteditbox.setText(self.pm().loadUsage(self.pm().getProgram()))
+		self.addTab(self.helptexteditbox, "Help")
+			
+		QtCore.QObject.connect(self, QtCore.SIGNAL("currentChanged(int)"), self._on_tabchange)
+		
+	def updateWidget(self):
+		""" Delegate to guiwidget """
+		self.guiwidget.updateWidget()
+	
+	def getCommand(self):
+		""" Delegate to gui widget """ 
+		if self.currentIndex() == 0:
+			return self.guiwidget.getCommand()
+		elif self.currentIndex() == 1:
+			if not self.cmderrorstate: 
+				return self.guitexteditbox.toPlainText()
+			else:
+				self.pm().statusbar.setMessage("Error(s) in GUI parameters. Please fix....")
+				return None
+		else:
+			self.pm().statusbar.setMessage("Error Can't launch from help menu")
+			return None
+		
+	def _on_tabchange(self, idx):
+		if idx == 1:
+			errormsg = self.guiwidget.getErrorMessage()
+			if errormsg:
+				self.cmderrorstate = True
+				self.guitexteditbox.setHtml("Error in parameters<br>"+errormsg)
+			else:
+				self.cmderrorstate = False
+				self.guitexteditbox.setHtml(self.guiwidget.getCommand())
+		
 class PMGUIWidget(QtGui.QScrollArea):
 	"""
 	Creates a GUI widget using a dict derived from the e2program options
@@ -1478,7 +1569,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 	def __init__(self, options, program, pm, mode):
 		QtGui.QScrollArea.__init__(self)
 		self.widgetlist = []
-		self.cwd  = pm.pm_projects_db[pm.pn_project_name]['CWD']	# The working directory that were in
+		self.cwd  = pm.pm_cwd	# The working directory that were in
 		self.program = program
 		self.db = db_open_dict("bdb:"+str(self.cwd)+"#"+program)
 		self.pm = weakref.ref(pm)
@@ -1487,7 +1578,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 		gridbox = QtGui.QGridLayout()
 		for option in options:
 			"""create the correct widget type"""
-			if ('expert' in  option) and not self.pm().expertmode: continue	# Do no add expertmode optionsif not in expert mode
+			if ('expert' in  option) and self.pm().getProgramExpertMode() < 2: continue	# Do no add expertmode options if not in expert mode (defined as 2, available AND turned on)
 
 			if option['guitype'] == 'header': 
 				widget = PMHeaderWidget(option['name'], option['title'])
@@ -1569,6 +1660,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 		return urange
 	
 	def getChoices(self, option):
+		""" Get a list of choices for combo boxes """
 		choices = []
 		if 'choicelist' in option:
 			choices = eval(option['choicelist'])
@@ -1604,7 +1696,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 		
 	def updateWidget(self):
 		# reload the DB if necessary (when projects are changed)
-		thiscwd = self.pm().pm_projects_db[self.pm().pn_project_name]['CWD']
+		thiscwd = self.pm().pm_cwd
 		if thiscwd != self.cwd:
 			self.cwd = thiscwd
 			self.db = db_open_dict("bdb:"+str(self.cwd)+"#"+self.program)
@@ -1625,7 +1717,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 			if widget.getArgument() == None: continue
 			# Check for errors before we launch script
 			if widget.getErrorMessage():
-				self.pm().statusbar.setMessage(widget.getErrorMessage())
+				self.pm().statusbar.setMessage(self.getErrorMessage())
 				return None
 			# Save the value
 			self.db[widget.getName()+widget.getMode()] = widget.getValue()
@@ -1633,6 +1725,14 @@ class PMGUIWidget(QtGui.QScrollArea):
 			
 		self.pm().statusbar.setMessage("")	# Blank Status bar
 		return args
+	
+	def getErrorMessage(self):
+		""" Check for any error messages """
+		errormsg = ""
+		for widget in self.widgetlist:
+			if widget.getErrorMessage():
+				errormsg += (widget.getErrorMessage()+"<br>")
+		return errormsg
 			
 	def _on_message(self, QString):
 		self.pm().statusbar.setMessage(str(QString))
@@ -1646,6 +1746,8 @@ class PMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 		self.program = None
 		self.mode = ""
 		self.notelevel = 0
+		self.wikipage = None
+		self.exmodestate = False
 		
 	def setProgram(self, program):
 		""" The name of the program the tree widget is supposed to run """
@@ -1668,6 +1770,25 @@ class PMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 	def getNoteLevel(self):
 		return self.notelevel
 
+	def setWikiPage(self, page):
+		""" The wiki for a program """
+		self.wikipage = page
+		
+	def getWikiPage(self):
+		return self.wikipage
+		
+	def setExpertMode(self, state):
+		"""
+		Sets the expert mode state
+		0 = not avialable
+		1 = available, but turned off
+		2 = avaialble and turned on
+		"""
+		self.exmodestate = state
+		
+	def getExpertMode(self):
+		return self.exmodestate
+		
 class PMToolButton(QtGui.QToolButton):
 	""" Create a toogle button """
 	def __init__(self):
@@ -1685,7 +1806,7 @@ class PMToolButton(QtGui.QToolButton):
 	def mouseReleaseEvent(self, event):
 		pass
 
-class ProjectDialogBase(QtGui.QDialog):
+class ProjectDialog(QtGui.QDialog):
 	"""
 	Base class for the Project New and Edit dialogs
 	"""
@@ -1698,22 +1819,30 @@ class ProjectDialogBase(QtGui.QDialog):
 		frame = QtGui.QFrame()
 		frame.setFrameStyle(QtGui.QFrame.StyledPanel)
 		grid = QtGui.QGridLayout()
+		# add intro
+		textbox = QtGui.QTextEdit("")
+		textbox.setHtml("Welcome to the EMAN2 project manager. Please add project specific paramters below. For Questions email: <a href='mailto:sludtke@bcm.edu'>sludtke@bcm.edu<\a>")
+		textbox.setMaximumHeight(50)
+		textbox.setReadOnly(True)
+		textbox.viewport().setCursor(QtCore.Qt.ArrowCursor)
+		
+		grid.addWidget(textbox, 0, 0, 1, 2)
+		# add pm name and icon
 		project_name_label = QtGui.QLabel("Project Name")
-		self.project_name = QtGui.QLineEdit("New Project")
+		self.project_name = QtGui.QLineEdit()
 		self.project_name.setMinimumWidth(minwidth)
-		grid.addWidget(project_name_label, 0, 0)
-		grid.addWidget(self.project_name, 0, 1)
-		project_directory_label = QtGui.QLabel("Project Directory")
-		self.project_directory = QtGui.QLineEdit(self.pm.pm_cwd)
-		self.project_directory.setMinimumWidth(minwidth)
-		grid.addWidget(project_directory_label, 1, 0)
-		grid.addWidget(self.project_directory, 1, 1)
+		grid.addWidget(project_name_label, 1, 0)
+		grid.addWidget(self.project_name, 1, 1)
 		icon_path_label = QtGui.QLabel("Project Icon")
-		self.icon_path = QtGui.QLineEdit(self.pm.pm_icon)
+		self.icon_path = QtGui.QLineEdit()
 		self.icon_path.setMinimumWidth(minwidth)
 		grid.addWidget(icon_path_label, 2, 0)
 		grid.addWidget(self.icon_path, 2, 1)
-		
+		# Mass
+		particle_mass_label = QtGui.QLabel("Particle Mass")
+		self.particle_mass = QtGui.QLineEdit()
+		grid.addWidget(particle_mass_label, 3, 0)
+		grid.addWidget(self.particle_mass, 3, 1)
 		# Scope pars
 		micrscope_cs_label = QtGui.QLabel("Microscope CS")
 		self.micrscope_cs = QtGui.QLineEdit()
@@ -1721,12 +1850,12 @@ class ProjectDialogBase(QtGui.QDialog):
 		self.microscope_voltage = QtGui.QLineEdit()
 		microscope_apix_label = QtGui.QLabel("Microscope apix")
 		self.microscope_apix = QtGui.QLineEdit()
-		grid.addWidget(micrscope_cs_label, 3, 0)
-		grid.addWidget(self.micrscope_cs, 3, 1)
-		grid.addWidget(microscope_voltage_label, 4, 0)
-		grid.addWidget(self.microscope_voltage, 4, 1)
-		grid.addWidget(microscope_apix_label, 5, 0)
-		grid.addWidget(self.microscope_apix, 5, 1)
+		grid.addWidget(micrscope_cs_label, 4, 0)
+		grid.addWidget(self.micrscope_cs, 4, 1)
+		grid.addWidget(microscope_voltage_label, 5, 0)
+		grid.addWidget(self.microscope_voltage, 5, 1)
+		grid.addWidget(microscope_apix_label, 6, 0)
+		grid.addWidget(self.microscope_apix, 6, 1)
 		
 		frame.setLayout(grid)
 		
@@ -1742,94 +1871,26 @@ class ProjectDialogBase(QtGui.QDialog):
 		self.connect(done_pb, QtCore.SIGNAL('clicked()'), self._on_done)
 		self.connect(cancel_pb, QtCore.SIGNAL('clicked()'), self._on_cancel)
 		
-	def _on_cancel(self):
-		self.done(1)
-		
-class DialogNewProject(ProjectDialogBase):
-	"""
-	Generate the new projects dialog
-	"""
-	def __init__(self, pm):
-		ProjectDialogBase.__init__(self, pm)
-		self.setWindowTitle('New Project')
-		
-		
-	def _on_done(self):
-		for project in self.pm.pm_projects_db.keys():
-			if project == "Unknown": continue
-			if project == self.project_name.text():
-				self.pm.statusbar.setMessage("Project Name is alreay in use!!!")
-				return
-			if self.pm.pm_projects_db[project]["CWD"] == self.project_directory.text():
-				self.pm.statusbar.setMessage("This project directory is already in use by another project!!!")
-				return
-		self.pm.pm_projects_db[str(self.project_name.text())] = {"CWD":str(self.project_directory.text()),"ICON":str(self.icon_path.text()),"CS":str(self.micrscope_cs.text()),"VOLTAGE":str(self.microscope_voltage.text()),"APIX":str(self.microscope_apix.text())}
-		self.pm.pn_project_name = str(self.project_name.text())
-		
-		self.pm.statusbar.setMessage("Project: "+self.project_name.text()+" created :)")
-		self.pm.updateProject()
-		self.done(0)
+		# Set values
+		self.fillFields()
 	
-class DialogEditProject(ProjectDialogBase):
-	"""
-	Edit an existing project
-	"""
-	def __init__(self, pm):
-		ProjectDialogBase.__init__(self, pm)
-		self.setWindowTitle('Edit Project')
+	def fillFields(self):
 		self.project_name.setText(self.pm.pn_project_name)
-		self.project_name.setReadOnly(True)
-		self.project_directory.setText(self.pm.pm_cwd)
-		
-		# CS, VOLTAGE, APIX
-		db = self.pm.pm_projects_db[self.pm.pn_project_name]
-		self.micrscope_cs.setText(db['CS'])
-		self.microscope_voltage.setText(db['VOLTAGE'])
-		self.microscope_apix.setText(db['APIX'])
+		self.icon_path.setText(self.pm.pm_icon)
+		self.micrscope_cs.setText(str(self.pm.getCS()))
+		self.microscope_voltage.setText(str(self.pm.getVoltage()))
+		self.microscope_apix.setText(str(self.pm.getAPIX()))
+		self.particle_mass.setText(str(self.pm.getMass()))
 		
 	def _on_done(self):
-		self.pm.pm_projects_db[self.pm.pn_project_name] = {"CWD":str(self.project_directory.text()),"ICON":str(self.icon_path.text()),"CS":str(self.micrscope_cs.text()),"VOLTAGE":str(self.microscope_voltage.text()),"APIX":str(self.microscope_apix.text())}
+		self.pm.pm_projects_db['global.particle_mass'] = str(self.particle_mass.text())
+		self.pm.pm_projects_db['global.microscope_cs'] = str(self.micrscope_cs.text())
+		self.pm.pm_projects_db['global.microscope_voltage'] = str(self.microscope_voltage.text())
+		self.pm.pm_projects_db['global.apix'] = str(self.microscope_apix.text())
+		self.pm.pm_projects_db['project_icon'] = str(self.icon_path.text())
+		self.pm.pm_projects_db['project_name'] = str(self.project_name.text())
 		self.pm.statusbar.setMessage("Project: "+self.project_name.text()+" edited!")
 		self.pm.updateProject()
-		self.done(0)
-	
-class DialogOpenProject(QtGui.QDialog):
-	"""
-	Generate the new projects dialog
-	"""
-	def __init__(self, pm):
-		QtGui.QDialog.__init__(self)
-		self.pm = pm
-		self.setWindowTitle('Open Project')
-		grid = QtGui.QGridLayout()
-		self.list_widget = QtGui.QListWidget()
-		# Populate list
-		for project in self.pm.pm_projects_db.keys():
-			if project == "Unknown": continue
-			item = QtGui.QListWidgetItem(project)
-			self.list_widget.addItem(item) 
-			if self.pm.pn_project_name == project:
-				self.list_widget.setCurrentItem(item)
-		self.list_widget.sortItems()
-		
-		grid.addWidget(self.list_widget, 0, 0, 1, 2)
-		open_pb = QtGui.QPushButton("Open Project")
-		cancel_pb = QtGui.QPushButton("Cancel")
-		grid.addWidget(open_pb)
-		grid.addWidget(cancel_pb)
-		self.setLayout(grid)
-		
-		self.connect(open_pb, QtCore.SIGNAL('clicked()'), self._on_openproject)
-		self.connect(cancel_pb, QtCore.SIGNAL('clicked()'), self._on_cancel)
-		
-	def _on_openproject(self):
-		self.pm.pn_project_name = str(self.list_widget.currentItem().text())
-		self.pm.statusbar.setMessage("Opened Project: "+self.pm.pn_project_name)
-		self.pm.updateProject()
-		if self.pm.gui_stacked_widget.currentIndex() >= 2:
-			self.pm.gui_stacked_widget.currentWidget().updateWidget()
-		else:
-			self.pm.gui_stacked_widget.setCurrentIndex(0)
 		self.done(0)
 		
 	def _on_cancel(self):

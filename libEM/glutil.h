@@ -105,7 +105,7 @@ namespace EMAN
 		* Uses OpenGL arrays for maximum performance
 		* @return an OpenGL display list number
 		*/
-		static unsigned long get_isosurface_dl(MarchingCubes* mc, unsigned int tex_id = 0, bool surface_face_z = false);
+		static unsigned long get_isosurface_dl(MarchingCubes* mc, unsigned int tex_id = 0, bool surface_face_z = false, bool recontour = true);
 		
 		/** Load a EMAN style transform to open GL w/o having to go through python
 		* Calls glLoadTransposeMatrix rather than glLoadMatrix to convert between C/C++/Python row-major format and openGL's Column major format

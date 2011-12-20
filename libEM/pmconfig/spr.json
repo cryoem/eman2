@@ -38,27 +38,35 @@
       {
         "ICON": "green_boxes", 
         "MODE": "boxing",
+        "EXPERT": 1,
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2boxer",
         "PROGRAM": "e2boxer.py", 
         "NAME": "Interactive Boxing-  e2boxer", 
         "CHILDREN": []
       }, 
       {
         "ICON": "green_boxes",
-        "MODE": "extraction", 
+        "MODE": "extraction",
+        "EXPERT": 1, 
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2boxer",
         "PROGRAM": "e2boxer.py", 
         "NAME": "Generate Output -e2boxer", 
         "CHILDREN": []
       }, 
       {
         "ICON": "green_boxes",
-        "MODE": "boxing", 
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2RCTboxer",
+        "MODE": "boxing",
+        "EXPERT": 1, 
         "PROGRAM": "e2RCTboxer.py", 
         "NAME": "Tilt Pair Boxing-  e2RCTboxer", 
         "CHILDREN": []
       }, 
       {
         "ICON": "green_boxes",
-        "MODE": "extraction", 
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2RCTboxer",
+        "MODE": "extraction",
+        "EXPERT": 1,
         "PROGRAM": "e2RCTboxer.py", 
         "NAME": "Generate Output -e2RCTboxer", 
         "CHILDREN": []
@@ -87,7 +95,8 @@
       {
         "ICON": "ctf", 
         "PROGRAM": "e2ctf.py",
-        "MODE": "autofit", 
+        "MODE": "autofit",
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2ctf",
         "NAME": "Automated Fitting -e2ctf", 
 	"NOTELEVEL": "1",
         "CHILDREN": []
@@ -96,6 +105,7 @@
         "ICON": "ctf", 
         "PROGRAM": "e2ctf.py",
 	"MODE": "tuning", 
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2ctf",
         "NAME": "Interactive Tuning -e2ctf", 
         "CHILDREN": []
       }, 
@@ -103,6 +113,7 @@
         "ICON": "ctf", 
         "PROGRAM": "e2ctf.py", 
         "MODE": "genoutp",
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2ctf",
         "NAME": "Generate Output - e2ctf", 
 	"NOTELEVEL": "1",
         "CHILDREN": []
@@ -111,6 +122,7 @@
         "ICON": "ctf", 
         "PROGRAM": "e2ctf.py", 
         "MODE": "gensf",
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2ctf",
         "NAME": "Generate Structure Factor - e2ctf", 
 	"NOTELEVEL": "1",
         "CHILDREN": []
@@ -131,6 +143,7 @@
       }, 
       {
         "ICON": "multiple_images", 
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2evalparticles",
         "PROGRAM": "e2evalparticles.py", 
         "NAME": "Evaluate Particle Sets",
 	"NOTELEVEL": "1",
@@ -144,7 +157,8 @@
     "NAME": "Reference Free Class Averages", 
     "CHILDREN": [
       {
-        "ICON": "web", 
+        "ICON": "web",
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2refine2d",
         "PROGRAM": "e2refine2d.py", 
         "NAME": "Generate Classes - e2refine2d", 
         "CHILDREN": []
@@ -157,14 +171,17 @@
     "NAME": "Initial Model", 
     "CHILDREN": [
       {
-        "ICON": "single_image_3d", 
+        "ICON": "single_image_3d",
+        "EXPERT": 1,
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2initialmodel", 
         "PROGRAM": "e2initialmodel.py", 
         "NAME": "Make Model - e2initialmodel", 
 	"NOTELEVEL": "1",
         "CHILDREN": []
       },
       {
-        "ICON": "single_image_3d", 
+        "ICON": "single_image_3d",
+        "EXPERT": 1,
         "PROGRAM": "e2montecarlorecon.py", 
         "NAME": "Make Model - e2montecarlo",
 	"NOTELEVEL": "1",
@@ -172,6 +189,8 @@
       },
       {
         "ICON": "single_image_3d", 
+        "EXPERT": 1,
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2rct",
         "PROGRAM": "e2rct.py", 
         "NAME": "Make Model - e2rct",
 	"NOTELEVEL": "1",
@@ -192,7 +211,8 @@
     "NAME": "3D Refinement", 
     "CHILDREN": [
       {
-        "ICON": "refine", 
+        "ICON": "refine",
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2refine", 
         "PROGRAM": "e2refine.py", 
         "NAME": "Run e2refine", 
 	"NOTELEVEL": "1",
@@ -200,6 +220,7 @@
       }, 
       {
         "ICON": "refine", 
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2refinemulti",
         "PROGRAM": "e2refinemulti.py", 
         "NAME": "Run e2refinemulti",
 	"NOTELEVEL": "1",
@@ -212,13 +233,15 @@
         "CHILDREN": [
           {
             "ICON": "refine", 
+            "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2refinetofrealign",
             "PROGRAM": "e2refinetofrealign.py", 
             "NAME": "Run e2refinetofrealign",
 	    "NOTELEVEL": "1",
             "CHILDREN": []
           }, 
           {
-            "ICON": "refine", 
+            "ICON": "refine",
+            "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2runfrealign", 
             "PROGRAM": "e2runfrealign.py", 
             "NAME": "Run e2runfrealign",
 	    "NOTELEVEL": "1",
@@ -226,6 +249,7 @@
           }, 
           {
             "ICON": "refine", 
+            "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2refinefromfrealign",
             "PROGRAM": "e2refinefromfrealign.py", 
             "NAME": "Run e2refinefromfrealign",
 	    "NOTELEVEL": "1",
@@ -241,7 +265,8 @@
     "NAME": "Resolution", 
     "CHILDREN": [
       {
-        "ICON": "resolution", 
+        "ICON": "resolution",
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2eotest",
         "PROGRAM": "e2eotest.py", 
         "NAME": "Run e2eotest",
 	"NOTELEVEL": "1",
