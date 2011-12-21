@@ -1220,7 +1220,7 @@ class EMIsosurface(EMItem3D):
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
 		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
-		#glColor(self.ambient)
+		glColor(self.ambient)
 		
 		glPushMatrix()
 		glTranslate(-self.parent.data.get_xsize()/2.0,-self.parent.data.get_ysize()/2.0,-self.parent.data.get_zsize()/2.0)

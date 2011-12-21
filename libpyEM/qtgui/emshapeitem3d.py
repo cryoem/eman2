@@ -37,7 +37,7 @@ from OpenGL.GLU import *
 from OpenGL.GL import *
 import math 
 from emglobjects import init_glut
-from emitem3d import EMItem3D, EMItem3DInspector
+from emitem3d import EMItem3D, EMItem3DInspector, drawBoundingBox
 from EMAN2 import Transform, get_3d_font_renderer, Vec3f
 from valslider import EMQTColorWidget, ValSlider, EMSpinWidget
 from libpyGLUtils2 import FTGLFontMode

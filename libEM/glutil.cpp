@@ -61,6 +61,7 @@ using namespace EMAN;
 
 //By depfault we need to first bind data to the GPU
 bool GLUtil::needtobind = 1;
+GLuint GLUtil::buffer[2] = {0, 0};
 
 unsigned int GLUtil::gen_glu_mipmaps(const EMData* const emdata)
 {
@@ -822,4 +823,29 @@ void GLUtil::glMultMatrix(const Transform& xform)
 	glMultTransposeMatrixf(reinterpret_cast<GLfloat*>(&xformlist[0]));
 }
 
+void GLUtil::glDrawBoundingBox(float width, float height, float depth)
+{
+	
+	float w2 = width/2.0;
+	float h2 = height/2.0;
+	float d2 = depth/2.0;
+	
+	float vertices[24] = {-w2,  h2,  d2, w2,  h2,  d2, w2, -h2,  d2, -w2, -h2,  d2, -w2,  h2, -d2, w2,  h2, -d2, w2, -h2, -d2, -w2, -h2, -d2};
+	int indices[24] = {0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6, 6, 7, 7, 4, 0, 4, 3, 7, 1, 5, 2, 6};
+	
+	if ( glIsBuffer(GLUtil::buffer[0])  == GL_FALSE ){
+		glGenBuffers(2, GLUtil::buffer);
+	}
+	
+	// Could use dirty bit here but not worth my time to implment
+	glBindBuffer(GL_ARRAY_BUFFER, GLUtil::buffer[0]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glVertexPointer(3,GL_FLOAT,0,0);
+	
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GLUtil::buffer[1]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	glDrawElements(GL_LINES,24,GL_UNSIGNED_INT,0);
+	
+}
 #endif // EMAN2_USING_OPENGL

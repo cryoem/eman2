@@ -126,9 +126,12 @@ namespace EMAN
 		**/
 		static void glMultMatrix(const Transform& xform);
 		
+		static void glDrawBoundingBox(float width, float height, float depth);
+		
 	private:
 		//This is a dirty bit to let the system know when to rebind data to the GPU
 		static bool needtobind;
+		static GLuint buffer[2];
 		
 	};
 }
