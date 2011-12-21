@@ -170,6 +170,7 @@ class EMCube(EMItem3D):
 			
 	def renderCube(self):        
 		# Material properties of the box
+		glDisable(GL_COLOR_MATERIAL)
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
 		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
@@ -333,6 +334,7 @@ class EMSphere(EMItem3D):
 			
 	def renderSphere(self):
 		# Material properties of the sphere
+		glDisable(GL_COLOR_MATERIAL)
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
 		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
@@ -466,6 +468,7 @@ class EMCylinder(EMItem3D):
 	def renderCylinder(self):
 	#def renderNode(self):	
 		# Material properties of the cylinder
+		glDisable(GL_COLOR_MATERIAL)
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
 		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
@@ -713,7 +716,8 @@ class EMLine(EMItem3D):
 			glRotated(ax, -1.0, 0.0, 0.0)	#Rotate to point 2 in x-y plane
 		else:
 			glRotated(ax, rx, ry, 0)
-			
+		
+		glDisable(GL_COLOR_MATERIAL)
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
 		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
@@ -859,6 +863,7 @@ class EMCone(EMItem3D):
 	def renderCone(self):
 	#def renderNode(self):	
 		# Material properties of the cone
+		glDisable(GL_COLOR_MATERIAL)
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
 		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
@@ -1020,6 +1025,7 @@ class EM3DText(EMItem3D):
 	
 	def render3DText(self):
 		# Material properties of the 3D text
+		glDisable(GL_COLOR_MATERIAL)
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
 		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)

@@ -126,6 +126,7 @@ namespace EMAN
 		**/
 		static void glMultMatrix(const Transform& xform);
 		
+		/** Draw a bounding box. This is done on the C side to simplify vertex arrays */
 		static void glDrawBoundingBox(float width, float height, float depth);
 		
 	private:
