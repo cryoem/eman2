@@ -1385,9 +1385,9 @@ void EMData::nn_SSNR(EMData* wptr, EMData* wptr2, EMData* myfft, const Transform
 						if (iyn > 0) iyt = ny - iyn + 1;
 						else	     iyt = -iyn + 1;
 
-						cmplx(-ixn,iyt,izt) += conj(btq);
+						cmplx(-ixn,iyt,izt) += std::conj(btq);
 						(*wptr)(-ixn,iyt,izt)++;
-						(*wptr2)(-ixn,iyt,izt) += norm(btq);
+						(*wptr2)(-ixn,iyt,izt) += std::norm(btq);
 					}
 				}
 			}
