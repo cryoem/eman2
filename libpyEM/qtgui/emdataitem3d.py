@@ -1128,12 +1128,6 @@ class EMIsosurface(EMItem3D):
 		""" Set the RGB mode """
 		self.rgbmode = mode
 		self.isorender.set_rgb_mode(mode)
-		if mode != 0:
-			glEnable(GL_COLOR_MATERIAL)	
-			glColorMaterial(GL_FRONT, GL_AMBIENT)
-			glColorMaterial(GL_FRONT, GL_DIFFUSE)
-		else:
-			glDisable(GL_COLOR_MATERIAL)
 			
 	def setRGBcolorScaling(self, inner, outer):
 		self.innerrad = inner
@@ -1172,6 +1166,13 @@ class EMIsosurface(EMItem3D):
 			self.getIsosurfaceContours()
 			self.force_update = False
 		
+		if self.rgbmode != 0:
+			glEnable(GL_COLOR_MATERIAL)	
+			glColorMaterial(GL_FRONT, GL_AMBIENT)
+			glColorMaterial(GL_FRONT, GL_DIFFUSE)
+		else:
+			glDisable(GL_COLOR_MATERIAL)
+			
 		# This code draws an outline around the isosurface
 		if (self.is_selected or self.getParent().is_selected) and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded(): # No need for outlining in selection mode
 						
@@ -1219,7 +1220,7 @@ class EMIsosurface(EMItem3D):
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
 		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
-		glColor(self.ambient)
+		#glColor(self.ambient)
 		
 		glPushMatrix()
 		glTranslate(-self.parent.data.get_xsize()/2.0,-self.parent.data.get_ysize()/2.0,-self.parent.data.get_zsize()/2.0)

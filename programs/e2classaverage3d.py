@@ -506,6 +506,11 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 			if verbose: 
 				print "Keep threshold : %f (min=%f  max=%f)"%(thresh,val[0],val[-1])
 
+		# Make variance image if available
+		print averager[0]
+		variance = EMData()
+		if averager[0] == 'mean':
+			averager[1]['sigma'] = variance
 		avgr=Averagers.get(averager[0], averager[1])
 		included=[]
 		
@@ -549,6 +554,8 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 		ret["class_ptcl_idxs"]=included
 		ret["class_ptcl_src"]=ptcl_file
 		
+		if averager[0] == 'mean':
+			variance.write_image(path+"/class_varmap",i)
 
 		return ret
 		
