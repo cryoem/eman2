@@ -12,7 +12,7 @@ e2proc3d.py tmp.hdf ../model_structure.hdf --process=filter.lowpass.tanh:cutoff_
 
 rm tmp.hdf
 
-sxprocess.py --generate_projections format="bdb":apix=5.2
+sxprocess.py ../model_structure.hdf data mic --generate_projections format="bdb":apix=5.2
 
 sxprocess.py demoparms --makedb=mpibdb
 e2boxer.py --gauss_autoboxer=demoparms --write_ptcl --boxsize=64 --norm=normalize.ramp.normvar mic*.hdf
