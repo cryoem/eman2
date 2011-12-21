@@ -25,11 +25,14 @@ sxprocess.py demoparms --makedb=mpibdbctf
 e2boxer.py --gauss_autoboxer=demoparms --do_ctf=demoparms --write_ptcl --boxsize=64 --norm=normalize.ramp.normvar mic*.hdf
 sxcpy.py bdb:particles/mic0_ptcls bdb:particles/mic1_ptcls bdb:particles/mic2_ptcls bdb:particles/mic3_ptcls bdb:particles/mic4_ptcls bdb:data2
 
-# To be done: phase flip the data set before processing with sxisac since bdb:data has CTF but sxisac currently does not correct for CTF.
+#  phase flip the data set before processing with sxisac since bdb:data has CTF but sxisac currently does not correct for CTF.
+sxprocess.py bdb:data bdb:flip_data --phase_flip
 
 sxheader.py bdb:data --params=active --one
 sxheader.py bdb:data --params=xform.align2d --zero
-mpirun -np 4 sxisac.py bdb:data --stab_ali=2 --init_iter=1 --main_iter=1 --match_second=1 --ou=30 --max_round=5 --img_per_grp=120 --thld_err=5.1 --generation=1 --MPI
+sxheader.py bdb:flip_data --params=active --one
+sxheader.py bdb:flip_data --params=xform.align2d --zero
+mpirun -np 4 sxisac.py bdb:flip_data --stab_ali=2 --init_iter=1 --main_iter=1 --match_second=1 --ou=30 --max_round=5 --img_per_grp=120 --thld_err=5.1 --generation=1 --MPI
 ###################################################################
 # To run gui version of sxisac, enter the following in the command line:
 # 	sxgui.py --demo=mpibdbctf &
@@ -38,6 +41,8 @@ mpirun -np 4 sxisac.py bdb:data --stab_ali=2 --init_iter=1 --main_iter=1 --match
 # Note thatif sxgui.py is invoked without the --demo option, the input fields will not be automatically initialized with the approprite values, in 
 # which case the proper values must be entered manually.
 ###################################################################
+sxheader.py bdb:flip_data --params=xform.align2d --export=parmsflip
+sxheader.py bdb:data --params=xform.align2d --import=parmsflip
 
 # Determination of the initial structure using class averages and common-lines
 mpirun -np 4 sxfind_struct.py class_averages_generation_1.hdf structure --ou=30 --delta=6 --lf=0.05 --hf=0.25 --maxit=20 --rand_seed=10 --trials=4 --MPI 
