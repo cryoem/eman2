@@ -60,7 +60,7 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--phase_flip", action="store_true", help="Phase flip the input stack", default=False)
-	parser.add_argument("--makedb", type=str, help="Fill in database with appropriate input parameters: --makedb=mpibdb means the input parameters will be those in 5_mpi_bdb, --makedb=mpibdbctf means the input parameters will be those in 7_mpi_bdb_ctf", default=None)
+	parser.add_argument("--makedb", type=str, help="Fill in database with appropriate input parameters: --makedb=mpibdb means the input parameters will be those in mpi_bdb, --makedb=mpibdbctf means the input parameters will be those in mpi_bdb_ctf", default=None)
 	parser.add_argument("--generate_projections", metavar="param1=value1:param2=value2", type=str,
 					action="append", help="apply a processor named 'processorname' with all its parameters/values.")
 	(options, args) = parser.parse_args()
