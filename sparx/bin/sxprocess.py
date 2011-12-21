@@ -54,7 +54,7 @@ def main():
 	phase flip a stack of images and write output to new file:
 	sxprocess.py input_stack.hdf output_stack.hdf --phase_flip	
 	
-	generate stack of projections bdb:data with CTF and micrographs with prefix mic (i.e., mic0.hdf, mic1.hdf etc) from structure input_structure.hdf:
+	generate a stack of projections bdb:data and micrographs with prefix mic (i.e., mic0.hdf, mic1.hdf etc) from structure input_structure.hdf, with CTF applied to both projections and micrographs:
 	sxprocess.py input_structure.hdf data mic --generate_projections format="bdb":apix=5.2:CTF=True 	
 """
 
@@ -62,7 +62,7 @@ def main():
 	parser.add_argument("--phase_flip", action="store_true", help="Phase flip the input stack", default=False)
 	parser.add_argument("--makedb", type=str, help="Fill in database with appropriate input parameters: --makedb=mpibdb means the input parameters will be those in mpi_bdb, --makedb=mpibdbctf means the input parameters will be those in mpi_bdb_ctf", default=None)
 	parser.add_argument("--generate_projections", metavar="param1=value1:param2=value2", type=str,
-					action="append", help="Three arguments are required: name of input structure from which to generate projections, desired name of output projection stack, and desired prefix for micrographs (e.g. if prefix is 'mic', then micrographs mic0.hdf, mic1.hdf etc will be generated). Optional arguments specifying format, apix and whether to add CTF effects can be entered as follows after --generate_projections: format='bdb':apix=5.2:CTF=True, format='hdf', etc., where format can be bdb or hdf, and CTF is True or False. Default values are: format='bdb', apix=2.5, CTF=False")
+					action="append", help="Three arguments are required: name of input structure from which to generate projections, desired name of output projection stack, and desired prefix for micrographs (e.g. if prefix is 'mic', then micrographs mic0.hdf, mic1.hdf etc will be generated). Optional arguments specifying format, apix and whether to add CTF effects can be entered as follows after --generate_projections: format='bdb':apix=5.2:CTF=True, or format='hdf', etc., where format can be bdb or hdf, apix is a float, and CTF is True or False. If an optional parameter is not specified, it will default as follows: format='bdb', apix=2.5, CTF=False")
 	(options, args) = parser.parse_args()
 	
 	
