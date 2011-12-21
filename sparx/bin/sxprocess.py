@@ -54,15 +54,15 @@ def main():
 	phase flip a stack of images and write output to new file:
 	sxprocess.py input_stack.hdf output_stack.hdf --phase_flip	
 	
-	generate stack of projections:
-	sxprocess.py --generate_projections format="bdb":apix=5.2:CTF=True 	
+	generate stack of projections bdb:data with CTF and micrographs with prefix mic (i.e., mic0.hdf, mic1.hdf etc) from structure input_structure.hdf:
+	sxprocess.py input_structure.hdf data mic --generate_projections format="bdb":apix=5.2:CTF=True 	
 """
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--phase_flip", action="store_true", help="Phase flip the input stack", default=False)
 	parser.add_argument("--makedb", type=str, help="Fill in database with appropriate input parameters: --makedb=mpibdb means the input parameters will be those in mpi_bdb, --makedb=mpibdbctf means the input parameters will be those in mpi_bdb_ctf", default=None)
 	parser.add_argument("--generate_projections", metavar="param1=value1:param2=value2", type=str,
-					action="append", help="apply a processor named 'processorname' with all its parameters/values.")
+					action="append", help="Three arguments are required: name of input structure from which to generate projections, desired name of output projection stack, and desired prefix for micrographs (e.g. if prefix is 'mic', then micrographs mic0.hdf, mic1.hdf etc will be generated). Optional arguments specifying format, apix and whether to add CTF effects can be entered as follows after --generate_projections: format='bdb':apix=5.2:CTF=True, format='hdf', etc., where format can be bdb or hdf, and CTF is True or False. Default values are: format='bdb', apix=2.5, CTF=False")
 	(options, args) = parser.parse_args()
 	
 	
@@ -139,6 +139,18 @@ def main():
 			gbdb[dbkey] = {'gauss_width':1.0,'pixel_input':5.2,'pixel_output':5.2,'thr_low':4.0,'thr_hi':60.0,"invert_contrast":False,"use_variance":True,"boxsize":64}
 	
 	if options.generate_projections:
+	
+		nargs = len(args)
+		if nargs != 3:
+			print "must provide name of input structure from which to generate projections, desired name of output projection stack, and desired prefix for output micrographs. Exiting..."
+			return
+		inpstr = args[0]
+		outstk = args[1]
+		micpref = args[2]
+		print 'input structure: ', inpstr
+		print 'output projection stack: ', outstk
+		print 'micrograph prefix: ', micpref
+			
 		parmstr= 'dummy:'+options.generate_projections[0]
 		(processorname, param_dict) = parsemodopt(parmstr)
 		
@@ -166,7 +178,8 @@ def main():
 		nangle = len(angles)
 		
 		modelvol = EMData()
-		modelvol.read_image("../model_structure.hdf")
+		#modelvol.read_image("../model_structure.hdf")
+		modelvol.read_image(inpstr)
 		
 		nx = modelvol.get_xsize()
 
@@ -180,10 +193,10 @@ def main():
 			volfts[i],kb = prep_vol(modelvol + scale*addon)
 			
 		if parm_format=="bdb":
-			stack_data = "bdb:data"
+			stack_data = "bdb:"+outstk
 			delete_bdb(stack_data)
 		else:
-			stack_data = "data.hdf"
+			stack_data = outstk + ".hdf"
 		Cs      = 2.0
 		pixel   = parm_apix
 		voltage = 120.0
@@ -258,7 +271,7 @@ def main():
 				mic = filt_ctf(mic, ctf)
 			mic += filt_gaussl(model_gauss_noise(17.5,4096,4096), 0.3)
 	
-			mic.write_image("mic%1d.hdf"%(idef-3),0)
+			mic.write_image(micpref+"%1d.hdf"%(idef-3),0)
 		
 		drop_spider_doc("params.txt", params)
 	
