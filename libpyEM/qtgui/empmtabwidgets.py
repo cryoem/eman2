@@ -302,18 +302,17 @@ class EMParticlesEntry(EMDirEntry):
 				ctf = (ctf_db[get_file_tag(self.path()).split("_ctf")[0]][0]).split()
 				self.defocus = "%.3f" % float(ctf[0][1:])
 				self.bfactor = "%.3f" % float(ctf[3])
-				#self.sampling = str(ctf[
-				background = ctf[10].split(','))[1:]
-				print len(background)
+				background = (ctf[10].split(','))[1:]
+				self.sampling = str(len(background))
+				self.snr = "%.3f" %  (sum(map(float, background))/float(self.sampling))
 				quality = ctf_db[get_file_tag(self.path()).split("_ctf")[0]][3]
 				self.quality = "%d" %quality
 			except:
 				pass
 		
 		# Check the cache for metadata
-		#cache = self.checkCache(db)
-		#if not self.cacheMiss(cache,'particlecount','particledim','defocus','bfactor','snr','sampling','type','filetype'): return 
-		#if not self.cacheMiss(cache,'particlecount','particledim','defocus','bfactor','snr','sampling','type','filetype'): return
+		cache = self.checkCache(db)
+		if not self.cacheMiss(cache,'particlecount','particledim','type','filetype'): return
 		
 		# get image counts
 		try:
@@ -330,29 +329,8 @@ class EMParticlesEntry(EMDirEntry):
 		except:
 			pass
 		
-		# Get particle stack headers
-		'''
-		d = None
-		try:
-			a = EMData(self.path(),0,True)
-			d = a.get_attr_dict()
-		except:
-			pass
-		
-		# get CTF dims
-		if d:
-			if d.has_key('nx') and d.has_key('ny') and d.has_key('nz'):
-				self.particledim = "%dx%dx%d"%(d['nx'],d['ny'],d['nz'])
-			if d.has_key('ctf'):
-				ctf = d['ctf']
-				self.defocus = "%.3f" %ctf.defocus
-				v "%.3f" %ctf.bfactor
-				self.snr = "%.3f" %(sum(ctf.snr)/len(ctf.snr))
-				self.sampling = str(len(ctf.background))
-		
 		# Update the cache
-		'''
-		#self.updateCache(db, cache, "filetype", "particlecount", "particledim", "type", "defocus", "bfactor", "snr", "sampling")
+		self.updateCache(db, cache, "filetype", "particlecount", "particledim", "type")
 		
 		
 		return True

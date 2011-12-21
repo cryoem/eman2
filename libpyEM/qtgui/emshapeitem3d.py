@@ -1118,22 +1118,26 @@ class EMInspectorControlShape(EMItem3DInspector):
 		
 	def _on_ambient_color(self, color):
 		rgb = color.getRgb()
-		self.item3d().setAmbientColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
-		self.inspector().updateSceneGraph()
+		if self.item3d():
+			self.item3d().setAmbientColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
+			self.inspector().updateSceneGraph()
 		
 	def _on_diffuse_color(self, color):
 		rgb = color.getRgb()
-		self.item3d().setDiffuseColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
-		self.inspector().updateSceneGraph()
+		if self.item3d():
+			self.item3d().setDiffuseColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
+			self.inspector().updateSceneGraph()
 		
 	def _on_specular_color(self, color):
 		rgb = color.getRgb()
-		self.item3d().setSpecularColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
-		self.inspector().updateSceneGraph()
+		if self.item3d():	
+			self.item3d().setSpecularColor((float(rgb[0])/255.0),(float(rgb[1])/255.0),(float(rgb[2])/255.0))
+			self.inspector().updateSceneGraph()
 		
 	def _on_shininess(self, shininess):
-		self.item3d().setShininess(shininess)
-		self.inspector().updateSceneGraph()
+		if self.item3d():
+			self.item3d().setShininess(shininess)
+			self.inspector().updateSceneGraph()
 		
 class EMInspectorControl3DText(EMInspectorControlShape):
 	"""
