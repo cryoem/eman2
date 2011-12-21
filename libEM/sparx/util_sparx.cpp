@@ -17644,7 +17644,7 @@ void Util::add_img(EMData* img, EMData* img1)
 {
 	ENTERFUNC;
 	/* Exception Handle */
-	if (!img) {
+	if (!img || !img1) {
 		throw NullPointerException("NULL input image");
 	}
 	/* ========= img += img1 ===================== */
