@@ -860,12 +860,12 @@ class EMDirEntry(object):
 				miss = True
 		return miss
 	
-	def updateCache(self, db, cache, *args):
+	def updateCache(self, db, cache, name="", *args):
 		""" update Cache """
 		dir(self)
 		for arg in args:
 			cache[arg] = self.__getattribute__(arg)
-		self.setCache(db, cache)
+		self.setCache(db, cache, name)
 			
 	def statFile(self, filename):
 		""" Stat either a file or BDB """

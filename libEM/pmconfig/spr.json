@@ -38,7 +38,6 @@
       {
         "ICON": "green_boxes", 
         "MODE": "boxing",
-        "EXPERT": 1,
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2boxer",
         "PROGRAM": "e2boxer.py", 
         "NAME": "Interactive Boxing-  e2boxer", 
@@ -57,7 +56,6 @@
         "ICON": "green_boxes",
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2RCTboxer",
         "MODE": "boxing",
-        "EXPERT": 1, 
         "PROGRAM": "e2RCTboxer.py", 
         "NAME": "Tilt Pair Boxing-  e2RCTboxer", 
         "CHILDREN": []

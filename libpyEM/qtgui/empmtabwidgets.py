@@ -99,7 +99,8 @@ class EMModelsEntry(EMDirEntry):
 		if self.filetype!=None : return False		# must all ready be filled in
 
 		# Check the cache for metadata
-		cache = self.checkCache(db,name='models')
+		name = 'models'
+		cache = self.checkCache(db,name=name)
 		if not self.cacheMiss(cache,'quality','dims','filetype'): return 
 		
 		# Should only be this:
@@ -119,7 +120,7 @@ class EMModelsEntry(EMDirEntry):
 				pass
 		
 		# Set Cache
-		self.updateCache(db, cache, 'quality', 'dims', 'filetype')
+		self.updateCache(db, cache, name, 'quality', 'dims', 'filetype')
 		
 		return True
 		
@@ -185,7 +186,8 @@ class EMSetsEntry(EMDirEntry):
 		if self.filetype!=None : return False		# must all ready be filled in
 		
 		# Check the cache for metadata
-		cache = self.checkCache(db,name='sets')
+		name = 'sets'
+		cache = self.checkCache(db,name=name)
 		if not self.cacheMiss(cache,'partcount','dims','filetype'): return 
 		
 		# get image counts
@@ -206,7 +208,7 @@ class EMSetsEntry(EMDirEntry):
 			self.dims = "%dx%dx%d"%(a.get_xsize(),a.get_ysize(),a.get_zsize())
 		
 		# Set Cache
-		self.updateCache(db, cache, 'partcount', 'dims', 'filetype')
+		self.updateCache(db, cache, name, 'partcount', 'dims', 'filetype')
 				
 		return True
 
@@ -505,11 +507,12 @@ class EMBoxesEntry(EMDirEntry):
 			mgquality = mgqdb[self.getBaseName(self.path(),extension=True)]
 			if mgquality != None:
 				self.mgquality=str(mgquality)
-			
-		# Cehck cahce for metadata
-		cache = self.checkCache(db,name='boxing')
+	
+		# Check cahce for metadata
+		name = 'boxing'
+		cache = self.checkCache(db,name=name)
 		if not self.cacheMiss(cache,'filetype'): return 
-		
+
 		# get image counts
 		try:
 			if EMUtil.get_image_count(self.path())==1 : self.filetype="Image"
@@ -517,7 +520,7 @@ class EMBoxesEntry(EMDirEntry):
 			self.filetype="-"
 		
 		# Set cache
-		self.updateCache(db, cache, "filetype")
+		self.updateCache(db, cache, name, "filetype")
 		
 		return True
 
@@ -612,7 +615,8 @@ class EMRCTBoxesEntry(EMDirEntry):
 				self.mgquality=str(mgquality)
 				
 		# check cache for metadata
-		cache = self.checkCache(db,name='rctboxing')
+		name = 'rctboxing'
+		cache = self.checkCache(db,name=name)
 		if not self.cacheMiss(cache,'filetype'): return 
 		
 		# get image counts
@@ -622,7 +626,7 @@ class EMRCTBoxesEntry(EMDirEntry):
 			self.filetype="-"
 		
 		# update cache
-		self.updateCache(db, cache, "filetype")
+		self.updateCache(db, cache, name, "filetype")
 		
 		return True
 		
