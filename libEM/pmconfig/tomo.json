@@ -2,57 +2,51 @@
 /* The ICON string needs to correspond to a dict key listed in the PM */
 /* The available keys can be found by browsing the JSON files of looking at e2 projectmanager.py */ 
 [
+
   {
     "ICON": "single_image_3d",
-    "PROGRAM": "programName", 
-    "NAME": "Tomographic Particle Reconstruction", 
-    "CHILDREN": [
-      {
-        "ICON": "single_image_3d",
-        "PROGRAM": "e2import.py", 
-        "MODE": "tomos", 
-        "NAME": "Import Tomogram Files",
-        "CHILDREN": [] 
-      }, 
-      {
-        "ICON": "green_boxes",
-        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2tomoboxer",
-        "PROGRAM": "e2tomoboxer.py", 
-        "NAME": "Box Tomogram Files", 
-        "CHILDREN": [] 
-      },
-      {
-        "ICON": "tomo_hunter",
-        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2classaverage3d",
-        "PROGRAM": "e2classaverage3d.py",
-	"MODE": "alignment", 
-        "NAME": "Tomogram Alignment and Averaging", 
-	"NOTELEVEL": "1",
-        "CHILDREN": [] 
-      },
-      {
-        "ICON": "tomo_hunter",
-        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2classaverage3d",
-        "PROGRAM": "e2classaverage3d.py",
-	"MODE": "breaksym", 
-        "NAME": "Tomogram Alignment, Break Sym", 
-	"NOTELEVEL": "1",
-        "CHILDREN": [] 
-      },
-      {
-        "ICON": "single_image_3d",
-        "PROGRAM": "e2symsearch.py", 
-        "NAME": "Align to Symmetry Axis",
-	"NOTELEVEL": "1",
-        "CHILDREN": [] 
-      },
-      {
-        "ICON": "single_image_3d",
-        "PROGRAM": "e2tomoresolution.py", 
-        "NAME": "Estimate Resolution via FSC",
-	"NOTELEVEL": "1",
-        "CHILDREN": [] 
-      }
-    ] 
+    "PROGRAM": "e2import.py", 
+    "MODE": "tomos", 
+    "NAME": "Import Tomogram Files",
+    "CHILDREN": [] 
+  }, 
+  {
+    "ICON": "green_boxes",
+    "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2tomoboxer",
+    "PROGRAM": "e2tomoboxer.py", 
+    "NAME": "Box Tomogram Files", 
+    "CHILDREN": [] 
+  },
+  {
+    "ICON": "tomo_hunter",
+    "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2classaverage3d",
+    "PROGRAM": "e2classaverage3d.py",
+    "MODE": "alignment", 
+    "NAME": "Tomogram Alignment and Averaging", 
+    "NOTELEVEL": "1",
+    "CHILDREN": [] 
+  },
+  {
+    "ICON": "tomo_hunter",
+    "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2classaverage3d",
+    "PROGRAM": "e2classaverage3d.py",
+    "MODE": "breaksym", 
+    "NAME": "Tomogram Alignment, Break Sym", 
+    "NOTELEVEL": "1",
+    "CHILDREN": [] 
+  },
+  {
+    "ICON": "single_image_3d",
+    "PROGRAM": "e2symsearch.py", 
+    "NAME": "Align to Symmetry Axis",
+    "NOTELEVEL": "1",
+    "CHILDREN": [] 
+  },
+  {
+    "ICON": "single_image_3d",
+    "PROGRAM": "e2tomoresolution.py", 
+    "NAME": "Estimate Resolution via FSC",
+    "NOTELEVEL": "1",
+    "CHILDREN": [] 
   }
 ]
