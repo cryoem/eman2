@@ -60,7 +60,8 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--phase_flip", action="store_true", help="Phase flip the input stack", default=False)
-	parser.add_argument("--makedb", type=str, help="Fill in database with appropriate input parameters: --makedb=mpibdb means the input parameters will be those in mpi_bdb, --makedb=mpibdbctf means the input parameters will be those in mpi_bdb_ctf", default=None)
+	parser.add_argument("--makedb", metavar="param1=value1:param2=value2", type=str,
+					action="append",  help="Fill in database with appropriate input parameters: --makedb=mpibdb means the input parameters will be those in mpi_bdb, --makedb=mpibdbctf means the input parameters will be those in mpi_bdb_ctf")
 	parser.add_argument("--generate_projections", metavar="param1=value1:param2=value2", type=str,
 					action="append", help="Three arguments are required: name of input structure from which to generate projections, desired name of output projection stack, and desired prefix for micrographs (e.g. if prefix is 'mic', then micrographs mic0.hdf, mic1.hdf etc will be generated). Optional arguments specifying format, apix and whether to add CTF effects can be entered as follows after --generate_projections: format='bdb':apix=5.2:CTF=True, or format='hdf', etc., where format can be bdb or hdf, apix is a float, and CTF is True or False. If an optional parameter is not specified, it will default as follows: format='bdb', apix=2.5, CTF=False")
 	(options, args) = parser.parse_args()
@@ -133,11 +134,20 @@ def main():
 		print "database key under which params will be stored: ", dbkey
 		gbdbname = 'bdb:e2boxercache#gauss_box_DB'
 		gbdb = db_open_dict(gbdbname)
-		if options.makedb == 'mpibdbctf':
-			gbdb[dbkey] = {'gauss_width':1.0,'pixel_input':5.2,'pixel_output':5.2,'thr_low':1.0,'thr_hi':30.0,"invert_contrast":False,"use_variance":True,"boxsize":64,"ctf_cs":2.0,"ctf_fstart":0.02,"ctf_fstop":0.5,"ctf_ampcont":10,"ctf_volt":120,"ctf_window":512,"ctf_edge":0,"ctf_overlap":50}
-		if options.makedb == 'mpibdb':
-			gbdb[dbkey] = {'gauss_width':1.0,'pixel_input':5.2,'pixel_output':5.2,'thr_low':4.0,'thr_hi':60.0,"invert_contrast":False,"use_variance":True,"boxsize":64}
-	
+				
+		parmstr= 'dummy:'+options.makedb[0]
+		(processorname, param_dict) = parsemodopt(parmstr)
+		dbdict = {}
+		for pkey in param_dict:
+			if (pkey == 'invert_contrast') or (pkey == 'use_variance'):
+				if param_dict[pkey] == 'True':
+					dbdict[pkey] = True
+				else:
+					dbdict[pkey] = False
+			else:		
+				dbdict[pkey] = param_dict[pkey]
+		gbdb[dbkey] = dbdict
+		
 	if options.generate_projections:
 	
 		nargs = len(args)
