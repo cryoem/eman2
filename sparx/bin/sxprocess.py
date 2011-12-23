@@ -61,7 +61,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--phase_flip", action="store_true", help="Phase flip the input stack", default=False)
 	parser.add_argument("--makedb", metavar="param1=value1:param2=value2", type=str,
-					action="append",  help="Fill in database with appropriate input parameters: --makedb=mpibdb means the input parameters will be those in mpi_bdb, --makedb=mpibdbctf means the input parameters will be those in mpi_bdb_ctf")
+					action="append",  help="One argument is required: name of key with which the database will be created. Fill in database with parameters specified as follows: --makedb param1=value1:param2=value2, e.g. 'gauss_width'=1.0:'pixel_input'=5.2:'pixel_output'=5.2:'thr_low'=1.0")
 	parser.add_argument("--generate_projections", metavar="param1=value1:param2=value2", type=str,
 					action="append", help="Three arguments are required: name of input structure from which to generate projections, desired name of output projection stack, and desired prefix for micrographs (e.g. if prefix is 'mic', then micrographs mic0.hdf, mic1.hdf etc will be generated). Optional arguments specifying format, apix and whether to add CTF effects can be entered as follows after --generate_projections: format='bdb':apix=5.2:CTF=True, or format='hdf', etc., where format can be bdb or hdf, apix is a float, and CTF is True or False. If an optional parameter is not specified, it will default as follows: format='bdb', apix=2.5, CTF=False")
 	(options, args) = parser.parse_args()
