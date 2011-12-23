@@ -28,7 +28,7 @@ sxprocess.py ../model_structure.hdf data mic --generate_projections format="bdb"
 # Create and initialize database
 # Input: name of the key under which the parameters will be saved in the database
 # Output: databese with input parameters
-sxprocess.py demoparms --makedb=mpibdbctf
+sxprocess.py demoparms --makedb 'gauss_width'=1.0:'pixel_input'=5.2:'pixel_output'=5.2:'thr_low'=1.0:'thr_hi'=30.0:"invert_contrast"=False:"use_variance"=True:"boxsize"=64:"ctf_cs"=2.0:"ctf_fstart"=0.02:"ctf_fstop"=0.5:"ctf_ampcont"=10:"ctf_volt"=120:"ctf_window"=512:"ctf_edge"=0:"ctf_overlap"=50 
 
 # Pick particles and estimate CTF
 # Input: simulated micrographs mic*.hdf
