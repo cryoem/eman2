@@ -19,6 +19,9 @@ e2proc3d.py tmp.hdf ../fmodel_structure.hdf --process=filter.lowpass.tanh:cutoff
 e2proc3d.py tmp.hdf ../model_structure.hdf --process=filter.lowpass.tanh:cutoff_abs=0.45:fall_off=0.1
 rm tmp.hdf
 
+# Generating 2D projections of a 3D model from an input hdf file.
+# It simulates the procedure of EM image acquisition process.
+# The output projections were disturbed with Gaussian noise.
 sxprocess.py ../model_structure.hdf data mic --generate_projections format="bdb":apix=5.2:CTF=True 
 
 sxprocess.py demoparms --makedb=mpibdbctf
