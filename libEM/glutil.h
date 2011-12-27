@@ -131,7 +131,6 @@ namespace EMAN
 		
 	private:
 		//This is a dirty bit to let the system know when to rebind data to the GPU
-		static bool needtobind;
 		static GLuint buffer[2];
 		
 	};

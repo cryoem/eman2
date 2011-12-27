@@ -449,6 +449,8 @@ namespace EMAN
 		
 		/** COlor by radius generator */
 		ColorRGBGenerator rgbgenerator;
+		
+		bool needtobind;	// A dirty bit to signal when the the MC algorithm or color has chaged and hence a need to update GPU buffers
 	};
 
 	/** @author David Woolford

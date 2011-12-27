@@ -60,7 +60,6 @@
 using namespace EMAN;
 
 //By depfault we need to first bind data to the GPU
-bool GLUtil::needtobind = 1;
 GLuint GLUtil::buffer[2] = {0, 0};
 
 unsigned int GLUtil::gen_glu_mipmaps(const EMData* const emdata)
@@ -739,7 +738,7 @@ void GLUtil::contour_isosurface(MarchingCubes* mc)
 	//What does this do???
 	for (unsigned int i = 0; i < mc->ff.elem(); ++i ) mc->ff[i] /= 3;
 	//Need to rebind data (to the GPU)
-	GLUtil::needtobind = true;
+	mc->needtobind = true;
 }
 
 void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,bool surface_face_z)
@@ -749,14 +748,14 @@ void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,bool surfa
 
 	if ( glIsBuffer(mc->buffer[0])  == GL_FALSE ){
 		glGenBuffers(4, mc->buffer);
-		GLUtil::needtobind = true;
+		mc->needtobind = true;
 	}
 	
 	if ( surface_face_z ) mc->surface_face_z();
 	
-	if( mc->getRGBmode() && (mc->rgbgenerator.getNeedToRecolor() || GLUtil::needtobind)){
+	if( mc->getRGBmode() && (mc->rgbgenerator.getNeedToRecolor() || mc->needtobind)){
 		mc->color_vertices();
-		GLUtil::needtobind = true;
+		mc->needtobind = true;
 	}
 	
 	int maxf;
@@ -771,12 +770,12 @@ void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,bool surfa
 	glEnableClientState(GL_NORMAL_ARRAY);
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 	glBindBuffer(GL_ARRAY_BUFFER, mc->buffer[2]);
-	if (GLUtil::needtobind) glBufferData(GL_ARRAY_BUFFER, 4*mc->nn.elem(), mc->nn.get_data(), GL_STATIC_DRAW);
+	if (mc->needtobind) glBufferData(GL_ARRAY_BUFFER, 4*mc->nn.elem(), mc->nn.get_data(), GL_STATIC_DRAW);
 	glNormalPointer(GL_FLOAT,0,0);
 
 	//Vertex vectors
 	glBindBuffer(GL_ARRAY_BUFFER, mc->buffer[0]);
-	if (GLUtil::needtobind) glBufferData(GL_ARRAY_BUFFER, 4*mc->pp.elem(), mc->pp.get_data(), GL_STATIC_DRAW);
+	if (mc->needtobind) glBufferData(GL_ARRAY_BUFFER, 4*mc->pp.elem(), mc->pp.get_data(), GL_STATIC_DRAW);
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glVertexPointer(3,GL_FLOAT,0,0);
 	
@@ -784,17 +783,17 @@ void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,bool surfa
 	if (mc->getRGBmode()){
 		glEnableClientState(GL_COLOR_ARRAY);
 		glBindBuffer(GL_ARRAY_BUFFER, mc->buffer[3]);
-		if (GLUtil::needtobind) glBufferData(GL_ARRAY_BUFFER, 4*mc->cc.elem(), mc->cc.get_data(), GL_STATIC_DRAW);
+		if (mc->needtobind) glBufferData(GL_ARRAY_BUFFER, 4*mc->cc.elem(), mc->cc.get_data(), GL_STATIC_DRAW);
 		glColorPointer(3,GL_FLOAT,0, 0);
 	}
 
 	//Indices
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mc->buffer[1]);
-	if (GLUtil::needtobind) glBufferData(GL_ELEMENT_ARRAY_BUFFER, 4*mc->ff.elem(), mc->ff.get_data(), GL_STATIC_DRAW);	
+	if (mc->needtobind) glBufferData(GL_ELEMENT_ARRAY_BUFFER, 4*mc->ff.elem(), mc->ff.get_data(), GL_STATIC_DRAW);	
 	glDrawElements(GL_TRIANGLES,mc->ff.elem(),GL_UNSIGNED_INT,0);
 	
 	// No longer need to bind data to the GPU
-	GLUtil::needtobind = false;
+	mc->needtobind = false;
 
 }
 
@@ -823,6 +822,7 @@ void GLUtil::glMultMatrix(const Transform& xform)
 	glMultTransposeMatrixf(reinterpret_cast<GLfloat*>(&xformlist[0]));
 }
 
+//This draw a bounding box, or any box 
 void GLUtil::glDrawBoundingBox(float width, float height, float depth)
 {
 	

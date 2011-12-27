@@ -529,13 +529,13 @@ float* ColorRGBGenerator::getRGBColor(int x, int y, int z)
 }
 
 MarchingCubes::MarchingCubes()
-	: _isodl(0)
+	: _isodl(0), needtobind(1)
 {
 	rgbgenerator = ColorRGBGenerator();
 }
 
 MarchingCubes::MarchingCubes(EMData * em)
-	: _isodl(0)
+	: _isodl(0), needtobind(1)
 {
 	rgbgenerator = ColorRGBGenerator();
 	set_data(em);
