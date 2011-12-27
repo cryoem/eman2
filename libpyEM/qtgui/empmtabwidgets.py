@@ -325,6 +325,15 @@ class EMParticlesEntry(EMDirEntry):
 		except:
 			pass
 		
+		# Get particle stack headers
+		a = None
+		try:
+			a = EMData(self.path(),0,True)
+		except:
+			pass	
+		if a:
+			self.particledim = a.get_xsize()
+			
 		# get partivle set type
 		try:
 			self.type = str(self.path().split('_ctf_')[1])

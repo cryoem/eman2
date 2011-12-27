@@ -852,10 +852,14 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		self.cullbackface.toggled.connect(self.onCullFaces)
 		self.wireframe.toggled.connect(self.onWireframe)
 		self.colorbyradius.toggled.connect(self.onColorByRadius)
+		self.colorbymap.toggled.connect(self.onColorByMap)
+		self.cmapbrowse.clicked.connect(self.onFileBrowse)
 		self.sampling_spinbox.valueChanged[int].connect(self.onSampling)
 		QtCore.QObject.connect(self.innercolorscaling, QtCore.SIGNAL("valueChanged(int)"), self.reColorScale)
 		QtCore.QObject.connect(self.outercolorscaling, QtCore.SIGNAL("valueChanged(int)"), self.reColorScale)
-	
+		QtCore.QObject.connect(self.cmapmin, QtCore.SIGNAL("valueChanged(int)"), self.reColorMapMinMax)
+		QtCore.QObject.connect(self.cmapmin, QtCore.SIGNAL("valueChanged(int)"), self.reColorMapMinMax)
+		
 	def updateItemControls(self):
 		""" Updates this item inspector. Function is called by the item it observes"""
 		super(EMIsosurfaceInspector, self).updateItemControls()
@@ -925,11 +929,31 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		cbrlayout.addWidget(self.outercolorscaling, 2, 1, 1, 1)
 		cbrframe.setLayout(cbrlayout)
 		
+		# Color by map frame
+		cbmframe = QtGui.QFrame()
+		cbmframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		cbmlayout = QtGui.QGridLayout()
+		cbmlayout.setAlignment(QtCore.Qt.AlignTop)
+		self.colorbymap = QtGui.QCheckBox("Color By Map")
+		self.colorbymap.setEnabled(False)
+		self.colormap = QtGui.QLineEdit("")
+		self.cmapbrowse = QtGui.QPushButton("Browse")
+		self.cmapmin = EMSpinWidget(0.0, 0.1, rounding=2)
+		self.cmapmax = EMSpinWidget(0.0, 0.1, rounding=2)
+		cbmlayout.addWidget(self.colorbymap, 0, 0, 1, 2)
+		cbmlayout.addWidget(self.colormap, 1, 0)
+		cbmlayout.addWidget(self.cmapbrowse, 1, 1)
+		cbmlayout.addWidget(self.cmapmin, 2, 0)
+		cbmlayout.addWidget(self.cmapmax, 2, 1)
+		cbmframe.setLayout(cbmlayout)
+		
+		
 		isogridbox.addWidget(self.histogram_widget, 0, 0, 1, 1)
 		isogridbox.addWidget(self.cullbackface, 1, 0, 1, 1)
 		isogridbox.addWidget(self.wireframe, 2,0,1,1)
 		isogridbox.addLayout(sampling_hbox_layout, 3,0,1,1)
 		isogridbox.addWidget(cbrframe, 4, 0, 1, 1)
+		isogridbox.addWidget(cbmframe, 5, 0, 1, 1)
 		isogridbox.setRowStretch(4,1)
 		isoframe.setLayout(isogridbox)
 		gridbox.addWidget(isoframe, 2, 1, 2, 1)
@@ -938,7 +962,37 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		# Set to default, but run only once and not in each base class
 		if type(self) == EMIsosurfaceInspector: self.updateItemControls()
 		self.histogram_widget.setProbe(self.item3d().isothr) # The needs to be node AFTER the data is set
+		
+	def onFileBrowse(self):
+		file_path = QtGui.QFileDialog.getOpenFileName(self, "Open 3D Volume Map")
+		if file_path:
+			self.colormap.setText(file_path)
+			self.colorbymap.setEnabled(True)
+			self.colormapdata = EMData(str(file_path))
+			self.cmapmin.setValue(self.colormapdata.get_attr('minimum'), quiet=1)
+			self.cmapmax.setValue(self.colormapdata.get_attr('maximum'), quiet=1)
+			cmrange = self.colormapdata.get_attr('maximum') - self.colormapdata.get_attr('minimum')
+			self.cmapmin.setIncrement(cmrange/50.0)
+			self.cmapmax.setIncrement(cmrange/50.0)
+			rounding = int(math.ceil(math.fabs(math.log(cmrange/2.0)))+1)
+			print rounding
+			self.cmapmin.setRounding(rounding)
+			self.cmapmax.setRounding(rounding)
+		
+	def onColorByMap(self):
+		if self.colorbymap.isChecked():
+			self.colorbyradius.setChecked(False)
+			self.item3d().setCmapData(self.colormapdata)
+			self.item3d().setRGBmode(2)
+		else:
+			self.item3d().setRGBmode(0)
+		        
+		self.inspector().updateSceneGraph()
 	
+	def reColorMapMinMax(self, val):
+		self.item3d().setCmapMinMax(self.cmapmin.getValue(), self.cmapmax.getValue())
+		self.inspector().updateSceneGraph()
+		
 	def onCullFaces(self):
 		self.item3d().cullbackfaces = self.cullbackface.isChecked()
 		self.inspector().updateSceneGraph()
@@ -963,6 +1017,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 	
 	def onColorByRadius(self):
 		if self.colorbyradius.isChecked():
+			self.colorbymap.setChecked(False)
 			self.item3d().setRGBmode(1)
 		else:
 			self.item3d().setRGBmode(0)
@@ -1129,6 +1184,14 @@ class EMIsosurface(EMItem3D):
 		self.rgbmode = mode
 		self.isorender.set_rgb_mode(mode)
 			
+	def setCmapData(self, data):
+		""" Setws the cmap data """
+		self.isorender.set_cmap_data(data)
+		
+	def setCmapMinMax(self, minimum, maximum):
+		""" Sets the cmap min and max """
+		self.isorender.set_cmap_minmax(minimum, maximum)
+		
 	def setRGBcolorScaling(self, inner, outer):
 		self.innerrad = inner
 		self.outerrad = outer

@@ -198,7 +198,13 @@ namespace EMAN
 		
 		/** set the emdata */
 		void set_data(EMData* data);
-				
+		
+		/** Generate a color map **/
+		void generateRadialColorMap();
+		
+		/** Set min max data */
+		void set_cmap_data(EMData* data);
+		
 		/** Set origin */
 		inline void setOrigin(int orix, int oriy, int oriz)
 		{
@@ -220,6 +226,15 @@ namespace EMAN
 			rgbmode = mode;
 			needtorecolor = true;
 		}
+		
+		/** Set the mn max for cmap coloring */
+		inline void setMinMax(float min, float max)
+		{
+			minimum = min;
+			maximum = max;
+			needtorecolor = true;
+		}
+		
 		/** Return RGB mode */
 		inline int getRGBmode()
 		{
@@ -239,9 +254,16 @@ namespace EMAN
 		int originz;
 		float inner;
 		float outer;
-		float rgb[3];
-		bool needtorecolor; // dirty bit to let the sytem know when we need to recolor
-		EMData* em_data;
+		float minimum;
+		float maximum;
+	
+		bool needtorecolor;	// dirty bit to let the sytem know when we need to recolor
+		
+		float* colormap; 	// pointer to a colormap
+		EMData* em_data;	// pointer to EMdata
+		EMData* cmap;		// pointer to colormap data
+		
+		float rgb[3];		//little array to hold RGB values;
 	};
 	
 	class MarchingCubes : public Isosurface {
@@ -327,6 +349,18 @@ namespace EMAN
 		inline int getRGBmode()
 		{
 			return rgbgenerator.getRGBmode();
+		}
+		
+		/** Sets the colormap */
+		inline void setCmapData(EMData* data)
+		{
+			rgbgenerator.set_cmap_data(data);
+		}
+		
+		/** Sets the colormap mix max range */
+		inline void setCmapMinMax(float min, float max)
+		{
+			rgbgenerator.setMinMax(min, max);
 		}
 		
 	private:

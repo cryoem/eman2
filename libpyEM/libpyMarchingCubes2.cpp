@@ -38,6 +38,7 @@
 
 // Includes ====================================================================
 #include "marchingcubes.h"
+#include "emdata.h"
 
 // Using =======================================================================
 using namespace boost::python;
@@ -82,6 +83,14 @@ struct EMAN_Isosurface_Wrapper: EMAN::Isosurface, wrapper<EMAN::Isosurface>
         this->get_override("set_rgb_mode")(mode);
     }
     
+    void set_cmap_data(EMAN::EMData* data) {
+        this->get_override("set_cmap_data")(data);
+    }
+    
+    void set_cmap_minmax(float min, float max) {
+        this->get_override("set_cmap_minmax")(min, max);
+    }
+    
     EMAN::Dict get_isosurface() {
        return this->get_override("get_isosurface")();
     }
@@ -108,7 +117,8 @@ BOOST_PYTHON_MODULE(libpyMarchingCubes2)
 		.def("set_rgb_origin", pure_virtual(&EMAN::Isosurface::setRGBorigin))
 		.def("set_rgb_scale", pure_virtual(&EMAN::Isosurface::setRGBscale))
 		.def("set_rgb_mode",  pure_virtual(&EMAN::Isosurface::setRGBmode))
-		
+		.def("set_cmap_data",  pure_virtual(&EMAN::Isosurface::setCmapData))
+		.def("set_cmap_minmax",  pure_virtual(&EMAN::Isosurface::setCmapMinMax))
 		;
 
 	/* We do not wrap default constructor of MarchingCubes into Python */

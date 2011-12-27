@@ -763,6 +763,12 @@ class EMSpinWidget(QtGui.QWidget):
 	def getValue(self):
 		return self.value
 	
+	def setRounding(self, rounding):
+		self.rounding = rounding
+		
+	def setIncrement(self, incr):
+		self.coeff = incr
+		
 	def wheelEvent(self, event):
 		if event.delta() > 0:
 			self.setValue(self.value+self.wheelstep)

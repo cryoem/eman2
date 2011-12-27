@@ -433,12 +433,12 @@ int a2iTriangleConnectionTable[256][16] =
 };
 
 ColorRGBGenerator::ColorRGBGenerator()
-	: rgbmode(0), originx(0), originy(0), originz(0), inner(0.0), outer(0.0), em_data(0), needtorecolor(1)
+	: rgbmode(0), originx(0), originy(0), originz(0), inner(0.0), outer(0.0), minimum(0.0), maximum(0.0), needtorecolor(1), colormap(0), em_data(0)
 {
 }
 
 ColorRGBGenerator::ColorRGBGenerator(EMData* data)
-	: rgbmode(0), needtorecolor(1)
+	: rgbmode(0), minimum(0.0), maximum(0.0), needtorecolor(1), colormap(0)
 {
 	set_data(data);
 }
@@ -453,35 +453,79 @@ void ColorRGBGenerator::set_data(EMData* data)
 	outer = originx;
 }
 
+void ColorRGBGenerator::set_cmap_data(EMData* data)
+{
+	cmap = data;
+	setMinMax(data->get_attr("minimum"), data->get_attr("maximum"));
+}
+	
+void ColorRGBGenerator::generateRadialColorMap()
+{
+
+	int size = int(sqrt(originx*originx + originy*originy + originz*originz));
+	
+	if(colormap) delete colormap;
+	colormap = new float[size*3];
+	
+	for(int i = 0; i < size; i++){
+		float normrad = 4.189*(i - inner)/(outer - inner);
+		if(normrad < 2.094){
+			if (normrad < 0.0) normrad = 0.0;
+			colormap[i*3] = 0.5*(1 + cos(normrad)/cos(1.047 - normrad));
+			colormap[i*3 + 1] = 1.5 - colormap[i*3];
+			colormap[i*3 + 2] = 0.0;
+		}
+		if(normrad >= 2.094){
+			if (normrad > 4.189) normrad = 4.189;
+			normrad =- 2.094;
+			colormap[i*3] = 0.0;
+			colormap[i*3 + 1] = 0.5*(1 + cos(normrad)/cos(1.047 - normrad));
+			colormap[i*3 + 2] = 1.5 - colormap[i*3 + 1];
+		}
+	}
+}
+
 float* ColorRGBGenerator::getRGBColor(int x, int y, int z)
 {
-	//calculate radius
+	// Get data using radial color info
+	if (rgbmode == 1){
+		//calculate radius
 #ifdef _WIN32
-	float rad = sqrt(pow(double(x-originx),2) + pow(double(y-originy),2) + pow(double(z-originz),2));
+		float rad = sqrt(pow(double(x-originx),2) + pow(double(y-originy),2) + pow(double(z-originz),2));
 #else
-	float rad = sqrt(float(pow(x-originx,2) + pow(y-originy,2) + pow(z-originz,2)));
+		float rad = sqrt(float(pow(x-originx,2) + pow(y-originy,2) + pow(z-originz,2)));
 #endif	//_WIN32
-	// Algorithm to convert HSI to RGB. Hue is dependent on radius, S = 1 and I = 0.5
-	float normrad = 4.189*(rad - inner)/(outer - inner);
-	if(normrad < 2.094){
-		if (normrad < 0.0) normrad = 0.0;
-		rgb[0] = 0.5*(1 + cos(normrad)/cos(1.047 - normrad));
-		rgb[1] = 1.5 - rgb[0];
-		rgb[2] = 0.0;
-	}
-	if(normrad >= 2.094 && normrad < 4.189){
-		if (normrad > 4.189) normrad = 4.189;
-		normrad =- 2.094;
-		rgb[0] = 0.0;
-		rgb[1] = 0.5*(1 + cos(normrad)/cos(1.047 - normrad));
-		rgb[2] = 1.5 - rgb[1];
-	}
-	//chop at Blues.....
-
-	//This indicates that new color info needs to be bound (to the GPU)
-	needtorecolor = false;
 	
-	return &rgb[0];
+		//This indicates that new color info needs to be bound (to the GPU)
+		if(needtorecolor) generateRadialColorMap();
+		
+		needtorecolor = false;
+		return &colormap[int(rad)*3];
+	}
+	// Get data using color map
+	if (rgbmode == 2){
+		float value = cmap->get_value_at(x, y, z);
+		value = 4.189*(value - minimum)/(maximum - minimum);
+		if(value < 2.094){
+			if (value < 0.0) value = 0.0;
+			rgb[0] = 0.5*(1 + cos(value)/cos(1.047 - value));
+			rgb[1] = 1.5 - rgb[0];
+			rgb[2] = 0.0;
+		}
+		if(value >= 2.094){
+			if (value > 4.189) value = 4.189;
+			value =- 2.094;
+			rgb[0] = 0.0;
+			rgb[1] = 0.5*(1 + cos(value)/cos(1.047 - value));
+			rgb[2] = 1.5 - rgb[1];
+		}
+		
+		needtorecolor = false;
+		return &rgb[0];
+	}
+	
+	needtorecolor = false;
+	return &colormap[0];	
 }
 
 MarchingCubes::MarchingCubes()

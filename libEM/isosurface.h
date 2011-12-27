@@ -79,6 +79,10 @@ namespace EMAN
 		virtual void setRGBscale(float i, float o) = 0;
 		
 		virtual void setRGBmode(int mode) = 0;
+		
+		virtual void setCmapData(EMData* data) = 0;
+		
+		virtual void setCmapMinMax(float min, float max) = 0;
 
 	protected:
 		EMData * _emdata;
