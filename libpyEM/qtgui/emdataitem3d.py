@@ -880,7 +880,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 			self.colorbyradius.setChecked(True)
 			self.colorbymap.setChecked(False)
 		self.innercolorscaling.setValue(self.item3d().innerrad)
-		self.outercolorscaling.setValue(self.item3d().outerrad)
+		self.outercolorscaling.setValue(self.item3d().outerrad/2.0)
 		
 		# Colormap data
 		if self.item3d().rgbmode == 2:
@@ -1211,7 +1211,7 @@ class EMIsosurface(EMItem3D):
 			# the minus two is here because the marching cubes thinks -1 is the high level of detail, 0 is the next best and  so forth
 			# However the user wants the highest level of detail to be 1, and the next best to be 2 and then 3 etc
 			self.smpval = int(val)-2
-			self.getIsosurfaceDisplayList()
+			self.getIsosurfaceContours()
 	
 	def setRGBmode(self, mode):
 		""" Set the RGB mode """
@@ -1291,7 +1291,8 @@ class EMIsosurface(EMItem3D):
 						
 			glPushAttrib( GL_ALL_ATTRIB_BITS )
 		
-			# First render the cylinder, writing the outline to the stencil buffer
+			if scenegraph.camera.getCappingMode(): glDisable(GL_CULL_FACE)
+			# First get a stencil of the object silluette
 			glClearStencil(0)
 			glClear( GL_STENCIL_BUFFER_BIT )
 			glEnable( GL_STENCIL_TEST )
@@ -1312,12 +1313,13 @@ class EMIsosurface(EMItem3D):
 	
 			glPopAttrib()
 			
-		elif (scenegraph.camera.getCappingMode() and not scenegraph.zslicemode):
+		elif (scenegraph.camera.getCappingMode() and not scenegraph.zslicemode and not (self.is_selected or self.getParent().is_selected)) and (glGetIntegerv(GL_RENDER_MODE) == GL_RENDER):
 			
-			# Still a bit expeimental
+			# First get a stencil of the object silluette
 			glPushAttrib( GL_ALL_ATTRIB_BITS )
 
 			glDisable(GL_CULL_FACE)
+			glClear( GL_STENCIL_BUFFER_BIT )
 			glClearStencil(0)
 			glEnable( GL_STENCIL_TEST )
 			glStencilFunc( GL_ALWAYS, 1, 0xFFFF )		# Write to stencil buffer
@@ -1332,14 +1334,16 @@ class EMIsosurface(EMItem3D):
 			# Draw plane of the capping color
 			glPushMatrix()
 			glLoadIdentity()
-			
-			z = scenegraph.camera.getClipNear()
+			x = float(scenegraph.camera.getWidth()/2.0)
+			y = float(scenegraph.camera.getHeight()/2.0)
+			z = -float(scenegraph.camera.getClipNear() + 0.5)
 			glBegin(GL_QUADS)
-			glVertex3f(-300, -300, -float(z+0.5))
-			glVertex3f(300, -300, -float(z+0.5))
-			glVertex3f(300, 300, -float(z+0.5))
-			glVertex3f(-300, 300, -float(z+0.5))
+			glVertex3f(-x, -y, z)
+			glVertex3f(x, -y, z)
+			glVertex3f(x, y, z)
+			glVertex3f(-x, y, z)
 			glEnd()
+			
 			glPopMatrix()
 
 			glPopAttrib()

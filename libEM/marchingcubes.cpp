@@ -778,7 +778,7 @@ void MarchingCubes::draw_cube(const int x, const int y, const int z, const int c
 
 void MarchingCubes::get_normal(Vector3 &normal, int fX, int fY, int fZ)
 {
-	normal[0] = _emdata->get_value_at(fX-1, fY, fZ) - _emdata->get_value_at(fX+1, fY, fZ);
+    normal[0] = _emdata->get_value_at(fX-1, fY, fZ) - _emdata->get_value_at(fX+1, fY, fZ);
     normal[1] = _emdata->get_value_at(fX, fY-1, fZ) - _emdata->get_value_at(fX, fY+1, fZ);
     normal[2] = _emdata->get_value_at(fX, fY, fZ-1) - _emdata->get_value_at(fX, fY, fZ+1);
     normal.normalize();
@@ -805,10 +805,10 @@ int MarchingCubes::get_edge_num(int x, int y, int z, int edge) {
 void MarchingCubes::color_vertices()
 {
 	cc.clear();
-		
+	int scaling = pow(2,drawing_level + 1);		// Needed to account for sampling rate
 	//Color vertices. We don't need to rerun marching cubes on color vertices, so this method improves effciency
 	for(unsigned int i = 0; i < vv.elem(); i+=3){
-		float* color = rgbgenerator.getRGBColor(vv[i], vv[i+1], vv[i+2]);
+		float* color = rgbgenerator.getRGBColor(scaling*vv[i], scaling*vv[i+1], scaling*vv[i+2]);
 		cc.push_back_3(color);
 	}
 	rgbgenerator.setNeedToRecolor(false);

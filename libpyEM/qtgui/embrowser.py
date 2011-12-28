@@ -832,10 +832,11 @@ class EMDirEntry(object):
 			self.__children[i]=self.__class__(self.filepath,n,self)
 	
 	def checkCache(self, db, name=""):
-		""" Returns a dict from the cache if it exists AND self.path() has an access time equal to cache.
+		""" 
+		Returns a dict from the cache if it exists AND self.path() has an access time equal to cache.
 		If the cache is used by more than one browser, then a name for the nth browser must be given otherwise 
-		cache info may be out of date."""
-		
+		cache info may be out of date. 'name' is needed because the same file might be involved in several MV widgets
+		"""
 		# modify time is used rather than access time b/c access time only has 24 hour resolution.
 		# This means that ONLY file metadata should be cached and NOT associated data in DBs which will
 		# not necessarily modify the original file!!!!!
@@ -845,7 +846,10 @@ class EMDirEntry(object):
 			return {}
 			
 	def setCache(self, db, dbdict, name=""):
-		""" Sets a cache """
+		""" 
+		Sets a cache 
+		'name' is needed because the same file might be involved in several MV widgets
+		"""
 		db[self.path()] = dbdict
 		db[self.path()+name+'lastaccesstime'] = self.statFile(self.path())[8]
 	

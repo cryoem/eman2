@@ -313,7 +313,8 @@ class EMParticlesEntry(EMDirEntry):
 				pass
 		
 		# Check the cache for metadata
-		cache = self.checkCache(db)
+		name = 'ctf'
+		cache = self.checkCache(db,name=name)
 		if not self.cacheMiss(cache,'particlecount','particledim','type','filetype'): return
 		
 		# get image counts
@@ -341,7 +342,7 @@ class EMParticlesEntry(EMDirEntry):
 			pass
 		
 		# Update the cache
-		self.updateCache(db, cache, "filetype", "particlecount", "particledim", "type")
+		self.updateCache(db, cache,  name, "filetype", "particlecount", "particledim", "type")
 		
 		
 		return True
