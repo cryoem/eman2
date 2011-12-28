@@ -1264,7 +1264,7 @@ class EMIsosurface(EMItem3D):
 	
 			glPopAttrib()
 			
-		elif (1==0 and not scenegraph.zslicemode):
+		elif (scenegraph.camera.getCappingMode() and not scenegraph.zslicemode):
 			
 			# Still a bit expeimental
 			glPushAttrib( GL_ALL_ATTRIB_BITS )
@@ -1281,7 +1281,7 @@ class EMIsosurface(EMItem3D):
 
 			#glMaterialfv(GL_FRONT, GL_EMISSION, [1.0, 0.0, 0.0, 1.0])
 
-			
+			# Draw plane of the capping color
 			glPushMatrix()
 			glLoadIdentity()
 			

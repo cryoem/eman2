@@ -1706,6 +1706,7 @@ class EMCamera:
 		self.far = far
 		self.near = near
 		self.fovy = fovy
+		self.cappingmode = False
 		zclip = (self.near-self.far)/2.0	# Puts things in the center of the viewing volume
 		if usingortho:
 			self.useOrtho(zclip)
@@ -1877,6 +1878,13 @@ class EMCamera:
 			self.zclip = clip
 		else:
 			self.perspective_z = clip
+			
+	def getCappingMode(self):
+		""" Return the capping mode """
+		return self.cappingmode
+		
+	def setCappingMode(self, mode):
+		self.cappingmode = mode
 	# Maybe other methods to control the camera
 	
 		
@@ -2297,8 +2305,10 @@ class EMInspector3D(QtGui.QWidget):
 		self.far.setMaximumHeight(40.0)
 		grid.addWidget(flabel, 2, 0)
 		grid.addWidget(self.far, 2, 1)
-		self.lockcb = QtGui.QCheckBox("Link")
+		self.lockcb = QtGui.QCheckBox("Link clipping planes")
 		grid.addWidget(self.lockcb, 1, 2)
+		self.capcb = QtGui.QCheckBox("Cap clipping planes")
+		grid.addWidget(self.capcb, 2, 2)
 		frame = QtGui.QFrame()
 		frame.setMaximumHeight(40.0)
 		frame.setFrameShape(QtGui.QFrame.StyledPanel)
@@ -2319,9 +2329,14 @@ class EMInspector3D(QtGui.QWidget):
 		QtCore.QObject.connect(self.camerawidget,QtCore.SIGNAL("farMoved(float)"),self._on_far_move)
 		QtCore.QObject.connect(self.orthoradio,QtCore.SIGNAL("clicked()"),self._on_radio_click)
 		QtCore.QObject.connect(self.perspectiveradio,QtCore.SIGNAL("clicked()"),self._on_radio_click)
+		QtCore.QObject.connect(self.capcb,QtCore.SIGNAL("clicked()"),self._on_capping)
 		
 		return cwidget
-	
+		
+	def _on_capping(self):
+		self.scenegraph().camera.setCappingMode(self.capcb.isChecked())
+		self.scenegraph().updateSG()
+		
 	def _on_near(self, value, link=True):
 		if not self.scenegraph().camera.usingortho and value <= 0:
 			return
