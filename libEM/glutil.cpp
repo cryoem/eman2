@@ -753,6 +753,7 @@ void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,bool surfa
 	
 	if ( surface_face_z ) mc->surface_face_z();
 	
+	//whenever something changes, like color mode or color scale (or threshold), we need to recolor
 	if( mc->getRGBmode() && (mc->rgbgenerator.getNeedToRecolor() || mc->needtobind)){
 		mc->color_vertices();
 		mc->needtobind = true;

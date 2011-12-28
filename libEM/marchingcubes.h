@@ -247,6 +247,10 @@ namespace EMAN
 			return needtorecolor;
 		}
 		
+		inline void setNeedToRecolor(bool recolor)
+		{
+			needtorecolor = recolor;
+		}
 	private:
 		int rgbmode;
 		int originx;

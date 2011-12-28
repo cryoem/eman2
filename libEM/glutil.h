@@ -130,7 +130,7 @@ namespace EMAN
 		static void glDrawBoundingBox(float width, float height, float depth);
 		
 	private:
-		//This is a dirty bit to let the system know when to rebind data to the GPU
+		//This is a buffer for the bounding box
 		static GLuint buffer[2];
 		
 	};

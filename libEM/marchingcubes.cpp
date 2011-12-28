@@ -497,9 +497,11 @@ float* ColorRGBGenerator::getRGBColor(int x, int y, int z)
 #endif	//_WIN32
 	
 		//This indicates that new color info needs to be bound (to the GPU)
-		if(needtorecolor) generateRadialColorMap();
+		if(needtorecolor){ 
+			generateRadialColorMap();
+			needtorecolor = false;
+		}
 		
-		needtorecolor = false;
 		return &colormap[int(rad)*3];
 	}
 	// Get data using color map
@@ -520,11 +522,9 @@ float* ColorRGBGenerator::getRGBColor(int x, int y, int z)
 			rgb[2] = 1.5 - rgb[1];
 		}
 		
-		needtorecolor = false;
 		return &rgb[0];
 	}
 	
-	needtorecolor = false;
 	return &colormap[0];	
 }
 
@@ -805,11 +805,13 @@ int MarchingCubes::get_edge_num(int x, int y, int z, int edge) {
 void MarchingCubes::color_vertices()
 {
 	cc.clear();
+		
 	//Color vertices. We don't need to rerun marching cubes on color vertices, so this method improves effciency
 	for(unsigned int i = 0; i < vv.elem(); i+=3){
 		float* color = rgbgenerator.getRGBColor(vv[i], vv[i+1], vv[i+2]);
 		cc.push_back_3(color);
 	}
+	rgbgenerator.setNeedToRecolor(false);
 }
 		
 void MarchingCubes::marching_cube(int fX, int fY, int fZ, int cur_level)
