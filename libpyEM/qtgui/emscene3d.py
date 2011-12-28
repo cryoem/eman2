@@ -714,6 +714,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.main_3d_inspector = None			# No inspector by default
 		self.item_inspector = None			# Get the inspector GUI
 		self.reset_camera = False			# Toogle flag to deterine if the clipping plane has changed and needs redrawing
+		self.zslicemode = False				# Set to true when making a Z slice
 		#self.SGactivenodeset = SGactivenodeset		# A set of all active nodes (currently not used)
 		self.scalestep = scalestep			# The scale factor stepsize
 		self.toggle_render_selectedarea = False		# Don't render the selection box by default
@@ -1302,6 +1303,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.setAutoBufferSwap(False)
 		oldnear = self.camera.getClipNear() 
 		oldfar = self.camera.getClipFar()
+		self.zslicemode = True
 		# We want to see the full volume data rather than a clip, so move clipping planes to BIG
 		# BIG is a bit differnt for perspective and orthgraphic volumes
 		if self.camera.usingortho:
@@ -1323,6 +1325,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.camera.setClipFar(oldfar)
 		self.reset_camera = True	# Reset the camera when rendering the real scene
 		self.setAutoBufferSwap(True)
+		self.zslicemode = False
 		self.pixels = []
 		self.pixels.append(1)
 		self.pixels.append(1)

@@ -314,6 +314,15 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 			node = node.parent
 			
 		return selected_ancestors
+	
+	def getRootNode(self):
+		"""
+		Returns the root node
+		"""
+		node = self
+		while node.parent:
+			node = node.parent
+		return node
 		
 	def getAllSelectedNodes(self):
 		"""
