@@ -10836,8 +10836,10 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 					apix = extract_value(parmvalues[il+3])
 					bfactor = extract_value(parmvalues[il+4])
 					ampcont = extract_value(parmvalues[il+5])
+					dfdiff = extract_value(parmvalues[il+6])
+					dfang = extract_value(parmvalues[il+7])
 					#set_ctf(img, [defocus, cs, voltage, apix, bfactor, ampcont])
-					ctf = generate_ctf([defocus, cs, voltage, apix, bfactor, ampcont]) 
+					ctf = generate_ctf([defocus, cs, voltage, apix, bfactor, ampcont, dfdiff, dfang]) 
 					if ext == "bdb":
 						DB.set_attr(i, "ctf", ctf)
 					elif ext == "hdf":
@@ -11029,11 +11031,11 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 						#defocus, cs, voltage, apix, bfactor, ampcont = get_ctf(img)
 						if ext == "bdb":
 							t = DB.get_attr(i,"ctf")
-							fexp.write("%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f "%(t.defocus, t.cs, t.voltage, t.apix, t.bfactor, t.ampcont))
+							fexp.write("%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %15.5f"%(t.defocus, t.cs, t.voltage, t.apix, t.bfactor, t.ampcont, t.dfdiff, t.dfang))
 							
 						elif ext == "hdf":
 							t = EMUtil.read_hdf_attribute(stack, "ctf",i)
-							fexp.write("%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f "%(t.defocus, t.cs, t.voltage, t.apix, t.bfactor, t.ampcont))
+							fexp.write("%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %15.5f"%(t.defocus, t.cs, t.voltage, t.apix, t.bfactor, t.ampcont, t.dfdiff, t.dfang))
 							
 					else:
 						if ext == "bdb":
