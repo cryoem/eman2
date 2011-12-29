@@ -403,7 +403,7 @@ def reference3( ref_data ):
 	Util.mul_img(volf, ref_data[0])
 	#fl, aa = fit_tanh1(ref_data[3], 0.1)
 	fl = 0.4
-	aa = 0.1
+	aa = 0.2
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
 	print_msg(msg)
 	volf = filt_tanl(volf, fl, aa)
