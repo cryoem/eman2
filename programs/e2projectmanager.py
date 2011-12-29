@@ -50,13 +50,13 @@ class EMProjectManager(QtGui.QMainWindow):
 		self.pm_cwd = os.getcwd()
 		self.pn_project_name_default='Unknown'
 		self.pm_icon = self.pm_icon_default = os.getenv("EMAN2DIR")+"/images/EMAN2Icon.png"
-		self.setWindowIcon(QtGui.QIcon(QtGui.QPixmap(wahicon)))
+		self.setWindowIcon(QtGui.QIcon(QtGui.QPixmap(pmicon)))
 		
 		# Set Defaults
-		self.usingEMEN = False
 		self.notebook = None
 		self.taskmanager = None
 		self.wikipage = None
+		self.thehelp = None
 		
 		# Load the project DataBase
 		self.loadPMdb()
@@ -104,6 +104,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		""" Upon PM close, close the taskmanager and the logbook """
 		if self.notebook: self.notebook.close()
 		if self.taskmanager: self.taskmanager.close()
+		if self.thehelp: self.thehelp.close()
 	
 	def loadPMdb(self):
 		"""
@@ -291,9 +292,9 @@ class EMProjectManager(QtGui.QMainWindow):
 		self.wikibutton.setMinimumWidth(30)
 		self.wikibutton.setMinimumHeight(30)
 		self.wikibutton.setEnabled(False)
-		#self.helpbutton = PMToolButton()
-		#self.helpbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(helpicon)))
-		#self.helpbutton.setToolTip("Help button")
+		self.helpbutton = PMToolButton()
+		self.helpbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(helpicon)))
+		self.helpbutton.setToolTip("Help button")
 		self.expertbutton = PMToolButton()
 		self.expertbutton.setDown(False, quiet=True)
 		self.expertbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(experticon)))
@@ -312,7 +313,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		self.taskmanagerbutton.setToolTip("Diaplay the task manager")
 		self.taskmanagerbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(taskicon)))
 		tbox.addWidget(self.wikibutton)
-		#tbox.addWidget(self.helpbutton)
+		tbox.addWidget(self.helpbutton)
 		tbox.addWidget(self.logbutton)
 		tbox.addWidget(self.taskmanagerbutton)
 		tbox.addWidget(self.wizardbutton)
@@ -322,7 +323,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		toolwidget.setLayout(tbox)
 		
 		QtCore.QObject.connect(self.expertbutton,QtCore.SIGNAL("stateChanged(bool)"),self._on_expertmodechanged)
-		#QtCore.QObject.connect(self.helpbutton,QtCore.SIGNAL("stateChanged(bool)"),self._on_helpbutton)
+		QtCore.QObject.connect(self.helpbutton,QtCore.SIGNAL("stateChanged(bool)"),self._on_helpbutton)
 		QtCore.QObject.connect(self.wikibutton,QtCore.SIGNAL("clicked()"),self._on_wikibutton)
 		QtCore.QObject.connect(self.logbutton,QtCore.SIGNAL("stateChanged(bool)"),self._on_logbutton)
 		QtCore.QObject.connect(self.taskmanagerbutton,QtCore.SIGNAL("stateChanged(bool)"),self._on_taskmgrbutton)
@@ -354,6 +355,15 @@ class EMProjectManager(QtGui.QMainWindow):
 			self._set_GUI(self.getProgram(), self.getProgramMode())
 	'''
 	
+	def _on_helpbutton(self, state):
+		"""
+		Load the help info
+		"""
+		if state:
+			self.loadTheHelp()
+		else:
+			self.thehelp.hide()
+			
 	def _on_logbutton(self, state):
 		"""
 		Load the log book
@@ -402,6 +412,14 @@ class EMProjectManager(QtGui.QMainWindow):
 		f.close()
 		
 		return helpstr
+	
+	def loadTheHelp(self):
+		"""
+		Make the help
+		"""
+		if not self.thehelp:
+			self.thehelp = TheHelp(self)
+		self.thehelp.show()
 		
 	def loadNoteBook(self):
 		"""
@@ -413,7 +431,7 @@ class EMProjectManager(QtGui.QMainWindow):
 			
 	def loadTaskManager(self):
 		"""
-		Make notebook
+		Make task manager
 		"""
 		if not self.taskmanager:
 			self.taskmanager = TaskManager(self)
@@ -588,6 +606,7 @@ class EMProjectManager(QtGui.QMainWindow):
 			self.updateProject()
 		else:
 			self.gui_stacked_widget.setCurrentIndex(0)
+			self.clearE2Interface()
 
 	
 	def _set_GUI(self, program, mode):
@@ -776,6 +795,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		# Set buttons
 		self.logbutton.setDown(bool(self.notebook), quiet=True)
 		self.taskmanagerbutton.setDown(bool(self.taskmanager), quiet=True)
+		self.helpbutton.setDown(bool(self.thehelp), quiet=True)
 		
 		# Wikipage
 		if self.getProgramWikiPage():
@@ -830,15 +850,106 @@ class PMIcon(QtGui.QLabel):
 	
 	def setIcon(self, image):
 		self.setText(("<img src=\"%s\" />")%image)
+
+class TheHelp(QtGui.QWidget):
+	"""
+	A little widget to aid in the daily chores. Good help is hard to find these days.....
+	"""
+	def __init__(self, pm):
+		QtGui.QWidget.__init__(self)
+		self.pm = weakref.ref(pm)
+		self.helptopics = []
+		self.widgetgeometry = None
+		
+		self.setWindowTitle('The Help')
+		grid = QtGui.QGridLayout()
+		grid.addWidget(self.getToolBar(), 0, 0)
+		self.textbox = QtGui.QTextEdit()
+		self.textbox.setReadOnly(True)
+		grid.addWidget(self.textbox, 1, 0)
+		self.setLayout(grid)
+		
+		self.setMinimumWidth(600)
+		self._helpchange(0)
+		
+	def getToolBar(self):
+		""" Return the toolbar widget """
+		tbwidget = QtGui.QWidget()
+		grid = QtGui.QGridLayout()
+	
+		font = QtGui.QFont()
+		font.setBold(True)
+		helplabel = QtGui.QLabel("EMAN2 topic:")
+		helplabel.setFont(font)
+		grid.addWidget(helplabel)
+		self.helpcb = QtGui.QComboBox()
+		grid.addWidget(self.helpcb, 0, 1)
+		
+		self.helpcb.addItem("aligners")
+		self.helpcb.addItem("averagers")
+		self.helpcb.addItem("analyzers")
+		self.helpcb.addItem("cmps")
+		self.helpcb.addItem("orientgens")
+		self.helpcb.addItem("processors")
+		self.helpcb.addItem("projectors")
+		self.helpcb.addItem("reconstuctors")
+		self.helpcb.addItem("symmetries")
+		self.helptopics.append(["aligners", dump_aligners_list()])
+		self.helptopics.append(["averagers", dump_averagers_list()])
+		self.helptopics.append(["analyzers", dump_analyzers_list()])
+		self.helptopics.append(["cmps", dump_cmps_list()])
+		self.helptopics.append(["orientgens", dump_orientgens_list()])
+		self.helptopics.append(["processors", dump_processors_list()])
+		self.helptopics.append(["projectors", dump_projectors_list()])
+		self.helptopics.append(["reconstuctors", dump_reconstructors_list()])
+		self.helptopics.append(["symmetries", dump_symmetries_list()])
+		
+		
+		self.connect(self.helpcb, QtCore.SIGNAL("activated(int)"), self._helpchange)
+		
+		tbwidget.setLayout(grid)
+		return tbwidget
+		
+	def _helpchange(self, idx):
+		""" Read in documenation info from the dump_.*_list() functions. Should reflect what is in the C dicts """
+		helpdict =  self.helptopics[idx][1]
+		helpdoc = "<B><H3>Listed below is a list of EMAN2 <I>%s</I></H3></B><BR>"%self.helptopics[idx][0]
+		
+		keys = helpdict.keys()
+		keys.sort()
+		for key in keys:
+			helpdoc += "<B>%s</B>"%(key)
+			eman2item = helpdict[key]
+			helpdoc += "<UL><LI><I>Description:</I> %s</LI>"%eman2item[0]
+			for param in xrange((len(eman2item)-1)/3):
+				helpdoc += "<LI><I>Paramater:</I> &nbsp;<B>%s(</B>%s<B>)</B>, %s</LI>"%(eman2item[param*3 +1],eman2item[param*3 +2],eman2item[param*3 +3])
+			helpdoc += "</UL>"
+		
+		self.textbox.setHtml(helpdoc)
+		
+	def hideEvent(self, event):
+		""" This remebers the geometry when we hide the widget """
+		QtGui.QWidget.hideEvent(self, event)
+		self.widgetgeometry = self.geometry()
+		
+	def showEvent(self, event):
+		""" This recalls the geometry when we show the widget """
+		QtGui.QWidget.showEvent(self, event)
+		if self.widgetgeometry: self.setGeometry(self.widgetgeometry)
+		
+	def closeEvent(self, event):
+		self.pm().thehelp = None
+		self.pm().updateProject()
 		
 class NoteBook(QtGui.QWidget):
 	"""
-	The Logbook for PM. The note book will reflect top levels jobs run, even if they were run on the command line
+	The Notebook for PM. The note book will reflect top levels jobs run, even if they were run on the command line
 	"""
 	def __init__(self, pm):
 		QtGui.QWidget.__init__(self)
 		self.pm = weakref.ref(pm)
 		self.donotsave = False
+		self.widgetgeometry = None
 		
 		self.setWindowTitle('NoteBook')
 		grid = QtGui.QGridLayout()
@@ -945,7 +1056,7 @@ class NoteBook(QtGui.QWidget):
 			fin.close()
 		except: 
 			self.pm().statusbar.setMessage("No pmnotes file found, starting a new one...")
-			self.texteditbox.insertHtml("<b>Project Name: %s<br>EMAN Version: %s<br>Path: %s<br></b>"%(self.pm().pn_project_name,EMANVERSION,self.pm().pm_projects_db[self.pm().pn_project_name]["CWD"]))
+			self.texteditbox.insertHtml("<b>Project Name: %s<br>EMAN Version: %s<br>Path: %s<br></b>"%(self.pm().pn_project_name,EMANVERSION,self.pm().getPMCWD()))
 			
 	def checkEMAN2LogFile(self):
 		""" Check the log file for any changes """
@@ -1000,6 +1111,16 @@ class NoteBook(QtGui.QWidget):
 	def _on_close(self):
 		self.donotsave = True
 		self.close()
+	
+	def hideEvent(self, event):
+		""" This remebers the geometry when we hide the widget """
+		QtGui.QWidget.hideEvent(self, event)
+		self.widgetgeometry = self.geometry()
+		
+	def showEvent(self, event):
+		""" This recalls the geometry when we show the widget """
+		QtGui.QWidget.showEvent(self, event)
+		if self.widgetgeometry: self.setGeometry(self.widgetgeometry)
 		
 	def closeEvent(self, event):
 		if not self.donotsave: self.writeNotes()
@@ -1064,7 +1185,9 @@ class TaskManager(QtGui.QWidget):
 	def __init__(self, pm):
 		QtGui.QWidget.__init__(self)
 		self.pm = weakref.ref(pm)
+		self.widgetgeometry = None
 		self.setWindowTitle('Task Manager')
+		
 		grid = QtGui.QGridLayout()
 		font = QtGui.QFont()
 		font.setBold(True)
@@ -1257,6 +1380,16 @@ class TaskManager(QtGui.QWidget):
 				print "Killing child process", task[1]
 				os.kill(task[1],signal.SIGTERM)
 				self._recursivekill(task[1])
+	
+	def hideEvent(self, event):
+		""" This remebers the geometry when we hide the widget """
+		QtGui.QWidget.hideEvent(self, event)
+		self.widgetgeometry = self.geometry()
+		
+	def showEvent(self, event):
+		""" This recalls the geometry when we show the widget """
+		QtGui.QWidget.showEvent(self, event)
+		if self.widgetgeometry: self.setGeometry(self.widgetgeometry)
 		
 	def closeEvent(self, event):
 		self.pm().taskmanager = None
