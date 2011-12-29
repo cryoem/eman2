@@ -65,7 +65,7 @@ Interactive help on a variety of topics."""
 	
 	l=None
 	if args[0] in ("cmp","cmps") :
-		print "Available comparitors:"
+		print "Available comparators:"
 		l=dump_cmps_list()
 	elif args[0] in ("analyzer","analyzers") :
 		print "Available analysers:"
