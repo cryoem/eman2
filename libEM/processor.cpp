@@ -9956,7 +9956,7 @@ void RotateInFSProcessor::process_inplace(EMData * image) // right now for 2d im
 	Transform invRotNow;
 	// Fill out real and imaginary full images
 
-	int kz=0;
+	//int kz=0;
 
 	if (debug) {image -> write_image("OrigImageFFT.hdf"); 	
 	            printf("Just wrote OrigImageFFT.hdf \n"); }

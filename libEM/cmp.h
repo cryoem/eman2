@@ -368,7 +368,7 @@ namespace EMAN
 
 		string get_desc() const
 		{
-			return "Caclultes dot product for each quadrant and returns worst value (default -1 * dot product)";
+			return "Calculates dot product for each quadrant and returns worst value (default -1 * dot product)";
 		}
 
 		static Cmp *NEW()

@@ -627,7 +627,7 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 
 // This implements the technique of Mike Schmid where by the cross correlation is normalized
 // in an effort to remove the effects of the missing wedge. Somewhat of a heuristic solution, but it seems
-// to work. Basiaclly it relies on the observation that 'good' matchs will conentrate the correlation
+// to work. Basically it relies on the observation that 'good' matchs will conentrate the correlation
 // signal in the peak, wheras 'bad' correlations will distribute the signal.
 // John Flanagan 18-10-2010
 
