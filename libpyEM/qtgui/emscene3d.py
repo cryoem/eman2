@@ -43,6 +43,7 @@ from valslider import ValSlider, EMLightControls, CameraControls, EMSpinWidget, 
 import math, weakref, os, pickle, copy
 from emshapeitem3d import *
 from emdataitem3d import EMDataItem3D, EMIsosurface, EMSliceItem3D, EMVolumeItem3D
+from emglobjects import get_default_gl_colors
 # XPM format Cursors
 
 visibleicon = [
@@ -1462,7 +1463,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		Return a dictionary of item parameters (used for restoring sessions
 		"""
 		dictionary = super(EMScene3D, self).getItemDictionary()
-		dictionary.update({"AMBIENTLIGHT":self.firstlight.getAmbient(),"ANGULARLIGHTPOSITION":self.firstlight.getAngularPosition(),"CAMERACLIP":[self.camera.getClipNear(), self.camera.getClipFar()],"CAMERAPM":self.camera.getUseOrtho(),"CLEARCOLOR":self.getClearColor()})
+		dictionary.update({"AMBIENTLIGHT":self.firstlight.getAmbient(),"ANGULARLIGHTPOSITION":self.firstlight.getAngularPosition(),"CAPCOLOR":self.camera.getCapColor(),"LINKINGMODE":self.camera.getLinkingMode(),"CAPPINGMODE":self.camera.getCappingMode(),"CAMERACLIP":[self.camera.getClipNear(), self.camera.getClipFar()],"CAMERAPM":self.camera.getUseOrtho(),"CLEARCOLOR":self.getClearColor()})
 		return dictionary
 	
 	def setUsingDictionary(self, dictionary):
@@ -1481,6 +1482,12 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		else:
 			objectsize = 50
 			self.camera.usePrespective(objectsize, 0.25, 60.0)
+		try:
+			self.camera.setCapColor(*dictionary["CAPCOLOR"])
+			self.camera.setCappingMode(dictionary["CAPPINGMODE"])
+			self.camera.setLinkingMode(dictionary["LINKINGMODE"])
+		except:
+			pass
 		self.cameraNeedsanUpdate()
 		# Set up the utils
 		self.setClearColor(dictionary["CLEARCOLOR"][0],dictionary["CLEARCOLOR"][1],dictionary["CLEARCOLOR"][2])
@@ -1491,12 +1498,12 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		self.reset_camera = True
 		
-	def setClearColor(self, r, g, b):
+	def setClearColor(self, r, g, b, a=0.0):
 		"""
 		Set the background colorambient
 		"""
-		self.clearcolor = [r, g, b, 0.0]
-		glClearColor(r, g, b, 0.0)
+		self.clearcolor = [r, g, b, a]
+		glClearColor(r, g, b, a)
 	
 	def getClearColor(self):
 		"""
@@ -1706,7 +1713,9 @@ class EMCamera:
 		self.far = far
 		self.near = near
 		self.fovy = fovy
-		self.cappingmode = False
+		self.setCappingMode(False)
+		self.setCapColor(*(get_default_gl_colors()["bluewhite"]['ambient']))
+		self.setLinkingMode(False)
 		zclip = (self.near-self.far)/2.0	# Puts things in the center of the viewing volume
 		if usingortho:
 			self.useOrtho(zclip)
@@ -1885,8 +1894,22 @@ class EMCamera:
 		
 	def setCappingMode(self, mode):
 		self.cappingmode = mode
-	# Maybe other methods to control the camera
-	
+		
+	def setCapColor(self, r, g, b, a=1.0):
+		""" Set the cap color """
+		self.capcolor = [r, g, b, a]
+		
+	def getCapColor(self):
+		""" Return the cap color """
+		return self.capcolor
+		
+	def setLinkingMode(self, mode):
+		""" Set the clipping plane linking mode"""
+		self.linkingmode = mode
+		
+	def getLinkingMode(self):
+		""" Return the linking mode """
+		return self.linkingmode
 		
 ###################################### Inspector Code #########################################################################################
 
@@ -2287,6 +2310,7 @@ class EMInspector3D(QtGui.QWidget):
 		self.cameratab_open = False
 		cwidget = QtGui.QWidget()
 		grid = QtGui.QGridLayout()
+		grid.setContentsMargins(11,5,11,5)
 		self.camerawidget = CameraControls(scenegraph=self.scenegraph())
 		grid.addWidget(self.camerawidget, 0, 0, 1, 3)
 		nlabel = QtGui.QLabel("Near clipping plane", cwidget)
@@ -2305,10 +2329,26 @@ class EMInspector3D(QtGui.QWidget):
 		self.far.setMaximumHeight(40.0)
 		grid.addWidget(flabel, 2, 0)
 		grid.addWidget(self.far, 2, 1)
-		self.lockcb = QtGui.QCheckBox("Link clipping planes")
-		grid.addWidget(self.lockcb, 1, 2)
+		
+		# The frame for linking capping, etc
+		cframe = QtGui.QFrame()
+		cframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		cframegrid = QtGui.QGridLayout()
+		self.linkcb = QtGui.QCheckBox("Link clipping planes")
+		self.linkcb.setMinimumHeight(40.0)
+		cframegrid.addWidget(self.linkcb, 0, 0, 1, 2)
 		self.capcb = QtGui.QCheckBox("Cap clipping planes")
-		grid.addWidget(self.capcb, 2, 2)
+		self.capcb.setMinimumHeight(40.0)
+		cframegrid.addWidget(self.capcb, 1, 0, 1, 2)
+		capcolorlabel = QtGui.QLabel("Cap Color")
+		cframegrid.addWidget(capcolorlabel, 2, 0, 1, 1)
+		self.cappingcolor = EMQTColorWidget(parent=self)
+		cframegrid.addWidget(self.cappingcolor, 2, 1, 1, 1)
+		cframegrid.setAlignment(QtCore.Qt.AlignCenter)
+		cframe.setLayout(cframegrid)
+		grid.addWidget(cframe, 1, 2, 3, 1)
+		
+		# The frame for project matrices
 		frame = QtGui.QFrame()
 		frame.setMaximumHeight(40.0)
 		frame.setFrameShape(QtGui.QFrame.StyledPanel)
@@ -2320,7 +2360,7 @@ class EMInspector3D(QtGui.QWidget):
 		hbox.addWidget(self.orthoradio)
 		hbox.addWidget(self.perspectiveradio)
 		frame.setLayout(hbox)
-		grid.addWidget(frame, 3, 0, 1, 3)
+		grid.addWidget(frame, 3, 0, 1, 2)
 		cwidget.setLayout(grid)
 
 		QtCore.QObject.connect(self.near,QtCore.SIGNAL("valueChanged(int)"),self._on_near)
@@ -2330,24 +2370,35 @@ class EMInspector3D(QtGui.QWidget):
 		QtCore.QObject.connect(self.orthoradio,QtCore.SIGNAL("clicked()"),self._on_radio_click)
 		QtCore.QObject.connect(self.perspectiveradio,QtCore.SIGNAL("clicked()"),self._on_radio_click)
 		QtCore.QObject.connect(self.capcb,QtCore.SIGNAL("clicked()"),self._on_capping)
+		QtCore.QObject.connect(self.linkcb,QtCore.SIGNAL("clicked()"),self._on_linking)
+		QtCore.QObject.connect(self.cappingcolor,QtCore.SIGNAL("newcolor(QColor)"),self._on_cap_color)
 		
 		return cwidget
 		
 	def _on_capping(self):
 		self.scenegraph().camera.setCappingMode(self.capcb.isChecked())
 		self.scenegraph().updateSG()
+	
+	def _on_linking(self):
+		self.scenegraph().camera.setLinkingMode(self.linkcb.isChecked())
+		
+	def _on_cap_color(self, color):
+		rgb = color.getRgb()
+		self.scenegraph().makeCurrent()
+		self.scenegraph().camera.setCapColor(float(rgb[0])/255.0, float(rgb[1])/255.0, float(rgb[2])/255.0)
+		if self.scenegraph().camera.getCappingMode(): self.updateSceneGraph()
 		
 	def _on_near(self, value, link=True):
 		if not self.scenegraph().camera.usingortho and value <= 0:
 			return
 		if self.scenegraph().camera.getClipFar() > value:
-			if self.lockcb.isChecked() and link: self._on_far(self.scenegraph().camera.getClipFar() + (value - self.scenegraph().camera.getClipNear()), link=False)
+			if self.linkcb.isChecked() and link: self._on_far(self.scenegraph().camera.getClipFar() + (value - self.scenegraph().camera.getClipNear()), link=False)
 			self.scenegraph().camera.setClipNear(value)
 			self.scenegraph().updateSG()
 	
 	def _on_far(self, value, link=True):
 		if value > self.scenegraph().camera.getClipNear():
-			if self.lockcb.isChecked() and link: self._on_near(self.scenegraph().camera.getClipNear() + (value - self.scenegraph().camera.getClipFar()), link=False)
+			if self.linkcb.isChecked() and link: self._on_near(self.scenegraph().camera.getClipNear() + (value - self.scenegraph().camera.getClipFar()), link=False)
 			self.scenegraph().camera.setClipFar(value)
 			self.scenegraph().updateSG()
 		
@@ -2357,14 +2408,14 @@ class EMInspector3D(QtGui.QWidget):
 			return
 		if self.scenegraph().camera.getClipFar() > value:
 			self.scenegraph().camera.setClipNear(value)
-			if self.lockcb.isChecked() and link: self._on_far_move(movement, link=False)
+			if self.linkcb.isChecked() and link: self._on_far_move(movement, link=False)
 			self.scenegraph().updateSG()
 		
 	def _on_far_move(self, movement, link=True):
 		value = self.scenegraph().camera.getClipFar() + movement
 		if value > self.scenegraph().camera.getClipNear():
 			self.scenegraph().camera.setClipFar(value)
-			if self.lockcb.isChecked() and link: self._on_near_move(movement, link=False)
+			if self.linkcb.isChecked() and link: self._on_near_move(movement, link=False)
 			self.scenegraph().updateSG()
 		
 	def _on_load_camera(self, idx):
@@ -2516,6 +2567,9 @@ class EMInspector3D(QtGui.QWidget):
 		if self.cameratab_open:
 			self.near.setValue(int(self.scenegraph().camera.getClipNear()), quiet=1)
 			self.far.setValue(int(self.scenegraph().camera.getClipFar()), quiet=1)
+			self.linkcb.setChecked(self.scenegraph().camera.getLinkingMode())
+			self.capcb.setChecked(self.scenegraph().camera.getCappingMode())
+			self.cappingcolor.setColor(QtGui.QColor(255*self.scenegraph().camera.getCapColor()[0],255*self.scenegraph().camera.getCapColor()[1],255*self.scenegraph().camera.getCapColor()[2]))
 			self._get_vv_state()
 			self.scenegraph().setZslice()
 			self.camerawidget.updateWidget()

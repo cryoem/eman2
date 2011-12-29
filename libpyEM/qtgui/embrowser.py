@@ -43,8 +43,6 @@ from emimage2d import *
 from emimagemx import *
 from emplot2d import *
 from emplot3d import *
-from emscene3d import *
-from emdataitem3d import *
 from valslider import StringBox
 import re
 import threading
@@ -2074,6 +2072,10 @@ class EMBrowserWidget(QtGui.QWidget):
 		event.accept()
 		#self.app().close_specific(self)
 		self.emit(QtCore.SIGNAL("module_closed")) # this signal is important when e2ctf is being used by a program running its own eve
+
+# These imports come after classes are defined to break circular importing
+from emscene3d import *
+from emdataitem3d import *
 
 # This is just for testing, of course
 def test_result():

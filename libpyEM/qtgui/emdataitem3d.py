@@ -1329,7 +1329,10 @@ class EMIsosurface(EMItem3D):
 			
 			glStencilFunc( GL_NOTEQUAL, 0, 0xFFFF )	
 
-			#glMaterialfv(GL_FRONT, GL_EMISSION, [1.0, 0.0, 0.0, 1.0])
+			glDisable(GL_COLOR_MATERIAL)
+			glMaterialfv(GL_FRONT, GL_SPECULAR, [0.0,0.0,0.0,1.0])
+			glMaterialfv(GL_FRONT, GL_AMBIENT, scenegraph.camera.getCapColor())
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, scenegraph.camera.getCapColor())
 
 			# Draw plane of the capping color
 			glPushMatrix()
