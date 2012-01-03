@@ -36,7 +36,7 @@ from PyQt4 import QtCore, QtGui
 from libpyGLUtils2 import GLUtil
 from EMAN2 import EMData, MarchingCubes, Transform
 from emitem3d import EMItem3D, EMItem3DInspector, drawBoundingBox
-from embrowser import EMBrowserWidget
+#from embrowser import EMBrowserWidget
 from emimageutil import ImgHistogram
 from valslider import ValSlider, EMSpinWidget
 from emshapeitem3d import EMInspectorControlShape
@@ -106,7 +106,7 @@ class EMDataItem3D(EMItem3D):
 		self.renderBoundingBox = state
 		
 	def getEvalString(self):
-		return "EMDataItem3D(\"%s\")"%self.path
+		return "EMDataItem3D(\"%s\")"%os.path.abspath(self.path)
 		
 	def getItemInspector(self):
 		if not self.item_inspector:
@@ -1226,7 +1226,7 @@ class EMIsosurface(EMItem3D):
 				self.cmapfilename = data.get_attr('source_path')
 		else:
 			self.cmapdata = EMData(str(data))
-			self.cmapfilename = data
+			self.cmapfilename = os.path.abspath(data)
 
 		self.isorender.set_cmap_data(self.cmapdata)
 		self.setCmapMinMax(self.cmapdata.get_attr('minimum'), self.cmapdata.get_attr('maximum'))
