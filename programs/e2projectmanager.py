@@ -876,14 +876,21 @@ class TheHelp(QtGui.QWidget):
 		""" Return the toolbar widget """
 		tbwidget = QtGui.QWidget()
 		grid = QtGui.QGridLayout()
-	
+		grid.setContentsMargins(6,0,6,0)
+		
 		font = QtGui.QFont()
 		font.setBold(True)
 		helplabel = QtGui.QLabel("EMAN2 topic:")
 		helplabel.setFont(font)
-		grid.addWidget(helplabel)
+		helplabel.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+
+		hbox = QtGui.QHBoxLayout()
+		hbox.addWidget(PMIcon(os.getenv("EMAN2DIR")+"/images/SirEMAN2.png"))
+		hbox.addWidget(helplabel)
+		hbox.setContentsMargins(0,0,0,0)
+		grid.addLayout(hbox,0, 0)
 		self.helpcb = QtGui.QComboBox()
-		grid.addWidget(self.helpcb, 0, 1)
+		grid.addWidget(self.helpcb, 0, 1, 1, 2)
 		
 		self.helpcb.addItem("aligners")
 		self.helpcb.addItem("averagers")
@@ -922,7 +929,7 @@ class TheHelp(QtGui.QWidget):
 			eman2item = helpdict[key]
 			helpdoc += "<UL><LI><I>Description:</I> %s</LI>"%eman2item[0]
 			for param in xrange((len(eman2item)-1)/3):
-				helpdoc += "<LI><I>Paramater:</I> &nbsp;<B>%s(</B>%s<B>)</B>, %s</LI>"%(eman2item[param*3 +1],eman2item[param*3 +2],eman2item[param*3 +3])
+				helpdoc += "<LI><I>Paramater:</I> &nbsp;<B>%s(</B><SPAN style='color:red;'>%s</SPAN><B>)</B>, %s</LI>"%(eman2item[param*3 +1],eman2item[param*3 +2],eman2item[param*3 +3])
 			helpdoc += "</UL>"
 		
 		self.textbox.setHtml(helpdoc)

@@ -883,8 +883,9 @@ class EMDirEntry(object):
 		if self.filetype!=None : return False		# must all ready be filled in
 		
 		# Check the cache for metadata
+		name='browser'
 		if os.access("EMAN2DB",os.R_OK):
-			cache = self.checkCache(db)
+			cache = self.checkCache(db, name=name)
 			if not self.cacheMiss(cache,'filetype','nimg','dim','size'): return 
 		
 		# BDB details are already cached and can often be retrieved quickly
@@ -908,7 +909,7 @@ class EMDirEntry(object):
 			
 			# Cache if EMAN2DB already exists
 			if os.access("EMAN2DB",os.R_OK):
-				self.updateCache(db, cache, 'filetype', 'nimg', 'dim', 'size')
+				self.updateCache(db, cache, name, 'filetype', 'nimg', 'dim', 'size')
 			
 			return True
 		
@@ -953,7 +954,7 @@ class EMDirEntry(object):
 		
 		# Cache if EMAN2DB already exists
 		if os.access("EMAN2DB",os.R_OK):
-			self.updateCache(db, cache, 'filetype', 'nimg', 'dim', 'size')
+			self.updateCache(db, cache, name, 'filetype', 'nimg', 'dim', 'size')
 			
 		return True
 
