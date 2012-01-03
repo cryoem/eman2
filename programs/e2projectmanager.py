@@ -525,8 +525,10 @@ class EMProjectManager(QtGui.QMainWindow):
 			child = subprocess.Popen((str(cmd)+" --ppid=-2"), shell=True, cwd=self.pm_cwd)
 		else:
 			if self.getProgramNoteLevel() > 0:
+				print "NOT Writing notes, ppid=-1"
 				child = subprocess.Popen(str(cmd), shell=True, cwd=self.pm_cwd)
 			else:
+				print "NOT Writing notes, ppid=-2"
 				child = subprocess.Popen((str(cmd)+" --ppid=-2"), shell=True, cwd=self.pm_cwd)
 		self.statusbar.setMessage("Program %s Launched!!!!"%str(cmd).split()[0])
 		
@@ -929,7 +931,7 @@ class TheHelp(QtGui.QWidget):
 			eman2item = helpdict[key]
 			helpdoc += "<UL><LI><I>Description:</I> %s</LI>"%eman2item[0]
 			for param in xrange((len(eman2item)-1)/3):
-				helpdoc += "<LI><I>Paramater:</I> &nbsp;<B>%s(</B><SPAN style='color:red;'>%s</SPAN><B>)</B>, %s</LI>"%(eman2item[param*3 +1],eman2item[param*3 +2],eman2item[param*3 +3])
+				helpdoc += "<LI><I>Parameter:</I> &nbsp;<B>%s(</B><SPAN style='color:red;'>%s</SPAN><B>)</B>, %s</LI>"%(eman2item[param*3 +1],eman2item[param*3 +2],eman2item[param*3 +3])
 			helpdoc += "</UL>"
 		
 		self.textbox.setHtml(helpdoc)
@@ -978,6 +980,7 @@ class NoteBook(QtGui.QWidget):
 		# Load the logbook and update
 		self.loadNoteBook()
 		self.checkEMAN2LogFile()
+		self.writeNotes() # save changes from checkEMAN2LogFile()
 		
 		self.connect(self.savepb, QtCore.SIGNAL('clicked()'), self._on_save)
 		self.connect(self.closepb, QtCore.SIGNAL('clicked()'), self._on_close)

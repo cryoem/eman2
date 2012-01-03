@@ -1713,6 +1713,7 @@ class EMCamera:
 		self.far = far
 		self.near = near
 		self.fovy = fovy
+		self.maxviewport = glGetIntegerv(GL_MAX_VIEWPORT_DIMS)
 		self.setCappingMode(False)
 		self.setCapColor(*(get_default_gl_colors()["bluewhite"]['ambient']))
 		self.setLinkingMode(False)
@@ -1732,7 +1733,7 @@ class EMCamera:
 		if height: self.height = height
 		self.aspectratio = float(self.height)/float(self.width)
 		if self.usingortho:
-			glViewport(-self.pseudofovy,int(-self.pseudofovy*self.aspectratio),self.width+2*self.pseudofovy,int(self.height+2*self.pseudofovy*self.aspectratio))
+			self.setViewPort(-self.pseudofovy, int(-self.pseudofovy*self.aspectratio), int(self.width+2*self.getPseudoFovyWidth()), int(self.height+2*self.getPseudoFovyHeight()))
 			glMatrixMode(GL_PROJECTION)
 			glLoadIdentity()
 			self.setOrthoProjectionMatrix()
@@ -1741,7 +1742,7 @@ class EMCamera:
 			self.setCameraPosition()
 		else:
 			# This may need some work to get it to behave
-			glViewport(0,0,self.width,self.height)
+			self.setViewPort(0,0,self.width,self.height)
 			glMatrixMode(GL_PROJECTION)
 			glLoadIdentity()
 			self.setPerspectiveProjectionMatrix()
@@ -1749,6 +1750,11 @@ class EMCamera:
 			glLoadIdentity()
 			self.setCameraPosition()
 	
+	def setViewPort(self, x, y, vpwidth, vpheight):
+		"""Set the viewport subject to openGL constraitns """
+		if (vpwidth < self.maxviewport[0] and vpheight < self.maxviewport[1]):
+			glViewport(x, y, vpwidth, vpheight)
+		
 	def setCameraPosition(self, sfactor=1):
 		"""
 		Set the default camera position
@@ -1837,9 +1843,9 @@ class EMCamera:
 		
 	def setPseudoFovy(self, pseudofovy):
 		"""
-		Set PseudoFovy, a sort of fovy for orthogramphic projections
+		Set PseudoFovy, a sort of fovy for orthogramphic projections, do bounds checking
 		"""
-		if (self.width+2*pseudofovy) > 0 and (self.height+2*pseudofovy) > 0: self.pseudofovy = pseudofovy # negative viewport values are not acceptable
+		if (self.width+2*pseudofovy) > 0 and (self.height+2*pseudofovy) > 0 and ((int(self.width+2*self.getPseudoFovyWidth()) < self.maxviewport[0] and int(self.height+2*self.getPseudoFovyHeight()) < self.maxviewport[1]) or pseudofovy < self.pseudofovy): self.pseudofovy = pseudofovy # negative viewport values are not acceptable
 		
 	def getPseudoFovyWidth(self):
 		"""
