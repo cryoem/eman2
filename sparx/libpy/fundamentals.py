@@ -502,9 +502,10 @@ def subsample(image, subsample_rate=1.0):
 
 def resample(img, sub_rate=0.5):
 	"""
-		Window image to FFT-friendly size, apply Butterworth low pass filter,
-		and subsample 2D image
-		sub_rate < 1.0, subsampling rate
+		resample image based on the value of sub_rate.
+		the input image can be either 2D image or 3D volume.
+		sub_rate < 1.0, subsampling the image.
+		sub_rate > 1.0, upsampling the image using new gridding interpolation.
 		fit_to_fft will change the ouput image size to an fft_friendly size
 	"""
 
