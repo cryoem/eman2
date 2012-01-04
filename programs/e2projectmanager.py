@@ -857,9 +857,12 @@ class TheHelp(QtGui.QWidget):
 	"""
 	A little widget to aid in the daily chores. Good help is hard to find these days.....
 	"""
-	def __init__(self, pm):
+	def __init__(self, pm=None):
 		QtGui.QWidget.__init__(self)
-		self.pm = weakref.ref(pm)
+		if pm: 
+			self.pm = weakref.ref(pm)
+		else:
+			self.pm = None
 		self.helptopics = []
 		self.widgetgeometry = None
 		
@@ -920,6 +923,7 @@ class TheHelp(QtGui.QWidget):
 		return tbwidget
 		
 	def _helpchange(self, idx):
+		self.helpcb.setCurrentIndex(idx) 
 		""" Read in documenation info from the dump_.*_list() functions. Should reflect what is in the C dicts """
 		helpdict =  self.helptopics[idx][1]
 		helpdoc = "<B><H3>Listed below is a list of EMAN2 <I>%s</I></H3></B><BR>"%self.helptopics[idx][0]
@@ -947,8 +951,8 @@ class TheHelp(QtGui.QWidget):
 		if self.widgetgeometry: self.setGeometry(self.widgetgeometry)
 		
 	def closeEvent(self, event):
-		self.pm().thehelp = None
-		self.pm().updateProject()
+		if self.pm: self.pm().thehelp = None
+		if self.pm: self.pm().updateProject()
 		
 class NoteBook(QtGui.QWidget):
 	"""

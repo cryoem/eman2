@@ -54,15 +54,45 @@ Interactive help on a variety of topics."""
 
 	#parser.add_argument("--res", "-R", type=float, help="Resolution in A, equivalent to Gaussian lowpass with 1/e width at 1/res",default=2.8)
 	#parser.add_argument("--box", "-B", type=str, help="Box size in pixels, <xyz> or <x>,<y>,<z>")
+	parser.add_argument("--gui", action="store_true", help="Use the GUI for display help", default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
-	
+		
+	if options.gui:
+		from e2projectmanager import TheHelp
+		from emapplication import EMApp
+		app = EMApp()
+		thehelp = TheHelp()
+		thehelp.show()
+		if args:
+			print args[0]
+			if args[0] in ("aligner","aligners"):
+				thehelp._helpchange(0)
+			elif args[0] in ("analyzer","analyzers"):
+				thehelp._helpchange(1)
+			elif args[0] in ("averager","averagers"):
+				thehelp._helpchange(2)
+			elif args[0] in ("cmp","cmps"):
+				thehelp._helpchange(3)
+			elif args[0] in ("orientgen","orientationgen","orientgens","orientationgens","orientationgenerators"):
+				thehelp._helpchange(4)
+			elif args[0] in ("processor","processors"):
+				thehelp._helpchange(5)
+			elif args[0] in ("projector","projectors"):
+				thehelp._helpchange(6)
+			elif args[0] in ("reconstructor","reconstructors"):
+				thehelp._helpchange(7)
+			elif args[0] in ("sym","symmetry","symmetries"):
+				thehelp._helpchange(8)
+		app.exec_()
+		exit(0)
+
 	if len(args)<1 : 
 		print helpstring
 		exit(0)
-	
+		
 	l=None
 	if args[0] in ("cmp","cmps") :
 		print "Available comparators:"
