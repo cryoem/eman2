@@ -66,7 +66,6 @@ SET(LIB_EM_SOURCE byteorder.cpp
     exception.cpp
     testutil.cpp
     analyzer.cpp
-    marchingcubes.cpp
     randnum.cpp
     sparx/fundamentals.cpp
     sparx/fourierfilter.cpp
@@ -88,6 +87,7 @@ SET(LIB_EM_SOURCE byteorder.cpp
 
 SET(LIB_GLEM_SOURCE 
 		glutil.cpp
+		marchingcubes.cpp
 		emftgl.cpp)
 
 IF(WIN32)

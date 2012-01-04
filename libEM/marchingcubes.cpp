@@ -29,10 +29,16 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  *
  * */
+#ifdef EMAN2_USING_OPENGL
 
 #ifdef _WIN32
 	#include <windows.h>
 #endif	//_WIN32
+
+#ifndef GL_GLEXT_PROTOTYPES
+	#define GL_GLEXT_PROTOTYPES
+#endif	//GL_GLEXT_PROTOTYPES
+
 
 #include "marchingcubes.h"
 
@@ -46,6 +52,12 @@ using namespace EMAN;
 
 #define min(a,b)(((a) < (b)) ? (a) : (b))
 #define max(a,b)(((a) > (b)) ? (a) : (b))
+
+#ifdef __APPLE__
+	#include "OpenGL/glext.h"
+#else // WIN32, LINUX
+	#include "GL/glext.h"
+#endif	//__APPLE__
 
 //a2fVertexOffset lists the positions, relative to vertex0, of each of the 8 vertices of a cube
 static const int a2fVertexOffset[8][3] =
@@ -532,12 +544,14 @@ MarchingCubes::MarchingCubes()
 	: _isodl(0), needtobind(1)
 {
 	rgbgenerator = ColorRGBGenerator();
+	glGenBuffers(4, buffer);
 }
 
 MarchingCubes::MarchingCubes(EMData * em)
 	: _isodl(0), needtobind(1)
 {
 	rgbgenerator = ColorRGBGenerator();
+	glGenBuffers(4, buffer);
 	set_data(em);
 }
 
@@ -599,6 +613,7 @@ bool MarchingCubes::calculate_min_max_vals()
 
 MarchingCubes::~MarchingCubes() {
 	clear_min_max_vals();
+	glDeleteBuffers(4, buffer);
 }
 
 Dict MarchingCubes::get_isosurface()
@@ -1274,3 +1289,4 @@ BOOST_PYTHON_MODULE(gorgon)
     ;
 }
 */
+#endif
