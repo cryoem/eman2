@@ -132,7 +132,11 @@ class EMClassPtclTool(QtGui.QWidget):
 		# Mark particles in selected classes as bad
 		self.wmarkbut=QtGui.QPushButton("Mark as Bad")
 		self.vbl2.addWidget(self.wmarkbut)
-		
+
+		# Mark particles in selected classes as good
+		self.wmarkgoodbut=QtGui.QPushButton("Mark as Good")
+		self.vbl2.addWidget(self.wmarkgoodbut)
+
 		# Make a new set from selected classes						
 		self.wmakebut=QtGui.QPushButton("Make New Set")
 		self.vbl2.addWidget(self.wmakebut)
@@ -156,6 +160,7 @@ class EMClassPtclTool(QtGui.QWidget):
 		QtCore.QObject.connect(self.wsel3db,QtCore.SIGNAL("clicked(bool)"),self.sel3DClasses)
 		QtCore.QObject.connect(self.wmakebut,QtCore.SIGNAL("clicked(bool)"),self.makeNewSet)
 		QtCore.QObject.connect(self.wmarkbut,QtCore.SIGNAL("clicked(bool)"),self.markBadPtcl)
+		QtCore.QObject.connect(self.wmarkgoodbut,QtCore.SIGNAL("clicked(bool)"),self.markGoodPtcl)
 		QtCore.QObject.connect(self.wsavebut,QtCore.SIGNAL("clicked(bool)"),self.savePtclNum)
 		QtCore.QObject.connect(self.wsaveorigbut,QtCore.SIGNAL("clicked(bool)"),self.saveOrigPtclNum)
 		
@@ -264,6 +269,39 @@ class EMClassPtclTool(QtGui.QWidget):
 		for k in baddict.keys():
 			try: db[k]=list(set(db[k]).union(baddict[k]))
 			except : db[k]=baddict[k]
+
+	def markGoodPtcl(self,x):
+		"Mark particles from the selected class-averages as good in the set interface"
+		
+		r=QtGui.QMessageBox.question(None,"Are you sure ?","WARNING: There is no undo for this operation. It will permanently mark all particles associated with the selected class-averages as good (if they were previously marked bad). Are you sure you want to proceed ?",QtGui.QMessageBox.Yes|QtGui.QMessageBox.Cancel)
+		if r==QtGui.QMessageBox.Cancel : return
+	
+#		print self.wselused.getValue(),self.wselunused.getValue()
+		
+		gooddict={}
+		# iterate over each particle from each marked class-average
+		for n in self.curPtclIter(self.wselused.getValue(),self.wselunused.getValue()): 
+			im=EMData(self.curPtclFile(),n,True)	# We have to actually read the particle header to dereference its set
+			try :
+				srcfile=im["data_source"]
+				if not "bdb:particles#" in srcfile : raise Exception
+			except:
+				QtGui.QMessageBox.warning(self,"Error !","The data_source '%s' does not follow EMAN2 project conventions. Cannot mark particles."%srcfile)
+				return
+				
+			# demangle the source name to get the CCD name we expect to find in bdb:select
+			srcname=srcfile.split("#")[1].split("?")[0].split("_ctf")[0]
+			try: gooddict[srcname].append(im["data_n"])
+			except: gooddict[srcname]=[im["data_n"]]
+			
+		print gooddict
+
+		# Now merge the newly marked bad particles with the main bad particle selection lists
+		db=db_open_dict("bdb:select")
+		for k in gooddict.keys():
+			try: db[k]=list(set(db[k]).difference(gooddict[k]))
+			except : pass
+
 
 	def savePtclNum(self,x):
 		"Saves a list of particles from marked classes into a text file"

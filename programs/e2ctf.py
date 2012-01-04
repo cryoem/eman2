@@ -266,7 +266,7 @@ def write_e2ctf_output(options):
 	"write wiener filtered and/or phase flipped particle data to the local database"
 	global logid
 
-	if options.phaseflip or options.wiener or options.phasefliphp :
+	if options.phaseflip or options.wiener or options.phasefliphp or options.storeparm:
 		db_parms=db_open_dict("bdb:e2ctf.parms")
 		for i,filename in enumerate(options.filenames):
 			name=get_file_tag(filename)
