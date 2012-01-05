@@ -98,7 +98,18 @@ class EMDataItem3D(EMItem3D):
 		EMItem3D.__init__(self, parent, children, transform=transform)
 		self.setData(data)
 		self.renderBoundingBox = False
-		
+	
+	def setSelectedItem(self, is_selected):
+		EMItem3D.setSelectedItem(self, is_selected)
+		sg = self.getRootNode()
+		try:
+			if is_selected:
+				sg.setAPix(self.data['apix_x'])
+			else:
+				sg.setAPix(None)
+		except:
+			print "ERROR in setting APIX" 
+			
 	def getRenderBoundingBox(self):
 		return self.renderBoundingBox
 		
@@ -1260,7 +1271,7 @@ class EMIsosurface(EMItem3D):
 		scenegraph = self.getRootNode()
 		cull = glIsEnabled(GL_CULL_FACE)
 		polygonmode = glGetIntegerv(GL_POLYGON_MODE)
-	
+
 		if self.cullbackfaces:
 			glEnable(GL_CULL_FACE)
 			glCullFace(GL_BACK)

@@ -193,6 +193,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 	def isSelectedItem(self): return self.is_selected
 	def setSelectedItem(self, is_selected): self.is_selected = is_selected
 	def isSelectionHidded(self): return self.hide_selection
+	def getHiddenSelected(self): return self.hide_selection
 	def setHiddenSelected(self, hide_selection): self.hide_selection = hide_selection
 	def getTransform(self): return self.transform
 	def setTransform(self, transform): self.transform = transform

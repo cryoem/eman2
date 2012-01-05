@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Author: Grant Tang (gtang@bcm.edu)
-# 2nd Author: John Flanagan (jfflanag@bcm.edu)
+# Author: John Flanagan (jfflanag@bcm.edu)
 # Copyright (c) 2011- Baylor College of Medicine
 
 
@@ -42,7 +42,171 @@ from EMAN2 import Transform, get_3d_font_renderer, Vec3f
 from valslider import EMQTColorWidget, ValSlider, EMSpinWidget
 from libpyGLUtils2 import FTGLFontMode
 
-class EMCube(EMItem3D):
+class EMShapeBase(EMItem3D):
+	""" Base class that all shape object need to inherit """
+	name = "shapebase"
+	nodetype = "ShapeNode"
+	
+	def __init__(self, parent=None, children=None, transform=None):
+		if not transform: transform = Transform()
+		EMItem3D.__init__(self, parent=parent, children=children, transform=transform)
+	
+		# initial color
+		self.diffuse = [0.5,0.5,0.5,1.0]
+		self.specular = [1.0,1.0,1.0,1.0]
+		self.ambient = [1.0, 1.0, 1.0, 1.0]
+		self.shininess = 25.0		
+		
+	def getEvalString(self):
+		raise NotImplementedError("Not to reimplemnt this function")
+	
+	def getItemInspector(self):
+		raise NotImplementedError("Not to reimplemnt this function")
+	
+	def setAmbientColor(self, red, green, blue, alpha=1.0):
+		self.ambient = [red, green, blue, alpha]
+
+	def setDiffuseColor(self, red, green, blue, alpha=1.0):
+		self.diffuse = [red, green, blue, alpha]
+		
+	def setSpecularColor(self, red, green, blue, alpha=1.0):
+		self.specular = [red, green, blue, alpha]
+	
+	def setShininess(self, shininess):
+		self.shininess = shininess
+	
+	def getItemDictionary(self):
+		"""
+		Return a dictionary of item parameters (used for restoring sessions
+		"""
+		dictionary = super(EMShapeBase, self).getItemDictionary()
+		dictionary.update({"COLOR":[self.ambient, self.diffuse, self.specular, self.shininess]})
+		return dictionary
+	
+	def setUsingDictionary(self, dictionary):
+		"""
+		Set item attributes using a dictionary, used in session restoration
+		"""
+		super(EMShapeBase, self).setUsingDictionary(dictionary)
+		self.setAmbientColor(*dictionary["COLOR"][0][0])
+		self.setDiffuseColor(*dictionary["COLOR"][1][0])
+		self.setSpecularColor(*dictionary["COLOR"][2][0])
+		self.setShininess(dictionary["COLOR"][3])
+		
+	def renderNode(self):
+		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded(): # No need to draw outline in selection mode
+			#if glGetIntegerv(GL_RENDER_MODE) == GL_RENDER: print "X"
+			glPushAttrib( GL_ALL_ATTRIB_BITS )
+		
+			# First render the cylinder, writing the outline to the stencil buffer
+			glClearStencil(0)
+			glClear( GL_STENCIL_BUFFER_BIT )
+			glEnable( GL_STENCIL_TEST )
+			glStencilFunc( GL_ALWAYS, 1, 0xFFFF )		# Write to stencil buffer
+			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )	# Only pixels that pass the depth test are written to the stencil buffer
+			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL )	
+			self.renderShape()
+		
+			# Then render the outline
+			glStencilFunc( GL_NOTEQUAL, 1, 0xFFFF )		# The object itself is stenciled out
+			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )
+			glLineWidth( 4.0 )				# By increasing the line width only the outline is drawn
+			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE )
+			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0, 1.0, 0.0, 1.0])
+			self.renderShape()
+	
+			glPopAttrib()	
+		else:
+			self.renderShape()
+			
+	def renderShape(self):
+		raise NotImplementedError("Not to reimplemnt this function")	
+	
+class EMRuler(EMShapeBase):
+	name = "Ruler"
+	nodetype = "ShapeNode"
+	
+	@staticmethod
+	def getNodeDialogWidget(attribdict):
+		"""
+		Return a cube control widget for the stacked_widget
+		"""
+		raise NotImplementedError("Not yet implmented")
+	
+	@staticmethod
+	def getNodeForDialog(attribdict):
+		"""
+		Create a new node using a attribdict
+		"""
+		raise NotImplementedError("Not yet implmented")
+			
+	def __init__(self, x1, y1, z1, x2, y2, z2, transform=None):
+		EMShapeBase.__init__(self, parent=None, children=set(), transform=transform)
+		self.setRuler(x1, y1, z1, x2, y2, z2)
+		
+		# color
+		self.diffuse = [0.5,0.5,0.5,0.5]
+		self.specular = [1.0,1.0,1.0,0.5]
+		self.ambient = [1.0, 1.0, 1.0, 0.5]
+		self.shininess = 25.0
+	
+	def getEvalString(self):
+		return "EMRuler(%s)"%self.length	
+	
+	def setLength(self, length):
+		""" Sets the ruler length """
+		sg = self.getRootNode()
+		apix = 1.0
+		if hasattr(sg, "getAPix"): apix = sg.getAPix()*sg.camera.getViewPortWidthScaling()
+
+		self.length = length*apix
+		self.boundingboxsize = 'length='+str(round(self.length, 2))+u'\u212B'
+		if self.item_inspector: self.item_inspector.updateMetaData()
+		
+	def getItemInspector(self):
+		"""
+		Return a Qt widget that controls the scene item
+		"""
+		if not self.item_inspector: self.item_inspector = EMInspectorControlShape("RULER", self)
+		return self.item_inspector
+	
+	def setRuler(self, x1, y1, z1, x2, y2, z2):
+		#print x1, y1, z1, x2, y2, z2
+		self.xi = x1
+		self.yi = y1
+		self.zi = z1
+		self.xf = x2
+		self.yf = y2
+		self.zf = z2
+		self.setLength(math.sqrt((x1-x2)**2 + (y1-y2)**2 + (z1-z2)**2))
+		self.angle = -math.atan2((y2-y1),(x2-x1))
+		#print x2, y2, z2
+		
+	def renderShape(self):        
+		# Material properties of the box
+		glDisable(GL_COLOR_MATERIAL)
+		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
+		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
+		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
+		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
+		
+		#glEnable(GL_BLEND)
+		#glDisable(GL_DEPTH_TEST)
+		#glBlendFunc(GL_SRC_ALPHA, GL_ONE)
+		#glBlendEquation(GL_FUNC_SUBTRACT)
+		#glColor(1.0, 1.0, 1.0, 0.01)
+		glBegin(GL_LINES)
+		glVertex3f(self.xi, self.yi, self.zi)
+		glVertex3f(self.xf, self.yf, self.zf)
+		glVertex3f(self.xi+10.0*math.sin(self.angle), self.yi+10.0*math.cos(self.angle), self.zf)
+		glVertex3f(self.xi-10.0*math.sin(self.angle), self.yi-10.0*math.cos(self.angle), self.zf)
+		glVertex3f(self.xf+10.0*math.sin(self.angle), self.yf+10.0*math.cos(self.angle), self.zf)
+		glVertex3f(self.xf-10.0*math.sin(self.angle), self.yf-10.0*math.cos(self.angle), self.zf)
+		glEnd()	# Done Drawing The Cube
+		#glDisable(GL_BLEND)
+		#glEnable(GL_DEPTH_TEST)
+		
+class EMCube(EMShapeBase):
 	name = "Cube"
 	nodetype = "ShapeNode"
 	
@@ -73,16 +237,9 @@ class EMCube(EMItem3D):
 		return EMCube(float(attribdict["cube_dim"].text()), transform=EMItem3D.getTransformFromDict(attribdict))
 		
 	def __init__(self, size, transform=None):
-		if not transform: transform = Transform()
-		EMItem3D.__init__(self, parent=None, children=set(), transform=transform)
+		EMShapeBase.__init__(self, parent=None, children=set(), transform=transform)
 		# size
 		self.setSize(size)
-		
-		# color
-		self.diffuse = [0.5,0.5,0.5,1.0]
-		self.specular = [1.0,1.0,1.0,1.0]
-		self.ambient = [1.0, 1.0, 1.0, 1.0]
-		self.shininess = 25.0		
 		
 	def setSize(self, size):
 		self.size = size
@@ -98,77 +255,14 @@ class EMCube(EMItem3D):
 	def getEvalString(self):
 		return "EMCube(%s)"%self.size
 		
-	def setAmbientColor(self, red, green, blue, alpha=1.0):
-		self.ambient = [red, green, blue, alpha]
-
-	def setDiffuseColor(self, red, green, blue, alpha=1.0):
-		self.diffuse = [red, green, blue, alpha]
-		
-	def setSpecularColor(self, red, green, blue, alpha=1.0):
-		self.specular = [red, green, blue, alpha]
-	
-	def setShininess(self, shininess):
-		self.shininess = shininess
-		
 	def getItemInspector(self):
 		"""
 		Return a Qt widget that controls the scene item
 		"""
 		if not self.item_inspector: self.item_inspector = EMInspectorControlShape("CUBE", self)
 		return self.item_inspector
-	
-	def getItemDictionary(self):
-		"""
-		Return a dictionary of item parameters (used for restoring sessions
-		"""
-		dictionary = super(EMCube, self).getItemDictionary()
-		dictionary.update({"COLOR":[self.ambient, self.diffuse, self.specular, self.shininess]})
-		return dictionary
-	
-	def setUsingDictionary(self, dictionary):
-		"""
-		Set item attributes using a dictionary, used in session restoration
-		"""
-		super(EMCube, self).setUsingDictionary(dictionary)
-		self.setAmbientColor(dictionary["COLOR"][0][0], dictionary["COLOR"][0][1], dictionary["COLOR"][0][2], dictionary["COLOR"][0][3])
-		self.setDiffuseColor(dictionary["COLOR"][1][0], dictionary["COLOR"][1][1], dictionary["COLOR"][1][2], dictionary["COLOR"][1][3])
-		self.setSpecularColor(dictionary["COLOR"][2][0], dictionary["COLOR"][2][1], dictionary["COLOR"][2][2], dictionary["COLOR"][2][3])
-		self.setShininess(dictionary["COLOR"][3])
-		
-	def renderNode(self):
-		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded(): # No need to draw outline in selection mode
-			#if glGetIntegerv(GL_RENDER_MODE) == GL_RENDER: print "X"
-			glPushAttrib( GL_ALL_ATTRIB_BITS )
-		
-			# First render the cylinder, writing the outline to the stencil buffer
-			glClearStencil(0)
-			glClear( GL_STENCIL_BUFFER_BIT )
-			glEnable( GL_STENCIL_TEST )
-			glStencilFunc( GL_ALWAYS, 1, 0xFFFF )		# Write to stencil buffer
-			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )	# Only pixels that pass the depth test are written to the stencil buffer
-			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL )	
-			self.renderCube()
-		
-			# Then render the outline
-			glStencilFunc( GL_NOTEQUAL, 1, 0xFFFF )		# The object itself is stenciled out
-			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )
-			glLineWidth( 4.0 )				# By increasing the line width only the outline is drawn
-			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE )
-			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0, 1.0, 0.0, 1.0])
-			self.renderCube()
-	
-			glPopAttrib()
-			'''
-			glPushAttrib( GL_ALL_ATTRIB_BITS )
-			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0, 1.0, 0.0, 0.0])
-			self.renderCube()
-			glPopAttrib()
-			'''
 			
-		else:
-			self.renderCube()
-			
-	def renderCube(self):        
+	def renderShape(self):        
 		# Material properties of the box
 		glDisable(GL_COLOR_MATERIAL)
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
@@ -218,7 +312,7 @@ class EMCube(EMItem3D):
 		glEnd()	# Done Drawing The Cube
 
 
-class EMSphere(EMItem3D):
+class EMSphere(EMShapeBase):
 	name = "Sphere"
 	nodetype = "ShapeNode"
 	
@@ -249,16 +343,9 @@ class EMSphere(EMItem3D):
 		return EMSphere(float(attribdict["sphere_dim"].text()), transform=EMItem3D.getTransformFromDict(attribdict))
 		
 	def __init__(self, radius, transform=None):
-		if not transform: transform = Transform()
-		EMItem3D.__init__(self, parent=None, children=set(), transform=transform)
+		EMShapeBase.__init__(self, parent=None, children=set(), transform=transform)
 		# size
 		self.setRadius(radius)
-		
-		# color
-		self.diffuse = [0.5,0.5,0.5,1.0]
-		self.specular = [1.0,1.0,1.0,1.0]
-		self.ambient = [1.0, 1.0, 1.0, 1.0]
-		self.shininess = 25.0
 	
 	def setRadius(self, radius):
 		self.radius = radius
@@ -268,19 +355,7 @@ class EMSphere(EMItem3D):
 		if self.item_inspector: self.item_inspector.updateMetaData()
 		
 	def getEvalString(self):
-		return "EMSphere(%s)"%self.radius
-		
-	def setAmbientColor(self, red, green, blue, alpha=1.0):
-		self.ambient = [red, green, blue, alpha]
-
-	def setDiffuseColor(self, red, green, blue, alpha=1.0):
-		self.diffuse = [red, green, blue, alpha]
-		
-	def setSpecularColor(self, red, green, blue, alpha=1.0):
-		self.specular = [red, green, blue, alpha]
-	
-	def setShininess(self, shininess):
-		self.shininess = shininess
+		return "EMSphere(%s)"%self.radius		
 		
 	def getItemInspector(self):
 		"""
@@ -288,51 +363,8 @@ class EMSphere(EMItem3D):
 		"""
 		if not self.item_inspector: self.item_inspector = EMInspectorControlShape("SPHERE", self)
 		return self.item_inspector
-		
-	def getItemDictionary(self):
-		"""
-		Return a dictionary of item parameters (used for restoring sessions
-		"""
-		dictionary = super(EMSphere, self).getItemDictionary()
-		dictionary.update({"COLOR":[self.ambient, self.diffuse, self.specular, self.shininess]})
-		return dictionary
-	
-	def setUsingDictionary(self, dictionary):
-		"""
-		Set item attributes using a dictionary, used in session restoration
-		"""
-		super(EMSphere, self).setUsingDictionary(dictionary)
-		self.setAmbientColor(dictionary["COLOR"][0][0], dictionary["COLOR"][0][1], dictionary["COLOR"][0][2], dictionary["COLOR"][0][3])
-		self.setDiffuseColor(dictionary["COLOR"][1][0], dictionary["COLOR"][1][1], dictionary["COLOR"][1][2], dictionary["COLOR"][1][3])
-		self.setSpecularColor(dictionary["COLOR"][2][0], dictionary["COLOR"][2][1], dictionary["COLOR"][2][2], dictionary["COLOR"][2][3])
-		self.setShininess(dictionary["COLOR"][3])
-		
-	def renderNode(self):
-		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded():
-			glPushAttrib( GL_ALL_ATTRIB_BITS )
-		
-			# First render the cylinder, writing the outline to the stencil buffer
-			glClearStencil(0)
-			glClear( GL_STENCIL_BUFFER_BIT )
-			glEnable( GL_STENCIL_TEST )
-			glStencilFunc( GL_ALWAYS, 1, 0xFFFF )		# Write to stencil buffer
-			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )	# Only pixels that pass the depth test are written to the stencil buffer
-			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL )	
-			self.renderSphere()
-		
-			# Then render the outline
-			glStencilFunc( GL_NOTEQUAL, 1, 0xFFFF )		# The object itself is stenciled out
-			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )
-			glLineWidth( 4.0 )				# By increasing the line width only the outline is drawn
-			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE )
-			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0, 1.0, 0.0, 1.0])
-			self.renderSphere()
-	
-			glPopAttrib()
-		else:
-			self.renderSphere()
 			
-	def renderSphere(self):
+	def renderShape(self):
 		# Material properties of the sphere
 		glDisable(GL_COLOR_MATERIAL)
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
@@ -346,7 +378,7 @@ class EMSphere(EMItem3D):
 
 		gluSphere(quadratic,self.radius,self.slices,self.stacks)
 		
-class EMCylinder(EMItem3D):
+class EMCylinder(EMShapeBase):
 	name = "Cylinder"
 	nodetype = "ShapeNode"
 	
@@ -381,17 +413,10 @@ class EMCylinder(EMItem3D):
 		return EMCylinder(float(attribdict["cylider_radius"].text()), float(attribdict["cylider_height"].text()), transform=EMItem3D.getTransformFromDict(attribdict))
 		
 	def __init__(self, radius, height, transform=None):
-		if not transform: transform = Transform()
-		EMItem3D.__init__(self, parent=None, children=set(), transform=transform)
+		EMShapeBase.__init__(self, parent=None, children=set(), transform=transform)
 		#size
 		self.setRadiusAndHeight(radius, height)
 		
-		# color
-		self.diffuse = [0.5,0.5,0.5,1.0]
-		self.specular = [1.0,1.0,1.0,1.0]
-		self.ambient = [1.0, 1.0, 1.0, 1.0]		
-		self.shininess = 25.0
-	
 	def setRadiusAndHeight(self, radius, height):
 		self.radius = radius
 		self.height = height
@@ -403,70 +428,14 @@ class EMCylinder(EMItem3D):
 	def getEvalString(self):
 		return "EMCylinder(%s, %s)"%(self.radius, self.height)
 		
-	def setAmbientColor(self, red, green, blue, alpha=1.0):
-		self.ambient = [red, green, blue, alpha]
-
-	def setDiffuseColor(self, red, green, blue, alpha=1.0):
-		self.diffuse = [red, green, blue, alpha]
-		
-	def setSpecularColor(self, red, green, blue, alpha=1.0):
-		self.specular = [red, green, blue, alpha]
-	
-	def setShininess(self, shininess):
-		self.shininess = shininess
-		
 	def getItemInspector(self):
 		"""
 		Return a Qt widget that controls the scene item
 		"""
 		if not self.item_inspector: self.item_inspector = EMInspectorControlShape("CYLINDER", self)
 		return self.item_inspector
-		
-	def getItemDictionary(self):
-		"""
-		Return a dictionary of item parameters (used for restoring sessions
-		"""
-		dictionary = super(EMCylinder, self).getItemDictionary()
-		dictionary.update({"COLOR":[self.ambient, self.diffuse, self.specular, self.shininess]})
-		return dictionary
 	
-	def setUsingDictionary(self, dictionary):
-		"""
-		Set item attributes using a dictionary, used in session restoration
-		"""
-		super(EMCylinder, self).setUsingDictionary(dictionary)
-		self.setAmbientColor(dictionary["COLOR"][0][0], dictionary["COLOR"][0][1], dictionary["COLOR"][0][2], dictionary["COLOR"][0][3])
-		self.setDiffuseColor(dictionary["COLOR"][1][0], dictionary["COLOR"][1][1], dictionary["COLOR"][1][2], dictionary["COLOR"][1][3])
-		self.setSpecularColor(dictionary["COLOR"][2][0], dictionary["COLOR"][2][1], dictionary["COLOR"][2][2], dictionary["COLOR"][2][3])
-		self.setShininess(dictionary["COLOR"][3])
-		
-	def renderNode(self):
-		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded():
-			glPushAttrib( GL_ALL_ATTRIB_BITS )
-		
-			# First render the cylinder, writing the outline to the stencil buffer
-			glClearStencil(0)
-			glClear( GL_STENCIL_BUFFER_BIT )
-			glEnable( GL_STENCIL_TEST )
-			glStencilFunc( GL_ALWAYS, 1, 0xFFFF )		# Write to stencil buffer
-			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )	# Only pixels that pass the depth test are written to the stencil buffer
-			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL )	
-			self.renderCylinder()
-		
-			# Then render the outline
-			glStencilFunc( GL_NOTEQUAL, 1, 0xFFFF )		# The object itself is stenciled out
-			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )
-			glLineWidth( 4.0 )				# By increasing the line width only the outline is drawn
-			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE )
-			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0, 1.0, 0.0, 1.0])
-			self.renderCylinder()
-	
-			glPopAttrib()
-		else:
-			self.renderCylinder()
-	
-	def renderCylinder(self):
-	#def renderNode(self):	
+	def renderShape(self):
 		# Material properties of the cylinder
 		glDisable(GL_COLOR_MATERIAL)
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
@@ -490,7 +459,7 @@ class EMCylinder(EMItem3D):
 		glPopMatrix()
 		glPopMatrix()
 
-class EMLine(EMItem3D):
+class EMLine(EMShapeBase):
 	name = "Line"
 	nodetype = "ShapeNode"
 	
@@ -538,16 +507,9 @@ class EMLine(EMItem3D):
 		return EMLine(float(attribdict["linexi"].text()), float(attribdict["lineyi"].text()), float(attribdict["linezi"].text()), float(attribdict["linexf"].text()), float(attribdict["lineyf"].text()), float(attribdict["linezf"].text()), float(attribdict["linewidth"].text()), transform=transform)
 		
 	def __init__(self, x1, y1, z1, x2, y2, z2, linewidth, transform=None):
-		if not transform: transform = Transform()
-		EMItem3D.__init__(self, parent=None, children=set(), transform=transform)
+		EMShapeBase.__init__(self, parent=None, children=set(), transform=transform)
 		# size
 		self.setEndAndWidth(x1, y1, z1, x2, y2, z2, linewidth)
-		
-		# color
-		self.diffuse = [0.5,0.5,0.5,1.0]
-		self.specular = [1.0,1.0,1.0,1.0]
-		self.ambient = [1.0, 1.0, 1.0, 1.0]
-		self.shininess = 25.0
 		
 		self.setShowLeftArrow(True)
 		self.setShowRightArrow(True)
@@ -599,18 +561,6 @@ class EMLine(EMItem3D):
 	
 	def getEvalString(self):
 		return "EMLine(%s, %s, %s, %s, %s, %s, %s)"%(self.x1, self.y1, self.z1, self.x2, self.y2,self.z2, self.width)
-	
-	def setAmbientColor(self, red, green, blue, alpha=1.0):
-		self.ambient = [red, green, blue, alpha]
-
-	def setDiffuseColor(self, red, green, blue, alpha=1.0):
-		self.diffuse = [red, green, blue, alpha]
-		
-	def setSpecularColor(self, red, green, blue, alpha=1.0):
-		self.specular = [red, green, blue, alpha]
-	
-	def setShininess(self, shininess):
-		self.shininess = shininess
 
 	def setShowLeftArrow(self, state):
 		self.showLeftArrow = state
@@ -642,7 +592,7 @@ class EMLine(EMItem3D):
 		Return a dictionary of item parameters (used for restoring sessions
 		"""
 		dictionary = super(EMLine, self).getItemDictionary()
-		dictionary.update({"LINEPARS":[self.leftArrowSize, self.leftArrowLength, self.showLeftArrow, self.rightArrowSize, self.rightArrowLength, self.showRightArrow, self.slices, self.stacks, self.width],"COLOR":[self.ambient, self.diffuse, self.specular, self.shininess]})
+		dictionary.update({"LINEPARS":[self.leftArrowSize, self.leftArrowLength, self.showLeftArrow, self.rightArrowSize, self.rightArrowLength, self.showRightArrow, self.slices, self.stacks, self.width]})
 		return dictionary
 		
 	def setUsingDictionary(self, dictionary):
@@ -650,10 +600,6 @@ class EMLine(EMItem3D):
 		Set item attributes using a dictionary, used in session restoration
 		"""
 		super(EMLine, self).setUsingDictionary(dictionary)
-		self.setAmbientColor(dictionary["COLOR"][0][0], dictionary["COLOR"][0][1], dictionary["COLOR"][0][2], dictionary["COLOR"][0][3])
-		self.setDiffuseColor(dictionary["COLOR"][1][0], dictionary["COLOR"][1][1], dictionary["COLOR"][1][2], dictionary["COLOR"][1][3])
-		self.setSpecularColor(dictionary["COLOR"][2][0], dictionary["COLOR"][2][1], dictionary["COLOR"][2][2], dictionary["COLOR"][2][3])
-		self.setShininess(dictionary["COLOR"][3])
 		self.leftArrowSize = dictionary["LINEPARS"][0]
 		self.leftArrowLength = dictionary["LINEPARS"][1]
 		self.showLeftArrow = dictionary["LINEPARS"][2]
@@ -662,34 +608,9 @@ class EMLine(EMItem3D):
 		self.showRightArrow = dictionary["LINEPARS"][5]
 		self.setSlices(dictionary["LINEPARS"][6])
 		self.setStacks(dictionary["LINEPARS"][7])
-		self.setWidth(dictionary["LINEPARS"][8])
-		
-	def renderNode(self):
-		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded():
-			glPushAttrib( GL_ALL_ATTRIB_BITS )
-		
-			# First render the cylinder, writing the outline to the stencil buffer
-			glClearStencil(0)
-			glClear( GL_STENCIL_BUFFER_BIT )
-			glEnable( GL_STENCIL_TEST )
-			glStencilFunc( GL_ALWAYS, 1, 0xFFFF )		# Write to stencil buffer
-			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )	# Only pixels that pass the depth test are written to the stencil buffer
-			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL )	
-			self.renderLine()
-		
-			# Then render the outline
-			glStencilFunc( GL_NOTEQUAL, 1, 0xFFFF )		# The object itself is stenciled out
-			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )
-			glLineWidth( 4.0 )				# By increasing the line width only the outline is drawn
-			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE )
-			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0, 1.0, 0.0, 1.0])
-			self.renderLine()
-	
-			glPopAttrib()
-		else:
-			self.renderLine()	
+		self.setWidth(dictionary["LINEPARS"][8])	
 			
-	def renderLine(self):
+	def renderShape(self):
 		r2d = 180.0/math.pi
 				
 		glPushMatrix()
@@ -741,7 +662,7 @@ class EMLine(EMItem3D):
 		glPopMatrix()
 		glPopMatrix()
 
-class EMCone(EMItem3D):
+class EMCone(EMShapeBase):
 	name = "Cone"
 	nodetype = "ShapeNode"
 	
@@ -776,16 +697,9 @@ class EMCone(EMItem3D):
 		return EMCone(float(attribdict["cone_radius"].text()), float(attribdict["cone_height"].text()), transform=EMItem3D.getTransformFromDict(attribdict))
 		
 	def __init__(self, radius, height, transform=None):
-		if not transform: transform = Transform()
-		EMItem3D.__init__(self, parent=None, children=set(), transform=transform)
+		EMShapeBase.__init__(self, parent=None, children=set(), transform=transform)
 		#size
 		self.setRadiusAndHeight(radius, height)
-		
-		# color
-		self.diffuse = [0.5,0.5,0.5,1.0]
-		self.specular = [1.0,1.0,1.0,1.0]
-		self.ambient = [1.0, 1.0, 1.0, 1.0]		
-		self.shininess = 25.0
 		
 	def setRadiusAndHeight(self, radius, height):
 		self.radius = radius
@@ -798,70 +712,14 @@ class EMCone(EMItem3D):
 	def getEvalString(self):
 		return "EMCone(%s, %s)"%(self.radius, self.height)
 		
-	def setAmbientColor(self, red, green, blue, alpha=1.0):
-		self.ambient = [red, green, blue, alpha]
-	
-	def setDiffuseColor(self, red, green, blue, alpha=1.0):
-		self.diffuse = [red, green, blue, alpha]
-		
-	def setSpecularColor(self, red, green, blue, alpha=1.0):
-		self.specular = [red, green, blue, alpha]
-	
-	def setShininess(self, shininess):
-		self.shininess = shininess
-		
 	def getItemInspector(self):
 		"""
 		Return a Qt widget that controls the scene item
 		"""
 		if not self.item_inspector: self.item_inspector = EMInspectorControlShape("CONE", self)
 		return self.item_inspector
-		
-	def getItemDictionary(self):
-		"""
-		Return a dictionary of item parameters (used for restoring sessions
-		"""
-		dictionary = super(EMCone, self).getItemDictionary()
-		dictionary.update({"COLOR":[self.ambient, self.diffuse, self.specular, self.shininess]})
-		return dictionary
 	
-	def setUsingDictionary(self, dictionary):
-		"""
-		Set item attributes using a dictionary, used in session restoration
-		"""
-		super(EMCone, self).setUsingDictionary(dictionary)
-		self.setAmbientColor(dictionary["COLOR"][0][0], dictionary["COLOR"][0][1], dictionary["COLOR"][0][2], dictionary["COLOR"][0][3])
-		self.setDiffuseColor(dictionary["COLOR"][1][0], dictionary["COLOR"][1][1], dictionary["COLOR"][1][2], dictionary["COLOR"][1][3])
-		self.setSpecularColor(dictionary["COLOR"][2][0], dictionary["COLOR"][2][1], dictionary["COLOR"][2][2], dictionary["COLOR"][2][3])
-		self.setShininess(dictionary["COLOR"][3])
-		
-	def renderNode(self):
-		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded():
-			glPushAttrib( GL_ALL_ATTRIB_BITS )
-		
-			# First render the cone, writing the outline to the stencil buffer
-			glClearStencil(0)
-			glClear( GL_STENCIL_BUFFER_BIT )
-			glEnable( GL_STENCIL_TEST )
-			glStencilFunc( GL_ALWAYS, 1, 0xFFFF )		# Write to stencil buffer
-			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )	# Only pixels that pass the depth test are written to the stencil buffer
-			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL )	
-			self.renderCone()
-		
-			# Then render the outline
-			glStencilFunc( GL_NOTEQUAL, 1, 0xFFFF )		# The object itself is stenciled out
-			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )
-			glLineWidth( 4.0 )				# By increasing the line width only the outline is drawn
-			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE )
-			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0, 1.0, 0.0, 1.0])
-			self.renderCone()
-	
-			glPopAttrib()
-		else:
-			self.renderCone()
-	
-	def renderCone(self):
-	#def renderNode(self):	
+	def renderShape(self):
 		# Material properties of the cone
 		glDisable(GL_COLOR_MATERIAL)
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
@@ -883,7 +741,7 @@ class EMCone(EMItem3D):
 		glPopMatrix()
 		glPopMatrix()
 
-class EM3DText(EMItem3D):
+class EM3DText(EMShapeBase):
 	name = "3DText"
 	nodetype = "ShapeNode"
 	
@@ -918,18 +776,11 @@ class EM3DText(EMItem3D):
 		return EM3DText(str(attribdict["text_content"].text()), float(attribdict["fontsize"].text()), transform=EMItem3D.getTransformFromDict(attribdict))
 		
 	def __init__(self, string, fontSize, fontMode=FTGLFontMode.TEXTURE, depth=10, transform=None):
-		if not transform: transform = Transform()
-		EMItem3D.__init__(self, parent=None, children=set(), transform=transform)
+		EMShapeBase.__init__(self, parent=None, children=set(), transform=transform)
 		#size
 		self.setRenderString(string, fontSize)
 		self.setFontMode(fontMode)
 		self.setFontDepth(depth)
-		
-		# color
-		self.diffuse = [0.5,0.5,0.5,1.0]
-		self.specular = [1.0,1.0,1.0,1.0]
-		self.ambient = [1.0, 1.0, 1.0, 1.0]		
-		self.shininess = 25.0
 		
 		self.font_renderer = get_3d_font_renderer()
 		
@@ -961,17 +812,6 @@ class EM3DText(EMItem3D):
 	def getRenderString(self):
 		return self.renderString
 		
-	def setAmbientColor(self, red, green, blue, alpha=1.0):
-		self.ambient = [red, green, blue, alpha]
-	
-	def setDiffuseColor(self, red, green, blue, alpha=1.0):
-		self.diffuse = [red, green, blue, alpha]
-		
-	def setSpecularColor(self, red, green, blue, alpha=1.0):
-		self.specular = [red, green, blue, alpha]
-	
-	def setShininess(self, shininess):
-		self.shininess = shininess
 		
 	def getItemInspector(self):
 		"""
@@ -985,7 +825,7 @@ class EM3DText(EMItem3D):
 		Return a dictionary of item parameters (used for restoring sessions
 		"""
 		dictionary = super(EM3DText, self).getItemDictionary()
-		dictionary.update({"COLOR":[self.ambient, self.diffuse, self.specular, self.shininess]})
+		dictionary.update({"TEXT":[self.getFontMode(), self.getFontDepth(), self.getFontSize(), self.getRenderString()]})
 		return dictionary
 	
 	def setUsingDictionary(self, dictionary):
@@ -993,37 +833,11 @@ class EM3DText(EMItem3D):
 		Set item attributes using a dictionary, used in session restoration
 		"""
 		super(EM3DText, self).setUsingDictionary(dictionary)
-		self.setAmbientColor(dictionary["COLOR"][0][0], dictionary["COLOR"][0][1], dictionary["COLOR"][0][2], dictionary["COLOR"][0][3])
-		self.setDiffuseColor(dictionary["COLOR"][1][0], dictionary["COLOR"][1][1], dictionary["COLOR"][1][2], dictionary["COLOR"][1][3])
-		self.setSpecularColor(dictionary["COLOR"][2][0], dictionary["COLOR"][2][1], dictionary["COLOR"][2][2], dictionary["COLOR"][2][3])
-		self.setShininess(dictionary["COLOR"][3])
-		
-	def renderNode(self):
-		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded():
-			glPushAttrib( GL_ALL_ATTRIB_BITS )
-		
-			# First render the cone, writing the outline to the stencil buffer
-			glClearStencil(0)
-			glClear( GL_STENCIL_BUFFER_BIT )
-			glEnable( GL_STENCIL_TEST )
-			glStencilFunc( GL_ALWAYS, 1, 0xFFFF )		# Write to stencil buffer
-			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )	# Only pixels that pass the depth test are written to the stencil buffer
-			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL )	
-			self.render3DText()
-		
-			# Then render the outline
-			glStencilFunc( GL_NOTEQUAL, 1, 0xFFFF )		# The object itself is stenciled out
-			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )
-			glLineWidth( 4.0 )				# By increasing the line width only the outline is drawn
-			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE )
-			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0, 1.0, 0.0, 1.0])
-			self.render3DText()
+		self.setFontMode(dictionary["TEXT"][0])
+		self.setFontDepth(dictionary["TEXT"][1])
+		self.setRenderString(dictionary["TEXT"][3],dictionary["TEXT"][2])	
 	
-			glPopAttrib()
-		else:
-			self.render3DText()	
-	
-	def render3DText(self):
+	def renderShape(self):
 		# Material properties of the 3D text
 		glDisable(GL_COLOR_MATERIAL)
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)

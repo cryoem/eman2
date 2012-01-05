@@ -691,7 +691,29 @@ selectionicon = [
     'ccccccccccccccccc',
     'ccccccccccccccccc'
 ] 
-		
+
+rulericon = [
+    '16 16 2 1',
+    'b c #000055',
+    'c c None',
+    'cccbbbbbbbbbbbccc',
+    'cccbcccccccccbccc',
+    'cccbbbcccccccbccc',
+    'cccbcccccccccbccc',
+    'cccbbbbbcccccbccc',
+    'cccbcccccccccbccc',
+    'cccbbbcccccccbccc',
+    'cccbcccccccccbccc',
+    'cccbbbbbcccccbccc',
+    'cccbcccccccccbccc',
+    'cccbbbcccccccbccc',
+    'cccbcccccccccbccc',
+    'cccbbbbbcccccbccc',
+    'cccbcccccccccbccc',
+    'cccbbbbbbbbbbbccc',
+    'ccccccccccccccccc'
+] 
+
 class EMScene3D(EMItem3D, EMGLWidget):
 	"""
 	Widget for rendering 3D objects. Uses a scne graph for rendering
@@ -713,6 +735,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.camera = EMCamera(1.0, 500.0)		# Default near,far
 		self.clearcolor = [0.0, 0.0, 0.0, 0.0]		# Back ground color	
 		self.main_3d_inspector = None			# No inspector by default
+		self.apix = None				# No angstrom per pixel to begin with
 		self.item_inspector = None			# Get the inspector GUI
 		self.reset_camera = False			# Toogle flag to deterine if the clipping plane has changed and needs redrawing
 		self.zslicemode = False				# Set to true when making a Z slice
@@ -1011,6 +1034,11 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			else:
 				QtGui.qApp.setOverrideCursor(self.xyrotatecursor)
 				self.zrotate = False
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "ruler"):
+			self.newnode = EMRuler(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, transform=self._gettransformbasedonscreen(event))
+			self._insert_shape("Ruler", self.newnode, clearsel=False)
+			#self.newnode.updateMatrices([90,1,0,0], "rotate")
+			self.updateSG()
 		if event.buttons()&Qt.LeftButton and self.mousemode == "scale":
 			QtGui.qApp.setOverrideCursor(self.scalecursor)
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "selection"): 
@@ -1041,10 +1069,11 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		if event.buttons()&Qt.MidButton or (event.buttons()&Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.showInspector()
 	
-	def _insert_shape(self, name, node):
+	def _insert_shape(self, name, node, clearsel=True):
 		""" Helper function for mousePressEvent to reduce code duplication"""
-		self.clearSelection()
+		if clearsel: self.clearSelection()
 		node.setSelectedItem(True)
+		node.setHiddenSelected(self.getHiddenSelected()) # inherit hidden state from SG
 		self.insertNewNode(name, node)
 		node.setTransform(self.newnode.getParentMatrixProduct().inverse()*self.newnode.getTransform()) # so the object is not modied by parent transform upon insertion
 		
@@ -1070,6 +1099,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.emit(QtCore.SIGNAL("sgmousemove()"), [event.x(), event.y()])
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "line"):
 			self.newnode.setEndAndWidth(0.0, 0.0, 0.0, x - self.first_x, self.first_y - y, 0.0, 20.0)
+		if (event.buttons()&Qt.LeftButton and self.mousemode == "ruler"):
+			self.newnode.setRuler(0.0, 0.0, 0.0, x - self.first_x, self.first_y - y, 0.0)
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cube"):
 			self.newnode.setSize(math.sqrt((x - self.first_x)**2 + (y - self.first_y)**2))
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "sphere"):
@@ -1153,6 +1184,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		if event.key() == QtCore.Qt.Key_Delete:
 			for node in self.getAllSelectedNodes():
 				self.deleteNode(node)
+			self.setCurrentSelection(self)
 			self.updateSG()
 		# Hide selections
 		if event.key() == QtCore.Qt.Key_H:
@@ -1181,6 +1213,9 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.updateInspector()
 		if event.key() == QtCore.Qt.Key_L:
 			self.setMouseMode("line")
+			self.updateInspector()
+		if event.key() == QtCore.Qt.Key_U and not event.modifiers()&Qt.ControlModifier:
+			self.setMouseMode("ruler")
 			self.updateInspector()
 		if event.key() == QtCore.Qt.Key_C and not event.modifiers()&Qt.ControlModifier:
 			self.setMouseMode("cube")
@@ -1259,7 +1294,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 				continue	# Don't group these 
 			node.parent.getChildren().remove(node)
 			newbasenode.addChild(node)
-			self.updateTree()	# Update the inspector tree
+			self.updateTree(self.getCurrentSelection())	# Update the inspector tree
 	
 	def unGroupNodes(self, nodes):
 		"""
@@ -1277,7 +1312,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		
 		if not parentnode.getChildren():
 			parentnode.parent.getChildren().remove(parentnode)
-		self.updateTree()	# Update the inspector tree
+		self.updateTree(self.getCurrentSelection())	# Update the inspector tree
 			
 	def setMouseMode(self, mousemode):
 		"""
@@ -1522,6 +1557,18 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		Return the currently selected item
 		"""
 		return self.currentselecteditem
+		
+	def setAPix(self, apix):
+		"""
+		Set the sg angstrom per pixeldata
+		"""
+		self.apix = apix
+		
+	def getAPix(self):
+		"""
+		Return the sg angstrom per pixeldata
+		"""
+		return self.apix
 		
 	def updateSG(self):
 		"""
@@ -1863,7 +1910,6 @@ class EMCamera:
 		"""
 		Return the scaling nesssary to insert move from the viewport to the actual viewport. Need this b/c of the crazy scaling scheme
 		"""
-		
 		return float(self.getWidth())/float(self.getWidth() + 2*self.getPseudoFovyWidth())
 		
 	def getViewPortHeightScaling(self):
@@ -2123,6 +2169,9 @@ class EMInspector3D(QtGui.QWidget):
 		if item.parent:
 			self.removeTreeNode(item.parent(), item.parent().indexOfChild(item)) 
 			item.parent().item3d().removeChild(item.item3d())
+			# In case we delete the currently selected item, we want6 to move selected item to last selection
+			if self.scenegraph().getCurrentSelection() == item.item3d():
+				self.scenegraph().setCurrentSelection(self.tree_widget.currentItem().item3d())
 			self.updateSceneGraph()
 		else:
 			print "Error cannot remove root node!!"
@@ -2145,6 +2194,9 @@ class EMInspector3D(QtGui.QWidget):
 		self.scaletool = EMANToolButton()
 		self.scaletool.setIcon(QtGui.QIcon(QtGui.QPixmap(scaleicon)))
 		self.scaletool.setToolTip("Scale\nHot Key: S")
+		self.rulertool = EMANToolButton()
+		self.rulertool.setIcon(QtGui.QIcon(QtGui.QPixmap(rulericon)))
+		self.rulertool.setToolTip("Ruler\nHot Key: U\nDoes NOT account for scaling")
 		self.selectiontool = EMANToolButton()
 		self.selectiontool.setIcon(QtGui.QIcon(QtGui.QPixmap(selectionicon)))
 		self.selectiontool.setToolTip("Select objects\nMouse: Left 'n' drag\nMultiple = + Shift\nHot Key: Esc")
@@ -2183,6 +2235,7 @@ class EMInspector3D(QtGui.QWidget):
 		tvbox.addWidget(self.ztranslate)
 		tvbox.addWidget(self.rotatetool)
 		tvbox.addWidget(self.scaletool)
+		tvbox.addWidget(self.rulertool)
 		tvbox.addWidget(self.linetool)
 		tvbox.addWidget(self.cubetool)
 		tvbox.addWidget(self.spheretool)
@@ -2197,6 +2250,7 @@ class EMInspector3D(QtGui.QWidget):
 		QtCore.QObject.connect(self.translatetool, QtCore.SIGNAL("clicked(int)"), self._transtool_clicked)
 		QtCore.QObject.connect(self.ztranslate, QtCore.SIGNAL("clicked(int)"), self._ztranstool_clicked)
 		QtCore.QObject.connect(self.scaletool, QtCore.SIGNAL("clicked(int)"), self._scaletool_clicked)
+		QtCore.QObject.connect(self.rulertool, QtCore.SIGNAL("clicked(int)"), self._rulertool_clicked)
 		QtCore.QObject.connect(self.selectiontool, QtCore.SIGNAL("clicked(int)"), self._seltool_clicked)
 		QtCore.QObject.connect(self.multiselectiontool, QtCore.SIGNAL("clicked(int)"), self._multiseltool_clicked)
 		QtCore.QObject.connect(self.linetool, QtCore.SIGNAL("clicked(int)"), self._linetool_clicked)
@@ -2222,6 +2276,9 @@ class EMInspector3D(QtGui.QWidget):
 	def _scaletool_clicked(self, state):
 		self.scenegraph().setMouseMode("scale")
 	
+	def _rulertool_clicked(self, state):
+		self.scenegraph().setMouseMode("ruler")
+		
 	def _seltool_clicked(self, state):
 		self.scenegraph().setMouseMode("selection")
 		
@@ -2551,6 +2608,7 @@ class EMInspector3D(QtGui.QWidget):
 		if self.scenegraph().getMouseMode() == "xytranslate": self.translatetool.setDown(True)
 		if self.scenegraph().getMouseMode() == "ztranslate": self.ztranslate.setDown(True)
 		if self.scenegraph().getMouseMode() == "scale": self.scaletool.setDown(True)
+		if self.scenegraph().getMouseMode() == "ruler": self.rulertool.setDown(True)
 		if self.scenegraph().getMouseMode() == "cube": self.cubetool.setDown(True)
 		if self.scenegraph().getMouseMode() == "sphere": self.spheretool.setDown(True)
 		if self.scenegraph().getMouseMode() == "cylinder": self.cylindertool.setDown(True)
@@ -2559,6 +2617,14 @@ class EMInspector3D(QtGui.QWidget):
 		if self.scenegraph().getMouseMode() == "text": self.texttool.setDown(True)
 		if self.scenegraph().getMouseMode() == "data": self.datatool.setDown(True)
 		if self.scenegraph().getMouseMode() == "app": self.apptool.setDown(True)
+		# Enable/Disable some tool buttons
+		if self.scenegraph().getAPix():
+			self.rulertool.setEnabled(True)
+		else:
+			self.rulertool.setEnabled(False)
+			if self.scenegraph().getMouseMode() == "ruler":
+				self.scenegraph().setMouseMode("rotate")	# Return to a default state
+				self.rotatetool.setDown(True)
 		# Lights
 		if self.lighttab_open:
 			position =  self.scenegraph().firstlight.getAngularPosition()
@@ -2591,6 +2657,8 @@ class EMInspector3D(QtGui.QWidget):
 		self.loadSG()
 		if currentnode:
 			self.tree_widget.setCurrentItem(currentnode.EMQTreeWidgetItem)
+			idx = self.stacked_widget.indexOf(currentnode.getItemInspector())
+			if idx >= 0: self.stacked_widget.setCurrentIndex(idx)
 			self.scenegraph().setCurrentSelection(currentnode)
 		
 	def updateSceneGraph(self):
