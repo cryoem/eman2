@@ -94,6 +94,7 @@ def main():
 
 	parser.add_argument("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False, guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
 	parser.add_argument("--postprocess",type=str,help="A processor to be applied to the volume after averaging the raw volumes, before subsequent iterations begin.",default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=14, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--nocenterofmass", action="store_true", help="Disable Centering of mass of the subtomogram every iteration.", default=False, guitype='boolbox', row=6, col=2, rowspan=1, colspan=1, mode='alignment,breaksym')
 	
 	#parser.add_argument('--reverse_contrast', action="store_true", default=False, help=""" This multiplies the input particles by -1. Remember that EMAN2 **MUST** work with 'white protein' """)
 	
@@ -318,7 +319,7 @@ def main():
 			if options.groups > 1:
 				for i in range(len(ref)):
 					refc=ref[i]
-					postprocess(refc,None,options.normproc,options.postprocess) #jesus
+					postprocess(refc,None,options.normproc,options.postprocess,nocenter=options.nocenterofmass) #jesus
 					
 					if options.savesteps:
 						refc.write_image("%s/class_%02d"%(options.path,i),it)			
@@ -327,7 +328,7 @@ def main():
 					if len(ref) > 1:
 						print "Looks like you have multiple references!!"
 						ref=ref[0]
-				postprocess(ref,None,options.normproc,options.postprocess) #jesus
+				postprocess(ref,None,options.normproc,options.postprocess,nocenter=options.nocenterofmass) #jesus
 				if options.savesteps:
 						ref.write_image("%s/class_%02d"%(options.path,ic),it)
 
@@ -364,10 +365,10 @@ def main():
 	E2end(logger)
 
 
-def postprocess(img,optmask,optnormproc,optpostprocess):
+def postprocess(img,optmask,optnormproc,optpostprocess,nocenter=False):
 	"""Postprocesses a volume in-place"""
 	
-	img.process_inplace("xform.centerofmass")
+	if not nocenter: img.process_inplace("xform.centerofmass")
 	
 	# Make a mask, use it to normalize (optionally), then apply it 
 	mask=EMData(img["nx"],img["ny"],img["nz"])
@@ -578,7 +579,7 @@ def make_average_pairs(ptcl_file,outfile,align_parms,averager,optmask,optnormpro
 		avgr.add_image(ptcl1)
 		
 		avg=avgr.finish()
-		postprocess(avg,optmask,optnormproc,optpostprocess)		# we treat these intermediate averages just like the final average
+		postprocess(avg,optmask,optnormproc,optpostprocess,nocenter=False)		# we treat these intermediate averages just like the final average
 		avg.write_image(outfile,i)
 
 '''
