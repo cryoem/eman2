@@ -30,6 +30,119 @@
 
 from global_def import *
 
+def avgvar(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift2D', interp='quadratic', i1=0, i2=0, use_odd=True, use_even=True):
+	'''
+	
+	INPUT
+	
+	data: image stack, can be 2D or 3D, must be in real space
+	mode: whether to apply alignment parameters. Default mode='a' means apply parameters
+	ali_params: name of the attribute alignment parameters are stored in image headers
+	rot_method: specifies the function by which images are rotated/shifted if alignment parameters are to be applied. This is only relevant for the case where images are 2D, in which case rot_method can be either rot_shift2D or rotshift2dg, with the default being rot_shift2D. If images are 3D, rot_shift3D will be used to rotate/shift the images.
+	interp: interpolation method to use for rot_method when applying alignment parameters.
+	i1: index of first image to be used.
+	i2: index of last image to be used. If i2 = 0, then i2 defaults to one less than number of images in the data
+	use_odd: images with indices between i1 and i2 which are odd are used if and only if use_odd is set to True. Default is True.
+	use_even: images with indices between i1 and i2 which are even are used if and only if use_even is set to True. Default is True.
+	
+	OUTPUT
+		
+	ave: the average of the image series in real space
+	var: the variance of the image series in real space
+	
+	'''
+	from utilities    import model_blank
+	from alignment    import kbt
+	
+	inmem = True
+	if type(data) == type(""):
+		inmem = False
+		from utilities    import get_im	
+	
+	img2D = True
+	if inmem:
+		img = data[0]
+	else:
+		img = get_im(data,0)
+	nx = img.get_xsize()
+	ny = img.get_ysize()
+	nz = img.get_zsize()
+	if nz > 1:
+		img2D = False
+	
+	if mode == 'a':
+		if not(img2D) and ali_params=="xform.align2d":
+			ali_params = 'xform.align3d'
+				
+		# determine which rotation/shift to use
+		# current options are: rot_shift2D, rot_shift3D, rot_shift2dg
+		
+		if img2D:
+			from utilities import get_params2D
+			if rot_method == 'rot_shift2D':
+				from fundamentals import rot_shift2D
+			else:	
+				if rot_method == 'rotshift2dg':
+					from fundamentals import rotshift2dg
+				else:
+					print "only rot_shift2dg and rot_shift2D are supported...exiting"
+					sys.exit()
+		else:
+			rot_method = 'rot_shift3D'
+			from fundamentals import rot_shift3D
+			from utilities import get_params3D
+					
+	if inmem:
+		data_nima = len(data)
+	else:
+		data_nima = EMUtil.get_image_count(data)
+	
+	if i2 == 0:
+		i2 = data_nima-1
+	
+	ave = model_blank(nx,ny,nz)
+	var = model_blank(nx,ny,nz)
+	
+	nima = 0
+	for i in xrange(i1, i2+1):
+		IS_ODD = False
+		IS_EVEN = False
+		
+		if i%2 == 0:
+			IS_EVEN = True
+		else:
+			IS_ODD = True
+		
+		if not(use_odd) and IS_ODD:
+			continue
+		if not(use_even) and IS_EVEN:
+			continue
+		
+		nima += 1
+		
+		if inmem:
+			img = data[i]
+		else:
+			img = get_im(data, i)
+		if (mode == 'a'):
+			if (nz > 1):
+				phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(img)
+				img = rot_shift3D(img, phi, theta, psi, s3x, s3y, s3z, scale)
+			else:
+				angle, sx, sy, mirror, scale = get_params2D(img)
+				if rot_method == 'rot_shift2D':
+					img = rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
+				else:
+					kb = kbt(nx)
+					img = rotshift2dg(img, angle, sx, sy, kb)
+					if  mirror: img.process_inplace("xform.mirror", {"axis":'x'})
+		Util.add_img(ave, img)
+		Util.add_img2(var, img)
+			
+	Util.mul_scalar(ave, 1.0 /float(nima) )
+		
+	return ave, (var - ave*ave*nima)/(nima-1)
+
 def add_oe_series(data, ali_params="xform.align2d"):
 	"""
 		Calculate odd and even sum of an image series using current alignment parameters
@@ -523,6 +636,7 @@ def ave_var_series_one(data, skip, kb):
 		Calculate average and variance of an image series using current alignment parameters
 	"""
 	from fundamentals import rotshift2dg
+	from utilities import model_blank
 	n = len(data)
 	nx = data[0].get_xsize()
 	ny = data[0].get_ysize()
