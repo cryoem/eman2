@@ -126,10 +126,10 @@ def avgvar(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift2D',
 			img = get_im(data, i)
 		if (mode == 'a'):
 			if (nz > 1):
-				phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(img)
+				phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(img, ali_params)
 				img = rot_shift3D(img, phi, theta, psi, s3x, s3y, s3z, scale)
 			else:
-				angle, sx, sy, mirror, scale = get_params2D(img)
+				angle, sx, sy, mirror, scale = get_params2D(img, ali_params)
 				if rot_method == 'rot_shift2D':
 					img = rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
 				else:
