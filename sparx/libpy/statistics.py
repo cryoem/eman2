@@ -143,6 +143,160 @@ def avgvar(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift2D',
 		
 	return ave, (var - ave*ave*nima)/(nima-1)
 
+def avgvar_CTF(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift2D', interp='quadratic', i1=0, i2=0, use_odd=True, use_even=True, snr=1.0):
+	'''
+	
+	INPUT
+	
+	data: image stack, can be 2D or 3D, must be in real space
+	mode: whether to apply alignment parameters. Default mode='a' means apply parameters
+	ali_params: name of the attribute alignment parameters are stored in image headers
+	rot_method: specifies the function by which images are rotated/shifted if alignment parameters are to be applied. This is only relevant for the case where images are 2D, in which case rot_method can be either rot_shift2D or rotshift2dg, with the default being rot_shift2D. If images are 3D, rot_shift3D will be used to rotate/shift the images.
+	interp: interpolation method to use for rot_method when applying alignment parameters.
+	i1: index of first image to be used.
+	i2: index of last image to be used. If i2 = 0, then i2 defaults to one less than number of images in the data
+	use_odd: images with indices between i1 and i2 which are odd are used if and only if use_odd is set to True. Default is True.
+	use_even: images with indices between i1 and i2 which are even are used if and only if use_even is set to True. Default is True.
+	snr: signal to noise ratio, default 1.0
+	
+	OUTPUT
+	
+	tavg: The best estimate (Wiener filter) given the image series and estimated CTF parms, in real space.
+			
+	var: Variance (in real space) calculated as follows, [1/(n-1)]*[sum_j (O_j - F^{-1}(H_j*tavg))^2] where O_j is the j-th image in real space, F^{-1} denotes inverse fourier transform operator, and H_j is the CTF of the j-th image
+	
+	'''
+	
+	from utilities    import model_blank
+	from alignment    import kbt
+	from fundamentals import fft, fftip
+	from filter       import filt_ctf
+	from morphology   import ctf_img
+	
+	inmem = True
+	if type(data) == type(""):
+		inmem = False
+		from utilities    import get_im	
+		
+	if inmem:
+		img = data[0]
+	else:
+		img = get_im(data,0)
+	nx = img.get_xsize()
+	ny = img.get_ysize()
+	nz = img.get_zsize()
+	if nz > 1:
+		print "images must be 2D for CTF correction.....exiting"
+		sys.exit()
+	
+	if img.get_attr_default('ctf_applied', 1) == 1:
+		print "data cannot be ctf-applied....exiting"
+		sys.exit()
+		
+	if mode == 'a':
+				
+		# determine which rotation/shift to use
+		# current options are: rot_shift2D, rot_shift3D, rot_shift2dg
+		
+		from utilities import get_params2D
+		if rot_method == 'rot_shift2D':
+			from fundamentals import rot_shift2D
+		else:	
+			if rot_method == 'rotshift2dg':
+				from fundamentals import rotshift2dg
+			else:
+				print "only rot_shift2dg and rot_shift2D are supported...exiting"
+				sys.exit()
+					
+	if inmem:
+		data_nima = len(data)
+	else:
+		data_nima = EMUtil.get_image_count(data)
+	
+	if i2 == 0:
+		i2 = data_nima-1
+	
+	ave = EMData(nx, ny, 1, False)
+	ctf_2_sum = EMData(nx, ny, 1, False)
+	nima = 0
+	for i in xrange(i1, i2+1):
+		IS_ODD = False
+		IS_EVEN = False
+		
+		if i%2 == 0:
+			IS_EVEN = True
+		else:
+			IS_ODD = True
+		
+		if not(use_odd) and IS_ODD:
+			continue
+		if not(use_even) and IS_EVEN:
+			continue
+		
+		nima += 1
+		
+		if inmem:
+			img = data[i]
+		else:
+			img = get_im(data, i)
+			
+		if (mode == 'a'):
+			angle, sx, sy, mirror, scale = get_params2D(img, ali_params)
+			if rot_method == 'rot_shift2D':
+				ima = rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
+			else:
+				kb = kbt(nx)
+				ima = rotshift2dg(img, angle, sx, sy, kb)
+				if  mirror: ima.process_inplace("xform.mirror", {"axis":'x'})
+			fftip(ima)
+		else:
+			ima = fft(img)
+			
+		ctf_params = img.get_attr("ctf")		
+		ima_filt = filt_ctf(ima, ctf_params)
+		Util.add_img(ave, ima_filt)
+		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
+
+	snr_img = EMData(nx, ny, 1, False)
+	fnx = snr_img.get_xsize()
+	fny = snr_img.get_ysize()
+	for i in xrange(fnx):
+		for j in xrange(fny):
+			snr_img.set_value_at(i,j, 1.0/snr)
+	Util.add_img(ctf_2_sum, snr_img)	
+	tavg = Util.divn_img(ave, ctf_2_sum)
+	
+	# calculate variance, in real space
+	totv = model_blank(nx, ny, nz) 
+	for i in xrange(i1, i2+1):
+		IS_ODD = False
+		IS_EVEN = False
+		
+		if i%2 == 0:
+			IS_EVEN = True
+		else:
+			IS_ODD = True
+		
+		if not(use_odd) and IS_ODD:
+			continue
+		if not(use_even) and IS_EVEN:
+			continue
+			
+		if inmem:
+			img = data[i]
+		else:
+			img = get_im(data, i)
+		
+		ctf_params = img.get_attr("ctf")	
+		temp = fft(filt_ctf(tavg, ctf_params)) # real space
+		temp = Util.subn_img(img, temp)
+		Util.add_img2(totv, temp)
+	
+	Util.mul_scalar(totv, 1.0/float(nima-1))
+		
+	return fft(tavg), totv
+
+
 def add_oe_series(data, ali_params="xform.align2d"):
 	"""
 		Calculate odd and even sum of an image series using current alignment parameters
