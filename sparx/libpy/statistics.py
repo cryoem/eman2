@@ -148,7 +148,7 @@ def avgvar_CTF(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift
 	
 	INPUT
 	
-	data: image stack, can be 2D or 3D, must be in real space
+	data: image stack, must be 2D, must be in real space
 	mode: whether to apply alignment parameters. Default mode='a' means apply parameters
 	ali_params: name of the attribute alignment parameters are stored in image headers
 	rot_method: specifies the function by which images are rotated/shifted if alignment parameters are to be applied. This is only relevant for the case where images are 2D, in which case rot_method can be either rot_shift2D or rotshift2dg, with the default being rot_shift2D. If images are 3D, rot_shift3D will be used to rotate/shift the images.
