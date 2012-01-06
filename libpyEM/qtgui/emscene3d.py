@@ -1035,7 +1035,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 				QtGui.qApp.setOverrideCursor(self.xyrotatecursor)
 				self.zrotate = False
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "ruler"):
-			self.newnode = EMRuler(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, transform=self._gettransformbasedonscreen(event))
+			self.newnode = EMRuler(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, self.getAPix(), self.camera.getViewPortWidthScaling(), transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Ruler", self.newnode, clearsel=False)
 			#self.newnode.updateMatrices([90,1,0,0], "rotate")
 			self.updateSG()

@@ -36,7 +36,7 @@ from PyQt4 import QtCore, QtGui
 from libpyGLUtils2 import GLUtil
 from EMAN2 import EMData, MarchingCubes, Transform
 from emitem3d import EMItem3D, EMItem3DInspector, drawBoundingBox
-#from embrowser import EMBrowserWidget
+from embrowser import EMBrowserWidget
 from emimageutil import ImgHistogram
 from valslider import ValSlider, EMSpinWidget
 from emshapeitem3d import EMInspectorControlShape
@@ -891,7 +891,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 			self.colorbyradius.setChecked(True)
 			self.colorbymap.setChecked(False)
 		self.innercolorscaling.setValue(self.item3d().innerrad)
-		self.outercolorscaling.setValue(self.item3d().outerrad/2.0)
+		self.outercolorscaling.setValue(self.item3d().outerrad)
 		
 		# Colormap data
 		if self.item3d().rgbmode == 2:
@@ -1157,7 +1157,7 @@ class EMIsosurface(EMItem3D):
 		
 		self.force_update = True
 		self.isorender = MarchingCubes(data)
-		self.outerrad = data.get_xsize()
+		self.outerrad = data.get_xsize()/2.0
 		
 		if self.item_inspector: self.getItemInspector().updateItemControls() # The idea is to use lazy evaluation for the item inspectors. Forcing inspector creation too early causes bugs!
 	
@@ -1324,8 +1324,7 @@ class EMIsosurface(EMItem3D):
 	
 			glPopAttrib()
 			
-		elif (scenegraph.camera.getCappingMode() and not scenegraph.zslicemode and not (self.is_selected or self.getParent().is_selected)) and (glGetIntegerv(GL_RENDER_MODE) == GL_RENDER):
-			
+		elif (scenegraph.camera.getCappingMode() and not scenegraph.zslicemode and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER):
 			# First get a stencil of the object silluette
 			glPushAttrib( GL_ALL_ATTRIB_BITS )
 

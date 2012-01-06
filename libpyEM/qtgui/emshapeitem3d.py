@@ -143,75 +143,25 @@ class EMRuler(EMShapeBase):
 		"""
 		raise NotImplementedError("Not yet implmented")
 			
-	def __init__(self, x1, y1, z1, x2, y2, z2, transform=None):
+	def __init__(self, x1, y1, z1, x2, y2, z2, apix, scaling, transform=None):
 		EMShapeBase.__init__(self, parent=None, children=set(), transform=transform)
-		self.apix = None
-		self.scaling = None
+		self.setRulerAPix(apix)
+		self.setRulerScaling(scaling)
 		self.barwidth = 10.0
 		self.setRuler(x1, y1, z1, x2, y2, z2)
 		
 	def getEvalString(self):
-		return "EMRuler(%s,%s,%s,%s,%s,%s)"%(self.xi,self.yi,self.zi,self.xf,self.yf,self.zf)	
-	
-	def getItemDictionary(self):
-		"""
-		Return a dictionary of item parameters (used for restoring sessions
-		"""
-		dictionary = super(EMRuler, self).getItemDictionary()
-		apix = self.getRulerAPix()
-		if not apix: 
-			apix = self.getSGApix()
-		scaling = self.getRulerScaling()
-		if not scaling:
-			scaling = self.getSGscaling()
-		dictionary.update({"RULER":[self.xi,self.yi,self.zi,self.xf,self.yf,self.zf],"RULERAPIX":apix,"RULERSCALE":scaling})
-		return dictionary
-		
-	def setUsingDictionary(self, dictionary):
-		"""
-		Set item attributes using a dictionary, used in session restoration
-		"""
-		super(EMRuler, self).setUsingDictionary(dictionary)
-		self.setRulerAPix(dictionary["RULERAPIX"])
-		self.setRulerScaling(dictionary["RULERSCALE"])
-		self.setRuler(*dictionary["RULER"])
-		self.setRulerScaling(None)
+		return "EMRuler(%s,%s,%s,%s,%s,%s,%s,%s)"%(self.xi,self.yi,self.zi,self.xf,self.yf,self.zf,self.getRulerAPix(),self.getRulerScaling())	
 		
 	def updateInfo(self):
 		""" 
 		Sets the ruler length 
 		"""
-		apix = self.getRulerAPix()
-		if not apix: 
-			apix = self.getSGApix()
-		scaling = self.getRulerScaling()
-		if not scaling:
-			scaling = self.getSGscaling()
-		scaledapix = apix*scaling
+		scaledapix = self.getRulerAPix()*self.getRulerScaling()
 		length = self.getLength()*scaledapix
 		smallbar = 2*scaledapix*self.barwidth
-		self.boundingboxsize = 'length='+str(round(length, 2))+u'\u212B'+';  smallbar='+str(round(smallbar, 2))+u'\u212B'+';  apix='+str(round(apix, 2))+u'\u212B'
+		self.boundingboxsize = 'length='+str(round(length, 2))+u'\u212B'+';  smallbar='+str(round(smallbar, 2))+u'\u212B'+';  apix='+str(round(self.getRulerAPix(), 2))+u'\u212B'
 		if self.item_inspector: self.item_inspector.updateMetaData()
-	
-	def getSGApix(self):
-		"""Return the apix for the EM object, default is 1.0"""
-		sg = self.getRootNode()
-		if hasattr(sg, "getAPix"):
-			apix = sg.getAPix()
-			if apix:
-				return apix
-			else:
-				return 1.0
-		else:
-			return 1.0
-	
-	def getSGscaling(self):
-		"""Return the scaling for the SG, default is 1.0"""
-		sg = self.getRootNode()
-		if  hasattr(sg, "camera"):
-			return sg.camera.getViewPortWidthScaling()
-		else:
-			return 1.0
 		
 	def getRulerAPix(self):
 		"""Return the apix for this ruler"""
