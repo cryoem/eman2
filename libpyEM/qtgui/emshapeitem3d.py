@@ -157,11 +157,14 @@ class EMRuler(EMShapeBase):
 		"""
 		sg = self.getRootNode()
 		apix = 1.0
-		if hasattr(sg, "getAPix"): apix = sg.getAPix()*sg.camera.getViewPortWidthScaling()
-
-		self.length = length*apix
+		scaledapix = 1.0
+		if hasattr(sg, "getAPix"): 
+			apix = sg.getAPix()
+			scaledapix = apix*sg.camera.getViewPortWidthScaling()
+			
+		self.length = length*scaledapix
 		self.pixlen = length
-		self.boundingboxsize = 'length='+str(round(self.length, 2))+u'\u212B'
+		self.boundingboxsize = 'length='+str(round(self.length, 2))+u'\u212B'+'   apix='+str(round(apix, 2))
 		if self.item_inspector: self.item_inspector.updateMetaData()
 		
 	def getItemInspector(self):
