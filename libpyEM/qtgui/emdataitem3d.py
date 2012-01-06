@@ -100,6 +100,7 @@ class EMDataItem3D(EMItem3D):
 		self.renderBoundingBox = False
 	
 	def setSelectedItem(self, is_selected):
+		""" Set SG apix to curent selection"""
 		EMItem3D.setSelectedItem(self, is_selected)
 		sg = self.getRootNode()
 		try:
@@ -364,6 +365,7 @@ class EMSliceItem3D(EMItem3D):
 		diag = 2**(int(math.floor( math.log(interior_diagonal)/math.log(2) ))) #next smaller power of 2
 		diag2 = diag/2
 		
+		glPushAttrib( GL_ALL_ATTRIB_BITS )
 		GL.glDisable(GL.GL_LIGHTING)
 		GL.glColor3f(1.0,1.0,1.0)
 		
@@ -475,6 +477,7 @@ class EMSliceItem3D(EMItem3D):
 			GL.glDisable(GL.GL_BLEND)
 		
 		GL.glEnable(GL.GL_LIGHTING)
+		glPopAttrib()
 		
 class EMSliceInspector(EMInspectorControlShape):
 	def __init__(self, name, item3d):
@@ -1362,7 +1365,11 @@ class EMIsosurface(EMItem3D):
 			glPopAttrib()
 			
 		else:
+			glPushAttrib( GL_ALL_ATTRIB_BITS )
+			
 			self.renderIso()
+			
+			glPopAttrib()
 			
 #		self.draw_bc_screen() #TODO: check into porting this from EM3DModel
 				

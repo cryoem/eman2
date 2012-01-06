@@ -117,7 +117,11 @@ class EMShapeBase(EMItem3D):
 	
 			glPopAttrib()	
 		else:
+			glPushAttrib( GL_ALL_ATTRIB_BITS )
+			
 			self.renderShape()
+			
+			glPopAttrib()
 			
 	def renderShape(self):
 		raise NotImplementedError("Not to reimplemnt this function")	
@@ -236,8 +240,6 @@ class EMRuler(EMShapeBase):
 			glVertex3f(self.xi+i[0]+self.rsinO/2.0, self.yi+i[1]+self.rcosO/2.0, self.zf)
 			glVertex3f(self.xi+i[0]-self.rsinO/2.0, self.yi+i[1]-self.rcosO/2.0, self.zf)
 		glEnd()	# Done Drawing The Cube
-		glDisable(GL_LINE_SMOOTH)
-		glDisable(GL_BLEND)
 		
 class EMCube(EMShapeBase):
 	name = "Cube"
@@ -297,6 +299,7 @@ class EMCube(EMShapeBase):
 			
 	def renderShape(self):        
 		# Material properties of the box
+		
 		glDisable(GL_COLOR_MATERIAL)
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
@@ -343,7 +346,6 @@ class EMCube(EMShapeBase):
 		glNormal3f(self.xf, self.yi - 1, self.zi); glVertex3f(self.xf, self.yi, self.zi)
 
 		glEnd()	# Done Drawing The Cube
-
 
 class EMSphere(EMShapeBase):
 	name = "Sphere"
@@ -670,7 +672,7 @@ class EMLine(EMShapeBase):
 			glRotated(ax, -1.0, 0.0, 0.0)	#Rotate to point 2 in x-y plane
 		else:
 			glRotated(ax, rx, ry, 0)
-		
+			
 		glDisable(GL_COLOR_MATERIAL)
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
@@ -893,7 +895,7 @@ class EM3DText(EMShapeBase):
 		glTranslate((tvar[0]-tvar[3])/2,(tvar[1]-tvar[4])/2,-(tvar[2]-tvar[5])/2)
 		
 		self.font_renderer.render_string(self.renderString)
-		glPopMatrix()	
+		glPopMatrix()
 
 class EMInspectorControlShape(EMItem3DInspector):
 	"""
