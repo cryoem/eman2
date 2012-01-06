@@ -451,7 +451,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		"""
 		Return a dictionary of item parameters (used for restoring sessions
 		"""
-		return {"TRANSFORMATION":self.transform.get_params("eman"),"CONSTRUCTOR":self.getEvalString(),"NAME":str(self.getLabel()),"VISIBLE":self.isVisibleItem(),"SELECTED":self.isSelectedItem(),"NODETYPE":self.nodetype}
+		return {"TRANSFORMATION":self.transform.get_params("eman"),"CONSTRUCTOR":self.getEvalString(),"NAME":str(self.getLabel()),"VISIBLE":self.isVisibleItem(),"SELECTED":self.isSelectedItem(),"NODETYPE":self.nodetype,"HIDDENSEL":self.getHiddenSelected()}
 		
 	def setUsingDictionary(self, dictionary):
 		"""
@@ -460,6 +460,10 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		self.setTransform(Transform(dictionary["TRANSFORMATION"]))
 		self.setVisibleItem(dictionary["VISIBLE"])
 		self.setSelectedItem(dictionary["SELECTED"])
+		try:
+			self.setHiddenSelected(dictionary["HIDDENSEL"])
+		except:
+			pass
 		self.setLabel(dictionary["NAME"])
 		
 	def render(self):

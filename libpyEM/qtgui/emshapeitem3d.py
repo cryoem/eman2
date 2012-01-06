@@ -88,9 +88,9 @@ class EMShapeBase(EMItem3D):
 		Set item attributes using a dictionary, used in session restoration
 		"""
 		super(EMShapeBase, self).setUsingDictionary(dictionary)
-		self.setAmbientColor(*dictionary["COLOR"][0][0])
-		self.setDiffuseColor(*dictionary["COLOR"][1][0])
-		self.setSpecularColor(*dictionary["COLOR"][2][0])
+		self.setAmbientColor(*dictionary["COLOR"][0])
+		self.setDiffuseColor(*dictionary["COLOR"][1])
+		self.setSpecularColor(*dictionary["COLOR"][2])
 		self.setShininess(dictionary["COLOR"][3])
 		
 	def renderNode(self):
@@ -145,39 +145,105 @@ class EMRuler(EMShapeBase):
 			
 	def __init__(self, x1, y1, z1, x2, y2, z2, transform=None):
 		EMShapeBase.__init__(self, parent=None, children=set(), transform=transform)
+		self.apix = None
+		self.scaling = None
 		self.barwidth = 10.0
 		self.setRuler(x1, y1, z1, x2, y2, z2)
 		
 	def getEvalString(self):
-		return "EMRuler(%s)"%self.length	
+		return "EMRuler(%s,%s,%s,%s,%s,%s)"%(self.xi,self.yi,self.zi,self.xf,self.yf,self.zf)	
 	
-	def setLength(self, length):
+	def getItemDictionary(self):
+		"""
+		Return a dictionary of item parameters (used for restoring sessions
+		"""
+		dictionary = super(EMRuler, self).getItemDictionary()
+		apix = self.getRulerAPix()
+		if not apix: 
+			apix = self.getSGApix()
+		scaling = self.getRulerScaling()
+		if not scaling:
+			scaling = self.getSGscaling()
+		dictionary.update({"RULER":[self.xi,self.yi,self.zi,self.xf,self.yf,self.zf],"RULERAPIX":apix,"RULERSCALE":scaling})
+		return dictionary
+		
+	def setUsingDictionary(self, dictionary):
+		"""
+		Set item attributes using a dictionary, used in session restoration
+		"""
+		super(EMRuler, self).setUsingDictionary(dictionary)
+		self.setRulerAPix(dictionary["RULERAPIX"])
+		self.setRulerScaling(dictionary["RULERSCALE"])
+		self.setRuler(*dictionary["RULER"])
+		self.setRulerScaling(None)
+		
+	def updateInfo(self):
 		""" 
 		Sets the ruler length 
 		"""
-		sg = self.getRootNode()
-		apix = 1.0
-		scaledapix = 1.0
-		if hasattr(sg, "getAPix"): 
-			apix = sg.getAPix()
-			scaledapix = apix*sg.camera.getViewPortWidthScaling()
-			
-		self.length = length*scaledapix
-		self.pixlen = length
-		self.boundingboxsize = 'length='+str(round(self.length, 2))+u'\u212B'+'   apix='+str(round(apix, 2))
+		apix = self.getRulerAPix()
+		if not apix: 
+			apix = self.getSGApix()
+		scaling = self.getRulerScaling()
+		if not scaling:
+			scaling = self.getSGscaling()
+		scaledapix = apix*scaling
+		length = self.getLength()*scaledapix
+		smallbar = 2*scaledapix*self.barwidth
+		self.boundingboxsize = 'length='+str(round(length, 2))+u'\u212B'+';  smallbar='+str(round(smallbar, 2))+u'\u212B'+';  apix='+str(round(apix, 2))+u'\u212B'
 		if self.item_inspector: self.item_inspector.updateMetaData()
+	
+	def getSGApix(self):
+		"""Return the apix for the EM object, default is 1.0"""
+		sg = self.getRootNode()
+		if hasattr(sg, "getAPix"):
+			apix = sg.getAPix()
+			if apix:
+				return apix
+			else:
+				return 1.0
+		else:
+			return 1.0
+	
+	def getSGscaling(self):
+		"""Return the scaling for the SG, default is 1.0"""
+		sg = self.getRootNode()
+		if  hasattr(sg, "camera"):
+			return sg.camera.getViewPortWidthScaling()
+		else:
+			return 1.0
+		
+	def getRulerAPix(self):
+		"""Return the apix for this ruler"""
+		return self.apix
+
+	def setRulerAPix(self, apix):
+		"""Set the apix for this ruler, overrides SG value"""
+		self.apix = apix
+	
+	def getRulerScaling(self):
+		""" Set ruler scaling, overrides SG value """
+		return self.scaling
+		
+	def setRulerScaling(self, scaling):
+		""" Get ruler scaling """
+		self.scaling = scaling
+		
+	def getLength(self):
+		"""Return the length"""
+		return self.pixlen
+		
+	def setLength(self, length):
+		"""Set the length in pixels"""
+		self.pixlen = length
 		
 	def getItemInspector(self):
-		"""
-		Return a Qt widget that controls the scene item
-		"""
+		"""Return a Qt widget that controls the scene item"""
 		if not self.item_inspector: self.item_inspector = EMInspectorControlShape("RULER", self)
 		return self.item_inspector
 	
 	def setRuler(self, x1, y1, z1, x2, y2, z2):
-		"""
-		Set the ruler based on end and starting points
-		"""
+		"""Set the ruler based on end and starting points"""
 		self.xi = x1
 		self.yi = y1
 		self.zi = z1
@@ -185,10 +251,11 @@ class EMRuler(EMShapeBase):
 		self.yf = y2
 		self.zf = z2
 		self.setLength(math.sqrt((x1-x2)**2 + (y1-y2)**2 + (z1-z2)**2))
+		self.updateInfo()
 		# Compute bars using parametric equations, and vector
 		angle = -math.atan2((y2-y1),(x2-x1))
-		if self.pixlen > 0:
-			self.direction = [(x2-x1)/self.pixlen, (y2-y1)/self.pixlen, (z2-z1)/self.pixlen]
+		if self.getLength() > 0:
+			self.direction = [(x2-x1)/self.getLength(), (y2-y1)/self.getLength(), (z2-z1)/self.getLength()]
 		else:
 			self.direction = [0.0,0.0,0.0]
 		self.rsinO = self.barwidth*math.sin(angle)

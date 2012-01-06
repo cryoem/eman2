@@ -1498,7 +1498,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		Return a dictionary of item parameters (used for restoring sessions
 		"""
 		dictionary = super(EMScene3D, self).getItemDictionary()
-		dictionary.update({"AMBIENTLIGHT":self.firstlight.getAmbient(),"ANGULARLIGHTPOSITION":self.firstlight.getAngularPosition(),"CAPCOLOR":self.camera.getCapColor(),"LINKINGMODE":self.camera.getLinkingMode(),"CAPPINGMODE":self.camera.getCappingMode(),"CAMERACLIP":[self.camera.getClipNear(), self.camera.getClipFar()],"CAMERAPM":self.camera.getUseOrtho(),"CLEARCOLOR":self.getClearColor()})
+		dictionary.update({"AMBIENTLIGHT":self.firstlight.getAmbient(),"ANGULARLIGHTPOSITION":self.firstlight.getAngularPosition(),"CAPCOLOR":self.camera.getCapColor(),"LINKINGMODE":self.camera.getLinkingMode(),"CAPPINGMODE":self.camera.getCappingMode(),"CAMERACLIP":[self.camera.getClipNear(), self.camera.getClipFar()],"CAMERAPM":self.camera.getUseOrtho(),"CLEARCOLOR":self.getClearColor(),"PSEUDOFOVY":self.camera.getPseudoFovyWidth(),"FOVY":self.camera.getFovy()})
 		return dictionary
 	
 	def setUsingDictionary(self, dictionary):
@@ -1521,6 +1521,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.camera.setCapColor(*dictionary["CAPCOLOR"])
 			self.camera.setCappingMode(dictionary["CAPPINGMODE"])
 			self.camera.setLinkingMode(dictionary["LINKINGMODE"])
+			self.camera.setFovy(dictionary["FOVY"])
+			self.camera.setPseudoFovy(dictionary["PSEUDOFOVY"])
 		except:
 			pass
 		self.cameraNeedsanUpdate()
