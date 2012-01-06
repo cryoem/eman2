@@ -123,6 +123,9 @@ class EMShapeBase(EMItem3D):
 		raise NotImplementedError("Not to reimplemnt this function")	
 	
 class EMRuler(EMShapeBase):
+	"""
+	Widget to make a ruler for measuring distances and drawing a little ruler on the screen
+	"""
 	name = "Ruler"
 	nodetype = "ShapeNode"
 	
@@ -142,24 +145,22 @@ class EMRuler(EMShapeBase):
 			
 	def __init__(self, x1, y1, z1, x2, y2, z2, transform=None):
 		EMShapeBase.__init__(self, parent=None, children=set(), transform=transform)
+		self.barwidth = 10.0
 		self.setRuler(x1, y1, z1, x2, y2, z2)
 		
-		# color
-		self.diffuse = [0.5,0.5,0.5,0.5]
-		self.specular = [1.0,1.0,1.0,0.5]
-		self.ambient = [1.0, 1.0, 1.0, 0.5]
-		self.shininess = 25.0
-	
 	def getEvalString(self):
 		return "EMRuler(%s)"%self.length	
 	
 	def setLength(self, length):
-		""" Sets the ruler length """
+		""" 
+		Sets the ruler length 
+		"""
 		sg = self.getRootNode()
 		apix = 1.0
 		if hasattr(sg, "getAPix"): apix = sg.getAPix()*sg.camera.getViewPortWidthScaling()
 
 		self.length = length*apix
+		self.pixlen = length
 		self.boundingboxsize = 'length='+str(round(self.length, 2))+u'\u212B'
 		if self.item_inspector: self.item_inspector.updateMetaData()
 		
@@ -171,7 +172,9 @@ class EMRuler(EMShapeBase):
 		return self.item_inspector
 	
 	def setRuler(self, x1, y1, z1, x2, y2, z2):
-		#print x1, y1, z1, x2, y2, z2
+		"""
+		Set the ruler based on end and starting points
+		"""
 		self.xi = x1
 		self.yi = y1
 		self.zi = z1
@@ -179,8 +182,15 @@ class EMRuler(EMShapeBase):
 		self.yf = y2
 		self.zf = z2
 		self.setLength(math.sqrt((x1-x2)**2 + (y1-y2)**2 + (z1-z2)**2))
-		self.angle = -math.atan2((y2-y1),(x2-x1))
-		#print x2, y2, z2
+		# Compute bars using parametric equations, and vector
+		angle = -math.atan2((y2-y1),(x2-x1))
+		if self.pixlen > 0:
+			self.direction = [(x2-x1)/self.pixlen, (y2-y1)/self.pixlen, (z2-z1)/self.pixlen]
+		else:
+			self.direction = [0.0,0.0,0.0]
+		self.rsinO = self.barwidth*math.sin(angle)
+		self.rcosO = self.barwidth*math.cos(angle)
+		self.smallbars = [[i*self.direction[0],i*self.direction[1]] for i in xrange(0,int(self.pixlen),int(2*self.barwidth))]
 		
 	def renderShape(self):        
 		# Material properties of the box
@@ -190,21 +200,24 @@ class EMRuler(EMShapeBase):
 		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
 		
-		#glEnable(GL_BLEND)
-		#glDisable(GL_DEPTH_TEST)
-		#glBlendFunc(GL_SRC_ALPHA, GL_ONE)
-		#glBlendEquation(GL_FUNC_SUBTRACT)
-		#glColor(1.0, 1.0, 1.0, 0.01)
+		glEnable(GL_BLEND)
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+		#glLineWidth(1.5)
+		glEnable(GL_LINE_SMOOTH)
+	
 		glBegin(GL_LINES)
 		glVertex3f(self.xi, self.yi, self.zi)
 		glVertex3f(self.xf, self.yf, self.zf)
-		glVertex3f(self.xi+10.0*math.sin(self.angle), self.yi+10.0*math.cos(self.angle), self.zf)
-		glVertex3f(self.xi-10.0*math.sin(self.angle), self.yi-10.0*math.cos(self.angle), self.zf)
-		glVertex3f(self.xf+10.0*math.sin(self.angle), self.yf+10.0*math.cos(self.angle), self.zf)
-		glVertex3f(self.xf-10.0*math.sin(self.angle), self.yf-10.0*math.cos(self.angle), self.zf)
+		glVertex3f(self.xi+self.rsinO, self.yi+self.rcosO, self.zf)
+		glVertex3f(self.xi-self.rsinO, self.yi-self.rcosO, self.zf)
+		glVertex3f(self.xf+self.rsinO, self.yf+self.rcosO, self.zf)
+		glVertex3f(self.xf-self.rsinO, self.yf-self.rcosO, self.zf)
+		for i in self.smallbars:
+			glVertex3f(self.xi+i[0]+self.rsinO/2.0, self.yi+i[1]+self.rcosO/2.0, self.zf)
+			glVertex3f(self.xi+i[0]-self.rsinO/2.0, self.yi+i[1]-self.rcosO/2.0, self.zf)
 		glEnd()	# Done Drawing The Cube
-		#glDisable(GL_BLEND)
-		#glEnable(GL_DEPTH_TEST)
+		glDisable(GL_LINE_SMOOTH)
+		glDisable(GL_BLEND)
 		
 class EMCube(EMShapeBase):
 	name = "Cube"

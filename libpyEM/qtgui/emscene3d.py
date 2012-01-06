@@ -1566,9 +1566,10 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		
 	def getAPix(self):
 		"""
-		Return the sg angstrom per pixeldata
+		Return the sg angstrom per pixeldata. Only for ortho mode as apix doesn't have any meaning in perspective mode
 		"""
-		return self.apix
+		if self.camera.getUseOrtho():
+			return self.apix
 		
 	def updateSG(self):
 		"""
