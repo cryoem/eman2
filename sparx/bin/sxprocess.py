@@ -55,7 +55,7 @@ def main():
 	sxprocess.py input_stack.hdf output_stack.hdf --phase_flip	
 	
 	generate a stack of projections bdb:data and micrographs with prefix mic (i.e., mic0.hdf, mic1.hdf etc) from structure input_structure.hdf, with CTF applied to both projections and micrographs:
-	sxprocess.py input_structure.hdf data mic --generate_projections format="bdb":apix=5.2:CTF=True 	
+	sxprocess.py input_structure.hdf data mic --generate_projections format="bdb":apix=5.2:CTF=True:boxsize_x=64 	
 """
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
@@ -177,8 +177,20 @@ def main():
 		
 		if 'apix' in param_dict:
 			parm_apix = float(param_dict['apix'])
-						
-		print "pixel size: ", parm_apix," format: ", parm_format," add CTF: ",parm_CTF
+		
+		boxsize_x = 64
+		if 'boxsize_x' in param_dict:
+			boxsize_x = int(param_dict['boxsize_x'])
+		
+		boxsize_y = boxsize_x
+		boxsize_z = boxsize_x
+		
+		if 'boxsize_y' in param_dict:
+			boxsize_y = int(param_dict['boxsize_y'])
+		if 'boxsize_z' in param_dict:
+			boxsize_z = int(param_dict['boxsize_z'])
+								
+		print "pixel size: ", parm_apix," format: ", parm_format," add CTF: ",parm_CTF," nx: ", boxsize_x, " ny: ", boxsize_y, " nz: ", boxsize_z
 		from filter import filt_gaussl, filt_ctf
 		from utilities import drop_spider_doc, even_angles, model_gauss, delete_bdb, model_blank,pad,model_gauss_noise,set_params2D, set_params_proj
 		from projection import prep_vol,prgs
@@ -192,12 +204,18 @@ def main():
 		modelvol.read_image(inpstr)
 		
 		nx = modelvol.get_xsize()
-
+		ny = modelvol.get_ysize()
+		nz = modelvol.get_zsize()
+		
+		if nx != boxsize_x or ny != boxsize_y or nz != boxsize_z:
+			print "requested box dimensions does not match dimensions of the input model....Exiting"
+			sys.exit()
+			
 		nvol = 10
 		volfts = [None]*nvol
 		for i in xrange(nvol):
 			sigma = 1.5 + random() # 1.5-2.5
-			addon = model_gauss(sigma, 64, 64, 64, sigma, sigma, 38, 38, 40 )
+			addon = model_gauss(sigma, boxsize_x, boxsize_y, boxsize_z, sigma, sigma, 38, 38, 40 )
 			scale = 2500 * (0.5+random())
 			model = modelvol + scale*addon
 			volfts[i],kb = prep_vol(modelvol + scale*addon)
@@ -211,12 +229,12 @@ def main():
 		pixel   = parm_apix
 		voltage = 120.0
 		ampcont = 10.0
-		ibd     = 4096/2-64
+		ibd     = 4096/2-boxsize_x
 		iprj    = 0
 
 		width = 240
-		xstart = 8 + 64/2
-		ystart = 8 + 64/2
+		xstart = 8 + boxsize_x/2
+		ystart = 8 + boxsize_x/2
 		rowlen = 17
 
 		params = []
