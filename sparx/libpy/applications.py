@@ -12974,9 +12974,9 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			print  "Group %d ......"%i,
 		
 			if l_stable_members <= thld_grp:
-				print "Size of stable subset smaller than threshold, discarded\n"
+				print "Size of stable subset smaller than the threshold, discarded\n"
 				continue
-			print "Size of stable subset larger than threshold, kept\n"
+			print "Size of stable subset larger than the threshold, kept\n"
 
 			ave = recv_EMData(node_to_run, i+70000)
 			stable_members_ori = [0]*l_stable_members
