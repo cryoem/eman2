@@ -183,6 +183,24 @@ def main():
 			boxsize = int(param_dict['boxsize'])
 							
 		print "pixel size: ", parm_apix," format: ", parm_format," add CTF: ",parm_CTF," box size: ", boxsize
+		
+		scale_mult = 2500
+		sigma_add = 1.5
+		sigma_proj = 30.0
+		sigma2_proj = 17.5
+		sigma_gauss = 0.3
+		
+		if 'scale_mult' in param_dict:
+			scale_mult = float(param_dict['scale_mult'])
+		if 'sigma_add' in param_dict:
+			sigma_add = float(param_dict['sigma_add'])
+		if 'sigma_proj' in param_dict:
+			sigma_proj = float(param_dict['sigma_proj'])
+		if 'sigma2_proj' in param_dict:
+			sigma2_proj = float(param_dict['sigma2_proj'])
+		if 'sigma_gauss' in param_dict:
+			sigma_gauss = float(param_dict['sigma_gauss'])	
+			
 		from filter import filt_gaussl, filt_ctf
 		from utilities import drop_spider_doc, even_angles, model_gauss, delete_bdb, model_blank,pad,model_gauss_noise,set_params2D, set_params_proj
 		from projection import prep_vol,prgs
@@ -204,9 +222,9 @@ def main():
 		nvol = 10
 		volfts = [None]*nvol
 		for i in xrange(nvol):
-			sigma = 1.5 + random() # 1.5-2.5
+			sigma = sigma_add + random() # 1.5-2.5
 			addon = model_gauss(sigma, boxsize, boxsize, boxsize, sigma, sigma, 38, 38, 40 )
-			scale = 2500 * (0.5+random())
+			scale = scale_mult * (0.5+random())
 			model = modelvol + scale*addon
 			volfts[i],kb = prep_vol(modelvol + scale*addon)
 			
@@ -263,12 +281,12 @@ def main():
 	
 					mic += pad(proj, 4096, 4096, 1, 0.0, x-2048, y-2048, 0)
 			
-					proj = proj + model_gauss_noise( 30.0, nx, nx )
+					proj = proj + model_gauss_noise( sigma_proj, nx, nx )
 					if parm_CTF :
 						proj = filt_ctf(proj, ctf)
 						proj.set_attr_dict({"ctf":ctf, "ctf_applied":0})
 			
-					proj = proj + filt_gaussl(model_gauss_noise(17.5,nx,nx), 0.3)
+					proj = proj + filt_gaussl(model_gauss_noise(sigma2_proj,nx,nx), sigma_gauss)
 					proj.set_attr( "active", 1 )
 					# flags describing the status of the image (1 = true, 0 = false)
 					set_params2D(proj, [0.0, 0.0, 0.0, 0, 1.0])
