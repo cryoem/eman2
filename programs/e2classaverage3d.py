@@ -117,10 +117,11 @@ def main():
 	if options.align: 
 		options.align=parsemodopt(options.align)
 		# If symmetry is being specified, then we need to use it for the aligner too
-		if options.sym:
+		if options.sym and options.align != None:
 			options.align[1]['sym'] = options.sym
 	if options.ralign: 
 		options.ralign=parsemodopt(options.ralign)
+	print "\n\nTHE ALIGNERS ARE ", options.ralign, options.align
 	
 	if options.aligncmp: 
 		options.aligncmp=parsemodopt(options.aligncmp)
@@ -711,8 +712,11 @@ class Align3DTask(EMTask):
 		if options["transform"]:
 			options["align"][1]["transform"] = options["transform"]
 			
+		# If None was passed in we skip course alignment and just do a refienement
+		if options["align"] == None:
+			bestcoarse=[{"score":1.0,"xform.align3d":Transform()}]
 		# If a Transform was passed in, we skip coarse alignment
-		if isinstance(options["align"],Transform):
+		elif isinstance(options["align"],Transform):
 			bestcoarse=[{"score":1.0,"xform.align3d":options["align"]}]
 			if options["shrinkrefine"]>1: 
 				bestcoarse[0]["xform.align3d"].set_trans(bestcoarse[0]["xform.align3d"].get_trans()/float(options["shrinkrefine"]))
@@ -735,10 +739,7 @@ class Align3DTask(EMTask):
 			# Now loop over the individual peaks and refine each
 			bestfinal=[]
 			for bc in bestcoarse:
-				if options["align"] != None:
-					options["ralign"][1]["xform.align3d"]=bc["xform.align3d"]
-				else:
-					options["ralign"][1]["xform.align3d"]=Transform()
+				options["ralign"][1]["xform.align3d"]=bc["xform.align3d"]
 				ali=s2image.align(options["ralign"][0],s2fixedimage,options["ralign"][1],options["raligncmp"][0],options["raligncmp"][1])
 				
 				try: 

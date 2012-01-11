@@ -419,10 +419,22 @@ class PMComboWidget(PMBaseWidget):
 		self.setPositional(postional)
 		
 		self.connect(self.combobox, QtCore.SIGNAL("activated(const QString &)"), self.setValue)
-		
+	
+	def getArgument(self):
+		# If the value is None or blank then do not yeild an option. Obviously this will nver happen for Int bool or float
+		if str(self.getValue()).upper() == "":
+			return ""
+		else:
+			""" There are two sorts of arguments: Posional and optional """
+			if self.getPositional():
+				return str(self.getValue())
+			else:
+				return "--%s=%s"%(self.getName(), str(self.getValue()))
+				
 	def getValue(self):
 		if str(self.combobox.currentText()) == "None":
-			return ""
+			# In the e2 programs we actually need to specify None otherwise default behaviour will be implmented
+			return "None"
 		return self.datatype(self.combobox.currentText())
 		
 	def setValue(self, value, quiet=False):
@@ -464,10 +476,22 @@ class PMComboParamsWidget(PMBaseWidget):
 		
 		self.connect(self.combobox, QtCore.SIGNAL("activated(const QString &)"), self.setValue)
 	
+	def getArgument(self):
+		# If the value is None or blank then do not yeild an option. Obviously this will nver happen for Int bool or float
+		if str(self.getValue()).upper() == "":
+			return ""
+		else:
+			""" There are two sorts of arguments: Posional and optional """
+			if self.getPositional():
+				return str(self.getValue())
+			else:
+				return "--%s=%s"%(self.getName(), str(self.getValue()))
+				
 	def getValue(self):
 		""" Return the value. Concatenate if necessary """
 		if str(self.combobox.currentText()) == "None":
-			return ""
+			# In the e2 programs we actually need to specify None otherwise default behaviour will be implmented
+			return "None"
 		if self.params.text() == "":
 			return str(self.combobox.currentText())
 		else:
