@@ -1649,7 +1649,6 @@ class PMGUIWidget(QtGui.QScrollArea):
 			# pop the widget off a copy of the hash
 			del(widgethash[ov[0][2:]])
 		
-		#print args
 		# now do the widgets which are not listed in the above list
 		for name,widget in widgethash.iteritems():
 			if isinstance(widget, PMHeaderWidget):
@@ -1659,11 +1658,9 @@ class PMGUIWidget(QtGui.QScrollArea):
 				continue
 			#process arguments, if postional widget
 			if widget.getPositional():
-				#widget.setValue((args.pop())[1:])
 				self._setValueJournaling(widget, (args.pop())[1:])
 				continue
 			# otherwise set to none	
-			#widget.setValue('')
 			self._setValueJournaling(widget, '')
 			
 	def _setValueJournaling(self, widget, value):

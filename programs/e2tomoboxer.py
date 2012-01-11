@@ -235,11 +235,6 @@ def main():
 		parser.error("You must specify a single volume data file on the command-line.")
 	if not file_exists(args[0]): 
 		parser.error("%s does not exist" %args[0])
-
-	# Lets save our subtomograms to a diectory called 'subtomogRAMS'
-	subtomosdir = os.path.join(".",options.path)
-	if not os.access(subtomosdir, os.R_OK):
-		os.mkdir(options.path)
 		
 #	if options.boxsize < 2: parser.error("The boxsize you specified is too small")
 #	# The program will not run very rapidly at such large box sizes anyhow
@@ -249,7 +244,13 @@ def main():
 
 	if options.coords:
 		commandline_tomoboxer(args[0],options.coords,options.subset,options.boxsize,options.cbin,options.output,options.output_format,options.swapyz,options.reverse_contrast)
-	else:		
+	else:	
+	
+		# Lets save our subtomograms to a diectory called 'subtomogRAMS'
+		subtomosdir = os.path.join(".",options.path)
+		if not os.access(subtomosdir, os.R_OK):
+			os.mkdir(options.path)
+		
 		img = args[0]
 					
 		app = EMApp()
