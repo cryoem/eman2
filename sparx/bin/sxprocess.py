@@ -189,6 +189,9 @@ def main():
 		sigma_proj = 30.0
 		sigma2_proj = 17.5
 		sigma_gauss = 0.3
+		sigma_mic = 30.0
+		sigma2_mic = 17.5
+		sigma_gauss_mic = 0.3
 		
 		if 'scale_mult' in param_dict:
 			scale_mult = float(param_dict['scale_mult'])
@@ -200,6 +203,12 @@ def main():
 			sigma2_proj = float(param_dict['sigma2_proj'])
 		if 'sigma_gauss' in param_dict:
 			sigma_gauss = float(param_dict['sigma_gauss'])	
+		if 'sigma_mic' in param_dict:
+			sigma_mic = float(param_dict['sigma_mic'])
+		if 'sigma2_mic' in param_dict:
+			sigma2_mic = float(param_dict['sigma2_mic'])
+		if 'sigma_gauss_mic' in param_dict:
+			sigma_gauss_mic = float(param_dict['sigma_gauss_mic'])	
 			
 		from filter import filt_gaussl, filt_ctf
 		from utilities import drop_spider_doc, even_angles, model_gauss, delete_bdb, model_blank,pad,model_gauss_noise,set_params2D, set_params_proj
@@ -301,11 +310,11 @@ def main():
 
 					iprj += 1
 
-			mic += model_gauss_noise(30.0,4096,4096)
+			mic += model_gauss_noise(sigma_mic,4096,4096)
 			if parm_CTF :
 				#apply CTF
 				mic = filt_ctf(mic, ctf)
-			mic += filt_gaussl(model_gauss_noise(17.5,4096,4096), 0.3)
+			mic += filt_gaussl(model_gauss_noise(sigma2_mic,4096,4096), sigma_gauss_mic)
 	
 			mic.write_image(micpref+"%1d.hdf"%(idef-3),0)
 		
