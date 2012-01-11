@@ -77,7 +77,7 @@ class PMBaseWidget(QtGui.QWidget):
 		
 	def getArgument(self):
 		# If the value is None or blank then do not yeild an option. Obviously this will nver happen for Int bool or float
-		if str(self.getValue()).upper() == "NONE" or str(self.getValue()).upper() == "":
+		if str(self.getValue()) == "":
 			return ""
 		else:
 			""" There are two sorts of arguments: Posional and optional """
@@ -419,17 +419,6 @@ class PMComboWidget(PMBaseWidget):
 		self.setPositional(postional)
 		
 		self.connect(self.combobox, QtCore.SIGNAL("activated(const QString &)"), self.setValue)
-	
-	def getArgument(self):
-		# If the value is None or blank then do not yeild an option. Obviously this will nver happen for Int bool or float
-		if str(self.getValue()).upper() == "":
-			return ""
-		else:
-			""" There are two sorts of arguments: Posional and optional """
-			if self.getPositional():
-				return str(self.getValue())
-			else:
-				return "--%s=%s"%(self.getName(), str(self.getValue()))
 				
 	def getValue(self):
 		if str(self.combobox.currentText()) == "None":
@@ -475,17 +464,6 @@ class PMComboParamsWidget(PMBaseWidget):
 		self.setPositional(postional)
 		
 		self.connect(self.combobox, QtCore.SIGNAL("activated(const QString &)"), self.setValue)
-	
-	def getArgument(self):
-		# If the value is None or blank then do not yeild an option. Obviously this will nver happen for Int bool or float
-		if str(self.getValue()).upper() == "":
-			return ""
-		else:
-			""" There are two sorts of arguments: Posional and optional """
-			if self.getPositional():
-				return str(self.getValue())
-			else:
-				return "--%s=%s"%(self.getName(), str(self.getValue()))
 				
 	def getValue(self):
 		""" Return the value. Concatenate if necessary """
