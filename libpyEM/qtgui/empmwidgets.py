@@ -430,7 +430,13 @@ class PMComboWidget(PMBaseWidget):
 		idx = self.combobox.findText(str(value))
 		if idx > -1:
 			self.combobox.setCurrentIndex(idx)
-		self.setErrorMessage(None)
+			self.setErrorMessage(None)
+			return
+		else:
+			self.setErrorMessage("Value '%s' not found in combobox '%s'"%(value,self.getName()))
+			self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Value '%s' not found in combobox '%s'"%(value,self.getName()))
+			return
+		
 			
 class PMComboParamsWidget(PMBaseWidget):
 	""" A Widget for combo boxes. Type is checked. For the combobox with params the datatype is always str """
@@ -477,6 +483,7 @@ class PMComboParamsWidget(PMBaseWidget):
 			self.combobox.setCurrentIndex(idx)
 		else:
 			self.setErrorMessage("Value '%s' not found in combobox '%s'"%(values[0],self.getName()))
+			self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Value '%s' not found in combobox '%s'"%(values[0],self.getName()))
 			return
 		if len(values) == 2: self.params.setText(values[1])
 		self.setErrorMessage(None)
@@ -536,6 +543,7 @@ class PMSymWidget(PMBaseWidget):
 			self.combobox.setCurrentIndex(idx)
 		else:
 			self.setErrorMessage("'%s' not a valid symmetry!!!"%value)
+			self.emit(QtCore.SIGNAL("pmmessage(QString)"),"'%s' not a valid symmetry!!!"%value)
 			return
 		self.symnumbox.setValue(defsymnum)
 		self.setErrorMessage(None)

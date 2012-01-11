@@ -1431,7 +1431,6 @@ class PMProgramWidget(QtGui.QTabWidget):
 	def __init__(self, options, program, pm, mode):
 		QtGui.QTabWidget.__init__(self)
 		self.pm = weakref.ref(pm)
-		self.cmderrorstate = False
 		self.setMinimumHeight(210) # Size of the tool bar
 		
 		# Add GUI tab
@@ -1464,7 +1463,7 @@ class PMProgramWidget(QtGui.QTabWidget):
 		if self.currentIndex() == 0:
 			return self.guiwidget.getCommand()
 		elif self.currentIndex() == 1:
-			if not self.cmderrorstate: 
+			if not self.guiwidget.errorstate: 
 				return self.guitexteditbox.toPlainText()
 			else:
 				self.pm().statusbar.setMessage("Error(s) in GUI parameters. Please fix....")
@@ -1477,10 +1476,8 @@ class PMProgramWidget(QtGui.QTabWidget):
 		if idx == 1:
 			errormsg = self.guiwidget.getErrorMessage()
 			if errormsg:
-				self.cmderrorstate = True
 				self.guitexteditbox.setHtml("Error in parameters<br>"+errormsg)
 			else:
-				self.cmderrorstate = False
 				self.guitexteditbox.setHtml(self.guiwidget.getCommand())
 		if idx == 0 and self.previoustab == 1:
 			self.guiwidget.updateGUIFromCmd(str(self.guitexteditbox.toPlainText()))
@@ -1639,24 +1636,42 @@ class PMGUIWidget(QtGui.QScrollArea):
 		""" Update the GUI from a command """
 		if self.errorstate or not cmd: return
 		options = re.findall('--\S*',cmd)
+		args = re.findall('\s[^-]{2}\S*',cmd)
 		widgethash = dict(self.widgethash)	# Make a copy of the widget hash
 		for option in options:
 			ov = option.split('=', 1)
 			if len(ov) == 2:
-				self.widgethash[ov[0][2:]].setValue(ov[1])
+				self._setValueJournaling(self.widgethash[ov[0][2:]], ov[1])
+				#self.widgethash[ov[0][2:]].setValue(ov[1])	
 			else:
-				self.widgethash[ov[0][2:]].setValue(True)
+				self._setValueJournaling(self.widgethash[ov[0][2:]], True)
+				#self.widgethash[ov[0][2:]].setValue(True)
 			# pop the widget off a copy of the hash
 			del(widgethash[ov[0][2:]])
+		
+		#print args
 		# now do the widgets which are not listed in the above list
 		for name,widget in widgethash.iteritems():
 			if isinstance(widget, PMHeaderWidget):
 				continue
 			if isinstance(widget, PMBoolWidget):
-				widget.setValue(False)
+				self._setValueJournaling(widget, False)
 				continue
-			#otherwise set the widget value to X
-			print name, widget
+			#process arguments, if postional widget
+			if widget.getPositional():
+				#widget.setValue((args.pop())[1:])
+				self._setValueJournaling(widget, (args.pop())[1:])
+				continue
+			# otherwise set to none	
+			#widget.setValue('')
+			self._setValueJournaling(widget, '')
+			
+	def _setValueJournaling(self, widget, value):
+		""" Set a value, but if an erro occurs then revert to the old value """
+		origval = widget.getValue()
+		widget.setValue(value)
+		if widget.getErrorMessage():
+			widget.setValue(origval)
 			
 			
 	def getCommand(self):
@@ -1681,8 +1696,10 @@ class PMGUIWidget(QtGui.QScrollArea):
 	def getErrorMessage(self):
 		""" Check for any error messages """
 		errormsg = ""
+		self.errorstate = False
 		for widget in self.widgethash.values():
 			if widget.getErrorMessage():
+				self.errorstate = True
 				errormsg += (widget.getErrorMessage()+"<br>")
 		return errormsg
 			
