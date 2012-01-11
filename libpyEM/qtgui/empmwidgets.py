@@ -57,7 +57,7 @@ class PMBaseWidget(QtGui.QWidget):
 	def getValue(self):
 		raise NotImplementedError("Sub class must reimplemnt 'getValue' function")
 	
-	def setValue(self, value):
+	def setValue(self, value, quiet=False):
 		raise NotImplementedError("Sub class must reimplemnt 'setValue' function")
 		 
 	def getName(self):
@@ -137,7 +137,7 @@ class PMIntEntryWidget(PMBaseWidget):
 	def getValue(self):
 		return self.value
 		
-	def setValue(self, value):
+	def setValue(self, value, quiet=False):
 		self.intbox.setText(str(value))
 		self._on_intchanged()
 		
@@ -189,7 +189,7 @@ class PMFloatEntryWidget(PMBaseWidget):
 	def getValue(self):
 		return self.value
 		
-	def setValue(self, value):
+	def setValue(self, value, quiet=False):
 		self.floatbox.setText(str(value))
 		self._on_floatchanged()
 	
@@ -220,7 +220,7 @@ class PMStringEntryWidget(PMBaseWidget):
 		# What to do with None tpye values? For strings, just set None to "". This should be equivilent
 		return self.string
 		
-	def setValue(self, string):
+	def setValue(self, string, quiet=False):
 		self.stringbox.setText(str(string))
 		self._on_stringchanged()
 		self.setErrorMessage(None)
@@ -275,7 +275,7 @@ class PMBoolWidget(PMBaseWidget):
 	def getValue(self):
 		return self.boolvalue
 		
-	def setValue(self, boolvalue):
+	def setValue(self, boolvalue, quiet=False):
 		self.boolbox.setChecked(boolvalue)
 		self. _on_boolchanged()
 		self.setErrorMessage(None)
@@ -331,14 +331,14 @@ class PMFileNameWidget(PMBaseWidget):
 	def getValue(self):
 		return self.filename
 		
-	def setValue(self, filename):
+	def setValue(self, filename, quiet=False):
 		# Check to see if the file exists
 		filename = str(filename)
 		# In some cases a file is optional
 		if self.checkfileexist:
 			# We need to check if the field is blank
 			if filename == "": 
-				self._onBadFile(filename)
+				self._onBadFile(filename, quiet)
 				return
 			# In not blank then check to ensure each file is 'ok'. Not that a list of files is accepted
 			if not self._checkfiles(filename): return
@@ -359,10 +359,10 @@ class PMFileNameWidget(PMBaseWidget):
 				return False
 		return True
 		
-	def _onBadFile(self, filename):
+	def _onBadFile(self, filename, quiet=False):
 		self.filename = None
 		self.setErrorMessage("File '%s' from field '%s' does not exist"%(filename,self.getName()))
-		if self.isVisible(): self.emit(QtCore.SIGNAL("pmmessage(QString)"),"File '%s' from field '%s' does not exist"%(filename,self.getName()))
+		if self.isVisible() and not quiet: self.emit(QtCore.SIGNAL("pmmessage(QString)"),"File '%s' from field '%s' does not exist"%(filename,self.getName()))
 
 class PMDirectoryWidget(PMBaseWidget):
 	""" A Widget for display dircories of a certian type """
@@ -391,7 +391,7 @@ class PMDirectoryWidget(PMBaseWidget):
 	def getValue(self):
 		return str(self.combobox.currentText())
 		
-	def setValue(self, value):
+	def setValue(self, value, quiet=False):
 		self.updateDirs()
 		idx = self.combobox.findText(str(value))
 		if idx > -1:
@@ -425,7 +425,7 @@ class PMComboWidget(PMBaseWidget):
 			return ""
 		return self.datatype(self.combobox.currentText())
 		
-	def setValue(self, value):
+	def setValue(self, value, quiet=False):
 		if value == '': value = "None"
 		idx = self.combobox.findText(str(value))
 		if idx > -1:
@@ -467,7 +467,7 @@ class PMComboParamsWidget(PMBaseWidget):
 		else:
 			return str(self.combobox.currentText())+":"+self.params.text()
 		
-	def setValue(self, value):
+	def setValue(self, value, quiet=False):
 		# First parse the value, as it may contain both a options and params
 		if value == '': value = "None"
 		values = self._parsedefault(str(value))
@@ -519,7 +519,7 @@ class PMSymWidget(PMBaseWidget):
 		else:
 			return str(self.combobox.currentText())+str(self.symnumbox.getValue())
 		
-	def setValue(self, value):
+	def setValue(self, value, quiet=False):
 		""" Set the value. For example c1 is split into c and 1 and then set """
 		if not value: return
 		defsym = re.findall('[a-zA-Z]+', value)
@@ -557,7 +557,7 @@ class PMMultiSymWidget(PMBaseWidget):
 		self.lastsymvalue = None
 		self.initdefault = initdefault
 	
-	def setValue(self, value):
+	def setValue(self, value, quiet=False):
 		if not value: return
 		values = value.split(",")
 		for i, widget in enumerate(self.multisymwidgetlist):
@@ -640,7 +640,7 @@ class PMAutoMask3DWidget(PMBaseWidget):
 	def _on_message(self, message):
 		self.emit(QtCore.SIGNAL("pmmessage(QString)"),message)
 		
-	def setValue(self, value):
+	def setValue(self, value, quiet=False):
 		# if value is "" of None, set bool to false
 		if not value:
 			self.automask3dbool.setChecked(False)

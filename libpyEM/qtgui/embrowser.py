@@ -46,6 +46,7 @@ from emplot3d import *
 from valslider import StringBox
 import re
 import threading
+import time
 
 # This is a floating point number-finding regular expression
 renumfind=re.compile(r"-?[0-9]+\.*[0-9]*[eE]?[-+]?[0-9]*")
@@ -155,16 +156,16 @@ class EMFileType(object):
 		"Add to current 3-D window"
 		brws.busy()
 
-		data=EMDataItem3D(self.path)
+		data=emdataitem3d.EMDataItem3D(self.path)
 
 		try: 
 			target=brws.view3d[-1]
 		except: 
-			target=EMScene3D()
+			target=emscene3d.EMScene3D()
 			brws.view3d.append(target)
 
 		target.insertNewNode(self.path.split("/")[-1].split("#")[-1],data,parentnode=target)
-		iso = EMIsosurface(data)
+		iso = emdataitem3d.EMIsosurface(data)
 		target.insertNewNode('Isosurface', iso, parentnode=data)
 		brws.notbusy()
 		target.show()
@@ -174,13 +175,13 @@ class EMFileType(object):
 		"New 3-D window"
 		brws.busy()
 
-		data=EMDataItem3D(self.path)
+		data=emdataitem3d.EMDataItem3D(self.path)
 
-		target=EMScene3D()
+		target=emscene3d.EMScene3D()
 		brws.view3d.append(target)
 		
 		target.insertNewNode(self.path.split("/")[-1].split("#")[-1],data)
-		iso = EMIsosurface(data)
+		iso = emdataitem3d.EMIsosurface(data)
 		target.insertNewNode('Isosurface', iso, parentnode=data)
 		brws.notbusy()
 		
@@ -1673,6 +1674,10 @@ class EMBrowserWidget(QtGui.QWidget):
 	"""
 	
 	def __init__(self,parent=None,withmodal=False,multiselect=False,startpath=".",setsmode=None):
+		# although this looks dumb it is necessary to break Python's issue with circular imports(a major weakness of Python IMO)
+		global emscene3d, emdataitem3d
+		import emscene3d
+		import emdataitem3d 
 		QtGui.QWidget.__init__(self,parent)
 		
 		self.resize(780,580)
@@ -2073,10 +2078,6 @@ class EMBrowserWidget(QtGui.QWidget):
 		event.accept()
 		#self.app().close_specific(self)
 		self.emit(QtCore.SIGNAL("module_closed")) # this signal is important when e2ctf is being used by a program running its own eve
-
-# These imports come after classes are defined to break circular importing
-from emscene3d import *
-from emdataitem3d import *
 
 # This is just for testing, of course
 def test_result():

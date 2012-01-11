@@ -133,11 +133,30 @@ experticon = [
     'bbccccccbbbbccc',
     'bbcccccbbccbbcc',
     'bbcccccbbccbbcc',
-    'bbbbbcbbccccbbcc',
+    'bbbbbcbbccccbbc',
     'bbbbbcbbccccbbc',
     'ccccccccccccccc'
 ]
 
+browseicon = [
+    '15 14 2 1',
+    'b c #000055',
+    'c c None',
+    'ccccccccccccccc',
+    'bbbbbbccccccccc',
+    'bccccbccccccccc',
+    'bbbbbbbbbbbbbcc',
+    'bbbbbbbbbbbbbbc',
+    'bbbbbbbbbbbbbbc',
+    'bbbbbbbbbbbbbbc',
+    'bbbbbbbbbbbbbbc',
+    'bbbbbbbbbbbbbbc',
+    'bbbbbbbbbbbbbbc',
+    'bbbbbbbbbbbbbbc',
+    'bbbbbbbbbbbbbbc',
+    'bbbbbbbbbbbbbbc',
+    'ccccccccccccccc',
+]
 boldicon = [
     '15 14 2 1',
     'b c #000055',

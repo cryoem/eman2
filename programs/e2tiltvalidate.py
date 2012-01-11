@@ -68,6 +68,7 @@ def main():
 	parser.add_argument("--tiltrange", type=int,help="The angular tiltrange to search",default=15, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="analysis")
 	parser.add_argument("--sym",  type=str,help="The recon symmetry", default="c1", guitype='symbox', row=5, col=1, rowspan=1, colspan=1, mode="analysis")
 	parser.add_argument("--planethres", type=float, help="Maximum out of plane threshold for the tiltaxis. 0 = perfectly in plane, 1 = normal to plane", default=0.1, guitype='floatbox', row=5, col=0, rowspan=1, mode="gui")
+	parser.add_argument("--datalabels", action="store_true",help="Add data labels to the plot", default=False, guitype='boolbox', row=6, col=0, rowspan=1, mode="gui")
 	parser.add_argument("--maxtiltangle", type=float, help="Maximum tiltangle permitted when finding tilt distances", default=180.0, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="analysis")
 	parser.add_argument("--gui",action="store_true",help="Start the GUI for viewing the tiltvalidate plots",default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode="gui[True]")
 	parser.add_argument("--radcut", type = float, default=-1, help="For use in the GUI, truncate the polar plot after R. -1 = no truncation", guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="gui")
@@ -93,7 +94,7 @@ def main():
 
 	# Run the GUI if in GUI mode
 	if options.gui:
-		display_validation_plots(options.path, options.radcut, options.planethres)
+		display_validation_plots(options.path, options.radcut, options.planethres, plotdatalabels=options.datalabels)
 		exit(0)
 		
 	if not (options.volume or options.eulerfile):
@@ -244,12 +245,12 @@ class ComputeTilts:
 					tiltbestrefnum = refnum
 			# Untilt
 			untilt_euler_xform = Transform({"type":"eman","phi":-simmx[3].get_value_at(untiltbestrefnum, imgnum)})*projections[untiltbestrefnum].get_attr('xform.projection')
-			#untiltrot = untilt_euler_xform.get_rotation("eman")
-			#untilt_euler_xform.set_rotation({"type":"eman","az":untiltrot["az"],"alt":untiltrot["alt"],"phi":-simmx[3].get_value_at(untiltbestrefnum, imgnum)})
+			untiltrot = untilt_euler_xform.get_rotation("eman")
+			untilt_euler_xform.set_rotation({"type":"eman","az":untiltrot["az"],"alt":untiltrot["alt"],"phi":-simmx[3].get_value_at(untiltbestrefnum, imgnum)})
 			# Tilt
 			tilt_euler_xform = Transform({"type":"eman","phi":-simmx_tilt[3].get_value_at(tiltbestrefnum, tiltimgnum)})*projections[tiltbestrefnum].get_attr('xform.projection')
-			#tiltrot = tilt_euler_xform.get_rotation("eman")
-			#tilt_euler_xform.set_rotation({"type":"eman","az":tiltrot["az"],"alt":tiltrot["alt"],"phi":-simmx_tilt[3].get_value_at(tiltbestrefnum, tiltimgnum)})
+			tiltrot = tilt_euler_xform.get_rotation("eman")
+			tilt_euler_xform.set_rotation({"type":"eman","az":tiltrot["az"],"alt":tiltrot["alt"],"phi":-simmx_tilt[3].get_value_at(tiltbestrefnum, tiltimgnum)})
 			
 			#Find best solultion takeing sym into accout
 			tiltpars = self.find_bestsymsoln(imgnum, untilt_euler_xform, tilt_euler_xform)
@@ -380,18 +381,20 @@ def run(command):
 		print "Error running:\n%s"%command		    
 		exit(1)
 
-def display_validation_plots(path, radcut, planethres):
+def display_validation_plots(path, radcut, planethres, plotdatalabels=False):
 	from emplot2d import EMPolarPlot2DWidget
 	from emimage2d import EMImage2DWidget
 	from emapplication import EMApp
 	r = []
 	theta = []
+	datap = []
 	try:
 		tpdb = db_open_dict("bdb:%s#perparticletilts"%path)
 		tplist = tpdb["particletilt_list"]
 		for tp in tplist:
 			if tp[3] > planethres:	# if the out of plane threshold is too much
 				continue
+			if plotdatalabels: datap.append(tp[0])
 			r.append(tp[1])
 			theta.append(math.radians(tp[2]))
 		tpdb.close()
@@ -407,7 +410,7 @@ def display_validation_plots(path, radcut, planethres):
 	app = EMApp()
 	if theta and r:
 		plot = EMPolarPlot2DWidget()
-		plot.set_data((theta,r),linewidth=50,radcut=radcut)
+		plot.set_data((theta,r),linewidth=50,radcut=radcut,datapoints=datap)
 		plot.show()
 	if data:
 		image = EMImage2DWidget(data)

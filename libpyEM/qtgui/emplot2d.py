@@ -62,7 +62,7 @@ import sys
 from emshape import *
 import weakref
 from pickle import dumps,loads
-import struct
+import struct, math
 
 import matplotlib
 from matplotlib.backends.backend_agg import FigureCanvasAgg
@@ -691,6 +691,7 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 	Reimplmetation of the EMPlot2DWidget( to make polar plots:
 	"""
 	def __init__(self):
+		self.datap = None
 		EMPlot2DWidget.__init__(self)
 		self.setWindowIcon(QtGui.QIcon(QtGui.QPixmap(ploticon)))
 		
@@ -699,23 +700,43 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 		lc=self.scr2plot(event.x(),event.y())
 		self.lastcx = self.firstcx = event.x()
 		self.lastcy = self.firstcy = event.y()
-		if event.button()==Qt.MidButton:
+		if event.buttons()&Qt.MidButton:
 			filename = QtGui.QFileDialog.getSaveFileName(self, 'Publish or Perish! Save Plot', os.getcwd(), "(*.tiff *.jpeg, *.png)")
 			if filename: # if we cancel
 				self.saveSnapShot(filename)
-		else:
+		elif event.buttons()&Qt.LeftButton:
 			self.valradius = 1.0
 			self.add_shape("Circle",EMShape(("scrcircle",1,0,0,self.firstcx,self.height()-self.firstcy,self.valradius,2.0)))
 			self.updateGL()
+		else:
+			# Find best image
+			x = event.x() - self.width()/2.0
+			y = event.y() - self.height()/2.0
+			radius = math.sqrt(x**2 + y**2)
+			angle = -math.atan2(y,x)
+			scaling = self.width()*(self.plotdims.x1 - self.plotdims.x0)
+			scaledrad = radius*(2.0*self.plotlim[3]/scaling)
+			self.find_image(angle,  scaledrad)
 	
+	def find_image(self, theta, rad):
+		data = self.data["data"]
+		bestdist = float("infinity")
+		for i in xrange(len(data[0])):
+			dist = data[1][i]**2 + rad**2 - 2*data[1][i]*rad*math.cos(data[0][i] - theta)
+			if dist < bestdist:
+				bestdist = dist
+				bestpoint = self.datap[i]
+		print "This point correpsonds to image: %s"%bestpoint
+				
 	def mouseMoveEvent(self, event):
-		lc=self.scr2plot(event.x(),event.y())
-		disp = (self.lastcx - event.x()) + (self.lastcy - event.y())
-		self.valradius += disp
-		self.add_shape("Circle",EMShape(("scrcircle",1,0,0,self.firstcx,self.height()-self.firstcy,self.valradius,2.0)))
-		self.updateGL()
-		self.lastcx = event.x()
-		self.lastcy = event.y()
+		if event.buttons()&Qt.LeftButton:
+			lc=self.scr2plot(event.x(),event.y())
+			disp = (self.lastcx - event.x()) + (self.lastcy - event.y())
+			self.valradius += disp
+			self.add_shape("Circle",EMShape(("scrcircle",1,0,0,self.firstcx,self.height()-self.firstcy,self.valradius,2.0)))
+			self.updateGL()
+			self.lastcx = event.x()
+			self.lastcy = event.y()
 	
 	def mouseReleaseEvent(self, event):
 		pass
@@ -735,7 +756,7 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 			image.save(filename, format)
 		print "Saved %s to disk"%os.path.basename(str(filename))
 		
-	def set_data(self,input_data,key="data",replace=False,quiet=False,color=0,linewidth=1,linetype=0,symtype=-1,symsize=4,radcut=-1):
+	def set_data(self,input_data,key="data",replace=False,quiet=False,color=0,linewidth=1,linetype=0,symtype=-1,symsize=4,radcut=-1,datapoints=None):
 		"""
 		Reimplemtation to set polar data
 		see set_data in EMPlot2DWidget for details
@@ -745,7 +766,8 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 		EMPlot2DWidget.set_data(self,input_data,key=key,replace=replace,quiet=quiet,color=color,linewidth=linewidth,linetype=linetype,symtype=symtype,symsize=symsize)
 		lst = list(self.pparm[key])
 		lst.append(radcut)
-		self.pparm[key] = tuple(lst)
+		self.pparm[key] = tuple(lst) 
+		self.datap = datapoints
 		
 	def render(self):
 		"""
@@ -803,10 +825,14 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 				
 					
 				ax.scatter(theta, r,s=self.pparm[i][3], color=colortypes[self.pparm[i][0]], lw=3)
-			
+				
 			if len(self.pparm[i]) == 8 and self.pparm[i][7] >= 0: 
 				ax.set_rmax(self.pparm[i][7])
-				
+			
+			if self.datap:
+				for i in xrange(len(theta)):
+					ax.annotate(" "+str(self.datap[i]),(theta[i],r[i]),color='#00ff00',weight='bold',horizontalalignment='left')
+			
 			canvas.draw()
 			self.plotimg = canvas.tostring_rgb()  # save this and convert to bitmap as needed
 			
@@ -820,7 +846,8 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 					print 'there is a problem with your matplotlib'
 					return
 			self.plotlim=(ax.get_xlim()[0],ax.get_ylim()[0],ax.get_xlim()[1]-ax.get_xlim()[0],ax.get_ylim()[1]-ax.get_ylim()[0])
-			
+			self.plotdims = ax.get_position()
+
 			if not self.glflags.npt_textures_unsupported():
 				self.__texture_plot(self.plotimg)
 			else:

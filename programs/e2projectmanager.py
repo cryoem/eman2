@@ -75,14 +75,15 @@ class EMProjectManager(QtGui.QMainWindow):
 		grid.addWidget(self.makeTilteBarWidget(), 0, 0, 1, 3)
 		workflowcontrollabel = QtGui.QLabel("Workflow Control", centralwidget)
 		workflowcontrollabel.setFont(font)
+		workflowcontrollabel.setMaximumHeight(20)
 		grid.addWidget(workflowcontrollabel, 1,0)
 		guilabel = QtGui.QLabel("EMAN2 Program Interface", centralwidget)
 		guilabel.setFont(font)
+		guilabel.setMaximumHeight(20)
 		grid.addWidget(guilabel, 1,1)
 				
 		# Make the GUI, Tree and ToolBar
-		grid.addWidget(self.makeStackedWidget(),2,0,1,1)
-		grid.addWidget(self.makeBrowseButtonWidget(),3,0,1,1)
+		grid.addWidget(self.makeStackedWidget(),2,0,2,1)
 		grid.addWidget(self.makeStackedGUIwidget(),2,1,1,1)
 		grid.addWidget(self.makeGUIToolButtons(),2,2,1,1)
 		grid.addWidget(self.makeCMDButtonsWidget(),3,1,1,1)
@@ -93,7 +94,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		# Add splitter to adjust statsus bar
 		vsplitter.addWidget(centralwidget)
 		vsplitter.addWidget(self.statusbar)
-		vsplitter.setSizes([10,1])
+		vsplitter.setSizes([1000,100])
 		
 		self.setCentralWidget(vsplitter)
 		
@@ -271,14 +272,14 @@ class EMProjectManager(QtGui.QMainWindow):
 		"""
 		self.gui_stacked_widget = QtGui.QStackedWidget()
 		# Set the initial height of the browser
-		self.gui_stacked_widget.setMinimumHeight(250)
+		#self.gui_stacked_widget.setMinimumHeight(250)
 		self.gui_stacked_widget.setFrameShape(QtGui.QFrame.StyledPanel)
 		# Blank screen widget
 		self.gui_stacked_widget.addWidget(QtGui.QWidget())
 		self.stackedWidgetHash = {}
 		
 		return self.gui_stacked_widget
-		
+	
 	def makeGUIToolButtons(self):
 		"""
 		Get get ToolBar widget
@@ -286,74 +287,42 @@ class EMProjectManager(QtGui.QMainWindow):
 		toolwidget = QtGui.QFrame()
 		#toolwidget.setFrameShape(QtGui.QFrame.StyledPanel)
 		tbox = QtGui.QVBoxLayout()
-		self.wikibutton = QtGui.QToolButton()
-		self.wikibutton.setIcon(QtGui.QIcon(QtGui.QPixmap(wikiicon)))
-		self.wikibutton.setToolTip("Show Wiki button")
-		self.wikibutton.setMinimumWidth(30)
-		self.wikibutton.setMinimumHeight(30)
-		self.wikibutton.setEnabled(False)
+		self.browsebutton = QtGui.QToolButton()
+		self.browsebutton.setIcon(QtGui.QIcon(QtGui.QPixmap(browseicon)))
+		self.browsebutton.setToolTip("Browse button")
+		self.browsebutton.setMinimumWidth(30)
+		self.browsebutton.setMinimumHeight(30)
 		self.helpbutton = PMToolButton()
 		self.helpbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(helpicon)))
 		self.helpbutton.setToolTip("Help button")
-		self.expertbutton = PMToolButton()
-		self.expertbutton.setDown(False, quiet=True)
-		self.expertbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(experticon)))
-		self.expertbutton.setToolTip("ExpertMode")
-		self.expertbutton.setEnabled(False)
-		self.wizardbutton = QtGui.QToolButton()
-		self.wizardbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(wizardicon)))
-		self.wizardbutton.setToolTip("Form Wizard")
-		self.wizardbutton.setMinimumWidth(30)
-		self.wizardbutton.setMinimumHeight(30)
-		self.wizardbutton.setEnabled(False)
 		self.logbutton = PMToolButton()
 		self.logbutton.setToolTip("Display the note book")
 		self.logbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(noteicon)))
 		self.taskmanagerbutton = PMToolButton()
 		self.taskmanagerbutton.setToolTip("Diaplay the task manager")
 		self.taskmanagerbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(taskicon)))
-		tbox.addWidget(self.wikibutton)
+		tbox.addWidget(self.browsebutton)
 		tbox.addWidget(self.helpbutton)
 		tbox.addWidget(self.logbutton)
 		tbox.addWidget(self.taskmanagerbutton)
-		tbox.addWidget(self.wizardbutton)
-		tbox.addWidget(self.expertbutton)
+		self.makeProgramToolButtons(tbox)
 		tbox.setContentsMargins(0,0,0,0)
 		tbox.setAlignment(QtCore.Qt.AlignTop)
 		toolwidget.setLayout(tbox)
 		
-		QtCore.QObject.connect(self.expertbutton,QtCore.SIGNAL("stateChanged(bool)"),self._on_expertmodechanged)
+		QtCore.QObject.connect(self.browsebutton,QtCore.SIGNAL("clicked()"),self._on_browse)
 		QtCore.QObject.connect(self.helpbutton,QtCore.SIGNAL("stateChanged(bool)"),self._on_helpbutton)
-		QtCore.QObject.connect(self.wikibutton,QtCore.SIGNAL("clicked()"),self._on_wikibutton)
 		QtCore.QObject.connect(self.logbutton,QtCore.SIGNAL("stateChanged(bool)"),self._on_logbutton)
 		QtCore.QObject.connect(self.taskmanagerbutton,QtCore.SIGNAL("stateChanged(bool)"),self._on_taskmgrbutton)
 		
 		return toolwidget
 
-	def _on_expertmodechanged(self, state):
+	def _on_browse(self):
 		""" 
-		Change the GUI upon expert mode toogling
-		""" 
-		if self.gui_stacked_widget.currentIndex() >= 1:	# First widget in the stack is the blank widget
-			self.setProgramExpertMode(int(state)+1)	# If we are able to set the state, then button is avaialble(state = 0), hence we toggle betwen '1', availible and OFF or '2', availible and ON
-			self._set_GUI(self.getProgram(), self.getProgramMode())
-	
-	'''
-	def _on_helpbutton(self, state):
+		Launch the browser 
 		"""
-		Load help info for the current GUI widgetitem
-		"""
-		# If there is wizard help, the use it otherwise load the usage info
-		if self.getProgram() == "programName": return
-		if state:
-			# Set the stacked widget to the help info
-			self.guitexteditbox.setWordWrapMode(QtGui.QTextOption.WordWrap)
-			self.guitexteditbox.setText(self.loadUsage(self.getProgram()))
-			self.gui_stacked_widget.setCurrentIndex(1)
-		else:
-			# Set the stacked widget to the GUI
-			self._set_GUI(self.getProgram(), self.getProgramMode())
-	'''
+		self.window = EMBrowserWidget(withmodal=False,multiselect=False)
+		self.window.show()
 	
 	def _on_helpbutton(self, state):
 		"""
@@ -388,31 +357,6 @@ class EMProjectManager(QtGui.QMainWindow):
 		else:
 			self.taskmanager.hide()
 	
-	def loadUsage(self, program):
-		"""
-		Read in and return the usage from an e2program
-		"""
-		try:
-			f = open(os.getenv("EMAN2DIR")+"/bin/"+program,"r")
-		except:
-			self.statusbar.setMessage("Can't open usage file '%s'"%program)
-			return
-		begin = False
-		helpstr = ""
-		bregex = re.compile('usage\s*=\s*"""')
-		eregex = re.compile('"""')
-		for line in f.xreadlines():
-			if re.search(eregex, line) and begin:
-				helpstr = helpstr + line.strip()
-				break
-			if re.search(bregex, line):
-				begin = True
-			if begin:
-				helpstr = helpstr + line.strip() + " "
-		f.close()
-		
-		return helpstr
-	
 	def loadTheHelp(self):
 		"""
 		Make the help
@@ -436,6 +380,50 @@ class EMProjectManager(QtGui.QMainWindow):
 		if not self.taskmanager:
 			self.taskmanager = TaskManager(self)
 		self.taskmanager.show()
+		
+	def makeProgramToolButtons(self, tbox):
+		"""
+		Make the browse button
+		"""
+		#programtoolwidget = QtGui.QFrame()
+		#programtoolwidget.setFrameShape(QtGui.QFrame.StyledPanel)
+		#tbox = QtGui.QVBoxLayout()
+		self.wikibutton = QtGui.QToolButton()
+		self.wikibutton.setIcon(QtGui.QIcon(QtGui.QPixmap(wikiicon)))
+		self.wikibutton.setToolTip("Show Wiki button")
+		self.wikibutton.setMinimumWidth(30)
+		self.wikibutton.setMinimumHeight(30)
+		self.wikibutton.setEnabled(False)
+		self.expertbutton = PMToolButton()
+		self.expertbutton.setDown(False, quiet=True)
+		self.expertbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(experticon)))
+		self.expertbutton.setToolTip("ExpertMode")
+		self.expertbutton.setEnabled(False)
+		self.wizardbutton = QtGui.QToolButton()
+		self.wizardbutton.setIcon(QtGui.QIcon(QtGui.QPixmap(wizardicon)))
+		self.wizardbutton.setToolTip("Form Wizard")
+		self.wizardbutton.setMinimumWidth(30)
+		self.wizardbutton.setMinimumHeight(30)
+		self.wizardbutton.setEnabled(False)
+		tbox.addWidget(self.wikibutton)
+		tbox.addWidget(self.wizardbutton)
+		tbox.addWidget(self.expertbutton)
+		#programtoolwidget.setLayout(tbox)
+		#tbox.setContentsMargins(0,0,0,0)
+		#tbox.setAlignment(QtCore.Qt.AlignTop)
+		
+		QtCore.QObject.connect(self.wikibutton,QtCore.SIGNAL("clicked()"),self._on_wikibutton)
+		QtCore.QObject.connect(self.expertbutton,QtCore.SIGNAL("stateChanged(bool)"),self._on_expertmodechanged)
+		
+		#return programtoolwidget
+	
+	def _on_expertmodechanged(self, state):
+		""" 
+		Change the GUI upon expert mode toogling
+		""" 
+		if self.gui_stacked_widget.currentIndex() >= 1:	# First widget in the stack is the blank widget
+			self.setProgramExpertMode(int(state)+1)	# If we are able to set the state, then button is avaialble(state = 0), hence we toggle betwen '1', availible and OFF or '2', availible and ON
+			self._set_GUI(self.getProgram(), self.getProgramMode())
 	
 	def loadWiki(self):
 		"""
@@ -444,35 +432,13 @@ class EMProjectManager(QtGui.QMainWindow):
 		import webbrowser
 		webbrowser.open(self.getProgramWikiPage())
 		
-	def makeBrowseButtonWidget(self):
-		"""
-		Make the browse button
-		"""
-		browsewidget = QtGui.QFrame()
-		browsewidget.setFrameShape(QtGui.QFrame.StyledPanel)
-		hbox = QtGui.QHBoxLayout()
-		self.browsebutton = QtGui.QPushButton('Browse')
-		hbox.addWidget(self.browsebutton)
-		browsewidget.setLayout(hbox)
-		hbox.setContentsMargins(4,4,4,4)
-		
-		QtCore.QObject.connect(self.browsebutton,QtCore.SIGNAL("clicked()"),self._on_browse)
-		
-		return browsewidget
-		
-	def _on_browse(self):
-		""" 
-		Launch the browser 
-		"""
-		self.window = EMBrowserWidget(withmodal=False,multiselect=False)
-		self.window.show()
-	
 	def makeCMDButtonsWidget(self):
 		"""
 		Get the e2program interface command buttons widget
 		"""
 		cmdwidget = QtGui.QFrame()
 		cmdwidget.setFrameShape(QtGui.QFrame.StyledPanel)
+		cmdwidget.setMaximumHeight(40)
 		hbox = QtGui.QHBoxLayout()
 		self.cancelbutton = QtGui.QPushButton("Cancel")
 		self.launchbutton = QtGui.QPushButton("Launch")
@@ -533,6 +499,33 @@ class EMProjectManager(QtGui.QMainWindow):
 		self.statusbar.setMessage("Program %s Launched!!!!"%str(cmd).split()[0])
 		
 		return True
+	
+	def loadUsage(self, program):
+		"""
+		Read in and return the usage from an e2program
+		"""
+		try:
+			f = open(os.getenv("EMAN2DIR")+"/bin/"+program,"r")
+		except:
+			self.statusbar.setMessage("Can't open usage file '%s'"%program)
+			return
+		begin = False
+		helpstr = ""
+		bregex = re.compile('usage\s*=\s*"""')
+		eregex = re.compile('"""')
+		for line in f.xreadlines():
+			if re.search(eregex, line) and begin:
+				line = re.sub(eregex, "", line)
+				helpstr = helpstr + line.strip()
+				break
+			if re.search(bregex, line):
+				begin = True
+				line = re.sub(bregex, "", line)
+			if begin:
+				helpstr = helpstr + line.strip() + " "
+		f.close()
+		
+		return helpstr
 		
 	def _add_children(self, toplevel, widgetitem):
 		""" 
@@ -625,8 +618,8 @@ class EMProjectManager(QtGui.QMainWindow):
 		# Only generate the GUI widget once.....
 		if program in self.stackedWidgetHash:
 			# load the widget using value from the correct DB
-			self.gui_stacked_widget.widget(self.stackedWidgetHash[program]).updateWidget()
 			self.gui_stacked_widget.setCurrentIndex(self.stackedWidgetHash[program])
+			self.gui_stacked_widget.widget(self.stackedWidgetHash[program]).updateWidget()
 		else:
 			# OR make the widget
 			self.stackedWidgetHash[program] = self.gui_stacked_widget.count()
@@ -795,9 +788,9 @@ class EMProjectManager(QtGui.QMainWindow):
 		self.PMIcon.setIcon(self.pm_icon)
 
 		# Set buttons
-		self.logbutton.setDown(bool(self.notebook), quiet=True)
-		self.taskmanagerbutton.setDown(bool(self.taskmanager), quiet=True)
-		self.helpbutton.setDown(bool(self.thehelp), quiet=True)
+		self.logbutton.setDown(bool(self.notebook) and self.notebook.isVisible(), quiet=True)
+		self.taskmanagerbutton.setDown(bool(self.taskmanager) and self.taskmanager.isVisible(), quiet=True)
+		self.helpbutton.setDown(bool(self.thehelp) and self.thehelp.isVisible(), quiet=True)
 		
 		# Wikipage
 		if self.getProgramWikiPage():
@@ -814,9 +807,6 @@ class EMProjectManager(QtGui.QMainWindow):
 				self.expertbutton.setDown(False)
 		else:
 			self.expertbutton.setEnabled(False)
-		# Help button should only be down if the textbox widget is displayed
-		#if self.gui_stacked_widget.currentIndex() != 0:
-		#	self.helpbutton.setDown(False, quiet=True)
 	
 class EMAN2StatusBar(QtGui.QTextEdit):
 	"""
@@ -1442,6 +1432,7 @@ class PMProgramWidget(QtGui.QTabWidget):
 		QtGui.QTabWidget.__init__(self)
 		self.pm = weakref.ref(pm)
 		self.cmderrorstate = False
+		self.setMinimumHeight(210) # Size of the tool bar
 		
 		# Add GUI tab
 		self.guiwidget = PMGUIWidget(options, program, pm, mode)
@@ -1459,6 +1450,8 @@ class PMProgramWidget(QtGui.QTabWidget):
 		self.helptexteditbox.viewport().setCursor(QtCore.Qt.ArrowCursor)
 		self.helptexteditbox.setText(self.pm().loadUsage(self.pm().getProgram()))
 		self.addTab(self.helptexteditbox, "Help")
+		
+		self.previoustab = 0
 			
 		QtCore.QObject.connect(self, QtCore.SIGNAL("currentChanged(int)"), self._on_tabchange)
 		
@@ -1489,6 +1482,10 @@ class PMProgramWidget(QtGui.QTabWidget):
 			else:
 				self.cmderrorstate = False
 				self.guitexteditbox.setHtml(self.guiwidget.getCommand())
+		if idx == 0 and self.previoustab == 1:
+			self.guiwidget.updateGUIFromCmd(str(self.guitexteditbox.toPlainText()))
+			
+		self.previoustab = idx
 		
 class PMGUIWidget(QtGui.QScrollArea):
 	"""
@@ -1496,7 +1493,8 @@ class PMGUIWidget(QtGui.QScrollArea):
 	"""
 	def __init__(self, options, program, pm, mode):
 		QtGui.QScrollArea.__init__(self)
-		self.widgetlist = []
+		self.errorstate = False
+		self.widgethash = {}
 		self.cwd  = pm.pm_cwd	# The working directory that were in
 		self.program = program
 		self.db = db_open_dict("bdb:"+str(self.cwd)+"#"+program)
@@ -1540,7 +1538,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 			# Setup each widget
 			self.connect(widget,QtCore.SIGNAL("pmmessage(QString)"),self._on_message)
 			widget.setToolTip(option['help'])
-			self.widgetlist.append(widget)
+			self.widgethash[option['name']] = widget
 			gridbox.addWidget(widget, option['row'], option['col'], self.getRowSpan(option), self.getColSpan(option))
 		
 		# Now make a widget and add it to the scroll area
@@ -1629,23 +1627,49 @@ class PMGUIWidget(QtGui.QScrollArea):
 			self.cwd = thiscwd
 			self.db = db_open_dict("bdb:"+str(self.cwd)+"#"+self.program)
 		# Might enable serval dbs to be loaded, but we will implment this later
-		for widget in self.widgetlist:
+		for widget in self.widgethash.values():
 			# If this is not a value holding widget continue
 			if widget.getArgument() == None: continue
 			if self.db[widget.getName()+widget.getMode()] == None:
-				widget.setValue(widget.initdefault)
+				widget.setValue(widget.initdefault, quiet=True)
 			else:
-				widget.setValue(self.db[widget.getName()+widget.getMode()])
-		
+				widget.setValue(self.db[widget.getName()+widget.getMode()], quiet=True)
+	
+	def updateGUIFromCmd(self, cmd):
+		""" Update the GUI from a command """
+		if self.errorstate or not cmd: return
+		options = re.findall('--\S*',cmd)
+		widgethash = dict(self.widgethash)	# Make a copy of the widget hash
+		for option in options:
+			ov = option.split('=', 1)
+			if len(ov) == 2:
+				self.widgethash[ov[0][2:]].setValue(ov[1])
+			else:
+				self.widgethash[ov[0][2:]].setValue(True)
+			# pop the widget off a copy of the hash
+			del(widgethash[ov[0][2:]])
+		# now do the widgets which are not listed in the above list
+		for name,widget in widgethash.iteritems():
+			if isinstance(widget, PMHeaderWidget):
+				continue
+			if isinstance(widget, PMBoolWidget):
+				widget.setValue(False)
+				continue
+			#otherwise set the widget value to X
+			print name, widget
+			
+			
 	def getCommand(self):
 		#Loop and check for errors and set the DB
+		self.errorstate = False
 		args = self.program
-		for widget in self.widgetlist:
+		for widget in self.widgethash.values():
 			# If this is not a value holding widget continue
 			if widget.getArgument() == None: continue
 			# Check for errors before we launch script
 			if widget.getErrorMessage():
 				self.pm().statusbar.setMessage(self.getErrorMessage())
+				self.errorstate = True
 				return None
 			# Save the value
 			self.db[widget.getName()+widget.getMode()] = widget.getValue()
@@ -1657,7 +1681,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 	def getErrorMessage(self):
 		""" Check for any error messages """
 		errormsg = ""
-		for widget in self.widgetlist:
+		for widget in self.widgethash.values():
 			if widget.getErrorMessage():
 				errormsg += (widget.getErrorMessage()+"<br>")
 		return errormsg
