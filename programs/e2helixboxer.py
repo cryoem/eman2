@@ -222,7 +222,7 @@ def get_particle_centroids(helix_coords, px_overlap, px_length, px_width):
     
     return ptcl_coords
 
-def get_rotated_particles( micrograph, helix_coords, px_overlap = None, px_length = None, px_width = None, gridding = False ):
+def get_rotated_particles( micrograph, helix_coords, px_overlap = None, px_length = None, px_width = None, gridding = False , mic_name=""):
     """
     Gets the overlapping square/rectangular "particles" with "lengths" (could be less than "widths") 
     parallel to the helical axis. They are then rotated so the "lengths" are vertical.
@@ -311,11 +311,12 @@ def get_rotated_particles( micrograph, helix_coords, px_overlap = None, px_lengt
         ptcl["ptcl_source_coord"] = tuple(centroid)
         ptcl["xform.align2d"] = tr
         ptcl["xform.projection"] = Transform() 
+	ptcl["ptcl_source_image"]=mic_name
         particles.append(ptcl)
     
     return particles
 
-def get_unrotated_particles(micrograph, helix_coords, px_overlap = None, px_length = None, px_width = None):
+def get_unrotated_particles(micrograph, helix_coords, px_overlap = None, px_length = None, px_width = None, mic_name=""):
     """
     Gets the image data for each particle, without first rotating the helix and its corresponding particles to be vertical.
     @param micrograph: EMData object that holds the image data for the helix
@@ -347,6 +348,7 @@ def get_unrotated_particles(micrograph, helix_coords, px_overlap = None, px_leng
         ptcl["ptcl_source_coord"] = tuple(centroid)
         ptcl["xform.projection"] = tr
         ptcl["xform.align2d"] = Transform()
+	ptcl["ptcl_source_image"]=mic_name
         particles.append(ptcl)
     return particles
 
@@ -633,9 +635,9 @@ def db_save_particles(micrograph_filepath, ptcl_filepath = None, px_overlap = No
     for coords in helices_dict:
         helix = helices_dict[coords]
         if rotated:
-            helix_particles = get_rotated_particles(micrograph, coords, px_overlap, px_length, px_width, gridding)
+            helix_particles = get_rotated_particles(micrograph, coords, px_overlap, px_length, px_width, gridding, mic_name = micrograph_filename)
         else:
-            helix_particles = get_unrotated_particles(micrograph, coords, px_overlap, px_length, px_width)
+            helix_particles = get_unrotated_particles(micrograph, coords, px_overlap, px_length, px_width,mic_name = micrograph_filename)
         all_particles.append(helix_particles)
     
     save_particles(all_particles, ptcl_filepath, do_edge_norm, stack_file_mode)
@@ -661,6 +663,7 @@ if ENABLE_GUI:
             
             micrograph_filepath = self.parentWidget().micrograph_filepath
             (micrograph_dir, micrograph_filename) = os.path.split(micrograph_filepath)
+	    self.micrograph_filename = micrograph_filename
             self.micrograph_name = os.path.splitext(micrograph_filename)[0]
             self.default_dir = os.getcwd()
             
@@ -910,14 +913,14 @@ if ENABLE_GUI:
                     all_particles = []
                     for coords_key in helices_dict:
                         if self.ptcls_bilinear_rotation_radiobutton.isChecked():
-                            helix_particles = get_rotated_particles(micrograph, coords_key, px_overlap, px_length, px_width, gridding=False)
+                            helix_particles = get_rotated_particles(micrograph, coords_key, px_overlap, px_length, px_width, gridding=False, mic_name=self.micrograph_filename)
                         elif self.ptcls_gridding_rotation_radiobutton.isChecked():
                             side = max(px_length, px_width)
                             #need to prepare the fft volume for gridding at here
-                            helix_particles = get_rotated_particles(micrograph, coords_key, px_overlap, side, side, gridding=True )
+                            helix_particles = get_rotated_particles(micrograph, coords_key, px_overlap, side, side, gridding=True , mic_name=self.micrograph_filename)
                         elif self.ptcls_no_rotation_radiobutton.isChecked():
                             side = max(px_length, px_width)
-                            helix_particles = get_unrotated_particles(micrograph, coords_key, px_overlap, side, side)
+                            helix_particles = get_unrotated_particles(micrograph, coords_key, px_overlap, side, side, mic_name=self.micrograph_filename)
                         all_particles.append(helix_particles)
                     save_particles(all_particles, ptcl_filepath, do_edge_norm, stack_mode)
                 if self.ptcls_coords_groupbox.isChecked():
