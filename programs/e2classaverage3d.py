@@ -465,7 +465,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 		ret=[]
 		
 		for i in range(len(groupslist)):
-			variance = EMData()
+			variance = (groupslist[0][0]).copy_head()
 			if averager[0] == 'mean':
 				averager[1]['sigma'] = variance
 			avgr=Averagers.get(averager[0], averager[1])
@@ -514,7 +514,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 				print "Keep threshold : %f (min=%f  max=%f)"%(thresh,val[0],val[-1])
 
 		# Make variance image if available
-		variance = EMData()
+		variance = EMData(ptcl_file,0).copy_head()
 		if averager[0] == 'mean':
 			averager[1]['sigma'] = variance
 		avgr=Averagers.get(averager[0], averager[1])

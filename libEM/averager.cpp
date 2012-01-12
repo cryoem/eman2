@@ -209,7 +209,7 @@ void ImageAverager::add_image(EMData * image)
 	size_t image_size = (size_t)nx * ny * nz;
 
 	if (nimg == 1) {
-		result = new EMData();
+		result = image->copy_head();
 		result->set_size(nx, ny, nz);
 		sigma_image = params.set_default("sigma", (EMData*)0);
 		ignore0 = params["ignore0"];
@@ -489,9 +489,9 @@ void IterationAverager::add_image( EMData * image)
 	size_t image_size = (size_t)nx * ny * nz;
 
 	if (nimg == 1) {
-		result = new EMData();
+		result = image->copy_head();
 		result->set_size(nx, ny, nz);
-		sigma_image = new EMData();
+		sigma_image = image->copy_head();
 		sigma_image->set_size(nx, ny, nz);
 	}
 
@@ -983,7 +983,7 @@ void CtfAverager::add_image(EMData * image)
 		ny = image0_fft->get_ysize();
 		nz = image0_fft->get_zsize();
 
-		result = new EMData();
+		result = image->copy_head();
 		result->set_size(nx - 2, ny, nz);
 
 
