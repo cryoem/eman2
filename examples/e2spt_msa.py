@@ -46,7 +46,7 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_argument("--ncls", type=str, help="...", default=2)
+	parser.add_argument("--ncls", type=int, help="...", default=2)
 	parser.add_argument("--nbasis", type=int, help="Basis vectors to use", default=3)
 
 	parser.add_argument("--input", type=str, help="The name of the volumes stack that HAVE BEEN ALIGNED to a common reference", default=None)
@@ -62,25 +62,29 @@ def main():
 	parser.add_argument('--output_format', type=str, default='stack', help='''Specify 'single' if you want the sub-volumes to be written to individual files. You MUST still provide an output name in the regular way.\nFor example, if you specify --output=myparticles.hdf\nbut also specify --output_format=single\nthen the particles will be written as individual files named myparticles_000.hdf myparticles_001.hdf...etc''')
 	
 	(options, args) = parser.parse_args()
-		
-	stack_basis = options.input.replace(".hdf","_basis.hdf")
-	stack_projection = options.input.replace(".hdf","_projection.hdf")
 	
-	nbasis =''
+	stack = options.input
+	print "The stack name is", stack
+		
+	stack_basis = stack.replace(".hdf","_basis.hdf")
+	stack_projection = stack.replace(".hdf","_projection.hdf")
+	
 	ncls = 2
 	cmd1=''
 	cmd2=''
 	cmd3=''
 	
-	cmd1 = 'e2msa.py --nbasis=' +  str(nbasis) + ' ' + stack  + ' ' + stack_basis
+	cmd1 = 'e2msa.py --nbasis=' +  str(options.nbasis) + ' ' + stack  + ' ' + stack_basis
 	
-	cmd2 = 'e2basis.py --mean1 project ' + stack_basis + ' ' +  stack + ' ' + stack_projection
+	cmd2 = 'e2basis.py --mean=1 project ' + stack_basis + ' ' +  stack + ' ' + stack_projection
 	
-	cmd3 = 'e2classifykmeans.py --ncls=' + str(ncls) + ' --average --original=' + stack + ' ' + stack_projection
+	cmd3 = 'e2classifykmeans.py --ncls=' + str(options.ncls) + ' --average --original=' + stack + ' ' + stack_projection
 	
 	if cmd1 is not '':
 		print "I will execute the msaer.py on stack", stack
-		os.system(cmd1 + " && " + cmd2 + " && " + cmd3)
+		cmd = cmd1 + " && " + cmd2 + " && " + cmd3
+		print "The command to execute is", cmd
+		os.system(cmd)
 		
 	return()
 	
