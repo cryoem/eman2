@@ -315,7 +315,10 @@ class ClassAvTask(EMTask):
 		# Final alignment to the reference (if there is one)
 		if ref!=None :
 			#ref.process_inplace("normalize.edgemean")
-			ali=align_one(avg,ref,True,self.options["align"],self.options["aligncmp"],self.options["ralign"],self.options["raligncmp"])
+			# This was commented out because the class-average doesn't have CTF parameters (or shouldn't) and
+			# often will be using a comparator which makes use of CTF. Hard-coding the aligner for now
+			#ali=align_one(avg,ref,True,self.options["align"],self.options["aligncmp"],self.options["ralign"],self.options["raligncmp"])
+			ali=align_one(avg,ref,True,("rotate_translate_flip_iterative",{}),("ccc",{}),("refine",{}),("ccc",{}))
 			fxf=ali["xform.align2d"]
 			avg1=avg
 			if options["verbose"]>0 : print "Final realign:",fxf
