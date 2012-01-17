@@ -894,6 +894,7 @@ class EMDirEntry(object):
 			self.filetype="BDB"
 			try:
 				info=db_get_image_info(self.path())
+#				print self.path,info
 				self.nimg=info[0]
 				if self.nimg>0:
 					if info[1][1]==1 : self.dim=str(info[1][0])

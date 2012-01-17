@@ -530,13 +530,14 @@ Takes a bdb: specifier and returns the number of images and image dimensions."""
 			db2=db_open_dict("bdb:%s#%s"%(path,"00image_counts"))
 			
 			# If this is true, we need to update the dictionary
-			if (db2.has_key(dictname) and os.path.getmtime("%s/EMAN2DB/%s.bdb"%(path,dictname))>db2[dictname][0]) or not db2.has_key(dictname) :
+			if (db2.has_key(dictname) and os.path.getmtime("%s/EMAN2DB/%s.bdb"%(path,dictname))>db2[dictname][0]) or not db2.has_key(dictname) or db2[dictname][2][0]==0:
 #				print "update ",dictname,os.path.getmtime("%s/EMAN2DB/%s.bdb"%(path,dictname)),db2[dictname][0],db2.has_key(dictname)
 				db=db_open_dict(fsp,True)
 				try: 
 					im=db[0]
 					sz=(im["nx"],im["ny"],im["nz"])
-				except : sz=(0,0,0)
+				except :
+					sz=(0,0,0)
 				db2[dictname]=(time.time(),len(db),sz)
 				
 			return db2[dictname][1:]
