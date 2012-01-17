@@ -34,6 +34,8 @@
 from EMAN2 import *
 import os, math
 from EMAN2db import EMTask
+from PyQt4 import QtCore, QtGui
+from emplot2d import EMPolarPlot2DWidget
 
 def main():
 	"""Program to validate a reconstruction by the Richard Henderson tilt validation method. A volume to validate, a small stack (~100 imgs) of untilted and ~10-15 degree
@@ -63,10 +65,11 @@ def main():
 	parser.add_argument("--volume", type=str,help="3D volume to validate",default=None, guitype='filebox', browser='EMModelsTable(withmodal=True,multiselect=False)', row=2, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_argument("--untiltdata", type=str,help="Stack of untilted images",default=None, guitype='filebox', browser='EMSetsTable(withmodal=True,multiselect=False)', row=0, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_argument("--tiltdata", type=str,help="Stack of tilted images",default=None, guitype='filebox', browser='EMSetsTable(withmodal=True,multiselect=False)', row=1, col=0, rowspan=1, colspan=2, mode="analysis")
-	parser.add_argument("--align", type=str,help="The name of a aligner to be used in comparing the aligned images",default="translational", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=6, col=0, rowspan=1, colspan=2, mode="analysis")
-	parser.add_argument("--cmp", type=str,help="The name of a 'cmp' to be used in comparing the aligned images",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=7, col=0, rowspan=1, colspan=2, mode="analysis")
-	parser.add_argument("--tiltrange", type=int,help="The angular tiltrange to search",default=15, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="analysis")
-	parser.add_argument("--sym",  type=str,help="The recon symmetry", default="c1", guitype='symbox', row=5, col=1, rowspan=1, colspan=1, mode="analysis")
+	parser.add_argument("--align", type=str,help="The name of a aligner to be used in comparing the aligned images",default="translational", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', expert=True, row=7, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--cmp", type=str,help="The name of a 'cmp' to be used in comparing the aligned images",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', expert=True, row=8, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--docontourplot",action="store_true",help="Compute a contour plot",default=False, guitype='boolbox',row=6,col=0, rowspan=1, colspan=1, expert=True, mode="analysis") 
+	parser.add_argument("--tiltrange", type=int,help="The angular tiltrange to search",default=15, guitype='intbox', row=6, col=1, rowspan=1, colspan=1, expert=True, mode="analysis")
+	parser.add_argument("--sym",  type=str,help="The recon symmetry", default="c1", guitype='symbox', row=5, col=0, rowspan=1, colspan=1, mode="analysis")
 	parser.add_argument("--planethres", type=float, help="Maximum out of plane threshold for the tiltaxis. 0 = perfectly in plane, 1 = normal to plane", default=0.1, guitype='floatbox', row=5, col=0, rowspan=1, mode="gui")
 	parser.add_argument("--datalabels", action="store_true",help="Add data labels to the plot", default=False, guitype='boolbox', row=6, col=0, rowspan=1, mode="gui")
 	parser.add_argument("--maxtiltangle", type=float, help="Maximum tiltangle permitted when finding tilt distances", default=180.0, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="analysis")
@@ -75,18 +78,18 @@ def main():
 	parser.add_argument("--quaternion",action="store_true",help="Use Quaterions for tilt distance computation",default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode='analysis')
 	parser.add_argument("--eulerfile",type=str,help="Euler angles file, to create tiltdistance from pre-aligned particles. Format is: imgnum, name, az, alt, phi",default=None)
 	# options associated with e2projector3d.py
-	parser.add_header(name="projheader", help='Options below this label are specific to e2project', title="### e2project options ###", row=9, col=0, rowspan=1, colspan=2, mode="analysis")
-	parser.add_argument("--delta", type=float,help="The angular step size for alingment", default=20.0, guitype='floatbox', row=10, col=0, rowspan=1, colspan=1, mode="analysis")
+	parser.add_header(name="projheader", help='Options below this label are specific to e2project', title="### e2project options ###", row=10, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--delta", type=float,help="The angular step size for alingment", default=20.0, guitype='floatbox', row=11, col=0, rowspan=1, colspan=1, mode="analysis")
 	# options associated with e2simmx.py
-	parser.add_header(name="simmxheader", help='Options below this label are specific to e2simmx', title="### e2simmx options ###", row=11, col=0, rowspan=1, colspan=2, mode="analysis")
-	parser.add_argument("--simalign",type=str,help="The name of an 'aligner' to use prior to comparing the images (default=rotate_translate)", default="rotate_translate", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=14, col=0, rowspan=1, colspan=2, mode="analysis")
-	parser.add_argument("--simaligncmp",type=str,help="Name of the aligner along with its construction arguments (default=ccc)",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=15, col=0, rowspan=1, colspan=2, mode="analysis")
-	parser.add_argument("--simcmp",type=str,help="The name of a 'cmp' to be used in comparing the aligned images (default=ccc)", default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=13, col=0, rowspan=1, colspan=2, mode="analysis")
-	parser.add_argument("--simralign",type=str,help="The name and parameters of the second stage aligner which refines the results of the first alignment", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine\', 0)', row=16, col=0, rowspan=1, colspan=2, mode="analysis")
-	parser.add_argument("--simraligncmp",type=str,help="The name and parameters of the comparitor used by the second stage aligner. (default=dot).",default="dot", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=17, col=0, rowspan=1, colspan=2, mode="analysis")
-	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes. Defulat = 0, no shrinking", guitype='intbox', row=12, col=0, rowspan=1, colspan=1, mode="analysis")
+	parser.add_header(name="simmxheader", help='Options below this label are specific to e2simmx', title="### e2simmx options ###", row=12, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--simalign",type=str,help="The name of an 'aligner' to use prior to comparing the images (default=rotate_translate)", default="rotate_translate", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=15, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--simaligncmp",type=str,help="Name of the aligner along with its construction arguments (default=ccc)",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=16, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--simcmp",type=str,help="The name of a 'cmp' to be used in comparing the aligned images (default=ccc)", default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=14, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--simralign",type=str,help="The name and parameters of the second stage aligner which refines the results of the first alignment", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine\', 0)', row=17, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--simraligncmp",type=str,help="The name and parameters of the comparitor used by the second stage aligner. (default=dot).",default="dot", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=18, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes. Defulat = 0, no shrinking", guitype='intbox', row=13, col=0, rowspan=1, colspan=1, mode="analysis")
 	
-	parser.add_argument("--parallel",type=str,help="Parallelism string",default=None, guitype='strbox', row=8, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--parallel",type=str,help="Parallelism string",default=None, guitype='strbox', row=9, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
@@ -183,40 +186,40 @@ def main():
 	
 	# Generate tilts from data
 	tiltgenerator.findtilts_fromdata(simmx, simmx_tilt, projections, volume, untiltimgs, tiltimgs) 
-	exit(1)
-
-	# Make contour plot to validate each particle
-	tasks=[]
-	distplot = EMData(options.tiltrange*2+1,options.tiltrange*2+1)
-	distplot.to_zero()
-	for imgnum in xrange(simmx[0].get_ysize()):
-		bestscore = float('inf')
-		bestrefnum = 0
-		for refnum in xrange(simmx[0].get_xsize()):
-			if simmx[0].get_value_at(refnum, imgnum) < bestscore:
-				bestscore = simmx[0].get_value_at(refnum, imgnum)
-				bestrefnum = refnum
-		# Get the euler angle for this particle and call compare to tilt"bdb:%s#
-		euler_xform = projections[bestrefnum].get_attr('xform.projection')
-		tasks.append(CompareToTiltTask(volume, tiltimgs[imgnum], imgnum, euler_xform, simmx[3].get_value_at(bestrefnum, imgnum), distplot, options.tiltrange, 1, options))
+	
+	if options.docontourplot:
+		# Make contour plot to validate each particle
+		tasks=[]
+		distplot = EMData(options.tiltrange*2+1,options.tiltrange*2+1)
+		distplot.to_zero()
+		for imgnum in xrange(simmx[0].get_ysize()):
+			bestscore = float('inf')
+			bestrefnum = 0
+			for refnum in xrange(simmx[0].get_xsize()):
+				if simmx[0].get_value_at(refnum, imgnum) < bestscore:
+					bestscore = simmx[0].get_value_at(refnum, imgnum)
+					bestrefnum = refnum
+			# Get the euler angle for this particle and call compare to tilt"bdb:%s#
+			euler_xform = projections[bestrefnum].get_attr('xform.projection')
+			tasks.append(CompareToTiltTask(volume, tiltimgs[imgnum], imgnum, euler_xform, simmx[3].get_value_at(bestrefnum, imgnum), distplot, options.tiltrange, 1, options))
 		
-	# Farm out the work and hang till finished!
-	tids=etc.send_tasks(tasks)
-	while 1:
-		time.sleep(5)
-		proglist=etc.check_task(tids)
-		tids=[j for i,j in enumerate(tids) if proglist[i]!=100]		# remove any completed tasks from the list we ask about
-		if len(tids)==0: break
+		# Farm out the work and hang till finished!
+		tids=etc.send_tasks(tasks)
+		while 1:
+			time.sleep(5)
+			proglist=etc.check_task(tids)
+			tids=[j for i,j in enumerate(tids) if proglist[i]!=100]		# remove any completed tasks from the list we ask about
+			if len(tids)==0: break
 		
 	
-	# Make scoremx avg
-	scoremxs = EMData.read_images("bdb:%s#scorematrix"%options.path)
-	avgmxavger = Averagers.get('mean')
-	for mx in scoremxs:
-		avgmxavger.add_image(mx)
-	avgmx = avgmxavger.finish()
-	avgmx.write_image("%s/contour.hdf"%options.path)
-	distplot.write_image("%s/distplot.hdf"%options.path)
+		# Make scoremx avg
+		scoremxs = EMData.read_images("bdb:%s#scorematrix"%options.path)
+		avgmxavger = Averagers.get('mean')
+		for mx in scoremxs:
+			avgmxavger.add_image(mx)
+		avgmx = avgmxavger.finish()
+		avgmx.write_image("%s/contour.hdf"%options.path)
+		distplot.write_image("%s/distplot.hdf"%options.path)
 	
 	E2end(logid)
 
@@ -226,7 +229,8 @@ class ComputeTilts:
 		self.symmeties = Symmetries.get(self.options.sym)
 		self.particletilt_list = []
 		self.tdb = db_open_dict("bdb:%s#perparticletilts"%self.options.path)
-		self.test = open("test.dat","w")
+		#self.test = open("test.dat","w")
+		self.eulersfile = open("eulersforxplor.dat", "w")
 		
 	def findtilts_fromdata(self, simmx, simmx_tilt, projections, volume, untiltimgs, tiltimgs):
 		""" Compute tiltdistances based on data """
@@ -299,8 +303,8 @@ class ComputeTilts:
 						besttiltaxis = math.degrees(math.atan2(tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n1"]))
 						anglefound = True
 					
-				self.test.write("\t%f %f %f %f\n"%(tiltxform.get_rotation("spin")["Omega"],tiltxform.get_rotation("spin")["n1"],tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n3"]))
-				self.test.write("\t%f %f %f\n"%(tiltxform.get_rotation("eman")["az"],tiltxform.get_rotation("eman")["alt"],tiltxform.get_rotation("eman")["phi"]))
+				#self.test.write("\t%f %f %f %f\n"%(tiltxform.get_rotation("spin")["Omega"],tiltxform.get_rotation("spin")["n1"],tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n3"]))
+				#self.test.write("\t%f %f %f\n"%(tiltxform.get_rotation("eman")["az"],tiltxform.get_rotation("eman")["alt"],tiltxform.get_rotation("eman")["phi"]))
 		else:
 			bestinplane = 180.0
 			for sym in self.symmeties.get_syms():
@@ -311,19 +315,21 @@ class ComputeTilts:
 						besttiltangle = tiltxform.get_rotation("eman")["alt"]
 						besttiltaxis = (tiltxform.get_rotation("eman")['az'] + (-tiltxform.get_rotation("eman")['phi'] % 360))/2.0
 						anglefound = True
-				
-				self.test.write("\t%f %f %f %f\n"%(tiltxform.get_rotation("spin")["Omega"],tiltxform.get_rotation("spin")["n1"],tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n3"]))
-				self.test.write("\t%f %f %f Ip %f\n"%(tiltxform.get_rotation("eman")["az"],tiltxform.get_rotation("eman")["alt"],tiltxform.get_rotation("eman")["phi"], bestinplane))
+				#self.test.write("\t%f %f %f %f\n"%(tiltxform.get_rotation("spin")["Omega"],tiltxform.get_rotation("spin")["n1"],tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n3"]))
+				#self.test.write("\t%f %f %f Ip %f\n"%(tiltxform.get_rotation("eman")["az"],tiltxform.get_rotation("eman")["alt"],tiltxform.get_rotation("eman")["phi"], bestinplane))
 			
 		if anglefound:
-			self.test.write("The best angle is %f with a tiltaxis of %f\n"%(besttiltangle,besttiltaxis))
+			#self.test.write("The best angle is %f with a tiltaxis of %f\n"%(besttiltangle,besttiltaxis))
+			rot = untilt_euler_xform.get_rotation('eman')
+			self.eulersfile.write("%d 2 %3.2f %3.2f\n"%(imgnum, rot['alt'], rot['az'])) 
 			self.particletilt_list.append([imgnum, besttiltangle,besttiltaxis,bestinplane])
 			return [besttiltangle,besttiltaxis,bestinplane]
 		else:
 			return [0.0, 0.0, 0.0]
 		
 	def finish(self):
-		self.test.close()
+		#self.test.close()
+		self.eulersfile.close()
 		self.tdb["particletilt_list"] = self.particletilt_list
 		self.tdb.close()
 	
@@ -382,7 +388,6 @@ def run(command):
 		exit(1)
 
 def display_validation_plots(path, radcut, planethres, plotdatalabels=False):
-	from emplot2d import EMPolarPlot2DWidget
 	from emimage2d import EMImage2DWidget
 	from emapplication import EMApp
 	r = []
@@ -409,13 +414,77 @@ def display_validation_plots(path, radcut, planethres, plotdatalabels=False):
 	if not data and not (theta and r): return
 	app = EMApp()
 	if theta and r:
-		plot = EMPolarPlot2DWidget()
-		plot.set_data((theta,r),linewidth=50,radcut=radcut,datapoints=datap)
+		#plot = EMPolarPlot2DWidget()
+		plot = EMValidationPlot()
+		plot.set_data((theta,r),50,radcut,datap)
+		#plot.set_data((theta,r),linewidth=50,radcut=radcut,datapoints=datap)
 		plot.show()
 	if data:
 		image = EMImage2DWidget(data)
 		image.show()
 	app.exec_()
+
+class EMValidationPlot(QtGui.QWidget):
+	"""Make a plot to display validation info"""
+	def __init__(self):
+		QtGui.QWidget.__init__(self)
+		box = QtGui.QVBoxLayout()
+		self.polarplot = EMPolarPlot2DWidget()
+		self.polarplot.setMinimumHeight(50)
+		self.polarplot.setMinimumWidth(50)
+		self.resize(480,580)
+		
+		meanAngLabel = QtGui.QLabel("Mean Tilt Angle") 
+		self.meanAngle = QtGui.QLineEdit("")
+		meanAxisLabel = QtGui.QLabel("Mean Tilt Axis") 
+		self.meanAxis = QtGui.QLineEdit("")
+		rmsdAngLabel = QtGui.QLabel("RMSD Tilt Angle") 
+		self.rmsdAngle = QtGui.QLineEdit("")
+		rmsdAxisLabel = QtGui.QLabel("RMSD Tilt Axis") 
+		self.rmsdAxis = QtGui.QLineEdit("")
+		pointsLabel = QtGui.QLabel("Num points")
+		self.points = QtGui.QLineEdit("")
+		self.pointlabel = QtGui.QLabel("Right click to pick a point")
+		
+		
+		frame = QtGui.QFrame()
+		frame.setFrameShape(QtGui.QFrame.StyledPanel)
+		frame.setMaximumHeight(100)
+		grid = QtGui.QGridLayout()
+		grid.addWidget(meanAngLabel, 0, 0)
+		grid.addWidget(self.meanAngle, 0, 1)
+		grid.addWidget(meanAxisLabel, 0, 2)
+		grid.addWidget(self.meanAxis, 0, 3)
+		grid.addWidget(rmsdAngLabel , 1, 0)
+		grid.addWidget(self.rmsdAngle, 1, 1)
+		grid.addWidget(rmsdAxisLabel, 1, 2)
+		grid.addWidget(self.rmsdAxis, 1, 3)
+		grid.addWidget(self.pointlabel, 2, 0, 1, 2)
+		grid.addWidget(pointsLabel, 2, 2)
+		grid.addWidget(self.points, 2, 3)
+		frame.setLayout(grid)
+		
+		box.addWidget(self.polarplot)
+		box.addWidget(frame)
+		self.setLayout(box)
+		self.connect(self.polarplot, QtCore.SIGNAL('clusterStats'), self._on_stats)
+		self.connect(self.polarplot, QtCore.SIGNAL('pointIdenity(int)'), self._on_point)
+		
+	def _on_stats(self, stats):
+		""" Set the selected stats """
+		self.meanAngle.setText(str(round(stats[1],2)))
+		self.meanAxis.setText(str(round(stats[0],2)))
+		self.rmsdAngle.setText(str(round(stats[3],2)))
+		self.rmsdAxis.setText(str(round(stats[2],2)))
+		self.points.setText(str(stats[4]))
+		
+	def _on_point(self, point):
+		""" Set the selected point"""
+		self.pointlabel.setText("You selected the point: %s"%str(point))
+		
+	def set_data(self, data, linewidth, radcut, datapoints):
+		self.polarplot.set_data(data, linewidth=linewidth, radcut=radcut, datapoints=datapoints)
+		
 		
 if __name__ == "__main__":
 	main()

@@ -286,6 +286,7 @@
     "CHILDREN": [
       {
         "ICON": "single_image_3d", 
+        "EXPERT": 1,
         "MODE": "analysis",
         "PROGRAM": "e2tiltvalidate.py", 
         "NAME": "Run e2tiltvalidate",

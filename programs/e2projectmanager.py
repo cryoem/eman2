@@ -1491,6 +1491,8 @@ class PMGUIWidget(QtGui.QScrollArea):
 	def __init__(self, options, program, pm, mode):
 		QtGui.QScrollArea.__init__(self)
 		self.errorstate = False
+		# I need both an ordered list and an associavite means of accessing the widgets
+		self.widgetlist = []
 		self.widgethash = {}
 		self.cwd  = pm.pm_cwd	# The working directory that were in
 		self.program = program
@@ -1536,6 +1538,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 			self.connect(widget,QtCore.SIGNAL("pmmessage(QString)"),self._on_message)
 			widget.setToolTip(option['help'])
 			self.widgethash[option['name']] = widget
+			self.widgetlist.append(widget)
 			gridbox.addWidget(widget, option['row'], option['col'], self.getRowSpan(option), self.getColSpan(option))
 		
 		# Now make a widget and add it to the scroll area
@@ -1624,7 +1627,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 			self.cwd = thiscwd
 			self.db = db_open_dict("bdb:"+str(self.cwd)+"#"+self.program)
 		# Might enable serval dbs to be loaded, but we will implment this later
-		for widget in self.widgethash.values():
+		for widget in self.widgetlist:
 			# If this is not a value holding widget continue
 			if widget.getArgument() == None: continue
 			if self.db[widget.getName()+widget.getMode()] == None:
@@ -1675,7 +1678,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 		#Loop and check for errors and set the DB
 		self.errorstate = False
 		args = self.program
-		for widget in self.widgethash.values():
+		for widget in self.widgetlist:
 			# If this is not a value holding widget continue
 			if widget.getArgument() == None: continue
 			# Check for errors before we launch script

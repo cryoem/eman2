@@ -1925,10 +1925,11 @@ class EMImageInspector2D(QtGui.QWidget):
 
 
 	def do_snapshot(self,du) :
-		if self.target().data==None : return
+		if self.target().data==None or self.target() == None: return
 		fsp=QtGui.QFileDialog.getSaveFileName(self, "Select output file, .pgm, .ppm, .jpeg, .png or .tiff only")
 		fsp=str(fsp)
 		# Just grab the framebuffer, as a QTImage, and save as tiff
+		self.target().update()
 		if fsp[-5:]==".jpeg" or fsp[-5:]==".tiff":
 			image = self.target().grabFrameBuffer()
 			image.save(fsp,str(fsp[-4:]))

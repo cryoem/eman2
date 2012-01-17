@@ -127,7 +127,7 @@ class EMPlot2DWidget(EMGLWidget):
 		self.render()
 		
 	def resizeGL(self, width, height):
-#		print "resize ",self.width()
+		#print "resize ",self.width(), self.height()
 		side = min(width, height)
 		GL.glViewport(0,0,self.width(),self.height())
 		
@@ -697,27 +697,38 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 		
 	def mousePressEvent(self, event):
 		#Save a snapshot of the scene
+		self.clusterorigin_rad = None
+		self.clusterorigin_theta = None
 		lc=self.scr2plot(event.x(),event.y())
 		self.lastcx = self.firstcx = event.x()
 		self.lastcy = self.firstcy = event.y()
+		x = self.firstcx - self.width()/2.0
+		y = self.firstcy - self.height()/2.0
 		if event.buttons()&Qt.MidButton:
 			filename = QtGui.QFileDialog.getSaveFileName(self, 'Publish or Perish! Save Plot', os.getcwd(), "(*.tiff *.jpeg, *.png)")
 			if filename: # if we cancel
 				self.saveSnapShot(filename)
 		elif event.buttons()&Qt.LeftButton:
+			self.clusterorigin_rad = self._computeRadius(x,y)
+			self.clusterorigin_theta = self._computeTheta(x,y)
 			self.valradius = 1.0
 			self.add_shape("Circle",EMShape(("scrcircle",1,0,0,self.firstcx,self.height()-self.firstcy,self.valradius,2.0)))
 			self.updateGL()
 		else:
 			# Find best image
-			x = event.x() - self.width()/2.0
-			y = event.y() - self.height()/2.0
-			radius = math.sqrt(x**2 + y**2)
-			angle = -math.atan2(y,x)
-			scaling = self.width()*(self.plotdims.x1 - self.plotdims.x0)
-			scaledrad = radius*(2.0*self.plotlim[3]/scaling)
-			self.find_image(angle,  scaledrad)
+			self.find_image(self._computeTheta(x,y), self._computeRadius(x,y))
 	
+	def _computeRadius(self, x, y):
+		"""Return the radius of two x and y points """
+		radius = math.sqrt(x**2 + y**2)
+		scaling = self.width()*(self.plotdims.x1 - self.plotdims.x0)
+		scaledrad = radius*(2.0*self.plotlim[3]/scaling)
+		return  scaledrad
+		
+	def _computeTheta(self, x, y):
+		""" Compute the theta angle for a given x and y"""
+		return  -math.atan2(y,x)
+		
 	def find_image(self, theta, rad):
 		data = self.data["data"]
 		bestdist = float("infinity")
@@ -726,7 +737,8 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 			if dist < bestdist:
 				bestdist = dist
 				bestpoint = self.datap[i]
-		print "This point correpsonds to image: %s"%bestpoint
+		#print "This point correpsonds to image: %s"%bestpoint
+		self.emit(QtCore.SIGNAL("pointIdenity(int)"), bestpoint)
 				
 	def mouseMoveEvent(self, event):
 		if event.buttons()&Qt.LeftButton:
@@ -737,10 +749,48 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 			self.updateGL()
 			self.lastcx = event.x()
 			self.lastcy = event.y()
-	
+			#If we are drawing a cluster circle, then compute its radius for use in find circumscribed particles
+			if self.clusterorigin_rad:
+				x = event.x() - self.width()/2.0
+				y = event.y() - self.height()/2.0
+				rad = self._computeRadius(x,y)
+				self.clusterradius = self.clusterorigin_rad**2 + rad**2 - 2*self.clusterorigin_rad*rad*math.cos(self._computeTheta(x,y) - self.clusterorigin_theta)
+				
 	def mouseReleaseEvent(self, event):
-		pass
-	
+		# Find all particles within the circle
+		if self.clusterorigin_rad:
+			pcount = 0
+			sigmaAngSin = 0.0
+			sigmaAngCos = 0.0
+			sigmaRad = 0.0
+			statsArray = []
+			data = self.data["data"]
+			# Compute mean angle and radius
+			for i in xrange(len(data[0])):
+				dist = data[1][i]**2 + self.clusterorigin_rad**2 - 2*data[1][i]*self.clusterorigin_rad*math.cos(data[0][i] - self.clusterorigin_theta)
+				if dist < self.clusterradius:
+					# We need to compute mean of angle
+					sigmaAngSin += math.sin(data[0][i])
+					sigmaAngCos += math.cos(data[0][i])
+					sigmaRad += data[1][i]
+					statsArray.append([math.sin(data[0][i]), math.cos(data[0][i]), data[1][i]])
+					pcount += 1
+			meanAngle = math.degrees(math.atan2(sigmaAngSin/pcount,sigmaAngCos/pcount))
+			meanRad = sigmaRad/pcount
+			#print "Mean Angle: %3.2f, Mean Rad: %3.2f, Num particles: %d"%(meanAngle, meanRad, pcount)
+			# Compute RMSD angle and radius
+			varAngSin = 0.0
+			varAngCos = 0.0
+			varRad = 0.0
+			for i,sa in enumerate(statsArray):
+				varAngSin += (sa[0]-sigmaAngSin/pcount)**2
+				varAngCos += (sa[1]-sigmaAngSin/pcount)**2
+				varRad += (sa[2]-sigmaRad/pcount)**2
+			rmsdAngle = math.degrees(math.atan2(math.sqrt(varAngSin/pcount),math.sqrt(varAngCos/pcount)))
+			rmsdRad = math.sqrt(varRad/pcount)
+			#print "RMSD Angle: %3.2f, RMSD Rad %3.2f"%(rmsdAngle, rmsdRad)
+			self.emit(QtCore.SIGNAL("clusterStats"), [meanAngle,meanRad,rmsdAngle,rmsdRad,pcount])
+			
 	def saveSnapShot(self, filename, format="tiff"):
 		"""
 		Save the frame buffer to an image file
