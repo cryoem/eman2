@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Steven Ludtke  2/8/2011 (rewritten)
+# Author: Steven Ludtke  2/8/2011 (rewritten), Jesus Galaz 7/1/2011
 # Author: John Flanagan  9/7/2011 (helixboxer)
 # Copyright (c) 2011- Baylor College of Medicine
 #
@@ -47,10 +47,152 @@ from emscene3d import EMScene3D
 from emdataitem3d import EMDataItem3D, EMIsosurface
 from emshape import EMShape
 from valslider import *
-from sys import argv #jesus
+from sys import argv
 
 
+def main():
+	progname = os.path.basename(sys.argv[0])
+	usage = """prog [options] <Volume file>
 
+	WARNING: This program still under development.
+	
+	Tomography 3-D particle picker and annotation tool. Still under development."""
+
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+
+	parser.add_header(name="tbheader", help='Options below this label are specific to e2tomoboxer', title="### e2tomoboxer options ###", row=1, col=0, rowspan=1, colspan=3)
+	parser.add_pos_argument(name="tomogram",help="The tomogram to use for boxing.", default="", guitype='filebox', browser="EMTomoDataTable(withmodal=True,multiselect=False)", positional=True, row=0, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=32)
+	
+	parser.add_argument("--centerbox", action="store_true", default=False, help='Will apply xform.centerofmass to the boxed subvolumes before the final extraction.')
+
+	parser.add_argument("--path",type=str,help="Pathname to save data to",default="subtomograms")
+	parser.add_argument("--inmemory",action="store_true",default=False,help="This will read the entire tomogram into memory. Much faster, but you must have enough ram !", guitype='boolbox', row=2, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--yshort",action="store_true",default=False,help="This means you have a file where y is the short axis", guitype='boolbox', row=2, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--apix",type=float,help="Override the A/pix value stored in the tomogram header",default=0.0, guitype='floatbox', row=3, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--helixboxer",action="store_true",default=False,help="Helix Boxer Mode", guitype='boolbox', row=2, col=2, rowspan=1, colspan=1)
+		
+	parser.add_argument('--bin', type=int, default=1, help="""Specify the binning/shrinking factor you want to use (for X,Y and Z) when opening the tomogram for boxing. \nDon't worry, the sub-volumes will be extracted from the UNBINNED tomogram. \nIf binx, biny or binz are also specified, they will override the general bin value for the corresponding X, Y or Z directions""", guitype='intbox', row=3, col=1, rowspan=1, colspan=1)
+	
+	parser.add_argument("--lowpass",type=int,help="Resolution (integer, in Angstroms) at which you want to apply a gaussian lowpass filter to the tomogram prior to loading it for boxing",default=0, guitype='intbox', row=3, col=2, rowspan=1, colspan=1)
+	parser.add_argument("--preprocess",type=str,help="""A processor (as in e2proc3d.py) to be applied to the tomogram before opening it. \nFor example, a specific filter with specific parameters you might like. \nType 'e2proc3d.py --processors' at the commandline to see a list of the available processors and their usage""",default=None)
+	
+	parser.add_argument('--reverse_contrast', action="store_true", default=False, help='''This means you want the contrast to me inverted while boxing, AND for the extracted sub-volumes.\nRemember that EMAN2 **MUST** work with "white" protein. You can very easily figure out what the original color\nof the protein is in your data by looking at the gold fiducials or the edge of the carbon hole in your tomogram.\nIf they look black you MUST specify this option''')
+	
+	#parameters for commandline boxer
+	
+	parser.add_argument('--coords', type=str, default='', help='Provide a coordinates file that contains the center coordinates of the sub-volumes you want to extract, to box from the command line')
+	
+	parser.add_argument('--cbin', type=int, default=1, help='''Specifies the scale of the coordinates respect to the actual size of the tomogram where you want to extract the particles from.\nFor example, provide 2 if you recorded the coordinates from a tomogram that was binned by 2, \nbut want to extract the sub-volumes from the UNbinned version of that tomogram''')
+
+	parser.add_argument('--subset', type=int, default=0, help='''Specify how many sub-volumes from the coordinates file you want to extract; e.g, if you specify 10, the first 10 particles will be boxed.\n0 means "box them all" because it makes no sense to box none''')
+	parser.add_argument('--output', type=str, default='stack.hdf', help="Specify the name of the stack file where to write the extracted sub-volumes")
+	parser.add_argument('--output_format', type=str, default='stack', help='''Specify 'single' if you want the sub-volumes to be written to individual files. You MUST still provide an output name in the regular way.\nFor example, if you specify --output=myparticles.hdf\nbut also specify --output_format=single\nthen the particles will be written as individual files named myparticles_000.hdf myparticles_001.hdf...etc''')
+	
+	parser.add_argument('--swapyz', action="store_true", default=False, help='''This means that the coordinates file and the actual tomogram do not agree regarding which is the "short" direction.\nFor example, the coordinates file migh thave a line like this:\n1243 3412 45\nwhere clearly the "short" direction is Z; yet, if in the actual tomogram the short direction is Y, as they come out fromIMOD by default, then the line should have been:\n1243 45 3412\n''')
+	parser.add_argument("--newwidget",action="store_true",default=False,help="Use the new 3D widgetD. Highly recommended!!!!")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+
+	global options
+	(options, args) = parser.parse_args()
+		
+	if len(args) != 1: 
+		parser.error("You must specify a single volume data file on the command-line.")
+	if not file_exists(args[0]): 
+		parser.error("%s does not exist" %args[0])
+
+	if options.coords:
+		commandline_tomoboxer(args[0],options.coords,options.subset,options.boxsize,options.cbin,options.output,options.output_format,options.swapyz,options.reverse_contrast,options.centerbox)
+	else:	
+	
+		# Lets save our subtomograms to a diectory called 'subtomogRAMS'
+		subtomosdir = os.path.join(".",options.path)
+		if not os.access(subtomosdir, os.R_OK):
+			os.mkdir(options.path)
+		
+		img = args[0]
+					
+		app = EMApp()
+		if options.inmemory: 
+			#img = EMData(args[0],0)
+			if options.bin > 1:
+				print "The tomogram is being shrunk by a factor of %d" %(options.bin)
+				#img = img.process('math.meanshrink',{'n':options.bin})
+
+				imgnew = img.replace('.','_bin' + str(options.bin) + '.')
+				cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --process=math.meanshrink:n=' + str(options.bin)
+				os.system(cmd)	
+				
+				print "Reading tomogram. Please wait."
+											#If the tomogram will be binned, there's no need to load the fulll version
+				img = EMData(imgnew,0)					#and bin it here. That's TOO slow. It's best to do so at the commandline.
+				cmd = 'rm ' + imgnew					#Remove "temporary" binned tomogram after loading it to memory.
+			else:
+				print "You better have A LOT of memory (more than 8GB) if this is an unbinned 4k x 4k x 0.5k tomogram, because I'm loading it UNBINNED/un-shrunk. Please wait"
+				img = EMData(img,0)
+			
+			if options.reverse_contrast:
+				img = img*(-1)
+				print "The contrast of the tomogram has been reversed"
+				
+			if options.lowpass:
+				filt=1.0/options.lowpass
+				print "The tomogram is being low pass filtered to %d Angstroms resolution" %(options.lowpass)
+				img = img.process('filter.lowpass.gauss',{'cutoff_freq':filt})
+				
+			print "Done !"
+			
+			boxer = EMTomoBoxer(app,data=img,yshort=options.yshort,boxsize=options.boxsize,bin=options.bin,contrast=options.reverse_contrast,center=options.centerbox)
+		else : 
+	#		boxer=EMTomoBoxer(app,datafile=args[0],yshort=options.yshort,apix=options.apix,boxsize=options.boxsize)		#jesus
+			img=args[0]
+			
+			
+			'''The modd variable is used as a "filter" that determines whether a "modified" tomogram needs to be deleted prior to extracting boxes from disk.
+			Because boxing from disk does NOT open the whole tomogram, a modified copy needs to be generated and written to file when you want to find
+			particles in a binned or pre-low pass filtered tomogram, BUT still extract from the raw tomogram'''
+			modd = False
+			if options.bin > 1:
+				imgnew = img
+				if '_edtedtemp.' not in img:
+					imgnew = img.replace('.','_editedtemp.')
+				cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --process=math.meanshrink:n=' + str(options.bin)
+				os.system(cmd)
+				img = imgnew
+				modd = True
+				
+			if options.reverse_contrast:
+				imgnew = img
+				if '_edtedtemp.' not in img:
+					imgnew = img.replace('.','_editedtemp.')
+				cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --mult=-1'
+				os.system(cmd)
+				img = imgnew
+				modd = True
+
+			if options.lowpass:
+				imgnew = img
+				if '_edtedtemp.' not in img:
+					imgnew = img.replace('.','_editedtemp.')
+				filt=1.0/options.lowpass
+				
+				imghdr = EMData(img,1,True)
+				tapix = imghdr['apix_x']
+				if options.apix:
+					tapix = options.apix
+				
+				cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --process=filter.lowpass.gauss:cutoff_freq=' + str(filt) + ':apix=' + str(tapix)
+				os.system(cmd)
+				img = imgnew
+				modd = True
+			
+			print "The bin factor default is", options.bin
+			boxer=EMTomoBoxer(app,datafile=img,yshort=options.yshort,apix=options.apix,boxsize=options.boxsize,bin=options.bin,contrast=options.reverse_contrast,center=options.centerbox,mod=modd)
+			
+		boxer.show()
+		app.execute()
+	return()
 
 """
 This function is called to extract sub-volumes from the RAW tomogram, regardless
@@ -59,8 +201,8 @@ binned and/or lowpass filtered).
 It is also called when boxing from the commandline, without GUI usage, as when you already have
 a coordinates file
 """
-def unbinned_extractor(boxsize,x,y,z,cbin,contrast,tomogram=argv[1]):
-	print "The tomogram to open in the unbinned extractor is", tomogram
+def unbinned_extractor(boxsize,x,y,z,cbin,contrast,center,tomogram=argv[1]):
+	
 	tomo_header=EMData(tomogram,0,True)
 	print "Which has a size of", tomo_header['nx'],tomo_header['ny'],tomo_header['nz']
 	#boxsize=boxsize*cbin
@@ -72,15 +214,29 @@ def unbinned_extractor(boxsize,x,y,z,cbin,contrast,tomogram=argv[1]):
 	e = EMData()
 	e.read_image(tomogram,0,False,r)
 	
+	if center:
+		ec = e.process('xform.centerofmass')
+		trans = ec['xform.align3d'].get_trans()
+		tx = trans[0]
+		ty = trans[1]
+		tz = trans[2]
+		print "I will apply these translations in trying to center the particles", tx,ty,tz
+		print "The old coordinates were", x, y, z
+		
+		x = x - tx				
+		y = y - ty
+		z = z - tz
+		print "Thus the new ones are", x, y, z 
+		
+		r = Region((2*x - boxsize)/2,(2*y - boxsize)/2, (2*z - boxsize)/2, boxsize, boxsize, boxsize)
+		e = EMData()
+		e.read_image(tomogram,0,False,r)
+	
 	print "The extracted particle has these dimensions", e['nx'],e['ny'],e['nz']
 	print "And this mean", e['mean']
 	
 	if contrast:
 		e=e*-1
-		
-	#e.process_inplace("xform",{"transform":Transform({"type":"eman","alt":90.0})})
-	#e.process_inplace("xform.flip",{"axis":"z"})
-	#e=e.process('normalize.edgemean')
 	
 	return(e)
 
@@ -89,7 +245,7 @@ This function enables extracting sub-volumes from the command line, without open
 Usually used when "re-extracting" sub-volumes (for whatever reason) from a coordinates file previously generated.
 It allows for extraction of smaller sub-sets too.
 """
-def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,output,output_format,swapyz,contrast):
+def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,output,output_format,swapyz,contrast,center):
 
 
 	clines = open(coordinates,'r').readlines()
@@ -131,7 +287,7 @@ def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,output,output
 
 		print "The coordinates for particle#%d are x=%d, y=%d, z=%d " % (i,x,y,z)
 
-		e=unbinned_extractor(boxsize,x,y,z,cbin,contrast)
+		e=unbinned_extractor(boxsize,x,y,z,cbin,contrast,center)
 
 		#IF the boxed out particle is NOT empty, perform BASIC RAW-PARTICLE EDITING: contrast reversak and normalization 
 		#Sometimes empty boxes are picked when boxing from the commandline if yshort isn't specified but should have, 
@@ -178,174 +334,6 @@ def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,output,output
 
 
 
-def main():
-	progname = os.path.basename(sys.argv[0])
-	usage = """prog [options] <Volume file>
-
-	WARNING: This program still under development.
-	
-	Tomography 3-D particle picker and annotation tool. Still under development."""
-
-	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-
-	parser.add_header(name="tbheader", help='Options below this label are specific to e2tomoboxer', title="### e2tomoboxer options ###", row=1, col=0, rowspan=1, colspan=3)
-	parser.add_pos_argument(name="tomogram",help="The tomogram to use for boxing.", default="", guitype='filebox', browser="EMTomoDataTable(withmodal=True,multiselect=False)", positional=True, row=0, col=0, rowspan=1, colspan=3)
-	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=32)
-	parser.add_argument("--path",type=str,help="Pathname to save data to",default="subtomograms")
-	parser.add_argument("--inmemory",action="store_true",default=False,help="This will read the entire tomogram into memory. Much faster, but you must have enough ram !", guitype='boolbox', row=2, col=1, rowspan=1, colspan=1)
-	parser.add_argument("--yshort",action="store_true",default=False,help="This means you have a file where y is the short axis", guitype='boolbox', row=2, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--apix",type=float,help="Override the A/pix value stored in the tomogram header",default=0.0, guitype='floatbox', row=3, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_argument("--helixboxer",action="store_true",default=False,help="Helix Boxer Mode", guitype='boolbox', row=2, col=2, rowspan=1, colspan=1)
-		
-	parser.add_argument('--bin', type=int, default=1, help="""Specify the binning/shrinking factor you want to use (for X,Y and Z) when opening the tomogram for boxing. \nDon't worry, the sub-volumes will be extracted from the UNBINNED tomogram. \nIf binx, biny or binz are also specified, they will override the general bin value for the corresponding X, Y or Z directions""", guitype='intbox', row=3, col=1, rowspan=1, colspan=1)
-	
-	parser.add_argument("--lowpass",type=int,help="Resolution (integer, in Angstroms) at which you want to apply a gaussian lowpass filter to the tomogram prior to loading it for boxing",default=0, guitype='intbox', row=3, col=2, rowspan=1, colspan=1)
-	parser.add_argument("--preprocess",type=str,help="""A processor (as in e2proc3d.py) to be applied to the tomogram before opening it. \nFor example, a specific filter with specific parameters you might like. \nType 'e2proc3d.py --processors' at the commandline to see a list of the available processors and their usage""",default=None)
-	
-	#parser.add_argument('--binx', type=int, default=1, help="Specify the binning/shrinking factor to use in X when opening the tomogram for boxing. Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram")
-	#parser.add_argument('--biny', type=int, default=1, help="Specify the binning/shrinking factor to use in Y when opening the tomogram for boxing. Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram")
-	#parser.add_argument('--binz', type=int, default=1, help="Specify the binning/shrinking factor to use in Z when opening the tomogram for boxing. Don't worry, the sub-volumes will be extracted from the UNBINNED tomogram")
-	
-	parser.add_argument('--reverse_contrast', action="store_true", default=False, help='''This means you want the contrast to me inverted while boxing, AND for the extracted sub-volumes.\nRemember that EMAN2 **MUST** work with "white" protein. You can very easily figure out what the original color\nof the protein is in your data by looking at the gold fiducials or the edge of the carbon hole in your tomogram.\nIf they look black you MUST specify this option''')
-	
-	#parameters for commandline boxer
-	
-	parser.add_argument('--coords', type=str, default='', help='Provide a coordinates file that contains the center coordinates of the sub-volumes you want to extract, to box from the command line')
-	
-	parser.add_argument('--cbin', type=int, default=1, help='''Specifies the scale of the coordinates respect to the actual size of the tomogram where you want to extract the particles from.\nFor example, provide 2 if you recorded the coordinates from a tomogram that was binned by 2, \nbut want to extract the sub-volumes from the UNbinned version of that tomogram''')
-	
-	#parser.add_argument('--cbinx', type=int, default=1, help="""Binning factor of the X coordinates with respect to the actual size of the tomogram from which you want to extract the subvolumes.
-	#Sometimes tomograms are not binned equally in all directions for purposes of recording the coordinates of particles""")
-	#parser.add_argument('--cbiny', type=int, default=1, help="Binning factor of the Y coordinates with respect to the actual size of the tomogram from which you want to extract the subvolumes")
-	#parser.add_argument('--cbinz', type=int, default=1, help="Binning factor of the X coordinates with respect to the actual size of the tomogram from which you want to extract the subvolumes")
-
-	parser.add_argument('--subset', type=int, default=0, help='''Specify how many sub-volumes from the coordinates file you want to extract; e.g, if you specify 10, the first 10 particles will be boxed.\n0 means "box them all" because it makes no sense to box none''')
-	parser.add_argument('--output', type=str, default='stack.hdf', help="Specify the name of the stack file where to write the extracted sub-volumes")
-	parser.add_argument('--output_format', type=str, default='stack', help='''Specify 'single' if you want the sub-volumes to be written to individual files. You MUST still provide an output name in the regular way.\nFor example, if you specify --output=myparticles.hdf\nbut also specify --output_format=single\nthen the particles will be written as individual files named myparticles_000.hdf myparticles_001.hdf...etc''')
-	
-	parser.add_argument('--swapyz', action="store_true", default=False, help='''This means that the coordinates file and the actual tomogram do not agree regarding which is the "short" direction.\nFor example, the coordinates file migh thave a line like this:\n1243 3412 45\nwhere clearly the "short" direction is Z; yet, if in the actual tomogram the short direction is Y, as they come out fromIMOD by default, then the line should have been:\n1243 45 3412\n''')
-	parser.add_argument("--newwidget",action="store_true",default=False,help="Use the new 3D widgetD. Highly recommended!!!!")
-	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-
-	global options
-	(options, args) = parser.parse_args()
-		
-	if len(args) != 1: 
-		parser.error("You must specify a single volume data file on the command-line.")
-	if not file_exists(args[0]): 
-		parser.error("%s does not exist" %args[0])
-		
-#	if options.boxsize < 2: parser.error("The boxsize you specified is too small")
-#	# The program will not run very rapidly at such large box sizes anyhow
-#	if options.boxsize > 2048: parser.error("The boxsize you specified is too large.\nCurrently there is a hard coded max which is 2048.\nPlease contact developers if this is a problem.")
-	
-#	logid=E2init(sys.argv,options.ppid)
-
-	if options.coords:
-		commandline_tomoboxer(args[0],options.coords,options.subset,options.boxsize,options.cbin,options.output,options.output_format,options.swapyz,options.reverse_contrast)
-	else:	
-	
-		# Lets save our subtomograms to a diectory called 'subtomogRAMS'
-		subtomosdir = os.path.join(".",options.path)
-		if not os.access(subtomosdir, os.R_OK):
-			os.mkdir(options.path)
-		
-		img = args[0]
-					
-		app = EMApp()
-		if options.inmemory: 
-			#img = EMData(args[0],0)
-			if options.bin > 1:
-				print "The tomogram is being shrunk by a factor of %d" %(options.bin)
-				#img = img.process('math.meanshrink',{'n':options.bin})
-
-				imgnew = img.replace('.','_bin' + str(options.bin) + '.')
-				cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --process=math.meanshrink:n=' + str(options.bin)
-				os.system(cmd)	
-				
-				print "Reading tomogram. Please wait."
-											#If the tomogram will be binned, there's no need to load the fulll version
-				img = EMData(imgnew,0)					#and bin it here. That's TOO slow. It's best to do so at the commandline.
-				cmd = 'rm ' + imgnew					#Remove "temporary" binned tomogram after loading it to memory.
-			else:
-				print "You better have A LOT of memory (more than 8GB) if this is an unbinned 4k x 4k x 0.5k tomogram, because I'm loading it UNBINNED/un-shrunk. Please wait"
-				img = EMData(img,0)
-			
-			if options.reverse_contrast:
-				img = img*(-1)
-				print "The contrast of the tomogram has been reversed"
-				
-			if options.lowpass:
-				filt=1.0/options.lowpass
-				print "The tomogram is being low pass filtered to %d Angstroms resolution" %(options.lowpass)
-				img = img.process('filter.lowpass.gauss',{'cutoff_freq':filt})
-				
-			print "Done !"
-			
-			boxer = EMTomoBoxer(app,data=img,yshort=options.yshort,boxsize=options.boxsize,bin=options.bin,contrast=options.reverse_contrast)
-		else : 
-	#		boxer=EMTomoBoxer(app,datafile=args[0],yshort=options.yshort,apix=options.apix,boxsize=options.boxsize)		#jesus
-			img=args[0]
-			
-			
-			'''The modd variable is used as a "filter" that determines whether a "modified" tomogram needs to be deleted prior to extracting boxes from disk.
-			Because boxing from disk does NOT open the whole tomogram, a modified copy needs to be generated and written to file when you want to find
-			particles in a bined or pre-low pass filtered tomogram, BUT still extract from the raw tomogram'''
-			modd = False
-			if options.bin > 1:
-				imgnew = img
-				if '_edtedtemp.' not in img:
-					imgnew = img.replace('.','_editedtemp.')
-				cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --process=math.meanshrink:n=' + str(options.bin)
-				os.system(cmd)
-				img = imgnew
-				modd = True
-				
-			if options.reverse_contrast:
-				imgnew = img
-				if '_edtedtemp.' not in img:
-					imgnew = img.replace('.','_editedtemp.')
-				cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --mult=-1'
-				os.system(cmd)
-				img = imgnew
-				modd = True
-
-			if options.lowpass:
-				imgnew = img
-				if '_edtedtemp.' not in img:
-					imgnew = img.replace('.','_editedtemp.')
-				filt=1.0/options.lowpass
-				
-				imghdr = EMData(img,1,True)
-				tapix = imghdr['apix_x']
-				if options.apix:
-					tapix = options.apix
-				
-				cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --process=filter.lowpass.gauss:cutoff_freq=' + str(filt) + ':apix=' + str(tapix)
-				os.system(cmd)
-				img = imgnew
-				modd = True
-			
-			print "The bin factor default is", options.bin
-			boxer=EMTomoBoxer(app,datafile=img,yshort=options.yshort,apix=options.apix,boxsize=options.boxsize,bin=options.bin,contrast=options.reverse_contrast,mod=modd)
-			
-		boxer.show()
-		app.execute()
-	#	E2end(logid)
-
-	#app = EMApp()
-	#if options.inmemory : 
-	#	print "Reading tomogram. Please wait."
-	#	img=EMData(args[0],0)
-	#	print "Done !"
-	#	boxer=EMTomoBoxer(app,data=img,yshort=options.yshort,boxsize=options.boxsize)
-	#else : boxer=EMTomoBoxer(app,datafile=args[0],yshort=options.yshort,apix=options.apix,boxsize=options.boxsize)
-	#boxer.show()
-	#app.execute()
-#	#E2end(logid)
-	
-	return()
 
 class EMAverageViewer(QtGui.QWidget):
 	"""This is a multi-paned view showing a single boxed out particle from a larger tomogram"""
@@ -592,16 +580,17 @@ class EMBoxViewer(QtGui.QWidget):
 class EMTomoBoxer(QtGui.QMainWindow):
 	"""This class represents the EMTomoBoxer application instance.  """
 	
-	def __init__(self,application,data=None,datafile=None,yshort=False,apix=0.0,boxsize=32,bin=1,contrast=None,mod=False):
+	def __init__(self,application,data=None,datafile=None,yshort=False,apix=0.0,boxsize=32,bin=1,contrast=None,center=None,mod=False):
 		QtGui.QWidget.__init__(self)
 		
 		self.app=weakref.ref(application)
 		self.yshort=yshort
 		self.apix=apix
 		
-		self.bin=bin			#jesus
-		self.contrast=contrast		#jesus
-		self.mod=mod			#jesus; the mod variable determines whether there's a modified tomogram to delte when boxing from disk
+		self.bin=bin			
+		self.contrast=contrast		
+		self.mod=mod
+		self.center=center			
 		
 		self.setWindowTitle("MAIN e2tomoboxer.py")
 
@@ -977,7 +966,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			for i,b in enumerate(self.helixboxes):
 				img = self.extract_subtomo_box(self.get_extended_a_vector(b))
 				
-				img['origin_x'] = 0						#jesus
+				img['origin_x'] = 0						
 				img['origin_y'] = 0				
 				img['origin_z'] = 0
 			
@@ -999,13 +988,14 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				bs=self.boxsize()
 				binf=self.bin
 				contrast=self.contrast
+				center=self.center
 			
-				if self.yshort:							#jesus
-					img = unbinned_extractor(bs,b[0],b[2],b[1],binf,contrast) 	#jesus
+				if self.yshort:							
+					img = unbinned_extractor(bs,b[0],b[2],b[1],binf,contrast,center) 	
 				else:
-					img = unbinned_extractor(bs,b[0],b[1],b[2],binf,contrast) 	#jesus
+					img = unbinned_extractor(bs,b[0],b[1],b[2],binf,contrast,center) 	
 			
-				img['origin_x'] = 0						#jesus
+				img['origin_x'] = 0						
 				img['origin_y'] = 0				
 				img['origin_z'] = 0
 			
@@ -1034,7 +1024,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			for i,b in enumerate(self.helixboxes):
 				img = self.extract_subtomo_box(self.get_extended_a_vector(b))
 
-				img['origin_x'] = 0						#jesus
+				img['origin_x'] = 0						
 				img['origin_y'] = 0				
 				img['origin_z'] = 0
 			
@@ -1051,13 +1041,14 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				bs=self.boxsize()
 				binf=self.bin
 				contrast=self.contrast
+				center=self.center
 
-				if self.yshort:							#jesus
-					img = unbinned_extractor(bs,b[0],b[2],b[1],binf,contrast) 	#jesus
+				if self.yshort:							
+					img = unbinned_extractor(bs,b[0],b[2],b[1],binf,contrast,center) 	
 				else:
-					img = unbinned_extractor(bs,b[0],b[1],b[2],binf,contrast) 	#jesus
+					img = unbinned_extractor(bs,b[0],b[1],b[2],binf,contrast,center) 	
 			
-				img['origin_x'] = 0						#jesus
+				img['origin_x'] = 0						
 				img['origin_y'] = 0				
 				img['origin_z'] = 0
 			
