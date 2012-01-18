@@ -61,7 +61,7 @@ Util.set_randnum_seed(rand_seed)
 BATCH = False
 
 # variable for disabling bdb cache use, For running sparx on clusters, set it to True to disable cache,
-CACHE_DISABLE = True
+CACHE_DISABLE = False
 
 # variable for disabling gui use (set by default to True, which means use GUI. Change to False to disable GUI).
 GUIUSE = True
