@@ -53,6 +53,13 @@ def print_iminfo(data, label):
 	data.get_attr("mean"), data.get_attr("sigma"),
 	data.get_attr("minimum"), data.get_attr("maximum"))
 
+def calcsf(data):
+	dataf = data.do_fft()
+	curve = dataf.calc_radial_dist(ny, 0, 0.5,True)
+	curve=[i/(dataf["nx"]*dataf["ny"]*dataf["nz"]) for i in curve]
+	Util.save_data(0, 1.0/(apix*2.0*ny), curve, options.calcsf);
+	return()
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + """ [options] <inputfile> <outputfile>
@@ -150,6 +157,8 @@ def main():
 	
 	parser.add_option("--swap", action="store_true", help="Swap the byte order", default=False)	
 	
+	parser.add_option("--average", action="store_true", help="Computes the average of a stack of 3D volumes", default=False)	
+	
 	parser.add_option("--append", action="store_true", help="Append output image, i.e., do not write inplace.")
 	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -171,6 +180,15 @@ def main():
 	n0 = options.first
 	n1 = options.last
 	nimg = EMUtil.get_image_count(infile)
+	
+	if options.average:
+		ptcls = []
+		for i in range(nimg):
+			ptcls.append(EMData(infile,i))
+		avg = sum(ptcls)/len(ptcls)
+		avg.process_inplace('normalize.edgemean')
+		avg.write_image(outfile,0)
+		sys.exit()
 	
 	index_d = {}
 	for append_option in append_options:
