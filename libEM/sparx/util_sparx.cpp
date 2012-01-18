@@ -5399,11 +5399,11 @@ EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_offset
 
 	/* Exception Handle */
 	if(new_nx>nx || new_ny>ny || new_nz>nz)
-		throw ImageDimensionException("The size of the windowed image cannot exceed the input image size.");
+		throw ImageDimensionException("The size of the windowed image cannot exceed the input image size. 1");
 	if((nx/2)-(new_nx/2)+x_offset<0 || (ny/2)-(new_ny/2)+y_offset<0 || (nz/2)-(new_nz/2)+z_offset<0)
-		throw ImageDimensionException("The offset inconsistent with the input image size.");
+		throw ImageDimensionException("The offset inconsistent with the input image size. 2");
 	if(x_offset>((nx-(nx/2))-(new_nx-(new_nx/2))) || y_offset>((ny-(ny/2))-(new_ny-(new_ny/2))) || z_offset>((nz-(nz/2))-(new_nz-(new_nz/2))))
-		throw ImageDimensionException("The offset inconsistent with the input image size.");
+		throw ImageDimensionException("The offset inconsistent with the input image size. 3");
 	/* ============================== */
 
 	/*    Calculation of the start point */
@@ -5414,7 +5414,7 @@ EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_offset
 
 	/* Exception Handle */
 	if (new_st_x<0 || new_st_y<0 || new_st_z<0)   //  WHAT HAPPENS WITH THE END POINT CHECK??  PAP
-		throw ImageDimensionException("The offset inconsistent with the input image size.");
+		throw ImageDimensionException("The offset inconsistent with the input image size. 4");
 	/* ============================== */
 
 	EMData* wind = img->copy_empty_head();
