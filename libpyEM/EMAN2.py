@@ -100,20 +100,10 @@ def timer(fn,n=1):
 	a=time.time()
 	for i in range(n): fn()
 	print time.time()-a
-'''
-class FlushFile(object):
-    """Write-only flushing wrapper for file-type objects."""
-    def __init__(self, f):
-        self.f = f
-    def write(self, x):
-        self.f.write(x)
-	self.f.flush()
-	
-def autoflush():
-# Replace stdout with an automatically flushing version
-	sys.stdout = FlushFile(sys.__stdout__)
-'''
-sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
+
+# This is to remove stdio buffering, only line buffering is done. This is what is done for the terminal, but this extends terminal behaviour to redirected stdio
+sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 1)
+
 def stopautoflush():
 	""" Return to buffered stdout """
 	sys.stdout = originalstdout

@@ -832,9 +832,10 @@ class EMPopen(subprocess.Popen):
 				break
 
 			if self.poll() !=None:
+				print "Stopped"
 				break
 				
-			# A GIANT HACK to prevent broken pipes(this may be a bit buggy, but it fixes an appaernt bug in subprocess module 
+			# A HACK to prevent broken pipes(this may be a bit buggy, but it fixes an appaernt bug in subprocess module 
 			time.sleep(0.5)
 			 
 class EMAN2StatusBar(QtGui.QTextEdit):
