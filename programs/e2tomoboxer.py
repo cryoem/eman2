@@ -194,6 +194,7 @@ def main():
 		app.execute()
 	return()
 
+
 """
 This function is called to extract sub-volumes from the RAW tomogram, regardless
 of where their coordinates are being found (the tomogram to find the coordinates might be
@@ -214,31 +215,64 @@ def unbinned_extractor(boxsize,x,y,z,cbin,contrast,center,tomogram=argv[1]):
 	e = EMData()
 	e.read_image(tomogram,0,False,r)
 	
-	if center:
-		ec = e.process('xform.centerofmass')
-		trans = ec['xform.align3d'].get_trans()
-		tx = trans[0]
-		ty = trans[1]
-		tz = trans[2]
-		print "I will apply these translations in trying to center the particles", tx,ty,tz
-		print "The old coordinates were", x, y, z
+	#IF the boxed out particle is NOT empty, perform BASIC RAW-PARTICLE EDITING: contrast reversal and normalization 
+	#Sometimes empty boxes are picked when boxing from the commandline if yshort isn't specified but should have, 
+	#or if erroneous binning factors are provided
+
+	if e['mean'] != 0:
+		if center:
+			ec = e.process('xform.centerofmass')
+			trans = ec['xform.align3d'].get_trans()
+			tx = trans[0]
+			ty = trans[1]
+			tz = trans[2]
+			print "I will apply these translations in trying to center the particles with xform.centerofmass", tx,ty,tz
+			print "The old coordinates were", x, y, z
+
+			x = x - tx				
+			y = y - ty
+			z = z - tz
+			print "Thus the new ones are", x, y, z 
+
+			r = Region((2*x - boxsize)/2,(2*y - boxsize)/2, (2*z - boxsize)/2, boxsize, boxsize, boxsize)
+			e = EMData()
+			e.read_image(tomogram,0,False,r)
 		
-		x = x - tx				
-		y = y - ty
-		z = z - tz
-		print "Thus the new ones are", x, y, z 
+		if contrast:
+			e=e*-1
+
+		#It IS CONVENIENT to record any processing done on the particles as header parameters
+
+		e['e2spt_tomogram'] = tomogram
+		e['e2spt_coordx'] = x
+		e['e2spt_coordy'] = y
+		e['e2spt_coordz'] = z
+
+		#The origin WILL most likely be MESSED UP if you don't explicitely set it to ZERO.
+		#This can create ANNOYING visualization problems in Chimera
+
+		e['origin_x'] = 0
+		e['origin_y'] = 0
+		e['origin_z'] = 0
+
+		#Make sure the transform parameter on the header is "clean", so that any later processing transformations are meaningful
+		e['xform.align3d'] = Transform({"type":'eman','az':0,'alt':0,'phi':0,'tx':0,'ty':0,'tz':0})
+			
+		print "The extracted particle has this boxsize", e['nx'],e['ny'],e['nz']
+		print "And the following mean BEFORE normalization", e['mean']
 		
-		r = Region((2*x - boxsize)/2,(2*y - boxsize)/2, (2*z - boxsize)/2, boxsize, boxsize, boxsize)
-		e = EMData()
-		e.read_image(tomogram,0,False,r)
+		e.process_inplace('normalize.edgemean')
+		e['e2spt_normalize.edgemean'] = 'yes'
+
+		return(e)
+
+	else:
+		print """WARNING! The particle was skipped (and not boxed) because it's mean was ZERO (which often indicates a box is empty).
+			Your coordinates file and/or the binning factors specified might be MESSED UP, or you might need to swap Y and Z, or
+			the particles are being normalized before they should 
+			"""
+		return()
 	
-	print "The extracted particle has these dimensions", e['nx'],e['ny'],e['nz']
-	print "And this mean", e['mean']
-	
-	if contrast:
-		e=e*-1
-	
-	return(e)
 
 """
 This function enables extracting sub-volumes from the command line, without opening the GUI.
@@ -246,8 +280,7 @@ Usually used when "re-extracting" sub-volumes (for whatever reason) from a coord
 It allows for extraction of smaller sub-sets too.
 """
 def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,output,output_format,swapyz,contrast,center):
-
-
+	
 	clines = open(coordinates,'r').readlines()
 	set = len(clines)
 	
@@ -259,6 +292,8 @@ def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,output,output
 	
 	print "The size of the set of sub-volumes to extract is", set
 	
+	k=-1
+	name = output
 	for i in range(set):
 	
 		#Some people might manually make ABERRANT coordinates files with commas, tabs, or more than once space in between coordinates
@@ -285,54 +320,24 @@ def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,output,output
 			y = z
 			z = aux
 
-		print "The coordinates for particle#%d are x=%d, y=%d, z=%d " % (i,x,y,z)
+		print "The unbinned coordinates from the coordinates file provided for particle#%d are x=%d, y=%d, z=%d " % (i,x,y,z)
 
-		e=unbinned_extractor(boxsize,x,y,z,cbin,contrast,center)
-
-		#IF the boxed out particle is NOT empty, perform BASIC RAW-PARTICLE EDITING: contrast reversak and normalization 
-		#Sometimes empty boxes are picked when boxing from the commandline if yshort isn't specified but should have, 
-		#or if erroneous binning factors are provided
+		e = unbinned_extractor(boxsize,x,y,z,cbin,contrast,center)
 		
-		if e['mean'] != 0:
+		if e:
+			print "There was a particle successfully returned, with the following box size and normalized mean value"
+			print e['nx'],e['ny'],e['nz']
+			print e['mean']
 			
-		#It IS CONVENIENT to record any processing done on the particles as header parameters
-
-			e['e2spt_tomogram'] = tomogram
-			e['e2spt_coordx'] = x
-			e['e2spt_coordy'] = y
-			e['e2spt_coordz'] = z
-
-			#The origin WILL most likely be MESSED UP if you don't explicitely set it to ZERO.
-			#This can create ANNOYING visualization problems in Chimera
-
-			e['origin_x'] = 0
-			e['origin_y'] = 0
-			e['origin_z'] = 0
-
-			e = e.process('normalize.edgemean')
-			e['e2spt_normalize.edgemean'] = 'yes'
-
-			e['xform.align3d'] = Transform({"type":'eman','az':0,'alt':0,'phi':0,'tx':0,'ty':0,'tz':0})
-
-			k=i
 			if output_format == 'single':
-				name = output.split('.')[0] + '_' + str(i).zfill(3) + '.' + output.split('.')[1]
-				k=0
+				k = 0
+				name = output.split('.')[0] + '_' + str(i).zfill(len(set)) + '.' + output.split('.')[1]
 			else:
-				name = output
-
+				k += 1
 			e.write_image(name,k)
+			
 
-		else:
-			print """WARNING! The particle was skipped (and not boxed) because it's mean was ZERO (which often indicates a box is empty).
-				Your coordinates file and/or the binning factors specified might be MESSED UP, or you might need to swap Y and Z, or
-				the particles are being normalized before they should 
-				"""
-	
 	return()
-
-
-
 
 
 class EMAverageViewer(QtGui.QWidget):
@@ -966,11 +971,11 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			for i,b in enumerate(self.helixboxes):
 				img = self.extract_subtomo_box(self.get_extended_a_vector(b))
 				
-				img['origin_x'] = 0						
-				img['origin_y'] = 0				
-				img['origin_z'] = 0
+				#img['origin_x'] = 0						
+				#img['origin_y'] = 0				
+				#img['origin_z'] = 0
 			
-				img=img.process('normalize.edgemean')
+				#img=img.process('normalize.edgemean')
 
 				if fsp[:4].lower()=="bdb:": 
 					img.write_image(os.path.join(options.path,"%s_%03d"%(fsp,i)),0)
@@ -995,11 +1000,11 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				else:
 					img = unbinned_extractor(bs,b[0],b[1],b[2],binf,contrast,center) 	
 			
-				img['origin_x'] = 0						
-				img['origin_y'] = 0				
-				img['origin_z'] = 0
+				#img['origin_x'] = 0						
+				#img['origin_y'] = 0				
+				#img['origin_z'] = 0
 			
-				img=img.process('normalize.edgemean')
+				#img=img.process('normalize.edgemean')
 
 				if fsp[:4].lower()=="bdb:": 
 					img.write_image(os.path.join(options.path,"%s_%03d"%(fsp,i),0))
@@ -1024,11 +1029,11 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			for i,b in enumerate(self.helixboxes):
 				img = self.extract_subtomo_box(self.get_extended_a_vector(b))
 
-				img['origin_x'] = 0						
-				img['origin_y'] = 0				
-				img['origin_z'] = 0
+				#img['origin_x'] = 0						
+				#img['origin_y'] = 0				
+				#img['origin_z'] = 0
 			
-				img=img.process('normalize.edgemean')
+				#img=img.process('normalize.edgemean')
 			
 				img.write_image(fsp,i)
 			
@@ -1048,11 +1053,11 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				else:
 					img = unbinned_extractor(bs,b[0],b[1],b[2],binf,contrast,center) 	
 			
-				img['origin_x'] = 0						
-				img['origin_y'] = 0				
-				img['origin_z'] = 0
+				#img['origin_x'] = 0						
+				#img['origin_y'] = 0				
+				#img['origin_z'] = 0
 			
-				img=img.process('normalize.edgemean')
+				#img=img.process('normalize.edgemean')
 			
 				img.write_image(fsp,i)
 			
