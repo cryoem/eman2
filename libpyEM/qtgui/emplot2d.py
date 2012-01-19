@@ -671,7 +671,7 @@ class EMPlot2DWidget(EMGLWidget):
 		self.needupd=1
 		self.del_shapes()  # also triggers an update
 		self.updateGL()
-		if self.inspector!=0 : self.inspector.update()
+		if self.inspector: self.inspector.update()
 
 	def wheelEvent(self, event):
 		pass
@@ -694,7 +694,8 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 		self.datap = None
 		EMPlot2DWidget.__init__(self)
 		self.setWindowIcon(QtGui.QIcon(QtGui.QPixmap(ploticon)))
-		
+		self.setDataLabelsColor('#00ff00')
+                
 	def mousePressEvent(self, event):
 		#Save a snapshot of the scene
 		self.clusterorigin_rad = None
@@ -818,6 +819,10 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 		lst.append(radcut)
 		self.pparm[key] = tuple(lst) 
 		self.datap = datapoints
+                
+        def setDataLabelsColor(self, color):
+                """ Set the color of the data labels """
+                self.datalabelscolor = color
 		
 	def render(self):
 		"""
@@ -881,7 +886,7 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 			
 			if self.datap:
 				for i in xrange(len(theta)):
-					ax.annotate(" "+str(self.datap[i]),(theta[i],r[i]),color='#00ff00',weight='bold',horizontalalignment='left')
+					ax.annotate(" "+str(self.datap[i]),(theta[i],r[i]),color=self.datalabelscolor,weight='bold',horizontalalignment='left')
 			
 			canvas.draw()
 			self.plotimg = canvas.tostring_rgb()  # save this and convert to bitmap as needed

@@ -245,6 +245,9 @@ def main():
 
 	(options, args) = parser.parse_args()
 	
+	# Start autoflushing output
+	#autoflush()
+	
 	if ( options.check ): options.verbose = 9
 	
 	print "project3d: ",str(options)

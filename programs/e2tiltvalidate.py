@@ -36,7 +36,7 @@ import os, math
 from EMAN2db import EMTask
 from PyQt4 import QtCore, QtGui
 from emplot2d import EMPolarPlot2DWidget
-
+	
 def main():
 	"""Program to validate a reconstruction by the Richard Henderson tilt validation method. A volume to validate, a small stack (~100 imgs) of untilted and ~10-15 degree
 	tilted particles must be presented. The untilted and tilted particle stack must have a one-to-one relationship. In the contour plot, the Tiltaxis is along positive 'Y'
@@ -71,9 +71,10 @@ def main():
 	parser.add_argument("--tiltrange", type=int,help="The angular tiltrange to search",default=15, guitype='intbox', row=6, col=1, rowspan=1, colspan=1, expert=True, mode="analysis")
 	parser.add_argument("--sym",  type=str,help="The recon symmetry", default="c1", guitype='symbox', row=5, col=0, rowspan=1, colspan=1, mode="analysis")
 	parser.add_argument("--planethres", type=float, help="Maximum out of plane threshold for the tiltaxis. 0 = perfectly in plane, 1 = normal to plane", default=0.1, guitype='floatbox', row=5, col=0, rowspan=1, mode="gui")
-	parser.add_argument("--datalabels", action="store_true",help="Add data labels to the plot", default=False, guitype='boolbox', row=6, col=0, rowspan=1, mode="gui")
+	parser.add_argument("--datalabels", action="store_true",help="Add data labels to the plot", default=False, guitype='boolbox', row=6, col=1, rowspan=1, mode="gui")
 	parser.add_argument("--maxtiltangle", type=float, help="Maximum tiltangle permitted when finding tilt distances", default=180.0, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="analysis")
 	parser.add_argument("--gui",action="store_true",help="Start the GUI for viewing the tiltvalidate plots",default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode="gui[True]")
+	parser.add_argument("--datalabelscolor", type=str, help="Set the color of the data labels. Any vaild matplotlib color is ok", default='#00ff00', guitype='strbox', row=6, col=0, rowspan=1, colspan=1, mode="gui")
 	parser.add_argument("--radcut", type = float, default=-1, help="For use in the GUI, truncate the polar plot after R. -1 = no truncation", guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="gui")
 	parser.add_argument("--quaternion",action="store_true",help="Use Quaterions for tilt distance computation",default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode='analysis')
 	parser.add_argument("--eulerfile",type=str,help="Euler angles file, to create tiltdistance from pre-aligned particles. Format is: imgnum, name, az, alt, phi",default=None)
@@ -94,10 +95,10 @@ def main():
 	parser.add_argument("--verbose", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
-
+	
 	# Run the GUI if in GUI mode
 	if options.gui:
-		display_validation_plots(options.path, options.radcut, options.planethres, plotdatalabels=options.datalabels)
+		display_validation_plots(options.path, options.radcut, options.planethres, plotdatalabels=options.datalabels, color=options.datalabelscolor)
 		exit(0)
 		
 	if not (options.volume or options.eulerfile):
@@ -387,7 +388,7 @@ def run(command):
 		print "Error running:\n%s"%command		    
 		exit(1)
 
-def display_validation_plots(path, radcut, planethres, plotdatalabels=False):
+def display_validation_plots(path, radcut, planethres, plotdatalabels=False, color='#00ff00'):
 	from emimage2d import EMImage2DWidget
 	from emapplication import EMApp
 	r = []
@@ -417,6 +418,7 @@ def display_validation_plots(path, radcut, planethres, plotdatalabels=False):
 		#plot = EMPolarPlot2DWidget()
 		plot = EMValidationPlot()
 		plot.set_data((theta,r),50,radcut,datap)
+		plot.set_datalabelscolor(color)
 		#plot.set_data((theta,r),linewidth=50,radcut=radcut,datapoints=datap)
 		plot.show()
 	if data:
@@ -484,6 +486,9 @@ class EMValidationPlot(QtGui.QWidget):
 		
 	def set_data(self, data, linewidth, radcut, datapoints):
 		self.polarplot.set_data(data, linewidth=linewidth, radcut=radcut, datapoints=datapoints)
+		
+	def set_datalabelscolor(self, color):
+		self.polarplot.setDataLabelsColor(color)
 		
 		
 if __name__ == "__main__":

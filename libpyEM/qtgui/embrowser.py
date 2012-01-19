@@ -714,10 +714,10 @@ class EMDirEntry(object):
 	"""Represents a directory entry in the filesystem"""
 	
 	# list of lambda functions to extract column values for sorting
-	col=(lambda x:x.name,lambda x:x.filetype,lambda x:x.size,lambda x:x.dim,lambda x:x.nimg,lambda x:x.date)
+	col=(lambda x:x.index,lambda x:x.name,lambda x:x.filetype,lambda x:x.size,lambda x:x.dim,lambda x:x.nimg,lambda x:x.date)
 #	classcount=0
 	
-	def __init__(self,root,name,parent=None,hidedot=True):
+	def __init__(self,root,name,index,parent=None,hidedot=True):
 		"""The path for this item is root/name. 
 		Parent (EMDirEntry) must be specified if it exists.
 		hidedot will cause hidden files (starting with .) to be excluded"""
@@ -725,6 +725,7 @@ class EMDirEntry(object):
 		self.__children=None	# ordered list of children, None indicates no check has been made, empty list means no children, otherwise list of names or list of EMDirEntrys
 		self.root=str(root)		# Path prefixing name
 		self.name=str(name)		# name of this path element (string)
+		self.index=str(index)
 		self.hidedot=hidedot	# If set children beginning with . will be hidden
 		if self.root[-1]=="/" or self.root[-1]=="\\" : self.root=self.root[:-1]
 		#self.seq=EMDirEntry.classcount
@@ -828,7 +829,7 @@ class EMDirEntry(object):
 		if not isinstance(self.__children[0],str) : return 		# this implies entries have already been filled
 		
 		for i,n in enumerate(self.__children):
-			self.__children[i]=self.__class__(self.filepath,n,self)
+			self.__children[i]=self.__class__(self.filepath,n,i,self)
 	
 	def checkCache(self, db, name=""):
 		""" 
@@ -991,11 +992,11 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 	"""This ItemModel represents the local filesystem. We don't use the normal filesystem item model because we want
 	to provide more info on images, and we need to merge BDB: files into the file view."""
 	
-	headers=("Name","Type","Size","Dim","N","Date")
+	headers=("Row","Name","Type","Size","Dim","N","Date")
 	
 	def __init__(self,startpath=None,direntryclass=EMDirEntry):
 		QtCore.QAbstractItemModel.__init__(self)
-		self.root=direntryclass(startpath,"")					# EMDirEntry as a parent for the root path
+		self.root=direntryclass(startpath,"", 0)				# EMDirEntry as a parent for the root path
 		self.rootpath=startpath							# root path for current browser
 		self.last=(0,0)
 		self.db=None
@@ -1008,9 +1009,9 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 		return False
 		
 	def columnCount(self,parent):
-		"Always 6 columns"
+		"Always 7 columns"
 		#print "EMFileItemModel.columnCount()=6"
-		return 6
+		return 7
 		
 	def rowCount(self,parent):
 		"Returns the number of children for a given parent"
@@ -1036,16 +1037,18 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 		#if index.column()==0 : print "EMFileItemModel.data(%d %d %s)=%s"%(index.row(),index.column(),index.parent(),str(data.__dict__))
 
 		col=index.column()
-		if col==0 : 
+		if col==0:
+			return nonone(data.index)
+		elif col==1 : 
 			if data.isbdb : return "bdb:"+data.name
 			return nonone(data.name)
-		elif col==1 : return nonone(data.filetype)
-		elif col==2 : return humansize(data.size)
-		elif col==3 :
+		elif col==2 : return nonone(data.filetype)
+		elif col==3 : return humansize(data.size)
+		elif col==4 :
 			if data.dim==0 : return "-"
 			return nonone(data.dim)
-		elif col==4 : return nonone(data.nimg)
-		elif col==5 : return nonone(data.date)
+		elif col==5 : return nonone(data.nimg)
+		elif col==6 : return nonone(data.date)
 		
 	def headerData(self,sec,orient,role):
 		if orient==Qt.Horizontal:
@@ -2048,8 +2051,9 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.wtree.setModel(self.curmodel)
 		self.wtree.setSortingEnabled(True)
 		self.wtree.resizeColumnToContents(0)
-		self.wtree.resizeColumnToContents(2)
+		self.wtree.resizeColumnToContents(1)
 		self.wtree.resizeColumnToContents(3)
+		self.wtree.resizeColumnToContents(4)
 
 		self.expanded=set()
 		# we add the child items to the list needing updates

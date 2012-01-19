@@ -477,7 +477,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		cmd = self.gui_stacked_widget.currentWidget().getCommand()
 		if self.launchScript(cmd): 
 			self.clearE2Interface()
-	
+			
 	def launchScript(self, cmd):
 		"""
 		Start the script running 
@@ -488,14 +488,17 @@ class EMProjectManager(QtGui.QMainWindow):
 			# Only take notes if note level is greater than 0
 			self.notebook.insertNewJob(cmd,local_datetime())
 			self.notebook.writeNotes()
-			child = subprocess.Popen((str(cmd)+" --ppid=-2"), shell=True, cwd=self.pm_cwd)
+			child = EMPopen((str(cmd)+" --ppid=-2"), shell=True, cwd=self.pm_cwd, stdout=subprocess.PIPE, bufsize=1)
 		else:
 			if self.getProgramNoteLevel() > 0:
 				print "NOT Writing notes, ppid=-1"
-				child = subprocess.Popen(str(cmd), shell=True, cwd=self.pm_cwd)
+				child = EMPopen(str(cmd), shell=True, cwd=self.pm_cwd, stdout=subprocess.PIPE, bufsize=1)
 			else:
 				print "NOT Writing notes, ppid=-2"
-				child = subprocess.Popen((str(cmd)+" --ppid=-2"), shell=True, cwd=self.pm_cwd)
+				child = EMPopen((str(cmd)+" --ppid=-2"), shell=True, cwd=self.pm_cwd, stdout=subprocess.PIPE, bufsize=1)
+		
+		child.realTimeCommunicate(self.statusbar)
+		
 		self.statusbar.setMessage("Program %s Launched!!!!"%str(cmd).split()[0])
 		
 		return True
@@ -761,6 +764,7 @@ class EMProjectManager(QtGui.QMainWindow):
 			return self.pm_projects_db.get("global.particle_mass", dfl=800.0)
 		except:
 			return ""
+		
 	def getPMCWD(self):
 		""" return the CWD that the pm is working in """
 		return self.pm_cwd
@@ -807,7 +811,32 @@ class EMProjectManager(QtGui.QMainWindow):
 				self.expertbutton.setDown(False)
 		else:
 			self.expertbutton.setEnabled(False)
-	
+
+class EMPopen(subprocess.Popen):
+	def __init__(self, args, bufsize=0, executable=None,stdin=None, stdout=None, stderr=None,preexec_fn=None, close_fds=False, shell=False,cwd=None, env=None, universal_newlines=False,startupinfo=None, creationflags=0):
+		subprocess.Popen.__init__(self, args, bufsize=bufsize, executable=executable, stdin=stdin, stdout=stdout, stderr=stderr, preexec_fn=preexec_fn, close_fds=close_fds, shell=shell, cwd=cwd, env=env, universal_newlines=universal_newlines, startupinfo=startupinfo, creationflags=creationflags) 
+		
+	def realTimeCommunicate(self, msgbox):
+		self.msgbox = msgbox
+		rtcom = threading.Thread(target=self.realTimeChatter)
+		rtcom.start()
+			
+	def realTimeChatter(self):
+		while 1:
+			if self.stdout:
+				#pass
+				stdout = self.stdout.readline()
+				if stdout:
+					self.msgbox.setMessage(stdout)
+			else:
+				break
+
+			if self.poll() !=None:
+				break
+				
+			# A GIANT HACK to prevent broken pipes(this may be a bit buggy, but it fixes an appaernt bug in subprocess module 
+			time.sleep(0.5)
+			 
 class EMAN2StatusBar(QtGui.QTextEdit):
 	"""
 	The Stats bar for PM

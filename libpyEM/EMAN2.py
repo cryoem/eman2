@@ -48,6 +48,8 @@ from e2version import *
 import EMAN2db
 import argparse, copy
 import glob
+
+import threading
 #from Sparx import *
 
 HOMEDB=None
@@ -69,7 +71,7 @@ Vec3f.__str__=lambda x:"Vec3f"+str(x.as_list())
 GUIMode=0
 app = 0
 GUIbeingdragged=None
-
+originalstdout = sys.stdout
 
 # Aliases
 EMData.get=EMData.get_value_at
@@ -98,6 +100,24 @@ def timer(fn,n=1):
 	a=time.time()
 	for i in range(n): fn()
 	print time.time()-a
+'''
+class FlushFile(object):
+    """Write-only flushing wrapper for file-type objects."""
+    def __init__(self, f):
+        self.f = f
+    def write(self, x):
+        self.f.write(x)
+	self.f.flush()
+	
+def autoflush():
+# Replace stdout with an automatically flushing version
+	sys.stdout = FlushFile(sys.__stdout__)
+'''
+sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
+def stopautoflush():
+	""" Return to buffered stdout """
+	sys.stdout = originalstdout
+
 
 def E2init(argv, ppid=-1) :
 	"""E2init(argv)

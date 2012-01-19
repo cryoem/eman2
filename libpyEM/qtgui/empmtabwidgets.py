@@ -51,15 +51,15 @@ class EMModelsTable(EMBrowserWidget):
 class EMModelsModel(EMFileItemModel):
 	""" Item model for the raw data """
 	
-	headers=("3D Models","Quality", "Dims")
+	headers=("Row","3D Models","Quality", "Dims")
 	
 	def __init__(self,startpath=None):
 		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMModelsEntry)
 		
 	def columnCount(self,parent):
-		"Always 3 columns"
+		"Always 4 columns"
 		#print "EMFileItemModel.columnCount()=6"
-		return 3
+		return 4
 		
 	def data(self,index,role):
 		"Returns the data for a specific location as a string"
@@ -74,23 +74,25 @@ class EMModelsModel(EMFileItemModel):
 		#if index.column()==0 : print "EMFileItemModel.data(%d %d %s)=%s"%(index.row(),index.column(),index.parent(),str(data.__dict__))
 
 		col=index.column()
-		if col==0 : 
+		if col==0:
+			return nonone(data.index)
+		elif col==1 : 
 			if data.isbdb : return "bdb:"+data.name
 			return nonone(data.name)
-		elif col==1 :
+		elif col==2 :
 			if data.quality==0 : return "-"
 			return nonone(data.quality)
-		elif col==2 :
+		elif col==3 :
 			if data.dims==0 : return "-"
 			return nonone(data.dims)
 
 class EMModelsEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:x.name,lambda x:x.quality, lambda x:x.dims)
+	col=(lambda x:x.index, lambda x:x.name,lambda x:x.quality, lambda x:x.dims)
 	
-	def __init__(self,root,name,parent=None,hidedot=True):
-		EMDirEntry.__init__(self,root,name,parent=parent,hidedot=hidedot)
+	def __init__(self,root,name,i,parent=None,hidedot=True):
+		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot)
 		self.quality=None
 		self.dims=None
 		
@@ -138,15 +140,15 @@ class EMSetsTable(EMBrowserWidget):
 class EMSetsModel(EMFileItemModel):
 	""" Item model for the raw data """
 	
-	headers=("Particles","Num Particles", "Dims")
+	headers=("Row","Particles","Num Particles", "Dims")
 	
 	def __init__(self,startpath=None):
 		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMSetsEntry)
 		
 	def columnCount(self,parent):
-		"Always 3 columns"
+		"Always 4 columns"
 		#print "EMFileItemModel.columnCount()=6"
-		return 3
+		return 4
 		
 	def data(self,index,role):
 		"Returns the data for a specific location as a string"
@@ -161,23 +163,25 @@ class EMSetsModel(EMFileItemModel):
 		#if index.column()==0 : print "EMFileItemModel.data(%d %d %s)=%s"%(index.row(),index.column(),index.parent(),str(data.__dict__))
 
 		col=index.column()
-		if col==0 : 
+		if col==0:
+			return nonone(data.index)
+		elif col==1 : 
 			if data.isbdb : return "bdb:"+data.name
 			return nonone(data.name)
-		elif col==1 :
+		elif col==2 :
 			if data.partcount==0 : return "-"
 			return nonone(data.partcount)
-		elif col==2 :
+		elif col==3 :
 			if data.dims==0 : return "-"
 			return nonone(data.dims)
 
 class EMSetsEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:x.name,lambda x:x.partcount, lambda x:x.dims)
+	col=(lambda x:x.index,lambda x:x.name,lambda x:x.partcount, lambda x:x.dims)
 	
-	def __init__(self,root,name,parent=None,hidedot=True):
-		EMDirEntry.__init__(self,root,name,parent=parent,hidedot=hidedot)
+	def __init__(self,root,name,i,parent=None,hidedot=True):
+		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot)
 		self.partcount=None
 		self.dims=None
 		
@@ -226,15 +230,15 @@ class EMParticlesTable(EMBrowserWidget):
 class EMParticlesModel(EMFileItemModel):
 	""" Item model for the raw data """
 	
-	headers=("Raw Data Files","Type", "Num Particles", "Particle Dims", "Defocus", "B Factor", "SNR", "Quality", "Sampling")
+	headers=("Row","Raw Data Files","Type", "Num Particles", "Particle Dims", "Defocus", "B Factor", "SNR", "Quality", "Sampling")
 	
 	def __init__(self,startpath=None):
 		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMParticlesEntry)
 		
 	def columnCount(self,parent):
-		"Always 9 columns"
+		"Always 10 columns"
 		#print "EMFileItemModel.columnCount()=6"
-		return 9
+		return 10
 		
 	def data(self,index,role):
 		"Returns the data for a specific location as a string"
@@ -249,41 +253,43 @@ class EMParticlesModel(EMFileItemModel):
 		#if index.column()==0 : print "EMFileItemModel.data(%d %d %s)=%s"%(index.row(),index.column(),index.parent(),str(data.__dict__))
 
 		col=index.column()
-		if col==0 : 
+		if col==0:
+			return nonone(data.index)
+		elif col==1 : 
 			if data.isbdb : return "bdb:"+data.name
 			return nonone(data.name)
-		elif col==1 : 
+		elif col==2 : 
 			if data.type==0 : return "-"
 			return nonone(data.type)
-		elif col==2 :
+		elif col==3 :
 			if data.particlecount==0 : return "-"
 			return nonone(data.particlecount)
-		elif col==3 :
+		elif col==4 :
 			if data.particledim==0 : return "-"
 			return nonone(data.particledim)
-		elif col==4 :
+		elif col==5 :
 			if data.defocus==0 : return "-"
 			return nonone(data.defocus)
-		elif col==5 :
+		elif col==6 :
 			if data.bfactor==0 : return "-"
 			return nonone(data.bfactor)
-		elif col==6 :
+		elif col==7 :
 			if data.snr==0 : return "-"
 			return nonone(data.snr)
-		elif col==7 :
+		elif col==8 :
 			if data.quality==0 : return "-"
 			return nonone(data.quality)
-		elif col==8 :
+		elif col==9 :
 			if data.sampling==0 : return "-"
 			return nonone(data.sampling)
 
 class EMParticlesEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:x.name,lambda x:x.type,lambda x:x.particlecount, lambda x:x.particledim, lambda x:x.defocus, lambda x:x.bfactor, lambda x:x.snr, lambda x:x.quality, lambda x:x.sampling)
+	col=(lambda x:x.index,lambda x:x.name,lambda x:x.type,lambda x:x.particlecount, lambda x:x.particledim, lambda x:x.defocus, lambda x:x.bfactor, lambda x:x.snr, lambda x:x.quality, lambda x:x.sampling)
 	
-	def __init__(self,root,name,parent=None,hidedot=True):
-		EMDirEntry.__init__(self,root,name,parent=parent,hidedot=hidedot)
+	def __init__(self,root,name,i,parent=None,hidedot=True):
+		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot)
 		self.type = None
 		self.particlecount=None
 		self.particledim=None
@@ -360,15 +366,15 @@ class EMParticlesEditTable(EMBrowserWidget):
 class EMParticlesEditModel(EMFileItemModel):
 	""" Item model for the raw data """
 	
-	headers=("Raw Data Files","Type", "Num Particles", "Bad Particles", "Defocus", "B Factor", "SNR", "Quality", "Sampling", "Particle Dims")
+	headers=("Row","Raw Data Files","Type", "Num Particles", "Bad Particles", "Defocus", "B Factor", "SNR", "Quality", "Sampling", "Particle Dims")
 	
 	def __init__(self,startpath=None):
 		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMParticlesEditEntry)
 		
 	def columnCount(self,parent):
-		"Always 10 columns"
+		"Always 11 columns"
 		#print "EMFileItemModel.columnCount()=6"
-		return 10
+		return 11
 		
 	def data(self,index,role):
 		"Returns the data for a specific location as a string"
@@ -383,44 +389,46 @@ class EMParticlesEditModel(EMFileItemModel):
 		#if index.column()==0 : print "EMFileItemModel.data(%d %d %s)=%s"%(index.row(),index.column(),index.parent(),str(data.__dict__))
 
 		col=index.column()
-		if col==0 : 
+		if col==0:
+			return nonone(data.index)
+		elif col==1 : 
 			if data.isbdb : return "bdb:"+data.name
 			return nonone(data.name)
-		elif col==1 : 
+		elif col==2 : 
 			if data.type==0 : return "-"
 			return nonone(data.type)
-		elif col==2 :
+		elif col==3 :
 			if data.particlecount==0 : return "-"
 			return nonone(data.particlecount)
-		elif col==3 :
+		elif col==4 :
 			if data.badparticlecount==0 : return "-"
 			return nonone(data.badparticlecount)
-		elif col==4 :
+		elif col==5 :
 			if data.defocus==0 : return "-"
 			return nonone(data.defocus)
-		elif col==5 :
+		elif col==6 :
 			if data.bfactor==0 : return "-"
 			return nonone(data.bfactor)
-		elif col==6 :
+		elif col==7 :
 			if data.snr==0 : return "-"
 			return nonone(data.snr)
-		elif col==7 :
+		elif col==8 :
 			if data.quality==0 : return "-"
 			return nonone(data.quality)
-		elif col==8 :
+		elif col==9 :
 			if data.sampling==0 : return "-"
 			return nonone(data.sampling)
-		elif col==9 :
+		elif col==10 :
 			if data.particledim==0 : return "-"
 			return nonone(data.particledim)
 
 class EMParticlesEditEntry(EMParticlesEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:x.name,lambda x:x.type,lambda x:x.particlecount, lambda x:x.badparticlecount, lambda x:x.defocus, lambda x:x.bfactor, lambda x:x.snr, lambda x:x.quality, lambda x:x.sampling, lambda x:x.particledim)
+	col=(lambda x:x.index,lambda x:x.name,lambda x:x.type,lambda x:x.particlecount, lambda x:x.badparticlecount, lambda x:x.defocus, lambda x:x.bfactor, lambda x:x.snr, lambda x:x.quality, lambda x:x.sampling, lambda x:x.particledim)
 	
-	def __init__(self,root,name,parent=None,hidedot=True):
-		EMParticlesEntry.__init__(self,root=root,name=name,parent=parent,hidedot=hidedot)
+	def __init__(self,root,name,i,parent=None,hidedot=True):
+		EMParticlesEntry.__init__(self,root=root,name=name,i=i,parent=parent,hidedot=hidedot)
 		self.badparticlecount = None
 		
 	def fillDetails(self, db):
@@ -448,15 +456,15 @@ class EMBoxesTable(EMBrowserWidget):
 class EMBoxesModel(EMFileItemModel):
 	""" Item model for the raw data """
 	
-	headers=("Raw Data Files","Stored Boxes", "Box Quality", "Micro Quality")
+	headers=("Row","Raw Data Files","Stored Boxes", "Box Quality", "Micro Quality")
 	
 	def __init__(self,startpath=None):
 		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMBoxesEntry)
 		
 	def columnCount(self,parent):
-		"Always 4 columns"
+		"Always 5 columns"
 		#print "EMFileItemModel.columnCount()=6"
-		return 4
+		return 5
 		
 	def data(self,index,role):
 		"Returns the data for a specific location as a string"
@@ -471,26 +479,28 @@ class EMBoxesModel(EMFileItemModel):
 		#if index.column()==0 : print "EMFileItemModel.data(%d %d %s)=%s"%(index.row(),index.column(),index.parent(),str(data.__dict__))
 
 		col=index.column()
-		if col==0 : 
+		if col==0:
+			return nonone(data.index)
+		elif col==1 : 
 			if data.isbdb : return "bdb:"+data.name
 			return nonone(data.name)
-		elif col==1 :
+		elif col==2 :
 			if data.boxcount==0 : return "-"
 			return nonone(data.boxcount)
-		elif col==2 :
+		elif col==3 :
 			if data.quality==0 : return "-"
 			return nonone(data.quality)
-		elif col==3 :
+		elif col==4 :
 			if data.mgquality==0 : return "-"
 			return nonone(data.mgquality)
 
 class EMBoxesEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:x.name,lambda x:x.boxcount, lambda x:x.quality, lambda x:x.mgquality)
+	col=(lambda x:x.index,lambda x:x.name,lambda x:x.boxcount, lambda x:x.quality, lambda x:x.mgquality)
 	
-	def __init__(self,root,name,parent=None,hidedot=True):
-		EMDirEntry.__init__(self,root,name,parent=parent,hidedot=hidedot)
+	def __init__(self,root,name,i,parent=None,hidedot=True):
+		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot)
 		self.boxcount=None
 		self.quality=None
 		self.mgquality=None
@@ -548,15 +558,15 @@ class EMRCTBoxesTable(EMBrowserWidget):
 class EMRCTBoxesModel(EMFileItemModel):
 	""" Item model for the raw data """
 	
-	headers=("Raw Data Files","Stored Boxes", "Box Quality", "Micro Quality")
+	headers=("Row","Raw Data Files","Stored Boxes", "Box Quality", "Micro Quality")
 	
 	def __init__(self,startpath=None):
 		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMRCTBoxesEntry)
 		
 	def columnCount(self,parent):
-		"Always 4 columns"
+		"Always 5 columns"
 		#print "EMFileItemModel.columnCount()=6"
-		return 4
+		return 5
 		
 	def data(self,index,role):
 		"Returns the data for a specific location as a string"
@@ -571,16 +581,18 @@ class EMRCTBoxesModel(EMFileItemModel):
 		#if index.column()==0 : print "EMFileItemModel.data(%d %d %s)=%s"%(index.row(),index.column(),index.parent(),str(data.__dict__))
 
 		col=index.column()
-		if col==0 : 
+		if col==0:
+			return nonone(data.index)
+		elif col==1 : 
 			if data.isbdb : return "bdb:"+data.name
 			return nonone(data.name)
-		elif col==1 :
+		elif col==2 :
 			if data.boxcount==0 : return "-"
 			return nonone(data.boxcount)
-		elif col==2 :
+		elif col==3 :
 			if data.quality==0 : return "-"
 			return nonone(data.quality)
-		elif col==3 :
+		elif col==4 :
 			if data.mgquality==0 : return "-"
 			return nonone(data.mgquality)
 
@@ -589,8 +601,8 @@ class EMRCTBoxesEntry(EMDirEntry):
 	
 	col=(lambda x:x.name,lambda x:x.boxcount, lambda x:x.quality, lambda x:x.mgquality)
 	
-	def __init__(self,root,name,parent=None,hidedot=True):
-		EMDirEntry.__init__(self,root,name,parent=parent,hidedot=hidedot)
+	def __init__(self,root,name,i,parent=None,hidedot=True):
+		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot)
 		self.boxcount=None
 		self.quality=None
 		self.mgquality=None
@@ -653,15 +665,15 @@ class EMSubTomosTable(EMBrowserWidget):
 class EMSubTomosModel(EMFileItemModel):
 	""" Item model for the raw data """
 	
-	headers=("Subtomograms","Num Subtomos", "Dims")
+	headers=("Row","Subtomograms","Num Subtomos", "Dims")
 	
 	def __init__(self,startpath=None):
 		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMSubTomosEntry)
 		
 	def columnCount(self,parent):
-		"Always 3 columns"
+		"Always 4 columns"
 		#print "EMFileItemModel.columnCount()=6"
-		return 3
+		return 4
 		
 	def data(self,index,role):
 		"Returns the data for a specific location as a string"
@@ -676,23 +688,25 @@ class EMSubTomosModel(EMFileItemModel):
 		#if index.column()==0 : print "EMFileItemModel.data(%d %d %s)=%s"%(index.row(),index.column(),index.parent(),str(data.__dict__))
 
 		col=index.column()
-		if col==0 : 
+		if col==0:
+			return nonone(data.index)
+		elif col==1 : 
 			if data.isbdb : return "bdb:"+data.name
 			return nonone(data.name)
-		elif col==1 :
+		elif col==2 :
 			if data.nimg==0 : return "-"
 			return nonone(data.nimg)
-		elif col==2 :
+		elif col==3 :
 			if data.dim==0 : return "-"
 			return nonone(data.dim)
 
 class EMSubTomosEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:x.name,lambda x:x.nimg, lambda x:x.dim)
+	col=(lambda x:x.index,lambda x:x.name,lambda x:x.nimg, lambda x:x.dim)
 	
-	def __init__(self,root,name,parent=None,hidedot=True):
-		EMDirEntry.__init__(self,root,name,parent=parent,hidedot=hidedot)
+	def __init__(self,root,name,i,parent=None,hidedot=True):
+		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot)
 		
 	def fillDetails(self, db):
 		# Maybe add code to cache results.....
@@ -712,15 +726,15 @@ class EMRawDataTable(EMBrowserWidget):
 class EMRawDataModel(EMFileItemModel):
 	""" Item model for the raw data """
 	
-	headers=("Raw Data Files","Dimensions", "Quality")
+	headers=("Row","Raw Data Files","Dimensions", "Quality")
 	
 	def __init__(self,startpath=None):
 		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMRawDataEntry)
 		
 	def columnCount(self,parent):
-		"Always 3 columns"
+		"Always 4 columns"
 		#print "EMFileItemModel.columnCount()=6"
-		return 3
+		return 4
 		
 	def data(self,index,role):
 		"Returns the data for a specific location as a string"
@@ -735,23 +749,25 @@ class EMRawDataModel(EMFileItemModel):
 		#if index.column()==0 : print "EMFileItemModel.data(%d %d %s)=%s"%(index.row(),index.column(),index.parent(),str(data.__dict__))
 
 		col=index.column()
-		if col==0 : 
+		if col==0:
+			return nonone(data.index)
+		elif col==1 : 
 			if data.isbdb : return "bdb:"+data.name
 			return nonone(data.name)
-		elif col==1 :
+		elif col==2 :
 			if data.dim==0 : return "-"
 			return nonone(data.dim)
-		elif col==2 :
+		elif col==3 :
 			if data.mgquality==0 : return "-"
 			return nonone(data.mgquality)		
 		
 class EMRawDataEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:x.name,lambda x:x.dim, lambda x:x.mgquality)
+	col=(lambda x:x.index,lambda x:x.name,lambda x:x.dim, lambda x:x.mgquality)
 	
-	def __init__(self,root,name,parent=None,hidedot=True):
-		EMDirEntry.__init__(self,root,name,parent=parent,hidedot=hidedot)
+	def __init__(self,root,name,i,parent=None,hidedot=True):
+		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot)
 		self.mgquality = None
 		
 	def fillDetails(self, db):
@@ -777,15 +793,15 @@ class EMTomoDataTable(EMBrowserWidget):
 class EMTomoDataModel(EMFileItemModel):
 	""" Item model for the raw data """
 	
-	headers=("Raw Data Files","Dimensions")
+	headers=("Row","Raw Data Files","Dimensions")
 	
 	def __init__(self,startpath=None):
 		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMTomoDataEntry)
 		
 	def columnCount(self,parent):
-		"Always 2 columns"
+		"Always 3 columns"
 		#print "EMFileItemModel.columnCount()=6"
-		return 2
+		return 3
 		
 	def data(self,index,role):
 		"Returns the data for a specific location as a string"
@@ -799,20 +815,22 @@ class EMTomoDataModel(EMFileItemModel):
 			return "XXX"
 
 		col=index.column()
-		if col==0 : 
+		if col==0:
+			return nonone(data.index)
+		elif col==1 : 
 			if data.isbdb : return "bdb:"+data.name
 			return nonone(data.name)
-		elif col==1 :
+		elif col==2 :
 			if data.dim==0 : return "-"
 			return nonone(data.dim)
 		
 class EMTomoDataEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:x.name,lambda x:x.dim)
+	col=(lambda x:x.index,lambda x:x.name,lambda x:x.dim)
 	
-	def __init__(self,root,name,parent=None,hidedot=True):
-		EMDirEntry.__init__(self,root,name,parent=parent,hidedot=hidedot)
+	def __init__(self,root,name,i,parent=None,hidedot=True):
+		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot)
 		self.mgquality = None
 		
 	def fillDetails(self, db):
