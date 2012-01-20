@@ -171,10 +171,12 @@ float XYData::get_yatx(float x,bool outzero)
 	if (x>data[nx-1].x) return outzero?0.0f:data[nx-1].y;
 	
 	int s = (int) floor((x - data[0].x) / mean_x_spacing);
+	if (s>nx-1) s=nx-1;
 
 	// These deal with possibly nonuniform x values. A btree would be better, but this is simple
 	while (s>0 && data[s].x > x) s--;
 	while (s<(nx-1) && data[s + 1].x < x ) s++;
+	if (s>nx-2) return outzero?0.0f:data[nx-1].y;
 	
 	float f = (x - data[s].x) / (data[s + 1].x - data[s].x);
 	float y = data[s].y * (1 - f) + data[s + 1].y * f;

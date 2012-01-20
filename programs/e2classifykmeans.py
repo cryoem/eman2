@@ -67,7 +67,7 @@ together."""
 	parser.add_argument("--normavg",action="store_true",help="Normalize averages",default=False)
 	parser.add_argument("--clsmx",type=str,default=None,help="Standard EMAN2 output suitable for use with e2classaverage, etc.")
 	parser.add_argument("--clsfiles","-C",action="store_true",help="Write EMAN 1 style cls files with members of each class",default=False)
-	parser.add_argument("--listout","-L",action="store_true",help="Output the results to 'class.list",default=False)
+#	parser.add_argument("--listout","-L",action="store_true",help="Output the results to 'class.list",default=False)
 	parser.add_argument("--mininclass",type=int,help="Try to eliminate classes with fewer than specified members. Default=2",default=2)
 	parser.add_argument("--original","-O",type=str,help="If the input stack was derived from another stack, you can provide the name of the original stack here",default=None)
 	parser.add_argument("--exclude", type=str,default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude.")

@@ -276,6 +276,7 @@ class EMParallelSimMX:
 						
 						try:
 							rslts = self.etc.get_results(tid)
+#							display(rslts[1]["rslt_data"][0])
 							self.__store_output_data(rslts[1])
 						except:
 							traceback.print_exc()
@@ -671,9 +672,9 @@ def main():
 	for r in range(*rrange):
 		if options.exclude and r in excl : continue
 		
-		if options.verbose>0: 
-			print "%d/%d\n"%(r,rrange[1]),
-			#sys.stdout.flush()
+		if options.verbose==1: 
+			print "%d/%d\r"%(r,rrange[1]),
+			sys.stdout.flush()
 		
 		# With the fillzero option, we only compute values where there is a zero in the existing matrix
 		if options.fillzero :
@@ -694,7 +695,8 @@ def main():
 		
 		E2progress(E2n,float(r-rrange[0])/(rrange[1]-rrange[0]))
 		shrink = options.shrink
-		row=cmponetomany(cimgs,rimg,options.align,options.aligncmp,options.cmp, options.ralign, options.raligncmp,options.shrink,mask,subset,options.prefilt)
+		if options.verbose>1 : print "%d. "%r,
+		row=cmponetomany(cimgs,rimg,options.align,options.aligncmp,options.cmp, options.ralign, options.raligncmp,options.shrink,mask,subset,options.prefilt,options.verbose)
 		for c,v in enumerate(row):
 			if row==None : mxout[0].set_value_at(c,r,0,-1.0e30)
 			else: mxout[0].set_value_at(c,r,0,v[0])
@@ -726,7 +728,7 @@ def main():
 	
 	E2end(E2n)
 	
-def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ralign=None, alircmp=("dot",{}),shrink=None,mask=None,subset=None,prefilt=False):
+def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ralign=None, alircmp=("dot",{}),shrink=None,mask=None,subset=None,prefilt=False,verbose=0):
 	"""Compares one image (target) to a list of many images (reflist). Returns """
 
 	ret=[None for i in reflist]
@@ -745,13 +747,15 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 		if align[0] :
 			r.del_attr("xform.align2d")
 			ta=r.align(align[0],target,align[1],alicmp[0],alicmp[1])
+			if verbose>3: print ta.get_attr("xform.align2d")
 			#ta.debug_print_params()
 			
 			if ralign and ralign[0]:
 				ralign[1]["xform.align2d"] = ta.get_attr("xform.align2d")
 				r.del_attr("xform.align2d")
 				ta = r.align(ralign[0],target,ralign[1],alircmp[0],alircmp[1])
-			
+				if verbose>3: print ta.get_attr("xform.align2d")
+
 			t = ta.get_attr("xform.align2d")
 			t.invert()
 			p = t.get_params("2d")
@@ -766,6 +770,11 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 		else :
 			ret[i]=(target.cmp(cmp[0],r,cmp[1]),0,0,0,1.0,False)
 		
+		if verbose>2 : print ret[i][0],
+	
+	if verbose>2 : print ""
+	if verbose==2 :
+		print "Best: ",sorted([(ret[i][0],i) for i in range(len(ret))])[0]
 	return ret
 
 def check(options,verbose):
