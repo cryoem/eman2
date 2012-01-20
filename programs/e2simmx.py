@@ -225,8 +225,8 @@ class EMParallelSimMX:
 				if self.options.mask!=None : data["mask"] = ("cache",self.options.mask,0,1)
 				if self.options.fillzero :
 					# for each particle check to see which portion of the matrix we need to fill
-					if (bn%10==0) : print "%d/%d     \n"%(bn,len(blocks)),
-					#sys.stdout.flush()
+					if (bn%10==0) : print "%d/%d     \r"%(bn,len(blocks)),
+					sys.stdout.flush()
 					rng=[]
 					for i in range(block[2],block[3]):
 						c=EMData()
@@ -266,8 +266,8 @@ class EMParallelSimMX:
 #			
 			while 1:
 				if len(self.tids) == 0: break
-				print len(self.tids),"simmx tasks left in main loop   \n",
-				#sys.stdout.flush()
+				print len(self.tids),"simmx tasks left in main loop   \r",
+				sys.stdout.flush()
 				st_vals = self.etc.check_task(self.tids)
 				for i in xrange(len(self.tids)-1,-1,-1):
 					st = st_vals[i]
@@ -286,12 +286,12 @@ class EMParallelSimMX:
 						if self.logger != None:
 							E2progress(self.logger,1.0-len(self.tids)/float(len(blocks)))
 							if self.options.verbose>0: 
-								print "%d/%d\n"%(len(self.tids),len(blocks))
-								#sys.stdout.flush()
+								print "%d/%d\r"%(len(self.tids),len(blocks))
+								sys.stdout.flush()
 								
 						self.tids.pop(i)
-					print len(self.tids),"simmx tasks left in main loop   \n",
-					#sys.stdout.flush()
+					print len(self.tids),"simmx tasks left in main loop   \r",
+					sys.stdout.flush()
 
 				
 				time.sleep(10)
@@ -672,9 +672,15 @@ def main():
 	for r in range(*rrange):
 		if options.exclude and r in excl : continue
 		
+<<<<<<< e2simmx.py
+		if options.verbose>0: 
+			print "%d/%d\r"%(r,rrange[1]),
+			sys.stdout.flush()
+=======
 		if options.verbose==1: 
 			print "%d/%d\r"%(r,rrange[1]),
 			sys.stdout.flush()
+>>>>>>> 1.105
 		
 		# With the fillzero option, we only compute values where there is a zero in the existing matrix
 		if options.fillzero :

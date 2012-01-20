@@ -89,7 +89,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		grid.addWidget(self.makeCMDButtonsWidget(),3,1,1,1)
 		
 		# Make status bar
-		self.statusbar = EMAN2StatusBar("Welcome to the EMAN2 Project Manager")
+		self.statusbar = EMAN2StatusBar("Welcome to the EMAN2 Project Manager","font-weight:bold;")
 		centralwidget.setLayout(grid)
 		# Add splitter to adjust statsus bar
 		vsplitter.addWidget(centralwidget)
@@ -216,7 +216,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		self.changeDirectory(self.openbrowser.getCWD())
 		self.loadPMdb()
 		self.updateProject()
-		self.statusbar.setMessage("Project Name is Now: '%s'"%self.pn_project_name)
+		self.statusbar.setMessage("Project Name is Now: '%s'"%self.pn_project_name, "font-weight:bold;")
 		
 	def _on_editproject(self):
 		""" Open edit dialog """
@@ -499,7 +499,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		
 		child.realTimeCommunicate(self.statusbar)
 		
-		self.statusbar.setMessage("Program %s Launched!!!!"%str(cmd).split()[0])
+		self.statusbar.setMessage("Program %s Launched!!!!"%str(cmd).split()[0],"font-weight:bold;")
 		
 		return True
 	
@@ -510,7 +510,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		try:
 			f = open(os.getenv("EMAN2DIR")+"/bin/"+program,"r")
 		except:
-			self.statusbar.setMessage("Can't open usage file '%s'"%program)
+			self.statusbar.setMessage("Can't open usage file '%s'"%program,"color:red;")
 			return
 		begin = False
 		helpstr = ""
@@ -560,7 +560,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		try:
 			jsonfile = open(filename, 'r')
 		except:
-			self.statusbar.setMessage("Can't open configureation file '%s'"%filename)
+			self.statusbar.setMessage("Can't open configureation file '%s'"%filename,"color:red;")
 			return
 		data = jsonfile.read()
 		data = self.json_strip_comments(data)
@@ -640,7 +640,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		try: 
 			f = open(os.getenv("EMAN2DIR")+"/bin/"+e2program,"r")
 		except:
-			self.statusbar.setMessage("Can't open file '%s'"%e2program)
+			self.statusbar.setMessage("Can't open file '%s'"%e2program,"color:red;")
 			return
 		# Regex objects
 		lineregex = re.compile("^\s*parser\.add_",flags=re.I) # eval parser.add_ lines, which are  not commented out.
@@ -832,7 +832,6 @@ class EMPopen(subprocess.Popen):
 				break
 
 			if self.poll() !=None:
-				print "Stopped"
 				break
 				
 			# A HACK to prevent broken pipes(this may be a bit buggy, but it fixes an appaernt bug in subprocess module 
@@ -842,23 +841,23 @@ class EMAN2StatusBar(QtGui.QTextEdit):
 	"""
 	The Stats bar for PM
 	"""
-	def __init__(self, text):
+	def __init__(self, text, style):
 		QtGui.QTextEdit.__init__(self)
 		self.setFrameShape(QtGui.QFrame.Panel | QtGui.QFrame.Sunken)
 		self.setLineWidth(2)
 		#self.setMargin(4)
 		self.setTextInteractionFlags(QtCore.Qt.NoTextInteraction)
 		self.viewport().setCursor(QtCore.Qt.ArrowCursor)
-		self.setMessage(text)
+		self.setMessage(text, style)
 		self.setToolTip("This is the Status Bar")
 		
-	def setMessage(self, text):
+	def setMessage(self, text, style=""):
 		textcursor = self.textCursor()
 		textcursor.movePosition(QtGui.QTextCursor.End)
 		if textcursor.columnNumber() !=0:
-			self.insertHtml("<br>"+text)
+			self.insertHtml("<br><span style=%s>%s</span>"%(style, text))
 		else:
-			self.insertHtml(text)
+			self.insertHtml("<span style=%s>%s</span>"%(style,text))
 		self.verticalScrollBar().setValue(self.verticalScrollBar().maximum())
 		
 
@@ -1089,7 +1088,7 @@ class NoteBook(QtGui.QWidget):
 			self.texteditbox.setHtml(fin.read())
 			fin.close()
 		except: 
-			self.pm().statusbar.setMessage("No pmnotes file found, starting a new one...")
+			self.pm().statusbar.setMessage("No pmnotes file found, starting a new one...","font-weight:bold;")
 			self.texteditbox.insertHtml("<b>Project Name: %s<br>EMAN Version: %s<br>Path: %s<br></b>"%(self.pm().pn_project_name,EMANVERSION,self.pm().getPMCWD()))
 			
 	def checkEMAN2LogFile(self):
@@ -1496,10 +1495,10 @@ class PMProgramWidget(QtGui.QTabWidget):
 			if not self.guiwidget.errorstate: 
 				return self.guitexteditbox.toPlainText()
 			else:
-				self.pm().statusbar.setMessage("Error(s) in GUI parameters. Please fix....")
+				self.pm().statusbar.setMessage("Error(s) in GUI parameters. Please fix....","color:red;")
 				return None
 		else:
-			self.pm().statusbar.setMessage("Error Can't launch from help menu")
+			self.pm().statusbar.setMessage("Error Can't launch from help menu","color:red;")
 			return None
 		
 	def _on_tabchange(self, idx):
@@ -1713,14 +1712,13 @@ class PMGUIWidget(QtGui.QScrollArea):
 			if widget.getArgument() == None: continue
 			# Check for errors before we launch script
 			if widget.getErrorMessage():
-				self.pm().statusbar.setMessage(self.getErrorMessage())
+				self.pm().statusbar.setMessage(self.getErrorMessage(),"color:red;")
 				self.errorstate = True
 				return None
 			# Save the value
 			self.db[widget.getName()+widget.getMode()] = widget.getValue()
 			args += " "+widget.getArgument()
 			
-		self.pm().statusbar.setMessage("")	# Blank Status bar
 		return args
 	
 	def getErrorMessage(self):
@@ -1734,7 +1732,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 		return errormsg
 			
 	def _on_message(self, QString):
-		self.pm().statusbar.setMessage(str(QString))
+		self.pm().statusbar.setMessage(str(QString),"color:red;")
 		
 class PMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 	"""
@@ -1888,7 +1886,7 @@ class ProjectDialog(QtGui.QDialog):
 		self.pm.pm_projects_db['global.apix'] = str(self.microscope_apix.text())
 		self.pm.pm_projects_db['project_icon'] = str(self.icon_path.text())
 		self.pm.pm_projects_db['project_name'] = str(self.project_name.text())
-		self.pm.statusbar.setMessage("Project: "+self.project_name.text()+" edited!")
+		self.pm.statusbar.setMessage("Project: "+self.project_name.text()+" edited!","font-weight:bold;")
 		self.pm.updateProject()
 		self.done(0)
 		
