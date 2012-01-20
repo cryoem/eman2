@@ -672,15 +672,9 @@ def main():
 	for r in range(*rrange):
 		if options.exclude and r in excl : continue
 		
-<<<<<<< e2simmx.py
 		if options.verbose>0: 
 			print "%d/%d\r"%(r,rrange[1]),
 			sys.stdout.flush()
-=======
-		if options.verbose==1: 
-			print "%d/%d\r"%(r,rrange[1]),
-			sys.stdout.flush()
->>>>>>> 1.105
 		
 		# With the fillzero option, we only compute values where there is a zero in the existing matrix
 		if options.fillzero :
