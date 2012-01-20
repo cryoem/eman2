@@ -36,7 +36,9 @@ from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU,GLUT
 from EMAN2 import Util,EMUtil,file_exists,IMAGE_UNKNOWN,gimme_image_dimensions3D,EMData
 import os
-
+from EMAN2 import Transform
+from emscene3d import EMScene3D
+from emdataitem3d import EMDataItem3D, EMIsosurface
 
 def image_update():
 	from emimage2d import EMImage2DWidget
@@ -87,7 +89,7 @@ def get_app():
 
 class EMImageWidget(object):
 	"""This is basically a factory class that will return an instance of the appropriate EMImage* class """
-	def __new__(cls,data=None,old=None,app=None,force_2d=False,force_plot=False,filename="",replace=True,usescenegraph=False):
+	def __new__(cls,data=None,old=None,app=None,force_2d=False,force_plot=False,filename="",replace=True):
 		"""This will create a new EMImage* object depending on the type of 'data'. If
 		old= is provided, and of the appropriate type, it will be used rather than creating
 		a new instance.
@@ -120,31 +122,15 @@ class EMImageWidget(object):
 			widget.set_data(data,filename)
 			return widget
 		elif isinstance(data,EMData):
-			if usescenegraph:
-				from EMAN2 import Transform
-				from emscene3d import EMScene3D
-				from emdataitem3d import EMDataItem3D, EMIsosurface
-				data = EMDataItem3D(data, transform=Transform())
-				#data.setSelectedItem(True)
-				isosurface = EMIsosurface(data, transform=Transform())
-				if old:
-					if isinstance(old,EMScene3D):
-						old.insertNewNode("Data", data, parentnode=old)
-						old.insertNewNode("Iso", isosurface, parentnode=data)
-						return old
-				widget = EMScene3D()
-				widget.insertNewNode("Data", data, parentnode=widget)
-				widget.insertNewNode("Iso", isosurface, parentnode=data)
-				return widget
-			else:
-				from emimage3d import EMImage3DWidget
-				if old:
-					if isinstance(old,EMImage3DWidget) :
-						old.set_data(data,filename,replace)
-						return old
-				widget = EMImage3DWidget(application=app)
-				widget.set_data(data,filename,replace)
-				return widget
+			if isinstance(old,EMScene3D): widget = old
+			else: widget = EMScene3D()
+			data = EMDataItem3D(data, transform=Transform())
+			#data.setSelectedItem(True)
+			isosurface = EMIsosurface(data, transform=Transform())
+			widget.insertNewNode(os.path.basename(filename), data, parentnode=widget)
+			widget.insertNewNode("Iso", isosurface, parentnode=data)
+			return widget
+
 		elif isinstance(data,list) and isinstance(data[0],EMData):
 			from emimagemx import EMImageMXWidget
 			if old:
@@ -188,7 +174,7 @@ class EMWidgetFromFile(object):
 	from disk internally, allowing the user to view very large sets.
 	
 	"""
-	def __new__(cls,filename,application,force_plot=False,force_2d=False,old=None,usescenegraph=False):
+	def __new__(cls,filename,application,force_plot=False,force_2d=False,old=None):
 		
 		file_type = Util.get_filename_ext(filename)
 		em_file_type = EMUtil.get_image_ext_type(file_type)
@@ -234,24 +220,15 @@ class EMWidgetFromFile(object):
 					widget.set_data_from_file(filename)
 					return widget
 			elif isinstance(data,EMData):
-				if usescenegraph:
-					from EMAN2 import Transform
-					from emscene3d import EMScene3D
-					from emdataitem3d import EMDataItem3D, EMIsosurface
-					if isinstance(old,EMScene3D): widget = old
-					else: widget = EMScene3D()
-					data = EMDataItem3D(data, transform=Transform())
-					#data.setSelectedItem(True)
-					isosurface = EMIsosurface(data, transform=Transform())
-					widget.insertNewNode(os.path.basename(filename), data, parentnode=widget)
-					widget.insertNewNode("Iso", isosurface, parentnode=data)
-					return widget
-				else:
-					from emimage3d import EMImage3DWidget
-					if isinstance(old,EMImage3DWidget): widget = old
-					else: widget = EMImage3DWidget(application=application)
-					widget.set_data(data,filename)
-					return widget
+				if isinstance(old,EMScene3D): widget = old
+				else: widget = EMScene3D()
+				data = EMDataItem3D(data, transform=Transform())
+				#data.setSelectedItem(True)
+				isosurface = EMIsosurface(data, transform=Transform())
+				widget.insertNewNode(os.path.basename(filename), data, parentnode=widget)
+				widget.insertNewNode("Iso", isosurface, parentnode=data)
+				return widget
+				
 			elif data == None or isinstance(data,list):
 				from emimagemx import EMImageMXWidget
 				if isinstance(old,EMImageMXWidget): widget = old

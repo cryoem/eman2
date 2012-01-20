@@ -211,7 +211,7 @@ def getmxim(fsp,fsp2,clsnum):
 	return imgs
 
 def display_file(filename,app,force_2d=False,usescenegraph=False):
-	w = EMWidgetFromFile(filename,application=app,force_2d=force_2d,usescenegraph=options.newwidget)
+	w = EMWidgetFromFile(filename,application=app,force_2d=force_2d)
 	w.setWindowTitle(get_file_tag(filename))
 	
 	app.show_specific(w)
@@ -222,7 +222,7 @@ def display_file(filename,app,force_2d=False,usescenegraph=False):
 
 def display(img,app,title="EMAN2 image"):
 	if len(img)==1 : img=img[0]
-	w=EMImageWidget(data=img,old=None,app=app,usescenegraph=options.newwidget)
+	w=EMImageWidget(data=img,old=None,app=app)
 	w.setWindowTitle(title)
 	try:
 		if file_exists(title):

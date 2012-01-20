@@ -142,7 +142,7 @@ class EMDataItem3D(EMItem3D):
 		else:
 			self.data = EMData(str(data))
 			self.path = str(data)
-		
+			
 		for child in self.getChildren():
 			try:	# What if child ins't a data type?
 				child.dataChanged()
@@ -1144,7 +1144,6 @@ class EMIsosurface(EMItem3D):
 		When the EMData changes for EMDataItem3D parent node, this method is called. It is responsible for updating the state of the slice node.
 		"""
 		data = self.getParent().getData()
-		
 		if self.isothr: #there was data previously
 			normalized_threshold = (self.isothr - self.mean)/self.sigma
 		else:
@@ -1270,7 +1269,7 @@ class EMIsosurface(EMItem3D):
 	def renderNode(self):
 		if (not isinstance(self.parent.data,EMData)): return
 		#a = time()
-		
+
 		scenegraph = self.getRootNode()
 		cull = glIsEnabled(GL_CULL_FACE)
 		polygonmode = glGetIntegerv(GL_POLYGON_MODE)
@@ -1287,7 +1286,6 @@ class EMIsosurface(EMItem3D):
 		else:
 			glPolygonMode(GL_FRONT,GL_FILL);
 		
-
 		glShadeModel(GL_SMOOTH)
 		if (self.force_update):
 			self.getIsosurfaceContours()
@@ -1299,10 +1297,8 @@ class EMIsosurface(EMItem3D):
 			glColorMaterial(GL_FRONT, GL_DIFFUSE)
 		else:
 			glDisable(GL_COLOR_MATERIAL)
-			
 		# This code draws an outline around the isosurface
-		if (self.is_selected or self.getParent().is_selected) and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded(): # No need for outlining in selection mode
-						
+		if (self.is_selected or self.getParent().is_selected) and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded(): # No need for outlining in selection mode			
 			glPushAttrib( GL_ALL_ATTRIB_BITS )
 		
 			if scenegraph.camera.getCappingMode(): glDisable(GL_CULL_FACE)
@@ -1325,8 +1321,7 @@ class EMIsosurface(EMItem3D):
 			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0, 1.0, 0.0, 1.0])
 			self.renderIso()
 	
-			glPopAttrib()
-			
+			glPopAttrib()	
 		elif (scenegraph.camera.getCappingMode() and not scenegraph.zslicemode and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER):
 			# First get a stencil of the object silluette
 			glPushAttrib( GL_ALL_ATTRIB_BITS )
@@ -1363,14 +1358,12 @@ class EMIsosurface(EMItem3D):
 			glPopMatrix()
 
 			glPopAttrib()
-			
 		else:
 			glPushAttrib( GL_ALL_ATTRIB_BITS )
 			
 			self.renderIso()
 			
 			glPopAttrib()
-			
 #		self.draw_bc_screen() #TODO: check into porting this from EM3DModel
 				
 		if cull: glEnable(GL_CULL_FACE)

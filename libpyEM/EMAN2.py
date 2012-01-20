@@ -576,7 +576,8 @@ def display(img,force_2d=False,force_plot=False):
 		if isinstance(img,tuple) : img=list(img)
 		image = emimage.EMImageWidget(img,None,app,force_2d,force_plot)
 		app.show_specific(image)
-		try: image.optimally_resize()
+		try: 
+			image.optimally_resize()
 		except: pass
 	else:
 		# In non interactive GUI mode, this will display an image or list of images with e2display
