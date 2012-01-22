@@ -721,7 +721,7 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
  		/*Get the file dataspace - the region we want to read in the file*/
 		int x0 = 0, y0 = 0, z0 = 0;		//the coordinates for up left corner, trim to be within image bound
 		int x1 = 0, y1 = 0, z1 = 0;		//the coordinates for down right corner, trim to be within image bound
-		int nx1 = 1, ny1 = 1, nz1 = 1;	//dimensions of the sub-region, actual region read form file
+		int nx1 = 1, ny1 = 1, nz1 = 1;	//dimensions of the sub-region, actual region read from file
  		if(rank == 3) {
 			hsize_t     doffset[3];             /* hyperslab offset in the file */
 			doffset[2] = (hsize_t)(area->x_origin() < 0 ? 0 : area->x_origin());
@@ -1016,7 +1016,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	char ipath[50];
 	sprintf(ipath,"/MDF/images/%d/image",image_index);
 
-	// Now create the actual image dataset
+	// Now create the actual image dataspace(not for regional writing)
 	if (nz==1)  {
 		hsize_t dims[2]= { ny,nx };
 		spc=H5Screate_simple(2,dims,NULL);
@@ -1027,6 +1027,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	}
 
 	ds=H5Dopen(file,ipath);
+	hsize_t rank = 0;
 	if(ds<0) {//new dataset
 		switch(dt) {
 		case EMUtil::EM_FLOAT:
@@ -1042,6 +1043,10 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			throw ImageWriteException(filename,"HDF5 does not support this data format");
 		}
 	}
+	else {	//existing file
+		hid_t spc_file = H5Dget_space(ds);
+		rank = H5Sget_simple_extent_ndims(spc_file);
+	}
 
 	//convert data to unsigned short, unsigned char...
 	hsize_t size = (hsize_t)nx*ny*nz;
@@ -1052,32 +1057,70 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, nz);
 
 	if(area) {
-		hsize_t doffset[3];		/*hyperslab offset in the file*/
-		doffset[0] = (hsize_t)(area->x_origin());
-		doffset[1] = (hsize_t)(area->y_origin());
-		doffset[2] = (hsize_t)(area->z_origin());
+		hid_t filespace = H5Dget_space(ds);
+		hid_t memoryspace = 0;
+		if(rank==3) {
+			hsize_t doffset[3];		/*hyperslab offset in the file*/
+			doffset[0] = (hsize_t)(area->z_origin()<0 ? 0 : area->z_origin());
+			doffset[1] = (hsize_t)(area->y_origin()<0 ? 0 : area->y_origin());
+			doffset[2] = (hsize_t)(area->x_origin()<0 ? 0 : area->x_origin());
 
-		hsize_t dcount[3];		/*size of the hyperslab in the file*/
-		dcount[0] = (hsize_t)(area->get_width());
-		dcount[1] = (hsize_t)(area->get_height()?area->get_height():1);
-		dcount[2] = (hsize_t)(area->get_depth()?area->get_depth():1);
+			hsize_t dcount[3];		/*size of the hyperslab in the file*/
+			dcount[0] = (hsize_t)(area->get_depth()?area->get_depth():1);
+			dcount[1] = (hsize_t)(area->get_height()?area->get_height():1);
+			dcount[2] = (hsize_t)(area->get_width()?area->get_width():1);
 
-		H5Sselect_hyperslab(spc, H5S_SELECT_SET, (const hsize_t*)doffset, NULL, (const hsize_t*)dcount, NULL);
+			herr_t errno = H5Sselect_hyperslab(filespace, H5S_SELECT_SET, (const hsize_t*)doffset, NULL, (const hsize_t*)dcount, NULL);
+			if(errno < 0) {
+				std::cerr << "H5Sselect_hyperslab error: " << errno << std::endl;
+			}
 
-		/*Create memory space with size of the region.*/
-		hsize_t dims[3];	/*size of the region in the memory*/
-		dims[0] = (hsize_t)(area->get_width());
-		dims[1] = (hsize_t)(area->get_height()?area->get_height():1);
-		dims[2] = (hsize_t)(area->get_depth()?area->get_depth():1);
+			/*Create memory space with size of the region.*/
+			hsize_t dims[3];	/*size of the region in the memory*/
+			dims[0] = dcount[2]?dcount[2]:1;
+			dims[1]	= dcount[1]?dcount[1]:1;
+			dims[2] = dcount[0]?dcount[0]:1;
 
-		hid_t memoryspace = H5Screate_simple(3, dims, NULL);
+			memoryspace = H5Screate_simple(rank, dims, NULL);
+		}
+		else if(rank==2){
+			hsize_t doffset[2];		/*hyperslab offset in the file*/
+			doffset[0] = (hsize_t)(area->y_origin() < 0 ? 0 : area->y_origin());
+			doffset[1] = (hsize_t)(area->x_origin() < 0 ? 0 : area->x_origin());
+
+			hsize_t dcount[2];		/*size of the hyperslab in the file*/
+			dcount[0] = (hsize_t)area->get_height();
+			dcount[1] = (hsize_t)area->get_width();
+
+			herr_t errno = H5Sselect_hyperslab(filespace, H5S_SELECT_SET, (const hsize_t*)doffset, NULL, (const hsize_t*)dcount, NULL);
+			if(errno < 0) {
+				std::cerr << "H5Sselect_hyperslab error: " << errno << std::endl;
+			}
+
+			/*Create memory space with size of the region.*/
+			/*Define memory dataspace - the memory we will created for the region*/
+			hsize_t     dims[2];              /* size of the region in the memory */
+			dims[0] = (hsize_t)(dcount[1]?dcount[1]:1);
+			dims[1]	= (hsize_t)(dcount[0]?dcount[0]:1);
+
+			memoryspace = H5Screate_simple(rank, dims, NULL);
+		}
+		else {
+			std::cerr << "rank is wrong: " << rank << std::endl;
+		}
+
+		herr_t errno;
 		switch(dt) {
 		case EMUtil::EM_FLOAT:
-			H5Dwrite(ds, H5T_NATIVE_FLOAT, memoryspace, spc, H5P_DEFAULT, data);
+			errno = H5Dwrite(ds, H5T_NATIVE_FLOAT, memoryspace, filespace, H5P_DEFAULT, data);
+			if(errno<0) {
+				std::cerr << "H5Dwrite error: " << errno << std::endl;
+			}
 			break;
 		default:
 			throw ImageWriteException(filename,"HDF5 does not support regional writing for this data format");
 		}
+		H5Sclose(filespace);
 		H5Sclose(memoryspace);
 	}
 	else {
