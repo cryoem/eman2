@@ -785,6 +785,13 @@ namespace EMAN
 		 * */
 		void set_xyz_origin(float origin_x, float origin_y, float origin_z);
 		
+		/**Find the mean and variance of voxels in the missing wedge
+		 * @param wedgeangle the angle of the missing wedge
+		 * @param influnce the region of influnce in fourier space. This is a fudge factor between 0 and 0.5
+		 * @param wedgedirection the direction of the wedge, so far only a wedge along Z is supported (set wedgedirection to 0)
+		 * */
+		EMData* compute_missingwedge_stats(float wedgeangle, float influnce = 0.05, int wedgedirection = 0);
+		
 		static int totalalloc;
 	private:
 		/** This EMDataFlags is deprecated. For anything which is currently handled by setting a

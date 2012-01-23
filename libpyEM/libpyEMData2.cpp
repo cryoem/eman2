@@ -202,13 +202,14 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_helicise_overloads_3_6, EMAN:
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_helicise_grid_overloads_4_7, EMAN::EMData::helicise_grid, 4, 7)
 
-
-
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_zero_corner_circulant_overloads_0_1, EMAN::EMData::zero_corner_circulant, 0, 1)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_dot_rotate_translate_overloads_4_5, EMAN::EMData::dot_rotate_translate, 4, 5)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_make_footprint_overloads_0_1, EMAN::EMData::make_footprint, 0, 1)
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_compute_missingwedge_stats_overloads_1_3, EMAN::EMData::compute_missingwedge_stats, 1, 3)
+
 }// namespace
 
 
@@ -535,6 +536,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("uncut_slice", &EMAN::EMData::uncut_slice, args("map", "tr"), "Opposite of the cut_slice(). It will take a slice and insert\nthe data into a real 3D map. It does not interpolate, it uses\nthe nearest neighbor.\n \nmap - The real 3D map.\ntr - Orientation of the slice.\n \nexception - NullPointerException If map is NULL.\nexception - ImageDimensionException If this image is not 2D.\nexception - ImageDimensionException If map image is not 3D.\nexception - ImageFormatException If this image is complex.\nexception - ImageFormatException If map is complex")
 	.def("set_xyz_origin", &EMAN::EMData::set_xyz_origin, args("origin_x", "origin_y", "origin_z"), "Set the x,y,z origin of the image\n \norigin_x - the x origin\norigin_y - the y origin\norigin_z - the z origin")
 	.def("equal", &EMAN::EMData::equal, args("that"), "compare the equality of two EMData object based on their pixel values")
+	.def("getwedgestats", &EMAN::EMData::compute_missingwedge_stats, EMAN_EMData_compute_missingwedge_stats_overloads_1_3(args("wedgeangle", "influnce", "wedgedirection"), "get the missingt wedge mean ansd std")[ return_value_policy< manage_new_object >() ])
 	.def("__getitem__", &emdata_getitem)
 	.def("__setitem__", &emdata_setitem)
 	.staticmethod("read_images_ext")
