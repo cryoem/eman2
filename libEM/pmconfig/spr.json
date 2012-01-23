@@ -210,6 +210,7 @@
     "CHILDREN": [
       {
         "ICON": "refine",
+        "MODE": "refinement",
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2refine", 
         "PROGRAM": "e2refine.py", 
         "NAME": "Run e2refine", 
@@ -218,6 +219,7 @@
       }, 
       {
         "ICON": "refine", 
+        "MODE": "refinement",
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2refinemulti",
         "PROGRAM": "e2refinemulti.py", 
         "NAME": "Run e2refinemulti",

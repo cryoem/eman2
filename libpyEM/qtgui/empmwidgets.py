@@ -597,7 +597,7 @@ class PMMultiSymWidget(PMBaseWidget):
 		multisym = QtGui.QWidget()
 		vbox = QtGui.QVBoxLayout()
 		for i,f in enumerate(fileslist):
-			widget = PMSymWidget("Model%d"%i,"c1")
+			widget = PMSymWidget("Model%d"%i,"c1",self.getMode())
 			self.multisymwidgetlist.append(widget)
 			vbox.addWidget(widget)
 			amount += 60	# A complete HACK
