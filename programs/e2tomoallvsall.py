@@ -63,7 +63,7 @@ def main():
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_argument("--path",type=str,default=None,help="Path for the refinement, default=auto")
+	parser.add_argument("--path",type=str,default=None,help="Path for the refinement")
 	
 	parser.add_argument("--groups",type=int,default=1,help="Breaks the set into subgroups and does ALL vs ALL on the subgroups separately. Recommended when the set is > 100")
 	
@@ -129,16 +129,17 @@ def main():
 	if not options.path: 
 		#options.path="bdb:"+numbered_path("sptavsa",True)
 		options.path = "sptavsa_01"
-	else:
-		while options.path in files:
-			if '_' not in options.path:
-				options.path = options.path + '_00'
-				
-			options.path = options.path.split('_')[0] + '_' + str(int(options.path.split('_')[-1]) + 1).zfill(2)
-			print "The new options.path is", options.path
+	
+	print "The files in dir are", files
 
+	while options.path in files:
+		if '_' not in options.path:
+			options.path = options.path + '_00'
+		options.path = options.path.split('_')[0] + '_' + str(int(options.path.split('_')[-1]) + 1).zfill(2)
+		print "The new options.path is", options.path
+	
 	if options.path not in files:
-		os.system('mkdir ' + options.path)
+		os.system('mkdir ' + options.path)	
 	
 	group_ranges=[]
 	data_files = []
