@@ -65,6 +65,8 @@ def main():
 	
 	parser.add_argument("--path",type=str,default=None,help="Path for the refinement, default=auto")
 	
+	parser.add_argument("--groups",type=int,default=1,help="Breaks the set into subgroups and does ALL vs ALL on the subgroups separately. Recommended when the set is > 100")
+	
 	parser.add_argument("--input", type=str, help="The name of the input volume stack. MUST be HDF or BDB, since volume stack support is required.", default=None)
 		
 	parser.add_argument("--iter", type=int, help="The number of iterations to perform. Default is 1.", default=1)
@@ -127,14 +129,67 @@ def main():
 	if not options.path: 
 		#options.path="bdb:"+numbered_path("sptavsa",True)
 		options.path = "sptavsa_01"
-	
+	else:
 		while options.path in files:
+			if '_' not in options.path:
+				options.path = options.path + '_00'
+				
 			options.path = options.path.split('_')[0] + '_' + str(int(options.path.split('_')[-1]) + 1).zfill(2)
 			print "The new options.path is", options.path
-		
+
 	if options.path not in files:
 		os.system('mkdir ' + options.path)
-			
+	
+	group_ranges=[]
+	data_files = []
+	
+	
+	nptcl = EMUtil.get_image_count(options.input)
+	groupsize = nptcl
+	entirestack = options.input
+	originalpath = options.path
+	
+	for i in range(options.groups):	
+		if options.groups > 1:
+			if options.groups * 3 > nptcl:
+				print "ERROR: You need at least 3 particles per groups to do all vs all within each group."
+				print "You asked for %d groups; thus, the stack needs to have more than %d particles, but it only has %d" % (options.groups,3*options.groups,nptcl)
+				print "Reduce the number of groups requested or provide a larger stack."
+				sys.exit()
+				
+			else:
+				groupsize = int( nptcl/options.groups )
+				bottom_range = i * groupsize
+				top_range = (i+1) * groupsize
+				if i == options.groups - 1:
+					top_range = nptcl
+
+				groupDIR = originalpath + '/group' + str(i+1).zfill(len(str(options.groups)))
+				groupID = 'group' + str(i+1).zfill(len(str(options.groups))) + '_raw.hdf'
+				groupPATH = groupDIR + '/' + groupID
+				os.system('mkdir ' + groupDIR)
+				#os.system('e2proc3d.py ' + entirestack + ' ' + groupPATH + ' --first=' + str(bottom_range) + ' --last=' + str(top_range)) 	
+				
+				mm = 0
+				for jj in xrange(bottom_range,top_range):
+					a = EMData(entirestack,jj)
+					a['spt_ptcl_indxs'] = mm
+					a.write_image(groupPATH,mm)
+					mm += 1
+				
+				options.input = groupPATH
+				options.path = groupDIR
+
+		print "I will start ALL vs ALL on group number", i+1
+		print "For which options.input is", options.input
+		allvsall(options)
+	return()
+	
+	
+def allvsall(options):
+	
+	print "Therefore the received options.input inside ALL VS ALL is", options.input
+	print "With these many particles in it", EMUtil.get_image_count(options.input)
 	hdr = EMData(options.input,0,True)
 	nx = hdr["nx"]
 	ny = hdr["ny"]
@@ -190,8 +245,8 @@ def main():
 		
 		nnew = len(newptcls)
 		if nnew + len(oldptcls) == 1:						#Stop the loop if the data has converged and you're left with one final particle (an average of all)
-				print "The all vs all algorithm has converged into one average\nTERMINATING."
-				sys.exit()
+				print "The all vs all algorithm has converged into one average"
+				break
 		
 		allptclsRound = {}							
 		
