@@ -168,6 +168,7 @@ float CccCmp::cmp(EMData * image, EMData *with) const
 	var2 = var2/double(n) - avg2*avg2;
 	ccc = ccc/double(n) - avg1*avg2;
 	ccc /= sqrt(var1*var2);
+	if (!Util::goodf(&ccc)) ccc=-2.0;		// Steve - if one image was 0, this returned nan, which messes certain things up. -2.0 is out of range, and should serve as a proxy
 	ccc *= negative;
 	return static_cast<float>(ccc);
 	EXITFUNC;
