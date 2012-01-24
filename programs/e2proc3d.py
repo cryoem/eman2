@@ -176,6 +176,7 @@ def main():
 	
 	infile = args[0]
 	outfile = args[1]
+	is_new_file = not os.path.isfile(outfile)
 	
 	n0 = options.first
 	n1 = options.last
@@ -419,7 +420,7 @@ def main():
 		elif 'mrc16bit' in optionlist:
 			data.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
 		else:
-			if options.append:
+			if options.append or is_new_file:
 				data.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
 			else:
 				data.write_image(outfile, img_index, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
