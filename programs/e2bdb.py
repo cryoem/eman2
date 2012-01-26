@@ -75,7 +75,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 	parser.add_argument("--smalldump",action="store_true",help="Lists contents of an entire database, but only list 2 items per dictionary to better see headers",default=False)
 	parser.add_argument("--extractplots",action="store_true",help="If a database contains sets of plots, such as bdb:refine_xx#convergence.results, this will extract the plots as text files.")
 	parser.add_argument("--check",action="store_true",help="Check for self-consistency and errors in the structure of specified databases",default=False)
-	parser.add_argument("--nocache",action="store_true",help="Don't use the database cache fof this operation",default=False)
+	parser.add_argument("--nocache",action="store_true",help="Don't use the database cache for this operation",default=False)
 	
 	parser.add_argument("--makevstack",type=str,help="Creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
 	parser.add_argument("--appendvstack",type=str,help="Appends to/creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
