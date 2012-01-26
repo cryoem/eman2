@@ -100,12 +100,14 @@ def DB_cleanup(signum=None,stack=None):
 		print "Shutdown complete, exiting" 
 		sys.stderr.flush()
 		sys.stdout.flush()
-		parallel_process_exit()
-		cuda_exit()
+		#parallel_process_exit()
+		#cuda_exit()
 		os._exit(1)
+	"""
 	else:
 		parallel_process_exit()
 		cuda_exit()
+	"""
 
 def cuda_exit():
 	try:	# will fail if cuda is not installed
