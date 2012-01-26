@@ -46,13 +46,15 @@ from empmtabwidgets import *
 
 class PMBaseWidget(QtGui.QWidget):
 	""" A base widget upon which all the other PM widgets are derived """
-	def __init__(self, name, mode=""):
+	def __init__(self, name, mode="",returnNone=False):
 		QtGui.QWidget.__init__(self)
 		
 		self.postional = False
 		self.name = name
 		self.setMode(mode)
 		self.errormessage = None
+		self.noarg = False
+		self.returnNone = returnNone
 		
 	def getValue(self):
 		raise NotImplementedError("Sub class must reimplemnt 'getValue' function")
@@ -77,7 +79,9 @@ class PMBaseWidget(QtGui.QWidget):
 		
 	def getArgument(self):
 		# If the value is None or blank then do not yeild an option. Obviously this will nver happen for Int bool or float
-		if str(self.getValue()) == "":
+		if str(self.getValue()) == "" or self.noarg:
+			return ""
+		elif  str(self.getValue()).upper() == "NONE" and not self.returnNone:
 			return ""
 		else:
 			""" There are two sorts of arguments: Posional and optional """
@@ -112,7 +116,7 @@ class PMIntEntryWidget(PMBaseWidget):
 
 		QtCore.QObject.connect(self.intbox,QtCore.SIGNAL("editingFinished()"),self._on_intchanged)
 		
-	def _on_intchanged(self):
+	def _on_intchanged(self, quiet=False):
 		if str(self.intbox.text()).upper() == "NONE":
 			self.value = None
 			self.setErrorMessage(None)
@@ -124,7 +128,7 @@ class PMIntEntryWidget(PMBaseWidget):
 		except ValueError:
 			self.intbox.setText("") 
 			self.setErrorMessage("Invalid type, Int neeeded in %s"%self.getName())
-			if self.isVisible(): self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Invalid type, Int neeeded in %s"%self.getName())
+			if self.isVisible() and not quiet: self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Invalid type, Int neeeded in %s"%self.getName())
 			
 	def _confirm_bounds(self):
 		if self.lrange != None and (self.value < self.lrange):
@@ -139,10 +143,39 @@ class PMIntEntryWidget(PMBaseWidget):
 		
 	def setValue(self, value, quiet=False):
 		self.intbox.setText(str(value))
-		self._on_intchanged()
+		self._on_intchanged(quiet=quiet)
 		
 	def setEnabled(self, state):
 		self.intbox.setEnabled(state)
+
+class PMShrinkEntryWidget(PMIntEntryWidget):
+	""" A widget for shink options. If this entry is set to <= 1 then no argument is returned """
+	def __init__(self, name, value, mode, lrange=None, postional=False, initdefault=None):
+		PMIntEntryWidget.__init__(self, name, value, mode, lrange=lrange, urange=None, postional=postional, initdefault=initdefault)
+		
+	def _on_intchanged(self, quiet=False):
+		if str(self.intbox.text()).upper() == "NONE" or str(self.intbox.text()) == "":
+			self.value = self.lrange - 1
+			self.intbox.setText(str(self.lrange-1))
+			self.setErrorMessage(None)
+			return
+		try:
+			self.value = int(self.intbox.text())
+			self.setErrorMessage(None)
+			self._confirm_bounds()
+		except ValueError:
+			self.value = self.lrange - 1
+			self.intbox.setText(str(self.lrange-1)) 
+			self.setErrorMessage("Invalid type, Int neeeded in %s"%self.getName())
+			if self.isVisible() and not quiet: self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Invalid type, Int neeeded in %s"%self.getName())
+		
+	def _confirm_bounds(self):
+		if self.lrange != None and (self.value < self.lrange):
+			self.value = self.lrange - 1
+			self.intbox.setText(str(self.lrange-1))
+			self.noarg = True
+			return
+		self.noarg = False
 		
 class PMFloatEntryWidget(PMBaseWidget):
 	""" A Widget for geting Float values. Type and range is checked """
@@ -164,7 +197,7 @@ class PMFloatEntryWidget(PMBaseWidget):
 		
 		QtCore.QObject.connect(self.floatbox,QtCore.SIGNAL("editingFinished()"),self._on_floatchanged)
 		
-	def _on_floatchanged(self):
+	def _on_floatchanged(self, quiet=False):
 		if str(self.floatbox.text()).upper() == "NONE":
 			self.value = None
 			self.setErrorMessage(None)
@@ -176,7 +209,7 @@ class PMFloatEntryWidget(PMBaseWidget):
 		except ValueError:
 			self.floatbox.setText("") 
 			self.setErrorMessage("Invalid type, float needed in '%s'"%self.getName())
-			if self.isVisible(): self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Invalid type, float needed in '%s'"%self.getName())
+			if self.isVisible() and not quiet: self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Invalid type, float needed in '%s'"%self.getName())
 			
 	def _confirm_bounds(self):
 		if self.lrange and (self.value < self.lrange):
@@ -191,14 +224,14 @@ class PMFloatEntryWidget(PMBaseWidget):
 		
 	def setValue(self, value, quiet=False):
 		self.floatbox.setText(str(value))
-		self._on_floatchanged()
+		self._on_floatchanged(quiet=quiet)
 	
 	def setEnabled(self, state):
 		self.floatbox.setEnabled(state)
 		
 class PMStringEntryWidget(PMBaseWidget):
 	""" A Widget for geting String values. Type is checked """
-	def __init__(self, name, string, mode, postional=False, initdefault=None):
+	def __init__(self, name, string, mode, postional=False, initdefault=None, returnNone=False):
 		PMBaseWidget.__init__(self, name, mode) 
 		gridbox = QtGui.QGridLayout()
 		label = QtGui.QLabel(name)
@@ -387,7 +420,12 @@ class PMDirectoryWidget(PMBaseWidget):
 	def updateDirs(self):
 		for idx in xrange(self.combobox.count()):
 			self.combobox.removeItem(self.combobox.count()-1)
-		for directory in sorted(glob.glob("%s*"%self.dirbasename)):
+		# This extra code allows use to have more than one type of directory
+		patterns = self.dirbasename.split("|")
+		dirs = []
+		for pattern in patterns:
+			dirs.extend(glob.glob("%s*"%pattern))
+		for directory in sorted(dirs):
 			self.combobox.addItem(str(directory))
 			
 	def getValue(self):
@@ -402,8 +440,8 @@ class PMDirectoryWidget(PMBaseWidget):
 		
 class PMComboWidget(PMBaseWidget):
 	""" A Widget for combo boxes. Type is checked """
-	def __init__(self, name, choices, default, mode, postional=False,  datatype=str, initdefault=None):
-		PMBaseWidget.__init__(self, name, mode) 
+	def __init__(self, name, choices, default, mode, postional=False,  datatype=str, initdefault=None, returnNone=False):
+		PMBaseWidget.__init__(self, name, mode, returnNone=returnNone) 
 		gridbox = QtGui.QGridLayout()
 		label = QtGui.QLabel(name)
 		self.combobox = QtGui.QComboBox()
@@ -437,14 +475,14 @@ class PMComboWidget(PMBaseWidget):
 			return
 		else:
 			self.setErrorMessage("Value '%s' not found in combobox '%s'"%(value,self.getName()))
-			self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Value '%s' not found in combobox '%s'"%(value,self.getName()))
+			if not quiet: self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Value '%s' not found in combobox '%s'"%(value,self.getName()))
 			return
 		
 			
 class PMComboParamsWidget(PMBaseWidget):
 	""" A Widget for combo boxes. Type is checked. For the combobox with params the datatype is always str """
-	def __init__(self, name, choices, default, mode, postional=False, initdefault=None):
-		PMBaseWidget.__init__(self, name, mode) 
+	def __init__(self, name, choices, default, mode, postional=False, initdefault=None, returnNone=False):
+		PMBaseWidget.__init__(self, name, mode, returnNone=returnNone) 
 		gridbox = QtGui.QGridLayout()
 		label = QtGui.QLabel(name)
 		self.combobox = QtGui.QComboBox()
@@ -487,7 +525,7 @@ class PMComboParamsWidget(PMBaseWidget):
 			self.combobox.setCurrentIndex(idx)
 		else:
 			self.setErrorMessage("Value '%s' not found in combobox '%s'"%(values[0],self.getName()))
-			self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Value '%s' not found in combobox '%s'"%(values[0],self.getName()))
+			if not quiet: self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Value '%s' not found in combobox '%s'"%(values[0],self.getName()))
 			return
 		if len(values) == 2: self.params.setText(values[1])
 		self.setErrorMessage(None)
@@ -547,7 +585,7 @@ class PMSymWidget(PMBaseWidget):
 			self.combobox.setCurrentIndex(idx)
 		else:
 			self.setErrorMessage("'%s' not a valid symmetry!!!"%value)
-			self.emit(QtCore.SIGNAL("pmmessage(QString)"),"'%s' not a valid symmetry!!!"%value)
+			if not quiet: self.emit(QtCore.SIGNAL("pmmessage(QString)"),"'%s' not a valid symmetry!!!"%value)
 			return
 		self.symnumbox.setValue(defsymnum)
 		self.setErrorMessage(None)
@@ -666,7 +704,7 @@ class PMAutoMask3DWidget(PMBaseWidget):
 			self.paramsdict[key].setValue(val)
 			
 	def getValue(self):
-		if not self.automask3dbool.isChecked(): return None
+		if not self.automask3dbool.isChecked(): return ""
 		value = ""
 		# concatenate things
 		for key in self.paramsdict.keys():

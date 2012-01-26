@@ -54,7 +54,7 @@ def main():
 	parser.add_argument("--numtemps",type=float,default=10.0,help="The number of temp steps, default=10.0", guitype='floatbox', row=3, col=2, rowspan=1, colspan=1)
 	parser.add_argument("--initemp",type=float,default=0.2,help="Initial temperature, default=0.2", guitype='floatbox', row=4, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--cooling",type=float,default=2.0,help="Cooling rate, default=2.0", guitype='floatbox', row=4, col=1, rowspan=1, colspan=1)
-	parser.add_argument("--shrink",type=int,default=0,help="Amount to shrink the CAs, default=0, no shrinking", guitype='intbox', row=4, col=2, rowspan=1, colspan=1)
+	parser.add_argument("--shrink",type=int,default=0,help="Amount to shrink the CAs, default=0, no shrinking", guitype='shrinkbox', row=4, col=2, rowspan=1, colspan=1)
 	parser.add_argument("--cuda",action="store_true", help="Use CUDA for the reconstructors step. (only if compiled with CUDA support.",default=False, guitype='boolbox', expert=True, row=6, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--sym", dest="sym", default="c1", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct.", guitype='symbox', row=5, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)

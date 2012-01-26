@@ -278,6 +278,13 @@
         "NAME": "Run e2resolution",
 	"NOTELEVEL": "1",
         "CHILDREN": []
+      },
+      {
+        "ICON": "resolution", 
+        "PROGRAM": "e2plotFSC.py", 
+        "NAME": "Run e2plotFSC",
+	"NOTELEVEL": "1",
+        "CHILDREN": []
       }
     ]
   },

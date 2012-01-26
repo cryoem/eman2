@@ -449,6 +449,7 @@ class EMArgumentParser(argparse.ArgumentParser):
 			if "browser" in kwargs: del kwargs["browser"]
 			if "dirbasename" in kwargs: del kwargs["dirbasename"]
 			if "nosharedb" in kwargs: del kwargs["nosharedb"]
+			if "returnNone" in kwargs: del kwargs["returnNone"]
 			
 		# Run arparser function
 		argparse.ArgumentParser.add_argument(self, *args, **kwargs)

@@ -1550,16 +1550,18 @@ class PMGUIWidget(QtGui.QScrollArea):
 				widget.setValue(self.getDefault(option))
 			if option['guitype'] == 'intbox':
 				widget = PMIntEntryWidget(option['name'], self.getDefault(option), self.getSharingMode(option), self.getLRange(option), self.getURange(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
+			if option['guitype'] == 'shrinkbox':
+				widget = PMShrinkEntryWidget(option['name'], self.getDefault(option), self.getSharingMode(option), 2, postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
 			if option['guitype'] == 'floatbox':
 				widget = PMFloatEntryWidget(option['name'], self.getDefault(option), self.getSharingMode(option), self.getLRange(option), self.getURange(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
 			if option['guitype'] == 'boolbox':
 				widget = PMBoolWidget(option['name'], self.getDefault(option), self.getSharingMode(option), initdefault=self.getDefault(option, nodb=True))
 			if option['guitype'] == 'strbox':
-				widget = PMStringEntryWidget(option['name'], self.getDefault(option), self.getSharingMode(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
+				widget = PMStringEntryWidget(option['name'], self.getDefault(option), self.getSharingMode(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True),returnNone=self.getreturnNone(option))
 			if option['guitype'] == 'comboparambox':
-				widget = PMComboParamsWidget(option['name'], self.getChoices(option), self.getDefault(option), self.getSharingMode(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
+				widget = PMComboParamsWidget(option['name'], self.getChoices(option), self.getDefault(option), self.getSharingMode(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True),returnNone=self.getreturnNone(option))
 			if option['guitype'] == 'combobox':
-				widget = PMComboWidget(option['name'], self.getChoices(option), self.getDefault(option), self.getSharingMode(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
+				widget = PMComboWidget(option['name'], self.getChoices(option), self.getDefault(option), self.getSharingMode(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True),returnNone=self.getreturnNone(option))
 			if option['guitype'] == 'automask3d':	
 				widget = PMAutoMask3DWidget(option['name'], self.getDefault(option), self.getSharingMode(option), initdefault=self.getDefault(option, nodb=True))
 			
@@ -1596,7 +1598,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 	def getDefault(self, option, nodb = False):
 		""" return the default value according to the folowing rules"""
 		# If there is a DB and its usage is desired the default will be the DB value
-		if not nodb and self.db[option['name']+self.getSharingMode(option)]: return self.db[option['name']+self.getSharingMode(option)]	# Return the default if it exists in the DB
+		if not nodb and self.db[option['name']+self.getSharingMode(option)] != None: return self.db[option['name']+self.getSharingMode(option)]	# Return the default if it exists in the DB
 		default = ""
 		if 'default' in option: default = option['default']
 		if type(default) == str and "self.pm()" in default: default = eval(default)	# eval CS, apix, voltage, etc, a bit of a HACK, but it works
@@ -1648,7 +1650,14 @@ class PMGUIWidget(QtGui.QScrollArea):
 		if 'browser' in option:
 			browser = option['browser']
 		return browser
-		
+	
+	def getreturnNone(self, option):
+		""" Sets whether or not we will actuall return None as an argument or leave it blank. Only some args can accpt None, others crash if this is input """
+		if 'returnNone' in option:
+			return True
+		else:
+			return False
+			
 	def updateWidget(self):
 		# reload the DB if necessary (when projects are changed)
 		thiscwd = self.pm().pm_cwd
