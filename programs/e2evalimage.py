@@ -136,10 +136,12 @@ class GUIEvalImage(QtGui.QWidget):
 		
 		# Per image parameters to keep track of
 		# for each image [box size,ctf,box coord,set of excluded boxnums]
+		# Bugzilla, EMAN2Ctf class implemntation is RUBBISH!!!
 		if self.defaultvoltage == None or  self.defaultapix==None or self.defaultcs == None:
 			self.parms=[[512,EMAN2Ctf(),(256,256),set()] for i in images]
 		else:
-			self.parms=[[512,EMAN2Ctf([0.0, 0.0, 0.0, 0.0, self.defaultac, self.defaultvoltage, self.defaultcs, self.defaultapix]),(256,256),set()] for i in images]	
+			ctf = EMAN2Ctf([0.0, 0.0, 0.0, 0.0, self.defaultac, self.defaultvoltage, self.defaultcs, self.defaultapix])
+			self.parms=[[512,ctf,(256,256),set()] for i in images]	
 		self.parms[0][1].defocus=0.0
 		
 		self.wimage=EMImage2DWidget()
@@ -694,8 +696,6 @@ class GUIEvalImage(QtGui.QWidget):
 	def plotmousedown(self,event) :
 		"mousedown in plot"
 #		m=self.guiim.scr_to_img((event.x(),event.y()))
-
-
 
 if __name__ == "__main__":
 	main()
