@@ -34,8 +34,6 @@
 from EMAN2 import *
 import os, math
 from EMAN2db import EMTask
-from PyQt4 import QtCore, QtGui
-from emplot2d import EMPolarPlot2DWidget
 	
 def main():
 	"""Program to validate a reconstruction by the Richard Henderson tilt validation method. A volume to validate, a small stack (~100 imgs) of untilted and ~10-15 degree
@@ -388,6 +386,8 @@ def run(command):
 		print "Error running:\n%s"%command		    
 		exit(1)
 
+from PyQt4 import QtCore, QtGui
+from emplot2d import EMPolarPlot2DWidget
 def display_validation_plots(path, radcut, planethres, plotdatalabels=False, color='#00ff00'):
 	from emimage2d import EMImage2DWidget
 	from emapplication import EMApp
