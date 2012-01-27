@@ -1144,16 +1144,17 @@ class EMIsosurface(EMItem3D):
 		When the EMData changes for EMDataItem3D parent node, this method is called. It is responsible for updating the state of the slice node.
 		"""
 		data = self.getParent().getData()
-		if self.isothr: #there was data previously
-			normalized_threshold = (self.isothr - self.mean)/self.sigma
-		else:
-			normalized_threshold = 3.0
-		
+	
 		self.minden = data.get_attr("minimum")
 		self.maxden = data.get_attr("maximum")
 		self.mean   = data.get_attr("mean")
 		self.sigma  = data.get_attr("sigma")
 		
+		if self.isothr: #there was data previously
+			normalized_threshold = (self.isothr - self.mean)/self.sigma
+		else:
+			normalized_threshold = 3.0
+			
 		self.isothr = self.mean+normalized_threshold*self.sigma
 		self.histogram_data = data.calc_hist(256,self.minden, self.maxden)
 		
