@@ -140,8 +140,11 @@ class GUIEvalImage(QtGui.QWidget):
 		if self.defaultvoltage == None or  self.defaultapix==None or self.defaultcs == None:
 			self.parms=[[512,EMAN2Ctf(),(256,256),set()] for i in images]
 		else:
-			ctf = EMAN2Ctf([0.0, 0.0, 0.0, 0.0, self.defaultac, self.defaultvoltage, self.defaultcs, self.defaultapix])
-			self.parms=[[512,ctf,(256,256),set()] for i in images]	
+			self.parms=[]
+			for i in images:
+				ctf = EMAN2Ctf()
+				ctf.from_dict({'defocus':0.0,'dfdiff':0.0,'dfang':0.0,'bfactor':200.0,'ampcont':self.defaultac,'voltage':self.defaultvoltage,'cs':self.defaultcs,'apix':self.defaultapix,'dsbg':-1})
+				self.parms.append([512,ctf,(256,256),set()])
 		self.parms[0][1].defocus=0.0
 		
 		self.wimage=EMImage2DWidget()
