@@ -1829,7 +1829,7 @@ class ProjectDialog(QtGui.QDialog):
 		# add intro
 		textbox = QtGui.QTextEdit("")
 		textbox.setHtml("Welcome to the EMAN2 project manager. Please add project specific paramters below. For Questions email: <a href='mailto:sludtke@bcm.edu'>sludtke@bcm.edu<\a>")
-		textbox.setMaximumHeight(50)
+		textbox.setMaximumHeight(66)
 		textbox.setReadOnly(True)
 		textbox.viewport().setCursor(QtCore.Qt.ArrowCursor)
 		
@@ -1846,12 +1846,12 @@ class ProjectDialog(QtGui.QDialog):
 		grid.addWidget(icon_path_label, 2, 0)
 		grid.addWidget(self.icon_path, 2, 1)
 		# Mass
-		particle_mass_label = QtGui.QLabel("Particle Mass")
+		particle_mass_label = QtGui.QLabel("Particle Mass (Da)")
 		self.particle_mass = QtGui.QLineEdit()
 		grid.addWidget(particle_mass_label, 3, 0)
 		grid.addWidget(self.particle_mass, 3, 1)
 		# Scope pars
-		micrscope_cs_label = QtGui.QLabel("Microscope CS")
+		micrscope_cs_label = QtGui.QLabel("Microscope CS (mm)")
 		self.micrscope_cs = QtGui.QLineEdit()
 		microscope_voltage_label = QtGui.QLabel("Microscope Voltage")
 		self.microscope_voltage = QtGui.QLineEdit()

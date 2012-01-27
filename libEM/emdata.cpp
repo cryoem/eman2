@@ -4170,25 +4170,26 @@ void EMData::save_byteorder_to_dict(ImageIO * imageio)
 	}
 }
 
-EMData* EMData::compute_missingwedge_stats(float wedgeangle, float influnce, int wedgedirection)
-{
-	if (wedgedirection != 0) throw UnexpectedBehaviorException("Unsupported wedge direction");
-		
+EMData* EMData::compute_missingwedge_stats(float wedgeangle, Transform& wedgexfrom, float influnce)
+{		
 	EMData* test = new EMData();
 	test->set_size(nx,ny,nz);
 	
 	float ratio = tan((90.0-wedgeangle)*M_PI/180.0);
 	
 	int offset = 2*int(influnce*nz/2);
-	if (wedgedirection == 0){
-		cout << offset << " " << ratio << endl;
-		for (int j = 0; j < ny; j++){
-			for (int k = offset; k < nz/2; k++) {
-				for (int i = 0; i < nx; i++) {
-					if (i < int(k*ratio)) {
-						test->set_value_at(i, j, k, 1.0);
-						//get_value_at(i, j, k)
-					}
+	vector<float> matrix = wedgexfrom.get_matrix();
+	
+	cout << offset << " " << ratio << endl;
+	for (int j = 0; j < ny; j++){
+		for (int k = offset; k < nz/2; k++) {
+			for (int i = 0; i < nx; i++) {
+				if (i < int(k*ratio)) {
+					int x = int(matrix[0]*i + matrix[1]*j + matrix[2]*k + matrix[3]);
+					int y = int(matrix[4]*i + matrix[5]*j + matrix[6]*k + matrix[7]);
+					int z = int(matrix[8]*i + matrix[9]*j + matrix[10]*k + matrix[11]);
+					//test->set_value_at_wrap(x, y, z, 1.0);
+					//get_value_at_wrap(x, y, z)
 				}
 			}
 		}

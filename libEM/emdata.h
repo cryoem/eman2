@@ -790,7 +790,7 @@ namespace EMAN
 		 * @param influnce the region of influnce in fourier space. This is a fudge factor between 0 and 0.5
 		 * @param wedgedirection the direction of the wedge, so far only a wedge along Z is supported (set wedgedirection to 0)
 		 * */
-		EMData* compute_missingwedge_stats(float wedgeangle, float influnce = 0.05, int wedgedirection = 0);
+		EMData* compute_missingwedge_stats(float wedgeangle, Transform& wedgexfrom, float influnce = 0.05);
 		
 		static int totalalloc;
 	private:
