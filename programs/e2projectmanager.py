@@ -1364,6 +1364,7 @@ class TaskManager(QtGui.QWidget):
 		listitems = self.getListItems()
 		for t in self.tasks:
 			if t[1] in listitems.keys():
+				listitems[t[1]].setText("%s  %s(%s)  %s"%(t[2][5:16],t[3][:4],t[1],t[4]))
 				del(listitems[t[1]])
 				continue
 			listwigetitem = PMQListWidgetItem("%s  %s(%s)  %s"%(t[2][5:16],t[3][:4],t[1],t[4]))
@@ -1434,7 +1435,7 @@ class PMQListWidgetItem(QtGui.QListWidgetItem):
 		QtGui.QListWidgetItem.__init__(self, text)
 		self.pid = None
 		self.programname = None
-	
+		
 	def setPID(self, pid):
 		self.pid = pid
 		
