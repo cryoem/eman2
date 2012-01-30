@@ -893,7 +893,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 	// If it is tested to be OK, remove the old code in the
 	// #if 0  ... #endif block.
 	EMUtil::process_region_io(ptr_data, mrcfile, WRITE_ONLY, image_index,
-							  mode_size, nx, mrch.ny, mrch.nz, area);
+							  mode_size, mrch.nx, mrch.ny, mrch.nz, area);
 
 	if(cdata) {delete [] cdata; cdata=0;}
 	if(sdata) {delete [] sdata; sdata=0;}
