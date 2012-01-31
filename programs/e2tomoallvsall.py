@@ -63,16 +63,20 @@ def main():
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_argument("--path",type=str,default=None,help="Path for the refinement")
+	parser.add_argument("--path",type=str,default=None,help="Path for the refinement, default=auto")
 	
 	parser.add_argument("--groups",type=int,default=1,help="Breaks the set into subgroups and does ALL vs ALL on the subgroups separately. Recommended when the set is > 100")
 	
+	parser.add_argument("--autocenter",action="store_true", help="Autocenters each averaged pair on all rounds using their center of mass",default=False)
+
 	parser.add_argument("--input", type=str, help="The name of the input volume stack. MUST be HDF or BDB, since volume stack support is required.", default=None)
 		
 	parser.add_argument("--iter", type=int, help="The number of iterations to perform. Default is 1.", default=1)
 	
 	parser.add_argument("--savesteps",action="store_true", help="If set, will save the averages after each iteration to round#_averages.hdf. There will be one .hdf stack per round, and the averages of 2 or more particles generated in that round will be images in that stack",default=False)
 	parser.add_argument("--saveali",action="store_true", help="If set, will save the aligned particle volumes in round#_particles.hdf. Overwrites existing file.",default=False)
+	
+	#Does save ali save the stack off ALL currently UNAVERAGED particles???
 	
 	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
 	parser.add_argument("--normproc",type=str,help="Normalization processor applied to particles before alignment. Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'", default="normalize.mask")
@@ -129,21 +133,19 @@ def main():
 	if not options.path: 
 		#options.path="bdb:"+numbered_path("sptavsa",True)
 		options.path = "sptavsa_01"
-	
-	print "The files in dir are", files
+	else:
+		while options.path in files:
+			if '_' not in options.path:
+				options.path = options.path + '_00'
+				
+			options.path = options.path.split('_')[0] + '_' + str(int(options.path.split('_')[-1]) + 1).zfill(2)
+			print "The new options.path is", options.path
 
-	while options.path in files:
-		if '_' not in options.path:
-			options.path = options.path + '_00'
-		options.path = options.path.split('_')[0] + '_' + str(int(options.path.split('_')[-1]) + 1).zfill(2)
-		print "The new options.path is", options.path
-	
 	if options.path not in files:
-		os.system('mkdir ' + options.path)	
+		os.system('mkdir ' + options.path)
 	
 	group_ranges=[]
 	data_files = []
-	
 	
 	nptcl = EMUtil.get_image_count(options.input)
 	groupsize = nptcl
@@ -157,7 +159,6 @@ def main():
 				print "You asked for %d groups; thus, the stack needs to have more than %d particles, but it only has %d" % (options.groups,3*options.groups,nptcl)
 				print "Reduce the number of groups requested or provide a larger stack."
 				sys.exit()
-				
 			else:
 				groupsize = int( nptcl/options.groups )
 				bottom_range = i * groupsize
@@ -239,7 +240,7 @@ def allvsall(options):
 	allptclsMatrix.append(allptclsRound)
 
 	for k in range(options.iter):							#Start the loop over the user-defined number of iterations
-		avgname = options.path + '/round' + str(k).zfill(fillfactor) + '_averages.hdf'
+		#avgname = options.path + '/round' + str(k).zfill(fillfactor) + '_averages.hdf'
 		newstack = options.path + '/round' + str(k-1).zfill(fillfactor) + '_averages.hdf'
 		if k== 0:
 			newstack =options.input
@@ -272,19 +273,11 @@ def allvsall(options):
 		for ptcl1, compare in newptclsmap:
 			for ptcl2 in compare:
 				
-				reftag = roundtag + str(ptcl1).zfill(fillfactor)				
-				#ref = newptcls[reftag]
-				
+				reftag = roundtag + str(ptcl1).zfill(fillfactor)								
 				particletag = roundtag + str(ptcl2).zfill(fillfactor)
-				#particle = newptcls[particletag]
 				
 				#if options.verbose > 2:
 				print "Setting the following comparison: %s vs %s in ALL VS ALL" %(reftag,particletag)
-				
-				#task = Align3DTaskAVSA(ref,["cache",particle], jj, reftag, particletag,"Aligning particle#%s VS particle#%s in iteration %d" % (reftag,particletag,k),options.mask,options.normproc,options.preprocess,
-				#options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
-				
-				#print "I'm passing this stack to the task!!!!", newstack
 				
 				task = Align3DTaskAVSA(newstack,newstack, jj, reftag, particletag, ptcl1, ptcl2,"Aligning particle#%s VS particle#%s in iteration %d" % (reftag,particletag,k),options.mask,options.normproc,options.preprocess,
 				options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
@@ -310,31 +303,13 @@ def allvsall(options):
 			print "Old tagas are:\n", oldtags
 			nnn = 0
 			for refkey,refvalue in newptcls.iteritems():
-			#for ptcl1 in range(len(newptcls)):
 				ptcl1 = nnn
 				for particlekey,particlevalue in oldptcls.iteritems():
-				#for ptcl2 in range(len(oldptcls)):	
-					#oldptclstack = 'round' + str(k).zfill(fillfactor) + '_old.hdf'
-					
-					#roundID = particlekey.split('_')[0]
-					#roundnumber = int(roundID.replace('round',''))
-					
-					#oldptclstack =  options.path + '/' + roundID + '_averages.hdf'
-					#oldptclstack =  options.path + '/oldptclstack.hdf'
-
-
-					#if roundnumber == '0' or roundnumber == 0:
-					#	oldptclstack = options.input
-					
-					#ptcl2 = int(particlekey.split('_')[-1])
 					
 					ptcl2 = oldtags[particlekey]
 					
 					#if options.verbose > 2:
 					print "Setting the following comparison: %s vs %s in ALL VS ALL" %(refkey,particlekey)
-					
-					#task = Align3DTaskAVSA(refvalue,["cache",particlevalue],jj,refkey,particlekey,"Aligning particle#%s VS particle#%s, in iteration %d" % (refkey,particlekey,k),options.mask,options.normproc,options.preprocess,
-					#options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
 					
 					task = Align3DTaskAVSA(newstack,options.path + '/oldptclstack.hdf',jj , refkey, particlekey, ptcl1, ptcl2,"Aligning particle round#%d_%d VS particle#%s, in iteration %d" % (k,ptcl1,particlekey.split('_')[0] + str(ptcl2),k),options.mask,options.normproc,options.preprocess,
 					options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
@@ -371,72 +346,100 @@ def allvsall(options):
 				used.add(results[z]['ptcl1'])		
 				used.add(results[z]['ptcl2'])
 													
-				avgr=Averagers.get(options.averager[0], options.averager[1])			#Call the averager
+				avgr = Averagers.get(options.averager[0], options.averager[1])			#Call the averager
+				
+				avg_ptcls = []
 								
 				ptcl1 = allptclsMatrix[k][results[z]['ptcl1']][0]
 							
-				ptcl1 = ptcl1 * ptcl1['spt_multiplicity']					#Take the multiplicity of ptcl1 into account
-				
+														#You always add all the past particles that went into a particular particle (being
+														#averaged in the current round) freshly from the raw stack to the averager (with
+														#the appropriate transforms they've undergone, of course. Thus, YOU DON'T have to
+														#worry about "multiplicity", since it takes care of itself by doing this.
 				indx_trans_pairs = {}
 
 				print "The indexes in particle 1 are", ptcl1['spt_ptcl_indxs']
 				
-				ptclinfo = allptclsMatrix[k][results[z]['ptcl1']]
+				ptcl1info = allptclsMatrix[k][results[z]['ptcl1']]
 				
-				ptcl_indxs_transforms = ptclinfo[-1]
+				ptcl1_indxs_transforms = ptcl1info[-1]
 								
-				kk=0
 				for p in ptcl1['spt_ptcl_indxs']:											
-					pastt = ptcl_indxs_transforms[p]
+					pastt = ptcl1_indxs_transforms[p]
 					
 					subp1 = EMData(options.input,p)
 					subp1.process_inplace("xform",{"transform":pastt})
 					
 					avgr.add_image(subp1)
 					
+					if options.saveali:
+						avg_ptcls.append(subp1)
+					
 					indx_trans_pairs.update({p:pastt})
 					
-					kk+=1
 						
 				#avgr.add_image(ptcl1)								#Add particle 1 to the average
 				
 				ptcl2 = allptclsMatrix[k][results[z]['ptcl2']][0]
 						
-				resultingt = results[z]["xform.align3d"]
-							
+				resultingt = results[z]["xform.align3d"]					
+					
 				print "The indexes in particle 2 are", ptcl2['spt_ptcl_indxs']
 				
-				ptclinfo = allptclsMatrix[k][results[z]['ptcl2']]
+				ptcl2info = allptclsMatrix[k][results[z]['ptcl2']]
 					
-				ptcl_indxs_transforms = ptclinfo[-1]
+				ptcl2_indxs_transforms = ptcl2info[-1]
 								
 				#ptcl2avgr = Averagers.get(options.averager[0], options.averager[1])		#You need to recompute ptcl2 "fresh" from the raw data to avoid multiple interpolations
 				
 				for p in ptcl2['spt_ptcl_indxs']:						#All the particles in ptcl2's history need to undergo the new transformation before averaging
 					#print "I'm fixing the transform for this index", p			#(multiplied by any old transforms, all in one step, to avoid multiple interpolations)
 					
-					pastt = ptcl_indxs_transforms[p]
+					pastt = ptcl2_indxs_transforms[p]
 					
 					totalt = resultingt * pastt
 					subp2 = EMData(options.input,p)
 					subp2.process_inplace("xform",{"transform":totalt})
 					
-					#if options.saveali:
-					#	subp2.write_image(avgname.replace('averages','average' + str(mm))  + '_ptcls',kk)
-					
 					avgr.add_image(subp2)
+					
+					if options.saveali:
+						avg_ptcls.append(subp2)					
 					
 					indx_trans_pairs.update({p:totalt})
 					
-					kk+=1
-
-				#ptcl2avg =  ptcl2avgr.finish()
-				
-				#ptcl2avg = ptcl2avg * ptcl2['spt_multiplicity']				#Take the multiplicity of ptcl2 into account
-												
-				#avgr.add_image(ptcl2avg)							#Add the transformed (rotated and translated) particle 2 to the average
-		
+							
 				avg=avgr.finish()
+				
+				if options.autocenter:
+					print "\n\n\n\nYou have selected to autocenter!\n"
+					avg = avg.process('xform.centerofmass')
+					tcenter = avg['xform.align3d']
+					print "Thus the average will be translated like this", tcenter
+					
+					if options.saveali:
+						avg_ptcls = []
+					
+					for p in ptcl1['spt_ptcl_indxs']:
+						pastt = ptcl1_indxs_transforms[p]
+						totalt = tcenter * pastt
+						indx_trans_pairs.update({p:totalt})
+						
+						if options.saveali:
+							subp1 = EMData(options.input,p)
+							subp1.process_inplace("xform",{"transform":totalt})
+							avg_ptcls.append(subp1)
+						
+					for p in ptcl2['spt_ptcl_indxs']:
+						pastt = ptcl2_indxs_transforms[p]
+						totalt = tcenter * pastt
+						indx_trans_pairs.update({p:totalt})
+						
+						if options.saveali:
+							subp2 = EMData(options.input,p)
+							subp2.process_inplace("xform",{"transform":totalt})
+							avg_ptcls.append(subp2)
+						
 				
 				avgmultiplicity = ptcl1['spt_multiplicity'] + ptcl2['spt_multiplicity']		#Define and set the multiplicity of the average
 				avg['spt_multiplicity'] = avgmultiplicity
@@ -461,8 +464,9 @@ def allvsall(options):
 				
 				avg.write_image(options.path + '/round' + str(k).zfill(fillfactor) + '_averages.hdf',mm)
 				
-				#if options.savesteps:
-				#	avg.write_image(avgname,mm)						#Particles from a "new round" need to be in a "new stack" defined by counter k; the number
+				if options.saveali:
+					for oo in range(len(avg_ptcls)):
+						avg_ptcls[oo].write_image(options.path + '/round' + str(k).zfill(fillfactor) + '_average' + str(mm).zfill(2)  + '_ptcls.hdf',oo)
 				
 				if options.postprocess!=None : 
 					avgp=avg.process(options.postprocess[0],options.postprocess[1])
