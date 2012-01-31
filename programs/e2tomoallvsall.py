@@ -218,11 +218,11 @@ def allvsall(options):
 
 		if 'spt_multiplicity' not in a.get_attr_dict():				#spt_multiplicity keeps track of how many particles were averaged to make any given new particle (set to 1 for the raw data)
 			a['spt_multiplicity']=1
-		if 'spt_ptcl_indxs' not in a.get_attr_dict():				#spt_ptcl_indxs keeps track of what particles from the original stack went into a particular average or "new particle"
-			a['spt_ptcl_indxs']=[i]						#The raw stack should contain particles where this parameter is the particle number itself
-		else:
-			if type(a['spt_ptcl_indxs']) is int:
-				a['spt_ptcl_indxs'] = [a['spt_ptcl_indxs']]		#The spt_ptcl_indxs parameter should be of type 'list', to easily 'append' new particle indexes
+		#if 'spt_ptcl_indxs' not in a.get_attr_dict():				#spt_ptcl_indxs keeps track of what particles from the original stack went into a particular average or "new particle"
+		a['spt_ptcl_indxs']=[i]							#The raw stack should contain particles where this parameter is the particle number itself
+		#else:
+		if type(a['spt_ptcl_indxs']) is int:
+			a['spt_ptcl_indxs'] = [a['spt_ptcl_indxs']]			#The spt_ptcl_indxs parameter should be of type 'list', to easily 'append' new particle indexes
 		
 		a.write_image(options.input,i)						#Overwrite the raw stack with one that has the appropriate header parameters set to work with e2sptallvsall
 		
