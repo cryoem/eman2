@@ -4205,9 +4205,9 @@ EMData* EMData::compute_missingwedge_stats(float wedgeangle, float start, float 
 	float sigma = (float)std::sqrt(std::max<double>(0.0,(square_sum - sum*sum / step)/(step-1)));
 	#endif	//_WIN32
 	
-	cout << "Mean sqr amp " << mean << " Sigma Squ Amp " << sigma << endl;
-	set_attr("mean_amp", mean);
-	set_attr("sigma_amp", sigma);
+	cout << "Mean sqr wedge amp " << mean << " Sigma Squ wedge Amp " << sigma << endl;
+	set_attr("mean_wedge_amp", mean);
+	set_attr("sigma_wedge_amp", sigma);
 	
 	return test;
 }

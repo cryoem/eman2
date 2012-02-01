@@ -152,14 +152,14 @@ class MissingWedgeViewer(QtGui.QWidget):
 	
 	def onOneVolStats(self):
 		idx = int(self.volcombobox.currentIndex())
-		self.volumes[idx].set_attr('mean_amp',self.wedgemean)
-		self.volumes[idx].set_attr('sigma_amp',self.wedgesigma)
+		self.volumes[idx].set_attr('mean_wedge_amp',self.wedgemean)
+		self.volumes[idx].set_attr('sigma_wedge_amp',self.wedgesigma)
 		self.volumes[idx].write_image(self.filename, idx, EMUtil.ImageType.IMAGE_UNKNOWN, True)
 		
 	def onManyVolStats(self):
-		for volume in self.volumes:
-			volume.set_attr('mean_amp',self.wedgemean)
-			volume.set_attr('sigma_amp',self.wedgesigma)
+		for idx, volume in enumerate(self.volumes):
+			volume.set_attr('mean_wedge_amp',self.wedgemean)
+			volume.set_attr('sigma_wedge_amp',self.wedgesigma)
 			volume.write_image(self.filename, idx, EMUtil.ImageType.IMAGE_UNKNOWN, True)
 		
 	def addData(self, wedge, name, color=None):
@@ -200,10 +200,10 @@ class MissingWedgeViewer(QtGui.QWidget):
 		wholewedge = w2.process('xform.mirror',{'axis':'y'}) + w2
 		self.wedgedata = self.addData(wholewedge,"Computed Wedge", [0.0625,0.8555,0.9453])
 		# Update info
-		self.wedgemean = vfft.get_attr('mean_amp')
-		self.wedgesigma = vfft.get_attr('sigma_amp')
-		self.wedgemeanwidget.setText(str(round(vfft.get_attr('mean_amp'),2)))
-		self.wedgesigmawidget.setText(str(round(vfft.get_attr('sigma_amp'),2)))
+		self.wedgemean = vfft.get_attr('mean_wedge_amp')
+		self.wedgesigma = vfft.get_attr('sigma_wedge_amp')
+		self.wedgemeanwidget.setText(str(round(self.wedgemean,2)))
+		self.wedgesigmawidget.setText(str(round(self.wedgesigma,2)))
 	
 if __name__ == "__main__":
 	main()
