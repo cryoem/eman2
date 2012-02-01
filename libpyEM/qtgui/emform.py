@@ -679,7 +679,6 @@ class EM2DFileTable(EMFileTable):
 			import emscene3d
 			import emdataitem3d 
 			
-			print self.display_module
 			data=emdataitem3d.EMDataItem3D(filename)
 			self.display_module.insertNewNode(os.path.basename(filename), data, parentnode=self.display_module)
 			isosurface = emdataitem3d.EMIsosurface(data)
