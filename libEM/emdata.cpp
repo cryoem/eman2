@@ -4170,30 +4170,50 @@ void EMData::save_byteorder_to_dict(ImageIO * imageio)
 	}
 }
 
-EMData* EMData::compute_missingwedge_stats(float wedgeangle, Transform& wedgexfrom, float influnce)
+EMData* EMData::compute_missingwedge_stats(float wedgeangle, float start, float stop)
 {		
 	EMData* test = new EMData();
 	test->set_size(nx,ny,nz);
 	
 	float ratio = tan((90.0-wedgeangle)*M_PI/180.0);
 	
-	int offset = 2*int(influnce*nz/2);
-	vector<float> matrix = wedgexfrom.get_matrix();
+	int offset_i = 2*int(start*nz/2);
+	int offset_f = int(stop*nz/2);
 	
-	cout << offset << " " << ratio << endl;
-	for (int j = 0; j < ny; j++){
-		for (int k = offset; k < nz/2; k++) {
-			for (int i = 0; i < nx; i++) {
+	int step = 0;
+	float sum = 0.0;
+	double square_sum = 0.0;
+	for (int j = 0; j < offset_f; j++){
+		for (int k = offset_i; k < offset_f; k++) {
+			for (int i = 0; i < nx; i+=2) {
 				if (i < int(k*ratio)) {
-					int x = int(matrix[0]*i + matrix[1]*j + matrix[2]*k + matrix[3]);
-					int y = int(matrix[4]*i + matrix[5]*j + matrix[6]*k + matrix[7]);
-					int z = int(matrix[8]*i + matrix[9]*j + matrix[10]*k + matrix[11]);
-					//test->set_value_at_wrap(x, y, z, 1.0);
-					//get_value_at_wrap(x, y, z)
+					test->set_value_at(i, j, k, 1.0);
+					float v = std::sqrt(pow(get_value_at_wrap(i, j, k),2) + pow(get_value_at_wrap(i+1, j, k),2));
+					sum += v;
+					square_sum += v * (double)(v);
+					step++;
 				}
 			}
 		}
 	}
 	
+	double mean = sum / step;
+	
+	#ifdef _WIN32
+	float sigma = (float)std::sqrt( _cpp_max(0.0,(square_sum - sum*sum / step)/(step-1)));
+	#else
+	float sigma = (float)std::sqrt(std::max<double>(0.0,(square_sum - sum*sum / step)/(step-1)));
+	#endif	//_WIN32
+	
+	cout << "Mean sqr amp " << mean << " Sigma Squ Amp " << sigma << endl;
+	set_attr("mean_amp", mean);
+	set_attr("sigma_amp", sigma);
+	
 	return test;
 }
+
+
+
+
+	
+	

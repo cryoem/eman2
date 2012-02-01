@@ -676,10 +676,14 @@ class EM2DFileTable(EMFileTable):
 			self.module_events_manager = ModuleEventsManager(self,self.display_module)
 		else:
 			from EMAN2 import EMData
-			a = EMData()
-			a.read_image(filename,0)
-			self.display_module.set_data(a,filename)
-			self.display_module.updateGL()
+			import emscene3d
+			import emdataitem3d 
+			
+			print self.display_module
+			data=emdataitem3d.EMDataItem3D(filename)
+			self.display_module.insertNewNode(os.path.basename(filename), data, parentnode=self.display_module)
+			isosurface = emdataitem3d.EMIsosurface(data)
+			self.display_module.insertNewNode("Iso", isosurface, parentnode=data)
 					
 		#self.module().emit(QtCore.SIGNAL("launching_module"),"Browser",module)
 		get_application().show_specific(self.display_module)
