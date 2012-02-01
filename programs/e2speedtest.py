@@ -320,7 +320,7 @@ so in most cases it is not dealt with.'
     ti = t2 - t1
     
     if not options.big and not options.slow and not options.refine:
-        print 'For comparison (note these numbers may change from release to release'
+        print 'For comparison (note these numbers are PER CORE. ie - for a quad core machine -> x4)'
         print 'An AMD Athlon (32 bit) 900Mhz SF --------------------------------  360'
         print 'An AMD Athlon XP 2400+ (32 bit) 2.0Ghz SF ----------------------- 1010'
         print 'An AMD Athlon XP 2600+ (32 bit) 2.0Ghz SF ----------------------- 1090'
@@ -339,6 +339,7 @@ so in most cases it is not dealt with.'
         print 'An Intel Xeon X5450 3.0Ghz SF ----------------------------------- 3220'
         print 'An Intel Xeon X5460 3.16Ghz SF ---------------------------------- 3320'
         print 'An Intel Xeon X5675 3.07Ghz SF ---------------------------------- 4070'
+	print 'An Intel Core i5-2500 3.30GHz (depends on turbo) ---------------- 5560 - 6345'
         print '\nYour machines speed factor = %1.1f\n' % (25000.0 / ti)
         print '\nThis repesents %1.2f RTFAligns/sec\n' % (3.0 * (NTT - 5.0) / ti)
 

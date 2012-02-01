@@ -1109,9 +1109,9 @@ class EMMpiTaskHandler():
 		
 		self.mpitask=subprocess.Popen(cmd, stdin=None, stdout=mpiout, stderr=mpierr, shell=True)
 
-		# order is important here, since opening for reading will block until the other end opens for writing
-		self.tompi=file("%s/tompi"%self.scratchdir,"wb",0)
+		# order is important here, since opening for writing will block until the other end opens for reading
 		self.fmmpi=file("%s/fmmpi"%self.scratchdir,"rb",0)
+		self.tompi=file("%s/tompi"%self.scratchdir,"wb",0)
 		
 		# Send a HELO and wait for a reply. We then know that the MPI system is setup and available
 		self.tompi.write("HELO")
