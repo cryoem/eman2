@@ -12492,6 +12492,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		print "* Iterative Stable Alignment and Clustering                                                        *"
 		print "* By Zhengfan Yang, Francisco Asturias and Pawel A. Penczek                             July 2011  *"
 		print "*                                                                                                  *"
+		print "* Last updated: 01/30/12                                                                           *"
 		print "****************************************************************************************************"            
 		print "*                                       Generation %3d                                             *"%(generation)
 		print "****************************************************************************************************"
