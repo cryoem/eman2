@@ -5594,7 +5594,7 @@ post-process - This is an optional filter to apply to the model as a final step,
 		# Steve is rethinking how we remember programs arguments
 		#self.write_db_parms(options,string_args,bool_args)
 		
-		# Hack to enable multimodels, BTW: The current design is COMPLETE SHIT!!!!
+		# Hack to enable multimodels
 		if len(params["model"]) > 0:
 			mlist = ""
 			tsym = ""

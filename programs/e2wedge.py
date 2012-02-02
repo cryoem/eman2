@@ -41,7 +41,7 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog 3Dstack [options]
 	Visulaizse and compute the mean amplitude and sigma in the missing wedge region. After you are sasified that the missing wedge looks sane, compute missing wedge stats
-	on all volumes
+	on all volumes. These stats are used by the aligner tomo.fsc, for subtomogram alignment and averaging.
 	"""
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)

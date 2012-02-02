@@ -349,6 +349,49 @@ namespace EMAN
 		static const string NAME;
 	};
 
+	
+	/** This is a FSC comparitor for tomography. I only counts voxels above a threshold, which is obtained from subtomogram metadata
+	* @ingroup CUDA_ENABLED
+	* @author John Flanagan
+	* @date 2012-2-02
+	* @param sigmas The number of times the standard deviation of Fourier amplitudes to accept
+	* @param minres The minimum resolution to accept
+	* @param maxes The maximum resolution to accept
+	* @param apix The angstroms per pixel to use
+	*/
+	class TomoFscCmp:public Cmp
+	{
+	  public:
+		virtual float cmp(EMData * image, EMData * with) const;
+
+		virtual string get_name() const 
+		{
+			return NAME;
+		}
+
+		virtual string get_desc() const
+		{
+			return "Fsc with consideration given for the missing wedge";
+		}
+
+		static Cmp *NEW()
+		{
+			return new TomoFscCmp();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("sigmas", EMObject::FLOAT, "The number of times the standard deviation of Fourier amplitudes to accept");
+			d.put("minres", EMObject::FLOAT, "The minimum resolution to accept (1/A)");
+			d.put("maxres", EMObject::FLOAT, "The maximum resolution to accept (1/A)");
+			d.put("apix", EMObject::FLOAT, "The angstroms per pixel to use");
+			return d;
+		}
+		
+		static const string NAME;
+	};
+	
 	/** This will calculate the dot product for each quadrant of the image and
 	* return the worst value
 	* @author Steve Ludtke (sludtke@bcm.tmc.edu)

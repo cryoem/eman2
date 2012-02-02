@@ -51,6 +51,7 @@ const string LodCmp::NAME = "lod";
 const string SqEuclideanCmp::NAME = "sqeuclidean";
 const string DotCmp::NAME = "dot";
 const string TomoCccCmp::NAME = "ccc.tomo";
+const string TomoFscCmp::NAME = "fsc.tomo";
 const string QuadMinDotCmp::NAME = "quadmindot";
 const string OptVarianceCmp::NAME = "optvariance";
 const string PhaseCmp::NAME = "phase";
@@ -63,6 +64,7 @@ template <> Factory < Cmp >::Factory()
 	force_add<SqEuclideanCmp>();
 	force_add<DotCmp>();
 	force_add<TomoCccCmp>();
+	force_add<TomoFscCmp>();
 	force_add<QuadMinDotCmp>();
 	force_add<OptVarianceCmp>();
 	force_add<PhaseCmp>();
@@ -664,6 +666,7 @@ float TomoCccCmp::cmp(EMData * image, EMData *with) const
 		
 		if (ccf_ownership) delete ccf; ccf = 0;
 		
+		EXITFUNC;
 		return best_score;
 		
 	}
@@ -680,6 +683,73 @@ float TomoCccCmp::cmp(EMData * image, EMData *with) const
         
 	return negative*best_score;
 
+}
+
+float TomoFscCmp::cmp(EMData * image, EMData *with) const
+{
+	ENTERFUNC;
+	bool usecpu = TRUE;
+	bool del_imagefft = FALSE;
+	bool del_withfft = FALSE;
+	float score = 1.0;
+	
+	//get parameters
+	if (!image->has_attr("mean_wedge_amp") || !image->has_attr("sigma_wedge_amp"))  throw InvalidCallException("Rubbish!!! Image Subtomogram does not have mena and/or sigma amps metadata");
+	if (!with->has_attr("mean_wedge_amp") || !with->has_attr("sigma_wedge_amp"))  throw InvalidCallException("Rubbish!!! With Subtomogram does not have mena and/or sigma amps metadata");
+	//float image_meanwedgeamp = image->get_attr("mean_wedge_amp");
+	//float image_sigmawedgeamp = image->get_attr("sigma_wedge_amp");
+	//float with_meanwedgeamp = with->get_attr("mean_wedge_amp");
+	//float with_sigmawedgeamp = with->get_attr("sigma_wedge_amp");
+	float sigmas = params.set_default("sigmas",5.0);
+	float img_amp_thres = pow((image->get_attr("mean_wedge_amp") + sigmas*image->get_attr("sigma_wedge_amp"),2);
+	float with_amp_thres = pow((with->get_attr("mean_wedge_amp") + sigmas*with->get_attr("sigma_wedge_amp"),2);
+	
+	//Check to ensure that images are complex
+	EMData* image_fft = image;
+	EMData* with_fft = with;
+	
+#ifdef EMAN2_USING_CUDA	
+	//do CUDA FFT
+	
+	
+#endif	
+	if(usecpu){
+		if(!image->is_complex()){
+			del_imagefft = TRUE;
+			image_fft = image->do_fft();
+		}
+		if(!with->is_complex()){
+			delwith_fft = TRUE;
+			with_fft = with->do_fft();
+		}
+		
+		//loop over all voxels
+		int vcount = 0;
+		double
+		int maxres_x = image->get_xsize();
+		int maxres_y = image->get_ysize()/2;
+		int maxres_z = image->get_zsize()/2;
+		for(int i = 0; i < maxres_x; i+=2){
+			for(int j = -maxres_y; j < maxres_y; j++){
+				for(int k = -maxres_z; k < maxres_z; k++){
+					float img_r = image->get_value_at_wrap(i, j, k);
+					float img_i = image->get_value_at_wrap(i+1, j, k);
+					float with_r = with->get_value_at_wrap(i, j, k);
+					float with_i = with->get_value_at_wrap(i+1, j, k);
+					if((img_r*img_i >  img_amp_thres) && (with_r*with_i >  with_amp_thres)){
+						vcount++;
+					}
+				}
+			}
+		}
+	}
+	
+	//avoid mem leaks
+	if(del_imagefft) delete image_fft;
+	if(del_withfft) delete with_fft;
+	
+	return score;
+	EXITFUNC;
 }
 
 // Even though this uses doubles, it might be wise to recode it row-wise

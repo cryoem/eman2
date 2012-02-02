@@ -601,7 +601,6 @@ class EMWorkFlowSelectorWidget(QtGui.QWidget):
 		self.emit(QtCore.SIGNAL("module_closed"),"module_string",module)
 	
 	def display_file(self,filename):
-		print "SHIT"
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		
 		if len(filename) > 18 and filename[-19:] == "convergence.results":
