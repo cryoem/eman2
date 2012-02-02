@@ -688,21 +688,22 @@ float TomoCccCmp::cmp(EMData * image, EMData *with) const
 float TomoFscCmp::cmp(EMData * image, EMData *with) const
 {
 	ENTERFUNC;
-	bool usecpu = TRUE;
-	bool del_imagefft = FALSE;
-	bool del_withfft = FALSE;
+	bool usecpu = 1;
+	bool del_imagefft = 0;
+	bool del_withfft = 0;
 	float score = 1.0;
 	
 	//get parameters
 	if (!image->has_attr("mean_wedge_amp") || !image->has_attr("sigma_wedge_amp"))  throw InvalidCallException("Rubbish!!! Image Subtomogram does not have mena and/or sigma amps metadata");
 	if (!with->has_attr("mean_wedge_amp") || !with->has_attr("sigma_wedge_amp"))  throw InvalidCallException("Rubbish!!! With Subtomogram does not have mena and/or sigma amps metadata");
-	//float image_meanwedgeamp = image->get_attr("mean_wedge_amp");
-	//float image_sigmawedgeamp = image->get_attr("sigma_wedge_amp");
-	//float with_meanwedgeamp = with->get_attr("mean_wedge_amp");
-	//float with_sigmawedgeamp = with->get_attr("sigma_wedge_amp");
+	// BAD DESIGN!!!! The fact that I have to load attrs into a variable before I can do operatiopns on them is silly
+	float image_meanwedgeamp = image->get_attr("mean_wedge_amp");
+	float image_sigmawedgeamp = image->get_attr("sigma_wedge_amp");
+	float with_meanwedgeamp = with->get_attr("mean_wedge_amp");
+	float with_sigmawedgeamp = with->get_attr("sigma_wedge_amp");
 	float sigmas = params.set_default("sigmas",5.0);
-	float img_amp_thres = pow((image->get_attr("mean_wedge_amp") + sigmas*image->get_attr("sigma_wedge_amp"),2);
-	float with_amp_thres = pow((with->get_attr("mean_wedge_amp") + sigmas*with->get_attr("sigma_wedge_amp"),2);
+	float img_amp_thres = pow(image_meanwedgeamp + sigmas*image_sigmawedgeamp, 2);
+	float with_amp_thres = pow(with_meanwedgeamp + sigmas*with_sigmawedgeamp, 2);
 	
 	//Check to ensure that images are complex
 	EMData* image_fft = image;
@@ -715,17 +716,16 @@ float TomoFscCmp::cmp(EMData * image, EMData *with) const
 #endif	
 	if(usecpu){
 		if(!image->is_complex()){
-			del_imagefft = TRUE;
+			del_imagefft = 1;
 			image_fft = image->do_fft();
 		}
 		if(!with->is_complex()){
-			delwith_fft = TRUE;
+			del_withfft = 1;
 			with_fft = with->do_fft();
 		}
 		
 		//loop over all voxels
 		int vcount = 0;
-		double
 		int maxres_x = image->get_xsize();
 		int maxres_y = image->get_ysize()/2;
 		int maxres_z = image->get_zsize()/2;
