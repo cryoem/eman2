@@ -382,6 +382,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
+			d.put("normalize", EMObject::EMDATA,"Return the negative value (which is EMAN2 convention), Defalut is true(1)");
 			d.put("sigmas", EMObject::FLOAT, "The number of times the standard deviation of Fourier amplitudes to accept");
 			d.put("minres", EMObject::FLOAT, "The minimum resolution to accept (1/A)");
 			d.put("maxres", EMObject::FLOAT, "The maximum resolution to accept (1/A)");

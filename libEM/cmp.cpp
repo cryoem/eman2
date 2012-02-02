@@ -704,6 +704,8 @@ float TomoFscCmp::cmp(EMData * image, EMData *with) const
 	float sigmas = params.set_default("sigmas",5.0);
 	float img_amp_thres = pow(image_meanwedgeamp + sigmas*image_sigmawedgeamp, 2);
 	float with_amp_thres = pow(with_meanwedgeamp + sigmas*with_sigmawedgeamp, 2);
+	float negative = (float)params.set_default("negative", 1);
+	if (negative) negative=-1.0; else negative=1.0;
 	
 	//Check to ensure that images are complex
 	EMData* image_fft = image;
@@ -753,7 +755,7 @@ float TomoFscCmp::cmp(EMData * image, EMData *with) const
 	if(del_imagefft) delete image_fft;
 	if(del_withfft) delete with_fft;
 	
-	return score;
+	return negative*score;
 	EXITFUNC;
 }
 
