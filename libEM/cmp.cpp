@@ -696,7 +696,7 @@ float TomoFscCmp::cmp(EMData * image, EMData *with) const
 	//get parameters
 	if (!image->has_attr("mean_wedge_amp") || !image->has_attr("sigma_wedge_amp"))  throw InvalidCallException("Rubbish!!! Image Subtomogram does not have mena and/or sigma amps metadata");
 	if (!with->has_attr("mean_wedge_amp") || !with->has_attr("sigma_wedge_amp"))  throw InvalidCallException("Rubbish!!! With Subtomogram does not have mena and/or sigma amps metadata");
-	// BAD DESIGN!!!! The fact that I have to load attrs into a variable before I can do operatiopns on them is silly
+	// BAD DESIGN!!!! The fact that I have to load attrs into a variable before I can do operations on them is silly
 	float image_meanwedgeamp = image->get_attr("mean_wedge_amp");
 	float image_sigmawedgeamp = image->get_attr("sigma_wedge_amp");
 	float with_meanwedgeamp = with->get_attr("mean_wedge_amp");
@@ -725,23 +725,28 @@ float TomoFscCmp::cmp(EMData * image, EMData *with) const
 		}
 		
 		//loop over all voxels
-		int vcount = 0;
-		int maxres_x = image->get_xsize();
-		int maxres_y = image->get_ysize()/2;
-		int maxres_z = image->get_zsize()/2;
-		for(int i = 0; i < maxres_x; i+=2){
-			for(int j = -maxres_y; j < maxres_y; j++){
-				for(int k = -maxres_z; k < maxres_z; k++){
-					float img_r = image->get_value_at_wrap(i, j, k);
-					float img_i = image->get_value_at_wrap(i+1, j, k);
-					float with_r = with->get_value_at_wrap(i, j, k);
-					float with_i = with->get_value_at_wrap(i+1, j, k);
-					if((img_r*img_i >  img_amp_thres) && (with_r*with_i >  with_amp_thres)){
-						vcount++;
-					}
-				}
+		int count = 0;
+		double sum_imgamp_sq = 0.0;
+		double sum_withamp_sq = 0.0;
+		double cong = 0.0;
+		float* img_data = image_fft->get_data();
+		float* with_data = with_fft->get_data();
+		for(int i = 0; i < image_fft->get_xsize()*image_fft->get_ysize()*image_fft->get_zsize(); i+=2){
+			float img_r = img_data[i];
+			float img_i = img_data[i+1];
+			float with_r = with_data[i];
+			float with_i = with_data[i+1];
+			double img_amp_sq = img_r*img_r + img_i*img_i;
+			double with_amp_sq = with_r*with_r + with_i*with_i;
+			if((img_amp_sq >  img_amp_thres) && (with_amp_sq >  with_amp_thres)){
+				count ++;
+				sum_imgamp_sq += img_amp_sq;
+				sum_withamp_sq += with_amp_sq;
+				cong += img_r*with_r + img_i*with_i;
 			}
 		}
+		//cout << count << " Voxels were used" << endl;
+		score = cong/sqrt(sum_imgamp_sq*sum_withamp_sq);
 	}
 	
 	//avoid mem leaks
