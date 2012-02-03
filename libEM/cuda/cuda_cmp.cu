@@ -620,10 +620,8 @@ float fsc_tomo_cmp_cuda(const float* data1, const float* data2, const float data
 	double top = 0.0;
 	double sum_data1_amps = 0.0;
 	double sum_data2_amps = 0.0;
-	printf("%d %d %d\n", nx,ny,nz);
 	for(int i = 0; i < num_calcs; i++){
 		if(!isnan(host_soln[i])){ //this wil return false when host_soln[i] is NaN
-			printf("%3.3f\n",host_soln[i]);
 			top += host_soln[i*3];
 			sum_data1_amps += host_soln[i*3 + 1];
 			sum_data1_amps += host_soln[i*3 + 2];
