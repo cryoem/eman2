@@ -254,7 +254,7 @@ class PMStringEntryWidget(PMBaseWidget):
 		return self.string
 		
 	def setValue(self, string, quiet=False):
-		if str(string).upper() == "NONE": string = ""
+		if str(string).upper() == "NONE": string = ""	# If none is passed set to blank
 		self.stringbox.setText(str(string))
 		self._on_stringchanged()
 		self.setErrorMessage(None)
@@ -368,7 +368,7 @@ class PMFileNameWidget(PMBaseWidget):
 	def setValue(self, filename, quiet=False):
 		# Check to see if the file exists
 		filename = str(filename)
-		if filename.upper() == "NONE": filename=""
+		if filename.upper() == "NONE": filename=""	# If none is passed set to blank
 		# In some cases a file is optional
 		if self.checkfileexist:
 			# We need to check if the field is blank

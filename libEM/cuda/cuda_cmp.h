@@ -14,4 +14,6 @@ float get_value_at_wrap_cuda(float * data, int tx, int ty, int tz, int nx, int n
 
 float* calc_fourier_shell_correlation_cuda(const int nx, const int ny, const int nz, const int d);
 
+float fsc_tomo_cmp_cuda(const float* data1, const float* data2, const float data1threshold, const float data2threshold, const float minres, const float maxres, const int nx, const int ny, const int nz);
+
 #endif //cuda_processor_h__

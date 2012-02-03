@@ -121,7 +121,7 @@ def main():
 			options.align[1]['sym'] = options.sym
 	if options.ralign: 
 		options.ralign=parsemodopt(options.ralign)
-	print "\n\nTHE ALIGNERS ARE ", options.ralign, options.align
+	#print "\n\nTHE ALIGNERS ARE ", options.ralign, options.align
 	
 	if options.aligncmp: 
 		options.aligncmp=parsemodopt(options.aligncmp)

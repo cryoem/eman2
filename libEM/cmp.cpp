@@ -713,8 +713,18 @@ float TomoFscCmp::cmp(EMData * image, EMData *with) const
 	
 #ifdef EMAN2_USING_CUDA	
 	//do CUDA FFT
-	
-	
+	if(EMData::usecuda == 1 && image->getcudarwdata() && with->getcudarwdata()) {
+		if(!image->is_complex()){
+			del_imagefft = 1;
+			image_fft = image->do_fft_cuda();
+		}
+		if(!with->is_complex()){
+			del_withfft = 1;
+			with_fft = with->do_fft_cuda();
+		}
+		score = fsc_tomo_cmp_cuda(image_fft->getcudarwdata(), with_fft->getcudarwdata(), img_amp_thres, with_amp_thres, 0.0, 0.0, image_fft->get_xsize(), image_fft->get_ysize(), image_fft->get_zsize());
+		usecpu = 0;
+	}
 #endif	
 	if(usecpu){
 		if(!image->is_complex()){

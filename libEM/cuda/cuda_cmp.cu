@@ -553,3 +553,85 @@ float ccc_cmp_cuda(const float* data1, const float* data2, const float* dm, cons
 	
 }
 
+__global__ void fsc_tomo_cmp_kernal(const float* data1, const float* data2, float* device_soln, const float data1threshold, const float data2threshold, const int nx, const int ny, const int nz, const int offset)
+{
+	
+	const uint x=threadIdx.x;
+	const uint y=blockIdx.x;
+
+	int idx = x + y*MAX_THREADS + offset;
+	
+	float sum_data1_amps = 0.0;
+	float sum_data2_amps = 0.0;
+	float top = 0.0;
+	for(int i = 0; i < ny; i++){
+		//int index = i*nx + idx % nx + ((idx/nx)*ny*nz); //for coalesing
+		int rindex = i*nx + 2*(idx % nx/2) + (2*idx/nx)*ny*nz;
+		int iindex = i*nx + 2*(idx % nx/2)+ 1 + (2*idx/nx)*ny*nz;
+		float data1_r = data1[rindex];
+		float data1_i = data1[iindex];
+		float data2_r = data2[rindex];
+		float data2_i = data2[iindex];
+		if((data1_r* data1_r +  data1_i*data1_i) > data1threshold && (data2_r* data2_r +  data2_i*data2_i) > data2threshold){
+			sum_data1_amps += (data1_r* data1_r +  data1_i*data1_i);
+			sum_data2_amps += (data2_r* data2_r +  data2_i*data2_i);
+			top += (data1_r*data2_r + data1_i*data2_i);
+		}
+	}
+	device_soln[idx*3] = top;
+	device_soln[idx*3 +1] = sum_data1_amps;
+	device_soln[idx*3 +2] = sum_data2_amps;
+	
+}
+
+float fsc_tomo_cmp_cuda(const float* data1, const float* data2, const float data1threshold, const float data2threshold, const float minres, const float maxres, const int nx, const int ny, const int nz)
+{
+	
+	int num_calcs = (nx/2)*nz;
+	int grid_y = num_calcs/(MAX_THREADS);
+	int res_y = num_calcs - grid_y*MAX_THREADS;	
+	
+	float * device_soln=0;
+	cudaMalloc((void **)&device_soln, 3*num_calcs*sizeof(float));
+	float * host_soln = 0;
+	host_soln = (float*) malloc(3*num_calcs*sizeof(float));
+
+	if (grid_y > 0) {
+		const dim3 blockSize(MAX_THREADS,1,1);
+		const dim3 gridSize(grid_y,1,1);
+		fsc_tomo_cmp_kernal<<<gridSize, blockSize>>>(data1, data2, device_soln, data1threshold, data2threshold, nx, ny, nz,0);
+
+	}else{
+		const dim3 blockSize(num_calcs,1,1);
+		const dim3 gridSize(1,1,1); //obviously only need one block here
+		fsc_tomo_cmp_kernal<<<gridSize, blockSize>>>(data1, data2, device_soln, data1threshold, data2threshold, nx, ny, nz,0);
+	}
+	if (res_y) {
+		const dim3 blockSize(res_y,1, 1);
+		const dim3 gridSize(1,1,1);
+		int offset = grid_y*MAX_THREADS;
+		fsc_tomo_cmp_kernal<<<gridSize, blockSize>>>(data1, data2, device_soln, data1threshold, data2threshold, nx, ny, nz, offset);
+	}
+	
+	cudaThreadSynchronize();
+	cudaMemcpy(host_soln,device_soln,3*num_calcs*sizeof(float),cudaMemcpyDeviceToHost);
+	cudaFree(device_soln);
+	
+	double top = 0.0;
+	double sum_data1_amps = 0.0;
+	double sum_data2_amps = 0.0;
+	printf("%d %d %d\n", nx,ny,nz);
+	for(int i = 0; i < num_calcs; i++){
+		if(!isnan(host_soln[i])){ //this wil return false when host_soln[i] is NaN
+			printf("%3.3f\n",host_soln[i]);
+			top += host_soln[i*3];
+			sum_data1_amps += host_soln[i*3 + 1];
+			sum_data1_amps += host_soln[i*3 + 2];
+		}
+	}
+	
+	free(host_soln);
+	
+	return top/sqrt(sum_data1_amps*sum_data2_amps);
+	
+}
