@@ -4197,12 +4197,12 @@ EMData* EMData::compute_missingwedge_stats(float wedgeangle, float start, float 
 		}
 	}
 	
-	double mean = sum / step;
+	float mean = sum / step;
 	
 	#ifdef _WIN32
-	float sigma = (float)std::sqrt( _cpp_max(0.0,(square_sum - sum*sum / step)/(step-1)));
+	float sigma = (float)std::sqrt( _cpp_max(0.0,(square_sum - sum*mean)/(step-1)));
 	#else
-	float sigma = (float)std::sqrt(std::max<double>(0.0,(square_sum - sum*sum / step)/(step-1)));
+	float sigma = (float)std::sqrt(std::max<double>(0.0,(square_sum - sum*mean)/(step-1)));
 	#endif	//_WIN32
 	
 	cout << "Mean sqr wedge amp " << mean << " Sigma Squ wedge Amp " << sigma << endl;

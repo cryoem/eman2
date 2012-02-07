@@ -661,6 +661,7 @@ float TomoCccCmp::cmp(EMData * image, EMData *with) const
 		}
 		//cout << "using CUDA" << endl;
 		float2 stats = get_stats_cuda(ccf->getcudarwdata(), ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
+		cout << stats.x << " " << stats.y << endl;
 		float best_score = get_value_at_wrap_cuda(ccf->getcudarwdata(), 0, 0, 0, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
 		if(norm) {
 			best_score = negative*(best_score - stats.x)/sqrt(stats.y);
@@ -680,6 +681,9 @@ float TomoCccCmp::cmp(EMData * image, EMData *with) const
 		ccf = image->calc_ccf(with);
 		ccf_ownership = true;
 	}
+	float mean = ccf->get_attr("mean");
+	float sigma = ccf->get_attr("sigma");
+	cout << mean << " " << sigma << endl;
 	if (norm) ccf->process_inplace("normalize");
 	
 	float best_score = ccf->get_value_at_wrap(0,0,0);
