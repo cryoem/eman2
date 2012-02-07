@@ -377,11 +377,14 @@ class ImgHistogram(QtGui.QWidget):
 		self.update()
 	
 	def setProbe(self, value):
-		x = int(255.0*(value - self.minden)/(self.maxden-self.minden))
-		if x > 255: x = 255
-		if x < 0: x = 0
-		self.threshold = value
-		self.probe=(x,self.histdata[x])
+		if (self.maxden-self.minden) != 0:
+			x = int(255.0*(value - self.minden)/(self.maxden-self.minden))
+			if x > 255: x = 255
+			if x < 0: x = 0
+			self.threshold = value
+			self.probe=(x,self.histdata[x])
+		else:
+			self.threshold = value
 		self.update()
 		
 	def paintEvent (self, event):

@@ -330,9 +330,11 @@ class PMFileNameWidget(PMBaseWidget):
 		self.browser = browser
 		self.filenamebox = QtGui.QLineEdit()
 		self.browsebutton = QtGui.QPushButton("Browse")
+		self.infolabel = QtGui.QLabel("Num Images: None")
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.filenamebox, 0, 1)
 		gridbox.addWidget(self.browsebutton, 0, 2)
+		gridbox.addWidget(self.infolabel, 1, 1, 1, 2)
 		self.setLayout(gridbox)
 
 		self.initdefault = initdefault
@@ -386,12 +388,15 @@ class PMFileNameWidget(PMBaseWidget):
 	
 	def _checkfiles(self, filename):
 		files = filename.split()
+		numimages = 0
 		for f in files:
 			if not os.access(f, os.F_OK) and not db_check_dict(f):
 				self._onBadFile(f)
 				# Display the rubbish file to the user
 				self.filenamebox.setText(filename)
 				return False
+			numimages += EMUtil.get_image_count(f)
+		self.infolabel.setText("Num Images: %d"%numimages)
 		return True
 		
 	def _onBadFile(self, filename, quiet=False):
