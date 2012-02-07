@@ -372,11 +372,10 @@ float2 get_stats_cuda(const float * data, const int nx, const int ny, const int 
 	double sum_sq = 0.0f;
 	double nnn = 0.0f;
 	for(int i = 0; i < num_calcs; i++){
-		
 		if(host_soln[i] == host_soln[i]){ //this will return false when host_soln[i] is NaN, in this case only need to check once, if mean = NaN then so will var
 			sum += host_soln[i];
 			sum_sq += host_soln[i + num_calcs];
-			nnn++;
+			nnn+=size;
 		}
 	}
 	

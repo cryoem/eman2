@@ -661,7 +661,8 @@ float TomoCccCmp::cmp(EMData * image, EMData *with) const
 		}
 		//cout << "using CUDA" << endl;
 		float2 stats = get_stats_cuda(ccf->getcudarwdata(), ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
-		cout << stats.x << " " << stats.y << endl;
+		float sigma = sqrt(stats.y);
+		cout << stats.x << " " << sigma << endl;
 		float best_score = get_value_at_wrap_cuda(ccf->getcudarwdata(), 0, 0, 0, ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize());
 		if(norm) {
 			best_score = negative*(best_score - stats.x)/sqrt(stats.y);
