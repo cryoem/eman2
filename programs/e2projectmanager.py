@@ -180,8 +180,15 @@ class EMProjectManager(QtGui.QMainWindow):
 		filebrowser = QtGui.QAction('File Browser', self)
 		filebrowser.setShortcut('Ctrl+F')
 		filebrowser.setStatusTip('File Browser')
-		self.connect(filebrowser, QtCore.SIGNAL('triggered()'), self._on_browse)
 		utilsmenu.addAction(filebrowser)
+		utilsmenu.addSeparator()
+		self.connect(filebrowser, QtCore.SIGNAL('triggered()'), self._on_browse)
+		self.dumpterminal = QtGui.QAction('Dump Terminal', self)
+		self.dumpterminal.setCheckable(True)
+		self.dumpterminal.setChecked(True)
+		utilsmenu.addAction(self.dumpterminal)
+		
+		
 	
 		# Help
 		helpmenu = menubar.addMenu('&Help')
@@ -484,20 +491,25 @@ class EMProjectManager(QtGui.QMainWindow):
 		"""
 		if not cmd: return False	# Don't excecute a broken script
 		# --ipd=-2 ; tell .eman2log.txt that this job is already in the pm note book
+		print self.dumpterminal.isChecked()
+		if self.dumpterminal.isChecked():
+			stdoutpipe = subprocess.PIPE
+		else:
+			stdoutpipe = None
 		if self.notebook and self.getProgramNoteLevel() > 0:
 			# Only take notes if note level is greater than 0
 			self.notebook.insertNewJob(cmd,local_datetime())
 			self.notebook.writeNotes()
-			child = EMPopen((str(cmd)+" --ppid=-2"), shell=True, cwd=self.pm_cwd, stdout=subprocess.PIPE, bufsize=1)
+			child = EMPopen((str(cmd)+" --ppid=-2"), shell=True, cwd=self.pm_cwd, stdout=stdoutpipe, bufsize=1)
 		else:
 			if self.getProgramNoteLevel() > 0:
 				print "NOT Writing notes, ppid=-1"
-				child = EMPopen(str(cmd), shell=True, cwd=self.pm_cwd, stdout=subprocess.PIPE, bufsize=1)
+				child = EMPopen(str(cmd), shell=True, cwd=self.pm_cwd, stdout=stdoutpipe, bufsize=1)
 			else:
 				print "NOT Writing notes, ppid=-2"
-				child = EMPopen((str(cmd)+" --ppid=-2"), shell=True, cwd=self.pm_cwd, stdout=subprocess.PIPE, bufsize=1)
-		
-		child.realTimeCommunicate(self.statusbar)
+				child = EMPopen((str(cmd)+" --ppid=-2"), shell=True, cwd=self.pm_cwd, stdout=stdoutpipe, bufsize=1)
+		# Dump terminal stdout if desired
+		if self.dumpterminal.isChecked(): child.realTimeCommunicate(self.statusbar)
 		
 		self.statusbar.setMessage("Program %s Launched!!!!"%str(cmd).split()[0],"font-weight:bold;")
 		
