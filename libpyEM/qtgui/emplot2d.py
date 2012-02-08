@@ -63,6 +63,7 @@ from emshape import *
 import weakref
 from pickle import dumps,loads
 import struct, math
+from numpy import *
 
 import matplotlib
 from matplotlib.backends.backend_agg import FigureCanvasAgg
@@ -206,14 +207,14 @@ class EMPlot2DWidget(EMGLWidget):
 		else : dosym,symtype=0,0
 		self.pparm[key]=(color,doline,linetype,linewidth,dosym,symtype,symsize)
 				
-		if not isinstance(data[0],list) and not isinstance(data[0],tuple):
-			x_axis = [i for i in range(len(data))]
-			rdata = [ x_axis,data ]
+		if not isinstance(data[0],list) and not isinstance(data[0],tuple) and not isinstance(data[0],array):
+			x_axis = arange(len(data))
+			rdata = [ x_axis,array(data) ]
 			self.data[key]= rdata
 			self.visibility[key] = True
 		else:
 			if data : 
-				self.data[key]=data
+				self.data[key]=[array(i) for i in data]
 				self.visibility[key] = True
 			else : 
 				#del self.data[key] why del?
@@ -343,7 +344,7 @@ class EMPlot2DWidget(EMGLWidget):
 				else : rdata=[[float(j) for j in i.split()] for i in rdata]
 				nx=len(rdata[0])
 				ny=len(rdata)
-				data=[[rdata[j][i] for j in range(ny)] for i in range(nx)]
+				data=[[array([rdata[j][i]]) for j in range(ny)] for i in range(nx)]
 					
 			except:
 				print "couldn't read",filename
@@ -437,14 +438,27 @@ class EMPlot2DWidget(EMGLWidget):
 				else : x=self.data[i][self.axes[i][0]]
 				if j[1]==-1 : y=range(len(self.data[i][0]))
 				else : y=self.data[i][self.axes[i][1]]
-				parm=""
-#				parm+=colortypes[self.pparm[i][0]]
-				if self.pparm[i][1]: 
-					parm+=linetypes[self.pparm[i][2]]
+				
+				# We draw markers (if any) first
 				if self.pparm[i][4]:
-					parm+=symtypes[self.pparm[i][5]]
+					mark=symtypes[self.pparm[i][5]]
+					if j[2]==-2: col=colortypes[self.pparm[i][0]]
+					elif j[2]==-1: col=arange(len(self.data[i][0]))*255.0/len(self.data[i][0])
+					else: 
+						col=(self.data[i][self.axes[i][2]]-self.climits[0])/(self.climits[1]-self.climits[0])
+						
+					if j[3]==-2: sz=self.pparm[i][6]
+					elif j[3]==-1: sz=arange(len(self.data[i][0]))*15.0/len(self.data[i][0])
+					else:
+						sz=(self.data[i][self.axes[i][3]]-self.slimits[0])/(self.slimits[1]-self.slimits[0])
+
+					ax.scatter(x,y,sz,col,mark,markeredgewidth=.5*(self.pparm[i][6]>4))
+				
+				# Then we draw the line
+				if self.pparm[i][1]: 
+					parm=linetypes[self.pparm[i][2]]
+					ax.plot(x,y,parm,linewidth=self.pparm[i][3],color=colortypes[self.pparm[i][0]])
 					
-				ax.plot(x,y,parm,linewidth=self.pparm[i][3],markersize=self.pparm[i][6],color=colortypes[self.pparm[i][0]])
 			
 			
 			canvas.draw()
@@ -559,9 +573,9 @@ class EMPlot2DWidget(EMGLWidget):
 		self.needupd=1
 		self.updateGL()
 		
-	def setAxes(self,key,xa,ya,za):
-		if self.axes[key]==(xa,ya,za) : return
-		self.axes[key]=(xa,ya,za)
+	def setAxes(self,key,xa,ya,za,sa):
+		if self.axes[key]==(xa,ya,za,sa) : return
+		self.axes[key]=(xa,ya,za,sa)
 		self.needupd=1
 		self.updateGL()
 		
@@ -666,8 +680,27 @@ class EMPlot2DWidget(EMGLWidget):
 				#self.add_shape("MEAS",("line",.5,.1,.5,self.shapes["MEAS"][4],self.shapes["MEAS"][5],lc[0],lc[1],2))
 
 	def rescale(self,x0,x1,y0,y1,quiet=False):
+		"adjusts the value range for the x/y axes"
 		if x0>=x1 or y0>=y1 : self.limits=None
 		else: self.limits=((x0,x1),(y0,y1))
+		self.needupd=1
+		self.del_shapes()  # also triggers an update
+		self.updateGL()
+		if self.inspector: self.inspector.update()
+
+	def recolor(self,c0,c1,quiet=False):
+		"adjusts the value range for the marker color display"
+		if c0>=c1 : self.climits=None
+		else: self.climits=(c0,c1)
+		self.needupd=1
+		self.del_shapes()  # also triggers an update
+		self.updateGL()
+		if self.inspector: self.inspector.update()
+
+	def resize(self,s0,s1,quiet=False):
+		"Adjusts the value range for the marker size display"
+		if s0>=s1 : self.slimits=None
+		else: self.slimits=(s0,s1)
 		self.needupd=1
 		self.del_shapes()  # also triggers an update
 		self.updateGL()
@@ -1083,14 +1116,23 @@ class EMPlot2DInspector(QtGui.QWidget):
 		
 		gl.addWidget(QtGui.QLabel("C Col:",self),2,0,Qt.AlignRight)
 		self.slidec=QtGui.QSpinBox(self)
-		self.slidec.setRange(-1,1)
+		self.slidec.setRange(-2,1)
 		gl.addWidget(self.slidec,2,1,Qt.AlignLeft)
 		vbl.addLayout(gl)
 		#self.slidec=ValSlider(self,(-1,1),"C col:",-1)
 		#self.slidec.setIntonly(1)
 		#vbl.addWidget(self.slidec)
 		
-		
+		gl.addWidget(QtGui.QLabel("S Col:",self),2,0,Qt.AlignRight)
+		self.slides=QtGui.QSpinBox(self)
+		self.slides.setRange(-2,1)
+		gl.addWidget(self.slides,3,1,Qt.AlignLeft)
+		vbl.addLayout(gl)
+		#self.slidec=ValSlider(self,(-1,1),"C col:",-1)
+		#self.slidec.setIntonly(1)
+		#vbl.addWidget(self.slidec)
+
+
 		hbl2 = QtGui.QHBoxLayout()
 		
 		self.xlogtog=QtGui.QPushButton(self)
@@ -1144,18 +1186,36 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.wrescale.setText("Rescale")
 		hbl2.addWidget(self.wrescale)
 		vbl0.addLayout(hbl2)
+
+		hbl3=QtGui.QHBoxLayout()
 		
-		hbl2 = QtGui.QHBoxLayout()	
-		hbl2.addWidget(QtGui.QLabel("X Label:",self))
+		hbl3.addWidget(QtGui.QLabel("C:",self))
+		self.wcmin=QtGui.QLineEdit(self)
+		hbl3.addWidget(self.wcmin)
+		hbl3.addWidget(QtGui.QLabel("-",self))
+		self.wcmax=QtGui.QLineEdit(self)
+		hbl3.addWidget(self.wcmax)
+		
+		hbl3.addWidget(QtGui.QLabel("S:",self))
+		self.wsmin=QtGui.QLineEdit(self)
+		hbl3.addWidget(self.wsmin)
+		hbl3.addWidget(QtGui.QLabel("-",self))
+		self.wsmax=QtGui.QLineEdit(self)
+		hbl3.addWidget(self.wsmax)
+		vbl0.addLayout(hbl3)
+
+
+		hbl4 = QtGui.QHBoxLayout()	
+		hbl4.addWidget(QtGui.QLabel("X Label:",self))
 		self.xlabel=QtGui.QLineEdit(self)
-		hbl2.addWidget(self.xlabel)
-		vbl0.addLayout(hbl2)
+		hbl4.addWidget(self.xlabel)
+		vbl0.addLayout(hbl4)
 		
-		hbl2 = QtGui.QHBoxLayout()	
-		hbl2.addWidget(QtGui.QLabel("Y Label:",self))
+		hbl5 = QtGui.QHBoxLayout()	
+		hbl5.addWidget(QtGui.QLabel("Y Label:",self))
 		self.ylabel=QtGui.QLineEdit(self)
-		hbl2.addWidget(self.ylabel)
-		vbl0.addLayout(hbl2)
+		hbl5.addWidget(self.ylabel)
+		vbl0.addLayout(hbl5)
 		
 	
 #		self.setLayout(vbl0)
@@ -1165,6 +1225,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.slidex, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
 		QtCore.QObject.connect(self.slidey, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
 		QtCore.QObject.connect(self.slidec, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
+		QtCore.QObject.connect(self.slides, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.list_item_changed)
 		QtCore.QObject.connect(self.color,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlot)
@@ -1184,6 +1245,10 @@ class EMPlot2DInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.wxmax,QtCore.SIGNAL("returnPressed()"),self.newLimits)
 		QtCore.QObject.connect(self.wymin,QtCore.SIGNAL("returnPressed()"),self.newLimits)
 		QtCore.QObject.connect(self.wymax,QtCore.SIGNAL("returnPressed()"),self.newLimits)
+		QtCore.QObject.connect(self.wcmin,QtCore.SIGNAL("returnPressed()"),self.newCLimits)
+		QtCore.QObject.connect(self.wcmax,QtCore.SIGNAL("returnPressed()"),self.newCLimits)
+		QtCore.QObject.connect(self.wsmin,QtCore.SIGNAL("returnPressed()"),self.newWLimits)
+		QtCore.QObject.connect(self.wsmax,QtCore.SIGNAL("returnPressed()"),self.newWLimits)
 		QtCore.QObject.connect(self.wrescale,QtCore.SIGNAL("clicked()"),self.autoScale)
 		
 		self.datachange()
@@ -1331,7 +1396,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 
 	def newCols(self,val):
 		if self.target: 
-			self.target().setAxes(str(self.setlist.currentItem().text()),self.slidex.value(),self.slidey.value(),self.slidec.value())
+			self.target().setAxes(str(self.setlist.currentItem().text()),self.slidex.value(),self.slidey.value(),self.slidec.value(),self.slides.value())
 	
 	def newLimits(self,val=None):
 		if self.busy: return
@@ -1343,6 +1408,24 @@ class EMPlot2DInspector(QtGui.QWidget):
 			self.target().rescale(xmin,xmax,ymin,ymax,True)
 		except:
 			self.target().rescale(0,0,0,0)
+
+	def newCLimits(self,val=None):
+		if self.busy: return
+		try:
+			cmin=float(str(self.wxmin.text()))
+			cmax=float(str(self.wxmax.text()))
+			self.target().recolor(cmin,cmax,True)
+		except:
+			self.target().recolor(0,0)
+
+	def newSLimits(self,val=None):
+		if self.busy: return
+		try:
+			smin=float(str(self.wxmin.text()))
+			smax=float(str(self.wxmax.text()))
+			self.target().resize(smin,smax,True)
+		except:
+			self.target().resize(0,0)
 	
 	def update(self):
 		self.busy=1
@@ -1358,6 +1441,20 @@ class EMPlot2DInspector(QtGui.QWidget):
 			self.wymax.setText("Auto")
 		self.busy=0
 	
+		try:
+			self.wcmin.setText(str(self.target().climits[0]))
+			self.wcmax.setText(str(self.target().climits[1]))
+		except:
+			self.wcmin.setText("Auto")
+			self.wcmax.setText("Auto")
+
+		try:
+			self.wsmin.setText(str(self.target().slimits[0]))
+			self.wsmax.setText(str(self.target().sdlimits[1]))
+		except:
+			self.wsmin.setText("Auto")
+			self.wsmax.setText("Auto")
+		
 	def autoScale(self):
 		self.target().rescale(0,0,0,0)
 	

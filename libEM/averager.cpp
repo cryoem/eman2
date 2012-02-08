@@ -277,7 +277,7 @@ EMData * ImageAverager::finish()
 		}
 		else {
 			for (size_t j = 0; j < image_size; ++j) {
-				result_data[j] /= nimg_n0[j];
+				if (nimg_n0[j]>0) result_data[j] /= nimg_n0[j];
 			}
 			if (sigma_image) {
 				float * sigma_image_data = sigma_image->get_data();

@@ -45,7 +45,25 @@ def main():
 	usage = """%prog [options] input1 input2 ...
 	
 Reads a full similarity matrix. Computes a Z score for each particle and plots vs actual
-similarity score."""
+similarity score.
+
+If there are N particles and M input files, the output file is:
+an M*4 or M*6 column text file with N rows (lines). M*6 columns are present only if --refs is specified.
+The columns are:
+
+input1-Q input2-Q ... input1-QA input2-QA ... input1-Z input2-Z ... input1-B ... input1-alt ... input1-az
+
+where:
+Z - Z score
+Q - raw quality value of best particle orientation
+QA - Average quality for this particle across all measured references
+B - reference number of best particle orientation
+alt - altitude of best particle orientation
+az - azimuth of best particle orientation
+
+Note also that Z scores will not be accurate if the similarity matrix was computed using --twostage classification,
+as not all elements are computed.
+"""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
@@ -82,6 +100,7 @@ similarity score."""
 	# for a single particle
 	for y in xrange(ny):
 		Qs=[]		# Quality
+		QAs=[]		# Average Quality for particle
 		Zs=[]		# Z score for classification
 		Ns=[]		# classified best class
 		for cm in args:
@@ -91,11 +110,13 @@ similarity score."""
 			Zs.append(Z)
 			Q=im["minimum"]
 			Qs.append(Q)
+			QAs.append(im["mean"])
 			N=im.calc_min_index()
 			Ns.append(N)
 		out.write("%d\t"%y)
 
 		for q in Qs : out.write("%1.4g\t"%q)
+		for qa in QAs : out.write("%1.4g\t"%qa)
 		for z in Zs : out.write("%1.4g\t"%z)
 		for n in Ns : out.write("%d\t"%n)
 

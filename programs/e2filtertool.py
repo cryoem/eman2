@@ -437,7 +437,7 @@ class EMFilterTool(QtGui.QMainWindow):
 
 
 		self.viewer=None			# viewer window for data
-		self.processors=[]				# list of processor specifications (name,dict)
+		self.processors=[]			# list of processor specifications (name,dict)
 		self.origdata=[]
 		self.filtdata=[]
 		self.nx=0
@@ -457,7 +457,7 @@ class EMFilterTool(QtGui.QMainWindow):
 
 		self.timer=QTimer()
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeOut)
-		self.timer.start(0.1)
+		self.timer.start(100)
 #		QtCore.QObject.connect(self.boxesviewer,QtCore.SIGNAL("mx_image_selected"),self.img_selected)
 
 	def setChange(self,line):
