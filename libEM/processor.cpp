@@ -232,6 +232,7 @@ const string SHIFTProcessor::NAME = "filter.shift";
 const string InverseKaiserI0Processor::NAME = "filter.kaiser_io_inverse";
 const string InverseKaiserSinhProcessor::NAME = "filter.kaisersinhinverse";
 const string NewRadialTableProcessor::NAME = "filter.radialtable";
+const string LowpassRandomPhaseProcessor::NAME = "filter.lowpass.randomphase";
 const string NewLowpassButterworthProcessor::NAME = "filter.lowpass.butterworth";
 const string NewHighpassButterworthProcessor::NAME = "filter.highpass.butterworth";
 const string NewHomomorphicButterworthProcessor::NAME = "filter.homomorphic.butterworth";
@@ -446,6 +447,7 @@ template <> Factory < Processor >::Factory()
 	force_add<NewBandpassGaussProcessor>();
 	force_add<NewHomomorphicGaussProcessor>();
 	force_add<NewInverseGaussProcessor>();
+	force_add<LowpassRandomPhaseProcessor>();
 	force_add<NewLowpassButterworthProcessor>();
 	force_add<NewHighpassButterworthProcessor>();
 	force_add<NewHomomorphicButterworthProcessor>();
@@ -1143,6 +1145,47 @@ void LinearRampFourierProcessor::create_radial_func(vector < float >&radial_mask
 	for (size_t i = 0; i < radial_mask.size(); i++) {
 		radial_mask[i] = (float)i;
 	}
+}
+
+void LowpassRandomPhaseProcessor::create_radial_func(vector < float >&radial_mask) const { };
+
+void LowpassRandomPhaseProcessor::process_inplace(EMData *image)
+{
+	float cutoff=0;
+	if( params.has_key("cutoff_abs") ) {
+		cutoff=params["cutoff_abs"];
+	}
+	else {
+		printf("A cutoff_* parameter is required by filter.lowpass.randomphase\n");
+		return;
+	}
+	
+	if (image->get_zsize()>1) {
+		printf("filter.lowpass.randomphase only works on 2-D images\n");
+		return;
+	}
+
+	int flag=0;
+	if (!image->is_complex()) { image->do_fft_inplace(); flag=1; }
+	image->ri2ap();
+
+	for (int y=0; y<image->get_ysize()/2; y++) {
+		for (int x=1; x<image->get_xsize(); x+=2) {
+			if (hypot((float)(x/2)/(float)image->get_xsize(),(float)y/(float)image->get_ysize())>cutoff) {
+				image->set_value_at(x*2+1,y,Util::get_frand(0.0f,M_PI*2.0f));
+			 }
+		}
+	}
+	for (int y=image->get_ysize()/2; y<image->get_ysize(); y++) {
+		for (int x=1; x<image->get_xsize(); x+=2) {
+			if (hypot((float)(x/2)/(float)image->get_xsize(),(float)(image->get_ysize()-y)/(float)image->get_ysize())>cutoff) {
+				image->set_value_at(x*2+1,y,Util::get_frand(0.0f,M_PI*2.0f));
+			 }
+		}
+	}
+
+	if (flag) image->do_ift_inplace();
+
 }
 
 void HighpassAutoPeakProcessor::preprocess(EMData * image)

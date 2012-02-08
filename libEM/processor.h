@@ -354,7 +354,32 @@ The basic design of EMAN Processors: <br>\
 		}
 
 	  protected:
-		  virtual void preprocess(EMData *) {}
+		  virtual void preprocess(EMData *image) {
+                        if(params.has_key("apix")) {
+                                image->set_attr("apix_x", (float)params["apix"]);
+                                image->set_attr("apix_y", (float)params["apix"]);
+                                image->set_attr("apix_z", (float)params["apix"]);
+                        }
+
+                        const Dict dict = image->get_attr_dict();
+                        if( params.has_key("sigma")) {
+                                params["cutoff_abs"] = (float)params["sigma"];
+                        }
+                        else if( params.has_key("cutoff_abs") ) {
+                                params["sigma"] = (float)params["cutoff_abs"];
+                        }
+                        else if( params.has_key("cutoff_freq") ) {
+                                float val =  (float)params["cutoff_freq"] * (float)dict["apix_x"];
+                                params["cutoff_abs"] = val;
+                                params["sigma"] = val;
+                        }
+                        else if( params.has_key("cutoff_pixels") ) {
+                                float val = (0.5f*(float)params["cutoff_pixels"] / (float)dict["nx"]);
+                                params["cutoff_abs"] = val;
+                                params["sigma"] = val;
+                        }
+
+			}
 		  virtual void create_radial_func(vector < float >&radial_mask) const = 0;
 	};
 
@@ -882,6 +907,26 @@ The basic design of EMAN Processors: <br>\
 		protected:
 			virtual void create_radial_func(vector < float >&radial_mask) const ;
 	};
+
+
+	   /**Lowpass Phase Randomization processor applied in Fourier space.
+         */
+        class LowpassRandomPhaseProcessor:public FourierProcessor
+        {
+          public:
+                string get_name() const
+                { return NAME; }
+                static Processor *NEW() { return new LowpassRandomPhaseProcessor(); }
+                string get_desc() const
+                {
+                        return "Above the cutoff frequency, phases will be completely randomized, but amplitudes will be unchanged. Used for testing for noise bias. If you can reconstruct information that isn't there, then you have noise bias problems.";
+                }
+				void process_inplace(EMData * image);
+		  		void create_radial_func(vector < float >&radial_mask) const;
+
+                static const string NAME;
+        };
+
 
 	/**processor radial function: if lowpass > 0, f(x) = exp(-x*x/(lowpass*lowpass)); else f(x) = exp(x*x/(lowpass*lowpass))
 	 */
