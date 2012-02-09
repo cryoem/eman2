@@ -714,7 +714,7 @@ class EMDirEntry(object):
 	"""Represents a directory entry in the filesystem"""
 	
 	# list of lambda functions to extract column values for sorting
-	col=(lambda x:x.index,lambda x:x.name,lambda x:x.filetype,lambda x:x.size,lambda x:x.dim,lambda x:x.nimg,lambda x:x.date)
+	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.filetype,lambda x:x.size,lambda x:x.dim,lambda x:x.nimg,lambda x:x.date)
 #	classcount=0
 	
 	def __init__(self,root,name,index,parent=None,hidedot=True):
@@ -1051,6 +1051,13 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 		elif col==6 : return nonone(data.date)
 		
 	def headerData(self,sec,orient,role):
+		# In case we use the QTableViews
+		if orient==Qt.Vertical:
+			if role==Qt.DisplayRole :
+				return str(sec)
+			elif role==Qt.ToolTipRole:
+				return None	
+		# This works for all Q*views
 		if orient==Qt.Horizontal:
 			if role==Qt.DisplayRole :
 				return self.__class__.headers[sec]

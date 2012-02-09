@@ -646,12 +646,6 @@ float TomoCccCmp::cmp(EMData * image, EMData *with) const
 	bool norm = params.set_default("norm",true);
 	float negative = (float)params.set_default("negative", 1);
 	if (negative) negative=-1.0; else negative=1.0;
-	int searchx, searchy, searchz;
-	
-
-	searchx = params.set_default("searchx",-1); 
-	searchy = params.set_default("searchy",-1); 
-	searchz = params.set_default("searchz",-1);
 	
 #ifdef EMAN2_USING_CUDA	
 	if(image->getcudarwdata() && with->getcudarwdata()){
