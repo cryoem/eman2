@@ -91,6 +91,7 @@ def main():
 	parser.add_argument("--breaksym",action="store_true", help="Break symmetry. Do not apply symmetrization after averaging", default=False, guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, nosharedb=True, mode=',breaksym[True]')
 	
 	parser.add_argument("--groups",type=int,help="This parameter is EXPERIMENTAL. It's the number of final averages you want from the set after ONE iteration of alignment. Particles will be separated in groups based on their correlation to the reference",default=0)
+	parser.add_argument("--randomizewedge",action="store_true", help="This parameter is EXPERIMENTAL. It randomizes the position of the particles BEFORE alignment, to minimize missing wedge bias and artifacts during symmetric alignment where only a fraction of space is scanned", default=False,)
 
 	parser.add_argument("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False, guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
 	parser.add_argument("--postprocess",type=str,help="A processor to be applied to the volume after averaging the raw volumes, before subsequent iterations begin.",default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=16, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
@@ -100,11 +101,16 @@ def main():
 	
 	parser.add_argument("--shrink", type=int,default=1,help="Optionally shrink the input volumes by an integer amount for coarse alignment.", guitype='shrinkbox', row=5, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
 	parser.add_argument("--shrinkrefine", type=int,default=1,help="Optionally shrink the input volumes by an integer amount for refine alignment.", guitype='intbox', row=5, col=2, rowspan=1, colspan=1, mode='alignment')
+<<<<<<< e2classaverage3d.py
+	
+	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:1", guitype='strbox', row=15, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+=======
 	#parser.add_argument("--automask",action="store_true",help="Applies a 3-D automask before centering. Can help with negative stain data, and other cases where centering is poor.")
 	#parser.add_argument("--resample",action="store_true",help="If set, will perform bootstrap resampling on the particle data for use in making variance maps.",default=False)
 	#parser.add_argument("--odd", default=False, help="Used by EMAN2 when running eotests. Includes only odd numbered particles in class averages.", action="store_true")
 	#parser.add_argument("--even", default=False, help="Used by EMAN2 when running eotests. Includes only even numbered particles in class averages.", action="store_true")
 	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:1", guitype='strbox', row=17, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+>>>>>>> 1.61
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
@@ -133,18 +139,19 @@ def main():
 
 	if options.normproc: 
 		options.normproc=parsemodopt(options.normproc)
+	
 	if options.mask: 
 		options.mask=parsemodopt(options.mask)
+	
 	if options.preprocess: 
 		options.preprocess=parsemodopt(options.preprocess)
+	
 	if options.postprocess: 
 		options.postprocess=parsemodopt(options.postprocess)
 
-#	if options.cmpr: 
-#		options.cmpr=parsemodopt(options.cmpr)
-
 	if options.resultmx : 
 		print "Sorry, resultmx not implemented yet"
+	
 	if options.resultmx!=None: 
 		options.storebad=True
 		
@@ -154,6 +161,7 @@ def main():
 		
 	if options.path and options.path[:4].lower()!="bdb:": 
 		options.path="bdb:"+options.path
+	
 	if not options.path: 
 		options.path="bdb:"+numbered_path("spt",True)
 	
@@ -171,7 +179,7 @@ def main():
 			print "Error, ref volume not same size as input volumes"
 			sys.exit(1)
 			
-	if '.' not in options.output:					#jesus
+	if '.' not in options.output:					
 		print "Error in output name. It must end in a valid format, like '.hdf'; make sure you didn't mistake a comma for a dot"
 		sys.exit(1)
 		
@@ -223,7 +231,8 @@ def main():
 		else: 
 			ptcls=classmx_ptcls(classmx,ic)			# This gets the list from the classmx
 		
-		if options.verbose and ncls>1 : print "###### Beggining class %d(%d)/%d"%(ic+1,ic,ncls)
+		if options.verbose and ncls>1: 
+			print "###### Beggining class %d(%d)/%d"%(ic+1,ic,ncls)
 		
 		# prepare a reference either by reading from disk or bootstrapping
 		if options.ref: 
@@ -264,7 +273,7 @@ def main():
 						transform = None
 					# Unfortunately this tree structure limits the parallelism to the number of pairs at the current level :^(
 					task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options.mask,options.normproc,options.preprocess,
-						options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,transform,options.verbose-1)
+						options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,transform,options.verbose-1,options.randomizewedge)
 					tasks.append(task)
 
 				# Start the alignments for this level
@@ -288,6 +297,7 @@ def main():
 				ref.write_image("%s#class_%02d"%(options.path,ic),-1)
 		
 		# Now we iteratively refine a single class
+		
 		for it in range(options.iter):
 			# In 2-D class-averaging, each alignment is fast, so we send each node a class-average to make
 			# in 3-D each alignment is very slow, so we use a single ptcl->ref alignment as a task
@@ -298,7 +308,7 @@ def main():
 				else:
 					transform = None
 				task=Align3DTask(ref,["cache",options.input,p],p,"Ptcl %d in iter %d"%(p,it),options.mask,options.normproc,options.preprocess,
-					options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,transform,options.verbose-1)
+					options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,transform,options.verbose-1,options.randomizewedge)
 				tasks.append(task)
 			
 			# start the alignments running
@@ -313,63 +323,59 @@ def main():
 				print "Results:"
 				pprint(results)
 			
-			ref=make_average(options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.sym,options.groups,options.breaksym,options.verbose,it)		# the reference for the next iteration
 			
-			#postprocess(ref,options.mask,options.normproc,options.postprocess) #jesus
+			#The reference for the next iteration should ALWAYS be the RAW AVERAGE of the aligned particles, since the reference will be "pre-processed" identically to the raw particles.
+			#There should be NO post-processing of the final averages, EXCEPT for visualization purposes (so, postprocessing is only applied to write out the output, if specified.
 			
+			ref = make_average(options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.sym,options.groups,options.breaksym,options.verbose,it)
+						
 			if options.groups > 1:
 				for i in range(len(ref)):
 					refc=ref[i]
-					postprocess(refc,None,options.normproc,options.postprocess,nocenter=options.nocenterofmass) #jesus
 					
 					if options.savesteps:
-						refc.write_image("%s/class_%02d"%(options.path,i),it)			
+						if options.postprocess:
+							ppref = refc.copy()
+							postprocess(ppref,None,options.normproc,options.postprocess,nocenter=options.nocenterofmass)
+							ppref.write_image("%s/class_%02d"%(options.path,i),it)
+						else:
+							refc.write_image("%s/class_%02d"%(options.path,i),it)
 			else:
-				if type(ref) is list:
-					if len(ref) > 1:
-						print "Looks like you have multiple references!!"
-						ref=ref[0]
-				postprocess(ref,None,options.normproc,options.postprocess,nocenter=options.nocenterofmass) #jesus
 				if options.savesteps:
+					if options.postprocess:
+						ppref = ref.copy()
+						postprocess(ppref,None,options.normproc,options.postprocess,nocenter=options.nocenterofmass)
+						ppref.write_image("%s/class_%02d"%(options.path,i),it)
+					else:
 						ref.write_image("%s/class_%02d"%(options.path,ic),it)
-
-			#sys.exit()
-
-			#if options.sym!=None : 
-			#	if options.verbose: 
-			#		print "Apply ",options.sym," symmetry"
-			#	symmetrize(ref,options.sym)
-			
 
 		if options.verbose: 
 			print "Preparing final average"
-			
-		# new average, why does make average need to be repeated?
-		#ref=make_average(options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.sym,options.groups,options.verbose)		# the reference for the next iteration
 		
-		#if options.postprocess!=None : 
-			#ref.process_inplace(options.postprocess[0],options.postprocess[1])     #jesus - The post process should be applied to the refinment averages. The last one is identical
-												#to the output final average, so no need to apply it to ref. Plus, you ALWAYS want to have a copy
 		if type(ref) is list:
-			print "You hvae a LIST of references"
-			if len(ref) > 1:
-				print "The first one will be picked"
-				ref=ref[0]
-												#of the average of the raw particles, completley raw
-		ref['origin_x']=0
-		ref['origin_y']=0		#jesus - The origin needs to be reset to ZERO to avoid display issues in Chimera
-		ref['origin_z']=0
-		#output_pathname=
-		ref.write_image("%s/%s" % (options.path.replace('bdb:',''),options.output),ic)
+			for ir in range(len(ref)):
+				ref[ir]['origin_x']=0
+				ref[ir]['origin_y']=0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
+				ref[ir]['origin_z']=0
+				ref.write_image("%s/%s" % (options.path.replace('bdb:',''),options.output),ic)
+		else:									
+			ref['origin_x']=0
+			ref['origin_y']=0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
+			ref['origin_z']=0
 		
-	if options.inixforms: db_close_dict(db)
+			ref.write_image("%s/%s" % (options.path.replace('bdb:',''),options.output.replace('.','_class' + str(ic).zfill(len(str(ncls))))),0)
+
+	if options.inixforms: 
+		db_close_dict(db)
+	
 	E2end(logger)
 
 
 def postprocess(img,optmask,optnormproc,optpostprocess,nocenter=False):
 	"""Postprocesses a volume in-place"""
 	
-	if not nocenter: img.process_inplace("xform.centerofmass")
+	if not nocenter: 
+		img.process_inplace("xform.centerofmass")
 	
 	# Make a mask, use it to normalize (optionally), then apply it 
 	mask=EMData(img["nx"],img["ny"],img["nz"])
@@ -379,7 +385,8 @@ def postprocess(img,optmask,optnormproc,optpostprocess,nocenter=False):
 		
 	# normalize
 	if optnormproc != None:
-		if optnormproc[0]=="normalize.mask" : optnormproc[1]["mask"]=mask
+		if optnormproc[0]=="normalize.mask": 
+			optnormproc[1]["mask"]=mask
 		img.process_inplace(optnormproc[0],optnormproc[1])
 
 	img.mult(mask)
@@ -389,18 +396,13 @@ def postprocess(img,optmask,optnormproc,optpostprocess,nocenter=False):
 		img.process_inplace(optpostprocess[0],optpostprocess[1])
 
 
-def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,keepsig,symmetry,groups,breaksym,verbose=1,it=1):			#jesus - added the groups parameter
+def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,keepsig,symmetry,groups,breaksym,verbose=1,it=1):
 	"""Will take a set of alignments and an input particle stack filename and produce a new class-average.
 	Particles may be excluded based on the keep and keepsig parameters. If keepsig is not set, then keep represents
 	an absolute fraction of particles to keep (0-1). Otherwise it represents a sigma multiplier akin to e2classaverage.py"""
 	
-	
-	
 	if groups > 1:
-		#print "QUIT! Becuase the groups are", groups
-		#print "And their types are", type(groups)
-		#sys.exit()
-		print "This is an example of where I'm getting the score from", align_parms[0][0]						#jesus
+		
 		val=[p[0]["score"] for p in align_parms]
 		
 		val.sort()
@@ -411,14 +413,12 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 			threshs.append(val[int((i+1)*(1.0/groups)*len(align_parms)) -1])
 			guinea_particles.append(int((i+1)*(1.0/groups)*len(align_parms)) -1)
 		print "Therefore, based on the size of the set, the coefficients that will work as thresholds are", threshs	
-		print "While the guinea particles where these came from were", guinea_particles
+		print "While the guineapig particles where these came from were", guinea_particles
 		print "Out of a total of these many particles", len(align_parms)
 		print "Therefor each group will contain approximately these many particles", len(align_parms)/groups
 	
 		threshs.sort()
-		
-		#avgr=Averagers.get(averager[0], averager[1])
-		
+				
 		groupslist=[]
 		includedlist=[]
 		for i in range(groups):
@@ -431,17 +431,16 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 			ptcl.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
 
 			if ptcl_parms[0]["score"] > threshs[-1]: 
-				#avgr.add_image(ptcl)
 				groupslist[-1].append(ptcl)
 				includedlist[-1].append(i)			
 				print "Particle %d assigned to last group!" %(i)
-				print "The threshold criteria was %f, and the particles cc score was %f" %(threshs[-1], ptcl_parms[0]["score"])
+				print "The threshold criteria was %f, and the particle's cc score was %f" %(threshs[-1], ptcl_parms[0]["score"])
 				
 			elif ptcl_parms[0]["score"] < threshs[0]: 
 				groupslist[0].append(ptcl)
 				includedlist[0].append(i)
 				print "Particle %d assigned to first group!" %(i)
-				print "The threshold criteria was %f, and the particles cc score was %f" %(threshs[0], ptcl_parms[0]["score"])
+				print "The threshold criteria was %f, and the particle's cc score was %f" %(threshs[0], ptcl_parms[0]["score"])
 			
 			else:
 				for kk in range(len(threshs)-1):
@@ -449,7 +448,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 						groupslist[kk+1].append(ptcl)
 						includedlist[kk+1].append(i)
 						print "Particle %d assigned to group number %d!" %(i,kk+1)
-						print "The threshold criteria was %f, and the particles cc score was %f" %(threshs[kk+1], ptcl_parms[0]["score"])
+						print "The threshold criteria was %f, and the particle's cc score was %f" %(threshs[kk+1], ptcl_parms[0]["score"])
 
 			db["tomo_%04d"%i] = ptcl_parms[0]['xform.align3d']
 			if saveali:
@@ -459,8 +458,6 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 				ptcl['spt_score'] = ptcl_parms[0]['score']
 				ptcl['spt_ali_param'] = ptcl_parms[0]['xform.align3d']
 				
-			#	print "I will write the particle with the origin set to 0. Its type is", type(ptcl)
-			#	ptcl.write_image("bdb:class_ptcl",i)
 		db_close_dict(db)
 		ret=[]
 		
@@ -475,10 +472,10 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 				
 				if saveali:
 					groupslist[i][j]['origin_x'] = 0
-					groupslist[i][j]['origin_y'] = 0		# jesus - the origin needs to be reset to ZERO to avoid display issues in Chimera
+					groupslist[i][j]['origin_y'] = 0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
 					groupslist[i][j]['origin_z'] = 0
 					
-					classname=path+"/class_" + str(i).zfill(len(str(len(groupslist)))) + "_ptcl"
+					classname = path+"/class_" + str(i).zfill(len(str(len(groupslist)))) + "_ptcl"
 					groupslist[i][j].write_image(classname,j)
 					
 			avg=avgr.finish()
@@ -491,7 +488,6 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 			
 			if averager[0] == 'mean':
 				variance.write_image(path+"/class_varmap_group_%d"%i,it)
-		#sys.exit()
 		return ret
 
 	else:
@@ -582,22 +578,7 @@ def make_average_pairs(ptcl_file,outfile,align_parms,averager,optmask,optnormpro
 		avg=avgr.finish()
 		postprocess(avg,optmask,optnormproc,optpostprocess,nocenter=False)		# we treat these intermediate averages just like the final average
 		avg.write_image(outfile,i)
-
-'''
-def symmetrize(ptcl,sym):
-	"Impose symmetry in the standard orientation in-place. Does not reorient particle before symmetrization"
-	xf = Transform()
-	xf.to_identity()
-	nsym=xf.get_nsym(sym)
-	orig=ptcl.copy()
-	for i in range(1,nsym):
-		dc=orig.copy()
-		dc.transform(xf.get_sym(sym,i))
-		ptcl.add(dc)
-	ptcl.mult(1.0/nsym)	
-	
-	return
-'''
+		
 
 def get_results(etc,tids,verbose):
 	"""This will get results for a list of submitted tasks. Won't return until it has all requested results.
@@ -632,7 +613,7 @@ def get_results(etc,tids,verbose):
 class Align3DTask(EMTask):
 	"""This is a task object for the parallelism system. It is responsible for aligning one 3-D volume to another, with a variety of options"""
 
-	def __init__(self,fixedimage,image,ptcl,label,mask,normproc,preprocess,npeakstorefine,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,transform,verbose):
+	def __init__(self,fixedimage,image,ptcl,label,mask,normproc,preprocess,npeakstorefine,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,transform,verbose,randomizewedge):
 		"""fixedimage and image may be actual EMData objects, or ["cache",path,number]
 	label is a descriptive string, not actually used in processing
 	ptcl is not used in executing the task, but is for reference
@@ -642,7 +623,7 @@ class Align3DTask(EMTask):
 		data={"fixedimage":fixedimage,"image":image}
 		EMTask.__init__(self,"ClassAv3d",data,{},"")
 
-		self.options={"ptcl":ptcl,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"npeakstorefine":npeakstorefine,"align":align,"aligncmp":aligncmp,"ralign":ralign,"raligncmp":raligncmp,"shrink":shrink,"shrinkrefine":shrinkrefine,"transform":transform,"verbose":verbose}
+		self.options={"ptcl":ptcl,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"npeakstorefine":npeakstorefine,"align":align,"aligncmp":aligncmp,"ralign":ralign,"raligncmp":raligncmp,"shrink":shrink,"shrinkrefine":shrinkrefine,"transform":transform,"verbose":verbose,"randomizeedge":randomizewedge}
 	
 	def execute(self,callback=None):
 		"""This aligns one volume to a reference and returns the alignment parameters"""
@@ -689,7 +670,7 @@ class Align3DTask(EMTask):
 		if options["shrink"]!=None and options["shrink"]>1 :
 			sfixedimage=fixedimage.process("math.meanshrink",{"n":options["shrink"]})
 			simage=image.process("math.meanshrink",{"n":options["shrink"]})
-		else :
+		else:
 			sfixedimage=fixedimage
 			simage=image
 			
@@ -715,16 +696,24 @@ class Align3DTask(EMTask):
 		# If None was passed in we skip course alignment and just do a refienement
 		if options["align"] == None:
 			bestcoarse=[{"score":1.0,"xform.align3d":Transform()}]
+		
 		# If a Transform was passed in, we skip coarse alignment
 		elif isinstance(options["align"],Transform):
 			bestcoarse=[{"score":1.0,"xform.align3d":options["align"]}]
 			if options["shrinkrefine"]>1: 
 				bestcoarse[0]["xform.align3d"].set_trans(bestcoarse[0]["xform.align3d"].get_trans()/float(options["shrinkrefine"]))
 		
-		# this is the default behavior, seed orientations come from coarse alignment
+		# This is the default behavior, seed orientations come from coarse alignment
 		else:
-			# returns an ordered vector of Dicts of length options.npeakstorefine. The Dicts in the vector have keys "score" and "xform.align3d"
-			bestcoarse=simage.xform_align_nbest(options["align"][0],sfixedimage,options["align"][1],options["npeakstorefine"],options["aligncmp"][0],options["aligncmp"][1])
+			# Returns an ordered vector of Dicts of length options.npeakstorefine. The Dicts in the vector have keys "score" and "xform.align3d"
+			
+			if options["randomizewedge"]:
+				rand_orient = OrientGens.get("rand",{"n":1,"phitoo":1})			#Fetches the orientation generator
+				c1_sym = Symmetries.get("c1")					#Generates the asymmetric unit from which you wish to generate a random orientation
+				random_transform = rand_orient.gen_orientations(c1_sym)[0]	#Generates a random orientation (in a Transform object) using the generator and asymmetric unit specified 
+				options["align"][1]["xform.align3d"] = random_transform
+			
+			bestcoarse = simage.xform_align_nbest(options["align"][0],sfixedimage,options["align"][1],options["npeakstorefine"],options["aligncmp"][0],options["aligncmp"][1])
 			scaletrans=options["shrink"]/float(options["shrinkrefine"])
 			if scaletrans!=1.0:
 				for c in bestcoarse:
@@ -739,14 +728,15 @@ class Align3DTask(EMTask):
 			# Now loop over the individual peaks and refine each
 			bestfinal=[]
 			for bc in bestcoarse:
-				options["ralign"][1]["xform.align3d"]=bc["xform.align3d"]
-				ali=s2image.align(options["ralign"][0],s2fixedimage,options["ralign"][1],options["raligncmp"][0],options["raligncmp"][1])
+				options["ralign"][1]["xform.align3d"] = bc["xform.align3d"]
+				ali = s2image.align(options["ralign"][0],s2fixedimage,options["ralign"][1],options["raligncmp"][0],options["raligncmp"][1])
 				
-				try: 
+				try: 					
 					bestfinal.append({"score":ali["score"],"xform.align3d":ali["xform.align3d"],"coarse":bc})
+										
 				except:
 					bestfinal.append({"xform.align3d":bc["xform.align3d"],"score":1.0e10,"coarse":bc})
-
+					
 			if options["shrinkrefine"]>1 :
 				for c in bestfinal:
 					c["xform.align3d"].set_trans(c["xform.align3d"].get_trans()*float(options["shrinkrefine"]))
@@ -757,10 +747,9 @@ class Align3DTask(EMTask):
 					print "fine %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
 
 		else: 
-			bestfinal=bestcoarse
+			bestfinal = bestcoarse
 		
-		#bestfinal.sort()	
-		from operator import itemgetter						#jesus - if you just sort 'bestfinal' it will be sorted based on the 'coarse' key in the dictionaries of the list
+		from operator import itemgetter						#If you just sort 'bestfinal' it will be sorted based on the 'coarse' key in the dictionaries of the list
 											#because they come before the 'score' key of the dictionary (alphabetically)
 		bestfinal = sorted(bestfinal, key=itemgetter('score'))
 
