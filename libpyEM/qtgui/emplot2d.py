@@ -106,6 +106,8 @@ class EMPlot2DWidget(EMGLWidget):
 		self.plotimg=None
 		self.shapes={}
 		self.limits=None
+		self.climits=None
+		self.slimits=None
 		self.rmousedrag=None
 		self.axisparms=(None,None,"linear","linear")
 		
@@ -119,6 +121,7 @@ class EMPlot2DWidget(EMGLWidget):
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
 		GL.glEnable(GL_DEPTH_TEST)
+		
 	def paintGL(self):
 
 		GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
@@ -196,8 +199,8 @@ class EMPlot2DWidget(EMGLWidget):
 		else: data = input_data
 		
 		try:
-			if len(data)>1 : self.axes[key]=(0,1,-1)
-			else : self.axes[key]=(-1,0,-1)
+			if len(data)>1 : self.axes[key]=(0,1,-2,-2)
+			else : self.axes[key]=(-1,0,-2,-2)
 		except: return
 		
 		if color not in range(len(colortypes)): color = 0 # there are only a certain number of colors
@@ -434,6 +437,7 @@ class EMPlot2DWidget(EMGLWidget):
 			for i in self.axes.keys():
 				if not self.visibility[i]: continue
 				j=self.axes[i]
+#				print j
 				if j[0]==-1 : x=range(len(self.data[i][0]))
 				else : x=self.data[i][self.axes[i][0]]
 				if j[1]==-1 : y=range(len(self.data[i][0]))
@@ -445,14 +449,18 @@ class EMPlot2DWidget(EMGLWidget):
 					if j[2]==-2: col=colortypes[self.pparm[i][0]]
 					elif j[2]==-1: col=arange(len(self.data[i][0]))*255.0/len(self.data[i][0])
 					else: 
-						col=(self.data[i][self.axes[i][2]]-self.climits[0])/(self.climits[1]-self.climits[0])
+						if self.climits==None : climits=(min(self.data[i][self.axes[i][2]]),max(self.data[i][self.axes[i][2]]))
+						else : climits=self.climits
+						col=(self.data[i][self.axes[i][2]]-climits[0])/(climits[1]-climits[0])*255.0
 						
 					if j[3]==-2: sz=self.pparm[i][6]
-					elif j[3]==-1: sz=arange(len(self.data[i][0]))*15.0/len(self.data[i][0])
+					elif j[3]==-1: sz=arange(len(self.data[i][0]))*30.0/len(self.data[i][0])
 					else:
-						sz=(self.data[i][self.axes[i][3]]-self.slimits[0])/(self.slimits[1]-self.slimits[0])
+						if self.slimits==None : slimits=(min(self.data[i][self.axes[i][3]]),max(self.data[i][self.axes[i][3]]))
+						else : slimits=self.slimits
+						sz=(self.data[i][self.axes[i][3]]-slimits[0])*30.0/(slimits[1]-slimits[0])
 
-					ax.scatter(x,y,sz,col,mark,markeredgewidth=.5*(self.pparm[i][6]>4))
+					ax.scatter(x,y,sz,col,mark,linewidths=.5*(self.pparm[i][6]>4))
 				
 				# Then we draw the line
 				if self.pparm[i][1]: 
@@ -1101,37 +1109,22 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.slidex=QtGui.QSpinBox(self)
 		self.slidex.setRange(-1,1)
 		gl.addWidget(self.slidex,0,1,Qt.AlignLeft)
-		
-		#self.slidex=ValSlider(self,(-1,1),"X col:",0)
-		#self.slidex.setIntonly(1)
-		#vbl.addWidget(self.slidex)
-		
+				
 		gl.addWidget(QtGui.QLabel("Y Col:",self),1,0,Qt.AlignRight)
 		self.slidey=QtGui.QSpinBox(self)
 		self.slidey.setRange(-1,1)
 		gl.addWidget(self.slidey,1,1,Qt.AlignLeft)
-		#self.slidey=ValSlider(self,(-1,1),"Y col:",1)
-		#self.slidey.setIntonly(1)
-		#vbl.addWidget(self.slidey)
 		
 		gl.addWidget(QtGui.QLabel("C Col:",self),2,0,Qt.AlignRight)
 		self.slidec=QtGui.QSpinBox(self)
 		self.slidec.setRange(-2,1)
 		gl.addWidget(self.slidec,2,1,Qt.AlignLeft)
-		vbl.addLayout(gl)
-		#self.slidec=ValSlider(self,(-1,1),"C col:",-1)
-		#self.slidec.setIntonly(1)
-		#vbl.addWidget(self.slidec)
 		
-		gl.addWidget(QtGui.QLabel("S Col:",self),2,0,Qt.AlignRight)
+		gl.addWidget(QtGui.QLabel("S Col:",self),3,0,Qt.AlignRight)
 		self.slides=QtGui.QSpinBox(self)
 		self.slides.setRange(-2,1)
 		gl.addWidget(self.slides,3,1,Qt.AlignLeft)
 		vbl.addLayout(gl)
-		#self.slidec=ValSlider(self,(-1,1),"C col:",-1)
-		#self.slidec.setIntonly(1)
-		#vbl.addWidget(self.slidec)
-
 
 		hbl2 = QtGui.QHBoxLayout()
 		
@@ -1247,10 +1240,11 @@ class EMPlot2DInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.wymax,QtCore.SIGNAL("returnPressed()"),self.newLimits)
 		QtCore.QObject.connect(self.wcmin,QtCore.SIGNAL("returnPressed()"),self.newCLimits)
 		QtCore.QObject.connect(self.wcmax,QtCore.SIGNAL("returnPressed()"),self.newCLimits)
-		QtCore.QObject.connect(self.wsmin,QtCore.SIGNAL("returnPressed()"),self.newWLimits)
-		QtCore.QObject.connect(self.wsmax,QtCore.SIGNAL("returnPressed()"),self.newWLimits)
+		QtCore.QObject.connect(self.wsmin,QtCore.SIGNAL("returnPressed()"),self.newSLimits)
+		QtCore.QObject.connect(self.wsmax,QtCore.SIGNAL("returnPressed()"),self.newSLimits)
 		QtCore.QObject.connect(self.wrescale,QtCore.SIGNAL("clicked()"),self.autoScale)
 		
+		self.newSet(0)
 		self.datachange()
 		
 	def on_bad_button(self,unused=False):
@@ -1375,12 +1369,16 @@ class EMPlot2DInspector(QtGui.QWidget):
 		except: 
 #			print "plot error"
 			return
+			
+
 		self.slidex.setRange(-1,len(self.target().data[i])-1)
 		self.slidey.setRange(-1,len(self.target().data[i])-1)
-		self.slidec.setRange(-1,len(self.target().data[i])-1)
+		self.slidec.setRange(-2,len(self.target().data[i])-1)
+		self.slides.setRange(-2,len(self.target().data[i])-1)
 		self.slidex.setValue(self.target().axes[i][0])
 		self.slidey.setValue(self.target().axes[i][1])
 		self.slidec.setValue(self.target().axes[i][2])
+		self.slides.setValue(self.target().axes[i][3])
 		
 		pp=self.target().pparm[i]
 		self.color.setCurrentIndex(pp[0])
@@ -1395,7 +1393,8 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.quiet=0
 
 	def newCols(self,val):
-		if self.target: 
+		if self.target and not self.quiet: 
+#			print "newcols",self.slidex.value(),self.slidey.value(),self.slidec.value(),self.slides.value()
 			self.target().setAxes(str(self.setlist.currentItem().text()),self.slidex.value(),self.slidey.value(),self.slidec.value(),self.slides.value())
 	
 	def newLimits(self,val=None):
