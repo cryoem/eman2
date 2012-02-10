@@ -780,6 +780,9 @@ class EMDirEntry(object):
 		"Recursive sorting"
 		if self.__children==None or len(self.__children)==0 or isinstance(self.__children[0],str): return
 		self.__children.sort(key=self.__class__.col[column],reverse=order)
+		# This keeps the row numbers consistent
+		for i, child in enumerate(self.__children):
+			child.index = i
 		
 	def parent(self):
 		"""Return the parent"""
