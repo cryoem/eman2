@@ -37,6 +37,8 @@ from pyemtbx.boxertools import CoarsenedFlattenedImageCache,FLCFImageCache
 from copy import deepcopy
 from EMAN2 import *
 from emboxerbase import *
+import os
+
 SWARM_TEMPLATE_MIN = TEMPLATE_MIN # this comes from emboxerbase
 
 def e2boxer_check(options,args):
@@ -221,11 +223,14 @@ def autobox(args,options,logid):
 		boxer.auto_box(arg, False, True, True)
 		E2progress(logid,float(i+1)/len(args))
 		
-def write_output(args,options,logid):
+def write_output(args,options,logid, database="bdb:e2boxercache"):
 	params = {}
 	params["filenames"] = args
 	params["suffix"] = options.suffix
 	params["format"] = options.format
+	db = db_open_dict(database+"#quality")
+	db['suffix'] = options.suffix
+	db['extension'] = os.path.splitext(args[0])[-1]
 	
 	total_progress = 0
 	if options.write_ptcls:total_progress += len(args)

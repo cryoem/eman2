@@ -120,7 +120,11 @@ class RCTprocessor:
 		self.args = args
 		self.options = options
 			
-	def write_particles(self):
+	def write_particles(self, database="bdb:e2boxercache"):
+		db = db_open_dict(database+"#quality")
+		db['suffix'] = self.options.suffix
+		db['extension'] = os.path.splitext(self.args[0])[-1]
+		
 		self.get_ptcl_names()
 		for i,output in enumerate(self.names):
 			input = self.args[i]

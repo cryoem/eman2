@@ -34,6 +34,7 @@
 
 from EMAN2 import *
 import os
+import re
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
 from embrowser import EMBrowserWidget, EMFileItemModel, EMDirEntry, nonone
@@ -216,7 +217,6 @@ class EMSetsEntry(EMDirEntry):
 				
 		return True
 
-
 ###########################################################################################################################
 
 class EMParticlesTable(EMBrowserWidget):
@@ -228,6 +228,126 @@ class EMParticlesTable(EMBrowserWidget):
 		super(EMParticlesTable, self).setPath(path,silent=False,inimodel=EMParticlesModel)
 
 class EMParticlesModel(EMFileItemModel):
+	""" Item model for the raw data """
+	
+	headers=("Row","Raw Data Files","Type", "Num Particles", "Particle Dims", "Quality")
+	
+	def __init__(self,startpath=None):
+		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMParticlesEntry)
+		
+	def columnCount(self,parent):
+		"Always 6 columns"
+		#print "EMFileItemModel.columnCount()=6"
+		return 6
+		
+	def data(self,index,role):
+		"Returns the data for a specific location as a string"
+		
+		if not index.isValid() : return None
+		if role!=Qt.DisplayRole : return None
+		
+		data=index.internalPointer()
+		if data==None : 
+			print "Error with index ",index.row(),index.column()
+			return "Rubbish"
+		#if index.column()==0 : print "EMFileItemModel.data(%d %d %s)=%s"%(index.row(),index.column(),index.parent(),str(data.__dict__))
+
+		col=index.column()
+		if col==0:
+			return nonone(data.index)
+		elif col==1 : 
+			if data.isbdb : return "bdb:"+data.name
+			return nonone(data.name)
+		elif col==2 : 
+			if data.type==0 : return "-"
+			return nonone(data.type)
+		elif col==3 :
+			if data.particlecount==0 : return "-"
+			return nonone(data.particlecount)
+		elif col==4 :
+			if data.particledim==0 : return "-"
+			return nonone(data.particledim)
+		elif col==5 :
+			if data.quality==0 : return "-"
+			return nonone(data.quality)
+
+class EMParticlesEntry(EMDirEntry):
+	""" Subclassing of EMDirEntry to provide functionality"""
+	
+	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.type,lambda x:x.particlecount, lambda x:x.particledim, lambda x:x.quality)
+	
+	def __init__(self,root,name,i,parent=None,hidedot=True):
+		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot)
+		self.regex = re.compile('flip|wiener')
+		self.type = None
+		self.particlecount=None
+		self.particledim=None
+		self.defocus=None
+		self.bfactor=None
+		self.snr=None
+		self.quality=None
+		self.sampling=None
+		
+	def fillDetails(self, db):
+		"""Fills in the expensive metadata about this entry. Returns False if no update was necessary."""
+		if self.filetype!=None : return False		# must all ready be filled in
+		
+		# get quality and box numbers
+		if db_check_dict('bdb:e2boxercache#quality'):
+			qdb = db_open_dict('bdb:e2boxercache#quality')
+			# The fact that extension names are used in the DB is stupid
+			extension = qdb['extension']
+			if extension:
+				# particles are saves micrograph + suffix, but in the DB quality is stored micrograph - suffix + extension 
+				quality = qdb[self.getBaseName(self.path(),extension=True)[:-len(qdb['suffix'])]+extension]
+				self.quality = quality
+				
+		# Check the cache for metadata
+		name = 'particles'
+		cache = self.checkCache(db,name=name)
+		if not self.cacheMiss(cache,'particlecount','particledim','type','filetype'): return
+		
+		# get image counts
+		try:
+			self.particlecount = str(EMUtil.get_image_count(self.path()))
+			if int(self.particlecount)==1 : self.filetype="Image"
+			if int(self.particlecount) > 1 : self.filetype="Image Stack"
+		
+		except:
+			pass
+		
+		# Get particle stack headers
+		a = None
+		try:
+			a = EMData(self.path(),0,True)
+		except:
+			pass	
+		if a:
+			self.particledim = a.get_xsize()
+			
+		# get partivle set type
+		try:
+			self.type = str(self.path().split('_ctf_')[1])
+		except:
+			pass
+		
+		# Update the cache
+		self.updateCache(db, cache,  name, "filetype", "particlecount", "particledim", "type")
+		
+		
+		return True
+		
+###########################################################################################################################
+
+class EMCTFParticlesTable(EMBrowserWidget):
+	""" Widget to display junk from e2boxercache """
+	def __init__(self, withmodal=False, multiselect=False):
+		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath="./particles")
+	
+	def setPath(self,path,silent=False):
+		super(EMParticlesTable, self).setPath(path,silent=False,inimodel=EMParticlesModel)
+
+class EMCTFParticlesModel(EMFileItemModel):
 	""" Item model for the raw data """
 	
 	headers=("Row","Raw Data Files","Type", "Num Particles", "Particle Dims", "Defocus", "B Factor", "SNR", "Quality", "Sampling")
@@ -283,7 +403,7 @@ class EMParticlesModel(EMFileItemModel):
 			if data.sampling==0 : return "-"
 			return nonone(data.sampling)
 
-class EMParticlesEntry(EMDirEntry):
+class EMCTFParticlesEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
 	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.type,lambda x:x.particlecount, lambda x:x.particledim, lambda x:x.defocus, lambda x:x.bfactor, lambda x:x.snr, lambda x:x.quality, lambda x:x.sampling)
@@ -422,13 +542,13 @@ class EMParticlesEditModel(EMFileItemModel):
 			if data.particledim==0 : return "-"
 			return nonone(data.particledim)
 
-class EMParticlesEditEntry(EMParticlesEntry):
+class EMParticlesEditEntry(EMCTFParticlesEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
 	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.type,lambda x:x.particlecount, lambda x:x.badparticlecount, lambda x:x.defocus, lambda x:x.bfactor, lambda x:x.snr, lambda x:x.quality, lambda x:x.sampling, lambda x:x.particledim)
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True):
-		EMParticlesEntry.__init__(self,root=root,name=name,i=i,parent=parent,hidedot=hidedot)
+		EMCTFParticlesEntry.__init__(self,root=root,name=name,i=i,parent=parent,hidedot=hidedot)
 		self.badparticlecount = None
 		
 	def fillDetails(self, db):

@@ -38,6 +38,7 @@ from emapplication import EMApp
 from EMAN2 import *
 import os.path
 import os
+import re
 import traceback
 from emimage2d import *
 from emimagemx import *
@@ -723,8 +724,9 @@ class EMDirEntry(object):
 		hidedot will cause hidden files (starting with .) to be excluded"""
 		self.__parent=parent	# single parent
 		self.__children=None	# ordered list of children, None indicates no check has been made, empty list means no children, otherwise list of names or list of EMDirEntrys
-		self.root=str(root)		# Path prefixing name
-		self.name=str(name)		# name of this path element (string)
+		self.regex = None	# A regular expression to weed out undesirable files based upn filename, uses regualr expression. Must be a regex object
+		self.root=str(root)	# Path prefixing name
+		self.name=str(name)	# name of this path element (string)
 		self.index=str(index)
 		self.hidedot=hidedot	# If set children beginning with . will be hidden
 		if self.root[-1]=="/" or self.root[-1]=="\\" : self.root=self.root[:-1]
@@ -812,14 +814,29 @@ class EMDirEntry(object):
 				return
 			
 			# read the child filenames
-			if self.hidedot : self.__children=[i for i in os.listdir(self.filepath) if i[0]!='.']
-			else : self.__children=os.listdir(self.filepath)
+			if self.hidedot : filelist=[i for i in os.listdir(self.filepath) if i[0]!='.']
+			else : filelist=os.listdir(self.filepath)
 			
+			# Weed out undesirable files
+			self.__children = []
+			if self.regex:
+				for child in filelist:
+					if not self.regex.search(child):
+						self.__children.append(child)
+			else:
+				self.__children = filelist
+			
+					
 			if "EMAN2DB" in self.__children :
 				self.__children.remove("EMAN2DB")
 				
-				t=["bdb:"+i for i in db_list_dicts("bdb:"+self.filepath)]
+				if self.regex:
+					t=["bdb:"+i for i in db_list_dicts("bdb:"+self.filepath) if not self.regex.search(i)]
+				else:
+					t=["bdb:"+i for i in db_list_dicts("bdb:"+self.filepath)]
+					
 				self.__children.extend(t)
+			
 				
 			self.__children.sort()
 			
