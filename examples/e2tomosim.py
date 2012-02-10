@@ -42,7 +42,7 @@ import numpy
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog <output> [options]
+	usage = """%prog [options]
 
 	This program produces simulated sub volumes in random orientations from a given PDB or EM file (mrc or hdf).
 	"""
@@ -62,6 +62,23 @@ def main():
 	parser.add_option("--shrink", type="int",default=1,help="Optionally shrink the input volume before the simulation if you want binned/down-sampled subtomograms.")
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n",type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
+	
+	parser.add_option("--nptcls", type="int",default=10,help="Number of simulated subtomograms tu generate per referece.")
+	parser.add_option("--txrange", type="int",default=None,help="""Maximum number of pixels to randomly translate each subtomogram in X. The random translation will be picked between -txrange and +txrange. 
+								     Default value is set by --transrange, but --txrange will overwrite it if specified.""")
+	parser.add_option("--tyrange", type="int",default=None,help="""Maximum number of pixels to randomly translate each subtomogram in Y. The random translation will be picked between -tyrange and +tyrange.
+								     Default value is set by --transrange, but --txrange will overwrite it if specified.""")
+	parser.add_option("--tzrange", type="int",default=None,help="""Maximum number of pixels to randomly translate each subtomogram in Z. The random translation will be picked between -tzrange and +tzrange.
+								     Default value is set by --transrange, but --txrange will overwrite it if specified.""")
+	parser.add_option("--transrange", type="int",default=4,help="""Maximum number of pixels to randomly translate each subtomogram in all X, Y and Z. 
+									The random translation will be picked between -transrage and +transrange; --txrange, --tyrange and --tzrange overwrite --transrange for each specified direction.""")
+	
+	parser.add_option("--tiltstep", type="int",default=10,help="Degrees between each image in the simulated tilt series for each subtomogram.")
+	parser.add_option("--tiltrange", type="int",default=10,help="""Maximum angular value at which the highest tilt picture will be simulated. Projections will be simulated from -tiltrange to +titlrange. 
+									For example, if simulating a tilt series collected from -60 to 60 degrees, enter a --tiltrange value of 60. 
+									Note that this parameter will determine the size of the missing wedge.""")
+	parser.add_option("--nptcls", type="int",default=10,help="Number of simulated subtomograms tu generate per referece.")
+	
 	(options, args) = parser.parse_args()	
 	
 	if options.filter:
@@ -79,12 +96,25 @@ def main():
 	
 	nrefs = EMUtil.get_image_count(options.input)
 	
+	tag = ''
+	
 	for i in range(nrefs):
+		
+		randptcls = []
+		if nrefs > 1:
+			tag = str(i).zfill(len(str(nrefs)))
 	
 		model = EMData(options.input,i)
 		if model['nx'] != model['ny'] or model['nx'] != model['nz'] or model['ny'] != model['nz']:
-			os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + max(model['nx'], model['ny'], model['nz'])	
+		
+			newsize = max(model['nx'], model['ny'], model['nz'])
+			if newsize % 2:
+				newsize += 1
+						
+			os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(mewsize) + ' --first=' + str(i) + ' --last=' + str(i))	
 	
+		model = EMData(options.input,i)
+
 		if options.filter != None:
 			model.process_inplace(options.filter[0],options.filter[1])
 		
@@ -92,12 +122,14 @@ def main():
 			model = model.process("math.meanshrink",{"n":options["shrink"]})
 		else:
 			model = model
+		
+		model.process_inplace('normalize')
 			
-		tomosim(model)
+		randptcls = randomizer(options, model, tag)
+		
+		subtomosim(options,randptcls)
 					
 	return()
-	
-	
 	
 
 '''
@@ -115,150 +147,84 @@ def angdist(t1,t2):
 
 
 
-
-
 '''
 ====================
-RANDOMIZER - Takes a model (.hdf, .mrc or .pdb) makes it suitable for SPT (even, multiple of 8 box size) 
-and produces a user defined n-number of particles from the model which are randomly rotated and translated within user-defined ranges
+RANDOMIZER - Takes a file in .hdf format and generates a set of particles randomly rotated and translated.
 ====================
 '''
-def randomizer(parameters,model = ''):
+def randomizer(options, model, tag):
+	
+	stackname = options.input.replace('.hdf','_st' + tag + '_n' + str(options.n).zfill(len(str(options.n))) + '.hdf')
+
 	print "I am inside the RANDOMIZER"
 	
-	random_stack_name = 'rand_orient_' + parameters['ID'] + '.hdf'
-	
-	reference= ''
-	
-	n = parameters['rand_num']
-	trans_range = parameters['trans_range']
-	rot_range = parameters['rot_range']
-	rot_step = parameters['rot_step']
-		
-	'''
-	The model can be supplied directly (an EMData file) if the function is imported. Otherwise, it's fetched from --model=
-	If it's PDB or MRC it needs to be converted to HDF and resized if the box isn't cubical and even
-	'''
-	if model == '':
-		print "NO MODEL WAS PASSED, so I have to load it!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", parameters['model']
-		if '.pdb' or '.mrc' in parameters['model']:
-			print "IT contains EITHER pdb or mrc"
-			
-			mrcname = parameters['model'].replace('.pdb','.mrc')
-			hdfname = mrcname.replace('.mrc','.hdf')
-
-			if '.pdb' in parameters['model']:
-				print "It contained PDB!!!!!!!!"
-				os.system('e2pdb2mrc.py ' + parameters['model'] + ' ' + mrcname + ' && e2proc3d.py ' + mrcname + ' ' + hdfname)
-			if '.mrc' in parameters['model']:
-				print "It contained MRC!!!!!!!!"
-				os.system('e2proc3d.py ' + mrcname + ' ' + hdfname)
-			
-			
-			print "The hdf model to load is", hdfname
-					
-			model = EMData(hdfname,0)
-
-		else:
-			model = EMData(parameters['model'],0)
-
-	if model['nx'] != model['ny'] or model['nx'] != model['nz'] or model['ny'] != model['nz']:
-		model = cubebox(model)
-	
-	if parameters['shrink']:
-		factor = 1.0/parameters['shrink']
-		clip = model['nx']/parameters['shrink']
-		model = model.process('xform.scale',{'scale':factor,'clip':clip})
-	
-	if model['nx'] % 2 or parameters['pad']:
-		model = fixbox(parameters,model)	
-		
-	if parameters['alignment_type'] == 'refbased':		#Write out the "reference" for refbased alignments, in the model's default position
-		reference = model.copy()
-		reference.write_image('reference.hdf')	
-	
-	random_particles = []
-	initlines = []			#Array to store the initial conditions (rotations and translations) as "lines" in a specific format to be written to a file
-	
 	if parameters['verbose']:
-		print "You have requested to generate %d particles with random orientations and translations" %(n)
-	for i in range(n):
+		print "You have requested to generate %d particles with random orientations and translations" %(options.n)
+	
+	randptcls = []
+	for i in range(options.n):
 		if parameters['verbose']:
-			print "I will generate particle number", i
+			print "I will generate particle #", i
 		
 		b = model.copy()
-		b['origin_x'] = 0
+		b['origin_x'] = 0							#Make sure the origin is set to zero, to avoid display issues with Chimera
 		b['origin_y'] = 0
 		b['origin_z'] = 0
-		print "The sizes of the copied model are", b['nx'], b['ny'], b['nz']
-		print "And its type is", type(b)
-		
-		az=alt=phi=x=y=z=0
-		
-		initial_trans = Vec3f(0,0,0)
-		if trans_range != 0:
-			x = random.randrange(trans_range)
-			y = random.randrange(trans_range)
-			z = random.randrange(trans_range)
-			b['rand_x'] = x
-			b['rand_y'] = y
-			b['rand_z'] = z
-			print "This is how much b was translated", x, y, z
-			initial_trans = Vec3f(x,y,z)
-			b.translate(initial_trans)
-		
-		initial_rot = (0,0,0)
-		
-		if parameters['rot_range'] and parameters['rot_step']:
-			factor = parameters['rot_range']/parameters['rot_step']
-			az = random.randrange(factor) * parameters['rot_step']
-			alt = random.randrange(factor / 2) * parameters['rot_step'] 
-			phi = random.randrange(factor) * parameters['rot_step']
-			b['rand_az'] = az
-			b['rand_alt'] = alt
-			b['rand_phi'] = phi
-			b.rotate(az,alt,phi)
-			print "This is how much b was rotated", az, alt, phi
 
-		b['spt_initial'] = [az,alt,phi,x,y,z]
+		rand_orient = OrientGens.get("rand",{"n":1, "phitoo":1})		#Generate a random orientation (randomizes all 3 euler angles)
+		c1_sym = Symmetries.get("c1")
+		random_transform = rand_orient.gen_orientations(c1_sym)[0]
+
+		randtx = random.randrange(-1 * options.transrange, options.transrange)	#Generate random translations
+		randty = random.randrange(-1 * options.transrange, options.transrange)
+		randtz = random.randrange(-1 * options.transrange, options.transrange)
+		
+		if options.txrange:
+			randtx = random.randrange(-1 * options.txrange, options.txrange)	
+		if options.tyrange:
+			randty = random.randrange(-1 * options.tyrange, options.tyrange)
+		if options.tzrange:
+			randtz = random.randrange(-1 * options.tzrange, options.tzrange)
 	
-		b.write_image(random_stack_name,i)
-		random_particles.append(b)		
-		
-		line = "particle #%s az=%s alt=%s phi=%s tx=%s ty=%s tz=%s\n" % ( str(i).zfill(len(str(n+1))), str(az).zfill(4),str(alt).zfill(4),str(phi).zfill(4),str(x).zfill(4),str(y).zfill(4),str(z).zfill(4) )
-		initlines.append(line)
+		random_transform.translate(randtx, randty, randtz)
 
+		b.transform(random_transform)		
+		
+		b['spt_randT'] = random_transform
+		b['xform.align3d'] = Transform()					#This parameter should be set to the identity transform since it can be used later to determine whether
+											#alignment programs can "undo" the random rotation in spt_randT accurately or not
+		#b.write_image(stackname,i)
+		
+		randptcls.append(b)
+		
 		if parameters['verbose']:
-			print "These are the initial conditions for this particle", line
-
-	init_file = open('initial_conditions_' + parameters['ID'] + '.txt','w')
-	init_file.writelines(initlines)
-	init_file.close()
+			print "The random transform applied to it was", rand 
 	
-	return(random_particles,reference)
-
+	return(randptcls)
+	
 '''
-NEEDS TESTING
-
-TOMO SIM - Takes a set of particles and turns them into simulated sub-tomograms.
-[That is, it generates projections for each particle within a user-defined range in altitude, at a user-defined tilt-step,
-adds noise and ctf to each projection, and recounstructs a new 3D volume from them
+====================
+SUBTOMOSIM takes a set of particles in .hdf format and generates a simulated sub-tomogram for each, using user-defined parameters for tomographic simulation.
+The function generates projections for each particle with a user-defined tilt step and missing wedge size (or data collection range),
+adds noise and ctf to each projection, and recounstructs a new 3D volume from the simulated tilt series.
+====================
 '''	
-def tomo_sim(parameters,particles):
+def subtomosim(options,ptcls):
 		
-	lower_bound = parameters['tilt_range'] * -1
-	upper_bound = parameters['tilt_range']
+	lower_bound = -1 * options.tiltrange
+	upper_bound = options.tiltrange
 	
-	slices = int(round((upper_bound - lower_bound)/int(parameters['tilt_step'])))
+	nslices = int(round((upper_bound - lower_bound)/ options.tiltstep))
+	
 	if parameters['verbose']:
-		print "There are these many particles", len(particles)
-		print "And these many slices", slices
+		print "There are these many particles in the set", len(ptcls)
+		print "And these many slices to simulate each subtomogram", nslices
 	
-	for i in range(len(particles)):
+	for i in range(len(ptcls)):
 		if parameters['verbose']:
-			print "Projecting and adding noise to particle number", i
+			print "Projecting and adding noise to particle #", i
 
-		apix = particles[i]['apix_x']
+		apix = ptcls[i]['apix_x']
 		
 		px = random.uniform(-1*parameters['hole_diameter']/2, parameters['hole_diameter']/2)		#random distance of the particle center from the tilt axis
 			
