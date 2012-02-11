@@ -87,6 +87,7 @@ def main():
 	parser.add_argument("--even", default=False, help="Used by EMAN2 when running eotests. Includes only even numbered particles in class averages.", action="store_true")
 	parser.add_argument("--parallel", default=None, help="parallelism argument")
 	parser.add_argument("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists.")
+	parser.add_argument("--saveali",action="store_true",help="Writes aligned particle images to aligned.hdf. Normally resultmx produces more useful informtation. This can be used for debugging.",default=False)	
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--debug","-d",action="store_true",help="Print debugging infromation while the program is running. Default is off.",default=False)
 	parser.add_argument("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
@@ -155,7 +156,7 @@ def main():
 			if options.even: ptcls=[i for i in ptcls if i%2==0]
 			tasks.append(ClassAvTask(options.input,ptcls,options.usefilt,options.ref,options.iter,options.normproc,options.prefilt,
 			  options.align,options.aligncmp,options.ralign,options.raligncmp,options.averager,options.cmp,options.keep,options.keepsig,
-			  options.automask,options.verbose,cl))
+			  options.automask,options.saveali,options.verbose,cl))
 	
 	else:
 		ptcls=range(nptcl)
@@ -164,7 +165,7 @@ def main():
 		if options.even: ptcls=[i for i in ptcls if i%2==0]
 		tasks.append(ClassAvTask(options.input,range(nptcl),options.usefilt,options.ref,options.iter,options.normproc,options.prefilt,
 			  options.align,options.aligncmp,options.ralign,options.raligncmp,options.averager,options.cmp,options.keep,options.keepsig,
-			  options.automask,options.verbose,0))
+			  options.automask,options.saveali,options.verbose,0))
 
 	# execute task list
 	if options.parallel:				# run in parallel
@@ -275,7 +276,7 @@ class ClassAvTask(EMTask):
 	"""This task will create a single task-average"""
 
 	def __init__(self,imagefile,imagenums,usefilt=None,ref=None,niter=1,normproc=("normalize.edgemean",{}),prefilt=0,align=("rotate_translate_flip",{}),
-		  aligncmp=("ccc",{}),ralign=None,raligncmp=None,averager=("mean",{}),scmp=("ccc",{}),keep=1.5,keepsig=1,automask=0,verbose=0,n=0):
+		  aligncmp=("ccc",{}),ralign=None,raligncmp=None,averager=("mean",{}),scmp=("ccc",{}),keep=1.5,keepsig=1,automask=0,saveali=0,verbose=0,n=0):
 		if usefilt==None : usefilt=imagefile
 		data={"images":["cache",imagefile,imagenums],"usefilt":["cache",usefilt,imagenums]}
 		if ref!=None : data["ref"]=["cache",ref,n]
@@ -283,7 +284,7 @@ class ClassAvTask(EMTask):
 		
 		self.options={"niter":niter, "normproc":normproc, "prefilt":prefilt, "align":align, "aligncmp":aligncmp,
 			"ralign":ralign,"raligncmp":raligncmp,"averager":averager,"scmp":scmp,"keep":keep,"keepsig":keepsig,
-			"automask":automask,"verbose":verbose,"n":n}
+			"automask":automask,"saveali":1,"verbose":verbose,"n":n}
 	
 	def execute(self,callback=None):
 		"""This does the actual class-averaging, and returns the result"""
@@ -300,7 +301,7 @@ class ClassAvTask(EMTask):
 		try:
 			avg,ptcl_info=class_average([self.data["usefilt"][1]]+self.data["usefilt"][2],ref,options["niter"],options["normproc"],options["prefilt"],options["align"],
 				options["aligncmp"],options["ralign"],options["raligncmp"],options["averager"],options["scmp"],options["keep"],options["keepsig"],
-				options["automask"],options["verbose"],callback)
+				options["automask"],options["saveali"],options["verbose"],callback)
 		except KeyboardInterrupt: return None
 		except SystemExit: return None
 		except:
@@ -405,7 +406,7 @@ def class_average_withali(images,ptcl_info,xform,averager=("mean",{}),normproc=(
 	return avg
 
 def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),prefilt=0,align=("rotate_translate_flip",{}),
-		aligncmp=("ccc",{}),ralign=None,raligncmp=None,averager=("mean",{}),scmp=("ccc",{}),keep=1.5,keepsig=1,automask=0,verbose=0,callback=None):
+		aligncmp=("ccc",{}),ralign=None,raligncmp=None,averager=("mean",{}),scmp=("ccc",{}),keep=1.5,keepsig=1,automask=0,saveali=0,verbose=0,callback=None):
 	"""Create a single class-average by iterative alignment and averaging.
 	images - may either be a list/tuple of images OR a tuple containing a filename followed by integer image numbers
 	ref - optional reference image (EMData). 
@@ -537,6 +538,7 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 			ptcl=get_image(images,i,normproc)					# get the particle to align 
 			ali=align_one(ptcl,ref,prefilt,align,aligncmp,ralign,raligncmp)  # align to reference
 			sim=ali.cmp(scmp[0],ref,scmp[1])			# compare similarity to reference (may use a different cmp() than the aligner)
+			if saveali and it==niter : ali.write_image("aligned.hdf",-1)
 
 			try: use=ptcl_info[i][2]
 			except: use=1
