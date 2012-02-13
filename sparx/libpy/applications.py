@@ -12490,7 +12490,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		print "*                 Beginning of the ISAC program               "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"            *"
 		print "*                                                                                                  *"
 		print "* Iterative Stable Alignment and Clustering                                                        *"
-		print "* By Zhengfan Yang, Francisco Asturias and Pawel A. Penczek                             July 2011  *"
+		print "* By Zhengfan Yang, Jia Fang, Francisco Asturias and Pawel A. Penczek                   July 2011  *"
 		print "*                                                                                                  *"
 		print '* REFERENCE: Z. Yang, J. Fang, J. Chittuluru, F. J. Asturias and P. A. Penczek, "Iterative Stable  *'
 		print '*            Alignment and Clustering of 2D Transmission Electron Microscope Images",              *' 
