@@ -1046,6 +1046,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	else {	//existing file
 		hid_t spc_file = H5Dget_space(ds);
 		rank = H5Sget_simple_extent_ndims(spc_file);
+		H5Sclose(spc_file);
 	}
 
 	//convert data to unsigned short, unsigned char...
@@ -1070,9 +1071,9 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			dcount[1] = (hsize_t)(area->get_height()?area->get_height():1);
 			dcount[2] = (hsize_t)(area->get_width()?area->get_width():1);
 
-			herr_t errno = H5Sselect_hyperslab(filespace, H5S_SELECT_SET, (const hsize_t*)doffset, NULL, (const hsize_t*)dcount, NULL);
-			if(errno < 0) {
-				std::cerr << "H5Sselect_hyperslab error: " << errno << std::endl;
+			herr_t err_no = H5Sselect_hyperslab(filespace, H5S_SELECT_SET, (const hsize_t*)doffset, NULL, (const hsize_t*)dcount, NULL);
+			if(err_no < 0) {
+				std::cerr << "H5Sselect_hyperslab error: " << err_no << std::endl;
 			}
 
 			/*Create memory space with size of the region.*/
@@ -1092,9 +1093,9 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			dcount[0] = (hsize_t)area->get_height();
 			dcount[1] = (hsize_t)area->get_width();
 
-			herr_t errno = H5Sselect_hyperslab(filespace, H5S_SELECT_SET, (const hsize_t*)doffset, NULL, (const hsize_t*)dcount, NULL);
-			if(errno < 0) {
-				std::cerr << "H5Sselect_hyperslab error: " << errno << std::endl;
+			herr_t err_no = H5Sselect_hyperslab(filespace, H5S_SELECT_SET, (const hsize_t*)doffset, NULL, (const hsize_t*)dcount, NULL);
+			if(err_no < 0) {
+				std::cerr << "H5Sselect_hyperslab error: " << err_no << std::endl;
 			}
 
 			/*Create memory space with size of the region.*/
@@ -1109,12 +1110,12 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			std::cerr << "rank is wrong: " << rank << std::endl;
 		}
 
-		herr_t errno;
+		herr_t err_no;
 		switch(dt) {
 		case EMUtil::EM_FLOAT:
-			errno = H5Dwrite(ds, H5T_NATIVE_FLOAT, memoryspace, filespace, H5P_DEFAULT, data);
-			if(errno<0) {
-				std::cerr << "H5Dwrite error: " << errno << std::endl;
+			err_no = H5Dwrite(ds, H5T_NATIVE_FLOAT, memoryspace, filespace, H5P_DEFAULT, data);
+			if(err_no<0) {
+				std::cerr << "H5Dwrite error: " << err_no << std::endl;
 			}
 			break;
 		default:
