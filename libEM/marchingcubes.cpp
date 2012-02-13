@@ -474,7 +474,7 @@ void ColorRGBGenerator::set_cmap_data(EMData* data)
 void ColorRGBGenerator::generateRadialColorMap()
 {
 
-	int size = int(sqrt(originx*originx + originy*originy + originz*originz));
+	int size = int(sqrt((float)originx*originx + originy*originy + originz*originz));
 	
 	if(colormap) delete colormap;
 	colormap = new float[size*3];
@@ -820,7 +820,11 @@ int MarchingCubes::get_edge_num(int x, int y, int z, int edge) {
 void MarchingCubes::color_vertices()
 {
 	cc.clear();
+#ifdef _WIN32
+	int scaling = pow(2.0,drawing_level + 1);		// Needed to account for sampling rate
+#else
 	int scaling = pow(2,drawing_level + 1);		// Needed to account for sampling rate
+#endif	//_WIN32	
 	//Color vertices. We don't need to rerun marching cubes on color vertices, so this method improves effciency
 	for(unsigned int i = 0; i < vv.elem(); i+=3){
 		float* color = rgbgenerator.getRGBColor(scaling*vv[i], scaling*vv[i+1], scaling*vv[i+2]);
