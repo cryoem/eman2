@@ -3236,11 +3236,9 @@ def k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node):
 	from mpi        import MPI_COMM_WORLD, MPI_INT, mpi_bcast
 	from mpi	import MPI_FLOAT, MPI_INT, mpi_recv, mpi_send, MPI_TAG_UB
 	from utilities  import bcast_number_to_all, recv_EMData, send_EMData
-	
-	
-	
+
 	#print "my id ==", myid, " assign [10:20] ", assign[10:20], " Je===", Je, "Cls==",Cls[ 'n' ], " Ji==", Cls['Ji']
-		
+
 	if myid == main_node:
 		je_return = [0.0]*(ncpu)
 		for n1 in xrange(ncpu):
@@ -3253,19 +3251,19 @@ def k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node):
 		je_return = map(float, je_return)
 		#print "recived je", je_return
 		min_je= 1.0e30
-		
+
 		#for i in xrange(ncpu):
 			#print "i ==", i, "Je==", je_return[i]
-				
+
 		for i in xrange(ncpu):
 			if( je_return[i] < min_je ):
 				if Je > 0:
 					min_je = je_return[i]
 					n_best = i
 		#print "main_node n_best===", n_best
-				
+
 	n_best = bcast_number_to_all(n_best,   source_node = main_node)
-		
+
 	if( n_best >=0):
 		
 		if myid == main_node:
@@ -3289,12 +3287,14 @@ def k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node):
 		if myid == main_node:
 
 			if n_best == main_node: r_Cls['n'] = Cls['n'] 
-			else: r_Cls['n'] = mpi_recv(K,MPI_INT, n_best, MPI_TAG_UB, MPI_COMM_WORLD)
+			else:
+				r_Cls['n'] = mpi_recv(K,MPI_INT, n_best, MPI_TAG_UB, MPI_COMM_WORLD)
+				r_Cls['n'] = map(int, r_Cls['n'])
 
 		else:
 			if n_best == myid:
-				mpi_send(Cls['n'], K, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)	
-			# get 'Ji"		
+				mpi_send(Cls['n'], K, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+		# get 'Ji'
 		if myid == main_node:
 
 			if n_best == main_node: r_Cls['Ji'] = Cls['Ji'] 
@@ -3305,7 +3305,7 @@ def k_means_SSE_combine(Cls, assign, Je, N, K, ncpu, myid, main_node):
 				mpi_send(Cls['Ji'], K, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 
 
-		for k in xrange( K):	
+		for k in xrange( K):
 			tag_cls_ave = 1000
 			tag_cls_var = 1010	
 			if myid == main_node:
