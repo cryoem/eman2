@@ -1152,6 +1152,7 @@ void LowpassRandomPhaseProcessor::create_radial_func(vector < float >&radial_mas
 void LowpassRandomPhaseProcessor::process_inplace(EMData *image)
 {
 	float cutoff=0;
+	preprocess(image);
 	if( params.has_key("cutoff_abs") ) {
 		cutoff=params["cutoff_abs"];
 	}
