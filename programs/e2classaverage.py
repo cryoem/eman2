@@ -284,7 +284,7 @@ class ClassAvTask(EMTask):
 		
 		self.options={"niter":niter, "normproc":normproc, "prefilt":prefilt, "align":align, "aligncmp":aligncmp,
 			"ralign":ralign,"raligncmp":raligncmp,"averager":averager,"scmp":scmp,"keep":keep,"keepsig":keepsig,
-			"automask":automask,"saveali":1,"verbose":verbose,"n":n}
+			"automask":automask,"saveali":saveali,"verbose":verbose,"n":n}
 	
 	def execute(self,callback=None):
 		"""This does the actual class-averaging, and returns the result"""
