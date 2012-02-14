@@ -206,10 +206,10 @@ void GLUtil::mx_bbox(const vector<float>& data, const vector<float>& text_color,
 	glBegin(GL_QUADS);
 	if (bg_color.size()==4) glColor4f(bg_color[0],bg_color[1],bg_color[2],bg_color[3]);
 	else glColor3f(bg_color[0],bg_color[1],bg_color[2]);
-	glVertex3f(data[0]-1,data[1]-1,-.1);
-	glVertex3f(data[3]+1,data[1]-1,-.1);
-	glVertex3f(data[3]+1,data[4]+1,-.1);
-	glVertex3f(data[0]-1,data[4]+1,-.1);
+	glVertex3f(data[0]-1,data[1]-1,-.1f);
+	glVertex3f(data[3]+1,data[1]-1,-.1f);
+	glVertex3f(data[3]+1,data[4]+1,-.1f);
+	glVertex3f(data[0]-1,data[4]+1,-.1f);
 	glEnd();
 //	glEnable(GL_TEXTURE_2D);
 	if (text_color.size()==4) glColor4f(text_color[0],text_color[1],text_color[2],text_color[3]);
@@ -745,6 +745,16 @@ void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,bool surfa
 {
 	// In current version Texture is not supported b/c it is not used... EVER
 	
+#ifdef _WIN32
+	typedef void (APIENTRYP PFNGLGENBUFFERSPROC) (GLsizei n, GLuint *buffers);
+	PFNGLGENBUFFERSPROC glGenBuffers;
+	glGenBuffers = (PFNGLGENBUFFERSPROC) wglGetProcAddress("glGenBuffers");
+
+	typedef GLboolean (APIENTRYP PFNGLISBUFFERPROC) (GLuint buffer);
+	PFNGLISBUFFERPROC glIsBuffer;
+	glIsBuffer = (PFNGLISBUFFERPROC) wglGetProcAddress("glIsBuffer");
+#endif	//_WIN32
+
 	if ( surface_face_z ) mc->surface_face_z();
 	//Bug in OpenGL, sometimes glGenBuffers doesn't work. Try again, if we still fail then return...
 	if (!glIsBuffer(mc->buffer[0])) glGenBuffers(4, mc->buffer);
@@ -766,6 +776,16 @@ void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,bool surfa
 	{
 		maxf = maxf - (maxf%3);
 	}
+
+#ifdef _WIN32
+	typedef void (APIENTRYP PFNGLBINDBUFFERPROC) (GLenum target, GLuint buffer);
+	PFNGLBINDBUFFERPROC glBindBuffer;
+	glBindBuffer = (PFNGLBINDBUFFERPROC) wglGetProcAddress("glBindBuffer");
+
+	typedef void (APIENTRYP PFNGLBUFFERDATAPROC) (GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage);
+	PFNGLBUFFERDATAPROC glBufferData;
+	glBufferData = (PFNGLBUFFERDATAPROC) wglGetProcAddress("glBufferData");
+#endif	//_WIN32
 
 	//Normal vectors
 	glEnableClientState(GL_NORMAL_ARRAY);
@@ -826,13 +846,31 @@ void GLUtil::glMultMatrix(const Transform& xform)
 void GLUtil::glDrawBoundingBox(float width, float height, float depth)
 {
 	
-	float w2 = width/2.0;
-	float h2 = height/2.0;
-	float d2 = depth/2.0;
+	float w2 = width/2.0f;
+	float h2 = height/2.0f;
+	float d2 = depth/2.0f;
 	
 	float vertices[24] = {-w2,  h2,  d2, w2,  h2,  d2, w2, -h2,  d2, -w2, -h2,  d2, -w2,  h2, -d2, w2,  h2, -d2, w2, -h2, -d2, -w2, -h2, -d2};
 	int indices[24] = {0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6, 6, 7, 7, 4, 0, 4, 3, 7, 1, 5, 2, 6};
 	
+#ifdef _WIN32
+	typedef void (APIENTRYP PFNGLGENBUFFERSPROC) (GLsizei n, GLuint *buffers);
+	PFNGLGENBUFFERSPROC glGenBuffers;
+	glGenBuffers = (PFNGLGENBUFFERSPROC) wglGetProcAddress("glGenBuffers");
+
+	typedef GLboolean (APIENTRYP PFNGLISBUFFERPROC) (GLuint buffer);
+	PFNGLISBUFFERPROC glIsBuffer;
+	glIsBuffer = (PFNGLISBUFFERPROC) wglGetProcAddress("glIsBuffer");
+
+	typedef void (APIENTRYP PFNGLBINDBUFFERPROC) (GLenum target, GLuint buffer);
+	PFNGLBINDBUFFERPROC glBindBuffer;
+	glBindBuffer = (PFNGLBINDBUFFERPROC) wglGetProcAddress("glBindBuffer");
+
+	typedef void (APIENTRYP PFNGLBUFFERDATAPROC) (GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage);
+	PFNGLBUFFERDATAPROC glBufferData;
+	glBufferData = (PFNGLBUFFERDATAPROC) wglGetProcAddress("glBufferData");
+#endif	//_WIN32
+
 	if ( glIsBuffer(GLUtil::buffer[0])  == GL_FALSE ){
 		glGenBuffers(2, GLUtil::buffer);
 	}

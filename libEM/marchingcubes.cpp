@@ -53,11 +53,6 @@ using namespace EMAN;
 #define min(a,b)(((a) < (b)) ? (a) : (b))
 #define max(a,b)(((a) > (b)) ? (a) : (b))
 
-#ifdef __APPLE__
-	#include "OpenGL/glext.h"
-#else // WIN32, LINUX
-	#include "GL/glext.h"
-#endif	//__APPLE__
 
 //a2fVertexOffset lists the positions, relative to vertex0, of each of the 8 vertices of a cube
 static const int a2fVertexOffset[8][3] =
@@ -462,7 +457,7 @@ void ColorRGBGenerator::set_data(EMData* data)
 	originy = data->get_ysize()/2;
 	originz = data->get_zsize()/2;
 	inner = 0;
-	outer = originx;
+	outer = (float)originx;
 }
 
 void ColorRGBGenerator::set_cmap_data(EMData* data)
@@ -480,19 +475,19 @@ void ColorRGBGenerator::generateRadialColorMap()
 	colormap = new float[size*3];
 	
 	for(int i = 0; i < size; i++){
-		float normrad = 4.189*(i - inner)/(outer - inner);
+		float normrad = 4.189f*(i - inner)/(outer - inner);
 		if(normrad < 2.094){
 			if (normrad < 0.0) normrad = 0.0;
-			colormap[i*3] = 0.5*(1 + cos(normrad)/cos(1.047 - normrad));
-			colormap[i*3 + 1] = 1.5 - colormap[i*3];
+			colormap[i*3] = 0.5f*(1 + cos(normrad)/cos(1.047f - normrad));
+			colormap[i*3 + 1] = 1.5f - colormap[i*3];
 			colormap[i*3 + 2] = 0.0;
 		}
 		if(normrad >= 2.094){
-			if (normrad > 4.189) normrad = 4.189;
-			normrad =- 2.094;
+			if (normrad > 4.189f) normrad = 4.189f;
+			normrad =- 2.094f;
 			colormap[i*3] = 0.0;
-			colormap[i*3 + 1] = 0.5*(1 + cos(normrad)/cos(1.047 - normrad));
-			colormap[i*3 + 2] = 1.5 - colormap[i*3 + 1];
+			colormap[i*3 + 1] = 0.5f*(1 + cos(normrad)/cos(1.047f - normrad));
+			colormap[i*3 + 2] = 1.5f - colormap[i*3 + 1];
 		}
 	}
 }
@@ -503,7 +498,7 @@ float* ColorRGBGenerator::getRGBColor(int x, int y, int z)
 	if (rgbmode == 1){
 		//calculate radius
 #ifdef _WIN32
-		float rad = sqrt(pow(double(x-originx),2) + pow(double(y-originy),2) + pow(double(z-originz),2));
+		float rad = (float)sqrt(pow(double(x-originx),2) + pow(double(y-originy),2) + pow(double(z-originz),2));
 #else
 		float rad = sqrt(float(pow(x-originx,2) + pow(y-originy,2) + pow(z-originz,2)));
 #endif	//_WIN32
@@ -519,19 +514,19 @@ float* ColorRGBGenerator::getRGBColor(int x, int y, int z)
 	// Get data using color map
 	if (rgbmode == 2){
 		float value = cmap->get_value_at(x, y, z);
-		value = 4.189*(value - minimum)/(maximum - minimum);
+		value = 4.189f*(value - minimum)/(maximum - minimum);
 		if(value < 2.094){
 			if (value < 0.0) value = 0.0;
-			rgb[0] = 0.5*(1 + cos(value)/cos(1.047 - value));
-			rgb[1] = 1.5 - rgb[0];
+			rgb[0] = 0.5f*(1 + cos(value)/cos(1.047f - value));
+			rgb[1] = 1.5f - rgb[0];
 			rgb[2] = 0.0;
 		}
 		if(value >= 2.094){
-			if (value > 4.189) value = 4.189;
-			value =- 2.094;
+			if (value > 4.189f) value = 4.189f;
+			value =- 2.094f;
 			rgb[0] = 0.0;
-			rgb[1] = 0.5*(1 + cos(value)/cos(1.047 - value));
-			rgb[2] = 1.5 - rgb[1];
+			rgb[1] = 0.5f*(1 + cos(value)/cos(1.047f - value));
+			rgb[2] = 1.5f - rgb[1];
 		}
 		
 		return &rgb[0];
@@ -544,13 +539,28 @@ MarchingCubes::MarchingCubes()
 	: _isodl(0), needtobind(1)
 {
 	rgbgenerator = ColorRGBGenerator();
+
+#ifdef _WIN32
+	typedef void (APIENTRYP PFNGLGENBUFFERSPROC) (GLsizei n, GLuint *buffers);
+	PFNGLGENBUFFERSPROC glGenBuffers;
+	glGenBuffers = (PFNGLGENBUFFERSPROC) wglGetProcAddress("glGenBuffers");
+#endif	//_WIN32
+
 	glGenBuffers(4, buffer);
+
 }
 
 MarchingCubes::MarchingCubes(EMData * em)
 	: _isodl(0), needtobind(1)
 {
 	rgbgenerator = ColorRGBGenerator();
+
+#ifdef _WIN32
+	typedef void (APIENTRYP PFNGLGENBUFFERSPROC) (GLsizei n, GLuint *buffers);
+	PFNGLGENBUFFERSPROC glGenBuffers;
+	glGenBuffers = (PFNGLGENBUFFERSPROC) wglGetProcAddress("glGenBuffers");
+#endif	//_WIN32
+
 	glGenBuffers(4, buffer);
 	set_data(em);
 }
@@ -613,6 +623,13 @@ bool MarchingCubes::calculate_min_max_vals()
 
 MarchingCubes::~MarchingCubes() {
 	clear_min_max_vals();
+
+#ifdef _WIN32
+	typedef void (APIENTRYP PFNGLDELETEBUFFERSPROC) (GLsizei n, const GLuint *buffers);
+	PFNGLDELETEBUFFERSPROC glDeleteBuffers;
+	glDeleteBuffers = (PFNGLDELETEBUFFERSPROC) wglGetProcAddress("glDeleteBuffers");
+#endif	//_WIN32
+
 	glDeleteBuffers(4, buffer);
 }
 
@@ -821,7 +838,7 @@ void MarchingCubes::color_vertices()
 {
 	cc.clear();
 #ifdef _WIN32
-	int scaling = pow(2.0,drawing_level + 1);		// Needed to account for sampling rate
+	int scaling = (int)pow(2.0,drawing_level + 1);		// Needed to account for sampling rate
 #else
 	int scaling = pow(2,drawing_level + 1);		// Needed to account for sampling rate
 #endif	//_WIN32	
