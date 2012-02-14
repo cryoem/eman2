@@ -73,10 +73,8 @@ class EMProjectManager(QtGui.QMainWindow):
 		# Make the tiltebars
 		grid = QtGui.QGridLayout()
 		grid.addWidget(self.makeTilteBarWidget(), 0, 0, 1, 3)
-		workflowcontrollabel = QtGui.QLabel("Workflow Control", centralwidget)
-		workflowcontrollabel.setFont(font)
-		workflowcontrollabel.setMaximumHeight(20)
-		grid.addWidget(workflowcontrollabel, 1,0)
+		#grid.addWidget(workflowcontrollabel, 1,0)
+		grid.addWidget(self.makeModeWidget(font))
 		guilabel = QtGui.QLabel("EMAN2 Program Interface", centralwidget)
 		guilabel.setFont(font)
 		guilabel.setMaximumHeight(20)
@@ -161,20 +159,6 @@ class EMProjectManager(QtGui.QMainWindow):
 		# Options
 		#optionsmenu = menubar.addMenu('&Options')
 		
-		# Mode
-		modemenu = menubar.addMenu('&Mode')
-		# modemenu
-		sprmode = QtGui.QAction('SPR mode', self)
-		sprmode.setShortcut('Ctrl+S')
-		sprmode.setStatusTip('SPR mode')
-		self.connect(sprmode, QtCore.SIGNAL('triggered()'), self._on_sprmode)
-		modemenu.addAction(sprmode)
-		tomomode = QtGui.QAction('TOMO mode', self)
-		tomomode.setShortcut('Ctrl+T')
-		tomomode.setStatusTip('TOMO mode')
-		self.connect(tomomode, QtCore.SIGNAL('triggered()'), self._on_tomomode)
-		modemenu.addAction(tomomode)
-		
 		# Utils
 		utilsmenu = menubar.addMenu('&Utilities')
 		filebrowser = QtGui.QAction('File Browser', self)
@@ -198,13 +182,30 @@ class EMProjectManager(QtGui.QMainWindow):
 		helpdoc = QtGui.QAction('Help', self)
 		helpdoc.setStatusTip('Help')
 		helpmenu.addAction(helpdoc)
-	
-	def _on_sprmode(self):
-		self.tree_stacked_widget.setCurrentIndex(0)
-		self._on_cmd_cancel()
+
+	def makeModeWidget(self, font):
+		""" Return a mode control widget """
+		widget = QtGui.QWidget()
+		box = QtGui.QHBoxLayout()
+		box.setContentsMargins(0,0,0,0)
+		workflowcontrollabel = QtGui.QLabel("Workflow Mode", widget)
+		workflowcontrollabel.setFont(font)
+		workflowcontrollabel.setMaximumHeight(20)
+		self.modeCB = QtGui.QComboBox()
+		# To add a new mode add an item to the list, and then add the json file in fuction: makeStackedWidget
+		self.modeCB.addItem("SPR")
+		self.modeCB.addItem("Tomo")
 		
-	def _on_tomomode(self):
-		self.tree_stacked_widget.setCurrentIndex(1)
+		box.addWidget(workflowcontrollabel)
+		box.addWidget(self.modeCB)
+		widget.setLayout(box)
+		
+		self.connect(self.modeCB, QtCore.SIGNAL("activated(int)"), self._onModeChange)
+		
+		return widget
+	
+	def _onModeChange(self, idx):
+		self.tree_stacked_widget.setCurrentIndex(idx)
 		self._on_cmd_cancel()
 	
 	def _on_openproject(self):
@@ -262,15 +263,15 @@ class EMProjectManager(QtGui.QMainWindow):
 	
 	def makeStackedWidget(self):
 		"""
-		This is the stacked widget to manage the tree types
+		This is the stacked widget to manage the tree types. To Add modes, do so here. Be sure to add the mode to the combo box in function: makeModeWidget
 		"""
 		self.tree_stacked_widget = QtGui.QStackedWidget()
 		self.tree_stacked_widget.setMinimumWidth(300)
-		self.tree_stacked_widget.addWidget(self.makeSPRTreeWidget())
-		self.tree_stacked_widget.addWidget(self.makeTomoTreeWidget())
+		self.tree_stacked_widget.addWidget(self.makeTreeWidget(os.getenv("EMAN2DIR")+'/lib/pmconfig/spr.json', 'SPR'))
+		self.tree_stacked_widget.addWidget(self.makeTreeWidget(os.getenv("EMAN2DIR")+'/lib/pmconfig/tomo.json', 'Tomography'))
 		
 		return self.tree_stacked_widget
-	
+		
 	def makeStackedGUIwidget(self):
 		"""
 		Make a stacked widget
@@ -677,20 +678,12 @@ class EMProjectManager(QtGui.QMainWindow):
 				break
 		f.close()
 		return parser.getGUIOptions()
-		
-	def makeSPRTreeWidget(self):
-		"""
-		Make the SPR tree
-		"""
-		self.SPRtree = self.loadTree(os.getenv("EMAN2DIR")+'/lib/pmconfig/spr.json', 'SPR')
-		return self.SPRtree
 	
-	def makeTomoTreeWidget(self):
+	def makeTreeWidget(self, jsonfile, treename):
 		"""
-		Make the tomo tree widget
+		Make a tree for a mode
 		"""
-		self.TOMOtree = self.loadTree(os.getenv("EMAN2DIR")+'/lib/pmconfig/tomo.json', 'Tomography')
-		return self.TOMOtree
+		return self.loadTree(jsonfile, treename)
 	
 	def getCurrentTree(self):
 		""" 
