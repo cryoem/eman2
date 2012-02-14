@@ -1172,14 +1172,14 @@ void LowpassRandomPhaseProcessor::process_inplace(EMData *image)
 	for (int y=0; y<image->get_ysize()/2; y++) {
 		for (int x=1; x<image->get_xsize(); x+=2) {
 			if (hypot((float)(x/2)/(float)image->get_xsize(),(float)y/(float)image->get_ysize())>cutoff) {
-				image->set_value_at(x*2+1,y,Util::get_frand(0.0f,(float)(M_PI*2.0)));
+				image->set_value_at(x,y,Util::get_frand(0.0f,(float)(M_PI*2.0)));
 			 }
 		}
 	}
 	for (int y=image->get_ysize()/2; y<image->get_ysize(); y++) {
 		for (int x=1; x<image->get_xsize(); x+=2) {
 			if (hypot((float)(x/2)/(float)image->get_xsize(),(float)(image->get_ysize()-y)/(float)image->get_ysize())>cutoff) {
-				image->set_value_at(x*2+1,y,Util::get_frand(0.0f,float(M_PI*2.0)));
+				image->set_value_at(x,y,Util::get_frand(0.0f,float(M_PI*2.0)));
 			 }
 		}
 	}
