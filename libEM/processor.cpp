@@ -1184,9 +1184,13 @@ void LowpassRandomPhaseProcessor::process_inplace(EMData *image)
 			 }
 		}
 	}
+	image->ap2ri();
 
-	if (flag) image->do_ift_inplace();
-
+	if (flag) {
+		image->do_ift_inplace();
+		image->depad();
+	}
+		
 }
 
 void HighpassAutoPeakProcessor::preprocess(EMData * image)
