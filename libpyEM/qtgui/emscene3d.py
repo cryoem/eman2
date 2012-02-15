@@ -2748,7 +2748,7 @@ class EMSGNodeInspector(EMItem3DInspector):
 		yaxis.setShowLeftArrow(False)
 		yaxis.setRightArrowLength(length/5)
 		yaxis.setAmbientColor(0.0,1.0,0.0)
-		zaxis = EMLine(0,0,0,0,0,-length,linewidth)
+		zaxis = EMLine(0,0,0,0,0,length,linewidth)
 		zaxis.setShowLeftArrow(False)
 		zaxis.setRightArrowLength(length/5)
 		zaxis.setAmbientColor(0.0,0.0,1.0)

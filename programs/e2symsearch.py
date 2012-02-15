@@ -88,10 +88,12 @@ def main():
 		symxform.set_trans(trans[0]*options.shrink, trans[1]*options.shrink, trans[2]*options.shrink)
 		output = EMData(options.input)
 		output.process_inplace('xform',{'transform':symxform})
+		output.set_attr('symxform', symxform)	# Obviously only HDF or BDB files will contain this metadata
 		if options.symmetrize:
 			output = output.process('xform.applysym',{'sym':options.sym})
 	else:
 		output = volume.process('xform',{'transform':symxform})
+		output.set_attr('symxform', symxform)	# Obviously only HDF or BDB files will contain this metadata
 		if options.symmetrize:
 			output = output.process('xform.applysym',{'sym':options.sym})
 	
