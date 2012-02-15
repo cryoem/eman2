@@ -665,31 +665,31 @@ class PMAutoMask3DWidget(PMBaseWidget):
 		PMBaseWidget.__init__(self, name, mode)
 		gridbox = QtGui.QGridLayout()
 		self.automask3dbool = QtGui.QCheckBox("Auto Mask 3D")
-		self.paramsdict = {}
-		self.paramsdict["threshold"] = PMFloatEntryWidget("Threshold", 0.8, mode)
-		self.paramsdict["nmaxseed"] = PMIntEntryWidget("NMax", 30, mode)
-		self.paramsdict["radius"] = PMIntEntryWidget("Radius", 30, mode)
-		self.paramsdict["nshells"] = PMIntEntryWidget("Mask Dilations", 5, mode)
-		self.paramsdict["nshellsgauss"] = PMIntEntryWidget("Post Gaussian Dialations", 5, mode)
+		self.params = []
+		self.params.append(PMFloatEntryWidget("Threshold", 0.8, mode))
+		self.params.append(PMIntEntryWidget("NMax", 30, mode))
+		self.params.append(PMIntEntryWidget("Radius", 30, mode))
+		self.params.append(PMIntEntryWidget("Mask Dilations", 5, mode))
+		self.params.append(PMIntEntryWidget("Post Gaussian Dialations", 5, mode))
 		gridbox.addWidget(self.automask3dbool, 0, 0)
-		gridbox.addWidget(self.paramsdict["threshold"], 1, 0)
-		gridbox.addWidget(self.paramsdict["nmaxseed"], 1, 1)
-		gridbox.addWidget(self.paramsdict["radius"], 1, 2)
-		gridbox.addWidget(self.paramsdict["nshells"], 2, 0)
-		gridbox.addWidget(self.paramsdict["nshellsgauss"], 2, 1, 1, 2)
+		gridbox.addWidget(self.params[0], 1, 0)
+		gridbox.addWidget(self.params[1], 1, 1)
+		gridbox.addWidget(self.params[2], 1, 2)
+		gridbox.addWidget(self.params[3], 2, 0)
+		gridbox.addWidget(self.params[4], 2, 1, 1, 2)
 		self.setLayout(gridbox)
 		self.setValue(default)
 		self.initdefault = initdefault
 		
 		QtCore.QObject.connect(self.automask3dbool,QtCore.SIGNAL("stateChanged(int)"),self._on_boolchanged)
-		self.connect(self.paramsdict["threshold"],QtCore.SIGNAL("pmmessage(QString)"),self._on_message)
-		self.connect(self.paramsdict["nmaxseed"],QtCore.SIGNAL("pmmessage(QString)"),self._on_message)
-		self.connect(self.paramsdict["radius"],QtCore.SIGNAL("pmmessage(QString)"),self._on_message)
-		self.connect(self.paramsdict["nshells"],QtCore.SIGNAL("pmmessage(QString)"),self._on_message)
-		self.connect(self.paramsdict["nshellsgauss"],QtCore.SIGNAL("pmmessage(QString)"),self._on_message)
+		self.connect(self.params[0],QtCore.SIGNAL("pmmessage(QString)"),self._on_message)
+		self.connect(self.params[1],QtCore.SIGNAL("pmmessage(QString)"),self._on_message)
+		self.connect(self.params[2],QtCore.SIGNAL("pmmessage(QString)"),self._on_message)
+		self.connect(self.params[3],QtCore.SIGNAL("pmmessage(QString)"),self._on_message)
+		self.connect(self.params[4],QtCore.SIGNAL("pmmessage(QString)"),self._on_message)
 		
 	def _on_boolchanged(self):
-		for widget in self.paramsdict.values():
+		for widget in self.params:
 			widget.setEnabled(self.automask3dbool.isChecked())
 	
 	def _on_message(self, message):
@@ -703,25 +703,24 @@ class PMAutoMask3DWidget(PMBaseWidget):
 			return
 		# Otherwise parse input and set
 		self.automask3dbool.setChecked(True)
-		params = value.split(':')
-		for param in params:
-			key, val = param.split('=')
-			self.paramsdict[key].setValue(val)
+		automaskval = value.split(',')
+		for i, param in enumerate(self.params):
+			param.setValue(automaskval[i])
 			
 	def getValue(self):
 		if not self.automask3dbool.isChecked(): return ""
 		value = ""
 		# concatenate things
-		for key in self.paramsdict.keys():
-			value = value+ ":"+key+"="+str(self.paramsdict[key].getValue())
+		for i in xrange(len(self.params)):
+			value = value+","+str(self.params[i].getValue())
 		value = value[1:]
 		return value
 		
 	def getErrorMessage(self):
 		if self.errormessage: return self.errormessage
-		if self.paramsdict["threshold"].getErrorMessage(): return self.paramsdict["threshold"].getErrorMessage()
-		if self.paramsdict["nmaxseed"].getErrorMessage(): return self.paramsdict["nmaxseed"].getErrorMessage()
-		if self.paramsdict["radius"].getErrorMessage(): return self.paramsdict["radius"].getErrorMessage()
-		if self.paramsdict["nshells"].getErrorMessage(): return self.paramsdict["nshells"].getErrorMessage()
-		if self.paramsdict["nshellsgauss"].getErrorMessage(): return self.paramsdict["nshellsgauss"].getErrorMessage()
+		if self.params[0].getErrorMessage(): return self.params[0].getErrorMessage()
+		if self.params[1].getErrorMessage(): return self.params[1].getErrorMessage()
+		if self.params[2].getErrorMessage(): return self.params[2].getErrorMessage()
+		if self.params[3].getErrorMessage(): return self.params[3].getErrorMessage()
+		if self.params[4].getErrorMessage(): return self.params[4].getErrorMessage()
 		
