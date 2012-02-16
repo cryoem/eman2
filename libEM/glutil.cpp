@@ -758,10 +758,6 @@ void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,bool surfa
 	if ( surface_face_z ) mc->surface_face_z();
 	//Bug in OpenGL, sometimes glGenBuffers doesn't work. Try again, if we still fail then return...
 	if (!glIsBuffer(mc->buffer[0])) glGenBuffers(4, mc->buffer);
-	if (!glIsBuffer(mc->buffer[0])){
-		cout << "Can Generate GL Vertex Buffers" << endl;
-		return;
-	}
 
 	//whenever something changes, like color mode or color scale (or threshold), we need to recolor
 	if( mc->getRGBmode() && (mc->rgbgenerator.getNeedToRecolor() || mc->needtobind)){
@@ -811,6 +807,10 @@ void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,bool surfa
 	//Indices
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mc->buffer[1]);
 	if (mc->needtobind) glBufferData(GL_ELEMENT_ARRAY_BUFFER, 4*mc->ff.elem(), mc->ff.get_data(), GL_STATIC_DRAW);
+	if (!glIsBuffer(mc->buffer[0])){
+		cout << "Can Generate GL Vertex Buffers" << endl;
+		return;
+	}
 	glDrawElements(GL_TRIANGLES,mc->ff.elem(),GL_UNSIGNED_INT,0);
 	// No longer need to bind data to the GPU
 	mc->needtobind = false;
