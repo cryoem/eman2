@@ -12,6 +12,7 @@
   }, 
   {
     "ICON": "green_boxes",
+    "MODE": "boxing",
     "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2tomoboxer",
     "PROGRAM": "e2tomoboxer.py", 
     "NAME": "Box Tomogram Files", 
