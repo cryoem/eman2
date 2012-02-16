@@ -355,7 +355,13 @@ class EMProjectManager(QtGui.QMainWindow):
 		Load the wiki help
 		"""
 		self.loadWiki()
-			
+	
+	def _on_wizardbutton(self):
+		"""
+		Load the wizardbutton
+		"""
+		self.loadWizard()
+		
 	def _on_taskmgrbutton(self, state):
 		"""
 		Load the log book
@@ -421,6 +427,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		#tbox.setAlignment(QtCore.Qt.AlignTop)
 		
 		QtCore.QObject.connect(self.wikibutton,QtCore.SIGNAL("clicked()"),self._on_wikibutton)
+		QtCore.QObject.connect(self.wizardbutton,QtCore.SIGNAL("clicked()"),self._on_wizardbutton)
 		QtCore.QObject.connect(self.expertbutton,QtCore.SIGNAL("stateChanged(bool)"),self._on_expertmodechanged)
 		
 		#return programtoolwidget
@@ -439,6 +446,21 @@ class EMProjectManager(QtGui.QMainWindow):
 		"""
 		import webbrowser
 		webbrowser.open(self.getProgramWikiPage())
+	
+	def loadWizard(self):
+		"""
+		Load the wizard from a filebox
+		"""
+
+		jsonfile = open(os.getenv("EMAN2DIR")+self.getProgramWizardFile(), 'r')
+		data = jsonfile.read()
+		data = self.json_strip_comments(data)
+		wizarddata = json.loads(data)
+		jsonfile.close()
+		
+		# Now load the wizard (Wizard is modal)
+		self.wizard = EMWizard(wizarddata, self.gui_stacked_widget.currentWidget().guiwidget)
+		self.wizard.show()
 		
 	def makeCMDButtonsWidget(self):
 		"""
@@ -492,7 +514,6 @@ class EMProjectManager(QtGui.QMainWindow):
 		"""
 		if not cmd: return False	# Don't excecute a broken script
 		# --ipd=-2 ; tell .eman2log.txt that this job is already in the pm note book
-		print self.dumpterminal.isChecked()
 		if self.dumpterminal.isChecked():
 			stdoutpipe = subprocess.PIPE
 		else:
@@ -557,6 +578,8 @@ class EMProjectManager(QtGui.QMainWindow):
 			if "NOTELEVEL" in child: qtreewidget.setNoteLevel(child["NOTELEVEL"])
 			# Optional wikipage, to load info about the program from the wiki
 			if "WIKIPAGE" in child: qtreewidget.setWikiPage(child["WIKIPAGE"])
+			# Optional wizard file to add a wizard for this e2program
+			if "WIZARD" in child: qtreewidget.setWizardFile(child["WIZARD"])
 			# Optional expertmode, to enable expert mode GUI widgets
 			if "EXPERT" in child:  qtreewidget.setExpertMode(child["EXPERT"])
 			self._add_children(child, qtreewidget)
@@ -593,6 +616,8 @@ class EMProjectManager(QtGui.QMainWindow):
 			if "NOTELEVEL" in toplevel: qtreewidget.setNoteLevel(toplevel["NOTELEVEL"])
 			# Optional wikipage, to load info about the program from the wiki
 			if "WIKIPAGE" in toplevel: qtreewidget.setWikiPage(toplevel["WIKIPAGE"])
+			# Optional wizardfile, add a wizard to use with an e2program
+			if "WIZARD" in toplevel: qtreewidget.setWizardFile(toplevel["WIZARD"])
 			# Optional expertmode, to enable expert mode GUI widgets
 			if "EXPERT" in toplevel:  qtreewidget.setExpertMode(toplevel["EXPERT"])
 			self._add_children(toplevel, qtreewidget)
@@ -726,6 +751,15 @@ class EMProjectManager(QtGui.QMainWindow):
 			return self.tree_stacked_widget.currentWidget().currentItem().getWikiPage()
 		except:
 			return None
+	
+	def getProgramWizardFile(self):
+		"""
+		Return the program wiki page
+		"""
+		try:
+			return self.tree_stacked_widget.currentWidget().currentItem().getWizardFile()
+		except:
+			return None
 			
 	def getProgramExpertMode(self):
 		"""
@@ -806,6 +840,12 @@ class EMProjectManager(QtGui.QMainWindow):
 			self.wikibutton.setEnabled(True)
 		else:
 			self.wikibutton.setEnabled(False)
+		
+		# Wizardpage
+		if self.getProgramWizardFile():
+			self.wizardbutton.setEnabled(True)
+		else:
+			self.wizardbutton.setEnabled(False)
 			
 		# Set Expert mode button
 		if self.getProgramExpertMode() > 0:
@@ -877,6 +917,65 @@ class PMIcon(QtGui.QLabel):
 	def setIcon(self, image):
 		self.setText(("<img src=\"%s\" />")%image)
 
+class EMWizard(QtGui.QWizard):
+	"""
+	This creates a wizard for filling out EM program forms 
+	"""
+	def __init__(self, wizarddata, e2gui):
+		QtGui.QWizard.__init__(self)
+		self.setModal(True)
+		self.setWindowTitle("e2program wizard")
+		self.e2gui = e2gui
+		
+		for page in wizarddata:
+			self.addPage(EMWizardPage(page, self.e2gui))
+			
+		
+class EMWizardPage(QtGui.QWizardPage):
+	"""
+	Make a page for the wizard
+	"""
+	def __init__(self, page, e2gui):
+		QtGui.QWizardPage.__init__(self)
+		self.e2gui = e2gui
+		self.widgetlist = []
+		
+		#Set Hep info
+		self.setTitle(page["TITLE"])
+		label = QtGui.QLabel(page["INST"])
+		label.setWordWrap(True)
+		# add to grid
+		grid = QtGui.QGridLayout()
+		grid.addWidget(label,0,0)
+		
+		# Add widgets stuff
+		frame = QtGui.QFrame()
+		frame.setFrameStyle(QtGui.QFrame.StyledPanel)
+		framegrid = QtGui.QGridLayout()
+		framegrid.setContentsMargins(6,0,6,0)
+		
+		# Insanely if I were to just addWidget using self.e2gui.widgethash[widget], it steals it from the PMGUI layout, so I need to make a copy !!!
+		for i, widget in enumerate(page["WIDGETS"]):
+			widgetcopy = type(self.e2gui.widgethash[widget]).copyWidget(self.e2gui.widgethash[widget])
+			self.widgetlist.append((self.e2gui.widgethash[widget],widgetcopy))
+			framegrid.addWidget(widgetcopy,i,0)
+		
+		frame.setLayout(framegrid)
+		grid.addWidget(frame,1,0)
+		#self.errorlabel = QtGui.QLabel()
+		#grid.addWidget(self.errorlabel,2,0)
+		self.setLayout(grid)
+
+	def validatePage(self):
+		""" Validate input and update GUI"""
+		for widget in self.widgetlist:
+			if widget[1].getErrorMessage():
+				self.errorlabel.setText(widget[1].getErrorMessage())
+				return False
+			widget[0].setValue(widget[1].getValue())
+			
+		return True
+		
 class TheHelp(QtGui.QWidget):
 	"""
 	A little widget to aid in the daily chores. Good help is hard to find these days.....
@@ -1759,6 +1858,7 @@ class PMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 		self.mode = ""
 		self.notelevel = 0
 		self.wikipage = None
+		self.wizardfile = None
 		self.exmodestate = False
 		
 	def setProgram(self, program):
@@ -1788,6 +1888,13 @@ class PMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 		
 	def getWikiPage(self):
 		return self.wikipage
+	
+	def setWizardFile(self, wizardfile):
+		""" set the wizard file """
+		self.wizardfile = wizardfile
+		
+	def getWizardFile(self):
+		return self.wizardfile
 		
 	def setExpertMode(self, state):
 		"""

@@ -323,6 +323,11 @@ class PMBoolWidget(PMBaseWidget):
 		
 class PMFileNameWidget(PMBaseWidget):
 	""" A Widget for geting filenames. Type is checked """
+	@staticmethod 
+	def copyWidget(widget):
+		""" Basically a copy constructor to get around QT and python limitations """
+		return PMFileNameWidget(widget.name, widget.filename, widget.mode, widget.browser, widget.postional, widget.initdefault, widget.checkfileexist) 
+		
 	def __init__(self, name, filename, mode, browser, postional=True, initdefault=None, checkfileexist=True):
 		PMBaseWidget.__init__(self, name, mode) 
 		gridbox = QtGui.QGridLayout()

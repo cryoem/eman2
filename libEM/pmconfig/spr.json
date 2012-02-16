@@ -300,6 +300,7 @@
         "PROGRAM": "e2tiltvalidate.py", 
         "NAME": "Run e2tiltvalidate",
 	"NOTELEVEL": "1",
+        "WIZARD":"/lib/pmconfig/runtiltvalidation.json",
         "CHILDREN": []
       },
       {
