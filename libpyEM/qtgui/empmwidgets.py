@@ -98,6 +98,12 @@ class PMBaseWidget(QtGui.QWidget):
 	
 class PMIntEntryWidget(PMBaseWidget):
 	""" A Widget for geting Int values. Type and range is checked """
+		
+	@staticmethod 
+	def copyWidget(widget):
+		""" Basically a copy constructor to get around QT and python limitations """
+		return PMIntEntryWidget(widget.getName(), widget.getValue(), widget.getMode(), widget.lrange, widget.urange, widget.postional, widget.initdefault)
+		
 	def __init__(self, name, value, mode, lrange=None, urange=None, postional=False, initdefault=None):
 		PMBaseWidget.__init__(self, name, mode) 
 		gridbox = QtGui.QGridLayout()
@@ -150,6 +156,12 @@ class PMIntEntryWidget(PMBaseWidget):
 
 class PMShrinkEntryWidget(PMIntEntryWidget):
 	""" A widget for shink options. If this entry is set to <= 1 then no argument is returned """
+	
+	@staticmethod 
+	def copyWidget(widget):
+		""" Basically a copy constructor to get around QT and python limitations """
+		return PMShrinkEntryWidget(widget.getName(), widget.getValue(), widget.getMode(), widget.lrange, widget.postional, widget.initdefault)
+		
 	def __init__(self, name, value, mode, lrange=None, postional=False, initdefault=None):
 		PMIntEntryWidget.__init__(self, name, value, mode, lrange=lrange, urange=None, postional=postional, initdefault=initdefault)
 		
@@ -179,6 +191,12 @@ class PMShrinkEntryWidget(PMIntEntryWidget):
 		
 class PMFloatEntryWidget(PMBaseWidget):
 	""" A Widget for geting Float values. Type and range is checked """
+	
+	@staticmethod 
+	def copyWidget(widget):
+		""" Basically a copy constructor to get around QT and python limitations """
+		return PMFloatEntryWidget(widget.getName(), widget.getValue(), widget.getMode(), widget.lrange, widget.urange, widget.postional, widget.initdefault)
+		
 	def __init__(self, name, value, mode, lrange=None, urange=None, postional=False, initdefault=None):
 		PMBaseWidget.__init__(self, name, mode) 
 		gridbox = QtGui.QGridLayout()
@@ -231,6 +249,12 @@ class PMFloatEntryWidget(PMBaseWidget):
 		
 class PMStringEntryWidget(PMBaseWidget):
 	""" A Widget for geting String values. Type is checked """
+	
+	@staticmethod 
+	def copyWidget(widget):
+		""" Basically a copy constructor to get around QT and python limitations """
+		return PMStringEntryWidget(widget.getName(), widget.getValue(), widget.getMode(), widget.postional, widget.initdefault, widget.returnNone)
+		
 	def __init__(self, name, string, mode, postional=False, initdefault=None, returnNone=False):
 		PMBaseWidget.__init__(self, name, mode) 
 		gridbox = QtGui.QGridLayout()
@@ -289,6 +313,12 @@ class PMHeaderWidget(PMBaseWidget):
 
 class PMBoolWidget(PMBaseWidget):
 	""" A Widget for getting Bool values. Type is checked """
+	
+	@staticmethod 
+	def copyWidget(widget):
+		""" Basically a copy constructor to get around QT and python limitations """
+		return PMBoolWidget(widget.getName(), widget.getValue(), widget.getMode(), widget.initdefault)
+		
 	def __init__(self, name, boolvalue, mode, initdefault=None):
 		PMBaseWidget.__init__(self, name, mode)
 		gridbox = QtGui.QGridLayout()
@@ -326,9 +356,9 @@ class PMFileNameWidget(PMBaseWidget):
 	@staticmethod 
 	def copyWidget(widget):
 		""" Basically a copy constructor to get around QT and python limitations """
-		return PMFileNameWidget(widget.name, widget.filename, widget.mode, widget.browser, widget.postional, widget.initdefault, widget.checkfileexist) 
+		return PMFileNameWidget(widget.getName(), widget.filename, widget.mode, widget.browser, widget.postional, widget.initdefault, widget.checkfileexist, infolabels=False) 
 		
-	def __init__(self, name, filename, mode, browser, postional=True, initdefault=None, checkfileexist=True):
+	def __init__(self, name, filename, mode, browser, postional=True, initdefault=None, checkfileexist=True, infolabels=True):
 		PMBaseWidget.__init__(self, name, mode) 
 		gridbox = QtGui.QGridLayout()
 		label = QtGui.QLabel(name)
@@ -339,7 +369,7 @@ class PMFileNameWidget(PMBaseWidget):
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.filenamebox, 0, 1)
 		gridbox.addWidget(self.browsebutton, 0, 2)
-		gridbox.addWidget(self.infolabel, 1, 1, 1, 2)
+		if infolabels: gridbox.addWidget(self.infolabel, 1, 1, 1, 2)
 		self.setLayout(gridbox)
 
 		self.initdefault = initdefault
@@ -411,6 +441,12 @@ class PMFileNameWidget(PMBaseWidget):
 
 class PMDirectoryWidget(PMBaseWidget):
 	""" A Widget for display dircories of a certian type """
+	
+	@staticmethod 
+	def copyWidget(widget):
+		""" Basically a copy constructor to get around QT and python limitations """
+		return PMDirectoryWidget(widget.getName(), widget.dirbasename, widget.getValue(), widget.getMode(), widget.postional, widget.initdefault)
+		
 	def __init__(self, name, dirbasename, default, mode, postional=False, initdefault=None):
 		PMBaseWidget.__init__(self, name, mode) 
 		self.dirbasename = dirbasename
@@ -450,6 +486,12 @@ class PMDirectoryWidget(PMBaseWidget):
 		
 class PMComboWidget(PMBaseWidget):
 	""" A Widget for combo boxes. Type is checked """
+	
+	@staticmethod 
+	def copyWidget(widget):
+		""" Basically a copy constructor to get around QT and python limitations """
+		return PMComboWidget(widget.getName(), widget.choices, widget.getValue(), widget.getMode(), widget.postional, widget.datatype, widget.initdefault, widget.returnNone)	
+
 	def __init__(self, name, choices, default, mode, postional=False,  datatype=str, initdefault=None, returnNone=False):
 		PMBaseWidget.__init__(self, name, mode, returnNone=returnNone) 
 		gridbox = QtGui.QGridLayout()
@@ -462,8 +504,8 @@ class PMComboWidget(PMBaseWidget):
 		self.initdefault = initdefault
 		self.datatype=datatype	# Must be int, float or str
 		
-		choices = sorted(choices)
-		for choice in choices:
+		self.choices = sorted(choices)
+		for choice in self.choices:
 			self.combobox.addItem(str(choice))
 		self.setValue(default)
 		self.setPositional(postional)
@@ -491,6 +533,12 @@ class PMComboWidget(PMBaseWidget):
 			
 class PMComboParamsWidget(PMBaseWidget):
 	""" A Widget for combo boxes. Type is checked. For the combobox with params the datatype is always str """
+	
+	@staticmethod 
+	def copyWidget(widget):
+		""" Basically a copy constructor to get around QT and python limitations """
+		return PMComboParamsWidget(widget.getName(), widget.choices, widget.getValue(), widget.getMode(), widget.postional, widget.initdefault, widget.returnNone)	
+		
 	def __init__(self, name, choices, default, mode, postional=False, initdefault=None, returnNone=False):
 		PMBaseWidget.__init__(self, name, mode, returnNone=returnNone) 
 		gridbox = QtGui.QGridLayout()
@@ -504,8 +552,8 @@ class PMComboParamsWidget(PMBaseWidget):
 		gridbox.addWidget(self.params, 0, 3)
 		self.setLayout(gridbox)
 
-		choices = sorted(choices)
-		for choice in choices:
+		self.choices = sorted(choices)
+		for choice in self.choices:
 			self.combobox.addItem(str(choice))
 		self.combobox.addItem('None')
 		
@@ -549,6 +597,12 @@ class PMComboParamsWidget(PMBaseWidget):
 		
 class PMSymWidget(PMBaseWidget):
 	""" A widget for getting/setting symmetry input """
+	
+	@staticmethod 
+	def copyWidget(widget):
+		""" Basically a copy constructor to get around QT and python limitations """
+		return PMSymWidget(widget.getName(), widget.getValue(), widget.getMode(), widget.initdefault)	
+		
 	def __init__(self, name, default, mode, initdefault=None):
 		PMBaseWidget.__init__(self, name, mode)
 		gridbox = QtGui.QGridLayout()
@@ -606,6 +660,12 @@ class PMSymWidget(PMBaseWidget):
 
 class PMMultiSymWidget(PMBaseWidget):
 	""" A widget for getting/setting symmetry input from multiple models and this widget is runtime dynamic """
+	
+	@staticmethod 
+	def copyWidget(widget):
+		""" Basically a copy constructor to get around QT and python limitations """
+		return PMMultiSymWidget(widget.getName(), widget.getMode(), widget.initdefault)
+		
 	def __init__(self, name, mode, initdefault=None):
 		PMBaseWidget.__init__(self, name, mode)
 		self.gridbox = QtGui.QVBoxLayout()
@@ -666,6 +726,12 @@ class PMMultiSymWidget(PMBaseWidget):
 			
 class PMAutoMask3DWidget(PMBaseWidget):
 	""" A Widget for getting automask 3D input """
+	
+	@staticmethod 
+	def copyWidget(widget):
+		""" Basically a copy constructor to get around QT and python limitations """
+		return PMAutoMask3DWidget(widget.getName(), widget.getValue(), widget.getMode(), widget.initdefault)
+		
 	def __init__(self, name, default, mode, initdefault=None):
 		PMBaseWidget.__init__(self, name, mode)
 		gridbox = QtGui.QGridLayout()

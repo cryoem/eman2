@@ -169,7 +169,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		self.connect(filebrowser, QtCore.SIGNAL('triggered()'), self._on_browse)
 		self.dumpterminal = QtGui.QAction('Dump Terminal', self)
 		self.dumpterminal.setCheckable(True)
-		self.dumpterminal.setChecked(True)
+		self.dumpterminal.setChecked(False)
 		utilsmenu.addAction(self.dumpterminal)
 		
 		
@@ -970,10 +970,9 @@ class EMWizardPage(QtGui.QWizardPage):
 		""" Validate input and update GUI"""
 		for widget in self.widgetlist:
 			if widget[1].getErrorMessage():
-				self.errorlabel.setText(widget[1].getErrorMessage())
+				print widget[1].getErrorMessage()
 				return False
 			widget[0].setValue(widget[1].getValue())
-			
 		return True
 		
 class TheHelp(QtGui.QWidget):
