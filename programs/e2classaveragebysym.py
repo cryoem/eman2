@@ -41,10 +41,10 @@ def main():
 	"""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_header(name="alignheader", help='Options below this label are specific to e2refine', title="### e2classaveragebysym options ###", row=3, col=0, rowspan=1, colspan=2)
+	
+	parser.add_header(name="alignheader", help='Options below this label are specific to e2refine', title="### e2classaveragebysym options ###", row=2, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--input", dest="input", default=None,type=str, help="The name of input stack of volumes", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=0, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--output", dest="output", default=None,type=str, help="The name of the output volume", guitype='strbox', filecheck=False, row=1, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--volume", dest="volume", default=None,type=str, help="The name of the aligned and averaged output volume", filecheck=False, row=2, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--output", dest="output", default=None,type=str, help="The name of the aligned and averaged output volume", guitype='strbox', filecheck=False, row=1, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--path",type=str,default=None,help="Path for the refinement, default=auto")
 	parser.add_argument("--sym", dest = "sym", default="c1", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos. For asymmetric reconstruction omit this option or specify c1.", guitype='symbox', row=3, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes. Default=0, no shrinking", guitype='shrinkbox', row=4, col=0, rowspan=1, colspan=1)
@@ -103,7 +103,7 @@ def main():
 		
 	# Now make the avearage
 	average = avgr.finish()
-	average.write_image(options.volume)
+	average.write_image(options.outout)
 		
 if __name__ == "__main__":
     main()
