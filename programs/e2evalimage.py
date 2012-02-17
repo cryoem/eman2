@@ -214,7 +214,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.splotmode=QtGui.QComboBox(self)
 		self.splotmode.addItem("Bgsub and Fit")
 		self.splotmode.addItem("Fg and Bg")
-		self.splotmode.addItem("Bgsub 45 deg and Fit")
+		self.splotmode.addItem("Fg, 45 deg slices")
 		self.gbl.addWidget(self.splotmode,4,1)
 
 		self.hbl.addLayout(self.gbl)
@@ -390,7 +390,6 @@ class GUIEvalImage(QtGui.QWidget):
 		if self.plotmode==0: 
 			bgsub=self.fft1d-bg1d
 			self.wplot.set_data((s,bgsub),"fg-bg",True,True,color=0)
-			print max(bgsub)
 			
 			fit=array(ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP))		# The fit curve
 			fit=fit*fit			# squared
@@ -415,31 +414,33 @@ class GUIEvalImage(QtGui.QWidget):
 			self.wplot.setAxisParms("s (1/"+ u"\u212B" +")","Intensity (a.u)")
 		elif self.plotmode==2:
 			if self.fft1dang==None: self.recalc_real()
-			bgsub=self.fft1d-bg1d
-			bgsuba=[array(self.fft1dang[i]) for i in xrange(4)]
-			for i in xrange(4): bgsuba[i][0]=0
-			print max(bgsub),max(bgsuba[0]),max(bgsuba[1])
-			self.wplot.set_data((s,bgsub),"fg-bg",True,True,color=0)
-			self.wplot.set_data((s,bgsuba[0]),"fg-bg 0-45",quiet=True,color=2)
-			self.wplot.set_data((s,bgsuba[1]),"fg-bg 45-90",quiet=True,color=3)
-			self.wplot.set_data((s,bgsuba[2]),"fg-bg 90-135",quiet=True,color=4)
-			self.wplot.set_data((s,bgsuba[3]),"fg-bg 135-180",quiet=True,color=5)
+			#bgsub=self.fft1d-bg1d
+			#bgsuba=[array(self.fft1dang[i])-bg1d for i in xrange(4)]
+			fg=self.fft1d
+			fga=[array(self.fft1dang[i]) for i in xrange(4)]
 			
-			fit=array(ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP))		# The fit curve
-			fit=fit*fit			# squared
+			for i in xrange(4): fga[i][0]=0
+			self.wplot.set_data((s,fg),"fg",True,True,color=0)
+			self.wplot.set_data((s,fga[0]),"fg 0-45",quiet=True,color=2)
+			self.wplot.set_data((s,fga[1]),"fg 45-90",quiet=True,color=3)
+			self.wplot.set_data((s,fga[2]),"fg 90-135",quiet=True,color=4)
+			self.wplot.set_data((s,fga[3]),"fg 135-180",quiet=True,color=5)
+			
+			#fit=array(ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP))		# The fit curve
+			#fit=fit*fit			# squared
 
-			# auto-amplitude for b-factor adjustment
-			rto,nrto=0,0
-			for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)): 
-				if bgsub[i]>0 : 
-					rto+=fit[i]
-					nrto+=fabs(bgsub[i])
-			if nrto==0 : rto=1.0
-			else : rto/=nrto
-			fit/=rto
+			## auto-amplitude for b-factor adjustment
+			#rto,nrto=0,0
+			#for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)): 
+				#if bgsub[i]>0 : 
+					#rto+=fit[i]
+					#nrto+=fabs(bgsub[i])
+			#if nrto==0 : rto=1.0
+			#else : rto/=nrto
+			#fit/=rto
 			
-			self.wplot.set_data((s,fit),"fit",color=1)
-			self.wplot.setAxisParms("s (1/"+ u"\u212B" + ")","Intensity (a.u)")
+			#self.wplot.set_data((s,fit),"fit",color=1)
+			#self.wplot.setAxisParms("s (1/"+ u"\u212B" + ")","Intensity (a.u)")
 			
 
 	def timeOut(self):
@@ -523,8 +524,10 @@ class GUIEvalImage(QtGui.QWidget):
 			
 			# extract the data and do an fft
 			clip=self.data.get_clip(Region(parms[2][0],parms[2][1],parms[0],parms[0]))
+			clip.process_inplace("normalize.edgemean")
 			self.fft=clip.do_fft()
-			self.fft.mult(1.0/parms[0]**2)
+#			self.fft.mult(1.0/parms[0]**2)
+			self.fft.mult(1.0/parms[0])
 
 		# mode where user selects/deselcts tiled image set
 		elif self.calcmode==1:
@@ -539,21 +542,24 @@ class GUIEvalImage(QtGui.QWidget):
 					
 					# read the data and make the FFT
 					clip=self.data.get_clip(Region(x*parms[0]+parms[0]/2,y*parms[0]+parms[0]/2,parms[0],parms[0]))
+					clip.process_inplace("normalize.edgemean")
 					fft=clip.do_fft()
+#					fft.mult(parms[0])
 					fft.ri2inten()
 					if self.fft==None: self.fft=fft
 					else: self.fft+=fft
 					nbx+=1
 			
+			self.fft.mult(1.0/(nbx*parms[0]**2))
 			self.fft.process_inplace("math.sqrt")
 			self.fft["is_intensity"]=0				# These 2 steps are done so the 2-D display of the FFT looks better. Things would still work properly in 1-D without it
-			self.fft.mult(1.0/(nbx*parms[0]**2))
+#			self.fft.mult(1.0/(nbx*parms[0]**2))
 			
 		self.fftbg=self.fft.process("math.nonconvex")
 		self.fft1d=self.fft.calc_radial_dist(self.fft.get_ysize()/2,0.0,1.0,1)	# note that this handles the ri2inten averages properly
 		if self.plotmode==2:
 			self.fft1dang=array(self.fft.calc_radial_dist(self.fft.get_ysize()/2,0.0,1.0,4,0.0,1))	# This form generates 4 sequential power spectra representing angular ranges
-			self.fft1dang.reshape((4,self.fft.get_ysize()/2))
+			self.fft1dang=self.fft1dang.reshape((4,self.fft.get_ysize()/2))
 		else:
 			self.fft1dang=None
 
