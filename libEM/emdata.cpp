@@ -2788,7 +2788,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 	return ret;
 }
 
-vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, bool inten)
+vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, float offset, bool inten)
 {
 	ENTERFUNC;
 
@@ -2796,6 +2796,10 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, bo
 		LOGERR("2D images only.");
 		throw ImageDimensionException("2D images only");
 	}
+	int isinten=get_attr_default("is_intensity",0);
+
+	if (isinten&&!inten) { throw InvalidParameterException("Must set inten for calc_radial_dist with intensity image"); }
+
 
 	vector<float>ret(n*nwedge);
 	vector<float>norm(n*nwedge);
@@ -2803,6 +2807,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, bo
 	int x,y,i;
 	int step=is_complex()?2:1;
 	float astep=static_cast<float>(M_PI*2.0/nwedge);
+	if (is_complex()) astep/=2;							// Since we only have the right 1/2 of Fourier space
 	float* data = get_data();
 	for (i=0; i<n*nwedge; i++) ret[i]=norm[i]=0.0;
 
@@ -2810,13 +2815,14 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, bo
 	for (y=i=0; y<ny; y++) {
 		for (x=0; x<nx; x+=step,i+=step) {
 			float r,v,a;
+			int bin;
 			if (is_complex()) {
 #ifdef	_WIN32
 				r=static_cast<float>(_hypot(x/2.0,y<ny/2?y:ny-y));		// origin at 0,0; periodic
 #else
 				r=static_cast<float>(hypot(x/2.0,y<ny/2?y:ny-y));		// origin at 0,0; periodic
 #endif
-				a=atan2(float(y<ny/2?y:ny-y),x/2.0f);
+				a=atan2(float(y<ny/2?y:y-ny),x/2.0f);
 				if (!inten) {
 #ifdef	_WIN32
 					if (is_ri()) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
@@ -2825,9 +2831,11 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, bo
 #endif	//_WIN32
 					else v=data[i];							// amp/phase, just get amp
 				} else {
-					if (is_ri()) v=data[i]*data[i]+data[i+1]*data[i+1];
+					if (isinten) v=data[i];
+					else if (is_ri()) v=data[i]*data[i]+data[i+1]*data[i+1];
 					else v=data[i]*data[i];
 				}
+				bin=n*int(floor((a+M_PI/2.0f+offset)/astep));
 			}
 			else {
 #ifdef	_WIN32
@@ -2838,12 +2846,14 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, bo
 				a=atan2(float(y-ny/2),float(x-nx/2));
 				if (inten) v=data[i]*data[i];
 				else v=data[i];
+				bin=n*int(floor((a+M_PI+offset)/astep));
 			}
-			int bin=n*int((a+M_PI)/astep);
-			if (bin>=nwedge) bin=nwedge-1;
+			if (bin>=nwedge*n) bin-=nwedge*n;
+			if (bin<0) bin+=nwedge*n;
 			r=(r-x0)/dx;
 			int f=int(r);	// safe truncation, so floor isn't needed
 			r-=float(f);	// r is now the fractional spacing between bins
+//			printf("%d %d %d %d %1.3f %1.3f\n",x,y,bin,f,r,a);
 			if (f>=0 && f<n) {
 				ret[f+bin]+=v*(1.0f-r);
 				norm[f+bin]+=(1.0f-r);

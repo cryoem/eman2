@@ -40,6 +40,7 @@ import sys
 import weakref
 import e2ctf
 import threading
+from numpy import array,arange
 
 try:
 	from PyQt4 import QtCore, QtGui, QtOpenGL
@@ -213,6 +214,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.splotmode=QtGui.QComboBox(self)
 		self.splotmode.addItem("Bgsub and Fit")
 		self.splotmode.addItem("Fg and Bg")
+		self.splotmode.addItem("Bgsub 45 deg and Fit")
 		self.gbl.addWidget(self.splotmode,4,1)
 
 		self.hbl.addLayout(self.gbl)
@@ -343,9 +345,9 @@ class GUIEvalImage(QtGui.QWidget):
 		apix=self.sapix.getValue()
 		ds=1.0/(apix*parms[0])
 		ctf=parms[1]
-		bg1d=ctf.background
+		bg1d=array(ctf.background)
 		r=len(ctf.background)
-		s=[ds*i for i in range(r)]
+		s=arange(0,ds*r,ds)
 		
 		# This updates the FFT CTF-zero circles
 		if self.f2danmode==0 :
@@ -386,11 +388,12 @@ class GUIEvalImage(QtGui.QWidget):
 
 		# Now update the plots for the correct plot mode
 		if self.plotmode==0: 
-			bgsub=[self.fft1d[i]-bg1d[i] for i in range(r)]
+			bgsub=self.fft1d-bg1d
 			self.wplot.set_data((s,bgsub),"fg-bg",True,True,color=0)
+			print max(bgsub)
 			
-			fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)		# The fit curve
-			fit=[fit[i]**2 for i in range(len(s))]		# squared, no SF
+			fit=array(ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP))		# The fit curve
+			fit=fit*fit			# squared
 
 			# auto-amplitude for b-factor adjustment
 			rto,nrto=0,0
@@ -410,6 +413,34 @@ class GUIEvalImage(QtGui.QWidget):
 			self.wplot.set_data((s[1:],self.fft1d[1:]),"fg",True,True,color=1)
 			self.wplot.set_data((s[1:],bg1d[1:]),"bg",color=0)
 			self.wplot.setAxisParms("s (1/"+ u"\u212B" +")","Intensity (a.u)")
+		elif self.plotmode==2:
+			if self.fft1dang==None: self.recalc_real()
+			bgsub=self.fft1d-bg1d
+			bgsuba=[array(self.fft1dang[i]) for i in xrange(4)]
+			for i in xrange(4): bgsuba[i][0]=0
+			print max(bgsub),max(bgsuba[0]),max(bgsuba[1])
+			self.wplot.set_data((s,bgsub),"fg-bg",True,True,color=0)
+			self.wplot.set_data((s,bgsuba[0]),"fg-bg 0-45",quiet=True,color=2)
+			self.wplot.set_data((s,bgsuba[1]),"fg-bg 45-90",quiet=True,color=3)
+			self.wplot.set_data((s,bgsuba[2]),"fg-bg 90-135",quiet=True,color=4)
+			self.wplot.set_data((s,bgsuba[3]),"fg-bg 135-180",quiet=True,color=5)
+			
+			fit=array(ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP))		# The fit curve
+			fit=fit*fit			# squared
+
+			# auto-amplitude for b-factor adjustment
+			rto,nrto=0,0
+			for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)): 
+				if bgsub[i]>0 : 
+					rto+=fit[i]
+					nrto+=fabs(bgsub[i])
+			if nrto==0 : rto=1.0
+			else : rto/=nrto
+			fit/=rto
+			
+			self.wplot.set_data((s,fit),"fit",color=1)
+			self.wplot.setAxisParms("s (1/"+ u"\u212B" + ")","Intensity (a.u)")
+			
 
 	def timeOut(self):
 		if self.busy : return
@@ -520,12 +551,18 @@ class GUIEvalImage(QtGui.QWidget):
 			
 		self.fftbg=self.fft.process("math.nonconvex")
 		self.fft1d=self.fft.calc_radial_dist(self.fft.get_ysize()/2,0.0,1.0,1)	# note that this handles the ri2inten averages properly
+		if self.plotmode==2:
+			self.fft1dang=array(self.fft.calc_radial_dist(self.fft.get_ysize()/2,0.0,1.0,4,0.0,1))	# This form generates 4 sequential power spectra representing angular ranges
+			self.fft1dang.reshape((4,self.fft.get_ysize()/2))
+		else:
+			self.fft1dang=None
 
 		# Compute 1-D curve and background
 		bg_1d=e2ctf.low_bg_curve(self.fft1d,ds)
 		parms[1].background=bg_1d
 		parms[1].dsbg=ds
-		
+
+		self.fft1d=array(self.fft1d)
 
 		self.needredisp=True
 		self.incalc=False
@@ -586,7 +623,7 @@ class GUIEvalImage(QtGui.QWidget):
 			self.wimage.del_shapes()
 			self.wimage.add_shapes(shp)
 			self.wimage.updateGL()
-
+			
 		if self.f2dmode>0 :
 			if self.f2dmode==1 : self.wfft.set_data(self.fft-self.fftbg)
 			else : self.wfft.set_data(self.fftbg)

@@ -555,11 +555,12 @@ namespace EMAN
 		 * @param x0 starting x coordinate.
 		 * @param dx step of x.
 		 * @param nwedge int number of wedges to divide the circle into
+		 * @param nwedge float angular offset in radians for start of first bin
 		 * @param inten returns intensity (amp^2) rather than amplitude if set
 		 * @exception ImageDimensionException If 'this' image is not 2D.
 		 * @return nwedge radial distributions packed into a single vector<float>
 		 */
-		vector < float >calc_radial_dist(int n, float x0, float dx, int nwedge, bool inten);
+		vector < float >calc_radial_dist(int n, float x0, float dx, int nwedge, float offset,bool inten);
 
 
 		/** Replace the image its complex conjugate.

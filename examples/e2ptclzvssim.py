@@ -38,6 +38,7 @@ from optparse import OptionParser
 from math import *
 import os
 import sys
+import time
 
 
 def main():
@@ -65,14 +66,15 @@ Note also that Z scores will not be accurate if the similarity matrix was comput
 as not all elements are computed.
 """
 
-	parser = OptionParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 #	parser.add_option("--input",type="string",help="Similarity matrix to analyze",default=None)
-	parser.add_option("--output",type="string",help="Output text file",default="zvssim.txt")
-	parser.add_option("--refs",type="string",help="Reference images from the similarity matrix (projections)",default=None)
-	parser.add_option("--inimgs",type="string",help="Input image file",default=None)
-	parser.add_option("--outimgs",type="string",help="Output image file",default="imgs.hdf")
-	parser.add_option("--filtimgs",type="string",help="A python expression using Z[n], Q[n] and N[n] for selecting specific particles to output. n is the 0 indexed number of the input file",default=None)
+	parser.add_argument("--output",type=str,help="Output text file",default="zvssim.txt")
+	parser.add_argument("--refs",type=str,help="Reference images from the similarity matrix (projections)",default=None)
+	parser.add_argument("--inimgs",type=str,help="Input image file",default=None)
+	parser.add_argument("--outimgs",type=str,help="Output image file",default="imgs.hdf")
+	parser.add_argument("--filtimgs",type=str,help="A python expression using Z[n], Q[n] and N[n] for selecting specific particles to output. n is the 0 indexed number of the input file",default=None)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : 
@@ -83,7 +85,9 @@ as not all elements are computed.
 	nx=tmp["nx"]
 	ny=tmp["ny"]
 
-	# read in projection Euler angles
+	logid=E2init(sys.argv,options.ppid)
+
+# read in projection Euler angles
 	if options.refs:
 		ALTs=[]
 		AZs=[]
@@ -96,9 +100,16 @@ as not all elements are computed.
 
 	out=file(options.output,"w")
 
+	colh=1
+	t0=time.time()
+	print "0 - N"
 	# We read one line of the simmx at a time. The line represents all values
 	# for a single particle
 	for y in xrange(ny):
+		if time.time()-t0>0.3 :
+			print " %d/%d\r"%(y+1,ny),
+			sys.stdout.flush()
+			t0=time.time()
 		Qs=[]		# Quality
 		QAs=[]		# Average Quality for particle
 		Zs=[]		# Z score for classification
@@ -115,19 +126,67 @@ as not all elements are computed.
 			Ns.append(N)
 		out.write("%d\t"%y)
 
-		for q in Qs : out.write("%1.4g\t"%q)
-		for qa in QAs : out.write("%1.4g\t"%qa)
-		for z in Zs : out.write("%1.4g\t"%z)
-		for n in Ns : out.write("%d\t"%n)
+		for i,q in enumerate(Qs) : 
+			out.write("%1.4g\t"%q)			# Quality of best alignment
+			if y==0: print "%d - Best Ali Quality (%s)"%(colh,args[i])
+			colh+=1
+		for i,qa in enumerate(QAs) : 
+			out.write("%1.4g\t"%qa)			#  Average quality for this particle
+			if y==0:print "%d - Avg Quality (%s)"%(colh,args[i])
+			colh+=1
+		for i,z in enumerate(Zs) : 
+			out.write("%1.4g\t"%z)			# Z for this alignment
+			if y==0:print "%d - Z score (%s)"%(colh,args[i])
+			colh+=1
+		for i,n in enumerate(Ns) : 
+			out.write("%d\t"%n)				# class number
+			if y==0:print "%d - Best Ali Class (%s)"%(colh,args[i])
+			colh+=1
 
 		# if refs were provided we also write out Euler angle columns
 		if options.refs :
-			for n in Ns : out.write("%1.5g\t"%ALTs[n])
-			for n in Ns : out.write("%1.5g\t"%AZs[n])
+			for i,n in enumerate(Ns) : 
+				out.write("%1.5g\t"%ALTs[n])	# Altitude Euler for best alignment
+				if y==0:print "%d - Alt (%s)"%(colh,args[i])
+				colh+=1
+			for i,n in enumerate(Ns) : 
+				out.write("%1.5g\t"%AZs[n])	# Azimuth Euler for best alignment
+				if y==0:print "%d - Az (%s)"%(colh,args[i])
+				colh+=1
+
+		# if input values were provided, we write per-particle info
+		if options.inimgs:
+			ptcl=EMData(options.inimgs,y,True)		# read image header
+			try :
+				ctf=ptcl["ctf"]
+				out.write("%1.4g\t%1.4g\t"%(ctf.defocus,ctf.bfactor))
+				snr=ctf.snr
+				snrw=[n*i for n,i in enumerate(snr)]
+				nsnr=len(snr)
+				# This gives integrated radial weighted SSNR over 3 resolution ranges
+#				out.write("%1.3g\t%1.3g\t%1.3g\t"%(sum(snrw[1:nsnr/8])/(nsnr/8),sum(snrw[nsnr/16:nsnr/3])/(nsnr/3-nsnr/16),sum(snrw[nsnr/3:nsnr*2/3])/(nsnr*2/3-nsnr/3)));
+				out.write("%1.3g\t%1.3g\t%1.3g\t"%(sum(snr[3:nsnr/6])/(nsnr/6-3),sum(snr[nsnr/8:nsnr/3])/(nsnr/3-nsnr/8),sum(snr[nsnr/3:nsnr*2/3])/(nsnr*2/3-nsnr/3)));
+				if y==0:print "%d - defocus"%(colh)
+				colh+=1
+				if y==0:print "%d - bfactor"%(colh)
+				colh+=1
+				if y==0:print "%d - snr low"%(colh)
+				colh+=1
+				if y==0:print "%d - snr middle"%(colh)
+				colh+=1
+				if y==0:print "%d - snr high"%(colh)
+				colh+=1
+				
+			except:
+				pass								# no particle CTF info
 
 		out.write("\n")
 
 		if options.filtimgs!=None and options.inimgs!=None and eval(options.filtimgs):
 			EMData(options.inimgs,y).write_image(options.outimgs,-1)
-	
+
+	print " %d/%d\r"%(ny,ny),
+	E2end(logid)
+
+
 if __name__ == "__main__":  main()

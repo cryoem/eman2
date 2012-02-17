@@ -210,7 +210,7 @@ class EMPlot2DWidget(EMGLWidget):
 		else : dosym,symtype=0,0
 		self.pparm[key]=(color,doline,linetype,linewidth,dosym,symtype,symsize)
 				
-		if not isinstance(data[0],list) and not isinstance(data[0],tuple) and not isinstance(data[0],array):
+		if not isinstance(data[0],list) and not isinstance(data[0],tuple) and not isinstance(data[0],ndarray):
 			x_axis = arange(len(data))
 			rdata = [ x_axis,array(data) ]
 			self.data[key]= rdata
@@ -397,7 +397,10 @@ class EMPlot2DWidget(EMGLWidget):
 	def render(self):
 		init_glut()
 		
-		if not self.data : return
+		try: 
+			if self.data==None or len(self.data)==0 : return
+		except:
+			return
 		
 		render = False
 			
@@ -733,7 +736,6 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 	"""
 	def __init__(self):
 		self.datap = None
-		self.data = {}
 		EMPlot2DWidget.__init__(self)
 		self.setWindowIcon(QtGui.QIcon(QtGui.QPixmap(ploticon)))
 		self.setDataLabelsColor('#00ff00')
