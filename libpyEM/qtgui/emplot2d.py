@@ -736,6 +736,7 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 	"""
 	def __init__(self):
 		self.datap = None
+		self.data = None
 		EMPlot2DWidget.__init__(self)
 		self.setWindowIcon(QtGui.QIcon(QtGui.QPixmap(ploticon)))
 		self.setDataLabelsColor('#00ff00')

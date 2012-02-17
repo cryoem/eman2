@@ -880,7 +880,8 @@ class EMPopen(subprocess.Popen):
 				break
 				
 			# A HACK to prevent broken pipes(this may be a bit buggy, but it fixes an appaernt bug in subprocess module 
-			time.sleep(0.5)
+			# Some sort of syncronization issue
+			time.sleep(1)
 			 
 class EMAN2StatusBar(QtGui.QTextEdit):
 	"""

@@ -44,6 +44,16 @@ import re, os, glob
 from embrowser import EMBrowserWidget
 from empmtabwidgets import *
 
+class PMComboBox(QtGui.QComboBox):
+	""" Reimplment the QComboBox to remove wheel widget activation """
+	def __init__(self):
+		QtGui.QComboBox.__init__(self)
+		
+	def wheelEvent(self, event):
+		""" Ignore wheelevents is not poped up """
+		event.ignore()
+
+			
 class PMBaseWidget(QtGui.QWidget):
 	""" A base widget upon which all the other PM widgets are derived """
 	def __init__(self, name, mode="",returnNone=False):
@@ -452,7 +462,7 @@ class PMDirectoryWidget(PMBaseWidget):
 		self.dirbasename = dirbasename
 		gridbox = QtGui.QGridLayout()
 		label = QtGui.QLabel(name)
-		self.combobox = QtGui.QComboBox()
+		self.combobox = PMComboBox()
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.combobox, 0, 1)
 		self.setLayout(gridbox)
@@ -496,7 +506,7 @@ class PMComboWidget(PMBaseWidget):
 		PMBaseWidget.__init__(self, name, mode, returnNone=returnNone) 
 		gridbox = QtGui.QGridLayout()
 		label = QtGui.QLabel(name)
-		self.combobox = QtGui.QComboBox()
+		self.combobox = PMComboBox()
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.combobox, 0, 1)
 		self.setLayout(gridbox)
@@ -543,7 +553,7 @@ class PMComboParamsWidget(PMBaseWidget):
 		PMBaseWidget.__init__(self, name, mode, returnNone=returnNone) 
 		gridbox = QtGui.QGridLayout()
 		label = QtGui.QLabel(name)
-		self.combobox = QtGui.QComboBox()
+		self.combobox = PMComboBox()
 		plabel = QtGui.QLabel("params:")
 		self.params = QtGui.QLineEdit()
 		gridbox.addWidget(label, 0, 0)
@@ -608,7 +618,7 @@ class PMSymWidget(PMBaseWidget):
 		gridbox = QtGui.QGridLayout()
 		label = QtGui.QLabel(name)
 		label.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight)
-		self.combobox = QtGui.QComboBox()
+		self.combobox = PMComboBox()
 		self.symnumbox = PMIntEntryWidget("Symmetry Number", 0, mode, lrange=0)
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.combobox, 0, 1)
