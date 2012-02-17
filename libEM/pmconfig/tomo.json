@@ -43,6 +43,13 @@
     "CHILDREN": [] 
   },
   {
+    "ICON": "tomo_hunter",
+    "PROGRAM": "e2classaveragebysym.py",
+    "NAME": "Tomogram Alignment, Using Symmetry", 
+    "NOTELEVEL": "1",
+    "CHILDREN": [] 
+  },
+  {
     "ICON": "single_image_3d",
     "PROGRAM": "e2symsearch.py", 
     "NAME": "Align to Symmetry Axis",
