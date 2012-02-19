@@ -64,6 +64,7 @@ import weakref
 from pickle import dumps,loads
 import struct, math
 from numpy import *
+from valslider import *
 
 import matplotlib
 from matplotlib.backends.backend_agg import FigureCanvasAgg
@@ -214,11 +215,11 @@ class EMPlot2DWidget(EMGLWidget):
 			x_axis = arange(len(data))
 			rdata = [ x_axis,array(data) ]
 			self.data[key]= rdata
-			self.visibility[key] = True
+			self.visibility.setdefault(key,True)
 		else:
 			if data : 
 				self.data[key]=[array(i) for i in data]
-				self.visibility[key] = True
+				self.visibility.setdefault(key,True)
 			else : 
 				#del self.data[key] why del?
 				self.data.pop(key)
@@ -1119,15 +1120,15 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.slidey.setRange(-1,1)
 		gl.addWidget(self.slidey,1,1,Qt.AlignLeft)
 		
-		gl.addWidget(QtGui.QLabel("C Col:",self),2,0,Qt.AlignRight)
+		gl.addWidget(QtGui.QLabel("C Col:",self),0,2,Qt.AlignRight)
 		self.slidec=QtGui.QSpinBox(self)
 		self.slidec.setRange(-2,1)
-		gl.addWidget(self.slidec,2,1,Qt.AlignLeft)
+		gl.addWidget(self.slidec,0,3,Qt.AlignLeft)
 		
-		gl.addWidget(QtGui.QLabel("S Col:",self),3,0,Qt.AlignRight)
+		gl.addWidget(QtGui.QLabel("S Col:",self),1,2,Qt.AlignRight)
 		self.slides=QtGui.QSpinBox(self)
 		self.slides.setRange(-2,1)
-		gl.addWidget(self.slides,3,1,Qt.AlignLeft)
+		gl.addWidget(self.slides,1,3,Qt.AlignLeft)
 		vbl.addLayout(gl)
 
 		hbl2 = QtGui.QHBoxLayout()
@@ -1165,18 +1166,18 @@ class EMPlot2DInspector(QtGui.QWidget):
 		
 		hbl2=QtGui.QHBoxLayout()
 		
-		hbl2.addWidget(QtGui.QLabel("X:",self))
-		self.wxmin=QtGui.QLineEdit(self)
+		#hbl2.addWidget(QtGui.QLabel("X:",self))
+		#self.wxmin=QtGui.QLineEdit(self)
+		self.wxmin=ValBox(label="Xmin:")
 		hbl2.addWidget(self.wxmin)
-		hbl2.addWidget(QtGui.QLabel("-",self))
-		self.wxmax=QtGui.QLineEdit(self)
+		#hbl2.addWidget(QtGui.QLabel("-",self))
+		#self.wxmax=QtGui.QLineEdit(self)
+		self.wxmax=ValBox(label="Xmax:")
 		hbl2.addWidget(self.wxmax)
 		
-		hbl2.addWidget(QtGui.QLabel("Y:",self))
-		self.wymin=QtGui.QLineEdit(self)
+		self.wymin=ValBox(label="Ymin:")
 		hbl2.addWidget(self.wymin)
-		hbl2.addWidget(QtGui.QLabel("-",self))
-		self.wymax=QtGui.QLineEdit(self)
+		self.wymax=ValBox(label="Ymax:")
 		hbl2.addWidget(self.wymax)
 
 		self.wrescale=QtGui.QPushButton(self)
@@ -1186,18 +1187,14 @@ class EMPlot2DInspector(QtGui.QWidget):
 
 		hbl3=QtGui.QHBoxLayout()
 		
-		hbl3.addWidget(QtGui.QLabel("C:",self))
-		self.wcmin=QtGui.QLineEdit(self)
+		self.wcmin=ValBox(label="Cmin:")
 		hbl3.addWidget(self.wcmin)
-		hbl3.addWidget(QtGui.QLabel("-",self))
-		self.wcmax=QtGui.QLineEdit(self)
+		self.wcmax=ValBox(label="Cmax:")
 		hbl3.addWidget(self.wcmax)
 		
-		hbl3.addWidget(QtGui.QLabel("S:",self))
-		self.wsmin=QtGui.QLineEdit(self)
+		self.wsmin=ValBox(label="Smin:")
 		hbl3.addWidget(self.wsmin)
-		hbl3.addWidget(QtGui.QLabel("-",self))
-		self.wsmax=QtGui.QLineEdit(self)
+		self.wsmax=ValBox(label="Smax:")
 		hbl3.addWidget(self.wsmax)
 		vbl0.addLayout(hbl3)
 
@@ -1404,10 +1401,10 @@ class EMPlot2DInspector(QtGui.QWidget):
 	def newLimits(self,val=None):
 		if self.busy: return
 		try:
-			xmin=float(str(self.wxmin.text()))
-			xmax=float(str(self.wxmax.text()))
-			ymin=float(str(self.wymin.text()))
-			ymax=float(str(self.wymax.text()))
+			xmin=self.wxmin.getValue()
+			xmax=self.wxmax.getValue()
+			ymin=self.wymin.getValue()
+			ymax=self.wymax.getValue()
 			self.target().rescale(xmin,xmax,ymin,ymax,True)
 		except:
 			self.target().rescale(0,0,0,0)
@@ -1415,8 +1412,8 @@ class EMPlot2DInspector(QtGui.QWidget):
 	def newCLimits(self,val=None):
 		if self.busy: return
 		try:
-			cmin=float(str(self.wxmin.text()))
-			cmax=float(str(self.wxmax.text()))
+			cmin=self.wcmin.getValue()
+			cmax=self.wcmax.getValue()
 			self.target().recolor(cmin,cmax,True)
 		except:
 			self.target().recolor(0,0)
@@ -1424,8 +1421,8 @@ class EMPlot2DInspector(QtGui.QWidget):
 	def newSLimits(self,val=None):
 		if self.busy: return
 		try:
-			smin=float(str(self.wxmin.text()))
-			smax=float(str(self.wxmax.text()))
+			smin=self.wsmin.getValue()
+			smax=self.wsmax.getValue()
 			self.target().resize(smin,smax,True)
 		except:
 			self.target().resize(0,0)
@@ -1433,30 +1430,30 @@ class EMPlot2DInspector(QtGui.QWidget):
 	def update(self):
 		self.busy=1
 		try:
-			self.wxmin.setText(str(self.target().limits[0][0]))		
-			self.wxmax.setText(str(self.target().limits[0][1]))		
-			self.wymin.setText(str(self.target().limits[1][0]))		
-			self.wymax.setText(str(self.target().limits[1][1]))		
+			self.wxmin.setValue(self.target().limits[0][0])		
+			self.wxmax.setValue(self.target().limits[0][1])		
+			self.wymin.setValue(self.target().limits[1][0])		
+			self.wymax.setValue(self.target().limits[1][1])		
 		except:
-			self.wxmin.setText("Auto")
-			self.wxmax.setText("Auto")
-			self.wymin.setText("Auto")
-			self.wymax.setText("Auto")
+			self.wxmin.setValue(None)
+			self.wxmax.setValue(None)
+			self.wymin.setValue(None)
+			self.wymax.setValue(None)
 		self.busy=0
 	
 		try:
-			self.wcmin.setText(str(self.target().climits[0]))
-			self.wcmax.setText(str(self.target().climits[1]))
+			self.wcmin.setValue(self.target().climits[0])
+			self.wcmax.setValue(self.target().climits[1])
 		except:
-			self.wcmin.setText("Auto")
-			self.wcmax.setText("Auto")
+			self.wcmin.setValue(None)
+			self.wcmax.setValue(None)
 
 		try:
-			self.wsmin.setText(str(self.target().slimits[0]))
-			self.wsmax.setText(str(self.target().sdlimits[1]))
+			self.wsmin.setValue(self.target().slimits[0])
+			self.wsmax.setValue(self.target().sdlimits[1])
 		except:
-			self.wsmin.setText("Auto")
-			self.wsmax.setText("Auto")
+			self.wsmin.setValue(None)
+			self.wsmax.setValue(None)
 		
 	def autoScale(self):
 		self.target().rescale(0,0,0,0)

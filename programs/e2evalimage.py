@@ -214,6 +214,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.splotmode=QtGui.QComboBox(self)
 		self.splotmode.addItem("Bgsub and Fit")
 		self.splotmode.addItem("Fg and Bg")
+		self.splotmode.addItem("Bgsub, 45 deg slices")
 		self.splotmode.addItem("Fg, 45 deg slices")
 		self.gbl.addWidget(self.splotmode,4,1)
 
@@ -238,7 +239,11 @@ class GUIEvalImage(QtGui.QWidget):
 		self.sampcont=ValSlider(self,(0,100),"% AC",10.0,90)
 		if self.defaultac!=None : self.sampcont.setValue(self.defaultac)
 		self.vbl.addWidget(self.sampcont)
-		
+
+		self.sang45=ValSlider(self,(-22.5,22.5),"45 mode ang",0.0,90)
+		self.vbl.addWidget(self.sang45)
+
+
 #		self.sapix=ValSlider(self,(.2,10),"A/Pix:",2,90)
 #		self.vbl.addWidget(self.sapix)
 
@@ -291,6 +296,7 @@ class GUIEvalImage(QtGui.QWidget):
 		QtCore.QObject.connect(self.svoltage, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.scs, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.sboxsize, QtCore.SIGNAL("valueChanged"), self.newBox)
+		QtCore.QObject.connect(self.sang45, QtCore.SIGNAL("valueChanged"), self.recalc_real)
 		QtCore.QObject.connect(self.quality,QtCore.SIGNAL("activated(int)"),self.newQualityFactor)
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
 		QtCore.QObject.connect(self.scalcmode,QtCore.SIGNAL("currentIndexChanged(int)"),self.newCalcMode)
@@ -389,7 +395,7 @@ class GUIEvalImage(QtGui.QWidget):
 		# Now update the plots for the correct plot mode
 		if self.plotmode==0: 
 			bgsub=self.fft1d-bg1d
-			self.wplot.set_data((s,bgsub),"fg-bg",True,True,color=0)
+			self.wplot.set_data((s,bgsub),"fg-bg",quiet=True,color=0)
 			
 			fit=array(ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP))		# The fit curve
 			fit=fit*fit			# squared
@@ -409,10 +415,38 @@ class GUIEvalImage(QtGui.QWidget):
 			self.wplot.set_data((s,fit),"fit",color=1)
 			self.wplot.setAxisParms("s (1/"+ u"\u212B" + ")","Intensity (a.u)")
 		elif self.plotmode==1:
-			self.wplot.set_data((s[1:],self.fft1d[1:]),"fg",True,True,color=1)
+			self.wplot.set_data((s[1:],self.fft1d[1:]),"fg",quiet=True,color=1)
 			self.wplot.set_data((s[1:],bg1d[1:]),"bg",color=0)
 			self.wplot.setAxisParms("s (1/"+ u"\u212B" +")","Intensity (a.u)")
 		elif self.plotmode==2:
+			if self.fft1dang==None: self.recalc_real()
+			bgsub=self.fft1d-bg1d
+			bgsuba=[array(self.fft1dang[i])-bg1d for i in xrange(4)]
+			
+#			for i in xrange(4): bgsuba[i][0]=0
+			self.wplot.set_data((s,bgsub),"fg",quiet=True,color=0)
+			self.wplot.set_data((s[3:],bgsuba[0][3:]),"fg 0-45",quiet=True,color=2)
+			self.wplot.set_data((s[3:],bgsuba[1][3:]),"fg 45-90",quiet=True,color=3)
+			self.wplot.set_data((s[3:],bgsuba[2][3:]),"fg 90-135",quiet=True,color=4)
+			self.wplot.set_data((s[3:],bgsuba[3][3:]),"fg 135-180",quiet=True,color=6)
+			
+			fit=array(ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP))		# The fit curve
+			fit=fit*fit			# squared
+
+			# auto-amplitude for b-factor adjustment
+			rto,nrto=0,0
+			for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)): 
+				if bgsub[i]>0 : 
+					rto+=fit[i]
+					nrto+=fabs(bgsub[i])
+			if nrto==0 : rto=1.0
+			else : rto/=nrto
+			fit/=rto
+			
+			self.wplot.set_data((s,fit),"fit",color=1)
+			self.wplot.setAxisParms("s (1/"+ u"\u212B" + ")","Intensity (a.u)")
+
+		elif self.plotmode==3:
 			if self.fft1dang==None: self.recalc_real()
 			#bgsub=self.fft1d-bg1d
 			#bgsuba=[array(self.fft1dang[i])-bg1d for i in xrange(4)]
@@ -420,11 +454,11 @@ class GUIEvalImage(QtGui.QWidget):
 			fga=[array(self.fft1dang[i]) for i in xrange(4)]
 			
 			for i in xrange(4): fga[i][0]=0
-			self.wplot.set_data((s,fg),"fg",True,True,color=0)
+			self.wplot.set_data((s,fg),"fg",quiet=True,color=0)
 			self.wplot.set_data((s,fga[0]),"fg 0-45",quiet=True,color=2)
 			self.wplot.set_data((s,fga[1]),"fg 45-90",quiet=True,color=3)
 			self.wplot.set_data((s,fga[2]),"fg 90-135",quiet=True,color=4)
-			self.wplot.set_data((s,fga[3]),"fg 135-180",quiet=True,color=5)
+			self.wplot.set_data((s,fga[3]),"fg 135-180",quiet=True,color=6)
 			
 			#fit=array(ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP))		# The fit curve
 			#fit=fit*fit			# squared
@@ -441,7 +475,7 @@ class GUIEvalImage(QtGui.QWidget):
 			
 			#self.wplot.set_data((s,fit),"fit",color=1)
 			#self.wplot.setAxisParms("s (1/"+ u"\u212B" + ")","Intensity (a.u)")
-			
+
 
 	def timeOut(self):
 		if self.busy : return
@@ -557,8 +591,8 @@ class GUIEvalImage(QtGui.QWidget):
 			
 		self.fftbg=self.fft.process("math.nonconvex")
 		self.fft1d=self.fft.calc_radial_dist(self.fft.get_ysize()/2,0.0,1.0,1)	# note that this handles the ri2inten averages properly
-		if self.plotmode==2:
-			self.fft1dang=array(self.fft.calc_radial_dist(self.fft.get_ysize()/2,0.0,1.0,4,0.0,1))	# This form generates 4 sequential power spectra representing angular ranges
+		if self.plotmode==2 or self.plotmode==3:
+			self.fft1dang=array(self.fft.calc_radial_dist(self.fft.get_ysize()/2,0.0,1.0,4,self.sang45.getValue()*.017453292,1))	# This form generates 4 sequential power spectra representing angular ranges
 			self.fft1dang=self.fft1dang.reshape((4,self.fft.get_ysize()/2))
 		else:
 			self.fft1dang=None
@@ -575,7 +609,7 @@ class GUIEvalImage(QtGui.QWidget):
 		time.sleep(.2)			# help make sure update has a chance
 		self.procthread=None
 		dbquality = self.db[os.path.basename(self.curfilename)]
-		print dbquality
+#		print dbquality
 		if dbquality != None:
 			self.quality.setCurrentIndex(dbquality)
 		else:
@@ -652,6 +686,7 @@ class GUIEvalImage(QtGui.QWidget):
 
 	def newPlotMode(self,mode):
 		self.plotmode=mode
+		self.wplot.set_data(None,replace=True,quiet=True)	# clear the data so plots are properly redisplayed, but don't update the display
 		self.needredisp=True
 
 	def newQualityFactor(self, factor):

@@ -289,6 +289,7 @@ class ValBox(QtGui.QWidget):
 		self.value=value
 		self.ignore=0
 		self.intonly=0
+		self.digits=5		# digits of precision to display
 		
 		self.hboxlayout = QtGui.QHBoxLayout(self)
 		self.hboxlayout.setMargin(0)
@@ -349,7 +350,13 @@ class ValBox(QtGui.QWidget):
 		
 	def getRange(self): return self.rng
 
+	def setDigits(self,digits): 
+		self.digits=int(digits)
+
 	def setValue(self,val,quiet=0):
+		if val==None: 
+			self.text.setText("")
+			return
 		if val <= self.rng[0]:
 			self.rng[0] = val
 			#self.updates()
@@ -408,7 +415,8 @@ class ValBox(QtGui.QWidget):
 		
 	def updatet(self):
 		self.ignore=1
-		self.text.setText(str(self.value)[:self.text.width()/10-1])
+		fmt="%%1.%dg"%self.digits
+		self.text.setText((fmt%self.value))
 		self.ignore=0
 		
 	def updateboth(self):
