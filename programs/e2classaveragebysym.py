@@ -46,16 +46,17 @@ def main():
 	parser.add_argument("--input", dest="input", default=None,type=str, help="The name of input stack of volumes", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=0, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--output", dest="output", default=None,type=str, help="The name of the aligned and averaged output volume", guitype='strbox', filecheck=False, row=1, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--path",type=str,default=None,help="Path for the refinement, default=auto")
-	parser.add_argument("--sym", dest = "sym", default="c1", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos. For asymmetric reconstruction omit this option or specify c1.", guitype='symbox', row=3, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", returnNone=True, default="mask.sharp:outer_radius=-2", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=6, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--preprocess",type=str,help="A processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=5, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes. Default=0, no shrinking", guitype='shrinkbox', row=4, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--steps", dest="steps", type = int, default=10, help="Number of steps (for the MC). This should be a multiple of the number of cores used for parallization", guitype='intbox', row=4, col=1, rowspan=1, colspan=1)
-	parser.add_argument("--symmetrize", default=True, action="store_true", help="Symmetrize volume after alignment.", guitype='boolbox', row=7, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--applytoraw", default=True, action="store_true", help="Applies symxform to raw data.", guitype='boolbox', row=7, col=1, rowspan=1, colspan=1)
-	parser.add_argument("--cmp",type=str,help="The name of a 'cmp' to be used in comparing the symmtrized object to unsymmetrized", default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=8, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--averager",type=str,help="The type of averager used to produce the class average. Default=mean",default="mean", guitype='combobox', choicelist='dump_averagers_list()', row=9, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None, guitype='strbox', row=10, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--sym", dest = "sym", default="c1", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos. For asymmetric reconstruction omit this option or specify c1.", guitype='symbox', row=5, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", returnNone=True, default="mask.sharp:outer_radius=-2", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=7, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--preprocess",type=str,help="A processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=6, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes. Default=0, no shrinking", guitype='shrinkbox', row=3, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--clip", dest="clip", type = str, default=None, help="Clip before alignemnt. Same as proc2d", guitype='strbox', row=3, col=1, rowspan=1, colspan=1) 
+	parser.add_argument("--steps", dest="steps", type = int, default=10, help="Number of steps (for the MC). This should be a multiple of the number of cores used for parallization", guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--symmetrize", default=True, action="store_true", help="Symmetrize volume after alignment.", guitype='boolbox', row=8, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--applytoraw", default=True, action="store_true", help="Applies symxform to raw data.", guitype='boolbox', row=9, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--cmp",type=str,help="The name of a 'cmp' to be used in comparing the symmtrized object to unsymmetrized", default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=9, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--averager",type=str,help="The type of averager used to produce the class average. Default=mean",default="mean", guitype='combobox', choicelist='dump_averagers_list()', row=10, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None, guitype='strbox', row=11, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	(options, args) = parser.parse_args()
@@ -113,8 +114,18 @@ def main():
 		if options.preprocess != None:
 			model3d.process_inplace(options.preprocess[0],options.preprocess[1])
 			
+		# clipping
+		if options.clip != None:
+			clipcx=model3d.get_xsize()/2
+			clipcy=model3d.get_ysize()/2
+			clipcz=model3d.get_zsize()/2
+			clipx, clipy, clipz = options.clip.split(",")
+			clipx, clipy, clipz = int(clipx),int(clipy),int(clipz)
+			model3d = model3d.get_clip(Region(clipcx-clipx/2, clipcy-clipy/2, clipcz-clipz/2, clipx, clipy, clipz))
+			
 		# write out file	
 		model3d.write_image(inputfile)
+		#exit(1)
 		
 		command = "e2symsearch.py --input=%s --output=%s --sym=%s --shrink=%d --steps=%d --cmp=%s --path=''"%(inputfile, outputfile, options.sym, options.shrink, options.steps, options.cmp)
 		
@@ -128,7 +139,8 @@ def main():
 		if options.applytoraw:
 			rawoutputfile = "%s#rawaligned_ptcl_%d"%(options.path,i)
 			symxform = EMData(outputfile).get_attr('symxform')
-			raw3d = EMData(options.input, i).process_inplace('xform',{'transform':symxform})
+			raw3d = EMData(options.input, i)
+			raw3d.process_inplace('xform',{'transform':symxform})
 			raw3d.write_image(rawoutputfile)
 			
 		# Add the volume to the avarage
