@@ -53,7 +53,7 @@ def main():
 	parser.add_argument("--clip", dest="clip", type = str, default=None, help="Clip before alignemnt. Same as proc2d", guitype='strbox', row=3, col=1, rowspan=1, colspan=1) 
 	parser.add_argument("--steps", dest="steps", type = int, default=10, help="Number of steps (for the MC). This should be a multiple of the number of cores used for parallization", guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--symmetrize", default=True, action="store_true", help="Symmetrize volume after alignment.", guitype='boolbox', row=8, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--applytoraw", default=True, action="store_true", help="Applies symxform to raw data.", guitype='boolbox', row=9, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--applytoraw", default=True, action="store_true", help="Applies symxform to raw data.", guitype='boolbox', row=8, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--cmp",type=str,help="The name of a 'cmp' to be used in comparing the symmtrized object to unsymmetrized", default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=9, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--averager",type=str,help="The type of averager used to produce the class average. Default=mean",default="mean", guitype='combobox', choicelist='dump_averagers_list()', row=10, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None, guitype='strbox', row=11, col=0, rowspan=1, colspan=2)
