@@ -43,7 +43,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_header(name="alignheader", help='Options below this label are specific to e2refine', title="### e2classaveragebysym options ###", row=2, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--input", dest="input", default=None,type=str, help="The name of input stack of volumes", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=0, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--input", dest="input", default=None,type=str, help="The name of input stack of volumes", guitype='filebox', browser='EMSubTomosTable(withmodal=True,multiselect=False)', row=0, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--output", dest="output", default=None,type=str, help="The name of the aligned and averaged output volume", guitype='strbox', filecheck=False, row=1, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--path",type=str,default=None,help="Path for the refinement, default=auto")
 	parser.add_argument("--sym", dest = "sym", default="c1", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos. For asymmetric reconstruction omit this option or specify c1.", guitype='symbox', row=5, col=0, rowspan=1, colspan=2)
@@ -148,7 +148,8 @@ def main():
 		
 	# Now make the avearage
 	average = avgr.finish()
-	average.write_image(options.output)
+	#average.write_image(options.output)
+	average.write_image("%s/%s" % (options.path.replace('bdb:',''),options.output))
 		
 if __name__ == "__main__":
     main()
