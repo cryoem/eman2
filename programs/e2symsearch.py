@@ -96,8 +96,12 @@ def main():
 		output.set_attr('symxform', symxform)	# Obviously only HDF or BDB files will contain this metadata
 		if options.symmetrize:
 			output = output.process('xform.applysym',{'sym':options.sym})
-	
-	output.write_image(os.path.join(inimodeldir, options.output))
+			
+	if inimodeldir =='./' or inimodeldir.upper == './NONE': # That is to say no directory is wanted (--path='')
+		output.write_image(options.output)
+	else:
+		print "WHT%sZZZ"%inimodeldir
+		output.write_image(os.path.join(inimodeldir, options.output))
 	
 	E2end(logid)
 

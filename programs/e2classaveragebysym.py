@@ -47,12 +47,15 @@ def main():
 	parser.add_argument("--output", dest="output", default=None,type=str, help="The name of the aligned and averaged output volume", guitype='strbox', filecheck=False, row=1, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--path",type=str,default=None,help="Path for the refinement, default=auto")
 	parser.add_argument("--sym", dest = "sym", default="c1", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos. For asymmetric reconstruction omit this option or specify c1.", guitype='symbox', row=3, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", returnNone=True, default="mask.sharp:outer_radius=-2", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=6, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--preprocess",type=str,help="A processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=5, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes. Default=0, no shrinking", guitype='shrinkbox', row=4, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--steps", dest="steps", type = int, default=10, help="Number of steps (for the MC). This should be a multiple of the number of cores used for parallization", guitype='intbox', row=4, col=1, rowspan=1, colspan=1)
-	parser.add_argument("--symmetrize", default=True, action="store_true", help="Symmetrize volume after alignment.", guitype='boolbox', row=5, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--cmp",type=str,help="The name of a 'cmp' to be used in comparing the symmtrized object to unsymmetrized", default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=6, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--averager",type=str,help="The type of averager used to produce the class average. Default=mean",default="mean", guitype='combobox', choicelist='dump_averagers_list()', row=7, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None, guitype='strbox', row=8, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--symmetrize", default=True, action="store_true", help="Symmetrize volume after alignment.", guitype='boolbox', row=7, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--applytoraw", default=True, action="store_true", help="Applies symxform to raw data.", guitype='boolbox', row=7, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--cmp",type=str,help="The name of a 'cmp' to be used in comparing the symmtrized object to unsymmetrized", default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=8, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--averager",type=str,help="The type of averager used to produce the class average. Default=mean",default="mean", guitype='combobox', choicelist='dump_averagers_list()', row=9, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None, guitype='strbox', row=10, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	(options, args) = parser.parse_args()
@@ -68,7 +71,13 @@ def main():
 	if nx!=ny or ny!=nz :
 		print "ERROR, input volumes are not cubes"
 		sys.exit(1)
+		
+	if options.mask: 
+		options.mask=parsemodopt(options.mask)
 	
+	if options.preprocess: 
+		options.preprocess=parsemodopt(options.preprocess)
+		
 	# get numbered path
 	if options.path and ("/" in options.path or "#" in options.path) :
 		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
@@ -83,14 +92,32 @@ def main():
 	# Get the averager
 	avgr=Averagers.get(options.averager[0], options.averager[1])
 	
+	# generate the mask
+	mask=EMData(nx,ny,nz)
+	mask.to_one()
+	if options.mask != None:
+		print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
+		mask.process_inplace(options.mask[0],options.mask[1])
+			
 	# Align each particle to its symmetry axis
 	for i in xrange(EMUtil.get_image_count(options.input)):
 		# Copy image
 		inputfile = "%s#ptcl_to_align_%d"%(options.path,i)
 		outputfile = "%s#aligned_ptcl_%d"%(options.path,i)
-		EMData(options.input, i).write_image(inputfile)
+		model3d = EMData(options.input, i)
 		
-		command = "e2symsearch.py --input=%s --output=%s --sym=%s --shrink%d --steps%d --cmp%s"%(inputfile, outputfile, options.sym, options.shrink, options.cmp)
+		# apply mask if desired
+		model3d.mult(mask)
+		
+		# preprocess
+		if options.preprocess != None:
+			model3d.process_inplace(options.preprocess[0],options.preprocess[1])
+			
+		# write out file	
+		model3d.write_image(inputfile)
+		
+		command = "e2symsearch.py --input=%s --output=%s --sym=%s --shrink=%d --steps=%d --cmp=%s --path=''"%(inputfile, outputfile, options.sym, options.shrink, options.steps, options.cmp)
+		
 		if options.symmetrize:
 			command += " --symmetrize"
 		if options.parallel:
@@ -98,12 +125,18 @@ def main():
 		launch_childprocess(command)
 		db_remove_dict(inputfile)
 		
+		if options.applytoraw:
+			rawoutputfile = "%s#rawaligned_ptcl_%d"%(options.path,i)
+			symxform = EMData(outputfile).get_attr('symxform')
+			raw3d = EMData(options.input, i).process_inplace('xform',{'transform':symxform})
+			raw3d.write_image(rawoutputfile)
+			
 		# Add the volume to the avarage
-		avgr.add_image(EMData.read_image(outputfile))
+		avgr.add_image(EMData(outputfile))
 		
 	# Now make the avearage
 	average = avgr.finish()
-	average.write_image(options.outout)
+	average.write_image(options.output)
 		
 if __name__ == "__main__":
     main()
