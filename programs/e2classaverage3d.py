@@ -85,7 +85,6 @@ def main():
 	parser.add_argument("--ralign",type=str,help="This is the second stage aligner used to refine the first alignment. Default is refine.3d, specify 'None' to disable", default="refine_3d", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine.*3d\')', row=14, col=0, rowspan=1, colspan=3, nosharedb=True, mode='alignment,breaksym[None]')
 	parser.add_argument("--raligncmp",type=str,help="The comparator used by the second stage aligner. Default is the internal tomographic ccc",default="ccc.tomo", guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=15, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
 	parser.add_argument("--averager",type=str,help="The type of averager used to produce the class average. Default=mean",default="mean")
-	#parser.add_argument("--cmp",type=str,dest="cmpr",help="The comparitor used to generate quality scores for the purpose of particle exclusion in classes, strongly linked to the keep argument.", default="ccc")
 	parser.add_argument("--keep",type=float,help="The fraction of particles to keep in each class.",default=1.0, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode='alignment,breaksym')
 	parser.add_argument("--inixforms",type=str,help="directory containing a dict of transform to apply before reference generation", default="", guitype='dirbox', dirbasename='spt_', row=7, col=0,rowspan=1, colspan=2, nosharedb=True, mode='breaksym')
 	parser.add_argument("--breaksym",action="store_true", help="Break symmetry. Do not apply symmetrization after averaging", default=False, guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, nosharedb=True, mode=',breaksym[True]')
@@ -107,7 +106,7 @@ def main():
 	#parser.add_argument("--resample",action="store_true",help="If set, will perform bootstrap resampling on the particle data for use in making variance maps.",default=False)
 	#parser.add_argument("--odd", default=False, help="Used by EMAN2 when running eotests. Includes only odd numbered particles in class averages.", action="store_true")
 	#parser.add_argument("--even", default=False, help="Used by EMAN2 when running eotests. Includes only even numbered particles in class averages.", action="store_true")
-	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:1", guitype='strbox', row=17, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
@@ -349,18 +348,18 @@ def main():
 		if options.verbose: 
 			print "Preparing final average"
 		
-		if type(ref) is list:
-			for ir in range(len(ref)):
-				ref[ir]['origin_x']=0
-				ref[ir]['origin_y']=0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
-				ref[ir]['origin_z']=0
-				ref.write_image("%s/%s" % (options.path.replace('bdb:',''),options.output),ic)
-		else:									
-			ref['origin_x']=0
-			ref['origin_y']=0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
-			ref['origin_z']=0
-		
-			ref.write_image("%s/%s" % (options.path.replace('bdb:',''),options.output.replace('.','_class' + str(ic).zfill(len(str(ncls))))),0)
+		#if type(ref) is list:
+		#	for ir in range(len(ref)):
+		#		ref[ir]['origin_x']=0
+		#		ref[ir]['origin_y']=0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
+		#		ref[ir]['origin_z']=0
+		#		ref.write_image("%s/%s" % (options.path.replace('bdb:',''),options.output),ic)
+		#else:									
+		#	ref['origin_x']=0
+		#	ref['origin_y']=0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
+		#	ref['origin_z']=0
+		#
+		#	ref.write_image("%s/%s" % (options.path.replace('bdb:',''),options.output.replace('.','_class' + str(ic).zfill(len(str(ncls))))),0)
 
 	if options.inixforms: 
 		db_close_dict(db)
