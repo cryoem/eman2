@@ -13,7 +13,7 @@ from EMAN2db import db_open_dict
 import pyemtbx.options
 import os
 import sys
-
+from subprocess import *
 
 IN_META_FILE = "ptcl_meta_data"
 OUTFILE = "diff.txt"
@@ -41,7 +41,9 @@ dir = args[0]
 in_img = EMData(dir + "/3DMapInOut.mrc")
 fa_out_img = EMData(dir + "/OutputMap.mrc")
 a = fa_out_img.process("normalize.toimage", {"to": in_img, "ignore_zero":1})
-a.write_image(dir + "/OutputMap_Normalized.mrc")
+a.write_image(dir + "/OutputMap_Temp.mrc")
+s = "e2proc3d.py " + dir + "/OutputMap_Temp.mrc " + dir + "/OutputMap_Normalized --icos2to5"
+call(s, shell=True) 
 
 
 OUT_META_FILE = "OutParam"

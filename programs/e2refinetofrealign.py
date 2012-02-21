@@ -123,9 +123,10 @@ cls_dir = dir + "#cls_result_" + high                               # CLS result
 
 s = "e2proc2d.py " + inpt + " " + E2FA + "/particlestack.mrc --twod2threed --process=normalize.edgemean"
 call(s, shell=True)
-s = "e2proc2d.py " + dir + "#threed_filt_" + high + " " + E2FA + "/3DMapInOut.mrc --threed2threed --process=normalize.edgemean"
+s = "e2proc2d.py " + dir + "#threed_filt_" + high + " " + E2FA + "/3DMapInOutTemp.mrc --threed2threed --process=normalize.edgemean"
 call(s, shell=True)
-
+s = "e2proc3d.py " + E2FA + "/3DMapInOutTemp.mrc " + E2FA + "/3DMapInOut.mrc --icos5to2"
+call(s, shell=True)
 # Retrieve the pixel values of each image in the CLS stack.
 for i in range(CLS):
    img = EMData(cls_dir, i)
