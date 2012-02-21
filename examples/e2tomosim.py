@@ -76,6 +76,8 @@ def main():
 	parser.add_option("--tiltrange", type="int",default=60,help="""Maximum angular value at which the highest tilt picture will be simulated. Projections will be simulated from -tiltrange to +titlrange. 
 									For example, if simulating a tilt series collected from -60 to 60 degrees, enter a --tiltrange value of 60. 
 									Note that this parameter will determine the size of the missing wedge.""")
+	parser.add_option("--applyctf", action="store_true",default=False,help="If on, it applies ctf to the projections in the simulated tilt series based on defocus, cs, and voltage parameters.")
+
 	parser.add_option("--defocus", type="int",default=3,help="Intended defocus at the tilt axis (in microns) for the simulated tilt series.")
 	parser.add_option("--voltage", type="int",default=200,help="Voltage of the microscope, used to simulate the ctf added to the subtomograms.")
 	parser.add_option("--cs", type="int",default=2,help="Cs of the microscope, used to simulate the ctf added to the subtomograms.")
@@ -90,6 +92,7 @@ def main():
 	parser.add_option("--pad", action="store_true",default=False,help="""If on, it will double the box size of the model for 3D reconstruction purposes, but the final
 									simulated tilt series and subtomograms will be clipped back to the original unpadded box size.""")								
 	parser.add_option("--noiseproc",type="string",help="A noise processor to be applied to the individual projections of the simulated tilt series",default=None)
+	
 	parser.add_option("--snr",type="int",help="Weighing factor for gaussian noise added to the image",default=10)
 
 	(options, args) = parser.parse_args()	
@@ -278,33 +281,34 @@ def subtomosim(options,ptcls,tag):
 			prj = ptcls[i].project("standard",t)
 			prj.set_attr('xform.projection',t)
 			
+			prj.process_inplace('normalize')
+			
 			if options.saveprjs:
 				prj.write_image( stackname.replace('.hdf', '_prjs' + '_ptcl' + str(i).zfill(len(str(nslices))) + '.hdf') , j)					#Write projections stack for particle i
 			raw_projections.append(prj)
-			
-			ctf = EMAN2Ctf()
-			ctf.from_dict({'defocus':options.defocus,'bfactor':100,'ampcont':0.05,'apix':apix,'voltage':options.voltage,'cs':options.cs})
-			
+					
 			prj_fft = prj.do_fft()
-			prj_ctf = prj_fft.copy()
 			
-			ctf.compute_2d_complex(prj_ctf,Ctf.CtfType.CTF_AMP)
-			prj_ctf.mult(-1)								#Reverse the contrast, as in "authentic" cryoEM data		
+			prj_fft.mult(-1)								#Reverse the contrast, as in "authentic" cryoEM data		
 			
-			prj_fft.mult(prj_ctf)
+			if options.applyctf:
+				ctf = EMAN2Ctf()
+				ctf.from_dict({'defocus':options.defocus,'bfactor':100,'ampcont':0.05,'apix':apix,'voltage':options.voltage,'cs':options.cs})	
+				prj_ctf = prj_fft.copy()	
+				ctf.compute_2d_complex(prj_ctf,Ctf.CtfType.CTF_AMP)
+				prj_fft.mult(prj_ctf)
 			
 			prj_r = prj_fft.do_ift()							#Go back to real space
-			
-			#prj_n = prj.process('math.addnoise',{'noise':10})
-			
+						
 			if options.noiseproc:
-			
-				prj_r.process_inplace(options.noiseproc[0],options.noiseproc[1])
+				#prj_n = prj.process('math.addnoise',{'noise':10})
+
+				#prj_r.process_inplace(options.noiseproc[0],options.noiseproc[1])
 				
-				#noise = EMData(prj_r['nx'],prj_r['ny'])
-				#noise.to_one()
-				#noise.process_inplace(options.noiseproc[0],options.noiseproc[1])
-				#prj_n = prj_r + (noise * options.snr)
+				noise = EMData(prj_r['nx'],prj_r['ny'])
+				noise.process_inplace(options.noiseproc[0],options.noiseproc[1])
+				noise.process_inplace('normalize')
+				prj_r = prj_r + (noise * options.snr)
 			
 			
 			ctfed_projections.append(prj_r)		
