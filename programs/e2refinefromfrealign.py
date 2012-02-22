@@ -15,6 +15,7 @@ import os
 import sys
 from subprocess import *
 
+
 IN_META_FILE = "ptcl_meta_data"
 OUTFILE = "diff.txt"
 progname = os.path.basename(sys.argv[0])
@@ -26,7 +27,7 @@ parser = EMArgumentParser(usage,version=EMANVERSION)
 
 parser.add_pos_argument(name="frealigndir",help="The Frealign directory to use.", default="", guitype='dirbox', dirbasename='frealign', positional=True, row=0, col=0,rowspan=1, colspan=3)
 parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-
+parser.add_argument("--icos", action="store_true", help="Icosahedral Symmetry")
 (options, args) = parser.parse_args()
 
 if len(args) != 1:
@@ -41,10 +42,13 @@ dir = args[0]
 in_img = EMData(dir + "/3DMapInOut.mrc")
 fa_out_img = EMData(dir + "/OutputMap.mrc")
 a = fa_out_img.process("normalize.toimage", {"to": in_img, "ignore_zero":1})
-a.write_image(dir + "/OutputMap_Temp.mrc")
-s = "e2proc3d.py " + dir + "/OutputMap_Temp.mrc " + dir + "/OutputMap_Normalized --icos2to5"
-call(s, shell=True) 
+a.write_image(dir + "/OutputMap_Normalized.mrc")
 
+for option1 in optionList:
+	if option1 == "icos":
+		s1 = "e2proc3d.py " + dir + "/OutputMap_Normalized.mrc " + dir + "/OutputMap_Normalized --icos2to5"
+		call(s,shell=True)
+		
 
 OUT_META_FILE = "OutParam"
 FINAL_META_FILE = OUT_META_FILE
