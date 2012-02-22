@@ -27,7 +27,8 @@ parser = EMArgumentParser(usage,version=EMANVERSION)
 
 parser.add_pos_argument(name="frealigndir",help="The Frealign directory to use.", default="", guitype='dirbox', dirbasename='frealign', positional=True, row=0, col=0,rowspan=1, colspan=3)
 parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-parser.add_argument("--icos", action="store_true", help="Icosahedral Symmetry")
+parser.add_argument("--icosahedral_symmetry", action="store_true", help="Does it have icosahedral symmetry?", default=False, guitype='boolbox', row=1, col=0, rowspan=1, colspan=1)
+#row=2, col=0, rowspan=1, colspan=1)
 (options, args) = parser.parse_args()
 
 if len(args) != 1:
@@ -45,7 +46,7 @@ a = fa_out_img.process("normalize.toimage", {"to": in_img, "ignore_zero":1})
 a.write_image(dir + "/OutputMap_Normalized.mrc")
 
 for option1 in optionList:
-	if option1 == "icos":
+	if option1 == "icosahedral_symmetry":
 		s1 = "e2proc3d.py " + dir + "/OutputMap_Normalized.mrc " + dir + "/OutputMap_Normalized --icos2to5"
 		call(s,shell=True)
 		

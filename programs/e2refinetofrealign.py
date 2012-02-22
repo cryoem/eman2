@@ -121,11 +121,10 @@ for i in range(num_images):
 nx = db[0]['nx']
 cls_dir = dir + "#cls_result_" + high                               # CLS results. 
 
-s = "e2proc2d.py " + inpt + " " + E2FA + "/particlestack.mrc --twod2threed --process=normalize.edgemean"
+s = "e2proc2d.py " + inpt + " " + E2FA + "/particlestack.mrc --twod2threed --process=normalize.edgemean --verbose=0"
 call(s, shell=True)
-s = "e2proc3d.py " + dir + "#threed_filt_" + high + " " + E2FA + "/3DMapInOut.mrc --process=normalize.edgemean"
+s = "e2proc3d.py " + dir + "#threed_filt_" + high + " " + E2FA + "/3DMapInOut.mrc --process=normalize.edgemean --verbose=0"
 call(s, shell=True)
-
 # Retrieve the pixel values of each image in the CLS stack.
 for i in range(CLS):
    img = EMData(cls_dir, i)
@@ -134,7 +133,6 @@ for i in range(CLS):
    for j in range(ny):
        ptcl[j] = img[SEP-1,j]        
    ptcl_data[i] = ptcl
-
 
 # Write output file of particle meta data for FreAlign into the E2FA subdirectory created above
 f = open(OUTFILE1,'w')
@@ -235,6 +233,7 @@ elif sym[0] == 'd':
 elif sym[0] == 'i':
    ASYM = 'I'
    s1 = "e2proc3d.py " + E2FA + "/3DMapInOut.mrc " + E2FA + "/3DMapInOut.mrc --icos5to2"
+   call(s1,shell=True)
 elif sym[0] == 'o':
    ASYM = 'O'
 elif sym[0] == 't':
