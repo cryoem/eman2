@@ -234,7 +234,8 @@ def main():
 	if not "outtype" in optionlist:
 		optionlist.append("outtype")
 
-	print "%d images, processing %d-%d......"%(nimg, n0, n1)
+	if options.verbose>0:
+		print "%d images, processing %d-%d......"%(nimg, n0, n1)
 	#print 'start.....'
 	img_index = n0
 	for data in datlst:
