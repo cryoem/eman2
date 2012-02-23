@@ -59,6 +59,7 @@ def main():
 """
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+	parser.add_argument("--order", action="store_true", help="Two arguments are required: name of input stack and desired name of output stack. The output stack is the input stack sorted by similarity in terms of cross-correlation coefficent.", default=False)
 	parser.add_argument("--phase_flip", action="store_true", help="Phase flip the input stack", default=False)
 	parser.add_argument("--makedb", metavar="param1=value1:param2=value2", type=str,
 					action="append",  help="One argument is required: name of key with which the database will be created. Fill in database with parameters specified as follows: --makedb param1=value1:param2=value2, e.g. 'gauss_width'=1.0:'pixel_input'=5.2:'pixel_output'=5.2:'thr_low'=1.0")
@@ -66,7 +67,46 @@ def main():
 					action="append", help="Three arguments are required: name of input structure from which to generate projections, desired name of output projection stack, and desired prefix for micrographs (e.g. if prefix is 'mic', then micrographs mic0.hdf, mic1.hdf etc will be generated). Optional arguments specifying format, apix, box size and whether to add CTF effects can be entered as follows after --generate_projections: format='bdb':apix=5.2:CTF=True:boxsize=100, or format='hdf', etc., where format is bdb or hdf, apix (pixel size) is a float, CTF is True or False, and boxsize denotes the dimension of the box (assumed to be a square). If an optional parameter is not specified, it will default as follows: format='bdb', apix=2.5, CTF=False, boxsize=64.")
 	(options, args) = parser.parse_args()
 	
-	
+	if options.order:
+		nargs = len(args)
+		if nargs != 2:
+			print "must provide name of input and output file!"
+			return
+		
+		from utilities import get_params2D, model_circle
+		from fundamentals import rot_shift2D
+		from statistics import ccc
+		stack = args[0]
+		new_stack = args[1]
+		print "input stack: ", stack
+		print "output stack: ", new_stack
+		
+		d = EMData.read_images(stack)
+		for i in xrange(len(d)):
+       			alpha, sx, sy, mirror, scale = get_params2D(d[i])
+        		d[i] = rot_shift2D(d[i], alpha, sx, sy, mirror)
+		m = model_circle(30, 64, 64)
+
+		init = 0
+		temp = d[init].copy()
+		temp.write_image(new_stack, 0)
+		del d[init]
+		k = 1
+		while len(d) > 1:
+        		maxcit = -111.
+        		for i in xrange(len(d)):
+                		cuc = ccc(d[i], temp, m)
+                		if cuc > maxcit:
+                        		maxcit = cuc
+                        		qi = i
+        		#print k, maxcit
+        		temp = d[qi].copy()
+        		del d[qi]
+        		temp.write_image(new_stack, k)
+        		k += 1
+
+		d[0].write_image(new_stack, k)
+			
 	if options.phase_flip:
 		nargs = len(args)
 		if nargs != 2:
