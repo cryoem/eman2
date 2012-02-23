@@ -77,7 +77,13 @@ def main():
 	parser.add_argument("--sym", dest = "sym", default=None, help = "Symmetry to impose - choices are: c<n>, d<n>, h<n>, tet, oct, icos", guitype='symbox', row=9, col=1, rowspan=1, colspan=2, mode='alignment,breaksym')
 	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", returnNone=True, default="mask.sharp:outer_radius=-2", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=11, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	parser.add_argument("--normproc",type=str,help="Normalization processor applied to particles before alignment. Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'", default="normalize.mask")
-	parser.add_argument("--preprocess",type=str,help="A processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	
+	parser.add_argument("--preprocess",type=str,help="Any processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	
+	parser.add_argument("--lowpass",type=str,help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=17, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+
+	parser.add_argument("--highpass",type=str,help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=18, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	
 	parser.add_argument("--ncoarse", type=int, help="Deprecated", default=None)
 	parser.add_argument("--npeakstorefine", type=int, help="The number of best coarse alignments to refine in search of the best final alignment. Default=4.", default=4, guitype='intbox', row=9, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym[1]')
 	parser.add_argument("--align",type=str,help="This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=10:delta=15:dphi=15, specify 'None' to disable", returnNone=True, default="rotate_translate_3d:search=10:delta=15:dphi=15", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'3d\')', row=12, col=0, rowspan=1, colspan=3, nosharedb=True, mode="alignment,breaksym['rotate_symmetry_3d']")
@@ -141,7 +147,13 @@ def main():
 	
 	if options.preprocess: 
 		options.preprocess=parsemodopt(options.preprocess)
+		
+	if options.lowpass: 
+		options.lowpass=parsemodopt(options.lowpass)
 	
+	if options.highpass: 
+		options.highpass=parsemodopt(options.highpass)
+		
 	if options.postprocess: 
 		options.postprocess=parsemodopt(options.postprocess)
 
@@ -268,7 +280,7 @@ def main():
 					else:
 						transform = None
 					# Unfortunately this tree structure limits the parallelism to the number of pairs at the current level :^(
-					task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options.mask,options.normproc,options.preprocess,
+					task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options.mask,options.normproc,options.preprocess,options.lowpass,options,highpass,
 						options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,transform,options.verbose-1,options.randomizewedge)
 					tasks.append(task)
 
@@ -303,7 +315,7 @@ def main():
 					transform = db["tomo_%04d"%j]
 				else:
 					transform = None
-				task=Align3DTask(ref,["cache",options.input,p],p,"Ptcl %d in iter %d"%(p,it),options.mask,options.normproc,options.preprocess,
+				task=Align3DTask(ref,["cache",options.input,p],p,"Ptcl %d in iter %d"%(p,it),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
 					options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,transform,options.verbose-1,options.randomizewedge)
 				tasks.append(task)
 			
@@ -348,18 +360,24 @@ def main():
 		if options.verbose: 
 			print "Preparing final average"
 		
-		#if type(ref) is list:
-		#	for ir in range(len(ref)):
-		#		ref[ir]['origin_x']=0
-		#		ref[ir]['origin_y']=0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
-		#		ref[ir]['origin_z']=0
-		#		ref.write_image("%s/%s" % (options.path.replace('bdb:',''),options.output),ic)
-		#else:									
-		#	ref['origin_x']=0
-		#	ref['origin_y']=0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
-		#	ref['origin_z']=0
-		#
-		#	ref.write_image("%s/%s" % (options.path.replace('bdb:',''),options.output.replace('.','_class' + str(ic).zfill(len(str(ncls))))),0)
+		if type(ref) is list:
+			print "You supplied a reference file that has more than one reference in it! EXITING."
+			sys.exit()
+		
+		else:									
+			ref['origin_x']=0
+			ref['origin_y']=0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
+			ref['origin_z']=0
+			
+			outdir = options.path
+			if 'bdb:' in options.path:
+				outdir = options.path.replace('bdb:','')
+			if outdir[-1] != '/':
+				outdir += '/'
+			finaloutput = outdir + options.output
+			
+			print "Final output is", finaloutput
+			ref.write_image(finaloutput,0)
 
 	if options.inixforms: 
 		db_close_dict(db)
@@ -609,7 +627,7 @@ def get_results(etc,tids,verbose):
 class Align3DTask(EMTask):
 	"""This is a task object for the parallelism system. It is responsible for aligning one 3-D volume to another, with a variety of options"""
 
-	def __init__(self,fixedimage,image,ptcl,label,mask,normproc,preprocess,npeakstorefine,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,transform,verbose,randomizewedge):
+	def __init__(self,fixedimage,image,ptcl,label,mask,normproc,preprocess,lowpass,highpass,npeakstorefine,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,transform,verbose,randomizewedge):
 		"""fixedimage and image may be actual EMData objects, or ["cache",path,number]
 	label is a descriptive string, not actually used in processing
 	ptcl is not used in executing the task, but is for reference
@@ -619,7 +637,7 @@ class Align3DTask(EMTask):
 		data={"fixedimage":fixedimage,"image":image}
 		EMTask.__init__(self,"ClassAv3d",data,{},"")
 
-		self.options={"ptcl":ptcl,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"npeakstorefine":npeakstorefine,"align":align,"aligncmp":aligncmp,"ralign":ralign,"raligncmp":raligncmp,"shrink":shrink,"shrinkrefine":shrinkrefine,"transform":transform,"verbose":verbose,"randomizewedge":randomizewedge}
+		self.options={"ptcl":ptcl,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"lowpass":lowpass,"highpass":highpass,"npeakstorefine":npeakstorefine,"align":align,"aligncmp":aligncmp,"ralign":ralign,"raligncmp":raligncmp,"shrink":shrink,"shrinkrefine":shrinkrefine,"transform":transform,"verbose":verbose,"randomizewedge":randomizewedge}
 	
 	def execute(self,callback=None):
 		"""This aligns one volume to a reference and returns the alignment parameters"""
@@ -661,6 +679,16 @@ class Align3DTask(EMTask):
 		if options["preprocess"] != None:
 			fixedimage.process_inplace(options["preprocess"][0],options["preprocess"][1])
 			image.process_inplace(options["preprocess"][0],options["preprocess"][1])
+			
+		# lowpass
+		if options["lowpass"] != None:
+			fixedimage.process_inplace(options["lowpass"][0],options["lowpass"][1])
+			image.process_inplace(options["lowpass"][0],options["lowpass"][1])
+			
+		# highpass
+		if options["highpass"] != None:
+			fixedimage.process_inplace(options["highpass"][0],options["highpass"][1])
+			image.process_inplace(options["highpass"][0],options["highpass"][1])
 		
 		# Shrinking both for initial alignment and reference
 		if options["shrink"]!=None and options["shrink"]>1 :
