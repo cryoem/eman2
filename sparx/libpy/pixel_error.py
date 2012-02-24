@@ -661,12 +661,12 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	ps_lp = results[:-1]
 	val = results[-1]
 	if val < 0.0:
-		# This will have in some rare cases, I am still not sure how it happens. My guess is 
-		# it's due to rounding errors, but it could be anything.
-		print "Strange results"
-		print "args =", args
-		print "ali_params_cleaned_list =", ali_params_cleaned_list
-		print "results = ", results
+		# This will happen in some rare cases, it should be due to rounding errors, 
+		# because all results show the val is about 1e-13.
+		#print "Strange results"
+		#print "args =", args
+		#print "ali_params_cleaned_list =", ali_params_cleaned_list
+		#print "results = ", results
 		val = 0.0
 	del ali_params_cleaned_list	
 	
