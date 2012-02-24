@@ -12479,6 +12479,10 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		ERROR("main_iter should be a multiple of iter_reali, please reset them and restart and program", "iter_isac", 1, myid)
 	mpi_barrier(MPI_COMM_WORLD)
 
+	if generation == 0:
+		ERROR("Generation should begin from 1, please reset it and restart and program", "iter_isac", 1, myid)
+	mpi_barrier(MPI_COMM_WORLD)
+
 	ali_params_dir = "ali_params_generation_%d"%generation
 	if os.path.exists(ali_params_dir):  
 		ERROR('Output directory for alignment parameters exists, please either change its name or delete it and restart the program', "iter_isac", 1, myid)
@@ -12496,7 +12500,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		print '*            Alignment and Clustering of 2D Transmission Electron Microscope Images",              *' 
 		print '*            Structure 20, 237-247, February 8, 2012.                                              *'
 		print "*                                                                                                  *"
-		print "* Last updated: 01/30/12                                                                           *"
+		print "* Last updated: 02/24/12                                                                           *"
 		print "****************************************************************************************************"            
 		print "*                                       Generation %3d                                             *"%(generation)
 		print "****************************************************************************************************"
@@ -12517,11 +12521,11 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	if myid == main_node:
 		alldata = EMData.read_images(stack)
 		ndata = len(alldata)
+		# alldata_n stores the original index of the particle (i.e., the index before generation 1)  
 		alldata_n = [0]*ndata
-		try:
-			alldata_n[0] = alldata[0].get_attr('data_n')
-			for i in xrange(1, ndata): alldata_n[i] = alldata[i].get_attr('data_n')
-		except:
+		if generation > 1:
+			for i in xrange(ndata): alldata_n[i] = alldata[i].get_attr('data_n')
+		else:
 			for i in xrange(ndata): alldata_n[i] = i
 		nx = alldata[0].get_xsize()
 	else:
