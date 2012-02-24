@@ -12521,7 +12521,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	if myid == main_node:
 		alldata = EMData.read_images(stack)
 		ndata = len(alldata)
-		# alldata_n stores the original index of the particle (i.e., the index before generation 1)  
+		# alldata_n stores the original index of the particle (i.e., the index before running Generation 1)  
 		alldata_n = [0]*ndata
 		if generation > 1:
 			for i in xrange(ndata): alldata_n[i] = alldata[i].get_attr('data_n')
