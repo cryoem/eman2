@@ -43,7 +43,7 @@ import time
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] input1 input2 ...
+	usage = """e2ptclzvssim.py [options] input1 input2 ...
 	
 Reads a full similarity matrix. Computes a Z score for each particle and plots vs actual
 similarity score.
@@ -68,7 +68,8 @@ as not all elements are computed.
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-#	parser.add_option("--input",type="string",help="Similarity matrix to analyze",default=None)
+#	parser.add_option("--input",type=str,help="Similarity matrix to analyze",default=None)
+	parser.add_argument("--refine",type=str,default=None,help="Automatically get parameters for a refine directory")
 	parser.add_argument("--output",type=str,help="Output text file",default="zvssim.txt")
 	parser.add_argument("--refs",type=str,help="Reference images from the similarity matrix (projections)",default=None)
 	parser.add_argument("--inimgs",type=str,help="Input image file",default=None)
@@ -77,9 +78,24 @@ as not all elements are computed.
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	(options, args) = parser.parse_args()
+
+		
+	if options.refine!=None:
+		if len(args)<1 :
+			args.append("bdb:%s#"%options.refine+sorted([ i for i in db_list_dicts("bdb:"+options.refine) if "simmx" in i and len(i)==8])[-1])
+			print args[0]
+		options.refs="bdb:%s#projections_%s"%(options.refine,args[0][-2:])
+		print "refs: ",options.refs
+
+		db=db_open_dict("bdb:%s#register"%options.refine,True)
+		options.inimgs=db["cmd_dict"]["input"]
+		print "inimgs: ",options.inimgs
+
+		
 	if len(args)<1 : 
 		print "Please specify input files"
 		sys.exit(1)
+
 
 	tmp=EMData(args[0],0,True)		# header info from first input, assume others are same
 	nx=tmp["nx"]
@@ -116,8 +132,10 @@ as not all elements are computed.
 		Ns=[]		# classified best class
 		for cm in args:
 			im=EMData(cm,0,False,Region(0,y,nx,1))
-	
-			Z=(im["mean"]-im["minimum"])/im["sigma"]
+			im2=im.copy()										# here we make a copy with the max value-> zero. Used with 2-stage classification to get a better sigma
+			im2.add(-im2["maximum"])
+			try : Z=(im["mean"]-im["minimum"])/im2["sigma_nonzero"]
+			except: Z=0
 			Zs.append(Z)
 			Q=im["minimum"]
 			Qs.append(Q)

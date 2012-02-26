@@ -325,7 +325,7 @@ class ValBox(QtGui.QWidget):
 		sizePolicy.setVerticalStretch(0)
 		sizePolicy.setHeightForWidth(self.text.sizePolicy().hasHeightForWidth())
 		self.text.setSizePolicy(sizePolicy)
-		self.text.setMinimumSize(QtCore.QSize(80,0))
+		self.text.setMinimumSize(QtCore.QSize(60,0))
 		self.text.setObjectName("text")
 		self.hboxlayout.addWidget(self.text)
 		
@@ -485,12 +485,11 @@ class StringBox(QtGui.QWidget):
 
 	def setValue(self,val,quiet=0):
 		if self.getValue()==val : return
-		self.text.setText(value)
-		if not quiet : self.emit(QtCore.SIGNAL("valueChanged"),self.value)
+		self.text.setText(val)
+		if not quiet : self.emit(QtCore.SIGNAL("valueChanged"),val)
 	
 	def getValue(self):
 		return str(self.text.text())
-	
 		
 	def textChange(self):
 		if self.ignore : return

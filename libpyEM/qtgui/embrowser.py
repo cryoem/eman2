@@ -1977,15 +1977,16 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.curactions[num][2](self)				# This calls the action method
 
 	def buttonOk(self,tog):
-		"Button press"
+		"When the OK button is pressed, this will emit a signal. The receiver should call the getResult method (once) to get the list of paths"
 		qism=self.wtree.selectionModel().selectedRows()
 		self.result=[i.internalPointer().path().replace(os.getcwd(),".") for i in qism]
 		self.emit(QtCore.SIGNAL("ok")) # this signal is important when e2ctf is being used by a program running its own eve
 		
 	def buttonCancel(self,tog):
-		"Button press"
+		"When the Cancel button is pressed, a signal is emitted, but getResult should not be called."
 		self.result=[]
 		self.emit(QtCore.SIGNAL("cancel")) # this signal is important when e2ctf is being used by a program running its own eve
+		self.close()
 		
 	def buttonBack(self,tog):
 		"Button press"

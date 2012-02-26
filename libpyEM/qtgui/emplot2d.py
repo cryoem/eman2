@@ -74,6 +74,8 @@ from matplotlib.figure import Figure
 from emapplication import EMApp, EMGLWidget
 from emglobjects import EMOpenGLFlagsAndTools,init_glut
 
+import traceback
+
 linetypes=["-","--",":","-."]
 symtypes=["o","s","+","2","1"]
 colortypes=["k","b","r","g","y","c","m","gray"]
@@ -111,6 +113,7 @@ class EMPlot2DWidget(EMGLWidget):
 		self.slimits=None
 		self.rmousedrag=None
 		self.axisparms=(None,None,"linear","linear")
+		self.selected=[]
 		
 		self.data={}				# List of Lists to plot 
 		self.visibility = {}  	   	# Same entries as in self.data, but entries are true or False to indicate visibility
@@ -442,9 +445,9 @@ class EMPlot2DWidget(EMGLWidget):
 				if not self.visibility[i]: continue
 				j=self.axes[i]
 #				print j
-				if j[0]==-1 : x=range(len(self.data[i][0]))
+				if j[0]==-1 : x=arange(len(self.data[i][0]))
 				else : x=self.data[i][self.axes[i][0]]
-				if j[1]==-1 : y=range(len(self.data[i][0]))
+				if j[1]==-1 : y=arange(len(self.data[i][0]))
 				else : y=self.data[i][self.axes[i][1]]
 				
 				# We draw markers (if any) first
@@ -562,7 +565,7 @@ class EMPlot2DWidget(EMGLWidget):
 		try:
 			if self.axisparms[2]=="linear" : x2=(x-self.plotlim[0])/self.plotlim[2]*self.scrlim[2]+self.scrlim[0]
 			else : x2=(-(self.scrlim[2]*log(x)) + (self.scrlim[0] + self.scrlim[2])*log(10)*log10(self.plotlim[0])-self.scrlim[0]*log(10)*log10(self.plotlim[0] +self.plotlim[2])) /(log(10)*(log10(self.plotlim[0]) - log10(self.plotlim[0] + self.plotlim[2])))
-			if self.axisparms[3]=="linear" :y2=(self.height()-y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]+self.scrlim[1]
+			if self.axisparms[3]=="linear" :y2=self.height()-((y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]+self.scrlim[1])
 			else : y2=(self.scrlim[3]*log(y) + self.height()*log(10.0)*log10(self.plotlim[1])-self.scrlim[1]*log(10.0)*log10(self.plotlim[1])-self.scrlim[3]*log(10.0)*log10(self.plotlim[1]) - self.height()*log(10.0)*log10(self.plotlim[1]+self.plotlim[3]) + self.scrlim[1]*log(10)*log10(self.plotlim[1]+self.plotlim[3])) / (log(10)*(log10(self.plotlim[1]) - log10(self.plotlim[1]+self.plotlim[3])))
 			return (x2,y2)
 		except: 
@@ -636,6 +639,43 @@ class EMPlot2DWidget(EMGLWidget):
 		self.shapechange=1
 		#self.updateGL()
 	
+	def update_selected(self,evc,lc):
+		"""Update the list of 'selected' points, and display coord info. 
+evc is the cursor selection point in screen coords
+lc is the cursor selection point in plot coords"""
+
+		# we find the first displayed axis in the list
+		for ak in self.axes.keys():
+			if not self.visibility[ak]: continue
+			j=self.axes[ak]
+			break
+			
+		if j[0]==-1 : x=arange(len(self.data[ak][0]))
+		else : x=self.data[ak][self.axes[ak][0]]
+		if j[1]==-1 : y=arange(len(self.data[ak][0]))
+		else : y=self.data[ak][self.axes[ak][1]]
+		
+		x2,y2=self.plot2scr(x,y)
+		
+		r=hypot(x2-evc[0],y2-evc[1])		# distance from cursor 
+
+		# if the closest point is more than 5 pixels away, nothing is selected
+		if min(r)>5 : 
+			self.selected=[]
+			self.del_shapes(("selp0","selp1","selp2","selp3","selp4"))
+			return
+			
+		srt=argsort(r)					# indices which would produce sorted array
+
+		# We select one point if it's within 5 pixels, then up to 4 more points within 3 pixels
+		self.selected=[srt[0]]
+		for i in xrange(1,5) : 
+			if r[srt[i]]<3 : self.selected.append(srt[i])
+		
+		for i,p in enumerate(self.selected):
+			self.add_shape("selp%d"%i,EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-(18*i+35),"%d. %1.3g, %1.3g"%(p,x[p],y[p]),120.0,-1)))
+		
+		self.emit(QtCore.SIGNAL("selected"),self.selected)
 		
 	def mousePressEvent(self, event):
 		lc=self.scr2plot(event.x(),event.y())
@@ -651,6 +691,7 @@ class EMPlot2DWidget(EMGLWidget):
 			try: recip="%1.2f"%(1.0/lc[0])
 			except: recip="-"
 			self.add_shape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-10,"%1.4g (%s), %1.4g"%(lc[0],recip,lc[1]),120.0,-1)))
+			self.update_selected((event.x(),event.y()),lc)
 			self.updateGL()
 			#if self.mmode==0:
 				#self.emit(QtCore.SIGNAL("mousedown"), event)
@@ -674,6 +715,7 @@ class EMPlot2DWidget(EMGLWidget):
 			try: recip="%1.2f"%(1.0/lc[0])
 			except: recip="-"
 			self.add_shape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-10,"%1.4g (%s), %1.4g"%(lc[0],recip,lc[1]),120.0,-1)))
+			self.update_selected((event.x(),event.y()),lc)
 			self.updateGL()
 #			self.add_shape("mcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-80,self.scrlim[3]-20,"%1.3g, %1.3g"%(self.plot2scr(*lc)[0],self.plot2scr(*lc)[1]),1.5,1)))
 	
@@ -1002,6 +1044,77 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 		
 		if not texture_2d_was_enabled: GL.glDisable(GL.GL_TEXTURE_2D)
 
+class EMPlot2DClassInsp(QtGui.QWidget):
+	"""This class implements the classification pop-up from the EMPlot2DInspector"""
+	def __init__(self,target) :
+		QtGui.QWidget.__init__(self,None)
+		self.target=weakref.ref(target)
+		gbl0=QtGui.QGridLayout(self)
+		
+		self.wimgfile=StringBox(label="Images:")
+		gbl0.addWidget(self.wimgfile,0,0)
+		
+		self.wimgfilebut=QtGui.QPushButton(self)
+		self.wimgfilebut.setText("Browse")
+		gbl0.addWidget(self.wimgfilebut,0,1)
+		
+		self.kmeansb=QtGui.QPushButton(self)
+		self.kmeansb.setText("K-means")
+		gbl0.addWidget(self.kmeansb,2,0,1,2)
+		
+		self.wnseg=ValBox(rng=(2,32),label="Nseg",value=3)
+		self.wnseg.intonly=1
+		gbl0.addWidget(self.wnseg,3,0,1,2)
+		
+		QtCore.QObject.connect(self.wimgfilebut,QtCore.SIGNAL("clicked()"),self.selectImgFile)
+		QtCore.QObject.connect(self.target(),QtCore.SIGNAL("selected"),self.imgSelect)
+		
+		self.imgwin=None
+	
+	def imgSelect(self,sel=None):
+		if self.imgwin==None : 
+			from emimagemx import EMImageMXWidget
+			self.imgwin=EMImageMXWidget()
+		
+		try:
+			if sel==None: sel=self.target().selected
+		except: 
+			print "imgSelect with no selection"
+			return
+		
+		try:
+			data=[EMData(self.wimgfile.getValue(),int(i)) for i in sel]
+		except:
+			traceback.print_exc()
+			data=None
+			
+		self.imgwin.set_data(data)
+		self.imgwin.show()
+
+	def selectImgFile(self):
+		from embrowser import EMBrowserWidget
+		self.browse = EMBrowserWidget(withmodal=True,multiselect=False)
+		self.browse.show()
+		QtCore.QObject.connect(self.browse, QtCore.SIGNAL("ok"),self.setImgFile)
+		QtCore.QObject.connect(self.browse, QtCore.SIGNAL("cancel"),self.canImgFile)
+		
+	def canImgFile(self,file=None):
+		return
+	
+	def setImgFile(self,file=None):
+
+		if file==None :
+			try:
+				self.wimgfile.setValue(self.browse.getResult()[0])
+			except: 
+				traceback.print_exc()
+				pass
+			return
+		
+	def closeEvent(self, event):
+		try: self.imgwin.close()
+		except: pass
+
 class EMPlot2DInspector(QtGui.QWidget):
 	
 	def __init__(self,target) :
@@ -1047,6 +1160,10 @@ class EMPlot2DInspector(QtGui.QWidget):
 		hbl0.addWidget(self.loadb)
 
 
+		hbl1 = QtGui.QHBoxLayout()
+		hbl1.setMargin(0)
+		hbl1.setSpacing(6)
+		
 		self.color=QtGui.QComboBox(self)
 		self.color.addItem("black")
 		self.color.addItem("blue")
@@ -1056,7 +1173,13 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.color.addItem("cyan")
 		self.color.addItem("magenta")
 		self.color.addItem("grey")
-		vbl.addWidget(self.color)
+		hbl1.addWidget(self.color)
+
+		self.classb=QtGui.QPushButton(self)
+		self.classb.setText("Classify")
+		hbl1.addWidget(self.classb)
+
+		vbl.addLayout(hbl1)
 
 		hbl2 = QtGui.QHBoxLayout()
 		hbl2.setMargin(0)
@@ -1145,6 +1268,10 @@ class EMPlot2DInspector(QtGui.QWidget):
 		
 		vbl.addLayout(hbl2)
 		
+		self.wrescale=QtGui.QPushButton(self)
+		self.wrescale.setText("Rescale")
+		vbl.addWidget(self.wrescale)
+		
 		xiangan_liu = False
 		if xiangan_liu:
 			hbl3 = QtGui.QHBoxLayout()
@@ -1180,9 +1307,6 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.wymax=ValBox(label="Ymax:")
 		hbl2.addWidget(self.wymax)
 
-		self.wrescale=QtGui.QPushButton(self)
-		self.wrescale.setText("Rescale")
-		hbl2.addWidget(self.wrescale)
 		vbl0.addLayout(hbl2)
 
 		hbl3=QtGui.QHBoxLayout()
@@ -1215,6 +1339,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 #		self.setLayout(vbl0)
 
 		self.quiet=0
+		self.classwin=None
 		
 		QtCore.QObject.connect(self.slidex, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
 		QtCore.QObject.connect(self.slidey, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
@@ -1223,6 +1348,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.list_item_changed)
 		QtCore.QObject.connect(self.color,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlot)
+		QtCore.QObject.connect(self.classb,QtCore.SIGNAL("clicked()"),self.openClassWin)
 		QtCore.QObject.connect(self.symtog,QtCore.SIGNAL("clicked()"),self.updPlot)
 		QtCore.QObject.connect(self.symsel,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlot)
 		QtCore.QObject.connect(self.symsize,QtCore.SIGNAL("valueChanged(int)"),self.updPlot)
@@ -1247,6 +1373,13 @@ class EMPlot2DInspector(QtGui.QWidget):
 		
 		self.newSet(0)
 		self.datachange()
+		self.resize(500,540)
+		
+	def openClassWin(self):
+		"""This launches a separate window for classifying points in a 2-D plot"""
+
+		if self.classwin==None : self.classwin=EMPlot2DClassInsp(self.target())
+		self.classwin.show()
 		
 	def on_bad_button(self,unused=False):
 		names = [str(item.text()) for item in self.setlist.selectedItems()]
@@ -1493,6 +1626,11 @@ class EMPlot2DInspector(QtGui.QWidget):
 			self.target().visibility[name] = checked
 			self.target().full_refresh()
 			self.target().updateGL()
+
+	def closeEvent(self, event):
+		try: self.classwin.close()
+		except: pass
+
 
 class EMPlot2DModule(EMPlot2DWidget):
 	def __init__(self, application=None,winid=None):
