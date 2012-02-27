@@ -1554,7 +1554,10 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 					data.append(EMData(name,idx))
 					if mx!=None:
 						xfm=Transform({"type":"2d","tx":mx[0][idx],"ty":mx[1][idx],"alpha":mx[2][idx],"mirror":bool(mx[3][idx])})
+						ad=data[-1].align("rotate_translate_flip",a,{},"ccc",{})
 						data[-1].transform(xfm)
+						data.append(ad)
+						print "%6d %s\n       %s"%(idx,str(xfm),str(ad["xform.align2d"]))
 					i+=1
 					progress.setValue(i)
  					get_application().processEvents()

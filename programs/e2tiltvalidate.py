@@ -386,8 +386,22 @@ def run(command):
 		print "Error running:\n%s"%command		    
 		exit(1)
 
-from PyQt4 import QtCore, QtGui
-from emplot2d import EMPolarPlot2DWidget
+# In some cases it is impossible to import PyQT4, particularly on clusters
+try:
+	from PyQt4 import QtCore, QtGui, QtOpenGL
+	from PyQt4.QtCore import Qt
+	from emshape import *
+	from valslider import ValSlider
+except:
+	class dummy:
+		pass
+	class QWidget:
+		"A dummy class for use when Qt not installed"
+		def __init__(self,parent):
+			print "Qt4 has not been loaded"
+	QtGui=dummy()
+	QtGui.QWidget=QWidget
+
 def display_validation_plots(path, radcut, planethres, plotdatalabels=False, color='#00ff00'):
 	from emimage2d import EMImage2DWidget
 	from emapplication import EMApp
