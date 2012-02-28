@@ -134,6 +134,11 @@ def main():
 
 	nptcl=EMUtil.get_image_count(options.input)
 
+	try: apix=EMData(options.input,0,True)["apix_x"]
+	except:
+		apix=1.0
+		print "WARNING: could not get apix from first image. Setting to 1.0. May impact results !"
+
 	# Initialize parallelism
 	if options.parallel :
 		from EMAN2PAR import EMTaskCustomer
@@ -209,10 +214,11 @@ def main():
 								except: pass
 					# failed average
 					elif options.storebad :
-						blk=EMData(options.ref,0)
+#						blk=EMData(options.ref,0)
 						blk=EMData(blk["nx"],blk["ny"],1)
 						blk.to_zero()
 						blk.set_attr("ptcl_repr", 0)
+						blk.set_attr("apix_x",apix)
 						blk.write_image(options.output,rslt[1]["n"])
 					
 			taskids=[j for i,j in enumerate(taskids) if curstat[i]!=100]
@@ -260,10 +266,11 @@ def main():
 						
 			# Failed average
 			elif options.storebad :
-				blk=EMData(options.ref,0)
+#				blk=EMData(options.ref,0)
 				blk=EMData(blk["nx"],blk["ny"],1)
 				blk.to_zero()
 				blk.set_attr("ptcl_repr", 0)
+				blk.set_attr("apix_x",apix)
 				blk.write_image(options.output,t.options["n"])
 				
 	if options.resultmx!=None:

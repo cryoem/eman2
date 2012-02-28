@@ -144,10 +144,19 @@ def main():
 	# get basic image parameters
 	tmp=EMData()
 	tmp.read_image(options.input,0,True)
+	try:
+		n=1
+		while tmp["ptcl_repr"]==0 :
+			tmp.read_image(options.input,n,True)
+			n+=1
+	except: pass
+	
 	nx=tmp["nx"]
 	ny=tmp["ny"]
 	nslice=tmp["nz"]
-	apix=tmp["apix_x"]
+	if options.apix!=None : apix=options.apix
+	else : apix=tmp["apix_x"]
+	
 	
 	if options.verbose>0: print "Image dimensions %d x %d"%(nx,ny)
 
