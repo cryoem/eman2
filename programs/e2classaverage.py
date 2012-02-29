@@ -214,8 +214,10 @@ def main():
 								except: pass
 					# failed average
 					elif options.storebad :
-#						blk=EMData(options.ref,0)
+						blk=EMData(options.ref,0)
+						apix=blk["apix_x"]
 						blk=EMData(blk["nx"],blk["ny"],1)
+						blk["apix_x"]=apix
 						blk.to_zero()
 						blk.set_attr("ptcl_repr", 0)
 						blk.set_attr("apix_x",apix)
@@ -266,8 +268,10 @@ def main():
 						
 			# Failed average
 			elif options.storebad :
-#				blk=EMData(options.ref,0)
+				blk=EMData(options.ref,0)
+				apix=blk["apix_x"]
 				blk=EMData(blk["nx"],blk["ny"],1)
+				blk["apix_x"]=apix
 				blk.to_zero()
 				blk.set_attr("ptcl_repr", 0)
 				blk.set_attr("apix_x",apix)
