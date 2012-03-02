@@ -81,6 +81,10 @@ def main():
 	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
 	parser.add_argument("--normproc",type=str,help="Normalization processor applied to particles before alignment. Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'", default="normalize.mask")
 	parser.add_argument("--preprocess",type=str,help="A processor (as in e2proc3d.py; could be masking, filtering, etc.) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.",default=None)
+	
+	parser.add_argument("--lowpass",type=str,help="A processor (as in e2proc3d.py; could be masking, filtering, etc.) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.",default=None)
+	parser.add_argument("--highpass",type=str,help="A processor (as in e2proc3d.py; could be masking, filtering, etc.) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.",default=None)
+
 	parser.add_argument("--npeakstorefine", type=int, help="The number of best coarse alignments to refine in search of the best final alignment. Default=4.", default=4)
 	parser.add_argument("--align",type=str,help="This is the aligner use for alignments. Default is rotate_translate_3d:search=10:delta=10:dphi=10", default="rotate_translate_3d:search=10:delta=10:dphi=10")
 	parser.add_argument("--aligncmp",type=str,help="The comparator used for the --align aligner. Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.",default="ccc.tomo")
@@ -116,8 +120,16 @@ def main():
 		options.normproc=parsemodopt(options.normproc)
 	if options.mask: 
 		options.mask=parsemodopt(options.mask)
+	
 	if options.preprocess: 
 		options.preprocess=parsemodopt(options.preprocess)
+	
+	if options.lowpass: 
+		options.lowpass=parsemodopt(options.lowpass)
+
+	if options.highpass: 
+		options.highpass=parsemodopt(options.highpass)
+
 	if options.postprocess: 
 		options.postprocess=parsemodopt(options.postprocess)
 		
@@ -133,13 +145,13 @@ def main():
 	if not options.path: 
 		#options.path="bdb:"+numbered_path("sptavsa",True)
 		options.path = "sptavsa_01"
-	else:
-		while options.path in files:
-			if '_' not in options.path:
-				options.path = options.path + '_00'
+	
+	while options.path in files:
+		if '_' not in options.path:
+			options.path = options.path + '_00'
 				
-			options.path = options.path.split('_')[0] + '_' + str(int(options.path.split('_')[-1]) + 1).zfill(2)
-			print "The new options.path is", options.path
+		options.path = options.path.split('_')[0] + '_' + str(int(options.path.split('_')[-1]) + 1).zfill(2)
+		print "The new options.path is", options.path
 
 	if options.path not in files:
 		os.system('mkdir ' + options.path)
@@ -279,7 +291,7 @@ def allvsall(options):
 				#if options.verbose > 2:
 				print "Setting the following comparison: %s vs %s in ALL VS ALL" %(reftag,particletag)
 				
-				task = Align3DTaskAVSA(newstack,newstack, jj, reftag, particletag, ptcl1, ptcl2,"Aligning particle#%s VS particle#%s in iteration %d" % (reftag,particletag,k),options.mask,options.normproc,options.preprocess,
+				task = Align3DTaskAVSA(newstack,newstack, jj, reftag, particletag, ptcl1, ptcl2,"Aligning particle#%s VS particle#%s in iteration %d" % (reftag,particletag,k),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
 				options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
 				
 				tasks.append(task)
@@ -311,7 +323,7 @@ def allvsall(options):
 					#if options.verbose > 2:
 					print "Setting the following comparison: %s vs %s in ALL VS ALL" %(refkey,particlekey)
 					
-					task = Align3DTaskAVSA(newstack,options.path + '/oldptclstack.hdf',jj , refkey, particlekey, ptcl1, ptcl2,"Aligning particle round#%d_%d VS particle#%s, in iteration %d" % (k,ptcl1,particlekey.split('_')[0] + str(ptcl2),k),options.mask,options.normproc,options.preprocess,
+					task = Align3DTaskAVSA(newstack,options.path + '/oldptclstack.hdf',jj , refkey, particlekey, ptcl1, ptcl2,"Aligning particle round#%d_%d VS particle#%s, in iteration %d" % (k,ptcl1,particlekey.split('_')[0] + str(ptcl2),k),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
 					options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
 					
 					tasks.append(task)
@@ -592,7 +604,7 @@ def get_results(etc,tids,verbose):
 class Align3DTaskAVSA(EMTask):
 	"""This is a task object for the parallelism system. It is responsible for aligning one 3-D volume to another, with a variety of options"""
 
-	def __init__(self,fixedimagestack,imagestack,comparison,ptcl1,ptcl2,p1n,p2n,label,mask,normproc,preprocess,npeakstorefine,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,verbose):
+	def __init__(self,fixedimagestack,imagestack,comparison,ptcl1,ptcl2,p1n,p2n,label,mask,normproc,preprocess,lowpass,highpass,npeakstorefine,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,verbose):
 		"""fixedimage and image may be actual EMData objects, or ["cache",path,number]
 	label is a descriptive string, not actually used in processing
 	ptcl is not used in executing the task, but is for reference
@@ -602,7 +614,7 @@ class Align3DTaskAVSA(EMTask):
 		data={"fixedimage":fixedimagestack,"image":imagestack}
 		EMTask.__init__(self,"ClassAv3d",data,{},"")
 
-		self.options={"comparison":comparison,"ptcl1":ptcl1,"ptcl2":ptcl2,"p1number":p1n,"p2number":p2n,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"npeakstorefine":npeakstorefine,"align":align,"aligncmp":aligncmp,"ralign":ralign,"raligncmp":raligncmp,"shrink":shrink,"shrinkrefine":shrinkrefine,"verbose":verbose}
+		self.options={"comparison":comparison,"ptcl1":ptcl1,"ptcl2":ptcl2,"p1number":p1n,"p2number":p2n,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"lowpass":lowpass,"highpass":highpass,"npeakstorefine":npeakstorefine,"align":align,"aligncmp":aligncmp,"ralign":ralign,"raligncmp":raligncmp,"shrink":shrink,"shrinkrefine":shrinkrefine,"verbose":verbose}
 	
 	def execute(self,callback=None):
 		"""This aligns one volume to a reference and returns the alignment parameters"""
@@ -639,6 +651,17 @@ class Align3DTaskAVSA(EMTask):
 		if options["preprocess"] != None:
 			fixedimage.process_inplace(options["preprocess"][0],options["preprocess"][1])
 			image.process_inplace(options["preprocess"][0],options["preprocess"][1])
+		
+		# lowpass
+		if options["lowpass"] != None:
+			fixedimage.process_inplace(options["lowpass"][0],options["lowpass"][1])
+			image.process_inplace(options["lowpass"][0],options["lowpass"][1])
+
+
+		# highpass
+		if options["highpass"] != None:
+			fixedimage.process_inplace(options["highpass"][0],options["highpass"][1])
+			image.process_inplace(options["highpass"][0],options["highpass"][1])
 		
 		# Shrinking both for initial alignment and reference
 		if options["shrink"]!=None and options["shrink"]>1 :
