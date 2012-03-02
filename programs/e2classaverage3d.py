@@ -226,7 +226,8 @@ def main():
 			pclist.append(options.ref)
 		etc.precache(pclist)
 
-	if options.inixforms: db = db_open_dict("%s#%s"%(options.path,"tomo_xforms"))
+	if options.inixforms: 
+		db = db_open_dict("%s#%s"%(options.path,"tomo_xforms"))
 			
 	#########################################
 	# This is where the actual class-averaging process begins
@@ -336,7 +337,10 @@ def main():
 			#There should be NO post-processing of the final averages, EXCEPT for visualization purposes (so, postprocessing is only applied to write out the output, if specified.
 			
 			ref = make_average(options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.sym,options.groups,options.breaksym,options.verbose,it)
-						
+			
+			if not options.nocenterofmass:
+				ref.process_inplace("xform.centerofmass")
+	
 			if options.groups > 1:
 				for i in range(len(ref)):
 					refc=ref[i]
@@ -344,7 +348,7 @@ def main():
 					if options.savesteps:
 						if options.postprocess:
 							ppref = refc.copy()
-							postprocess(ppref,None,options.normproc,options.postprocess,nocenter=options.nocenterofmass)
+							postprocess(ppref,None,options.normproc,options.postprocess)
 							ppref.write_image("%s/class_%02d"%(options.path,i),it)
 						else:
 							refc.write_image("%s/class_%02d"%(options.path,i),it)
@@ -352,7 +356,7 @@ def main():
 				if options.savesteps:
 					if options.postprocess:
 						ppref = ref.copy()
-						postprocess(ppref,None,options.normproc,options.postprocess,nocenter=options.nocenterofmass)
+						postprocess(ppref,None,options.normproc,options.postprocess)
 						ppref.write_image("%s/class_%02d"%(options.path,i),it)
 					else:
 						ref.write_image("%s/class_%02d"%(options.path,ic),it)
@@ -385,11 +389,8 @@ def main():
 	E2end(logger)
 
 
-def postprocess(img,optmask,optnormproc,optpostprocess,nocenter=False):
+def postprocess(img,optmask,optnormproc,optpostprocess):
 	"""Postprocesses a volume in-place"""
-	
-	if not nocenter: 
-		img.process_inplace("xform.centerofmass")
 	
 	# Make a mask, use it to normalize (optionally), then apply it 
 	mask=EMData(img["nx"],img["ny"],img["nz"])
@@ -717,7 +718,7 @@ class Align3DTask(EMTask):
 		if options["transform"]:
 			options["align"][1]["transform"] = options["transform"]
 			
-		# If None was passed in we skip course alignment and just do a refienement
+		# If None was passed in we skip coarse alignment and just do a refienement
 		if options["align"] == None:
 			bestcoarse=[{"score":1.0,"xform.align3d":Transform()}]
 		
@@ -731,11 +732,15 @@ class Align3DTask(EMTask):
 		else:
 			# Returns an ordered vector of Dicts of length options.npeakstorefine. The Dicts in the vector have keys "score" and "xform.align3d"
 			
+			random_transform = None
 			if options["randomizewedge"]:
-				rand_orient = OrientGens.get("rand",{"n":1,"phitoo":1})			#Fetches the orientation generator
+				rand_orient = OrientGens.get("rand",{"n":1,"phitoo":1})		#Fetches the orientation generator
 				c1_sym = Symmetries.get("c1")					#Generates the asymmetric unit from which you wish to generate a random orientation
 				random_transform = rand_orient.gen_orientations(c1_sym)[0]	#Generates a random orientation (in a Transform object) using the generator and asymmetric unit specified 
-				options["align"][1]["xform.align3d"] = random_transform
+				
+				#print "\n\n\nOptions['align'][1] is\n", options['align'][1]
+				#print "\n\n\nOptions['align'][0] is\n", options['align'][0]
+				#options["align"][1].update({'transform' : random_transform})
 			
 			bestcoarse = simage.xform_align_nbest(options["align"][0],sfixedimage,options["align"][1],options["npeakstorefine"],options["aligncmp"][0],options["aligncmp"][1])
 			scaletrans=options["shrink"]/float(options["shrinkrefine"])
