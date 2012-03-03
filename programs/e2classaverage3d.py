@@ -281,7 +281,7 @@ def main():
 					else:
 						transform = None
 					# Unfortunately this tree structure limits the parallelism to the number of pairs at the current level :^(
-					task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options.mask,options.normproc,options.preprocess,options.lowpass,options,highpass,
+					task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
 						options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,transform,options.verbose-1,options.randomizewedge)
 					tasks.append(task)
 
@@ -298,7 +298,7 @@ def main():
 					pprint(results)
 				
 				
-				make_average_pairs(infile,outfile,results,options.averager,options.mask,options.normproc,options.postprocess)
+				make_average_pairs(infile,outfile,results,options.averager,options.nocenterofmass)
 				
 			ref=EMData(outfile,0)		# result of the last iteration
 			
@@ -336,10 +336,7 @@ def main():
 			#The reference for the next iteration should ALWAYS be the RAW AVERAGE of the aligned particles, since the reference will be "pre-processed" identically to the raw particles.
 			#There should be NO post-processing of the final averages, EXCEPT for visualization purposes (so, postprocessing is only applied to write out the output, if specified.
 			
-			ref = make_average(options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.sym,options.groups,options.breaksym,options.verbose,it)
-			
-			if not options.nocenterofmass:
-				ref.process_inplace("xform.centerofmass")
+			ref = make_average(options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.sym,options.groups,options.breaksym,options.nocenterofmass,options.verbose,it)
 	
 			if options.groups > 1:
 				for i in range(len(ref)):
@@ -411,7 +408,7 @@ def postprocess(img,optmask,optnormproc,optpostprocess):
 		img.process_inplace(optpostprocess[0],optpostprocess[1])
 
 
-def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,keepsig,symmetry,groups,breaksym,verbose=1,it=1):
+def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,keepsig,symmetry,groups,breaksym,nocenterofmass,verbose=1,it=1):
 	"""Will take a set of alignments and an input particle stack filename and produce a new class-average.
 	Particles may be excluded based on the keep and keepsig parameters. If keepsig is not set, then keep represents
 	an absolute fraction of particles to keep (0-1). Otherwise it represents a sigma multiplier akin to e2classaverage.py"""
@@ -474,7 +471,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 				ptcl['spt_ali_param'] = ptcl_parms[0]['xform.align3d']
 				
 		db_close_dict(db)
-		ret=[]
+		avgs=[]
 		
 		for i in range(len(groupslist)):
 			variance = (groupslist[0][0]).copy_head()
@@ -494,16 +491,23 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 					groupslist[i][j].write_image(classname,j)
 					
 			avg=avgr.finish()
-			if symmetry and not breaksym:
-				avg=avg.process('xform.applysym',{'sym':symmetry})
+
 			avg["class_ptcl_idxs"]=includedlist[i]
 			avg["class_ptcl_src"]=ptcl_file
 			
-			ret.append(avg)
+			if symmetry and not breaksym:
+				avg=avg.process('xform.applysym',{'sym':symmetry})
+			
+			
+			if not nocenterofmass: 
+				avg.process_inplace("xform.centerofmass")
+				print "I will apply centerofmass"
+			
+			avgs.append(avg)
 			
 			if averager[0] == 'mean':
 				variance.write_image(path+"/class_varmap_group_%d"%i,it)
-		return ret
+		return avgs
 
 	else:
 		if keepsig:
@@ -565,19 +569,21 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 		if verbose: 
 			print "Kept %d / %d particles in average"%(len(included),len(align_parms))
 
-		ret=avgr.finish()
+		avg=avgr.finish()
 		if symmetry and not breaksym:
-			ret=ret.process('xform.applysym',{'sym':symmetry})
-		ret["class_ptcl_idxs"]=included
-		ret["class_ptcl_src"]=ptcl_file
+			avg=avg.process('xform.applysym',{'sym':symmetry})
+		avg["class_ptcl_idxs"]=included
+		avg["class_ptcl_src"]=ptcl_file
 		
 		if averager[0] == 'mean':
 			variance.write_image(path+"/class_varmap",it)
-
-		return ret
+					
+		if not nocenterofmass:
+			avg.process_inplace("xform.centerofmass")
 		
+		return avg		
 
-def make_average_pairs(ptcl_file,outfile,align_parms,averager,optmask,optnormproc,optpostprocess):
+def make_average_pairs(ptcl_file,outfile,align_parms,averager,nocenterofmass):
 	"""Will take a set of alignments and an input particle stack filename and produce a new set of class-averages over pairs"""
 	
 	for i,ptcl_parms in enumerate(align_parms):
@@ -591,7 +597,11 @@ def make_average_pairs(ptcl_file,outfile,align_parms,averager,optmask,optnormpro
 		avgr.add_image(ptcl1)
 		
 		avg=avgr.finish()
-		postprocess(avg,optmask,optnormproc,optpostprocess,nocenter=False)		# we treat these intermediate averages just like the final average
+		#postprocess(avg,optmask,optnormproc,optpostprocess)		#There should be NO postprocessing of the intermediate averages
+		
+		if not nocenterofmass:
+			avg.process_inplace("xform.centerofmass")
+
 		avg.write_image(outfile,i)
 		
 
