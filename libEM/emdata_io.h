@@ -69,13 +69,14 @@ void read_image(const string & filename, int img_index = 0,
  * @param filename The image file name.
  * @param img_index The nth image you want to read.
  * @param binfactor The amout you want to bin by. Must be an integer
+ * @param fast Only bin xy slice every binfactor intervals, otherwise meanshrink z
  * @param is_3d  Whether to treat the image as a single 3D or a
  *   set of 2Ds. This is a hint for certain image formats which
  *   has no difference between 3D image and set of 2Ds.
  * @exception ImageFormatException
  * @exception ImageReadException
  */
-void read_binedimage(const string & filename, int img_index = 0, int binfactor=0, bool is_3d = false);
+void read_binedimage(const string & filename, int img_index = 0, int binfactor=0, bool fast = true, bool is_3d = false);
 
 
 /** write the header and data out to an image.

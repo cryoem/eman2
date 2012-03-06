@@ -130,7 +130,7 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 	EXITFUNC;
 }
 
-void EMData::read_binedimage(const string & filename, int img_index, int binfactor, bool is_3d)
+void EMData::read_binedimage(const string & filename, int img_index, int binfactor, bool fast, bool is_3d)
 {
 	ENTERFUNC;
 	
@@ -173,11 +173,18 @@ void EMData::read_binedimage(const string & filename, int img_index, int binfact
 			EMData* tempdata = new EMData();
 			size_t sizeofslice = nx*ny*sizeof(float);
 			
+			//zbin factor use 1 to speed binning(but don't benfit by averaging in Z)
+			int zbin = binfactor;
+			if(fast) zbin = 1;
 			for(int k = 0; k < ori_nz; k+=binfactor){
-				const Region* binregion = new Region(0,0,k,ori_nx,ori_ny,1);
+				cout << k << endl;
+				// read in a slice region
+				const Region* binregion = new Region(0,0,k,ori_nx,ori_ny,zbin);
 				tempdata->read_image(filename, 0, false, binregion);
+				// shrink the slice
 				if (binfactor > 1) tempdata->process_inplace("math.meanshrink",{"n",binfactor});
 				size_t offset = nx*ny*k/binfactor;
+				//add slice to total
 				EMUtil::em_memcpy(get_data()+offset,tempdata->get_data(),sizeofslice);
 				delete binregion;
 			}

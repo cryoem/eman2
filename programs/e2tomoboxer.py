@@ -116,19 +116,6 @@ def main():
 		if options.inmemory: 
 			#img = EMData(args[0],0)
 			if options.bin > 1:
-				'''
-				print "The tomogram is being shrunk by a factor of %d" %(options.bin)
-				#img = img.process('math.meanshrink',{'n':options.bin})
-
-				imgnew = img.replace('.','_bin' + str(options.bin) + '.')
-				cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --process=math.meanshrink:n=' + str(options.bin)
-				os.system(cmd)	
-				
-				print "Reading tomogram. Please wait."
-											#If the tomogram will be binned, there's no need to load the fulll version
-				img = EMData(imgnew,0)					#and bin it here. That's TOO slow. It's best to do so at the commandline.
-				cmd = 'rm ' + imgnew					#Remove "temporary" binned tomogram after loading it to memory.
-				'''
 				# The new bining scheme
 				print "Binning, please wait :)"
 				img = EMData()
@@ -163,8 +150,6 @@ def main():
 				imgnew = img
 				if '_edtedtemp.' not in img:
 					imgnew = img.replace('.','_editedtemp.')
-				#cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --process=math.meanshrink:n=' + str(options.bin)
-				#os.system(cmd)
 				print "Binning, please wait :)"
 				imgfile = EMData()
 				imgfile.read_binedimage(img,0,options.bin)
