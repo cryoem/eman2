@@ -65,6 +65,18 @@ void read_image(const string & filename, int img_index = 0,
 				bool header_only = false,
 				const Region * region = 0, bool is_3d = false);
 
+/** read in a binned image, bin while reading. For use in huge files(tomograms)
+ * @param filename The image file name.
+ * @param img_index The nth image you want to read.
+ * @param binfactor The amout you want to bin by. Must be an integer
+ * @param is_3d  Whether to treat the image as a single 3D or a
+ *   set of 2Ds. This is a hint for certain image formats which
+ *   has no difference between 3D image and set of 2Ds.
+ * @exception ImageFormatException
+ * @exception ImageReadException
+ */
+void read_binedimage(const string & filename, int img_index = 0, int binfactor=0, bool is_3d = false);
+
 
 /** write the header and data out to an image.
  *

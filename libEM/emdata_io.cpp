@@ -130,6 +130,73 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 	EXITFUNC;
 }
 
+void EMData::read_binedimage(const string & filename, int img_index, int binfactor, bool is_3d)
+{
+	ENTERFUNC;
+	
+	ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY);
+	
+	if (!imageio) {
+		throw ImageFormatException("cannot create an image io");
+	}
+	else {
+		int err = imageio->read_header(attr_dict, img_index, 0, is_3d);
+		if (err) {
+			throw ImageReadException(filename, "imageio read header failed");
+		}
+		else {
+			attr_dict["source_path"] = filename;
+			attr_dict["source_n"] = img_index;
+			if (imageio->is_complex_mode()) {
+				set_complex(true);
+				set_fftpad(true);
+			}
+			if (attr_dict.has_key("is_fftodd") && (int)attr_dict["is_fftodd"] == 1) {
+				set_fftodd(true);
+			}
+			if ((int) attr_dict["is_complex_ri"] == 1) {
+				set_ri(true);
+			}
+			save_byteorder_to_dict(imageio);
+
+			int ori_nx = nx = attr_dict["nx"];
+			int ori_ny = ny = attr_dict["ny"];
+			int ori_nz = nz = attr_dict["nz"];
+			attr_dict.erase("nx");
+			attr_dict.erase("ny");
+			attr_dict.erase("nz");
+			
+			// At this point nx, ny and nz are all reduced by binfactor
+			set_size(nx/binfactor, ny/binfactor, nz/binfactor);
+
+			//here is where we read in the binned data
+			EMData* tempdata = new EMData();
+			size_t sizeofslice = nx*ny*sizeof(float);
+			
+			for(int k = 0; k < ori_nz; k+=binfactor){
+				const Region* binregion = new Region(0,0,k,ori_nx,ori_ny,1);
+				tempdata->read_image(filename, 0, false, binregion);
+				if (binfactor > 1) tempdata->process_inplace("math.meanshrink",{"n",binfactor});
+				size_t offset = nx*ny*k/binfactor;
+				EMUtil::em_memcpy(get_data()+offset,tempdata->get_data(),sizeofslice);
+				delete binregion;
+			}
+			
+			delete tempdata;
+			update();
+		}
+	}
+	
+#ifndef IMAGEIO_CACHE
+	if( imageio )
+	{
+		delete imageio;
+		imageio = 0;
+	}
+#endif
+	EXITFUNC;
+}
+
 #include <sys/stat.h>
 
 void EMData::write_image(const string & filename, int img_index,

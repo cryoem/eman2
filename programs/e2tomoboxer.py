@@ -91,7 +91,6 @@ def main():
 	parser.add_argument('--output_format', type=str, default='stack', help='''Specify 'single' if you want the sub-volumes to be written to individual files. You MUST still provide an output name in the regular way.\nFor example, if you specify --output=myparticles.hdf\nbut also specify --output_format=single\nthen the particles will be written as individual files named myparticles_000.hdf myparticles_001.hdf...etc''')
 	
 	parser.add_argument('--swapyz', action="store_true", default=False, help='''This means that the coordinates file and the actual tomogram do not agree regarding which is the "short" direction.\nFor example, the coordinates file migh thave a line like this:\n1243 3412 45\nwhere clearly the "short" direction is Z; yet, if in the actual tomogram the short direction is Y, as they come out fromIMOD by default, then the line should have been:\n1243 45 3412\n''')
-	parser.add_argument("--newwidget",action="store_true",default=False,help="Use the new 3D widgetD. Highly recommended!!!!")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	global options
@@ -117,6 +116,7 @@ def main():
 		if options.inmemory: 
 			#img = EMData(args[0],0)
 			if options.bin > 1:
+				'''
 				print "The tomogram is being shrunk by a factor of %d" %(options.bin)
 				#img = img.process('math.meanshrink',{'n':options.bin})
 
@@ -128,6 +128,11 @@ def main():
 											#If the tomogram will be binned, there's no need to load the fulll version
 				img = EMData(imgnew,0)					#and bin it here. That's TOO slow. It's best to do so at the commandline.
 				cmd = 'rm ' + imgnew					#Remove "temporary" binned tomogram after loading it to memory.
+				'''
+				# The new bining scheme
+				print "Binning, please wait :)"
+				img = EMData()
+				img.read_binedimage(args[0],0,options.bin)
 			else:
 				print "You better have A LOT of memory (more than 8GB) if this is an unbinned 4k x 4k x 0.5k tomogram, because I'm loading it UNBINNED/un-shrunk. Please wait"
 				img = EMData(img,0)
@@ -154,11 +159,17 @@ def main():
 			particles in a binned or pre-low pass filtered tomogram, BUT still extract from the raw tomogram'''
 			modd = False
 			if options.bin > 1:
+				
 				imgnew = img
 				if '_edtedtemp.' not in img:
 					imgnew = img.replace('.','_editedtemp.')
-				cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --process=math.meanshrink:n=' + str(options.bin)
-				os.system(cmd)
+				#cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --process=math.meanshrink:n=' + str(options.bin)
+				#os.system(cmd)
+				print "Binning, please wait :)"
+				imgfile = EMData()
+				imgfile.read_binedimage(img,0,options.bin)
+				imgfile.write(imgnew)
+				
 				img = imgnew
 				modd = True
 				
@@ -206,7 +217,8 @@ def unbinned_extractor(boxsize,x,y,z,cbin,contrast,center,tomogram=argv[1]):
 	
 	tomo_header=EMData(tomogram,0,True)
 	print "Which has a size of", tomo_header['nx'],tomo_header['ny'],tomo_header['nz']
-	#boxsize=boxsize*cbin
+	#print cbin, tomogram
+	boxsize=boxsize*cbin
 	x=x*cbin
 	y=y*cbin
 	z=z*cbin
@@ -237,10 +249,9 @@ def unbinned_extractor(boxsize,x,y,z,cbin,contrast,center,tomogram=argv[1]):
 			r = Region((2*x - boxsize)/2,(2*y - boxsize)/2, (2*z - boxsize)/2, boxsize, boxsize, boxsize)
 			e = EMData()
 			e.read_image(tomogram,0,False,r)
-		
 		if contrast:
 			e=e*-1
-
+		
 		#It IS CONVENIENT to record any processing done on the particles as header parameters
 
 		e['e2spt_tomogram'] = tomogram
@@ -362,14 +373,11 @@ class EMAverageViewer(QtGui.QWidget):
 		#self.zyview = EMImage2DWidget()
 		#self.gbl.addWidget(self.zyview,0,0)
 
-		if options.newwidget:
-			self.d3view = EMScene3D()
-			self.d3viewdata = EMDataItem3D(test_image_3d(3), transform=Transform())
-			isosurface = EMIsosurface(self.d3viewdata, transform=Transform())
-			self.d3view.insertNewNode('', self.d3viewdata, parentnode=self.d3view)
-			self.d3view.insertNewNode("Iso", isosurface, parentnode=self.d3viewdata)
-		else:
-			self.d3view = EMImage3DWidget()
+		self.d3view = EMScene3D()
+		self.d3viewdata = EMDataItem3D(test_image_3d(3), transform=Transform())
+		isosurface = EMIsosurface(self.d3viewdata, transform=Transform())
+		self.d3view.insertNewNode('', self.d3viewdata, parentnode=self.d3view)
+		self.d3view.insertNewNode("Iso", isosurface, parentnode=self.d3viewdata)
 			
 		self.gbl.addWidget(self.d3view,0,0)
 		
@@ -467,11 +475,9 @@ class EMAverageViewer(QtGui.QWidget):
 		#self.xyview.set_data(xyd)	
 		#self.xzview.set_data(xzd)
 		#self.zyview.set_data(zyd)
-		if options.newwidget:
-			self.d3viewdata.setData(self.data)
-			self.d3view.updateSG()
-		else:
-			self.d3view.set_data(self.data)
+		
+		self.d3viewdata.setData(self.data)
+		self.d3view.updateSG()
 		
 	def thread_process(self):
 		
@@ -499,14 +505,13 @@ class EMBoxViewer(QtGui.QWidget):
 		self.gbl.addWidget(self.zyview,0,0)
 		self.data = None
 		
-		if options.newwidget:
-			self.d3view = EMScene3D()
-			self.d3viewdata = EMDataItem3D(test_image_3d(3), transform=Transform())
-			isosurface = EMIsosurface(self.d3viewdata, transform=Transform())
-			self.d3view.insertNewNode('', self.d3viewdata, parentnode=self.d3view)
-			self.d3view.insertNewNode("Iso", isosurface, parentnode=self.d3viewdata )
-		else:
-			self.d3view = EMImage3DWidget()
+
+		self.d3view = EMScene3D()
+		self.d3viewdata = EMDataItem3D(test_image_3d(3), transform=Transform())
+		isosurface = EMIsosurface(self.d3viewdata, transform=Transform())
+		self.d3view.insertNewNode('', self.d3viewdata, parentnode=self.d3view)
+		self.d3view.insertNewNode("Iso", isosurface, parentnode=self.d3viewdata )
+
 		self.gbl.addWidget(self.d3view,1,0)
 		
 		self.wfilt = ValSlider(rng=(0,50),label="Filter:",value=0.0)
@@ -553,11 +558,10 @@ class EMBoxViewer(QtGui.QWidget):
 			self.xyview.set_data(None)
 			self.xzview.set_data(None)
 			self.zyview.set_data(None)
-			if options.newwidget:
-				self.d3viewdata.setData(test_image_3d(3))
-				self.d3view.updateSG()
-			else:
-				self.d3view.set_data(None)
+
+			self.d3viewdata.setData(test_image_3d(3))
+			self.d3view.updateSG()
+
 			return
 		
 		if self.wfilt.getValue()!=0.0 :
@@ -570,11 +574,10 @@ class EMBoxViewer(QtGui.QWidget):
 		self.xyview.set_data(xyd)	
 		self.xzview.set_data(xzd)
 		self.zyview.set_data(zyd)
-		if options.newwidget:
-			self.d3viewdata.setData(self.fdata)
-			self.d3view.updateSG()
-		else:
-			self.d3view.set_data(self.fdata)
+
+		self.d3viewdata.setData(self.fdata)
+		self.d3view.updateSG()
+
 		
 	def event_filter(self,value):
 		self.update()
