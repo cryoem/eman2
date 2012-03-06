@@ -130,9 +130,14 @@ class RCTprocessor:
 			input = self.args[i]
 			tiltbox_list = EMBoxList()
 			tiltbox_list.set_boxes_db('tilted',input)
+			tiltdata = tiltbox_list.get_tiltdata_from_db()
 			if tiltbox_list.load_boxes_from_db():
 				for i,box in enumerate(tiltbox_list.boxlist):
 					image = box.get_image(input,self.options.boxsize)
+					if tiltdata:
+						image.set_attr("tiltangle", tiltdata[0])
+						image.set_attr("tiltaxis", tiltdata[1])
+						image.set_attr("tiltgamma", tiltdata[2])
 					if self.options.invert: image.mult(-1)
 					if self.options.shrink: image.process_inplace('math.meanshrink',{'n':self.options.shrink})
 					if self.options.norm: image.process_inplace(self.options.norm)
@@ -140,9 +145,14 @@ class RCTprocessor:
 	
 			untiltbox_list = EMBoxList()
 			untiltbox_list.set_boxes_db('untilted',input)
+			tiltdata = untiltbox_list.get_tiltdata_from_db()
 			if untiltbox_list.load_boxes_from_db():
 				for i,box in enumerate(untiltbox_list.boxlist):
 					image = box.get_image(input,self.options.boxsize)
+					if tiltdata:
+						image.set_attr("tiltangle", tiltdata[0])
+						image.set_attr("tiltaxis", tiltdata[1])
+						image.set_attr("tiltgamma", tiltdata[2])
 					if self.options.invert: image.mult(-1)
 					if self.options.shrink: image.process_inplace('math.meanshrink',{'n':self.options.shrink})
 					if self.options.norm: image.process_inplace(self.options.norm)
@@ -538,9 +548,15 @@ class EMBoxList:
 				self.append_box(int(box[0]),int(box[1]),box[2])
 			return True
 		return False
-				
+	
+	def get_tiltdata_from_db(self):
+		return self.db["tiltparams_"+os.path.basename(self.entry)]
+		
 	def save_boxes_to_db(self):
 		self.db[os.path.basename(self.entry)] = [[box.x,box.y,box.type] for box in self.boxlist]
+		
+	def save_tiltdata_to_db(self, tiltdata):
+		self.db["tiltparams_"+os.path.basename(self.entry)] = tiltdata
 	
 	def get_particle_images(self,image_name,box_size):
 		return [box.get_image(image_name,box_size,"normalize.edgemean") for box in self.boxlist]

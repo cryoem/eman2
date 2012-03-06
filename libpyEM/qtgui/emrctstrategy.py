@@ -219,6 +219,7 @@ class Strategy2IMGPair(Strategy):
 		self.compute_mask()
 
 	def compute_tiltaxis(self):
+		""" Must have already computed tilt angle for this to work!"""
 		if self.A != None and self.tiltangle != None:
 			rotA = numpy.array([[self.A[0,0],self.A[0,1]],[self.A[1,0],self.A[1,1]]])
 			tan_phi = (rotA[0,0] - rotA[1,1]*math.cos(math.radians(self.tiltangle)))/(rotA[1,0]*math.cos(math.radians(self.tiltangle)) + rotA[0,1])
@@ -236,6 +237,9 @@ class Strategy2IMGPair(Strategy):
 			
 			self.mediator.control_window.pair_picker_tool.tiltaxis.setText(("%3.2f"%self.dphi)+u'\u00B0')
 			self.mediator.control_window.pair_picker_tool.gamma.setText(("%3.2f"%self.dgamma)+u'\u00B0')
+			# Save tilt data
+			self.mediator.tilt_win.boxes.save_tiltdata_to_db([self.tiltangle, self.dphi, self.dgamma])
+			self.mediator.untilt_win.boxes.save_tiltdata_to_db([self.tiltangle, self.dphi, self.dgamma])
 		
 	def compute_mask(self):
 		if self.A != None:
