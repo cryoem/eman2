@@ -80,12 +80,17 @@ namespace EMAN
 			short alpha;		//alpha
 			short beta;			//beta
 			short gamma;		//gamma
-			short header16;		//header19*(253-3)/(Rhomax-Rhomin)
-			short header17;		//(3*Rhomax-253*Rhomin)/(Rhomax-Rhomin)
+			short iprod;		//scale2*(253-3)/(Rhomax-Rhomin)
+			short iplus;		//(3*Rhomax-253*Rhomin)/(Rhomax-Rhomin)
 			short scale;		//Cell Constant Scaling Factor
-			short header19;		//constant 100
+			short scale2;		//constant 100
 
-			short unused[237];	//unused space
+			short imin;			//minimum
+			short imax;			//maximum
+			short isigma;		//sigma
+			short imean;		//mean, probably not really there
+
+			short unused[233];	//unused space
 		};
 
 		string filename;

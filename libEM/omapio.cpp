@@ -102,25 +102,38 @@ int OmapIO::read_header(EMAN::Dict& dict, int, EMAN::Region const*, bool)
 	ENTERFUNC;
 	init();
 
-	dict["OMAP.xstart"] = omaph.xstart;
-	dict["OMAP.ystart"] = omaph.ystart;
-	dict["OMAP.zstart"] = omaph.zstart;
-	dict["nx"] = omaph.nx;
-	dict["ny"] = omaph.ny;
-	dict["nz"] = omaph.nz;
-	dict["apix_x"] = omaph.apix_x;
-	dict["apix_y"] = omaph.apix_y;
-	dict["apix_z"] = omaph.apix_z;
-	dict["OMAP.header10"] = omaph.header10;
-	dict["OMAP.header11"] = omaph.header11;
-	dict["OMAP.header12"] = omaph.header12;
-	dict["alpha"] = omaph.alpha;
-	dict["beta"] = omaph.beta;
-	dict["gamma"] = omaph.gamma;
-	dict["OMAP.header16"] = omaph.header16;
-	dict["OMAP.header17"] = omaph.header17;
-	dict["OMAP.scale"] = omaph.scale;
-	dict["OMAP.header19"] = omaph.header19;
+	dict["OMAP.xstart"] = (int)omaph.xstart;
+	dict["OMAP.ystart"] = (int)omaph.ystart;
+	dict["OMAP.zstart"] = (int)omaph.zstart;
+	dict["nx"] = (int)omaph.nx;
+	dict["ny"] = (int)omaph.ny;
+	dict["nz"] = (int)omaph.nz;
+	dict["apix_x"] = (int)omaph.apix_x;
+	dict["apix_y"] = (int)omaph.apix_y;
+	dict["apix_z"] = (int)omaph.apix_z;
+	dict["OMAP.cellA"] = (int)(omaph.header10/omaph.scale);
+	dict["OMAP.cellB"] = (int)(omaph.header11/omaph.scale);
+	dict["OMAP.cellC"] = (int)(omaph.header12/omaph.scale);
+	dict["alpha"] = (int)(omaph.alpha/omaph.scale);
+	dict["beta"] = (int)(omaph.beta/omaph.scale);
+	dict["gamma"] = (int)(omaph.gamma/omaph.scale);
+	dict["OMAP.iprod"] = (int)omaph.iprod;
+	dict["OMAP.iplus"] = (int)omaph.iplus;
+	dict["OMAP.scale"] = (int)omaph.scale?omaph.scale:100;
+	dict["OMAP.scale2"] = (int)omaph.scale2?omaph.scale2:100;
+
+	float prod = (float)(omaph.iprod/(int)dict["OMAP.scale2"]);
+	float plus = (float)omaph.iplus;
+
+	dict["OMAP.min"] = (omaph.imin - plus)/prod;
+	dict["OMAP.imax"] = (omaph.imax - plus)/prod;
+	dict["OMAP.sigma"] = (omaph.isigma - plus)/prod;
+	dict["OMAP.mean"] = (omaph.imean - plus)/prod;
+
+	if((float)dict["OMAP.sigma"] < 0.001f || (float)dict["OMAP.sigma"] > 10.0f) {
+		std::cout << "Warning : Suspect value of sigma : " << (float)dict["OMAP.sigma"] << std::endl;
+		dict["OMAP.sigma"] = 0;		//flag bad sigma
+	}
 
 	EXITFUNC;
 	return 0;
@@ -129,21 +142,77 @@ int OmapIO::read_header(EMAN::Dict& dict, int, EMAN::Region const*, bool)
 int OmapIO::read_data(float *rdata, int, EMAN::Region const*, bool)
 {
 	ENTERFUNC;
-	std::cout << "file pointer location = " << ftell(omapfile) << std::endl;
+//	std::cout << "file pointer location = " << ftell(omapfile) << std::endl;
 
-	unsigned char * cdata = (unsigned char *) rdata;
-	size_t size = (size_t)omaph.nx*omaph.ny*omaph.nz;
-	if (fread(cdata, size, 1, omapfile) != 1) {
-		throw ImageReadException(filename, "OMAP data");
-	}
+	// cubes in each direction
+	int inx = omaph.nx/8;
+	int iny = omaph.ny/8;
+	int inz = omaph.nz/8;
 
-	float density_factor = (float)omaph.header16/omaph.header19 + omaph.header17;
+	//include partial cube
+	if(omaph.nx%8 > 0) ++inx;
+	if(omaph.ny%8 > 0) ++iny;
+	if(omaph.nz%8 > 0) ++inz;
 
-	std::cout << "density_factor = " << density_factor << std::endl;
+	// How much element of last cube to read ?
+	int xtraX = omaph.nx%8;
+	int xtraY = omaph.ny%8;
+	int xtraZ = omaph.nz%8;
 
-	for (size_t i = 0; i < size; ++i) {
-		size_t j = size - 1 - i;
-		rdata[j] = static_cast < float >(cdata[j]) * density_factor;
+//	std::cout << "Total records = " << inx*iny*inz << std::endl;
+
+	float prod = (float)omaph.iprod/omaph.scale2?omaph.scale2:100;
+	float plus = omaph.iplus;
+	float pixel = 0.0f;
+	unsigned char record[512];
+	for (int k=0; k < inz; k++) {
+		for (int j=0;  j < iny; j++) {
+			for (int i=0; i < inx; i++) {
+				if (fread(record, 512, 1, omapfile) != 1) {
+					throw ImageReadException(filename, "OMAP data");
+				}
+
+				//swap bytes for little endian
+				bool byteswap = false;
+				if(!ByteOrder::is_host_big_endian()) {
+					byteswap = true;
+				}
+				if(byteswap) {
+					for (int ii=0; ii < 511; ii+=2) {
+						char tempchar = record[ii];
+						record[ii] = record[ii+1];
+						record[ii+1] = tempchar;
+					}
+				}
+
+				int cubieSizeX = 8;
+				int cubieSizeY = 8;
+				int cubieSizeZ = 8;
+
+				//for partial cube
+				if (xtraX > 0) if (i == inx-1) cubieSizeX = xtraX;
+				if (xtraY > 0) if (j == iny-1) cubieSizeY = xtraY;
+				if (xtraZ > 0) if (k == inz-1) cubieSizeZ = xtraZ;
+
+				for (int n=0; n < cubieSizeZ; n++) {
+					for (int m=0;  m < cubieSizeY; m++) {
+						for (int l=0; l < cubieSizeX; l++) {
+							unsigned char sboxLMN = record[8*8*n+8*m+l];
+
+							pixel = ((float)sboxLMN - plus)/prod;
+
+							int pt3 = k*8 + n;
+							int pt2 = j*8 + m;
+							int pt1 = i*8 + l;
+
+							rdata[pt3*omaph.nx*omaph.ny + pt2*omaph.nx + pt1] = (pixel-plus)/prod;
+							if(omaph.isigma>0) rdata[pt3*omaph.nx*omaph.ny + pt2*omaph.nx + pt1] /= (float)omaph.isigma;
+						}
+					}
+				}
+
+			}
+		}
 	}
 
 	EXITFUNC;
@@ -153,6 +222,8 @@ int OmapIO::read_data(float *rdata, int, EMAN::Region const*, bool)
 int OmapIO::write_header(EMAN::Dict const&, int, EMAN::Region const*, EMAN::EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
+
+	throw ImageWriteException("N/A", "No writing for Omap images");
 
 	EXITFUNC;
 	return 0;
@@ -192,15 +263,6 @@ bool OmapIO::is_valid(const void *first_block, off_t file_size)
 		ByteOrder::swap_bytes(&nz);
 		ByteOrder::swap_bytes(&const_value);
 	}
-
-//	std::cout << "const_value = " << const_value
-//			<< ", xstart = " << xstart
-//			<< ", ystart = " << ystart
-//			<< ", zstart = " << zstart
-//			<< ", nx = " << nx
-//			<< ", ny = " << ny
-//			<< ", nz = " << nz
-//			<< std::endl;
 
 	if(const_value != 100) return false;
 	if(nx<=0 || ny<=0 || nz<=0 || nx>10000 || ny>10000 || nz>10000) return false;
