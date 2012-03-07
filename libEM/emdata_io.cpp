@@ -176,8 +176,13 @@ void EMData::read_binedimage(const string & filename, int img_index, int binfact
 			//zbin factor use 1 to speed binning(but don't benfit by averaging in Z)
 			int zbin = binfactor;
 			if(fast) zbin = 1;
+			//verbose
+			float percent = 0.1;
 			for(int k = 0; k < ori_nz; k+=binfactor){
-				cout << k << endl;
+				if(k > ori_nz*percent){	
+					cout << float(k)/float(ori_nz) << "% Done!" << endl;
+					percent+=0.1;
+				}
 				// read in a slice region
 				const Region* binregion = new Region(0,0,k,ori_nx,ori_ny,zbin);
 				tempdata->read_image(filename, 0, false, binregion);

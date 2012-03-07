@@ -76,7 +76,7 @@ void read_image(const string & filename, int img_index = 0,
  * @exception ImageFormatException
  * @exception ImageReadException
  */
-void read_binedimage(const string & filename, int img_index = 0, int binfactor=0, bool fast = true, bool is_3d = false);
+void read_binedimage(const string & filename, int img_index = 0, int binfactor=0, bool fast = false, bool is_3d = false);
 
 
 /** write the header and data out to an image.
