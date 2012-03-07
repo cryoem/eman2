@@ -177,17 +177,17 @@ void EMData::read_binedimage(const string & filename, int img_index, int binfact
 			int zbin = binfactor;
 			if(fast) zbin = 1;
 			//verbose
-			float percent = 0.1;
+			float percent = 0.1f;
 			for(int k = 0; k < ori_nz; k+=binfactor){
 				if(k > ori_nz*percent){	
 					cout << float(k)/float(ori_nz) << "% Done!" << endl;
-					percent+=0.1;
+					percent+=0.1f;
 				}
 				// read in a slice region
 				const Region* binregion = new Region(0,0,k,ori_nx,ori_ny,zbin);
 				tempdata->read_image(filename, 0, false, binregion);
 				// shrink the slice
-				if (binfactor > 1) tempdata->process_inplace("math.meanshrink",{"n",binfactor});
+				if (binfactor > 1) tempdata->process_inplace("math.meanshrink",Dict("n",binfactor));
 				size_t offset = nx*ny*k/binfactor;
 				//add slice to total
 				EMUtil::em_memcpy(get_data()+offset,tempdata->get_data(),sizeofslice);
