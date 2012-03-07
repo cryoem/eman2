@@ -924,7 +924,7 @@ class EMWizard(QtGui.QWizard):
 	"""
 	def __init__(self, wizarddata, e2gui):
 		QtGui.QWizard.__init__(self)
-		self.setModal(True)
+		#self.setModal(True)
 		self.setWindowTitle("e2program wizard")
 		self.e2gui = e2gui
 		
@@ -963,15 +963,14 @@ class EMWizardPage(QtGui.QWizardPage):
 		
 		frame.setLayout(framegrid)
 		grid.addWidget(frame,1,0)
-		#self.errorlabel = QtGui.QLabel()
-		#grid.addWidget(self.errorlabel,2,0)
 		self.setLayout(grid)
 
 	def validatePage(self):
 		""" Validate input and update GUI"""
 		for widget in self.widgetlist:
 			if widget[1].getErrorMessage():
-				print widget[1].getErrorMessage()
+				#print widget[1].getErrorMessage()
+				self.e2gui.pm().statusbar.setMessage(widget[1].getErrorMessage(),"color:red;")
 				return False
 			widget[0].setValue(widget[1].getValue())
 		return True
