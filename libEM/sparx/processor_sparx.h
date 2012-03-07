@@ -670,7 +670,7 @@ namespace EMAN
 		{ return new NewLowpassTanhProcessor(); }
 		string get_desc() const
 		{
-			return "Lowpass tanh filter processor applied in Fourier space.";
+			return "Lowpass tanh filter processor applied in Fourier space. 0.5*(tanh(cnst*(S+omega))-tanh(cnst*(S-omega))). omega==cutoff_abs. cnst==pi/(2*fall_off*omega). S in terms of Nyquist=0.5.";
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = TANH_LOW_PASS;
@@ -681,7 +681,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d = NewFourierProcessor::get_param_types();
-			d.put("fall_off", EMObject::FLOAT, "Tanh decay rate.");
+			d.put("fall_off", EMObject::FLOAT, "Tanh decay rate. ~0 -> step function. 1 -> smooth, gaussian-like falloff. ");
 			return d;
 		}
 		

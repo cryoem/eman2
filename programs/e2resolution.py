@@ -44,8 +44,8 @@ import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <volume> <mask> <output>
-	Note that this method has not yet (2010) been published, and is not yet a reliable
-	scheme for resolution determination, but we have high-hopes for the future.
+	Note that this method has not yet been published, and is not yet a reliable
+	scheme for resolution determination. DO NOT EXPECT RELIABLE ANSWERS AT THIS POINT !
 
 	This will compute an FSC resolution curve from a single structure by
 	comparing the power spectrum of the noise region to the power spectrum
@@ -78,6 +78,8 @@ def main():
 	E2n=E2init(sys.argv,options.ppid)
 	
 	#options.align=parsemodopt(options.align)
+
+	print "WARNING:  e2resolution is an experimental program. It does not (yet) produce reliable resolution curves in most cases."
 
 	print "read models"
 	data=EMData(args[0],0)

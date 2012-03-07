@@ -115,10 +115,11 @@ as not all elements are computed.
 		print nx," projections read"
 
 	out=file(options.output,"w")
+	outkey=file(options.output.rsplit(".",1)[0]+"_key.txt","w")
 
 	colh=1
 	t0=time.time()
-	print "0 - N"
+	outkey.write( "0 - N\n")
 	# We read one line of the simmx at a time. The line represents all values
 	# for a single particle
 	for y in xrange(ny):
@@ -128,8 +129,12 @@ as not all elements are computed.
 			t0=time.time()
 		Qs=[]		# Quality
 		QAs=[]		# Average Quality for particle
+		Q0s=[]		# Quality - Worst Quality
 		Zs=[]		# Z score for classification
 		Ns=[]		# classified best class
+		DTAs=[]		# angle of translation (best orient)
+		DTRs=[]		# translation distance
+		DAs=[]		# rotation angle
 		for cm in args:
 			im=EMData(cm,0,False,Region(0,y,nx,1))
 			im2=im.copy()										# here we make a copy with the max value-> zero. Used with 2-stage classification to get a better sigma
@@ -140,37 +145,76 @@ as not all elements are computed.
 			Q=im["minimum"]
 			Qs.append(Q)
 			QAs.append(im["mean"])
+			Q0s.append(im2["minimum"])	# im2 has worst quality -> 0
 			N=im.calc_min_index()
 			Ns.append(N)
+			
+			# a little silly to read the whole line, but also a little silly to have a 1 pixel image :^/
+			imdx=EMData(cm,1,False,Region(0,y,nx,1))
+			imdy=EMData(cm,1,False,Region(0,y,nx,1))
+			imda=EMData(cm,1,False,Region(0,y,nx,1))
+			
+			DTAs.append(atan2(imdy[N],imdx[N]))
+			DTRs.append(hypot(imdx[N],imdy[N]))
+			DAs.append(imda[N])
+			
 		out.write("%d\t"%y)
 
+		# note that we are multiplying qualities by -1 so BIGGER is better
 		for i,q in enumerate(Qs) : 
-			out.write("%1.4g\t"%q)			# Quality of best alignment
-			if y==0: print "%d - Best Ali Quality (%s)"%(colh,args[i])
-			colh+=1
+			out.write("%1.4g\t"%-q)			# Quality of best alignment
+			if y==0:
+				outkey.write( "%d - Best Ali Quality *-1 (%s)\n"%(colh,args[i]))
+				colh+=1
 		for i,qa in enumerate(QAs) : 
-			out.write("%1.4g\t"%qa)			#  Average quality for this particle
-			if y==0:print "%d - Avg Quality (%s)"%(colh,args[i])
-			colh+=1
+			out.write("%1.4g\t"%-qa)			#  Average quality for this particle
+			if y==0:
+				outkey.write( "%d - Avg Quality *-1 (%s)\n"%(colh,args[i]))
+				colh+=1
+		for i,q0 in enumerate(Q0s) : 
+			out.write("%1.4g\t"%-q0)			#  Average quality for this particle
+			if y==0:
+				outkey.write( "%d - Quality - Worst Quality *-1 (%s)\n"%(colh,args[i]))
+				colh+=1
 		for i,z in enumerate(Zs) : 
 			out.write("%1.4g\t"%z)			# Z for this alignment
-			if y==0:print "%d - Z score (%s)"%(colh,args[i])
-			colh+=1
+			if y==0:
+				outkey.write( "%d - Z score (%s)\n"%(colh,args[i]))
+				colh+=1
 		for i,n in enumerate(Ns) : 
 			out.write("%d\t"%n)				# class number
-			if y==0:print "%d - Best Ali Class (%s)"%(colh,args[i])
-			colh+=1
+			if y==0:
+				outkey.write( "%d - Best Ali Class (%s)\n"%(colh,args[i]))
+				colh+=1
+		for i,dta in enumerate(DTAs) : 
+			out.write("%1.4g\t"%dta)			# Trans align angle for best alignment
+			if y==0: 
+				outkey.write( "%d - Best Ali trans angle (%s)\n"%(colh,args[i]))
+				colh+=1
+		for i,dtr in enumerate(DTRs) : 
+			out.write("%1.2g\t"%dtr)			# Trans align dist for best alignment
+			if y==0: 
+				outkey.write( "%d - Best Ali trans dist (%s)\n"%(colh,args[i]))
+				colh+=1
+		for i,da in enumerate(DAs) : 
+			out.write("%1.4g\t"%da)			# Rot align angle for best alignment
+			if y==0: 
+				outkey.write( "%d - Best Ali rot angle (%s)\n"%(colh,args[i]))
+				colh+=1
+
 
 		# if refs were provided we also write out Euler angle columns
 		if options.refs :
 			for i,n in enumerate(Ns) : 
 				out.write("%1.5g\t"%ALTs[n])	# Altitude Euler for best alignment
-				if y==0:print "%d - Alt (%s)"%(colh,args[i])
-				colh+=1
+				if y==0:
+					outkey.write( "%d - Alt (%s)\n"%(colh,args[i]))
+					colh+=1
 			for i,n in enumerate(Ns) : 
 				out.write("%1.5g\t"%AZs[n])	# Azimuth Euler for best alignment
-				if y==0:print "%d - Az (%s)"%(colh,args[i])
-				colh+=1
+				if y==0:
+					outkey.write( "%d - Az (%s)\n"%(colh,args[i]))
+					colh+=1
 
 		# if input values were provided, we write per-particle info
 		if options.inimgs:
@@ -184,16 +228,17 @@ as not all elements are computed.
 				# This gives integrated radial weighted SSNR over 3 resolution ranges
 #				out.write("%1.3g\t%1.3g\t%1.3g\t"%(sum(snrw[1:nsnr/8])/(nsnr/8),sum(snrw[nsnr/16:nsnr/3])/(nsnr/3-nsnr/16),sum(snrw[nsnr/3:nsnr*2/3])/(nsnr*2/3-nsnr/3)));
 				out.write("%1.3g\t%1.3g\t%1.3g\t"%(sum(snr[3:nsnr/6])/(nsnr/6-3),sum(snr[nsnr/8:nsnr/3])/(nsnr/3-nsnr/8),sum(snr[nsnr/3:nsnr*2/3])/(nsnr*2/3-nsnr/3)));
-				if y==0:print "%d - defocus"%(colh)
-				colh+=1
-				if y==0:print "%d - bfactor"%(colh)
-				colh+=1
-				if y==0:print "%d - snr low"%(colh)
-				colh+=1
-				if y==0:print "%d - snr middle"%(colh)
-				colh+=1
-				if y==0:print "%d - snr high"%(colh)
-				colh+=1
+				if y==0:
+					outkey.write( "%d - defocus\n"%(colh))
+					colh+=1
+					outkey.write( "%d - bfactor\n"%(colh))
+					colh+=1
+					outkey.write( "%d - snr low\n"%(colh))
+					colh+=1
+					outkey.write( "%d - snr middle\n"%(colh))
+					colh+=1
+					outkey.write( "%d - snr high\n"%(colh))
+					colh+=1
 				
 			except:
 				pass								# no particle CTF info
@@ -203,7 +248,9 @@ as not all elements are computed.
 		if options.filtimgs!=None and options.inimgs!=None and eval(options.filtimgs):
 			EMData(options.inimgs,y).write_image(options.outimgs,-1)
 
-	print " %d/%d\r"%(ny,ny),
+	print " %d/%d\n"%(ny,ny),
+	print "Output in ",options.output
+	print "Key in ",options.output.rsplit(".",1)[0]+"_key.txt"
 	E2end(logid)
 
 

@@ -85,6 +85,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--checkctf",action="store_true",help="Verfies that all images in the file contain CTF information, and gives some basic statistics",default=False)
 
+	parser.add_argument("--step",type=str,default="0,1",help="Specify <init>,<step>. Processes only a subset of the input data. For example, 0,2 would process only the even numbered particles")
 	(options, args) = parser.parse_args()
 
 	if options.nocache : EMAN2db.BDB_CACHE_DISABLE=True
@@ -92,6 +93,11 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 	if options.cleanup : 
 		db_cleanup(options.force)
 		sys.exit(0)
+
+	try : options.step=int(options.step.split(",")[0]),int(options.step.split(",")[1])		# convert strings to tuple
+	except:
+		print "Invalid --step specification"
+		sys.exit(1)
 
 	if options.all : options.long=1
 	if len(args)==0 : args.append("bdb:.")
@@ -155,8 +161,8 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 			for db in dbs:
 				dct,keys=db_open_dict(path+db,ro=True,with_keys=True)
 				if dct==vstack : continue
-				vals = keys
-				if keys == None: vals = range(len(dct))
+				vals = keys[options.step[0]::options.step[1]]		# we apply --step even if we have a list of keys
+				if keys == None: vals = xrange(options.step[0],len(dct),options.step[1])
 				if options.list !=None: vals=slist
 				for n in vals:
 					try: d=dct.get(n,nodata=1).get_attr_dict()
@@ -201,7 +207,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 			nima = EMUtil.get_image_count(options.restore)
 			IB = db_open_dict(options.restore)
 			data_old = None
-			for i in xrange(nima):
+			for i in xrange(options.step[0],nima,options.step[1]):
 				source = IB.get_header(i)
 				data_source = source["data_source"]
 				ID = source["data_n"]
@@ -254,7 +260,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 				#### Dump
 				keys=dct.keys()
 				keys.sort()
-				for k in keys:
+				for k in keys[options.step[0]::options.step[1]]:
 					v=dct[k]
 					print "%s : "%k,
 					if isinstance (v,list) or isinstance(v,tuple)  :
@@ -279,7 +285,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 				dct=db_open_dict(path+db,ro=True)
 				keys=dct.keys()
 				defocus=set()
-				for k in keys:
+				for k in keys[options.step[0]::options.step[1]]:
 					v=dct.get_header(k)
 					try:
 						ctf=v["ctf"]
@@ -304,7 +310,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 				#### Dump
 				keys=dct.keys()
 				keys.sort()
-				for k in keys:
+				for k in keys[options.step[0]::options.step[1]]:
 					v=dct[k]
 					print "%s : "%k,
 					if isinstance (v,list) or isinstance(v,tuple)  :
@@ -330,7 +336,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 								
 				### Info on all particles
 				if options.all :
-					for i in range(len(dct)):
+					for i in range(options.step[0],len(dct),options.step[1]):
 						try: 
 							im=dct[i]
 							if im==None : raise Exception

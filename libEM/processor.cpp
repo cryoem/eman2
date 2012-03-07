@@ -1154,43 +1154,65 @@ void LowpassRandomPhaseProcessor::process_inplace(EMData *image)
 	float cutoff=0;
 	preprocess(image);
 	if( params.has_key("cutoff_abs") ) {
-		cutoff=params["cutoff_abs"];
+		cutoff=(float)params["cutoff_abs"];
 	}
 	else {
 		printf("A cutoff_* parameter is required by filter.lowpass.randomphase\n");
 		return;
 	}
 	
-	if (image->get_zsize()>1) {
-		printf("filter.lowpass.randomphase only works on 2-D images\n");
-		return;
-	}
-
-	int flag=0;
-	if (!image->is_complex()) { image->do_fft_inplace(); flag=1; }
-	image->ri2ap();
-
-	for (int y=0; y<image->get_ysize()/2; y++) {
-		for (int x=1; x<image->get_xsize(); x+=2) {
-			if (hypot((float)(x/2)/(float)image->get_xsize(),(float)y/(float)image->get_ysize())>cutoff) {
-				image->set_value_at(x,y,Util::get_frand(0.0f,(float)(M_PI*2.0)));
-			 }
-		}
-	}
-	for (int y=image->get_ysize()/2; y<image->get_ysize(); y++) {
-		for (int x=1; x<image->get_xsize(); x+=2) {
-			if (hypot((float)(x/2)/(float)image->get_xsize(),(float)(image->get_ysize()-y)/(float)image->get_ysize())>cutoff) {
-				image->set_value_at(x,y,Util::get_frand(0.0f,float(M_PI*2.0)));
-			 }
-		}
-	}
-	image->ap2ri();
-
-	if (flag) {
-		image->do_ift_inplace();
-		image->depad();
-	}
+	
+	if (image->get_zsize()==1) {
+		int flag=0;
+		if (!image->is_complex()) { image->do_fft_inplace(); flag=1; }
+		image->ri2ap();
+		int nx=image->get_xsize();
+		int ny=image->get_ysize();
 		
+		int z=0;
+		float *data=image->get_data();
+		for (int y=-ny/2; y<ny/2; y++) {
+			for (int x=0; x<nx/2+1; x++) {
+				if (hypot(x/float(nx),y/float(ny))>=cutoff) {
+					size_t idx=image->get_complex_index_fast(x,y,z);		// location of the amplitude
+					data[idx+1]=Util::get_frand(0.0f,(float)(M_PI*2.0));
+				}
+			}
+		}
+
+		image->ap2ri();
+
+		if (flag) {
+			image->do_ift_inplace();
+			image->depad();
+		}
+	}
+	else {		// 3D
+		int flag=0;
+		if (!image->is_complex()) { image->do_fft_inplace(); flag=1; }
+		image->ri2ap();
+		int nx=image->get_xsize();
+		int ny=image->get_ysize();
+		int nz=image->get_zsize();
+		
+		float *data=image->get_data();
+		for (int z=-nz/2; z<nz/2; z++) {
+			for (int y=-ny/2; y<ny/2; y++) {
+				for (int x=0; x<nx/2+1; x++) {
+					if (Util::hypot3(x/float(nx),y/float(ny),z/float(nz))>=cutoff) {
+						size_t idx=image->get_complex_index_fast(x,y,z);		// location of the amplitude
+						data[idx+1]=Util::get_frand(0.0f,(float)(M_PI*2.0));
+					}
+				}
+			}
+		}
+		image->ap2ri();
+
+		if (flag) {
+			image->do_ift_inplace();
+			image->depad();
+		}
+	}
 }
 
 void HighpassAutoPeakProcessor::preprocess(EMData * image)
