@@ -737,7 +737,7 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool )
 
 		EMUtil::get_region_dims(area, mrch.nx, &xlen, mrch.ny, &ylen, mrch.nz, &zlen);
 
-		size = xlen * ylen * zlen;
+		size = (size_t)xlen * ylen * zlen;
 	}
 
 	if (mrch.mode != MRC_UCHAR) {
