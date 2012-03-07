@@ -78,7 +78,7 @@ def main():
 	parser.add_argument("--lowpass",type=int,help="Resolution (integer, in Angstroms) at which you want to apply a gaussian lowpass filter to the tomogram prior to loading it for boxing",default=0, guitype='intbox', row=3, col=2, rowspan=1, colspan=1, mode="boxing")
 	parser.add_argument("--preprocess",type=str,help="""A processor (as in e2proc3d.py) to be applied to the tomogram before opening it. \nFor example, a specific filter with specific parameters you might like. \nType 'e2proc3d.py --processors' at the commandline to see a list of the available processors and their usage""",default=None)
 	
-	parser.add_argument('--reverse_contrast', action="store_true", default=False, help='''This means you want the contrast to me inverted while boxing, AND for the extracted sub-volumes.\nRemember that EMAN2 **MUST** work with "white" protein. You can very easily figure out what the original color\nof the protein is in your data by looking at the gold fiducials or the edge of the carbon hole in your tomogram.\nIf they look black you MUST specify this option''')
+	parser.add_argument('--reverse_contrast', action="store_true", default=False, help='''This means you want the contrast to me inverted while boxing, AND for the extracted sub-volumes.\nRemember that EMAN2 **MUST** work with "white" protein. You can very easily figure out what the original color\nof the protein is in your data by looking at the gold fiducials or the edge of the carbon hole in your tomogram.\nIf they look black you MUST specify this option''', guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="boxing")
 	
 	#parameters for commandline boxer
 	
@@ -923,7 +923,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		f=file(fsp,"r")
 		if options.helixboxer:
 			for b in f:
-				b2=[int(float(i)) for i in b.split()[:6]]
+				b2=[int(float(i))/self.bin for i in b.split()[:6]]
 				self.boxes.append(self.load_box_yshort(b2[3:6]))
 				self.update_box(len(self.boxes)-1)
 				self.helixboxes.append(b2)
@@ -932,7 +932,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				self.update_box(len(self.boxes)-1)
 		else:
 			for b in f:
-				b2=[int(float(i)) for i in b.split()[:3]]
+				b2=[int(float(i))/self.bin for i in b.split()[:3]]
 				self.boxes.append(b2)
 				self.update_box(len(self.boxes)-1)
 		f.close()
