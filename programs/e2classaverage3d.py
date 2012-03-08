@@ -107,7 +107,7 @@ def main():
 	parser.add_argument("--shrink", type=int,default=1,help="Optionally shrink the input volumes by an integer amount for coarse alignment.", guitype='shrinkbox', row=5, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
 	parser.add_argument("--shrinkrefine", type=int,default=1,help="Optionally shrink the input volumes by an integer amount for refine alignment.", guitype='intbox', row=5, col=2, rowspan=1, colspan=1, mode='alignment')
 	
-	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:1", guitype='strbox', row=15, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:1", guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	#parser.add_argument("--automask",action="store_true",help="Applies a 3-D automask before centering. Can help with negative stain data, and other cases where centering is poor.")
 	#parser.add_argument("--resample",action="store_true",help="If set, will perform bootstrap resampling on the particle data for use in making variance maps.",default=False)
 	#parser.add_argument("--odd", default=False, help="Used by EMAN2 when running eotests. Includes only odd numbered particles in class averages.", action="store_true")
