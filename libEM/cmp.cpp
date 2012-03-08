@@ -541,21 +541,41 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 			}
 		}
 		result /= sqrt(square_sum1*square_sum2);
-		} else  result /= ((float)nx*(float)ny*(float)nz*(float)nx*(float)ny*(float)nz);
+		} 
+			else  result /= ((float)nx*(float)ny*(float)nz*(float)nx*(float)ny*(float)nz);
+			// This concludes the 2D part.
+		} else { 
+		//This 3D code is incorrect, but it is the best I can do now 01/09/06 PAP
 
-		} else { //This 3D code is incorrect, but it is the best I can do now 01/09/06 PAP
+/*
+I fixed this part of the code, one could easily verify it in SPARX to see the results are same
+
+03/08/12  by Zhengfan Yang
+
+In [1]: a = model_gauss_noise(1.0, 64, 64, 64)
+In [2]: A = fft(a)
+In [3]: print a.cmp("dot", a, {"negative":0}), A.cmp("dot", A, {"negative":0})
+
+In [4]: a = model_gauss_noise(1.0, 65, 65, 65)
+In [5]: A = fft(a)
+In [6]: print a.cmp("dot", a, {"negative":0}), A.cmp("dot", A, {"negative":0})
+*/
+		
 		int ky, kz;
 		int ny2 = ny/2; int nz2 = nz/2;
 		for ( int iz = 0; iz <= nz-1; ++iz) {
 			if(iz>nz2) kz=iz-nz; else kz=iz;
 			for ( int iy = 0; iy <= ny-1; ++iy) {
 				if(iy>ny2) ky=iy-ny; else ky=iy;
-				for ( int ix = 0; ix <= lsd2-1; ++ix) {
+				//for ( int ix = 0; ix <= lsd2-1; ++ix) {
 					// Skip Friedel related values
-					if(ix>0 || (kz>=0 && (ky>=0 || kz!=0))) {
+					//if(ix>0 || (kz>=0 && (ky>=0 || kz!=0))) {
+				for (int ix = 0; ix <= lsd2-1; ++ix) {
+						int p = 2.0;
+						if  (ix <= 1 || ix >= lsd2-2 && nx%2 == 0)   p = 1.0;
 						size_t ii = ix + (iy  + iz * ny)* (size_t)lsd2;
-						result += x_data[ii] * double(y_data[ii]);
-					}
+						result += p * x_data[ii] * double(y_data[ii]);
+					//}
 				}
 			}
 		}
@@ -568,21 +588,27 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 			if(iz>nz2) kz=iz-nz; else kz=iz;
 			for ( int iy = 0; iy <= ny-1; ++iy) {
 				if(iy>ny2) ky=iy-ny; else ky=iy;
-				for ( int ix = 0; ix <= lsd2-1; ++ix) {
+				//for ( int ix = 0; ix <= lsd2-1; ++ix) {
 					// Skip Friedel related values
-					if(ix>0 || (kz>=0 && (ky>=0 || kz!=0))) {
+					//if(ix>0 || (kz>=0 && (ky>=0 || kz!=0))) {
+				for (int ix = 0; ix <= lsd2-1; ++ix) {
+						int p = 2.0;
+						if  (ix <= 1 || ix >= lsd2-2 && nx%2 == 0)   p = 1.0;
 						size_t ii = ix + (iy  + iz * ny)* (size_t)lsd2;
-						square_sum1 += x_data[ii] * double(x_data[ii]);
-						square_sum2 += y_data[ii] * double(y_data[ii]);
-					}
+						square_sum1 += p * x_data[ii] * double(x_data[ii]);
+						square_sum2 += p * y_data[ii] * double(y_data[ii]);
+					//}
 				}
 			}
 		}
 		result /= sqrt(square_sum1*square_sum2);
-		} else result /= ((float)nx*(float)ny*(float)nz*(float)nx*(float)ny*(float)nz/2);
+		} 
+//			else result /= ((float)nx*(float)ny*(float)nz*(float)nx*(float)ny*(float)nz/2);
+			else result /= ((float)nx*(float)ny*(float)nz*(float)nx*(float)ny*(float)nz);
 		}
 	} else {
-		
+		// This part is for when two images are real, which is much easier because 2-D or 3-D
+		// is the same code.
 		size_t totsize = (size_t)image->get_xsize() * image->get_ysize() * image->get_zsize();
 
 		double square_sum1 = 0., square_sum2 = 0.;
