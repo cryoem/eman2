@@ -39,7 +39,38 @@ from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
 from embrowser import EMBrowserWidget, EMFileItemModel, EMDirEntry, nonone
 
+class EMValidateTable(EMBrowserWidget):
+	""" Widgewt to display refinement directories """
+	def __init__(self, withmodal=False, multiselect=False):
+		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath=".")
+	
+	def setPath(self,path,silent=False):
+		super(EMValidateTable, self).setPath(path,silent=False,inimodel=EMValidateModel)
+		
+class EMValidateModel(EMFileItemModel):
+	""" Item model for the refinement data """
+	def __init__(self,startpath=None):
+		regex = re.compile('^TiltValidate')
+		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMDirEntry, dirregex=regex)
+		
+########################################################################################################################
 
+class EMRefineTable(EMBrowserWidget):
+	""" Widgewt to display refinement directories """
+	def __init__(self, withmodal=False, multiselect=False):
+		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath=".")
+	
+	def setPath(self,path,silent=False):
+		super(EMRefineTable, self).setPath(path,silent=False,inimodel=EMRefineModel)
+		
+class EMRefineModel(EMFileItemModel):
+	""" Item model for the refinement data """
+	def __init__(self,startpath=None):
+		regex = re.compile('^refine|^frealign')
+		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMDirEntry, dirregex=regex)
+		
+########################################################################################################################
+	
 class EMModelsTable(EMBrowserWidget):
 	""" Widget to display junk from e2boxercache """
 	def __init__(self, withmodal=False, multiselect=False):
@@ -92,8 +123,8 @@ class EMModelsEntry(EMDirEntry):
 	
 	col=(lambda x:int(x.index), lambda x:x.name,lambda x:x.quality, lambda x:x.dims)
 	
-	def __init__(self,root,name,i,parent=None,hidedot=True):
-		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot)
+	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
+		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
 		self.quality=None
 		self.dims=None
 		
@@ -181,8 +212,8 @@ class EMSetsEntry(EMDirEntry):
 	
 	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.partcount, lambda x:x.dims)
 	
-	def __init__(self,root,name,i,parent=None,hidedot=True):
-		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot)
+	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
+		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
 		self.partcount=None
 		self.dims=None
 		
@@ -276,8 +307,8 @@ class EMParticlesEntry(EMDirEntry):
 	
 	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.type,lambda x:x.particlecount, lambda x:x.particledim, lambda x:x.quality)
 	
-	def __init__(self,root,name,i,parent=None,hidedot=True):
-		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot)
+	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
+		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
 		self.regex = re.compile('flip|wiener')
 		self.type = None
 		self.particlecount=None
@@ -345,15 +376,15 @@ class EMCTFParticlesTable(EMBrowserWidget):
 		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath="./particles")
 	
 	def setPath(self,path,silent=False):
-		super(EMParticlesTable, self).setPath(path,silent=False,inimodel=EMParticlesModel)
-
+		super(EMCTFParticlesTable, self).setPath(path,silent=False,inimodel=EMCTFParticlesModel)
+		
 class EMCTFParticlesModel(EMFileItemModel):
 	""" Item model for the raw data """
 	
 	headers=("Row","Raw Data Files","Type", "Num Particles", "Particle Dims", "Defocus", "B Factor", "SNR", "Quality", "Sampling")
 	
 	def __init__(self,startpath=None):
-		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMParticlesEntry)
+		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMCTFParticlesEntry)
 		
 	def columnCount(self,parent):
 		"Always 10 columns"
@@ -408,8 +439,9 @@ class EMCTFParticlesEntry(EMDirEntry):
 	
 	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.type,lambda x:x.particlecount, lambda x:x.particledim, lambda x:x.defocus, lambda x:x.bfactor, lambda x:x.snr, lambda x:x.quality, lambda x:x.sampling)
 	
-	def __init__(self,root,name,i,parent=None,hidedot=True):
-		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot)
+	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
+		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
+		self.regex = re.compile(r'^(?!.*?wiener).*^(?!.*?flip).*')
 		self.type = None
 		self.particlecount=None
 		self.particledim=None
@@ -427,14 +459,15 @@ class EMCTFParticlesEntry(EMDirEntry):
 		if db_check_dict("bdb:e2ctf.parms"):
 			ctf_db = db_open_dict("bdb:e2ctf.parms",ro=True)
 			try:
-				ctf = (ctf_db[get_file_tag(self.path()).split("_ctf")[0]][0]).split()
-				self.defocus = "%.3f" % float(ctf[0][1:])
-				self.bfactor = "%.3f" % float(ctf[3])
-				background = (ctf[10].split(','))[1:]
-				self.sampling = str(len(background))
-				self.snr = "%.3f" %  (sum(map(float, background))/float(self.sampling))
-				quality = ctf_db[get_file_tag(self.path()).split("_ctf")[0]][3]
-				self.quality = "%d" %quality
+				if len(get_file_tag(self.path()).split("_ctf")) > 1: 
+					ctf = (ctf_db[get_file_tag(self.path()).split("_ctf")[0]][0]).split()
+					self.defocus = "%.3f" % float(ctf[0][1:])
+					self.bfactor = "%.3f" % float(ctf[3])
+					background = (ctf[10].split(','))[1:]
+					self.sampling = str(len(background))
+					self.snr = "%.3f" %  (sum(map(float, background))/float(self.sampling))
+					quality = ctf_db[get_file_tag(self.path()).split("_ctf")[0]][3]
+					self.quality = "%d" %quality
 			except:
 				pass
 		
@@ -547,9 +580,10 @@ class EMParticlesEditEntry(EMCTFParticlesEntry):
 	
 	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.type,lambda x:x.particlecount, lambda x:x.badparticlecount, lambda x:x.defocus, lambda x:x.bfactor, lambda x:x.snr, lambda x:x.quality, lambda x:x.sampling, lambda x:x.particledim)
 	
-	def __init__(self,root,name,i,parent=None,hidedot=True):
-		EMCTFParticlesEntry.__init__(self,root=root,name=name,i=i,parent=parent,hidedot=hidedot)
+	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
+		EMCTFParticlesEntry.__init__(self,root=root,name=name,i=i,parent=parent,hidedot=hidedot,dirregex=dirregex)
 		self.badparticlecount = None
+		self.regex=None
 		
 	def fillDetails(self, db):
 		super(EMParticlesEditEntry, self).fillDetails(db)
@@ -558,7 +592,7 @@ class EMParticlesEditEntry(EMCTFParticlesEntry):
 		if db_check_dict("bdb:select"):
 			select_db = db_open_dict("bdb:select",ro=True)
 			try:
-				self.badparticlecount = len(select_db[self.getBaseName(self.path())])
+				self.badparticlecount = len(select_db[self.getBaseName(self.path()).split('_ctf_')[0]])
 			except:
 				pass
 			
@@ -619,8 +653,8 @@ class EMBoxesEntry(EMDirEntry):
 	
 	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.boxcount, lambda x:x.quality, lambda x:x.mgquality)
 	
-	def __init__(self,root,name,i,parent=None,hidedot=True):
-		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot)
+	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
+		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
 		self.boxcount=None
 		self.quality=None
 		self.mgquality=None
@@ -721,8 +755,8 @@ class EMRCTBoxesEntry(EMDirEntry):
 	
 	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.boxcount, lambda x:x.quality, lambda x:x.mgquality)
 	
-	def __init__(self,root,name,i,parent=None,hidedot=True):
-		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot)
+	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
+		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
 		self.boxcount=None
 		self.quality=None
 		self.mgquality=None
@@ -825,8 +859,8 @@ class EMSubTomosEntry(EMDirEntry):
 	
 	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.nimg, lambda x:x.dim)
 	
-	def __init__(self,root,name,i,parent=None,hidedot=True):
-		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot)
+	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
+		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
 		
 	def fillDetails(self, db):
 		# Maybe add code to cache results.....
@@ -886,8 +920,8 @@ class EMRawDataEntry(EMDirEntry):
 	
 	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.dim, lambda x:x.mgquality)
 	
-	def __init__(self,root,name,i,parent=None,hidedot=True):
-		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot)
+	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
+		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
 		self.mgquality = None
 		
 	def fillDetails(self, db):
@@ -949,8 +983,8 @@ class EMTomoDataEntry(EMDirEntry):
 	
 	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.dim)
 	
-	def __init__(self,root,name,i,parent=None,hidedot=True):
-		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot)
+	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
+		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
 		self.mgquality = None
 		
 	def fillDetails(self, db):

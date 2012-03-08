@@ -718,13 +718,14 @@ class EMDirEntry(object):
 	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.filetype,lambda x:x.size,lambda x:x.dim,lambda x:x.nimg,lambda x:x.date)
 #	classcount=0
 	
-	def __init__(self,root,name,index,parent=None,hidedot=True):
+	def __init__(self,root,name,index,parent=None,hidedot=True,dirregex=None):
 		"""The path for this item is root/name. 
 		Parent (EMDirEntry) must be specified if it exists.
 		hidedot will cause hidden files (starting with .) to be excluded"""
 		self.__parent=parent	# single parent
 		self.__children=None	# ordered list of children, None indicates no check has been made, empty list means no children, otherwise list of names or list of EMDirEntrys
 		self.regex = None	# A regular expression to weed out undesirable files based upn filename, uses regualr expression. Must be a regex object
+		self.dirregex=dirregex	# only list files using regex. Only applies to starting directory
 		self.root=str(root)	# Path prefixing name
 		self.name=str(name)	# name of this path element (string)
 		self.index=str(index)
@@ -819,9 +820,13 @@ class EMDirEntry(object):
 			
 			# Weed out undesirable files
 			self.__children = []
-			if self.regex:
+			if self.dirregex:
 				for child in filelist:
-					if not self.regex.search(child):
+					if self.dirregex.search(child):
+						self.__children.append(child)
+			elif self.regex:
+				for child in filelist:
+					if not self.regex.search(child) or child == "EMAN2DB":
 						self.__children.append(child)
 			else:
 				self.__children = filelist
@@ -1014,9 +1019,9 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 	
 	headers=("Row","Name","Type","Size","Dim","N","Date")
 	
-	def __init__(self,startpath=None,direntryclass=EMDirEntry):
+	def __init__(self,startpath=None,direntryclass=EMDirEntry,dirregex=None):
 		QtCore.QAbstractItemModel.__init__(self)
-		self.root=direntryclass(startpath,"", 0)				# EMDirEntry as a parent for the root path
+		self.root=direntryclass(startpath,"", 0,dirregex=dirregex)				# EMDirEntry as a parent for the root path
 		self.rootpath=startpath							# root path for current browser
 		self.last=(0,0)
 		self.db=None
@@ -1924,7 +1929,7 @@ class EMBrowserWidget(QtGui.QWidget):
 			ftc=obj.fileTypeClass()
 			if ftc!=None: 
 				self.curft=ftc(obj.path())
-				if self.setsmode: self.curft.setSetsDB(obj.path())	# If we want to enable bad particel picking
+				if self.setsmode: self.curft.setSetsDB(obj.path().split('_ctf_')[0])	# If we want to enable bad particel picking (treat ctf and raw data bads as same)
 				self.curactions=self.curft.actions()
 #				print actions
 				for i,b in enumerate(self.wbutmisc):

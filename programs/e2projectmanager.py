@@ -57,6 +57,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		self.taskmanager = None
 		self.wikipage = None
 		self.thehelp = None
+		self.table = None
 		
 		# Load the project DataBase
 		self.loadPMdb()
@@ -571,7 +572,10 @@ class EMProjectManager(QtGui.QMainWindow):
 		for child in toplevel["CHILDREN"]:
 			qtreewidget = PMQTreeWidgetItem(QtCore.QStringList(child["NAME"]))
 			qtreewidget.setIcon(0, self.icons[child["ICON"]])
-			qtreewidget.setProgram(child["PROGRAM"])
+			# optional program
+			if "PROGRAM" in child: qtreewidget.setProgram(child["PROGRAM"])
+			# optional table to diaply rather than a program
+			if "TABLE" in child: qtreewidget.setTable(child["TABLE"])
 			# Optional mode for the program to run in. The default is to have no mode
 			if "MODE" in child: qtreewidget.setMode(child["MODE"])
 			# Option note level and note elevel > 0 means add job to notebook. Good to prevent a lot of crap from piling up!
@@ -609,7 +613,10 @@ class EMProjectManager(QtGui.QMainWindow):
 		for toplevel in tree:
 			qtreewidget = PMQTreeWidgetItem(QtCore.QStringList(toplevel["NAME"]))
 			qtreewidget.setIcon(0, self.icons[toplevel["ICON"]])
-			qtreewidget.setProgram(toplevel["PROGRAM"])
+			# optional program
+			if "PROGRAM" in toplevel: qtreewidget.setProgram(toplevel["PROGRAM"])
+			# optional table to diaply rather than a program
+			if "TABLE" in toplevel: qtreewidget.setTable(toplevel["TABLE"])
 			# Optional mode for the program to run in. The default is to have no mode
 			if "MODE" in toplevel: qtreewidget.setMode(toplevel["MODE"])
 			# Option note level and note elevel > 0 means add job to notebook. Good to prevent a lot of crap from piling up!
@@ -637,9 +644,13 @@ class EMProjectManager(QtGui.QMainWindow):
         
         def _tree_widget_click(self, item, col):
 		# Display the progrma GUI
-		if item.getProgram() != "programName":
+		if item.getProgram():
 			self._set_GUI(item.getProgram(), item.getMode())
 			self.updateProject()
+		elif item.getTable():
+			if self.table: self.table.close()
+			self.table = eval(item.getTable())
+			self.table.show()
 		else:
 			self.gui_stacked_widget.setCurrentIndex(0)
 			self.clearE2Interface()
@@ -1854,6 +1865,7 @@ class PMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 	def __init__(self, qstring):
 		QtGui.QTreeWidgetItem.__init__(self, qstring)
 		self.program = None
+		self.table = None
 		self.mode = ""
 		self.notelevel = 0
 		self.wikipage = None
@@ -1866,6 +1878,13 @@ class PMQTreeWidgetItem(QtGui.QTreeWidgetItem):
 		
 	def getProgram(self):
 		return self.program
+		
+	def setTable(self, table):
+		""" Set the table to display, as an alternative to a program """
+		self.table = table
+		
+	def getTable(self):
+		return self.table
 		
 	def setMode(self, mode):
 		""" The mode the program is supposed to run in """

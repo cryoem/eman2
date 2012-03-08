@@ -4,7 +4,7 @@
 [
   {
     "ICON": "single_image", 
-    "PROGRAM": "programName", 
+    "TABLE": "EMRawDataTable(withmodal=False,multiselect=True)", 
     "NAME": "Raw Data", 
     "CHILDREN": [
       {
@@ -32,7 +32,7 @@
   }, 
   {
     "ICON": "green_boxes", 
-    "PROGRAM": "programName", 
+    "TABLE": "EMParticlesTable(withmodal=False,multiselect=True)", 
     "NAME": "Particles", 
     "CHILDREN": [
       {
@@ -87,7 +87,7 @@
   }, 
   {
     "ICON": "ctf", 
-    "PROGRAM": "programName", 
+    "TABLE": "EMCTFParticlesTable(withmodal=False,multiselect=True)", 
     "NAME": "CTF", 
     "CHILDREN": [
       {
@@ -129,7 +129,7 @@
   }, 
   {
     "ICON": "multiple_images", 
-    "PROGRAM": "programName", 
+    "TABLE": "EMParticlesEditTable(withmodal=False,multiselect=True)", 
     "NAME": "Particle Sets", 
     "CHILDREN": [
       {
@@ -151,7 +151,7 @@
   }, 
   {
     "ICON": "web", 
-    "PROGRAM": "programName", 
+    "TABLE": "EMSetsTable(withmodal=False,multiselect=False)", 
     "NAME": "Reference Free Class Averages", 
     "CHILDREN": [
       {
@@ -165,7 +165,7 @@
   }, 
   {
     "ICON": "single_image_3d", 
-    "PROGRAM": "programName", 
+    "TABLE": "EMModelsTable(withmodal=False,multiselect=False)", 
     "NAME": "Initial Model", 
     "CHILDREN": [
       {
@@ -205,7 +205,7 @@
   }, 
   {
     "ICON": "refine", 
-    "PROGRAM": "programName", 
+    "TABLE": "EMRefineTable(withmodal=False,multiselect=False)", 
     "NAME": "3D Refinement", 
     "CHILDREN": [
       {
@@ -228,7 +228,7 @@
       }, 
       {
         "ICON": "refine", 
-        "PROGRAM": "programName", 
+        "TABLE": "EMRefineTable(withmodal=False,multiselect=False)", 
         "NAME": "Frealign", 
         "CHILDREN": [
           {
@@ -261,7 +261,6 @@
   }, 
   {
     "ICON": "resolution", 
-    "PROGRAM": "programName", 
     "NAME": "Resolution", 
     "CHILDREN": [
       {
@@ -290,7 +289,7 @@
   },
   {
     "ICON": "single_image_3d", 
-    "PROGRAM": "programName", 
+    "TABLE": "EMValidateTable(withmodal=False,multiselect=False)",  
     "NAME": "Validation", 
     "CHILDREN": [
       {
