@@ -719,7 +719,7 @@ class EMRCTBoxesModel(EMFileItemModel):
 class EMRCTBoxesEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:x.name,lambda x:x.boxcount, lambda x:x.quality, lambda x:x.mgquality)
+	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.boxcount, lambda x:x.quality, lambda x:x.mgquality)
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True):
 		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot)

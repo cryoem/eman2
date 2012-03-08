@@ -392,6 +392,7 @@ try:
 	from PyQt4.QtCore import Qt
 	from emshape import *
 	from valslider import ValSlider
+	from emplot2d import EMPolarPlot2DWidget
 except:
 	class dummy:
 		pass
