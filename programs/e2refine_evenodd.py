@@ -66,7 +66,7 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--input", dest="input", default=None,type=str, help="The name of the set containing the particle data", browser='EMSetsTable(withmodal=True,multiselect=False)', guitype='filebox', row=0, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--model", dest="model", type=str,default="threed.0a.mrc", help="The name of the 3D image that will seed the refinement", guitype='filebox', browser='EMModelsTable(withmodal=True,multiselect=False)', row=5, col=0, rowspan=1, colspan=3, mode="refinement")
-	parser.add_argument("--randomres",type=float,default=25.0,"Resolution for the lowpass phase-randomization to apply to the initial model. Specify in A. (default=25)")
+	parser.add_argument("--randomres",type=float,default=25.0,help="Resolution for the lowpass phase-randomization to apply to the initial model. Specify in A. (default=25)")
 	parser.add_argument("--usefilt", dest="usefilt", type=str,default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used in projection matching routines, and elsewhere.")
 	parser.add_argument("--path", default=None, type=str,help="The name of a directory where results are placed. If unspecified will generate one automatically of type refine_??.")
 	parser.add_argument("--mass", default=0, type=float,help="The mass of the particle in kilodaltons, used to run normalize.bymass. If unspecified (set to 0) nothing happens. Requires the --apix argument.", guitype='floatbox', row=2, col=1, rowspan=1, colspan=1, mode="refinement['self.pm().getMass()']")
@@ -128,30 +128,18 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	(options, args) = parser.parse_args()
-	error = False
-	if check(options,True) == True : 
-		error = True
-	if check_projection_args(options) == True : 
-		error = True
-	if check_simmx_args(options,True) == True :
-		error = True
-	if check_classify_args(options,True) == True :
-		error = True
-	if check_classaverage_args(options,True) == True :
-		error = True
-#	if check_make3d_args(options,True) == True:
-#		error = True
 	
 	logid=E2init(sys.argv,options.ppid)
 	
 	# make directories for the two jobs
-	try: os.mkdir(os.path+"_even")
+	try: os.mkdir(options.path+"_even")
 	except: pass
-	try: os.mkdir(os.path+"_odd")
+	try: os.mkdir(options.path+"_odd")
 	except: pass
 
 	# create the even and odd data sets
 	# note that this is very inefficient if not using bdb: as a source 
+	print "### Creating virtual stacks for even/odd data"
 	if options.input[:4].lower()=="bdb:" :
 		eset=options.input+"_even"
 		oset=options.input+"_odd"
@@ -166,14 +154,41 @@ def main():
 			print "Warning: %s already exists. Trusting that this file is correct and complete."%oset
 		else:
 			error = launch_childprocess("e2bdb.py %s --makevstack=%s --step=1,2"%(options.input,oset))
+	else:
+		print "Sorry, at the moment this program supports only BDB format input particle stacks !"
+		sys.exit(1)
 
 	# Prepare the starting models for each run
 	# each model will have different random phases beyond the specified resolution
-	launch_childprocess("e2proc3d.py %s bdb:%s_even#initial_model --process=filter.lowpass.randomphase:cutoff_freq=%1.4f"%(options.model,os.path,1.0/options.randomres)
-	launch_childprocess("e2proc3d.py %s bdb:%s_odd#initial_model --process=filter.lowpass.randomphase:cutoff_freq=%1.4f"%(options.model,os.path,1.0/options.randomres)
+	print "### Preparing initial models for refinement, phase-randomized at %1.1f A resolution"%options.randomres
+	launch_childprocess("e2proc3d.py %s bdb:%s_even#initial_model --process=filter.lowpass.randomphase:cutoff_freq=%1.4f"%(options.model,options.path,1.0/options.randomres))
+	launch_childprocess("e2proc3d.py %s bdb:%s_odd#initial_model --process=filter.lowpass.randomphase:cutoff_freq=%1.4f"%(options.model,options.path,1.0/options.randomres))
 	
 	# Ok, now we're ready to run the actual refinements !
-	print sys.argv
+	argv=sys.argv[1:]
+	for a in argv:
+		if a[:11]=="--randomres" : argv.remove(a)
+
+	for i,a in enumerate(argv):
+		if a[:6]=="--path" : ipath=i
+		if a[:7]=="--model" : imodel=i
+
+	# run even refinement
+	print "### Starting even data refinement"
+	argv[ipath]="--path=%s"%(options.path+"_even")
+	argv[imodel]="--model=bdb:%s_even#initial_model"%options.path
+	launch_childprocess("e2refine.py "+" ".join(argv))
+
+	# run odd refinement
+	print "### Starting odd data refinement"
+	argv[ipath]="--path=%s"%(options.path+"_odd")
+	argv[imodel]="--model=bdb:%s_odd#initial_model"%options.path
+	launch_childprocess("e2refine.py "+" ".join(argv))
+
+	# measure resolution curve
+	print "### Computing resolution curve as fsc_gold_%s.txt"%options.path[-2:]
+	launch_childprocess("e2proc3d.py bdb:%s_even#threed_filt_%02d fsc_gold_%s.txt --calcfsc=bdb:%s_odd#threed_filt_%02d"%(options.path,options.iter-1,options.path[-2:],options.path,options.iter-1))
+	
 
 	E2end(logid)
 

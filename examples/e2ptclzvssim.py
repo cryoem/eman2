@@ -111,7 +111,9 @@ as not all elements are computed.
 			# this reads the header, gets the orientation, and reads it out EMAN style
 			ort=EMData(options.refs,i,True)["xform.projection"].get_rotation("eman")
 			ALTs.append(ort["alt"])
-			AZs.append(ort["az"])
+			if ort["az"]>180.0 : az=ort["az"]-360.0		# we do this to reduce problems with symmetric structures with angle perturbation
+			else: az=ort["az"]
+			AZs.append(az)
 		print nx," projections read"
 
 	out=file(options.output,"w")

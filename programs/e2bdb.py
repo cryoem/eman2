@@ -161,8 +161,8 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 			for db in dbs:
 				dct,keys=db_open_dict(path+db,ro=True,with_keys=True)
 				if dct==vstack : continue
-				vals = keys[options.step[0]::options.step[1]]		# we apply --step even if we have a list of keys
 				if keys == None: vals = xrange(options.step[0],len(dct),options.step[1])
+				else: vals = keys[options.step[0]::options.step[1]]		# we apply --step even if we have a list of keys
 				if options.list !=None: vals=slist
 				for n in vals:
 					try: d=dct.get(n,nodata=1).get_attr_dict()
