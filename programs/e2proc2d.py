@@ -537,13 +537,14 @@ def main():
 				#write processed image to file
 				if options.threed2threed or options.twod2threed:    #output a single 3D image
 					if i==0:
-						out3d_img = EMData(d.get_xsize(), d.get_ysize(), nimg)
-						if 'mrc8bit' in optionlist:
-							out3d_img.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', 0, EMUtil.get_image_ext_type(options.outtype), True, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
-						elif 'mrc16bit' in optionlist:
-							out3d_img.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', 0, EMUtil.get_image_ext_type(options.outtype), True, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
-						else:
-							out3d_img.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), True, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+						if not os.path.isfile(outfile):	#create a dummy 3D image for regional writing if not already exist
+							out3d_img = EMData(d.get_xsize(), d.get_ysize(), nimg)
+							if 'mrc8bit' in optionlist:
+								out3d_img.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', 0, EMUtil.get_image_ext_type(options.outtype), True, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
+							elif 'mrc16bit' in optionlist:
+								out3d_img.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', 0, EMUtil.get_image_ext_type(options.outtype), True, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
+							else:
+								out3d_img.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), True, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
 					
 					region = Region(0, 0, i, d.get_xsize(), d.get_ysize(), 1)
 									
