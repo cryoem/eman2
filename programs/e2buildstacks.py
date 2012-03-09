@@ -30,43 +30,70 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
-import os
+import os, re
 from EMAN2 import *
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """prog [options] <micrgrpah1, microgaph2....
-	Use e2proc2d.py to build particle sets
-	>"""
+	usage = """prog [options] <micrgrpah1, microgaph2....>
+	Use e2bdb.py or e2proc2d.py to build particle sets
+	"""
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_pos_argument(name="stack_files",help="List building material (sets) here.", default="", guitype='filebox', browser="EMParticlesEditTable(withmodal=True,multiselect=True)", positional=True, row=0, col=0,rowspan=1, colspan=2, nosharedb=True)
-	parser.add_header(name="builbheader", help='Options below this label are specific to e2buildstacks', title="### e2buildstacks options ###", row=1, col=0, rowspan=1, colspan=2)
+	parser.add_header(name="buildheader", help='Options below this label are specific to e2buildstacks', title="### e2buildstacks options ###", row=1, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--stackname",type=str,help="Name of the stack to build", default='my_stack', guitype='strbox',row=2, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--filetype",help="Type of file",default='bdb',guitype='combobox',choicelist='["bdb","hdf","spi"]',row=3,col=0,rowspan=1,colspan=1)
+	parser.add_argument("--excludebad",action="store_true",help="Exculde bad particles. Only works for BDB stacks",default=True, guitype='boolbox',row=4,col=0,rowspan=1,colspan=1)
 	
 	(options, args) = parser.parse_args()
 	
 	# Now do the work
-	
-	boxesdir = os.path.join(".","sets")
+	path = "sets"
+
+	boxesdir = os.path.join(".",path)
 	if not os.access(boxesdir, os.R_OK):
-		os.mkdir("sets")
+		os.mkdir(path)
 	
-	outname = ""
+	#If we use bdb, then make a virtual stack
+	out_name = ""
 	if options.filetype == "bdb":
-		outname = "bdb:sets#%s"%os.path.splitext(options.stackname)[0]
+		out_name = "bdb:%s#%s"%(path,os.path.splitext(options.stackname)[0])
+		
+		# Check exclude DB
+		if db_check_dict("bdb:select"):
+			select_db = db_open_dict("bdb:select")
+		else:
+			select_db = None
+		cmd = ""
+	
+		for i,name in enumerate(args):
+			cmd = "e2bdb.py"
+			no_exc = True
+			if options.excludebad and select_db != None:
+				exc_db = re.sub(r'_ctf_flip$|_ctf_wiener$','',get_file_tag(name))
+				if select_db.has_key(exc_db):
+					cmd += " "+name+"?exclude."+exc_db
+					no_exc=False
+				
+			if no_exc:
+				cmd += " "+name
+				
+			cmd += " --appendvstack="+out_name
+		
+			success = (os.system(cmd) in (0,11,12))
+			
+		exit(0)
+	
+	#If we don't use bdb, then make a 'real' stack
 	if options.filetype == "hdf":
-		outname = os.path.join("sets","%s.hdf"%os.path.splitext(options.stackname)[0])
+		out_name = os.path.join(path,"%s.hdf"%os.path.splitext(options.stackname)[0])
 	if options.filetype == "spi":
-		outname = os.path.join("sets","%s.spi"%os.path.splitext(options.stackname)[0])
+		out_name = os.path.join(path,"%s.spi"%os.path.splitext(options.stackname)[0])
 		
 	for arg in args:
-		launch_childprocess("e2proc2d.py %s %s"%(arg,outname))
+		launch_childprocess("e2proc2d.py %s %s"%(arg,out_name))
 	
-
-
-		
 if __name__ == "__main__":
 	main()

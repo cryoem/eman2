@@ -783,6 +783,7 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 		EMPlot2DWidget.__init__(self)
 		self.setWindowIcon(QtGui.QIcon(QtGui.QPixmap(ploticon)))
 		self.setDataLabelsColor('#00ff00')
+		self.scattercolor = None	# IF set to none default colors are used
                 
 	def mousePressEvent(self, event):
 		#Save a snapshot of the scene
@@ -911,6 +912,10 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
         def setDataLabelsColor(self, color):
                 """ Set the color of the data labels """
                 self.datalabelscolor = color
+	
+	def setScatterColor(self, color):
+		""" Set a matplotlib color or list of colors """
+		self.scattercolor = color
 		
 	def render(self):
 		"""
@@ -966,9 +971,14 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 				if self.pparm[i][4]:
 					parm+=symtypes[self.pparm[i][5]]
 				
+				if self.scattercolor:
+					scattercolor = self.scattercolor
+				else:
+					scattercolor = colortypes[self.pparm[i][0]]
 					
-				ax.scatter(theta, r,s=self.pparm[i][3], color=colortypes[self.pparm[i][0]], lw=3)
-				
+				ax.scatter(theta, r,s=self.pparm[i][3], color=scattercolor, lw=3)
+				#ax.scatter(theta, r,s=self.pparm[i][3], color=['#00ff00','#0000ff','#00ff00','#00ff00','#00ff00','#00ff00','#00ff00','#00ff00'], lw=3)
+
 			if len(self.pparm[i]) == 8 and self.pparm[i][7] >= 0: 
 				ax.set_rmax(self.pparm[i][7])
 			

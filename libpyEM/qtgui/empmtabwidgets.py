@@ -39,6 +39,23 @@ from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
 from embrowser import EMBrowserWidget, EMFileItemModel, EMDirEntry, nonone
 
+
+class EMRefine2dTable(EMBrowserWidget):
+	""" Widgewt to display refinement directories """
+	def __init__(self, withmodal=False, multiselect=False):
+		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath=".")
+	
+	def setPath(self,path,silent=False):
+		super(EMRefine2dTable, self).setPath(path,silent=False,inimodel=EMRefine2dModel)
+		
+class EMRefine2dModel(EMFileItemModel):
+	""" Item model for the refinement data """
+	def __init__(self,startpath=None):
+		regex = re.compile('^r2d')
+		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMDirEntry, dirregex=regex)
+		
+########################################################################################################################
+
 class EMValidateTable(EMBrowserWidget):
 	""" Widgewt to display refinement directories """
 	def __init__(self, withmodal=False, multiselect=False):

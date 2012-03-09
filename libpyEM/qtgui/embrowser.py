@@ -106,10 +106,7 @@ class EMFileType(object):
 		
 	def setSetsDB(self, db_name):
 		"Sets the emmxwidget to sets dbname"
-		if db_name[:4].lower()!="bdb:": 
-			self.setsdb = os.path.splitext(os.path.basename(db_name))[0]
-		else:
-			self.setsdb = db_parse_path(db_name)[1]
+		self.setsdb = get_file_tag(db_name)
 		
 	def getSetsDB(self):
 		"Returns the sets mode"
@@ -1929,7 +1926,7 @@ class EMBrowserWidget(QtGui.QWidget):
 			ftc=obj.fileTypeClass()
 			if ftc!=None: 
 				self.curft=ftc(obj.path())
-				if self.setsmode: self.curft.setSetsDB(obj.path().split('_ctf_')[0])	# If we want to enable bad particel picking (treat ctf and raw data bads as same)
+				if self.setsmode: self.curft.setSetsDB(re.sub(r'_ctf_flip$|_ctf_wiener$','',obj.path()))	# If we want to enable bad particel picking (treat ctf and raw data bads as same)
 				self.curactions=self.curft.actions()
 #				print actions
 				for i,b in enumerate(self.wbutmisc):

@@ -151,7 +151,7 @@
   }, 
   {
     "ICON": "web", 
-    "TABLE": "EMSetsTable(withmodal=False,multiselect=False)", 
+    "TABLE": "EMRefine2dTable(withmodal=False,multiselect=False)", 
     "NAME": "Reference Free Class Averages", 
     "CHILDREN": [
       {

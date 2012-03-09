@@ -70,6 +70,7 @@ def main():
 	parser.add_argument("--sym",  type=str,help="The recon symmetry", default="c1", guitype='symbox', row=5, col=0, rowspan=1, colspan=1, mode="analysis")
 	parser.add_argument("--planethres", type=float, help="Maximum out of plane threshold for the tiltaxis. 0 = perfectly in plane, 1 = normal to plane", default=0.1, guitype='floatbox', row=5, col=0, rowspan=1, mode="gui")
 	parser.add_argument("--datalabels", action="store_true",help="Add data labels to the plot", default=False, guitype='boolbox', row=6, col=1, rowspan=1, mode="gui")
+	parser.add_argument("--colorzaxis", action="store_true",help="Color scatter dots by Z axis", default=False, guitype='boolbox', row=7, col=0, rowspan=1, mode="gui")
 	parser.add_argument("--maxtiltangle", type=float, help="Maximum tiltangle permitted when finding tilt distances", default=180.0, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="analysis")
 	parser.add_argument("--gui",action="store_true",help="Start the GUI for viewing the tiltvalidate plots",default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode="gui[True]")
 	parser.add_argument("--datalabelscolor", type=str, help="Set the color of the data labels. Any vaild matplotlib color is ok", default='#00ff00', guitype='strbox', row=6, col=0, rowspan=1, colspan=1, mode="gui")
@@ -96,7 +97,7 @@ def main():
 	
 	# Run the GUI if in GUI mode
 	if options.gui:
-		display_validation_plots(options.path, options.radcut, options.planethres, plotdatalabels=options.datalabels, color=options.datalabelscolor)
+		display_validation_plots(options.path, options.radcut, options.planethres, plotdatalabels=options.datalabels, color=options.datalabelscolor, plotzaxiscolor=options.colorzaxis)
 		exit(0)
 		
 	if not (options.volume or options.eulerfile):
@@ -403,21 +404,26 @@ except:
 	QtGui=dummy()
 	QtGui.QWidget=QWidget
 
-def display_validation_plots(path, radcut, planethres, plotdatalabels=False, color='#00ff00'):
+def display_validation_plots(path, radcut, planethres, plotdatalabels=False, color='#00ff00', plotzaxiscolor=False):
 	from emimage2d import EMImage2DWidget
 	from emapplication import EMApp
 	r = []
 	theta = []
 	datap = []
+	zaxis = []
+	
 	try:
 		tpdb = db_open_dict("bdb:%s#perparticletilts"%path)
 		tplist = tpdb["particletilt_list"]
+		maxcolorval = max(tplist, key=lambda x: x[3])[3]
+		print maxcolorval
 		for tp in tplist:
 			if tp[3] > planethres:	# if the out of plane threshold is too much
 				continue
 			if plotdatalabels: datap.append(tp[0])
 			r.append(tp[1])
 			theta.append(math.radians(tp[2]))
+			zaxis.append(computeRGBcolor(tp[3],0,maxcolorval))
 		tpdb.close()
 	except:
 		print "Couldn't load tp from DB, not showing polar plot"
@@ -430,17 +436,39 @@ def display_validation_plots(path, radcut, planethres, plotdatalabels=False, col
 	if not data and not (theta and r): return
 	app = EMApp()
 	if theta and r:
-		#plot = EMPolarPlot2DWidget()
 		plot = EMValidationPlot()
 		plot.set_data((theta,r),50,radcut,datap)
+		# Color by Z axis if desired
+		if plotzaxiscolor: plot.set_scattercolor(zaxis)
 		plot.set_datalabelscolor(color)
-		#plot.set_data((theta,r),linewidth=50,radcut=radcut,datapoints=datap)
 		plot.show()
 	if data:
 		image = EMImage2DWidget(data)
 		image.show()
 	app.exec_()
 
+def computeRGBcolor(value, minval, maxval):
+	# Normalize from 0 to 1
+	normval = (value-minval)/(maxval-minval)
+	radval = normval*2*math.pi
+	if radval < 2*math.pi/3:
+		B = 0.0
+		R = 0.33*(1 + math.cos(radval)/math.cos(math.pi/3 - radval))
+		G = 1.0 - R
+		return "#%02x%02x%02x"%(255*R,255*G,255*B)
+	if radval > 2*math.pi/3 and radval < 4*math.pi/3:
+		hue = radval- 2*math.pi/3
+		R = 0.0
+		G = 0.33*(1 + math.cos(hue)/math.cos(math.pi/3 - hue))
+		B = 1.0 - G
+		return "#%02x%02x%02x"%(255*R,255*G,255*B)
+	if radval > 4*math.pi/3:
+		hue = radval- 4*math.pi/3
+		G = 0
+		B = 0.33*(1 + math.cos(hue)/math.cos(math.pi/3 - hue))
+		R = 1.0 - B
+		return "#%02x%02x%02x"%(255*R,255*G,255*B)
+	
 class EMValidationPlot(QtGui.QWidget):
 	"""Make a plot to display validation info"""
 	def __init__(self):
@@ -505,6 +533,8 @@ class EMValidationPlot(QtGui.QWidget):
 	def set_datalabelscolor(self, color):
 		self.polarplot.setDataLabelsColor(color)
 		
+	def set_scattercolor(self, color):
+		self.polarplot.setScatterColor(color)
 		
 if __name__ == "__main__":
 	main()
