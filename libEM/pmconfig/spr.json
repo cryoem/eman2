@@ -307,6 +307,7 @@
         "MODE": "gui",
         "PROGRAM": "e2tiltvalidate.py", 
         "NAME": "Plot Validation", 
+        "WIZARD":"/lib/pmconfig/plottiltvalidation.json",
         "CHILDREN": []
       }
     ]

@@ -416,13 +416,14 @@ def display_validation_plots(path, radcut, planethres, plotdatalabels=False, col
 		tpdb = db_open_dict("bdb:%s#perparticletilts"%path)
 		tplist = tpdb["particletilt_list"]
 		maxcolorval = max(tplist, key=lambda x: x[3])[3]
-		print maxcolorval
+
 		for tp in tplist:
 			if tp[3] > planethres:	# if the out of plane threshold is too much
 				continue
 			if plotdatalabels: datap.append(tp[0])
 			r.append(tp[1])
 			theta.append(math.radians(tp[2]))
+			# Color the Z axis out of planeness
 			zaxis.append(computeRGBcolor(tp[3],0,maxcolorval))
 		tpdb.close()
 	except:
@@ -447,6 +448,7 @@ def display_validation_plots(path, radcut, planethres, plotdatalabels=False, col
 		image.show()
 	app.exec_()
 
+# Compute a RGB value to represent a data range. Basically convert Hue to GSB with I=0.33 and S=1.0
 def computeRGBcolor(value, minval, maxval):
 	# Normalize from 0 to 1
 	normval = (value-minval)/(maxval-minval)
