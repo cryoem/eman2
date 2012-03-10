@@ -73,6 +73,14 @@ def main():
 		
 	parser.add_argument("--iter", type=int, help="The number of iterations to perform. Default is 1.", default=1)
 	
+	parser.add_argument("--exclusive_class_min", type=int, help="""The minimum multiplicity (number of particles that went into an average) to look for mutually exclusive classes/averages.
+									Two classes are mutually exclusive when non of the members in one are present in the other.
+									In HAC (hierarchical ascendant classification or "all vs all" alignments, classes MERGE, so a class
+									from a later round will be composed of classes from earlier rounds. Some classes remain un-merged for many rounds.
+									If set, this parameter will extract classes with a minimum number of particles (from whatever round/iteration they were 
+									generated in) whose members are not present in any other of the extracted classes. The mutually exclusive classes
+									will be put into a separate sub-directory starting with the character 'me_classes'.""", default=None)
+	
 	parser.add_argument("--savesteps",action="store_true", help="If set, will save the averages after each iteration to round#_averages.hdf. There will be one .hdf stack per round, and the averages of 2 or more particles generated in that round will be images in that stack",default=False)
 	parser.add_argument("--saveali",action="store_true", help="If set, will save the aligned particle volumes in round#_particles.hdf. Overwrites existing file.",default=False)
 	
@@ -116,8 +124,10 @@ def main():
 	
 	if options.averager: 
 		options.averager=parsemodopt(options.averager)
+
 	if options.normproc: 
 		options.normproc=parsemodopt(options.normproc)
+	
 	if options.mask: 
 		options.mask=parsemodopt(options.mask)
 	
@@ -132,7 +142,7 @@ def main():
 
 	if options.postprocess: 
 		options.postprocess=parsemodopt(options.postprocess)
-		
+
 	if options.path and ("/" in options.path or "#" in options.path) :
 		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
 		sys.exit(1)
@@ -160,47 +170,128 @@ def main():
 	data_files = []
 	
 	nptcl = EMUtil.get_image_count(options.input)
-	groupsize = nptcl
+	#groupsize = nptcl
 	entirestack = options.input
 	originalpath = options.path
 	
 	for i in range(options.groups):	
-		if options.groups > 1:
-			if options.groups * 3 > nptcl:
-				print "ERROR: You need at least 3 particles per groups to do all vs all within each group."
-				print "You asked for %d groups; thus, the stack needs to have more than %d particles, but it only has %d" % (options.groups,3*options.groups,nptcl)
-				print "Reduce the number of groups requested or provide a larger stack."
-				sys.exit()
-			else:
-				groupsize = int( nptcl/options.groups )
-				bottom_range = i * groupsize
-				top_range = (i+1) * groupsize
-				if i == options.groups - 1:
-					top_range = nptcl
-
+		#if options.groups > 1:
+		if options.groups * 3 > nptcl:
+			print "ERROR: You need at least 3 particles per groups to do all vs all within each group."
+			print "You asked for %d groups; thus, the stack needs to have more than %d particles, but it only has %d" % (options.groups,3*options.groups,nptcl)
+			print "Reduce the number of groups requested or provide a larger stack."
+			sys.exit()
+		else:
+			groupsize = int( nptcl/options.groups )
+			bottom_range = i * groupsize
+			top_range = (i+1) * groupsize
+			if i == options.groups - 1:
+				top_range = nptcl
+			
+			groupPATH = entirestack
+			if options.groups > 1:
 				groupDIR = originalpath + '/group' + str(i+1).zfill(len(str(options.groups)))
 				groupID = 'group' + str(i+1).zfill(len(str(options.groups))) + '_raw.hdf'
 				groupPATH = groupDIR + '/' + groupID
 				os.system('mkdir ' + groupDIR)
 				#os.system('e2proc3d.py ' + entirestack + ' ' + groupPATH + ' --first=' + str(bottom_range) + ' --last=' + str(top_range)) 	
 				
-				mm = 0
-				for jj in xrange(bottom_range,top_range):
-					a = EMData(entirestack,jj)
-					a['spt_ptcl_indxs'] = mm
-					a.write_image(groupPATH,mm)
-					mm += 1
-				
-				options.input = groupPATH
+
 				options.path = groupDIR
 
-		print "I will start ALL vs ALL on group number", i+1
-		print "For which options.input is", options.input
+				print "I will start ALL vs ALL on group number", i+1
+				print "For which options.input is", options.input
+
+			mm = 0
+			for jj in xrange(bottom_range,top_range):
+				print "I am rewritting the spt_ptcl_indxs header parameter for every particle in the stack"
+				a = EMData(entirestack,jj)
+				a['spt_ptcl_indxs'] = mm
+				a.write_image(groupPATH,mm)
+				mm += 1
+			options.input = groupPATH
+		
 		allvsall(options)
+		if options.exclusive_class_min:
+			exclusive_classes(options)
 	return()
+
+
+def exclusive_classes(options):
+
+	#current = os.getcwd()
+	findir = os.listdir(options.path)
 	
+	minmembers = options.exclusive_class_min
+
+	averages = []
+	for i in findir:
+		if '_averages.hdf' in i:
+			#print "I will analyze this average stack", i
+			n=EMUtil.get_image_count(options.path + '/' + i)
+			#print "It has these many averages", n
+			for j in range(n):
+				a=EMData(options.path + '/' +i,j,True)
+				print "The average I have just appended has this multiplicity", a['spt_multiplicity']
+				print "And comes from this file", options.path + '/' + i
+				indxs = a['spt_ptcl_indxs']
+				indxs.sort()
+				averages.append({'file':options.path + '/' + i,'n':j,'multiplicity':a['spt_multiplicity'],'indxs':indxs})
+	me_classes = []
+	repeated = []
+
+	#candidates=[{'multiplicity':5,'indxs':[1,2,3,4,5]},{'multiplicity':2,'indxs':[3,6]},{'multiplicity':2,'indxs':[4,5]},{'multiplicity':3,'indxs':[4,5,6]},{'multiplicity':3,'indxs':[1,2,3]}]
+
+	averages = sorted(averages, key=itemgetter('multiplicity'))
+
+	#print "\n\n\nThe candidates sorted are", candidates
+	#print "I have found these many candidates", len(candidates)
 	
+	candidates = 0
+	repeats=0
+	for i in range(len(averages)):
+		if int(averages[i]['multiplicity']) >= int(options.exclusive_class_min):	
+			print "I've found a candidate with the min number of members in the average!", averages[i]['multiplicity']
+			candidates+=1
+			for j in xrange(i+1,len(averages)):	
+				if averages[i] not in repeated:
+					#print "I'm comparing these candidates", averages[i], averages[j]			
+					for k in averages[i]['indxs']:
+						if k in averages[j]['indxs']:
+							if averages[j] not in repeated:							
+								#print "I have added this candidate to repeated", averages[j]					
+								print "I've found a repeated..."
+								repeats+=1							
+								repeated.append(averages[j])
+								break
+				
+			if averages[i] not in me_classes and averages[i] not in repeated:					
+				print "\n@@@\nI have found a ME class $$$$$$"			
+				me_classes.append(averages[i])
+
+	print "The mutually exclusive classes with more than %d particles" %options.exclusive_class_min
+	print "are:"
+	for i in me_classes:
+		print i
+
+	#print "\n\nThere were these many candidates and repeats", candidates, repeats
+	#print "But only these many uniques", len(me_classes)
+
+	udir = options.path + '/me_classes_' + str(options.exclusive_class_min).zfill(len(str(options.exclusive_class_min)))
+	os.system('mkdir ' + udir)
+
+	for i in range(len(me_classes)):
+		out= udir + '/me_class' + str(i).zfill(len(str(len(me_classes)))) + '_s' + str(me_classes[i]['multiplicity']) + '.hdf'
+		cmd = 'e2proc3d.py ' + me_classes[i]['file'] + ' ' + out + ' --first=' + str(me_classes[i]['n']) + ' --last=' + str(me_classes[i]['n']) + ' --append'
+		#print "The command is", cmd	
+		os.system(cmd)
+		#os.system('mv ' + out + ' ' + udir)		
+
+	return()
+
+
 def allvsall(options):
+	print "These are path and input received in allvsall", options.path, options.input
 	
 	print "Therefore the received options.input inside ALL VS ALL is", options.input
 	print "With these many particles in it", EMUtil.get_image_count(options.input)
@@ -458,8 +549,10 @@ def allvsall(options):
 				
 				indexes1 = ptcl1["spt_ptcl_indxs"]
 				indexes2 = ptcl2["spt_ptcl_indxs"]				
-				
-				avg["spt_ptcl_indxs"] = indexes1 + indexes2					#Keep track of what particles go into each average or "new particle"				
+				avgindexes = indexes1 + indexes2
+				avgindexes.sort()
+
+				avg["spt_ptcl_indxs"] = avgindexes						#Keep track of what particles go into each average or "new particle"				
 				
 				avg["spt_ptcl_src"] = options.input
 				
@@ -472,7 +565,7 @@ def allvsall(options):
 				
 				avg['sptID'] = avgtag
 				
-				avg.process_inplace("normalize.edgemean")
+				avg.process_inplace(options.normproc[0],options.normproc[1])
 				
 				avg.write_image(options.path + '/round' + str(k).zfill(fillfactor) + '_averages.hdf',mm)
 				
