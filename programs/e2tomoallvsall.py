@@ -207,8 +207,16 @@ def main():
 				print "I am rewritting the spt_ptcl_indxs header parameter for every particle in the stack"
 				a = EMData(entirestack,jj)
 				a['spt_ptcl_indxs'] = mm
-				a.write_image(groupPATH,mm)
+
 				mm += 1
+	
+				#sptparams=[]
+				params = a.get_attr_dict()
+				for i in params:
+					if 'spt_' in params:
+						a[i] = ''
+				a.write_image(groupPATH,mm)
+	
 			options.input = groupPATH
 		
 		allvsall(options)
@@ -332,8 +340,10 @@ def allvsall(options):
 		particletag = roundtag + '_' + str(i).zfill(fillfactor)
 		newptcls.update({particletag :a})
 		
-		if 'sptID' not in a.get_attr_dict():					#spt_multiplicity keeps track of how many particles were averaged to make any given new particle (set to 1 for the raw data)
-			a['sptID'] = particletag
+		if 'spt_ID' not in a.get_attr_dict():					#spt_multiplicity keeps track of how many particles were averaged to make any given new particle (set to 1 for the raw data)
+			a['spt_ID'] = particletag
+		elif not a['spt_ID']:
+			a['spt_ID'] = particletag	
 		allptclsRound.update({particletag : [a,{i:totalt}]})			
 		
 	oldptcls = {}									#'Unused' particles (those that weren't part of any unique-best-pair) join the 'oldptcls' dictionary onto the next round
@@ -400,7 +410,7 @@ def allvsall(options):
 			nold = EMUtil.get_image_count(options.path + '/oldptclstack.hdf')
 			
 			for i in range(nold):
-				oldtags.update({EMData(options.path + '/oldptclstack.hdf',i,True)['sptID'] : i})
+				oldtags.update({EMData(options.path + '/oldptclstack.hdf',i,True)['spt_ID'] : i})
 			
 			
 			print "Old tagas are:\n", oldtags
@@ -563,7 +573,7 @@ def allvsall(options):
 				newroundtag = 'round' + str(k+1).zfill(fillfactor) + '_'
 				avgtag = newroundtag + str(mm).zfill(fillfactor)
 				
-				avg['sptID'] = avgtag
+				avg['spt_ID'] = avgtag
 				
 				avg.process_inplace(options.normproc[0],options.normproc[1])
 				
