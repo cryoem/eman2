@@ -87,7 +87,7 @@ def main():
 	#Does save ali save the stack off ALL currently UNAVERAGED particles???
 	
 	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
-	parser.add_argument("--normproc",type=str,help="Normalization processor applied to particles before alignment. Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'", default="normalize.mask")
+	parser.add_argument("--normproc",type=str,help="Normalization processor applied to particles before alignment. Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'", default="normalize")
 	parser.add_argument("--preprocess",type=str,help="A processor (as in e2proc3d.py; could be masking, filtering, etc.) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.",default=None)
 	
 	parser.add_argument("--lowpass",type=str,help="A processor (as in e2proc3d.py; could be masking, filtering, etc.) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.",default=None)
@@ -128,6 +128,8 @@ def main():
 	if options.normproc: 
 		options.normproc=parsemodopt(options.normproc)
 	
+	print "normproc is", options.normproc
+	print "therefore its components are", options.normproc[0], options.normproc[1]
 	if options.mask: 
 		options.mask=parsemodopt(options.mask)
 	
@@ -512,7 +514,8 @@ def allvsall(options):
 				#ptcl2avgr = Averagers.get(options.averager[0], options.averager[1])		#You need to recompute ptcl2 "fresh" from the raw data to avoid multiple interpolations
 				
 				for p in ptcl2['spt_ptcl_indxs']:						#All the particles in ptcl2's history need to undergo the new transformation before averaging
-					#print "I'm fixing the transform for this index", p			#(multiplied by any old transforms, all in one step, to avoid multiple interpolations)
+					print "I'm fixing the transform for this index in the new average", p	#(multiplied by any old transforms, all in one step, to avoid multiple interpolations)
+					
 					
 					pastt = ptcl2_indxs_transforms[p]
 					
@@ -526,11 +529,9 @@ def allvsall(options):
 						avg_ptcls.append(subp2)					
 					
 					indx_trans_pairs.update({p:totalt})
-					
-							
+								
 				avg=avgr.finish()
 				
-
 				print "THe average was successfully finished"
 
 				if options.autocenter:
@@ -566,10 +567,15 @@ def allvsall(options):
 				avgmultiplicity = ptcl1['spt_multiplicity'] + ptcl2['spt_multiplicity']		#Define and set the multiplicity of the average
 				avg['spt_multiplicity'] = avgmultiplicity
 				
+				print avgmultiplicity
+
 				indexes1 = ptcl1["spt_ptcl_indxs"]
 				indexes2 = ptcl2["spt_ptcl_indxs"]				
 				avgindexes = indexes1 + indexes2
+
+				print "I will sort the indexes in the average"				
 				avgindexes.sort()
+				print avgindexes
 
 				avg["spt_ptcl_indxs"] = avgindexes						#Keep track of what particles go into each average or "new particle"				
 				
@@ -578,12 +584,13 @@ def allvsall(options):
 				avg['origin_x'] = 0								#The origin needs to be set to ZERO to avoid display issues in Chimera
 				avg['origin_y'] = 0
 				avg['origin_z'] = 0
-								
+							
 				newroundtag = 'round' + str(k+1).zfill(fillfactor) + '_'
 				avgtag = newroundtag + str(mm).zfill(fillfactor)
 				
 				avg['spt_ID'] = avgtag
 				
+				print "I will normalize the average"
 				avg.process_inplace(options.normproc[0],options.normproc[1])
 				
 				avg.write_image(options.path + '/round' + str(k).zfill(fillfactor) + '_averages.hdf',mm)
