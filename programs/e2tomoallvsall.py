@@ -207,16 +207,19 @@ def main():
 				print "I am rewritting the spt_ptcl_indxs header parameter for every particle in the stack"
 				a = EMData(entirestack,jj)
 				a['spt_ptcl_indxs'] = mm
-
-				mm += 1
 	
 				#sptparams=[]
 				params = a.get_attr_dict()
+				
 				for i in params:
-					if 'spt_' in params:
-						a[i] = ''
+					if 'sptID' in i:
+						print "I'm resetting THIS parameter", i
+						a[str(i)] = ''
+				print "The type of a should be EMData", type(a)
 				a.write_image(groupPATH,mm)
-	
+
+				mm += 1
+
 			options.input = groupPATH
 		
 		allvsall(options)
@@ -301,7 +304,6 @@ def exclusive_classes(options):
 def allvsall(options):
 	print "These are path and input received in allvsall", options.path, options.input
 	
-	print "Therefore the received options.input inside ALL VS ALL is", options.input
 	print "With these many particles in it", EMUtil.get_image_count(options.input)
 	hdr = EMData(options.input,0,True)
 	nx = hdr["nx"]
@@ -329,13 +331,13 @@ def allvsall(options):
 
 		if 'spt_multiplicity' not in a.get_attr_dict():				#spt_multiplicity keeps track of how many particles were averaged to make any given new particle (set to 1 for the raw data)
 			a['spt_multiplicity']=1
+		elif not a['spt_multiplicity']:
+			a['spt_multiplicity']=1
 		#if 'spt_ptcl_indxs' not in a.get_attr_dict():				#spt_ptcl_indxs keeps track of what particles from the original stack went into a particular average or "new particle"
 		a['spt_ptcl_indxs']=[i]							#The raw stack should contain particles where this parameter is the particle number itself
 		#else:
 		if type(a['spt_ptcl_indxs']) is int:
 			a['spt_ptcl_indxs'] = [a['spt_ptcl_indxs']]			#The spt_ptcl_indxs parameter should be of type 'list', to easily 'append' new particle indexes
-		
-		a.write_image(options.input,i)						#Overwrite the raw stack with one that has the appropriate header parameters set to work with e2sptallvsall
 		
 		particletag = roundtag + '_' + str(i).zfill(fillfactor)
 		newptcls.update({particletag :a})
@@ -344,6 +346,9 @@ def allvsall(options):
 			a['spt_ID'] = particletag
 		elif not a['spt_ID']:
 			a['spt_ID'] = particletag	
+		
+		a.write_image(options.input,i)						#Overwrite the raw stack with one that has the appropriate header parameters set to work with e2sptallvsall		
+		
 		allptclsRound.update({particletag : [a,{i:totalt}]})			
 		
 	oldptcls = {}									#'Unused' particles (those that weren't part of any unique-best-pair) join the 'oldptcls' dictionary onto the next round
@@ -452,6 +457,8 @@ def allvsall(options):
 		used = set()											#Tracks what particles WERE actually averaged
 		
 		mm=0												#Counter to track new particles/averages produced and write them to output
+		print "I'm in the averager!!!!!!!!!!!!"
+		
 		for z in range(len(results)):
 			if results[z]['ptcl1'] not in tried and results[z]['ptcl2'] not in tried:
 				tried.add(results[z]['ptcl1'])							#If the two particles in the pair have not been tried, and they're the next "best pair", they MUST be averaged
@@ -463,8 +470,7 @@ def allvsall(options):
 				
 				avg_ptcls = []
 								
-				ptcl1 = allptclsMatrix[k][results[z]['ptcl1']][0]
-							
+				ptcl1 = allptclsMatrix[k][results[z]['ptcl1']][0]				
 														#You always add all the past particles that went into a particular particle (being
 														#averaged in the current round) freshly from the raw stack to the averager (with
 														#the appropriate transforms they've undergone, of course. Thus, YOU DON'T have to
@@ -524,11 +530,14 @@ def allvsall(options):
 							
 				avg=avgr.finish()
 				
+
+				print "THe average was successfully finished"
+
 				if options.autocenter:
 					print "\n\n\n\nYou have selected to autocenter!\n"
 					avg = avg.process('xform.centerofmass')
 					tcenter = avg['xform.align3d']
-					print "Thus the average will be translated like this", tcenter
+					print "Thus the average HAS BEEN be translated like this", tcenter
 					
 					if options.saveali:
 						avg_ptcls = []
@@ -553,7 +562,7 @@ def allvsall(options):
 							subp2.process_inplace("xform",{"transform":totalt})
 							avg_ptcls.append(subp2)
 						
-				
+				print "I will set the multiplicity of the average"
 				avgmultiplicity = ptcl1['spt_multiplicity'] + ptcl2['spt_multiplicity']		#Define and set the multiplicity of the average
 				avg['spt_multiplicity'] = avgmultiplicity
 				
