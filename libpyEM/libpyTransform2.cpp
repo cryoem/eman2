@@ -627,6 +627,8 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.staticmethod("icos_5_to_2")
 		.def("tet_3_to_2", &EMAN::Transform::tet_3_to_2)
 		.staticmethod("tet_3_to_2")
+		.def("__eq__", (bool (EMAN::Transform::*)(const EMAN::Transform&) const)&EMAN::Transform::operator==)
+		.def("__ne__", (bool (EMAN::Transform::*)(const EMAN::Transform&) const)&EMAN::Transform::operator!=)
 	;
 
 }
