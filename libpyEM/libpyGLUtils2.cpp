@@ -75,6 +75,7 @@ BOOST_PYTHON_MODULE(libpyGLUtils2)
 		.def("glLoadMatrix", &EMAN::GLUtil::glLoadMatrix)
 		.def("glMultMatrix", &EMAN::GLUtil::glMultMatrix)
 		.def("glDrawBoundingBox", &EMAN::GLUtil::glDrawBoundingBox)
+		.def("glDrawDisk", &EMAN::GLUtil::glDrawDisk)
 		.staticmethod("gen_glu_mipmaps")
 		.staticmethod("gen_gl_texture")
 		.staticmethod("render_amp8_gl_texture")
@@ -88,6 +89,7 @@ BOOST_PYTHON_MODULE(libpyGLUtils2)
 		.staticmethod("glMultMatrix")
 		.staticmethod("contour_isosurface")
 		.staticmethod("glDrawBoundingBox")
+		.staticmethod("glDrawDisk")
 		
 	);
 

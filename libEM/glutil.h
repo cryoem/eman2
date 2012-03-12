@@ -129,6 +129,8 @@ namespace EMAN
 		/** Draw a bounding box. This is done on the C side to simplify vertex arrays */
 		static void glDrawBoundingBox(float width, float height, float depth);
 		
+		static void glDrawDisk(float radius, int spokes);
+		
 	private:
 		//This is a buffer for the bounding box
 		static GLuint buffer[2];

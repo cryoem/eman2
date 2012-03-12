@@ -891,4 +891,68 @@ void GLUtil::glDrawBoundingBox(float width, float height, float depth)
 	glDrawElements(GL_LINES,24,GL_UNSIGNED_INT,0);
 	
 }
+
+void GLUtil::glDrawDisk(float radius, int spokes)
+{
+	//This code is experimental
+	int arraysize = 4*pow(2,spokes);
+	int sideofarray = pow(2,spokes);
+	
+	float vertices[3*arraysize + 3];
+	
+	//last vertex is center
+	vertices[3*arraysize] = 0.0;
+	vertices[3*arraysize+1] = 0.0;
+	vertices[3*arraysize+2] = 0.0;
+	
+	vertices[0] = 0.0;
+	vertices[1] = radius;
+	vertices[2] = 0.0;
+		
+	vertices[sideofarray*3] = radius;
+	vertices[sideofarray*3 + 1] = 0.0;
+	vertices[sideofarray*3 + 2] = 0.0;
+	
+	vertices[sideofarray*6] = 0.0;
+	vertices[sideofarray*6 + 1] = -radius;
+	vertices[sideofarray*6 + 2] = 0.0;
+	
+	vertices[sideofarray*9] = -radius;
+	vertices[sideofarray*9 + 1] = 0.0;
+	vertices[sideofarray*9 + 2] = 0.0;
+	
+	//This could aslo be implemented recusivly
+	for(int step = 0; step < spokes; step++){
+		//starting location
+		int x = sideofarray/pow(2,step+1);
+		for(int i = 1; i <= 4*pow(2,step); i++ ){
+			
+			// take the necessary steps
+			int index =  x + 2*x*(i-1);
+			int index_f = (index + x) % arraysize;
+			int index_i = index - x;
+			cout << index << " " << index_f << " " << index_i << endl;
+			
+			//need to resclae length to that of radius
+			vertices[index_f*3] = (vertices[index_f*3] - vertices[index_i*3])/2.0;
+			vertices[index_f*3 + 1] = (vertices[index_f*3 + 1] - vertices[index_i*3 + 1])/2.0;
+			vertices[index_f*3 + 2] = (vertices[index_f*3 + 2] - vertices[index_i*3 + 2])/2.0;
+		}
+	}
+	
+	//GL stuff
+	if ( glIsBuffer(GLUtil::buffer[0])  == GL_FALSE ){
+		glGenBuffers(2, GLUtil::buffer);
+	}
+	
+	// Could use dirty bit here but not worth my time to implment
+	glBindBuffer(GL_ARRAY_BUFFER, GLUtil::buffer[0]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glVertexPointer(3,GL_FLOAT,0,0);
+	
+	//Code to select indices
+	
+	
+}
 #endif // EMAN2_USING_OPENGL

@@ -16,7 +16,7 @@
   },
   {
     "TITLE":"e2tiltvalidation options",
-    "INST": "Enter the maximum radius you wish to examine. Note that values will never be plotted beyond the parameter listed in --maxtiltangle. This parameter allow you to effectivly zoom in and out of the plot plot. Enter -1 to plot the entire range",
+    "INST": "Enter the maximum radius you wish to examine. Note that values will never be plotted beyond the parameter listed in --maxtiltangle. This parameter allow you to effectivly zoom in and out of the polar plot. Enter -1 to plot the entire range",
     "WIDGETS":[
       "radcut"
     ]
