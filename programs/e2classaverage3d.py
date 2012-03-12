@@ -215,6 +215,9 @@ def main():
 		if options.keepsig or options.keep!=1.0 :
 			print "Error: do not use --keepsig with one particle, also keep should be 1.0 if specified"
 			sys.exit(1)
+		if options.groups > 1:
+			print "ERROR: You cannot split your data in more than one group if the input stack only has ONE particle!"
+			sys.exit()
 
 	# Initialize parallelism if being used
 	if options.parallel :
@@ -429,10 +432,9 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 		print "Therefore, based on the size of the set, the coefficients that will work as thresholds are", threshs	
 		print "While the guineapig particles where these came from were", guinea_particles
 		print "Out of a total of these many particles", len(align_parms)
-		print "Therefor each group will contain approximately these many particles", len(align_parms)/groups
+		print "Therefore each group will contain approximately these many particles", len(align_parms)/groups
 	
 		threshs.sort()
-				
 		groupslist=[]
 		includedlist=[]
 		for i in range(groups):
@@ -443,7 +445,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 		for i,ptcl_parms in enumerate(align_parms):
 			ptcl=EMData(ptcl_file,i)
 			ptcl.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
-
+			
 			if ptcl_parms[0]["score"] > threshs[-1]: 
 				groupslist[-1].append(ptcl)
 				includedlist[-1].append(i)			
@@ -475,15 +477,22 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 		db_close_dict(db)
 		avgs=[]
 		
+		print "The length of groupslist is", len(groupslist)
+		if len(groupslist)==0:
+			print "Aborting. Zero groups!"
+			sys.exit()
+		
 		for i in range(len(groupslist)):
 			variance = (groupslist[0][0]).copy_head()
 			if averager[0] == 'mean':
 				averager[1]['sigma'] = variance
+			
 			avgr=Averagers.get(averager[0], averager[1])
+			print "I have called the averager!"
 			
 			for j in range(len(groupslist[i])):
 				avgr.add_image(groupslist[i][j])
-				
+				print "I have added an image to the avrg", groupslist[i][j]
 				if saveali:
 					groupslist[i][j]['origin_x'] = 0
 					groupslist[i][j]['origin_y'] = 0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
