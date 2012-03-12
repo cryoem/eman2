@@ -256,8 +256,8 @@ def main():
 			# compute pairwise alignments until we get an average out. 
 		
 			nseed=2**int(floor(log(len(ptcls),2)))	# we stick with powers of 2 for this to make the tree easier to collapse
-			if nseed>64 : 
-				nseed=64
+			if nseed>128 : 
+				nseed=128
 				print "Limiting seeding to the first 64 images"
 
 			nseediter=int(log(nseed,2))			# number of iterations we'll need
@@ -266,20 +266,22 @@ def main():
 			
 			# We copy the particles for this class into bdb:seedtree_0
 			for i,j in enumerate(ptcls[:nseed]):
-				EMData(options.input,j).write_image("%s#seedtree_0"%options.path,i)
-				
+				emdata = EMData(options.input,j)
+				if options.inixforms:
+					emdata.process_inplace("xform",{"transform":db["tomo_%04d"%i]})
+					emdata.set_attr("test_xfm",db["tomo_%04d"%i])
+				emdata.write_image("%s#seedtree_0"%options.path,i)
+			
 			# Outer loop covering levels in the converging binary tree
 			for i in range(nseediter):
 				infile="%s#seedtree_%d"%(options.path,i)
 				outfile="%s#seedtree_%d"%(options.path,i+1)
 			
 				tasks=[]
+				transform = None
 				# loop over volumes in the current level
 				for j in range(0,nseed/(2**i),2):
-					if options.inixforms:
-						transform = db["tomo_%04d"%j]
-					else:
-						transform = None
+
 					# Unfortunately this tree structure limits the parallelism to the number of pairs at the current level :^(
 					task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
 						options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,transform,options.verbose-1,options.randomizewedge)
@@ -313,7 +315,7 @@ def main():
 			tasks=[]
 			for p in ptcls:
 				if options.inixforms:
-					transform = db["tomo_%04d"%j]
+					transform = db["tomo_%04d"%p]
 				else:
 					transform = None
 				task=Align3DTask(ref,["cache",options.input,p],p,"Ptcl %d in iter %d"%(p,it),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
@@ -725,8 +727,8 @@ class Align3DTask(EMTask):
 			print "Align size %d,  Refine Align size %d"%(sfixedimage["nx"],s2fixedimage["nx"])
 
 		# In some cases we want to prealign the particles
-		print "GIMMME A TRASNFORM", options["transform"]
 		if options["transform"]:
+			print "Moving Xfrom", options["transform"]
 			options["align"][1]["transform"] = options["transform"]
 			
 		# If None was passed in we skip coarse alignment and just do a refienement
@@ -755,6 +757,7 @@ class Align3DTask(EMTask):
 			
 			bestcoarse = simage.xform_align_nbest(options["align"][0],sfixedimage,options["align"][1],options["npeakstorefine"],options["aligncmp"][0],options["aligncmp"][1])
 			
+			# Scale translation
 			if options["ralign"]!=None :
 				scaletrans=options["shrink"]/float(options["shrinkrefine"])
 			else:
