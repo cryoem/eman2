@@ -227,7 +227,7 @@ def main():
 		etc.precache(pclist)
 
 	if options.inixforms: 
-		db = db_open_dict("%s#%s"%(options.path,"tomo_xforms"))
+		db = db_open_dict("bdb:%s#%s"%(options.inixforms,"tomo_xforms"))
 			
 	#########################################
 	# This is where the actual class-averaging process begins
@@ -725,6 +725,7 @@ class Align3DTask(EMTask):
 			print "Align size %d,  Refine Align size %d"%(sfixedimage["nx"],s2fixedimage["nx"])
 
 		# In some cases we want to prealign the particles
+		print "GIMMME A TRASNFORM", options["transform"]
 		if options["transform"]:
 			options["align"][1]["transform"] = options["transform"]
 			
@@ -742,7 +743,7 @@ class Align3DTask(EMTask):
 		else:
 			# Returns an ordered vector of Dicts of length options.npeakstorefine. The Dicts in the vector have keys "score" and "xform.align3d"
 			
-			random_transform = None
+			#random_transform = None
 			if options["randomizewedge"]:
 				rand_orient = OrientGens.get("rand",{"n":1,"phitoo":1})		#Fetches the orientation generator
 				c1_sym = Symmetries.get("c1")					#Generates the asymmetric unit from which you wish to generate a random orientation
@@ -753,7 +754,12 @@ class Align3DTask(EMTask):
 				#options["align"][1].update({'transform' : random_transform})
 			
 			bestcoarse = simage.xform_align_nbest(options["align"][0],sfixedimage,options["align"][1],options["npeakstorefine"],options["aligncmp"][0],options["aligncmp"][1])
-			scaletrans=options["shrink"]/float(options["shrinkrefine"])
+			
+			if options["ralign"]!=None :
+				scaletrans=options["shrink"]/float(options["shrinkrefine"])
+			else:
+				scaletrans=float(options["shrink"])
+				
 			if scaletrans!=1.0:
 				for c in bestcoarse:
 					c["xform.align3d"].set_trans(c["xform.align3d"].get_trans()*scaletrans)
