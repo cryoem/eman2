@@ -440,7 +440,7 @@ def display_validation_plots(path, radcut, planethres, plotdatalabels=False, col
 		plot = EMValidationPlot()
 		plot.set_data((theta,r),50,radcut,datap)
 		# Color by Z axis if desired
-		if plotzaxiscolor: plot.set_scattercolor(zaxis)
+		if plotzaxiscolor: plot.set_scattercolor([zaxis])
 		plot.set_datalabelscolor(color)
 		plot.show()
 	if data:

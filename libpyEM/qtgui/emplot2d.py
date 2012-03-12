@@ -784,6 +784,7 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 		self.setWindowIcon(QtGui.QIcon(QtGui.QPixmap(ploticon)))
 		self.setDataLabelsColor('#00ff00')
 		self.scattercolor = None	# IF set to none default colors are used
+		self.pointsizes = None		# Defalt is to use consta sizes. Overrides constant size
                 
 	def mousePressEvent(self, event):
 		#Save a snapshot of the scene
@@ -914,8 +915,12 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
                 self.datalabelscolor = color
 	
 	def setScatterColor(self, color):
-		""" Set a matplotlib color or list of colors """
+		""" Set a matplotlib color or list of colors. One list for each data set """
 		self.scattercolor = color
+	
+	def setPointSizes(self, sizes):
+		""" Sets a list of point sizes. One list for each data set """
+		self.pointsizes = sizes
 		
 	def render(self):
 		"""
@@ -971,13 +976,18 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 				if self.pparm[i][4]:
 					parm+=symtypes[self.pparm[i][5]]
 				
+				# Set color(s)
 				if self.scattercolor:
-					scattercolor = self.scattercolor
+					scattercolor = self.scattercolor[0]
 				else:
 					scattercolor = colortypes[self.pparm[i][0]]
+				# Set size(s)
+				if self.pointsizes:
+					pointsizes = self.pointsizes
+				else:
+					pointsizes = self.pparm[i][3]
 					
-				ax.scatter(theta, r,s=self.pparm[i][3], color=scattercolor, lw=3)
-				#ax.scatter(theta, r,s=self.pparm[i][3], color=['#00ff00','#0000ff','#00ff00','#00ff00','#00ff00','#00ff00','#00ff00','#00ff00'], lw=3)
+				ax.scatter(theta, r,s=pointsizes, color=scattercolor, lw=3)
 
 			if len(self.pparm[i]) == 8 and self.pparm[i][7] >= 0: 
 				ax.set_rmax(self.pparm[i][7])
