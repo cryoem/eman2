@@ -81,7 +81,7 @@ def main():
 	parser.add_argument('--reverse_contrast', action="store_true", default=False, help='''This means you want the contrast to me inverted while boxing, AND for the extracted sub-volumes.\nRemember that EMAN2 **MUST** work with "white" protein. You can very easily figure out what the original color\nof the protein is in your data by looking at the gold fiducials or the edge of the carbon hole in your tomogram.\nIf they look black you MUST specify this option''', guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="boxing")
 	
 	#parameters for commandline boxer
-	
+
 	parser.add_argument('--coords', type=str, default='', help='Provide a coordinates file that contains the center coordinates of the sub-volumes you want to extract, to box from the command line')
 	
 	parser.add_argument('--cbin', type=int, default=1, help='''Specifies the scale of the coordinates respect to the actual size of the tomogram where you want to extract the particles from.\nFor example, provide 2 if you recorded the coordinates from a tomogram that was binned by 2, \nbut want to extract the sub-volumes from the UNbinned version of that tomogram''')
@@ -114,8 +114,8 @@ def main():
 					
 		app = EMApp()
 		if options.inmemory: 
-			#img = EMData(args[0],0)
 			if options.bin > 1:
+
 				# The new bining scheme
 				print "Binning, please wait :)"
 				img = EMData()
@@ -137,7 +137,7 @@ def main():
 			
 			boxer = EMTomoBoxer(app,data=img,yshort=options.yshort,boxsize=options.boxsize,bin=options.bin,contrast=options.reverse_contrast,center=options.centerbox)
 		else : 
-	#		boxer=EMTomoBoxer(app,datafile=args[0],yshort=options.yshort,apix=options.apix,boxsize=options.boxsize)		#jesus
+	#		boxer=EMTomoBoxer(app,datafile=args[0],yshort=options.yshort,apix=options.apix,boxsize=options.boxsize)		
 			img=args[0]
 			
 			
@@ -160,8 +160,10 @@ def main():
 				
 			if options.reverse_contrast:
 				imgnew = img
-				if '_edtedtemp.' not in img:
-					imgnew = img.replace('.','_editedtemp.')
+				if '_editedtemp.' not in img:
+					os.system('rm *_editedtemp*')
+					imgnew = img.split('/')[-1].replace('.','_editedtemp.')
+					
 				cmd = 'e2proc3d.py ' + img + ' ' + imgnew + ' --mult=-1'
 				os.system(cmd)
 				img = imgnew
@@ -169,8 +171,9 @@ def main():
 
 			if options.lowpass:
 				imgnew = img
-				if '_edtedtemp.' not in img:
-					imgnew = img.replace('.','_editedtemp.')
+				if '_editedtemp.' not in img:
+					os.system('rm *_editedtemp*')
+					imgnew = img.split('/')[-1].replace('.','_editedtemp.')
 				filt=1.0/options.lowpass
 				
 				imghdr = EMData(img,1,True)
@@ -190,7 +193,6 @@ def main():
 		app.execute()
 	return()
 
-
 """
 This function is called to extract sub-volumes from the RAW tomogram, regardless
 of where their coordinates are being found (the tomogram to find the coordinates might be
@@ -203,11 +205,13 @@ def unbinned_extractor(boxsize,x,y,z,cbin,contrast,center,tomogram=argv[1]):
 	tomo_header=EMData(tomogram,0,True)
 	print "Which has a size of", tomo_header['nx'],tomo_header['ny'],tomo_header['nz']
 	#print cbin, tomogram
-	boxsize=boxsize*cbin
+	
+	#boxsize=boxsize*cbin	#THE BOXSIZE SHOULD BE THE FINAL BOXSIZE! No binning compensation applied.
+	
 	x=x*cbin
 	y=y*cbin
 	z=z*cbin
-
+	
 	r = Region((2*x-boxsize)/2,(2*y-boxsize)/2, (2*z-boxsize)/2, boxsize, boxsize, boxsize)
 	e = EMData()
 	e.read_image(tomogram,0,False,r)
@@ -329,7 +333,10 @@ def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,output,output
 				k = 0
 				name = output.split('.')[0] + '_' + str(i).zfill(len(set)) + '.' + output.split('.')[1]
 			else:
+				print "The format is stack format!"
 				k += 1
+			print "\nThe file name to write out to is", name
+			print "And the particle number is %d\n" % k
 			e.write_image(name,k)
 			
 
@@ -980,6 +987,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				#img=self.get_cube(b[0],b[1],b[2])
 				bs=self.boxsize()
 				binf=self.bin
+				if binf >1:
+					bs=bs*binf
+				
 				contrast=self.contrast
 				center=self.center
 			
@@ -1033,6 +1043,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				#img=self.get_cube(b[0],b[1],b[2])
 				bs=self.boxsize()
 				binf=self.bin
+				if binf >1:
+					bs=bs*binf
+				
 				contrast=self.contrast
 				center=self.center
 
