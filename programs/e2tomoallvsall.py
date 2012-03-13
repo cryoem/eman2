@@ -215,6 +215,12 @@ def main():
 					if 'sptID' in i:
 						print "I'm resetting THIS parameter", i
 						a[str(i)] = ''
+						
+					if 'spt_ID' in i:
+						print "I'm resetting THIS parameter", i
+						a[str(i)] = ''						
+						
+						
 				print "The type of a should be EMData", type(a)
 				a.write_image(groupPATH,mm)
 
