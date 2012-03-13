@@ -6384,7 +6384,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 			fourvar, debug, chunk)
 		
 		return
-
+	'''
 	from utilities      import model_circle, drop_image
 	from utilities      import get_image, get_input_from_string
 	from utilities      import get_params_proj, set_params_proj
@@ -6568,7 +6568,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 			from utilities import write_headers
 			write_headers( stack, data, list_of_particles)
 	print_end_msg("ihrsr")
-
+	'''
 def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
 	txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndphi, dphi_step, psi_max,
 	rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
