@@ -77,6 +77,8 @@ def main():
 									For example, if simulating a tilt series collected from -60 to 60 degrees, enter a --tiltrange value of 60. 
 									Note that this parameter will determine the size of the missing wedge.""")
 	parser.add_option("--applyctf", action="store_true",default=False,help="If on, it applies ctf to the projections in the simulated tilt series based on defocus, cs, and voltage parameters.")
+	
+	parser.add_option("--orthogonal", action="store_true",default=False,help="If on, --nptcls is ignored and you get 3 subtomograms (simulated from the model supplied) which are orthogonal to each other.")
 
 	parser.add_option("--defocus", type="int",default=3,help="Intended defocus at the tilt axis (in microns) for the simulated tilt series.")
 	parser.add_option("--voltage", type="int",default=200,help="Voltage of the microscope, used to simulate the ctf added to the subtomograms.")
@@ -193,46 +195,64 @@ def randomizer(options, model, tag):
 		print "You have requested to generate %d particles with random orientations and translations" %(options.nptcls)
 	
 	randptcls = []
-	for i in range(options.nptcls):
-		if options.verbose:
-			print "I will generate particle #", i
-		
-		b = model.copy()
-		b['origin_x'] = 0									#Make sure the origin is set to zero, to avoid display issues with Chimera
-		b['origin_y'] = 0
-		b['origin_z'] = 0
-
-		rand_orient = OrientGens.get("rand",{"n":1, "phitoo":1})				#Generate a random orientation (randomizes all 3 euler angles)
-		c1_sym = Symmetries.get("c1")
-		random_transform = rand_orient.gen_orientations(c1_sym)[0]
-
-		randtx = random.randrange(-1 * options.transrange, options.transrange)			#Generate random translations
-		randty = random.randrange(-1 * options.transrange, options.transrange)
-		randtz = random.randrange(-1 * options.transrange, options.transrange)
-		
-		if options.txrange:
-			randtx = random.randrange(-1 * options.txrange, options.txrange)	
-		if options.tyrange:
-			randty = random.randrange(-1 * options.tyrange, options.tyrange)
-		if options.tzrange:
-			randtz = random.randrange(-1 * options.tzrange, options.tzrange)
 	
-		random_transform.translate(randtx, randty, randtz)
+	if options.orthogonal:
+		for i in range(3):
+			b = model.copy()
+			b['origin_x'] = 0									#Make sure the origin is set to zero, to avoid display issues with Chimera
+			b['origin_y'] = 0
+			b['origin_z'] = 0
+			if i==0:
+				randptcls.append(b)
 
-		b.transform(random_transform)		
-		
-		b['spt_randT'] = random_transform
-		b['xform.align3d'] = Transform()							#This parameter should be set to the identity transform since it can be used later to determine whether
-													#alignment programs can "undo" the random rotation in spt_randT accurately or not
-		if options.saverandstack:	
-			stackname = options.input.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf')
-			b.write_image(stackname.split('/')[-1],i)
-		
-		randptcls.append(b)
-		
-		if options.verbose:
-			print "The random transform applied to it was", random_transform
-	
+			if i == 1:
+				b.rotate(0,90,0)
+				randptlcs.append(b)
+			if i == 2:
+				b.rotate(0,90,90)
+				randptlcs.append(b)
+			
+	else:	
+		for i in range(options.nptcls):
+			if options.verbose:
+				print "I will generate particle #", i
+
+			b = model.copy()
+			b['origin_x'] = 0									#Make sure the origin is set to zero, to avoid display issues with Chimera
+			b['origin_y'] = 0
+			b['origin_z'] = 0
+
+			rand_orient = OrientGens.get("rand",{"n":1, "phitoo":1})				#Generate a random orientation (randomizes all 3 euler angles)
+			c1_sym = Symmetries.get("c1")
+			random_transform = rand_orient.gen_orientations(c1_sym)[0]
+
+			randtx = random.randrange(-1 * options.transrange, options.transrange)			#Generate random translations
+			randty = random.randrange(-1 * options.transrange, options.transrange)
+			randtz = random.randrange(-1 * options.transrange, options.transrange)
+
+			if options.txrange:
+				randtx = random.randrange(-1 * options.txrange, options.txrange)	
+			if options.tyrange:
+				randty = random.randrange(-1 * options.tyrange, options.tyrange)
+			if options.tzrange:
+				randtz = random.randrange(-1 * options.tzrange, options.tzrange)
+
+			random_transform.translate(randtx, randty, randtz)
+
+			b.transform(random_transform)		
+
+			b['spt_randT'] = random_transform
+			b['xform.align3d'] = Transform()							#This parameter should be set to the identity transform since it can be used later to determine whether
+														#alignment programs can "undo" the random rotation in spt_randT accurately or not
+			if options.saverandstack:	
+				stackname = options.input.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf')
+				b.write_image(stackname.split('/')[-1],i)
+
+			randptcls.append(b)
+
+			if options.verbose:
+				print "The random transform applied to it was", random_transform
+
 	return(randptcls)
 	
 '''
