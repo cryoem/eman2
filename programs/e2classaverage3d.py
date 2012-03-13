@@ -366,7 +366,7 @@ def main():
 		if options.verbose: 
 			print "Preparing final average"
 		
-		if groups < 2:
+		if options.groups < 2:
 			if type(ref) is list:
 				ref =ref[0]
 												
