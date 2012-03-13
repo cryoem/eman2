@@ -128,8 +128,6 @@ def main():
 	if options.normproc: 
 		options.normproc=parsemodopt(options.normproc)
 	
-	print "normproc is", options.normproc
-	print "therefore its components are", options.normproc[0], options.normproc[1]
 	if options.mask: 
 		options.mask=parsemodopt(options.mask)
 	
@@ -287,18 +285,18 @@ def exclusive_classes(options):
 	for i in me_classes:
 		print i
 
-	#print "\n\nThere were these many candidates and repeats", candidates, repeats
-	#print "But only these many uniques", len(me_classes)
-
 	udir = options.path + '/me_classes_' + str(options.exclusive_class_min).zfill(len(str(options.exclusive_class_min)))
 	os.system('mkdir ' + udir)
 
 	for i in range(len(me_classes)):
-		out= udir + '/me_class' + str(i).zfill(len(str(len(me_classes)))) + '_s' + str(me_classes[i]['multiplicity']) + '.hdf'
+		out = udir + '/me_class' + str(i).zfill(len(str(len(me_classes)))) + '_s' + str(me_classes[i]['multiplicity']) + '.hdf'
 		cmd = 'e2proc3d.py ' + me_classes[i]['file'] + ' ' + out + ' --first=' + str(me_classes[i]['n']) + ' --last=' + str(me_classes[i]['n']) + ' --append'
-		#print "The command is", cmd	
 		os.system(cmd)
-		#os.system('mv ' + out + ' ' + udir)		
+		if options.postprocess!=None:
+			a=EMData(out,0)
+			a.process_inplace(options.postprocess[0],options.postprocess[1])
+			outpp = out.replace('.hdf','_postp.hdf')
+			a.write_image(outpp,0)
 
 	return()
 
@@ -597,7 +595,7 @@ def allvsall(options):
 				
 				if options.saveali:
 					for oo in range(len(avg_ptcls)):
-						avg_ptcls[oo].write_image(options.path + '/round' + str(k).zfill(fillfactor) + '_average' + str(mm).zfill(2)  + '_ptcls.hdf',oo)
+						avg_ptcls[oo].write_image(options.path + '/round' + str(k).zfill(fillfactor) + '_average' + str(mm).zfill(fillfactor)  + '_ptcls.hdf',oo)
 				
 				if options.postprocess!=None : 
 					avgp=avg.process(options.postprocess[0],options.postprocess[1])
