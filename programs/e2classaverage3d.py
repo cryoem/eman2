@@ -366,11 +366,10 @@ def main():
 		if options.verbose: 
 			print "Preparing final average"
 		
-		if type(ref) is list:
-			print "You supplied a reference file that has more than one reference in it! EXITING."
-			sys.exit()
-		
-		else:									
+		if groups < 2:
+			if type(ref) is list:
+				ref =ref[0]
+												
 			ref['origin_x']=0
 			ref['origin_y']=0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
 			ref['origin_z']=0
