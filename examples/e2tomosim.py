@@ -144,14 +144,17 @@ def main():
 	
 			os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --process=math.meanshrink:n=' + str(options.shrink))
 	
+		padded=options.input
 		if options.pad:
 			newsize *= 3
 			print "I am padding the model. The original size in X was", oldx				
 			print "Whereas the new one (thrice as much as the largest dimension) is", newsize
+			padded=padded.replace('.hdf','_padded.hdf')
 							
 		if newsize != oldx:
-			os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(newsize) + ' --first=' + str(i) + ' --last=' + str(i))	
-	
+			os.system('e2proc3d.py ' + options.input + ' ' + padded + ' --clip=' + str(newsize) + ' --first=' + str(i) + ' --last=' + str(i))	
+			options.input=padded
+			
 		model = EMData(options.input,i)
 
 		if options.filter != None:
@@ -207,10 +210,10 @@ def randomizer(options, model, tag):
 
 			if i == 1:
 				b.rotate(0,90,0)
-				randptlcs.append(b)
+				randptcls.append(b)
 			if i == 2:
 				b.rotate(0,90,90)
-				randptlcs.append(b)
+				randptcls.append(b)
 			
 	else:	
 		for i in range(options.nptcls):
@@ -246,6 +249,7 @@ def randomizer(options, model, tag):
 														#alignment programs can "undo" the random rotation in spt_randT accurately or not
 			if options.saverandstack:	
 				stackname = options.input.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf')
+				print "The stackname to use is", stackname
 				b.write_image(stackname.split('/')[-1],i)
 
 			randptcls.append(b)
