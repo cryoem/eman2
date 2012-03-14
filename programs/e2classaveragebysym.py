@@ -148,12 +148,8 @@ def main():
 		
 	# Now make the avearage
 	average = avgr.finish()
-<<<<<<< e2classaveragebysym.py
-	average.write_image("%s/%s" % (options.path.replace('bdb:',''),options.outout))
-=======
-	#average.write_image(options.output)
 	average.write_image("%s/%s" % (options.path.replace('bdb:',''),options.output))
->>>>>>> 1.6
+
 		
 if __name__ == "__main__":
     main()

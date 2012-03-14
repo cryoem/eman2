@@ -1791,19 +1791,19 @@ class PMGUIWidget(QtGui.QScrollArea):
 	def updateGUIFromCmd(self, cmd):
 		""" Update the GUI from a command """
 		if self.errorstate or not cmd: return
-		options = re.findall('--\S*',cmd)
+		options = re.findall('\s--\S*',cmd)
 		args = re.findall('\s[^-]{2}\S*',cmd)
 		widgethash = dict(self.widgethash)	# Make a copy of the widget hash
 		for option in options:
 			ov = option.split('=', 1)
 			if len(ov) == 2:
-				self._setValueJournaling(self.widgethash[ov[0][2:]], ov[1])
+				self._setValueJournaling(self.widgethash[ov[0][3:]], ov[1])
 				#self.widgethash[ov[0][2:]].setValue(ov[1])	
 			else:
-				self._setValueJournaling(self.widgethash[ov[0][2:]], True)
+				self._setValueJournaling(self.widgethash[ov[0][3:]], True)
 				#self.widgethash[ov[0][2:]].setValue(True)
 			# pop the widget off a copy of the hash
-			del(widgethash[ov[0][2:]])
+			del(widgethash[ov[0][3:]])
 		
 		# now do the widgets which are not listed in the above list
 		for name,widget in widgethash.iteritems():

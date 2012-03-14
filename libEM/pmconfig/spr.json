@@ -87,7 +87,7 @@
   }, 
   {
     "ICON": "ctf", 
-    "TABLE": "EMCTFParticlesTable(withmodal=False,multiselect=True)", 
+    "TABLE": "EMCTFcorrectedParticlesTable(withmodal=False,multiselect=True)", 
     "NAME": "CTF", 
     "CHILDREN": [
       {
@@ -129,7 +129,7 @@
   }, 
   {
     "ICON": "multiple_images", 
-    "TABLE": "EMParticlesEditTable(withmodal=False,multiselect=True)", 
+    "TABLE": "EMSetsTable(withmodal=False,multiselect=True)", 
     "NAME": "Particle Sets", 
     "CHILDREN": [
       {
@@ -227,6 +227,12 @@
         "CHILDREN": []
       }, 
       {
+        "ICON": "eulers",
+        "PROGRAM": "e2plotEulers.py", 
+        "NAME": "Run e2plotEulers", 
+        "CHILDREN": []
+      }, 
+      {
         "ICON": "refine", 
         "TABLE": "EMRefineTable(withmodal=False,multiselect=False)", 
         "NAME": "Frealign", 
@@ -308,6 +314,12 @@
         "PROGRAM": "e2tiltvalidate.py", 
         "NAME": "Plot Validation", 
         "WIZARD":"/lib/pmconfig/plottiltvalidation.json",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "eulers",
+        "PROGRAM": "e2plotEulers.py", 
+        "NAME": "Run e2plotEulers", 
         "CHILDREN": []
       }
     ]

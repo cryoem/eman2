@@ -384,7 +384,7 @@ class EMParticlesEntry(EMDirEntry):
 		
 		
 		return True
-		
+	
 ###########################################################################################################################
 
 class EMCTFParticlesTable(EMBrowserWidget):
@@ -400,8 +400,11 @@ class EMCTFParticlesModel(EMFileItemModel):
 	
 	headers=("Row","Raw Data Files","Type", "Num Particles", "Particle Dims", "Defocus", "B Factor", "SNR", "Quality", "Sampling")
 	
-	def __init__(self,startpath=None):
-		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMCTFParticlesEntry)
+	def __init__(self,startpath=None, direntryclass=None):
+		if not direntryclass:
+			EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMCTFParticlesEntry)
+		else:
+			EMFileItemModel.__init__(self, startpath=startpath, direntryclass=direntryclass)
 		
 	def columnCount(self,parent):
 		"Always 10 columns"
@@ -458,7 +461,7 @@ class EMCTFParticlesEntry(EMDirEntry):
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
-		self.regex = re.compile(r'^(?!.*?wiener).*^(?!.*?flip).*')
+		self.regex=re.compile("_flip$|_wiener$")
 		self.type = None
 		self.particlecount=None
 		self.particledim=None
@@ -476,15 +479,14 @@ class EMCTFParticlesEntry(EMDirEntry):
 		if db_check_dict("bdb:e2ctf.parms"):
 			ctf_db = db_open_dict("bdb:e2ctf.parms",ro=True)
 			try:
-				if len(get_file_tag(self.path()).split("_ctf")) > 1: 
-					ctf = (ctf_db[get_file_tag(self.path()).split("_ctf")[0]][0]).split()
-					self.defocus = "%.3f" % float(ctf[0][1:])
-					self.bfactor = "%.3f" % float(ctf[3])
-					background = (ctf[10].split(','))[1:]
-					self.sampling = str(len(background))
-					self.snr = "%.3f" %  (sum(map(float, background))/float(self.sampling))
-					quality = ctf_db[get_file_tag(self.path()).split("_ctf")[0]][3]
-					self.quality = "%d" %quality
+				ctf = (ctf_db[get_file_tag(self.path()).split("_ctf")[0]][0]).split()
+				self.defocus = "%.3f" % float(ctf[0][1:])
+				self.bfactor = "%.3f" % float(ctf[3])
+				background = (ctf[10].split(','))[1:]
+				self.sampling = str(len(background))
+				self.snr = "%.3f" %  (sum(map(float, background))/float(self.sampling))
+				quality = ctf_db[get_file_tag(self.path()).split("_ctf")[0]][3]
+				self.quality = "%d" %quality
 			except:
 				pass
 		
@@ -522,7 +524,28 @@ class EMCTFParticlesEntry(EMDirEntry):
 		
 		
 		return True
+
+#####################################################################################################################
+
+class EMCTFcorrectedParticlesTable(EMCTFParticlesTable):
+	""" Widget to display junk from e2boxercache. Same as EMCTFParticlesTable, but only displays CTF corrected  """
+	def __init__(self, withmodal=False, multiselect=False):
+		EMCTFParticlesTable.__init__(self, withmodal=withmodal, multiselect=multiselect)
+	
+	def setPath(self,path,silent=False):
+		super(EMCTFParticlesTable, self).setPath(path,silent=False,inimodel=EMCTFcorrectedParticlesModel)
 		
+class EMCTFcorrectedParticlesModel(EMCTFParticlesModel):
+	""" Item model for the raw data """
+	def __init__(self,startpath=None):
+		EMCTFParticlesModel.__init__(self,startpath=startpath,direntryclass=EMCTFcorrectedParticlesEntry)
+	
+class EMCTFcorrectedParticlesEntry(EMCTFParticlesEntry):
+	""" Subclassing of EMDirEntry to provide functionality"""
+	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
+		EMCTFParticlesEntry.__init__(self,root,name,i,parent=None,hidedot=True,dirregex=None)
+		self.regex = re.compile(r'^(?!.*?wiener).*^(?!.*?flip).*')
+	
 ######################################################################################################################
 
 class EMParticlesEditTable(EMBrowserWidget):

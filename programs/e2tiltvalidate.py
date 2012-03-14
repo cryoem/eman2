@@ -160,18 +160,18 @@ def main():
 		exit(1)
 		
 	# Do projections
-	e2projectcmd = "e2project3d.py %s --orientgen=eman:delta=%f:inc_mirror=1:perturb=0 --outfile=bdb:%s#projections --projector=standard --sym=%s" % (options.volume,options.delta,options.path, options.sym) # Seems to work better when I check all possibilites
+	e2projectcmd = "e2project3d.py %s --orientgen=eman:delta=%f:inc_mirror=1:perturb=0 --outfile=bdb:%s#projections_00 --projector=standard --sym=%s" % (options.volume,options.delta,options.path, options.sym) # Seems to work better when I check all possibilites
 	if options.parallel: e2projectcmd += " --parallel=%s" %options.parallel
 	run(e2projectcmd)
 	
 	# Make simmx
-	e2simmxcmd = "e2simmx.py bdb:%s#projections %s bdb:%s#simmx -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d" % (options.path,options.untiltdata,options.path,options.simcmp,options.simalign,options.simaligncmp,options.verbose)
+	e2simmxcmd = "e2simmx.py bdb:%s#projections_00 %s bdb:%s#simmx -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d" % (options.path,options.untiltdata,options.path,options.simcmp,options.simalign,options.simaligncmp,options.verbose)
 	if options.simralign: e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
 	if options.parallel: e2simmxcmd += " --parallel=%s" %options.parallel
 	if options.shrink: e2simmxcmd += " --shrink=%d" %options.shrink
 	run(e2simmxcmd)
 	
-	e2simmxcmd = "e2simmx.py bdb:%s#projections %s bdb:%s#simmx_tilt -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d" % (options.path,options.tiltdata,options.path,options.simcmp,options.simalign,options.simaligncmp,options.verbose)
+	e2simmxcmd = "e2simmx.py bdb:%s#projections_00 %s bdb:%s#simmx_tilt -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d" % (options.path,options.tiltdata,options.path,options.simcmp,options.simalign,options.simaligncmp,options.verbose)
 	if options.simralign: e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
 	if options.parallel: e2simmxcmd += " --parallel=%s" %options.parallel
 	if options.shrink: e2simmxcmd += " --shrink=%d" %options.shrink
@@ -180,7 +180,7 @@ def main():
 	# Read in the data
 	simmx= EMData.read_images("bdb:%s#simmx"%options.path)
 	simmx_tilt= EMData.read_images("bdb:%s#simmx_tilt"%options.path)
-	projections = EMData.read_images("bdb:%s#projections"%options.path)
+	projections = EMData.read_images("bdb:%s#projections_00"%options.path)
 	volume = EMData() 
 	volume.read_image(options.volume) # I don't know why I cant EMData.read_image.......
 	
@@ -231,9 +231,12 @@ class ComputeTilts:
 		self.tdb = db_open_dict("bdb:%s#perparticletilts"%self.options.path)
 		#self.test = open("test.dat","w")
 		self.eulersfile = open("eulersforxplor.dat", "w")
+		self.classifyfile = None
 		
 	def findtilts_fromdata(self, simmx, simmx_tilt, projections, volume, untiltimgs, tiltimgs):
 		""" Compute tiltdistances based on data """
+		# Save data to classify file
+		self.classifyfile = [EMData(1,simmx[0].get_ysize()),EMData(1,simmx[0].get_ysize()),EMData(1,simmx[0].get_ysize()),EMData(1,simmx[0].get_ysize()),EMData(1,simmx[0].get_ysize())]
 		for imgnum in xrange(simmx[0].get_ysize()):
 			untiltbestscore = float('inf')
 			tiltbestscore = float('inf')
@@ -243,10 +246,18 @@ class ComputeTilts:
 			for refnum in xrange(simmx[0].get_xsize()):
 				if simmx[0].get_value_at(refnum, imgnum) < untiltbestscore:
 					untiltbestscore = simmx[0].get_value_at(refnum, imgnum)
-					untiltbestrefnum = refnum		
+					untiltbestrefnum = refnum
 				if simmx_tilt[0].get_value_at(refnum, tiltimgnum) < tiltbestscore:
 					tiltbestscore = simmx_tilt[0].get_value_at(refnum, tiltimgnum)
 					tiltbestrefnum = refnum
+			
+			# save classifcation info
+			self.classifyfile[0][1,imgnum] = untiltbestrefnum
+			self.classifyfile[1][1,imgnum] = simmx[1].get_value_at(untiltbestrefnum, imgnum)
+			self.classifyfile[2][1,imgnum] = simmx[2].get_value_at(untiltbestrefnum, imgnum)
+			self.classifyfile[3][1,imgnum] = simmx[3].get_value_at(untiltbestrefnum, imgnum)
+			self.classifyfile[4][1,imgnum] = simmx[4].get_value_at(untiltbestrefnum, imgnum)
+			
 			# Untilt
 			untilt_euler_xform = Transform({"type":"eman","phi":-simmx[3].get_value_at(untiltbestrefnum, imgnum)})*projections[untiltbestrefnum].get_attr('xform.projection')
 			untiltrot = untilt_euler_xform.get_rotation("eman")
@@ -332,6 +343,9 @@ class ComputeTilts:
 		self.eulersfile.close()
 		self.tdb["particletilt_list"] = self.particletilt_list
 		self.tdb.close()
+		if self.classifyfile:
+			for i in xrange(5):
+				self.classifyfile[i].write_image("bdb:%s#classify_00"%self.options.path,i)
 	
 # Function to compute a similarity map for a given image
 class CompareToTiltTask(EMTask):
