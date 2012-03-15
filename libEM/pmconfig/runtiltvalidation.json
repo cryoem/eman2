@@ -4,12 +4,12 @@
 [
   {
     "TITLE":"e2TiltValidate Wizard",
-    "INST":"This Wizard to Help EM users fill in the GUi to run e2tiltvalidat.py. For more info on this concept please read: Optimal Determination of Particle Orientation,Absolute Hand, and Contrast Loss in Single-particle. Electron Cryomicroscopy Rosenthal and Henderson",
+    "INST":"This Wizard is to Help EM users fill in the GUi to run e2tiltvalidat.py. For more info on this concept please read: Optimal Determination of Particle Orientation,Absolute Hand, and Contrast Loss in Single-particle. Electron Cryomicroscopy Rosenthal and Henderson",
     "WIDGETS":[]
   },
   {
-    "TITLE":"Tilt Pair Filenames and Volume to Validate",
-    "INST":"Please eneter filename for the two tiltpair stacks and the volume to validate",
+    "TITLE":"Tilt Pair Filenames and Volume",
+    "INST":"Please enter filename for the two tiltpair stacks and the volume to validate. Volume and stack must have same dimensions and APIX",
     "WIDGETS":[
       "untiltdata",
       "tiltdata",

@@ -51,6 +51,7 @@
   },
   {
     "ICON": "single_image_3d",
+    "WIZARD":"/lib/pmconfig/symsearch.json",
     "PROGRAM": "e2symsearch.py", 
     "NAME": "Align to Symmetry Axis",
     "NOTELEVEL": "1",

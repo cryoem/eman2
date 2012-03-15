@@ -180,6 +180,7 @@
       {
         "ICON": "single_image_3d",
         "EXPERT": 1,
+        "WIZARD":"/lib/pmconfig/montecarlo.json",
         "PROGRAM": "e2montecarlorecon.py", 
         "NAME": "Make Model - e2montecarlo",
 	"NOTELEVEL": "1",
@@ -189,6 +190,7 @@
         "ICON": "single_image_3d", 
         "EXPERT": 1,
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2rct",
+        "WIZARD":"/lib/pmconfig/rct.json",
         "PROGRAM": "e2rct.py", 
         "NAME": "Make Model - e2rct",
 	"NOTELEVEL": "1",
@@ -196,6 +198,7 @@
       },
       {
         "ICON": "single_image_3d",
+        "WIZARD":"/lib/pmconfig/symsearch.json",
         "PROGRAM": "e2symsearch.py", 
         "NAME": "Align to Symmetry Axis",
 	"NOTELEVEL": "1",
@@ -228,6 +231,7 @@
       }, 
       {
         "ICON": "eulers",
+        "WIZARD":"/lib/pmconfig/ploteulers.json",
         "PROGRAM": "e2plotEulers.py", 
         "NAME": "Run e2plotEulers", 
         "CHILDREN": []
@@ -286,6 +290,7 @@
       },
       {
         "ICON": "resolution", 
+        "WIZARD":"/lib/pmconfig/plotfsc.json",
         "PROGRAM": "e2plotFSC.py", 
         "NAME": "Run e2plotFSC",
 	"NOTELEVEL": "1",
@@ -318,6 +323,7 @@
       },
       {
         "ICON": "eulers",
+        "WIZARD":"/lib/pmconfig/symsearch.json",
         "PROGRAM": "e2plotEulers.py", 
         "NAME": "Run e2plotEulers", 
         "CHILDREN": []
