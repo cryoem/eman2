@@ -80,6 +80,7 @@ const string RT3DGridAligner::NAME = "rotate_translate_3d_grid";
 const string RT3DSphereAligner::NAME = "rotate_translate_3d";
 const string RT3DSymmetryAligner::NAME = "rotate_symmetry_3d";
 const string FRM2DAligner::NAME = "frm2d";
+const string ScaleAligner::NAME = "scale";
 
 
 template <> Factory < Aligner >::Factory()
@@ -107,6 +108,7 @@ template <> Factory < Aligner >::Factory()
 	force_add<RT3DSphereAligner>();
 	force_add<RT3DSymmetryAligner>();
 	force_add<FRM2DAligner>();
+	force_add<ScaleAligner>();
 //	force_add<XYZAligner>();
 }
 
@@ -114,6 +116,57 @@ vector<Dict> Aligner::xform_align_nbest(EMData *, EMData *, const unsigned int, 
 {
 	vector<Dict> solns;
 	return solns;
+}
+
+EMData* ScaleAligner::align(EMData * this_img, EMData *to,
+			const string& cmp_name, const Dict& cmp_params) const
+{
+	
+	//get the scale range
+	float min =  params.set_default("min",0.95);
+	float max = params.set_default("max",1.05);
+	float step = params.set_default("step",0.01);
+	
+	Transform t = Transform();
+	t.set_scale(max);
+	float* oridata = this_img->get_data();
+	
+	//get the transform processor and cast to correct factory product
+	Processor* proc = Factory <Processor>::get("xform", Dict());
+	TransformProcessor* xform = dynamic_cast<TransformProcessor*>(proc);
+	
+	// Using the following method we only create one EMdata object. If I just used the processor, then I would create many EMdata objects
+	float bestscale = 1.0;
+	float bestscore = numeric_limits<float>::infinity();
+
+	for(float i = max; i > min; i-=step){
+			
+		float* des_data = xform->transform(this_img,t);
+		this_img->set_data(des_data);
+		this_img->update();
+		
+		//check compairsion
+		float score = this_img->cmp(cmp_name, to, cmp_params);
+		if(score < bestscore){
+			bestscore = score;
+			bestscale = i;
+		}
+		
+		t.set_scale(i);
+		
+		//reset original data
+		this_img->set_data(oridata);
+	}
+
+
+	
+	//Return scaled image
+	t.set_scale(bestscale);
+	EMData* result = this_img->process("xform",Dict("transform",&t));
+	result->set_attr("scalefactor",bestscale);
+	
+	return result;
+	
 }
 
 // Note, the translational aligner assumes that the correlation image

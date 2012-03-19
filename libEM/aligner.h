@@ -163,6 +163,51 @@ namespace EMAN
 //		static Transform* get_set_align_attr(const string& key, EMData* const to_image, const EMData* const from_image  );
 	};
 
+	/** Scale aligner. To scale one image to another in real space
+	 * @param min Minimum scaling (default: 0.95)
+	 * @param max aximum scaling (default: 1.05)
+	 * @param step Scaling step (default: 0.01)
+	 * @author John Flanagan
+	 * @date March 2012
+	*/
+	class ScaleAligner:public Aligner
+	{
+	  public:
+		virtual EMData * align(EMData * this_img, EMData * to_img,
+						const string & cmp_name = "dot", const Dict& cmp_params = Dict()) const;
+
+		virtual EMData * align(EMData * this_img, EMData * to_img) const
+		{
+			return align(this_img, to_img, "dot", Dict());
+		}
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual string get_desc() const
+		{
+			return "Performs real space scale alignment";
+		}
+
+		static Aligner *NEW()
+		{
+			return new ScaleAligner();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("min", EMObject::FLOAT, "Minimum scaling (default: 0.95)");
+			d.put("max", EMObject::FLOAT, "Maximum scaling (default: 1.05)");
+			d.put("step", EMObject::FLOAT, "Scaling step (default: 0.01)");
+			return d;
+		}
+		
+		static const string NAME;
+	};
+	
 	/** Translational 2D Alignment using cross correlation.
      * It calculates the shift for a translational alignment, then
      * do the translation.

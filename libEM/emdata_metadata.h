@@ -108,6 +108,9 @@ inline void set_data(float* data, const int x, const int y, const int z) {
 	update();
 }
 
+inline void set_data(float* data) {
+	rdata = data;
+}
 
 /** Dump the image pixel data in native byte order to a disk file.
  * @param fsp The filename to write the image data to

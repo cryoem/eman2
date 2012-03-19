@@ -901,8 +901,8 @@ class EMInspectorControlShape(EMItem3DInspector):
 	"""
 	Class to make EMItem GUI SHAPE Inspector
 	"""
-	def __init__(self, name, item3d, numgridcols=1):
-		EMItem3DInspector.__init__(self, name, item3d, numgridcols=numgridcols)
+	def __init__(self, name, item3d):
+		EMItem3DInspector.__init__(self, name, item3d)
 		
 	def updateItemControls(self):
 		""" Updates this item inspector. Function is called by the item it observes"""
@@ -910,7 +910,17 @@ class EMInspectorControlShape(EMItem3DInspector):
 		self.ambcolorbox.setColor(QtGui.QColor(255*self.item3d().ambient[0],255*self.item3d().ambient[1],255*self.item3d().ambient[2]))
 		self.diffusecolorbox.setColor(QtGui.QColor(255*self.item3d().diffuse[0],255*self.item3d().diffuse[1],255*self.item3d().diffuse[2]))
 		self.specularcolorbox.setColor(QtGui.QColor(255*self.item3d().specular[0],255*self.item3d().specular[1],255*self.item3d().specular[2]))
+	
+	def addTabs(self):
+		""" Add a tab for each 'column' """
+		tabwidget = QtGui.QWidget()
+		gridbox = QtGui.QGridLayout()
 		
+		EMInspectorControlShape.addControls(self, gridbox)
+		
+		tabwidget.setLayout(gridbox)
+		self.addTab(tabwidget, "basic")
+			
 	def addControls(self, gridbox):
 		""" Construct all the widgets in this Item Inspector """
 		super(EMInspectorControlShape, self).addControls(gridbox)
@@ -999,7 +1009,7 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 	Class to make EMItem GUI SHAPE 3DText Inspector
 	"""
 	def __init__(self, name, item3d):
-		EMInspectorControlShape.__init__(self, name, item3d, numgridcols=2)
+		EMInspectorControlShape.__init__(self, name, item3d)
 
 	def updateItemControls(self):
 		""" Updates this item inspector. Function is called by the item it observes"""
@@ -1018,11 +1028,21 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 			self.textModeBox.setCurrentIndex(2)
 		if self.item3d().getFontMode() == FTGLFontMode.OUTLINE:
 			self.textModeBox.setCurrentIndex(3)
+	
+	def addTabs(self):
+		""" Add a tab for each 'column' """
+		super(EMInspectorControl3DText, self).addTabs()
+		tabwidget = QtGui.QWidget()
+		gridbox = QtGui.QGridLayout()
+		
+		EMInspectorControl3DText.addControls(self, gridbox)
+		
+		tabwidget.setLayout(gridbox)
+		self.addTab(tabwidget, "text")
 		
 	def addControls(self, gridbox):
 		""" Construct all the widgets in this Item Inspector """
-		super(EMInspectorControl3DText, self).addControls(gridbox)
-			
+	
 		textframe = QtGui.QFrame()
 		textframe.setFrameShape(QtGui.QFrame.StyledPanel)
 		lfont = QtGui.QFont()
@@ -1058,7 +1078,7 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 		textgridbox.addWidget(self.fontSize, 2, 1, 1, 1)
 		
 		textframe.setLayout(textgridbox)	
-		gridbox.addWidget(textframe, 2, 1, 1, 1)
+		gridbox.addWidget(textframe, 2, 0)
 		
 		# Add text
 		text3dframe = QtGui.QFrame()
@@ -1073,7 +1093,7 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 		text3dgridbox.addWidget(self.text3d, 3, 1, 2, 1)
 		
 		text3dframe.setLayout(text3dgridbox)
-		gridbox.addWidget(text3dframe, 3, 1, 1, 1)
+		gridbox.addWidget(text3dframe, 3, 0)
 		
 		# set to default, but run only as a base class
 		if type(self) == EMInspectorControl3DText: 
@@ -1114,7 +1134,7 @@ class EMInspectorControlLine(EMInspectorControlShape):
 	Class to make EMItem GUI SHAPE Line Inspector
 	"""
 	def __init__(self, name, item3d):
-		EMInspectorControlShape.__init__(self, name, item3d, numgridcols=2)
+		EMInspectorControlShape.__init__(self, name, item3d)
 		
 	def updateItemControls(self):
 		""" Updates this item inspector. Function is called by the item it observes"""
@@ -1130,11 +1150,20 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		self.slice.setValue(self.item3d().slices, quiet=1)
 		self.stack.setValue(self.item3d().stacks, quiet=1)
 		self.linelength.setValue(int(self.item3d().length), quiet=1)
+	
+	def addTabs(self):
+		""" Add a tab for each 'column' """
+		super(EMInspectorControlLine, self).addTabs()
+		tabwidget = QtGui.QWidget()
+		gridbox = QtGui.QGridLayout()
+		
+		EMInspectorControlLine.addControls(self, gridbox)
+		
+		tabwidget.setLayout(gridbox)
+		self.addTab(tabwidget, "line")
 		
 	def addControls(self, gridbox):
 		""" Construct all the widgets in this Item Inspector """
-		super(EMInspectorControlLine, self).addControls(gridbox)
-		
 		#frame to control properties of left/right arrows
 		lineframe = QtGui.QFrame()
 		lineframe.setFrameShape(QtGui.QFrame.StyledPanel)
@@ -1203,7 +1232,7 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		linegridbox.addWidget(self.linewidth, 5, 2, 1, 2)
 		
 		lineframe.setLayout(linegridbox)	
-		gridbox.addWidget(lineframe, 2, 1, 1, 1)
+		gridbox.addWidget(lineframe, 2, 0)
 		
 		#frame to control slice/stack of the line
 		lineframe2 = QtGui.QFrame()
@@ -1220,7 +1249,7 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		linehbox.addWidget(self.stack)
 		
 		lineframe2.setLayout(linehbox)
-		gridbox.addWidget(lineframe2, 3, 1, 1, 1)
+		gridbox.addWidget(lineframe2, 3, 0)
 		
 		# set to default, but run only as a base class
 		if type(self) == EMInspectorControl3DText: 

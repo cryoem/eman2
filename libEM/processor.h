@@ -1546,8 +1546,8 @@ The basic design of EMAN Processors: <br>\
 
 			static const string NAME;
 
-		private:
 			float* transform(const EMData* const image, const Transform& t) const;
+		private:
 			// This function became redundant if favor of EMData::scale_pixel
 			//void update_emdata_attributes(EMData* const image, const Dict& attr_dict, const float& scale) const;
 

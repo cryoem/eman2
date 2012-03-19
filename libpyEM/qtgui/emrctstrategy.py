@@ -160,7 +160,8 @@ class Strategy2IMGPair(Strategy):
 					if self.centertilts:
 						self.centerboxes(self.mediator.tilt_win)
 						
-					self.mediator.tilt_win.update_mainwin()	
+					self.mediator.tilt_win.update_mainwin()
+					self.mediator.tilt_win.update_particles()
 					
 					if self.cont_update_boxes:
 						self.update_boxes()
@@ -187,6 +188,7 @@ class Strategy2IMGPair(Strategy):
 						self.centerboxes(self.mediator.untilt_win)
 						
 					self.mediator.untilt_win.update_mainwin()
+					self.mediator.untilt_win.update_particles()
 					
 					if self.cont_update_boxes:
 						self.update_boxes()	

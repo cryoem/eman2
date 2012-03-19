@@ -510,25 +510,32 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 	def mouseReleaseEvent(self, event): pass
 	def wheelEvent(self, event): pass
 		
-class EMItem3DInspector(QtGui.QWidget):
+class EMItem3DInspector(QtGui.QTabWidget):
 	"""
 	Class to make the EMItem GUI controls
 	"""
-	def __init__(self, name, item3d, numgridcols=1):
-		QtGui.QWidget.__init__(self)
+	def __init__(self, name, item3d):
+		QtGui.QTabWidget.__init__(self)
 		self.item3d = weakref.ref(item3d)
 		self.name = name
 		self.inspector = None
-		self.transfromboxmaxheight = 400
+		self.transfromboxmaxheight = 400	# This might be problematic
 		
-		gridbox = QtGui.QGridLayout()
-		self.gridcols = numgridcols
-		self.addControls(gridbox)
-		self.setLayout(gridbox)
-		
+		self.addTabs()	
+			
 	def setInspector(self, inspector):
 		""" This is a reference back to the main inspector, which holds all the item inspectors"""
 		self.inspector = weakref.ref(inspector)
+		
+	def addTabs(self):
+		""" Add a tab for each 'column' """
+		tabwidget = QtGui.QWidget()
+		gridbox = QtGui.QGridLayout()
+		
+		EMItem3DInspector.addControls(self, gridbox)
+		
+		tabwidget.setLayout(gridbox)
+		self.addTab(tabwidget, "basic")
 		
 	def addControls(self, gridbox):
 		""" Construct all the widgets in this Item Inspector """
@@ -538,13 +545,13 @@ class EMItem3DInspector(QtGui.QWidget):
 		label = QtGui.QLabel(self.name,self)
 		label.setFont(font)
 		label.setAlignment(QtCore.Qt.AlignCenter)
-		gridbox.addWidget(label, 0, 0, 1, self.gridcols)
+		gridbox.addWidget(label, 0, 0, 1, 1)
 		databox = QtGui.QHBoxLayout()
 		self.boundingbox = None
 		if self.item3d().boundingboxsize:
 			self.boundingbox = QtGui.QLabel("Size: "+self.item3d().boundingboxsize,self)
 			databox.addWidget(self.boundingbox)
-		gridbox.addLayout(databox, 1, 0, 1, self.gridcols)
+		gridbox.addLayout(databox, 1, 0, 1, 1)
 		# angluar controls
 		xformframe = QtGui.QFrame()
 		xformframe.setFrameShape(QtGui.QFrame.StyledPanel)

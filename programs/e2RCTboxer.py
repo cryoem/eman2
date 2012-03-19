@@ -312,9 +312,9 @@ class ParticlesWindow:
 		# reset the relevent list of particles
 		self.listsofparts[idx][1] = len(particles)
 		self.listsofparts[idx][2] = particles
-		
+
 		# get the number of lists and the minimum number of particles in a given list..
-		listlength = 100000000000000	# It would be nice to have something elegant like Math.Inf, but sometime python can be a PoS
+		listlength = 1e308	
 		for lst in self.listsofparts:
 			listlength = min(listlength, lst[1])
 		
@@ -326,8 +326,8 @@ class ParticlesWindow:
 				self.listsofparts[lst][2][part].set_attr("PImg#", part)
 				self.totparts.append(self.listsofparts[lst][2][part])
 				i += 1	
-
-		if self.totparts != []:	
+				
+		if self.totparts != []:
 			self.window.set_data(self.totparts)
 			self.window.updateGL()
 			

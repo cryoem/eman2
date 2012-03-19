@@ -168,7 +168,7 @@ class EMDataItem3D(EMItem3D):
 	
 class EMDataItem3DInspector(EMItem3DInspector):
 	def __init__(self, name, item3d):
-		EMItem3DInspector.__init__(self, name, item3d, numgridcols=2)
+		EMItem3DInspector.__init__(self, name, item3d)
 	
 	def updateItemControls(self):
 		""" Updates this item inspector. Function is called by the item it observes"""
@@ -176,11 +176,21 @@ class EMDataItem3DInspector(EMItem3DInspector):
 		# Anything that needs to be updated when the scene is rendered goes here.....
 		if self.item3d().path: self.file_path_label.setText(self.item3d().path)
 		self.data_checkbox.setChecked(self.item3d().getRenderBoundingBox())
+	
+		
+	def addTabs(self):
+		""" Add a tab for each 'column' """
+		super(EMDataItem3DInspector, self).addTabs()
+		tabwidget = QtGui.QWidget()
+		gridbox = QtGui.QGridLayout()
+		
+		EMDataItem3DInspector.addControls(self, gridbox)
+		
+		tabwidget.setLayout(gridbox)
+		self.addTab(tabwidget, "data")
 		
 	def addControls(self, gridbox):
 		""" Construct all the widgets in this Item Inspector """
-		super(EMDataItem3DInspector, self).addControls(gridbox)
-		
 		dataframe = QtGui.QFrame()
 		dataframe.setFrameShape(QtGui.QFrame.StyledPanel)
 		lfont = QtGui.QFont()
@@ -188,16 +198,16 @@ class EMDataItem3DInspector(EMItem3DInspector):
 		datagridbox = QtGui.QGridLayout()
 		
 		self.data_checkbox= QtGui.QCheckBox("Display Bounding Box")
-		datagridbox.addWidget(self.data_checkbox, 0, 0, 1, 1)
+		datagridbox.addWidget(self.data_checkbox, 0, 0)
 		self.file_browse_button = QtGui.QPushButton("Set Data Source")
-		datagridbox.addWidget(self.file_browse_button, 1, 0, 1, 1)
+		datagridbox.addWidget(self.file_browse_button, 1, 0)
 		dataframe.setLayout(datagridbox)
-		gridbox.addWidget(dataframe, 2, 1, 1, 1)
+		gridbox.addWidget(dataframe, 2, 0)
 		
 		self.file_path_label = QtGui.QLabel()
 		self.file_path_label.setAlignment(QtCore.Qt.AlignCenter)
 		self.file_path_label.setFont(lfont)
-		gridbox.addWidget(self.file_path_label, 3, 0, 1, 2)
+		gridbox.addWidget(self.file_path_label, 3, 0)
 
 		self.file_browse_button.clicked.connect(self.onFileBrowse)
 		QtCore.QObject.connect(self.data_checkbox, QtCore.SIGNAL("stateChanged(int)"), self.onBBoxChange)
@@ -481,7 +491,7 @@ class EMSliceItem3D(EMItem3D):
 		
 class EMSliceInspector(EMInspectorControlShape):
 	def __init__(self, name, item3d):
-		EMInspectorControlShape.__init__(self, name, item3d, numgridcols=2)
+		EMInspectorControlShape.__init__(self, name, item3d)
 		
 		self.constrained_plane_combobox.currentIndexChanged.connect(self.onConstrainedOrientationChanged)
 		self.use_3d_texture_checkbox.clicked.connect(self.on3DTextureCheckbox)
@@ -507,10 +517,20 @@ class EMSliceInspector(EMInspectorControlShape):
 		
 		self.contrast_slider.setValue(self.item3d().contrast)
 		self.contrast_slider.setRange(0.001, 1.0)
+	
+	def addTabs(self):
+		""" Add a tab for each 'column' """
+		super(EMSliceInspector, self).addTabs()
+		tabwidget = QtGui.QWidget()
+		gridbox = QtGui.QGridLayout()
+		
+		EMSliceInspector.addControls(self, gridbox)
+		
+		tabwidget.setLayout(gridbox)
+		self.addTab(tabwidget, "slices")
 		
 	def addControls(self, gridbox):
 		""" Construct all the widgets in this Item Inspector """
-		super(EMSliceInspector, self).addControls(gridbox)
 		sliceframe = QtGui.QFrame()
 		sliceframe.setFrameShape(QtGui.QFrame.StyledPanel)
 		slice_grid_layout = QtGui.QGridLayout()
@@ -541,7 +561,7 @@ class EMSliceInspector(EMInspectorControlShape):
 		slice_grid_layout.addWidget(self.contrast_slider, 4, 1, 1, 1)
 		slice_grid_layout.setRowStretch(5,1)
 		sliceframe.setLayout(slice_grid_layout)
-		gridbox.addWidget(sliceframe, 2, 1, 2, 1)
+		gridbox.addWidget(sliceframe, 2, 0, 2, 1)
 	
 	def on3DTextureCheckbox(self):
 		self.item3d().use_3d_texture = self.use_3d_texture_checkbox.isChecked()
@@ -827,10 +847,20 @@ class EMVolumeInspector(EMInspectorControlShape):
 		self.brightness_slider.setRange(-max, -min)
 		self.contrast_slider.setValue(self.item3d().contrast)
 		self.contrast_slider.setRange(0.001, 1.0)
+	
+	def addTabs(self):
+		""" Add a tab for each 'column' """
+		super(EMVolumeInspector, self).addTabs()
+		tabwidget = QtGui.QWidget()
+		gridbox = QtGui.QGridLayout()
+		
+		EMVolumeInspector.addControls(self, gridbox)
+		
+		tabwidget.setLayout(gridbox)
+		self.addTab(tabwidget, "volume")
 		
 	def addControls(self, gridbox):
-		super(EMVolumeInspector, self).addControls(gridbox)
-
+		""" add controls for the volumes """
 		volframe = QtGui.QFrame()
 		volframe.setFrameShape(QtGui.QFrame.StyledPanel)
 		vol_grid_layout = QtGui.QGridLayout()
@@ -843,7 +873,7 @@ class EMVolumeInspector(EMInspectorControlShape):
 		vol_grid_layout.setRowStretch(2,1)
 
 		volframe.setLayout(vol_grid_layout)
-		gridbox.addWidget(volframe, 2, 1, 2, 1)
+		gridbox.addWidget(volframe, 2, 0, 2, 1)
 	
 	def onBrightnessSlider(self):
 		self.item3d().brightness = self.brightness_slider.getValue()
@@ -860,7 +890,7 @@ class EMVolumeInspector(EMInspectorControlShape):
 
 class EMIsosurfaceInspector(EMInspectorControlShape):
 	def __init__(self, name, item3d):
-		EMInspectorControlShape.__init__(self, name, item3d, numgridcols=2)	# for the iso inspector we need two grid cols for extra space....
+		EMInspectorControlShape.__init__(self, name, item3d)	# for the iso inspector we need two grid cols for extra space....
 		
 		QtCore.QObject.connect(self.thr, QtCore.SIGNAL("valueChanged"), self.onThresholdSlider)
 		QtCore.QObject.connect(self.histogram_widget, QtCore.SIGNAL("thresholdChanged(float)"), self.onHistogram)
@@ -916,11 +946,20 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 				self.colorbymap.setEnabled(True)
 			else:
 				self.colorbymap.setEnabled(False)
+	
+	def addTabs(self):
+		""" Add a tab for each 'column' """
+		super(EMIsosurfaceInspector, self).addTabs()
+		tabwidget = QtGui.QWidget()
+		gridbox = QtGui.QGridLayout()
 		
+		EMIsosurfaceInspector.addControls(self, gridbox)
+		
+		tabwidget.setLayout(gridbox)
+		self.addTab(tabwidget, "isosurface")
 		
 	def addControls(self, gridbox):
 		""" Construct all the widgets in this Item Inspector """
-		super(EMIsosurfaceInspector, self).addControls(gridbox)
 		self.histogram_widget = ImgHistogram(self)
 		self.histogram_widget.setObjectName("hist")
 
@@ -993,7 +1032,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		isogridbox.addWidget(cbmframe, 5, 0, 1, 1)
 		isogridbox.setRowStretch(4,1)
 		isoframe.setLayout(isogridbox)
-		gridbox.addWidget(isoframe, 2, 1, 2, 1)
+		gridbox.addWidget(isoframe, 2, 0, 2, 1)
 		gridbox.addWidget(self.thr, 4, 0, 1, 2)
 		
 		# Set to default, but run only once and not in each base class
