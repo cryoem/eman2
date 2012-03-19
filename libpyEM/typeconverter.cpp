@@ -159,10 +159,18 @@ PyObject* EMObject_to_python::convert(EMObject const& emobj)
 	PyObject * result = 0;
 
 	if (t == EMObject::BOOL) {
+#ifdef IS_PY3K
+		result = PyLong_FromLong((bool)emobj);
+#else
 		result = PyInt_FromLong((bool)emobj);
+#endif	//IS_PY3K
 	}
 	if (t == EMObject::INT) {
+#ifdef IS_PY3K
+		result = PyLong_FromLong((int)emobj);
+#else
 		result = PyInt_FromLong((int)emobj);
+#endif	//IS_PY3K
 	}
 	else if (t == EMObject::FLOAT) {
 		result = PyFloat_FromDouble((float) emobj);
@@ -171,7 +179,11 @@ PyObject* EMObject_to_python::convert(EMObject const& emobj)
 		result = PyFloat_FromDouble((double) emobj);
 	}
 	else if (t == EMObject::STRING) {
+#ifdef IS_PY3K
+		result = PyUnicode_FromString((const char*) emobj);
+#else
 		result = PyString_FromString((const char*) emobj);
+#endif	//IS_PY3K
 	}
 	else if (t == EMObject::EMDATA) {
 		EMData * img = (EMData*) emobj;

@@ -60,6 +60,9 @@ using std::map;
 using std::cout;
 using std::endl;
 
+#if PY_MAJOR_VERSION >= 3
+	#define IS_PY3K
+#endif
 
 namespace EMAN {
 
@@ -485,14 +488,23 @@ namespace EMAN {
 
 			EMObject& result = *((EMObject*) storage);
 
+#ifdef IS_PY3K
+			PyObject * first_obj = PyObject_GetItem(obj_ptr, PyLong_FromLong(0));
+#else
 			PyObject * first_obj = PyObject_GetItem(obj_ptr, PyInt_FromLong(0));
+#endif	//IS_PY3K
+
 			if(PySequence_Size(obj_ptr) == 0 || !first_obj) {	//to handle the empty list in python
 				result = EMObject();
 			}
 			else {
 				EMObject::ObjectType object_type = EMObject::UNKNOWN;
 
+#ifdef	IS_PY3K
+				if( PyObject_TypeCheck(first_obj, &PyLong_Type) ) {
+#else
 				if( PyObject_TypeCheck(first_obj, &PyInt_Type) ) {
+#endif	//IS_PY3K
 					object_type = EMObject::INTARRAY;
 				   // PySequence_GetItem takes an int directly; otherwise you'd need
 				   // to DECREF the int object you pass to PyObject_GetItem as well.
@@ -502,7 +514,11 @@ namespace EMAN {
 					object_type = EMObject::FLOATARRAY;
 					Py_DECREF(first_obj);
 				}
+#ifdef	IS_PY3K
+				else if( PyObject_TypeCheck(first_obj, &PyUnicode_Type) ) {
+#else
 				else if( PyObject_TypeCheck(first_obj, &PyString_Type) ) {
+#endif	//IS_PY3K
 					object_type = EMObject::STRINGARRAY;
 					Py_DECREF(first_obj);
 				}

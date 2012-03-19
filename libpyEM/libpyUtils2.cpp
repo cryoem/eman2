@@ -53,6 +53,10 @@
 // Using =======================================================================
 using namespace boost::python;
 
+#if PY_MAJOR_VERSION >= 3
+	#define IS_PY3K
+#endif
+
 // Declarations ================================================================
 namespace  {
 
@@ -317,13 +321,23 @@ float pysdot( int n, array& x, int incx, array& y, int incy )
 
 void readarray( object& f, array& x, int size)
 {
-    if( !PyFile_Check(f.ptr()) )
+#ifdef IS_PY3K
+	extern PyTypeObject PyIOBase_Type;
+	if(!PyObject_IsInstance(f.ptr(), (PyObject *)&PyIOBase_Type) )
+#else
+	if( !PyFile_Check(f.ptr()) )
+#endif	//IS_PY3K
     {
         std::cout << "Error: expecting a file object" << std::endl;
         return;
     }
 
+#ifdef IS_PY3K
+	int fd = PyObject_AsFileDescriptor( f.ptr() );
+	FILE*  fh = fdopen(fd, "r");
+#else
     FILE*  fh = PyFile_AsFile( f.ptr() );
+#endif	//IS_PY3K
     float* fx = get_fptr( x );
 
     fread( fx, sizeof(float), size, fh );
