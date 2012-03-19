@@ -92,7 +92,7 @@ def main():
 	parser.add_argument("--raligncmp",type=str,help="The comparator used by the second stage aligner. Default is the internal tomographic ccc",default="ccc.tomo", guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=15, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
 	parser.add_argument("--averager",type=str,help="The type of averager used to produce the class average. Default=mean",default="mean")
 	parser.add_argument("--keep",type=float,help="The fraction of particles to keep in each class.",default=1.0, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode='alignment,breaksym')
-	parser.add_argument("--inixforms",type=str,help="directory containing a dict of transform to apply before reference generation", default="", guitype='dirbox', dirbasename='spt_', row=7, col=0,rowspan=1, colspan=2, nosharedb=True, mode='breaksym')
+	parser.add_argument("--inixforms",type=str,help="directory containing a dict of transform to apply before reference generation", default="", guitype='dirbox', dirbasename='spt_|sptsym_', row=7, col=0,rowspan=1, colspan=2, nosharedb=True, mode='breaksym')
 	parser.add_argument("--breaksym",action="store_true", help="Break symmetry. Do not apply symmetrization after averaging", default=False, guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, nosharedb=True, mode=',breaksym[True]')
 	
 	parser.add_argument("--groups",type=int,help="This parameter is EXPERIMENTAL. It's the number of final averages you want from the set after ONE iteration of alignment. Particles will be separated in groups based on their correlation to the reference",default=0)
@@ -215,9 +215,6 @@ def main():
 		if options.keepsig or options.keep!=1.0 :
 			print "Error: do not use --keepsig with one particle, also keep should be 1.0 if specified"
 			sys.exit(1)
-		if options.groups > 1:
-			print "ERROR: You cannot split your data in more than one group if the input stack only has ONE particle!"
-			sys.exit()
 
 	# Initialize parallelism if being used
 	if options.parallel :
@@ -259,8 +256,8 @@ def main():
 			# compute pairwise alignments until we get an average out. 
 		
 			nseed=2**int(floor(log(len(ptcls),2)))	# we stick with powers of 2 for this to make the tree easier to collapse
-			if nseed>128 : 
-				nseed=128
+			if nseed>64 : 
+				nseed=64
 				print "Limiting seeding to the first 64 images"
 
 			nseediter=int(log(nseed,2))			# number of iterations we'll need
@@ -274,6 +271,7 @@ def main():
 					emdata.process_inplace("xform",{"transform":db["tomo_%04d"%i]})
 					emdata.set_attr("test_xfm",db["tomo_%04d"%i])
 				emdata.write_image("%s#seedtree_0"%options.path,i)
+
 			
 			# Outer loop covering levels in the converging binary tree
 			for i in range(nseediter):
@@ -366,10 +364,11 @@ def main():
 		if options.verbose: 
 			print "Preparing final average"
 		
-		if options.groups < 2:
-			if type(ref) is list:
-				ref =ref[0]
-												
+		if type(ref) is list:
+			print "You supplied a reference file that has more than one reference in it! EXITING."
+			sys.exit()
+		
+		else:									
 			ref['origin_x']=0
 			ref['origin_y']=0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
 			ref['origin_z']=0
@@ -431,9 +430,10 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 		print "Therefore, based on the size of the set, the coefficients that will work as thresholds are", threshs	
 		print "While the guineapig particles where these came from were", guinea_particles
 		print "Out of a total of these many particles", len(align_parms)
-		print "Therefore each group will contain approximately these many particles", len(align_parms)/groups
+		print "Therefor each group will contain approximately these many particles", len(align_parms)/groups
 	
 		threshs.sort()
+				
 		groupslist=[]
 		includedlist=[]
 		for i in range(groups):
@@ -444,7 +444,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 		for i,ptcl_parms in enumerate(align_parms):
 			ptcl=EMData(ptcl_file,i)
 			ptcl.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
-			
+
 			if ptcl_parms[0]["score"] > threshs[-1]: 
 				groupslist[-1].append(ptcl)
 				includedlist[-1].append(i)			
@@ -476,22 +476,15 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 		db_close_dict(db)
 		avgs=[]
 		
-		print "The length of groupslist is", len(groupslist)
-		if len(groupslist)==0:
-			print "Aborting. Zero groups!"
-			sys.exit()
-		
 		for i in range(len(groupslist)):
 			variance = (groupslist[0][0]).copy_head()
 			if averager[0] == 'mean':
 				averager[1]['sigma'] = variance
-			
 			avgr=Averagers.get(averager[0], averager[1])
-			print "I have called the averager!"
 			
 			for j in range(len(groupslist[i])):
 				avgr.add_image(groupslist[i][j])
-				print "I have added an image to the avrg", groupslist[i][j]
+				
 				if saveali:
 					groupslist[i][j]['origin_x'] = 0
 					groupslist[i][j]['origin_y'] = 0		#The origin needs to be reset to ZERO to avoid display issues in Chimera

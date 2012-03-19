@@ -1976,7 +1976,7 @@ class EMInspector3D(QtGui.QWidget):
 		QtGui.QWidget.__init__(self)
 		self.scenegraph = weakref.ref(scenegraph)
 		self.mintreewidth = 250		# minimum width of the tree
-		self.mincontrolwidth = 250
+		self.mincontrolwidth = 0
 		
 		vbox = QtGui.QVBoxLayout(self)
 		self.inspectortab = QtGui.QTabWidget()

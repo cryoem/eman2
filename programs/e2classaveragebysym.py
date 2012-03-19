@@ -54,7 +54,7 @@ def main():
 	parser.add_argument("--steps", dest="steps", type = int, default=10, help="Number of steps (for the MC). This should be a multiple of the number of cores used for parallization", guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--symmetrize", default=True, action="store_true", help="Symmetrize volume after alignment.", guitype='boolbox', row=8, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--applytoraw", default=True, action="store_true", help="Applies symxform to raw data.", guitype='boolbox', row=8, col=1, rowspan=1, colspan=1)
-	parser.add_argument("--cmp",type=str,help="The name of a 'cmp' to be used in comparing the symmtrized object to unsymmetrized", default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=9, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--cmp",type=str,help="The name of a 'cmp' to be used in comparing the symmtrized object to unsymmetrized", default="ccc", guitype='comboparambox', choicelist='dump_cmps_list()', row=9, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--averager",type=str,help="The type of averager used to produce the class average. Default=mean",default="mean", guitype='combobox', choicelist='dump_averagers_list()', row=10, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None, guitype='strbox', row=11, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -99,7 +99,10 @@ def main():
 	if options.mask != None:
 		print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
 		mask.process_inplace(options.mask[0],options.mask[1])
-			
+	
+	# open transfrom DB
+	db = db_open_dict("%s#%s"%(options.path,"tomo_xforms"))
+	
 	# Align each particle to its symmetry axis
 	for i in xrange(EMUtil.get_image_count(options.input)):
 		# Copy image
@@ -136,13 +139,17 @@ def main():
 		launch_childprocess(command)
 		db_remove_dict(inputfile)
 		
+		rawoutputfile = "%s#rawaligned_ptcl_%d"%(options.path,i)
+		symxform = EMData(outputfile).get_attr('symxform')
 		if options.applytoraw:
-			rawoutputfile = "%s#rawaligned_ptcl_%d"%(options.path,i)
-			symxform = EMData(outputfile).get_attr('symxform')
+
 			raw3d = EMData(options.input, i)
 			raw3d.process_inplace('xform',{'transform':symxform})
 			raw3d.write_image(rawoutputfile)
 			
+		# Append transform to DB
+		db["tomo_%04d"%i] = symxform
+		
 		# Add the volume to the avarage
 		avgr.add_image(EMData(outputfile))
 		
