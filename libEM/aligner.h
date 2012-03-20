@@ -163,6 +163,28 @@ namespace EMAN
 //		static Transform* get_set_align_attr(const string& key, EMData* const to_image, const EMData* const from_image  );
 	};
 
+	/** This is an ABS for use in constructing, rt_scale, rt_flip, etc scale aligners. Hence this class is not be be initialized
+	 * To use, inherit this class and set the base aligner name
+	 * This stragtegy uses the Template design pattern
+	 */
+	class ScaleAlignerABS:public Aligner
+	{
+	  public: 
+		 /** Constructor to initialize the basealigner string */
+		 ScaleAlignerABS(const string& ba) : basealigner(ba)
+		 {
+		 }
+		 
+		 /**implmentation of the scale alignment using the base aligner set in set_base_aligner */
+		 EMData* align_using_base(EMData * this_img, EMData * to_img,
+						const string & cmp_name = "dot", const Dict& cmp_params = Dict()) const;
+	
+	  protected:
+		const string basealigner;
+		Dict basealigner_params;
+		
+	};
+	
 	/** Scale aligner. To scale one image to another in real space
 	 * @param min Minimum scaling (default: 0.95)
 	 * @param max aximum scaling (default: 1.05)
@@ -424,6 +446,64 @@ namespace EMAN
 		
 		static const string NAME;
 	};
+
+	/** rotational, translational, scaling alignment
+	 * @param min Minimum scaling (default: 0.95)
+	 * @param max aximum scaling (default: 1.05)
+	 * @param step Scaling step (default: 0.01)
+	 * @param maxshift Maximum translation in pixels
+	 * @param nozero Zero translation not permitted (useful for CCD images)
+	 * @param rfp_mode Either 0,1 or 2. A temporary flag for testing the rotational foot print
+	 * @author John Flanagan
+	 * @date March 2012
+        */
+	class RotateTranslateScaleAligner:public ScaleAlignerABS
+	{
+	  public:
+		
+		//Set the type of base aligner
+		RotateTranslateScaleAligner() : ScaleAlignerABS("rotate_translate")
+		{
+		}
+
+		virtual EMData * align(EMData * this_img, EMData * to_img,
+					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
+
+		virtual EMData * align(EMData * this_img, EMData * to_img) const
+		{
+			return align(this_img, to_img, "sqeuclidean", Dict());
+		}
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual string get_desc() const
+		{
+			return "Performs rotational alignment and follows this with translational and then scaling alignment.";
+		}
+
+		static Aligner *NEW()
+		{
+			return new RotateTranslateScaleAligner();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("min", EMObject::FLOAT, "Minimum scaling (default: 0.95)");
+			d.put("max", EMObject::FLOAT, "Maximum scaling (default: 1.05)");
+			d.put("step", EMObject::FLOAT, "Scaling step (default: 0.01)");
+			d.put("maxshift", EMObject::INT, "Maximum translation in pixels");
+			d.put("nozero", EMObject::INT,"Zero translation not permitted (useful for CCD images)");
+			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print");
+			d.put("useflcf", EMObject::INT,"Use Fast Local Correlation Function rather than CCF for translational alignment");
+			return d;
+		}
+		
+		static const string NAME;
+	};
 	
 	/** Iterative rotational, translational alignment.  Basically, we find the best translation, and move to that pointer
 	* then we find the best rotation and rotate to that point. Next we iterate X times.
@@ -464,7 +544,68 @@ namespace EMAN
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			//d.put("usedot", EMObject::INT);
+			d.put("maxshift", EMObject::INT, "Maximum translation in pixels");
+			d.put("r1", EMObject::INT, "Inner ring, pixels");
+			d.put("r2", EMObject::INT, "Outer ring, pixels");
+			d.put("maxiter", EMObject::INT, "Maximum number of iterations");
+			d.put("nozero", EMObject::INT,"Zero translation not permitted (useful for CCD images)");
+			d.put("useflcf", EMObject::INT,"Use Fast Local Correlation Function rather than CCF for translational alignment");
+			return d;
+		}
+		
+		static const string NAME;
+	};
+
+	/** Iterative rotational, translational alignment with scaling.  Basically, we find the best translation, and move to that pointer
+	* then we find the best rotation and rotate to that point. Next we iterate X times. We do this for each scale of the image and return the optimal solution
+	 * @param min Minimum scaling (default: 0.95)
+	 * @param max aximum scaling (default: 1.05)
+	 * @param step Scaling step (default: 0.01)
+	 * @param maxshift Maximum translation in pixels
+	 * @param r1 inner ring
+	 * @param r2 outer ring
+	 * @param maxiter maximum number of alignment iterations
+	 * @param nozero Zero translation not permitted (useful for CCD images)
+	 * @author John Flanagan
+	 * @date Oct 2010
+        */
+	class RotateTranslateScaleAlignerIterative:public ScaleAlignerABS
+	{
+	  public:
+		//Set the type of base aligner
+		RotateTranslateScaleAlignerIterative() : ScaleAlignerABS("rotate_translate_iterative")
+		{
+		}
+		
+		virtual EMData * align(EMData * this_img, EMData * to_img,
+					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
+
+		virtual EMData * align(EMData * this_img, EMData * to_img) const
+		{
+			return align(this_img, to_img, "sqeuclidean", Dict());
+		}
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual string get_desc() const
+		{
+			return "Performs rotational alignment and follows this with translational alignment using the iterative method. Does this for each scale and returns the best";
+		}
+
+		static Aligner *NEW()
+		{
+			return new RotateTranslateScaleAlignerIterative();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("min", EMObject::FLOAT, "Minimum scaling (default: 0.95)");
+			d.put("max", EMObject::FLOAT, "Maximum scaling (default: 1.05)");
+			d.put("step", EMObject::FLOAT, "Scaling step (default: 0.01)");
 			d.put("maxshift", EMObject::INT, "Maximum translation in pixels");
 			d.put("r1", EMObject::INT, "Inner ring, pixels");
 			d.put("r2", EMObject::INT, "Outer ring, pixels");
@@ -707,6 +848,65 @@ namespace EMAN
 		static const string NAME;
 	};
 
+	/** rotational, translational, flip, scaling alignment
+	 * @param min Minimum scaling (default: 0.95)
+	 * @param max aximum scaling (default: 1.05)
+	 * @param step Scaling step (default: 0.01)
+	 * @param flip who knows what this means?
+	 * @param maxshift Maximum translation in pixels
+	 * @param nozero Zero translation not permitted (useful for CCD images)
+	 * @param rfp_mode Either 0,1 or 2. A temporary flag for testing the rotational foot print
+	 * @author John Flanagan
+	 * @date March 2012
+        */
+	class RotateTranslateFlipScaleAligner:public ScaleAlignerABS
+	{
+	  public:	
+		//Set the type of base aligner
+		RotateTranslateFlipScaleAligner() : ScaleAlignerABS("rotate_translate_flip")
+		{
+		}
+
+		virtual EMData * align(EMData * this_img, EMData * to_img,
+					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
+
+		virtual EMData * align(EMData * this_img, EMData * to_img) const
+		{
+			return align(this_img, to_img, "sqeuclidean", Dict());
+		}
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual string get_desc() const
+		{
+			return "Performs rotational alignment and follows this with translational and then scaling alignment.";
+		}
+
+		static Aligner *NEW()
+		{
+			return new RotateTranslateFlipScaleAligner();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("min", EMObject::FLOAT, "Minimum scaling (default: 0.95)");
+			d.put("max", EMObject::FLOAT, "Maximum scaling (default: 1.05)");
+			d.put("step", EMObject::FLOAT, "Scaling step (default: 0.01)");
+			d.put("flip", EMObject::EMDATA);
+			d.put("maxshift", EMObject::INT, "Maximum translation in pixels");
+			d.put("nozero", EMObject::INT,"Zero translation not permitted (useful for CCD images)");
+			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print");
+			d.put("useflcf", EMObject::INT,"Use Fast Local Correlation Function rather than CCF for translational alignment");
+			return d;
+		}
+		
+		static const string NAME;
+	};
+	
 	/** rotational, translational and flip alignment, iterative style
 	 * @param flip
 	 * @param r1 inner ring
@@ -753,6 +953,67 @@ namespace EMAN
 			d.put("r2", EMObject::INT, "Outer ring, pixels");
 			d.put("maxiter", EMObject::INT, "Maximum number of iterations");
 			d.put("maxshift", EMObject::INT, "Maximum translation in pixels");
+			return d;
+		}
+		
+		static const string NAME;
+	};
+	
+	/** Iterative rotational, translational alignment with flipping and scaling.  Basically, we find the best translation, and move to that pointer
+	* then we find the best rotation and rotate to that point. Next we iterate X times. We do this for each scale and flip of the image and return the optimal solution
+	 * @param min Minimum scaling (default: 0.95)
+	 * @param max aximum scaling (default: 1.05)
+	 * @param step Scaling step (default: 0.01)
+	 * @param flip
+	 * @param maxshift Maximum translation in pixels
+	 * @param r1 inner ring
+	 * @param r2 outer ring
+	 * @param maxiter maximum number of alignment iterations
+	 * @author John Flanagan
+	 * @date Oct 2010
+        */
+	class RotateTranslateFlipScaleAlignerIterative:public ScaleAlignerABS
+	{
+	  public:
+		//Set the type of base aligner
+		RotateTranslateFlipScaleAlignerIterative() : ScaleAlignerABS("rotate_translate_flip_iterative")
+		{
+		}
+		
+		virtual EMData * align(EMData * this_img, EMData * to_img,
+					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
+
+		virtual EMData * align(EMData * this_img, EMData * to_img) const
+		{
+			return align(this_img, to_img, "sqeuclidean", Dict());
+		}
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual string get_desc() const
+		{
+			return "Performs rotational alignment and follows this with translational alignment using the iterative method. Does this for each scale and returns the best";
+		}
+
+		static Aligner *NEW()
+		{
+			return new RotateTranslateFlipScaleAlignerIterative();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("min", EMObject::FLOAT, "Minimum scaling (default: 0.95)");
+			d.put("max", EMObject::FLOAT, "Maximum scaling (default: 1.05)");
+			d.put("step", EMObject::FLOAT, "Scaling step (default: 0.01)");
+			d.put("maxshift", EMObject::INT, "Maximum translation in pixels");
+			d.put("flip", EMObject::EMDATA);
+			d.put("r1", EMObject::INT, "Inner ring, pixels");
+			d.put("r2", EMObject::INT, "Outer ring, pixels");
+			d.put("maxiter", EMObject::INT, "Maximum number of iterations");
 			return d;
 		}
 		

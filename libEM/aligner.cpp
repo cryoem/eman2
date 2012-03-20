@@ -61,13 +61,17 @@ const string RotationalAligner::NAME = "rotational";
 const string RotationalAlignerIterative::NAME = "rotational_iterative";
 const string RotatePrecenterAligner::NAME = "rotate_precenter";
 const string RotateTranslateAligner::NAME = "rotate_translate";
+const string RotateTranslateScaleAligner::NAME = "rotate_translate_scale";
 const string RotateTranslateAlignerIterative::NAME = "rotate_translate_iterative";
+const string RotateTranslateScaleAlignerIterative::NAME = "rotate_trans_scale_iter";
 const string RotateTranslateAlignerPawel::NAME = "rotate_translate_resample";
 const string RotateTranslateBestAligner::NAME = "rotate_translate_best";
 const string RotateFlipAligner::NAME = "rotate_flip";
 const string RotateFlipAlignerIterative::NAME = "rotate_flip_iterative";
 const string RotateTranslateFlipAligner::NAME = "rotate_translate_flip";
+const string RotateTranslateFlipScaleAligner::NAME = "rotate_trans_flip_scale";
 const string RotateTranslateFlipAlignerIterative::NAME = "rotate_translate_flip_iterative";
+const string RotateTranslateFlipScaleAlignerIterative::NAME = "rotate_trans_flip_scale_iter";
 const string RotateTranslateFlipAlignerPawel::NAME = "rotate_translate_flip_resample";
 const string RTFExhaustiveAligner::NAME = "rtf_exhaustive";
 const string RTFSlowExhaustiveAligner::NAME = "rtf_slow_exhaustive";
@@ -90,12 +94,16 @@ template <> Factory < Aligner >::Factory()
 	force_add<RotationalAlignerIterative>();
 	force_add<RotatePrecenterAligner>();
 	force_add<RotateTranslateAligner>();
+	force_add<RotateTranslateScaleAligner>();
 	force_add<RotateTranslateAlignerIterative>();
+	force_add<RotateTranslateScaleAlignerIterative>();
 	force_add<RotateTranslateAlignerPawel>();
 	force_add<RotateFlipAligner>();
 	force_add<RotateFlipAlignerIterative>();
 	force_add<RotateTranslateFlipAligner>();
+	force_add<RotateTranslateFlipScaleAligner>();
 	force_add<RotateTranslateFlipAlignerIterative>();
+	force_add<RotateTranslateFlipScaleAlignerIterative>();
 	force_add<RotateTranslateFlipAlignerPawel>();
 	force_add<RTFExhaustiveAligner>();
 	force_add<RTFSlowExhaustiveAligner>();
@@ -117,6 +125,59 @@ vector<Dict> Aligner::xform_align_nbest(EMData *, EMData *, const unsigned int, 
 	vector<Dict> solns;
 	return solns;
 }
+
+EMData* ScaleAlignerABS::align_using_base(EMData * this_img, EMData * to,
+			const string & cmp_name, const Dict& cmp_params) const
+{
+	//get the scale range
+	float min =  params.set_default("min",0.95);
+	float max = params.set_default("max",1.05);
+	float step = params.set_default("step",0.01);
+	
+	// crate the starting transform
+	Transform t = Transform();
+	t.set_scale(max);
+	
+	//save orignal data
+	float* oridata = this_img->get_data();
+	
+	//get the transform processor and cast to correct factory product
+	Processor* proc = Factory <Processor>::get("xform", Dict());
+	TransformProcessor* xform = dynamic_cast<TransformProcessor*>(proc);
+	
+	// Using the following method we only create one EMdata object. If I just used the processor, then I would create many EMdata objects
+	EMData* result = 0;
+	float bestscore = numeric_limits<float>::infinity();
+	
+	for(float i = max; i > min; i-=step){
+		
+		//scale the image
+		float* des_data = xform->transform(this_img,t);
+		this_img->set_data(des_data);
+		this_img->update();
+		
+		//check compairsion
+		EMData* aligned = this_img->align(basealigner, to, basealigner_params, cmp_name, cmp_params);
+		float score = aligned->cmp(cmp_name, to, cmp_params);
+		if(score < bestscore){
+			bestscore = score;
+			result = aligned;
+			result->set_attr("scalefactor",i);
+		}else{
+			delete aligned;
+		}
+		
+		t.set_scale(i);
+		
+		//reset original data
+		this_img->set_data(oridata);
+	}	
+	
+	if (!result) throw UnexpectedBehaviorException("Alignment score is infinity! Something is seriously wrong with the data!");
+	
+	return result;	
+	
+};
 
 EMData* ScaleAligner::align(EMData * this_img, EMData *to,
 			const string& cmp_name, const Dict& cmp_params) const
@@ -539,6 +600,23 @@ EMData *RotateTranslateAlignerIterative::align(EMData * this_img, EMData *to,
 	return moving_img;
 }
 
+EMData *RotateTranslateScaleAlignerIterative::align(EMData * this_img, EMData *to,
+			const string & cmp_name, const Dict& cmp_params) const
+{
+	
+	//Basically copy params into rotate_translate
+	basealigner_params["maxshift"] = params.set_default("maxshift", -1);
+	basealigner_params["r1"] = params.set_default("r1",-1);
+	basealigner_params["r2"] = params.set_default("r2",-1);
+	basealigner_params["maxiter"] = params.set_default("maxiter",3);
+	basealigner_params["nozero"] = params.set_default("nozero",false);
+	basealigner_params["useflcf"] = params.set_default("useflcf",0);
+	
+	//return the correct results
+	return align_using_base(this_img, to, cmp_name, cmp_params);
+	
+}
+
 EMData *RotateTranslateAlignerPawel::align(EMData * this_img, EMData *to,
 			const string & cmp_name, const Dict& cmp_params) const
 {
@@ -671,7 +749,19 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 }
 
 
-
+EMData *RotateTranslateScaleAligner::align(EMData * this_img, EMData *to,
+			const string & cmp_name, const Dict& cmp_params) const
+{
+	
+	//Basically copy params into rotate_translate
+	basealigner_params["maxshift"] = params.set_default("maxshift", -1);
+	basealigner_params["rfp_mode"] = params.set_default("rfp_mode",0);
+	basealigner_params["useflcf"] = params.set_default("useflcf",0);
+	
+	//return the correct results
+	return align_using_base(this_img, to, cmp_name, cmp_params);
+	
+}
 
 EMData* RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 										  const string & cmp_name, const Dict& cmp_params) const
@@ -726,6 +816,21 @@ EMData* RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 	return result;
 }
 
+EMData *RotateTranslateFlipScaleAligner::align(EMData * this_img, EMData *to,
+			const string & cmp_name, const Dict& cmp_params) const
+{
+	
+	//Basically copy params into rotate_translate
+	basealigner_params["flip"] = params.set_default("flip", (EMData *) 0);
+	basealigner_params["maxshift"] = params.set_default("maxshift", -1);
+	basealigner_params["rfp_mode"] = params.set_default("rfp_mode",0);
+	basealigner_params["useflcf"] = params.set_default("useflcf",0);
+	
+	//return the correct results
+	return align_using_base(this_img, to, cmp_name, cmp_params);
+	
+}
+
 EMData* RotateTranslateFlipAlignerIterative::align(EMData * this_img, EMData *to,
 										  const string & cmp_name, const Dict& cmp_params) const
 {
@@ -777,6 +882,22 @@ EMData* RotateTranslateFlipAlignerIterative::align(EMData * this_img, EMData *to
 	}
 
 	return result;
+}
+
+EMData *RotateTranslateFlipScaleAlignerIterative::align(EMData * this_img, EMData *to,
+			const string & cmp_name, const Dict& cmp_params) const
+{
+	
+	//Basically copy params into rotate_translate
+	basealigner_params["flip"] = params.set_default("flip", (EMData *) 0);
+	basealigner_params["maxshift"] = params.set_default("maxshift", -1);
+	basealigner_params["r1"] = params.set_default("r1",-1);
+	basealigner_params["r2"] = params.set_default("r2",-1);
+	basealigner_params["maxiter"] = params.set_default("maxiter",3);
+	
+	//return the correct results
+	return align_using_base(this_img, to, cmp_name, cmp_params);
+	
 }
 
 EMData *RotateTranslateFlipAlignerPawel::align(EMData * this_img, EMData *to,

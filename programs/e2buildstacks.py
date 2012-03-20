@@ -46,6 +46,7 @@ def main():
 	parser.add_argument("--stackname",type=str,help="Name of the stack to build", default='my_stack', guitype='strbox',row=2, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--filetype",help="Type of file",default='bdb',guitype='combobox',choicelist='["bdb","hdf","spi"]',row=3,col=0,rowspan=1,colspan=1)
 	parser.add_argument("--excludebad",action="store_true",help="Exculde bad particles. Only works for BDB stacks",default=True, guitype='boolbox',row=4,col=0,rowspan=1,colspan=1)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	(options, args) = parser.parse_args()
 	

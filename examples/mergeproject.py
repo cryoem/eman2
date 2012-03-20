@@ -115,4 +115,12 @@ for source in sys.argv[1:]:
 	for k in src.keys(): 
 		print k
 		dest[k]=src[k]
+	
+	# Copy bad particles list
+	print "Copy bad particles lists"
+	src=db_open_dict("bdb:%s#select"%source,ro=True)
+	dest=db_open_dict("bdb:.#select")
+	for k in src.keys(): 
+		print k
+		dest[k]=src[k]
 
