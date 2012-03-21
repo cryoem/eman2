@@ -621,13 +621,18 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		for i in range(0,len(self.data),stp):		# we check ~32 images randomly spaced in the set
 			d = self.data.get_image_header(i)
 			if d == None: continue
-			mean+=d["mean"]
-			nav+=1
-			sigma=max(sigma,d["sigma"])
-			m0=min(m0,d["minimum"])
-			m1=max(m1,d["maximum"])
-			
-		mean/=float(nav)
+			try: 
+				mean+=d["mean"]
+				nav+=1
+				sigma=max(sigma,d["sigma"])
+				m0=min(m0,d["minimum"])
+				m1=max(m1,d["maximum"])
+			except: pass
+		
+		if nav==0: 
+			mean=0
+			sigma=1
+		else: mean/=float(nav)
 		
 		if auto_contrast:
 			mn=max(m0,mean-3.0*sigma)

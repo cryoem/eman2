@@ -152,7 +152,9 @@ class EMPlot2DWidget(EMGLWidget):
 		EMGLWidget.closeEvent(self, event)
 		
 	def keyPressEvent(self,event):
-		if event.key() == Qt.Key_F1:
+		if event.key() == Qt.Key_C:
+			self.show_inspector(1)
+		elif event.key() == Qt.Key_F1:
 			try: from PyQt4 import QtWebKit
 			except: return
 			try:
