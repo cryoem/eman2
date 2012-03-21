@@ -1678,16 +1678,31 @@ def read_spider_doc(fnam):
 	line    = inf.readline()
 	while len(line) > 0:
 		line_data=[]
-		if(line[5:6] == " "): ibeg = 6
-		else:  ibeg = 7
-		for irec in xrange(atoi(line[ibeg:ibeg+2])):
-		 	start= ibeg+2+irec*12
-		 	end  = ibeg+2+(irec+1)*12
-		 	line_data.append(atof(line[start:end]))
-		data.append(line_data)
-		line = inf.readline()
+		if(line[11:12]==" " and line[8:10] != " "):			# new data format
+			start= 13
+			end  = 15
+			#line_data.append(atoi(line[start:end]))		# 03/21/12 Anna: according to the previous version of this function this value was omitted
+			start= end+3
+			end  = start+6
+			line_data.append(atof(line[start:end]))
+			colNo = (len(line)-end)/12 - 1
+			for i in xrange(colNo):
+				start= end+6
+				end  = start+7
+				line_data.append(atof(line[start:end]))
+			data.append(line_data)
+			line = inf.readline()
+		else:												# old data format
+			if(line[5:6] == " "): ibeg = 6
+			else:  ibeg = 7
+			for irec in xrange(atoi(line[ibeg:ibeg+2])):
+			 	start= ibeg+2+irec*12
+			 	end  = ibeg+2+(irec+1)*12
+			 	line_data.append(atof(line[start:end]))
+			data.append(line_data)
+			line = inf.readline()
 	return data
-		
+	
 def read_text_row(fnam, format="", skip=";"):
 	"""
 	 	Read a column-listed txt file.
