@@ -174,6 +174,7 @@ EMData* ScaleAlignerABS::align_using_base(EMData * this_img, EMData * to,
 	}	
 	
 	if (!result) throw UnexpectedBehaviorException("Alignment score is infinity! Something is seriously wrong with the data!");
+	if (proc) delete proc;
 	
 	return result;	
 	
@@ -225,6 +226,7 @@ EMData* ScaleAligner::align(EMData * this_img, EMData *to,
 	t.set_scale(bestscale);
 	EMData* result = this_img->process("xform",Dict("transform",&t));
 	result->set_attr("scalefactor",bestscale);
+	if (proc) delete proc;
 	
 	return result;
 	
@@ -531,13 +533,13 @@ EMData *RotationalAlignerIterative::align(EMData * this_img, EMData *to,
 	EMData * this_img_polar = this_img->unwrap(r1,r2,-1,0,0,true);
 	int this_img_polar_nx = this_img_polar->get_xsize();
 	
-	EMData *cf = this_img_polar->calc_ccfx(to_polar, 0, this_img->get_ysize());
+	EMData * cf = this_img_polar->calc_ccfx(to_polar, 0, this_img->get_ysize());
 	
 	//take out the garbage
 	delete to_polar; to_polar = 0;
 	delete this_img_polar; this_img_polar = 0;
 	
-	float *data = cf->get_data();
+	float * data = cf->get_data();
 	float peak = 0;
 	int peak_index = 0;
 	Util::find_max(data, this_img_polar_nx, &peak, &peak_index);
@@ -779,7 +781,7 @@ EMData* RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 	}
 
 	EMData * rot_trans_align_flip = this_img->align("rotate_translate", flipped, rt_params, cmp_name, cmp_params);
-	Transform* t = rot_trans_align_flip->get_attr("xform.align2d");
+	Transform * t = rot_trans_align_flip->get_attr("xform.align2d");
 	t->set_mirror(true);
 	rot_trans_align_flip->set_attr("xform.align2d",t);
 	delete t;
@@ -974,7 +976,7 @@ EMData *RotateTranslateFlipAlignerPawel::align(EMData * this_img, EMData *to,
 	Transform tmptt(Dict("type","2d","alpha",0,"tx",-best_tx,"ty",-best_ty));
 	Transform tmprot(Dict("type","2d","alpha",rot_angle,"tx",0,"ty",0));
 	Transform total = tmprot*tmptt;
-	EMData* rotimg=this_img->process("xform",Dict("transform",(Transform*)&total));
+	EMData * rotimg=this_img->process("xform",Dict("transform",(Transform*)&total));
 	rotimg->set_attr("xform.align2d",&total);
 	if(flip == true) {
 		rotimg->process_inplace("xform.flip",Dict("axis", "x"));
@@ -1030,10 +1032,10 @@ EMData *RotateFlipAlignerIterative::align(EMData * this_img, EMData *to,
 			const string& cmp_name, const Dict& cmp_params) const
 {
 	Dict rot_params("r1",params.set_default("r1",-1),"r2",params.set_default("r2",-1));
-	EMData *r1 = this_img->align("rotational_iterative", to, rot_params,cmp_name, cmp_params);
+	EMData * r1 = this_img->align("rotational_iterative", to, rot_params,cmp_name, cmp_params);
 
-	EMData* flipped =to->process("xform.flip", Dict("axis", "x"));
-	EMData *r2 = this_img->align("rotational_iterative", flipped,rot_params, cmp_name, cmp_params);
+	EMData * flipped =to->process("xform.flip", Dict("axis", "x"));
+	EMData * r2 = this_img->align("rotational_iterative", flipped,rot_params, cmp_name, cmp_params);
 	Transform* t = r2->get_attr("xform.align2d");
 	t->set_mirror(true);
 	r2->set_attr("xform.align2d",t);
@@ -1548,6 +1550,8 @@ EMData* SymAlignProcessor::align(EMData * this_img, EMData *to, const string & c
 			}
 		}
 	}
+	if(sym) delete sym;
+	
 	return bestimage;
 }
 
@@ -1605,8 +1609,9 @@ static double refalifn(const gsl_vector * v, void *params)
 // 	}
 
 
-	if ( tmp != 0 ) delete tmp;
-
+	if (tmp != 0) delete tmp;
+	if (c != 0) delete c;
+	
 	return result;
 }
 
@@ -1759,7 +1764,7 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 	gsl_vector_free(ss);
 	gsl_multimin_fminimizer_free(s);
 
-	if ( c != 0 ) delete c;
+	if (c != 0) delete c;
 	return result;
 }
 
@@ -1808,7 +1813,8 @@ static double symquat(const gsl_vector * v, void *params)
 	double result = c->cmp(symtmp,tmp);
 	delete tmp;
 	delete symtmp;
-	delete t; t = 0;
+	delete t;
+	delete c;
 	//cout << result << endl;
 	return result;
 }
@@ -1836,7 +1842,8 @@ static double refalifn3dquat(const gsl_vector * v, void *params)
 	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
 	double result = c->cmp(tmp,with);
 	if ( tmp != 0 ) delete tmp;
-	delete t; t = 0;
+	delete t;
+	delete c;
 	//cout << result << endl;
 	return result;
 }
@@ -1950,7 +1957,7 @@ EMData* SymAlignProcessorQuat::align(EMData * volume, EMData *to, const string &
 	gsl_vector_free(ss);
 	gsl_multimin_fminimizer_free(s);
 
-	if ( c != 0 ) delete c;
+	if (c != 0) delete c;
 	delete t;
 				      
 	return result;
@@ -2091,7 +2098,7 @@ EMData* Refine3DAlignerQuaternion::align(EMData * this_img, EMData *to,
 	gsl_vector_free(ss);
 	gsl_multimin_fminimizer_free(s);
 
-	if ( c != 0 ) delete c;
+	if (c != 0) delete c;
 	
 	return result;
 }
@@ -2243,6 +2250,8 @@ EMData* Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 
 	if(tofft) {delete tofft; tofft = 0;}
 	if(fsrotate) {delete this_imgfft;}
+	if (c != 0) delete c;
+	
 	//make aligned map;
 	EMData* best_match = this_img->process("xform",Dict("transform", best["xform.align3d"])); // we are returning a map
 	best_match->set_attr("xform.align3d", best["xform.align3d"]);
@@ -2412,6 +2421,8 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	}
 	
 	if(tofft) {delete tofft; tofft = 0;}
+	if (c != 0) delete c;
+	
 	return solns;
 
 }
@@ -2604,9 +2615,11 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 
 		}
 	}
-	delete sym; sym = 0;
+	
 	if(this_imgfft) {delete this_imgfft; this_imgfft = 0;}
 	if(fsrotate){delete to_fft;}
+	if(sym!=0) delete sym;
+	if (c != 0) delete c;
 	
 	return solns;
 
@@ -2686,7 +2699,9 @@ vector<Dict> RT3DSymmetryAligner::xform_align_nbest(EMData * this_img, EMData * 
 			}
 		}
 	}
-		
+	
+	if (c != 0) delete c;
+	
 	return solns;
 }
 
