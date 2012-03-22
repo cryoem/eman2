@@ -121,7 +121,7 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 		delta, d, snr, CTF, npad,\
 		MPI, myid, ncpu, verbose = 0 ):
 	from   utilities import even_angles
-	from   random import seed, jumpahead
+	from   random import seed, jumpahead, resample
 	import os
 	from   sys import exit
 
@@ -236,16 +236,14 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 
 		mults = [ [0]*nprj for i in xrange(nbufvol) ]
 		for i in xrange(nbufvol):
-			mass= [None]*nrefa
 			for l in xrange(nrefa):
-				mass[l] = assignments[l][:]
-			for l in xrange(nrefa):
+				mass = assignments[l][:]
+				shuffle(mass)
+				mass = mass[:keep]
+				mass.sort()
+				#print  l, "  *  ",mass
 				for k in xrange(keep):
-					ti = randint(0,len(mass[l])-1)
-					td = mass[l][ti]
-					del mass[l][ti]
-					#if myid == 0:print  nbufvol,i,td
-					mults[i][td] = 1
+					mults[i][mass[k]] = 1
 			'''
 			lout = []
 			for l in xrange(len(mults[i])):
