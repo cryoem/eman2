@@ -266,8 +266,16 @@ def prg(volume, params):
 	"""Given a volume, a set of projection angles, and Kaiser-Bessel
 	   window parameters, use gridding to generate projection
 	"""
-	volft,kb = prep_vol(volume)
-	return  prgs(volft,kb,params)
+	Mx=vol.get_xsize()
+	My=vol.get_ysize()
+	Mz=vol.get_zsize()
+	if(Mx==Mz&My==Mz):
+		volft,kb = prep_vol(volume)
+		return  prgs(volft,kb,params)
+	else:
+		volft,kbx,kby,kbz = prep_vol(volume)
+		return  prgs(volft,kbz,params,kbx,kby) 
+	
 
 def prep_vol(vol):
 	"""
