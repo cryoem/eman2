@@ -8929,7 +8929,7 @@ def iso_kmeans(images, out_dir, parameter, K=None, mask=None, init_method="Rando
 		res[1].write_image(out_dir+"/Isodata_kmeans_variance_"+m+".spi",k)
 '''
 
-def project3d(volume, stack, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = None , listctfs = None, noise = None):
+def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = None , listctfs = None, noise = None):
 	from projection    import   prgs, prep_vol
 	from utilities     import   even_angles, read_text_row, set_params_proj, model_gauss_noise, info
 	from string        import   split
