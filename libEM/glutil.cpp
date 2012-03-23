@@ -894,11 +894,30 @@ void GLUtil::glDrawBoundingBox(float width, float height, float depth)
 
 void GLUtil::glDrawDisk(float radius, int spokes)
 {
+#ifdef _WIN32
+	typedef void (APIENTRYP PFNGLGENBUFFERSPROC) (GLsizei n, GLuint *buffers);
+	PFNGLGENBUFFERSPROC glGenBuffers;
+	glGenBuffers = (PFNGLGENBUFFERSPROC) wglGetProcAddress("glGenBuffers");
+
+	typedef GLboolean (APIENTRYP PFNGLISBUFFERPROC) (GLuint buffer);
+	PFNGLISBUFFERPROC glIsBuffer;
+	glIsBuffer = (PFNGLISBUFFERPROC) wglGetProcAddress("glIsBuffer");
+
+	typedef void (APIENTRYP PFNGLBINDBUFFERPROC) (GLenum target, GLuint buffer);
+	PFNGLBINDBUFFERPROC glBindBuffer;
+	glBindBuffer = (PFNGLBINDBUFFERPROC) wglGetProcAddress("glBindBuffer");
+
+	typedef void (APIENTRYP PFNGLBUFFERDATAPROC) (GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage);
+	PFNGLBUFFERDATAPROC glBufferData;
+	glBufferData = (PFNGLBUFFERDATAPROC) wglGetProcAddress("glBufferData");
+#endif	//_WIN32
+
 	//This code is experimental
-	int arraysize = 4*pow(2,spokes);
-	int sideofarray = pow(2,spokes);
+	int arraysize = 4*pow((double)2,(double)spokes);
+	int sideofarray = pow((double)2,(double)spokes);
 	
-	float vertices[3*arraysize + 3];
+//	float vertices[3*arraysize + 3];
+	vector<float> vertices(3*arraysize + 3);
 	
 	//last vertex is center
 	vertices[3*arraysize] = 0.0;
@@ -924,8 +943,8 @@ void GLUtil::glDrawDisk(float radius, int spokes)
 	//This could aslo be implemented recusivly
 	for(int step = 0; step < spokes; step++){
 		//starting location
-		int x = sideofarray/pow(2,step+1);
-		for(int i = 1; i <= 4*pow(2,step); i++ ){
+		int x = sideofarray/pow(2.0,(double)(step+1));
+		for(int i = 1; i <= 4*pow(2.0,(double)step); i++ ){
 			
 			// take the necessary steps
 			int index =  x + 2*x*(i-1);
@@ -934,9 +953,9 @@ void GLUtil::glDrawDisk(float radius, int spokes)
 			cout << index << " " << index_f << " " << index_i << endl;
 			
 			//need to resclae length to that of radius
-			vertices[index_f*3] = (vertices[index_f*3] - vertices[index_i*3])/2.0;
-			vertices[index_f*3 + 1] = (vertices[index_f*3 + 1] - vertices[index_i*3 + 1])/2.0;
-			vertices[index_f*3 + 2] = (vertices[index_f*3 + 2] - vertices[index_i*3 + 2])/2.0;
+			vertices[index_f*3] = (vertices[index_f*3] - vertices[index_i*3])/2.0f;
+			vertices[index_f*3 + 1] = (vertices[index_f*3 + 1] - vertices[index_i*3 + 1])/2.0f;
+			vertices[index_f*3 + 2] = (vertices[index_f*3 + 2] - vertices[index_i*3 + 2])/2.0f;
 		}
 	}
 	
@@ -947,7 +966,8 @@ void GLUtil::glDrawDisk(float radius, int spokes)
 	
 	// Could use dirty bit here but not worth my time to implment
 	glBindBuffer(GL_ARRAY_BUFFER, GLUtil::buffer[0]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size(), &(vertices[0]), GL_STATIC_DRAW);
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glVertexPointer(3,GL_FLOAT,0,0);
 	
