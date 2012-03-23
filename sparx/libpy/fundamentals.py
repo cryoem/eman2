@@ -902,11 +902,11 @@ def rot_shift3D_grid(img, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, s
 		'wrap': option for using wraparound pixels during translations
 	"""
 
-	if scale == 0.0 :  ERROR("scale=0 not allowed","rot_shift3D_grid", 1)
+	if scale == 0.0 :  ERROR("scale=0 not allowed", "rot_shift3D_grid", 1)
 
-	if(mode == "cyclic"):
+	if mode == "cyclic":
 		from math import pi
-		if kb==None:
+		if kb == None:
 			o, kb = prepi3D(img)
 		else:
 			o = img.copy()
@@ -914,9 +914,9 @@ def rot_shift3D_grid(img, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, s
 		o = o.rot_scale_conv_new_3D(phi*pi/180.0, theta*pi/180.0, psi*pi/180.0, sx, sy, sz, kb, scale, wrap)
 		#if  mirror: o.process_inplace("xform.mirror", {"axis":'x'})
 		return o
-	elif(mode == "background"):
+	elif mode == "background":
 		from math import pi
-		if kb==None:
+		if kb == None:
 			o, kb = prepi3D(img)
 		else:
 			o = img.copy()
