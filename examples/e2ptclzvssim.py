@@ -122,6 +122,9 @@ as not all elements are computed.
 	colh=1
 	t0=time.time()
 	outkey.write( "0 - N\n")
+	angcols=[]	# list of columns containing angles (used in image conversion at end)
+	ncols=[]	# list of ptcl number cols
+
 	# We read one line of the simmx at a time. The line represents all values
 	# for a single particle
 	for y in xrange(ny):
@@ -153,10 +156,10 @@ as not all elements are computed.
 			
 			# a little silly to read the whole line, but also a little silly to have a 1 pixel image :^/
 			imdx=EMData(cm,1,False,Region(0,y,nx,1))
-			imdy=EMData(cm,1,False,Region(0,y,nx,1))
-			imda=EMData(cm,1,False,Region(0,y,nx,1))
+			imdy=EMData(cm,2,False,Region(0,y,nx,1))
+			imda=EMData(cm,3,False,Region(0,y,nx,1))
 			
-			DTAs.append(atan2(imdy[N],imdx[N]))
+			DTAs.append(atan2(imdy[N],imdx[N])*180.0/pi)
 			DTRs.append(hypot(imdx[N],imdy[N]))
 			DAs.append(imda[N])
 			
@@ -187,14 +190,16 @@ as not all elements are computed.
 			out.write("%d\t"%n)				# class number
 			if y==0:
 				outkey.write( "%d - Best Ali Class (%s)\n"%(colh,args[i]))
+				ncols.append(colh)
 				colh+=1
 		for i,dta in enumerate(DTAs) : 
 			out.write("%1.4g\t"%dta)			# Trans align angle for best alignment
 			if y==0: 
 				outkey.write( "%d - Best Ali trans angle (%s)\n"%(colh,args[i]))
+				angcols.append(colh)
 				colh+=1
 		for i,dtr in enumerate(DTRs) : 
-			out.write("%1.2g\t"%dtr)			# Trans align dist for best alignment
+			out.write("%1.4g\t"%dtr)			# Trans align dist for best alignment
 			if y==0: 
 				outkey.write( "%d - Best Ali trans dist (%s)\n"%(colh,args[i]))
 				colh+=1
@@ -202,6 +207,7 @@ as not all elements are computed.
 			out.write("%1.4g\t"%da)			# Rot align angle for best alignment
 			if y==0: 
 				outkey.write( "%d - Best Ali rot angle (%s)\n"%(colh,args[i]))
+				angcols.append(colh)
 				colh+=1
 
 
@@ -211,11 +217,13 @@ as not all elements are computed.
 				out.write("%1.5g\t"%ALTs[n])	# Altitude Euler for best alignment
 				if y==0:
 					outkey.write( "%d - Alt (%s)\n"%(colh,args[i]))
+					angcols.append(colh)
 					colh+=1
 			for i,n in enumerate(Ns) : 
 				out.write("%1.5g\t"%AZs[n])	# Azimuth Euler for best alignment
 				if y==0:
 					outkey.write( "%d - Az (%s)\n"%(colh,args[i]))
+					angcols.append(colh)
 					colh+=1
 
 		# if input values were provided, we write per-particle info
@@ -234,6 +242,7 @@ as not all elements are computed.
 					outkey.write( "%d - defocus\n"%(colh))
 					colh+=1
 					outkey.write( "%d - bfactor\n"%(colh))
+					colbfac=colh
 					colh+=1
 					outkey.write( "%d - snr low\n"%(colh))
 					colh+=1
@@ -253,6 +262,25 @@ as not all elements are computed.
 	print " %d/%d\n"%(ny,ny),
 	print "Output in ",options.output
 	print "Key in ",options.output.rsplit(".",1)[0]+"_key.txt"
+	out.close()
+	
+	# we convert the output we just generated to an image file for other potential analysis techniques
+	import numpy
+	ary=numpy.loadtxt(options.output).transpose()[1:]		# load the entire text file, rotate so we can manipulate columns, and throw away the row number column
+	for i in angcols: ary[i-1]*=pi/180.0					# convert angles to radians to better match scale of other parameters
+	ary[colbfac-1]=numpy.sqrt(ary[colbfac-1])/100.0				# B-factor -> sqrt(B)/100.0
+	print ncols
+	print max(ary[ncols[0]-1])
+	for i in ncols: ary[i-1]/=max(ary[i-1])					# class numbers -> 0-1 range
+	print max(ary[ncols[0]-1])
+	ary=ary.transpose()										# transpose again
+	
+	imgpath=options.output.rsplit(".",1)[0]+".hdf"
+	print "Image stack output in ",imgpath
+	for i in xrange(ary.shape[0]):							# we write the output to a stack of images
+		im=EMNumPy.numpy2em(ary[i])
+		im.write_image(imgpath,i)
+	
 	E2end(logid)
 
 
