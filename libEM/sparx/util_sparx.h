@@ -545,7 +545,7 @@ class FakeKaiserBessel : public KaiserBessel {
 	 * input - fourier transforms of rings!!
 	 * circ1 already multiplied by weights!
 	*/
-	static Dict Crosrng_sm_psi(EMData* circ1, EMData* circ2, vector<int> numr, float psi, int flag);
+	static Dict Crosrng_sm_psi(EMData* circ1, EMData* circ2, vector<int> numr, float psi, int flag, float psimax);
 
 	/**
 	 * checks both straight & mirrored positions
