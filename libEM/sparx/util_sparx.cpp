@@ -3964,24 +3964,22 @@ Dict Util::Crosrng_psi_0_180_no_mirror(EMData* circ1p, EMData* circ2p, vector<in
 
 
 
-Dict Util::Crosrng_sm_psi(EMData* circ1p, EMData* circ2p, vector<int> numr, float psi, int flag) {
-// flag 0 - straignt, 1 - mirror
+Dict Util::Crosrng_sm_psi(EMData* circ1p, EMData* circ2p, vector<int> numr, float psi, int flag, float psi_max) {
+// flag 0 - straight, 1 - mirror
 
 	int nring = numr.size()/3;
 	int maxrin = numr[numr.size()-1];
-	double qn; float tot; double qm; float tmt;
+	double qn; float tot;
 	float *circ1 = circ1p->get_data();
 	float *circ2 = circ2p->get_data();
 
-	double *q, t7[7];
+	double *q;
 
 	int   ip, jc, numr3i, numr2i, i, j, k, jtot = 0;
-	float t1, t2, t3, t4, c1, c2, d1, d2, pos;
+	float t1, t2, t3, t4, c1, c2, d1, d2;
 
 	qn  = 0.0f;
-	qm  = 0.0f;
 	tot = 0.0f;
-	tmt = 0.0f;
 #ifdef _WIN32
 	ip = -(int)(log((float)maxrin)/log(2.0f));
 #else
@@ -3992,104 +3990,62 @@ Dict Util::Crosrng_sm_psi(EMData* circ1p, EMData* circ2p, vector<int> numr, floa
 	//  zero q array
 
 	q = (double*)calloc(maxrin,sizeof(double));
-
+	int neg = 1-2*flag;
    //   premultiply  arrays ie( circ12 = circ1 * circ2) much slower
-   	if (flag==0) {
-		for (i=1; i<=nring; i++) {
+   	
+	for (i=1; i<=nring; i++) {
 
-			numr3i = numr(3,i);   // Number of samples of this ring
-			numr2i = numr(2,i);   // The beginning point of this ring
+		numr3i = numr(3,i);   // Number of samples of this ring
+		numr2i = numr(2,i);   // The beginning point of this ring
 
-			t1   = circ1(numr2i) * circ2(numr2i);
-			q(1) += t1;
+		t1   = circ1(numr2i) * circ2(numr2i);
+		q(1) += t1;
 
-			t1   = circ1(numr2i+1) * circ2(numr2i+1);
-			if (numr3i == maxrin)  {
-				q(2) += t1;
-			} else {
-				q(numr3i+1) += t1;
-			}
-
-			for (j=3; j<=numr3i; j += 2) {
-				jc     = j+numr2i-1;
-
-	// Here, (c1+c2i)*conj(d1+d2i) = (c1*d1+c2*d2)+(-c1*d2+c2*d1)i
-	//   			          ----- -----    ----- -----
-	//      			   t1     t2      t3    t4
-
-				c1     = circ1(jc);
-				c2     = circ1(jc+1);
-				d1     = circ2(jc);
-				d2     = circ2(jc+1);
-
-				t1     = c1 * d1;
-				t3     = c1 * d2;
-				t2     = c2 * d2;
-				t4     = c2 * d1;
-
-				q(j)   += t1 + t2;
-				q(j+1) += -t3 + t4;
-			}
+		t1   = circ1(numr2i+1) * circ2(numr2i+1);
+		if (numr3i == maxrin)  {
+			q(2) += t1;
+		} else {
+			q(numr3i+1) += t1;
 		}
-	} else {
-		for (i=1; i<=nring; i++) {
 
-			numr3i = numr(3,i);   // Number of samples of this ring
-			numr2i = numr(2,i);   // The beginning point of this ring
-
-			t1   = circ1(numr2i) * circ2(numr2i);
-			q(1) += t1;
-
-			t1   = circ1(numr2i+1) * circ2(numr2i+1);
-			if (numr3i == maxrin)  {
-				q(2) += t1;
-			} else {
-				q(numr3i+1) += t1;
-			}
-
-			for (j=3; j<=numr3i; j += 2) {
-				jc     = j+numr2i-1;
+		for (j=3; j<=numr3i; j += 2) {
+			jc     = j+numr2i-1;
 
 	// Here, (c1+c2i)*conj(d1+d2i) = (c1*d1+c2*d2)+(-c1*d2+c2*d1)i
 	//   			          ----- -----    ----- -----
 	//      			   t1     t2      t3    t4
 
-				c1     = circ1(jc);
-				c2     = circ1(jc+1);
-				d1     = circ2(jc);
-				d2     = circ2(jc+1);
+			c1     = circ1(jc);
+			c2     = circ1(jc+1);
+			d1     = circ2(jc);
+			d2     = circ2(jc+1);
 
-				t1     = c1 * d1;
-				t3     = c1 * d2;
-				t2     = c2 * d2;
-				t4     = c2 * d1;
+			t1     = c1 * d1;
+			t3     = c1 * d2;
+			t2     = c2 * d2;
+			t4     = c2 * d1;
 
-				q(j)   += t1 - t2;
-				q(j+1) += -t3 - t4;
-			}
+			q(j)   += t1 + t2*neg;
+			q(j+1) += -t3 + t4*neg;
 		}
 	}
+	 
+	
 	fftr_d(q,ip);
 
 	qn  = -1.0e20;
 	int psi_pos = int(psi/360.0*maxrin+0.5);
-
-	for (k=-5; k<=5; k++) {
-		j = (psi_pos+maxrin-1)%maxrin+1;
+	const int psi_range = int(psi_max/360.0*maxrin + 0.5);
+	
+	for (k=-psi_range; k<=psi_range; k++) {
+		j = (k+psi_pos+maxrin-1)%maxrin+1;
 		if (q(j) >= qn) {
 			qn  = q(j);
 			jtot = j;
 		}
 	}
 
-	for (k=-3; k<=3; k++) {
-		j = ((jtot+k+maxrin-1)%maxrin)+1;
-		t7(k+4) = q(j);
-	}
-
-	// interpolate
-	prb1d(t7,7,&pos);
-	tot = (float)(jtot)+pos;
+	tot = (float)(jtot);
 	free(q);
 
 	Dict retvals;
@@ -18397,7 +18353,7 @@ vector<float> Util::multiref_polar_ali_2d_local_psi(EMData* image, const vector<
 		for (iref = 0; iref < (int)crefim_len; iref++) {
 			if (abs(n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3)>=ant) {
 				if (nomirror) {
-		    			Dict retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, psi, 0);
+		    			Dict retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, psi, 0, psi_max);
 			    		double qn = retvals["qn"];
 			    		if (qn >= peak) {
 						sx = -ix;
@@ -18408,7 +18364,7 @@ vector<float> Util::multiref_polar_ali_2d_local_psi(EMData* image, const vector<
 						mirror = 0;
 					}
 				} else {
-		    			Dict retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, psi, 1);
+		    			Dict retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, psi, 1, psi_max);
 			    		double qn = retvals["qn"];
 			    		if (qn >= peak) {
 						sx = -ix;
