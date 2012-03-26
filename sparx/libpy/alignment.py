@@ -938,11 +938,13 @@ def prep_vol_kb(vol, kb, npad=2):
 	volft.fft_shuffle()
 	return  volft
 
-def prepare_refrings( volft, kb, nz, delta, ref_a, sym, numr, MPI=False, phiEqpsi = "Minus", kbx = None, kby = None, initial_theta =None, delta_theta = None):
-        from projection   import prep_vol, prgs
-        from math         import sin, cos, pi
+def prepare_refrings( volft, kb, nz, delta, ref_a, sym, numr, MPI=False, phiEqpsi = "Minus", kbx = None, kby = None, initial_theta = None, delta_theta = None):
+
+	from projection   import prep_vol, prgs
+	from math         import sin, cos, pi
 	from applications import MPI_start_end
 	from utilities    import even_angles
+
 	# generate list of Eulerian angles for reference projections
 	#  phi, theta, psi
 	mode = "F"
@@ -956,7 +958,7 @@ def prepare_refrings( volft, kb, nz, delta, ref_a, sym, numr, MPI=False, phiEqps
 	cnx = nz//2 + 1
 	cny = nz//2 + 1
 	qv = pi/180.
-        num_ref = len(ref_angles)
+	num_ref = len(ref_angles)
 
 	if MPI:
 		from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
@@ -966,18 +968,19 @@ def prepare_refrings( volft, kb, nz, delta, ref_a, sym, numr, MPI=False, phiEqps
 		ncpu = 1
 		myid = 0
 	from applications import MPI_start_end
-	ref_start,ref_end = MPI_start_end( num_ref, ncpu, myid )
+	ref_start, ref_end = MPI_start_end(num_ref, ncpu, myid)
 
 	refrings = []     # list of (image objects) reference projections in Fourier representation
 
-	sizex = numr[ len(numr)-2 ] + numr[ len(numr)-1 ] - 1
+	sizex = numr[len(numr)-2] + numr[len(numr)-1]-1
 
-        for i in xrange(num_ref):
+	for i in xrange(num_ref):
 		prjref = EMData()
 		prjref.set_size(sizex, 1, 1)
 		refrings.append(prjref)
+
 	if kbx is None:
-        	for i in xrange(ref_start, ref_end):
+		for i in xrange(ref_start, ref_end):
 			prjref = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
 			cimage = Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
 			Util.Normalize_ring(cimage, numr)
@@ -997,10 +1000,9 @@ def prepare_refrings( volft, kb, nz, delta, ref_a, sym, numr, MPI=False, phiEqps
 		from utilities import bcast_EMData_to_all
 		for i in xrange(num_ref):
 			for j in xrange(ncpu):
-				ref_start,ref_end = MPI_start_end(num_ref,ncpu,j)
+				ref_start, ref_end = MPI_start_end(num_ref, ncpu, j)
 				if i >= ref_start and i < ref_end: rootid = j
-
-			bcast_EMData_to_all( refrings[i], myid, rootid )
+			bcast_EMData_to_all(refrings[i], myid, rootid)
 
 	for i in xrange(len(ref_angles)):
 		n1 = sin(ref_angles[i][1]*qv)*cos(ref_angles[i][0]*qv)

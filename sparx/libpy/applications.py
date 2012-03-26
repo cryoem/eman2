@@ -3168,7 +3168,7 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				print_msg(msg)
 				if int(sym[1]) > 1:
 					cs[0] = cs[1] = 0.0
-					print_msg("For symmmety group cn (n>1), we only center the volume in z-direction\n")
+					print_msg("For symmetry group cn (n>1), we only center the volume in z-direction\n")
 				rotate_3D_shift(data, [-cs[0], -cs[1], -cs[2]])
 
 			if CTF:   vol1 = recons3d_4nn_ctf(data, range(0, nima, 2), snr, 1, sym)
@@ -3395,7 +3395,7 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, True)
 			del volft, kb
 			if myid == main_node:
-				print_msg( "Time to prepare rings: %d\n" % (time()-start_time) )
+				print_msg("Time to prepare rings: %d\n" % (time()-start_time))
 				start_time = time()
 
 			for im in xrange(nima):
@@ -3435,7 +3435,7 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				precn = 100*float(total_nima-im)/float(total_nima)
 				msg = " Number of particles that changed orientations %7d, percentage of total: %5.1f\n"%(total_nima-im, precn)
 				print_msg(msg)
-				if(precn <= termprec):  terminate = 1
+				if precn <= termprec:  terminate = 1
 				del region, histo
 			del recvbuf
 			terminate = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
@@ -3450,7 +3450,7 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				if int(sym[1]) > 1:
 					cs[0] = cs[1] = 0.0
 					if myid == main_node:
-						print_msg("For symmmety group cn (n>1), we only center the volume in z-direction\n")
+						print_msg("For symmetry group cn (n>1), we only center the volume in z-direction\n")
 				cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 				cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
 				rotate_3D_shift(data, cs)
