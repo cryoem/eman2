@@ -121,7 +121,7 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 		delta, d, snr, CTF, npad,\
 		MPI, myid, ncpu, verbose = 0 ):
 	from   utilities import even_angles
-	from   random import seed, jumpahead, resample
+	from   random import seed, jumpahead, shuffle
 	import os
 	from   sys import exit
 
