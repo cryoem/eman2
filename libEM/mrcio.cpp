@@ -678,12 +678,13 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 	mode_size = get_mode_size(mrch.mode);
 	is_new_file = false;
 
-	if( dict.has_key("ctf") ) {
-		vector<float> vctf = dict["ctf"];
-		EMAN1Ctf ctf_;
-		ctf_.from_vector(vctf);
-		write_ctf(ctf_);
-	}
+	//Do not write ctf to mrc header in EMAN2
+//	if( dict.has_key("ctf") ) {
+//		vector<float> vctf = dict["ctf"];
+//		EMAN1Ctf ctf_;
+//		ctf_.from_vector(vctf);
+//		write_ctf(ctf_);
+//	}
 
 	EXITFUNC;
 	return 0;
