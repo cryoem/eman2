@@ -3153,12 +3153,11 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
  		for Iter in xrange(max_iter):
 			print_msg("\nITERATION #%3d\n"%(N_step*max_iter+Iter+1))
 
-			volft,kb = prep_vol( vol )
+			volft, kb = prep_vol(vol)
 			refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, sym, numr, MPI=False)
-			del volft,kb
+			del volft, kb
 
-			for im in xrange( nima ):
-
+			for im in xrange(nima):
 				if an[N_step] == -1:	
 					peak, pixel_error = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
 				else:
@@ -3169,7 +3168,7 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				print_msg(msg)
 				if int(sym[1]) > 1:
 					cs[0] = cs[1] = 0.0
-					print_msg("For symmmety group cn (n>1), we only center the volume in z-direction")
+					print_msg("For symmmety group cn (n>1), we only center the volume in z-direction\n")
 				rotate_3D_shift(data, [-cs[0], -cs[1], -cs[2]])
 
 			if CTF:   vol1 = recons3d_4nn_ctf(data, range(0, nima, 2), snr, 1, sym)
@@ -3322,7 +3321,7 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	else:	 from reconstruction import rec3D_MPI_noCTF
 
 	if myid == main_node:
-       		if(file_type(stack) == "bdb"):
+       		if file_type(stack) == "bdb":
 			from EMAN2db import db_open_dict
 			dummy = db_open_dict(stack, True)
 		active = EMUtil.get_all_attributes(stack, 'active')
@@ -3373,10 +3372,10 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	disps = []
 	recvcount = []
 	for im in xrange(number_of_proc):
-		if( im == main_node ):  disps.append(0)
+		if im == main_node :  disps.append(0)
 		else:                  disps.append(disps[im-1] + recvcount[im-1])
 		ib, ie = MPI_start_end(total_nima, number_of_proc, im)
-		recvcount.append( ie - ib )
+		recvcount.append(ie-ib)
 
 	pixer = [0.0]*nima
 	cs = [0.0]*3
@@ -3385,22 +3384,21 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	for N_step in xrange(lstp):
 		terminate = 0
 		Iter = -1
- 		while(Iter < max_iter-1 and terminate == 0):
+ 		while Iter < max_iter-1 and terminate == 0:
 			Iter += 1
 			total_iter += 1
 			if myid == main_node:
 				start_time = time()
 				print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f, delta psi = %5.2f, start psi = %5.2f\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],yrng[N_step],step[N_step],deltapsi[N_step],startpsi[N_step]))
 
-			volft,kb = prep_vol( vol )
-			refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, sym, numr, True)
-			del volft,kb
-			if myid== main_node:
+			volft, kb = prep_vol(vol)
+			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, True)
+			del volft, kb
+			if myid == main_node:
 				print_msg( "Time to prepare rings: %d\n" % (time()-start_time) )
 				start_time = time()
 
-			for im in xrange( nima ):
-
+			for im in xrange(nima):
 				if deltapsi[N_step] > 0.0:
 					from alignment import proj_ali_incore_delta
 					peak, pixer[im] = proj_ali_incore_delta(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],startpsi[N_step],deltapsi[N_step],finfo)						
@@ -3418,12 +3416,12 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 			recvbuf = mpi_gatherv(pixer, nima, MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			mpi_barrier(MPI_COMM_WORLD)
 			terminate = 0
-			if(myid == main_node):
+			if myid == main_node:
 				recvbuf = map(float, recvbuf)
 				from statistics import hist_list
 				lhist = 20
 				region, histo = hist_list(recvbuf, lhist)
-				if(region[0] < 0.0):  region[0] = 0.0
+				if region[0] < 0.0:  region[0] = 0.0
 				msg = "      Histogram of pixel errors\n      ERROR       number of particles\n"
 				print_msg(msg)
 				for lhx in xrange(lhist):
@@ -3432,7 +3430,7 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				# Terminate if 95% within 1 pixel error
 				im = 0
 				for lhx in xrange(lhist):
-					if(region[lhx] > 1.0): break
+					if region[lhx] > 1.0: break
 					im += histo[lhx]
 				precn = 100*float(total_nima-im)/float(total_nima)
 				msg = " Number of particles that changed orientations %7d, percentage of total: %5.1f\n"%(total_nima-im, precn)
@@ -3452,7 +3450,7 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				if int(sym[1]) > 1:
 					cs[0] = cs[1] = 0.0
 					if myid == main_node:
-						print_msg("For symmmety group cn (n>1), we only center the volume in z-direction")					
+						print_msg("For symmmety group cn (n>1), we only center the volume in z-direction\n")
 				cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 				cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
 				rotate_3D_shift(data, cs)
