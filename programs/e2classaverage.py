@@ -394,6 +394,7 @@ def class_average_withali(images,ptcl_info,xform,averager=("mean",{}),normproc=(
 	
 	incl=[]
 	excl=[]
+	xforms=[]
 	avgr=Averagers.get(averager[0], averager[1])
 	for i in range(nimg):
 		img=get_image(images,i,normproc)
@@ -404,6 +405,7 @@ def class_average_withali(images,ptcl_info,xform,averager=("mean",{}),normproc=(
 		if use : 
 			avgr.add_image(img)				# only include the particle if we've tagged it as good
 			if img.has_attr("source_n") : incl.append(img["source_n"])
+			xforms.append(ptcl_info[i][1])
 		elif img.has_attr("source_n") : excl.append(img["source_n"])
 
 	avg=avgr.finish()
@@ -412,6 +414,7 @@ def class_average_withali(images,ptcl_info,xform,averager=("mean",{}),normproc=(
 	if len(incl)>0 or len(excl)>0 :
 		if len(incl)>0 : avg["class_ptcl_idxs"]=incl
 		if len(excl)>0 : avg["exc_class_ptcl_idxs"]=excl
+		if len(xforms)>0: avg["class_ptcl_xforms"]=xforms
 		avg["class_ptcl_src"]=img["source_path"]
 		
 	return avg

@@ -174,7 +174,7 @@ EMData* ScaleAlignerABS::align_using_base(EMData * this_img, EMData * to,
 	}	
 	
 	if (!result) throw UnexpectedBehaviorException("Alignment score is infinity! Something is seriously wrong with the data!");
-	if (proc) delete proc;
+	if (proc != 0) delete proc;
 	
 	return result;	
 	
@@ -226,7 +226,7 @@ EMData* ScaleAligner::align(EMData * this_img, EMData *to,
 	t.set_scale(bestscale);
 	EMData* result = this_img->process("xform",Dict("transform",&t));
 	result->set_attr("scalefactor",bestscale);
-	if (proc) delete proc;
+	if (proc != 0) delete proc;
 	
 	return result;
 	
@@ -1550,7 +1550,7 @@ EMData* SymAlignProcessor::align(EMData * this_img, EMData *to, const string & c
 			}
 		}
 	}
-	if(sym) delete sym;
+	if(sym != 0) delete sym;
 	
 	return bestimage;
 }
@@ -1610,7 +1610,6 @@ static double refalifn(const gsl_vector * v, void *params)
 
 
 	if (tmp != 0) delete tmp;
-	if (c != 0) delete c;
 	
 	return result;
 }
@@ -1813,8 +1812,7 @@ static double symquat(const gsl_vector * v, void *params)
 	double result = c->cmp(symtmp,tmp);
 	delete tmp;
 	delete symtmp;
-	delete t;
-	delete c;
+
 	//cout << result << endl;
 	return result;
 }
@@ -1842,8 +1840,7 @@ static double refalifn3dquat(const gsl_vector * v, void *params)
 	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
 	double result = c->cmp(tmp,with);
 	if ( tmp != 0 ) delete tmp;
-	delete t;
-	delete c;
+
 	//cout << result << endl;
 	return result;
 }
