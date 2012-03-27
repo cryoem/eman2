@@ -507,9 +507,11 @@ def main():
 				
 				
 			elif option1 == "interlv":
+				if not options.outtype:
+					options.outtype = "unknown"
+				d.append_image(outfile, EMUtil.get_image_ext_type(options.outtype))
 				d.read_image(options.interlv, i)
-				d.append_image(outfile, IMAGIC)
-			
+				
 			elif option1 == "outtype":
 				if not options.outtype:
 					options.outtype = "unknown"
