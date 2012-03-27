@@ -516,9 +516,14 @@ class EMProjectManager(QtGui.QMainWindow):
 		if not cmd: return False	# Don't excecute a broken script
 		# --ipd=-2 ; tell .eman2log.txt that this job is already in the pm note book
 		if self.dumpterminal.isChecked():
-			stdoutpipe = subprocess.PIPE
+			# This wont work on Windows(or for multiple e2projectmanger instances)....... Fix later
+			try : os.unlink("%s/pmfifo"%os.getcwd())
+			except : pass
+			os.mkfifo("%s/pmfifo"%os.getcwd())
+			stdoutpipe = file("%s/pmfifo"%os.getcwd(),"w+",0)
 		else:
 			stdoutpipe = None
+
 		if self.notebook and self.getProgramNoteLevel() > 0:
 			# Only take notes if note level is greater than 0
 			self.notebook.insertNewJob(cmd,local_datetime())
@@ -873,26 +878,28 @@ class EMPopen(subprocess.Popen):
 		subprocess.Popen.__init__(self, args, bufsize=bufsize, executable=executable, stdin=stdin, stdout=stdout, stderr=stderr, preexec_fn=preexec_fn, close_fds=close_fds, shell=shell, cwd=cwd, env=env, universal_newlines=universal_newlines, startupinfo=startupinfo, creationflags=creationflags) 
 		
 	def realTimeCommunicate(self, msgbox):
+		self.pmfifo = file("%s/pmfifo"%os.getcwd(),"r+")
 		self.msgbox = msgbox
 		rtcom = threading.Thread(target=self.realTimeChatter)
 		rtcom.start()
 			
 	def realTimeChatter(self):
 		while 1:
-			if self.stdout:
+			if self.pmfifo:
 				#pass
-				stdout = self.stdout.readline()
+				stdout = self.pmfifo.readline()
 				if stdout:
 					self.msgbox.setMessage(stdout)
 			else:
 				break
 
 			if self.poll() !=None:
+				print "\n\nDONE\n\n"
 				break
 				
 			# A HACK to prevent broken pipes(this may be a bit buggy, but it fixes an appaernt bug in subprocess module 
 			# Some sort of syncronization issue
-			time.sleep(1)
+			time.sleep(0.1)
 			 
 class EMAN2StatusBar(QtGui.QTextEdit):
 	"""

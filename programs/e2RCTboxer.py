@@ -213,6 +213,7 @@ class RCTboxer:
 		self.init_tilted_window()
 		#self.init_control_pannel()
 		
+		# Set the box colors
 		EMBox.set_box_color("untilted",[0,0,1])
 		EMBox.set_box_color("tilted",[0,1,0])
 	
@@ -527,6 +528,7 @@ class EMBoxList:
 		self.fontsize = 60.0
 		EMBoxList.OBJECTIDX += 1
 		self.mask = None
+		self.showlabels = True		# Default is to show labels
 	
 	def add_mask(self, mask):
 		self.mask = mask
@@ -610,11 +612,12 @@ class EMBoxList:
 			d[i+offset] = self.shapelist[i]
 		
 		lsize = len(self.boxlist)
+		
 		for i in range(len(self.labellist)):
 			if self.labellist[i] == None:
 				label = self.boxlist[i].get_label(i,self.fontsize,box_size)
 				self.labellist[i] = label
-			d[i+offset+lsize] = self.labellist[i]
+			if self.showlabels: d[i+offset+lsize] = self.labellist[i]
 		
 		return d
 		
