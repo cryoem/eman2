@@ -830,7 +830,7 @@ class CaRMSD(object):
 
 
 def main():
-	usage = """prog [options] <pdb file>
+	usage = """e2pathwalker.py [options] <pdb file>
 
 	Find paths between two atoms in a PDB model. You can also specify two PDB files to calculate an RMSD.
 
