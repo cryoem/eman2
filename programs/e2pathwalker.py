@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Author: Ian Rees (ian.rees@bcm.edu), 08/01/2010
+# Author: Ian Rees (ian.rees@bcm.edu), 03/20/2012
 # Copyright (c) 2000-2011 Baylor College of Medicine
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -44,8 +44,7 @@ import numpy
 import json
 import tempfile
 import os
-
-
+import subprocess
 
 
 def check_exists(outfile, overwrite=False):
@@ -450,8 +449,19 @@ class PathWalker(object):
 		print "Results file: %s"%outfile
 		
 		self.write_tsplib(filename=tspfile)
-		os.system("concorde -x -m -o %s %s"%(outfile, tspfile))
+		# os.system("concorde -x -m -o %s %s"%(outfile, tspfile))
+		args = ['concorde', '-x', '-m', '-o', outfile, tspfile]
+		try:
+			a = subprocess.Popen(args)
+		except OSError:
+			print """
+	Error! Could not find concorde executable. Please see the Pathwalker wiki for details:
+	http://blake.bcm.edu/emanwiki/EMAN2/Programs/e2pathwalker
+			"""
+			sys.exit(0)
+			return
 
+		a.wait()
 		ret = self._readtour_concorde(outfile)
 		
 		try:
@@ -477,8 +487,19 @@ class PathWalker(object):
 		f.close()
 
 		self.write_tsplib(filename=tspfile)
-		os.system("LKH %s"%(lkhfile))
 		
+		args = ['LKH', lkhfile]
+		try:
+			a = subprocess.Popen(args)
+		except OSError:
+			print """
+	Error! Could not find LKH executable. Please see the Pathwalker wiki for details:
+	http://blake.bcm.edu/emanwiki/EMAN2/Programs/e2pathwalker
+			"""
+			sys.exit(0)
+			return
+	
+		a.wait()
 		ret = self._readtour_lkh(outfile)
 		
 		try:
@@ -810,14 +831,17 @@ class CaRMSD(object):
 
 def main():
 	usage = """prog [options] <pdb file>
-	
+
 	Find paths between two atoms in a PDB model. You can also specify two PDB files to calculate an RMSD.
-	
+
 	Use "--solve=<solver>" to run the TSP solver and save the output.
 	Use "--output" to save the output to a PDB file.
 
-	"""
+	Pathwalker wiki:
+		http://blake.bcm.edu/emanwiki/Pathwalker
+	
 
+	"""
 	parser = EMAN2.EMArgumentParser(usage=usage,version=EMAN2.EMANVERSION)
 	parser.add_argument("--output", type=str,help="Output file")
 	parser.add_argument("--start", type=int,help="Start ATOM")
@@ -831,57 +855,53 @@ def main():
 	parser.add_argument("--chain", type=str ,help="Load Chain. Default: load all chains")	
 	parser.add_argument("--edgefile", type=str ,help="Load fixed fragment file; one sequence of forced connections per line, separated by space.")	
 	parser.add_argument("-e", "--edge", action="append", help="Forced edge: e.g. -e1,3")
+	parser.add_argument("--fixed", type=str, help="Same as --edgefile.")
 	parser.add_argument("--iterations", type=int,help="Iterations", default=1)
 	parser.add_argument("--json", type=int, help="If writing output pdb, also write JSON metadata. Default: 1. Options: 0, 1", default=1)
 	parser.add_argument("--overwrite", action="store_true", help="Overwrite files without prompting")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help='verbose level [0-9], higher number means higher level of verboseness')
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	
+
 	(options, args) = parser.parse_args()
 
 	if len(args) == 1:
 		filename = args[0]
-		for j in range(options.iterations):
-			if options.iterations > 1:
-				print "Iteration:", j
-	
-			pw = PathWalker(
-				filename=filename, 
-				start=options.start, 
-				end=options.end, 
-				edgefile=options.edgefile, 
-				dmin=options.dmin, 
-				dmax=options.dmax, 
-				average=options.average, 
-				noise=options.noise, 
-				atomtype=options.atomtype, 
-				chain=options.chain, 
-				json=options.json,
-				solver=options.solver,
-				overwrite=options.overwrite,
-				outfile=options.output
-			)
-			pw.run()
-	
-	
+		# for j in range(options.iterations):
+		#	if options.iterations > 1:
+		#		print "Iteration:", j
+		if options.iterations > 1:
+			print "Warning: Iterations currently unsupported."
+
+		pw = PathWalker(
+			filename=filename, 
+			start=options.start, 
+			end=options.end, 
+			edgefile=options.edgefile or options.fixed,
+			dmin=options.dmin, 
+			dmax=options.dmax, 
+			average=options.average, 
+			noise=options.noise, 
+			atomtype=options.atomtype, 
+			chain=options.chain, 
+			json=options.json,
+			solver=options.solver,
+			overwrite=options.overwrite,
+			outfile=options.output
+		)
+		pw.run()
+
+
 	elif len(args) == 2:
 		ca = CaRMSD(args[0], args[1], outfile=options.output, atomtype=options.atomtype, overwrite=options.overwrite)
 		ca.run()
-	
+
 	else:
 		#print "Not enough arguments!"
 		pass
-		
+
 
 
 # If executed as a program
 if __name__ == '__main__':
 	main()
-
-
-
-
-
-
-
 
