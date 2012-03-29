@@ -6940,8 +6940,9 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 						sxi   = float(-df["tx"])
 						syi   = float(-df["ty"])
 		
-					# unique ranges of azimuthal angle for ortho-axial and non-ortho-axial projection are identified by [k0,k1) and [k2,k3)
-					# k0, k1, k2, k3 are floats denoting azimuthal angles
+					# unique ranges of azimuthal angle for ortho-axial and non-ortho-axial projection directions are identified by [k0,k1) and [k2,k3), where k0, k1, k2, k3 are floats denoting azimuthal angles.
+					# Eulerian angles whose azimuthal angles are mapped into [k2, k3) are related to Eulerian angles whose azimuthal angles are mapped into [k0, k1) by an in-plane mirror operaton along the x-axis.
+					
 					tp = Transform({"type":"spider","phi":phihi,"theta":theta,"psi":psi})
 					tp.set_trans( Vec2f( -sxi, -syi ) )
 					k0 = 0.0
@@ -6983,7 +6984,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 						if ( abs( tp.at(2,2) )<1.0e-6 ):
 							if( sn%2==1 ): # theta=90 and n odd, only one of the two region match
 
-								if( ( d1['phi'] < float(k1) and d1['phi'] >= float(k0) ) or ( d1['phi'] < float(k3) and d1['phi'] >= float(k2) )):
+								if( ( d1['phi'] >= float(k0) and d1['phi'] < float(k1) ) or ( d1['phi'] >= float(k2) and d1['phi'] < float(k3) )):
 
 									sxnew = - d1["tx"]
 									synew = - d1["ty"]
@@ -7001,7 +7002,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 											break
 							else: #for theta=90 and n even, there is no mirror version during aligment, so only consider region [k0,k1]
 
-								if( d1['phi'] < float(k1) and d1['phi'] >= float(k0) ) :
+								if( d1['phi'] >= float(k0) and d1['phi'] < float(k1)  ) :
 
 									sxnew = - d1["tx"]
 									synew = - d1["ty"]
@@ -7021,7 +7022,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 
 								if (tp.at(2,2) >0.0): #theta <90
 									
-									if( d1['phi'] < float(k1) and d1['phi'] >= float(k0) ):
+									if(  d1['phi'] >= float(k0) and d1['phi'] < float(k1)):
 										if( cos( pi*float( d1['theta'] )/180.0 )>0.0 ):
 			
 											sxnew = - d1["tx"]
@@ -7031,7 +7032,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 											psinew = d1["psi"]
 		
 								else:
-									if(  d1['phi'] < float(k3) and d1['phi'] >= float(k2) ):
+									if(  d1['phi'] >= float(k2) and d1['phi'] < float(k3)):
 										if( cos( pi*float( d1['theta'] )/180.0 )<0.0 ):
 
 											sxnew = - d1["tx"]
