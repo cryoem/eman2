@@ -1345,7 +1345,7 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	sn = int(sym_string[1:])
 	
 	k0 = 0.0
-	k2 = k0+180
+	k2 = k0+180.0
 	
 	if( abs( t1.at(2,2) )<1.0e-6 ):
 		if (sym_string[0] =="c") or (sym_string[0] =="C"):
@@ -1359,15 +1359,18 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 			else:
 				k1=360.0/4/sn
 	else:
-		k1=360.0/sn	
+		if (sym_string[0] =="c") or (sym_string[0] =="C"):
+			k1=360.0/sn
+		elif (sym_string[0] =="d") or (sym_string[0] =="D"):
+			k1=360.0/2/sn	
 	
-	k3 = k1 +180
+	k3 = k1 +180.0
 	from numpy import float32
 	dpphi = float32(dp['phi'])
 	if sn%2 == 1:
 		if (abs(cos(dp['theta']*pi/180.0)) < 1.0e-6): 
-			if  ( dpphi < float(k3) and dpphi >= float(k2) ):
-				mirror_only = True
+			if  ( dpphi >= float(k2) and dpphi < float(k3) ):
+				mirror_only = True 
 		else:
 			if dp['theta'] > 90.0: # assumes that when theta is allowed to vary, it only varies from theta1 to 90 where theta1<90.
 				mirror_only=True
