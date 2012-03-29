@@ -138,7 +138,7 @@ class EMModelsModel(EMFileItemModel):
 class EMModelsEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:int(x.index), lambda x:x.name,lambda x:x.quality, lambda x:x.dims)
+	col=(lambda x:int(x.index), lambda x:x.name,lambda x:int(x.quality), lambda x:x.dims)
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
@@ -227,7 +227,7 @@ class EMSetsModel(EMFileItemModel):
 class EMSetsEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.partcount, lambda x:x.dims)
+	col=(lambda x:int(x.index),lambda x:x.name,lambda x:int(x.partcount), lambda x:x.dims)
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
@@ -322,7 +322,7 @@ class EMParticlesModel(EMFileItemModel):
 class EMParticlesEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.type,lambda x:x.particlecount, lambda x:x.particledim, lambda x:x.quality)
+	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.type,lambda x:int(x.particlecount), lambda x:x.particledim, lambda x:int(x.quality))
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
@@ -457,7 +457,7 @@ class EMCTFParticlesModel(EMFileItemModel):
 class EMCTFParticlesEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.type,lambda x:x.particlecount, lambda x:x.particledim, lambda x:x.defocus, lambda x:x.bfactor, lambda x:x.snr, lambda x:x.quality, lambda x:x.sampling)
+	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.type,lambda x:int(x.particlecount), lambda x:x.particledim, lambda x:float(x.defocus), lambda x:float(x.bfactor), lambda x:float(x.snr), lambda x:x.int(quality), lambda x:x.sampling)
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
@@ -618,7 +618,7 @@ class EMParticlesEditModel(EMFileItemModel):
 class EMParticlesEditEntry(EMCTFParticlesEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.type,lambda x:x.particlecount, lambda x:x.badparticlecount, lambda x:x.defocus, lambda x:x.bfactor, lambda x:x.snr, lambda x:x.quality, lambda x:x.sampling, lambda x:x.particledim)
+	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.type,lambda x:int(x.particlecount), lambda x:int(x.badparticlecount), lambda x:float(x.defocus), lambda x:float(x.bfactor), lambda x:float(x.snr), lambda x:int(x.quality), lambda x:x.sampling, lambda x:x.particledim)
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMCTFParticlesEntry.__init__(self,root=root,name=name,i=i,parent=parent,hidedot=hidedot,dirregex=dirregex)
@@ -691,7 +691,7 @@ class EMBoxesModel(EMFileItemModel):
 class EMBoxesEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.boxcount, lambda x:x.quality, lambda x:x.mgquality)
+	col=(lambda x:int(x.index),lambda x:x.name,lambda x:int(x.boxcount), lambda x:int(x.quality), lambda x:int(x.mgquality))
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
@@ -793,7 +793,7 @@ class EMRCTBoxesModel(EMFileItemModel):
 class EMRCTBoxesEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.boxcount, lambda x:x.quality, lambda x:x.mgquality)
+	col=(lambda x:int(x.index),lambda x:x.name,lambda x:int(x.boxcount), lambda x:int(x.quality), lambda x:int(x.mgquality))
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
@@ -897,7 +897,7 @@ class EMSubTomosModel(EMFileItemModel):
 class EMSubTomosEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.nimg, lambda x:x.dim)
+	col=(lambda x:int(x.index),lambda x:x.name,lambda x:int(x.nimg), lambda x:x.dim)
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
@@ -958,7 +958,7 @@ class EMRawDataModel(EMFileItemModel):
 class EMRawDataEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.dim, lambda x:x.mgquality)
+	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.dim, lambda x:int(x.mgquality))
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)

@@ -158,12 +158,21 @@ def main():
 	if len(tiltimgs) != len(untiltimgs):
 		print "The untilted image stack is not the same lenght as the tilted stack!!!"
 		exit(1)
-		
-	# Do projections
-	e2projectcmd = "e2project3d.py %s --orientgen=eman:delta=%f:inc_mirror=1:perturb=0 --outfile=bdb:%s#projections_00 --projector=standard --sym=%s" % (options.volume,options.delta,options.path, options.sym) # Seems to work better when I check all possibilites
-	if options.parallel: e2projectcmd += " --parallel=%s" %options.parallel
-	run(e2projectcmd)
 	
+	# write projection command to DB. If we rerun this program no need to reproject if it was done using same pars before
+	cdb = db_open_dict('bdb:cmdcache')
+	projparmas = "%s%f%s"%(options.volume,options.delta, options.sym)
+	if (cdb.has_key('projparmas') and  cdb['projparmas'] == projparmas):
+		run("e2proc2d.py bdb:%s#projections_00 bdb:%s#projections_00"%(cdb['previouspath'], options.path))
+	else:	
+		# Do projections
+		e2projectcmd = "e2project3d.py %s --orientgen=eman:delta=%f:inc_mirror=1:perturb=0 --outfile=bdb:%s#projections_00 --projector=standard --sym=%s" % (options.volume,options.delta,options.path, options.sym) # Seems to work better when I check all possibilites	
+		if options.parallel: e2projectcmd += " --parallel=%s" %options.parallel
+		run(e2projectcmd)
+	cdb['projparmas'] = projparmas
+	cdb['previouspath'] = options.path
+	cdb.close()
+		
 	# Make simmx
 	e2simmxcmd = "e2simmx.py bdb:%s#projections_00 %s bdb:%s#simmx -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d" % (options.path,options.untiltdata,options.path,options.simcmp,options.simalign,options.simaligncmp,options.verbose)
 	if options.simralign: e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)

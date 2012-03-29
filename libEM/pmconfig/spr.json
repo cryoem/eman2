@@ -10,7 +10,8 @@
       {
         "ICON": "single_image", 
         "MODE": "import",
-        "PROGRAM": "e2rawdata.py", 
+        "PROGRAM": "e2rawdata.py",
+        "WIZARD":"/lib/pmconfig/rawdataimport.json", 
         "NAME": "Import Raw Data", 
         "CHILDREN": []
       },
@@ -18,6 +19,7 @@
         "ICON": "single_image", 
         "MODE": "filter",
         "PROGRAM": "e2rawdata.py", 
+        "WIZARD":"/lib/pmconfig/rawdata.json",
         "NAME": "Filter Raw Data", 
         "CHILDREN": []
       },
@@ -25,6 +27,7 @@
         "ICON": "single_image", 
         "MODE": "eval",
         "PROGRAM": "e2evalimage.py", 
+        "WIZARD":"/lib/pmconfig/evalrawdata.json", 
         "NAME": "Evaluate Raw Data", 
         "CHILDREN": []
       }
@@ -40,6 +43,7 @@
         "MODE": "boxing",
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2boxer",
         "PROGRAM": "e2boxer.py", 
+        "WIZARD":"/lib/pmconfig/boxer.json", 
         "NAME": "Interactive Boxing-  e2boxer", 
         "CHILDREN": []
       }, 
@@ -49,6 +53,7 @@
         "EXPERT": 1, 
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2boxer",
         "PROGRAM": "e2boxer.py", 
+        "WIZARD":"/lib/pmconfig/boxergo.json", 
         "NAME": "Generate Output -e2boxer", 
         "CHILDREN": []
       }, 
@@ -57,6 +62,7 @@
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2RCTboxer",
         "MODE": "boxing",
         "PROGRAM": "e2RCTboxer.py", 
+        "WIZARD":"/lib/pmconfig/RCTboxer.json", 
         "NAME": "Tilt Pair Boxing-  e2RCTboxer", 
         "CHILDREN": []
       }, 
@@ -66,6 +72,7 @@
         "MODE": "extraction",
         "EXPERT": 1,
         "PROGRAM": "e2RCTboxer.py", 
+        "WIZARD":"/lib/pmconfig/RCTboxergo.json", 
         "NAME": "Generate Output -e2RCTboxer", 
         "CHILDREN": []
       }, 
@@ -73,13 +80,15 @@
         "ICON": "green_boxes", 
 	"MODE": "parts", 
         "PROGRAM": "e2import.py", 
+        "WIZARD":"/lib/pmconfig/particleimport.json", 
         "NAME": "Particle Import -e2import.py", 
         "CHILDREN": []
       }, 
       {
         "ICON": "green_boxes",
 	"MODE": "coords",
-        "PROGRAM": "e2import.py", 
+        "PROGRAM": "e2import.py",
+        "WIZARD":"/lib/pmconfig/coordimport.json", 
         "NAME": "Coordinate Import -e2import.py", 
         "CHILDREN": []
       }
@@ -136,6 +145,7 @@
         "ICON": "multiple_images", 
         "PROGRAM": "e2buildstacks.py", 
         "NAME": "Build Particle Sets", 
+        "WIZARD":"/lib/pmconfig/buildstacks.json",
 	"NOTELEVEL": "1",
         "CHILDREN": []
       }, 

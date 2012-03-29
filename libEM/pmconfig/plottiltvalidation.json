@@ -1,6 +1,4 @@
-/* JSON file to configure the project manager SPR mode */
-/* The ICON string needs to correspond to a dict key listed in the PM */
-/* The available keys can be found by browsing the JSON files of looking at e2 projectmanager.py */ 
+/* JSON file for the tiltvalidation wizard */
 [
   {
     "TITLE":"e2TiltValidate Wizard",

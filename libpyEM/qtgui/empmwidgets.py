@@ -266,7 +266,7 @@ class PMStringEntryWidget(PMBaseWidget):
 		return PMStringEntryWidget(widget.getName(), widget.getValue(), widget.getMode(), widget.postional, widget.initdefault, widget.returnNone)
 		
 	def __init__(self, name, string, mode, postional=False, initdefault=None, returnNone=False):
-		PMBaseWidget.__init__(self, name, mode) 
+		PMBaseWidget.__init__(self, name, mode, returnNone=returnNone) 
 		gridbox = QtGui.QGridLayout()
 		label = QtGui.QLabel(name)
 		self.stringbox = QtGui.QLineEdit()
@@ -288,7 +288,7 @@ class PMStringEntryWidget(PMBaseWidget):
 		return self.string
 		
 	def setValue(self, string, quiet=False):
-		if str(string).upper() == "NONE": string = ""	# If none is passed set to blank
+		if str(string).upper() == "NONE" and not self.returnNone: string = ""	# If none is passed set to blank
 		self.stringbox.setText(str(string))
 		self._on_stringchanged()
 		self.setErrorMessage(None)

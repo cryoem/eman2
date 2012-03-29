@@ -1801,6 +1801,8 @@ class PMGUIWidget(QtGui.QScrollArea):
 		options = re.findall('\s--\S*',cmd)
 		args = re.findall('\s[^-]{2}\S*',cmd)
 		widgethash = dict(self.widgethash)	# Make a copy of the widget hash
+		
+		#process 
 		for option in options:
 			ov = option.split('=', 1)
 			if len(ov) == 2:
@@ -1812,6 +1814,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 			# pop the widget off a copy of the hash
 			del(widgethash[ov[0][3:]])
 		
+		posargs = []
 		# now do the widgets which are not listed in the above list
 		for name,widget in widgethash.iteritems():
 			if isinstance(widget, PMHeaderWidget):
@@ -1821,10 +1824,18 @@ class PMGUIWidget(QtGui.QScrollArea):
 				continue
 			#process arguments, if postional widget
 			if widget.getPositional():
-				self._setValueJournaling(widget, (args.pop())[1:])
+				posargs.append(widget)
 				continue
 			# otherwise set to none	
 			self._setValueJournaling(widget, '')
+		
+		#loop through pos args. The stadard is that ither there is one arg per widget or one widget and many args
+		if len(posargs) == len(args):
+			for posarg in posargs:
+				self._setValueJournaling(posarg, (args.pop())[1:])
+		else:
+			argsstring = ''.join(str(n ) for n in args)
+			self._setValueJournaling(posargs[0], argsstring)
 			
 	def _setValueJournaling(self, widget, value):
 		""" Set a value, but if an erro occurs then revert to the old value """

@@ -54,7 +54,7 @@ def main():
 	#options associated with e2refine.py
 	parser.add_header(name="refineheader", help='Options below this label are specific to e2refine', title="### e2refine options ###", row=1, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_header(name="modelheader", help='Options below this label are specific to e2refine Model', title="### e2refine model options ###", row=4, col=0, rowspan=1, colspan=3, mode="refinement")
-	parser.add_argument("--iter", dest = "iter", type = int, default=0, help = "The total number of refinement iterations to perform", guitype='intbox', row=2, col=2, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--iter", dest = "iter", type = int, default=0, help = "The total number of refinement iterations to perform", guitype='intbox', row=2, col=2, rowspan=1, colspan=1, mode="refinement[2]")
 	parser.add_argument("--startiter", dest = "startiter", type = int, default=0, help = "If a refinement crashes, this can be used to pick it up where it left off. This should NOT be used to change parameters, but only to resume an incomplete run.")
 	parser.add_argument("--check", "-c", dest="check", default=False, action="store_true",help="Checks the contents of the current directory to verify that e2refine.py command will work - checks for the existence of the necessary starting files and checks their dimensions. Performs no work ")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -76,7 +76,7 @@ def main():
 	parser.add_header(name="simmxheader", help='Options below this label are specific to e2simmx', title="### e2simmx options ###", row=11, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--simalign",type=str,help="The name of an 'aligner' to use prior to comparing the images", default="rotate_translate_flip", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=14, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--simaligncmp",type=str,help="Name and parameters of the comparator used by the first stage aligner",default="dot", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=15, col=0, rowspan=1, colspan=3, mode="refinement")
-	parser.add_argument("--simralign",type=str,help="The name and parameters of the second stage aligner which refines the results of the first alignment, currently 'refine' or not specified.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=16, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--simralign",type=str,help="The name and parameters of the second stage aligner which refines the results of the first alignment, currently 'refine' or not specified.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine\', 0)', row=16, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--simraligncmp",type=str,help="The name and parameters of the comparator used by the second stage aligner. Default is dot.",default="dot", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=17, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--simcmp",type=str,help="The name of a comparator to be used in comparing the aligned images", default="frc:zeromask=1:snrweight=1", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=13, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--simmask",type=str,help="A file containing a single 0/1 image to apply as a mask before comparison but after alignment", default=None)
@@ -570,7 +570,7 @@ def check(options,verbose=0):
 			if not check_eman2_type(options.automask3d,Processors,"Processors"): error = True
 	
 	if not options.iter:
-		print "Error: you must specify the --it argument"
+		print "Error: you must specify the --iter argument"
 		error = True
 		
 	if ( file_exists(options.model) and options.input != None and file_exists(options.input)):
