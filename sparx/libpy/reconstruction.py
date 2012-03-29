@@ -873,7 +873,7 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 
 	return CUBE
 
-def prepare_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetry="c1"): 
+def prepare_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetry="c1"):
 	"""
 		Prepare auxiliary arrays dm and ss.
 		Weigthed back-projection algorithm.
@@ -882,7 +882,7 @@ def prepare_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetry
 		method - "general" Rademacher's Gaussian, "exact" MvHs triangle
 		const  - for "general" 1.0e4 works well, for "exact" it should be the diameter of the object
 		symmetry - point group symmetry of the object
-	""" 
+	"""
 	import types
 
 	if type(stack_name) == types.StringType:
@@ -914,7 +914,7 @@ def prepare_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetry
 	return dm,ss
 
 
-def recons3d_swbp(A, L, dm, ss, method = "general", const=1.0E4, symmetry="c1"): 
+def recons3d_swbp(A, L, dm, ss, method = "general", const=1.0E4, symmetry="c1"):
 	"""
 	        Take one projection, but angles form the entire set.  Build the weighting function for the given projection taking into account all,
 		apply it, and backproject.
@@ -924,7 +924,7 @@ def recons3d_swbp(A, L, dm, ss, method = "general", const=1.0E4, symmetry="c1"):
 		method - "general" Rademacher's Gaussian, "exact" MvHs triangle
 		const  - for "general" 1.0e4 works well, for "exact" it should be the diameter of the object
 		symmetry - point group symmetry of the object
-	""" 
+	"""
 	B = A.copy()
 	nx = B.get_xsize()
 	RA = Transform()
@@ -941,11 +941,11 @@ def recons3d_swbp(A, L, dm, ss, method = "general", const=1.0E4, symmetry="c1"):
 	  	if   (method=="general"):    Util.WTF(B, ss, const, L+1)
 	  	elif (method=="exact"  ):    Util.WTM(B, ss, const, L+1)
 
-		Util.BPCQ(B, CUBE, DM)  # Uses xform.projectio from the header
+		Util.BPCQ(B, CUBE, DM)  # Uses xform.projection from the header
 
 	return CUBE, B
 
-def weight_swbp(A, L, dm, ss, method = "general", const=1.0E4, symmetry="c1"): 
+def weight_swbp(A, L, dm, ss, method = "general", const=1.0E4, symmetry="c1"):
 	"""
 	        Take one projection, but angles form the entire set.  Build the weighting function for the given projection taking into account all,
 		apply it, return weighted projection.
@@ -955,7 +955,7 @@ def weight_swbp(A, L, dm, ss, method = "general", const=1.0E4, symmetry="c1"):
 		method - "general" Rademacher's Gaussian, "exact" MvHs triangle
 		const  - for "general" 1.0e4 works well, for "exact" it should be the diameter of the object
 		symmetry - point group symmetry of the object
-	""" 
+	"""
 
 	if(method=="exact"  ):    const = int(const)
 	nsym = 1
