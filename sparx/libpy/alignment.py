@@ -1317,8 +1317,8 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, stepx,ynumber,dpsi=180.0,
 		return peak, phi, theta, psi, s2x, s2y, t1
 	else:
 		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
-		
-def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, dpsi=180.0, finfo=None):
+
+def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, dpsi=180.0, finfo=None, sym_string='d3', yrnglocal=-1.0):
 	"""
 	  dpsi - how much psi can differ from 90 or 270 degrees
 	"""
@@ -1340,8 +1340,45 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 		finfo.write("Image id: %6d\n"%(ID))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
 		finfo.flush()
-
-	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_helical_local(data, refrings, xrng, yrng, stepx, ant, dpsi, mode, numr, cnx+dp["tx"], cny+dp["ty"],int(ynumber))
+	
+	mirror_only = False
+	sn = int(sym_string[1:])
+	
+	k0 = 0.0
+	k2 = k0+180
+	
+	if( abs( t1.at(2,2) )<1.0e-6 ):
+		if (sym_string[0] =="c") or (sym_string[0] =="C"):
+			if sn%2 == 0:
+				k1=360.0/sn
+			else:
+				k1=360.0/2/sn
+		elif (sym_string[0] =="d") or (sym_string[0] =="D"):
+			if sn%2 == 0:
+				k1=360.0/2/sn
+			else:
+				k1=360.0/4/sn
+	else:
+		k1=360.0/sn	
+	
+	k3 = k1 +180
+	from numpy import float32
+	dpphi = float32(dp['phi'])
+	if sn%2 == 1:
+		if (abs(cos(dp['theta']*pi/180.0)) < 1.0e-6): 
+			if  ( dpphi < float(k3) and dpphi >= float(k2) ):
+				mirror_only = True
+		else:
+			if dp['theta'] > 90.0: # assumes that when theta is allowed to vary, it only varies from theta1 to 90 where theta1<90.
+				mirror_only=True
+	else:
+		# sn is even
+		if dp['theta'] > 90.0: # assumes that when theta is allowed to vary, it only varies from theta1 to 90 where theta1<90.
+				mirror_only=True
+				
+	#[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_helical_local(data, refrings, xrng, yrng, stepx, ant, dpsi, mode, numr, cnx+dp["tx"], cny+dp["ty"],int(ynumber))
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_helical_local(data, refrings, xrng, yrng, stepx, ant, dpsi, mode, numr, cnx+dp["tx"], cny+dp["ty"],int(ynumber),mirror_only, yrnglocal)
+	
 	iref = int(iref)
 	
 	if iref > -1:
@@ -1362,7 +1399,10 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 			s2y   = syb - dp["ty"]
 		
 		if finfo:
-			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
+			if mirror_only:
+				finfo.write("mirror only\n")
+			finfo.write("ref phi: %9.4f\n"%(refrings[iref].get_attr("phi")))
+			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f \n\n" %(phi, theta, psi, s2x, s2y, peak))
 			finfo.flush()
 		return peak, phi, theta, psi, s2x, s2y, t1
 	else:
