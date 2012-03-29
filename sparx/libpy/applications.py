@@ -6368,14 +6368,14 @@ def autowin_MPI(indir,outdir, noisedoc, noisemic, templatefile, deci, CC_method,
 def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
           txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max,
 	  rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
-	  fourvar, debug = False, MPI = False, chunk = -1.0, WRAP = 1):
+	  fourvar, debug = False, MPI = False, chunk = -1.0, WRAP = 1, y_restrict=-1.0):
 	if MPI:
 		if (chunk <= 0.0):
 			if WRAP == 1:
 				ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
 			txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max,
 			rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
-			fourvar, debug)
+			fourvar, debug, y_restrict)
 			
 			else:
 				ihrsr_MPI_no_wrap(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
@@ -6577,7 +6577,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
 	txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndphi, dphi_step, psi_max,
 	rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
-	fourvar, debug):
+	fourvar, debug, y_restrict):
 
 	from alignment      import Numrinit, prepare_refrings, proj_ali_helical, proj_ali_helical_90, proj_ali_helical_local, proj_ali_helical_90_local, helios,helios7
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string, pad, model_blank
@@ -6811,11 +6811,13 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	#jeanmod
 	total_iter = 0
 	# do the projection matching
-	
+	if y_restrict < 0:
+		y_restrict = dp
 	for N_step in xrange(lstp):
 		terminate = 0
 		Iter = 0
  		while(Iter < max_iter and terminate == 0):
+			yrnglocal = float(y_restrict)/(2*pixel_size)
 			yrng[N_step]=float(dp)/(2*pixel_size) #will change it later according to dp
 			if(ynumber[N_step]==0):
 				stepy = 0.0
@@ -6837,6 +6839,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 				volft, kbx, kby, kbz = prep_vol( vol )
 				refrings = prepare_refrings( volft, kbz, nmax, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero", kbx = kbx, kby = kby, initial_theta =initial_theta, delta_theta = delta_theta)
 				del volft, kbx, kby, kbz
+			
 			if myid== main_node:
 				print_msg( "Time to prepare rings: %d\n" % (time()-start_time) )
 				start_time = time()
@@ -6872,7 +6875,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 					if  an[N_step] == -1:
 						peak2, phihi2, theta2, psi2, sxi2, syi2, t12 = proj_ali_helical(data[im],refrings2,numr,xrng[N_step],yrng[N_step],stepx[N_step],ynumber[N_step],psi_max,finfo,)
 					else:
-						peak2, phihi2, theta2, psi2, sxi2, syi2, t12 = proj_ali_helical_local(data[im],refrings2,numr,xrng[N_step],yrng[N_step],stepx[N_step],ynumber[N_step], an[N_step], psi_max,finfo,)
+						peak2, phihi2, theta2, psi2, sxi2, syi2, t12 = proj_ali_helical_local(data[im],refrings2,numr,xrng[N_step],yrng[N_step],stepx[N_step],ynumber[N_step], an[N_step], psi_max,finfo,sym_string=symmetry_string,yrnglocal=yrnglocal)
 				if peak1 is None: 
 					peak = peak2
 					phihi = phihi2
@@ -6974,8 +6977,10 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 									phinew = d1['phi']
 									thetanew = d1["theta"]
 									psinew = d1["psi"]
+									
 							else: #for theta=90 and n even, there is no mirror version during aligment, so only consider region [k0,k1]
-
+								
+									
 								if( d1['phi'] <= float(k1) and d1['phi'] >= float(k0) ) :
 									
 									sxnew = - d1["tx"]
@@ -6985,6 +6990,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 									psinew = d1["psi"]
 									
 						else: #theta !=90, # if theta >90, put the projection into [k2,k3]. Otherwise put it into the region [k0,k1]
+							
 							if( sn==1):
 								sxnew = sxi
 								synew = syi
@@ -7022,6 +7028,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 					data[im].set_attr("xform.projection", t2)
 					pixer[im]  = max_3D_pixel_error(t1, t2, numr[-3])
 					modphi[im] = phinew
+					
 				else:
 					# peak not found, parameters not modified
 					pixer[im]  = 0.0
