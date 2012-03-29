@@ -6940,28 +6940,37 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 						sxi   = float(-df["tx"])
 						syi   = float(-df["ty"])
 		
-					# unique range identified by [k0,k1], [k2,k3]
+					# unique ranges of azimuthal angle for ortho-axial and non-ortho-axial projection are identified by [k0,k1] and [k2,k3]
+					# k0, k1, k2, k3 are floats denoting azimuthal angles
 					tp = Transform({"type":"spider","phi":phihi,"theta":theta,"psi":psi})
 					tp.set_trans( Vec2f( -sxi, -syi ) )
 					k0 = 0.0
-					k2 = k0+180
+					k2 = k0+180.0
 
 					if( abs( tp.at(2,2) )<1.0e-6 ):
 						if (symmetry_string[0] =="c"):
 							if sn%2 == 0:
-								k1=360.0/sn
+								k1=359.99/sn
 							else:
-								k1=360.0/2/sn
+								k1=359.99/2/sn
 						elif (symmetry_string[0] =="d"):
 							if sn%2 == 0:
-								k1=360.0/2/sn
+								k1=359.99/2/sn
 							else:
-								k1=360.0/4/sn
+								k1=359.99/4/sn
 					else:
-						k1=360.0/sn
-					k3 = k1 +180
+						k1=359.99/sn
+					k3 = k1 +180.0
 					from utilities import get_sym
 					T = get_sym(symmetry_string[0:])
+					
+					d1tp = tp.get_params('spider')
+					sxnew = - d1tp["tx"]
+					synew = - d1tp["ty"]
+					phinew = d1tp['phi']
+					thetanew = d1tp["theta"]
+					psinew = d1tp["psi"]
+					del d1tp
 					
 					for i in xrange( len(T) ):
 						ttt = tp*Transform({"type":"spider","phi":T[i][0],"theta":T[i][1],"psi":T[i][2]})
