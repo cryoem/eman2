@@ -6998,7 +6998,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 									# In local search, psi should stay within neighborhood of original value, so take the symmetry related
 									# Eulerian angles in unique range which does not change psi by 180.
 									if an[N_step] != -1:
-										if psinew == psi:
+										if abs(psinew - psi) < 90:
 											break
 							else: #for theta=90 and n even, there is no mirror version during aligment, so only consider region [k0,k1]
 
