@@ -6940,7 +6940,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 						sxi   = float(-df["tx"])
 						syi   = float(-df["ty"])
 		
-					# unique ranges of azimuthal angle for ortho-axial and non-ortho-axial projection are identified by [k0,k1] and [k2,k3]
+					# unique ranges of azimuthal angle for ortho-axial and non-ortho-axial projection are identified by [k0,k1) and [k2,k3)
 					# k0, k1, k2, k3 are floats denoting azimuthal angles
 					tp = Transform({"type":"spider","phi":phihi,"theta":theta,"psi":psi})
 					tp.set_trans( Vec2f( -sxi, -syi ) )
@@ -6950,16 +6950,20 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 					if( abs( tp.at(2,2) )<1.0e-6 ):
 						if (symmetry_string[0] =="c"):
 							if sn%2 == 0:
-								k1=359.99/sn
+								k1=360.0/sn
 							else:
-								k1=359.99/2/sn
+								k1=360.0/2/sn
 						elif (symmetry_string[0] =="d"):
 							if sn%2 == 0:
-								k1=359.99/2/sn
+								k1=360.0/2/sn
 							else:
-								k1=359.99/4/sn
+								k1=360.0/4/sn
 					else:
-						k1=359.99/sn
+						if (symmetry_string[0] =="c"):
+							k1=360.0/sn
+						if (symmetry_string[0] =="d"):
+							k1=360.0/2/sn
+							
 					k3 = k1 +180.0
 					from utilities import get_sym
 					T = get_sym(symmetry_string[0:])
@@ -6979,7 +6983,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 						if ( abs( tp.at(2,2) )<1.0e-6 ):
 							if( sn%2==1 ): # theta=90 and n odd, only one of the two region match
 
-								if( ( d1['phi'] <= float(k1) and d1['phi'] >= float(k0) ) or ( d1['phi'] < float(k3) and d1['phi'] >= float(k2) )):
+								if( ( d1['phi'] < float(k1) and d1['phi'] >= float(k0) ) or ( d1['phi'] < float(k3) and d1['phi'] >= float(k2) )):
 									
 									sxnew = - d1["tx"]
 									synew = - d1["ty"]
@@ -6987,10 +6991,18 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 									thetanew = d1["theta"]
 									psinew = d1["psi"]
 									
+									# For boundary cases where phihi is exactly on the boundary of the unique range, there may be two symmetry related Eulerian angles which are both in the unique 
+									# range but whose psi differ by 180. 
+									# For example, (180,90,270) has two symmetry related angles in unique range: (180,90,270) and (180, 90, 90)
+									# In local search, psi should stay within neighborhood of original value, so take the symmetry related
+									# Eulerian angles in unique range which does not change psi by 180.
+									if an[N_step] != -1:
+										if psinew == psi:
+											break
 							else: #for theta=90 and n even, there is no mirror version during aligment, so only consider region [k0,k1]
 								
 									
-								if( d1['phi'] <= float(k1) and d1['phi'] >= float(k0) ) :
+								if( d1['phi'] < float(k1) and d1['phi'] >= float(k0) ) :
 									
 									sxnew = - d1["tx"]
 									synew = - d1["ty"]
@@ -7010,7 +7022,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 
 								if (tp.at(2,2) >0.0): #theta <90
 									
-									if( d1['phi'] <= float(k1) and d1['phi'] >= float(k0) ):
+									if( d1['phi'] < float(k1) and d1['phi'] >= float(k0) ):
 										if( cos( pi*float( d1['theta'] )/180.0 )>0.0 ):
 											
 											sxnew = - d1["tx"]
@@ -7020,7 +7032,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 											psinew = d1["psi"]
 											
 								else:
-									if(  d1['phi'] <= float(k3) and d1['phi'] >= float(k2) ):
+									if(  d1['phi'] < float(k3) and d1['phi'] >= float(k2) ):
 										if( cos( pi*float( d1['theta'] )/180.0 )<0.0 ):
 											
 											sxnew = - d1["tx"]
