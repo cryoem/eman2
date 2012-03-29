@@ -6963,11 +6963,11 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 							k1=360.0/sn
 						if (symmetry_string[0] =="d"):
 							k1=360.0/2/sn
-							
+
 					k3 = k1 +180.0
 					from utilities import get_sym
 					T = get_sym(symmetry_string[0:])
-					
+
 					d1tp = tp.get_params('spider')
 					sxnew = - d1tp["tx"]
 					synew = - d1tp["ty"]
@@ -6975,7 +6975,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 					thetanew = d1tp["theta"]
 					psinew = d1tp["psi"]
 					del d1tp
-					
+
 					for i in xrange( len(T) ):
 						ttt = tp*Transform({"type":"spider","phi":T[i][0],"theta":T[i][1],"psi":T[i][2]})
 						d1 = ttt.get_params("spider")
@@ -6984,13 +6984,13 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 							if( sn%2==1 ): # theta=90 and n odd, only one of the two region match
 
 								if( ( d1['phi'] < float(k1) and d1['phi'] >= float(k0) ) or ( d1['phi'] < float(k3) and d1['phi'] >= float(k2) )):
-									
+
 									sxnew = - d1["tx"]
 									synew = - d1["ty"]
 									phinew = d1['phi']
 									thetanew = d1["theta"]
 									psinew = d1["psi"]
-									
+
 									# For boundary cases where phihi is exactly on the boundary of the unique range, there may be two symmetry related Eulerian angles which are both in the unique 
 									# range but whose psi differ by 180. 
 									# For example, (180,90,270) has two symmetry related angles in unique range: (180,90,270) and (180, 90, 90)
@@ -7000,18 +7000,17 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 										if psinew == psi:
 											break
 							else: #for theta=90 and n even, there is no mirror version during aligment, so only consider region [k0,k1]
-								
-									
+
 								if( d1['phi'] < float(k1) and d1['phi'] >= float(k0) ) :
-									
+
 									sxnew = - d1["tx"]
 									synew = - d1["ty"]
 									phinew = d1['phi']
 									thetanew = d1["theta"]
 									psinew = d1["psi"]
-									
+
 						else: #theta !=90, # if theta >90, put the projection into [k2,k3]. Otherwise put it into the region [k0,k1]
-							
+
 							if( sn==1):
 								sxnew = sxi
 								synew = syi
@@ -7024,32 +7023,31 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 									
 									if( d1['phi'] < float(k1) and d1['phi'] >= float(k0) ):
 										if( cos( pi*float( d1['theta'] )/180.0 )>0.0 ):
-											
+			
 											sxnew = - d1["tx"]
 											synew = - d1["ty"]
 											phinew = d1['phi']
 											thetanew = d1["theta"]
 											psinew = d1["psi"]
-											
+		
 								else:
 									if(  d1['phi'] < float(k3) and d1['phi'] >= float(k2) ):
 										if( cos( pi*float( d1['theta'] )/180.0 )<0.0 ):
-											
+
 											sxnew = - d1["tx"]
 											synew = - d1["ty"]
 											phinew = d1['phi']
 											thetanew = d1["theta"]
 											psinew = d1["psi"]
-											
-						del ttt,d1
 
+						del ttt,d1
 
 					t2 = Transform({"type":"spider","phi":phinew,"theta":thetanew,"psi":psinew})
 					t2.set_trans(Vec2f(-sxnew, -synew))
 					data[im].set_attr("xform.projection", t2)
 					pixer[im]  = max_3D_pixel_error(t1, t2, numr[-3])
 					modphi[im] = phinew
-					
+
 				else:
 					# peak not found, parameters not modified
 					pixer[im]  = 0.0
