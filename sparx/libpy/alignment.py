@@ -1371,8 +1371,13 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 		if (abs(cos(dp['theta']*pi/180.0)) < 1.0e-6): 
 			if  ( dpphi >= float(k2) and dpphi < float(k3) ):
 				mirror_only = True 
+			
+			# temporary hack to deal with parameters whose phi angles may land exactly on k3 since the parameters were generated with old
+			# even_angles code.	
+			if dpphi == k3:
+				mirror_only = True
 		else:
-			if dp['theta'] > 90.0: # assumes that when theta is allowed to vary, it only varies from theta1 to 90 where theta1<90.
+			if( cos( pi*float( dp['theta'] )/180.0 )<0.0 ): # dp['theta'] > 90.0
 				mirror_only=True
 	else:
 		# sn is even
