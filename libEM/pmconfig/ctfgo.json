@@ -1,0 +1,30 @@
+/* JSON file to make the particle import wizard */
+[
+  {
+    "TITLE":"e2ctf generate output Wizard",
+    "INST":"This Wizard is to Help users from e2ctf in generate output mode. Two distint type of output are posssible: CTF corrected particles using phase flipping, and CTF corrected particles using Wiener filtration",
+    "WIDGETS":[]
+  },
+  {
+    "TITLE":"Select particle files",
+    "INST":"Select particle stacks for generating ouput from",
+    "WIDGETS":[
+      "particles"
+    ]
+  },
+  {
+    "TITLE":"CTF correction by phase flipping",
+    "INST":"Two distinct methods for CTF correcting particles are possible. Phase flipping and Wiener filtration. Phase flipped particles are CTF corrected by just reversing the phase sign where it is inverted by the CTF. Amplitudes are accounted for later in the reconstruction process during class average generation via ctfw.auto. To generate phase flipped particles, check 'phaseflip' You also have the option of high pass filtering your phase flipped images by removing the DC component (basically the image background)",
+    "WIDGETS":[
+      "phaseflip",
+      "phasefliphp"
+    ]
+  },
+  {
+    "TITLE":"CTF correction by wiener filtration",
+    "INST":"The second method of CTF correction, is Wiener filtration. Here we optimally correct both the phases and amplitudes in a least sqaures sense. Mathematically this is the best method, HOWEVER, it relies on a good estimate of the signal to noise ratio. If your SNR is off your wiener filtration will distort your partilcesdue to grossly erronious amplitude modification. I reccomend this only where you have strong signal (high contrasty images)",
+    "WIDGETS":[
+      "wiener"
+    ]
+  }
+]

@@ -40,7 +40,7 @@
   },
   {
     "TITLE":"Structure factor processing",
-    "INST":"To compute structure factors directly after CTF autofitting, check 'computesf'. You almost nver want to do this, as it's best to compute strucutre factors on only the best particle satcks. Initially the high resolution domains of the GroEL structure factors are used during CTF determination, however if 'sf' is set to auto, previously determined strucutre factors for this molecule are used if available(otherwise GroEL is used. To force GroEL use set 'sf' to none",
+    "INST":"To compute structure factors directly after CTF autofitting, check 'computesf'. You almost never want to do this, as it's best to compute strucutre factors on only the best particle stacks. Initially the high resolution domains of the GroEL structure factors are used during CTF determination, however if 'sf' is set to auto, previously determined strucutre factors for this molecule are used if available(otherwise GroEL is used. To force GroEL use set 'sf' to none",
     "WIDGETS":[
       "computesf",
       "sf"
