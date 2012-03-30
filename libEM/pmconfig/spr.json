@@ -104,6 +104,7 @@
         "PROGRAM": "e2ctf.py",
         "MODE": "autofit",
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2ctf",
+        "WIZARD":"/lib/pmconfig/ctfautofit.json", 
         "NAME": "Automated Fitting -e2ctf", 
 	"NOTELEVEL": "1",
         "CHILDREN": []

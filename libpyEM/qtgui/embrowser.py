@@ -1744,7 +1744,12 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.wbutinfo=QtGui.QPushButton("Info")
 		self.wbutinfo.setCheckable(True)
 		self.wtoolhbl.addWidget(self.wbutinfo,1)
-
+		
+		# add a selectall button
+		self.selectall=QtGui.QPushButton("Sel All")
+		if withmodal:
+			self.wtoolhbl.addWidget(self.selectall,0)
+		
 		self.gbl.addWidget(self.wtools,0,0,1,2)
 		
 		
@@ -1827,6 +1832,7 @@ class EMBrowserWidget(QtGui.QWidget):
 		QtCore.QObject.connect(self.wbutfwd, QtCore.SIGNAL('clicked(bool)'), self.buttonFwd)
 		QtCore.QObject.connect(self.wbutup, QtCore.SIGNAL('clicked(bool)'), self.buttonUp)
 		QtCore.QObject.connect(self.wbutinfo, QtCore.SIGNAL('clicked(bool)'), self.buttonInfo)
+		QtCore.QObject.connect(self.selectall, QtCore.SIGNAL('clicked(bool)'), self.selectAll)
 		QtCore.QObject.connect(self.wtree, QtCore.SIGNAL('clicked(const QModelIndex)'), self.itemSel)
 		QtCore.QObject.connect(self.wtree, QtCore.SIGNAL('activated(const QModelIndex)'), self.itemActivate)
 		QtCore.QObject.connect(self.wtree, QtCore.SIGNAL('expanded(const QModelIndex)'), self.itemExpand)
@@ -1989,33 +1995,32 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.result=[]
 		self.emit(QtCore.SIGNAL("cancel")) # this signal is important when e2ctf is being used by a program running its own eve
 		self.close()
+	
+	def selectAll(self):
+		self.wtree.selectAll()
 		
 	def buttonBack(self,tog):
 		"Button press"
-		try : 
-			l=self.pathstack.index(self.curpath)
-			if l==0 : raise Exception
-		except : return
+		# I don't like the stack idea, it's annoying, so I am using a circular array instead John F
 		
-		self.setPath(self.pathstack[l-1],True)
+		l=self.pathstack.index(self.curpath)
+		self.setPath(self.pathstack[(l-1)%len(self.pathstack)],True)
 		
 	def buttonFwd(self,tog):
 		"Button press"
-		try : 
-			l=self.pathstack.index(self.curpath)
-			if l==len(self.pathstack)-1 : raise Exception
-		except : return
+		# I don't like the stack idea, it's annoying, so I am using a circular array instead John F
 		
-		self.setPath(self.pathstack[l+1],True)
+		l=self.pathstack.index(self.curpath)
+		self.setPath(self.pathstack[(l+1)%len(self.pathstack)],True)
 		
 	def buttonUp(self,tog):
 		"Button press"
-
 		if "/" in self.curpath : newpath=self.curpath.rsplit("/",1)[0]
 		else: newpath=os.path.realpath(self.curpath).rsplit("/",1)[0]
 
 		print "Newpath: ",newpath
-		if len(newpath)>1 : self.setPath(newpath)
+		#if len(newpath)>1 : self.setPath(newpath)	# What if we want to return to CWD, '.' # John F
+		if len(newpath)>0 : self.setPath(newpath)
 		
 	def buttonInfo(self,tog):
 		if tog :
