@@ -558,19 +558,19 @@ def filt_from_fsc(dres, low = 0.1):
 	filtc = [0.0]*n
 	filtc[0] = 1.0
 	last = n
-	for i in xrange(1,n-1):
-		if(dres[1][i]<0.0):
+	for i in xrange(1, n-1):
+		if dres[1][i] < 0.0:
 			qt = 0.0
 		else:
-			qt = 2*(dres[1][i-1]/(1.0+dres[1][i-1]) +dres[1][i]/(1.0+dres[1][i]) + dres[1][i+1]/(1.0+dres[1][i+1]))/3.0
-		if ( qt < low ):
+			qt = 2*(dres[1][i-1]/(1.0+dres[1][i-1]) + dres[1][i]/(1.0+dres[1][i]) + dres[1][i+1]/(1.0+dres[1][i+1]))/3.0
+		if qt < low:
 			filtc[i] = low
 			last = i
 			break
 		else:
 			filtc[i] = qt
-	if(last<n-1):
-		for i in xrange(last, min(last+4,n)):
+	if last < n-1:
+		for i in xrange(last, min(last+4, n)):
 			qt /= 1.2
 			filtc[i] = qt
 	return filtc
