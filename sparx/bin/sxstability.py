@@ -46,6 +46,7 @@ def main():
 	parser.add_option("--thld_err",     type="float",   default=1.732,     help=" threshld of pixel error (default = 1.732)")
 	parser.add_option("--num_ali",      type="int",     default=5,         help=" number of alignments performed for stability (default = 5)")
 	parser.add_option("--verbose",      action="store_true",     default=False,       help=" whether to print individual pixel error (default = False)")
+	parser.add_option("--stab_part",	action="store_true",	 default=False,	      help=" whether to output the stable particles number in file")
 	(options, args) = parser.parse_args()
 	if len(args) != 2:
     		print "usage: " + usage
@@ -111,6 +112,10 @@ def main():
 							write_text_file([ALPHA, SX, SY, MIRROR, SCALE], "ali_params_grp_%03d_run_%d"%(i, ii)) 
 					stable_set, mir_stab_rate, pix_err = multi_align_stability(all_ali_params, 0.0, 10000.0, options.thld_err, options.verbose)
 					print "Average %4d : %20.3f %20.3f %20d %20d"%(i, mir_stab_rate, pix_err, len(stable_set), len(mem))
+					if stab_part and len(stable_set) >= options.thld_grp:
+						stab_mem = [0]*len(stable_set)
+						for j in xrange(len(stable_set)): stab_mem[j] = mem[stable_set[j]]
+						write_text_file(mem, "stab_part_%03d.txt"%i)
 
 		global_def.BATCH = False
 
