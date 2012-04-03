@@ -5,6 +5,7 @@
 
   {
     "ICON": "single_image_3d",
+    "WIZARD":"/lib/pmconfig/tomoimport.json",
     "PROGRAM": "e2import.py", 
     "MODE": "tomos", 
     "NAME": "Import Tomogram Files",
@@ -12,6 +13,7 @@
   }, 
   {
     "ICON": "green_boxes",
+    "WIZARD":"/lib/pmconfig/tomoboxer.json",
     "MODE": "boxing",
     "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2tomoboxer",
     "PROGRAM": "e2tomoboxer.py", 
@@ -20,12 +22,14 @@
   },
   {
     "ICON": "green_boxes",
+    "WIZARD":"/lib/pmconfig/wedge.json",
     "PROGRAM": "e2wedge.py", 
     "NAME": "Examine Missing Wedges", 
     "CHILDREN": [] 
   },
   {
     "ICON": "tomo_hunter",
+    "WIZARD":"/lib/pmconfig/classaverage3d.json",
     "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2classaverage3d",
     "PROGRAM": "e2classaverage3d.py",
     "MODE": "alignment", 

@@ -162,9 +162,10 @@ def main():
 	# write projection command to DB. If we rerun this program no need to reproject if it was done using same pars before
 	cdb = db_open_dict('bdb:cmdcache')
 	projparmas = "%s%f%s"%(options.volume,options.delta, options.sym)
-	if (cdb.has_key('projparmas') and  cdb['projparmas'] == projparmas):
+	try:
+		if (cdb.has_key('projparmas') and  cdb['projparmas'] == projparmas): raise IOError("Projection file does not exsist")
 		run("e2proc2d.py bdb:%s#projections_00 bdb:%s#projections_00"%(cdb['previouspath'], options.path))
-	else:	
+	except:	
 		# Do projections
 		e2projectcmd = "e2project3d.py %s --orientgen=eman:delta=%f:inc_mirror=1:perturb=0 --outfile=bdb:%s#projections_00 --projector=standard --sym=%s" % (options.volume,options.delta,options.path, options.sym) # Seems to work better when I check all possibilites	
 		if options.parallel: e2projectcmd += " --parallel=%s" %options.parallel

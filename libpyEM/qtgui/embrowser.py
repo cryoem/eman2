@@ -52,7 +52,21 @@ import time
 # This is a floating point number-finding regular expression
 renumfind=re.compile(r"-?[0-9]+\.*[0-9]*[eE]?[-+]?[0-9]*")
 
-
+#We need to sort ints and floats as themselves, not string, John Flanagan
+def safe_int(v):
+	""" Performs a safe conversion from a string to an int. If a non int is presented we return the lowest possible value """
+	try:
+		return int(v)
+	except (ValueError, TypeError):
+		return -sys.maxint-1
+	
+def safe_float(v):
+	""" Performs a safe conversion from a string to an int. If a non int is presented we return the lowest possible value """
+	try:
+		return float(v)
+	except (ValueError, TypeError):
+		return sys.float_info.min
+		
 def isprint(s):
 	"returns True if the string contains only printable ascii characters"
 	
@@ -712,7 +726,7 @@ class EMDirEntry(object):
 	"""Represents a directory entry in the filesystem"""
 	
 	# list of lambda functions to extract column values for sorting
-	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.filetype,lambda x:x.size,lambda x:x.dim,lambda x:x.nimg,lambda x:x.date)
+	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.filetype,lambda x:x.size,lambda x:x.dim,lambda x:safe_int(x.nimg),lambda x:x.date)
 #	classcount=0
 	
 	def __init__(self,root,name,index,parent=None,hidedot=True,dirregex=None):

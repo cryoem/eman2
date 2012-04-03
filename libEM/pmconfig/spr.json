@@ -9,18 +9,10 @@
     "CHILDREN": [
       {
         "ICON": "single_image", 
-        "MODE": "import",
-        "PROGRAM": "e2rawdata.py",
-        "WIZARD":"/lib/pmconfig/rawdataimport.json", 
-        "NAME": "Import Raw Data", 
-        "CHILDREN": []
-      },
-      {
-        "ICON": "single_image", 
         "MODE": "filter",
         "PROGRAM": "e2rawdata.py", 
         "WIZARD":"/lib/pmconfig/rawdata.json",
-        "NAME": "Filter Raw Data", 
+        "NAME": "Import Raw Data", 
         "CHILDREN": []
       },
       {

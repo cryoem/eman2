@@ -37,7 +37,7 @@ import os
 import re
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
-from embrowser import EMBrowserWidget, EMFileItemModel, EMDirEntry, nonone
+from embrowser import EMBrowserWidget, EMFileItemModel, EMDirEntry, nonone, safe_int
 
 
 class EMRefine2dTable(EMBrowserWidget):
@@ -46,7 +46,7 @@ class EMRefine2dTable(EMBrowserWidget):
 		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath=".")
 	
 	def setPath(self,path,silent=False):
-		super(EMRefine2dTable, self).setPath(path,silent=False,inimodel=EMRefine2dModel)
+		super(EMRefine2dTable, self).setPath(path,silent=silent,inimodel=EMRefine2dModel)
 		
 class EMRefine2dModel(EMFileItemModel):
 	""" Item model for the refinement data """
@@ -62,7 +62,7 @@ class EMValidateTable(EMBrowserWidget):
 		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath=".")
 	
 	def setPath(self,path,silent=False):
-		super(EMValidateTable, self).setPath(path,silent=False,inimodel=EMValidateModel)
+		super(EMValidateTable, self).setPath(path,silent=silent,inimodel=EMValidateModel)
 		
 class EMValidateModel(EMFileItemModel):
 	""" Item model for the refinement data """
@@ -78,7 +78,7 @@ class EMRefineTable(EMBrowserWidget):
 		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath=".")
 	
 	def setPath(self,path,silent=False):
-		super(EMRefineTable, self).setPath(path,silent=False,inimodel=EMRefineModel)
+		super(EMRefineTable, self).setPath(path,silent=silent,inimodel=EMRefineModel)
 		
 class EMRefineModel(EMFileItemModel):
 	""" Item model for the refinement data """
@@ -94,7 +94,7 @@ class EMModelsTable(EMBrowserWidget):
 		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath="./initial_models")
 	
 	def setPath(self,path,silent=False):
-		super(EMModelsTable, self).setPath(path,silent=False,inimodel=EMModelsModel)
+		super(EMModelsTable, self).setPath(path,silent=silent,inimodel=EMModelsModel)
 		
 
 class EMModelsModel(EMFileItemModel):
@@ -138,7 +138,7 @@ class EMModelsModel(EMFileItemModel):
 class EMModelsEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:int(x.index), lambda x:x.name,lambda x:int(x.quality), lambda x:x.dims)
+	col=(lambda x:int(x.index), lambda x:x.name,lambda x:safe_int(x.quality), lambda x:x.dims)
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
@@ -183,7 +183,7 @@ class EMSetsTable(EMBrowserWidget):
 		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath="./sets")
 	
 	def setPath(self,path,silent=False):
-		super(EMSetsTable, self).setPath(path,silent=False,inimodel=EMSetsModel)
+		super(EMSetsTable, self).setPath(path,silent=silent,inimodel=EMSetsModel)
 
 
 class EMSetsModel(EMFileItemModel):
@@ -227,7 +227,7 @@ class EMSetsModel(EMFileItemModel):
 class EMSetsEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:int(x.index),lambda x:x.name,lambda x:int(x.partcount), lambda x:x.dims)
+	col=(lambda x:int(x.index),lambda x:x.name,lambda x:safe_int(x.partcount), lambda x:x.dims)
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
@@ -273,7 +273,7 @@ class EMParticlesTable(EMBrowserWidget):
 		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath="./particles")
 	
 	def setPath(self,path,silent=False):
-		super(EMParticlesTable, self).setPath(path,silent=False,inimodel=EMParticlesModel)
+		super(EMParticlesTable, self).setPath(path,silent=silent,inimodel=EMParticlesModel)
 
 class EMParticlesModel(EMFileItemModel):
 	""" Item model for the raw data """
@@ -322,7 +322,7 @@ class EMParticlesModel(EMFileItemModel):
 class EMParticlesEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.type,lambda x:int(x.particlecount), lambda x:x.particledim, lambda x:int(x.quality))
+	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.type,lambda x:safe_int(x.particlecount), lambda x:x.particledim, lambda x:safe_int(x.quality))
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
@@ -393,7 +393,7 @@ class EMCTFParticlesTable(EMBrowserWidget):
 		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath="./particles")
 	
 	def setPath(self,path,silent=False):
-		super(EMCTFParticlesTable, self).setPath(path,silent=False,inimodel=EMCTFParticlesModel)
+		super(EMCTFParticlesTable, self).setPath(path,silent=silent,inimodel=EMCTFParticlesModel)
 		
 class EMCTFParticlesModel(EMFileItemModel):
 	""" Item model for the raw data """
@@ -457,7 +457,7 @@ class EMCTFParticlesModel(EMFileItemModel):
 class EMCTFParticlesEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.type,lambda x:int(x.particlecount), lambda x:x.particledim, lambda x:float(x.defocus), lambda x:float(x.bfactor), lambda x:float(x.snr), lambda x:x.int(quality), lambda x:x.sampling)
+	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.type,lambda x:safe_int(x.particlecount), lambda x:x.particledim, lambda x:safe_float(x.defocus), lambda x:safe_float(x.bfactor), lambda x:safe_float(x.snr), lambda x:x.safe_int(quality), lambda x:x.sampling)
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
@@ -533,7 +533,7 @@ class EMCTFcorrectedParticlesTable(EMCTFParticlesTable):
 		EMCTFParticlesTable.__init__(self, withmodal=withmodal, multiselect=multiselect)
 	
 	def setPath(self,path,silent=False):
-		super(EMCTFParticlesTable, self).setPath(path,silent=False,inimodel=EMCTFcorrectedParticlesModel)
+		super(EMCTFParticlesTable, self).setPath(path,silent=silent,inimodel=EMCTFcorrectedParticlesModel)
 		
 class EMCTFcorrectedParticlesModel(EMCTFParticlesModel):
 	""" Item model for the raw data """
@@ -554,7 +554,7 @@ class EMParticlesEditTable(EMBrowserWidget):
 		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath="./particles",setsmode=True)
 	
 	def setPath(self,path,silent=False):
-		super(EMParticlesEditTable, self).setPath(path,silent=False,inimodel=EMParticlesEditModel)
+		super(EMParticlesEditTable, self).setPath(path,silent=silent,inimodel=EMParticlesEditModel)
 		
 class EMParticlesEditModel(EMFileItemModel):
 	""" Item model for the raw data """
@@ -618,7 +618,7 @@ class EMParticlesEditModel(EMFileItemModel):
 class EMParticlesEditEntry(EMCTFParticlesEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.type,lambda x:int(x.particlecount), lambda x:int(x.badparticlecount), lambda x:float(x.defocus), lambda x:float(x.bfactor), lambda x:float(x.snr), lambda x:int(x.quality), lambda x:x.sampling, lambda x:x.particledim)
+	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.type,lambda x:safe_int(x.particlecount), lambda x:safe_int(x.badparticlecount), lambda x:safe_float(x.defocus), lambda x:safe_float(x.bfactor), lambda x:safe_float(x.snr), lambda x:safe_int(x.quality), lambda x:x.sampling, lambda x:x.particledim)
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMCTFParticlesEntry.__init__(self,root=root,name=name,i=i,parent=parent,hidedot=hidedot,dirregex=dirregex)
@@ -644,7 +644,7 @@ class EMBoxesTable(EMBrowserWidget):
 		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath="./micrographs")
 	
 	def setPath(self,path,silent=False):
-		super(EMBoxesTable, self).setPath(path,silent=False,inimodel=EMBoxesModel)
+		super(EMBoxesTable, self).setPath(path,silent=silent,inimodel=EMBoxesModel)
 
 
 class EMBoxesModel(EMFileItemModel):
@@ -691,7 +691,7 @@ class EMBoxesModel(EMFileItemModel):
 class EMBoxesEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:int(x.index),lambda x:x.name,lambda x:int(x.boxcount), lambda x:int(x.quality), lambda x:int(x.mgquality))
+	col=(lambda x:int(x.index),lambda x:x.name,lambda x:safe_int(x.boxcount), lambda x:safe_int(x.quality), lambda x:safe_int(x.mgquality))
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
@@ -746,7 +746,7 @@ class EMRCTBoxesTable(EMBrowserWidget):
 		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath="./micrographs")
 	
 	def setPath(self,path,silent=False):
-		super(EMRCTBoxesTable, self).setPath(path,silent=False,inimodel=EMRCTBoxesModel)
+		super(EMRCTBoxesTable, self).setPath(path,silent=silent,inimodel=EMRCTBoxesModel)
 
 
 class EMRCTBoxesModel(EMFileItemModel):
@@ -793,7 +793,7 @@ class EMRCTBoxesModel(EMFileItemModel):
 class EMRCTBoxesEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:int(x.index),lambda x:x.name,lambda x:int(x.boxcount), lambda x:int(x.quality), lambda x:int(x.mgquality))
+	col=(lambda x:int(x.index),lambda x:x.name,lambda x:safe_int(x.boxcount), lambda x:safe_int(x.quality), lambda x:safe_int(x.mgquality))
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
@@ -854,7 +854,7 @@ class EMSubTomosTable(EMBrowserWidget):
 		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath="./subtomograms")
 	
 	def setPath(self,path,silent=False):
-		super(EMSubTomosTable, self).setPath(path,silent=False,inimodel=EMSubTomosModel)
+		super(EMSubTomosTable, self).setPath(path,silent=silent,inimodel=EMSubTomosModel)
 	
 class EMSubTomosModel(EMFileItemModel):
 	""" Item model for the raw data """
@@ -897,7 +897,7 @@ class EMSubTomosModel(EMFileItemModel):
 class EMSubTomosEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:int(x.index),lambda x:x.name,lambda x:int(x.nimg), lambda x:x.dim)
+	col=(lambda x:int(x.index),lambda x:x.name,lambda x:safe_int(x.nimg), lambda x:x.dim)
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
@@ -914,7 +914,7 @@ class EMRawDataTable(EMBrowserWidget):
 		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath=startpath)
 	
 	def setPath(self,path,silent=False):
-		super(EMRawDataTable, self).setPath(path,silent=False,inimodel=EMRawDataModel)
+		super(EMRawDataTable, self).setPath(path,silent=silent,inimodel=EMRawDataModel)
 
 			
 class EMRawDataModel(EMFileItemModel):
@@ -958,7 +958,7 @@ class EMRawDataModel(EMFileItemModel):
 class EMRawDataEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.dim, lambda x:int(x.mgquality))
+	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.dim, lambda x:safe_int(x.mgquality))
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
@@ -982,7 +982,7 @@ class EMTomoDataTable(EMBrowserWidget):
 		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath="./rawtomograms")
 	
 	def setPath(self,path,silent=False):
-		super(EMTomoDataTable, self).setPath(path,silent=False,inimodel=EMTomoDataModel)
+		super(EMTomoDataTable, self).setPath(path,silent=silent,inimodel=EMTomoDataModel)
 		
 class EMTomoDataModel(EMFileItemModel):
 	""" Item model for the raw data """
