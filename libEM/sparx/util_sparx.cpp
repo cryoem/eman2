@@ -18072,6 +18072,36 @@ vector<int> Util::assign_groups(const vector<float>& d, int nref, int nima) {
 	return id_list_1;
 }
 
+int Util::nearest_ang(const vector<float>& vecref, float x, float y, float z) {
+	float best_v = -1.0f;
+	int best_i = -1.0;
+	
+	for (int i=0; i<vecref.size()/3; i++) {
+		float v = abs(vecref[i*3]*x+vecref[i*3+1]*y+vecref[i*3+2]*z);
+		if (v > best_v) {
+			best_v = v;
+			best_i = i;
+		}
+	}
+	return best_i;
+}
+
+vector<int> Util::assign_projangles(const vector<float>& projangles, const vector<float>& refangles) {
+	int nref = refangles.size()/2;
+	int nproj = projangles.size()/2;
+	
+	vector<float> vecref(nref*3, 0.0f);
+	vector<int> asg(nproj, 0);
+	for (int i=0; i<nref; i++)  
+		getvec(refangles[i*2], refangles[i*2+1], vecref[i*3], vecref[i*3+1], vecref[i*3+2]); 
+	for (int i=0; i<nproj; i++) {
+		float x, y, z;
+		getvec(projangles[i*2], projangles[i*2+1], x, y, z);
+		asg[i] = nearest_ang(vecref, x, y, z);
+	}
+	
+	return asg;
+}
 
 vector<float> Util::multiref_polar_ali_2d_delta(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, string mode,

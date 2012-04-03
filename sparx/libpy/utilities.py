@@ -2935,15 +2935,37 @@ def nearest_ang( vecs, phi, tht ) :
 
 	return best_i
 
-def assign_projangles(projangles, refangles):
+# This is in python, it is very slow, we keep it just for comparison
+def assign_projangles_slow(projangles, refangles):
 	refnormal = [None]*len(refangles)
 	for i in xrange(len(refangles)):
-		refnormal[i] = getvec( refangles[i][0], refangles[i][1] )
+		refnormal[i] = getvec(refangles[i][0], refangles[i][1])
 	assignments = [[] for i in xrange(len(refangles))]
 	for i in xrange(len(projangles)):
-		mm = nearest_ang( refnormal, projangles[i][0], projangles[i][1] )
-		assignments[mm].append(i)
+		best_i = nearest_ang(refnormal, projangles[i][0], projangles[i][1])
+		assignments[best_i].append(i)
 	return assignments
+
+
+def assign_projangles(projangles, refangles):
+	nproj = len(projangles)
+	nref = len(refangles)
+	proj_ang = [0.0]*(nproj*2)
+	ref_ang = [0.0]*(nref*2)
+	for i in xrange(nproj):
+		proj_ang[i*2] = projangles[i][0]
+		proj_ang[i*2+1] = projangles[i][1]
+	for i in xrange(nref):
+		ref_ang[i*2] = refangles[i][0]
+		ref_ang[i*2+1] = refangles[i][1]
+	
+	asg = Util.assign_projangles(proj_ang, ref_ang)
+	assignments = [[] for i in xrange(nref)]
+	for i in xrange(nproj):
+		assignments[asg[i]].append(i)
+
+	return assignments
+
 
 def cone_ang( projangles, phi, tht, ant ) :
 	from utilities import getvec

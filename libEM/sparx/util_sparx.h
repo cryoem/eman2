@@ -836,7 +836,38 @@ public:
                 float xrng, float yrng, float step, string mode,
                 vector< int >numr, float cnx, float cny);
 
+	/* This is used in ISAC program to assigning particles equally to grops */
 	static vector<int> assign_groups(const vector<float>& d, int nref, int nima);
+
+	static inline void getvec(float phi, float theta, float& x, float& y, float& z) {
+		float pi180 = M_PI/180.0f;
+		
+		if (theta > 180.0f) {
+			theta -= 180.0f;
+			phi += 180.0f;
+		} else if (theta > 90.0f) {
+			theta = 180.0f - theta;
+			phi += 180.0f;
+		}
+
+		phi   *= pi180;		
+		theta *= pi180;
+
+		x = sin(theta)*cos(phi);
+		y = sin(theta)*sin(phi);
+		z = cos(theta);
+		
+		return;
+	}
+	
+	/* Find the nearest projection angles
+		Notice: the input I use is different from python code, which I think is awkward.
+	*/
+	static int nearest_ang(const vector<float>& vecref, float x, float y, float z);
+
+	/* Assign the projection angles to the nearest reference projections */
+	static vector<int> assign_projangles(const vector<float>& projangles, const vector<float>& refangles); 
+
 
 	/** formerly known as apmq
 	 * Determine shift and rotation between image and many reference
