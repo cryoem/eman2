@@ -39,6 +39,7 @@
   },
   {
     "ICON": "tomo_hunter",
+    "WIZARD":"/lib/pmconfig/breaksym.json",
     "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2classaverage3d",
     "PROGRAM": "e2classaverage3d.py",
     "MODE": "breaksym", 

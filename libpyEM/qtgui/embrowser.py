@@ -1737,6 +1737,7 @@ class EMBrowserWidget(QtGui.QWidget):
 		
 		self.wbutback=QtGui.QPushButton("<-")
 		self.wbutback.setMaximumWidth(42)
+		self.wbutback.setEnabled(False)
 		self.wtoolhbl.addWidget(self.wbutback,0)
 
 		self.wbutup=QtGui.QPushButton("^")
@@ -1745,6 +1746,7 @@ class EMBrowserWidget(QtGui.QWidget):
 
 		self.wbutfwd=QtGui.QPushButton("->")
 		self.wbutfwd.setMaximumWidth(42)
+		self.wbutfwd.setEnabled(False)
 		self.wtoolhbl.addWidget(self.wbutfwd,0)
 
 		# Text line for showing (or editing) full path
@@ -2018,14 +2020,20 @@ class EMBrowserWidget(QtGui.QWidget):
 		# I don't like the stack idea, it's annoying, so I am using a circular array instead John F
 		
 		l=self.pathstack.index(self.curpath)
-		self.setPath(self.pathstack[(l-1)%len(self.pathstack)],True)
+		self.setPath(self.pathstack[(l-1)],True)
+		if l == 1:
+			self.wbutback.setEnabled(False)
+			self.wbutfwd.setEnabled(True)
 		
 	def buttonFwd(self,tog):
 		"Button press"
 		# I don't like the stack idea, it's annoying, so I am using a circular array instead John F
 		
 		l=self.pathstack.index(self.curpath)
-		self.setPath(self.pathstack[(l+1)%len(self.pathstack)],True)
+		self.setPath(self.pathstack[(l+1)],True)
+		if l == len(self.pathstack) - 2:
+			self.wbutback.setEnabled(True)
+			self.wbutfwd.setEnabled(False)
 		
 	def buttonUp(self,tog):
 		"Button press"
@@ -2113,6 +2121,7 @@ class EMBrowserWidget(QtGui.QWidget):
 			try: self.pathstack.remove(self.curpath)
 			except: pass
 			self.pathstack.append(self.curpath)
+			if len(self.pathstack) > 1: self.wbutback.setEnabled(True)
 
 	def bookmarkPress(self,action):
 		""

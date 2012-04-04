@@ -75,6 +75,12 @@ def main():
 
 	global options
 	(options, args) = parser.parse_args()
+	
+	#print help 
+	if options.untiltdata == None or options.tiltdata == None or options.classavg == None:
+		parser.print_help()
+		exit(0)
+		
 	logid=E2init(sys.argv,options.ppid)
 	
 	if options.careject: options.careject = options.careject.split(',')

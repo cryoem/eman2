@@ -62,6 +62,12 @@ def main():
 	
 	global options
 	(options, args) = parser.parse_args()
+	
+	#print help 
+	if options.classavg == None:
+		parser.print_help()
+		exit(0)
+		
 	# Initialize CUDA iof needed
 	if options.cuda: initializeCUDAdevice()
 

@@ -95,6 +95,11 @@ def main():
 	
 	(options, args) = parser.parse_args()
 	
+	#print help 
+	if options.volume == None or options.untiltdata == None or options.tiltdata == None:
+		parser.print_help()
+		exit(0)
+		
 	# Run the GUI if in GUI mode
 	if options.gui:
 		display_validation_plots(options.path, options.radcut, options.planethres, plotdatalabels=options.datalabels, color=options.datalabelscolor, plotzaxiscolor=options.colorzaxis)

@@ -118,6 +118,11 @@ def main():
 
 	(options, args) = parser.parse_args()
 
+	#print help 
+	if options.input == None:
+		parser.print_help()
+		exit(0)
+		
 	if options.ncoarse!=None :
 		print "The ncoarse option has been renamed npeakstorefine"
 		sys.exit(1)

@@ -62,6 +62,11 @@ def main():
 	
 	(options, args) = parser.parse_args()
 	
+	#print help 
+	if options.input == None:
+		parser.print_help()
+		exit(0)
+	
 	# Initialize parallelism if being used
 	from EMAN2PAR import EMTaskCustomer
 	if options.parallel :
