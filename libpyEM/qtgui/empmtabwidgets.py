@@ -37,7 +37,7 @@ import os
 import re
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import Qt
-from embrowser import EMBrowserWidget, EMFileItemModel, EMDirEntry, nonone, safe_int
+from embrowser import EMBrowserWidget, EMFileItemModel, EMDirEntry, nonone, safe_int,safe_float
 
 
 class EMRefine2dTable(EMBrowserWidget):
