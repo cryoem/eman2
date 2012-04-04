@@ -2121,7 +2121,11 @@ class EMBrowserWidget(QtGui.QWidget):
 			try: self.pathstack.remove(self.curpath)
 			except: pass
 			self.pathstack.append(self.curpath)
-			if len(self.pathstack) > 1: self.wbutback.setEnabled(True)
+			if len(self.pathstack) > 1: 
+				self.wbutback.setEnabled(True)
+			else:
+				self.wbutback.setEnabled(False)
+				self.wbutfwd.setEnabled(False)
 
 	def bookmarkPress(self,action):
 		""
