@@ -13517,7 +13517,7 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 		for Iter in xrange(max_iter):
 			total_iter += 1
 			tavg = ave_series(data)
-		        fl = 0.1+(FH-0.1)*Iter/float(max_iter-1)
+			fl = 0.1+(FH-0.1)*Iter/float(max_iter-1)
 			tavg = filt_tanl(tavg, fl, FF)
 			if total_iter == len(xrng)*max_iter:  return tavg
 			cs[0] = sx_sum/float(nima)

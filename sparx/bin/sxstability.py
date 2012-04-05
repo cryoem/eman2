@@ -39,7 +39,7 @@ from   optparse       import OptionParser
 import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack averages --ou=ou --th_grp=th_grp --thld_err=thld_err --num_ali=num_ali --verbose"
+	usage = progname + " stack averages --ou=ou --th_grp=th_grp --thld_err=thld_err --num_ali=num_ali --verbose --stab_part"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ou",           type="int",     default=-1,        help=" outer radius for alignment")
 	parser.add_option("--thld_grp",     type="int",     default=5,         help=" mininum number of objects to consider for stability (default = 5)")
