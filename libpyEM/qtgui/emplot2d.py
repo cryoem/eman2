@@ -1137,6 +1137,49 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		try: self.imgwin.close()
 		except: pass
 
+class DragListWidget(QtGui.QListWidget):
+	"This is a minor modification of the QListWidget to support drag-drop of data sets"
+	def setDataSource(self,trg):
+		"""We keep a weak reference to our data source so we can pull the data only when dragging actually starts"""
+		self.datasource=weakref.ref(trg)
+	
+	def dragEnterEvent(self,e):
+		e.acceptProposedAction()
+
+	def dragMoveEvent(self,e):
+		e.acceptProposedAction()
+
+	def dropEvent(self,e):
+		e.acceptProposedAction()
+		
+	def supportedDropActions(self):
+		return Qt.DropActions(Qt.CopyAction)
+	
+	def setMovement(self,x):
+		"""The ListView and ListWidget unfortunately make use of drag-drop for internal rearrangement, but we need to use it for widget->widget copy. This prevents the parent from disabling drag/drop."""
+		QtGui.QListWidget.setMovement(self,x)
+		self.setlist.setDragEnabled(True)
+		self.setlist.setAcceptDrops(True)
+		
+	def setViewMode(self,x):
+		"""The ListView and ListWidget unfortunately make use of drag-drop for internal rearrangement, but we need to use it for widget->widget copy. This prevents the parent from disabling drag/drop."""
+		QtGui.QListWidget.setViewMode(self,x)
+		self.setlist.setDragEnabled(True)
+		self.setlist.setAcceptDrops(True)
+	
+	def startDrag(self,actions):
+		
+		drag = QtGui.QDrag(self)
+		mimeData = QtCore.QMimeData()
+
+		mimeData.setText("A Great Test Message");
+		drag.setMimeData(mimeData);
+#		drag.setPixmap(iconPixmap);
+
+		dropact = drag.exec_(Qt.CopyAction);
+#		print "Dropped ",dropact
+
+
 class EMPlot2DInspector(QtGui.QWidget):
 	
 	def __init__(self,target) :
@@ -1151,9 +1194,11 @@ class EMPlot2DInspector(QtGui.QWidget):
 		hbl.setObjectName("hbl")
 		
 		# plot list
-		self.setlist=QtGui.QListWidget(self)
+		self.setlist=DragListWidget(self)
 		self.setlist.setSelectionMode(3)
 		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
+		self.setlist.setDragEnabled(True)
+		self.setlist.setAcceptDrops(True)
 		hbl.addWidget(self.setlist)
 		
 		vbl = QtGui.QVBoxLayout()
@@ -1617,10 +1662,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		
 		self.setlist.clear()
 		
-		#flag1 = Qt.ItemFlags(Qt.ItemIsTristate)
-		flag2 = Qt.ItemFlags(Qt.ItemIsSelectable)
-		flag3 = Qt.ItemFlags(Qt.ItemIsEnabled)
-		flag4 = Qt.ItemFlags(Qt.ItemIsUserCheckable)
+		flags= Qt.ItemFlags(Qt.ItemIsSelectable)|Qt.ItemFlags(Qt.ItemIsEnabled)|Qt.ItemFlags(Qt.ItemIsUserCheckable)|Qt.ItemFlags(Qt.ItemIsDragEnabled)
 		
 		keys=self.target().data.keys()
 		visible = self.target().visibility
@@ -1630,7 +1672,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		
 		for i,j in enumerate(keys) :
 			a = QtGui.QListWidgetItem(j)
-			a.setFlags(flag2|flag3|flag4)
+			a.setFlags(flags)
 			a.setTextColor(qt_color_map[colortypes[parms[j][0]]])
 			if visible[j]: a.setCheckState(Qt.Checked)
 			else: a.setCheckState(Qt.Unchecked)

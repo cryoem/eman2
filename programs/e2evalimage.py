@@ -138,14 +138,15 @@ class GUIEvalImage(QtGui.QWidget):
 		# Per image parameters to keep track of
 		# for each image [box size,ctf,box coord,set of excluded boxnums]
 		# Bugzilla, EMAN2Ctf class implemntation is RUBBISH!!!
-		if self.defaultvoltage == None or  self.defaultapix==None or self.defaultcs == None:
-			self.parms=[[512,EMAN2Ctf(),(256,256),set()] for i in images]
-		else:
-			self.parms=[]
-			for i in images:
-				ctf = EMAN2Ctf()
-				ctf.from_dict({'defocus':0.0,'dfdiff':0.0,'dfang':0.0,'bfactor':200.0,'ampcont':self.defaultac,'voltage':self.defaultvoltage,'cs':self.defaultcs,'apix':self.defaultapix,'dsbg':-1})
-				self.parms.append([512,ctf,(256,256),set()])
+		self.parms=[]
+		for i in images:
+			ctf = EMAN2Ctf()
+			ctf.from_dict({'defocus':0.0,'dfdiff':0.0,'dfang':0.0,'bfactor':200.0,'ampcont':self.defaultac,'voltage':200.0,'cs':4.1,'apix':1.0,'dsbg':-1})
+			if self.defaultvoltage!=None : ctf.voltage=self.defaultvoltage
+			if self.defaultcs!=None : ctf.cs=self.defaultcs
+			if self.defaultapix!=None : ctf.apix=self.defaultapix
+			self.parms.append([512,ctf,(256,256),set()])
+			
 		self.parms[0][1].defocus=0.0
 		
 		self.wimage=EMImage2DWidget()
@@ -500,6 +501,7 @@ class GUIEvalImage(QtGui.QWidget):
 		"called when a new data set is selected from the list"
 		self.curset=val
 		self.data=EMData(str(self.setlist.item(val).text()),0)	# read the image from disk
+		if self.defaultapix!=None : self.data["apix_x"]=self.defaultapix
 		self.wimage.set_data(self.data)
 		self.curfilename = str(self.setlist.item(val).text())
 
