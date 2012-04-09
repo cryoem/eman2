@@ -689,6 +689,8 @@ float TomoFscCmp::cmp(EMData * image, EMData *with) const
 	if (!image->has_attr("mean_wedge_amp") || !image->has_attr("sigma_wedge_amp"))  throw InvalidCallException("Rubbish!!! Image Subtomogram does not have mena and/or sigma amps metadata");
 	if (!with->has_attr("mean_wedge_amp") || !with->has_attr("sigma_wedge_amp"))  throw InvalidCallException("Rubbish!!! With Subtomogram does not have mena and/or sigma amps metadata");
 	// BAD DESIGN!!!! The fact that I have to load attrs into a variable before I can do operations on them is silly
+	
+	//get threshold information
 	float image_meanwedgeamp = image->get_attr("mean_wedge_amp");
 	float image_sigmawedgeamp = image->get_attr("sigma_wedge_amp");
 	float with_meanwedgeamp = with->get_attr("mean_wedge_amp");
@@ -697,6 +699,7 @@ float TomoFscCmp::cmp(EMData * image, EMData *with) const
 	float sigmas = params.set_default("sigmas",5.0f);
 	float img_amp_thres = pow(image_meanwedgeamp + sigmas*image_sigmawedgeamp, 2.0f);
 	float with_amp_thres = pow(with_meanwedgeamp + sigmas*with_sigmawedgeamp, 2.0f);
+	
 	// take negative of score
 	float negative = (float)params.set_default("negative", 1.0f);
 	if (negative) negative=-1.0; else negative=1.0;
@@ -711,7 +714,7 @@ float TomoFscCmp::cmp(EMData * image, EMData *with) const
 	EMData* with_fft = with;
 	
 #ifdef EMAN2_USING_CUDA	
-	//do CUDA FFT
+	//do CUDA FFT, does not allow minres, maxres yet
 	if(EMData::usecuda == 1 && image->getcudarwdata() && with->getcudarwdata()) {
 		if(!image->is_complex()){
 			del_imagefft = 1;
