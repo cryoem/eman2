@@ -62,12 +62,12 @@ def main():
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_pos_argument(name="dir",help="The refinement directory to use for e2resolution.", default="", guitype='dirbox', dirbasename='refine', positional=True, row=0, col=0,rowspan=1, colspan=1)
-	parser.add_pos_argument(name="refineiter",help="The refinement iteration to use.", default="", guitype='intbox', positional=True, row=0, col=1,rowspan=1, colspan=1)
-	parser.add_header(name="eotestheader", help='Options below this label are specific to e2resolution', title="### e2resolution options ###", row=1, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--apix", "-A", type=float, help="A/voxel", default=-1.0, guitype='floatbox', row=2, col=0, rowspan=1, colspan=2)
-	
-	parser.add_argument("--path", default=None, type=str,help="The name the e2refine directory that contains the reconstruction data. If specified will place curves generated in bdb:path#convergence.results")
+	parser.add_pos_argument(name="volume",help="Volume to compute resolution on.", default="", guitype='filebox', positional=True, row=0, col=0,rowspan=1, colspan=2)
+	parser.add_pos_argument(name="mask",help="Mask for the volume. The volume is masked by this file (should be ssoft mask).", default="", guitype='filebox', positional=True, row=1, col=0,rowspan=1, colspan=2)
+	parser.add_pos_argument(name="output",help="Name of the output file. These data will contain FSC stats.", default="", guitype='strbox', positional=True, row=2, col=0,rowspan=1, colspan=2)
+	parser.add_header(name="eotestheader", help='Options below this label are specific to e2resolution', title="### e2resolution options ###", row=3, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--apix", "-A", type=float, help="A/voxel", default=-1.0, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--path", type=str,help="The name the e2refine directory that contains the reconstruction data. If specified will place curves generated in bdb:path#convergence.results", guitype='dirbox', default=None, dirbasename='refine', row=4, col=1,rowspan=1, colspan=1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
