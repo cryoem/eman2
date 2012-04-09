@@ -56,7 +56,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_pos_argument(name="dir",help="The refinement directory to use for eotest.", default="", guitype='dirbox', dirbasename='refine', positional=True, row=0, col=0,rowspan=1, colspan=2)
-	parser.add_pos_argument(name="refineiter",help="The refinement iteration to use.", default="", guitype='intbox', positional=True, row=0, col=2,rowspan=1, colspan=1)
+	parser.add_pos_argument(name="refineiter",help="The refinement iteration to use.", default=0, guitype='intbox', positional=True, row=0, col=2,rowspan=1, colspan=1)
 	parser.add_header(name="eotestheader", help='Options below this label are specific to e2eotest', title="### e2eotest options ###", row=1, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--path", default=None, type=str,help="The name the e2refine directory that contains the reconstruction data.")
 	parser.add_argument("--iteration",default=None,type=str,help="Advanced. Can be used to perform the eotest using data from specific rounds of iterative refinement. In unspecified that most recently generated class data are used.")
@@ -80,7 +80,7 @@ def main():
 	parser.add_argument("--classaligncmp",type=str,help="This is the name and parameters of the comparitor used by the fist stage aligner  Default is dot.",default="phase", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=10, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--classralign",type=str,help="The second stage aligner which refines the results of the first alignment in class averaging. Default is None.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=11, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--classraligncmp",type=str,help="The comparitor used by the second stage aligner in class averageing. Default is dot:normalize=1.",default="dot:normalize=1", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=12, col=0, rowspan=1, colspan=3)
-	parser.add_argument("--classaverager",type=str,help="The averager used to generate the class averages. Default is \'image\'.",default="image", guitype='combobox', choicelist='dump_averagers_list()', row=7, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--classaverager",type=str,help="The averager used to generate the class averages. Default is \'mean\'.",default="mean", guitype='combobox', choicelist='dump_averagers_list()', row=7, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--classcmp",type=str,help="The name and parameters of the comparitor used to generate similarity scores, when class averaging. Default is \'dot:normalize=1\'", default="dot:normalize=1", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=8, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--classnormproc",type=str,default="normalize.edgemean",help="Normalization applied during class averaging", guitype='combobox', choicelist='re_filter_list(dump_processors_list(),\'normalize\')', row=6, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--classrefsf",default=False, action="store_true", help="Use the setsfref option in class averaging to produce better filtered averages.", guitype='boolbox', row=7, col=2, rowspan=1, colspan=1)

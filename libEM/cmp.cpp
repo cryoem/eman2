@@ -33,6 +33,7 @@
 #include "emdata.h"
 #include "ctf.h"
 #include "plugins/cmp_template.h"
+#include <climits>
 
 #ifdef EMAN2_USING_CUDA
 // Only CCC, DOT  and CCC.TOMO are cuda enabled
@@ -682,7 +683,7 @@ float TomoFscCmp::cmp(EMData * image, EMData *with) const
 	bool usecpu = 1;
 	bool del_imagefft = 0;
 	bool del_withfft = 0;
-	float score = 1.0;
+	float score = 1.0f;
 	
 	//get parameters
 	if (!image->has_attr("mean_wedge_amp") || !image->has_attr("sigma_wedge_amp"))  throw InvalidCallException("Rubbish!!! Image Subtomogram does not have mena and/or sigma amps metadata");
@@ -693,12 +694,17 @@ float TomoFscCmp::cmp(EMData * image, EMData *with) const
 	float with_meanwedgeamp = with->get_attr("mean_wedge_amp");
 	float with_sigmawedgeamp = with->get_attr("sigma_wedge_amp");
 	// Find threshold
-	float sigmas = params.set_default("sigmas",5.0);
-	float img_amp_thres = pow(image_meanwedgeamp + sigmas*image_sigmawedgeamp, 2);
-	float with_amp_thres = pow(with_meanwedgeamp + sigmas*with_sigmawedgeamp, 2);
+	float sigmas = params.set_default("sigmas",5.0f);
+	float img_amp_thres = pow(image_meanwedgeamp + sigmas*image_sigmawedgeamp, 2.0f);
+	float with_amp_thres = pow(with_meanwedgeamp + sigmas*with_sigmawedgeamp, 2.0f);
 	// take negative of score
-	float negative = (float)params.set_default("negative", 1);
+	float negative = (float)params.set_default("negative", 1.0f);
 	if (negative) negative=-1.0; else negative=1.0;
+	//get apix, use param apix, if not specified use apix_x, if this is not specified then apix=1.0
+	float apix = params.set_default("apix",image->get_attr_default("apix_x", 1.0f));
+	//get min and max res
+	float minres = params.set_default("minres",std::numeric_limits<float>::max());
+	float maxres = params.set_default("maxres", 0.0f);
 	
 	//Check to ensure that images are complex
 	EMData* image_fft = image;
@@ -736,23 +742,50 @@ float TomoFscCmp::cmp(EMData * image, EMData *with) const
 		double cong = 0.0;
 		float* img_data = image_fft->get_data();
 		float* with_data = with_fft->get_data();
-		for(int i = 0; i < image_fft->get_xsize()*image_fft->get_ysize()*image_fft->get_zsize(); i+=2){
-			float img_r = img_data[i];
-			float img_i = img_data[i+1];
-			float with_r = with_data[i];
-			float with_i = with_data[i+1];
-			double img_amp_sq = img_r*img_r + img_i*img_i;
-			double with_amp_sq = with_r*with_r + with_i*with_i;
-			// TODO Only process within resolution range...
-			if((img_amp_sq >  img_amp_thres) && (with_amp_sq >  with_amp_thres)){
-				count ++;
-				sum_imgamp_sq += img_amp_sq;
-				sum_withamp_sq += with_amp_sq;
-				cong += img_r*with_r + img_i*with_i;
+	
+		int nx  = image_fft->get_xsize();
+		int ny  = image_fft->get_ysize();
+		int nz  = image_fft->get_zsize();
+		int ny2 = ny/2;
+		int nz2 = nz/2;
+	
+		//compute FSC
+		int ii, kz, ky;
+		for (int iz = 0; iz < nz; iz++) {
+			if(iz > nz2) kz = nz-iz; else kz=iz;
+			for (int iy = 0; iy < ny; iy++) {
+				if(iy > ny2) ky = ny-iy; else ky=iy;
+				for (int ix = 0; ix < nx; ix+=2) {
+					//compute spatial frequency and convert to resolution stat
+					float freq = std::sqrt(kz*kz + ky*ky + ix*ix/4)/float(nz);
+					float reso = apix/freq;
+					
+					//only look within a resolution domain
+					if(reso < minres && reso > maxres){
+						ii = ix + (iy  + iz * ny)* nx;
+						float img_r = img_data[ii];
+						float img_i = img_data[ii+1];
+						float with_r = with_data[ii];
+						float with_i = with_data[ii+1];
+						double img_amp_sq = img_r*img_r + img_i*img_i;
+						double with_amp_sq = with_r*with_r + with_i*with_i;
+
+						if((img_amp_sq >  img_amp_thres) && (with_amp_sq >  with_amp_thres)){
+							count ++;
+							sum_imgamp_sq += img_amp_sq;
+							sum_withamp_sq += with_amp_sq;
+							cong += img_r*with_r + img_i*with_i;
+						}
+					}
+				}
 			}
 		}
-		//cout << count << " Voxels were used" << endl;
-		score = cong/sqrt(sum_imgamp_sq*sum_withamp_sq);
+		
+		if(count > 0){ 
+			score = cong/sqrt(sum_imgamp_sq*sum_withamp_sq);
+		}else{
+			score = 1.0f;
+		}
 	}
 	
 	//avoid mem leaks

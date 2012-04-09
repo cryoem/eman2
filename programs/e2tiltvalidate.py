@@ -94,11 +94,6 @@ def main():
 	parser.add_argument("--verbose", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
-	
-	#print help 
-	if options.volume == None or options.untiltdata == None or options.tiltdata == None:
-		parser.print_help()
-		exit(0)
 		
 	# Run the GUI if in GUI mode
 	if options.gui:
@@ -266,13 +261,14 @@ class ComputeTilts:
 					tiltbestscore = simmx_tilt[0].get_value_at(refnum, tiltimgnum)
 					tiltbestrefnum = refnum
 			
-			# save classifcation info
+			# save classifcation info, for use with e2eulerplot.py
 			self.classifyfile[0][1,imgnum] = untiltbestrefnum
 			self.classifyfile[1][1,imgnum] = simmx[1].get_value_at(untiltbestrefnum, imgnum)
 			self.classifyfile[2][1,imgnum] = simmx[2].get_value_at(untiltbestrefnum, imgnum)
 			self.classifyfile[3][1,imgnum] = simmx[3].get_value_at(untiltbestrefnum, imgnum)
 			self.classifyfile[4][1,imgnum] = simmx[4].get_value_at(untiltbestrefnum, imgnum)
 			
+			# Here we actuall compute tilt geometry
 			# Untilt
 			untilt_euler_xform = Transform({"type":"eman","phi":-simmx[3].get_value_at(untiltbestrefnum, imgnum)})*projections[untiltbestrefnum].get_attr('xform.projection')
 			untiltrot = untilt_euler_xform.get_rotation("eman")
@@ -285,7 +281,7 @@ class ComputeTilts:
 			#Find best solultion takeing sym into accout
 			tiltpars = self.find_bestsymsoln(imgnum, untilt_euler_xform, tilt_euler_xform)
 			
-			# Write out test results
+			# Write out test results, for debugging
 			volume.project('standard', untilt_euler_xform).write_image("projections_ut.hdf", imgnum)
 			volume.project('standard', tilt_euler_xform).write_image("projections_t.hdf", imgnum)
 			untiltimgs[imgnum].set_attr('tiltangle',round(tiltpars[0],2))

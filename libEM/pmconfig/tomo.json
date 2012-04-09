@@ -49,6 +49,7 @@
   },
   {
     "ICON": "tomo_hunter",
+    "WIZARD":"/lib/pmconfig/symaligner.json",
     "PROGRAM": "e2classaveragebysym.py",
     "NAME": "Tomogram Alignment, Using Symmetry", 
     "NOTELEVEL": "1",
@@ -64,6 +65,7 @@
   },
   {
     "ICON": "single_image_3d",
+    "WIZARD":"/lib/pmconfig/tomores.json",
     "PROGRAM": "e2tomoresolution.py", 
     "NAME": "Estimate Resolution via FSC",
     "NOTELEVEL": "1",
