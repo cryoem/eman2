@@ -161,6 +161,7 @@ def main():
 	
 	parser.add_option("--append", action="store_true", help="Append output image, i.e., do not write inplace.")
 	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
+	parser.add_option("--unstacking", action="store_true", help="Process a stack of 3D images, then output a a series of numbered single image files", default=False)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	append_options = ["clip", "fftclip", "process", "filter", "meanshrink", "medianshrink", "scale", "sym", "multfile"]
@@ -416,15 +417,23 @@ def main():
 					options.outtype = "unknown"
 		
 		#print_iminfo(data, "Final")
-		if 'mrc8bit' in optionlist:
-			data.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
-		elif 'mrc16bit' in optionlist:
-			data.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
-		else:
-			if options.append:
-				data.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+		if options.unstacking:	#output a series numbered single image files
+			if 'mrc8bit' in optionlist:
+				data.write_image(outfile.split('.')[0]+'-'+str(img_index+1)+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
+			elif 'mrc16bit' in optionlist:
+				data.write_image(outfile.split('.')[0]+'-'+str(img_index+1)+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
 			else:
-				data.write_image(outfile, img_index, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+				data.write_image(outfile.split('.')[0]+'-'+str(img_index+1)+'.'+outfile.split('.')[-1])
+		else:   #output a single 2D image or a 2D stack	
+			if 'mrc8bit' in optionlist:
+				data.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
+			elif 'mrc16bit' in optionlist:
+				data.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
+			else:
+				if options.append:
+					data.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+				else:
+					data.write_image(outfile, img_index, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
 		
 		img_index += 1
 		for append_option in append_options:	#clean up the multi-option counter for next image
