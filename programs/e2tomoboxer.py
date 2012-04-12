@@ -153,7 +153,8 @@ def main():
 				print "Binning, please wait :)"
 				imgfile = EMData()
 				imgfile.read_binedimage(img,0,options.bin)
-				imgfile.write(imgnew)
+				imgfile.write_image
+				(imgnew)
 				
 				img = imgnew
 				modd = True
@@ -964,7 +965,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
 		if options.helixboxer:
 			for i,b in enumerate(self.helixboxes):
-				img = self.extract_subtomo_box(self.get_extended_a_vector(b))
+				img = self.extract_subtomo_box(self.get_extended_a_vector(b), cbin=self.bin)
 				
 				#img['origin_x'] = 0						
 				#img['origin_y'] = 0				
@@ -1025,7 +1026,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
 		if options.helixboxer:
 			for i,b in enumerate(self.helixboxes):
-				img = self.extract_subtomo_box(self.get_extended_a_vector(b))
+				img = self.extract_subtomo_box(self.get_extended_a_vector(b), cbin=self.bin)
 
 				#img['origin_x'] = 0						
 				#img['origin_y'] = 0				
@@ -1074,12 +1075,20 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		xvec = xform.get_matrix()
 		return [xvec[0]*point[0] + xvec[4]*point[1] + xvec[8]*point[2] + xvec[3], xvec[1]*point[0] + xvec[5]*point[1] + xvec[9]*point[2] + xvec[7], xvec[2]*point[0] + xvec[6]*point[1] + xvec[10]*point[2] + xvec[11]]
 		
-	def extract_subtomo_box(self, helixbox, tomogram=argv[1]):
+	def extract_subtomo_box(self, helixbox, cbin=1, tomogram=argv[1]):
 		""" Retruns an extracted subtomogram box"""
+		# Only scale the helix boxer values transiently
+		x1 = helixbox[0]*cbin
+		y1 = helixbox[1]*cbin
+		z1 = helixbox[2]*cbin
+		x2 = helixbox[3]*cbin
+		y2 = helixbox[4]*cbin
+		z2 = helixbox[5]*cbin
+		
 		bs=self.boxsize()/2
 		# Get the extended vector based on boxsize
-		a = Vec3f((helixbox[3]-helixbox[0]), (helixbox[4]-helixbox[1]), (helixbox[5]-helixbox[2]))	# Find the a, the long vector
-		tcs = self.get_box_coord_system(helixbox)							# Get the local coord system
+		a = Vec3f((x2-x1), (y2-y1), (z2-z1))	# Find the a, the long vector
+		tcs = self.get_box_coord_system([x1,y1,z1,x2,y2,z2])							# Get the local coord system
 		# Get the new coord system
 		# First extract a subtomo gram bounding region from the tomogram so we do have to read the whole bloody thing in!
 		rv = [self.transform_coords([0, -bs, -bs], tcs), self.transform_coords([0, bs, bs], tcs), self.transform_coords([0, bs, -bs], tcs), self.transform_coords([0, -bs, bs], tcs), self.transform_coords([a.length(), -bs, -bs], tcs), self.transform_coords([a.length(), bs, bs], tcs), self.transform_coords([a.length(), bs, -bs], tcs), self.transform_coords([a.length(), -bs, bs], tcs)]
@@ -1421,7 +1430,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.zyview.update()
 		
 		if not quiet and options.helixboxer:
-			hb = self.extract_subtomo_box(helixbox)
+			hb = self.extract_subtomo_box(helixbox, cbin=self.bin)
 			self.boxviewer.set_data(hb)
 			
 			proj=hb.process("misc.directional_sum",{"axis":"z"})
