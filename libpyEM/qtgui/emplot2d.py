@@ -61,10 +61,12 @@ from EMAN2 import *
 import sys
 from emshape import *
 import weakref
-from pickle import dumps,loads
+from cPickle import dumps,loads
 import struct, math
 from numpy import *
 from valslider import *
+from cStringIO import StringIO
+import re
 
 import matplotlib
 from matplotlib.backends.backend_agg import FigureCanvasAgg
@@ -179,7 +181,7 @@ class EMPlot2DWidget(EMGLWidget):
 			glDeleteLists(self.main_display_list,1)
 			self.main_display_list = 0
 
-	def set_data(self,input_data,key="data",replace=False,quiet=False,color=0,linewidth=1,linetype=0,symtype=-1,symsize=4):
+	def set_data(self,input_data,key="data",replace=False,quiet=False,color=-1,linewidth=1,linetype=0,symtype=-1,symsize=4):
 		"""Set a keyed data set. The key should generally be a string describing the data.
 		'data' is a tuple/list of tuples/list representing all values for a particular
 		axis. eg - the points: 1,5; 2,7; 3,9 would be represented as ((1,2,3),(5,7,9)).
@@ -209,6 +211,7 @@ class EMPlot2DWidget(EMGLWidget):
 			else : self.axes[key]=(-1,0,-2,-2)
 		except: return
 		
+		if color<0 : color=colortypes[len(data)%len(colortypes)]			# Automatic color setting
 		if color not in range(len(colortypes)): color = 0 # there are only a certain number of colors
 		if linetype>=0 : doline=1
 		else : doline,linetype=0,0
@@ -590,7 +593,7 @@ class EMPlot2DWidget(EMGLWidget):
 		self.needupd=1
 		self.updateGL()
 		
-	def setAxes(self,key,xa,ya,za,sa):
+	def setAxes(self,key,xa,ya=-1,za=-2,sa=-2):
 		if self.axes[key]==(xa,ya,za,sa) : return
 		self.axes[key]=(xa,ya,za,sa)
 		self.needupd=1
@@ -1144,13 +1147,45 @@ class DragListWidget(QtGui.QListWidget):
 		self.datasource=weakref.ref(trg)
 	
 	def dragEnterEvent(self,e):
-		e.acceptProposedAction()
+		if e.mimeData().hasText() : e.acceptProposedAction()
 
 	def dragMoveEvent(self,e):
-		e.acceptProposedAction()
+		if e.mimeData().hasText() : e.acceptProposedAction()
 
 	def dropEvent(self,e):
-		e.acceptProposedAction()
+		if e.mimeData().hasText() :
+			sdata=str(e.mimeData().text()).split("\n")
+			
+			rex=re.compile("\s*([0-9Ee\-\.]+)(?:[\s,;:]*)")		# regular expression for parsing text with any of these separators: <space>,;: 
+
+			# parse the data
+			data=None
+			for s in sdata:
+				if len(s.strip())==0 or s[0]=="#" : continue
+
+				if data==None:					# first good line
+					n=len(rex.findall(s))		# count numbers on the line
+					data=[ [] for i in xrange(n)]		# initialize empty data arrays
+
+				# parses out each number from each line and puts it in our list of lists
+				for i,f in enumerate(rex.findall(s)):
+					data[i].append(float(f))
+
+			# Find an unused name for the data set
+			trgplot=self.datasource().target()
+			name="Dropped"
+			n=1
+			while trgplot.data.has_key(name) :
+				name="Dropped_%d"%n
+				n+=1
+			
+			trgplot.set_data(data,name,quiet=True)
+			if n==1: trgplot.setAxes(name,-1,0)
+			elif n==2: trgplot.setAxes(name,0,1)
+			elif n==3: trgplot.setAxes(name,0,1,2)
+			elif n==4: trgplot.setAxes(name,0,1,2,3)
+			
+			e.acceptProposedAction()
 		
 	def supportedDropActions(self):
 		return Qt.DropActions(Qt.CopyAction)
@@ -1168,15 +1203,32 @@ class DragListWidget(QtGui.QListWidget):
 		self.setlist.setAcceptDrops(True)
 	
 	def startDrag(self,actions):
-		
+
+		data,axes,pparm=self.datasource().getCurrentData()		# get the "current" data object
+		if data==None : return						# don't start a drag if nothing is selected
+
+		# we only copy the specific axes that are used in the current plot settings !
+		if axes[1]<0: axes=[axes[0]]
+		elif axes[2]<0: axes=axes[:2]
+		elif axes[3]<0: axes=axes[:3]
+
+		# create the string representation of the data set
+		sdata=StringIO()		# easier to write as if to a file
+		for y in xrange(len(data[0])):
+			sdata.write("%1.8g"%data[axes[0]][y])
+			for x in xrange(1,len(axes)):
+				sdata.write("\t%1.8g"%data[axes[x]][y])
+			sdata.write("\n")
+
+		# start the drag operation
 		drag = QtGui.QDrag(self)
 		mimeData = QtCore.QMimeData()
 
-		mimeData.setText("A Great Test Message");
-		drag.setMimeData(mimeData);
+		mimeData.setText(sdata.getvalue())
+		drag.setMimeData(mimeData)
 #		drag.setPixmap(iconPixmap);
 
-		dropact = drag.exec_(Qt.CopyAction);
+		dropact = drag.exec_(Qt.CopyAction)
 #		print "Dropped ",dropact
 
 
@@ -1195,6 +1247,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		
 		# plot list
 		self.setlist=DragListWidget(self)
+		self.setlist.setDataSource(self)
 		self.setlist.setSelectionMode(3)
 		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
 		self.setlist.setDragEnabled(True)
@@ -1510,6 +1563,17 @@ class EMPlot2DInspector(QtGui.QWidget):
 		
 		self.__remove_from_file("xian_bad.txt",names)
 		self.__at_to_file("xian_good.txt",names)
+
+	def getCurrentData(self):
+		"""Returns (data,axes,pparm) for the single 'current' plot"""
+		try:
+			name=str(self.setlist.currentItem().text())
+			data=self.target().data[name]
+			pparm=self.target().pparm[name]
+			axes=self.target().axes[name]
+		except: return None,None,None
+		
+		return data,axes,pparm
 
 	def saveConcatPlot(self):
 		"""Saves the contents of the current plot to a text file. All sets are concatenated together into a single file"""
