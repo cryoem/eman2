@@ -1320,7 +1320,7 @@ class SwarmBoxer:
 		'''
 		box = self.target().get_box(box_number)
 		for i,rbox in enumerate(self.ref_boxes):
-			if rbox.x == box.x and rbox.y == box.y and rbox.image_name == image_name:
+			if rbox.x == box.x and rbox.y == box.y and os.path.basename(rbox.image_name) == os.path.basename(image_name):
 				rbox.x += dx
 				rbox.y += dy
 				if set_moved:rbox.ever_moved = True
@@ -1342,7 +1342,7 @@ class SwarmBoxer:
 		@param image_name the name of the image we're operating on
 		'''
 		for i,rbox in enumerate(self.ref_boxes):
-			if rbox.x == box.x and rbox.y == box.y and rbox.image_name == image_name:
+			if rbox.x == box.x and rbox.y == box.y and os.path.basename(rbox.image_name) == os.path.basename(image_name):
 				b = self.ref_boxes.pop(i)
 				if self.auto_update:
 					if len(self.ref_boxes) > 0:
@@ -1692,7 +1692,7 @@ class SwarmBoxer:
 		for box in list_of_boxes:
 			if box.type in [SwarmBoxer.REF_NAME,SwarmBoxer.WEAK_REF_NAME]:
 				for i,rbox in enumerate(self.ref_boxes):
-					if rbox.x == box.x and rbox.y == box.y and rbox.image_name == image_name:
+					if rbox.x == box.x and rbox.y == box.y and os.path.basename(rbox.image_name) == os.path.basename(image_name):
 						remove_happened = True
 						if self.auto_update: auto_box = True
 						if box.type == SwarmBoxer.REF_NAME: self.signal_template_update=True

@@ -1699,8 +1699,7 @@ class EMBoxerModuleVitals(object):
 
 	def current_file(self):
 		return self.file_names[self.current_idx]
-
-
+		
 	def get_box_size(self):
 		return self.box_size
 

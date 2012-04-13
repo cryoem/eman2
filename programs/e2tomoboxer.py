@@ -153,8 +153,12 @@ def main():
 				print "Binning, please wait :)"
 				imgfile = EMData()
 				imgfile.read_binedimage(img,0,options.bin)
+<<<<<<< e2tomoboxer.py
+				imgfile.write_image(imgnew)
+=======
 				imgfile.write_image
 				(imgnew)
+>>>>>>> 1.87
 				
 				img = imgnew
 				modd = True

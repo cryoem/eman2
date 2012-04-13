@@ -62,7 +62,7 @@ def main():
 		os.mkdir("micrographs")
 	
 	# If we do not do any filtering and keep the micorgpahs in the same format, only need to move micros.
-	if not options.invert and not options.edgenorm and not options.xraypixel and (os.path.splitext(arg[0])[1] == ("."+options.format)):
+	if not options.invert and not options.edgenorm and not options.xraypixel and (os.path.splitext(args[0])[1] == ("."+options.format)):
 		for arg in args:
 			os.rename(arg,os.path.join(microdir,os.path.basename(arg)))
 		print "exiting...."

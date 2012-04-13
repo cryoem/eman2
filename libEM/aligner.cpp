@@ -161,12 +161,16 @@ EMData* ScaleAlignerABS::align_using_base(EMData * this_img, EMData * to,
 		float score = aligned->cmp(cmp_name, to, cmp_params);
 		if(score < bestscore){
 			bestscore = score;
+			//If we just reassign w/o cleaing up we will get memory leaks!
+			if(result != 0) delete result;
 			result = aligned;
 			result->set_attr("scalefactor",i);
 		}else{
 			delete aligned;
 		}
-		
+		//clean up scaled image data
+		delete des_data;
+
 		t.set_scale(i);
 		
 		//reset original data
@@ -213,6 +217,8 @@ EMData* ScaleAligner::align(EMData * this_img, EMData *to,
 			bestscore = score;
 			bestscale = i;
 		}
+		//clean up scaled image data
+		delete des_data;
 		
 		t.set_scale(i);
 		
