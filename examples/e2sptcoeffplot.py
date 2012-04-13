@@ -34,21 +34,34 @@ for i in range(n):
 	x.append(i)
 
 dataset = sorted(dataset, key=itemgetter('score'), reverse=True)
-#print "dataset is", dataset
+
+halfptclnum=int(round(n/2.0))
+halfptcl=dataset[keyptclnum]
+print "keyptcl is", keyptcl
+halfscore=keyptcl['score']
+
+for s in scores:
+	if s < halfscore:
+		scores.remove(s)
+		print "I have removed this aberrantly low score", s
 
 scores.sort()
 scores.reverse()
 
+thresh=cutoff
+
+if cutoff=='half':
+	thresh="%0.2f" % (halfscore)
+
+thresh=str(thresh).replace('.','p')
+
 group1=[]
-g1name = data.replace('.hdf','_G1.hdf')
+g1name = data.replace('.hdf','_th' + thresh + 'G1.hdf')
 group2=[]
-g2name = data.replace('.hdf','_G2.hdf')
+g2name = data.replace('.hdf','_th' + thresh + 'G2.hdf')
 
 if cutoff == 'half':
-	keyptclnum=int(round(n/2.0))
-	keyptcl=dataset[keyptclnum]
-	print "keyptcl is", keyptcl
-	keyscore=keyptcl['score']
+	
 	k1=0
 	k2=0
 	for i in dataset:
@@ -58,10 +71,13 @@ if cutoff == 'half':
 			k1+=1
 			print "I have appended a particle to group 1"
 		else:
-			group2.append(i['particle'])
-			i['particle'].write_image(g2name,k2)
-			k2+=1	
-			print "I have appended a particle to group 2"
+			if ['score'] > halfscore/2
+				group2.append(i['particle'])
+				i['particle'].write_image(g2name,k2)
+				k2+=1	
+				print "I have appended a particle to group 2"
+			else:
+				print "\n\n@@@@ Found a garbage particle!\n\n"
 
 
 if cutoff and cutoff != 'half':
@@ -74,9 +90,12 @@ if cutoff and cutoff != 'half':
 			i['particle'].write_image(g1name,k1)
 			k1+=1
 		else:
-			group2.append(i['particle'])
-			i['particle'].write_image(g2name,k2)
-			k2+=1	
+			if ['score'] > halfscore/2
+				group2.append(i['particle'])
+				i['particle'].write_image(g2name,k2)
+				k2+=1
+			else:
+				print "\n\n@@@@ Found a garbage particle!\n\n"	
 	
 if group1:
 	g1avg = sum(group1)/len(group1)
