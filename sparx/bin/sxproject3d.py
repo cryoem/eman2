@@ -49,6 +49,7 @@ def main():
 	parser.add_option("--angles",   type="string",  default=None,    help="List of angles (phi, theta, psi) or with shifts (phi, theta, psi, tx, ty)")
 	parser.add_option("--noise",    type="float",   default=None,    help="add Gaussian noise with standard deviation s and zero mean")
 	parser.add_option("--CTF",      type="string",  default=None,    help="list of CTF parameters")
+	parser.add_option("--realspace",action="store_true", default=False,   help="real space projection")
 
 	(options, args) = parser.parse_args()
 	if(len(args) < 2 or len(args) > 3):
@@ -65,7 +66,7 @@ def main():
 			disable_bdb_cache()
 		from   applications import project3d
 		global_def.BATCH = True
-		project3d(args[0], args[1], mask, options.delta, options.method, options.phiEqpsi, options.symmetry, options.angles, listctfs=options.CTF,noise=options.noise)
+		project3d(args[0], args[1], mask, options.delta, options.method, options.phiEqpsi, options.symmetry, options.angles, listctfs=options.CTF, noise=options.noise, realsp=options.realspace)
 		global_def.BATCH = False
 
 if __name__ == "__main__":

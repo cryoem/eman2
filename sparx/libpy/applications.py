@@ -8961,8 +8961,8 @@ def iso_kmeans(images, out_dir, parameter, K=None, mask=None, init_method="Rando
 		res[1].write_image(out_dir+"/Isodata_kmeans_variance_"+m+".spi",k)
 '''
 
-def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = None , listctfs = None, noise = None):
-	from projection    import   prgs, prep_vol
+def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = None , listctfs = None, noise = None, realsp = False):
+	from projection    import   prgs, prep_vol, project
 	from utilities     import   even_angles, read_text_row, set_params_proj, model_gauss_noise, info
 	from string        import   split
 	from filter        import   filt_ctf,filt_gaussl
@@ -9015,10 +9015,13 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 		ny = vol.get_ysize()
 		nz = vol.get_zsize()
 		
-		if(nx==nz&ny==nz):
-			volft, kb = prep_vol(vol)
+		if realsp:
+			volft = vol
 		else:
-			volft, kbx,kby,kbz = prep_vol(vol)
+			if(nx==nz&ny==nz):
+				volft, kb = prep_vol(vol)
+			else:
+				volft, kbx,kby,kbz = prep_vol(vol)
 	else:
 		if(mask):
 			if(type(mask) is types.StringType):
@@ -9032,10 +9035,13 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 		ny = vol.get_ysize()
 		nz = vol.get_zsize()
 		
-		if(nx==nz&ny==nz):
-			volft, kb = prep_vol(vol)
+		if realsp:
+			volft = vol
 		else:
-			volft, kbx,kby,kbz = prep_vol(vol)
+			if(nx==nz&ny==nz):
+				volft, kb = prep_vol(vol)
+			else:
+				volft, kbx,kby,kbz = prep_vol(vol)
 
 	if(type(stack) is types.StringType):
 		Disk = True
@@ -9049,16 +9055,22 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 	
 	for i in xrange(len(angles)):
 		if(len(angles[i]) == 3):
-			if(nx==nz&ny==nz):
-				proj = prgs(volft, kb, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0])
+			if realsp:
+				proj = project(volft, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0], 10*nx)
 			else:
-				proj = prgs(volft, kbz, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0],kbx,kby)
+				if(nx==nz&ny==nz):
+					proj = prgs(volft, kb, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0])
+				else:
+					proj = prgs(volft, kbz, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0],kbx,kby)
 			set_params_proj(proj, [angles[i][0], angles[i][1], angles[i][2], 0.0, 0.0])
 		else:
-			if(nx==nz&ny==nz):
-				proj = prgs(volft, kb, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]])
+			if realsp:
+				proj = project(volft, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]], 10*nx)
 			else:
-				proj = prgs(volft, kbz, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]],kbx,kby)
+				if(nx==nz&ny==nz):
+					proj = prgs(volft, kb, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]])
+				else:
+					proj = prgs(volft, kbz, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]],kbx,kby)
 			set_params_proj(proj, angles[i])
 		proj.set_attr_dict({'active':1})
 
@@ -9067,8 +9079,7 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 		if noise is not None:
 			try:
 				# no mask, so call w/ false
-				noise_ima = model_gauss_noise(noise_level,proj.get_xsize(),
-							      proj.get_ysize())
+				noise_ima = model_gauss_noise(noise_level, proj.get_xsize(), proj.get_ysize())
 			except:
 				pass
 			else:
@@ -9092,8 +9103,7 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 		# add second noise level that is not affected by CTF
 		if noise is not None:
 			try:
-				noise_ima = model_gauss_noise(noise_level,proj.get_xsize(),
-							      proj.get_ysize())
+				noise_ima = model_gauss_noise(noise_level, proj.get_xsize(), proj.get_ysize())
 			except:
 				pass
 			else:
