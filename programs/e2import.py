@@ -41,7 +41,7 @@ def main():
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_pos_argument(name="import_files",help="List the files to import here.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)", positional=True, row=0, col=0,rowspan=1, colspan=2, nosharedb=True, mode='coords,parts,tomos')
+	parser.add_pos_argument(name="import_files",help="List the files to import here.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)",  row=0, col=0, rowspan=1, colspan=2, nosharedb=True, mode='coords,parts,tomos')
 	parser.add_header(name="filterheader", help='Options below this label are specific to e2import', title="### e2import options ###", row=1, col=0, rowspan=1, colspan=2, mode='coords,parts,tomos')
 	parser.add_argument("--import_particles",action="store_true",help="Import particles",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='parts[True]')
 	parser.add_argument("--import_tomos",action="store_true",help="Import tomograms",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='tomos[True]')

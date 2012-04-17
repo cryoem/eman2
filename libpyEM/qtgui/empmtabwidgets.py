@@ -632,9 +632,12 @@ class EMParticlesEditEntry(EMCTFParticlesEntry):
 		if db_check_dict("bdb:select"):
 			select_db = db_open_dict("bdb:select",ro=True)
 			try:
-				self.badparticlecount = len(select_db[self.getBaseName(self.path()).split('_ctf_')[0]])
+				self.badparticlecount = len(select_db[self.path().split('_ctf_')[0]])
 			except:
-				pass
+				try:
+					self.badparticlecount = len(select_db[self.getBaseName(self.path()).split('_ctf_')[0]])
+				except:
+					pass
 			
 #######################################################################################################################
 
@@ -706,22 +709,37 @@ class EMBoxesEntry(EMDirEntry):
 		# get quality and box numbers
 		if db_check_dict('bdb:e2boxercache#quality'):
 			qdb = db_open_dict('bdb:e2boxercache#quality')
-			quality = qdb[self.getBaseName(self.path(),extension=True)]
+			# We check first for the full path, then for just the basename as there is two ways of doing things, insanely
+			quality = qdb[self.path()]
 			if quality != None:
 				self.quality = quality
+			else:	
+				quality = qdb[self.getBaseName(self.path(),extension=True)]
+				if quality != None:
+					self.quality = quality
 			
 		if db_check_dict('bdb:e2boxercache#boxes'):
 			boxdb = db_open_dict('bdb:e2boxercache#boxes')
-			bc = boxdb[self.getBaseName(self.path(),extension=True)]
+			# We check first for the full path, then for just the basename as there is two ways of doing things, insanely
+			bc = boxdb[self.path()]
 			if bc:
 				self.boxcount = len(bc)
+			else:
+				bc = boxdb[self.getBaseName(self.path(),extension=True)]
+				if bc:
+					self.boxcount = len(bc)
 		
 		if db_check_dict('bdb:mgquality'):
 			mgqdb = db_open_dict('bdb:mgquality')
-			mgquality = mgqdb[self.getBaseName(self.path(),extension=True)]
+			# We check first for the full path, then for just the basename as there is two ways of doing things, insanely
+			mgquality = mgqdb[self.path()]
 			if mgquality != None:
 				self.mgquality=str(mgquality)
-	
+			else:
+				mgquality = mgqdb[self.getBaseName(self.path(),extension=True)]
+				if mgquality != None:
+					self.mgquality=str(mgquality)
+					
 		# Check cahce for metadata
 		name = 'boxing'
 		cache = self.checkCache(db,name=name)
@@ -808,27 +826,47 @@ class EMRCTBoxesEntry(EMDirEntry):
 		# get quality and box numbers
 		if db_check_dict('bdb:e2boxercache#quality'):
 			qdb = db_open_dict('bdb:e2boxercache#quality')
-			quality = qdb[self.getBaseName(self.path(),extension=True)]
+			# Check full path then if not found, just check for basename
+			quality = qdb[self.path()]
 			if quality != None:
 				self.quality = quality
+			else:
+				quality = qdb[self.getBaseName(self.path(),extension=True)]
+				if quality != None:
+					self.quality = quality
 			
 		if db_check_dict('bdb:e2boxercache#boxestilted'):
 			tboxdb = db_open_dict('bdb:e2boxercache#boxestilted')
-			bc = tboxdb[self.getBaseName(self.path(),extension=True)]
+			# Check full path then if not found, just check for basename
+			bc = tboxdb[self.path()]
 			if bc:
 				self.boxcount = len(bc)
+			else:
+				bc = tboxdb[self.getBaseName(self.path(),extension=True)]
+				if bc:
+					self.boxcount = len(bc)
 			
 		if db_check_dict('bdb:e2boxercache#boxesuntilted'):
 			utboxdb = db_open_dict('bdb:e2boxercache#boxesuntilted')
-			bc = utboxdb[self.getBaseName(self.path(),extension=True)]
+			# Check full path then if not found, just check for basename
+			bc = utboxdb[self.path()]
 			if bc:
 				self.boxcount = len(bc)
+			else:
+				bc = utboxdb[self.getBaseName(self.path(),extension=True)]
+				if bc:
+					self.boxcount = len(bc)
 				
 		if db_check_dict('bdb:mgquality'):
 			mgqdb = db_open_dict('bdb:mgquality')
-			mgquality = mgqdb[self.getBaseName(self.path(),extension=True)]
+			# Check full path then if not found, just check for basename
+			mgquality = mgqdb[self.path()]
 			if mgquality != None:
 				self.mgquality=str(mgquality)
+			else:
+				mgquality = mgqdb[self.getBaseName(self.path(),extension=True)]
+				if mgquality != None:
+					self.mgquality=str(mgquality)
 				
 		# check cache for metadata
 		name = 'rctboxing'
@@ -970,9 +1008,14 @@ class EMRawDataEntry(EMDirEntry):
 		
 		if db_check_dict('bdb:mgquality'):
 			qdb = db_open_dict('bdb:mgquality')
-			mgquality = qdb[self.getBaseName(self.path(),extension=True)]
+			# Check full path then if not found, just check for basename
+			mgquality = qdb[self.path()]
 			if mgquality != None:
 				self.mgquality=str(mgquality)
+			else:
+				mgquality = qdb[self.getBaseName(self.path(),extension=True)]
+				if mgquality != None:
+					self.mgquality=str(mgquality)
 		
 #################################################################################################################################
 

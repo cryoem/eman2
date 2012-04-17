@@ -298,7 +298,11 @@ class ControlPannel(QtGui.QWidget):
 		# Add quality combobox
 		self.quality = QtGui.QComboBox()
 		for i in xrange(5): self.quality.addItem(str(i))
-		self.quality.setCurrentIndex(self.qualitydb.get(os.path.basename(self.mediator.windowlist[0].filename),dfl=0))
+		# check full path then check basename
+		if self.qualitydb[self.mediator.windowlist[0].filename]:
+			self.quality.setCurrentIndex(self.qualitydb.get(self.mediator.windowlist[0].filename,dfl=0))
+		else:
+			self.quality.setCurrentIndex(self.qualitydb.get(os.path.basename(self.mediator.windowlist[0].filename),dfl=0))
 		grid.addWidget(QtGui.QLabel("Quality Score"),2,0)
 		grid.addWidget(self.quality, 2,1)
 		# add to layout
@@ -335,7 +339,7 @@ class ControlPannel(QtGui.QWidget):
 	
 	def quality_score_changed(self, idx):
 		for window in self.mediator.windowlist:
-			self.qualitydb[os.path.basename(window.filename)] = idx
+			self.qualitydb[window.filename] = idx
 		
 	# Here is where additional tools can be added
 	def add_picker_tools(self):

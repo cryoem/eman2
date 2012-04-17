@@ -25,7 +25,7 @@ Help info needs to go here.....
 
 parser = EMArgumentParser(usage,version=EMANVERSION)
 
-parser.add_pos_argument(name="frealigndir",help="The Frealign directory to use.", default="", guitype='dirbox', dirbasename='frealign', positional=True, row=0, col=0,rowspan=1, colspan=3)
+parser.add_pos_argument(name="frealigndir",help="The Frealign directory to use.", default="", guitype='dirbox', dirbasename='frealign',  row=0, col=0,rowspan=1, colspan=3)
 parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 parser.add_argument("--icosahedral_symmetry", action="store_true", help="Does it have icosahedral symmetry?", default=False, guitype='boolbox', row=1, col=0, rowspan=1, colspan=1)
 #row=2, col=0, rowspan=1, colspan=1)

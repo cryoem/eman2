@@ -43,8 +43,8 @@ def main():
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	#parser.add_pos_argument(name="plot_files",help="List the directories to plot here.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)", positional=True, row=0, col=0,rowspan=1, colspan=2)
-	parser.add_pos_argument(name="refinedir",help="The refinement directory to use for FSC plotting.", default="", guitype='dirbox', dirbasename='refine|TiltValidate', positional=True, row=0, col=0,rowspan=1, colspan=2)
+	#parser.add_pos_argument(name="plot_files",help="List the directories to plot here.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=2)
+	parser.add_pos_argument(name="refinedir",help="The refinement directory to use for FSC plotting.", default="", guitype='dirbox', dirbasename='refine|TiltValidate',  row=0, col=0,rowspan=1, colspan=2)
 	parser.add_header(name="eulerheader", help='Options below this label are specific to e2plotEuler', title="### e2plotEuler options ###", row=1, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--iteration",type=int,help="Refinement iteration to plot", default=0, guitype='intbox', row=2, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--pointwidth",type=float,help="The relative scale of the points plotted. The absoule size is dpenedent on particle count", default=1.0, guitype='floatbox', row=2, col=2, rowspan=1, colspan=1)

@@ -59,8 +59,8 @@ Usage: e2RCTboxer.py untilted.hdf tilted.hdf options.
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_pos_argument(name="untilted micrograph",help="List the untilted micrograph here.", default="", guitype='filebox', browser="EMRCTBoxesTable(withmodal=True,multiselect=False)" , positional=True, row=0, col=0,rowspan=1, colspan=3, mode="boxing,extraction")
-	parser.add_pos_argument(name="tilted micrograph",help="List the tilted micrograph here.", default="", guitype='filebox', browser="EMRCTBoxesTable(withmodal=True,multiselect=False)", positional=True, row=1, col=0,rowspan=1, colspan=3, mode="boxing,extraction")
+	parser.add_pos_argument(name="untilted micrograph",help="List the untilted micrograph here.", default="", guitype='filebox', browser="EMRCTBoxesTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=3, mode="boxing,extraction")
+	parser.add_pos_argument(name="tilted micrograph",help="List the tilted micrograph here.", default="", guitype='filebox', browser="EMRCTBoxesTable(withmodal=True,multiselect=False)", row=1, col=0,rowspan=1, colspan=3, mode="boxing,extraction")
 	parser.add_header(name="RCTboxerheader", help='Options below this label are specific to e2RCTboxer', title="### e2RCTboxer options ###", row=2, col=0, rowspan=1, colspan=3, mode="boxing,extraction")
 	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=-1, guitype='intbox', row=3, col=0, rowspan=1, colspan=3, mode="boxing,extraction")
 	parser.add_argument("--write_boxes",action="store_true",help="Write coordinate file (eman1 dbbox) files",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="extraction")
@@ -542,8 +542,8 @@ class EMBoxList:
 		db_close_dict(self.db)
 		
 	def load_boxes_from_db(self):
-		data = self.db[os.path.basename(self.entry)]
-		if data == None: data = self.db[self.entry]	# Backward compability
+		data = self.db[self.entry]
+		if data == None: data = self.db[os.path.basename(self.entry)]	# Backward compability
 
 		if data != None:
 			for box in data:
@@ -552,13 +552,17 @@ class EMBoxList:
 		return False
 	
 	def get_tiltdata_from_db(self):
-		return self.db["tiltparams_"+os.path.basename(self.entry)]
+		#First check for the full path, if not present, then use the basename only
+		if db.has_key("tiltparams_"+self.entry):
+			self.db["tiltparams_"+self.entry]
+		else:
+			return self.db["tiltparams_"+os.path.basename(self.entry)]
 		
 	def save_boxes_to_db(self):
-		self.db[os.path.basename(self.entry)] = [[box.x,box.y,box.type] for box in self.boxlist]
+		self.db[self.entry] = [[box.x,box.y,box.type] for box in self.boxlist]
 		
 	def save_tiltdata_to_db(self, tiltdata):
-		self.db["tiltparams_"+os.path.basename(self.entry)] = tiltdata
+		self.db["tiltparams_"+self.entry] = tiltdata
 	
 	def get_particle_images(self,image_name,box_size):
 		return [box.get_image(image_name,box_size,"normalize.edgemean") for box in self.boxlist]
@@ -606,6 +610,7 @@ class EMBoxList:
 			d[0] = self.mask
 			offset = 1
 		for i in range(len(self.boxlist)):
+			#if i in [1,2,3,5,6,7,8,9,10,15,17,18,19,23,25,27,29,33,35,36,39,40]: # For maing a plot for a paper
 			if self.shapelist[i] == None:
 				shape = self.boxlist[i].get_shape(self.shape_string,box_size)
 				self.shapelist[i] = shape

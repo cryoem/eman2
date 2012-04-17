@@ -41,7 +41,7 @@ def main():
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_pos_argument(name="stack_files",help="List building material (sets) here.", default="", guitype='filebox', browser="EMParticlesEditTable(withmodal=True,multiselect=True)", positional=True, row=0, col=0,rowspan=1, colspan=2, nosharedb=True)
+	parser.add_pos_argument(name="stack_files",help="List building material (sets) here.", default="", guitype='filebox', browser="EMParticlesEditTable(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=2, nosharedb=True)
 	parser.add_header(name="buildheader", help='Options below this label are specific to e2buildstacks', title="### e2buildstacks options ###", row=1, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--stackname",type=str,help="Name of the stack to build", default='my_stack', guitype='strbox',row=2, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--filetype",help="Type of file",default='bdb',guitype='combobox',choicelist='["bdb","hdf","spi"]',row=3,col=0,rowspan=1,colspan=1)

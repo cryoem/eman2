@@ -46,7 +46,7 @@ def main():
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_pos_argument(name="tomodir",help="The refinement directory to use for tomoresolution.", default="", guitype='dirbox', dirbasename='spt_', positional=True, row=0, col=0,rowspan=1, colspan=2)
+	parser.add_pos_argument(name="tomodir",help="The refinement directory to use for tomoresolution.", default="", guitype='dirbox', dirbasename='spt_',  row=0, col=0,rowspan=1, colspan=2)
 	parser.add_header(name="tomoresoheader", help='Options below this label are specific to e2tomoresolution', title="### e2tomoresolution options ###", row=1, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--averager",type=str,help="The averager used to generate the averages. Default is \'mean\'.",default="mean", guitype='combobox', choicelist='dump_averagers_list()', row=2, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--sym",  type=str,help="The recon symmetry", default="c1", guitype='symbox', row=3, col=0, rowspan=1, colspan=2)

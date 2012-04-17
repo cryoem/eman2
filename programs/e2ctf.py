@@ -71,7 +71,7 @@ images far from focus."""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_pos_argument(name="particles",help="List the file to process with e2ctf here.", default="", guitype='filebox', browser="EMCTFParticlesTable(withmodal=True,multiselect=True)", positional=True, row=0, col=0,rowspan=1, colspan=2, mode='autofit,tuning,genoutp,gensf')
+	parser.add_pos_argument(name="particles",help="List the file to process with e2ctf here.", default="", guitype='filebox', browser="EMCTFParticlesTable(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=2, mode='autofit,tuning,genoutp,gensf')
 	parser.add_header(name="ctfheader", help='Options below this label are specific to e2ctflassaverage3d', title="### e2ctf options ###", default=None, row=1, col=0, rowspan=1, colspan=2, mode="autofit,tuning,genoutp,gensf")
 	
 	parser.add_argument("--allparticles",action="store_true",help="Will process all particle sets stored in BDB in the particles subdirectory witho",default=False)

@@ -61,7 +61,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_header(name="tbheader", help='Options below this label are specific to e2tomoboxer', title="### e2tomoboxer options ###", row=1, col=0, rowspan=1, colspan=3, mode="boxing")
-	parser.add_pos_argument(name="tomogram",help="The tomogram to use for boxing.", default="", guitype='filebox', browser="EMTomoDataTable(withmodal=True,multiselect=False)", positional=True, row=0, col=0, rowspan=1, colspan=3, mode="boxing")
+	parser.add_pos_argument(name="tomogram",help="The tomogram to use for boxing.", default="", guitype='filebox', browser="EMTomoDataTable(withmodal=True,multiselect=False)",  row=0, col=0, rowspan=1, colspan=3, mode="boxing")
 	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=32)
 	
 	parser.add_argument("--centerbox", action="store_true", default=False, help='Will apply xform.centerofmass to the boxed subvolumes before the final extraction.')

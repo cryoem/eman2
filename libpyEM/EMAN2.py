@@ -420,7 +420,8 @@ class EMArgumentParser(argparse.ArgumentParser):
 	
 	def add_pos_argument(self, **kwargs):
 		""" Add a position argument, needed only for the GUI """
-		self.optionslist.append(copy.deepcopy(kwargs))
+		kwargs["positional"]=True
+		self.optionslist.append(copy.deepcopy(kwargs))	
 		
 	def add_header(self, **kwargs):
 		""" for the header, you need, title, row, col"""

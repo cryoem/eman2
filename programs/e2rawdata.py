@@ -43,8 +43,8 @@ def main():
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_pos_argument(name="micrographs",help="List the micrographs to filter here.", default="", guitype='filebox', browser="EMRawDataTable(withmodal=True,multiselect=True)", positional=True, row=0, col=0,rowspan=1, colspan=2, mode='filter')
-	parser.add_pos_argument(name="import_files",help="List the files to import/filter here.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)", positional=True, row=0, col=0,rowspan=1, colspan=2, mode='import')
+	parser.add_pos_argument(name="micrographs",help="List the micrographs to filter here.", default="", guitype='filebox', browser="EMRawDataTable(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=2, mode='filter')
+	parser.add_pos_argument(name="import_files",help="List the files to import/filter here.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=2, mode='import')
 	parser.add_header(name="filterheader", help='Options below this label are specific to filtering', title="### filtering options ###", row=1, col=0, rowspan=1, colspan=2, mode='import,filter')
 	parser.add_argument("--invert",action="store_true",help="Invert contrast",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='filter[True]')
 	parser.add_argument("--edgenorm",action="store_true",help="Edge normalize",default=False, guitype='boolbox', row=2, col=1, rowspan=1, colspan=1, mode='filter[True]')

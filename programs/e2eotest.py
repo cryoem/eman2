@@ -55,8 +55,8 @@ def main():
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_pos_argument(name="dir",help="The refinement directory to use for eotest.", default="", guitype='dirbox', dirbasename='refine', positional=True, row=0, col=0,rowspan=1, colspan=2)
-	parser.add_pos_argument(name="refineiter",help="The refinement iteration to use.", default=0, guitype='intbox', positional=True, row=0, col=2,rowspan=1, colspan=1)
+	parser.add_pos_argument(name="dir",help="The refinement directory to use for eotest.", default="", guitype='dirbox', dirbasename='refine',  row=0, col=0,rowspan=1, colspan=2)
+	parser.add_pos_argument(name="refineiter",help="The refinement iteration to use.", default=0, guitype='intbox',  row=0, col=2,rowspan=1, colspan=1)
 	parser.add_header(name="eotestheader", help='Options below this label are specific to e2eotest', title="### e2eotest options ###", row=1, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--path", default=None, type=str,help="The name the e2refine directory that contains the reconstruction data.")
 	parser.add_argument("--iteration",default=None,type=str,help="Advanced. Can be used to perform the eotest using data from specific rounds of iterative refinement. In unspecified that most recently generated class data are used.")

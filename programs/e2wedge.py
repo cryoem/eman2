@@ -46,7 +46,7 @@ def main():
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_pos_argument(name="tdstack",help="The 3D stack to examine.", default="", guitype='filebox', positional=True, row=0, col=0,rowspan=1, colspan=2)
+	parser.add_pos_argument(name="tdstack",help="The 3D stack to examine.", default="", guitype='filebox',  row=0, col=0,rowspan=1, colspan=2)
 	parser.add_header(name="wedgeheader", help='Options below this label are specific to e2wedge', title="### e2wedge options ###", row=1, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--wedgeangle",type=float,help="Missing wedge angle",default=70.0, guitype='floatbox', row=2, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--wedgei",type=float,help="Missingwedge begining", default=0.05)
