@@ -195,7 +195,7 @@ def gauss_cmd_line_autobox(args,options,logid):
 		do_ctfest = True
 		ctfdict = gbdb[ctfkey]
 		try:
-			ctf_params={'ctf_fstart':float(ctfdict['ctf_fstart']),'ctf_fstop':float(ctfdict['ctf_fstop']), 'ctf_window':int(ctfdict['ctf_window']),'ctf_edge':int(ctfdict['ctf_edge']),'ctf_overlap':int(ctfdict['ctf_overlap']),'ctf_ampcont':float(ctfdict['ctf_ampcont']),'ctf_volt':float(ctfdict['ctf_volt']),'ctf_cs':float(ctfdict['ctf_cs'])}
+			ctf_params={'pixel_input': float(ctfdict['pixel_input']), 'pixel_output': float(ctfdict['pixel_output']),'ctf_fstart':float(ctfdict['ctf_fstart']),'ctf_fstop':float(ctfdict['ctf_fstop']), 'ctf_window':int(ctfdict['ctf_window']),'ctf_edge':int(ctfdict['ctf_edge']),'ctf_overlap':int(ctfdict['ctf_overlap']),'ctf_ampcont':float(ctfdict['ctf_ampcont']),'ctf_volt':float(ctfdict['ctf_volt']),'ctf_cs':float(ctfdict['ctf_cs'])}
 		except:
 			print 'no ctf parameters stored in current directory! Estimate ctf in the GUI in gauss mode first!'
 			do_ctfest = False
@@ -2845,6 +2845,8 @@ class GaussBoxer:
 		ctf_ampcont = ctf_params['ctf_ampcont']
 		ctf_fstart = ctf_params['ctf_fstart']
 		ctf_fstop = ctf_params['ctf_fstop']
+		self.pixel_input = ctf_params['pixel_input']
+		self.pixel_output = ctf_params['pixel_output']
 		
 		from fundamentals import welch_pw2
 		# XXX: check image dimensions, especially box size for welch_pw2!
@@ -2859,7 +2861,7 @@ class GaussBoxer:
 		
 		# set image properties, in order to save ctf values
 		from utilities import set_ctf, generate_ctf
-		ctf_tuple = [defocus,ctf_Cs,ctf_volt,self.pixel_input,0,ctf_ampcont]
+		ctf_tuple = [defocus,ctf_Cs,ctf_volt,self.pixel_output,0,ctf_ampcont]
 		set_ctf(img, ctf_tuple)
 		img.write_image(image_name, 0)
 		print "        CTF parameters for original micrograph:", ctf_tuple
