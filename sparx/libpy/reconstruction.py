@@ -29,6 +29,8 @@
 #
 
 from global_def import *
+from morphology import threshold_to_minval
+from utilities import model_circle
 
 def rec2D(  lines, idrange=None, snr=None ):
 	"""Perform a 2D reconstruction on a set of 1D lines using nearest neighbouring reverse FFT algorithm.
@@ -705,6 +707,248 @@ def bootstrap_nn(proj_stack, volume_stack, list_proj, niter, media="memory", npa
 			output.write( " time %15.3f %15.3f \n" % (time()-iter_start,time()-overall_start) )
         		output.flush()
 
+
+def recons3d_em(projections_stack_filename, projections_indexes = [], symmetry = "c1", max_iterations_count = 100, min_avg_abs_voxel_change = 0.01, use_weights = True):
+	"""
+	Reconstruction algorithm basing on the Expectation Maximization method
+		projections_stack_filename   -- file with projections
+		projections_indexes          -- list of projections id, empty == all projections from file 
+		max_iterations_count         -- stop criterion 
+		min_avg_abs_voxel_change     -- stop criterion 
+	#
+	"""
+	from tempfile import mkstemp
+	from shutil import copyfile
+	from time import clock
+	from os import close, remove
+	if len(projections_indexes) == 0:
+		projections_indexes = range( EMUtil.get_image_count(projections_stack_filename) )
+	assert len(projections_indexes) > 2
+	# ----- initialization of temporary file
+	temp_fd, temp_filename = mkstemp(".hdf")
+	copyfile(projections_stack_filename, temp_filename)
+	# ----- read images size and create EMData objects
+	proj = EMData()
+	proj.read_image(projections_stack_filename, projections_indexes[0])
+	nx = proj.get_xsize()
+	assert nx == proj.get_ysize() # works only for square images
+	radius = nx / 2 - 1   # why -1 ? It was taken from recons3d_sirt function
+	sphere2D = model_circle(radius, nx, nx)
+	sphere3D = model_circle(radius, nx, nx, nx)
+	solution = EMData(nx, nx, nx)
+	solution.to_zero()
+	a = EMData(nx, nx, nx)
+	a.to_zero()
+	sphere3D_volume = a.cmp("lod",sphere3D,{"negative":0,"normalize":0}) 
+	e2D = EMData(nx, nx)
+	e2D.to_one()
+	e3D = EMData(nx, nx, nx)
+	e3D.to_one()
+	print "Parameters:  size=%d  radius=%d  projections_count=%d  max_iterations_count=%d min_avg_abs_voxel_change=%f" % (
+						nx, radius, len(projections_indexes), max_iterations_count, min_avg_abs_voxel_change )
+	# ----- read projections, create initial solution, calculate weights and normalization image (a)
+	projections_angles  = []  # list of lists of angles
+	projections_temp_indexes = [] # list of list of indexes of weighted projections
+	temp_i = 0
+	for proj_i in projections_indexes:
+		proj.read_image(projections_stack_filename, proj_i)
+		assert nx == proj.get_xsize()
+		assert nx == proj.get_ysize()
+		angles = []
+		temp_indexes = []
+		RA = proj.get_attr( "xform.projection" )
+		proj *= sphere2D
+		for j in range(RA.get_nsym(symmetry)):
+			angdict = RA.get_sym(symmetry,j).get_rotation("spider") 
+			angles.append( [angdict["phi"], angdict["theta"], angdict["psi"]] )
+			chao_params = {"anglelist":angles[j],"radius":radius}
+			solution += proj.backproject("chao", chao_params)
+			a        +=  e2D.backproject("chao", chao_params)
+			if use_weights:
+				proj3Dsphere = sphere3D.project("chao", chao_params) 
+				proj *= proj3Dsphere / Util.infomask(proj3Dsphere, None, True)[3]
+			proj.write_image(temp_filename, temp_i, EMUtil.ImageType.IMAGE_HDF)
+			temp_indexes.append(temp_i)
+			temp_i += 1
+		projections_angles.append(angles)
+		projections_temp_indexes.append(temp_indexes)
+	a = threshold_to_minval(a, 0.0001)
+	solution /= a
+	solution *= sphere3D
+	print "Projections loading COMPLETED"
+	# ----- iterations
+	iter_no = 0
+	avg_absolute_voxel_change = min_avg_abs_voxel_change
+	prev_avg_absolute_voxel_change = 999999999
+	q = EMData(nx, nx, nx)
+	time_projection = 0
+	time_backprojection = 0
+	time_iterations = clock()
+	while iter_no < max_iterations_count and avg_absolute_voxel_change >= min_avg_abs_voxel_change:
+		iter_no = iter_no + 1
+		q.to_zero()
+		for i in range(len(projections_angles)):
+			for j in range(len(projections_angles[i])):
+				proj.read_image(temp_filename, projections_temp_indexes[i][j])
+				chao_params = {"anglelist":projections_angles[i][j],"radius":radius}
+				time_start = clock()
+				w = solution.project("chao", chao_params)
+				time_projection += clock() - time_start
+				p = proj / threshold_to_minval(w, 0.0001)
+				time_start = clock()
+				q += p.backproject("chao", chao_params)
+				time_backprojection += clock() - time_start
+		q /= a 
+		q *= solution # q <- new solution
+		avg_absolute_voxel_change = q.cmp("lod",solution,{"mask":sphere3D,"negative":0,"normalize":0}) / sphere3D_volume
+		if avg_absolute_voxel_change > prev_avg_absolute_voxel_change:
+			print "Finish and return last good solution"
+			break
+		prev_avg_absolute_voxel_change = avg_absolute_voxel_change
+		# ----- swap solution and q
+		t = solution
+		solution = q
+		q = t
+		# -----
+		print "Iteration ", iter_no, ",  avg_abs_voxel_change=", avg_absolute_voxel_change 
+	time_iterations = clock() - time_iterations
+	# ----- free temp filename
+	close(temp_fd)
+	remove(temp_filename)
+	# ----- return solution and exit
+	print "Times: iterations=", time_iterations, "  project=", time_projection, "  backproject=", time_backprojection
+	return solution
+
+
+def recons3d_em_MPI(projections_stack_filename, projections_indexes = [], symmetry = "c1", max_iterations_count = 100, min_avg_abs_voxel_change = 0.01, use_weights = True):
+	"""
+	Reconstruction algorithm basing on the Expectation Maximization method
+		projections_stack_filename   -- file with projections
+		projections_indexes          -- list of projections id, empty == all projections from file 
+		max_iterations_count         -- stop criterion 
+		min_avg_abs_voxel_change     -- stop criterion 
+	#
+	"""
+	from tempfile import mkstemp
+	from shutil import copyfile
+	from time import clock
+	from os import close, remove
+	from mpi import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from utilities import reduce_EMData_to_root, bcast_EMData_to_all
+	if len(projections_indexes) == 0:
+		projections_indexes = range( EMUtil.get_image_count(projections_stack_filename) )
+	assert len(projections_indexes) > 2
+	mpi_n = mpi_comm_size(MPI_COMM_WORLD)
+	mpi_r = mpi_comm_rank(MPI_COMM_WORLD)
+	# ----- initialization of temporary file
+	temp_fd, temp_filename = mkstemp(".hdf")
+	copyfile(projections_stack_filename, temp_filename)
+	# ----- read images size and create EMData objects
+	proj = EMData()
+	proj.read_image(projections_stack_filename, projections_indexes[0])
+	nx = proj.get_xsize()
+	assert nx == proj.get_ysize() # works only for square images
+	radius = nx / 2 - 1   # why -1 ? It was taken from recons3d_sirt function
+	sphere2D = model_circle(radius, nx, nx)
+	sphere3D = model_circle(radius, nx, nx, nx)
+	solution = EMData(nx, nx, nx)
+	solution.to_zero()
+	a = EMData(nx, nx, nx)
+	a.to_zero()
+	sphere3D_volume = a.cmp("lod",sphere3D,{"negative":0,"normalize":0}) 
+	e2D = EMData(nx, nx)
+	e2D.to_one()
+	e3D = EMData(nx, nx, nx)
+	e3D.to_one()
+	if mpi_r == 0:
+		print "MPI processes: ", mpi_n
+		print "Parameters:  size=%d  radius=%d  projections_count=%d  max_iterations_count=%d min_avg_abs_voxel_change=%f" % (
+						nx, radius, len(projections_indexes), max_iterations_count, min_avg_abs_voxel_change )
+	# ----- read projections, create initial solution, calculate weights and normalization image (a)
+	all_projs_count = len(projections_indexes)
+	projections_indexes = projections_indexes[(mpi_r*all_projs_count/mpi_n):((mpi_r+1)*all_projs_count/mpi_n)]
+	projections_angles  = []  # list of lists of angles
+	projections_temp_indexes = [] # list of list of indexes of weighted projections
+	temp_i = 0
+	for proj_i in projections_indexes:
+		proj.read_image(projections_stack_filename, proj_i)
+		assert nx == proj.get_xsize()
+		assert nx == proj.get_ysize()
+		angles = []
+		temp_indexes = []
+		RA = proj.get_attr( "xform.projection" )
+		proj *= sphere2D
+		for j in range(RA.get_nsym(symmetry)):
+			angdict = RA.get_sym(symmetry,j).get_rotation("spider") 
+			angles.append( [angdict["phi"], angdict["theta"], angdict["psi"]] )
+			chao_params = {"anglelist":angles[j],"radius":radius}
+			solution += proj.backproject("chao", chao_params)
+			a        +=  e2D.backproject("chao", chao_params)
+			if use_weights:
+				proj3Dsphere = sphere3D.project("chao", chao_params) 
+				proj *= proj3Dsphere / Util.infomask(proj3Dsphere, None, True)[3]
+			proj.write_image(temp_filename, temp_i, EMUtil.ImageType.IMAGE_HDF)
+			temp_indexes.append(temp_i)
+			temp_i += 1
+		projections_angles.append(angles)
+		projections_temp_indexes.append(temp_indexes)
+	# reduce_scatter(solution)
+	reduce_EMData_to_root(solution, mpi_r)
+	bcast_EMData_to_all  (solution, mpi_r)
+	# reduce_scatter(a)
+	reduce_EMData_to_root(a, mpi_r)
+	bcast_EMData_to_all  (a, mpi_r)
+	# ----------
+	a = threshold_to_minval(a, 0.0001)
+	solution /= a
+	solution *= sphere3D
+	if mpi_r == 0:
+		print "Projections loading COMPLETED"
+	# ----- iterations
+	iter_no = 0
+	avg_absolute_voxel_change = min_avg_abs_voxel_change
+	q = EMData(nx, nx, nx)
+	time_projection = 0
+	time_backprojection = 0
+	time_iterations = clock()
+	while iter_no < max_iterations_count and avg_absolute_voxel_change >= min_avg_abs_voxel_change:
+		iter_no = iter_no + 1
+		q.to_zero()
+		for i in range(len(projections_angles)):
+			for j in range(len(projections_angles[i])):
+				proj.read_image(temp_filename, projections_temp_indexes[i][j])
+				chao_params = {"anglelist":projections_angles[i][j],"radius":radius}
+				time_start = clock()
+				w = solution.project("chao", chao_params)
+				time_projection += clock() - time_start
+				p = proj / threshold_to_minval(w, 0.0001)
+				time_start = clock()
+				q += p.backproject("chao", chao_params)
+				time_backprojection += clock() - time_start
+		# reduce_scatter(q)
+		reduce_EMData_to_root(q, mpi_r)
+		bcast_EMData_to_all  (q, mpi_r)
+		# --------
+		q /= a 
+		q *= solution # q <- new solution
+		avg_absolute_voxel_change = q.cmp("lod",solution,{"mask":sphere3D,"negative":0,"normalize":0}) / sphere3D_volume
+		# ----- swap solution and q
+		t = solution
+		solution = q
+		q = t
+		# -----
+		if mpi_r == 0:
+			print "Iteration ", iter_no, ",  avg_abs_voxel_change=", avg_absolute_voxel_change 
+	time_iterations = clock() - time_iterations
+	# ----- free temp filename
+	close(temp_fd)
+	remove(temp_filename)
+	# ----- return solution and exit
+	if mpi_r == 0:
+		print "Times: iterations=", time_iterations, "  project=", time_projection, "  backproject=", time_backprojection
+	return solution
+
+
 def recons3d_sirt(stack_name, list_proj, radius, lam=1.0e-4, maxit=100, symmetry="c1", tol=0.001):
 	"""
 	SIRT
@@ -744,7 +988,6 @@ def recons3d_sirt(stack_name, list_proj, radius, lam=1.0e-4, maxit=100, symmetry
 
 	# start iterating
 	iter  = 1
-	old_rnorm = 1.0
 	while iter <= maxit:
 		if (iter == 1):
 			#
@@ -778,11 +1021,10 @@ def recons3d_sirt(stack_name, list_proj, radius, lam=1.0e-4, maxit=100, symmetry
 					symangles[0] = angdict["phi"]
 					symangles[1] = angdict["theta"]
 					symangles[2] = angdict["psi"]
-					myparams = {"angletype":"SPIDER",
-					     	    "anglelist":symangles,
+					myparams = {"anglelist":symangles,
 					     	    "radius":radius}
 					bvol += data.backproject("chao", myparams)
-			bnorm = sqrt(bvol.cmp("dot",bvol,{"mask":mask3d,"negative":0}))
+			old_rnorm = bnorm = sqrt(bvol.cmp("dot",bvol,{"mask":mask3d,"negative":0}))
 			grad  = bvol
 		else:
 			#  Insert your favorite MPI here
@@ -798,15 +1040,14 @@ def recons3d_sirt(stack_name, list_proj, radius, lam=1.0e-4, maxit=100, symmetry
 					symangles[0] = angdict["phi"]
 					symangles[1] = angdict["theta"]
 					symangles[2] = angdict["psi"]
-					myparams = {"angletype":"SPIDER",
-					    	    "anglelist":symangles,
+					myparams = {"anglelist":symangles,
 					    	    "radius":radius}
 					data  = xvol.project("chao", myparams) 
 					pxvol += data.backproject("chao",myparams)
 			grad  = bvol - pxvol
 
 		rnorm = sqrt(grad.cmp("dot",grad,{"mask":mask3d,"negative":0}))
-		print 'iter = %3d,  rnorm = %6.3f' % (iter,rnorm/bnorm)
+		print 'iter = %3d,  rnorm = %6.3f,  rnorm/bnorm = %6.3f' % (iter,rnorm,rnorm/bnorm)
 		if (rnorm < tol or rnorm > old_rnorm): break
 		old_rnorm = rnorm
 		xvol = xvol + lam*grad
