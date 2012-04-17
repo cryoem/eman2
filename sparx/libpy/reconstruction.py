@@ -738,7 +738,7 @@ def recons3d_em(projections_stack_filename, projections_indexes = [], symmetry =
 	sphere2D = model_circle(radius, nx, nx)   
 	sphere3D = model_circle(radius, nx, nx, nx)
 	solution = model_blank(nx, nx, nx)
-	a = model_blank(nx, nx, nx) # normalization image
+	a = model_blank(nx, nx, nx) # normalization volume
 	e2D = model_square(nx, nx, nx)
 	sphere3D_volume = model_blank(nx,nx,nx).cmp("lod",sphere3D,{"negative":0,"normalize":0})
 	print "Parameters:  size=%d  radius=%d  projections_count=%d  max_iterations_count=%d min_avg_abs_voxel_change=%f" % (
@@ -747,8 +747,9 @@ def recons3d_em(projections_stack_filename, projections_indexes = [], symmetry =
 	# ----- create initial solution, calculate weights and normalization image (a)
 	projections_angles = []  # list of lists of angles
 	projections_data   = []  # list of lists of projections' images with weights
+	#  THERE IS NO NEED TO CHECK ALL THENM, JUST ONE.  OUR DATA BASE DOES NOT ALLOW STORING IMAGES OF DIFFERENT SIZE in a single stack,
+	#  PLUS, YOU ALREADE CHECK IT EARLIER< SO WHY SECOND TIME?
 	for proj in projections:
-		
 		if (proj.get_xsize() != nx) or (proj.get_ysize() != nx) or (proj.get_zsize() != 1):
 			ERROR("Sizes of all projections must be equal", "recons3d_em")
 		
@@ -775,10 +776,12 @@ def recons3d_em(projections_stack_filename, projections_indexes = [], symmetry =
 	print "Projections loading COMPLETED"
 	# ----- iterations
 	prev_avg_absolute_voxel_change = 999999999.0
+	#  THE NEXT TWO SHOULD BE REAL??
 	time_projection = 0
 	time_backprojection = 0
 	time_iterations = clock()
-	for iter_no in range(max_iterations_count):
+	#  please use xrange when you mean SIMPLE LOOP, RANGE GENERATES AN ACTUAL LIST!
+	for iter_no in xrange(max_iterations_count):
 		q = model_blank(nx, nx, nx)
 		for i in range(len(projections_angles)):
 			for j in range(len(projections_angles[i])):
@@ -805,7 +808,6 @@ def recons3d_em(projections_stack_filename, projections_indexes = [], symmetry =
 	# ----- return solution and exit
 	print "Times: iterations=", time_iterations, "  project=", time_projection, "  backproject=", time_backprojection
 	return solution
-
 
 def recons3d_em_MPI(projections_stack_filename, projections_indexes = [], symmetry = "c1", max_iterations_count = 100, min_avg_abs_voxel_change = 0.01, use_weights = True):
 	"""
