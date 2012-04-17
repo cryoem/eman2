@@ -3544,8 +3544,8 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 
 		if rnd_method == 'd2w': assign, Cls['n'] = k_means_init_asg_d2w(im_M, N, K)
 		else:	                assign, Cls['n'] = k_means_init_asg_rnd(N, K)
-		
-	
+
+
 		if CTF:
 			## Calculate averages ave = S CTF.F / S CTF**2, first init ctf2
 			for k in xrange(K):	Cls_ctf2[k] = [0] * len_ctm
