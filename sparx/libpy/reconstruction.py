@@ -30,7 +30,7 @@
 
 from global_def import *
 from morphology import threshold_to_minval
-from utilities import model_circle
+from utilities import model_circle, model_square
 
 def rec2D(  lines, idrange=None, snr=None ):
 	"""Perform a 2D reconstruction on a set of 1D lines using nearest neighbouring reverse FFT algorithm.
@@ -707,7 +707,7 @@ def bootstrap_nn(proj_stack, volume_stack, list_proj, niter, media="memory", npa
 			output.write( " time %15.3f %15.3f \n" % (time()-iter_start,time()-overall_start) )
         		output.flush()
 
-'''
+
 def recons3d_em(projections_stack_filename, projections_indexes = [], symmetry = "c1", max_iterations_count = 100, min_avg_abs_voxel_change = 0.01, use_weights = True):
 	"""
 	Reconstruction algorithm basing on the Expectation Maximization method
@@ -715,68 +715,70 @@ def recons3d_em(projections_stack_filename, projections_indexes = [], symmetry =
 		projections_indexes          -- list of projections id, empty == all projections from file 
 		max_iterations_count         -- stop criterion 
 		min_avg_abs_voxel_change     -- stop criterion 
+		use_weights                  -- true == multiply projections by extra weights
 	#
 	"""
 	from time import clock
-
+	from utilities import model_blank, model_circle, model_square
+	min_allowed_divisor = 0.0001
+	
 	if len(projections_indexes) == 0:
-		proj = EMData.read_images(projections_stack_filename)
+		projections = EMData.read_images(projections_stack_filename)
 	else:
-		proj = EMData.read_images(projections_stack_filename, projections_indexes)
+		projections = EMData.read_images(projections_stack_filename, projections_indexes)
+	
+	if len(projections) == 0:
+		ERROR("Stack of projections cannot be empty", "recons3d_em")
+	
+	nx = projections[0].get_xsize()
+	if (projections[0].get_ysize() != nx) or (projections[0].get_zsize() != 1):
+		ERROR("This procedure works only for square images", "recons3d_em")
 
-	call ERROR function
-	# ----- read images size and create EMData objects
-	nx = proj.get_xsize()
-	#call ERROR instead assert nx == proj.get_ysize() # works only for square images
-	radius = nx // 2 - 1   # why -1 ? It was taken from recons3d_sirt function
-	sphere2D = model_circle(radius, nx, nx)   # please explicitly import all functions
+	radius = nx // 2 - 1
+	sphere2D = model_circle(radius, nx, nx)   
 	sphere3D = model_circle(radius, nx, nx, nx)
 	solution = model_blank(nx, nx, nx)
-	and so on...
-	a = EMData(nx, nx, nx)
-	a.to_zero()
-	sphere3D_volume = a.cmp("lod",sphere3D,{"negative":0,"normalize":0})
-	e2D = EMData(nx, nx)
-	e2D.to_one()
-	e3D = EMData(nx, nx, nx)
-	e3D.to_one()
+	a = model_blank(nx, nx, nx) # normalization image
+	e2D = model_square(nx, nx, nx)
+	sphere3D_volume = model_blank(nx,nx,nx).cmp("lod",sphere3D,{"negative":0,"normalize":0})
 	print "Parameters:  size=%d  radius=%d  projections_count=%d  max_iterations_count=%d min_avg_abs_voxel_change=%f" % (
 						nx, radius, len(projections_indexes), max_iterations_count, min_avg_abs_voxel_change )
-	# ----- read projections, create initial solution, calculate weights and normalization image (a)
-	projections_angles  = []  # list of lists of angles
-	projections_temp_indexes = [] # list of list of indexes of weighted projections
-	temp_i = 0
-	for proj_i in projections_indexes:
-		DO NOT USE ASSERT!! assert nx == proj.get_xsize()
-		assert nx == proj.get_ysize()
-		angles = []
-		temp_indexes = []
+	
+	# ----- create initial solution, calculate weights and normalization image (a)
+	projections_angles = []  # list of lists of angles
+	projections_data   = []  # list of lists of projections' images with weights
+	for proj in projections:
+		
+		if (proj.get_xsize() != nx) or (proj.get_ysize() != nx) or (proj.get_zsize() != 1):
+			ERROR("Sizes of all projections must be equal", "recons3d_em")
+		
+		angles = [] # list of angles
+		data = []   # list of projections' images with weights
 		RA = proj.get_attr( "xform.projection" )
-		proj *= sphere2D  #  use Util.mul_img or something instead
+		Util.mul_img( proj, sphere2D )
 		for j in range(RA.get_nsym(symmetry)):
 			angdict = RA.get_sym(symmetry,j).get_rotation("spider") 
 			angles.append( [angdict["phi"], angdict["theta"], angdict["psi"]] )
 			chao_params = {"anglelist":angles[j],"radius":radius}
-			solution = Util.add_im( proj.backproject("chao", chao_params)
-			a        +=  e2D.backproject("chao", chao_params)
+			Util.add_img( solution, proj.backproject("chao", chao_params) )
+			Util.add_img( a, e2D.backproject("chao", chao_params) )
 			if use_weights:
 				proj3Dsphere = sphere3D.project("chao", chao_params)
-				proj *= proj3Dsphere / Util.infomask(proj3Dsphere, None, True)[3]
-			temp_indexes.append(temp_i)
+				Util.mul_scalar( proj3Dsphere, 1.0 / Util.infomask(proj3Dsphere, None, True)[3] )
+				Util.mul_img( proj, proj3Dsphere )
+			data.append(proj)
 		projections_angles.append(angles)
-		projections_temp_indexes.append(temp_indexes)
-	solution *=Util sphere3D
+		projections_data.append(data)
+	a = threshold_to_minval(a, min_allowed_divisor)  # make sure that voxels' values are not too small (image a is divisior)
+	Util.mul_img( solution, sphere3D )
+	Util.div_img( solution, a )
 	print "Projections loading COMPLETED"
 	# ----- iterations
-	iter_no = 0
-	avg_absolute_voxel_change = min_avg_abs_voxel_change
 	prev_avg_absolute_voxel_change = 999999999.0
-	
 	time_projection = 0
 	time_backprojection = 0
 	time_iterations = clock()
-	while iter_no < max_iterations_count and avg_absolute_voxel_change >= min_avg_abs_voxel_change:
-		iter_no = iter_no + 1
+	for iter_no in range(max_iterations_count):
 		q = model_blank(nx, nx, nx)
 		for i in range(len(projections_angles)):
 			for j in range(len(projections_angles[i])):
@@ -784,28 +786,26 @@ def recons3d_em(projections_stack_filename, projections_indexes = [], symmetry =
 				time_start = clock()
 				w = solution.project("chao", chao_params)
 				time_projection += clock() - time_start
-				p = proj / threshold_to_minval(w, 0.01)#  This cannot be.
+				p = projections_data[i][j] / threshold_to_minval(w, min_allowed_divisor)
 				time_start = clock()
 				q += p.backproject("chao", chao_params)
 				time_backprojection += clock() - time_start
-		q /= a # use util
-		q *= solution # q <- new solution  use Util
-		avg_absolute_voxel_change = q.cmp("lod",solution,{"mask":sphere3D,"negative":0,"normalize":0}) / sphere3D_volume # use Util,
+		Util.div_img( q, a )
+		Util.mul_img( q, solution ) # q <- new solution  
+		avg_absolute_voxel_change = q.cmp("lod",solution,{"mask":sphere3D,"negative":0,"normalize":0}) / sphere3D_volume
 		if avg_absolute_voxel_change > prev_avg_absolute_voxel_change:
 			print "Finish and return last good solution"
 			break
 		prev_avg_absolute_voxel_change = avg_absolute_voxel_change
-		# ----- swap solution and q
-		t = solution  COMMENT WHY THIS WAY, LOOKS AWKWARD
 		solution = q
-		q = t
-		# -----
 		print "Iteration ", iter_no, ",  avg_abs_voxel_change=", avg_absolute_voxel_change 
+		if min_avg_abs_voxel_change > avg_absolute_voxel_change:
+			break
 	time_iterations = clock() - time_iterations
 	# ----- return solution and exit
 	print "Times: iterations=", time_iterations, "  project=", time_projection, "  backproject=", time_backprojection
 	return solution
-'''
+
 
 def recons3d_em_MPI(projections_stack_filename, projections_indexes = [], symmetry = "c1", max_iterations_count = 100, min_avg_abs_voxel_change = 0.01, use_weights = True):
 	"""
