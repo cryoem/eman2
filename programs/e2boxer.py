@@ -2864,7 +2864,7 @@ class GaussBoxer:
 		ctf_tuple = [defocus,ctf_Cs,ctf_volt,self.pixel_output,0,ctf_ampcont]
 		set_ctf(img, ctf_tuple)
 		img.write_image(image_name, 0)
-		print "        CTF parameters for original micrograph:", ctf_tuple
+		print "        CTF parameters for original micrograph %s:"%image_name, ctf_tuple
 		del img
 						
 class GaussTool(GaussBoxer,EMBoxingTool):
