@@ -152,11 +152,17 @@ class EMModelsEntry(EMDirEntry):
 		# Check the cache for metadata
 		name = 'models'
 		cache = self.checkCache(db,name=name)
-		if not self.cacheMiss(cache,'quality','dims','filetype'): return 
+		if not self.cacheMiss(cache,'nimg','quality','dims','filetype'): return 
 		
 		# Should only be this:
 		self.filetype="Image"
 		
+		# get image counts Needed for get info. Requiring this in in a reimplemeted function is a bad design... I din't do this :)
+		try:
+			self.nimg = EMUtil.get_image_count(self.path())
+		except:
+			pass
+			
 		# Get particle stack headers
 		a = None
 		try:
@@ -171,7 +177,7 @@ class EMModelsEntry(EMDirEntry):
 				pass
 		
 		# Set Cache
-		self.updateCache(db, cache, name, 'quality', 'dims', 'filetype')
+		self.updateCache(db, cache, name, 'nimg','quality', 'dims', 'filetype')
 		
 		return True
 		
@@ -218,8 +224,8 @@ class EMSetsModel(EMFileItemModel):
 			if data.isbdb : return "bdb:"+data.name
 			return nonone(data.name)
 		elif col==2 :
-			if data.partcount==0 : return "-"
-			return nonone(data.partcount)
+			if data.nimg==0 : return "-"
+			return nonone(data.nimg)
 		elif col==3 :
 			if data.dims==0 : return "-"
 			return nonone(data.dims)
@@ -231,7 +237,6 @@ class EMSetsEntry(EMDirEntry):
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
-		self.partcount=None
 		self.dims=None
 		
 	def fillDetails(self, db):
@@ -241,13 +246,13 @@ class EMSetsEntry(EMDirEntry):
 		# Check the cache for metadata
 		name = 'sets'
 		cache = self.checkCache(db,name=name)
-		if not self.cacheMiss(cache,'partcount','dims','filetype'): return 
+		if not self.cacheMiss(cache,'nimg','dims','filetype'): return 
 		
 		# get image counts
 		try:
-			self.partcount = EMUtil.get_image_count(self.path())
-			if self.partcount == 1 : self.filetype="Image"
-			if int(self.partcount) > 1 : self.filetype="Image Stack"
+			self.nimg = EMUtil.get_image_count(self.path())
+			if self.nimg == 1 : self.filetype="Image"
+			if int(self.nimg) > 1 : self.filetype="Image Stack"
 		except:
 			self.filetype="-"
 		
@@ -261,7 +266,7 @@ class EMSetsEntry(EMDirEntry):
 			self.dims = "%dx%dx%d"%(a.get_xsize(),a.get_ysize(),a.get_zsize())
 		
 		# Set Cache
-		self.updateCache(db, cache, name, 'partcount', 'dims', 'filetype')
+		self.updateCache(db, cache, name, 'nimg', 'dims', 'filetype')
 				
 		return True
 
@@ -310,8 +315,8 @@ class EMParticlesModel(EMFileItemModel):
 			if data.type==0 : return "-"
 			return nonone(data.type)
 		elif col==3 :
-			if data.particlecount==0 : return "-"
-			return nonone(data.particlecount)
+			if data.nimg==0 : return "-"
+			return nonone(data.nimg)
 		elif col==4 :
 			if data.particledim==0 : return "-"
 			return nonone(data.particledim)
@@ -322,13 +327,12 @@ class EMParticlesModel(EMFileItemModel):
 class EMParticlesEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.type,lambda x:safe_int(x.particlecount), lambda x:x.particledim, lambda x:safe_int(x.quality))
+	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.type,lambda x:safe_int(x.nimg), lambda x:x.particledim, lambda x:safe_int(x.quality))
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
 		self.regex = re.compile('flip|wiener')
 		self.type = None
-		self.particlecount=None
 		self.particledim=None
 		self.defocus=None
 		self.bfactor=None
@@ -353,13 +357,13 @@ class EMParticlesEntry(EMDirEntry):
 		# Check the cache for metadata
 		name = 'particles'
 		cache = self.checkCache(db,name=name)
-		if not self.cacheMiss(cache,'particlecount','particledim','type','filetype'): return
+		if not self.cacheMiss(cache,'nimg','particledim','type','filetype'): return
 		
 		# get image counts
 		try:
-			self.particlecount = str(EMUtil.get_image_count(self.path()))
-			if int(self.particlecount)==1 : self.filetype="Image"
-			if int(self.particlecount) > 1 : self.filetype="Image Stack"
+			self.nimg = EMUtil.get_image_count(self.path())
+			if self.nimg==1 : self.filetype="Image"
+			if self.nimg > 1 : self.filetype="Image Stack"
 		
 		except:
 			pass
@@ -380,7 +384,7 @@ class EMParticlesEntry(EMDirEntry):
 			pass
 		
 		# Update the cache
-		self.updateCache(db, cache,  name, "filetype", "particlecount", "particledim", "type")
+		self.updateCache(db, cache,  name, "filetype", "nimg", "particledim", "type")
 		
 		
 		return True
@@ -433,8 +437,8 @@ class EMCTFParticlesModel(EMFileItemModel):
 			if data.type==0 : return "-"
 			return nonone(data.type)
 		elif col==3 :
-			if data.particlecount==0 : return "-"
-			return nonone(data.particlecount)
+			if data.nimg==0 : return "-"
+			return nonone(data.nimg)
 		elif col==4 :
 			if data.particledim==0 : return "-"
 			return nonone(data.particledim)
@@ -457,13 +461,12 @@ class EMCTFParticlesModel(EMFileItemModel):
 class EMCTFParticlesEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.type,lambda x:safe_int(x.particlecount), lambda x:x.particledim, lambda x:safe_float(x.defocus), lambda x:safe_float(x.bfactor), lambda x:safe_float(x.snr), lambda x:x.safe_int(quality), lambda x:x.sampling)
+	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.type,lambda x:safe_int(x.nimg), lambda x:x.particledim, lambda x:safe_float(x.defocus), lambda x:safe_float(x.bfactor), lambda x:safe_float(x.snr), lambda x:x.safe_int(quality), lambda x:x.sampling)
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
 		self.regex=re.compile("_flip$|_wiener$")
 		self.type = None
-		self.particlecount=None
 		self.particledim=None
 		self.defocus=None
 		self.bfactor=None
@@ -493,13 +496,13 @@ class EMCTFParticlesEntry(EMDirEntry):
 		# Check the cache for metadata
 		name = 'ctf'
 		cache = self.checkCache(db,name=name)
-		if not self.cacheMiss(cache,'particlecount','particledim','type','filetype'): return
+		if not self.cacheMiss(cache,'nimg','particledim','type','filetype'): return
 		
 		# get image counts
 		try:
-			self.particlecount = str(EMUtil.get_image_count(self.path()))
-			if int(self.particlecount)==1 : self.filetype="Image"
-			if int(self.particlecount) > 1 : self.filetype="Image Stack"
+			self.nimg = EMUtil.get_image_count(self.path())
+			if self.nimg==1 : self.filetype="Image"
+			if self.nimg > 1 : self.filetype="Image Stack"
 		
 		except:
 			pass
@@ -520,7 +523,7 @@ class EMCTFParticlesEntry(EMDirEntry):
 			pass
 		
 		# Update the cache
-		self.updateCache(db, cache,  name, "filetype", "particlecount", "particledim", "type")
+		self.updateCache(db, cache,  name, "filetype", "nimg", "particledim", "type")
 		
 		
 		return True
@@ -591,8 +594,8 @@ class EMParticlesEditModel(EMFileItemModel):
 			if data.type==0 : return "-"
 			return nonone(data.type)
 		elif col==3 :
-			if data.particlecount==0 : return "-"
-			return nonone(data.particlecount)
+			if data.nimg==0 : return "-"
+			return nonone(data.nimg)
 		elif col==4 :
 			if data.badparticlecount==0 : return "-"
 			return nonone(data.badparticlecount)
@@ -618,7 +621,7 @@ class EMParticlesEditModel(EMFileItemModel):
 class EMParticlesEditEntry(EMCTFParticlesEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.type,lambda x:safe_int(x.particlecount), lambda x:safe_int(x.badparticlecount), lambda x:safe_float(x.defocus), lambda x:safe_float(x.bfactor), lambda x:safe_float(x.snr), lambda x:safe_int(x.quality), lambda x:x.sampling, lambda x:x.particledim)
+	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.type,lambda x:safe_int(x.nimg), lambda x:safe_int(x.badparticlecount), lambda x:safe_float(x.defocus), lambda x:safe_float(x.bfactor), lambda x:safe_float(x.snr), lambda x:safe_int(x.quality), lambda x:x.sampling, lambda x:x.particledim)
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMCTFParticlesEntry.__init__(self,root=root,name=name,i=i,parent=parent,hidedot=hidedot,dirregex=dirregex)
@@ -743,16 +746,17 @@ class EMBoxesEntry(EMDirEntry):
 		# Check cahce for metadata
 		name = 'boxing'
 		cache = self.checkCache(db,name=name)
-		if not self.cacheMiss(cache,'filetype'): return 
+		if not self.cacheMiss(cache,'filetype', 'nimg'): return 
 
 		# get image counts
 		try:
-			if EMUtil.get_image_count(self.path())==1 : self.filetype="Image"
+			self.nimg = EMUtil.get_image_count(self.path())
+			if self.nimg==1 : self.filetype="Image"
 		except:
 			self.filetype="-"
 		
 		# Set cache
-		self.updateCache(db, cache, name, "filetype")
+		self.updateCache(db, cache, name, 'filetype', 'nimg')
 		
 		return True
 
@@ -871,16 +875,17 @@ class EMRCTBoxesEntry(EMDirEntry):
 		# check cache for metadata
 		name = 'rctboxing'
 		cache = self.checkCache(db,name=name)
-		if not self.cacheMiss(cache,'filetype'): return 
+		if not self.cacheMiss(cache,'filetype', 'nimg'): return 
 		
 		# get image counts
 		try:
-			if EMUtil.get_image_count(self.path())==1 : self.filetype="Image"
+			self.nimg = EMUtil.get_image_count(self.path())
+			if self.nimg==1 : self.filetype="Image"
 		except:
 			self.filetype="-"
 		
 		# update cache
-		self.updateCache(db, cache, name, "filetype")
+		self.updateCache(db, cache, name, 'filetype', 'nimg')
 		
 		return True
 		

@@ -611,6 +611,11 @@ class EMBoxList:
 			offset = 1
 		for i in range(len(self.boxlist)):
 			#if i in [1,2,3,5,6,7,8,9,10,15,17,18,19,23,25,27,29,33,35,36,39,40]: # For maing a plot for a paper
+			#	EMBox.set_box_color("untilted",[0,0,0])
+			#	EMBox.set_box_color("tilted",[0,0,0])
+			#else:
+			#	EMBox.set_box_color("untilted",[1,0,0])
+			#	EMBox.set_box_color("tilted",[1,0,0])
 			if self.shapelist[i] == None:
 				shape = self.boxlist[i].get_shape(self.shape_string,box_size)
 				self.shapelist[i] = shape
