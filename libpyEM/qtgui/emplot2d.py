@@ -54,7 +54,7 @@ ploticon = [
 import PyQt4
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
-from OpenGL import GL,GLU,GLUT
+from OpenGL import GL,GLU
 from OpenGL.GL import *
 from math import *
 from EMAN2 import *
@@ -74,7 +74,7 @@ from matplotlib.figure import Figure
 #matplotlib.use('Agg')
 
 from emapplication import EMApp, EMGLWidget
-from emglobjects import EMOpenGLFlagsAndTools,init_glut
+from emglobjects import EMOpenGLFlagsAndTools
 
 import traceback
 
@@ -404,7 +404,6 @@ class EMPlot2DWidget(EMGLWidget):
 	is_file_readable = staticmethod(is_file_readable)
 	
 	def render(self):
-		init_glut()
 		
 		try: 
 			if self.data==None or len(self.data)==0 : return
@@ -931,7 +930,6 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 		"""
 		Reimplmentation to plot a plor plot
 		"""
-		init_glut()
 		
 		if not self.data : return
 		
@@ -1180,7 +1178,7 @@ class DragListWidget(QtGui.QListWidget):
 				n+=1
 			
 			trgplot.set_data(data,name,quiet=True)
-			if n==1: trgplot.setAxes(name,-1,0)
+			if n==1: trgplot.setAxes(name,0)
 			elif n==2: trgplot.setAxes(name,0,1)
 			elif n==3: trgplot.setAxes(name,0,1,2)
 			elif n==4: trgplot.setAxes(name,0,1,2,3)

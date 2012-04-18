@@ -74,7 +74,7 @@ images far from focus."""
 	parser.add_pos_argument(name="particles",help="List the file to process with e2ctf here.", default="", guitype='filebox', browser="EMCTFParticlesTable(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=2, mode='autofit,tuning,genoutp,gensf')
 	parser.add_header(name="ctfheader", help='Options below this label are specific to e2ctflassaverage3d', title="### e2ctf options ###", default=None, row=1, col=0, rowspan=1, colspan=2, mode="autofit,tuning,genoutp,gensf")
 	
-	parser.add_argument("--allparticles",action="store_true",help="Will process all particle sets stored in BDB in the particles subdirectory witho",default=False)
+	parser.add_argument("--allparticles",action="store_true",help="Will process all particle sets stored in BDB in the particles subdirectory",default=False)
 	parser.add_argument("--minptcl",type=int,help="Files with fewer than the specified number of particles will be skipped",default=0)
 	parser.add_argument("--gui",action="store_true",help="Start the GUI for interactive fitting",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode="tuning[True]")
 	parser.add_argument("--autofit",action="store_true",help="Runs automated CTF fitting on the input images",default=False, guitype='boolbox', row=6, col=0, rowspan=1, colspan=1, mode='autofit[True]')

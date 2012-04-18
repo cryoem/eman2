@@ -283,12 +283,16 @@ def get_apix_used(options):
 	'''
 	apix = 1.0
 	if options.apix: apix = options.apix # check function checks whether or not this value is positive, non zero
-	elif db_check_dict("bdb:project"):
-		# this is a temporary workaround to get things working in the workflow
-		db2 = db_open_dict("bdb:project")
-		apix = db2.get("global.apix",dfl=1)
-		db_close_dict("bdb:project")
-		if apix == 0: apix = 1
+	else:
+		img=EMData(options.input,0)
+		try: apix=img["ctf"].apix
+		except: apix=img["apix_x"]
+	#elif db_check_dict("bdb:project"):
+		## this is a temporary workaround to get things working in the workflow
+		#db2 = db_open_dict("bdb:project")
+		#apix = db2.get("global.apix",dfl=1)
+		#db_close_dict("bdb:project")
+		#if apix == 0: apix = 1
 	#else apix is 1 !
 	return apix
 		
