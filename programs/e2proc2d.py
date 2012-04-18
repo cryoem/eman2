@@ -536,50 +536,51 @@ def main():
 						#outfile = outfile + "%04d" % i + ".lst"
 						#options.outtype = "lst"
 				
-				#write processed image to file
-				if options.threed2threed or options.twod2threed:    #output a single 3D image
-					if i==0:
-						if not os.path.isfile(outfile):	#create a dummy 3D image for regional writing if not already exist
-							out3d_img = EMData(d.get_xsize(), d.get_ysize(), nimg)
-							if 'mrc8bit' in optionlist:
-								out3d_img.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', 0, EMUtil.get_image_ext_type(options.outtype), True, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
-							elif 'mrc16bit' in optionlist:
-								out3d_img.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', 0, EMUtil.get_image_ext_type(options.outtype), True, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
-							else:
-								out3d_img.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), True, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
-					
-					region = Region(0, 0, i, d.get_xsize(), d.get_ysize(), 1)
-									
-					if 'mrc8bit' in optionlist:
-							d.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', 0, EMUtil.get_image_ext_type(options.outtype), False, region, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
-					elif 'mrc16bit' in optionlist:
-							d.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', 0, EMUtil.get_image_ext_type(options.outtype), False, region, EMUtil.EMDataType.EM_SHORT, not(options.swap))
-					else:
-							d.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, region, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
-					
-				elif options.unstacking:	#output a series numbered single image files
-					if 'mrc8bit' in optionlist:
-						d.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
-					elif 'mrc16bit' in optionlist:
-						d.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
-					else:
-						d.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.'+outfile.split('.')[-1])
-				else:   #output a single 2D image or a 2D stack			
-					if 'mrc8bit' in optionlist:
-						d.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
-					elif 'mrc16bit' in optionlist:
-						d.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
-					else:
-						if options.inplace:
-							d.write_image(outfile, i, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
-						else: 
-							d.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+				if not options.average:	#skip write the input image to output file 
+					#write processed image to file
+					if options.threed2threed or options.twod2threed:    #output a single 3D image
+						if i==0:
+							if not os.path.isfile(outfile):	#create a dummy 3D image for regional writing if not already exist
+								out3d_img = EMData(d.get_xsize(), d.get_ysize(), nimg)
+								if 'mrc8bit' in optionlist:
+									out3d_img.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', 0, EMUtil.get_image_ext_type(options.outtype), True, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
+								elif 'mrc16bit' in optionlist:
+									out3d_img.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', 0, EMUtil.get_image_ext_type(options.outtype), True, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
+								else:
+									out3d_img.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), True, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+						
+						region = Region(0, 0, i, d.get_xsize(), d.get_ysize(), 1)
+										
+						if 'mrc8bit' in optionlist:
+								d.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', 0, EMUtil.get_image_ext_type(options.outtype), False, region, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
+						elif 'mrc16bit' in optionlist:
+								d.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', 0, EMUtil.get_image_ext_type(options.outtype), False, region, EMUtil.EMDataType.EM_SHORT, not(options.swap))
+						else:
+								d.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, region, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+						
+					elif options.unstacking:	#output a series numbered single image files
+						if 'mrc8bit' in optionlist:
+							d.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
+						elif 'mrc16bit' in optionlist:
+							d.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
+						else:
+							d.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.'+outfile.split('.')[-1])
+					else:   #output a single 2D image or a 2D stack			
+						if 'mrc8bit' in optionlist:
+							d.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
+						elif 'mrc16bit' in optionlist:
+							d.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
+						else:
+							if options.inplace:
+								d.write_image(outfile, i, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+							else: 
+								d.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
 				
 	#end of image loop
 		
 	if average:
 		average["ptcl_repr"]=(n1-n0+1)
-		average.mult(1.0/(n1-n0+1.0));
+		average.mult(1.0/(n1-n0+1.0))
 #		average.process_inplace("normalize");
 		average.append_image(outfile);
 
