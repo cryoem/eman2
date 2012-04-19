@@ -57,37 +57,46 @@ def main():
 	if not os.access(boxesdir, os.R_OK):
 		os.mkdir(path)
 	
-	#If we use bdb, then make a virtual stack
+	#If we use bdb, then make a virtual stack (but only if all input files are also BDB)
 	out_name = ""
 	if options.filetype == "bdb":
 		out_name = "bdb:%s#%s"%(path,os.path.splitext(options.stackname)[0])
-		
-		# Check exclude DB
-		if db_check_dict("bdb:select"):
-			select_db = db_open_dict("bdb:select")
-		else:
-			select_db = None
-		cmd = ""
 	
-		for i,name in enumerate(args):
-			cmd = "e2bdb.py"
-			no_exc = True
-			if options.excludebad and select_db != None:
-				exc_db = re.sub(r'_ctf_flip$|_ctf_wiener$','',get_file_tag(name))
-				if select_db.has_key(exc_db):
-					cmd += " "+name+"?exclude."+exc_db
-					no_exc=False
-				
-			if no_exc:
-				cmd += " "+name
-				
-			cmd += " --appendvstack="+out_name
-		
-			success = (os.system(cmd) in (0,11,12))
+		# Check to see if any of the input files are not BDB format if this is so then we Cannot make a virtual stack and must make a 'regular' stack
+		bdbfiles = True
+		for arg in args:
+			if arg[:4] != "bdb:": 
+				bdbfiles = False
+				break
 			
-		exit(0)
+		# Make a virtual stack. This is only possible if all input files and the output format are BDB. Otherwise pass over this code and make a 'real' stack
+		if bdbfiles:		
+			# Check exclude DB
+			if db_check_dict("bdb:select"):
+				select_db = db_open_dict("bdb:select")
+			else:
+				select_db = None
+			cmd = ""
 	
-	#If we don't use bdb, then make a 'real' stack
+			for i,name in enumerate(args):
+				cmd = "e2bdb.py"
+				no_exc = True
+				if options.excludebad and select_db != None:
+					exc_db = re.sub(r'_ctf_flip$|_ctf_wiener$','',get_file_tag(name))
+					if select_db.has_key(exc_db):
+						cmd += " "+name+"?exclude."+exc_db
+						no_exc=False
+				
+				if no_exc:
+					cmd += " "+name
+				
+				cmd += " --appendvstack="+out_name
+		
+				success = (os.system(cmd) in (0,11,12))
+			
+			exit(0)
+	
+	#Make a 'real' stack
 	if options.filetype == "hdf":
 		out_name = os.path.join(path,"%s.hdf"%os.path.splitext(options.stackname)[0])
 	if options.filetype == "spi":

@@ -30,7 +30,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
-import os
+import os, shutil, glob
 from EMAN2 import *
 
 def main():
@@ -97,13 +97,30 @@ def main():
 		partsdir = os.path.join(".","particles")
 		if not os.access(partsdir, os.R_OK):
 			os.mkdir("particles")
+			
+		VanHeelHash = {}
 		for filename in args:
 			if options.importaction == "move":
-				os.rename(filename,os.path.join(partsdir,os.path.basename(filename)))
-			if options.importaction == "copy":
-				shutil.copy(filename,partsdir)
-			if options.importaction == "link":
-				os.symlink(filename,os.path.join(partsdir,os.path.basename(filename)))
+				# If this is an image file move both hed and img files regardless of whether or not they are listed
+				if filename[-4:].upper() == ".HED" or filename[-4:].upper() == ".IMG":
+					if not VanHeelHash.has_key(filename[:-4]):
+						globed = glob.glob(filename[:-4]+'*')
+						vhglobed = filter(lambda x: x[-4:].upper() == ".HED" or x[-4:].upper() == ".IMG", globed)
+						for vh in vhglobed:
+							if options.importaction == "move":
+								os.rename(vh,os.path.join(partsdir,os.path.basename(vh)))
+							if options.importaction == "copy":
+								shutil.copy(vh,partsdir)
+							if options.importaction == "link":
+								os.symlink(vh,os.path.join(partsdir,os.path.basename(vh)))
+						VanHeelHash[filename[:-4]] = 1
+				else:
+					if options.importaction == "move":
+						os.rename(filename,os.path.join(partsdir,os.path.basename(filename)))	
+					if options.importaction == "copy":
+						shutil.copy(filename,partsdir)
+					if options.importaction == "link":
+						os.symlink(filename,os.path.join(partsdir,os.path.basename(filename)))
 				
 	# Import tomograms
 	if options.import_tomos:
