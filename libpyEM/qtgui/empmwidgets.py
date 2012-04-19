@@ -133,7 +133,7 @@ class PMIntEntryWidget(PMBaseWidget):
 		QtCore.QObject.connect(self.intbox,QtCore.SIGNAL("editingFinished()"),self._on_intchanged)
 		
 	def _on_intchanged(self, quiet=False):
-		if str(self.intbox.text()).upper() == "NONE":
+		if str(self.intbox.text()).upper() == "NONE" or str(self.intbox.text()) == "":
 			self.value = None
 			self.setErrorMessage(None)
 			return
@@ -226,7 +226,7 @@ class PMFloatEntryWidget(PMBaseWidget):
 		QtCore.QObject.connect(self.floatbox,QtCore.SIGNAL("editingFinished()"),self._on_floatchanged)
 		
 	def _on_floatchanged(self, quiet=False):
-		if str(self.floatbox.text()).upper() == "NONE":
+		if str(self.floatbox.text()).upper() == "NONE" or str(self.floatbox.text()) == "":
 			self.value = None
 			self.setErrorMessage(None)
 			return

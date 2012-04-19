@@ -793,6 +793,7 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 	def mousePressEvent(self, event):
 		#Save a snapshot of the scene
 		self.clusterorigin_rad = None
+		self.clusterradius = None
 		self.clusterorigin_theta = None
 		lc=self.scr2plot(event.x(),event.y())
 		self.lastcx = self.firstcx = event.x()
@@ -853,7 +854,7 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 				
 	def mouseReleaseEvent(self, event):
 		# Find all particles within the circle
-		if self.clusterorigin_rad:
+		if self.clusterorigin_rad and self.clusterradius:
 			pcount = 0
 			sigmaAngSin = 0.0
 			sigmaAngCos = 0.0
@@ -870,6 +871,9 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 					sigmaRad += data[1][i]
 					statsArray.append([math.sin(data[0][i]), math.cos(data[0][i]), data[1][i]])
 					pcount += 1
+			if pcount == 0:
+				return
+			# Compute stats	
 			meanAngle = math.degrees(math.atan2(sigmaAngSin/pcount,sigmaAngCos/pcount))
 			meanRad = sigmaRad/pcount
 			#print "Mean Angle: %3.2f, Mean Rad: %3.2f, Num particles: %d"%(meanAngle, meanRad, pcount)

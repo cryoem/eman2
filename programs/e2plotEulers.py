@@ -89,7 +89,7 @@ def main():
 	# Make the QT app and plot
 	app = EMApp()
 	plot = EMPolarPlot2DWidget()
-	plot.set_data((theta,r),50,180)
+	plot.set_data((theta,r),linewidth=50,radcut=180)
 	plot.setPointSizes(size)
 	plot.show()
 	

@@ -818,7 +818,8 @@ class EMDirEntry(object):
 		return len(self.__children)
 	
 	def fillChildNames(self):
-		"""Makes sure that __children contains at LEAST a list of names"""
+		"""Makes sure that __children contains at LEAST a list of names. This function needs to reimplmented to make derived browsers,
+		NOTE!!!! You must have nimg implmented in your reimplmentation (I know this is a bad design....)"""
 		if self.__children==None:
 			
 			if not os.path.isdir(self.filepath) :
