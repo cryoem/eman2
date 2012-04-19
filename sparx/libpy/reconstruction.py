@@ -836,24 +836,25 @@ def recons3d_em_MPI(projections_stack_filename, projections_indexes = [], max_it
 		all_projs_count = 0
 	
 	# ----- scatter projections among MPI processes
-	bcast_number_to_all(all_projs_count)
+	all_projs_count = bcast_number_to_all(all_projs_count)
 	
 	if all_projs_count < mpi_n:
 		ERROR("Number of projections cannot be less than number of MPI processes", "recons3d_em")
 	
-	if mpi_r == 0 and mpi_n > 1:
-		for i in xrange(mpi_n-2):
-			target_node = i+1
-			projs_begin = (target_node * all_projs_count) // mpi_n
-			projs_end = ((target_node+1) * all_projs_count) // mpi_n
+	if mpi_n > 1:
+		if mpi_r == 0:
+			for i in xrange(mpi_n-2):
+				target_node = i+1
+				projs_begin = (target_node * all_projs_count) // mpi_n
+				projs_end = ((target_node+1) * all_projs_count) // mpi_n
+				for i in xrange(projs_end-projs_begin):
+					send_EMData(projections[projs_begin + i], target_node, 44)
+			projections = projections[0:(all_projs_count // mpi_n)]
+		else:
+			projs_begin = (mpi_r * all_projs_count) // mpi_n
+			projs_end = ((mpi_r+1) * all_projs_count) // mpi_n
 			for i in xrange(projs_end-projs_begin):
-				send_EMData(projections[projs_begin + i], target_node, 44)
-		projections = projections[0:(all_projs_count // mpi_n)]
-	else:
-		projs_begin = (mpi_r * all_projs_count) // mpi_n
-		projs_end = ((mpi_r+1) * all_projs_count) // mpi_n
-		for i in xrange(projs_end-projs_begin):
-			projections.append(recv_EMData(0,44))	
+				projections.append(recv_EMData(0,44))	
 	# ----------------------------------------------
 	
 	nx = projections[0].get_xsize()
@@ -875,6 +876,7 @@ def recons3d_em_MPI(projections_stack_filename, projections_indexes = [], max_it
 	# ----- create initial solution, calculate weights and normalization image (a)
 	projections_angles = []  # list of lists of angles
 	projections_data   = []  # list of lists of projections' images with weights
+	print "Projs: ", len(projections)
 	for proj in projections:
 		angles = [] # list of angles
 		data = []   # list of projections' images with weights
@@ -933,7 +935,8 @@ def recons3d_em_MPI(projections_stack_filename, projections_indexes = [], max_it
 			break
 		prev_avg_absolute_voxel_change = avg_absolute_voxel_change
 		solution = q
-		if mpi_r == 0: print "Iteration ", iter_no, ",  avg_abs_voxel_change=", avg_absolute_voxel_change 
+		#if mpi_r == 0: 
+		print "Iteration ", iter_no, ",  avg_abs_voxel_change=", avg_absolute_voxel_change 
 		if min_avg_abs_voxel_change > avg_absolute_voxel_change:
 			break
 	time_iterations = clock() - time_iterations
