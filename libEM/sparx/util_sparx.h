@@ -541,19 +541,25 @@ class FakeKaiserBessel : public KaiserBessel {
 	static Dict Crosrng_ms_delta(EMData* circ1, EMData* circ2, vector<int> numr, float delta_start, float delta);
 
 	/**
-	 * checks both straight & mirrored position
+	 * checks either straight or mirrored position depending on flag
 	 * input - fourier transforms of rings!!
 	 * circ1 already multiplied by weights!
 	*/
 	static Dict Crosrng_sm_psi(EMData* circ1, EMData* circ2, vector<int> numr, float psi, int flag, float psimax);
 
+    /**
+	 * checks both straight & mirrored position
+	 * input - fourier transforms of rings!!
+	 * circ1 already multiplied by weights!
+	*/
+	static Dict Crosrng_psi(EMData* circ1, EMData* circ2, vector<int> numr, float psi, float psimax);
+ 
 	/**
 	 * checks both straight & mirrored positions
 	 * Find only positions within +/-pis_max of 0 and 180 (for helcal use)
 	 * input - fourier transforms of rings!
 	 * circ1 already multiplied by weights!
 	*/
-	static Dict Crosrng_psi_0_180(EMData* circ1, EMData* circ2, vector<int> numr, float psi_max);
 	static Dict Crosrng_psi_0_180_no_mirror(EMData* circ1, EMData* circ2, vector<int> numr, float psi_max);
 	static Dict Crosrng_ns(EMData* circ1, EMData* circ2, vector<int> numr);
 
