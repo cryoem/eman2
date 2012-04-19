@@ -804,7 +804,6 @@ def recons3d_em(projections_stack_filename, projections_indexes = [], max_iterat
 	return solution
 
 
-
 def recons3d_em_MPI(projections_stack_filename, projections_indexes = [], max_iterations_count = 100, min_avg_abs_voxel_change = 0.01, use_weights = False, symmetry = "c1"):
 	"""
 	Reconstruction algorithm basing on the Expectation Maximization method
