@@ -101,7 +101,7 @@ def main():
 		VanHeelHash = {}
 		for filename in args:
 			if options.importaction == "move":
-				# If this is an image file move both hed and img files regardless of whether or not they are listed
+				# If this is an IMAGIC file move both hed and img files regardless of whether or not they are both listed
 				if filename[-4:].upper() == ".HED" or filename[-4:].upper() == ".IMG":
 					if not VanHeelHash.has_key(filename[:-4]):
 						globed = glob.glob(filename[:-4]+'*')
