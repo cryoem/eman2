@@ -328,7 +328,7 @@ namespace EMAN
 			
 			        // here I have added a little function to filter to a resolvability (John Flanagan 20/09/2010)
 				float R = 1/((float)params["cutoff_resolv"]*(float)dict["apix_x"]);    // convert to pixels
-				float rsigma = sqrt((-4*log(0.36f))/(pow(M_PI,2)*pow(R,2)));        // find optimal sigma
+				float rsigma = sqrt(-4*log(0.36))/(M_PI*R);        // find optimal sigma
 				params["cutoff_abs"] = rsigma / sqrt(2.0f);                               // patch to fix the 2s^2 problem
 				params["sigma"] = rsigma / sqrt(2.0f);                                    // patch to fix the 2s^2 problem
 			}
@@ -338,7 +338,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d = NewFourierProcessor::get_param_types();
-			d.put("cutoff_resolv", EMObject::FLOAT, "Resolvibility in 1/A, applied using filter.lowpass.gauss where cutoff_freq = sqrt(-4ln(0.36)/pi^2R^2) & R = 1/cf*apix");
+			d.put("cutoff_resolv", EMObject::FLOAT, "Resolvibility in 1/A, applied using filter.lowpass.gauss where cutoff_freq = 2/(pi*R) & R = 1/cutoff_resolv*apix");
 			return d;
 		}
 		

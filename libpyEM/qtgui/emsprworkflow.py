@@ -3722,10 +3722,6 @@ class E2MakeSetTask(E2ParticleExamineTask):
 		
 	def make_v_stack(self,filenames,out_name,path,exclude_bad,progress=None,N=0,M=1):
 	 	
-	 	print "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-	 	print filenames,out_name,path,exclude_bad,progress, N, M
-	 	exit(1)
-	 	
 		if db_check_dict("bdb:select"):
 			select_db = db_open_dict("bdb:select")
 		else:
@@ -3746,7 +3742,6 @@ class E2MakeSetTask(E2ParticleExamineTask):
 				
 			cmd += " --appendvstack=bdb:"+path+"#"+out_name
 			print cmd
-			exit(1)
 #			print N,i,len(filenames),M
 			success = (os.system(cmd) in (0,11,12))
 			if not success:
