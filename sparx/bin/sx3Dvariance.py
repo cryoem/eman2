@@ -42,6 +42,7 @@ import sys
 def calc_projections_variance(projections, members, phi, theta, delta):
 	from string import replace
 	from random import random
+	from sparx import get_im, ave_var
 
 	class_data = []
 	for im in members: class_data.append(get_im(projections, im))
@@ -53,14 +54,21 @@ def calc_projections_variance(projections, members, phi, theta, delta):
 	return projs_var
 
 
-def find_projections_variances(projections_stack_filename, symmetry = "c1"):
+def find_projections_variances(projections_stack_filename, projections_indexes = [], symmetry = "c1"):
+	from sparx import even_angles, assign_projangles
+	from time import time
+	
 	projections_variances_list = []   # result
 	
 	# The fourth and fifth columns are originally for shifts,
 	# but we will recycle them and use the fourth column for the image number,
 	# and the fifth one for the active flag
 
-	projections = EMData.read_images(projections_stack_filename)
+	if len(projections_indexes) == 0:
+		projections = EMData.read_images(projections_stack_filename)
+	else:
+		projections = EMData.read_images(projections_stack_filename, projections_indexes)
+	
 	proj_ang = []
 	for i in xrange(len(projections)):
 		proj = projections[i]
@@ -94,7 +102,7 @@ def find_projections_variances(projections_stack_filename, symmetry = "c1"):
 		while trial < max_trial:
 			mid_delta = (min_delta+max_delta)/2
 			print "...... Testing delta = %6.2f"%(mid_delta)
-			ref_ang = even_angles(mid_delta, symmetry)
+			ref_ang = even_angles(mid_delta, symmetry=symmetry)
 			t1 = time()
 			asg = assign_projangles(proj_ang_now, ref_ang)
 			print "............ Time used = %6.2f"%(time()-t1)
@@ -143,7 +151,7 @@ def main():
 	usage = progname + " prj_stack volume [begin end step] --iter --var --sym=symmetry --MPI"
 	parser = OptionParser(usage, version=SPARXVERSION)
 
-	parser.add_option("--iter", type="int"         , default=100  , help="Maximum number of iterations" )
+	parser.add_option("--iter", type="int"         , default=20   , help="Maximum number of iterations" )
 	parser.add_option("--var" , action="store_true", default=False, help="stack on input consists of variances")
 	parser.add_option("--sym" , type="string"      , default="c1" , help="symmetry" )
 	parser.add_option("--MPI" , action="store_true", default=False, help="use MPI version ")
@@ -179,7 +187,8 @@ def main():
 
 	global_def.BATCH = True
 	if not options.var:
-		prj_stack = find_projections_variances(prj_stack, symmetry)
+		prj_stack = find_projections_variances(prj_stack, pid_list, options.sym)
+		pid_list = []
 	
 	if options.MPI:
 		from mpi import mpi_comm_rank, MPI_COMM_WORLD

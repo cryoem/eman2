@@ -708,10 +708,10 @@ def bootstrap_nn(proj_stack, volume_stack, list_proj, niter, media="memory", npa
         		output.flush()
 
 
-def recons3d_em(projections_stack_filename, projections_indexes = [], max_iterations_count = 100, min_avg_abs_voxel_change = 0.01, use_weights = False, symmetry = "c1"):
+def recons3d_em(projections_stack, projections_indexes = [], max_iterations_count = 100, min_avg_abs_voxel_change = 0.01, use_weights = False, symmetry = "c1"):
 	"""
 	Reconstruction algorithm basing on the Expectation Maximization method
-		projections_stack_filename   -- file with projections
+		projections_stack            -- file or list with projections
 		projections_indexes          -- list of projections id, empty == all projections from file 
 		max_iterations_count         -- stop criterion 
 		min_avg_abs_voxel_change     -- stop criterion 
@@ -721,12 +721,21 @@ def recons3d_em(projections_stack_filename, projections_indexes = [], max_iterat
 	"""
 	from time import clock
 	from utilities import model_blank, model_circle, model_square
+	import types
 	min_allowed_divisor = 0.0001
 	
 	if len(projections_indexes) == 0:
-		projections = EMData.read_images(projections_stack_filename)
+		if type(projections_stack) is types.StringType:
+			projections = EMData.read_images(projections_stack)
+		else:
+			projections = projections_stack
 	else:
-		projections = EMData.read_images(projections_stack_filename, projections_indexes)
+		if type(projections_stack) is types.StringType:
+			projections = EMData.read_images(projections_stack, projections_indexes)
+		else:
+			projections = []
+			for p in projections_indexes:
+				projections.append( projections_stack[p] )
 	
 	if len(projections) == 0:
 		ERROR("Stack of projections cannot be empty", "recons3d_em")
@@ -804,10 +813,10 @@ def recons3d_em(projections_stack_filename, projections_indexes = [], max_iterat
 	return solution
 
 
-def recons3d_em_MPI(projections_stack_filename, projections_indexes = [], max_iterations_count = 100, min_avg_abs_voxel_change = 0.01, use_weights = False, symmetry = "c1"):
+def recons3d_em_MPI(projections_stack, projections_indexes = [], max_iterations_count = 100, min_avg_abs_voxel_change = 0.01, use_weights = False, symmetry = "c1"):
 	"""
 	Reconstruction algorithm basing on the Expectation Maximization method
-		projections_stack_filename   -- file with projections
+		projections_stack            -- file or list with projections
 		projections_indexes          -- list of projections id, empty == all projections from file 
 		max_iterations_count         -- stop criterion 
 		min_avg_abs_voxel_change     -- stop criterion 
@@ -817,6 +826,7 @@ def recons3d_em_MPI(projections_stack_filename, projections_indexes = [], max_it
 	"""
 	from time import clock
 	from utilities import model_blank, model_circle, model_square
+	import types
 	from mpi import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 	from utilities import reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, send_EMData, recv_EMData
 	min_allowed_divisor = 0.0001
@@ -825,15 +835,27 @@ def recons3d_em_MPI(projections_stack_filename, projections_indexes = [], max_it
 	mpi_r = mpi_comm_rank(MPI_COMM_WORLD)
 	
 	# ----- read projections 
-	all_projs_count = EMUtil.get_image_count(projections_stack_filename)
+	if len(projections_indexes) == 0:
+		if type(projections_stack) is types.StringType:
+			projections = EMData.read_images(projections_stack)
+		else:
+			projections = projections_stack
+	else:
+		if type(projections_stack) is types.StringType:
+			projections = EMData.read_images(projections_stack, projections_indexes)
+		else:
+			projections = []
+			for p in projections_indexes:
+				projections.append( projections_stack[p] )
+	
+	all_projs_count = len(projections)
 	
 	if all_projs_count < mpi_n:
 		ERROR("Number of projections cannot be less than number of MPI processes", "recons3d_em")
 	
 	projs_begin = (mpi_r * all_projs_count) // mpi_n
 	projs_end = ((mpi_r+1) * all_projs_count) // mpi_n
-	projections = EMData.read_images( projections_stack_filename, range(projs_begin,projs_end) )
-	
+	projections = projections[projs_begin:projs_end]
 	# ----------------------------------------------
 	
 	nx = projections[0].get_xsize()
