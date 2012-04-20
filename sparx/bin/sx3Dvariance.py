@@ -54,7 +54,7 @@ def calc_projections_variance(projections, members, phi, theta, delta):
 	return projs_var
 
 
-def find_projections_variances(projections_stack_filename, projections_indexes = [], symmetry = "c1"):
+def find_projections_variances(projections_stack_filename, symmetry = "c1"):
 	from sparx import even_angles, assign_projangles
 	from time import time
 	
@@ -64,10 +64,7 @@ def find_projections_variances(projections_stack_filename, projections_indexes =
 	# but we will recycle them and use the fourth column for the image number,
 	# and the fifth one for the active flag
 
-	if len(projections_indexes) == 0:
-		projections = EMData.read_images(projections_stack_filename)
-	else:
-		projections = EMData.read_images(projections_stack_filename, projections_indexes)
+	projections = EMData.read_images(projections_stack_filename)
 	
 	proj_ang = []
 	for i in xrange(len(projections)):
@@ -170,8 +167,6 @@ def main():
 	if len(args) == 2:
 		prj_stack = args[0]
 		vol_stack = args[1]
-		nimage = EMUtil.get_image_count( prj_stack )
-		pid_list = range(0, nimage) 
 	else:
 		ERROR("incomplete list of arguments","sxvariances3d",1)
 		exit()
@@ -180,17 +175,16 @@ def main():
 
 	global_def.BATCH = True
 	if not options.var:
-		prj_stack = find_projections_variances(prj_stack, pid_list, options.sym)
-		pid_list = []
+		prj_stack = find_projections_variances(prj_stack, options.sym)
 	
 	if options.MPI:
 		from mpi import mpi_comm_rank, MPI_COMM_WORLD
-		res = recons3d_em_MPI(prj_stack, pid_list, options.iter, 0.01, True, options.sym)
+		res = recons3d_em_MPI(prj_stack, options.iter, 0.01, True, options.sym)
 		mpi_r = mpi_comm_rank(MPI_COMM_WORLD)
 		if mpi_r == 0:
 			res.write_image(vol_stack)
 	else:
-		res = recons3d_em(prj_stack, pid_list, options.iter, 0.01, True, options.sym)
+		res = recons3d_em(prj_stack, options.iter, 0.01, True, options.sym)
 		res.write_image(vol_stack)
 	global_def.BATCH = False
 

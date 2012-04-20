@@ -708,11 +708,10 @@ def bootstrap_nn(proj_stack, volume_stack, list_proj, niter, media="memory", npa
         		output.flush()
 
 
-def recons3d_em(projections_stack, projections_indexes = [], max_iterations_count = 100, min_avg_abs_voxel_change = 0.01, use_weights = False, symmetry = "c1"):
+def recons3d_em(projections_stack, max_iterations_count = 100, min_avg_abs_voxel_change = 0.01, use_weights = False, symmetry = "c1"):
 	"""
 	Reconstruction algorithm basing on the Expectation Maximization method
 		projections_stack            -- file or list with projections
-		projections_indexes          -- list of projections id, empty == all projections from file 
 		max_iterations_count         -- stop criterion 
 		min_avg_abs_voxel_change     -- stop criterion 
 		use_weights                  -- true == multiply projections by extra weights
@@ -724,18 +723,10 @@ def recons3d_em(projections_stack, projections_indexes = [], max_iterations_coun
 	import types
 	min_allowed_divisor = 0.0001
 	
-	if len(projections_indexes) == 0:
-		if type(projections_stack) is types.StringType:
-			projections = EMData.read_images(projections_stack)
-		else:
-			projections = projections_stack
+	if type(projections_stack) is types.StringType:
+		projections = EMData.read_images(projections_stack)
 	else:
-		if type(projections_stack) is types.StringType:
-			projections = EMData.read_images(projections_stack, projections_indexes)
-		else:
-			projections = []
-			for p in projections_indexes:
-				projections.append( projections_stack[p] )
+		projections = projections_stack
 	
 	if len(projections) == 0:
 		ERROR("Stack of projections cannot be empty", "recons3d_em")
@@ -813,11 +804,10 @@ def recons3d_em(projections_stack, projections_indexes = [], max_iterations_coun
 	return solution
 
 
-def recons3d_em_MPI(projections_stack, projections_indexes = [], max_iterations_count = 100, min_avg_abs_voxel_change = 0.01, use_weights = False, symmetry = "c1"):
+def recons3d_em_MPI(projections_stack, max_iterations_count = 100, min_avg_abs_voxel_change = 0.01, use_weights = False, symmetry = "c1"):
 	"""
 	Reconstruction algorithm basing on the Expectation Maximization method
 		projections_stack            -- file or list with projections
-		projections_indexes          -- list of projections id, empty == all projections from file 
 		max_iterations_count         -- stop criterion 
 		min_avg_abs_voxel_change     -- stop criterion 
 		use_weights                  -- true == multiply projections by extra weights
@@ -835,18 +825,10 @@ def recons3d_em_MPI(projections_stack, projections_indexes = [], max_iterations_
 	mpi_r = mpi_comm_rank(MPI_COMM_WORLD)
 	
 	# ----- read projections 
-	if len(projections_indexes) == 0:
-		if type(projections_stack) is types.StringType:
-			projections = EMData.read_images(projections_stack)
-		else:
-			projections = projections_stack
+	if type(projections_stack) is types.StringType:
+		projections = EMData.read_images(projections_stack)
 	else:
-		if type(projections_stack) is types.StringType:
-			projections = EMData.read_images(projections_stack, projections_indexes)
-		else:
-			projections = []
-			for p in projections_indexes:
-				projections.append( projections_stack[p] )
+		projections = projections_stack
 	
 	all_projs_count = len(projections)
 	
