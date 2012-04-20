@@ -798,6 +798,23 @@ class EMDirEntry(object):
 		for i, child in enumerate(self.__children):
 			child.index = i
 		
+	def findSelected(self,ret):
+		"Used to retain selection during sorting. Returns a list of (parent,row) pairs."
+		
+		if self.__children==None or len(self.__children)==0 or isinstance(self.__children[0],str): return
+
+		for i, child in enumerate(self.__children):
+			try :
+				if child.sel :
+#					print "sel ->",child.name
+					child.sel=False
+					ret.append((self,i))
+			except:
+#				print "not -> ",child.name
+				pass
+			
+			child.findSelected(ret)
+		
 	def parent(self):
 		"""Return the parent"""
 		return self.__parent
@@ -1160,6 +1177,13 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 		self.root.sort(column,order)
 #		self.emit(QtCore.SIGNAL("layoutChanged()"))
 		self.layoutChanged.emit()
+	
+	def findSelected(self,toplevel=True):
+		"Makes a list of QModelIndex items for all items marked as selected"
+		sel=[]
+		self.root.findSelected(sel)
+		if toplevel : return [self.createIndex(i[1],0,i[0]) for i in sel if i[0]==self.root]
+		return [self.createIndex(i[1],0,i[0]) for i in sel]
 	
 	def getCacheDB(self):
 		if not self.db:
@@ -1714,6 +1738,60 @@ class EMInfoWin(QtGui.QWidget):
 			self.stack.setCurrentIndex(i)		# put the new pane on top
 			
 
+class SortSelTree(QtGui.QTreeView):
+	"""This is a subclass of QtGui.QTreeView. It is almost identical but implements selection processing with sorting. 
+	The correct way of doing this in QT4.2 is to use a QSortFilterProxy object, but that won't work properly in this case."""
+
+	def __init__(self,parent=None):
+		QtGui.QTreeView.__init__(self,parent)
+		self.header().setClickable(True)
+		self.connect(self.header(),QtCore.SIGNAL("sectionClicked(int)"),self.colclick)
+		self.scol=-1
+		self.sdir=1
+
+	def setSortingEnabled(self,enable):
+#		print "enable ",enable
+		return		#always enabled 
+
+	def colclick(self,col):
+		if col==self.scol : self.sdir^=1
+		else : 
+			self.scol=col
+			self.sdir=1
+			
+		self.header().setSortIndicator(self.scol,self.sdir)
+		self.header().setSortIndicatorShown(True)
+
+		self.sortByColumn(self.scol,self.sdir)
+
+	def sortByColumn(self,col,ascend):
+		
+		if col==-1 : return
+		
+		# we mark all selected records
+		try: 
+			for s in self.selectedIndexes(): 
+				if s.column()==0: 
+					s.internalPointer().sel=True
+#					print s.row()
+		except: 
+			pass
+#			print "no model"
+			
+		# then do the actual sort
+		QtGui.QTreeView.sortByColumn(self,col,ascend)
+		
+		# then set a new selection list
+		sel=self.model().findSelected()
+		if len(sel)==0 :return
+		
+		qis=QtGui.QItemSelection()
+		for i in sel: qis.select(i,i)
+		self.selectionModel().select(qis,QtGui.QItemSelectionModel.ClearAndSelect|QtGui.QItemSelectionModel.Rows)
+		
+#		for i in sel: self.selectionModel().select(i,QtGui.QItemSelectionModel.ClearAndSelect)
+#		self.update()
+
 class EMBrowserWidget(QtGui.QWidget):
 	"""This widget is a file browser for EMAN2. In addition to being a regular file browser, it supports:
 	- getting information about recognized data types
@@ -1792,7 +1870,7 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.gbl.addWidget(self.wbookmarkfr,1,0)
 		
 		# This is the main window listing files and metadata
-		self.wtree = QtGui.QTreeView()
+		self.wtree = SortSelTree()
 		if multiselect: self.wtree.setSelectionMode(3)	# extended selection
 		else : self.wtree.setSelectionMode(1)			# single selection
 		self.wtree.setSelectionBehavior(1)		# select rows
@@ -1930,7 +2008,7 @@ class EMBrowserWidget(QtGui.QWidget):
 # 		self.itemSel(None)
 
 	def itemSel(self,qmi):
-#		print "Item selected",qmi.row(),qmi.column(),qmi.internalPointer().path()
+#		print "Item selected",qmi.row(),qmi.column(),qmi.parent(),qmi.internalPointer().path()
 		qism=self.wtree.selectionModel().selectedRows()
 		if len(qism)>1 : 
 			self.wpath.setText("<multiple select>")

@@ -68,7 +68,7 @@ def main():
 
 	# options associated with e2project3d.py
 	parser.add_header(name="projectheader", help='Options below this label are specific to e2project', title="### e2project options ###", row=12, col=0, rowspan=1, colspan=3)
-	parser.add_argument("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos. Optionally specify a comma separated list to specify per-model symmetry.", guitype='multisymbox', row=10, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, tet, oct, icos. Optionally specify a comma separated list to specify per-model symmetry.", guitype='multisymbox', row=10, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--projector", dest = "projector", default = "standard",help = "Projector to use", guitype='comboparambox', choicelist='dump_projectors_list()', row=13, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--orientgen", type = str, default='eman:delta=5.0:inc_mirror=0:perturb=1',help = "The orientation generation argument for e2project3d.py", guitype='comboparambox', choicelist='dump_orientgens_list()', row=14, col=0, rowspan=1, colspan=3, mode="refinement")
 		
@@ -122,6 +122,13 @@ def main():
 	(options, args) = parser.parse_args()
 	error = False
 	options.models=options.models.split(",")
+	options.sym=options.sym.split(",")
+	if len(options.sym)==1 : 
+		options.sym=options.sym*len(options.models)
+		print "Using ",options.sym[0]," symmetry for all models"
+	elif len(options.sym)!=len(options.models):
+		print "Number of symmetries must match number of models"
+		sys.exit(1)
 
 	if check(options,True) == True : 
 		error = True
@@ -213,7 +220,7 @@ def main():
 		new_models = options.models
 		cmd=get_make3d_cmd(options)
 		for ii,m in enumerate(options.models):
-			if (run(cmd+" --output=%s --input_model=%d"%(m,ii))) :
+			if (run(cmd+"--sym=%s --output=%s --input_model=%d"%(options.sym[ii],m,ii))) :
 				print "Failed to execute %s" %get_make3d_cmd(options)
 				exit_refine(1,logid)
 
@@ -296,7 +303,7 @@ def exit_refine(n,logid):
 	exit(n)
 
 def get_make3d_cmd(options,check=False,nofilecheck=False):
-	e2make3dcmd = "e2make3d.py --input=%s --sym=%s --iter=%d -f" %(options.cafile,options.sym,options.m3diter)
+	e2make3dcmd = "e2make3d.py --input=%s --iter=%d -f" %(options.cafile,options.m3diter)
 	
 	e2make3dcmd += " --recon=%s " %(options.recon)
 
