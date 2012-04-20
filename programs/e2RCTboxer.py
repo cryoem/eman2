@@ -165,7 +165,7 @@ class RCTprocessor:
 			if self.options.format == "bdb":
 				out = "bdb:particles#" + get_file_tag(name) + self.options.suffix
 			else:
-				out = get_file_tag(name)+self.options.suffix+"."+self.options.format
+				out = os.path.join(os.path.join(".","particles"),get_file_tag(name)+self.options.suffix+"."+self.options.format)
 			self.names.append(out)
 			
 	def write_boxes(self):
@@ -553,7 +553,7 @@ class EMBoxList:
 	
 	def get_tiltdata_from_db(self):
 		#First check for the full path, if not present, then use the basename only
-		if db.has_key("tiltparams_"+self.entry):
+		if self.db.has_key("tiltparams_"+self.entry):
 			self.db["tiltparams_"+self.entry]
 		else:
 			return self.db["tiltparams_"+os.path.basename(self.entry)]

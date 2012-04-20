@@ -331,7 +331,7 @@ class EMParticlesEntry(EMDirEntry):
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
-		self.regex = re.compile('flip|wiener')
+		self.regex = re.compile('_ctf_flip.{0,5}|_ctf_flip_hp.{0,5}|_ctf_wiener.{0,5}')
 		self.type = None
 		self.particledim=None
 		self.defocus=None
@@ -465,7 +465,7 @@ class EMCTFParticlesEntry(EMDirEntry):
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
-		self.regex=re.compile("_flip$|_wiener$")
+		self.regex=re.compile("_ctf_flip.{0,5}$|_ctf_flip_hp.{0,5}$|_ctf_wiener.{0,5}$")
 		self.type = None
 		self.particledim=None
 		self.defocus=None
@@ -547,7 +547,7 @@ class EMCTFcorrectedParticlesEntry(EMCTFParticlesEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMCTFParticlesEntry.__init__(self,root,name,i,parent=None,hidedot=True,dirregex=None)
-		self.regex = re.compile(r'^(?!.*?wiener).*^(?!.*?flip).*')
+		self.regex = re.compile(r'^(?!.*?_ctf_wiener).*^(?!.*?_ctf_flip).*')
 	
 ######################################################################################################################
 
