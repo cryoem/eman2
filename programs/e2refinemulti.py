@@ -472,7 +472,7 @@ def get_projection_cmd(options,check=False):
 	if hasattr(options,"filtered_models"): # sometimes there is a filtered model, i.e. if mass or automask3d is specified
 		models = options.filtered_models
 		
-	e2projcmd = "e2project3d.py %s -f --sym=%s --projector=%s --outfile=%s --orientgen=%s --postprocess=normalize.circlemean" %(" ".join(models),options.sym,options.projector,options.projfile,options.orientgen)
+	e2projcmd = "e2project3d.py %s -f --sym=%s --projector=%s --outfile=%s --orientgen=%s --postprocess=normalize.circlemean" %(" ".join(models),",".join(options.sym),options.projector,options.projfile,options.orientgen)
 	
 	if options.parallel: e2projcmd += " --parallel=%s" %options.parallel
 	
