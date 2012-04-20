@@ -18775,92 +18775,75 @@ vector<float> Util::multiref_polar_ali_helical_90(EMData* image, const vector< E
 	float ang=0.0f;
 	int   kx = int(2*xrng/step+0.5)/2;
 	//if ynumber==-1, use the old code which process x and y direction equally.
-	if(ynumber==-1) {
-		int   ky = int(2*yrng/step+0.5)/2;
-		for (int i = -ky; i <= ky; i++) {
-			iy = i * step ;
-			for (int j = -kx; j <= kx; j++)  {
-				ix = j*step ;
-				EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
-
-				Normalize_ring( cimage, numr );
-
-				Frngs(cimage, numr);
-				//  compare with all reference images
-				// for iref in xrange(len(crefim)):
-				for ( iref = 0; iref < (int)crefim_len; iref++) {
-					Dict retvals = Crosrng_psi_0_180_no_mirror(crefim[iref], cimage, numr, psi_max);
-					double qn = retvals["qn"];
-					if( qn >= peak) {
-						sx = -ix;
-						sy = -iy;
-						nref = iref;
-						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-						peak = static_cast<float>(qn);
-						mirror = 0;
-					}
-				}  
-				delete cimage; cimage = 0;
-			}
-		   }
+	
+	int ky;
+	float stepy;
+	int kystart;
+	
+	if (ynumber == -1){
+	    ky = int(2*yrng/step+0.5)/2;
+	    stepy = step;
+	    kystart = -ky;
 	}
-	//if ynumber is given, it should be even. We need to check whether it is zero
-	else if(ynumber==0) {
-		sy = 0.0f;
-		for (int j = -kx; j <= kx; j++) {
+	else if(ynumber == 0){
+	     ky = 0;
+	   	 stepy = 0.0f;
+	   	 kystart = ky;
+	}
+	else {
+	    ky = int(ynumber/2);		
+		stepy=2*yrng/ynumber;
+		kystart = -ky + 1;    
+	}
+	
+		//std::cout<<"yrng="<<yrng<<"ynumber="<<ynumber<<"stepy=="<<stepy<<"stepx=="<<step<<std::endl;
+	for (int i = kystart; i <= ky; i++) {
+		iy = i * stepy ;
+		for (int j = -kx; j <= kx; j++)	{
 			ix = j*step ;
-			iy = 0.0f ;
-			EMData* cimage = Polar2Dm(image, cnx+ix, cny, numr, mode);
+			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 
 			Normalize_ring( cimage, numr );
 
 			Frngs(cimage, numr);
 			//  compare with all reference images
 			// for iref in xrange(len(crefim)):
-			for ( iref = 0; iref < (int)crefim_len; iref++)  {
-				Dict retvals = Crosrng_psi_0_180_no_mirror(crefim[iref], cimage, numr, psi_max);
-				double qn = retvals["qn"];
-				if( qn >= peak ) {
+			for ( iref = 0; iref < (int)crefim_len; iref++) {
+				Dict retvals_0 = Crosrng_sm_psi(crefim[iref], cimage, numr, 0, 0, psi_max);
+				Dict retvals_180 = Crosrng_sm_psi(crefim[iref], cimage, numr, 180, 0, psi_max);
+				double qn_0 = retvals_0["qn"];
+				double qn_180 = retvals_180["qn"];
+				double qn;
+				bool qn_is_zero = false;
+				
+				if (qn_0 >= qn_180){
+					qn = qn_0;
+					qn_is_zero = true;
+				}
+				else{
+					qn = qn_180;
+					qn_is_zero = false; 
+				}
+					
+				if(qn >= peak) {
 					sx = -ix;
+					sy = -iy;
 					nref = iref;
-					ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+					
+					if (qn_is_zero){
+						ang = ang_n(retvals_0["tot"], mode, numr[numr.size()-1]);
+					}
+					else{
+						ang = ang_n(retvals_180["tot"], mode, numr[numr.size()-1]);
+					}
 					peak = static_cast<float>(qn);
 					mirror = 0;
+					 
 				}
-			} 
-			delete cimage; cimage = 0;
-		}		   	
-	} else {
-		int   ky = int(ynumber/2);		
-		float stepy=2*yrng/ynumber;
-		//std::cout<<"yrng="<<yrng<<"ynumber="<<ynumber<<"stepy=="<<stepy<<"stepx=="<<step<<std::endl;
-		for (int i = -ky+1; i <= ky; i++) {
-			iy = i * stepy ;
-			for (int j = -kx; j <= kx; j++)	{
-				ix = j*step ;
-				EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
-
-				Normalize_ring( cimage, numr );
-
-				Frngs(cimage, numr);
-				//  compare with all reference images
-				// for iref in xrange(len(crefim)):
-				for ( iref = 0; iref < (int)crefim_len; iref++) {
-					Dict retvals = Crosrng_psi_0_180_no_mirror(crefim[iref], cimage, numr, psi_max);
-					double qn = retvals["qn"];
-					if( qn >= peak) {
-						sx = -ix;
-						sy = -iy;
-						nref = iref;
-						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-						peak = static_cast<float>(qn);
-						mirror = 0;
-					}
-				}
-				delete cimage; cimage = 0;
 			}
+			delete cimage; cimage = 0;
 		}
-	}
+	}	
 	float co, so, sxs, sys;
 	co = static_cast<float>( cos(ang*pi/180.0) );
 	so = static_cast<float>( -sin(ang*pi/180.0) );
@@ -18875,7 +18858,6 @@ vector<float> Util::multiref_polar_ali_helical_90(EMData* image, const vector< E
 	res.push_back(peak);
 	return res;
 }
-
 
 
 vector<float> Util::multiref_polar_ali_helical_90_local(EMData* image, const vector< EMData* >& crefim,
