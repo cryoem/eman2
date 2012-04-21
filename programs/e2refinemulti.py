@@ -220,7 +220,7 @@ def main():
 		new_models = options.models
 		cmd=get_make3d_cmd(options)
 		for ii,m in enumerate(options.models):
-			if (run(cmd+"--sym=%s --output=%s --input_model=%d"%(options.sym[ii],m,ii))) :
+			if (run(cmd+" --sym=%s --output=%s --input_model=%d"%(options.sym[ii],m,ii))) :
 				print "Failed to execute %s" %get_make3d_cmd(options)
 				exit_refine(1,logid)
 
