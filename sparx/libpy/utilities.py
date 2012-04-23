@@ -3227,3 +3227,100 @@ def set_pixel_size(img, pixel_size):
 	if(cc):
 		cc.apix = pixel_size
 		img.set_attr("ctf", cc)
+
+def group_proj_by_phitheta(projections_stack_filename, symmetry = "c1"):
+	from sparx import even_angles, assign_projangles
+	from time import time
+	
+	proj_list = []   
+	angles_list = []
+	# The fourth and fifth columns are originally for shifts,
+	# but we will recycle them and use the fourth column for the image number,
+	# and the fifth one for the active flag
+
+	projections = EMData.read_images(projections_stack_filename)
+	
+	proj_ang = []
+	for i in xrange(len(projections)):
+		proj = projections[i]
+		RA = proj.get_attr( "xform.projection" )
+		angdict = RA.get_sym(symmetry,0).get_rotation("spider")
+		proj_ang.append( [angdict["phi"], angdict["theta"], angdict["psi"], i, True] )
+			
+	img_per_grp = 40 # int(sys.argv[4])
+	diff_pct = 0.1 # float(sys.argv[5])
+	min_img_per_grp = img_per_grp*(1-diff_pct)
+	max_img_per_grp = img_per_grp*(1+diff_pct)
+	
+	N = len(proj_ang)
+
+	while True:
+		proj_ang_now = []
+		for i in xrange(N):
+			if proj_ang[i][4]: proj_ang_now.append(proj_ang[i])
+		#print "Current size of data set = ", len(proj_ang_now)
+		if len(proj_ang_now) <= max_img_per_grp:
+			members = [0]*len(proj_ang_now)
+			for i in xrange(len(proj_ang_now)):  members[i] = proj_ang_now[i][3]
+			print "Size of this group = ", len(members)
+			proj_member = []
+			for i in members:
+				proj_member.append(projections[i])
+			proj_list.append(proj_member)
+			angles_list.append([ 0.0, 0.0])
+			break
+	
+		min_delta = 0.001
+		max_delta = 2.0
+		trial = 0
+		max_trial = 20
+		while trial < max_trial:
+			mid_delta = (min_delta+max_delta)/2
+			#print "...... Testing delta = %6.2f"%(mid_delta)
+			ref_ang = even_angles(mid_delta, symmetry=symmetry)
+			t1 = time()
+			asg = assign_projangles(proj_ang_now, ref_ang)
+			#print "............ Time used = %6.2f"%(time()-t1)
+
+			count = []
+			for i in xrange(len(asg)): count.append([len(asg[i]), i])
+			count.sort(reverse = True)
+			#print "............ maximum size = %5d   minimum size = %5d"%(count[0][0], count[-1][0])
+			k = 0
+			grp_size = count[k][0]
+			grp_num = count[k][1]
+			while grp_size >= min_img_per_grp and grp_size <= max_img_per_grp:
+				members = [0]*grp_size
+				for i in xrange(grp_size):
+					members[i] = proj_ang_now[asg[grp_num][i]][3]
+					proj_ang[members[i]][4] = False
+				#print "Size of this group = ", grp_size	
+				proj_member = []
+				for i in members:
+					proj_member.append(projections[i])
+				proj_list.append(proj_member)
+				angles_list.append([ ref_ang[grp_num][0], ref_ang[grp_num][1]])
+				k += 1
+				grp_size = count[k][0]
+				grp_num = count[k][1]
+			if k > 0: break
+			if grp_size > max_img_per_grp:  max_delta = mid_delta
+			else:  min_delta = mid_delta
+			trial += 1
+
+		if trial == max_trial:
+			grp_size = count[0][0]
+			grp_num = count[0][1]
+			members = [0]*grp_size
+			for i in xrange(grp_size):
+				members[i] = proj_ang_now[asg[grp_num][i]][3]
+				proj_ang[members[i]][4] = False
+			#print "Size of this group = ", grp_size
+			proj_member = []
+			for i in members:
+				proj_member.append(projections[i])
+			proj_list.append(proj_member)
+			angles_list.append([ref_ang[grp_num][0], ref_ang[grp_num][1]])
+		#print ""
+	return proj_list, angles_list
+
