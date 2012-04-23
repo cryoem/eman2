@@ -33,6 +33,7 @@
 #include "emdata.h"
 #include "ctf.h"
 #include "plugins/cmp_template.h"
+#undef max
 #include <climits>
 
 #ifdef EMAN2_USING_CUDA
@@ -554,8 +555,8 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 			for ( int iy = 0; iy <= ny-1; ++iy) {
 				if(iy>ny2) ky=iy-ny; else ky=iy;
 				for (int ix = 0; ix <= lsd2-1; ++ix) {
-						int p = 2.0;
-						if  (ix <= 1 || ix >= lsd2-2 && nx%2 == 0)   p = 1.0;
+						int p = 2;
+						if  (ix <= 1 || ix >= lsd2-2 && nx%2 == 0)   p = 1;
 						size_t ii = ix + (iy  + iz * ny)* (size_t)lsd2;
 						result += p * x_data[ii] * double(y_data[ii]);
 				}
@@ -570,8 +571,8 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 			for ( int iy = 0; iy <= ny-1; ++iy) {
 				if(iy>ny2) ky=iy-ny; else ky=iy;
 				for (int ix = 0; ix <= lsd2-1; ++ix) {
-						int p = 2.0;
-						if  (ix <= 1 || ix >= lsd2-2 && nx%2 == 0)   p = 1.0;
+						int p = 2;
+						if  (ix <= 1 || ix >= lsd2-2 && nx%2 == 0)   p = 1;
 						size_t ii = ix + (iy  + iz * ny)* (size_t)lsd2;
 						square_sum1 += p * x_data[ii] * double(x_data[ii]);
 						square_sum2 += p * y_data[ii] * double(y_data[ii]);
@@ -760,7 +761,7 @@ float TomoFscCmp::cmp(EMData * image, EMData *with) const
 				if(iy > ny2) ky = ny-iy; else ky=iy;
 				for (int ix = 0; ix < nx; ix+=2) {
 					//compute spatial frequency and convert to resolution stat
-					float freq = std::sqrt(kz*kz + ky*ky + ix*ix/4)/float(nz);
+					float freq = std::sqrt(kz*kz + ky*ky + ix*ix/4.0f)/float(nz);
 					float reso = apix/freq;
 					
 					//only look within a resolution domain
@@ -785,7 +786,7 @@ float TomoFscCmp::cmp(EMData * image, EMData *with) const
 		}
 		
 		if(count > 0){ 
-			score = cong/sqrt(sum_imgamp_sq*sum_withamp_sq);
+			score = (float)(cong/sqrt(sum_imgamp_sq*sum_withamp_sq));
 		}else{
 			score = 1.0f;
 		}
