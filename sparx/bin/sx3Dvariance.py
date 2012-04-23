@@ -35,22 +35,11 @@ from   global_def import *
 from   optparse import OptionParser
 from   string import atoi,replace
 from   EMAN2 import EMUtil
+from sparx import *
+from EMAN2 import *
 import os
 import sys
 
-
-def get_proj_variance_stack(proj_list, phi, theta)  #  TODO - body of this fuction
-	class_data = []
-	#print "========", phi, theta
-	p = get_im(proj_list)
-	t1,t2,psi,sx,sy = get_params_proj(p)
-	class_data.append(p)
-	p = rot_shift2D(p, -psi, -sx, -sy)
-	#	print t1, t2, psi
-	projs_avg,projs_var = ave_var(class_data, "")
-	set_params_proj(projs_var, [phi, theta, 0.0, 0.0, 0.0])
-	return projs_var
-	
 
 def main():
 	arglist = []
@@ -88,12 +77,28 @@ def main():
 
 	global_def.BATCH = True
 	if not options.var:
-		proj_list, angles_list = group_proj_by_phitheta(prj_stack, options.sym)
+		data = EMData.read_images(prj_stack)
+		proj_list, angles_list = group_proj_by_phitheta(data, options.sym)
 		var2Dstack = []
-		for i in xrange(len(angles_list)):
-			var2Dstack.append(get_proj_variance_stack(proj_list[i], angles_list[i][0], angles_list[i][1]))
-		prj_stack = var2Dstack
-	
+		for i in xrange(len(proj_list)):
+			imagroup = []
+			imgdata = EMData.read_images(prj_stack, proj_list[i])
+			#ima = EMData()
+			for j in xrange(len(proj_list[i])):
+				#ima = imgdata[j]
+				phi,theta,psi,s2x,s2y = get_params_proj(imgdata[j])
+				alpha, sx, sy, mirror = params_3D_2D(phi, theta, psi, s2x, s2y)
+				set_params2D(imgdata[j], [alpha, sx, sy, mirror, 1.0])
+				#write_header(stack, ima, im)
+				imagroup.append(imgdata[j])
+			ave, var = ave_var(imagroup,"a")
+			set_params_proj(var, angles_list[i][0], angles_list[i][1])
+			ave.write_image("ave2Dstack.hdf",i)
+			var.write_image("var2Dstack.hdf",i)
+			var2Dstack.append(var)
+		prj_stack = var2Dstack 
+		#exit()
+		
 	if options.MPI:
 		from mpi import mpi_comm_rank, MPI_COMM_WORLD
 		res = recons3d_em_MPI(prj_stack, options.iter, 0.01, True, options.sym)
