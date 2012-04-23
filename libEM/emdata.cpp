@@ -895,7 +895,7 @@ void EMData::translate(const Vec3i &translation)
 	}
 
 	Dict params("trans",static_cast< vector<int> >(translation));
-	process_inplace("math.translate.int",params);
+	process_inplace("xform.translate.int",params);
 
 	// update() - clip_inplace does the update
 	all_translation += translation;

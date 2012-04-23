@@ -39,15 +39,15 @@ from math import *
 import os
 import sys
 import time
+from numpy import *
 
 
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """e2fsc.py [options] input1 input2
 
-Simple 2 volume FSCs can be computed with e2proc3d.py. This program is designed for more esoteric tasks, such as localized FSC calculations.
-
-Two volumes with identical dimensions, and presumably identical orientations, should be provided at the command-line.
+Simple 2 volume FSCs can be computed with e2proc3d.py. In addition to the overall fsc (saved to fsc.txt), 
+it also computes a "local resolution" through the volume.
 """
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
@@ -55,12 +55,16 @@ Two volumes with identical dimensions, and presumably identical orientations, sh
 #	parser.add_option("--input",type=str,help="Similarity matrix to analyze",default=None)
 #	parser.add_argument("--refine",type=str,default=None,help="Automatically get parameters for a refine directory")
 	parser.add_argument("--output",type=str,help="Output text file",default="zvssim.txt")
+	parser.add_argument("--localsize", type=int, help="Size in pixels of the local region to compute the resolution in",default=-1)
+	parser.add_argument("--apix", type=float, help="A/pix to use for the comparison (default uses Vol1 apix)",default=0)
 	#parser.add_argument("--refs",type=str,help="Reference images from the similarity matrix (projections)",default=None)
 	#parser.add_argument("--inimgs",type=str,help="Input image file",default=None)
 	#parser.add_argument("--outimgs",type=str,help="Output image file",default="imgs.hdf")
 	#parser.add_argument("--filtimgs",type=str,help="A python expression using Z[n], Q[n] and N[n] for selecting specific particles to output. n is the 0 indexed number of the input file",default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbosity [0-9]. Larger values produce more output.")
+
+
 	(options, args) = parser.parse_args()
 		
 	if len(args)<2 : 
@@ -72,42 +76,93 @@ Two volumes with identical dimensions, and presumably identical orientations, sh
 	v1=EMData(args[0],0)
 	v2=EMData(args[1],0)
 	
+	if options.apix>0 : apix=options.apix
+	else :
+		apix=v1["apix_x"]
+		print "Using %1.2f A/pix"%apix
+	
 	nx,ny,nz=v1["nx"],v1["ny"],v1["nz"]
 	print "%d x %d x %d"%(nx,ny,nz)
-	
 	if nx!=ny or nx!=nz : print "Warning: non-cubic volumes may produce unexpected results"
 	
+	if options.localsize==-1 : lnx=nx/10*2
+	else: lnx=options.localsize
+	print "Local region is %d pixels"%lnx
+	
+	thresh1=v1["mean"]+v1["sigma"]
+	thresh2=v2["mean"]+v2["sigma"]
+	print "Thresholds : ",thresh1,thresh2
+	
+	# overall fsc
+	fsc=v1.calc_fourier_shell_correlation(v2)
+	fx=array(fsc[0:len(fsc)/3])/apix
+	fy=fsc[len(fsc)/3:len(fsc)*2/3]
+
+	out=file("fsc.txt","w")
+	for i,x in enumerate(fx):
+		out.write("%1.5f\t%1.4f\n"%(x,fy[i]))
+	out.close()
+	
 	# Create a centered Gaussian mask with a size ~1/10th of the box size
-	cenmask=EMData(nx,ny,nz)
+	cenmask=EMData(lnx,lnx,lnx)
 	cenmask.to_one()
-	cenmask.process_inplace("mask.gaussian",{"outer_radius":nx/20})
+	cenmask.process_inplace("mask.gaussian",{"inner_radius":lnx/6,"outer_radius":lnx/6})
+	#display(cenmask)
+	
+	xr=xrange(lnx/8,nx-lnx,lnx/12)
+	yr=xrange(lnx/8,ny-lnx,lnx/12)
+	zr=xrange(lnx/8,nz-lnx,lnx/12)
+	resvol=EMData(len(xr),len(yr),len(zr))
+	resvol["apix_x"]=apix*lnx/12
+	resvol["apix_y"]=apix*lnx/12
+	resvol["apix_z"]=apix*lnx/12
 	
 	fys=[]
-	for z in range(nz/20,nz,nz/10):
-		for y in range(nz/20,ny,ny/10):
-			for x in range(nz/20,nx,nx/10):
-				print "%d, %d, %d :"%(x,y,z),
+	t=time.time()
+	for oz,z in enumerate(zr):
+		for oy,y in enumerate(yr):
+			for ox,x in enumerate(xr):
+				if options.verbose : print "%d, %d, %d :"%(x,y,z),
+				else:
+					if time.time()-t>.5 :
+						print "  %3d,%3d,%3d / %d,%d,%d\r"%(ox,oy,oz,len(xr),len(yr),len(zr)),
+						sys.stdout.flush()
+						t=time.time()
+						
+				v1m=v1.get_clip(Region(x,y,z,lnx,lnx,lnx))
+				v1m.mult(cenmask)
 				
-				# make a copy of the mask centered at the current position
-				mask=cenmask.process("xform",{"transform":Transform({"tx":x-nx/2,"ty":y-ny/2,"tz":z-nz/2})})		
+				v2m=v2.get_clip(Region(x,y,z,lnx,lnx,lnx))
+				v2m.mult(cenmask)
+				
+				
+				## make a copy of the mask centered at the current position
+				#mask=cenmask.process("xform.translate.int",{"trans":(x-nx/2,y-ny/2,z-nz/2)})		
 
-				v1m=v1*mask
-				v2m=v2*mask
-				if v1m["sigma_nonzero"]<.001 or v2m["sigma_nonzero"]<.001 :
-					print "0 sigma"
+				#v1m=v1*mask
+				#v2m=v2*mask
+
+				if options.verbose : print v1m["sigma_nonzero"], v2m["sigma_nonzero"],
+				if v1m["maximum"]<thresh1 or v2m["maximum"]<thresh2 :
+					if options.verbose : print " "
+					resvol[ox,oy,oz]=0.0
 					continue
-
-				print v1m["sigma_nonzero"], v2m["sigma_nonzero"]
+				if options.verbose : print " ***"
+#				display(v1m)
 				
 				fsc=v1m.calc_fourier_shell_correlation(v2m)
-				fx=fsc[0:len(fsc)/3]
-				fy=fsc[len(fsc)/3:len(fsc)*2/3]
+				fx=array(fsc[1:len(fsc)/3])/apix
+				fy=fsc[len(fsc)/3+1:len(fsc)*2/3]
+				
+				for i,xx in enumerate(fx[:-1]):
+					if fy[i]>0.5 and fy[i+1]<0.5 : break
+				
+				resvol[ox,oy,oz]=(0.5-fy[i])*(fx[i+1]-fx[i])/(fy[i+1]-fy[i])+fx[i]
 				
 				fys.append(fy)
 				if isnan(fy[0]): print "NAN"
-				else: 
-					pass
-					#plot((fx,fy))
+	
+	resvol.write_image("resvol.hdf")
 	
 	out=file("rslt.txt","w")
 	for i,x in enumerate(fx):

@@ -354,7 +354,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	
 	Dict params("trans",static_cast< vector<int> >(cur_trans));
 	if (use_cpu){
-		cf=this_img->process("math.translate.int",params);
+		cf=this_img->process("xform.translate.int",params);
 	}
 	Transform t;
 	t.set_trans(cur_trans);
