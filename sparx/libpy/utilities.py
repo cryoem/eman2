@@ -3228,7 +3228,7 @@ def set_pixel_size(img, pixel_size):
 		cc.apix = pixel_size
 		img.set_attr("ctf", cc)
 
-def group_proj_by_phitheta(projections_stack_filename, symmetry = "c1"):
+def group_proj_by_phitheta(projections, symmetry = "c1", img_per_grp = 100, diff_pct = 0.1):
 	from sparx import even_angles, assign_projangles
 	from time import time
 	
@@ -3237,8 +3237,6 @@ def group_proj_by_phitheta(projections_stack_filename, symmetry = "c1"):
 	# The fourth and fifth columns are originally for shifts,
 	# but we will recycle them and use the fourth column for the image number,
 	# and the fifth one for the active flag
-
-	projections = EMData.read_images(projections_stack_filename)
 	
 	proj_ang = []
 	for i in xrange(len(projections)):
@@ -3247,11 +3245,12 @@ def group_proj_by_phitheta(projections_stack_filename, symmetry = "c1"):
 		angdict = RA.get_sym(symmetry,0).get_rotation("spider")
 		proj_ang.append( [angdict["phi"], angdict["theta"], angdict["psi"], i, True] )
 			
-	img_per_grp = 40 # int(sys.argv[4])
-	diff_pct = 0.1 # float(sys.argv[5])
 	min_img_per_grp = img_per_grp*(1-diff_pct)
 	max_img_per_grp = img_per_grp*(1+diff_pct)
 	
+	min_delta = 0.001
+	max_delta = 45.0
+	max_trial = 20
 	N = len(proj_ang)
 
 	while True:
@@ -3263,17 +3262,12 @@ def group_proj_by_phitheta(projections_stack_filename, symmetry = "c1"):
 			members = [0]*len(proj_ang_now)
 			for i in xrange(len(proj_ang_now)):  members[i] = proj_ang_now[i][3]
 			print "Size of this group = ", len(members)
-			proj_member = []
-			for i in members:
-				proj_member.append(projections[i])
-			proj_list.append(proj_member)
-			angles_list.append([ 0.0, 0.0])
+			proj_list.append(members)
+			angles_list.append([0.0, 0.0, 45.0])
 			break
 	
-		min_delta = 0.001
-		max_delta = 2.0
+		
 		trial = 0
-		max_trial = 20
 		while trial < max_trial:
 			mid_delta = (min_delta+max_delta)/2
 			#print "...... Testing delta = %6.2f"%(mid_delta)
@@ -3295,11 +3289,8 @@ def group_proj_by_phitheta(projections_stack_filename, symmetry = "c1"):
 					members[i] = proj_ang_now[asg[grp_num][i]][3]
 					proj_ang[members[i]][4] = False
 				#print "Size of this group = ", grp_size	
-				proj_member = []
-				for i in members:
-					proj_member.append(projections[i])
-				proj_list.append(proj_member)
-				angles_list.append([ ref_ang[grp_num][0], ref_ang[grp_num][1]])
+				proj_list.append(members)
+				angles_list.append([ ref_ang[grp_num][0], ref_ang[grp_num][1], mid_delta])
 				k += 1
 				grp_size = count[k][0]
 				grp_num = count[k][1]
@@ -3316,11 +3307,8 @@ def group_proj_by_phitheta(projections_stack_filename, symmetry = "c1"):
 				members[i] = proj_ang_now[asg[grp_num][i]][3]
 				proj_ang[members[i]][4] = False
 			#print "Size of this group = ", grp_size
-			proj_member = []
-			for i in members:
-				proj_member.append(projections[i])
-			proj_list.append(proj_member)
-			angles_list.append([ref_ang[grp_num][0], ref_ang[grp_num][1]])
+			proj_list.append(members)
+			angles_list.append([ref_ang[grp_num][0], ref_ang[grp_num][1], mid_delta])
 		#print ""
 	return proj_list, angles_list
 
