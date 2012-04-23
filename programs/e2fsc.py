@@ -156,8 +156,9 @@ it also computes a "local resolution" through the volume.
 				
 				for i,xx in enumerate(fx[:-1]):
 					if fy[i]>0.5 and fy[i+1]<0.5 : break
-				
-				resvol[ox,oy,oz]=(0.5-fy[i])*(fx[i+1]-fx[i])/(fy[i+1]-fy[i])+fx[i]
+				res=(0.5-fy[i])*(fx[i+1]-fx[i])/(fy[i+1]-fy[i])+fx[i]
+				if res<0 or res>fx[-1] : res=0.0
+				resvol[ox,oy,oz]=res
 				
 				fys.append(fy)
 				if isnan(fy[0]): print "NAN"
