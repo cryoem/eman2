@@ -43,10 +43,18 @@ def calc_projections_variance(projections, members, phi, theta, delta):
 	from string import replace
 	from random import random
 	from sparx import get_im, ave_var
+	from fundamentals import rot_shift2D
+	from utilities import get_params_proj, set_params_proj
 
 	class_data = []
-	for im in members: class_data.append(get_im(projections, im))
-	projs_var = ave_var(class_data)
+	#print "========", phi, theta
+	for im in members: 
+		p = get_im(projections, im)
+		t1,t2,psi,sx,sy = get_params_proj(p)
+		class_data.append(p)
+		p = rot_shift2D(p, -psi, -sx, -sy)
+	#	print t1, t2, psi
+	projs_avg,projs_var = ave_var(class_data, "")
 	projs_var.set_attr('delta', delta)
 	set_params_proj(projs_var, [phi, theta, 0.0, 0.0, 0.0])
 	projs_var.set_attr('members', members)
@@ -84,7 +92,7 @@ def find_projections_variances(projections_stack_filename, symmetry = "c1"):
 		proj_ang_now = []
 		for i in xrange(N):
 			if proj_ang[i][4]: proj_ang_now.append(proj_ang[i])
-		print "Current size of data set = ", len(proj_ang_now)
+		#print "Current size of data set = ", len(proj_ang_now)
 		if len(proj_ang_now) <= max_img_per_grp:
 			members = [0]*len(proj_ang_now)
 			for i in xrange(len(proj_ang_now)):  members[i] = proj_ang_now[i][3]
@@ -93,21 +101,21 @@ def find_projections_variances(projections_stack_filename, symmetry = "c1"):
 			break
 	
 		min_delta = 0.001
-		max_delta = 45.0
+		max_delta = 2.0
 		trial = 0
 		max_trial = 20
 		while trial < max_trial:
 			mid_delta = (min_delta+max_delta)/2
-			print "...... Testing delta = %6.2f"%(mid_delta)
+			#print "...... Testing delta = %6.2f"%(mid_delta)
 			ref_ang = even_angles(mid_delta, symmetry=symmetry)
 			t1 = time()
 			asg = assign_projangles(proj_ang_now, ref_ang)
-			print "............ Time used = %6.2f"%(time()-t1)
+			#print "............ Time used = %6.2f"%(time()-t1)
 
 			count = []
 			for i in xrange(len(asg)): count.append([len(asg[i]), i])
 			count.sort(reverse = True)
-			print "............ maximum size = %5d   minimum size = %5d"%(count[0][0], count[-1][0])
+			#print "............ maximum size = %5d   minimum size = %5d"%(count[0][0], count[-1][0])
 			k = 0
 			grp_size = count[k][0]
 			grp_num = count[k][1]
@@ -116,7 +124,7 @@ def find_projections_variances(projections_stack_filename, symmetry = "c1"):
 				for i in xrange(grp_size):
 					members[i] = proj_ang_now[asg[grp_num][i]][3]
 					proj_ang[members[i]][4] = False
-				print "Size of this group = ", grp_size
+				#print "Size of this group = ", grp_size
 				projections_variances_list.append( calc_projections_variance(projections, members, ref_ang[grp_num][0], ref_ang[grp_num][1], mid_delta) )
 				k += 1
 				grp_size = count[k][0]
@@ -133,9 +141,9 @@ def find_projections_variances(projections_stack_filename, symmetry = "c1"):
 			for i in xrange(grp_size):
 				members[i] = proj_ang_now[asg[grp_num][i]][3]
 				proj_ang[members[i]][4] = False
-			print "Size of this group = ", grp_size
+			#print "Size of this group = ", grp_size
 			projections_variances_list.append( calc_projections_variance(projections, members, ref_ang[grp_num][0], ref_ang[grp_num][1], mid_delta) )
-		print ""
+		#print ""
 	return projections_variances_list
 	
 
