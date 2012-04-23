@@ -39,112 +39,17 @@ import os
 import sys
 
 
-def calc_projections_variance(projections, members, phi, theta, delta):
-	from string import replace
-	from random import random
-	from sparx import get_im, ave_var
-	from fundamentals import rot_shift2D
-	from utilities import get_params_proj, set_params_proj
-
+def get_proj_variance_stack(proj_list, phi, theta)  #  TODO - body of this fuction
 	class_data = []
 	#print "========", phi, theta
-	for im in members: 
-		p = get_im(projections, im)
-		t1,t2,psi,sx,sy = get_params_proj(p)
-		class_data.append(p)
-		p = rot_shift2D(p, -psi, -sx, -sy)
+	p = get_im(proj_list)
+	t1,t2,psi,sx,sy = get_params_proj(p)
+	class_data.append(p)
+	p = rot_shift2D(p, -psi, -sx, -sy)
 	#	print t1, t2, psi
 	projs_avg,projs_var = ave_var(class_data, "")
-	projs_var.set_attr('delta', delta)
 	set_params_proj(projs_var, [phi, theta, 0.0, 0.0, 0.0])
-	projs_var.set_attr('members', members)
-	projs_var.set_attr('n_objects', len(members))
 	return projs_var
-
-
-def find_projections_variances(projections_stack_filename, symmetry = "c1"):
-	from sparx import even_angles, assign_projangles
-	from time import time
-	
-	projections_variances_list = []   # result
-	
-	# The fourth and fifth columns are originally for shifts,
-	# but we will recycle them and use the fourth column for the image number,
-	# and the fifth one for the active flag
-
-	projections = EMData.read_images(projections_stack_filename)
-	
-	proj_ang = []
-	for i in xrange(len(projections)):
-		proj = projections[i]
-		RA = proj.get_attr( "xform.projection" )
-		angdict = RA.get_sym(symmetry,0).get_rotation("spider")
-		proj_ang.append( [angdict["phi"], angdict["theta"], angdict["psi"], i, True] )
-			
-	img_per_grp = 40 # int(sys.argv[4])
-	diff_pct = 0.1 # float(sys.argv[5])
-	min_img_per_grp = img_per_grp*(1-diff_pct)
-	max_img_per_grp = img_per_grp*(1+diff_pct)
-	
-	N = len(proj_ang)
-
-	while True:
-		proj_ang_now = []
-		for i in xrange(N):
-			if proj_ang[i][4]: proj_ang_now.append(proj_ang[i])
-		#print "Current size of data set = ", len(proj_ang_now)
-		if len(proj_ang_now) <= max_img_per_grp:
-			members = [0]*len(proj_ang_now)
-			for i in xrange(len(proj_ang_now)):  members[i] = proj_ang_now[i][3]
-			print "Size of this group = ", len(members)
-			projections_variances_list.append( calc_projections_variance(projections, members, 0.0, 0.0, 45.0) )
-			break
-	
-		min_delta = 0.001
-		max_delta = 2.0
-		trial = 0
-		max_trial = 20
-		while trial < max_trial:
-			mid_delta = (min_delta+max_delta)/2
-			#print "...... Testing delta = %6.2f"%(mid_delta)
-			ref_ang = even_angles(mid_delta, symmetry=symmetry)
-			t1 = time()
-			asg = assign_projangles(proj_ang_now, ref_ang)
-			#print "............ Time used = %6.2f"%(time()-t1)
-
-			count = []
-			for i in xrange(len(asg)): count.append([len(asg[i]), i])
-			count.sort(reverse = True)
-			#print "............ maximum size = %5d   minimum size = %5d"%(count[0][0], count[-1][0])
-			k = 0
-			grp_size = count[k][0]
-			grp_num = count[k][1]
-			while grp_size >= min_img_per_grp and grp_size <= max_img_per_grp:
-				members = [0]*grp_size
-				for i in xrange(grp_size):
-					members[i] = proj_ang_now[asg[grp_num][i]][3]
-					proj_ang[members[i]][4] = False
-				#print "Size of this group = ", grp_size
-				projections_variances_list.append( calc_projections_variance(projections, members, ref_ang[grp_num][0], ref_ang[grp_num][1], mid_delta) )
-				k += 1
-				grp_size = count[k][0]
-				grp_num = count[k][1]
-			if k > 0: break
-			if grp_size > max_img_per_grp:  max_delta = mid_delta
-			else:  min_delta = mid_delta
-			trial += 1
-
-		if trial == max_trial:
-			grp_size = count[0][0]
-			grp_num = count[0][1]
-			members = [0]*grp_size
-			for i in xrange(grp_size):
-				members[i] = proj_ang_now[asg[grp_num][i]][3]
-				proj_ang[members[i]][4] = False
-			#print "Size of this group = ", grp_size
-			projections_variances_list.append( calc_projections_variance(projections, members, ref_ang[grp_num][0], ref_ang[grp_num][1], mid_delta) )
-		#print ""
-	return projections_variances_list
 	
 
 def main():
@@ -183,7 +88,11 @@ def main():
 
 	global_def.BATCH = True
 	if not options.var:
-		prj_stack = find_projections_variances(prj_stack, options.sym)
+		proj_list, angles_list = group_proj_by_phitheta(prj_stack, options.sym)
+		var2Dstack = []
+		for i in xrange(len(angles_list)):
+			var2Dstack.append(get_proj_variance_stack(proj_list[i], angles_list[i][0], angles_list[i][1]))
+		prj_stack = var2Dstack
 	
 	if options.MPI:
 		from mpi import mpi_comm_rank, MPI_COMM_WORLD
