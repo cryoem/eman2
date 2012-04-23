@@ -92,7 +92,7 @@ def main():
 				#write_header(stack, ima, im)
 				imagroup.append(imgdata[j])
 			ave, var = ave_var(imagroup,"a")
-			set_params_proj(var, angles_list[i][0], angles_list[i][1])
+			set_params_proj(var, [angles_list[i][0], angles_list[i][1], 0.0, 0.0, 0.0])
 			ave.write_image("ave2Dstack.hdf",i)
 			var.write_image("var2Dstack.hdf",i)
 			var2Dstack.append(var)
