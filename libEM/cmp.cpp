@@ -687,15 +687,15 @@ float TomoFscCmp::cmp(EMData * image, EMData *with) const
 	float score = 1.0f;
 	
 	//get parameters
-	if (!image->has_attr("mean_wedge_amp") || !image->has_attr("sigma_wedge_amp"))  throw InvalidCallException("Rubbish!!! Image Subtomogram does not have mena and/or sigma amps metadata");
-	if (!with->has_attr("mean_wedge_amp") || !with->has_attr("sigma_wedge_amp"))  throw InvalidCallException("Rubbish!!! With Subtomogram does not have mena and/or sigma amps metadata");
+	if (!image->has_attr("spt_wedge_mean") || !image->has_attr("spt_wedge_sigma"))  throw InvalidCallException("Rubbish!!! Image Subtomogram does not have mean and/or sigma amps metadata");
+	if (!with->has_attr("spt_wedge_mean") || !with->has_attr("spt_wedge_sigma"))  throw InvalidCallException("Rubbish!!! With Subtomogram does not have mean and/or sigma amps metadata");
 	// BAD DESIGN!!!! The fact that I have to load attrs into a variable before I can do operations on them is silly
 	
 	//get threshold information
-	float image_meanwedgeamp = image->get_attr("mean_wedge_amp");
-	float image_sigmawedgeamp = image->get_attr("sigma_wedge_amp");
-	float with_meanwedgeamp = with->get_attr("mean_wedge_amp");
-	float with_sigmawedgeamp = with->get_attr("sigma_wedge_amp");
+	float image_meanwedgeamp = image->get_attr("spt_wedge_mean");
+	float image_sigmawedgeamp = image->get_attr("spt_wedge_sigma");
+	float with_meanwedgeamp = with->get_attr("spt_wedge_mean");
+	float with_sigmawedgeamp = with->get_attr("spt_wedge_sigma");
 	// Find threshold
 	float sigmas = params.set_default("sigmas",5.0f);
 	float img_amp_thres = pow(image_meanwedgeamp + sigmas*image_sigmawedgeamp, 2.0f);
