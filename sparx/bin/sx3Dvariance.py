@@ -48,12 +48,12 @@ def main():
 	usage = progname + " prj_stack volume --iter --var --sym=symmetry --MPI"
 	parser = OptionParser(usage, version=SPARXVERSION)
 
-	parser.add_option("--iter", type="int"         , default=20   , help="Maximum number of iterations" )
-	parser.add_option("--var" , action="store_true", default=False, help="stack on input consists of variances")
-	parser.add_option("--sym" , type="string"      , default="c1" , help="symmetry" )
-	parser.add_option("--MPI" , action="store_true", default=False, help="use MPI version")
-	parser.add_option("--img_per_grp" ,	 type="int", default=100, 	help="images per group")
-	parser.add_option("--diff_pct", 	type="float", default=0.1, 	help="percentage of ...")
+	parser.add_option("--iter", type="int"         ,	default=20   ,	help="Maximum number of iterations" )
+	parser.add_option("--var" , action="store_true",	default=False,	help="stack on input consists of variances")
+	parser.add_option("--sym" , type="string"      ,	default="c1" ,	help="symmetry" )
+	parser.add_option("--MPI" , action="store_true",	default=False,	help="use MPI version")
+	parser.add_option("--img_per_grp",	type="int" ,	default=100  ,	help="images per group")
+	parser.add_option("--diff_pct", 	type="float",	default=0.1  ,	help="percentage of ...")
 
 	(options,args) = parser.parse_args(arglist[1:])
 
@@ -96,7 +96,6 @@ def main():
 			var.write_image("var2Dstack.hdf",i)
 			var2Dstack.append(var)
 		prj_stack = var2Dstack 
-		#exit()
 		
 	if options.MPI:
 		from mpi import mpi_comm_rank, MPI_COMM_WORLD
