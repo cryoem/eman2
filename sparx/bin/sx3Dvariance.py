@@ -30,15 +30,13 @@
 #
 #
 
-import global_def
-from   global_def import *
-from   optparse import OptionParser
-from   string import atoi,replace
-from   EMAN2 import EMUtil
-from sparx import *
-from EMAN2 import *
-import os
-import sys
+import	global_def
+from	global_def import *
+from	optparse import OptionParser
+from	string import atoi,replace
+from	EMAN2 import EMUtil
+import	os
+import	sys
 
 
 def main():
@@ -53,7 +51,9 @@ def main():
 	parser.add_option("--iter", type="int"         , default=20   , help="Maximum number of iterations" )
 	parser.add_option("--var" , action="store_true", default=False, help="stack on input consists of variances")
 	parser.add_option("--sym" , type="string"      , default="c1" , help="symmetry" )
-	parser.add_option("--MPI" , action="store_true", default=False, help="use MPI version ")
+	parser.add_option("--MPI" , action="store_true", default=False, help="use MPI version")
+	parser.add_option("--img_per_grp" ,	 type="int", default=100, 	help="images per group")
+	parser.add_option("--diff_pct", 	type="float", default=0.1, 	help="percentage of ...")
 
 	(options,args) = parser.parse_args(arglist[1:])
 
@@ -78,20 +78,19 @@ def main():
 	global_def.BATCH = True
 	if not options.var:
 		data = EMData.read_images(prj_stack)
-		proj_list, angles_list = group_proj_by_phitheta(data, options.sym)
+		from utilities	import group_proj_by_phitheta, get_params_proj, params_3D_2D, set_params_proj, set_params2D
+		from statistics	import ave_var
+		from morphology	import threshold
+		proj_list, angles_list = group_proj_by_phitheta(data, options.sym, options.img_per_grp, options.diff_pct)
 		var2Dstack = []
 		for i in xrange(len(proj_list)):
-			imagroup = []
 			imgdata = EMData.read_images(prj_stack, proj_list[i])
-			#ima = EMData()
 			for j in xrange(len(proj_list[i])):
-				#ima = imgdata[j]
 				phi,theta,psi,s2x,s2y = get_params_proj(imgdata[j])
 				alpha, sx, sy, mirror = params_3D_2D(phi, theta, psi, s2x, s2y)
 				set_params2D(imgdata[j], [alpha, sx, sy, mirror, 1.0])
-				#write_header(stack, ima, im)
-				imagroup.append(imgdata[j])
-			ave, var = ave_var(imagroup,"a")
+			ave, var = ave_var(imgdata,"a")
+			var = threshold(var, 0.0)
 			set_params_proj(var, [angles_list[i][0], angles_list[i][1], 0.0, 0.0, 0.0])
 			ave.write_image("ave2Dstack.hdf",i)
 			var.write_image("var2Dstack.hdf",i)
