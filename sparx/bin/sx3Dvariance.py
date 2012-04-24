@@ -48,15 +48,15 @@ def main():
 	usage = progname + " prj_stack volume --iter --var --sym=symmetry --MPI"
 	parser = OptionParser(usage, version=SPARXVERSION)
 
-	parser.add_option("--iter", type="int"         ,	default=20   ,	help="Maximum number of iterations" )
-	parser.add_option("--var" , action="store_true",	default=False,	help="stack on input consists of variances")
-	parser.add_option("--sym" , type="string"      ,	default="c1" ,	help="symmetry" )
-	parser.add_option("--MPI" , action="store_true",	default=False,	help="use MPI version")
-	parser.add_option("--img_per_grp",	type="int" ,	default=100  ,	help="images per group")
-	parser.add_option("--diff_pct", 	type="float",	default=0.1  ,	help="percentage of ...")
+	parser.add_option("--iter", 		type="int"         ,	default=20   ,	help="Maximum number of iterations" )
+	parser.add_option("--var" , 		action="store_true",	default=False,	help="stack on input consists of variances")
+	parser.add_option("--sym" , 		type="string"      ,	default="c1" ,	help="symmetry" )
+	parser.add_option("--MPI" , 		action="store_true",	default=False,	help="use MPI version")
+	parser.add_option("--img_per_grp",	type="int"         ,	default=100  ,	help="images per group")
+	parser.add_option("--diff_pct", 	type="float"       ,	default=0.1  ,	help="percentage of ...")		
+	parser.add_option("--CTF",			action="store_true",	default=False,	help="use CFT correction")
 
 	(options,args) = parser.parse_args(arglist[1:])
-
 
 	if options.MPI:
 		from mpi import mpi_init
@@ -78,33 +78,33 @@ def main():
 	global_def.BATCH = True
 	if not options.var:
 		from utilities	import group_proj_by_phitheta, get_params_proj, params_3D_2D, set_params_proj, set_params2D
-		from statistics	import ave_var
+		from statistics	import avgvar, avgvar_CTF
 		from morphology	import threshold
-		from applications import header
+		stack = prj_stack
+		prj_stack = []
 		proj_angles = []
-		nima = EMUtil.get_image_count(prj_stack)
-		tab = EMUtil.get_all_attributes(prj_stack, 'xform.projection')
+		nima = EMUtil.get_image_count(stack)
+		tab = EMUtil.get_all_attributes(stack, 'xform.projection')
 		for i in xrange(nima):
 			t = tab[i].get_params('spider')
 			proj_angles.append([t['phi'], t['theta'], t['psi']])
-		
 		proj_list, angles_list = group_proj_by_phitheta(proj_angles, options.sym, options.img_per_grp, options.diff_pct)
 		del proj_angles
 		for i in xrange(len(proj_list)):
-			imgdata = EMData.read_images(prj_stack, proj_list[i])
+			imgdata = EMData.read_images(stack, proj_list[i])
 			for j in xrange(len(proj_list[i])):
 				phi,theta,psi,s2x,s2y = get_params_proj(imgdata[j])
 				alpha, sx, sy, mirror = params_3D_2D(phi, theta, psi, s2x, s2y)
 				set_params2D(imgdata[j], [alpha, sx, sy, mirror, 1.0])
-			ave, var = ave_var(imgdata,"a")
+			if (options.CTF):	ave, var = avgvar_CTF(imgdata,"a")
+			else:	ave, var = avgvar(imgdata,"a")
 			var = threshold(var)
 			set_params_proj(var, [angles_list[i][0], angles_list[i][1], 0.0, 0.0, 0.0])
+			prj_stack.append(var)
 			ave.write_image("ave2Dstack.hdf",i)
-			var.write_image("var2Dstack.hdf",i)
-			del ave, var
-		del imgdata, angles_list, proj_list
-		prj_stack = "var2Dstack.hdf"
-		
+			var.write_image("var2Dstack.hdf",i) 
+		del ave, var, imgdata, angles_list, proj_list, stack
+		exit()
 		
 	if options.MPI:
 		from mpi import mpi_comm_rank, MPI_COMM_WORLD
