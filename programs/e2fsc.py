@@ -47,7 +47,8 @@ def main():
 	usage = """e2fsc.py [options] input1 input2
 
 Simple 2 volume FSCs can be computed with e2proc3d.py. In addition to the overall fsc (saved to fsc.txt), 
-it also computes a "local resolution" through the volume.
+it also computes a "local resolution" through the volume. This method is of HIGHLY questionable usefulness,
+and this program should be regarded as experimental.
 """
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
@@ -64,6 +65,8 @@ it also computes a "local resolution" through the volume.
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbosity [0-9]. Larger values produce more output.")
 
+	print "WARNING: This program is considered highly experimental, and there are mathematical arguments that local estimation techniques will not produce reliable values."
+	print "Having said that, the fsc.txt file is a normal FSC between the two volumes, and IS relaible, though e2proc3d.py could compute it far more easily"
 
 	(options, args) = parser.parse_args()
 		
@@ -107,11 +110,13 @@ it also computes a "local resolution" through the volume.
 	cenmask=EMData(lnx,lnx,lnx)
 	cenmask.to_one()
 	cenmask.process_inplace("mask.gaussian",{"inner_radius":lnx/6,"outer_radius":lnx/6})
+	print "Approx feature size for assessment = %1.1f A"%(apix*lnx/2.0)
+	cenmask.write_image("cenmask.hdf")
 	#display(cenmask)
 	
-	xr=xrange(lnx/8,nx-lnx,lnx/12)
-	yr=xrange(lnx/8,ny-lnx,lnx/12)
-	zr=xrange(lnx/8,nz-lnx,lnx/12)
+	xr=xrange(0,nx-lnx,lnx/12)
+	yr=xrange(0,ny-lnx,lnx/12)
+	zr=xrange(0,nz-lnx,lnx/12)
 	resvol=EMData(len(xr),len(yr),len(zr))
 	resvol["apix_x"]=apix*lnx/12
 	resvol["apix_y"]=apix*lnx/12
@@ -168,7 +173,7 @@ it also computes a "local resolution" through the volume.
 	out=file("rslt.txt","w")
 	for i,x in enumerate(fx):
 		out.write( "%f\t"%x)
-		for j in range(len(fy)):
+		for j in range(len(fys)):
 			out.write( "%f\t"%fys[j][i])
 			
 		out.write("\n")
