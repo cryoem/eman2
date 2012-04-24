@@ -41,9 +41,9 @@ def main():
 	>"""
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	
+	#dirbasename='refine|frealign',
 	#parser.add_pos_argument(name="plot_files",help="List the directories to plot here.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=2)
-	parser.add_pos_argument(name="fscdir",help="The refinement directory to use for FSC plotting.", default="", guitype='dirbox', dirbasename='refine|frealign',  row=0, col=0,rowspan=1, colspan=2)
+	parser.add_pos_argument(name="fscdir",help="The refinement directory to use for FSC plotting.", default="", guitype='fsctable', row=0, col=0,rowspan=1, colspan=2)
 	parser.add_header(name="filterheader", help='Options below this label are specific to e2plotFSC', title="### e2plotFSC options ###", row=1, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--plote2res",action="store_false",help="Plot curves from e2resoltion",default=True,guitype='boolbox',row=2,col=0,rowspan=1,colspan=1)
 	parser.add_argument("--plote2eotest",action="store_false",help="Plot curves from e2eotest",default=True,guitype='boolbox',row=2,col=1,rowspan=1,colspan=1)

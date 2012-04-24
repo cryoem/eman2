@@ -1686,6 +1686,8 @@ class PMGUIWidget(QtGui.QScrollArea):
 				widget = PMComboWidget(option['name'], self.getChoices(option), self.getDefault(option), self.getSharingMode(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True),returnNone=self.getreturnNone(option))
 			if option['guitype'] == 'automask3d':	
 				widget = PMAutoMask3DWidget(option['name'], self.getDefault(option), self.getSharingMode(option), initdefault=self.getDefault(option, nodb=True))
+			if option['guitype'] == 'fsctable':
+				widget = PMFSCTableWidget(option['name'], self.getDefault(option), self.getSharingMode(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
 			
 			# Setup each widget
 			self.connect(widget,QtCore.SIGNAL("pmmessage(QString)"),self._on_message)
@@ -1788,7 +1790,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 			self.db = db_open_dict("bdb:"+str(self.cwd)+"#"+self.program)
 		# Might enable serval dbs to be loaded, but we will implment this later
 		for widget in self.widgetlist:
-			# If this is not a value holding widget continue
+			# If this is not a value holding widget continue (bool widget, herader, etc)
 			if widget.getArgument() == None: continue
 			if self.db[widget.getName()+widget.getMode()] == None:
 				widget.setValue(widget.initdefault, quiet=True)

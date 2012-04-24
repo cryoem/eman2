@@ -611,6 +611,7 @@ class EMBoxList:
 			offset = 1
 		for i in range(len(self.boxlist)):
 			#if i in [1,2,3,5,6,7,8,9,10,15,17,18,19,23,25,27,29,33,35,36,39,40]: # For maing a plot for a paper
+			#if i in [1, 2, 3, 4, 6, 8, 9, 10, 11, 13, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 28, 29, 30, 31, 31, 32, 33, 33, 34, 35, 36, 38, 39, 40, 43, 44, 45, 46, 47, 48, 49] : # For maing a plot for a paper
 			#	EMBox.set_box_color("untilted",[0,0,0])
 			#	EMBox.set_box_color("tilted",[0,0,0])
 			#else:

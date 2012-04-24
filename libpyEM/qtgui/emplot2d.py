@@ -789,7 +789,15 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 		self.setDataLabelsColor('#00ff00')
 		self.scattercolor = None	# IF set to none default colors are used
 		self.pointsizes = None		# Defalt is to use consta sizes. Overrides constant size
-                
+		self.yticklabels = True		# Default is to draw Y tick labels
+		self.xticklabels = True		# Default is to draw X tick labels
+        
+        def set_yticklabels(self, boolvalue):
+		self.yticklabels = boolvalue
+		
+        def set_xticklabels(self, boolvalue):
+		self.xticklabels = boolvalue	
+		
 	def mousePressEvent(self, event):
 		#Save a snapshot of the scene
 		self.clusterorigin_rad = None
@@ -970,6 +978,8 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 			else : ax=fig.add_axes((.1,.1,.8,.8),autoscale_on=True,polar=True,xscale=self.axisparms[2],yscale=self.axisparms[3])
 			if self.axisparms[0] and len(self.axisparms[0])>0 : ax.set_xlabel(self.axisparms[0],size="xx-large")
 			if self.axisparms[1] and len(self.axisparms[1])>0 : ax.set_ylabel(self.axisparms[1],size="xx-large")
+			if not self.yticklabels: ax.set_yticklabels([])
+			if not self.xticklabels: ax.set_xticklabels([])
 			canvas=FigureCanvasAgg(fig)
 			
 			for i in self.axes.keys():

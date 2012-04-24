@@ -805,3 +805,164 @@ class PMAutoMask3DWidget(PMBaseWidget):
 		if self.params[3].getErrorMessage(): return self.params[3].getErrorMessage()
 		if self.params[4].getErrorMessage(): return self.params[4].getErrorMessage()
 		
+class PMTableBase(PMBaseWidget):
+	""" A base widget for making tables """	
+	def __init__(self, name, mode, postional=False, initdefault=None):
+		PMBaseWidget.__init__(self, name, mode) 
+		self.setPositional(postional)
+		self.initdefault = initdefault
+		
+		gridbox = QtGui.QGridLayout()
+		self.tablewidget = QtGui.QTableWidget()
+		gridbox.addWidget(self.tablewidget, 0, 0)
+		self.setLayout(gridbox)
+		
+		#self.connect(self.tablewidget, QtCore.SIGNAL('cellClicked(int,int)'), self.onItemClick)
+		
+	def updateTable(self):
+		""" Update FSC table"""
+		raise NotImplementedError("Sub class must reimplemnt 'getValue' function")
+	
+class PMFSCTableWidget(PMTableBase):
+	""" A widget for generating FSC tables"""
+	
+	def copyWidget(widget):
+		""" Basically a copy constructor to get around QT and python limitations """
+		pass
+		#return PMDirectoryWidget(widget.getName(), widget.dirbasename, widget.getValue(), widget.getMode(), widget.postional, widget.initdefault)
+		
+	def __init__(self, name, default, mode, postional=False, initdefault=None):
+		PMTableBase.__init__(self, name, mode, postional, initdefault)
+		
+		# table stuff
+		self.tablewidget.setColumnCount(4)
+		self.tablewidget.setHorizontalHeaderLabels(["Ref Dir", "Iter", "e2eotest", "e2resolution"])
+		self.tablewidget.setSelectionBehavior(1)	# select rows
+		self.tablewidget.setSelectionMode(1)		# single selection
+		
+		self.tablewidget.setRowCount(0)
+		self.patterns = ["refine","frealign"]
+		
+		#now update table
+		self.updateTable()
+	
+	def getValue(self):
+		return self.tablewidget.item(self.tablewidget.currentRow(),0).text()
+		
+	def setValue(self, value, quiet=False):
+		self.updateTable()
+		
+	
+		
+	def updateTable(self):
+		""" Update FSC table"""
+		dirs = []
+		for pattern in self.patterns:
+			dirs.extend(glob.glob("%s*"%pattern))
+		self.tablewidget.setRowCount(len(dirs))
+
+		for i, directory in enumerate(sorted(dirs)):
+			# load each directory
+			qwi_dirname = QtGui.QTableWidgetItem(str(directory)) 
+			self.tablewidget.setItem(i, 0, qwi_dirname)
+			
+			#load info from DB
+			db_name = "bdb:"+str(directory)+"#convergence.results"
+			if not db_check_dict(db_name):
+				continue
+			db = db_open_dict(db_name,ro=True)
+			# count iterations
+			count = 0
+			while True:
+				if not db.has_key("%02d_%02d_fsc"%(count,count+1)):
+					break;
+				count+=1
+			if count > 0:
+				qwi_iterations = QtGui.QTableWidgetItem(str(count))
+				qwi_iterations.setTextAlignment(QtCore.Qt.AlignCenter)
+				self.tablewidget.setItem(i, 1, qwi_iterations)
+			else:
+				# no more processing required
+				continue
+			
+			# get res estimates, I jacked this from David
+			keys = db.keys()
+			res = self.get_e2resolution_results_list(keys)
+			eo = self.get_e2eotest_results_list(keys)
+			
+			if len(eo) > 0:
+				last_res = eo[-1]
+				[xaxis,yaxis] = db[last_res]
+				resolution = self.find_first_point_5_crossing(xaxis,yaxis)
+				qwi_eotest = QtGui.QTableWidgetItem(str(resolution))
+				qwi_eotest.setTextAlignment(QtCore.Qt.AlignCenter)
+				self.tablewidget.setItem(i, 2, qwi_eotest)
+			if len(res) > 0:
+				# get the latest one, this will be the last as guaranteed by sorted results
+				last_res = res[-1]
+				[xaxis,yaxis] = db[last_res]
+				resolution = self.find_first_point_5_crossing(xaxis,yaxis)		
+				qwi_res = QtGui.QTableWidgetItem(str(resolution))
+				qwi_res.setTextAlignment(QtCore.Qt.AlignCenter)
+				self.tablewidget.setItem(i, 3, qwi_res)
+				
+	# I jacked this from David		
+	def get_e2resolution_results_list(self, keys):
+		'''
+		Extract the names from the keys that match the e2resolution.py output naming convention
+		(keys is a list of keys in the convergence.results dictionary, in a refinement directory)
+		'''
+		solns = []
+		for k in keys:
+			if len(k) > 6 and k[-7:] == "res_fsc":
+				solns.append(k)
+		solns.sort()
+		return solns
+	
+	def get_e2eotest_results_list(self, keys):
+		'''
+		Extract the names from the keys that match the e2eotest.py output naming convention
+		(keys is a list of keys in the convergence.results dictionary, in a refinement directory)
+		'''
+		solns = []
+		for k in keys:
+			if len(k) > 7 and k[0:8] == "even_odd":
+				solns.append(k)
+		solns.sort()
+		return solns
+		
+	def find_first_point_5_crossing(self,xaxis,yaxis):
+		'''
+		Find the first 0.5 crossing in the FSC - interpolate and try to return an accurate estimate
+		Disregards the first five entries
+		Assumes the Nyquist frequency is correct
+		'''
+		idx = 0
+		if len(yaxis) > 5:
+			idx = 6
+		
+		soln = -1
+		while (idx < len(yaxis)-1 ):
+			if yaxis[idx] >= 0.5 and yaxis[idx+1] <= 0.5:
+				v1 = yaxis[idx]
+				v2 = yaxis[idx+1]
+				if v1 != v2:
+					d = v1-v2
+					offset = v1-0.5
+					interp = offset/d
+					soln = idx+interp
+				else: soln = idx
+				break
+			else:
+				idx += 1
+		
+		try:
+			if soln == -1:
+				return "???"
+			elif int(soln) == soln:
+				return "%.1f" %(1.0/xaxis(soln))
+			else:
+				# interpolated frequency
+				return "%.1f" %(1.0/(soln/len(yaxis)*xaxis[-1]))
+		except:
+			return "invalid"

@@ -152,14 +152,14 @@ class MissingWedgeViewer(QtGui.QWidget):
 	
 	def onOneVolStats(self):
 		idx = int(self.volcombobox.currentIndex())
-		self.volumes[idx].set_attr('mean_wedge_amp',self.wedgemean)
-		self.volumes[idx].set_attr('sigma_wedge_amp',self.wedgesigma)
+		self.volumes[idx].set_attr('spt_wedge_mean',self.wedgemean)
+		self.volumes[idx].set_attr('spt_wedge_sigma',self.wedgesigma)
 		self.volumes[idx].write_image(self.filename, idx, EMUtil.ImageType.IMAGE_UNKNOWN, True)
 		
 	def onManyVolStats(self):
 		for idx, volume in enumerate(self.volumes):
-			volume.set_attr('mean_wedge_amp',self.wedgemean)
-			volume.set_attr('sigma_wedge_amp',self.wedgesigma)
+			volume.set_attr('spt_wedge_mean',self.wedgemean)
+			volume.set_attr('spt_wedge_sigma',self.wedgesigma)
 			volume.write_image(self.filename, idx, EMUtil.ImageType.IMAGE_UNKNOWN, True)
 		
 	def addData(self, wedge, name, color=None):
@@ -189,7 +189,7 @@ class MissingWedgeViewer(QtGui.QWidget):
 	def findWedge(self, volume, angle):
 		""" Compute missing wedge stats, and draw missing wedge to check sanity """
 		vfft = volume.do_fft()
-		wedge = vfft.getwedgestats(angle, float(self.wedgei.text()), float(self.wedgef.text()))
+		wedge = vfft.getwedge(angle, float(self.wedgei.text()), float(self.wedgef.text()))
 		
 		#vfft.set_attr('is_complex',0)
 		#self.addData(vfft,"wedge")
@@ -200,8 +200,8 @@ class MissingWedgeViewer(QtGui.QWidget):
 		wholewedge = w2.process('xform.mirror',{'axis':'y'}) + w2
 		self.wedgedata = self.addData(wholewedge,"Computed Wedge", [0.0625,0.8555,0.9453])
 		# Update info
-		self.wedgemean = vfft.get_attr('mean_wedge_amp')
-		self.wedgesigma = vfft.get_attr('sigma_wedge_amp')
+		self.wedgemean = vfft.get_attr('spt_wedge_mean')
+		self.wedgesigma = vfft.get_attr('spt_wedge_sigma')
 		self.wedgemeanwidget.setText(str(round(self.wedgemean,2)))
 		self.wedgesigmawidget.setText(str(round(self.wedgesigma,2)))
 	

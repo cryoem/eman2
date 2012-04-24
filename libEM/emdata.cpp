@@ -4179,7 +4179,7 @@ void EMData::save_byteorder_to_dict(ImageIO * imageio)
 	}
 }
 
-EMData* EMData::compute_missingwedge_stats(float wedgeangle, float start, float stop)
+EMData* EMData::compute_missingwedge(float wedgeangle, float start, float stop)
 {		
 	EMData* test = new EMData();
 	test->set_size(nx,ny,nz);
