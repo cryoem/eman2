@@ -95,7 +95,7 @@ def main():
 			ave.write_image("ave2Dstack.hdf",i)
 			var.write_image("var2Dstack.hdf",i)
 			del ave, var
-		del imgdata
+		del imgdata, angles_list, proj_list
 		prj_stack = "var2Dstack.hdf"
 		
 		
