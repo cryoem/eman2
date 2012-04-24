@@ -77,12 +77,19 @@ def main():
 
 	global_def.BATCH = True
 	if not options.var:
-		data = EMData.read_images(prj_stack)
 		from utilities	import group_proj_by_phitheta, get_params_proj, params_3D_2D, set_params_proj, set_params2D
 		from statistics	import ave_var
 		from morphology	import threshold
-		proj_list, angles_list = group_proj_by_phitheta(data, options.sym, options.img_per_grp, options.diff_pct)
-		del data
+		from applications import header
+		proj_angles = []
+		nima = EMUtil.get_image_count(prj_stack)
+		tab = EMUtil.get_all_attributes(prj_stack, 'xform.projection')
+		for i in xrange(nima):
+			t = tab[i].get_params('spider')
+			proj_angles.append([t['phi'], t['theta'], t['psi']])
+		
+		proj_list, angles_list = group_proj_by_phitheta(proj_angles, options.sym, options.img_per_grp, options.diff_pct)
+		del proj_angles
 		for i in xrange(len(proj_list)):
 			imgdata = EMData.read_images(prj_stack, proj_list[i])
 			for j in xrange(len(proj_list[i])):

@@ -3228,22 +3228,17 @@ def set_pixel_size(img, pixel_size):
 		cc.apix = pixel_size
 		img.set_attr("ctf", cc)
 
-def group_proj_by_phitheta(projections, symmetry = "c1", img_per_grp = 100, diff_pct = 0.1):
+def group_proj_by_phitheta(proj_ang, symmetry = "c1", img_per_grp = 100, diff_pct = 0.1):
 	from sparx import even_angles, assign_projangles
 	from time import time
 	
 	proj_list = []   
 	angles_list = []
-	# The fourth and fifth columns are originally for shifts,
-	# but we will recycle them and use the fourth column for the image number,
-	# and the fifth one for the active flag
 	
-	proj_ang = []
-	for i in xrange(len(projections)):
-		proj = projections[i]
-		RA = proj.get_attr( "xform.projection" )
-		angdict = RA.get_sym(symmetry,0).get_rotation("spider")
-		proj_ang.append( [angdict["phi"], angdict["theta"], angdict["psi"], i, True] )
+	N = len(proj_ang)
+	for i in xrange(N):
+		proj_ang[i].append(i)
+		proj_ang[i].append(True)
 			
 	min_img_per_grp = img_per_grp*(1-diff_pct)
 	max_img_per_grp = img_per_grp*(1+diff_pct)
@@ -3251,7 +3246,6 @@ def group_proj_by_phitheta(projections, symmetry = "c1", img_per_grp = 100, diff
 	min_delta = 0.001
 	max_delta = 45.0
 	max_trial = 20
-	N = len(proj_ang)
 
 	while True:
 		proj_ang_now = []
