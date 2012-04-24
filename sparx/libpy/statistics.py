@@ -49,16 +49,16 @@ def avgvar(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift2D',
 		
 	ave: the average of the image series in real space
 	var: the variance of the image series in real space
-	
+
 	'''
 	from utilities    import model_blank
 	from alignment    import kbt
-	
+
 	inmem = True
 	if type(data) == type(""):
 		inmem = False
 		from utilities    import get_im	
-	
+
 	img2D = True
 	if inmem:
 		img = data[0]
@@ -69,19 +69,19 @@ def avgvar(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift2D',
 	nz = img.get_zsize()
 	if nz > 1:
 		img2D = False
-	
+
 	if mode == 'a':
 		if not(img2D) and ali_params=="xform.align2d":
 			ali_params = 'xform.align3d'
-				
+
 		# determine which rotation/shift to use
 		# current options are: rot_shift2D, rot_shift3D, rot_shift2dg
-		
+
 		if img2D:
 			from utilities import get_params2D
 			if rot_method == 'rot_shift2D':
 				from fundamentals import rot_shift2D
-			else:	
+			else:
 				if rot_method == 'rotshift2dg':
 					from fundamentals import rotshift2dg
 				else:
@@ -91,35 +91,35 @@ def avgvar(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift2D',
 			rot_method = 'rot_shift3D'
 			from fundamentals import rot_shift3D
 			from utilities import get_params3D
-					
+
 	if inmem:
 		data_nima = len(data)
 	else:
 		data_nima = EMUtil.get_image_count(data)
-	
+
 	if i2 == 0:
 		i2 = data_nima-1
-	
+
 	ave = model_blank(nx,ny,nz)
 	var = model_blank(nx,ny,nz)
-	
+
 	nima = 0
 	for i in xrange(i1, i2+1):
 		IS_ODD = False
 		IS_EVEN = False
-		
+
 		if i%2 == 0:
 			IS_EVEN = True
 		else:
 			IS_ODD = True
-		
+
 		if not(use_odd) and IS_ODD:
 			continue
 		if not(use_even) and IS_EVEN:
 			continue
-		
+
 		nima += 1
-		
+
 		if inmem:
 			img = data[i]
 		else:
@@ -138,9 +138,9 @@ def avgvar(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift2D',
 					if  mirror: img.process_inplace("xform.mirror", {"axis":'x'})
 		Util.add_img(ave, img)
 		Util.add_img2(var, img)
-			
+
 	Util.mul_scalar(ave, 1.0 /float(nima) )
-		
+
 	return ave, (var - ave*ave*nima)/(nima-1)
 
 def avgvar_CTF(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift2D', interp='quadratic', i1=0, i2=0, use_odd=True, use_even=True, snr=1.0):
@@ -172,12 +172,12 @@ def avgvar_CTF(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift
 	from fundamentals import fft, fftip
 	from filter       import filt_ctf
 	from morphology   import ctf_img
-	
+
 	inmem = True
 	if type(data) == type(""):
 		inmem = False
 		from utilities    import get_im	
-		
+
 	if inmem:
 		img = data[0]
 	else:
@@ -188,41 +188,41 @@ def avgvar_CTF(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift
 	if nz > 1:
 		print "images must be 2D for CTF correction.....exiting"
 		sys.exit()
-	
+
 	if img.get_attr_default('ctf_applied', 1) == 1:
 		print "data cannot be ctf-applied....exiting"
 		sys.exit()
-		
+
 	if mode == 'a':
-				
+
 		# determine which rotation/shift to use
 		# current options are: rot_shift2D, rot_shift3D, rot_shift2dg
-		
+
 		from utilities import get_params2D
 		if rot_method == 'rot_shift2D':
 			from fundamentals import rot_shift2D
-		else:	
+		else:
 			if rot_method == 'rotshift2dg':
 				from fundamentals import rotshift2dg
 			else:
 				print "only rot_shift2dg and rot_shift2D are supported...exiting"
 				sys.exit()
-					
+
 	if inmem:
 		data_nima = len(data)
 	else:
 		data_nima = EMUtil.get_image_count(data)
-	
+
 	if i2 == 0:
 		i2 = data_nima-1
-	
+
 	ave = EMData(nx, ny, 1, False)
 	ctf_2_sum = EMData(nx, ny, 1, False)
 	nima = 0
 	for i in xrange(i1, i2+1):
 		IS_ODD = False
 		IS_EVEN = False
-		
+
 		if i%2 == 0:
 			IS_EVEN = True
 		else:
@@ -232,14 +232,14 @@ def avgvar_CTF(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift
 			continue
 		if not(use_even) and IS_EVEN:
 			continue
-		
+
 		nima += 1
-		
+
 		if inmem:
 			img = data[i]
 		else:
 			img = get_im(data, i)
-			
+
 		if (mode == 'a'):
 			angle, sx, sy, mirror, scale = get_params2D(img, ali_params)
 			if rot_method == 'rot_shift2D':
@@ -251,7 +251,7 @@ def avgvar_CTF(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift
 			fftip(ima)
 		else:
 			ima = fft(img)
-			
+
 		ctf_params = img.get_attr("ctf")		
 		ima_filt = filt_ctf(ima, ctf_params)
 		Util.add_img(ave, ima_filt)
@@ -263,37 +263,37 @@ def avgvar_CTF(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift
 	for i in xrange(fnx):
 		for j in xrange(fny):
 			snr_img.set_value_at(i,j, 1.0/snr)
-	Util.add_img(ctf_2_sum, snr_img)	
+	Util.add_img(ctf_2_sum, snr_img)
 	tavg = Util.divn_img(ave, ctf_2_sum)
-	
+
 	# calculate variance, in real space
 	totv = model_blank(nx, ny, nz) 
 	for i in xrange(i1, i2+1):
 		IS_ODD = False
 		IS_EVEN = False
-		
+
 		if i%2 == 0:
 			IS_EVEN = True
 		else:
 			IS_ODD = True
-		
+
 		if not(use_odd) and IS_ODD:
 			continue
 		if not(use_even) and IS_EVEN:
 			continue
-			
+
 		if inmem:
 			img = data[i]
 		else:
 			img = get_im(data, i)
-		
-		ctf_params = img.get_attr("ctf")	
+	
+		ctf_params = img.get_attr("ctf")
 		temp = fft(filt_ctf(tavg, ctf_params)) # real space
 		temp = Util.subn_img(img, temp)
 		Util.add_img2(totv, temp)
-	
+
 	Util.mul_scalar(totv, 1.0/float(nima-1))
-		
+
 	return fft(tavg), totv
 
 
