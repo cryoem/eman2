@@ -1546,9 +1546,8 @@ EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag,bool center)
 		
 		// If the argument EMData pointer is not the same size we automatically resize it
 		bool undoresize = false;
-		int wnx = with->get_xsize(); int wny = with->get_ysize(); int wnz = with->get_zsize(); // obviously is one image is complex and the other real they won't be the same size and we DONT! want to clip JFF
-		if (!(is_complex() ^ with->is_complex()) && (wnx != nx || wny != ny || wnz != nz)) {
-			cout << "Warning!!! resizing image before CCF calculation" << endl;
+		int wnx = with->get_xsize(); int wny = with->get_ysize(); int wnz = with->get_zsize();
+		if (!(is_complex()^with->is_complex()) && (wnx != nx || wny != ny || wnz != nz) ) {
 			Region r((wnx-nx)/2, (wny-ny)/2, (wnz-nz)/2,nx,ny,nz);
 			with->clip_inplace(r);
 			undoresize = true;
@@ -4216,8 +4215,8 @@ EMData* EMData::compute_missingwedge_stats(float wedgeangle, float start, float 
 	#endif	//_WIN32
 	
 	cout << "Mean sqr wedge amp " << mean << " Sigma Squ wedge Amp " << sigma << endl;
-	set_attr("mean_wedge_amp", mean);
-	set_attr("sigma_wedge_amp", sigma);
+	set_attr("spt_wedge_mean", mean);
+	set_attr("spt_wedge_sigma", sigma);
 	
 	return test;
 }
