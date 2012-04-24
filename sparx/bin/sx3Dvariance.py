@@ -82,6 +82,7 @@ def main():
 		from statistics	import ave_var
 		from morphology	import threshold
 		proj_list, angles_list = group_proj_by_phitheta(data, options.sym, options.img_per_grp, options.diff_pct)
+		del data
 		for i in xrange(len(proj_list)):
 			imgdata = EMData.read_images(prj_stack, proj_list[i])
 			for j in xrange(len(proj_list[i])):
@@ -89,11 +90,14 @@ def main():
 				alpha, sx, sy, mirror = params_3D_2D(phi, theta, psi, s2x, s2y)
 				set_params2D(imgdata[j], [alpha, sx, sy, mirror, 1.0])
 			ave, var = ave_var(imgdata,"a")
-			var = threshold(var, 0.0)
+			var = threshold(var)
 			set_params_proj(var, [angles_list[i][0], angles_list[i][1], 0.0, 0.0, 0.0])
 			ave.write_image("ave2Dstack.hdf",i)
 			var.write_image("var2Dstack.hdf",i)
+			del ave, var
+		del imgdata
 		prj_stack = "var2Dstack.hdf"
+		
 		
 	if options.MPI:
 		from mpi import mpi_comm_rank, MPI_COMM_WORLD
