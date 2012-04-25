@@ -88,12 +88,14 @@ def main():
 		for i in xrange(nima):
 			t = tab[i].get_params('spider')
 			proj_angles.append([t['phi'], t['theta'], t['psi']])
+			##if (i < 30): print t['psi']  ##
 		proj_list, angles_list = group_proj_by_phitheta(proj_angles, options.sym, options.img_per_grp, options.diff_pct)
 		del proj_angles
+		#print "Number of groups = ", len(proj_list)
 		for i in xrange(len(proj_list)):
 			imgdata = EMData.read_images(stack, proj_list[i])
 			for j in xrange(len(proj_list[i])):
-				phi,theta,psi,s2x,s2y = get_params_proj(imgdata[j])
+				phi, theta, psi, s2x, s2y = get_params_proj(imgdata[j])
 				alpha, sx, sy, mirror = params_3D_2D(phi, theta, psi, s2x, s2y)
 				set_params2D(imgdata[j], [alpha, sx, sy, mirror, 1.0])
 			if (options.CTF):	ave, var = avgvar_CTF(imgdata,"a")
@@ -103,8 +105,9 @@ def main():
 			prj_stack.append(var)
 			ave.write_image("ave2Dstack.hdf",i)
 			var.write_image("var2Dstack.hdf",i) 
-		del ave, var, imgdata, angles_list, proj_list, stack
+		del ave, var, imgdata, angles_list, proj_list, stack, phi, theta, psi, s2x, s2y, alpha, sx, sy, mirror
 		exit()
+		
 		
 	if options.MPI:
 		from mpi import mpi_comm_rank, MPI_COMM_WORLD
