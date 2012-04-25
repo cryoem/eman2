@@ -3252,7 +3252,7 @@ def group_proj_by_phitheta(proj_ang, symmetry = "c1", img_per_grp = 100, diff_pc
 		for i in xrange(N):
 			if proj_ang[i][4]: proj_ang_now.append(proj_ang[i])
 		#print "Current size of data set = ", len(proj_ang_now)
-		if len(proj_ang_now) <= max_img_per_grp:
+		if len(proj_ang_now) <= max_img_per_grp and len(proj_ang_now) >=1 :
 			members = [0]*len(proj_ang_now)
 			for i in xrange(len(proj_ang_now)):  members[i] = proj_ang_now[i][3]
 			print "Size of this group = ", len(members)
