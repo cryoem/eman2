@@ -276,7 +276,8 @@
     ]
   }, 
   {
-    "ICON": "resolution", 
+    "ICON": "resolution",
+    "TABLE": "PMFSCTableWidget('fsclist','','',resize=True)", 
     "NAME": "Resolution", 
     "CHILDREN": [
       {

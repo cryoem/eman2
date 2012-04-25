@@ -67,24 +67,31 @@ class PMBaseWidget(QtGui.QWidget):
 		self.returnNone = returnNone
 		
 	def getValue(self):
+		""" Get the value for this widget """
 		raise NotImplementedError("Sub class must reimplemnt 'getValue' function")
 	
 	def setValue(self, value, quiet=False):
+		""" Set the value for this widget """
 		raise NotImplementedError("Sub class must reimplemnt 'setValue' function")
 		 
 	def getName(self):
+		""" Return the name of this widget """
 		return self.name
 		
 	def setPositional(self, position):
+		""" Set whether or not this is a postional argument """
 		self.postional = position
 		
 	def getPositional(self):
+		""" Return true is this is a positional argument rather than an option """
 		return self.postional
 	
 	def setMode(self, mode):
+		""" Set the DB sharing mode """
 		self.mode = mode
 	
 	def getMode(self):
+		""" Get the DB sharing mode """
 		return self.mode
 		
 	def getArgument(self):
@@ -101,9 +108,11 @@ class PMBaseWidget(QtGui.QWidget):
 				return "--%s=%s"%(self.getName(), str(self.getValue()))
 	
 	def setErrorMessage(self, message):
+		""" Set the error message """
 		self.errormessage = message
 		
 	def getErrorMessage(self):
+		""" return the error message if none then this returns blank """
 		return self.errormessage
 	
 class PMIntEntryWidget(PMBaseWidget):
@@ -806,7 +815,8 @@ class PMAutoMask3DWidget(PMBaseWidget):
 		if self.params[4].getErrorMessage(): return self.params[4].getErrorMessage()
 		
 class PMTableBase(PMBaseWidget):
-	""" A base widget for making tables """	
+	""" A base widget for making tables. To make a table class subclass this base and add a line to PMGUIWidget in e2projectmanager.py 
+	inorder to instatiate it using directions from an e2program. See Wiki for more info """	
 	def __init__(self, name, mode, postional=False, initdefault=None):
 		PMBaseWidget.__init__(self, name, mode) 
 		self.setPositional(postional)
@@ -815,12 +825,19 @@ class PMTableBase(PMBaseWidget):
 		gridbox = QtGui.QGridLayout()
 		self.tablewidget = QtGui.QTableWidget()
 		gridbox.addWidget(self.tablewidget, 0, 0)
+		self.tablewidget.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)	# Readonly table
 		self.setLayout(gridbox)
 		
-		#self.connect(self.tablewidget, QtCore.SIGNAL('cellClicked(int,int)'), self.onItemClick)
-		
 	def updateTable(self):
-		""" Update FSC table"""
+		""" Update FSC table. You must implment this function to build the table"""
+		raise NotImplementedError("Sub class must reimplemnt 'getValue' function")
+	
+	def getValue(self):
+		""" must implment this to, to return a value from the table """
+		raise NotImplementedError("Sub class must reimplemnt 'getValue' function")
+	
+	def setValue(self):
+		""" must implemnt this function to set a value in the table """
 		raise NotImplementedError("Sub class must reimplemnt 'getValue' function")
 	
 class PMFSCTableWidget(PMTableBase):
@@ -828,31 +845,60 @@ class PMFSCTableWidget(PMTableBase):
 	
 	def copyWidget(widget):
 		""" Basically a copy constructor to get around QT and python limitations """
-		pass
-		#return PMDirectoryWidget(widget.getName(), widget.dirbasename, widget.getValue(), widget.getMode(), widget.postional, widget.initdefault)
+		return PMFSCTableWidget(widget.getName(), widget.getValue(), widget.getMode(), widget.postional, widget.initdefault)
 		
-	def __init__(self, name, default, mode, postional=False, initdefault=None):
+	def __init__(self, name, default, mode, postional=False, initdefault=None, resize=False):
 		PMTableBase.__init__(self, name, mode, postional, initdefault)
 		
 		# table stuff
 		self.tablewidget.setColumnCount(4)
 		self.tablewidget.setHorizontalHeaderLabels(["Ref Dir", "Iter", "e2eotest", "e2resolution"])
-		self.tablewidget.setSelectionBehavior(1)	# select rows
-		self.tablewidget.setSelectionMode(1)		# single selection
+		self.tablewidget.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)	# select rows
+		self.tablewidget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)	# single selection
 		
 		self.tablewidget.setRowCount(0)
 		self.patterns = ["refine","frealign"]
+		self.connect(self.tablewidget,QtCore.SIGNAL("cellDoubleClicked(int,int)"),self.loadFSC)
 		
 		#now update table
-		self.updateTable()
-	
+		self.setValue(default)
+		if resize: self.resize(500,300)
+		
 	def getValue(self):
-		return self.tablewidget.item(self.tablewidget.currentRow(),0).text()
+		value = self.tablewidget.item(self.tablewidget.currentRow(),0)
+		if value:
+			return value.text()
+		else:
+			self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Warning NOTHING IS SELECTED IN THE TABLE!!!")
+			return ""
 		
 	def setValue(self, value, quiet=False):
 		self.updateTable()
-		
+		str(value)
+		wlist = self.tablewidget.findItems(str(value), QtCore.Qt.MatchExactly)
+		# Only set if something was found
+		if wlist: 
+			self.tablewidget.setCurrentItem(wlist[0])
 	
+	def loadFSC(self, row, col):
+		""" dispaly the FSC curve. This is a callback for double clicking"""
+		if not self.tablewidget.item(row, 1):
+			msg = "Rubbish!!! No FSC curves to plot."
+			print msg
+			self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Rubbish!!! No FSC curves to plot.")
+			return
+		# load FSC options
+		fsccmd = "e2plotFSC.py %s --plotconvergence"%self.tablewidget.item(row, 0).text()
+		if self.tablewidget.item(row, 2):
+			fsccmd+=" --plote2eotest"
+		if self.tablewidget.item(row, 3):
+			fsccmd+=" --plote2res"
+			
+		# Now load the FSC curves
+		msg = "Loading FSC curves, please wait..."
+		print msg
+		self.emit(QtCore.SIGNAL("pmmessage(QString)"),msg)
+		subprocess.Popen(fsccmd, shell=True)
 		
 	def updateTable(self):
 		""" Update FSC table"""

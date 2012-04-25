@@ -517,6 +517,7 @@ class EMProjectManager(QtGui.QMainWindow):
 		# --ipd=-2 ; tell .eman2log.txt that this job is already in the pm note book
 		if self.dumpterminal.isChecked():
 			# This wont work on Windows(or for multiple e2projectmanger instances)....... Fix later
+			# Also this code is experimental, it needs to be finished....
 			try : os.unlink("%s/pmfifo"%os.getcwd())
 			except : pass
 			os.mkfifo("%s/pmfifo"%os.getcwd())
