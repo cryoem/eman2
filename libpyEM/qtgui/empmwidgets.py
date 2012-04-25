@@ -425,6 +425,9 @@ class PMFileNameWidget(PMBaseWidget):
 		# Check to see if the file exists
 		filename = str(filename)
 		if filename.upper() == "NONE": filename=""	# If none is passed set to blank
+		# Posional arguments must be space delimted for multiple files, whereas options must be comma delimted
+		if not self.getPositional():
+			filename = filename.replace(" ",",")
 		# In some cases a file is optional
 		if self.checkfileexist:
 			# We need to check if the field is blank
@@ -441,7 +444,12 @@ class PMFileNameWidget(PMBaseWidget):
 		self.emit(QtCore.SIGNAL("pmfilename(QString)"),self.getValue())
 	
 	def _checkfiles(self, filename):
-		files = filename.split()
+		# Posional arguments must be space delimted for multiple files, whereas options must be comma delimted
+		if self.getPositional():
+			files = filename.split()
+		else:
+			files = filename.split(",")
+		# Check each file
 		numimages = 0
 		for f in files:
 			if not os.access(f, os.F_OK) and not db_check_dict(f):
@@ -457,7 +465,7 @@ class PMFileNameWidget(PMBaseWidget):
 		self.filename = None
 		self.setErrorMessage("File '%s' from field '%s' does not exist"%(filename,self.getName()))
 		if self.isVisible() and not quiet: self.emit(QtCore.SIGNAL("pmmessage(QString)"),"File '%s' from field '%s' does not exist"%(filename,self.getName()))
-
+		
 class PMDirectoryWidget(PMBaseWidget):
 	""" A Widget for display dircories of a certian type """
 	
@@ -676,72 +684,6 @@ class PMSymWidget(PMBaseWidget):
 	def getErrorMessage(self):
 		if self.errormessage: return self.errormessage
 		if self.symnumbox.getErrorMessage(): return self.symnumbox.getErrorMessage()
-
-class PMMultiSymWidget(PMBaseWidget):
-	""" A widget for getting/setting symmetry input from multiple models and this widget is runtime dynamic """
-	
-	@staticmethod 
-	def copyWidget(widget):
-		""" Basically a copy constructor to get around QT and python limitations """
-		return PMMultiSymWidget(widget.getName(), widget.getMode(), widget.initdefault)
-		
-	def __init__(self, name, mode, initdefault=None):
-		PMBaseWidget.__init__(self, name, mode)
-		self.gridbox = QtGui.QVBoxLayout()
-		self.gridbox.setContentsMargins(0,0,0,0)
-		self.stackedwidget = QtGui.QStackedWidget()
-		self.multisymwidgetlist = []
-		self.gridbox.addWidget(self.stackedwidget)
-		self.setLayout(self.gridbox)
-		self.lastsymvalue = None
-		self.initdefault = initdefault
-	
-	def setValue(self, value, quiet=False):
-		if not value: return
-		values = value.split(",")
-		for i, widget in enumerate(self.multisymwidgetlist):
-			if i > len(values) - 1: break	# Can add more defaults than exist!!!
-			widget.setValue(values[i])
-		self.lastsymvalue = value
-		
-	def getValue(self):
-		multisym = ""
-		for widget in self.multisymwidgetlist:
-			multisym += ","+widget.getValue()
-		multisym = multisym[1:]
-		return multisym
-		
-	def update(self, files): 
-		fileslist = str(files).split()
-		amount = 0
-		self.multisymwidgetlist = []
-		# First remove the old widget
-		if self.stackedwidget.currentIndex() == -1:
-			widget = self.stackedwidget.widget(0)
-			self.stackedwidget.removeWidget(widget)
-			del(widget)
-		# Then add new one
-		multisym = QtGui.QWidget()
-		vbox = QtGui.QVBoxLayout()
-		for i,f in enumerate(fileslist):
-			widget = PMSymWidget("Model%d"%i,"c1",self.getMode())
-			self.multisymwidgetlist.append(widget)
-			vbox.addWidget(widget)
-			amount += 60	# A complete HACK
-		if self.lastsymvalue: self.setValue(self.lastsymvalue)
-		vbox.setContentsMargins(0,0,0,0)
-		multisym.setLayout(vbox)
-		self.stackedwidget.insertWidget(0, multisym)
-		self.stackedwidget.setCurrentIndex(0)
-		
-		# Then resize the GUI widget, this was just hacked together
-		self.setMinimumHeight(amount)
-		self.setMaximumHeight(amount)
-		
-	def getErrorMessage(self):
-		if self.errormessage: return self.errormessage
-		for widget in self.multisymwidgetlist:
-			if widget.getErrorMessage(): return widget.getErrorMessage()
 			
 class PMAutoMask3DWidget(PMBaseWidget):
 	""" A Widget for getting automask 3D input """

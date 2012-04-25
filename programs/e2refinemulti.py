@@ -68,7 +68,7 @@ def main():
 
 	# options associated with e2project3d.py
 	parser.add_header(name="projectheader", help='Options below this label are specific to e2project', title="### e2project options ###", row=12, col=0, rowspan=1, colspan=3)
-	parser.add_argument("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, tet, oct, icos. Optionally specify a comma separated list to specify per-model symmetry.", guitype='multisymbox', row=10, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, tet, oct, icos. Optionally specify a comma separated list to specify per-model symmetry.", guitype='strbox', row=10, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--projector", dest = "projector", default = "standard",help = "Projector to use", guitype='comboparambox', choicelist='dump_projectors_list()', row=13, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--orientgen", type = str, default='eman:delta=5.0:inc_mirror=0:perturb=1',help = "The orientation generation argument for e2project3d.py", guitype='comboparambox', choicelist='dump_orientgens_list()', row=14, col=0, rowspan=1, colspan=3, mode="refinement")
 		

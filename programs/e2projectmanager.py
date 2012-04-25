@@ -1661,16 +1661,10 @@ class PMGUIWidget(QtGui.QScrollArea):
 				widget = PMHeaderWidget(option['name'], option['title'])
 			if option['guitype'] == 'filebox':
 				widget = PMFileNameWidget(option['name'], self.getDefault(option), self.getSharingMode(option), self.getBrowser(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True),checkfileexist=self.getFileCheck(option))
-				fileboxwidget = widget
 			if option['guitype'] == 'dirbox':
 				widget = PMDirectoryWidget(option['name'], option['dirbasename'], self.getDefault(option), self.getSharingMode(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
 			if option['guitype'] == 'symbox':
 				widget = PMSymWidget(option['name'], self.getDefault(option), self.getSharingMode(option), initdefault=self.getDefault(option, nodb=True))
-			if option['guitype'] == 'multisymbox':
-				widget = PMMultiSymWidget(option['name'], self.getSharingMode(option), initdefault=self.getDefault(option, nodb=True))
-				self.connect(fileboxwidget,QtCore.SIGNAL("pmfilename(QString)"),widget.update)
-				widget.update(fileboxwidget.getValue())
-				widget.setValue(self.getDefault(option))
 			if option['guitype'] == 'intbox':
 				widget = PMIntEntryWidget(option['name'], self.getDefault(option), self.getSharingMode(option), self.getLRange(option), self.getURange(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
 			if option['guitype'] == 'shrinkbox':
