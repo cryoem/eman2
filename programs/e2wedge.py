@@ -98,10 +98,9 @@ def main():
 	return()
 				
 	
-	
 def wedgestats(volume,angle, wedgei, wedgef):
 	vfft = volume.do_fft()
-	wedge = vfft.getwedgestats(angle, wedgei, wedgef)		
+	wedge = vfft.getwedge(angle, wedgei, wedgef)		
 	mean = vfft.get_attr('spt_wedge_mean')
 	sigma = vfft.get_attr('spt_wedge_sigma')
 	return(mean,sigma)
