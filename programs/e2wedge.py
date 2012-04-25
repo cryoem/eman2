@@ -48,18 +48,63 @@ def main():
 	
 	parser.add_pos_argument(name="tdstack",help="The 3D stack to examine.", default="", guitype='filebox',  row=0, col=0,rowspan=1, colspan=2)
 	parser.add_header(name="wedgeheader", help='Options below this label are specific to e2wedge', title="### e2wedge options ###", row=1, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--wedgeangle",type=float,help="Missing wedge angle",default=70.0, guitype='floatbox', row=2, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--wedgeangle",type=float,help="Missing wedge angle",default=60.0, guitype='floatbox', row=2, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--wedgei",type=float,help="Missingwedge begining", default=0.05)
 	parser.add_argument("--wedgef",type=float,help="Missingwedge ending", default=0.5)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	
+	parser.add_argument("--nogui", action="store_true", default=False, help="Do not launch the GUI and set the average of the missing wedge statistics on all the volumes.")
+	parser.add_argument("--averagestats", action="store_true", default=False, help="Do not launch the GUI and set the average of the missing wedge statistics on all the volumes.")
+
 	(options, args) = parser.parse_args()
+	
+	stack=args[0]
+	
+	if not options.nogui:	
+		em_app = EMApp()
+		wedgeviewer = MissingWedgeViewer(stack, options.wedgeangle, wedgei=options.wedgei, wedgef=options.wedgef)
+		wedgeviewer.show()
+		ret=em_app.exec_()
+		sys.exit(ret)
+	else:
+		means=[]
+		sigmas=[]
 		
-	em_app = EMApp()
-	wedgeviewer = MissingWedgeViewer(args[0], options.wedgeangle, wedgei=options.wedgei, wedgef=options.wedgef)
-	wedgeviewer.show()
-	ret=em_app.exec_()
-	sys.exit(ret)
+		n=EMUtil.get_image_count(stack)
+		for i in range(n):
+			a = EMData(stack,i)
+			retr = wedgestats(a,options.wedgeangle,options.wedgei,options.wedgef)
+			mean = retr[0]
+			sigma = retr[1]
+			
+			if options.averagestats:
+				means.append(mean)
+				sigmas.append(sigma)
+			else:
+				a['spt_wedge_mean'] = mean
+				a['spt_wedge_sigma'] = sigma
+				print "The mean and sigma for subvolume %d are: mean=%f, sigma=%f" % (i,mean,sigma)
+				a.write_image(stack,i)
+		
+		if options.averagestats:
+			meanavg = sum(means)/len(means)
+			sigmaavg = sum(sigmas)/len(sigmas)
+			
+			print "The average mean and sigma for the wedges in the stack are", meanavg, sigmaavg
+			for i in range(n):
+				a = EMData(stack,i)
+				a['spt_wedge_mean'] = meanavg
+				a['spt_wedge_sigma'] = sigmaavg
+				a.write_image(stack,i)
+	return()
+				
+	
+	
+def wedgestats(volume,angle, wedgei, wedgef):
+	vfft = volume.do_fft()
+	wedge = vfft.getwedgestats(angle, wedgei, wedgef)		
+	mean = vfft.get_attr('spt_wedge_mean')
+	sigma = vfft.get_attr('spt_wedge_sigma')
+	return(mean,sigma)
 
 
 class MissingWedgeViewer(QtGui.QWidget):
