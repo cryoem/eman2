@@ -33,7 +33,7 @@
 
 import PyQt4
 from PyQt4 import QtCore, QtGui
-from PyQt4.QtCore import Qt
+from PyQt4.QtCore import Qt,QString,QChar
 from emapplication import EMApp
 from EMAN2 import *
 import os.path
@@ -1852,19 +1852,24 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.wtoolhbl=QtGui.QHBoxLayout(self.wtools)
 		self.wtoolhbl.setContentsMargins(0,0,0,0)
 		
-		self.wbutback=QtGui.QPushButton("<-")
-		self.wbutback.setMaximumWidth(42)
+		self.wbutback=QtGui.QPushButton(QString(QChar(0x2190)))
+		self.wbutback.setMaximumWidth(36)
 		self.wbutback.setEnabled(False)
 		self.wtoolhbl.addWidget(self.wbutback,0)
 
-		self.wbutup=QtGui.QPushButton("^")
-		self.wbutup.setMaximumWidth(42)
+		self.wbutup=QtGui.QPushButton(QString(QChar(0x2191)))
+		self.wbutup.setMaximumWidth(36)
 		self.wtoolhbl.addWidget(self.wbutup,0)
 
-		self.wbutfwd=QtGui.QPushButton("->")
-		self.wbutfwd.setMaximumWidth(42)
+		self.wbutfwd=QtGui.QPushButton(QString(QChar(0x2192)))
+		self.wbutfwd.setMaximumWidth(36)
 		self.wbutfwd.setEnabled(False)
 		self.wtoolhbl.addWidget(self.wbutfwd,0)
+
+		self.wbutrefresh=QtGui.QPushButton(QString(QChar(0x21ba)))
+		self.wbutrefresh.setMaximumWidth(36)
+		self.wtoolhbl.addWidget(self.wbutrefresh,0)
+
 
 		# Text line for showing (or editing) full path
 		self.wpath = QtGui.QLineEdit()
@@ -1964,6 +1969,7 @@ class EMBrowserWidget(QtGui.QWidget):
 		QtCore.QObject.connect(self.wbutback, QtCore.SIGNAL('clicked(bool)'), self.buttonBack)
 		QtCore.QObject.connect(self.wbutfwd, QtCore.SIGNAL('clicked(bool)'), self.buttonFwd)
 		QtCore.QObject.connect(self.wbutup, QtCore.SIGNAL('clicked(bool)'), self.buttonUp)
+		QtCore.QObject.connect(self.wbutrefresh, QtCore.SIGNAL('clicked(bool)'), self.buttonRefresh)
 		QtCore.QObject.connect(self.wbutinfo, QtCore.SIGNAL('clicked(bool)'), self.buttonInfo)
 		QtCore.QObject.connect(self.selectall, QtCore.SIGNAL('clicked(bool)'), self.selectAll)
 		QtCore.QObject.connect(self.wtree, QtCore.SIGNAL('clicked(const QModelIndex)'), self.itemSel)
@@ -2173,7 +2179,11 @@ class EMBrowserWidget(QtGui.QWidget):
 		print "Newpath: ",newpath
 		#if len(newpath)>1 : self.setPath(newpath)	# What if we want to return to CWD, '.' # John F
 		if len(newpath)>0 : self.setPath(newpath)
-		
+
+	def buttonRefresh(self,tog):
+		"Button press"
+		self.setPath(self.curpath)
+
 	def buttonInfo(self,tog):
 		if tog :
 			if self.infowin==None :
