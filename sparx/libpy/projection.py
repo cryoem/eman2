@@ -48,7 +48,7 @@ def project(volume, params, radius):
 
         myparams = {"transform":Transform({"type":"spider","phi":params[0],"theta":params[1],"psi":params[2]}), "radius":radius}
         proj = volume.project("pawel", myparams)
-	if(params[3]!=0. or params[4]!=0.): 
+	if(params[3]!=0. or params[4]!=0.):
 		params2 = {"filter_type" : Processor.fourier_filter_types.SHIFT, "x_shift" : params[3], "y_shift" : params[4], "z_shift" : 0.0}
 		proj=Processor.EMFourierFilter(proj, params2)
 		#proj = rot_shift2D(proj, sx = params[3], sy = params[4], interpolation_method = "linear")
