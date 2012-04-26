@@ -125,6 +125,12 @@ class PMIntEntryWidget(PMBaseWidget):
 		
 	def __init__(self, name, value, mode, lrange=None, urange=None, postional=False, initdefault=None):
 		PMBaseWidget.__init__(self, name, mode) 
+		self.value = None
+		self.lrange = lrange
+		self.urange = urange
+		self.initdefault = initdefault
+		self.setPositional(postional)
+		
 		gridbox = QtGui.QGridLayout()
 		label = QtGui.QLabel(name)
 		self.intbox = QtGui.QLineEdit()
@@ -132,14 +138,9 @@ class PMIntEntryWidget(PMBaseWidget):
 		gridbox.addWidget(self.intbox, 0, 1)
 		self.setLayout(gridbox)
 
-		self.value = None
-		self.lrange = lrange
-		self.urange = urange
-		self.initdefault = initdefault
-		self.setValue(value)
-		self.setPositional(postional)
-
 		QtCore.QObject.connect(self.intbox,QtCore.SIGNAL("editingFinished()"),self._on_intchanged)
+		
+		self.setValue(value)
 		
 	def _on_intchanged(self, quiet=False):
 		if str(self.intbox.text()).upper() == "NONE" or str(self.intbox.text()) == "":
@@ -218,6 +219,12 @@ class PMFloatEntryWidget(PMBaseWidget):
 		
 	def __init__(self, name, value, mode, lrange=None, urange=None, postional=False, initdefault=None):
 		PMBaseWidget.__init__(self, name, mode) 
+		self.value = None
+		self.lrange = lrange
+		self.urange = urange
+		self.initdefault = initdefault
+		self.setPositional(postional)
+		
 		gridbox = QtGui.QGridLayout()
 		label = QtGui.QLabel(name)
 		self.floatbox = QtGui.QLineEdit()
@@ -225,14 +232,9 @@ class PMFloatEntryWidget(PMBaseWidget):
 		gridbox.addWidget(self.floatbox, 0, 1)
 		self.setLayout(gridbox)
 		
-		self.value = None
-		self.lrange = lrange
-		self.urange = urange
-		self.initdefault = initdefault
-		self.setValue(value)
-		self.setPositional(postional)
-		
 		QtCore.QObject.connect(self.floatbox,QtCore.SIGNAL("editingFinished()"),self._on_floatchanged)
+		
+		self.setValue(value)
 		
 	def _on_floatchanged(self, quiet=False):
 		if str(self.floatbox.text()).upper() == "NONE" or str(self.floatbox.text()) == "":
@@ -276,18 +278,19 @@ class PMStringEntryWidget(PMBaseWidget):
 		
 	def __init__(self, name, string, mode, postional=False, initdefault=None, returnNone=False):
 		PMBaseWidget.__init__(self, name, mode, returnNone=returnNone) 
+		self.initdefault = initdefault
+		self.setPositional(postional)
+		
 		gridbox = QtGui.QGridLayout()
 		label = QtGui.QLabel(name)
 		self.stringbox = QtGui.QLineEdit()
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.stringbox, 0, 1)
 		self.setLayout(gridbox)
-		
-		self.initdefault = initdefault
-		self.setValue(string)
-		self.setPositional(postional)
-		
+
 		QtCore.QObject.connect(self.stringbox,QtCore.SIGNAL("editingFinished()"),self._on_stringchanged)
+		
+		self.setValue(string)
 	
 	def _on_stringchanged(self):
 		self.string = str(self.stringbox.text())
@@ -309,6 +312,7 @@ class PMHeaderWidget(PMBaseWidget):
 	""" A widget to add a header """
 	def __init__(self, name, header):
 		PMBaseWidget.__init__(self, name)
+		
 		gridbox = QtGui.QGridLayout()
 		self.header = QtGui.QLabel()
 		font = QtGui.QFont()
@@ -340,17 +344,17 @@ class PMBoolWidget(PMBaseWidget):
 		
 	def __init__(self, name, boolvalue, mode, initdefault=None):
 		PMBaseWidget.__init__(self, name, mode)
+		self.boolvalue = boolvalue
+		self.initdefault = initdefault
+		
 		gridbox = QtGui.QGridLayout()
 		self.boolbox = QtGui.QCheckBox(name)
 		gridbox.addWidget(self.boolbox, 0, 0)
 		self.setLayout(gridbox)
 		
-
-		self.boolvalue = boolvalue
-		self.initdefault = initdefault
-		self.setValue(self.boolvalue)
-		
 		QtCore.QObject.connect(self.boolbox,QtCore.SIGNAL("stateChanged(int)"),self._on_boolchanged)
+		
+		self.setValue(self.boolvalue)
 	
 	def _on_boolchanged(self):
 		self.boolvalue = self.boolbox.isChecked()
@@ -379,6 +383,10 @@ class PMFileNameWidget(PMBaseWidget):
 		
 	def __init__(self, name, filename, mode, browser, postional=True, initdefault=None, checkfileexist=True, infolabels=True):
 		PMBaseWidget.__init__(self, name, mode) 
+		self.initdefault = initdefault
+		self.checkfileexist= checkfileexist
+		self.setPositional(postional)
+		
 		gridbox = QtGui.QGridLayout()
 		label = QtGui.QLabel(name)
 		self.browser = browser
@@ -390,14 +398,11 @@ class PMFileNameWidget(PMBaseWidget):
 		gridbox.addWidget(self.browsebutton, 0, 2)
 		if infolabels: gridbox.addWidget(self.infolabel, 1, 1, 1, 2)
 		self.setLayout(gridbox)
-
-		self.initdefault = initdefault
-		self.checkfileexist= checkfileexist
-		self.setValue(filename)
-		self.setPositional(postional)
 		
 		QtCore.QObject.connect(self.filenamebox,QtCore.SIGNAL("editingFinished()"),self._on_filenamechanged)
 		QtCore.QObject.connect(self.browsebutton,QtCore.SIGNAL("clicked()"),self._on_clicked)
+		
+		self.setValue(filename)
 	
 	def _on_filenamechanged(self):
 		self.setValue(str(self.filenamebox.text()))
@@ -477,6 +482,9 @@ class PMDirectoryWidget(PMBaseWidget):
 	def __init__(self, name, dirbasename, default, mode, postional=False, initdefault=None):
 		PMBaseWidget.__init__(self, name, mode) 
 		self.dirbasename = dirbasename
+		self.initdefault = initdefault
+		self.setPositional(postional)
+		
 		gridbox = QtGui.QGridLayout()
 		label = QtGui.QLabel(name)
 		self.combobox = PMComboBox()
@@ -484,11 +492,9 @@ class PMDirectoryWidget(PMBaseWidget):
 		gridbox.addWidget(self.combobox, 0, 1)
 		self.setLayout(gridbox)
 		
-		self.initdefault = initdefault
-		self.setValue(default)
-		self.setPositional(postional)
-		
 		self.connect(self.combobox, QtCore.SIGNAL("activated(const QString &)"), self.setValue)
+		
+		self.setValue(default)
 				
 	def updateDirs(self):
 		for idx in xrange(self.combobox.count()):
@@ -521,23 +527,24 @@ class PMComboWidget(PMBaseWidget):
 
 	def __init__(self, name, choices, default, mode, postional=False,  datatype=str, initdefault=None, returnNone=False):
 		PMBaseWidget.__init__(self, name, mode, returnNone=returnNone) 
+		self.initdefault = initdefault
+		self.datatype=datatype	# Must be int, float or str
+		self.setPositional(postional)		
+		
 		gridbox = QtGui.QGridLayout()
 		label = QtGui.QLabel(name)
 		self.combobox = PMComboBox()
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.combobox, 0, 1)
 		self.setLayout(gridbox)
-
-		self.initdefault = initdefault
-		self.datatype=datatype	# Must be int, float or str
-		
+		# load combo box
 		self.choices = sorted(choices)
 		for choice in self.choices:
 			self.combobox.addItem(str(choice))
-		self.setValue(default)
-		self.setPositional(postional)
 		
 		self.connect(self.combobox, QtCore.SIGNAL("activated(const QString &)"), self.setValue)
+		
+		self.setValue(default)
 				
 	def getValue(self):
 		if str(self.combobox.currentText()) == "None":
@@ -568,6 +575,9 @@ class PMComboParamsWidget(PMBaseWidget):
 		
 	def __init__(self, name, choices, default, mode, postional=False, initdefault=None, returnNone=False):
 		PMBaseWidget.__init__(self, name, mode, returnNone=returnNone) 
+		self.initdefault = initdefault
+		self.setPositional(postional)
+		
 		gridbox = QtGui.QGridLayout()
 		label = QtGui.QLabel(name)
 		self.combobox = PMComboBox()
@@ -578,18 +588,16 @@ class PMComboParamsWidget(PMBaseWidget):
 		gridbox.addWidget(plabel, 0, 2)
 		gridbox.addWidget(self.params, 0, 3)
 		self.setLayout(gridbox)
-
+		# load choices
 		self.choices = sorted(choices)
 		for choice in self.choices:
 			self.combobox.addItem(str(choice))
 		self.combobox.addItem('None')
 		
-		self.initdefault = initdefault
-		self.setValue(default)
-		self.setPositional(postional)
-		
 		self.connect(self.combobox, QtCore.SIGNAL("activated(const QString &)"), self.setValue)
-				
+
+		self.setValue(default)
+		
 	def getValue(self):
 		""" Return the value. Concatenate if necessary """
 		if str(self.combobox.currentText()) == "None":
@@ -632,6 +640,8 @@ class PMSymWidget(PMBaseWidget):
 		
 	def __init__(self, name, default, mode, initdefault=None):
 		PMBaseWidget.__init__(self, name, mode)
+		self.initdefault = initdefault
+				
 		gridbox = QtGui.QGridLayout()
 		label = QtGui.QLabel(name)
 		label.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight)
@@ -646,7 +656,6 @@ class PMSymWidget(PMBaseWidget):
 		
 		self.connect(self.symnumbox,QtCore.SIGNAL("pmmessage(QString)"),self._on_message)
 		
-		self.initdefault = initdefault
 		self.setValue(default)
 	
 	def _on_message(self, message):
@@ -695,6 +704,8 @@ class PMAutoMask3DWidget(PMBaseWidget):
 		
 	def __init__(self, name, default, mode, initdefault=None):
 		PMBaseWidget.__init__(self, name, mode)
+		self.initdefault = initdefault
+		
 		gridbox = QtGui.QGridLayout()
 		self.automask3dbool = QtGui.QCheckBox("Auto Mask 3D")
 		self.params = []
@@ -710,8 +721,6 @@ class PMAutoMask3DWidget(PMBaseWidget):
 		gridbox.addWidget(self.params[3], 2, 0)
 		gridbox.addWidget(self.params[4], 2, 1, 1, 2)
 		self.setLayout(gridbox)
-		self.setValue(default)
-		self.initdefault = initdefault
 		
 		QtCore.QObject.connect(self.automask3dbool,QtCore.SIGNAL("stateChanged(int)"),self._on_boolchanged)
 		self.connect(self.params[0],QtCore.SIGNAL("pmmessage(QString)"),self._on_message)
@@ -719,6 +728,8 @@ class PMAutoMask3DWidget(PMBaseWidget):
 		self.connect(self.params[2],QtCore.SIGNAL("pmmessage(QString)"),self._on_message)
 		self.connect(self.params[3],QtCore.SIGNAL("pmmessage(QString)"),self._on_message)
 		self.connect(self.params[4],QtCore.SIGNAL("pmmessage(QString)"),self._on_message)
+		
+		self.setValue(default)
 		
 	def _on_boolchanged(self):
 		for widget in self.params:
