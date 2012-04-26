@@ -2114,6 +2114,11 @@ class EMBrowserWidget(QtGui.QWidget):
 		itm=qmi.internalPointer()
 		if itm.nChildren()>0:
 			self.setPath(itm.path())
+		else:
+			try:
+				self.curactions[0][2](self)
+			except:
+				print "error on Activate"
 	
 	def itemExpand(self,qmi):
 		"Called when an item is expanded"
