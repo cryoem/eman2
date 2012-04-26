@@ -18632,7 +18632,7 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 				}
 				else if (mirror_only) {
 					// inner product of the mirror of iref's Eulerian angles with that of the data
-					nbrinp = (-1.0*n1[iref]*imn1) + (-1.0*n2[iref]*imn2) + n3[iref]*imn3;
+					nbrinp = (-1.0f*n1[iref]*imn1) + (-1.0f*n2[iref]*imn2) + n3[iref]*imn3;
 					if (nbrinp >= ant){
 						use_ref = true;
 					}

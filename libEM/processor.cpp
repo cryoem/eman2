@@ -2819,7 +2819,7 @@ void NonConvexProcessor::process_inplace(EMData * image) {
 		float *bdat=binary->get_data();
 		int nxy=(nx2*ny2*4);
 		for (int i=0; i<nxy; i++) {
-			bdat[i]=idat[i]==0?0:1.0;		// binary version of the convex points in image
+			bdat[i]=idat[i]==0?0:1.0f;		// binary version of the convex points in image
 		}
 		binary->update();
 		
@@ -2841,7 +2841,7 @@ void NonConvexProcessor::process_inplace(EMData * image) {
 		for (int x=0; x<image->get_xsize(); x+=2) {
 			for (int y=0; y<image->get_ysize(); y++) {
 				float bv=binary->get_value_at(x/2+nx2,y);
-				image->set_value_at_fast(x,y,image->get_value_at(x/2+nx2,y)/(bv<=0?1.0:bv));
+				image->set_value_at_fast(x,y,image->get_value_at(x/2+nx2,y)/(bv<=0?1.0f:bv));
 				image->set_value_at_fast(x+1,y,0.0);
 			}
 		}
@@ -5517,14 +5517,14 @@ EMData* CtfSimProcessor::process(const EMData * const image) {
 	EMAN2Ctf ctf;
 	ctf.defocus=params["defocus"];
 	ctf.bfactor=params["bfactor"];
-	ctf.ampcont=params.set_default("ampcont",10.0);
-	ctf.voltage=params.set_default("voltage",200.0);
+	ctf.ampcont=params.set_default("ampcont",10.0f);
+	ctf.voltage=params.set_default("voltage",200.0f);
 	ctf.cs=params.set_default("cs",2.0);
 	ctf.apix=params.set_default("apix",image->get_attr_default("apix_x",1.0));
 	ctf.dsbg=1.0/(ctf.apix*fft->get_ysize()*4.0);		//4x oversampling
 	
-	float noiseamp=params.set_default("noiseamp",0.0);
-	float noiseampwhite=params.set_default("noiseampwhite",0.0);
+	float noiseamp=params.set_default("noiseamp",0.0f);
+	float noiseampwhite=params.set_default("noiseampwhite",0.0f);
 	
 	// compute and apply the CTF
 	vector <float> ctfc = ctf.compute_1d(fft->get_ysize()*6,ctf.dsbg,ctf.CTF_AMP,NULL); // *6 goes to corner, remember you provide 2x the number of points you need
@@ -5534,7 +5534,7 @@ EMData* CtfSimProcessor::process(const EMData * const image) {
 // 	for (int i=0; i<ctfc.size(); i++) fprintf(out,"%f\t%1.3g\n",0.25*i/(float)fft->get_ysize(),ctfc[i]);
 // 	fclose(out);
 	
-	fft->apply_radial_func(0,0.25/fft->get_ysize(),ctfc,1);
+	fft->apply_radial_func(0,0.25f/fft->get_ysize(),ctfc,1);
 	
 	// Add noise
 	if (noiseamp!=0 || noiseampwhite!=0) {
@@ -5553,10 +5553,10 @@ EMData* CtfSimProcessor::process(const EMData * const image) {
 		if (noiseamp!=0) {
 			vector <float> pinkbg;
 			pinkbg.resize(500);
-			float nyimg=0.5/ctf.apix;	// image nyquist
+			float nyimg=0.5f/ctf.apix;	// image nyquist
 			// This pink curve came from a typical image in the GroEL 4A data set
-			for (int i=0; i<500; i++) pinkbg[i]=noiseamp*(44.0*exp(-5.0*nyimg*i/250.0)+10.0*exp(-90.0*nyimg*i/250.0));		// compute curve to image Nyquist*2
-			noise->apply_radial_func(0,.002,pinkbg,1);		// Image nyquist is at 250 -> 0.5
+			for (int i=0; i<500; i++) pinkbg[i]=noiseamp*(44.0f*exp(-5.0f*nyimg*i/250.0f)+10.0f*exp(-90.0f*nyimg*i/250.0f));		// compute curve to image Nyquist*2
+			noise->apply_radial_func(0,.002f,pinkbg,1);		// Image nyquist is at 250 -> 0.5
 			fft->add(*noise);
 		}
 		
@@ -9979,7 +9979,7 @@ void RotateInFSProcessor::process_inplace(EMData * image) // right now for 2d im
 
 //	Transform *rotNow  = params.set_default("transform",&Transform());
 	Transform *rotNow  = params["transform"];
-	float interpCutoff = params.set_default("interpCutoff",0.8);   // JFF, can you move this to input parameter? 
+	float interpCutoff = params.set_default("interpCutoff",0.8f);   // JFF, can you move this to input parameter? 
 //	float interpCutoff = params["interpCutoff"];   // JFF, can you move this to input parameter? 
 //	float interpCutoff =.8;   // JFF, can you move this to input parameter? 
 	

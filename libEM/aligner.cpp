@@ -130,9 +130,9 @@ EMData* ScaleAlignerABS::align_using_base(EMData * this_img, EMData * to,
 			const string & cmp_name, const Dict& cmp_params) const
 {
 	//get the scale range
-	float min =  params.set_default("min",0.95);
-	float max = params.set_default("max",1.05);
-	float step = params.set_default("step",0.01);
+	float min =  params.set_default("min",0.95f);
+	float max = params.set_default("max",1.05f);
+	float step = params.set_default("step",0.01f);
 	
 	// crate the starting transform
 	Transform t = Transform();
@@ -189,9 +189,9 @@ EMData* ScaleAligner::align(EMData * this_img, EMData *to,
 {
 	
 	//get the scale range
-	float min =  params.set_default("min",0.95);
-	float max = params.set_default("max",1.05);
-	float step = params.set_default("step",0.01);
+	float min =  params.set_default("min",0.95f);
+	float max = params.set_default("max",1.05f);
+	float step = params.set_default("step",0.01f);
 	
 	Transform t = Transform();
 	t.set_scale(max);

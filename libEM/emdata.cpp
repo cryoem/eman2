@@ -4184,7 +4184,7 @@ EMData* EMData::compute_missingwedge(float wedgeangle, float start, float stop)
 	EMData* test = new EMData();
 	test->set_size(nx,ny,nz);
 	
-	float ratio = tan((90.0-wedgeangle)*M_PI/180.0);
+	float ratio = tan((90.0f-wedgeangle)*M_PI/180.0f);
 	
 	int offset_i = 2*int(start*nz/2);
 	int offset_f = int(stop*nz/2);
