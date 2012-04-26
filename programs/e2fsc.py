@@ -57,6 +57,7 @@ and this program should be regarded as experimental.
 #	parser.add_argument("--refine",type=str,default=None,help="Automatically get parameters for a refine directory")
 	parser.add_argument("--output",type=str,help="Output text file",default="zvssim.txt")
 	parser.add_argument("--localsize", type=int, help="Size in pixels of the local region to compute the resolution in",default=-1)
+	parser.add_argument("--overlap", type=int, help="Amount of oversampling to use in local resolution windows. Larger value -> larger output map",default=12)
 	parser.add_argument("--apix", type=float, help="A/pix to use for the comparison (default uses Vol1 apix)",default=0)
 	#parser.add_argument("--refs",type=str,help="Reference images from the similarity matrix (projections)",default=None)
 	#parser.add_argument("--inimgs",type=str,help="Input image file",default=None)
@@ -65,8 +66,8 @@ and this program should be regarded as experimental.
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbosity [0-9]. Larger values produce more output.")
 
-	print "WARNING: This program is considered highly experimental, and there are mathematical arguments that local estimation techniques will not produce reliable values."
-	print "Having said that, the fsc.txt file is a normal FSC between the two volumes, and IS relaible, though e2proc3d.py could compute it far more easily"
+	print "WARNING: This program is considered highly experimental, and there are mathematical \narguments that local estimation techniques will not produce reliable values.\n"
+	print "Having said that, the fsc.txt file is a normal FSC between the two volumes, and IS \nreliable, though e2proc3d.py could compute it far more easily"
 
 	(options, args) = parser.parse_args()
 		
@@ -90,6 +91,9 @@ and this program should be regarded as experimental.
 	
 	if options.localsize==-1 : lnx=nx/10*2
 	else: lnx=options.localsize
+	if apix*lnx/2.0<15.0 :
+		print "WARNING: Local sampling box is <15 A. Adjusting to 20 A."
+		lnx=int(floor(40.0/apix))
 	print "Local region is %d pixels"%lnx
 	
 	thresh1=v1["mean"]+v1["sigma"]
@@ -114,15 +118,20 @@ and this program should be regarded as experimental.
 	cenmask.write_image("cenmask.hdf")
 	#display(cenmask)
 	
-	xr=xrange(0,nx-lnx,lnx/12)
-	yr=xrange(0,ny-lnx,lnx/12)
-	zr=xrange(0,nz-lnx,lnx/12)
+	overlap=options.overlap		# This is the fraction of the window size to use as a step size in sampling
+	if overlap<1 or overlap>lnx :
+		print "Invalid overlap specified, using default"
+	
+	xr=xrange(0,nx-lnx,lnx/overlap)
+	yr=xrange(0,ny-lnx,lnx/overlap)
+	zr=xrange(0,nz-lnx,lnx/overlap)
 	resvol=EMData(len(xr),len(yr),len(zr))
-	resvol["apix_x"]=apix*lnx/12
-	resvol["apix_y"]=apix*lnx/12
-	resvol["apix_z"]=apix*lnx/12
+	resvol["apix_x"]=apix*lnx/overlap
+	resvol["apix_y"]=apix*lnx/overlap
+	resvol["apix_z"]=apix*lnx/overlap
 	
 	fys=[]
+	funny=[]		# list of funny curves
 	t=time.time()
 	for oz,z in enumerate(zr):
 		for oy,y in enumerate(yr):
@@ -162,7 +171,11 @@ and this program should be regarded as experimental.
 				for i,xx in enumerate(fx[:-1]):
 					if fy[i]>0.5 and fy[i+1]<0.5 : break
 				res=(0.5-fy[i])*(fx[i+1]-fx[i])/(fy[i+1]-fy[i])+fx[i]
-				if res<0 or res>fx[-1] : res=0.0
+				if res<0 : res=0.0
+				if res>fx[-1]: 
+					res=fx[-1]		# This makes the resolution at Nyquist, which is not a good thing
+					funny.append(len(fys))
+#				if res>0 and res<0.04 : funny.append(len(fys))
 				resvol[ox,oy,oz]=res
 				
 				fys.append(fy)
@@ -170,13 +183,30 @@ and this program should be regarded as experimental.
 	
 	resvol.write_image("resvol.hdf")
 	
-	out=file("rslt.txt","w")
+	out=file("fsc.curves.txt","w")
+	out.write("# This file contains individual FSC curves from e2fsc.py. Only a fraction of computed curves are included.\n")
+	if len(fys)>100 : 
+		step=len(fys)/100
+		print "Saving 1/%d of curves to fsc.curves.txt + %d"%(step,len(funny))
+	else: 
+		step=1
+		print "Saving all curves to fsc.curves.txt"
+	
 	for i,x in enumerate(fx):
 		out.write( "%f\t"%x)
-		for j in range(len(fys)):
+		for j in range(0,len(fys),step):
+			out.write( "%f\t"%fys[j][i])
+		
+		# Also save any particularly low resolution curves
+		for j in funny:
 			out.write( "%f\t"%fys[j][i])
 			
 		out.write("\n")
+		
+	if len(funny)>1 :
+		print "WARNING: %d/%d curves were evaluated as being >0.5 AT Nyquist. While these values have been set to \
+		Nyquist (the maximum resolution for your sampling), these values are not meaningful, and could imply \
+		insufficient sampling, or bias in the underlying reconstructions."%(len(funny),len(fys))
 
 	E2end(logid)
 

@@ -78,8 +78,23 @@ def isprint(s):
 		return False
 	return True
 
+def askFileExists():
+	"""Opens a dialog and asks the user what to do if a file to be written to already exists"""
+
+	box=QtGui.QMessageBox(4,"File Exists","File already exists. What would you like to do ?")	# 4 means we're asking a question
+	b1=box.addButton("Append",QtGui.QMessageBox.AcceptRole)
+	b2=box.addButton("Overwrite",QtGui.QMessageBox.AcceptRole)
+	b3=box.addButton("Cancel",QtGui.QMessageBox.AcceptRole)
+
+	box.exec_()
+	
+	if box.clickedButton()==b1 : return "append"
+	elif box.clickedButton()==b2 : return "overwrite"
+	else : return "cancel"
+
+
 class EMFileType(object):
-	"""This is a base class for handling interaction with files of different type. It includes a number of excution methods common to
+	"""This is a base class for handling interaction with files of different types. It includes a number of excution methods common to
 	several different subclasses"""
 
 	# A class dictionary keyed by EMDirEntry filetype string with value beign a single subclass of EMFileType. filetype strings are unique
@@ -130,6 +145,29 @@ class EMFileType(object):
 		"""Returns a list of (name,help,callback) tuples detailing the operations the user can call on the current file.
 		callbacks will also be passed a reference to the browser object."""
 		return []
+
+	def saveAs(self,brws):
+		"Save an image file/stack to a new file"
+		
+		outpath=QtGui.QInputDialog.getText(None,"Save Filename","Filename to save to (type determined by extension)")
+		if outpath[1]!=True : return
+		
+		outpath=str(outpath[0])
+		action="overwrite"
+		if file_exists(outpath):
+			action=askFileExists()
+			if action=="cancel" : return
+			
+			if action=="overwrite" :
+				remove_image(outpath)
+		
+		n=EMUtil.get_image_count(self.path)
+		
+		for i in xrange(n):
+			im=EMData(self.path,i)
+			im.write_image(outpath,-1)
+			
+		
 
 	def plot2dApp(self,brws):
 		"Append self to current plot"
@@ -563,24 +601,24 @@ class EMBdbFileType(EMFileType):
 			return [("Show 3D","Add to 3D window",self.show3dApp),("Show 3D+","New 3D Window",self.show3DNew),("Show Stack","Show as set of 2-D Z slices",self.show2dStack),
 				("Show Stack+","Show all images together in a new window",self.show2dStackNew),("Show 2D","Show in a scrollable 2D image window",self.show2dSingle),
 				("Show 2D+","Show all images, one at a time in a new window",self.show2dSingleNew),("Chimera","Open in chimera (if installed)",self.showChimera),
-				("FilterTool","Open in e2filtertool.py",self.showFilterTool)]
+				("FilterTool","Open in e2filtertool.py",self.showFilterTool),("Save As","Saves images in new file format",self.saveAs)]
 		# single 2-D
 		elif self.nimg==1 and self.dim[1]>1 :
-			return [("Show 2D","Show in a 2D single image display",self.show2dSingle),("Show 2D+","Show in new 2D single image display",self.show2dSingleNew),("FilterTool","Open in e2filtertool.py",self.showFilterTool)]
+			return [("Show 2D","Show in a 2D single image display",self.show2dSingle),("Show 2D+","Show in new 2D single image display",self.show2dSingleNew),("FilterTool","Open in e2filtertool.py",self.showFilterTool),("Save As","Saves images in new file format",self.saveAs)]
 		# single 1-D
 		elif self.nimg==1:
 			return [("Plot 2D","Add to current plot",self.plot2dApp),("Plot 2D+","Make new plot",self.plot2dNew),
-				("Show 2D","Replace in 2D single image display",self.show2dSingle),("Show 2D+","New 2D single image display",self.show2dSingleNew)]
+				("Show 2D","Replace in 2D single image display",self.show2dSingle),("Show 2D+","New 2D single image display",self.show2dSingleNew),("Save As","Saves images in new file format",self.saveAs)]
 		# 3-D stack
 		elif self.nimg>1 and self.dim[2]>1 :
-			return [("Show 3D","Show all in a single 3D window",self.show3DNew),("Chimera","Open in chimera (if installed)",self.showChimera)]
+			return [("Show 3D","Show all in a single 3D window",self.show3DNew),("Chimera","Open in chimera (if installed)",self.showChimera),("Save As","Saves images in new file format",self.saveAs)]
 		# 2-D stack
 		elif self.nimg>1 and self.dim[1]>1 :
 			return [("Show Stack","Show all images together in one window",self.show2dStack),("Show Stack+","Show all images together in a new window",self.show2dStackNew),
-				("Show 2D","Show all images, one at a time in current window",self.show2dSingle),("Show 2D+","Show all images, one at a time in a new window",self.show2dSingleNew),("FilterTool","Open in e2filtertool.py",self.showFilterTool)]
+				("Show 2D","Show all images, one at a time in current window",self.show2dSingle),("Show 2D+","Show all images, one at a time in a new window",self.show2dSingleNew),("FilterTool","Open in e2filtertool.py",self.showFilterTool),("Save As","Saves images in new file format",self.saveAs)]
 		# 1-D stack
 		elif self.nimg>0:
-			return [("Plot 2D","Plot all on a single 2-D plot",self.plot2dNew)]
+			return [("Plot 2D","Plot all on a single 2-D plot",self.plot2dNew),("Save As","Saves images in new file format",self.saveAs)]
 		
 		return []
 
@@ -624,14 +662,14 @@ class EMImageFileType(EMFileType):
 			return [("Show 3D","Add to 3D window",self.show3dApp),("Show 3D+","New 3D Window",self.show3DNew),("Show Stack","Show as set of 2-D Z slices",self.show2dStack),
 				("Show Stack+","Show all images together in a new window",self.show2dStackNew),("Show 2D","Show in a scrollable 2D image window",self.show2dSingle),
 				("Show 2D+","Show all images, one at a time in a new window",self.show2dSingleNew),("Chimera","Open in chimera (if installed)",self.showChimera),
-				("FilterTool","Open in e2filtertool.py",self.showFilterTool)]
+				("FilterTool","Open in e2filtertool.py",self.showFilterTool),("Save As","Saves images in new file format",self.saveAs)]
 		# single 2-D
 		elif  self.dim[1]>1 :
-			return [("Show 2D","Show in a 2D single image display",self.show2dSingle),("Show 2D+","Show in new 2D single image display",self.show2dSingleNew),("FilterTool","Open in e2filtertool.py",self.showFilterTool)]
+			return [("Show 2D","Show in a 2D single image display",self.show2dSingle),("Show 2D+","Show in new 2D single image display",self.show2dSingleNew),("FilterTool","Open in e2filtertool.py",self.showFilterTool),("Save As","Saves images in new file format",self.saveAs)]
 		# single 1-D
 		else:
 			return [("Plot 2D","Add to current plot",self.plot2dApp),("Plot 2D+","Make new plot",self.plot2dNew),
-				("Show 2D","Replace in 2D single image display",self.show2dSingle),("Show 2D+","New 2D single image display",self.show2dSingleNew)]
+				("Show 2D","Replace in 2D single image display",self.show2dSingle),("Show 2D+","New 2D single image display",self.show2dSingleNew),("Save As","Saves images in new file format",self.saveAs)]
 		
 	def showChimera(self,brws):
 		"Open in Chimera"
@@ -673,14 +711,14 @@ class EMStackFileType(EMFileType):
 		"Returns a list of (name,callback) tuples detailing the operations the user can call on the current file"
 		# 3-D stack
 		if self.nimg>1 and self.dim[2]>1 :
-			return [("Show 3D","Show all in a single 3D window",self.show3DNew),("Chimera","Open in chimera (if installed)",self.showChimera)]
+			return [("Show 3D","Show all in a single 3D window",self.show3DNew),("Chimera","Open in chimera (if installed)",self.showChimera),("Save As","Saves images in new file format",self.saveAs)]
 		# 2-D stack
 		elif self.nimg>1 and self.dim[1]>1 :
 			return [("Show Stack","Show all images together in one window",self.show2dStack),("Show Stack+","Show all images together in a new window",self.show2dStackNew),
-				("Show 2D","Show all images, one at a time in current window",self.show2dSingle),("Show 2D+","Show all images, one at a time in a new window",self.show2dSingleNew),("FilterTool","Open in e2filtertool.py",self.showFilterTool)]
+				("Show 2D","Show all images, one at a time in current window",self.show2dSingle),("Show 2D+","Show all images, one at a time in a new window",self.show2dSingleNew),("FilterTool","Open in e2filtertool.py",self.showFilterTool),("Save As","Saves images in new file format",self.saveAs)]
 		# 1-D stack
 		elif self.nimg>1:
-			return [("Plot 2D","Plot all on a single 2-D plot",self.plot2dNew)]
+			return [("Plot 2D","Plot all on a single 2-D plot",self.plot2dNew),("Save As","Saves images in new file format",self.saveAs)]
 		else : print "Error: stackfile with <2 images ? (%s)"%self.path
 		
 		return []
@@ -942,7 +980,7 @@ class EMDirEntry(object):
 		name='browser'
 		if os.access("EMAN2DB",os.R_OK):
 			cache = self.checkCache(db, name=name)
-			if not self.cacheMiss(cache,'filetype','nimg','dim','size'): return 
+			if not self.cacheMiss(cache,'filetype','nimg','dim','size'): return True
 		
 		# BDB details are already cached and can often be retrieved quickly
 		if self.isbdb:
@@ -1451,7 +1489,7 @@ class EMBDBInfoPane(EMInfoPane):
 		
 		QtCore.QObject.connect(self.wimnum, QtCore.SIGNAL("valueChanged(int)"),self.imNumChange)
 		QtCore.QObject.connect(self.wimlist, QtCore.SIGNAL("itemSelectionChanged()"),self.imSelChange)
-#		QtCore.QObject.connect(self.wbutedit, QtCore.SIGNAL('clicked(bool)'), self.buttonEdit)
+##		QtCore.QObject.connect(self.wbutedit, QtCore.SIGNAL('clicked(bool)'), self.buttonEdit)
 		
 
 	def display(self,target):
@@ -1571,7 +1609,7 @@ class EMImageInfoPane(EMInfoPane):
 		itms=[]
 		# Dictionaries may require recursion
 		if isinstance(trg,dict):
-			for k in trg.keys():
+			for k in sorted(trg.keys()):
 				itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k),str(trg[k])))))
 				if isinstance(trg[k],list) or isinstance(trg[k],tuple) or isinstance(trg[k],set) or isinstance(trg[k],dict):
 					self.addTreeItem(trg[k],itms[-1])
@@ -1675,7 +1713,7 @@ class EMStackInfoPane(EMInfoPane):
 		itms=[]
 		# Dictionaries may require recursion
 		if isinstance(trg,dict):
-			for k in trg.keys():
+			for k in sorted(trg.keys()):
 				itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k),str(trg[k])))))
 				if isinstance(trg[k],list) or isinstance(trg[k],tuple) or isinstance(trg[k],set) or isinstance(trg[k],dict):
 					self.addTreeItem(trg[k],itms[-1])
@@ -1939,7 +1977,7 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.curpath=None	# The path represented by the current data model
 		self.curft=None		# a fileType instance for the currently hilighted object
 		self.curactions=[]	# actions returned by the filtetype. Cached for speed
-		self.models={}		# Cached models to avoid a lot of rereading (not sure if this is really worthwhile)
+#		self.models={}		# Cached models to avoid a lot of rereading (not sure if this is really worthwhile)
 		self.pathstack=[]	# A stack of previous viewed paths
 		self.infowin=None	# The 'info' window instance
 
@@ -1958,6 +1996,7 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.updthread=threading.Thread(target=self.updateDetails)	# The actual thread
 		self.updlist=[]				# List of QModelIndex items in need of updating
 		self.redrawlist=[]			# List of QModelIndex items in need of redisplay
+		self.needresize=0			# Used to resize column widths occaisonally
 		self.expanded=set()			# We get multiple expand events for each path element, so we need to keep track of which ones we've updated
 
 		self.setPath(startpath)	# start in the local directory
@@ -1980,7 +2019,8 @@ class EMBrowserWidget(QtGui.QWidget):
 		while 1:
 			if self.updthreadexit : break
 			if len(self.updlist)==0 :
-				time.sleep(1.0)				# If there is nothing to update at the moment, we don't need to spin our wheels as much
+				time.sleep(3.0)				# If there is nothing to update at the moment, we don't need to spin our wheels as much
+				
 			else:
 				de=self.updlist.pop()
 				if de.internalPointer().fillDetails(self.curmodel.getCacheDB()) : 
@@ -1991,11 +2031,22 @@ class EMBrowserWidget(QtGui.QWidget):
 	def updateDetailsDisplay(self):
 		"""Since we can't do GUI updates from a thread, this is a timer event to update the display after the beckground thread
 		gets the details for each item"""
-		
-		if len(self.redrawlist)==0 : return
+
+		if self.needresize > 0:
+			self.needresize-=1
+			self.wtree.resizeColumnToContents(3)
+			self.wtree.resizeColumnToContents(4)
+
+		if len(self.redrawlist)==0 : 
+			return
 		
 		# we emit a datachanged event for each item
-		for i in self.redrawlist : self.curmodel.dataChanged.emit(i,self.curmodel.createIndex(i.row(),5,i.internalPointer()))
+		while len(self.redrawlist)>0:
+			i=self.redrawlist.pop()
+			self.curmodel.dataChanged.emit(i,self.curmodel.createIndex(i.row(),5,i.internalPointer()))
+			
+		self.needresize=2
+
 
 	def editPath(self):
 		"Set a new path"
@@ -2173,15 +2224,18 @@ class EMBrowserWidget(QtGui.QWidget):
 		the path history will not be updated."""
 		
 		self.updlist=[]
+		self.redrawlist=[]
 		
 		self.curpath=str(path)
 		self.wpath.setText(path)
 
-		if path in self.models :
-			self.curmodel=self.models[path]
-		else : 
-			self.curmodel=inimodel(path)
-			self.models[self.curpath]=self.curmodel
+		#if path in self.models :
+			#self.curmodel=self.models[path]
+		#else : 
+			#self.curmodel=inimodel(path)
+			#self.models[self.curpath]=self.curmodel
+
+		self.curmodel=inimodel(path)
 
 		self.wtree.setSortingEnabled(False)
 		self.wtree.setModel(self.curmodel)

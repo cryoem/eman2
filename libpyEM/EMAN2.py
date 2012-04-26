@@ -374,6 +374,11 @@ def remove_image(fsp):
 	"""This will remove the image file pointed to by fsp. The reason for this function
 	to exist is formats like IMAGIC which store data in two files. This insures that
 	both files are removed."""
+	if fsp[:4].lower()=="bdb:" :
+		try: db_remove_dict(fsp)
+		except: pass
+		return
+	
 	try:
 		os.unlink(fsp)
 		if fsp[-4:]==".hed" : os.unlink(fsp[:-3]+"img")
