@@ -48,7 +48,8 @@ def main():
 	usage = progname + " prj_stack volume --iter --var --sym=symmetry --MPI"
 	parser = OptionParser(usage, version=SPARXVERSION)
 
-	parser.add_option("--iter", 		type="int"         ,	default=20   ,	help="maximum number of iterations" )
+	parser.add_option("--iter", 		type="int"         ,	default=40   ,	help="Maximum number of iterations (stop criterion of reconstruction process)" )
+	parser.add_option("--abs", 			type="float"         ,	default=0.1  ,	help="Minimum average absolute change of voxels' values (stop criterion of reconstruction process)" )
 	parser.add_option("--var" , 		action="store_true",	default=False,	help="stack on input consists of variances")
 	parser.add_option("--sym" , 		type="string"      ,	default="c1" ,	help="symmetry" )
 	parser.add_option("--MPI" , 		action="store_true",	default=False,	help="use MPI version - works only with stack of variance as an input")
@@ -121,12 +122,12 @@ def main():
 				
 	if options.MPI:
 		from mpi import mpi_comm_rank, MPI_COMM_WORLD
-		res = recons3d_em_MPI(prj_stack, options.iter, 0.01, True, options.sym)
+		res = recons3d_em_MPI(prj_stack, options.iter, options.abs, True, options.sym)
 		mpi_r = mpi_comm_rank(MPI_COMM_WORLD)
 		if mpi_r == 0:
 			res.write_image(vol_stack)
 	else:
-		res = recons3d_em(prj_stack, options.iter, 0.01, True, options.sym)
+		res = recons3d_em(prj_stack, options.iter, options.abs, True, options.sym)
 		res.write_image(vol_stack)
 	global_def.BATCH = False
 

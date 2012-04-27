@@ -29,8 +29,6 @@
 #
 
 from global_def import *
-from morphology import threshold_to_minval
-from utilities import model_circle, model_square, send_EMData
 
 def rec2D(  lines, idrange=None, snr=None ):
 	"""Perform a 2D reconstruction on a set of 1D lines using nearest neighbouring reverse FFT algorithm.
