@@ -44,6 +44,8 @@ from emapplication import get_application, EMApp
 from emimage2d import EMImage2DWidget
 from emimagemx import EMImageMXWidget
 from emimage3d import EMImage3DWidget
+from emscene3d import EMScene3D
+from emdataitem3d import EMDataItem3D, EMIsosurface
 from emshape import EMShape
 from valslider import *
 import traceback
@@ -538,8 +540,9 @@ class EMFilterTool(QtGui.QMainWindow):
 			self.needredisp=0
 			self.viewer.show()
 			if self.nz==1: self.viewer.set_data(self.procdata)
-			else : self.viewer.set_data(self.procdata[0])
-		
+			else : 
+				self.sgdata.setData(self.procdata[0])
+				self.viewer.updateSG()
 		
 	def procChange(self,tag):
 #		print "change"
@@ -608,7 +611,12 @@ class EMFilterTool(QtGui.QMainWindow):
 		if self.nz==1 : 
 			if len(self.origdata)>1 : self.viewer=EMImageMXWidget()
 			else : self.viewer=EMImage2DWidget()
-		else : self.viewer=EMImage3DWidget()
+		else : 
+			self.viewer = EMScene3D()
+			self.sgdata = EMDataItem3D(test_image_3d(3), transform=Transform())
+			isosurface = EMIsosurface(self.sgdata, transform=Transform())
+			self.viewer.insertNewNode('', self.sgdata, parentnode=self.viewer)
+			self.viewer.insertNewNode("Iso", isosurface, parentnode=self.sgdata)
 		
 		self.procChange(-1)
 
