@@ -43,7 +43,6 @@ from EMAN2 import *
 from emapplication import get_application, EMApp
 from emimage2d import EMImage2DWidget
 from emimagemx import EMImageMXWidget
-from emimage3d import EMImage3DWidget
 from emscene3d import EMScene3D
 from emdataitem3d import EMDataItem3D, EMIsosurface
 from emshape import EMShape
@@ -615,7 +614,7 @@ class EMFilterTool(QtGui.QMainWindow):
 			self.viewer = EMScene3D()
 			self.sgdata = EMDataItem3D(test_image_3d(3), transform=Transform())
 			isosurface = EMIsosurface(self.sgdata, transform=Transform())
-			self.viewer.insertNewNode('', self.sgdata, parentnode=self.viewer)
+			self.viewer.insertNewNode('Data', self.sgdata, parentnode=self.viewer)
 			self.viewer.insertNewNode("Iso", isosurface, parentnode=self.sgdata)
 		
 		self.procChange(-1)
