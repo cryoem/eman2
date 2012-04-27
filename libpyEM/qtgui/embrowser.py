@@ -1508,11 +1508,57 @@ class EMBDBInfoPane(EMInfoPane):
 		self.gbl.setColumnStretch(0,1)
 		self.gbl.setColumnStretch(1,4)
 		
+		# Lower region has buttons for actions
+		self.hbl2 = QtGui.QGridLayout()
+
+		self.wbutmisc=[]
+	
+		# 10 buttons for context-dependent actions
+		self.hbl2.setRowStretch(0,1)
+		self.hbl2.setRowStretch(1,1)
+		
+		for i in range(5):
+			self.hbl2.setColumnStretch(i,2)
+			for j in range(2):
+				self.wbutmisc.append(QtGui.QPushButton(""))
+				self.hbl2.addWidget(self.wbutmisc[-1],j,i)
+				self.wbutmisc[-1].hide()
+				QtCore.QObject.connect(self.wbutmisc[-1], QtCore.SIGNAL('clicked(bool)'), lambda x,v=i*2+j:self.buttonMisc(v))
+		
+		# These just clean up the layout a bit
+		self.wbutxx=QtGui.QLabel("")
+		self.wbutxx.setMaximumHeight(12)
+		self.hbl2.addWidget(self.wbutxx,0,6)
+		self.wbutyy=QtGui.QLabel("")
+		self.wbutyy.setMaximumHeight(12)
+		self.hbl2.addWidget(self.wbutyy,1,6)
+		
+		self.gbl.addLayout(self.hbl2,2,0,1,2)
+
 		QtCore.QObject.connect(self.wimnum, QtCore.SIGNAL("valueChanged(int)"),self.imNumChange)
 		QtCore.QObject.connect(self.wimlist, QtCore.SIGNAL("itemSelectionChanged()"),self.imSelChange)
 ##		QtCore.QObject.connect(self.wbutedit, QtCore.SIGNAL('clicked(bool)'), self.buttonEdit)
 		
+		self.view2d=[]
 
+	def hideEvent(self,event) :
+		"If this pane is no longer visible close any child views"
+		for v in self.view2d: v.close()
+		event.accept()
+
+	def buttonMisc(self,but):
+		"Context sensitive button press"
+		
+		val=self.wimlist.currentItem().text()
+		try:
+			val=int(val)
+		except:
+			QtGui.QMessageBox.warning(self,"Error","Sorry, cannot display string-keyed images")
+			return
+			
+		self.curft.setN(val)
+		self.curactions[but][2](self)				# This calls the action method
+		
 	def display(self,target):
 		"display information for the target EMDirEntry"
 		self.target=target
@@ -1536,6 +1582,19 @@ class EMBDBInfoPane(EMInfoPane):
 
 		self.wheadtree.clear()
 
+		# This sets up action buttons which can be used on individual images in a stack
+		self.curft=EMImageFileType(target.path())
+		self.curactions=self.curft.actions()
+
+		for i,b in enumerate(self.wbutmisc):
+			try:
+				b.setText(self.curactions[i][0])
+				b.setToolTip(self.curactions[i][1])
+				b.show()
+			except:
+				b.hide()
+				
+				
 	def imNumChange(self,num):
 		"New image number"
 		if num<500 : self.wimlist.setCurrentRow(num)
