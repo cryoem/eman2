@@ -48,6 +48,7 @@ from valslider import StringBox
 import re
 import threading
 import time
+import weakref
 
 # This is a floating point number-finding regular expression
 renumfind=re.compile(r"-?[0-9]+\.*[0-9]*[eE]?[-+]?[0-9]*")
@@ -113,10 +114,15 @@ class EMFileType(object):
 	def __init__(self,path):
 		self.path=path			# the current path this FileType is representing
 		self.setsdb=None		# The bad particles DB 
+		self.n=-1				# used to look at one image from a stack. -1 means not set.
 
 	def setFile(self,path):
 		"""Represent a new file. Will update inspector if open. Assumes isValid already checked !"""
 		self.path=path
+
+	def setN(self,n):
+		"""Change the specific image methods should target"""
+		self.n=n
 
 	@staticmethod
 	def name():
@@ -161,19 +167,23 @@ class EMFileType(object):
 			if action=="overwrite" :
 				remove_image(outpath)
 		
-		n=EMUtil.get_image_count(self.path)
+		brws.busy()
+		if self.n>=0 : ns=[self.n]
+		else : ns=xrange(EMUtil.get_image_count(self.path))
 		
-		for i in xrange(n):
+		for i in ns:
 			im=EMData(self.path,i)
 			im.write_image(outpath,-1)
 			
+		brws.notbusy()
 		
 
 	def plot2dApp(self,brws):
 		"Append self to current plot"
 		brws.busy()
 
-		data=EMData(self.path)
+		if self.n>=0 : data=EMData(self.path)
+		else : data=EMData(self.path,self.n)
 
 		try: 
 			target=brws.viewplot2d[-1]
@@ -191,7 +201,8 @@ class EMFileType(object):
 		"Make a new plot"
 		brws.busy()
 
-		data=EMData(self.path)
+		if self.n>=0 : data=EMData(self.path)
+		else : data=EMData(self.path,self.n)
 		
 		target=EMPlot2DWidget()
 		brws.viewplot2d.append(target)
@@ -206,7 +217,8 @@ class EMFileType(object):
 		"Add to current 3-D window"
 		brws.busy()
 
-		data=emdataitem3d.EMDataItem3D(self.path)
+		if self.n>=0 : data=emdataitem3d.EMDataItem3D(self.path)
+		else : data=emdataitem3d.EMDataItem3D(self.path,n=self.n)
 
 		try: 
 			target=brws.view3d[-1]
@@ -225,7 +237,9 @@ class EMFileType(object):
 		"New 3-D window"
 		brws.busy()
 
-		data=emdataitem3d.EMDataItem3D(self.path)
+		if self.n>=0 : data=emdataitem3d.EMDataItem3D(self.path)
+		else : data=emdataitem3d.EMDataItem3D(self.path,n=self.n)
+
 
 		target=emscene3d.EMScene3D()
 		brws.view3d.append(target)
@@ -282,7 +296,9 @@ class EMFileType(object):
 	def show2dSingle(self,brws):
 		"Show a single 2-D image"
 		brws.busy()
-		if self.nimg>1 : data=EMData.read_images(self.path)
+		if self.nimg>1 : 
+			if self.n>=0 : data=EMData(self.path,self.n)
+			else : data=EMData.read_images(self.path)
 		else : data=EMData(self.path)
 		
 		try: 
@@ -299,7 +315,9 @@ class EMFileType(object):
 	def show2dSingleNew(self,brws):
 		"Show a single 2-D image"
 		brws.busy()
-		if self.nimg>1 : data=EMData.read_images(self.path)
+		if self.nimg>1 : 
+			if self.n>=0 : data=EMData(self.path,self.n)
+			else : data=EMData.read_images(self.path)
 		else : data=EMData(self.path)
 		
 		target=EMImage2DWidget(data)
@@ -1262,9 +1280,12 @@ class EMInfoPane(QtGui.QWidget):
 		
 		self.target=target
 		
-		
 		return
 		
+	def busy(self) : pass
+	
+	def notbusy(self) : pass 
+
 class EMTextInfoPane(EMInfoPane):
 	
 	def __init__(self,parent=None):
@@ -1656,18 +1677,56 @@ class EMStackInfoPane(EMInfoPane):
 		
 		self.gbl.setColumnStretch(0,1)
 		self.gbl.setColumnStretch(1,4)
+
+		# Lower region has buttons for actions
+		self.hbl2 = QtGui.QGridLayout()
+
+		self.wbutmisc=[]
+	
+		# 10 buttons for context-dependent actions
+		self.hbl2.setRowStretch(0,1)
+		self.hbl2.setRowStretch(1,1)
 		
+		for i in range(5):
+			self.hbl2.setColumnStretch(i,2)
+			for j in range(2):
+				self.wbutmisc.append(QtGui.QPushButton(""))
+				self.hbl2.addWidget(self.wbutmisc[-1],j,i)
+				self.wbutmisc[-1].hide()
+				QtCore.QObject.connect(self.wbutmisc[-1], QtCore.SIGNAL('clicked(bool)'), lambda x,v=i*2+j:self.buttonMisc(v))
+		
+		# These just clean up the layout a bit
+		self.wbutxx=QtGui.QLabel("")
+		self.wbutxx.setMaximumHeight(12)
+		self.hbl2.addWidget(self.wbutxx,0,6)
+		self.wbutyy=QtGui.QLabel("")
+		self.wbutyy.setMaximumHeight(12)
+		self.hbl2.addWidget(self.wbutyy,1,6)
+		
+		self.gbl.addLayout(self.hbl2,2,0,1,2)
+
 		QtCore.QObject.connect(self.wimnum, QtCore.SIGNAL("valueChanged(int)"),self.imNumChange)
 		QtCore.QObject.connect(self.wimlist, QtCore.SIGNAL("itemSelectionChanged()"),self.imSelChange)
 #		QtCore.QObject.connect(self.wbutedit, QtCore.SIGNAL('clicked(bool)'), self.buttonEdit)
+		self.view2d=[]
 		
+	def hideEvent(self,event) :
+		"If this pane is no longer visible close any child views"
+		for v in self.view2d: v.close()
+		event.accept()
+
+	def buttonMisc(self,but):
+		"Context sensitive button press"
+		
+		self.curft.setN(int(self.wimnum.value()))
+		self.curactions[but][2](self)				# This calls the action method
 
 	def display(self,target):
 		"display information for the target EMDirEntry"
 		self.target=target
 		
 		# Set up image selectors for stacks
-		self.wimnum.setRange(0,target.nimg)
+		self.wimnum.setRange(0,target.nimg-1)
 		self.wimlist.clear()
 		self.wimlist.addItems([str(i) for i in range(0,min(target.nimg,self.maxim))])
 		if target.nimg>self.maxim: self.wimlist.addItem("...")
@@ -1675,6 +1734,18 @@ class EMStackInfoPane(EMInfoPane):
 		self.wimlist.show()
 
 		self.wheadtree.clear()
+
+		# This sets up action buttons which can be used on individual images in a stack
+		self.curft=EMImageFileType(target.path())
+		self.curactions=self.curft.actions()
+
+		for i,b in enumerate(self.wbutmisc):
+			try:
+				b.setText(self.curactions[i][0])
+				b.setToolTip(self.curactions[i][1])
+				b.show()
+			except:
+				b.hide()
 
 	def imNumChange(self,num):
 		"New image number"
@@ -1684,13 +1755,16 @@ class EMStackInfoPane(EMInfoPane):
 	def imSelChange(self):
 		"New image selection"
 		
-		val=self.wimlist.currentItem().text()
 		try:
+			val=self.wimlist.currentItem().text()
 			val=int(val)
 			self.wimnum.setValue(val)
 		except:
-			print "Error with key :",val
-			return
+			try:
+				val=int(self.wimnum.value())
+			except:
+				print "Error with key :",val
+				return
 		
 		self.showItem(val)
 		
@@ -2118,7 +2192,7 @@ class EMBrowserWidget(QtGui.QWidget):
 			try:
 				self.curactions[0][2](self)
 			except:
-				print "error on Activate"
+				pass
 	
 	def itemExpand(self,qmi):
 		"Called when an item is expanded"

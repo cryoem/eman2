@@ -605,7 +605,9 @@ class EMFilterTool(QtGui.QMainWindow):
 		EMProcessorWidget.parmdefault["apix"]=(0,(0.2,10.0),self.apix,None)
 
 		if self.viewer!=None : self.viewer.close()
-		if self.nz==1 : self.viewer=EMImageMXWidget()
+		if self.nz==1 : 
+			if len(self.origdata)>1 : self.viewer=EMImageMXWidget()
+			else : self.viewer=EMImage2DWidget()
 		else : self.viewer=EMImage3DWidget()
 		
 		self.procChange(-1)

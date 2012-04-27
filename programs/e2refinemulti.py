@@ -110,7 +110,7 @@ def main():
 	parser.add_argument("--m3dkeep", type=float, help="The percentage of slices to keep in e2make3d.py", default=0.8, guitype='floatbox', row=35, col=0, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--m3dkeepsig", default=False, action="store_true", help="The standard deviation alternative to the --m3dkeep argument", guitype='boolbox', row=35, col=1, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--m3dsetsf", default=False, action="store_true", help="The standard deviation alternative to the --m3dkeep argument", guitype='boolbox', row=35, col=2, rowspan=1, colspan=1, mode="refinement")
-	parser.add_argument("--m3diter", type=int, default=4, help="The number of times the 3D reconstruction should be iterated", guitype='intbox', row=33, col=2, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--m3diter", type=int, default=2, help="The number of times the 3D reconstruction should be iterated", guitype='intbox', row=33, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--m3dpreprocess", type=str, default="normalize.edgemean", help="Normalization processor applied before 3D reconstruction", guitype='combobox', choicelist='re_filter_list(dump_processors_list(),\'normalize\')', row=34, col=0, rowspan=1, colspan=2, mode="refinement")
 	parser.add_argument("--m3dpostprocess", type=str, default=None, help="Post processor to be applied to the 3D volume once the reconstruction is completed", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter.lowpass|filter.highpass\')', row=36, col=0, rowspan=1, colspan=3, mode="refinement")
 
@@ -595,7 +595,7 @@ def check(options,verbose=0):
 			print "Error: the path %s does not exist" %options.path
 			error = True
 	else:
-		options.path = numbered_path("refine",True)
+		options.path = numbered_path("multi",True)
 			
 	if hasattr(options,"parallel") and options.parallel != None:
   		if len(options.parallel) < 2:

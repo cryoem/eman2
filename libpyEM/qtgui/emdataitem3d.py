@@ -93,7 +93,7 @@ class EMDataItem3D(EMItem3D):
 		"""
 		return EMDataItem3D(str(attribdict["data_path"].text()), transform=EMItem3D.getTransformFromDict(attribdict))
 		
-	def __init__(self, data, parent = None, children = set(), transform=None):
+	def __init__(self, data, parent = None, children = set(), transform=None, n=0):
 		if not transform: transform = Transform()	# Object initialization should not be put in the constructor. Causes issues 
 		EMItem3D.__init__(self, parent, children, transform=transform)
 		self.setData(data)
