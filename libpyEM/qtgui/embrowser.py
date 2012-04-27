@@ -2158,13 +2158,13 @@ class EMBrowserWidget(QtGui.QWidget):
 		while 1:
 			if self.updthreadexit : break
 			if len(self.updlist)==0 :
-				time.sleep(3.0)				# If there is nothing to update at the moment, we don't need to spin our wheels as much
+				time.sleep(1.0)				# If there is nothing to update at the moment, we don't need to spin our wheels as much
 				
 			else:
 				de=self.updlist.pop()
 				if de.internalPointer().fillDetails(self.curmodel.getCacheDB()) : 
 					self.redrawlist.append(de)		# if the update changed anything, we trigger a redisplay of this entry
-					time.sleep(0.07)					# prevents updates from happening too fast and slowing the machine down
+					time.sleep(0.03)					# prevents updates from happening too fast and slowing the machine down
 #				print "### ",de.internalPointer().path()
 
 	def updateDetailsDisplay(self):
