@@ -1768,6 +1768,7 @@ class EMStackInfoPane(EMInfoPane):
 		QtCore.QObject.connect(self.wimlist, QtCore.SIGNAL("itemSelectionChanged()"),self.imSelChange)
 #		QtCore.QObject.connect(self.wbutedit, QtCore.SIGNAL('clicked(bool)'), self.buttonEdit)
 		self.view2d=[]
+		self.view3d=[]
 		
 	def hideEvent(self,event) :
 		"If this pane is no longer visible close any child views"
@@ -1776,7 +1777,6 @@ class EMStackInfoPane(EMInfoPane):
 
 	def buttonMisc(self,but):
 		"Context sensitive button press"
-		
 		self.curft.setN(int(self.wimnum.value()))
 		self.curactions[but][2](self)				# This calls the action method
 
