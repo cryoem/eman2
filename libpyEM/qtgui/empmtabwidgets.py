@@ -195,7 +195,7 @@ class EMSetsTable(EMBrowserWidget):
 class EMSetsModel(EMFileItemModel):
 	""" Item model for the raw data """
 	
-	headers=("Row","Particles","Num Particles", "Dims")
+	headers=("Row","Name","Num Particles", "Dims")
 	
 	def __init__(self,startpath=None):
 		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMSetsEntry)

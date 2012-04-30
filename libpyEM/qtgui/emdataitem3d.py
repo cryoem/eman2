@@ -393,7 +393,7 @@ class EMSliceItem3D(EMItem3D):
 			if self.texture2d_name != 0:
 				GL.glDeleteTextures(self.texture2d_name)
 			
-			self.texture2d_name = GLUtil.gen_gl_texture(temp_data, GL.GL_ALPHA)
+			self.texture2d_name = GLUtil.gen_gl_texture(temp_data, GL.GL_LUMINANCE)
 			
 			
 			#For debugging purposes, draw an outline
@@ -406,8 +406,6 @@ class EMSliceItem3D(EMItem3D):
 			
 			
 			#Now draw the texture on another quad
-			GL.glEnable(GL.GL_BLEND)
-			GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
 			
 			GL.glEnable(GL.GL_TEXTURE_2D)
 			GL.glBindTexture(GL.GL_TEXTURE_2D, self.texture2d_name)
@@ -432,7 +430,7 @@ class EMSliceItem3D(EMItem3D):
 			GL.glDisable(GL.GL_TEXTURE_2D)
 			
 			GL.glDisable(GL.GL_TEXTURE_3D)
-			GL.glDisable(GL.GL_BLEND)
+
 		else: #Using a 3D texture
 			
 			# Generating a new 3D texture is slower than a new 2D texture.
@@ -453,8 +451,8 @@ class EMSliceItem3D(EMItem3D):
 			GL.glEnd()	
 			
 			#Now draw the texture on another quad
-			GL.glEnable(GL.GL_BLEND)
-			GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
+			#GL.glEnable(GL.GL_BLEND)
+			#GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
 			
 			GL.glEnable(GL.GL_TEXTURE_3D)
 			GL.glBindTexture(GL.GL_TEXTURE_3D, self.texture3d_name)
@@ -484,9 +482,9 @@ class EMSliceItem3D(EMItem3D):
 			GL.glMatrixMode(GL.GL_MODELVIEW)
 			
 			GL.glDisable(GL.GL_TEXTURE_3D)
-			GL.glDisable(GL.GL_BLEND)
+			#GL.glDisable(GL.GL_BLEND)
 		
-		GL.glEnable(GL.GL_LIGHTING)
+		#GL.glEnable(GL.GL_LIGHTING)
 		glPopAttrib()
 		
 class EMSliceInspector(EMInspectorControlShape):

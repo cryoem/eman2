@@ -810,7 +810,7 @@ class PMFSCTableWidget(PMTableBase):
 		self.tablewidget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)	# single selection
 		
 		self.tablewidget.setRowCount(0)
-		self.patterns = ["refine","frealign"]
+		self.patterns = ["refine","frealign","multi"]
 		self.connect(self.tablewidget,QtCore.SIGNAL("cellDoubleClicked(int,int)"),self.loadFSC)
 		
 		#now update table

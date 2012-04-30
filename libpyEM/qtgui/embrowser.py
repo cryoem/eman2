@@ -1242,7 +1242,7 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 		return [self.createIndex(i[1],0,i[0]) for i in sel]
 	
 	def getCacheDB(self):
-		if not self.db:
+		if self.db == None:
 			self.db=db_open_dict("bdb:browsercache")
 		return self.db
 					
@@ -2164,7 +2164,7 @@ class EMBrowserWidget(QtGui.QWidget):
 				de=self.updlist.pop()
 				if de.internalPointer().fillDetails(self.curmodel.getCacheDB()) : 
 					self.redrawlist.append(de)		# if the update changed anything, we trigger a redisplay of this entry
-					time.sleep(0.03)					# prevents updates from happening too fast and slowing the machine down
+					time.sleep(0.03)			# prevents updates from happening too fast and slowing the machine down
 #				print "### ",de.internalPointer().path()
 
 	def updateDetailsDisplay(self):
