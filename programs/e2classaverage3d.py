@@ -130,8 +130,9 @@ def main():
 	if options.align: 
 		options.align=parsemodopt(options.align)
 		# If symmetry is being specified, then we need to use it for the aligner too
-		if options.sym and options.align != None:
+		if options.sym != None and options.align != None:
 			options.align[1]['sym'] = options.sym
+			
 	if options.ralign: 
 		options.ralign=parsemodopt(options.ralign)
 	#print "\n\nTHE ALIGNERS ARE ", options.ralign, options.align
