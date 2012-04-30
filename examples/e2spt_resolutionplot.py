@@ -35,7 +35,7 @@ from EMAN2 import *
 import os
 import sys
 import time
-import scipy
+import numpy
 import pylab
 
 def main():
@@ -47,7 +47,7 @@ def main():
 	
 	parser.add_argument("--vol1", type=str, help="File for volume 1. Note that volume 2 will be aligned TO volume 1; that is, volume 1 is 'the reference'. The format MUST be '.hdf' or '.mrc' ", default=None)
 	parser.add_argument("--vol2", type=str, help="File for volume 2. Volume 2 to will be 'moved' to find its best alignment to volume 1. The format MUST be '.hdf' or '.mrc' ", default=None)
-	parser.add_argument("--output", type=str, help="Name for the .txt file that will contain the FSC data. If not specified, a default name will be used, vol1_VS_vol2, where vol1 and vol2 are taken from --vol1 and --vol2 without the format"., default=None)
+	parser.add_argument("--output", type=str, help="Name for the .txt file that will contain the FSC data. If not specified, a default name will be used, vol1_VS_vol2, where vol1 and vol2 are taken from --vol1 and --vol2 without the format.", default=None)
 
 	parser.add_argument("--sym", type=str, default=None, help = "Asymmetric unit to limit the alignment search to. Note that this should only be on IF the reference (--vol1) is ALREADY aligned to the symmetry axis.")
 	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
@@ -59,9 +59,9 @@ def main():
 	parser.add_argument("--highpass",type=str,help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.", default=None)
 	
 	parser.add_argument("--npeakstorefine", type=int, help="The number of best 'coarse peaks' from 'coarse alignment' to refine in search for the best final alignment. Default=4.", default=4)
-	parser.add_argument("--align",type=str,help="This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=10:delta=10:dphi=10, specify 'None' to disable", returnNone=True, default="rotate_translate_3d:search=10:delta=10:dphi=10")
+	parser.add_argument("--align",type=str,help="This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=10:delta=10:dphi=10, specify 'None' to disable", default="rotate_translate_3d:search=10:delta=10:dphi=10")
 	parser.add_argument("--aligncmp",type=str,help="The comparator used for the --align aligner. Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.",default="ccc.tomo")
-	parser.add_argument("--ralign",type=str,help="This is the second stage aligner used to refine the first alignment. Default is refine_3d:search=2:delta=3:range=12", default="refine_3d:search=2:delta=3:range=12", returnNone=True)
+	parser.add_argument("--ralign",type=str,help="This is the second stage aligner used to refine the first alignment. Default is refine_3d:search=2:delta=3:range=12", default="refine_3d:search=2:delta=3:range=12")
 	parser.add_argument("--raligncmp",type=str,help="The comparator used by the second stage aligner. Default is the internal tomographic ccc",default="ccc.tomo")
 	
 	parser.add_argument("--postprocess",type=str,help="A processor to be applied to the volume after averaging the raw volumes, before subsequent iterations begin.",default=None)
@@ -79,23 +79,19 @@ def main():
 	vol1 = options.vol1
 	vol2 = options.vol2
 	
-	vol1ALIname =  vol1.replace('.',+'_ALI.')
-	
-	alicmd = """e2classaverage3d.py --input=""" + vol1ALIname + """ --output=""" + + 
-	""" --ref=""" + vol2 + """ --npeakstorefine=""" + options.npeakstorefine + """ --verbose=""" + options.verbose + """ --mask=""" + options.mask + 
-	""" --preprocess=""" + options.preprocess + """ --align=""" + options.align + """--parallel=""" + options.parallel + """ --ralign=""" + options.ralign + 
-	""" --aligncmp=""" + options.aligncmp + """ --raligncmp=""" + """ --shrink=""" + options.shrink + """ --shrinkrefine=""" + options.shrinkrefine + 
-	""" --saveali""" + """ --normproc=""" + options.normproc + """ --sym=""" + options.sym + """ --breaksym"""
+	vol1ALIname =  vol1.replace('.','_ALI.')
 	
 	fscoutputname = options.output
 	if not options.output:
 		fscoutputname = 'FSC_' + vol1.split('.')[0] + '_VS_' + vol2.split('.')[0] + '.txt'
 	
-	fsccmd = """e2proc3d.py """ + vol2 + """ """ + fscoutputname + """ --calcfsc=""" + vol1ALIname
+	alicmd = 'e2classaverage3d.py --input=' + vol1ALIname + ' --output=' + fscoutputname + ' --ref=' + vol2 + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + options.mask + ' --preprocess=' + options.preprocess + ' --align=' + options.align + ' --parallel=' + options.parallel + ' --ralign=' + options.ralign + ' --aligncmp=' + options.aligncmp + ' --raligncmp=' + options.raligncmp + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + options.normproc + ' --sym=' + options.sym + ' --breaksym'
 	
-	pltcmd = 
+	fsccmd = 'e2proc3d.py ' + vol2 + ' ' + fscoutputname + ' --calcfsc' + vol1ALIname
 	
-	options.system(alicmd + ' && ' + fsccmd)
+	#pltcmd = 
+	
+	os.system(alicmd + ' && ' + fsccmd)
 	
 	findir=os.listdir(os.getcwd())
 	
@@ -118,8 +114,8 @@ def main():
 			values.append(float( line.split()[-1] ) )
 			k += 1
 		
-		polycoeffs = scipy.polyfit(x, values, 3)
-		yfit = scipy.polyval(polycoeffs, x)
+		polycoeffs = numpy.polyfit(x, values, 3)
+		yfit = numpy.polyval(polycoeffs, x)
 		
 		pylab.plot(x, values, 'k.')
 		pylab.plot(x, yfit, 'r-')
