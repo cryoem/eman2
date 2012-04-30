@@ -780,6 +780,7 @@ Transform Transform::get_hflip_transform() const {
 	Dict rot = get_rotation("eman");
 	rot["alt"] = 180.0f + static_cast<float>(rot["alt"]);
 	rot["phi"] = 180.0f - static_cast<float>(rot["phi"]);
+       // This is the same as new_alt= 180-alt, new_phi=-phi, new_az=180+az
 
 	Transform ret(*this); // Is the identity
 	ret.set_rotation(rot);
@@ -798,6 +799,8 @@ Transform Transform::get_vflip_transform() const {
 	Dict rot = get_rotation("eman");
 	rot["alt"] = 180.0f + static_cast<float>(rot["alt"]);
 	rot["phi"] = - static_cast<float>(rot["phi"]);
+	
+       // This is the same as new_alt= 180-alt, new_phi=180-phi, new_az=180+az
 
 	Transform ret(*this);
 	ret.set_rotation(rot);
@@ -874,24 +877,10 @@ Dict Transform::get_rotation(const string& euler_type) const
 	psiS = psiS-360.0*floor(psiS/360.0);
 
 //   do some quaternionic stuff here
+        double xtilt = 0;
+        double ytilt = 0;
+        double ztilt = 0;
 
-	double nphi = (az-phi)/2.0;
-    // The next is also e0
-	double cosOover2 = cos((az+phi)*EMConsts::deg2rad/2.0) * cos(alt*EMConsts::deg2rad/2.0);
-	double sinOover2 = sqrt(1 -cosOover2*cosOover2);
-	double cosnTheta = sin((az+phi)*EMConsts::deg2rad/2.0) * cos(alt*EMConsts::deg2rad/2.0) / sqrt(1-cosOover2*cosOover2);
-	double sinnTheta = sqrt(1-cosnTheta*cosnTheta);
-	double n1 = sinnTheta*cos(nphi*EMConsts::deg2rad);
-	double n2 = sinnTheta*sin(nphi*EMConsts::deg2rad);
-	double n3 = cosnTheta;
-	double xtilt = 0;
-	double ytilt = 0;
-	double ztilt = 0;
-
-
-	if (cosOover2<0) {
-		cosOover2*=-1; n1 *=-1; n2*=-1; n3*=-1;
-	}
 
 	string type = Util::str_to_lower(euler_type);
 
@@ -933,24 +922,50 @@ Dict Transform::get_rotation(const string& euler_type) const
 		result["xtilt"]  = xtilt;
 		result["ytilt"]  = ytilt;
 		result["ztilt"]  = ztilt;
-	} else if (type == "quaternion") {
-// 		assert_consistent_type(THREED);
-		result["e0"] = cosOover2 ;
-		result["e1"] = sinOover2 * n1 ;
-		result["e2"] = sinOover2 * n2;
-		result["e3"] = sinOover2 * n3;
-	} else if (type == "spin") {
-// 		assert_consistent_type(THREED);
-		result["Omega"] = 2.0*EMConsts::rad2deg * acos(cosOover2);
-		result["n1"] = n1;
-		result["n2"] = n2;
-		result["n3"] = n3;
-	} else if (type == "sgirot") {
-// 		assert_consistent_type(THREED);
-		result["q"] = 2.0*EMConsts::rad2deg * acos(cosOover2);
-		result["n1"] = n1;
-		result["n2"] = n2;
-		result["n3"] = n3;
+	} else if ((type == "quaternion") || (type == "spin") ||  (type == "sgirot")) {
+	  
+	      // The cosOover2 is also e0
+//	        double nphi = (az-phi)/2.0;
+//	        double cosOover2 = cos((az+phi)*EMConsts::deg2rad/2.0) * cos(alt*EMConsts::deg2rad/2.0);
+		double traceR = matrix[0][0]+matrix[1][1]+matrix[2][2]; // This should be 1 + 2 cos Omega
+	        double cosOmega =  (traceR-1)/2.0;
+		if (cosOmega>1) cosOmega=1;
+		
+		  // matrix(x,y)-matrix(y,x) = 2 n_z   sin(Omega) etc
+		 // trace matrix = 1 + 2 cos(Omega)
+		double sinOover2= sqrt((1.0 -cosOmega)/2.0);
+		double cosOover2= sqrt(1.0 -sinOover2*sinOover2);
+		double sinOmega = 2* sinOover2*cosOover2; 
+	        double n1 = 0; double n2 = 0;   double n3 = 0;
+		if (sinOmega>0) {
+		      n1 = (matrix[1][2]-matrix[2][1])/2.0/sinOmega ;
+		      n2 = (matrix[2][0]-matrix[0][2])/2.0/sinOmega ;
+		      n3 = (matrix[0][1]-matrix[1][0])/2.0/sinOmega ;
+		}
+//	        printf("traceR=%f,OneMinusCosOmega=%f,sinOover2=%f,cosOover2=%f,sinOmega=%f,cosOmega=%f,n3=%f \n",traceR,1-cosOmega,sinOover2,cosOover2,sinOmega,cosOmega,n3);
+
+		
+		if (type == "quaternion"){
+		    result["e0"] = cosOover2 ;
+		    result["e1"] = sinOover2 * n1 ;
+		    result["e2"] = sinOover2 * n2;
+		    result["e3"] = sinOover2 * n3;
+		}
+
+		if (type == "spin"){
+		    result["Omega"] = EMConsts::rad2deg * acos(cosOmega);
+		    result["n1"] = n1;
+		    result["n2"] = n2;
+		    result["n3"] = n3;
+		}
+
+		if (type == "sgirot"){
+		    result["q"] = EMConsts::rad2deg * acos(cosOmega);
+		    result["n1"] = n1;
+		    result["n2"] = n2;
+		    result["n3"] = n3;
+		}
+		    
 	} else if (type == "matrix") {
 // 		assert_consistent_type(THREED);
 		result["m11"] = x_mirror_scale*matrix[0][0]*inv_scale;
@@ -1097,12 +1112,7 @@ void Transform::scale(const float& scale)
 	float determinant = get_determinant();
 	if (determinant < 0) determinant *= -1.0f;
 	float newscale = std::pow(determinant,1.0f/3.0f) + scale;
-	//IF scale is < 0.01 The det can sometime be computed to be 0 (The precission is a bit Rubbish here)
-	if(newscale > 0.01) 
-	{
-		//cout << newscale << endl;
-		set_scale(newscale); // If scale ~ 0 things blowup, so we need a little fudge factor
-	}
+	if(newscale > 0.0001) set_scale(newscale); // If scale ~ 0 things blowup, so we need a little fudge factor
 }
 
 void print_matrix(gsl_matrix* M, unsigned int r, unsigned int c, const string& message ) {
