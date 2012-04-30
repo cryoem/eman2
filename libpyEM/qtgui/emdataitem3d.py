@@ -317,11 +317,11 @@ class EMSliceItem3D(EMItem3D):
 			data_copy.mult(self.contrast)
 			
 			if True: #MUCH faster than generating texture in Python
-				self.texture3d_name = GLUtil.gen_gl_texture(data_copy, GL.GL_ALPHA)
+				self.texture3d_name = GLUtil.gen_gl_texture(data_copy, GL.GL_LUMINANCE)
 			else:
 				self.texture3d_name = GL.glGenTextures(1)
 				GL.glBindTexture(GL.GL_TEXTURE_3D, self.texture3d_name)
-				GL.glTexImage3D(GL.GL_TEXTURE_3D,0, GL.GL_ALPHA,data_copy["nx"], data_copy["ny"], data_copy["nz"],0, GL.GL_ALPHA, GL.GL_FLOAT, data_copy.get_data_as_vector())
+				GL.glTexImage3D(GL.GL_TEXTURE_3D,0,GL.GL_LUMINANCE, data_copy["nx"], data_copy["ny"], data_copy["nz"],0, GL.GL_ALPHA, GL.GL_FLOAT, data_copy.get_data_as_vector())
 
 			#print "Slice Node's 3D texture == ", self.texture3d_name
 		return self.texture3d_name
@@ -428,8 +428,6 @@ class EMSliceItem3D(EMItem3D):
 			glEnd()
 		
 			GL.glDisable(GL.GL_TEXTURE_2D)
-			
-			GL.glDisable(GL.GL_TEXTURE_3D)
 
 		else: #Using a 3D texture
 			
@@ -451,8 +449,6 @@ class EMSliceItem3D(EMItem3D):
 			GL.glEnd()	
 			
 			#Now draw the texture on another quad
-			#GL.glEnable(GL.GL_BLEND)
-			#GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
 			
 			GL.glEnable(GL.GL_TEXTURE_3D)
 			GL.glBindTexture(GL.GL_TEXTURE_3D, self.texture3d_name)
@@ -482,9 +478,8 @@ class EMSliceItem3D(EMItem3D):
 			GL.glMatrixMode(GL.GL_MODELVIEW)
 			
 			GL.glDisable(GL.GL_TEXTURE_3D)
-			#GL.glDisable(GL.GL_BLEND)
 		
-		#GL.glEnable(GL.GL_LIGHTING)
+		GL.glEnable(GL.GL_LIGHTING)
 		glPopAttrib()
 		
 class EMSliceInspector(EMInspectorControlShape):
