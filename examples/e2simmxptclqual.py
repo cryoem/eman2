@@ -127,11 +127,11 @@ def main():
 		out.write("%d\t%d\t%1.4f\t%1.4g\t%d\t%1.4f\t%1.4g"%(y,N,Nq,Nqd,best[2],best[0],best[1]))
 	
 		if options.refs:
-			angs=[fabs((ORTs[N]*(ORTs[best[2]]*s).inverse()).get_rotation("spin")["Omega"]) for s in syms]
-			if angs[0]!=min(angs) : 
-				print N,best[2],angs
-				print ORTs[N]
-				for s in syms: print ORTs[best[2]]*s
+			angs=[(ORTs[N]*(ORTs[best[2]]*s).inverse()).get_rotation("spin")["Omega"] for s in syms]
+#			if angs[0]!=min(angs) : 
+#				print N,best[2],angs
+#				print ORTs[N]
+#				for s in syms: print ORTs[best[2]]*s
 			# This is the amount of rotation required to move from one best Euler to the other, ignoring in-plane
 #			angdiff=fabs((ORTs[N]*ORTs[best[2]].inverse()).get_rotation("spin")["Omega"])
 			angdiff=min(angs)

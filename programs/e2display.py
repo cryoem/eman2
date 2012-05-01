@@ -39,7 +39,7 @@ from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU,GLUT
 from emapplication import EMApp
-from emselector import EMBrowser
+import embrowser
 import os
 import EMAN2db
 
@@ -80,9 +80,9 @@ def main():
 		
 		
 	if len(args)<1 :
-		dialog = EMBrowser(usescenegraph=options.newwidget)
-		QtCore.QObject.connect(dialog,QtCore.SIGNAL("ok"),on_browser_done)
-		QtCore.QObject.connect(dialog,QtCore.SIGNAL("cancel"),on_browser_cancel)
+		dialog = embrowser.EMBrowserWidget(withmodal=False,multiselect=False)
+		#QtCore.QObject.connect(dialog,QtCore.SIGNAL("ok"),on_browser_done)
+		#QtCore.QObject.connect(dialog,QtCore.SIGNAL("cancel"),on_browser_cancel)
 		app.show()
 	elif options.plot:
 		plot(args,app)
