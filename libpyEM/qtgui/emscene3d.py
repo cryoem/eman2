@@ -1154,16 +1154,17 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		QT event handler. Scales the SG upon wheel movement, does so by chaning fovy or orthographic equilivant
 		"""
 		# Originally the wheel sclaed by zoom the viewport, but that caused all sorts of issues, so I now just scale the SG
+		# The 25 is a fudge factor that controls the speed of scaling, lower if slower scaling
 		if event.orientation() & Qt.Vertical:
 			self.cameraNeedsanUpdate()
 			if event.delta() > 0:
 				if self.camera.getUseOrtho():
-					self.camera.setPseudoFovy(self.camera.getPseudoFovyWidth()+self.camera.getWidth()/20)
+					self.camera.setPseudoFovy(self.camera.getPseudoFovyWidth()+(self.camera.getPseudoFovyWidth()+self.camera.getWidth())/25)
 				else:
 					self.camera.setFovy(self.camera.getFovy()+1.0)
 			else:
 				if self.camera.getUseOrtho():
-					self.camera.setPseudoFovy(self.camera.getPseudoFovyWidth()-self.camera.getWidth()/20)
+					self.camera.setPseudoFovy(self.camera.getPseudoFovyWidth()-(self.camera.getPseudoFovyWidth()+self.camera.getWidth())/25)
 				else:
 					self.camera.setFovy(self.camera.getFovy()-1.0)
 			self.updateSG()
@@ -1577,7 +1578,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 	def initialViewportDims(self, dims):
 		"""
 		Scale viewport to dims when the EMScene is first displayed. This only works for ortho mode, so support is needed for perspective mode
-		The initial size is set when the showEvent is called
+		The initial size is set when the showEvent is called, and the scaling is to the viewport width
 		"""
 		self.initialviewportdims = dims
 		
@@ -1818,7 +1819,7 @@ class EMCamera:
 		
 	def scaleToDims(self, dims):
 		"""
-		Scale in, ortho mode to the given dimensions
+		Scale in, ortho mode to the given dimensions. Scale is to width
 		"""
 		self.setPseudoFovy((self.width*self.width)/(2*dims) - (self.width/2))
 		

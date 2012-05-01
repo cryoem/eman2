@@ -2149,16 +2149,11 @@ EMData* Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 	float delta = params.set_default("delta",1.0f);
 	float range = params.set_default("range",10.0f);
 	bool verbose = params.set_default("verbose",false);
-	bool fsrotate = params.set_default("fsrotate",0);
 	
 	bool tomography = (cmp_name == "ccc.tomo") ? 1 : 0;
 	EMData * tofft = 0;
 	if(dotrans || tomography){
 		tofft = to->do_fft();
-	}
-	EMData * this_imgfft = 0;
-	if(fsrotate){
-		this_imgfft = this_img->do_fft();
 	}
 
 #ifdef EMAN2_USING_CUDA 
@@ -2195,11 +2190,7 @@ EMData* Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 				
 				//EMData* transformed = this_img->process("xform",Dict("transform",&tr));
 				EMData* transformed;
-				if(fsrotate){
-					transformed = this_imgfft->process("rotateinfs",Dict("transform",&tr));
-				} else {
-					transformed = this_img->process("xform",Dict("transform",&tr));
-				}
+				transformed = this_img->process("xform",Dict("transform",&tr));
 				
 				//need to do things a bit diffrent if we want to compare two tomos
 				float score = 0.0f;
@@ -2252,7 +2243,6 @@ EMData* Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 	}
 
 	if(tofft) {delete tofft; tofft = 0;}
-	if(fsrotate) {delete this_imgfft;}
 	if (c != 0) delete c;
 	
 	//make aligned map;
@@ -2308,7 +2298,18 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		searchy = params.set_default("searchy",3);
 		searchz = params.set_default("searchz",3);
 	}
-
+        
+	Transform* initxform;
+	if (params.has_key("initxform") ) {
+		// Unlike the 2d refine aligner, this class doesn't require the starting transform's
+		// parameters to form the starting guess. Instead the Transform itself
+		// is perturbed carefully (using quaternion rotation) to overcome problems that arise
+		// when you use orthogonally-based Euler angles
+		initxform = params["initxform"];
+	}else {
+		initxform = new Transform(); // is the identity
+	}
+	
 	float lalt = params.set_default("alt0",0.0f);
 	float laz = params.set_default("az0",0.0f);
 	float lphi = params.set_default("phi0",0.0f);
@@ -2370,6 +2371,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				d["phi"] = phi; 
 				d["az"] = az;
 				Transform t(d);
+				t = t*(*initxform);
 				EMData* transformed = this_img->process("xform",Dict("transform",&t));
 			
 				//need to do things a bit diffrent if we want to compare two tomos
@@ -2457,7 +2459,6 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	int searchz = 0;
          
 	bool dotrans = params.set_default("dotrans",1);
-	bool fsrotate = params.set_default("fsrotate",0);
 	if (params.has_key("search")) {
 		vector<string> check;
 		check.push_back("searchx");
@@ -2476,6 +2477,17 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 		searchz = params.set_default("searchz",3);
 	}
 
+	Transform* initxform;
+	if (params.has_key("initxform") ) {
+		// Unlike the 2d refine aligner, this class doesn't require the starting transform's
+		// parameters to form the starting guess. Instead the Transform itself
+		// is perturbed carefully (using quaternion rotation) to overcome problems that arise
+		// when you use orthogonally-based Euler angles
+		initxform = params["initxform"];
+	}else {
+		initxform = new Transform(); // is the identity
+	}
+	
 	float lphi = params.set_default("phi0",0.0f);
 	float uphi = params.set_default("phi1",360.0f);
 	float dphi = params.set_default("dphi",10.f);
@@ -2524,11 +2536,6 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	if(dotrans || tomography){
 		this_imgfft = this_img->do_fft();
 	}
-	EMData * to_fft = 0;
-	if(fsrotate){
-		to_fft = to->do_fft();
-	}
-	
 	
 #ifdef EMAN2_USING_CUDA 
 	if(EMData::usecuda == 1) {
@@ -2555,13 +2562,10 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 		for( float phi = lphi; phi < uphi; phi += dphi ) { 
 			params["phi"] = phi;
 			Transform t(params);
+			t = t*(*initxform);
 			
 			EMData* transformed;
-			if(fsrotate){
-				transformed = to_fft->process("rotateinfs",Dict("transform",&t));
-			} else {
-				transformed = to->process("xform",Dict("transform",&t));
-			}
+			transformed = to->process("xform",Dict("transform",&t));
 				
 			//need to do things a bit diffrent if we want to compare two tomos
 			float best_score = 0.0f;
@@ -2620,7 +2624,6 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	}
 	
 	if(this_imgfft) {delete this_imgfft; this_imgfft = 0;}
-	if(fsrotate){delete to_fft;}
 	if(sym!=0) delete sym;
 	if (c != 0) delete c;
 	
