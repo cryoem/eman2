@@ -33,24 +33,26 @@
  * This code is for a CUDA memory managment scheme. EMData rdata arrays are copied to CUDA DDRAM memory via
  * copy_to_cuda() and to texture memory via copy_to_cudaro(). EMData is copied back using copy_from_device(), 
  * and DDRAM data can be freed via rw_free() and ro_free(). When data is copied to CUDA DDRAM, memory is managed
- * via a doubly linked list. When copy_tocuda*() is called there is first a check to ensure that there is enough
+ * via a static doubly linked list. When copy_to_cuda() is called there is first a check to ensure that there is enough
  * memory available. If so , the copy is made and a call to addlist() is made, adding this EMData item to the
- * doubly linked list. If there is not enough memory, then the function, freeup_devicemem(), is called and the
+ * static doubly linked list. If there is not enough memory, then the function, freeup_devicemem(), is called and the
  * last item on the linked list is removed. If there is still not enough room, then the next last item is removed, etc, etc
- * If there is still no room after the last item is removed, then no copy is made. Items are removed from the list via:
- * reomvefromlist(). Used in this maner the meory managment algorithm is a FILO(first in last out), HOWEVER, when CUDA is
- * used in applications a call to elementaccessed() can be made, which moves the item to the top of the list. When this
- * scheme is used, the memory management algorithm becomes, LRU(least recently used), which should give better results in 
+ * If there is still no room after the last item is removed, then no copy is made(and everything on this list is removed). 
+ * Items are removed from the list via: reomvefromlist(). Used in this maner the memory managment algorithm is a FILO(first in last out), 
+ * HOWEVER, when CUDA is used in applications a call to elementaccessed() can be made, which moves the item to the top of the list. 
+ * When this scheme is used, the memory management algorithm becomes, LRU(least recently used), which should give better results in 
  * almost all cases. As a side note, to actutally use texture memory, a call to bindcudaarray?() should be made, when needed
  * A corresponding call to unbindcudaarray?() needs to be made after texture memory is not needed. These operations do not actually
- * move data around, just bind it to a Texture object, which are very limited resources!!!. Note that elementacessed is called 
- * every time getcudarwdata(), getcudarodata() or isroongpu() called. Hence LRU is used by default, and you are forced to useage
- * these getter function b/c cudarwdata and cudarodata are private. You could get arround this in EMData functions, and most
- * functions in the EMData class just grab the cudarwdata pointer rather than calling the getcudarwdata() function. This is done to
- * avod unnecessary pointer arithmatic, but may cause issues. I haven't decided what the best call is....
- * Note that possible concurrency issues can arise, because when datra is copied bewteen the Host and GPU, there are two copies. 
- * To accout for this possible problem, CUDA functions need to call setdirtybit() which will copy back fron GPU to host whenever
- * get_data() is called(This function is a getter for EMData's rdata) 
+ * move data around, just bind it to a Texture object, which are very limited resources!!!. There are just two such texture object,
+ * known as texA, and texB. These can be utilized in the actual CUDA code that nvcc compiles (in directory libEM/cuda).
+ * Note that elementacessed is called every time getcudarwdata(), getcudarodata() or isroongpu() called. Hence LRU is used by default, 
+ * and you are forced to use these getter function b/c cudarwdata and cudarodata are private. You could get arround this in EMData 
+ * functions though..... 
+ * Note that possible concurrency issues can arise, because when data is copied bewteen the Host and GPU, there are two copies. 
+ * To account for this possible problem, CUDA functions can call setdirtybit() which will copy back from GPU to host whenever
+ * get_data() is called (This function is a getter for EMData's rdata). Currently this technology is not in use because I haven't 
+ * debuggesd it, so whenever a call to get_data()is called and there is data on the GPU a copy from GPU to CPU is made irrespctive
+ * of whether or not the data on the CPU vs GPU is the same.
 */
 
 #ifdef EMAN2_USING_CUDA
