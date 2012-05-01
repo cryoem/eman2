@@ -927,9 +927,11 @@ Dict Transform::get_rotation(const string& euler_type) const
 	      // The cosOover2 is also e0
 //	        double nphi = (az-phi)/2.0;
 //	        double cosOover2 = cos((az+phi)*EMConsts::deg2rad/2.0) * cos(alt*EMConsts::deg2rad/2.0);
+//		printf("%f %f %f",matrix[0][0],matrix[1][1],matrix[2][2]);
 		double traceR = matrix[0][0]+matrix[1][1]+matrix[2][2]; // This should be 1 + 2 cos Omega
-	        double cosOmega =  (traceR-1)/2.0;
-		if (cosOmega>1) cosOmega=1;
+	        double cosOmega =  (traceR-1.0)/2.0;
+		if (cosOmega>1.0) cosOmega=1.0;
+		if (cosOmega<-1.0) cosOmega=-1.0;
 		
 		  // matrix(x,y)-matrix(y,x) = 2 n_z   sin(Omega) etc
 		 // trace matrix = 1 + 2 cos(Omega)
@@ -942,7 +944,7 @@ Dict Transform::get_rotation(const string& euler_type) const
 		      n2 = (matrix[2][0]-matrix[0][2])/2.0/sinOmega ;
 		      n3 = (matrix[0][1]-matrix[1][0])/2.0/sinOmega ;
 		}
-//	        printf("traceR=%f,OneMinusCosOmega=%f,sinOover2=%f,cosOover2=%f,sinOmega=%f,cosOmega=%f,n3=%f \n",traceR,1-cosOmega,sinOover2,cosOover2,sinOmega,cosOmega,n3);
+//	        printf("traceR=%lf,OneMinusCosOmega=%lf,sinOover2=%lf,cosOover2=%lf,sinOmega=%lf,cosOmega=%lf,n3=%lf \n",traceR,1-cosOmega,sinOover2,cosOover2,sinOmega,cosOmega,n3);
 
 		
 		if (type == "quaternion"){

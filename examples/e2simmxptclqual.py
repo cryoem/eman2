@@ -53,6 +53,7 @@ def main():
         #parser.add_argument("--filtimgs",type=str,help="A python expression using Z[n], Q[n] and N[n] for selecting specific particles to output. n is the 0 indexed number of the input file",default=None)
         #parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--refs",type=str,help="Reference images from the similarity matrix (projections)",default=None)
+	parser.add_argument("--sym",type=str,help="Symmetry operator to include in best orientation distance search",default="c1")
         
 	(options, args) = parser.parse_args()
 
@@ -98,6 +99,8 @@ def main():
 	mx.write_image("simvec.hdf",0)
 	print "Output mean quality vector per class in simvec.hdf"
 
+	syms=Symmetries.get(options.sym).get_syms()
+
 	print "Particle quality file"
 	# Output particle quality file
 	out=file("simqual.txt","w")
@@ -124,8 +127,14 @@ def main():
 		out.write("%d\t%d\t%1.4f\t%1.4g\t%d\t%1.4f\t%1.4g"%(y,N,Nq,Nqd,best[2],best[0],best[1]))
 	
 		if options.refs:
+			angs=[fabs((ORTs[N]*(ORTs[best[2]]*s).inverse()).get_rotation("spin")["Omega"]) for s in syms]
+			if angs[0]!=min(angs) : 
+				print N,best[2],angs
+				print ORTs[N]
+				for s in syms: print ORTs[best[2]]*s
 			# This is the amount of rotation required to move from one best Euler to the other, ignoring in-plane
-			angdiff=fabs((ORTs[N]*ORTs[best[2]].inverse()).get_rotation("spin")["Omega"])
+#			angdiff=fabs((ORTs[N]*ORTs[best[2]].inverse()).get_rotation("spin")["Omega"])
+			angdiff=min(angs)
 			out.write("\t%1.3g"%angdiff)
 		out.write("\n")
 	
