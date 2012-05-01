@@ -1355,6 +1355,7 @@ class EMIsosurface(EMItem3D):
 			self.renderIso()
 	
 			glPopAttrib()	
+			
 		elif (scenegraph.camera.getCappingMode() and not scenegraph.zslicemode and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER):
 			# First get a stencil of the object silluette
 			glPushAttrib( GL_ALL_ATTRIB_BITS )
@@ -1378,9 +1379,11 @@ class EMIsosurface(EMItem3D):
 			# Draw plane of the capping color
 			glPushMatrix()
 			glLoadIdentity()
+			
 			x = float(scenegraph.camera.getWidth()/2.0)
 			y = float(scenegraph.camera.getHeight()/2.0)
 			z = -float(scenegraph.camera.getClipNear() + 0.5)
+			
 			glBegin(GL_QUADS)
 			glVertex3f(-x, -y, z)
 			glVertex3f(x, -y, z)

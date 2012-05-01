@@ -743,6 +743,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.scalestep = scalestep			# The scale factor stepsize
 		self.toggle_render_selectedarea = False		# Don't render the selection box by default
 		self.mousemode = "rotate"			# The mouse mode
+		self.initialviewportdims = None			# Default is not to set viewport dims, the objects will appear as actual sizes
 		self.zrotatecursor = QtGui.QCursor(QtGui.QPixmap(zrotatecursor),-1,-1)
 		self.xyrotatecursor = QtGui.QCursor(QtGui.QPixmap(xyrotatecursor),-1,-1)
 		self.crosshaircursor = QtGui.QCursor(QtGui.QPixmap(crosshairscursor),-1,-1)
@@ -1572,6 +1573,13 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		if self.camera.getUseOrtho():
 			return self.apix
+	
+	def initialViewportDims(self, dims):
+		"""
+		Scale viewport to dims when the EMScene is first displayed. This only works for ortho mode, so support is needed for perspective mode
+		The initial size is set when the showEvent is called
+		"""
+		self.initialviewportdims = dims
 		
 	def updateSG(self):
 		"""
@@ -1603,6 +1611,13 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		Close the main inspector
 		"""
 		if self.main_3d_inspector: self.main_3d_inspector.close()
+	
+	def showEvent(self, event):
+		QtGui.QWidget.showEvent(self, event)
+		# if desired scale viewport to a chosen scale so that initialviewportdims fills the screen
+		if self.initialviewportdims != None:
+			self.camera.scaleToDims(self.initialviewportdims)
+			self.camera.update()
 		
 	# Maybe add methods to control the lights
 
@@ -1799,7 +1814,14 @@ class EMCamera:
 			glMatrixMode(GL_MODELVIEW)
 			glLoadIdentity()
 			self.setCameraPosition()
-	
+		
+		
+	def scaleToDims(self, dims):
+		"""
+		Scale in, ortho mode to the given dimensions
+		"""
+		self.setPseudoFovy((self.width*self.width)/(2*dims) - (self.width/2))
+		
 	def setViewPort(self, x, y, vpwidth, vpheight):
 		"""Set the viewport subject to openGL constraitns """
 		if (vpwidth < self.maxviewport[0] and vpheight < self.maxviewport[1]):
@@ -1895,8 +1917,13 @@ class EMCamera:
 		"""
 		Set PseudoFovy, a sort of fovy for orthogramphic projections, do bounds checking
 		"""
-		if (self.width+2*pseudofovy) > 0 and (self.height+2*pseudofovy) > 0 and ((int(self.width+2*self.getPseudoFovyWidth()) < self.maxviewport[0] and int(self.height+2*self.getPseudoFovyHeight()) < self.maxviewport[1]) or pseudofovy < self.pseudofovy): self.pseudofovy = pseudofovy # negative viewport values are not acceptable
-		
+		if ((self.width+2*pseudofovy) > 0 and (self.height+2*pseudofovy) > 0):
+			if ((int(self.width+2*pseudofovy) < self.maxviewport[0] and int(self.height+2*pseudofovy*self.aspectratio) < self.maxviewport[1]) or pseudofovy < self.pseudofovy): 
+				self.pseudofovy = pseudofovy # negative viewport values are not acceptable
+			else:
+				# Set to max zoom
+				self.pseudofovy = (self.maxviewport[0] - self.width)/2
+	
 	def getPseudoFovyWidth(self):
 		"""
 		Return PseudoFovy, a sort of fovy for orthogramphic projections

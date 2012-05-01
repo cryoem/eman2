@@ -229,6 +229,7 @@ class EMFileType(object):
 		target.insertNewNode(self.path.split("/")[-1].split("#")[-1],data,parentnode=target)
 		iso = emdataitem3d.EMIsosurface(data)
 		target.insertNewNode('Isosurface', iso, parentnode=data)
+		target.initialViewportDims(data.getData().get_xsize())
 		brws.notbusy()
 		target.show()
 		target.raise_()
@@ -247,6 +248,7 @@ class EMFileType(object):
 		target.insertNewNode(self.path.split("/")[-1].split("#")[-1],data)
 		iso = emdataitem3d.EMIsosurface(data)
 		target.insertNewNode('Isosurface', iso, parentnode=data)
+		target.initialViewportDims(data.getData().get_xsize())
 		brws.notbusy()
 		
 		target.show()
