@@ -111,9 +111,11 @@ def main():
 			else:	ave, var = avgvar(imgdata,"a")
 			var = threshold(var)
 			set_params_proj(var, [angles_list[i][0], angles_list[i][1], 0.0, 0.0, 0.0])
+			var.set_attr("imgindex",proj_list[i])
 			if ( i < len(proj_list)-1):
 				prj_stack.append(var)
 				set_params_proj(ave, [angles_list[i][0], angles_list[i][1], 0.0, 0.0, 0.0])
+				ave.set_attr("imgindex",proj_list[i])
 				aveList.append(ave)
 				ave.write_image("ave2Dstack.hdf",i)
 				var.write_image("var2Dstack.hdf",i)
