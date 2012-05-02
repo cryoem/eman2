@@ -58,7 +58,7 @@ def main():
 	parser.add_option("--CTF",			action="store_true",	default=False,	help="use CFT correction")
 
 	(options,args) = parser.parse_args(arglist[1:])
-	
+
 	if (options.MPI and not options.var):
 		print "There is no MPI version of procedure to extract variance from the stack of projections"
 		exit()
@@ -82,7 +82,7 @@ def main():
 
 	global_def.BATCH = True
 
-	
+
 	if not options.var:
 		from utilities		import group_proj_by_phitheta, get_params_proj, params_3D_2D, set_params_proj, set_params2D
 		from statistics		import avgvar, avgvar_CTF
@@ -116,14 +116,14 @@ def main():
 				set_params_proj(ave, [angles_list[i][0], angles_list[i][1], 0.0, 0.0, 0.0])
 				aveList.append(ave)
 				ave.write_image("ave2Dstack.hdf",i)
-				var.write_image("var2Dstack.hdf",i) 
+				var.write_image("var2Dstack.hdf",i)
 			else:
 				ave.write_image("leftover.hdf")
 		ave3D = recons3d_em(aveList, options.iter, options.abs, False, options.sym)
 		ave3D.write_image("ave3D.hdf")
 		del ave, var, imgdata, angles_list, proj_list, stack, phi, theta, psi, s2x, s2y, alpha, sx, sy, mirror, ave3D, aveList
 		#exit()
-				
+
 	if options.MPI:
 		from mpi import mpi_comm_rank, MPI_COMM_WORLD
 		res = recons3d_em_MPI(prj_stack, options.iter, options.abs, True, options.sym)
