@@ -718,6 +718,7 @@ def recons3d_em(projections_stack, max_iterations_count = 100, min_avg_abs_voxel
 	"""
 	from time import clock
 	from utilities import model_blank, model_circle, model_square
+	from morphology import threshold_to_minval
 	import types
 	min_allowed_divisor = 0.0001
 	
@@ -814,6 +815,7 @@ def recons3d_em_MPI(projections_stack, max_iterations_count = 100, min_avg_abs_v
 	"""
 	from time import clock
 	from utilities import model_blank, model_circle, model_square
+	from morphology import threshold_to_minval
 	import types
 	from mpi import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 	from utilities import reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, send_EMData, recv_EMData
