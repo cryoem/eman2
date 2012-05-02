@@ -2686,12 +2686,18 @@ class EMInspector3D(QtGui.QWidget):
 		"""
 		self.clearTree()
 		self.loadSG()
+		# either set the current node to the argument or set it to the one PM has selected
 		if currentnode:
 			self.tree_widget.setCurrentItem(currentnode.EMQTreeWidgetItem)
 			idx = self.stacked_widget.indexOf(currentnode.getItemInspector())
 			if idx >= 0: self.stacked_widget.setCurrentIndex(idx)
 			self.scenegraph().setCurrentSelection(currentnode)
-		
+		else:
+			node = self.scenegraph().getCurrentSelection()
+			self.tree_widget.setCurrentItem(node.EMQTreeWidgetItem)
+			idx = self.stacked_widget.indexOf(node.getItemInspector())
+			if idx >= 0: self.stacked_widget.setCurrentIndex(idx)
+			
 	def updateSceneGraph(self):
 		""" 
 		Updates SG, in the near future this will be improved to allow for slow operations

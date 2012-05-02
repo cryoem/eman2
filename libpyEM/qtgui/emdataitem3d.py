@@ -180,14 +180,14 @@ class EMDataItem3DInspector(EMItem3DInspector):
 		
 	def addTabs(self):
 		""" Add a tab for each 'column' """
-		super(EMDataItem3DInspector, self).addTabs()
+		
 		tabwidget = QtGui.QWidget()
 		gridbox = QtGui.QGridLayout()
-		
-		EMDataItem3DInspector.addControls(self, gridbox)
-		
 		tabwidget.setLayout(gridbox)
 		self.addTab(tabwidget, "data")
+		# add data tab first, then basic
+		super(EMDataItem3DInspector, self).addTabs()
+		EMDataItem3DInspector.addControls(self, gridbox)
 		
 	def addControls(self, gridbox):
 		""" Construct all the widgets in this Item Inspector """
@@ -513,14 +513,13 @@ class EMSliceInspector(EMInspectorControlShape):
 	
 	def addTabs(self):
 		""" Add a tab for each 'column' """
-		super(EMSliceInspector, self).addTabs()
 		tabwidget = QtGui.QWidget()
 		gridbox = QtGui.QGridLayout()
-		
-		EMSliceInspector.addControls(self, gridbox)
-		
 		tabwidget.setLayout(gridbox)
 		self.addTab(tabwidget, "slices")
+		# add slices tab first then basic tab
+		super(EMSliceInspector, self).addTabs()
+		EMSliceInspector.addControls(self, gridbox)
 		
 	def addControls(self, gridbox):
 		""" Construct all the widgets in this Item Inspector """
@@ -843,14 +842,13 @@ class EMVolumeInspector(EMInspectorControlShape):
 	
 	def addTabs(self):
 		""" Add a tab for each 'column' """
-		super(EMVolumeInspector, self).addTabs()
 		tabwidget = QtGui.QWidget()
 		gridbox = QtGui.QGridLayout()
-		
-		EMVolumeInspector.addControls(self, gridbox)
-		
 		tabwidget.setLayout(gridbox)
 		self.addTab(tabwidget, "volume")
+		# add volume tab then basic tab
+		super(EMVolumeInspector, self).addTabs()
+		EMVolumeInspector.addControls(self, gridbox)
 		
 	def addControls(self, gridbox):
 		""" add controls for the volumes """
@@ -942,14 +940,13 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 	
 	def addTabs(self):
 		""" Add a tab for each 'column' """
-		super(EMIsosurfaceInspector, self).addTabs()
 		tabwidget = QtGui.QWidget()
 		gridbox = QtGui.QGridLayout()
-		
-		EMIsosurfaceInspector.addControls(self, gridbox)
-		
 		tabwidget.setLayout(gridbox)
 		self.addTab(tabwidget, "isosurface")
+		# add isosurface tab first, then basic tab
+		super(EMIsosurfaceInspector, self).addTabs()
+		EMIsosurfaceInspector.addControls(self, gridbox)
 		
 	def addControls(self, gridbox):
 		""" Construct all the widgets in this Item Inspector """
@@ -1182,6 +1179,7 @@ class EMIsosurface(EMItem3D):
 		self.mean   = data.get_attr("mean")
 		self.sigma  = data.get_attr("sigma")
 		
+		#This computes initial threshold. Steven Murray does seem to have much success with this though.
 		if self.isothr: #there was data previously
 			normalized_threshold = (self.isothr - self.mean)/self.sigma
 		else:

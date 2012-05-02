@@ -230,6 +230,8 @@ class EMFileType(object):
 		iso = emdataitem3d.EMIsosurface(data)
 		target.insertNewNode('Isosurface', iso, parentnode=data)
 		target.initialViewportDims(data.getData().get_xsize())
+		target.setCurrentSelection(iso)
+		target.updateSG()	# this is needed because this might just be an addition to the SG rather than initialization
 		brws.notbusy()
 		target.show()
 		target.raise_()
@@ -249,6 +251,7 @@ class EMFileType(object):
 		iso = emdataitem3d.EMIsosurface(data)
 		target.insertNewNode('Isosurface', iso, parentnode=data)
 		target.initialViewportDims(data.getData().get_xsize())
+		target.setCurrentSelection(iso)
 		brws.notbusy()
 		
 		target.show()

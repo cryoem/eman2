@@ -160,6 +160,7 @@ def DataDisplayModuleTemplate(Type,get_data_attr="get_data",data_functors=[],use
 						old_module.insertNewNode(name, emdata3d, parentnode=old_module)
 						old_module.insertNewNode("Iso", isosurface, parentnode=emdata3d)
 						old_module.initialViewportDims(emdata3d.getData().get_xsize())
+						old_module.setCurrentSelection(isosurface)
 					else:
 						old_module.set_data(data)
 				old_module.setWindowTitle(item.get_url())
@@ -196,6 +197,7 @@ def DataDisplayModuleTemplate(Type,get_data_attr="get_data",data_functors=[],use
 					widget.insertNewNode(name, emdata3d, parentnode=widget)
 					widget.insertNewNode("Iso", isosurface, parentnode=emdata3d)
 					widget.initialViewportDims(emdata3d.getData().get_xsize())
+					widget.setCurrentSelection(isosurface)
 				else:
 					widget.set_data(data)
 			self.display_modules.append(widget)
