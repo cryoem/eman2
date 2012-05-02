@@ -98,6 +98,7 @@ def main():
 			proj_angles.append([t['phi'], t['theta'], t['psi']])
 			## if (i < 30): print t['phi'], t['theta'], t['psi']  ##
 		proj_list, angles_list = group_proj_by_phitheta(proj_angles, options.sym, options.img_per_grp, options.diff_pct)
+		print len(proj_list), len(angles_list)
 		del proj_angles
 		print "Number of groups = ", len(proj_list)
 		for i in xrange(len(proj_list)):
