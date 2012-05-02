@@ -48,8 +48,8 @@ def main():
 	usage = progname + " prj_stack volume --iter --var --sym=symmetry --MPI"
 	parser = OptionParser(usage, version=SPARXVERSION)
 
-	parser.add_option("--iter", 		type="int"         ,	default=40   ,	help="Maximum number of iterations (stop criterion of reconstruction process)" )
-	parser.add_option("--abs", 			type="float"         ,	default=0.1  ,	help="Minimum average absolute change of voxels' values (stop criterion of reconstruction process)" )
+	parser.add_option("--iter", 		type="int"         ,	default=40   ,	help="maximum number of iterations (stop criterion of reconstruction process)" )
+	parser.add_option("--abs", 			type="float"         ,	default=0.1  ,	help="minimum average absolute change of voxels' values (stop criterion of reconstruction process)" )
 	parser.add_option("--var" , 		action="store_true",	default=False,	help="stack on input consists of variances")
 	parser.add_option("--sym" , 		type="string"      ,	default="c1" ,	help="symmetry" )
 	parser.add_option("--MPI" , 		action="store_true",	default=False,	help="use MPI version - works only with stack of variance as an input")
@@ -84,19 +84,19 @@ def main():
 
 	
 	if not options.var:
-		#uuu = 0
-		from utilities	import group_proj_by_phitheta, get_params_proj, params_3D_2D, set_params_proj, set_params2D
-		from statistics	import avgvar, avgvar_CTF
-		from morphology	import threshold
+		from utilities		import group_proj_by_phitheta, get_params_proj, params_3D_2D, set_params_proj, set_params2D
+		from statistics		import avgvar, avgvar_CTF
+		from morphology		import threshold
 		stack = prj_stack
 		prj_stack = []
 		proj_angles = []
+		aveList = []
 		nima = EMUtil.get_image_count(stack)
 		tab = EMUtil.get_all_attributes(stack, 'xform.projection')
 		for i in xrange(nima):
 			t = tab[i].get_params('spider')
 			proj_angles.append([t['phi'], t['theta'], t['psi']])
-			##if (i < 30): print t['psi']  ##
+			## if (i < 30): print t['phi'], t['theta'], t['psi']  ##
 		proj_list, angles_list = group_proj_by_phitheta(proj_angles, options.sym, options.img_per_grp, options.diff_pct)
 		del proj_angles
 		print "Number of groups = ", len(proj_list)
@@ -112,12 +112,15 @@ def main():
 			set_params_proj(var, [angles_list[i][0], angles_list[i][1], 0.0, 0.0, 0.0])
 			if ( i < len(proj_list)-1):
 				prj_stack.append(var)
-				#ave.write_image("ave2DstackNN.hdf",i)
-				#var.write_image("var2DstackNN.hdf",i) 
-			#else:
-				#ave.write_image("leftoverNN.hdf", uuu)
-				#uuu += 1
-		del ave, var, imgdata, angles_list, proj_list, stack, phi, theta, psi, s2x, s2y, alpha, sx, sy, mirror
+				set_params_proj(ave, [angles_list[i][0], angles_list[i][1], 0.0, 0.0, 0.0])
+				aveList.append(ave)
+				ave.write_image("ave2Dstack.hdf",i)
+				var.write_image("var2Dstack.hdf",i) 
+			else:
+				ave.write_image("leftover.hdf")
+		ave3D = recons3d_em(aveList, options.iter, options.abs, False, options.sym)
+		ave3D.write_image("ave3D.hdf")
+		del ave, var, imgdata, angles_list, proj_list, stack, phi, theta, psi, s2x, s2y, alpha, sx, sy, mirror, ave3D, aveList
 		#exit()
 				
 	if options.MPI:
