@@ -43,6 +43,7 @@ from emselector import EMSelectorDialog	# This will be replaced by something mor
 import re, os, glob
 from embrowser import EMBrowserWidget
 from empmtabwidgets import *
+import EMAN2fsc
 
 class PMComboBox(QtGui.QComboBox):
 	""" Reimplment the QComboBox to remove wheel widget activation """
@@ -899,8 +900,8 @@ class PMFSCTableWidget(PMTableBase):
 			
 			# get res estimates, I jacked this from David
 			keys = db.keys()
-			reo = self.get_e2refine_even_odd_results_list(keys)
-			eo = self.get_e2eotest_results_list(keys)
+			reo = EMAN2fsc.get_e2refine_even_odd_results_list(keys)
+			eo = EMAN2fsc.get_e2eotest_results_list(keys)
 			
 			if len(reo) > 0:
 				# get the latest one, this will be the last as guaranteed by sorted results
@@ -917,33 +918,7 @@ class PMFSCTableWidget(PMTableBase):
 				resolution = self.find_first_point_5_crossing(xaxis,yaxis)
 				qwi_eotest = QtGui.QTableWidgetItem(str(resolution))
 				qwi_eotest.setTextAlignment(QtCore.Qt.AlignCenter)
-				self.tablewidget.setItem(i, 4, qwi_eotest)
-
-				
-	# I jacked this from David		
-	def get_e2refine_even_odd_results_list(self, keys):
-		'''
-		Extract the names from the keys that match the e2resolution.py output naming convention
-		(keys is a list of keys in the convergence.results dictionary, in a refinement directory)
-		'''
-		solns = []
-		for k in keys:
-			if k[0:13] == "conv_even_odd":
-				solns.append(k)
-		solns.sort()
-		return solns
-	
-	def get_e2eotest_results_list(self, keys):
-		'''
-		Extract the names from the keys that match the e2eotest.py output naming convention
-		(keys is a list of keys in the convergence.results dictionary, in a refinement directory)
-		'''
-		solns = []
-		for k in keys:
-			if len(k) > 7 and k[0:8] == "even_odd":
-				solns.append(k)
-		solns.sort()
-		return solns
+				self.tablewidget.setItem(i, 4, qwi_eotest)		
 		
 	def find_first_point_5_crossing(self,xaxis,yaxis):
 		'''
