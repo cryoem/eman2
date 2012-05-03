@@ -87,6 +87,7 @@ def main():
 		from utilities		import group_proj_by_phitheta, get_params_proj, params_3D_2D, set_params_proj, set_params2D
 		from statistics		import avgvar, avgvar_CTF
 		from morphology		import threshold
+		from reconstruction	import recons3d_4nn, recons3d_4nn_ctf
 		stack = prj_stack
 		prj_stack = []
 		proj_angles = []
@@ -98,7 +99,6 @@ def main():
 			proj_angles.append([t['phi'], t['theta'], t['psi']])
 			## if (i < 30): print t['phi'], t['theta'], t['psi']  ##
 		proj_list, angles_list = group_proj_by_phitheta(proj_angles, options.sym, options.img_per_grp, options.diff_pct)
-		print len(proj_list), len(angles_list)
 		del proj_angles
 		print "Number of groups = ", len(proj_list)
 		for i in xrange(len(proj_list)):
@@ -121,7 +121,8 @@ def main():
 				var.write_image("var2Dstack.hdf",i)
 			else:
 				ave.write_image("leftover.hdf")
-		ave3D = recons3d_em(aveList, options.iter, options.abs, False, options.sym)
+		if (options.CTF):	ave3D = recons3d_4nn_ctf(aveList, range(len(proj_list)-1), snr = 1.0, sign = 1, symmetry = options.sym, verbose = 0, npad = 4, xysize = -1, zsize = -1)
+		else:	ave3D = recons3d_4nn(aveList, range(len(proj_list)-1), symmetry = options.sym, npad = 4, xysize = -1, zsize = -1)
 		ave3D.write_image("ave3D.hdf")
 		del ave, var, imgdata, angles_list, proj_list, stack, phi, theta, psi, s2x, s2y, alpha, sx, sy, mirror, ave3D, aveList
 		#exit()
