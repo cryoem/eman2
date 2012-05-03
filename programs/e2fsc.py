@@ -129,6 +129,7 @@ and this program should be regarded as experimental.
 	resvol["apix_x"]=apix*lnx/overlap
 	resvol["apix_y"]=apix*lnx/overlap
 	resvol["apix_z"]=apix*lnx/overlap
+	resvol143=resvol.copy()
 	
 	fys=[]
 	funny=[]		# list of funny curves
@@ -168,6 +169,7 @@ and this program should be regarded as experimental.
 				fx=array(fsc[1:len(fsc)/3])/apix
 				fy=fsc[len(fsc)/3+1:len(fsc)*2/3]
 				
+				# 0.5 resolution
 				for i,xx in enumerate(fx[:-1]):
 					if fy[i]>0.5 and fy[i+1]<0.5 : break
 				res=(0.5-fy[i])*(fx[i+1]-fx[i])/(fy[i+1]-fy[i])+fx[i]
@@ -180,8 +182,22 @@ and this program should be regarded as experimental.
 				
 				fys.append(fy)
 				if isnan(fy[0]): print "NAN"
-	
+
+				# 0.143 resolution
+				for i,xx in enumerate(fx[:-1]):
+					if fy[i]>0.143 and fy[i+1]<0.143 : break
+				res143=(0.143-fy[i])*(fx[i+1]-fx[i])/(fy[i+1]-fy[i])+fx[i]
+				if res143<0 : res143=0.0
+				if res143>fx[-1]: 
+					res143=fx[-1]		# This makes the resolution at Nyquist, which is not a good thing
+#				if res>0 and res<0.04 : funny.append(len(fys))
+				resvol143[ox,oy,oz]=res143
+				
+				fys.append(fy)
+
+
 	resvol.write_image("resvol.hdf")
+	resvol143.write_image("resvol143.hdf")
 	
 	out=file("fsc.curves.txt","w")
 	out.write("# This file contains individual FSC curves from e2fsc.py. Only a fraction of computed curves are included.\n")

@@ -39,6 +39,8 @@ def main():
         progname = os.path.basename(sys.argv[0])
         usage = """e2simmxptclqual.py [options] <simmx file in> 
 	Computes the average simmx score vector for each orientation, normalizes it, then uses it to compute per-particle projections which are hopefully representative of particle quality.
+
+	To use this as a filter and generate a new output set with only specified particles, --inimgs, --thresh and --outset must all be specified.
         
 """
 
@@ -48,12 +50,14 @@ def main():
 #        parser.add_argument("--refine",type=str,default=None,help="Automatically get parameters for a refine directory")
         #parser.add_argument("--output",type=str,help="Output text file",default="zvssim.txt")
         #parser.add_argument("--refs",type=str,help="Reference images from the similarity matrix (projections)",default=None)
-        #parser.add_argument("--inimgs",type=str,help="Input image file",default=None)
+        parser.add_argument("--inset",type=str,help="Input image set",default=None)
         #parser.add_argument("--outimgs",type=str,help="Output image file",default="imgs.hdf")
         #parser.add_argument("--filtimgs",type=str,help="A python expression using Z[n], Q[n] and N[n] for selecting specific particles to output. n is the 0 indexed number of the input file",default=None)
         #parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--refs",type=str,help="Reference images from the similarity matrix (projections)",default=None)
 	parser.add_argument("--sym",type=str,help="Symmetry operator to include in best orientation distance search",default="c1")
+	parser.add_argument("--thresh",type=float,help="Maximum deviation angle for inclusion in good set (degrees)",default=-1.0)
+	parser.add_argument("--outset",type=str,help="Name of set for good ouput particles",default=None)
         
 	(options, args) = parser.parse_args()
 
@@ -101,10 +105,17 @@ def main():
 
 	syms=Symmetries.get(options.sym).get_syms()
 
+	if options.outset!=None: 
+		dbout=db_open_dict("bdb:sets#%s"%options.outset)
+	if options.inset!=None:
+		if options.inset.lower()[:4]!="bdb:" : dbin=db_open_dict("bdb:sets#%s"%options.inset)
+		else : dbin=db_open_dict(options.inset)
+	
 	print "Particle quality file"
 	# Output particle quality file
 	out=file("simqual.txt","w")
 	t=time.time()
+	outn=0
 	for y in xrange(ny):
 		if time.time()-t>.2 :
 			print " %d\r"%y,
@@ -137,6 +148,11 @@ def main():
 			angdiff=min(angs)
 			out.write("\t%1.3g"%angdiff)
 		out.write("\n")
+
+		if angdiff<options.thresh :
+			im=dbin.get_header(y)
+			dbout[outn]=im
+			outn+=1
 	
 	print "Output particle quality file simqual.txt"
 
