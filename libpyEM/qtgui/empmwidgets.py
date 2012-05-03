@@ -816,7 +816,7 @@ class PMFSCTableWidget(PMTableBase):
 		
 		#now update table
 		self.setValue(default)
-		if resize: self.resize(500,300)
+		if resize: self.resize(550,300)
 		
 	def getValue(self):
 		value = self.tablewidget.item(self.tablewidget.currentRow(),0)

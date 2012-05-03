@@ -654,6 +654,7 @@ class EMProjectManager(QtGui.QMainWindow):
 			self._set_GUI(item.getProgram(), item.getMode())
 			self.updateProject()
 		elif item.getTable():
+			# Only one table is allowed to be displayed at a time
 			if self.table: self.table.close()
 			self.table = eval(item.getTable())
 			self.table.show()
@@ -1815,6 +1816,9 @@ class PMGUIWidget(QtGui.QScrollArea):
 		#process 
 		for option in options:
 			ov = option.split('=', 1)
+			if not self.widgethash.has_key(ov[0][3:]):
+				self.pm().statusbar.setMessage("Rubbish!!! Option '%s' not found."%ov[0][3:],"color:red;")
+				continue
 			if len(ov) == 2:
 				self._setValueJournaling(self.widgethash[ov[0][3:]], ov[1])
 				#self.widgethash[ov[0][2:]].setValue(ov[1])	
@@ -1836,7 +1840,8 @@ class PMGUIWidget(QtGui.QScrollArea):
 			if widget.getPositional():
 				posargs.append(widget)
 				continue
-			# otherwise set to none	
+			
+			# otherwise set to none	because the user deleted it
 			self._setValueJournaling(widget, '')
 		
 		#loop through pos args. The stadard is that ither there is one arg per widget or one widget and many args
