@@ -38,6 +38,7 @@ from math import *
 import os
 import sys
 import traceback
+import e2refine
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -136,6 +137,8 @@ def main():
 	except: pass
 	try: os.mkdir(options.path+"_odd")
 	except: pass
+	try: s.mkdir(options.path) # we at least need a place to put refinement results
+	except: pass
 
 	# create the even and odd data sets
 	# note that this is very inefficient if not using bdb: as a source 
@@ -189,7 +192,10 @@ def main():
 	print "### Computing resolution curve as fsc_gold_%s.txt"%options.path[-2:]
 	launch_childprocess("e2proc3d.py bdb:%s_even#threed_filt_%02d fsc_gold_%s.txt --calcfsc=bdb:%s_odd#threed_filt_%02d"%(options.path,options.iter-1,options.path[-2:],options.path,options.iter-1))
 	
-
+	# compute convergence results for even odd test
+	for i in xrange(1,options.iter):
+		db_compute_fsc(EMData("bdb:%s_even#threed_filt_%02d"%(options.path,i)), EMData("bdb:%s_odd#threed_filt_%02d"%(options.path,i)), e2refine.get_apix_used(options), options.path, "conv_even_odd_%02d"%i)
+	
 	E2end(logid)
 
 if __name__ == "__main__":

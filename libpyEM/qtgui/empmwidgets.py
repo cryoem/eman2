@@ -804,8 +804,8 @@ class PMFSCTableWidget(PMTableBase):
 		PMTableBase.__init__(self, name, mode, postional, initdefault)
 		
 		# table stuff
-		self.tablewidget.setColumnCount(4)
-		self.tablewidget.setHorizontalHeaderLabels(["Ref Dir", "Iter", "e2eotest", "e2resolution"])
+		self.tablewidget.setColumnCount(5)
+		self.tablewidget.setHorizontalHeaderLabels(["Ref Dir", "Iter", "EO Iter", "EO Res", "e2eotest"])
 		self.tablewidget.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)	# select rows
 		self.tablewidget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)	# single selection
 		
@@ -843,10 +843,10 @@ class PMFSCTableWidget(PMTableBase):
 		# load FSC options
 		fsccmd = "e2plotFSC.py %s --plotconvergence"%self.tablewidget.item(row, 0).text()
 		if self.tablewidget.item(row, 2):
+			fsccmd+=" --ploteoconvergence"
+		if self.tablewidget.item(row, 4):
 			fsccmd+=" --plote2eotest"
-		if self.tablewidget.item(row, 3):
-			fsccmd+=" --plote2res"
-			
+		
 		# Now load the FSC curves
 		msg = "Loading FSC curves, please wait..."
 		print msg
@@ -870,50 +870,65 @@ class PMFSCTableWidget(PMTableBase):
 			if not db_check_dict(db_name):
 				continue
 			db = db_open_dict(db_name,ro=True)
-			# count iterations
-			count = 0
+			
+			# count iterations, refinement
+			rcount = 0
 			while True:
-				if not db.has_key("%02d_%02d_fsc"%(count,count+1)):
-					break;
-				count+=1
-			if count > 0:
-				qwi_iterations = QtGui.QTableWidgetItem(str(count))
+				if not db.has_key("%02d_%02d_fsc"%(rcount,rcount+1)):
+					break
+				rcount+=1
+			# count even odd refinements
+			ccount = 0
+			while True:
+				if not db.has_key("conv_even_odd_%02d"%(ccount+1)):
+					break
+				ccount+=1
+			# no need for further processing
+			if rcount ==0 and ccount == 0:
+				continue
+			# load refinement results
+			if rcount > 0:
+				qwi_iterations = QtGui.QTableWidgetItem(str(rcount))
 				qwi_iterations.setTextAlignment(QtCore.Qt.AlignCenter)
 				self.tablewidget.setItem(i, 1, qwi_iterations)
-			else:
-				# no more processing required
-				continue
+			# load even odd refinement results
+			if ccount > 0:
+				qwi_iterations = QtGui.QTableWidgetItem(str(ccount))
+				qwi_iterations.setTextAlignment(QtCore.Qt.AlignCenter)
+				self.tablewidget.setItem(i, 2, qwi_iterations)
 			
 			# get res estimates, I jacked this from David
 			keys = db.keys()
-			res = self.get_e2resolution_results_list(keys)
+			reo = self.get_e2refine_even_odd_results_list(keys)
 			eo = self.get_e2eotest_results_list(keys)
 			
-			if len(eo) > 0:
-				last_res = eo[-1]
-				[xaxis,yaxis] = db[last_res]
-				resolution = self.find_first_point_5_crossing(xaxis,yaxis)
-				qwi_eotest = QtGui.QTableWidgetItem(str(resolution))
-				qwi_eotest.setTextAlignment(QtCore.Qt.AlignCenter)
-				self.tablewidget.setItem(i, 2, qwi_eotest)
-			if len(res) > 0:
+			if len(reo) > 0:
 				# get the latest one, this will be the last as guaranteed by sorted results
-				last_res = res[-1]
+				last_res = reo[-1]
 				[xaxis,yaxis] = db[last_res]
 				resolution = self.find_first_point_5_crossing(xaxis,yaxis)		
 				qwi_res = QtGui.QTableWidgetItem(str(resolution))
 				qwi_res.setTextAlignment(QtCore.Qt.AlignCenter)
 				self.tablewidget.setItem(i, 3, qwi_res)
 				
+			if len(eo) > 0:
+				last_res = eo[-1]
+				[xaxis,yaxis] = db[last_res]
+				resolution = self.find_first_point_5_crossing(xaxis,yaxis)
+				qwi_eotest = QtGui.QTableWidgetItem(str(resolution))
+				qwi_eotest.setTextAlignment(QtCore.Qt.AlignCenter)
+				self.tablewidget.setItem(i, 4, qwi_eotest)
+
+				
 	# I jacked this from David		
-	def get_e2resolution_results_list(self, keys):
+	def get_e2refine_even_odd_results_list(self, keys):
 		'''
 		Extract the names from the keys that match the e2resolution.py output naming convention
 		(keys is a list of keys in the convergence.results dictionary, in a refinement directory)
 		'''
 		solns = []
 		for k in keys:
-			if len(k) > 6 and k[-7:] == "res_fsc":
+			if k[0:13] == "conv_even_odd":
 				solns.append(k)
 		solns.sort()
 		return solns

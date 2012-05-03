@@ -247,12 +247,12 @@ def main():
 				if ( launch_childprocess(com) != 0 ):
 					print "Failed to execute %s" %com
 					exit_refine(1,logid)
-				
-		fsc = a.calc_fourier_shell_correlation(b)
-		third = len(fsc)/3
-		xaxis = fsc[0:third]
-		plot = fsc[third:2*third]
-		error = fsc[2*third:]
+							
+		#fsc = a.calc_fourier_shell_correlation(b)
+		#third = len(fsc)/3
+		#xaxis = fsc[0:third]
+		#plot = fsc[third:2*third]
+		#error = fsc[2*third:]
 		
 		if i == 0:
 			s = "init_00"
@@ -263,13 +263,14 @@ def main():
 			if len(s2) == 1: s2 = "0" + s2
 			s = s1 + "_" + s2
 		
-		convergence_db_name = "bdb:"+options.path+"#convergence.results"
-		db = db_open_dict(convergence_db_name)
+		db_compute_fsc(a, b, apix, options.path, s+"_fsc") 
+		#convergence_db_name = "bdb:"+options.path+"#convergence.results"
+		#db = db_open_dict(convergence_db_name)
 		
-		tmpaxis = [x/apix for x in xaxis]
-		db[s+"_fsc"] = [tmpaxis,plot]
+		#tmpaxis = [x/apix for x in xaxis]
+		#db[s+"_fsc"] = [tmpaxis,plot]
 		#db["error_"+s+"_fsc"] = [xaxis,error] #we're not plotting the errors
-		db_close_dict(convergence_db_name)
+		#db_close_dict(convergence_db_name)
 		
 		E2progress(logid,progress/total_procs)
 	E2end(logid)
@@ -287,13 +288,7 @@ def get_apix_used(options):
 		img=EMData(options.input,0)
 		try: apix=img["ctf"].apix
 		except: apix=img["apix_x"]
-	#elif db_check_dict("bdb:project"):
-		## this is a temporary workaround to get things working in the workflow
-		#db2 = db_open_dict("bdb:project")
-		#apix = db2.get("global.apix",dfl=1)
-		#db_close_dict("bdb:project")
-		#if apix == 0: apix = 1
-	#else apix is 1 !
+
 	return apix
 		
 def number_options_file(i,file,options,attr):

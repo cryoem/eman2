@@ -130,7 +130,7 @@ class EMImageWidget(object):
 			isosurface = EMIsosurface(data, transform=Transform())
 			widget.insertNewNode(os.path.basename(filename), data, parentnode=widget)
 			widget.insertNewNode("Iso", isosurface, parentnode=data)
-			widget.setCurrentSelection(isosurface)
+			widget.setCurrentSelection(isosurface)	# Set isosurface to display upon inspector loading
 			return widget
 
 		elif isinstance(data,list) and isinstance(data[0],EMData):
@@ -230,7 +230,7 @@ class EMWidgetFromFile(object):
 				isosurface = EMIsosurface(data, transform=Transform())
 				widget.insertNewNode(os.path.basename(filename), data, parentnode=widget)
 				widget.insertNewNode("Iso", isosurface, parentnode=data)
-				widget.setCurrentSelection(isosurface)
+				widget.setCurrentSelection(isosurface)	# Set isosurface to display upon inspector loading
 				return widget
 				
 			elif data == None or isinstance(data,list):

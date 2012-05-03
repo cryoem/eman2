@@ -708,6 +708,21 @@ def plot(data,data2=None,data3=None,show=1,size=(800,600),path="plot.png"):
 			try: os.system("display "+path)
 			except: pass
 
+def db_compute_fsc(a, b, apix, pathname, dbname):
+	fsc = a.calc_fourier_shell_correlation(b)
+	third = len(fsc)/3
+	xaxis = fsc[0:third]
+	plot = fsc[third:2*third]
+	error = fsc[2*third:]
+		
+	convergence_db_name = "bdb:"+pathname+"#convergence.results"
+	db = db_open_dict(convergence_db_name)
+	
+	tmpaxis = [x/apix for x in xaxis]
+	db[dbname] = [tmpaxis,plot]
+	#db["error_"+s+"_fsc"] = [xaxis,error] #we're not plotting the errors
+	db_close_dict(convergence_db_name)
+	
 def kill_process(pid):
 	'''
 	platform independent way of killing a process 

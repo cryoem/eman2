@@ -84,7 +84,7 @@ def main():
 		dialog.show()
 		#QtCore.QObject.connect(dialog,QtCore.SIGNAL("ok"),on_browser_done)
 		#QtCore.QObject.connect(dialog,QtCore.SIGNAL("cancel"),on_browser_cancel)
-		app.show()
+		dialog.show()
 	elif options.plot:
 		plot(args,app)
 	elif options.plot3:

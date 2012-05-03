@@ -229,8 +229,8 @@ class EMFileType(object):
 		target.insertNewNode(self.path.split("/")[-1].split("#")[-1],data,parentnode=target)
 		iso = emdataitem3d.EMIsosurface(data)
 		target.insertNewNode('Isosurface', iso, parentnode=data)
-		target.initialViewportDims(data.getData().get_xsize())
-		target.setCurrentSelection(iso)
+		target.initialViewportDims(data.getData().get_xsize())	# Scale viewport to object size
+		target.setCurrentSelection(iso)				# Set isosurface to display upon inspector loading
 		target.updateSG()	# this is needed because this might just be an addition to the SG rather than initialization
 		brws.notbusy()
 		target.show()
@@ -250,8 +250,8 @@ class EMFileType(object):
 		target.insertNewNode(self.path.split("/")[-1].split("#")[-1],data)
 		iso = emdataitem3d.EMIsosurface(data)
 		target.insertNewNode('Isosurface', iso, parentnode=data)
-		target.initialViewportDims(data.getData().get_xsize())
-		target.setCurrentSelection(iso)
+		target.initialViewportDims(data.getData().get_xsize())	# Scale viewport to object size
+		target.setCurrentSelection(iso)				# Set isosurface to display upon inspector loading
 		brws.notbusy()
 		
 		target.show()

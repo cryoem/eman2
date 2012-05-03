@@ -48,6 +48,7 @@ def main():
 	parser.add_argument("--plote2res",action="store_false",help="Plot curves from e2resoltion",default=True,guitype='boolbox',row=2,col=0,rowspan=1,colspan=1)
 	parser.add_argument("--plote2eotest",action="store_false",help="Plot curves from e2eotest",default=True,guitype='boolbox',row=2,col=1,rowspan=1,colspan=1)
 	parser.add_argument("--plotconvergence",action="store_false",help="Plot curves from refinement convergence",default=True,guitype='boolbox',row=3,col=0,rowspan=1,colspan=1)
+	parser.add_argument("--ploteoconvergence",action="store_false",help="Plot curves from refine_even_odd convergence",default=True,guitype='boolbox',row=3,col=1,rowspan=1,colspan=1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	(options, args) = parser.parse_args()
@@ -68,10 +69,12 @@ def main():
 	res = []
 	eo = []
 	conv = []
+	eoconv = []
 	# Method to the maddness, I use not here because I need to only plot when open is not presented AND I need to keep presentation on in the GUI
 	if not options.plote2res: res= get_e2resolution_results_list(keys)
 	if not options.plote2eotest: eo = get_e2eotest_results_list(keys)
 	if not options.plotconvergence: conv = get_convergence_results_list(keys)
+	if not options.ploteoconvergence: eoconv = get_e2refine_even_odd_results_list(keys)
 	
 	# Plot FSC curves
 	i = 0
@@ -79,7 +82,13 @@ def main():
 	for k in conv:
 		module.set_data(db[k],k,color=(i%max),linewidth=1) # there are only a ceratin number of  colors
 		i += 1
-			
+		
+	# plot e2refine_even_odd curves
+	for k in eoconv:
+		module.set_data(db[k],k,color=(i%max),linewidth=2) # there are only a ceratin number of  colors
+		i += 1
+		
+	#plot eo test and res
 	for plot in [eo,res]:
 		for k in plot:
 			module.set_data(db[k],k,color=(i%max),linewidth=3) # there are only a ceratin number of  colors
@@ -88,6 +97,19 @@ def main():
 	module.show()
 	app.exec_()
 
+def  get_e2refine_even_odd_results_list(keys):
+		'''
+		Extract the names from the keys that match the e2resolution.py output naming convention
+		(keys is a list of keys in the convergence.results dictionary, in a refinement directory)
+		'''
+		solns = []
+		for k in keys:
+			if k[0:13] == "conv_even_odd":
+				solns.append(k)
+		if not solns: print "Rubbish!!!, no e2refine_even_odd FSC curves found!"
+		solns.sort()
+		return solns
+		
 def get_e2resolution_results_list(keys):
 		'''
 		Extract the names from the keys that match the e2resolution.py output naming convention
