@@ -85,6 +85,7 @@ def main():
 
 	if not options.var:
 		from utilities		import group_proj_by_phitheta, get_params_proj, params_3D_2D, set_params_proj, set_params2D
+		from utilities		import compose_transform2
 		from statistics		import avgvar, avgvar_CTF
 		from morphology		import threshold
 		from reconstruction	import recons3d_4nn, recons3d_4nn_ctf
@@ -101,26 +102,25 @@ def main():
 		proj_list, angles_list = group_proj_by_phitheta(proj_angles, options.sym, options.img_per_grp, options.diff_pct)
 		del proj_angles
 		print "Number of groups = ", len(proj_list)
-		for i in xrange(len(proj_list)):
+		for i in xrange(len(proj_list)-1): # last group contains leftovers, ignored
 			imgdata = EMData.read_images(stack, proj_list[i])
 			for j in xrange(len(proj_list[i])):
 				phi, theta, psi, s2x, s2y = get_params_proj(imgdata[j])
 				alpha, sx, sy, mirror = params_3D_2D(phi, theta, psi, s2x, s2y)
+				if mirror == 0:  alpha, sx, sy, scale = compose_transform2( alpha, sx, sy, 1.0, angles_list[i][0]-phi, 0.0, 0.0, 1.0)
+				else:            alpha, sx, sy, scale = compose_transform2( alpha, sx, sy, 1.0, 180-(angles_list[i][0]-phi), 0.0, 0.0, 1.0)
 				set_params2D(imgdata[j], [alpha, sx, sy, mirror, 1.0])
 			if (options.CTF):	ave, var = avgvar_CTF(imgdata,"a")
 			else:	ave, var = avgvar(imgdata,"a")
 			var = threshold(var)
 			set_params_proj(var, [angles_list[i][0], angles_list[i][1], 0.0, 0.0, 0.0])
 			var.set_attr("imgindex",proj_list[i])
-			if ( i < len(proj_list)-1):
-				prj_stack.append(var)
-				set_params_proj(ave, [angles_list[i][0], angles_list[i][1], 0.0, 0.0, 0.0])
-				ave.set_attr("imgindex",proj_list[i])
-				aveList.append(ave)
-				ave.write_image("ave2Dstack.hdf",i)
-				var.write_image("var2Dstack.hdf",i)
-			else:
-				ave.write_image("leftover.hdf")
+			prj_stack.append(var)
+			set_params_proj(ave, [angles_list[i][0], angles_list[i][1], 0.0, 0.0, 0.0])
+			ave.set_attr("imgindex",proj_list[i])
+			aveList.append(ave)
+			ave.write_image("ave2Dstack.hdf",i)
+			var.write_image("var2Dstack.hdf",i)
 		if (options.CTF):	ave3D = recons3d_4nn_ctf(aveList, range(len(proj_list)-1), snr = 1.0, sign = 1, symmetry = options.sym, verbose = 0, npad = 4, xysize = -1, zsize = -1)
 		else:	ave3D = recons3d_4nn(aveList, range(len(proj_list)-1), symmetry = options.sym, npad = 4, xysize = -1, zsize = -1)
 		ave3D.write_image("ave3D.hdf")
