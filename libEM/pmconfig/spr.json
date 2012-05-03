@@ -204,6 +204,7 @@
       },
       {
         "ICON": "single_image_3d",
+	"MODE":"align",
         "WIZARD":"/lib/pmconfig/symsearch.json",
         "PROGRAM": "e2symsearch.py", 
         "NAME": "Align to Symmetry Axis",
