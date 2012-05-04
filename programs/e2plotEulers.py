@@ -49,8 +49,8 @@ def main():
 	parser.add_argument("--iteration",type=int,help="Refinement iteration to plot", default=0, guitype='intbox', row=2, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--pointwidth",type=float,help="The relative scale of the points plotted. The absoule size is dpenedent on particle count", default=1.0, guitype='floatbox', row=2, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--sym", dest="sym", default="c1", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct.", guitype='symbox', row=3, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--noyticklabels",action="store_true",help="Disable Y tick labels", guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, default=False)
-	parser.add_argument("--noxticklabels",action="store_true",help="Disable X tick labels", guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, default=False)
+	parser.add_argument("--norticklabels",action="store_true",help="Disable radius tick labels", guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, default=False)
+	parser.add_argument("--nothetaticklabels",action="store_true",help="Disable Theta tick labels", guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 		
 	(options, args) = parser.parse_args()
@@ -91,8 +91,8 @@ def main():
 	# Make the QT app and plot
 	app = EMApp()
 	plot = EMPolarPlot2DWidget()
-	plot.set_yticklabels(not options.noyticklabels)
-	plot.set_xticklabels(not options.noxticklabels)
+	plot.set_yticklabels(not options.norticklabels)
+	plot.set_xticklabels(not options.nothetaticklabels)
 	plot.setAxisParms(False,False)
 	plot.set_data((theta,r),linewidth=50,radcut=180)
 	plot.setPointSizes(size)
