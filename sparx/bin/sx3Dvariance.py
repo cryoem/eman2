@@ -48,14 +48,17 @@ def main():
 	usage = progname + " prj_stack volume --iter --var --sym=symmetry --MPI"
 	parser = OptionParser(usage, version=SPARXVERSION)
 
-	parser.add_option("--iter", 		type="int"         ,	default=40   ,	help="maximum number of iterations (stop criterion of reconstruction process)" )
-	parser.add_option("--abs", 			type="float"         ,	default=0.1  ,	help="minimum average absolute change of voxels' values (stop criterion of reconstruction process)" )
-	parser.add_option("--var" , 		action="store_true",	default=False,	help="stack on input consists of variances")
-	parser.add_option("--sym" , 		type="string"      ,	default="c1" ,	help="symmetry" )
-	parser.add_option("--MPI" , 		action="store_true",	default=False,	help="use MPI version - works only with stack of variance as an input")
-	parser.add_option("--img_per_grp",	type="int"         ,	default=100  ,	help="images per group")
-	parser.add_option("--diff_pct", 	type="float"       ,	default=0.1  ,	help="percentage of ...")		
-	parser.add_option("--CTF",			action="store_true",	default=False,	help="use CFT correction")
+	parser.add_option("--iter", 		type="int"         ,	default=40   ,				help="maximum number of iterations (stop criterion of reconstruction process)" )
+	parser.add_option("--abs", 			type="float"       ,	default=0.1  ,				help="minimum average absolute change of voxels' values (stop criterion of reconstruction process)" )
+	parser.add_option("--var" , 		action="store_true",	default=False,				help="stack on input consists of variances")
+	parser.add_option("--sym" , 		type="string"      ,	default="c1" ,				help="symmetry" )
+	parser.add_option("--MPI" , 		action="store_true",	default=False,				help="use MPI version - works only with stack of variance as an input")
+	parser.add_option("--img_per_grp",	type="int"         ,	default=100  ,				help="images per group")
+	parser.add_option("--diff_pct", 	type="float"       ,	default=0.1  ,				help="percentage of ...")		
+	parser.add_option("--CTF",			action="store_true",	default=False,				help="use CFT correction")
+	parser.add_option("--ave2D",		type="string"	   ,	default=False,				help="write to the disk a stack of 2D averages")
+	parser.add_option("--var2D",		type="string"	   ,	default=False,				help="write to the disk a stack of 2D variances")
+	parser.add_option("--ave3D",		type="string"	   ,	default=False,				help="write to the disk reconstructed 3D average")
 
 	(options,args) = parser.parse_args(arglist[1:])
 
@@ -82,7 +85,6 @@ def main():
 
 	global_def.BATCH = True
 
-
 	if not options.var:
 		from utilities		import group_proj_by_phitheta, get_params_proj, params_3D_2D, set_params_proj, set_params2D
 		from utilities		import compose_transform2
@@ -98,11 +100,10 @@ def main():
 		for i in xrange(nima):
 			t = tab[i].get_params('spider')
 			proj_angles.append([t['phi'], t['theta'], t['psi']])
-			## if (i < 30): print t['phi'], t['theta'], t['psi']  ##
 		proj_list, angles_list = group_proj_by_phitheta(proj_angles, options.sym, options.img_per_grp, options.diff_pct)
 		del proj_angles
 		print "Number of groups = ", len(proj_list)
-		for i in xrange(len(proj_list)-1): # last group contains leftovers, ignored
+		for i in xrange(len(proj_list)): 
 			imgdata = EMData.read_images(stack, proj_list[i])
 			for j in xrange(len(proj_list[i])):
 				phi, theta, psi, s2x, s2y = get_params_proj(imgdata[j])
@@ -119,11 +120,11 @@ def main():
 			set_params_proj(ave, [angles_list[i][0], angles_list[i][1], 0.0, 0.0, 0.0])
 			ave.set_attr("imgindex",proj_list[i])
 			aveList.append(ave)
-			ave.write_image("ave2Dstack.hdf",i)
-			var.write_image("var2Dstack.hdf",i)
+			if (options.ave2D):	ave.write_image(options.ave2D,i)
+			if (options.var2D): var.write_image(options.var2D,i)
 		if (options.CTF):	ave3D = recons3d_4nn_ctf(aveList, range(len(proj_list)-1), snr = 1.0, sign = 1, symmetry = options.sym, verbose = 0, npad = 4, xysize = -1, zsize = -1)
 		else:	ave3D = recons3d_4nn(aveList, range(len(proj_list)-1), symmetry = options.sym, npad = 4, xysize = -1, zsize = -1)
-		ave3D.write_image("ave3D.hdf")
+		if (options.ave3D): ave3D.write_image(options.ave3D)
 		del ave, var, imgdata, angles_list, proj_list, stack, phi, theta, psi, s2x, s2y, alpha, sx, sy, mirror, ave3D, aveList
 		#exit()
 
