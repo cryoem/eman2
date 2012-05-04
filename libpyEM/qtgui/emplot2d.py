@@ -101,6 +101,7 @@ class EMPlot2DWidget(EMGLWidget):
 		fmt.setDoubleBuffer(True);
 		EMGLWidget.__init__(self, winid=winid)
 		self.setFormat(fmt)
+		self.resize(640,480)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"plot.png"))
 		
 		self.axes={}
@@ -109,8 +110,7 @@ class EMPlot2DWidget(EMGLWidget):
 		self.needupd=1
 		self.plotimg=None
 		self.shapes={}
-		self.xlimits=None
-		self.ylimits=None
+		self.limits=None
 		self.climits=None
 		self.slimits=None
 		self.rmousedrag=None
@@ -123,8 +123,6 @@ class EMPlot2DWidget(EMGLWidget):
 		
 		self.tex_name = 0
 		self.main_display_list = 0
-		
-		self.resize(640,480)
 	
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
@@ -235,7 +233,6 @@ class EMPlot2DWidget(EMGLWidget):
 				self.data.pop(key)
 				self.visibility.pop(key)
 		
-		self.autoscale()
 		
 		if self.inspector: self.inspector.datachange()
 		
@@ -307,7 +304,6 @@ class EMPlot2DWidget(EMGLWidget):
 					
 				self.set_data(data,remove_directories_from_name(filename))
 			except:
-				traceback.print_exc()
 				print "couldn't read",filename
 				return False
 				
@@ -411,7 +407,6 @@ class EMPlot2DWidget(EMGLWidget):
 		
 		try: 
 			if self.data==None or len(self.data)==0 : return
-			if self.xlimits==None or self.ylimits==None or self.climits==None or self.slimits==None : return
 		except:
 			return
 		
@@ -442,9 +437,10 @@ class EMPlot2DWidget(EMGLWidget):
 		GL.glPopMatrix()
 		
 		if render: 
+	
 			fig=Figure((self.width()/72.0,self.height()/72.0),dpi=72.0)
-			ax=fig.add_axes((.08,.08,.9,.9),autoscale_on=False,xlim=self.xlimits,ylim=self.ylimits,xscale=self.axisparms[2],yscale=self.axisparms[3])
-			#else : ax=fig.add_axes((.08,.08,.9,.9),autoscale_on=True,xscale=self.axisparms[2],yscale=self.axisparms[3])
+			if self.limits :ax=fig.add_axes((.08,.08,.9,.9),autoscale_on=False,xlim=self.limits[0],ylim=self.limits[1],xscale=self.axisparms[2],yscale=self.axisparms[3])
+			else : ax=fig.add_axes((.08,.08,.9,.9),autoscale_on=True,xscale=self.axisparms[2],yscale=self.axisparms[3])
 			if self.axisparms[0] and len(self.axisparms[0])>0 : ax.set_xlabel(self.axisparms[0],size="xx-large")
 			if self.axisparms[1] and len(self.axisparms[1])>0 : ax.set_ylabel(self.axisparms[1],size="xx-large")
 			canvas=FigureCanvasAgg(fig)
@@ -464,13 +460,15 @@ class EMPlot2DWidget(EMGLWidget):
 					if j[2]==-2: col=colortypes[self.pparm[i][0]]
 					elif j[2]==-1: col=arange(len(self.data[i][0]))*255.0/len(self.data[i][0])
 					else: 
-						climits=self.climits
+						if self.climits==None : climits=(min(self.data[i][self.axes[i][2]]),max(self.data[i][self.axes[i][2]]))
+						else : climits=self.climits
 						col=(self.data[i][self.axes[i][2]]-climits[0])/(climits[1]-climits[0])*255.0
 						
 					if j[3]==-2: sz=self.pparm[i][6]
 					elif j[3]==-1: sz=arange(len(self.data[i][0]))*30.0/len(self.data[i][0])
 					else:
-						slimits=self.slimits
+						if self.slimits==None : slimits=(min(self.data[i][self.axes[i][3]]),max(self.data[i][self.axes[i][3]]))
+						else : slimits=self.slimits
 						sz=(self.data[i][self.axes[i][3]]-slimits[0])*30.0/(slimits[1]-slimits[0])
 
 					ax.scatter(x,y,sz,col,mark,linewidths=.5*(self.pparm[i][6]>4))
@@ -597,7 +595,6 @@ class EMPlot2DWidget(EMGLWidget):
 	def setAxes(self,key,xa,ya=-1,za=-2,sa=-2):
 		if self.axes[key]==(xa,ya,za,sa) : return
 		self.axes[key]=(xa,ya,za,sa)
-		self.autoscale(True)
 		self.needupd=1
 		self.updateGL()
 		
@@ -742,9 +739,8 @@ lc is the cursor selection point in plot coords"""
 
 	def rescale(self,x0,x1,y0,y1,quiet=False):
 		"adjusts the value range for the x/y axes"
-		self.xlimits=(x0,x1)
-		self.ylimits=(y0,y1)
-		if x0>=x1 or y0>=y1 : self.autoscale()
+		if x0>=x1 or y0>=y1 : self.limits=None
+		else: self.limits=((x0,x1),(y0,y1))
 		self.needupd=1
 		self.del_shapes()  # also triggers an update
 		self.updateGL()
@@ -752,7 +748,7 @@ lc is the cursor selection point in plot coords"""
 
 	def recolor(self,c0,c1,quiet=False):
 		"adjusts the value range for the marker color display"
-		if c0>=c1 : self.autoscale()
+		if c0>=c1 : self.climits=None
 		else: self.climits=(c0,c1)
 		self.needupd=1
 		self.del_shapes()  # also triggers an update
@@ -761,55 +757,11 @@ lc is the cursor selection point in plot coords"""
 
 	def resize(self,s0,s1,quiet=False):
 		"Adjusts the value range for the marker size display"
-		if s0>=s1 : self.autoscale()
+		if s0>=s1 : self.slimits=None
 		else: self.slimits=(s0,s1)
 		self.needupd=1
 		self.del_shapes()  # also triggers an update
 		self.updateGL()
-		if self.inspector: self.inspector.update()
-
-	def autoscale(self,force=False):
-		"This autoscales, but only axes which currently have invalid settings"
-		if force or self.xlimits==None or self.xlimits[1]<=self.xlimits[0] :
-			xmin=1.0e38
-			xmax=-1.0e38
-			for k in self.axes.keys():
-				xmin=min(xmin,min(self.data[k][self.axes[k][0]]))
-				xmax=max(xmax,max(self.data[k][self.axes[k][0]]))
-				
-			if self.axisparms[2]!="linear" : self.xlimits=(xmin/1.1,xmax*1.1)
-			else:
-				margin=(xmax-xmin)*0.025
-				self.xlimits=(xmin-margin,xmax+margin)
-			
-		if force or self.ylimits==None or self.ylimits[1]<=self.ylimits[0] :
-			ymin=1.0e38
-			ymax=-1.0e38
-			for k in self.axes.keys():
-				ymin=min(ymin,min(self.data[k][self.axes[k][1]]))
-				ymax=max(ymax,max(self.data[k][self.axes[k][1]]))
-				
-			if self.axisparms[3]!="linear" : self.ylimits=(ymin/1.1,ymax*1.1)
-			else:
-				margin=(ymax-ymin)*0.025
-				self.ylimits=(ymin-margin,ymax+margin)
-
-		if force or self.climits==None or self.climits[1]<=self.climits[0] :
-			cmin=1.0e38
-			cmax=-1.0e38
-			for k in self.axes.keys():
-				cmin=min(cmin,min(self.data[k][self.axes[k][2]]))
-				cmax=max(cmax,max(self.data[k][self.axes[k][2]]))
-			self.climits=(cmin,cmax)
-
-		if force or self.slimits==None or self.slimits[1]<=self.slimits[0] :
-			smin=1.0e38
-			smax=-1.0e38
-			for k in self.axes.keys():
-				smin=min(smin,min(self.data[k][self.axes[k][3]]))
-				smax=max(smax,max(self.data[k][self.axes[k][3]]))
-			self.slimits=(smin,smax)
-			
 		if self.inspector: self.inspector.update()
 
 	def wheelEvent(self, event):
@@ -837,7 +789,15 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 		self.setDataLabelsColor('#00ff00')
 		self.scattercolor = None	# IF set to none default colors are used
 		self.pointsizes = None		# Defalt is to use consta sizes. Overrides constant size
-                
+		self.yticklabels = True		# Default is to draw Y tick labels
+		self.xticklabels = True		# Default is to draw X tick labels
+        
+        def set_yticklabels(self, boolvalue):
+		self.yticklabels = boolvalue
+		
+        def set_xticklabels(self, boolvalue):
+		self.xticklabels = boolvalue	
+		
 	def mousePressEvent(self, event):
 		#Save a snapshot of the scene
 		self.clusterorigin_rad = None
@@ -858,9 +818,6 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 			self.valradius = 1.0
 			self.add_shape("Circle",EMShape(("scrcircle",1,0,0,self.firstcx,self.height()-self.firstcy,self.valradius,2.0)))
 			self.updateGL()
-		else:
-			# Find best image
-			self.find_image(self._computeTheta(x,y), self._computeRadius(x,y))
 	
 	def _computeRadius(self, x, y):
 		"""Return the radius of two x and y points """
@@ -872,17 +829,6 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 	def _computeTheta(self, x, y):
 		""" Compute the theta angle for a given x and y"""
 		return  -math.atan2(y,x)
-		
-	def find_image(self, theta, rad):
-		data = self.data["data"]
-		bestdist = float("infinity")
-		for i in xrange(len(data[0])):
-			dist = data[1][i]**2 + rad**2 - 2*data[1][i]*rad*math.cos(data[0][i] - theta)
-			if dist < bestdist:
-				bestdist = dist
-				bestpoint = self.datap[i]
-		#print "This point correpsonds to image: %s"%bestpoint
-		self.emit(QtCore.SIGNAL("pointIdenity(int)"), bestpoint)
 				
 	def mouseMoveEvent(self, event):
 		if event.buttons()&Qt.LeftButton:
@@ -1018,6 +964,8 @@ class EMPolarPlot2DWidget(EMPlot2DWidget):
 			else : ax=fig.add_axes((.1,.1,.8,.8),autoscale_on=True,polar=True,xscale=self.axisparms[2],yscale=self.axisparms[3])
 			if self.axisparms[0] and len(self.axisparms[0])>0 : ax.set_xlabel(self.axisparms[0],size="xx-large")
 			if self.axisparms[1] and len(self.axisparms[1])>0 : ax.set_ylabel(self.axisparms[1],size="xx-large")
+			if not self.yticklabels: ax.set_yticklabels([])
+			if not self.xticklabels: ax.set_xticklabels([])
 			canvas=FigureCanvasAgg(fig)
 			
 			for i in self.axes.keys():
@@ -1461,50 +1409,34 @@ class EMPlot2DInspector(QtGui.QWidget):
 
 		vbl0.addLayout(hbl)
 		
-		hbl2a=QtGui.QHBoxLayout()
-		
-		self.wl1=QtGui.QLabel("Min")
-		self.wl1.setAlignment(Qt.AlignHCenter)
-		hbl2a.addWidget(self.wl1)
-		self.wl2=QtGui.QLabel("Max")
-		self.wl2.setAlignment(Qt.AlignHCenter)
-		hbl2a.addWidget(self.wl2)
-		self.wl3=QtGui.QLabel("Min")
-		self.wl3.setAlignment(Qt.AlignHCenter)
-		hbl2a.addWidget(self.wl3)
-		self.wl4=QtGui.QLabel("Max")
-		self.wl4.setAlignment(Qt.AlignHCenter)
-		hbl2a.addWidget(self.wl4)
-		vbl0.addLayout(hbl2a)
-		
 		hbl2=QtGui.QHBoxLayout()
 		
 		#hbl2.addWidget(QtGui.QLabel("X:",self))
 		#self.wxmin=QtGui.QLineEdit(self)
-		self.wxmin=ValBox(label="X:")
+		self.wxmin=ValBox(label="Xmin:")
 		hbl2.addWidget(self.wxmin)
 		#hbl2.addWidget(QtGui.QLabel("-",self))
 		#self.wxmax=QtGui.QLineEdit(self)
-		self.wxmax=ValBox(label="  ")
+		self.wxmax=ValBox(label="Xmax:")
 		hbl2.addWidget(self.wxmax)
 		
-		self.wymin=ValBox(label="Y:")
+		self.wymin=ValBox(label="Ymin:")
 		hbl2.addWidget(self.wymin)
-		self.wymax=ValBox(label="  ")
+		self.wymax=ValBox(label="Ymax:")
 		hbl2.addWidget(self.wymax)
 
 		vbl0.addLayout(hbl2)
 
 		hbl3=QtGui.QHBoxLayout()
 		
-		self.wcmin=ValBox(label="C:")
+		self.wcmin=ValBox(label="Cmin:")
 		hbl3.addWidget(self.wcmin)
-		self.wcmax=ValBox(label="  ")
+		self.wcmax=ValBox(label="Cmax:")
 		hbl3.addWidget(self.wcmax)
 		
-		self.wsmin=ValBox(label="S:")
+		self.wsmin=ValBox(label="Smin:")
 		hbl3.addWidget(self.wsmin)
-		self.wsmax=ValBox(label="  ")
+		self.wsmax=ValBox(label="Smax:")
 		hbl3.addWidget(self.wsmax)
 		vbl0.addLayout(hbl3)
 
@@ -1525,7 +1457,6 @@ class EMPlot2DInspector(QtGui.QWidget):
 #		self.setLayout(vbl0)
 
 		self.quiet=0
-		self.busy=0
 		self.classwin=None
 		
 		QtCore.QObject.connect(self.slidex, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
@@ -1548,14 +1479,14 @@ class EMPlot2DInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.ylabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
 		QtCore.QObject.connect(self.saveb,QtCore.SIGNAL("clicked()"),self.savePlot)
 		QtCore.QObject.connect(self.concatb,QtCore.SIGNAL("clicked()"),self.saveConcatPlot)
-		QtCore.QObject.connect(self.wxmin,QtCore.SIGNAL("valueChanged"),self.newLimits)
-		QtCore.QObject.connect(self.wxmax,QtCore.SIGNAL("valueChanged"),self.newLimits)
-		QtCore.QObject.connect(self.wymin,QtCore.SIGNAL("valueChanged"),self.newLimits)
-		QtCore.QObject.connect(self.wymax,QtCore.SIGNAL("valueChanged"),self.newLimits)
-		QtCore.QObject.connect(self.wcmin,QtCore.SIGNAL("valueChanged"),self.newCLimits)
-		QtCore.QObject.connect(self.wcmax,QtCore.SIGNAL("valueChanged"),self.newCLimits)
-		QtCore.QObject.connect(self.wsmin,QtCore.SIGNAL("valueChanged"),self.newSLimits)
-		QtCore.QObject.connect(self.wsmax,QtCore.SIGNAL("valueChanged"),self.newSLimits)
+		QtCore.QObject.connect(self.wxmin,QtCore.SIGNAL("returnPressed()"),self.newLimits)
+		QtCore.QObject.connect(self.wxmax,QtCore.SIGNAL("returnPressed()"),self.newLimits)
+		QtCore.QObject.connect(self.wymin,QtCore.SIGNAL("returnPressed()"),self.newLimits)
+		QtCore.QObject.connect(self.wymax,QtCore.SIGNAL("returnPressed()"),self.newLimits)
+		QtCore.QObject.connect(self.wcmin,QtCore.SIGNAL("returnPressed()"),self.newCLimits)
+		QtCore.QObject.connect(self.wcmax,QtCore.SIGNAL("returnPressed()"),self.newCLimits)
+		QtCore.QObject.connect(self.wsmin,QtCore.SIGNAL("returnPressed()"),self.newSLimits)
+		QtCore.QObject.connect(self.wsmax,QtCore.SIGNAL("returnPressed()"),self.newSLimits)
 		QtCore.QObject.connect(self.wrescale,QtCore.SIGNAL("clicked()"),self.autoScale)
 		
 		self.newSet(0)
@@ -1691,7 +1622,6 @@ class EMPlot2DInspector(QtGui.QWidget):
 		if self.ylogtog.isChecked() : yl="log"
 		else : yl="linear"
 		self.target().setAxisParms(self.xlabel.text(),self.ylabel.text(),xl,yl)
-		self.target().autoscale(True)
 		self.target().setPlotParms(str(self.setlist.currentItem().text()),self.color.currentIndex(),self.lintog.isChecked(),
 				self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),self.symsel.currentIndex(),self.symsize.value())
 
@@ -1762,10 +1692,10 @@ class EMPlot2DInspector(QtGui.QWidget):
 	def update(self):
 		self.busy=1
 		try:
-			self.wxmin.setValue(self.target().xlimits[0])
-			self.wxmax.setValue(self.target().xlimits[1])
-			self.wymin.setValue(self.target().ylimits[0])
-			self.wymax.setValue(self.target().ylimits[1])
+			self.wxmin.setValue(self.target().limits[0][0])		
+			self.wxmax.setValue(self.target().limits[0][1])		
+			self.wymin.setValue(self.target().limits[1][0])		
+			self.wymax.setValue(self.target().limits[1][1])		
 		except:
 			self.wxmin.setValue(None)
 			self.wxmax.setValue(None)
@@ -1782,15 +1712,13 @@ class EMPlot2DInspector(QtGui.QWidget):
 
 		try:
 			self.wsmin.setValue(self.target().slimits[0])
-			self.wsmax.setValue(self.target().slimits[1])
+			self.wsmax.setValue(self.target().sdlimits[1])
 		except:
 			self.wsmin.setValue(None)
 			self.wsmax.setValue(None)
 		
 	def autoScale(self):
-		self.target().autoscale(True)
 		self.target().rescale(0,0,0,0)
-#		self.update()
 	
 	def datachange(self):
 		

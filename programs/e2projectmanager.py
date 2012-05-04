@@ -838,7 +838,7 @@ class EMProjectManager(QtGui.QMainWindow):
 				
 	def updateProject(self):
 		"""
-		Update the Project. Make sure buttons, DB, title and icon observe the state of the PM
+		Update the Project. Make sure buttons, DB, title and icon observe the PM state
 		"""
 		# Set Name, use db value, otherwise whatever the default is set to 
 		self.pn_project_name = self.pm_projects_db.get("project_name", dfl=self.pn_project_name_default)
@@ -960,7 +960,7 @@ class EMWizard(QtGui.QWizard):
 		
 class EMWizardPage(QtGui.QWizardPage):
 	"""
-	Make a page for the wizard, uses input validation. If input is not valid send a message to the PM status bar
+	Make a page for the wizard, uses input validation. If input is not valid send a message to the PM status bar and you will not be allowed to continue to the next wizard page
 	"""
 	def __init__(self, page, e2gui):
 		QtGui.QWizardPage.__init__(self)
@@ -1637,6 +1637,7 @@ class PMProgramWidget(QtGui.QTabWidget):
 			return None
 		
 	def _on_tabchange(self, idx):
+		""" Implements cross talk between GUI and Comnmand widgets """
 		if idx == 1:
 			errormsg = self.guiwidget.getErrorMessage()
 			if errormsg:
@@ -1666,6 +1667,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 		self.pm = weakref.ref(pm)
 		self.mode = mode
 		
+		# loop through options (a list of dicts) and generate the GUI widget
 		gridbox = QtGui.QGridLayout()
 		for option in options:
 			"""create the correct widget type"""
@@ -1861,7 +1863,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 			
 			
 	def getCommand(self):
-		# Loop and check for errors and set the DB
+		""" Loop and check for errors and set the DB. If errors are encountered, then Retrun None """
 		self.errorstate = False
 		args = self.program
 		for widget in self.widgetlist:
