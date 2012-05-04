@@ -33,6 +33,7 @@
 from EMAN2 import *
 from EMAN2fsc import *
 from emplot2d import EMPlot2DWidget,colortypes
+from empmwidgets import PMFSCTableWidget
 from emapplication import EMApp
 
 def main():
@@ -56,46 +57,54 @@ def main():
 
 	# Make the QT app
 	app = EMApp()
-	module = EMPlot2DWidget()
 	
-	# Get data from data base
-	db_name = "bdb:"+args[0]+"#convergence.results"
-	if not db_check_dict(db_name):
-		print "Rubbish!!!, no FSC curves found!!!"
-		return
-	db = db_open_dict(db_name,ro=True)
-	keys = db.keys()
-	
-	# Load desired FSC curves
-	res = []
-	eo = []
-	conv = []
-	eoconv = []
-	# Method to the maddness, I use not here because I need to only plot when open is not presented AND I need to keep presentation on in the GUI
-	if not options.plote2res: res= get_e2resolution_results_list(keys)
-	if not options.plote2eotest: eo = get_e2eotest_results_list(keys)
-	if not options.plotconvergence: conv = get_convergence_results_list(keys)
-	if not options.ploteoconvergence: eoconv = get_e2refine_even_odd_results_list(keys)
-	
-	# Plot FSC curves
-	i = 0
-	max = len(colortypes)		
-	for k in conv:
-		module.set_data(db[k],k,color=(i%max),linewidth=1) # there are only a ceratin number of  colors
-		i += 1
+	# display table
+	if len(args) == 0:
+		fsctable = PMFSCTableWidget("fsc","",None,resize=True)
+		fsctable.show()
 		
-	# plot e2refine_even_odd curves
-	for k in eoconv:
-		module.set_data(db[k],k,color=(i%max),linewidth=2) # there are only a ceratin number of  colors
-		i += 1
-		
-	#plot eo test and res
-	for plot in [eo,res]:
-		for k in plot:
-			module.set_data(db[k],k,color=(i%max),linewidth=3) # there are only a ceratin number of  colors
+	# or let user choose FSC plotting pars 
+	else:
+		module = EMPlot2DWidget()
+	
+		# Get data from data base
+		db_name = "bdb:"+args[0]+"#convergence.results"
+		if not db_check_dict(db_name):
+			print "Rubbish!!!, no FSC curves found!!!"
+			return
+		db = db_open_dict(db_name,ro=True)
+		keys = db.keys()
+	
+		# Load desired FSC curves
+		res = []
+		eo = []
+		conv = []
+		eoconv = []
+		# Method to the maddness, I use not here because I need to only plot when open is not presented AND I need to keep presentation on in the GUI
+		if not options.plote2res: res= get_e2resolution_results_list(keys)
+		if not options.plote2eotest: eo = get_e2eotest_results_list(keys)
+		if not options.plotconvergence: conv = get_convergence_results_list(keys)
+		if not options.ploteoconvergence: eoconv = get_e2refine_even_odd_results_list(keys)
+	
+		# Plot FSC curves
+		i = 0
+		max = len(colortypes)		
+		for k in conv:
+			module.set_data(db[k],k,color=(i%max),linewidth=1) # there are only a ceratin number of  colors
 			i += 1
+		
+		# plot e2refine_even_odd curves
+		for k in eoconv:
+			module.set_data(db[k],k,color=(i%max),linewidth=2) # there are only a ceratin number of  colors
+			i += 1
+		
+		#plot eo test and res
+		for plot in [eo,res]:
+			for k in plot:
+				module.set_data(db[k],k,color=(i%max),linewidth=3) # there are only a ceratin number of  colors
+				i += 1
 					
-	module.show()
+		module.show()
 	app.exec_()
 	
 if __name__ == "__main__":

@@ -871,19 +871,17 @@ class PMFSCTableWidget(PMTableBase):
 			if not db_check_dict(db_name):
 				continue
 			db = db_open_dict(db_name,ro=True)
+			keys = db.keys()
 			
 			# count iterations, refinement
 			rcount = 0
-			while True:
-				if not db.has_key("%02d_%02d_fsc"%(rcount,rcount+1)):
-					break
-				rcount+=1
-			# count even odd refinements
 			ccount = 0
-			while True:
-				if not db.has_key("conv_even_odd_%02d"%(ccount+1)):
-					break
-				ccount+=1
+			for key in keys:
+				if ("%02d_%02d_fsc"%(rcount,rcount+1)) == key:
+					rcount+=1
+				if ("conv_even_odd_%02d"%(ccount+1)) == key :
+					ccount+=1
+					
 			# no need for further processing
 			if rcount ==0 and ccount == 0:
 				continue
@@ -899,7 +897,6 @@ class PMFSCTableWidget(PMTableBase):
 				self.tablewidget.setItem(i, 2, qwi_iterations)
 			
 			# get res estimates, I jacked this from David
-			keys = db.keys()
 			reo = EMAN2fsc.get_e2refine_even_odd_results_list(keys)
 			eo = EMAN2fsc.get_e2eotest_results_list(keys)
 			
