@@ -804,6 +804,10 @@ def constant( ref_data ):
 	return  tavg, cs
 
 
+def ref_empty( refdata ):
+	pass
+
+
 # rewrote factory dict to provide a flexible interface for providing user functions dynamically.
 #    factory is a class that checks how it's called. static labels are rerouted to the original
 #    functions, new are are routed to build_user_function (provided below), to load from file
@@ -833,7 +837,8 @@ class factory_class:
 		self.contents["ref_aliB_cone"]      = ref_aliB_cone
 		self.contents["ref_7grp"]           = ref_7grp
 		self.contents["steady"]             = steady
-		self.contents["constant"]           = constant	 		
+		self.contents["constant"]           = constant	 
+		self.contents["ref_empty"]          = ref_empty		
 
 	def __getitem__(self,index):
 
