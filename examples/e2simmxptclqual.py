@@ -40,7 +40,9 @@ def main():
         usage = """e2simmxptclqual.py [options] <simmx file in> 
 	Computes the average simmx score vector for each orientation, normalizes it, then uses it to compute per-particle projections which are hopefully representative of particle quality.
 
-	To use this as a filter and generate a new output set with only specified particles, --inimgs, --thresh and --outset must all be specified.
+	output is ptcl#,Npeak,cccpeak,peakval,Nbestvec,cccbestvec,bestvecval
+
+	To use this as a filter and generate a new output set with only specified particles, --inimgs, --maxang, --minccc, --minvec and --outset must all be specified.
         
 """
 
@@ -53,10 +55,12 @@ def main():
         parser.add_argument("--inset",type=str,help="Input image set",default=None)
         #parser.add_argument("--outimgs",type=str,help="Output image file",default="imgs.hdf")
         #parser.add_argument("--filtimgs",type=str,help="A python expression using Z[n], Q[n] and N[n] for selecting specific particles to output. n is the 0 indexed number of the input file",default=None)
-        #parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+        parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--refs",type=str,help="Reference images from the similarity matrix (projections)",default=None)
 	parser.add_argument("--sym",type=str,help="Symmetry operator to include in best orientation distance search",default="c1")
-	parser.add_argument("--thresh",type=float,help="Maximum deviation angle for inclusion in good set (degrees)",default=-1.0)
+	parser.add_argument("--maxang",type=float,help="Maximum deviation angle for inclusion in good set (degrees)",default=-1.0)
+	parser.add_argument("--minccc",type=float,help="Maximum ccc",default=10.0)
+	parser.add_argument("--minvec",type=float,help="Maximum deviation angle for inclusion in good set (degrees)",default=10.0)
 	parser.add_argument("--outset",type=str,help="Name of set for good ouput particles",default=None)
         
 	(options, args) = parser.parse_args()
@@ -79,6 +83,7 @@ def main():
 			ORTs.append(ort)
 		print nx," projections read"
 
+	logid=E2init(sys.argv,options.ppid)
 
 	print "Computing average unit vectors"
 	# compile vector sums for each class
@@ -118,7 +123,7 @@ def main():
 	outn=0
 	for y in xrange(ny):
 		if time.time()-t>.2 :
-			print " %d\r"%y,
+			print " %d\t %d\r"%(y,outn),
 			sys.stdout.flush()
 			t=time.time()
 
@@ -128,12 +133,12 @@ def main():
 		for r in xrange(nx):
 			try:
 				c=-im.cmp("ccc",bvecs[r])
-				if c>best[0]: best=[c,0,r]
+				if c>best[0]: best=[c,im[r]-im["minimum"],r]
 			except: pass
-		best[1]=-im.cmp("dot",bvecs[best[2]])
+#		best[1]=-im.cmp("dot",bvecs[best[2]])
 		
 		Nq=-im.cmp("ccc",bvecs[N])
-		Nqd=-im.cmp("dot",bvecs[N])
+		Nqd=-im["minimum"]
 
 		out.write("%d\t%d\t%1.4f\t%1.4g\t%d\t%1.4f\t%1.4g"%(y,N,Nq,Nqd,best[2],best[0],best[1]))
 	
@@ -149,12 +154,13 @@ def main():
 			out.write("\t%1.3g"%angdiff)
 		out.write("\n")
 
-		if angdiff<options.thresh :
+		if angdiff<options.maxang and options.minccc<Nq and options.minvec<best[0]:
 			im=dbin.get_header(y)
 			dbout[outn]=im
 			outn+=1
 	
 	print "Output particle quality file simqual.txt"
+	E2end(logid)
 
 if __name__ == "__main__":  main()
 
