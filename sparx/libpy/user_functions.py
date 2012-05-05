@@ -804,7 +804,7 @@ def constant( ref_data ):
 	return  tavg, cs
 
 
-def ref_empty( refdata ):
+def ref_empty( ref_data ):
 	vol = ref_data[2]
 	cs  = [0.0]*3
 	return  volf, cs
