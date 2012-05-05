@@ -805,7 +805,9 @@ def constant( ref_data ):
 
 
 def ref_empty( refdata ):
-	pass
+	vol = ref_data[2]
+	cs  = [0.0]*3
+	return  volf, cs
 
 
 # rewrote factory dict to provide a flexible interface for providing user functions dynamically.
