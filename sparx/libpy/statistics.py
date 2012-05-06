@@ -8794,7 +8794,7 @@ def pearson(X, Y):
 
 def table_stat(X):
 	"""
-	  Basic statistics of numbers stored in a list
+	  Basic statistics of numbers stored in a list: average, variance, minimum, maximum
 	"""
 	av = X[0]
 	va = X[0]*X[0]
