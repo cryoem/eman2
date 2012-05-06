@@ -1041,6 +1041,8 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 		method - "general" Rademacher's Gaussian, "exact" MvHs triangle
 		const  - for "general" 1.0e4 works well, for "exact" it should be the diameter of the object
 		symmetry - point group symmetry of the object
+
+		WARNING - symmetries not implemented!!!!!!!!!
 	""" 
 	import types
 
@@ -1070,6 +1072,11 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 			PHI, THETA, PSI, s2x, s2y = get_params_proj( B )
 		else:  
 			PHI, THETA, PSI, s2x, s2y = get_params_proj( stack_name[list_proj[i]] )
+		#  This part is really silly.  The angles are converted from the rotation matrix
+		#  in the transform object only to be converted back into the matrix in CANG.
+		#  If this method was to be used, the matrix should be taken directly from the transform object.
+		#  However, convention would have to be checked carefully, i.e., is the transform
+		#  object identical to what CANG produces?
 		DMnSS = Util.CANG(PHI, THETA, PSI)
 		dm[(count*9) :(count+1)*9] = DMnSS["DM"]
 		ss[(count*6) :(count+1)*6] = DMnSS["SS"]
@@ -1083,7 +1090,7 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 		#for j in xrange(nsym):  # symmetries were bit out on the list
 		for j in xrange(1):
 			DM = dm[((j*nsym+count)*9) :(j*nsym+count+1)*9]
-			count += 1   # It has to be there as conting in WTF and WTM start from 1!
+			count += 1   # It has to be there as counting in WTF and WTM start from 1!
 			if   method=="general":    Util.WTF(B, ss, const, count)
 			elif method=="exact"  :    Util.WTM(B, ss, const, count)
 
