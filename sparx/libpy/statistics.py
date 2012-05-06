@@ -1319,10 +1319,10 @@ def ssnr2d(data, mask = None, mode=""):
 		Util.add_img(sumsq, fim)
 		Util.add_img2(var, fim)
 	Util.mul_img(sumsq, sumsq.conjg())
+	# convert to real images
 	var   = Util.pack_complex_to_real(var)
 	sumsq = Util.pack_complex_to_real(sumsq)
 	var = (var - sumsq/n)/(n-1)
-	# convert to real images
 	ssnr   = sumsq/var/n - 1.0
 	from fundamentals import rot_avg_table
 	rvar = rot_avg_table(var)
