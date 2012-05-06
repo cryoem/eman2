@@ -206,7 +206,11 @@ def main():
 		E2progress(logid,progress/total_procs)
 			
 		try : previous_model = options.filtered_model
-		except : previous_model = options.model
+		except : 
+			if options.startiter>0:
+				number_options_file(options.startiter-1,"threed_filt",options,"model")
+				print "startiter: overriding model with ",options.model
+			previous_model = options.model
 		number_options_file(i,"threed",options,"model")
 		new_model = options.model
 		if ( launch_childprocess(get_make3d_cmd(options)) != 0 ):
