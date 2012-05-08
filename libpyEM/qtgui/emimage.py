@@ -112,7 +112,7 @@ class EMImageWidget(object):
 			widget = EMPlot2DWidget(application=app)
 			widget.set_data(data,remove_directories_from_name(filename),replace)
 			return widget	
-		if force_2d or (isinstance(data,EMData) and data.get_zsize()==1):
+		elif force_2d or (isinstance(data,EMData) and data.get_zsize()==1):
 			from emimage2d import EMImage2DWidget
 			if old:
 				if isinstance(old,EMImage2DWidget) :
@@ -125,12 +125,10 @@ class EMImageWidget(object):
 			if isinstance(old,EMScene3D): widget = old
 			else: widget = EMScene3D()
 			data = EMDataItem3D(data, transform=Transform())
-			widget.initialViewportDims(data.getData().get_xsize())
 			#data.setSelectedItem(True)
 			isosurface = EMIsosurface(data, transform=Transform())
 			widget.insertNewNode(os.path.basename(filename), data, parentnode=widget)
 			widget.insertNewNode("Iso", isosurface, parentnode=data)
-			widget.setCurrentSelection(isosurface)	# Set isosurface to display upon inspector loading
 			return widget
 
 		elif isinstance(data,list) and isinstance(data[0],EMData):
@@ -144,7 +142,7 @@ class EMImageWidget(object):
 			return widget
 		elif isinstance(data,list):
 			from emplot3d import EMPlot3DWidget
-			if len(data) > 2:
+			if (isinstance(data[0],list) or isinstance(data[0],tuple)) and len(data) > 2:
 				if old:
 					if isinstance(old,EMPlot3DWidget) :
 						old.set_data(remove_directories_from_name(filename),data,replace)
@@ -225,12 +223,10 @@ class EMWidgetFromFile(object):
 				if isinstance(old,EMScene3D): widget = old
 				else: widget = EMScene3D()
 				data = EMDataItem3D(data, transform=Transform())
-				widget.initialViewportDims(data.getData().get_xsize())
 				#data.setSelectedItem(True)
 				isosurface = EMIsosurface(data, transform=Transform())
 				widget.insertNewNode(os.path.basename(filename), data, parentnode=widget)
 				widget.insertNewNode("Iso", isosurface, parentnode=data)
-				widget.setCurrentSelection(isosurface)	# Set isosurface to display upon inspector loading
 				return widget
 				
 			elif data == None or isinstance(data,list):
