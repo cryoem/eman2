@@ -55,6 +55,10 @@ import weakref
 MAG_INCREMENT_FACTOR = 1.1
 
 
+class EMPlot3DModelNew(QtGui.QWidget):
+	def __init__(self, gl_widget=None):
+		QtGui.QWidget.__init__(self)
+	
 class EMPlot3DModel(EM3DModel, EMLightsDrawer):
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)

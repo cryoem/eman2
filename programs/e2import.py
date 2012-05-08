@@ -45,7 +45,7 @@ def main():
 	parser.add_header(name="filterheader", help='Options below this label are specific to e2import', title="### e2import options ###", row=1, col=0, rowspan=1, colspan=2, mode='coords,parts,tomos')
 	parser.add_argument("--import_particles",action="store_true",help="Import particles",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='parts[True]')
 	parser.add_argument("--import_tomos",action="store_true",help="Import tomograms",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='tomos[True]')
-	parser.add_argument("--importaction",help="import particles",default='move',guitype='combobox',choicelist='["move","copy","link"]',row=2,col=1,rowspan=1,colspan=1, mode="parts")
+	parser.add_argument("--importaction",help="import particles",default='move',guitype='combobox',choicelist='["move","copy","link"]',row=2,col=1,rowspan=1,colspan=1, mode='tomos')
 	parser.add_argument("--import_boxes",action="store_true",help="Import boxes",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='coords[True]')
 	parser.add_argument("--extension",type=str,help="Extension of the micrographs that the boxes match", default='dm3', guitype='strbox',row=3, col=0, rowspan=1, colspan=1, mode='coords')
 	parser.add_argument("--box_type",help="Type of boxes to import, normally boxes, but for tilted data use tiltedboxes, and untiltedboxes for the tilted  particle partner",default=None,guitype='combobox',choicelist='["boxes","tiltedboxes","untiltedboxes"]',row=2,col=1,rowspan=1,colspan=1, mode="coords['boxes']")
@@ -100,27 +100,18 @@ def main():
 			
 		VanHeelHash = {}
 		for filename in args:
-			if options.importaction == "move":
-				# If this is an IMAGIC file move both hed and img files regardless of whether or not they are both listed
-				if filename[-4:].upper() == ".HED" or filename[-4:].upper() == ".IMG":
-					if not VanHeelHash.has_key(filename[:-4]):
-						globed = glob.glob(filename[:-4]+'*')
-						vhglobed = filter(lambda x: x[-4:].upper() == ".HED" or x[-4:].upper() == ".IMG", globed)
-						for vh in vhglobed:
-							if options.importaction == "move":
-								os.rename(vh,os.path.join(partsdir,os.path.basename(vh)))
-							if options.importaction == "copy":
-								shutil.copy(vh,partsdir)
-							if options.importaction == "link":
-								os.symlink(vh,os.path.join(partsdir,os.path.basename(vh)))
-						VanHeelHash[filename[:-4]] = 1
-				else:
-					if options.importaction == "move":
-						os.rename(filename,os.path.join(partsdir,os.path.basename(filename)))	
-					if options.importaction == "copy":
-						shutil.copy(filename,partsdir)
-					if options.importaction == "link":
-						os.symlink(filename,os.path.join(partsdir,os.path.basename(filename)))
+			# If this is an IMAGIC file process both hed and img files regardless of whether or not they are both listed
+			if filename[-4:].upper() == ".HED" or filename[-4:].upper() == ".IMG":
+				if not VanHeelHash.has_key(filename[:-4]):
+					globed = glob.glob(filename[:-4]+'*')
+					vhglobed = filter(lambda x: x[-4:].upper() == ".HED", globed)
+					for vh in vhglobed:
+						launch_childprocess("e2proc2d.py %s bdb:particles#%s"%(vh,os.path.splitext(os.path.basename(vh))[0]))
+						print ("e2proc2d.py %s bdb:particles#%s"%(vh,os.path.splitext(os.path.basename(vh))[0]))
+					VanHeelHash[filename[:-4]] = 1
+			else:
+				launch_childprocess("e2proc2d.py %s bdb:particles#%s"%(filename,os.path.splitext(os.path.basename(filename))[0]))
+				print ("e2proc2d.py %s bdb:particles#%s"%(filename,os.path.splitext(os.path.basename(filename))[0]))
 				
 	# Import tomograms
 	if options.import_tomos:
