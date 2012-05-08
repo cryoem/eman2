@@ -57,6 +57,7 @@ def main():
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--sep", type=int, help="The number of classes a particle can contribute towards (default is 1)", default=1)
+	parser.add_argument("--simvec",action="store_true",help="Instead of using the class for the peak value, uses the pattern of similarities for each orientation for assignment.",default=False)
 	parser.add_argument("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
@@ -107,6 +108,25 @@ def main():
 		clsmx=(EMData(options.sep,nptcl),EMData(options.sep,nptcl),EMData(options.sep,nptcl),EMData(options.sep,nptcl),EMData(options.sep,nptcl),EMData(options.sep,nptcl),EMData(options.sep,nptcl))		
 	else :
 		clsmx=(EMData(options.sep,nptcl),EMData(options.sep,nptcl))
+
+	# preparation for the simvec option. This finds all particles with a peak value corresponding to a particular orientation
+	# and then computes an average similarity vector (across all references).
+	if options.simvec:
+		print "Computing average unit vectors"
+		
+		bvecs={}
+		# compile vector sums for each class
+		for y in range(nptcl):
+			im=EMData(args[0],0,False,Region(0,y,nref,1))
+			N=im.calc_min_index()
+			im.process_inplace("normalize")
+			try: bvecs[N].add(im)
+			except: bvecs[N]=im
+
+		# normalize all vector sums
+		for im in bvecs.values(): 
+			im.process_inplace("normalize.unitlen")
+
 		
 	#hmmm, this code is pretty silly, but harmless, I suppose...
 	simmx=(EMData(),EMData(),EMData(),EMData(),EMData(),EMData())
