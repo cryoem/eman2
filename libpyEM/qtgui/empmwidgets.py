@@ -808,6 +808,8 @@ class PMFSCTableWidget(PMTableBase):
 		# table stuff
 		self.tablewidget.setColumnCount(4)
 		self.tablewidget.setHorizontalHeaderLabels(["ref dir", "iter", "refine_even_odd", "eotest"])
+		self.tablewidget.horizontalHeader().setResizeMode(QtGui.QHeaderView.ResizeToContents)
+		self.tablewidget.horizontalHeader().setHighlightSections(False)
 		self.tablewidget.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)	# select rows
 		self.tablewidget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)	# single selection
 		
@@ -881,8 +883,10 @@ class PMFSCTableWidget(PMTableBase):
 				if "init_00_fsc" == key:
 					rcount+=1
 					#do I need to increment ccount too?
+					continue
 				if ("%02d_%02d_fsc"%(rcount,rcount+1)) == key:
 					rcount+=1
+					continue
 				if ("conv_even_odd_%02d"%(ccount+1)) == key :
 					ccount+=1
 					
