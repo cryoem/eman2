@@ -122,10 +122,9 @@ def main():
 			aveList.append(ave)
 			if (options.ave2D):	ave.write_image(options.ave2D,i)
 			if (options.var2D): var.write_image(options.var2D,i)
-		if (options.CTF):	ave3D = recons3d_4nn_ctf(aveList, range(len(proj_list)-1), snr = 1.0, sign = 1, symmetry = options.sym, verbose = 0, npad = 4, xysize = -1, zsize = -1)
-		else:	ave3D = recons3d_4nn(aveList, range(len(proj_list)-1), symmetry = options.sym, npad = 4, xysize = -1, zsize = -1)
+		ave3D = recons3d_4nn(aveList, range(len(proj_list)-1), symmetry = options.sym, npad = 4, xysize = -1, zsize = -1)
 		if (options.ave3D): ave3D.write_image(options.ave3D)
-		del ave, var, imgdata, angles_list, proj_list, stack, phi, theta, psi, s2x, s2y, alpha, sx, sy, mirror, ave3D, aveList
+		del ave, var, imgdata, angles_list, proj_list, stack, phi, theta, psi, s2x, s2y, alpha, sx, sy, mirror, aveList, ave3D
 		#exit()
 
 	if options.MPI:
