@@ -194,8 +194,11 @@ def main():
 	launch_childprocess("e2proc3d.py bdb:%s_even#threed_filt_%02d fsc_gold_%s.txt --calcfsc=bdb:%s_odd#threed_filt_%02d"%(options.path,options.iter-1,options.path[-2:],options.path,options.iter-1))
 	
 	# compute convergence results for even odd test
-	for i in xrange(1,options.iter):
-		db_compute_fsc(EMData("bdb:%s_even#threed_filt_%02d"%(options.path,i)), EMData("bdb:%s_odd#threed_filt_%02d"%(options.path,i)), e2refine.get_apix_used(options), options.path, "conv_even_odd_%02d"%i)
+	for i in xrange(options.startiter,options.iter):
+		try:
+			db_compute_fsc(EMData("bdb:%s_even#threed_filt_%02d"%(options.path,i)), EMData("bdb:%s_odd#threed_filt_%02d"%(options.path,i)), e2refine.get_apix_used(options), options.path, "conv_even_odd_%02d"%i)
+		except:
+			print "Could not compute FSC for iteration %d"%i
 	
 	E2end(logid)
 
