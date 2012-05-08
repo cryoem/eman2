@@ -797,6 +797,7 @@ class PMTableBase(PMBaseWidget):
 class PMFSCTableWidget(PMTableBase):
 	""" A widget for generating FSC tables"""
 	
+	@staticmethod 
 	def copyWidget(widget):
 		""" Basically a copy constructor to get around QT and python limitations """
 		return PMFSCTableWidget(widget.getName(), widget.getValue(), widget.getMode(), widget.postional, widget.initdefault)
@@ -805,8 +806,8 @@ class PMFSCTableWidget(PMTableBase):
 		PMTableBase.__init__(self, name, mode, postional, initdefault)
 		
 		# table stuff
-		self.tablewidget.setColumnCount(5)
-		self.tablewidget.setHorizontalHeaderLabels(["Ref Dir", "Iter", "EO Iter", "EO Res", "e2eotest"])
+		self.tablewidget.setColumnCount(4)
+		self.tablewidget.setHorizontalHeaderLabels(["Ref Dir", "Iter", "Ref EO Res", "e2eotest"])
 		self.tablewidget.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)	# select rows
 		self.tablewidget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)	# single selection
 		
@@ -845,7 +846,7 @@ class PMFSCTableWidget(PMTableBase):
 		fsccmd = "e2plotFSC.py %s --plotconvergence"%self.tablewidget.item(row, 0).text()
 		if self.tablewidget.item(row, 2):
 			fsccmd+=" --ploteoconvergence"
-		if self.tablewidget.item(row, 4):
+		if self.tablewidget.item(row, 3):
 			fsccmd+=" --plote2eotest"
 		
 		# Now load the FSC curves
@@ -883,18 +884,13 @@ class PMFSCTableWidget(PMTableBase):
 					ccount+=1
 					
 			# no need for further processing
-			if rcount ==0 and ccount == 0:
+			if rcount == 0 and ccount == 0:
 				continue
 			# load refinement results
 			if rcount > 0:
 				qwi_iterations = QtGui.QTableWidgetItem(str(rcount))
 				qwi_iterations.setTextAlignment(QtCore.Qt.AlignCenter)
 				self.tablewidget.setItem(i, 1, qwi_iterations)
-			# load even odd refinement results
-			if ccount > 0:
-				qwi_iterations = QtGui.QTableWidgetItem(str(ccount))
-				qwi_iterations.setTextAlignment(QtCore.Qt.AlignCenter)
-				self.tablewidget.setItem(i, 2, qwi_iterations)
 			
 			# get res estimates, I jacked this from David
 			reo = EMAN2fsc.get_e2refine_even_odd_results_list(keys)
@@ -907,7 +903,7 @@ class PMFSCTableWidget(PMTableBase):
 				resolution = self.find_first_point_5_crossing(xaxis,yaxis)		
 				qwi_res = QtGui.QTableWidgetItem(str(resolution))
 				qwi_res.setTextAlignment(QtCore.Qt.AlignCenter)
-				self.tablewidget.setItem(i, 3, qwi_res)
+				self.tablewidget.setItem(i, 2, qwi_res)
 				
 			if len(eo) > 0:
 				last_res = eo[-1]
@@ -915,8 +911,9 @@ class PMFSCTableWidget(PMTableBase):
 				resolution = self.find_first_point_5_crossing(xaxis,yaxis)
 				qwi_eotest = QtGui.QTableWidgetItem(str(resolution))
 				qwi_eotest.setTextAlignment(QtCore.Qt.AlignCenter)
-				self.tablewidget.setItem(i, 4, qwi_eotest)		
-		
+				self.tablewidget.setItem(i, 3, qwi_eotest)		
+	
+	# I lifted this code from Daivids SPR workflow module
 	def find_first_point_5_crossing(self,xaxis,yaxis):
 		'''
 		Find the first 0.5 crossing in the FSC - interpolate and try to return an accurate estimate

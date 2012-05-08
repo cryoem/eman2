@@ -30,9 +30,10 @@
 #
 #
 
+# This module contains function that implement python level FSC manipulation, so as to have code in only one place, once.
+
 from EMAN2db import db_open_dict,db_close_dict
 
-# This module contains function that implement python level FSC manipulation, so as to have code in only one place, once
 def db_compute_fsc(a, b, apix, pathname, dbname):
 	fsc = a.calc_fourier_shell_correlation(b)
 	third = len(fsc)/3

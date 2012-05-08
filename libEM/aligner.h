@@ -1344,7 +1344,7 @@ namespace EMAN
 			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
-// 				d.put("xform.align3d", EMObject::TRANSFORM,"The Transform storing the starting guess. If unspecified the identity matrix is used");
+ 				d.put("xform.align3d", EMObject::TRANSFORM,"The Transform storing the starting guess. If unspecified the identity matrix is used");
 				d.put("delta", EMObject::FLOAT, "The angular step size. Default is 1." );
 				d.put("range", EMObject::FLOAT, "The angular range size. Default is 10." );
 				d.put("dotrans", EMObject::BOOL,"Do a translational search. Default is True(1)");
