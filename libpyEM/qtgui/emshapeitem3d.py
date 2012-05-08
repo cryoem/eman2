@@ -412,7 +412,61 @@ class EMSphere(EMShapeBase):
 		gluQuadricTexture(quadratic, GL_TRUE)      # Create Texture Coords (NEW) 
 
 		gluSphere(quadratic,self.radius,self.slices,self.stacks)
+
+class EMScatterPlot3D(EMShapeBase):
+	name = "Plot3D"
+	nodetype = "ShapeNode"
+	
+	def __init__(self, transform=None):
+		EMShapeBase.__init__(self, parent=None, children=set(), transform=transform)
 		
+	def setData(self, data, pointsize):
+		""" Set the dat to plot. Format is a [X, Y, Z] whereX Y and Z are lists of the smae length """
+		if len(data) != 3:
+			raise ValueError("Data must have 3 dimensions")
+		if len(data[0]) != len(data[1]) or len(data[1]) != len(data[2]):
+			raise ValueError("Dimensions must be of the same length")
+		self.data = data
+		self.setPointSize(pointsize)
+
+	def getPointSize(self):
+		return self.pointsize
+		
+	def setPointSize(self, pointsize):
+		self.pointsize = pointsize
+		self.slices = int(pointsize)
+		self.stacks = int(pointsize)
+		
+	def getEvalString(self):
+		"""Implement me"""
+		raise NotImplementedError("Implement me")
+	
+	def getItemInspector(self):
+		""" Implement me """
+		if not self.item_inspector: self.item_inspector = EMInspectorControlScatterPlot("Scatter Plot", self)
+		return self.item_inspector
+	
+	def renderShape(self):
+		# Material properties of the sphere
+		glDisable(GL_COLOR_MATERIAL)
+		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
+		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
+		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
+		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
+		
+		quadratic = gluNewQuadric()
+		gluQuadricNormals(quadratic, GLU_SMOOTH)    # Create Smooth Normals (NEW) 
+		gluQuadricTexture(quadratic, GL_TRUE)      # Create Texture Coords (NEW)
+		
+		for i in xrange(len(self.data[0])):
+			glPushMatrix()
+			
+			glTranslatef(self.data[0][i],self.data[1][i],self.data[2][i])
+			gluSphere(quadratic,self.pointsize,self.slices,self.stacks)
+			
+			glPopMatrix()
+
+			
 class EMCylinder(EMShapeBase):
 	name = "Cylinder"
 	nodetype = "ShapeNode"
@@ -1003,6 +1057,62 @@ class EMInspectorControlShape(EMItem3DInspector):
 		if self.item3d():
 			self.item3d().setShininess(shininess)
 			self.inspector().updateSceneGraph()
+
+class EMInspectorControlScatterPlot(EMInspectorControlShape):
+	"""
+	Class to make scatter plot 3D inspector 
+	"""
+	def __init__(self, name, item3d):
+		EMInspectorControlShape.__init__(self, name, item3d)
+		
+	def updateItemControls(self):
+		""" Updates this item inspector. Function is called by the item it observes"""
+		super(EMInspectorControlScatterPlot, self).updateItemControls()
+		self.pointsize.setValue(self.item3d().getPointSize())
+		
+	def addTabs(self):
+		""" Add a tab for each 'column' """
+		super(EMInspectorControlScatterPlot, self).addTabs()
+		tabwidget = QtGui.QWidget()
+		gridbox = QtGui.QGridLayout()
+		
+		EMInspectorControlScatterPlot.addControls(self, gridbox)
+		
+		tabwidget.setLayout(gridbox)
+		self.addTab(tabwidget, "scatterplot")
+		
+	def addControls(self, gridbox):
+		""" Construct all the widgets in this Item Inspector """
+		
+		scatterframe = QtGui.QFrame()
+		scatterframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		lfont = QtGui.QFont()
+		lfont.setBold(True)
+		scattergridbox = QtGui.QGridLayout()
+		scattergridbox.setAlignment(QtCore.Qt.AlignTop)
+		
+		# Add widgets to frame
+		pslabel = QtGui.QLabel("Point Size")
+		pslabel.setFont(lfont)
+		pslabel.setAlignment(QtCore.Qt.AlignCenter)
+		scattergridbox.addWidget(pslabel, 0, 0, 1, 1)
+		
+		self.pointsize = EMSpinWidget(int(self.item3d().getPointSize()), 1.0, rounding=0)
+		self.pointsize.setMinimumWidth(120)
+		scattergridbox.addWidget(self.pointsize, 1, 0, 1, 1)
+		
+		scatterframe.setLayout(scattergridbox)
+		gridbox.addWidget(scatterframe, 3, 0)
+		
+		# set to default, but run only as a base class
+		if type(self) == EMInspectorControlScatterPlot: 
+			self.updateItemControls()
+		
+		QtCore.QObject.connect(self.pointsize,QtCore.SIGNAL("valueChanged(int)"),self.onPointSizeChanged)
+	
+	def onPointSizeChanged(self):
+		self.item3d().setPointSize(self.pointsize.getValue())
+		if self.inspector: self.inspector().updateSceneGraph()
 		
 class EMInspectorControl3DText(EMInspectorControlShape):
 	"""

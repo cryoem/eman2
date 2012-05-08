@@ -49,15 +49,31 @@ from valslider import ValSlider
 import copy
 import weakref
 
-
-
-
 MAG_INCREMENT_FACTOR = 1.1
 
 
-class EMPlot3DModelNew(QtGui.QWidget):
+class EMPlot3DWidgetNew(QtGui.QWidget):
 	def __init__(self, gl_widget=None):
+		from emscene3d import EMScene3D
+		from emshapeitem3d import EMScatterPlot3D
 		QtGui.QWidget.__init__(self)
+		
+		# make the plot3d widget
+		self.setMinimumWidth(400)
+		self.setMinimumHeight(400)
+		grid=QtGui.QGridLayout()
+		self.sgwidget = EMScene3D()
+		self.plot = EMScatterPlot3D()
+		self.sgwidget.insertNewNode("Scatter", self.plot, parentnode=self.sgwidget)
+		
+		grid.setContentsMargins(0,0,0,0)
+		grid.addWidget(self.sgwidget, 0, 0)
+		
+		self.setLayout(grid)
+		
+	def set_data(self, data, x, y):
+		""" Set the scater plot data """
+		self.plot.setData(data,10)
 	
 class EMPlot3DModel(EM3DModel, EMLightsDrawer):
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):

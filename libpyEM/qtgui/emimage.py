@@ -141,14 +141,14 @@ class EMImageWidget(object):
 			widget.set_data(data,filename)
 			return widget
 		elif isinstance(data,list):
-			from emplot3d import EMPlot3DWidget
+			from emplot3d import EMPlot3DWidgetNew
 			if (isinstance(data[0],list) or isinstance(data[0],tuple)) and len(data) > 2:
 				if old:
-					if isinstance(old,EMPlot3DWidget) :
-						old.set_data(remove_directories_from_name(filename),data,replace)
+					if isinstance(old,EMPlot3DWidgetNew) :
+						old.set_data(data,remove_directories_from_name(filename),replace)
 						return old
-				widget = EMPlot3DWidget()
-				widget.set_data(remove_directories_from_name(filename),data,replace)
+				widget = EMPlot3DWidgetNew()
+				widget.set_data(data,remove_directories_from_name(filename),replace)
 				return widget	
 			else:
 				from emplot2d import EMPlot2DWidget
