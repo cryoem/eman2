@@ -1,0 +1,96 @@
+/* JSON file for e2refinetorelion3d.py wizard */
+[
+  {
+    "TITLE":"e2refinetorelion3d Wizard",
+    "INST":"This Wizard is to Help EM users fill in the GUI to run e2refinetorelion3d.py.It will output a directory, relion3d_##, that contains everything required to run Relion.",
+    "WIDGETS":[]
+  },
+  {
+    "TITLE":"Input files",
+    "INST":"Please enter the location of the particle stack you wish to use as well as the reference map you wish to use.",
+    "WIDGETS":[
+      "set_name",
+      "refmap",
+      "greyscale",
+      "refctfcorrected"
+    ]
+  },
+  {
+    "TITLE":"Solvent Mask",
+    "INST":"Enter the user provided mask for the reference(s). If no mask is provided a spherical mask with the particle diameter is used",
+    "WIDGETS":[
+      "solventmask"
+    ]
+  },
+  {
+    "TITLE":"Project Parameters",
+    "INST":"Enter various particle and microscope parameters. The symm group and number are required, as is the image mask diameter. If the voltage, cs, and apix values reside in the image header or in the project database, it will attempt to fill these in with those values.",
+    "WIDGETS":[
+      "symmgroup",
+      "symmnumber",
+      "voltage",
+      "cs",
+      "apix",
+      "imagemaskd",
+      "defocus",
+      "amplitudecontrast"
+    ]
+  },
+  {
+    "TITLE":"Relion Options 1",
+    "INST":"Please enter the number of iterations you wish Relion to do and the number of classes you wish Relion to refine into",
+    "WIDGETS":[
+      "numiter",
+      "numclasses"
+    ]
+  },
+  {
+    "TITLE":"Relion T/F Refinement Options",
+    "INST":"Do you want Relion to perform CTF Correction?  Do you want Relion to perform intensity scale corrections on image groups?  Do you wish Relion to only flip phases?(If no then Relion will perform full amplitude-correction)  Is the data already phase-flipped?  Do you wish Relion to ignore CTF's until their first peak?  Do you wish to perform masking on the reference structure?",
+    "WIDGETS":[
+      "ctfcorrect",
+      "intensitycorrection",
+      "onlyflipphase",
+      "dataphaseflipped",
+      "ignoretofirstpeak",
+      "maskrefstructure"
+    ]
+  },
+  {
+    "TITLE":"Data Splitting",
+    "INST":"Do you wish to have Relion refine two random halves of the data completely separately?  Do you wish Relion to join the two separately refined halves back together?",
+    "WIDGETS":[
+      "splithalves",
+      "joinhalves"
+    ]
+  },
+  {
+    "TITLE":"Relion Options 2",
+    "INST":"What padding factor do you wish to use? 1 = 1x, 2=2x, and 3=3x padding.  What resolution do you wish to limit the refinement to for its first iteration?  The regparam is a regularisation parameter (values higher than 1 give more weight to the data).  The healpix is the angular sampling (before oversampling)",
+    "WIDGETS":[
+      "pad",
+      "lowpass",
+      "regparam",
+      "healpix"
+    ]
+  },
+  {
+    "TITLE":"Relion Options 3",
+    "INST":"Local represents the stddev on all three Euler angles for local angular searches (of +/- 3 stddev)  The inplaneang represents the sampling rate for the in-plane angle (before oversampling)  The offsetrange represents the search range for origin offsets in pixels and the offsetstep represents the sampling rate (before oversampling) of origin offsets in pixels. The oversampling represents the value for adaptive oversampling to speed up calculations (0=no oversampling, 1=2x, 2=4x etc)",
+    "WIDGETS":[
+      "local",
+      "inplaneang",
+      "offsetrange",
+      "offsetstep",
+      "oversampling"
+    ]
+  },
+  {
+    "TITLE":"Relion Memory Options",
+    "INST":"Threads is the number of threads you wish Relion to execute and maxmemory represents the available amount of memory for each thread",
+    "WIDGETS":[
+      "threads",
+      "maxmemory"
+    ]
+  }
+]

@@ -1,0 +1,77 @@
+/* JSON file for e2refinetorelion3d.py wizard */
+[
+  {
+    "TITLE":"e2refinetorelion2d Wizard",
+    "INST":"This Wizard is to Help EM users fill in the GUI to run e2refinetorelion2d.py.It will run Relion Maximum Likelihood 2D to generate class averages.",
+    "WIDGETS":[]
+  },
+  {
+    "TITLE":"Input files",
+    "INST":"Please enter the location of the particle stack you wish to use.",
+    "WIDGETS":[
+      "set_name"
+    ]
+  },
+  {
+    "TITLE":"Relion2D Run Options",
+    "INST":"How many interations would you like Relion to run for and how many classes do you wish it to refine into",
+    "WIDGETS":[
+      "numiter",
+      "numclasses"
+    ]
+  },
+  {
+    "TITLE":"Relion T/F Refinement Options",
+    "INST":"Do you want Relion to perform CTF Correction?  Do you want Relion to perform intensity scale corrections on image groups?   Do you wish Relion to ignore CTF's until their first peak?  Do you wish to perform masking on the reference structure?  Do you wish Relion to only flip phases?(If no then Relion will perform full amplitude-correction)  Is the data already phase-flipped?",
+    "WIDGETS":[
+      "ctfcorrect",
+      "intensitycorrection",
+      "ignoretofirstpeak",
+      "maskrefstructure",
+      "onlyflipphase",
+      "dataphaseflipped"
+    ]
+  },
+  {
+    "TITLE":"Data Splitting",
+    "INST":"Do you wish to have Relion refine two random halves of the data completely separately?  Do you wish Relion to join the two separately refined halves back together?",
+    "WIDGETS":[
+      "splithalves",
+      "joinhalves"
+    ]
+  },
+  {
+    "TITLE":"Relion Options 2",
+    "INST":"The regparam is a regularisation parameter (values higher than 1 give more weight to the data).  The healpix is the angular sampling (before oversampling).  The oversampling represents the value for adaptive oversampling to speed up calculations (0=no oversampling, 1=2x, 2=4x etc)",
+    "WIDGETS":[
+      "regparam",
+      "imagemaskd",
+      "oversampling"
+    ]
+  },
+  {
+    "TITLE":"Relion Options 3",
+    "INST":"The inplaneang represents the sampling rate for the in-plane angle (before oversampling)  The offsetrange represents the search range for origin offsets in pixels and the offsetstep represents the sampling rate (before oversampling) of origin offsets in pixels.",
+    "WIDGETS":[
+      "inplaneang",
+      "offsetrange",
+      "offsetstep"
+    ]
+  },
+  {
+    "TITLE":"Relion Options 4",
+    "INST":"If the voltage (in kV), cs, and apix values reside in the image header or in the project database and are not provided here, it will attempt to fill these in with those values.",
+    "WIDGETS":[
+      "voltage",
+      "cs",
+      "apix"
+    ]
+  },
+  {
+    "TITLE":"Relion Memory Options",
+    "INST":"Threads is the number of threads you wish Relion to execute",
+    "WIDGETS":[
+      "threads"
+    ]
+  }
+]

@@ -166,6 +166,14 @@
         "PROGRAM": "e2refine2d.py", 
         "NAME": "Generate Classes - e2refine2d", 
         "CHILDREN": []
+      },
+      {
+	"ICON": "single_image",
+	"PROGRAM":"e2refinetorelion2d.py",
+	"WIZARD":"/lib/pmconfig/relion2d.json",
+	"NAME": "Relion 2D Maximum Likelihood",
+	"NOTELEVEL": "1",
+	"CHILDREN": []
       }
     ]
   }, 
@@ -252,7 +260,7 @@
             "ICON": "refine", 
             "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2refinetofrealign",
             "PROGRAM": "e2refinetofrealign.py", 
-            "NAME": "Run e2refinetofrealign",
+            "NAME": "FreAlign Refinement - e2refinetofrealign",
 	    "NOTELEVEL": "1",
             "CHILDREN": []
           }, 
@@ -273,6 +281,13 @@
             "CHILDREN": []
           }
         ]
+      },
+      {
+	"ICON": "refine",
+	"PROGRAM": "e2refinetorelion3d.py",
+        "WIZARD":"/lib/pmconfig/relion3d.json",
+	"NAME": "Relion 3D Refinement",
+	"CHILDREN": []
       }
     ]
   }, 
