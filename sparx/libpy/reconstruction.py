@@ -1051,10 +1051,10 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 		B.read_image(stack_name,list_proj[0])
 	else : B = stack_name[list_proj[0]].copy()
 
-	nx = B.get_xsize()
+	ny = B.get_ysize()  # have to take ysize, because xsize is different for real and fft images
 
 	CUBE = EMData()
-	CUBE.set_size(nx, nx, nx)
+	CUBE.set_size(ny, ny, ny)
 	CUBE.to_zero()
 
 	RA = Transform()
@@ -1062,7 +1062,6 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 
 	nimages = len(list_proj)
 	ntripletsWnsym = nsym*nimages
-	dm = [0.0]*(9*ntripletsWnsym)
 	ss = [0.0]*(6*ntripletsWnsym)
 	count = 0
 	from utilities import get_params_proj
@@ -1070,17 +1069,23 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 		if type(stack_name) == types.StringType:
 			B.read_image(stack_name,list_proj[i], True)
 			PHI, THETA, PSI, s2x, s2y = get_params_proj( B )
+			m = B.get_attr( "xform.projection" ).get_matrix()
 		else:  
 			PHI, THETA, PSI, s2x, s2y = get_params_proj( stack_name[list_proj[i]] )
+			m = stack_name[list_proj[i]].get_attr( "xform.projection" ).get_matrix()
 		#  This part is really silly.  The angles are converted from the rotation matrix
 		#  in the transform object only to be converted back into the matrix in CANG.
 		#  If this method was to be used, the matrix should be taken directly from the transform object.
 		#  However, convention would have to be checked carefully, i.e., is the transform
 		#  object identical to what CANG produces?
 		DMnSS = Util.CANG(PHI, THETA, PSI)
-		dm[(count*9) :(count+1)*9] = DMnSS["DM"]
 		ss[(count*6) :(count+1)*6] = DMnSS["SS"]
 		count += 1
+		for i in range(9):
+			if abs(DMnSS["DM"][i] - m[i + i//3]) > 0.000001:
+				print "Error !!!"
+				print DMnSS["DM"]
+				print m
 	if method=="exact":    const = int(const)
 
 	count = 0
@@ -1089,12 +1094,10 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 		else :                                   B = stack_name[list_proj[i]].copy()
 		#for j in xrange(nsym):  # symmetries were bit out on the list
 		for j in xrange(1):
-			DM = dm[((j*nsym+count)*9) :(j*nsym+count+1)*9]
 			count += 1   # It has to be there as counting in WTF and WTM start from 1!
 			if   method=="general":    Util.WTF(B, ss, const, count)
 			elif method=="exact"  :    Util.WTM(B, ss, const, count)
-
-			Util.BPCQ(B, CUBE, DM)
+			Util.BPCQ(B, CUBE)
 
 	return CUBE
 
@@ -1139,7 +1142,7 @@ def prepare_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetry
 	return dm,ss
 
 
-def recons3d_swbp(A, L, dm, ss, method = "general", const=1.0E4, symmetry="c1"):
+def recons3d_swbp(A, transform, L, ss, method = "general", const=1.0E4, symmetry="c1"):
 	"""
 	        Take one projection, but angles form the entire set.  Build the weighting function for the given projection taking into account all,
 		apply it, and backproject.
@@ -1152,25 +1155,27 @@ def recons3d_swbp(A, L, dm, ss, method = "general", const=1.0E4, symmetry="c1"):
 	"""
 	B = A.copy()
 	nx = B.get_xsize()
-	RA = Transform()
 	if(method=="exact"  ):    const = int(const)
 	nsym = 1
 	CUBE = EMData()
 	CUBE.set_size(nx, nx, nx)
 	CUBE.to_zero()
 
+	org_transform = B.get_attr("xform.projection")
+
 	count = 0
 	for j in xrange(1):
-	  	DM = dm[((j*nsym+L)*9) :(j*nsym+L+1)*9]
 	  	count += 1   # It has to be there as counting in WTF and WTM start from 1!
 	  	if   (method=="general"):    Util.WTF(B, ss, const, L+1)
 	  	elif (method=="exact"  ):    Util.WTM(B, ss, const, L+1)
 
-		Util.BPCQ(B, CUBE, DM)  # Uses xform.projection from the header
-
+		B.set_attr("xform.projection", transform)
+		Util.BPCQ(B, CUBE)  
+		
+	B.set_attr("xform.projection", org_transform)
 	return CUBE, B
 
-def weight_swbp(A, L, dm, ss, method = "general", const=1.0E4, symmetry="c1"):
+def weight_swbp(A, L, ss, method = "general", const=1.0E4, symmetry="c1"):
 	"""
 	        Take one projection, but angles form the entire set.  Build the weighting function for the given projection taking into account all,
 		apply it, return weighted projection.
@@ -1187,14 +1192,13 @@ def weight_swbp(A, L, dm, ss, method = "general", const=1.0E4, symmetry="c1"):
 	B = A.copy()
 	count = 0
 	for j in xrange(1):
-	  	DM = dm[((j*nsym+L)*9) :(j*nsym+L+1)*9]
 	  	count += 1   # It has to be there as counting in WTF and WTM start from 1!
 	  	if   (method=="general"):    Util.WTF(B, ss, const, L+1)
 	  	elif (method=="exact"  ):    Util.WTM(B, ss, const, L+1)
 
 	return B
 
-def backproject_swbp(B, L, dm, symmetry="c1"): 
+def backproject_swbp(B, transform = None, symmetry="c1"): 
 	"""
 	        Take one projection, but angles form the entire set.  Build the weighting function for the given projection taking into account all,
 		apply it, and backproject.
@@ -1206,18 +1210,20 @@ def backproject_swbp(B, L, dm, symmetry="c1"):
 		symmetry - point group symmetry of the object
 	""" 
 
-	nx = B.get_xsize()
+	ny = B.get_ysize()
 	CUBE = EMData()
-	CUBE.set_size(nx, nx, nx)
+	CUBE.set_size(ny, ny, ny)
 	CUBE.to_zero()
 
-	DM = dm[(L*9) :(L+1)*9]
-
-	Util.BPCQ(B, CUBE, DM)  # Uses xform.projectio from the header
+	org_transform = B.get_attr("xform.projection")
+	if transform != None:
+		B.set_attr("xform.projection", transform)
+	Util.BPCQ(B, CUBE)  
+	B.set_attr("xform.projection", org_transform)
 
 	return CUBE
 
-def one_swbp(CUBE, B, L, dm, symmetry="c1"): 
+def one_swbp(CUBE, B, transform = None, symmetry="c1"): 
 	"""
 	        Take one projection, but angles form the entire set.  Build the weighting function for the given projection taking into account all,
 		apply it, and backproject.
@@ -1226,10 +1232,11 @@ def one_swbp(CUBE, B, L, dm, symmetry="c1"):
 		const  - for "general" 1.0e4 works well, for "exact" it should be the diameter of the object
 		symmetry - point group symmetry of the object
 	""" 
-
-	DM = dm[(L*9) :(L+1)*9]
-
-	Util.BPCQ(B, CUBE, DM)  # Uses xform.projectio from the header
+	org_transform = B.get_attr("xform.projection")
+	if transform != None:
+		B.set_attr("xform.projection", transform)
+	Util.BPCQ(B, CUBE)  
+	B.set_attr("xform.projection", org_transform)
 
 def prepare_recons(data, symmetry, myid, main_node_half, half_start, step, index, finfo=None, npad = 4):
 	from random     import randint

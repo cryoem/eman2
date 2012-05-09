@@ -45,6 +45,7 @@ public:
 static int coveig(int n, float *covmat, float *eigval, float *eigvec);
 
 /** same function than Util::coveig but wrapped to use directly in python code */
+/* Functions WTF, WTM and BPCQ accept as first parameter images in real and Fourier space. Output image is always in real space. */
 static Dict coveig_for_py(int ncov, const vector<float>& covmatpy);
 
 static void WTF(EMData* PROJ,vector<float> SS,float SNR,int K);
@@ -53,7 +54,7 @@ static void WTM(EMData* PROJ, vector<float> SS,int DIAMETER,int NUMP);
 
 static Dict CANG(float PHI, float THETA, float PSI);
 
-static void BPCQ(EMData* B, EMData *CUBE,vector<float> DM);
+static void BPCQ(EMData* B, EMData *CUBE);
 
 static vector<float> infomask(EMData* Vol, EMData* mask, bool);
 

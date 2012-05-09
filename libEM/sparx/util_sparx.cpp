@@ -5724,12 +5724,27 @@ Dict Util::CANG(float PHI,float THETA,float PSI)
 #undef QUADPI
 #undef DGR_TO_RAD
 //-----------------------------------------------------------------------------------------------------------------------
-#define    DM(I)         		DM[I-1]
+#define    DM(I)         		lDM[I-1]
 #define    B(i,j) 			Bptr[i-1+((j-1)*NSAM)]
 #define    CUBE(i,j,k)                  CUBEptr[(i-1)+((j-1)+((k-1)*NY3D))*(size_t)NX3D]
 
-void Util::BPCQ(EMData *B,EMData *CUBE, vector<float> DM)
+void Util::BPCQ(EMData *B,EMData *CUBE)
 {
+	if (B->is_complex()) {
+		B->do_ift_inplace();
+		B->depad();
+	}
+
+	Transform * t = B->get_attr("xform.projection");
+
+	// ---- build DM matrix (transform matrix) - convert from 3x4 matrix to 3x3 matrix
+	std::vector<float> lDM = t->get_matrix();
+	for (uint32_t r = 1; r < 3; ++r) {
+		lDM[r*3+0] = lDM[r*4+0];
+		lDM[r*3+1] = lDM[r*4+1];
+		lDM[r*3+2] = lDM[r*4+2];
+	}
+	lDM.resize(9);
 
 	float  *Bptr = B->get_data();
 	float  *CUBEptr = CUBE->get_data();
@@ -5737,9 +5752,8 @@ void Util::BPCQ(EMData *B,EMData *CUBE, vector<float> DM)
 	int NSAM,NROW,NX3D,NY3D,NZC,KZ,IQX,IQY,LDPX,LDPY,LDPZ,LDPNMX,LDPNMY,NZ1;
 	float DIPX,DIPY,XB,YB,XBB,YBB;
 
-	Transform * t = B->get_attr("xform.projection");
 	Dict d = t->get_params("spider");
-	if(t) {delete t; t=0;}
+	delete t; t=0;
 	//  Unsure about sign of shifts, check later PAP 06/28/09
 	float x_shift = d[ "tx" ];
 	float y_shift = d[ "ty" ];
@@ -5797,11 +5811,16 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
 
 	NSAM = PROJ->get_xsize();
 	NROW = PROJ->get_ysize();
-        int ntotal = NSAM*NROW;
+
+	if (PROJ->is_fftpadded()) {
+		NSAM -= (PROJ->is_fftodd()) ? (1) : (2);  // correction for DFT image
+	}
+
+    int ntotal = NSAM*NROW;
 	float q = 2.0f;
 	float qt = 8.0f/q;
 	//  Fix for padding 2x
-	int ipad = 1;
+	const int ipad = 1;
 	NSAM *= ipad;
 	NROW *= ipad;
 	NNNN = NSAM+2-(NSAM%2);
@@ -5815,10 +5834,9 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
 	W->set_size(Wnx,NROW,1);
 	W->to_zero();
 	float *Wptr = W->get_data();
-	float *PROJptr = PROJ->get_data();
 	for (L=1; L<=NANG; L++) {
 		float  tmp1 = SS(3,K)*SS(4,L)*(SS(1,K)*SS(1,L) + SS(2,K)*SS(2,L)) - SS(3,L)*SS(4,K);
-		float  tmp2 = SS(4,L)*( SS(1,K)*SS(2,L) - SS(1,L)*SS(2,K) ); 
+		float  tmp2 = SS(4,L)*( SS(1,K)*SS(2,L) - SS(1,L)*SS(2,K) );
 		OX = SS(6,K)*tmp2 + SS(5,K)*tmp1;
 		OY = SS(5,K)*tmp2 - SS(6,K)*tmp1;
 		if(OX < 0.0f) {
@@ -5849,13 +5867,16 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
 			for(int J=1;J<=NROW;J++) for(int I=1;I<=NNNN/2;I++)  W(I,J) += 1.0f;
 		}
 	}
-        EMData* proj_in = PROJ;
+    EMData* proj_in = PROJ;
 
-	PROJ = PROJ->norm_pad( false, ipad);
-	PROJ->do_fft_inplace();
-	PROJ->update();
-	//cout << " x   "<<PROJ->get_xsize() << " y   "<<PROJ->get_ysize() <<endl;
-	PROJptr = PROJ->get_data();
+	const bool realOnInput = PROJ->is_real();
+    if (realOnInput) {
+		// copy input image and run DFT on it
+		PROJ = PROJ->norm_pad( false, ipad);
+		PROJ->do_fft_inplace();
+		PROJ->update();
+    }
+    float * PROJptr = PROJ->get_data();
 
 	float WNRMinv,temp;
 	float osnr = 1.0f/SNR;
@@ -5879,17 +5900,19 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
 		}
 	}
 	delete W; W = 0;
+
 	PROJ->do_ift_inplace();
 	PROJ->depad();
 
-        float* data_src = PROJ->get_data();
-        float* data_dst = proj_in->get_data();
+	if (realOnInput) {
+		// copy data back to input image
+		float* data_src = PROJ->get_data();
+		float* data_dst = proj_in->get_data();
+		memcpy( data_dst, data_src, ntotal * sizeof(float) );
+		delete PROJ;
+	}
 
-        for( int i=0; i < ntotal; ++i )  data_dst[i] = data_src[i];
-
-        proj_in->update();
-
-	delete PROJ;
+	proj_in->update();
 }
 /*
 void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
@@ -6063,11 +6086,15 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 		}
 	}
 
-        EMData* proj_in = PROJ;
+    EMData* proj_in = PROJ;
+    const bool realOnInput = PROJ->is_real();
 
-	PROJ = PROJ->norm_pad( false, 1);
-	PROJ->do_fft_inplace();
-	PROJ->update();
+	if (realOnInput) {
+		// copy input image and run DFT on it
+		PROJ = PROJ->norm_pad( false, 1 );
+		PROJ->do_fft_inplace();
+		PROJ->update();
+	}
 	float *PROJptr = PROJ->get_data();
 
 	int KX;
@@ -6083,14 +6110,16 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 	PROJ->do_ift_inplace();
 	PROJ->depad();
 
-        float* data_src = PROJ->get_data();
-        float* data_dst = proj_in->get_data();
+	if (realOnInput) {
+		// copy data back to input image
+		float* data_src = PROJ->get_data();
+		float* data_dst = proj_in->get_data();
+		int ntotal = NSAM*NROW;
+		memcpy( data_dst, data_src, ntotal * sizeof(float) );
+		delete PROJ;
+	}
 
-        int ntotal = NSAM*NROW;
-        for( int i=0; i < ntotal; ++i )  data_dst[i] = data_src[i];
-
-        proj_in->update();
-	delete PROJ;
+	proj_in->update();
 }
 #undef   AMAX1
 #undef   AMIN1
@@ -6099,12 +6128,10 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 #undef   CP
 #undef   VV
 #undef   VP
-
-
 #undef   W
 #undef   SS
 #undef   PROJ
-
+//----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 float Util::tf(float dzz, float ak, float voltage, float cs, float wgh, float b_factor, float sign)
 {
 	float cst  = cs*1.0e7f;

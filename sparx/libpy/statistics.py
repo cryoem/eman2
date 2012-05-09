@@ -9554,7 +9554,7 @@ class pcanalyzer:
 
 
 class pcanalyzebck:
-	def __init__(self, mask, nvec, dataw, list_of_particles, dm, variance, fl, aa, MPI=False ):
+	def __init__(self, mask, nvec, dataw, variance, fl, aa, MPI=False ):
 		import os
 		self.mask = mask.copy()
 		if MPI:
@@ -9578,8 +9578,6 @@ class pcanalyzebck:
 			self.myid = 0
 		#self.sdir   = sdir
 		self.dataw  = dataw
-		self.list_of_particles = list_of_particles
-		self.dm     = dm
 		self.variance = variance
 		self.nimg   = len(dataw)
 		self.nvec   = nvec
@@ -9612,7 +9610,7 @@ class pcanalyzebck:
 	def get_dat( self, k ):
 		from reconstruction import backproject_swbp
 		from filter  import filt_tanl
-		vb = Util.divn_img(backproject_swbp(self.dataw[k], self.list_of_particles[k], self.dm), self.variance)
+		vb = Util.divn_img(backproject_swbp(self.dataw[k]), self.variance)
 		if(self.fl > 0.0):
 			vb = filt_tanl(vb, self.fl, self.aa)
 		#vb -= pc[0]
