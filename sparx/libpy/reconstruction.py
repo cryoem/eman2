@@ -794,7 +794,7 @@ def recons3d_em(projections_stack, max_iterations_count = 100, min_avg_abs_voxel
 			break
 		prev_avg_absolute_voxel_change = avg_absolute_voxel_change
 		solution = q
-		print "Iteration ", iter_no, ",  avg_abs_voxel_change=", avg_absolute_voxel_change 
+		#print "Iteration ", iter_no, ",  avg_abs_voxel_change=", avg_absolute_voxel_change 
 		if min_avg_abs_voxel_change > avg_absolute_voxel_change:
 			break
 	time_iterations = clock() - time_iterations
