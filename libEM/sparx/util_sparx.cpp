@@ -5739,7 +5739,7 @@ void Util::BPCQ(EMData *B,EMData *CUBE)
 
 	// ---- build DM matrix (transform matrix) - convert from 3x4 matrix to 3x3 matrix
 	std::vector<float> lDM = t->get_matrix();
-	for (uint32_t r = 1; r < 3; ++r) {
+	for (unsigned r = 1; r < 3; ++r) {
 		lDM[r*3+0] = lDM[r*4+0];
 		lDM[r*3+1] = lDM[r*4+1];
 		lDM[r*3+2] = lDM[r*4+2];
@@ -6016,6 +6016,11 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 
 	NSAM = PROJ->get_xsize();
 	NROW = PROJ->get_ysize();
+
+	if (PROJ->is_fftpadded()) {
+		NSAM -= (PROJ->is_fftodd()) ? (1) : (2);  // correction for DFT image
+	}
+
 	NNNN = NSAM+2-(NSAM%2);
 	NR2  = NROW/2;
 	NANG = int(SS.size())/6;

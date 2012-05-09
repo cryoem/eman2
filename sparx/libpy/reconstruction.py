@@ -1045,6 +1045,7 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 		WARNING - symmetries not implemented!!!!!!!!!
 	""" 
 	import types
+	from utilities import get_im
 
 	if type(stack_name) == types.StringType:
 		B = EMData()
@@ -1057,48 +1058,35 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 	CUBE.set_size(ny, ny, ny)
 	CUBE.to_zero()
 
-	RA = Transform()
-	nsym = RA.get_nsym(symmetry)
-
+	nsym = Transform.get_nsym(symmetry)
 	nimages = len(list_proj)
-	ntripletsWnsym = nsym*nimages
-	ss = [0.0]*(6*ntripletsWnsym)
-	count = 0
-	from utilities import get_params_proj
-	for i in xrange(nimages):
+
+	ss = [0.0]*(6*nsym*nimages)
+	symmetry_transforms = [ [None for i in xrange(nsym)] for j in xrange(nimages) ] # list of nimages lists of nsym elements
+	for iProj in xrange(nimages):
 		if type(stack_name) == types.StringType:
-			B.read_image(stack_name,list_proj[i], True)
-			PHI, THETA, PSI, s2x, s2y = get_params_proj( B )
-			m = B.get_attr( "xform.projection" ).get_matrix()
-		else:  
-			PHI, THETA, PSI, s2x, s2y = get_params_proj( stack_name[list_proj[i]] )
-			m = stack_name[list_proj[i]].get_attr( "xform.projection" ).get_matrix()
-		#  This part is really silly.  The angles are converted from the rotation matrix
-		#  in the transform object only to be converted back into the matrix in CANG.
-		#  If this method was to be used, the matrix should be taken directly from the transform object.
-		#  However, convention would have to be checked carefully, i.e., is the transform
-		#  object identical to what CANG produces?
-		DMnSS = Util.CANG(PHI, THETA, PSI)
-		ss[(count*6) :(count+1)*6] = DMnSS["SS"]
-		count += 1
-		for i in range(9):
-			if abs(DMnSS["DM"][i] - m[i + i//3]) > 0.000001:
-				print "Error !!!"
-				print DMnSS["DM"]
-				print m
-	if method=="exact":    const = int(const)
+			B.read_image(stack_name,list_proj[iProj], True)
+		else:
+			B = stack_name[list_proj[iProj]]
+		transform = B.get_attr("xform.projection")
+		for iSym in xrange(nsym):
+			symmetry_transforms[iProj][iSym] = transform.get_sym(symmetry, iSym)
+			d = symmetry_transforms[iProj][iSym].get_params("spider")
+			DMnSS = Util.CANG(d["phi"], d["theta"], d["psi"])
+			ss[ (iProj*nsym+iSym)*6 : (iProj*nsym+iSym+1)*6 ] = DMnSS["SS"]
 
-	count = 0
-	for i in xrange(nimages):
-		if type(stack_name) == types.StringType: B.read_image(stack_name,list_proj[i])
-		else :                                   B = stack_name[list_proj[i]].copy()
-		#for j in xrange(nsym):  # symmetries were bit out on the list
-		for j in xrange(1):
-			count += 1   # It has to be there as counting in WTF and WTM start from 1!
-			if   method=="general":    Util.WTF(B, ss, const, count)
-			elif method=="exact"  :    Util.WTM(B, ss, const, count)
+	if method=="exact":    
+		const = int(const)
+
+	for iProj in xrange(nimages):
+		proj = get_im(stack_name, list_proj[iProj])
+		for iSym in xrange(nsym):
+			B = proj.copy()
+			B.set_attr("xform.projection", symmetry_transforms[iProj][iSym])
+			if   method=="general":  Util.WTF(B, ss, const, iProj*nsym+iSym+1)  # counting in WTF start from 1!
+			elif method=="exact"  :  Util.WTM(B, ss, const, iProj*nsym+iSym+1)  # counting in WTM start from 1!
 			Util.BPCQ(B, CUBE)
-
+		
 	return CUBE
 
 def prepare_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetry="c1"):
