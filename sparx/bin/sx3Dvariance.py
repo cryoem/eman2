@@ -31,12 +31,16 @@
 #
 
 import	global_def
-from	global_def import *
-from	optparse import OptionParser
-from	string import atoi,replace
-from	EMAN2 import EMUtil
+from	global_def 	import *
+from	optparse 	import OptionParser
+from	string 		import atoi,replace
+from	EMAN2 		import EMUtil
 import	os
 import	sys
+from 	time		import	time
+from	utilities	import print_begin_msg, print_end_msg, print_msg
+
+t0 = time()
 
 
 def main():
@@ -84,8 +88,10 @@ def main():
 	from reconstruction import recons3d_em, recons3d_em_MPI
 
 	global_def.BATCH = True
-
+	print_begin_msg("sx3Dvariance")
+	
 	if not options.var:
+		t1 = time()
 		from utilities		import group_proj_by_phitheta, get_params_proj, params_3D_2D, set_params_proj, set_params2D
 		from utilities		import compose_transform2
 		from statistics		import avgvar, avgvar_CTF
@@ -96,13 +102,21 @@ def main():
 		proj_angles = []
 		aveList = []
 		nima = EMUtil.get_image_count(stack)
+		print_msg("Number of projections							:%d\n"%(nima))
 		tab = EMUtil.get_all_attributes(stack, 'xform.projection')
 		for i in xrange(nima):
 			t = tab[i].get_params('spider')
 			proj_angles.append([t['phi'], t['theta'], t['psi']])
+		t2 = time()
+		print_msg("Number of images per group						:%d\n"%(options.img_per_grp))
+		print_msg("... grouping projections \n")
 		proj_list, angles_list = group_proj_by_phitheta(proj_angles, options.sym, options.img_per_grp, options.diff_pct)
+		t3 = time()
+		print_msg("Grouping projections lasted [s]						:%s\n"%(t3-t2))
 		del proj_angles
-		print "Number of groups = ", len(proj_list)
+		print_msg("Number of groups							:%d\n"%(len(proj_list)))
+		t4 = time()
+		print_msg("... calculating the stack of 2D variances \n")
 		for i in xrange(len(proj_list)): 
 			imgdata = EMData.read_images(stack, proj_list[i])
 			for j in xrange(len(proj_list[i])):
@@ -112,7 +126,8 @@ def main():
 				else:            alpha, sx, sy, scale = compose_transform2( alpha, sx, sy, 1.0, 180-(angles_list[i][0]-phi), 0.0, 0.0, 1.0)
 				set_params2D(imgdata[j], [alpha, sx, sy, mirror, 1.0])
 			if (options.CTF):	ave, var = avgvar_CTF(imgdata,"a")
-			else:	ave, var = avgvar(imgdata,"a")
+			#else:	ave, var = avgvar(imgdata,"a")
+			else:	ave, var = avgvar(imgdata,None)
 			var = threshold(var)
 			set_params_proj(var, [angles_list[i][0], angles_list[i][1], 0.0, 0.0, 0.0])
 			var.set_attr("imgindex",proj_list[i])
@@ -122,9 +137,15 @@ def main():
 			aveList.append(ave)
 			if (options.ave2D):	ave.write_image(options.ave2D,i)
 			if (options.var2D): var.write_image(options.var2D,i)
+		if (options.ave2D): print_msg("Writing to the disk a stack of 2D averages as				:%s\n"%(options.ave2D))
+		if (options.var2D): print_msg("Writing to the disk a stack of 2D variances as				:%s\n"%(options.var2D))
 		ave3D = recons3d_4nn(aveList, range(len(proj_list)-1), symmetry = options.sym, npad = 4, xysize = -1, zsize = -1)
-		if (options.ave3D): ave3D.write_image(options.ave3D)
+		if (options.ave3D): 
+			ave3D.write_image(options.ave3D)
+			print_msg("Writing to the disk volume reconstructed from averages as		:%s\n"%(options.ave3D))
 		del ave, var, imgdata, angles_list, proj_list, stack, phi, theta, psi, s2x, s2y, alpha, sx, sy, mirror, aveList, ave3D
+		t5 = time()
+		print_msg("Calculating the stack of 2D variances lasted [s]			:%s\n"%(t5-t4))
 		#exit()
 
 	if options.MPI:
@@ -134,14 +155,21 @@ def main():
 		if mpi_r == 0:
 			res.write_image(vol_stack)
 	else:
+		t6 = time()
+		print_msg("... reconstructing 3D variance  \n")
 		res = recons3d_em(prj_stack, options.iter, options.abs, True, options.sym)
 		res.write_image(vol_stack)
+		print_msg("Writing to the disk volume of reconstructed 3D variance as		:%s\n"%(vol_stack))
+		t7 = time()
+		print_msg("Reconstructing 3D variance lasted [s]					:%s\n"%(t7-t6))
+	tF = time()
+	print_msg("Total time for these computations [min]					:%s\n"%((tF-t0)/60))
+	print_end_msg("sx3Dvariance")
 	global_def.BATCH = False
 
 	if options.MPI:
 		from mpi import mpi_finalize
 		mpi_finalize()
-
-
+	
 if __name__=="__main__":
 	main()
