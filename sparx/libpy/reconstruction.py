@@ -741,8 +741,8 @@ def recons3d_em(projections_stack, max_iterations_count = 100, min_avg_abs_voxel
 	a = model_blank(nx, nx, nx) # normalization volume
 	e2D = model_square(nx, nx, nx)
 	sphere3D_volume = model_blank(nx,nx,nx).cmp("lod",sphere3D,{"negative":0,"normalize":0})
-	print "Parameters:  size=%d  radius=%d  projections_count=%d  max_iterations_count=%d min_avg_abs_voxel_change=%f" % (
-						nx, radius, len(projections), max_iterations_count, min_avg_abs_voxel_change )
+	#print "Parameters:  size=%d  radius=%d  projections_count=%d  max_iterations_count=%d min_avg_abs_voxel_change=%f" % (
+	#					nx, radius, len(projections), max_iterations_count, min_avg_abs_voxel_change )
 	
 	# ----- create initial solution, calculate weights and normalization image (a)
 	projections_angles = []  # list of lists of angles
@@ -768,7 +768,7 @@ def recons3d_em(projections_stack, max_iterations_count = 100, min_avg_abs_voxel
 	a = threshold_to_minval(a, min_allowed_divisor)  # make sure that voxels' values are not too small (image a is divisior)
 	Util.mul_img( solution, sphere3D )
 	Util.div_img( solution, a )
-	print "Projections loading COMPLETED"
+	#print "Projections loading COMPLETED"
 	# ----- iterations
 	prev_avg_absolute_voxel_change = 999999999.0
 	time_projection = 0.0
@@ -790,7 +790,7 @@ def recons3d_em(projections_stack, max_iterations_count = 100, min_avg_abs_voxel
 		Util.mul_img( q, solution ) # q <- new solution  
 		avg_absolute_voxel_change = q.cmp("lod",solution,{"mask":sphere3D,"negative":0,"normalize":0}) / sphere3D_volume
 		if avg_absolute_voxel_change > prev_avg_absolute_voxel_change:
-			print "Finish and return last good solution"
+			#print "Finish and return last good solution"
 			break
 		prev_avg_absolute_voxel_change = avg_absolute_voxel_change
 		solution = q
@@ -799,7 +799,7 @@ def recons3d_em(projections_stack, max_iterations_count = 100, min_avg_abs_voxel
 			break
 	time_iterations = clock() - time_iterations
 	# ----- return solution and exit
-	print "Times: iterations=", time_iterations, "  project=", time_projection, "  backproject=", time_backprojection
+	#print "Times: iterations=", time_iterations, "  project=", time_projection, "  backproject=", time_backprojection
 	return solution
 
 
