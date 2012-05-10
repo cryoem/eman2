@@ -5724,9 +5724,8 @@ Dict Util::CANG(float PHI,float THETA,float PSI)
 #undef QUADPI
 #undef DGR_TO_RAD
 //-----------------------------------------------------------------------------------------------------------------------
-#define    DM(I)         		lDM[I-1]
 #define    B(i,j) 			Bptr[i-1+((j-1)*NSAM)]
-#define    CUBE(i,j,k)                  CUBEptr[(i-1)+((j-1)+((k-1)*NY3D))*(size_t)NX3D]
+#define    CUBE(i,j,k)                  CUBEptr[i+(j+(k*NY3D))*(size_t)NX3D]
 
 void Util::BPCQ(EMData *B,EMData *CUBE)
 {
@@ -5737,20 +5736,14 @@ void Util::BPCQ(EMData *B,EMData *CUBE)
 
 	Transform * t = B->get_attr("xform.projection");
 
-	// ---- build DM matrix (transform matrix) - convert from 3x4 matrix to 3x3 matrix
-	std::vector<float> lDM = t->get_matrix();
-	for (unsigned r = 1; r < 3; ++r) {
-		lDM[r*3+0] = lDM[r*4+0];
-		lDM[r*3+1] = lDM[r*4+1];
-		lDM[r*3+2] = lDM[r*4+2];
-	}
-	lDM.resize(9);
+	// ---- build DM matrix (transform matrix) - convert from 3x4 matrix to 2x3 matrix (only 2 first rows are nedeed)
+	std::vector<float> DM = t->get_matrix();
+	DM[3+0] = DM[4+0];
+	DM[3+1] = DM[4+1];
+	DM[3+2] = DM[4+2];
 
 	float  *Bptr = B->get_data();
 	float  *CUBEptr = CUBE->get_data();
-
-	int NSAM,NROW,NX3D,NY3D,NZC,KZ,IQX,IQY,LDPX,LDPY,LDPZ,LDPNMX,LDPNMY,NZ1;
-	float DIPX,DIPY,XB,YB,XBB,YBB;
 
 	Dict d = t->get_params("spider");
 	delete t; t=0;
@@ -5760,42 +5753,40 @@ void Util::BPCQ(EMData *B,EMData *CUBE)
 	x_shift = -x_shift;
 	y_shift = -y_shift;
 
-	NSAM = B->get_xsize();
-	NROW = B->get_ysize();
-	NX3D = CUBE->get_xsize();
-	NY3D = CUBE->get_ysize();
-	NZC  = CUBE->get_zsize();
+	const int NSAM = B->get_xsize();
+	const int NROW = B->get_ysize();
+	const int NX3D = CUBE->get_xsize();
+	const int NY3D = CUBE->get_ysize();
+	const int NZC  = CUBE->get_zsize();
 
+	const int LDPX = NX3D/2 +1;
+	const int LDPY = NY3D/2 +1;
+	const int LDPZ = NZC/2 +1;
+	const int LDPNMX = NSAM/2 +1;
+	const int LDPNMY = NROW/2 +1;
+	const int NZ1 = 1;
 
-	LDPX   = NX3D/2 +1;
-	LDPY   = NY3D/2 +1;
-	LDPZ   = NZC/2 +1;
-	LDPNMX = NSAM/2 +1;
-	LDPNMY = NROW/2 +1;
-	NZ1    = 1;
-
-	for(int K=1;K<=NZC;K++) {
-		KZ=K-1+NZ1;
-		for(int J=1;J<=NY3D;J++) {
-			XBB = (1-LDPX)*DM(1)+(J-LDPY)*DM(2)+(KZ-LDPZ)*DM(3);
-			YBB = (1-LDPX)*DM(4)+(J-LDPY)*DM(5)+(KZ-LDPZ)*DM(6);
-			for(int I=1;I<=NX3D;I++) {
-				XB  = (I-1)*DM(1)+XBB-x_shift;
-				IQX = int(XB+float(LDPNMX));
+	for (int K=0; K<NZC; K++) {
+		const int KZ = K + NZ1;
+		for (int J=0; J<NY3D; J++) {
+			const float XBB = (1-LDPX)*DM[0]+(J+1-LDPY)*DM[1]+(KZ-LDPZ)*DM[2];
+			const float YBB = (1-LDPX)*DM[3]+(J+1-LDPY)*DM[4]+(KZ-LDPZ)*DM[5];
+			for (int I=0; I<NX3D; I++) {
+				const float XB  = I*DM[0] + XBB - x_shift;
+				const int IQX = int(XB+float(LDPNMX));
 				if (IQX <1 || IQX >= NSAM) continue;
-				YB  = (I-1)*DM(4)+YBB-y_shift;
-				IQY = int(YB+float(LDPNMY));
+				const float YB  = I*DM[3] + YBB - y_shift;
+				const int IQY = int(YB+float(LDPNMY));
 				if (IQY<1 || IQY>=NROW)  continue;
-				DIPX = XB+LDPNMX-IQX;
-				DIPY = YB+LDPNMY-IQY;
+				const float DIPX = XB+LDPNMX-IQX;
+				const float DIPY = YB+LDPNMY-IQY;
 
-				CUBE(I,J,K) = CUBE(I,J,K)+B(IQX,IQY)+DIPY*(B(IQX,IQY+1)-B(IQX,IQY))+DIPX*(B(IQX+1,IQY)-B(IQX,IQY)+DIPY*(B(IQX+1,IQY+1)-B(IQX+1,IQY)-B(IQX,IQY+1)+B(IQX,IQY)));
+				CUBE(I,J,K) = CUBE(I,J,K) + B(IQX,IQY)+DIPY*(B(IQX,IQY+1)-B(IQX,IQY))+DIPX*(B(IQX+1,IQY)-B(IQX,IQY)+DIPY*(B(IQX+1,IQY+1)-B(IQX+1,IQY)-B(IQX,IQY+1)+B(IQX,IQY)));
 			}
 		}
 	}
 }
 
-#undef DM
 #undef B
 #undef CUBE
 
