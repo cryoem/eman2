@@ -168,9 +168,9 @@ def avgvar_CTF(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift
 	
 	'''
 	
-	from utilities    import model_blank
+	from utilities    import model_blank, pad
 	from alignment    import kbt
-	from fundamentals import fft, fftip
+	from fundamentals import fft, fftip, window2d
 	from filter       import filt_ctf
 	from morphology   import ctf_img
 
@@ -216,9 +216,11 @@ def avgvar_CTF(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift
 
 	if i2 == 0:
 		i2 = data_nima-1
-
 	ave = EMData(nx, ny, 1, True)
-	ctf_2_sum = EMData(nx, ny, 1, False)
+	nx2 = nx#*2
+	ny2 = ny#*2
+	dopa = False
+	ctf_2_sum = EMData(nx2, ny2, 1, False)
 	nima = 0
 	for i in xrange(i1, i2+1):
 		IS_ODD = False
@@ -251,16 +253,17 @@ def avgvar_CTF(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift
 				if  mirror: img.process_inplace("xform.mirror", {"axis":'x'})
 
 		ctf_params = img.get_attr("ctf")
-		Util.add_img(ave, filt_ctf(img, ctf_params))
-		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
+		Util.add_img(ave, filt_ctf(img, ctf_params, dopa))
+		Util.add_img2(ctf_2_sum, ctf_img(nx2, ctf_params))
 
-	snr_img = EMData(nx, ny, 1, False)
+	snr_img = EMData(nx2, ny2, 1, False)
 	fnx = snr_img.get_xsize()
 	fny = snr_img.get_ysize()
 	for i in xrange(fnx):
 		for j in xrange(fny):
 			snr_img.set_value_at(i,j, 1.0/snr)
-	Util.add_img(ctf_2_sum, snr_img)
+	#Util.add_img(ctf_2_sum, snr_img)
+	#tavg = window2d(fft(Util.divn_img(fft(pad(ave,nx2,ny2,1,background="circumference")), ctf_2_sum)), nx,ny)
 	tavg = fft(Util.divn_img(fft(ave), ctf_2_sum))
 
 	# calculate variance, in real space
@@ -295,13 +298,15 @@ def avgvar_CTF(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift
 				if  mirror: img.process_inplace("xform.mirror", {"axis":'x'})
 	
 		ctf_params = img.get_attr("ctf")
-		temp = filt_ctf(img-filt_ctf(tavg, ctf_params), ctf_params)
+		temp = filt_ctf(img-filt_ctf(tavg, ctf_params, dopa), ctf_params, dopa)
+		temp.write_image("qdif.hdf",i)
 		temp = fft(Util.divn_img(fft(temp), ctf_2_sum))
+		#temp = window2d(fft(Util.divn_img(fft(pad(temp,nx2,ny2,1,background="circumference")), ctf_2_sum)), nx,ny)
+		temp.write_image("pdif.hdf",i)
 		Util.add_img(totv, temp)
 		Util.add_img2(tvar, temp)
-	Util.mul_scalar(totv, 1.0/float(nima))
-	tvar = (tvar - totv*totv*nima)/(nima-1)
-	return tavg, tvar#, totv
+	#Util.mul_scalar(totv, 1.0/float(nima))
+	return (tvar - totv*totv/nima), tvar, totv,tavg
 
 def add_oe_series(data, ali_params="xform.align2d"):
 	"""
@@ -1179,8 +1184,8 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 
 	if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "aves_wiener", 1)
 
-	nx2 = 2*nx
-	ny2 = 2*ny
+	nx2 = nx2
+	ny2 = ny2
 	ave       = EMData(nx2, ny2, 1, False)
 	ctf_2_sum = EMData(nx2, ny2, 1, False)
 	snrsqrt = sqrt(SNR)
