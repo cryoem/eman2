@@ -1274,7 +1274,7 @@ class EMInfoPane(QtGui.QWidget):
 	def __init__(self,parent=None):
 		"Set our GUI up"
 		QtGui.QWidget.__init__(self,parent)
-		
+
 		# Root class represents no target
 		self.hbl=QtGui.QHBoxLayout(self)
 		self.lbl=QtGui.QLabel("No Information Available")
@@ -1289,7 +1289,7 @@ class EMInfoPane(QtGui.QWidget):
 		
 	def busy(self) : pass
 	
-	def notbusy(self) : pass 
+	def notbusy(self) : pass 	
 
 class EMTextInfoPane(EMInfoPane):
 	
@@ -1545,10 +1545,14 @@ class EMBDBInfoPane(EMInfoPane):
 ##		QtCore.QObject.connect(self.wbutedit, QtCore.SIGNAL('clicked(bool)'), self.buttonEdit)
 		
 		self.view2d=[]
+		self.view3d=[]
+		self.view2ds=[]
 
 	def hideEvent(self,event) :
 		"If this pane is no longer visible close any child views"
 		for v in self.view2d: v.close()
+		for v in self.view3d: v.close()
+		for v in self.view2ds: v.close()
 		event.accept()
 
 	def buttonMisc(self,but):
@@ -1588,17 +1592,20 @@ class EMBDBInfoPane(EMInfoPane):
 		self.wheadtree.clear()
 
 		# This sets up action buttons which can be used on individual images in a stack
-		self.curft=EMImageFileType(target.path())
-		self.curactions=self.curft.actions()
+		try:
+			self.curft=EMImageFileType(target.path())
+			self.curactions=self.curft.actions()
 
-		for i,b in enumerate(self.wbutmisc):
-			try:
-				b.setText(self.curactions[i][0])
-				b.setToolTip(self.curactions[i][1])
-				b.show()
-			except:
-				b.hide()
-				
+			for i,b in enumerate(self.wbutmisc):
+				try:
+					b.setText(self.curactions[i][0])
+					b.setToolTip(self.curactions[i][1])
+					b.show()
+				except:
+					b.hide()
+		except:
+			# Not a readable image or volume
+			pass
 				
 	def imNumChange(self,num):
 		"New image number"
@@ -1913,7 +1920,10 @@ class EMInfoWin(QtGui.QWidget):
 			pane.display(target)
 			self.stack.setCurrentIndex(i)		# put the new pane on top
 			
-
+	def closeEvent(self,event):
+		QtGui.QWidget.closeEvent(self,event)
+		self.emit(QtCore.SIGNAL("winclosed()"))
+		
 class SortSelTree(QtGui.QTreeView):
 	"""This is a subclass of QtGui.QTreeView. It is almost identical but implements selection processing with sorting. 
 	The correct way of doing this in QT4.2 is to use a QSortFilterProxy object, but that won't work properly in this case."""
@@ -2327,6 +2337,9 @@ class EMBrowserWidget(QtGui.QWidget):
 		"Button press"
 		self.setPath(self.curpath)
 
+	def infowinClosed(self):
+		self.wbutinfo.setChecked(False)
+		
 	def buttonInfo(self,tog):
 		if tog :
 			if self.infowin==None :
@@ -2338,6 +2351,7 @@ class EMBrowserWidget(QtGui.QWidget):
 			if len(qism)==1 : 
 				self.infowin.set_target(qism[0].internalPointer(),self.curft)
 			else : self.infowin.set_target(None,None)
+			QtCore.QObject.connect(self.infowin, QtCore.SIGNAL('winclosed()'), self.infowinClosed)
 		else :
 			if self.infowin!=None:
 				self.infowin.hide()
