@@ -260,6 +260,8 @@ class Strategy2IMGPair(Strategy):
 			self.mediator.untilt_win.update_mainwin()
 	
 	def compute_tilt_angle(self):
+		self.compute_tilt_angle_phil()
+		'''
 		if self.A != None:
 			# Use the transformation matrix to compute the tilt angle
 			rotA = numpy.array([[self.A[0,0],self.A[0,1]],[self.A[1,0],self.A[1,1]]])
@@ -270,7 +272,27 @@ class Strategy2IMGPair(Strategy):
 			except:
 				self.mediator.control_window.pair_picker_tool.tiltangle.setText("Det(A) > 1")
 			self.compute_tiltaxis()
-		
+		'''
+	def compute_tilt_angle_phil(self):
+		if self.A != None:
+			# SVD of A
+			rotA = numpy.array([[self.A[0,0],self.A[0,1]],[self.A[1,0],self.A[1,1]]])
+			U, D, V = numpy.linalg.svd(rotA)
+			# single values are ranked by numpy
+			self.tiltangle = math.degrees(math.acos(D[1]))
+			self.mediator.control_window.pair_picker_tool.tiltangle.setText(("%3.2f"%self.tiltangle)+u'\u00B0')
+			# compute tilt axis
+			self.dphi = math.degrees(math.atan2(U[0][1],U[0][0]))
+			self.dgamma = math.degrees(math.atan2(V[0][1],V[0][0]))
+			# save and display data
+			self.mediator.control_window.pair_picker_tool.tiltaxis.setText(("%3.2f"%self.dphi)+u'\u00B0')
+			self.mediator.control_window.pair_picker_tool.gamma.setText(("%3.2f"%self.dgamma)+u'\u00B0')
+			# Save tilt data
+			self.mediator.tilt_win.boxes.save_tiltdata_to_db([self.tiltangle, self.dphi, self.dgamma])
+			self.mediator.untilt_win.boxes.save_tiltdata_to_db([self.tiltangle, self.dphi, self.dgamma])
+			
+			print D
+			
 	def update_boxes(self):
 		for i,box in enumerate(self.mediator.untilt_win.boxes.boxlist):
 			# Compute tilted box

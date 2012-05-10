@@ -328,6 +328,7 @@
     "CHILDREN": [
       {
         "ICON": "single_image_3d", 
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2tiltvalidate.py",
         "EXPERT": 1,
         "MODE": "analysis",
         "PROGRAM": "e2tiltvalidate.py", 
@@ -338,6 +339,7 @@
       },
       {
         "ICON": "single_image_3d", 
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2tiltvalidate.py",
         "MODE": "gui",
         "PROGRAM": "e2tiltvalidate.py", 
         "NAME": "Plot Validation", 

@@ -68,7 +68,7 @@ def main():
 	parser.add_argument("--docontourplot",action="store_true",help="Compute a contour plot",default=False, guitype='boolbox',row=6,col=0, rowspan=1, colspan=1, expert=True, mode="analysis") 
 	parser.add_argument("--tiltrange", type=int,help="The angular tiltrange to search",default=15, guitype='intbox', row=6, col=1, rowspan=1, colspan=1, expert=True, mode="analysis")
 	parser.add_argument("--sym",  type=str,help="The recon symmetry", default="c1", guitype='symbox', row=5, col=0, rowspan=1, colspan=1, mode="analysis")
-	parser.add_argument("--planethres", type=float, help="Maximum out of plane threshold for the tiltaxis. 0 = perfectly in plane, 1 = normal to plane", default=0.1, guitype='floatbox', row=5, col=0, rowspan=1, mode="gui")
+	parser.add_argument("--planethres", type=float, help="Maximum out of plane threshold for the tiltaxis. 0 = perfectly in plane, 1 = normal to plane", default=360.0, guitype='floatbox', row=5, col=0, rowspan=1, mode="gui")
 	parser.add_argument("--datalabels", action="store_true",help="Add data labels to the plot", default=False, guitype='boolbox', row=6, col=1, rowspan=1, mode="gui")
 	parser.add_argument("--colorzaxis", action="store_true",help="Color scatter dots by Z axis", default=False, guitype='boolbox', row=7, col=0, rowspan=1, mode="gui")
 	parser.add_argument("--maxtiltangle", type=float, help="Maximum tiltangle permitted when finding tilt distances", default=180.0, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="analysis")
@@ -79,7 +79,7 @@ def main():
 	parser.add_argument("--eulerfile",type=str,help="Euler angles file, to create tiltdistance from pre-aligned particles. Format is: imgnum, name, az, alt, phi",default=None)
 	# options associated with e2projector3d.py
 	parser.add_header(name="projheader", help='Options below this label are specific to e2project', title="### e2project options ###", row=10, col=0, rowspan=1, colspan=2, mode="analysis")
-	parser.add_argument("--delta", type=float,help="The angular step size for alingment", default=20.0, guitype='floatbox', row=11, col=0, rowspan=1, colspan=1, mode="analysis")
+	parser.add_argument("--delta", type=float,help="The angular step size for alingment", default=5.0, guitype='floatbox', row=11, col=0, rowspan=1, colspan=1, mode="analysis")
 	# options associated with e2simmx.py
 	parser.add_header(name="simmxheader", help='Options below this label are specific to e2simmx', title="### e2simmx options ###", row=12, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_argument("--simalign",type=str,help="The name of an 'aligner' to use prior to comparing the images (default=rotate_translate)", default="rotate_translate", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=15, col=0, rowspan=1, colspan=2, mode="analysis")
