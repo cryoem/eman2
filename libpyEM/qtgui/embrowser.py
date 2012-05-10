@@ -1992,6 +1992,10 @@ class EMBrowserWidget(QtGui.QWidget):
 		import emdataitem3d 
 		QtGui.QWidget.__init__(self,parent)
 		
+		
+		self.withmodal=withmodal
+		self.multiselect=multiselect
+		
 		self.resize(780,580)
 		self.gbl = QtGui.QGridLayout(self)
 		
@@ -2263,6 +2267,10 @@ class EMBrowserWidget(QtGui.QWidget):
 		if itm.nChildren()>0:
 			self.setPath(itm.path())
 		else:
+			if self.withmodal : 
+				self.buttonOk(True)
+				return
+			
 			try:
 				self.curactions[0][2](self)
 			except:

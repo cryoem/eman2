@@ -147,6 +147,7 @@ class EMImageWidget(object):
 					if isinstance(old,EMPlot3DWidgetNew) :
 						old.set_data(data,remove_directories_from_name(filename),replace)
 						return old
+						
 				widget = EMPlot3DWidgetNew()
 				widget.set_data(data,remove_directories_from_name(filename),replace)
 				return widget	

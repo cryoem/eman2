@@ -338,7 +338,7 @@ class EMPlot3DModel(EM3DModel, EMLightsDrawer):
 		else: working_data = data
 				
 		if len(working_data) < 2:
-			print "error, the length of the input working_data must be atleast 2"
+			print "error, the length of the input working_data must be at least 2"
 			return
 		l = -1
 		for d in working_data:
@@ -349,7 +349,7 @@ class EMPlot3DModel(EM3DModel, EMLightsDrawer):
 					return
 		
 		if clear_current: 
-			self.clear_working_data() # use this so there's only one function
+			self.data={} 
 		
 		# note no checking, if the old working_data exists it is simply replaced
 		self.data[key] = working_data

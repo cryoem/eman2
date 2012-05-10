@@ -276,6 +276,9 @@ class GUIEvalImage(QtGui.QWidget):
 		self.quality.setMinimumWidth(80)
 		self.hbl3.addWidget(self.quality)
 		
+		self.bimport=QtGui.QPushButton("Import")
+		self.hbl3.addWidget(self.bimport)
+		
 		self.vbl.addLayout(self.hbl3)
 		#self.hbl_buttons = QtGui.QHBoxLayout()
 		#self.saveparms = QtGui.QPushButton("Save parms")
@@ -290,6 +293,7 @@ class GUIEvalImage(QtGui.QWidget):
 		#self.vbl.addLayout(self.hbl_buttons)
 		#self.vbl.addLayout(self.hbl_buttons2)
 		
+		QtCore.QObject.connect(self.bimport, QtCore.SIGNAL("clicked(bool)"),self.doImport)
 		QtCore.QObject.connect(self.sdefocus, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.sbfactor, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.sapix, QtCore.SIGNAL("valueChanged"), self.newCTF)
@@ -494,7 +498,19 @@ class GUIEvalImage(QtGui.QWidget):
 			QtGui.QMessageBox.warning(None,"Error","The following processors encountered errors during processing of 1 or more images:"+"\n".join(self.errors))
 			self.errors=None
 
-
+	def doImport(self,val):
+		"""Imports the currently selected image into a project"""
+		
+		# create directory if necessary
+		if not os.access("micrographs",os.r_OK) :
+			try : os.mkdir("micrographs")
+			except: 
+				QtGui.QMessageBox.warning(self,"Error !","Cannot create micrographs directory")
+				return
+			
+		db=db_open_dict("bdb:micrographs#%s"%base_name(self.setlist.item(val).text()))
+		self.data["ctf"]=self.parms[val][1]
+		
 
 
 	def newSet(self,val):

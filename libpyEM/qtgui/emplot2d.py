@@ -183,13 +183,15 @@ class EMPlot2DWidget(EMGLWidget):
 			glDeleteLists(self.main_display_list,1)
 			self.main_display_list = 0
 
-	def set_data(self,input_data,key="data",replace=False,quiet=False,color=-1,linewidth=1,linetype=0,symtype=-1,symsize=4):
+	def set_data(self,input_data,key="data",replace=False,quiet=False,color=-1,linewidth=1,linetype=-2,symtype=-2,symsize=4):
 		"""Set a keyed data set. The key should generally be a string describing the data.
 		'data' is a tuple/list of tuples/list representing all values for a particular
 		axis. eg - the points: 1,5; 2,7; 3,9 would be represented as ((1,2,3),(5,7,9)).
 		Multiple axes may be set, and which axis represents which axis in the plot can be
 		selected by the user. 'data' can also be an EMData object, in which case the entire
-		data array is plotted as if it were 1-D."""
+		data array is plotted as if it were 1-D.
+		
+		linetype and symtype are integers. -1 will disable either. Default is autoselect."""
 		
 		self.del_shapes()
 		
@@ -213,13 +215,6 @@ class EMPlot2DWidget(EMGLWidget):
 			else : self.axes[key]=(-1,0,-2,-2)
 		except: return
 		
-		if color<0 : color=colortypes[len(data)%len(colortypes)]			# Automatic color setting
-		if color not in range(len(colortypes)): color = 0 # there are only a certain number of colors
-		if linetype>=0 : doline=1
-		else : doline,linetype=0,0
-		if symtype>=0 : dosym=1
-		else : dosym,symtype=0,0
-		self.pparm[key]=(color,doline,linetype,linewidth,dosym,symtype,symsize)
 				
 		if not isinstance(data[0],list) and not isinstance(data[0],tuple) and not isinstance(data[0],ndarray):
 			x_axis = arange(len(data))
@@ -235,6 +230,17 @@ class EMPlot2DWidget(EMGLWidget):
 				self.data.pop(key)
 				self.visibility.pop(key)
 		
+		if symtype==-2 and linetype==-2:
+			if len(self.data[key][0])>2500 : dosym,symtype=1,0
+			else : doline,linetype=1,0
+		if color<0 : color=colortypes[len(data)%len(colortypes)]			# Automatic color setting
+		if color not in range(len(colortypes)): color = 0 # there are only a certain number of colors
+		if linetype>=0 : doline=1
+		else : doline,linetype=0,0
+		if symtype>=0 : dosym=1
+		else : dosym,symtype=0,0
+		self.pparm[key]=(color,doline,linetype,linewidth,dosym,symtype,symsize)
+
 		self.autoscale()
 		
 		if self.inspector: self.inspector.datachange()
@@ -416,7 +422,7 @@ class EMPlot2DWidget(EMGLWidget):
 			return
 		
 		render = False
-			
+		
 		if self.needupd or not self.plotimg:
 			self.needupd=0
 			if self.main_display_list != 0:
@@ -825,109 +831,19 @@ lc is the cursor selection point in plot coords"""
 	def leaveEvent(self,event):
 		pass
 
-class EMPolarPlot2DWidget(EMGLWidget):
+class EMPolarPlot2DWidget(EMPlot2DWidget):
 	"""
-	A QT widget for plotting ploar plots:
+	Reimplmetation of the EMPlot2DWidget( to make polar plots:
 	"""
-	def __init__(self,application=None,winid=None):
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True);
-		EMGLWidget.__init__(self, winid=winid)
-		self.setFormat(fmt)
-		self.resize(640,480)
-		self.setWindowIcon(QtGui.QIcon(QtGui.QPixmap(ploticon)))
-		
-		self.axes={}
-		self.pparm={}			# color,line,linetype,linewidth,sym,symtype,symsize
-		self.inspector=None
-		self.needupd=1
-		self.plotimg=None
-		self.shapes={}
-		self.limits=None
-		self.climits=None
-		self.slimits=None
-		self.rmousedrag=None
-		self.axisparms=(None,None,"linear","linear")
-		self.selected=[]
-		
-		self.data={}				# List of Lists to plot 
-		self.visibility = {}  	   	# Same entries as in self.data, but entries are true or False to indicate visibility
-		self.glflags = EMOpenGLFlagsAndTools() 	# supplies power of two texturing flags
-		
-		self.tex_name = 0
-		self.main_display_list = 0
-		
-		#polar plotting stuff
+	def __init__(self):
 		self.datap = None
+		self.data = None
+		EMPlot2DWidget.__init__(self)
+		self.setWindowIcon(QtGui.QIcon(QtGui.QPixmap(ploticon)))
 		self.setDataLabelsColor('#00ff00')
 		self.scattercolor = None	# IF set to none default colors are used
 		self.pointsizes = None		# Defalt is to use consta sizes. Overrides constant size
-		self.yticklabels = True		# Default is to draw Y tick labels
-		self.xticklabels = True		# Default is to draw X tick labels
-        
-        def set_yticklabels(self, boolvalue):
-		self.yticklabels = boolvalue
-		
-        def set_xticklabels(self, boolvalue):
-		self.xticklabels = boolvalue	
-		
-	def initializeGL(self):
-		GL.glClearColor(0,0,0,0)
-		GL.glEnable(GL_DEPTH_TEST)
-		
-	def paintGL(self):
-
-		GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
-		
-		GL.glMatrixMode(GL.GL_MODELVIEW)
-		GL.glLoadIdentity()
-		self.render()
-		
-	def resizeGL(self, width, height):
-		#print "resize ",self.width(), self.height()
-		side = min(width, height)
-		GL.glViewport(0,0,self.width(),self.height())
-		
-		GL.glMatrixMode(GL.GL_PROJECTION)
-		GL.glLoadIdentity()
-		GL.glOrtho(0.0,self.width(),0.0,self.height(),-10,10)
-		GL.glMatrixMode(GL.GL_MODELVIEW)
-		GL.glLoadIdentity()
-		
-		self.resize_event(width,height)
-		
-	def closeEvent(self,event):
-		self.clear_gl_memory()
-		EMGLWidget.closeEvent(self, event)
-		
-	def keyPressEvent(self,event):
-		if event.key() == Qt.Key_C:
-			self.show_inspector(1)
-		elif event.key() == Qt.Key_F1:
-			try: from PyQt4 import QtWebKit
-			except: return
-			try:
-				try:
-					test = self.browser
-				except: 
-					self.browser = QtWebKit.QWebView()
-					self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display"))
-					self.browser.resize(800,800)
-				
-				if not self.browser.isVisible(): self.browser.show()
-			except: pass
-
-	def setWindowTitle(self,filename):
-		EMGLWidget.setWindowTitle(self, remove_directories_from_name(filename))
-	
-	def clear_gl_memory(self):
-		if self.tex_name != 0: 
-			GL.glDeleteTextures(self.tex_name)
-			self.tex_name = 0
-		if self.main_display_list != 0:
-			glDeleteLists(self.main_display_list,1)
-			self.main_display_list = 0
-			
+                
 	def mousePressEvent(self, event):
 		#Save a snapshot of the scene
 		self.clusterorigin_rad = None
@@ -1042,16 +958,6 @@ class EMPolarPlot2DWidget(EMGLWidget):
 			filename = "%s.%s"%(filename,format)
 			image.save(filename, format)
 		print "Saved %s to disk"%os.path.basename(str(filename))
-	
-	def base_set_data(self,input_data,key="data",replace=False,quiet=False,color=-1,linewidth=1,linetype=0,symtype=-1,symsize=4):
-		"""Set a keyed data set. The key should generally be a string describing the data.
-		'data' is a tuple/list of tuples/list representing all values for a particular
-		axis. eg - the points: 1,5; 2,7; 3,9 would be represented as ((1,2,3),(5,7,9)).
-		Multiple axes may be set, and which axis represents which axis in the plot can be
-		selected by the user. 'data' can also be an EMData object, in which case the entire
-		data array is plotted as if it were 1-D."""
-		
-		self.del_shapes()
 		
 	def set_data(self,input_data,key="data",replace=False,quiet=False,color=0,linewidth=1,linetype=0,symtype=-1,symsize=4,radcut=-1,datapoints=None):
 		"""
@@ -1060,58 +966,11 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		"""
 		if len(input_data) != 2:
 			raise ValueError("The must be Theta and R axes")
-
-		self.del_shapes()
-		
-		self.needupd=1
-		
-		if replace: 
-			self.data = {}
-			self.axes = {}
-			self.visibility = {}
-			
-		if input_data==None :
-			if not quiet: self.updateGL()
-			return
-				
-		if isinstance(input_data,EMData):
-			data = input_data.get_data_as_vector()
-		else: data = input_data
-		
-		try:
-			if len(data)>1 : self.axes[key]=(0,1,-2,-2)
-			else : self.axes[key]=(-1,0,-2,-2)
-		except: return
-		
-		if color<0 : color=colortypes[len(data)%len(colortypes)]			# Automatic color setting
-		if color not in range(len(colortypes)): color = 0 # there are only a certain number of colors
-		if linetype>=0 : doline=1
-		else : doline,linetype=0,0
-		if symtype>=0 : dosym=1
-		else : dosym,symtype=0,0
-		self.pparm[key]=(color,doline,linetype,linewidth,dosym,symtype,symsize)
-				
-		if not isinstance(data[0],list) and not isinstance(data[0],tuple) and not isinstance(data[0],ndarray):
-			x_axis = arange(len(data))
-			rdata = [ x_axis,array(data) ]
-			self.data[key]= rdata
-			self.visibility.setdefault(key,True)
-		else:
-			if data : 
-				self.data[key]=[array(i) for i in data]
-				self.visibility.setdefault(key,True)
-			else : 
-				#del self.data[key] why del?
-				self.data.pop(key)
-				self.visibility.pop(key)
-		
+		EMPlot2DWidget.set_data(self,input_data,key=key,replace=replace,quiet=quiet,color=color,linewidth=linewidth,linetype=linetype,symtype=symtype,symsize=symsize)
 		lst = list(self.pparm[key])
 		lst.append(radcut)
 		self.pparm[key] = tuple(lst) 
 		self.datap = datapoints
-		
-		if not quiet: self.updateGL()
-		if self.inspector: self.inspector.datachange()
                 
         def setDataLabelsColor(self, color):
                 """ Set the color of the data labels """
@@ -1165,8 +1024,6 @@ class EMPolarPlot2DWidget(EMGLWidget):
 			else : ax=fig.add_axes((.1,.1,.8,.8),autoscale_on=True,polar=True,xscale=self.axisparms[2],yscale=self.axisparms[3])
 			if self.axisparms[0] and len(self.axisparms[0])>0 : ax.set_xlabel(self.axisparms[0],size="xx-large")
 			if self.axisparms[1] and len(self.axisparms[1])>0 : ax.set_ylabel(self.axisparms[1],size="xx-large")
-			if not self.yticklabels: ax.set_yticklabels([])
-			if not self.xticklabels: ax.set_xticklabels([])
 			canvas=FigureCanvasAgg(fig)
 			
 			for i in self.axes.keys():
@@ -1268,83 +1125,6 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		
 		if not texture_2d_was_enabled: GL.glDisable(GL.GL_TEXTURE_2D)
 
-	def scr2plot(self,x,y) :
-		""" converts screen coordinates to plot coordinates """
-		try: 
-			if self.axisparms[2]=="linear" : x2=(x-self.scrlim[0])/self.scrlim[2]*self.plotlim[2]+self.plotlim[0]
-			else : x2=10.0**((x-self.scrlim[0])/self.scrlim[2]*(log10(self.plotlim[2]+self.plotlim[0])-log10(self.plotlim[0]))+log10(self.plotlim[0]))
-			if self.axisparms[3]=="linear" : y2=(self.height()-y-self.scrlim[1])/self.scrlim[3]*self.plotlim[3]+self.plotlim[1]
-			else : y2=10.0**((self.height()-y-self.scrlim[1])/self.scrlim[3]*(log10(self.plotlim[3]+self.plotlim[1])-log10(self.plotlim[1]))+log10(self.plotlim[1]))
-			return (x2,y2)
-		except: return (0,0)
-		
-	def plot2scr(self,x,y) :
-		""" converts plot coordinates to screen coordinates """
-		try:
-			if self.axisparms[2]=="linear" : x2=(x-self.plotlim[0])/self.plotlim[2]*self.scrlim[2]+self.scrlim[0]
-			else : x2=(-(self.scrlim[2]*log(x)) + (self.scrlim[0] + self.scrlim[2])*log(10)*log10(self.plotlim[0])-self.scrlim[0]*log(10)*log10(self.plotlim[0] +self.plotlim[2])) /(log(10)*(log10(self.plotlim[0]) - log10(self.plotlim[0] + self.plotlim[2])))
-			if self.axisparms[3]=="linear" :y2=self.height()-((y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]+self.scrlim[1])
-			else : y2=(self.scrlim[3]*log(y) + self.height()*log(10.0)*log10(self.plotlim[1])-self.scrlim[1]*log(10.0)*log10(self.plotlim[1])-self.scrlim[3]*log(10.0)*log10(self.plotlim[1]) - self.height()*log(10.0)*log10(self.plotlim[1]+self.plotlim[3]) + self.scrlim[1]*log(10)*log10(self.plotlim[1]+self.plotlim[3])) / (log(10)*(log10(self.plotlim[1]) - log10(self.plotlim[1]+self.plotlim[3])))
-			return (x2,y2)
-		except: 
-			return (0,0)
-			
-	def resize_event(self,width,height):
-		self.full_refresh()
-		
-	def full_refresh(self):
-		'''
-		This function is called from resizeGL and from the inspector when somebody toggles the display of a line
-		'''
-		self.needupd=1
-		self.del_shapes(("xcross","ycross","lcross","Circle"))
-	
-	def setAxisParms(self,xlabel,ylabel,xlog="linear",ylog="linear"):
-# skip this since we want a guaranteed redraw somewhere
-#		if self.axisparms==(xlabel,ylabel,xlog,ylog): return
-		self.axisparms=(xlabel,ylabel,xlog,ylog)
-		self.needupd=1
-		self.updateGL()
-		
-	def add_shape(self,k,s):
-		"""Add a 'shape' object to be overlaid on the image. Each shape is
-		keyed into a dictionary, so different types of shapes for different
-		purposes may be simultaneously displayed. The 'scr' shapes are in
-		screen coordinates rather than data coordinates
-		
-		0            1  2  3  4  5     6     7     8
-		"rect"       R  G  B  x0 y0    x1    y1    linew
-		"line"       R  G  B  x0 y0    x1    y1    linew
-		"label"      R  G  B  x0 y0    text  size	linew
-		"circle"     R  G  B  x0 y0    r     linew
-		"scrrect"    R  G  B  x0 y0    x1    y1    linew
-		"scrline"    R  G  B  x0 y0    x1    y1    linew
-		"scrlabel"   R  G  B  x0 y0    text  size	linew
-		"scrcircle"  R  G  B  x0 y0    r     linew
-		"""
-		self.shapes[k]=s
-		self.shapechange=1
-		#self.updateGL()
-	
-	def add_shapes(self,d):
-		self.shapes.update(d)
-		self.shapechange=1
-		#self.updateGL()
-	
-	def del_shapes(self,k=None):
-		if k:
-			try:
-				for i in k:
-					if i in self.shapes : del self.shapes[i]
-			except: 
-				try: del self.shapes[k]
-				except: return
-		else:
-			self.shapes={}
-		
-		self.shapechange=1
-		#self.updateGL()
-		
 class EMPlot2DClassInsp(QtGui.QWidget):
 	"""This class implements the classification pop-up from the EMPlot2DInspector"""
 	def __init__(self,target) :
@@ -1450,10 +1230,10 @@ class DragListWidget(QtGui.QListWidget):
 			# Find an unused name for the data set
 			trgplot=self.datasource().target()
 			name="Dropped"
-			n=1
+			nn=1
 			while trgplot.data.has_key(name) :
-				name="Dropped_%d"%n
-				n+=1
+				name="Dropped_%d"%nn
+				nn+=1
 			
 			trgplot.set_data(data,name,quiet=True)
 			if n==1: trgplot.setAxes(name,0)
