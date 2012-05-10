@@ -143,6 +143,7 @@ def avgvar(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift2D',
 
 	return ave, (var - ave*ave*nima)/(nima-1)
 
+
 def avgvar_CTF(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift2D', interp='quadratic', i1=0, i2=0, use_odd=True, use_even=True, snr=1.0):
 	'''
 	
@@ -163,7 +164,7 @@ def avgvar_CTF(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift
 	
 	tavg: The best estimate (Wiener filter) given the image series and estimated CTF parms, in real space.
 			
-	var: Variance (in real space) calculated as follows, [1/(n-1)]*[sum_j (O_j - F^{-1}(H_j*tavg))^2] where O_j is the j-th image in real space, F^{-1} denotes inverse fourier transform operator, and H_j is the CTF of the j-th image
+		var: Variance (in real space) calculated as follows, [1/(n-1)]*[sum_j { F[(H_j*(O_j - F^{-1}(H_j*tavg))^2]/SUM_CTF^2} where O_j is the j-th image in real space, F^{-1} denotes inverse fourier transform operator, and H_j is the CTF of the j-th image
 	
 	'''
 	
@@ -216,7 +217,7 @@ def avgvar_CTF(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift
 	if i2 == 0:
 		i2 = data_nima-1
 
-	ave = EMData(nx, ny, 1, False)
+	ave = EMData(nx, ny, 1, True)
 	ctf_2_sum = EMData(nx, ny, 1, False)
 	nima = 0
 	for i in xrange(i1, i2+1):
@@ -236,25 +237,21 @@ def avgvar_CTF(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift
 		nima += 1
 
 		if inmem:
-			img = data[i]
+			img = data[i].copy()
 		else:
 			img = get_im(data, i)
 
 		if (mode == 'a'):
 			angle, sx, sy, mirror, scale = get_params2D(img, ali_params)
 			if rot_method == 'rot_shift2D':
-				ima = rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
+				img = rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
 			else:
 				kb = kbt(nx)
-				ima = rotshift2dg(img, angle, sx, sy, kb)
-				if  mirror: ima.process_inplace("xform.mirror", {"axis":'x'})
-			fftip(ima)
-		else:
-			ima = fft(img)
+				img = rotshift2dg(img, angle, sx, sy, kb)
+				if  mirror: img.process_inplace("xform.mirror", {"axis":'x'})
 
-		ctf_params = img.get_attr("ctf")		
-		ima_filt = filt_ctf(ima, ctf_params)
-		Util.add_img(ave, ima_filt)
+		ctf_params = img.get_attr("ctf")
+		Util.add_img(ave, filt_ctf(img, ctf_params))
 		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params))
 
 	snr_img = EMData(nx, ny, 1, False)
@@ -264,10 +261,11 @@ def avgvar_CTF(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift
 		for j in xrange(fny):
 			snr_img.set_value_at(i,j, 1.0/snr)
 	Util.add_img(ctf_2_sum, snr_img)
-	tavg = Util.divn_img(ave, ctf_2_sum)
+	tavg = fft(Util.divn_img(fft(ave), ctf_2_sum))
 
 	# calculate variance, in real space
-	totv = model_blank(nx, ny, nz) 
+	totv = model_blank(nx, ny, nz)
+	tvar = model_blank(nx, ny, nz)
 	for i in xrange(i1, i2+1):
 		IS_ODD = False
 		IS_EVEN = False
@@ -283,19 +281,27 @@ def avgvar_CTF(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift
 			continue
 
 		if inmem:
-			img = data[i]
+			img = data[i].copy()
 		else:
 			img = get_im(data, i)
+
+		if (mode == 'a'):
+			angle, sx, sy, mirror, scale = get_params2D(img, ali_params)
+			if rot_method == 'rot_shift2D':
+				img = rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
+			else:
+				kb = kbt(nx)
+				img = rotshift2dg(img, angle, sx, sy, kb)
+				if  mirror: img.process_inplace("xform.mirror", {"axis":'x'})
 	
 		ctf_params = img.get_attr("ctf")
-		temp = fft(filt_ctf(tavg, ctf_params)) # real space
-		temp = Util.subn_img(img, temp)
-		Util.add_img2(totv, temp)
-
-	Util.mul_scalar(totv, 1.0/float(nima-1))
-
-	return fft(tavg), totv
-
+		temp = filt_ctf(img-filt_ctf(tavg, ctf_params), ctf_params)
+		temp = fft(Util.divn_img(fft(temp), ctf_2_sum))
+		Util.add_img(totv, temp)
+		Util.add_img2(tvar, temp)
+	Util.mul_scalar(totv, 1.0/float(nima))
+	tvar = (tvar - totv*totv*nima)/(nima-1)
+	return tavg, tvar#, totv
 
 def add_oe_series(data, ali_params="xform.align2d"):
 	"""
@@ -1205,6 +1211,8 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 		Util.add_img2(var, ima)
 	ave = Util.window(fft(ave),nx,ny,1,0,0,0)
 	Util.mul_scalar(var, 1.0/(n-1))
+	#  The variance is incorrect, so I replaced it by a blank image, will fix later
+	var.to_zero()
 	return ave, var
 
 
@@ -1270,6 +1278,8 @@ def aves_adw(input_stack, mode="a", SNR=1.0, Ng = -1):
 		Util.sub_img(ima, oc)
 		Util.add_img2(var, ima)
 	Util.mul_scalar(var, 1.0/(n-1))
+	#  The variance is incorrect, so I replaced it by a blank image, will fix later
+	var.to_zero()
 	return ave, var
 
 
@@ -9554,7 +9564,7 @@ class pcanalyzer:
 
 
 class pcanalyzebck:
-	def __init__(self, mask, nvec, dataw, variance, fl, aa, MPI=False ):
+	def __init__(self, mask, nvec, dataw, list_of_particles, dm, variance, fl, aa, MPI=False ):
 		import os
 		self.mask = mask.copy()
 		if MPI:
@@ -9578,6 +9588,8 @@ class pcanalyzebck:
 			self.myid = 0
 		#self.sdir   = sdir
 		self.dataw  = dataw
+		self.list_of_particles = list_of_particles
+		self.dm     = dm
 		self.variance = variance
 		self.nimg   = len(dataw)
 		self.nvec   = nvec
@@ -9610,7 +9622,7 @@ class pcanalyzebck:
 	def get_dat( self, k ):
 		from reconstruction import backproject_swbp
 		from filter  import filt_tanl
-		vb = Util.divn_img(backproject_swbp(self.dataw[k]), self.variance)
+		vb = Util.divn_img(backproject_swbp(self.dataw[k], self.list_of_particles[k], self.dm), self.variance)
 		if(self.fl > 0.0):
 			vb = filt_tanl(vb, self.fl, self.aa)
 		#vb -= pc[0]
