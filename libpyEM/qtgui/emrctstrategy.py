@@ -260,8 +260,8 @@ class Strategy2IMGPair(Strategy):
 			self.mediator.untilt_win.update_mainwin()
 	
 	def compute_tilt_angle(self):
-		self.compute_tilt_angle_phil()
-		'''
+		#self.compute_tilt_angle_phil()
+		
 		if self.A != None:
 			# Use the transformation matrix to compute the tilt angle
 			rotA = numpy.array([[self.A[0,0],self.A[0,1]],[self.A[1,0],self.A[1,1]]])
@@ -272,7 +272,7 @@ class Strategy2IMGPair(Strategy):
 			except:
 				self.mediator.control_window.pair_picker_tool.tiltangle.setText("Det(A) > 1")
 			self.compute_tiltaxis()
-		'''
+		
 	def compute_tilt_angle_phil(self):
 		if self.A != None:
 			# SVD of A
