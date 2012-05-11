@@ -128,7 +128,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.ringrad=1
 		self.xpos1=(10,0)
 		self.xpos2=(0,10)
-		self.db = db_open_dict('bdb:mgquality')
+#		self.db = db_open_dict('bdb:mgquality')
 		
 		self.defaultvoltage=voltage
 		self.defaultapix=apix
@@ -244,6 +244,10 @@ class GUIEvalImage(QtGui.QWidget):
 		self.sang45=ValSlider(self,(-22.5,22.5),"45 mode ang",0.0,90)
 		self.vbl.addWidget(self.sang45)
 
+		self.squality=ValSlider(self,(0,9),"Quality (0-9):",0,90)
+		self.squality.setIntonly(True)
+		self.vbl.addWidget(self.squality)
+
 
 #		self.sapix=ValSlider(self,(.2,10),"A/Pix:",2,90)
 #		self.vbl.addWidget(self.sapix)
@@ -270,11 +274,11 @@ class GUIEvalImage(QtGui.QWidget):
 		self.sboxsize.intonly=True
 		self.hbl3.addWidget(self.sboxsize)
 		
-		self.hbl3.addWidget(QtGui.QLabel("Quality Factor"))
-		self.quality = QtGui.QComboBox()
-		for i in xrange(6): self.quality.addItem(str(i))
-		self.quality.setMinimumWidth(80)
-		self.hbl3.addWidget(self.quality)
+		#self.hbl3.addWidget(QtGui.QLabel("Quality Factor"))
+		#self.quality = QtGui.QComboBox()
+		#for i in xrange(10): self.quality.addItem(str(i))
+		#self.quality.setMinimumWidth(80)
+		#self.hbl3.addWidget(self.quality)
 		
 		self.bimport=QtGui.QPushButton("Import")
 		self.hbl3.addWidget(self.bimport)
@@ -302,7 +306,7 @@ class GUIEvalImage(QtGui.QWidget):
 		QtCore.QObject.connect(self.scs, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.sboxsize, QtCore.SIGNAL("valueChanged"), self.newBox)
 		QtCore.QObject.connect(self.sang45, QtCore.SIGNAL("valueChanged"), self.recalc_real)
-		QtCore.QObject.connect(self.quality,QtCore.SIGNAL("activated(int)"),self.newQualityFactor)
+#		QtCore.QObject.connect(self.quality,QtCore.SIGNAL("activated(int)"),self.newQualityFactor)
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
 		QtCore.QObject.connect(self.scalcmode,QtCore.SIGNAL("currentIndexChanged(int)"),self.newCalcMode)
 		QtCore.QObject.connect(self.s2dmode,QtCore.SIGNAL("currentIndexChanged(int)"),self.new2DMode)
@@ -501,6 +505,9 @@ class GUIEvalImage(QtGui.QWidget):
 	def doImport(self,val):
 		"""Imports the currently selected image into a project"""
 		
+		# This is just the (presumably) unique portion of the filename
+		item=item_name(self.setlist.item(val).text())
+		
 		# create directory if necessary
 		if not os.access("micrographs",os.r_OK) :
 			try : os.mkdir("micrographs")
@@ -508,9 +515,11 @@ class GUIEvalImage(QtGui.QWidget):
 				QtGui.QMessageBox.warning(self,"Error !","Cannot create micrographs directory")
 				return
 			
-		db=db_open_dict("bdb:micrographs#%s"%base_name(self.setlist.item(val).text()))
+		db=db_open_dict("bdb:micrographs#%s"%item)
 		self.data["ctf"]=self.parms[val][1]
 		
+		db_parms=db_open_dict("bdb:e2ctf.parms")
+		db_parms[item]=[self.parms[val][1].to_string(),self.fft1d,self.parms[val][1].background,self.squality.value]
 
 
 	def newSet(self,val):
@@ -626,12 +635,13 @@ class GUIEvalImage(QtGui.QWidget):
 		self.incalc=False
 		time.sleep(.2)			# help make sure update has a chance
 		self.procthread=None
-		dbquality = self.db[os.path.basename(self.curfilename)]
+#		dbquality = self.db[os.path.basename(self.curfilename)]
 #		print dbquality
-		if dbquality != None:
-			self.quality.setCurrentIndex(dbquality)
-		else:
-			self.quality.setCurrentIndex(2)
+		item=item_name(self.curfilename)
+		db=db_open_dict("bdb:e2ctf.parms")
+		if db[item]==None or db[item[3]]==None : db[item]=[parms[1].to_string(),self.fft1d,parms[1].background,5]
+		print item,db[item][3]
+		self.squality.setValue(int(db[item[3]]))
 		
 	def redisplay(self):
 		self.needredisp=False
@@ -706,9 +716,6 @@ class GUIEvalImage(QtGui.QWidget):
 		self.plotmode=mode
 		self.wplot.set_data(None,replace=True,quiet=True)	# clear the data so plots are properly redisplayed, but don't update the display
 		self.needredisp=True
-
-	def newQualityFactor(self, factor):
-		self.db[os.path.basename(self.curfilename)] = factor
 		
 	def newBox(self):
 		parms=self.parms[self.curset]

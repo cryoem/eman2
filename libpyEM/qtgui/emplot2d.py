@@ -657,6 +657,7 @@ class EMPlot2DWidget(EMGLWidget):
 evc is the cursor selection point in screen coords
 lc is the cursor selection point in plot coords"""
 
+		j=0
 		# we find the first displayed axis in the list
 		for ak in self.axes.keys():
 			if not self.visibility[ak]: continue

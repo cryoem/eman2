@@ -1087,10 +1087,10 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 			# our parameter set is (defocus,bfactor)
 			parm=[b1a[1],500.0]
 
-	#		print "Initial guess : ",parm
+#			print "Initial guess : ",parm
 			sim=Simplex(ctf_cmp_2,parm,[.02,20.0],data=(ctf,bglowsub,s0,s1,ds,parm[0],rng))
 			oparm=sim.minimize(epsilon=.0000001,monitor=0)
-	#		print "Optimized : ",oparm
+#			print "Optimized : ",oparm
 			best.append((oparm[1],oparm[0]))			
 
 
@@ -1267,7 +1267,7 @@ def ctf_cmp_a(parms,data):
 		if i>=s0a and i<s0 : er+=fabs(cc[i]-bs[i])
 		if i>=s0 : er+=(cc[i]-bs[i])**2.0
 
-	er*=max(1.0,1.0+parms[0]*20.0-rng[1])**2		# penalty for being outside range (high)
+	er*=max(1.0,1.0+parms[0]*20.0-rng[-1])**2		# penalty for being outside range (high)
 	er*=max(1.0,1.0+rng[0]-parms[0]*20.0)**2		# penalty for being outside range (low)
 
 
@@ -1308,22 +1308,24 @@ def ctf_cmp_2(parms,data):
 #	out=file("xxx","w")
 	a,b,c=0,0,0
 	for i in range(s0,s1):
-		v=sfact(i*ds)*cc[i]*cc[i]
-		a+=v*bgsub[i]
+		v=sfact(i*ds)*cc[i]*cc[i]		# structure factor * CTF intensity
+		a+=v*bgsub[i]					# 
 		b+=v*v
 		c+=bgsub[i]*bgsub[i]
 #		if v>.001 : out.write("%f\t%f\n"%(i*ds,bgsub[i]/v))
 #	print s0,s1,a,b,c
 	er=1.0-a/sqrt(b*c)
-
+	
+	er1=er
 
 #	print er,(parms[0]-dforig)**2,parms[1]
 	
 	er*=(1.0+300.0*(parms[0]-dforig)**4)		# This is a weight which biases the defocus towards the initial value
-	er*=max(1.0,1.0+parms[0]*20.0-rng[1])**2		# penalty for being outside range (high)
+	er*=max(1.0,1.0+parms[0]*20.0-rng[-1])**2		# penalty for being outside range (high)
 	er*=max(1.0,1.0+rng[0]-parms[0]*20.0)**2		# penalty for being outside range (low)
 	er*=1.0+(parms[1]-200)/20000.0+exp(-(parms[1]-50.0)/30.0)		# This is a bias towards small B-factors and to prevent negative B-factors
 #	er*=(1.0+fabs(parms[1]-200.0)/100000.0)		# This is a bias towards small B-factors
+#	print "%1.3g\t%1.3g\t%1.3g\t%1.3g\t"%(er,er1,er/er1,parms[0]),(1.0+300.0*(parms[0]-dforig)**4),max(1.0,1.0+parms[0]*20.0-rng[-1])**2,max(1.0,1.0+rng[0]-parms[0]*20.0)**2,1.0+(parms[1]-200)/20000.0+exp(-(parms[1]-50.0)/30.0)
 	
 	#out=file("dbg","a")
 	#out.write("%f\t%f\t%f\n"%(parms[0],sqrt(parms[1]),er))
@@ -1485,7 +1487,7 @@ class GUIctf(QtGui.QWidget):
 		self.scs=ValSlider(self,(0,5),"Cs (mm):",0,90)
 		self.vbl.addWidget(self.scs)
 		
-		self.squality=ValSlider(self,(0,10),"Quality (0-10):",0,90)
+		self.squality=ValSlider(self,(0,9),"Quality (0-9):",0,90)
 		self.squality.setIntonly(True)
 		self.vbl.addWidget(self.squality)
 		

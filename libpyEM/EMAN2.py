@@ -1088,6 +1088,25 @@ def abs_path(name):
 	else:
 		return os.path.abspath(name)
 
+def item_name(file_name):
+	"""
+	This will return an 'item name' for a path. This is generally the last element of the path without any extensions, eg:
+	"/home/test/abc.hdf" -> abc
+	"bdb:test#mytest" -> mytest
+	"""
+	
+	if "\\" in file_name : file_name=file_name.replace("\\","/")
+
+	if file_name[:4].lower()=="bdb:":
+		s=file_name.split("#")
+		if len(s)==1 : 
+			if not "/" in file_name : return file_name[4:]
+			return file_name.split("/")[-1]
+		return s[-1]
+	else:
+		s=file_name.split("/")[-1]
+		return s.rsplit(".",1)[0]
+
 def base_name( file_name,bdb_keep_dir=False ):
 	'''
 	wraps os.path.basename but returns something sensible for bdb syntax
