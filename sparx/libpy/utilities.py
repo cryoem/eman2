@@ -3228,52 +3228,62 @@ def set_pixel_size(img, pixel_size):
 		cc.apix = pixel_size
 		img.set_attr("ctf", cc)
 
-def group_proj_by_phitheta(proj_ang, symmetry = "c1", img_per_grp = 100, diff_pct = 0.1):
+def group_proj_by_phitheta(proj_ang, symmetry = "c1", img_per_grp = 100, diff_pct = 0.1, verbose = False):
 	from sparx import even_angles, assign_projangles
 	from time import time
+	from random import random
 	
+	t0 = time()
 	proj_list = []   
 	angles_list = []
-	
 	N = len(proj_ang)
-	for i in xrange(N):
-		proj_ang[i].append(i)
-		proj_ang[i].append(True)
-			
+	if len(proj_ang[0]) == 3:       # determine whether it have shifts provided, make the program more robust
+		for i in xrange(N):
+			proj_ang[i][0] += random()*0.5-0.25
+			proj_ang[i][1] += random()*0.5-0.25
+			proj_ang[i].append(i)
+			proj_ang[i].append(True)
+	else:
+		for i in xrange(N):
+			proj_ang[i][0] += random()*0.5-0.25
+			proj_ang[i][1] += random()*0.5-0.25
+			proj_ang[i][3] = i
+			proj_ang[i][4] = True
+	
 	min_img_per_grp = img_per_grp*(1-diff_pct)
 	max_img_per_grp = img_per_grp*(1+diff_pct)
-	
-	min_delta = 0.001
-	max_delta = 45.0
 	max_trial = 20
+	max_pssbl_delta = 180.0/int(symmetry[1])
 
 	while True:
 		proj_ang_now = []
 		for i in xrange(N):
 			if proj_ang[i][4]: proj_ang_now.append(proj_ang[i])
 		if len(proj_ang_now) == 0: break
-		#print "Current size of data set = ", len(proj_ang_now)
+		if verbose: print "Current size of data set = ", len(proj_ang_now)
 		if len(proj_ang_now) <= max_img_per_grp:
 			members = [0]*len(proj_ang_now)
 			for i in xrange(len(proj_ang_now)):  members[i] = proj_ang_now[i][3]
 			#print "Size of this group = ", len(members)
 			proj_list.append(members)
-			angles_list.append([0.0, 0.0, 45.0])
+			angles_list.append([0.0, 0.0, max_pssbl_delta])
 			break
 		
 		trial = 0
+		min_delta = 0.001
+		max_delta = max_pssbl_delta
 		while trial < max_trial:
 			mid_delta = (min_delta+max_delta)/2
-			#print "...... Testing delta = %6.2f"%(mid_delta)
+			if verbose: print "...... Testing delta = %6.2f"%(mid_delta)
 			ref_ang = even_angles(mid_delta, symmetry=symmetry)
 			t1 = time()
 			asg = assign_projangles(proj_ang_now, ref_ang)
-			#print "............ Time used = %6.2f"%(time()-t1)
+			if verbose: print "............ Time used = %6.2f"%(time()-t1)
 
 			count = []
 			for i in xrange(len(asg)): count.append([len(asg[i]), i])
 			count.sort(reverse = True)
-			#print "............ maximum size = %5d   minimum size = %5d"%(count[0][0], count[-1][0])
+			if verbose: print "............ maximum size = %5d   minimum size = %5d"%(count[0][0], count[-1][0])
 			k = 0
 			grp_size = count[k][0]
 			grp_num = count[k][1]
@@ -3282,9 +3292,9 @@ def group_proj_by_phitheta(proj_ang, symmetry = "c1", img_per_grp = 100, diff_pc
 				for i in xrange(grp_size):
 					members[i] = proj_ang_now[asg[grp_num][i]][3]
 					proj_ang[members[i]][4] = False
-				#print "Size of this group = ", grp_size	
+				if verbose: print "Size of this group = ", grp_size	
 				proj_list.append(members)
-				angles_list.append([ ref_ang[grp_num][0], ref_ang[grp_num][1], mid_delta])
+				angles_list.append([ref_ang[grp_num][0], ref_ang[grp_num][1], mid_delta])
 				k += 1
 				grp_size = count[k][0]
 				grp_num = count[k][1]
@@ -3300,9 +3310,10 @@ def group_proj_by_phitheta(proj_ang, symmetry = "c1", img_per_grp = 100, diff_pc
 			for i in xrange(grp_size):
 				members[i] = proj_ang_now[asg[grp_num][i]][3]
 				proj_ang[members[i]][4] = False
-			#print "Size of this group = ", grp_size
+			if verbose: print "Size of this group = ", grp_size
 			proj_list.append(members)
 			angles_list.append([ref_ang[grp_num][0], ref_ang[grp_num][1], mid_delta])
-		#print ""
+		if verbose: print ""
+	if verbose: print "Total time used = %6.2f"%(time()-t0)
 	return proj_list, angles_list
 
