@@ -40,9 +40,14 @@
 #include "ctf.h"
 #include "emassert.h"
 #include "exception.h"
+#include "hdf_filecache.h"
 
 #include <boost/shared_ptr.hpp>
 using boost::shared_ptr;
+
+#ifdef	HDFIO_CACHE
+	#include <boost/filesystem.hpp>
+#endif	//HDFIO_CACHE
 
 #ifdef WIN32
 	#include <windows.h>
@@ -367,6 +372,9 @@ EMUtil::ImageType EMUtil::get_image_type(const string & in_filename)
 	if (old_ext == ImagicIO::IMG_EXT) {
 		filename = Util::change_filename_ext(filename, ImagicIO::HED_EXT);
 	}
+	else if(old_ext == "hdf") {
+		return IMAGE_HDF;
+	}
 
 	FILE *in = fopen(filename.c_str(), "rb");
 	if (!in) {
@@ -487,13 +495,15 @@ int EMUtil::get_image_count(const string & filename)
 	if (imageio) {
 		nimg = imageio->get_nimg();
 	}
+#ifndef HDFIO_CACHE
 #ifndef IMAGEIO_CACHE
 	if( imageio )
 	{
 		delete imageio;
 		imageio = 0;
 	}
-#endif
+#endif	//IMAGEIO_CACHE
+#endif	//HDFIO_CACHE
 	EXITFUNC;
 	return nimg;
 }
@@ -551,6 +561,36 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 		break;
 #endif
 #ifdef EM_HDF5
+	#ifdef	HDFIO_CACHE
+	case IMAGE_HDF:
+	{
+		bool readonly;
+		if(rw == ImageIO::READ_ONLY) {
+			readonly = true;
+		}
+		else{
+			readonly = false;
+		}
+
+		boost::filesystem::path p(filename);
+		boost::filesystem::path full_p = boost::filesystem::complete(p);
+		FileItem * fitem = HDFCache::instance()->get_file(full_p.string());
+		if(fitem && readonly==fitem->get_readonly()) {
+			imageio = fitem->get_imgio();
+		}
+		else {
+			imageio = new HdfIO2(filename, rw_mode);
+			if (((HdfIO2 *)imageio)->init_test()==-1) {
+				delete imageio;
+				imageio = new HdfIO(filename, rw_mode);
+			}
+
+			FileItem * fitem = new FileItem(full_p.string(), imageio, time(0), readonly);
+			HDFCache::instance()->add_file(fitem);
+		}
+	}
+		break;
+	#else	//HDFIO_CACHE
 	case IMAGE_HDF:
 		imageio = new HdfIO2(filename, rw_mode);
 		if (((HdfIO2 *)imageio)->init_test()==-1) {
@@ -558,7 +598,8 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 			imageio = new HdfIO(filename, rw_mode);
 		}
 		break;
-#endif
+	#endif	//HDFIO_CACHE
+#endif	//EM_HDF5
 	case IMAGE_LST:
 		imageio = new LstIO(filename, rw_mode);
 		break;

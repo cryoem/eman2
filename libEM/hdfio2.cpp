@@ -311,7 +311,7 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 	}
 
     //we need this delete attribute call here, even we called erase_header()
-    //at the biginning of write_header(), since the  "imageid_max" need be updated correctly.
+    //at the beginning of write_header(), since the  "imageid_max" need be updated correctly.
 	if( H5Adelete(loc,name) < 0 ) {
 #ifdef DEBUGHDF
 		LOGERR("Attribute %s deletion error in write_attr().\n", name);

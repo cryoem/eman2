@@ -67,6 +67,7 @@ SET(LIB_EM_SOURCE byteorder.cpp
     testutil.cpp
     analyzer.cpp
     randnum.cpp
+    hdf_filecache.cpp
     sparx/fundamentals.cpp
     sparx/fourierfilter.cpp
     sparx/rsconvolution.cpp
@@ -190,6 +191,10 @@ ELSE(ENABLE_OPENGL)
     INSTALL(TARGETS EM2 
         DESTINATION lib)
 ENDIF(ENABLE_OPENGL)
+
+if(ENABLE_HDFIOCACHE)
+    TARGET_LINK_LIBRARIES(EM2 ${BOOST_THREAD_LIBRARY} ${BOOST_FILESYSTEM_LIBRARY})
+endif(ENABLE_HDFIOCACHE)
 
 FILE(GLOB headerfiles "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
 INSTALL(FILES ${headerfiles}

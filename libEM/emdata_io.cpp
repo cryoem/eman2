@@ -120,13 +120,15 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 		}
 	}
 
+#ifndef HDFIO_CACHE
 #ifndef IMAGEIO_CACHE
 	if( imageio )
 	{
 		delete imageio;
 		imageio = 0;
 	}
-#endif
+#endif	//IMAGEIO_CACHE
+#endif	//HDFIO_CACHE
 	EXITFUNC;
 }
 
@@ -198,7 +200,8 @@ void EMData::read_binedimage(const string & filename, int img_index, int binfact
 			update();
 		}
 	}
-	
+
+#ifndef HDFIO_CACHE
 #ifndef IMAGEIO_CACHE
 	if( imageio )
 	{
@@ -206,6 +209,8 @@ void EMData::read_binedimage(const string & filename, int img_index, int binfact
 		imageio = 0;
 	}
 #endif
+#endif
+
 	EXITFUNC;
 }
 
@@ -240,6 +245,7 @@ void EMData::write_image(const string & filename, int img_index,
 	attr_dict["nz"] = nz;
 	attr_dict["changecount"] = changecount;
 
+#ifndef HDFIO_CACHE
 	if (Util::is_file_exist(filename)) {
 		LOGVAR("file exists");
 		if (!header_only && region == 0) {
@@ -248,15 +254,18 @@ void EMData::write_image(const string & filename, int img_index,
 			if (tmp_imageio->is_single_image_format()) {
 				rwmode = ImageIO::WRITE_ONLY;
 			}
+
 #ifndef IMAGEIO_CACHE
 			if( tmp_imageio )
 			{
 				delete tmp_imageio;
 				tmp_imageio = 0;
 			}
-#endif
+#endif	//IMAGEIO_CACHE
 		}
 	}
+#endif	//HDFIO_CACHE
+
 	LOGVAR("getimageio %d",rwmode);
 	ImageIO *imageio = EMUtil::get_imageio(filename, rwmode, imgtype);
 	if (!imageio) {
@@ -367,6 +376,7 @@ void EMData::write_image(const string & filename, int img_index,
 		imageio->flush();
 	}
 
+#ifndef HDFIO_CACHE
 #ifndef IMAGEIO_CACHE
 	if( imageio )
 	{
@@ -374,7 +384,7 @@ void EMData::write_image(const string & filename, int img_index,
 		imageio = 0;
 	}
 #endif
-
+#endif
 
 
 	EXITFUNC;
