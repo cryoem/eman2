@@ -30,14 +30,13 @@
 
 from global_def import *
 
-def avgvar(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift2D', interp='quadratic', i1=0, i2=0, use_odd=True, use_even=True):
+def avgvar(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_even=True):
 	'''
 	
 	INPUT
 	
 	data: image stack, can be 2D or 3D, must be in real space
 	mode: whether to apply alignment parameters. Default mode='a' means apply parameters
-	ali_params: name of the attribute alignment parameters are stored in image headers
 	rot_method: specifies the function by which images are rotated/shifted if alignment parameters are to be applied. This is only relevant for the case where images are 2D, in which case rot_method can be either rot_shift2D or rotshift2dg, with the default being rot_shift2D. If images are 3D, rot_shift3D will be used to rotate/shift the images.
 	interp: interpolation method to use for rot_method when applying alignment parameters.
 	i1: index of first image to be used.
@@ -71,87 +70,52 @@ def avgvar(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift2D',
 		img2D = False
 
 	if mode == 'a':
-		if not(img2D) and ali_params=="xform.align2d":
-			ali_params = 'xform.align3d'
-
-		# determine which rotation/shift to use
-		# current options are: rot_shift2D, rot_shift3D, rot_shift2dg
-
 		if img2D:
 			from utilities import get_params2D
-			if rot_method == 'rot_shift2D':
-				from fundamentals import rot_shift2D
-			else:
-				if rot_method == 'rotshift2dg':
-					from fundamentals import rotshift2dg
-				else:
-					print "only rot_shift2dg and rot_shift2D are supported...exiting"
-					sys.exit()
+			from fundamentals import rot_shift2D
 		else:
-			rot_method = 'rot_shift3D'
-			from fundamentals import rot_shift3D
 			from utilities import get_params3D
+			from fundamentals import rot_shift3D
 
 	if inmem:
 		data_nima = len(data)
 	else:
 		data_nima = EMUtil.get_image_count(data)
-
-	if i2 == 0:
-		i2 = data_nima-1
+	if i2 == 0: i2 = data_nima-1
 
 	ave = model_blank(nx,ny,nz)
 	var = model_blank(nx,ny,nz)
-
 	nima = 0
 	for i in xrange(i1, i2+1):
-		IS_ODD = False
-		IS_EVEN = False
-
-		if i%2 == 0:
-			IS_EVEN = True
-		else:
-			IS_ODD = True
-
-		if not(use_odd) and IS_ODD:
+		if not(use_odd) and i%2 == 1:
 			continue
-		if not(use_even) and IS_EVEN:
+		if not(use_even) and i%2 == 0:
 			continue
-
 		nima += 1
-
 		if inmem:
 			img = data[i]
 		else:
 			img = get_im(data, i)
 		if (mode == 'a'):
-			if (nz > 1):
-				phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(img, ali_params)
-				img = rot_shift3D(img, phi, theta, psi, s3x, s3y, s3z, scale)
+			if img2D:
+				angle, sx, sy, mirror, scale = get_params2D(img)
+				img = rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
 			else:
-				angle, sx, sy, mirror, scale = get_params2D(img, ali_params)
-				if rot_method == 'rot_shift2D':
-					img = rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
-				else:
-					kb = kbt(nx)
-					img = rotshift2dg(img, angle, sx, sy, kb)
-					if  mirror: img.process_inplace("xform.mirror", {"axis":'x'})
+				phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(img)
+				img = rot_shift3D(img, phi, theta, psi, s3x, s3y, s3z, scale)
 		Util.add_img(ave, img)
 		Util.add_img2(var, img)
 
 	Util.mul_scalar(ave, 1.0 /float(nima) )
-
 	return ave, (var - ave*ave*nima)/(nima-1)
 
-
-def avgvar_CTF(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift2D', interp='quadratic', i1=0, i2=0, use_odd=True, use_even=True, snr=1.0):
+def avgvar_CTF(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_even=True, snr=1.0e23, dopa = True):
 	'''
 	
 	INPUT
 	
 	data: image stack, must be 2D, must be in real space
 	mode: whether to apply alignment parameters. Default mode='a' means apply parameters
-	ali_params: name of the attribute alignment parameters are stored in image headers
 	rot_method: specifies the function by which images are rotated/shifted if alignment parameters are to be applied. This is only relevant for the case where images are 2D, in which case rot_method can be either rot_shift2D or rotshift2dg, with the default being rot_shift2D. If images are 3D, rot_shift3D will be used to rotate/shift the images.
 	interp: interpolation method to use for rot_method when applying alignment parameters.
 	i1: index of first image to be used.
@@ -195,65 +159,43 @@ def avgvar_CTF(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift
 		sys.exit()
 
 	if mode == 'a':
-
-		# determine which rotation/shift to use
-		# current options are: rot_shift2D, rot_shift3D, rot_shift2dg
-
 		from utilities import get_params2D
-		if rot_method == 'rot_shift2D':
-			from fundamentals import rot_shift2D
-		else:
-			if rot_method == 'rotshift2dg':
-				from fundamentals import rotshift2dg
-			else:
-				print "only rot_shift2dg and rot_shift2D are supported...exiting"
-				sys.exit()
+		from fundamentals import rot_shift2D
 
 	if inmem:
 		data_nima = len(data)
 	else:
 		data_nima = EMUtil.get_image_count(data)
 
-	if i2 == 0:
-		i2 = data_nima-1
-	ave = EMData(nx, ny, 1, True)
-	nx2 = nx#*2
-	ny2 = ny#*2
-	dopa = False
+	if i2 == 0: i2 = data_nima-1
+	if dopa:
+		nx2 = nx*2
+		ny2 = ny*2
+	else:
+		nx2 = nx
+		ny2 = ny
+	ave = EMData(nx2, ny2, 1, False)
 	ctf_2_sum = EMData(nx2, ny2, 1, False)
 	nima = 0
 	for i in xrange(i1, i2+1):
-		IS_ODD = False
-		IS_EVEN = False
-
-		if i%2 == 0:
-			IS_EVEN = True
-		else:
-			IS_ODD = True
-		
-		if not(use_odd) and IS_ODD:
+		if not(use_odd) and i%2 == 1:
 			continue
-		if not(use_even) and IS_EVEN:
+		if not(use_even) and i%2 == 0:
 			continue
-
 		nima += 1
-
 		if inmem:
 			img = data[i].copy()
 		else:
 			img = get_im(data, i)
 
 		if (mode == 'a'):
-			angle, sx, sy, mirror, scale = get_params2D(img, ali_params)
-			if rot_method == 'rot_shift2D':
-				img = rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
-			else:
-				kb = kbt(nx)
-				img = rotshift2dg(img, angle, sx, sy, kb)
-				if  mirror: img.process_inplace("xform.mirror", {"axis":'x'})
+			angle, sx, sy, mirror, scale = get_params2D(img)
+			img = rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
 
+		img = pad(img, nx2, ny2, 1, background = "circumference")
 		ctf_params = img.get_attr("ctf")
-		Util.add_img(ave, filt_ctf(img, ctf_params, dopa))
+		fftip(img)
+		Util.add_img(ave, filt_ctf(img, ctf_params))
 		Util.add_img2(ctf_2_sum, ctf_img(nx2, ctf_params))
 
 	snr_img = EMData(nx2, ny2, 1, False)
@@ -262,51 +204,36 @@ def avgvar_CTF(data, mode='a', ali_params="xform.align2d", rot_method='rot_shift
 	for i in xrange(fnx):
 		for j in xrange(fny):
 			snr_img.set_value_at(i,j, 1.0/snr)
-	#Util.add_img(ctf_2_sum, snr_img)
-	#tavg = window2d(fft(Util.divn_img(fft(pad(ave,nx2,ny2,1,background="circumference")), ctf_2_sum)), nx,ny)
-	tavg = fft(Util.divn_img(fft(ave), ctf_2_sum))
+	Util.add_img(ctf_2_sum, snr_img)
+	Util.div_img(ave, ctf_2_sum)
 
-	# calculate variance, in real space
-	totv = model_blank(nx, ny, nz)
+	# calculate variance in real space
+	#totv = model_blank(nx2, ny2, nz)
 	tvar = model_blank(nx, ny, nz)
 	for i in xrange(i1, i2+1):
-		IS_ODD = False
-		IS_EVEN = False
-
-		if i%2 == 0:
-			IS_EVEN = True
-		else:
-			IS_ODD = True
-
-		if not(use_odd) and IS_ODD:
+		if not(use_odd) and i%2 == 1:
 			continue
-		if not(use_even) and IS_EVEN:
+		if not(use_even) and i%2 == 0:
 			continue
-
 		if inmem:
 			img = data[i].copy()
 		else:
 			img = get_im(data, i)
 
 		if (mode == 'a'):
-			angle, sx, sy, mirror, scale = get_params2D(img, ali_params)
-			if rot_method == 'rot_shift2D':
-				img = rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
-			else:
-				kb = kbt(nx)
-				img = rotshift2dg(img, angle, sx, sy, kb)
-				if  mirror: img.process_inplace("xform.mirror", {"axis":'x'})
+			angle, sx, sy, mirror, scale = get_params2D(img)
+			img = rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
 	
+		img = pad(img, nx2, ny2, 1, background = "circumference")
+		fftip(img)
 		ctf_params = img.get_attr("ctf")
-		temp = filt_ctf(img-filt_ctf(tavg, ctf_params, dopa), ctf_params, dopa)
-		temp.write_image("qdif.hdf",i)
-		temp = fft(Util.divn_img(fft(temp), ctf_2_sum))
-		#temp = window2d(fft(Util.divn_img(fft(pad(temp,nx2,ny2,1,background="circumference")), ctf_2_sum)), nx,ny)
-		temp.write_image("pdif.hdf",i)
-		Util.add_img(totv, temp)
-		Util.add_img2(tvar, temp)
-	#Util.mul_scalar(totv, 1.0/float(nima))
-	return (tvar - totv*totv/nima), tvar, totv,tavg
+		img = filt_ctf(img-filt_ctf(ave, ctf_params, dopa), ctf_params, dopa)
+		Util.div_img(img, ctf_2_sum)
+		img = window2d(fft(img),nx,ny)
+		#Util.add_img(totv, img)
+		Util.add_img2(tvar, img)
+	Util.mul_scalar(tvar, float(nima)*nima/(nima-1)) # the strange factor is due to the fact that division by ctf^2 is equivalent to division by nima
+	return  window2d(fft(ave),nx,ny) , tvar#,(tvar - totv*totv/nima), tvar, totv,tavg
 
 def add_oe_series(data, ali_params="xform.align2d"):
 	"""
