@@ -176,17 +176,20 @@ def main():
 	for i,a in enumerate(argv):
 		if a[:6]=="--path" : ipath=i
 		if a[:7]=="--model" : imodel=i
+		if a[:7]=="--input" : iinp=i
 
 	# run even refinement
 	print "### Starting even data refinement"
 	argv[ipath]="--path=%s"%(options.path+"_even")
 	argv[imodel]="--model=bdb:%s_even#initial_model"%options.path
+	argv[iinp]="--input=%s"%eset
 	launch_childprocess("e2refine.py "+" ".join(argv))
 
 	# run odd refinement
 	print "### Starting odd data refinement"
 	argv[ipath]="--path=%s"%(options.path+"_odd")
 	argv[imodel]="--model=bdb:%s_odd#initial_model"%options.path
+	argv[iinp]="--input=%s"%oset
 	launch_childprocess("e2refine.py "+" ".join(argv))
 
 	# measure resolution curve
