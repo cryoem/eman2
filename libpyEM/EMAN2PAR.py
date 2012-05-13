@@ -661,6 +661,7 @@ class EMMpiClient():
 			self.mpisock=socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 			self.mpisock.connect("%s/mpisock"%self.scratchdir)
 			self.mpifile=self.mpisock.makefile()
+			self.log("Connected to Controller")
 			
 			# Initial handshake to make sure we're both here
 			if (self.mpifile.read(4)!="HELO") :
@@ -670,6 +671,7 @@ class EMMpiClient():
 				os._exit(1)
 			self.log( "Controller said HELO")
 			self.mpifile.write("HELO")
+			self.mpifile.flush()
 			self.log("Said HELO back")
 
 			self.rankjobs=[-1 for i in xrange(self.nrank)]		# Each element is a rank, and indicates which job that rank is currently running (-1 if idle)
@@ -684,6 +686,7 @@ class EMMpiClient():
 					com,data=load(self.mpifile)
 					if com=="EXIT" :
 						dump("OK",self.mpifile,-1)
+						self.mpifile.flush()
 						self.log("Normal EXIT")
 						for i in range(1,self.nrank):
 							r=self.mpi_send_com(i,"EXIT")
@@ -695,6 +698,7 @@ class EMMpiClient():
 						break
 					elif com=="NEWJ" :
 						dump("OK",self.mpifile,-1)
+						self.mpifile.flush()
 						if verbose>1 : print "New job %d from customer"%data
 						self.log("New job %d from customer"%data)
 						self.maxjob=data	# this is the highest number job currently assigned
@@ -705,9 +709,11 @@ class EMMpiClient():
 							else: data[i]=self.status[data[i]]
 				
 						dump(data,self.mpifile,-1)
+						self.mpifile.flush()
 					elif com=="CACH" :
 						if verbose>1 : print "Cache request from customer: ",data
 						dump("OK",self.mpifile,-1)
+						self.mpifile.flush()
 						
 						if self.cachedir!=None :
 							# check each node to see if it needs the data
@@ -1127,6 +1133,7 @@ class EMMpiTaskHandler():
 		
 		self.mpitask=subprocess.Popen(cmd, stdin=None, stdout=mpiout, stderr=mpierr, shell=True)
 
+		print "Listening for connections"
 		self.mpisock.listen(1)
 		self.mpiconn, self.mpiaddr = self.mpisock.accept()
 		self.mpifile=self.mpiconn.makefile()
@@ -1138,6 +1145,7 @@ class EMMpiTaskHandler():
 		# Send a HELO and wait for a reply. We then know that the MPI system is setup and available
 		print "Say HELO to MPI rank 0"
 		self.mpifile.write("HELO")
+		self.mpifile.flush()
 		rd=self.mpifile.read(4)
 		if (rd!="HELO") :
 			print "Fatal error establishing MPI communications (%s)",rd
@@ -1164,6 +1172,7 @@ class EMMpiTaskHandler():
 	def sendcom(self,com,data=None):
 		"""Transmits a command to MPI rank 0 and waits for a single object in reply"""
 		dump((com,data),self.mpifile,-1)
+		self.mpifile.flush()
 		
 		return load(self.mpifile)
 
