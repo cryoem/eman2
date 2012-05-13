@@ -654,16 +654,21 @@ class EMMpiClient():
 			self.log("MPI on %d processors"%self.nrank)
 			
 			# FIFOs to talk to the controlling process, creation order is important !
-			self.fmcon=file("%s/tompi"%self.scratchdir,"rb",0)
-			self.tocon=file("%s/fmmpi"%self.scratchdir,"wb",0)
+			#self.fmcon=file("%s/tompi"%self.scratchdir,"rb",0)
+			#self.tocon=file("%s/fmmpi"%self.scratchdir,"wb",0)
+
+			# Using a UNIX domain socket due to odd problems with the named FIFO pairs deadlocking
+			self.mpisock=socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+			self.mpisock.connect("%s/mpisock"%self.scratchdir)
+			self.mpifile=self.mpisock.makefile()
 			
 			# Initial handshake to make sure we're both here
-			if (self.fmcon.read(4)!="HELO") :
+			if (self.mpifile.read(4)!="HELO") :
 				print "Fatal error establishing MPI controller communications"
 				sys.stderr.flush()
 				sys.stdout.flush()
 				os._exit(1)
-			self.tocon.write("HELO")
+			self.mpifile.write("HELO")
 
 			self.rankjobs=[-1 for i in xrange(self.nrank)]		# Each element is a rank, and indicates which job that rank is currently running (-1 if idle)
 			self.rankjobs[0]=-2					# this makes sure we don't try to send a job to ourself
@@ -673,10 +678,10 @@ class EMMpiClient():
 			
 			while 1:
 				# Look for a command from our controlling process
-				if select.select([self.fmcon],[],[],0)[0]:
-					com,data=load(self.fmcon)
+				if select.select([self.mpifile],[],[],0)[0]:
+					com,data=load(self.mpifile)
 					if com=="EXIT" :
-						dump("OK",self.tocon,-1)
+						dump("OK",self.mpifile,-1)
 						self.log("Normal EXIT")
 						for i in range(1,self.nrank):
 							r=self.mpi_send_com(i,"EXIT")
@@ -684,7 +689,7 @@ class EMMpiClient():
 							
 						break
 					elif com=="NEWJ" :
-						dump("OK",self.tocon,-1)
+						dump("OK",self.mpifile,-1)
 						if verbose>1 : print "New job %d from customer"%data
 						self.log("New job %d from customer"%data)
 						self.maxjob=data	# this is the highest number job currently assigned
@@ -694,10 +699,10 @@ class EMMpiClient():
 							if data[i] not in self.status : data[i]=-1
 							else: data[i]=self.status[data[i]]
 				
-						dump(data,self.tocon,-1)
+						dump(data,self.mpifile,-1)
 					elif com=="CACH" :
 						if verbose>1 : print "Cache request from customer: ",data
-						dump("OK",self.tocon,-1)
+						dump("OK",self.mpifile,-1)
 						
 						if self.cachedir!=None :
 							# check each node to see if it needs the data
@@ -1096,26 +1101,38 @@ class EMMpiTaskHandler():
 		
 		# Named pipes we use to communicate with rank 0 of the MPI job
 		# Unfortunately this isn't windows compatible as far as I know :^(
-		try : os.unlink("%s/tompi"%self.scratchdir)
-		except : pass
-		try : os.unlink("%s/fmmpi"%self.scratchdir)
-		except : pass
-		os.mkfifo("%s/tompi"%self.scratchdir)
-		os.mkfifo("%s/fmmpi"%self.scratchdir)
+		#try : os.unlink("%s/tompi"%self.scratchdir)
+		#except : pass
+		#try : os.unlink("%s/fmmpi"%self.scratchdir)
+		#except : pass
+		#os.mkfifo("%s/tompi"%self.scratchdir)
+		#os.mkfifo("%s/fmmpi"%self.scratchdir)
 
+		# Using a UNIX domain socket due to odd problems with the named FIFO pairs deadlocking
+		try : os.unlink("%s/mpisock"%self.scratchdir)
+		except : pass
+
+		self.mpisock=socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+		self.mpisock.bind("%s/tompi"%self.scratchdir)
+		
+		# Launch the MPI subprocess
 		if cache : cache=" --cache"
 		else: cache=""
 		cmd="mpirun -n %d e2parallel.py mpiclient --scratchdir=%s %s -v 2 </dev/null"%(ncpus,self.scratchdir,cache)
 		
 		self.mpitask=subprocess.Popen(cmd, stdin=None, stdout=mpiout, stderr=mpierr, shell=True)
 
+		self.mpisock.listen(1)
+		self.mpiconn, self.mpiaddr = s.accept()
+		self.mpifile=mpiconn.makefile()
+		
 		# order is important here, since opening for reading will block until the other end opens for writing
-		self.tompi=file("%s/tompi"%self.scratchdir,"wb",0)
-		self.fmmpi=file("%s/fmmpi"%self.scratchdir,"rb",0)
+		#self.tompi=file("%s/tompi"%self.scratchdir,"wb",0)
+		#self.fmmpi=file("%s/fmmpi"%self.scratchdir,"rb",0)
 		
 		# Send a HELO and wait for a reply. We then know that the MPI system is setup and available
-		self.tompi.write("HELO")
-		rd=self.fmmpi.read(4)
+		self.mpifile.write("HELO")
+		rd=self.mpifile.read(4)
 		if (rd!="HELO") :
 			print "Fatal error establishing MPI communications (%s)",rd
 			sys.stderr.flush()
@@ -1128,6 +1145,8 @@ class EMMpiTaskHandler():
 		"""Called externally (by the Customer) to nicely shut down the task handler"""
 		self.sendcom("EXIT")
 		
+		self.mpifile.close()
+		self.mpiconn.close()
 		shutil.rmtree(self.queuedir,True)
 
 	def precache(self,filelist):
@@ -1137,9 +1156,9 @@ class EMMpiTaskHandler():
 		
 	def sendcom(self,com,data=None):
 		"""Transmits a command to MPI rank 0 and waits for a single object in reply"""
-		dump((com,data),self.tompi,-1)
+		dump((com,data),self.mpifile,-1)
 		
-		return load(self.fmmpi)
+		return load(self.mpifile)
 
 	def add_task(self,task):
 		if not isinstance(task,EMTask) : raise Exception,"Non-task object passed to EMLocalTaskHandler for execution"
@@ -1152,6 +1171,7 @@ class EMMpiTaskHandler():
 			except: pass
 			else :
 				task.modtimes[i[1]]=e2filemodtime(i[1])
+				
 		task.taskid=self.maxid
 		
 		dump(task,file("%s/%07d"%(self.queuedir,self.maxid),"wb"),-1)
