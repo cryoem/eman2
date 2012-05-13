@@ -37,10 +37,13 @@ import matplotlib.pyplot as plt
 import sys
 
 def main():
+	print "I have entered main"
 
 	progname = os.path.basename(sys.argv[0])
 	usage = """Aligns a 3d volume to another by executing e2classaverage3d.py and then calculates the FSC between them by calling e2proc3d.py . It returns both a number for the resolution based on the FSC0.5 
 	criterion(on the screen) and a plot as an image in .png format."""
+
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_argument("--input", type=str, help="Stack of 3D volumes that have been aligned with EMAN2 SPT programs. The format MUST be '.hdf', and the files must contain the header parameter 'spt_coefficient'.", default=None)
 	parser.add_argument("--cutoff", type=float, help="Fraction of particles (as a decimal, where 1.0 is the entire set, 0.8 is 80%. 0.5 is 50%, etc); where to make the cutoff to divide the set into two groups. For example, if you specify --cutoff=0.2, the 20% of particles with the highest correlation scores will be bundled into the first group, and the remaining 80% into the second group.", default=None)
@@ -49,17 +52,21 @@ def main():
 	
 	data=options.input
 	cutoff=options.cutoff
-
+	
+	print "I have read the parameters"
+	
 	scores=[]
 	dataset=[]
 	x=[]
 
 	n=EMUtil.get_image_count(data)
-
+	
+	print "The set has these many particles", n
+	
 	for i in range(n):
 		a=EMData(data,i)
 		hdr=a.get_attr_dict()
-
+		print  "analyzing header for particle", i
 		if 'spt_score' in hdr:
 			score=-1*a['spt_score']
 		elif 'spt_coefficient' in hdr:
@@ -78,6 +85,8 @@ def main():
 	print "halfptcl is", halfptcl
 	halfscore=halfptcl['score']
 
+	print "Will analyze scores to remove aberrantly low ones"
+	
 	for s in scores:
 		if s < halfscore/2.0:
 			scores.remove(s)
