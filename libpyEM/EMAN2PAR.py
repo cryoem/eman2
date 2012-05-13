@@ -587,9 +587,9 @@ class EMMpiClient():
 		
 		
 		self.lastupdate=0		# last time we sent an update to rank 0
-		if self.rank==0 : self.logfile=file(self.scratchdir+"/rank0.log","a")
-		elif self.rank==1 : self.logfile=file(self.scratchdir+"/rank1.log","a")
-		elif self.rank==12 : self.logfile=file(self.scratchdir+"/rank12.log","a")
+		if self.rank==0 : self.logfile=file(self.scratchdir+"/rank0.log","w")
+		elif self.rank==1 : self.logfile=file(self.scratchdir+"/rank1.log","w")
+#		elif self.rank==12 : self.logfile=file(self.scratchdir+"/rank12.log","a")
 		else: self.logfile=None
 		
 		self.rankmap={}			# key=rank, value=hostname
@@ -668,7 +668,9 @@ class EMMpiClient():
 				sys.stderr.flush()
 				sys.stdout.flush()
 				os._exit(1)
+			self.log( "Controller said HELO")
 			self.mpifile.write("HELO")
+			self.log("Said HELO back")
 
 			self.rankjobs=[-1 for i in xrange(self.nrank)]		# Each element is a rank, and indicates which job that rank is currently running (-1 if idle)
 			self.rankjobs[0]=-2					# this makes sure we don't try to send a job to ourself
@@ -686,6 +688,9 @@ class EMMpiClient():
 						for i in range(1,self.nrank):
 							r=self.mpi_send_com(i,"EXIT")
 							if r!="OK" : print "Error: Unexpected reply when shutting down from rank %d"%i
+						
+						self.mpifile.close()
+						self.mpisock.close()
 							
 						break
 					elif com=="NEWJ" :
@@ -1113,7 +1118,7 @@ class EMMpiTaskHandler():
 		except : pass
 
 		self.mpisock=socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-		self.mpisock.bind("%s/tompi"%self.scratchdir)
+		self.mpisock.bind("%s/mpisock"%self.scratchdir)
 		
 		# Launch the MPI subprocess
 		if cache : cache=" --cache"
@@ -1123,14 +1128,15 @@ class EMMpiTaskHandler():
 		self.mpitask=subprocess.Popen(cmd, stdin=None, stdout=mpiout, stderr=mpierr, shell=True)
 
 		self.mpisock.listen(1)
-		self.mpiconn, self.mpiaddr = s.accept()
-		self.mpifile=mpiconn.makefile()
+		self.mpiconn, self.mpiaddr = self.mpisock.accept()
+		self.mpifile=self.mpiconn.makefile()
 		
 		# order is important here, since opening for reading will block until the other end opens for writing
 		#self.tompi=file("%s/tompi"%self.scratchdir,"wb",0)
 		#self.fmmpi=file("%s/fmmpi"%self.scratchdir,"rb",0)
 		
 		# Send a HELO and wait for a reply. We then know that the MPI system is setup and available
+		print "Say HELO to MPI rank 0"
 		self.mpifile.write("HELO")
 		rd=self.mpifile.read(4)
 		if (rd!="HELO") :
@@ -1138,6 +1144,7 @@ class EMMpiTaskHandler():
 			sys.stderr.flush()
 			sys.stdout.flush()
 			os._exit(1)
+		print "Rank 0 said HELO back"
 			
 		print "MPI subsystem initialized"
 
