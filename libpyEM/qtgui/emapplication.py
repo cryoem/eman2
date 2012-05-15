@@ -108,7 +108,7 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 		if self.qt_parent:
 			QtOpenGL.QGLWidget.resize(self, w, h)
 			if get_platform()=="Darwin" : self.qt_parent.resize(w, h+22)
-			else : self.qt_parent.resize(w, h)
+			else : self.qt_parent.resize(w+4, h+4)
 			
 	def show(self):
 		if self.qt_parent:
