@@ -766,7 +766,7 @@ lc is the cursor selection point in plot coords"""
 		self.updateGL()
 		if self.inspector: self.inspector.update()
 
-	def resize(self,s0,s1,quiet=False):
+	def remsize(self,s0,s1,quiet=False):
 		"Adjusts the value range for the marker size display"
 		if s0>=s1 : self.autoscale()
 		else: self.slimits=(s0,s1)
@@ -1988,9 +1988,9 @@ class EMPlot2DInspector(QtGui.QWidget):
 		try:
 			smin=self.wsmin.getValue()
 			smax=self.wsmax.getValue()
-			self.target().resize(smin,smax,True)
+			self.target().remsize(smin,smax,True)
 		except:
-			self.target().resize(0,0)
+			self.target().remsize(0,0)
 	
 	def update(self):
 		self.busy=1
