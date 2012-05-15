@@ -246,6 +246,13 @@
       }, 
       {
         "ICON": "eulers",
+        "PROGRAM": "e2eulerxplor.py", 
+        "NAME": "Run e2eulerxplor", 
+	"WIKIPAGE":"http://blake.bcm.edu/emanwiki/EMAN2/Programs/e2eulerxplor",
+        "CHILDREN": []
+      }, 
+      {
+        "ICON": "eulers",
         "WIZARD":"/lib/pmconfig/ploteulers.json",
         "PROGRAM": "e2plotEulers.py", 
         "NAME": "Run e2plotEulers", 
