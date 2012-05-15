@@ -586,6 +586,7 @@ def display(img,force_2d=False,force_plot=False):
 		try: 
 			image.optimally_resize()
 		except: pass
+		return image
 	else:
 		# In non interactive GUI mode, this will display an image or list of images with e2display
 		fsp="bdb:%s/.eman2dir#tmp"%e2gethome()

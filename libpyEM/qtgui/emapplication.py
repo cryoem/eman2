@@ -35,7 +35,7 @@ from PyQt4 import QtGui, QtCore, QtOpenGL
 from PyQt4.QtCore import Qt
 import sys
 from emimageutil import EMParentWin
-from EMAN2 import remove_directories_from_name, get_image_directory,get_3d_font_renderer, E2end
+from EMAN2 import remove_directories_from_name, get_image_directory,get_3d_font_renderer, E2end,get_platform
 import EMAN2db
 import weakref
 from libpyGLUtils2 import *
@@ -107,7 +107,8 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 	def resize(self, w, h):
 		if self.qt_parent:
 			QtOpenGL.QGLWidget.resize(self, w, h)
-			self.qt_parent.resize(w, h)
+			if get_platform()=="Darwin" : self.qt_parent.resize(w, h+22)
+			else : self.qt_parent.resize(w, h)
 			
 	def show(self):
 		if self.qt_parent:
