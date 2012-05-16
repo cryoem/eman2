@@ -94,10 +94,11 @@ def main():
 	parser.add_option("--scale", metavar="n", type="float", action="append",
 								help="Rescales the image by 'n', generally used with clip option.")
 
-	parser.add_option("--sym", dest = "sym", action="append", help = "Symmetry to impose - choices are: c<n>, d<n>, h<n>, tet, oct, icos")
+	parser.add_option("--sym", dest = "sym", action="append", 
+								help = "Symmetry to impose - choices are: c<n>, d<n>, h<n>, tet, oct, icos")
 
 	parser.add_option("--clip", metavar="x[,y,z[,xc,yc,zc]]", type='string', action="callback", callback=intvararg_callback, 
-							help="Make the output have this size by padding/clipping. 1, 3 or 6 arguments. ")
+								help="Make the output have this size by padding/clipping. 1, 3 or 6 arguments. ")
 	
 	parser.add_option("--fftclip", metavar="x, y, z", type="string", action="callback", callback=floatvararg_callback,
 								help="Make the output have this size, rescaling by padding FFT.")
@@ -144,9 +145,11 @@ def main():
 	parser.add_option("--first", metavar="n", type="int", default=0, 
 								help="the first image in the input to process [0 - n-1])")
 
-	parser.add_option("--trans", metavar="dx,dy,dz", type="string", default=0, help="Translate map by dx,dy,dz ")
+	parser.add_option("--trans", metavar="dx,dy,dz", type="string", action="append", 
+								help="Translate map by dx,dy,dz ")
 
-	parser.add_option("--rot", metavar="az,alt,phi or convention,a1,a2,a3,a4", type="string", default=0, help="Rotate map using EMAN Euler angles z,x,z' or an arbitrary convention. NOTE, at the moment users may only specify az,alt,phi - this is a bug that will be resolved")
+	parser.add_option("--rot", metavar="az,alt,phi or convention,a1,a2,a3,a4", type="string", action="append", 
+								help="Rotate map using EMAN Euler angles z,x,z' or an arbitrary convention. NOTE, at the moment users may only specify az,alt,phi - this is a bug that will be resolved")
 
 	parser.add_option("--icos5to2",action="store_true",help="Rotate an icosahedral map from 5-fold on Z (EMAN standard) to 2-fold on Z (MRC standard) orientation")
 	parser.add_option("--icos2to5",action="store_true",help="Rotate an icosahedral map from 2-fold on Z (MRC standard) to 5-fold on Z (EMAN standard)  orientation")
@@ -164,7 +167,7 @@ def main():
 	parser.add_option("--unstacking", action="store_true", help="Process a stack of 3D images, then output a a series of numbered single image files", default=False)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
-	append_options = ["clip", "fftclip", "process", "filter", "meanshrink", "medianshrink", "scale", "sym", "multfile"]
+	append_options = ["clip", "fftclip", "process", "filter", "meanshrink", "medianshrink", "scale", "sym", "multfile", "trans", "rot"]
 	
 	optionlist = pyemtbx.options.get_optionlist(sys.argv[1:])
 	
@@ -288,6 +291,7 @@ def main():
 
 			elif option1 == "process":
 				fi = index_d[option1]
+				print 'process option = ', options.process
 				(filtername, param_dict) = parsemodopt(options.process[fi])
 				data.process_inplace(filtername, param_dict)
 				index_d[option1] += 1
@@ -321,13 +325,16 @@ def main():
 
 
 			elif option1 == "trans":
-				dx,dy,dz=options.trans.split(",")
+				fi = index_d[option1]
+				dx,dy,dz=options.trans[fi].split(",")
 				data.translate(float(dx),float(dy),float(dz))
+				index_d[option1] += 1
 			
 			elif option1 == "rot":
-				daz,dalt,dphi=options.rot.split(",")
+				fi = index_d[option1]
+				daz,dalt,dphi=options.rot[fi].split(",")
 				data.rotate(float(daz),float(dalt),float(dphi))
-				
+				index_d[option1] += 1
 			
 			elif option1 == "clip":
 				if(len(options.clip) == 6):
