@@ -47,6 +47,7 @@ def main():
 
 	parser.add_argument("--input", type=str, help="Stack of 3D volumes that have been aligned with EMAN2 SPT programs. The format MUST be '.hdf', and the files must contain the header parameter 'spt_coefficient'.", default=None)
 	parser.add_argument("--cutoff", type=float, help="Fraction of particles (as a decimal, where 1.0 is the entire set, 0.8 is 80%. 0.5 is 50%, etc); where to make the cutoff to divide the set into two groups. For example, if you specify --cutoff=0.2, the 20% of particles with the highest correlation scores will be bundled into the first group, and the remaining 80% into the second group.", default=None)
+	parser.add_argument("--groups", type=int, help="Number of groups you want the data to be divided into.", default=None)
 
 	(options, args) = parser.parse_args()
 	
@@ -104,69 +105,82 @@ def main():
 			print "I have removed this aberrant particle from the dataset due to its low score", d['score']
 
 	newN=len(dataset)
-	
-	threshptclnum=int(round(newN/(1/options.cutoff)))
-	threshptcl=dataset[threshptclnum]
-	print "The new threshptcl is", threshptcl
-	threshscore=threshptcl['score']
 
 	scores.sort()
 	scores.reverse()
+	
+	if options.groups and options.cutoff:
+		print "ERROR; you cannot specify both --cutoff and --groups at the same time"
+		sys.exit()
 
-	threshlabel="%0.2f" %(cutoff)
-	threshlabel=str(threshlabel).replace('.','p')
+	if options.groups and not options.cutoff:
+		subdatasetsSET=[]
+		N=len(dataset)
+		#print "THe type of dataset is", type(dataset)
+		print "The len of the dataset is", N
+		subN = N/options.groups
+		print "The len of each subset, except the last, should be", subN
+		for g in range(options.groups):
+			#subscores = scores[g*subN : (g+1)*subN]
+			subdataset = dataset[g*subN : (g+1)*subN]			
+			if g == options.groups -1:
+				subdataset = dataset[g*subN :]
+			subdatasetsSET.append(subdataset)
+	
+		kk=0
+		for subdataset in subdatasetsSET:
+			print "The len of subset %d is %d" % (kk, len(subdataset))
+			jj = 0		
+			groupname = data.replace('.hdf', '_'+ str(kk).zfill(len(str(options.groups))) + '.hdf')
+			particleLIST = []			
+			for element in subdataset:
+				particle = element['particle']
+				particle.write_image(groupname,jj)
+				jj+=1
+				particleLIST.append(particle)
+			averageNAME = groupname.replace('.hdf','_AVG.hdf')		
+			average = sum(particleLIST)/len(particleLIST)
+			average.process_inplace('normalize')
+			print "\nThe group %d has been written to %s, and has these many particles in it %d" % ( kk, groupname, len(particleLIST) )
+			average.write_image(averageNAME,0)
+			print "\nThe group average has been written to", averageNAME
+			kk+=1	
+			
+	if options.cutoff and not options.group:
+	
+		threshptclnum=int(round(newN/(1/options.cutoff)))
+		threshptcl=dataset[threshptclnum]	
+		print "The new threshptcl is", threshptcl
+		threshscore=threshptcl['score']
 
-	group1=[]
-	g1name = data.replace('.hdf','_th' + threshlabel + 'G1.hdf')
-	group2=[]
-	g2name = data.replace('.hdf','_th' + threshlabel + 'G2.hdf')
-
-	'''
-	if cutoff == 'half':
-
-		k1=0
-		k2=0
+		threshlabel="%0.2f" %(cutoff)
+		threshlabel=str(threshlabel).replace('.','p')	
+		group1=[]
+		group2=[]
+		kk=0
 		for i in dataset:
-			if i['score'] >= halfscore:
+				
+			if i['score'] >= threshscore:
 				group1.append(i['particle'])
 				i['particle'].write_image(g1name,k1)
 				k1+=1
-				print "I have appended a particle to group 1"
 			else:
 				if ['score'] > halfscore/2.0:
 					group2.append(i['particle'])
 					i['particle'].write_image(g2name,k2)
-					k2+=1	
-					print "I have appended a particle to group 2"
+					k2+=1
 				else:
-					print "\n\n@@@@ Found a garbage particle!\n\n"
+					print "\n\n@@@@ Found a garbage particle, and thus did not consider it!\n\n"	
 
-	'''
-	
-	k1=0
-	k2=0
-	for i in dataset:
-		if i['score'] >= threshscore:
-			group1.append(i['particle'])
-			i['particle'].write_image(g1name,k1)
-			k1+=1
-		else:
-			if ['score'] > halfscore/2.0:
-				group2.append(i['particle'])
-				i['particle'].write_image(g2name,k2)
-				k2+=1
-			else:
-				print "\n\n@@@@ Found a garbage particle, and thus did not consider it!\n\n"	
+		if group1:	
+			g1avg = sum(group1)/len(group1)	
+			g1avg.write_image(g1name.replace('.hdf','_avg.hdf'),0)
 
-	if group1:
-		g1avg = sum(group1)/len(group1)
-		g1avg.write_image(g1name.replace('.hdf','_avg.hdf'),0)
+		if group2:
+			g2avg = sum(group2)/len(group2)
+			g2avg.write_image(g2name.replace('.hdf','_avg.hdf'),0)
 
-	if group2:
-		g2avg = sum(group2)/len(group2)
-		g2avg.write_image(g2name.replace('.hdf','_avg.hdf'),0)
-
-	plot_name = data.replace('.hdf', '_' + threshlabel + 'SCORES.png')
+	plot_name = data.replace('.hdf', '_SCORES.png')
 	plt.plot(x, scores, linewidth=1, marker='o', linestyle='--', color='r')
 	plt.title(plot_name)
 	plt.ylabel('score')
