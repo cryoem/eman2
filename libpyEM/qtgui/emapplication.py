@@ -152,6 +152,7 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 		QtOpenGL.QGLWidget.closeEvent(self, event)
 		self.qt_parent.close()
 		self.emit(QtCore.SIGNAL("module_closed")) # this could be a useful signal, especially for something like the selector module, which can potentially show a lot of images but might want to close them all when it is closed
+		event.accept()
 		
 	def display_web_help(self,url="http://blake.bcm.edu/emanwiki/e2display"):
 		try:

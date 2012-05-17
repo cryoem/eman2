@@ -1612,6 +1612,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		Close the main inspector
 		"""
 		if self.main_3d_inspector: self.main_3d_inspector.close()
+		EMGLWidget.closeEvent(self,event)
 	
 	def showEvent(self, event):
 		QtGui.QWidget.showEvent(self, event)
