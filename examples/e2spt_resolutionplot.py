@@ -40,6 +40,7 @@ import pylab
 #from operator import itemgetter					 
 
 def main():
+	
 	progname = os.path.basename(sys.argv[0])
 	usage = """Aligns a 3d volume to another by executing e2classaverage3d.py and then calculates the FSC between them by calling e2proc3d.py . It returns both a number for the resolution based on the FSC0.5 
 	criterion(on the screen) and a plot as an image in .png format."""
@@ -74,6 +75,8 @@ def main():
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--plotonly",action="store_true", help="Assumes vol1 and vol2 are already aligned with respect to each other and thus skips alignment", default=False)
+
 	
 	#print "Before parsing, options are", parser.args()
 	
@@ -90,28 +93,29 @@ def main():
 	apix = vol1hdr['apix_x']
 	boxsize = vol1hdr['nx']
 	
-	vol1ALIname =  vol1.replace('.','_ALI.')
+	vol2ALIname =  vol2.replace('.','_ALI.')
+	if options.plotonly:
+		vol2ALIname = vol2
 	
 	fscoutputname = options.output
 	if not options.output:
 		fscoutputname = 'FSC_' + vol1.split('.')[0] + '_VS_' + vol2.split('.')[0] + '.txt'
 	
-	alicmd = 'e2classaverage3d.py --path=. --input=' + vol1 + ' --output=' + vol1ALIname + ' --ref=' + vol1 + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + options.mask + ' --preprocess=' + options.preprocess + ' --align=' + options.align + ' --parallel=' + options.parallel + ' --ralign=' + options.ralign + ' --aligncmp=' + options.aligncmp + ' --raligncmp=' + options.raligncmp + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + options.normproc + ' --sym=' + options.sym + ' --breaksym'
+	alicmd = 'echo'
+	if  not options.plotonly:
+		alicmd = 'e2classaverage3d.py --path=. --input=' + vol2 + ' --output=' + vol2ALIname + ' --ref=' + vol1 + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + options.mask + ' --preprocess=' + options.preprocess + ' --align=' + options.align + ' --parallel=' + options.parallel + ' --ralign=' + options.ralign + ' --aligncmp=' + options.aligncmp + ' --raligncmp=' + options.raligncmp + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + options.normproc + ' --sym=' + options.sym + ' --breaksym'
 	
 	print "FSCOUTPUTNAME is", fscoutputname
 	print "Because options.output was", options.output
 	
-	fsccmd = 'e2proc3d.py ' + vol2 + ' ' + fscoutputname + ' --calcfsc=' + vol1ALIname
+	fsccmd = 'e2proc3d.py ' + vol2ALIname + ' ' + fscoutputname + ' --calcfsc=' + vol1
 	
-	print "Ali command is\n", alicmd
-	print "\n\nFSC command is\n", fsccmd
-	
-	#cmd = alicmd + ' && ' + 'mv res/' + vol1ALIname + ' . && ' + fsccmd + ' && rm -r res' 
-	
-	cmd = alicmd + ' && ' + fsccmd + ' && rm -r res' 
+	cmd = alicmd + ' && ' + fsccmd 
 
-		
-	print "\n\nThus together they are\n", cmd
+	if options.verbose:
+		print "\n\nAli command is\n", alicmd
+		print "\n\nFSC command is\n", fsccmd	
+		print "\n\nThus together they are\n", cmd
 		
 	os.system(cmd)
 	
@@ -142,12 +146,9 @@ def main():
 		polycoeffs = numpy.polyfit(x, values, 10)
 		yfit = numpy.polyval(polycoeffs, x)
 		
-		#print "\n\n\n\n\n Y FIT IS!!!\n", yfit
-		
 		plot_name = fscoutputname.replace('.txt','_PLOT.png')
 		
 		fullinfo = {}
-		#fullinfo2 = {}
 
 		difs = []
 		
@@ -155,7 +156,6 @@ def main():
 			dif = abs(yfit[i] - 0.5)
 			difs.append(dif)
 			fullinfo.update({dif:i})
-			#fullinfo2.update({inversefreqs[i]:dif})
 		
 		difsmin1=min(difs)
 		difs.remove(difsmin1)
