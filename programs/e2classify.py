@@ -127,8 +127,17 @@ def main():
 		for im in bvecs.values(): 
 			im.process_inplace("normalize.unitlen")
 
+		## Make an output image of vectors
+		#mx=EMData(nx,nx,1)
+		#mx.to_zero()
+		#for i in range(nx):
+			#try: mx.insert_clip(bvecs[i],(0,i))
+			#except: pass
+			
+		#mx.write_image("simvec.hdf",0)
 		
-	#hmmm, this code is pretty silly, but harmless, I suppose...
+		
+		
 	simmx=(EMData(),EMData(),EMData(),EMData(),EMData(),EMData())
 	for iptcl in xrange(nptcl):
 		simmx[0].read_image(args[0],0,False,Region(0,iptcl,nref,1))
@@ -140,8 +149,15 @@ def main():
 			try:
 				simmx[5].read_image(args[0],5,False,Region(0,iptcl,nref,1))		#scale
 			except: pass
-		maximum=simmx[0]["maximum"]
 		
+		# We replace simmx[0] with a new version computed via average vectors
+		if options.simvec:
+			newmx=simmx[0].copy()
+			for i in xrange(newmx["nx"]):
+				simmx[0][i]=newmx.cmp("ccc",bvecs[i])
+		
+		#hmmm, this code is pretty silly, but harmless, I suppose...
+		maximum=simmx[0]["maximum"]
 		for ic in xrange(options.sep):
 			cls=simmx[0].calc_min_index()
 			clsmx[0][ic,iptcl]=cls
