@@ -4384,7 +4384,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 	step        = get_input_from_string(ts)
 	delta       = get_input_from_string(delta)
 	lstp = min( len(xrng), len(yrng), len(step), len(delta) )
-	if (an == "-1"):
+	if an == "-1":
 		an = []
 		for i in xrange(len(xrng)):   an.append(-1)
 	else:
@@ -4404,7 +4404,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 
 	fscmask = model_circle(last_ring, nx, nx, nx)
 
-	if (myid == main_node):
+	if myid == main_node:
 		import user_functions
 		user_func = user_functions.factory[user_func_name]
 		print_msg("Input stack                 : %s\n"%(stack))
@@ -4431,15 +4431,15 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 		print_msg("Symmetry group              : %s\n\n"%(sym))
 		print_msg("Percentage of change for termination: %f\n"%(termprec))
 
-	if(maskfile):
-		if(type(maskfile) is types.StringType): mask3D = get_image(maskfile)
+	if maskfile:
+		if type(maskfile) is types.StringType: mask3D = get_image(maskfile)
 		else: 	                                mask3D = maskfile
 	else        :  mask3D = model_circle(last_ring, nx, nx, nx)
 
 	numr     = Numrinit(first_ring, last_ring, rstep, "F")
 	mask2D   = model_circle(last_ring, nx, nx) - model_circle(first_ring, nx, nx)
 
-	if(myid == main_node):
+	if myid == main_node:
 		active = EMUtil.get_all_attributes(stack, 'active')
 		list_of_particles = []
 		for im in xrange(len(active)):
@@ -4447,11 +4447,11 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 		del active
 		nima = len(list_of_particles)
 	else:
-		nima =0
+		nima = 0
 
 	nima = bcast_number_to_all(nima, source_node = main_node)
 
-	if(myid != main_node):
+	if myid != main_node:
 		list_of_particles = [-1]*nima
 
 	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
@@ -4468,7 +4468,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 
 	start_time = time()
 	data = EMData.read_images(stack, list_of_particles)
-	if(myid == 0):
+	if myid == main_node:
 		print_msg( "Time to read data: %d\n" % (time()-start_time) );start_time = time()
 	#  Initialize Particle ID and set group number to non-existant -1
 	assignment = [-1]*len(data)
@@ -4486,7 +4486,6 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 			varf.write_image( os.path.join(outdir,"varf0000.hdf") )
 	else:
 		varf = None
-
 
 	if myid == main_node:
 		for  iref in xrange(numref):
@@ -4507,7 +4506,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 	disps = []
 	recvcount = []
 	for im in xrange(number_of_proc):
-		if( im == main_node ):  disps.append(0)
+		if im == main_node:  disps.append(0)
 		else:                  disps.append(disps[im-1] + recvcount[im-1])
 		ib, ie = MPI_start_end(total_nima, number_of_proc, im)
 		recvcount.append( ie - ib )
@@ -4524,7 +4523,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 			runtype = "REFINEMENT"
 
 		total_iter += 1
-		if(myid == main_node):
+		if myid == main_node:
 			print_msg("\n%s ITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f\n"%(runtype, total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],yrng[N_step],step[N_step]))
 			start_ime = time()
 	
@@ -4541,29 +4540,27 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 				if runtype=="REFINEMENT":
 					start_time = time()
 					prjref = prgq( volft, kb, nx, delta[N_step], ref_a, sym, MPI=True)
-					if(myid == 0):
+					if myid == main_node:
 						print_msg( "Calculation of projections: %d\n" % (time()-start_time) );start_time = time()
 					del volft, kb
-
 			else:
 				if runtype=="REFINEMENT":
 					start_time = time()
 					refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, sym, numr)
-					if(myid == 0):
+					if myid == main_node:
 						print_msg( "Initial time to prepare rings: %d\n" % (time()-start_time) );start_time = time()
 					del volft, kb
 
-
 			start_time = time()
 			for im in xrange(nima):
-				if(CTF):
+				if CTF:
 					ctf = data[im].get_attr( "ctf" )
 					if runtype=="REFINEMENT":
-						if(ctf.defocus != previous_defocus):
+						if ctf.defocus != previous_defocus:
 							previous_defocus = ctf.defocus
 							rstart_time = time()
 							refrings = gen_rings_ctf( prjref, nx, ctf, numr)
-							if(myid == 0):
+							if myid == main_node:
 								print_msg( "Repeated time to prepare rings: %d\n" % (time()-rstart_time) );rstart_time = time()
 
 				if runtype=="ASSIGNMENT":
@@ -4574,7 +4571,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 					if not(finfo is None):
 						finfo.write( "ID,iref,peak: %6d %d %8.5f" % (list_of_particles[im],iref,peak) )
 				else:
-					if(an[N_step] == -1):
+					if an[N_step] == -1:
 						peak, pixel_error = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
 					else:
 						peak, pixel_error = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step])
@@ -4583,7 +4580,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 						finfo.write( "ID,iref,peak,trans: %6d %d %f %f %f %f %f %f"%(list_of_particles[im],iref,peak,phi,tht,psi,s2x,s2y) )
 						finfo.flush()
 
-				if(peak > peaks[im]):
+				if peak > peaks[im]:
 					peaks[im] = peak
 					data[im].set_attr('group', iref)
 					if runtype=="REFINEMENT":
@@ -4596,7 +4593,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 					if not(finfo is None):
 						finfo.write( "\n" )
 						finfo.flush()
-			if(myid == 0):
+			if myid == main_node:
 				print_msg( "Time to process particles for reference %3d: %d\n" % (iref, time()-start_time) );start_time = time()
 
 
@@ -4611,14 +4608,14 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 		for im in xrange(nima):
 			iref = data[im].get_attr('group')
 			npergroup[iref] += 1
-			if( iref != assignment[im]):
+			if iref != assignment[im]:
 				assignment[im] = iref
 				nchng += 1
 		nchng = mpi_reduce(nchng, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
 		npergroup = mpi_reduce(npergroup, numref, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
 		npergroup = map(int, npergroup)
 		terminate = 0
-		if( myid == 0 ):
+		if myid == main_node:
 			nchng = int(nchng[0])
 			precn = 100*float(nchng)/float(total_nima)
 			msg = " Number of particles that changed assignments %7d, percentage of total: %5.1f\n"%(nchng, precn)
@@ -4628,7 +4625,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 			for iref in xrange(numref):
 				msg = " %5d       %7d\n"%(iref+1, npergroup[iref])
 				print_msg(msg)
-			if(precn <= termprec):  terminate = 1
+			if precn <= termprec:  terminate = 1
 		terminate = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
 		terminate = int(terminate[0])
 
@@ -4636,7 +4633,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 			for im in xrange(nima):
 				data[im].set_attr('xform.projection', trans[im])
 
-			if(center == -1):
+			if center == -1:
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(data, total_nima, myid, number_of_proc, main_node)				
 				if myid == main_node:
 					msg = " Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
@@ -4648,12 +4645,12 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 			from mpi import mpi_gatherv
 			recvbuf = mpi_gatherv(pixer, nima, MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			mpi_barrier(MPI_COMM_WORLD)
-			if(myid == main_node):
+			if myid == main_node:
 				recvbuf = map(float, recvbuf)
 				from statistics import hist_list
 				lhist = 20
 				region, histo = hist_list(recvbuf, lhist)
-				if(region[0] < 0.0):  region[0] = 0.0
+				if region[0] < 0.0:  region[0] = 0.0
 				msg = "      Histogram of pixel errors\n      ERROR       number of particles\n"
 				print_msg(msg)
 				for lhx in xrange(lhist):
@@ -4672,12 +4669,12 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 		for iref in xrange(numref):
 			#  3D stuff
 			from time import localtime, strftime
-			if(CTF): volref, fscc[iref] = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
+			if CTF: volref, fscc[iref] = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
 			else:    volref, fscc[iref] = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
-			if(myid == 0):
+			if myid == main_node:
 				print_msg( "Time to compute 3D: %d\n" % (time()-start_time) );start_time = time()
 
-			if(myid == main_node):
+			if myid == main_node:
 				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
 				if fourvar and runtype=="REFINEMENT":
 					sumvol += volref
@@ -4691,7 +4688,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 					varf.write_image( os.path.join(outdir,"varf%04d.hdf"%total_iter) )
 
 
-		if(myid == main_node):
+		if myid == main_node:
 			refdata = [None]*7
 			refdata[0] = numref
 			refdata[1] = outdir
@@ -4711,21 +4708,20 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 			par_str = ['group', 'ID' ]
 	        if myid == main_node:
 			from utilities import file_type
-	        	if(file_type(stack) == "bdb"):
+	        	if file_type(stack) == "bdb":
 	        		from utilities import recv_attr_dict_bdb
 	        		recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	        	else:
 	        		from utilities import recv_attr_dict
 	        		recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	        else:		send_attr_dict(main_node, data, par_str, image_start, image_end)
-		if(terminate == 1):
-			if myid==main_node:
+		if terminate == 1:
+			if myid == main_node:
 				print_end_msg("mref_ali3d_MPI terminated due to small number of objects changing assignments")
-			from sys import exit
-			exit()
-		if(myid == 0):
+			break
+		if myid == main_node:
 			print_msg( "Time to write headers: %d\n" % (time()-start_time) );start_time = time()
-	if myid==main_node:
+	if myid == main_node:
 		print_end_msg("mref_ali3d_MPI")
 
 def get_refiparams(nx):
