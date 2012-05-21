@@ -121,6 +121,7 @@ def main():
 	parser.add_argument("--twostage", dest="twostage", type = int, help="This option is for command-line compatibility with e2refine.py. It's value is ignored !",default=0)
 	
 	# options associated with e2classify.py
+	parser.add_argument("--simvec", action="store_true",help="Causes the classification algorithm to use patterns rather than peak values",default=False)
 	parser.add_argument("--sep", type=int, help="This option is for command-line compatibility with e2refine.py. It's value is ignored !", default=1)
 	
 

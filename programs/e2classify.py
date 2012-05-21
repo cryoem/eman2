@@ -154,7 +154,8 @@ def main():
 		if options.simvec:
 			newmx=simmx[0].copy()
 			for i in xrange(newmx["nx"]):
-				simmx[0][i]=newmx.cmp("ccc",bvecs[i])
+				try: simmx[0][i]=newmx.cmp("ccc",bvecs[i])
+				except: simmx[0][i]=1.0		# worst possible value if we have no reference
 		
 		#hmmm, this code is pretty silly, but harmless, I suppose...
 		maximum=simmx[0]["maximum"]
@@ -172,6 +173,7 @@ def main():
 			
 		E2end(E2n)
 
+	print "Classification complete, writing classmx"
 	clsmx[0].write_image(args[1],0)
 	clsmx[1].write_image(args[1],1)
 	if num_sim>=5 :

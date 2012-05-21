@@ -60,60 +60,14 @@ for d in dirs:
 
 	db=db_open_dict("bdb:%s#convergence.results"%d)
 
-	if re.search('^refine_\d+_even$',d) != None:
+	if d[-5:]=="_even" :
 		# For e2refine_even_odd results
+		db2=db_open_dict("bdb:%s#convergence.results"%d[:-5])
 		tdflist = [i for i in db_list_dicts("bdb:%s"%d) if "threed_filt" in i]
-		base = re.search('^refine_\d+').group()
 		for i in tdflist:
 			dictname = re.sub('^threed_filt_','conv_even_odd_', i)
-			a = EMData("bdb:%s_even#%s"%(base,i))
-			b = EMData("bdb:%s_odd#threed_filt_%02d"%(base,i))
-			db_compute_fsc(a, b, a["apix_x"], base, dictname)
-			
-	#only proces even odd once...
-	elif re.search('^refine_\d+_odd$',d) != None):
-		continue
-	
-	else:
-		tdf=[i for i in db_list_dicts("bdb:%s"%d) if "threed_filt" in i or "threed_masked" in i]
-		#k=db.keys()
-
-		# instead of using the existing list, we construct our own list from files
-		k=[]
-		for i in tdf:
-			n=int(i.split("_")[2])
-			if i=="threed_filt_00" : k.append("init_00_fsc")
-			elif "masked" in i : k.append("even_odd_%s_fsc"%i.split("_")[2])
-			else : k.append("%02d_%02d_fsc"%(n-1,n))
-		print " %d comparisons"%len(k)
-		# iterates over all iterations in a directory
-		for n in k:
-			ns=n.split("_")
-			# init vs 01
-			if ns[0]=="init" :
-				if initm==None : continue
-				a=EMData(initm,0)
-				b=EMData("bdb:%s#threed_filt_%s"%(d,ns[1]),0)
-			# e2refine, ignore
-			elif ns[0]=="threed" : continue
-			# even/odd tests
-			elif ns[0]=="even" :
-				a=EMData("bdb:%s#threed_masked_%s_even"%(d,ns[2]),0)
-				b=EMData("bdb:%s#threed_masked_%s_odd"%(d,ns[2]),0)
-				#try : 
-					#m=EMData("bdb:%s#threed_mask_%s"%(d,ns[2]),0)	# We apply the same (soft) mask to both images. Contrary to EMAN1
-					#a.mult(m)
-					#b.mult(m)
-				#except:
-					#print "not masking even/odd"
-			# general case, convergence curves
-			else : 
-				try :
-					a=EMData("bdb:%s#threed_filt_%s"%(d,ns[0]),0)
-					b=EMData("bdb:%s#threed_filt_%s"%(d,ns[1]),0)
-				except:
-					print "Error with ",n
-					sys.exit(1)
+			a = EMData("bdb:%s#%s"%(d,i),0)
+			b = EMData("bdb:%s_odd#%s"%(d[:-5],i))
 
 			# compute FSC and overwrite original results
 			apix=a["apix_x"]
@@ -121,9 +75,62 @@ for d in dirs:
 			third = len(fsc)/3
 			xaxis = fsc[0:third]
 			fsc = fsc[third:2*third]
-#			error = fsc[2*third:]
 			saxis = [x/apix for x in xaxis]
 
-			db[n]=[saxis,fsc]
-			print "  ",n
+			db2[dictname]=[saxis,fsc]
+			print "  %s (%s - %s)"%(dictname,"bdb:%s#%s"%(d,i),"bdb:%s_odd#%s"%(d[:-5],i))
+
+#			EMAN2fsc.db_compute_fsc(a, b, a["apix_x"], base, dictname)
+			
+	tdf=[i for i in db_list_dicts("bdb:%s"%d) if "threed_filt" in i or "threed_masked" in i]
+	#k=db.keys()
+
+	# instead of using the existing list, we construct our own list from files
+	k=[]
+	for i in tdf:
+		n=int(i.split("_")[2])
+		if i=="threed_filt_00" : k.append("init_00_fsc")
+		elif "masked" in i : k.append("even_odd_%s_fsc"%i.split("_")[2])
+		else : k.append("%02d_%02d_fsc"%(n-1,n))
+	print " %d comparisons"%len(k)
+	# iterates over all iterations in a directory
+	for n in k:
+		ns=n.split("_")
+		# init vs 01
+		if ns[0]=="init" :
+			try:
+				if initm==None : continue
+				a=EMData(initm,0)
+				b=EMData("bdb:%s#threed_filt_%s"%(d,ns[1]),0)
+			except: continue
+		# e2refine, ignore
+		elif ns[0]=="threed" : continue
+		# even/odd tests
+		elif ns[0]=="even" :
+			#print "bdb:%s#threed_masked_%s_even"%(d,ns[2]),"vs","bdb:%s#threed_masked_%s_odd"%(d,ns[2])
+			a=EMData("bdb:%s#threed_masked_%s_even"%(d,ns[2]),0)
+			b=EMData("bdb:%s#threed_masked_%s_odd"%(d,ns[2]),0)
+		# general case, convergence curves
+		else : 
+			try :
+				#print "bdb:%s#threed_filt_%s"%(d,ns[0]),"vs","bdb:%s#threed_filt_%s"%(d,ns[1])
+				a=EMData("bdb:%s#threed_filt_%s"%(d,ns[0]),0)
+				b=EMData("bdb:%s#threed_filt_%s"%(d,ns[1]),0)
+			except:
+				print "Error with ",n
+				sys.exit(1)
+
+		# compute FSC and overwrite original results
+		#print "compute"
+		apix=a["apix_x"]
+		fsc = a.calc_fourier_shell_correlation(b)
+		third = len(fsc)/3
+		xaxis = fsc[0:third]
+		fsc = fsc[third:2*third]
+#		error = fsc[2*third:]
+		saxis = [x/apix for x in xaxis]
+
+		#print "write"
+		db[n]=[saxis,fsc]
+		print "  ",n
 

@@ -86,6 +86,7 @@ def main():
 	parser.add_argument("--prefilt",action="store_true",help="Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison",default=False, guitype='boolbox', row=12, col=2, rowspan=1, colspan=1)
 	
 	# options associated with e2classify.py
+	parser.add_argument("--simvec", action="store_true",help="Causes the classification algorithm to use patterns rather than peak values",default=False)
 	parser.add_argument("--sep", type=int, help="The number of classes a particle can contribute towards (default is 1)", default=1, guitype='intbox', row=19, col=2, rowspan=1, colspan=1, mode="refinement")
 	
 	# options associated with e2classaverage.py
@@ -409,6 +410,9 @@ def check_classaverage_args(options, nofilecheck=False):
 def get_classify_cmd(options,check=False,nofilecheck=False):
 	e2classifycmd = "e2classify.py %s %s --sep=%d -f" %(options.simmxfile,options.classifyfile,options.sep)
 	
+	if (options.simvec):
+		e2classifycmd += " --simvec"
+
 	if (options.verbose):
 		e2classifycmd += " --verbose=" + str(options.verbose - 1)
 	

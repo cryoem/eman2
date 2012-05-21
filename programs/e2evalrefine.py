@@ -37,6 +37,8 @@ from EMAN2db import db_open_dict
 from math import *
 import os
 import sys
+import datetime
+
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -45,7 +47,8 @@ def main():
 	evaluating a single particle reconstruction refinement run. Currently only provides a 
 	single option to compare the parameters used for different refinement runs in a single project."""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-		
+	
+	parser.add_argument("--timing", default=False, action="store_true", help="report on how long each step of the refinement process took during the first iteration of each run")
 	parser.add_argument("--parmcmp",  default=False, action="store_true",help="Compare parameters used in different refinement rounds")
 	parser.add_argument("--parmpair",default=None,type=str,help="Specify iter,iter to compare the parameters used between 2 itertions.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -81,6 +84,39 @@ def main():
 			except:
 				try: print "%s: %s -> None"%(k,pa[k])
 				except: print "%s: None -> %s"%(k,pb[k])
+
+	if options.timing:
+		#dl=[i for i in os.listdir(".") if "refine_" in i]		# list of all refine_ directories
+		#dl.sort()
+
+		hist=[]
+		fin=open(".eman2log.txt","r")
+		while 1:
+			line=fin.readline()
+			if len(line)==0 : break
+			
+			spl=line.split("\t")
+			try: com=spl[4].split()[0].split("/")[-1]
+			except : continue
+
+			if com in ("e2refine.py","e2project3d.py","e2simmx.py","e2simmx2stage.py","e2classify.py","e2classaverage.py","e2make3d.py") : hist.append((com,spl))
+			
+		n=0
+		while n<len(hist):
+			com=hist[n][1][4]
+			ttime=timestamp_diff(hist[n][1][0],hist[n][1][1])
+			if hist[n][0]=="e2refine.py": 
+				pl=com.find("--path=")
+				parl=com.find("--parallel=")
+				print "%s\t%1.2f hours\te2refine %s"%(difftime(ttime),ttime/3600.0,com[pl+7:].split()[0]),
+				if parl>0: print com[parl+11:].split()[0]
+				else: print " "
+
+			else:
+				print "\t%s\t%1.2f hours\t%s"%(difftime(ttime),ttime/3600.0,hist[n][0])
+			
+			n+=1
+			
 
 	if options.parmcmp:
 		dl=[i for i in os.listdir(".") if "refine_" in i]		# list of all refine_ directories

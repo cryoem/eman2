@@ -980,10 +980,25 @@ def remove_file( file_name, img_couples_too=True ):
 # returns the local date and time as a string
 def local_datetime(secs=-1):
 	"""Returns a timestamp as yyyy/mm/dd hh:mm:ss"""
-	from time import localtime
+	from time import localtime,strftime
 	if secs<0 : secs=time.time()
 	t=localtime(secs)
-	return "%04d/%02d/%02d %02d:%02d:%02d"%t[:6]
+	return strftime("%Y/%m/%d %H:%M:%S",t)
+#	return "%04d/%02d/%02d %02d:%02d:%02d"%t[:6]
+
+def timestamp_diff(t1,t2):
+	"""Takes two timestamps in local_datetime() format and subtracts them, result in seconds. 
+	difftime() available for convenient display."""
+	from time import strptime,mktime
+	
+	try:
+		tt1=mktime(strptime(t1,"%Y/%m/%d %H:%M:%S"))
+		tt2=mktime(strptime(t2,"%Y/%m/%d %H:%M:%S"))
+	except:
+#		print "time error ",t1,t2
+		return 0
+	
+	return tt2-tt1
 
 def difftime(secs):
 	"""Returns a string representation of a time difference in seconds as a Dd hh:mm:ss style string"""
@@ -991,7 +1006,7 @@ def difftime(secs):
 	d=int(floor(secs/86400))
 	secs-=d*86400
 	h=int(floor(secs/3600))
-	secs-=d*3600
+	secs-=h*3600
 	m=int(floor(secs/60))
 	secs=int(secs-m*60)
 	
