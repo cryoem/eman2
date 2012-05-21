@@ -659,6 +659,7 @@ class EMMpiClient():
 
 			# Using a UNIX domain socket due to odd problems with the named FIFO pairs deadlocking
 			self.mpisock=socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+			time.sleep(2)
 			self.mpisock.connect("%s/mpisock"%self.scratchdir)
 			self.mpifile=self.mpisock.makefile()
 			self.log("Connected to Controller")
@@ -1133,7 +1134,6 @@ class EMMpiTaskHandler():
 		
 		self.mpitask=subprocess.Popen(cmd, stdin=None, stdout=mpiout, stderr=mpierr, shell=True)
 
-		print "Listening for connections"
 		self.mpisock.listen(1)
 		self.mpiconn, self.mpiaddr = self.mpisock.accept()
 		self.mpifile=self.mpiconn.makefile()
