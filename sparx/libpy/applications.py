@@ -6771,7 +6771,13 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 				ctf_params = data[im].get_attr("ctf")
 				data[im] = filt_ctf(data[im], ctf_params)
 				data[im].set_attr('ctf_applied', 1)
+		
 		#Util.mul_img(data[im], mask2D)  #?????
+		if an[0] == -1:
+			stprj = data[im].get_attr_default("xform.projection", -1)
+			if(stprj == -1):
+				set_params_proj(data[im],[0,0,0,0,0], xform='xform.projection')
+		
 	del mask2D
 
 	if debug:
@@ -6786,7 +6792,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	from math import sin, pi
 	ou_max = ( nmax/2.0)*sin( initial_theta*pi/180) - dp/2.0/pixel_size -1.0
 	if ( ou > ou_max):
-		ERROR('ou should be less than----( nmax/2.0)*sin( initial_theta*pi/180) - dp/2.0/pixel_size -2.0 ', "ihrsr_MPI", 1,myid)
+		ERROR('ou should be less than or equal to ----( nmax/2.0)*sin( initial_theta*pi/180) - dp/2.0/pixel_size -1.0 ', "ihrsr_MPI", 1,myid)
 	del ou_max
 	if myid == main_node:
 		print_msg("Pixel size in Angstroms                   : %5.4f\n\n"%(pixel_size))
