@@ -1032,13 +1032,12 @@ def recons3d_sirt(stack_name, list_proj, radius, lam=1.0e-4, maxit=100, symmetry
 
 	return  xvol
       
-
 def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetry="c1"): 
 	"""
 		Weigthed back-projection algorithm.
 		stack_name - disk stack with projections or in-core list of images
 		list_proj  - list of projections to be used in the reconstruction
-		method - "general" Rademacher's Gaussian, "exact" MvHs triangle
+		method - "general" Radermacher's Gaussian, "exact" MvHs triangle
 		const  - for "general" 1.0e4 works well, for "exact" it should be the diameter of the object
 		symmetry - point group symmetry of the object
 
@@ -1086,8 +1085,68 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 			if   method=="general":  Util.WTF(B, ss, const, iProj*nsym+iSym+1)  # counting in WTF start from 1!
 			elif method=="exact"  :  Util.WTM(B, ss, const, iProj*nsym+iSym+1)  # counting in WTM start from 1!
 			Util.BPCQ(B, CUBE)
-		
+
 	return CUBE
+
+      
+def recons3d_vwbp(stack_name, list_proj, method = "general", const=1.0E4, symmetry="c1",outstack="bdb:temp"): 
+	"""
+		Weigthed back-projection algorithm.
+		stack_name - disk stack with projections or in-core list of images
+		list_proj  - list of projections to be used in the reconstruction
+		method - "general" Radermacher's Gaussian, "exact" MvHs triangle
+		const  - for "general" 1.0e4 works well, for "exact" it should be the diameter of the object
+		symmetry - point group symmetry of the object
+
+		WARNING - symmetries not implemented!!!!!!!!!
+	""" 
+	import types
+	from utilities import get_im
+
+	if type(stack_name) == types.StringType:
+		B = EMData()
+		B.read_image(stack_name,list_proj[0])
+	else : B = stack_name[list_proj[0]].copy()
+
+	ny = B.get_ysize()  # have to take ysize, because xsize is different for real and fft images
+
+	nsym = Transform.get_nsym(symmetry)
+	nimages = len(list_proj)
+
+	ss = [0.0]*(6*nsym*nimages)
+	symmetry_transforms = [ [None for i in xrange(nsym)] for j in xrange(nimages) ] # list of nimages lists of nsym elements
+	for iProj in xrange(nimages):
+		if type(stack_name) == types.StringType:
+			B.read_image(stack_name,list_proj[iProj], True)
+		else:
+			B = stack_name[list_proj[iProj]]
+		transform = B.get_attr("xform.projection")
+		for iSym in xrange(nsym):
+			symmetry_transforms[iProj][iSym] = transform.get_sym(symmetry, iSym)
+			d = symmetry_transforms[iProj][iSym].get_params("spider")
+			DMnSS = Util.CANG(d["phi"], d["theta"], d["psi"])
+			ss[ (iProj*nsym+iSym)*6 : (iProj*nsym+iSym+1)*6 ] = DMnSS["SS"]
+
+	if method=="exact":    
+		const = int(const)
+
+	for iProj in xrange(nimages):
+		if(iProj%100 == 0):  print "BPCQ  ",iProj
+		CUBE = EMData()
+		CUBE.set_size(ny, ny, ny)
+		CUBE.to_zero()
+		proj = get_im(stack_name, list_proj[iProj])
+		for iSym in xrange(nsym):
+			B = proj.copy()
+			B.set_attr("xform.projection", symmetry_transforms[iProj][iSym])
+			if   method=="general":  Util.WTF(B, ss, const, iProj*nsym+iSym+1)  # counting in WTF start from 1!
+			elif method=="exact"  :  Util.WTM(B, ss, const, iProj*nsym+iSym+1)  # counting in WTM start from 1!
+			from filter import filt_tanl
+			B = filt_tanl(B, 0.3, 0.1)
+			Util.BPCQ(B, CUBE)
+		CUBE.write_image(outstack, iProj)
+	return CUBE
+
 
 def prepare_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetry="c1"):
 	"""
@@ -1095,7 +1154,7 @@ def prepare_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetry
 		Weigthed back-projection algorithm.
 		stack_name - disk stack with projections or in-core list of images
 		list_proj  - list of projections to be used in the reconstruction
-		method - "general" Rademacher's Gaussian, "exact" MvHs triangle
+		method - "general" Radermacher's Gaussian, "exact" MvHs triangle
 		const  - for "general" 1.0e4 works well, for "exact" it should be the diameter of the object
 		symmetry - point group symmetry of the object
 	"""
@@ -1132,12 +1191,12 @@ def prepare_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetry
 
 def recons3d_swbp(A, transform, L, ss, method = "general", const=1.0E4, symmetry="c1"):
 	"""
-	        Take one projection, but angles form the entire set.  Build the weighting function for the given projection taking into account all,
+	    Take one projection, but angles form the entire set.  Build the weighting function for the given projection taking into account all,
 		apply it, and backproject.
 		The projection number is L counting from zero.
 		Weigthed back-projection algorithm.
 		stack_name - disk stack with projections or in-core list of images
-		method - "general" Rademacher's Gaussian, "exact" MvHs triangle
+		method - "general" Radermacher's Gaussian, "exact" MvHs triangle
 		const  - for "general" 1.0e4 works well, for "exact" it should be the diameter of the object
 		symmetry - point group symmetry of the object
 	"""
@@ -1158,19 +1217,19 @@ def recons3d_swbp(A, transform, L, ss, method = "general", const=1.0E4, symmetry
 	  	elif (method=="exact"  ):    Util.WTM(B, ss, const, L+1)
 
 		B.set_attr("xform.projection", transform)
-		Util.BPCQ(B, CUBE)  
+		Util.BPCQ(B, CUBE)
 		
 	B.set_attr("xform.projection", org_transform)
 	return CUBE, B
 
 def weight_swbp(A, L, ss, method = "general", const=1.0E4, symmetry="c1"):
 	"""
-	        Take one projection, but angles form the entire set.  Build the weighting function for the given projection taking into account all,
+	    Take one projection, but angles form the entire set.  Build the weighting function for the given projection taking into account all,
 		apply it, return weighted projection.
 		The projection number is L counting from zero.
 		Weigthed back-projection algorithm.
 		stack_name - disk stack with projections or in-core list of images
-		method - "general" Rademacher's Gaussian, "exact" MvHs triangle
+		method - "general" Radermacher's Gaussian, "exact" MvHs triangle
 		const  - for "general" 1.0e4 works well, for "exact" it should be the diameter of the object
 		symmetry - point group symmetry of the object
 	"""
@@ -1188,12 +1247,12 @@ def weight_swbp(A, L, ss, method = "general", const=1.0E4, symmetry="c1"):
 
 def backproject_swbp(B, transform = None, symmetry="c1"): 
 	"""
-	        Take one projection, but angles form the entire set.  Build the weighting function for the given projection taking into account all,
+	    Take one projection, but angles form the entire set.  Build the weighting function for the given projection taking into account all,
 		apply it, and backproject.
 		The projection number is L counting from zero.
 		Weigthed back-projection algorithm.
 		stack_name - disk stack with projections or in-core list of images
-		method - "general" Rademacher's Gaussian, "exact" MvHs triangle
+		method - "general" Radermacher's Gaussian, "exact" MvHs triangle
 		const  - for "general" 1.0e4 works well, for "exact" it should be the diameter of the object
 		symmetry - point group symmetry of the object
 	""" 
@@ -1206,7 +1265,7 @@ def backproject_swbp(B, transform = None, symmetry="c1"):
 	org_transform = B.get_attr("xform.projection")
 	if transform != None:
 		B.set_attr("xform.projection", transform)
-	Util.BPCQ(B, CUBE)  
+	Util.BPCQ(B, CUBE)
 	B.set_attr("xform.projection", org_transform)
 
 	return CUBE
