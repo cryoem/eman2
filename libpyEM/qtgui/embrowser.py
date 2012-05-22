@@ -1641,7 +1641,7 @@ class EMBDBInfoPane(EMInfoPane):
 		itms=[]
 		# Dictionaries may require recursion
 		if isinstance(trg,dict):
-			for k in trg.keys():
+			for k in sorted(trg.keys()):
 				itms.append(QtGui.QTreeWidgetItem(QtCore.QStringList((str(k),str(trg[k])))))
 				if isinstance(trg[k],list) or isinstance(trg[k],tuple) or isinstance(trg[k],set) or isinstance(trg[k],dict):
 					self.addTreeItem(trg[k],itms[-1])

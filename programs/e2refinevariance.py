@@ -248,7 +248,7 @@ def main():
 	E2end(logid)
 
 def get_make3d_cmd(options,check=False,nofilecheck=False):
-	e2make3dcmd = "e2make3d.py --input=%s --sym=%s --iter=%d -f" %(options.cafile,options.sym,options.m3diter)
+	e2make3dcmd = "e2make3d.py --input=%s --sym=%s --iter=%d -f --keepabs" %(options.cafile,options.sym,options.m3diter)
 	
 	e2make3dcmd += " --recon=%s --output=%s" %(options.recon,options.model)
 

@@ -43,6 +43,7 @@ import sys
 import math
 import random
 import traceback
+from numpy import array
 
 def get_usage():
 	progname = os.path.basename(sys.argv[0])
@@ -100,6 +101,7 @@ def main():
 	parser.add_argument("--recon", dest="recon_type", default="fourier", help="Reconstructor to use see e2help.py reconstructors -v. Default is fourier:mode=gauss_2")
 	parser.add_argument("--keep", type=float, dest="keep", help="The fraction of slices to keep, based on quality scores (1.0 = use all slices). See keepsig.",default=1.0)
 	parser.add_argument("--keepsig",action="store_true",default=False, dest="keepsig", help="If set, keep will be interpreted as a standard deviation coefficient instead of as a percentage.")	
+	parser.add_argument("--keepabs",action="store_true",default=False, dest="keepabs", help="If set, keep will refer to the absolute quality of the class-average, not a local quality relative to other similar sized classes.")
 	parser.add_argument("--no_wt", action="store_true", dest="no_wt", default=False, help="This argument turns automatic weighting off causing all images to be weighted by 1. If this argument is not specified images inserted into the reconstructed volume are weighted by the number of particles that contributed to them (i.e. as in class averages), which is extracted from the image header (as the ptcl_repr attribute).")
 	parser.add_argument("--iter", type=int, dest="iter", default=2, help="Set the number of iterations (default is 2). Iterative reconstruction improves the overall normalization of the 2D images as they are inserted into the reconstructed volume, and allows for the exclusion of the poorer quality images.")
 	parser.add_argument("--force", "-f",dest="force",default=False, action="store_true",help="deprecated")
@@ -212,7 +214,7 @@ def main():
 
 	#########################################################
 	# The actual reconstruction
-	output=reconstruct(data,recon,options.preprocess,options.pad,options.iter,options.keep,options.keepsig,start,options.startweight,options.verbose-1)
+	output=reconstruct(data,recon,options.preprocess,options.pad,options.iter,options.keep,options.keepsig,start,options.startweight,options.verbose-1,options.keepabs)
 	#
 	########################################################3
 	
@@ -394,7 +396,7 @@ def get_processed_image(filename,nim,nsl,preprocess,pad,nx=0,ny=0):
 	
 	return ret
 	
-def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=None,startweight=0,verbose=0):
+def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=None,startweight=0,verbose=0,keepabs=False):
 	"""Do an actual reconstruction using an already allocated reconstructor, and a data list as produced
 	by initialize_data(). preprocess is a list of processor strings to be applied to the image data in the
 	event that it hasn't already been read into the data array. start and startweight are optional parameters
@@ -418,7 +420,7 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 			
 			# If the image is below the quality cutoff, skip it
 			try:
-				if elem["reconstruct_qual"]<qcutoff or elem["weight"]==0 : 
+				if (keepabs and elem["reconstruct_absqual"]<qcutoff) or (not keepabs and elem["reconstruct_qual"]<qcutoff) or elem["weight"]==0 : 
 					if verbose>0 : print i," *  (%1.3g)"%(elem["reconstruct_qual"])
 					if it==niter-1 : 
 						if elem["fileslice"]<0 : excluded.append(elem["filenum"])
@@ -463,7 +465,7 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 			for i,elem in enumerate(data):
 				
 				try:
-					if elem["reconstruct_qual"]<qcutoff or elem["weight"]==0: 
+					if (keepabs and elem["reconstruct_absqual"]<qcutoff) or (not keepabs and elem["reconstruct_qual"]<qcutoff) or elem["weight"]==0: 
 						if verbose>0 : print i," *"
 #						continue
 				except: pass
@@ -489,7 +491,7 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 				
 				dosub=True
 				try:
-					if elem["reconstruct_qual"]<qcutoff or elem["weight"]==0: dosub=False
+					if (keepabs and elem["reconstruct_absqual"]<qcutoff) or (not keepabs and elem["reconstruct_qual"]<qcutoff) or elem["weight"]==0: dosub=False
 				except: pass
 
 				recon.determine_slice_agreement(img,elem["xform"],elem["weight"],dosub)
@@ -523,16 +525,29 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 					qlist.append(-1)
 #			plot(qlist)
 
+			# we also get some statistics on the absolute qualities in case the user doesn't want local averaging
+			sq=array(sorted([data[i]["reconstruct_absqual"] for i in xrange(len(data))]))
+			aqmean=sq.mean()
+			aqsigma=sq.std()
+
 			# set exclusion thresholds
-			if keepsig:
-				qmean=sum(qlist)/len(qlist)
-				qsigma=sqrt(sum([i*i for i in qlist])/len(qlist)-qmean**2)
-				qcutoff=qmean-qsigma*keep
-				if verbose>0: print "Quality: mean=%1.3f sigma=%1.3f  ->  cutoff = %1.3f (%d ptcl)"%(qmean,qsigma,qcutoff,ptcl)
+			if keepabs:
+				if keepsig:
+					qcutoff=aqmean-aqsigma*keepabs
+					if verbose>0: print "Absolute Quality: mean=%1.3f sigma=%1.3f  ->  cutoff = %1.3f (%d ptcl)"%(aqmean,aqsigma,qcutoff,ptcl)
+				else:
+					qcutoff=sq[-int(keep*len(qlist))]
+					if verbose>0: print "Absolute Quality: min=%1.3f max=%1.3f  ->  cutoff = %1.3f (%d ptcl)"%(sq[0],sq[-1],qcutoff,ptcl)
 			else:
-				qlist.sort()
-				qcutoff=qlist[-int(keep*len(qlist))]
-				if verbose>0: print "Quality: min=%1.3f max=%1.3f  ->  cutoff = %1.3f (%d ptcl)"%(qlist[0],qlist[-1],qcutoff,ptcl)
+				if keepsig:
+					qmean=sum(qlist)/len(qlist)
+					qsigma=sqrt(sum([i*i for i in qlist])/len(qlist)-qmean**2)
+					qcutoff=qmean-qsigma*keep
+					if verbose>0: print "Quality: mean=%1.3f sigma=%1.3f  ->  cutoff = %1.3f (%d ptcl)"%(qmean,qsigma,qcutoff,ptcl)
+				else:
+					qlist.sort()
+					qcutoff=qlist[-int(keep*len(qlist))]
+					if verbose>0: print "Quality: min=%1.3f max=%1.3f  ->  cutoff = %1.3f (%d ptcl)"%(qlist[0],qlist[-1],qcutoff,ptcl)
 
 		output = recon.finish(True)
 
