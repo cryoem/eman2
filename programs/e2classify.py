@@ -154,8 +154,10 @@ def main():
 		if options.simvec:
 			newmx=simmx[0].copy()
 			for i in xrange(newmx["nx"]):
-				try: simmx[0][i]=newmx.cmp("ccc",bvecs[i])
-				except: simmx[0][i]=1.0		# worst possible value if we have no reference
+				try: 
+#					simmx[0][i]=newmx.cmp("ccc",bvecs[i])
+					simmx[0][i]=newmx.cmp("sqeuclidean",bvecs[i],{"normto":1})
+				except: simmx[0][i]=100000.0		# bad value if we have no reference
 		
 		#hmmm, this code is pretty silly, but harmless, I suppose...
 		maximum=simmx[0]["maximum"]

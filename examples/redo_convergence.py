@@ -117,8 +117,8 @@ for d in dirs:
 				a=EMData("bdb:%s#threed_filt_%s"%(d,ns[0]),0)
 				b=EMData("bdb:%s#threed_filt_%s"%(d,ns[1]),0)
 			except:
-				print "Error with ",n
-				sys.exit(1)
+				print "Error with ",n,"bdb:%s#threed_filt_%s"%(d,ns[0]),"bdb:%s#threed_filt_%s"%(d,ns[1])
+				continue
 
 		# compute FSC and overwrite original results
 		#print "compute"

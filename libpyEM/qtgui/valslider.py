@@ -560,6 +560,14 @@ class CheckBox(QtGui.QWidget):
 		except: return True
 		
 	def setValue(self,val,quiet=0):
+		try:
+			if int(val)!=0: val=True
+			else : val=False
+		except:
+			if isinstance(val,str) : 
+				if val.lower() in ("true","yes","t","y") : val=True
+				else : val=False
+				
 		if self.getValue()==val : return
 		self.check.setChecked(val)
 		if not quiet : self.emit(QtCore.SIGNAL("valueChanged"),self.value)

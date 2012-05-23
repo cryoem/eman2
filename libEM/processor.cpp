@@ -6199,13 +6199,13 @@ void CoordinateMaskFileProcessor::process_inplace(EMData * image)
 	float apix = image->get_attr("apix_x");
 	float apixm = msk->get_attr("apix_x");
 
-	float xo = image->get_attr("origin_x");
-	float yo = image->get_attr("origin_y");
-	float zo = image->get_attr("origin_z");
+	float xo = image->get_attr_default("origin_x",0.0);
+	float yo = image->get_attr_default("origin_y",0.0);
+	float zo = image->get_attr_default("origin_z",0.0);
 
-	float xom = msk->get_attr("origin_x");
-	float yom = msk->get_attr("origin_y");
-	float zom = msk->get_attr("origin_z");
+	float xom = msk->get_attr_default("origin_x",0.0);
+	float yom = msk->get_attr_default("origin_y",0.0);
+	float zom = msk->get_attr_default("origin_z",0.0);
 
 	float *dp = image->get_data();
 	float *dpm = msk->get_data();
