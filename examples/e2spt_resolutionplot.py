@@ -123,10 +123,10 @@ def main():
 	
 	if fscoutputname not in findir:
 		print "I am waiting for the fsc file to be generated"
-		while fscoutputname not in findir:
-			print "Can't find it yet!"
-			findir=os.listdir(os.getcwd())
-			time.sleep=(10)
+		#while fscoutputname not in findir:
+		#	print "Can't find it yet!"
+		#	findir=os.listdir(os.getcwd())
+		#	time.sleep=(10)
 	else:
 		print "I found the fsc file", fscoutputname
 	
@@ -143,48 +143,125 @@ def main():
 			inversefreqs.append( float( line.split()[0] ))
 			k += 1
 		
-		polycoeffs = numpy.polyfit(x, values, 10)
+		polycoeffs = numpy.polyfit(x, values, 20)
 		yfit = numpy.polyval(polycoeffs, x)
 		
 		plot_name = fscoutputname.replace('.txt','_PLOT.png')
 		
 		fullinfo = {}
 
-		difs = []
+		difs0p5 = []
+		difs0p143 = []
 		
 		for i in range(len(yfit)):
-			dif = abs(yfit[i] - 0.5)
-			difs.append(dif)
-			fullinfo.update({dif:i})
+			dif0p5 = abs(yfit[i] - 0.5)
+			difs0p5.append(dif0p5)
+			fullinfo.update({dif0p5:i})
+			
+			dif0p143 = abs(yfit[i] - 0.143)
+			difs0p143.append(dif0p143)
+			fullinfo.update({dif0p143:i})
+			
 		
-		difsmin1=min(difs)
-		difs.remove(difsmin1)
-		difsmin2=min(difs)
+		difs0p5min1=min(difs0p5)
+		difs0p5.remove(difs0p5min1)
+		difs0p5min2=min(difs0p5)
+		
+		difs0p143min1=min(difs0p143)
+		difs0p143.remove(difs0p143min1)
+		difs0p143min2=min(difs0p143)
+		
+		fsc0p5minpixel1 = fullinfo[difs0p5min1]
+		fsc0p5minpixel2 = fullinfo[difs0p5min2]
+		fsc0p5pixel = (fsc0p5minpixel1 + fsc0p5minpixel2)/2
+		fsc0p5freq1 = inversefreqs[fsc0p5minpixel1]
+		fsc0p5freq2 = inversefreqs[fsc0p5minpixel2]
+		
+		fsc0p143minpixel1 = fullinfo[difs0p143min1]
+		fsc0p143minpixel2 = fullinfo[difs0p143min2]
+		fsc0p143pixel = (fsc0p5minpixel1 + fsc0p143minpixel2)/2
+		fsc0p143freq1 = inversefreqs[fsc0p143minpixel1]
+		fsc0p143freq2 = inversefreqs[fsc0p143minpixel2]
+		
+		fsc0p5freqavg = (fsc0p5freq1 + fsc0p5freq2)/2.0
+		
+		fsc0p143freqavg = (fsc0p143freq1 + fsc0p143freq2)/2.0
+		
+		fsc0p5resolution1 = ''
+		fsc0p5resolution1label=''
+		
+		fsc0p143resolution1 = ''
+		fsc0p143resolution1label=''
+		
+		if fsc0p5pixel:		
+			fsc0p5resolution1 = (float(apix) * float(boxsize)) / float(fsc0p5pixel)
+			fsc0p5resolution1label = "%.2f" % ( fsc0p5resolution1 )
+		else:
+			print "Method 1 for resolution calculation failed (there was a division by zero somewhere)"
+		
+
+		if fsc0p143pixel:		
+			fsc0p143resolution1 = (float(apix) * float(boxsize)) / float(fsc0p143pixel)
+			fsc0p143resolution1label = "%.2f" % ( fsc0p143resolution1 )
+	
+		elif not fsc0p5pixel:
+			print "Method 1 for resolution calculation failed (there was a division by zero somewhere)"
 		
 		
-		minpixel1 = fullinfo[difsmin1]
-		minpixel2 = fullinfo[difsmin2]
 		
-		fsc0p5pixel = (minpixel1+minpixel2)/2
-		fscfreq1 = inversefreqs[minpixel1]
-		fscfreq2 = inversefreqs[minpixel2]
+		fsc0p5resolution2=''
+		fsc0p5resolution2label=''
+
+		if fsc0p5freqavg:	
+			fsc0p5resolution2 = 1/fsc0p5freqavg
+			fsc0p5resolution2label = "%.2f" % ( fsc0p5resolution2 )
+		else:
+			print "Method 2 for resolution calculation failed (there was a division by zero somewhere)"
 		
-		fscfreqavg = (fscfreq1 + fscfreq2)/2.0
 		
-		resolution1 = (float(apix) * float(boxsize)) / float(fsc0p5pixel)
+		fsc0p143resolution2=''
+		fsc0p143resolution2label=''
+
+		if fsc0p143freqavg:	
+			fsc0p143resolution2 = 1/fsc0p143freqavg
+			fsc0p143resolution2label = "%.2f" % ( fsc0p143resolution2 )
+
+		elif not fsc0p5resolution2:
+			print "Method 2 for resolution calculation failed (there was a division by zero somewhere)"
 		
-		resolution2 = 1/fscfreq2
 		
-		print "The resolution calculations 1 and 2 are", resolution1, resolution2
-		#difs = sorted(bestfinal, key=itemgetter('score'))
+		if sum(values)/len(values) == 1.0:
+			print "The particles you are aligning are exactly the same; cannot compute a reasonable FSC curve for a particle with itself! (but I'll plot the straight line anyway)."
+		else:
+			print "FSC0.5 resolution calculations 1 and 2 are", fsc0p5resolution1, fsc0p5resolution2
+			print "FSC0.143 resolution calculations 1 and 2 are", fsc0p143resolution1, fsc0p143resolution2
+			
+		curve = pylab.plot(x, values, 'k.')
+		fit = pylab.plot(x, yfit, 'r-')
 		
-		pylab.plot(x, values, 'k.')
-		pylab.plot(x, yfit, 'r-')
-				
+		final0p5='NA'
+		if fsc0p5resolution2label:
+			final0p5 = fsc0p5resolution2label
+		elif fsc0p5resolution1label:
+			final0p5 = fsc0p5resolution1label
+
+		final0p143='NA'
+		if fsc0p143resolution2label:
+			final0p143 = fsc0p143resolution2label
+		elif fsc0p143resolution1label:
+			final0p143 = fsc0p143resolution1label	
+		
 		pylab.title(plot_name)
 		pylab.ylabel('FSC value')
 		pylab.xlabel('pixel number')
+		pylab.grid(True)
+		pylab.legend( (curve, fit), ('Values', 'Fit'))
+		pylab.axis([0,boxsize/2 + 10,0,1.2])
 		
+		pylab.annotate("FSC0.5 = "+str(final0p5)+" A", xy=(0, 1), xytext=(300, -30), xycoords='data', textcoords='offset points',bbox=dict(boxstyle="round", fc="0.8"))
+		pylab.annotate("FSC0.143 = "+str(final0p143)+" A", xy=(0, 1), xytext=(300, -55), xycoords='data', textcoords='offset points',bbox=dict(boxstyle="round", fc="0.8"))
+		pylab.annotate("Sampling ="+"%.2f"%(apix) + " A/pixel", xy=(0, 1), xytext=(300, -80), xycoords='data', textcoords='offset points',bbox=dict(boxstyle="round", fc="0.8"))
+
 		pylab.savefig(plot_name)
 		
 		#pylab.plot(x, values, linewidth=1, marker='o', linestyle='--', color='r')	
