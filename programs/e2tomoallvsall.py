@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus Galaz (with adapted code from e2classaverage3d), 07/2011
+# Author: Jesus Galaz, 07/2011
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -170,10 +170,12 @@ def main():
 	data_files = []
 	
 	nptcl = EMUtil.get_image_count(options.input)
-	#groupsize = nptcl
 	entirestack = options.input
 	originalpath = options.path
 	
+	
+	logger = E2init(sys.argv,options.ppid)
+
 	for i in range(options.groups):	
 		#if options.groups > 1:
 		if options.groups * 3 > nptcl:
@@ -193,9 +195,7 @@ def main():
 				groupDIR = originalpath + '/group' + str(i+1).zfill(len(str(options.groups)))
 				groupID = 'group' + str(i+1).zfill(len(str(options.groups))) + '_raw.hdf'
 				groupPATH = groupDIR + '/' + groupID
-				os.system('mkdir ' + groupDIR)
-				#os.system('e2proc3d.py ' + entirestack + ' ' + groupPATH + ' --first=' + str(bottom_range) + ' --last=' + str(top_range)) 	
-				
+				os.system('mkdir ' + groupDIR)				
 
 				options.path = groupDIR
 
@@ -208,7 +208,6 @@ def main():
 				a = EMData(entirestack,jj)
 				a['spt_ptcl_indxs'] = mm
 	
-				#sptparams=[]
 				params = a.get_attr_dict()
 				
 				for i in params:
@@ -231,12 +230,13 @@ def main():
 		allvsall(options)
 		if options.exclusive_class_min:
 			exclusive_classes(options)
+	E2end(logger)
+
 	return()
 
 
 def exclusive_classes(options):
 
-	#current = os.getcwd()
 	findir = os.listdir(options.path)
 	
 	minmembers = options.exclusive_class_min
@@ -244,9 +244,7 @@ def exclusive_classes(options):
 	averages = []
 	for i in findir:
 		if '_averages.hdf' in i:
-			#print "I will analyze this average stack", i
 			n=EMUtil.get_image_count(options.path + '/' + i)
-			#print "It has these many averages", n
 			for j in range(n):
 				a=EMData(options.path + '/' +i,j,True)
 				print "The average I have just appended has this multiplicity", a['spt_multiplicity']
@@ -256,13 +254,8 @@ def exclusive_classes(options):
 				averages.append({'file':options.path + '/' + i,'n':j,'multiplicity':a['spt_multiplicity'],'indxs':indxs})
 	me_classes = []
 	repeated = []
-
-	#candidates=[{'multiplicity':5,'indxs':[1,2,3,4,5]},{'multiplicity':2,'indxs':[3,6]},{'multiplicity':2,'indxs':[4,5]},{'multiplicity':3,'indxs':[4,5,6]},{'multiplicity':3,'indxs':[1,2,3]}]
-
+	
 	averages = sorted(averages, key=itemgetter('multiplicity'))
-
-	#print "\n\n\nThe candidates sorted are", candidates
-	#print "I have found these many candidates", len(candidates)
 	
 	candidates = 0
 	repeats=0
@@ -298,7 +291,7 @@ def exclusive_classes(options):
 		out = udir + '/me_class' + str(i).zfill(len(str(len(me_classes)))) + '_s' + str(me_classes[i]['multiplicity']) + '.hdf'
 		cmd = 'e2proc3d.py ' + me_classes[i]['file'] + ' ' + out + ' --first=' + str(me_classes[i]['n']) + ' --last=' + str(me_classes[i]['n']) + ' --append'
 		os.system(cmd)
-		if options.postprocess!=None:
+		if options.postprocess:
 			a=EMData(out,0)
 			a.process_inplace(options.postprocess[0],options.postprocess[1])
 			outpp = out.replace('.hdf','_postp.hdf')
@@ -362,7 +355,7 @@ def allvsall(options):
 		
 	allptclsMatrix = []								#Massive matrix listing all the allptclsRound dictionaries produced after each iteration
 	allptclsMatrix.append(allptclsRound)
-
+	
 	for k in range(options.iter):							#Start the loop over the user-defined number of iterations
 		#avgname = options.path + '/round' + str(k).zfill(fillfactor) + '_averages.hdf'
 		newstack = options.path + '/round' + str(k-1).zfill(fillfactor) + '_averages.hdf'
@@ -376,7 +369,6 @@ def allvsall(options):
 		
 		allptclsRound = {}							
 		
-		logger = E2init(sys.argv,options.ppid)
 		if options.parallel:							# Initialize parallelism if being used
 			from EMAN2PAR import EMTaskCustomer
 			etc=EMTaskCustomer(options.parallel)
@@ -603,7 +595,7 @@ def allvsall(options):
 					for oo in range(len(avg_ptcls)):
 						avg_ptcls[oo].write_image(options.path + '/round' + str(k).zfill(fillfactor) + '_average' + str(mm).zfill(fillfactor)  + '_ptcls.hdf',oo)
 				
-				if options.postprocess!=None : 
+				if options.postprocess: 
 					avgp=avg.process(options.postprocess[0],options.postprocess[1])
 					avgp.write_image(options.path + '/round' + str(k).zfill(fillfactor) + '_averages_postp.hdf',mm)
 										
@@ -676,8 +668,6 @@ def allvsall(options):
 		
 		#if k>0:
 		#	os.system('rm ' + newstack)
-
-		E2end(logger)
 
 	return()
 
