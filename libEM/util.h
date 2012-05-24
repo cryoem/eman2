@@ -388,12 +388,12 @@ namespace EMAN
 		/** Get the seed for Randnum class
 		 * @return 	the seed for current random number generator
 		 * */
-		static unsigned long int get_randnum_seed();
+		static unsigned long long get_randnum_seed();
 
 		/** Set the seed for Randnum class
 		 * @param[in] seed the seed for current random number generator
 		 * */
-		static void set_randnum_seed(unsigned long int seed);
+		static void set_randnum_seed(unsigned long long seed);
 
 		/** Get an integer random number between low and high, [low, high]
 		 * @param[in] low The lower bound of the random number.

@@ -675,13 +675,13 @@ void Util::sort_mat(float *left, float *right, int *leftPerm, int *rightPerm)
 	}
 }
 
-void Util::set_randnum_seed(unsigned long int seed)
+void Util::set_randnum_seed(unsigned long long seed)
 {
 	Randnum* randnum = Randnum::Instance();
 	randnum->set_seed(seed);
 }
 
-unsigned long int Util::get_randnum_seed()
+unsigned long long Util::get_randnum_seed()
 {
 	Randnum* randnum = Randnum::Instance();
 	return	randnum->get_seed();

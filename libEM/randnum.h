@@ -102,12 +102,12 @@ namespace EMAN
 		 * 
 		 * @param seed the seed for random number generator
 		 * */
-		void set_seed(unsigned long int seed);	
+		void set_seed(unsigned long long seed);
 		
 		/** Get the current random number seed
 		 * 
 		 * @return current seed*/	
-		unsigned long int get_seed();
+		unsigned long long get_seed();
 		
 		/** This function returns a random integer from lo to hi inclusive.
 		 * All integers in the range [lo,hi] are produced with equal probability. 
@@ -116,7 +116,7 @@ namespace EMAN
 		 * @param hi the high end of the random integer
 		 * @return the long integer in [lo, hi]  
 		 * */
-		long get_irand(long lo, long hi) const;
+		long long get_irand(long long lo, long long hi) const;
 		
 		/** This function returns a random float from lo inclusive to hi.
 		 * 
@@ -168,7 +168,7 @@ namespace EMAN
 	  private:
 		const static gsl_rng_type * T;
     	static gsl_rng * r;
-    	static unsigned long int _seed;
+    	static unsigned long long _seed;
     	
     	static Randnum* _instance;
 	}; 

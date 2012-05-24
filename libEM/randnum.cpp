@@ -55,7 +55,7 @@ namespace {
 	/** Generate a random seed from /dev/random if available. 
   	 * if no /dev/random, generate the seed from current time in milli-second
   	 * @return a random number as candidate for seed*/
-	unsigned long int random_seed()
+	unsigned long long random_seed()
 	{
 		unsigned int seed;
 		struct timeval tv;
@@ -76,7 +76,7 @@ namespace {
 	}
 #else
 	/* this function works on Windows */
-	unsigned long int random_seed()
+	unsigned long long random_seed()
 	{
 		FILETIME ft;
   		unsigned __int64 tmpres = 0;
@@ -91,10 +91,10 @@ namespace {
     	/*converting file time to unix epoch*/
     	tmpres /= 10;  /*convert into microseconds*/
     	tmpres -= DELTA_EPOCH_IN_MICROSECS; 
-    	tv.tv_sec = (long)(tmpres / 1000000UL);
-    	tv.tv_usec = (long)(tmpres % 1000000UL);
+    	tv.tv_sec = (long long)(tmpres / 1000000UL);
+    	tv.tv_usec = (long long)(tmpres % 1000000UL);
     	
-    	unsigned long seed = tv.tv_sec + tv.tv_usec;
+    	unsigned long long seed = tv.tv_sec + tv.tv_usec;
     	return seed;
 	}
 #endif
@@ -103,7 +103,7 @@ namespace {
 Randnum * Randnum::_instance = 0;
 const gsl_rng_type * Randnum::T = gsl_rng_default;
 gsl_rng * Randnum::r = 0;
-unsigned long int Randnum::_seed = random_seed();
+unsigned long long Randnum::_seed = random_seed();
 
 Randnum * Randnum::Instance() {
 	if(_instance == 0) {
@@ -143,18 +143,18 @@ Randnum::~Randnum()
 	gsl_rng_free (r);
 }
 
-void Randnum::set_seed(unsigned long int seed)
+void Randnum::set_seed(unsigned long long seed)
 {
 	_seed = seed;
 	gsl_rng_set(r, _seed);
 }
 
-unsigned long int Randnum::get_seed()
+unsigned long long Randnum::get_seed()
 {
 	return _seed;
 }
 
-long Randnum::get_irand(long lo, long hi) const
+long long Randnum::get_irand(long long lo, long long hi) const
 {
 	return gsl_rng_uniform_int(r, hi-lo+1)+lo;
 }
