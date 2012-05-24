@@ -173,7 +173,14 @@ def main():
 		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
 		sys.exit(1)
 		
-	if options.path and options.path[:4].lower()!="bdb:": 
+	if options.path and options.path[:4].lower()!="bdb:":
+		#if options.path == '.':
+		#	findir=os.listdir(os.getcwd())
+		#	if "res" not in findir:
+		#		os.mkdir('res')
+		#	else:
+		#		options.path = 'res'
+			 
 		options.path="bdb:"+options.path
 	
 	if not options.path: 
@@ -665,7 +672,7 @@ class Align3DTask(EMTask):
 		if options["verbose"]: 
 			print "Aligning ",options["label"]
 
-		if isinstance(self.data["fixedimage"],EMData) :
+		if isinstance(self.data["fixedimage"],EMData):
 			fixedimage=self.data["fixedimage"]
 		else: 
 			fixedimage=EMData(self.data["fixedimage"][1],self.data["fixedimage"][2])
@@ -682,18 +689,25 @@ class Align3DTask(EMTask):
 		# Make the mask first, use it to normalize (optionally), then apply it 
 		mask=EMData(image["nx"],image["ny"],image["nz"])
 		mask.to_one()
-		if options["mask"] != None:
+		if options["mask"]:
 			print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options["mask"][0],options["mask"][1]) 
 			mask.process_inplace(options["mask"][0],options["mask"][1])
 		
 		# normalize
-		if options["normproc"] != None:
-			if options["normproc"][0]=="normalize.mask" : options["normproc"][1]["mask"]=mask
+		if options["normproc"]:
+			if options["normproc"][0]=="normalize.mask": 
+				options["normproc"][1]["mask"]=mask
+			
 			fixedimage.process_inplace(options["normproc"][0],options["normproc"][1])
 			image.process_inplace(options["normproc"][0],options["normproc"][1])
 		
 		fixedimage.mult(mask)
 		image.mult(mask)
+		
+		#If 'normalize.mask' is not used, the procedure really should be mask-normalize-mask
+		if options["normproc"[0] != "normalize.mask":
+			image.process_inplace('normalize')
+			image.mult(mask)
 		
 		# preprocess
 		if options["preprocess"] != None:
