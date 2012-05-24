@@ -902,7 +902,7 @@ namespace EMAN
 		// The old code used 'fpclassify' which was demonstrably broken on many platforms, 
 		// causing many irritating problems
 
-			if (((*((long int *)p_f)>>52)&2047)==2047) return 0;
+			if (((*((long long *)p_f)>>52)&2047)==2047) return 0;
 
 			return 1;
 		}
