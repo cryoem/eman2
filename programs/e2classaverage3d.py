@@ -705,7 +705,7 @@ class Align3DTask(EMTask):
 		image.mult(mask)
 		
 		#If 'normalize.mask' is not used, the procedure really should be mask-normalize-mask
-		if options["normproc"[0] != "normalize.mask":
+		if options["normproc"][0] != "normalize.mask":
 			image.process_inplace('normalize')
 			image.mult(mask)
 		
