@@ -5724,9 +5724,6 @@ Dict Util::CANG(float PHI,float THETA,float PSI)
 #undef QUADPI
 #undef DGR_TO_RAD
 //-----------------------------------------------------------------------------------------------------------------------
-#define    B(i,j) 			Bptr[i-1+((j-1)*NSAM)]
-#define    CUBE(i,j,k)                  CUBEptr[i+(j+(k*NY3D))*(size_t)NX3D]
-
 void Util::BPCQ(EMData *B,EMData *CUBE)
 {
 	if (B->is_complex()) {
@@ -5734,16 +5731,13 @@ void Util::BPCQ(EMData *B,EMData *CUBE)
 		B->depad();
 	}
 
-	Transform * t = B->get_attr("xform.projection");
+	const Transform * t = B->get_attr("xform.projection");
 
 	// ---- build DM matrix (transform matrix) - convert from 3x4 matrix to 2x3 matrix (only 2 first rows are nedeed)
 	std::vector<float> DM = t->get_matrix();
 	DM[3+0] = DM[4+0];
 	DM[3+1] = DM[4+1];
 	DM[3+2] = DM[4+2];
-
-	float  *Bptr = B->get_data();
-	float  *CUBEptr = CUBE->get_data();
 
 	Dict d = t->get_params("spider");
 	delete t; t=0;
@@ -5759,37 +5753,37 @@ void Util::BPCQ(EMData *B,EMData *CUBE)
 	const int NY3D = CUBE->get_ysize();
 	const int NZC  = CUBE->get_zsize();
 
-	const int LDPX = NX3D/2 +1;
-	const int LDPY = NY3D/2 +1;
-	const int LDPZ = NZC/2 +1;
-	const int LDPNMX = NSAM/2 +1;
-	const int LDPNMY = NROW/2 +1;
-	const int NZ1 = 1;
+	const int LDPX = NX3D/2;
+	const int LDPY = NY3D/2;
+	const int LDPZ = NZC /2;
+	const float LDPNMXf = float(NSAM/2 +1);
+	const float LDPNMYf = float(NROW/2 +1);
 
-	for (int K=0; K<NZC; K++) {
-		const int KZ = K + NZ1;
-		for (int J=0; J<NY3D; J++) {
-			const float XBB = (1-LDPX)*DM[0]+(J+1-LDPY)*DM[1]+(KZ-LDPZ)*DM[2];
-			const float YBB = (1-LDPX)*DM[3]+(J+1-LDPY)*DM[4]+(KZ-LDPZ)*DM[5];
-			for (int I=0; I<NX3D; I++) {
-				const float XB  = I*DM[0] + XBB - x_shift;
-				const int IQX = int(XB+float(LDPNMX));
+	const float * const Bptr = B->get_data();
+	float  *CUBEptr = CUBE->get_data();
+
+	for (int K=0; K<NZC; ++K) {
+		for (int J=0; J<NY3D; ++J) {
+			const float XBB = (-LDPX)*DM[0] + (J-LDPY)*DM[1] + (K-LDPZ)*DM[2];
+			const float YBB = (-LDPX)*DM[3] + (J-LDPY)*DM[4] + (K-LDPZ)*DM[5];
+			for (int I=0; I<NX3D; ++I, ++CUBEptr) {
+				const float XB  = I*DM[0] + XBB - x_shift + LDPNMXf;
+				const int IQX = int(XB);
 				if (IQX <1 || IQX >= NSAM) continue;
-				const float YB  = I*DM[3] + YBB - y_shift;
-				const int IQY = int(YB+float(LDPNMY));
+				const float YB  = I*DM[3] + YBB - y_shift + LDPNMYf;
+				const int IQY = int(YB);
 				if (IQY<1 || IQY>=NROW)  continue;
-				const float DIPX = XB+LDPNMX-IQX;
-				const float DIPY = YB+LDPNMY-IQY;
-
-				CUBE(I,J,K) = CUBE(I,J,K) + B(IQX,IQY)+DIPY*(B(IQX,IQY+1)-B(IQX,IQY))+DIPX*(B(IQX+1,IQY)-B(IQX,IQY)+DIPY*(B(IQX+1,IQY+1)-B(IQX+1,IQY)-B(IQX,IQY+1)+B(IQX,IQY)));
+				const float DIPX = XB-IQX;
+				const float DIPY = YB-IQY;
+				const float b00 = Bptr[IQX-1+((IQY-1)*NSAM)];
+				const float b01 = Bptr[IQX-1+((IQY-0)*NSAM)];
+				const float b10 = Bptr[IQX-0+((IQY-1)*NSAM)];
+				const float b11 = Bptr[IQX-0+((IQY-0)*NSAM)];
+				*CUBEptr = *CUBEptr + b00 + DIPY*(b01-b00) + DIPX*(b10-b00+DIPY*(b11-b10-b01+b00));
 			}
 		}
 	}
 }
-
-#undef B
-#undef CUBE
-
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #define    W(i,j) 			Wptr        [i-1+((j-1)*Wnx)]
 #define    PROJ(i,j) 		        PROJptr     [i-1+((j-1)*NNNN)]
