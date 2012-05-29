@@ -846,13 +846,13 @@ public:
 	/* This is used in ISAC program to assigning particles equally to grops */
 	static vector<int> assign_groups(const vector<float>& d, int nref, int nima);
 
-	static inline void getvec(float phi, float theta, float& x, float& y, float& z) {
+	static inline void getvec(float phi, float theta, float& x, float& y, float& z, int option=0) {
 		float pi180 = M_PI/180.0f;
 		
 		if (theta > 180.0f) {
 			theta -= 180.0f;
 			phi += 180.0f;
-		} else if (theta > 90.0f) {
+		} else if (theta > 90.0f && option == 0) {
 			theta = 180.0f - theta;
 			phi += 180.0f;
 		}
@@ -867,6 +867,14 @@ public:
 		return;
 	}
 	
+	static inline float ang_diff(float v11, float v12, float v13, float v21, float v22, float v23, int& mirror) {
+		float v = v11*v21+v12*v22+v13*v23;
+		if (v > 1) v = 1;
+		if (v < -1) v = -1;
+		if (v > 0) { mirror = 1; return acos(v)*180.0/M_PI; }
+		else { mirror = -1; return acos(-v)*180.0/M_PI; }
+	}
+	
 	/* Find the nearest projection angles
 		Notice: the input I use is different from python code, which I think is awkward.
 	*/
@@ -875,6 +883,8 @@ public:
 	/* Assign the projection angles to the nearest reference projections */
 	static vector<int> assign_projangles(const vector<float>& projangles, const vector<float>& refangles); 
 
+	/* Group the projection angles by (phi, theta) */
+	static vector<int> group_proj_by_phitheta(const vector<float>& projangles, const vector<float>& ref_ang, const int img_per_grp);
 
 	/** formerly known as apmq
 	 * Determine shift and rotation between image and many reference

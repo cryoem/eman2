@@ -1813,12 +1813,18 @@ def write_text_file(data, file_name):
 		# It is a list of lists
 		for i in xrange(len(data[0])):
 			for j in xrange(len(data)):
-				outf.write("  %12.5g"%data[j][i])
+				if type(data[j][i]) == type(0):
+					outf.write("  %12d"%data[j][i])
+				else:
+					outf.write("  %12.5g"%data[j][i])
 			outf.write("\n")
 	else:
 		# Single list
 		for j in xrange(len(data)):
-			outf.write("  %12.5g\n"%data[j])
+			if type(data[j]) == type(0):
+				outf.write("  %12d\n"%data[j])
+			else:
+				outf.write("  %12.5g\n"%data[j])
 	outf.close()
 
 def reconstitute_mask(image_mask_applied_file, new_mask_file, save_file_on_disk = True, saved_file_name = "image_in_reconstituted_mask.hdf"):
@@ -2946,8 +2952,43 @@ def assign_projangles_slow(projangles, refangles):
 		assignments[best_i].append(i)
 	return assignments
 
+'''
+def assign_projangles(projangles, refangles, return_asg = False):
+
+	if len(refangles) > 10000:
+		if len(refangles) > 100000:
+			coarse_refangles = even_angles(1.5)   # 9453 angles 
+		else:
+			coarse_refangles = even_angles(5.0)   # 849 angles
+		coarse_asg = assign_projangles(projangles, coarse_refangles, True)
+		ref_asg = assign_projangles(refangles, coarse_refangles, True)
+	else:
+		coarse_refangles = []
+		coarse_asg = []
+		ref_asg = []
+
+	nproj = len(projangles)
+	nref = len(refangles)
+	proj_ang = [0.0]*(nproj*2)
+	ref_ang = [0.0]*(nref*2)
+	for i in xrange(nproj):
+		proj_ang[i*2] = projangles[i][0]
+		proj_ang[i*2+1] = projangles[i][1]
+	for i in xrange(nref):
+		ref_ang[i*2] = refangles[i][0]
+		ref_ang[i*2+1] = refangles[i][1]
+	
+	asg = Util.assign_projangles(proj_ang, ref_ang, coarse_asg, ref_asg, len(coarse_refangles))
+	if return_asg: return asg
+	assignments = [[] for i in xrange(nref)]
+	for i in xrange(nproj):
+		assignments[asg[i]].append(i)
+
+	return assignments
+'''
 
 def assign_projangles(projangles, refangles):
+
 	nproj = len(projangles)
 	nref = len(refangles)
 	proj_ang = [0.0]*(nproj*2)
@@ -2960,6 +3001,7 @@ def assign_projangles(projangles, refangles):
 		ref_ang[i*2+1] = refangles[i][1]
 	
 	asg = Util.assign_projangles(proj_ang, ref_ang)
+	if return_asg: return asg
 	assignments = [[] for i in xrange(nref)]
 	for i in xrange(nproj):
 		assignments[asg[i]].append(i)
@@ -3228,92 +3270,299 @@ def set_pixel_size(img, pixel_size):
 		cc.apix = pixel_size
 		img.set_attr("ctf", cc)
 
-def group_proj_by_phitheta(proj_ang, symmetry = "c1", img_per_grp = 100, diff_pct = 0.1, verbose = False):
-	from sparx import even_angles, assign_projangles
+
+def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, verbose = False):
 	from time import time
-	from random import random
+	from math import exp, pi
 	
+	def get_ref_ang_list(delta, sym):
+		ref_ang = even_angles(delta, symmetry=sym)
+		ref_ang_list = [0.0]*(len(ref_ang)*2)
+		for i in xrange(len(ref_ang)):
+			ref_ang_list[2*i] = ref_ang[i][0]
+			ref_ang_list[2*i+1] = ref_ang[i][1]
+		return ref_ang_list, len(ref_ang)
+	
+	def gv(phi, theta):
+		from math import pi, cos, sin
+		angle_to_rad = pi/180.0
+
+		theta *= angle_to_rad
+		phi *= angle_to_rad
+
+		x = sin(theta)*cos(phi) 
+		y = sin(theta)*sin(phi)
+		z = cos(theta)
+
+		return (x, y, z)
+
+	def ang_diff(v1, v2):
+		# The first return value is the angle between two vectors
+		# The second return value is whether we need to mirror one of them (0 - no need, 1 - need)
+		from math import acos, pi
+
+		v = v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]
+		if v > 1: v = 1
+		if v < -1: v = -1
+		if v >= 0: return acos(v)*180/pi, 0
+		else:  return acos(-v)*180/pi, 1
+
 	t0 = time()
 	proj_list = []   
 	angles_list = []
 	N = len(proj_ang)
-	if len(proj_ang[0]) == 3:       # determine whether it have shifts provided, make the program more robust
+	if len(proj_ang[0]) == 3:       # determine whether it has shifts provided, make the program more robust
 		for i in xrange(N):
-			proj_ang[i][0] += random()*0.5-0.25
-			proj_ang[i][1] += random()*0.5-0.25
 			proj_ang[i].append(i)
 			proj_ang[i].append(True)
+			vec = gv(proj_ang[i][0], proj_ang[i][1])     # pre-calculate the vector for each projection angles
+			proj_ang[i].append(vec)
 	else:
 		for i in xrange(N):
-			proj_ang[i][0] += random()*0.5-0.25
-			proj_ang[i][1] += random()*0.5-0.25
 			proj_ang[i][3] = i
 			proj_ang[i][4] = True
+			vec = gv(proj_ang[i][0], proj_ang[i][1])     # pre-calculate the vector for each projection angles
+			proj_ang[i].append(vec)
 	
-	min_img_per_grp = img_per_grp*(1-diff_pct)
-	max_img_per_grp = img_per_grp*(1+diff_pct)
-	max_trial = 20
-	max_pssbl_delta = 180.0/int(symmetry[1])
-
-	while True:
-		proj_ang_now = []
-		for i in xrange(N):
-			if proj_ang[i][4]: proj_ang_now.append(proj_ang[i])
-		if len(proj_ang_now) == 0: break
-		if verbose: print "Current size of data set = ", len(proj_ang_now)
-		if len(proj_ang_now) <= max_img_per_grp:
-			members = [0]*len(proj_ang_now)
-			for i in xrange(len(proj_ang_now)):  members[i] = proj_ang_now[i][3]
-			#print "Size of this group = ", len(members)
-			proj_list.append(members)
-			angles_list.append([0.0, 0.0, max_pssbl_delta])
-			break
+	ref_ang_list1, nref1 = get_ref_ang_list(20.0, sym = symmetry)   
+	ref_ang_list2, nref2 = get_ref_ang_list(10.0, sym = symmetry)   
+	ref_ang_list3, nref3 = get_ref_ang_list(5.0, sym = symmetry)    
+	ref_ang_list4, nref4 = get_ref_ang_list(2.5, sym = symmetry)
+	
+	c = 100
+	L = max(100, img_per_grp)
+	# This is to record whether we are considering the same group as before
+	# If we are, we are only going to read the table and avoid calculating the distance again.
+	previous_group = -1
+	previous_zone = 5
+	for grp in xrange(N/img_per_grp):
+		print grp,
+		N_remain = N-grp*img_per_grp
+		# The idea here is that if each group has more than 100 images in average, 
+		# we consider it crowded enough to just consider the most crowded group.
+		if N_remain >= nref4*L:
+			ref_ang_list = ref_ang_list4
+			nref = nref4
+			if previous_zone > 4:
+				previous_group = -1
+				previous_zone = 4
+		elif N_remain >= nref3*L:
+			ref_ang_list = ref_ang_list3
+			nref = nref3
+			if previous_zone > 3:
+				previous_group = -1
+				previous_zone = 3
+		elif N_remain >= nref2*L:
+			ref_ang_list = ref_ang_list2
+			nref = nref2
+			if previous_zone > 2:
+				previous_group = -1
+				previous_zone = 2
+		elif N_remain >= nref1*L:
+			ref_ang_list = ref_ang_list1
+			nref = nref1
+			if previous_zone > 1:
+				previous_group = -1
+				previous_zone = 1
+		else:
+			if previous_zone > 0:
+				previous_group = -1
+				previous_zone = 0
 		
-		trial = 0
-		min_delta = 0.001
-		max_delta = max_pssbl_delta
-		while trial < max_trial:
-			mid_delta = (min_delta+max_delta)/2
-			if verbose: print "...... Testing delta = %6.2f"%(mid_delta)
-			ref_ang = even_angles(mid_delta, symmetry=symmetry)
-			t1 = time()
-			asg = assign_projangles(proj_ang_now, ref_ang)
-			if verbose: print "............ Time used = %6.2f"%(time()-t1)
+		t1 = time()
+		v = []
+		index = []
+		if N_remain >= nref1*L:
+			# In this case, assign all projection to groups and only consider the most crowded group.
+			proj_ang_list = [0.0]*(N_remain*2)
+			nn = 0
+			remain_index = [0]*N_remain
+			for i in xrange(N):
+				if proj_ang[i][4]:
+					proj_ang_list[nn*2] = proj_ang[i][0]
+					proj_ang_list[nn*2+1] = proj_ang[i][1]
+					remain_index[nn] = i
+					nn += 1
+			asg = Util.assign_projangles(proj_ang_list, ref_ang_list)
+			assignments = [[] for i in xrange(nref)]
+			for i in xrange(N_remain):
+				assignments[asg[i]].append(i)
+			# find the largest group and record the group size and group number 
+			max_group_size = 0
+			max_group = -1
+			for i in xrange(nref):
+				if len(assignments[i]) > max_group_size:
+					max_group_size = len(assignments[i])
+					max_group = i
+			print max_group_size, max_group, previous_group,
+			for i in xrange(len(assignments[max_group])):
+				ind = remain_index[assignments[max_group][i]]
+				v.append(proj_ang[ind][5])
+				index.append(ind)
+		else:
+			# In this case, use all the projections available
+			for i in xrange(N):
+				if proj_ang[i][4]:
+					v.append(proj_ang[i][5])
+					index.append(i)
+			max_group = 0
+		
+		t2 = time()
+		Nn = len(index)
+		density = [[0.0, 0] for i in xrange(Nn)]
+		if max_group != previous_group:
+			diff_table = [[0.0 for i in xrange(Nn)] for j in xrange(Nn)]
+			for i in xrange(Nn-1):
+				for j in xrange(i+1, Nn):
+					diff = ang_diff(v[i], v[j])
+					q = exp(-c*(diff[0]/180.0*pi)**2)
+					diff_table[i][j] = q
+					diff_table[j][i] = q
+			diff_table_index = dict()
+			for i in xrange(Nn): diff_table_index[index[i]] = i
+			print Nn, True, 
+		else:
+			print Nn, False,
+		
+		t21 = time()
+		for i in xrange(Nn):
+			density[i][0] = sum(diff_table[diff_table_index[index[i]]])
+			density[i][1] = i
+		t22 = time()
+		density.sort(reverse=True)
 
-			count = []
-			for i in xrange(len(asg)): count.append([len(asg[i]), i])
-			count.sort(reverse = True)
-			if verbose: print "............ maximum size = %5d   minimum size = %5d"%(count[0][0], count[-1][0])
-			k = 0
-			grp_size = count[k][0]
-			grp_num = count[k][1]
-			while grp_size >= min_img_per_grp and grp_size <= max_img_per_grp:
-				members = [0]*grp_size
-				for i in xrange(grp_size):
-					members[i] = proj_ang_now[asg[grp_num][i]][3]
-					proj_ang[members[i]][4] = False
-				if verbose: print "Size of this group = ", grp_size	
-				proj_list.append(members)
-				angles_list.append([ref_ang[grp_num][0], ref_ang[grp_num][1], mid_delta])
-				k += 1
-				grp_size = count[k][0]
-				grp_num = count[k][1]
-			if k > 0: break
-			if grp_size > max_img_per_grp:  max_delta = mid_delta
-			else:  min_delta = mid_delta
-			trial += 1
-
-		if trial == max_trial:
-			grp_size = count[0][0]
-			grp_num = count[0][1]
-			members = [0]*grp_size
-			for i in xrange(grp_size):
-				members[i] = proj_ang_now[asg[grp_num][i]][3]
-				proj_ang[members[i]][4] = False
-			if verbose: print "Size of this group = ", grp_size
-			proj_list.append(members)
-			angles_list.append([ref_ang[grp_num][0], ref_ang[grp_num][1], mid_delta])
-		if verbose: print ""
-	if verbose: print "Total time used = %6.2f"%(time()-t0)
+		t3 = time()
+		dang = [[0.0, 0] for i in xrange(Nn)]
+		most_dense_point = density[0][1]
+		for i in xrange(Nn):
+			diff = ang_diff(v[i], v[most_dense_point])
+			dang[i][0] = diff[0]
+			dang[i][1] = i
+		dang[most_dense_point][0] = -1.
+		dang.sort()
+		
+		t4 = time()
+		members = [0]*img_per_grp
+		for i in xrange(img_per_grp):
+			idd = index[dang[i][1]]
+			for j in xrange(len(diff_table)):
+				diff_table[diff_table_index[idd]][j] = 0.0
+				diff_table[j][diff_table_index[idd]] = 0.0
+			members[i] = idd
+			proj_ang[members[i]][4] = False
+		proj_list.append(members)
+		center_i = index[dang[0][1]]
+		angles_list.append([proj_ang[center_i][0], proj_ang[center_i][1], dang[img_per_grp-1][0]])
+		previous_group = max_group
+		print t2-t1, t3-t2, t22-t21, t3-t22, t4-t3
+	
+	if N%img_per_grp*3 >= 2*img_per_grp:
+		members = []
+		for i in xrange(N):
+			if proj_ang[i][4]:
+				members.append(i)
+		proj_list.append(members)
+		angles_list.append([proj_ang[members[0]][0], proj_ang[members[0]][1], 90.0])
+	elif N%img_per_grp != 0:
+		for i in xrange(N):
+			if proj_ang[i][4]:
+				proj_list[-1].append(i)
+	print "Total time used = ", time()-t0
+		
 	return proj_list, angles_list
 
+def group_proj_by_phitheta(proj_ang, symmetry = "c1", img_per_grp = 100, verbose = False):
+	from math import exp, pi
+
+	def gv(phi, theta):
+		from math import pi, cos, sin
+		angle_to_rad = pi/180.0
+
+		theta *= angle_to_rad
+		phi *= angle_to_rad
+
+		x = sin(theta)*cos(phi) 
+		y = sin(theta)*sin(phi)
+		z = cos(theta)
+
+		return (x, y, z)
+
+	def ang_diff(v1, v2):
+		# The first return value is the angle between two vectors
+		# The second return value is whether we need to mirror one of them (0 - no need, 1 - need)
+		from math import acos, pi
+
+		v = v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]
+		if v > 1: v = 1
+		if v < -1: v = -1
+		if v >= 0: return acos(v)*180/pi, 0
+		else:  return acos(-v)*180/pi, 1
+
+	
+	def get_ref_ang_list(delta, sym):
+		ref_ang = even_angles(delta, symmetry=sym)
+		ref_ang_list = [0.0]*(len(ref_ang)*2)
+		for i in xrange(len(ref_ang)):
+			ref_ang_list[2*i] = ref_ang[i][0]
+			ref_ang_list[2*i+1] = ref_ang[i][1]
+		return ref_ang_list, len(ref_ang)
+	
+	N = len(proj_ang)
+	proj_ang_list = [0]*(N*2)
+	for i in xrange(N):
+		proj_ang_list[i*2] = proj_ang[i][0]
+		proj_ang_list[i*2+1] = proj_ang[i][1]
+	
+	ref_ang_list1, nref1 = get_ref_ang_list(20.0, sym = symmetry)   
+	ref_ang_list2, nref2 = get_ref_ang_list(10.0, sym = symmetry)   
+	ref_ang_list3, nref3 = get_ref_ang_list(5.0, sym = symmetry)    
+	ref_ang_list4, nref4 = get_ref_ang_list(2.5, sym = symmetry)
+
+	ref_ang_list = []
+	ref_ang_list.extend(ref_ang_list1)
+	ref_ang_list.extend(ref_ang_list2)
+	ref_ang_list.extend(ref_ang_list3)
+	ref_ang_list.extend(ref_ang_list4)
+	ref_ang_list.append(nref1)
+	ref_ang_list.append(nref2)
+	ref_ang_list.append(nref3)
+	ref_ang_list.append(nref4)
+	proj_list = Util.group_proj_by_phitheta(proj_ang_list, ref_ang_list, img_per_grp)
+	
+	proj_list2 = proj_list[:]
+	for i in xrange(len(proj_list2)): proj_list2[i] = abs(proj_list2[i])
+	proj_list2.sort()
+	assert N == len(proj_list2)
+	for i in xrange(N): assert i == proj_list2[i]
+	
+	Ng = N/img_per_grp
+	proj_list_new = [[] for i in xrange(Ng)]
+	mirror_list = [[] for i in xrange(Ng)]
+	angles_list = []
+	for i in xrange(Ng):
+		for j in xrange(img_per_grp):
+			proj_list_new[i].append(abs(proj_list[i*img_per_grp+j]));
+			mirror_list[i].append(proj_list[i*img_per_grp+j] >= 0)
+		phi1 = proj_ang[proj_list_new[i][0]][0];
+		theta1 = proj_ang[proj_list_new[i][0]][1];
+		phi2 = proj_ang[proj_list_new[i][-1]][0];
+		theta2 = proj_ang[proj_list_new[i][-1]][1];
+		angles_list.append([phi1, theta1, ang_diff(gv(phi1, theta1), gv(phi2, theta2))[0]]);
+
+	if N%img_per_grp*3 >= 2*img_per_grp:
+		proj_list_new.append([])
+		mirror_list.append([])
+		for i in xrange(Ng*img_per_grp, N):
+			proj_list_new[-1].append(abs(proj_list[i]));
+			mirror_list[-1].append(proj_list[i] >= 0)
+		phi1 = proj_ang[proj_list_new[Ng][0]][0];
+		theta1 = proj_ang[proj_list_new[Ng][0]][1];
+		phi2 = proj_ang[proj_list_new[Ng][-1]][0];
+		theta2 = proj_ang[proj_list_new[Ng][-1]][1];
+		angles_list.append([phi1, theta1, ang_diff(gv(phi1, theta1), gv(phi2, theta2))[0]]);
+	elif N%img_per_grp != 0:
+		for i in xrange(Ng*img_per_grp, N):
+			proj_list_new[-1].append(abs(proj_list[i]))
+			mirror_list[-1].append(proj_list[i] >= 0)
+	
+	return proj_list_new, angles_list, mirror_list

@@ -18106,12 +18106,19 @@ int Util::nearest_ang(const vector<float>& vecref, float x, float y, float z) {
 	return best_i;
 }
 
+struct d_ang {
+	float d;
+	int i;
+	int mirror;
+	d_ang(float _d, int _i, int _m):d(_d), i(_i), mirror(_m) {}
+	bool operator<(const d_ang& a) const { return d < a.d || (d == a.d && i < a.i); }
+};
+
 vector<int> Util::assign_projangles(const vector<float>& projangles, const vector<float>& refangles) {
 	int nref = refangles.size()/2;
 	int nproj = projangles.size()/2;
-	
-	vector<float> vecref(nref*3, 0.0f);
 	vector<int> asg(nproj, 0);
+	vector<float> vecref(nref*3, 0.0f);
 	for (int i=0; i<nref; i++)  
 		getvec(refangles[i*2], refangles[i*2+1], vecref[i*3], vecref[i*3+1], vecref[i*3+2]); 
 	for (int i=0; i<nproj; i++) {
@@ -18119,8 +18126,166 @@ vector<int> Util::assign_projangles(const vector<float>& projangles, const vecto
 		getvec(projangles[i*2], projangles[i*2+1], x, y, z);
 		asg[i] = nearest_ang(vecref, x, y, z);
 	}
-	
 	return asg;
+}
+
+vector<int> Util::group_proj_by_phitheta(const vector<float>& projangles, const vector<float>& ref_ang, const int img_per_grp) {
+	float c = 100.0;
+	int L = max(100, img_per_grp);
+	int N = projangles.size()/2;
+
+	int sz = ref_ang.size();
+	int nref1 = ref_ang[sz-4];
+	int nref2 = ref_ang[sz-3];
+	int nref3 = ref_ang[sz-2];
+	int nref4 = ref_ang[sz-1];
+	int nref;
+
+	set<int> pt;
+	for (int i=0; i<N; i++) pt.insert(i);
+	vector<float> v(N*3, 0.0f);
+	for (int i=0; i<N; i++) 
+		getvec(projangles[i*2], projangles[i*2+1], v[i*3], v[i*3+1], v[i*3+2], 1);
+
+	int previous_group = -1;
+	int previous_zone = 5;
+	int max_group = 0;
+	vector<float> ref_ang_list;
+	vector<float> diff_table;
+	map<int, int> diff_table_index;
+	vector<int> proj_list;
+	vector<int> sg;
+	vector<int> remain_index;
+	vector<int> asg;
+	int mirror;
+	for (int grp=0; grp<N/img_per_grp; grp++) {
+		int N_remain = N-grp*img_per_grp;
+		assert(N_remain == pt.size());
+		if (N_remain >= nref4*L) {
+			if (previous_zone > 4) {
+				ref_ang_list.resize(nref4*2);
+				for (int i=0; i<nref4*2; i++)  ref_ang_list[i] = ref_ang[(nref1+nref2+nref3)*2+i];
+				nref = nref4;
+				previous_group = -1;
+				previous_zone = 4;
+			}
+		} else if (N_remain >= nref3*L) {
+			if (previous_zone > 3) {
+				ref_ang_list.resize(nref3*2);
+				for (int i=0; i<nref3*2; i++)  ref_ang_list[i] = ref_ang[(nref1+nref2)*2+i];
+				nref = nref3;
+				previous_group = -1;
+				previous_zone = 3;
+			}
+		} else if (N_remain >= nref2*L) {
+			if (previous_zone > 2) {
+				ref_ang_list.resize(nref2*2);
+				for (int i=0; i<nref2*2; i++)  ref_ang_list[i] = ref_ang[nref1*2+i];
+				nref = nref2;
+				previous_group = -1;
+				previous_zone = 2;
+			}
+		} else if (N_remain >= nref1*L) {
+			if (previous_zone > 1) {
+				ref_ang_list.resize(nref1*2);
+				for (int i=0; i<nref1*2; i++)  ref_ang_list[i] = ref_ang[i];
+				nref = nref1;
+				previous_group = -1;
+				previous_zone = 1;
+			}
+		} else if (previous_zone > 0) {
+			previous_group = -1;
+			previous_zone = 0;
+		}
+
+		vector<int> index;
+		if (N_remain >=  nref1*L) {
+			if (previous_group == -1) { // which means it just changed zone
+				vector<float> proj_ang_list(N_remain*2, 0.0f);
+				remain_index.resize(N_remain);
+				int l = 0;
+				for (set<int>::const_iterator si = pt.begin(); si != pt.end(); ++si) {
+					remain_index[l] = (*si);
+					proj_ang_list[l*2] = projangles[(*si)*2];
+					proj_ang_list[l*2+1] = projangles[(*si)*2+1];
+					l++; 
+				}
+				assert(N_remain == l);
+				asg = assign_projangles(proj_ang_list, ref_ang_list);
+				sg.resize(nref);
+				for (int i=0; i<nref; i++) sg[i] = 0;
+				for (int i=0; i<N_remain; i++)  sg[asg[i]]++;
+			}
+			int max_group_size = 0;
+			for (int i=0; i<nref; i++)
+				if (sg[i] > max_group_size)	{ max_group_size = sg[i]; max_group = i; }
+			for (int i=0; i<remain_index.size(); i++)
+				if (asg[i] == max_group)  index.push_back(remain_index[i]);
+		} else {
+			for (set<int>::const_iterator si = pt.begin(); si != pt.end(); ++si) 
+				index.push_back(*si);
+			max_group = 0;
+		}
+			
+		int Nn = index.size();
+		if (max_group != previous_group) {
+			diff_table.resize(Nn*Nn);
+			diff_table_index.clear();
+			for (int i=0; i<Nn-1; i++)
+				for (int j=i+1; j<Nn; j++) {
+					float diff = ang_diff(v[index[i]*3], v[index[i]*3+1], v[index[i]*3+2], v[index[j]*3], v[index[j]*3+1], v[index[j]*3+2], mirror);
+					float q = exp(-c*pow(diff/180.0f*M_PI, 2.0));
+					diff_table[i*Nn+j] = q;
+					diff_table[j*Nn+i] = q;
+				}
+			for (int i=0; i<Nn; i++)  {
+				diff_table[i*Nn+i] = 0.0f;      // diagonal values
+				diff_table_index[index[i]] = i;	
+			}
+			previous_group = max_group;
+		} 
+
+		int diff_table_size = static_cast<int>(sqrt(diff_table.size())+0.5);
+		float max_density = -1;
+		int max_density_i = -1;
+		for (int i=0; i<Nn; i++) {
+			float s = 0.0f;
+			int z = diff_table_index[index[i]];
+			for (int j=0; j<diff_table_size; j++)  s += diff_table[z*diff_table_size+j];
+			if (s > max_density) {
+				max_density = s;
+				max_density_i = i;
+			}
+		}
+
+		vector<d_ang> dang(Nn, d_ang(0.0, 0, 0));
+		for (int i=0; i<Nn; i++) {
+			dang[i].d = ang_diff(v[index[i]*3], v[index[i]*3+1], v[index[i]*3+2], 
+			  v[index[max_density_i]*3], v[index[max_density_i]*3+1], v[index[max_density_i]*3+2], mirror);
+			dang[i].mirror = mirror;
+			dang[i].i = i;
+		}
+		dang[max_density_i].d = -1;
+		sort(dang.begin(), dang.end());		
+
+		for (int i=0; i<img_per_grp; i++) {
+			int idd = index[dang[i].i];
+			mirror = dang[i].mirror;
+			for (int j=0; j<remain_index.size(); j++)
+				if (idd == remain_index[j]) asg[j] = -1;
+			for (int j=0; j<diff_table_size; j++) {
+				diff_table[diff_table_index[idd]*diff_table_size+j] = 0.0f;
+				diff_table[diff_table_index[idd]+diff_table_size*j] = 0.0f;
+			}
+			proj_list.push_back(mirror*idd);
+			pt.erase(idd);
+		}
+		sg[max_group] -= img_per_grp;
+	}
+	for (set<int>::const_iterator si = pt.begin(); si != pt.end(); ++si) {
+		proj_list.push_back(*si);
+	}
+	return proj_list;
 }
 
 vector<float> Util::multiref_polar_ali_2d_delta(EMData* image, const vector< EMData* >& crefim,
