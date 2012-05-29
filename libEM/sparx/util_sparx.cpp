@@ -5820,73 +5820,80 @@ void Util::BPCQ( EMData *B, EMData *CUBE, const int radius )
 	free(lines_to_process);
 }
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-#define    W(i,j) 			Wptr        [i-1+((j-1)*Wnx)]
-#define    PROJ(i,j) 		        PROJptr     [i-1+((j-1)*NNNN)]
-#define    SS(I,J)         		SS	    [I-1 + (J-1)*6]
+#define    W(i,j) 			Wptr    [i+(j)*Wnx]
+#define    PROJ(i,j) 		PROJptr [i+(j)*NNNN]
+#define    SS(i,j)         	SS	    [i+(j)*6]
 
 void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
 {
-	int NSAM,NROW,NNNN,NR2,L,JY,KX,NANG;
-	float WW,OX,OY;
+	//clock_t t0 = clock();
 
-	NSAM = PROJ->get_xsize();
-	NROW = PROJ->get_ysize();
+	--K; // now indexes are started from 0
+
+	int NSAM = PROJ->get_xsize();
+	int NROW = PROJ->get_ysize();
 
 	if (PROJ->is_fftpadded()) {
 		NSAM -= (PROJ->is_fftodd()) ? (1) : (2);  // correction for DFT image
 	}
 
-    int ntotal = NSAM*NROW;
-	float q = 2.0f;
-	float qt = 8.0f/q;
+    const int ntotal = NSAM*NROW;
+	const float q = 2.0f;
+	const float qt = 8.0f/q;
 	//  Fix for padding 2x
 	const int ipad = 1;
 	NSAM *= ipad;
 	NROW *= ipad;
-	NNNN = NSAM+2-(NSAM%2);
-	int NX2 = NSAM/2;
-	NR2  = NROW/2;
+	const int NNNN = NSAM+2-(NSAM%2);
+	const int NX2 = NSAM/2;
+	const int NR2  = NROW/2;
 
-	NANG = int(SS.size())/6;
+	const int NANG = int(SS.size())/6;
 
 	EMData* W = new EMData();
-	int Wnx = NNNN/2;
+	const int Wnx = NNNN/2;
 	W->set_size(Wnx,NROW,1);
 	W->to_zero();
 	float *Wptr = W->get_data();
-	for (L=1; L<=NANG; L++) {
-		float  tmp1 = SS(3,K)*SS(4,L)*(SS(1,K)*SS(1,L) + SS(2,K)*SS(2,L)) - SS(3,L)*SS(4,K);
-		float  tmp2 = SS(4,L)*( SS(1,K)*SS(2,L) - SS(1,L)*SS(2,K) );
-		OX = SS(6,K)*tmp2 + SS(5,K)*tmp1;
-		OY = SS(5,K)*tmp2 - SS(6,K)*tmp1;
+
+	//clock_t t05 = clock();
+
+	for (int L=0; L<NANG; L++) {
+		const float tmp1 = SS(2,K)*SS(3,L)*(SS(0,K)*SS(0,L) + SS(1,K)*SS(1,L)) - SS(2,L)*SS(3,K);
+		const float tmp2 = SS(3,L)*( SS(0,K)*SS(1,L) - SS(0,L)*SS(1,K) );
+		float OX = SS(5,K)*tmp2 + SS(4,K)*tmp1;
+		float OY = SS(4,K)*tmp2 - SS(5,K)*tmp1;
 		if(OX < 0.0f) {
 			OX = -OX;
 			OY = -OY;
 		}
 
 		if( fabs(OX) > 1.0e-6f || fabs(OY) > 1.0e6f ) {
-			for(int J=1;J<=NROW;J++) {
-				JY = (J-1);
-				if(JY > NR2) JY -= NROW;
+			for (int J=0; J<NROW; ++J) {
+				const int JY = (J > NR2) ? (J - NROW) : (J);
 #ifdef _WIN32
-				int xma = _cpp_min(int(0.5f+(q-JY*OY)/OX),NX2);
-				int xmi = _cpp_max(int((-q-JY*OY)/OX+0.5+NSAM)-NSAM,0);
+				const int xma = _cpp_min(int(0.5f+( q-JY*OY)/OX),NX2);
+				const int xmi = _cpp_max(int(0.5f+(-q-JY*OY)/OX),0);
 #else
-				int xma = std::min(int(0.5f+(q-JY*OY)/OX),NX2);
-				int xmi = std::max(int((-q-JY*OY)/OX+0.5+NSAM)-NSAM,0);
+				const int xma = std::min(int(0.5f+( q-JY*OY)/OX),NX2);
+				const int xmi = std::max(int(0.5f+(-q-JY*OY)/OX),0);
 #endif	//_WIN32
-				if( xmi <= xma) {
-					for(int I=xmi;I<=xma;I++) {
-						float Y = fabs(OX*I + OY*JY);
-						W(I+1,J) += exp(-qt*Y*Y);
-	//cout << " L   "<<L << " I   "<<I << " JY   "<<JY << " ARG   "<<qt*Y*Y <<endl;
-					}
+				for( int I=xmi; I<=xma; ++I ) {
+					const float Y = OX*I + OY*JY;
+					W(I,J) += exp(-qt*Y*Y);
 				}
 			}
 		} else {
-			for(int J=1;J<=NROW;J++) for(int I=1;I<=NNNN/2;I++)  W(I,J) += 1.0f;
+			for (int J=0; J<NROW; ++J) {
+				for (int I=0; I<NNNN/2; ++I) {
+					W(I,J) += 1.0f;
+				}
+			}
 		}
 	}
+
+	//clock_t t1 = clock();
+
     EMData* proj_in = PROJ;
 
 	const bool realOnInput = PROJ->is_real();
@@ -5898,28 +5905,26 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
     }
     float * PROJptr = PROJ->get_data();
 
-	float WNRMinv,temp;
-	float osnr = 1.0f/SNR;
-	WNRMinv = 1.0f/W(1,1);
-	for(int J=1;J<=NROW;J++)  {
-		JY = J-1;
-		if( JY > NR2)  JY -= NROW;
-		float sy = JY;
+	const float osnr = 1.0f/SNR;
+	const float WNRMinv = 1.0f/W(0,0);
+	for (int J=0; J<NROW; ++J)  {
+		float sy = (J > NR2) ? (J - NROW) : (J);
 		sy /= NROW;
 		sy *= sy;
-		for(int I=1;I<=NNNN;I+=2) {
-			KX	     = (I+1)/2;
-			temp	     = W(KX,J)*WNRMinv;
-			WW           = temp/(temp*temp + osnr);
+		for (int I=0; I<NNNN; I+=2) {
+			const int KX = I/2;
+			const float temp = W(KX,J)*WNRMinv;
+			float WW = temp/(temp*temp + osnr);
 			// This is supposed to fix fall-off due to Gaussian function in the weighting function
-			float sx = KX-1;
-			sx /= NSAM;
+			const float sx = float(KX) / NSAM;
 			WW *= exp(qt*(sy + sx*sx));
 			PROJ(I,J)   *= WW;
 			PROJ(I+1,J) *= WW;
 		}
 	}
 	delete W; W = 0;
+
+	//clock_t t2 = clock();
 
 	PROJ->do_ift_inplace();
 	PROJ->depad();
@@ -5933,6 +5938,10 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
 	}
 
 	proj_in->update();
+
+	//clock_t t3 = clock();
+
+	//std::cout << "Details: " << (t05-t0) << " " << (t1-t05) << " " << (t2-t1) << " " << (t3-t2) << "\n";
 }
 /*
 void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
