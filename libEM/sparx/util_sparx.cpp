@@ -5826,7 +5826,7 @@ void Util::BPCQ( EMData *B, EMData *CUBE, const int radius )
 
 void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
 {
-	//clock_t t0 = clock();
+//	clock_t t0 = clock();
 
 	--K; // now indexes are started from 0
 
@@ -5856,7 +5856,7 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
 	W->to_zero();
 	float *Wptr = W->get_data();
 
-	//clock_t t05 = clock();
+//	clock_t t05 = clock();
 
 	for (int L=0; L<NANG; L++) {
 		const float tmp1 = SS(2,K)*SS(3,L)*(SS(0,K)*SS(0,L) + SS(1,K)*SS(1,L)) - SS(2,L)*SS(3,K);
@@ -5868,9 +5868,9 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
 			OY = -OY;
 		}
 
-		if( fabs(OX) > 1.0e-6f || fabs(OY) > 1.0e6f ) {
+		if( OX > 1.0e-6f || fabs(OY) > 1.0e6f ) {
 			for (int J=0; J<NROW; ++J) {
-				const int JY = (J > NR2) ? (J - NROW) : (J);
+				const float JY = (J > NR2) ? (J - NROW) : (J);
 #ifdef _WIN32
 				const int xma = _cpp_min(int(0.5f+( q-JY*OY)/OX),NX2);
 				const int xmi = _cpp_max(int(0.5f+(-q-JY*OY)/OX),0);
@@ -5892,7 +5892,7 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
 		}
 	}
 
-	//clock_t t1 = clock();
+//	clock_t t1 = clock();
 
     EMData* proj_in = PROJ;
 
@@ -5924,7 +5924,7 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
 	}
 	delete W; W = 0;
 
-	//clock_t t2 = clock();
+//	clock_t t2 = clock();
 
 	PROJ->do_ift_inplace();
 	PROJ->depad();
@@ -5939,9 +5939,9 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
 
 	proj_in->update();
 
-	//clock_t t3 = clock();
+//	clock_t t3 = clock();
 
-	//std::cout << "Details: " << (t05-t0) << " " << (t1-t05) << " " << (t2-t1) << " " << (t3-t2) << "\n";
+//	std::cout << "Details: " << (t05-t0) << " " << (t1-t05) << " " << (t2-t1) << " " << (t3-t2) << "\n";
 }
 /*
 void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
