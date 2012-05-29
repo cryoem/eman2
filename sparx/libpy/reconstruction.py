@@ -1032,7 +1032,7 @@ def recons3d_sirt(stack_name, list_proj, radius, lam=1.0e-4, maxit=100, symmetry
 
 	return  xvol
       
-def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetry="c1"): 
+def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetry="c1", radius=None): 
 	"""
 		Weigthed back-projection algorithm.
 		stack_name - disk stack with projections or in-core list of images
@@ -1040,8 +1040,6 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 		method - "general" Radermacher's Gaussian, "exact" MvHs triangle
 		const  - for "general" 1.0e4 works well, for "exact" it should be the diameter of the object
 		symmetry - point group symmetry of the object
-
-		WARNING - symmetries not implemented!!!!!!!!!
 	""" 
 	import types
 	from utilities import get_im
@@ -1053,6 +1051,9 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 	else : B = stack_name[list_proj[0]].copy()
 
 	ny = B.get_ysize()  # have to take ysize, because xsize is different for real and fft images
+
+	if radius == None:
+		radius = (ny - 1) // 2
 
 	CUBE = EMData()
 	CUBE.set_size(ny, ny, ny)
@@ -1090,7 +1091,7 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 			elif method=="exact"  :  Util.WTM(B, ss, const, iProj*nsym+iSym+1)  # counting in WTM start from 1!
 #			time_wt += datetime.now() - t0
 #			t0 = datetime.now()
-			Util.BPCQ(B, CUBE, (B.get_ysize()-1)//2)
+			Util.BPCQ(B, CUBE, radius)
 #			time_bp += datetime.now() - t0
 			
 #	print "time(WT) =", time_wt.total_seconds()
