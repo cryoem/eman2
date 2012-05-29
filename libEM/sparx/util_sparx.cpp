@@ -35,6 +35,7 @@
 
 #ifdef _WIN32
 #pragma warning(disable:4819)
+#include <malloc.h>
 #endif	//_WIN32
 
 #include <cstring>
@@ -5724,65 +5725,99 @@ Dict Util::CANG(float PHI,float THETA,float PSI)
 #undef QUADPI
 #undef DGR_TO_RAD
 //-----------------------------------------------------------------------------------------------------------------------
-void Util::BPCQ(EMData *B,EMData *CUBE)
+struct t_BPCQ_line{
+	int rX;     // radius along X axe
+	int offset; // offset of voxel in volume - beginning of the line
+	float xbb;  // XBB coefficient
+	float ybb;  // YBB coefficient
+};
+
+void Util::BPCQ( EMData *B, EMData *CUBE, const int radius )
 {
 	if (B->is_complex()) {
 		B->do_ift_inplace();
 		B->depad();
 	}
 
-	const Transform * t = B->get_attr("xform.projection");
+	const Transform * transform = B->get_attr("xform.projection");
+	Dict transform_params = transform->get_params("spider");
 
 	// ---- build DM matrix (transform matrix) - convert from 3x4 matrix to 2x3 matrix (only 2 first rows are nedeed)
-	std::vector<float> DM = t->get_matrix();
+	std::vector<float> DM = transform->get_matrix();
 	DM[3+0] = DM[4+0];
 	DM[3+1] = DM[4+1];
 	DM[3+2] = DM[4+2];
 
-	Dict d = t->get_params("spider");
-	delete t; t=0;
-	//  Unsure about sign of shifts, check later PAP 06/28/09
-	float x_shift = d[ "tx" ];
-	float y_shift = d[ "ty" ];
-	x_shift = -x_shift;
-	y_shift = -y_shift;
+	delete transform;
 
 	const int NSAM = B->get_xsize();
 	const int NROW = B->get_ysize();
-	const int NX3D = CUBE->get_xsize();
-	const int NY3D = CUBE->get_ysize();
-	const int NZC  = CUBE->get_zsize();
 
-	const int LDPX = NX3D/2;
-	const int LDPY = NY3D/2;
-	const int LDPZ = NZC /2;
-	const float LDPNMXf = float(NSAM/2 +1);
-	const float LDPNMYf = float(NROW/2 +1);
+	// buffer "lines_to_process" should be aligned to size of cache line (usually 64 or 128 bytes)
+	t_BPCQ_line * lines_to_process;
+#ifdef _WIN32
+	if ( (lines_to_process = _aligned_malloc( 4*radius*radius*sizeof(t_BPCQ_line), 256 )) == NULL )
+#else
+	if ( posix_memalign( reinterpret_cast<void**>(&lines_to_process), 256, 4*radius*radius*sizeof(t_BPCQ_line) ) != 0 )
+#endif	//_WIN32
+	{
+		throw std::bad_alloc();
+	}
+	t_BPCQ_line * first_free_line = lines_to_process;
 
-	const float * const Bptr = B->get_data();
-	float  *CUBEptr = CUBE->get_data();
+	// calculate lines parameters
+	{
+		//  Unsure about sign of shifts, check later PAP 06/28/09
+		const float x_shift_plus_center = float(NSAM/2 +1) + float(transform_params[ "tx" ]);
+		const float y_shift_plus_center = float(NROW/2 +1) + float(transform_params[ "ty" ]);
 
-	for (int K=0; K<NZC; ++K) {
-		for (int J=0; J<NY3D; ++J) {
-			const float XBB = (-LDPX)*DM[0] + (J-LDPY)*DM[1] + (K-LDPZ)*DM[2];
-			const float YBB = (-LDPX)*DM[3] + (J-LDPY)*DM[4] + (K-LDPZ)*DM[5];
-			for (int I=0; I<NX3D; ++I, ++CUBEptr) {
-				const float XB  = I*DM[0] + XBB - x_shift + LDPNMXf;
-				const int IQX = int(XB);
-				if (IQX <1 || IQX >= NSAM) continue;
-				const float YB  = I*DM[3] + YBB - y_shift + LDPNMYf;
-				const int IQY = int(YB);
-				if (IQY<1 || IQY>=NROW)  continue;
-				const float DIPX = XB-IQX;
-				const float DIPY = YB-IQY;
-				const float b00 = Bptr[IQX-1+((IQY-1)*NSAM)];
-				const float b01 = Bptr[IQX-1+((IQY-0)*NSAM)];
-				const float b10 = Bptr[IQX-0+((IQY-1)*NSAM)];
-				const float b11 = Bptr[IQX-0+((IQY-0)*NSAM)];
-				*CUBEptr = *CUBEptr + b00 + DIPY*(b01-b00) + DIPX*(b10-b00+DIPY*(b11-b10-b01+b00));
+		const int sizeX = CUBE->get_xsize();
+		const int sizeY = CUBE->get_ysize();
+
+		const int centerX = sizeX / 2;
+		const int centerY = sizeY / 2;
+		const int centerZ = CUBE->get_zsize() /2;
+
+		for ( int rZ=-radius; rZ<=radius; ++rZ ) {
+			for ( int rY=-radius; rY<=radius; ++rY ) {
+				const int sqRX = radius*radius - rZ*rZ - rY*rY;
+				if (sqRX >= 0) {
+					first_free_line->rX     = static_cast<int>( roundf(sqrtf(sqRX)) );
+					first_free_line->offset = sizeX*( centerY+rY + sizeY*(centerZ+rZ) ) + centerX - first_free_line->rX;
+					first_free_line->xbb    = rZ*DM[2] + rY*DM[1] + x_shift_plus_center;
+					first_free_line->ybb    = rZ*DM[5] + rY*DM[4] + y_shift_plus_center;
+					++first_free_line;
+				}
 			}
 		}
 	}
+
+	const float * const Bptr = B->get_data();
+	float * const CUBE_begin = CUBE->get_data();
+
+	// update voxels in volume
+	// this loop takes more than 95% of calculations time spent in Util::BPCQ function
+	for ( t_BPCQ_line * iLine = lines_to_process; iLine < first_free_line; ++iLine ) {
+		const int rX_first = -(iLine->rX);
+		const int rX_last  =   iLine->rX;
+		float  *CUBE_ptr = CUBE_begin + iLine->offset;
+		for (int rX=rX_first; rX<=rX_last; ++rX, ++CUBE_ptr) {
+			const float XB  = rX * DM[0] + iLine->xbb;
+			const float YB  = rX * DM[3] + iLine->ybb;
+			const int IQX = int(XB);
+			const int IQY = int(YB);
+			if ( IQX < 1 || IQX >= NSAM || IQY < 1 || IQY >= NROW )  continue;
+			const float DIPX = XB-IQX;
+			const float DIPY = YB-IQY;
+			const float b00 = Bptr[IQX-1+((IQY-1)*NSAM)];
+			const float b01 = Bptr[IQX-1+((IQY-0)*NSAM)];
+			const float b10 = Bptr[IQX-0+((IQY-1)*NSAM)];
+			const float b11 = Bptr[IQX-0+((IQY-0)*NSAM)];
+			*(CUBE_ptr) = *(CUBE_ptr) + b00 + DIPY*(b01-b00) + DIPX*(b10-b00+DIPY*(b11-b10-b01+b00));
+		}
+	}
+
+	free(lines_to_process);
 }
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #define    W(i,j) 			Wptr        [i-1+((j-1)*Wnx)]

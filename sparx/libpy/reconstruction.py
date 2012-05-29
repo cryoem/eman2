@@ -1045,6 +1045,7 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 	""" 
 	import types
 	from utilities import get_im
+#	from datetime import timedelta, datetime
 
 	if type(stack_name) == types.StringType:
 		B = EMData()
@@ -1077,15 +1078,23 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 	if method=="exact":    
 		const = int(const)
 
+#	time_wt = timedelta()
+#	time_bp = timedelta()
 	for iProj in xrange(nimages):
 		proj = get_im(stack_name, list_proj[iProj])
 		for iSym in xrange(nsym):
 			B = proj.copy()
 			B.set_attr("xform.projection", symmetry_transforms[iProj][iSym])
+#			t0 = datetime.now()
 			if   method=="general":  Util.WTF(B, ss, const, iProj*nsym+iSym+1)  # counting in WTF start from 1!
 			elif method=="exact"  :  Util.WTM(B, ss, const, iProj*nsym+iSym+1)  # counting in WTM start from 1!
-			Util.BPCQ(B, CUBE)
-
+#			time_wt += datetime.now() - t0
+#			t0 = datetime.now()
+			Util.BPCQ(B, CUBE, (B.get_ysize()-1)//2)
+#			time_bp += datetime.now() - t0
+			
+#	print "time(WT) =", time_wt.total_seconds()
+#	print "time(BP) =", time_bp.total_seconds()
 	return CUBE
 
       
@@ -1143,7 +1152,7 @@ def recons3d_vwbp(stack_name, list_proj, method = "general", const=1.0E4, symmet
 			elif method=="exact"  :  Util.WTM(B, ss, const, iProj*nsym+iSym+1)  # counting in WTM start from 1!
 			from filter import filt_tanl
 			B = filt_tanl(B, 0.3, 0.1)
-			Util.BPCQ(B, CUBE)
+			Util.BPCQ(B, CUBE, (B.get_ysize()-1)//2)
 		CUBE.write_image(outstack, iProj)
 	return CUBE
 
@@ -1217,7 +1226,7 @@ def recons3d_swbp(A, transform, L, ss, method = "general", const=1.0E4, symmetry
 	  	elif (method=="exact"  ):    Util.WTM(B, ss, const, L+1)
 
 		B.set_attr("xform.projection", transform)
-		Util.BPCQ(B, CUBE)
+		Util.BPCQ(B, CUBE, (B.get_ysize()-1)//2)
 		
 	B.set_attr("xform.projection", org_transform)
 	return CUBE, B
@@ -1265,7 +1274,7 @@ def backproject_swbp(B, transform = None, symmetry="c1"):
 	org_transform = B.get_attr("xform.projection")
 	if transform != None:
 		B.set_attr("xform.projection", transform)
-	Util.BPCQ(B, CUBE)
+	Util.BPCQ(B, CUBE, (B.get_ysize()-1)//2)
 	B.set_attr("xform.projection", org_transform)
 
 	return CUBE
@@ -1282,7 +1291,7 @@ def one_swbp(CUBE, B, transform = None, symmetry="c1"):
 	org_transform = B.get_attr("xform.projection")
 	if transform != None:
 		B.set_attr("xform.projection", transform)
-	Util.BPCQ(B, CUBE)  
+	Util.BPCQ(B, CUBE, (B.get_ysize()-1)//2)  
 	B.set_attr("xform.projection", org_transform)
 
 def prepare_recons(data, symmetry, myid, main_node_half, half_start, step, index, finfo=None, npad = 4):

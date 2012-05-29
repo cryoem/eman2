@@ -54,7 +54,7 @@ static void WTM(EMData* PROJ, vector<float> SS,int DIAMETER,int NUMP);
 
 static Dict CANG(float PHI, float THETA, float PSI);
 
-static void BPCQ(EMData* B, EMData *CUBE);
+static void BPCQ(EMData* B, EMData *CUBE, const int radius);
 
 static vector<float> infomask(EMData* Vol, EMData* mask, bool);
 
