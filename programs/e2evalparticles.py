@@ -182,7 +182,8 @@ class EMClassPtclTool(QtGui.QWidget):
 			im=EMData(self.curPtclFile(),n,True)	# We have to actually read the particle header to dereference its set
 			try :
 				srcfile=im["data_source"]
-				if not "bdb:particles#" in srcfile : raise Exception
+				if not ("bdb:particles#" in srcfile or "bdb:./particles#" in srcfile): raise Exception
+				#if not "bdb:particles#" in srcfile : raise Exception
 			except:
 				QtGui.QMessageBox.warning(self,"Error !","The data_source '%s' does not follow EMAN2 project conventions. Cannot find raw particles for set."%srcfile)
 				return
