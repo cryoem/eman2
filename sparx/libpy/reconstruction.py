@@ -1043,7 +1043,6 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 	""" 
 	import types
 	from utilities import get_im
-#	from datetime import timedelta, datetime
 
 	if type(stack_name) == types.StringType:
 		B = EMData()
@@ -1079,23 +1078,15 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 	if method=="exact":    
 		const = int(const)
 
-#	time_wt = timedelta()
-#	time_bp = timedelta()
 	for iProj in xrange(nimages):
 		proj = get_im(stack_name, list_proj[iProj])
 		for iSym in xrange(nsym):
 			B = proj.copy()
 			B.set_attr("xform.projection", symmetry_transforms[iProj][iSym])
-#			t0 = datetime.now()
 			if   method=="general":  Util.WTF(B, ss, const, iProj*nsym+iSym+1)  # counting in WTF start from 1!
 			elif method=="exact"  :  Util.WTM(B, ss, const, iProj*nsym+iSym+1)  # counting in WTM start from 1!
-#			time_wt += datetime.now() - t0
-#			t0 = datetime.now()
 			Util.BPCQ(B, CUBE, radius)
-#			time_bp += datetime.now() - t0
-			
-#	print "time(WT) =", time_wt.total_seconds()
-#	print "time(BP) =", time_bp.total_seconds()
+
 	return CUBE
 
       
