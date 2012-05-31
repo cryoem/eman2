@@ -5826,7 +5826,6 @@ void Util::BPCQ( EMData *B, EMData *CUBE, const int radius )
 
 void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
 {
-//	clock_t t0 = clock();
 
 	--K; // now indexes are started from 0
 
@@ -5856,8 +5855,6 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
 	W->to_zero();
 	float *Wptr = W->get_data();
 
-//	clock_t t05 = clock();
-
 	for (int L=0; L<NANG; L++) {
 		const float tmp1 = SS(2,K)*SS(3,L)*(SS(0,K)*SS(0,L) + SS(1,K)*SS(1,L)) - SS(2,L)*SS(3,K);
 		const float tmp2 = SS(3,L)*( SS(0,K)*SS(1,L) - SS(0,L)*SS(1,K) );
@@ -5868,18 +5865,24 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
 			OY = -OY;
 		}
 
-		if( OX > 1.0e-6f || fabs(OY) > 1.0e6f ) {
+		if( OX > 1.0e-6f || fabs(OY) > 1.0e-6f ) {
 			for (int J=0; J<NROW; ++J) {
-				const float JY = (J > NR2) ? (J - NROW) : (J);
-#ifdef _WIN32
-				const int xma = _cpp_min(int(0.5f+( q-JY*OY)/OX),NX2);
-				const int xmi = _cpp_max(int(0.5f+(-q-JY*OY)/OX),0);
-#else
-				const int xma = std::min(int(0.5f+( q-JY*OY)/OX),NX2);
-				const int xmi = std::max(int(0.5f+(-q-JY*OY)/OX),0);
-#endif	//_WIN32
+				const float JY_OY = (J > NR2) ? ((J-NROW)*OY) : (J*OY);
+				int xma = NX2;
+				int xmi = 0;
+				const float fxma = ( q-JY_OY) / OX;
+				const float fxmi = (-q-JY_OY) / OX;
+				if (fxma < xmi || fxmi > xma ) {
+					continue;
+				}
+				if (fxma < xma) {
+					xma = static_cast<int>(fxma+0.5f);
+				}
+				if (fxmi > xmi) {
+					xmi = static_cast<int>(fxmi+0.5f);
+				}
 				for( int I=xmi; I<=xma; ++I ) {
-					const float Y = OX*I + OY*JY;
+					const float Y = I*OX + JY_OY;
 					W(I,J) += exp(-qt*Y*Y);
 				}
 			}
@@ -5891,8 +5894,6 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
 			}
 		}
 	}
-
-//	clock_t t1 = clock();
 
     EMData* proj_in = PROJ;
 
@@ -5924,8 +5925,6 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
 	}
 	delete W; W = 0;
 
-//	clock_t t2 = clock();
-
 	PROJ->do_ift_inplace();
 	PROJ->depad();
 
@@ -5938,10 +5937,6 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
 	}
 
 	proj_in->update();
-
-//	clock_t t3 = clock();
-
-//	std::cout << "Details: " << (t05-t0) << " " << (t1-t05) << " " << (t2-t1) << " " << (t3-t2) << "\n";
 }
 /*
 void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K)
