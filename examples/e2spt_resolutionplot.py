@@ -37,7 +37,10 @@ import sys
 import time
 import numpy
 import pylab
-#from operator import itemgetter					 
+#from operator import itemgetter
+from matplotlib.ticker import MaxNLocator
+from pylab import figure, show	
+import matplotlib.pyplot as plt				 
 
 def main():
 	
@@ -51,7 +54,9 @@ def main():
 	parser.add_argument("--vol2", type=str, help="File for volume 2. Volume 2 to will be 'static' (the 'reference' to which volume 1 will be aligned to). The format MUST be '.hdf' or '.mrc' ", default=None)
 	parser.add_argument("--output", type=str, help="Name for the .txt file that will contain the FSC data. If not specified, a default name will be used, vol1_VS_vol2, where vol1 and vol2 are taken from --vol1 and --vol2 without the format.", default=None)
 
-	parser.add_argument("--sym", type=str, default='c1', help = "Asymmetric unit to limit the alignment search to. Note that this should only be on IF the reference (--vol1) is ALREADY aligned to the symmetry axis.")
+	parser.add_argument("--sym", type=str, default='c1', help = """Will symmetrize the reference (--vol1) and limit alignment of other structure (--vol2) against the model to searching the asymmetric unit only. 
+								Then, after alignment, vol2 will be symmetrized as well, and the FSC will be calculated. 
+								Note that this will only work IF the reference (--vol1) is ALREADY aligned to the symmetry axis as defined by EMAN2.""")
 	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
 	parser.add_argument("--normproc",type=str,help="Normalization processor applied to particles before alignment. Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'", default="normalize.mask")
 	parser.add_argument("--preprocess",type=str,help="Any processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.", default=None)
@@ -61,8 +66,10 @@ def main():
 	parser.add_argument("--highpass",type=str,help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.", default=None)
 	
 	parser.add_argument("--npeakstorefine", type=int, help="The number of best 'coarse peaks' from 'coarse alignment' to refine in search for the best final alignment. Default=4.", default=4)
-	parser.add_argument("--align",type=str,help="This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=10:delta=10:dphi=10, specify 'None' to disable", default="rotate_translate_3d:search=10:delta=10:dphi=10")
+	
+	parser.add_argument("--align",type=str,help="This is the aligner used to align particles to the previous class average.", default=None)
 	parser.add_argument("--aligncmp",type=str,help="The comparator used for the --align aligner. Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.",default="ccc.tomo")
+	
 	parser.add_argument("--ralign",type=str,help="This is the second stage aligner used to refine the first alignment. Default is refine_3d:search=2:delta=3:range=12", default="refine_3d:search=2:delta=3:range=12")
 	parser.add_argument("--raligncmp",type=str,help="The comparator used by the second stage aligner. Default is the internal tomographic ccc",default="ccc.tomo")
 	
@@ -76,7 +83,8 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--plotonly",action="store_true", help="Assumes vol1 and vol2 are already aligned with respect to each other and thus skips alignment", default=False)
-
+	
+	
 	
 	#print "Before parsing, options are", parser.args()
 	
@@ -97,16 +105,58 @@ def main():
 	if options.plotonly:
 		vol2ALIname = vol2
 	
-	fscoutputname = options.output
+	if options.sym is not 'c1' and options.sym is not "C1":
+		vol2ALIname = vol2ALIname.replace('.','_' + options.sym + '.')
+	
 	if not options.output:
 		fscoutputname = 'FSC_' + vol1.split('.')[0] + '_VS_' + vol2.split('.')[0] + '.txt'
 	
-	alicmd = 'echo'
-	if  not options.plotonly:
-		alicmd = 'e2classaverage3d.py --path=. --input=' + vol2 + ' --output=' + vol2ALIname + ' --ref=' + vol1 + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + options.mask + ' --preprocess=' + options.preprocess + ' --align=' + options.align + ' --parallel=' + options.parallel + ' --ralign=' + options.ralign + ' --aligncmp=' + options.aligncmp + ' --raligncmp=' + options.raligncmp + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + options.normproc + ' --sym=' + options.sym + ' --breaksym'
+	if '.hdf' in options.output:
+		output = options.output
+		output = output.replace('.hdf','.txt')
+		options.output = output
+		
+	if '.txt' not in options.output:
+		options.output = options.output + '.txt'
 	
-	print "FSCOUTPUTNAME is", fscoutputname
-	print "Because options.output was", options.output
+	fscoutputname = options.output
+
+	alicmd = 'echo'
+	if  not options.plotonly and options.align:
+		aligner=options.align
+		aligner=aligner.split(':')
+		print "The split aligner is", aligner
+		newaligner=''
+		
+		if 'sym='+options.sym not in aligner:
+			for element in aligner:
+				if 'sym' in element:
+					element='sym=' +options.sym
+				newaligner=newaligner + element + ":"
+			if newaligner[-1] == ':':
+				newaligner = newaligner[:-1]
+				options.align=newaligner
+		
+		print "The reformed aligner is", options.align
+		
+		if options.sym is not 'c1' and options.sym is not "C1":
+			vol1symname = vol1.replace('.hdf','_' + options.sym + '.hdf')
+			os.system('e2proc3d.py ' + vol1 + ' ' + vol1symname + ' --sym=' + options.sym)
+			vol1 = vol1symname
+			
+		alicmd = 'e2classaverage3d.py --path=. --input=' + vol2 + ' --output=' + vol2ALIname + ' --ref=' + vol1 + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + options.mask + ' --preprocess=' + options.preprocess + ' --align=' + options.align + ' --parallel=' + options.parallel + ' --ralign=' + options.ralign + ' --aligncmp=' + options.aligncmp + ' --raligncmp=' + options.raligncmp + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + options.normproc + ' --sym=' + options.sym + ' --breaksym'
+		
+		if options.sym is not 'c1' and options.sym is not "C1":
+			print "\n@@@@@@@@@@@@@@@@@@@@@@@@@@@\nSym is NOT C1, therefore, the vol2 must be symmetrized\n"
+			alicmd = alicmd + ' && e2proc3d.py ' + vol2ALIname + ' ' + vol2ALIname + ' --sym=' + options.sym
+			print "\nAlicmd is", alicmd		
+	
+	else:
+		if not options.align:
+			print "Error: If you want to align vol2 to vol1 before computing and plotting the FSC, you must supply the aligner and corresponding parameters through --align="
+			sys.exit()
+	#print "FSCOUTPUTNAME is", fscoutputname
+	#print "Because options.output was", options.output
 	
 	fsccmd = 'e2proc3d.py ' + vol2ALIname + ' ' + fscoutputname + ' --calcfsc=' + vol1
 	
@@ -135,16 +185,36 @@ def main():
 		
 		k=0
 		x = []
+		
 		values = []
 		inversefreqs = []
+		inversefreqslabels = []
+		
+		xticks = []
+		nlines=len(lines)
+		factorOfTicks = round(nlines/(round(nlines/10)))
+		print "\n\n\nTHEE factor of ticks is!!!!\n", factorOfTicks
 		for line in lines:
 			x.append(float(k))
 			values.append( float( line.split()[-1] ) )
-			inversefreqs.append( float( line.split()[0] ))
+			inverse =  float( line.split()[0] )
+			#print "inverse is"
+			inversefreqs.append(inverse)
+			
+			element = ''
+			if inverse:
+				element = '1/' + str(int(round( 1.0/inverse  )))
+			else:
+				element='0'
+			#print "Therefore, turned into a number it is", element
+			inversefreqslabels.append(element)
+			if not k % factorOfTicks:
+			
+				print "I have appended this tick!", element
+				print "Because k is", k
+				print "And k mod factorOfTicks is", k % factorOfTicks
+				xticks.append(element)
 			k += 1
-		
-		polycoeffs = numpy.polyfit(x, values, 20)
-		yfit = numpy.polyval(polycoeffs, x)
 		
 		plot_name = fscoutputname.replace('.txt','_PLOT.png')
 		
@@ -152,6 +222,10 @@ def main():
 
 		difs0p5 = []
 		difs0p143 = []
+		
+		
+		polycoeffs = numpy.polyfit(x, values, 30)
+		yfit = numpy.polyval(polycoeffs, x)
 		
 		for i in range(len(yfit)):
 			dif0p5 = abs(yfit[i] - 0.5)
@@ -195,26 +269,24 @@ def main():
 		
 		if fsc0p5pixel:		
 			fsc0p5resolution1 = (float(apix) * float(boxsize)) / float(fsc0p5pixel)
-			fsc0p5resolution1label = "%.2f" % ( fsc0p5resolution1 )
+			fsc0p5resolution1label = "%.1f" % ( fsc0p5resolution1 )
 		else:
 			print "Method 1 for resolution calculation failed (there was a division by zero somewhere)"
 		
 
 		if fsc0p143pixel:		
 			fsc0p143resolution1 = (float(apix) * float(boxsize)) / float(fsc0p143pixel)
-			fsc0p143resolution1label = "%.2f" % ( fsc0p143resolution1 )
+			fsc0p143resolution1label = "%.1f" % ( fsc0p143resolution1 )
 	
 		elif not fsc0p5pixel:
 			print "Method 1 for resolution calculation failed (there was a division by zero somewhere)"
-		
-		
 		
 		fsc0p5resolution2=''
 		fsc0p5resolution2label=''
 
 		if fsc0p5freqavg:	
 			fsc0p5resolution2 = 1/fsc0p5freqavg
-			fsc0p5resolution2label = "%.2f" % ( fsc0p5resolution2 )
+			fsc0p5resolution2label = "%.1f" % ( fsc0p5resolution2 )
 		else:
 			print "Method 2 for resolution calculation failed (there was a division by zero somewhere)"
 		
@@ -224,7 +296,7 @@ def main():
 
 		if fsc0p143freqavg:	
 			fsc0p143resolution2 = 1/fsc0p143freqavg
-			fsc0p143resolution2label = "%.2f" % ( fsc0p143resolution2 )
+			fsc0p143resolution2label = "%.1f" % ( fsc0p143resolution2 )
 
 		elif not fsc0p5resolution2:
 			print "Method 2 for resolution calculation failed (there was a division by zero somewhere)"
@@ -235,10 +307,22 @@ def main():
 		else:
 			print "FSC0.5 resolution calculations 1 and 2 are", fsc0p5resolution1, fsc0p5resolution2
 			print "FSC0.143 resolution calculations 1 and 2 are", fsc0p143resolution1, fsc0p143resolution2
-			
-		curve = pylab.plot(x, values, 'k.')
-		fit = pylab.plot(x, yfit, 'r-')
 		
+	
+		fig = figure()
+		curve = pylab.plot(x, values, 'k',marker='o')
+		
+		#fit = pylab.plot(x, yfit, 'r-')
+		
+		ax = fig.add_subplot(111)
+		plt.xticks(x,inversefreqslabels)
+		print "Len of x and inversefreqslabels are", len(x), len(inversefreqslabels)
+		
+		print "len of ticks is", len(xticks)
+		print "ticks are", xticks
+		ax.xaxis.set_major_locator(MaxNLocator(nbins=len(xticks)))
+		pylab.setp(ax, xticklabels=xticks)
+
 		final0p5='NA'
 		if fsc0p5resolution2label:
 			final0p5 = fsc0p5resolution2label
@@ -252,23 +336,26 @@ def main():
 			final0p143 = fsc0p143resolution1label	
 		
 		pylab.title(plot_name)
-		pylab.ylabel('FSC value')
-		pylab.xlabel('pixel number')
+		pylab.ylabel('FSC')
+		pylab.xlabel('Frequency 1/Angstroms')
 		pylab.grid(True)
-		pylab.legend( (curve, fit), ('Values', 'Fit'))
-		pylab.axis([0,boxsize/2 + 10,0,1.2])
+		#pylab.legend( (curve, fit), ('Values', 'Fit'))
+		pylab.ylim([0,1.2])
 		
-		pylab.annotate("FSC0.5 = "+str(final0p5)+" A", xy=(0, 1), xytext=(300, -30), xycoords='data', textcoords='offset points',bbox=dict(boxstyle="round", fc="0.8"))
-		pylab.annotate("FSC0.143 = "+str(final0p143)+" A", xy=(0, 1), xytext=(300, -55), xycoords='data', textcoords='offset points',bbox=dict(boxstyle="round", fc="0.8"))
-		pylab.annotate("Sampling ="+"%.2f"%(apix) + " A/pixel", xy=(0, 1), xytext=(300, -80), xycoords='data', textcoords='offset points',bbox=dict(boxstyle="round", fc="0.8"))
+		ww=open(plot_name.replace('.png','_RESvalues.txt'),'w')
+		resline1 = 'fsc0.5=' +fsc0p5resolution1label + ' , fsc0.143=' +fsc0p143resolution1label + '\n'
+		resline2 = 'fsc0.5=' +fsc0p5resolution2label + ' , fsc0.143=' +fsc0p143resolution2label+ '\n'
+		resline3 = 'fsc0.5=' +str(final0p5) + ' , fsc0.143=' + str(final0p143) + '\n'
+		reslines = [resline1, resline2, resline3]
+		ww.writelines(reslines)
+		ww.close()
+		
+		#pylab.annotate("FSC0.5 = "+str(final0p5)+" A", xy=(0, 1), xytext=(300, -30), xycoords='data', textcoords='offset points',bbox=dict(boxstyle="round", fc="0.8"))
+		#pylab.annotate("FSC0.143 = "+str(final0p143)+" A", xy=(0, 1), xytext=(300, -55), xycoords='data', textcoords='offset points',bbox=dict(boxstyle="round", fc="0.8"))
+		#pylab.annotate("Sampling ="+"%.2f"%(apix) + " A/pixel", xy=(0, 1), xytext=(300, -80), xycoords='data', textcoords='offset points',bbox=dict(boxstyle="round", fc="0.8"))
 
 		pylab.savefig(plot_name)
 		
-		#pylab.plot(x, values, linewidth=1, marker='o', linestyle='--', color='r')	
-		
-		#a = plt.gca()
-		#a.set_xlim(1,mults[-1])
-		#a.set_ylim(0,max(x))
 
 	E2end(logger)
 	
