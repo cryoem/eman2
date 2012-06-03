@@ -137,7 +137,8 @@ def main():
 				set_params_proj(diff2, [phi, theta, psi, s2x, s2y])
 				diff2.write_image("difference.hdf", i)
 				#prj_stack.append(diff2)
-			if options.MPI: mpi_barrier(MPI_COMM_WORLD)
+		
+		if options.MPI: mpi_barrier(MPI_COMM_WORLD)
 		prj_stack = "difference.hdf"
 			
 	if not options.var and not options.SND and not options.MPI:
@@ -212,8 +213,7 @@ def main():
 	if options.MPI:
 		from mpi import mpi_comm_rank, MPI_COMM_WORLD
 		res = recons3d_em_MPI(prj_stack, options.iter, options.abs, True, options.sym)
-		mpi_r = mpi_comm_rank(MPI_COMM_WORLD)
-		if mpi_r == 0:
+		if isRoot:
 			res.write_image(vol_stack)
 	else:
 		t6 = time()
