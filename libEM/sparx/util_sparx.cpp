@@ -43,6 +43,7 @@
 #include <iostream>
 #include <cstdio>
 #include <cstdlib>
+#include <cassert>
 #include <boost/format.hpp>
 #include "emdata.h"
 #include "util.h"
@@ -5756,7 +5757,7 @@ void Util::BPCQ( EMData *B, EMData *CUBE, const int radius )
 	// buffer "lines_to_process" should be aligned to size of cache line (usually 64 or 128 bytes)
 	t_BPCQ_line * lines_to_process;
 #ifdef _WIN32
-	if ( (lines_to_process = _aligned_malloc( 4*radius*radius*sizeof(t_BPCQ_line), 256 )) == NULL )
+	if ( (lines_to_process = (t_BPCQ_line *)_aligned_malloc( 4*radius*radius*sizeof(t_BPCQ_line), 256 )) == NULL )
 #else
 	if ( posix_memalign( reinterpret_cast<void**>(&lines_to_process), 256, 4*radius*radius*sizeof(t_BPCQ_line) ) != 0 )
 #endif	//_WIN32
@@ -5782,7 +5783,11 @@ void Util::BPCQ( EMData *B, EMData *CUBE, const int radius )
 			for ( int rY=-radius; rY<=radius; ++rY ) {
 				const int sqRX = radius*radius - rZ*rZ - rY*rY;
 				if (sqRX >= 0) {
+#ifdef	_WIN32
+					first_free_line->rX     = static_cast<int>( floor(sqrtf(sqRX)+0.5) );
+#else
 					first_free_line->rX     = static_cast<int>( roundf(sqrtf(sqRX)) );
+#endif	//_WIN32
 					first_free_line->offset = sizeX*( centerY+rY + sizeY*(centerZ+rZ) ) + centerX - first_free_line->rX;
 					first_free_line->xbb    = rZ*DM[2] + rY*DM[1] + x_shift_plus_center;
 					first_free_line->ybb    = rZ*DM[5] + rY*DM[4] + y_shift_plus_center;
@@ -18229,7 +18234,7 @@ vector<int> Util::group_proj_by_phitheta(const vector<float>& projangles, const 
 			for (int i=0; i<Nn-1; i++)
 				for (int j=i+1; j<Nn; j++) {
 					float diff = ang_diff(v[index[i]*3], v[index[i]*3+1], v[index[i]*3+2], v[index[j]*3], v[index[j]*3+1], v[index[j]*3+2], mirror);
-					float q = exp(-c*pow(diff/180.0f*M_PI, 2.0));
+					float q = exp(-c*pow(diff/180.0f*M_PI, 2.0f));
 					diff_table[i*Nn+j] = q;
 					diff_table[j*Nn+i] = q;
 				}
@@ -18240,7 +18245,7 @@ vector<int> Util::group_proj_by_phitheta(const vector<float>& projangles, const 
 			previous_group = max_group;
 		} 
 
-		int diff_table_size = static_cast<int>(sqrt(diff_table.size())+0.5);
+		int diff_table_size = static_cast<int>(sqrt((float)diff_table.size())+0.5f);
 		float max_density = -1;
 		int max_density_i = -1;
 		for (int i=0; i<Nn; i++) {

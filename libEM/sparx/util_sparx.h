@@ -871,8 +871,8 @@ public:
 		float v = v11*v21+v12*v22+v13*v23;
 		if (v > 1) v = 1;
 		if (v < -1) v = -1;
-		if (v > 0) { mirror = 1; return acos(v)*180.0/M_PI; }
-		else { mirror = -1; return acos(-v)*180.0/M_PI; }
+		if (v > 0) { mirror = 1; return acos(v)*180.0f/M_PI; }
+		else { mirror = -1; return acos(-v)*180.0f/M_PI; }
 	}
 	
 	/* Find the nearest projection angles
