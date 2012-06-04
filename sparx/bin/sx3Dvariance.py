@@ -211,6 +211,7 @@ def main():
 		#exit()
 
 	if options.MPI:
+		t6 = time()
 		from mpi import mpi_comm_rank, MPI_COMM_WORLD
 		res = recons3d_em_MPI(prj_stack, options.iter, options.abs, True, options.sym)
 		if isRoot:
@@ -222,9 +223,9 @@ def main():
 		res = recons3d_em(prj_stack, options.iter, options.abs, True, options.sym)
 		res.write_image(vol_stack)
 		print_msg("Writing to the disk volume of reconstructed 3D variance as		:%s\n"%(vol_stack))
-		t7 = time()
-		print_msg("Reconstructing 3D variance lasted [s]					:%s\n"%(t7-t6))
-		print "RECONSTRUCTION LASTED: ", (t7-t6)/60, " min"																		##
+	t7 = time()
+	print_msg("Reconstructing 3D variance lasted [s]					:%s\n"%(t7-t6))
+	print "RECONSTRUCTION LASTED: ", (t7-t6)/60, " min"																		##
 	tF = time()
 	print_msg("Total time for these computations [min]					:%s\n"%((tF-t0)/60))
 	print_end_msg("sx3Dvariance")
