@@ -9237,7 +9237,7 @@ def cluster_equalsize(d, m):
 
 
 class pcanalyzer:
-	def __init__(self, mask, sdir, nvec, MPI=False, scratch = None ):
+	def __init__(self, mask, sdir, nvec, incore=False, MPI=False, scratch=None):
 		import os
 		self.mask = mask.copy()
 		if MPI:
@@ -9261,22 +9261,29 @@ class pcanalyzer:
 		self.fw     = None
 		self.fr     = None
 		self.avgdat = None
+		self.myBuff = None
+		self.incore = incore
 
 	def writedat( self, data ):
 		import array
+		if not self.incore:
+			if self.fw is None:
+				self.fw = open( self.file, "wb" )
+			data.tofile( self.fw )
+		else:
+			self.myBuff = data.copy()
 
-		if self.fw is None:
-			self.fw = open( self.file, "wb" )
-
-		data.tofile( self.fw )
+		
 
 	def read_dat( self, data ):
 		from numpy import fromfile, float32
-		if not(self.fw is None) and not( self.fw.closed ):
-			self.fw.close()
-
-		assert not(self.fr is None) and not self.fr.closed
-		Util.readarray( self.fr, data, self.ncov )
+		if not self.incore:
+			if not(self.fw is None) and not( self.fw.closed ):
+				self.fw.close()
+			assert not(self.fr is None) and not self.fr.closed
+			Util.readarray( self.fr, data, self.ncov )
+		else:
+			data = self.myBuff.copy()
 		if not(self.avgdat is None):
 			data -= self.avgdat
 
