@@ -106,12 +106,12 @@ def main():
 	print_msg("Input stack							:%s\n"%(prj_stack))
 	
 	if not options.var and options.SND:
+		from mpi	import mpi_barrier, MPI_COMM_WORLD
 		if isRoot:
 			from reconstruction	import recons3d_4nn
 			from projection		import prep_vol, prgs
 			from statistics		import im_diff
-			from utilities		import get_im, model_circle, get_params_proj, set_params_proj
-			from mpi			import mpi_barrier, MPI_COMM_WORLD
+			from utilities		import get_im, model_circle, get_params_proj, set_params_proj	
 			stack = prj_stack
 			prj_stack = []
 			proj_angles = []
