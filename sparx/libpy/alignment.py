@@ -88,6 +88,7 @@ def ang_n(tot, mode, maxrin):
 	if (mode == 'f' or mode == 'F'): return fmod(((tot-1.0) / maxrin+1.0)*360.0, 360.0)
 	else:                            return fmod(((tot-1.0) / maxrin+1.0)*180.0, 180.0)
 
+# Copy of this function is implemented in C++ in Util (Util.Applyws). It works much faster than this one.
 def Applyws(circ, numr, wr):
 	"""
 	  Apply weights to FTs of rings
@@ -985,7 +986,7 @@ def prepare_refrings( volft, kb, nz, delta, ref_a, sym, numr, MPI=False, phiEqps
 			cimage = Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
 			Util.Normalize_ring(cimage, numr)
 			Util.Frngs(cimage, numr)
-			Applyws(cimage, numr, wr_four)
+			Util.Applyws(cimage, numr, wr_four)
 			refrings[i] = cimage
 	else:
 		for i in xrange(ref_start, ref_end):
@@ -993,7 +994,7 @@ def prepare_refrings( volft, kb, nz, delta, ref_a, sym, numr, MPI=False, phiEqps
 			cimage = Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
 			Util.Normalize_ring(cimage, numr)
 			Util.Frngs(cimage, numr)
-			Applyws(cimage, numr, wr_four)
+			Util.Applyws(cimage, numr, wr_four)
 			refrings[i] = cimage
 
 	if MPI:
