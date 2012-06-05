@@ -3128,6 +3128,29 @@ void Util::Frngs_inv(EMData* circp, vector<int> numr){
 }
 #undef  circ
 
+void Util::Applyws(EMData* circp, vector<int> numr, vector<float> wr)
+{	/*
+	  Apply weights to FTs of rings
+	*/
+	const int nring = numr.size() / 3;
+	const int maxrin = numr.back();
+	float *circ = circp->get_data();
+	for (int i = 0; i < nring; ++i) {
+		const int numr3i = numr[2+i*3];
+		const int numr2i = numr[1+i*3]-1;
+		const float w = wr[i];
+		circ[numr2i] *= w;
+		if (numr3i == maxrin) {
+			circ[numr2i+1] *= w;
+		} else {
+			circ[numr2i+1] *= 0.5*w;
+		}
+		for (int j = 2+numr2i; j < numr3i+numr2i; ++j) {
+			circ[j] *= w;
+		}
+	}
+}
+
 #define  b(i)            b[i-1]
 void Util::prb1d(double *b, int npoint, float *pos) {
 	double  c2,c3;

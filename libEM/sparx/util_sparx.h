@@ -522,6 +522,9 @@ class FakeKaiserBessel : public KaiserBessel {
 	/** This function conducts the Single Precision Inverse Fourier Transform for a set of rings */
 	static void  Frngs_inv(EMData* circ, vector<int> numr);
 
+	/** This is a copy of Applyws routine from alignment.py */
+	static void  Applyws(EMData* circ, vector<int> numr, vector<float> wr);
+
 	/*
 	  	A little notes about different Crosrng:
 		Basically, they all do cross-correlation function to two images in polar coordinates
