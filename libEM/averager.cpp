@@ -45,6 +45,7 @@ using namespace EMAN;
 const string ImageAverager::NAME = "mean";
 const string TomoAverager::NAME = "mean.tomo";
 const string MinMaxAverager::NAME = "minmax";
+const string AbsMaxMinAverager::NAME = "absmaxmin";
 const string IterationAverager::NAME = "iteration";
 const string WeightingAverager::NAME = "snr_weight";
 const string CtfCAverager::NAME = "ctfc";
@@ -56,6 +57,7 @@ template <> Factory < Averager >::Factory()
 {
 	force_add<ImageAverager>();
 	force_add<MinMaxAverager>();
+	force_add<AbsMaxMinAverager>();
 	force_add<IterationAverager>();
 //	force_add<WeightingAverager>();
 	// These commented out until we're happy they're working. (d.woolford, Feb 3rd 2009)
@@ -463,6 +465,61 @@ EMData *MinMaxAverager::finish()
 	return NULL;
 }
 
+AbsMaxMinAverager::AbsMaxMinAverager() : nimg(0)
+{
+	/*move max out of initializer list, since this max(0) is considered as a macro
+	 * in Visual Studio, which we defined somewhere else*/
+	min = 0;
+}
+
+void AbsMaxMinAverager::add_image(EMData * image)
+{
+	if (!image) {
+		return;
+	}
+
+	if (nimg >= 1 && !EMUtil::is_same_size(image, result)) {
+		LOGERR("%sAverager can only process same-size Image",
+			   get_name().c_str());
+		return;
+	}
+
+	nimg++;
+
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+
+	size_t imgsize = (size_t)nx*ny*nz;
+
+	if (nimg == 1) {
+		result = image->copy();
+		min = params["min"];
+		return;
+	}
+
+	float * data 	 = result->get_data();
+	float * src_data = image->get_data();
+
+	for(size_t i=0; i<imgsize; ++i) {
+		if(!min) {	//average to maximum by default
+			if (fabs(data[i]) < fabs(src_data[i])) data[i]=src_data[i];
+		}
+		else {	//average to minimum if set 'min'
+			if (fabs(data[i]) > fabs(src_data[i])) data[i]=src_data[i];
+		}
+	}
+}
+
+EMData *AbsMaxMinAverager::finish()
+{
+	result->update();
+	result->set_attr("ptcl_repr",nimg);
+
+	if (result && nimg > 1) return result;
+
+	return NULL;
+}
 
 IterationAverager::IterationAverager() : nimg(0)
 {

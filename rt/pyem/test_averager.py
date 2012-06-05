@@ -42,10 +42,41 @@ IS_TEST_EXCEPTION = False
 
 class TestAverager(unittest.TestCase):
     """averager test"""
+	
+    #def test_ImageAverager(self):
+    #    """test ImageAverager ..............................."""
     
-    def test_ImageAverager(self):
-        """test ImageAverager ..............................."""
-
+    def test_AbsMaxMinAverager(self):
+		"""test AbsMaxMinAverager ..........................."""
+		
+		e = EMData(3,3)
+		for i in range(3):
+			for j in range(3):
+				e.set_value_at(i,j,2.0)
+		e.set_value_at(0,0,100)
+		
+		f = EMData(3,3)
+		for i in range(3):
+			for j in range(3):
+				f.set_value_at(i,j,10.0)
+		
+		#test default find maximum values
+		avgr = Averagers.get("absmaxmin")
+		avgr.add_image(e)
+		avgr.add_image(f)
+		avg = avgr.finish()
+		data = avg.get_2dview()
+		self.assertAlmostEqual(data[0,0], 100.0, 3)
+		self.assertAlmostEqual(data[2,2], 10.0, 3)
+		
+		#test finding minimum values
+		avgr2 = Averagers.get("absmaxmin", {"min":1})
+		avgr2.add_image(e)
+		avgr2.add_image(f)
+		avg2 = avgr2.finish()
+		data2 = avg2.get_2dview()
+		self.assertAlmostEqual(data2[0,0], 10.0, 3)
+		self.assertAlmostEqual(data2[2,2], 2.0, 3)
 
 def test_main():
     p = OptionParser()

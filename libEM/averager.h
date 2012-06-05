@@ -297,6 +297,47 @@ namespace EMAN
 		int nimg;
 	};
 
+	/** AbsMaxMinAverager averages a list of images to the maximum(or minimum of the absolute pixel value)
+	 *  It optionally makes a sigma image.
+     *@param min If set, will find the min value, otherwise finds max
+     */
+	class AbsMaxMinAverager:public Averager
+	{
+	public:
+		AbsMaxMinAverager();
+
+		void add_image( EMData * image);
+		EMData * finish();
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		string get_desc() const
+		{
+			return "Average to maximum(or minimum if set parameter 'min' to non-zero) absolute value in each pixel";
+		}
+
+		static Averager *NEW()
+		{
+			return new AbsMaxMinAverager();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("min", EMObject::INT, "If set, will average to minimum absolute value, by default average to max");
+			return d;
+		}
+
+		static const string NAME;
+
+	private:
+		int min;
+		int nimg;
+	};
+
 	/** IterationAverager averages images by doing the smoothing iteration.
      */
 	class IterationAverager:public Averager
