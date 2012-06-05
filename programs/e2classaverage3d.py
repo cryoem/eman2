@@ -708,6 +708,9 @@ class Align3DTask(EMTask):
 		if options["normproc"][0] != "normalize.mask":
 			image.process_inplace('normalize')
 			image.mult(mask)
+			
+			fixedimage.process_inplace('normalize')
+			fixedimage.mult(mask)
 		
 		# preprocess
 		if options["preprocess"] != None:
