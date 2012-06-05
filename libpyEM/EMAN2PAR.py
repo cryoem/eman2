@@ -164,13 +164,13 @@ class EMTaskCustomer:
 			n=0
 			while (n==0) :
 				try:
-					signal.alarm(60)
+					signal.alarm(120)
 					n = EMDCsendonecom(self.addr,"NCPU",None)
 					signal.alarm(0)
 				except:
-					signal.alarm(60)
+					signal.alarm(120)
 					self.wait_for_server()
-					signal.alarm(60)
+					signal.alarm(120)
 					n=EMDCsendonecom(self.addr,"NCPU",None)
 					signal.alarm(0)
 				if not wait : return n
@@ -199,7 +199,7 @@ class EMTaskCustomer:
 		
 		if self.servtype=="dc":
 			while (1):
-				signal.alarm(60)
+				signal.alarm(120)
 				try: 
 					ret=EMDCsendonecom(self.addr,"RQUE",tid)
 					signal.alarm(0)
@@ -233,14 +233,14 @@ class EMTaskCustomer:
 
 			# Try to open a socket until we succeed
 			try: 
-				signal.alarm(240)		# sometime there is a lot of congestion here...
+				signal.alarm(360)		# sometime there is a lot of congestion here...
 				ret=EMDCsendonecom(self.addr,"TSKS",tasks)
 				signal.alarm(0)
 				return ret
 			except:
 				traceback.print_exc()
 				print "***************************  ERROR SENDING TASK"
-				signal.alarm(60)
+				signal.alarm(120)
 				self.wait_for_server()
 				signal.alarm(0)
 				return EMDCsendonecom(self.addr,"TSKS",tasks)
@@ -265,14 +265,14 @@ class EMTaskCustomer:
 				except: pass
 				
 			try: 
-				signal.alarm(60)
+				signal.alarm(120)
 				ret=EMDCsendonecom(self.addr,"TASK",task)
 				signal.alarm(0)
 				return ret
 			except:
 				traceback.print_exc()
 				print "***************************  ERROR SENDING TASK"
-				signal.alarm(60)
+				signal.alarm(120)
 				self.wait_for_server()
 				signal.alarm(0)
 				return EMDCsendonecom(self.addr,"TASK",task)
@@ -287,12 +287,12 @@ class EMTaskCustomer:
 		
 		if self.servtype=="dc":
 			try:
-				signal.alarm(60)
+				signal.alarm(180)
 				ret=EMDCsendonecom(self.addr,"STAT",taskid_list)
 				signal.alarm(0)
 				return ret
 			except:
-				signal.alarm(60)
+				signal.alarm(180)
 				self.wait_for_server()
 				signal.alarm(0)
 				return EMDCsendonecom(self.addr,"STAT",taskid_list)
@@ -307,13 +307,13 @@ class EMTaskCustomer:
 		
 		if self.servtype=="dc":
 			try:
-				signal.alarm(60)
+				signal.alarm(180)
 				sock,sockf=openEMDCsock(self.addr,retry=10)
 				sockf.write("RSLT")
 				sendobj(sockf,taskid)
 				sockf.flush()
 				
-				signal.alarm(60)
+				signal.alarm(180)
 				task=recvobj(sockf)
 				
 				k=0

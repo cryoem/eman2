@@ -217,6 +217,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.splotmode.addItem("Fg and Bg")
 		self.splotmode.addItem("Bgsub, 45 deg slices")
 		self.splotmode.addItem("Fg, 45 deg slices")
+		self.splotmode.addItem("Est. SSNR")
 		self.gbl.addWidget(self.splotmode,4,1)
 
 		self.hbl.addLayout(self.gbl)
@@ -484,6 +485,28 @@ class GUIEvalImage(QtGui.QWidget):
 			
 			#self.wplot.set_data((s,fit),"fit",color=1)
 			#self.wplot.setAxisParms("s (1/"+ u"\u212B" + ")","Intensity (a.u)")
+		if self.plotmode==4: 
+			if min(bg1d)<=0.0 : bg1d+=min(bg1d)+max(bg1d)/10000.0
+			ssnr=(self.fft1d-bg1d)/bg1d
+			self.wplot.set_data((s,ssnr),"SSNR",quiet=True,color=0)
+			
+			#fit=array(ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP))		# The fit curve
+			#fit=fit*fit			# squared
+
+			## auto-amplitude for b-factor adjustment
+			#rto,nrto=0,0
+			#for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)): 
+				#if bgsub[i]>0 : 
+					#rto+=fit[i]
+					#nrto+=fabs(bgsub[i])
+			#if nrto==0 : rto=1.0
+			#else : rto/=nrto
+			#fit=[fit[i]/rto for i in range(len(s))]
+			
+##			print ctf_cmp((self.sdefocus.value,self.sbfactor.value,rto),(ctf,bgsub,int(.04/ds)+1,min(int(0.15/ds),len(s)-1),ds,self.sdefocus.value))
+			
+			#self.wplot.set_data((s,fit),"fit",color=1)
+			self.wplot.setAxisParms("s (1/"+ u"\u212B" + ")","Est. SSNR")
 
 
 	def timeOut(self):
@@ -641,7 +664,8 @@ class GUIEvalImage(QtGui.QWidget):
 		db=db_open_dict("bdb:e2ctf.parms")
 		if db[item]==None or db[item[3]]==None : db[item]=[parms[1].to_string(),self.fft1d,parms[1].background,5]
 		print item,db[item][3]
-		self.squality.setValue(int(db[item[3]]))
+		try: self.squality.setValue(int(db[item[3]]))
+		except: self.squality.setValue(5)
 		
 	def redisplay(self):
 		self.needredisp=False

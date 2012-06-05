@@ -1969,7 +1969,7 @@ class EMImageInspector2D(QtGui.QWidget):
 			#fsp1=".".join(fsp[:-1])
 			#fsp2=fsp[-1]
 		
-		for i in range(self.stminsb.value(),self.stmaxsb.value()):
+		for i in range(self.stminsb.value()-1,self.stmaxsb.value()):
 			im=self.target().list_data[i]
 			im.write_image(fsp,-1)
 

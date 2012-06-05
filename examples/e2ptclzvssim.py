@@ -169,44 +169,44 @@ as not all elements are computed.
 		for i,q in enumerate(Qs) : 
 			out.write("%1.4g\t"%-q)			# Quality of best alignment
 			if y==0:
-				outkey.write( "%d - Best Ali Quality *-1 (%s)\n"%(colh,args[i]))
+				outkey.write( "%d - (Qs) Best Ali Quality *-1 (%s)\n"%(colh,args[i]))
 				colh+=1
 		for i,qa in enumerate(QAs) : 
 			out.write("%1.4g\t"%-qa)			#  Average quality for this particle
 			if y==0:
-				outkey.write( "%d - Avg Quality *-1 (%s)\n"%(colh,args[i]))
+				outkey.write( "%d - (QAs) Avg Quality *-1 (%s)\n"%(colh,args[i]))
 				colh+=1
 		for i,q0 in enumerate(Q0s) : 
 			out.write("%1.4g\t"%-q0)			#  Average quality for this particle
 			if y==0:
-				outkey.write( "%d - Quality - Worst Quality *-1 (%s)\n"%(colh,args[i]))
+				outkey.write( "%d - (Q0s) Quality - Worst Quality *-1 (%s)\n"%(colh,args[i]))
 				colh+=1
 		for i,z in enumerate(Zs) : 
 			out.write("%1.4g\t"%z)			# Z for this alignment
 			if y==0:
-				outkey.write( "%d - Z score (%s)\n"%(colh,args[i]))
+				outkey.write( "%d - (Zs) Z score (%s)\n"%(colh,args[i]))
 				colh+=1
 		for i,n in enumerate(Ns) : 
 			out.write("%d\t"%n)				# class number
 			if y==0:
-				outkey.write( "%d - Best Ali Class (%s)\n"%(colh,args[i]))
+				outkey.write( "%d - (Ns) Best Ali Class (%s)\n"%(colh,args[i]))
 				ncols.append(colh)
 				colh+=1
 		for i,dta in enumerate(DTAs) : 
 			out.write("%1.4g\t"%dta)			# Trans align angle for best alignment
 			if y==0: 
-				outkey.write( "%d - Best Ali trans angle (%s)\n"%(colh,args[i]))
+				outkey.write( "%d - (DTAs) Best Ali trans angle (%s)\n"%(colh,args[i]))
 				angcols.append(colh)
 				colh+=1
 		for i,dtr in enumerate(DTRs) : 
 			out.write("%1.4g\t"%dtr)			# Trans align dist for best alignment
 			if y==0: 
-				outkey.write( "%d - Best Ali trans dist (%s)\n"%(colh,args[i]))
+				outkey.write( "%d - (DTRs) Best Ali trans dist (%s)\n"%(colh,args[i]))
 				colh+=1
 		for i,da in enumerate(DAs) : 
 			out.write("%1.4g\t"%da)			# Rot align angle for best alignment
 			if y==0: 
-				outkey.write( "%d - Best Ali rot angle (%s)\n"%(colh,args[i]))
+				outkey.write( "%d - (DAs) Best Ali rot angle (%s)\n"%(colh,args[i]))
 				angcols.append(colh)
 				colh+=1
 
@@ -216,13 +216,13 @@ as not all elements are computed.
 			for i,n in enumerate(Ns) : 
 				out.write("%1.5g\t"%ALTs[n])	# Altitude Euler for best alignment
 				if y==0:
-					outkey.write( "%d - Alt (%s)\n"%(colh,args[i]))
+					outkey.write( "%d - (ALTs) Alt (%s)\n"%(colh,args[i]))
 					angcols.append(colh)
 					colh+=1
 			for i,n in enumerate(Ns) : 
 				out.write("%1.5g\t"%AZs[n])	# Azimuth Euler for best alignment
 				if y==0:
-					outkey.write( "%d - Az (%s)\n"%(colh,args[i]))
+					outkey.write( "%d - (AZs) Az (%s)\n"%(colh,args[i]))
 					angcols.append(colh)
 					colh+=1
 
@@ -256,8 +256,11 @@ as not all elements are computed.
 
 		out.write("\n")
 
-		if options.filtimgs!=None and options.inimgs!=None and eval(options.filtimgs):
-			EMData(options.inimgs,y).write_image(options.outimgs,-1)
+		if options.filtimgs!=None :
+			e=eval(options.filtimgs)
+			#print y,e,DTRs[0]-DTRs[1],fabs(DAs[0]-DAs[1]),fabs(ALTs[0]-ALTs[1]),Qs[1]
+			if options.inimgs!=None and e:
+				EMData(options.inimgs,y).write_image(options.outimgs,-1)
 
 	print " %d/%d\n"%(ny,ny),
 	print "Output in ",options.output
