@@ -18234,7 +18234,7 @@ vector<int> Util::group_proj_by_phitheta(const vector<float>& projangles, const 
 			for (int i=0; i<Nn-1; i++)
 				for (int j=i+1; j<Nn; j++) {
 					float diff = ang_diff(v[index[i]*3], v[index[i]*3+1], v[index[i]*3+2], v[index[j]*3], v[index[j]*3+1], v[index[j]*3+2], mirror);
-					float q = exp(-c*pow(diff/180.0f*M_PI, 2.0f));
+					float q = exp(-c*pow(diff/180.0f*static_cast<float>(M_PI), 2.0f));
 					diff_table[i*Nn+j] = q;
 					diff_table[j*Nn+i] = q;
 				}
