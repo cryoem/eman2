@@ -9261,7 +9261,8 @@ class pcanalyzer:
 		self.fw     = None
 		self.fr     = None
 		self.avgdat = None
-		self.myBuff = None
+		self.myBuff = []
+		self.myBuffPos = 0
 		self.incore = incore
 
 	def writedat( self, data ):
@@ -9271,21 +9272,39 @@ class pcanalyzer:
 				self.fw = open( self.file, "wb" )
 			data.tofile( self.fw )
 		else:
-			self.myBuff = data.copy()
-
-		
+			if len(self.myBuff) <= self.myBuffPos:
+				self.myBuff.append(data.copy())
+				self.myBuffPos = len(self.myBuff)
+			else:
+				self.myBuff[self.myBuffPos] = data.copy()
+				self.myBuffPos += 1
 
 	def read_dat( self, data ):
 		from numpy import fromfile, float32
 		if not self.incore:
 			if not(self.fw is None) and not( self.fw.closed ):
 				self.fw.close()
+			if self.fr is None:
+				self.fr = open( self.file, "rb" )
 			assert not(self.fr is None) and not self.fr.closed
 			Util.readarray( self.fr, data, self.ncov )
 		else:
-			data = self.myBuff.copy()
+			data[:] = self.myBuff[self.myBuffPos]
+			self.myBuffPos += 1
 		if not(self.avgdat is None):
 			data -= self.avgdat
+		
+
+	def close_dat( self ):
+		if not self.incore:
+			if not(self.fw is None) and not( self.fw.closed ):
+				self.fw.close()
+			self.fw = None
+			if not(self.fr is None) and not( self.fr.closed ):
+				self.fr.close()
+			self.fr = None	
+		else:
+			self.myBuffPos = 0
 
 	def usebuf( self ):
 		nx = self.mask.get_xsize()
@@ -9316,19 +9335,27 @@ class pcanalyzer:
 		#print self.myid, "shuffling"
 		sumdata = zeros( (self.ncov), float32 )
 		imgdata = zeros( (self.ncov), float32 )
-		self.fr = open( self.file, "rb" )
+		if not self.incore: 
+			self.fr = open( self.file, "rb" )
 		self.avgdata = None
 
-		fw = open( shfflfile, "wb" )
+		if not self.incore: 
+			fw = open( shfflfile, "wb" )
 		for i in xrange(self.nimg):
 			self.read_dat( imgdata )
 			shuffle( imgdata )
 			sumdata += imgdata
-			imgdata.tofile( fw )
+			if not self.incore:
+				imgdata.tofile( fw )
+			else:
+				self.myBuff[self.myBuffPos-1] = imgdata.copy()
 
-		self.fr.close()
-		fw.close()
-
+		if not self.incore: 
+			self.fr.close()
+			fw.close()
+		else:
+			self.close_dat()
+		
 		if self.MPI:
 			from mpi import mpi_reduce, mpi_bcast, MPI_FLOAT, MPI_INT, MPI_SUM, MPI_COMM_WORLD
 			sumdata = mpi_reduce( sumdata, self.ncov, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD )
@@ -9362,7 +9389,11 @@ class pcanalyzer:
 		from utilities import get_image_data
 		tmpimg = Util.compress_image_mask( img, self.mask )
 		tmpdat = get_image_data(tmpimg)
-		self.writedat( tmpdat )                                   #   WRITEDAT
+		if self.incore:
+			self.myBuffPos = len(self.myBuff)
+		self.writedat( tmpdat )
+		if self.incore:
+			self.close_dat()                                   #   WRITEDAT
 		self.nimg +=1
 		self.ncov = tmpimg.get_xsize()
 
@@ -9381,7 +9412,6 @@ class pcanalyzer:
 		lanczos_start = time()
 		kstep = self.lanczos( kstep, diag, subdiag, vmat )
 		#print 'time for lanczos: ', time() - lanczos_start
-
 		if not self.MPI or self.myid==0:
 			qmat = zeros( (kstep,kstep), float32 )
 			lfwrk = 100 + 4*kstep + kstep*kstep
@@ -9397,7 +9427,7 @@ class pcanalyzer:
 
 			from utilities import model_blank, get_image_data
 			eigimgs = []
-                	for j in xrange(self.nvec):
+			for j in xrange(self.nvec):
 				tmpimg = model_blank(ncov, 1, 1)
 				eigvec = get_image_data( tmpimg )
 				trans = 'N'
@@ -9423,7 +9453,7 @@ class pcanalyzer:
 		hvec = zeros( (kstep), float32 )
 		htmp = zeros( (kstep), float32 )
 		imgdata = zeros( (ncov), float32 )
-	
+			
 		for i in xrange(ncov):
 			v0[i] = 1.0
 
@@ -9431,13 +9461,12 @@ class pcanalyzer:
 		for i in xrange(ncov):
 			V[0][i] = v0[i]/beta
 
-		self.fr = open( self.file, "rb" )
 		for i in xrange(self.nimg):
-			self.read_dat(imgdata)                                     #  READ_DAT
+			self.read_dat(imgdata)                                     #  READ_DAT			
 			alpha = Util.sdot( ncov, imgdata, 1, V[0], 1 )
 			Util.saxpy( ncov, alpha, imgdata, 1, Av, 1 )
-		self.fr.close()
-
+		self.close_dat()
+		
 		if self.MPI:
 			from mpi import mpi_reduce, mpi_bcast, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD
 			Av = mpi_reduce( Av, ncov, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD )
@@ -9464,12 +9493,11 @@ class pcanalyzer:
 
 			Av[:] = 0.0
 
-			self.fr = open( self.file, "rb" )
 			for i in xrange(self.nimg):
 				self.read_dat( imgdata )                                #READ_DAT
 				alpha = Util.sdot( ncov, imgdata, 1, V[iter], 1 )
 				Util.saxpy( ncov, float(alpha), imgdata, 1, Av, 1 )
-			self.fr.close()
+			self.close_dat()
 
 
 			if self.MPI:
