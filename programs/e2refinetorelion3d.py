@@ -178,7 +178,7 @@ else:
 	s = "relion_star_loopheader rlnImageName rlnMicrographName rlnVoltage rlnAmplitudeContrast > " + E2RLN + "/all_images.star"
 call(s,shell=True)
 
-
+print "AAAAAAAAAAAAAAAAAAAAAAAAAAA"
 
 print "Converting EMAN2 Files to Formats Compatible with RELION"
 for k in range(num_ptcl):
@@ -322,7 +322,7 @@ if grey != 1:
 
 print "Generating qsub file"
 ###### create files to make the runs ######
-qsub_file = current_dir + "/" + RUNDIR + "/qsub.sh"
+qsub_file = current_dir + "/" + RUNDIR + "/qsub.pbs"
 f = open(qsub_file, 'w')
 f.write("""#!/bin/sh
 
