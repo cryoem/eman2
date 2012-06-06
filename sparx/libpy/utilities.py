@@ -3566,3 +3566,230 @@ def group_proj_by_phitheta(proj_ang, symmetry = "c1", img_per_grp = 100, verbose
 			mirror_list[-1].append(proj_list[i] >= 0)
 	
 	return proj_list_new, angles_list, mirror_list
+
+
+def nearest_proj(proj_ang, img_per_grp=100, List=[]):
+	from math import exp, pi
+	from sets import Set
+	from time import time
+	from random import randint
+
+	def gv(phi, theta):
+		from math import pi, cos, sin
+		angle_to_rad = pi/180.0
+
+		theta *= angle_to_rad
+		phi *= angle_to_rad
+
+		x = sin(theta)*cos(phi) 
+		y = sin(theta)*sin(phi)
+		z = cos(theta)
+
+		return (x, y, z)
+
+	def ang_diff(v1, v2):
+		# The first return value is the angle between two vectors
+		# The second return value is whether we need to mirror one of them (0 - no need, 1 - need)
+		from math import acos, pi
+
+		v = v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]
+		if v > 1: v = 1
+		if v < -1: v = -1
+		if v >= 0: return acos(v)*180/pi, 0
+		else:  return acos(-v)*180/pi, 1
+	
+	def get_ref_ang_list(delta, sym):
+		ref_ang = even_angles(delta, symmetry=sym)
+		ref_ang_list = [0.0]*(len(ref_ang)*2)
+		for i in xrange(len(ref_ang)):
+			ref_ang_list[2*i] = ref_ang[i][0]
+			ref_ang_list[2*i+1] = ref_ang[i][1]
+		return ref_ang_list, len(ref_ang)
+	
+	def binary_search(a, x):
+		N = len(a)
+		begin = 0
+		end = N-1
+		while begin <= end:
+			mid = (begin+end)/2
+			if a[mid] == x: return mid
+			if a[mid] < x: begin = mid+1
+			else: end = mid-1
+		return -1
+	
+	def binary_search_l(a, x):
+		# This function returns an index i such that i is the smallest number 
+		# such that when t >= i, a[t] >= x
+		N = len(a)
+		t = binary_search(a, x)
+		if t != -1:
+			while t-1 >= 0 and a[t-1] == a[t]: t -= 1
+			return t
+		else:
+			if x > a[N-1]: return -1;
+			if x < a[0]: return 0;
+			begin = 0
+			end = N-2
+			while end >= begin:
+				mid = (begin+end)/2
+				if x > a[mid] and x < a[mid+1]: break;
+				if x < a[mid]: end = mid-1
+				else: begin = mid+1
+			return mid+1
+	
+	def binary_search_r(a, x):
+		# This function returns an index i such that i is the largest number
+		# such that when t <= i, a[t] <= x
+		N = len(a)
+		t = binary_search(a, x)
+		if t != -1:
+			while t+1 <= N-1 and a[t+1] == a[t]: t += 1
+			return t
+		else:
+			if x > a[N-1]: return N-1;
+			if x < a[0]: return -1;
+			begin = 0
+			end = N-2
+			while end >= begin:
+				mid = (begin+end)/2
+				if x > a[mid] and x < a[mid+1]: break;
+				if x < a[mid]: end = mid-1
+				else: begin = mid+1
+			return mid
+	
+	N = len(proj_ang)
+	if len(List) == 0: List = range(N)
+	if N < img_per_grp:
+		print "Error: image per group larger than the number of particles!"
+		exit()
+	phi_list = [[0.0, 0] for i in xrange(N)]
+	theta_list = [[0.0, 0] for i in xrange(N)]
+	vec = [None]*N
+	for i in xrange(N):
+		phi = proj_ang[i][0]
+		theta = proj_ang[i][1]
+		vec[i] = gv(phi, theta)
+		if theta > 90.0:
+			theta = 180.0-theta
+			phi += 180.0
+		phi = phi%360.0
+		phi_list[i][0] = phi
+		phi_list[i][1] = i
+		theta_list[i][0] = theta
+		theta_list[i][1] = i
+	theta_list.sort()
+	phi_list.sort()
+	theta_list_l = [0.0]*N
+	phi_list_l = [0.0]*N
+	for i in xrange(N):
+		theta_list_l[i] = theta_list[i][0]
+		phi_list_l[i] = phi_list[i][0]
+	
+	g = [[360.0, 0, 0] for i in xrange(N)]
+	proj_list = []
+	mirror_list = []
+	neighbor  = [0]*img_per_grp
+	#neighbor2 = [0]*img_per_grp
+	dis       = [0.0]*img_per_grp
+	#dis2      = [0.0]*img_per_grp
+	mirror    = [0]*img_per_grp
+	S = Set()
+	T = Set()
+	#tt1 = time()
+	for i in xrange(len(List)):
+		k = List[i]
+		#print "\nCase #%3d: Testing projection %6d"%(i, k)
+		#t1 = time()
+		phi = proj_ang[k][0]
+		theta = proj_ang[k][1]
+		if theta > 90.0:
+			theta = 180.0-theta
+			phi += 180.0
+		phi = phi%360.0
+		delta = 0.01
+		while True:
+			min_theta = max(0.0, theta-delta)
+			max_theta = min(90.0, theta+delta)
+			if min_theta == 0.0:
+				min_phi = 0.0
+				max_phi = 360.0
+			else:
+				dphi = min(delta/(2*min_theta)*180.0, 180.0)
+				min_phi = phi - dphi
+				max_phi = phi + dphi
+				if min_phi < 0.0: min_phi += 360.0
+				if max_phi > 360.0: max_phi -= 360.0
+				if theta+delta > 90.0:
+					phi_mir = (phi+180.0)%360.0
+					min_phi_mir = phi_mir - dphi
+					max_phi_mir = phi_mir + dphi
+					if min_phi_mir < 0.0: min_phi_mir += 360.0
+					if max_phi_mir > 360.0: max_phi_mir -= 360.0
+				
+			phi_left_bound = binary_search_l(phi_list_l, min_phi)
+			phi_right_bound = binary_search_r(phi_list_l, max_phi)
+			theta_left_bound = binary_search_l(theta_list_l, min_theta)
+			theta_right_bound = binary_search_r(theta_list_l, max_theta)
+			if theta+delta > 90.0:
+				phi_mir_left_bound = binary_search_l(phi_list_l, min_phi_mir)
+				phi_mir_right_bound = binary_search_r(phi_list_l, max_phi_mir)							
+			#print delta
+			#print min_phi, max_phi, min_theta, max_theta
+			#print phi_left_bound, phi_right_bound, theta_left_bound, theta_right_bound
+			if phi_left_bound < phi_right_bound:
+				for j in xrange(phi_left_bound, phi_right_bound+1):
+					S.add(phi_list[j][1])
+			else:
+				for j in xrange(phi_right_bound+1):
+					S.add(phi_list[j][1])
+				for j in xrange(phi_left_bound, N):
+					S.add(phi_list[j][1])
+			if theta+delta > 90.0:
+				if phi_mir_left_bound < phi_mir_right_bound:
+					for j in xrange(phi_mir_left_bound, phi_mir_right_bound+1):
+						S.add(phi_list[j][1])
+				else:
+					for j in xrange(phi_mir_right_bound+1):
+						S.add(phi_list[j][1])
+					for j in xrange(phi_mir_left_bound, N):
+						S.add(phi_list[j][1])
+			for j in xrange(theta_left_bound, theta_right_bound+1):
+				T.add(theta_list[j][1])
+			v = list(T.intersection(S))
+			S.clear()
+			T.clear()
+			if len(v) >= min(1.5*img_per_grp, N): break
+			delta *= 2
+			del v
+
+		for j in xrange(len(v)):
+			d = ang_diff(vec[v[j]], vec[k])
+			g[j][0] = d[0]
+			g[j][1] = d[1]
+			g[j][2] = v[j]
+		g[:len(v)] = sorted(g[:len(v)])
+		for j in xrange(img_per_grp):
+			neighbor[j] = g[j][2]
+			dis[j] = g[j][0]
+			mirror[j] = (g[j][1] == 1)
+		proj_list.append(neighbor[:])
+		mirror_list.append(mirror[:])
+		#t2 = time()
+
+		'''
+		for j in xrange(N):
+			d = ang_diff(vec[j], vec[k])
+			g[j][0] = d[0]
+			g[j][1] = d[1]
+			g[j][2] = j
+		g.sort()
+		for j in xrange(img_per_grp):
+			neighbor2[j] = g[j][2]
+			dis2[j] = g[j][0]
+		t3 = time()
+		print "Members in common = %3d   extra delta = %6.3f   time1 = %5.2f   time2 = %5.2f"%(len(Set(neighbor).intersection(Set(neighbor2))),
+		dis[-1]-dis2[-1], t2-t1, t3-t2)
+		'''
+	#tt2 = time()
+	#print tt2-tt1
+	return proj_list, mirror_list
