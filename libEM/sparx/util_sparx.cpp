@@ -18117,9 +18117,9 @@ vector<int> Util::assign_groups(const vector<float>& d, int nref, int nima) {
 
 int Util::nearest_ang(const vector<float>& vecref, float x, float y, float z) {
 	float best_v = -1.0f;
-	int best_i = -1.0;
+	int best_i = -1;
 	
-	for (int i=0; i<vecref.size()/3; i++) {
+	for (unsigned int i=0; i<vecref.size()/3; i++) {
 		float v = abs(vecref[i*3]*x+vecref[i*3+1]*y+vecref[i*3+2]*z);
 		if (v > best_v) {
 			best_v = v;
@@ -18183,7 +18183,7 @@ vector<int> Util::group_proj_by_phitheta(const vector<float>& projangles, const 
 	int mirror;
 	for (int grp=0; grp<N/img_per_grp; grp++) {
 		int N_remain = N-grp*img_per_grp;
-		assert(N_remain == pt.size());
+		assert(N_remain == static_cast<int>(pt.size()));
 		if (N_remain >= nref4*L) {
 			if (previous_zone > 4) {
 				ref_ang_list.resize(nref4*2);
@@ -18242,7 +18242,7 @@ vector<int> Util::group_proj_by_phitheta(const vector<float>& projangles, const 
 			int max_group_size = 0;
 			for (int i=0; i<nref; i++)
 				if (sg[i] > max_group_size)	{ max_group_size = sg[i]; max_group = i; }
-			for (int i=0; i<remain_index.size(); i++)
+			for (unsigned int i=0; i<remain_index.size(); i++)
 				if (asg[i] == max_group)  index.push_back(remain_index[i]);
 		} else {
 			for (set<int>::const_iterator si = pt.begin(); si != pt.end(); ++si) 
@@ -18294,7 +18294,7 @@ vector<int> Util::group_proj_by_phitheta(const vector<float>& projangles, const 
 		for (int i=0; i<img_per_grp; i++) {
 			int idd = index[dang[i].i];
 			mirror = dang[i].mirror;
-			for (int j=0; j<remain_index.size(); j++)
+			for (unsigned int j=0; j<remain_index.size(); j++)
 				if (idd == remain_index[j]) asg[j] = -1;
 			for (int j=0; j<diff_table_size; j++) {
 				diff_table[diff_table_index[idd]*diff_table_size+j] = 0.0f;
