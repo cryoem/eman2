@@ -72,7 +72,11 @@ def main():
 		disable_bdb_cache()
 	from applications import pca
 	global_def.BATCH = True
-	pca(input_stacks, output_stack, options.subavg, options.rad, options.sdir, options.nvec, options.incore, options.shuffle, not(options.usebuf), options.mask, options.MPI)
+	vecs = []
+	vecs = pca(input_stacks, options.subavg, options.rad, options.sdir, options.nvec, options.incore, options.shuffle, not(options.usebuf), options.mask, options.MPI)
+	for i in xrange(len(vecs)):
+		vecs[i].write_image(output_stack, i)
+	
 	global_def.BATCH = False
         if options.MPI:
 		from mpi import mpi_finalize
