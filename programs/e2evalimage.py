@@ -404,7 +404,10 @@ class GUIEvalImage(QtGui.QWidget):
 
 		# Now update the plots for the correct plot mode
 		if self.plotmode==0: 
-			bgsub=self.fft1d-bg1d
+			try: bgsub=self.fft1d-bg1d
+			except:
+				print "Error computing bgsub on this image"
+				return
 			self.wplot.set_data((s,bgsub),"fg-bg",quiet=True,color=0)
 			
 			fit=array(ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP))		# The fit curve
