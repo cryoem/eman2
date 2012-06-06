@@ -10195,13 +10195,18 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 		vol_ssnr2, output_volume+"2.spi", "s")
 		"""
 
-def pca(input_stacks, output_stack, subavg, mask_radius, sdir, nvec, incore, shuffle, genbuf, maskfile="", MPI=False, verbose=False):
+def pca(input_stacks, subavg, mask_radius, sdir, nvec, incore, shuffle, genbuf, maskfile="", MPI=False, verbose=False):
 	from utilities import get_image, get_im, model_circle, model_blank
 	from statistics import pcanalyzer
+	import types
+	oldVer = False	# input_stacks is a list of images not a file name
 
 	if len(input_stacks)==0:
 		print "Error: no input file."
 		return
+	
+	if type(input_stacks[0]) is types.StringType:
+		oldVer = True	# input_stacks is a file name
 
 	if mask_radius > 0 and maskfile !="":
 		print "Error: mask radius and mask file cannot be used at the same time"
@@ -10215,8 +10220,10 @@ def pca(input_stacks, output_stack, subavg, mask_radius, sdir, nvec, incore, shu
 		if maskfile!="":
 			print "Error: mask radius and mask file cannot be given at the same time"
 			return
-
-		data = get_im( input_stacks[0] )
+		if oldVer:
+			data = get_im( input_stacks[0] )
+		else:
+			data = input_stacks[0]
 		mask = model_circle(mask_radius, data.get_xsize(), data.get_ysize(), data.get_zsize())
 
 	elif(maskfile!="") :
@@ -10225,7 +10232,10 @@ def pca(input_stacks, output_stack, subavg, mask_radius, sdir, nvec, incore, shu
 		mask = get_image( maskfile )
 	else:
 		data = EMData()
-		data.read_image( input_stacks[0], 0, True)
+		if oldVer:
+			data.read_image( input_stacks[0], 0, True)
+		else:
+			data = input_stacks[0]
 		mask = model_blank(data.get_xsize(), data.get_ysize(), data.get_zsize(), bckg=1.0)
 
 	pca = pcanalyzer(mask, sdir, nvec, incore, MPI)
@@ -10237,7 +10247,8 @@ def pca(input_stacks, output_stack, subavg, mask_radius, sdir, nvec, incore, shu
 		avg = get_image( subavg )
 		pca.setavg( avg )
 
-	files = file_set( input_stacks )
+	if oldVer:
+		files = file_set( input_stacks )
 	if MPI:
 		from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
 		myid = mpi_comm_rank( MPI_COMM_WORLD )
@@ -10250,15 +10261,20 @@ def pca(input_stacks, output_stack, subavg, mask_radius, sdir, nvec, incore, shu
 		if shuffle:
 			print "Error: shuffle works only with usebuf"
 			return
-
-		bgn,end = MPI_start_end( files.nimg(), ncpu, myid )
+		if oldVer:
+			bgn,end = MPI_start_end( files.nimg(), ncpu, myid )
+		else:
+			bgn,end = MPI_start_end( len(input_stacks), ncpu, myid )
 		for i in xrange(bgn,end):
-			fname, imgid = files.get( i )
-			
-			data = get_im( fname, imgid)
-			pca.insert( data )
-			if(verbose):
+			if oldVer:
+				fname, imgid = files.get( i )
+				data = get_im( fname, imgid)
+				if(verbose):
 				 print "Inserting image %s, %4d" % (fname, imgid)
+			else:
+				data = input_stacks[i]
+			pca.insert( data )
+			
 	else:
 		pca.usebuf( )
 		print myid, "using existing buff, nimg: ", pca.nimg
@@ -10266,11 +10282,9 @@ def pca(input_stacks, output_stack, subavg, mask_radius, sdir, nvec, incore, shu
 			pca.shuffle()
 
 	vecs = pca.analyze()
-	if myid==0:
-		for i in xrange( len(vecs) ):
-			vecs[i].write_image( output_stack, i)
-
-
+	if not MPI or (MPI and myid == 0):
+		return vecs
+	
 def prepare_2d_forPCA(input_stack, output_stack, average, avg = False, CTF = False):
 	"""
 		Prepare 2D images for PCA

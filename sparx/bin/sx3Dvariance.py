@@ -71,6 +71,7 @@ def main():
 	parser.add_option("--CTF",			action="store_true",	default=False,				help="use CFT correction")
 	parser.add_option("--VERBOSE",		action="store_true",	default=False,				help="comments")
 	parser.add_option("--img_per_grp",	type="int"         ,	default=5  ,				help="images per group")
+	parser.add_option("--nvec",			type="int"         ,	default=3  ,				help="number of eigenvectors")
 	parser.add_option("--ave2D",		type="string"	   ,	default=False,				help="write to the disk a stack of 2D averages")
 	parser.add_option("--var2D",		type="string"	   ,	default=False,				help="write to the disk a stack of 2D variances")
 	parser.add_option("--ave3D",		type="string"	   ,	default=False,				help="write to the disk reconstructed 3D average")
@@ -81,7 +82,7 @@ def main():
 	if (options.MPI and not options.var and not options.SND):
 		print "There is no MPI version of procedure to extract variance from the stack of projections other than by computing squared normalized differences"
 		exit()
-
+	
 	isRoot = True
 	if options.MPI:
 		from mpi import mpi_init, mpi_comm_rank, MPI_COMM_WORLD
@@ -120,16 +121,12 @@ def main():
 				print nima
 			structure = recons3d_4nn(stack, range(nima), symmetry = options.sym, npad = 4, xysize = -1, zsize = -1)
 			structure, kb = prep_vol(structure)
-			#structure.write_image("structure.hdf")	
 			nx = get_im(stack, 1).get_xsize()
 			ny = get_im(stack, 1).get_ysize()
-			#nz = get_im(stack, 1).get_zsize()
 			rad = -1
 			mask = model_circle(int(rad), nx, ny)
-			#tab = EMUtil.get_all_attributes(stack, 'xform.projection')
 			for i in xrange(nima):
 				imgdata = get_im(stack, i)
-				#t = tab[i].get_params('spider')
 				phi, theta, psi, s2x, s2y = get_params_proj(imgdata)
 				ref_prj = prgs(structure, kb, [phi, theta, psi, -s2x, -s2y])
 				diff, A, B = im_diff(ref_prj, imgdata, mask)
@@ -137,17 +134,16 @@ def main():
 				set_params_proj(diff2, [phi, theta, psi, s2x, s2y])
 				diff2.write_image("difference.hdf", i)
 				#prj_stack.append(diff2)
-		
 		if options.MPI: mpi_barrier(MPI_COMM_WORLD)
 		prj_stack = "difference.hdf"
 			
 	if not options.var and not options.SND and not options.MPI:
 		t1 = time()
-		from utilities		import group_proj_by_phitheta, get_params_proj, params_3D_2D, set_params_proj, set_params2D
-		from utilities		import compose_transform2
+		from utilities		import group_proj_by_phitheta, get_params_proj, params_3D_2D, set_params_proj, set_params2D, compose_transform2
 		from statistics		import avgvar, avgvar_CTF
 		from morphology		import threshold
 		from reconstruction	import recons3d_4nn, recons3d_4nn_ctf
+		from applications	import pca
 		stack = prj_stack
 		prj_stack = []
 		proj_angles = []
@@ -195,17 +191,23 @@ def main():
 			set_params_proj(ave, [angles_list[i][0], angles_list[i][1], 0.0, 0.0, 0.0])
 			ave.set_attr("imgindex",proj_list[i])
 			aveList.append(ave)
+			rad = imgdata[0].get_xsize() // 2
+			eig = pca(input_stacks=imgdata, subavg=ave, mask_radius=rad, sdir=".", nvec=options.nvec, incore=True, shuffle=False, genbuf=True, maskfile="", MPI=False, verbose=options.VERBOSE)
+			#eigList.append(eig)
+			#eig[0].write_image("eig.hdf", i)
 			if (options.ave2D):	ave.write_image(options.ave2D,i)
 			if (options.var2D): var.write_image(options.var2D,i)
-		print "GOT A STACK OF 2D VARIENCE"
+		if options.VERBOSE:
+			print "GOT A STACK OF 2D VARIENCE"
 		if (options.ave2D): print_msg("Writing to the disk a stack of 2D averages as				:%s\n"%(options.ave2D))
 		if (options.var2D): print_msg("Writing to the disk a stack of 2D variances as				:%s\n"%(options.var2D))
-		print "RECONSTRUCTING 3D AVERAGE VOLUME"																					##
+		if options.VERBOSE:
+			print "RECONSTRUCTING 3D AVERAGE VOLUME"																					##
 		ave3D = recons3d_4nn(aveList, range(len(proj_list)-1), symmetry = options.sym, npad = 4, xysize = -1, zsize = -1)
 		if (options.ave3D): 
 			ave3D.write_image(options.ave3D)
 			print_msg("Writing to the disk volume reconstructed from averages as		:%s\n"%(options.ave3D))
-		del ave, var, imgdata, angles_list, proj_list, stack, phi, theta, psi, s2x, s2y, alpha, sx, sy, mirror, aveList, ave3D
+		del ave, var, imgdata, angles_list, proj_list, stack, phi, theta, psi, s2x, s2y, alpha, sx, sy, mirror, aveList, ave3D, rad, eig
 		t5 = time()
 		print_msg("Calculating the stack of 2D variances lasted [s]			:%s\n"%(t5-t4))
 		#exit()
@@ -219,7 +221,8 @@ def main():
 	else:
 		t6 = time()
 		print_msg("... reconstructing 3D variance  \n")
-		print "RECONSTRUCTING 3D VARIANCE VOLUME"																				##
+		if options.VERBOSE:
+			print "RECONSTRUCTING 3D VARIANCE VOLUME"																				##
 		res = recons3d_em(prj_stack, options.iter, options.abs, True, options.sym)
 		res.write_image(vol_stack)
 		print_msg("Writing to the disk volume of reconstructed 3D variance as		:%s\n"%(vol_stack))
