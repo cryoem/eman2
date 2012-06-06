@@ -62,6 +62,7 @@ using std::pair;
 // #include "transform.h" // Trnasform3D::EulerType
 
 // debug
+#include <cstdio>
 #include <iostream>
 using std::cout;
 using std::endl;
