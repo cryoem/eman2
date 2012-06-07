@@ -29,7 +29,7 @@
   },
   {
     "TITLE":"Monte Carlo steps",
-    "INST":"Subtomogram alignment to symmetry axis is done using e2symsearch.py. e2symsearch.py uses a downhill search using the simplex algorithm to align to symmetry axis. However the downhill search can get stuck in local minima, so a number of random starting positions are investigation. List this number here. Use higher numbers for lower symmtry ",
+    "INST":"Subtomogram alignment to symmetry axis is done using e2symsearch3d.py. e2symsearch3d.py uses a downhill search using the simplex algorithm to align to symmetry axis. However the downhill search can get stuck in local minima, so a number of random starting positions are investigation. List this number here. Use higher numbers for lower symmtry ",
     "WIDGETS":[
       "steps"
     ]

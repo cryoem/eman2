@@ -1,8 +1,8 @@
-/* JSON file to make the e2classaverage3d wizard */
+/* JSON file to make the e2spt_classaverage wizard */
 [
   {
-    "TITLE":"e2classaverage3d",
-    "INST":"This Wizard is to Help users align, average and classify subtomograms using e2classaverage3d.py. This is a very large program with many options, and it is best to run this using some sort of paralleism mecvhanism. This program is CUDA enabled",
+    "TITLE":"e2spt_classaverage",
+    "INST":"This Wizard is to Help users align, average and classify subtomograms using e2spt_classaverage.py. This is a very large program with many options, and it is best to run this using some sort of paralleism mecvhanism. This program is CUDA enabled",
     "WIDGETS":[]
   },
   {
@@ -68,7 +68,7 @@
   },
   {
     "TITLE":"Subtomogram symmetry",
-    "INST":"Set the symmetry of the subtomograms. IF there is no symmetry, set this value to 'c1'. If your subtomogram has symmetry, but is not aligned to the symmetry axis, aslo set this to 'c1'(this the case when you do not have a reference. ALWAYS set sym to c1 if ref=''). If you have a reference that has symmetry, you can align it to the symmetry axis using e2symsearch.py. Using symmtry can help in two ways. First it effictivly increases the number of self similar particles and boost SNR of your average after it is applied. Secondly, the search space can be reduced by only searching over the asymmetrix unit.",
+    "INST":"Set the symmetry of the subtomograms. IF there is no symmetry, set this value to 'c1'. If your subtomogram has symmetry, but is not aligned to the symmetry axis, aslo set this to 'c1'(this the case when you do not have a reference. ALWAYS set sym to c1 if ref=''). If you have a reference that has symmetry, you can align it to the symmetry axis using e2symsearch3d.py. Using symmtry can help in two ways. First it effictivly increases the number of self similar particles and boost SNR of your average after it is applied. Secondly, the search space can be reduced by only searching over the asymmetrix unit.",
     "WIDGETS":[
       "sym"
     ]

@@ -1,7 +1,7 @@
 /* JSON file to make the tomoboxer wizard */
 [
   {
-    "TITLE":"e2tomoboxer Wizard",
+    "TITLE":"e2spt_boxer Wizard",
     "INST":"This Wizard is to Help users extract subtomograms from tomograms.Tomograms can be binned on the fly and both cubic and parallelpiped subtomograms can be extarcted",
     "WIDGETS":[]
   },

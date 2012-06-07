@@ -15,8 +15,8 @@
     "ICON": "green_boxes",
     "WIZARD":"/lib/pmconfig/tomoboxer.json",
     "MODE": "boxing",
-    "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2tomoboxer",
-    "PROGRAM": "e2tomoboxer.py", 
+    "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spt_boxer",
+    "PROGRAM": "e2spt_boxer.py", 
     "NAME": "Box Tomogram Files", 
     "CHILDREN": [] 
   },
@@ -30,8 +30,8 @@
   {
     "ICON": "tomo_hunter",
     "WIZARD":"/lib/pmconfig/classaverage3d.json",
-    "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2classaverage3d",
-    "PROGRAM": "e2classaverage3d.py",
+    "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spt_classaverage",
+    "PROGRAM": "e2spt_classaverage.py",
     "MODE": "alignment", 
     "NAME": "Tomogram Alignment and Averaging", 
     "NOTELEVEL": "1",
@@ -40,8 +40,8 @@
   {
     "ICON": "tomo_hunter",
     "WIZARD":"/lib/pmconfig/breaksym.json",
-    "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2classaverage3d",
-    "PROGRAM": "e2classaverage3d.py",
+    "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spt_classaverage",
+    "PROGRAM": "e2spt_classaverage.py",
     "MODE": "breaksym", 
     "NAME": "Tomogram Alignment, Break Sym", 
     "NOTELEVEL": "1",
@@ -59,7 +59,7 @@
     "ICON": "single_image_3d",
     "MODE":"align",
     "WIZARD":"/lib/pmconfig/symsearch.json",
-    "PROGRAM": "e2symsearch.py", 
+    "PROGRAM": "e2symsearch3d.py", 
     "NAME": "Align to Symmetry Axis",
     "NOTELEVEL": "1",
     "CHILDREN": [] 

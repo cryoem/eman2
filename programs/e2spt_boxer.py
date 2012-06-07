@@ -60,7 +60,7 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_header(name="tbheader", help='Options below this label are specific to e2tomoboxer', title="### e2tomoboxer options ###", row=1, col=0, rowspan=1, colspan=3, mode="boxing")
+	parser.add_header(name="tbheader", help='Options below this label are specific to e2spt_boxer', title="### e2spt_boxer options ###", row=1, col=0, rowspan=1, colspan=3, mode="boxing")
 	parser.add_pos_argument(name="tomogram",help="The tomogram to use for boxing.", default="", guitype='filebox', browser="EMTomoDataTable(withmodal=True,multiselect=False)",  row=0, col=0, rowspan=1, colspan=3, mode="boxing")
 	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=32)
 	
@@ -592,9 +592,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.mod=mod
 		self.center=center			
 		
-		self.setWindowTitle("MAIN e2tomoboxer.py")
+		self.setWindowTitle("MAIN e2spt_boxer.py")
 
-		self.setWindowTitle("e2tomoboxer.py")
+		self.setWindowTitle("e2spt_boxer.py")
 		
 		# Menu Bar
 		self.mfile=self.menuBar().addMenu("File")

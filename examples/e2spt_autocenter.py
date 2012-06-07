@@ -32,7 +32,7 @@
 from EMAN2 import *
 from sys import argv
 import os
-from e2classaverage3d import *
+from e2spt_classaverage import *
 import sys
 
 def main():

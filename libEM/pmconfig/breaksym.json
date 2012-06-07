@@ -1,8 +1,8 @@
-/* JSON file to make the e2classaverage3d in breaksym mode wizard */
+/* JSON file to make the e2spt_classaverage in breaksym mode wizard */
 [
   {
-    "TITLE":"e2classaverage3d breaksym",
-    "INST":"This Wizard is to Help users run e2classaverage3d in breaksym mode. Once subtomograms have been aligned using a symmetric search, it can be desirable to break the symmetry to find asymmetric features such as the tail of a virus. This seach takes particles that are prealigned to their symmetry axis, searches all symmetric positions and alignes based on the best score which should be where asymetric features line up(provided the have sufficient signal). This program is CUDA enabled",
+    "TITLE":"e2spt_classaverage breaksym",
+    "INST":"This Wizard is to Help users run e2spt_classaverage in breaksym mode. Once subtomograms have been aligned using a symmetric search, it can be desirable to break the symmetry to find asymmetric features such as the tail of a virus. This seach takes particles that are prealigned to their symmetry axis, searches all symmetric positions and alignes based on the best score which should be where asymetric features line up(provided the have sufficient signal). This program is CUDA enabled",
     "WIDGETS":[]
   },
   {
@@ -60,7 +60,7 @@
   },
   {
     "TITLE":"Initial position transforms",
-    "INST":"After running e2classaverage3d NOT in break sym mode, each particle will have been given a transform to mve the raw subtomogram into alignment with the reference. There is a set of such transforms for each spt_ directory. Please select the refinement direcotry you want to use",
+    "INST":"After running e2spt_classaverage NOT in break sym mode, each particle will have been given a transform to mve the raw subtomogram into alignment with the reference. There is a set of such transforms for each spt_ directory. Please select the refinement direcotry you want to use",
     "WIDGETS":[
       "inixforms"
     ]

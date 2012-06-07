@@ -48,7 +48,7 @@ class EMPreferencesTask(WorkFlowTask):
 	def get_params(self):
 		params = []
 		params.append(["e2display",self.__get_display_preference_params()])
-		params.append(["e2tomoboxer",self.__get_tomoboxer_preference_params()])
+		params.append(["e2spt_boxer",self.__get_tomoboxer_preference_params()])
 		return params
 		
 	def __get_display_preference_params(self):

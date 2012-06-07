@@ -45,7 +45,7 @@ def main():
 	Refinement of a 3D-volume stack against multiple models. The initial models can be provided in a stack, OR generated from the data itself.
 	
 	When no reference is provided, you define a number of models greater than 2 to use (for example, 4).
-	[If you want to refine the data against ONE model, use e2classaverage3d.py]
+	[If you want to refine the data against ONE model, use e2spt_classaverage.py]
 	The data set is divded into that same number of groups (4). 
 	An initial model will be generated with the data in each group.
 	Then, the entire data set will be refined against all 4 initial models.
@@ -57,7 +57,7 @@ def main():
 	which means you will refine the data against 3 models in the next round, not just 2.
 	
 	If you supply a single reference/model then --addmodel MUST be supplied too; otherwise, to refine a data set against a single model use
-	e2classaverage3d.py
+	e2spt_classaverage.py
 	 """
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)

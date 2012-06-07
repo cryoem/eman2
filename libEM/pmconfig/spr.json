@@ -214,7 +214,7 @@
         "ICON": "single_image_3d",
 	"MODE":"align",
         "WIZARD":"/lib/pmconfig/symsearch.json",
-        "PROGRAM": "e2symsearch.py", 
+        "PROGRAM": "e2symsearch3d.py", 
         "NAME": "Align to Symmetry Axis",
 	"NOTELEVEL": "1",
         "CHILDREN": [] 

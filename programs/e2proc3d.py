@@ -306,7 +306,7 @@ def main():
 				index_d[option1] += 1
 				
 #            elif option1 == "tomoshrink":
-#                from e2tomoboxer import ShrunkenTomogram
+#                from e2spt_boxer import ShrunkenTomogram
 #                st = ShrunkenTomogram(args[0])
 #                st.set_cache_to_db(False)
 #                tmp = st.get_image()

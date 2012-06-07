@@ -130,7 +130,7 @@ def main():
 		model3d.write_image(inputfile)
 		#exit(1)
 		
-		command = "e2symsearch.py --input=%s --output=%s --sym=%s --shrink=%d --steps=%d --cmp=%s --path=''"%(inputfile, outputfile, options.sym, options.shrink, options.steps, options.cmp)
+		command = "e2symsearch3d.py --input=%s --output=%s --sym=%s --shrink=%d --steps=%d --cmp=%s --path=''"%(inputfile, outputfile, options.sym, options.shrink, options.steps, options.cmp)
 		
 		if options.symmetrize:
 			command += " --symmetrize"

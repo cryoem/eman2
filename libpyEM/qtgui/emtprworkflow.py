@@ -388,13 +388,13 @@ class EMRefDataReportTask(EMRawDataReportTask):
 		return table,len(project_names)	
 
 class EMTomoBootstrapTask(WorkFlowTask):
-	'''Use this task for running e2classaverage3d'''
+	'''Use this task for running e2spt_classaverage'''
 	
 	def __init__(self):
 		WorkFlowTask.__init__(self)
 		self.tomo_boxer_module = None
 		self.form_db_name = "bdb:emform.tomo.classavg3d"
-		self.window_title = "Launch e2classaverage3d"
+		self.window_title = "Launch e2spt_classaverage"
 		self.report_task = None
 		
 	def get_tomo_hunter_basic_table(self):
@@ -514,7 +514,7 @@ class EMTomoBootstrapTask(WorkFlowTask):
 			EMErrorMessageDisplay.run(["Only one referecne can be used"])
 			return
 		
-		e23dcalist = "e2classaverage3d.py"
+		e23dcalist = "e2spt_classaverage.py"
 		e23dcalist += " --input="+params['filenames'][0]
 		if(params['filenames'][0][-4:-3] == "."):
 			e23dcalist += " --output="+params['filenames'][0][:-4]+"_3DAVG."+params['filenames'][0][-3:] # output file hack
@@ -590,12 +590,12 @@ class EMTomoRawDataReportTask(EMRawDataReportTask):
 		return table,len(project_names)
 		
 class E2TomoBoxerGuiTask(WorkFlowTask):
-	"""Select the file you want to process and hit okay, this will launch e2tomoboxer. The yshort option sets the Z axis normal to the screen, and inmemory load the tomo into memory for fast access"""
+	"""Select the file you want to process and hit okay, this will launch e2spt_boxer. The yshort option sets the Z axis normal to the screen, and inmemory load the tomo into memory for fast access"""
 	def __init__(self):
 		WorkFlowTask.__init__(self)
 		self.tomo_boxer_module = None
 		self.form_db_name = "bdb:emform.tomo.boxer"
-		self.window_title = "Launch e2tomoboxer"
+		self.window_title = "Launch e2spt_boxer"
 		self.report_task = None
 		
 	def get_tomo_boxer_basic_table(self):
@@ -611,7 +611,7 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 
 	def get_tomo_boxes_in_database(name):
 		print "checking for boxes, but this aspect of things is not working yet...."+get_file_tag(name)+" "+name
-		#from e2tomoboxer import tomo_db_name
+		#from e2spt_boxer import tomo_db_name
 		#if db_check_dict(tomo_db_name):
 			#tomo_db = db_open_dict(tomo_db_name)
 			#image_dict = tomo_db.get(get_file_tag(name),dfl={})
@@ -627,7 +627,7 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 		db = db_open_dict(self.form_db_name)
 		
 		p,n = self.get_tomo_boxer_basic_table() # note n is unused, it's a refactoring residual		
-		params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use of e2tomoboxer",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
+		params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use of e2spt_boxer",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		params.append(p)
 		pylong = ParamDef(name="yshort",vartype="boolean",desc_short="yshort",desc_long="Use Z axis as normal",property=None,defaultunits=db.get("yshort",dfl=True),choices=None)
 		pinmem = ParamDef(name="inmemory",vartype="boolean",desc_short="inmemory",desc_long="Load the tomo into memory",property=None,defaultunits=db.get("inmemory",dfl=True),choices=None)
@@ -650,7 +650,7 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 
 		self.write_db_entries(params)
 		
-		e2tblist = "e2tomoboxer.py"
+		e2tblist = "e2spt_boxer.py"
 		e2tblist += " "+params['filenames'][0]
 		if params["yshort"]:
 			e2tblist += " --yshort"

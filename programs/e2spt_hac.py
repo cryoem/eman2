@@ -314,7 +314,7 @@ def allvsall(options):
 	
 	nptcl = EMUtil.get_image_count(options.input)
 	if nptcl<3: 
-		print "ERROR: at least 3 particles are required in the input stack for all vs all. Otherwise, to align 2 particles (one to the other or to a model) use e2classaverage3d.py"
+		print "ERROR: at least 3 particles are required in the input stack for all vs all. Otherwise, to align 2 particles (one to the other or to a model) use e2spt_classaverage.py"
 		sys.exit(1)
 	
 	fillfactor = len(str(nptcl))							#Calculate this based on the number of particles so that tags are adequate ("pretty") and ordered
@@ -721,7 +721,7 @@ class Align3DTaskAVSA(EMTask):
 		"""fixedimage and image may be actual EMData objects, or ["cache",path,number]
 	label is a descriptive string, not actually used in processing
 	ptcl is not used in executing the task, but is for reference
-	other parameters match command-line options from e2classaverage3d.py
+	other parameters match command-line options from e2spt_classaverage.py
 	Rather than being a string specifying an aligner, 'align' may be passed in as a Transform object, representing a starting orientation for refinement"""
 		data={}
 		data={"fixedimage":fixedimagestack,"image":imagestack}

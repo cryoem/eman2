@@ -7,7 +7,7 @@
   },
   {
     "TITLE":"Aligned subtomograms",
-    "INST":"List the directory (spt_??) containing the aligned subtomograms. You need to run e2classaverage3d.py at least once before this directory appears.",
+    "INST":"List the directory (spt_??) containing the aligned subtomograms. You need to run e2spt_classaverage.py at least once before this directory appears.",
     "WIDGETS":[
       "tomodir"
     ]
