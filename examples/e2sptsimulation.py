@@ -93,17 +93,18 @@ def main():
 											to see all options and parameters available.""")
 	parser.add_option("--pad", action="store_true",default=False,help="""If on, it will double the box size of the model for 3D reconstruction purposes, but the final
 									simulated tilt series and subtomograms will be clipped back to the original unpadded box size.""")								
-	parser.add_option("--noiseproc",type="string",help="A noise processor to be applied to the individual projections of the simulated tilt series",default=None)
+	#parser.add_option("--noiseproc",type="string",help="A noise processor to be applied to the individual projections of the simulated tilt series",default=None)
 	
-	parser.add_option("--snr",type="int",help="Weighing factor for gaussian noise added to the image",default=10)
+	parser.add_option("--snr",type="int",help="Weighing noise factor for noise added to the image. Only words if --addnoise is on.",default=5)
+	parser.add_option("--addnoise",action="store_true",default=False,help="If on, it adds random noise to the particles")
 
 	(options, args) = parser.parse_args()	
 	
 	if options.filter:
 		options.filter = parsemodopt(options.filter)
 		
-	if options.noiseproc:
-		options.noiseproc= parsemodopt(options.noiseproc)
+	#if options.noiseproc:
+	#	options.noiseproc= parsemodopt(options.noiseproc)
 		
 	if options.reconstructor:
 		options.reconstructor= parsemodopt(options.reconstructor)
@@ -308,7 +309,7 @@ def subtomosim(options,ptcls,tag):
 			prj.process_inplace('normalize')
 			
 			if options.saveprjs:
-				prj.write_image( stackname.replace('.hdf', '_prjs' + '_ptcl' + str(i).zfill(len(str(nslices))) + '.hdf') , j)					#Write projections stack for particle i
+				prj.write_image( stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsRAW.hdf') , j)					#Write projections stack for particle i
 			raw_projections.append(prj)
 					
 			prj_fft = prj.do_fft()
@@ -323,22 +324,20 @@ def subtomosim(options,ptcls,tag):
 				prj_fft.mult(prj_ctf)
 			
 			prj_r = prj_fft.do_ift()							#Go back to real space
-						
-			if options.noiseproc:
-				#prj_n = prj.process('math.addnoise',{'noise':10})
-
-				#prj_r.process_inplace(options.noiseproc[0],options.noiseproc[1])
+			
+			if options.addnoise:
+				prj_r.process_inplace('math.addnoise',{'noise':options.snr})
 				
-				noise = EMData(prj_r['nx'],prj_r['ny'])
-				noise.process_inplace(options.noiseproc[0],options.noiseproc[1])
-				noise.process_inplace('normalize')
-				prj_r = prj_r + (noise * options.snr)
-			
-			
+				#prj_n = EMData(nx,ny)
+				#for i in range(options.snr):				
+				#	prj_n.process_inplace(options.noiseproc[0],options.noiseproc[1])
+				#	prj_r = prj_r + prj_n
+				#prj_n.write_image('NOISE_ptcl' + str(i).zfill(len(str(nslices))) + '.hdf',j)
+		
 			ctfed_projections.append(prj_r)		
 
-			if options.saveprjs:
-				prj_r.write_image(stackname.replace('.hdf', '_prjsctf' + '_ptcl' + str(i).zfill(len(str(nslices))) + '.hdf') , j)	
+			if options.saveprjs and options.applyctf or options.addnoise:
+				prj_r.write_image(stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsEDITED.hdf') , j)	
 			
 						
 			alt += int(options.tiltstep)
