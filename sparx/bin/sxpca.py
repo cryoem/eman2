@@ -63,10 +63,12 @@ def main():
 		print "Error: number of components is not given"
 		sys.exit(-2) 
 
+	isRoot = True
 	if options.MPI:
-		from mpi import mpi_init
+		from mpi import mpi_init, mpi_comm_rank, MPI_COMM_WORLD
 		sys.argv = mpi_init( len(sys.argv), sys.argv )
-
+		isRoot = (mpi_comm_rank(MPI_COMM_WORLD) == 0)
+		
 	if global_def.CACHE_DISABLE:
 		from utilities import disable_bdb_cache
 		disable_bdb_cache()
@@ -74,8 +76,9 @@ def main():
 	global_def.BATCH = True
 	vecs = []
 	vecs = pca(input_stacks, options.subavg, options.rad, options.sdir, options.nvec, options.incore, options.shuffle, not(options.usebuf), options.mask, options.MPI)
-	for i in xrange(len(vecs)):
-		vecs[i].write_image(output_stack, i)
+	if isRoot:
+		for i in xrange(len(vecs)):
+			vecs[i].write_image(output_stack, i)
 	
 	global_def.BATCH = False
         if options.MPI:
