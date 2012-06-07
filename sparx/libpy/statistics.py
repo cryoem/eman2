@@ -109,7 +109,7 @@ def avgvar(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_eve
 	Util.mul_scalar(ave, 1.0 /float(nima) )
 	return ave, (var - ave*ave*nima)/(nima-1)
 
-def avgvar_CTF(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_even=True, snr=1.0e23, dopa = True):
+def avgvar_ctf(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_even=True, snr=1.0e23, dopa = True):
 	'''
 	
 	INPUT
@@ -223,7 +223,7 @@ def avgvar_CTF(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use
 		if (mode == 'a'):
 			angle, sx, sy, mirror, scale = get_params2D(img)
 			img = rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
-	
+
 		img = pad(img, nx2, ny2, 1, background = "circumference")
 		fftip(img)
 		ctf_params = img.get_attr("ctf")
@@ -1214,7 +1214,6 @@ def aves_adw(input_stack, mode="a", SNR=1.0, Ng = -1):
 	var.to_zero()
 	return ave, var
 
-
 def ssnr2d(data, mask = None, mode=""):
 	'''
 	Calculate ssnr and variance in Fourier space for 2D or 3D images
@@ -1277,7 +1276,97 @@ def ssnr2d(data, mask = None, mode=""):
 
 	return rssnr, rsumsq, rvar, ssnr, sumsq, var
 
-def ssnr2d_ctf(data, mask = None, mode=""):
+def ssnr2d_ctf(data, mask = None, mode="", dopa=True):
+	'''
+	Calculate ssnr and variance in Fourier space for 2D images including CTF information
+	If mode = "a" apply alignment parameters
+	'''
+	from fundamentals import fft, rot_shift2D, rot_avg_table, fftip
+	from morphology   import ctf_img, threshold
+	from filter       import filt_ctf
+	from utilities    import get_params2D, pad
+	import  types
+	
+	if type(data) is types.StringType:
+		n = EMUtil.get_image_count(data)
+		ima = EMData()
+		ima.read_image(data, 0, True)
+		if ima.get_attr_default('ctf_applied', 1) == 1:
+			ERROR("data cannot be ctf-applied","ssnr2d",1)
+		nx = ima.get_xsize()
+		ny = ima.get_ysize()
+	else:
+		if data[0].get_attr_default('ctf_applied', 1) == 1:
+			ERROR("data cannot be ctf-applied","ssnr2d",1)
+		n = len(data)
+		nx = data[0].get_xsize()
+		ny = data[0].get_ysize()
+	if  dopa:
+		nx2 = nx*2
+		ny2 = ny*2
+	else:
+		nx2 = nx
+		ny2 = ny
+	ctf_2_sum = EMData(nx2, ny2, 1, False)
+	sumsq     = EMData(nx2, ny2, 1, False)
+
+	for i in xrange(n):
+		if type(data) is types.StringType:
+			ima = EMData()
+			ima.read_image(data, i)
+		else:
+			ima = data[i].copy()
+		ctf_params = ima.get_attr('ctf')
+		if mode == "a":
+			alpha, sx, sy, mirror, scale = get_params2D(ima)
+ 			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+		if mask:  Util.mul_img(ima, mask)
+		ima = pad(ima, nx2, ny2, 1, background = "circumference")
+		fftip(ima)
+		Util.add_img(sumsq, filt_ctf(ima, ctf_params))
+		Util.add_img2(ctf_2_sum, ctf_img(nx2, ctf_params))
+	print  "   NEW "
+
+	ave = Util.divn_img(sumsq, ctf_2_sum)
+
+	var       = EMData(nx2, ny2, 1, False)
+	for i in xrange(n):
+		if type(data) is types.StringType:
+			ima = EMData()
+			ima.read_image(data, i)
+		else:
+			ima = data[i].copy()
+		ctf_params = ima.get_attr('ctf')
+		if mode == "a":
+			alpha, sx, sy, mirror, scale = get_params2D(ima)
+ 			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
+		if mask:  Util.mul_img(ima, mask)
+		ima = pad(ima, nx2, ny2, 1, background = "circumference")
+		fftip(ima)
+		ima = filt_ctf(ima-filt_ctf(ave, ctf_params, dopa), ctf_params, dopa)
+		#Util.div_img(ima, ctf_2_sum)
+		#ima = fft(window2d(fft(ima),nx,ny))
+		#Util.mul_img(ima, ima.conjg())
+		Util.add_img2(var, ima)
+	
+	Util.mul_img(sumsq, sumsq.conjg())
+	from fundamentals import resample
+	#sumsq  = fft(window2d(fft(sumsq),nx,ny))
+	sumsq = resample(Util.pack_complex_to_real(sumsq),0.5)
+	#Util.div_img(var, ctf_2_sum)
+	var  = resample(Util.pack_complex_to_real(var),0.5)
+	ssnr = sumsq/var - 1.0
+	rave = rot_avg_table(sumsq)
+	rvar = rot_avg_table(var)
+
+	rssnr = []
+	for i in xrange(len(rvar)):
+		if rvar[i] > 0.0: qt = max(0.0, rave[i]/rvar[i] - 1.0)
+		else:              ERROR("ssnr2d","rvar negative",1)
+		rssnr.append(qt)
+	return rssnr, rave, rvar, ssnr, sumsq, ave, var
+
+def ssnr2d_ctf_OLD(data, mask = None, mode=""):
 	'''
 	Calculate ssnr and variance in Fourier space for 2D images including CTF information
 	If mode = "a" apply alignment parameters
