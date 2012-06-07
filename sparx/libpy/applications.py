@@ -10200,7 +10200,7 @@ def pca(input_stacks, subavg, mask_radius, sdir, nvec, incore, shuffle, genbuf, 
 	from statistics import pcanalyzer
 	import types
 	oldVer = False	# input_stacks is a list of images not a file name
-
+	
 	if len(input_stacks)==0:
 		print "Error: no input file."
 		return
@@ -10282,8 +10282,7 @@ def pca(input_stacks, subavg, mask_radius, sdir, nvec, incore, shuffle, genbuf, 
 			pca.shuffle()
 
 	vecs = pca.analyze()
-	if not MPI or (MPI and myid == 0):
-		return vecs
+	return vecs
 	
 def prepare_2d_forPCA(input_stack, output_stack, average, avg = False, CTF = False):
 	"""
