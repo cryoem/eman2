@@ -46,7 +46,7 @@ t0 = time()
 def main():
 
 	def params_3D_2D_NEW(phi, theta, psi, s2x, s2y, mirror):
-		if mirror == False:
+		if mirror == True:
 			m = 1
 			alpha, sx, sy, scalen = compose_transform2(0, s2x, s2y, 1.0, 540.0-psi, 0, 0, 1.0)
 		else:
@@ -139,7 +139,7 @@ def main():
 			
 	if not options.var and not options.SND and not options.MPI:
 		t1 = time()
-		from utilities		import group_proj_by_phitheta, get_params_proj, params_3D_2D, set_params_proj, set_params2D, compose_transform2
+		from utilities		import group_proj_by_phitheta, get_params_proj, params_3D_2D, set_params_proj, set_params2D, compose_transform2, nearest_proj
 		from statistics		import avgvar, avgvar_CTF
 		from morphology		import threshold
 		from reconstruction	import recons3d_4nn, recons3d_4nn_ctf
@@ -162,7 +162,8 @@ def main():
 		if options.VERBOSE:
 			print "Number of images per group: ", options.img_per_grp	
 			print "NOW GROUPING PROJECTIONS"																							
-		proj_list, angles_list, mirror_list = group_proj_by_phitheta(proj_angles, options.sym, options.img_per_grp)
+		#proj_list, angles_list, mirror_list = group_proj_by_phitheta(proj_angles, options.sym, options.img_per_grp)
+		proj_list, mirror_list = nearest_proj(proj_angles, options.img_per_grp)
 		t3 = time()
 		print_msg("Grouping projections lasted [s]						:%s\n"%(t3-t2))				
 		del proj_angles
@@ -176,23 +177,29 @@ def main():
 			print "NOW CALCULATING A STACK OF 2D VARIANCES"							
 		for i in xrange(len(proj_list)): 
 			imgdata = EMData.read_images(stack, proj_list[i])
+			phiM, thetaM, psiM, s2xM, s2yM = get_params_proj(imgdata[0])
 			for j in xrange(len(proj_list[i])):
 				phi, theta, psi, s2x, s2y = get_params_proj(imgdata[j])
+				#alpha, sx, sy, mirror = params_3D_2D(phi, theta, psi, s2x, s2y)
 				alpha, sx, sy, mirror = params_3D_2D_NEW(phi, theta, psi, s2x, s2y, mirror_list[i][j])
-				if mirror == 0:  alpha, sx, sy, scale = compose_transform2( alpha, sx, sy, 1.0, angles_list[i][0]-phi, 0.0, 0.0, 1.0)
-				else:            alpha, sx, sy, scale = compose_transform2( alpha, sx, sy, 1.0, 180-(angles_list[i][0]-phi), 0.0, 0.0, 1.0)
+				##if mirror == 0:  alpha, sx, sy, scale = compose_transform2( alpha, sx, sy, 1.0, angles_list[i][0]-phi, 0.0, 0.0, 1.0)
+				##else:            alpha, sx, sy, scale = compose_transform2( alpha, sx, sy, 1.0, 180-(angles_list[i][0]-phi), 0.0, 0.0, 1.0)
+				if mirror == 0:  alpha, sx, sy, scale = compose_transform2( alpha, sx, sy, 1.0, phiM-phi, 0.0, 0.0, 1.0)
+				else:            alpha, sx, sy, scale = compose_transform2( alpha, sx, sy, 1.0, 180-(phiM-phi), 0.0, 0.0, 1.0)
 				set_params2D(imgdata[j], [alpha, sx, sy, mirror, 1.0])
 			if (options.CTF):	ave, var = avgvar_CTF(imgdata,"a")
 			else:	ave, var = avgvar(imgdata, mode="a", interp="linear")
 			var = threshold(var)
-			set_params_proj(var, [angles_list[i][0], angles_list[i][1], 0.0, 0.0, 0.0])
+			##set_params_proj(var, [angles_list[i][0], angles_list[i][1], 0.0, 0.0, 0.0])
+			set_params_proj(var, [phiM, thetaM, 0.0, 0.0, 0.0])
 			var.set_attr("imgindex",proj_list[i])
 			prj_stack.append(var)
-			set_params_proj(ave, [angles_list[i][0], angles_list[i][1], 0.0, 0.0, 0.0])
+			##set_params_proj(ave, [angles_list[i][0], angles_list[i][1], 0.0, 0.0, 0.0])
+			set_params_proj(ave, [phiM, thetaM, 0.0, 0.0, 0.0])
 			ave.set_attr("imgindex",proj_list[i])
 			aveList.append(ave)
 			rad = imgdata[0].get_xsize() // 2
-			eig = pca(input_stacks=imgdata, subavg=ave, mask_radius=rad, sdir=".", nvec=options.nvec, incore=True, shuffle=False, genbuf=True, maskfile="", MPI=False, verbose=options.VERBOSE)
+			#eig = pca(input_stacks=imgdata, subavg=ave, mask_radius=rad, sdir=".", nvec=options.nvec, incore=True, shuffle=False, genbuf=True, maskfile="", MPI=options.MPI, verbose=options.VERBOSE)
 			#eigList.append(eig)
 			#eig[0].write_image("eig.hdf", i)
 			if (options.ave2D):	ave.write_image(options.ave2D,i)
@@ -207,10 +214,10 @@ def main():
 		if (options.ave3D): 
 			ave3D.write_image(options.ave3D)
 			print_msg("Writing to the disk volume reconstructed from averages as		:%s\n"%(options.ave3D))
-		del ave, var, imgdata, angles_list, proj_list, stack, phi, theta, psi, s2x, s2y, alpha, sx, sy, mirror, aveList, ave3D, rad, eig
+		del ave, var, imgdata, proj_list, stack, phi, theta, psi, s2x, s2y, alpha, sx, sy, mirror, aveList, ave3D, rad
 		t5 = time()
 		print_msg("Calculating the stack of 2D variances lasted [s]			:%s\n"%(t5-t4))
-		#exit()
+		exit()
 
 	if options.MPI:
 		t6 = time()
