@@ -573,7 +573,8 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 		}
 
 		boost::filesystem::path p(filename);
-		boost::filesystem::path full_p = boost::filesystem::complete(p);
+//		boost::filesystem::path full_p = boost::filesystem::complete(p);
+		boost::filesystem::path full_p = boost::filesystem::absolute(p);
 		FileItem * fitem = HDFCache::instance()->get_file(full_p.string());
 		if(fitem && readonly==fitem->get_readonly()) {
 			imageio = fitem->get_imgio();
