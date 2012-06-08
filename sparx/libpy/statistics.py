@@ -1321,9 +1321,9 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=True):
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
  			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 		if mask:  Util.mul_img(ima, mask)
-		ima = pad(ima, nx2, ny2, 1, background = "circumference")
+		if  dopa:  ima = pad(ima, nx2, ny2, 1, background = "circumference")
 		fftip(ima)
-		Util.add_img(sumsq, filt_ctf(ima, ctf_params))
+		Util.add_img(sumsq, filt_ctf(ima, ctf_params, dopa))
 		Util.add_img2(ctf_2_sum, ctf_img(nx2, ctf_params))
 	print  "   NEW "
 
@@ -1341,7 +1341,7 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=True):
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
  			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 		if mask:  Util.mul_img(ima, mask)
-		ima = pad(ima, nx2, ny2, 1, background = "circumference")
+		if dopa:  ima = pad(ima, nx2, ny2, 1, background = "circumference")
 		fftip(ima)
 		ima = filt_ctf(ima-filt_ctf(ave, ctf_params, dopa), ctf_params, dopa)
 		#Util.div_img(ima, ctf_2_sum)
@@ -1352,9 +1352,11 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=True):
 	Util.mul_img(sumsq, sumsq.conjg())
 	from fundamentals import resample
 	#sumsq  = fft(window2d(fft(sumsq),nx,ny))
-	sumsq = resample(Util.pack_complex_to_real(sumsq),0.5)
+	sumsq = Util.pack_complex_to_real(sumsq)
+	if dopa:  sumsq = resample(sumsq,0.5)
 	#Util.div_img(var, ctf_2_sum)
-	var  = resample(Util.pack_complex_to_real(var),0.5)
+	var = Util.pack_complex_to_real(var)
+	if dopa:  var  = resample(var,0.5)
 	ssnr = sumsq/var - 1.0
 	rave = rot_avg_table(sumsq)
 	rvar = rot_avg_table(var)
@@ -1371,7 +1373,7 @@ def ssnr2d_ctf_OLD(data, mask = None, mode=""):
 	Calculate ssnr and variance in Fourier space for 2D images including CTF information
 	If mode = "a" apply alignment parameters
 	'''
-	from fundamentals import fft, rot_shift2D, rot_avg_table
+	from fundamentals import fft, fftip, rot_shift2D, rot_avg_table
 	from morphology   import ctf_img, threshold
 	from filter       import filt_ctf
 	from utilities    import get_params2D
@@ -1409,20 +1411,20 @@ def ssnr2d_ctf_OLD(data, mask = None, mode=""):
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
  			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 		if mask:  Util.mul_img(ima, mask)
-		ctfimg = ctf_img(nx, ctf_params)
-		Util.add_img2(ctf_2_sum, ctfimg)
-		ima = fft(ima)
+		fftip(ima)
+		oc = filt_ctf(ima, ctf_params)
+		Util.add_img(sumsq, oc)
 		Util.add_img2(var, ima)
-		Util.mul_img(ima, ctfimg)
-		Util.add_img(sumsq, ima)
-	Util.div_filter(sumsq, ctf_2_sum)
+		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params, ny=ny))
 	Util.mul_img(sumsq, sumsq.conjg())
-	Util.mul_img(sumsq, ctf_2_sum)
+	Util.div_filter(sumsq, ctf_2_sum)
 	Util.sub_img(var, sumsq)
 	Util.mul_scalar(var, 1.0/float(n-1))
-	
+	Util.div_filter(sumsq, ctf_2_sum)
+
 	var   = Util.pack_complex_to_real(var)
 	sumsq = Util.pack_complex_to_real(sumsq)
+	sumsq *= n
 	ssnr   = sumsq/var - 1.0
 	rvar = rot_avg_table(var)
 	rsumsq = rot_avg_table(sumsq)
@@ -1480,13 +1482,13 @@ def varf(data, mask = None, mode="a"):
 
 	return var, rot_avg_table(Util.pack_complex_to_real(var))
 
-def varfctf(data, mask = None, mode="a"):
+def varfctf(data, mask = None, mode="a", dopad = True):
 	'''
 	Calculate variance in Fourier space for 2D or 3D images including ctf correction
 	If mode = "a" apply alignment parameters
 	This command is for ML average, i.e., A = sum_k (CTF_k F_k) / sum_k ( CTF_k^2 )
 	'''
-	from fundamentals import fft, rot_shift2D
+	from fundamentals import fftip, fft, rot_shift2D, window2d, cyclic_shift
 	from morphology   import ctf_img
 	from filter       import filt_ctf
 	from utilities    import get_arb_params, get_params2D
@@ -1508,10 +1510,19 @@ def varfctf(data, mask = None, mode="a"):
 		nx = data[0].get_xsize()
 		ny = data[0].get_ysize()
 		nz = data[0].get_zsize()
-
-	ctf_2_sum = EMData(nx, ny, nz, False)
-	sumsq     = EMData(nx, ny, nz, False)
-	var       = EMData(nx, ny, nz, False)
+	if dopad:
+		nx2 = 2*nx
+		ny2 = 2*ny
+		if( nz>1 ): nz2 = 2*nz
+		else:       nz2 = nz
+		from utilities import pad
+	else:
+		nx2 = nx
+		ny2 = ny
+		nz2 = nz
+	ctf_2_sum = EMData(nx2, ny2, nz2, False)
+	sumsq     = EMData(nx2, ny2, nz2, False)
+	var       = EMData(nx2, ny2, nz, False)
 
 	for i in xrange(n):
 		if (type(data) is types.StringType):
@@ -1524,16 +1535,20 @@ def varfctf(data, mask = None, mode="a"):
 			alpha, sx, sy, mirror, scale = get_params2D(ima)
  			ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 		if(mask): Util.mul_img(ima, mask)
-		oc = filt_ctf(ima, ctf_params, dopad=True)
-		Util.add_img(sumsq, fft(oc))
-		Util.add_img2(var, fft(ima))
-		Util.add_img2(ctf_2_sum, ctf_img(nx, ctf_params, ny = ny, nz = nz))
+		if dopad:  ima = pad(ima, nx2, ny2, nz2, background = "circumference")
+		fftip(ima)
+		oc = filt_ctf(ima, ctf_params)
+		Util.add_img(sumsq, oc)
+		Util.add_img2(var, ima)
+		Util.add_img2(ctf_2_sum, ctf_img(nx2, ctf_params, ny = ny2, nz = nz2))
 	Util.mul_img(sumsq, sumsq.conjg())
-	Util.div_img(sumsq, ctf_2_sum)
+	Util.div_filter(sumsq, ctf_2_sum)
 	Util.sub_img(var, sumsq)
 	Util.mul_scalar(var, 1.0/float(n-1))
 	st = Util.infomask(var, None, True)
 	if(st[2]<0.0):  ERROR("Negative variance!","varfctf",1)
+	if dopad:  #  CHECK THIS< CAN IT BE DONE BETTER??
+		var = fft( cyclic_shift(window2d(cyclic_shift(fft(var), nx, ny, nz), nx, ny), -nx//2, -ny//2, -nz//2) )
 
 	from fundamentals import rot_avg_table
 
@@ -1583,7 +1598,7 @@ def varf2d(data, ave, mask = None, mode="a"):
 
 	Util.mul_scalar(var, 1.0/float(n-1))
 	st = Util.infomask(var, None, True)
-	if(st[2]<0.0):  ERROR("Negative variance!","varfctf",1)
+	if(st[2]<0.0):  ERROR("Negative variance!","varf2d",1)
 
 	from fundamentals import rot_avg_table
 

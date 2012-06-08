@@ -17590,8 +17590,8 @@ EMData* Util::divn_filter(EMData* img, EMData* img1)
 	if(img->is_complex()) {
 		for (size_t i=0; i<size; i+=2) {
 			if(img1_ptr[i] > 1.e-10f) {
-			img2_ptr[i]   = img_ptr[i]  /img1_ptr[i];
-			img2_ptr[i+1] = img_ptr[i+1]/img1_ptr[i];
+				img2_ptr[i]   = img_ptr[i]  /img1_ptr[i];
+				img2_ptr[i+1] = img_ptr[i+1]/img1_ptr[i];
 			} else img2_ptr[i] = img2_ptr[i+1] = 0.0f;
 		}
 	} else  throw ImageFormatException("Only Fourier image allowed");
@@ -17792,8 +17792,8 @@ void Util::div_filter(EMData* img, EMData* img1)
 	if(img->is_complex()) {
 		for (size_t i=0; i<size; i+=2) {
 			if(img1_ptr[i] > 1.e-10f) {
-			img_ptr[i]   /= img1_ptr[i];
-			img_ptr[i+1] /= img1_ptr[i];
+				img_ptr[i]   /= img1_ptr[i];
+				img_ptr[i+1] /= img1_ptr[i];
 			} else img_ptr[i] = img_ptr[i+1] = 0.0f;
 		}
 	} else throw ImageFormatException("Only Fourier image allowed");
