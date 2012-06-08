@@ -205,7 +205,7 @@ def avgvar_ctf(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use
 		for j in xrange(fny):
 			snr_img.set_value_at(i,j, 1.0/snr)
 	Util.add_img(ctf_2_sum, snr_img)
-	Util.div_img(ave, ctf_2_sum)
+	Util.div_filter(ave, ctf_2_sum)
 
 	# calculate variance in real space
 	#totv = model_blank(nx2, ny2, nz)
@@ -228,7 +228,7 @@ def avgvar_ctf(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use
 		fftip(img)
 		ctf_params = img.get_attr("ctf")
 		img = filt_ctf(img-filt_ctf(ave, ctf_params, dopa), ctf_params, dopa)
-		Util.div_img(img, ctf_2_sum)
+		Util.div_filter(img, ctf_2_sum)
 		img = window2d(fft(img),nx,ny)
 		#Util.add_img(totv, img)
 		Util.add_img2(tvar, img)
@@ -1327,7 +1327,7 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=True):
 		Util.add_img2(ctf_2_sum, ctf_img(nx2, ctf_params))
 	print  "   NEW "
 
-	ave = Util.divn_img(sumsq, ctf_2_sum)
+	ave = Util.divn_filter(sumsq, ctf_2_sum)
 
 	var       = EMData(nx2, ny2, 1, False)
 	for i in xrange(n):
@@ -1343,20 +1343,59 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=True):
 		if mask:  Util.mul_img(ima, mask)
 		if dopa:  ima = pad(ima, nx2, ny2, 1, background = "circumference")
 		fftip(ima)
-		ima = filt_ctf(ima-filt_ctf(ave, ctf_params, dopa), ctf_params, dopa)
-		#Util.div_img(ima, ctf_2_sum)
-		#ima = fft(window2d(fft(ima),nx,ny))
-		#Util.mul_img(ima, ima.conjg())
+		"""
+		ima = ima-filt_ctf(ave, ctf_params, dopa)
 		Util.add_img2(var, ima)
-	
+		"""
+		ima = filt_ctf(ima-filt_ctf(ave, ctf_params, dopa), ctf_params, dopa)
+		#Util.div_filter(ima, ctf_2_sum)
+		Util.add_img2(var, ima)
+
+	"""
+	Util.mul_scalar(var, 1.0/float(n-1))
+	Util.mul_img(ave, ave.conjg())
+	ave *= n
+	"""
 	Util.mul_img(sumsq, sumsq.conjg())
-	from fundamentals import resample
 	#sumsq  = fft(window2d(fft(sumsq),nx,ny))
+
+	#Util.div_filter(sumsq, ctf_2_sum)
+	#Util.sub_img(var, sumsq)
+	#Util.mul_scalar(var, 1.0/float(n-1))
+	#Util.div_filter(sumsq, ctf_2_sum)
+
+	#Util.mul_img(ave, ave.conjg())
+
+	#Util.mul_img(ave, ctf_2_sum)
+	#Util.mul_img(ave, ctf_2_sum)
+	#ave *= n
+	#var /= (n-1)
+
+	nn = nx2//2
+	nm = ny2//2
+
+	from utilities import info
+	from fundamentals import resample
 	sumsq = Util.pack_complex_to_real(sumsq)
-	if dopa:  sumsq = resample(sumsq,0.5)
-	#Util.div_img(var, ctf_2_sum)
+	sumsq[nn,nm] = sumsq[nn+1,nm]
+	#if dopa:  sumsq = resample(sumsq,0.5)
+	#info(var,None, "   tvar in ssnr2d")
+	tvar = Util.divn_filter(var, ctf_2_sum)
+	#info(tvar,None, "   tvar in ssnr2d first div")
+	Util.div_filter(tvar, ctf_2_sum)
+	#info(tvar,None, "   tvar in ssnr2d second div")
+	tvar =  Util.pack_complex_to_real(tvar)
+	#info(tvar,None, "   tvar in ssnr2d pack")
+	tvar[nn,nm] = tvar[nn+1,nm]
+	#if dopa:  tvar  = resample(tvar,0.5)
+	#info(tvar,None, "   tvar in ssnr2d after resample")
+
+
 	var = Util.pack_complex_to_real(var)
-	if dopa:  var  = resample(var,0.5)
+	var[nn,nm] = var[nn+1,nm]
+	#info(var,None, "   var in ssnr2d")
+	#if dopa:  var  = resample(var,0.5)
+	#info(var,None, "   var in ssnr2d after resample")
 	ssnr = sumsq/var - 1.0
 	rave = rot_avg_table(sumsq)
 	rvar = rot_avg_table(var)
@@ -1366,7 +1405,7 @@ def ssnr2d_ctf(data, mask = None, mode="", dopa=True):
 		if rvar[i] > 0.0: qt = max(0.0, rave[i]/rvar[i] - 1.0)
 		else:              ERROR("ssnr2d","rvar negative",1)
 		rssnr.append(qt)
-	return rssnr, rave, rvar, ssnr, sumsq, ave, var
+	return rssnr, rave, rvar, ssnr, sumsq, ave, tvar
 
 def ssnr2d_ctf_OLD(data, mask = None, mode=""):
 	'''
@@ -1440,7 +1479,7 @@ def varf(data, mask = None, mode="a"):
 	Calculate variance in Fourier space for 2D or 3D images, (no CTF correction)
 	If mode = "a" apply alignment parameters
 	'''
-	from fundamentals import fft, rot_shift2D
+	from fundamentals import fftip, rot_shift2D
 	from utilities    import get_params2D
 	import  types
 	if (type(data) is types.StringType):
@@ -1469,9 +1508,9 @@ def varf(data, mask = None, mode="a"):
 		 	alpha, sx, sy, mirror, scale = get_params2D(ima)
 	 		ima = rot_shift2D(ima, alpha, sx, sy, mirror)
 		if(mask):  Util.mul_img(ima, mask)
-		fim = fft(ima)
-		Util.add_img(sumsq, fim)
-		Util.add_img2(var, fim)
+		fftip(ima)
+		Util.add_img(sumsq, ima)
+		Util.add_img2(var, ima)
 
 	Util.mul_img(sumsq, sumsq.conjg())
 	Util.mad_scalar(var, sumsq, -1.0/float(n))
