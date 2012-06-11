@@ -53,7 +53,6 @@ using std::binary_function;
 
 const static int CHECK_INTERVAL = 10;	//seconds for thread to check if the opened file need been closed
 const static int ACCESS_TIME_THRESHOLD = 30;	//seconds since the last access to close HDF image file
-const static size_t CACHESIZE = 1000;	//SIZE limit for the HDF file cache
 
 namespace EMAN
 {
@@ -115,6 +114,8 @@ private:
 
 	boost::thread	_thread;
 	boost::mutex 	m_mutex;
+
+	size_t CACHESIZE;		//size limit for the HDF file cache, half of the file descriptor limit per process
 
 	//These functions are running in the thread
 	int purge_file();		//purge the file has last access time >= threshold

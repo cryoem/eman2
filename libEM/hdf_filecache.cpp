@@ -38,6 +38,8 @@
 #include <list>
 #include "hdf_filecache.h"
 #include <boost/date_time.hpp>
+#include <sys/time.h>
+#include <sys/resource.h>
 
 using namespace EMAN;
 using std::list;
@@ -107,6 +109,11 @@ HDFCache * HDFCache::_instance = 0;
 HDFCache::HDFCache()
 {
 	_thread = boost::thread(&HDFCache::cache_routine, this);
+
+	struct rlimit rl;
+	getrlimit(RLIMIT_NOFILE, &rl);
+	CACHESIZE = rl.rlim_cur/2;
+//	std::cout << "CACHESIZE = " << CACHESIZE << std::endl;
 }
 
 HDFCache * HDFCache::instance()
@@ -136,6 +143,8 @@ void HDFCache::cache_routine()
 
 FileItem * HDFCache::get_file(const string& filename)
 {
+	boost::mutex::scoped_lock l(m_mutex);
+
 	if(file_pool.find(filename) != file_pool.end()) {
 		FileItem * hdf_item = file_pool[filename];
 		hdf_item->set_timestamp(time(0));
@@ -148,19 +157,22 @@ FileItem * HDFCache::get_file(const string& filename)
 
 int HDFCache::add_file(FileItem * newfile)
 {
-	boost::mutex::scoped_lock l(m_mutex);
+	if(file_pool.size() >= CACHESIZE) {
+		force_clean();
+	}
 
+	boost::mutex::scoped_lock l(m_mutex);
 	file_pool[newfile->get_path()] = newfile;
 	file_pool2.push_back(newfile);
 
 	return 0;
 }
 
+/**I don't put lock in this function to avoid race condition.
+ * the lock is in upper level function purge_file() and force_clean()*/
 int HDFCache::close_file(const string& filename)
 {
 	FileItem * hdfitem = file_pool[filename];
-
-	boost::mutex::scoped_lock l(m_mutex);
 
 	ImageIO * hdfio = hdfitem->get_imgio();
 	delete hdfio;
@@ -175,6 +187,8 @@ int HDFCache::close_file(const string& filename)
 
 int HDFCache::purge_file()
 {
+	boost::mutex::scoped_lock l(m_mutex);
+
 	//close those files have access time over the threshold
 	sort(file_pool2.begin(), file_pool2.end(), least_access());
 
@@ -195,10 +209,12 @@ int HDFCache::purge_file()
 
 int HDFCache::force_clean()
 {
-	//close 10 oldest files when cache size reach limit
+	boost::mutex::scoped_lock l(m_mutex);
+
+	//close 1/10 oldest files when cache size reach limit
 	if(file_pool2.size() >= CACHESIZE) {
 		sort(file_pool2.begin(), file_pool2.end(), least_access());
-		for(int i=0; i<=10; ++i) {
+		for(size_t i=0; i<=CACHESIZE/10; ++i) {
 			close_file(file_pool2.front()->get_path());
 		}
 	}
