@@ -241,7 +241,7 @@ def main():
 	if options.verbose>0:
 		print "%d images, processing %d-%d......"%(nimg, n0, n1)
 	#print 'start.....'
-	img_index = n0
+	img_index = 0
 	for data in datlst:
 		for option1 in optionlist:				
 			if option1 == "origin":
