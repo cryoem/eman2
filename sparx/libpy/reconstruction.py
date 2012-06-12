@@ -826,18 +826,20 @@ def recons3d_em_MPI(projections_stack, max_iterations_count = 100, min_avg_abs_v
 	
 	# ----- read projections 
 	if type(projections_stack) is types.StringType:
-		projections = EMData.read_images(projections_stack)
+		all_projs_count = EMUtil.get_image_count(projections_stack)
 	else:
-		projections = projections_stack
-	
-	all_projs_count = len(projections)
+		all_projs_count = len(projections_stack)
 	
 	if all_projs_count < mpi_n:
 		ERROR("Number of projections cannot be less than number of MPI processes", "recons3d_em")
 	
 	projs_begin = (mpi_r * all_projs_count) // mpi_n
 	projs_end = ((mpi_r+1) * all_projs_count) // mpi_n
-	projections = projections[projs_begin:projs_end]
+	
+	if type(projections_stack) is types.StringType:
+		projections = EMData.read_images(projections_stack, range(projs_begin,projs_end))
+	else:
+		projections = projections_stack[projs_begin:projs_end]
 	# ----------------------------------------------
 	
 	nx = projections[0].get_xsize()
@@ -911,13 +913,14 @@ def recons3d_em_MPI(projections_stack, max_iterations_count = 100, min_avg_abs_v
 		# ----------------------
 		Util.div_img( q, a )
 		Util.mul_img( q, solution ) # q <- new solution  
-		avg_absolute_voxel_change = q.cmp("lod",solution,{"mask":sphere3D,"negative":0,"normalize":0}) / sphere3D_volume
+		avg_absolute_voxel_change = q.cmp("lod",solution,{"mask":sphere3D,"negative":0,"normalize":0}) / q.cmp("lod",model_blank(nx,nx,nx),{"mask":sphere3D,"negative":0,"normalize":0}) #sphere3D_volume
+		norm_sq_voxel_change = q.cmp("sqEuclidean",solution,{"mask":sphere3D}) / q.cmp("sqEuclidean",model_blank(nx,nx,nx),{"mask":sphere3D})
 		if avg_absolute_voxel_change > prev_avg_absolute_voxel_change:
 			if mpi_r == 0: print "Finish and return last good solution"
 			break
 		prev_avg_absolute_voxel_change = avg_absolute_voxel_change
 		solution = q
-		if mpi_r == 0: print "Iteration ", iter_no, ",  avg_abs_voxel_change=", avg_absolute_voxel_change 
+		if mpi_r == 0: print "Iteration ", iter_no, ",  norm_abs_voxel_change=", avg_absolute_voxel_change, ",  norm_sq_voxel_change=", norm_sq_voxel_change 
 		if min_avg_abs_voxel_change > avg_absolute_voxel_change:
 			break
 	time_iterations = clock() - time_iterations
