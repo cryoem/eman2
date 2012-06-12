@@ -58,6 +58,9 @@ def main():
 	parser.add_argument("--shrink", type=int,default=1,help="Optionally shrink the input volumes by an integer amount for coarse alignment.")
 	parser.add_argument("--shrinkrefine", type=int,default=1,help="Optionally shrink the input volumes by an integer amount for refine alignment.")
 	
+	parser.add_argument("--daz", type=int,default=3,help="Step size to vary azimuth.")
+	parser.add_argument("--dalt", type=int,default=0,help="Step size to vary altitude.")
+	
 	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:1")
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -68,6 +71,10 @@ def main():
 		
 	logger = E2init(sys.argv, options.ppid)
 
+	vol1hdr = EMData(options.input,0,True)
+	apix = vol1hdr['apix_x']
+	boxsize = vol1hdr['nx']
+	
 	if options.mask: 
 		options.mask=parsemodopt(options.mask)
 	
@@ -80,89 +87,111 @@ def main():
 	if options.highpass: 
 		options.highpass=parsemodopt(options.highpass)
 		
-	if options.postprocess: 
-		options.postprocess=parsemodopt(options.postprocess)
-
-	vol1 = EMData(ptions.input,0)
+	vol1 = EMData(options.input,0)
 	
 	# Make the mask first, use it to normalize (optionally), then apply it 
 	mask = EMData(vol1["nx"],vol1["ny"],vol1["nz"])
 	mask.to_one()
-	if options["mask"]:
+	if options.mask:
 		#print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options["mask"][0],options["mask"][1]) 
-		mask.process_inplace(options["mask"][0],options["mask"][1])
+		mask.process_inplace(options.mask[0],options.mask[1])
 
 	# normalize
-	if options["normproc"]:
-		#if options["normproc"][0]=="normalize.mask": 
-		#	options["normproc"][1]["mask"]=mask
-		vol1.process_inplace('normalize')
-
+	vol1.process_inplace('normalize')
 	vol1.mult(mask)
 	vol1.process_inplace('normalize')
 	vol1.mult(mask)
 
 	# preprocess
-	if options["preprocess"] != None:
-		vol1.process_inplace(options["preprocess"][0],options["preprocess"][1])
+	if options.preprocess != None:
+		vol1.process_inplace(options.preprocess[0],options.preprocess[1])
 
 	# lowpass
-	if options["lowpass"] != None:
-		vol1.process_inplace(options["lowpass"][0],options["lowpass"][1])
+	if options.lowpass != None:
+		vol1.process_inplace(options.lowpass[0],options.lowpass[1])
 
 	# highpass
-	if options["highpass"] != None:
-		vol1.process_inplace(options["highpass"][0],options["highpass"][1])
+	if options.highpass != None:
+		vol1.process_inplace(options.highpass[0],options.highpass[1])
 
 	# Shrinking both for initial alignment and reference
-	if options["shrink"]!=None and options["shrink"]>1 :
-		vol1=vol1.process("math.meanshrink",{"n":options["shrink"]})
+	if options.shrink!=None and options.shrink > 1 :
+		vol1=vol1.process("math.meanshrink",{"n":options.shrink})
+
+	alt=0
 	
-	vol1hdr = EMData(vol1,0,True)
-	apix = vol1hdr['apix_x']
-	boxsize = vol1hdr['nx']
-	
-	az=0
 	values = []
 	azs=[]
-	while az <= 360:
-		vol2 = EMAN2.EMData()
-		vol2 = vol1.copy()
-
-		ccf = vol1.calc_ccf(vol2)
-		ccf.process_inplace("xform.phaseorigin.tocorner") 
-		ccf.process_inplace('normalize')
-
-		#box = ccf.get_zsize()
-		#r =  Region((box/2) - int(parameters['searchx']), (box/2) - int(parameters['searchy']), (box/2) - int(parameters['searchz']), 2 * int(parameters['searchx']) + 1, 2 * int(parameters['searchy']) + 1, 2 * int(parameters['searchz']) + 1) 
-		#sub_ccf = ccf.get_clip(r)
-
-		loc_sub = ccf.calc_max_location()
-		
-		#xbest = loc_sub[0]
-		#ybest = loc_sub[1]
-		#zbest = loc_sub[2]
-
-		best_value = ccf.get_value_at(loc_sub[0],loc_sub[1],loc_sub[2])
-		values.append(best_value)
-		
-		azs.append(az)
-		
-		az += options.delta
-		vol2.rotate(az,0,0)
 	
+	if options.dalt == 180:
+		maxaz = 360 * 2
+	
+	while alt <= 180:
+		#if not options.dalt:
+		#	alt = 180
+		az=0
+		azlist=[]
+		valueslist=[]
+		while az <= 360:
+			vol2 = EMData()
+			vol2 = vol1.copy()
+			
+			print "I will rotate by this alt and az", alt, az
+			vol2.rotate(az,alt,0)
+			if alt == 180:
+				print "In theory, I have flipped the molecule now!!!!", alt, az
+			
+			ccf = vol1.calc_ccf(vol2)
+			ccf.process_inplace("xform.phaseorigin.tocorner") 
+			ccf.process_inplace('normalize')
+				
+			#box = ccf.get_zsize()
+			#r =  Region((box/2) - int(parameters['searchx']), (box/2) - int(parameters['searchy']), (box/2) - int(parameters['searchz']), 2 * int(parameters['searchx']) + 1, 2 * int(parameters['searchy']) + 1, 2 * int(parameters['searchz']) + 1) 
+			#sub_ccf = ccf.get_clip(r)
+
+			loc_sub = ccf.calc_max_location()
+
+			#xbest = loc_sub[0]
+			#ybest = loc_sub[1]
+			#zbest = loc_sub[2]
+
+			best_value = ccf.get_value_at(loc_sub[0],loc_sub[1],loc_sub[2])
+			valueslist.append(best_value)
+			azlist.append(az)
+
+			az += options.daz
+		azs.append(azlist)
+		values.append(valueslist)
+			
+		alt = alt + options.dalt
+		print "ALT now is!!!", alt
+	
+		#if not options.dalt:
+		#	alt+=181
+
 	fileoutputname = options.output
 	
-	f = open(fscoutputname,'w')
-	f.writelines(values)
+	lines=[]
+	
+	fileoutputname.replace('.png','.txt')
+	
+	if '.txt' not in fileoutputname:
+		fileoutputname += '.txt'
+		
+	f = open(fileoutputname,'w')
+	for i in range(len(values)):
+		line = str(azs[i]) + ' ' + str(values[i]) + '\n'
+		lines.append(line)
+	f.writelines(lines)
 	f.close()
 	
 	#polycoeffs = numpy.polyfit(x, values, 30)
 	#yfit = numpy.polyval(polycoeffs, x)
 
-	plot_name = filecoutputname.replace('.txt','_PLOT.png')
-
-	pylab.plot(azs, values, 'k-', marker='o')
+	plot_name = fileoutputname.replace('.txt','_PLOT.png')
+	
+	for i in range(len(values)):
+		pylab.plot(azs[i], values[i], linewidth=2)
 	#fit = pylab.plot(x, yfit, 'r-')
 
 	pylab.title(plot_name)
