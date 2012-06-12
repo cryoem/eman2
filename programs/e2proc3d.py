@@ -426,11 +426,11 @@ def main():
 		#print_iminfo(data, "Final")
 		if options.unstacking:	#output a series numbered single image files
 			if 'mrc8bit' in optionlist:
-				data.write_image(outfile.split('.')[0]+'-'+str(img_index+1)+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
+				data.write_image(outfile.split('.')[0]+'-'+str(img_index+1).zfill(len(str(nimg)))+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
 			elif 'mrc16bit' in optionlist:
-				data.write_image(outfile.split('.')[0]+'-'+str(img_index+1)+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
+				data.write_image(outfile.split('.')[0]+'-'+str(img_index+1).zfill(len(str(nimg)))+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
 			else:
-				data.write_image(outfile.split('.')[0]+'-'+str(img_index+1)+'.'+outfile.split('.')[-1])
+				data.write_image(outfile.split('.')[0]+'-'+str(img_index+1).zfill(len(str(nimg)))+'.'+outfile.split('.')[-1])
 		else:   #output a single 2D image or a 2D stack	
 			if 'mrc8bit' in optionlist:
 				data.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))

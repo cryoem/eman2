@@ -216,6 +216,7 @@ def main():
 	d = EMData()
 	threed_xsize = 0
 	threed_ysize = 0
+	nimg = 1
 	if options.threed2threed or options.threed2twod:
 		d.read_image(infile, 0, True)
 		if(d.get_zsize() == 1):
@@ -560,11 +561,11 @@ def main():
 						
 					elif options.unstacking:	#output a series numbered single image files
 						if 'mrc8bit' in optionlist:
-							d.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
+							d.write_image(outfile.split('.')[0]+'-'+str(i+1).zfill(len(str(nimg)))+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
 						elif 'mrc16bit' in optionlist:
-							d.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
+							d.write_image(outfile.split('.')[0]+'-'+str(i+1).zfill(len(str(nimg)))+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
 						else:
-							d.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.'+outfile.split('.')[-1])
+							d.write_image(outfile.split('.')[0]+'-'+str(i+1).zfill(len(str(nimg)))+'.'+outfile.split('.')[-1])
 					else:   #output a single 2D image or a 2D stack			
 						if 'mrc8bit' in optionlist:
 							d.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
