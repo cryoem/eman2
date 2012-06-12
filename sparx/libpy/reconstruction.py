@@ -399,7 +399,7 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None, n
 	return fftvol
 
 def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, symmetry="c1", CTF = False, random_angles = 0):
-	
+
 	"""
 	Perform a 3-D reconstruction using nearest neighbor interpolation and 
 	calculate 3D spectral signal-to-noise ratio (SSNR)	   
@@ -427,12 +427,12 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 	else :                                   nima = len(stack_name)
 	# read first image to determine the size to use
 	if type(stack_name) == types.StringType:
-		proj = EMData()	
+		proj = EMData()
 		proj.read_image(stack_name, 0)
 	else:    
 		proj = stack_name[0].copy()
 	#active = proj.get_attr('active')
-	size   = proj.get_xsize()	
+	size   = proj.get_xsize()
 	# sanity check -- image must be square
 	if size != proj.get_ysize(): ERROR("input data has to be square","recons3d_nn_SSNR",1)
 	# reconstructor
@@ -500,7 +500,6 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 	for i in xrange(1,nn): outlist[4].append(SSNR(i,3,0))				  # number of added Fourier points
 	for i in xrange(1,nn): outlist[5].append(SSNR(i,0,0))				  # square of signal
 	return [outlist, vol_ssnr]
-
 
 def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, symmetry="c1", CTF = False, random_angles = 0):
 	from utilities import reduce_EMData_to_root, bcast_number_to_all
