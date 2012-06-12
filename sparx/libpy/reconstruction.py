@@ -803,14 +803,15 @@ def recons3d_em(projections_stack, max_iterations_count = 100, min_avg_abs_voxel
 	return solution
 
 
-def recons3d_em_MPI(projections_stack, max_iterations_count = 100, min_avg_abs_voxel_change = 0.01, use_weights = False, symmetry = "c1"):
+def recons3d_em_MPI(projections_stack, max_iterations_count = 100, min_norm_absolute_voxel_change = 0.01, use_weights = False, symmetry = "c1", min_norm_squared_voxel_change = 0.0001):
 	"""
-	Reconstruction algorithm basing on the Expectation Maximization method
-		projections_stack            -- file or list with projections
-		max_iterations_count         -- stop criterion 
-		min_avg_abs_voxel_change     -- stop criterion 
-		use_weights                  -- true == multiply projections by extra weights
-		symmetry                     -- type of symmetry
+	Reconstruction algorithm basing on the Expectation Maximization method.
+		projections_stack              -- file or list with projections
+		max_iterations_count           -- stop criterion 
+		min_norm_absolute_voxel_change -- stop criterion (set -1 to switch off) 
+		min_norm_squared_voxel_change  -- stop criterion (set -1 to switch off)
+		use_weights                    -- true == multiply projections by extra weights
+		symmetry                       -- type of symmetry
 	#
 	"""
 	from time import clock
@@ -852,11 +853,10 @@ def recons3d_em_MPI(projections_stack, max_iterations_count = 100, min_avg_abs_v
 	solution = model_blank(nx, nx, nx)
 	a = model_blank(nx, nx, nx) # normalization volume
 	e2D = model_square(nx, nx, nx)
-	sphere3D_volume = model_blank(nx,nx,nx).cmp("lod",sphere3D,{"negative":0,"normalize":0})
 	if mpi_r == 0:
 		print "MPI processes: ", mpi_n
-		print "Parameters:  size=%d  radius=%d  projections_count=%d  max_iterations_count=%d min_avg_abs_voxel_change=%f" % (
-						nx, radius, all_projs_count, max_iterations_count, min_avg_abs_voxel_change )	
+		print "Parameters:  size=%d  radius=%d  projections_count=%d  max_iterations_count=%d min_norm_absolute_voxel_change=%f" % (
+						nx, radius, all_projs_count, max_iterations_count, min_norm_absolute_voxel_change )	
 	
 	# ----- create initial solution, calculate weights and normalization image (a)
 	projections_angles = []  # list of lists of angles
@@ -913,15 +913,15 @@ def recons3d_em_MPI(projections_stack, max_iterations_count = 100, min_avg_abs_v
 		# ----------------------
 		Util.div_img( q, a )
 		Util.mul_img( q, solution ) # q <- new solution  
-		avg_absolute_voxel_change = q.cmp("lod",solution,{"mask":sphere3D,"negative":0,"normalize":0}) / q.cmp("lod",model_blank(nx,nx,nx),{"mask":sphere3D,"negative":0,"normalize":0}) #sphere3D_volume
-		norm_sq_voxel_change = q.cmp("sqEuclidean",solution,{"mask":sphere3D}) / q.cmp("sqEuclidean",model_blank(nx,nx,nx),{"mask":sphere3D})
-		if avg_absolute_voxel_change > prev_avg_absolute_voxel_change:
+		norm_absolute_voxel_change = q.cmp("lod",solution,{"mask":sphere3D,"negative":0,"normalize":0}) / q.cmp("lod",model_blank(nx,nx,nx),{"mask":sphere3D,"negative":0,"normalize":0})
+		norm_squared_voxel_change  = q.cmp("sqEuclidean",solution,{"mask":sphere3D}) / q.cmp("sqEuclidean",model_blank(nx,nx,nx),{"mask":sphere3D})
+		if norm_absolute_voxel_change > prev_avg_absolute_voxel_change:
 			if mpi_r == 0: print "Finish and return last good solution"
 			break
-		prev_avg_absolute_voxel_change = avg_absolute_voxel_change
+		prev_avg_absolute_voxel_change = norm_absolute_voxel_change
 		solution = q
-		if mpi_r == 0: print "Iteration ", iter_no, ",  norm_abs_voxel_change=", avg_absolute_voxel_change, ",  norm_sq_voxel_change=", norm_sq_voxel_change 
-		if min_avg_abs_voxel_change > avg_absolute_voxel_change:
+		if mpi_r == 0: print "Iteration ", iter_no, ",  norm_abs_voxel_change=", norm_absolute_voxel_change, ",  norm_squared_voxel_change=", norm_squared_voxel_change 
+		if min_norm_absolute_voxel_change > norm_absolute_voxel_change or min_norm_squared_voxel_change > norm_squared_voxel_change:
 			break
 	time_iterations = clock() - time_iterations
 	# ----- return solution and exit

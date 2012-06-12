@@ -62,8 +62,8 @@ def main():
 	usage = progname + " prj_stack volume --iter --var --sym=symmetry --MPI"
 	parser = OptionParser(usage, version=SPARXVERSION)
 
-	parser.add_option("--iter", 		type="int"         ,	default=40   ,				help="maximum number of iterations (stop criterion of reconstruction process)" )
-	parser.add_option("--abs", 			type="float"       ,	default=0.1  ,				help="minimum average absolute change of voxels' values (stop criterion of reconstruction process)" )
+	parser.add_option("--iter", 		type="int"         ,	default=100  ,				help="maximum number of iterations (stop criterion of reconstruction process)" )
+	parser.add_option("--abs", 			type="float"       ,	default=0.01 ,				help="minimum average absolute change of voxels' values (stop criterion of reconstruction process)" )
 	parser.add_option("--var" , 		action="store_true",	default=False,				help="stack on input consists of variances")
 	parser.add_option("--sym" , 		type="string"      ,	default="c1" ,				help="symmetry" )
 	parser.add_option("--MPI" , 		action="store_true",	default=False,				help="use MPI version - works only with stack of variance as an input")
