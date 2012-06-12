@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus Galaz, 04/28/2012 - using code and concepts drawn from Jesus Galaz's scripts
+# Author: Jesus Galaz, 04/28/2012; last update 06/10/2012
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -45,7 +45,7 @@ import matplotlib.pyplot as plt
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = """Aligns a 3d volume to another by executing e2spt_classaverage.py and then calculates the FSC between them by calling e2proc3d.py . It returns both a number for the resolution based on the FSC0.5 
+	usage = """Aligns a 3d volume to another by executing e2classaverage3d.py and then calculates the FSC between them by calling e2proc3d.py . It returns both a number for the resolution based on the FSC0.5 
 	criterion(on the screen) and a plot as an image in .png format."""
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
@@ -172,12 +172,12 @@ def main():
 		print "The reformed aligner is", options.align
 			
 		vol2ALIname = vol2.replace('.hdf','_ALI.hdf')
-		alicmd = 'e2spt_classaverage.py --path=. --input=' + vol2 + ' --output=' + vol2ALIname + ' --ref=' + vol1 + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + options.mask + ' --preprocess=' + options.preprocess + ' --align=' + options.align + ' --parallel=' + options.parallel + ' --ralign=' + options.ralign + ' --aligncmp=' + options.aligncmp + ' --raligncmp=' + options.raligncmp + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + options.normproc + ' --sym=' + options.sym + ' --breaksym'
+		alicmd = 'e2classaverage3d.py --path=. --input=' + vol2 + ' --output=' + vol2ALIname + ' --ref=' + vol1 + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + options.mask + ' --preprocess=' + options.preprocess + ' --align=' + options.align + ' --parallel=' + options.parallel + ' --ralign=' + options.ralign + ' --aligncmp=' + options.aligncmp + ' --raligncmp=' + options.raligncmp + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + options.normproc + ' --sym=' + options.sym + ' --breaksym'
 		vol2final = vol2ALIname
 		
 		if options.mirror:
 			vol2mirrorALIname = vol2mirror.replace('.hdf','_ALI.hdf')
-			alicmd += ' && e2spt_classaverage.py --path=. --input=' + vol2mirror + ' --output=' + vol2mirrorALIname + ' --ref=' + vol1 + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + options.mask + ' --preprocess=' + options.preprocess + ' --align=' + options.align + ' --parallel=' + options.parallel + ' --ralign=' + options.ralign + ' --aligncmp=' + options.aligncmp + ' --raligncmp=' + options.raligncmp + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + options.normproc + ' --sym=' + options.sym + ' --breaksym'
+			alicmd += ' && e2classaverage3d.py --path=. --input=' + vol2mirror + ' --output=' + vol2mirrorALIname + ' --ref=' + vol1 + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + options.mask + ' --preprocess=' + options.preprocess + ' --align=' + options.align + ' --parallel=' + options.parallel + ' --ralign=' + options.ralign + ' --aligncmp=' + options.aligncmp + ' --raligncmp=' + options.raligncmp + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + options.normproc + ' --sym=' + options.sym + ' --breaksym'
 			vol2mirrorfinal = vol2mirrorALIname
 		
 		if options.sym is not 'c1' and options.sym is not "C1":
@@ -292,6 +292,61 @@ def fscplotter(fscoutputname,apix,boxsize):
 
 	difs0p5 = []
 	difs0p143 = []
+
+
+
+
+	"""
+	import scipy.optimize
+
+	def sigmoid(p,x):
+	    x0,y0,c,k=p
+	    y = c / (1 + np.exp(-k*(x-x0))) + y0
+	    return y
+
+	def residuals(p,x,y):
+	    return y - sigmoid(p,x)
+
+	def resize(arr,lower=0.0,upper=1.0):
+	    arr=arr.copy()
+	    if lower>upper: lower,upper=upper,lower
+	    arr -= arr.min()
+	    arr *= (upper-lower)/arr.max()
+	    arr += lower
+	    return arr
+
+	# raw data
+	x = np.array([821,576,473,377,326],dtype='float')
+	y = np.array([255,235,208,166,157],dtype='float')
+
+	x=resize(-x,lower=0.3)
+	y=resize(y,lower=0.3)
+	print(x)
+	print(y)
+	p_guess=(np.median(x),np.median(y),1.0,1.0)
+	p, cov, infodict, mesg, ier = scipy.optimize.leastsq(
+	    residuals,p_guess,args=(x,y),full_output=1,warning=True)  
+
+	x0,y0,c,k=p
+	print('''\
+	x0 = {x0}
+	y0 = {y0}
+	c = {c}
+	k = {k}
+	'''.format(x0=x0,y0=y0,c=c,k=k))
+
+	xp = np.linspace(0, 1.1, 1500)
+	pxp=sigmoid(p,xp)
+
+	# Plot the results
+	plt.plot(x, y, '.', xp, pxp, '-')
+	"""
+
+
+
+
+
+
 
 
 	polycoeffs = numpy.polyfit(x, values, 30)
