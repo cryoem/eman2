@@ -205,9 +205,11 @@ int LstIO::calc_ref_image_index(int image_index)
 int LstIO::read_header(Dict & dict, int image_index, const Region * area, bool is_3d)
 {
 	ENTERFUNC;
+	init();
 	check_read_access(image_index);
 	int ref_image_index = calc_ref_image_index(image_index);
 	int err = imageio->read_header(dict, ref_image_index, area, is_3d);
+	dict["source_path"] = ref_filename;
 	EXITFUNC;
 	return err;
 }
@@ -215,6 +217,7 @@ int LstIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 int LstIO::write_header(const Dict &, int, const Region* , EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
+	init();
 	fprintf(lst_file, "%s\n", MAGIC);
 	EXITFUNC;
 	return 0;
