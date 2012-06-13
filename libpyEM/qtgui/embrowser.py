@@ -217,8 +217,8 @@ class EMFileType(object):
 		"Add to current 3-D window"
 		brws.busy()
 
-		if self.n>=0 : data=emdataitem3d.EMDataItem3D(self.path)
-		else : data=emdataitem3d.EMDataItem3D(self.path,n=self.n)
+		if self.n>=0 : data=emdataitem3d.EMDataItem3D(self.path,n=self.n)
+		else : data=emdataitem3d.EMDataItem3D(self.path)
 
 		try: 
 			target=brws.view3d[-1]
@@ -240,8 +240,8 @@ class EMFileType(object):
 		"New 3-D window"
 		brws.busy()
 
-		if self.n>=0 : data=emdataitem3d.EMDataItem3D(self.path)
-		else : data=emdataitem3d.EMDataItem3D(self.path,n=self.n)
+		if self.n>=0 : data=emdataitem3d.EMDataItem3D(self.path,n=self.n)
+		else : data=emdataitem3d.EMDataItem3D(self.path)
 
 
 		target=emscene3d.EMScene3D()

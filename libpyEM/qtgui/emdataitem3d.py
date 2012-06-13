@@ -96,7 +96,7 @@ class EMDataItem3D(EMItem3D):
 	def __init__(self, data, parent = None, children = set(), transform=None, n=0):
 		if not transform: transform = Transform()	# Object initialization should not be put in the constructor. Causes issues 
 		EMItem3D.__init__(self, parent, children, transform=transform)
-		self.setData(data)
+		self.setData(data,n)
 		self.renderBoundingBox = False
 	
 	def setSelectedItem(self, is_selected):
@@ -132,7 +132,7 @@ class EMDataItem3D(EMItem3D):
 	def getData(self):
 		return self.data
 		
-	def setData(self, data):
+	def setData(self, data, n=0):
 		if isinstance(data, EMData):
 			self.data = data
 			if data.has_attr("source_path"):
@@ -140,7 +140,8 @@ class EMDataItem3D(EMItem3D):
 			else:
 				self.path = None 
 		else:
-			self.data = EMData(str(data))
+			if n>0: self.data = EMData(str(data),n)
+			else: self.data = EMData(str(data))
 			self.path = str(data)
 			
 		for child in self.getChildren():
