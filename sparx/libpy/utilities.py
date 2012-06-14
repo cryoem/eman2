@@ -3765,6 +3765,7 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 		for j in xrange(len(v)):
 			d = ang_diff(vec[v[j]], vec[k])
 			g[j][0] = d[0]
+			if v[j] == k: g[j][0] = -1.  # To ensure the image itself is always included in the group
 			g[j][1] = d[1]
 			g[j][2] = v[j]
 		g[:len(v)] = sorted(g[:len(v)])
@@ -3793,3 +3794,4 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 	#tt2 = time()
 	#print tt2-tt1
 	return proj_list, mirror_list
+
