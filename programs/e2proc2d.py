@@ -167,7 +167,7 @@ def main():
 	parser.add_argument("--swap", action="store_true", help="Swap the byte order", default=False)
 	parser.add_argument("--threed2threed", action="store_true", help="Process 3D image as a statck of 2D slice, then output as a 3D image", default=False)	
 	parser.add_argument("--threed2twod", action="store_true", help="Process 3D image as a statck of 2D slice, then output as a 2D stack", default=False)
-	parser.add_argument("--twod2threed", action="store_true", help="Process a stack of 2D images, then output as a 3D image", default=False)
+	parser.add_argument("--twod2threed", action="store_true", help="Process a stack of 2D images, then output as a 3D image.(Note: the output 3D file must be pre-existing dummy file with the right dimensions.)", default=False)
 	parser.add_argument("--unstacking", action="store_true", help="Process a stack of 2D images, then output a a series of numbered single image files", default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	
@@ -544,13 +544,17 @@ def main():
 							if not os.path.isfile(outfile):	#create a dummy 3D image for regional writing if not already exist
 								out3d_img = EMData(d.get_xsize(), d.get_ysize(), nimg)
 								if 'mrc8bit' in optionlist:
-									out3d_img.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', 0, EMUtil.get_image_ext_type(options.outtype), True, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
+									out3d_img.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', 0, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
 								elif 'mrc16bit' in optionlist:
-									out3d_img.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', 0, EMUtil.get_image_ext_type(options.outtype), True, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
+									out3d_img.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', 0, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
 								else:
-									out3d_img.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), True, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+									out3d_img.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
 						
-						region = Region(0, 0, i, d.get_xsize(), d.get_ysize(), 1)
+						if options.list:
+							if imagelist[i] != 0:
+								region = Region(0, 0, imagelist[0:i].count(1), d.get_xsize(), d.get_ysize(), 1)
+						else:
+							region = Region(0, 0, i, d.get_xsize(), d.get_ysize(), 1)
 										
 						if 'mrc8bit' in optionlist:
 								d.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', 0, EMUtil.get_image_ext_type(options.outtype), False, region, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
