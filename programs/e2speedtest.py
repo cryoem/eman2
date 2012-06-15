@@ -338,8 +338,10 @@ so in most cases it is not dealt with.'
         print 'An Intel Xeon X5550 2.66Ghz SF ---------------------------------- 3060'
         print 'An Intel Xeon X5450 3.0Ghz SF ----------------------------------- 3220'
         print 'An Intel Xeon X5460 3.16Ghz SF ---------------------------------- 3320'
+        print 'An Intel Xeon E5645 2.4Ghz SF ----------------------------------- 3623'
         print 'An Intel Xeon X5675 3.07Ghz SF ---------------------------------- 4070'
-	print 'An Intel Core i5-2500 3.30GHz (depends on turbo) ---------------- 5560 - 6345'
+        print 'An Intel Xeon E5-2670 2.6Ghz SF --------------------------------- 4817'
+        print 'An Intel Core i5-2500 3.30GHz (depends on turbo) ---------------- 5560 - 6345'
         print '\nYour machines speed factor = %1.1f\n' % (25000.0 / ti)
         print '\nThis repesents %1.2f RTFAligns/sec\n' % (3.0 * (NTT - 5.0) / ti)
 
