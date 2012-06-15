@@ -10018,6 +10018,9 @@ def ssnr3d(stack, output_volume = None, ssnr_text_file = None, mask = None, refe
 	[ssnr1, vol_ssnr1] = recons3d_nn_SSNR(stack, mask2D, rw, npad, sign, sym, CTF, random_angles)
 	vol_ssnr1.write_image(output_volume, 0)
 	del vol_ssnr1
+	from sys import exit 
+	#exit()
+
 	# perform 3D reconstruction
 	if reference_structure == None:
 		nima = EMUtil.get_image_count(stack)
@@ -10054,7 +10057,7 @@ def ssnr3d(stack, output_volume = None, ssnr_text_file = None, mask = None, refe
 	outf = file(ssnr_text_file, "w")
 	for i in xrange(len(ssnr2[0])):
 		datstrings = []
-		datstrings.append("  %15f" % ssnr1[0][i])    #  have to subtract 0.5 as in C code there is round.
+		datstrings.append("  %15f" % ssnr1[0][i])    # have to subtract 0.5 as in C code there is round.
 		datstrings.append("  %15e" % ssnr1[1][i])    # SSNR
 		datstrings.append("  %15e" % ssnr1[2][i])    # variance
 		datstrings.append("  %15f" % ssnr1[3][i])    # number of points in the shell
