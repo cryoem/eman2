@@ -705,7 +705,7 @@ def bootstrap_nn(proj_stack, volume_stack, list_proj, niter, media="memory", npa
         		output.flush()
 
 
-def recons3d_em(projections_stack, max_iterations_count = 100, min_avg_abs_voxel_change = 0.01, use_weights = False, symmetry = "c1"):
+def recons3d_em(projections_stack, max_iterations_count = 100, radius = -1, min_avg_abs_voxel_change = 0.01, use_weights = False, symmetry = "c1"):
 	"""
 	Reconstruction algorithm basing on the Expectation Maximization method
 		projections_stack            -- file or list with projections
@@ -733,7 +733,7 @@ def recons3d_em(projections_stack, max_iterations_count = 100, min_avg_abs_voxel
 	if (projections[0].get_ysize() != nx) or (projections[0].get_zsize() != 1):
 		ERROR("This procedure works only for square images", "recons3d_em")
 
-	radius = nx // 2 - 1
+	if radius < 0:  radius = nx // 2 - 1
 	sphere2D = model_circle(radius, nx, nx)   
 	sphere3D = model_circle(radius, nx, nx, nx)
 	solution = model_blank(nx, nx, nx)
@@ -802,7 +802,7 @@ def recons3d_em(projections_stack, max_iterations_count = 100, min_avg_abs_voxel
 	return solution
 
 
-def recons3d_em_MPI(projections_stack, max_iterations_count = 100, min_norm_absolute_voxel_change = 0.01, use_weights = False, symmetry = "c1", min_norm_squared_voxel_change = 0.0001):
+def recons3d_em_MPI(projections_stack, max_iterations_count = 100, radius = -1, min_norm_absolute_voxel_change = 0.01, use_weights = False, symmetry = "c1", min_norm_squared_voxel_change = 0.0001):
 	"""
 	Reconstruction algorithm basing on the Expectation Maximization method.
 		projections_stack              -- file or list with projections
@@ -839,14 +839,15 @@ def recons3d_em_MPI(projections_stack, max_iterations_count = 100, min_norm_abso
 	if type(projections_stack) is types.StringType:
 		projections = EMData.read_images(projections_stack, range(projs_begin,projs_end))
 	else:
-		projections = projections_stack[projs_begin:projs_end]
+		#projections = projections_stack[projs_begin:projs_end]
+		projections = projections_stack
 	# ----------------------------------------------
 	
 	nx = projections[0].get_xsize()
 	if (projections[0].get_ysize() != nx) or (projections[0].get_zsize() != 1):
 		ERROR("This procedure works only for square images", "recons3d_em")
 
-	radius = nx // 2 - 1
+	if radius < 0: radius = nx // 2 - 1
 	sphere2D = model_circle(radius, nx, nx)   
 	sphere3D = model_circle(radius, nx, nx, nx)
 	solution = model_blank(nx, nx, nx)
