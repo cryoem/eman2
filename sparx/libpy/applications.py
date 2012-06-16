@@ -5631,8 +5631,8 @@ def local_ali3d(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, ce
 	ref_data = [mask3D, center, None, None]
 
 	M = nx
-	npad = 2
-	N = M*npad
+	npad_kaiser = 2
+	N = M*npad_kaiser
 	K = 6
 	alpha = 1.75
 	r = M/2
@@ -5900,8 +5900,8 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 	from time import time	
 		
 	M = nx
-	npad = 2
-	N = M*npad
+	npad_kaiser = 2
+	N = M*npad_kaiser
 	K = 6
 	alpha = 1.75
 	r = M/2

@@ -83,7 +83,7 @@ def main():
 		from applications import local_ali3d
 		global_def.BATCH = True
 		local_ali3d(args[0], args[1], mask, options.ou, options.delta, options.ts, options.center, options.maxit,
-		options.CTF, options.snr, options.sym, options.chunk, parse_user_function(options.function), options.fourvar,
+		options.CTF, options.snr, options.sym, options.chunk, options.function, options.fourvar,
 		options.npad, options.debug, options.MPI)
 		global_def.BATCH = False
 
