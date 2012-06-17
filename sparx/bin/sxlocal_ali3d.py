@@ -36,7 +36,6 @@ import os
 import global_def
 from   global_def import *
 from   optparse import OptionParser
-from   utilities import parse_user_function
 import sys
 
 
