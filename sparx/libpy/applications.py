@@ -5946,7 +5946,7 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 					print_msg("Time to center = %d\n"%(time()-start_time))
 					start_time = time()
 			# compute updated 3D before each chunk
- 	    		# resolution
+ 	    	# resolution
 			if debug:
 				finfo.write("  begin reconstruction = "+str(image_start))
 				finfo.write("\n")
@@ -5983,7 +5983,7 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 				vol, dummy = user_func(ref_data)
 				drop_image(vol, os.path.join(outdir, "volf%03d_%03d.hdf"%(iteration, ic)))
 			del varf
-			
+
 			# in last iteration return here
 			if(iteration == maxit):
 				if myid == main_node: print_end_msg("local_ali3d_MPI")
