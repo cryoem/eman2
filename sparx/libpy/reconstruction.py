@@ -315,7 +315,7 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 10.0, sign=1, symmetry="c
 	return fftvol
 
 
-def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None, npad=4, xysize=-1, zsize=-1):
+def recons3d_4nn_ctf_MPI(myid, prjlist, snr=1.0, sign=1, symmetry="c1", info=None, npad=4, xysize=-1, zsize=-1):
 	"""
 		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
 		Input
