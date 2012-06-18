@@ -46,6 +46,8 @@ def main():
 	
 	parser.add_argument("--vols", type=str, help="Volume whose radial density plot you want to compute. For multiple volumes, either provide them as an .hdf stack, or separate them by commas --vols=first.hdf,second.hdf,etc...", default=None)
 	parser.add_argument("--output", type=str, help="Name for the output .png and .txt files that contain the plots and the numeric values for them. Must be specified if --singleplot is on.", default=None)
+	parser.add_argument("--mode", type=str, help="provide --mode=x, y, or z to get the average density per slice in the indicated direction. --mode=cylinder for concentric cylindrical shell; default is --mode=sphere", default='sphere')
+	parser.add_argument("--fixedcylinderheight", type=int, help="Works only if --mode=cylinder, and keeps the height of the cylinder at a constant value, while varying the radius.", default=0)
 
 	parser.add_argument("--mask",type=str,help="Mask processor applied to volumes before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
 	parser.add_argument("--normproc",type=str,help="Normalization processor applied to volumes before alignment. Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify 'None' ", default="normalize")
@@ -89,9 +91,9 @@ def main():
 		stackvalues = []
 		print "The stack %s has %d images in it" % ( i, n ) 
 		for j in range(n):
-			a = EMData(i,j)
-			radius = a.get_xsize()/2
-			values = calcvalues(a,options,radius)	
+			ptcl = EMData(i,j)
+			#radius = a.get_xsize()/2
+			values = calcvalues(ptcl,options)	
 			stackvalues.append(values)
 		finalvalues.update({i:stackvalues})	
 	
@@ -166,7 +168,7 @@ def main():
 
 	return()				
 				
-def calcvalues(a,options,radius):
+def calcvalues(a,options):
 	# Make the mask first, use it to normalize (optionally), then apply it 
 	mask=EMData(a["nx"],a["ny"],a["nz"])
 	mask.to_one()
@@ -205,10 +207,67 @@ def calcvalues(a,options,radius):
 	if options.shrink !=None and options.shrink>1 :
 		a=a.process("math.meanshrink",{"n":options.shrink})
 
-	values = a.calc_radial_dist(radius, 0, 1, 1)
+	if options.mode == 'sphere':
+		values = a.calc_radial_dist(a['nx']/2, 0, 1, 1)
+		return(values)
 	
+	elif options.mode == 'cylinder':
+		values = cylider(a,options)
+		return(values)
+		
+	elif options.mode == 'x' or options.mode == 'y' or options.mode == 'z' or:
+		values = direction(a,options)
+		return(values)
+
+
+def cylinder(a,options):
+	values = []
+	mask = EMData(a['nx'],b['ny'],c['nz'])
+	for i in xrange(1,a['nx']/2):
+		height = i
+		radius = i
+		if options.fixedcylinderheight:
+			height = options.fixedcylinderheight
+			
+		maskout = mask.process("testimage.cylinder",{'height':height,'radius':radius})
+		maskin = mask.process("testimage.cylinder",{'height':height-1,'radius':radius-1})
+		b = a.copy()
+		b.mult(maskout)
+		b.mult(maskin)
+		value = b ['mean']
+		values.append(value)
+		
 	return(values)
 
+
+def direction(a,options):
+	values = []
+	mask = EMData(a['nx'],b['ny'],c['nz'])
 	
+	rng = a['nx']
+	if options.mode == 'y':
+		rng == a['ny']
+	
+	if options.mode == 'z':
+		rng == a['nz']
+	
+	for i in xrange(0,rng):
+		maskslice = mask
+		if options.mode == 'x':
+			maskslice = mask.process("mask.zeroedge3d",{'x0':i,'x1':a['nx'] -i -1,'y0':0,'y1':0,'z0':0,'z1':0})
+		
+		if options.mode == 'y':
+			maskslice = mask.process("mask.zeroedge3d",{'x0':0,'x1':0,'y0':i,'y1':a['ny'] -i -1,'z0':0,'z1':0})
+		
+		if options.mode == 'z':
+			maskslice = mask.process("mask.zeroedge3d",{'x0':0,'x1':0,'y0':0,'y1':0,'z0':i,'z1':a['nz'] -i -1})
+		
+		b = a.copy()
+		b.mult(maskslice)
+		value = b ['mean']
+		values.append(value)
+		
+	return(values)
+
 if __name__ == '__main__':
 	main()
