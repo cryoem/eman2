@@ -689,6 +689,7 @@ class Align3DTask(EMTask):
 		# Make the mask first, use it to normalize (optionally), then apply it 
 		mask=EMData(image["nx"],image["ny"],image["nz"])
 		mask.to_one()
+		
 		if options["mask"]:
 			print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options["mask"][0],options["mask"][1]) 
 			mask.process_inplace(options["mask"][0],options["mask"][1])
@@ -701,16 +702,38 @@ class Align3DTask(EMTask):
 			fixedimage.process_inplace(options["normproc"][0],options["normproc"][1])
 			image.process_inplace(options["normproc"][0],options["normproc"][1])
 		
+		#Mask after normalizing with the mask you just made, which is just a box full of 1s if not mask is specified
 		fixedimage.mult(mask)
 		image.mult(mask)
 		
-		#If 'normalize.mask' is not used, the procedure really should be mask-normalize-mask
-		if options["normproc"][0] != "normalize.mask":
-			image.process_inplace('normalize')
-			image.mult(mask)
+		#If normalizing, it's best to do normalize-mask-normalize-mask
+		if options["normproc"]:
+			if options["normproc"][0]=="normalize.mask": 
+				options["normproc"][1]["mask"]=mask
 			
-			fixedimage.process_inplace('normalize')
+			fixedimage.process_inplace(options["normproc"][0],options["normproc"][1])
+			image.process_inplace(options["normproc"][0],options["normproc"][1])
+		
 			fixedimage.mult(mask)
+			image.mult(mask)
+		
+		
+		
+		
+		
+		#If 'normalize.mask' is not used, the procedure really should be mask-normalize-mask
+		#if options["normproc"][0] != "normalize.mask":
+		#	image.process_inplace(options["normproc"][0],options["normproc"][1])
+		#	image.mult(mask)
+			
+		#	fixedimage.process_inplace(options["normproc"][0],options["normproc"][1])
+		#	fixedimage.mult(mask)
+		
+		
+		
+		
+		
+		
 		
 		# preprocess
 		if options["preprocess"] != None:
