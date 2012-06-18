@@ -2537,7 +2537,7 @@ class GaussBoxer:
 		@param cache whether or not the newly establish state, i.e. at the end of this function, should be cached to the database and internally. Generally True but sometimes False (see self.load_from_last_state) .
 		'''
 		from sparx import filt_gaussl
-		print "Gauss method............start autboxing"
+		print "Gauss method............start auto boxing"
 		if self.gui_mode:
 			from PyQt4 import QtCore 
 			get_application().setOverrideCursor(QtCore.Qt.BusyCursor)
@@ -2789,7 +2789,7 @@ class GaussBoxer:
 	def auto_box_cmdline(self, imgname,boxsize=128,norm="normalize.edgemean"):
 		
 		from sparx import filt_gaussl
-		print "Gauss method............start command line autboxing"
+		print "Gauss method............start command line auto boxing"
 		# user pawelautoboxer (gauss method) to compute soln
 		# downsample input image.
 		small_img = self.get_small_image(imgname,modecmd=True,boxsize=boxsize)
