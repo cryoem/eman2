@@ -66,7 +66,7 @@ def main():
 	
 	parser.add_argument("--centerbox", action="store_true", default=False, help='Will apply xform.centerofmass to the boxed subvolumes before the final extraction.')
 
-	parser.add_argument("--path",type=str,help="Pathname to save data to",default=".")
+	parser.add_argument("--path",type=str,help="Pathname to save data to",default="")
 	parser.add_argument("--inmemory",action="store_true",default=False,help="This will read the entire tomogram into memory. Much faster, but you must have enough ram !", guitype='boolbox', row=2, col=1, rowspan=1, colspan=1, mode="boxing")
 	parser.add_argument("--yshort",action="store_true",default=False,help="This means you have a file where y is the short axis", guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode="boxing")
 	parser.add_argument("--apix",type=float,help="Use THIS A/pix value to display the tomogram (if filtering) and to write to the header of the extracted subvolumes, instead of using the apix value one stored in the tomogram's header.",default=0.0, guitype='floatbox', row=3, col=0, rowspan=1, colspan=1, mode="boxing['self.pm().getAPIX()']")
