@@ -66,10 +66,10 @@ def main():
 	
 	parser.add_argument("--centerbox", action="store_true", default=False, help='Will apply xform.centerofmass to the boxed subvolumes before the final extraction.')
 
-	parser.add_argument("--path",type=str,help="Pathname to save data to",default="subtomograms")
+	parser.add_argument("--path",type=str,help="Pathname to save data to",default=".")
 	parser.add_argument("--inmemory",action="store_true",default=False,help="This will read the entire tomogram into memory. Much faster, but you must have enough ram !", guitype='boolbox', row=2, col=1, rowspan=1, colspan=1, mode="boxing")
 	parser.add_argument("--yshort",action="store_true",default=False,help="This means you have a file where y is the short axis", guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode="boxing")
-	parser.add_argument("--apix",type=float,help="Override the A/pix value stored in the tomogram header",default=0.0, guitype='floatbox', row=3, col=0, rowspan=1, colspan=1, mode="boxing['self.pm().getAPIX()']")
+	parser.add_argument("--apix",type=float,help="Use THIS A/pix value to display the tomogram (if filtering) and to write to the header of the extracted subvolumes, instead of using the apix value one stored in the tomogram's header.",default=0.0, guitype='floatbox', row=3, col=0, rowspan=1, colspan=1, mode="boxing['self.pm().getAPIX()']")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--helixboxer",action="store_true",default=False,help="Helix Boxer Mode", guitype='boolbox', row=2, col=2, rowspan=1, colspan=1, mode="boxing")
 		
@@ -84,7 +84,7 @@ def main():
 
 	parser.add_argument('--coords', type=str, default='', help='Provide a coordinates file that contains the center coordinates of the sub-volumes you want to extract, to box from the command line')
 	
-	parser.add_argument('--cbin', type=int, default=1, help='''Specifies the scale of the coordinates respect to the actual size of the tomogram where you want to extract the particles from.\nFor example, provide 2 if you recorded the coordinates from a tomogram that was binned by 2, \nbut want to extract the sub-volumes from the UNbinned version of that tomogram''')
+	parser.add_argument('--cbin', type=float, default=1.0, help='''Specifies the scale of the coordinates respect to the actual size of the tomogram where you want to extract the particles from.\nFor example, provide 2 if you recorded the coordinates from a tomogram that was binned by 2, \nbut want to extract the sub-volumes from the UNbinned version of that tomogram''')
 
 	parser.add_argument('--subset', type=int, default=0, help='''Specify how many sub-volumes from the coordinates file you want to extract; e.g, if you specify 10, the first 10 particles will be boxed.\n0 means "box them all" because it makes no sense to box none''')
 	parser.add_argument('--output', type=str, default='stack.hdf', help="Specify the name of the stack file where to write the extracted sub-volumes")
@@ -105,11 +105,12 @@ def main():
 		commandline_tomoboxer(args[0],options.coords,options.subset,options.boxsize,options.cbin,options.output,options.output_format,options.swapyz,options.reverse_contrast,options.centerbox)
 	else:	
 	
-		# Lets save our subtomograms to a diectory called 'subtomogRAMS'
-		subtomosdir = os.path.join(".",options.path)
-		if not os.access(subtomosdir, os.R_OK):
-			os.mkdir(options.path)
+		# Lets save our subtomograms to a diectory called 'subtomogRAMS', ONLY if they are single files
+		#subtomosdir = os.path.join(".",options.path)
+		#if not os.access(subtomosdir, os.R_OK) and options.format == 'single':
+		#	os.mkdir(options.path)
 		
+		print "OPTIONS.PATH IS!!!!\n\n\n", options.path
 		img = args[0]
 					
 		app = EMApp()
@@ -208,10 +209,11 @@ def unbinned_extractor(boxsize,x,y,z,cbin,contrast,center,tomogram=argv[1]):
 	
 	#boxsize=boxsize*cbin	#THE BOXSIZE SHOULD BE THE FINAL BOXSIZE! No binning compensation applied.
 	
-	x=x*cbin
-	y=y*cbin
-	z=z*cbin
+	x=round(x*cbin)
+	y=round(y*cbin)
+	z=round(z*cbin)
 	
+	print "The actual coordinates used for extraction are", x, y, z
 	r = Region((2*x-boxsize)/2,(2*y-boxsize)/2, (2*z-boxsize)/2, boxsize, boxsize, boxsize)
 	e = EMData()
 	e.read_image(tomogram,0,False,r)
@@ -314,13 +316,16 @@ def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,output,output
 		y = int(clines[i][1])
 		z = int(clines[i][2])
 
+		
+		print "The raw coordinates from the coordinates file provided for particle#%d are x=%d, y=%d, z=%d " % (i,x,y,z)
+
 		if swapyz:
 			print "You indicated Y and Z are flipped in the coords file, respect to the tomogram's orientation; therefore, they will be swapped"
 			aux = y
 			y = z
 			z = aux
+			print "Therefore, the swapped coordinates are", x, y, z
 
-		print "The unbinned coordinates from the coordinates file provided for particle#%d are x=%d, y=%d, z=%d " % (i,x,y,z)
 
 		e = unbinned_extractor(boxsize,x,y,z,cbin,contrast,center)
 		
@@ -1077,12 +1082,12 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	def extract_subtomo_box(self, helixbox, cbin=1, tomogram=argv[1]):
 		""" Retruns an extracted subtomogram box"""
 		# Only scale the helix boxer values transiently
-		x1 = helixbox[0]*cbin
-		y1 = helixbox[1]*cbin
-		z1 = helixbox[2]*cbin
-		x2 = helixbox[3]*cbin
-		y2 = helixbox[4]*cbin
-		z2 = helixbox[5]*cbin
+		x1 = round(helixbox[0]*cbin)
+		y1 = round(helixbox[1]*cbin)
+		z1 = round(helixbox[2]*cbin)
+		x2 = round(helixbox[3]*cbin)
+		y2 = round(helixbox[4]*cbin)
+		z2 = round(helixbox[5]*cbin)
 		
 		bs=self.boxsize()/2
 		# Get the extended vector based on boxsize
