@@ -94,7 +94,7 @@ os.mkdir(E2RLN)
 
 #E2n = E2init(sys.argv,options.ppid)
 set_name, refmap = args[0], args[1]
-s1 = "e2proc2d.py " + refmap + " " + E2RLN + "/3DRefMap.mrc --threed2threed --process=normalize.edgemean --verbose=0"
+s1 = "e2proc3d.py " + refmap + " " + E2RLN + "/3DRefMap.mrc --process=normalize.edgemean --verbose=0"
 call(s1, shell=True)
 header = EMData(set_name,0,True)
 h_keys = header.get_attr_dict().keys()
