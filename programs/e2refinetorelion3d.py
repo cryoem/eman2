@@ -178,8 +178,6 @@ else:
 	s = "relion_star_loopheader rlnImageName rlnMicrographName rlnVoltage rlnAmplitudeContrast > " + E2RLN + "/all_images.star"
 call(s,shell=True)
 
-print "AAAAAAAAAAAAAAAAAAAAAAAAAAA"
-
 print "Converting EMAN2 Files to Formats Compatible with RELION"
 for k in range(num_ptcl):
 	src = EMData(set_name,k)['data_source']
