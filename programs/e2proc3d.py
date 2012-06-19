@@ -294,7 +294,36 @@ def main():
 			elif option1 == "process":
 				fi = index_d[option1]
 				print 'process option = ', options.process
-				(filtername, param_dict) = parsemodopt(options.process[fi])
+				if options.process[0].find('bdb:') == -1:
+					(filtername, param_dict) = parsemodopt(options.process[fi])
+				else:
+					filtername = options.process[0].split(':')[0]
+					param_option = options.process[0].split(filtername+':')[1]
+					
+					#Parse the options to convert the image file name to EMData object(for both plain image file and bdb file)
+					l = param_option.split(':')
+					l2 = []
+					l2i = 0
+					for i in range(len(l)):
+						if l[i].find('=') != -1:
+							l2.append(l[i])
+						else:
+							l2[l2i-1] += ':'+l[i]
+							l2i -= 1
+						l2i += 1
+										
+					param_dict = {}
+					for i in l2:
+						param_dict[i.split('=')[0]] = i.split('=')[1]
+
+				for key in param_dict.keys():
+					if param_dict[key].find('bdb:')!=-1 or len(param_dict[key].split('.')[1])==3:
+						try:
+							param_dict[key] = EMData(param_dict[key])			
+						except:
+							pass
+									
+				
 				data.process_inplace(filtername, param_dict)
 				index_d[option1] += 1
 
