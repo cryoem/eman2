@@ -278,16 +278,18 @@ def main():
 				
 				#dataf = data.do_fft()
 				#curve = dataf.calc_radial_dist(ny, 0, 0.5,True)
-				#filt=[]
+				#filt=[]                 
 				#norm=data["nx"]*data["ny"]*data["nz"]
 				#for i,j in enumerate(curve):
 					#if j==0 : filt.append(0.0)
-					#else : filt.append(sqrt(norm*sf.get_yatx(i/(apix*2.0*dataf["ny"]))/j))
+					#else : 
+						#filt.append(sqrt(norm*sf.get_yatx(i/(apix*2.0*dataf["ny"]))/j))
+						#print i,sqrt(norm*sf.get_yatx(i/(apix*2.0*dataf["ny"]))/j)
 				#dataf.apply_radial_func(0,0.5/len(filt),filt)
 				#data=dataf.do_ift()
 				
 				#curve2 = dataf.calc_radial_dist(ny, 0, 0.5,True)
-				#plot((curve,curve2))
+#				plot((curve,curve2))
 
 			elif option1 == "process":
 				fi = index_d[option1]

@@ -601,15 +601,15 @@ void FourierAnlProcessor::process_inplace(EMData * image)
 
 
 	if (image->is_complex()) {
-		vector <float>yarray = image->calc_radial_dist(image->get_ysize()/2,0,1.0,1);
+		vector <float>yarray = image->calc_radial_dist(image->get_ysize(),0,0.5,1);
 		create_radial_func(yarray,image);
 		image->apply_radial_func(0, 0.5f/yarray.size(), yarray);
 	}
 	else {
 		EMData *fft = image->do_fft();
-		vector <float>yarray = fft->calc_radial_dist(fft->get_ysize()/2,0,1.0,1);
+		vector <float>yarray = fft->calc_radial_dist(fft->get_ysize(),0,0.5,1);
 		create_radial_func(yarray,image);
-		fft->apply_radial_func(0,  0.5f/yarray.size(), yarray,0);		// 4/30/10 stevel turned off interpolation to fix problem with matched filter
+		fft->apply_radial_func(0, 0.5f/yarray.size(), yarray,0);		// 4/30/10 stevel turned off interpolation to fix problem with matched filter
 		EMData *ift = fft->do_ift();
 
 		memcpy(image->get_data(),ift->get_data(),ift->get_xsize()*ift->get_ysize()*ift->get_zsize()*sizeof(float));
@@ -6310,10 +6310,16 @@ void SetSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *ima
 	}
 
 	float apix=image->get_attr("apix_x");
-
+	
 	int n = radial_mask.size();
 	for (int i=0; i<n; i++) {
-		if (radial_mask[i]>0) radial_mask[i]= n*n*n*sqrt(sf->get_yatx(i/(apix*2.0f*n),false)/radial_mask[i]);
+//		if (radial_mask[i]>0)
+//		{
+//			radial_mask[i]= sqrt(n*sf->get_yatx(i/(apix*2.0f*n),false)/radial_mask[i]);
+//		}
+		if (radial_mask[i]>0) {
+			radial_mask[i]= sqrt((n*n*n)*sf->get_yatx(i/(apix*2.0f*n))/radial_mask[i]);
+		}
 		else if (i>0) radial_mask[i]=radial_mask[i-1];
 	}
 
