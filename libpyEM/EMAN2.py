@@ -426,7 +426,7 @@ class EMArgumentParser(argparse.ArgumentParser):
 	def add_pos_argument(self, **kwargs):
 		""" Add a position argument, needed only for the GUI """
 		kwargs["positional"]=True
-		self.optionslist.append(copy.deepcopy(kwargs))	
+		self.optionslist.append(copy.deepcopy(kwargs))
 		
 	def add_header(self, **kwargs):
 		""" for the header, you need, title, row, col"""
@@ -485,7 +485,24 @@ def parsemodopt(optstr):
 	if not optstr or len(optstr)==0 : return (None,{})
 	if optstr.lower()=="none" : return None					# special case doesn't return a tuple
 	
-	p_1 = re.findall( parseparmobj3, optstr )
+	if optstr.find('bdb:') == -1:
+		p_1 = re.findall( parseparmobj3, optstr )
+	else:
+		name = optstr.split(':')[0]
+		p_1 = [name]
+		param_option = optstr.split(name+':')[1]
+		l = param_option.split(':')
+		l2 = []
+		l2i = 0
+		for i in range(len(l)):
+			if l[i].find('=') != -1:
+				l2.append(l[i])
+			else:
+				l2[l2i-1] += ':'+l[i]
+				l2i -= 1
+			l2i += 1
+		p_1 += l2
+        
 	if len(p_1)==0: return (optstr,{})
 	
 	r2 = {}
