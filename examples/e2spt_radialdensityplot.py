@@ -50,13 +50,14 @@ def main():
 	parser.add_argument("--fixedcylinderheight", type=int, help="Works only if --mode=cylinder, and keeps the height of the cylinder at a constant value, while varying the radius.", default=0)
 
 	parser.add_argument("--mask",type=str,help="Mask processor applied to volumes before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
-	parser.add_argument("--normproc",type=str,help="Normalization processor applied to volumes before alignment. Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify 'None' ", default="normalize")
+	parser.add_argument("--normproc",type=str,help="Normalization processor applied to volumes before alignment. Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify 'None' ", default=None)
 	parser.add_argument("--preprocess",type=str,help="Any processor (as in e2proc3d.py) to be applied to each volume prior to radial density plot computation.", default=None)
 	parser.add_argument("--lowpass",type=str,help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to radial density plot computation.", default=None)
 	parser.add_argument("--highpass",type=str,help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to radial density plot computation.", default=None)	
 	parser.add_argument("--shrink", type=int,default=1,help="Optionally shrink the input volumes by an integer amount.")	
 	#parser.add_argument("--apix", type=float, help="Provide --apix to overrride the value found in the volumes' header paramter.", default=0)
 	parser.add_argument("--singleplot", action="store_true",default=False,help="Plot all the Radial Density Profiles of the volumes provided in one single plot.")	
+	parser.add_argument("--threshold", action="store_true",default=False,help="If on, this will turn all negative pixel values into 0.")	
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -114,11 +115,33 @@ def main():
 			if '.png' not in plotname:
 				plotname += '.png'
 
-			plt.title("Radial density plot")
+			plt.title("Spherical radial density plot")
 			plt.ylabel("Density (arbitrary units)")
-			plt.xlabel("Radius [pixels]")
+			plt.xlabel("Radius (angstroms)")
+
+			if options.mode == 'x':
+				plt.title("Density plot of slices along x-axis")
+				plt.xlabel("X (angstroms)")
+
+			if options.mode == 'y':
+				plt.title("Density plot of slices along y-axis")
+				plt.xlabel("Y (angstroms)")
+
+			if options.mode == 'z':
+				plt.title("Density plot of slices along z-axis")
+				plt.xlabel("Z (angstroms)")
+				
+			if options.mode == 'cylinder':
+				plt.title("Density plot of concentric cylyndrical shells")
+				plt.xlabel("Radius (angstroms)")
 			
-			for i in names:		
+			for i in names:
+				apix = EMData(i,0,True)['apix_x']
+	
+				x = range(len(values))
+				for j in range(len(x)):
+					x[j] = int(round(x[j] * apix))		
+			
 				values = finalvalues[i][0]
 				txtname = plotname.replace('.png', '_' + str(j).zfill(len(names)) + '.txt') 
 				f = open(txtname,'w')
@@ -129,13 +152,13 @@ def main():
 				f.writelines(lines)
 				f.close()
 				
-				plt.plot(values, linewidth=2)
+				plt.plot(x,values, linewidth=2)
 
 			p = plt.gca()
 			plt.savefig(plotname)
 			plt.clf()
 
-	if not options.singleplot:
+	else:
 		for i in names:
 			plotname = ''
 			if options.output:
@@ -146,28 +169,45 @@ def main():
 			if plotname and '.png' not in plotname:
 				plotname += '.png'
 				
-			#print "\n\nfinal values for", i
-			#print "are", finalvalues[i]
-			#print "\n\n"
-			
 			for j in range(len(finalvalues[i])):
+				apix = EMData(i,j,True)['apix_x']
+
 				plotname = plotname.replace('.png','_' + str(j).zfill(len(finalvalues[i])) + '.png')
 				txtname = plotname.replace('.png','.txt')
 				values = finalvalues[i][j]
 				
-				plt.title("Radial density plot")
-				plt.ylabel("Density (arbitrary units)")
-				plt.xlabel("Radius [pixels]")
+				x=range(len(values))
+				for i in range(len(x)):
+					x[i] = int(round(x[i] * apix))
 				
-				plt.plot(values, linewidth=2)
-				a = plt.gca()
-				a.set_xlim([0,radius])
+				plt.title("Spherical radial density plot")
+				plt.ylabel("Density (arbitrary units)")
+				plt.xlabel("Radius (angstroms)")
+
+				if options.mode == 'x':
+					plt.title("Density plot of slices along x-axis")
+					plt.xlabel("X (angstroms)")
+				
+				if options.mode == 'y':
+					plt.title("Density plot of slices along y-axis")
+					plt.xlabel("Y (angstroms)")
+				
+				if options.mode == 'z':
+					plt.title("Density plot of slices along z-axis")
+					plt.xlabel("Z (angstroms)")
+					
+				if options.mode == 'cylinder':
+					plt.title("Density plot of concentric cylyndrical shells")
+					plt.xlabel("Radius (angstroms)")
+
+				plt.plot(x,values,linewidth=2)
+				p = plt.gca()
 				plt.savefig(plotname)
 				plt.clf()
 
-
 	return()				
 				
+
 def calcvalues(a,options):
 	# Make the mask first, use it to normalize (optionally), then apply it 
 	mask=EMData(a["nx"],a["ny"],a["nz"])
@@ -178,15 +218,15 @@ def calcvalues(a,options):
 
 	# normalize
 	if options.normproc != None:
-		#if options["normproc"][0]=="normalize.mask": 
-		#	options["normproc"][1]["mask"]=mask
+		if options.normproc[0]=="normalize.mask": 
+			options.normproc[1]["mask"]=mask
 		a.process_inplace(options.normproc[0],options.normproc[1])
 
 	a.mult(mask)
 
 	if options.normproc != None:
-		#if options["normproc"][0]=="normalize.mask": 
-		#	options["normproc"][1]["mask"]=mask
+		if options.normproc[0]=="normalize.mask": 
+			options.normproc[1]["mask"]=mask
 		a.process_inplace(options.normproc[0],options.normproc[1])
 
 	a.mult(mask)
@@ -206,35 +246,46 @@ def calcvalues(a,options):
 	# Shrink
 	if options.shrink !=None and options.shrink>1 :
 		a=a.process("math.meanshrink",{"n":options.shrink})
+	
+	if options.threshold:
+		a=a.process("threshold.belowtozero",{"minval":0.0})
 
 	if options.mode == 'sphere':
 		values = a.calc_radial_dist(a['nx']/2, 0, 1, 1)
 		return(values)
 	
 	elif options.mode == 'cylinder':
-		values = cylider(a,options)
+		values = cylinder(a,options)
 		return(values)
 		
-	elif options.mode == 'x' or options.mode == 'y' or options.mode == 'z' or:
+	elif options.mode == 'x' or options.mode == 'y' or options.mode == 'z':
 		values = direction(a,options)
 		return(values)
 
 
 def cylinder(a,options):
 	values = []
-	mask = EMData(a['nx'],b['ny'],c['nz'])
+	mask = EMData(a['nx'],a['ny'],a['nz'])
+	mask.to_one()
+	
 	for i in xrange(1,a['nx']/2):
-		height = i
+		heightout = i
+		heightin = heightout-1
 		radius = i
 		if options.fixedcylinderheight:
-			height = options.fixedcylinderheight
-			
-		maskout = mask.process("testimage.cylinder",{'height':height,'radius':radius})
-		maskin = mask.process("testimage.cylinder",{'height':height-1,'radius':radius-1})
+			heightout = options.fixedcylinderheight
+			heightin = heightout
+		#print "Heighout, heightin and radius are", heightout, heightin, radius
+		maskout = mask.process("testimage.cylinder",{'height':heightout,'radius':radius})
+		maskin = mask.process("testimage.cylinder",{'height':heightin,'radius':radius-1})
+		
+		finalmask = maskout - maskin
+		
 		b = a.copy()
-		b.mult(maskout)
-		b.mult(maskin)
-		value = b ['mean']
+		#b.mult(maskout)
+		#b.mult(maskin)
+		b.mult(finalmask)
+		value = b ['mean_nonzero']
 		values.append(value)
 		
 	return(values)
@@ -242,7 +293,8 @@ def cylinder(a,options):
 
 def direction(a,options):
 	values = []
-	mask = EMData(a['nx'],b['ny'],c['nz'])
+	mask = EMData(a['nx'],a['ny'],a['nz'])
+	mask.to_one()
 	
 	rng = a['nx']
 	if options.mode == 'y':
@@ -250,6 +302,9 @@ def direction(a,options):
 	
 	if options.mode == 'z':
 		rng == a['nz']
+	
+	print "The mode is", options.mode
+	print "And the range for values calculation is", rng
 	
 	for i in xrange(0,rng):
 		maskslice = mask
@@ -264,7 +319,7 @@ def direction(a,options):
 		
 		b = a.copy()
 		b.mult(maskslice)
-		value = b ['mean']
+		value = b ['mean_nonzero']
 		values.append(value)
 		
 	return(values)
