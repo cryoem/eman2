@@ -77,7 +77,7 @@ e2proc3d.py ab_initio_vol.hdf ab_initio_volf.hdf --process=filter.lowpass.tanh:c
 sxparams_2D_to_3D.py bdb:data 
 
 # 3D projection alignment - refinement of the initial structure
-mpirun -np 4 sxali3d.py bdb:data ab_initio_volf.hdf ali3d_d --ou=30 --xr='2.0 1.0 0.5' --ts='1.0 1 0.5' --delta='31 10 2' --an='-1 12 6' --maxit=2 --ref_a=P  --function=reference3 --CTF --MPI 
+mpirun -np 4 sxali3d.py bdb:data ab_initio_volf.hdf ali3d_d --ou=30 --xr='2.0 1.0 0.5' --ts='1.0 1 0.5' --delta='31 10 2' --an='-1 12 6' --maxit=2 --ref_a=P  --function="[..,demo_user_funcs,ali3d_reference3]" --CTF --MPI 
 ###################################################################
 # To run gui version, enter the following in the command line:
 # 	sxgui.py --demo=mpibdbctf &
@@ -88,7 +88,7 @@ mpirun -np 4 sxali3d.py bdb:data ab_initio_volf.hdf ali3d_d --ou=30 --xr='2.0 1.
 ###################################################################
 
 # Refinement of the 3D structure using high accuracy alignment
-mpirun -np 4 sxlocal_ali3d.py bdb:data ali3d_e --ou=30 --delta=2 --ts=2 --maxit=1 --chunk=0.25 --function=reference3 --center=0 --MPI --CTF --debug 
+mpirun -np 4 sxlocal_ali3d.py bdb:data ali3d_e --ou=30 --delta=2 --ts=2 --maxit=1 --chunk=0.25 --function="[..,demo_user_funcs,localali3d_reference3]" --center=0 --MPI --CTF --debug 
 ###################################################################
 # To run gui version, enter the following in the command line:
 # 	sxgui.py --demo=mpibdbctf &
