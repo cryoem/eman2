@@ -362,7 +362,7 @@ def main():
 						param_dict[i.split('=')[0]] = i.split('=')[1]
 				
 				for key in param_dict.keys():
-					if param_dict[key].find('bdb:')!=-1 or len(param_dict[key].split('.')[1])==3:
+					if str(param_dict[key]).find('bdb:')!=-1 or len(str(param_dict[key]).split('.')[1])==3:
 						try:
 							param_dict[key] = EMData(param_dict[key])			
 						except:
