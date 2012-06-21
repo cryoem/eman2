@@ -299,12 +299,11 @@ def main():
 
 				#Parse the options to convert the image file name to EMData object(for both plain image file and bdb file)
 				for key in param_dict.keys():
-					if str(param_dict[key]).find('bdb:')!=-1 or len(str(param_dict[key]).split('.')[1])==3:
+					if str(param_dict[key]).find('bdb:')!=-1 or not str(param_dict[key]).isdigit():
 						try:
 							param_dict[key] = EMData(param_dict[key])			
 						except:
-							pass
-									
+							pass									
 				
 				data.process_inplace(filtername, param_dict)
 				index_d[option1] += 1
