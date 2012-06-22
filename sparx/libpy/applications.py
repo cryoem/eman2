@@ -10199,14 +10199,12 @@ def pca(input_stacks, subavg, mask_radius, sdir, nvec, incore, shuffle, genbuf, 
 	from utilities import get_image, get_im, model_circle, model_blank
 	from statistics import pcanalyzer
 	import types
-	oldVer = False	# input_stacks is a list of images not a file name
-	
 	if len(input_stacks)==0:
 		print "Error: no input file."
 		return
 	
-	if type(input_stacks[0]) is types.StringType:
-		oldVer = True	# input_stacks is a file name
+	if type(input_stacks[0]) is types.StringType: oldVer = True	# input_stacks is a file name
+	else:  	oldVer = False	# input_stacks is a list of images not a file name
 
 	if mask_radius > 0 and maskfile !="":
 		print "Error: mask radius and mask file cannot be used at the same time"
@@ -10239,7 +10237,6 @@ def pca(input_stacks, subavg, mask_radius, sdir, nvec, incore, shuffle, genbuf, 
 		mask = model_blank(data.get_xsize(), data.get_ysize(), data.get_zsize(), bckg=1.0)
 
 	pca = pcanalyzer(mask, sdir, nvec, incore, MPI)
-
 
 	if subavg != "":
 		if(verbose):
