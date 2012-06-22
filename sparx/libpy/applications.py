@@ -6046,8 +6046,8 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 				from pixel_error import max_3D_pixel_error
 				pixer[imn-image_start] = max_3D_pixel_error(t1, t2, last_ring)
 				#set_params_proj(dataim[imn-image_start], optm_params[0])
-				if( myid== main_node and (imn>image_start_in_chunk) and ( ((imn-image_start_in_chunk)%(n_in_chunk//2) == 0) or (imn == image_end_in_chunk-1) ) ):
-					print_msg( "Time to process %6d particles : %d\n" % (n_in_chunk//2, time()-start_time) )
+				if( myid == main_node ):
+					print_msg( "Time to process %6d particles : %d\n" % (image_end_in_chunk-image_start_in_chunk, time()-start_time) )
 					start_time = time()
 
 			# release memory of volft
@@ -10281,7 +10281,7 @@ def pca(input_stacks, subavg, mask_radius, sdir, nvec, incore, shuffle, genbuf, 
 	vecs = pca.analyze()
 	return vecs
 	
-def prepare_2d_forPCA(data, mode = "a", output_stack = None, average = None, avg = False, CTF = False):
+def prepare_2d_forPCA(data, mode = "a", output_stack = None, average = None, avg = True, CTF = False):
 	"""
 		Prepare 2D images for PCA
 		Average of all images is calculated using header alignment information, 
@@ -10292,16 +10292,18 @@ def prepare_2d_forPCA(data, mode = "a", output_stack = None, average = None, avg
 		   Im_k - CTF_k*Av
 		If avg = True, average outside of a circle r = nx//2-1 is subtracted from each image
 	"""
-	from utilities    import model_blank, model_circle, get_arb_params, set_arb_params
+	from utilities    import model_blank, model_circle, set_params_2D, get_params_2D
 	from fundamentals import rot_shift2D
 
 
 	if( output_stack == None):  outstack = [None]*n
 
-	inmem = True
 	if type(data) == type(""):
 		inmem = False
 		from utilities    import get_im	
+	else:
+		inmem = True
+
 
 	if inmem:
 		img = data[0]
@@ -10319,12 +10321,11 @@ def prepare_2d_forPCA(data, mode = "a", output_stack = None, average = None, avg
 		n = EMUtil.get_image_count(data)
 
 
-	
-	if avg:  mask = model_circle( nx//2-1, nx, ny)
+	if avg:  mask = model_circle( nx//2-2, nx, ny)
 	if  CTF:
-		if(ima.get_attr_default('ctf_applied', 2) > 0):
+		if(img.get_attr_default('ctf_applied', 2) > 0):
 			ERROR("data cannot be ctf-applied","prepare_2d_forPCA",1)
-		from fundamentals import fft
+		from fundamentals import fft, fftip, windows2d
 		from morphology   import ctf_img
 		from filter 	  import filt_ctf
 		from utilities    import pad
@@ -10339,54 +10340,66 @@ def prepare_2d_forPCA(data, mode = "a", output_stack = None, average = None, avg
 				img = data[i].copy()
 			else:
 				img = get_im(data, i)
-			ctf_params = ima.get_attr("ctf")
-			ali = get_arb_params(ima, pali)
-			ima    = rot_shift2D(ima, ali[0], ali[1], ali[2], ali[3])
+			ctf_params = img.get_attr("ctf")
+			if (mode == 'a'):
+				angle, sx, sy, mirror, scale = get_params2D(img)
+				img = rot_shift2D(img, angle, sx, sy, mirror, scale)
 			if avg:
-				st = Util.infomask(ima, mask, False)
-				ima -= st[0]
-			oc = filt_ctf(fft(pad(ima, nx2, ny2, background = 0.0)), ctf_params)
-			Util.add_img(ave, oc)
-			Util.add_img2(ctf_2_sum, ctf_img(nx2, ctf_params, ny = ny2, nz = 1))
+				st = Util.infomask(img, mask, False)
+				img -= st[0]
+			img = pad(img, nx2,ny2, 1, background = "circumference")
+			fftip(img)
+			Util.add_img(ave, filt_ctf(img, ctf_params))
+			Util.add_img2(ctf_2_sum, ctf_img(nx2, ctf_params))
 		Util.div_filter(ave, ctf_2_sum)
 		for i in xrange(n):
-			ima = EMData()
-			ima.read_image(input_stack, i)
-			ctf_params = ima.get_attr( "ctf" )
-			ali = get_arb_params(ima, pali)
-			ima    = rot_shift2D(ima, ali[0], ali[1], ali[2], ali[3])
+			if inmem:
+				img = data[i].copy()
+			else:
+				img = get_im(data, i)
+			ctf_params = img.get_attr("ctf")
+			if (mode == 'a'):
+				angle, sx, sy, mirror, scale = get_params2D(img)
+				img = rot_shift2D(img, angle, sx, sy, mirror, scale)
 			if avg:
-				st = Util.infomask(ima, mask, False)
-				ima -= st[0]
-			oc = filt_ctf(ave, ctf_params, pad= True)
-			Util.sub_img(ima, Util.window(fft(oc),nx,ny,1,0,0,0))
-			set_arb_params(ima, [0.0,0.0,0.0,0], pali)
-			ima.write_image(output_stack, i)
-		Util.window(fft(ave),nx,ny,1,0,0,0).write_image(average)
+				st = Util.infomask(img, mask, False)
+				img -= st[0]
+			img = pad(img, nx2,ny2, 1, background = "circumference")
+			fftip(img)
+			img = filt_ctf(img-filt_ctf(ave, ctf_params, dopa), ctf_params, dopa)
+			Util.div_filter(img, ctf_2_sum)
+			img = window2d(fft(img),nx,ny)
+			set_params2D(img, [0.0,0.0,0.0,0,1.0])
+			if( output_stack == None):  outstack[i] = img
+			else:                       img.write_image(output_stack, i)
 	else:
 		ave  = model_blank( nx, ny)
 		for i in xrange(n):
-			ima = EMData()
-			ima.read_image(input_stack, i)
-			ali = get_arb_params(ima, pali)
-			ima    = rot_shift2D(ima, ali[0], ali[1], ali[2], ali[3])
+			if inmem:
+				img = data[i].copy()
+			else:
+				img = get_im(data, i)
+			angle, sx, sy, mirror, scale = get_params2D(img)
+			img = rot_shift2D(img, angle, sx, sy, mirror, scale)
 			if avg:
-				st = Util.infomask(ima, mask, False)
-				ima -= st[0]
-			Util.add_img(ave, ima)
+				st = Util.infomask(img, mask, False)
+				img -= st[0]
+			Util.add_img(ave, img)
 		ave /= n
-		ave.write_image(average)
 		for i in xrange(n):
-			ima = EMData()
-			ima.read_image(input_stack, i)
-			ali = get_arb_params(ima, pali)
-			ima    = rot_shift2D(ima, ali[0], ali[1], ali[2], ali[3])
+			if inmem:
+				img = data[i].copy()
+			else:
+				img = get_im(data, i)
+			angle, sx, sy, mirror, scale = get_params2D(img)
+			img = rot_shift2D(img, angle, sx, sy, mirror, scale)
 			if avg:
-				st = Util.infomask(ima, mask, False)
-				ima -= st[0]
-			Util.sub_img(ima, ave)
-			set_arb_params(ima, [0.0,0.0,0.0,0], pali)
-			ima.write_image(output_stack, i)
+				st = Util.infomask(img, mask, False)
+				img -= st[0]
+			Util.sub_img(img, ave)
+			set_params2D(img, [0.0,0.0,0.0,0,1.0])
+			if( output_stack == None):  outstack[i] = img
+			else:                       img.write_image(output_stack, i)
 
 def varimax(input_stack, imglist, output_stack, maskfile, mask_radius, verbose ) :
 	from utilities import get_im, model_circle
