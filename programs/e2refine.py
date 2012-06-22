@@ -531,6 +531,7 @@ def check(options,verbose=0):
 		img1.read_image(options.input,0,read_header_only)
 		img2 = EMData()
 		img2.read_image(options.usefilt,0,read_header_only)
+		img3 = EMData(options.model,0,True)
 		
 		nx1 = img1.get_attr("nx") 
 		nx2 = img2.get_attr("nx") 
@@ -581,6 +582,13 @@ def check(options,verbose=0):
 		print "Error: you must specify the --iter argument"
 		error = True
 		
+	if options.path != None:
+		if not os.path.exists(options.path):
+			print "Error: the path %s does not exist" %options.path
+			error = True
+	else:
+		options.path = numbered_path("refine",True)
+		
 	if ( file_exists(options.model) and options.input != None and file_exists(options.input)):
 		(xsize, ysize ) = gimme_image_dimensions2D(options.input);
 		(xsize3d,ysize3d,zsize3d) = gimme_image_dimensions3D(options.model)
@@ -602,15 +610,19 @@ def check(options,verbose=0):
 			error = True
 			
 		if ( xsize3d != xsize ) :
-			print "Error: the dimensions of %s (%d) do not match the dimension of %s (%d)" %(options.input,xsize,options.model,xsize3d)
-			error = True
-			
-	if options.path != None:
-		if not os.path.exists(options.path):
-			print "Error: the path %s does not exist" %options.path
-			error = True
-	else:
-		options.path = numbered_path("refine",True)
+			print "WARNING: the dimensions of the particles (%d) do not match the dimensions of the starting model (%d). I will attempt to adjust the model appropriately."%(xsize,xsize3d)
+			img1 = EMData(options.input,0,True)
+			img3 = EMData(options.model,0,True)
+			try:
+				scale=img1["apix_x"]/img3["apix_x"]
+			except:
+				print "A/pix unknown, assuming scale same as relative box size"
+				scale=float(xsize)/xsize3d
+			if scale>1 : cmd="e2proc3d.py %s bdb:%s#initial_model --clip=%d,%d,%d --scale=%1.5f"%(options.model,options.path,xsize,xsize,xsize,scale)
+			else :       cmd="e2proc3d.py %s bdb:%s#initial_model --scale=%1.5f --clip=%d,%d,%d"%(options.model,options.path,scale,xsize,xsize,xsize)
+			print cmd
+			launch_childprocess(cmd)
+			options.model="bdb:%s#initial_model"%options.path
 			
 	if hasattr(options,"parallel") and options.parallel != None:
   		if len(options.parallel) < 2:

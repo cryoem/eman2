@@ -59,10 +59,11 @@ def main():
 	parser.add_argument("--input", dest="input", default=None,type=str, help="The name of the image containing the particle data", browser='EMBrowserWidget(withmodal=True,multiselect=False)', guitype='filebox', row=0, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--iter", type = int, default=8, help = "The total number of refinement iterations to perform", guitype='intbox', row=2, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--tries", type=int, default=10, help="The number of different initial models to generate in search of a good one", guitype='intbox', row=2, col=1, rowspan=1, colspan=1)
-	parser.add_argument("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos",default="c1", guitype='symbox', row=3, col=0, rowspan=1, colspan=3)
-	parser.add_argument("--savemore",action="store_true",help="Will cause intermediate results to be written to flat files",default=False, guitype='boolbox', expert=True, row=4, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Optionally shrink the input particles by an integer amount prior to reconstruction. Default=0, no shrinking", guitype='shrinkbox', row=2, col=2, rowspan=1, colspan=1)
+	parser.add_argument("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos",default="c1", guitype='symbox', row=4, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--savemore",action="store_true",help="Will cause intermediate results to be written to flat files",default=False, guitype='boolbox', expert=True, row=5, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_argument("--orientgen",type=str, default="eman",help="The type of orientation generator. Default is safe. See e2help.py orientgens", guitype='combobox', choicelist='dump_orientgens_list()', row=2, col=2, rowspan=1, colspan=1)
+	parser.add_argument("--orientgen",type=str, default="eman",help="The type of orientation generator. Default is safe. See e2help.py orientgens", guitype='combobox', choicelist='dump_orientgens_list()', expert=True, row=2, col=2, rowspan=1, colspan=1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	# Database Metadata storage
@@ -72,10 +73,31 @@ def main():
 	verbose=options.verbose
 
 	ptcls=EMData.read_images(options.input)
-	for i in ptcls: i.process_inplace("normalize.edgemean",{})
+	apix=ptcls[0]["apix_x"]
+	if options.shrink>1 : apix*=options.shrink
+
+	for i in range(len(ptcls)): 
+		ptcls[i].process_inplace("normalize.edgemean",{})
+		if options.shrink>1 : 
+			ptcls[i]=ptcls[i].process("math.meanshrink",{"n":options.shrink})
+	if ptcls[0]["nx"]>64 : print "WARNING: using a box-size >64 is not optimial for making initial models. Suggest using --shrink="
 	if not ptcls or len(ptcls)==0 : parser.error("Bad input file")
 	boxsize=ptcls[0].get_xsize()
 	if verbose>0 : print "%d particles %dx%d"%(len(ptcls),boxsize,boxsize)
+	print "Models will be %1.3f A/pix"%apix
+
+	try:
+		db_misc=db_open_dict("bdb:e2ctf.misc",True)
+		m=db_misc["strucfac"]
+		print "Using previously generated structure factor from bdb:e2ctf.misc"
+		sfcurve=XYData()		# this is really slow and stupid
+		for i,j in enumerate(m):
+			sfcurve.set_x(i,j[0])
+			sfcurve.set_y(i,j[1])
+		
+		sfcurve.update()
+	except : sfcurve=None
+
 
 	# angles to use for refinement
 	sym_object = parsesym(options.sym)
@@ -98,11 +120,12 @@ def main():
 		else: break
 	results_name="bdb:initial_models#model_%02d"%ii
 	print results_name
+	ptcls[0].write_image(results_name+"_01",0)		# If someone runs a second job, this makes sure they use different output files
 
 	# We make one new reconstruction for each loop of t 
 	for t in range(options.tries):
 		if verbose>0: print "Try %d"%t
-		threed=[make_random_map(boxsize)]		# initial model
+		threed=[make_random_map(boxsize,sfcurve)]		# initial model
 		apply_sym(threed[0],options.sym)		# with the correct symmetry
 		
 		# This is the refinement loop
@@ -118,7 +141,7 @@ def main():
 			bss=0.0
 			bslst=[]
 			for i in range(len(ptcls)):
-				sim=cmponetomany(projs,ptcls[i],align=("rotate_translate_flip",{}),alicmp=("dot",{}),cmp=("frc",{}))
+				sim=cmponetomany(projs,ptcls[i],align=("rotate_translate_flip",{"maxshift":boxsize/5}),alicmp=("ccc",{}),cmp=("frc",{"maxres":20}))
 				bs=min(sim)
 				#print bs[0]
 				bss+=bs[0]
@@ -135,7 +158,7 @@ def main():
 #			for i in range(len(ptcls)*3/4):		# We used to include 3/4 of the particles
 			for i in range(len(ptcls)*7/8):
 				n=ptcls[bslst[i][1]]["match_n"]
-				aptcls.append(ptcls[bslst[i][1]].align("rotate_translate_flip",projs[n],{},"dot",{}))
+				aptcls.append(ptcls[bslst[i][1]].align("rotate_translate_flip",projs[n],{},"ccc",{}))
 				if it<2 : aptcls[-1].process_inplace("xform.centerofmass",{})
 			
 			bss/=len(ptcls)
@@ -184,7 +207,10 @@ def main():
 			threed[-1].process_inplace("mask.gaussian",{"inner_radius":boxsize/3.0,"outer_radius":boxsize/12.0})
 			threed[-1].process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
 			threed[-1].process_inplace("normalize.edgemean")
-			if it>1 : threed[-1].process_inplace("mask.auto3d",{"radius":boxsize/6,"threshold":2.0,"nmaxseed":60,"nshells":boxsize/20,"nshellsgauss":boxsize/20})
+			if it>1 : threed[-1].process_inplace("mask.auto3d",{"radius":boxsize/6,"threshold":1.6,"nmaxseed":60,"nshells":boxsize/20,"nshellsgauss":boxsize/20})
+			threed[-1]["apix_x"]=apix
+			threed[-1]["apix_y"]=apix
+			threed[-1]["apix_z"]=apix
 #			threed[-1]["quality"]=bss
 			threed[-1]["quality"]=qual
 
@@ -210,7 +236,7 @@ def main():
 			out_name = results_name+"_%02d"%(i+1)
 			j[1].write_image(out_name,0)
 			j[4].write_image(results_name+"_%02d_init"%(i+1),0)
-			print out_name,j[1]["quality"],j[0]
+			print out_name,j[1]["quality"],j[0],j[1]["apix_x"]
 			if options.dbls: # database list storage
 				pdb = db_open_dict("bdb:project")
 				old_data = pdb.get(options.dbls,dfl={})
@@ -239,12 +265,14 @@ def main():
 	E2end(logid)
 
 
-def make_random_map(boxsize):
+def make_random_map(boxsize,sfcurve=None):
 	"""This will make a map consisting of random noise, low-pass filtered and center-weighted for use
 	as a random starting model in initial model generation. Note that the mask is eliptical and has random aspect."""
 	
 	ret=EMData(boxsize,boxsize,boxsize)
 	ret.process_inplace("testimage.noise.gauss",{"mean":0.02,"sigma":1.0})
+	#if sfcurve!=None:
+		#ret.process_inplace("filter.setstrucfac",{"strucfac":sfcurve})
 	ret.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
 	ret.process_inplace("xform.centerofmass",{})
 #	ret.process_inplace("mask.gaussian",{"inner_radius":boxsize/3.0,"outer_radius":boxsize/12.0})

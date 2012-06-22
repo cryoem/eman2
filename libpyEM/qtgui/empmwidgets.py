@@ -464,7 +464,14 @@ class PMFileNameWidget(PMBaseWidget):
 				self.filenamebox.setText(filename)
 				return False
 			numimages += EMUtil.get_image_count(f)
-		self.infolabel.setText("Num Images: %d"%numimages)
+		try: 
+			tst=EMData(files[0],0)
+			nx,ny,nz=tst["nx"],tst["ny"],tst["nz"]
+		except:
+			nx,ny,nz=0,0,0
+		if nx>0: self.infolabel.setText("Num Images: %d  %dx%dx%d"%(numimages,nx,ny,nz))
+		else : self.infolabel.setText("Num Images: %d"%numimages)
+		
 		return True
 		
 	def _onBadFile(self, filename, quiet=False):
