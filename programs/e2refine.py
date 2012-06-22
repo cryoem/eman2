@@ -614,7 +614,7 @@ def check(options,verbose=0):
 			img1 = EMData(options.input,0,True)
 			img3 = EMData(options.model,0,True)
 			try:
-				scale=img1["apix_x"]/img3["apix_x"]
+				scale=img3["apix_x"]/img1["apix_x"]
 			except:
 				print "A/pix unknown, assuming scale same as relative box size"
 				scale=float(xsize)/xsize3d
