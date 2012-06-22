@@ -82,6 +82,7 @@ power spectrum in various ways."""
 	parser.add_argument("--voltage",type=float,help="Microscope voltage in KV",default=None, guitype='floatbox', row=3, col=1, rowspan=1, colspan=1, mode="eval['self.pm().getVoltage()']")
 	parser.add_argument("--cs",type=float,help="Microscope Cs (spherical aberation)",default=None, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="eval['self.pm().getCS()']")
 	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage, default=10)",default=10, guitype='floatbox', row=4, col=1, rowspan=1, colspan=1, mode="eval")
+	parser.add_argument("--box",type=int,help="Box size in grid mode ",default=512, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="eval")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
@@ -91,7 +92,7 @@ power spectrum in various ways."""
 
 	from emapplication import EMApp
 	app=EMApp()
-	gui=GUIEvalImage(args,options.voltage,options.apix,options.cs,options.ac)
+	gui=GUIEvalImage(args,options.voltage,options.apix,options.cs,options.ac,options.box)
 	gui.show()
 	app.execute()
 
@@ -100,7 +101,7 @@ power spectrum in various ways."""
 
 		
 class GUIEvalImage(QtGui.QWidget):
-	def __init__(self,images,voltage=None,apix=None,cs=None,ac=10.0):
+	def __init__(self,images,voltage=None,apix=None,cs=None,ac=10.0,box=512):
 		"""Implements the CTF fitting dialog using various EMImage and EMPlot2D widgets
 		'data' is a list of (filename,ctf,im_1d,bg_1d,im_2d,bg_2d)
 		"""
@@ -150,15 +151,19 @@ class GUIEvalImage(QtGui.QWidget):
 				if self.defaultvoltage!=None : ctf.voltage=self.defaultvoltage
 				if self.defaultcs!=None : ctf.cs=self.defaultcs
 				if self.defaultapix!=None : ctf.apix=self.defaultapix
-				parms=[512,ctf,(256,256),set(),5]
+				parms=[int(box),ctf,(256,256),set(),5]
 				print "no parms for ",item_name(i)
 			
 			self.parms.append(parms)
 		
 		self.wimage=EMImage2DWidget()
+		self.wimage.setWindowTitle("e2evalimage - Micrograph")
 		
 		self.wfft=EMImage2DWidget()
+		self.wfft.setWindowTitle("e2evalimage - 2D FFT")
+
 		self.wplot=EMPlot2DWidget()
+		self.wplot.setWindowTitle("e2evalimage - Plot")
 		
 		self.wimage.connect(self.wimage,QtCore.SIGNAL("mousedown"),self.imgmousedown)
 		self.wimage.connect(self.wimage,QtCore.SIGNAL("mousedrag"),self.imgmousedrag)
@@ -319,7 +324,7 @@ class GUIEvalImage(QtGui.QWidget):
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeOut)
 		self.timer.start(0.1)
 		
-		self.setWindowTitle("CTF")
+		self.setWindowTitle("e2evalimage - Control Panel")
 #		self.recalc()
 
 		
@@ -754,6 +759,7 @@ class GUIEvalImage(QtGui.QWidget):
 	def newBox(self):
 		parms=self.parms[self.curset]
 		parms[0]=self.sboxsize.value
+		parms[3]=set()
 		self.recalc()
 
 	def newQualityFactor(self):
