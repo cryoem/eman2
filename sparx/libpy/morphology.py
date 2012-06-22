@@ -358,7 +358,7 @@ def defocus_get(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0, f_sto
 	else: 			i_start=int(Pixel_size*2.*len(roo)/f_start)
 	if f_stop <= i_start : 	i_stop=len(roo)
 	else: 			i_stop=int(Pixel_size*2.*len(roo)/f_stop)
-	
+
 	TE  = defocus_env_baseline_fit(roo, i_start, i_stop, int(nr1), 4)
 	Pn1 = defocus_env_baseline_fit(roo, i_start, i_stop, int(nr2), 3)
 	Res_roo = []
