@@ -9380,25 +9380,26 @@ def cluster_equalsize(d, m):
 
 
 class pcanalyzer:
-	def __init__(self, mask, sdir, nvec, incore=False, MPI=False, scratch=None):
+	#def __init__(self, mask, sdir=".", nvec=3, incore=False, MPI=False, scratch=None):
+	def __init__(self, mask, nvec=3, incore=False, MPI=False, scratch=None):
 		import os
 		self.mask = mask.copy()
 		if MPI:
 			from mpi import mpi_comm_rank, MPI_COMM_WORLD
 			self.myid = mpi_comm_rank( MPI_COMM_WORLD )
 			if( scratch == None):
-				self.file = os.path.join(sdir , "maskedimg%04d.bin" % self.myid )
+				self.file = os.path.join("." , "maskedimg%04d.bin" % self.myid )
 			else:
 				self.file = os.path.join(scratch , "maskedimg%04d.bin" % self.myid )
 			self.MPI  = True
 		else:
 			if( scratch == None):
-				self.file = os.path.join(sdir , "maskedimg.bin" )
+				self.file = os.path.join("." , "maskedimg.bin" )
 			else:
 				self.file = os.path.join(scratch , "maskedimg.bin" )
 			self.MPI  = False
 			self.myid = 0
-		self.sdir   = sdir
+		#self.sdir   = "."
 		self.nimg   = 0
 		self.nvec   = nvec
 		self.fw     = None
