@@ -5614,8 +5614,7 @@ def local_ali3d(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, ce
 		outf.write("\n")
 		outf.flush()
 
-	n_in_chunk  = max(int(chunk * nima), 1)
-	n_of_chunks = nima//n_in_chunk + min(nima%n_in_chunk, 1)
+	n_of_chunks = int(1.0/chunk)
 	
 	if debug:
 		outf = file(os.path.join(outdir, "progress"), "w")
@@ -5631,8 +5630,8 @@ def local_ali3d(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, ce
 	ref_data = [mask3D, center, None, None]
 
 	M = nx
-	npad_kaiser = 2
-	N = M*npad_kaiser
+	npad = 2
+	N = M*npad
 	K = 6
 	alpha = 1.75
 	r = M/2
@@ -5685,8 +5684,8 @@ def local_ali3d(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, ce
 			if not CTF:
 				data[0], data[1] = prep_vol(vol)
 
-			image_start_in_chunk = ic*n_in_chunk
-			image_end_in_chunk   = min(image_start_in_chunk + n_in_chunk, nima)
+			image_start_in_chunk = ic*nima/n_of_chunks
+			image_end_in_chunk   = (ic+1)*nima/n_of_chunks
 			if debug:
 				outf.write("image_start_in_chunk "+str(image_start_in_chunk)+"\n")
 				outf.write("\n")
@@ -5837,6 +5836,7 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 	if last_ring < 0:	last_ring = int(nx/2) - 2
 
 	if chunk <= 0.0:  chunk = 1.0
+	n_of_chunks = int(1.0/chunk)
 
 	if myid == main_node:
 		import user_functions
@@ -5868,9 +5868,6 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 		finfo.write( "image_start, image_end: %d %d\n" %(image_start, image_end) )
 		finfo.flush()
 
-	n_in_chunk  = max(int(chunk*(image_end-image_start)), 1)
-	n_of_chunks = (image_end-image_start)//n_in_chunk + min((image_end-image_start)%n_in_chunk, 1)
-
 	if debug:
 		finfo.write("  chunk = "+str(chunk)+"   ")
 		finfo.write("\n")
@@ -5900,8 +5897,8 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 	from time import time	
 		
 	M = nx
-	npad_kaiser = 2
-	N = M*npad_kaiser
+	npad = 2
+	N = M*npad
 	K = 6
 	alpha = 1.75
 	r = M/2
@@ -5946,7 +5943,7 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 					print_msg("Time to center = %d\n"%(time()-start_time))
 					start_time = time()
 			# compute updated 3D before each chunk
- 	    	# resolution
+ 	    		# resolution
 			if debug:
 				finfo.write("  begin reconstruction = "+str(image_start))
 				finfo.write("\n")
@@ -5983,7 +5980,7 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 				vol, dummy = user_func(ref_data)
 				drop_image(vol, os.path.join(outdir, "volf%03d_%03d.hdf"%(iteration, ic)))
 			del varf
-
+			
 			# in last iteration return here
 			if(iteration == maxit):
 				if myid == main_node: print_end_msg("local_ali3d_MPI")
@@ -5993,10 +5990,10 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 			if not CTF:
 				data[0], data[1] = prep_vol(vol)
 
-			image_start_in_chunk = image_start + ic*n_in_chunk
-			image_end_in_chunk   = min(image_start_in_chunk + n_in_chunk, image_end)
+			image_start_in_chunk = image_start + ic*nima/n_of_chunks
+			image_end_in_chunk   = image_start + (ic+1)*nima/n_of_chunks
 			if debug:
-				finfo.write("Chunk "+str(ic)+"   Number of images in this chunk: "+str(n_in_chunk)+"\n")
+				finfo.write("Chunk "+str(ic)+"   Number of images in this chunk: "+str(image_end_in_chunk-image_start_in_chunk)+"\n")
 				finfo.write("First image in this chunk: "+str(image_start_in_chunk)+"   Last image in this chunk: "+str(image_end_in_chunk-1)+"\n")
 				finfo.flush()
 			if CTF:  previous_defocus = -1.0
@@ -10287,7 +10284,7 @@ def pca(input_stacks, subavg, mask_radius, sdir, nvec, incore, shuffle, genbuf, 
 	vecs = pca.analyze()
 	return vecs
 	
-def prepare_2d_forPCA(input_stack, output_stack, average, avg = False, CTF = False):
+def prepare_2d_forPCA(data, mode = "a", output_stack = None, average = None, avg = False, CTF = False):
 	"""
 		Prepare 2D images for PCA
 		Average of all images is calculated using header alignment information, 
@@ -10300,12 +10297,31 @@ def prepare_2d_forPCA(input_stack, output_stack, average, avg = False, CTF = Fal
 	"""
 	from utilities    import model_blank, model_circle, get_arb_params, set_arb_params
 	from fundamentals import rot_shift2D
-	pali = ["alpha", "sx", "sy", "mirror"]
-	n = EMUtil.get_image_count(input_stack)
-	ima = EMData()
-	ima.read_image(input_stack, 0)
-	nx = ima.get_xsize()
-	ny = ima.get_xsize()
+
+
+	if( output_stack == None):  outstack = [None]*n
+
+	inmem = True
+	if type(data) == type(""):
+		inmem = False
+		from utilities    import get_im	
+
+	if inmem:
+		img = data[0]
+	else:
+		img = get_im(data,0)
+
+	nx = img.get_xsize()
+	ny = img.get_ysize()
+	nz = img.get_zsize()
+
+
+	if inmem:
+		n = len(data)
+	else:
+		n = EMUtil.get_image_count(data)
+
+
 	
 	if avg:  mask = model_circle( nx//2-1, nx, ny)
 	if  CTF:
@@ -10315,7 +10331,6 @@ def prepare_2d_forPCA(input_stack, output_stack, average, avg = False, CTF = Fal
 		from morphology   import ctf_img
 		from filter 	  import filt_ctf
 		from utilities    import pad
-		parnames = ["Pixel_size", "defocus", "voltage", "Cs", "amp_contrast", "B_factor",  "ctf_applied"]
 
 		nx2 = 2*nx
 		ny2 = 2*ny
@@ -10323,9 +10338,11 @@ def prepare_2d_forPCA(input_stack, output_stack, average, avg = False, CTF = Fal
 		ctf_2_sum = EMData(nx2, ny2, 1, False)
 
 		for i in xrange(n):
-			ima = EMData()
-			ima.read_image(input_stack, i)
-			ctf_params = ima.get_arb_params("ctf")
+			if inmem:
+				img = data[i].copy()
+			else:
+				img = get_im(data, i)
+			ctf_params = ima.get_attr("ctf")
 			ali = get_arb_params(ima, pali)
 			ima    = rot_shift2D(ima, ali[0], ali[1], ali[2], ali[3])
 			if avg:
