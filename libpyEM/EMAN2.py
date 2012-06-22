@@ -756,7 +756,11 @@ def launch_childprocess(cmd):
 	Convenience function to lauch child processes
 	'''
 	p = subprocess.Popen(str(cmd)+" --ppid=%d"%os.getpid(), shell=True)
-	error = os.waitpid(p.pid, 0)[1]
+	
+	if get_platform() == 'Windows':
+		error = p.wait()	#os.waitpid does not work on windows
+	else:
+		error = os.waitpid(p.pid, 0)[1]
 	
 	return error
 	
