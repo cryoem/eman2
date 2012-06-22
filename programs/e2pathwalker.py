@@ -452,7 +452,7 @@ class PathWalker(object):
 		# os.system("concorde -x -m -o %s %s"%(outfile, tspfile))
 		args = ['concorde', '-x', '-m', '-o', outfile, tspfile]
 		try:
-			a = subprocess.Popen(args)
+			a = subprocess.Popen(args, shell=True)
 		except OSError:
 			print """
 	Error! Could not find concorde executable. Please see the Pathwalker wiki for details:
@@ -490,7 +490,7 @@ class PathWalker(object):
 		
 		args = ['LKH', lkhfile]
 		try:
-			a = subprocess.Popen(args)
+			a = subprocess.Popen(args, shell=True)
 		except OSError:
 			print """
 	Error! Could not find LKH executable. Please see the Pathwalker wiki for details:
