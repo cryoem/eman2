@@ -201,6 +201,7 @@ class ValSlider(QtGui.QWidget):
 	
 	def setIntonly(self,flag):
 		self.intonly=flag
+		if flag : self.rounding=0
 		self.updateboth()
 		
 	def textChange(self):

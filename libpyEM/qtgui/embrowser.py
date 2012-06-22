@@ -796,8 +796,7 @@ class EMDirEntry(object):
 		hidedot will cause hidden files (starting with .) to be excluded"""
 		self.__parent=parent	# single parent
 		self.__children=None	# ordered list of children, None indicates no check has been made, empty list means no children, otherwise list of names or list of EMDirEntrys
-		self.regex = None	# A regular expression to weed out undesirable files based upn filename, uses regualr expression. Must be a regex object
-		self.dirregex=dirregex	# only list files using regex. Only applies to starting directory
+		self.dirregex=dirregex	# only list files using regex
 		self.root=str(root)	# Path prefixing name
 		self.name=str(name)	# name of this path element (string)
 		self.index=str(index)
@@ -910,14 +909,15 @@ class EMDirEntry(object):
 			
 			# Weed out undesirable files
 			self.__children = []
-			if self.dirregex:
+			if self.dirregex!=None:
 				for child in filelist:
-					if self.dirregex.search(child):
+#					print child,self.dirregex.search(child)
+					if os.path.isdir(self.filepath+"/"+child) or self.dirregex.match(child)!=None:
 						self.__children.append(child)
-			elif self.regex:
-				for child in filelist:
-					if not self.regex.search(child) or child == "EMAN2DB":
-						self.__children.append(child)
+			#elif self.regex:
+				#for child in filelist:
+					#if not self.regex.search(child) or child == "EMAN2DB":
+						#self.__children.append(child)
 			else:
 				self.__children = filelist
 			
@@ -925,8 +925,9 @@ class EMDirEntry(object):
 			if "EMAN2DB" in self.__children :
 				self.__children.remove("EMAN2DB")
 				
-				if self.regex:
-					t=["bdb:"+i for i in db_list_dicts("bdb:"+self.filepath) if not self.regex.search(i)]
+				if self.dirregex!=None:
+					t=["bdb:"+i for i in db_list_dicts("bdb:"+self.filepath) if self.dirregex.match(i)!=None]
+#					for i in db_list_dicts("bdb:"+self.filepath): print i,self.dirregex.search(i)
 				else:
 					t=["bdb:"+i for i in db_list_dicts("bdb:"+self.filepath)]
 					
@@ -1982,10 +1983,16 @@ class EMBrowserWidget(QtGui.QWidget):
 	"""This widget is a file browser for EMAN2. In addition to being a regular file browser, it supports:
 	- getting information about recognized data types
 	- embedding BDB: databases into the observed filesystem
-	- remote database access (EMEN2)
+	- remote database access (EMEN2)*
 	"""
 	
 	def __init__(self,parent=None,withmodal=False,multiselect=False,startpath=".",setsmode=None):
+		"""withmodal - if specified will have ok/cancel buttons, and provide a mechanism for a return value (not truly modal)
+multiselect - if True, multiple files can be simultaneously selected
+startpath - default "."
+setsmode - Used during bad particle marking
+dirregex - default "", a regular expression for filtering filenames (directory names not filtered)
+"""
 		# although this looks dumb it is necessary to break Python's issue with circular imports(a major weakness of Python IMO)
 		global emscene3d, emdataitem3d
 		import emscene3d
@@ -2000,8 +2007,7 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.gbl = QtGui.QGridLayout(self)
 		
 		# Top Toolbar area
-		self.wtools=QtGui.QWidget()
-		self.wtoolhbl=QtGui.QHBoxLayout(self.wtools)
+		self.wtoolhbl=QtGui.QHBoxLayout()
 		self.wtoolhbl.setContentsMargins(0,0,0,0)
 		
 		self.wbutback=QtGui.QPushButton(QString(QChar(0x2190)))
@@ -2009,21 +2015,15 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.wbutback.setEnabled(False)
 		self.wtoolhbl.addWidget(self.wbutback,0)
 
-		self.wbutup=QtGui.QPushButton(QString(QChar(0x2191)))
-		self.wbutup.setMaximumWidth(36)
-		self.wtoolhbl.addWidget(self.wbutup,0)
-
 		self.wbutfwd=QtGui.QPushButton(QString(QChar(0x2192)))
 		self.wbutfwd.setMaximumWidth(36)
 		self.wbutfwd.setEnabled(False)
 		self.wtoolhbl.addWidget(self.wbutfwd,0)
 
-		self.wbutrefresh=QtGui.QPushButton(QString(QChar(0x21ba)))
-		self.wbutrefresh.setMaximumWidth(36)
-		self.wtoolhbl.addWidget(self.wbutrefresh,0)
-
-
 		# Text line for showing (or editing) full path
+		self.lpath = QtGui.QLabel("  Path:")
+		self.wtoolhbl.addWidget(self.lpath)
+		
 		self.wpath = QtGui.QLineEdit()
 		self.wtoolhbl.addWidget(self.wpath,5)
 				
@@ -2035,14 +2035,46 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.wbutinfo.setCheckable(True)
 		self.wtoolhbl.addWidget(self.wbutinfo,1)
 		
-		# add a selectall button
+		
+		self.gbl.addLayout(self.wtoolhbl,0,0,1,2)
+		
+
+		# 2nd Top Toolbar area
+		self.wtoolhbl2=QtGui.QHBoxLayout()
+		self.wtoolhbl2.setContentsMargins(0,0,0,0)
+		
+		self.wbutup=QtGui.QPushButton(QString(QChar(0x2191)))
+		self.wbutup.setMaximumWidth(36)
+		self.wtoolhbl2.addWidget(self.wbutup,0)
+
+		self.wbutrefresh=QtGui.QPushButton(QString(QChar(0x21ba)))
+		self.wbutrefresh.setMaximumWidth(36)
+		self.wtoolhbl2.addWidget(self.wbutrefresh,0)
+
+		# Text line for showing (or editing) full path
+		self.lfilter = QtGui.QLabel("Filter:")
+		self.wtoolhbl2.addWidget(self.lfilter)
+		
+		self.wfilter = QtGui.QComboBox()
+		self.wfilter.setEditable(True)
+		self.wfilter.setInsertPolicy(QtGui.QComboBox.InsertAtBottom)
+		self.wfilter.addItem("")
+		self.wfilter.addItem("(.(?!_ctf))*$")
+		self.wfilter.addItem(".*\.img")
+		self.wfilter.addItem(".*_ptcls$")
+		self.wtoolhbl2.addWidget(self.wfilter,5)
+				
+		#self.wspacet1=QtGui.QSpacerItem(100,10,QtGui.QSizePolicy.MinimumExpanding)
+		#self.wtoolhbl.addSpacerItem(self.wspacet1)
+
+
 		self.selectall=QtGui.QPushButton("Sel All")
-		if withmodal:
-			self.wtoolhbl.addWidget(self.selectall,0)
+		self.wtoolhbl2.addWidget(self.selectall,1)
+		self.selectall.setEnabled(withmodal)
 		
-		self.gbl.addWidget(self.wtools,0,0,1,2)
-		
-		
+		self.gbl.addLayout(self.wtoolhbl2,1,0,1,2)
+
+
 		### Central verticalregion has bookmarks and tree
 		# Bookmarks implemented with a toolbar in a frame
 		self.wbookmarkfr = QtGui.QFrame()
@@ -2062,7 +2094,7 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.addBookmark("Home",e2gethome())
 		self.wbmfrbl.addWidget(self.wbookmarks)
 		
-		self.gbl.addWidget(self.wbookmarkfr,1,0)
+		self.gbl.addWidget(self.wbookmarkfr,2,0)
 		
 		# This is the main window listing files and metadata
 		self.wtree = SortSelTree()
@@ -2071,7 +2103,7 @@ class EMBrowserWidget(QtGui.QWidget):
 		self.wtree.setSelectionBehavior(1)		# select rows
 		self.wtree.setAllColumnsShowFocus(True)
 		self.wtree.sortByColumn(-1,0)			# start unsorted
-		self.gbl.addWidget(self.wtree,1,1)
+		self.gbl.addWidget(self.wtree,2,1)
 		
 		# Lower region has buttons for actions
 		self.hbl2 = QtGui.QGridLayout()
@@ -2116,7 +2148,7 @@ class EMBrowserWidget(QtGui.QWidget):
 			QtCore.QObject.connect(self.wbutcancel, QtCore.SIGNAL('clicked(bool)'), self.buttonCancel)
 			QtCore.QObject.connect(self.wbutok, QtCore.SIGNAL('clicked(bool)'), self.buttonOk)
 
-		self.gbl.addLayout(self.hbl2,3,1)
+		self.gbl.addLayout(self.hbl2,4,1)
 
 		QtCore.QObject.connect(self.wbutback, QtCore.SIGNAL('clicked(bool)'), self.buttonBack)
 		QtCore.QObject.connect(self.wbutfwd, QtCore.SIGNAL('clicked(bool)'), self.buttonFwd)
@@ -2129,6 +2161,7 @@ class EMBrowserWidget(QtGui.QWidget):
 		QtCore.QObject.connect(self.wtree, QtCore.SIGNAL('expanded(const QModelIndex)'), self.itemExpand)
 		QtCore.QObject.connect(self.wpath, QtCore.SIGNAL('returnPressed()'), self.editPath)
 		QtCore.QObject.connect(self.wbookmarks, QtCore.SIGNAL('actionTriggered(QAction*)'), self.bookmarkPress)
+		QtCore.QObject.connect(self.wfilter, QtCore.SIGNAL('currentIndexChanged(int)'), self.editFilter)
 
 		self.setsmode=setsmode	# The sets mode is used when selecting bad particles 
 		self.curmodel=None	# The current data model displayed in the tree
@@ -2205,6 +2238,9 @@ class EMBrowserWidget(QtGui.QWidget):
 			
 		self.needresize=2
 
+	def editFilter(self,newfilt):
+		"""Sets a new filter. Requires reloading the current directory."""
+		self.setPath(str(self.wpath.text()))
 
 	def editPath(self):
 		"Set a new path"
@@ -2403,14 +2439,20 @@ class EMBrowserWidget(QtGui.QWidget):
 		
 		self.curpath=str(path)
 		self.wpath.setText(path)
+		filt=str(self.wfilter.currentText()).strip()
 
+		if filt=="" : filt=None
+		else: 
+			filt=re.compile(filt)
+			
 		#if path in self.models :
 			#self.curmodel=self.models[path]
 		#else : 
 			#self.curmodel=inimodel(path)
 			#self.models[self.curpath]=self.curmodel
 
-		self.curmodel=inimodel(path)
+		if filt!=None and filt !="": self.curmodel=inimodel(path,dirregex=filt)
+		else: self.curmodel=inimodel(path)
 
 		self.wtree.setSortingEnabled(False)
 		self.wtree.setModel(self.curmodel)

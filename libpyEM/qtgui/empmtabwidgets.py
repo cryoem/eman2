@@ -331,7 +331,6 @@ class EMParticlesEntry(EMDirEntry):
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
-		self.regex = re.compile('_ctf_flip.{0,5}|_ctf_flip_hp.{0,5}|_ctf_wiener.{0,5}')
 		self.type = None
 		self.particledim=None
 		self.defocus=None
@@ -465,7 +464,6 @@ class EMCTFParticlesEntry(EMDirEntry):
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
-		self.regex=re.compile("_ctf_flip.{0,5}$|_ctf_flip_hp.{0,5}$|_ctf_wiener.{0,5}$")
 		self.type = None
 		self.particledim=None
 		self.defocus=None
@@ -547,7 +545,6 @@ class EMCTFcorrectedParticlesEntry(EMCTFParticlesEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMCTFParticlesEntry.__init__(self,root,name,i,parent=None,hidedot=True,dirregex=None)
-		self.regex = re.compile(r'^(?!.*?_ctf_wiener).*^(?!.*?_ctf_flip).*')
 	
 ######################################################################################################################
 
@@ -555,6 +552,7 @@ class EMParticlesEditTable(EMBrowserWidget):
 	""" Widget to display junk from e2boxercache """
 	def __init__(self, withmodal=False, multiselect=False):
 		EMBrowserWidget.__init__(self, withmodal=withmodal, multiselect=multiselect, startpath="./particles",setsmode=True)
+		self.wfilter.setCurrentIndex(1)
 	
 	def setPath(self,path,silent=False):
 		super(EMParticlesEditTable, self).setPath(path,silent=silent,inimodel=EMParticlesEditModel)
@@ -562,15 +560,15 @@ class EMParticlesEditTable(EMBrowserWidget):
 class EMParticlesEditModel(EMFileItemModel):
 	""" Item model for the raw data """
 	
-	headers=("Row","Raw Data Files","Type", "Num Particles", "Bad Particles", "Defocus", "B Factor", "SNR", "Quality", "Sampling", "Particle Dims")
+	headers=("Row","Raw Data Files", "Num Particles", "Bad Particles", "Defocus", "B Factor", "SNR", "Quality", "Sampling", "Particle Dims")
 	
-	def __init__(self,startpath=None):
-		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMParticlesEditEntry)
+	def __init__(self,startpath=None,dirregex=None):
+		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMParticlesEditEntry,dirregex=dirregex)
 		
 	def columnCount(self,parent):
-		"Always 11 columns"
+		"Always 10 columns"
 		#print "EMFileItemModel.columnCount()=6"
-		return 11
+		return 10
 		
 	def data(self,index,role):
 		"Returns the data for a specific location as a string"
@@ -590,43 +588,39 @@ class EMParticlesEditModel(EMFileItemModel):
 		elif col==1 : 
 			if data.isbdb : return "bdb:"+data.name
 			return nonone(data.name)
-		elif col==2 : 
-			if data.type==0 : return "-"
-			return nonone(data.type)
-		elif col==3 :
+		elif col==2 :
 			if data.nimg==0 : return "-"
 			return nonone(data.nimg)
-		elif col==4 :
+		elif col==3 :
 			if data.badparticlecount==0 : return "-"
 			return nonone(data.badparticlecount)
-		elif col==5 :
+		elif col==4 :
 			if data.defocus==0 : return "-"
 			return nonone(data.defocus)
-		elif col==6 :
+		elif col==5 :
 			if data.bfactor==0 : return "-"
 			return nonone(data.bfactor)
-		elif col==7 :
+		elif col==6 :
 			if data.snr==0 : return "-"
 			return nonone(data.snr)
-		elif col==8 :
+		elif col==7 :
 			if data.quality==0 : return "-"
 			return nonone(data.quality)
-		elif col==9 :
+		elif col==8 :
 			if data.sampling==0 : return "-"
 			return nonone(data.sampling)
-		elif col==10 :
+		elif col==9 :
 			if data.particledim==0 : return "-"
 			return nonone(data.particledim)
 
 class EMParticlesEditEntry(EMCTFParticlesEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.type,lambda x:safe_int(x.nimg), lambda x:safe_int(x.badparticlecount), lambda x:safe_float(x.defocus), lambda x:safe_float(x.bfactor), lambda x:safe_float(x.snr), lambda x:safe_int(x.quality), lambda x:x.sampling, lambda x:x.particledim)
+	col=(lambda x:int(x.index),lambda x:x.name,lambda x:safe_int(x.nimg), lambda x:safe_int(x.badparticlecount), lambda x:safe_float(x.defocus), lambda x:safe_float(x.bfactor), lambda x:safe_float(x.snr), lambda x:safe_int(x.quality), lambda x:x.sampling, lambda x:x.particledim)
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMCTFParticlesEntry.__init__(self,root=root,name=name,i=i,parent=parent,hidedot=hidedot,dirregex=dirregex)
 		self.badparticlecount = None
-		self.regex=None
 		
 	def fillDetails(self, db):
 		super(EMParticlesEditEntry, self).fillDetails(db)
@@ -658,8 +652,8 @@ class EMBoxesModel(EMFileItemModel):
 	
 	headers=("Row","Raw Data Files","Stored Boxes", "Box Quality", "Micro Quality")
 	
-	def __init__(self,startpath=None):
-		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMBoxesEntry)
+	def __init__(self,startpath=None,dirregex=None):
+		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMBoxesEntry,dirregex=dirregex)
 		
 	def columnCount(self,parent):
 		"Always 5 columns"
@@ -776,8 +770,8 @@ class EMRCTBoxesModel(EMFileItemModel):
 	
 	headers=("Row","Raw Data Files","Stored Boxes", "Box Quality", "Micro Quality")
 	
-	def __init__(self,startpath=None):
-		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMRCTBoxesEntry)
+	def __init__(self,startpath=None,dirregex=None):
+		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMRCTBoxesEntry,dirregex=dirrege)
 		
 	def columnCount(self,parent):
 		"Always 5 columns"
@@ -904,8 +898,8 @@ class EMSubTomosModel(EMFileItemModel):
 	
 	headers=("Row","Subtomograms","Num Subtomos", "Dims")
 	
-	def __init__(self,startpath=None):
-		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMSubTomosEntry)
+	def __init__(self,startpath=None,dirregex=None):
+		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMSubTomosEntry,dirregex=dirregex)
 		
 	def columnCount(self,parent):
 		"Always 4 columns"
@@ -965,8 +959,8 @@ class EMRawDataModel(EMFileItemModel):
 	
 	headers=("Row","Raw Data Files","Dimensions", "Quality")
 	
-	def __init__(self,startpath=None):
-		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMRawDataEntry)
+	def __init__(self,startpath=None,dirregex=None):
+		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMRawDataEntry,dirregex=dirregex)
 		
 	def columnCount(self,parent):
 		"Always 4 columns"
@@ -1037,8 +1031,8 @@ class EMTomoDataModel(EMFileItemModel):
 	
 	headers=("Row","Raw Data Files","Dimensions")
 	
-	def __init__(self,startpath=None):
-		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMTomoDataEntry)
+	def __init__(self,startpath=None,dirregex=None):
+		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMTomoDataEntry,dirregex=dirregex)
 		
 	def columnCount(self,parent):
 		"Always 3 columns"

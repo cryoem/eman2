@@ -41,6 +41,7 @@ import weakref
 import e2ctf
 import threading
 from numpy import array,arange
+import traceback
 
 try:
 	from PyQt4 import QtCore, QtGui, QtOpenGL
@@ -136,18 +137,23 @@ class GUIEvalImage(QtGui.QWidget):
 		self.defaultac=ac
 		
 		# Per image parameters to keep track of
-		# for each image [box size,ctf,box coord,set of excluded boxnums]
-		# Bugzilla, EMAN2Ctf class implemntation is RUBBISH!!!
+		# for each image [box size,ctf,box coord,set of excluded boxnums,quality]
 		self.parms=[]
+		db_fparms=db_open_dict("bdb:e2ctf.frameparms",True)
 		for i in images:
-			ctf = EMAN2Ctf()
-			ctf.from_dict({'defocus':0.0,'dfdiff':0.0,'dfang':0.0,'bfactor':200.0,'ampcont':self.defaultac,'voltage':200.0,'cs':4.1,'apix':1.0,'dsbg':-1})
-			if self.defaultvoltage!=None : ctf.voltage=self.defaultvoltage
-			if self.defaultcs!=None : ctf.cs=self.defaultcs
-			if self.defaultapix!=None : ctf.apix=self.defaultapix
-			self.parms.append([512,ctf,(256,256),set()])
+			try: 
+				parms=db_fparms[item_name(i)]
+				if parms==None : raise Exception
+			except:
+				ctf = EMAN2Ctf()
+				ctf.from_dict({'defocus':0.0,'dfdiff':0.0,'dfang':0.0,'bfactor':200.0,'ampcont':self.defaultac,'voltage':200.0,'cs':4.1,'apix':1.0,'dsbg':-1})
+				if self.defaultvoltage!=None : ctf.voltage=self.defaultvoltage
+				if self.defaultcs!=None : ctf.cs=self.defaultcs
+				if self.defaultapix!=None : ctf.apix=self.defaultapix
+				parms=[512,ctf,(256,256),set(),5]
+				print "no parms for ",item_name(i)
 			
-		self.parms[0][1].defocus=0.0
+			self.parms.append(parms)
 		
 		self.wimage=EMImage2DWidget()
 		
@@ -166,137 +172,117 @@ class GUIEvalImage(QtGui.QWidget):
 		self.wfft.mmode="app"
 
 		# This object is itself a widget we need to set up
-		self.hbl = QtGui.QHBoxLayout(self)
-		self.hbl.setMargin(8)
-		self.hbl.setSpacing(6)
-		self.hbl.setObjectName("hbl")
+		self.gbl = QtGui.QGridLayout(self)
+		self.gbl.setMargin(8)
+		self.gbl.setSpacing(6)
 		
 		# plot list and plot mode combobox
-		self.gbl = QtGui.QGridLayout()
 		self.setlist=QtGui.QListWidget(self)
 		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
 		for i in images:
 			self.setlist.addItem(i)
-		self.gbl.addWidget(self.setlist,0,0,1,2)
+		self.gbl.addWidget(self.setlist,0,0,10,2)
 		
 		self.lcalcmode=QtGui.QLabel("Region:",self)
-		self.gbl.addWidget(self.lcalcmode,1,0)
+		self.gbl.addWidget(self.lcalcmode,10,0)
 		
 		self.scalcmode=QtGui.QComboBox(self)
 		self.scalcmode.addItem("Single Region")
 		self.scalcmode.addItem("Tiled Boxes")
 		self.scalcmode.setCurrentIndex(1)
-		self.gbl.addWidget(self.scalcmode,1,1)
+		self.gbl.addWidget(self.scalcmode,10,1)
 		
 
 		self.lcalcmode=QtGui.QLabel("2D FFT:",self)
-		self.gbl.addWidget(self.lcalcmode,2,0)
+		self.gbl.addWidget(self.lcalcmode,11,0)
 		
 		self.s2dmode=QtGui.QComboBox(self)
 		self.s2dmode.addItem("Power Spectrum")
 		self.s2dmode.addItem("Bg Subtracted")
 		self.s2dmode.addItem("Background")
-		self.gbl.addWidget(self.s2dmode,2,1)
+		self.gbl.addWidget(self.s2dmode,11,1)
 
 		self.lcalcmode=QtGui.QLabel("Annotate:",self)
-		self.gbl.addWidget(self.lcalcmode,3,0)
+		self.gbl.addWidget(self.lcalcmode,12,0)
 		
 		self.s2danmode=QtGui.QComboBox(self)
 		self.s2danmode.addItem("Ctf Zeroes")
 		self.s2danmode.addItem("Resolution Ring")
 		self.s2danmode.addItem("2-D Xtal")
 		self.s2danmode.addItem("None")
-		self.gbl.addWidget(self.s2danmode,3,1)
+		self.gbl.addWidget(self.s2danmode,12,1)
 
 
 		self.lcalcmode=QtGui.QLabel("Plot:",self)
-		self.gbl.addWidget(self.lcalcmode,4,0)
+		self.gbl.addWidget(self.lcalcmode,13,0)
 		
 		self.splotmode=QtGui.QComboBox(self)
 		self.splotmode.addItem("Bgsub and Fit")
 		self.splotmode.addItem("Fg and Bg")
 		self.splotmode.addItem("Bgsub, 45 deg slices")
 		self.splotmode.addItem("Fg, 45 deg slices")
-		self.splotmode.addItem("Est. SSNR")
-		self.gbl.addWidget(self.splotmode,4,1)
-
-		self.hbl.addLayout(self.gbl)
+		self.splotmode.addItem("SSNR (NOT BY PTCL !)")
+		self.gbl.addWidget(self.splotmode,13,1)
 		
 		# ValSliders for CTF parameters
-		self.vbl = QtGui.QVBoxLayout()
-		self.vbl.setMargin(8)
-		self.vbl.setSpacing(6)
-		self.vbl.setObjectName("vbl")
-		self.hbl.addLayout(self.vbl)
 		
 		#self.samp = ValSlider(self,(0,5.0),"Amp:",0)
 		#self.vbl.addWidget(self.samp)
 				
 		self.sdefocus=ValSlider(self,(0,5),"Defocus:",0.0,90)
-		self.vbl.addWidget(self.sdefocus)
+		self.gbl.addWidget(self.sdefocus,0,2,1,3)
 		
 		self.sbfactor=ValSlider(self,(0,1600),"B factor:",200.0,90)
-		self.vbl.addWidget(self.sbfactor)
+		self.gbl.addWidget(self.sbfactor,1,2,1,3)
 		
 		self.sampcont=ValSlider(self,(0,100),"% AC",10.0,90)
 		if self.defaultac!=None : self.sampcont.setValue(self.defaultac)
-		self.vbl.addWidget(self.sampcont)
+		self.gbl.addWidget(self.sampcont,2,2,1,3)
 
 		self.sang45=ValSlider(self,(-22.5,22.5),"45 mode ang",0.0,90)
-		self.vbl.addWidget(self.sang45)
+		self.gbl.addWidget(self.sang45,3,2,1,3)
 
 		self.squality=ValSlider(self,(0,9),"Quality (0-9):",0,90)
 		self.squality.setIntonly(True)
-		self.vbl.addWidget(self.squality)
+		self.gbl.addWidget(self.squality,4,2,1,3)
 
 
 #		self.sapix=ValSlider(self,(.2,10),"A/Pix:",2,90)
 #		self.vbl.addWidget(self.sapix)
 
-		self.hbl2 = QtGui.QHBoxLayout()
-
 		self.sapix=ValBox(self,(0,500),"A/pix:",1.0,90)
 		if self.defaultapix!=None : self.sapix.setValue(self.defaultapix)
-		self.hbl2.addWidget(self.sapix)
+		self.gbl.addWidget(self.sapix,10,2)
 
 		self.svoltage=ValBox(self,(0,500),"Voltage (kV):",200,90)
 		if self.defaultvoltage!=None : self.svoltage.setValue(self.defaultvoltage)
-		self.hbl2.addWidget(self.svoltage)
-		
+		self.gbl.addWidget(self.svoltage,11,2)
+				
 		self.scs=ValBox(self,(0,5),"Cs (mm):",4.1,90)
 		if self.defaultcs!=None : self.scs.setValue(self.defaultcs)
-		self.hbl2.addWidget(self.scs)		
-		
-		self.vbl.addLayout(self.hbl2)
-		
-		self.hbl3 = QtGui.QHBoxLayout()
-		
+		self.gbl.addWidget(self.scs,12,2)		
+
 		self.sboxsize=ValBox(self,(0,500),"Box Size:",256,90)
 		self.sboxsize.intonly=True
-		self.hbl3.addWidget(self.sboxsize)
+		self.gbl.addWidget(self.sboxsize,13,2)
+
+		# this is just a spacer
+		self.gbl.setColumnStretch(3,2)
+
+		self.bbox=QtGui.QGroupBox("Project")
+		self.gbl.addWidget(self.bbox,10,4,4,1)
 		
-		#self.hbl3.addWidget(QtGui.QLabel("Quality Factor"))
-		#self.quality = QtGui.QComboBox()
-		#for i in xrange(10): self.quality.addItem(str(i))
-		#self.quality.setMinimumWidth(80)
-		#self.hbl3.addWidget(self.quality)
-		
+		self.bvbl=QtGui.QVBoxLayout()
+		self.bbox.setLayout(self.bvbl)
+
 		self.bimport=QtGui.QPushButton("Import")
-		self.hbl3.addWidget(self.bimport)
+		self.bvbl.addWidget(self.bimport)
 		
-		self.vbl.addLayout(self.hbl3)
-		#self.hbl_buttons = QtGui.QHBoxLayout()
-		#self.saveparms = QtGui.QPushButton("Save parms")
-		#self.recallparms = QtGui.QPushButton("Recall")
-		#self.refit = QtGui.QPushButton("Refit")
-		#self.output = QtGui.QPushButton("Output")
-		#self.hbl_buttons.addWidget(self.refit)
-		#self.hbl_buttons.addWidget(self.saveparms)
-		#self.hbl_buttons.addWidget(self.recallparms)
-		#self.hbl_buttons2 = QtGui.QHBoxLayout()
-		#self.hbl_buttons2.addWidget(self.output)
-		#self.vbl.addLayout(self.hbl_buttons)
-		#self.vbl.addLayout(self.hbl_buttons2)
+		self.cinvert=CheckBox(None,"Invert")
+		self.bvbl.addWidget(self.cinvert)
+		
+		self.cxray=CheckBox(None,"X-ray Pixels")
+		self.bvbl.addWidget(self.cxray)
 		
 		QtCore.QObject.connect(self.bimport, QtCore.SIGNAL("clicked(bool)"),self.doImport)
 		QtCore.QObject.connect(self.sdefocus, QtCore.SIGNAL("valueChanged"), self.newCTF)
@@ -307,7 +293,7 @@ class GUIEvalImage(QtGui.QWidget):
 		QtCore.QObject.connect(self.scs, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.sboxsize, QtCore.SIGNAL("valueChanged"), self.newBox)
 		QtCore.QObject.connect(self.sang45, QtCore.SIGNAL("valueChanged"), self.recalc_real)
-#		QtCore.QObject.connect(self.quality,QtCore.SIGNAL("activated(int)"),self.newQualityFactor)
+		QtCore.QObject.connect(self.squality,QtCore.SIGNAL("activated(int)"),self.newQualityFactor)
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
 		QtCore.QObject.connect(self.scalcmode,QtCore.SIGNAL("currentIndexChanged(int)"),self.newCalcMode)
 		QtCore.QObject.connect(self.s2dmode,QtCore.SIGNAL("currentIndexChanged(int)"),self.new2DMode)
@@ -339,6 +325,7 @@ class GUIEvalImage(QtGui.QWidget):
 		
 	def closeEvent(self,event):
 #		QtGui.QWidget.closeEvent(self,event)
+		self.writeCurParm()
 		event.accept()
 		QtGui.qApp.exit(0)
 		#app=QtGui.qApp
@@ -435,7 +422,8 @@ class GUIEvalImage(QtGui.QWidget):
 			if self.fft1dang==None: self.recalc_real()
 			bgsub=self.fft1d-bg1d
 			bgsuba=[array(self.fft1dang[i])-bg1d for i in xrange(4)]
-			
+					# Write the current image parameters to the database
+
 #			for i in xrange(4): bgsuba[i][0]=0
 			self.wplot.set_data((s,bgsub),"fg",quiet=True,color=0)
 			self.wplot.set_data((s[3:],bgsuba[0][3:]),"fg 0-45",quiet=True,color=2)
@@ -517,7 +505,8 @@ class GUIEvalImage(QtGui.QWidget):
 		
 		# Redisplay before spawning thread for more interactive display
 		if self.needredisp :
-			self.redisplay()
+			try: self.redisplay()
+			except: pass
 		
 		# Spawn a thread to reprocess the data
 		if self.needupdate and self.procthread==None: 
@@ -530,26 +519,42 @@ class GUIEvalImage(QtGui.QWidget):
 
 	def doImport(self,val):
 		"""Imports the currently selected image into a project"""
+		print "import ",item_name(self.setlist.item(self.curset).text())
 		
 		# This is just the (presumably) unique portion of the filename
-		item=item_name(self.setlist.item(val).text())
+		item=item_name(self.setlist.item(self.curset).text())
 		
 		# create directory if necessary
-		if not os.access("micrographs",os.r_OK) :
+		if not os.access("micrographs",os.R_OK) :
 			try : os.mkdir("micrographs")
 			except: 
 				QtGui.QMessageBox.warning(self,"Error !","Cannot create micrographs directory")
 				return
 			
-		db=db_open_dict("bdb:micrographs#%s"%item)
+		#db=db_open_dict("bdb:micrographs#%s"%item)
 		self.data["ctf"]=self.parms[val][1]
+		self.cxray
+		if self.cinvert.value!=0 : self.data.mult(-1)
+		if self.cxray.value : self.data.process_inplace("--process=threshold.clampminmax.nsigma:nsigma=4:tomean=1")
+		self.data.write_image("micrographs/%s.hdf"%item)
+		
 		
 		db_parms=db_open_dict("bdb:e2ctf.parms")
-		db_parms[item]=[self.parms[val][1].to_string(),self.fft1d,self.parms[val][1].background,self.squality.value]
+		db_parms[item]=[self.parms[val][1].to_string(),self.fft1d,self.parms[val][1].background,self.parms[val][4]]
 
+	def writeCurParm(self):
+		"Called to store the current parameters for this image to the frameparms database"
+		db_fparms=db_open_dict("bdb:e2ctf.frameparms")
+		curtag=item_name(str(self.setlist.item(self.curset).text()))
+		db_fparms[curtag]=self.parms[self.curset]
 
 	def newSet(self,val):
 		"called when a new data set is selected from the list"
+		
+		# Write the current image parameters to the database
+		if val!=self.curset : self.writeCurParm()
+		
+		# now set the new item
 		self.curset=val
 		self.data=EMData(str(self.setlist.item(val).text()),0)	# read the image from disk
 		if self.defaultapix!=None : self.data["apix_x"]=self.defaultapix
@@ -577,6 +582,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.svoltage.setValue(ctf.voltage,True)
 		self.scs.setValue(ctf.cs,True)
 		self.sboxsize.setValue(self.parms[val][0],True)
+		self.squality.setValue(self.parms[val][4],True)
 		
 		#if self.guiim != None: 
 ##			print self.data
@@ -684,6 +690,7 @@ class GUIEvalImage(QtGui.QWidget):
 				parms[1]=e2ctf.ctf_fit(self.fft1d,parms[1].background,parms[1].background,self.fft,self.fftbg,parms[1].voltage,parms[1].cs,parms[1].ampcont,apix,bgadj=False,autohp=True,verbose=1)
 			except:
 				print "CTF Autofit Failed"
+				traceback.print_exc()
 				parms[1].defocus=1.0
 				
 			self.sdefocus.setValue(parms[1].defocus,True)
@@ -748,6 +755,11 @@ class GUIEvalImage(QtGui.QWidget):
 		parms=self.parms[self.curset]
 		parms[0]=self.sboxsize.value
 		self.recalc()
+
+	def newQualityFactor(self):
+		parms=self.parms[self.curset]
+		parms[4]=self.squality.value
+		
 
 	def newCTF(self) :
 		parms=self.parms[self.curset]

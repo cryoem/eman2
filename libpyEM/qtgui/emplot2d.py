@@ -484,8 +484,9 @@ class EMPlot2DWidget(EMGLWidget):
 				# Then we draw the line
 				if self.pparm[i][1]: 
 					parm=linetypes[self.pparm[i][2]]
-					ax.plot(x,y,parm,linewidth=self.pparm[i][3],color=colortypes[self.pparm[i][0]])
-					
+					try: ax.plot(x,y,parm,linewidth=self.pparm[i][3],color=colortypes[self.pparm[i][0]])
+					except:
+						print "Error: Plot failed\n%d %s\n%d %s"%(len(x),x,len(y),y)
 			
 			
 			canvas.draw()

@@ -68,7 +68,7 @@ def main():
 	parser.add_argument("--prefilt",action="store_true",help="Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison",default=False, guitype='boolbox', row=2, col=2, rowspan=1, colspan=1)
 	parser.add_argument("--mass", default=0, type=float,help="The mass of the particle in kilodaltons, used to run normalize.bymass. If unspecified (set to 0) nothing happens. Requires the --apix argument.")
 	parser.add_argument("--apix", default=0, type=float,help="The angstrom per pixel of the input particles. This argument is required if you specify the --mass argument. If unspecified (set to 0), the convergence plot is generated using either the project apix, or if not an apix of 1.")
-	parser.add_argument("--automask3d", default=None, type=str,help="The 5 parameters of the mask.auto3d processor, applied after 3D reconstruction. These paramaters are, in order, isosurface threshold,radius,nshells and ngaussshells. Specify --automask=none to suppress using the mask from refinement")
+	parser.add_argument("--automask3d", default=None, type=str,help="The 5 parameters of the mask.auto3d processor, applied after 3D reconstruction. \n These parameters are, in order, isosurface threshold, radius, nshells, ngaussshells, nmaxseed. \n From e2proc3d.py you could achieve the same thing using: \n --process=mask.auto3d:threshold=1.1:radius=30:nshells=5:ngaussshells=5:nmaxseed=0.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	# options associated with e2classaverage.py

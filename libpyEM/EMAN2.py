@@ -1126,8 +1126,11 @@ def item_name(file_name):
 	This will return an 'item name' for a path. This is generally the last element of the path without any extensions, eg:
 	"/home/test/abc.hdf" -> abc
 	"bdb:test#mytest" -> mytest
+	
+	see also: get_file_tag
 	"""
 	
+	file_name=str(file_name)
 	if "\\" in file_name : file_name=file_name.replace("\\","/")
 
 	if file_name[:4].lower()=="bdb:":

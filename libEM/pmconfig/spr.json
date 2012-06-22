@@ -9,18 +9,18 @@
     "CHILDREN": [
       {
         "ICON": "single_image", 
-        "MODE": "filter",
-        "PROGRAM": "e2rawdata.py", 
-        "WIZARD":"/lib/pmconfig/rawdata.json",
-        "NAME": "Import Raw Data", 
+        "MODE": "eval",
+        "PROGRAM": "e2evalimage.py", 
+        "WIZARD":"/lib/pmconfig/evalrawdata.json", 
+        "NAME": "Evaluate & Import Micrographs", 
         "CHILDREN": []
       },
       {
         "ICON": "single_image", 
-        "MODE": "eval",
-        "PROGRAM": "e2evalimage.py", 
-        "WIZARD":"/lib/pmconfig/evalrawdata.json", 
-        "NAME": "Evaluate Raw Data", 
+        "MODE": "filter",
+        "PROGRAM": "e2rawdata.py", 
+        "WIZARD":"/lib/pmconfig/rawdata.json",
+        "NAME": "Import Micrographs", 
         "CHILDREN": []
       }
     ]
@@ -139,9 +139,9 @@
     "CHILDREN": [
       {
         "ICON": "multiple_images", 
-        "PROGRAM": "e2buildstacks.py", 
+        "PROGRAM": "e2buildsets.py", 
         "NAME": "Build Particle Sets", 
-        "WIZARD":"/lib/pmconfig/buildstacks.json",
+        "WIZARD":"/lib/pmconfig/buildsets.json",
 	"NOTELEVEL": "1",
         "CHILDREN": []
       }, 
