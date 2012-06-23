@@ -1048,7 +1048,7 @@ class Main2DWindowEventHandler(BoxEventsHandler):
 		@param a QtGui.QKeyEvent sent from the EMImage2DWidget
 		'''
 		if self.mouse_handler == None: return
-		print "2d window key press"
+#		print "2d window key press"
 		
 	def mouse_wheel(self,event):
 		'''
