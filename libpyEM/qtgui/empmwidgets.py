@@ -727,7 +727,7 @@ class PMAutoMask3DWidget(PMBaseWidget):
 		gridbox.addWidget(self.params[1], 1, 1)
 		gridbox.addWidget(self.params[2], 1, 2)
 		gridbox.addWidget(self.params[3], 2, 0)
-		gridbox.addWidget(self.params[4], 2, 1, 1, 2)
+		gridbox.addWidget(self.params[4], 2, 1)
 		self.setLayout(gridbox)
 		
 		QtCore.QObject.connect(self.automask3dbool,QtCore.SIGNAL("stateChanged(int)"),self._on_boolchanged)
