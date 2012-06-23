@@ -109,17 +109,7 @@
         "WIZARD":"/lib/pmconfig/ctftuning.json", 
         "NAME": "Interactive Tuning -e2ctf", 
         "CHILDREN": []
-      }, 
-      {
-        "ICON": "ctf", 
-        "PROGRAM": "e2ctf.py", 
-        "MODE": "genoutp",
-        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2ctf",
-        "WIZARD":"/lib/pmconfig/ctfgo.json", 
-        "NAME": "Generate Output - e2ctf", 
-	"NOTELEVEL": "1",
-        "CHILDREN": []
-      }, 
+      },
       {
         "ICON": "ctf", 
         "PROGRAM": "e2ctf.py", 
@@ -127,6 +117,16 @@
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2ctf",
         "WIZARD":"/lib/pmconfig/ctfsf.json", 
         "NAME": "Generate Structure Factor - e2ctf", 
+	"NOTELEVEL": "1",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "ctf", 
+        "PROGRAM": "e2ctf.py", 
+        "MODE": "genoutp",
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2ctf",
+        "WIZARD":"/lib/pmconfig/ctfgo.json", 
+        "NAME": "Generate Output - e2ctf", 
 	"NOTELEVEL": "1",
         "CHILDREN": []
       }

@@ -2158,6 +2158,7 @@ dirregex - default "", a regular expression for filtering filenames (directory n
 		QtCore.QObject.connect(self.selectall, QtCore.SIGNAL('clicked(bool)'), self.selectAll)
 		QtCore.QObject.connect(self.wtree, QtCore.SIGNAL('clicked(const QModelIndex)'), self.itemSel)
 		QtCore.QObject.connect(self.wtree, QtCore.SIGNAL('activated(const QModelIndex)'), self.itemActivate)
+		QtCore.QObject.connect(self.wtree, QtCore.SIGNAL('doubleClicked(const QModelIndex)'), self.itemDoubleClick)
 		QtCore.QObject.connect(self.wtree, QtCore.SIGNAL('expanded(const QModelIndex)'), self.itemExpand)
 		QtCore.QObject.connect(self.wpath, QtCore.SIGNAL('returnPressed()'), self.editPath)
 		QtCore.QObject.connect(self.wbookmarks, QtCore.SIGNAL('actionTriggered(QAction*)'), self.bookmarkPress)
@@ -2300,10 +2301,25 @@ dirregex - default "", a regular expression for filtering filenames (directory n
 	def itemActivate(self,qmi):
 #		print "Item activated",qmi.row(),qmi.column()
 		itm=qmi.internalPointer()
+		#if itm.nChildren()>0:
+			#self.setPath(itm.path())
+		#else:
+			#if self.withmodal and not self.multiselect: 
+				#self.buttonOk(True)
+				#return
+			
+			#try:
+				#self.curactions[0][2](self)
+			#except:
+				#pass
+	
+	def itemDoubleClick(self,qmi):
+#		print "Item activated",qmi.row(),qmi.column()
+		itm=qmi.internalPointer()
 		if itm.nChildren()>0:
 			self.setPath(itm.path())
 		else:
-			if self.withmodal : 
+			if self.withmodal and not self.multiselect: 
 				self.buttonOk(True)
 				return
 			

@@ -206,6 +206,20 @@ class EMProcessorWidget(QtGui.QWidget):
 		
 		self.wcat.setCurrentIndex(self.wcat.findText(proc_cat))
 		self.wsubcat.setCurrentIndex(self.wsubcat.findText(proc_scat))
+		
+	def getAsProc(self):
+		"Returns the currently defined processor as a --process string for use in commands"
+
+		if not self.wenable.isChecked() : return ""
+
+		proc=self.processorName()
+		if not self.plist.has_key(proc) : return ""		# invalid processor selection 
+
+		enabled=[]
+		for w in self.parmw:
+			if w.getEnabled() : enabled.append("%s=%s"%(w.getLabel(),str(w.getValue())))
+
+		return "--process=%s:%s "%(self.processorName(),":".join(enabled))
 
 	def getAsText(self):
 		"Returns the currently defined processor as a 3 line string for persistence"
@@ -225,7 +239,7 @@ class EMProcessorWidget(QtGui.QWidget):
 		ret+="# %s\n--process=%s:%s\n\n"%(":".join(disabled),self.processorName(),":".join(enabled))
 			
 		return ret
-		
+	
 
 	def setFromText(self,text):
 		"""Sets the GUI from the text written to disk for persistent storage
@@ -400,6 +414,7 @@ class EMFilterTool(QtGui.QMainWindow):
 		# Menu Bar
 		self.mfile=self.menuBar().addMenu("File")
 #		self.mfile_save_processor=self.mfile.addAction("Save Processor Param")
+		self.mfile_save_stack=self.mfile.addAction("Save Processed Stack")
 		self.mfile_save_map=self.mfile.addAction("Save Processed Map")
 		self.mfile_quit=self.mfile.addAction("Quit")
 
@@ -431,6 +446,7 @@ class EMFilterTool(QtGui.QMainWindow):
 		
 		# file menu
 #		QtCore.QObject.connect(self.mfile_save_processor,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_save_processor  )
+		QtCore.QObject.connect(self.mfile_save_stack,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_save_stack  )
 		QtCore.QObject.connect(self.mfile_save_map,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_save_map  )
 		QtCore.QObject.connect(self.mfile_quit,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_quit)
 
@@ -608,9 +624,17 @@ class EMFilterTool(QtGui.QMainWindow):
 
 		if self.viewer!=None : self.viewer.close()
 		if self.nz==1 : 
-			if len(self.origdata)>1 : self.viewer=EMImageMXWidget()
-			else : self.viewer=EMImage2DWidget()
-		else : 
+			if len(self.origdata)>1 : 
+				self.viewer=EMImageMXWidget()
+				self.mfile_save_stack.setEnabled(True)
+				self.mfile_save_map.setEnabled(False)
+			else : 
+				self.viewer=EMImage2DWidget()
+				self.mfile_save_stack.setEnabled(False)
+				self.mfile_save_map.setEnabled(True)
+		else :
+			self.mfile_save_stack.setEnabled(False)
+			self.mfile_save_map.setEnabled(True)
 			self.viewer = EMScene3D()
 			self.sgdata = EMDataItem3D(test_image_3d(3), transform=Transform())
 			isosurface = EMIsosurface(self.sgdata, transform=Transform())
@@ -684,6 +708,16 @@ class EMFilterTool(QtGui.QMainWindow):
 		#QtGui.QMessageBox.warning(None,"Saved","The processor parameters have been added to the end of 'processor.txt'")
 		
 		self.save_current_processorset(str(self.wsetname.currentText()))
+
+	def menu_file_save_stack(self):
+		"Processes the entire current stack, and saves as a new name"
+		
+		name=QtGui.QInputDialog.getText(None,"Enter Filename","Enter an output filename for the entire processed particle stack (not just the displayed images).")
+		if not name[1] : return		# canceled
+		
+		allfilt=" ".join([i.getAsProc() for i in self.processorlist])
+		
+		launch_childprocess( "e2proc2d.py %s %s %s"%(self.datafile,str(name[0]),allfilt))
 		
 	def menu_file_save_map(self):
 		"saves the current processored map"

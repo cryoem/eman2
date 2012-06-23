@@ -235,9 +235,11 @@ def db_parse_path(url):
 		elif u2[0][:8].lower()=="exclude." :
 			ddb=EMAN2DB.open_db(".")
 			ddb.open_dict("select")
-			if not ddb.select.has_key(u2[0][8:]) : raise Exception,"Unknown selection list %s"%u2[0][8:]
-			exc_set = set(ddb.select[u2[0][8:]])
 			all_set = set(range(0,EMUtil.get_image_count("bdb:"+url[0]+"#"+url[1])))
+			if not ddb.select.has_key(u2[0][8:]) : 
+				return (url[0],url[1],list(all_set))			# if the exclusion list is missing, we exclude nothing
+#				raise Exception,"Unknown selection list %s"%u2[0][8:]
+			exc_set = set(ddb.select[u2[0][8:]])
 			rem_set = all_set - exc_set
 			return (url[0],url[1],list(rem_set))		# bdb:path/to#dict?select/name
 #		return url											# bdb:path/to#dict?onekey
