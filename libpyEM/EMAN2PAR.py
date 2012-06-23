@@ -553,7 +553,7 @@ class EMLocalTaskHandler():
 				EMLocalTaskHandler.lock.acquire()
 				#There is the issue that when shell=True, popen.pid return shell pid and not process, so we set shell=false (there will be issues on Windows, but we don't support paralellization on windows
 				#proc=subprocess.Popen("e2parallel.py" + " localclient" + " --taskin=%s/%07d"%(self.scratchdir,self.nextid) + " --taskout=%s/%07d.out"%(self.scratchdir,self.nextid), shell=True)
-				proc=subprocess.Popen(["e2parallel.py","localclient","--taskin=%s/%07d"%(self.scratchdir,self.nextid),"--taskout=%s/%07d.out"%(self.scratchdir,self.nextid)], shell=True)
+				proc=subprocess.Popen(["e2parallel.py","localclient","--taskin=%s/%07d"%(self.scratchdir,self.nextid),"--taskout=%s/%07d.out"%(self.scratchdir,self.nextid)])
 				self.running.append((proc,self.nextid))
 				EMLocalTaskHandler.allrunning[self.nextid] = proc
 				self.nextid+=1
