@@ -718,10 +718,10 @@ class PMAutoMask3DWidget(PMBaseWidget):
 		self.automask3dbool = QtGui.QCheckBox("Auto Mask 3D")
 		self.params = []
 		self.params.append(PMFloatEntryWidget("Threshold", 0.8, mode))
-		self.params.append(PMIntEntryWidget("NMax", 30, mode))
 		self.params.append(PMIntEntryWidget("Radius", 30, mode))
 		self.params.append(PMIntEntryWidget("Mask Dilations", 5, mode))
-		self.params.append(PMIntEntryWidget("Post Gaussian Dialations", 5, mode))
+		self.params.append(PMIntEntryWidget("Gaussian Dialations", 5, mode))
+		self.params.append(PMIntEntryWidget("NMax", 30, mode))
 		gridbox.addWidget(self.automask3dbool, 0, 0)
 		gridbox.addWidget(self.params[0], 1, 0)
 		gridbox.addWidget(self.params[1], 1, 1)
