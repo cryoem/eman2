@@ -10281,29 +10281,30 @@ def pca(input_stacks, subavg="", mask_radius=-1, nvec=3, incore=False, shuffle=F
 	vecs = pca.analyze()
 	return vecs
 	
-def prepare_2d_forPCA(data, mode = "a", output_stack = None, average = None, avg = True, CTF = False):
+def prepare_2d_forPCA(data, mode = "a", output_stack = None, CTF = False):
 	"""
 		Prepare 2D images for PCA
 		Average of all images is calculated using header alignment information, 
 		  subtracted from each image and the difference is written to the output_stack
-		If CTF, average is calculated as
-		   Av = sum(CTF_k*Im_k)/sum(CTF_k^2
+		If CTF, the average is calculated as
+		   Av = sum(CTF_k*Im_k)/sum(CTF_k^2)
 		and the difference as
-		   Im_k - CTF_k*Av
-		If avg = True, average outside of a circle r = nx//2-1 is subtracted from each image
+		   CTF_k(Im_k - CTF_k*Av)/sum(CTF_k^2)
+		average outside of a circle r = nx//2-1 is subtracted from each image
 	"""
-	from utilities    import model_blank, model_circle, set_params_2D, get_params_2D
+	from utilities    import model_blank, model_circle, set_params2D, get_params2D
 	from fundamentals import rot_shift2D
-
-
-	if( output_stack == None):  outstack = [None]*n
-
+	dopa = True
 	if type(data) == type(""):
 		inmem = False
 		from utilities    import get_im	
 	else:
 		inmem = True
 
+	if inmem:
+		n = len(data)
+	else:
+		n = EMUtil.get_image_count(data)
 
 	if inmem:
 		img = data[0]
@@ -10313,19 +10314,14 @@ def prepare_2d_forPCA(data, mode = "a", output_stack = None, average = None, avg
 	nx = img.get_xsize()
 	ny = img.get_ysize()
 	nz = img.get_zsize()
+	
+	if( output_stack == None):  outstack = [None]*n
 
-
-	if inmem:
-		n = len(data)
-	else:
-		n = EMUtil.get_image_count(data)
-
-
-	if avg:  mask = model_circle( nx//2-2, nx, ny)
+	mask = model_circle( nx//2-2, nx, ny)
 	if  CTF:
 		if(img.get_attr_default('ctf_applied', 2) > 0):
 			ERROR("data cannot be ctf-applied","prepare_2d_forPCA",1)
-		from fundamentals import fft, fftip, windows2d
+		from fundamentals import fft, fftip, window2d
 		from morphology   import ctf_img
 		from filter 	  import filt_ctf
 		from utilities    import pad
@@ -10344,9 +10340,8 @@ def prepare_2d_forPCA(data, mode = "a", output_stack = None, average = None, avg
 			if (mode == 'a'):
 				angle, sx, sy, mirror, scale = get_params2D(img)
 				img = rot_shift2D(img, angle, sx, sy, mirror, scale)
-			if avg:
-				st = Util.infomask(img, mask, False)
-				img -= st[0]
+			st = Util.infomask(img, mask, False)
+			img -= st[0]
 			img = pad(img, nx2,ny2, 1, background = "circumference")
 			fftip(img)
 			Util.add_img(ave, filt_ctf(img, ctf_params))
@@ -10361,9 +10356,8 @@ def prepare_2d_forPCA(data, mode = "a", output_stack = None, average = None, avg
 			if (mode == 'a'):
 				angle, sx, sy, mirror, scale = get_params2D(img)
 				img = rot_shift2D(img, angle, sx, sy, mirror, scale)
-			if avg:
-				st = Util.infomask(img, mask, False)
-				img -= st[0]
+			st = Util.infomask(img, mask, False)
+			img -= st[0]
 			img = pad(img, nx2,ny2, 1, background = "circumference")
 			fftip(img)
 			img = filt_ctf(img-filt_ctf(ave, ctf_params, dopa), ctf_params, dopa)
@@ -10381,9 +10375,8 @@ def prepare_2d_forPCA(data, mode = "a", output_stack = None, average = None, avg
 				img = get_im(data, i)
 			angle, sx, sy, mirror, scale = get_params2D(img)
 			img = rot_shift2D(img, angle, sx, sy, mirror, scale)
-			if avg:
-				st = Util.infomask(img, mask, False)
-				img -= st[0]
+			st = Util.infomask(img, mask, False)
+			img -= st[0]
 			Util.add_img(ave, img)
 		ave /= n
 		for i in xrange(n):
@@ -10393,13 +10386,14 @@ def prepare_2d_forPCA(data, mode = "a", output_stack = None, average = None, avg
 				img = get_im(data, i)
 			angle, sx, sy, mirror, scale = get_params2D(img)
 			img = rot_shift2D(img, angle, sx, sy, mirror, scale)
-			if avg:
-				st = Util.infomask(img, mask, False)
-				img -= st[0]
+			st = Util.infomask(img, mask, False)
+			img -= st[0]
 			Util.sub_img(img, ave)
 			set_params2D(img, [0.0,0.0,0.0,0,1.0])
 			if( output_stack == None):  outstack[i] = img
 			else:                       img.write_image(output_stack, i)
+	if( output_stack == None):  return outstack
+	else:                       return None
 
 def varimax(input_stack, imglist, output_stack, maskfile, mask_radius, verbose ) :
 	from utilities import get_im, model_circle
