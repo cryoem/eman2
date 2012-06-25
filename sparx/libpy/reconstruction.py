@@ -315,7 +315,7 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 10.0, sign=1, symmetry="c
 	return fftvol
 
 
-def recons3d_4nn_ctf_MPI(myid, prjlist, snr=1.0, sign=1, symmetry="c1", info=None, npad=4, xysize=-1, zsize=-1):
+def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None, npad=4, xysize=-1, zsize=-1):
 	"""
 		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
 		Input
@@ -495,7 +495,7 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 			outlist[1].append(max(0.0,(SSNR(i,0,0)/SSNR(i,1,0)-1.)))      # SSNR
 		else:
 			outlist[1].append(0.0)
-	for i in xrange(1,nn): outlist[2].append(SSNR(i,1,0)/SSNR(i,2,0))	  # variance
+	for i in xrange(1,nn): outlist[2].append(SSNR(i,1,0)/SSNR(i,2,0))	          # variance
 	for i in xrange(1,nn): outlist[3].append(SSNR(i,2,0))				  # number of points in the shell
 	for i in xrange(1,nn): outlist[4].append(SSNR(i,3,0))				  # number of added Fourier points
 	for i in xrange(1,nn): outlist[5].append(SSNR(i,0,0))				  # square of signal
@@ -802,7 +802,7 @@ def recons3d_em(projections_stack, max_iterations_count = 100, radius = -1, min_
 	return solution
 
 
-def recons3d_em_MPI(projections_stack, max_iterations_count = 100, radius = -1, min_norm_absolute_voxel_change = 0.01, use_weights = False, symmetry = "c1", min_norm_squared_voxel_change = 0.0001):
+def recons3d_em_MPI(projections_stack, output_file, max_iterations_count = 100, radius = -1, min_norm_absolute_voxel_change = 0.01, use_weights = False, symmetry = "c1", min_norm_squared_voxel_change = 0.0001):
 	"""
 	Reconstruction algorithm basing on the Expectation Maximization method.
 		projections_stack              -- file or list with projections
@@ -814,9 +814,10 @@ def recons3d_em_MPI(projections_stack, max_iterations_count = 100, radius = -1, 
 	#
 	"""
 	from time import clock
-	from utilities import model_blank, model_circle, model_square
+	from utilities import model_blank, model_circle, model_square, circumference
 	from morphology import threshold_to_minval
 	import types
+	from string import replace
 	from mpi import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 	from utilities import reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, send_EMData, recv_EMData
 	min_allowed_divisor = 0.0001
@@ -920,7 +921,10 @@ def recons3d_em_MPI(projections_stack, max_iterations_count = 100, radius = -1, 
 			break
 		prev_avg_absolute_voxel_change = norm_absolute_voxel_change
 		solution = q
-		if mpi_r == 0: print "Iteration ", iter_no, ",  norm_abs_voxel_change=", norm_absolute_voxel_change, ",  norm_squared_voxel_change=", norm_squared_voxel_change 
+		solution = circumference(solution, radius-2, radius)
+		if (iter_no+1)%5 == 0 and mpi_r == 0:
+			solution.write_image(replace(output_file, ".hdf", "_%03d.hdf"%(iter_no+1)))
+		if mpi_r == 0: print "Iteration ", iter_no+1, ",  norm_abs_voxel_change=", norm_absolute_voxel_change, ",  norm_squared_voxel_change=", norm_squared_voxel_change 
 		if min_norm_absolute_voxel_change > norm_absolute_voxel_change or min_norm_squared_voxel_change > norm_squared_voxel_change:
 			break
 	time_iterations = clock() - time_iterations

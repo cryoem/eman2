@@ -66,6 +66,7 @@ def main():
 	parser.add_option("--VERBOSE",		action="store_true",	default=False,				help="comments")
 	parser.add_option("--img_per_grp",	type="int"         ,	default=10   ,				help="number of neighbouring projections")
 	parser.add_option("--nvec",			type="int"         ,	default=0   ,				help="number of eigenvectors, default = 0 meaning no PCA calculated")
+	parser.add_option("--npad",			type="int"         ,	default=2   ,				help="number of time to pad the original images")
 	parser.add_option("--freq",			type="float"       ,	default=0.0  ,				help="stop-band frequency")
 	parser.add_option("--fall_off",		type="float"       ,	default=0.0  ,				help="fall off of the filter")
 	parser.add_option("--ave2D",		type="string"	   ,	default=False,				help="write to the disk a stack of 2D averages")
@@ -108,6 +109,10 @@ def main():
 	if options.SND and (options.ave2D or options.ave3D):
 		ERROR("When SND is set, the program cannot output ave2D or ave3D", "sx3Dvariance", myid=myid)
 		exit()
+	if options.nvec > 0 and options.ave3D == None:
+		ERROR("When doing PCA analysis, one must set ave3D", "sx3Dvariance", myid=myid)
+		exit()
+		 
 
 	if global_def.CACHE_DISABLE:
 		from utilities import disable_bdb_cache
@@ -151,9 +156,9 @@ def main():
 		imgdata = EMData.read_images(stack, range(img_begin, img_end))
 
 		if options.CTF:
-			vol = recons3d_4nn_ctf_MPI(myid, imgdata, 1.0, symmetry=options.sym, npad=4, xysize=-1, zsize=-1)
+			vol = recons3d_4nn_ctf_MPI(myid, imgdata, 1.0, symmetry=options.sym, npad=options.npad, xysize=-1, zsize=-1)
 		else:
-			vol = recons3d_4nn_MPI(myid, imgdata, symmetry=options.sym, npad=4, xysize=-1, zsize=-1)
+			vol = recons3d_4nn_MPI(myid, imgdata, symmetry=options.sym, npad=options.npad, xysize=-1, zsize=-1)
 	
 		bcast_EMData_to_all(vol, myid)
 		volft, kb = prep_vol(vol)
@@ -175,12 +180,13 @@ def main():
 		varList = EMData.read_images(stack, range(img_begin, img_end))
 	else:
 		from utilities		import bcast_number_to_all, bcast_list_to_all, send_EMData, recv_EMData
-		from utilities		import set_params_proj, get_params_proj, params_3D_2D, set_params2D, compose_transform2
+		from utilities		import set_params_proj, get_params_proj, params_3D_2D, get_params2D, set_params2D, compose_transform2
 		from utilities		import model_blank, nearest_proj, model_circle
 		from applications	import pca
-		from statistics		import avgvar, avgvar_ctf
+		from statistics		import avgvar, avgvar_ctf, ccc
 		from filter		import filt_tanl
 		from morphology		import threshold
+		from projection 	import project
 		from sets		import Set			
 
 		if myid == main_node:
@@ -249,7 +255,9 @@ def main():
 		proj_params = [0.0]*(nima*5)
 		aveList = []
 		varList = []				
-
+		if nvec > 0:
+			eigList = [[] for i in xrange(nvec)]
+		
 		if options.VERBOSE: 	print "Begin to read images on processor %d"%(myid)
 		ttt = time()
 		imgdata = EMData.read_images(stack, all_proj)
@@ -264,9 +272,9 @@ def main():
 			for k in xrange(len(imgdata2)):
 				imgdata2[k] = filt_tanl(imgdata2[k], options.freq, options.fall_off)
 		if options.CTF:
-			vol = recons3d_4nn_ctf_MPI(myid, imgdata2, 1.0, symmetry=options.sym, npad=4, xysize=-1, zsize=-1)
+			vol = recons3d_4nn_ctf_MPI(myid, imgdata2, 1.0, symmetry=options.sym, npad=options.npad, xysize=-1, zsize=-1)
 		else:
-			vol = recons3d_4nn_MPI(myid, imgdata2, symmetry=options.sym, npad=4, xysize=-1, zsize=-1)
+			vol = recons3d_4nn_MPI(myid, imgdata2, symmetry=options.sym, npad=options.npad, xysize=-1, zsize=-1)
 		if myid == main_node:
 			vol.write_image("vol_ctf.hdf")
 			print_msg("Writing to the disk volume reconstructed from averages as		:  %s\n"%("vol_ctf.hdf"))
@@ -301,8 +309,14 @@ def main():
 				del mask	
 
 			if options.freq > 0.0:
+				from utilities import pad
+				from filter import filt_ctf
+				from fundamentals import fft, window2d
+				nx2 = 2*nx
+				ny2 = 2*ny
 				for k in xrange(img_per_grp):
-					grp_imgdata[k] = filt_tanl(grp_imgdata[k], options.freq, options.fall_off)
+					grp_imgdata[k] = window2d(fft( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf")), options.freq, options.fall_off) ),nx,ny)
+					#grp_imgdata[k] = filt_tanl(grp_imgdata[k], options.freq, options.fall_off)
 
 			'''
 			if i < 10 and myid == main_node:
@@ -322,8 +336,13 @@ def main():
 			#rad = nx/2
 			if options.VERBOSE:
 				print "%5.2f%% done on processor %d"%(i*100.0/len(proj_list), myid)
-			#eig = pca(input_stacks=imgdata, subavg=ave, mask_radius=rad, sdir=".", nvec=options.nvec, incore=True, shuffle=False, genbuf=True, maskfile="", MPI=False, verbose=options.VERBOSE)
-		del imgdata		
+			if nvec > 0:
+				eig = pca(input_stacks=grp_imgdata, subavg=ave, mask_radius=35, nvec=nvec, incore=True, shuffle=False, genbuf=True)
+				for k in xrange(nvec):
+					set_params_proj(eig[k], [phiM, thetaM, 0.0, 0.0, 0.0])
+					eigList[k].append(eig[k])
+				
+		del imgdata
 
 		if options.ave2D:
 			for i in xrange(number_of_proc):
@@ -335,12 +354,34 @@ def main():
 		if options.ave3D:
 			if options.VERBOSE:
 				print "Reconstructing 3D average volume"
-			ave3D = recons3d_4nn_MPI(myid, aveList, symmetry=options.sym, npad=4, xysize=-1, zsize=-1)
+			ave3D = recons3d_4nn_MPI(myid, aveList, symmetry=options.sym, npad=options.npad, xysize=-1, zsize=-1)
+			bcast_EMData_to_all(ave3D, myid)
 			if myid == main_node:
 				ave3D.write_image(options.ave3D)
 				print_msg("%-70s:  %s\n"%("Writing to the disk volume reconstructed from averages as", options.ave3D))
-			del ave3D
 		del ave, var, proj_list, stack, phi, theta, psi, s2x, s2y, alpha, sx, sy, mirror, aveList
+		
+		if nvec > 0:
+			ave3D = filt_tanl(ave3D, 0.3, 0.2)
+			for k in xrange(nvec):
+				c = [0.0]*len(eigList[k])
+				for l in xrange(len(eigList[k])):
+					phi, theta, psi, s2x, s2y = get_params_proj(eigList[k][l])
+					proj = project(ave3D, [phi, theta, psi, s2x, s2y], 200)
+					c[l] = ccc(proj, eigList[k][l])
+					if c[l] < 0: eigList[k][l] = 0-eigList[k][l]
+					
+			if options.VERBOSE:
+				print "Reconstruction eigenvolumes"
+			for k in xrange(nvec):
+				eig3D = recons3d_4nn_MPI(myid, eigList[k], symmetry=options.sym, npad=options.npad, xysize=-1, zsize=-1)
+				if myid == main_node:
+					eig3D.write_image("eig3d_%03d.hdf"%k)
+				del eig3D
+				mpi_barrier(MPI_COMM_WORLD)
+			del eigList
+
+		if options.ave3D: del ave3D
 
 	if options.var2D:
 		for i in xrange(number_of_proc):
@@ -354,7 +395,7 @@ def main():
 		print "Reconstructing 3D variance volume"
 
 	t6 = time()
-	res = recons3d_em_MPI(varList, options.iter, options.radius, options.abs, True, options.sym, options.squ)
+	res = recons3d_em_MPI(varList, vol_stack, options.iter, options.radius, options.abs, True, options.sym, options.squ)
 	if myid == main_node:
 		res.write_image(vol_stack)
 
