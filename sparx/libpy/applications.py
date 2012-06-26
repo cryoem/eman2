@@ -10199,38 +10199,33 @@ def pca(input_stacks, subavg="", mask_radius=-1, nvec=3, incore=False, shuffle=F
 	from utilities import get_image, get_im, model_circle, model_blank
 	from statistics import pcanalyzer
 	import types
-	if len(input_stacks)==0:
-		print "Error: no input file."
-		return
 	
-	if type(input_stacks[0]) is types.StringType: oldVer = True	# input_stacks is a file name
-	else:  	oldVer = False	# input_stacks is a list of images not a file name
+	if type(input_stacks[0]) is types.StringType: data_on_disk = True	 # input_stacks is a file name
+	else:
+		data_on_disk = False # input_stacks is a list of images not a file name
+		if MPI:
+			 ERROR('MPI version for data in memory version is not implemented', "pca", 1)
 
 	if mask_radius > 0 and maskfile !="":
-		print "Error: mask radius and mask file cannot be used at the same time"
-		return
+		ERROR('Error: mask radius and mask file cannot be used at the same time', "pca", 1)
 
 	if mask_radius >0:
 
-		if(verbose):
-			print "Using spherical mask, rad=", mask_radius
+		if(verbose): print "Using spherical mask, rad=", mask_radius
 
-		if maskfile!="":
-			print "Error: mask radius and mask file cannot be given at the same time"
-			return
-		if oldVer:
+		if maskfile!="":   ERROR('mask radius and mask file cannot be used at the same time', "pca", 1)
+		if data_on_disk:
 			data = get_im( input_stacks[0] )
 		else:
 			data = input_stacks[0]
 		mask = model_circle(mask_radius, data.get_xsize(), data.get_ysize(), data.get_zsize())
 
 	elif(maskfile!="") :
-		if(verbose):
-			print "Using mask: ", maskfile
+		if(verbose): print "Using mask: ", maskfile
 		mask = get_image( maskfile )
 	else:
 		data = EMData()
-		if oldVer:
+		if data_on_disk:
 			data.read_image( input_stacks[0], 0, True)
 		else:
 			data = input_stacks[0]
@@ -10239,12 +10234,11 @@ def pca(input_stacks, subavg="", mask_radius=-1, nvec=3, incore=False, shuffle=F
 	pca = pcanalyzer(mask, nvec, incore, MPI)
 
 	if subavg != "":
-		if(verbose):
-			print "Subtracting ", subavg, " from each image"
+		if(verbose): print "Subtracting ", subavg, " from each image"
 		avg = get_image( subavg )
 		pca.setavg( avg )
 
-	if oldVer:
+	if data_on_disk:
 		files = file_set( input_stacks )
 	if MPI:
 		from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
@@ -10255,26 +10249,24 @@ def pca(input_stacks, subavg="", mask_radius=-1, nvec=3, incore=False, shuffle=F
 		ncpu = 1
 
 	if genbuf:
-		if shuffle:
-			print "Error: shuffle works only with usebuf"
-			return
-		if oldVer:
+		if shuffle: ERROR('Shuffle works only with usebuf', "pca", 1)
+
+		if data_on_disk:
 			bgn,end = MPI_start_end( files.nimg(), ncpu, myid )
 		else:
 			bgn,end = MPI_start_end( len(input_stacks), ncpu, myid )
 		for i in xrange(bgn,end):
-			if oldVer:
+			if data_on_disk:
 				fname, imgid = files.get( i )
 				data = get_im( fname, imgid)
-				if(verbose):
-				 print "Inserting image %s, %4d" % (fname, imgid)
+				if(verbose):  print "Inserting image %s, %4d" % (fname, imgid)
 			else:
 				data = input_stacks[i]
 			pca.insert( data )
 
 	else:
 		pca.usebuf( )
-		print myid, "using existing buff, nimg: ", pca.nimg
+		if(verbose):  print myid, "using existing buff, nimg: ", pca.nimg
 		if shuffle:
 			pca.shuffle()
 
