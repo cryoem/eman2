@@ -191,7 +191,7 @@ def main():
 		from statistics		import avgvar, avgvar_ctf, ccc
 		from filter		import filt_tanl
 		from morphology		import threshold
-		from projection 	import project
+		from projection 	import project, prep_vol, prgs
 		from sets		import Set			
 
 		if myid == main_node:
@@ -329,14 +329,24 @@ def main():
 				for k in xrange(10):
 					grp_imgdata[k].write_image("grp%03d.hdf"%i, k)
 			'''
+			if myid == main_node and i==0:
+				for pp in xrange(len(grp_imgdata)):
+					grp_imgdata[pp].write_image("pp.hdf", pp)
 
 			ave, grp_imgdata = prepare_2d_forPCA(grp_imgdata)
+			if myid == main_node and i==0:
+				for pp in xrange(len(grp_imgdata)):
+					grp_imgdata[pp].write_image("qq.hdf", pp)
+
 			var = model_blank(nx,ny)
 			for q in grp_imgdata:  Util.add_img2( var, q )
 			Util.mul_scalar( var, 1.0/(len(grp_imgdata)-1))
 			#if options.CTF:	ave, var = avgvar_ctf(grp_imgdata, mode="a")
 			#else:	            ave, var = avgvar(grp_imgdata, mode="a")
-
+			if myid == main_node:
+				ave.write_image("avgv.hdf",i)
+				var.write_image("varv.hdf",i)
+				
 			var = threshold(var)
 			set_params_proj(ave, [phiM, thetaM, 0.0, 0.0, 0.0])
 			set_params_proj(var, [phiM, thetaM, 0.0, 0.0, 0.0])
@@ -347,10 +357,13 @@ def main():
 			if options.VERBOSE:
 				print "%5.2f%% done on processor %d"%(i*100.0/len(proj_list), myid)
 			if nvec > 0:
-				eig = pca(input_stacks=grp_imgdata, subavg=ave, mask_radius=radiuspca, nvec=nvec, incore=True, shuffle=False, genbuf=True)
+				eig = pca(input_stacks=grp_imgdata, subavg="", mask_radius=radiuspca, nvec=nvec, incore=True, shuffle=False, genbuf=True)
 				for k in xrange(nvec):
 					set_params_proj(eig[k], [phiM, thetaM, 0.0, 0.0, 0.0])
 					eigList[k].append(eig[k])
+				if myid == 0 and i == 0:
+					for k in xrange(nvec):
+						eig[k].write_image("eig.hdf", k)
 
 		del imgdata
 		#  To this point, all averages, variances, and eigenvectors are computed
@@ -382,18 +395,30 @@ def main():
 				while cont:
 					print "On node %d, iteration %d"%(myid, ITER)
 					eig3D = recons3d_4nn_MPI(myid, eigList[k], symmetry=options.sym, npad=options.npad)
-					eig3D = Util.img_mul( filt_tanl(eig3D, options.freq, options.fall_off), model_circle(radiuspca, nx, nx, nx) )
+					bcast_EMData_to_all(eig3D, myid, main_node)
+					if options.freq > 0.0:
+						eig3D = filt_tanl(eig3D, options.freq, options.fall_off)
+					Util.mul_img( eig3D, model_circle(radiuspca, nx, nx, nx) )
 					eig3Df, kb = prep_vol(eig3D)
 					cont = False
+					icont = 0
 					for l in xrange(len(eigList[k])):
 						phi, theta, psi, s2x, s2y = get_params_proj(eigList[k][l])
 						proj = prgs(eig3Df, kb, [phi, theta, psi, s2x, s2y])
 						cl = ccc(proj, eigList[k][l], mask2d)
 						if cl < 0.0:
+							icont += 1
 							cont = True
 							eigList[k][l] *= -1.0
 					u = int(cont)
-					u = mpi_reduce(u, 1, MPI_INT, MPI_MAX, main_node, MPI_COMM_WORLD)
+					u = mpi_reduce([u], 1, MPI_INT, MPI_MAX, main_node, MPI_COMM_WORLD)
+                                        icont = mpi_reduce([icont], 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
+
+					if myid == main_node:
+						u = int(u[0])
+						eig3D.write_image("egv%04d.hdf"%ITER)
+						print " number changed ",int(icont[0])
+					else: u = 0
 					u = bcast_number_to_all(u, main_node)
 					cont = bool(u)
 					ITER += 1
