@@ -343,7 +343,6 @@ def main():
 			aveList.append(ave)
 			varList.append(var)
 
-			#rad = nx/2
 			if options.VERBOSE:
 				print "%5.2f%% done on processor %d"%(i*100.0/len(proj_list), myid)
 			if nvec > 0:
@@ -353,7 +352,7 @@ def main():
 					eigList[k].append(eig[k])
 
 		del imgdata
-		#  All averages, variances, and eigenvectors are computed
+		#  To this point, all averages, variances, and eigenvectors are computed
 
 		if options.ave2D:
 			for i in xrange(number_of_proc):
@@ -373,32 +372,29 @@ def main():
 		del ave, var, proj_list, stack, phi, theta, psi, s2x, s2y, alpha, sx, sy, mirror, aveList
 
 		if nvec > 0:
-
-			if options.VERBOSE:
-				print "Reconstruction eigenvolumes"
 			for k in xrange(nvec):
+				if options.VERBOSE:
+					print "Reconstruction eigenvolumes", k
 				cont = True
-				while(cont):
+				ITER = 1
+				while cont:
+					print "On node %d, iteration %d"%(myid, ITER)
 					eig3D = recons3d_4nn_MPI(myid, eigList[k], symmetry=options.sym, npad=options.npad, xysize=-1, zsize=-1)
-					eig3D = filt_tanl(eig3D, options.freq, options.fall_off)*mask() ##################
-					eig3Df,kb = prep_vol( eig3D )
-					#c = [0.0]*len(eigList[k])
+					eig3D = filt_tanl(eig3D, options.freq, options.fall_off) #*mask() ##################
+					eig3Df, kb = prep_vol(eig3D)
 					cont = False
 					for l in xrange(len(eigList[k])):
 						phi, theta, psi, s2x, s2y = get_params_proj(eigList[k][l])
 						proj = prgs(eig3Df, kb, [phi, theta, psi, s2x, s2y])
-						cl = ccc(proj, eigList[k][l], mask##########)
-						if( cl < 0.0 ):
+						cl = ccc(proj, eigList[k][l]) #, mask################)
+						if cl < 0.0:
 							cont = True
 							eigList[k][l] *= -1.0
-					#  Gather cont and send back
-					# gather all ccc's
-					# decided what is the correct sign
-					#  send information back
-					#  correct sign of eigvecs
-				
-				
-				
+					u = int(cont)
+					u = mpi_reduce(u, 1, MPI_INT, MPI_MAX, main_node, MPI_COMM_WORLD)
+					u = bcast_number_to_all(u, main_node)
+					cont = bool(u)
+					ITER += 1
 				
 				if myid == main_node:
 					eig3D.write_image("eig3d_%03d.hdf"%k)
