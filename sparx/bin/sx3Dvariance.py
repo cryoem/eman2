@@ -55,7 +55,8 @@ def main():
 	usage = progname + " prj_stack volume --iter --var --sym=symmetry --MPI"
 	parser = OptionParser(usage, version=SPARXVERSION)
 
-	parser.add_option("--radius", 		type="int"         ,	default=-1   ,				help="radius of region in concern" )
+	parser.add_option("--radiuspca", 	type="int"         ,	default=-1   ,				help="radius for PCA" )
+	parser.add_option("--radiusvar", 	type="int"         ,	default=-1   ,				help="radius for 3D var" )
 	parser.add_option("--iter", 		type="int"         ,	default=40   ,				help="maximum number of iterations (stop criterion of reconstruction process)" )
 	parser.add_option("--abs", 			type="float"       ,	default=0.0  ,				help="minimum average absolute change of voxels' values (stop criterion of reconstruction process)" )
 	parser.add_option("--squ", 			type="float"       ,	default=0.0  ,				help="minimum average squared change of voxels' values (stop criterion of reconstruction process)" )
@@ -126,21 +127,21 @@ def main():
 	
 	img_per_grp = options.img_per_grp
 	nvec = options.nvec
-	radius = options.radius
+	radiuspca = options.radiuspca
 
 	if myid == main_node:
 		nima = EMUtil.get_image_count(stack)
-		img = get_image(stack)
-		nx = img.get_xsize()
-		ny = img.get_ysize()
+		img  = get_image(stack)
+		nx   = img.get_xsize()
+		ny   = img.get_ysize()
 	else:
 		nima = 0
 		nx = 0
 		ny = 0
 	nima = bcast_number_to_all(nima)
-	nx = bcast_number_to_all(nx)
-	ny = bcast_number_to_all(ny)
-	if radius == -1: radius = nx/2-2
+	nx   = bcast_number_to_all(nx)
+	ny   = bcast_number_to_all(ny)
+	if radiuspca == -1: radiuspca = nx/2-2
 
 	if myid == main_node:
 		print_msg("%-70s:  %d\n"%("Number of projection", nima))
@@ -346,7 +347,7 @@ def main():
 			if options.VERBOSE:
 				print "%5.2f%% done on processor %d"%(i*100.0/len(proj_list), myid)
 			if nvec > 0:
-				eig = pca(input_stacks=grp_imgdata, subavg=ave, mask_radius=radius, nvec=nvec, incore=True, shuffle=False, genbuf=True)
+				eig = pca(input_stacks=grp_imgdata, subavg=ave, mask_radius=radiuspca, nvec=nvec, incore=True, shuffle=False, genbuf=True)
 				for k in xrange(nvec):
 					set_params_proj(eig[k], [phiM, thetaM, 0.0, 0.0, 0.0])
 					eigList[k].append(eig[k])
@@ -364,7 +365,7 @@ def main():
 		if options.ave3D:
 			if options.VERBOSE:
 				print "Reconstructing 3D average volume"
-			ave3D = recons3d_4nn_MPI(myid, aveList, symmetry=options.sym, npad=options.npad, xysize=-1, zsize=-1)
+			ave3D = recons3d_4nn_MPI(myid, aveList, symmetry=options.sym, npad=options.npad)
 			bcast_EMData_to_all(ave3D, myid)
 			if myid == main_node:
 				ave3D.write_image(options.ave3D)
@@ -377,16 +378,17 @@ def main():
 					print "Reconstruction eigenvolumes", k
 				cont = True
 				ITER = 1
+				mask2d = model_circle(radiuspca, nx, nx)
 				while cont:
 					print "On node %d, iteration %d"%(myid, ITER)
-					eig3D = recons3d_4nn_MPI(myid, eigList[k], symmetry=options.sym, npad=options.npad, xysize=-1, zsize=-1)
-					eig3D = filt_tanl(eig3D, options.freq, options.fall_off) #*mask() ##################
+					eig3D = recons3d_4nn_MPI(myid, eigList[k], symmetry=options.sym, npad=options.npad)
+					eig3D = Util.img_mul( filt_tanl(eig3D, options.freq, options.fall_off), model_circle(radiuspca, nx, nx, nx) )
 					eig3Df, kb = prep_vol(eig3D)
 					cont = False
 					for l in xrange(len(eigList[k])):
 						phi, theta, psi, s2x, s2y = get_params_proj(eigList[k][l])
 						proj = prgs(eig3Df, kb, [phi, theta, psi, s2x, s2y])
-						cl = ccc(proj, eigList[k][l]) #, mask################)
+						cl = ccc(proj, eigList[k][l], mask2d)
 						if cl < 0.0:
 							cont = True
 							eigList[k][l] *= -1.0
@@ -400,7 +402,7 @@ def main():
 					eig3D.write_image("eig3d_%03d.hdf"%k)
 				del eig3D
 				mpi_barrier(MPI_COMM_WORLD)
-			del eigList
+			del eigList, mask2d
 
 		if options.ave3D: del ave3D
 
