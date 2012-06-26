@@ -419,7 +419,9 @@ def main():
 			print "Reconstructing 3D variance volume"
 
 		t6 = time()
-		res = recons3d_em_MPI(varList, vol_stack, options.iter, radius, options.abs, True, options.sym, options.squ)
+		radiusvar = options.radiusvar
+		if( radiusvar < 0 ):  radiusvar = nx//2 -3
+		res = recons3d_em_MPI(varList, vol_stack, options.iter, radiusvar, options.abs, True, options.sym, options.squ)
 		if myid == main_node:
 			res.write_image(vol_stack)
 
