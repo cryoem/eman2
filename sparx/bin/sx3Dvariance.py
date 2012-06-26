@@ -125,6 +125,8 @@ def main():
 	
 	img_per_grp = options.img_per_grp
 	nvec = options.nvec
+	radius = options.radius
+
 	if myid == main_node:
 		nima = EMUtil.get_image_count(stack)
 		img = get_image(stack)
@@ -137,6 +139,7 @@ def main():
 	nima = bcast_number_to_all(nima)
 	nx = bcast_number_to_all(nx)
 	ny = bcast_number_to_all(ny)
+	if radius == -1: radius = nx/2-2
 
 	if myid == main_node:
 		print_msg("%-70s:  %d\n"%("Number of projection", nima))
@@ -337,7 +340,7 @@ def main():
 			if options.VERBOSE:
 				print "%5.2f%% done on processor %d"%(i*100.0/len(proj_list), myid)
 			if nvec > 0:
-				eig = pca(input_stacks=grp_imgdata, subavg=ave, mask_radius=35, nvec=nvec, incore=True, shuffle=False, genbuf=True)
+				eig = pca(input_stacks=grp_imgdata, subavg=ave, mask_radius=radius, nvec=nvec, incore=True, shuffle=False, genbuf=True)
 				for k in xrange(nvec):
 					set_params_proj(eig[k], [phiM, thetaM, 0.0, 0.0, 0.0])
 					eigList[k].append(eig[k])
@@ -395,7 +398,7 @@ def main():
 		print "Reconstructing 3D variance volume"
 
 	t6 = time()
-	res = recons3d_em_MPI(varList, vol_stack, options.iter, options.radius, options.abs, True, options.sym, options.squ)
+	res = recons3d_em_MPI(varList, vol_stack, options.iter, radius, options.abs, True, options.sym, options.squ)
 	if myid == main_node:
 		res.write_image(vol_stack)
 
