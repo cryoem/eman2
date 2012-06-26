@@ -65,15 +65,16 @@ def main():
 	parser.add_option("--CTF",			action="store_true",	default=False,				help="use CFT correction")
 	parser.add_option("--VERBOSE",		action="store_true",	default=False,				help="comments")
 	parser.add_option("--img_per_grp",	type="int"         ,	default=10   ,				help="number of neighbouring projections")
-	parser.add_option("--nvec",			type="int"         ,	default=0   ,				help="number of eigenvectors, default = 0 meaning no PCA calculated")
-	parser.add_option("--npad",			type="int"         ,	default=2   ,				help="number of time to pad the original images")
+	parser.add_option("--nvec",			type="int"         ,	default=0    ,				help="number of eigenvectors, default = 0 meaning no PCA calculated")
+	parser.add_option("--npad",			type="int"         ,	default=2    ,				help="number of time to pad the original images")
 	parser.add_option("--freq",			type="float"       ,	default=0.0  ,				help="stop-band frequency")
 	parser.add_option("--fall_off",		type="float"       ,	default=0.0  ,				help="fall off of the filter")
 	parser.add_option("--ave2D",		type="string"	   ,	default=False,				help="write to the disk a stack of 2D averages")
 	parser.add_option("--var2D",		type="string"	   ,	default=False,				help="write to the disk a stack of 2D variances")
 	parser.add_option("--ave3D",		type="string"	   ,	default=False,				help="write to the disk reconstructed 3D average")
+	parser.add_option("--var3D",		type="string"	   ,	default=False,				help="compute 3D variance (time consuming!)")
 	parser.add_option("--no_norm",		action="store_true",	default=False,				help="do not use normalization")
-	parser.add_option("--MPI" , 		action="store_true",	default=False,				help="use MPI version - works only with stack of variance as an input")
+	parser.add_option("--MPI" , 		action="store_true",	default=False,				help="use MPI version")
 
 	(options,args) = parser.parse_args()
 	
@@ -284,11 +285,12 @@ def main():
 		del vol, imgdata2
 		mpi_barrier(MPI_COMM_WORLD)
 		'''
-		
+		from applications import prepare_2d_forPCA
+		from utilities import model_blank		
 		for i in xrange(len(proj_list)): 
 			mi = index[proj_angles[proj_list[i][0]][3]]
 			phiM, thetaM, psiM, s2xM, s2yM = get_params_proj(imgdata[mi])
-			
+
 			grp_imgdata = []
 			for j in xrange(img_per_grp):
 				mj = index[proj_angles[proj_list[i][j]][3]]
@@ -318,7 +320,7 @@ def main():
 				nx2 = 2*nx
 				ny2 = 2*ny
 				for k in xrange(img_per_grp):
-					grp_imgdata[k] = window2d(fft( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf")), options.freq, options.fall_off) ),nx,ny)
+					grp_imgdata[k] = window2d(fft( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.freq, options.fall_off) ),nx,ny)
 					#grp_imgdata[k] = filt_tanl(grp_imgdata[k], options.freq, options.fall_off)
 
 			'''
@@ -327,12 +329,17 @@ def main():
 					grp_imgdata[k].write_image("grp%03d.hdf"%i, k)
 			'''
 
-			if options.CTF:	ave, var = avgvar_ctf(grp_imgdata, mode="a")
-			else:	ave, var = avgvar(grp_imgdata, mode="a")
+			ave, grp_imgdata = prepare_2d_forPCA(grp_imgdata)
+			var = model_blank(nx,ny)
+			for q in grp_imgdata:  Util.add_img2( var, q )
+			Util.mul_scalar( var, 1.0/(len(grp_imgdata)-1))
+			#if options.CTF:	ave, var = avgvar_ctf(grp_imgdata, mode="a")
+			#else:	            ave, var = avgvar(grp_imgdata, mode="a")
+
 			var = threshold(var)
 			set_params_proj(ave, [phiM, thetaM, 0.0, 0.0, 0.0])
 			set_params_proj(var, [phiM, thetaM, 0.0, 0.0, 0.0])
-			
+
 			aveList.append(ave)
 			varList.append(var)
 
@@ -344,8 +351,9 @@ def main():
 				for k in xrange(nvec):
 					set_params_proj(eig[k], [phiM, thetaM, 0.0, 0.0, 0.0])
 					eigList[k].append(eig[k])
-				
+
 		del imgdata
+		#  All averages, variances, and eigenvectors are computed
 
 		if options.ave2D:
 			for i in xrange(number_of_proc):
@@ -363,21 +371,35 @@ def main():
 				ave3D.write_image(options.ave3D)
 				print_msg("%-70s:  %s\n"%("Writing to the disk volume reconstructed from averages as", options.ave3D))
 		del ave, var, proj_list, stack, phi, theta, psi, s2x, s2y, alpha, sx, sy, mirror, aveList
-		
+
 		if nvec > 0:
-			ave3D = filt_tanl(ave3D, 0.3, 0.2)
-			for k in xrange(nvec):
-				c = [0.0]*len(eigList[k])
-				for l in xrange(len(eigList[k])):
-					phi, theta, psi, s2x, s2y = get_params_proj(eigList[k][l])
-					proj = project(ave3D, [phi, theta, psi, s2x, s2y], 200)
-					c[l] = ccc(proj, eigList[k][l])
-					if c[l] < 0: eigList[k][l] = 0-eigList[k][l]
-					
+
 			if options.VERBOSE:
 				print "Reconstruction eigenvolumes"
 			for k in xrange(nvec):
-				eig3D = recons3d_4nn_MPI(myid, eigList[k], symmetry=options.sym, npad=options.npad, xysize=-1, zsize=-1)
+				cont = True
+				while(cont):
+					eig3D = recons3d_4nn_MPI(myid, eigList[k], symmetry=options.sym, npad=options.npad, xysize=-1, zsize=-1)
+					eig3D = filt_tanl(eig3D, options.freq, options.fall_off)*mask() ##################
+					eig3Df,kb = prep_vol( eig3D )
+					#c = [0.0]*len(eigList[k])
+					cont = False
+					for l in xrange(len(eigList[k])):
+						phi, theta, psi, s2x, s2y = get_params_proj(eigList[k][l])
+						proj = prgs(eig3Df, kb, [phi, theta, psi, s2x, s2y])
+						cl = ccc(proj, eigList[k][l], mask##########)
+						if( cl < 0.0 ):
+							cont = True
+							eigList[k][l] *= -1.0
+					#  Gather cont and send back
+					# gather all ccc's
+					# decided what is the correct sign
+					#  send information back
+					#  correct sign of eigvecs
+				
+				
+				
+				
 				if myid == main_node:
 					eig3D.write_image("eig3d_%03d.hdf"%k)
 				del eig3D
@@ -394,29 +416,30 @@ def main():
 			mpi_barrier(MPI_COMM_WORLD)
 	mpi_barrier(MPI_COMM_WORLD)
 
-	if myid == main_node and options.VERBOSE:
-		print "Reconstructing 3D variance volume"
+	if  options.var3D:
+		if myid == main_node and options.VERBOSE:
+			print "Reconstructing 3D variance volume"
 
-	t6 = time()
-	res = recons3d_em_MPI(varList, vol_stack, options.iter, radius, options.abs, True, options.sym, options.squ)
-	if myid == main_node:
-		res.write_image(vol_stack)
+		t6 = time()
+		res = recons3d_em_MPI(varList, vol_stack, options.iter, radius, options.abs, True, options.sym, options.squ)
+		if myid == main_node:
+			res.write_image(vol_stack)
 
-	if myid == main_node:
-		print_msg("%-70s:  %.2f\n"%("Reconstructing 3D variance lasted [s]", time()-t6))
-		if options.VERBOSE:
-			print "Reconstruction took: %.2f [min]"%((time()-t6)/60)
+		if myid == main_node:
+			print_msg("%-70s:  %.2f\n"%("Reconstructing 3D variance lasted [s]", time()-t6))
+			if options.VERBOSE:
+				print "Reconstruction took: %.2f [min]"%((time()-t6)/60)
 
-	if myid == main_node:
-		print_msg("%-70s:  %.2f\n"%("Total time for these computations [s]", time()-t0))
-		if options.VERBOSE:
-			print "Total time for these computations: %.2f [min]"%((time()-t0)/60)
-		print_end_msg("sx3Dvariance")
+		if myid == main_node:
+			print_msg("%-70s:  %.2f\n"%("Total time for these computations [s]", time()-t0))
+			if options.VERBOSE:
+				print "Total time for these computations: %.2f [min]"%((time()-t0)/60)
+			print_end_msg("sx3Dvariance")
 
 	global_def.BATCH = False
 
 	from mpi import mpi_finalize
 	mpi_finalize()
-	
+
 if __name__=="__main__":
 	main()

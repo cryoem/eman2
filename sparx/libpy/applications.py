@@ -10271,7 +10271,7 @@ def pca(input_stacks, subavg="", mask_radius=-1, nvec=3, incore=False, shuffle=F
 			else:
 				data = input_stacks[i]
 			pca.insert( data )
-			
+
 	else:
 		pca.usebuf( )
 		print myid, "using existing buff, nimg: ", pca.nimg
@@ -10392,7 +10392,7 @@ def prepare_2d_forPCA(data, mode = "a", output_stack = None, CTF = False):
 			set_params2D(img, [0.0,0.0,0.0,0,1.0])
 			if( output_stack == None):  outstack[i] = img
 			else:                       img.write_image(output_stack, i)
-	if( output_stack == None):  return outstack
+	if( output_stack == None):  return ave, outstack
 	else:                       return None
 
 def varimax(input_stack, imglist, output_stack, maskfile, mask_radius, verbose ) :
