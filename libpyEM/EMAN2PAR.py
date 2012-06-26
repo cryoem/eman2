@@ -45,7 +45,7 @@ import thread,threading
 import getpass
 import select
 
-from EMAN2 import test_image,EMData,abs_path,local_datetime,EMUtil,Util
+from EMAN2 import test_image,EMData,abs_path,local_datetime,EMUtil,Util,get_platform
 from EMAN2db import EMTask,EMTaskQueue,db_open_dict,db_remove_dict,e2filemodtime,db_check_dict
 from e2classaverage import ClassAvTask
 from e2spt_classaverage import Align3DTask
