@@ -797,6 +797,7 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 		
 		if edgenorm : im1.process_inplace("normalize.edgemean")
 		if oversamp>1 :
+#			print Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys)
 			im1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
 		
 		im2=im1.copy()
