@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/home1/01102/pawelpap/EMAN2/Python/bin/python
 #
 # Author: 
 # Copyright (c) 2012 The University of Texas - Houston Medical School
@@ -92,7 +92,7 @@ def main():
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	main_node = 0
-	print options.var3D
+
 	if len(args) == 2:
 		stack = args[0]
 		vol_stack = args[1]
@@ -315,13 +315,15 @@ def main():
 				del mask	
 
 			if options.freq > 0.0:
-				from utilities import pad
-				from filter import filt_ctf
+				from utilities import pad, read_text_file
+				from filter import filt_ctf, filt_table
 				from fundamentals import fft, window2d
+				#fifi = read_text_file("adjfilt90padded.txt")
 				nx2 = 2*nx
 				ny2 = 2*ny
 				for k in xrange(img_per_grp):
 					grp_imgdata[k] = window2d(fft( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.freq, options.fall_off) ),nx,ny)
+					#grp_imgdata[k] = window2d(fft( filt_table( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.freq, options.fall_off), fifi) ),nx,ny)
 					#grp_imgdata[k] = filt_tanl(grp_imgdata[k], options.freq, options.fall_off)
 
 			'''
@@ -452,12 +454,13 @@ def main():
 		t6 = time()
 		radiusvar = options.radiusvar
 		if( radiusvar < 0 ):  radiusvar = nx//2 -3
-		res = recons3d_em_MPI(varList, vol_stack, options.iter, radiusvar, options.abs, True, options.sym, options.squ)
+		res = recons3d_4nn_MPI(myid, varList, symmetry=options.sym, npad=options.npad)
+		#res = recons3d_em_MPI(varList, vol_stack, options.iter, radiusvar, options.abs, True, options.sym, options.squ)
 		if myid == main_node:
 			res.write_image(vol_stack)
 
 		if myid == main_node:
-			print_msg("%-70s:  %.2f\n"%("Reconstructing 3D variance lasted [s]", time()-t6))
+			print_msg("%-70s:  %.2f\n"%("Reconstructing 3D variance took [s]", time()-t6))
 			if options.VERBOSE:
 				print "Reconstruction took: %.2f [min]"%((time()-t6)/60)
 
