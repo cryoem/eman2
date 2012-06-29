@@ -419,13 +419,7 @@ EMObject::operator float () const
 		return (float) d;
 	}
 	else if (type == STRING) {
-		try {
-			return atof(str.c_str());
-		}
-		catch(...) {
-			throw TypeException("Cannot convert to float from this data type",
-											get_object_type_name(type));
-		}
+		return (float)atof(str.c_str());
 	}
 	else {
 		if (type != UNKNOWN) {
