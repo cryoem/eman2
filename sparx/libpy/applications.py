@@ -5475,7 +5475,7 @@ def local_ali3dm_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, 
 			refdata = [None]*7
 			refdata[0] = numref
 			refdata[1] = outdir
-			refdata[2] = None # fscc
+			refdata[2] = fscc
 			refdata[3] = iteration
 			refdata[4] = varf
 			refdata[5] = mask3D
