@@ -52,6 +52,7 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	(options, args) = parser.parse_args()
+	logid=E2init(sys.argv,options.ppid)
 	
 	# Import boxes
 	if options.import_boxes:
@@ -68,8 +69,8 @@ def main():
 				fh = open(filename, 'r')
 				for line in fh.readlines():
 					fields = line.split()
-					boxlist.append([float(fields[0])+float(fields[3])/2, float(fields[1])+float(fields[3])/2, 'swarm_auto'])
-				db[os.path.splitext(os.path.basename(filename))[0]+options.extension] = boxlist
+					boxlist.append([float(fields[0])+float(fields[3])/2, float(fields[1])+float(fields[3])/2, 'manual'])
+				db["micrographs/%s.%s"%(os.path.splitext(os.path.basename(filename))[0],options.extension)] = boxlist
 			db_close_dict(db)
 		if options.box_type == 'tiltedboxes':
 			db = db_open_dict('bdb:e2boxercache#boxestilted')
@@ -125,6 +126,7 @@ def main():
 				shutil.copy(filename,partsdir)
 			if options.importaction == "link":
 				os.symlink(filename,os.path.join(tomosdir,os.path.basename(filename)))
+	E2end(logid)
 			
 if __name__ == "__main__":
 	main()

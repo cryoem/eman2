@@ -463,8 +463,8 @@ class PMFileNameWidget(PMBaseWidget):
 				# Display the rubbish file to the user
 				self.filenamebox.setText(filename)
 				return False
-			numimages += EMUtil.get_image_count(f)
 		try: 
+			numimages += EMUtil.get_image_count(f)
 			tst=EMData(files[0],0)
 			nx,ny,nz=tst["nx"],tst["ny"],tst["nz"]
 		except:

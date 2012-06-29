@@ -2061,6 +2061,8 @@ dirregex - default "", a regular expression for filtering filenames (directory n
 		self.wfilter.addItem("")
 		self.wfilter.addItem("(.(?!_ctf))*$")
 		self.wfilter.addItem(".*\.img")
+		self.wfilter.addItem(".*\.box")
+		self.wfilter.addItem(".*\.hdf")
 		self.wfilter.addItem(".*_ptcls$")
 		self.wtoolhbl2.addWidget(self.wfilter,5)
 				
@@ -2425,6 +2427,8 @@ dirregex - default "", a regular expression for filtering filenames (directory n
 		if self.result==None: return None
 		
 		self.close()
+		for i in xrange(len(self.result)):
+			if self.result[i][:2]=="./" : self.result[i]=self.result[i][2:]
 		return self.result
 
 	def getCWD(self):
