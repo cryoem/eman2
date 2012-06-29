@@ -1,4 +1,4 @@
-#!/home1/01102/pawelpap/EMAN2/Python/bin/python
+#!/usr/bin/env python
 #
 # Author: 
 # Copyright (c) 2012 The University of Texas - Houston Medical School
@@ -97,7 +97,7 @@ def main():
 		stack = args[0]
 		vol_stack = args[1]
 	else:
-		ERROR("incomplete list of arguments", "sxvariances3d", 1)
+		ERROR("incomplete list of arguments", "sxvariances3d", 1, myid=myid)
 		exit()
 	if not options.MPI:
 		ERROR("Non-MPI not supported!", "sx3Dvariance", myid=myid)
@@ -321,10 +321,28 @@ def main():
 				#fifi = read_text_file("adjfilt90padded.txt")
 				nx2 = 2*nx
 				ny2 = 2*ny
-				for k in xrange(img_per_grp):
-					grp_imgdata[k] = window2d(fft( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.freq, options.fall_off) ),nx,ny)
-					#grp_imgdata[k] = window2d(fft( filt_table( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.freq, options.fall_off), fifi) ),nx,ny)
-					#grp_imgdata[k] = filt_tanl(grp_imgdata[k], options.freq, options.fall_off)
+				if CTF:
+					for k in xrange(img_per_grp):
+						grp_imgdata[k] = window2d(fft( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.freq, options.fall_off) ),nx,ny)
+						#grp_imgdata[k] = window2d(fft( filt_table( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.freq, options.fall_off), fifi) ),nx,ny)
+						#grp_imgdata[k] = filt_tanl(grp_imgdata[k], options.freq, options.fall_off)
+				else:
+					for k in xrange(img_per_grp):
+						grp_imgdata[k] = filt_tanl( grp_imgdata[k], options.freq, options.fall_off)
+						#grp_imgdata[k] = window2d(fft( filt_table( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.freq, options.fall_off), fifi) ),nx,ny)
+						#grp_imgdata[k] = filt_tanl(grp_imgdata[k], options.freq, options.fall_off)
+			else:
+				from utilities import pad, read_text_file
+				from filter import filt_ctf, filt_table
+				from fundamentals import fft, window2d
+				#fifi = read_text_file("adjfilt90padded.txt")
+				nx2 = 2*nx
+				ny2 = 2*ny
+				if CTF:
+					for k in xrange(img_per_grp):
+						grp_imgdata[k] = window2d( fft( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1) ) , nx,ny)
+						#grp_imgdata[k] = window2d(fft( filt_table( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.freq, options.fall_off), fifi) ),nx,ny)
+						#grp_imgdata[k] = filt_tanl(grp_imgdata[k], options.freq, options.fall_off)
 
 			'''
 			if i < 10 and myid == main_node:
