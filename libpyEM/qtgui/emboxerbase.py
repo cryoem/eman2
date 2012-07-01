@@ -2197,6 +2197,7 @@ class EMBoxerWriteOutputTask(WorkFlowTask):
 		'''
 		box_list = EMBoxList()
 		box_list.load_boxes_from_database(file_name)
+#		print "lbd ",file_name
 		return str(len(box_list))
 	
 	get_quality = staticmethod(get_quality)

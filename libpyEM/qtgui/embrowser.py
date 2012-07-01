@@ -112,12 +112,14 @@ class EMFileType(object):
 	setsmode = False
 	
 	def __init__(self,path):
+		if path[:2]=="./" : path=path[2:]
 		self.path=path			# the current path this FileType is representing
 		self.setsdb=None		# The bad particles DB 
 		self.n=-1				# used to look at one image from a stack. -1 means not set.
 
 	def setFile(self,path):
 		"""Represent a new file. Will update inspector if open. Assumes isValid already checked !"""
+		if path[:2]=="./" : path=path[2:]
 		self.path=path
 
 	def setN(self,n):
@@ -470,6 +472,7 @@ class EMPlotFileType(EMFileType):
 		return EMPlotInfoPane
 
 	def __init__(self,path):
+		if path[:2]=="./" : path=path[2:]
 		EMFileType.__init__(self,path)	# the current path this FileType is representing
 
 		# Make sure all of the lines have the same number of columns
@@ -602,6 +605,7 @@ class EMBdbFileType(EMFileType):
 		return EMBDBInfoPane
 
 	def __init__(self,path):
+		if path[:2]=="./" : path=path[2:]
 		EMFileType.__init__(self,path)	# the current path this FileType is representing
 		self.bdb=db_open_dict(path,ro=True)
 		
@@ -658,6 +662,7 @@ class EMImageFileType(EMFileType):
 	"""FileType for files containing a single 2-D image"""
 
 	def __init__(self,path):
+		if path[:2]=="./" : path=path[2:]
 		EMFileType.__init__(self,path)	# the current path this FileType is representing
 		self.nimg=EMUtil.get_image_count(path)
 		im0=EMData(path,0,True)
@@ -725,6 +730,7 @@ class EMStackFileType(EMFileType):
 		return EMStackInfoPane
 
 	def __init__(self,path):
+		if path[:2]=="./" : path=path[2:]
 		EMFileType.__init__(self,path)	# the current path this FileType is representing
 		self.nimg=EMUtil.get_image_count(path)
 		im0=EMData(path,0,True)
@@ -1112,6 +1118,7 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 	
 	def __init__(self,startpath=None,direntryclass=EMDirEntry,dirregex=None):
 		QtCore.QAbstractItemModel.__init__(self)
+		if startpath[:2]=="./" : startpath=startpath[2:]
 		self.root=direntryclass(startpath,"", 0,dirregex=dirregex)				# EMDirEntry as a parent for the root path
 		self.rootpath=startpath							# root path for current browser
 		self.last=(0,0)
@@ -2454,6 +2461,8 @@ dirregex - default "", a regular expression for filtering filenames (directory n
 		"""Sets the current root path for the browser window. If silent is true,
 		the path history will not be updated."""
 		
+		if path[:2]=="./" : path=path[2:]
+
 		self.updlist=[]
 		self.redrawlist=[]
 		
