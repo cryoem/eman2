@@ -403,11 +403,11 @@ class EMCTFParticlesModel(EMFileItemModel):
 	
 	headers=("Row","Raw Data Files","Type", "Num Particles", "Particle Dims", "Defocus", "B Factor", "SNR", "Quality", "Sampling")
 	
-	def __init__(self,startpath=None, direntryclass=None):
+	def __init__(self,startpath=None, direntryclass=None,dirregex=None):
 		if not direntryclass:
-			EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMCTFParticlesEntry)
+			EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMCTFParticlesEntry,dirregex=dirregex)
 		else:
-			EMFileItemModel.__init__(self, startpath=startpath, direntryclass=direntryclass)
+			EMFileItemModel.__init__(self, startpath=startpath, direntryclass=direntryclass,dirregex=dirregex)
 		
 	def columnCount(self,parent):
 		"Always 10 columns"
@@ -544,7 +544,7 @@ class EMCTFcorrectedParticlesModel(EMCTFParticlesModel):
 class EMCTFcorrectedParticlesEntry(EMCTFParticlesEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
-		EMCTFParticlesEntry.__init__(self,root,name,i,parent=None,hidedot=True,dirregex=None)
+		EMCTFParticlesEntry.__init__(self,root,name,i,parent=None,hidedot=True,dirregex=dirregex)
 	
 ######################################################################################################################
 
@@ -771,7 +771,7 @@ class EMRCTBoxesModel(EMFileItemModel):
 	headers=("Row","Raw Data Files","Stored Boxes", "Box Quality", "Micro Quality")
 	
 	def __init__(self,startpath=None,dirregex=None):
-		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMRCTBoxesEntry,dirregex=dirrege)
+		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMRCTBoxesEntry,dirregex=dirregex)
 		
 	def columnCount(self,parent):
 		"Always 5 columns"

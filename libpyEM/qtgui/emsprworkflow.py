@@ -1877,7 +1877,7 @@ class E2BoxerTask(ParticleWorkFlowTask):
 	
 	def get_boxes_in_database(file_name):
 		
-		print "GDB",file_name
+#		print "GDB",file_name
 		db_name = "bdb:e2boxercache#boxes"
 		#db_name = "bdb:e2boxer.cache"		
 		box_maps = {}
