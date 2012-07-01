@@ -554,7 +554,7 @@ class EMLocalTaskHandler():
 				#There is the issue that when shell=True, popen.pid return shell pid and not process, so we set shell=false (there will be issues on Windows, but we don't support paralellization on windows
 				#proc=subprocess.Popen("e2parallel.py" + " localclient" + " --taskin=%s/%07d"%(self.scratchdir,self.nextid) + " --taskout=%s/%07d.out"%(self.scratchdir,self.nextid), shell=True)
 				if get_platform() == 'Windows':
-					proc=subprocess.Popen(["python %s\\bin\\e2parallel.py"%os.getenv('EMAN2DIR'),"localclient","--taskin=%s/%07d"%(self.scratchdir,self.nextid),"--taskout=%s/%07d.out"%(self.scratchdir,self.nextid)])
+					proc=subprocess.Popen(["python", "%s\\bin\\e2parallel.py"%os.getenv('EMAN2DIR'),"localclient","--taskin=%s/%07d"%(self.scratchdir,self.nextid),"--taskout=%s/%07d.out"%(self.scratchdir,self.nextid)])
 				else:
 					proc=subprocess.Popen(["e2parallel.py","localclient","--taskin=%s/%07d"%(self.scratchdir,self.nextid),"--taskout=%s/%07d.out"%(self.scratchdir,self.nextid)])
 				self.running.append((proc,self.nextid))
