@@ -401,7 +401,7 @@ class EMCTFParticlesTable(EMBrowserWidget):
 class EMCTFParticlesModel(EMFileItemModel):
 	""" Item model for the raw data """
 	
-	headers=("Row","Raw Data Files","Type", "Num Particles", "Particle Dims", "Defocus", "B Factor", "SNR", "Quality", "Sampling")
+	headers=("Row","Raw Data Files","Type", "Num Particles", "Particle Dims", "Defocus", "B Factor", "SNR-lo","SNR-hi", "Quality", "Sampling")
 	
 	def __init__(self,startpath=None, direntryclass=None,dirregex=None):
 		if not direntryclass:
@@ -410,9 +410,9 @@ class EMCTFParticlesModel(EMFileItemModel):
 			EMFileItemModel.__init__(self, startpath=startpath, direntryclass=direntryclass,dirregex=dirregex)
 		
 	def columnCount(self,parent):
-		"Always 10 columns"
+		"Always 11 columns"
 		#print "EMFileItemModel.columnCount()=6"
-		return 10
+		return 11
 		
 	def data(self,index,role):
 		"Returns the data for a specific location as a string"
@@ -451,16 +451,19 @@ class EMCTFParticlesModel(EMFileItemModel):
 			if data.snr==0 : return "-"
 			return nonone(data.snr)
 		elif col==8 :
+			if data.snrhi==0 : return "-"
+			return nonone(data.snrhi)
+		elif col==9 :
 			if data.quality==0 : return "-"
 			return nonone(data.quality)
-		elif col==9 :
+		elif col==10 :
 			if data.sampling==0 : return "-"
 			return nonone(data.sampling)
 
 class EMCTFParticlesEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.type,lambda x:safe_int(x.nimg), lambda x:x.particledim, lambda x:safe_float(x.defocus), lambda x:safe_float(x.bfactor), lambda x:safe_float(x.snr), lambda x:safe_int(x.quality), lambda x:x.sampling)
+	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.type,lambda x:safe_int(x.nimg), lambda x:x.particledim, lambda x:safe_float(x.defocus), lambda x:safe_float(x.bfactor), lambda x:safe_float(x.snr), lambda x:safe_float(x.snrhi),lambda x:safe_int(x.quality), lambda x:x.sampling)
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)
@@ -469,6 +472,7 @@ class EMCTFParticlesEntry(EMDirEntry):
 		self.defocus=None
 		self.bfactor=None
 		self.snr=None
+		self.snrhi=None
 		self.quality=None
 		self.sampling=None
 		
@@ -480,12 +484,18 @@ class EMCTFParticlesEntry(EMDirEntry):
 		if db_check_dict("bdb:e2ctf.parms"):
 			ctf_db = db_open_dict("bdb:e2ctf.parms",ro=True)
 			try:
-				ctf = (ctf_db[get_file_tag(self.path()).split("_ctf")[0]][0]).split()
-				self.defocus = "%.3f" % float(ctf[0][1:])
-				self.bfactor = "%.3f" % float(ctf[3])
-				background = (ctf[10].split(','))[1:]
-				self.sampling = str(len(background))
-				self.snr = "%.3f" %  (sum(map(float, background))/float(self.sampling))
+				ctf=EMAN2Ctf()
+				ctf.from_string(ctf_db[get_file_tag(self.path()).split("_ctf")[0]][0])
+#				ctf = (ctf_db[get_file_tag(self.path()).split("_ctf")[0]][0]).split()
+#				print ctf
+				self.defocus = "%.3f" % ctf.defocus 
+				self.bfactor = "%.3f" % ctf.bfactor
+				self.sampling = str(len(ctf.snr))
+				s0=max(2,int(1.0/(100.0*ctf.dsbg)))
+				s1=int(1.0/(12.0*ctf.dsbg))
+				s2=int(1.0/(5.0*ctf.dsbg))
+				self.snr = "%.3f" %  (sum(ctf.snr[s0:s1])/(s1-s0))
+				self.snrhi = "%.3f" %  (sum(ctf.snr[s1:s2])/(s2-s1))
 				quality = ctf_db[get_file_tag(self.path()).split("_ctf")[0]][3]
 				self.quality = "%d" %quality
 			except:
