@@ -370,7 +370,7 @@ def main():
 					if options.postprocess:
 						ppref = ref.copy()
 						postprocess(ppref,None,options.normproc,options.postprocess)
-						ppref.write_image("%s/class_%02d"%(options.path,i),it)
+						ppref.write_image("%s/class_%02d"%(options.path,ic),it)
 					else:
 						ref.write_image("%s/class_%02d"%(options.path,ic),it)
 
