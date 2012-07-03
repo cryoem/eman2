@@ -70,7 +70,10 @@ def main():
 				for line in fh.readlines():
 					fields = line.split()
 					boxlist.append([float(fields[0])+float(fields[3])/2, float(fields[1])+float(fields[3])/2, 'manual'])
-				db["micrographs/%s.%s"%(os.path.splitext(os.path.basename(filename))[0],options.extension)] = boxlist
+				if get_platform() == 'Windows':
+					db["micrographs\%s.%s"%(os.path.splitext(os.path.basename(filename))[0],options.extension)] = boxlist
+				else:
+					db["micrographs/%s.%s"%(os.path.splitext(os.path.basename(filename))[0],options.extension)] = boxlist
 			db_close_dict(db)
 		if options.box_type == 'tiltedboxes':
 			db = db_open_dict('bdb:e2boxercache#boxestilted')

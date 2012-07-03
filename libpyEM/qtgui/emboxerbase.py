@@ -46,7 +46,7 @@ points in terms of figuring out how to adapt this code to application specific n
 from optparse import OptionParser
 from emapplication import EMApp,get_application
 from pyemtbx.boxertools import BigImageCache,BinaryCircleImageCache,Cache
-from EMAN2 import file_exists,EMANVERSION,gimme_image_dimensions2D,EMData,get_file_tag,get_image_directory,Region,file_exists,gimme_image_dimensions3D,abs_path
+from EMAN2 import file_exists,EMANVERSION,gimme_image_dimensions2D,EMData,get_file_tag,get_image_directory,Region,file_exists,gimme_image_dimensions3D,abs_path,get_platform
 from EMAN2db import db_open_dict,db_check_dict,db_close_dict
 from emsprworkflow import workflow_path
 
@@ -2309,6 +2309,14 @@ class EMBoxerWriteOutputTask(WorkFlowTask):
 			
 def get_particle_outnames(params):
 	input = params["filenames"]
+	
+	if get_platform() == 'Windows':
+		input2 = []
+		for name in input:	
+			name = name.replace('\\', '/')
+			input2.append(name)
+		input = input2
+	
 	format = params["format"]
 	output = []
 	for name in input:
