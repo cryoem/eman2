@@ -601,13 +601,13 @@ void FourierAnlProcessor::process_inplace(EMData * image)
 
 
 	if (image->is_complex()) {
-		vector <float>yarray = image->calc_radial_dist(image->get_ysize(),0,0.5,1);
+		vector <float>yarray = image->calc_radial_dist(image->get_ysize()/2,0,1.0,1);
 		create_radial_func(yarray,image);
 		image->apply_radial_func(0, 0.5f/yarray.size(), yarray);
 	}
 	else {
 		EMData *fft = image->do_fft();
-		vector <float>yarray = fft->calc_radial_dist(fft->get_ysize(),0,0.5,1);
+		vector <float>yarray = fft->calc_radial_dist(fft->get_ysize()/2,0,1.0,1);
 		create_radial_func(yarray,image);
 		fft->apply_radial_func(0, 0.5f/yarray.size(), yarray,0);		// 4/30/10 stevel turned off interpolation to fix problem with matched filter
 		EMData *ift = fft->do_ift();
