@@ -163,6 +163,10 @@ def main():
 		print "Sorry, at the moment this program supports only BDB format input particle stacks !"
 		sys.exit(1)
 
+	if options.path==None :
+		print "The --path argument is required, and must point to the 'parent' refinement for the desired resolution test, ie --path=refine_05"
+		sys.exit(1)
+
 	# Prepare the starting models for each run
 	# each model will have different random phases beyond the specified resolution
 	print "### Preparing initial models for refinement, phase-randomized at %1.1f A resolution"%options.randomres
