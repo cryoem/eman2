@@ -45,7 +45,7 @@ def db_compute_fsc(a, b, apix, pathname, dbname):
 	db = db_open_dict(convergence_db_name)
 	
 	tmpaxis = [x/apix for x in xaxis]
-	db[dbname] = [tmpaxis,plot]
+	db[dbname] = [tmpaxis[1:],plot[1:]]
 	#db["error_"+s+"_fsc"] = [xaxis,error] #we're not plotting the errors
 	db_close_dict(convergence_db_name)
 	
