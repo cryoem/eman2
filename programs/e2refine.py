@@ -229,7 +229,6 @@ def main():
 		
 		a = EMData(previous_model,0)
 		b = EMData(new_model,0)
-		print "FSC between ",previous_model,new_model
 		
 		# redid this using e2proc3d commands rather than internally for better logging. Performance will take a very slight hit this way
 		if options.mass:
