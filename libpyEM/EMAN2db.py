@@ -1470,6 +1470,7 @@ of these occasional errors"""
 					except: raise KeyError,"Undefined data location key %s for %s"%(key,pkey+fkey)
 					try: ret.read_data(pkey+fkey,n*4*rnx*rny*rnz,region,rnx,rny,rnz)	# note that this uses n, NOT 'key'. Images cannot be located in the binary file based on their numerical key
 					except :
+						import socket
 						print "Data read error (%s) on %s (%d)"%(socket.gethostname(),pkey+fkey,key*4*rnx*rny*rnz)
 						traceback.print_exc()
 						sys.stderr.flush()
