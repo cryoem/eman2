@@ -45,7 +45,7 @@ def main():
 	parser.add_header(name="filterheader", help='Options below this label are specific to e2import', title="### e2import options ###", row=1, col=0, rowspan=1, colspan=2, mode='coords,parts,tomos')
 	parser.add_argument("--import_particles",action="store_true",help="Import particles",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='parts[True]')
 	parser.add_argument("--import_tomos",action="store_true",help="Import tomograms",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='tomos[True]')
-	parser.add_argument("--importaction",help="import particles",default='move',guitype='combobox',choicelist='["move","copy","link"]',row=2,col=1,rowspan=1,colspan=1, mode='tomos')
+	parser.add_argument("--importation",help="import particles",default='copy',guitype='combobox',choicelist='["move","copy","link"]',row=2,col=1,rowspan=1,colspan=1, mode='tomos')
 	parser.add_argument("--import_boxes",action="store_true",help="Import boxes",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='coords[True]')
 	parser.add_argument("--extension",type=str,help="Extension of the micrographs that the boxes match", default='dm3', guitype='strbox',row=3, col=0, rowspan=1, colspan=1, mode='coords')
 	parser.add_argument("--box_type",help="Type of boxes to import, normally boxes, but for tilted data use tiltedboxes, and untiltedboxes for the tilted  particle partner",default=None,guitype='combobox',choicelist='["boxes","tiltedboxes","untiltedboxes"]',row=2,col=1,rowspan=1,colspan=1, mode="coords['boxes']")
@@ -123,11 +123,11 @@ def main():
 		if not os.access(tomosdir, os.R_OK):
 			os.mkdir("rawtomograms")
 		for filename in args:
-			if options.importaction == "move":
+			if options.importation == "move":
 				os.rename(filename,os.path.join(tomosdir,os.path.basename(filename)))
-			if options.importaction == "copy":
-				shutil.copy(filename,partsdir)
-			if options.importaction == "link":
+			if options.importation == "copy":
+				shutil.copy(filename,os.path.join(tomosdir,os.path.basename(filename)))
+			if options.importation == "link":
 				os.symlink(filename,os.path.join(tomosdir,os.path.basename(filename)))
 	E2end(logid)
 			
