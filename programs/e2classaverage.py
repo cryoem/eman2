@@ -122,6 +122,7 @@ def main():
 	if options.check: exit(0)
 	
 	logger=E2init(sys.argv,options.ppid)
+	print "Class averaging beginning"
 	
 	try: 
 		classmx=EMData.read_images(options.classmx)		# we keep the entire classification matrix in memory, since we need to update it in most cases
@@ -280,7 +281,8 @@ def main():
 	if options.resultmx!=None:
 		if options.verbose : print "Writing results matrix"
 		for i,j in enumerate(classmx) : j.write_image(options.resultmx,i)
-
+	
+	print "Class averaging complete"
 	E2end(logger)
 
 class ClassAvTask(EMTask):
