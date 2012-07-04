@@ -78,7 +78,7 @@ def main():
 		else:
 			mask = args[3]
 		if options.MPI:
-			from mpi import mpi_init
+			from mpi import mpi_init, mpi_finalize
 			sys.argv = mpi_init(len(sys.argv), sys.argv)
 
 		if global_def.CACHE_DISABLE:
@@ -111,9 +111,7 @@ def main():
 				options.function, options.Fourvar, options.npad, options.debug, options.MPI, options.stoprnct)
 				global_def.BATCH = False
 
-                if options.MPI:
-		        from mpi import mpi_finalize
-			mpi_finalize()
+		if options.MPI:  mpi_finalize()
 
 if __name__ == "__main__":
 	main()
