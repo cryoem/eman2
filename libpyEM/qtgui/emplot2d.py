@@ -782,6 +782,7 @@ lc is the cursor selection point in plot coords"""
 			xmin=1.0e38
 			xmax=-1.0e38
 			for k in self.axes.keys():
+				if not self.visibility[k]: continue
 				xmin=min(xmin,min(self.data[k][self.axes[k][0]]))
 				xmax=max(xmax,max(self.data[k][self.axes[k][0]]))
 				
@@ -794,6 +795,7 @@ lc is the cursor selection point in plot coords"""
 			ymin=1.0e38
 			ymax=-1.0e38
 			for k in self.axes.keys():
+				if not self.visibility[k]: continue
 				ymin=min(ymin,min(self.data[k][self.axes[k][1]]))
 				ymax=max(ymax,max(self.data[k][self.axes[k][1]]))
 				
@@ -806,6 +808,7 @@ lc is the cursor selection point in plot coords"""
 			cmin=1.0e38
 			cmax=-1.0e38
 			for k in self.axes.keys():
+				if not self.visibility[k]: continue
 				cmin=min(cmin,min(self.data[k][self.axes[k][2]]))
 				cmax=max(cmax,max(self.data[k][self.axes[k][2]]))
 			self.climits=(cmin,cmax)
@@ -814,6 +817,7 @@ lc is the cursor selection point in plot coords"""
 			smin=1.0e38
 			smax=-1.0e38
 			for k in self.axes.keys():
+				if not self.visibility[k]: continue
 				smin=min(smin,min(self.data[k][self.axes[k][3]]))
 				smax=max(smax,max(self.data[k][self.axes[k][3]]))
 			self.slimits=(smin,smax)

@@ -77,7 +77,7 @@ for d in dirs:
 			fsc = fsc[third:2*third]
 			saxis = [x/apix for x in xaxis]
 
-			db2[dictname]=[saxis,fsc]
+			db2[dictname]=[saxis[1:],fsc[1:]]
 			print "  %s (%s - %s)"%(dictname,"bdb:%s#%s"%(d,i),"bdb:%s_odd#%s"%(d[:-5],i))
 
 #			EMAN2fsc.db_compute_fsc(a, b, a["apix_x"], base, dictname)
@@ -131,6 +131,6 @@ for d in dirs:
 		saxis = [x/apix for x in xaxis]
 
 		#print "write"
-		db[n]=[saxis,fsc]
+		db[n]=[saxis[1:],fsc[1:]]
 		print "  ",n
 

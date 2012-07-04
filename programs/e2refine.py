@@ -229,6 +229,7 @@ def main():
 		
 		a = EMData(previous_model,0)
 		b = EMData(new_model,0)
+		print "FSC between ",previous_model,new_model
 		
 		# redid this using e2proc3d commands rather than internally for better logging. Performance will take a very slight hit this way
 		if options.mass:
@@ -253,7 +254,8 @@ def main():
 				if ( launch_childprocess(com) != 0 ):
 					print "Failed to execute %s" %com
 					exit_refine(1,logid)
-							
+			
+			b=EMData(options.filtered_model,0)		# reload result for FSC
 		#fsc = a.calc_fourier_shell_correlation(b)
 		#third = len(fsc)/3
 		#xaxis = fsc[0:third]
