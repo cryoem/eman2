@@ -1558,6 +1558,10 @@ void MaskEdgeMeanProcessor::calc_locals(EMData * image)
 	float *data = image->get_data();
 	size_t i = 0;
 
+	xc = Util::fast_floor(nx/2.0f) + dx;
+	yc = Util::fast_floor(ny/2.0f) + dy;
+	zc = Util::fast_floor(nz/2.0f) + dz;
+	
 	for (int z = 0; z < nz; ++z) {
 		for (int y = 0; y < ny; ++y) {
 			for (int x = 0; x < nx; ++x) {
