@@ -1121,12 +1121,17 @@ class DBDict:
 				self.bdb.open(self.path+"/"+lfile,self.name,db.DB_BTREE,db.DB_CREATE|db.DB_THREAD)
 			except db.DBInvalidArgError:
 				self.updateold(lfile,ro)
-			except :
-				self.bdb=None
-				self.lock.release()
-				traceback.print_exc()
-				print "Unable to open read/write %s (%s/%s)"%(self.name,self.path,lfile)
-				return
+			except:
+				try:
+					os.makedirs("%s/EMAN2DB"%self.path)
+					self.bdb=db.DB(self.dbenv)
+					self.bdb.open(self.path+"/"+lfile,self.name,db.DB_BTREE,db.DB_CREATE|db.DB_THREAD)
+				except :
+					self.bdb=None
+					self.lock.release()
+					traceback.print_exc()
+					print "Unable to open read/write %s (%s/%s)"%(self.name,self.path,lfile)
+					return
 			#except: 
 				## try one more time... this shouldn't be necessary...
 				#time.sleep(1)
