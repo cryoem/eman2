@@ -61,7 +61,7 @@ for d in dirs:
 	db=db_open_dict("bdb:%s#convergence.results"%d)
 
 	if d[-5:]=="_even" :
-		# For e2refine_even_odd results
+		# For e2refine_evenodd results
 		db2=db_open_dict("bdb:%s#convergence.results"%d[:-5])
 		tdflist = [i for i in db_list_dicts("bdb:%s"%d) if "threed_filt" in i]
 		for i in tdflist:

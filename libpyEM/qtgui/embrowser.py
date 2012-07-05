@@ -849,7 +849,7 @@ class EMDirEntry(object):
 	def path(self):
 		"""The full path of the current item"""
 		if self.isbdb: return "bdb:%s#%s"%(self.root,self.name)
-		return os.path.join(self.root,self.name)
+		return os.path.join(self.root,self.name).replace("\\","/")
 	
 	def fileTypeClass(self):
 		"Returns the FileType class corresponding to the named filetype if it exists. None otherwise"
@@ -2461,6 +2461,7 @@ dirregex - default "", a regular expression for filtering filenames (directory n
 		"""Sets the current root path for the browser window. If silent is true,
 		the path history will not be updated."""
 		
+		path=path.replace("\\","/")
 		if path[:2]=="./" : path=path[2:]
 
 		self.updlist=[]
