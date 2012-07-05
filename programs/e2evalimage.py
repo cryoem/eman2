@@ -677,7 +677,7 @@ class GUIEvalImage(QtGui.QWidget):
 		item=item_name(self.curfilename)
 		db=db_open_dict("bdb:e2ctf.parms")
 		if db[item]==None or db[item[3]]==None : db[item]=[parms[1].to_string(),self.fft1d,parms[1].background,5]
-		print item,db[item][3]
+#		print item,db[item][3]
 		try: self.squality.setValue(int(db[item[3]]))
 		except: self.squality.setValue(5)
 		
