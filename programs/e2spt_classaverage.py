@@ -63,7 +63,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_header(name="caheader", help='Options below this label are specific to e2spt_classaverage', title="### e2spt_classaverage options ###", default=None, guitype='filebox', row=3, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
-	parser.add_argument("--path",type=str,default=None,help="Path for the refinement, default=auto")
+	parser.add_argument("--path",type=str,default=None,help="Directory to store results in. The default is a numbered series of directories containing the prefix 'spt'; for example, spt_02 will be the directory by default if 'spt_01' already exists.")
 	parser.add_argument("--input", type=str, help="The name of the input volume stack. MUST be HDF or BDB, since volume stack support is required.", default=None, guitype='filebox', browser='EMSubTomosTable(withmodal=True,multiselect=False)', row=0, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	parser.add_argument("--output", type=str, help="The name of the output class-average stack. MUST be HDF or BDB, since volume stack support is required.", default=None, guitype='strbox', row=2, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	parser.add_argument("--oneclass", type=int, help="Create only a single class-average. Specify the class number.",default=None)
