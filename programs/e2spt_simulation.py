@@ -44,11 +44,13 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options]
 
-	This program produces simulated sub volumes in random orientations from a given PDB or EM file (mrc or hdf).
+	This program produces simulated sub volumes in random orientations from a given PDB or EM file. The output is ALWAYS in HDF format, since it's the only format supported by E2SPT programs.
 	"""
 			
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 	
+	parser.add_argument("--path",type=str,default=None,help="Directory to store results in. The default is a numbered series of directories containing the prefix 'sptsim'; for example, sptsim_02 will be the directory by default if 'sptsim_01' already exists.")
+
 	parser.add_option("--input", type="string", help="""The name of the input volume from which simulated subtomograms will be generated. 
 							The output will be in HDF format, since volume stack support is required. The input CAN be PDB, MRC or and HDF stack. 
 							If the input file is PDB or MRC, a version of the supplied model will be written out in HDF format.
@@ -100,6 +102,22 @@ def main():
 
 	(options, args) = parser.parse_args()	
 	
+	'''
+	Make the directory where to create the database where the results will be stored
+	'''
+	if options.path and ("/" in options.path or "#" in options.path) :
+		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
+		sys.exit(1)
+		
+	if options.path and options.path[:4].lower()!="bdb:":
+		options.path="bdb:"+options.path
+	
+	if not options.path: 
+		options.path="bdb:"+numbered_path("spt",True)
+	
+	'''
+	Parse the options
+	'''
 	if options.filter:
 		options.filter = parsemodopt(options.filter)
 		
@@ -109,6 +127,10 @@ def main():
 	if options.reconstructor:
 		options.reconstructor= parsemodopt(options.reconstructor)
 	
+	
+	'''
+	If PDB or MRC files are provided to similuate subtomograms, convert them to HDF
+	'''
 	if '.pdb' in options.input:
 		pdbmodel = options.input
 		mrcmodel = pdbmodel.replace('.pdb','.mrc').split('/')[-1]
@@ -326,14 +348,20 @@ def subtomosim(options,ptcls,tag):
 			prj_r = prj_fft.do_ift()							#Go back to real space
 			
 			if options.addnoise:
-				prj_r.process_inplace('math.addnoise',{'noise':options.snr})
+				#prj_r.process_inplace('math.addnoise',{'noise':options.snr})
 				
 				#prj_n = EMData(nx,ny)
 				#for i in range(options.snr):				
 				#	prj_n.process_inplace(options.noiseproc[0],options.noiseproc[1])
 				#	prj_r = prj_r + prj_n
 				#prj_n.write_image('NOISE_ptcl' + str(i).zfill(len(str(nslices))) + '.hdf',j)
-		
+				
+		 		noise = test_image(1,size=(nx,ny))
+	                        noise2 = noise.process("filter.lowpass.gauss",{"cutoff_abs":.25})
+	                        noise.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.75})
+	                        noise = noise*3 + noise2*3
+	                        prj_r.add(noise)
+
 			ctfed_projections.append(prj_r)		
 
 			if options.saveprjs and options.applyctf or options.addnoise:
