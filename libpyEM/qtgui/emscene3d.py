@@ -1119,9 +1119,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 					self.updateMatrices([dx/self.camera.getViewPortWidthScaling(),0,0,-1], "rotate")
 				else:
 					self.updateMatrices([magnitude/self.camera.getViewPortWidthScaling(),-dy/magnitude,-dx/magnitude,0], "rotate")
-			except ValueError:
-			except ZeroDivisionError:
-				pass	# In some pathological circumstances, we can get divide by zero errors
+			except ValueError: pass
+			except ZeroDivisionError: pass
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "selection") and not event.modifiers()&Qt.ControlModifier:
 			self.updateMatrices([dx,-dy,0], "translate")
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "multiselection"):
