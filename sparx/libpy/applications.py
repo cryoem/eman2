@@ -3843,7 +3843,8 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 	else        :  mask3D = model_circle(last_ring, nx, nx, nx)
 
 	numr     = Numrinit(first_ring, last_ring, rstep, "F")
-	mask2D   = model_circle(last_ring, nx, nx) - model_circle(first_ring, nx, nx)
+	mask2D   = model_circle(last_ring, nx, nx)
+	if(first_ring > 1):  mask2D -= model_circle(first_ring, nx, nx)
 
 	if(myid == main_node):
 		active = EMUtil.get_all_attributes(stack, 'active')
@@ -4040,7 +4041,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 				for j in xrange(3):
 					transv[im][j] = trns.at(2,j)
 		else:
-			# For REFINEMENT we have a problem, as the exact angle is not known only after the next step of assigning projections.
+			# For REFINEMENT we have a problem, as the exact angle is known only after the next step of assigning projections.
 			# So, we will assume it is the one with max peak
 			for im in xrange(nima):
 				qt = -1.0e23
