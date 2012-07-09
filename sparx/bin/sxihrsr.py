@@ -82,6 +82,7 @@ def main():
 	parser.add_option("--chunk",      type="float",  default= -1.0,             help="percentage of data used for alignment")
 	parser.add_option("--WRAP",     type="int",    default= 1,                  help="do helical wrapping")
 	parser.add_option("--y_restrict",    type="float",  default= -1,                 help="range for translational search in y-direction, search is +/-y_restrict/2 in Angstroms. This only applies to local search, i.e., when an is not -1. If y_restrict=-1, the default value, then there is no y search range restriction")
+	parser.add_option("--CONS",      action="store_true", default=False,         help="Restrict angular and y-shift search so helical consistency is maintained.")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
     		print "usage: " + usage
@@ -112,7 +113,7 @@ def main():
 		from applications import ihrsr
 		global_def.BATCH = True
 			#print (options.ynumber,options.txs)
-		ihrsr(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.ynumber, options.txs, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, options.rmin, options.rmax, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.fourvar, options.debug, options.MPI, options.chunk, options.WRAP,options.y_restrict) 
+		ihrsr(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.ynumber, options.txs, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, options.rmin, options.rmax, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.fourvar, options.debug, options.MPI, options.chunk, options.WRAP,options.y_restrict,options.CONS) 
 		global_def.BATCH = False
 		
 		if options.MPI:
