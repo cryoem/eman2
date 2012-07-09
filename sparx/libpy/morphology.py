@@ -1727,7 +1727,7 @@ def predict_y(ps2, refseg, refy, filtheta,dz, pixel_size,ptclcoords,ysgn):
 def helical_consistency(parmfile, miclistfile, ptclcoordsfile, testcons=False,THR_CONS_PHI=1.5,THR_CONS_Y=1.0,delta_phi = 3.5, delta_y = 1.5, dphi = -166.5,dz = 27.6, pixel_size = 1.84):        
         
         from utilities import read_text_row, write_text_file, write_text_row
-        from scipy.optimize import *
+        from scipy.optimize import minimize
         
         global helical_dphi
         global helical_dz
