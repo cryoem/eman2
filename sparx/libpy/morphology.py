@@ -1187,3 +1187,743 @@ def refine_with_mask(vol):
 	vol *= mask
 	return vol
 '''
+
+
+'''
+Start code for helical consistency
+'''
+
+# global variables
+helical_ref_weight = 200.0
+helical_nonref_weight = 0.5
+helical_dphi = -166.5
+helical_dz = 27.6 # Angstroms
+helical_pixel_size = 1.84
+helical_sgnfil=-1000
+helical_ref = -1
+helical_ysgn = -1000
+helical_filtheta=90
+helical_ptclcoords=[]
+helical_thetapsi1 = []
+helical_THR_CONS_PHI=1.5
+helical_w0=[]
+helical_THR_CONS_Y=0.5
+helical_w0y=[]
+
+def S6(w):
+        tot = 0
+        np = len(helical_thetapsi1)
+        for ii in xrange(0,np):
+                jj = helical_ref 
+                wij = get_iphi(helical_thetapsi1[ii], helical_thetapsi1[jj], w[jj], helical_dz, helical_dphi, helical_pixel_size,helical_ptclcoords,helical_filtheta,helical_sgnfil)
+                conscost = (abs( (w[ii]%360.0) - (wij%360.0)))%360.
+                conscost = min(conscost, 360.0-conscost)
+                
+                # if within allowed threshold then consider it consistent
+                if conscost < helical_THR_CONS_PHI:
+                        conscost = 0.0
+                        
+                dfcost = 0
+                if ii == ref:
+                        dfi = (abs((w[ii]%360.0) - (helical_w0[ii]%360.0)))%360.0
+                        wid = min(dfi, 360.-dfi)
+                        dfcost = wid*helical_ref_weight 
+                else:
+                        dfi = (abs((w[ii]%360.0) - (helical_w0[ii]%360.0)))%360.0
+                        wid = min(dfi, 360.-dfi)
+                        dfcost = wid*helical_nonref_weight 
+                        
+                tot += (dfcost + conscost)
+        
+        return tot        
+
+def S6y(w):
+        tot = 0
+        np = len(helical_thetapsi1)
+        for ii in xrange(0,np):
+                jj = helical_ref
+                ycons = get_iy(helical_thetapsi1[ii],helical_thetapsi1[jj],w[jj], helical_dz, helical_pixel_size,helical_ptclcoords,helical_filtheta,helical_ysgn)
+               
+                minycost = -1
+                yii_min = -1
+                for yii in ycons:
+                        ycost = abs(yii - helical_w0y[ii])
+                        if (minycost < 0) or (ycost < minycost):
+                                minycost = ycost
+                                yii_min = yii
+                
+                ycost = abs(yii_min - w[ii])
+                
+                # if within allowed threshold then consider it consistent
+                if ycost < helical_THR_CONS_Y:
+                        ycost = 0.0
+                
+                dfty = 0
+                if ii == ref:
+                        dfyi = abs(w[ii] - helical_w0y[ii])
+                        dfty = dfyi*helical_ref_weight
+                else:
+                        dfyi = abs(w[ii] - helical_w0y[ii])
+                        dfty = dfyi*helical_nonref_weight
+                        
+                tot += (ycost + dfty)
+        
+        return tot   
+
+def get_delta_p_y(aD_p, aip, aiy, apref):
+        ymin = aiy[0]
+        for y in aiy:
+                if abs(ymin - aip) > abs(y - aip):
+                        ymin = y
+        bestD = abs(ymin - apref)
+        delta_p = bestD - aD_p                
+        return delta_p, bestD
+       
+def get_delta_p(aD_p, aiphi, apref):
+        D = abs(aiphi - apref) # ideal distnace between ref and seg calculated wrt D_p
+        D_1 = (aiphi-apref)%360.
+        D_2 = min(D_1, 360.-D_1)
+        D_3 = max(D_1, 360.-D_1)
+        bestD = D
+        delta_p = bestD - aD_p
+        if abs(delta_p) > abs(D_1 - aD_p):
+                bestD = D_1
+                delta_p = D_1 - aD_p
+        if abs(delta_p) > abs(D_2 - aD_p):
+                bestD = D_2
+                delta_p = D_2 - aD_p
+        if abs(delta_p) > abs(D_3 - aD_p):
+                bestD = D_3
+                delta_p = D_3 - aD_p
+        return delta_p, bestD          
+              
+def get_neighborhoods(refseg, ps, newparams,dz, dphi, pixel_size, ptclcoords,filtheta,sgnfil):
+        
+        pref = newparams[refseg][0]
+        
+        a1ref = 10
+        a2ref = -10
+        
+        for iseg in ps:
+                if iseg == refseg:
+                        continue
+                
+                ip = newparams[iseg][0]
+                
+                D_p = abs(ip - pref) # absolute value between ref and iseg
+                iphi = get_iphi(iseg,refseg,pref, dz, dphi, pixel_size,ptclcoords,filtheta,sgnfil)
+                delta_p, D = get_delta_p(D_p, iphi, pref)
+                
+                dsgn = 1.0      
+                if (ip - pref) == D_p:
+                        dsgn=-1.0
+                
+                if abs(delta_p) >= delta_phi:
+                        print "1 enforced level of consistency is too not strict enough cmpared to desired level of consistency"
+                        print ip
+                        print get_iphi(iseg,refseg,pref, dz, dphi, pixel_size,ptclcoords,sgnfil)
+                        print pref, D, D_p
+                        sys.exit()
+               
+                a1 = dsgn*delta_p - delta_phi
+                a2 = dsgn*delta_p + delta_phi
+                if a1 > a1ref or a1ref > 0:
+                        a1ref = a1
+                if a2 < a2ref or a2ref < 0:
+                        a2ref = a2
+                if abs(2*delta_phi) <= D_p:
+                        continue
+                
+                delta_pp = D + D_p
+                
+                if abs(delta_pp) > delta_phi:
+                        print "2 enforced level of consistency is too not strict enough cmpared to desired level of consistency"
+                        sys.exit()
+                dsgn2 = 1.0      
+                if (pref- ip) == D_p:
+                        dsgn2=-1.0
+                a1 = dsgn*delta_pp - delta_phi
+                a2 = dsgn*delta_pp + delta_phi
+                if a1 > a1ref or a1ref > 0:
+                        a1ref = a1
+                if a2 < a2ref or a2ref < 0:
+                        a2ref = a2
+        
+        a1ref = a1ref/2.0
+        a2ref = a2ref/2.0
+        
+        nbrphi[refseg] = [a1ref, a2ref]
+                
+        for iseg in ps:
+                if iseg == refseg:
+                        continue
+                ip = newparams[iseg][0]
+               
+                D_p = abs(ip - pref) # absolute value between ref and iseg
+                iphi = get_iphi(iseg,refseg,pref, dz, dphi, pixel_size,ptclcoords,filtheta,sgnfil)
+                delta_p, D = get_delta_p(D_p, iphi, pref)
+                
+                if abs(delta_p) >= delta_phi:
+                        print "abs(delta_p) >= delta_phi"
+                        print delta_p, delta_phi
+                        sys.exit()
+                dsgn = 1.0      
+                if (pref - ip) == D_p:
+                        dsgn=-1.0
+                        
+                a1 = dsgn*delta_p - delta_phi + a2ref
+                a2 = dsgn*delta_p + delta_phi + a1ref
+                
+                if a1 > 0 or a2 < 0:
+                        print "1 something wrong with a1, a2"
+                        print a1, a2
+                        print dsgn*delta_phi, a2ref, delta_p
+                        sys.exit()
+                  
+                nbrphi[iseg]=[a1,a2]
+                
+                if abs(2*delta_phi) <= D_p:
+                        continue
+                        
+                delta_pp = D + D_p
+                if abs(delta_pp) > delta_phi:
+                        print "enforced level of consistency is too not strict enough cmpared to desired level of consistency"
+                        sys.exit()
+                
+                dsgn2 = 1.0      
+                if (ip-pref) == D_p:
+                        dsgn2=-1.0 
+                            
+                a1 = dsgn2*delta_pp - delta_phi + a2ref
+                a2 = dsgn2*delta_pp + delta_phi + a1ref
+                
+                if a1 > 0 or a2 < 0:
+                        print "2 something wrong with a1, a2"
+                        sys.exit()
+                        
+                if a1 > nbrphi[iseg][0]:
+                        nbrphi[iseg][0] = a1
+                if a2 < nbrphi[iseg][1]:
+                        nbrphi[iseg][1] = a2
+
+def get_neighborhoods_y(refseg, ps, newparams, dz, pixel_size,ptclcoords,filtheta,ysgn):
+        
+        dpp_half = dz/pixel_size/2.0
+        
+        pref = newparams[refseg][4]
+        
+        a1ref = 10
+        a2ref = -10
+        
+        for iseg in ps:
+                if iseg == refseg:
+                        continue
+                
+                ip = newparams[iseg][4]
+                
+                D_p = abs(ip - pref) # absolute value between ref and iseg
+                iy = get_iy(iseg,refseg,pref, dz, pixel_size,ptclcoords,filtheta,ysgn)
+                delta_p, D = get_delta_p_y(D_p, ip, iy, pref)
+               
+                dsgn = 1.0      
+                if (ip - pref) == D_p:
+                        dsgn=-1.0
+                
+                if abs(delta_p) >= delta_y:
+                        print "1 enforced level of consistency is too not strict enough cmpared to desired level of consistency"
+                        sys.exit()
+               
+                a1 = dsgn*delta_p - delta_y
+                a2 = dsgn*delta_p + delta_y
+                if a1 > a1ref or a1ref > 0:
+                        a1ref = a1
+                if a2 < a2ref or a2ref < 0:
+                        a2ref = a2
+                if abs(2*delta_y) <= D_p:
+                        continue
+                delta_pp = D + D_p
+                
+                if abs(delta_pp) > delta_y:
+                        print "2 enforced level of consistency is too not strict enough cmpared to desired level of consistency"
+                        sys.exit()
+                dsgn2 = 1.0      
+                if (pref- ip) == D_p:
+                        dsgn2=-1.0
+                a1 = dsgn*delta_pp - delta_y
+                a2 = dsgn*delta_pp + delta_y
+                if a1 > a1ref or a1ref > 0:
+                        a1ref = a1
+                if a2 < a2ref or a2ref < 0:
+                        a2ref = a2
+        
+        a1ref = a1ref/2.0
+        a2ref = a2ref/2.0
+        
+        if pref+a1ref < -1*dpp_half:
+                a1ref = (-1*dpp_half) - pref
+        if pref + a2ref > dpp_half:
+                a2ref = dpp_half - pref
+                
+        nbry[refseg] = [a1ref, a2ref]
+                
+        for iseg in ps:
+                if iseg == refseg:
+                        continue
+                ip = newparams[iseg][4]
+               
+                D_p = abs(ip - pref) # absolute value between ref and iseg
+                iy = get_iy(iseg,refseg,pref, dz, pixel_siz,ptclcoords,filtheta,ysgn)
+                delta_p,D = get_delta_p_y(D_p, ip, iy, pref)
+                
+                if abs(delta_p) >= delta_y:
+                        print "abs(delta_p) >= delta_y"
+                        sys.exit()
+                dsgn = 1.0      
+                if (pref - ip) == D_p:
+                        dsgn=-1.0
+                        
+                a1 = dsgn*delta_p - delta_y + a2ref
+                a2 = dsgn*delta_p + delta_y + a1ref
+                
+                if a1 > 0 or a2 < 0:
+                        print "1 something wrong with a1, a2"
+                        print a1, a2
+                        print dsgn*delta_y, a2ref, delta_p
+                        sys.exit()
+                  
+                nbry[iseg]=[a1,a2]
+                
+                if abs(2*delta_y) <= D_p:
+                        continue
+                        
+                delta_pp = D + D_p
+                
+                if abs(delta_pp) > delta_y:
+                        print "enforced level of consistency is too not strict enough cmpared to desired level of consistency"
+                        sys.exit()
+                
+                dsgn2 = 1.0      
+                if (ip-pref) == D_p:
+                        dsgn2=-1.0 
+                            
+                a1 = dsgn2*delta_pp - delta_y + a2ref
+                a2 = dsgn2*delta_pp + delta_y + a1ref
+                
+                if a1 > 0 or a2 < 0:
+                        print "2 something wrong with a1, a2"
+                        sys.exit()
+                        
+                if a1 > nbry[iseg][0]:
+                        nbry[iseg][0] = a1
+                if a2 < nbry[iseg][1]:
+                        nbry[iseg][1] = a2
+        
+        for iseg in ps:
+                a1 = nbry[iseg][0]
+                a2 = nbry[iseg][1]
+                ip = newparams[iseg][4]
+                if ip+a1 < -1*dpp_half:
+                        a1 = (-1*dpp_half) - ip
+                        nbry[iseg][0] = a1
+                if ip + a2 > dpp_half:
+                        a2 = dpp_half - ip
+                        nbry[iseg][1] = a2
+        
+
+def get_dist(ix, iy, jx, jy, theta):
+        from math import pi, sqrt, sin
+        qv = pi/180
+        d = sqrt((ix - jx)**2 + (iy - jy)**2)
+	d = (d/abs(sin(theta*qv)))
+	return d
+
+# get what ii is supposed to be using jj
+def get_iphi(iseg, refseg, phiref, dz, dphi, pixel_size,ptclcoords,filtheta,sgnfil):
+        ix = ptclcoords[iseg][0]
+        iy = ptclcoords[iseg][1]
+        jx = ptclcoords[refseg][0]
+        jy = ptclcoords[refseg][1]
+        d = pixel_size * get_dist(ix, iy, jx, jy, filtheta)
+                
+        if iseg > refseg:
+                iphi = (((phiref%360.0) + sgnfil*round(d/dz)*dphi)%360.0)
+        else:
+                iphi = (((phiref%360.0) - sgnfil*round(d/dz)*dphi)%360.0)          
+        return iphi
+        
+def get_iy(iseg, refseg, yref, dz, pixel_size,ptclcoords,filtheta,ysgn):
+        
+        ix = ptclcoords[iseg][0]
+        iy = ptclcoords[iseg][1]
+        refx = ptclcoords[refseg][0]
+        refy = ptclcoords[refseg][1]
+        d = pixel_size * get_dist(ix, iy, refx, refy, filtheta)
+        dbar = d%dz
+        dbar1 = dz-dbar
+       
+        ycons=[] # all possible helical consistent y-shifts
+             
+        if iseg < refseg:
+                yii_1 = ysgn*dbar
+                yii_2 = -1*ysgn*dbar1
+        else:
+                yii_1 = -1*ysgn*dbar
+                yii_2 = ysgn*dbar1
+        
+        yii_1 += (yref*pixel_size)
+        yii_2 += (yref*pixel_size)
+        
+        if yii_1 >= dz:
+                yii_1 = yii_1%dz
+        if yii_1 <= -dz:
+                yii_1 = -1.0*((abs(yii_1))%dz)
+        
+        if yii_2 >= dz:
+                yii_2 = yii_2%dz
+        if yii_2 <= -dz:
+                yii_2 = -1.0*((abs(yii_2))%dz)
+       
+        if abs(yii_1) <= 0.5*dz:
+                ycons.append(yii_1/pixel_size)
+        if abs(yii_2) <= 0.5*dz:
+                ycons.append(yii_2/pixel_size)
+                
+        return ycons
+        
+def find_params_phi(w0, ref, ps, dz, dphi, pixel_size,ptclcoords,filtheta,sgnfil,THR):
+        tot = 0
+        np = len(ps)
+        for ii in xrange(0,np):
+                jj = ref 
+                wij = get_iphi(ps[ii], ps[jj], w0[jj], dz, dphi, pixel_size,ptclcoords,filtheta,sgnfil)
+                conscost = (abs( (w0[ii]%360.0) - (wij%360.0)))%360.
+                conscost = min(conscost, 360.0-conscost)
+                
+                if conscost >= THR:
+                        conscost += ((conscost-THR)*20)
+                tot += (conscost)
+        
+        return tot        
+
+def find_params_y(w0y, ref, ps, dz,pixel_size,ptclcoords,filtheta,THR,ysgn):
+        tot = 0
+        np = len(ps)
+        for ii in xrange(0,np):
+                jj = ref
+                ycons = get_iy(ps[ii],ps[jj],w0y[jj], dz, pixel_size,ptclcoords,filtheta,ysgn)
+               
+                minycost = -1
+                yii_min = -1
+                for yii in ycons:
+                        ycost = abs(yii - w0y[ii])
+                        if (minycost < 0) or (ycost < minycost):
+                                minycost = ycost
+                                yii_min = yii
+                
+                ycost = abs(yii_min - w0y[ii])
+                if ycost >= THR:
+                        # have to weigh y more than phi because each unit 
+                        # of deviation in y-shift counts for more. 
+                        # phi has 360 degrees possible deviation, whereas y varies between 0 and dp=15!
+                        ycost += ((ycost-THR)*700)
+                tot += (ycost)
+        
+        return tot   
+        
+
+def num_cons_segs(w,ps,ref, dz, dphi, pixel_size ,ptclcoords, sgnfil, THR=3.5, STRICT=False,filtheta=90):
+        ncons=0
+        nt = 0
+        np = len(ps)
+        for ii in xrange(0,np):
+                jj = ref
+                
+                wij = get_iphi(ps[ii], ps[jj], w[jj], dz, dphi, pixel_size,ptclcoords,filtheta,sgnfil)
+                conscost = (abs( (w[ii]%360.0) - (wij%360.0)))%360.
+                conscost = min(conscost, 360.0-conscost)
+                    
+                nt += 1
+                
+                if not(STRICT):
+                        if conscost <= THR:
+                                ncons += 1
+                else:
+                        if conscost < THR:
+                                ncons += 1
+                #else:
+                #        print "not consistent: ", ps[ii]
+                #        print wij, w[ii]
+        return nt, ncons
+
+def num_cons_segs_y(w, ps, ref, dz, pixel_size, ptclcoords, THR=1.5, STRICT=False,filtheta=90,ysgn=-1000):
+        ncons=0
+        nt = 0
+        np = len(ps)
+        for ii in xrange(0,np):
+                jj = ref
+                
+                ycons = get_iy(ps[ii],ps[jj],w[jj], dz, pixel_size,ptclcoords,filtheta,ysgn)
+                minycost = -1
+                yii_min = -1
+                for yii in ycons:
+                        ycost = abs(yii - w[ii])
+                        if (minycost < 0) or (ycost < minycost):
+                                minycost = ycost
+                                yii_min = yii
+                
+                ycost = abs(yii_min - w[ii])
+                
+                nt += 1
+                
+                if not(STRICT):
+                        if abs(ycost) <= THR:
+                                ncons += 1
+                else:
+                        if abs(ycost) < THR:
+                                ncons += 1
+                #else: 
+                #        print "y not consistent: ", ps[ii]
+                #        print yii_min, w[ii],w0y[ii]
+                #        sys.exit()
+        return nt, ncons   
+
+
+# ps2 are the IDs of segments whose phi angle need to be predicted
+def predict_phi(ps2, refseg, refphi, dz, dphi, pixel_size,ptclcoords,sgnfil):
+        np = len(ps2)
+        prphi=[0 for iiiii in xrange(np)]
+        for ii in xrange(np):
+                iphi = get_iphi(ps2[ii], refseg, refphi, dz, dphi, pixel_size,ptclcoords,filtheta,sgnfil)
+                prphi[ii] = iphi
+        return prphi
+        
+def predict_y(ps2, refseg, refy, dz, pixel_size,ptclcoords,ysgn):
+        np = len(ps2)
+        pry=[0 for iiiii in xrange(np)]
+        for ii in xrange(np):
+                iyall = get_iy(ps2[ii], refseg, refy, dz, pixel_size,ptclcoords,filtheta,ysgn)
+                if (refseg == 1024 and ps2[ii]==1025) or (refseg == 1025 and ps2[ii]==1024):
+                        print iyall 
+                ymin = iyall[0]
+                for yshift in iyall:
+                        if abs(yshift) < abs(ymin):
+                                ymin = yshift
+                pry[ii] = ymin
+                if abs(ymin - refy) > 0.1:
+                        print "ymin not equal to refy: ", ps2[ii], refseg, iyall
+                        sys.exit()
+        return pry
+'''
+ Level of consistency enforeced on parameters
+        THR_CONS_PHI=1.5
+        THR_CONS_Y=1.0
+
+ Desired level of consistency AFTER refinement
+        delta_phi = 3.5
+        delta_y = 1.5
+        
+ dz is in Angstroms
+'''
+def helical_consistency(parmfile, miclistfile, ptclcoordsfile, testcons=False,THR_CONS_PHI=1.5,THR_CONS_Y=1.0,delta_phi = 3.5, delta_y = 1.5, dphi = -166.5,dz = 27.6, pixel_size = 1.84):        
+        
+        from utilities import read_text_row, write_text_file, write_text_row
+        #from scipy.optimize import *
+        
+        global helical_dphi
+        global helical_dz
+        global helical_pixel_size
+        global helical_sgnfil
+        global helical_ref
+        global helical_filtheta
+        global helical_ptclcoords
+        global helical_thetapsi1
+        global helical_ysgn
+        global helical_THR_CONS_PHI
+        global helical_w0
+        global helical_THR_CONS_Y
+        global helical_w0y
+        
+        helical_dphi = dphi
+        helical_dz = dz
+        helical_pixel_size =pixel_size
+        
+        miclist = read_text_row(miclistfile)
+        ptclcoords=read_text_row(ptclcoordsfile)
+        helical_ptclcoords = ptclcoords    
+        params=read_text_row(parmfile)  
+
+        if testcons:
+                THR_CONS_PHI=delta_phi
+                THR_CONS_Y=delta_y
+        
+        helical_THR_CONS_PHI=THR_CONS_PHI
+        helical_THR_CONS_Y = THR_CONS_Y
+        MAXIT = 20
+
+        dpp_half = dz/pixel_size/2.0
+
+        # For C1, so psi angles for a particular filament should be ~same if consistent
+        # theta = 90
+        nima = len(params)
+        newparams=[[] for iiiii in xrange(nima)]
+        nbrphi=[[] for iiiii in xrange(nima)]
+        nbry=[[] for iiiii in xrange(nima)]
+        N = len(miclist)
+        newIDs = []
+        totphitested=0.0
+        totphicons=0.0
+        totytested = 0.0
+        totycons=0.0
+
+        for i in xrange(N):
+                mic = miclist[i][6:]
+                mic = map(int, mic)
+                a90=[]
+                a270=[]
+                for iseg in mic:
+                        ipsi = params[iseg][2]
+                        if ipsi - 90 > 90:
+                                a90.append(iseg)
+                        else:
+                                a270.append(iseg)
+                if len(a90) > len(a270):
+                        thetapsi1 = a90
+                else:
+                        thetapsi1 = a270
+       
+                if (len(a90) == len(a270)) or len(mic)==1:
+                        # these cannot be predicted. Don't include them in final stack
+                        continue
+                newIDs.extend(mic)     
+                helical_thetapsi1= thetapsi1
+                filtheta=params[thetapsi1[0]][1]
+                helical_filtheta = filtheta
+                w0 = []
+                for iseg in thetapsi1:
+                        w0.append(params[iseg][0])
+                helical_w0=w0
+                w0y=[]
+                for iseg in thetapsi1:
+                        w0y.append(params[iseg][4])  
+                helical_w0y = w0y
+                best_cost = -1
+                best_sgnfil = 100
+                best_ref=-1
+                best_ysgn = -100
+        
+                for ref in xrange(len(thetapsi1)):
+                        if len(thetapsi1) > 1:
+                                if abs(params[thetapsi1[ref]][4] * pixel_size) > 0.5*dz:
+                                        continue
+                        for sgnfil in [-1,1]:
+                                for ysgn in [-1,1]:
+                                        startphicost = find_params_phi(w0, ref, thetapsi1, dz, dphi,pixel_size,ptclcoords,filtheta,sgnfil,THR_CONS_PHI)
+                                        startycost = find_params_y(w0y, ref, thetapsi1,dz,pixel_size,ptclcoords,filtheta,THR_CONS_Y,ysgn)
+        
+                                        cost = startphicost + startycost
+                               
+                                        if (best_cost < 0) or (cost < best_cost):
+                                                best_cost = cost
+                                                best_sgnfil = sgnfil
+                                                best_ref = ref
+                                                best_ysgn = ysgn
+                sgnfil = best_sgnfil 
+                helical_sgnfil = sgnfil  
+                if best_ref < 0:
+                        print "no references round, all segments had shifts > dpp_half"
+                        sys.exit()
+                ref = best_ref
+                helical_ref =ref
+                ysgn=best_ysgn
+                helical_ysgn = ysgn
+        
+                if testcons:
+                        h1, h2 = num_cons_segs(w0,thetapsi1,ref, dz, dphi, pixel_size,ptclcoords,sgnfil,THR=THR_CONS_PHI,filtheta=filtheta)
+                        h1y, h2y = num_cons_segs_y(w0y, thetapsi1,ref,dz,pixel_size,ptclcoords,THR=THR_CONS_Y,filtheta=filtheta,ysgn=ysgn)
+                        totphicons = totphicons + h2
+                        totphitested = totphitested + h1
+                        totycons = totycons + h2y
+                        totytested = totytested + h1y
+                        print "phi: ", totphitested, totphicons,totphicons/totphitested
+                        print "y: ", totytested, totycons, totycons/totytested
+                        continue
+        
+                res = w0
+        
+                # iterate until we get to the desired level of consistency
+                print "optimize filament ", i
+                h1, h2 = num_cons_segs(res,thetapsi1, ref, dz, dphi, pixel_size,ptclcoords, sgnfil,THR=THR_CONS_PHI, STRICT=True,filtheta=filtheta)
+                counter = 0
+                while h2 < h1:
+                        res = minimize(S6, w0, method='Powell')   
+                        h1, h2 = num_cons_segs(res,thetapsi1, ref, dz, dphi, pixel_size,ptclcoords,sgnfil, THR=THR_CONS_PHI, STRICT=True,filtheta=filtheta)
+                        counter = counter + 1
+                        if counter > MAXIT:
+                                print "cannot reach desired level of consistency for phi"
+                                sys.exit()
+        
+                resy = w0y  
+                h1y, h2y = num_cons_segs_y(resy,thetapsi1, ref,dz,pixel_size,ptclcoords,THR=THR_CONS_Y, STRICT=True,filtheta=filtheta,ysgn=ysgn)
+        
+                counter = 0
+                while h2y < h1y:
+                        resy = minimize(S6y, resy, method='Powell')  
+                        h1y, h2y = num_cons_segs_y(resy,thetapsi1, ref, dz, pixel_size, ptclcoords,THR=THR_CONS_Y, STRICT=True,filtheta=filtheta,ysgn=ysgn)
+                        counter = counter + 1
+                        if counter > MAXIT:
+                                print "cannot reach desired level of consistency for y"
+                                sys.exit()
+                    
+                for ii in xrange(len(thetapsi1)):
+                        newparams[thetapsi1[ii]] = [(res[ii])%360.,params[thetapsi1[ii]][1],params[thetapsi1[ii]][2],params[thetapsi1[ii]][3], resy[ii]]
+        
+                # predict what consistent params should be for everything not in thetapsi1
+        
+                thetapsi2 = []
+                for iseg in mic:
+                        if not(iseg in thetapsi1):
+                                thetapsi2.append(iseg)
+        
+                # theta nad psi of segments in thetapsi2 will be set to that of the reference's phi and theta
+        
+                reftheta = params[thetapsi1[ref]][1]
+                refpsi = params[thetapsi1[ref]][2]
+        
+                # phi angles and y-shifts of segments in thetapsi2 will be predicted using the reference's adjusted params (newparams)
+        
+                predphi = predict_phi(thetapsi2, thetapsi1[ref], newparams[thetapsi1[ref]][0], dz, dphi, pixel_size,ptclcoords,sgnfil)
+                predy = predict_y(thetapsi2, thetapsi1[ref], newparams[thetapsi1[ref]][4], dz, pixel_size,ptclcoords,ysgn)
+        
+                for ii in xrange(len(thetapsi2)):
+                        newparams[thetapsi2[ii]] = [(predphi[ii])%360., reftheta, refpsi,params[thetapsi2[ii]][3], predy[ii]]
+        
+                # First determine allowed neighborhood for the reference
+                refseg = thetapsi1[ref]
+        
+                get_neighborhoods(refseg,thetapsi3, newparams, dz, dphi, pixel_size,ptclcoords,filtheta,sgnfil)
+                get_neighborhoods_y(refseg,thetapsi3, newparams, dz, pixel_size,ptclcoords,filtheta,ysgn)   
+       
+        if not(testcons):
+                newIDs.sort()
+                nnima=len(newIDs)
+                newparams2=[[] for jj in xrange(nnima)]
+                testparams=[[] for jj in xrange(nnima)]
+                nbrphi2 = [[] for jj in xrange(nnima)]
+                bry2 = [[] for jj in xrange(nnima)]
+                for ii in xrange(nnima):
+                        iseg = newIDs[ii]
+                        newparams2[ii] = [newparams[iseg][0],newparams[iseg][1],newparams[iseg][2],newparams[iseg][3],newparams[iseg][4]]
+                        testparams[ii] = [newparams[iseg][0],newparams[iseg][1],newparams[iseg][2],newparams[iseg][3],newparams[iseg][4]]
+
+                        nbrphi2[ii] = [nbrphi[iseg][0], nbrphi[iseg][1]]
+                        nbry2[ii] = [nbry[iseg][0], nbry[iseg][1]]
+
+                if not(testcons):
+                        write_text_file(newIDs,'newIDs_ce4.txt')  
+                        write_text_row(newparams2,'newparams2_ce4.txt')  # consistency enforced on small_stack_parameters (from elmar)
+                        write_text_row(nbrphi2,'nbrphi_ce4.txt')  
+                        write_text_row(nbry2,'nbry_ce4.txt')  
+
+'''
+End code for helical consistency
+'''
