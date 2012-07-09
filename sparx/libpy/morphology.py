@@ -1224,7 +1224,7 @@ def S6(w):
                         conscost = 0.0
                         
                 dfcost = 0
-                if ii == ref:
+                if ii == helical_ref:
                         dfi = (abs((w[ii]%360.0) - (helical_w0[ii]%360.0)))%360.0
                         wid = min(dfi, 360.-dfi)
                         dfcost = wid*helical_ref_weight 
@@ -1259,7 +1259,7 @@ def S6y(w):
                         ycost = 0.0
                 
                 dfty = 0
-                if ii == ref:
+                if ii == helical_ref:
                         dfyi = abs(w[ii] - helical_w0y[ii])
                         dfty = dfyi*helical_ref_weight
                 else:
@@ -1297,7 +1297,7 @@ def get_delta_p(aD_p, aiphi, apref):
                 delta_p = D_3 - aD_p
         return delta_p, bestD          
               
-def get_neighborhoods(refseg, ps, newparams,dz, dphi, pixel_size, ptclcoords,filtheta,sgnfil):
+def get_neighborhoods(refseg, ps, newparams,dz, dphi, pixel_size, ptclcoords,filtheta,sgnfil,delta_phi,nbrphi):
         
         pref = newparams[refseg][0]
         
@@ -1406,7 +1406,7 @@ def get_neighborhoods(refseg, ps, newparams,dz, dphi, pixel_size, ptclcoords,fil
                 if a2 < nbrphi[iseg][1]:
                         nbrphi[iseg][1] = a2
 
-def get_neighborhoods_y(refseg, ps, newparams, dz, pixel_size,ptclcoords,filtheta,ysgn):
+def get_neighborhoods_y(refseg, ps, newparams, dz, pixel_size,ptclcoords,filtheta,ysgn,delta_y,nbry):
         
         dpp_half = dz/pixel_size/2.0
         
@@ -1472,7 +1472,7 @@ def get_neighborhoods_y(refseg, ps, newparams, dz, pixel_size,ptclcoords,filthet
                 ip = newparams[iseg][4]
                
                 D_p = abs(ip - pref) # absolute value between ref and iseg
-                iy = get_iy(iseg,refseg,pref, dz, pixel_siz,ptclcoords,filtheta,ysgn)
+                iy = get_iy(iseg,refseg,pref, dz, pixel_size,ptclcoords,filtheta,ysgn)
                 delta_p,D = get_delta_p_y(D_p, ip, iy, pref)
                 
                 if abs(delta_p) >= delta_y:
@@ -1689,7 +1689,7 @@ def num_cons_segs_y(w, ps, ref, dz, pixel_size, ptclcoords, THR=1.5, STRICT=Fals
 
 
 # ps2 are the IDs of segments whose phi angle need to be predicted
-def predict_phi(ps2, refseg, refphi, dz, dphi, pixel_size,ptclcoords,sgnfil):
+def predict_phi(ps2, refseg, refphi, filtheta,dz, dphi, pixel_size,ptclcoords,sgnfil):
         np = len(ps2)
         prphi=[0 for iiiii in xrange(np)]
         for ii in xrange(np):
@@ -1697,7 +1697,7 @@ def predict_phi(ps2, refseg, refphi, dz, dphi, pixel_size,ptclcoords,sgnfil):
                 prphi[ii] = iphi
         return prphi
         
-def predict_y(ps2, refseg, refy, dz, pixel_size,ptclcoords,ysgn):
+def predict_y(ps2, refseg, refy, filtheta,dz, pixel_size,ptclcoords,ysgn):
         np = len(ps2)
         pry=[0 for iiiii in xrange(np)]
         for ii in xrange(np):
@@ -1727,7 +1727,7 @@ def predict_y(ps2, refseg, refy, dz, pixel_size,ptclcoords,ysgn):
 def helical_consistency(parmfile, miclistfile, ptclcoordsfile, testcons=False,THR_CONS_PHI=1.5,THR_CONS_Y=1.0,delta_phi = 3.5, delta_y = 1.5, dphi = -166.5,dz = 27.6, pixel_size = 1.84):        
         
         from utilities import read_text_row, write_text_file, write_text_row
-        #from scipy.optimize import *
+        from scipy.optimize import *
         
         global helical_dphi
         global helical_dz
@@ -1891,17 +1891,17 @@ def helical_consistency(parmfile, miclistfile, ptclcoordsfile, testcons=False,TH
         
                 # phi angles and y-shifts of segments in thetapsi2 will be predicted using the reference's adjusted params (newparams)
         
-                predphi = predict_phi(thetapsi2, thetapsi1[ref], newparams[thetapsi1[ref]][0], dz, dphi, pixel_size,ptclcoords,sgnfil)
-                predy = predict_y(thetapsi2, thetapsi1[ref], newparams[thetapsi1[ref]][4], dz, pixel_size,ptclcoords,ysgn)
+                predphi = predict_phi(thetapsi2, thetapsi1[ref], newparams[thetapsi1[ref]][0], filtheta, dz, dphi, pixel_size,ptclcoords,sgnfil)
+                predy = predict_y(thetapsi2, thetapsi1[ref], newparams[thetapsi1[ref]][4], filtheta,dz, pixel_size,ptclcoords,ysgn)
         
                 for ii in xrange(len(thetapsi2)):
                         newparams[thetapsi2[ii]] = [(predphi[ii])%360., reftheta, refpsi,params[thetapsi2[ii]][3], predy[ii]]
         
                 # First determine allowed neighborhood for the reference
                 refseg = thetapsi1[ref]
-        
-                get_neighborhoods(refseg,thetapsi3, newparams, dz, dphi, pixel_size,ptclcoords,filtheta,sgnfil)
-                get_neighborhoods_y(refseg,thetapsi3, newparams, dz, pixel_size,ptclcoords,filtheta,ysgn)   
+                thetapsi3 = thetapsi1 + thetapsi2
+                get_neighborhoods(refseg,thetapsi3, newparams, dz, dphi, pixel_size,ptclcoords,filtheta,sgnfil,delta_phi,nbrphi)
+                get_neighborhoods_y(refseg,thetapsi3, newparams, dz, pixel_size,ptclcoords,filtheta,ysgn,delta_y,nbry)   
        
         if not(testcons):
                 newIDs.sort()
@@ -1909,7 +1909,7 @@ def helical_consistency(parmfile, miclistfile, ptclcoordsfile, testcons=False,TH
                 newparams2=[[] for jj in xrange(nnima)]
                 testparams=[[] for jj in xrange(nnima)]
                 nbrphi2 = [[] for jj in xrange(nnima)]
-                bry2 = [[] for jj in xrange(nnima)]
+                nbry2 = [[] for jj in xrange(nnima)]
                 for ii in xrange(nnima):
                         iseg = newIDs[ii]
                         newparams2[ii] = [newparams[iseg][0],newparams[iseg][1],newparams[iseg][2],newparams[iseg][3],newparams[iseg][4]]
@@ -1919,10 +1919,10 @@ def helical_consistency(parmfile, miclistfile, ptclcoordsfile, testcons=False,TH
                         nbry2[ii] = [nbry[iseg][0], nbry[iseg][1]]
 
                 if not(testcons):
-                        write_text_file(newIDs,'newIDs_ce4.txt')  
-                        write_text_row(newparams2,'newparams2_ce4.txt')  # consistency enforced on small_stack_parameters (from elmar)
-                        write_text_row(nbrphi2,'nbrphi_ce4.txt')  
-                        write_text_row(nbry2,'nbry_ce4.txt')  
+                        write_text_file(newIDs,'newIDs_ce4morph.txt')  
+                        write_text_row(newparams2,'newparams2_ce4morph.txt')  # consistency enforced on small_stack_parameters (from elmar)
+                        write_text_row(nbrphi2,'nbrphi_ce4morph.txt')  
+                        write_text_row(nbry2,'nbry_ce4morph.txt')  
 
 '''
 End code for helical consistency
