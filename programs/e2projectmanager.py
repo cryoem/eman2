@@ -1417,7 +1417,7 @@ class TaskManager(QtGui.QWidget):
 				day=int(tsk[0][8:10])
 				if mon!=tm[1] or yr!=tm[0] or tm[2]-day>1 : raise Exception 
 				
-			if os.name=="nt": tsk[4]=tsk[4].convert("\\","/")
+			if os.name=="nt": tsk[4]=tsk[4].replace("\\","/")
 			command = tsk[4].split()[0].split("/")[-1]
 			if command=="e2projectmanager.py" : raise Exception
 		except:	
@@ -1441,7 +1441,7 @@ class TaskManager(QtGui.QWidget):
 			except: 
 				self.lastpos=loc
 				break
-				
+                
 			tsk=t.split("\t")
 
 			if not self.is_running(tsk,loc) : continue
@@ -1456,7 +1456,7 @@ class TaskManager(QtGui.QWidget):
 				if len(ids) == 2:
 					ppid = int(ids[1].strip())
 			else : pid=int(tsk[2])
-			if os.name=="nt": tsk[4]=tsk[4].convert("\\","/")
+			if os.name=="nt": tsk[4]=tsk[4].replace("\\","/")
 			command = tsk[4].split()[0].split("/")[-1]
 			self.tasks.append([loc,pid,tsk[0],tsk[1],command,ppid])
 			
