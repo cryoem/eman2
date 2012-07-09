@@ -1884,37 +1884,37 @@ def rotate_about_center(alpha, cx, cy):
 	#   return compalpha, comptrans.at(0),comptrans.at(1), compscale
 	return cmp2[0], cmp2[1], cmp2[2], cmp2[3]
 	
-def reshape_1dpw2(input_object, rimage_size_to_be, rimage_size_interpolated, Pixel_size_to_be = 0, Pixel_size_interpolated = 0):
+def reshape_1d(input_object, length_current=0, length_interpolated=0, Pixel_size_current = 0., Pixel_size_interpolated = 0.):
 	"""
 		linearly interpolate a 1D power spectrum to required length with required Pixel size
+		input_object - a 1D list with a 1D curve to be interpolated
+		length_current - half size of the image size (in case of power spectrum, it can be different from the length of the input_object)
+		length_interpolated - length of the interpolated 1D curve
+		Pixel_size_current - pixel size of the input 1D list
+		Pixel_size_interpolated - pixel size of the target 1D list
+		One can either input the two lengths or two respective pixel sizes
 	""" 
-	import types
-	from utilities import read_spider_doc
-	from fundamentals import rops_table
-	if  type(input_object) == types.ClassType:
-		to_be_interpolated = []
-		if input_object.get_ndim() > 1: 
-			to_be_interpolated = rops_table(input_object)
-			rimage_size_to_be  = input_object.get_xsize()
-		else       : 
-			for ir in xrange(input_object.get_xsize()): to_be_interpolated.append(input_object.get_value_at(ir))
-	elif type(input_object) == types.StringType:
-		to_be_interpolated = [] 
-		tmp_table = read_spider_doc(input_object) # assume 1dpw2 is saved in SPIDER format
-		for i in xrange(len(tmp_table)):
-			to_be_interpolated.append(tmp_table[i][0])
-	elif type(input_object) == types.ListType or type(input_object) == types.TupleType: to_be_interpolated = input_object
-	else:   ERROR("Input type is wrong ","linear_interpolation_1dpw2",1)
+
 	interpolated = []
-	if  Pixel_size_to_be == 0 :
-		Pixel_size_to_be = 1
-		Pixel_size_interpolated = Pixel_size_to_be 
-	if  Pixel_size_interpolated == 0: Pixel_size_interpolated = Pixel_size_to_be				
-	for i in xrange(int(rimage_size_interpolated/2)):
-		xi =  float(i)*(rimage_size_to_be*Pixel_size_to_be)/(Pixel_size_interpolated*rimage_size_interpolated)
-		ix = int(xi)
+	if length_current == 0: length_current = len(input_object)
+	lt = len(input_object) - 2
+	if length_interpolated == 0:
+		if( Pixel_size_interpolated != Pixel_size_current):
+			length_interpolated = int(length_current*Pixel_size_current/Pixel_size_interpolated + 0.5)
+		else:
+			ERROR("Incorrect input parameters","reshape_1d",1)
+			return []
+
+	if  Pixel_size_current == 0.:
+		Pixel_size_current = 1.
+		Pixel_size_interpolated = Pixel_size_current*float(length_current)/float(length_interpolated)
+	qt =Pixel_size_interpolated/Pixel_size_current
+
+	for i in xrange(length_interpolated):
+		xi = float(i)*qt
+		ix = min(int(xi),lt)
 		df = xi -ix
-		xval = (1.0-df)*to_be_interpolated[ix] + df*to_be_interpolated[ix+1]
+		xval = (1.0-df)*input_object[ix] + df*input_object[ix+1]
 		interpolated.append(xval)
 	return interpolated
 	
