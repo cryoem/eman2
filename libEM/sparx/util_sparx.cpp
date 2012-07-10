@@ -18782,6 +18782,8 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 	Dict d = t->get_params("spider");
 	if(t) {delete t; t=0;}
 	float phi = d["phi"];
+	float phi_upper = phi+phi_rhs;
+	float phi_lower = phi+phi_lhs;
 	float theta = d["theta"];
 	float psi = d["psi"];
 	float imn1 = sin(theta*qv)*cos(phi*qv);
@@ -18801,7 +18803,8 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 	float nbrinp;
 	bool use_ref;
 	int   kx = int(2*xrng/step+0.5)/2;
-	
+	int ychoice = 0;
+	int phichoice = 0;
 	//if ynumber==-1, use the old code which process x and y direction equally.
 	if(ynumber==-1) {
 		int   ky = int(2*yrng/step+0.5)/2;
@@ -18938,26 +18941,30 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 	} else {
 		int   ky = int(ynumber/2);		
 		float stepy=2*yrng/ynumber;
-	        int ky_rhs = ky;
-	        int ky_lhs = -ky + 1;
+		int ky_rhs = ky;
+		int ky_lhs = -ky + 1;
+		
 		// when yrnglocal is not equal to -1.0, the search range is limited to +/- yrnglocal
 		// leave step size the same
-		if (CONS){
-		        
-		        ky_rhs = floor(y_rhs/stepy);
-		        ky_lhs = -1.0*floor((abs(y_lhs))/stepy);
-		        
-		}
-		else{
+                
+                if (CONS){
+                        
+                        ky_rhs = floor((abs(y_lhs))/stepy);
+                        ky_lhs = -1.0*floor((abs(y_rhs))/stepy);
+                        
+                }
+                else{
 		        if (yrnglocal >= 0.0){
 			        ky_rhs = int(yrnglocal/stepy);
 			        ky_lhs = -ky_rhs + 1;
 		        }
 		}
+		
 		//std::cout<<"yrnglocal="<<yrnglocal<<"ynumber="<<ynumber<<"stepy=="<<stepy<<"stepx=="<<step<<std::endl;
 		//cout<<"ky stepy: "<<ky<<" "<<stepy<<endl;
 		for (int i = ky_lhs; i <= ky_rhs; i++) {
 			iy = i * stepy ;
+			ychoice = ychoice+1;
 			for (int j = -kx; j <= kx; j++)	{
 				ix = j*step ;
 				EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
@@ -18975,7 +18982,7 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 						nbrinp = n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3;
 						if (CONS){
 						        
-						        if ((ref_phi[iref] <= (phi + phi_rhs)) && (ref_phi[iref] >= (phi - phi_lhs))){
+						        if ((ref_phi[iref] <= phi_upper) && (ref_phi[iref] >= phi_lower)){
 						                use_ref = true;
 						        }
 						}
@@ -18989,8 +18996,7 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 						// inner product of the mirror of iref's Eulerian angles with that of the data
 						nbrinp = (-1.0*n1[iref]*imn1) + (-1.0*n2[iref]*imn2) + n3[iref]*imn3;
 						if (CONS){
-						        
-						        if ((ref_phi[iref] + 180. <= (phi + phi_rhs)) && (ref_phi[iref]+180. >= (phi - phi_lhs))){
+						        if ((ref_phi[iref] + 180. <= phi_upper) && (ref_phi[iref]+180. >= phi_lower)){
 						                use_ref = true;
 						        }
 						}
@@ -19002,6 +19008,7 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 						
 					}
 					if(use_ref) {
+					        phichoice = phichoice + 1;
 						Dict retvals;
 						if (mirror_only == true){
 						    if ((psi-90) < 90)	
@@ -19037,6 +19044,9 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 			}
 		}
 	}
+	if ((phichoice < 1) || (ychoice  < 1))
+	        cout<<ychoice<<", "<<phichoice<<", ..."<<mirror_only<<"...,"<<phi<<","<<phi_lhs<<","<<phi_rhs<<endl;
+	
 	float co, so, sxs, sys;
 	co = static_cast<float>( cos(ang*pi/180.0) );
 	so = static_cast<float>( -sin(ang*pi/180.0) );
