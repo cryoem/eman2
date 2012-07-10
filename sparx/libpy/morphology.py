@@ -1819,7 +1819,7 @@ def helical_consistency(parmfile, miclistfile, ptclcoordsfile, testcons=False,TH
                                 for ysgn in [-1,1]:
                                         startphicost = find_params_phi(w0, ref, thetapsi1, dz, dphi,pixel_size,ptclcoords,filtheta,sgnfil,THR_CONS_PHI)
                                         startycost = find_params_y(w0y, ref, thetapsi1,dz,pixel_size,ptclcoords,filtheta,THR_CONS_Y,ysgn)
-        
+                                        #startphicost=0*startphicost
                                         cost = startphicost + startycost
                                
                                         if (best_cost < 0) or (cost < best_cost):
@@ -1844,14 +1844,12 @@ def helical_consistency(parmfile, miclistfile, ptclcoordsfile, testcons=False,TH
                         totphitested = totphitested + h1
                         totycons = totycons + h2y
                         totytested = totytested + h1y
-                        print "phi: ", totphitested, totphicons,totphicons/totphitested
-                        print "y: ", totytested, totycons, totycons/totytested
                         continue
         
                 res = w0
         
                 # iterate until we get to the desired level of consistency
-                print "optimize filament ", i
+                #print "optimize filament ", i
                 h1, h2 = num_cons_segs(res,thetapsi1, ref, dz, dphi, pixel_size,ptclcoords, sgnfil,THR=THR_CONS_PHI, STRICT=True,filtheta=filtheta)
                 counter = 0
                 while h2 < h1:
@@ -1902,8 +1900,11 @@ def helical_consistency(parmfile, miclistfile, ptclcoordsfile, testcons=False,TH
                 thetapsi3 = thetapsi1 + thetapsi2
                 get_neighborhoods(refseg,thetapsi3, newparams, dz, dphi, pixel_size,ptclcoords,filtheta,sgnfil,delta_phi,nbrphi)
                 get_neighborhoods_y(refseg,thetapsi3, newparams, dz, pixel_size,ptclcoords,filtheta,ysgn,delta_y,nbry)   
-       
-        if not(testcons):
+        
+        if testcons:
+                print "phi: ", totphitested, totphicons,totphicons/totphitested
+                print "y: ", totytested, totycons, totycons/totytested
+        else:
                 newIDs.sort()
                 nnima=len(newIDs)
                 newparams2=[[] for jj in xrange(nnima)]
