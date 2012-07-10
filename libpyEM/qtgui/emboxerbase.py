@@ -1460,10 +1460,12 @@ class EMBoxList:
 			image = box.get_image(input_file_name,box_size)
 			if invert: image.mult(-1)
 			if str(normproc) != "None": image.process_inplace(normproc)
-			if apix != 1.0:
-				image.set_attr('apix_x', float(apix))
-				image.set_attr('apix_y', float(apix))
-				image.set_attr('apix_z', float(apix))
+			try:
+				if apix != 1.0:
+					image.set_attr('apix_x', float(apix))
+					image.set_attr('apix_y', float(apix))
+					image.set_attr('apix_z', float(apix))
+			except: pass
 			image.write_image(out_file_name,i)
 			
 	

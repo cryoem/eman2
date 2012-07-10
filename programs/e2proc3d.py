@@ -55,9 +55,9 @@ def print_iminfo(data, label):
 
 def calcsf(data):
 	dataf = data.do_fft()
-	curve = dataf.calc_radial_dist(ny, 0, 0.5,True)
+	curve = dataf.calc_radial_dist(ny/2, 0, 1.0,True)
 	curve=[i/(dataf["nx"]*dataf["ny"]*dataf["nz"]) for i in curve]
-	Util.save_data(0, 1.0/(apix*2.0*ny), curve, options.calcsf);
+	Util.save_data(0, 1.0/(apix*ny), curve, options.calcsf);
 	return()
 
 def main():
@@ -266,9 +266,9 @@ def main():
 
 			elif option1 == "calcsf":
 				dataf = data.do_fft()
-				curve = dataf.calc_radial_dist(ny, 0, 0.5,True)
+				curve = dataf.calc_radial_dist(ny/2, 0, 1.0,True)
 				curve=[i/(dataf["nx"]*dataf["ny"]*dataf["nz"]) for i in curve]
-				Util.save_data(0, 1.0/(apix*2.0*ny), curve, options.calcsf);
+				Util.save_data(0, 1.0/(apix*ny), curve, options.calcsf);
 
 			elif option1 == "setsf":
 				sf=XYData()

@@ -64,13 +64,26 @@ def main():
 		# we add boxsize/2 to the coords since box files are stored with origin being the lower left side of the box, but in EMAN2 origin is in the center
 		if options.box_type == 'boxes':
 			db = db_open_dict('bdb:e2boxercache#boxes')
+			micros=os.listdir("micrographs")
 			for filename in args:
 				boxlist = []
 				fh = open(filename, 'r')
 				for line in fh.readlines():
 					fields = line.split()
 					boxlist.append([float(fields[0])+float(fields[3])/2, float(fields[1])+float(fields[3])/2, 'manual'])
-				db["micrographs/%s.%s"%(os.path.splitext(os.path.basename(filename))[0],options.extension)] = boxlist
+				boxname=os.path.splitext(os.path.basename(filename))[0]
+				if "%s.%s"%(boxname,options.extension) in micros :  
+					db["micrographs/%s.%s"%(boxname,options.extension)] = boxlist
+				elif "%s_filt.%s"%(boxname,options.extension) in micros : 
+					db["micrographs/%s_filt.%s"%(boxname,options.extension)]=boxlist
+				else:
+					mat=[i for i in micros if boxname in i]
+					if len(mat)==0 : 
+						print "Warning: no matching micrograph for ",boxname
+						continue
+					elif len(mat)>1 : print "Warning: Ambiguous file naming convention. %s matches %s. Using %s"%(boxname,mat,mat[0])
+					db["micrographs/%s"%mat[0]]=boxlist
+					
 			db_close_dict(db)
 		if options.box_type == 'tiltedboxes':
 			db = db_open_dict('bdb:e2boxercache#boxestilted')

@@ -1090,7 +1090,7 @@ project database, and gives an opportunity to apply a number of common filters t
 		pthumbnail = ParamDef(name="thumbs",vartype="boolean",desc_short="Generate thumbnail",desc_long="Generate thumbnails for e2boxer",property=None,defaultunits=db.get("thumbs",dfl=True),choices=None)
 		passociate = ParamDef(name="project_associate",vartype="boolean",desc_short="Associate with project",desc_long="Associate filtered images with the project",property=None,defaultunits=db.get("project_associate",dfl=True),choices=None)
 		pinplace = ParamDef(name="inplace",vartype="boolean",desc_short="Inplace processing",desc_long="Process images inplace to save disk space",property=None,defaultunits=db.get("inplace",dfl=False),choices=None)
-		psuffix = ParamDef(name="suffix",vartype="string",desc_short="Output Suffix", desc_long="This text will be appended to the names of the output files",property=None,defaultunits=db.get("suffix",dfl="_filt"),choices=None )
+		psuffix = ParamDef(name="suffix",vartype="string",desc_short="Output Suffix", desc_long="This text will be appended to the names of the output files",property=None,defaultunits=db.get("suffix",dfl=""),choices=None )
 	
 		pinplace.dependents = ["suffix"] # these are things that become disabled when the pwb checkbox is unchecked etc
 		pinplace.invert_logic = True
