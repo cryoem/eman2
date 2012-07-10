@@ -6361,15 +6361,15 @@ def autowin_MPI(indir,outdir, noisedoc, noisemic, templatefile, deci, CC_method,
 def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
           txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max,
 	  rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
-	  fourvar, debug = False, MPI = False, chunk = -1.0, WRAP = 1, y_restrict=-1.0, CONS=False):
+	  fourvar, debug = False, MPI = False, chunk = -1.0, WRAP = 1, y_restrict=-1.0, consnbr=""):
 	if MPI:
 		if (chunk <= 0.0):
 			if WRAP == 1:
-			        if CONS:
+			        if len(consnbr) > 0:
 			                ihrsr_MPI_cons(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
 			txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max,
 			rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
-			fourvar, debug, y_restrict)
+			fourvar, debug, y_restrict, consnbr)
 			
 	                        else:
 				        ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
@@ -13789,7 +13789,7 @@ def get_unique_averages(data, indep_run, m_th=0.45):
 def ihrsr_MPI_cons(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
 	txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndphi, dphi_step, psi_max,
 	rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
-	fourvar, debug, y_restrict):
+	fourvar, debug, y_restrict, consnbr):
 
 	from alignment      import Numrinit, prepare_refrings, proj_ali_helical, proj_ali_helical_90, proj_ali_helical_local, proj_ali_helical_90_local, helios,helios7
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string, pad, model_blank
@@ -13800,7 +13800,7 @@ def ihrsr_MPI_cons(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	from pixel_error    import max_3D_pixel_error
 	import os
 	import types
-	from utilities      import print_begin_msg, print_end_msg, print_msg
+	from utilities      import print_begin_msg, print_end_msg, print_msg, read_text_row
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
 	from mpi            import mpi_recv,  mpi_send, MPI_TAG_UB
 	from mpi            import mpi_reduce, MPI_INT, MPI_SUM
@@ -13947,6 +13947,7 @@ def ihrsr_MPI_cons(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	else:	 from reconstruction import recons3d_4nn_MPI
 
 	if myid == main_node:
+	              
        		if(file_type(stack) == "bdb"):
 			from EMAN2db import db_open_dict
 			dummy = db_open_dict(stack, True)
@@ -13956,14 +13957,36 @@ def ihrsr_MPI_cons(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 			if active[im]:  list_of_particles.append(im)
 		del active
 		nima = len(list_of_particles)
+		
+		# get neighborhood parameters for maintaining helical consistency into the stack header
+	        fns = consnbr.split(',')
+	        nbrphi_name = (fns[0]).strip()
+	        nbry_name = (fns[1]).strip()
+	        #print "nbr names: ", nbrphi_name, nbry_name
+	        nbrphi = read_text_row(nbrphi_name)
+                nbry = read_text_row(nbry_name)
+                phi_lhs=[nbrphi[i][0] for i in xrange(nima)]
+                phi_rhs=[nbrphi[i][1] for i in xrange(nima)]
+                y_lhs=[nbry[i][0] for i in xrange(nima)]
+                y_rhs=[nbry[i][1] for i in xrange(nima)]
+                
 	else:
 		nima = 0
 	total_nima = bcast_number_to_all(nima, source_node = main_node)
-
+        
 	if myid != main_node:
 		list_of_particles = [-1]*total_nima
+		phi_lhs = [-1]*total_nima
+		phi_rhs = [-1]*total_nima
+		y_lhs = [-1]*total_nima
+		y_rhs = [-1]*total_nima
+		
 	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
-
+        phi_lhs = bcast_list_to_all(phi_lhs, source_node = main_node)
+        phi_rhs = bcast_list_to_all(phi_rhs, source_node = main_node)
+        y_lhs = bcast_list_to_all(y_lhs, source_node = main_node)
+        y_rhs = bcast_list_to_all(y_rhs, source_node = main_node)
+        
 	image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
 	# create a list of images for each node
 	list_of_particles = list_of_particles[image_start: image_end]
@@ -13978,6 +14001,11 @@ def ihrsr_MPI_cons(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	if fourvar:  original_data = []
 	for im in xrange(nima):
 		data[im].set_attr('ID', list_of_particles[im])
+		data[im].set_attr('phi_lhs', phi_lhs[list_of_particles[im]])
+		data[im].set_attr('phi_rhs', phi_rhs[list_of_particles[im]])
+		data[im].set_attr('y_lhs', y_lhs[list_of_particles[im]])
+		data[im].set_attr('y_rhs', y_rhs[list_of_particles[im]])
+		
 		sttt = Util.infomask(data[im], mask2D, False)
 		data[im] = data[im] - sttt[0]
 		if fourvar: original_data.append(data[im].copy())
