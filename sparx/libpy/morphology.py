@@ -1304,6 +1304,8 @@ def get_neighborhoods(refseg, ps, newparams,dz, dphi, pixel_size, ptclcoords,fil
         a1ref = 10
         a2ref = -10
         
+        check_D_p_all=False
+        
         for iseg in ps:
                 if iseg == refseg:
                         continue
@@ -1334,10 +1336,15 @@ def get_neighborhoods(refseg, ps, newparams,dz, dphi, pixel_size, ptclcoords,fil
                 if abs(2*delta_phi) <= D_p:
                         continue
                 
+                # set check_D_p to True and make sure the resulting interval
+                check_D_p_all = True
+              
+                '''
                 delta_pp = D + D_p
                 
                 if abs(delta_pp) > delta_phi:
-                        print "2 enforced level of consistency is too not strict enough cmpared to desired level of consistency"
+                        print "2 enforced level of consistency is too not strict enough cmpared to desired level of consistency: phi"
+                        print D, D_p,delta_pp, delta_phi, iphi, pref
                         sys.exit()
                 dsgn2 = 1.0      
                 if (pref- ip) == D_p:
@@ -1348,13 +1355,26 @@ def get_neighborhoods(refseg, ps, newparams,dz, dphi, pixel_size, ptclcoords,fil
                         a1ref = a1
                 if a2 < a2ref or a2ref < 0:
                         a2ref = a2
-        
+                '''
         a1ref = a1ref/2.0
         a2ref = a2ref/2.0
-        
         nbrphi[refseg] = [a1ref, a2ref]
+        
+        if check_D_p_all:
+                small_enough=False
+                while not(small_enough):
+                        aa1ref = abs(nbrphi[refseg][0])
+                        aa2ref = abs(nbrphi[refseg][1])
+                        if max(aa1ref, aa2ref) < D_p:
+                                small_enough=True
+                        else:
+                                if aa1ref > aa2ref:
+                                        nbrphi[refseg][0] = 0.95*nbrphi[refseg][0]
+                                else:
+                                        nbrphi[refseg][1] = 0.95*nbrphi[refseg][1]
                 
         for iseg in ps:
+                check_D_p = False
                 if iseg == refseg:
                         continue
                 ip = newparams[iseg][0]
@@ -1384,7 +1404,27 @@ def get_neighborhoods(refseg, ps, newparams,dz, dphi, pixel_size, ptclcoords,fil
                 
                 if abs(2*delta_phi) <= D_p:
                         continue
+                
+                check_D_p = True
+                
+                if check_D_p or check_D_p_all:
+                        # adjust a1, a2 so that |max(|a1|,|a2|)| + |max(|a1ref|,|a2ref|)| < D_p
+                        aa1ref = abs(nbrphi[refseg][0])
+                        aa2ref = abs(nbrphi[refseg][1])
+                        small_enough = False
                         
+                        while not(small_enough):
+                                aa1 = abs(nbrphi[iseg][0])
+                                aa2 = abs(nbrphi[iseg][1])
+                                if max(aa1, aa2) + max(aa1ref, aa2ref) < D_p:
+                                        small_enough = True
+                                else:
+                                        if aa1 > aa2:
+                                                nbrphi[iseg][0] = 0.95*nbrphi[iseg][0]
+                                        else:
+                                                nbrphi[iseg][1] = 0.95*nbrphi[iseg][1]
+                                
+                '''
                 delta_pp = D + D_p
                 if abs(delta_pp) > delta_phi:
                         print "enforced level of consistency is too not strict enough cmpared to desired level of consistency"
@@ -1405,7 +1445,9 @@ def get_neighborhoods(refseg, ps, newparams,dz, dphi, pixel_size, ptclcoords,fil
                         nbrphi[iseg][0] = a1
                 if a2 < nbrphi[iseg][1]:
                         nbrphi[iseg][1] = a2
-
+                '''
+        
+                
 def get_neighborhoods_y(refseg, ps, newparams, dz, pixel_size,ptclcoords,filtheta,ysgn,delta_y,nbry):
         
         dpp_half = dz/pixel_size/2.0
@@ -1444,7 +1486,7 @@ def get_neighborhoods_y(refseg, ps, newparams, dz, pixel_size,ptclcoords,filthet
                 delta_pp = D + D_p
                 
                 if abs(delta_pp) > delta_y:
-                        print "2 enforced level of consistency is too not strict enough cmpared to desired level of consistency"
+                        print "2 enforced level of consistency is too not strict enough cmpared to desired level of consistency: y"
                         sys.exit()
                 dsgn2 = 1.0      
                 if (pref- ip) == D_p:
@@ -1544,11 +1586,10 @@ def get_iphi(iseg, refseg, phiref, dz, dphi, pixel_size,ptclcoords,filtheta,sgnf
         jx = ptclcoords[refseg][0]
         jy = ptclcoords[refseg][1]
         d = pixel_size * get_dist(ix, iy, jx, jy, filtheta)
-                
         if iseg > refseg:
                 iphi = (((phiref%360.0) + sgnfil*round(d/dz)*dphi)%360.0)
         else:
-                iphi = (((phiref%360.0) - sgnfil*round(d/dz)*dphi)%360.0)          
+                iphi = (((phiref%360.0) - sgnfil*round(d/dz)*dphi)%360.0)   
         return iphi
         
 def get_iy(iseg, refseg, yref, dz, pixel_size,ptclcoords,filtheta,ysgn):
@@ -1819,7 +1860,8 @@ def helical_consistency(parmfile, miclistfile, ptclcoordsfile, testcons=False,TH
                                 for ysgn in [-1,1]:
                                         startphicost = find_params_phi(w0, ref, thetapsi1, dz, dphi,pixel_size,ptclcoords,filtheta,sgnfil,THR_CONS_PHI)
                                         startycost = find_params_y(w0y, ref, thetapsi1,dz,pixel_size,ptclcoords,filtheta,THR_CONS_Y,ysgn)
-                                        #startphicost=0*startphicost
+                                        #startphicost=0.0*startphicost
+                                        #startycost=0.0*startycost
                                         cost = startphicost + startycost
                                
                                         if (best_cost < 0) or (cost < best_cost):
