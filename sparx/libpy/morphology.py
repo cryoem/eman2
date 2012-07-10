@@ -1724,7 +1724,7 @@ def predict_y(ps2, refseg, refy, filtheta,dz, pixel_size,ptclcoords,ysgn):
         
  dz is in Angstroms
 '''
-def helical_consistency(parmfile, miclistfile, ptclcoordsfile, testcons=False,THR_CONS_PHI=1.5,THR_CONS_Y=1.0,delta_phi = 3.5, delta_y = 1.5, dphi = -166.5,dz = 27.6, pixel_size = 1.84):        
+def helical_consistency(parmfile, miclistfile, ptclcoordsfile, testcons=False,THR_CONS_PHI=1.5,THR_CONS_Y=1.0,delta_phi = 3.5, delta_y = 1.5, dphi = -166.5,dz = 27.6, pixel_size = 1.84, fileNewIDs='newIDs_morph.txt', fileNewParams='newparams2_morph.txt', fileNbrPhi='nbrphi_morph.txt', fileNbrY='nbry_morph.txt'):        
         
         from utilities import read_text_row, write_text_file, write_text_row
         from scipy.optimize import minimize
@@ -1919,10 +1919,10 @@ def helical_consistency(parmfile, miclistfile, ptclcoordsfile, testcons=False,TH
                         nbry2[ii] = [nbry[iseg][0], nbry[iseg][1]]
 
                 if not(testcons):
-                        write_text_file(newIDs,'newIDs_ce4morph.txt')  
-                        write_text_row(newparams2,'newparams2_ce4morph.txt')  # consistency enforced on small_stack_parameters (from elmar)
-                        write_text_row(nbrphi2,'nbrphi_ce4morph.txt')  
-                        write_text_row(nbry2,'nbry_ce4morph.txt')  
+                        write_text_file(newIDs,fileNewIDs)  
+                        write_text_row(newparams2,fileNewParams)  # consistency enforced on small_stack_parameters (from elmar)
+                        write_text_row(nbrphi2,fileNbrPhi)  
+                        write_text_row(nbry2,fileNbrY)  
 
 '''
 End code for helical consistency
