@@ -104,10 +104,7 @@ num_images = EMUtil.get_image_count(dir + "#projections_" + high)   # Number of 
 cmd = db_open_dict(dir + "#register")                               # Register containing parameters used in the refinement
 cmd = cmd['cmd_dict']
 inpt1 = cmd['input']						    # Input filename for refinement
-inpt = inpt1.replace('_phase_flipped-hp','')
-inpt = inpt.replace('_phase_flipped','')
-inpt = inpt.replace('_wiener_filtered','')
-inpt = inpt+'_original_data'
+inpt=inpt1.split("_ctf")[0]
 part2 = db_open_dict(inpt1)
 if not 'ctf' in part2[0].get_attr_dict():
    print "This command cannot be run with data that has not been CTF corrected"
