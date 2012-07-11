@@ -701,15 +701,15 @@ if ENABLE_GUI:
             
             ptcls_overlap_label = QtGui.QLabel(self.tr("&Overlap:"))
             self.ptcls_overlap_spinbox = QtGui.QSpinBox()
-            self.ptcls_overlap_spinbox.setMaximum(1000)
+            self.ptcls_overlap_spinbox.setMaximum(10000)
             ptcls_overlap_label.setBuddy(self.ptcls_overlap_spinbox)
             ptcls_length_label = QtGui.QLabel(self.tr("&Length:"))
             self.ptcls_length_spinbox = QtGui.QSpinBox()
-            self.ptcls_length_spinbox.setMaximum(1000)
+            self.ptcls_length_spinbox.setMaximum(10000)
             ptcls_length_label.setBuddy(self.ptcls_length_spinbox)
             ptcls_width_label = QtGui.QLabel(self.tr("W&idth:"))
             self.ptcls_width_spinbox = QtGui.QSpinBox()
-            self.ptcls_width_spinbox.setMaximum(1000)
+            self.ptcls_width_spinbox.setMaximum(10000)
             ptcls_width_label.setBuddy(self.ptcls_width_spinbox)
             
             self.ptcls_coords_groupbox = QtGui.QGroupBox(self.tr("Particle Coordinates"))
@@ -1000,7 +1000,7 @@ if ENABLE_GUI:
             
             self.box_width_label = QtGui.QLabel(self.tr("Box &Width:"))
             self.box_width_spinbox = QtGui.QSpinBox()
-            self.box_width_spinbox.setMaximum(1000)
+            self.box_width_spinbox.setMaximum(10000)
             self.box_width_label.setBuddy(self.box_width_spinbox)
             
             self.img_quality_label = QtGui.QLabel(self.tr("Image &Quality:"))
