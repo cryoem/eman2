@@ -3748,7 +3748,6 @@ Dict Util::Crosrng_psi_0_180_no_mirror(EMData* circ1p, EMData* circ2p, vector<in
 
 		t1   = circ1(numr2i) * circ2(numr2i);
 		q(1) += t1;
-		
 
 		t1   = circ1(numr2i+1) * circ2(numr2i+1);
 		if (numr3i == maxrin)  {
@@ -3780,10 +3779,11 @@ Dict Util::Crosrng_psi_0_180_no_mirror(EMData* circ1p, EMData* circ2p, vector<in
 
 			q(j)   += t1 + t2;
 			q(j+1) += -t3 + t4;
-		
+
 		}
 	}
 	//for (j=1; j<=maxrin; j++) cout <<"  "<<j<<"   "<<q(j) <<"   "<<t(j) <<endl;
+
 	fftr_d(q,ip);
 
 	int psi_range  = int(psi_max/360.0*maxrin+0.5);
@@ -3857,7 +3857,7 @@ Dict Util::Crosrng_sm_psi(EMData* circ1p, EMData* circ2p, vector<int> numr, floa
 	q = (double*)calloc(maxrin,sizeof(double));
 	int neg = 1-2*flag;
    //   premultiply  arrays ie( circ12 = circ1 * circ2) much slower
-   	
+
 	for (i=1; i<=nring; i++) {
 
 		numr3i = numr(3,i);   // Number of samples of this ring
@@ -3894,16 +3894,15 @@ Dict Util::Crosrng_sm_psi(EMData* circ1p, EMData* circ2p, vector<int> numr, floa
 			q(j+1) += -t3 + t4*neg;
 		}
 	}
-	 
-	
+
 	fftr_d(q,ip);
 
 	qn  = -1.0e20;
 	int psi_pos = int(psi/360.0*maxrin+0.5);
 	const int psi_range = int(psi_max/360.0*maxrin + 0.5);
-	
+
 	for (k=-psi_range; k<=psi_range; k++) {
-		j = (k+psi_pos+maxrin-1)%maxrin+1;
+		j = ( k + psi_pos + maxrin -1 )%maxrin+1;
 		if (q(j) >= qn) {
 			qn  = q(j);
 			jtot = j;
@@ -3995,14 +3994,13 @@ Dict Util::Crosrng_psi(EMData* circ1p, EMData* circ2p, vector<int> numr, float p
 			t(j+1) += -t3 - t4;
 		}
 	}
-	 
-	
+
 	fftr_d(q,ip);
 
 	qn  = -1.0e20;
 	int psi_pos = int(psi/360.0*maxrin+0.5);
 	const int psi_range = int(psi_max/360.0*maxrin + 0.5);
-	
+
 	for (k=-psi_range; k<=psi_range; k++) {
 		j = (k+psi_pos+maxrin-1)%maxrin+1;
 		if (q(j) >= qn) {
@@ -4016,9 +4014,9 @@ Dict Util::Crosrng_psi(EMData* circ1p, EMData* circ2p, vector<int> numr, float p
 
     // mirrored
 	fftr_d(t,ip);
-	
+
 	qm  = -1.0e20;
-	
+
 	for (k=-psi_range; k<=psi_range; k++) {
 		j = (k+psi_pos+maxrin-1)%maxrin+1;
 		if (t(j) >= qm) {
@@ -4029,7 +4027,7 @@ Dict Util::Crosrng_psi(EMData* circ1p, EMData* circ2p, vector<int> numr, float p
 
 	tmt = (float)(jtot);
 	free(t);
-	 
+
 	Dict retvals;
 	retvals["qn"] = qn;
 	retvals["tot"] = tot;
@@ -18571,7 +18569,7 @@ vector<float> Util::multiref_polar_ali_2d_local_psi(EMData* image, const vector<
 			n2[iref] = crefim[iref]->get_attr("n2");
 			n3[iref] = crefim[iref]->get_attr("n3");
 	}
-	bool nomirror = (theta<90.0) || ((theta==90.0) && (psi<psi_max));
+	bool nomirror = (theta<90.0) || ((theta==90.0));// && (psi<psi_max));
 	if (!nomirror) {
 		phi = fmod(phi+540.0f, 360.0f);
 		theta = 180-theta;
@@ -18583,7 +18581,7 @@ vector<float> Util::multiref_polar_ali_2d_local_psi(EMData* image, const vector<
 		ix = j*step;
 		EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 
-                Normalize_ring(cimage, numr);
+        Normalize_ring(cimage, numr);
 
 		Frngs(cimage, numr);
 		//  compare with all reference images
@@ -18591,9 +18589,9 @@ vector<float> Util::multiref_polar_ali_2d_local_psi(EMData* image, const vector<
 		for (iref = 0; iref < (int)crefim_len; iref++) {
 			if (abs(n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3)>=ant) {
 				if (nomirror) {
-		    			Dict retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, psi, 0, psi_max);
-			    		double qn = retvals["qn"];
-			    		if (qn >= peak) {
+		    		Dict retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, psi, 0, psi_max);
+			    	double qn = retvals["qn"];
+			    	if (qn >= peak) {
 						sx = -ix;
 						sy = -iy;
 						nref = iref;
@@ -18602,9 +18600,9 @@ vector<float> Util::multiref_polar_ali_2d_local_psi(EMData* image, const vector<
 						mirror = 0;
 					}
 				} else {
-		    			Dict retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, psi, 1, psi_max);
-			    		double qn = retvals["qn"];
-			    		if (qn >= peak) {
+		    		Dict retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, psi, 1, psi_max);
+			    	double qn = retvals["qn"];
+			    	if (qn >= peak) {
 						sx = -ix;
 						sy = -iy;
 						nref = iref;
@@ -18613,7 +18611,7 @@ vector<float> Util::multiref_polar_ali_2d_local_psi(EMData* image, const vector<
 						mirror = 1;
 					}
 				}
-		    	}
+		    }
 		}  delete cimage; cimage = 0;
 	    }
 	}
