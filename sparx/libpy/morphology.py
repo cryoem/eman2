@@ -1283,13 +1283,15 @@ def get_delta_p(aD_p, aiphi, apref):
         return delta_p, bestD          
               
 def get_neighborhoods(refseg, ps, newparams,dz, dphi, pixel_size, ptclcoords,filtheta,sgnfil,delta_phi,nbrphi):
-        
         pref = newparams[refseg][0]
         
         a1ref = 10
         a2ref = -10
         small_D_p = 0.1
         
+        aref ={}
+        aref_g0 ={}
+        aref_e0 ={}
         for iseg in ps:
                 if iseg == refseg:
                         continue
@@ -1300,49 +1302,62 @@ def get_neighborhoods(refseg, ps, newparams,dz, dphi, pixel_size, ptclcoords,fil
                 iphi = get_iphi(iseg,refseg,pref, dz, dphi, pixel_size,ptclcoords,filtheta,sgnfil)
                 delta_p, D = get_delta_p(D_p, iphi, pref)
                 
-                dsgn = 1.0      
-                if (ip - pref) == D_p:
-                        dsgn=-1.0
-                
                 if abs(delta_p) >= delta_phi:
                         print "1 enforced level of consistency is too not strict enough cmpared to desired level of consistency"
                         print ip
                         print get_iphi(iseg,refseg,pref, dz, dphi, pixel_size,ptclcoords,sgnfil)
                         print pref, D, D_p
                         sys.exit()
-               
+                
+                dsgn = 1.0      
+                if (ip - pref) == D_p:
+                        dsgn=-1.0
                 a1 = dsgn*delta_p - delta_phi
                 a2 = dsgn*delta_p + delta_phi
-                if a1 > a1ref or a1ref > 0:
-                        a1ref = a1
-                if a2 < a2ref or a2ref < 0:
-                        a2ref = a2
+                
+                if a1 >=0 or a2 <= 0:
+                        print "something wrong with a1 and a2, phi"
+                        sys.exit()
+                        
                 if abs(2*delta_phi) <= D_p:
+                        aref[iseg] = [a1/2.0,a2/2.0]
                         continue
                 
-                # Do two options at this point and explore both paths
-                # for very small D_p, don't try to reduce resulting neighborhoods so their total length < D_p
-                if D_p < small_D_p: 
-                        delta_pp = D + D_p
+                if D_p > 0:
+                        aref_g0[iseg] = [a1/2.0, a2/2.0]
                 
-                        if abs(delta_pp) > delta_phi:
-                                print "2 enforced level of consistency is too not strict enough cmpared to desired level of consistency: phi"
-                                print D, D_p,delta_pp, delta_phi, iphi, pref
-                                sys.exit()
+                        if abs(aref_g0[iseg][0]) > D_p:
+                                aref_g0[iseg][0] = -D_p/2.0
+                        if abs(aref_g0[iseg][1]) > D_p:
+                                aref_g0[iseg][1] = D_p/2.0
+                        
+                delta_pp = D + D_p
+                
+                if abs(delta_pp) <= delta_phi:
+                       
                         dsgn2 = 1.0      
                         if (pref- ip) == D_p:
                                 dsgn2=-1.0
-                        a1 = dsgn*delta_pp - delta_phi
-                        a2 = dsgn*delta_pp + delta_phi
-                        if a1 > a1ref or a1ref > 0:
-                                a1ref = a1
-                        if a2 < a2ref or a2ref < 0:
-                                a2ref = a2
-                
-        a1ref = a1ref/2.0
-        a2ref = a2ref/2.0
-        nbrphi[refseg] = [a1ref, a2ref]
-        
+                        a1e0 = dsgn*delta_pp - delta_phi
+                        a2e0 = dsgn*delta_pp + delta_phi
+                        if a1e0 > a1:
+                                a1 = a1e0
+                        if a2e0 < a2:
+                                a2 = a2e0
+                        
+                        aref_e0[iseg] = [a1/2.0,a2/2.0]         
+               
+        aseg ={}
+        aseg_g0 ={}
+        aseg_e0 ={}
+        allkeys = aref.keys() + aref_e0.keys() + aref_g0.keys()
+        for iseg in ps:
+                if iseg == refseg:
+                        continue
+                if not(iseg in allkeys):
+                        print "iseg is not covered in ref keys"
+                        print D_p
+                        sys.exit()
         for iseg in ps:
                 if iseg == refseg:
                         continue
@@ -1356,70 +1371,132 @@ def get_neighborhoods(refseg, ps, newparams,dz, dphi, pixel_size, ptclcoords,fil
                         print "abs(delta_p) >= delta_phi"
                         print delta_p, delta_phi
                         sys.exit()
-                dsgn = 1.0      
-                if (pref - ip) == D_p:
-                        dsgn=-1.0
+                
+                if iseg in aref.keys():
+                
+                        if abs(2*delta_phi) > D_p:
+                                print "this should not be"
+                                sys.exit()
+                        dsgn = 1.0      
+                        if (pref - ip) == D_p:
+                                dsgn=-1.0
+                        a1ref = aref[iseg][0]
+                        a2ref = aref[iseg][1]
+                        a1 = dsgn*delta_p - delta_phi + a2ref
+                        a2 = dsgn*delta_p + delta_phi + a1ref
+                
+                        if a1 > 0 or a2 < 0:
+                                print "1 something wrong with a1, a2"
+                                sys.exit()
                         
-                a1 = dsgn*delta_p - delta_phi + a2ref
-                a2 = dsgn*delta_p + delta_phi + a1ref
-                
-                if a1 > 0 or a2 < 0:
-                        print "1 something wrong with a1, a2"
-                        print a1, a2
-                        print dsgn*delta_phi, a2ref, delta_p
-                        sys.exit()
-                  
-                nbrphi[iseg]=[a1,a2]
-                
-                if abs(2*delta_phi) <= D_p:
+                        aseg[iseg]=[a1,a2]
                         continue
+                        
+                if iseg in aref_e0.keys():
                 
-                if D_p >= small_D_p:
-                        # adjust a1, a2 so that |max(|a1|,|a2|)| + |max(|a1ref|,|a2ref|)| < D_p
-                        small_enough = False
+                        a1ref = aref_e0[iseg][0]
+                        a2ref = aref_e0[iseg][1]
                         
-                        while not(small_enough):
-                                aa1 = abs(nbrphi[iseg][0])
-                                aa2 = abs(nbrphi[iseg][1])
-                                aa1ref = abs(nbrphi[refseg][0])
-                                aa2ref = abs(nbrphi[refseg][1])
+                        dsgn = 1.0      
+                        if (pref - ip) == D_p:
+                                dsgn=-1.0
                         
-                                if max(aa1, aa2) + max(aa1ref, aa2ref) < D_p:
-                                        small_enough = True
-                                else:
-                                        if max(aa1ref, aa2ref) > max(aa1, aa2):
-                                                if aa1ref > aa2ref:
-                                                        nbrphi[refseg][0] = 0.95*nbrphi[refseg][0]
-                                                else:
-                                                        nbrphi[refseg][1] = 0.95*nbrphi[refseg][1]
-                                        else:
-                                                if aa1 > aa2:
-                                                        nbrphi[iseg][0] = 0.95*nbrphi[iseg][0]
-                                                else:
-                                                        nbrphi[iseg][1] = 0.95*nbrphi[iseg][1]
-                                
-                else:
+                        a1 = dsgn*delta_p - delta_phi + a2ref
+                        a2 = dsgn*delta_p + delta_phi + a1ref
+                        
+                        if a1 > 0 or a2 < 0:
+                                print "1 something wrong with a1, a2"
+                                sys.exit()
+                        
+                        aseg_e0[iseg] = [a1, a2]    
                         delta_pp = D + D_p
+                        
                         if abs(delta_pp) > delta_phi:
-                                print "cannot find interval"
+                                print "this should not happen"
                                 sys.exit()
                 
                         dsgn2 = 1.0      
                         if (ip-pref) == D_p:
                                 dsgn2=-1.0 
-                            
-                        a1 = dsgn2*delta_pp - delta_phi + a2ref
-                        a2 = dsgn2*delta_pp + delta_phi + a1ref
+                        
+                        a1e0 = dsgn2*delta_pp - delta_phi + a2ref
+                        a2e0 = dsgn2*delta_pp + delta_phi + a1ref
                 
-                        if a1 > 0 or a2 < 0:
+                        if a1e0 > 0 or a2e0 < 0:
                                 print "2 something wrong with a1, a2"
                                 sys.exit()
                         
-                        if a1 > nbrphi[iseg][0]:
-                                nbrphi[iseg][0] = a1
-                        if a2 < nbrphi[iseg][1]:
-                                nbrphi[iseg][1] = a2
+                        
+                        if a1e0 > aseg_e0[iseg][0] :
+                                aseg_e0[iseg][0] = a1e0
+                        if a2e0 < aseg_e0[iseg][1]:
+                                aseg_e0[iseg][1] = a2e0
+                                
+                if iseg in aref_g0.keys():
+                        a1ref = aref_g0[iseg][0]
+                        a2ref = aref_g0[iseg][1]
+                        a1 = dsgn*delta_p - delta_phi + a2ref
+                        a2 = dsgn*delta_p + delta_phi + a1ref
                 
+                        if a1 > 0 or a2 < 0:
+                                print "1 something wrong with a1, a2"
+                                sys.exit()
+                                
+                        # adjust a1, a2 so that |max(|a1|,|a2|)| + |max(|a1ref|,|a2ref|)| < D_p
+                        small_enough = False
+                        aa1ref =abs(a1ref)
+                        aa2ref =abs(a2ref)
+                        
+                        while not(small_enough):
+                                aa1 = abs(a1)
+                                aa2 = abs(a2)
+                        
+                                if max(aa1, aa2) + max(aa1ref, aa2ref) < D_p:
+                                        small_enough = True
+                                else:
+                                        if aa1 > aa2:
+                                                aa1 = 0.95*aa1
+                                        else:
+                                                aa2 = 0.95*aa2
+                        aseg_g0[iseg]=[-aa1, aa2]
+                # set aseg[iseg] to the larger of the two intervals in aseg_e0 and aseg_g0      
+                e0len = -1
+                g0len = -1
+                e0reflen = -1
+                g0reflen = -1
+                if iseg in aref_e0.keys():
+                        e0len = aseg_e0[iseg][1] - aseg_e0[iseg][0]
+                        e0reflen = aref_e0[iseg][1] - aref_e0[iseg][0]
+                        
+                if iseg in aref_g0.keys():
+                        g0len = aseg_g0[iseg][1] - aseg_g0[iseg][0]
+                        g0reflen = aref_g0[iseg][1] - aref_g0[iseg][0]
+                        
+                if e0len < 0 and g0len < 0 and e0reflen < 0 and g0reflen < 0:
+                        print "something wrong"
+                        sys.exit()
+                
+                if ((e0len + e0reflen) > (g0len + g0reflen)):
+                        aseg[iseg] = [aseg_e0[iseg][0],aseg_e0[iseg][1]]
+                        aref[iseg]=[aref_e0[iseg][0],aref_e0[iseg][1]]
+                else:
+                        aseg[iseg] = [aseg_g0[iseg][0],aseg_g0[iseg][1]]
+                        aref[iseg] = [aref_g0[iseg][0],aref_g0[iseg][1]]
+              
+        # set ref's neighborhood to intersection of aref[iseg] for all iseg
+        a1ref = 1000
+        a2ref = -1000
+        for iseg in ps:
+                if iseg != refseg:
+                        
+                        nbrphi[iseg]=[aseg[iseg][0], aseg[iseg][1]]
+               
+                        if aref[iseg][0] > a1ref or a1ref > 0:
+                                a1ref = aref[iseg][0]
+                
+                        if aref[iseg][1] < a2ref or a2ref < 0:
+                                a2ref = aref[iseg][1]  
+        nbrphi[refseg] = [a1ref, a2ref]
         
                 
 def get_neighborhoods_y(refseg, ps, newparams, dz, pixel_size,ptclcoords,filtheta,ysgn,delta_y,nbry):
@@ -1774,6 +1851,7 @@ def helical_consistency(parmfile, miclistfile, ptclcoordsfile, THR_CONS_PHI=1.5,
         newIDs = []
 
         for i in xrange(N):
+                print "filament ", i
                 mic = miclist[i][6:]
                 mic = map(int, mic)
                 a90=[]
