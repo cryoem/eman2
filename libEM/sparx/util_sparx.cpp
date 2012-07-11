@@ -18581,7 +18581,7 @@ vector<float> Util::multiref_polar_ali_2d_local_psi(EMData* image, const vector<
 		ix = j*step;
 		EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 
-        Normalize_ring(cimage, numr);
+                Normalize_ring(cimage, numr);
 
 		Frngs(cimage, numr);
 		//  compare with all reference images
