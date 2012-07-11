@@ -18569,27 +18569,28 @@ vector<float> Util::multiref_polar_ali_2d_local_psi(EMData* image, const vector<
 			n2[iref] = crefim[iref]->get_attr("n2");
 			n3[iref] = crefim[iref]->get_attr("n3");
 	}
-	bool nomirror = (theta<90.0) || ((theta==90.0));// && (psi<psi_max));
+	bool nomirror = (theta<90.0) || (theta==90.0);
 	if (!nomirror) {
 		phi = fmod(phi+540.0f, 360.0f);
 		theta = 180-theta;
 		psi = fmod(540.0f-psi, 360.0f);
-	}
+	} else { psi = fmod(360.0f-psi, 360.0f); }
 	for (int i = -ky; i <= ky; i++) {
 	    iy = i * step ;
 	    for (int j = -kx; j <= kx; j++) {
 		ix = j*step;
 		EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 
-                Normalize_ring(cimage, numr);
+		Normalize_ring(cimage, numr);
 
 		Frngs(cimage, numr);
 		//  compare with all reference images
 		// for iref in xrange(len(crefim)):
 		for (iref = 0; iref < (int)crefim_len; iref++) {
 			if (abs(n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3)>=ant) {
+				float refpsi = crefim[iref]->get_attr("psi");
 				if (nomirror) {
-		    		Dict retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, psi, 0, psi_max);
+		    		Dict retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, fmod(360.0+psi+refpsi, 360.0), 0, psi_max);
 			    	double qn = retvals["qn"];
 			    	if (qn >= peak) {
 						sx = -ix;
@@ -18600,7 +18601,7 @@ vector<float> Util::multiref_polar_ali_2d_local_psi(EMData* image, const vector<
 						mirror = 0;
 					}
 				} else {
-		    		Dict retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, psi, 1, psi_max);
+		    		Dict retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, fmod(360.0+psi-refpsi, 360.0), 1, psi_max);
 			    	double qn = retvals["qn"];
 			    	if (qn >= peak) {
 						sx = -ix;

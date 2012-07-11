@@ -50,7 +50,8 @@ def main():
 	parser.add_option("--yr",       type="string", default= "-1",               help="range for translation search in y direction, search is +/yr (default = same as xr)")
 	parser.add_option("--ts", 	type="string", default= "1 1 1 0.5 0.25",   help="step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional")
 	parser.add_option("--delta",    type="string", default= "10 6 4 3 2",       help="angular step of reference projections")
-	parser.add_option("--an",       type="string", default= "-1",               help="angular neighborhood for local searches")
+	parser.add_option("--an",       type="string", default= "-1",               help="angular neighborhood for local searches (phi and theta)")
+	parser.add_option("--apsi",     type="string", default= "-1",               help="angular neighborhood for local searches (psi)")
 	parser.add_option("--deltapsi", type="string", default= "-1",               help="Delta psi for coarse search")
 	parser.add_option("--startpsi", type="string", default= "-1",               help="Start psi for coarse search")
 	parser.add_option("--center",   type="float",  default= -1,                 help="-1: average shift method; 0: no centering; 1: center of gravity (default=-1)")
@@ -106,7 +107,7 @@ def main():
 				from applications import ali3d
 				global_def.BATCH = True
 				ali3d(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
-				options.yr, options.ts, options.delta, options.an, options.deltapsi, options.startpsi,
+				options.yr, options.ts, options.delta, options.an, options.apsi, options.deltapsi, options.startpsi,
 				options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
 				options.function, options.Fourvar, options.npad, options.debug, options.MPI, options.stoprnct)
 				global_def.BATCH = False

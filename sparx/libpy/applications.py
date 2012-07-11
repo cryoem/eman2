@@ -3015,7 +3015,7 @@ def ali3d_a(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 
 
 def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
-            xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1", deltapsi = "-1", startpsi = "-1",
+            xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1", apsi = "-1", deltapsi = "-1", startpsi = "-1",
 	    center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym = "c1",
 	    user_func_name = "ref_ali3d", fourvar = True, npad = 4, debug = False, MPI = False, termprec = 0.0):
 	"""
@@ -3048,7 +3048,7 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	"""
 	if MPI:
 		ali3d_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, ts,
-	        	delta, an, deltapsi, startpsi, center, maxit, CTF, snr, ref_a, sym, user_func_name,
+	        	delta, an, apsi, deltapsi, startpsi, center, maxit, CTF, snr, ref_a, sym, user_func_name,
 			fourvar, npad, debug, termprec)
 		return
 
@@ -3205,11 +3205,11 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	print_end_msg("ali3d")
 
 def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
-            xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1", deltapsi = "-1", startpsi = "-1",
+            xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1", apsi = "-1", deltapsi = "-1", startpsi = "-1",
 	    center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym = "c1",  user_func_name = "ref_ali3d",
 	    fourvar = True, npad = 4, debug = False, termprec = 0.0):
 
-	from alignment       import Numrinit, prepare_refrings, proj_ali_incore, proj_ali_incore_local
+	from alignment       import Numrinit, prepare_refrings, proj_ali_incore, proj_ali_incore_local, proj_ali_incore_local_psi
 	from utilities       import model_circle, get_image, drop_image, get_input_from_string
 	from utilities       import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all
 	from utilities       import send_attr_dict
@@ -3259,6 +3259,11 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	else:
 		an = get_input_from_string(an)
 
+	if apsi == "-1":
+		apsi = [-1] * lstp
+	else:
+		apsi = get_input_from_string(apsi)
+
 	if deltapsi == "-1":
 		deltapsi = [-1] * lstp
 	else:
@@ -3295,7 +3300,8 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 		print_msg("Y search range              : %s\n"%(yrng))
 		print_msg("Translational step          : %s\n"%(step))
 		print_msg("Angular step                : %s\n"%(delta))
-		print_msg("Angular search range        : %s\n"%(an))
+		print_msg("Angular search range (phi and theta)       : %s\n"%(an))
+		print_msg("Angular search range (psi)                 : %s\n"%(apsi))
 		print_msg("Delta psi                   : %s\n"%(deltapsi))
 		print_msg("Start psi                   : %s\n"%(startpsi))
 		print_msg("Maximum iteration           : %i\n"%(max_iter))
@@ -3405,7 +3411,10 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				elif an[N_step] == -1:
 					peak, pixer[im] = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],finfo)
 				else:
-					peak, pixer[im] = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],finfo)
+					if apsi[N_step] == -1:
+						peak, pixer[im] = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],finfo)
+					else:
+						peak, pixer[im] = proj_ali_incore_local_psi(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],apsi[N_step],finfo)
 
 			if myid == main_node:
 				print_msg("Time of alignment = %d\n"%(time()-start_time))
