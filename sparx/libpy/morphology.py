@@ -1371,15 +1371,17 @@ def get_neighborhoods(refseg, ps, newparams,dz, dphi, pixel_size, ptclcoords,fil
                         print "abs(delta_p) >= delta_phi"
                         print delta_p, delta_phi
                         sys.exit()
-                
+                        
+                dsgn = 1.0      
+                if (pref - ip) == D_p:
+                        dsgn=-1.0
+                        
                 if iseg in aref.keys():
                 
                         if abs(2*delta_phi) > D_p:
                                 print "this should not be"
                                 sys.exit()
-                        dsgn = 1.0      
-                        if (pref - ip) == D_p:
-                                dsgn=-1.0
+                       
                         a1ref = aref[iseg][0]
                         a2ref = aref[iseg][1]
                         a1 = dsgn*delta_p - delta_phi + a2ref
@@ -1396,10 +1398,6 @@ def get_neighborhoods(refseg, ps, newparams,dz, dphi, pixel_size, ptclcoords,fil
                 
                         a1ref = aref_e0[iseg][0]
                         a2ref = aref_e0[iseg][1]
-                        
-                        dsgn = 1.0      
-                        if (pref - ip) == D_p:
-                                dsgn=-1.0
                         
                         a1 = dsgn*delta_p - delta_phi + a2ref
                         a2 = dsgn*delta_p + delta_phi + a1ref
