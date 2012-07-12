@@ -1338,8 +1338,8 @@ def get_neighborhoods(refseg, ps, newparams,dz, dphi, pixel_size, ptclcoords,fil
                         dsgn2 = 1.0      
                         if (pref- ip) == D_p:
                                 dsgn2=-1.0
-                        a1e0 = dsgn*delta_pp - delta_phi
-                        a2e0 = dsgn*delta_pp + delta_phi
+                        a1e0 = dsgn2*delta_pp - delta_phi
+                        a2e0 = dsgn2*delta_pp + delta_phi
                         if a1e0 > a1:
                                 a1 = a1e0
                         if a2e0 < a2:
