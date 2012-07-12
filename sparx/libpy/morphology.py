@@ -2065,14 +2065,12 @@ def helical_consistency(parmfile, miclistfile, ptclcoordsfile, THR_CONS_PHI=1.5,
         newIDs.sort()
         nnima=len(newIDs)
         newparams2=[[] for jj in xrange(nnima)]
-        testparams=[[] for jj in xrange(nnima)]
         nbrphi2 = [[] for jj in xrange(nnima)]
         nbry2 = [[] for jj in xrange(nnima)]
         for ii in xrange(nnima):
                 iseg = newIDs[ii]
                 newparams2[ii] = [newparams[iseg][0],newparams[iseg][1],newparams[iseg][2],newparams[iseg][3],newparams[iseg][4]]
-                testparams[ii] = [newparams[iseg][0],newparams[iseg][1],newparams[iseg][2],newparams[iseg][3],newparams[iseg][4]]
-
+                
                 nbrphi2[ii] = [nbrphi[iseg][0], nbrphi[iseg][1]]
                 nbry2[ii] = [nbry[iseg][0], nbry[iseg][1]]
 
@@ -2081,7 +2079,7 @@ def helical_consistency(parmfile, miclistfile, ptclcoordsfile, THR_CONS_PHI=1.5,
         write_text_row(nbrphi2,fileNbrPhi)  
         write_text_row(nbry2,fileNbrY)  
 
-def helical_consistency_predict(parmfile, miclistfile, ptclcoordsfile, dphi = -166.5,dz = 27.6, pixel_size = 1.84, fileNewIDs='newIDs.txt', fileNewParams='pred_params.txt'):        
+def helical_consistency_predict(parmfile, miclistfile, ptclcoordsfile,delta_phi = 3.5, delta_y = 1.5, dphi = -166.5,dz = 27.6, pixel_size = 1.84, fileNewIDs='newIDs.txt', fileNewParams='pred_params.txt', fileNbrPhi='nbrphi_pred.txt', fileNbrY='nbry_pred.txt'):        
         
         from utilities import read_text_row, write_text_file, write_text_row
         
@@ -2096,6 +2094,8 @@ def helical_consistency_predict(parmfile, miclistfile, ptclcoordsfile, dphi = -1
         # theta = 90
         nima = len(params)
         newparams=[[] for iiiii in xrange(nima)]
+        nbrphi=[[] for iiiii in xrange(nima)]
+        nbry=[[] for iiiii in xrange(nima)]
         N = len(miclist)
         newIDs = []
         
@@ -2168,17 +2168,27 @@ def helical_consistency_predict(parmfile, miclistfile, ptclcoordsfile, dphi = -1
         
                 for ii in xrange(len(mic)):
                         newparams[mic[ii]] = [(predphi[ii])%360., reftheta, refpsi,params[mic[ii]][3], predy[ii]]
-        
+                
+                
+                refseg = thetapsi1[ref]
+                get_neighborhoods(refseg,mic, newparams, dz, dphi, pixel_size,ptclcoords,filtheta,sgnfil,delta_phi,nbrphi)
+                get_neighborhoods_y(refseg,mic, newparams, dz, pixel_size,ptclcoords,filtheta,ysgn,delta_y,nbry)   
+
         newIDs.sort()
         nnima=len(newIDs)
         newparams2=[[] for jj in xrange(nnima)]
+        nbrphi2 = [[] for jj in xrange(nnima)]
+        nbry2 = [[] for jj in xrange(nnima)]
         for ii in xrange(nnima):
                 iseg = newIDs[ii]
                 newparams2[ii] = [newparams[iseg][0],newparams[iseg][1],newparams[iseg][2],newparams[iseg][3],newparams[iseg][4]]
-
+                nbrphi2[ii] = [nbrphi[iseg][0], nbrphi[iseg][1]]
+                nbry2[ii] = [nbry[iseg][0], nbry[iseg][1]]
+                
         write_text_file(newIDs,fileNewIDs)  
         write_text_row(newparams2,fileNewParams)  # consistency enforced on small_stack_parameters (from elmar)
-
+        write_text_row(nbrphi2,fileNbrPhi)  
+        write_text_row(nbry2,fileNbrY)  
 def helical_consistency_test(parmfile, miclistfile, ptclcoordsfile,THR_CONS_PHI=1.5,THR_CONS_Y=1.0, dphi = -166.5,dz = 27.6, pixel_size = 1.84):        
         
         from utilities import read_text_row, write_text_file, write_text_row
