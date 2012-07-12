@@ -72,8 +72,7 @@ improved with time."""
     
     print 'This could take a few minutes. Please be patient.'
     if options.big:
-        SIZE = 100
-        NIT = 320
+        SIZE = 256
         
     print 'Initializing'
     
@@ -319,7 +318,7 @@ so in most cases it is not dealt with.'
     
     ti = t2 - t1
     
-    if not options.big and not options.slow and not options.refine:
+    if SIZE==96:
         print 'For comparison (note these numbers are PER CORE. ie - for a quad core machine -> x4)'
         print 'An AMD Athlon (32 bit) 900Mhz SF --------------------------------  360'
         print 'An AMD Athlon XP 2400+ (32 bit) 2.0Ghz SF ----------------------- 1010'
@@ -333,17 +332,23 @@ so in most cases it is not dealt with.'
         print 'An AMD Opteron 280 2.4Ghz SF ------------------------------------ 2130'
         print 'An Intel Core2 6700 2.66Ghz SF ---------------------------------- 2600'
         print 'An Intel Core2 Duo T9400 2.53Ghz SF ----------------------------- 2730'
-        print 'An Intel Xeon E5430 2.66Ghz SF ---------------------------------- 2800'
-        print 'An Intel Xeon X5355 2.66Ghz SF ---------------------------------- 2920'
         print 'An Intel Xeon X5550 2.66Ghz SF ---------------------------------- 3060'
         print 'An Intel Xeon X5450 3.0Ghz SF ----------------------------------- 3220'
-        print 'An Intel Xeon X5460 3.16Ghz SF ---------------------------------- 3320'
-        print 'An Intel Xeon E5645 2.4Ghz SF ----------------------------------- 3623'
-        print 'An Intel Xeon X5675 3.07Ghz SF ---------------------------------- 4070'
-        print 'An Intel Xeon E5-2670 2.6Ghz SF --------------------------------- 4817'
-        print 'An Intel Core i5-2500 3.30GHz (depends on turbo) ---------------- 5560 - 6345'
-        print '\nYour machines speed factor = %1.1f\n' % (25000.0 / ti)
-        print '\nThis repesents %1.2f RTFAligns/sec\n' % (3.0 * (NTT - 5.0) / ti)
+        print 'An Intel Xeon E5645 2.4Ghz SF ----------------------------------- 3600'
+        print 'An Intel Xeon X5675 3.07Ghz SF ---------------------------------- 4070 (6 cores -> 24,420)'
+        print 'An Intel Core i5-2500 3.30GHz (depends on turbo) ---------------- 5560 - 6345 (4 cores -> 22,240 - 25,380)'
+        print 'An Intel Xeon E5-2670 2.6Ghz SF --------------------------------- 4800 (8 cores -> 38,400)'
+		print '\nConsider using --big for a more representative value with modern high resolution maps'
 
+	if size==256:
+        print 'For comparison (note these numbers are PER CORE. ie - for a quad core machine -> x4)'
+        print 'An Intel Core i7-3820 3.6GHz (depends on turbo) ----------------- 610 - 650 (4 cores -> 2440 - 2600)'
+        print 'An Intel Core i5-2500 3.30GHz (depends on turbo) ---------------- 720 - 820 (4 cores -> 2880 - 3280)'
+        print 'An Intel Xeon X5675 3.07Ghz SF ---------------------------------- 570       (6 cores -> 3420)'
+        print 'An Intel Xeon E5-2670 2.6Ghz SF --------------------------------- 600       (8 cores -> 4800)'
+ 
+	print '\nYour machines speed factor = %1.1f\n' % (25000.0 / ti)
+    print '\nThis repesents %1.2f RTFAligns/sec\n' % (3.0 * (NTT - 5.0) / ti)
+       
 if __name__ == "__main__":
     main()
