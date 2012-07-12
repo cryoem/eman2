@@ -1292,6 +1292,10 @@ def get_neighborhoods(refseg, ps, newparams,dz, dphi, pixel_size, ptclcoords,fil
         aref ={}
         aref_g0 ={}
         aref_e0 ={}
+        
+        D={}
+        delta_p={}
+        
         for iseg in ps:
                 if iseg == refseg:
                         continue
@@ -1300,20 +1304,20 @@ def get_neighborhoods(refseg, ps, newparams,dz, dphi, pixel_size, ptclcoords,fil
                 
                 D_p = abs(ip - pref) # absolute value between ref and iseg
                 iphi = get_iphi(iseg,refseg,pref, dz, dphi, pixel_size,ptclcoords,filtheta,sgnfil)
-                delta_p, D = get_delta_p(D_p, iphi, pref)
+                idelta_p, iD = get_delta_p(D_p, iphi, pref)
+                D[iseg] = iD
+                delta_p[iseg]= idelta_p
                 
-                if abs(delta_p) >= delta_phi:
+                if abs(delta_p[iseg]) >= delta_phi:
                         print "1 enforced level of consistency is too not strict enough cmpared to desired level of consistency"
-                        print ip
-                        print get_iphi(iseg,refseg,pref, dz, dphi, pixel_size,ptclcoords,sgnfil)
-                        print pref, D, D_p
+                        
                         sys.exit()
                 
                 dsgn = 1.0      
                 if (ip - pref) == D_p:
                         dsgn=-1.0
-                a1 = dsgn*delta_p - delta_phi
-                a2 = dsgn*delta_p + delta_phi
+                a1 = dsgn*delta_p[iseg] - delta_phi
+                a2 = dsgn*delta_p[iseg] + delta_phi
                 
                 if a1 >=0 or a2 <= 0:
                         print "something wrong with a1 and a2, phi"
@@ -1331,7 +1335,7 @@ def get_neighborhoods(refseg, ps, newparams,dz, dphi, pixel_size, ptclcoords,fil
                         if abs(aref_g0[iseg][1]) > D_p:
                                 aref_g0[iseg][1] = D_p/2.0
                         
-                delta_pp = D + D_p
+                delta_pp = D[iseg] + D_p
                 
                 if abs(delta_pp) <= delta_phi:
                        
@@ -1364,12 +1368,9 @@ def get_neighborhoods(refseg, ps, newparams,dz, dphi, pixel_size, ptclcoords,fil
                 ip = newparams[iseg][0]
                
                 D_p = abs(ip - pref) # absolute value between ref and iseg
-                iphi = get_iphi(iseg,refseg,pref, dz, dphi, pixel_size,ptclcoords,filtheta,sgnfil)
-                delta_p, D = get_delta_p(D_p, iphi, pref)
                 
-                if abs(delta_p) >= delta_phi:
+                if abs(delta_p[iseg]) >= delta_phi:
                         print "abs(delta_p) >= delta_phi"
-                        print delta_p, delta_phi
                         sys.exit()
                         
                 dsgn = 1.0      
@@ -1378,14 +1379,10 @@ def get_neighborhoods(refseg, ps, newparams,dz, dphi, pixel_size, ptclcoords,fil
                         
                 if iseg in aref.keys():
                 
-                        if abs(2*delta_phi) > D_p:
-                                print "this should not be"
-                                sys.exit()
-                       
                         a1ref = aref[iseg][0]
                         a2ref = aref[iseg][1]
-                        a1 = dsgn*delta_p - delta_phi + a2ref
-                        a2 = dsgn*delta_p + delta_phi + a1ref
+                        a1 = dsgn*delta_p[iseg] - delta_phi + a2ref
+                        a2 = dsgn*delta_p[iseg] + delta_phi + a1ref
                 
                         if a1 > 0 or a2 < 0:
                                 print "1 something wrong with a1, a2"
@@ -1399,20 +1396,16 @@ def get_neighborhoods(refseg, ps, newparams,dz, dphi, pixel_size, ptclcoords,fil
                         a1ref = aref_e0[iseg][0]
                         a2ref = aref_e0[iseg][1]
                         
-                        a1 = dsgn*delta_p - delta_phi + a2ref
-                        a2 = dsgn*delta_p + delta_phi + a1ref
+                        a1 = dsgn*delta_p[iseg] - delta_phi + a2ref
+                        a2 = dsgn*delta_p[iseg] + delta_phi + a1ref
                         
                         if a1 > 0 or a2 < 0:
                                 print "1 something wrong with a1, a2"
                                 sys.exit()
                         
                         aseg_e0[iseg] = [a1, a2]    
-                        delta_pp = D + D_p
+                        delta_pp = D[iseg] + D_p
                         
-                        if abs(delta_pp) > delta_phi:
-                                print "this should not happen"
-                                sys.exit()
-                
                         dsgn2 = 1.0      
                         if (ip-pref) == D_p:
                                 dsgn2=-1.0 
@@ -1424,7 +1417,6 @@ def get_neighborhoods(refseg, ps, newparams,dz, dphi, pixel_size, ptclcoords,fil
                                 print "2 something wrong with a1, a2"
                                 sys.exit()
                         
-                        
                         if a1e0 > aseg_e0[iseg][0] :
                                 aseg_e0[iseg][0] = a1e0
                         if a2e0 < aseg_e0[iseg][1]:
@@ -1433,8 +1425,8 @@ def get_neighborhoods(refseg, ps, newparams,dz, dphi, pixel_size, ptclcoords,fil
                 if iseg in aref_g0.keys():
                         a1ref = aref_g0[iseg][0]
                         a2ref = aref_g0[iseg][1]
-                        a1 = dsgn*delta_p - delta_phi + a2ref
-                        a2 = dsgn*delta_p + delta_phi + a1ref
+                        a1 = dsgn*delta_p[iseg] - delta_phi + a2ref
+                        a2 = dsgn*delta_p[iseg] + delta_phi + a1ref
                 
                         if a1 > 0 or a2 < 0:
                                 print "1 something wrong with a1, a2"
