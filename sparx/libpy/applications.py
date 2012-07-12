@@ -12667,6 +12667,13 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	couldnt_find_stable = 0
 	#    (b)  if number of groups to process is less than three
 	K = ndata/img_per_grp
+	
+	if K < number_of_proc:
+		if myid == main_node:
+			print "WARNING: Number of groups is less than number of MPI processes."
+			print "         It means that some of allocated processors (cores) will not be used during large part of calculations."
+			print "         This is only efficiency warning."
+	
 	while Iter <= max_round and couldnt_find_stable < 3 and K > 3:
 		if myid == main_node: 
 			print "################################################################################"
@@ -13160,6 +13167,14 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		print "****************************************************************************************************"            
 
 
+# stack - list of images (filename also accepted)
+# refim - list of reference images (filename also accepted)
+# maskfile - image with mask (filename also accepted)
+# CTF - not supported
+# snr - not supported
+# stability - when True stability checking is performed
+# stab_ali - used only when stability=True, 
+# iter_reali - used only when stability=True, for which iteration (index of iteration % iter_reali == 0) stability checking is performed
 def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1, xrng=0, yrng=0, step=1, 
             maxit=30, isac_iter=10, CTF=False, snr=1.0, rand_seed=-1, color=0, comm=-1, 
 	    stability=False, stab_ali=5, iter_reali=1, thld_err=1.732, FL=0.1, FH=0.3, FF=0.2, dst=90.0):
