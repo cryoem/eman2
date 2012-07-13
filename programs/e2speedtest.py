@@ -338,7 +338,7 @@ so in most cases it is not dealt with.'
         print 'An Intel Xeon X5675 3.07Ghz SF ---------------------------------- 4070 (6 cores -> 24,420)'
         print 'An Intel Core i5-2500 3.30GHz (depends on turbo) ---------------- 5560 - 6345 (4 cores -> 22,240 - 25,380)'
         print 'An Intel Xeon E5-2670 2.6Ghz SF --------------------------------- 4800 (8 cores -> 38,400)'
-		print '\nConsider using --big for a more representative value with modern high resolution maps'
+        print '\nConsider using --big for a more representative value with modern high resolution maps'
 
 	if size==256:
         print 'For comparison (note these numbers are PER CORE. ie - for a quad core machine -> x4)'
