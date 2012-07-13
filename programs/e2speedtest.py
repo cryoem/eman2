@@ -42,7 +42,7 @@ from EMAN2 import *
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options]
-	
+
 This program runs a set of speed tests on the current machine
 
 This program runs a set of speed tests in the current computer. It should
@@ -53,9 +53,9 @@ in that it tests a variety of actual operations performed by a
 refinement procedure. Don't compare values given by speed test in
 different versions of EMAN, since the underlying routines may be
 improved with time."""
-	
+
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	
+
 	parser.add_argument("--slow",action="store_true",help="rtf_slow alignment",default=False)
 	parser.add_argument("--best",action="store_true",help="rtf_best alignment",default=False)
 	parser.add_argument("--low",action="store_true",help="low level test",default=False)
@@ -64,35 +64,35 @@ improved with time."""
 	parser.add_argument("--size",type=int,help="Size of particles, 96 default for comparisons",default=96)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	
+
 	(options, args) = parser.parse_args()
-	
+
 	SIZE = options.size
 	NTT = 500
-	
+
 	print 'This could take a few minutes. Please be patient.'
 	if options.big:
 		SIZE = 256
-		
+
 	print 'Initializing'
-	
+
 #	 pat = EMData();
 #	 pat.set_size(SIZE, SIZE, 1)
 #	 for i in xrange(-SIZE/2, SIZE/2):
 #		 for j in xrange(-SIZE/2, SIZE/2):
-#			 value = -3.0 * math.exp(-Util.square(math.fabs(i)+math.fabs(j)) / 10.0) + math.exp(-Util.square( (math.fabs(i)+math.fabs(j))/2.0 )/100.0) * 2.0 if abs(i)<2 else 1.0  
+#			 value = -3.0 * math.exp(-Util.square(math.fabs(i)+math.fabs(j)) / 10.0) + math.exp(-Util.square( (math.fabs(i)+math.fabs(j))/2.0 )/100.0) * 2.0 if abs(i)<2 else 1.0
 #			 pat.set_value_at(i+SIZE/2, j+SIZE/2, value)
 #	 pat.update()
 	pat=test_image(size=(SIZE,SIZE))
 	pat.process_inplace('normalize.circlemean')
 	pat.process_inplace("mask.sharp", {"outer_radius":pat.get_xsize()/2.0})
-	
+
 	data = [None for i in xrange(NTT)]
-	
+
 	for i in xrange(NTT):
 #		 data[i] = test_image
 #	pat.copy()
-		
+
 #		 for j in xrange(SIZE):
 #			 for k in xrange(SIZE):
 #				 data[i].set_value_at_fast(j, k, Util.get_gauss_rand(0, 1.0))
@@ -101,10 +101,10 @@ improved with time."""
 		data[i].add(test_image(1,size=(SIZE,SIZE)))
 		data[i].process_inplace('normalize.circlemean')
 		data[i].process_inplace('mask.sharp', {'outer_radius':data[i].get_xsize()/2})
-		
+
 #		 if i < 5 :
 #			 data[i].write_image('speed.hed', i, EMUtil.ImageType.IMAGE_IMAGIC)
-			
+
 	if options.low:
 		print 'Low level tests starting. Please note that compiling with optimization may \
 invalidate certain tests. Also note that overhead is difficult to compensate for, \
@@ -117,7 +117,7 @@ so in most cases it is not dealt with.'
 		ti = t2-t1
 		print 'Baseline 1: %d, %d x %d dot()s in %1.1f sec	%1.1f/sec-> ~%1.2f mflops' % \
 			( 500 * NTT / 2, SIZE, SIZE, ti, 500 * NTT / (2.0 * ti), SIZE * SIZE * 4 * 500.0 * NTT / (1000000.0 * ti))
-		
+
 		t1 = time.clock()
 		for fj in xrange(500):
 			for i in xrange(NTT/2):
@@ -126,7 +126,7 @@ so in most cases it is not dealt with.'
 		ti = t2-t1
 		print 'Baseline 1a: %d, %d x %d optimized cached dot()s in %1.1f s %1.1f/s-> ~%1.2f mflops' % \
 			(500 * NTT / 2, SIZE, SIZE, ti, 500 * NTT / (2.0 * ti), SIZE * SIZE * 4 * 500.0 * NTT / (1000000.0 * ti))
-			
+
 		t1 = time.clock()
 		for j in xrange(500):
 			for i in xrange(NTT/2):
@@ -137,7 +137,7 @@ so in most cases it is not dealt with.'
 		ti = t2-t1
 		print 'Baseline 2: %d, %d x %d lcmp()s in %1.1f sec	  %1.1f/sec' % \
 			(500 * NTT / 2, SIZE, SIZE, ti, 500 * NTT / (2.0 * ti))
-			
+
 		t1 = time.clock()
 		for j in xrange(100):
 			for i in xrange(NTT/2):
@@ -146,7 +146,7 @@ so in most cases it is not dealt with.'
 		ti = t2-t1
 		print 'Baseline 3: %d, %d x %d pcmp()s in %1.1f sec	 %1.1f/sec' % \
 			(100 * NTT / 2, SIZE, SIZE, ti, 100 * NTT / (2.0 * ti))
-			
+
 		t1 = time.clock()
 		for j in xrange(100):
 			for i in xrange(NTT/2):
@@ -155,7 +155,7 @@ so in most cases it is not dealt with.'
 		ti = t2-t1
 		print 'Baseline 4: %d, %d x %d fscmp()s in %1.1f sec  %1.1f/sec' % \
 			(100 * NTT / 2, SIZE, SIZE, ti, 100 * NTT / (2.0 * ti))
-			
+
 		t1 = time.clock()
 		for j in xrange(500):
 			for i in xrange(NTT/2):
@@ -164,7 +164,7 @@ so in most cases it is not dealt with.'
 		ti = t2-t1
 		print 'Baseline 5a: %d, %d x %d fabs in %1.1f sec -> ~%1.2f mfabs/sec' %  \
 			(500 * NTT / 2, SIZE, SIZE, ti, SIZE * SIZE * 500.0 * NTT / (1000000.0 * ti))
-			
+
 		t1 = time.clock()
 		for j in xrange(100):
 			for i in xrange(NTT/2):
@@ -173,7 +173,7 @@ so in most cases it is not dealt with.'
 		ti = t2-t1
 		print 'Baseline 5b: %d, %d x %d sqrts in %1.1f sec -> ~%1.2f msqrt/sec' % \
 			(100 * NTT / 2, SIZE, SIZE, ti, SIZE * SIZE * 100.0 * NTT / (1000000.0 * ti))
-		
+
 		t1 = time.clock()
 		dat = data[0].get_2dview()
 		for j in xrange(100):
@@ -186,7 +186,7 @@ so in most cases it is not dealt with.'
 		print 'Baseline 5c: %d, %d x %d sqrts in %1.1f sec -> ~%1.2f msqrt/sec (cached)' % \
 			(100 * NTT / 2, SIZE, SIZE, ti, SIZE * SIZE * 100.0 * NTT / (1000000.0 * ti))
 		data[0].update()
-		
+
 		d = data[0].get_2dview()
 		t1 = time.clock()
 		for j in xrange(100):
@@ -199,7 +199,7 @@ so in most cases it is not dealt with.'
 		print 'Baseline 5d: %d, %d x %d cos in %1.1f sec -> ~%1.2f mcos/sec (cached)' % \
 			(100 * NTT / 2, SIZE, SIZE, ti, SIZE * SIZE * 100.0 * NTT / (1000000.0 * ti))
 		data[0].update()
-		
+
 		d = data[0].get_2dview()
 		t1 = time.clock()
 		for j in xrange(100):
@@ -212,7 +212,7 @@ so in most cases it is not dealt with.'
 		print 'Baseline 5e: %d, %d x %d hypot in %1.1f sec -> ~%1.2f mhypot/sec (cached)' % \
 			   (100 * NTT / 2, SIZE, SIZE, ti, SIZE * SIZE * 100.0 * NTT / (1000000.0 * ti))
 		data[0].update()
-		
+
 		d = data[0].get_2dview()
 		t1 = time.clock()
 		for j in xrange(1000):
@@ -226,7 +226,7 @@ so in most cases it is not dealt with.'
 		print 'Baseline 5f: %d, %d x %d mult in %1.1f sec -> ~%1.2f mmult/sec (cached)' % \
 			   (100 * NTT / 2, SIZE, SIZE, ti, SIZE * SIZE * 1000.0 * NTT / (1000000.0 * ti))
 		data[0].update()
-		
+
 		d = data[0].get_2dview()
 		t1 = time.clock()
 		for j in xrange(500):
@@ -240,7 +240,7 @@ so in most cases it is not dealt with.'
 		print 'Baseline 5g: %d, %d x %d div in %1.1f sec -> ~%1.2f mdiv/sec (cached)' % \
 			   (100 * NTT / 2, SIZE, SIZE, ti, SIZE * SIZE * 500.0 * NTT / (1000000.0 * ti))
 		data[0].update()
-		
+
 		d = data[0].get_2dview()
 		t1 = time.clock()
 		for j in xrange(500):
@@ -254,7 +254,7 @@ so in most cases it is not dealt with.'
 		print 'Baseline 5h: %d, %d x %d fabs in %1.1f sec -> ~%1.2f fabs/sec (cached)' % \
 			   (100 * NTT / 2, SIZE, SIZE, ti, SIZE * SIZE * 500.0 * NTT / (1000000.0 * ti))
 		data[0].update()
-		
+
 		d = data[0].get_2dview()
 		t1 = time.clock()
 		for j in xrange(500):
@@ -268,7 +268,7 @@ so in most cases it is not dealt with.'
 		print 'Baseline 5i: %d, %d x %d ri2ap in %1.1f sec -> ~%1.2f ri2ap/sec (cached)' % \
 			   (100 * NTT / 2, SIZE, SIZE, ti, SIZE * SIZE * 500.0 * NTT / (1000000.0 * ti))
 		data[0].update()
-		
+
 		t1 = time.clock()
 		for i in xrange(NTT*100):
 			cp = data[i%NTT].copy()
@@ -278,7 +278,7 @@ so in most cases it is not dealt with.'
 		t2 = time.clock()
 		ti = t2-t1
 		print 'Baseline 6:	%1.1f sec %f meanshrink x 2/sec' % (ti, NTT * 100.0 / ti)
-		
+
 		dla = data[0].copy()
 		t1 = time.clock()
 		for i in xrange(NTT*1000):
@@ -287,7 +287,7 @@ so in most cases it is not dealt with.'
 		t2 = time.clock()
 		ti = t2-t1
 		print 'Baseline 7:	%1.1f sec %f ffts/sec' % (ti, NTT * 1000 / ti)
-		
+
 		dla = data[0].copy()
 		t1 = time.clock()
 		for i in xrange(NTT*1000):
@@ -295,9 +295,9 @@ so in most cases it is not dealt with.'
 		t2 = time.clock()
 		ti = t2-t1
 		print 'Baseline 8:	%1.1f sec	%f translates/sec' % (ti, NTT * 1000 / ti)
-		
+
 		return
-		
+
 	t1 = time.clock()
 	for i in xrange(3):
 		for j in xrange(5, NTT):
@@ -309,15 +309,15 @@ so in most cases it is not dealt with.'
 				tmp = data[i].align('rotate_translate_flip', data[j], {})
 			else:
 				tmp = data[i].align('rotate_translate_flip', data[j], {})
-			
+
 			if j%10 == 0:
 				sys.stdout.write('.')
 				sys.stdout.flush()
 		print
 	t2 = time.clock()
-	
+
 	ti = t2 - t1
-	
+
 	if SIZE==96:
 		print 'For comparison (note these numbers are PER CORE. ie - for a quad core machine -> x4)'
 		print 'An AMD Athlon (32 bit) 900Mhz SF --------------------------------  360'
@@ -340,15 +340,15 @@ so in most cases it is not dealt with.'
 		print 'An Intel Xeon E5-2670 2.6Ghz SF --------------------------------- 4800 (8 cores -> 38,400)'
 		print '\nConsider using --big for a more representative value with modern high resolution maps'
 
-	if size==256:
+	if SIZE==256:
 		print 'For comparison (note these numbers are PER CORE. ie - for a quad core machine -> x4)'
 		print 'An Intel Core i7-3820 3.6GHz (depends on turbo) ----------------- 610 - 650 (4 cores -> 2440 - 2600)'
 		print 'An Intel Core i5-2500 3.30GHz (depends on turbo) ---------------- 720 - 820 (4 cores -> 2880 - 3280)'
 		print 'An Intel Xeon X5675 3.07Ghz SF ---------------------------------- 570	   (6 cores -> 3420)'
 		print 'An Intel Xeon E5-2670 2.6Ghz SF --------------------------------- 600	   (8 cores -> 4800)'
- 
+
 	print '\nYour machines speed factor = %1.1f\n' % (25000.0 / ti)
 	print '\nThis repesents %1.2f RTFAligns/sec\n' % (3.0 * (NTT - 5.0) / ti)
-	   
+
 if __name__ == "__main__":
 	main()
