@@ -149,7 +149,7 @@ class PMIntEntryWidget(PMBaseWidget):
 			self.setErrorMessage(None)
 			return
 		try:
-			if len(self.intbox.text().strip())==0 : self.value=0
+			if len(str(self.intbox.text()).strip())==0 : self.value=0
 			else: self.value = int(self.intbox.text())
 			self.setErrorMessage(None)
 			self._confirm_bounds()

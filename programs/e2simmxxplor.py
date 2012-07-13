@@ -270,6 +270,10 @@ class EMSimmxExplorer(EM3DSymModel):
 
 					amp=ctf.compute_1d(particle["ny"],ds,Ctf.CtfType.CTF_AMP)
 					self.frc_display.set_data((ses,amp),"CTF",color=2)
+					
+					awfrcm=[frcm[nf+i]*snr[i] for i in range(len(snr))]
+					self.frc_display.set_data((ses,awfrcm),"frcm*SNR",color=3)
+					
 				except : ctf=None
 
 		else:
