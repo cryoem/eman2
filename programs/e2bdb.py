@@ -222,8 +222,8 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 				except:
 					del source['data_source']
 					del source['data_n']
-					del source['data_path']
-				
+					#del source['data_path']
+
 				DB.set_header(ID, source)
 			DB.close()
 			continue
