@@ -418,11 +418,11 @@ class GUIEvalImage(QtGui.QWidget):
 #			print ctf_cmp((self.sdefocus.value,self.sbfactor.value,rto),(ctf,bgsub,int(.04/ds)+1,min(int(0.15/ds),len(s)-1),ds,self.sdefocus.value))
 			
 			self.wplot.set_data((s,fit),"fit",color=1)
-			self.wplot.setAxisParms("s (1/"+ u"\u212B" + ")","Intensity (a.u)")
+			self.wplot.setAxisParms("s (1/"+ "$\AA$" +")","Intensity (a.u)")
 		elif self.plotmode==1:
 			self.wplot.set_data((s[1:],self.fft1d[1:]),"fg",quiet=True,color=1)
 			self.wplot.set_data((s[1:],bg1d[1:]),"bg",color=0)
-			self.wplot.setAxisParms("s (1/"+ u"\u212B" +")","Intensity (a.u)")
+			self.wplot.setAxisParms("s (1/"+ "$\AA$" +")","Intensity (a.u)")
 		elif self.plotmode==2:
 			if self.fft1dang==None: self.recalc_real()
 			bgsub=self.fft1d-bg1d
@@ -450,7 +450,7 @@ class GUIEvalImage(QtGui.QWidget):
 			fit/=rto
 			
 			self.wplot.set_data((s,fit),"fit",color=1)
-			self.wplot.setAxisParms("s (1/"+ u"\u212B" + ")","Intensity (a.u)")
+			self.wplot.setAxisParms("s (1/"+ "$\AA$" + ")","Intensity (a.u)")
 
 		elif self.plotmode==3:
 			if self.fft1dang==None: self.recalc_real()
@@ -480,7 +480,7 @@ class GUIEvalImage(QtGui.QWidget):
 			#fit/=rto
 			
 			#self.wplot.set_data((s,fit),"fit",color=1)
-			#self.wplot.setAxisParms("s (1/"+ u"\u212B" + ")","Intensity (a.u)")
+			#self.wplot.setAxisParms("s (1/"+ "$\AA$" + ")","Intensity (a.u)")
 		if self.plotmode==4: 
 			if min(bg1d)<=0.0 : bg1d+=min(bg1d)+max(bg1d)/10000.0
 			ssnr=(self.fft1d-bg1d)/bg1d
@@ -502,7 +502,7 @@ class GUIEvalImage(QtGui.QWidget):
 ##			print ctf_cmp((self.sdefocus.value,self.sbfactor.value,rto),(ctf,bgsub,int(.04/ds)+1,min(int(0.15/ds),len(s)-1),ds,self.sdefocus.value))
 			
 			#self.wplot.set_data((s,fit),"fit",color=1)
-			self.wplot.setAxisParms("s (1/"+ u"\u212B" + ")","Est. SSNR")
+			self.wplot.setAxisParms("s (1/"+ "$\AA$" + ")","Est. SSNR")
 
 
 	def timeOut(self):
