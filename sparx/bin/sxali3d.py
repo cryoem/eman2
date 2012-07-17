@@ -48,7 +48,7 @@ def main():
 	parser.add_option("--rs",       type= "int",   default= 1,                  help="step between rings in rotational correlation >0  (set to 1)" ) 
 	parser.add_option("--xr",       type="string", default= "4 2 1 1 1",        help="range for translation search in x direction, search is +/xr")
 	parser.add_option("--yr",       type="string", default= "-1",               help="range for translation search in y direction, search is +/yr (default = same as xr)")
-	parser.add_option("--ts", 	type="string", default= "1 1 1 0.5 0.25",   help="step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional")
+	parser.add_option("--ts",       type="string", default= "1 1 1 0.5 0.25",   help="step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional")
 	parser.add_option("--delta",    type="string", default= "10 6 4 3 2",       help="angular step of reference projections")
 	parser.add_option("--an",       type="string", default= "-1",               help="angular neighborhood for local searches (phi and theta)")
 	parser.add_option("--apsi",     type="string", default= "-1",               help="angular neighborhood for local searches (psi)")
@@ -67,7 +67,7 @@ def main():
 	parser.add_option("--npad",     type="int",    default= 4,                  help="padding size for 3D reconstruction")
 	parser.add_option("--debug",    action="store_true", default=False,         help="debug")
 	parser.add_option("--n",        action="store_true", default=False,         help="new")
-	parser.add_option("--chunk",      type="float",  default= 0.2,             help="percentage of data used for alignment")
+	parser.add_option("--chunk",    type="float",  default= 0.2,                help="percentage of data used for alignment")
 	parser.add_option("--rantest",  action="store_true", default=False,         help="rantest")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
