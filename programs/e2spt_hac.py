@@ -149,12 +149,12 @@ def main():
 		
 	#if options.path and options.path[:4].lower()!="bdb:": 
 	#	options.path="bdb:"+options.path
-	
-	files=os.listdir(os.getcwd())
 
 	if not options.path: 
 		#options.path="bdb:"+numbered_path("sptavsa",True)
 		options.path = "sptavsa_01"
+
+	files=os.listdir(os.getcwd())
 	
 	while options.path in files:
 		if '_' not in options.path:
