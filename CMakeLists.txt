@@ -63,6 +63,7 @@ OPTION(ENABLE_DEBUG "enable debug support" OFF)
 OPTION(ENABLE_PROFILE "enable symbol generation without debug support" OFF)
 OPTION(ENABLE_ATHLON "enable ATHLON specific support" OFF)
 OPTION(ENABLE_X86_64 "enable x86_64 specific optimizations" OFF)
+OPTION(ENABLE_WINDOWS_VC "enable visual c++ specific optimization" OFF)
 
 OPTION(ENABLE_LEOPARD "enable OSX 10.5 support" OFF)
 
@@ -96,6 +97,8 @@ ELSEIF (ENABLE_ATHLON)
     SET (OPT_FLAGS "-O3 -ansi -march=athlon-xp -mfpmath=sse -msse -funroll-loops -pipe")
 ELSEIF (ENABLE_X86_64)
     SET (OPT_FLAGS "-O5 -ansi -march=k8 -mfpmath=sse -m64 -ffast-math -pipe")
+ELSEIF (ENABLE_WINDOWS_VC)
+	SET (OPT_FLAGS "/Ox")
 ELSE()
     SET (OPT_FLAGS "-O5 -ansi -ffast-math")		# This is the default
 ENDIF()
