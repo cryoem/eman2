@@ -1611,15 +1611,17 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum, boo
 
 	int height = y1-y0;
 	int width = (nx+2-(nx%2));
-	if (width != nx_fft || height != ny_fft ) {
-		f1.set_size(width,height);
-		f2.set_size(width,height);
+	int wpad = ((width+3)/4)*4;			// This is for 128 bit alignment of rows to prevent SSE crashes
+	if (wpad != nx_fft || height != ny_fft ) {	// Seems meaningless, but due to static definitions above. f1,f2 are cached to prevent multiple reallocations
+		f1.set_size(wpad,height);
+		f2.set_size(wpad,height);
 		rslt.set_size(nx,height);
-		nx_fft = width;
+		nx_fft = wpad;
 		ny_fft = height;
 	}
 
 #ifdef EMAN2_USING_CUDA
+	// FIXME : Not tested with new wpad change
 	if (EMData::usecuda == 1 && cudarwdata && with->cudarwdata) {
 		//cout << "calc_ccfx CUDA" << endl;
 		if(!f1.cudarwdata) f1.rw_alloc();
@@ -1642,19 +1644,21 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum, boo
 	}
 #endif
 
+//	printf("%d %d %d\n",(int)get_attr("nx"),(int)f2.get_attr("nx"),width);
+
 	float *d1 = get_data();
 	float *d2 = with->get_data();
 	float *f1d = f1.get_data();
 	float *f2d = f2.get_data();
 	for (int j = 0; j < height; j++) {
-		EMfft::real_to_complex_1d(d1 + j * nx, f1d+j*width, nx);
-		EMfft::real_to_complex_1d(d2 + j * nx, f2d+j*width, nx);
+		EMfft::real_to_complex_1d(d1 + j * nx, f1d+j*wpad, nx);
+		EMfft::real_to_complex_1d(d2 + j * nx, f2d+j*wpad, nx);
 	}
 
 	if(flip == false) {
 		for (int j = 0; j < height; j++) {
-			float *f1a = f1d + j * width;
-			float *f2a = f2d + j * width;
+			float *f1a = f1d + j * wpad;
+			float *f2a = f2d + j * wpad;
 
 			for (int i = 0; i < width / 2; i++) {
 				float re1 = f1a[2*i];
@@ -1668,8 +1672,8 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum, boo
 		}
 	} else {
 		for (int j = 0; j < height; j++) {
-			float *f1a = f1d + j * width;
-			float *f2a = f2d + j * width;
+			float *f1a = f1d + j * wpad;
+			float *f2a = f2d + j * wpad;
 
 			for (int i = 0; i < width / 2; i++) {
 				float re1 = f1a[2*i];
@@ -1685,7 +1689,7 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum, boo
 
 	float* rd = rslt.get_data();
 	for (int j = y0; j < y1; j++) {
-		EMfft::complex_to_real_1d(f1d+j*width, rd+j*nx, nx);
+		EMfft::complex_to_real_1d(f1d+j*wpad, rd+j*nx, nx);
 	}
 
 	if (no_sum) {
