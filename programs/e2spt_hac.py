@@ -157,11 +157,20 @@ def main():
 	files=os.listdir(os.getcwd())
 	
 	while options.path in files:
-		if '_' not in options.path:
-			options.path = options.path + '_00'
-				
-		options.path = options.path.split('_')[0] + '_' + str(int(options.path.split('_')[-1]) + 1).zfill(2)
-		print "The new options.path is", options.path
+		path = options.path		
+		if '_' not in path:
+			path = path + '_00'
+		else:
+			jobtag=''
+			components=path.split('_')
+			if components[-1].isdigit():
+				components[-1] = str(int(components[-1])+1).zfill(2)
+			else:
+				components.append('00')
+						
+			path = '_'.join(components)
+			options.path = path
+			print "The new options.path is", options.path
 
 	if options.path not in files:
 		os.system('mkdir ' + options.path)
