@@ -1461,7 +1461,7 @@ class EMBoxList:
 			if invert: image.mult(-1)
 			if str(normproc) != "None": image.process_inplace(normproc)
 			try:
-				if apix != 1.0:
+				if apix != None:
 					image.set_attr('apix_x', float(apix))
 					image.set_attr('apix_y', float(apix))
 					image.set_attr('apix_z', float(apix))

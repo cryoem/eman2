@@ -337,6 +337,7 @@ so in most cases it is not dealt with.'
 		print 'An Intel Xeon E5645 2.4Ghz SF ----------------------------------- 3600 (6 cores -> 21,600)'
 		print 'An Intel Xeon X5675 3.07Ghz SF ---------------------------------- 4070 (6 cores -> 24,420)'
 		print 'An Intel Core i5-2500 3.30GHz (depends on turbo) ---------------- 5560 - 6345 (4 cores -> 22,240 - 25,380)'
+		print 'An Intel Core i7-3960X 3.3Ghz SF -------------------------------- 6000 - 6550  (6 cores -> 36,000 - 39,300)'
 		print 'An Intel Xeon E5-2670 2.6Ghz SF --------------------------------- 4800 (8 cores -> 38,400)'
 		print '\nConsider using --big for a more representative value with modern high resolution maps'
 
@@ -345,6 +346,7 @@ so in most cases it is not dealt with.'
 		print 'An Intel Core i7-3820 3.6GHz (depends on turbo) ----------------- 610 - 650 (4 cores -> 2440 - 2600)'
 		print 'An Intel Core i5-2500 3.30GHz (depends on turbo) ---------------- 720 - 820 (4 cores -> 2880 - 3280)'
 		print 'An Intel Xeon X5675 3.07Ghz SF ---------------------------------- 570	   (6 cores -> 3420)'
+		print 'An Intel Core i7-3960X 3.3Ghz SF -------------------------------- 770 - 900 (6 cores -> 4600 - 5400)'
 		print 'An Intel Xeon E5-2670 2.6Ghz SF --------------------------------- 600	   (8 cores -> 4800)'
 
 	print '\nYour machines speed factor = %1.1f\n' % (25000.0 / ti)
