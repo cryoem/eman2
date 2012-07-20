@@ -596,7 +596,35 @@ def allvsall(options):
 				avg['spt_ID'] = avgtag
 				
 				print "I will normalize the average"
-				avg.process_inplace(options.normproc[0],options.normproc[1])
+				
+				# Make the mask first, use it to normalize (optionally), then apply it 
+				#mask=EMData(avg['nx'],avg['ny'],avg['nz'])
+				#mask.to_one()
+				
+				#if options.mask:
+				#	#print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
+				#	mask.process_inplace(options.mask[0],options.mask[1])
+		
+				# normalize
+				#if options.normproc:
+				#	if options.normproc[0]=="normalize.mask": 
+				#		options.normproc[1]["mask"]=mask
+
+				#	avg.process_inplace(options.normproc[0],options.normproc[1])
+
+				#Mask after normalizing with the mask you just made, which is just a box full of 1s if not mask is specified
+				#avg.mult(mask)
+
+				#If normalizing, it's best to do normalize-mask-normalize-mask
+				#if options.normproc:
+				#	if options.normproc[0]=="normalize.mask": 
+				#		options.normproc[1]["mask"]=mask
+
+				#	avg.process_inplace(options.normproc[0],options.normproc[1])
+
+				#	avg.mult(mask)
+				
+				avg.process_inplace('normalize.edgemean')
 				
 				avg.write_image(options.path + '/round' + str(k).zfill(fillfactor) + '_averages.hdf',mm)
 				
@@ -750,24 +778,58 @@ class Align3DTaskAVSA(EMTask):
 		#if type(self.data) != libpyEMData2.EMData:
 		#	print 
 		
-		image=EMData(self.data["image"],options['p2number'])
-		iin=EMUtil.get_image_count(self.data["image"])
+		image = EMData(self.data["image"],options['p2number'])
+		iin = EMUtil.get_image_count(self.data["image"])
 		
-		mask=EMData(int(image['nx']),int(image['ny']),int(image['nz']))
+		
+		
+		
+		# Make the mask first, use it to normalize (optionally), then apply it 
+		mask=EMData(int(image["nx"]),int(image["ny"]),int(image["nz"]))
 		mask.to_one()
 		
-		if options["mask"] != None:
+		if options["mask"]:
+			#print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options["mask"][0],options["mask"][1]) 
 			mask.process_inplace(options["mask"][0],options["mask"][1])
 		
 		# normalize
-		if options["normproc"] != None:
+		if options["normproc"]:
 			if options["normproc"][0]=="normalize.mask": 
 				options["normproc"][1]["mask"]=mask
+			
 			fixedimage.process_inplace(options["normproc"][0],options["normproc"][1])
 			image.process_inplace(options["normproc"][0],options["normproc"][1])
 		
+		#Mask after normalizing with the mask you just made, which is just a box full of 1s if not mask is specified
 		fixedimage.mult(mask)
 		image.mult(mask)
+		
+		#If normalizing, it's best to do normalize-mask-normalize-mask
+		if options["normproc"]:
+			if options["normproc"][0]=="normalize.mask": 
+				options["normproc"][1]["mask"]=mask
+			
+			fixedimage.process_inplace(options["normproc"][0],options["normproc"][1])
+			image.process_inplace(options["normproc"][0],options["normproc"][1])
+		
+			fixedimage.mult(mask)
+			image.mult(mask)
+		
+		
+		#if options["mask"] != None:
+		#	mask.process_inplace(options["mask"][0],options["mask"][1])
+		
+		# normalize
+		#if options["normproc"] != None:
+		#	if options["normproc"][0]=="normalize.mask": 
+		#		options["normproc"][1]["mask"]=mask
+		#	fixedimage.process_inplace(options["normproc"][0],options["normproc"][1])
+		#	image.process_inplace(options["normproc"][0],options["normproc"][1])
+		#fixedimage.mult(mask)
+		#image.mult(mask)
+		
+		
+		
 		
 		# preprocess
 		if options["preprocess"] != None:
