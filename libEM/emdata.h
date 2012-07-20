@@ -502,7 +502,7 @@ namespace EMAN
 
 
 		/** Maps to polar coordinates from Cartesian coordinates. Optionaly radially weighted.
-		 * When used with RFP, this provides 1 pixel accuracy at 75% radius.
+		 * When used with RFP, this provides roughly 1 pixel accuracy at 50% radius.
 		 * 2D only.
 		 * @ingroup CUDA_ENABLED
 		 * @param r1 inner ring (all rings less than r1 are discarded) Default = 4

@@ -2503,8 +2503,8 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360, bool 
 	}
 
 	if (xs < 1) {
-		xs = (int) Util::fast_floor(p * M_PI * ny / 4);
-		xs -= xs % 8;
+		xs = (int) Util::fast_floor(p * M_PI * ny / 5.0);
+		xs = Util::calc_best_fft_size(xs);
 		if (xs<=8) xs=16;
 	}
 
