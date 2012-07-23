@@ -1666,8 +1666,8 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum, boo
 				float im1 = f1a[2*i+1];
 				float im2 = f2a[2*i+1];
 
-				f1d[j*width+i*2] = re1 * re2 + im1 * im2;
-				f1d[j*width+i*2+1] = im1 * re2 - re1 * im2;
+				f1d[j*wpad+i*2] = re1 * re2 + im1 * im2;
+				f1d[j*wpad+i*2+1] = im1 * re2 - re1 * im2;
 			}
 		}
 	} else {
@@ -1681,8 +1681,8 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum, boo
 				float im1 = f1a[2*i+1];
 				float im2 = f2a[2*i+1];
 
-				f1d[j*width+i*2] = re1 * re2 - im1 * im2;
-				f1d[j*width+i*2+1] = im1 * re2 + re1 * im2;
+				f1d[j*wpad+i*2] = re1 * re2 - im1 * im2;
+				f1d[j*wpad+i*2+1] = im1 * re2 + re1 * im2;
 			}
 		}
 	}
@@ -1777,6 +1777,7 @@ EMData *EMData::make_rotational_footprint( bool unwrap) {
 	}
 
 	EMData* ccf = this->calc_ccf(this,CIRCULANT,true);
+//	EMData* ccf = this->calc_ccf(this,PADDED,true);		# this would probably be a bit better, but takes 4x longer  :^/
 	ccf->sub(ccf->get_edge_mean());
 	//ccf->process_inplace("xform.phaseorigin.tocenter"); ccf did the centering
 	EMData *result = ccf->unwrap();
@@ -1891,7 +1892,7 @@ EMData *EMData::make_rotational_footprint_e1( bool unwrap)
 	if (nz != 1) {
 		sml_clip.insert_clip(mc,IntPoint(-cs+nx/4,-cs+ny/4,-cs+nz/4));
 	} else {
-		sml_clip.insert_clip(mc,IntPoint(-cs+nx/4,-cs+ny/4,0));
+		sml_clip.insert_clip(mc,IntPoint(-cs+nx/4,-cs+ny/4,0));		// same as padding change above
 	}
 		
 	delete mc; mc = 0;

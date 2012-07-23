@@ -308,7 +308,7 @@ namespace EMAN
 			return new RotationalAligner();
 		}
 
-		static EMData * align_180_ambiguous(EMData * this_img, EMData * to_img, int rfp_mode = 0);
+		static EMData * align_180_ambiguous(EMData * this_img, EMData * to_img, int rfp_mode = 2);
 
 		virtual TypeDict get_param_types() const
 		{

@@ -441,7 +441,7 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 #endif
 
 	// Perform 180 ambiguous alignment
-	int rfp_mode = params.set_default("rfp_mode",0);
+	int rfp_mode = params.set_default("rfp_mode",2);
 	EMData* rot_aligned = RotationalAligner::align_180_ambiguous(this_img,to,rfp_mode);
 	Transform * tmp = rot_aligned->get_attr("xform.align2d");
 	Dict rot = tmp->get_rotation("2d");
@@ -697,7 +697,7 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 #endif
 
 	// Get the 180 degree ambiguously rotationally aligned and its 180 degree rotation counterpart
-	int rfp_mode = params.set_default("rfp_mode",0);
+	int rfp_mode = params.set_default("rfp_mode",2);
 	EMData *rot_align  =  RotationalAligner::align_180_ambiguous(this_img,to,rfp_mode);
 	Transform * tmp = rot_align->get_attr("xform.align2d");
 	Dict rot = tmp->get_rotation("2d");
@@ -763,7 +763,7 @@ EMData *RotateTranslateScaleAligner::align(EMData * this_img, EMData *to,
 	
 	//Basically copy params into rotate_translate
 	basealigner_params["maxshift"] = params.set_default("maxshift", -1);
-	basealigner_params["rfp_mode"] = params.set_default("rfp_mode",0);
+	basealigner_params["rfp_mode"] = params.set_default("rfp_mode",2);
 	basealigner_params["useflcf"] = params.set_default("useflcf",0);
 	
 	//return the correct results
@@ -775,7 +775,7 @@ EMData* RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 										  const string & cmp_name, const Dict& cmp_params) const
 {
 	// Get the non flipped rotational, tranlsationally aligned image
-	Dict rt_params("maxshift", params["maxshift"], "rfp_mode", params.set_default("rfp_mode",0),"useflcf",params.set_default("useflcf",0));
+	Dict rt_params("maxshift", params["maxshift"], "rfp_mode", params.set_default("rfp_mode",2),"useflcf",params.set_default("useflcf",0));
 	EMData *rot_trans_align = this_img->align("rotate_translate",to,rt_params,cmp_name, cmp_params);
 	
 	// Do the same alignment, but using the flipped version of the image
@@ -831,7 +831,7 @@ EMData *RotateTranslateFlipScaleAligner::align(EMData * this_img, EMData *to,
 	//Basically copy params into rotate_translate
 	basealigner_params["flip"] = params.set_default("flip", (EMData *) 0);
 	basealigner_params["maxshift"] = params.set_default("maxshift", -1);
-	basealigner_params["rfp_mode"] = params.set_default("rfp_mode",0);
+	basealigner_params["rfp_mode"] = params.set_default("rfp_mode",2);
 	basealigner_params["useflcf"] = params.set_default("useflcf",0);
 	
 	//return the correct results
@@ -995,7 +995,7 @@ EMData *RotateTranslateFlipAlignerPawel::align(EMData * this_img, EMData *to,
 EMData *RotateFlipAligner::align(EMData * this_img, EMData *to,
 			const string& cmp_name, const Dict& cmp_params) const
 {
-	Dict rot_params("rfp_mode",params.set_default("rfp_mode",0));
+	Dict rot_params("rfp_mode",params.set_default("rfp_mode",2));
 	EMData *r1 = this_img->align("rotational", to, rot_params,cmp_name, cmp_params);
 
 
