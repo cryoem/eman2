@@ -59,7 +59,6 @@ improved with time."""
 	parser.add_argument("--slow",action="store_true",help="rtf_slow alignment",default=False)
 	parser.add_argument("--best",action="store_true",help="rtf_best alignment",default=False)
 	parser.add_argument("--low",action="store_true",help="low level test",default=False)
-	parser.add_argument("--refine",action="store_true",help="refine alignment",default=False)
 	parser.add_argument("--big",action="store_true",help="big size test",default=False)
 	parser.add_argument("--size",type=int,help="Size of particles, 96 default for comparisons",default=96)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -68,7 +67,7 @@ improved with time."""
 	(options, args) = parser.parse_args()
 
 	SIZE = options.size
-	NTT = 500
+	NTT = 205		# adjusted to keep new values with refine scaled to old values on reference machine
 
 	print 'This could take a few minutes. Please be patient.'
 	if options.big:
@@ -305,10 +304,10 @@ so in most cases it is not dealt with.'
 				tmp = data[i].align('rtf_best', data[j], {"flip":None, "maxshift":SIZE/8})
 			elif options.slow:
 				tmp = data[i].align('rtf_slow', data[j], {"flip":None, "maxshift":SIZE/8})
-			elif options.refine:
-				tmp = data[i].align('rotate_translate_flip', data[j], {})
 			else:
 				tmp = data[i].align('rotate_translate_flip', data[j], {})
+				data[i].del_attr("xform.align2d")
+				tmp2 = data[i].align('refine',data[j],{"xform.align2d":tmp.get_attr("xform.align2d")},"ccc",{})
 
 			if j%10 == 0:
 				sys.stdout.write('.')
