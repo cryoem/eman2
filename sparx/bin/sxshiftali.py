@@ -42,10 +42,9 @@ import sys
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack outdir <maskfile> --search_rng --ou=outer_radius --maxit=max_iteration --CTF --snr=SNR --Fourvar=Fourier_variance --oneDx --MPI"
+	usage = progname + " stack outdir <maskfile> --search_rng --maxit=max_iteration --CTF --snr=SNR --Fourvar=Fourier_variance --oneDx --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--search_rng",       type="int",  default=-1,             help="Used to compute the dimension of a \nnwx by nwx section of the 2D ccf which is \nwindowed out for peak search: \nnwx=2*search_rng+1 (nwx=nx if search_rng is -1))")
-	parser.add_option("--ou",       type="float",  default=-1,            help="radius of the particle - used for constructing the default mask. If ou is -1, then the mask is a circle with radius nx/2 - 2")
 	parser.add_option("--maxit",    type="float",  default=100,             help="maximum number of iterations program will perform")
 	parser.add_option("--CTF",      action="store_true", default=False,   help="use CTF correction during centering ")
 	parser.add_option("--snr",      type="float",  default=1.0,           help="signal-to-noise ratio of the data (default is 1.0)")
@@ -77,15 +76,15 @@ def main():
 		sys.argv = mpi_init(len(sys.argv),sys.argv)
 
 		global_def.BATCH = True
-		shiftali_MPI(args[0], outdir, mask,options.ou, options.maxit, options.CTF, options.snr, options.Fourvar,options.search_rng,options.oneDx)
+		shiftali_MPI(args[0], outdir, mask, options.maxit, options.CTF, options.snr, options.Fourvar,options.search_rng,options.oneDx)
 		global_def.BATCH = False
 		
 		from mpi import mpi_finalize
 		mpi_finalize()
 
-def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=1.0, Fourvar=False, search_rng=-1, oneDx=False):  
+def shiftali_MPI(stack, outdir, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=False, search_rng=-1, oneDx=False):  
 	from applications import MPI_start_end
-	from utilities    import model_circle, model_blank, get_image, peak_search
+	from utilities    import model_circle, model_blank, get_image, peak_search, get_im
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
 	from statistics   import varf2d_MPI
 	from fundamentals import fft, ccf, rot_shift3D, rot_shift2D
@@ -148,9 +147,11 @@ def shiftali_MPI(stack, outdir, maskfile=None, ou=-1, maxit=100, CTF=False, snr=
 	if CTF:
 		ctf_app = bcast_number_to_all(ctf_app, source_node = main_node)
 		if ctf_app > 0:	ERROR("data cannot be ctf-applied", "shiftali_MPI", 1, myid)
-
-	mask = model_circle(nx//2-2, nx, nx)
-
+        
+        if maskfile == None:
+	        mask = model_circle(nx//2-2, nx, nx)
+        else:
+                mask = get_im(maskfile)
 	cnx  = nx/2+1
  	cny  = cnx
 
