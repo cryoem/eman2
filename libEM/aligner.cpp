@@ -147,7 +147,8 @@ EMData* ScaleAlignerABS::align_using_base(EMData * this_img, EMData * to,
 	
 	// Using the following method we only create one EMdata object. If I just used the processor, then I would create many EMdata objects
 	EMData* result = 0;
-	float bestscore = numeric_limits<float>::infinity();
+//	float bestscore = numeric_limits<float>::infinity();
+	float bestscore = 1.0e37;
 	
 	for(float i = max; i > min; i-=step){
 		
@@ -203,7 +204,7 @@ EMData* ScaleAligner::align(EMData * this_img, EMData *to,
 	
 	// Using the following method we only create one EMdata object. If I just used the processor, then I would create many EMdata objects
 	float bestscale = 1.0;
-	float bestscore = numeric_limits<float>::infinity();
+	float bestscore = 1.0e37;
 
 	for(float i = max; i > min; i-=step){
 			
@@ -638,7 +639,8 @@ EMData *RotateTranslateAlignerPawel::align(EMData * this_img, EMData *to,
 	if(this_img->get_xsize()/2 - 1 - r2 - maxtx <= 0 || (r2 == -1 && maxtx > 0)) throw InvalidParameterException("nx/2 - 1 - r2 - tx must be greater than or = 0");
 	if(this_img->get_ysize()/2 - 1 - r2 - maxty <= 0 || (r2 == -1 && maxty > 0)) throw InvalidParameterException("ny/2 - 1 - r2 - ty must be greater than or = 0");
 	
-	float best_peak = -numeric_limits<float>::infinity();
+//	float best_peak = -numeric_limits<float>::infinity();
+	float best_peak = -1.0e37;
 	int best_peak_index = 0;
 	int best_tx = 0;
 	int best_ty = 0;
@@ -927,7 +929,8 @@ EMData *RotateTranslateFlipAlignerPawel::align(EMData * this_img, EMData *to,
 		throw InvalidParameterException("ny/2 - 1 - r2 - ty must be greater than or = 0");
 	}
 	
-	float best_peak = -numeric_limits<float>::infinity();
+//	float best_peak = -numeric_limits<float>::infinity();
+	float best_peak = -1.0e37;
 	int best_peak_index = 0;
 	int best_tx = 0;
 	int best_ty = 0;
@@ -2167,7 +2170,8 @@ EMData* Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 	Dict d;
 	d["type"] = "eman"; // d is used in the loop below
 	Dict best;
-	best["score"] = numeric_limits<float>::infinity();
+//	best["score"] = numeric_limits<float>::infinity();
+	best["score"] = 1.0e37;
 	bool use_cpu = true;
 	Transform tran = Transform();
 	Cmp* c = Factory <Cmp>::get(cmp_name, cmp_params);
@@ -2235,6 +2239,7 @@ EMData* Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 				}
 				
 				if(score < float(best["score"])) {
+					printf("%f\n",score);
 					best["score"] = score;
 					best["xform.align3d"] = &tr; // I wonder if this will cause a mem leak?
 				} 	
