@@ -1731,6 +1731,7 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 
 	float precision = params.set_default("precision",0.04f);
 	int maxiter = params.set_default("maxiter",28);
+	int verbose = params.set_default("verbose",0);
 
 //	printf("Refine sx=%1.2f sy=%1.2f sa=%1.2f prec=%1.4f maxit=%d\n",stepx,stepy,stepaz,precision,maxiter);
 //	printf("%1.2f %1.2f %1.1f  ->",(float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1),(float)gsl_vector_get(s->x, 2));
@@ -1741,7 +1742,9 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 		if (status) {
 			break;
 		}
-		rval = gsl_multimin_test_size(gsl_multimin_fminimizer_size(s), precision);
+		float size = gsl_multimin_fminimizer_size (s);
+		rval = gsl_multimin_test_size(size, precision);
+		if (verbose>2) printf("GSL %d. %1.3f %1.3f %1.3f   %1.3f\n",iter,gsl_vector_get(s->x,0),gsl_vector_get(s->x,1),gsl_vector_get(s->x,2),size);
 	}
 
 	int maxshift = params.set_default("maxshift",-1);
@@ -1752,7 +1755,7 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 	float fmaxshift = static_cast<float>(maxshift);
 	if ( fmaxshift >= fabs((float)gsl_vector_get(s->x, 0)) && fmaxshift >= fabs((float)gsl_vector_get(s->x, 1)) && (stepscale==0 || (((float)gsl_vector_get(s->x, 3))<1.3 && ((float)gsl_vector_get(s->x, 3))<0.7))  )
 	{
-//		printf(" Refine good %1.2f %1.2f %1.1f\n",(float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1),(float)gsl_vector_get(s->x, 2));
+		if (verbose>0) printf(" Refine good (%d) %1.2f %1.2f %1.1f\n",iter,(float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1),(float)gsl_vector_get(s->x, 2));
 		Transform  tsoln(Dict("type","2d","alpha",(float)gsl_vector_get(s->x, 2)));
 		tsoln.set_mirror(mirror);
 		tsoln.set_trans((float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1));
@@ -1760,7 +1763,7 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 		result = this_img->process("xform",Dict("transform",&tsoln));
 		result->set_attr("xform.align2d",&tsoln);
 	} else { // The refine aligner failed - this shift went beyond the max shift
-//		printf(" Refine Failed %1.2f %1.2f %1.1f\n",(float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1),(float)gsl_vector_get(s->x, 2));
+		if (verbose>1) printf(" Refine Failed %1.2f %1.2f %1.1f\n",(float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1),(float)gsl_vector_get(s->x, 2));
 		result = this_img->process("xform",Dict("transform",t));
 		result->set_attr("xform.align2d",t);
 	}
@@ -2239,7 +2242,7 @@ EMData* Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 				}
 				
 				if(score < float(best["score"])) {
-					printf("%f\n",score);
+//					printf("%f\n",score);
 					best["score"] = score;
 					best["xform.align3d"] = &tr; // I wonder if this will cause a mem leak?
 				} 	
