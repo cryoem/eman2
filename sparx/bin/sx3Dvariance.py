@@ -189,10 +189,10 @@ def main():
 		from utilities		import model_blank, nearest_proj, model_circle
 		from applications	import pca
 		from statistics		import avgvar, avgvar_ctf, ccc
-		from filter		import filt_tanl
+		from filter		    import filt_tanl
 		from morphology		import threshold
 		from projection 	import project, prep_vol, prgs
-		from sets		import Set			
+		from sets		    import Set			
 
 		if myid == main_node:
 			t1 = time()
