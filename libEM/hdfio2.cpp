@@ -244,6 +244,7 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 		type=H5Tcopy(H5T_NATIVE_CHAR);
 		spc=H5Scopy(simple_space);
 		break;
+	case EMObject::SHORT:
 	case EMObject::INT:
 		type=H5Tcopy(H5T_NATIVE_INT);
 		spc=H5Scopy(simple_space);
@@ -327,6 +328,7 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 	bool b;
 	char c;
 	int i;
+	short si;
 	float f,*fa;
 	int * ia;
 	unsigned int ui;
@@ -342,6 +344,11 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 			c = 'F';
 		}
 		H5Awrite(attr,type,&c);
+		break;
+	case EMObject::SHORT:
+		si = (short)obj;
+		i = (int)si;
+		H5Awrite(attr,type,&i);
 		break;
 	case EMObject::INT:
 		i=(int)obj;

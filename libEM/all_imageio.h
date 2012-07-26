@@ -78,6 +78,7 @@
 #include "df3io.h"
 #include "omapio.h"
 #include "situsio.h"
+#include "serio.h"
 
 #ifdef ENABLE_V4L2
 	#include "v4l2io.h"

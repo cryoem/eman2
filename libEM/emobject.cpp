@@ -87,6 +87,7 @@ map< EMObject::ObjectType, string> EMObject::init()
 	{
 		// Initialize the the type registry once and for all
 		mymap[BOOL] = "BOOL";
+		mymap[SHORT] = "SHORT";
 		mymap[INT] = "INT";
 		mymap[UNSIGNEDINT] = "UNSIGNEDINT";
 		mymap[FLOAT] = "FLOAT";
@@ -142,6 +143,15 @@ EMObject::EMObject() :
 
 EMObject::EMObject(bool boolean) :
 	b(boolean), type(BOOL)
+{
+#ifdef MEMDEBUG
+	allemobjlist.insert(this);
+	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
+#endif
+}
+
+EMObject::EMObject(short sint) :
+	si(sint), type(SHORT)
 {
 #ifdef MEMDEBUG
 	allemobjlist.insert(this);
@@ -321,6 +331,9 @@ EMObject::operator bool () const
 	if (type == BOOL) {
 		return b;
 	}
+	else if (type == SHORT) {
+		return si != 0;
+	}
 	else if (type == INT) {
 		return n != 0;
 	}
@@ -361,10 +374,26 @@ EMObject::operator bool () const
 	return 0;
 }
 
+EMObject::operator short () const
+{
+	if (type == SHORT) {
+		return si;
+	}
+	else {
+	if (type != UNKNOWN) {
+				throw TypeException("Cannot convert to int this data type ",
+									get_object_type_name(type));
+			}
+	}
+}
+
 EMObject::operator int () const
 {
 	if (type == INT) {
 		return n;
+	}
+	else if (type == SHORT) {
+		return si;
 	}
 	else if (type == UNSIGNEDINT) {
 		return (int) ui;
@@ -409,6 +438,9 @@ EMObject::operator float () const
 	else if (type == FLOAT) {
 		return f;
 	}
+	else if (type == SHORT) {
+		return si;
+	}
 	else if (type == INT) {
 		return (float) n;
 	}
@@ -438,6 +470,9 @@ EMObject::operator double () const
 	}
 	else if (type == DOUBLE) {
 		return d;
+	}
+	else if (type == SHORT) {
+		return si;
 	}
 	else if (type == INT) {
 		return (double) n;
@@ -667,6 +702,9 @@ string EMObject::to_str(ObjectType argtype) const
 			else
 				sprintf(tmp_str, "false");
 		}
+		else if (argtype == SHORT) {
+			sprintf(tmp_str, "%hd", si);
+		}
 		else if (argtype == INT) {
 			sprintf(tmp_str, "%d", n);
 		}
@@ -728,6 +766,9 @@ string EMObject::get_object_type_name(ObjectType t)
 #ifdef _WIN32
 	if (t == BOOL) {
 		return "BOOL";
+	}else
+	if ( t == SHORT) {
+		return "SHORT";
 	}else
 	if ( t == INT){
 		return "INT";
@@ -806,6 +847,9 @@ bool EMAN::operator==(const EMObject &e1, const EMObject & e2)
 	switch (e1.type) {
 	case  EMObject::BOOL:
 		return (e1.b == e2.b);
+	break;
+	case EMObject::SHORT:
+		return (e1.si == e2.si);
 	break;
 	case  EMObject::INT:
 		return (e1.n == e2.n);
@@ -935,6 +979,9 @@ EMObject& EMObject::operator=( const EMObject& that )
 		{
 		case BOOL:
 			b = that.b;
+		break;
+		case SHORT:
+			si = that.si;
 		break;
 		case INT:
 			n = that.n;

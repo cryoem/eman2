@@ -129,6 +129,7 @@ namespace EMAN
 		enum ObjectType {
 			UNKNOWN,
 			BOOL,
+			SHORT,
 			UNSIGNEDINT,
 			INT,
 			FLOAT,
@@ -154,6 +155,7 @@ namespace EMAN
 		 */
 		EMObject();
 		EMObject(bool boolean);
+		EMObject(short);
 		EMObject(int num);
 		EMObject(unsigned int num);
 		EMObject(float ff);
@@ -191,6 +193,7 @@ namespace EMAN
 		/** Conversion operators
 		 */
 		operator bool () const;
+		operator short () const;
 		operator int () const;
 		operator unsigned int () const;
 		operator float () const;
@@ -257,6 +260,7 @@ namespace EMAN
 		union
 		{
 			bool b;
+			short si;
 			int n;
 			unsigned int ui;
 			float f;
