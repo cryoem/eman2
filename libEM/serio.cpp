@@ -37,8 +37,7 @@
 #include "util.h"
 #include "portable_fileio.h"
 
-#include <iomanip>
-#include <ctime>
+#include <cassert>
 
 using namespace EMAN;
 
@@ -387,13 +386,15 @@ void SerIO::read_dim_arr(Dict & dict, int idx)
 	dict["SER.DescriptionLength"+sidx]	= desclen;
 
 	if(desclen != 0) {
-		char descr[desclen+1];
+		char * descr = new char[desclen+1];
+		//char descr[desclen+1];
 		if (fread(descr, sizeof(char), desclen, serfile) != (unsigned int)desclen) {
 			throw ImageReadException(filename, "SER header");
 		}
 		descr[desclen] = '\0';
 		string sdescr(descr);
 		dict["SER.Description"+sidx] = sdescr;
+		delete [] descr;
 	}
 
 	int unitslen;
@@ -403,13 +404,15 @@ void SerIO::read_dim_arr(Dict & dict, int idx)
 	dict["SER.UnitsLength"+sidx] = unitslen;
 
 	if(unitslen != 0) {
-		char units[unitslen+1];
+		char * units = new char[unitslen+1];
+		//char units[unitslen+1];
 		if (fread(units, sizeof(int), unitslen, serfile) != (unsigned int)unitslen) {
 			throw ImageReadException(filename, "SER header");
 		}
 		units[unitslen] = '\0';
 		string sunits(units);
 		dict["SER.Units"+sidx] = sunits;
+		delete [] units;
 	}
 
 }
