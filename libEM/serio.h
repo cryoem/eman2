@@ -46,6 +46,7 @@ namespace EMAN
 	 * scanned images and spectra.
 	 *
 	 * Each .ser file stores a number of 1D or 2D images.
+	 * We do not support complex SER image for now.
 	 *
 	 * http://www.microscopy.cen.dtu.dk/~cbb/info/TIAformat/index.html
 	 * */
@@ -57,6 +58,7 @@ namespace EMAN
 
 		DEFINE_IMAGEIO_FUNC;
 		static bool is_valid(const void *first_block);
+		int get_nimg();
 
 	private:
 		enum SerImgMode {
@@ -114,8 +116,13 @@ namespace EMAN
 		int datatypeid;	//1D or 2D image
 		int datamode;	//data value mode (int, float, etc.)
 
+		/**helper function to read attributes in dimension array*/
 		void read_dim_arr(Dict & dict, int idx);
+
+		/**helper function to read header attributes in data element */
 		void read_data_element(Dict & dict);
+
+		/**helper function to read header attributes in data tag*/
 		void read_data_tag(Dict & dict);
 	};
 
