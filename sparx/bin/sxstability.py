@@ -40,7 +40,7 @@ import sys
 def main():
 	from utilities import get_input_from_string
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack averages --ou=ou --xr=xr --yr=yr --ts=ts --thld_grp=thld_grp --thld_err=thld_err --num_ali=num_ali --fl=fl --aa=aa --CTF --verbose --stab_part"
+	usage = progname + " stack <averages> --ou=ou --xr=xr --yr=yr --ts=ts --thld_grp=thld_grp --thld_err=thld_err --num_ali=num_ali --fl=fl --aa=aa --CTF --verbose --stab_part"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ou",           type="int",              default=-1,          help=" outer radius for alignment")
 	parser.add_option("--xr",           type="string"      ,     default="2 1",       help="range for translation search in x direction, search is +/xr")
@@ -55,7 +55,7 @@ def main():
 	parser.add_option("--verbose",      action="store_true",     default=False,       help="print individual pixel error (default = False)")
 	parser.add_option("--stab_part",	action="store_true",	 default=False,	      help="output the stable particles number in file")
 	(options, args) = parser.parse_args()
-	if len(args) != 2:
+	if len(args) != 1 and len(args) != 2:
     		print "usage: " + usage
     		print "Please run '" + progname + " -h' for detailed options"
 	else:
@@ -80,7 +80,11 @@ def main():
 		step        = get_input_from_string(options.ts)
 
 		data = EMData.read_images(args[0])
-		averages = EMData.read_images(args[1])
+		if len(args) > 1:
+			averages = EMData.read_images(args[1])
+		else:
+			averages = [ EMData() ]
+			averages[0].set_attr( "members", range(len(data)) )
 
 		nx = data[0].get_xsize()
 		ou = options.ou
