@@ -38,15 +38,22 @@ from   global_def     import *
 from   optparse       import OptionParser
 import sys
 def main():
+	from utilities import get_input_from_string
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack averages --ou=ou --th_grp=th_grp --thld_err=thld_err --num_ali=num_ali --verbose --stab_part"
+	usage = progname + " stack averages --ou=ou --xr=xr --yr=yr --ts=ts --thld_grp=thld_grp --thld_err=thld_err --num_ali=num_ali --fl=fl --aa=aa --CTF --verbose --stab_part"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ou",           type="int",              default=-1,          help=" outer radius for alignment")
-	parser.add_option("--thld_grp",     type="int",              default=5,           help=" mininum number of objects to consider for stability (default = 5)")
-	parser.add_option("--thld_err",     type="float",            default=1.732,       help=" threshld of pixel error (default = 1.732)")
-	parser.add_option("--num_ali",      type="int",              default=5,           help=" number of alignments performed for stability (default = 5)")
-	parser.add_option("--verbose",      action="store_true",     default=False,       help=" whether to print individual pixel error (default = False)")
-	parser.add_option("--stab_part",	action="store_true",	 default=False,	      help=" whether to output the stable particles number in file")
+	parser.add_option("--xr",           type="string"      ,     default="2 1",       help="range for translation search in x direction, search is +/xr")
+	parser.add_option("--yr",           type="string"      ,     default="-1",        help="range for translation search in y direction, search is +/yr (default = same as xr)")
+	parser.add_option("--ts",           type="string"      ,     default="1 0.5",     help="step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional")
+	parser.add_option("--thld_grp",     type="int",              default=5,           help="mininum number of objects to consider for stability (default = 5)")
+	parser.add_option("--thld_err",     type="float",            default=1.732,       help="threshld of pixel error (default = 1.732)")
+	parser.add_option("--num_ali",      type="int",              default=5,           help="number of alignments performed for stability (default = 5)")
+	parser.add_option("--fl",           type="float"       ,     default=0.3,         help="cut-off frequency of hyperbolic tangent low-pass Fourier filter")
+	parser.add_option("--aa",           type="float"       ,     default=0.2,         help="fall-off of hyperbolic tangent low-pass Fourier filter")
+	parser.add_option("--CTF",          action="store_true",     default=False,       help="Consider CTF correction during the alignment ")
+	parser.add_option("--verbose",      action="store_true",     default=False,       help="print individual pixel error (default = False)")
+	parser.add_option("--stab_part",	action="store_true",	 default=False,	      help="output the stable particles number in file")
 	(options, args) = parser.parse_args()
 	if len(args) != 2:
     		print "usage: " + usage
@@ -66,6 +73,11 @@ def main():
 		from utilities import write_text_file	
 
 		global_def.BATCH = True
+
+		xrng        = get_input_from_string(options.xr)
+		if  options.yr == "-1":  yrng = xrng
+		else          :  yrng = get_input_from_string(options.yr)
+		step        = get_input_from_string(options.ts)
 
 		data = EMData.read_images(args[0])
 		averages = EMData.read_images(args[1])
@@ -87,7 +99,12 @@ def main():
 					print "Average %4d: Group size too small to consider for stability."%i
 				else:
 					class_data = [data[im] for im in mem]
-					for im in class_data: set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0])
+					if options.CTF :
+						from filter import filt_ctf
+						for im in xrange(len(class_data)):
+							class_data[im] = filt_ctf(class_data[im], class_data[im].get_attr("ctf"), binary=1)
+					for im in class_data: 
+						set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0])
 					all_ali_params = []
 					for ii in xrange(num_ali):
 						ali_params = []
@@ -97,7 +114,7 @@ def main():
 							SY = []
 							MIRROR = []
 							SCALE = []
-						dummy = within_group_refinement(class_data, mask, True, 1, ou, 1, [2, 1], [2, 1], [1, 0.5], 90.0, 30, 0.3, 0.2)
+						dummy = within_group_refinement(class_data, mask, True, 1, ou, 1, xrng, yrng, step, 90.0, 30, options.fl, options.aa)
 						for im in class_data:
 							alpha, sx, sy, mirror, scale = get_params2D(im)
 							ali_params.extend([alpha, sx, sy, mirror])
