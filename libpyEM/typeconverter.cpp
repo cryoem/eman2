@@ -165,6 +165,13 @@ PyObject* EMObject_to_python::convert(EMObject const& emobj)
 		result = PyInt_FromLong((bool)emobj);
 #endif	//IS_PY3K
 	}
+	if(t == EMObject::SHORT) {
+#ifdef IS_PY3K
+		result = PyLong_FromLong((short)emobj);
+#else
+		result = PyInt_FromLong((short)emobj);
+#endif	//IS_PY3K
+	}
 	if (t == EMObject::INT) {
 #ifdef IS_PY3K
 		result = PyLong_FromLong((int)emobj);
