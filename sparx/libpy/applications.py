@@ -12601,7 +12601,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	# Read data on each processor, there are two ways, one is read on main_node and send them to all other nodes
 	# The other way is all nodes reading it one by one, we have to test to determine which way is better.
 	# The test shows that way 1 (18s) is way faster then way 2 (197s) on the test on 16 nodes.
-	# The drawback of way 1 is it cannot have all attibutes, but I assume this is not important.
+	# The drawback of way 1 is it cannot have all attributes, but I assume this is not important.
 	# Method 1:
 	if myid == main_node:
 		alldata = EMData.read_images(stack)

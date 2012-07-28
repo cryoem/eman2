@@ -2432,9 +2432,9 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 
 	#   hdf version!
 	# This is done on the main node, so for images from the main node, simply write headers
-	
+
 	if comm == -1:  comm = MPI_COMM_WORLD
-	
+
 	TransType = type(Transform())
 	# prepare keys for float/int
 	value = get_arb_params(data[0], list_params)
@@ -2529,9 +2529,9 @@ def recv_attr_dict_bdb(main_node, stack, data, list_params, image_start, image_e
 	from EMAN2db import db_open_dict
 	#  bdb version!
 	# This is done on the main node, so for images from the main node, simply write headers
-	
+
 	if comm == -1: comm = MPI_COMM_WORLD
-	
+
 	DB = db_open_dict(stack)
 	TransType = type(Transform())
 	# prepare keys for float/int
@@ -2814,11 +2814,8 @@ def get_ctf(ima):
 	  order of returned parameters:
         [defocus, cs, voltage, apix, bfactor, ampcont]
 	"""
-
 	from EMAN2 import EMAN2Ctf
-	
-	ctf_params = ima.get_attr("ctf")
-	
+	ctf_params = ima.get_attr("ctf")	
 	return ctf_params.defocus, ctf_params.cs, ctf_params.voltage, ctf_params.apix, ctf_params.bfactor, ctf_params.ampcont, ctf_params.dfdiff, ctf_params.dfang
 
 def generate_ctf(p):
@@ -2867,7 +2864,6 @@ def delete_bdb(name):
 	  Delete bdb stack
 	"""
 	from EMAN2db import db_open_dict, db_remove_dict
-
 	a = db_open_dict(name)
 	db_remove_dict(name)
 
@@ -2907,13 +2903,14 @@ def parse_user_function(opt_string):
 def getvec( phi, tht ):
 	from math import pi,cos,sin
 	angle_to_rad = pi/180.0
-
+	#print phi,tht
 	if tht > 180.0:
 		tht -= 180.0
 		phi += 180.0
-	elif tht > 90.0:
+	if tht > 90.0:
 		tht = 180.0 - tht
 		phi += 180.0
+	#print "  ",phi,tht
 
 	assert tht <=90.0
 
@@ -2941,6 +2938,18 @@ def nearest_ang( vecs, phi, tht ) :
 
 	return best_i
 
+def closest_ang( vecs, vec) :
+	best_s = -1.0
+	best_i = -1
+
+	for i in xrange( len(vecs) ):
+		s = abs(vecs[i][0]*vec[0] + vecs[i][1]*vec[1] + vecs[i][2]*vec[2])
+		if s > best_s:
+			best_s = s
+			best_i = i
+
+	return best_i
+
 # This is in python, it is very slow, we keep it just for comparison
 def assign_projangles_slow(projangles, refangles):
 	refnormal = [None]*len(refangles)
@@ -2951,6 +2960,31 @@ def assign_projangles_slow(projangles, refangles):
 		best_i = nearest_ang(refnormal, projangles[i][0], projangles[i][1])
 		assignments[best_i].append(i)
 	return assignments
+
+def nearestk_projangles(projangles, whichone = 0, howmany = 1):
+	lookup = range(len(projangles))
+	refnormal = [None]*len(projangles)
+	for i in xrange(len(projangles)):
+		refnormal[i] = getvec(projangles[i][0], projangles[i][1])
+	# remove the reference projection from the list
+	ref = refnormal[whichone]
+	del refnormal[whichone], lookup[whichone]
+	assignments = [-1]*howmany
+	for i in xrange(howmany):
+		k = closest_ang(refnormal, ref)
+		assignments[i] = lookup[k]
+		del refnormal[k], lookup[k]
+	return assignments
+
+def nearestk_to_refdir(projdirs, refdir, howmany = 1):
+	lookup = range(len(projangles))
+	assignments = [-1]*howmany
+	for i in xrange(howmany):
+		k = closest_ang(refnormal, ref)
+		assignments[i] = lookup[k]
+		del refnormal[k], lookup[k]
+	return assignments
+
 
 '''
 def assign_projangles(projangles, refangles, return_asg = False):
@@ -2977,7 +3011,7 @@ def assign_projangles(projangles, refangles, return_asg = False):
 	for i in xrange(nref):
 		ref_ang[i*2] = refangles[i][0]
 		ref_ang[i*2+1] = refangles[i][1]
-	
+
 	asg = Util.assign_projangles(proj_ang, ref_ang, coarse_asg, ref_asg, len(coarse_refangles))
 	if return_asg: return asg
 	assignments = [[] for i in xrange(nref)]
@@ -2999,7 +3033,7 @@ def assign_projangles(projangles, refangles):
 	for i in xrange(nref):
 		ref_ang[i*2] = refangles[i][0]
 		ref_ang[i*2+1] = refangles[i][1]
-	
+
 	asg = Util.assign_projangles(proj_ang, ref_ang)
 	if return_asg: return asg
 	assignments = [[] for i in xrange(nref)]
@@ -3041,13 +3075,10 @@ def findall(lo,val):
 	return  u
 
 def disable_bdb_cache():
-
 	import EMAN2db
-
 	EMAN2db.BDB_CACHE_DISABLE = True
 
 def enable_bdb_cache():
-
 	import EMAN2db
 	EMAN2db.BDB_CACHE_DISABLE = False
 
@@ -3232,7 +3263,6 @@ def rotation_between_anglesets(agls1, agls2):
 
 	return dictR['phi'], dictR['theta'], dictR['psi']
 
-
 def get_pixel_size(img):
 	"""
 	  Retrieve pixel size from the header.
@@ -3270,11 +3300,10 @@ def set_pixel_size(img, pixel_size):
 		cc.apix = pixel_size
 		img.set_attr("ctf", cc)
 
-
 def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, verbose = False):
 	from time import time
 	from math import exp, pi
-	
+
 	def get_ref_ang_list(delta, sym):
 		ref_ang = even_angles(delta, symmetry=sym)
 		ref_ang_list = [0.0]*(len(ref_ang)*2)
@@ -3282,7 +3311,7 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 			ref_ang_list[2*i] = ref_ang[i][0]
 			ref_ang_list[2*i+1] = ref_ang[i][1]
 		return ref_ang_list, len(ref_ang)
-	
+
 	def gv(phi, theta):
 		from math import pi, cos, sin
 		angle_to_rad = pi/180.0
@@ -3323,12 +3352,12 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 			proj_ang[i][4] = True
 			vec = gv(proj_ang[i][0], proj_ang[i][1])     # pre-calculate the vector for each projection angles
 			proj_ang[i].append(vec)
-	
+
 	ref_ang_list1, nref1 = get_ref_ang_list(20.0, sym = symmetry)   
 	ref_ang_list2, nref2 = get_ref_ang_list(10.0, sym = symmetry)   
 	ref_ang_list3, nref3 = get_ref_ang_list(5.0, sym = symmetry)    
 	ref_ang_list4, nref4 = get_ref_ang_list(2.5, sym = symmetry)
-	
+
 	c = 100
 	L = max(100, img_per_grp)
 	# This is to record whether we are considering the same group as before
@@ -3368,7 +3397,7 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 			if previous_zone > 0:
 				previous_group = -1
 				previous_zone = 0
-		
+
 		t1 = time()
 		v = []
 		index = []
@@ -3406,7 +3435,7 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 					v.append(proj_ang[i][5])
 					index.append(i)
 			max_group = 0
-		
+
 		t2 = time()
 		Nn = len(index)
 		density = [[0.0, 0] for i in xrange(Nn)]
@@ -3423,7 +3452,7 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 			print Nn, True, 
 		else:
 			print Nn, False,
-		
+
 		t21 = time()
 		for i in xrange(Nn):
 			density[i][0] = sum(diff_table[diff_table_index[index[i]]])
@@ -3440,7 +3469,7 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 			dang[i][1] = i
 		dang[most_dense_point][0] = -1.
 		dang.sort()
-		
+
 		t4 = time()
 		members = [0]*img_per_grp
 		for i in xrange(img_per_grp):
@@ -3455,7 +3484,7 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 		angles_list.append([proj_ang[center_i][0], proj_ang[center_i][1], dang[img_per_grp-1][0]])
 		previous_group = max_group
 		print t2-t1, t3-t2, t22-t21, t3-t22, t4-t3
-	
+
 	if N%img_per_grp*3 >= 2*img_per_grp:
 		members = []
 		for i in xrange(N):
@@ -3468,7 +3497,7 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 			if proj_ang[i][4]:
 				proj_list[-1].append(i)
 	print "Total time used = ", time()-t0
-		
+
 	return proj_list, angles_list
 
 def group_proj_by_phitheta(proj_ang, symmetry = "c1", img_per_grp = 100, verbose = False):
@@ -3564,9 +3593,8 @@ def group_proj_by_phitheta(proj_ang, symmetry = "c1", img_per_grp = 100, verbose
 		for i in xrange(Ng*img_per_grp, N):
 			proj_list_new[-1].append(abs(proj_list[i]))
 			mirror_list[-1].append(proj_list[i] >= 0)
-	
-	return proj_list_new, angles_list, mirror_list
 
+	return proj_list_new, angles_list, mirror_list
 
 def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 	from math import exp, pi
@@ -3794,4 +3822,3 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 	#tt2 = time()
 	#print tt2-tt1
 	return proj_list, mirror_list
-

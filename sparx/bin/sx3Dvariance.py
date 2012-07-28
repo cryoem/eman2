@@ -79,8 +79,8 @@ def main():
 
 	(options,args) = parser.parse_args()
 	
-	from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
-	from mpi import mpi_barrier, mpi_reduce, mpi_bcast, MPI_FLOAT, MPI_SUM, MPI_INT, MPI_MAX
+	from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD, MPI_TAG_UB
+	from mpi import mpi_barrier, mpi_reduce, mpi_bcast, mpi_send, MPI_FLOAT, MPI_SUM, MPI_INT, MPI_MAX
 	from applications import MPI_start_end
 	from reconstruction import recons3d_em, recons3d_em_MPI
 	from reconstruction	import recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
@@ -192,7 +192,7 @@ def main():
 		from filter		    import filt_tanl
 		from morphology		import threshold
 		from projection 	import project, prep_vol, prgs
-		from sets		    import Set			
+		from sets		    import Set
 
 		if myid == main_node:
 			t1 = time()
@@ -238,8 +238,8 @@ def main():
 
 		all_proj = list(all_proj)
 		if options.VERBOSE:
-			print "One node %2d, number of images need to read = %5d"%(myid, len(all_proj))
-		
+			print "On node %2d, number of images needed to be read = %5d"%(myid, len(all_proj))
+
 		index = {}
 		for i in xrange(len(all_proj)): index[all_proj[i]] = i
 		mpi_barrier(MPI_COMM_WORLD)
@@ -262,7 +262,7 @@ def main():
 		varList = []				
 		if nvec > 0:
 			eigList = [[] for i in xrange(nvec)]
-		
+
 		if options.VERBOSE: 	print "Begin to read images on processor %d"%(myid)
 		ttt = time()
 		imgdata = EMData.read_images(stack, all_proj)
@@ -270,7 +270,7 @@ def main():
 			print "Reading images on processor %d done, time = %.2f"%(myid, time()-ttt)
 			print "One processor %d, we got %d images"%(myid, len(imgdata))
 		mpi_barrier(MPI_COMM_WORLD)
-		
+
 		'''	
 		imgdata2 = EMData.read_images(stack, range(img_begin, img_end))
 		if options.freq > 0.0:
@@ -312,7 +312,7 @@ def main():
 					ave, std, minn, maxx = Util.infomask(grp_imgdata[k], mask, False)
 					grp_imgdata[k] -= ave
 					grp_imgdata[k] /= std
-				del mask	
+				del mask
 
 			if options.freq > 0.0:
 				from utilities import pad, read_text_file
@@ -395,11 +395,20 @@ def main():
 		#  To this point, all averages, variances, and eigenvectors are computed
 
 		if options.ave2D:
-			for i in xrange(number_of_proc):
-				if myid == i:
-					for im in xrange(len(aveList)):
-						aveList[im].write_image(options.ave2D, im+img_begin)
-				mpi_barrier(MPI_COMM_WORLD)
+			if myid == main_node:
+				km = 0
+				for i in xrange(number_of_proc):
+					if i == main_node :
+						for im in xrange(len(aveList)):
+							aveList[im].write_image(options.ave2D, km)
+							km+ = 1
+					else:
+						nl = mpi_recv(1, MPI_INT, i, MPI_TAG_UB, MPI_COMM_WORLD)
+						nl = int(nl[0])
+			else:
+				mpi_send(len(aveList), 1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+				for im in xrange(len(aveList)):
+					send_EMData(aveList[im],)#  What with the attributes??
 
 		if options.ave3D:
 			if options.VERBOSE:
@@ -457,13 +466,23 @@ def main():
 
 		if options.ave3D: del ave3D
 
-	if options.var2D:
-		for i in xrange(number_of_proc):
-			if myid == i:
+		if options.var2D:
+			if myid == main_node:
+				km = 0
+				for i in xrange(number_of_proc):
+					if i == main_node :
+						for im in xrange(len(varList)):
+							aveList[im].write_image(options.var2D, km)
+							km+ = 1
+					else:
+						nl = mpi_recv(1, MPI_INT, i, MPI_TAG_UB, MPI_COMM_WORLD)
+						nl = int(nl[0])
+			else:
+				mpi_send(len(aveList), 1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 				for im in xrange(len(varList)):
-					varList[im].write_image(options.var2D, im+img_begin)
-			mpi_barrier(MPI_COMM_WORLD)
-	mpi_barrier(MPI_COMM_WORLD)
+					send_EMData(varList[im],)#  What with the attributes??
+
+		mpi_barrier(MPI_COMM_WORLD)
 
 	if  options.var3D:
 		if myid == main_node and options.VERBOSE:
