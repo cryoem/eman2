@@ -5070,7 +5070,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 		virtual string get_desc() const
 		{
-			return "Tries to mask out only interesting density using something akin to a flood file approach.";
+			return "This will mask a 3-D volume using a 'flood filling' approach. It begins with a seed generated either as a sphere with \
+specified 'radius' or with the 'nmaxseed' highest values. It then includes any mass connected to the seed with value higher than 'threshold'.\
+Next, the mask is expanded by 'nshells'+'nshellsgauss'/2 voxels. Finally a gaussian low-pass filter is applied with a width of 'nshellsgauss'.";
 		}
 
 		virtual TypeDict get_param_types() const
@@ -5080,8 +5082,8 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("nmaxseed",EMObject::INT,"Use the n highest valued pixels in the map as a seed. Alternative to radius. Useful for viruses.");
 			d.put("threshold", EMObject::FLOAT, "An isosurface threshold that suitably encases the mass.");
 			d.put("sigma", EMObject::FLOAT, "Alternative to threshold based on mean + x*sigma");
-			d.put("nshells", EMObject::INT, "The number of dilation operations");
-			d.put("nshellsgauss", EMObject::INT, "number of Gaussian pixels to expand, following the dilation operations");
+			d.put("nshells", EMObject::INT, "Number of 1-voxel shells to expand the mask by.");
+			d.put("nshellsgauss", EMObject::INT, "Width in voxels of a Gaussian decay at the edge of the mask.");
 			d.put("return_mask", EMObject::BOOL, "If true the result of the operation will produce the mask, not the masked volume.");
 			d.put("verbose", EMObject::INT, "How verbose to be (stdout)");
 			return d;

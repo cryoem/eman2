@@ -6703,12 +6703,17 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 
 	amask->update();
 
-	if (verbose) printf("extending mask\n");
-	amask->process_inplace("mask.addshells.gauss", Dict("val1", nshells, "val2", nshellsgauss));
+	if (verbose) printf("expanding mask\n");
+	amask->process_inplace("mask.addshells.gauss", Dict("val1", (int)(nshells+nshellsgauss/2),"val2",0));
+	if (verbose) printf("filtering mask\n");
+	amask->process_inplace("filter.lowpass.gauss", Dict("cutoff_abs", (float)(1.0f/(float)nshellsgauss)));
+	amask->process_inplace("threshold.belowtozero", Dict("minval",(float)0.002));	// this makes the value exactly 0 beyond ~2.5 sigma
 
 	bool return_mask = params.set_default("return_mask",false);
 	if (return_mask) {
 		// Yes there is probably a much more efficient way of getting the mask itself, but I am only providing a stop gap at the moment.
+		dat = image->get_data();
+		dat2 = amask->get_data();
 		memcpy(dat,dat2,image->get_size()*sizeof(float));
 	} else {
 		image->mult(*amask);
