@@ -52,7 +52,7 @@ def main():
 		return  alpha, sx, sy, m
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " prj_stack volume --iter --var --sym=symmetry --MPI"
+	usage = progname + " prj_stack volume --iter= --var2D=  --sym=symmetry --MPI"
 	parser = OptionParser(usage, version=SPARXVERSION)
 
 	parser.add_option("--radiuspca", 	type="int"         ,	default=-1   ,				help="radius for PCA" )
@@ -79,7 +79,7 @@ def main():
 
 	(options,args) = parser.parse_args()
 	
-	from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD, MPI_TAG_UB
+	from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, mpi_recv, MPI_COMM_WORLD, MPI_TAG_UB
 	from mpi import mpi_barrier, mpi_reduce, mpi_bcast, mpi_send, MPI_FLOAT, MPI_SUM, MPI_INT, MPI_MAX
 	from applications import MPI_start_end
 	from reconstruction import recons3d_em, recons3d_em_MPI
@@ -97,7 +97,7 @@ def main():
 		stack = args[0]
 		vol_stack = args[1]
 	else:
-		ERROR("incomplete list of arguments", "sxvariances3d", 1, myid=myid)
+		ERROR("Incomplete list of arguments", "sxvariances3d", 1, myid=myid)
 		exit()
 	if not options.MPI:
 		ERROR("Non-MPI not supported!", "sx3Dvariance", myid=myid)
@@ -287,8 +287,8 @@ def main():
 		mpi_barrier(MPI_COMM_WORLD)
 		'''
 		from applications import prepare_2d_forPCA
-		from utilities import model_blank		
-		for i in xrange(len(proj_list)): 
+		from utilities import model_blank
+		for i in xrange(len(proj_list)):
 			mi = index[proj_angles[proj_list[i][0]][3]]
 			phiM, thetaM, psiM, s2xM, s2yM = get_params_proj(imgdata[mi])
 
@@ -315,10 +315,8 @@ def main():
 				del mask
 
 			if options.freq > 0.0:
-				from utilities import pad, read_text_file
 				from filter import filt_ctf, filt_table
 				from fundamentals import fft, window2d
-				#fifi = read_text_file("adjfilt90padded.txt")
 				nx2 = 2*nx
 				ny2 = 2*ny
 				if options.CTF:
@@ -335,7 +333,6 @@ def main():
 				from utilities import pad, read_text_file
 				from filter import filt_ctf, filt_table
 				from fundamentals import fft, window2d
-				#fifi = read_text_file("adjfilt90padded.txt")
 				nx2 = 2*nx
 				ny2 = 2*ny
 				if options.CTF:
@@ -401,14 +398,40 @@ def main():
 					if i == main_node :
 						for im in xrange(len(aveList)):
 							aveList[im].write_image(options.ave2D, km)
-							km+ = 1
+							km += 1
 					else:
 						nl = mpi_recv(1, MPI_INT, i, MPI_TAG_UB, MPI_COMM_WORLD)
 						nl = int(nl[0])
+						for im in xrange(nl):
+							ave = recv_EMData(i, im+i+70000)
+							"""
+							nm = mpi_recv(1, MPI_INT, i, MPI_TAG_UB, MPI_COMM_WORLD)
+							nm = int(nm[0])
+							members = mpi_recv(nm, MPI_INT, i, MPI_TAG_UB, MPI_COMM_WORLD)
+							ave.set_attr('members', map(int, members))
+							members = mpi_recv(nm, MPI_FLOAT, i, MPI_TAG_UB, MPI_COMM_WORLD)
+							ave.set_attr('pix_err', map(float, members))
+							members = mpi_recv(3, MPI_FLOAT, i, MPI_TAG_UB, MPI_COMM_WORLD)
+							ave.set_attr('refprojdir', map(float, members))
+							"""
+							ave.write_image(options.ave2D, km)
+							km += 1
 			else:
 				mpi_send(len(aveList), 1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 				for im in xrange(len(aveList)):
-					send_EMData(aveList[im],)#  What with the attributes??
+					send_EMData(aveList[im], main_node,im+myid+70000)
+					"""
+					members = aveList[im].get_attr('members')
+					mpi_send(len(members), 1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+					mpi_send(members, len(members), MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+					members = aveList[im].get_attr('pix_err')
+					mpi_send(members, len(members), MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+					try:
+						members = aveList[im].get_attr('refprojdir')
+						mpi_send(members, 3, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+					except:
+						mpi_send([-999.0,-999.0,-999.0], 3, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+					"""
 
 		if options.ave3D:
 			if options.VERBOSE:

@@ -70,7 +70,7 @@ def main():
 
 		from applications import within_group_refinement
 		from pixel_error import multi_align_stability
-		from utilities import write_text_file	
+		from utilities import write_text_file
 
 		global_def.BATCH = True
 
@@ -107,7 +107,7 @@ def main():
 						from filter import filt_ctf
 						for im in xrange(len(class_data)):
 							class_data[im] = filt_ctf(class_data[im], class_data[im].get_attr("ctf"), binary=1)
-					for im in class_data: 
+					for im in class_data:
 						set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0])
 					all_ali_params = []
 					for ii in xrange(num_ali):
