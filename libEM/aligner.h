@@ -1202,7 +1202,16 @@ namespace EMAN
 	};
 
 	/** refine alignment. Refines a preliminary 2D alignment using a simplex algorithm. Subpixel precision.
-     */
+	* @param xform.align2d The Transform storing the starting guess. If unspecified the identity matrix is used
+	* @param stepx The x increment used to create the starting simplex. Default is 1
+	* @param stepy The y increment used to create the starting simplex. Default is 1
+	* @param stepaz The rotational increment used to create the starting simplex. Default is 5
+	* @param precision The precision which, if achieved, can stop the iterative refinement before reaching the maximum iterations. Default is 0.04
+	* @param maxiter The maximum number of iterations. default=28
+	* @param maxshift Maximum translation in pixels in any direction. If the solution yields a shift beyond this value in any direction, then the refinement is judged a failure and the original alignment is used as the solution
+	* @param stepscale If set to any non-zero value, scale will be included in the alignment, and this will be the initial step. Images should be edgenormalized. If the scale goes beyond +-30% alignment will fail
+	* @param verbose This will cause debugging information to be printed on the screen for the iterative refinement. Larger numbers -> more info. default=0
+    */
 	class RefineAligner:public Aligner
 	{
 	  public:
@@ -1239,9 +1248,63 @@ namespace EMAN
 			d.put("stepy", EMObject::FLOAT, "The y increment used to create the starting simplex. Default is 1");
 			d.put("stepaz", EMObject::FLOAT, "The rotational increment used to create the starting simplex. Default is 5");
 			d.put("precision", EMObject::FLOAT, "The precision which, if achieved, can stop the iterative refinement before reaching the maximum iterations. Default is 0.04.");
-			d.put("maxiter", EMObject::INT,"The maximum number of iterations that can be performed by the Simplex minimizer");
+			d.put("maxiter", EMObject::INT,"The maximum number of iterations that can be performed by the Simplex minimizer. default=28");
 			d.put("maxshift", EMObject::INT,"Maximum translation in pixels in any direction. If the solution yields a shift beyond this value in any direction, then the refinement is judged a failure and the original alignment is used as the solution.");
 			d.put("stepscale", EMObject::FLOAT, "If set to any non-zero value, scale will be included in the alignment, and this will be the initial step. Images should be edgenormalized. If the scale goes beyond +-30% alignment will fail.");
+			d.put("verbose", EMObject::INT, "This will cause debugging information to be printed on the screen for the iterative refinement. Larger numbers -> more info. default=0");
+			return d;
+		}
+		
+		static const string NAME;
+	};
+
+	
+	/** Conjugate gradient refine alignment. Refines a preliminary 2D alignment to subpixel precision. Faster than 'refine', but requires better local minimum
+	* @param xform.align2d The Transform storing the starting guess. If unspecified the identity matrix is used
+	* @param step The initial increment used for stepping on the gradient. default=0.1
+	* @param precision The precision which, if achieved, can stop the iterative refinement before reaching the maximum iterations. Default is 0.02
+	* @param maxiter The maximum number of iterations. default=12
+	* @param maxshift Maximum translation in pixels in any direction. If the solution yields a shift beyond this value in any direction, then the refinement is judged a failure and the original alignment is used as the solution
+	* @param stepscale If set to any non-zero value, scale will be included in the alignment, and this will be the initial step. Images should be edgenormalized. If the scale goes beyond +-30% alignment will fail
+	* @param verbose This will cause debugging information to be printed on the screen for the iterative refinement. Larger numbers -> more info. default=0
+     */
+	class RefineAlignerCG:public Aligner
+	{
+	  public:
+		virtual EMData * align(EMData * this_img, EMData * to_img,
+					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
+
+		virtual EMData * align(EMData * this_img, EMData * to_img) const
+		{
+			return align(this_img, to_img, "sqeuclidean", Dict());
+		}
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual string get_desc() const
+		{
+			return "Refines a preliminary 2D alignment using a simplex algorithm. Subpixel precision.";
+		}
+
+		static Aligner *NEW()
+		{
+			return new RefineAlignerCG();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+
+			d.put("mode", EMObject::INT, "Currently unused");
+			d.put("xform.align2d", EMObject::TRANSFORM, "The Transform storing the starting guess. If unspecified the identity matrix is used");
+			d.put("step", EMObject::FLOAT, "The x increment used to create the starting simplex. Default is 0.1");
+			d.put("precision", EMObject::FLOAT, "The precision which, if achieved, can stop the iterative refinement before reaching the maximum iterations. Default is 0.02.");
+			d.put("maxiter", EMObject::INT,"The maximum number of iterations that can be performed by the Simplex minimizer. default=12");
+			d.put("maxshift", EMObject::INT,"Maximum translation in pixels in any direction. If the solution yields a shift beyond this value in any direction, then the refinement is judged a failure and the original alignment is used as the solution.");
+			d.put("stepscale", EMObject::FLOAT, "If set to any non-zero value, scale will be included in the alignment. Images should be edgenormalized. If the scale goes beyond +-30% alignment will fail.");
 			d.put("verbose", EMObject::INT, "This will cause debugging information to be printed on the screen for the iterative refinement. Larger numbers -> more info. default=0");
 			return d;
 		}

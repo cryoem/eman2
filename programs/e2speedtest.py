@@ -36,6 +36,7 @@ import sys
 import math
 import time
 from pprint import pprint
+from random import uniform
 
 from EMAN2 import *
 
@@ -67,7 +68,7 @@ improved with time."""
 	(options, args) = parser.parse_args()
 
 	SIZE = options.size
-	NTT = 205		# adjusted to keep new values with refine scaled to old values on reference machine
+	NTT = 315		# adjusted to keep new values with refine scaled to old values on reference machine
 
 	print 'This could take a few minutes. Please be patient.'
 	if options.big:
@@ -88,16 +89,13 @@ improved with time."""
 
 	data = [None for i in xrange(NTT)]
 
+	tmpl=test_image(0,size=(SIZE,SIZE))
 	for i in xrange(NTT):
-#		 data[i] = test_image
-#	pat.copy()
-
-#		 for j in xrange(SIZE):
-#			 for k in xrange(SIZE):
-#				 data[i].set_value_at_fast(j, k, Util.get_gauss_rand(0, 1.0))
-#		 data[i].update()
-		data[i]=test_image(0,size=(SIZE,SIZE))
-		data[i].add(test_image(1,size=(SIZE,SIZE)))
+		data[i]=tmpl.process("xform",{"transform":Transform({"type":"2d","alpha":uniform(0,360.0),"tx":uniform(-4.0,4.0),"ty":uniform(-4.0,4.0)})})
+		noise=test_image(1,size=(SIZE,SIZE))
+		noise.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.1})
+		noise.mult(.2)
+		data[i].add(noise)
 		data[i].process_inplace('normalize.circlemean')
 		data[i].process_inplace('mask.sharp', {'outer_radius':data[i].get_xsize()/2})
 
@@ -307,7 +305,7 @@ so in most cases it is not dealt with.'
 			else:
 				tmp = data[i].align('rotate_translate_flip', data[j], {})
 				data[i].del_attr("xform.align2d")
-				tmp2 = data[i].align('refine',data[j],{"xform.align2d":tmp.get_attr("xform.align2d")},"ccc",{})
+				tmp2 = data[i].align('refinecg',data[j],{"verbose":0,"xform.align2d":tmp.get_attr("xform.align2d")},"ccc",{})
 
 			if j%10 == 0:
 				sys.stdout.write('.')
@@ -337,7 +335,7 @@ so in most cases it is not dealt with.'
 		print 'An Intel Core i7-3960X 3.3Ghz SF -------------------------------- 900 - 960 (6 cores -> 5400 - 5750)'
 
 	print '\nYour machines speed factor = %1.1f\n' % (25000.0 / ti)
-	print '\nThis repesents %1.2f RTFAligns/sec\n' % (3.0 * (NTT - 5.0) / ti)
+	print '\nThis repesents %1.2f (RTFAlign+RefineCG)/sec\n' % (3.0 * (NTT - 5.0) / ti)
 
 if __name__ == "__main__":
 	main()

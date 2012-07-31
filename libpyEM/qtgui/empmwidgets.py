@@ -456,6 +456,19 @@ class PMFileNameWidget(PMBaseWidget):
 			files = filename.split()
 		else:
 			files = filename.split(",")
+		
+		# If we have too many files, the user will have to wait a LOOONG time for the image check, so we just skip it
+		if len(files)>20 :
+			try:
+				tst=EMData(files[0],0)
+				nx,ny,nz=tst["nx"],tst["ny"],tst["nz"]
+			except: nx,ny,nz=0,0,0
+
+			if nx>0: self.infolabel.setText("Files: %d   %dx%dx%d"%(len(files),nx,ny,nz))
+			else : self.infolabel.setText("Files: %d"%(len(files)))
+
+			return True
+			
 		# Check each file
 		numimages = 0
 		nx,ny,nz=0,0,0
@@ -471,8 +484,8 @@ class PMFileNameWidget(PMBaseWidget):
 				nx,ny,nz=tst["nx"],tst["ny"],tst["nz"]
 			except:
 				nx,ny,nz=0,0,0
-		if nx>0: self.infolabel.setText("Num Images: %d  %dx%dx%d"%(numimages,nx,ny,nz))
-		else : self.infolabel.setText("Num Images: %d"%numimages)
+		if nx>0: self.infolabel.setText("Files: %d Images: %d  %dx%dx%d"%(len(files),numimages,nx,ny,nz))
+		else : self.infolabel.setText("Files: %d Images: %d"%(len(files),numimages))
 
 		return True
 

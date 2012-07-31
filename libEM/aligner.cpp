@@ -76,6 +76,7 @@ const string RotateTranslateFlipAlignerPawel::NAME = "rotate_translate_flip_resa
 const string RTFExhaustiveAligner::NAME = "rtf_exhaustive";
 const string RTFSlowExhaustiveAligner::NAME = "rtf_slow_exhaustive";
 const string RefineAligner::NAME = "refine";
+const string RefineAlignerCG::NAME = "refinecg";
 const string SymAlignProcessorQuat::NAME = "symalignquat";
 const string SymAlignProcessor::NAME = "symalign";
 const string Refine3DAlignerGrid::NAME = "refine_3d_grid";
@@ -109,6 +110,7 @@ template <> Factory < Aligner >::Factory()
 	force_add<RTFSlowExhaustiveAligner>();
 	force_add<SymAlignProcessor>();
 	force_add<RefineAligner>();
+	force_add<RefineAlignerCG>();
 	force_add<SymAlignProcessorQuat>();
 	force_add<Refine3DAlignerGrid>();
 	force_add<Refine3DAlignerQuaternion>();
@@ -1576,15 +1578,7 @@ static double refalifn(const gsl_vector * v, void *params)
 	EMData *with = (*dict)["with"];
 	bool mirror = (*dict)["mirror"];
 
-//	float mean = (float)this_img->get_attr("mean");
-//	if ( Util::goodf(&mean) ) {
-//		//cout << "tmps mean is nan even before rotation" << endl;
-//	}
-
 	Transform t(Dict("type","2d","alpha",static_cast<float>(a)));
-// 	Transform3D t3d(Transform3D::EMAN, (float)a, 0.0f, 0.0f);
-// 	t3d.set_posttrans( (float) x, (float) y);
-//	tmp->rotate_translate(t3d);
 	t.set_trans((float)x,(float)y);
 	t.set_mirror(mirror);
 	if (v->size>3) {
@@ -1598,29 +1592,56 @@ static double refalifn(const gsl_vector * v, void *params)
 	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
 	double result = c->cmp(tmp,with);
 
-	// DELETE AT SOME STAGE, USEFUL FOR PRERELEASE STUFF
-	// 	float test_result = (float)result;
-// 	if ( Util::goodf(&test_result) ) {
-//		cout << "result " << result << " " << x << " " << y << " " << a << endl;
-//		cout << (float)this_img->get_attr("mean") << " " << (float)tmp->get_attr("mean") << " " << (float)with->get_attr("mean") << endl;
-//		tmp->write_image("tmp.hdf");
-//		with->write_image("with.hdf");
-//		this_img->write_image("this_img.hdf");
-//		EMData* t = this_img->copy();
-//		cout << (float)t->get_attr("mean") << endl;
-//		t->rotate_translate( t3d );
-//		cout << (float)t->get_attr("mean") << endl;
-//		cout << "exit" << endl;
-//// 		double result = c->cmp(t,with);
-//		cout << (float)t->get_attr("mean") << endl;
-//		cout << "now exit" << endl;
-//		delete t;
-// 	}
-
-
 	if (tmp != 0) delete tmp;
 	
 	return result;
+}
+
+static void refalidf(const gsl_vector * v, void *params,gsl_vector * df) {
+	// we do this using a simple local difference estimate due to the expense of the calculation. 
+	// The step has to be large enough for the similarity metric
+	// To provide an accurate change in value. 
+	static double lstep[4] = { 0.05, 0.05, 0.1, 0.01 }; 
+	
+	gsl_vector *vc = gsl_vector_alloc(v->size);
+	gsl_vector_memcpy(vc,v);
+	
+	double f = refalifn(v,params);
+	for (unsigned int i=0; i<v->size; i++) {
+		double *vp = gsl_vector_ptr(vc,i);
+		*vp+=lstep[i];
+		double f2 = refalifn(vc,params);
+		*vp-=lstep[i];
+		
+		gsl_vector_set(df,i,(f2-f)/lstep[i]);
+	}
+	
+	gsl_vector_free(vc);
+	return;
+}
+
+static void refalifdf(const gsl_vector * v, void *params, double * f, gsl_vector * df) {
+	// we do this using a simple local difference estimate due to the expense of the calculation. 
+	// The step has to be large enough for the similarity metric
+	// To provide an accurate change in value. 
+	static double lstep[4] = { 0.05, 0.05, 0.1, 0.01 }; 
+	
+	gsl_vector *vc = gsl_vector_alloc(v->size);
+	gsl_vector_memcpy(vc,v);
+	
+	*f = refalifn(v,params);
+	for (unsigned int i=0; i<v->size; i++) {
+		double *vp = gsl_vector_ptr(vc,i);
+		*vp+=lstep[i];
+		double f2 = refalifn(vc,params);
+		*vp-=lstep[i];
+		
+		gsl_vector_set(df,i,(f2-*f)/lstep[i]);
+	}
+	
+	gsl_vector_free(vc);
+	return;
+
 }
 
 static double refalifnfast(const gsl_vector * v, void *params)
@@ -1731,7 +1752,6 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 
 	float precision = params.set_default("precision",0.04f);
 	int maxiter = params.set_default("maxiter",28);
-	int verbose = params.set_default("verbose",0);
 
 //	printf("Refine sx=%1.2f sy=%1.2f sa=%1.2f prec=%1.4f maxit=%d\n",stepx,stepy,stepaz,precision,maxiter);
 //	printf("%1.2f %1.2f %1.1f  ->",(float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1),(float)gsl_vector_get(s->x, 2));
@@ -1742,9 +1762,135 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 		if (status) {
 			break;
 		}
-		float size = gsl_multimin_fminimizer_size (s);
-		rval = gsl_multimin_test_size(size, precision);
-		if (verbose>2) printf("GSL %d. %1.3f %1.3f %1.3f   %1.3f\n",iter,gsl_vector_get(s->x,0),gsl_vector_get(s->x,1),gsl_vector_get(s->x,2),size);
+		rval = gsl_multimin_test_size(gsl_multimin_fminimizer_size(s), precision);
+	}
+
+	int maxshift = params.set_default("maxshift",-1);
+
+	if (maxshift <= 0) {
+		maxshift = this_img->get_xsize() / 4;
+	}
+	float fmaxshift = static_cast<float>(maxshift);
+	if ( fmaxshift >= fabs((float)gsl_vector_get(s->x, 0)) && fmaxshift >= fabs((float)gsl_vector_get(s->x, 1)) && (stepscale==0 || (((float)gsl_vector_get(s->x, 3))<1.3 && ((float)gsl_vector_get(s->x, 3))<0.7))  )
+	{
+//		printf(" Refine good %1.2f %1.2f %1.1f\n",(float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1),(float)gsl_vector_get(s->x, 2));
+		Transform  tsoln(Dict("type","2d","alpha",(float)gsl_vector_get(s->x, 2)));
+		tsoln.set_mirror(mirror);
+		tsoln.set_trans((float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1));
+		if (stepscale!=0.0) tsoln.set_scale((float)gsl_vector_get(s->x, 3));
+		result = this_img->process("xform",Dict("transform",&tsoln));
+		result->set_attr("xform.align2d",&tsoln);
+	} else { // The refine aligner failed - this shift went beyond the max shift
+//		printf(" Refine Failed %1.2f %1.2f %1.1f\n",(float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1),(float)gsl_vector_get(s->x, 2));
+		result = this_img->process("xform",Dict("transform",t));
+		result->set_attr("xform.align2d",t);
+	}
+
+	delete t;
+	t = 0;
+
+	gsl_vector_free(x);
+	gsl_vector_free(ss);
+	gsl_multimin_fminimizer_free(s);
+
+	if (c != 0) delete c;
+	return result;
+}
+
+EMData *RefineAlignerCG::align(EMData * this_img, EMData *to,
+	const string & cmp_name, const Dict& cmp_params) const
+{
+
+	if (!to) {
+		return 0;
+	}
+
+	EMData *result;
+	int mode = params.set_default("mode", 0);
+	float saz = 0.0;
+	float sdx = 0.0;
+	float sdy = 0.0;
+	float sscale = 1.0;
+	bool mirror = false;
+	Transform* t;
+	if (params.has_key("xform.align2d") ) {
+		t = params["xform.align2d"];
+		Dict params = t->get_params("2d");
+		saz = params["alpha"];
+		sdx = params["tx"];
+		sdy = params["ty"];
+		mirror = params["mirror"];
+		sscale = params["scale"];
+	} else {
+		t = new Transform(); // is the identity
+	}
+
+	// We do this to prevent the GSL routine from crashing on an invalid alignment
+	if ((float)(this_img->get_attr("sigma"))==0.0 || (float)(to->get_attr("sigma"))==0.0) {
+		result = this_img->process("xform",Dict("transform",t));
+		result->set_attr("xform.align2d",t);
+		delete t;
+		return result;
+	}
+	
+	float step = params.set_default("step",0.1f);
+	float stepscale = params.set_default("stepscale",0.0f);
+
+	int np = 3;
+	if (stepscale!=0.0) np++;
+	Dict gsl_params;
+	gsl_params["this"] = this_img;
+	gsl_params["with"] = to;
+	gsl_params["snr"]  = params["snr"];
+	gsl_params["mirror"] = mirror;
+
+	const gsl_multimin_fdfminimizer_type *T = gsl_multimin_fdfminimizer_vector_bfgs;
+	
+	gsl_vector *x = gsl_vector_alloc(np);
+	gsl_vector_set(x, 0, sdx);
+	gsl_vector_set(x, 1, sdy);
+	gsl_vector_set(x, 2, saz);
+	if (stepscale!=0.0) gsl_vector_set(x,3,1.0);
+	
+	Cmp *c = 0;
+
+	gsl_multimin_function_fdf minex_func;
+	if (mode == 2) {
+		minex_func.f = &refalifnfast;
+	}
+	else {
+		c = Factory < Cmp >::get(cmp_name, cmp_params);
+		gsl_params["cmp"] = (void *) c;
+		minex_func.f = &refalifn;
+	}
+
+	minex_func.df = &refalidf;
+	minex_func.fdf = &refalifdf;
+	minex_func.n = np;
+	minex_func.params = (void *) &gsl_params;
+
+	gsl_multimin_fdfminimizer *s = gsl_multimin_fdfminimizer_alloc(T, np);
+	gsl_multimin_fdfminimizer_set(s, &minex_func, x, step, 0.001f);
+
+	int rval = GSL_CONTINUE;
+	int status = GSL_SUCCESS;
+	int iter = 1;
+
+	float precision = params.set_default("precision",0.02f);
+	int maxiter = params.set_default("maxiter",12);
+	int verbose = params.set_default("verbose",0);
+
+//	printf("Refine sx=%1.2f sy=%1.2f sa=%1.2f prec=%1.4f maxit=%d\n",stepx,stepy,stepaz,precision,maxiter);
+//	printf("%1.2f %1.2f %1.1f  ->",(float)gsl_vector_get(s->x, 0),(float)gsl_vector_get(s->x, 1),(float)gsl_vector_get(s->x, 2));
+
+	while (rval == GSL_CONTINUE && iter < maxiter) {
+		iter++;
+		status = gsl_multimin_fdfminimizer_iterate(s);
+		if (status) {
+			break;
+		}
+		rval = gsl_multimin_test_gradient (s->gradient, precision);
+//		if (verbose>2) printf("GSL %d. %1.3f %1.3f %1.3f   %1.3f\n",iter,gsl_vector_get(s->x,0),gsl_vector_get(s->x,1),gsl_vector_get(s->x,2),s->gradient[0]);
 	}
 
 	int maxshift = params.set_default("maxshift",-1);
@@ -1772,8 +1918,7 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 	t = 0;
 
 	gsl_vector_free(x);
-	gsl_vector_free(ss);
-	gsl_multimin_fminimizer_free(s);
+	gsl_multimin_fdfminimizer_free(s);
 
 	if (c != 0) delete c;
 	return result;

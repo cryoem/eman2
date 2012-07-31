@@ -1,11 +1,17 @@
 High priority
+2.1
 7/21/12		Automatic filter selection at ctf stage
 7/21/12		BDB->HDF
 7/21/12		Develop JSON files
-7/21/12		Add fastseed option to gui
 7/22/12		Same mask for all projections ?
-7/22/12		2d plotting of 1d image in browser broken
 7/22/12		Counting in filename entry in GUI (was taking a LOOONG time). Fix with new caching system.
+
+2.06
+7/21/12		Add fastseed option to gui
+7/27/12		RCT .box import broken in projectmanager
+7/22/12		2d plotting of 1d image in browser broken
+7/27/12		Can't browse BDB dictionary contents
 
 Low priority
 7/25/12		In orthographic projection in 3-D viewer, mouse wheel behavior is inverted
+

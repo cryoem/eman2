@@ -76,7 +76,9 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 	parser.add_argument("--extractplots",action="store_true",help="If a database contains sets of plots, such as bdb:refine_xx#convergence.results, this will extract the plots as text files.")
 	parser.add_argument("--check",action="store_true",help="Check for self-consistency and errors in the structure of specified databases",default=False)
 	parser.add_argument("--nocache",action="store_true",help="Don't use the database cache for this operation",default=False)
-	
+	parser.add_argument("--merge",action="store_true",help="This will merge the contents of BDB 2-N into BDB 1 (including BDB 1's contents)",default=False)
+
+
 	parser.add_argument("--makevstack",type=str,help="Creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
 	parser.add_argument("--appendvstack",type=str,help="Appends to/creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -113,6 +115,29 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 		vstackn=len(vstack)
 	else : vstack=None
 		
+	if options.merge :
+		print "WARNING: Merge mode\nCombining contents of: ",", ".join(args[1:])
+		print "into ",args[0]
+		
+		if raw_input("Proceed (y/n) :").lower() != "y" :
+			print "Aborting"
+			sys.exit(1)
+		
+		
+		for i,path in enumerate(args):
+			if path.lower()[:4]=="bdb:" and not "#" in path : path="bdb:.#"+path[4:]
+			if path.lower()[:4]!="bdb:" : path="bdb:"+path
+			
+			if i==0 :
+				outdb=db_open_dict(path)
+				continue
+			
+			indb=db_open_dict(path,True)
+			for k in indb.keys():
+				outdb[k]=indb[k]
+				
+		print "Merging complete"
+		sys.exit(0)
 	
 	for path in args:
 		if path.lower()[:4]=="bdb:" and not "#" in path : path="bdb:.#"+path[4:]
