@@ -385,6 +385,7 @@ EMObject::operator short () const
 									get_object_type_name(type));
 			}
 	}
+	return 0;
 }
 
 EMObject::operator int () const
