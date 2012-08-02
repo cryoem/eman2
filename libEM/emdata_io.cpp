@@ -121,15 +121,20 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 		}
 	}
 
-#ifndef HDFIO_CACHE
 #ifndef IMAGEIO_CACHE
 	if( imageio )
 	{
-		delete imageio;
-		imageio = 0;
+#ifdef HDFIO_CACHE
+		if(dynamic_cast<HdfIO2*>(imageio)==NULL && dynamic_cast<HdfIO*>(imageio)==NULL) {
+#endif	//HDFIO_CACHE
+			delete imageio;
+			imageio = 0;
+#ifdef HDFIO_CACHE
+		}
+#endif	//HDFIO_CACHE
 	}
 #endif	//IMAGEIO_CACHE
-#endif	//HDFIO_CACHE
+
 	EXITFUNC;
 }
 
@@ -202,15 +207,19 @@ void EMData::read_binedimage(const string & filename, int img_index, int binfact
 		}
 	}
 
-#ifndef HDFIO_CACHE
 #ifndef IMAGEIO_CACHE
 	if( imageio )
 	{
-		delete imageio;
-		imageio = 0;
+#ifdef HDFIO_CACHE
+		if(dynamic_cast<HdfIO2*>(imageio)==NULL && dynamic_cast<HdfIO*>(imageio)==NULL) {
+#endif	//HDFIO_CACHE
+			delete imageio;
+			imageio = 0;
+#ifdef HDFIO_CACHE
+		}
+#endif	//HDFIO_CACHE
 	}
-#endif
-#endif
+#endif	//IMAGEIO_CACHE
 
 	EXITFUNC;
 }
@@ -377,16 +386,19 @@ void EMData::write_image(const string & filename, int img_index,
 		imageio->flush();
 	}
 
-#ifndef HDFIO_CACHE
 #ifndef IMAGEIO_CACHE
 	if( imageio )
 	{
-		delete imageio;
-		imageio = 0;
+#ifdef HDFIO_CACHE
+		if(dynamic_cast<HdfIO2*>(imageio)==NULL && dynamic_cast<HdfIO*>(imageio)==NULL) {
+#endif	//HDFIO_CACHE
+			delete imageio;
+			imageio = 0;
+#ifdef HDFIO_CACHE
+		}
+#endif	//HDFIO_CACHE
 	}
-#endif
-#endif
-
+#endif	//IMAGEIO_CACHE
 
 	EXITFUNC;
 }

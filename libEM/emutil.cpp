@@ -506,15 +506,21 @@ int EMUtil::get_image_count(const string & filename)
 	if (imageio) {
 		nimg = imageio->get_nimg();
 	}
-#ifndef HDFIO_CACHE
+
 #ifndef IMAGEIO_CACHE
 	if( imageio )
 	{
-		delete imageio;
-		imageio = 0;
+#ifdef HDFIO_CACHE
+		if(dynamic_cast<HdfIO2*>(imageio)==NULL && dynamic_cast<HdfIO*>(imageio)==NULL) {
+#endif	//HDFIO_CACHE
+			delete imageio;
+			imageio = 0;
+#ifdef HDFIO_CACHE
+		}
+#endif	//HDFIO_CACHE
 	}
 #endif	//IMAGEIO_CACHE
-#endif	//HDFIO_CACHE
+
 	EXITFUNC;
 	return nimg;
 }
