@@ -47,6 +47,7 @@ using boost::shared_ptr;
 
 #ifdef	HDFIO_CACHE
 	#include <boost/filesystem.hpp>
+	#include <boost/version.hpp>
 #endif	//HDFIO_CACHE
 
 #ifdef WIN32
@@ -590,8 +591,13 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 		}
 
 		boost::filesystem::path p(filename);
-//		boost::filesystem::path full_p = boost::filesystem::complete(p);
+
+#if BOOST_VERSION >= 104600 && BOOST_FILESYSTEM_VERSION >= 3
 		boost::filesystem::path full_p = boost::filesystem::absolute(p);
+#else
+		boost::filesystem::path full_p = boost::filesystem::complete(p);
+#endif
+
 		FileItem * fitem = HDFCache::instance()->get_file(full_p.string());
 		if(fitem && readonly==fitem->get_readonly()) {
 			imageio = fitem->get_imgio();
