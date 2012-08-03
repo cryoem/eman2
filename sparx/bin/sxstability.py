@@ -69,7 +69,7 @@ def main():
 		myid = mpi_comm_rank(MPI_COMM_WORLD)
 
 		from applications import within_group_refinement
-		from pixel_error import multi_align_stability
+		from pixel_error import multi_align_stability_new
 		from utilities import write_text_file
 
 		global_def.BATCH = True
@@ -141,7 +141,7 @@ def main():
 						all_ali_params.append(ali_params)
 						if options.verbose:
 							write_text_file([ALPHA, SX, SY, MIRROR, SCALE], "ali_params_grp_%03d_run_%d"%(i, ii)) 
-					stable_set, mir_stab_rate, pix_err = multi_align_stability(all_ali_params, 0.0, 10000.0, options.thld_err, options.verbose)
+					stable_set, mir_stab_rate, pix_err = multi_align_stability_new(all_ali_params, 0.0, 10000.0, options.thld_err, options.verbose, 2*ou+1)
 					print "Average %4d : %20.3f %20.3f %20d %20d"%(i, mir_stab_rate, pix_err, len(stable_set), len(mem))
 					if options.stab_part and len(stable_set) >= options.thld_grp:
 						stab_mem = [0,0.0,0]*len(stable_set)
