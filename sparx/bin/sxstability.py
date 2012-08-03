@@ -108,7 +108,17 @@ def main():
 						for im in xrange(len(class_data)):
 							class_data[im] = filt_ctf(class_data[im], class_data[im].get_attr("ctf"), binary=1)
 					for im in class_data:
-						set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0])
+						try:
+							t = im.get_attr("xform.align2d")
+							d = t.get_params("2D")
+							set_params2D(im, [d["alpha"],d["tx"],d["ty"],d["mirror"],d["scale"]])
+						except:
+							try:
+								t = im.get_attr("xform.projection")
+								d = t.get_params("spider")
+								set_params2D(im, [0.0,-d["tx"],-d["ty"],0,1.0])
+							except:
+								set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0])
 					all_ali_params = []
 					for ii in xrange(num_ali):
 						ali_params = []
@@ -134,8 +144,8 @@ def main():
 					stable_set, mir_stab_rate, pix_err = multi_align_stability(all_ali_params, 0.0, 10000.0, options.thld_err, options.verbose)
 					print "Average %4d : %20.3f %20.3f %20d %20d"%(i, mir_stab_rate, pix_err, len(stable_set), len(mem))
 					if options.stab_part and len(stable_set) >= options.thld_grp:
-						stab_mem = [0]*len(stable_set)
-						for j in xrange(len(stable_set)): stab_mem[j] = mem[int(stable_set[j][1])]
+						stab_mem = [0,0.0,0]*len(stable_set)
+						for j in xrange(len(stable_set)): stab_mem[j] = [mem[int(stable_set[j][1])], stable_set[j][0], j]
 						write_text_file(stab_mem, "stab_part_%03d.txt"%i)
 
 		global_def.BATCH = False

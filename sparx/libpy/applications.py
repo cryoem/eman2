@@ -13585,8 +13585,8 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 		for Iter in xrange(max_iter):
 			total_iter += 1
 			tavg = ave_series(data)
-			fl = 0.1+(FH-0.1)*Iter/float(max_iter-1)
-			tavg = filt_tanl(tavg, fl, FF)
+			if FH>0.0 and FF>0.0:
+				tavg = filt_tanl(tavg, 0.1+(FH-0.1)*Iter/float(max_iter-1), FF)
 			if total_iter == len(xrng)*max_iter:  return tavg
 			cs[0] = sx_sum/float(nima)
 			cs[1] = sy_sum/float(nima)
@@ -13615,26 +13615,18 @@ def match_independent_runs(data, refi, n_group, T):
 
 	#print Parts
 	#print "Before matching = ", localtime()[:5]
-        MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_bbenum(Parts, T=T, J=50, max_branching=40, stmult=0.1, branchfunc=2)
+	MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_bbenum(Parts, T=T, J=50, max_branching=40, stmult=0.1, branchfunc=2)
 	#print "After matching = ", localtime()[:5]
 
-        # I commented out next three, not much use printing them,  PAP.
-	#print MATCH
-        #print STB_PART
-        #print CT_s
-        #print CT_t
-        #print ST
- 	#print st
-
-        cost_by_match_thresh = []
-        for i in xrange(len(CT_s)):
-                if CT_s[i] > T:
-                        cost_by_match_thresh.append(CT_s[i])
-
-        print "%d-way match: total cost of matches over threshold: "%(len(Parts)), sum(cost_by_match_thresh)
-        print "%d-way match: total number of matches over threshold: "%(len(Parts)), len(cost_by_match_thresh)
-        print "%d-way match: cost by match over threshold: "%(len(Parts)), cost_by_match_thresh
-        print " "
+	cost_by_match_thresh = []
+	for i in xrange(len(CT_s)):
+		if CT_s[i] > T:
+			cost_by_match_thresh.append(CT_s[i])
+	
+	print "%d-way match: total cost of matches over threshold: "%(len(Parts)), sum(cost_by_match_thresh)
+	print "%d-way match: total number of matches over threshold: "%(len(Parts)), len(cost_by_match_thresh)
+	print "%d-way match: cost by match over threshold: "%(len(Parts)), cost_by_match_thresh
+	print " "
 
 	STB_PART_cleaned = []
 	for i in xrange(len(STB_PART)):
