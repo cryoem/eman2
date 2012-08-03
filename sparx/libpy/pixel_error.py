@@ -697,6 +697,9 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 
 
 
+
+
+
 def multi_align_stability_new(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.0, err_thld = 1.732, print_individual = False, d = 64):
 
 	def var(a):
@@ -707,7 +710,7 @@ def multi_align_stability_new(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10
 		return (var-avg*avg/n)/(n-1)
 
 	def func(args, data, return_avg_pixel_error=True):
-
+		# Computes pixel error per particle given transformation parameters (G_l)
 		from math import pi, sin, cos
 		from utilities import combine_params2
 	
@@ -718,7 +721,7 @@ def multi_align_stability_new(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10
 
 		L = len(ali_params)
 		N = len(ali_params[0])/4
-		print  "        FUNC",N,L,d
+		#print  "        FUNC",N,L,d
 	
 		args_list= [0.0]*(L*3)
 		for i in xrange(L*3-3):        args_list[i] = args[i]
@@ -744,82 +747,16 @@ def multi_align_stability_new(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10
 				anger += (sin(alpha[l]*pi/180.0)-sum_sina)**2
 			anger *= 2
 			#print i,P,P/L,var(sx),var(sy)
-			print  i,anger,"         ",sx,var(sx),"      ",sy,var(sy)
+			#print  i,d*d/4.*anger+var(sx)+var(sy),"   ",anger,"         ",sx,var(sx),"      ",sy,var(sy)
 			sqr_pixel_error[i] = d*d/4.*anger+var(sx)+var(sy)
-	
+
 		# Warning: Whatever I return here is squared pixel error, this is for the easy expression of derivative
 		# Don't forget to square root it after getting the value
 		if return_avg_pixel_error:         return sum(sqr_pixel_error)/N
 		else: return sqr_pixel_error
 
-	'''
-	def dfunc(args, data):
 
-	        from math import pi, sin, cos
-	        from numpy import zeros, array, float64
-
-	        g = zeros(args.shape, float64)
-
-	        ali_params = data[0]
-	        d = data[1]
-
-	        L = len(ali_params)
-	        N = len(ali_params[0])/4
-
-	        args_list= [0.0]*(L*3)
-	        for i in xrange(L*3-3):        args_list[i] = args[i]
-	        cosa = [0.0]*L
-	        sina = [0.0]*L
-	        for i in xrange(L):
-	        	cosa[i] = cos(args_list[i*3]*pi/180.0)
-	        	sina[i] = sin(args_list[i*3]*pi/180.0)
-	        for i in xrange(N):
-	        	sum_cosa = 0.0
-	        	sum_sina = 0.0
-	        	sx = [0.0]*L
-	        	sy = [0.0]*L
-	        	for j in xrange(L):
-	        		if int(ali_params[j][i*4+3]) == 0:
-	        			sum_cosa += cos((args_list[j*3]+ali_params[j][i*4])*pi/180.0)
-	        			sum_sina += sin((args_list[j*3]+ali_params[j][i*4])*pi/180.0)
-	        			sx[j] = args_list[j*3+1]+ali_params[j][i*4+1]*cosa[j]-ali_params[j][i*4+2]*sina[j]
-	        			sy[j] = args_list[j*3+2]+ali_params[j][i*4+1]*sina[j]+ali_params[j][i*4+2]*cosa[j]
-	        		else:
-	        			sum_cosa += cos((-args_list[j*3]+ali_params[j][i*4])*pi/180.0)
-	        			sum_sina += sin((-args_list[j*3]+ali_params[j][i*4])*pi/180.0)
-	        			sx[j] = -args_list[j*3+1]+ali_params[j][i*4+1]*cosa[j]+ali_params[j][i*4+2]*sina[j]
-	        			sy[j] =  args_list[j*3+2]-ali_params[j][i*4+1]*sina[j]+ali_params[j][i*4+2]*cosa[j]
-	        	P = sqrt(sum_cosa**2+sum_sina**2)
-	        	sum_cosa /= P
-	        	sum_sina /= P
-
-	        	for j in xrange(L-1):
-	        		# Original formula, useful for double-checking, DON'T DELETE!
-	        		#g[j*3] += d*d/4.0*(-1.0)*0.5/P*(-2*sum_cosa*P*sin((args_list[j*3]+ali_params[j][i*4])*pi/180.0)+\
-	        		#			      2*sum_sina*P*cos((args_list[j*3]+ali_params[j][i*4])*pi/180.0))*pi/180.0+\
-	        		#      2.0*(sx[j]-ave(sx))*(-ali_params[j][i*4+1]*sin(args_list[j*3]*pi/180.0)-ali_params[j][i*4+2]*cos(args_list[j*3]*pi/180.0))*pi/180.0+\
-	        		#      2.0*(sy[j]-ave(sy))*( ali_params[j][i*4+1]*cos(args_list[j*3]*pi/180.0)-ali_params[j][i*4+2]*sin(args_list[j*3]*pi/180.0))*pi/180.0
-	        		dx = 2.0*(sx[j]-ave(sx))
-	        		dy = 2.0*(sy[j]-ave(sy))
-	        		if int(ali_params[j][i*4+3]) == 0:
-	        			g[j*3] += (d*d/4.0*(sum_cosa*sin((args_list[j*3]+ali_params[j][i*4])*pi/180.0)-\
-	        					sum_sina*cos((args_list[j*3]+ali_params[j][i*4])*pi/180.0))+\
-	        					dx*(-ali_params[j][i*4+1]*sina[j]-ali_params[j][i*4+2]*cosa[j])+\
-	        					dy*( ali_params[j][i*4+1]*cosa[j]-ali_params[j][i*4+2]*sina[j]))*pi/180.0
-	        			g[j*3+1] += dx
-	        			g[j*3+2] += dy
-	        		else:
-	        			g[j*3] += (d*d/4.0*(-sum_cosa*sin((-args_list[j*3]+ali_params[j][i*4])*pi/180.0)+\
-	        					    sum_sina*cos((-args_list[j*3]+ali_params[j][i*4])*pi/180.0))+\
-	        					 dx*(-ali_params[j][i*4+1]*sina[j]+ali_params[j][i*4+2]*cosa[j])+\
-	        					 dy*(-ali_params[j][i*4+1]*cosa[j]-ali_params[j][i*4+2]*sina[j]))*pi/180.0
-	        			g[j*3+1] += -dx
-	        			g[j*3+2] += dy
-	        g /= (N*L)
-
-	        return g
-	'''
-	
+	####   MAIN BODY   ###################################################################################################
 	from statistics import k_means_stab_bbenum
 	from utilities import combine_params2
 	from numpy import array
@@ -849,11 +786,10 @@ def multi_align_stability_new(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10
 	mir_stab_rate = len(mir_stab_part)/float(nima)
 	if mir_stab_rate <= mir_stab_thld: return [], mir_stab_rate, -1.0
 	mir_stab_part.sort()
-	del all_part, match, stab_part, CT_s, CT_t, ST, st	
+	del all_part, match, stab_part, CT_s, CT_t, ST, st
 
-
-	for j in xrange(nima):
-		print j, ali_params[0][j*4:j*4+4], ali_params[1][j*4:j*4+4]
+	#for j in xrange(nima):
+	#	print j, ali_params[0][j*4:j*4+4], ali_params[1][j*4:j*4+4]
 
 
 	# Keep the alignment parameters of mirror stable particles
@@ -868,73 +804,61 @@ def multi_align_stability_new(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10
 	for i in xrange(num_ali-1):
 		alpha, sx, sy, mirror = align_diff_params(ali_params_mir_stab[i], ali_params_mir_stab[num_ali-1])
 		args.extend([alpha, sx, sy])
-	print  "  ALI PARAMS  ",alpha, sx, sy, mirror
-	print  "  ALI PARAMS  ",args
+	#print  "  ALI PARAMS  ",alpha, sx, sy, mirror
+	#print  "  ALI PARAMS  ",args
+
 	# Do an initial analysis, purge all outlier particles, whose pixel error are larger than three times of threshold
 	data = [ali_params_mir_stab, d]
-	pixel_error_before = func(array(args), data, return_avg_pixel_error=False)
-	#for i in xrange(len(pixel_error_before)):  print pixel_error_before[i]
+	pixel_error = func(array(args), data, return_avg_pixel_error=False)
 
 	#  Intercept here  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 	#if True:  # these errors should now be the same as computed by ave_ali_err_params, which also uses align_diff_params as in the code above.
 	#	return pixel_error_before
-	
+
 	ali_params_cleaned = [[] for i in xrange(num_ali)]
 	cleaned_part = []
 	for j in xrange(nima2):
-		if sqrt(pixel_error_before[j]) > 3*err_thld: continue
-		cleaned_part.append(j)
-		for i in xrange(num_ali):
-			ali_params_cleaned[i].extend(ali_params_mir_stab[i][j*4:j*4+4])
+		if sqrt(pixel_error[j]) <= 3*err_thld:
+			cleaned_part.append(j)
+			for i in xrange(num_ali):
+				ali_params_cleaned[i].extend(ali_params_mir_stab[i][j*4:j*4+4])
 	nima3 = len(cleaned_part)
-	if nima3 <= 1:  return [], mir_stab_rate, sqrt(sum(pixel_error_before)/nima2)
+	if nima3 <= 1:  return [], mir_stab_rate, sqrt(sum(pixel_error)/nima2)
 
-	# Use LBFGSB to minimize the sum of pixel errors
-	data = [ali_params_cleaned, d]
+	#print  "  CLEANED PART  contains ",nima3,"  images"
 
-	# Use Python code
-	#ps_lp, val, d = fmin_l_bfgs_b(func, array(args), args=[data], fprime=dfunc, bounds=None, m=10, factr=1e3, pgtol=1e-4, iprint=-1, maxfun=100)
+	# Compute alignment parameters AFGAIN after exclusion of outliers for the first numali-2 sets against the last (num_ali-1) one
+	args = []
+	for i in xrange(num_ali-1):
+		alpha, sx, sy, mirror = align_diff_params(ali_params_cleaned[i], ali_params_cleaned[num_ali-1])
+		args.extend([alpha, sx, sy])
+	#print  "  ALI PARAMS  ",alpha, sx, sy, mirror
+	#print  "  ALI PARAMS  ",args
 
-	# Use C++ code
-	ali_params_cleaned_list = []
-	for params in ali_params_cleaned: ali_params_cleaned_list.extend(params)
-	results = Util.multi_align_error(args, ali_params_cleaned_list, d)
-	ps_lp = results[:-1]
-	val = results[-1]
-	if val < 0.0:
-		# This will happen in some rare cases, it should be due to rounding errors, 
-		# because all results show the val is about 1e-13.
-		#print "Strange results"
-		#print "args =", args
-		#print "ali_params_cleaned_list =", ali_params_cleaned_list
-		#print "results = ", results
-		val = 0.0
-	del ali_params_cleaned_list	
-	
-	if sqrt(val) > grp_err_thld: return [], mir_stab_rate, sqrt(val)
-	print  len(ps_lp)
-	print  ps_lp
-	pixel_error_after = func(ps_lp, data, return_avg_pixel_error=False)
-	if True:  # these errors should now be the same as computed by ave_ali_err_params, which also uses align_diff_params as in the code above.
-		return pixel_error_after
-
-	if print_individual:
-		for i in xrange(nima):
-			if i in mir_stab_part:
-				j = mir_stab_part.index(i)
-				if j in cleaned_part:
-					print "Particle %4d :  pixel error = %8.4f \n"%(i, sqrt(pixel_error_after[cleaned_part.index(j)]))
-				else:
-					print "Particle %4d :  pixel error = %8.4f     outlier \n"%(i, sqrt(pixel_error_before[j]))
-			else: print "Particle %4d :  Mirror unstable \n"%i
+	# repeat the analysis for all particles, for outliers the error is supposed to increase
+	pixel_error = func(array(args), data, return_avg_pixel_error=False)
 
 	stable_set = []
-	for i in xrange(nima3):
-		err = sqrt(pixel_error_after[i])
-		if err < err_thld: stable_set.append([err, mir_stab_part[cleaned_part[i]]])
-	stable_set.sort()
-		
-	return stable_set, mir_stab_rate, sqrt(val)
+	val = 0.0
+	for i in xrange(nima):
+		if i in mir_stab_part:
+			j = mir_stab_part.index(i)
+			err = sqrt(pixel_error[j])
+			if err < err_thld:
+				stable_set.append([err, mir_stab_part[j]])
+				val += err
+				if print_individual:  print "Particle %4d :  pixel error = %18.4f"%(i, err)
+			else:
+				if print_individual:  print "Particle %4d :  pixel error = %18.4f  unstable"%(i, err)
+		else:
+			if print_individual:  print "Particle %4d :  Mirror unstable"%i
+
+	#stable_set.sort()
+	#if True:  # these errors should now be the same as computed by ave_ali_err_params, which also uses align_diff_params as in the code above.
+	#	return pixel_error
+
+	return stable_set, mir_stab_rate, val/len(cleaned_part)
+
 
 
 def ave_ali_err_params_new(ali_params1, ali_params2, r=25):
