@@ -65,7 +65,7 @@ def main():
 
 		from applications import within_group_refinement
 		from pixel_error import multi_align_stability_new
-		from utilities import write_text_file
+		from utilities import write_text_file, write_text_row
 
 		global_def.BATCH = True
 
@@ -88,8 +88,7 @@ def main():
 		from utilities import model_circle, get_params2D, set_params2D
 		mask = model_circle(ou, nx, nx)
 
-		if myid == 0:
-			print "%14s %20s %20s %20s %20s"%("", "Mirror stab rate", "Pixel error", "Size of stable set", "Size of set")
+		print "%14s %20s %20s %20s %20s"%("", "Mirror stab rate", "Pixel error", "Size of stable set", "Size of set")
 		for i in xrange(len(averages)):
 			mem = averages[i].get_attr('members')
 			mem = map(int, mem)
@@ -138,7 +137,7 @@ def main():
 				if options.stab_part and len(stable_set) >= options.thld_grp:
 					stab_mem = [0,0.0,0]*len(stable_set)
 					for j in xrange(len(stable_set)): stab_mem[j] = [mem[int(stable_set[j][1])], stable_set[j][0], j]
-					write_text_file(stab_mem, "stab_part_%03d.txt"%i)
+					write_text_row(stab_mem, "stab_part_%03d.txt"%i)
 
 		global_def.BATCH = False
 
