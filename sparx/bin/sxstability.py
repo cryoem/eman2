@@ -63,11 +63,6 @@ def main():
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
 
-		from mpi import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-		sys.argv = mpi_init(len(sys.argv),sys.argv)
-		number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
-		myid = mpi_comm_rank(MPI_COMM_WORLD)
-
 		from applications import within_group_refinement
 		from pixel_error import multi_align_stability_new
 		from utilities import write_text_file
@@ -96,62 +91,56 @@ def main():
 		if myid == 0:
 			print "%14s %20s %20s %20s %20s"%("", "Mirror stab rate", "Pixel error", "Size of stable set", "Size of set")
 		for i in xrange(len(averages)):
-			if i%number_of_proc == myid:
-				mem = averages[i].get_attr('members')
-				mem = map(int, mem)
-				if len(mem) < options.thld_grp:
-					print "Average %4d: Group size too small to consider for stability."%i
-				else:
-					class_data = [data[im] for im in mem]
-					if options.CTF :
-						from filter import filt_ctf
-						for im in xrange(len(class_data)):
-							class_data[im] = filt_ctf(class_data[im], class_data[im].get_attr("ctf"), binary=1)
-					for im in class_data:
+			mem = averages[i].get_attr('members')
+			mem = map(int, mem)
+			if len(mem) < options.thld_grp:
+				print "Average %4d: Group size too small to consider for stability."%i
+			else:
+				class_data = [data[im] for im in mem]
+				if options.CTF :
+					from filter import filt_ctf
+					for im in xrange(len(class_data)):
+						class_data[im] = filt_ctf(class_data[im], class_data[im].get_attr("ctf"), binary=1)
+				for im in class_data:
+					try:
+						t = im.get_attr("xform.align2d") # if they are there, no need to set them!
+					except:
 						try:
-							t = im.get_attr("xform.align2d") # if they are there, no need to set them!
+							t = im.get_attr("xform.projection")
+							d = t.get_params("spider")
+							set_params2D(im, [0.0,-d["tx"],-d["ty"],0,1.0])
 						except:
-							try:
-								t = im.get_attr("xform.projection")
-								d = t.get_params("spider")
-								set_params2D(im, [0.0,-d["tx"],-d["ty"],0,1.0])
-							except:
-								set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0])
-					all_ali_params = []
-					for ii in xrange(num_ali):
-						ali_params = []
+							set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0])
+				all_ali_params = []
+				for ii in xrange(num_ali):
+					ali_params = []
+					if options.verbose:
+						ALPHA = []
+						SX = []
+						SY = []
+						MIRROR = []
+						SCALE = []
+					dummy = within_group_refinement(class_data, mask, True, 1, ou, 1, xrng, yrng, step, 90.0, 30, options.fl, options.aa)
+					for im in class_data:
+						alpha, sx, sy, mirror, scale = get_params2D(im)
+						ali_params.extend([alpha, sx, sy, mirror])
 						if options.verbose:
-							ALPHA = []
-							SX = []
-							SY = []
-							MIRROR = []
-							SCALE = []
-						dummy = within_group_refinement(class_data, mask, True, 1, ou, 1, xrng, yrng, step, 90.0, 30, options.fl, options.aa)
-						for im in class_data:
-							alpha, sx, sy, mirror, scale = get_params2D(im)
-							ali_params.extend([alpha, sx, sy, mirror])
-							if options.verbose:
-								ALPHA.append(alpha)
-								SX.append(sx)
-								SY.append(sy)
-								MIRROR.append(mirror)
-								SCALE.append(scale)
-						all_ali_params.append(ali_params)
-						if options.verbose:
-							write_text_file([ALPHA, SX, SY, MIRROR, SCALE], "ali_params_grp_%03d_run_%d"%(i, ii)) 
-					stable_set, mir_stab_rate, pix_err = multi_align_stability_new(all_ali_params, 0.0, 10000.0, options.thld_err, options.verbose, 2*ou+1)
-					print "Average %4d : %20.3f %20.3f %20d %20d"%(i, mir_stab_rate, pix_err, len(stable_set), len(mem))
-					if options.stab_part and len(stable_set) >= options.thld_grp:
-						stab_mem = [0,0.0,0]*len(stable_set)
-						for j in xrange(len(stable_set)): stab_mem[j] = [mem[int(stable_set[j][1])], stable_set[j][0], j]
-						write_text_file(stab_mem, "stab_part_%03d.txt"%i)
+							ALPHA.append(alpha)
+							SX.append(sx)
+							SY.append(sy)
+							MIRROR.append(mirror)
+							SCALE.append(scale)
+					all_ali_params.append(ali_params)
+					if options.verbose:
+						write_text_file([ALPHA, SX, SY, MIRROR, SCALE], "ali_params_grp_%03d_run_%d"%(i, ii)) 
+				stable_set, mir_stab_rate, pix_err = multi_align_stability_new(all_ali_params, 0.0, 10000.0, options.thld_err, options.verbose, 2*ou+1)
+				print "Average %4d : %20.3f %20.3f %20d %20d"%(i, mir_stab_rate, pix_err, len(stable_set), len(mem))
+				if options.stab_part and len(stable_set) >= options.thld_grp:
+					stab_mem = [0,0.0,0]*len(stable_set)
+					for j in xrange(len(stable_set)): stab_mem[j] = [mem[int(stable_set[j][1])], stable_set[j][0], j]
+					write_text_file(stab_mem, "stab_part_%03d.txt"%i)
 
 		global_def.BATCH = False
-
-		from mpi import mpi_finalize
-		mpi_finalize()
-
-
 
 if __name__ == "__main__":
 	main()
