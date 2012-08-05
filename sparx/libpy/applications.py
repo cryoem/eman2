@@ -13695,7 +13695,6 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 			alpha, sx, sy, mirror, scale = get_params2D(im)
 			alphai, sxi, syi, mirrori = inverse_transform2(alpha, sx, sy)
 			alphan, sxn, syn, mirrorn = combine_params2(0.0, -sxi, -syi, 0, random()*360.0, 0.0, 0.0, randint(0, 1))
-			#set_params2D(im, [random()*360.0, 0.0, 0.0, randint(0, 1), 1.0])
 			set_params2D(im, [alphan, sxn, syn, mirrorn, 1.0])
 
 	cnx = nx/2+1
@@ -13712,16 +13711,16 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 		for Iter in xrange(max_iter):
 			total_iter += 1
 			tavg = ave_series(data)
-			fl = 0.1+(FH-0.1)*Iter/float(max_iter-1)
-			tavg = filt_tanl(tavg, fl, FF)
+			if( FH > 0.0):
+				fl = 0.1+(FH-0.1)*Iter/float(max_iter-1)
+				tavg = filt_tanl(tavg, fl, FF)
 			if total_iter == len(xrng)*max_iter:  return tavg
-			cs[0] = sx_sum/float(nima)
-			cs[1] = sy_sum/float(nima)
+			if( xrng[0] > 0.0 ): cs[0] = sx_sum/float(nima)
+			if( yrng[0] > 0.0 ): cs[1] = sy_sum/float(nima)
 			tavg = fshift(tavg, -cs[0], -cs[1])
 			if Iter%4 != 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0
 			else: delta = dst
 			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF=False, delta=delta)
-
 
 def match_independent_runs(data, refi, n_group, T):
 

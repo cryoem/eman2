@@ -29,7 +29,7 @@
 #
 
 from global_def import *
-	
+
 def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode, CTF=False, random_method="", T=1.0, ali_params="xform.align2d", delta = 0.0):
 	"""
 		single iteration of 2D alignment using ormq

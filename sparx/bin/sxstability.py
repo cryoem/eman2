@@ -109,9 +109,7 @@ def main():
 							class_data[im] = filt_ctf(class_data[im], class_data[im].get_attr("ctf"), binary=1)
 					for im in class_data:
 						try:
-							t = im.get_attr("xform.align2d")
-							d = t.get_params("2D")
-							set_params2D(im, [d["alpha"],d["tx"],d["ty"],d["mirror"],d["scale"]])
+							t = im.get_attr("xform.align2d") # if they are there, no need to set them!
 						except:
 							try:
 								t = im.get_attr("xform.projection")
