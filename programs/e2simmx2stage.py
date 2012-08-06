@@ -61,6 +61,7 @@ def main():
 	parser.add_argument("--raligncmp",type=str,help="The name and parameters of the comparitor used by the second stage aligner. Default is dot.",default="dot")
 	parser.add_argument("--cmp",type=str,help="The name of a 'cmp' to be used in comparing the aligned images", default="dot:normalize=1")
 	parser.add_argument("--mask",type=str,help="File containing a single mask image to apply before similarity comparison",default=None)
+	parser.add_argument("--colmasks",type=str,help="File containing one mask for each column (projection) image, to be used when refining row (particle) image alignments.",default=None)
 	parser.add_argument("--saveali",action="store_true",help="Save alignment values, output is c x r x 4 instead of c x r x 1",default=False)
 	parser.add_argument("--prefilt",action="store_true",help="Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison",default=False)
 	parser.add_argument("--verbose", "-v", dest="verbose", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -200,6 +201,7 @@ def main():
 	# the actual final classification
 	cmd = "e2simmx.py %s %s %s -f --saveali --cmp=%s --align=%s --aligncmp=%s --fillzero --nofilecheck --force --verbose=%d"  %(args[0],args[1],args[2],options.cmp,options.align,options.aligncmp, options.verbose-1)
 	if options.mask!=None : cmd += " --mask=%s"%options.mask
+	if options.colmasks!=None : cmd += " --colmasks=%s"%options.colmasks
 	
 	if ( options.ralign != None ):
 		cmd += " --ralign=%s --raligncmp=%s" %(options.ralign,options.raligncmp)

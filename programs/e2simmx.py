@@ -97,7 +97,8 @@ class EMParallelSimMX:
 	
 		from EMAN2PAR import EMTaskCustomer
 		self.etc=EMTaskCustomer(options.parallel)
-		self.etc.precache([args[0],args[1]])
+		if options.colmasks!=None : self.etc.precache([args[0],args[1],options.colmasks])
+		else : self.etc.precache([args[0],args[1]])
 		self.num_cpus = self.etc.cpu_est()
 		if self.num_cpus < 32: # lower limit
 			self.num_cpus = 32
@@ -222,6 +223,7 @@ class EMParallelSimMX:
 				data = {}
 				data["references"] = ("cache",self.args[0],block[0],block[1])
 				data["particles"] = ("cache",self.args[1],block[2],block[3])
+				if self.options.colmasks!=None : data["colmasks"] = ("cache",self.options.colmasks,block[0],block[1])
 				if self.options.mask!=None : data["mask"] = ("cache",self.options.mask,0,1)
 				if self.options.fillzero :
 					# for each particle check to see which portion of the matrix we need to fill
@@ -372,8 +374,11 @@ class EMSimTaskDC(EMTask):
 		ref_data_name=self.data["references"][1]
 		ref_indices = image_range(*self.data["references"][2:])
 		
+		if self.data.has_key("colmasks") :
+			ref_masks_name=self.data["colmasks"][1]
+		else : ref_masks_name=None
+		
 		if self.data.has_key("mask") :
-			print "MASK ",self.data["mask"]
 			mask=EMData(self.data["mask"][1],self.data["mask"][2])
 			if shrink != None : mask.process_inplace("math.meanshrink",{"n":options["shrink"]})
 		else : mask=None
@@ -384,7 +389,14 @@ class EMSimTaskDC(EMTask):
 			image = EMData(ref_data_name,idx)
 			if shrink != None:
 				image.process_inplace("math.meanshrink",{"n":options["shrink"]})
-			refs[idx] = image
+				
+			if ref_masks_name==None :
+				refs[idx] = (image,None)
+			else :
+				mask=EMData(ref_masks_name,idx)
+				if shrink != None:
+					mask.process_inplace("math.meanshrink",{"n":options["shrink"]})
+				refs[idx] = (image,mask)
 			
 		ptcl_data_name=self.data["particles"][1]
 		ptcl_indices = image_range(*self.data["particles"][2:])
@@ -397,8 +409,11 @@ class EMSimTaskDC(EMTask):
 				raise Exception,"Couldn't read data in init_memory"
 			if shrink != None:
 				image.process_inplace("math.meanshrink",{"n":options["shrink"]})
-				if mask!=None : image.mult(mask)
+# removed 8/2/12 stevel. Don't want to apply mask before alignment
+#			if mask!=None : image.mult(mask)
 			ptcls[idx] = image
+			
+		# Note that 'refs' is now a dictionary of tuples: (reference,mask) or (reference,None)
 		return refs,ptcls,shrink,mask
 			
 	def __cmp_one_to_many(self,ptcl,refs,mask,partial=None,progress_callback=None,cbi=0,cbn=1):
@@ -417,23 +432,45 @@ class EMSimTaskDC(EMTask):
 					data[ref_idx] = (-1.0e38,None)			# ref wasn't in the partial list, skip this one
 					continue
 			if options.has_key("prefilt") and options["prefilt"]:
-				msk=ref.process("threshold.notzero")					# mask from the projection
-				ref=ref.process("filter.matchto",{"to":ptcl})	# matched filter
-				ref.mult(msk)											# remask after setsf
+				if ref[1]==None:
+					msk=ref[0].process("threshold.notzero")					# mask from the projection
+					ref[0]=ref[0].process("filter.matchto",{"to":ptcl})	# matched filter
+					ref[0].mult(msk)											# remask after setsf
+				else:
+					ref[0]=ref[0].process("filter.matchto",{"to":ptcl})	# matched filter
+					ref[0].mult(ref[1])											# remask after setsf
 			if options.has_key("align") and options["align"] != None:
-				aligned=ref.align(options["align"][0],ptcl,options["align"][1],options["aligncmp"][0],options["aligncmp"][1])
+				aligned=ref[0].align(options["align"][0],ptcl,options["align"][1],options["aligncmp"][0],options["aligncmp"][1])
 	
 				if options.has_key("ralign") and options["ralign"] != None: # potentially employ refine alignment
 					refine_parms=options["ralign"][1]
-					refine_parms["xform.align2d"] = aligned.get_attr("xform.align2d")
-					ref.del_attr("xform.align2d")
-					aligned = ref.align(options["ralign"][0],ptcl,refine_parms,options["raligncmp"][0],options["raligncmp"][1])		
+					if ref[1]!=None : 
+						#print "using mask, and ",mask
+						refine_parms["xform.align2d"] = aligned.get_attr("xform.align2d").inverse()
+						ref[0].del_attr("xform.align2d")
+						refine_parms["mask"]=ref[1]
+						alip = ptcl.align(options["ralign"][0],ref[0],refine_parms,options["raligncmp"][0],options["raligncmp"][1])
+						aligned=ref[0].copy()
+						aligned.transform(alip["xform.align2d"].inverse())
+						aligned["xform.align2d"]=alip["xform.align2d"].inverse()
+					else:
+						refine_parms["xform.align2d"] = aligned.get_attr("xform.align2d")
+						ref[0].del_attr("xform.align2d")
+						aligned = ref[0].align(options["ralign"][0],ptcl,refine_parms,options["raligncmp"][0],options["raligncmp"][1])		
+					
 			
 				if mask!=None : 
 					aligned.mult(mask)
-				t =  aligned.get_attr("xform.align2d")
-				t.invert()
-				data[ref_idx] = (ptcl.cmp(options["cmp"][0],aligned,options["cmp"][1]),t)
+					ptcl2=ptcl.copy()
+					ptcl2.mult(mask)
+					t =  aligned.get_attr("xform.align2d")
+					t.invert()
+					data[ref_idx] = (ptcl2.cmp(options["cmp"][0],aligned,options["cmp"][1]),t)
+					
+				else:
+					t =  aligned.get_attr("xform.align2d")
+					t.invert()
+					data[ref_idx] = (ptcl.cmp(options["cmp"][0],aligned,options["cmp"][1]),t)
 			else:
 				data[ref_idx] = (ptcl.cmp(options["cmp"][0],ref,options["cmp"][1]),None)
 			
@@ -541,7 +578,8 @@ def main():
 	parser.add_argument("--raligncmp",type=str,help="The name and parameters of the comparitor used by the second stage aligner. Default is dot.",default="dot")
 	parser.add_argument("--cmp",type=str,help="The name of a 'cmp' to be used in comparing the aligned images", default="dot:normalize=1")
 	parser.add_argument("--prefilt",action="store_true",help="Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison",default=False)
-	parser.add_argument("--mask",type=str,help="File containing a single mask image to apply before similarity comparison",default=None)
+	parser.add_argument("--mask",type=str,help="File containing a single mask image to apply after alignment, but before similarity comparison",default=None)
+	parser.add_argument("--colmasks",type=str,help="File containing one mask for each column (projection) image, to be used when refining row (particle) image alignments.",default=None)
 	parser.add_argument("--range",type=str,help="Range of images to process (c0,r0,c1,r1) c0,r0 inclusive c1,r1 exclusive", default=None)
 	parser.add_argument("--saveali",action="store_true",help="Save alignment values, output is 5, c x r images instead of 1. Images are (score,dx,dy,da,flip). ",default=False)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -646,11 +684,19 @@ def main():
 
 	# Read all c images, then read and compare one r image at a time
 	cimgs=EMData.read_images(args[0],range(*crange))
+	if options.colmasks:
+		cmimgs=EMData.read_images(options.colmasks,range(*crange))
+		cimgs=zip(cimgs,cmimgs)
+	else:
+		for i in range(len(cimgs)):
+			cimgs[i]=(cimgs[i],None)
+
 	if options.shrink != None: # the check function guarantees that shrink is an integer greater than 1
 		#d = [ image.process("math.meanshrink",{"n":options.shrink}) for image in cimgs]
 		#cimgs = d
-		for image in cimgs:
+		for image,imagem in cimgs:
 			image.process_inplace("math.meanshrink",{"n":options.shrink})
+			if imagem!=None : imagem.process_inplace("math.meanshrink",{"n":options.shrink})
 	
 #	if (options.lowmem):
 	rimg=EMData()
@@ -734,41 +780,58 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 	ret=[None for i in reflist]
 #	target.write_image("dbug.hdf",-1)
 	for i,r in enumerate(reflist):
-		#print "idx", i
-		if r["sigma"]==0 : continue				# bad reference
+		#print i,r
+		if r[0]["sigma"]==0 : continue				# bad reference
 		if subset!=None and i not in subset : 
 			ret[i]=None
 			continue
 		if prefilt :
 			msk=r.process("threshold.notzero")					# mask from the projection
-			r=r.process("filter.matchto",{"to":target})
-			r.mult(msk)											# remask after filtering
+			r[0]=r[0].process("filter.matchto",{"to":target})
+			r[0].mult(msk)											# remask after filtering
 
 		if align[0] :
-			r.del_attr("xform.align2d")
-			ta=r.align(align[0],target,align[1],alicmp[0],alicmp[1])
+			r[0].del_attr("xform.align2d")
+			ta=r[0].align(align[0],target,align[1],alicmp[0],alicmp[1])
 			if verbose>3: print ta.get_attr("xform.align2d")
 			#ta.debug_print_params()
 			
 			if ralign and ralign[0]:
-				ralign[1]["xform.align2d"] = ta.get_attr("xform.align2d")
-				r.del_attr("xform.align2d")
-				ta = r.align(ralign[0],target,ralign[1],alircmp[0],alircmp[1])
+				if r[1]!=None : 
+					#print "(single) using mask, and ",mask
+					ralign[1]["xform.align2d"] = ta.get_attr("xform.align2d").inverse()
+					r[0].del_attr("xform.align2d")
+					ralign[1]["mask"]=r[1]
+					alip = target.align(ralign[0],r[0],ralign[1],alircmp[0],alircmp[1])
+					ta=r[0].copy()
+					ta.transform(alip["xform.align2d"].inverse())
+					ta["xform.align2d"]=alip["xform.align2d"].inverse()
+				else:
+					ralign[1]["xform.align2d"] = ta.get_attr("xform.align2d")
+					r[0].del_attr("xform.align2d")
+					ta = r[0].align(ralign[0],target,ralign[1],alircmp[0],alircmp[1])
+					
 				if verbose>3: print ta.get_attr("xform.align2d")
 
-			t = ta.get_attr("xform.align2d")
+			
+			t =  ta.get_attr("xform.align2d")
 			t.invert()
 			p = t.get_params("2d")
 			
-			if mask!=None : ta.mult(mask)
-			
 			scale_correction = 1.0
 			if shrink != None: scale_correction = float(shrink)
-			ret[i]=(target.cmp(cmp[0],ta,cmp[1]),scale_correction*p["tx"],scale_correction*p["ty"],p["alpha"],p["mirror"],p["scale"])
+
+			if mask!=None : 
+				ta.mult(mask)
+				ptcl2=target.copy()
+				ptcl2.mult(mask)
+				ret[i]=(ptcl2.cmp(cmp[0],ta,cmp[1]),scale_correction*p["tx"],scale_correction*p["ty"],p["alpha"],p["mirror"],p["scale"])
+			else:
+				ret[i]=(target.cmp(cmp[0],ta,cmp[1]),scale_correction*p["tx"],scale_correction*p["ty"],p["alpha"],p["mirror"],p["scale"])
 #			ta.write_image("dbug.hdf",-1)
 			
 		else :
-			ret[i]=(target.cmp(cmp[0],r,cmp[1]),0,0,0,1.0,False)
+			ret[i]=(target.cmp(cmp[0],r[0],cmp[1]),0,0,0,1.0,False)
 		
 		if verbose>2 : print ret[i][0],
 	

@@ -5,13 +5,23 @@ High priority
 7/21/12		Develop JSON files
 7/22/12		Same mask for all projections ?
 7/22/12		Counting in filename entry in GUI (was taking a LOOONG time). Fix with new caching system.
+8/2/12		More dimensions in tilt validate
 
 2.06
 7/21/12		Add fastseed option to gui
 7/27/12		RCT .box import broken in projectmanager
 7/22/12		2d plotting of 1d image in browser broken
 7/27/12		Can't browse BDB dictionary contents
+8/1/12		HDF file caching is leaving open pointers for other types
+8/1/12		Need to re-examine CTF fitting. Should be able to get better B-factors
+8/1/12		New options for better masking during alignment and classification to make smoother alignment energy function
+8/2/12		min/max not shown in browser info window
+8/2/12		Update wiki output files for twostage, automaskalign options.
+8/5/12		Progress bar save in filtertool
+
 
 Low priority
 7/25/12		In orthographic projection in 3-D viewer, mouse wheel behavior is inverted
+
+Complete
 

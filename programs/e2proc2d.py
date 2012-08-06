@@ -114,6 +114,7 @@ def main():
 	parser.add_argument("--apix", type=float, help="A/pixel for S scaling")
 	parser.add_argument("--average", action="store_true",
 					help="Averages all input images (without alignment) and writes a single output image")
+	parser.add_argument("--averager",type=str,help="If --average is specified, this is the averager to use (e2help.py averager). Default=mean",default="mean")
 	parser.add_argument("--calcsf", metavar="n outputfile", type=str, nargs=2,
 					help="calculate a radial structure factor for the image and write it to the output file, must specify apix. divide into <n> angular bins")    
 	parser.add_argument("--clip", metavar="xsize,ysize", type=str, action="append",
@@ -195,7 +196,11 @@ def main():
 		E2end(logid)
 		sys.exit(r)
 		
-	average = None
+	if options.average:
+		averager=parsemodopt(options.averager)
+		average=Averagers.get(averager[0], averager[1])
+	else : average = None
+
 	fftavg = None
 	
 	n0 = options.first
@@ -472,10 +477,7 @@ def main():
 				d = r
 			
 			elif option1 == "average":
-				if not average:
-					average = d.copy()
-				else:
-					average.add(d)
+				average.add_image(d)
 				continue
 
 			elif option1 == "fftavg":
@@ -594,10 +596,12 @@ def main():
 	#end of image loop
 		
 	if average:
-		average["ptcl_repr"]=(n1-n0+1)
-		average.mult(1.0/(n1-n0+1.0))
+		avg=average.finish()
+		avg["ptcl_repr"]=(n1-n0+1)
+#		avg.mult(1.0/(n1-n0+1.0))
 #		average.process_inplace("normalize");
-		average.append_image(outfile);
+		if options.inplace: avg.write_image(outfile,0)
+		else : avg.write_image(outfile,-1)
 
 	if options.fftavg:
 		fftavg.mult(1.0 / sqrt(n1 - n0 + 1))

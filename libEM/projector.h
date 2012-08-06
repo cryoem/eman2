@@ -297,6 +297,42 @@ namespace EMAN
 				       int& nn, IPCube* ipcube=NULL) const;
 	};
 
+	/** Real-space projection which computes the maximum value along each line projection rather than a sum
+	 * @param Transform object used for projection
+	*/
+	class MaxValProjector:public Projector
+	{
+	  public:
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("transform", EMObject::TRANSFORM, "Transform object used for projection");
+			return d;
+		}
+
+		EMData * project3d(EMData * image) const;
+                // no implementation yet
+		EMData * backproject3d(EMData * image) const;
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		string get_desc() const
+		{
+			return "Real-space projection which computes the maximum value along each line projection rather than the sum";
+		}
+
+		static Projector *NEW()
+		{
+			return new MaxValProjector();
+		}
+		
+		static const string NAME;
+	};
+
+	
 	/** Fast real-space 3D projection.
 	 * @ingroup CUDA_ENABLED
 	 * @param Transform object used for projection

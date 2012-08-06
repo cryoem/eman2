@@ -1587,6 +1587,7 @@ static double refalifn(const gsl_vector * v, void *params)
 		t.set_scale((float)gsl_vector_get(v, 3));
 	}
 	EMData *tmp = this_img->process("xform",Dict("transform",&t));
+	if (dict->has_key("mask")) tmp->mult(*(EMData *)((*dict)["mask"]));
 
 //	printf("GSL %f %f %f %d %f\n",x,y,a,mirror,(float)gsl_vector_get(v, 3));
 	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
@@ -1712,7 +1713,8 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 	gsl_params["with"] = to;
 	gsl_params["snr"]  = params["snr"];
 	gsl_params["mirror"] = mirror;
-
+	if (params.has_key("mask")) gsl_params["mask"]=params["mask"];
+	
 	const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
 	gsl_vector *ss = gsl_vector_alloc(np);
 
@@ -1843,6 +1845,7 @@ EMData *RefineAlignerCG::align(EMData * this_img, EMData *to,
 	gsl_params["with"] = to;
 	gsl_params["snr"]  = params["snr"];
 	gsl_params["mirror"] = mirror;
+	if (params.has_key("mask")) gsl_params["mask"]=params["mask"];
 
 	const gsl_multimin_fdfminimizer_type *T = gsl_multimin_fdfminimizer_vector_bfgs;
 	

@@ -66,55 +66,56 @@ def main():
 	parser.add_argument("--mass", default=0, type=float,help="The mass of the particle in kilodaltons, used to run normalize.bymass. If unspecified (set to 0) nothing happens. Requires the --apix argument.", guitype='floatbox', row=2, col=1, rowspan=1, colspan=1, mode="refinement['self.pm().getMass()']")
 	parser.add_argument("--apix", default=0, type=float,help="The angstrom per pixel of the input particles. This argument is required if you specify the --mass argument. \n If unspecified (set to 0), the convergence plot is generated using either the project apix, or if not an apix of 1.", guitype='floatbox', row=2, col=0, rowspan=1, colspan=1, mode="refinement['self.pm().getAPIX()']")
 	parser.add_argument("--automask3d", default=None, type=str,help="The 5 parameters of the mask.auto3d processor, applied after 3D reconstruction. \n These parameters are, in order, isosurface threshold, radius, nshells, ngaussshells, nmaxseed. \n From e2proc3d.py you could achieve the same thing using: \n --process=mask.auto3d:threshold=1.1:radius=30:nshells=5:ngaussshells=5:nmaxseed=0.", guitype='automask3d', row=6, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--automaskalign",action="store_true",help="This will use the automask to improve 2-D alignments and classification.",default=False, guitype='boolbox', row=7, col=0, rowspan=1, colspan=1,mode="refinement")
 
 	# options associated with e2project3d.py
-	parser.add_header(name="projectheader", help='Options below this label are specific to e2project', title="### e2project options ###", row=7, col=0, rowspan=1, colspan=3, mode="refinement")
-	parser.add_argument("--sym", dest = "sym", default="c1", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos. For asymmetric reconstruction omit this option or specify c1.", guitype='symbox', row=10, col=0, rowspan=1, colspan=3, mode="refinement")
-	parser.add_argument("--projector", dest = "projector", default = "standard",help = "Projector to use", guitype='comboparambox', choicelist='dump_projectors_list()', row=8, col=0, rowspan=1, colspan=3, mode="refinement")
-	parser.add_argument("--orientgen", type = str, default='eman:delta=5.0:inc_mirror=0:perturb=1',help = "The orientation generation argument for e2project3d.py", guitype='comboparambox', choicelist='dump_orientgens_list()', row=9, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_header(name="projectheader", help='Options below this label are specific to e2project', title="### e2project options ###", row=10, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--sym", dest = "sym", default="c1", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos. For asymmetric reconstruction omit this option or specify c1.", guitype='symbox', row=13, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--projector", dest = "projector", default = "standard",help = "Projector to use", guitype='comboparambox', choicelist='dump_projectors_list()', row=11, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--orientgen", type = str, default='eman:delta=5.0:inc_mirror=0:perturb=1',help = "The orientation generation argument for e2project3d.py", guitype='comboparambox', choicelist='dump_orientgens_list()', row=12, col=0, rowspan=1, colspan=3, mode="refinement")
 		
 	# options associated with e2simmx.py
-	parser.add_header(name="simmxheader", help='Options below this label are specific to e2simmx', title="### e2simmx options ###", row=11, col=0, rowspan=1, colspan=3, mode="refinement")
-	parser.add_argument("--simalign",type=str,help="The name of an 'aligner' to use prior to comparing the images", default="rotate_translate_flip", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=14, col=0, rowspan=1, colspan=3, mode="refinement")
-	parser.add_argument("--simaligncmp",type=str,help="Name and parameters of the comparator used by the first stage aligner",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=15, col=0, rowspan=1, colspan=3, mode="refinement")
-	parser.add_argument("--simralign",type=str,help="The name and parameters of the second stage aligner which refines the results of the first alignment, currently 'refine' or not specified.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine\', 0)', row=16, col=0, rowspan=1, colspan=3, mode="refinement")
-	parser.add_argument("--simraligncmp",type=str,help="The name and parameters of the comparator used by the second stage aligner. Default is dot.",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=17, col=0, rowspan=1, colspan=3, mode="refinement")
-	parser.add_argument("--simcmp",type=str,help="The name of a comparator to be used in comparing the aligned images", default="frc:zeromask=1:snrweight=1", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=13, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_header(name="simmxheader", help='Options below this label are specific to e2simmx', title="### e2simmx options ###", row=16, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--simalign",type=str,help="The name of an 'aligner' to use prior to comparing the images", default="rotate_translate_flip", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=19, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--simaligncmp",type=str,help="Name and parameters of the comparator used by the first stage aligner",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=20, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--simralign",type=str,help="The name and parameters of the second stage aligner which refines the results of the first alignment, currently 'refine' or not specified.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine\', 0)', row=21, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--simraligncmp",type=str,help="The name and parameters of the comparator used by the second stage aligner. Default is dot.",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=22, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--simcmp",type=str,help="The name of a comparator to be used in comparing the aligned images", default="frc:zeromask=1:snrweight=1", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=18, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--simmask",type=str,help="A file containing a single 0/1 image to apply as a mask before comparison but after alignment", default=None)
-	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores, for speed purposes. Default=0, no shrinking", guitype='shrinkbox', row=12, col=0, rowspan=1, colspan=1, mode="refinement")
-	parser.add_argument("--twostage", dest="twostage", type = int, help="Optionally run a faster 2-stage similarity matrix, ~5-10x faster, generally same accuracy. Value specifies shrink factor for first stage, typ 1-3",default=0, guitype='intbox', row=12, col=1, rowspan=1, colspan=1, mode="refinement")
-	parser.add_argument("--prefilt",action="store_true",help="Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison",default=False, guitype='boolbox', row=12, col=2, rowspan=1, colspan=1)
+	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores, for speed purposes. Default=0, no shrinking", guitype='shrinkbox', row=17, col=0, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--twostage", dest="twostage", type = int, help="Optionally run a faster 2-stage similarity matrix, ~5-10x faster, generally same accuracy. Value specifies shrink factor for first stage, typ 1-3",default=0, guitype='intbox', row=17, col=1, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--prefilt",action="store_true",help="Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison",default=False, guitype='boolbox', row=17, col=2, rowspan=1, colspan=1)
 	
 	# options associated with e2classify.py
 	parser.add_argument("--simvec", action="store_true",help="Causes the classification algorithm to use patterns rather than peak values",default=False)
-	parser.add_argument("--sep", type=int, help="The number of classes a particle can contribute towards (default is 1)", default=1, guitype='intbox', row=19, col=2, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--sep", type=int, help="The number of classes a particle can contribute towards (default is 1)", default=1, guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement")
 	
 	# options associated with e2classaverage.py
-	parser.add_header(name="caheader", help='Options below this label are specific to e2classaverage', title="### e2classaverage options ###", row=18, col=0, rowspan=1, colspan=3, mode="refinement")
-	parser.add_argument("--classkeep",type=float,help="The fraction of particles to keep in each class, based on the similarity score generated by the --cmp argument.",default=0.8, guitype='floatbox', row=20, col=0, rowspan=1, colspan=2, mode="refinement")
-	parser.add_argument("--classkeepsig", default=False, action="store_true", help="Change the keep (\'--keep\') criterion from fraction-based to sigma-based.", guitype='boolbox', row=20, col=2, rowspan=1, colspan=1, mode="refinement")
-	parser.add_argument("--classiter", type=int, help="The number of iterations to perform. Default is 1.", default=1, guitype='intbox', row=19, col=0, rowspan=1, colspan=2, mode="refinement")
-	parser.add_argument("--classalign",type=str,help="If doing more than one iteration, this is the name and parameters of the 'aligner' used to align particles to the previous class average.", default="rotate_translate_flip", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=24, col=0, rowspan=1, colspan=3, mode="refinement")
-	parser.add_argument("--classaligncmp",type=str,help="This is the name and parameters of the comparator used by the first stage aligner  Default is dot.",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=25, col=0, rowspan=1, colspan=3, mode="refinement")
-	parser.add_argument("--classralign",type=str,help="The second stage aligner which refines the results of the first alignment in class averaging. Either specify 'refine' or omit the option.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine\', 0)', row=26, col=0, rowspan=1, colspan=3, mode="refinement")
-	parser.add_argument("--classraligncmp",type=str,help="The comparator used by the second stage aligner in class averageing. Default is ccc.",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=27, col=0, rowspan=1, colspan=3, mode="refinement")
-	parser.add_argument("--classaverager",type=str,help="The averager used to generate the class averages. Default is \'mean\'.",default="mean", guitype='combobox', choicelist='dump_averagers_list()', row=22, col=0, rowspan=1, colspan=2, mode="refinement")
-	parser.add_argument("--classcmp",type=str,help="The name and parameters of the comparator used to generate similarity scores, when class averaging. Default is ccc", default="frc:snrweight=1", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=23, col=0, rowspan=1, colspan=3, mode="refinement")
-	parser.add_argument("--classnormproc",type=str,default="normalize.edgemean",help="Normalization applied during class averaging", guitype='combobox', choicelist='re_filter_list(dump_processors_list(),\'normalize\')', row=21, col=0, rowspan=1, colspan=3, mode="refinement")
-	parser.add_argument("--classrefsf",default=False, action="store_true", help="Use the setsfref option in class averaging to produce better filtered averages.", guitype='boolbox', row=22, col=2, rowspan=1, colspan=1, mode="refinement")
+	parser.add_header(name="caheader", help='Options below this label are specific to e2classaverage', title="### e2classaverage options ###", row=26, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--classkeep",type=float,help="The fraction of particles to keep in each class, based on the similarity score generated by the --cmp argument.",default=0.8, guitype='floatbox', row=28, col=0, rowspan=1, colspan=2, mode="refinement")
+	parser.add_argument("--classkeepsig", default=False, action="store_true", help="Change the keep (\'--keep\') criterion from fraction-based to sigma-based.", guitype='boolbox', row=28, col=2, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--classiter", type=int, help="The number of iterations to perform. Default is 1.", default=1, guitype='intbox', row=27, col=0, rowspan=1, colspan=2, mode="refinement")
+	parser.add_argument("--classalign",type=str,help="If doing more than one iteration, this is the name and parameters of the 'aligner' used to align particles to the previous class average.", default="rotate_translate_flip", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=32, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--classaligncmp",type=str,help="This is the name and parameters of the comparator used by the first stage aligner  Default is dot.",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=33, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--classralign",type=str,help="The second stage aligner which refines the results of the first alignment in class averaging. Either specify 'refine' or omit the option.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine\', 0)', row=34, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--classraligncmp",type=str,help="The comparator used by the second stage aligner in class averageing. Default is ccc.",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=35, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--classaverager",type=str,help="The averager used to generate the class averages. Default is \'mean\'.",default="mean", guitype='combobox', choicelist='dump_averagers_list()', row=30, col=0, rowspan=1, colspan=2, mode="refinement")
+	parser.add_argument("--classcmp",type=str,help="The name and parameters of the comparator used to generate similarity scores, when class averaging. Default is ccc", default="frc:snrweight=1", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=31, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--classnormproc",type=str,default="normalize.edgemean",help="Normalization applied during class averaging", guitype='combobox', choicelist='re_filter_list(dump_processors_list(),\'normalize\')', row=29, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--classrefsf",default=False, action="store_true", help="Use the setsfref option in class averaging to produce better filtered averages.", guitype='boolbox', row=30, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--classautomask",default=False, action="store_true", help="This will apply an automask to the class-average during iterative alignment for better accuracy. The final class averages are unmasked.")
 	
 	
 	#options associated with e2make3d.py
-	parser.add_header(name="make3dheader", help='Options below this label are specific to e2make3d', title="### e2make3d options ###", row=28, col=0, rowspan=1, colspan=3, mode="refinement")
-	parser.add_argument("--pad", type=int, dest="pad", help="To reduce Fourier artifacts, the model is typically padded by ~25 percent - only applies to Fourier reconstruction", default=0, guitype='intbox', row=30, col=2, rowspan=1, colspan=1, mode="refinement")
-	parser.add_argument("--recon", dest="recon", default="fourier", help="Reconstructor to use. See 'e2help.py reconstructors -v' for more information", guitype='combobox', choicelist='dump_reconstructors_list()', row=29, col=0, rowspan=1, colspan=2, mode="refinement")
-	parser.add_argument("--m3dkeep", type=float, help="The percentage of slices to keep in e2make3d.py", default=0.8, guitype='floatbox', row=31, col=0, rowspan=1, colspan=1, mode="refinement")
-	parser.add_argument("--m3dkeepsig", default=False, action="store_true", help="The standard deviation alternative to the --m3dkeep argument", guitype='boolbox', row=31, col=1, rowspan=1, colspan=1, mode="refinement")
-	parser.add_argument("--m3dsetsf", default=False, action="store_true", help="The standard deviation alternative to the --m3dkeep argument", guitype='boolbox', row=31, col=2, rowspan=1, colspan=1, mode="refinement")
-	parser.add_argument("--m3diter", type=int, default=2, help="The number of times the 3D reconstruction should be iterated", guitype='intbox', row=29, col=2, rowspan=1, colspan=1, mode="refinement")
-	parser.add_argument("--m3dpreprocess", type=str, default="normalize.edgemean", help="Normalization processor applied before 3D reconstruction", guitype='combobox', choicelist='re_filter_list(dump_processors_list(),\'normalize\')', row=30, col=0, rowspan=1, colspan=2, mode="refinement")
-	parser.add_argument("--m3dpostprocess", type=str, default=None, help="Post processor to be applied to the 3D volume once the reconstruction is completed", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter.lowpass|filter.highpass\')', row=32, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_header(name="make3dheader", help='Options below this label are specific to e2make3d', title="### e2make3d options ###", row=38, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--pad", type=int, dest="pad", help="To reduce Fourier artifacts, the model is typically padded by ~25 percent - only applies to Fourier reconstruction", default=0, guitype='intbox', row=40, col=2, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--recon", dest="recon", default="fourier", help="Reconstructor to use. See 'e2help.py reconstructors -v' for more information", guitype='combobox', choicelist='dump_reconstructors_list()', row=39, col=0, rowspan=1, colspan=2, mode="refinement")
+	parser.add_argument("--m3dkeep", type=float, help="The percentage of slices to keep in e2make3d.py", default=0.8, guitype='floatbox', row=41, col=0, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--m3dkeepsig", default=False, action="store_true", help="The standard deviation alternative to the --m3dkeep argument", guitype='boolbox', row=41, col=1, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--m3dsetsf", default=False, action="store_true", help="The standard deviation alternative to the --m3dkeep argument", guitype='boolbox', row=41, col=2, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--m3diter", type=int, default=2, help="The number of times the 3D reconstruction should be iterated", guitype='intbox', row=39, col=2, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--m3dpreprocess", type=str, default="normalize.edgemean", help="Normalization processor applied before 3D reconstruction", guitype='combobox', choicelist='re_filter_list(dump_processors_list(),\'normalize\')', row=40, col=0, rowspan=1, colspan=2, mode="refinement")
+	parser.add_argument("--m3dpostprocess", type=str, default=None, help="Post processor to be applied to the 3D volume once the reconstruction is completed", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter.lowpass|filter.highpass\')', row=42, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--m3dpostprocess2", type=str, default=None, help="A second post processor to be applied to the 3D volume once the reconstruction is completed")
 	
 	#lowmem!
@@ -178,7 +179,31 @@ def main():
 			exit_refine(1,logid)
 		progress += 1.0
 		E2progress(logid,progress/total_procs)
-		
+
+		if options.automaskalign :
+			# This generates projections of the automask from the previous iteration
+			# TODO : consider whether these should be true projections, or maxval projections
+			number_options_file(i,"proj_masks",options,"projmask")
+			if ( launch_childprocess(get_maskproj_cmd(options)) != 0 ):
+				print "Failed to execute %s" %get_maskproj_cmd(options)
+				exit_refine(1,logid)
+
+			# Combine the mask projections to produce a single mask which is good for all projections
+			# Using the individual masks for different projections in the similarity matrix might produce a bias towards projections with smaller masks
+			number_options_file(i,"proj_simmask",options,"projmaskavg")
+			cmd="e2proc2d.py %s %s --inplace --average --averager=minmax:max=1"%(options.projmask,options.projmaskavg)
+			if ( launch_childprocess(cmd) != 0 ):
+				print "Failed to execute %s" %cmd
+				exit_refine(1,logid)
+
+			# Clamp the single mask to 0-1
+			# TODO : consider how to treat this depending on whether the individual mask projections are maxval or not
+			cmd="e2proc2d.py %s %s --inplace --process=threshold.clampminmax:maxval=1:minval=0"%(options.projmaskavg,options.projmaskavg)
+			if ( launch_childprocess(cmd) != 0 ):
+				print "Failed to execute %s" %cmd
+				exit_refine(1,logid)
+			
+
 		number_options_file(i,"simmx",options,"simmxfile")
 		if options.twostage>0 :
 			number_options_file(i,"proj_simmx",options,"simmxprojfile")
@@ -190,7 +215,7 @@ def main():
 			exit_refine(1,logid)
 		progress += 1.0
 		E2progress(logid,progress/total_procs)
-			
+		
 		number_options_file(i,"classify",options,"classifyfile")
 		if ( launch_childprocess(get_classify_cmd(options)) != 0 ):
 			print "Failed to execute %s" %get_classify_cmd(options)
@@ -447,8 +472,11 @@ def get_simmx_cmd(options,check=False,nofilecheck=False):
 
 	if options.prefilt : e2simmxcmd+=" --prefilt"
 
-
-	if options.simmask!=None : e2simmxcmd += " --mask=%s"%options.simmask
+	# we skip this for check with the try
+	try:
+		if options.automaskalign : e2simmxcmd+=" --colmasks=%s --mask=%s"%(options.projmask,options.projmaskavg)
+		elif options.simmask!=None : e2simmxcmd += " --mask=%s"%options.simmask
+	except: pass
 	
 	if ( options.simralign != None ):
 		e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
@@ -482,6 +510,28 @@ def check_simmx_args(options, nofilecheck=False):
 	print "#### Test executing simmx command: %s" %cmd
 	return (False)
 	return ( launch_childprocess(cmd) != 0)
+
+def get_maskproj_cmd(options,check=False):
+	"""This generates projections of the last automask"""
+	
+	if hasattr(options,"filtered_model"): # sometimes there is a filtered model, i.e. if mass or automask3d is specified
+		model = options.filtered_model.replace("filt","mask")
+	else:
+		print "WARNING: automaskalign option specified, but automask not found. Generating non-zero mask from %s. This is normal in the first iteration."%options.model
+		launch_childprocess("e2proc3d.py %s %s_mask --process=threshold.notzero"%(options.model,options.model))
+		model = options.model+"_mask"
+		
+	e2projcmd = "e2project3d.py %s -f --sym=%s --projector=%s --outfile=%s --orientgen=%s --postprocess=normalize.circlemean" %(model,options.sym,options.projector,options.projmask,options.orientgen)
+
+	if options.parallel: e2projcmd += " --parallel=%s" %options.parallel
+	
+	if ( check ):
+		e2projcmd += " --check"	
+		
+	if (options.verbose):
+		e2projcmd += " --verbose=" + str(options.verbose - 1)
+	
+	return e2projcmd
 
 def get_projection_cmd(options,check=False):
 	

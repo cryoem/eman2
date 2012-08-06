@@ -133,8 +133,8 @@ def main():
 			E2progress(logid,(it+t*options.iter)/float(options.tries*options.iter))
 			if verbose>0 : print "Iteration %d"%it
 			if options.savemore : threed[it].write_image("imdl.%02d.%02d.mrc"%(t,it))
-			projs=[threed[it].project("standard",ort) for ort in orts]		# projections
-			for i in projs : i.process_inplace("normalize.edgemean")
+			projs=[(threed[it].project("standard",ort),None) for ort in orts]		# projections
+			for i in projs : i[0].process_inplace("normalize.edgemean")
 			if verbose>2: print "%d projections"%len(projs)
 			
 			# determine particle orientation
@@ -158,7 +158,7 @@ def main():
 #			for i in range(len(ptcls)*3/4):		# We used to include 3/4 of the particles
 			for i in range(len(ptcls)*7/8):
 				n=ptcls[bslst[i][1]]["match_n"]
-				aptcls.append(ptcls[bslst[i][1]].align("rotate_translate_flip",projs[n],{},"ccc",{}))
+				aptcls.append(ptcls[bslst[i][1]].align("rotate_translate_flip",projs[n][0],{},"ccc",{}))
 				if it<2 : aptcls[-1].process_inplace("xform.centerofmass",{})
 			
 			bss/=len(ptcls)
@@ -252,10 +252,10 @@ def main():
 				s["Original Data"] = out_name
 				old_data[out_name] = s
 				pdb[options.dbls] = old_data
-			for k,l in enumerate(j[3]): l.write_image(results_name+"_%02d_proj"%(i+1),k)	# set of projection images
+			for k,l in enumerate(j[3]): l[0].write_image(results_name+"_%02d_proj"%(i+1),k)	# set of projection images
 			for k,l in enumerate(j[2]): 
 				l.process("normalize").write_image(results_name+"_%02d_aptcl"%(i+1),k*2)						# set of aligned particles
-				j[3][l["match_n"]].process("normalize").write_image(results_name+"_%02d_aptcl"%(i+1),k*2+1)	# set of projections matching aligned particles
+				j[3][l["match_n"]][0].process("normalize").write_image(results_name+"_%02d_aptcl"%(i+1),k*2+1)	# set of projections matching aligned particles
 			
 #		threed[-1].write_image("x.%d.mrc"%t)
 		

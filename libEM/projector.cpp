@@ -55,6 +55,7 @@ const string GaussFFTProjector::NAME = "gauss_fft";
 const string FourierGriddingProjector::NAME = "fourier_gridding";
 const string PawelProjector::NAME = "pawel";
 const string StandardProjector::NAME = "standard";
+const string MaxValProjector::NAME = "maxval";
 const string ChaoProjector::NAME = "chao";
 
 template <> Factory < Projector >::Factory()
@@ -62,6 +63,7 @@ template <> Factory < Projector >::Factory()
 	force_add<GaussFFTProjector>();
 	force_add<PawelProjector>();
 	force_add<StandardProjector>();
+	force_add<MaxValProjector>();
 	force_add<FourierGriddingProjector>();
 	force_add<ChaoProjector>();
 	
@@ -1052,6 +1054,159 @@ EMData *StandardProjector::project3d(EMData * image) const
 	}
 	else throw ImageDimensionException("Standard projection works only for 2D and 3D images");
 }
+
+EMData *MaxValProjector::project3d(EMData * image) const
+{
+	Transform* t3d = params["transform"];
+	if ( t3d == NULL ) throw NullPointerException("The transform object containing the angles(required for projection), was not specified");
+// 	Dict p = t3d->get_rotation();
+	if ( image->get_ndim() == 3 )
+	{
+
+		int nx = image->get_xsize();
+		int ny = image->get_ysize();
+		int nz = image->get_zsize();
+
+// 		Transform3D r(Transform3D::EMAN, az, alt, phi);
+		Transform r = t3d->inverse(); // The inverse is taken here because we are rotating the coordinate system, not the image
+		int xy = nx * ny;
+
+		EMData *proj = new EMData();
+		proj->set_size(nx, ny, 1);
+
+		Vec3i offset(nx/2,ny/2,nz/2);
+
+		float *sdata = image->get_data();
+		float *ddata = proj->get_data();
+		for (int k = -nz / 2; k < nz - nz / 2; k++) {
+			int l = 0;
+			for (int j = -ny / 2; j < ny - ny / 2; j++) {
+				ddata[l]=0;
+				for (int i = -nx / 2; i < nx - nx / 2; i++,l++) {
+
+					Vec3f coord(i,j,k);
+					Vec3f soln = r*coord;
+					soln += offset;
+
+					/**A "fix" for the segmentation fault when calling initmodel.py with
+					 * standard projector. We'll look into this and make a real fix.
+					 * -- Grant Tang*/
+//					printf(" ");
+
+					float x2 = soln[0];
+					float y2 = soln[1];
+					float z2 = soln[2];
+
+					float x = (float)Util::fast_floor(x2);
+					float y = (float)Util::fast_floor(y2);
+					float z = (float)Util::fast_floor(z2);
+
+					float t = x2 - x;
+					float u = y2 - y;
+					float v = z2 - z;
+
+					size_t ii = (size_t) ((size_t)x + (size_t)y * nx + (size_t)z * xy);
+// 
+					if (x2 < 0 || y2 < 0 || z2 < 0 ) continue;
+					if 	(x2 > (nx-1) || y2  > (ny-1) || z2 > (nz-1) ) continue;
+
+					if (x2 < (nx - 1) && y2 < (ny - 1) && z2 < (nz - 1)) {
+						ddata[l] = Util::get_max(ddata[l],
+								Util::trilinear_interpolate(sdata[ii], sdata[ii + 1], sdata[ii + nx],
+								sdata[ii + nx + 1], sdata[ii + xy],	sdata[ii + xy + 1], sdata[ii + xy + nx],
+								sdata[ii + xy + nx + 1], t, u, v));
+					}
+					else if ( x2 == (nx - 1) && y2 == (ny - 1) && z2 == (nz - 1) ) {
+						ddata[l] = Util::get_max(ddata[l],sdata[ii]);
+					}
+					else if ( x2 == (nx - 1) && y2 == (ny - 1) ) {
+						ddata[l] =	Util::get_max(ddata[l],Util::linear_interpolate(sdata[ii], sdata[ii + xy],v));
+					}
+					else if ( x2 == (nx - 1) && z2 == (nz - 1) ) {
+						ddata[l] =	Util::get_max(ddata[l],Util::linear_interpolate(sdata[ii], sdata[ii + nx],u));
+					}
+					else if ( y2 == (ny - 1) && z2 == (nz - 1) ) {
+						ddata[l] =	Util::get_max(ddata[l],Util::linear_interpolate(sdata[ii], sdata[ii + 1],t));
+					}
+					else if ( x2 == (nx - 1) ) {
+						ddata[l] =	Util::get_max(ddata[l],Util::bilinear_interpolate(sdata[ii], sdata[ii + nx], sdata[ii + xy], sdata[ii + xy + nx],u,v));
+					}
+					else if ( y2 == (ny - 1) ) {
+						ddata[l] =	Util::get_max(ddata[l],Util::bilinear_interpolate(sdata[ii], sdata[ii + 1], sdata[ii + xy], sdata[ii + xy + 1],t,v));
+					}
+					else if ( z2 == (nz - 1) ) {
+						ddata[l] =	Util::get_max(ddata[l],Util::bilinear_interpolate(sdata[ii], sdata[ii + 1], sdata[ii + nx], sdata[ii + nx + 1],t,u));
+					}
+				}
+			}
+		}
+		proj->update();
+		proj->set_attr("xform.projection",t3d);
+		proj->set_attr("apix_x",(float)image->get_attr("apix_x"));
+		proj->set_attr("apix_y",(float)image->get_attr("apix_y"));
+		proj->set_attr("apix_z",(float)image->get_attr("apix_z"));
+		
+		if(t3d) {delete t3d; t3d=0;}
+		return proj;
+	}
+	else if ( image->get_ndim() == 2 ) {
+
+		Transform r = t3d->inverse(); // The inverse is taken here because we are rotating the coordinate system, not the image
+
+		int nx = image->get_xsize();
+		int ny = image->get_ysize();
+
+		EMData *proj = new EMData();
+		proj->set_size(nx, 1, 1);
+		proj->to_zero();
+
+		float *sdata = image->get_data();
+		float *ddata = proj->get_data();
+
+		Vec2f offset(nx/2,ny/2);
+		for (int j = -ny / 2; j < ny - ny / 2; j++) { // j represents a column of pixels in the direction of the angle
+			int l = 0;
+			for (int i = -nx / 2; i < nx - nx / 2; i++,l++) {
+
+				Vec2f coord(i,j);
+				Vec2f soln = r*coord;
+				soln += offset;
+
+				float x2 = soln[0];
+				float y2 = soln[1];
+
+				float x = (float)Util::fast_floor(x2);
+				float y = (float)Util::fast_floor(y2);
+
+				int ii = (int) (x + y * nx);
+				float u = x2 - x;
+				float v = y2 - y;
+
+				if (x2 < 0 || y2 < 0 ) continue;
+				if 	(x2 > (nx-1) || y2  > (ny-1) ) continue;
+
+				if (  x2 < (nx - 1) && y2 < (ny - 1) ) {
+					ddata[l] =	Util::get_max(ddata[l],Util::bilinear_interpolate(sdata[ii], sdata[ii + 1], sdata[ii + nx],sdata[ii + nx + 1], u, v));
+				}
+				else if (x2 == (nx-1) && y2 == (ny-1) ) {
+					ddata[l] =	Util::get_max(ddata[l],sdata[ii]);
+				}
+				else if (x2 == (nx-1) ) {
+					ddata[l] =	Util::get_max(ddata[l],Util::linear_interpolate(sdata[ii],sdata[ii + nx], v));
+				}
+				else if (y2 == (ny-1) ) {
+					ddata[l] =	Util::get_max(ddata[l],Util::linear_interpolate(sdata[ii],sdata[ii + 1], u));
+				}
+			}
+		}
+		proj->set_attr("xform.projection",t3d);
+		proj->update();
+		if(t3d) {delete t3d; t3d=0;}
+		return proj;
+	}
+	else throw ImageDimensionException("Standard projection works only for 2D and 3D images");
+}
+
 
 // EMData *FourierGriddingProjector::project3d(EMData * image) const
 // {
@@ -2091,6 +2246,14 @@ EMData *StandardProjector::backproject3d(EMData * ) const
    EMData *ret = new EMData();
    return ret;
 }
+
+EMData *MaxValProjector::backproject3d(EMData * ) const
+{
+   // no implementation yet
+   EMData *ret = new EMData();
+   return ret;
+}
+
 
 EMData *FourierGriddingProjector::backproject3d(EMData * ) const
 {

@@ -32,6 +32,7 @@ df=int(clmx[5][0,argv3])
 im1=EMData(ptcl,argv3)						# The raw paricle
 im1.process_inplace("normalize.edgemean")
 im2=EMData("bdb:refine_%02d#projections_%02d"%(argv1,argv2),projn)		# best classified projection
+im2m=EMData("bdb:refine_%02d#proj_masks_%02d"%(argv1,argv2),projn)		# mask for best classified projection
 im3=EMData("bdb:refine_%02d#classes_%02d"%(argv1,argv2),projn)			# best classified class-average
 im2.process_inplace("normalize.edgemean")
 im3.process_inplace("normalize.edgemean")
@@ -85,6 +86,7 @@ for tx in arange(dx-5,dx+5,0.01):
 	xfm=Transform({"type":"2d","tx":tx,"ty":dy,"alpha":da,"mirror":df})
 	im1a=im1.copy()
 	im1a.transform(xfm)
+	im1a.mult(im2m)
 	sim=im2.cmp(comp[0],im1a,comp[1])
 	out1[0].append(sim)
 
@@ -92,6 +94,7 @@ for ty in arange(dy-5,dy+5,0.01):
 	xfm=Transform({"type":"2d","tx":dx,"ty":ty,"alpha":da,"mirror":df})
 	im1a=im1.copy()
 	im1a.transform(xfm)
+	im1a.mult(im2m)
 	sim=im2.cmp(comp[0],im1a,comp[1])
 	out1[1].append(sim)
 
@@ -99,6 +102,7 @@ for ta in arange(da-5,da+5,0.01):
 	xfm=Transform({"type":"2d","tx":dx,"ty":dy,"alpha":ta,"mirror":df})
 	im1a=im1.copy()
 	im1a.transform(xfm)
+	im1a.mult(im2m)
 	sim=im2.cmp(comp[0],im1a,comp[1])
 	out1[2].append(sim)
 

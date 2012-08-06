@@ -1251,6 +1251,7 @@ namespace EMAN
 			d.put("maxiter", EMObject::INT,"The maximum number of iterations that can be performed by the Simplex minimizer. default=28");
 			d.put("maxshift", EMObject::INT,"Maximum translation in pixels in any direction. If the solution yields a shift beyond this value in any direction, then the refinement is judged a failure and the original alignment is used as the solution.");
 			d.put("stepscale", EMObject::FLOAT, "If set to any non-zero value, scale will be included in the alignment, and this will be the initial step. Images should be edgenormalized. If the scale goes beyond +-30% alignment will fail.");
+			d.put("mask", EMObject::EMDATA, "A mask to be applied to the image being aligned prior to each similarity comparison.");
 			d.put("verbose", EMObject::INT, "This will cause debugging information to be printed on the screen for the iterative refinement. Larger numbers -> more info. default=0");
 			return d;
 		}
@@ -1305,6 +1306,7 @@ namespace EMAN
 			d.put("maxiter", EMObject::INT,"The maximum number of iterations that can be performed by the Simplex minimizer. default=12");
 			d.put("maxshift", EMObject::INT,"Maximum translation in pixels in any direction. If the solution yields a shift beyond this value in any direction, then the refinement is judged a failure and the original alignment is used as the solution.");
 			d.put("stepscale", EMObject::FLOAT, "If set to any non-zero value, scale will be included in the alignment. Images should be edgenormalized. If the scale goes beyond +-30% alignment will fail.");
+			d.put("mask", EMObject::EMDATA, "A mask to be applied to the image being aligned prior to each similarity comparison.");
 			d.put("verbose", EMObject::INT, "This will cause debugging information to be printed on the screen for the iterative refinement. Larger numbers -> more info. default=0");
 			return d;
 		}
