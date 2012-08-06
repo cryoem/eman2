@@ -66,16 +66,16 @@ def main():
 	usage = progname + " proj_stack output_averages --MPI"
 	parser = OptionParser(usage, version=SPARXVERSION)
 
-	parser.add_option("--img_per_grp", 	type="int"         ,	default=100  ,				help="number of images per group" )
+	parser.add_option("--img_per_group",type="int"         ,	default=100  ,				help="number of images per group" )
 	parser.add_option("--radius", 		type="int"         ,	default=-1   ,				help="radius for alignment" )
 	parser.add_option("--xr",           type="string"      ,    default="2 1",              help="range for translation search in x direction, search is +/xr")
 	parser.add_option("--yr",           type="string"      ,    default="-1",               help="range for translation search in y direction, search is +/yr (default = same as xr)")
 	parser.add_option("--ts",           type="string"      ,    default="1 0.5",            help="step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional")
-	parser.add_option("--iter", 		type="int"         ,	default=30,                 help="number of iterations for alignment" )
+	parser.add_option("--iter", 		type="int"         ,	default=30,                 help="number of iterations within alignment (default = 30)" )
 	parser.add_option("--num_ali",      type="int"     	   ,    default=5,         			help="number of alignments performed for stability (default = 5)" )
 	parser.add_option("--thld_err",     type="float"       ,    default=1.732,         		help="threshold of pixel error (default = 1.732)" )
-	parser.add_option("--grouping" , 	type="string"      ,	default="PPR",				help="do grouping of projections: PPR - per projection, GRP - different size groups, exclusive, GEV - groupin equal size")
-	parser.add_option("--delta",        type="float"       ,    default=-1.0         		help="angular step for reference projections (required for GEV method)")
+	parser.add_option("--grouping" , 	type="string"      ,	default="PPR",				help="do grouping of projections: PPR - per projection (default), GRP - different size groups, exclusive, GEV - grouping equal size")
+	parser.add_option("--delta",        type="float"       ,    default=-1.0,         		help="angular step for reference projections (required for GEV method)")
 	parser.add_option("--fl",           type="float"       ,    default=0.3,                help="cut-off frequency of hyperbolic tangent low-pass Fourier filter")
 	parser.add_option("--aa",           type="float"       ,    default=0.2,                help="fall-off of hyperbolic tangent low-pass Fourier filter")
 	parser.add_option("--CTF",          action="store_true",    default=False,              help="Consider CTF correction during the alignment ")
@@ -83,11 +83,11 @@ def main():
 
 	(options,args) = parser.parse_args()
 	
-	from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
-	from mpi import mpi_barrier, mpi_send, mpi_recv, mpi_bcast, MPI_INT, mpi_finalize
+	from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD, MPI_TAG_UB
+	from mpi import mpi_barrier, mpi_send, mpi_recv, mpi_bcast, MPI_INT, mpi_finalize, MPI_FLOAT
 	from applications import MPI_start_end, within_group_refinement
-	from pixel_error import multi_align_stability
-	from utilities import print_begin_msg, print_end_msg, print_msg
+	from pixel_error import multi_align_stability_new
+	from utilities import print_begin_msg, print_end_msg, print_msg, send_EMData, recv_EMData
 	from utilities import get_image, bcast_number_to_all, set_params2D, get_params2D
 	from utilities import group_proj_by_phitheta, model_circle, get_input_from_string
 
@@ -116,15 +116,9 @@ def main():
 
 	if myid == main_node:
 		print_begin_msg("sxproj_stability")
-		#os.mkdir(outdir)
-	mpi_barrier(MPI_COMM_WORLD)
-
-
-	if myid == main_node:
-		print_begin_msg("sxproj_stability")
 		print_msg("%-70s:  %s\n"%("Input stack", stack))
 	
-	img_per_grp = options.img_per_grp
+	img_per_grp = options.img_per_group
 	radius = options.radius
 	ite = options.iter
 	num_ali = options.num_ali
@@ -152,12 +146,12 @@ def main():
 	mask = model_circle(radius, nx, nx)
 
 	if myid == main_node:
-		print_msg("%-70s:  %d\n"%("Number of images per group", img_per_grp))
-		print_msg("%-70s:  %d\n"%("Radius of alignment", radius))
-		print_msg("%-70s:  %d\n"%("Number of iterations", ite))
-		print_msg("%-70s:  %d\n"%("Number of alignments", num_ali))
-		print_msg("%-70s:  %d\n"%("Threshold of pixel error", thld_err))
-		print_msg("%-70s:  %s\n"%("Whether to use grouping", options.grouping))
+		print_msg("%-70s:  %d\n"%("Number of images per group            ", img_per_grp))
+		print_msg("%-70s:  %d\n"%("Radius of alignment                   ", radius))
+		print_msg("%-70s:  %d\n"%("Number of iterations within alignment ", ite))
+		print_msg("%-70s:  %d\n"%("Number of alignments for stability    ", num_ali))
+		print_msg("%-70s:  %d\n"%("Threshold of pixel error              ", thld_err))
+		print_msg("%-70s:  %s\n"%("Grouping method                       ", options.grouping))
 	st = time()
 	if options.grouping == "GRP":
 		if myid == main_node:
@@ -213,24 +207,41 @@ def main():
 		refproj = even_angles(options.delta)
 		img_begin, img_end = MPI_start_end(len(refproj), number_of_proc, myid)
 		# Now each processor keeps its own share of reference projections
-		refprojdir = refproj[img_begin, img_end]
-		refproj = [None]*len(refprojdir)
-		for i in xrange(len(refprojdir)):  refproj[i] = getvec(refprojdir[i][0],refprojdir[i][1])
-		
+		refprojdir = refproj[img_begin: img_begin+3 ]#img_end]
+		del refproj
+
+		ref_ang = [0.0]*(len(refprojdir)*2)
+		for i in xrange(len(refprojdir)):
+			ref_ang[i*2]   = refprojdir[0][0]
+			ref_ang[i*2+1] = refprojdir[0][1]+i*0.1
+
 		print "  A  ",myid,"  ",time()-st
 		for i in xrange(number_of_proc):
 			if myid == i:
 				proj_attr = EMUtil.get_all_attributes(stack, "xform.projection")
 			mpi_barrier(MPI_COMM_WORLD)
 		print "  B  ",myid,"  ",time()-st
-		proj_params = []
+
+		proj_ang = [0.0]*(nima*2)
 		for i in xrange(nima):
 			dp = proj_attr[i].get_params("spider")
-			phi, theta, psi, s2x, s2y = dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]
-			proj_params.append(getvec(phi,theta))
-		proj_list = [None]*len(refproj)
-		for i in xrange(len(refproj)):
-			proj_list[i] = nearestk_to_refdir(proj_params, refproj[i],img_per_grp)
+			proj_ang[i*2]   = dp["phi"]
+			proj_ang[i*2+1] = dp["theta"]
+		print "  C  ",myid,"  ",time()-st
+		asi = Util.nearestk_to_refdir(proj_ang, ref_ang, img_per_grp)
+		del proj_ang, ref_ang
+		ass = []
+		for i in xrange(len(refprojdir)):
+			ass.append(asi[i*img_per_grp:(i+1)*img_per_grp])
+			print i,refprojdir[i][0] ,refprojdir[i][1] ,ass[i]
+		for i in xrange(len(ass[0])):
+			print ass[0][i],ass[1][i],ass[2][i]
+			
+		print "  D  ",myid,"  ",time()-st
+		from sys import exit
+		exit()
+
+		
 
 	#   Compute stability per projection
 	elif options.grouping == "PPR":
@@ -248,7 +259,7 @@ def main():
 		img_begin, img_end = MPI_start_end(nima, number_of_proc, myid)
 		print "  C  ",myid,"  ",time()-st
 		from utilities import nearest_proj
-		proj_list, mirror_list = nearest_proj(proj_params, img_per_grp, range(img_begin, img_begin+3))#range(img_begin, img_end))
+		proj_list, mirror_list = nearest_proj(proj_params, img_per_grp, range(img_begin, img_begin+1))#range(img_begin, img_end))
 		refprojdir = proj_params[img_begin: img_end]
 		del proj_params, mirror_list
 		print "  D  ",myid,"  ",time()-st
@@ -260,20 +271,34 @@ def main():
 	"""
 
 	# Begin stability test	
-	from fundamentals import fshift
-	from utilities import get_params_proj
-	ave = [None]*len(proj_list)
+	#from utilities import get_params_proj, read_text_file
+	#if myid == 0:
+	#	from utilities import read_text_file
+	#	proj_list[0] = map(int, read_text_file("lggrpp0.txt"))
+
+
+
+	aveList = [None]*len(proj_list)
 	for i in xrange(len(proj_list)):
 		print "  E  ",myid,"  ",time()-st
 		class_data = EMData.read_images(stack, proj_list[i])
+		#if myid == 0:
+		#	p1,p2,p3,p4,p5 = get_params_proj(class_data[0])
+		#	refprojdir[0] = [p1,p2,p3]
 		print "  R  ",myid,"  ",time()-st
 		if options.CTF :
 			from filter import filt_ctf
 			for im in xrange(len(class_data)):  class_data[im] = filt_ctf(class_data[im], class_data[im].get_attr("ctf"), binary=1)
-		for im in xrange(len(class_data)):
-			phi, theta, psi, s2x, s2y = get_params_proj(class_data[im])
-			class_data[im] = fshift(class_data[im], s2x, s2y)
-			set_params2D(class_data[im], [0.0, 0.0, 0.0, 0, 1.0])
+		for im in class_data:
+			try:
+				t = im.get_attr("xform.align2d") # if they are there, no need to set them!
+			except:
+				try:
+					t = im.get_attr("xform.projection")
+					d = t.get_params("spider")
+					set_params2D(im, [0.0,-d["tx"],-d["ty"],0,1.0])
+				except:
+					set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0])
 		print "  F  ",myid,"  ",time()-st
 		# Here, we perform realignment num_ali times
 		all_ali_params = []
@@ -284,7 +309,7 @@ def main():
 				alpha, sx, sy, mirror, scale = get_params2D(class_data[im])
 				ali_params.extend( [alpha, sx, sy, mirror] )
 			all_ali_params.append(ali_params)
-		ave[i] = avet
+		aveList[i] = avet
 		print "  G  ",myid,"  ",time()-st
 		del ali_params
 		# We determine the stability of this group here.
@@ -293,7 +318,7 @@ def main():
 		# stable_set is sorted based on pixel error
 		#from utilities import write_text_file
 		#write_text_file(all_ali_params, "all_ali_params%03d.txt"%myid)
-		stable_set, mir_stab_rate, pix_err = multi_align_stability(all_ali_params, 0.0, 10000.0, thld_err, False)
+		stable_set, mir_stab_rate, pix_err = multi_align_stability_new(all_ali_params, 0.0, 10000.0, thld_err, False, 2*radius+1)
 		print "  H  ",myid,"  ",time()-st
 
 		stable_set_id = []
@@ -310,9 +335,9 @@ def main():
 				members.append(proj_list[i][j])
 				pix_err.append(99999.99)
 		# Here more information has to be stored, PARTICULARLY WHAT IS THE REFERENCE DIRECTION.  PLUS, IT WOULD BE NICE TO WRITE THEM TO ONE FILE!
-		ave[i].set_attr('members', members)
-		ave[i].set_attr('pix_err', pix_err)
-		ave[i].set_attr('refprojdir',refprojdir[i])
+		aveList[i].set_attr('members', members)
+		aveList[i].set_attr('pix_err', pix_err)
+		aveList[i].set_attr('refprojdir',refprojdir[i])
 		#ave.write_image( os.path.join(outdir, "averages_%04d.hdf"%myid), i)
 	if myid == main_node:
 		km = 0
