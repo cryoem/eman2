@@ -2903,14 +2903,13 @@ def parse_user_function(opt_string):
 def getvec( phi, tht ):
 	from math import pi,cos,sin
 	angle_to_rad = pi/180.0
-	#print phi,tht
+
 	if tht > 180.0:
 		tht -= 180.0
 		phi += 180.0
 	if tht > 90.0:
 		tht = 180.0 - tht
 		phi += 180.0
-	#print "  ",phi,tht
 
 	assert tht <=90.0
 
@@ -2976,11 +2975,11 @@ def nearestk_projangles(projangles, whichone = 0, howmany = 1):
 		del refnormal[k], lookup[k]
 	return assignments
 
-def nearestk_to_refdir(projdirs, refdir, howmany = 1):
-	lookup = range(len(projangles))
+def nearestk_to_refdir(refnormal, refdir, howmany = 1):
+	lookup = range(len(refnormal))
 	assignments = [-1]*howmany
 	for i in xrange(howmany):
-		k = closest_ang(refnormal, ref)
+		k = closest_ang(refnormal, refdir)
 		assignments[i] = lookup[k]
 		del refnormal[k], lookup[k]
 	return assignments

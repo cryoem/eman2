@@ -65,7 +65,7 @@ def max_2D_pixel_error(ali_params1, ali_params2, r):
 	Compute 2D maximum pixel error
 	"""
 	from math import sin, pi, sqrt
-	return abs(sin((ali_params1[0]-ali_params2[0])/180.0*pi/2))*r*2+sqrt((ali_params1[1]-ali_params2[1])**2+(ali_params1[2]-ali_params2[2])**2)
+	return (sin((ali_params1[0]-ali_params2[0])/180.0*pi/2)*(2*r+1))**2+(ali_params1[1]-ali_params2[1])**2+(ali_params1[2]-ali_params2[2])**2
 
 
 def max_3D_pixel_error(t1, t2, r):
@@ -711,7 +711,7 @@ def multi_align_stability_new(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10
 
 	def func(args, data, return_avg_pixel_error=True):
 		# Computes pixel error per particle given transformation parameters (G_l)
-		from math import pi, sin, cos
+		from math import pi, sin, cos, sqrt
 		from utilities import combine_params2
 	
 		ali_params = data[0]
@@ -749,7 +749,7 @@ def multi_align_stability_new(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10
 			#print i,P,P/L,var(sx),var(sy)
 			#print  i,d*d/4.*anger+var(sx)+var(sy),"   ",anger,"         ",sx,var(sx),"      ",sy,var(sy)
 			sqr_pixel_error[i] = d*d/4.*anger+var(sx)+var(sy)
-
+			print i,sqrt(P),d**2/4*(1.0-sqrt(P)/L),d*d/4.*anger
 		# Warning: Whatever I return here is squared pixel error, this is for the easy expression of derivative
 		# Don't forget to square root it after getting the value
 		if return_avg_pixel_error:         return sum(sqr_pixel_error)/N

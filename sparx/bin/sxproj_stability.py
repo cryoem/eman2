@@ -230,13 +230,10 @@ def main():
 		print "  C  ",myid,"  ",time()-st
 		asi = Util.nearestk_to_refdir(proj_ang, ref_ang, img_per_grp)
 		del proj_ang, ref_ang
-		ass = []
+		proj_list = []
 		for i in xrange(len(refprojdir)):
-			ass.append(asi[i*img_per_grp:(i+1)*img_per_grp])
-			print i,refprojdir[i][0] ,refprojdir[i][1] ,ass[i]
-		for i in xrange(len(ass[0])):
-			print ass[0][i],ass[1][i],ass[2][i]
-			
+			proj_list.append(asi[i*img_per_grp:(i+1)*img_per_grp])
+		del asi			
 		print "  D  ",myid,"  ",time()-st
 		from sys import exit
 		exit()

@@ -2367,7 +2367,7 @@ void Util::alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
              int  *numr, float *circ, int , int  nring, char  mode) {
 	double dpi, dfi;
 	int    it, jt, inr, l, nsim, kcirc, lt;
-	float	xold, yold, fi, x, y;
+	float  xold, yold, fi, x, y;
 
 	//     cns2 and cnr2 are predefined centers
 	//     no need to set to zero, all elements are defined
@@ -18138,10 +18138,10 @@ struct d_ang {
 vector<int> Util::assign_projangles(const vector<float>& projangles, const vector<float>& refangles) {
 	int nref = refangles.size()/2;
 	int nproj = projangles.size()/2;
-	vector<int> asg(nproj, 0);
-	vector<float> vecref(nref*3, 0.0f);
-	for (int i=0; i<nref; i++)  
-		getvec(refangles[i*2], refangles[i*2+1], vecref[i*3], vecref[i*3+1], vecref[i*3+2]); 
+	vector<int> asg(nproj);
+	vector<float> vecref(nref*3);
+	for (int i=0; i<nref; i++)
+		getvec(refangles[i*2], refangles[i*2+1], vecref[i*3], vecref[i*3+1], vecref[i*3+2]);
 	for (int i=0; i<nproj; i++) {
 		float x, y, z;
 		getvec(projangles[i*2], projangles[i*2+1], x, y, z);
@@ -18149,6 +18149,41 @@ vector<int> Util::assign_projangles(const vector<float>& projangles, const vecto
 	}
 	return asg;
 }
+
+
+vector<int> Util::nearestk_to_refdir(const vector<float>& projangles, const vector<float>& refangles, const int howmany) {
+	int nref = refangles.size()/2;
+	int nproj = projangles.size()/2;
+	vector<int> asg(howmany*nref);
+	vector<float> vecproj(nproj*3);
+	for (int i=0; i<nproj; i++)
+		getvec(projangles[i*2], projangles[i*2+1], vecproj[i*3], vecproj[i*3+1], vecproj[i*3+2]);
+
+
+	vector<bool> taken(nproj);
+	for (int k=0; k<nref; k++) {
+		for (int i=0; i<nproj; i++)  taken[i] = true;
+		float x, y, z;
+		getvec(refangles[k*2], refangles[k*2+1], x, y, z);
+		for (int h=0; h<howmany; h++) {
+			float best_v = -1.0f;
+			int best_i = -1;
+			for (int i=0; i<nproj; i++) {
+				if( taken[i] ) {
+					float v = abs(vecproj[i*3]*x+vecproj[i*3+1]*y+vecproj[i*3+2]*z);
+					if (v > best_v) {
+						best_v = v;
+						best_i = i;
+					}
+				}
+			}
+			asg[k*howmany + h] = best_i;
+			taken[best_i] = false;
+		}
+	}
+	return asg;
+}
+
 
 vector<int> Util::group_proj_by_phitheta(const vector<float>& projangles, const vector<float>& ref_ang, const int img_per_grp) {
 	float c = 100.0;

@@ -860,13 +860,13 @@ public:
 			phi += 180.0f;
 		}
 
-		phi   *= pi180;		
+		phi   *= pi180;
 		theta *= pi180;
 
 		x = sin(theta)*cos(phi);
 		y = sin(theta)*sin(phi);
 		z = cos(theta);
-		
+
 		return;
 	}
 	
@@ -878,15 +878,18 @@ public:
 		else { mirror = -1; return acos(-v)*180.0f/M_PI; }
 	}
 	
-	/* Find the nearest projection angles
+	/* Find nearest projection angles
 		Notice: the input I use is different from python code, which I think is awkward.
 	*/
 	static int nearest_ang(const vector<float>& vecref, float x, float y, float z);
 
-	/* Assign the projection angles to the nearest reference projections */
+	/* Assign projection angles to nearest reference projections */
 	static vector<int> assign_projangles(const vector<float>& projangles, const vector<float>& refangles); 
 
-	/* Group the projection angles by (phi, theta) */
+	/* Assign howmany projection angles to the nearest reference projection */
+	static vector<int> nearestk_to_refdir(const vector<float>& projangles, const vector<float>& refangles, const int howmany); 
+
+	/* Group projection angles by (phi, theta) */
 	static vector<int> group_proj_by_phitheta(const vector<float>& projangles, const vector<float>& ref_ang, const int img_per_grp);
 
 	/** formerly known as apmq
