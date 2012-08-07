@@ -83,13 +83,13 @@ def main():
 
 	(options,args) = parser.parse_args()
 	
-	from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD, MPI_TAG_UB
-	from mpi import mpi_barrier, mpi_send, mpi_recv, mpi_bcast, MPI_INT, mpi_finalize, MPI_FLOAT
-	from applications import MPI_start_end, within_group_refinement
-	from pixel_error import multi_align_stability_new
-	from utilities import print_begin_msg, print_end_msg, print_msg, send_EMData, recv_EMData
-	from utilities import get_image, bcast_number_to_all, set_params2D, get_params2D
-	from utilities import group_proj_by_phitheta, model_circle, get_input_from_string
+	from mpi          import mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD, MPI_TAG_UB
+	from mpi          import mpi_barrier, mpi_send, mpi_recv, mpi_bcast, MPI_INT, mpi_finalize, MPI_FLOAT
+	from applications import MPI_start_end, within_group_refinement, ali2d_ras
+	from pixel_error  import multi_align_stability_new
+	from utilities    import print_begin_msg, print_end_msg, print_msg, send_EMData, recv_EMData
+	from utilities    import get_image, bcast_number_to_all, set_params2D, get_params2D
+	from utilities    import group_proj_by_phitheta, model_circle, get_input_from_string
 
 	sys.argv = mpi_init(len(sys.argv), sys.argv)
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
@@ -300,7 +300,10 @@ def main():
 		# Here, we perform realignment num_ali times
 		all_ali_params = []
 		for j in xrange(num_ali):
-			avet = within_group_refinement(class_data, mask, True, 1, radius, 1, xrng, yrng, step, 90.0, ite, options.fl, options.aa)
+			if( xrng[0] == 0.0 and yrng[0] == 0.0 ):
+				avet = ali2d_ras(class_data, randomize = True, ir = 1, ou = radius, rs = 1, step = 1.0, dst = 90.0, maxit = ite, check_mirror = True, FH=options.fl, FF=options.aa)
+			else:
+				avet = within_group_refinement(class_data, mask, True, 1, radius, 1, xrng, yrng, step, 90.0, ite, options.fl, options.aa)
 			ali_params = []
 			for im in xrange(len(class_data)):
 				alpha, sx, sy, mirror, scale = get_params2D(class_data[im])

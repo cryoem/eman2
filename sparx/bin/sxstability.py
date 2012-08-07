@@ -63,9 +63,9 @@ def main():
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
 
-		from applications import within_group_refinement
-		from pixel_error import multi_align_stability_new
-		from utilities import write_text_file, write_text_row
+		from applications   import within_group_refinement, ali2d_ras
+		from pixel_error    import multi_align_stability_new
+		from utilities      import write_text_file, write_text_row
 
 		global_def.BATCH = True
 
@@ -119,7 +119,10 @@ def main():
 						SY = []
 						MIRROR = []
 						SCALE = []
-					dummy = within_group_refinement(class_data, mask, True, 1, ou, 1, xrng, yrng, step, 90.0, 30, options.fl, options.aa)
+					if( xrng[0] == 0.0 and yrng[0] == 0.0 ):
+						dummy = ali2d_ras(class_data, randomize = True, ir = 1, ou = ou, rs = 1, step = 1.0, dst = 90.0, maxit = 30, check_mirror = True, FH=options.fl, FF=options.aa)
+					else:
+						dummy = within_group_refinement(class_data, mask, True, 1, ou, 1, xrng, yrng, step, 90.0, 30, options.fl, options.aa)
 					for im in class_data:
 						alpha, sx, sy, mirror, scale = get_params2D(im)
 						ali_params.extend([alpha, sx, sy, mirror])

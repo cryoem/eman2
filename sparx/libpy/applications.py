@@ -2662,15 +2662,13 @@ def ali2d_rac(stack, maskfile = None, ir = 1, ou = -1, rs = 1, nclass = 2, maxit
 	print_end_msg("ali2d_rac")
 
 
-def ali2d_ras(data2d, maskfile = None, randomize = False, ir = 1, ou = -1, rs = 1, step = 1.0, dst = 0.0, maxit = 10, check_mirror = True, FH = 0.0, FF =0.0):
+def ali2d_ras(data2d, randomize = False, ir = 1, ou = -1, rs = 1, step = 1.0, dst = 0.0, maxit = 10, check_mirror = True, FH = 0.0, FF =0.0):
 # stripped down 2D rotational alignment in polar coordinates
+#  I did not check the version with no check mirror, I doubt it works.
 
-	from utilities    import model_circle, compose_transform2, combine_params2, drop_image, get_im, get_arb_params, get_params2D, set_params2D, inverse_transform2
-	from alignment    import Numrinit, ringwe, ang_n, Applyws
-	from alignment    import Applyws, ang_n
-	from morphology   import ctf_2
+	from utilities    import compose_transform2, combine_params2, get_arb_params, get_params2D, set_params2D, inverse_transform2
+	from alignment    import Numrinit, ringwe, ang_n
 	from statistics   import ave_series
-	from applications import transform2d
 	from random       import random, randint
 
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit); 
@@ -2687,13 +2685,6 @@ def ali2d_ras(data2d, maskfile = None, randomize = False, ir = 1, ou = -1, rs = 
 	numr = Numrinit(first_ring, last_ring, rstep, mode)
 	wr   = ringwe(numr, mode)
 	maxrin = numr[len(numr)-1]
-	# prepare 2-D mask for normalization
-	if maskfile:
-		mask2D = maskfile
-	else : mask2D = model_circle(last_ring, nx, nx)
-	if (first_ring > 0):
-		tave = model_circle(first_ring-1, nx, ny)
-		mask2D -= tave
 
 	#  center is in SPIDER convention
 	cnx = int(nx/2) + 1
@@ -2705,18 +2696,14 @@ def ali2d_ras(data2d, maskfile = None, randomize = False, ir = 1, ou = -1, rs = 
 	for im in xrange(nima):
 		if randomize:
 			alpha, sx, sy, miri, scale = get_params2D(data2d[im])
-			#alphai, sxi, syi, mirrori = inverse_transform2(alpha, sx, sy, miri)
-			#if check_mirror: alphan, sxn, syn, mirrorn = combine_params2(0.0, -sxi, -syi, 0, 0.0,0.0,0.0,0)# random()*360.0, 0.0, 0.0, randint(0, 1))
-			#else: alphan, sxn, syn, mirrorn = combine_params2(0.0, -sxi, -syi, mirrori, random()*360.0, 0.0, 0.0, )			
-			#alphai, sxi, syi, mirrori = inverse_transform2(alpha, sx, sy, miri)
-			if check_mirror: alphan, sxn, syn, mirrorn = combine_params2(alpha, sx, sy, miri, 73.,0.,0.,0)#random()*360.0, 0.0, 0.0, randint(0, 1))
-			else: alphan, sxn, syn, mirrorn = combine_params2(alpha, sx, sy, miri, random()*360.0, 0.0, 0.0, )			
-			set_params2D(data2d[im], [alphan, sxn, syn, mirrorn, 1.0])
+			alphai, sxi, syi, mirrori = inverse_transform2(alpha, sx, sy)
+			if check_mirror: alphan, sxn, syn, mirrorn = combine_params2(0.0, -sxi, -syi, 0, random()*360.0, 0.0, 0.0, randint(0, 1))
+			else:            alphan, sxn, syn, mirrorn = combine_params2(0.0, -sxi, -syi, 0, random()*360.0, 0.0, 0.0, 0)			
 		else:
 			alphan, sxn, syn, mirrorn, scale = get_params2D(data2d[im])
-		params.append([alphan, sxn, syn, mirrorn])
 		#  Here we need inverse transformation shifts for resampling into polar
-		alphai, sxn, syn, mirrori = inverse_transform2(alphan, sxn, syn, mirrorn)
+		alphai, sxn, syn, mirrori = inverse_transform2(alphan, sxn, syn)
+		params.append([sxn, syn])
 		cimage = Util.Polar2Dm(data2d[im], cnx+sxn, cny+syn, numr, mode)
 		Util.Frngs(cimage, numr)
 		data.append(cimage)
@@ -2728,20 +2715,17 @@ def ali2d_ras(data2d, maskfile = None, randomize = False, ir = 1, ou = -1, rs = 
 		if( FH > 0.0):
 			fl = 0.1+(FH-0.1)*Iter/float(max_iter-1)
 			tavg = filt_tanl(tavg, fl, FF)
-		tavg.write_image("tavg.hdf",total_iter-1)
 		if total_iter == max_iter:  return tavg
 		if Iter%4 != 0 or total_iter > max_iter-10: delta = 0.0
-		else: delta = dst
-		#  Convert avergae to polar
+		else:                                       delta = dst
+		#  Convert average to polar
 		cimage = Util.Polar2Dm(tavg, cnx, cny, numr, mode)
 		Util.Frngs(cimage, numr)
 		for im in xrange(nima):
 			# align current image to the reference 
 			if(check_mirror):
-				if delta == 0.0:
-					retvals = Util.Crosrng_ms(cimage, data[im], numr)
-				else:
-					retvals = Util.Crosrng_ms_delta(cimage, data[im], numr, 0.0, delta)
+				if delta == 0.0: retvals = Util.Crosrng_ms(cimage, data[im], numr)
+				else:            retvals = Util.Crosrng_ms_delta(cimage, data[im], numr, 0.0, delta)
 				qn = retvals["qn"]
 				qm = retvals["qm"]
 		   		if (qn >= qm):
@@ -2754,7 +2738,7 @@ def ali2d_ras(data2d, maskfile = None, randomize = False, ir = 1, ou = -1, rs = 
 				retvals = Util.Crosrng_e(cimage, data[im], numr, 0)
 				ang = ang_n(retvals["tot"], mode, numr[-1])
 			# combine parameters and store in data2d header
-			alphan, sxn, syn, mir = combine_params2(params[im][0], params[im][1], params[im][2], params[im][3], ang, 0,0, mirror)
+			alphan, sxn, syn, mir = combine_params2(0.0, -params[im][0], -params[im][1], 0, ang, 0.0 ,0.0, mirror)
 			set_params2D(data2d[im], [alphan, sxn, syn, mir, 1.0])
 
 def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=1, maxit=0, CTF=False, snr=1.0, user_func_name="ref_ali2d"):
@@ -13765,7 +13749,6 @@ def isac_stability_check_mpi(alldata, numref, belongsto, stab_ali, thld_err, mas
 	mpi_barrier(comm)
 	
 	return refi
-
 
 def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, step, dst, maxit, FH, FF):
 
