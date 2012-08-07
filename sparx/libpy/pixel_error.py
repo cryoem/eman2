@@ -706,7 +706,7 @@ def multi_align_stability_new(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10
 		avg = sum(a)
 		var = 0.0
 		for i in xrange(n): var += a[i]**2
-		return (var-avg*avg/n)/n
+		return (var-avg*avg/n)/(n-1)
 
 	# args - G, data -[T, d]
 	def func(args, data, return_avg_pixel_error=True):
