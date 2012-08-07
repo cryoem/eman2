@@ -63,7 +63,6 @@ from global_def import *
 def max_2D_pixel_error(ali_params1, ali_params2, r):
 	"""
 	Compute 2D maximum pixel error
-	NOTE - I changed it to compute squared average pixel error 08/07/2012, PAP
 	"""
 	from math import sin, pi, sqrt
 	return (sin((ali_params1[0]-ali_params2[0])/180.0*pi/2)*(2*r+1))**2+(ali_params1[1]-ali_params2[1])**2+(ali_params1[2]-ali_params2[2])**2
@@ -482,6 +481,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 		for i in xrange(n): var += (a[i]-avg)**2
 		return var/n
 
+	# args - G, data -[T, d]
 	def func(args, data, return_avg_pixel_error=True):
 
 	        from math import pi, sin, cos
@@ -517,8 +517,6 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	        			sx[j] = -args_list[j*3+1]+ali_params[j][i*4+1]*cosa[j]+ali_params[j][i*4+2]*sina[j]
 	        			sy[j] =  args_list[j*3+2]-ali_params[j][i*4+1]*sina[j]+ali_params[j][i*4+2]*cosa[j]
 	        	P = sqrt(sum_cosa**2+sum_sina**2)
-	        	sum_cosa /= P
-	        	sum_sina /= P
 
 	        	sqr_pixel_error[i] = d*d/4.*(1-P/L)+var(sx)+var(sy)
 
@@ -708,8 +706,9 @@ def multi_align_stability_new(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10
 		avg = sum(a)
 		var = 0.0
 		for i in xrange(n): var += a[i]**2
-		return (var-avg*avg/n)/(n-1)
+		return (var-avg*avg/n)/n
 
+	# args - G, data -[T, d]
 	def func(args, data, return_avg_pixel_error=True):
 		# Computes pixel error per particle given transformation parameters (G_l)
 		from math import pi, sin, cos, sqrt
@@ -738,19 +737,18 @@ def multi_align_stability_new(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10
 				alpha[l], sx[l], sy[l], mirror12 = combine_params2(ali_params[l][i*4+0], ali_params[l][i*4+1], ali_params[l][i*4+2], int(ali_params[l][i*4+3]), args_list[l*3+0],args_list[l*3+1],args_list[l*3+2],0)
 				sum_cosa += cos(alpha[l]*pi/180.0)
 				sum_sina += sin(alpha[l]*pi/180.0)
-			P = sqrt(sum_cosa**2+sum_sina**2)
-			sum_cosa /= P
-			sum_sina /= P
+			sqrtP = sqrt(sum_cosa**2+sum_sina**2)
+			sum_cosa /= sqrtP
+			sum_sina /= sqrtP
 			#  This completes calculation of matrix H_i
 			anger = 0.0
 			for l in xrange(L):
 				anger += (cos(alpha[l]*pi/180.0)-sum_cosa)**2
 				anger += (sin(alpha[l]*pi/180.0)-sum_sina)**2
 			anger *= 2
-			#print i,P,P/L,var(sx),var(sy)
-			#print  i,d*d/4.*anger+var(sx)+var(sy),"   ",anger,"         ",sx,var(sx),"      ",sy,var(sy)
 			sqr_pixel_error[i] = d*d/4.*anger/L/4.+var(sx)+var(sy)
-			#print i,P,d**2/4*(1.0-P/L),d*d/4.*anger/L/4.
+			#three different approaches give the same solution:
+			#print i,d*d/4*(1.0-sqrtP/L) + var(sx) + var(sy),sqr_pixel_error[i], (sin((alpha[0]-alpha[1])*pi/180.0/4.0)*(d))**2/2  + ((sx[0]-sx[1])/2)**2 +  ((sy[0]-sy[1])/2)**2
 		# Warning: Whatever I return here is squared pixel error, this is for the easy expression of derivative
 		# Don't forget to square root it after getting the value
 		if return_avg_pixel_error:         return sum(sqr_pixel_error)/N
@@ -762,7 +760,7 @@ def multi_align_stability_new(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10
 	from utilities import combine_params2
 	from numpy import array
 	from math import sqrt
-
+	
 	# I decided not to use scipy in order to reduce the dependency, I wrote the C++ code instead
 	# from scipy import array, int32
 	# from scipy.optimize.lbfgsb import fmin_l_bfgs_b
@@ -771,6 +769,7 @@ def multi_align_stability_new(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10
 	all_part = []
 	num_ali = len(ali_params)
 	nima = len(ali_params[0])/4
+	print  num_ali,nima
 	for i in xrange(num_ali):
 		mirror0 = []
 		mirror1 = []
