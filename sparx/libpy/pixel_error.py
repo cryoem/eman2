@@ -771,7 +771,6 @@ def multi_align_stability_new(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10
 	all_part = []
 	num_ali = len(ali_params)
 	nima = len(ali_params[0])/4
-	print  num_ali,nima
 	for i in xrange(num_ali):
 		mirror0 = []
 		mirror1 = []

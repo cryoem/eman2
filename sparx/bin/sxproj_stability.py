@@ -233,10 +233,10 @@ def main():
 		proj_list = []
 		for i in xrange(len(refprojdir)):
 			proj_list.append(asi[i*img_per_grp:(i+1)*img_per_grp])
-		del asi			
+		del asi
 		print "  D  ",myid,"  ",time()-st
-		from sys import exit
-		exit()
+		#from sys import exit
+		#exit()
 
 		
 
