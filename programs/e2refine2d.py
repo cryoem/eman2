@@ -80,7 +80,7 @@ def main():
 	parser.add_argument("--initial",type=str,default=None,help="File containing starting class-averages. If not specified, will generate starting averages automatically", guitype='strbox', row=3, col=1, rowspan=1, colspan=2)
 	parser.add_argument("--nbasisfp",type=int,default=5,help="Number of MSA basis vectors to use when classifying particles", guitype='intbox', row=4, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--minchange", type=int,default=-1,help="Minimum number of particles that change group before deicding to terminate. Default = -1 (auto)")
-	parser.add_argument("--fastseed", action="store_true", default=False,help="Will seed the k-means loop quickly, but may produce less consistent results.")
+	parser.add_argument("--fastseed", action="store_true", default=False,help="Will seed the k-means loop quickly, but may produce less consistent results. Always use this when generating >~100 classes.",guitype='boolbox', row=2, col=2, rowspan=1, colspan=1)
 
 	parser.add_header(name="simmxheader", help='Options below this label are specific to simmx', title="### simmx options ###", row=6, col=0, rowspan=1, colspan=3)
 	# options associated with e2simmx.py

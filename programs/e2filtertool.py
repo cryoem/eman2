@@ -402,7 +402,7 @@ class EMProcessorWidget(QtGui.QWidget):
 		return (proc,parms)
 	
 class EMFilterTool(QtGui.QMainWindow):
-	"""This class represents the EMTomoBoxer application instance.  """
+	"""This class represents the EMFilterTool application instance.  """
 	
 	def __init__(self,datafile=None,apix=0.0,verbose=0):
 		QtGui.QMainWindow.__init__(self)
@@ -476,6 +476,7 @@ class EMFilterTool(QtGui.QMainWindow):
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeOut)
 		self.timer.start(100)
 #		QtCore.QObject.connect(self.boxesviewer,QtCore.SIGNAL("mx_image_selected"),self.img_selected)
+
 
 	def setChange(self,line):
 		"""When the user selects a new set or hits enter after a new name"""
@@ -717,8 +718,29 @@ class EMFilterTool(QtGui.QMainWindow):
 		
 		allfilt=" ".join([i.getAsProc() for i in self.processorlist])
 		
-		launch_childprocess( "e2proc2d.py %s %s %s"%(self.datafile,str(name[0]),allfilt))
-		
+		n=EMUtil.get_image_count(self.datafile)
+		from PyQt4.QtGui import QProgressDialog
+		progressdialog=QProgressDialog("Processing Images","Abort",0,n,self)
+		progressdialog.setMinimumDuration(1000)
+
+		e=E2init(["e2proc2d.py",self.datafile,str(name[0]),allfilt,"--progress"])	# we don't actually run this program, since we couldn't have a progress dialog easo;y then
+
+		pp=[i.processorParms() for i in self.processorlist]
+
+		for i in xrange(n):
+			im=EMData(self.datafile,i)
+			QtGui.qApp.processEvents()
+			for p in pp: im.process_inplace(p[0],p[1])
+			im.write_image(str(name[0]),i)
+			progressdialog.setValue(i+1)
+			if progressdialog.wasCanceled() : 
+				print "Processing Cancelled"
+				break
+
+		progressdialog.setValue(n)
+
+		E2end(e)
+
 	def menu_file_save_map(self):
 		"saves the current processored map"
 		

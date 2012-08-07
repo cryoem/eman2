@@ -266,10 +266,13 @@ def main():
 	imagelist = read_listfile(options.list, options.exclude, nimg)
 	sfcurve1 = None
 
+			
+
 	lasttime=time.time()
 	outfilename_no_ext = outfile[:-4]
 	outfilename_ext = outfile[-3:]
 	for i in range(n0, n1+1):
+			
 		if options.verbose >= 1:
 			
 			if time.time()-lasttime>3 or options.verbose>2 :

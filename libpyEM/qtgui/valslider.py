@@ -571,7 +571,7 @@ class CheckBox(QtGui.QWidget):
 				
 		if self.getValue()==val : return
 		self.check.setChecked(val)
-		if not quiet : self.emit(QtCore.SIGNAL("valueChanged"),self.value)
+		if not quiet : self.emit(QtCore.SIGNAL("valueChanged"),val)
 	
 	def getValue(self):
 		return bool(self.check.isChecked())
