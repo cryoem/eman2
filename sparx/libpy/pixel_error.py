@@ -749,8 +749,8 @@ def multi_align_stability_new(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10
 			anger *= 2
 			#print i,P,P/L,var(sx),var(sy)
 			#print  i,d*d/4.*anger+var(sx)+var(sy),"   ",anger,"         ",sx,var(sx),"      ",sy,var(sy)
-			sqr_pixel_error[i] = d*d/4.*anger+var(sx)+var(sy)
-			print i,sqrt(P),d**2/4*(1.0-sqrt(P)/L),d*d/4.*anger
+			sqr_pixel_error[i] = d*d/4.*anger/L/4.+var(sx)+var(sy)
+			print i,P,d**2/4*(1.0-P/L),d*d/4.*anger/L/4.
 		# Warning: Whatever I return here is squared pixel error, this is for the easy expression of derivative
 		# Don't forget to square root it after getting the value
 		if return_avg_pixel_error:         return sum(sqr_pixel_error)/N
