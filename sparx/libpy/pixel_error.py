@@ -63,6 +63,7 @@ from global_def import *
 def max_2D_pixel_error(ali_params1, ali_params2, r):
 	"""
 	Compute 2D maximum pixel error
+	NOTE - I changed it to compute squared average pixel error 08/07/2012, PAP
 	"""
 	from math import sin, pi, sqrt
 	return (sin((ali_params1[0]-ali_params2[0])/180.0*pi/2)*(2*r+1))**2+(ali_params1[1]-ali_params2[1])**2+(ali_params1[2]-ali_params2[2])**2
