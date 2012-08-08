@@ -2700,6 +2700,7 @@ def ali2d_ras(data2d, randomize = False, ir = 1, ou = -1, rs = 1, step = 1.0, ds
 			alphai, sxi, syi, mirrori = inverse_transform2(alpha, sx, sy)
 			if check_mirror: alphan, sxn, syn, mirrorn = combine_params2(0.0, -sxi, -syi, 0, random()*360.0, 0.0, 0.0, randint(0, 1))
 			else:            alphan, sxn, syn, mirrorn = combine_params2(0.0, -sxi, -syi, 0, random()*360.0, 0.0, 0.0, 0)			
+			set_params2D(data2d[im], [alphan, sxn, syn, mirrorn, 1.0] )
 		else:
 			alphan, sxn, syn, mirrorn, scale = get_params2D(data2d[im])
 		#  Here we need inverse transformation shifts for resampling into polar
