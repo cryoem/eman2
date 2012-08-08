@@ -701,12 +701,12 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 
 def multi_align_stability_new(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.0, err_thld = 1.732, print_individual = False, d = 64):
 
-	def var(a):
+	def sqerr(a):
 		n = len(a)
 		avg = sum(a)
-		var = 0.0
-		for i in xrange(n): var += a[i]**2
-		return (var-avg*avg/n)/(n-1)
+		sq = 0.0
+		for i in xrange(n): sq += a[i]**2
+		return (sq-avg*avg/n)/n
 
 	# args - G, data -[T, d]
 	def func(args, data, return_avg_pixel_error=True):
@@ -724,9 +724,12 @@ def multi_align_stability_new(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10
 		#print  "        FUNC",N,L,d
 	
 		args_list= [0.0]*(L*3)
-		for i in xrange(L*3-3):        args_list[i] = args[i]
+		for i in xrange(L*3-3):  args_list[i] = args[i]
 
+		pt = Transform({"type":"2D"})
 		sqr_pixel_error = [0.0]*N
+		ave_params =[]
+		hmir = 0
 		for i in xrange(N):
 			sum_cosa = 0.0
 			sum_sina = 0.0
@@ -735,24 +738,35 @@ def multi_align_stability_new(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10
 			alpha    = [0.0]*L
 			for l in xrange(L):
 				alpha[l], sx[l], sy[l], mirror12 = combine_params2(ali_params[l][i*4+0], ali_params[l][i*4+1], ali_params[l][i*4+2], int(ali_params[l][i*4+3]), args_list[l*3+0],args_list[l*3+1],args_list[l*3+2],0)
+				hmir += mirror12
 				sum_cosa += cos(alpha[l]*pi/180.0)
 				sum_sina += sin(alpha[l]*pi/180.0)
 			sqrtP = sqrt(sum_cosa**2+sum_sina**2)
 			sum_cosa /= sqrtP
 			sum_sina /= sqrtP
 			#  This completes calculation of matrix H_i
+			"""
 			anger = 0.0
 			for l in xrange(L):
 				anger += (cos(alpha[l]*pi/180.0)-sum_cosa)**2
 				anger += (sin(alpha[l]*pi/180.0)-sum_sina)**2
 			anger *= 2
-			sqr_pixel_error[i] = d*d/4.*anger/L/4.+var(sx)+var(sy)
+			sqr_pixel_error[i] = d*d/4.*anger/L/4.+sqerr(sx)+sqerr(sy)
+			"""
+			sqr_pixel_error[i] = d*d/4*(1.0-sqrtP/L) + sqerr(sx) + sqerr(sy)
+			#  Get ave transform params
+			pt.set_matrix([sum_cosa, sum_sina, 0.0, sum(sx)/L, -sum_sina, sum_cosa, 0.0, sum(sy)/L, 0.0, 0.0, 1.0, 0.0])
+			dd = pt.get_params("2D")
+			#  We are using here mirror of the FIRST SET.
+			pt = Transform({"type":"2D","alpha":dd[ "alpha" ],"tx":dd[ "tx" ],"ty": dd[ "ty" ],"mirror":int(ali_params[0][i*4+3]),"scale":1.0})
+			dd = pt.get_params("2D")
+			ave_params.append([dd[ "alpha" ], dd[ "tx" ], dd[ "ty" ], dd[ "mirror" ]])
 			#three different approaches give the same solution:
-			#print i,d*d/4*(1.0-sqrtP/L) + var(sx) + var(sy),sqr_pixel_error[i], (sin((alpha[0]-alpha[1])*pi/180.0/4.0)*(d))**2/2  + ((sx[0]-sx[1])/2)**2 +  ((sy[0]-sy[1])/2)**2
+			#print i,d*d/4*(1.0-sqrtP/L) + sqerr(sx) + sqerr(sy),sqr_pixel_error[i]#, (sin((alpha[0]-alpha[1])*pi/180.0/4.0)*(d))**2/2  + ((sx[0]-sx[1])/2)**2 +  ((sy[0]-sy[1])/2)**2
 		# Warning: Whatever I return here is squared pixel error, this is for the easy expression of derivative
 		# Don't forget to square root it after getting the value
 		if return_avg_pixel_error:         return sum(sqr_pixel_error)/N
-		else: return sqr_pixel_error
+		else: return sqr_pixel_error, ave_params
 
 
 	####   MAIN BODY   ###################################################################################################
@@ -769,7 +783,7 @@ def multi_align_stability_new(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10
 	all_part = []
 	num_ali = len(ali_params)
 	nima = len(ali_params[0])/4
-	print  num_ali,nima
+	#print  num_ali,nima
 	for i in xrange(num_ali):
 		mirror0 = []
 		mirror1 = []
@@ -808,7 +822,7 @@ def multi_align_stability_new(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10
 
 	# Do an initial analysis, purge all outlier particles, whose pixel error are larger than three times of threshold
 	data = [ali_params_mir_stab, d]
-	pixel_error = func(array(args), data, return_avg_pixel_error=False)
+	pixel_error, ave_params = func(array(args), data, return_avg_pixel_error=False)
 
 	#  Intercept here  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 	#if True:  # these errors should now be the same as computed by ave_ali_err_params, which also uses align_diff_params as in the code above.
@@ -826,7 +840,7 @@ def multi_align_stability_new(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10
 
 	#print  "  CLEANED PART  contains ",nima3,"  images"
 
-	# Compute alignment parameters AFGAIN after exclusion of outliers for the first numali-2 sets against the last (num_ali-1) one
+	# Compute alignment parameters AGAIN after exclusion of outliers for the first numali-2 sets against the last (num_ali-1) one
 	args = []
 	for i in xrange(num_ali-1):
 		alpha, sx, sy, mirror = align_diff_params(ali_params_cleaned[i], ali_params_cleaned[num_ali-1])
@@ -835,7 +849,7 @@ def multi_align_stability_new(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10
 	#print  "  ALI PARAMS  ",args
 
 	# repeat the analysis for all particles, for outliers the error is supposed to increase
-	pixel_error = func(array(args), data, return_avg_pixel_error=False)
+	pixel_error, ave_params = func(array(args), data, return_avg_pixel_error=False)
 
 	stable_set = []
 	val = 0.0
@@ -844,7 +858,7 @@ def multi_align_stability_new(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10
 			j = mir_stab_part.index(i)
 			err = sqrt(pixel_error[j])
 			if err < err_thld:
-				stable_set.append([err, mir_stab_part[j]])
+				stable_set.append([err, mir_stab_part[j], ave_params[j]])
 				val += err
 				if print_individual:  print "Particle %4d :  pixel error = %18.4f"%(i, err)
 			else:

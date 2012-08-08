@@ -154,6 +154,7 @@ def main():
 		print_msg("%-70s:  %s\n"%("Grouping method                       ", options.grouping))
 	st = time()
 	if options.grouping == "GRP":
+		#  THIS IS NOT FINISHED!!
 		if myid == main_node:
 			proj_attr = EMUtil.get_all_attributes(stack, "xform.projection")
 			proj_params = []
@@ -207,7 +208,7 @@ def main():
 		refproj = even_angles(options.delta)
 		img_begin, img_end = MPI_start_end(len(refproj), number_of_proc, myid)
 		# Now each processor keeps its own share of reference projections
-		refprojdir = refproj[img_begin: img_begin+3 ]#img_end]
+		refprojdir = refproj[img_begin: img_end]
 		del refproj
 
 		ref_ang = [0.0]*(len(refprojdir)*2)
@@ -309,7 +310,7 @@ def main():
 				alpha, sx, sy, mirror, scale = get_params2D(class_data[im])
 				ali_params.extend( [alpha, sx, sy, mirror] )
 			all_ali_params.append(ali_params)
-		aveList[i] = avet
+		#aveList[i] = avet
 		print "  G  ",myid,"  ",time()-st
 		del ali_params
 		# We determine the stability of this group here.
@@ -330,15 +331,21 @@ def main():
 			members.append(proj_list[i][s[1]])
 			pix_err.append(s[0])
 		# Then put the unstable members into attr 'members' and 'pix_err'
+		from fundamentals import rot_shift2D
+		avet.to_zero()
+		l = -1
 		for j in xrange(len(proj_list[i])):
-			if j not in stable_set_id:
+			if j in stable_set_id:
+				l += 1
+				avet += rot_shift2D(class_data[j], stable_set[l][2][0], stable_set[l][2][1], stable_set[l][2][2], stable_set[l][2][3] )
+			else:
 				members.append(proj_list[i][j])
 				pix_err.append(99999.99)
+		aveList[i] = avet/l
 		# Here more information has to be stored, PARTICULARLY WHAT IS THE REFERENCE DIRECTION.  PLUS, IT WOULD BE NICE TO WRITE THEM TO ONE FILE!
 		aveList[i].set_attr('members', members)
 		aveList[i].set_attr('pix_err', pix_err)
 		aveList[i].set_attr('refprojdir',refprojdir[i])
-		#ave.write_image( os.path.join(outdir, "averages_%04d.hdf"%myid), i)
 	if myid == main_node:
 		km = 0
 		for i in xrange(number_of_proc):

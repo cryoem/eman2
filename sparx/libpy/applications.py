@@ -2669,6 +2669,7 @@ def ali2d_ras(data2d, randomize = False, ir = 1, ou = -1, rs = 1, step = 1.0, ds
 	from utilities    import compose_transform2, combine_params2, get_arb_params, get_params2D, set_params2D, inverse_transform2
 	from alignment    import Numrinit, ringwe, ang_n
 	from statistics   import ave_series
+	from filter       import filt_tanl
 	from random       import random, randint
 
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit); 
