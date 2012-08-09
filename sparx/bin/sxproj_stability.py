@@ -208,7 +208,7 @@ def main():
 		refproj = even_angles(options.delta)
 		img_begin, img_end = MPI_start_end(len(refproj), number_of_proc, myid)
 		# Now each processor keeps its own share of reference projections
-		refprojdir = refproj[img_begin: img_begin+4]#img_end]
+		refprojdir = refproj[img_begin: img_end]
 		del refproj
 
 		ref_ang = [0.0]*(len(refprojdir)*2)
@@ -341,7 +341,8 @@ def main():
 			else:
 				members.append(proj_list[i][j])
 				pix_err.append(99999.99)
-		aveList[i] = avet/l
+		aveList[i] = avet.copy()
+		if l>1 : aveList[i]/=l
 		# Here more information has to be stored, PARTICULARLY WHAT IS THE REFERENCE DIRECTION.  PLUS, IT WOULD BE NICE TO WRITE THEM TO ONE FILE!
 		aveList[i].set_attr('members', members)
 		aveList[i].set_attr('pix_err', pix_err)
