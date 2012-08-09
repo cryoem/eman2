@@ -217,10 +217,14 @@ def main():
 			ref_ang[i*2+1] = refprojdir[0][1]+i*0.1
 
 		print "  A  ",myid,"  ",time()-st
+		proj_attr = EMUtil.get_all_attributes(stack, "xform.projection")
+		#  the solution below is very slow, do not use it unless there is a problem with the i/O
+		"""
 		for i in xrange(number_of_proc):
 			if myid == i:
 				proj_attr = EMUtil.get_all_attributes(stack, "xform.projection")
 			mpi_barrier(MPI_COMM_WORLD)
+		"""
 		print "  B  ",myid,"  ",time()-st
 
 		proj_ang = [0.0]*(nima*2)
@@ -244,10 +248,7 @@ def main():
 	#   Compute stability per projection
 	elif options.grouping == "PPR":
 		print "  A  ",myid,"  ",time()-st
-		for i in xrange(number_of_proc):
-			if myid == i:
-				proj_attr = EMUtil.get_all_attributes(stack, "xform.projection")
-			mpi_barrier(MPI_COMM_WORLD)
+		proj_attr = EMUtil.get_all_attributes(stack, "xform.projection")
 		print "  B  ",myid,"  ",time()-st
 		proj_params = []
 		for i in xrange(nima):
