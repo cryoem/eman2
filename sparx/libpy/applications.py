@@ -3802,8 +3802,8 @@ def ali3dpsi_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 				ref = prgs( volft,kb,[phi,tht,psi,-s2x,-s2y] )
 				from alignment import ormq
 				from alignment import Numrinit, ringwe, Applyws
-				wr   = ringwe(numr, mode)
-				crefim = Util.Polar2Dm(refim, cnx, cny, numr, mode)
+				wr   = ringwe(numr, "F")
+				crefim = Util.Polar2Dm(refim, cnx, cny, numr, "F")
 				Util.Frngs(crefim, numr)
 				Applyws(crefim, numr, wr)
 				ang, sxs, sys, mirror, peak = ornq(data[im], crefim, 0.0, 0.0, 1.0, "F", numr, cnx, cny)
