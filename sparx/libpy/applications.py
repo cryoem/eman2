@@ -3824,7 +3824,7 @@ def ali3dpsi_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 				drop_image(vol, os.path.join(outdir, "vol%04d.hdf"%(total_iter)))
 				ref_data[2] = vol
 				ref_data[3] = fscc
-				ref_data[4] = varf
+				ref_data[4] = None
 				#  call user-supplied function to prepare reference image, i.e., center and filter it
 				vol, cs = user_func(ref_data)
 				drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(total_iter)))
