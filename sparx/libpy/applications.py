@@ -3772,8 +3772,7 @@ def ali3dpsi_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 
 	pixer = [0.0]*nima
 	cs = [0.0]*3
-	cnx = nx//2
-	cny = ny//2
+	cnx = cny = nx//2
 	numr = Numrinit(first_ring, last_ring, 1, "F")
 
 	total_iter = 0
@@ -3788,7 +3787,11 @@ def ali3dpsi_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 				start_time = time()
 				print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f, delta psi = %5.2f, start psi = %5.2f\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],yrng[N_step],step[N_step],deltapsi[N_step],startpsi[N_step]))
 
-			previous_defocus = -1.0
+			if CTF:
+				previous_defocus = -1.0
+			else:
+				volft,kb = prep_vol(vol)
+
 			for im in xrange(nima):
 				if(CTF):
 					ctf_params = data[im].get_attr("ctf")
