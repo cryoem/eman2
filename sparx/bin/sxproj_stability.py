@@ -208,7 +208,7 @@ def main():
 		refproj = even_angles(options.delta)
 		img_begin, img_end = MPI_start_end(len(refproj), number_of_proc, myid)
 		# Now each processor keeps its own share of reference projections
-		refprojdir = refproj[img_begin: img_end]
+		refprojdir = refproj[img_begin: img_begin+4]#img_end]
 		del refproj
 
 		ref_ang = [0.0]*(len(refprojdir)*2)
