@@ -3799,8 +3799,8 @@ def ali3dpsi_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 						previous_defocus = ctf_params.defocus
 						volft,kb = prep_vol(filt_ctf(vol, ctf_params))
 				phi,tht,psi,s2x,s2y = get_params_proj(data[im])
-				ref = prgs( volft,kb,[phi,tht,psi,-s2x,-s2y] )
-				from alignment import ormq
+				refim = prgs( volft,kb,[phi,tht,psi,-s2x,-s2y] )
+				from alignment import ornq
 				from alignment import Numrinit, ringwe, Applyws
 				wr   = ringwe(numr, "F")
 				crefim = Util.Polar2Dm(refim, cnx, cny, numr, "F")
@@ -3812,36 +3812,6 @@ def ali3dpsi_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 			if myid == main_node:
 				print_msg("Time of alignment = %d\n"%(time()-start_time))
 				start_time = time()
-
-			#output pixel errors
-			from mpi import mpi_gatherv
-			recvbuf = mpi_gatherv(pixer, nima, MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-			mpi_barrier(MPI_COMM_WORLD)
-			terminate = 0
-			if myid == main_node:
-				recvbuf = map(float, recvbuf)
-				from statistics import hist_list
-				lhist = 20
-				region, histo = hist_list(recvbuf, lhist)
-				if region[0] < 0.0:  region[0] = 0.0
-				msg = "      Histogram of pixel errors\n      ERROR       number of particles\n"
-				print_msg(msg)
-				for lhx in xrange(lhist):
-					msg = " %10.3f     %7d\n"%(region[lhx], histo[lhx])
-					print_msg(msg)
-				# Terminate if 95% within 1 pixel error
-				im = 0
-				for lhx in xrange(lhist):
-					if region[lhx] > 1.0: break
-					im += histo[lhx]
-				precn = 100*float(total_nima-im)/float(total_nima)
-				msg = " Number of particles that changed orientations %7d, percentage of total: %5.1f\n"%(total_nima-im, precn)
-				print_msg(msg)
-				if precn <= termprec:  terminate = 1
-				del region, histo
-			del recvbuf
-			terminate = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
-			terminate = int(terminate[0])
 
 			if CTF: vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution%04d"%(total_iter)), myid, main_node, npad = npad)
 			else:    vol, fscc = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution%04d"%(total_iter)), myid, main_node, npad = npad)
@@ -3859,7 +3829,6 @@ def ali3dpsi_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 				vol, cs = user_func(ref_data)
 				drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(total_iter)))
 
-			del varf
 			bcast_EMData_to_all(vol, myid, main_node)
 			# write out headers, under MPI writing has to be done sequentially
 			mpi_barrier(MPI_COMM_WORLD)
