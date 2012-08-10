@@ -3799,15 +3799,16 @@ def ali3dpsi_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 						previous_defocus = ctf_params.defocus
 						volft,kb = prep_vol(filt_ctf(vol, ctf_params))
 				phi,tht,psi,s2x,s2y = get_params_proj(data[im])
-				refim = prgs( volft,kb,[phi,tht,psi,-s2x,-s2y] )
-				from alignment import ornq
-				from alignment import Numrinit, ringwe, Applyws
-				wr   = ringwe(numr, "F")
-				crefim = Util.Polar2Dm(refim, cnx, cny, numr, "F")
-				Util.Frngs(crefim, numr)
-				Applyws(crefim, numr, wr)
-				ang, sxs, sys, mirror, peak = ornq(data[im], crefim, 0.0, 0.0, 1.0, "F", numr, cnx, cny)
-				set_params_proj(data[im],[phi,tht,psi-ang,s2x,s2y])
+				refim = prgs( volft,kb,[phi,tht,0.0,0.0,0.0] )
+				from alignment import align2d
+				ang, sxs, sys, mirror, peak = align2d(image, refim, xrng=0.0, yrng=0.0, step=1, first_ring=first_ring, last_ring=last_ring, rstep=1, mode = "F")
+				if mirror > 0:
+					phi   = (540.0 + phi)%360.0
+					tht   = 180.0  - tht
+					psi   = (540.0 - ang)%360.0
+				else:
+					psi   = (720.0 - ang)%360.0
+				set_params_proj(data[im],[phi,tht,psi,0.0,0.0])
 
 			if myid == main_node:
 				print_msg("Time of alignment = %d\n"%(time()-start_time))
