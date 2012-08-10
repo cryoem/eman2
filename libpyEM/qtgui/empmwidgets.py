@@ -929,7 +929,7 @@ class PMFSCTableWidget(PMTableBase):
 				# get the latest one, this will be the last as guaranteed by sorted results
 				last_res = reo[-1]
 				[xaxis,yaxis] = db[last_res]
-				resolution = self.find_first_point_5_crossing(xaxis,yaxis)
+				resolution = self.find_first_point_5_crossing(xaxis,yaxis,.143)	# with this test, the .143 threshold is reasonable
 				qwi_res = QtGui.QTableWidgetItem(str(resolution))
 				qwi_res.setTextAlignment(QtCore.Qt.AlignCenter)
 				self.tablewidget.setItem(i, 2, qwi_res)
@@ -943,7 +943,7 @@ class PMFSCTableWidget(PMTableBase):
 				self.tablewidget.setItem(i, 3, qwi_eotest)
 
 	# I lifted this code from Daivids SPR workflow module
-	def find_first_point_5_crossing(self,xaxis,yaxis):
+	def find_first_point_5_crossing(self,xaxis,yaxis,thr=0.5):
 		'''
 		Find the first 0.5 crossing in the FSC - interpolate and try to return an accurate estimate
 		Disregards the first five entries
@@ -955,12 +955,12 @@ class PMFSCTableWidget(PMTableBase):
 
 		soln = -1
 		while (idx < len(yaxis)-1 ):
-			if yaxis[idx] >= 0.5 and yaxis[idx+1] <= 0.5:
+			if yaxis[idx] >= thr and yaxis[idx+1] <= thr:
 				v1 = yaxis[idx]
 				v2 = yaxis[idx+1]
 				if v1 != v2:
 					d = v1-v2
-					offset = v1-0.5
+					offset = v1-thr
 					interp = offset/d
 					soln = idx+interp
 				else: soln = idx

@@ -75,14 +75,6 @@
         "WIZARD":"/lib/pmconfig/particleimport.json", 
         "NAME": "Particle Import -e2import.py", 
         "CHILDREN": []
-      }, 
-      {
-        "ICON": "green_boxes",
-	"MODE": "coords",
-        "PROGRAM": "e2import.py",
-        "WIZARD":"/lib/pmconfig/coordimport.json", 
-        "NAME": "Coordinate Import -e2import.py", 
-        "CHILDREN": []
       }
     ]
   }, 

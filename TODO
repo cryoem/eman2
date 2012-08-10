@@ -6,6 +6,8 @@ High priority
 7/22/12		Same mask for all projections ?
 7/22/12		Counting in filename entry in GUI (was taking a LOOONG time). Fix with new caching system.
 8/2/12		More dimensions in tilt validate
+8/9/12		Astigmatism ?
+8/9/12		e2procpdb.py ?
 
 2.06
 7/27/12		RCT .box import broken in projectmanager
