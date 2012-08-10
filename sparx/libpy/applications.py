@@ -3801,7 +3801,7 @@ def ali3dpsi_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 				phi,tht,psi,s2x,s2y = get_params_proj(data[im])
 				refim = prgs( volft,kb,[phi,tht,0.0,0.0,0.0] )
 				from alignment import align2d
-				ang, sxs, sys, mirror, peak = align2d(image, refim, xrng=0.0, yrng=0.0, step=1, first_ring=first_ring, last_ring=last_ring, rstep=1, mode = "F")
+				ang, sxs, sys, mirror, peak = align2d(data[im], refim, xrng=0.0, yrng=0.0, step=1, first_ring=first_ring, last_ring=last_ring, rstep=1, mode = "F")
 				if mirror > 0:
 					phi   = (540.0 + phi)%360.0
 					tht   = 180.0  - tht
