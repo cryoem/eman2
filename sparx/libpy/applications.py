@@ -3640,7 +3640,7 @@ def ali3dpsi_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 	else          :  yrng = get_input_from_string(yr)
 	step        = get_input_from_string(ts)
 	delta       = get_input_from_string(delta)
-	lstp = 01min(len(xrng), len(yrng), len(step), len(delta))
+	lstp = 1 # min(len(xrng), len(yrng), len(step), len(delta))
 	if an == "-1":
 		an = [-1] * lstp
 	else:
