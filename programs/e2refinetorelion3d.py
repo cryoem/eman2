@@ -41,11 +41,7 @@ parser.add_argument("--refctfcorrected", action="store_true", help="Has the refe
 parser.add_argument("--solventmask",type=str, help="Location of the mask to be used", guitype='filebox',default="", browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False,row=4, col=0, rowspan=1, colspan=2)
 parser.add_argument("--symmgroup", help="Symmentry group", guitype='combobox', default='C',choicelist="""'C','D','T','O','I'""", row=5, col=0, rowspan=1, colspan=1)
 parser.add_argument("--symmnumber",type=int,help="Symmetry number",default=1, guitype='intbox', row=5, col=1, rowspan=1, colspan=1)
-parser.add_argument("--voltage",type=int, default=None, help="Voltage of the Microscope (kV)", guitype='intbox', row=6, col=0, rowspan=1, colspan=1)
-parser.add_argument("--cs", type=float, default=None, help="Spherical Aberration", guitype='floatbox', row=6, col=1, rowspan=1, colspan=1)
-parser.add_argument("--apix", type=float, default=None, help="Angstrom per pixel", guitype='floatbox', row=6, col=2, rowspan=1, colspan=1)
 parser.add_argument("--imagemaskd", type=float, help="Diameter of the image mask", default=-1, guitype='floatbox', row=7, col=0, rowspan=1, colspan=1)
-parser.add_argument("--defocus", type=float, help="Defocus in A", default=10000, guitype='floatbox', row=7, col=1, rowspan=1, colspan=1)
 parser.add_argument("--amplitudecontrast", type=float, help="Amplitude Contrast value for the micrographs", default=0.1, guitype='floatbox', row=7, col=2, rowspan=1, colspan=2)
 parser.add_argument("--numiter", type=int, help="# of iterations", default=25, guitype='intbox', row=8, col=0, rowspan=1, colspan=1)
 parser.add_argument("--numclasses", type=int, help="# of classes", default=8, guitype='intbox', row=8, col=1, rowspan=1, colspan=1)
@@ -69,6 +65,7 @@ parser.add_argument("--oversampling",help="Oversampling order",default='1', guit
 parser.add_argument("--threads", type=int, help="# of threads", default=1, guitype='intbox', row=18, col=0, rowspan=1, colspan=1)
 parser.add_argument("--maxmemory", type=float, help="Maximum memory available for each node", guitype='floatbox', row=18, col=1, rowspan=1, colspan=1)
 parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+parser.add_argument("--verbosity", type=int, help="Set the level of verbosity for the code",default=0, guitype='intbox',row=18, col=2, rowspan=1, colspan=1)
 optionList = pyemtbx.options.get_optionlist(sys.argv[1:])
 (options, args) = parser.parse_args()
 
@@ -94,13 +91,15 @@ os.mkdir(E2RLN)
 
 #E2n = E2init(sys.argv,options.ppid)
 set_name, refmap = args[0], args[1]
-s1 = "e2proc3d.py " + refmap + " " + E2RLN + "/3DRefMap.mrc --process=normalize.edgemean --verbose=0"
+num_images = EMUtil.get_image_count(set_name)
+s1 = "e2proc3d.py " + refmap + " " + E2RLN + "/3DRefMap.mrc --process=normalize.edgemean --verbose="+str(options.verbosity)
 call(s1, shell=True)
 header = EMData(set_name,0,True)
 h_keys = header.get_attr_dict().keys()
 nx,ny,nz=header['nx'],header['ny'],header['nz']
 num_images = EMUtil.get_image_count(set_name)
 mrc = False
+
 if num_images > nz:
 	num_ptcl = num_images
 else:
@@ -114,44 +113,46 @@ if not header.get_attr_dict().__contains__('data_source'):
 	shutil.rmtree(E2RLN)
 	exit(-1)
 
-if options.apix == None:
-	if header.get_attr_dict().__contains__('apix_x'):
-		apix = header['apix_x']
-	elif project_db.__contains__('global.apix'):
-		apix = project_db['global.apix']
-	else:
-		print "An Angstrom per pixel was not found in the project database, the images themselves, and was not provided via a command line option. Please provide one"
-		print "Exiting e2refinetorelion3d"
-		shutil.rmtree(E2RLN)
-		exit(-1)
-else:
-	apix = options.apix
 
-if options.cs == None:
-	if header.get_attr_dict().__contains__('cs'):
-		cs = header['cs']
-	elif project_db.__contains__('global.microscope_cs'):
-		cs = project_db['global.microscope_cs']
-	else:
-		print "A spherical aberration value was not found in the project database, the images themselves, and was not provided via a command line option. Please provide one"
-		print "Exiting e2refinetorelion3d"
-		shutil.rmtree(E2RLN)
-		exit(-1)
+if header.get_attr_dict().__contains__('apix') and header.get_attr_dict().__contains__('apix_x'):
+	if header['apix_x'] == 1.0:
+		apix=header['apix']
+		print """***An "apix" value was found in the header. This is an old style and apix values should be correctly stored in apix_x, apix_y, apix_z. The value in apix is """ + str(apix) + """. Be aware this may not be the value you intended***"""
+elif header.get_attr_dict().__contains__('apix_x'):
+	apix = header['apix_x']
+elif header.get_attr_dict().__contains__('apix'):
+	apix = header['apix']
+	print """***An "apix" value was found in the header. This is an old style and apix values should be correctly stored in apix_x, apix_y, apix_z. The value in apix is """ + str(apix) + """. Be aware this may not be the value you intended***"""
+elif project_db.__contains__('global.apix'):
+	apix = project_db['global.apix']
+
 else:
-	cs = options.cs
+	print "An Angstrom per pixel was not found in the project database nor in the images themselves. Please ensure it exists in the data header"
+	print "Exiting e2refinetorelion3d"
+	shutil.rmtree(E2RLN)
+	exit(-1)
+
+
+if header.get_attr_dict().__contains__('cs'):
+	cs = header['cs']
+elif project_db.__contains__('global.microscope_cs'):
+	cs = project_db['global.microscope_cs']
+else:
+	print "A spherical aberration value was not found in the project database nor in the images themselves. Please ensure it exists in the data header"
+	print "Exiting e2refinetorelion3d"
+	shutil.rmtree(E2RLN)
+	exit(-1)
 	
-if options.voltage == None:
-	if header.get_attr_dict().__contains__('voltage'):
-		voltage = header['voltage']
-	elif project_db.__contains__('global.microscope_voltage'):
-		voltage = project_db['global.microscope_voltage']
-	else:
-		print "A microscope voltage was not found in the project database, the images themselves, and was not provided via a command line option. Please provide one (in kV)"
-		print "Exiting e2refinetorelion3d"
-		shutil.rmtree(E2RLN)
-		exit(-1)
+
+if header.get_attr_dict().__contains__('voltage'):
+	voltage = header['voltage']
+elif project_db.__contains__('global.microscope_voltage'):
+	voltage = project_db['global.microscope_voltage']
 else:
-	voltage = options.voltage	
+	print "A microscope voltage was not found in the project database nor in the images themselves. Please ensure it exists in the data header"
+	print "Exiting e2refinetorelion3d"
+	shutil.rmtree(E2RLN)
+	exit(-1)
 
 
 ## Create the particle stack files (.mrcs files) and the .star file that RELION needs as an inputs.
@@ -159,63 +160,83 @@ set_orig = set_name
 #set_db = db_open_dict(set_orig)
 i = 0
 old_src = EMData(set_name,0)['data_source']
-
-if mrc:
-	s =  "e2proc2d.py " + set_orig + " " + E2RLN + "/ptcl_stack.hdf --threed2twod --verbose=0"
-else:
-	s =  "e2proc2d.py " + set_orig + " " + E2RLN + "/ptcl_stack.hdf --verbose=0"
+s =  "e2proc2d.py " + set_orig + " " + E2RLN + "/ptcl_stack.hdf --verbose="+str(options.verbosity)
 call(s,shell=True)
 ctf_corr = 0
 for option1 in optionList:
-	if option1 == "ctf":
+	if option1 == "ctfcorrect":
 		ctf_corr = 1
 	if option1 == "amplitudecontrast":
 		amplitude_contrast = str(options.amplitudecontrast)		
 if ctf_corr == 1:
+
+	dblist = db_list_dicts("bdb:./sets")	
+	for db in dblist:
+		db_src=set_name.replace("bdb:./sets#",'').replace("_original_data",'')
+		if not db.find(db_src):
+			db_set=EMData("bdb:./sets#"+db,0,True)
+			if db_set.get_attr_dict().__contains__('ctf') and (EMUtil.get_image_count("bdb:sets#"+db) == num_images):
+				ctf_value=True
+#				defocus = db_set['ctf'].to_dict()['defocus']*1000
+				break
+	print "CTF information being pulled from: " + db
 	s = "relion_star_loopheader rlnImageName rlnMicrographName rlnDefocusU rlnDefocusV rlnDefocusAngle rlnVoltage rlnSphericalAberration rlnAmplitudeContrast > " + E2RLN + "/all_images.star"
-	DEF1 = DEF2 = str(options.defocus)
+	defocus1 = defocus2 = 0
 else:
 	s = "relion_star_loopheader rlnImageName rlnMicrographName rlnVoltage rlnAmplitudeContrast > " + E2RLN + "/all_images.star"
 call(s,shell=True)
 
 print "Converting EMAN2 Files to Formats Compatible with RELION"
+temp = EMData(set_name,0)
+#print '# \tMicrograph \t\tDefocus \tVoltage CS \tAPIX'
 for k in range(num_ptcl):
+#	print k, '\t',temp['data_source'].split('?')[0].split('#')[1],'\t', temp['defocus'],'\t', temp['voltage'],'\t', temp['cs'],'\t', '1.8'	
 	src = EMData(set_name,k)['data_source']
 	if (src != old_src):
-		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".hdf --verbose=0 --first=" + str(i) + " --last=" + str(k-1)
+		temp=EMData("bdb:./sets#"+db,k-1)
+		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".hdf --verbose="+str(options.verbosity)+" --first=" + str(i) + " --last=" + str(k-1)
 		call(s, shell=True)
 		if (k-i-1) == 0:
-			s = "e2proc2d.py " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose=0"
+			s = "e2proc2d.py " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose="+str(options.verbosity)
                         call(s, shell=True)
 		else:
-			s = "e2proc2d.py " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose=0 --twod2threed" 
+			s = "e2proc2d.py " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose="+str(options.verbosity)+" --twod2threed" 
 			call(s, shell=True)
 		s1 = E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrc"
 		s2 = s1 + "s"
 		shutil.move(s1, s2)
-		s = "relion_star_datablock_stack " +  str(k-i) + " " +  E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + str(voltage) + " " + str(amplitude_contrast) + "  >> " + E2RLN + "/all_images.star" 
+		if ctf_corr == 1:
+			defocus1 = defocus2 = str(temp['ctf'].to_dict()['defocus']*1000)
+			s = "relion_star_datablock_stack " + str(k-i) + " " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + str(defocus1) + " " + str(defocus2) + " 0 " + str(voltage) + " " + str(cs) + " " + str(amplitude_contrast) + " >> " + E2RLN + "/all_images.star"
+		else:
+			s = "relion_star_datablock_stack " + str(k-i) + " " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + str(voltage) + " " + str(amplitude_contrast) + "  >> " + E2RLN + "/all_images.star" 
 		call(s,shell=True)
 		s = "rm " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".hdf" 
 		call(s,shell=True)
 		i = k
 		old_src = src
-	if (k+1) == num_ptcl:
-		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".hdf --verbose=0 --first=" + str(i) + " --last=" + str(k)
+	elif (k+1) == num_ptcl:
+		diff = k-i
+		temp=EMData("bdb:./sets#"+db,k)
+		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".hdf --verbose="+str(options.verbosity)+" --first=" + str(i) + " --last=" + str(k)
 		call(s, shell=True)
-		s = "e2proc2d.py " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose=0"
+		s = "e2proc2d.py " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose="+str(options.verbosity)
                 call(s, shell=True)
-
 		s1 = E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".mrc"
 		s2 = s1 + "s"
 		shutil.move(s1, s2)
-		s = "relion_star_datablock_stack 1 "+  E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + str(voltage) + " " + amplitude_contrast + "  >> " + E2RLN + "/all_images.star" 
+		if ctf_corr == 1:
+			defocus1 = defocus2 = str(temp['ctf'].to_dict()['defocus']*1000)
+			s = "relion_star_datablock_stack " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + str(defocus1) + " " + str(defocus2) + " 0 " + str(voltage) + " " + str(cs) + " " + str(amplitude_contrast) + " >> " + E2RLN + "/all_images.star"
+		else:
+			s = "relion_star_datablock_stack 1 "+  E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + str(voltage) + " " + amplitude_contrast + "  >> " + E2RLN + "/all_images.star" 
 		call(s,shell=True)
 		s = "rm " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".hdf" 
 		call(s,shell=True)
 		i = k
 		old_src = src
-		break
-
+		
+	print k, i
 
 s = "rm " + E2RLN + "/ptcl_stack.hdf"
 call(s,shell=True)
