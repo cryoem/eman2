@@ -243,7 +243,6 @@ def main():
 		#from sys import exit
 		#exit()
 
-		
 
 	#   Compute stability per projection
 	elif options.grouping == "PPR":
