@@ -53,15 +53,15 @@ stack. If indeed only one stack is desired, one could use sxcpy.py to concatenat
 stacks into one stack.
 '''
 
-import	global_def
-from	global_def 	import *
-from	optparse 	import OptionParser
-from	EMAN2 		import EMUtil
-import	os
-import	sys
-from time import time
 def main():
-
+	import	global_def
+	from	global_def 	import *
+	from	optparse 	import OptionParser
+	from	EMAN2 		import EMUtil
+	import	os
+	import	sys
+	from time import time
+	
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " proj_stack output_averages --MPI"
 	parser = OptionParser(usage, version=SPARXVERSION)
@@ -156,6 +156,7 @@ def main():
 	if options.grouping == "GRP":
 		#  THIS IS NOT FINISHED!!
 		if myid == main_node:
+			print "  A  ",myid,"  ",time()-st
 			proj_attr = EMUtil.get_all_attributes(stack, "xform.projection")
 			proj_params = []
 			for i in xrange(nima):
@@ -174,6 +175,7 @@ def main():
 			#              whether it should take mirror position.
 			# In this program angle_list and mirror list are not of interest.
 			proj_list_all, angle_list, mirror_list = group_proj_by_phitheta(proj_params, img_per_grp=img_per_grp)
+			print "  B  ",myid,"  ",time()-st
 		mpi_barrier(MPI_COMM_WORLD)
 
 		# Number of groups, actually there could be one or two more groups, since the size of the remaining group varies
@@ -193,6 +195,7 @@ def main():
 				temp = map(int, temp)
 				proj_list.append(temp)
 			mpi_barrier(MPI_COMM_WORLD)
+		print "  C  ",myid,"  ",time()-st
 		if myid == main_node:
 			# Assign the remaining groups to main_node
 			for i in xrange(n_grp, len(proj_list_all)):
@@ -335,18 +338,36 @@ def main():
 		avet.to_zero()
 		l = -1
 		for j in xrange(len(proj_list[i])):
+			if options.grouping == "GRP":
+				aphi, atht, vphi, vtht = 0.0
 			if j in stable_set_id:
 				l += 1
 				avet += rot_shift2D(class_data[j], stable_set[l][2][0], stable_set[l][2][1], stable_set[l][2][2], stable_set[l][2][3] )
+				if options.grouping == "GRP":
+					phi, theta, psi, sxs, sys = get_params_proj(class_data[j])
+					aphi += phi
+					atht += theta
+					vphi += phi*phi
+					vtht += theta*theta
 			else:
 				members.append(proj_list[i][j])
 				pix_err.append(99999.99)
 		aveList[i] = avet.copy()
-		if l>1 : aveList[i]/=l
+		if l>1 :
+			aveList[i]/=l
+			if options.grouping == "GRP":
+				aphi /= l
+				atht /= l
+				vphi = (vphi - l*aphi)/n
+				vtht = (vtht - l*atht)/n
+				from math import sqrt
+				refprojdir[i] = [aphi, atht, (sqrt(vphi)+sqrt(vtht))/2.0]
 		# Here more information has to be stored, PARTICULARLY WHAT IS THE REFERENCE DIRECTION.  PLUS, IT WOULD BE NICE TO WRITE THEM TO ONE FILE!
 		aveList[i].set_attr('members', members)
 		aveList[i].set_attr('pix_err', pix_err)
 		aveList[i].set_attr('refprojdir',refprojdir[i])
+
+	del class_data
 	if myid == main_node:
 		km = 0
 		for i in xrange(number_of_proc):

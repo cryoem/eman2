@@ -3020,7 +3020,7 @@ def assign_projangles(projangles, refangles, return_asg = False):
 	return assignments
 '''
 
-def assign_projangles(projangles, refangles):
+def assign_projangles(projangles, refangles, return_asg = False):
 
 	nproj = len(projangles)
 	nref = len(refangles)
