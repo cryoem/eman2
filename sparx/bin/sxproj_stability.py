@@ -272,7 +272,7 @@ def main():
 	"""
 
 	# Begin stability test	
-	#from utilities import get_params_proj, read_text_file
+	from utilities import get_params_proj, read_text_file
 	#if myid == 0:
 	#	from utilities import read_text_file
 	#	proj_list[0] = map(int, read_text_file("lggrpp0.txt"))
