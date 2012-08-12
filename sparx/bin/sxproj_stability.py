@@ -154,7 +154,6 @@ def main():
 		print_msg("%-70s:  %s\n"%("Grouping method                       ", options.grouping))
 	st = time()
 	if options.grouping == "GRP":
-		#  THIS IS NOT FINISHED!!
 		if myid == main_node:
 			print "  A  ",myid,"  ",time()-st
 			proj_attr = EMUtil.get_all_attributes(stack, "xform.projection")
@@ -174,6 +173,7 @@ def main():
 			# mirror_list: Also returns a list of list, each list contains img_per_grp True or False, which indicates
 			#              whether it should take mirror position.
 			# In this program angle_list and mirror list are not of interest.
+
 			proj_list_all, angle_list, mirror_list = group_proj_by_phitheta(proj_params, img_per_grp=img_per_grp)
 			print "  B  ",myid,"  ",time()-st
 		mpi_barrier(MPI_COMM_WORLD)
