@@ -52,10 +52,10 @@ the pixel error would be 99999.99. For the simplicity of the program, there are 
 stack. If indeed only one stack is desired, one could use sxcpy.py to concatenate all 
 stacks into one stack.
 '''
+from	global_def 	import *
 
 def main():
 	import	global_def
-	from	global_def 	import *
 	from	optparse 	import OptionParser
 	from	EMAN2 		import EMUtil
 	import	os
