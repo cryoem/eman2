@@ -189,8 +189,8 @@ def main():
 			if proc_to_stay == main_node:
 				if myid == main_node: 	proj_list.append(proj_list_all[i])
 			elif myid == main_node:
-				mpi_send(len(proj_list[i]), 1, MPI_INT, i, MPI_TAG_UB, MPI_COMM_WORLD)
-				mpi_send(proj_list[i], len(proj_list[i]), MPI_INT, proc_to_stay, i, MPI_COMM_WORLD)
+				mpi_send(len(proj_list_all[i]), 1, MPI_INT, i, MPI_TAG_UB, MPI_COMM_WORLD)
+				mpi_send(proj_list_all[i], len(proj_list_all[i]), MPI_INT, proc_to_stay, i, MPI_COMM_WORLD)
 			elif myid == proc_to_stay:
 				img_per_grp = mpi_recv(1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 				img_per_grp = int(img_per_grp[0])
