@@ -368,7 +368,7 @@ def main():
 				vphi = (vphi - l*aphi)/l
 				vtht = (vtht - l*atht)/l
 				from math import sqrt
-				refprojdir[i] = [aphi, atht, (sqrt(vphi)+sqrt(vtht))/2.0]
+				refprojdir[i] = [aphi, atht, (sqrt(max(vphi,0.0))+sqrt(max(vtht,0.0)))/2.0]
 		# Here more information has to be stored, PARTICULARLY WHAT IS THE REFERENCE DIRECTION.  PLUS, IT WOULD BE NICE TO WRITE THEM TO ONE FILE!
 		aveList[i].set_attr('members', members)
 		aveList[i].set_attr('pix_err', pix_err)
