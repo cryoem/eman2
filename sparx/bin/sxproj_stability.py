@@ -283,6 +283,7 @@ def main():
 
 
 	aveList = [None]*len(proj_list)
+	if options.grouping == "GRP":  refprojdir = [0.0,0.0,0.0]*len(proj_list)
 	for i in xrange(len(proj_list)):
 		print "  E  ",myid,"  ",time()-st
 		class_data = EMData.read_images(stack, proj_list[i])
