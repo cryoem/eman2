@@ -61,7 +61,7 @@ def main():
 	import	os
 	import	sys
 	from time import time
-	
+
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " proj_stack output_averages --MPI"
 	parser = OptionParser(usage, version=SPARXVERSION)
@@ -189,11 +189,14 @@ def main():
 			if proc_to_stay == main_node:
 				if myid == main_node: 	proj_list.append(proj_list_all[i])
 			elif myid == main_node:
-				mpi_send(proj_list[i], img_per_grp, MPI_INT, proc_to_stay, i, MPI_COMM_WORLD)
+				mpi_send(len(proj_list[i]), 1, MPI_INT, i, MPI_TAG_UB, MPI_COMM_WORLD)
+				mpi_send(proj_list[i], len(proj_list[i], MPI_INT, proc_to_stay, i, MPI_COMM_WORLD)
 			elif myid == proc_to_stay:
-				temp = mpi_recv(img_per_grp, MPI_INT, main_node, i, MPI_COMM_WORLD)
-				temp = map(int, temp)
-				proj_list.append(temp)
+				img_per_grp = mpi_recv(1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+				img_per_grp = int(img_per_grp[0])
+				temp = mpi_recv(img_per_grp, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+				proj_list.append(map(int, temp))
+				del temp
 			mpi_barrier(MPI_COMM_WORLD)
 		print "  C  ",myid,"  ",time()-st
 		if myid == main_node:
@@ -361,8 +364,8 @@ def main():
 			if options.grouping == "GRP":
 				aphi /= l
 				atht /= l
-				vphi = (vphi - l*aphi)/n
-				vtht = (vtht - l*atht)/n
+				vphi = (vphi - l*aphi)/l
+				vtht = (vtht - l*atht)/l
 				from math import sqrt
 				refprojdir[i] = [aphi, atht, (sqrt(vphi)+sqrt(vtht))/2.0]
 		# Here more information has to be stored, PARTICULARLY WHAT IS THE REFERENCE DIRECTION.  PLUS, IT WOULD BE NICE TO WRITE THEM TO ONE FILE!
