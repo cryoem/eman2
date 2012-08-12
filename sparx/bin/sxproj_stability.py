@@ -339,7 +339,10 @@ def main():
 		l = -1
 		for j in xrange(len(proj_list[i])):
 			if options.grouping == "GRP":
-				aphi, atht, vphi, vtht = 0.0
+				aphi = 0.0
+				atht = 0.0
+				vphi = 0.0
+				vtht = 0.0
 			if j in stable_set_id:
 				l += 1
 				avet += rot_shift2D(class_data[j], stable_set[l][2][0], stable_set[l][2][1], stable_set[l][2][2], stable_set[l][2][3] )
