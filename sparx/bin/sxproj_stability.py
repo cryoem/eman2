@@ -281,8 +281,8 @@ def main():
 	#	proj_list[0] = map(int, read_text_file("lggrpp0.txt"))
 
 
-
-	aveList = [None]*len(proj_list)
+	from utilities import model_blank
+	aveList = [model_blank(nx,ny)]*len(proj_list)
 	if options.grouping == "GRP":  refprojdir = [0.0,0.0,0.0]*len(proj_list)
 	for i in xrange(len(proj_list)):
 		print "  E  ",myid,"  ",time()-st
@@ -374,10 +374,10 @@ def main():
 				from math import sqrt
 				refprojdir[i] = [aphi, atht, (sqrt(max(vphi,0.0))+sqrt(max(vtht,0.0)))/2.0]
 
-		# Here more information has to be stored, PARTICULARLY WHAT IS THE REFERENCE DIRECTION
-		aveList[i].set_attr('members', members)
-		aveList[i].set_attr('pix_err', pix_err)
-		aveList[i].set_attr('refprojdir',refprojdir[i])
+			# Here more information has to be stored, PARTICULARLY WHAT IS THE REFERENCE DIRECTION
+			aveList[i].set_attr('members', members)
+			aveList[i].set_attr('pix_err', pix_err)
+			aveList[i].set_attr('refprojdir',refprojdir[i])
 
 	del class_data
 	if myid == main_node:
