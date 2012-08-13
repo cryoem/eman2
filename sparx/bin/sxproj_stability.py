@@ -362,8 +362,8 @@ def main():
 			else:
 				members.append(proj_list[i][j])
 				pix_err.append(99999.99)
+		aveList[i] = avet.copy()
 		if l>1 :
-			aveList[i] = avet.copy()
 			l += 1
 			aveList[i] /= l
 			if options.grouping == "GRP":
@@ -374,10 +374,10 @@ def main():
 				from math import sqrt
 				refprojdir[i] = [aphi, atht, (sqrt(max(vphi,0.0))+sqrt(max(vtht,0.0)))/2.0]
 
-			# Here more information has to be stored, PARTICULARLY WHAT IS THE REFERENCE DIRECTION
-			aveList[i].set_attr('members', members)
-			aveList[i].set_attr('pix_err', pix_err)
-			aveList[i].set_attr('refprojdir',refprojdir[i])
+		# Here more information has to be stored, PARTICULARLY WHAT IS THE REFERENCE DIRECTION
+		aveList[i].set_attr('members', members)
+		aveList[i].set_attr('pix_err', pix_err)
+		aveList[i].set_attr('refprojdir',refprojdir[i])
 
 	del class_data
 	if myid == main_node:
