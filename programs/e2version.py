@@ -47,6 +47,8 @@ def main():
             cmd = 'cat /etc/system-release'
         elif os.path.exists('/etc/lsb-release'):
             cmd = 'cat /etc/lsb-release'
+        else:
+            cmd = 'cat /etc/*-release'
             
         p = Popen(cmd, shell=True, bufsize=1024, stdin=PIPE, stdout=PIPE, stderr=STDOUT, close_fds=True)
         (fin, fout) = (p.stdin, p.stdout)
