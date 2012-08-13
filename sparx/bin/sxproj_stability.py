@@ -290,7 +290,7 @@ def main():
 		#if myid == 0:
 		#	p1,p2,p3,p4,p5 = get_params_proj(class_data[0])
 		#	refprojdir[0] = [p1,p2,p3]
-		print "  R  ",myid,"  ",time()-st
+		#print "  R  ",myid,"  ",time()-st
 		if options.CTF :
 			from filter import filt_ctf
 			for im in xrange(len(class_data)):  class_data[im] = filt_ctf(class_data[im], class_data[im].get_attr("ctf"), binary=1)
@@ -327,7 +327,7 @@ def main():
 		#from utilities import write_text_file
 		#write_text_file(all_ali_params, "all_ali_params%03d.txt"%myid)
 		stable_set, mir_stab_rate, pix_err = multi_align_stability_new(all_ali_params, 0.0, 10000.0, thld_err, False, 2*radius+1)
-		print "  H  ",myid,"  ",time()-st
+		#print "  H  ",myid,"  ",time()-st
 
 		stable_set_id = []
 		for s in stable_set: stable_set_id.append(s[1])
@@ -341,17 +341,20 @@ def main():
 		from fundamentals import rot_shift2D
 		avet.to_zero()
 		l = -1
+		if options.grouping == "GRP":
+			aphi = 0.0
+			atht = 0.0
+			vphi = 0.0
+			vtht = 0.0
 		for j in xrange(len(proj_list[i])):
-			if options.grouping == "GRP":
-				aphi = 0.0
-				atht = 0.0
-				vphi = 0.0
-				vtht = 0.0
 			if j in stable_set_id:
 				l += 1
 				avet += rot_shift2D(class_data[j], stable_set[l][2][0], stable_set[l][2][1], stable_set[l][2][2], stable_set[l][2][3] )
 				if options.grouping == "GRP":
 					phi, theta, psi, sxs, sys = get_params_proj(class_data[j])
+					if( theta > 90.0):
+						phi = (phi+540.0)%360.0
+						theta = 180.0 - theta
 					aphi += phi
 					atht += theta
 					vphi += phi*phi
@@ -359,17 +362,19 @@ def main():
 			else:
 				members.append(proj_list[i][j])
 				pix_err.append(99999.99)
-		aveList[i] = avet.copy()
 		if l>1 :
-			aveList[i]/=l
+			aveList[i] = avet.copy()
+			l += 1
+			aveList[i] /= l
 			if options.grouping == "GRP":
 				aphi /= l
 				atht /= l
-				vphi = (vphi - l*aphi)/l
-				vtht = (vtht - l*atht)/l
+				vphi = (vphi - l*aphi*aphi)/l
+				vtht = (vtht - l*atht*atht)/l
 				from math import sqrt
 				refprojdir[i] = [aphi, atht, (sqrt(max(vphi,0.0))+sqrt(max(vtht,0.0)))/2.0]
-		# Here more information has to be stored, PARTICULARLY WHAT IS THE REFERENCE DIRECTION.  PLUS, IT WOULD BE NICE TO WRITE THEM TO ONE FILE!
+
+		# Here more information has to be stored, PARTICULARLY WHAT IS THE REFERENCE DIRECTION
 		aveList[i].set_attr('members', members)
 		aveList[i].set_attr('pix_err', pix_err)
 		aveList[i].set_attr('refprojdir',refprojdir[i])
@@ -416,7 +421,7 @@ def main():
 		print_end_msg("sxproj_stability")
 
 	global_def.BATCH = False
-
+	mpi_barrier(MPI_COMM_WORLD)
 	from mpi import mpi_finalize
 	mpi_finalize()
 
