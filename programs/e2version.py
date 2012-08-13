@@ -43,12 +43,7 @@ def main():
     print EMANVERSION + ' (CVS' + CVSDATESTAMP[6:-2] +')' 
     
     if sys.platform=='linux2':
-        if os.path.exists('/etc/system-release'):
-            cmd = 'cat /etc/system-release'
-        elif os.path.exists('/etc/lsb-release'):
-            cmd = 'cat /etc/lsb-release'
-        else:
-            cmd = 'cat /etc/*-release'
+        cmd = 'cat /etc/*-release'
             
         p = Popen(cmd, shell=True, bufsize=1024, stdin=PIPE, stdout=PIPE, stderr=STDOUT, close_fds=True)
         (fin, fout) = (p.stdin, p.stdout)
