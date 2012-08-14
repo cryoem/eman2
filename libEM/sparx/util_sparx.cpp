@@ -19954,6 +19954,12 @@ vector<float> Util::twoD_fine_ali_SD(EMData* image, EMData *refim, EMData* mask,
 	return res;
 }
 
+/* Parameters:
+ * args - parameters of (L-1) G transformation (G_1, G_2, ..., G_(L-1)), saved as alpha_1, sx_1, sy_1, alpha_2, sx_2, sy_2, ... (transformation G_L is always set to I)
+ * all_ali_params - parameters of (L*N) T transformation, saved as flat list: <parameters of N images for G_1 alignment>, <parameters of N images for G_2 alignment>, ...
+ *                  where image's parameters consists of four values: alpha, sx, sy, mirror
+ * d - particle diameter (2R)
+ */
 vector<float> Util::multi_align_error(vector<float> args, vector<float> all_ali_params, int d) {
 	
 	const int nmax=args.size(), mmax=nmax;
@@ -20042,17 +20048,19 @@ vector<float> Util::multi_align_error(vector<float> args, vector<float> all_ali_
 
 }
 
-double Util::multi_align_error_func(double* x, vector<float> all_ali_params, int nima, int num_ali, int d) {
-
+double Util::multi_align_error_func(double* x, vector<float> all_ali_params, int nima, int num_ali, int d)
+{
 	vector<double> sqr_pixel_error = multi_align_error_func2(x, all_ali_params, nima, num_ali, d);
 	double sum_sqr_pixel_error = 0.0;
-	for (int i=0; i<nima; i++)  sum_sqr_pixel_error += sqr_pixel_error[i];
-	return sum_sqr_pixel_error/static_cast<float>(nima);
+	for (int i=0; i<nima; i++) {
+		sum_sqr_pixel_error += sqr_pixel_error[i];
+	}
+	return ( sum_sqr_pixel_error / nima );
 }
 
 
-vector<double> Util::multi_align_error_func2(double* x, vector<float> ali_params, int nima, int num_ali, int d) {
-
+vector<double> Util::multi_align_error_func2(double* x, vector<float> ali_params, int nima, int num_ali, int d)
+{
 	double* args = new double[num_ali*3];
 	for (int i=0; i<3*num_ali-3; i++)   args[i] = x[i];
 	args[3*num_ali-3] = 0.0;
@@ -20076,19 +20084,17 @@ vector<double> Util::multi_align_error_func2(double* x, vector<float> ali_params
 			if (static_cast<int>(ali_params[j*nima*4+i*4+3]) == 0) {
 				sum_cosa += cos((args[j*3]+ali_params[j*nima*4+i*4])*M_PI/180.0);
 				sum_sina += sin((args[j*3]+ali_params[j*nima*4+i*4])*M_PI/180.0);
-				sx[j] = args[j*3+1] + ali_params[j*nima*4+i*4+1]*cosa[j] - ali_params[j*nima*4+i*4+2]*sina[j];
-				sy[j] = args[j*3+2] + ali_params[j*nima*4+i*4+1]*sina[j] + ali_params[j*nima*4+i*4+2]*cosa[j];
+				sx[j] = args[j*3+1] + ali_params[j*nima*4+i*4+1]*cosa[j] + ali_params[j*nima*4+i*4+2]*sina[j];
+				sy[j] = args[j*3+2] - ali_params[j*nima*4+i*4+1]*sina[j] + ali_params[j*nima*4+i*4+2]*cosa[j];
 			} else {
 				sum_cosa += cos((-args[j*3]+ali_params[j*nima*4+i*4])*M_PI/180.0);
 				sum_sina += sin((-args[j*3]+ali_params[j*nima*4+i*4])*M_PI/180.0);
-				sx[j] = -args[j*3+1] + ali_params[j*nima*4+i*4+1]*cosa[j] + ali_params[j*nima*4+i*4+2]*sina[j];
-				sy[j] =  args[j*3+2] - ali_params[j*nima*4+i*4+1]*sina[j] + ali_params[j*nima*4+i*4+2]*cosa[j];
+				sx[j] = -args[j*3+1] + ali_params[j*nima*4+i*4+1]*cosa[j] - ali_params[j*nima*4+i*4+2]*sina[j];
+				sy[j] =  args[j*3+2] + ali_params[j*nima*4+i*4+1]*sina[j] + ali_params[j*nima*4+i*4+2]*cosa[j];
 			}
 		}
-		double P = sqrt(sum_cosa*sum_cosa+sum_sina*sum_sina);
-		sum_cosa /= P;
-		sum_sina /= P;
-		sqr_pixel_error[i] = d*d/4.0*(1.0-P/num_ali)+var(sx, num_ali)+var(sy, num_ali);
+		double sqrtP = sqrt(sum_cosa*sum_cosa+sum_sina*sum_sina);
+		sqr_pixel_error[i] = d*d/4.0*(1.0-sqrtP/num_ali)+var(sx, num_ali)+var(sy, num_ali);
 	}
 	
 	delete[] args;
@@ -20127,13 +20133,13 @@ void Util::multi_align_error_dfunc(double* x, vector<float> ali_params, int nima
 			if (static_cast<int>(ali_params[j*nima*4+i*4+3]) == 0) {
 				sum_cosa += cos((args[j*3]+ali_params[j*nima*4+i*4])*M_PI/180.0);
 				sum_sina += sin((args[j*3]+ali_params[j*nima*4+i*4])*M_PI/180.0);
-				sx[j] = args[j*3+1] + ali_params[j*nima*4+i*4+1]*cosa[j] - ali_params[j*nima*4+i*4+2]*sina[j];
-				sy[j] = args[j*3+2] + ali_params[j*nima*4+i*4+1]*sina[j] + ali_params[j*nima*4+i*4+2]*cosa[j];
+				sx[j] = args[j*3+1] + ali_params[j*nima*4+i*4+1]*cosa[j] + ali_params[j*nima*4+i*4+2]*sina[j];
+				sy[j] = args[j*3+2] - ali_params[j*nima*4+i*4+1]*sina[j] + ali_params[j*nima*4+i*4+2]*cosa[j];
 			} else {
 				sum_cosa += cos((-args[j*3]+ali_params[j*nima*4+i*4])*M_PI/180.0);
 				sum_sina += sin((-args[j*3]+ali_params[j*nima*4+i*4])*M_PI/180.0);
-				sx[j] = -args[j*3+1] + ali_params[j*nima*4+i*4+1]*cosa[j] + ali_params[j*nima*4+i*4+2]*sina[j];
-				sy[j] =  args[j*3+2] - ali_params[j*nima*4+i*4+1]*sina[j] + ali_params[j*nima*4+i*4+2]*cosa[j];
+				sx[j] = -args[j*3+1] + ali_params[j*nima*4+i*4+1]*cosa[j] - ali_params[j*nima*4+i*4+2]*sina[j];
+				sy[j] =  args[j*3+2] + ali_params[j*nima*4+i*4+1]*sina[j] + ali_params[j*nima*4+i*4+2]*cosa[j];
 			}
 		}
 		double P = sqrt(sum_cosa*sum_cosa+sum_sina*sum_sina);
@@ -20145,15 +20151,15 @@ void Util::multi_align_error_dfunc(double* x, vector<float> ali_params, int nima
 			if (static_cast<int>(ali_params[j*nima*4+i*4+3]) == 0) {
 				g[j*3] += (d*d/4.0*(sum_cosa*sin((args[j*3]+ali_params[j*nima*4+i*4])*M_PI/180.0) -
 					 	    sum_sina*cos((args[j*3]+ali_params[j*nima*4+i*4])*M_PI/180.0)) +
-						    dx*(-ali_params[j*nima*4+i*4+1]*sina[j]-ali_params[j*nima*4+i*4+2]*cosa[j])+
-						    dy*( ali_params[j*nima*4+i*4+1]*cosa[j]-ali_params[j*nima*4+i*4+2]*sina[j]))*M_PI/180.0;
+						    dx*(-ali_params[j*nima*4+i*4+1]*sina[j]+ali_params[j*nima*4+i*4+2]*cosa[j])+
+						    dy*(-ali_params[j*nima*4+i*4+1]*cosa[j]-ali_params[j*nima*4+i*4+2]*sina[j]))*M_PI/180.0;
 				g[j*3+1] += dx;
 				g[j*3+2] += dy;
 			} else {
 				g[j*3] += (d*d/4.0*(-sum_cosa*sin((-args[j*3]+ali_params[j*nima*4+i*4])*M_PI/180.0) +
 					 	     sum_sina*cos((-args[j*3]+ali_params[j*nima*4+i*4])*M_PI/180.0)) +
-						    dx*(-ali_params[j*nima*4+i*4+1]*sina[j]+ali_params[j*nima*4+i*4+2]*cosa[j])+
-						    dy*(-ali_params[j*nima*4+i*4+1]*cosa[j]-ali_params[j*nima*4+i*4+2]*sina[j]))*M_PI/180.0;
+						    dx*( ali_params[j*nima*4+i*4+1]*sina[j]+ali_params[j*nima*4+i*4+2]*cosa[j])+
+						    dy*(-ali_params[j*nima*4+i*4+1]*cosa[j]+ali_params[j*nima*4+i*4+2]*sina[j]))*M_PI/180.0;
 				g[j*3+1] += -dx;
 				g[j*3+2] += dy;
 			}
