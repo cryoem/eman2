@@ -509,16 +509,16 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	        		if int(ali_params[j][i*4+3]) == 0:
 	        			sum_cosa += cos((args_list[j*3]+ali_params[j][i*4])*pi/180.0)
 	        			sum_sina += sin((args_list[j*3]+ali_params[j][i*4])*pi/180.0)
-	        			sx[j] = args_list[j*3+1]+ali_params[j][i*4+1]*cosa[j]-ali_params[j][i*4+2]*sina[j]
-	        			sy[j] = args_list[j*3+2]+ali_params[j][i*4+1]*sina[j]+ali_params[j][i*4+2]*cosa[j]
+	        			sx[j] =  args_list[j*3+1] + ali_params[j][i*4+1]*cosa[j] + ali_params[j][i*4+2]*sina[j]
+	        			sy[j] =  args_list[j*3+2] - ali_params[j][i*4+1]*sina[j] + ali_params[j][i*4+2]*cosa[j]
 	        		else:
 	        			sum_cosa += cos((-args_list[j*3]+ali_params[j][i*4])*pi/180.0)
 	        			sum_sina += sin((-args_list[j*3]+ali_params[j][i*4])*pi/180.0)
-	        			sx[j] = -args_list[j*3+1]+ali_params[j][i*4+1]*cosa[j]+ali_params[j][i*4+2]*sina[j]
-	        			sy[j] =  args_list[j*3+2]-ali_params[j][i*4+1]*sina[j]+ali_params[j][i*4+2]*cosa[j]
+	        			sx[j] = -args_list[j*3+1] + ali_params[j][i*4+1]*cosa[j] - ali_params[j][i*4+2]*sina[j]
+	        			sy[j] =  args_list[j*3+2] + ali_params[j][i*4+1]*sina[j] + ali_params[j][i*4+2]*cosa[j]
 	        	P = sqrt(sum_cosa**2+sum_sina**2)
 
-	        	sqr_pixel_error[i] = d*d/4.*(1-P/L)+var(sx)+var(sy)
+	        	sqr_pixel_error[i] = d*d/4.*(1-P/L) + var(sx) + var(sy)
 
 	        # Warning: Whatever I return here is squared pixel error, this is for the easy expression of derivative
 	        # Don't forget to square root it after getting the value
@@ -555,13 +555,13 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	        		if int(ali_params[j][i*4+3]) == 0:
 	        			sum_cosa += cos((args_list[j*3]+ali_params[j][i*4])*pi/180.0)
 	        			sum_sina += sin((args_list[j*3]+ali_params[j][i*4])*pi/180.0)
-	        			sx[j] = args_list[j*3+1]+ali_params[j][i*4+1]*cosa[j]-ali_params[j][i*4+2]*sina[j]
-	        			sy[j] = args_list[j*3+2]+ali_params[j][i*4+1]*sina[j]+ali_params[j][i*4+2]*cosa[j]
+	        			sx[j] = args_list[j*3+1]+ali_params[j][i*4+1]*cosa[j]+ali_params[j][i*4+2]*sina[j]
+	        			sy[j] = args_list[j*3+2]-ali_params[j][i*4+1]*sina[j]+ali_params[j][i*4+2]*cosa[j]
 	        		else:
 	        			sum_cosa += cos((-args_list[j*3]+ali_params[j][i*4])*pi/180.0)
 	        			sum_sina += sin((-args_list[j*3]+ali_params[j][i*4])*pi/180.0)
-	        			sx[j] = -args_list[j*3+1]+ali_params[j][i*4+1]*cosa[j]+ali_params[j][i*4+2]*sina[j]
-	        			sy[j] =  args_list[j*3+2]-ali_params[j][i*4+1]*sina[j]+ali_params[j][i*4+2]*cosa[j]
+	        			sx[j] = -args_list[j*3+1]+ali_params[j][i*4+1]*cosa[j]-ali_params[j][i*4+2]*sina[j]
+	        			sy[j] =  args_list[j*3+2]+ali_params[j][i*4+1]*sina[j]+ali_params[j][i*4+2]*cosa[j]
 	        	P = sqrt(sum_cosa**2+sum_sina**2)
 	        	sum_cosa /= P
 	        	sum_sina /= P
@@ -577,15 +577,15 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	        		if int(ali_params[j][i*4+3]) == 0:
 	        			g[j*3] += (d*d/4.0*(sum_cosa*sin((args_list[j*3]+ali_params[j][i*4])*pi/180.0)-\
 	        					sum_sina*cos((args_list[j*3]+ali_params[j][i*4])*pi/180.0))+\
-	        					dx*(-ali_params[j][i*4+1]*sina[j]-ali_params[j][i*4+2]*cosa[j])+\
-	        					dy*( ali_params[j][i*4+1]*cosa[j]-ali_params[j][i*4+2]*sina[j]))*pi/180.0
+	        					dx*(-ali_params[j][i*4+1]*sina[j]+ali_params[j][i*4+2]*cosa[j])+\
+	        					dy*(-ali_params[j][i*4+1]*cosa[j]-ali_params[j][i*4+2]*sina[j]))*pi/180.0
 	        			g[j*3+1] += dx
 	        			g[j*3+2] += dy
 	        		else:
 	        			g[j*3] += (d*d/4.0*(-sum_cosa*sin((-args_list[j*3]+ali_params[j][i*4])*pi/180.0)+\
 	        					    sum_sina*cos((-args_list[j*3]+ali_params[j][i*4])*pi/180.0))+\
-	        					 dx*(-ali_params[j][i*4+1]*sina[j]+ali_params[j][i*4+2]*cosa[j])+\
-	        					 dy*(-ali_params[j][i*4+1]*cosa[j]-ali_params[j][i*4+2]*sina[j]))*pi/180.0
+	        					 dx*( ali_params[j][i*4+1]*sina[j]+ali_params[j][i*4+2]*cosa[j])+\
+	        					 dy*(-ali_params[j][i*4+1]*cosa[j]+ali_params[j][i*4+2]*sina[j]))*pi/180.0
 	        			g[j*3+1] += -dx
 	        			g[j*3+2] += dy
 	        g /= (N*L)
@@ -926,12 +926,12 @@ def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error
 		ave /= n
 		return ave
 
-	def var(a):
+	def avg_sqr_diff_from_mean(a):
 		n = len(a)
 		avg = ave(a)
-		var = 0.0
-		for i in xrange(n): var += (a[i]-avg)**2
-		return var/n
+		avg_sqr_diff_from_mean = 0.0
+		for i in xrange(n): avg_sqr_diff_from_mean += (a[i]-avg)**2
+		return avg_sqr_diff_from_mean/n
 
 	def transform_variance(args, data):
 		from math import sqrt
@@ -961,7 +961,7 @@ def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error
 	        		x1_new[j], y1_new[j] = rot_shift(x1, y1, alpha12, sx12, sy12)
 	        		x2_new[j], y2_new[j] = rot_shift(x2, y2, alpha12, sx12, sy12)
 
-	        	err[i] = sqrt(var(x1_new)+var(y1_new)+var(x2_new)+var(y2_new))
+	        	err[i] = sqrt(avg_sqr_diff_from_mean(x1_new)+avg_sqr_diff_from_mean(y1_new)+avg_sqr_diff_from_mean(x2_new)+avg_sqr_diff_from_mean(y2_new))
 
 	        return err
 		
@@ -994,7 +994,7 @@ def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error
 	        		x1_new[j], y1_new[j] = rot_shift(x1, y1, alpha12, 0.0, 0.0)
 	        		x2_new[j], y2_new[j] = rot_shift(x2, y2, alpha12, 0.0, 0.0)
 
-	        	err[i] = sqrt(var(x1_new)+var(y1_new)+var(x2_new)+var(y2_new))
+	        	err[i] = sqrt(avg_sqr_diff_from_mean(x1_new)+avg_sqr_diff_from_mean(y1_new)+avg_sqr_diff_from_mean(x2_new)+avg_sqr_diff_from_mean(y2_new))
 
 		# Error introduced by shift
         	all_ali_params = data
@@ -1018,7 +1018,7 @@ def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error
 	        		x1_new[j], y1_new[j] = rot_shift(x1, y1, 0.0, sx12, sy12)
 	        		x2_new[j], y2_new[j] = rot_shift(x2, y2, 0.0, sx12, sy12)
 
-	        	err2[i] = sqrt(var(x1_new)+var(y1_new)+var(x2_new)+var(y2_new))
+	        	err2[i] = sqrt(avg_sqr_diff_from_mean(x1_new)+avg_sqr_diff_from_mean(y1_new)+avg_sqr_diff_from_mean(x2_new)+avg_sqr_diff_from_mean(y2_new))
 
         	all_ali_params = data
 	        num_ali = len(all_ali_params)
@@ -1041,7 +1041,7 @@ def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error
 	        		x1_new[j], y1_new[j] = rot_shift(x1, y1, alpha12, sx12, sy12)
 	        		x2_new[j], y2_new[j] = rot_shift(x2, y2, alpha12, sx12, sy12)
 
-	        	err3[i] = sqrt(var(x1_new)+var(y1_new)+var(x2_new)+var(y2_new))
+	        	err3[i] = sqrt(avg_sqr_diff_from_mean(x1_new)+avg_sqr_diff_from_mean(y1_new)+avg_sqr_diff_from_mean(x2_new)+avg_sqr_diff_from_mean(y2_new))
 
 	        return err, err2, err3
 
