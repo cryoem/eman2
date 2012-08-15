@@ -29,7 +29,7 @@ sxprocess.py ../model_structure.hdf data mic --generate_projections format="bdb"
 # first use e2boxer in the interactive mode to determine the desired parameters by
 # first invoking e2boxer with the --gui option and a micrograph file name:
 
-e2boxer.py --gui mic0.hdf &
+#e2boxer.py --gui mic0.hdf &
 
 # Choose "Gauss" in the drop down menu for "Current Boxing Tool," set desired parameters, and 
 # click on "Run" to pick particles.
@@ -43,9 +43,9 @@ e2boxer.py --gui mic0.hdf &
 # For example, if the particles selected for mic0.hdf was
 # saved to bdb:particles/mic0_ptcls, delete it as follows:
 
-cd particles
-e2bdb.py bdb:mic0_ptcls --delete
-cd ..
+#cd particles
+#e2bdb.py bdb:mic0_ptcls --delete
+#cd ..
 
 # Create and initialize database
 # Input: name of the key under which the parameters will be saved in the database
