@@ -98,7 +98,7 @@ ELSEIF (ENABLE_ATHLON)
 ELSEIF (ENABLE_X86_64)
     SET (OPT_FLAGS "-O5 -ansi -march=k8 -mfpmath=sse -m64 -ffast-math -pipe")
 ELSEIF (ENABLE_WINDOWS_VC)
-	SET (OPT_FLAGS "/Ox")
+	SET (OPT_FLAGS "/Ox /DHAVE_INLINE")
 ELSE()
     SET (OPT_FLAGS "-O5 -ansi -ffast-math")		# This is the default
 ENDIF()
