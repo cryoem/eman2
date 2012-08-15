@@ -17,6 +17,28 @@ rm tmp.hdf
 # The output projections were disturbed with Gaussian noise.
 sxprocess.py ../model_structure.hdf data mic --generate_projections format="bdb":apix=5.2
 
+# Before proceeding to automated particle picking mode, it is suggested that the user 
+# first use e2boxer in the interactive mode to determine the desired parameters by
+# first invoking e2boxer with the --gui option and a micrograph file name:
+
+#e2boxer.py --gui mic0.hdf &
+
+# Choose "Gauss" in the drop down menu for "Current Boxing Tool," set desired parameters, and 
+# click on "Run" to pick particles.
+# There should be a window displaying the picked particles. To reset or "unpick" the 
+# particles, click on "Clear Boxes".
+# Click on the "Write output" button to save the particles selected for mic0.hdf. 
+# By default the particles file will be saved to bdb:particles/mic0_ptcls. 
+ 
+# Note that if you saved any particles file under its default name in e2boxer, 
+# make sure to delete it to avoid conflict later in the automated mode. 
+# For example, if the particles selected for mic0.hdf was
+# saved to bdb:particles/mic0_ptcls, delete it as follows:
+
+#cd particles
+#e2bdb.py bdb:mic0_ptcls --delete
+#cd ..
+
 sxprocess.py demoparms --makedb 'gauss_width'=1.0:'pixel_input'=5.2:'pixel_output'=5.2:'thr_low'=4.0:'thr_hi'=60.0:"invert_contrast"=False:"use_variance"=True:"boxsize"=64
 e2boxer.py --gauss_autoboxer=demoparms --write_ptcl --boxsize=64 --norm=normalize.ramp.normvar mic*.hdf
 sxcpy.py bdb:particles/mic0_ptcls bdb:particles/mic1_ptcls bdb:particles/mic2_ptcls bdb:particles/mic3_ptcls bdb:particles/mic4_ptcls bdb:data2
