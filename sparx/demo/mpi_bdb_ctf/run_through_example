@@ -25,6 +25,28 @@ rm tmp.hdf
 # Each output file was computed with regard to various CTF settings.
 sxprocess.py ../model_structure.hdf data mic --generate_projections format="bdb":apix=5.2:CTF=True 
 
+# Before proceeding to automated particle picking mode, it is suggested that the user 
+# first use e2boxer in the interactive mode to determine the desired parameters by
+# first invoking e2boxer with the --gui option and a micrograph file name:
+
+e2boxer.py --gui mic0.hdf &
+
+# Choose "Gauss" in the drop down menu for "Current Boxing Tool," set desired parameters, and 
+# click on "Run" to pick particles.
+# There should be a window displaying the picked particles. To reset or "unpick" the 
+# particles, click on "Clear Boxes".
+# Click on the "Write output" button to save the particles selected for mic0.hdf. 
+# By default the particles file will be saved to bdb:particles/mic0_ptcls. 
+ 
+# Note that if you saved any particles file under its default name in e2boxer, 
+# make sure to delete it to avoid conflict later in the automated mode. 
+# For example, if the particles selected for mic0.hdf was
+# saved to bdb:particles/mic0_ptcls, delete it as follows:
+
+cd particles
+e2bdb.py bdb:mic0_ptcls --delete
+cd ..
+
 # Create and initialize database
 # Input: name of the key under which the parameters will be saved in the database
 # Output: databese with input parameters
