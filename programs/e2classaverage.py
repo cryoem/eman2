@@ -349,8 +349,14 @@ class ClassAvTask(EMTask):
 			ali=avg.process("xform.centerofmass",{"threshold":avg["mean"]+avg["sigma"]})
 			fxf=ali["xform.align2d"]
 			if options["verbose"]>0 : print "Final center:",fxf
+			avg1=avg
 			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,Transform(),options["averager"],options["normproc"],options["verbose"])
 			
+		try:
+			avg["class_ptcl_qual"]=avg1["class_ptcl_qual"]
+			avg["class_ptcl_qual_sigma"]=avg1["class_ptcl_qual_sigma"]
+		except: pass
+		
 		if ref_orient!=None: 
 			avg["xform.projection"]=ref_orient
 			avg["model_id"]=ref_model
@@ -396,7 +402,7 @@ def class_average_withali(images,ptcl_info,xform,averager=("mean",{}),normproc=(
 	
 	incl=[]
 	excl=[]
-	xforms=[]
+#	xforms=[]
 	avgr=Averagers.get(averager[0], averager[1])
 	for i in range(nimg):
 		img=get_image(images,i,normproc)
@@ -407,7 +413,7 @@ def class_average_withali(images,ptcl_info,xform,averager=("mean",{}),normproc=(
 		if use : 
 			avgr.add_image(img)				# only include the particle if we've tagged it as good
 			if img.has_attr("source_n") : incl.append(img["source_n"])
-			xforms.append(ptcl_info[i][1])
+#			xforms.append(ptcl_info[i][1])
 		elif img.has_attr("source_n") : excl.append(img["source_n"])
 
 	avg=avgr.finish()
@@ -416,7 +422,7 @@ def class_average_withali(images,ptcl_info,xform,averager=("mean",{}),normproc=(
 	if len(incl)>0 or len(excl)>0 :
 		if len(incl)>0 : avg["class_ptcl_idxs"]=incl
 		if len(excl)>0 : avg["exc_class_ptcl_idxs"]=excl
-		if len(xforms)>0: avg["class_ptcl_xforms"]=xforms
+#		if len(xforms)>0: avg["class_ptcl_xforms"]=xforms
 		avg["class_ptcl_src"]=img["source_path"]
 		
 	return avg
@@ -503,6 +509,8 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 		if verbose : print "Starting iteration %d"%it
 		if callback!=None : callback(int(it*100/(niter+2)))
 		
+		mean,sigma=0.0,1.0		# defaults for when similarity isn't computed
+		
 		# Evaluate quality from last iteration, and set a threshold for keeping particles
 		if it>0:
 			# measure statistics of quality values
@@ -571,6 +579,8 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 		if verbose>1 : print ""
 
 		ref=avgr.finish()
+		ref["class_ptcl_qual"]=mean
+		ref["class_ptcl_qual_sigma"]=sigma
 		
 		# A little masking before the next iteration
 		ref.process_inplace("normalize.circlemean")

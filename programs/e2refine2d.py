@@ -248,11 +248,15 @@ def main():
 		# extract the most different references for alignment
 #		run("e2stacksort.py %s aliref.%02d.hdf --simcmp=sqeuclidean --reverse --nsort=%d"%(options.initial,it,options.naliref))
 
-		# sort by particles
-		run("e2stacksort.py %s#allrefs_%02d %s#allrefs_%02d --bykurtosis"%(options.path,it,options.path,it))
+		# sort by class-average quality
+		run("e2stacksort.py %s#allrefs_%02d %s#allrefs_%02d --byheader=class_ptcl_qual"%(options.path,it,options.path,it))
 
-       	# now extract most different refs. ninput eliminates 25% particles with lowest kurtosis from consideration
-		run("e2stacksort.py %s#allrefs_%02d %s#aliref_%02d --reverse --ninput=%d --nsort=%d --simcmp=ccc --simalign=rotate_translate_flip"%(options.path,it,options.path,it,options.ncls*3/4,options.naliref))
+		# number of 'best' particles to select from
+		ncheck=options.ncls/3
+		ncheck=max(ncheck,options.naliref+2)
+		
+       	# now extract most different refs. ninput eliminates ~2/3 particles with lowest 'quality' from consideration
+		run("e2stacksort.py %s#allrefs_%02d %s#aliref_%02d --reverse --ninput=%d --nsort=%d --simcmp=ccc --simalign=rotate_translate_flip"%(options.path,it,options.path,it,ncheck,options.naliref))
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
 		# We use e2simmx to compute the optimal particle orientations

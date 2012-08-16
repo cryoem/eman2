@@ -62,6 +62,7 @@ def main():
 	parser.add_argument("--reverse",action="store_true",default=False,help="Sort in order of least mutual similarity")
 	parser.add_argument("--byptcl",action="store_true",default=False,help="Sort in order of number of particles represented in each class-average. No alignment, shrinking, etc. is performed")
 	parser.add_argument("--bykurtosis",action="store_true",default=False,help="Sort by image Kurtosis. No alignment, shrinking, etc. is performed")
+	parser.add_argument("--byheader",type=str, help="Uses the named header parameter to sort the images",default=None)
 	parser.add_argument("--iterative",action="store_true",default=False,help="Iterative approach for achieving a good 'consensus alignment' among the set of particles") 
 	parser.add_argument("--useali",action="store_true",default=False,help="Save aligned particles to the output file, note that if used with shrink= this will store the reduced aligned particles")
 	parser.add_argument("--center",action="store_true",default=False,help="After alignment, particles are centered via center of mass before comparison")
@@ -110,6 +111,8 @@ def main():
 		b=sortstackptcl(a,options.nsort)
 	elif options.bykurtosis:
 		b=sortstackkurt(a,options.nsort)
+	elif options.byheader!=None:
+		b=sortstackheader(a,options.nsort,options.byheader)
 	elif options.iterative: b=sortstackiter(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center,options.simmask)
 	elif options.reverse: b=sortstackrev(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center,options.simmask)
 	else : b=sortstack(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center,options.simmask)
@@ -300,6 +303,13 @@ def sortstackkurt(stack,nsort):
 	"""Sorts a list of images based on the number of particles each image represents"""
 
 	stack.sort(key=lambda B:B.get_attr("kurtosis"),reverse=True)
+
+	return stack[:nsort]
+
+def sortstackheader(stack,nsort,header):
+	"""Sorts a list of images based on the number of particles each image represents"""
+
+	stack.sort(key=lambda B:B.get_attr(header))
 
 	return stack[:nsort]
 

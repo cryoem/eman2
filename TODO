@@ -9,14 +9,16 @@ High priority
 8/9/12		Astigmatism ?
 8/9/12		e2procpdb.py ?
 
-2.06
-7/27/12		RCT .box import broken in projectmanager
+7/27/12		RCT .box import broken in projectmanager (temporarily removed)
 7/22/12		2d plotting of 1d image in browser broken
 7/27/12		Can't browse BDB dictionary contents
 8/1/12		Need to re-examine CTF fitting. Should be able to get better B-factors
 8/1/12		New options for better masking during alignment and classification to make smoother alignment energy function
 8/2/12		min/max not shown in browser info window
 8/2/12		Update wiki output files for twostage, automaskalign options.
+8/13/12		When 3D windows are closed, don't reuse them 
+8/14/12		parallel make3d
+8/14/12		monte-carlo initial model generator
 
 
 Low priority
