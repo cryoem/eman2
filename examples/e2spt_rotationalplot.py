@@ -197,7 +197,7 @@ def main():
 	pylab.title(plot_name)
 	pylab.ylabel('Correlation')
 	pylab.xlabel('Azimuth')
-	pylab.grid(True)
+	#pylab.grid(True)
 	#pylab.legend( (curve, fit), ('Values', 'Fit'))
 	#pylab.yaxis([0,boxsize/2 + 10,0,1.2])
 
