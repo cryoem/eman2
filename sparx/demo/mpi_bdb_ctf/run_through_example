@@ -66,7 +66,7 @@ sxheader.py bdb:data --params=active --one
 sxheader.py bdb:data --params=xform.align2d --zero
 sxheader.py bdb:flip_data --params=active --one
 sxheader.py bdb:flip_data --params=xform.align2d --zero
-mpirun -np 4 sxisac.py bdb:flip_data --stab_ali=2 --init_iter=1 --main_iter=1 --match_second=1 --ou=30 --max_round=5 --img_per_grp=120 --thld_err=1.0 --generation=1 --MPI
+mpirun -np 4 sxisac.py bdb:flip_data --stab_ali=2 --init_iter=1 --main_iter=1 --match_second=1 --ou=30 --max_round=5 --img_per_grp=120 --thld_err=0.75 --generation=1 --MPI
 ###################################################################
 # Actually, ISAC run with these parameters is very loose. For real data more, the following commands should be used:
 # mpirun -np 4 sxisac.py bdb:flip_data --ou=30 --thld_err=1.0 --generation=1 --MPI
