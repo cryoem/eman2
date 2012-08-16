@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.7
 
 #
 # Author: Jesus Galaz, 04/28/2012; last update 06/10/2012
@@ -47,7 +47,7 @@ import matplotlib.pyplot as plt
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = """Aligns a 3d volume to another by executing e2classaverage3d.py and then calculates the FSC between them by calling e2proc3d.py . It returns both a number for the resolution based on the FSC0.5 
+	usage = """Aligns a 3d volume to another by executing e2spt_classaverage.py and then calculates the FSC between them by calling e2proc3d.py . It returns both a number for the resolution based on the FSC0.5 
 	criterion(on the screen) and a plot as an image in .png format."""
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
@@ -179,12 +179,12 @@ def main():
 		print "The reformed aligner is", options.align
 			
 		vol2ALIname = vol2.replace('.hdf','_ALI.hdf')
-		alicmd = 'e2classaverage3d.py --path=. --input=' + vol2 + ' --output=' + vol2ALIname + ' --ref=' + vol1 + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + options.mask + ' --preprocess=' + options.preprocess + ' --align=' + options.align + ' --parallel=' + options.parallel + ' --ralign=' + options.ralign + ' --aligncmp=' + options.aligncmp + ' --raligncmp=' + options.raligncmp + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + options.normproc + ' --sym=' + options.sym + ' --breaksym'
+		alicmd = 'e2spt_classaverage.py --path=. --input=' + vol2 + ' --output=' + vol2ALIname + ' --ref=' + vol1 + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + options.mask + ' --preprocess=' + options.preprocess + ' --align=' + options.align + ' --parallel=' + options.parallel + ' --ralign=' + options.ralign + ' --aligncmp=' + options.aligncmp + ' --raligncmp=' + options.raligncmp + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + options.normproc + ' --sym=' + options.sym + ' --breaksym'
 		vol2final = vol2ALIname
 		
 		if options.mirror:
 			vol2mirrorALIname = vol2mirror.replace('.hdf','_ALI.hdf')
-			alicmd += ' && e2classaverage3d.py --path=. --input=' + vol2mirror + ' --output=' + vol2mirrorALIname + ' --ref=' + vol1 + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + options.mask + ' --preprocess=' + options.preprocess + ' --align=' + options.align + ' --parallel=' + options.parallel + ' --ralign=' + options.ralign + ' --aligncmp=' + options.aligncmp + ' --raligncmp=' + options.raligncmp + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + options.normproc + ' --sym=' + options.sym + ' --breaksym'
+			alicmd += ' && e2spt_classaverage.py --path=. --input=' + vol2mirror + ' --output=' + vol2mirrorALIname + ' --ref=' + vol1 + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + options.mask + ' --preprocess=' + options.preprocess + ' --align=' + options.align + ' --parallel=' + options.parallel + ' --ralign=' + options.ralign + ' --aligncmp=' + options.aligncmp + ' --raligncmp=' + options.raligncmp + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + options.normproc + ' --sym=' + options.sym + ' --breaksym'
 			vol2mirrorfinal = vol2mirrorALIname
 		
 		if options.sym is not 'c1' and options.sym is not "C1":
@@ -277,7 +277,8 @@ def fscplotter(fscs,options):
 
 		xticks = []
 		nlines=len(lines)
-		factorOfTicks = round(nlines/(round(nlines/10)))
+		arbfactor = round(0.2*nlines)
+		factorOfTicks = round(nlines/(round(nlines / (0.2*nlines))))
 		print "\n\n\nTHEE factor of ticks is!!!!\n", factorOfTicks
 		for line in lines:
 			x.append(float(k))
@@ -398,6 +399,13 @@ def fscplotter(fscs,options):
 			print "FSC0.143 resolution calculations 1 and 2 are", fsc0p143resolution1, fsc0p143resolution2
 		
 		pylab.plot(x, values, linewidth=2)
+	
+		yy1=[0.5]*len(values)	
+		yy2=[0.143]*len(values)
+		#pylab.axhline(linewidth=0.5)
+		#pylab.axhline(linewidth=0.143)
+		pylab.plot(x, yy1, 'k--', linewidth=1)
+		pylab.plot(x, yy2, 'k--', linewidth=1)
 
 		#fit = pylab.plot(x, yfit, 'r-')
 
@@ -493,7 +501,7 @@ def fscplotter(fscs,options):
 	pylab.title(plot_name)
 	pylab.ylabel('FSC')
 	pylab.xlabel('Frequency 1/Angstroms')
-	pylab.grid(True)
+	#pylab.grid(True)
 	pylab.ylim([0,1.2])
 	plt.savefig(plot_name)
 	
