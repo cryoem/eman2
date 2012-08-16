@@ -46,34 +46,33 @@ sxcpy.py bdb:particles/mic0_ptcls bdb:particles/mic1_ptcls bdb:particles/mic2_pt
 sxheader.py bdb:data --params=active --one
 sxheader.py bdb:data --params=xform.align2d --zero
 mpirun -np 4 sxisac.py bdb:data --stab_ali=2 --init_iter=1 --main_iter=1 --match_second=1 --ou=30 --max_round=5 --img_per_grp=120 --thld_err=0.75 --generation=1 --MPI
-###################################################################
+###################################################################<<<<<<< run_through_example
 # ISAC run with parameters given above is not sufficiently restrictive for EM data. Instead, one may try to use default parameters, in which case
-# the program will be more stringent, but will run significantly longer. Parameters --ou and --thld_err should be adjusted according to the data type.
-# The ISAC program is designed to run in multiple generations in the following way: we first run the first generation on the data set, which will generate some class averages. 
+#  the program will be more stringent, but will run significantly longer.
+# In particular, parameters --ou and --thld_err should be adjusted according to the data.
+# The ISAC program is designed to run in multiple generations: we first run the first generation on the data set, which will generate initial class averages. 
 # We call the particles that are assigned to these class averages accounted for and set them aside. We will make a stack of the unaccounted for particles and run the second 
 # generation on this stack. Then we set aside the particles that are accounted for in the second generation and make a new stack for the particles that are still unaccounted for. 
-# We will run the third generation on the new stack, and so on. The process repeated until no or very few class averages can be generated in one generation. The parameter 
-# generation is used to tell the program which generation you are running right now.
+# The program is designed to use four generation for the full run. The process repeated until no or very few class averages can be generated in one generation. The parameter 
+# generation is used to tell the program which generation is currently used.
 #
-# mpirun -np 4 sxisac.py bdb:data --ou=30 --thld_err=1.0 --generation=1 --MPI
-# e2bdb.py bdb:data --makevstack=bdb:flip_data_2 --list="generation_1_unaccounted.txt"
-# mpirun -np 4 sxisac.py bdb:data_2 --ou=30 --thld_err=1.0 --generation=2 --MPI
-# e2bdb.py bdb:data --makevstack=bdb:flip_data_3 --list="generation_2_unaccounted.txt"
-# mpirun -np 4 sxisac.py bdb:data_3 --ou=30 --thld_err=1.0 --generation=3 --MPI
-# e2bdb.py bdb:data --makevstack=bdb:flip_data_4 --list="generation_3_unaccounted.txt"
-# mpirun -np 4 sxisac.py bdb:data_4 --ou=30 --thld_err=1.0 --generation=4 --MPI
+# mpirun -np 4 sxisac.py bdb:flip_data --ou=30 --thld_err=1.0 --generation=1 --MPI
+# e2bdb.py bdb:flip_data --makevstack=bdb:flip_data_2 --list="generation_1_unaccounted.txt"
+# mpirun -np 4 sxisac.py bdb:flip_data_2 --ou=30 --thld_err=1.0 --generation=2 --MPI
+# e2bdb.py bdb:flip_data --makevstack=bdb:flip_data_3 --list="generation_2_unaccounted.txt"
+# mpirun -np 4 sxisac.py bdb:flip_data_3 --ou=30 --thld_err=1.0 --generation=3 --MPI
+# e2bdb.py bdb:flip_data --makevstack=bdb:flip_data_4 --list="generation_3_unaccounted.txt"
+# mpirun -np 4 sxisac.py bdb:flip_data_4 --ou=30 --thld_err=1.0 --generation=4 --MPI
 #
-# To run gui version of sxisac, enter the following in the command line:
 # 	sxgui.py --demo=mpibdb &
 # and then press the 'sxisac' button in the main menu. A separate window will pop up with the input fields already initialized to the proper values. 
 # Press the green 'Run sxisac' button to execute the command.
 # Note thatif sxgui.py is invoked without the --demo option, the input fields will not be automatically initialized with the approprite values, in 
 # which case the proper values must be entered manually.
 ###################################################################
-sxcpy.py class_averages_generation_*.hdf class_averages.hdf
 
 # Determination of the initial structure using class averages and common-lines
-mpirun -np 4 sxfind_struct.py class_averages.hdf structure --ou=30 --delta=6 --lf=0.05 --hf=0.3 --maxit=20 --rand_seed=200 --trials=4 --MPI || exit
+mpirun -np 4 sxfind_struct.py class_averages_generation_1.hdf structure --ou=30 --delta=6 --lf=0.05 --hf=0.3 --maxit=20 --rand_seed=200 --trials=4 --MPI || exit
 ###################################################################
 # To run gui version, enter the following in the command line:
 # 	sxgui.py --demo=mpibdb &
