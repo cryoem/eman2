@@ -12054,7 +12054,7 @@ def defvar(files, outdir, fl, aa, radccc, frepa = "default", pca=False, pcamask=
 	if pca :
 		from statistics import pcanalyzer
 		pcamask = get_im( pcamask)
-		pcaer = pcanalyzer(pcamask, outdir, pcanvec, False)
+		pcaer = pcanalyzer(pcamask, pcanvec, False)
 
 	avgfile  = os.path.join(outdir, "avg.hdf")
 	varfile  = os.path.join(outdir, "var.hdf")
@@ -12202,7 +12202,7 @@ def var_mpi(files, outdir, fl, aa, radccc, frepa = "default", pca=False, pcamask
 		if(myid == 0):  pcamask = get_im( pcamask)
 		else:           pcamask = model_blank(nx,ny,nz)
 		bcast_EMData_to_all(pcamask, myid)
-		pcaer = pcanalyzer(pcamask, outdir, pcanvec, True)
+		pcaer = pcanalyzer(pcamask, pcanvec, True)
 		if( myid == 0 ):  refstat = Util.infomask(img, pcamask, True)
 		else:             refstat = [0.0,0.0,0.0,0.0]
 		refstat = mpi_bcast(refstat, 4, MPI_FLOAT, 0, MPI_COMM_WORLD)

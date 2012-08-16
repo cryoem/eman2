@@ -9380,7 +9380,6 @@ def cluster_equalsize(d, m):
 
 
 class pcanalyzer:
-	#def __init__(self, mask, sdir=".", nvec=3, incore=False, MPI=False, scratch=None):
 	def __init__(self, mask, nvec=3, incore=False, MPI=False, scratch=None):
 		import os
 		self.mask = mask.copy()
