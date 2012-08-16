@@ -688,7 +688,12 @@ def allvsall(options):
 				
 		newptcls = averages							#All the new averages become part of the new "newptcls" list
 		
-		os.system('rm ' + options.path + '/oldptclstack.hdf')
+		fs=os.listdir( options.path)
+		
+		if 'oldptclstack.hdf' in fs:						#This seems not to be needed in the last round. Sometimes the program fails with an error saying there's no old stack in the directory.
+			os.system('rm ' + options.path + '/oldptclstack.hdf')
+		#a=EMData(nx,ny,nz)
+		#a.write_image(oldptclstack.hdf,0)					#
 		
 		gg=0
 		for particlekey,particlevalue in oldptcls.iteritems():
