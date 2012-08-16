@@ -474,7 +474,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 		ave /= n
 		return ave
 
-	def var(a):
+	def sqerr(a):
 		n = len(a)
 		avg = ave(a)
 		var = 0.0
@@ -484,46 +484,56 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	# args - G, data -[T, d]
 	def func(args, data, return_avg_pixel_error=True):
 
-	        from math import pi, sin, cos
+		from math import pi, sin, cos
 
-	        ali_params = data[0]
-	        d = data[1]
+		ali_params = data[0]
+		d = data[1]
 
-	        L = len(ali_params)
-	        N = len(ali_params[0])/4
+		L = len(ali_params)
+		N = len(ali_params[0])/4
 
-	        args_list= [0.0]*(L*3)
-	        for i in xrange(L*3-3):        args_list[i] = args[i]
-	        cosa = [0.0]*L
-	        sina = [0.0]*L
-	        for i in xrange(L):
-	        	cosa[i] = cos(args_list[i*3]*pi/180.0)
-	        	sina[i] = sin(args_list[i*3]*pi/180.0)
-	        sqr_pixel_error = [0.0]*N
-	        for i in xrange(N):
-	        	sum_cosa = 0.0
-	        	sum_sina = 0.0
-	        	sx = [0.0]*L
-	        	sy = [0.0]*L
-	        	for j in xrange(L):
-	        		if int(ali_params[j][i*4+3]) == 0:
-	        			sum_cosa += cos((args_list[j*3]+ali_params[j][i*4])*pi/180.0)
-	        			sum_sina += sin((args_list[j*3]+ali_params[j][i*4])*pi/180.0)
-	        			sx[j] =  args_list[j*3+1] + ali_params[j][i*4+1]*cosa[j] + ali_params[j][i*4+2]*sina[j]
-	        			sy[j] =  args_list[j*3+2] - ali_params[j][i*4+1]*sina[j] + ali_params[j][i*4+2]*cosa[j]
-	        		else:
-	        			sum_cosa += cos((-args_list[j*3]+ali_params[j][i*4])*pi/180.0)
-	        			sum_sina += sin((-args_list[j*3]+ali_params[j][i*4])*pi/180.0)
-	        			sx[j] = -args_list[j*3+1] + ali_params[j][i*4+1]*cosa[j] - ali_params[j][i*4+2]*sina[j]
-	        			sy[j] =  args_list[j*3+2] + ali_params[j][i*4+1]*sina[j] + ali_params[j][i*4+2]*cosa[j]
-	        	P = sqrt(sum_cosa**2+sum_sina**2)
+		args_list= [0.0]*(L*3)
+		for i in xrange(L*3-3):	args_list[i] = args[i]
+		cosa = [0.0]*L
+		sina = [0.0]*L
+		for i in xrange(L):
+			cosa[i] = cos(args_list[i*3]*pi/180.0)
+			sina[i] = sin(args_list[i*3]*pi/180.0)
+		sqr_pixel_error = [0.0]*N
+		ave_params = []
+		for i in xrange(N):
+			sum_cosa = 0.0
+			sum_sina = 0.0
+			sx = [0.0]*L
+			sy = [0.0]*L
+			for j in xrange(L):
+				if int(ali_params[j][i*4+3]) == 0:
+					sum_cosa += cos((args_list[j*3]+ali_params[j][i*4])*pi/180.0)
+					sum_sina += sin((args_list[j*3]+ali_params[j][i*4])*pi/180.0)
+					sx[j] =  args_list[j*3+1] + ali_params[j][i*4+1]*cosa[j] + ali_params[j][i*4+2]*sina[j]
+					sy[j] =  args_list[j*3+2] - ali_params[j][i*4+1]*sina[j] + ali_params[j][i*4+2]*cosa[j]
+				else:
+					sum_cosa += cos((-args_list[j*3]+ali_params[j][i*4])*pi/180.0)
+					sum_sina += sin((-args_list[j*3]+ali_params[j][i*4])*pi/180.0)
+					sx[j] = -args_list[j*3+1] + ali_params[j][i*4+1]*cosa[j] - ali_params[j][i*4+2]*sina[j]
+					sy[j] =  args_list[j*3+2] + ali_params[j][i*4+1]*sina[j] + ali_params[j][i*4+2]*cosa[j]
+			P = sqrt(sum_cosa**2+sum_sina**2)
 
-	        	sqr_pixel_error[i] = d*d/4.*(1-P/L) + var(sx) + var(sy)
-
-	        # Warning: Whatever I return here is squared pixel error, this is for the easy expression of derivative
-	        # Don't forget to square root it after getting the value
-	        if return_avg_pixel_error:         return sum(sqr_pixel_error)/N
-	        else: return sqr_pixel_error
+			sqr_pixel_error[i] = d*d/4.*(1-P/L) + sqerr(sx) + sqerr(sy)
+			# Get ave transform params
+			H = Transform({"type":"2D"})
+			H.set_matrix([sum_cosa, sum_sina, 0.0, sum(sx)/L, -sum_sina, sum_cosa, 0.0, sum(sy)/L, 0.0, 0.0, 1.0, 0.0])
+			dd = H.get_params("2D")
+			#  We are using here mirror of the FIRST SET.
+			H = Transform({"type":"2D","alpha":dd[ "alpha" ],"tx":dd[ "tx" ],"ty": dd[ "ty" ],"mirror":int(ali_params[0][i*4+3]),"scale":1.0})
+			dd = H.get_params("2D")
+			ave_params.append([dd[ "alpha" ], dd[ "tx" ], dd[ "ty" ], dd[ "mirror" ]])
+		# Warning: Whatever I return here is squared pixel error, this is for the easy expression of derivative
+		# Don't forget to square root it after getting the value
+		if return_avg_pixel_error:
+			return sum(sqr_pixel_error)/N
+		else: 
+			return sqr_pixel_error, ave_params
 
 	'''
 	def dfunc(args, data):
@@ -637,7 +647,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 
 	# Do an initial analysis, purge all outlier particles, whose pixel error are larger than three times of threshold
 	data = [ali_params_mir_stab, d]
-	pixel_error_before = func(array(args), data, return_avg_pixel_error=False)
+	pixel_error_before, ave_params = func(array(args), data, return_avg_pixel_error=False)
 	ali_params_cleaned = [[] for i in xrange(num_ali)]
 	cleaned_part = []
 	for j in xrange(nima2):
@@ -650,10 +660,8 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 
 	# Use LBFGSB to minimize the sum of pixel errors
 	data = [ali_params_cleaned, d]
-
 	# Use Python code
 	#ps_lp, val, d = fmin_l_bfgs_b(func, array(args), args=[data], fprime=dfunc, bounds=None, m=10, factr=1e3, pgtol=1e-4, iprint=-1, maxfun=100)
-
 	# Use C++ code
 	ali_params_cleaned_list = []
 	for params in ali_params_cleaned: ali_params_cleaned_list.extend(params)
@@ -672,7 +680,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	
 	if sqrt(val) > grp_err_thld: return [], mir_stab_rate, sqrt(val)
 	
-	pixel_error_after = func(ps_lp, data, return_avg_pixel_error=False)
+	pixel_error_after, ave_params = func(ps_lp, data, return_avg_pixel_error=False)
 
 	if print_individual:
 		for i in xrange(nima):
@@ -687,15 +695,11 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	stable_set = []
 	for i in xrange(nima3):
 		err = sqrt(pixel_error_after[i])
-		if err < err_thld: stable_set.append([err, mir_stab_part[cleaned_part[i]]])
+		if err < err_thld: 
+			stable_set.append([err, mir_stab_part[cleaned_part[i]], ave_params[i]])
 	stable_set.sort()
 		
 	return stable_set, mir_stab_rate, sqrt(val)
-
-
-
-
-
 
 
 
@@ -744,15 +748,6 @@ def multi_align_stability_new(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10
 			sqrtP = sqrt(sum_cosa**2+sum_sina**2)
 			sum_cosa /= sqrtP
 			sum_sina /= sqrtP
-			#  This completes calculation of matrix H_i
-			"""
-			anger = 0.0
-			for l in xrange(L):
-				anger += (cos(alpha[l]*pi/180.0)-sum_cosa)**2
-				anger += (sin(alpha[l]*pi/180.0)-sum_sina)**2
-			anger *= 2
-			sqr_pixel_error[i] = d*d/4.*anger/L/4.+sqerr(sx)+sqerr(sy)
-			"""
 			sqr_pixel_error[i] = d*d/4*(1.0-sqrtP/L) + sqerr(sx) + sqerr(sy)
 			#  Get ave transform params
 			pt.set_matrix([sum_cosa, sum_sina, 0.0, sum(sx)/L, -sum_sina, sum_cosa, 0.0, sum(sy)/L, 0.0, 0.0, 1.0, 0.0])

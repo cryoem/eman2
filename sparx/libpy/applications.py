@@ -12927,12 +12927,10 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		print "*                                       Generation %3d                                             *"%(generation)
 		print "****************************************************************************************************"
 		print ""
-	                                  
 
 	color = myid%indep_run
 	key = myid/indep_run
 	group_comm = mpi_comm_split(MPI_COMM_WORLD, color, key)
-	group_number_of_proc = mpi_comm_size(group_comm)
 	group_main_node = 0
 
 	# Read data on each processor, there are two ways, one is read on main_node and send them to all other nodes
@@ -12992,7 +12990,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		print "* typically should have 10 to 20 rounds (default = 20). The candidate class averages are *"
 		print "* stored in class_averages_candidate_generation_n.hdf.                                   *"
 		print "******************************************************************************************"
-		 
+		
 	avg_num = 0
 	Iter = 1
 	match_initialization = False
@@ -13453,11 +13451,11 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 			class_data = [None]*l_STB_PART
 			members_id = [0]*l_STB_PART
- 		        for im in xrange(l_STB_PART):
- 	                        class_data[im] = alldata[STB_PART[im]]
- 				members_id[im] = alldata[STB_PART[im]].get_attr('ID')
- 			for im in xrange(l_STB_PART-1):
- 				assert members_id[im] != members_id[im+1]
+			for im in xrange(l_STB_PART):
+				class_data[im] = alldata[STB_PART[im]]
+				members_id[im] = alldata[STB_PART[im]].get_attr('ID')
+			for im in xrange(l_STB_PART-1):
+				assert members_id[im] != members_id[im+1]
 
 			ali_params = [[] for j in xrange(stab_ali)]
 			for ii in xrange(stab_ali):
@@ -13477,10 +13475,10 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			all_scale = [1.0]*l_stable_set
 			for j in xrange(l_stable_set): 
 				stable_set_id[j] = members_id[stable_set[j][1]]
-				all_alpha[j] = ali_params[stab_ali-1][stable_set[j][1]*4]
-				all_sx[j] = ali_params[stab_ali-1][stable_set[j][1]*4+1]
-				all_sy[j] = ali_params[stab_ali-1][stable_set[j][1]*4+2]
-				all_mirror[j] = ali_params[stab_ali-1][stable_set[j][1]*4+3]
+				all_alpha[j]  = stable_set[j][2][0]
+				all_sx[j]     = stable_set[j][2][1]
+				all_sy[j]     = stable_set[j][2][2]
+				all_mirror[j] = stable_set[j][2][3]
 
 			mpi_send(l_stable_set, 1, MPI_INT, main_node, i+30000, MPI_COMM_WORLD)
 			mpi_send(stable_set_id, l_stable_set, MPI_INT, main_node, i+40000, MPI_COMM_WORLD)
@@ -13793,11 +13791,11 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 					assign = []
 					for im in xrange(nima):
 						if j == belongsto[im]:  assign.append(im)
-	
+
 					randomize = True  # I think there is no reason not to be True
 					class_data = [alldata[im] for im in assign]
 					refi[j] = within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, [xrng], [yrng], [step], dst, maxit, FH, FF)
-	
+
 					if check_stability:
 						ali_params = [[] for qq in xrange(stab_ali)]
 						for ii in xrange(stab_ali):
@@ -13806,11 +13804,11 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 							for im in xrange(len(class_data)):
 								alpha, sx, sy, mirror, scale = get_params2D(class_data[im])
 								ali_params[ii].extend([alpha, sx, sy, mirror])
-	
+
 						stable_set, mirror_consistent_rate, err = multi_align_stability(ali_params, 0.0, 10000.0, thld_err, False, last_ring*2)
-	
+
 						#print  "Color % d, class %d ...... Size of stable subset = %d,  Mirror consistent rate = %f,  Average error = %f"%(color, j, len(stable_set), mirror_consistent_rate, err)
-	
+
 						# If the size of stable subset is too small (say 1, 2), it will cause many problems, so we manually increase it to 5
 						while len(stable_set) < 5:
 							duplicate = True
@@ -13819,16 +13817,17 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 								p = randint(0, len(class_data)-1)
 								for ss in stable_set:
 									if p == ss[1]: duplicate = True
-							stable_set.append([100.0, p])
-	
+							stable_set.append([100.0, p, [0.0, 0.0, 0.0, 0]])
+
 						stable_data = []
 						stable_members = []
 						for err in stable_set:
 							im = err[1]
 							stable_members.append(assign[im])
 							stable_data.append(class_data[im])
+							set_params2D( class_data[im], [err[2][0], err[2][1], err[2][2], int(err[2][3]), 1.0] )
 						stable_members.sort()
-	
+
 						refi[j] = filt_tanl(ave_series(stable_data), FH, FF)
 						refi[j].set_attr('members', stable_members)
 						refi[j].set_attr('n_objects', len(stable_members))
@@ -13836,7 +13835,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 					# end of stability
 					del assign
 				mpi_barrier(comm)
-	
+
 				for im in xrange(nima):
 					done_on_node = belongsto[im]%number_of_proc
 					if myid == done_on_node:
@@ -13987,7 +13986,7 @@ def isac_stability_check_mpi(alldata, numref, belongsto, stab_ali, thld_err, mas
 				p = randint(0, len(grp_images[j])-1)
 				for ss in stable_set:
 					if p == ss[1]: duplicate = True
-			stable_set.append([100.0, p])
+			stable_set.append([100.0, p, [0.0, 0.0, 0.0, 0]])
 
 		stable_data = []
 		stable_members = []
@@ -13995,6 +13994,7 @@ def isac_stability_check_mpi(alldata, numref, belongsto, stab_ali, thld_err, mas
 			im = err[1]
 			stable_members.append(grp_indexes[j][im])
 			stable_data.append(grp_images[j][im])
+			set_params2D( grp_images[j][im], [err[2][0], err[2][1], err[2][2], int(err[2][3]), 1.0] )
 		stable_members.sort()
 
 		refi[j] = filt_tanl(ave_series(stable_data), FH, FF)

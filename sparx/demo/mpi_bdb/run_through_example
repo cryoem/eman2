@@ -45,8 +45,11 @@ sxcpy.py bdb:particles/mic0_ptcls bdb:particles/mic1_ptcls bdb:particles/mic2_pt
 
 sxheader.py bdb:data --params=active --one
 sxheader.py bdb:data --params=xform.align2d --zero
-mpirun -np 4 sxisac.py bdb:data --stab_ali=2 --init_iter=1 --main_iter=1 --match_second=1 --ou=30 --max_round=5 --img_per_grp=120 --thld_err=5.1 --generation=1 --MPI 
+mpirun -np 4 sxisac.py bdb:data --stab_ali=2 --init_iter=1 --main_iter=1 --match_second=1 --ou=30 --max_round=5 --img_per_grp=120 --thld_err=1.0 --generation=1 --MPI 
 ###################################################################
+# Actually, ISAC run with these parameters is very loose. For real data more, the following commands should be used:
+# mpirun -np 4 sxisac.py bdb:flip_data --ou=30 --thld_err=1.0 --generation=1 --MPI
+# Parameters --ou and --thld_err should be adjusted according to the data type. Moreover, probably more than one ISAC run will be needed.
 # To run gui version of sxisac, enter the following in the command line:
 # 	sxgui.py --demo=mpibdb &
 # and then press the 'sxisac' button in the main menu. A separate window will pop up with the input fields already initialized to the proper values. 
