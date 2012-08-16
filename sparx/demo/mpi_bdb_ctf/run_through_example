@@ -94,10 +94,10 @@ mpirun -np 4 sxisac.py bdb:flip_data --stab_ali=2 --init_iter=1 --main_iter=1 --
 ###################################################################
 sxheader.py bdb:flip_data --params=xform.align2d --export=parmsflip
 sxheader.py bdb:data --params=xform.align2d --import=parmsflip
-sxcpy.py class_averages_generation_*.hdf class_averages_generation.hdf
+sxcpy.py class_averages_generation_*.hdf class_averages.hdf
 
 # Determination of the initial structure using class averages and common-lines
-mpirun -np 4 sxfind_struct.py class_averages_generation.hdf structure --ou=30 --delta=6 --lf=0.05 --hf=0.25 --maxit=20 --rand_seed=10 --trials=4 --MPI 
+mpirun -np 4 sxfind_struct.py class_averages.hdf structure --ou=30 --delta=6 --lf=0.05 --hf=0.25 --maxit=20 --rand_seed=10 --trials=4 --MPI 
 ###################################################################
 # To run gui version, enter the following in the command line:
 # 	sxgui.py --demo=mpibdbctf &
