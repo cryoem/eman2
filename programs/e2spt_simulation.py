@@ -93,10 +93,11 @@ def main():
 
 	parser.add_argument("--reconstructor", type=str,default="fourier",help="""The reconstructor to use to reconstruct the tilt series into a tomogram. Type 'e2help.py reconstructors' at the command line
 											to see all options and parameters available.""")
-	parser.add_argument("--pad", action="store_true",default=False,help="""If on, it will double the box size of the model for 3D reconstruction purposes, but the final
-									simulated tilt series and subtomograms will be clipped back to the original unpadded box size.""")								
+	parser.add_argument("--pad", type=int,default=0,help="""If on, it will increase the box size of the model BEFORE generating projections and doing 3D reconstruction of simulated sutomograms.""")								
 	#parser.add_argument("--noiseproc",type=str,help="A noise processor to be applied to the individual projections of the simulated tilt series",default=None)
 	
+	parser.add_argument("--finalboxsize", type=int,default=0,help="""The final box size to clip the subtomograms to.""")								
+
 	parser.add_argument("--snr",type=int,help="Weighing noise factor for noise added to the image. Only words if --addnoise is on.",default=5)
 	parser.add_argument("--addnoise",action="store_true",default=False,help="If on, it adds random noise to the particles")
 
@@ -106,16 +107,47 @@ def main():
 	Make the directory where to create the database where the results will be stored
 	'''
 	
-	if options.path and ("/" in options.path or "#" in options.path) :
-		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
-		sys.exit(1)
+	#if options.path and ("/" in options.path or "#" in options.path) :
+	#	print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
+	#	sys.exit(1)
 		
 	#if options.path and options.path[:4].lower()!="bdb:": 
 	#	options.path="bdb:"+options.path
 
+	#if not options.path: 
+	#	#options.path="bdb:"+numbered_path("sptavsa",True)
+	#	options.path = "sptsim_01"
+	
+	
+	if options.path and ("/" in options.path or "#" in options.path) :
+		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
+		sys.exit(1)
+
 	if not options.path: 
 		#options.path="bdb:"+numbered_path("sptavsa",True)
 		options.path = "sptsim_01"
+
+	files=os.listdir(os.getcwd())
+	
+	while options.path in files:
+		path = options.path		
+		if '_' not in path:
+			path = path + '_00'
+		else:
+			jobtag=''
+			components=path.split('_')
+			if components[-1].isdigit():
+				components[-1] = str(int(components[-1])+1).zfill(2)
+			else:
+				components.append('00')
+						
+			path = '_'.join(components)
+			options.path = path
+			print "The new options.path is", options.path
+
+	if options.path not in files:
+		os.system('mkdir ' + options.path)
+	
 	
 	'''
 	Parse the options
@@ -144,6 +176,11 @@ def main():
 		os.system('e2proc3d.py ' + options.input + ' ' + hdfmodel)
 		options.input = hdfmodel
 	
+	workname = options.input
+	workname = workname.replace('.hdf','_sptsim.hdf')
+	os.system('cp ' + options.input + ' ' + workname)
+	options.input = workname
+	
 	nrefs = EMUtil.get_image_count(options.input)
 	
 	tag = ''
@@ -155,6 +192,7 @@ def main():
 			tag = str(i).zfill(len(str(nrefs)))
 	
 		model = EMData(options.input,i)
+		#print "The apix of the model is", model['apix_x']
 		
 		newsize = model['nx']
 		oldx = model['nx']
@@ -166,14 +204,12 @@ def main():
 			newsize = newsize/options.shrink	
 			if newsize % 2:
 				newsize += 1
-	
+			
 			os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --process=math.meanshrink:n=' + str(options.shrink))
 	
 		padded=options.input
 		if options.pad:
-			newsize *= 3
-			print "I am padding the model. The original size in X was", oldx				
-			print "Whereas the new one (thrice as much as the largest dimension) is", newsize
+			newsize *= options.pad
 			padded=padded.replace('.hdf','_padded.hdf')
 							
 		if newsize != oldx:
@@ -181,6 +217,7 @@ def main():
 			options.input=padded
 			
 		model = EMData(options.input,i)
+		#print "after editing, apix of model is", model['apix_x']
 
 		if options.filter != None:
 			model.process_inplace(options.filter[0],options.filter[1])
@@ -246,6 +283,14 @@ def randomizer(options, model, tag):
 				print "I will generate particle #", i
 
 			b = model.copy()
+			apixX=model['apix_x']
+			apixY=model['apix_y']
+			apixZ=model['apix_z']
+			
+			b['apix_x'] = apixX
+			b['apix_y'] = apixY
+			b['apix_z'] = apixZ
+			
 			b['origin_x'] = 0									#Make sure the origin is set to zero, to avoid display issues with Chimera
 			b['origin_y'] = 0
 			b['origin_z'] = 0
@@ -329,6 +374,10 @@ def subtomosim(options,ptcls,tag):
 						
 			prj = ptcls[i].project("standard",t)
 			prj.set_attr('xform.projection',t)
+			prj['apix_x']=apix
+			prj['apix_y']=apix
+			
+			#print "The size of the prj is", prj['nx']
 			
 			prj.process_inplace('normalize')
 			
@@ -377,14 +426,15 @@ def subtomosim(options,ptcls,tag):
 		
 		box = ptcls[i].get_xsize()
 		
-		if options.pad:
-			box /= 3
+		if options.finalboxsize:
+			box = options.finalboxsize
 		
 		r = Reconstructors.get(options.reconstructor[0],{'size':(box,box,box),'sym':'c1','verbose':True,'mode':'gauss_2'})
 		#r = Reconstructors.get(options.reconstructor[0],options.reconstructor[1])
 		r.setup()
 		
 		for p in ctfed_projections:
+			#print "The size of the prj to insert is", p['nx']
 			p = r.preprocess_slice(p,p['xform.projection'])
 			r.insert_slice(p,p['xform.projection'],1.0)
 		
@@ -392,6 +442,11 @@ def subtomosim(options,ptcls,tag):
 		#mname = parameters['model'].split('/')[-1].split('.')[0]
 		#name = 'rec_' + mname + '#' + str(i).zfill(len(str(len(particles)))) + '.hdf'
 		
+		rec['apix_x']=apix
+		rec['apix_y']=apix
+		rec['apix_z']=apix
+		
+		#print "The apix of rec is", rec['apix_x']
 		rec.write_image(options.path + '/' + outname,i)
 	
 	
