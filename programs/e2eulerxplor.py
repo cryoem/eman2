@@ -197,7 +197,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 		else:
 			EM3DSymModel.keyPressEvent(self,event)
 	
-	def __init__(self, gl_widget, auto=True,sparse_mode=False, file_name = ""):
+	def __init__(self, gl_widget=None, auto=True,sparse_mode=False, file_name = ""):
 		self.current_hit = None
 		self.events_mode_list = ["navigate", "inspect"]
 		self.events_mode = self.events_mode_list[1]

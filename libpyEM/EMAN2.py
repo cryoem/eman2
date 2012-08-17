@@ -621,13 +621,14 @@ def display(img,force_2d=False,force_plot=False):
 def euler_display(emdata_list):
 	if len(emdata_list) == 0: return
 	if GUIMode:
-		from e2eulerxplor import EMEulerExplorer
-		module = EMEulerExplorer(auto=False,sparse_mode=True)
+		from e2eulerxplor import EMEulerWidget
+		widget=EMEulerWidget(auto=False,sparse_mode=True)
+		module = widget.model
 		if isinstance(emdata_list[0],EMData): module.set_emdata_list_as_data(emdata_list)
 		elif isinstance(emdata_list[0],Transform):
 			module.specify_eulers(emdata_list)
 			module.regen_dl()
-		app.show_specific(module)
+		widget.show()
 	else:
 		print "gui mode is disabled"
 

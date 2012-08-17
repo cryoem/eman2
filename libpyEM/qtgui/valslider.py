@@ -177,6 +177,8 @@ class ValSlider(QtGui.QWidget):
 	def getRange(self): return self.rng
 
 	def setValue(self,val,quiet=0):
+		if val==None : return
+
 		if val <= self.rng[0]:
 			self.rng[0] = val
 			#self.updates()
