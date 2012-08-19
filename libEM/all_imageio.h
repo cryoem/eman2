@@ -49,6 +49,7 @@
 #endif
 
 #include "dm3io.h"
+#include "dm4io.h"
 
 #ifdef EM_TIFF
 	#include "tifio.h"

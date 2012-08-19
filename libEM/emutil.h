@@ -116,6 +116,7 @@ namespace EMAN
 			IMAGE_IMAGIC,
 			IMAGE_HDF,
 			IMAGE_DM3,
+			IMAGE_DM4,
 			IMAGE_TIFF,
 			IMAGE_PGM,
 			IMAGE_LST,

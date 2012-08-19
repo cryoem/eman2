@@ -20,6 +20,7 @@ SET(LIB_EM_SOURCE byteorder.cpp
     pdbreader.cpp
     mrcio.cpp
     dm3io.cpp
+    dm4io.cpp
     tifio.cpp
     hdfio.cpp
     hdfio2.cpp

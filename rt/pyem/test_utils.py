@@ -420,6 +420,9 @@ class TestEMUtils(unittest.TestCase):
         self.assertEqual(EMUtil.get_image_ext_type('dm3'), EMUtil.ImageType.IMAGE_DM3)
         self.assertEqual(EMUtil.get_image_ext_type('DM3'), EMUtil.ImageType.IMAGE_DM3)
         
+        self.assertEqual(EMUtil.get_image_ext_type('dm4'), EMUtil.ImageType.IMAGE_DM4)
+        self.assertEqual(EMUtil.get_image_ext_type('DM4'), EMUtil.ImageType.IMAGE_DM4)
+        
         self.assertEqual(EMUtil.get_image_ext_type('spi'), EMUtil.ImageType.IMAGE_SPIDER)
         self.assertEqual(EMUtil.get_image_ext_type('SPI'), EMUtil.ImageType.IMAGE_SPIDER)
         self.assertEqual(EMUtil.get_image_ext_type('spider'), EMUtil.ImageType.IMAGE_SPIDER)
@@ -602,6 +605,7 @@ class TestEMUtils(unittest.TestCase):
         self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_PNG), 'PNG')
         self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_HDF), 'HDF5')
         self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_DM3), 'GatanDM3')
+        self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_DM3), 'GatanDM4')
         self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_TIFF), 'TIFF')
         self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_VTK), 'VTK')
         self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_SAL), 'HDR')

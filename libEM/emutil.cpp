@@ -86,6 +86,9 @@ EMUtil::ImageType EMUtil::get_image_ext_type(const string & file_ext)
 		imagetypes["dm3"] = IMAGE_DM3;
 		imagetypes["DM3"] = IMAGE_DM3;
 
+		imagetypes["dm4"] = IMAGE_DM4;
+		imagetypes["DM4"] = IMAGE_DM4;
+
 		imagetypes["spi"] = IMAGE_SPIDER;
 		imagetypes["SPI"] = IMAGE_SPIDER;
 
@@ -245,6 +248,11 @@ EMUtil::ImageType EMUtil::fast_get_image_type(const string & filename,
 	case IMAGE_DM3:
 		if (DM3IO::is_valid(first_block)) {
 			return IMAGE_DM3;
+		}
+		break;
+	case IMAGE_DM4:
+		if (DM4IO::is_valid(first_block)) {
+			return IMAGE_DM4;
 		}
 		break;
 #ifdef EM_HDF5
@@ -420,6 +428,9 @@ EMUtil::ImageType EMUtil::get_image_type(const string & in_filename)
 	else if (DM3IO::is_valid(first_block)) {
 		image_type = IMAGE_DM3;
 	}
+	else if (DM4IO::is_valid(first_block)) {
+		image_type = IMAGE_DM4;
+	}
 #ifdef EM_HDF5
 	else if (HdfIO2::is_valid(first_block)) {
 		image_type = IMAGE_HDF;
@@ -572,6 +583,9 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 		break;
 	case IMAGE_DM3:
 		imageio = new DM3IO(filename, rw_mode);
+		break;
+	case IMAGE_DM4:
+		imageio = new DM4IO(filename, rw_mode);
 		break;
 #ifdef EM_TIFF
 	case IMAGE_TIFF:
@@ -738,6 +752,9 @@ const char *EMUtil::get_imagetype_name(ImageType t)
 		break;
 	case IMAGE_DM3:
 		return "GatanDM3";
+		break;
+	case IMAGE_DM4:
+		return "GatanDM4";
 		break;
 	case IMAGE_TIFF:
 		return "TIFF";
