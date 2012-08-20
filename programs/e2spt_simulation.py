@@ -150,7 +150,19 @@ def main():
 	if options.path not in files:
 		if '_' not in options.path:
 			print "I will add the number"
-			path = path + '_00'
+			options.path = options.path + '_00'
+		else:
+			jobtag=''
+			components=options.path.split('_')
+			if components[-1].isdigit():
+				components[-1] = str(int(components[-1])+1).zfill(2)
+			else:
+				components.append('00')
+						
+			options.path = '_'.join(components)
+			#options.path = path
+			print "The new options.path is", options.path
+			
 		print "I will make the path", options.path
 		os.system('mkdir ' + options.path)
 	
