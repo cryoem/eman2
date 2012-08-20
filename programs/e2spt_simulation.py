@@ -126,26 +126,32 @@ def main():
 	if not options.path: 
 		#options.path="bdb:"+numbered_path("sptavsa",True)
 		options.path = "sptsim_01"
-
-	files=os.listdir(os.getcwd())
 	
+	files=os.listdir(os.getcwd())
+	print "right before while loop"
 	while options.path in files:
-		path = options.path		
-		if '_' not in path:
-			path = path + '_00'
+		print "in while loop, options.path is", options.path
+		#path = options.path
+		if '_' not in options.path:
+			print "I will add the number"
+			options.path = options.path + '_00'
 		else:
 			jobtag=''
-			components=path.split('_')
+			components=options.path.split('_')
 			if components[-1].isdigit():
 				components[-1] = str(int(components[-1])+1).zfill(2)
 			else:
 				components.append('00')
 						
-			path = '_'.join(components)
-			options.path = path
+			options.path = '_'.join(components)
+			#options.path = path
 			print "The new options.path is", options.path
 
 	if options.path not in files:
+		if '_' not in options.path:
+			print "I will add the number"
+			path = path + '_00'
+		print "I will make the path", options.path
 		os.system('mkdir ' + options.path)
 	
 	
@@ -165,33 +171,62 @@ def main():
 	'''
 	If PDB or MRC files are provided to similuate subtomograms, convert them to HDF
 	'''
+	
+	check=0
 	if '.pdb' in options.input:
 		pdbmodel = options.input
-		mrcmodel = pdbmodel.replace('.pdb','.mrc').split('/')[-1]
-		os.system('e2pdb2mrc.py ' + pdbmodel + ' ' + mrcmodel)
+		os.system('cp ' + pdbmodel + ' ' + options.path)
+		pdbmodel = options.path + '/' + pdbmodel.split('/')[-1]
+		mrcmodel = pdbmodel.replace('.pdb','.mrc')
+		os.system('e2pdb2mrc.py ' + pdbmodel + ' ' + mrcmodel + ' && rm ' + pdbmodel)
 		options.input = mrcmodel
+		check=1
 	
 	if '.mrc' in options.input:
-		hdfmodel = options.input.replace('.mrc','.hdf').split('/')[-1]
-		os.system('e2proc3d.py ' + options.input + ' ' + hdfmodel)
+		mrcmodel = options.input
+		if check==0:
+			os.system('cp ' + mrcmodel + ' ' + options.path)
+			mrcmodel = options.path + '/' + mrcmodel.split('/')[-1]
+		hdfmodel = mrcmodel.replace('.mrc','.hdf')
+		os.system('e2proc3d.py ' + options.input + ' ' + hdfmodel + ' && rm ' + mrcmodel)
 		options.input = hdfmodel
-	
-	workname = options.input
-	workname = workname.replace('.hdf','_sptsim.hdf')
-	os.system('cp ' + options.input + ' ' + workname)
-	options.input = workname
+		check=1
 	
 	nrefs = EMUtil.get_image_count(options.input)
 	
+	if '.hdf' in options.input:
+		hdfmodel = options.input
+		if check == 0:
+			os.system('cp ' + hdfmodel + ' ' + options.path)
+			hdfmodel = options.path + '/' + hdfmodel.split('/')[-1]
+			options.input = hdfmodel
+		workname = hdfmodel.replace('.hdf','_sptsimMODEL.hdf')
+		if nrefs > 1:
+			workname = hdfmodel.replace('.hdf','_sptsimMODELS.hdf')
+		
+		os.system('cp ' + hdfmodel + ' ' + workname + ' && rm ' + hdfmodel)
+		options.input = workname
+	
+	
 	tag = ''
 	
+	originalpath = options.path
 	for i in range(nrefs):
+		if nrefs>1:
+			modelfilename = options.input.split('/')[-1].replace('.hdf','_model' + str(i).zfill(2) + '.hdf')
+			options.path = originalpath + '/model' + str(i).zfill(2)
+			os.system('mkdir ' + options.path)
+			#cmd = 'e2proc3d.py '  + options.input + ' ' + options.path + '/' + modelfilename + ' --first=' + str(i) + ' --last=' + str(i) + ' --append'
+			os.system('e2proc3d.py '  + options.input + ' ' + options.path + '/' + modelfilename + ' --first=' + str(i) + ' --last=' + str(i) + ' --append')
+			#print "This is the command to create the model", cmd
+			options.input = options.path + '/' + modelfilename
+			#print "Therefore, the model to load is", options.input
 		
 		randptcls = []
 		if nrefs > 1:
 			tag = str(i).zfill(len(str(nrefs)))
 	
-		model = EMData(options.input,i)
+		model = EMData(options.input,0,True)
 		#print "The apix of the model is", model['apix_x']
 		
 		newsize = model['nx']
@@ -210,13 +245,13 @@ def main():
 		padded=options.input
 		if options.pad:
 			newsize *= options.pad
-			padded=padded.replace('.hdf','_padded.hdf')
+			#padded=padded.replace('.hdf','_padded.hdf')
 							
 		if newsize != oldx:
-			os.system('e2proc3d.py ' + options.input + ' ' + padded + ' --clip=' + str(newsize) + ' --first=' + str(i) + ' --last=' + str(i))	
+			os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(newsize) + ' --first=' + str(i) + ' --last=' + str(i))	
 			options.input=padded
 			
-		model = EMData(options.input,i)
+		model = EMData(options.input,0)
 		#print "after editing, apix of model is", model['apix_x']
 
 		if options.filter != None:
@@ -226,7 +261,10 @@ def main():
 			
 		randptcls = randomizer(options, model, tag)
 		
-		subtomosim(options,randptcls, tag)
+		ret=subtomosim(options,randptcls, tag)
+		if ret == 1:
+			os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))	
+
 					
 	return()
 	
@@ -363,6 +401,9 @@ def subtomosim(options,ptcls,tag):
 		alt = lower_bound
 		raw_projections = []
 		ctfed_projections = []
+		
+		randT = ptcls[i]['sptsim_randT']
+		
 		for j in range(nslices):
 			t = Transform({'type':'eman','az':0,'alt':alt,'phi':0})				#Generate the projection orientation for each picture in the tilt series
 			
@@ -418,7 +459,7 @@ def subtomosim(options,ptcls,tag):
 
 			ctfed_projections.append(prj_r)		
 
-			if options.saveprjs and options.applyctf or options.addnoise:
+			if options.saveprjs and options.applyctf or options.saveprjs and options.addnoise:
 				prj_r.write_image(options.path + '/' + stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsEDITED.hdf') , j)	
 			
 						
@@ -445,12 +486,13 @@ def subtomosim(options,ptcls,tag):
 		rec['apix_x']=apix
 		rec['apix_y']=apix
 		rec['apix_z']=apix
+		rec['sptsim_randT'] = randT
 		
 		#print "The apix of rec is", rec['apix_x']
 		rec.write_image(options.path + '/' + outname,i)
 	
 	
-	return()	
+	return(1)	
 
 if __name__ == '__main__':
 	main()
