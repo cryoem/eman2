@@ -139,6 +139,7 @@ def main():
 	
 	if options.aligncmp: 
 		options.aligncmp=parsemodopt(options.aligncmp)
+	
 	if options.raligncmp: 
 		options.raligncmp=parsemodopt(options.raligncmp)
 	
@@ -702,11 +703,15 @@ class Align3DTask(EMTask):
 			fixedimage.process_inplace(options["normproc"][0],options["normproc"][1])
 			image.process_inplace(options["normproc"][0],options["normproc"][1])
 		
+		'''
 		#Mask after normalizing with the mask you just made, which is just a box full of 1s if not mask is specified
+		'''
 		fixedimage.mult(mask)
 		image.mult(mask)
 		
+		'''
 		#If normalizing, it's best to do normalize-mask-normalize-mask
+		'''
 		if options["normproc"]:
 			if options["normproc"][0]=="normalize.mask": 
 				options["normproc"][1]["mask"]=mask
@@ -717,40 +722,24 @@ class Align3DTask(EMTask):
 			fixedimage.mult(mask)
 			image.mult(mask)
 		
-		
-		
-		
-		
-		#If 'normalize.mask' is not used, the procedure really should be mask-normalize-mask
-		#if options["normproc"][0] != "normalize.mask":
-		#	image.process_inplace(options["normproc"][0],options["normproc"][1])
-		#	image.mult(mask)
-			
-		#	fixedimage.process_inplace(options["normproc"][0],options["normproc"][1])
-		#	fixedimage.mult(mask)
-		
-		
-		
-		
-		
-		
-		
-		# preprocess
+		'''
+		#Preprocess, lowpass and/or highpass
+		'''
 		if options["preprocess"] != None:
 			fixedimage.process_inplace(options["preprocess"][0],options["preprocess"][1])
 			image.process_inplace(options["preprocess"][0],options["preprocess"][1])
 			
-		# lowpass
 		if options["lowpass"] != None:
 			fixedimage.process_inplace(options["lowpass"][0],options["lowpass"][1])
 			image.process_inplace(options["lowpass"][0],options["lowpass"][1])
 			
-		# highpass
 		if options["highpass"] != None:
 			fixedimage.process_inplace(options["highpass"][0],options["highpass"][1])
 			image.process_inplace(options["highpass"][0],options["highpass"][1])
 		
-		# Shrinking both for initial alignment and reference
+		'''
+		#Shrinking both for initial alignment and reference
+		'''
 		if options["shrink"]!=None and options["shrink"]>1 :
 			sfixedimage=fixedimage.process("math.meanshrink",{"n":options["shrink"]})
 			simage=image.process("math.meanshrink",{"n":options["shrink"]})
@@ -759,48 +748,55 @@ class Align3DTask(EMTask):
 			simage=image
 			
 		if options["shrinkrefine"]!=None and options["shrinkrefine"]>1 :
-			if options["shrinkrefine"]==options["shrink"] :
+			if options["shrinkrefine"] == options["shrink"] :
 				s2fixedimage=sfixedimage
 				s2image=simage
-			else :
+			else:
 				s2fixedimage=fixedimage.process("math.meanshrink",{"n":options["shrinkrefine"]})
 				s2image=image.process("math.meanshrink",{"n":options["shrinkrefine"]})
-		else :
+		else:
 			s2fixedimage=fixedimage
 			s2image=image
 			
-
 		if options["verbose"]: 
 			print "Align size %d,  Refine Align size %d"%(sfixedimage["nx"],s2fixedimage["nx"])
 
 		# In some cases we want to prealign the particles
 		if options["transform"]:
 			print "Moving Xfrom", options["transform"]
-			options["align"][1]["transform"] = options["transform"]
+			options["align"][1]["initxform"] = options["transform"]
 			
-		# If None was passed in we skip coarse alignment and just do a refienement
+			if options["shrink"]>1:
+			 	options["align"][1]["initxform"].set_trans( options["align"][1]["initxform"].get_trans()/float(options["shrinkrefine"]) )
+			
+		#	if
+		#	bestcoarse=[{"score":1.0,"xform.align3d":options["align"]}]
+		#		bestcoarse[0]["xform.align3d"].set_trans(bestcoarse[0]["xform.align3d"].get_trans()/float(options["shrinkrefine"]))	
+		# If None was passed in we skip coarse alignment and just do fine alignment
+		
+		elif options["randomizewedge"]:
+			rand_orient = OrientGens.get("rand",{"n":1,"phitoo":1})		#Fetches the orientation generator
+			c1_sym = Symmetries.get("c1")					#Generates the asymmetric unit from which you wish to generate a random orientation
+			random_transform = rand_orient.gen_orientations(c1_sym)[0]	#Generates a random orientation (in a Transform object) using the generator and asymmetric unit specified 
+				
+			#print "\n\n\nOptions['align'][1] is\n", options['align'][1]
+			#print "\n\n\nOptions['align'][0] is\n", options['align'][0]
+			options["align"][1].update({'initxform' : random_transform})
+		
 		if options["align"] == None:
 			bestcoarse=[{"score":1.0,"xform.align3d":Transform()}]
 		
-		# If a Transform was passed in, we skip coarse alignment
-		elif isinstance(options["align"],Transform):
-			bestcoarse=[{"score":1.0,"xform.align3d":options["align"]}]
-			if options["shrinkrefine"]>1: 
-				bestcoarse[0]["xform.align3d"].set_trans(bestcoarse[0]["xform.align3d"].get_trans()/float(options["shrinkrefine"]))
-		
+		# If a Transform was passed in, skip coarse alignment
+		#elif isinstance(options["align"],Transform):
+		#		
+		#	bestcoarse=[{"score":1.0,"xform.align3d":options["align"]}]
+		#	if options["shrinkrefine"]>1: 
+		#		bestcoarse[0]["xform.align3d"].set_trans(bestcoarse[0]["xform.align3d"].get_trans()/float(options["shrinkrefine"]))
 		# This is the default behavior, seed orientations come from coarse alignment
+	
 		else:
 			# Returns an ordered vector of Dicts of length options.npeakstorefine. The Dicts in the vector have keys "score" and "xform.align3d"
-			
 			#random_transform = None
-			if options["randomizewedge"]:
-				rand_orient = OrientGens.get("rand",{"n":1,"phitoo":1})		#Fetches the orientation generator
-				c1_sym = Symmetries.get("c1")					#Generates the asymmetric unit from which you wish to generate a random orientation
-				random_transform = rand_orient.gen_orientations(c1_sym)[0]	#Generates a random orientation (in a Transform object) using the generator and asymmetric unit specified 
-				
-				#print "\n\n\nOptions['align'][1] is\n", options['align'][1]
-				#print "\n\n\nOptions['align'][0] is\n", options['align'][0]
-				#options["align"][1].update({'transform' : random_transform})
 			
 			bestcoarse = simage.xform_align_nbest(options["align"][0],sfixedimage,options["align"][1],options["npeakstorefine"],options["aligncmp"][0],options["aligncmp"][1])
 			
