@@ -100,9 +100,20 @@ def main():
 
 	parser.add_argument("--snr",type=int,help="Weighing noise factor for noise added to the image. Only words if --addnoise is on.",default=5)
 	parser.add_argument("--addnoise",action="store_true",default=False,help="If on, it adds random noise to the particles")
+	
+	parser.add_argument("--sym",type=str,default='c1',help="If your particle is symmetrical, you should randomize it's orientation withing the asymmetric unit only. Thus, provide the symmetry.")
+
+	parser.add_argument("--notrandomize",action="store_true",default=False,help="This will prevent the simulated particles from being rotated and translated into random orientations.")
+	parser.add_argument("--simref",action="store_true",default=False,help="This will make a simulated particle in the same orientation as the original input (or reference).")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+
+	(options, args) = parser.parse_args()
 
 	(options, args) = parser.parse_args()	
 	
+	
+	logger = E2init(sys.argv, options.ppid)
+
 	'''
 	Make the directory where to create the database where the results will be stored
 	'''
@@ -270,31 +281,32 @@ def main():
 			model.process_inplace(options.filter[0],options.filter[1])
 		
 		model.process_inplace('normalize')
-			
+		model['origin_x'] = 0									#Make sure the origin is set to zero, to avoid display issues with Chimera
+		model['origin_y'] = 0
+		model['origin_z'] = 0
+
 		randptcls = randomizer(options, model, tag)
 		
-		ret=subtomosim(options,randptcls, tag)
+		stackname = options.input.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
+		
+		ret=subtomosim(options,randptcls, stackname)
 		if ret == 1:
 			os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))	
-
+		
+		if options.simref:
+			name = options.input.replace('.hdf','_SIM.hdf')
+			model['sptsim_randT'] = Transform()
+			model['xform.align3d'] = Transform()
+			ret = subtomosim(options,[model],name)
+			
+			if ret == 1:
+				os.system('e2proc3d.py ' + name + ' ' + name + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))	
+	
+	
+	E2end(logger)
 					
 	return()
 	
-
-'''
-ANGDIST - Calculates the distance between two transforms. Used to verify the answers provided by the aligner for simmulated data,
-and to determine the proximity of the 10 best peaks proposed, for experimental and simmulated data.
-'''
-def angdist(t1,t2):
-	t2inv = t2.inverse()
-	product = t2inv * t1
-	product_SPIN = product.get_rotation('spin')
-	angular_distance = round(float(product_SPIN["Omega"]),2)
-	print "The angular distance is", angular_distance
-	return(angular_distance)
-
-
-
 
 '''
 ====================
@@ -314,9 +326,7 @@ def randomizer(options, model, tag):
 	if options.orthogonal:
 		for i in range(3):
 			b = model.copy()
-			b['origin_x'] = 0									#Make sure the origin is set to zero, to avoid display issues with Chimera
-			b['origin_y'] = 0
-			b['origin_z'] = 0
+			
 			if i==0:
 				randptcls.append(b)
 
@@ -333,36 +343,34 @@ def randomizer(options, model, tag):
 				print "I will generate particle #", i
 
 			b = model.copy()
-			apixX=model['apix_x']
-			apixY=model['apix_y']
-			apixZ=model['apix_z']
+			#apixX=model['apix_x']
+			#apixY=model['apix_y']
+			#apixZ=model['apix_z']
 			
-			b['apix_x'] = apixX
-			b['apix_y'] = apixY
-			b['apix_z'] = apixZ
+			#b['apix_x'] = apixX
+			#b['apix_y'] = apixY
+			#b['apix_z'] = apixZ
 			
-			b['origin_x'] = 0									#Make sure the origin is set to zero, to avoid display issues with Chimera
-			b['origin_y'] = 0
-			b['origin_z'] = 0
+			random_transform = Transform()	
+			if not options.notrandomize:
+				rand_orient = OrientGens.get("rand",{"n":1, "phitoo":1})				#Generate a random orientation (randomizes all 3 euler angles)
+				c1_sym = Symmetries.get("c1")
+				random_transform = rand_orient.gen_orientations(c1_sym)[0]
 
-			rand_orient = OrientGens.get("rand",{"n":1, "phitoo":1})				#Generate a random orientation (randomizes all 3 euler angles)
-			c1_sym = Symmetries.get("c1")
-			random_transform = rand_orient.gen_orientations(c1_sym)[0]
+				randtx = random.randrange(-1 * options.transrange, options.transrange)			#Generate random translations
+				randty = random.randrange(-1 * options.transrange, options.transrange)
+				randtz = random.randrange(-1 * options.transrange, options.transrange)
 
-			randtx = random.randrange(-1 * options.transrange, options.transrange)			#Generate random translations
-			randty = random.randrange(-1 * options.transrange, options.transrange)
-			randtz = random.randrange(-1 * options.transrange, options.transrange)
+				if options.txrange:
+					randtx = random.randrange(-1 * options.txrange, options.txrange)	
+				if options.tyrange:
+					randty = random.randrange(-1 * options.tyrange, options.tyrange)
+				if options.tzrange:
+					randtz = random.randrange(-1 * options.tzrange, options.tzrange)
 
-			if options.txrange:
-				randtx = random.randrange(-1 * options.txrange, options.txrange)	
-			if options.tyrange:
-				randty = random.randrange(-1 * options.tyrange, options.tyrange)
-			if options.tzrange:
-				randtz = random.randrange(-1 * options.tzrange, options.tzrange)
+				random_transform.translate(randtx, randty, randtz)
 
-			random_transform.translate(randtx, randty, randtz)
-
-			b.transform(random_transform)		
+				b.transform(random_transform)		
 
 			b['sptsim_randT'] = random_transform
 			b['xform.align3d'] = Transform()							#This parameter should be set to the identity transform since it can be used later to determine whether
@@ -387,10 +395,8 @@ adds noise and ctf to each projection, randomizes the position of each particle 
 and recounstructs a new 3D volume from the simulated tilt series.
 ====================
 '''	
-def subtomosim(options,ptcls,tag):
-	
-	stackname = options.input.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
-		
+def subtomosim(options,ptcls,stackname):
+
 	lower_bound = -1 * options.tiltrange
 	upper_bound = options.tiltrange
 	
@@ -401,6 +407,9 @@ def subtomosim(options,ptcls,tag):
 		print "And these many slices to simulate each subtomogram", nslices
 	
 	outname = stackname.replace('.hdf','_subtomos.hdf')
+	
+	if len(ptcls) == 1 and '_SIM.hdf' in stackname:
+		outname = stackname.split('/')[-1]
 	
 	for i in range(len(ptcls)):
 		if options.verbose:
