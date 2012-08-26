@@ -9263,9 +9263,8 @@ def cluster_pairwise(d, K):
 		for i in xrange(N):
 			if(assign[i] == k):  cent.append(i)
 		write_text_file(assign, "assign%03d"%(k))
-	"""	
-	
-	
+	"""
+
 def cluster_equalsize(d, m):
 	"""
 	  d  - lower half of the square matrix of pairwsie distances
@@ -9436,7 +9435,6 @@ class pcanalyzer:
 			self.myBuffPos += 1
 		if not(self.avgdat is None):
 			data -= self.avgdat
-		
 
 	def close_dat( self ):
 		if not self.incore:
@@ -9586,9 +9584,9 @@ class pcanalyzer:
 	def lanczos( self, kstep, diag, subdiag, V ):
 		from numpy import zeros, float32, array
 		from time import time
-		
+
 		all_start = time()
-	
+
 		ncov = self.ncov
 		v0 = zeros( (ncov), float32)
 		Av = zeros( (ncov), float32)
@@ -9596,7 +9594,7 @@ class pcanalyzer:
 		hvec = zeros( (kstep), float32 )
 		htmp = zeros( (kstep), float32 )
 		imgdata = zeros( (ncov), float32 )
-			
+
 		for i in xrange(ncov):
 			v0[i] = 1.0
 
@@ -9609,7 +9607,7 @@ class pcanalyzer:
 			alpha = Util.sdot( ncov, imgdata, 1, V[0], 1 )
 			Util.saxpy( ncov, alpha, imgdata, 1, Av, 1 )
 		self.close_dat()
-		
+
 		if self.MPI:
 			from mpi import mpi_reduce, mpi_bcast, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD
 			Av = mpi_reduce( Av, ncov, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD )
@@ -9841,7 +9839,7 @@ class pcanalyzebck:
 		print 'time for lanczos: ', time() - lanczos_start
 
 		if not self.MPI or self.myid==0:
-                	qmat = zeros( (kstep,kstep), float32 )
+			qmat = zeros( (kstep,kstep), float32 )
 			lfwrk = 100 + 4*kstep + kstep*kstep
 			liwrk =   3 + 5*kstep
 
@@ -9855,7 +9853,7 @@ class pcanalyzebck:
 
 			from utilities import model_blank, get_image_data
 			eigimgs = []
-                	for j in xrange(self.nvec):
+			for j in xrange(self.nvec):
 				tmpimg = model_blank(ncov, 1, 1)
 				eigvec = get_image_data( tmpimg )
 				trans = 'N'

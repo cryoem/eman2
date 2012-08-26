@@ -1988,7 +1988,7 @@ def estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node):
 	from mpi import MPI_COMM_WORLD
 	from mpi import mpi_recv, mpi_send, MPI_FLOAT
 	from applications import MPI_start_end
-	
+
 	ali_params_series = []
 	for im in data:
 		phi, theta, psi, s2x, s2y = get_params_proj(im)
