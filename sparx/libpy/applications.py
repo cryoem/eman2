@@ -12286,7 +12286,7 @@ def var_mpi(files, outdir, fl, aa, radccc, frepa = "default", pca=False, pcamask
 			if pca : pcaer.insert(img)
 			Util.sub_img(img, avg)
 			if(total_img%2 == 0): Util.add_img2(var1, img)
-			else:                 Util.add_img2(var2 , img)
+			else:                 Util.add_img2(var2, img)
 
 	reduce_EMData_to_root(var1, myid)
 	reduce_EMData_to_root(var2, myid)
