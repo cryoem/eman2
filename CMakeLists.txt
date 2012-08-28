@@ -66,11 +66,17 @@ OPTION(ENABLE_X86_64 "enable x86_64 specific optimizations" OFF)
 OPTION(ENABLE_WINDOWS_VC "enable visual c++ specific optimization" OFF)
 
 OPTION(ENABLE_LEOPARD "enable OSX 10.5 support" OFF)
+OPTION(ENABLE_MOUNTAIN_LION "enable OSX 10.8 support" OFF)
 
 IF (ENABLE_LEOPARD)
 	SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dylib_file,/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib:/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib")
 	SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dylib_file,/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib:/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib")
 ENDIF (ENABLE_LEOPARD)
+
+#IF (ENABLE_MOUNTAIN_LION)
+#	SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dylib_file,/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib")
+#	SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dylib_file,/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib")
+#ENDIF (ENABLE_MOUNTAIN_LION)
 
 IF (ENABLE_MEMDEBUG)
 	ADD_DEFINITIONS(-DMEMDEBUG -W -Wall)
@@ -95,12 +101,14 @@ ELSEIF(ENABLE_PROFILE)
     OPTION(ENABLE_DEBUG "enable debug support" OFF)
 ELSEIF (ENABLE_ATHLON)
     SET (OPT_FLAGS "-O3 -ansi -march=athlon-xp -mfpmath=sse -msse -funroll-loops -pipe")
+ELSEIF (ENABLE_MOUNTAIN_LION)
+    SET (OPT_FLAGS "-Os -ffast-math")
 ELSEIF (ENABLE_X86_64)
     SET (OPT_FLAGS "-O5 -ansi -march=k8 -mfpmath=sse -m64 -ffast-math -pipe")
 ELSEIF (ENABLE_WINDOWS_VC)
 	SET (OPT_FLAGS "/Ox /DHAVE_INLINE")
 ELSE()
-    SET (OPT_FLAGS "-O5 -ansi -ffast-math")		# This is the default
+    SET (OPT_FLAGS "-O3 -ansi -ffast-math")		# This is the default
 ENDIF()
 #MESSAGE("OPT_FLAGS = " ${OPT_FLAGS})
 
@@ -180,10 +188,10 @@ SET(INCLUDE_DIRS
 	$ENV{GSLDIR}/include 
 	/usr/local/include 
 	/usr/local/cuda/include
-	/Developer/SDKs/MacOSX10.5.sdk/usr/X11/include
 	/usr/include 
 	/sw/include
 	/usr/include/freetype2
+	/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/OpenGL.framework/Headers
 	)
 
 SET(LIB_DIRS 
@@ -197,6 +205,7 @@ SET(LIB_DIRS
 	/usr/lib64 
 	/usr/lib 
 	/sw/lib
+	/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries
 	)
 
 
