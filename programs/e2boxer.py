@@ -1897,6 +1897,7 @@ class GaussPanel:
 		self.GW = "1.0"
 		self.ctf_inspector = None
 		self.ctf_inspector_gone = True
+		self.setgwbox =False
 		
 	def set_data( self, data ):
 		self.ccfs = data
@@ -2165,15 +2166,18 @@ class GaussPanel:
 	def gauss_width_changed(self, v):
 		from math import pow
 		s = "%.3f" % pow(10.0, v*0.01)
-		self.gauss_width.setText( s )
-		self.target().set_gauss_width(float(self.gauss_width.text()))
+		if self.setgwbox:
+		        self.gauss_width.setText( s )
+		        self.target().set_gauss_width(float(self.gauss_width.text()))
 		
 	def gauss_width_edited(self):
 		from string import atof
 		from math import log10
 		text = self.gauss_width.text()
 		v = int( log10(atof(text)) * 100)
+		self.setgwbox = False
 		self.gauss_width_slider.setValue( v )
+		self.setgwbox = True
 		self.target().set_gauss_width(float(text))
 		
 		gbdb = db_open_dict(GaussPanel.GDB_NAME)
@@ -2567,9 +2571,13 @@ class GaussBoxer:
 		print "npeak: ", npeak
 		boxes = []
 		ccfs = [] # ccfs are used to set threshold_low adn threshold_high after the particles have been picked. see set_data in CcfHistogram in sxboxer and set_params_of_gui in pawelautoboxer in boxertools.py
-		#print "current thr low: ", self.thr_low
-		#print "current thr hi: ", self.thr_hgh
-		
+		print "thr low: ", self.thr_low
+		print "thr hi: ", self.thr_hgh
+		print "pixel_output: ", self.pixel_output
+		print "pixel input: ", self.pixel_input
+		print "invert: ", self.invert
+		print "gauss width: ", self.gauss_width
+		print "variance: ", self.use_variance
 		for i in xrange(npeak):
 			cx = peaks[3*i+1]
 			cy = peaks[3*i+2]
@@ -2637,21 +2645,30 @@ class GaussBoxer:
 		
 		self.target().clear_boxes([GaussBoxer.REF_NAME,GaussBoxer.AUTO_NAME,GaussBoxer.WEAK_REF_NAME],cache=True)
 		
-		self.panel_object.pixel_output_edit.setText('1.0')
-		self.panel_object.pixel_input_edit.setText('1.0')
-		self.panel_object.invert_contrast_chk.setChecked(self.panel_object.INVCONT)
-		self.panel_object.gauss_width_slider.setValue( self.panel_object.SLVAL )
-		self.panel_object.gauss_width.setText(self.panel_object.GW)
-		self.panel_object.thr_low_edit.setText('N/A')
-                self.panel_object.thr_hi_edit.setText('N/A')
-		self.panel_object.use_variance_chk.setChecked(self.panel_object.USEVAR)
-		self.panel_object.new_thr_hi()
-		self.panel_object.new_thr_low()
+		self.panel_object.pixel_output_edit.setText(str(self.pixel_output))
+		self.panel_object.new_pixel_output()
+		self.panel_object.pixel_input_edit.setText(str(self.pixel_input))
 		self.panel_object.new_pixel_input()
-                self.panel_object.new_pixel_output()
-		self.panel_object.invert_contrast_checked(self.panel_object.INVCONT)
-		self.panel_object.use_variance_checked( self.panel_object.USEVAR)
+		self.panel_object.gauss_width.setText(str(self.gauss_width))
 		self.panel_object.gauss_width_edited()
+		self.panel_object.setgwbox=False
+		self.panel_object.gauss_width_slider.setValue(int( log10(self.gauss_width) * 100) )
+		self.panel_object.setgwbox=True
+		tlowtext = self.panel_object.THRNA
+		if self.thr_low != None:
+		        tlowtext = str(self.thr_low )
+		self.panel_object.thr_low_edit.setText(tlowtext)
+		self.panel_object.new_thr_low()
+		thitext = self.panel_object.THRNA
+		if self.thr_hgh != None:
+		        thitext = str(self.thr_hgh )
+                self.panel_object.thr_hi_edit.setText(thitext)
+                self.panel_object.new_thr_hi()
+                
+		self.panel_object.use_variance_chk.setChecked(self.use_variance)
+		self.panel_object.use_variance_checked( self.use_variance)
+		self.panel_object.invert_contrast_chk.setChecked(self.invert)
+		self.panel_object.invert_contrast_checked(self.invert)
 		
 		BigImageCache.get_object(self.target().file_names[0]).register_alternate(None)
 		self.target().set_current_file_by_idx(0)
