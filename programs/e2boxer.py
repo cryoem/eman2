@@ -1908,10 +1908,10 @@ class GaussPanel:
 		hmin = self.data[0][0]
 		hmax = self.data[0][-1]
 
-		self.thr_low_edit.setText(str(hmin))
-		self.thr_hi_edit.setText(str(hmax))
-		self.new_thr_low()
-		self.new_thr_hi()
+		#self.thr_low_edit.setText(str(hmin))
+		#self.thr_hi_edit.setText(str(hmax))
+		#self.new_thr_low()
+		#self.new_thr_hi()
 		
 	def get_widget(self):
 		if self.widget == None:
