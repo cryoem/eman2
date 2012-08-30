@@ -50,6 +50,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)	
 	
 	parser.add_argument("--path",type=str,default=None,help="Directory to store results in. The default is a numbered series of directories containing the prefix 'sptsim'; for example, sptsim_02 will be the directory by default if 'sptsim_01' already exists.")
+	parser.add_argument("--output",type=str,default=None,help="Name of the output stack for the simulated subtomograms.")
 
 	parser.add_argument("--input", type=str, help="""The name of the input volume from which simulated subtomograms will be generated. 
 							The output will be in HDF format, since volume stack support is required. The input CAN be PDB, MRC or and HDF stack. 
@@ -62,7 +63,6 @@ def main():
 	
 	parser.add_argument("--shrink", type=int,default=1,help="Optionally shrink the input volume before the simulation if you want binned/down-sampled subtomograms.")
 	parser.add_argument("--verbose", "-v", type=int, dest="verbose", action="store", metavar="n", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	
 	
 	parser.add_argument("--nptcls", type=int,default=10,help="Number of simulated subtomograms tu generate per referece.")
 	parser.add_argument("--txrange", type=int,default=None,help="""Maximum number of pixels to randomly translate each subtomogram in X. The random translation will be picked between -txrange and +txrange. 
@@ -98,19 +98,18 @@ def main():
 	
 	parser.add_argument("--finalboxsize", type=int,default=0,help="""The final box size to clip the subtomograms to.""")								
 
-	parser.add_argument("--snr",type=int,help="Weighing noise factor for noise added to the image. Only words if --addnoise is on.",default=5)
+	parser.add_argument("--snr",type=int,help="Weighing noise factor for noise added to the image. Only words if --addnoise is on.",default=0)
 	parser.add_argument("--addnoise",action="store_true",default=False,help="If on, it adds random noise to the particles")
 	
 	parser.add_argument("--sym",type=str,default='c1',help="If your particle is symmetrical, you should randomize it's orientation withing the asymmetric unit only. Thus, provide the symmetry.")
 
 	parser.add_argument("--notrandomize",action="store_true",default=False,help="This will prevent the simulated particles from being rotated and translated into random orientations.")
 	parser.add_argument("--simref",action="store_true",default=False,help="This will make a simulated particle in the same orientation as the original input (or reference).")
+	parser.add_argument("--negativecontrast",action="store_true",default=False,help="This will make the simulated particles be like real EM data before contrast reversal. Otherwise, 'white protein' (positive density values) will be used.")
+
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
-	(options, args) = parser.parse_args()
-
 	(options, args) = parser.parse_args()	
-	
 	
 	logger = E2init(sys.argv, options.ppid)
 
@@ -141,7 +140,7 @@ def main():
 	files=os.listdir(os.getcwd())
 	print "right before while loop"
 	while options.path in files:
-		print "in while loop, options.path is", options.path
+		print "in while loop making path in e2spt_simulation.py, options.path is", options.path
 		#path = options.path
 		if '_' not in options.path:
 			print "I will add the number"
@@ -159,21 +158,7 @@ def main():
 			print "The new options.path is", options.path
 
 	if options.path not in files:
-		if '_' not in options.path:
-			print "I will add the number"
-			options.path = options.path + '_00'
-		else:
-			jobtag=''
-			components=options.path.split('_')
-			if components[-1].isdigit():
-				components[-1] = str(int(components[-1])+1).zfill(2)
-			else:
-				components.append('00')
-						
-			options.path = '_'.join(components)
-			#options.path = path
-			print "The new options.path is", options.path
-			
+		
 		print "I will make the path", options.path
 		os.system('mkdir ' + options.path)
 	
@@ -230,7 +215,6 @@ def main():
 		os.system('cp ' + hdfmodel + ' ' + workname + ' && rm ' + hdfmodel)
 		options.input = workname
 	
-	
 	tag = ''
 	
 	originalpath = options.path
@@ -285,9 +269,16 @@ def main():
 		model['origin_y'] = 0
 		model['origin_z'] = 0
 
-		randptcls = randomizer(options, model, tag)
-		
 		stackname = options.input.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
+		if options.output:
+			stackname = options.output
+
+		randptcls = randomizer(options, model, stackname)
+		
+		#stackname = options.input.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf')
+		
+		if options.output:
+			stackname = options.output
 		
 		ret=subtomosim(options,randptcls, stackname)
 		if ret == 1:
@@ -302,7 +293,6 @@ def main():
 			if ret == 1:
 				os.system('e2proc3d.py ' + name + ' ' + name + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))	
 	
-	
 	E2end(logger)
 					
 	return()
@@ -314,7 +304,7 @@ RANDOMIZER - Takes a file in .hdf format and generates a set of n particles rand
 the size of the set and is defined by the user
 ====================
 '''
-def randomizer(options, model, tag):
+def randomizer(options, model, stackname):
 	
 	print "I am inside the RANDOMIZER"
 	
@@ -343,13 +333,6 @@ def randomizer(options, model, tag):
 				print "I will generate particle #", i
 
 			b = model.copy()
-			#apixX=model['apix_x']
-			#apixY=model['apix_y']
-			#apixZ=model['apix_z']
-			
-			#b['apix_x'] = apixX
-			#b['apix_y'] = apixY
-			#b['apix_z'] = apixZ
 			
 			random_transform = Transform()	
 			if not options.notrandomize:
@@ -376,7 +359,7 @@ def randomizer(options, model, tag):
 			b['xform.align3d'] = Transform()							#This parameter should be set to the identity transform since it can be used later to determine whether
 														#alignment programs can "undo" the random rotation in spt_randT accurately or not
 			if options.saverandstack:	
-				stackname = options.input.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf')
+				
 				print "The stackname to use is", stackname
 				b.write_image(options.path + '/' + stackname.split('/')[-1],i)
 
@@ -406,7 +389,7 @@ def subtomosim(options,ptcls,stackname):
 		print "There are these many particles in the set", len(ptcls)
 		print "And these many slices to simulate each subtomogram", nslices
 	
-	outname = stackname.replace('.hdf','_subtomos.hdf')
+	outname = stackname.replace('.hdf','_ptcls.hdf')
 	
 	if len(ptcls) == 1 and '_SIM.hdf' in stackname:
 		outname = stackname.split('/')[-1]
@@ -449,7 +432,8 @@ def subtomosim(options,ptcls,stackname):
 					
 			prj_fft = prj.do_fft()
 			
-			prj_fft.mult(-1)								#Reverse the contrast, as in "authentic" cryoEM data		
+			if options.negativecontrast:
+				prj_fft.mult(-1)								#Reverse the contrast, as in "authentic" cryoEM data		
 			
 			if options.applyctf:
 				ctf = EMAN2Ctf()
@@ -460,7 +444,7 @@ def subtomosim(options,ptcls,stackname):
 			
 			prj_r = prj_fft.do_ift()							#Go back to real space
 			
-			if options.addnoise:
+			if options.addnoise and options.snr:
 				#prj_r.process_inplace('math.addnoise',{'noise':options.snr})
 				
 				#prj_n = EMData(nx,ny)
@@ -475,7 +459,7 @@ def subtomosim(options,ptcls,stackname):
 		 		noise = test_image(1,size=(nx,ny))
 	                        noise2 = noise.process("filter.lowpass.gauss",{"cutoff_abs":.25})
 	                        noise.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.75})
-	                        noise = noise*3 + noise2*3
+	                        noise = ( noise*3 + noise2*3 ) * options.snr
 	                        prj_r.add(noise)
 
 			ctfed_projections.append(prj_r)		
