@@ -11054,7 +11054,7 @@ def cml_find_structure_MPI(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_see
 	if myid == main_node:
 		if ncpu > trials:
 			print '** WARNING **'
-			print 'Find structure MPI: number of trials must be superior than the number of processors.'
+			print 'Find structure MPI: number of trials must be larger than the number of processors.'
 			flag = 1
 	flag = mpi_bcast(flag, 1, MPI_INT, 0, MPI_COMM_WORLD)
 	flag = int(flag[0])
@@ -12984,7 +12984,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		print "*            Beginning of the first phase           "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"            *"
 		print "*                                                                                        *"
 		print "* The first phase is an exploratory phase. In this phase, we set the criteria to be very *"
-		print "* loose and try to find as much candidate class averages as possible. This phase         *"
+		print "* loose and try to find as many candidate class averages as possible. This phase         *"
 		print "* typically should have 10 to 20 rounds (default = 20). The candidate class averages are *"
 		print "* stored in class_averages_candidate_generation_n.hdf.                                   *"
 		print "******************************************************************************************"
@@ -13164,9 +13164,9 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		print "******************************************************************************************"
 		print "*           Beginning of the second phase           "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"            *"
 		print "*                                                                                        *"
-		print "* The second phase is where the actual class averages are generated, it typically have   *"
+		print "* The second phase is where the actual class averages are generated, it typically has   *"
 		print "* 3~9 iterations (default = 5) of matching. The first half of iterations are 2-way       *"
-		print "* matching, the second half of iterations are 3-way matching, and the last iteration is  *"
+		print "* matchings, the second half of iterations are 3-way matchings, and the last iteration is  *"
 		print "* 4-way matching. In the second phase, three files will be generated:                    *"
 		print "* class_averages_generation_n.hdf : class averages generated in this generation          *"
 		print "* generation_n_accounted.txt      : IDs of accounted particles in this generation        *"
