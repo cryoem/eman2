@@ -205,10 +205,12 @@ def main():
 		print "I will make the path", options.path
 		os.system('mkdir ' + options.path)
 	
-	if options.testalignment:
-		resultsdir = 'results_ali_errors'
-		os.system('cd ' + options.path + ' && mkdir ' + resultsdir)
-			
+	#if options.testalignment:
+	#	resultsdir = 'results_ali_errors'
+	#	os.system('cd ' + options.path + ' && mkdir ' + resultsdir)
+	
+	nrefs = EMUtil.get_image_count(options.input)
+		
 	tiltrange=tiltrangel
 	while tiltrange <tiltrangeu:
 		print "tiltrage is", tiltrange
@@ -220,76 +222,121 @@ def main():
 			snr=snrl
 			while snr < snru:
 				print "Snr is", snr
-					
-				subpath = 'TR' + str(tiltrange).zfill(2) + '_TS' + str(tiltstep).zfill(2) + '_SNR' + str(snr).zfill(2)
-				subtomos =  subpath + '.hdf'
-				
-				jobcmd = 'e2spt_simulation.py --input=' + options.input + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --tiltstep=' + str(tiltstep) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrink) + ' --finalboxsize=' + str(options.finalboxsize)
-				
-				if options.simref:
-					jobcmd += ' --simref'
-				if options.addnoise:
-					jobcmd += ' --addnoise'
-				if options.saveprjs:
-					jobcmd += ' --saveprjs'
-				if options.negativecontrast:
-					jobcmd += ' --negativecontrast'
-					
-				jobcmd += ' --path=' + subpath				
-				
-				cmd = 'cd ' + options.path + ' && ' + jobcmd
-				
-				resultsfiles=[]
-				
+								
 				rootpath = os.getcwd()
-				
-				if options.testalignment:
-				
-					cmd = cmd + ' && cd ' + rootpath + '/' + options.path+'/'+subpath 			
-					
-					#subtomos = options.input.split('/')[-1].replace('.hdf','_sptsimMODEL_randst_n' + str(options.nptcls) + '_' + subpath + '_subtomos.hdf')
-					
-					print "\n\nSubtomos name will be\n", subtomos
-					
-					ref = options.input.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf')
-					
-					output=subtomos.replace('.hdf', '_avg.hdf')
-					print "\n\nRef name is\n", ref
-					
-					print "\n\noutput name is\n", output
 
-					alipath=output.replace('_avg.hdf','_ali')
-					print "\n\nAlipath for results will be\n", alipath
-
-					alicmd = " && e2spt_classaverage.py --path=" + alipath + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --npeakstorefine=4 -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=0 --parallel=thread:8 --ralign=refine_3d_grid:delta=12:range=12:search=2 --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --shrink=2 --savesteps --saveali --normproc=normalize.mask"
+				for d in range(nrefs):
 					
-					if options.quicktest:
-						alicmd = " && e2spt_classaverage.py --path=" + alipath + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=thread:8 --ralign=None --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --shrink=3 --savesteps --saveali --normproc=normalize.mask"
-
-					aliptcls = output.replace('_avg.hdf','_ptcls_ali.hdf')
+					modeltag = ''
+					subpath = 'TR' + str(tiltrange).zfill(2) + '_TS' + str(tiltstep).zfill(2) + '_SNR' + str(snr).zfill(2)
 					
-					print "\n\aliptcls name is\n", aliptcls
-
-					extractcmd = " && cd " + alipath + " && e2proc3d.py bdb:class_ptcl " + aliptcls
+					inputdata = options.input
 					
-					resultsfile=aliptcls.replace('_ptcls_ali.hdf','_ali_error.txt')
+					if nrefs > 1:
+						modeltag = 'model' + str(d).zfill(2)
+						subpath += '_' + modeltag
+						
+						model = EMData(options.input,d)
+						newname = options.path + '/' + inputdata.split('/')[-1].replace('.hdf','_' + modeltag + '.hdf')
+						model.write_image(newname,0)
+						
+						inputdata = newname.split('/')[-1]
 					
-					solutioncmd = " && e2spt_transformdistance.py --input=" + aliptcls + ' --output=' + resultsfile
+					subtomos =  subpath + '.hdf'
 
-					rfilecmd =  ' && mv ' + resultsfile + ' ' +  rootpath + '/' + options.path + '/results_ali_errors/'
-					
-					cmd = cmd + alicmd + extractcmd + solutioncmd + rfilecmd
-				
-				print "The command to execute is \n\n %s \n\n" %(cmd)
+					jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --tiltstep=' + str(tiltstep) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrink) + ' --finalboxsize=' + str(options.finalboxsize)
 
-				os.system(cmd)
-				
+					if options.simref:
+						jobcmd += ' --simref'
+					if options.addnoise:
+						jobcmd += ' --addnoise'
+					if options.saveprjs:
+						jobcmd += ' --saveprjs'
+					if options.negativecontrast:
+						jobcmd += ' --negativecontrast'
+
+					jobcmd += ' --path=' + subpath				
+
+					cmd = 'cd ' + options.path + ' && ' + jobcmd
+
+					resultsfiles=[]
+
+					if options.testalignment:
+
+						#modeldir = ''
+						#if nrefs > 1:
+						#	modeldir = '/model' + str(d).zfill(2)
+
+						cmd = cmd + ' && cd ' + rootpath + '/' + options.path + '/' + subpath
+
+						#subtomos = options.input.split('/')[-1].replace('.hdf','_sptsimMODEL_randst_n' + str(options.nptcls) + '_' + subpath + '_subtomos.hdf')
+
+						print "\n\nSubtomos name will be\n", subtomos
+
+						ref = inputdata.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf')
+
+						#if nrefs > 1:
+						#	modd = 'model' + str(d).zfill(2)
+						#	ref = options.input.split('/')[-1].replace('.hdf','_sptsimMODELS_' + modd + '.hdf')
+
+						output=subtomos.replace('.hdf', '_avg.hdf')
+						print "\n\n$$$$$$$$$$$$$$$$$$$$$$\nRef name is\n$$$$$$$$$$$$$$$$$$$\n", ref
+
+						print "\n\noutput name is\n", output
+
+						alipath=output.replace('_avg.hdf','_ali')
+						print "\n\nAlipath for results will be\n", alipath
+
+						alicmd = " && e2spt_classaverage.py --path=" + alipath + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --npeakstorefine=4 -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=0 --parallel=thread:8 --ralign=refine_3d_grid:delta=12:range=12:search=2 --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --shrink=2 --savesteps --saveali --normproc=normalize.mask"
+
+						if options.quicktest:
+							alicmd = " && e2spt_classaverage.py --path=" + alipath + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=thread:8 --ralign=None --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --shrink=3 --savesteps --saveali --normproc=normalize.mask"
+
+						aliptcls = output.replace('_avg.hdf','_ptcls_ali.hdf')
+
+						print "\n\aliptcls name is\n", aliptcls
+
+						extractcmd = " && cd " + alipath + " && e2proc3d.py bdb:class_ptcl " + aliptcls
+
+						resultsfile=aliptcls.replace('_ptcls_ali.hdf','_ali_error.txt')
+
+						solutioncmd = " && e2spt_transformdistance.py --input=" + aliptcls + ' --output=' + resultsfile
+
+						rfilecmd =  ' && mv ' + resultsfile + ' ' +  rootpath + '/' + options.path
+
+						cmd = cmd + alicmd + extractcmd + solutioncmd + rfilecmd
+
+					print "The command to execute is \n\n %s \n\n" %(cmd)
+
+					os.system(cmd)
+
 				snr += snrch
 				
 			tiltstep += tiltstepch
 		
 		tiltrange += tiltrangech
+	
+	resultsdir = 'results_ali_error'
+	if nrefs >1:
+		for i in range(nrefs):
+		
+			modname = 'model' + str(i).zfill(2)
+			print "\nI will make this moddir", modname
+			cmdd='cd ' + options.path + ' && mkdir ' + modname + ' && mv *' + modname + '* ' + modname
+			print "\nBy executing this command", cmdd
+			os.system(cmdd)
 
+		for i in range(nrefs):
+			modname = 'model' + str(i).zfill(2)
+			
+			resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
+			print "\n\n\n\n*******************\nResults dir is\n", resultsdir
+			
+			os.system('mkdir ' +  resultsdir + ' && cd ' + options.path + '/' + modname + ' && mv *error.txt ' + resultsdir)
+	
+	else:
+		os.system('cd ' + options.path + ' && mkdir ' + resultsdir + ' && mv *error.txt ' + resultsdir)
+			 	
 	E2end(logger)
 
 	return()
