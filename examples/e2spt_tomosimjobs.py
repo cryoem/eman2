@@ -271,7 +271,7 @@ def main():
 
 						#subtomos = options.input.split('/')[-1].replace('.hdf','_sptsimMODEL_randst_n' + str(options.nptcls) + '_' + subpath + '_subtomos.hdf')
 
-						print "\n\nSubtomos name will be\n", subtomos
+						#print "\n\nSubtomos name will be\n", subtomos
 
 						ref = inputdata.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf')
 
@@ -280,12 +280,12 @@ def main():
 						#	ref = options.input.split('/')[-1].replace('.hdf','_sptsimMODELS_' + modd + '.hdf')
 
 						output=subtomos.replace('.hdf', '_avg.hdf')
-						print "\n\n$$$$$$$$$$$$$$$$$$$$$$\nRef name is\n$$$$$$$$$$$$$$$$$$$\n", ref
+						#print "\n\n$$$$$$$$$$$$$$$$$$$$$$\nRef name is\n$$$$$$$$$$$$$$$$$$$\n", ref
 
-						print "\n\noutput name is\n", output
+						#print "\n\noutput name is\n", output
 
 						alipath=output.replace('_avg.hdf','_ali')
-						print "\n\nAlipath for results will be\n", alipath
+						#print "\n\nAlipath for results will be\n", alipath
 
 						alicmd = " && e2spt_classaverage.py --path=" + alipath + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --npeakstorefine=4 -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=0 --parallel=thread:8 --ralign=refine_3d_grid:delta=12:range=12:search=2 --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --shrink=2 --savesteps --saveali --normproc=normalize.mask"
 
@@ -294,7 +294,7 @@ def main():
 
 						aliptcls = output.replace('_avg.hdf','_ptcls_ali.hdf')
 
-						print "\n\aliptcls name is\n", aliptcls
+						#print "\n\aliptcls name is\n", aliptcls
 
 						extractcmd = " && cd " + alipath + " && e2proc3d.py bdb:class_ptcl " + aliptcls
 
@@ -306,7 +306,7 @@ def main():
 
 						cmd = cmd + alicmd + extractcmd + solutioncmd + rfilecmd
 
-					print "The command to execute is \n\n %s \n\n" %(cmd)
+					#print "The command to execute is \n\n %s \n\n" %(cmd)
 
 					os.system(cmd)
 
@@ -315,28 +315,64 @@ def main():
 			tiltstep += tiltstepch
 		
 		tiltrange += tiltrangech
-	
-	resultsdir = 'results_ali_error'
-	if nrefs >1:
+		
+	if nrefs > 1:
 		for i in range(nrefs):
 		
 			modname = 'model' + str(i).zfill(2)
-			print "\nI will make this moddir", modname
+			#print "\nI will make this moddir", modname
 			cmdd='cd ' + options.path + ' && mkdir ' + modname + ' && mv *' + modname + '* ' + modname
-			print "\nBy executing this command", cmdd
+			#print "\nBy executing this command", cmdd
 			os.system(cmdd)
 
 		for i in range(nrefs):
 			modname = 'model' + str(i).zfill(2)
 			
 			resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
-			print "\n\n\n\n*******************\nResults dir is\n", resultsdir
+			#print "\n\n\n\n*******************\nResults dir is\n", resultsdir
 			
 			os.system('mkdir ' +  resultsdir + ' && cd ' + options.path + '/' + modname + ' && mv *error.txt ' + resultsdir)
 	
 	else:
+		resultsdir = 'results_ali_error'
 		os.system('cd ' + options.path + ' && mkdir ' + resultsdir + ' && mv *error.txt ' + resultsdir)
 			 	
+	for i in range(nrefs):
+		
+		resultsdir = options.path + '/results_ali_error'
+		if nrefs > 1:
+			resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
+
+	
+		resfiles = []
+		ang_errors = []
+		trans_errors = []
+
+		findir = os.listdir(resultsdir)
+		for f in findir:
+			if 'error.txt' in f:
+				resfiles.append(f)
+		for ff in resfiles:
+
+			fff = open(ff,'r')
+			lines = ff.readlines()
+			ang = lines[0].split('=')[-1].replace('\n','')
+			ang_errors.append(ang)
+			trans = lines[1].split('=')[-1].replace('\n','')
+			trans_errors.append(trans)
+
+	return()
+
+	
+def 1dplot:
+	return()
+	
+def 2dplot:
+	return()
+	
+def 3dplot:
+	return()	
+	
 	E2end(logger)
 
 	return()
