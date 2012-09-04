@@ -12867,6 +12867,8 @@ def ave_ali(name_stack, name_out = None, ali = False, active = False):
 		ave.write_image('ave_' + name, 0)
 	else:
 		ave.write_image(name_out, 0)
+
+
 #####################
 #      ISAC CODE
 #####################
@@ -12925,10 +12927,12 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		print "*                                       Generation %3d                                             *"%(generation)
 		print "****************************************************************************************************"
 		print ""
+	                                  
 
 	color = myid%indep_run
 	key = myid/indep_run
 	group_comm = mpi_comm_split(MPI_COMM_WORLD, color, key)
+	group_number_of_proc = mpi_comm_size(group_comm)
 	group_main_node = 0
 
 	# Read data on each processor, there are two ways, one is read on main_node and send them to all other nodes
@@ -12984,11 +12988,11 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		print "*            Beginning of the first phase           "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"            *"
 		print "*                                                                                        *"
 		print "* The first phase is an exploratory phase. In this phase, we set the criteria to be very *"
-		print "* loose and try to find as many candidate class averages as possible. This phase         *"
+		print "* loose and try to find as much candidate class averages as possible. This phase         *"
 		print "* typically should have 10 to 20 rounds (default = 20). The candidate class averages are *"
 		print "* stored in class_averages_candidate_generation_n.hdf.                                   *"
 		print "******************************************************************************************"
-		
+		 
 	avg_num = 0
 	Iter = 1
 	match_initialization = False
@@ -13000,7 +13004,6 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	couldnt_find_stable = 0
 	#    (b)  if number of groups to process is less than three
 	K = ndata/img_per_grp
-	
 	while Iter <= max_round and couldnt_find_stable < 3 and K > 3:
 		if myid == main_node: 
 			print "################################################################################"
@@ -13085,8 +13088,8 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				all_ali_params[3].append(mirror)
 				all_ali_params[4].append(scale)
 			if key == group_main_node:
-				call(['rm', '-f', ali_params_filename + "_" + str(mloop)])
-				write_text_file(all_ali_params, ali_params_filename + "_" + str(mloop))
+				call(['rm', '-f', ali_params_filename])
+				write_text_file(all_ali_params, ali_params_filename)
 			del all_ali_params
 
 			# gather the data from the group main node to the main node
@@ -13095,7 +13098,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 			if mloop != match_first:
 				if myid == main_node:
-					current_refim = match_2_way(data, refi, indep_run, thld_grp, FH, FF, suffix="_"+str(mloop) )
+					current_refim = match_2_way(data, refi, indep_run, thld_grp, FH, FF)
 				else:
 					current_refim = [model_blank(nx, nx) for i in xrange(K)]
 				for k in xrange(K):
@@ -13106,7 +13109,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		# Run Matching
 		if myid == main_node:
 			#print " Before matching ...  ", localtime()[:5] #len(data), len(refi), indep_run
-			matched_data = match_2_way(data, refi, indep_run, thld_grp, FH, FF, suffix="_"+str(mloop) )
+			matched_data = match_2_way(data, refi, indep_run, thld_grp, FH, FF)
 			members = []
 			for im in matched_data:
 				im.write_image(avg_first_stage, avg_num)
@@ -13164,9 +13167,9 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		print "******************************************************************************************"
 		print "*           Beginning of the second phase           "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"            *"
 		print "*                                                                                        *"
-		print "* The second phase is where the actual class averages are generated, it typically has   *"
+		print "* The second phase is where the actual class averages are generated, it typically have   *"
 		print "* 3~9 iterations (default = 5) of matching. The first half of iterations are 2-way       *"
-		print "* matchings, the second half of iterations are 3-way matchings, and the last iteration is  *"
+		print "* matching, the second half of iterations are 3-way matching, and the last iteration is  *"
 		print "* 4-way matching. In the second phase, three files will be generated:                    *"
 		print "* class_averages_generation_n.hdf : class averages generated in this generation          *"
 		print "* generation_n_accounted.txt      : IDs of accounted particles in this generation        *"
@@ -13179,7 +13182,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		nrefim = len(refim)
 	else:
 		nrefim = 0
-	nrefim = mpi_bcast(nrefim, 1, MPI_INT, main_node, MPI_COMM_WORLD)            # number of ref
+	nrefim = mpi_bcast(nrefim, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 	nrefim = int(nrefim[0])
 
 	if myid != main_node:
@@ -13188,7 +13191,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 	nn = [0]*nrefim
 	for i in xrange(nrefim):
-		bcast_EMData_to_all(refim[i], myid, main_node)                           # ref + n_objects
+		bcast_EMData_to_all(refim[i], myid, main_node)
 		if myid == main_node: n_objects = refim[i].get_attr('n_objects')
 		else: n_objects = 0
 		n_objects = mpi_bcast(n_objects, 1, MPI_INT, main_node, MPI_COMM_WORLD)
@@ -13228,11 +13231,11 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			n_members = len(members)
 		else:
 			n_members = 0
-		n_members = mpi_bcast(n_members, 1, MPI_INT, main_node, MPI_COMM_WORLD)           # n_members
+		n_members = mpi_bcast(n_members, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 		n_members = int(n_members[0])
 		if myid != main_node:
 			members = [0]*n_members
-		members = mpi_bcast(members, n_members, MPI_INT, main_node, MPI_COMM_WORLD)       # members
+		members = mpi_bcast(members, n_members, MPI_INT, main_node, MPI_COMM_WORLD)
 		members = map(int, members)
 
 		ndata = len(alldata)
@@ -13248,7 +13251,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		if K_left > 0:
 			if myid == main_node: 
 				print "**********************************************************************"
-				print "        Generating initial averages for unaccounted for images        "
+		 		print "        Generating initial averages for unaccounted for images        "
 				print "**********************************************************************"
 				print "   Number of images unaccounted for = %d     Number of groups = %d"%(nleft, K_left)
 
@@ -13260,7 +13263,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				refim_left = [model_blank(nx, nx) for i in xrange(K_left)]
 
 			for i in xrange(K_left):
-				bcast_EMData_to_all(refim_left[i], key, group_main_node, group_comm)          # Within one SAC
+				bcast_EMData_to_all(refim_left[i], key, group_main_node, group_comm)
 
 			# Generate initial averages for the unaccouted images
 			refim_left = isac_MPI(data_left, refim_left, maskfile=None, outname=None, ir=ir, ou=ou, rs=rs, xrng=xr, yrng=yr, step=ts, 
@@ -13282,9 +13285,9 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 						if ileft >= K_left:  break
 			mpi_barrier(MPI_COMM_WORLD)
 
-#			if key == group_main_node:
-#				for i in xrange(K):
-#					refim[i].write_image("init_group%d_2nd_phase_round%d.hdf"%(color, mloop), i)
+			#if key == group_main_node:
+			#	for i in xrange(K):
+			#		refim[i].write_image("init_group%d_2nd_phase_round%d.hdf"%(color, mloop), i)
 
 		# Run ISAC
 		if myid == main_node:
@@ -13306,24 +13309,22 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			all_ali_params[3].append(mirror)
 			all_ali_params[4].append(scale)
 		if key == group_main_node:
-			call(['rm', '-f', ali_params_filename + "_" + str(mloop)])
-			write_text_file(all_ali_params, ali_params_filename + "_" + str(mloop))
+			call(['rm', '-f', ali_params_filename])
+			write_text_file(all_ali_params, ali_params_filename)
 
 		# gather refim to the main node
 		if key == group_main_node:
 			refim = gather_EMData(refim, indep_run, myid, main_node)
-#			for i in xrange(len(refim)):
-#				refim[i].write_image("log_mainPart_" + str(color) + "_" + str(mloop) + ".hdf", i)
 
 		if mloop != match_second:
 			if myid == main_node:
-				print "**********************************************************************"
-				print "            		       Run the %d-way matching algorithm                   "%wayness
-				print "**********************************************************************"
+ 				print "**********************************************************************"
+ 				print "                   Run the %d-way matching algorithm                   "%wayness
+ 				print "**********************************************************************"
 				# In this last two-way loop, we find all unique 2-way matches and use it as the starting
 				# point of three-way match
 				if mloop == two_way_loop:
-					refim_all = match_2_way(alldata, refim, indep_run, thld_grp, FH, FF, suffix="_"+str(mloop) )
+					refim_all = match_2_way(alldata, refim, indep_run, thld_grp, FH, FF)
 					# If they are enough, good; otherwise, add some random images into it.
 					if len(refim_all) > K:
 						print "Since it is more than the number of groups (%d), we only use the first %d of them."%(K, K)
@@ -13340,7 +13341,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 					for i in xrange(K*(indep_run-1)):
 						refim_all.append(refim[i%K])
 				else:
-					refim_all = match_2_way(alldata, refim, indep_run, thld_grp, FH, FF, find_unique = False, wayness = wayness, suffix="_"+str(mloop) )
+					refim_all = match_2_way(alldata, refim, indep_run, thld_grp, FH, FF, find_unique = False, wayness = wayness)
 			else:
 				refim_all = [model_blank(nx, nx) for i in xrange(K*indep_run)]
 			for k in xrange(K*indep_run):
@@ -13353,12 +13354,9 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			#if key == group_main_node:
 			#	for k in xrange(K): refim[k].write_image("%s_way_match_%02d_%02d.hdf"%(wayness_english, mloop, color), k)
 		mpi_barrier(MPI_COMM_WORLD)
-#		if key == group_main_node:
-#			for i in xrange(len(refim)):
-#				refim[i].write_image("log_afterMatching_" + str(color) + "_" + str(mloop) + ".hdf", i)
 
-#	if key == group_main_node:
-#		call(['rm', '-f', ali_params_filename])
+	if key == group_main_node:
+		call(['rm', '-f', ali_params_filename])
 
 	if myid == main_node:
 		print "**********************************************************************"
@@ -13449,11 +13447,11 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 			class_data = [None]*l_STB_PART
 			members_id = [0]*l_STB_PART
-			for im in xrange(l_STB_PART):
-				class_data[im] = alldata[STB_PART[im]]
-				members_id[im] = alldata[STB_PART[im]].get_attr('ID')
-			for im in xrange(l_STB_PART-1):
-				assert members_id[im] != members_id[im+1]
+ 		        for im in xrange(l_STB_PART):
+ 	                        class_data[im] = alldata[STB_PART[im]]
+ 				members_id[im] = alldata[STB_PART[im]].get_attr('ID')
+ 			for im in xrange(l_STB_PART-1):
+ 				assert members_id[im] != members_id[im+1]
 
 			ali_params = [[] for j in xrange(stab_ali)]
 			for ii in xrange(stab_ali):
@@ -13473,10 +13471,10 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			all_scale = [1.0]*l_stable_set
 			for j in xrange(l_stable_set): 
 				stable_set_id[j] = members_id[stable_set[j][1]]
-				all_alpha[j]  = stable_set[j][2][0]
-				all_sx[j]     = stable_set[j][2][1]
-				all_sy[j]     = stable_set[j][2][2]
-				all_mirror[j] = stable_set[j][2][3]
+				all_alpha[j] = ali_params[stab_ali-1][stable_set[j][1]*4]
+				all_sx[j] = ali_params[stab_ali-1][stable_set[j][1]*4+1]
+				all_sy[j] = ali_params[stab_ali-1][stable_set[j][1]*4+2]
+				all_mirror[j] = ali_params[stab_ali-1][stable_set[j][1]*4+3]
 
 			mpi_send(l_stable_set, 1, MPI_INT, main_node, i+30000, MPI_COMM_WORLD)
 			mpi_send(stable_set_id, l_stable_set, MPI_INT, main_node, i+40000, MPI_COMM_WORLD)
@@ -13499,14 +13497,6 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		print "****************************************************************************************************"            
 
 
-# stack - list of images (filename also accepted)
-# refim - list of reference images (filename also accepted)
-# maskfile - image with mask (filename also accepted)
-# CTF - not supported
-# snr - not supported
-# stability - when True stability checking is performed
-# stab_ali - used only when stability=True, 
-# iter_reali - used only when stability=True, for which iteration (index of iteration % iter_reali == 0) stability checking is performed
 def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1, xrng=0, yrng=0, step=1, 
             maxit=30, isac_iter=10, CTF=False, snr=1.0, rand_seed=-1, color=0, comm=-1, 
 	    stability=False, stab_ali=5, iter_reali=1, thld_err=1.732, FL=0.1, FH=0.3, FF=0.2, dst=90.0):
@@ -13522,9 +13512,11 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 	from utilities      import   reduce_EMData_to_root, bcast_EMData_to_all
 	from utilities      import   get_params2D, set_params2D
 
+	import os
+	import sys
 	from random         import   seed, randint, jumpahead
 	from subprocess     import   call
-	from mpi 	    import   mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from mpi 	    import   mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier
 	from mpi 	    import   mpi_reduce, mpi_bcast, mpi_barrier, mpi_recv, mpi_send
 	from mpi 	    import   MPI_SUM, MPI_FLOAT, MPI_INT, MPI_TAG_UB
 
@@ -13532,7 +13524,6 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 	number_of_proc = mpi_comm_size(comm)
 	myid = mpi_comm_rank(comm)
-	my_abs_id = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(isac_iter)
@@ -13605,7 +13596,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 	while main_iter < max_iter:
 		Iter += 1
-		#if my_abs_id == main_node: print "Iter = ", Iter, "    main_iter = ", main_iter, "    len data = ", image_end-image_start, localtime()[0:5], myid
+		#if myid == main_node: print "Iter = ", Iter, "    main_iter = ", main_iter, "    len data = ", image_end-image_start, localtime()[0:5]
 		ringref = []
 		for j in xrange(numref):
 			refi[j].process_inplace("normalize.mask", {"mask":mask, "no_sigma":1}) # normalize reference images to N(0,1)
@@ -13745,13 +13736,8 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			fl = FL
 			do_within_group = 1
 			
-		# Here stability does not need to be checked for each main iteration, it only need to
-		# be done for every 'iter_reali' iterations. If one really want it to be checked each time
-		# simple set iter_reali to 1, which is the default value right now.
-		check_stability = (stability and (main_iter%iter_reali==0))
-			
 		if do_within_group == 1:
-#			if my_abs_id == main_node: print "Doing within group alignment .......", localtime()[0:5]
+			#if myid == main_node: print "Doing within group alignment .......", localtime()[0:5]
 
 			# Broadcast the alignment parameters to all nodes
 			for i in xrange(number_of_proc):
@@ -13772,87 +13758,76 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 					mirror = int(ali_params[(im-im_start)*4+3])
 					set_params2D(alldata[im], [alpha, sx, sy, mirror, 1.0])
 	
+			# Here the assumption is that numref > number_of_proc, should be checked.
 			main_iter += 1
-			
-			# There are two approaches to scatter calculations among MPI processes during stability checking.
-			# The first one is the original one. I added the second method.
-			# Here we try to estimate the calculation time for both approaches.
-			stab_calc_time_method_1 = stab_ali * ((numref-1) // number_of_proc + 1)
-			stab_calc_time_method_2 = (numref * stab_ali - 1) // number_of_proc + 1
-#			if my_abs_id == main_node: print "Times estimation: ", stab_calc_time_method_1, stab_calc_time_method_2
-#	
-			# When there is no stability checking or estimated calculation time of new method is greater than 80% of estimated calculation time of original method 
-			# then the original method is used. In other case. the second (new) method is used.
-			if (not check_stability) or (stab_calc_time_method_2 > 0.80 * stab_calc_time_method_1):
-				# ====================================== standard approach is used, calculations are parallelized by scatter groups (averages) among MPI processes
-				for j in xrange(myid, numref, number_of_proc):
-					assign = []
-					for im in xrange(nima):
-						if j == belongsto[im]:  assign.append(im)
-
-					randomize = True  # I think there is no reason not to be True
-					class_data = [alldata[im] for im in assign]
-					refi[j] = within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, [xrng], [yrng], [step], dst, maxit, FH, FF)
-
-					if check_stability:
-						ali_params = [[] for qq in xrange(stab_ali)]
-						for ii in xrange(stab_ali):
-							if ii > 0:  # The first one does not have to be repeated
-								dummy = within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, [xrng], [yrng], [step], dst, maxit, FH, FF)
-							for im in xrange(len(class_data)):
-								alpha, sx, sy, mirror, scale = get_params2D(class_data[im])
-								ali_params[ii].extend([alpha, sx, sy, mirror])
-
-						stable_set, mirror_consistent_rate, err = multi_align_stability(ali_params, 0.0, 10000.0, thld_err, False, last_ring*2)
-
-						#print  "Color % d, class %d ...... Size of stable subset = %d,  Mirror consistent rate = %f,  Average error = %f"%(color, j, len(stable_set), mirror_consistent_rate, err)
-
-						# If the size of stable subset is too small (say 1, 2), it will cause many problems, so we manually increase it to 5
-						while len(stable_set) < 5:
-							duplicate = True
-							while duplicate:
-								duplicate = False
-								p = randint(0, len(class_data)-1)
-								for ss in stable_set:
-									if p == ss[1]: duplicate = True
-							stable_set.append([100.0, p, [0.0, 0.0, 0.0, 0]])
-
-						stable_data = []
-						stable_members = []
-						for err in stable_set:
-							im = err[1]
-							stable_members.append(assign[im])
-							stable_data.append(class_data[im])
-							set_params2D( class_data[im], [err[2][0], err[2][1], err[2][2], int(err[2][3]), 1.0] )
-						stable_members.sort()
-
-						refi[j] = filt_tanl(ave_series(stable_data), FH, FF)
-						refi[j].set_attr('members', stable_members)
-						refi[j].set_attr('n_objects', len(stable_members))
-						del stable_members
-					# end of stability
-					del assign
-				mpi_barrier(comm)
-
+			for j in xrange(myid, numref, number_of_proc):
+				assign = []
 				for im in xrange(nima):
-					done_on_node = belongsto[im]%number_of_proc
-					if myid == done_on_node:
-						alpha, sx, sy, mirror, scale = get_params2D(alldata[im])
-						ali_params = [alpha, sx, sy, mirror]
-					else:
-						ali_params = [0.0]*4
-					ali_params = mpi_bcast(ali_params, 4, MPI_FLOAT, done_on_node, comm)
-					ali_params = map(float, ali_params)
-					set_params2D(alldata[im], [ali_params[0], ali_params[1], ali_params[2], int(ali_params[3]), 1.0])
+					if j == belongsto[im]:  assign.append(im)
 
-			else:
-				# ================================================ more complicated approach is used - runs of within_group_refinement are scattered among MPI processes
-				refi = isac_stability_check_mpi(alldata, numref, belongsto, stab_ali, thld_err, mask, first_ring, last_ring, rstep, xrng, yrng, step, dst, maxit, FH, FF, comm)
+				randomize = True  # I think there is no reason not to be True
+				class_data = [alldata[im] for im in assign]
+				refi[j] = within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, [xrng], [yrng], [step], dst, maxit, FH, FF)
+
+				# Here stability does not need to be checked for each main iteration, it only need to
+				# be done for every 'iter_reali' iterations. If one really want it to be checked each time
+				# simple set iter_reali to 1, which is the default value right now.
+				if stability and main_iter%iter_reali==0:
+					ali_params = [[] for qq in xrange(stab_ali)]
+					for ii in xrange(stab_ali):
+						if ii > 0:  # The first one does not have to be repeated
+							dummy = within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, [xrng], [yrng], [step], dst, maxit, FH, FF)
+						for im in xrange(len(class_data)):
+							alpha, sx, sy, mirror, scale = get_params2D(class_data[im])
+							ali_params[ii].extend([alpha, sx, sy, mirror])
+
+					stable_set, mirror_consistent_rate, err = multi_align_stability(ali_params, 0.0, 10000.0, thld_err, False, last_ring*2)
+
+					#print  "Class %d ...... Size of stable subset = %d"%(j, len(stable_set))
+					#print  "Class %d ...... Mirror consistent rate = %f"%(j, mirror_consistent_rate)
+					#print  "Class %d ...... Average error = %f"%(j, err)
+
+					# If the size of stable subset is too small (say 1, 2), it will cause many problems, so we manually increase it to 5
+					while len(stable_set) < 5:
+						duplicate = True
+						while duplicate:
+							duplicate = False
+							p = randint(0, len(class_data)-1)
+							for ss in stable_set:
+								if p == ss[1]: duplicate = True
+						stable_set.append([100.0, p])
+
+					stable_data = []
+					stable_members = []
+					for err in stable_set:
+						im = err[1]
+						stable_members.append(assign[im])
+						stable_data.append(class_data[im])
+					stable_members.sort()
+
+					refi[j] = filt_tanl(ave_series(stable_data), FH, FF)
+					refi[j].set_attr('members', stable_members)
+					refi[j].set_attr('n_objects', len(stable_members))
+					del stable_members
+				# end of stability
+				del assign
+			mpi_barrier(comm)
 
 			for j in xrange(numref):
 				bcast_EMData_to_all(refi[j], myid, j%number_of_proc, comm)
 
-			if check_stability:
+			for im in xrange(nima):
+				done_on_node = belongsto[im]%number_of_proc
+				if myid == done_on_node:
+					alpha, sx, sy, mirror, scale = get_params2D(alldata[im])
+					ali_params = [alpha, sx, sy, mirror]
+				else:
+					ali_params = [0.0]*4
+				ali_params = mpi_bcast(ali_params, 4, MPI_FLOAT, done_on_node, comm)
+				ali_params = map(float, ali_params)
+				set_params2D(alldata[im], [ali_params[0], ali_params[1], ali_params[2], int(ali_params[3]), 1.0])
+
+			if stability and main_iter%iter_reali == 0:
 				# In this case, we need to set the 'members' attr using stable members from the stability test
 				for j in xrange(numref):
 					done_on_node = j%number_of_proc
@@ -13867,7 +13842,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 							members = refi[j].get_attr('members')
 							mpi_send(len(members), 1, MPI_INT, main_node, MPI_TAG_UB, comm)
 							mpi_send(members, len(members), MPI_INT, main_node, MPI_TAG_UB, comm)
-#			if myid == main_node:  print "within group alignment done. ", localtime()[0:5]
+			#if myid == main_node:  print "within group alignment done. ", localtime()[0:5]
 		# end of do_within_group
 		mpi_barrier(comm)
 
@@ -13875,7 +13850,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			#  I added a switch here.  I do not think we will need those in the future.  PAP 03/26
 			if outname != None:
 				call(['rm', '-f', outname+'%02d_%03d.hdf'%(color, Iter)])
-			if check_stability:
+			if stability and main_iter%iter_reali == 0:
 				# In this case, the attr 'members' is defined as the stable members, its setting is done
 				# in the code before
 				if outname != None:
@@ -13890,120 +13865,6 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 	return refi
 
-
-# This routine runs within_group_refinement several times in parallel for multiple groups (parameter randomize must be set to True)
-# All MPI processes must have the same values of all parameters
-# This function returns list of references images with numref elements, elements with index holds (index % mpi_comm_size(comm) == mpi_comm_rank(comm)) contains corresponding reference images, 
-# rest of elements contains blank images
-def isac_stability_check_mpi(alldata, numref, belongsto, stab_ali, thld_err, mask, first_ring, last_ring, rstep, xrng, yrng, step, dst, maxit, FH, FF, comm):
-	from mpi         import mpi_comm_size, mpi_comm_rank, mpi_barrier, mpi_bcast, mpi_send, mpi_recv, MPI_FLOAT, MPI_TAG_UB
-	from pixel_error import multi_align_stability
-	from utilities   import get_params2D, set_params2D, model_blank
-	from filter      import filt_tanl
-	from random      import randint
-	from statistics  import ave_series
-	
-	myid = mpi_comm_rank(comm)
-	number_of_proc = mpi_comm_size(comm)
-	nima = len(alldata)
-	refi = []
-	for i in xrange(numref):
-		refi.append(model_blank(alldata[0].get_xsize(), alldata[0].get_ysize()))
-
-	# --- divide images into groups
-	grp_images = []
-	grp_indexes = []
-	for i in xrange(numref):
-		grp_images.append([])
-		grp_indexes.append([])
-	for i in xrange(nima):
-		grp_images[belongsto[i]].append(alldata[i])
-		grp_indexes[belongsto[i]].append(i)
-	
-	# --- prepare mapping (group id, run index) -> process id
-	grp_run_to_mpi_id = []
-	for ig in xrange(numref):
-		grp_run_to_mpi_id.append([])
-		for ii in xrange(stab_ali):
-			grp_run_to_mpi_id[ig].append( (ig * stab_ali + ii) % number_of_proc )
-	
-	# --- prepare structure for alignment parameters: (group id, run index) -> []
-	grp_run_to_ali_params = []
-	for ig in xrange(numref):
-		grp_run_to_ali_params.append([])
-		for ii in xrange(stab_ali):
-			grp_run_to_ali_params[ig].append([])
-	
-	# --- run within_group_refinement
-#	print "run within_group_refinement"
-	for ig in xrange(numref):
-		for ii in xrange(stab_ali):
-			if grp_run_to_mpi_id[ig][ii] == myid:
-				within_group_refinement(grp_images[ig], mask, True, first_ring, last_ring, rstep, [xrng], [yrng], [step], dst, maxit, FH, FF)
-				for im in (grp_images[ig]):
-					alpha, sx, sy, mirror, scale = get_params2D(im)
-					grp_run_to_ali_params[ig][ii].extend([alpha, sx, sy, mirror])
-
-	# --- send obtained alignment parameters to target MPI process, alignment parameters from last runs are broadcasted and copied to images' headers
-#	print "send obtained alignment parameters to target MPI process"
-	for ig in xrange(numref):
-		grp_size = len(grp_images[ig])
-		for ii in xrange(stab_ali-1):
-			src_proc_id = grp_run_to_mpi_id[ig][ii]
-			trg_proc_id = ig % number_of_proc
-			if src_proc_id == trg_proc_id:
-				continue
-			if myid == src_proc_id:
-				mpi_send(grp_run_to_ali_params[ig][ii], 4*grp_size, MPI_FLOAT, trg_proc_id, MPI_TAG_UB, comm)
-			if myid == trg_proc_id:
-				grp_run_to_ali_params[ig][ii] = mpi_recv(4*grp_size, MPI_FLOAT, src_proc_id, MPI_TAG_UB, comm)
-				grp_run_to_ali_params[ig][ii] = map(float, grp_run_to_ali_params[ig][ii])
-
-	for ig in xrange(numref):
-		grp_size = len(grp_images[ig])
-		ii = stab_ali - 1
-		src_proc_id = grp_run_to_mpi_id[ig][ii]
-		if myid != src_proc_id:
-			grp_run_to_ali_params[ig][ii] = [0.0] * (4 * grp_size)
-		grp_run_to_ali_params[ig][ii] = mpi_bcast(grp_run_to_ali_params[ig][ii], 4*grp_size, MPI_FLOAT, src_proc_id, comm)
-		grp_run_to_ali_params[ig][ii] = map(float, grp_run_to_ali_params[ig][ii])
-		for i in xrange(len(grp_images[ig])):
-			set_params2D(grp_images[ig][i], [grp_run_to_ali_params[ig][ii][4*i+0], grp_run_to_ali_params[ig][ii][4*i+1], grp_run_to_ali_params[ig][ii][4*i+2], int(grp_run_to_ali_params[ig][ii][4*i+3]), 1.0])
-
-	# ======================= rest of stability checking is analogical to the old approach
-#	print "rest of code..."
-	for j in xrange(myid, numref, number_of_proc):
-		
-		stable_set, mirror_consistent_rate, err = multi_align_stability(grp_run_to_ali_params[j], 0.0, 10000.0, thld_err, False, last_ring*2)
-
-		# If the size of stable subset is too small (say 1, 2), it will cause many problems, so we manually increase it to 5
-		while len(stable_set) < 5:
-			duplicate = True
-			while duplicate:
-				duplicate = False
-				p = randint(0, len(grp_images[j])-1)
-				for ss in stable_set:
-					if p == ss[1]: duplicate = True
-			stable_set.append([100.0, p, [0.0, 0.0, 0.0, 0]])
-
-		stable_data = []
-		stable_members = []
-		for err in stable_set:
-			im = err[1]
-			stable_members.append(grp_indexes[j][im])
-			stable_data.append(grp_images[j][im])
-			set_params2D( grp_images[j][im], [err[2][0], err[2][1], err[2][2], int(err[2][3]), 1.0] )
-		stable_members.sort()
-
-		refi[j] = filt_tanl(ave_series(stable_data), FH, FF)
-		refi[j].set_attr('members', stable_members)
-		refi[j].set_attr('n_objects', len(stable_members))
-		del stable_members
-		# end of stability
-	
-	mpi_barrier(comm)
-	
-	return refi
 
 def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, step, dst, maxit, FH, FF):
 
@@ -14029,13 +13890,14 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 			alpha, sx, sy, mirror, scale = get_params2D(im)
 			alphai, sxi, syi, mirrori = inverse_transform2(alpha, sx, sy)
 			alphan, sxn, syn, mirrorn = combine_params2(0.0, -sxi, -syi, 0, random()*360.0, 0.0, 0.0, randint(0, 1))
+			#set_params2D(im, [random()*360.0, 0.0, 0.0, randint(0, 1), 1.0])
 			set_params2D(im, [alphan, sxn, syn, mirrorn, 1.0])
 
 	cnx = nx/2+1
-	cny = cnx
-	mode = "F"
+ 	cny = cnx
+ 	mode = "F"
 	numr = Numrinit(first_ring, last_ring, rstep, mode)
-	wr = ringwe(numr, mode)
+ 	wr = ringwe(numr, mode)
 
 	sx_sum = 0.0
 	sy_sum = 0.0
@@ -14045,16 +13907,16 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 		for Iter in xrange(max_iter):
 			total_iter += 1
 			tavg = ave_series(data)
-			if( FH > 0.0):
-				fl = 0.1+(FH-0.1)*Iter/float(max_iter-1)
-				tavg = filt_tanl(tavg, fl, FF)
+			fl = 0.1+(FH-0.1)*Iter/float(max_iter-1)
+			tavg = filt_tanl(tavg, fl, FF)
 			if total_iter == len(xrng)*max_iter:  return tavg
-			if( xrng[0] > 0.0 ): cs[0] = sx_sum/float(nima)
-			if( yrng[0] > 0.0 ): cs[1] = sy_sum/float(nima)
+			cs[0] = sx_sum/float(nima)
+			cs[1] = sy_sum/float(nima)
 			tavg = fshift(tavg, -cs[0], -cs[1])
 			if Iter%4 != 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0
 			else: delta = dst
 			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF=False, delta=delta)
+
 
 def match_independent_runs(data, refi, n_group, T):
 
@@ -14075,16 +13937,16 @@ def match_independent_runs(data, refi, n_group, T):
 
 	#print Parts
 	#print "Before matching = ", localtime()[:5]
-	MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_bbenum(Parts, T=T, J=50, max_branching=40, stmult=0.1, branchfunc=2)
+        MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_bbenum(Parts, T=T, J=50, max_branching=40, stmult=0.1, branchfunc=2)
 	#print "After matching = ", localtime()[:5]
 
-	# I commented out next three, not much use printing them,  PAP.
+        # I commented out next three, not much use printing them,  PAP.
 	#print MATCH
-	#print STB_PART
-	#print CT_s
-	#print CT_t
-	#print ST
-	#print st
+        #print STB_PART
+        #print CT_s
+        #print CT_t
+        #print ST
+ 	#print st
 
         cost_by_match_thresh = []
         for i in xrange(len(CT_s)):
@@ -14104,7 +13966,7 @@ def match_independent_runs(data, refi, n_group, T):
 	return STB_PART_cleaned
 
 
-def match_2_way(data, refi, indep_run, thld_grp, FH, FF, find_unique=True, wayness=2, suffix=""):
+def match_2_way(data, refi, indep_run, thld_grp, FH, FF, find_unique=True, wayness=2):
 
 	from utilities import read_text_row, set_params2D
 
@@ -14117,12 +13979,10 @@ def match_2_way(data, refi, indep_run, thld_grp, FH, FF, find_unique=True, wayne
 	run = range(indep_run)
 	shuffle(run)
 
-	print run
-
 	reproducible_avgs = []
         
 	for irun in xrange(indep_run):
-		filename = "ali_params_%d"%run[irun] + suffix
+		filename = "ali_params_%d"%run[irun]
 		all_ali_params = read_text_row(filename)
 	
 		Parts = []
@@ -14151,7 +14011,6 @@ def match_2_way(data, refi, indep_run, thld_grp, FH, FF, find_unique=True, wayne
 	                        part.append(lid)
 			Parts.append(part)
 
-	        #print Parts
 	        MATCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_bbenum(Parts, T=thld_grp, J=50, max_branching=40, stmult=0.1, branchfunc=2)
 
        		cost_by_match_thresh = []
@@ -14271,7 +14130,6 @@ def get_unique_averages(data, indep_run, m_th=0.45):
 		if flag[im] == 3: 	data_good.append(data[im])
 	
 	return data_good
-
 
 def ihrsr_MPI_cons(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
 	txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndphi, dphi_step, psi_max,
