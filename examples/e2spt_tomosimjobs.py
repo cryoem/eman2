@@ -39,6 +39,11 @@ import heapq
 import operator
 import random
 import numpy
+import colorsys
+
+from mpl_toolkits.mplot3d import Axes3D
+import numpy as np
+import matplotlib.pyplot as plt
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -339,43 +344,215 @@ def main():
 			 	
 	for i in range(nrefs):
 		
-		resultsdir = options.path + '/results_ali_error'
+		resultsdir = rootpath + '/' + options.path + '/results_ali_error'
 		if nrefs > 1:
+			modname = 'model' + str(i).zfill(2)
 			resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
 
 	
 		resfiles = []
 		ang_errors = []
 		trans_errors = []
-
+		
+		snrs = []
+		trs = []
+		tss = []
+	
+		twoD_tr_ts_points = []
+		twoD_snr_tr_points = []	
+		twoD_snr_ts_points = []
+		
+		threeD_points = []
+		
 		findir = os.listdir(resultsdir)
 		for f in findir:
 			if 'error.txt' in f:
 				resfiles.append(f)
+		
+		d=0
+		resfiles.sort()
 		for ff in resfiles:
+			tr = float(ff.split('TR')[-1].split('_')[0])
+			trs.append(tr)
 
-			fff = open(ff,'r')
-			lines = ff.readlines()
+			snr = float(ff.split('SNR')[-1].split('_')[0])
+			snrs.append(snr)
+			
+			ts = float(ff.split('TS')[-1].split('_')[0])
+			tss.append(ts)
+			
+			#3dpoints.append([tr,snr,ts])
+		
+			
+			resultsfilelocation = resultsdir + '/' + ff
+			#print "\n\n%%%%%%%%%%%%\nThe results file is here\n%%%%%%%%%%%%%%%%%\n\n", resultsfilelocation
+			
+			fff = open(resultsfilelocation,'r')
+			lines = fff.readlines()
+			
 			ang = lines[0].split('=')[-1].replace('\n','')
 			ang_errors.append(ang)
+			
 			trans = lines[1].split('=')[-1].replace('\n','')
 			trans_errors.append(trans)
-
-	return()
-
-	
-def 1dplot:
-	return()
-	
-def 2dplot:
-	return()
-	
-def 3dplot:
-	return()	
-	
+			
+			threeD_points.append({'n':d,'tilt range':tr,'tilt step':ts,'noise level':snr,'angular_error':ang,'translational_error':trans})
+			twoD_tr_ts_points.append({'n':d,'tilt range':tr,'tilt step':ts,'angular_error':ang,'translational_error':trans})
+			twoD_snr_tr_points.append({'n':d,'tilt range':tr,'noise level':snr,'angular_error':ang,'translational_error':trans})
+			twoD_snr_ts_points.append({'n':d,'tilt step':ts,'noise level':snr,'angular_error':ang,'translational_error':trans})
+			
+		if len(set(snrs)) == 1: 
+			if len(set(trs)) == 1:
+				oneD_plot(tss,ang_errors,resultsdir+'/angular_error.png','tilt step')
+				oneD_plot(tss,trans_errors,resultsdir+'/translational_error.png','tilt step')
+			
+			if len(set(tss)) == 1:
+				oneD_plot(trs,ang_errors,resultsdir+'/angular_error.png','tilt range')
+				oneD_plot(trs,trans_errors,resultsdir+'/translational_error.png','tilt range')
+			
+		if len(set(trs)) == 1: 
+			if len(set(tss)) == 1:
+				oneD_plot(snrs,ang_errors,resultsdir+'/angular_error.png','noise level')
+				oneD_plot(snrs,trans_errors,resultsdir+'/translational_error.png','noise level')
+		
+		if len(set(snrs)) == 1 and len(set(trs)) > 1 and len(set(tss)) > 1:
+			twoD_plot(twoD_tr_ts_points,val1='tilt range',val2='tilt step',location=resultsdir +'/')
+			
+		if len(set(trs)) == 1 and len(set(snrs)) > 1 and len(set(tss)) > 1:
+			twoD_plot(twoD_snr_ts_points,val1='noise level',val2='tilt step',location=resultsdir +'/')
+			
+		if len(set(tss)) == 1 and len(set(trs)) > 1 and len(set(snrs)) > 1:
+			twoD_plot(twoD_snr_tr_points,val1='noise level',val2='tilt range',location=resultsdir +'/')
+		
+		if len(set(tss)) > 1 and len(set(trs)) > 1 and len(set(snrs)) > 1:
+			threeD_plot(threeD_points,resultsdir +'/')
+		
+		
 	E2end(logger)
 
 	return()
 
+
+def color(value):
+	color =	colorsys.hsv_to_rgb( float(value) / 180.0 / (1.1), 1, 1)
+	return(color)
+
+
+def oneD_plot(points,errors,name,concept):
+	
+	title=name.split('/')[-1].replace('.png','').replace('_',' ')
+	#plt.title(title)
+	plt.xlabel(concept)
+	plt.ylabel(title)
+	plt.plot(points,errors,color='b')
+	plt.savefig(name,bbox_inches=0)
+	plt.clf()
+	
+	return()
+	
+
+def twoD_plot(points,val1,val2,location):
+	
+	finalpoints = []
+	ang_errors = []
+	trans_errors = [] 
+	x=[]
+	y=[]
+	for p in points:
+		finalpoints.append([ p[val1],p[val2] ])
+		x.append(p[val1])
+		y.append(p[val2])
+		ang_errors.append(p['angular_error'])
+		trans_errors.append(p['translational_error'])
+	
+	plotname1 = location + 'angular_errors_2d_' + '_'.join(val1.split(' ')) + '.png'
+	print "\n\n########\nI will save the plot inside 2d_plot to\n########\n\n", plotname1
+
+	plt.title("Angular error")
+	plt.xlabel(val1)
+	plt.ylabel(val2)
+	plt.xlim([min(x)-min(x)*0.1,max(x)+max(x)*0.1])
+	plt.ylim([min(y)-min(y)*0.1,max(y)+max(y)*0.1])
+	for i in range(len(finalpoints)):
+		plt.plot(*zip(*[finalpoints[i]]),marker='o',markersize=4,color=color(ang_errors[i]))	
+	plt.savefig(plotname1,bbox_inches=0)
+	#plt.clf()
+	
+	'''
+	plotname2 = 'translational_errors_2d_' + '_'.join(val1.split(' ')) + '.png'
+	plt.title("Translational error")
+	plt.xlabel(val1)
+	plt.ylabel(val2)
+	for i in range(len(finalpoints)):
+		plt.plot(*zip(*[finalpoints[i]]),marker='o',markersize=2,color=color(trans_errors[i]))
+	plt.savefig(plotname2)
+	#plt.clf()
+	'''
+	return()
+	
+	
+def threeD_plot(points,location):
+	
+	finalpoints = []
+	ang_errors = []
+	trans_errors = []
+	x=[]
+	y=[]
+	z=[] 
+	for p in points:
+		x.append(p['tilt range'])			
+		y.append(p['noise level'])
+		z.append(p['tilt step'])
+	
+		finalpoints.append([ p['tilt range'],p['noise level'],p['tilt step'] ])
+		ang_errors.append(p['angular_error'])
+		trans_errors.append(p['translational_error'])
+	
+	plotname1 = location + 'angular_errors_3d.png'
+	
+	print "\n\n#########\nI will save the plot inside 3d_plot to\n###########\n\n", plotname1
+	
+	fig = plt.figure()
+	ax = fig.gca(projection='3d')
+	
+	plt.title("Angular error")
+	xLabel = ax.set_xlabel('tilt range')
+	yLabel = ax.set_ylabel('noise level')
+	zLabel = ax.set_zlabel('tilt step')
+	
+	ax.set_xlim3d(min(x)-min(x)*0.1,max(x)+max(x)*0.1) 
+	ax.set_ylim3d(min(y)-min(y)*0.1,max(x)+max(y)*0.1)
+	ax.set_zlim3d(min(z)-min(z)*0.1,max(z)+max(z)*0.1)                              
+	
+	ax.xaxis.labelpad = 30
+	ax.yaxis.labelpad = 30
+
+	#ax.dist = 15
+	for i in range(len(finalpoints)):
+		ax.plot(*zip(*[finalpoints[i]]),marker='o',markersize=4, color=color(ang_errors[i]) )
+	plt.savefig(plotname1,bbox_inches=0)
+	print "\n\n**********\nI HAVE saved the plot inside 3d_plot to\n********\n\n", plotname1
+
+	#plt.clf()
+	
+	
+	'''
+	plotname2 = 'translational_errors_3d.png'
+	plt.title("Angular error")
+	
+	xLabel = ax.set_xlabel('tilt range')
+	yLabel = ax.set_ylabel('noise level')
+	zLabel = ax.set_zlabel('tilt step')
+	
+	fig = plt.figure()
+	ax = fig.gca(projection='3d')
+	for i in range(len(finalpoints)):
+		ax.plot(*zip(*[finalpoints[i]]),marker='o',color=color(trans_errors[i]) )
+	plt.savefig(plotname2)
+	#plt.clf()
+	'''
+	return()	
+	
+	
 if __name__ == "__main__":
     main()
