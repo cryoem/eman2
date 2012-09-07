@@ -62,10 +62,10 @@ from global_def import *
 
 def max_2D_pixel_error(ali_params1, ali_params2, r):
 	"""
-	Compute 2D maximum pixel error
+	Compute average squared 2D pixel error
 	"""
 	from math import sin, pi, sqrt
-	return (sin((ali_params1[0]-ali_params2[0])/180.0*pi/2)*(2*r+1))**2+(ali_params1[1]-ali_params2[1])**2+(ali_params1[2]-ali_params2[2])**2
+	return (sin((ali_params1[0]-ali_params2[0])/180.0*pi/2)*(2*r+1))**2 / 2 + (ali_params1[1]-ali_params2[1])**2 + (ali_params1[2]-ali_params2[2])**2
 
 
 def max_3D_pixel_error(t1, t2, r):
@@ -98,12 +98,12 @@ def angle_diff(angle1, angle2):
 	cosi = 0.0
 	sini = 0.0
 	for i in xrange(nima):
-		cosi += cos((angle2[i]-angle1[i])*pi/180.0)
-		sini += sin((angle2[i]-angle1[i])*pi/180.0)
+		cosi += cos( (angle2[i]-angle1[i])*(pi/180.0) )
+		sini += sin( (angle2[i]-angle1[i])*(pi/180.0) )
 	if cosi > 0.0:
-		alphai = atan(sini/cosi)/pi*180.0
+		alphai = atan(sini/cosi) * (180.0/pi)
 	elif cosi < 0.0:
-		alphai = atan(sini/cosi)/pi*180.0+180.0
+		alphai = atan(sini/cosi) * (180.0/pi) + 180.0
 	else:
 		if sini > 0.0:	alphai = 90.0
 		else: alphai = 270.0
@@ -488,12 +488,13 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 
 		ali_params = data[0]
 		d = data[1]
-
 		L = len(ali_params)
 		N = len(ali_params[0])/4
-
+		
 		args_list= [0.0]*(L*3)
-		for i in xrange(L*3-3):	args_list[i] = args[i]
+		for i in xrange(L*3-3):
+			args_list[i] = args[i]
+		
 		cosa = [0.0]*L
 		sina = [0.0]*L
 		for i in xrange(L):
@@ -517,15 +518,14 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 					sum_sina += sin((-args_list[j*3]+ali_params[j][i*4])*pi/180.0)
 					sx[j] = -args_list[j*3+1] + ali_params[j][i*4+1]*cosa[j] - ali_params[j][i*4+2]*sina[j]
 					sy[j] =  args_list[j*3+2] + ali_params[j][i*4+1]*sina[j] + ali_params[j][i*4+2]*cosa[j]
-			P = sqrt(sum_cosa**2+sum_sina**2)
-
-			sqr_pixel_error[i] = d*d/4.*(1-P/L) + sqerr(sx) + sqerr(sy)
+			sqrtP = sqrt(sum_cosa**2+sum_sina**2)
+			sqr_pixel_error[i] = d*d/4.*(1-sqrtP/L) + sqerr(sx) + sqerr(sy)
 			# Get ave transform params
 			H = Transform({"type":"2D"})
-			H.set_matrix([sum_cosa, sum_sina, 0.0, sum(sx)/L, -sum_sina, sum_cosa, 0.0, sum(sy)/L, 0.0, 0.0, 1.0, 0.0])
+			H.set_matrix([sum_cosa/sqrtP, sum_sina/sqrtP, 0.0, sum(sx)/L, -sum_sina/sqrtP, sum_cosa/sqrtP, 0.0, sum(sy)/L, 0.0, 0.0, 1.0, 0.0])
 			dd = H.get_params("2D")
-			#  We are using here mirror of the FIRST SET.
-			H = Transform({"type":"2D","alpha":dd[ "alpha" ],"tx":dd[ "tx" ],"ty": dd[ "ty" ],"mirror":int(ali_params[0][i*4+3]),"scale":1.0})
+			#  We are using here mirror of the LAST SET.
+			H = Transform({"type":"2D","alpha":dd[ "alpha" ],"tx":dd[ "tx" ],"ty": dd[ "ty" ],"mirror":int(ali_params[L-1][i*4+3]),"scale":1.0})
 			dd = H.get_params("2D")
 			ave_params.append([dd[ "alpha" ], dd[ "tx" ], dd[ "ty" ], dd[ "mirror" ]])
 		# Warning: Whatever I return here is squared pixel error, this is for the easy expression of derivative
