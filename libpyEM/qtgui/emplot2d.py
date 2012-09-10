@@ -1909,11 +1909,14 @@ class EMPlot2DInspector(QtGui.QWidget):
 		if len(names) == 0: return
 
 		for name in names :
+			sname=name.convert(" ","_")
+			sname=sname.convert("(","_")
+			sname=sname.convert(")","")
 			data=self.target().data[name]
-			name2="plt_%s.txt"%(name)
+			name2="plt_%s.txt"%(sname)
 			i=0
 			while os.path.exists(name2):
-				name2="plt_%s_%02d.txt"%(name,i)
+				name2="plt_%s_%02d.txt"%(sname,i)
 				i+=1
 				
 			out=file(name2,"w")

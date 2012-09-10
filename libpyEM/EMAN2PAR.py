@@ -1106,7 +1106,8 @@ class EMMpiTaskHandler():
 		else: self.cachedir=None
 		try: os.makedirs(self.queuedir)
 		except: 
-			print "makedirs queue failed (%s). May have failed because already exists. "%self.queuedir
+			#print "makedirs queue failed (%s). May have failed because already exists. "%self.queuedir
+			pass
 
 		self.maxid=1			# Current task counter, points to the next open number
 		self.completed={}		# set of completed tasks, key is task id, value is completion status

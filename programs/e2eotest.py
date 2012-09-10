@@ -179,12 +179,13 @@ def main():
 		except : 
 			print "Error: Must specify --path"
 			sys.exit(1)
-		try: options.apix=db["apix"]
+		try: options.apix=float(db["apix"])
 		except : 
 			if options.automask3d:
 				print "Error: cannot get apix parameter from register"
 				sys.exit(1)
 
+	options.apix=float(options.apix)
 
 	error = False
 	if check(options) == True :
@@ -271,14 +272,15 @@ def main():
 		
 		db = db_open_dict("bdb:"+options.path+"#convergence.results")
 		
-		if db_check_dict("bdb:project"):
-			# this is a temporary workaround to get things working in the workflow
-			db2 = db_open_dict("bdb:project")
-			apix = db2.get("global.apix",dfl=1)
-			if apix == 0: apix = 1
-		else:
-			apix = 1
-			
+		#if db_check_dict("bdb:project"):
+			## this is a temporary workaround to get things working in the workflow
+			#db2 = db_open_dict("bdb:project")
+			#apix = db2.get("global.apix",dfl=1)
+			#if apix == 0: apix = 1
+		#else:
+			#apix = 1
+		apix=float(options.apix)
+
 		apix = 1/apix
 		tmp_axis = [x*apix for x in xaxis]
 #		# convert the axis so it's readable

@@ -1174,7 +1174,7 @@ class EMThumbsTools:
 		'''
 		from emapplication import EMProgressDialog
 		
-		if shrink == None: shrink = EMThumbsTools.get_image_thumb_shrink(image_names[0])
+		if shrink == None or shrink<1.5 : shrink = EMThumbsTools.get_image_thumb_shrink(image_names[0])
 		
 		application = get_application()
 		nim = len(image_names)
@@ -1223,6 +1223,7 @@ class EMThumbsTools:
 			inx /= 2
 			iny /= 2
 			shrink *= 2
+		if shrink==1 : print "WARNING: input images are too small. Something is likely wrong with your file selection"
 	
 		return shrink
 	

@@ -164,6 +164,25 @@ def main():
 		print "Sorry, at the moment this program supports only BDB format input particle stacks !"
 		sys.exit(1)
 
+	if options.usefilt[:4].lower()=="bdb:" :
+		efset=options.usefilt+"_even"
+		ofset=options.usefilt+"_odd"
+		
+		# This creates the even/odd input data sets so we can just use the stock 'e2refine.py' command for refinement
+		if db_check_dict(efset) :
+			print "Warning: %s already exists. Trusting that this file is correct and complete."%efset
+		else:
+			error = launch_childprocess("e2bdb.py %s --makevstack=%s --step=0,2"%(options.usefilt,efset))
+	
+		if db_check_dict(ofset) :
+			print "Warning: %s already exists. Trusting that this file is correct and complete."%ofset
+		else:
+			error = launch_childprocess("e2bdb.py %s --makevstack=%s --step=1,2"%(options.usefilt,ofset))
+	else:
+		print "Sorry, at the moment this program supports only BDB format usefilt particle stacks !"
+		sys.exit(1)
+
+
 	if options.path==None :
 		print "The --path argument is required, and must point to the 'parent' refinement for the desired resolution test, ie --path=refine_05"
 		sys.exit(1)
@@ -179,16 +198,19 @@ def main():
 	for a in argv:
 		if a[:11]=="--randomres" : argv.remove(a)
 
+	iuf=0
 	for i,a in enumerate(argv):
 		if a[:6]=="--path" : ipath=i
 		if a[:7]=="--model" : imodel=i
 		if a[:7]=="--input" : iinp=i
+		if a[:9]=="--usefilt" : iuf=i
 
 	# run even refinement
 	print "### Starting even data refinement"
 	argv[ipath]="--path=%s"%(options.path+"_even")
 	argv[imodel]="--model=bdb:%s_even#initial_model"%options.path
 	argv[iinp]="--input=%s"%eset
+	if iuf>0: argv[iuf]="--usefilt=%s"%efset
 	launch_childprocess("e2refine.py "+" ".join(argv))
 
 	# run odd refinement
@@ -196,6 +218,7 @@ def main():
 	argv[ipath]="--path=%s"%(options.path+"_odd")
 	argv[imodel]="--model=bdb:%s_odd#initial_model"%options.path
 	argv[iinp]="--input=%s"%oset
+	if iuf>0: argv[iuf]="--usefilt=%s"%ofset
 	launch_childprocess("e2refine.py "+" ".join(argv))
 
 	# measure resolution curve

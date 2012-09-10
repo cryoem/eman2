@@ -19,6 +19,10 @@ High priority
 8/13/12		When 3D windows are closed, don't reuse them 
 8/14/12		parallel make3d
 8/14/12		monte-carlo initial model generator
+8/17/12		Registration system in GUI
+
+9/6/12		Histogram normalization in image display ?
+9/6/12		--maxshift seems to cause segfaults sometimes
 
 
 Low priority
