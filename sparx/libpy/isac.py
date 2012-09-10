@@ -436,9 +436,9 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
                         if ileft >= K_left:  break
             mpi_barrier(MPI_COMM_WORLD)
 
-            if key == group_main_node:
-                for i in xrange(K):
-                    refim[i].write_image("init_group%d_2nd_phase_round%d.hdf"%(color, mloop), i)
+#            if key == group_main_node:
+#                for i in xrange(K):
+#                    refim[i].write_image("init_group%d_2nd_phase_round%d.hdf"%(color, mloop), i)
 
         # Run ISAC
         if myid == main_node:
@@ -466,8 +466,8 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
         # gather refim to the main node
         if key == group_main_node:
             refim = gather_EMData(refim, indep_run, myid, main_node)
-            for i in xrange(len(refim)):
-                refim[i].write_image("log_mainPart_" + str(color) + "_" + str(mloop) + ".hdf", i)
+#            for i in xrange(len(refim)):
+#                refim[i].write_image("log_mainPart_" + str(color) + "_" + str(mloop) + ".hdf", i)
 
         if mloop != match_second:
             if myid == main_node:
@@ -507,12 +507,12 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
         #if key == group_main_node:
             #    for k in xrange(K): refim[k].write_image("%s_way_match_%02d_%02d.hdf"%(wayness_english, mloop, color), k)
         mpi_barrier(MPI_COMM_WORLD)
-        if key == group_main_node:
-            for i in xrange(len(refim)):
-                refim[i].write_image("log_afterMatching_" + str(color) + "_" + str(mloop) + ".hdf", i)
+#        if key == group_main_node:
+#            for i in xrange(len(refim)):
+#                refim[i].write_image("log_afterMatching_" + str(color) + "_" + str(mloop) + ".hdf", i)
 
-#    if key == group_main_node:
-#        call(['rm', '-f', ali_params_filename])
+    if key == group_main_node:
+        call(['rm', '-f', ali_params_filename + "_" + str(mloop)])
 
     if myid == main_node:
         print "**********************************************************************"
