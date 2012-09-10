@@ -154,7 +154,7 @@ def avgvar_ctf(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use
 		print "images must be 2D for CTF correction.....exiting"
 		sys.exit()
 
-	if img.get_attr_default('ctf_applied', 1) == 1:
+	if img.get_attr_default('ctf_applied', 0) == 1:
 		print "data cannot be ctf-applied....exiting"
 		sys.exit()
 
