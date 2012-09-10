@@ -62,7 +62,7 @@ def main():
 	parser.add_option("--max_round",      type="int",          default=20,      help="maximum rounds of generating candidate averages in the first phase ")
 	parser.add_option("--match_second",   type="int",          default=5,       help="number of iterations to run 2-way (or 3-way) matching in the second phase ")
 	parser.add_option("--stab_ali",       type="int",          default=5,       help="number of alignments when checking stability ")
-	parser.add_option("--thld_err",       type="float",        default=1.732,   help="the threshold of pixel error when checking stability ")
+	parser.add_option("--thld_err",       type="float",        default=1.0,     help="the threshold of pixel error when checking stability ")
 	parser.add_option("--indep_run",      type="int",          default=4,       help="number of indepentdent runs for reproducibility (default=4, currently other values not supported")
 	parser.add_option("--thld_grp",       type="int",          default=10,      help="the threshold of size of reproducible class (essentially minimum size of class)")
 	parser.add_option("--img_per_grp",    type="int",          default=100,     help="number of images per group in the ideal case (essentially maximum size of class)")
@@ -83,7 +83,7 @@ def main():
 		from mpi import mpi_init
 		sys.argv = mpi_init(len(sys.argv),sys.argv)
 
-	from applications import iter_isac
+	from isac import iter_isac
 	global_def.BATCH = True
 	iter_isac(args[0], options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.maxit, options.CTF, options.snr, \
 		options.dst, options.FL, options.FH, options.FF, options.init_iter, options.main_iter, options.iter_reali, options.match_first, \
