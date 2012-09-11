@@ -146,6 +146,9 @@ def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 	# default value for the last ring
 	if last_ring == -1:  last_ring = nx/2-2
 
+	if last_ring + max([max(xrng), max(yrng)]) > (nx-1) // 2:
+		ERROR('Shift or radius is too large - particle crosses image boundary', "ali2d", 1)
+
 	import user_functions
 	user_func = user_functions.factory[user_func_name]
 	print_msg("Number of active images     : %s\n"%(nima))
@@ -460,6 +463,9 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 
 	# default value for the last ring
 	if last_ring == -1: last_ring = nx/2-2
+
+	if last_ring + max([max(xrng), max(yrng)]) > (nx-1) // 2:
+		ERROR('Shift or radius is too large - particle crosses image boundary', "ali2d_MPI", 1)
 
 	if CUDA:
 		GPUID = get_input_from_string(GPUID)
