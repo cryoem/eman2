@@ -102,7 +102,9 @@ def timer(fn,n=1):
 	print time.time()-a
 
 # This is to remove stdio buffering, only line buffering is done. This is what is done for the terminal, but this extends terminal behaviour to redirected stdio
-sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 1)
+# try/except is to prevent errors with systems that already redirect stdio
+try: sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 1)
+except: pass
 
 def stopautoflush():
 	""" Return to buffered stdout """
