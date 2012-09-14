@@ -141,6 +141,23 @@ class GUIEvalImage(QtGui.QWidget):
 		# for each image [box size,ctf,box coord,set of excluded boxnums,quality]
 		self.parms=[]
 		db_fparms=db_open_dict("bdb:e2ctf.frameparms",True)
+		
+		# This little block of code deals with Z stacks of images and multiple image files,
+		# rewriting the name(s) with an enumeration including ;number or ,number
+		newimages=[]
+		for i in images:
+			n=EMUtil.get_image_count(i)
+			if n!=1:
+				for j in xrange(n): newimages.append(i+",%d"%j)
+			else:
+				h=EMData(i,0,True)		# read header
+				n=h["nz"]
+				if n!=1:
+					for j in xrange(n): newimages.append(i+";%d"%j)
+				else : newimages.append(i)
+		images=newimages
+		
+		# Now we try to restore old image information
 		for i in images:
 			try: 
 				parms=db_fparms[item_name(i)]
@@ -561,7 +578,19 @@ class GUIEvalImage(QtGui.QWidget):
 		
 		# now set the new item
 		self.curset=val
-		self.data=EMData(str(self.setlist.item(val).text()),0)	# read the image from disk
+		
+		# This deals with Z stacks and multi image files
+		fsp=str(self.setlist.item(val).text())
+		if "," in fsp : 
+			fsp,n=fsp.split(",")
+			self.data=EMData(fsp,int(n))	# read the image from disk
+		elif ";" in fsp : 
+			fsp,n=fsp.split(";")
+			hdr=EMData(fsp,0,True)
+			self.data=EMData(fsp,0,False,Region(0,0,int(n),hdr["nx"],hdr["ny"],1))	# read the image from disk
+		else :
+			self.data=EMData(fsp,0)	# read the image from disk
+		
 		if self.defaultapix!=None : self.data["apix_x"]=self.defaultapix
 		self.wimage.set_data(self.data)
 		self.curfilename = str(self.setlist.item(val).text())

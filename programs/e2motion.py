@@ -125,7 +125,7 @@ class EMMotion(QtGui.QMainWindow):
 		self.wlistresult=QListWidget()
 		self.gbl.addWidget(self.wlistresult,1,6,4,1)
 
-		if path!=None : self.initpath(path)
+		if path!=None : self.initPath(path)
 
 
 if __name__ == "__main__":
