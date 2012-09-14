@@ -597,9 +597,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.mod=mod
 		self.center=center			
 		
-		self.setWindowTitle("MAIN e2spt_boxer.py")
+		self.setWindowTitle("Main Window (e2spt_boxer.py)")
 
-		self.setWindowTitle("e2spt_boxer.py")
+#		self.setWindowTitle("e2spt_boxer.py")
 		
 		# Menu Bar
 		self.mfile=self.menuBar().addMenu("File")
@@ -1102,6 +1102,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		e = EMData()
 		e.read_image(tomogram,0,False,r)
 		e.set_attr("source_path", tomogram)
+		e["ptcl_source_image"]=tomogram
+		e["ptcl_source_coord"]=((rvmin[0]+rvmax[0])/2,(rvmin[1]+rvmax[1])/2,(rvmin[2]+rvmax[2])/2)
 		# Next adjust the transform matrix to move it to the origin
 		origin = self.transform_coords([0,0,0], tcs)
 		tcs.set_trans(origin[0] - rvmin[0], origin[1] - rvmin[1], origin[2] - rvmin[2])
