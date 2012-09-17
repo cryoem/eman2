@@ -203,7 +203,6 @@ def main():
 	if options.average:
 		ptcls = []
 		for i in range(options.step[0],n1,options.step[1]):
-			print "Averaging Volume " + str(i)
 			ptcls.append(EMData(infile,i))
 		avg = sum(ptcls)/len(ptcls)
 		avg.process_inplace('normalize.edgemean')
@@ -502,7 +501,6 @@ def parse_infile(infile, first, last, step):
 			print "the image is a 3D stack - I will process images from %d to %d" % (first, last)
 			data = []
 			for i in xrange(first, last+1, step):
-				print i
 				d = EMData()
 				d.read_image(infile, i)
 				data.append(d)

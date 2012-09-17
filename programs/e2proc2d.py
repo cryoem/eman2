@@ -166,11 +166,12 @@ def main():
                       help="Change the plane of image processing, useful for processing 3D mrcs as 2D images.")
 	parser.add_argument("--writejunk", action="store_true", help="Writes the image even if its sigma is 0.", default=False)
 	parser.add_argument("--swap", action="store_true", help="Swap the byte order", default=False)
-	parser.add_argument("--threed2threed", action="store_true", help="Process 3D image as a statck of 2D slice, then output as a 3D image", default=False)	
-	parser.add_argument("--threed2twod", action="store_true", help="Process 3D image as a statck of 2D slice, then output as a 2D stack", default=False)
+	parser.add_argument("--threed2threed", action="store_true", help="Process 3D image as a stack of 2D slices, then output as a 3D image", default=False)	
+	parser.add_argument("--threed2twod", action="store_true", help="Process 3D image as a stack of 2D slices, then output as a 2D stack", default=False)
 	parser.add_argument("--twod2threed", action="store_true", help="Process a stack of 2D images, then output as a 3D image.(Note: the output 3D file must be pre-existing dummy file with the right dimensions.)", default=False)
 	parser.add_argument("--unstacking", action="store_true", help="Process a stack of 2D images, then output a a series of numbered single image files", default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
+	parser.add_argument("--step",type=str,default="0,1",help="Specify <init>,<step>. Processes only a subset of the input data. For example, 0,2 would process only the even numbered particles")
 	
 	# Parallelism
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:n=<proc>:option:option",default=None)
@@ -187,7 +188,16 @@ def main():
 		sys.exit(1)
 	
 	logid=E2init(sys.argv,options.ppid)
-
+	
+	try : options.step=int(options.step.split(",")[0]),int(options.step.split(",")[1])		# convert strings to tuple
+	except:
+		print "Invalid --step specification"
+		sys.exit(1)
+		
+	if options.step and options.first:
+		print 'Invalid options. You used --first and --step. The --step option contains both a step size and the first image to step from. Please use only the --step option rather than --step and --first'
+		sys.exit(1)
+		
 	infile = args[0]
 	outfile = args[1]
 
@@ -231,6 +241,11 @@ def main():
 			if options.verbose>0:
 				print "Process 3D as a stack of %d 2D images" % d.get_zsize()
 			nimg = d.get_zsize()
+			if n1 > nimg:
+				print 'The value for --last is greater than the number of images in the input stack. Exiting'
+				sys.exit(1)
+			if options.step[0] > n0:
+				n0 = options.step[0]
 			threed_xsize = d.get_xsize()
 			threed_ysize = d.get_ysize()
 			isthreed = False
@@ -255,13 +270,17 @@ def main():
 			n1 = tomo_ny-1
 		elif plane in yzplanes:
 			n1 = tomo_nx-1
+		if options.last < n1:
+			n1 = options.last
+		elif options.last > n1:
+			print 'The value for --last is greater than the number of images in the input stack. Exiting'
+			sys.exit(1)
 		threed = EMData()
 		threed.read_image(infile)
 		
-
 	ld = EMData()
 	if options.verbose>0:
-		print "%d images, processing %d-%d"%(nimg,n0,n1)
+		print "%d images, processing %d-%d stepping by %d"%(nimg,n0,n1,options.step[1])
 
 	imagelist = read_listfile(options.list, options.exclude, nimg)
 	sfcurve1 = None
@@ -271,8 +290,9 @@ def main():
 	lasttime=time.time()
 	outfilename_no_ext = outfile[:-4]
 	outfilename_ext = outfile[-3:]
-	for i in range(n0, n1+1):
-			
+	if options.step[0] > options.first:
+		n0=options.step[0]
+	for i in range(n0, n1+1, options.step[1]):
 		if options.verbose >= 1:
 			
 			if time.time()-lasttime>3 or options.verbose>2 :
@@ -552,7 +572,7 @@ def main():
 						#outfile = outfile + "%04d" % i + ".lst"
 						#options.outtype = "lst"
 				
-				if not options.average:	#skip write the input image to output file 
+				if not options.average:	#skip writing the input image to output file 
 					#write processed image to file
 					if options.threed2threed or options.twod2threed:    #output a single 3D image
 						if i==0:
