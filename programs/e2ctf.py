@@ -1383,7 +1383,20 @@ except:
 def notzero(x):
 	if x==0 : return 1.0
 	return x
+
+class MyListWidget(QtGui.QListWidget):
+	"""Exactly like a normal list widget but intercepts a few keyboard events"""
+	
+	def keyPressEvent(self,event):
 		
+		if event.key() in (Qt.Key_Up,Qt.Key_Down) : 
+			QtGui.QListWidget.keyPressEvent(self,event)
+			return
+			
+		self.emit(QtCore.SIGNAL("keypress"),event)
+#		event.key()==Qt.Key_I
+	
+
 class GUIctf(QtGui.QWidget):
 	def __init__(self,application,data,autohp=True,nosmooth=False):
 		"""Implements the CTF fitting dialog using various EMImage and EMPlot2D widgets
@@ -1432,7 +1445,7 @@ class GUIctf(QtGui.QWidget):
 		
 		# plot list and plot mode combobox
 		self.vbl2 = QtGui.QVBoxLayout()
-		self.setlist=QtGui.QListWidget(self)
+		self.setlist=MyListWidget(self)
 		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
 		self.vbl2.addWidget(self.setlist)
 		
@@ -1516,6 +1529,7 @@ class GUIctf(QtGui.QWidget):
 		QtCore.QObject.connect(self.scs, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.squality, QtCore.SIGNAL("valueChanged"), self.newQual)
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
+		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("keypress"),self.listkey)
 		QtCore.QObject.connect(self.splotmode,QtCore.SIGNAL("currentIndexChanged(int)"),self.newPlotMode)
 
 	   	QtCore.QObject.connect(self.saveparms,QtCore.SIGNAL("clicked(bool)"),self.on_save_params)
@@ -1529,6 +1543,22 @@ class GUIctf(QtGui.QWidget):
 		
 		
 		self.setWindowTitle("CTF")
+
+	def listkey(self,event):
+		
+		if event.key()>=Qt.Key_0 and event.key()<=Qt.Key_9 :
+			q=int(event.key())-Qt.Key_0
+			self.squality.setValue(q)
+		elif event.key() == Qt.Key_Left:
+			self.sdefocus.setValue(self.sdefocus.getValue()-0.01)
+		elif event.key() == Qt.Key_Right:
+			self.sdefocus.setValue(self.sdefocus.getValue()+0.01)
+		elif event.key()==Qt.Key_S :
+			print "Save Parms ",str(self.setlist.item(self.curset).text())
+			self.on_save_params()
+		elif event.key()==Qt.Key_R :
+			self.on_recall_params()
+		
 
 	def on_save_params(self):
 		

@@ -109,16 +109,27 @@ class EMMotion(QtGui.QMainWindow):
 		self.gbl = QtGui.QGridLayout(self.centralWidget())
 		cen=self.centralWidget()
 		
+		###### Alignment Mask
 		# widget for editing the alignment mask
-		self.wlalimaskdraw=QtGui.QLabel("<big><b>Edit</b></big>")
+		self.wlalimaskdraw=QtGui.QLabel("<big><pre>Edit</pre></big>")
 		self.wlalimaskdraw.setAlignment(Qt.AlignHCenter)
 		self.gbl.addWidget(self.wlalimaskdraw,0,1)
 		
-		self.wlalimaskdraw2=QtGui.QLabel("A\nl\ni\ng\nn")
+		self.wlalimaskdraw2=QtGui.QLabel("<big><pre>A\nl\ni\ng\nn</pre></big>")
 		self.gbl.addWidget(self.wlalimaskdraw2,1,0)
 		
 		self.w2dalimaskdraw=EMImage2DWidget()
 		self.gbl.addWidget(self.w2dalimaskdraw,1,1)
+		
+		# Buttons for controlling mask
+		self.hbl1=QtGui.QHBoxLayout()
+		self.gbl.addLayout(self.hbl1,2,1)
+		
+		self.wbautoali=QtGui.QPushButton("Auto")
+		self.hbl1.addWidget(self.wbautoali)
+		
+		self.wbresetali=QtGui.QPushButton("Reset")
+		self.hbl1.addWidget(self.wbresetali)
 		
 		# Widget for setting alignment mask blur and base level
 		self.vbl1=QtGui.QVBoxLayout()
@@ -144,19 +155,30 @@ class EMMotion(QtGui.QMainWindow):
 		self.vbl1.addStretch(5)
 		
 		# widget for displaying the masked alignment reference
-		self.wlalimask=QtGui.QLabel("Ref")
+		self.wlalimask=QtGui.QLabel("<big><pre>Reference</pre></big>")
 		self.wlalimask.setAlignment(Qt.AlignHCenter)
 		self.gbl.addWidget(self.wlalimask,0,3)
 		
 		self.w2dalimask=EMImage2DWidget()
 		self.gbl.addWidget(self.w2dalimask,1,3)
 
+		###### ROI Mask
 		# widget for editing the ROI mask
-		self.wlroimaskdraw=QtGui.QLabel("R\nO\nI")
+		self.wlroimaskdraw=QtGui.QLabel("<big><pre>R\nO\nI</pre></big>")
 		self.gbl.addWidget(self.wlroimaskdraw,4,0)
 		
 		self.w2clsmaskdraw=EMImage2DWidget()
 		self.gbl.addWidget(self.w2clsmaskdraw,4,1)
+
+		# Buttons for controlling mask
+		self.hbl2=QtGui.QHBoxLayout()
+		self.gbl.addLayout(self.hbl2,5,1)
+		
+		self.wbautoroi=QtGui.QPushButton("Auto")
+		self.hbl2.addWidget(self.wbautoroi)
+		
+		self.wbresetroi=QtGui.QPushButton("Reset")
+		self.hbl2.addWidget(self.wbresetroi)
 
 		# Widget for setting alignment mask blur and base level
 		self.vbl2=QtGui.QVBoxLayout()
@@ -176,9 +198,17 @@ class EMMotion(QtGui.QMainWindow):
 		
 		self.vbl2.addStretch(5)
 
+		###### Results
 		# Widget showing lists of different result sets
+		self.vbl3=QtGui.QVBoxLayout()
+		self.gbl.addLayout(self.vbl3,1,6,4,1)
+		
+		self.wllistresult=QtGui.QLabel("Results")
+#		self.wllistresult.setAlignment(Qt.AlignHCenter)
+		self.vbl3.addWidget(self.wllistresult)
+		
 		self.wlistresult=QtGui.QListWidget()
-		self.gbl.addWidget(self.wlistresult,1,6,4,1)
+		self.vbl3.addWidget(self.wlistresult)
 
 		if path!=None : self.initPath(path)
 
