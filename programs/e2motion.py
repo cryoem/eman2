@@ -40,6 +40,8 @@ from PyQt4.QtCore import Qt
 from emapplication import get_application, EMApp
 from emimage2d import EMImage2DWidget
 from emimagemx import EMImageMXWidget
+from valslider import *
+import embrowser
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -96,13 +98,15 @@ class EMMotion(QtGui.QMainWindow):
 		
 		# Menu Bar
 		self.mfile=self.menuBar().addMenu("File")
-		self.mfile_open=self.mfile.addAction("Open")
-		self.mfile_quit=self.mfile.addAction("Quit")
+		self.mfileopen=self.mfile.addAction("Select Particles")
+		self.mfileopencls=self.mfile.addAction("Particles from Classes")
+		self.mfileopencls.setEnabled(False)
+		self.mfilequit=self.mfile.addAction("Quit")
 
-		self.mwin=self.menuBar().addMenu("Window")
-		self.mwin_boxes=self.mwin.addAction("Particles")
-		self.mwin_single=self.mwin.addAction("Single Particle")
-		self.mwin_average=self.mwin.addAction("Averaging")
+		#self.mwin=self.menuBar().addMenu("Window")
+		#self.mwin_boxes=self.mwin.addAction("Particles")
+		#self.mwin_single=self.mwin.addAction("Single Particle")
+		#self.mwin_average=self.mwin.addAction("Averaging")
 
 
 		self.setCentralWidget(QtGui.QWidget())
@@ -124,13 +128,16 @@ class EMMotion(QtGui.QMainWindow):
 		# Buttons for controlling mask
 		self.hbl1=QtGui.QHBoxLayout()
 		self.gbl.addLayout(self.hbl1,2,1)
+		self.hbl1.addStretch(5)
 		
 		self.wbautoali=QtGui.QPushButton("Auto")
 		self.hbl1.addWidget(self.wbautoali)
 		
 		self.wbresetali=QtGui.QPushButton("Reset")
 		self.hbl1.addWidget(self.wbresetali)
-		
+
+		self.hbl1.addStretch(5)
+
 		# Widget for setting alignment mask blur and base level
 		self.vbl1=QtGui.QVBoxLayout()
 		self.gbl.addLayout(self.vbl1,1,2)
@@ -152,6 +159,11 @@ class EMMotion(QtGui.QMainWindow):
 		self.wsbalimaskbase.setRange(0,100)
 		self.vbl1.addWidget(self.wsbalimaskbase)
 		
+		self.vbl1.addSpacing(16)
+		
+		self.wbaligo=QtGui.QPushButton(QtCore.QChar(0x2192))
+		self.vbl1.addWidget(self.wbaligo)
+		
 		self.vbl1.addStretch(5)
 		
 		# widget for displaying the masked alignment reference
@@ -161,6 +173,16 @@ class EMMotion(QtGui.QMainWindow):
 		
 		self.w2dalimask=EMImage2DWidget()
 		self.gbl.addWidget(self.w2dalimask,1,3)
+		
+		self.hbl1a=QtGui.QHBoxLayout()
+		self.gbl.addLayout(self.hbl1a,2,3)
+		self.hbl1a.addStretch(5)
+		
+		self.wbrecalcref=QtGui.QPushButton("Recompute")
+		self.hbl1a.addWidget(self.wbrecalcref)
+		
+		self.hbl1a.addStretch(5)
+
 
 		###### ROI Mask
 		# widget for editing the ROI mask
@@ -173,12 +195,15 @@ class EMMotion(QtGui.QMainWindow):
 		# Buttons for controlling mask
 		self.hbl2=QtGui.QHBoxLayout()
 		self.gbl.addLayout(self.hbl2,5,1)
+		self.hbl2.addStretch(5)
 		
 		self.wbautoroi=QtGui.QPushButton("Auto")
 		self.hbl2.addWidget(self.wbautoroi)
 		
 		self.wbresetroi=QtGui.QPushButton("Reset")
 		self.hbl2.addWidget(self.wbresetroi)
+		
+		self.hbl2.addStretch(5)
 
 		# Widget for setting alignment mask blur and base level
 		self.vbl2=QtGui.QVBoxLayout()
@@ -192,16 +217,25 @@ class EMMotion(QtGui.QMainWindow):
 		self.wsbclsmaskblur.setRange(0,25)
 		self.vbl2.addWidget(self.wsbclsmaskblur)
 
+		self.vbl2.addSpacing(16)
+		
+		self.wbroigo=QtGui.QPushButton(QtCore.QChar(0x2192))
+		self.vbl2.addWidget(self.wbroigo)
+
+
 		# widget for displaying the masked ROI
 		self.w2clsmask=EMImage2DWidget()
 		self.gbl.addWidget(self.w2clsmask,4,3)
 		
 		self.vbl2.addStretch(5)
 
+		self.wlarrow1=QtGui.QLabel(QtCore.QChar(0x2192))
+		self.gbl.addWidget(self.wlarrow1,2,4)
+
 		###### Results
 		# Widget showing lists of different result sets
 		self.vbl3=QtGui.QVBoxLayout()
-		self.gbl.addLayout(self.vbl3,1,6,4,1)
+		self.gbl.addLayout(self.vbl3,1,6,5,1)
 		
 		self.wllistresult=QtGui.QLabel("Results")
 #		self.wllistresult.setAlignment(Qt.AlignHCenter)
@@ -210,10 +244,120 @@ class EMMotion(QtGui.QMainWindow):
 		self.wlistresult=QtGui.QListWidget()
 		self.vbl3.addWidget(self.wlistresult)
 
+		###### Parameters for processing
+		self.vgb1=QtGui.QGroupBox("Launch Job")
+		self.vbl3.addWidget(self.vgb1)
+		
+		self.vbl3a=QtGui.QVBoxLayout()
+		self.vgb1.setLayout(self.vbl3a)
+		
+		self.wvbclasses=ValBox(None,(0,256),"# Classes",32)
+		self.wvbclasses.setIntonly(True)
+		self.vbl3a.addWidget(self.wvbclasses)
+		
+		self.wvbcores=ValBox(None,(0,256),"# Threads",2)
+		self.wvbcores.setIntonly(True)
+		self.vbl3a.addWidget(self.wvbcores)
+		
+		self.wcbprocmode=QtGui.QComboBox()
+		self.wcbprocmode.addItem("PCA / k-means")
+		self.wcbprocmode.addItem("Average Density")
+		self.vbl3a.addWidget(self.wcbprocmode)
+		
+		self.wpbprogress=QtGui.QProgressBar()
+		self.wpbprogress.setEnabled(False)
+		self.wpbprogress.setMinimum(0)
+		self.wpbprogress.setMaximum(100)
+		self.wpbprogress.setValue(0)
+		self.vbl3a.addWidget(self.wpbprogress)
+		
+		# doubles as a cancel button
+		self.wbcompute=QtGui.QPushButton("Compute")
+		self.vbl3a.addWidget(self.wbcompute)
+
+		self.wlarrow2=QtGui.QLabel(QtCore.QChar(0x2192))
+		self.gbl.addWidget(self.wlarrow2,2,7)
+
+
+		###### Output widgets
+		# Class-averages
+		self.wlclasses=QtGui.QLabel("<big><pre>Classes</pre></big>")
+		self.wlclasses.setAlignment(Qt.AlignHCenter)
+		self.gbl.addWidget(self.wlclasses,0,9)
+		
+		self.w2dclasses=EMImage2DWidget()
+		self.gbl.addWidget(self.w2dclasses,1,9)
+		
+		## Buttons for controlling mask
+		#self.hbl1=QtGui.QHBoxLayout()
+		#self.gbl.addLayout(self.hbl1,2,1)
+		#self.hbl1.addStretch(5)
+		
+		#self.wbautoali=QtGui.QPushButton("Auto")
+		#self.hbl1.addWidget(self.wbautoali)
+		
+		#self.wbresetali=QtGui.QPushButton("Reset")
+		#self.hbl1.addWidget(self.wbresetali)
+
+		#self.hbl1.addStretch(5)
+
+		QtCore.QObject.connect(self.wbautoali,QtCore.SIGNAL("clicked(bool)"),self.aliAutoPress)
+		QtCore.QObject.connect(self.wbresetali,QtCore.SIGNAL("clicked(bool)"),self.aliResetPress)
+		QtCore.QObject.connect(self.wbaligo,QtCore.SIGNAL("clicked(bool)"),self.aliGoPress)
+		QtCore.QObject.connect(self.wbrecalcref,QtCore.SIGNAL("clicked(bool)"),self.aliRecalcRefPress)
+		QtCore.QObject.connect(self.wbautoroi,QtCore.SIGNAL("clicked(bool)"),self.roiAutoPress)
+		QtCore.QObject.connect(self.wbresetroi,QtCore.SIGNAL("clicked(bool)"),self.roiResetPress)
+		QtCore.QObject.connect(self.wbroigo,QtCore.SIGNAL("clicked(bool)"),self.roiGoPress)
+		QtCore.QObject.connect(self.wbcompute,QtCore.SIGNAL("clicked(bool)"),self.doCompute)
+
+		QtCore.QObject.connect(self.mfileopen,QtCore.SIGNAL("triggered(bool)")  ,self.menuFileOpen  )
+
+
+		# set up draw mode
+		insp=self.w2dalimaskdraw.get_inspector()
+		insp.hide()
+		insp.mmtab.setCurrentIndex(3)
+		insp.dtpenv.setText("0.0")
+		
+		insp=self.w2dalimaskdraw.get_inspector()
+		insp.hide()
+		insp.mmtab.setCurrentIndex(3)
+		insp.dtpenv.setText("0.0")
+		
+
 		if path!=None : self.initPath(path)
 
 	def initPath(self,path):
 		return
+
+	def menuFileOpen(self,x):
+		dialog = embrowser.EMBrowserWidget(withmodal=False,multiselect=False)
+
+	def aliAutoPress(self,x):
+		pass
+	
+	def aliResetPress(self,x):
+		pass
+	
+	def aliGoPress(self,x):
+		pass
+	
+	def aliRecalcRefPress(self,x):
+		pass
+	
+	def roiAutoPress(self,x):
+		pass
+	
+	def roiResetPress(self,x):
+		pass
+	
+	def roiGoPress(self,x):
+		pass
+	
+	def doCompute(self,x):
+		pass
+	
+	
 
 if __name__ == "__main__":
 	main()
