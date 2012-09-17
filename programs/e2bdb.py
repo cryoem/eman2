@@ -87,7 +87,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--checkctf",action="store_true",help="Verfies that all images in the file contain CTF information, and gives some basic statistics",default=False)
 
-	parser.add_argument("--step",type=str,default="0,1",help="Specify <init>,<step>. Processes only a subset of the input data. For example, 0,2 would process only the even numbered particles")
+	parser.add_argument("--step",type=str,default="0,1",help="Specify <init>,<step>[,<max>]. Processes only a subset of the input data. For example, 0,2 would process only the even numbered particles")
 	(options, args) = parser.parse_args()
 
 	if options.nocache : EMAN2db.BDB_CACHE_DISABLE=True
@@ -96,10 +96,13 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 		db_cleanup(options.force)
 		sys.exit(0)
 
-	try : options.step=int(options.step.split(",")[0]),int(options.step.split(",")[1])		# convert strings to tuple
+	try : options.step=int(options.step.split(",")[0]),int(options.step.split(",")[1]),int(options.step.split(",")[2])		# convert strings to tuple
 	except:
-		print "Invalid --step specification"
-		sys.exit(1)
+		try:
+			options.step=int(options.step.split(",")[0]),int(options.step.split(",")[1])
+		except:
+			print "Invalid --step specification"
+			sys.exit(1)
 
 	if options.all : options.long=1
 	if len(args)==0 : args.append("bdb:.")
@@ -186,8 +189,13 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 			for db in dbs:
 				dct,keys=db_open_dict(path+db,ro=True,with_keys=True)
 				if dct==vstack : continue
-				if keys == None: vals = xrange(options.step[0],len(dct),options.step[1])
-				else: vals = keys[options.step[0]::options.step[1]]		# we apply --step even if we have a list of keys
+				if len(options.step)==2 :
+					if keys == None: vals = xrange(options.step[0],len(dct),options.step[1])
+					else: vals = keys[options.step[0]::options.step[1]]		# we apply --step even if we have a list of keys
+				else:
+					if keys == None: vals = xrange(options.step[0],options.step[2],options.step[1])
+					else: vals = keys[options.step[0]:options.step[2]:options.step[1]]		# we apply --step even if we have a list of keys
+
 				if options.list !=None: vals=slist
 				for n in vals:
 					try: d=dct.get(n,nodata=1).get_attr_dict()
@@ -232,6 +240,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 			nima = EMUtil.get_image_count(options.restore)
 			IB = db_open_dict(options.restore)
 			data_old = None
+			if len(options.step)==3 : nima=min(options.step[2],nima)
 			for i in xrange(options.step[0],nima,options.step[1]):
 				source = IB.get_header(i)
 				data_source = source["data_source"]
@@ -285,6 +294,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 				#### Dump
 				keys=dct.keys()
 				keys.sort()
+				if len(options.step)==3 : keys=keys[:options.step[2]]
 				for k in keys[options.step[0]::options.step[1]]:
 					v=dct[k]
 					print "%s : "%k,
@@ -309,6 +319,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 				print "##### CTF -> ",db
 				dct=db_open_dict(path+db,ro=True)
 				keys=dct.keys()
+				if len(options.step)==3 : keys=keys[:options.step[2]]
 				defocus=set()
 				for k in keys[options.step[0]::options.step[1]]:
 					v=dct.get_header(k)
@@ -334,6 +345,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 				
 				#### Dump
 				keys=dct.keys()
+				if len(options.step)==3 : keys=keys[:options.step[2]]
 				keys.sort()
 				for k in keys[options.step[0]::options.step[1]]:
 					v=dct[k]
@@ -361,7 +373,9 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 								
 				### Info on all particles
 				if options.all :
-					for i in range(options.step[0],len(dct),options.step[1]):
+					mx=len(dct)
+					if len(options.step)==3 : mx=min(mx,options.step[2])
+					for i in range(options.step[0],mx,options.step[1]):
 						try: 
 							im=dct[i]
 							if im==None : raise Exception

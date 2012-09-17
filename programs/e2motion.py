@@ -72,6 +72,7 @@ def main():
 	
 	if options.path==None:
 		options.path=numbered_path("motion",True)
+		os.makedirs(options.path)
 
 	pid=E2init(argv)
 	
@@ -297,7 +298,7 @@ class EMMotion(QtGui.QMainWindow):
 		#self.hbl1.addWidget(self.wbautoali)
 		
 		#self.wbresetali=QtGui.QPushButton("Reset")
-		#self.hbl1.addWidget(self.wbresetali)
+		#self.hbl1.addWidget(self.wbresetali)"bdb:%s"
 
 		#self.hbl1.addStretch(5)
 
@@ -328,11 +329,57 @@ class EMMotion(QtGui.QMainWindow):
 		if path!=None : self.initPath(path)
 
 	def initPath(self,path):
+		if path[:4].lower()!="bdb:" : path="bdb:"+path
+		self.path=path
+		dicts=db_list_dicts(self.path)
+		
+		# If particles exists then we can fully initialize
+		if db_check_dict("%s#particles"%self.path) :
+			self.particles=EMData.read_images("%s#particles"%self.path,0,-1)	# read in the entire particle stack
+			
+			cl=[i for i in dicts if "classes" in i]
+			cl.sort()
+			self.wllistresult.addItems(QtCore.QStringList(cl))
+			
+			self.bootstrap()
+		else :
+			self.particles=None
+			
 		return
 
 	def menuFileOpen(self,x):
-		dialog = embrowser.EMBrowserWidget(withmodal=False,multiselect=False)
+		if self.particles!=None:
+			QtGui.QMessageBox.warning(None,"Error","%s already contains a stack of particles. A new folder is required to start with a new stack of particles. Rerun without --path option."%self.path)
+			return
 
+		self.dialog = embrowser.EMBrowserWidget(withmodal=False,multiselect=False)
+		QtCore.QObject.connect(dialog,QtCore.SIGNAL("ok"),self.gotPath)
+		QtCore.QObject.connect(dialog,QtCore.SIGNAL("cancel"),self.gotPath)
+	
+	def gotPath(self):
+		ptcl=self.dialog.getResult()
+		self.dialog=None
+		if ptcl == None : return		# user pressed cancel, but we still need to clean up
+		
+		n=EMUtil.get_image_count(ptcl)
+		sz=EMData(ptcl,0,True)["nx"]
+		
+		# We don't want the user to overwhelm the system
+		if sz*sz*4*n > 5.0e8 :
+			nmax=5.0e8/(sz*sz*4)
+			r=QtGui.QMessageBox.question(None,"Are you sure ?","WARNING: This full particle set will require %d+ gb memory to process. Select Yes to use only the first %d particles, No to use the entire stack, or Cancel to abort. You may also consider using e2proc2d.py --meanshrink= to produce a downsampled stack for processing."%(int(sz*sz*9*n/1.0e9+.5),nmax),QtGui.QMessageBox.Yes|QtGui.QMessageBox.No|QtGui.QMessageBox.Cancel)
+			if r==QtGui.QMessageBox.Cancel : return
+			if r==QtGui.QMessageBox.Yes : n=nmax
+			
+		launch_childprocess("e2bdb.py %s  --makevstack=%s#particles --step=0,1,%d"%(path,self.path,n))
+		
+		self.initPath(self.path)
+	
+	def bootstrap(self):
+		"""This will create an initial alignment for the particles when no reference is available"""
+		
+		
+		
 	def aliAutoPress(self,x):
 		pass
 	
