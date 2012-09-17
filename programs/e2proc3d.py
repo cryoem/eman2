@@ -166,6 +166,7 @@ def main():
 	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_option("--unstacking", action="store_true", help="Process a stack of 3D images, then output a a series of numbered single image files", default=False)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_option("--step",type=str,default="0,1",help="Specify <init>,<step>. Processes only a subset of the input data. For example, 0,2 would process only the even numbered particles")
 	
 	append_options = ["clip", "fftclip", "process", "filter", "meanshrink", "medianshrink", "scale", "sym", "multfile", "trans", "rot"]
 	
@@ -186,9 +187,23 @@ def main():
 	n1 = options.last
 	nimg = EMUtil.get_image_count(infile)
 	
+	if n1 > nimg:
+		print 'The value for --last is greater than the number of images in the input stack. Exiting'
+		sys.exit(1)
+	
+	try : options.step=int(options.step.split(",")[0]),int(options.step.split(",")[1])		# convert strings to tuple
+	except:
+		print "Invalid --step specification"
+		sys.exit(1)
+
+	if options.step and options.first:
+		print 'Invalid options. You used --first and --step. The --step option contains both a step size and the first image to step from. Please use only the --step option rather than --step and --first'
+		sys.exit(1)
+		
 	if options.average:
 		ptcls = []
-		for i in range(nimg):
+		for i in range(options.step[0],n1,options.step[1]):
+			print "Averaging Volume " + str(i)
 			ptcls.append(EMData(infile,i))
 		avg = sum(ptcls)/len(ptcls)
 		avg.process_inplace('normalize.edgemean')
@@ -209,7 +224,7 @@ def main():
 		print "Your last index is out of range, changed to %d" % (nimg-1)
 		n1 = nimg-1
 	
-	datlst = parse_infile(infile, n0, n1)
+	datlst = parse_infile(infile, n0, n1,options.step[1])
 	
 	logid=E2init(sys.argv,options.ppid)
 
@@ -462,7 +477,7 @@ def main():
 
 
 #parse_file() wil read the input image file and return a list of EMData() object
-def parse_infile(infile, first, last):
+def parse_infile(infile, first, last, step):
 	nimg = EMUtil.get_image_count(infile)
 	
 	if (nimg > 1):
@@ -486,7 +501,8 @@ def parse_infile(infile, first, last):
 		else:
 			print "the image is a 3D stack - I will process images from %d to %d" % (first, last)
 			data = []
-			for i in xrange(first, last+1):
+			for i in xrange(first, last+1, step):
+				print i
 				d = EMData()
 				d.read_image(infile, i)
 				data.append(d)
