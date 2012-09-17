@@ -243,7 +243,7 @@ def main():
 			nimg = d.get_zsize()
 			if n1 > nimg:
 				print 'The value for --last is greater than the number of images in the input stack. Exiting'
-				sys.exit(1)
+				n1=options.last
 			if options.step[0] > n0:
 				n0 = options.step[0]
 			threed_xsize = d.get_xsize()
@@ -270,15 +270,18 @@ def main():
 			n1 = tomo_ny-1
 		elif plane in yzplanes:
 			n1 = tomo_nx-1
-		if options.last < n1:
+		if options.last >= 0 and options.last < n1:
 			n1 = options.last
 		elif options.last > n1:
-			print 'The value for --last is greater than the number of images in the input stack. Exiting'
-			sys.exit(1)
+			print 'The value for --last is greater than the number of images in the input stack. It is being set to the maximum length of the images'
+			n1 = tomo_nz-1
 		threed = EMData()
 		threed.read_image(infile)
 		
 	ld = EMData()
+	if options.step[0] > options.first:
+		n0=options.step[0]
+
 	if options.verbose>0:
 		print "%d images, processing %d-%d stepping by %d"%(nimg,n0,n1,options.step[1])
 
@@ -290,8 +293,6 @@ def main():
 	lasttime=time.time()
 	outfilename_no_ext = outfile[:-4]
 	outfilename_ext = outfile[-3:]
-	if options.step[0] > options.first:
-		n0=options.step[0]
 	for i in range(n0, n1+1, options.step[1]):
 		if options.verbose >= 1:
 			
