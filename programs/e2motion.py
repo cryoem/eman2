@@ -36,6 +36,7 @@ import weakref
 from sys import argv
 from EMAN2 import *
 from PyQt4 import QtCore, QtGui
+from PyQt4.QtCore import Qt
 from emapplication import get_application, EMApp
 from emimage2d import EMImage2DWidget
 from emimagemx import EMImageMXWidget
@@ -109,24 +110,80 @@ class EMMotion(QtGui.QMainWindow):
 		cen=self.centralWidget()
 		
 		# widget for editing the alignment mask
+		self.wlalimaskdraw=QtGui.QLabel("<big><b>Edit</b></big>")
+		self.wlalimaskdraw.setAlignment(Qt.AlignHCenter)
+		self.gbl.addWidget(self.wlalimaskdraw,0,1)
+		
+		self.wlalimaskdraw2=QtGui.QLabel("A\nl\ni\ng\nn")
+		self.gbl.addWidget(self.wlalimaskdraw2,1,0)
+		
 		self.w2dalimaskdraw=EMImage2DWidget()
 		self.gbl.addWidget(self.w2dalimaskdraw,1,1)
 		
-		# widget for displaying the final masked alignment reference
-		self.w2dalimask=EMImage2DWidget()
-		self.gbl.addWidget(w2dalimask,1,3)
-
-		# widget for editing the variation region mask
-		self.w2dalimaskdraw=EMImage2DWidget()
-		self.gbl.addWidget(self.w2dalimaskdraw,4,1)
+		# Widget for setting alignment mask blur and base level
+		self.vbl1=QtGui.QVBoxLayout()
+		self.gbl.addLayout(self.vbl1,1,2)
+		self.vbl1.addStretch(5)
 		
+		self.wlalimaskblur=QtGui.QLabel("Blur")
+		self.vbl1.addWidget(self.wlalimaskblur)
+		
+		self.wsbalimaskblur=QtGui.QSpinBox()
+		self.wsbalimaskblur.setRange(0,25)
+		self.vbl1.addWidget(self.wsbalimaskblur)
+		
+		self.vbl1.addSpacing(16)
+		
+		self.wlalimaskbase=QtGui.QLabel("Base")
+		self.vbl1.addWidget(self.wlalimaskbase)
+		
+		self.wsbalimaskbase=QtGui.QSpinBox()
+		self.wsbalimaskbase.setRange(0,100)
+		self.vbl1.addWidget(self.wsbalimaskbase)
+		
+		self.vbl1.addStretch(5)
+		
+		# widget for displaying the masked alignment reference
+		self.wlalimask=QtGui.QLabel("Ref")
+		self.wlalimask.setAlignment(Qt.AlignHCenter)
+		self.gbl.addWidget(self.wlalimask,0,3)
+		
+		self.w2dalimask=EMImage2DWidget()
+		self.gbl.addWidget(self.w2dalimask,1,3)
+
+		# widget for editing the ROI mask
+		self.wlroimaskdraw=QtGui.QLabel("R\nO\nI")
+		self.gbl.addWidget(self.wlroimaskdraw,4,0)
+		
+		self.w2clsmaskdraw=EMImage2DWidget()
+		self.gbl.addWidget(self.w2clsmaskdraw,4,1)
+
+		# Widget for setting alignment mask blur and base level
+		self.vbl2=QtGui.QVBoxLayout()
+		self.gbl.addLayout(self.vbl2,4,2)
+		self.vbl2.addStretch(5)
+		
+		self.wlclsmaskblur=QtGui.QLabel("Blur")
+		self.vbl2.addWidget(self.wlclsmaskblur)
+		
+		self.wsbclsmaskblur=QtGui.QSpinBox()
+		self.wsbclsmaskblur.setRange(0,25)
+		self.vbl2.addWidget(self.wsbclsmaskblur)
+
+		# widget for displaying the masked ROI
+		self.w2clsmask=EMImage2DWidget()
+		self.gbl.addWidget(self.w2clsmask,4,3)
+		
+		self.vbl2.addStretch(5)
 
 		# Widget showing lists of different result sets
-		self.wlistresult=QListWidget()
+		self.wlistresult=QtGui.QListWidget()
 		self.gbl.addWidget(self.wlistresult,1,6,4,1)
 
 		if path!=None : self.initPath(path)
 
+	def initPath(self,path):
+		return
 
 if __name__ == "__main__":
 	main()
