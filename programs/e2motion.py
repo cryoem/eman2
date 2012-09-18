@@ -72,7 +72,7 @@ def main():
 	
 	if options.path==None:
 		options.path=numbered_path("motion",True)
-		os.makedirs(options.path)
+#		os.makedirs(options.path)
 
 	pid=E2init(argv)
 	
@@ -130,7 +130,11 @@ class EMMotion(QtGui.QMainWindow):
 		self.hbl1=QtGui.QHBoxLayout()
 		self.gbl.addLayout(self.hbl1,2,1)
 		self.hbl1.addStretch(5)
-		
+
+		self.wbdrawali=QtGui.QPushButton("Draw")
+		self.hbl1.addWidget(self.wbdrawali)
+		self.wbdrawali.hide()						# this functionality won't work with the current widget
+
 		self.wbautoali=QtGui.QPushButton("Auto")
 		self.hbl1.addWidget(self.wbautoali)
 		
@@ -158,6 +162,7 @@ class EMMotion(QtGui.QMainWindow):
 		
 		self.wsbalimaskbase=QtGui.QSpinBox()
 		self.wsbalimaskbase.setRange(0,100)
+		self.wsbalimaskbase.setValue(10)
 		self.vbl1.addWidget(self.wsbalimaskbase)
 		
 		self.vbl1.addSpacing(16)
@@ -190,14 +195,18 @@ class EMMotion(QtGui.QMainWindow):
 		self.wlroimaskdraw=QtGui.QLabel("<big><pre>R\nO\nI</pre></big>")
 		self.gbl.addWidget(self.wlroimaskdraw,4,0)
 		
-		self.w2clsmaskdraw=EMImage2DWidget()
-		self.gbl.addWidget(self.w2clsmaskdraw,4,1)
+		self.w2droimaskdraw=EMImage2DWidget()
+		self.gbl.addWidget(self.w2droimaskdraw,4,1)
 
 		# Buttons for controlling mask
 		self.hbl2=QtGui.QHBoxLayout()
 		self.gbl.addLayout(self.hbl2,5,1)
 		self.hbl2.addStretch(5)
 		
+		self.wbdrawroi=QtGui.QPushButton("Draw")
+		self.hbl1.addWidget(self.wbdrawroi)
+		self.wbdrawroi.hide()							# this button won't work right for now
+
 		self.wbautoroi=QtGui.QPushButton("Auto")
 		self.hbl2.addWidget(self.wbautoroi)
 		
@@ -211,12 +220,12 @@ class EMMotion(QtGui.QMainWindow):
 		self.gbl.addLayout(self.vbl2,4,2)
 		self.vbl2.addStretch(5)
 		
-		self.wlclsmaskblur=QtGui.QLabel("Blur")
-		self.vbl2.addWidget(self.wlclsmaskblur)
+		self.wlroimaskblur=QtGui.QLabel("Blur")
+		self.vbl2.addWidget(self.wlroimaskblur)
 		
-		self.wsbclsmaskblur=QtGui.QSpinBox()
-		self.wsbclsmaskblur.setRange(0,25)
-		self.vbl2.addWidget(self.wsbclsmaskblur)
+		self.wsbroimaskblur=QtGui.QSpinBox()
+		self.wsbroimaskblur.setRange(0,25)
+		self.vbl2.addWidget(self.wsbroimaskblur)
 
 		self.vbl2.addSpacing(16)
 		
@@ -225,8 +234,8 @@ class EMMotion(QtGui.QMainWindow):
 
 
 		# widget for displaying the masked ROI
-		self.w2clsmask=EMImage2DWidget()
-		self.gbl.addWidget(self.w2clsmask,4,3)
+		self.w2droimask=EMImage2DWidget()
+		self.gbl.addWidget(self.w2droimask,4,3)
 		
 		self.vbl2.addStretch(5)
 
@@ -269,7 +278,7 @@ class EMMotion(QtGui.QMainWindow):
 		self.wpbprogress.setEnabled(False)
 		self.wpbprogress.setMinimum(0)
 		self.wpbprogress.setMaximum(100)
-		self.wpbprogress.setValue(0)
+		self.wpbprogress.reset()
 		self.vbl3a.addWidget(self.wpbprogress)
 		
 		# doubles as a cancel button
@@ -302,10 +311,12 @@ class EMMotion(QtGui.QMainWindow):
 
 		#self.hbl1.addStretch(5)
 
+		QtCore.QObject.connect(self.wbdrawali,QtCore.SIGNAL("clicked(bool)"),self.aliDrawMode)
 		QtCore.QObject.connect(self.wbautoali,QtCore.SIGNAL("clicked(bool)"),self.aliAutoPress)
 		QtCore.QObject.connect(self.wbresetali,QtCore.SIGNAL("clicked(bool)"),self.aliResetPress)
 		QtCore.QObject.connect(self.wbaligo,QtCore.SIGNAL("clicked(bool)"),self.aliGoPress)
 		QtCore.QObject.connect(self.wbrecalcref,QtCore.SIGNAL("clicked(bool)"),self.aliRecalcRefPress)
+		QtCore.QObject.connect(self.wbdrawroi,QtCore.SIGNAL("clicked(bool)"),self.roiDrawMode)
 		QtCore.QObject.connect(self.wbautoroi,QtCore.SIGNAL("clicked(bool)"),self.roiAutoPress)
 		QtCore.QObject.connect(self.wbresetroi,QtCore.SIGNAL("clicked(bool)"),self.roiResetPress)
 		QtCore.QObject.connect(self.wbroigo,QtCore.SIGNAL("clicked(bool)"),self.roiGoPress)
@@ -320,13 +331,28 @@ class EMMotion(QtGui.QMainWindow):
 		insp.mmtab.setCurrentIndex(3)
 		insp.dtpenv.setText("0.0")
 		
-		insp=self.w2dalimaskdraw.get_inspector()
+		insp=self.w2droimaskdraw.get_inspector()
 		insp.hide()
 		insp.mmtab.setCurrentIndex(3)
 		insp.dtpenv.setText("0.0")
 		
+		self.aliimg=None		# This is the unmasked alignment reference image
+		self.alisig=None		# This is the standard deviation of the alignment reference
+		self.alimask=None		# This is the drawn-upon version of aliimg used to generate the mask
+		self.alimasked=None		# This is the masked alignment reference used for the actual alignments
+		self.roimask=None		# Region of interest mask drawing image
+		self.roimasked=None		# Region of interest display widget
 
-		if path!=None : self.initPath(path)
+		self.particles=None
+		self.particles_ali=None
+
+		self.path=path
+		QtCore.QTimer.singleShot(200,self.afterStart)
+
+	def afterStart(self):
+		"""This gets called once the event loop is running"""
+		print "App running, initializing"
+		self.initPath(self.path)
 
 	def initPath(self,path):
 		if path[:4].lower()!="bdb:" : path="bdb:"+path
@@ -335,11 +361,11 @@ class EMMotion(QtGui.QMainWindow):
 		
 		# If particles exists then we can fully initialize
 		if db_check_dict("%s#particles"%self.path) :
-			self.particles=EMData.read_images("%s#particles"%self.path,0,-1)	# read in the entire particle stack
+			self.particles=EMData.read_images("%s#particles"%self.path)	# read in the entire particle stack
 			
 			cl=[i for i in dicts if "classes" in i]
 			cl.sort()
-			self.wllistresult.addItems(QtCore.QStringList(cl))
+			self.wlistresult.addItems(QtCore.QStringList(cl))
 			
 			self.bootstrap()
 		else :
@@ -352,14 +378,16 @@ class EMMotion(QtGui.QMainWindow):
 			QtGui.QMessageBox.warning(None,"Error","%s already contains a stack of particles. A new folder is required to start with a new stack of particles. Rerun without --path option."%self.path)
 			return
 
-		self.dialog = embrowser.EMBrowserWidget(withmodal=False,multiselect=False)
-		QtCore.QObject.connect(dialog,QtCore.SIGNAL("ok"),self.gotPath)
-		QtCore.QObject.connect(dialog,QtCore.SIGNAL("cancel"),self.gotPath)
+		self.dialog = embrowser.EMBrowserWidget(withmodal=True,multiselect=False)
+		QtCore.QObject.connect(self.dialog,QtCore.SIGNAL("ok"),self.gotPath)
+		QtCore.QObject.connect(self.dialog,QtCore.SIGNAL("cancel"),self.gotPath)
+		self.dialog.show()
 	
 	def gotPath(self):
 		ptcl=self.dialog.getResult()
 		self.dialog=None
 		if ptcl == None : return		# user pressed cancel, but we still need to clean up
+		ptcl=ptcl[0]
 		
 		n=EMUtil.get_image_count(ptcl)
 		sz=EMData(ptcl,0,True)["nx"]
@@ -370,19 +398,28 @@ class EMMotion(QtGui.QMainWindow):
 			r=QtGui.QMessageBox.question(None,"Are you sure ?","WARNING: This full particle set will require %d+ gb memory to process. Select Yes to use only the first %d particles, No to use the entire stack, or Cancel to abort. You may also consider using e2proc2d.py --meanshrink= to produce a downsampled stack for processing."%(int(sz*sz*9*n/1.0e9+.5),nmax),QtGui.QMessageBox.Yes|QtGui.QMessageBox.No|QtGui.QMessageBox.Cancel)
 			if r==QtGui.QMessageBox.Cancel : return
 			if r==QtGui.QMessageBox.Yes : n=nmax
-			
-		launch_childprocess("e2bdb.py %s  --makevstack=%s#particles --step=0,1,%d"%(path,self.path,n))
+		
+		task="e2bdb.py %s  --makevstack=%s#particles --step=0,1,%d"%(ptcl,self.path,n)
+		print task
+		launch_childprocess(task)
 		
 		self.initPath(self.path)
 		
 	def bootstrap(self):
-		"""This will create an initial alignment for the particles when no reference is available"""
-		
+		"""This will create an initial alignment reference for the particles when no reference is available"""
+
+		self.wpbprogress.setEnabled(True)
+		self.wpbprogress.reset()
+		QtGui.qApp.processEvents()
+
 		tree=self.particles[:]
 		while len(tree)>1:
+			maxt=len(tree)
 			tree2=[]
 			# average particles in pairs, and make a new shorter list
 			while len(tree)>0:
+				self.wpbprogress.setValue(int((maxt-len(tree))*100/maxt))
+				QtGui.qApp.processEvents()
 				a=tree.pop()
 				try: b=tree.pop()
 				except:
@@ -390,36 +427,159 @@ class EMMotion(QtGui.QMainWindow):
 					break
 				c=a.align("rotate_translate_flip",b)
 				c.add(b)
+				c.process_inplace("xform.centeracf")
 				tree2.append(c)
+#				c.write_image("zzz.hdf",-1)
 			
 			tree=tree2
 			
-		self.aliref=tree[0]
-		self.aliref.process_inplace("normalize.edgemean")
+		tree[0].process_inplace("xform.centeracf")
+		tree[0].process_inplace("normalize.edgemean")
+
+		# We look for the most 'featurefull' direction to put on Y
+		f=tree[0].do_fft()
+		f.ri2ap()
+		pl=f.calc_az_dist(90,-90.0,2.0,3,16)
+#		for i in range(90): print "%d\t%f"%(i,pl[i])
+		ml=2.0*pl.index(max(pl))
+		tree[0].rotate(ml,0,0)				# put the initial reference in the preferred orientation
+		#tree[0].write_image("zzz.hdf",0)
 		
+		# One final alignment pass
+		self.particles_ali=[]
+		self.alisig=EMData(self.particles[0]["nx"],self.particles[0]["ny"],1)
+		avgr=Averagers.get("mean",{"sigma":self.alisig})
+		for i,p in enumerate(self.particles):
+			self.wpbprogress.setValue(int(i*100/len(self.particles)))
+			QtGui.qApp.processEvents()
+			a=p.align("rotate_translate_flip",tree[0])
+#			a=p.align("refine",tree[0],{"verbose":0,"xform.align2d":a["xform.align2d"]},"ccc",{})		# doesn't really seem to make an improvement
+			a["match_qual"]=a.cmp("ccc",tree[0])		# compute similarity to unmasked reference
+			self.particles_ali.append(a)
+			avgr.add_image(a)
 		
-	def aliAutoPress(self,x):
+		self.aliimg=avgr.finish()
+		
+		#self.aliimg.write_image("zzz.hdf",1)
+		#self.alisig.write_image("zzz.hdf",2)
+		
+		self.setAliRef(self.aliimg)
+		
+		self.wpbprogress.reset()
+		self.wpbprogress.setEnabled(False)
+	
+	def setAliRef(self,img):
+		"""Sets a new alignment reference, creating a new empty mask if none is present"""
+		
+		self.aliimg=img
+		
+		# If there is an existing mask drawn, we copy it out before overwriting
+		mask=None
+		if self.alimask!=None:
+			mask=self.alimask
+			mask.process_inplace("threshold.binary",{"value":0.001})
+		
+		self.alimask=img.copy()							# we need a copy of the pristine alignment reference to mask later
+		self.alimask.add(-self.alimask["minimum"]+.01)		# The minimum value in the image is >0, so when we draw with 0 'color' we can extract the mask info
+		if mask!=None : self.alimask.mult(mask)
+		
+		self.w2dalimaskdraw.set_data(self.alimask)
+		self.aliGoPress()								# regenerate the actual alignment reference image (alimasked)
+		
+		rmask=None
+		if self.roimask!=None:
+			rmask=self.roimask
+			rmask.process_inplace("threshold.binary",{"value":0.001})
+			
+		self.roimask=img.copy()
+		self.roimask.add(-self.roimask["minimum"]+.01)		# The minimum value in the image is >0, so when we draw with 0 'color' we can extract the mask info
+		if rmask!=None: self.roimask.mult(rmask)
+		
+		self.w2droimaskdraw.set_data(self.roimask)
+		self.roiGoPress()								# regenerate the region of interest display
+
+	def aliDrawMode(self,x=False):
+		insp=self.w2dalimaskdraw.inspector
+		if self.wbdrawali.text()=="Draw":
+			insp.dtpenv.setText("0.0")
+
+	def aliAutoPress(self,x=False):
 		pass
 	
-	def aliResetPress(self,x):
+	def aliResetPress(self,x=False):
+		self.alimask=self.aliimg.copy()
+		self.alimask.add(-self.alimask["minimum"]+.01)		# The minimum value in the image is >0, so when we draw with 0 'color' we can extract the mask info
+		self.w2dalimaskdraw.set_data(self.alimask)
+		self.aliGoPress()
+	
+	def aliGoPress(self,x=False):
+		self.alimasked=self.aliimg.copy()
+		
+		base=self.wsbalimaskbase.value()
+		blur=self.wsbalimaskblur.value()
+		
+		mask=self.alimask.process("threshold.binary",{"value":0.001})			# binarize the drawn mask
+		mask.process_inplace("math.linear",{"scale":-1.0,"shift":1.0+base/100.0})		# invert the mask (user selects the region to include, not exclude)
+		mask.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.5/(blur+.01)})
+		
+		self.alimasked.mult(mask)
+		self.w2dalimask.set_data(self.alimasked)
+
+	def alignToRef(self):
+		"""realigns particles to reference, but does not compute a new reference"""
+		self.wpbprogress.setEnabled(True)
+		self.wpbprogress.reset()
+		
+		self.particles_ali=[]
+		for i,p in enumerate(self.particles):
+			self.wpbprogress.setValue(int(i*100/len(self.particles)))
+			QtGui.qApp.processEvents()
+			a=p.align("rotate_translate_flip",self.alimasked)
+#			a=p.align("refine",tree[0],{"verbose":0,"xform.align2d":a["xform.align2d"]},"ccc",{})		# doesn't really seem to make an improvement
+			a["match_qual"]=a.cmp("ccc",self.aliimg)		# compute similarity to unmasked reference
+			self.particles_ali.append(a)
+
+		self.wpbprogress.reset()
+		self.wpbprogress.setEnabled(False)
+
+	def aliRecalcRefPress(self,x=False):
+		if len(self.particles)==0 : return
+		
+		self.alignToRef()			# realign particles to current masked reference
+		
+		# Compute the new average
+		self.alisig=EMData(self.particles[0]["nx"],self.particles[0]["ny"],1)
+		avgr=Averagers.get("mean",{"sigma":self.alisig})
+		avgr.add_image_list(self.particles_ali)
+		self.aliimg=avgr.finish()
+		
+		self.setAliRef(self.aliimg)
+	
+	def roiDrawMode(self,x=False):
 		pass
 	
-	def aliGoPress(self,x):
+	def roiAutoPress(self,x=False):
 		pass
 	
-	def aliRecalcRefPress(self,x):
-		pass
+	def roiResetPress(self,x=False):
+		self.roimask=self.aliimg.copy()
+		self.roimask.add(-self.roimask["minimum"]+.01)		# The minimum value in the image is >0, so when we draw with 0 'color' we can extract the mask info
+		self.w2droimaskdraw.set_data(self.roimask)
+		self.roiGoPress()
 	
-	def roiAutoPress(self,x):
-		pass
+	def roiGoPress(self,x=False):
+		self.roimasked=self.aliimg.copy()
+		
+		blur=self.wsbroimaskblur.value()
+		
+		mask=self.roimask.process("threshold.binary",{"value":0.001})			# binarize the drawn mask
+		mask.process_inplace("math.linear",{"scale":-1.0,"shift":1.0})		# invert the mask (user selects the region to include, not exclude)
+		mask.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.5/(blur+.01)})
 	
-	def roiResetPress(self,x):
-		pass
+		self.roimasked.mult(mask)
+		self.w2droimask.set_data(self.roimasked)
 	
-	def roiGoPress(self,x):
-		pass
-	
-	def doCompute(self,x):
+	def doCompute(self,x=False):
 		pass
 	
 	
