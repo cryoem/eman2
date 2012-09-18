@@ -73,18 +73,22 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--helixboxer",action="store_true",default=False,help="Helix Boxer Mode", guitype='boolbox', row=2, col=2, rowspan=1, colspan=1, mode="boxing")
 		
-	parser.add_argument('--bin', type=int, default=1, help="""Specify the binning/shrinking factor you want to use (for X,Y and Z) when opening the tomogram for boxing. \nDon't worry, the sub-volumes will be extracted from the UNBINNED tomogram. \nIf binx, biny or binz are also specified, they will override the general bin value for the corresponding X, Y or Z directions""", guitype='intbox', row=3, col=1, rowspan=1, colspan=1, mode="boxing")
+	#parser.add_argument('--bin', type=int, default=1, help="""Specify the binning/shrinking factor you want to use (for X,Y and Z) when opening the tomogram for boxing. \nDon't worry, the sub-volumes will be extracted from the UNBINNED tomogram. \nIf binx, biny or binz are also specified, they will override the general bin value for the corresponding X, Y or Z directions""", guitype='intbox', row=3, col=1, rowspan=1, colspan=1, mode="boxing")
+	
+	parser.add_argument('--shrink', type=int, default=1, help="""Specify the binning/shrinking factor you want to use (for X,Y and Z) when opening the tomogram for boxing. \nDon't worry, the sub-volumes will be extracted from the UNBINNED tomogram.""", guitype='intbox', row=3, col=1, rowspan=1, colspan=1, mode="boxing")
 	
 	parser.add_argument("--lowpass",type=int,help="Resolution (integer, in Angstroms) at which you want to apply a gaussian lowpass filter to the tomogram prior to loading it for boxing",default=0, guitype='intbox', row=3, col=2, rowspan=1, colspan=1, mode="boxing")
 	parser.add_argument("--preprocess",type=str,help="""A processor (as in e2proc3d.py) to be applied to the tomogram before opening it. \nFor example, a specific filter with specific parameters you might like. \nType 'e2proc3d.py --processors' at the commandline to see a list of the available processors and their usage""",default=None)
 	
-	parser.add_argument('--reverse_contrast', action="store_true", default=False, help='''This means you want the contrast to me inverted while boxing, AND for the extracted sub-volumes.\nRemember that EMAN2 **MUST** work with "white" protein. You can very easily figure out what the original color\nof the protein is in your data by looking at the gold fiducials or the edge of the carbon hole in your tomogram.\nIf they look black you MUST specify this option''', guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="boxing")
+	#parser.add_argument('--reverse_contrast', action="store_true", default=False, help='''This means you want the contrast to me inverted while boxing, AND for the extracted sub-volumes.\nRemember that EMAN2 **MUST** work with "white" protein. You can very easily figure out what the original color\nof the protein is in your data by looking at the gold fiducials or the edge of the carbon hole in your tomogram.\nIf they look black you MUST specify this option''', guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="boxing")
 	
+	parser.add_argument('--invert', action="store_true", default=False, help='''This means you want the contrast to me inverted while boxing, AND for the extracted sub-volumes.\nRemember that EMAN2 **MUST** work with "white" protein. You can very easily figure out what the original color\nof the protein is in your data by looking at the gold fiducials or the edge of the carbon hole in your tomogram.\nIf they look black you MUST specify this option''', guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="boxing")
+
 	#parameters for commandline boxer
 
-	parser.add_argument('--coords', type=str, default='', help='Provide a coordinates file that contains the center coordinates of the sub-volumes you want to extract, to box from the command line')
+	parser.add_argument('--coords', type=str, default='', help='Provide a coordinates file that contains the center coordinates of the sub-volumes you want to extract, to box from the command line.')
 	
-	parser.add_argument('--cbin', type=float, default=1.0, help='''Specifies the scale of the coordinates respect to the actual size of the tomogram where you want to extract the particles from.\nFor example, provide 2 if you recorded the coordinates from a tomogram that was binned by 2, \nbut want to extract the sub-volumes from the UNbinned version of that tomogram''')
+	parser.add_argument('--cshrink', type=float, default=1.0, help='''Specifies the factor by which to multiply the coordinates in the coordinates file, so that they can be at the same scale as the tomogram.\nFor example, provide 2 if the coordinates are on a 2K x 2K scale,\nbut you want to extract the sub-volumes from the UN-shrunk 4K x 4K tomogram.''')
 
 	parser.add_argument('--subset', type=int, default=0, help='''Specify how many sub-volumes from the coordinates file you want to extract; e.g, if you specify 10, the first 10 particles will be boxed.\n0 means "box them all" because it makes no sense to box none''')
 	parser.add_argument('--output', type=str, default='stack.hdf', help="Specify the name of the stack file where to write the extracted sub-volumes")
@@ -102,7 +106,7 @@ def main():
 		parser.error("%s does not exist" %args[0])
 
 	if options.coords:
-		commandline_tomoboxer(args[0],options.coords,options.subset,options.boxsize,options.cbin,options.output,options.output_format,options.swapyz,options.reverse_contrast,options.centerbox)
+		commandline_tomoboxer(args[0],options.coords,options.subset,options.boxsize,options.cshrink,options.output,options.output_format,options.swapyz,options.invert,options.centerbox)
 	else:	
 	
 		# Lets save our subtomograms to a diectory called 'subtomogRAMS', ONLY if they are single files
@@ -115,17 +119,17 @@ def main():
 					
 		app = EMApp()
 		if options.inmemory: 
-			if options.bin > 1:
+			if options.shrink > 1:
 
-				# The new bining scheme
-				print "Binning, please wait :)"
+				# The new shrinking scheme
+				print "Shrinking, please wait :)"
 				img = EMData()
-				img.read_binedimage(args[0],0,options.bin)
+				img.read_binedimage(args[0],0,options.shrink)
 			else:
-				print "You better have A LOT of memory (more than 8GB) if this is an unbinned 4k x 4k x 0.5k tomogram, because I'm loading it UNBINNED/un-shrunk. Please wait"
+				print "You better have A LOT of memory (more than 8GB) if this is an un-shrunk 4k x 4k x 0.5k tomogram, because I'm loading it un-shrunk. It is wise to wait patiently."
 				img = EMData(img,0)
 			
-			if options.reverse_contrast:
+			if options.invert:
 				img = img*(-1)
 				print "The contrast of the tomogram has been reversed"
 				
@@ -136,7 +140,7 @@ def main():
 				
 			print "Done !"
 			
-			boxer = EMTomoBoxer(app,data=img,yshort=options.yshort,boxsize=options.boxsize,bin=options.bin,contrast=options.reverse_contrast,center=options.centerbox)
+			boxer = EMTomoBoxer(app,data=img,yshort=options.yshort,boxsize=options.boxsize,shrink=options.shrink,contrast=options.invert,center=options.centerbox)
 		else : 
 	#		boxer=EMTomoBoxer(app,datafile=args[0],yshort=options.yshort,apix=options.apix,boxsize=options.boxsize)		
 			img=args[0]
@@ -144,22 +148,22 @@ def main():
 			
 			'''The modd variable is used as a "filter" that determines whether a "modified" tomogram needs to be deleted prior to extracting boxes from disk.
 			Because boxing from disk does NOT open the whole tomogram, a modified copy needs to be generated and written to file when you want to find
-			particles in a binned or pre-low pass filtered tomogram, BUT still extract from the raw tomogram'''
+			particles in a shrunk or pre-low pass filtered tomogram, BUT still extract from the raw tomogram'''
 			modd = False
-			if options.bin > 1:
+			if options.shrink > 1:
 				
 				imgnew = img
 				if '_edtedtemp.' not in img:
 					imgnew = img.replace('.','_editedtemp.')
-				print "Binning, please wait :)"
+				print "Shrinking, please wait :)"
 				imgfile = EMData()
-				imgfile.read_binedimage(img,0,options.bin)
+				imgfile.read_binedimage(img,0,options.shrink)
 				imgfile.write_image(imgnew)
 				
 				img = imgnew
 				modd = True
 				
-			if options.reverse_contrast:
+			if options.invert:
 				imgnew = img
 				if '_editedtemp.' not in img:
 					os.system('rm *_editedtemp*')
@@ -187,8 +191,8 @@ def main():
 				img = imgnew
 				modd = True
 			
-			print "The bin factor default is", options.bin
-			boxer=EMTomoBoxer(app,datafile=img,yshort=options.yshort,apix=options.apix,boxsize=options.boxsize,bin=options.bin,contrast=options.reverse_contrast,center=options.centerbox,mod=modd)
+			#print "The shrink factor default is", options.shrink
+			boxer=EMTomoBoxer(app,datafile=img,yshort=options.yshort,apix=options.apix,boxsize=options.boxsize,shrink=options.shrink,contrast=options.invert,center=options.centerbox,mod=modd)
 			
 		boxer.show()
 		app.execute()
@@ -197,11 +201,11 @@ def main():
 """
 This function is called to extract sub-volumes from the RAW tomogram, regardless
 of where their coordinates are being found (the tomogram to find the coordinates might be
-binned and/or lowpass filtered).
+shrunk and/or lowpass filtered).
 It is also called when boxing from the commandline, without GUI usage, as when you already have
 a coordinates file
 """
-def unbinned_extractor(boxsize,x,y,z,cbin,contrast,center,tomogram=argv[1]):
+def unbinned_extractor(boxsize,x,y,z,cshrink,contrast,center,tomogram=argv[1]):
 	
 	tomo_header=EMData(tomogram,0,True)
 	print "Which has a size of", tomo_header['nx'],tomo_header['ny'],tomo_header['nz']
@@ -209,9 +213,9 @@ def unbinned_extractor(boxsize,x,y,z,cbin,contrast,center,tomogram=argv[1]):
 	
 	#boxsize=boxsize*cbin	#THE BOXSIZE SHOULD BE THE FINAL BOXSIZE! No binning compensation applied.
 	
-	x=round(x*cbin)
-	y=round(y*cbin)
-	z=round(z*cbin)
+	x=round(x*cshrink)
+	y=round(y*cshrink)
+	z=round(z*cshrink)
 	
 	print "The actual coordinates used for extraction are", x, y, z
 	r = Region((2*x-boxsize)/2,(2*y-boxsize)/2, (2*z-boxsize)/2, boxsize, boxsize, boxsize)
@@ -245,10 +249,15 @@ def unbinned_extractor(boxsize,x,y,z,cbin,contrast,center,tomogram=argv[1]):
 		
 		#It IS CONVENIENT to record any processing done on the particles as header parameters
 
-		e['e2spt_tomogram'] = tomogram
-		e['e2spt_coordx'] = x
-		e['e2spt_coordy'] = y
-		e['e2spt_coordz'] = z
+		#e['e2spt_tomogram'] = tomogram
+		
+		e['ptcl_source_image'] = tomogram
+		
+		#e['e2spt_coordx'] = x
+		#e['e2spt_coordy'] = y
+		#e['e2spt_coordz'] = z
+
+		e['ptcl_source_coord'] = (x,y,z)
 
 		#The origin WILL most likely be MESSED UP if you don't explicitely set it to ZERO.
 		#This can create ANNOYING visualization problems in Chimera
@@ -270,7 +279,7 @@ def unbinned_extractor(boxsize,x,y,z,cbin,contrast,center,tomogram=argv[1]):
 
 	else:
 		print """WARNING! The particle was skipped (and not boxed) because it's mean was ZERO (which often indicates a box is empty).
-			Your coordinates file and/or the binning factors specified might be MESSED UP, or you might need to swap Y and Z, or
+			Your coordinates file and/or the shrinking factors specified might be MESSED UP, or you might need to swap Y and Z, or
 			the particles are being normalized before they should 
 			"""
 		return()
@@ -281,7 +290,7 @@ This function enables extracting sub-volumes from the command line, without open
 Usually used when "re-extracting" sub-volumes (for whatever reason) from a coordinates file previously generated.
 It allows for extraction of smaller sub-sets too.
 """
-def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,output,output_format,swapyz,contrast,center):
+def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cshrink,output,output_format,swapyz,contrast,center):
 	
 	clines = open(coordinates,'r').readlines()
 	set = len(clines)
@@ -327,7 +336,7 @@ def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cbin,output,output
 			print "Therefore, the swapped coordinates are", x, y, z
 
 
-		e = unbinned_extractor(boxsize,x,y,z,cbin,contrast,center)
+		e = unbinned_extractor(boxsize,x,y,z,cshrink,contrast,center)
 		
 		if e:
 			print "There was a particle successfully returned, with the following box size and normalized mean value"
@@ -585,14 +594,14 @@ class EMBoxViewer(QtGui.QWidget):
 class EMTomoBoxer(QtGui.QMainWindow):
 	"""This class represents the EMTomoBoxer application instance.  """
 	
-	def __init__(self,application,data=None,datafile=None,yshort=False,apix=0.0,boxsize=32,bin=1,contrast=None,center=None,mod=False):
+	def __init__(self,application,data=None,datafile=None,yshort=False,apix=0.0,boxsize=32,shrink=1,contrast=None,center=None,mod=False):
 		QtGui.QWidget.__init__(self)
 		
 		self.app=weakref.ref(application)
 		self.yshort=yshort
 		self.apix=apix
 		
-		self.bin=bin			
+		self.shrink=shrink			
 		self.contrast=contrast		
 		self.mod=mod
 		self.center=center			
@@ -935,7 +944,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		f=file(fsp,"r")
 		if options.helixboxer:
 			for b in f:
-				b2=[int(float(i))/self.bin for i in b.split()[:6]]
+				b2=[int(float(i))/self.shrink for i in b.split()[:6]]
 				self.boxes.append(self.load_box_yshort(b2[3:6]))
 				self.update_box(len(self.boxes)-1)
 				self.helixboxes.append(b2)
@@ -944,23 +953,23 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				self.update_box(len(self.boxes)-1)
 		else:
 			for b in f:
-				b2=[int(float(i))/self.bin for i in b.split()[:3]]
+				b2=[int(float(i))/self.shrink for i in b.split()[:3]]
 				self.boxes.append(b2)
 				self.update_box(len(self.boxes)-1)
 		f.close()
 
 	def menu_file_save_boxloc(self):
-		binf=self.bin 								#jesus
+		shrinkf=self.shrink 								#jesus
 
 		fsp=str(QtGui.QFileDialog.getSaveFileName(self, "Select output text file"))
 		
 		out=file(fsp,"w")
 		if options.helixboxer:
 			for b in self.helixboxes:
-				out.write("%d\t%d\t%d\t%d\t%d\t%d\n"%(b[0]*binf,b[1]*binf,b[2]*binf,b[3]*binf,b[4]*binf,b[5]*binf))
+				out.write("%d\t%d\t%d\t%d\t%d\t%d\n"%(b[0]*shrinkf,b[1]*shrinkf,b[2]*shrinkf,b[3]*shrinkf,b[4]*shrinkf,b[5]*shrinkf))
 		else:
 			for b in self.boxes:
-				out.write("%d\t%d\t%d\n"%(b[0]*binf,b[1]*binf,b[2]*binf))
+				out.write("%d\t%d\t%d\n"%(b[0]*shrinkf,b[1]*shrinkf,b[2]*shrinkf))
 		out.close()
 		
 	def menu_file_save_boxes(self):
@@ -969,7 +978,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
 		if options.helixboxer:
 			for i,b in enumerate(self.helixboxes):
-				img = self.extract_subtomo_box(self.get_extended_a_vector(b), cbin=self.bin)
+				img = self.extract_subtomo_box(self.get_extended_a_vector(b), cshrink=self.shrink)
 				
 				#img['origin_x'] = 0						
 				#img['origin_y'] = 0				
@@ -991,23 +1000,17 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			for i,b in enumerate(self.boxes):
 				#img=self.get_cube(b[0],b[1],b[2])
 				bs=self.boxsize()
-				binf=self.bin
-				if binf >1:
-					bs=bs*binf
+				shrinkf=self.shrink
+				if shrinkf >1:
+					bs=bs*shrinkf
 				
 				contrast=self.contrast
 				center=self.center
 			
 				if self.yshort:							
-					img = unbinned_extractor(bs,b[0],b[2],b[1],binf,contrast,center) 	
+					img = unbinned_extractor(bs,b[0],b[2],b[1],shrinkf,contrast,center) 	
 				else:
-					img = unbinned_extractor(bs,b[0],b[1],b[2],binf,contrast,center) 	
-			
-				#img['origin_x'] = 0						
-				#img['origin_y'] = 0				
-				#img['origin_z'] = 0
-			
-				#img=img.process('normalize.edgemean')
+					img = unbinned_extractor(bs,b[0],b[1],b[2],shrinkf,contrast,center) 	
 
 				if fsp[:4].lower()=="bdb:": 
 					img.write_image(os.path.join(options.path,"%s_%03d"%(fsp,i),0))
@@ -1030,7 +1033,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
 		if options.helixboxer:
 			for i,b in enumerate(self.helixboxes):
-				img = self.extract_subtomo_box(self.get_extended_a_vector(b), cbin=self.bin)
+				img = self.extract_subtomo_box(self.get_extended_a_vector(b), cshrink=self.shrink)
 
 				#img['origin_x'] = 0						
 				#img['origin_y'] = 0				
@@ -1047,17 +1050,17 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			for i,b in enumerate(self.boxes):
 				#img=self.get_cube(b[0],b[1],b[2])
 				bs=self.boxsize()
-				binf=self.bin
-				if binf >1:
-					bs=bs*binf
+				shrinkf=self.shrink
+				if shrinkf >1:
+					bs=bs*shrinkf
 				
 				contrast=self.contrast
 				center=self.center
 
 				if self.yshort:							
-					img = unbinned_extractor(bs,b[0],b[2],b[1],binf,contrast,center) 	
+					img = unbinned_extractor(bs,b[0],b[2],b[1],shrinkf,contrast,center) 	
 				else:
-					img = unbinned_extractor(bs,b[0],b[1],b[2],binf,contrast,center) 	
+					img = unbinned_extractor(bs,b[0],b[1],b[2],shrinkf,contrast,center) 	
 			
 				#img['origin_x'] = 0						
 				#img['origin_y'] = 0				
@@ -1079,15 +1082,15 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		xvec = xform.get_matrix()
 		return [xvec[0]*point[0] + xvec[4]*point[1] + xvec[8]*point[2] + xvec[3], xvec[1]*point[0] + xvec[5]*point[1] + xvec[9]*point[2] + xvec[7], xvec[2]*point[0] + xvec[6]*point[1] + xvec[10]*point[2] + xvec[11]]
 		
-	def extract_subtomo_box(self, helixbox, cbin=1, tomogram=argv[1]):
+	def extract_subtomo_box(self, helixbox, cshrink=1, tomogram=argv[1]):
 		""" Retruns an extracted subtomogram box"""
 		# Only scale the helix boxer values transiently
-		x1 = round(helixbox[0]*cbin)
-		y1 = round(helixbox[1]*cbin)
-		z1 = round(helixbox[2]*cbin)
-		x2 = round(helixbox[3]*cbin)
-		y2 = round(helixbox[4]*cbin)
-		z2 = round(helixbox[5]*cbin)
+		x1 = round(helixbox[0]*cshrink)
+		y1 = round(helixbox[1]*cshrink)
+		z1 = round(helixbox[2]*cshrink)
+		x2 = round(helixbox[3]*cshrink)
+		y2 = round(helixbox[4]*cshrink)
+		z2 = round(helixbox[5]*cshrink)
 		
 		bs=self.boxsize()/2
 		# Get the extended vector based on boxsize
@@ -1424,7 +1427,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.zyview.update()
 		
 		if not quiet and options.helixboxer:
-			hb = self.extract_subtomo_box(helixbox, cbin=self.bin)
+			hb = self.extract_subtomo_box(helixbox, cshrink=self.shrink)
 			self.boxviewer.set_data(hb)
 			
 			proj=hb.process("misc.directional_sum",{"axis":"z"})
