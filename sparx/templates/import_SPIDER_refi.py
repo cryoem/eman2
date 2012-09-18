@@ -37,11 +37,11 @@ for ii in xrange(1,696+1) :
 
 	fn_high = doc_home + "FINAL/defgrp%03d/select_298_pop01.ext" % ii
 
-	selected_particles = readSpiderDoc(fn_high)
+	selected_particles = read_spider_doc(fn_high)
 
 	nimage  = EMUtil.get_image_count( proj_in )
-	trans = read_txt_col(fn_tran)
-	angl = read_txt_col(fn_angl)
+	trans = read_text_row(fn_tran, format = "s")
+	angl  = read_text_row(fn_angl, format = "s")
 
 	defocus = atof( split( i_ctfs.readline() )[2] )
 

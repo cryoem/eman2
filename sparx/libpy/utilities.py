@@ -2985,6 +2985,20 @@ def nearestk_to_refdir(refnormal, refdir, howmany = 1):
 	return assignments
 
 
+def nearestk_to_refdirs(refnormal, refdir, howmany = 1):
+	lookup = range(len(refnormal))
+	assignments = []
+	for j in xrange(len(refdir)):
+		assignment = [-1]*howmany
+		for i in xrange(howmany):
+			k = closest_ang(refnormal, refdir[j])
+			assignment[i] = lookup[k]
+			del refnormal[k], lookup[k]
+		assignments.append(assignment)
+	return assignments
+
+
+
 '''
 def assign_projangles(projangles, refangles, return_asg = False):
 
@@ -3060,8 +3074,8 @@ def cone_ang( projangles, phi, tht, ant ) :
 
 def findall(lo,val):
 	"""
-	  Find all occurences of val on list lo
-	  Returns a list of indices of val on lo.
+	  Find all occurences of val in list lo
+	  Returns a list of indices of val in lo.
 	"""
 	u = []
 	i = -1
@@ -3275,11 +3289,11 @@ def get_pixel_size(img):
 	else:
 		p2 = round(cc.apix, 3)
 	if p1 == -1.0 and p2 == -1.0:
-		ERROR("Pixel size not set", "get_pixel_size", 0)
+		#ERROR("Pixel size not set", "get_pixel_size", 0)
 		return -1.0
 	elif p1 > -1.0 and p2 > -1.0:
-		if abs(p1-p2) >= 0.001:
-			ERROR("Conflict between pixel size in attribute and in ctf object", "get_pixel_size", 0)
+		#if abs(p1-p2) >= 0.001:
+		#	ERROR("Conflict between pixel size in attribute and in ctf object", "get_pixel_size", 0)
 		# pixel size is positive, so what follows omits -1 problem
 		return max(p1, p2)
 	else:
