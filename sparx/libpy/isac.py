@@ -492,7 +492,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
                             ave.set_attr_dict({"members": [temp_id], "n_objects": 1})
                             refim_all.append(ave)
                     for i in xrange(K*(indep_run-1)):
-                        refim_all.append(refim[i%K])
+                        refim_all.append(refim_all[i%K])
                 else:
                     refim_all = match_2_way(alldata, refim, indep_run, thld_grp, FH, FF, find_unique = False, wayness = wayness, suffix="_"+str(mloop) )
             else:
