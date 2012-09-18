@@ -374,10 +374,28 @@ class EMMotion(QtGui.QMainWindow):
 		launch_childprocess("e2bdb.py %s  --makevstack=%s#particles --step=0,1,%d"%(path,self.path,n))
 		
 		self.initPath(self.path)
-	
+		
 	def bootstrap(self):
 		"""This will create an initial alignment for the particles when no reference is available"""
 		
+		tree=self.particles[:]
+		while len(tree)>1:
+			tree2=[]
+			# average particles in pairs, and make a new shorter list
+			while len(tree)>0:
+				a=tree.pop()
+				try: b=tree.pop()
+				except:
+					tree2.append(a)
+					break
+				c=a.align("rotate_translate_flip",b)
+				c.add(b)
+				tree2.append(c)
+			
+			tree=tree2
+			
+		self.aliref=tree[0]
+		self.aliref.process_inplace("normalize.edgemean")
 		
 		
 	def aliAutoPress(self,x):
