@@ -652,6 +652,15 @@ def get_results(etc,tids,verbose):
 		
 	return results
 
+
+def wedgestats(volume,angle, wedgei, wedgef):
+	vfft = volume.do_fft()
+	wedge = vfft.getwedge(angle, wedgei, wedgef)		
+	mean = vfft.get_attr('spt_wedge_mean')
+	sigma = vfft.get_attr('spt_wedge_sigma')
+	return(mean,sigma)
+
+
 class Align3DTask(EMTask):
 	"""This is a task object for the parallelism system. It is responsible for aligning one 3-D volume to another, with a variety of options"""
 
@@ -761,6 +770,28 @@ class Align3DTask(EMTask):
 		if options["verbose"]: 
 			print "Align size %d,  Refine Align size %d"%(sfixedimage["nx"],s2fixedimage["nx"])
 
+		
+		if options["aligncmp"][0] == "fsc.tomo" or options["raligncmp"][0] == "fsc.tomo":
+			retr = wedgestats(simage,options.wedgeangle,options.wedgei,options.wedgef)
+			simage['spt_wedge_mean'] = retr[0]
+			simage['spt_wedge_sigma'] = retr[1]
+			
+			retr = wedgestats(sfixedimage,options.wedgeangle,options.wedgei,options.wedgef)
+			sfixedimage['spt_wedge_mean'] = retr[0]
+			sfixedimage['spt_wedge_sigma'] = retr[1]
+			
+			retr = wedgestats(s2image,options.wedgeangle,options.wedgei,options.wedgef)
+			s2image ['spt_wedge_mean'] = retr[0]
+			s2image['spt_wedge_sigma'] = retr[1]
+			
+			retr = wedgestats(s2fixedimage,options.wedgeangle,options.wedgei,options.wedgef)
+			s2fixedimage['spt_wedge_mean'] = retr[0]
+			s2fixedimage['spt_wedge_sigma'] = retr[1]
+			
+			#print "The mean and sigma for subvolume %d are: mean=%f, sigma=%f" % (i,mean,sigma)
+			#a.write_image(stack,i)
+		
+		
 		# In some cases we want to prealign the particles
 		if options["transform"]:
 			print "Moving Xfrom", options["transform"]
