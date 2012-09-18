@@ -362,6 +362,7 @@ class EMMotion(QtGui.QMainWindow):
 		# If particles exists then we can fully initialize
 		if db_check_dict("%s#particles"%self.path) :
 			self.particles=EMData.read_images("%s#particles"%self.path)	# read in the entire particle stack
+			for p in self.particles: p.process_inplace("normalize.edgemean")
 			
 			cl=[i for i in dicts if "classes" in i]
 			cl.sort()
@@ -399,7 +400,8 @@ class EMMotion(QtGui.QMainWindow):
 			if r==QtGui.QMessageBox.Cancel : return
 			if r==QtGui.QMessageBox.Yes : n=nmax
 		
-		task="e2bdb.py %s  --makevstack=%s#particles --step=0,1,%d"%(ptcl,self.path,n)
+		if ptcl[:4].lower()=="bdb:" : task="e2bdb.py %s  --makevstack=%s#particles --step=0,1,%d"%(ptcl,self.path,n)
+		else : task="e2proc2d.py %s %s#particles --last=%d"%(ptcl,self.path,n)
 		print task
 		launch_childprocess(task)
 		
@@ -427,13 +429,13 @@ class EMMotion(QtGui.QMainWindow):
 					break
 				c=a.align("rotate_translate_flip",b)
 				c.add(b)
-				c.process_inplace("xform.centeracf")
+				c.process_inplace("xform.centerofmass",{"threshold":0.5})
 				tree2.append(c)
 #				c.write_image("zzz.hdf",-1)
 			
 			tree=tree2
 			
-		tree[0].process_inplace("xform.centeracf")
+		tree[0].process_inplace("xform.centerofmass",{"threshold":0.5})
 		tree[0].process_inplace("normalize.edgemean")
 
 		# We look for the most 'featurefull' direction to put on Y
