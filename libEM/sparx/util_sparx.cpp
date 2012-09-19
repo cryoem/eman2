@@ -19078,8 +19078,8 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 			}
 		}
 	}
-	if ((phichoice < 1) || (ychoice  < 1))
-	        cout<<ychoice<<", "<<phichoice<<", ..."<<mirror_only<<"...,"<<phi<<","<<phi_lhs<<","<<phi_rhs<<endl;
+	//if ((phichoice < 1) || (ychoice  < 1))
+	//        cout<<ychoice<<", "<<phichoice<<", ..."<<mirror_only<<"...,"<<phi<<","<<phi_lhs<<","<<phi_rhs<<endl;
 	
 	float co, so, sxs, sys;
 	co = static_cast<float>( cos(ang*pi/180.0) );
