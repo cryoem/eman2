@@ -68,7 +68,9 @@ def main():
 		print "I will test the CPU"
 		print "Because options.cpu is", options.cpu
 		retcpu=doit(corg,options)
+		print "retcpu is", retcpu
 		for key,value in retcpu:
+			print "I should be plotting this"
 		
 	if options.gpu:
 		corg = 'gpu'
@@ -76,14 +78,16 @@ def main():
 		print "Because options.gpu is", options.gpu
 		retgpu=doit(corg,options)
 		for key,value in retgpu:
+			print "I should be plotting this"
 	
 	if retcpu and retgpu:
-		if len(retcpu) == len(retgpu)
+		if len(retcpu) == len(retgpu):
+			print "I should be plotting this"
 	
 		else:
 			sys.exit()
 	else:
-		sys,exit()
+		sys.exit()
 	
 		
 	return()
@@ -96,7 +100,7 @@ def doit(corg,options):
 	steps = [10,8,6,4,2]
 	if options.test:
 		mults = [12,14,15,22,32]
-		steps = [10,8]
+		steps = [10]
 
 	#,81,84,88,91,96,98,100]
 	
@@ -150,7 +154,7 @@ def doit(corg,options):
 				setcuda = 'export EMANUSECUDA=0 && '
 				print "\n\n\n !!!! I Have turned cuda OFF!!!\n\n\n"
 			
-			instruction1 = setcuda + '''e2classaverage3d.py --input=''' + aname + ''' --output=''' + out + ''' --ref=''' + bname + ''' --iter=1 --npeakstorefine=1 -v 1 --mask=mask.sharp:outer_radius=22 --preprocess=filter.lowpass.gauss:cutoff_freq=0.025:apix=4.4793 --align=rotate_translate_3d:search=6:delta=''' + str(coarsestep) + ''':dphi=''' + str(coarsestep) + ''':verbose=1:sym=icos --parallel=thread:1 --ralign=refine_3d_grid:delta=''' + str(finestep) + ''':range=''' + str(coarsestep) + ''' --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --normproc=normalize'''
+			instruction1 = setcuda + '''e2spt_classaverage.py --input=''' + aname + ''' --output=''' + out + ''' --ref=''' + bname + ''' --iter=1 --npeakstorefine=1 -v 1 --mask=mask.sharp:outer_radius=-2 --preprocess=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --align=rotate_translate_3d:search=6:delta=''' + str(coarsestep) + ''':dphi=''' + str(coarsestep) + ''':verbose=1:sym=icos --parallel=thread:1 --ralign=refine_3d_grid:delta=''' + str(finestep) + ''':range=''' + str(coarsestep) + ''' --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --normproc=normalize.mask'''
 			cmd = instruction1
 			print "The instruction is", cmd
 	
@@ -172,7 +176,7 @@ def doit(corg,options):
 			txt.write(line2write)
 		txt.close()
 	
-		data.update({step:[mults,times]})
+		data.update({str(step):[mults,times]})
 
 	return(data)
 
@@ -208,7 +212,7 @@ def plotter(name,xaxis,yaxis):
 	plt.clf()
 	return()
 
-
+'''
 if what != 'dif' and '.' not in what:
 	for i in fs:
 		if what in i and '.txt' in i:
@@ -362,7 +366,7 @@ else:
 
 	plt.savefig(plot_name)
 	plt.clf()
-
+'''
 
 
 
