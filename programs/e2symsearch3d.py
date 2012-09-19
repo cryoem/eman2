@@ -36,6 +36,7 @@ from EMAN2 import *
 import math
 import os
 from EMAN2db import EMTask
+import sys
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -50,7 +51,7 @@ def main():
 	
 	parser.add_header(name="refineheader", help='Options below this label are specific to e2refine', title="### e2refine options ###", row=3, col=0, rowspan=1, colspan=2, mode="align")
 	parser.add_argument("--input", dest="input", default=None,type=str, help="The name of input volume", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=0, col=0, rowspan=1, colspan=2, mode="align")
-	parser.add_argument("--output", dest="output", default=None,type=str, help="The name of the output volume", guitype='strbox', filecheck=False, row=1, col=0, rowspan=1, colspan=2, mode="align")
+	parser.add_argument("--output", dest="output", default="e2symsearch3d_OUTPUT.hdf",type=str, help="The name of the output volume", guitype='strbox', filecheck=False, row=1, col=0, rowspan=1, colspan=2, mode="align")
 	parser.add_argument("--path",type=str,help="Name of path for output file",default='', guitype='strbox', row=2, col=0, rowspan=1, colspan=2, mode="align['initial_models']")
 	parser.add_argument("--sym", dest = "sym", default="c1", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos. For asymmetric reconstruction omit this option or specify c1.", guitype='symbox', row=4, col=0, rowspan=1, colspan=2, mode="align")
 	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes. Default=0, no shrinking", guitype='shrinkbox', row=5, col=0, rowspan=1, colspan=1, mode="align")
@@ -62,6 +63,10 @@ def main():
 	
 	(options, args) = parser.parse_args()
 	
+	if ".hdf" not in options.output and ".mrc" not in options.output and "bdb" not in options.output:
+		print "ERROR. The output must contain a valid format ending, for example '.hdf.' TERMINATING!"
+		sys.exit(0
+		
 	#print help 
 	if options.input == None:
 		parser.print_help()
