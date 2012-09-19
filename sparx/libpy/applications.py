@@ -11462,7 +11462,7 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 						elif ext == "hdf":
 							t = EMUtil.read_hdf_attribute(stack, "ctf",i)
 							fexp.write("%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %15.5f"%(t.defocus, t.cs, t.voltage, t.apix, t.bfactor, t.ampcont, t.dfdiff, t.dfang))
-							
+
 					else:
 						if ext == "bdb":
 							fexp.write("%15s "%str(DB.get_attr(i, p)))
