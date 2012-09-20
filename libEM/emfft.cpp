@@ -679,7 +679,7 @@ int EMfft::real_to_complex_nd(float *real_data, float *complex_data, int nx, int
 	dims[0] = nz;
 	dims[1] = ny;
 	dims[2] = nx;
-	
+
 	switch(rank) {
 		case 1:
 			real_to_complex_1d(real_data, complex_data, nx);
@@ -708,12 +708,12 @@ int EMfft::real_to_complex_nd(float *real_data, float *complex_data, int nx, int
 #endif // FFTW_PLAN_CACHING
 		}
 			break;
-		
+
 		default:
 			LOGERR("Should NEVER be here!!!");
 			break;
 	}
-	
+
 	return 0;
 }
 

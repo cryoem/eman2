@@ -83,27 +83,27 @@ EMData *EMData::do_fft() const
 		return dat;
 #endif // NATIVE_FFT
 	} else {
-	int nxreal = nx;
-	int offset = 2 - nx%2;
-	int nx2 = nx + offset;
-	EMData* dat = copy_head();
-	dat->set_size(nx2, ny, nz);
-	//dat->to_zero();  // do not need it, real_to_complex will do it right anyway
-	if (offset == 1) dat->set_fftodd(true);
-	else             dat->set_fftodd(false);
+		int nxreal = nx;
+		int offset = 2 - nx%2;
+		int nx2 = nx + offset;
+		EMData* dat = copy_head();
+		dat->set_size(nx2, ny, nz);
+		//dat->to_zero();  // do not need it, real_to_complex will do it right anyway
+		if (offset == 1) dat->set_fftodd(true);
+		else             dat->set_fftodd(false);
 
-	float *d = dat->get_data();
-	//std::cout<<" do_fft "<<rdata[5]<<"  "<<d[5]<<std::endl;
-	EMfft::real_to_complex_nd(get_data(), d, nxreal, ny, nz);
+		float *d = dat->get_data();
+		//std::cout<<" do_fft "<<rdata[5]<<"  "<<d[5]<<std::endl;
+		EMfft::real_to_complex_nd(get_data(), d, nxreal, ny, nz);
 
-	dat->update();
-	dat->set_fftpad(true);
-	dat->set_complex(true);
-	if(dat->get_ysize()==1 && dat->get_zsize()==1) dat->set_complex_x(true);
-	dat->set_ri(true);
+		dat->update();
+		dat->set_fftpad(true);
+		dat->set_complex(true);
+		if(dat->get_ysize()==1 && dat->get_zsize()==1) dat->set_complex_x(true);
+		dat->set_ri(true);
 
-	EXITFUNC;
-	return dat;
+		EXITFUNC;
+		return dat;
 	}
 }
 
