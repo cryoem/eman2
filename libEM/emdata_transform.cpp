@@ -64,7 +64,7 @@ EMData *EMData::do_fft() const
 #ifdef NATIVE_FFT
 		LOGERR(" NATIVE_FFT does not supported complex to complex.");  // PAP
 		throw ImageFormatException("real image expected. Input image is complex image.");
-#elsif
+#elif
 		EMData *temp_in=copy();
 		EMData *dat= copy_head();
 		int offset;

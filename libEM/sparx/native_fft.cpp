@@ -35,6 +35,7 @@
 
 #ifdef NATIVE_FFT
 
+#include <cstring>
 #include <cmath>
 #include "native_fft.h" 
 #include "log.h"
