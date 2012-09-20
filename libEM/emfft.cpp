@@ -34,6 +34,7 @@
  * */
  
 #include <string>
+#include <cstring>
 #include "emfft.h"
 #include "log.h"
 

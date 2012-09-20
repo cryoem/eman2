@@ -3552,6 +3552,21 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
 				rotate_3D_shift(data, cs)
 
+			# write out headers, under MPI writing has to be done sequentially
+			mpi_barrier(MPI_COMM_WORLD)
+			par_str = ['xform.projection', 'ID']
+			if myid == main_node:
+	   			if(file_type(stack) == "bdb"):
+	        			from utilities import recv_attr_dict_bdb
+	        			recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+	        		else:
+	        			from utilities import recv_attr_dict
+	        			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+				print_msg("Time to write header information= %d\n"%(time()-start_time))
+				start_time = time()
+	        	else:	       send_attr_dict(main_node, data, par_str, image_start, image_end)
+
+
 			if CTF: vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution%04d"%(total_iter)), myid, main_node, npad = npad)
 			else:    vol, fscc = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution%04d"%(total_iter)), myid, main_node, npad = npad)
 
@@ -3581,19 +3596,9 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 
 			del varf
 			bcast_EMData_to_all(vol, myid, main_node)
-			# write out headers, under MPI writing has to be done sequentially
-			mpi_barrier(MPI_COMM_WORLD)
-			par_str = ['xform.projection', 'ID']
-			if myid == main_node:
-	   			if(file_type(stack) == "bdb"):
-	        			from utilities import recv_attr_dict_bdb
-	        			recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-	        		else:
-	        			from utilities import recv_attr_dict
-	        			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-				print_msg("Time to write header information= %d\n"%(time()-start_time))
-				start_time = time()
-	        	else:	       send_attr_dict(main_node, data, par_str, image_start, image_end)
+
+
+
 	if myid == main_node: print_end_msg("ali3d_MPI")
 
 
