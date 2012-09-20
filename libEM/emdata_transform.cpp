@@ -62,11 +62,10 @@ EMData *EMData::do_fft() const
 
 	if (is_complex() ) { // ming add 08/17/2010
 #ifdef NATIVE_FFT
-		LOGERR(" NATIVE_FFT not supported yet.");
+		LOGERR(" NATIVE_FFT does not supported complex to complex.");  // PAP
 		throw ImageFormatException("real image expected. Input image is complex image.");
 		exit;
-#endif // NATIVE_FFT
-
+#elsif
 			EMData *temp_in=copy();
 			EMData *dat= copy_head();
 			int offset;
@@ -83,9 +82,8 @@ EMData *EMData::do_fft() const
 			delete temp_in;
 			EXITFUNC;
 			return dat;
-		}
-
-	else{
+#endif // NATIVE_FFT
+	} else {
 	int nxreal = nx;
 	int offset = 2 - nx%2;
 	int nx2 = nx + offset;
