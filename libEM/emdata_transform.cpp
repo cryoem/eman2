@@ -64,24 +64,23 @@ EMData *EMData::do_fft() const
 #ifdef NATIVE_FFT
 		LOGERR(" NATIVE_FFT does not supported complex to complex.");  // PAP
 		throw ImageFormatException("real image expected. Input image is complex image.");
-		exit;
 #elsif
-			EMData *temp_in=copy();
-			EMData *dat= copy_head();
-			int offset;
-			if(is_fftpadded()) {
-				offset = is_fftodd() ? 1 : 2;
-			}
-			else offset=0;
-			//printf("offset=%d\n",offset);
-			EMfft::complex_to_complex_nd(temp_in->get_data(),dat->get_data(),nx-offset,ny,nz);
+		EMData *temp_in=copy();
+		EMData *dat= copy_head();
+		int offset;
+		if(is_fftpadded()) {
+			offset = is_fftodd() ? 1 : 2;
+		}
+		else offset=0;
+		//printf("offset=%d\n",offset);
+		EMfft::complex_to_complex_nd(temp_in->get_data(),dat->get_data(),nx-offset,ny,nz);
 
-			if(dat->get_ysize()==1 && dat->get_zsize()==1) dat->set_complex_x(true);
+		if(dat->get_ysize()==1 && dat->get_zsize()==1) dat->set_complex_x(true);
 
-			dat->update();
-			delete temp_in;
-			EXITFUNC;
-			return dat;
+		dat->update();
+		delete temp_in;
+		EXITFUNC;
+		return dat;
 #endif // NATIVE_FFT
 	} else {
 	int nxreal = nx;
