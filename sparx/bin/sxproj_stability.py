@@ -86,7 +86,7 @@ def main():
 	from mpi          import mpi_init, mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD, MPI_TAG_UB
 	from mpi          import mpi_barrier, mpi_send, mpi_recv, mpi_bcast, MPI_INT, mpi_finalize, MPI_FLOAT
 	from applications import MPI_start_end, within_group_refinement, ali2d_ras
-	from pixel_error  import multi_align_stability_new
+	from pixel_error  import multi_align_stability
 	from utilities    import print_begin_msg, print_end_msg, print_msg, send_EMData, recv_EMData
 	from utilities    import get_image, bcast_number_to_all, set_params2D, get_params2D
 	from utilities    import group_proj_by_phitheta, model_circle, get_input_from_string
@@ -293,7 +293,11 @@ def main():
 		#print "  R  ",myid,"  ",time()-st
 		if options.CTF :
 			from filter import filt_ctf
-			for im in xrange(len(class_data)):  class_data[im] = filt_ctf(class_data[im], class_data[im].get_attr("ctf"), binary=1)
+			for im in xrange(len(class_data)):  #  MEM LEAK!!
+				atemp = class_data[im].copy()
+				btemp = filt_ctf(atemp, atemp.get_attr("ctf"), binary=1)
+				class_data[im] = btemp
+				#class_data[im] = filt_ctf(class_data[im], class_data[im].get_attr("ctf"), binary=1)
 		for im in class_data:
 			try:
 				t = im.get_attr("xform.align2d") # if they are there, no need to set them!
@@ -326,7 +330,7 @@ def main():
 		# stable_set is sorted based on pixel error
 		#from utilities import write_text_file
 		#write_text_file(all_ali_params, "all_ali_params%03d.txt"%myid)
-		stable_set, mir_stab_rate, pix_err = multi_align_stability_new(all_ali_params, 0.0, 10000.0, thld_err, False, 2*radius+1)
+		stable_set, mir_stab_rate, pix_err = multi_align_stability(all_ali_params, 0.0, 10000.0, thld_err, False, 2*radius+1)
 		#print "  H  ",myid,"  ",time()-st
 
 		stable_set_id = []
