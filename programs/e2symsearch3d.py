@@ -65,12 +65,12 @@ def main():
 	
 	if ".hdf" not in options.output and ".mrc" not in options.output and "bdb" not in options.output:
 		print "ERROR. The output must contain a valid format ending, for example '.hdf.' TERMINATING!"
-		sys.exit(0
+		sys.exit()
 		
 	#print help 
-	if options.input == None:
+	if not options.input:
 		parser.print_help()
-		exit(0)
+		sys.exit(0)
 	
 	# Initialize parallelism if being used
 	from EMAN2PAR import EMTaskCustomer
