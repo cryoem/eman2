@@ -109,7 +109,7 @@ def main():
 	parser.add_option("--apix", type="float", help="A/pixel for S scaling")
 	
 	parser.add_option("--origin", metavar="x, y, z", type="string", action="callback", callback=floatvararg_callback,
-								help="Set the coordinates for the pixel (0,0,0).")
+								help="Set the coordinates for the pixel (0,0,0) for Chimera. THIS HAS NO IMPACT ON IMAGE PROCESSING !")
 
 	parser.add_option("--mult", metavar="f", type="float", 
 								help="Scales the densities by a fixed number in the output")

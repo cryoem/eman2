@@ -40,6 +40,7 @@
 #include <aligner.h>
 #include <cmp.h>
 #include <ctf.h>
+#include <emdata.h>
 #include <emdata_pickle.h>
 #include <emdata_wrapitems.h>
 #include <emfft.h>
@@ -87,7 +88,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_process_overloads_1_2, EMAN::
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_cmp_overloads_2_3, EMAN::EMData::cmp, 2, 3)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_align_overloads_2_5, EMAN::EMData::align, 2, 5)
+//BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_align_overloads_2_5, EMAN::EMData::align, 2, 5)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_xform_align_nbest_overloads_2_6, EMAN::EMData::xform_align_nbest, 2, 6)
 
@@ -214,6 +215,36 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_compute_missingwedge_overload
 
 }// namespace
 
+//// These give us threadsafety. Couldn't find a more elegant way to do it with overloading :^/
+EMData *EMData_align_wrapper2(EMData &ths, const string & aligner_name, EMData * to_img) {
+	EMData *ret;
+	Py_BEGIN_ALLOW_THREADS
+	ret = ths.align(aligner_name,to_img); 
+	Py_END_ALLOW_THREADS
+	return ret;
+}
+EMData *EMData_align_wrapper3(EMData &ths, const string & aligner_name, EMData * to_img,const Dict & params) {
+	EMData *ret;
+	Py_BEGIN_ALLOW_THREADS
+	ret=ths.align(aligner_name,to_img,params); 
+	Py_END_ALLOW_THREADS
+	return ret;
+}
+EMData *EMData_align_wrapper4(EMData &ths, const string & aligner_name, EMData * to_img,const Dict & params, const string & cmp_name) {
+	EMData *ret;
+	Py_BEGIN_ALLOW_THREADS
+	ret=ths.align(aligner_name,to_img,params,cmp_name); 
+	Py_END_ALLOW_THREADS
+	return ret;
+}
+EMData *EMData_align_wrapper5(EMData &ths, const string & aligner_name, EMData * to_img,const Dict & params, const string & cmp_name, const Dict& cmp_params) {
+	EMData *ret;
+	Py_BEGIN_ALLOW_THREADS
+	ret=ths.align(aligner_name,to_img,params,cmp_name,cmp_params); 
+	Py_END_ALLOW_THREADS
+	return ret;
+}
+
 
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyEMData2)
@@ -323,7 +354,10 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("process", (EMAN::EMData* (EMAN::EMData::*)(EMAN::Processor*) const )&EMAN::EMData::process, args("p"), "Call the process with an instance od Processor, usually this instance can\nbe get by (in Python) Processors.get('name', {'k':v, 'k':v})\n \np - the processor object", return_value_policy< manage_new_object >())
 	.def("cmp", &EMAN::EMData::cmp, EMAN_EMData_cmp_overloads_2_3(args("cmpname", "with", "params"), "Compare this image with another image.\n \ncmpname - Comparison algorithm name.\nwith - The image you want to compare to.\nparams - Comparison parameters in a keyed dictionary, default to Null.\n \nreturn comparison score. The bigger, the better.\nexception - NotExistingObjectError If the comparison algorithm doesn't exist."))
 	.def("xform_align_nbest", &EMAN::EMData::xform_align_nbest, EMAN_EMData_xform_align_nbest_overloads_2_6(args("aligner_name", "to_img", "params", "nsoln", "cmp_name", "cmp_params"), "Align this image with another image, return the parameters of the \"n best\" solutions.\nThis function first added in the context of the 3D aligners used by e2tomohunter:\nwhich wants the n best solutions, as opposed to just the best. Return value is an\nordered vector of Dicts of length nsoln. The data with idx 0 has the best solution in it.\n \naligner_name - Alignment algorithm name.\nto_img - The image 'this' image aligns to.\nparams - Alignment algorithm parameters in a keyed dictionary, default to Null.\nnsoln - the number of solutions you want to receive in the return vector, default to 1.\ncmp_name - Comparison algorithm used in alignment, default to 'dot'.\ncmp_params - Parameter dictionary for comparison algorithm, default to NUll.\n \nreturn an ordered vector of Dicts of length nsoln. The Dicts in the vector have keys \"score\" (i.e. correlation score) and \"xform.align3d\" (Transform containing the alignment)\nexception - NotExistingObjectError If the alignment algorithm doesn't exist."))
-	.def("align", &EMAN::EMData::align, EMAN_EMData_align_overloads_2_5(args("aligner_name", "to_img", "params", "cmp_name", "cmp_params"), "Align this image with another image and return the result image.\n \naligner_name - Alignment algorithm name.\nto_img - The image 'this' image aligns to.\nparams - Alignment algorithm parameters in a keyed dictionary, default to Null.\ncmp_name - Comparison algorithm used in alignment, default to 'dot'.\ncmp_params - Parameter dictionary for comparison algorithm, default to Null.\n \nreturn The result image.\nexception - NotExistingObjectError If the alignment algorithm doesn't exist.")[ return_value_policy< manage_new_object >() ])
+	.def("align", &EMData_align_wrapper2,args("aligner_name", "to_img"),return_value_policy< manage_new_object >(), "Align this image with another image and return the result image.\n \naligner_name - Alignment algorithm name.\nto_img - The image 'this' image aligns to.\nparams - Alignment algorithm parameters in a keyed dictionary, default to Null.\ncmp_name - Comparison algorithm used in alignment, default to 'dot'.\ncmp_params - Parameter dictionary for comparison algorithm, default to Null.\n \nreturn The result image.\nexception - NotExistingObjectError If the alignment algorithm doesn't exist.")
+	.def("align", &EMData_align_wrapper3,args("aligner_name", "to_img", "params"),return_value_policy< manage_new_object >(), "Align this image with another image and return the result image.\n \naligner_name - Alignment algorithm name.\nto_img - The image 'this' image aligns to.\nparams - Alignment algorithm parameters in a keyed dictionary, default to Null.\ncmp_name - Comparison algorithm used in alignment, default to 'dot'.\ncmp_params - Parameter dictionary for comparison algorithm, default to Null.\n \nreturn The result image.\nexception - NotExistingObjectError If the alignment algorithm doesn't exist.")
+	.def("align", &EMData_align_wrapper4,args("aligner_name", "to_img", "params", "cmp_name"),return_value_policy< manage_new_object >(), "Align this image with another image and return the result image.\n \naligner_name - Alignment algorithm name.\nto_img - The image 'this' image aligns to.\nparams - Alignment algorithm parameters in a keyed dictionary, default to Null.\ncmp_name - Comparison algorithm used in alignment, default to 'dot'.\ncmp_params - Parameter dictionary for comparison algorithm, default to Null.\n \nreturn The result image.\nexception - NotExistingObjectError If the alignment algorithm doesn't exist.")
+	.def("align", &EMData_align_wrapper5,args("aligner_name", "to_img", "params", "cmp_name", "cmp_params"),return_value_policy< manage_new_object >(), "Align this image with another image and return the result image.\n \naligner_name - Alignment algorithm name.\nto_img - The image 'this' image aligns to.\nparams - Alignment algorithm parameters in a keyed dictionary, default to Null.\ncmp_name - Comparison algorithm used in alignment, default to 'dot'.\ncmp_params - Parameter dictionary for comparison algorithm, default to Null.\n \nreturn The result image.\nexception - NotExistingObjectError If the alignment algorithm doesn't exist.")
 	.def("project", (EMAN::EMData* (EMAN::EMData::*)(const std::string&, const EMAN::Dict&) )&EMAN::EMData::project, EMAN_EMData_project_overloads_1_2(args("projector_name", "params"), "Calculate the projection of this image and return the result.\n \nprojector_name - Projection algorithm name.\nparams - Projection Algorithm parameters, default to Null.\n \nreturn The result image.\nexception - NotExistingObjectError If the projection algorithm doesn't exist.")[ return_value_policy< manage_new_object >() ])
 	.def("project", (EMAN::EMData* (EMAN::EMData::*)(const std::string&, const EMAN::Transform&) )&EMAN::EMData::project, args("projector_name", "t3d"), "Calculate the projection of this image and return the result.\n \nprojector_name - Projection algorithm name.\nt3d - Transform object used to do projection.\n \nreturn The result image.\nexception - NotExistingObjectError If the projection algorithm doesn't exist.", return_value_policy< manage_new_object >() )
 	.def("backproject", &EMAN::EMData::backproject, EMAN_EMData_backproject_overloads_1_2(args("peojector_name", "params"), "Calculate the backprojection of this image (stack) and return the result.\n \nprojector_name - Projection algorithm name. Only \"pawel\" and \"chao\" have been implemented now.\nparams - Projection Algorithm parameters, default to Null.\n \nreturn The result image.\nexception - NotExistingObjectError If the projection algorithm doesn't exist.")[ return_value_policy< manage_new_object >() ])

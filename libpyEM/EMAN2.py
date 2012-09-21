@@ -856,16 +856,9 @@ def num_cpus():
 	platform_string = get_platform()
 	if platform_string == "Linux":
 		try:
-			f = open("/proc/cpuinfo")
-			a = f.readlines()
-			# assumes the entry 12 is the one we're looking for - this might not work but we can fix it as we go
-			split = a[11].split()
-			if split[0] == "cpu" and split[1] == "cores":
-				cores = int(split[-1])
-				if cores < 1: return 1 # just for safety
-				else: return cores
-			else:
-				return 1
+			f = open("/proc/cpuinfo","r")
+			a = [int(i.split(":")[1]) for i in f if "processor" in i]
+			return max(a)+1
 		except:
 			return 1
 	elif platform_string == "Windows":

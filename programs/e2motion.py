@@ -33,6 +33,8 @@
 import sys
 import os
 import weakref
+import threading
+import time
 from sys import argv
 from EMAN2 import *
 from PyQt4 import QtCore, QtGui
@@ -169,7 +171,7 @@ class EMMotion(QtGui.QMainWindow):
 		
 		self.wbaligo=QtGui.QPushButton(QtCore.QChar(0x2192))
 		self.vbl1.addWidget(self.wbaligo)
-		
+
 		self.vbl1.addStretch(5)
 		
 		# widget for displaying the masked alignment reference
@@ -184,8 +186,11 @@ class EMMotion(QtGui.QMainWindow):
 		self.gbl.addLayout(self.hbl1a,2,3)
 		self.hbl1a.addStretch(5)
 		
-		self.wbrecalcref=QtGui.QPushButton("Recompute")
+		self.wbrecalcref=QtGui.QPushButton("Realign")
 		self.hbl1a.addWidget(self.wbrecalcref)
+		
+		self.wbrrecalcref=QtGui.QPushButton("Rerefine")
+		self.hbl1a.addWidget(self.wbrrecalcref)
 		
 		self.hbl1a.addStretch(5)
 
@@ -265,7 +270,12 @@ class EMMotion(QtGui.QMainWindow):
 		self.wvbclasses.setIntonly(True)
 		self.vbl3a.addWidget(self.wvbclasses)
 		
-		self.wvbcores=ValBox(None,(0,256),"# Threads",2)
+		try :
+			cores=num_cpus()
+		except:
+			cores=2
+		if cores==1 : cores=2
+		self.wvbcores=ValBox(None,(0,256),"# Threads",cores)
 		self.wvbcores.setIntonly(True)
 		self.vbl3a.addWidget(self.wvbcores)
 		
@@ -297,6 +307,9 @@ class EMMotion(QtGui.QMainWindow):
 		
 		self.w2dclasses=EMImage2DWidget()
 		self.gbl.addWidget(self.w2dclasses,1,9)
+
+		self.w2dptcl=EMImage2DWidget()
+		self.gbl.addWidget(self.w2dptcl,4,9)
 		
 		## Buttons for controlling mask
 		#self.hbl1=QtGui.QHBoxLayout()
@@ -316,6 +329,7 @@ class EMMotion(QtGui.QMainWindow):
 		QtCore.QObject.connect(self.wbresetali,QtCore.SIGNAL("clicked(bool)"),self.aliResetPress)
 		QtCore.QObject.connect(self.wbaligo,QtCore.SIGNAL("clicked(bool)"),self.aliGoPress)
 		QtCore.QObject.connect(self.wbrecalcref,QtCore.SIGNAL("clicked(bool)"),self.aliRecalcRefPress)
+		QtCore.QObject.connect(self.wbrrecalcref,QtCore.SIGNAL("clicked(bool)"),self.aliRRecalcRefPress)
 		QtCore.QObject.connect(self.wbdrawroi,QtCore.SIGNAL("clicked(bool)"),self.roiDrawMode)
 		QtCore.QObject.connect(self.wbautoroi,QtCore.SIGNAL("clicked(bool)"),self.roiAutoPress)
 		QtCore.QObject.connect(self.wbresetroi,QtCore.SIGNAL("clicked(bool)"),self.roiResetPress)
@@ -406,35 +420,88 @@ class EMMotion(QtGui.QMainWindow):
 		launch_childprocess(task)
 		
 		self.initPath(self.path)
+	
+	def threadAlign(self,stack,ref,outstack):
+		"""This method is designed to run in a thread and perform alignments of a stack of inputs to a single reference"""
+	
+		for p in stack:
+			p2=p.process("filter.lowpass.gauss",{"cutoff_abs":0.1})
+			a=p2.align("rotate_translate_flip",ref)
+#			a=p2.copy()
+			a["match_qual"]=a.cmp("frc",ref,{"sweight":0})		# compute similarity to unmasked reference
+			outstack.append((a["match_qual"],a))
+
+	def threadTreeAlign(self,tree,tree2,lock):
+		"""Averages pairs in tree to produce 1/2 as many averages in tree2. Competes with other threads for elements to work on."""
 		
+		while len(tree)>0:
+			# we need to pull a pair from 'tree'. We use a lock to make sure we don't end up with a bunch of singletons at the end
+			lock.acquire()
+			try:
+				a=tree.pop()
+			except:
+				lock.release()
+				break
+			
+			try: b=tree.pop()
+			except:
+				tree2.append(a)
+				lock.release()
+				break
+			lock.release()
+			
+			# now we do the alignment and dump the result into the shared output list
+			c=a.align("rotate_translate_flip",b)
+			c.add(b)
+			c.process_inplace("xform.centerofmass",{"threshold":0.5})
+			tree2.append(c)
+
 	def bootstrap(self):
 		"""This will create an initial alignment reference for the particles when no reference is available"""
 
 		self.wpbprogress.setEnabled(True)
 		self.wpbprogress.reset()
 		QtGui.qApp.processEvents()
+		nthr=int(self.wvbcores.getValue())		# number of threads to use for faster alignments
+		print nthr
 
-		tree=self.particles[:]
+		tree=[i.process("math.meanshrink",{"n":2}) for i in self.particles]
+		for j,i in enumerate(tree): 
+			self.wpbprogress.setValue(int(j*100/len(tree)))
+			QtGui.qApp.processEvents()
+			i.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
+		
+		lock=threading.Lock()
+
+		print "b1"
 		while len(tree)>1:
 			maxt=len(tree)
 			tree2=[]
-			# average particles in pairs, and make a new shorter list
-			while len(tree)>0:
+			
+			# launch nthr threads to do the alignments
+			thrs=[]
+			for i in range(nthr):
+				print i
+				thrs.append(threading.Thread(target=self.threadTreeAlign, args=(tree,tree2,lock)))
+				thrs[-1].start()
+				
+			# Wait for threads to finish
+			while 1:
+				time.sleep(0.2)
+				print len(tree)
 				self.wpbprogress.setValue(int((maxt-len(tree))*100/maxt))
 				QtGui.qApp.processEvents()
-				a=tree.pop()
-				try: b=tree.pop()
-				except:
-					tree2.append(a)
+
+				# If any threads are alive, it breaks out of the inner loop, if none are alive, the else block breaks out of the outer loop
+				for t in thrs:
+					if t.isAlive() : break
+				else:
 					break
-				c=a.align("rotate_translate_flip",b)
-				c.add(b)
-				c.process_inplace("xform.centerofmass",{"threshold":0.5})
-				tree2.append(c)
-#				c.write_image("zzz.hdf",-1)
-			
+
 			tree=tree2
-			
+		
+#		tree[0]=tree[0].get_clip(Region(-tree[0]["nx"]/2,-tree[0]["ny"]/2,tree[0]["nx"]*2,tree[0]["ny"]*2))
+		tree[0].process_inplace("xform.scale",{"clip":tree[0]["nx"]*2,"scale":2.0})
 		tree[0].process_inplace("xform.centerofmass",{"threshold":0.5})
 		tree[0].process_inplace("normalize.edgemean")
 
@@ -445,25 +512,45 @@ class EMMotion(QtGui.QMainWindow):
 #		for i in range(90): print "%d\t%f"%(i,pl[i])
 		ml=2.0*pl.index(max(pl))
 		tree[0].rotate(ml,0,0)				# put the initial reference in the preferred orientation
-		#tree[0].write_image("zzz.hdf",0)
+		tree[0].write_image("zzz.hdf",0)
 		
 		# One final alignment pass
 		self.particles_ali=[]
 		self.alisig=EMData(self.particles[0]["nx"],self.particles[0]["ny"],1)
 		avgr=Averagers.get("mean",{"sigma":self.alisig})
-		for i,p in enumerate(self.particles):
-			self.wpbprogress.setValue(int(i*100/len(self.particles)))
+		thrs=[]
+		
+		print "b2"
+		# launch nthr threads to do the alignments
+		for i in range(nthr):
+			print i
+			thrs.append(threading.Thread(target=self.threadAlign, args=(self.particles[i::nthr],tree[0],self.particles_ali)))
+			thrs[-1].start()
+
+		# wait for the threads to finish running
+		while (1):
+			time.sleep(0.2)
+			print len(self.particles_ali)
+			self.wpbprogress.setValue(int(len(self.particles_ali)*100/len(self.particles)))
 			QtGui.qApp.processEvents()
-			a=p.align("rotate_translate_flip",tree[0])
-#			a=p.align("refine",tree[0],{"verbose":0,"xform.align2d":a["xform.align2d"]},"ccc",{})		# doesn't really seem to make an improvement
-			a["match_qual"]=a.cmp("ccc",tree[0])		# compute similarity to unmasked reference
-			self.particles_ali.append(a)
-			avgr.add_image(a)
+			
+			# If any threads are alive, it breaks out of the inner loop, if none are alive, the else block breaks out of the outer loop
+			for t in thrs:
+				if t.isAlive() : break
+			else:
+				break
+		
+		print "b3"
+		self.particles_ali.sort()
+		for i,a in self.particles_ali[:len(self.particles)/2]: avgr.add_image(a)
 		
 		self.aliimg=avgr.finish()
+
+		self.w2dptcl.set_data([i for j,i in self.particles_ali])
 		
-		#self.aliimg.write_image("zzz.hdf",1)
-		#self.alisig.write_image("zzz.hdf",2)
+
+		self.aliimg.write_image("zzz.hdf",1)
+		self.alisig.write_image("zzz.hdf",2)
 		
 		self.setAliRef(self.aliimg)
 		
@@ -513,7 +600,7 @@ class EMMotion(QtGui.QMainWindow):
 		self.alimask.add(-self.alimask["minimum"]+.01)		# The minimum value in the image is >0, so when we draw with 0 'color' we can extract the mask info
 		self.w2dalimaskdraw.set_data(self.alimask)
 		self.aliGoPress()
-	
+
 	def aliGoPress(self,x=False):
 		self.alimasked=self.aliimg.copy()
 		
@@ -527,6 +614,29 @@ class EMMotion(QtGui.QMainWindow):
 		self.alimasked.mult(mask)
 		self.w2dalimask.set_data(self.alimasked)
 
+	def rAlignToRef(self):
+		"""realigns particles to reference, but does not compute a new reference"""
+		self.wpbprogress.setEnabled(True)
+		self.wpbprogress.reset()
+		
+		newali=[]
+		for i,p in enumerate(self.particles):
+			self.wpbprogress.setValue(int(i*100/len(self.particles)))
+			QtGui.qApp.processEvents()
+#			a=p.align("rotate_translate_flip",self.alimasked)
+			p2=p.process("filter.lowpass.gauss",{"cutoff_abs":0.1})
+			a=p2.align("refine",self.alimasked,{"verbose":0,"xform.align2d":self.particles_ali[i][1]["xform.align2d"]},"ccc",{})		# doesn't really seem to make an improvement
+#			a["match_qual"]=a.cmp("ccc",self.aliimg)		# compute similarity to unmasked reference
+			a["match_qual"]=a.cmp("frc",self.aliimg,{"sweight":0})		# compute similarity to unmasked reference
+			newali.append((a["match_qual"],a))
+
+		newali.sort()
+		self.particles_ali=newali
+		self.w2dptcl.set_data([i for j,i in self.particles_ali])
+
+		self.wpbprogress.reset()
+		self.wpbprogress.setEnabled(False)
+
 	def alignToRef(self):
 		"""realigns particles to reference, but does not compute a new reference"""
 		self.wpbprogress.setEnabled(True)
@@ -536,10 +646,14 @@ class EMMotion(QtGui.QMainWindow):
 		for i,p in enumerate(self.particles):
 			self.wpbprogress.setValue(int(i*100/len(self.particles)))
 			QtGui.qApp.processEvents()
-			a=p.align("rotate_translate_flip",self.alimasked)
+			p2=p.process("filter.lowpass.gauss",{"cutoff_abs":0.1})
+			a=p2.align("rotate_translate_flip",self.alimasked)
 #			a=p.align("refine",tree[0],{"verbose":0,"xform.align2d":a["xform.align2d"]},"ccc",{})		# doesn't really seem to make an improvement
-			a["match_qual"]=a.cmp("ccc",self.aliimg)		# compute similarity to unmasked reference
-			self.particles_ali.append(a)
+#			a["match_qual"]=a.cmp("ccc",self.aliimg)		# compute similarity to unmasked reference
+			a["match_qual"]=a.cmp("frc",self.aliimg,{"sweight":0})		# compute similarity to unmasked reference
+			self.particles_ali.append((a["match_qual"],a))
+		self.particles_ali.sort()
+		self.w2dptcl.set_data([i for j,i in self.particles_ali])
 
 		self.wpbprogress.reset()
 		self.wpbprogress.setEnabled(False)
@@ -552,7 +666,20 @@ class EMMotion(QtGui.QMainWindow):
 		# Compute the new average
 		self.alisig=EMData(self.particles[0]["nx"],self.particles[0]["ny"],1)
 		avgr=Averagers.get("mean",{"sigma":self.alisig})
-		avgr.add_image_list(self.particles_ali)
+		for q,i in self.particles_ali[:len(self.particles)/2] : avgr.add_image(i)
+		self.aliimg=avgr.finish()
+		
+		self.setAliRef(self.aliimg)
+
+	def aliRRecalcRefPress(self,x=False):
+		if len(self.particles)==0 : return
+		
+		self.rAlignToRef()			# realign particles to current masked reference
+		
+		# Compute the new average
+		self.alisig=EMData(self.particles[0]["nx"],self.particles[0]["ny"],1)
+		avgr=Averagers.get("mean",{"sigma":self.alisig})
+		for q,i in self.particles_ali[:len(self.particles)/2] : avgr.add_image(i)
 		self.aliimg=avgr.finish()
 		
 		self.setAliRef(self.aliimg)
