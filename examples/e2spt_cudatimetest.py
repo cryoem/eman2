@@ -37,7 +37,8 @@ from sys import argv
 from time import time
 		 
 import matplotlib.pyplot as plt
-import sys		 
+import sys
+import numpy		 
 		 
 def main():
 	
@@ -61,33 +62,42 @@ def main():
 	
 	logger = E2init(sys.argv, options.ppid)
 	
-	retcpu={}
-	retgpu={}
+	retcpu=[]
+	retgpu=[]
 	if options.cpu:
 		corg = 'cpu'
 		print "I will test the CPU"
 		print "Because options.cpu is", options.cpu
 		retcpu=doit(corg,options)
-		print "retcpu is", retcpu
-		for key,value in retcpu:
-			print "I should be plotting this"
 		
 	if options.gpu:
 		corg = 'gpu'
 		print "I will test the GPU"
 		print "Because options.gpu is", options.gpu
 		retgpu=doit(corg,options)
-		for key,value in retgpu:
-			print "I should be plotting this"
 	
 	if retcpu and retgpu:
 		if len(retcpu) == len(retgpu):
+
+			steps=[]
+			difs=[]
+			for i in len(retgpu):
+				step = retgpu[0]
+				name = "step"+str(step).zfill(2) + '_' + 'gpuVScpu.png'
+				gnums = numpy.array(retgpu[i][-1])
+				cnums = numpy.array(retcpu[i][-1])
+				sizes = numpy.array(retgpu[i][1])
+				difs = cnum/gnum
+				print "\n$$$$$$$\nThe step is", step
+				print "\n\n"
+				plotter(name,sizes,difs)
 			print "I should be plotting this"
 	
 		else:
+			print "For some sick reason, you don't have the same number of data points for gpu and cpu, therefore, you cannot compare them, see", len(retgpu), len(retcpu)
 			sys.exit()
 	else:
-		sys.exit()
+		return()
 	
 		
 	return()
@@ -100,13 +110,13 @@ def doit(corg,options):
 	steps = [10,8,6,4,2]
 	if options.test:
 		mults = [12,14,15,22,32]
-		steps = [10]
+		steps = [3]
 
 	#,81,84,88,91,96,98,100]
 	
 	computer = options.ID
 	
-	data = {}
+	data = []
 	
 	for step in steps:
 
@@ -171,12 +181,12 @@ def doit(corg,options):
 			
 			td = tb - ta
 			print "BUt the real time is", td
-			times.append(td)
+			times.append(float(td))
 			line2write= str(size) + ' ' + str(td)+'\n'
 			txt.write(line2write)
 		txt.close()
 	
-		data.update({str(step):[mults,times]})
+		data.append([step,mults,times])
 
 	return(data)
 
@@ -326,7 +336,8 @@ else:
 			m=lines[j].split()[0]
 		       	mults.append(m)
 		       	xnum=lines[j].split()[1]
-		       	
+		       	for j in len(sizes):
+					gnums=retgpu[i][j][
 			if i == 0:
 				
 				x.append(float(xnum)/normnums[j])
