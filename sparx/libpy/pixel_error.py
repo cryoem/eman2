@@ -467,19 +467,12 @@ def ali_stable_list(ali_params1, ali_params2, pixel_error_threshold, r=25):
 
 def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.0, err_thld = 1.732, print_individual = False, d = 64):
 
-	def ave(a):
-		n = len(a)
-		ave = 0.0
-		for i in xrange(n): ave += a[i]
-		ave /= n
-		return ave
-
 	def sqerr(a):
 		n = len(a)
-		avg = ave(a)
-		var = 0.0
-		for i in xrange(n): var += (a[i]-avg)**2
-		return var/n
+		avg = sum(a)
+		sq = 0.0
+		for i in xrange(n): sq += a[i]**2
+		return (sq-avg*avg/n)/n
 
 	# args - G, data -[T, d]
 	def func(args, data, return_avg_pixel_error=True):
@@ -490,11 +483,10 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 		d = data[1]
 		L = len(ali_params)
 		N = len(ali_params[0])/4
-		
+
 		args_list= [0.0]*(L*3)
-		for i in xrange(L*3-3):
-			args_list[i] = args[i]
-		
+		for i in xrange(L*3-3):  args_list[i] = args[i]
+
 		cosa = [0.0]*L
 		sina = [0.0]*L
 		for i in xrange(L):
@@ -682,22 +674,20 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	
 	pixel_error_after, ave_params = func(ps_lp, data, return_avg_pixel_error=False)
 
-	if print_individual:
-		for i in xrange(nima):
-			if i in mir_stab_part:
-				j = mir_stab_part.index(i)
-				if j in cleaned_part:
-					print "Particle %4d :  pixel error = %8.4f \n"%(i, sqrt(pixel_error_after[cleaned_part.index(j)]))
-				else:
-					print "Particle %4d :  pixel error = %8.4f     outlier \n"%(i, sqrt(pixel_error_before[j]))
-			else: print "Particle %4d :  Mirror unstable \n"%i
-
 	stable_set = []
-	for i in xrange(nima3):
-		err = sqrt(pixel_error_after[i])
-		if err < err_thld: 
-			stable_set.append([err, mir_stab_part[cleaned_part[i]], ave_params[i]])
-	stable_set.sort()
+	val = 0.0
+	for i in xrange(nima):
+		if i in mir_stab_part:
+			j = mir_stab_part.index(i)
+			err = sqrt(pixel_error[j])
+			if err < err_thld:
+				stable_set.append([err, mir_stab_part[j], ave_params[j]])
+				val += err
+				if print_individual:  print "Particle %4d :  pixel error = %18.4f"%(i, err)
+			else:
+				if print_individual:  print "Particle %4d :  pixel error = %18.4f  unstable"%(i, err)
+		else:
+			if print_individual:  print "Particle %4d :  Mirror unstable"%i
 		
 	return stable_set, mir_stab_rate, sqrt(val)
 
