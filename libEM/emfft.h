@@ -175,7 +175,7 @@ namespace EMAN
 		static int complex_to_complex_nd(float *complex_data_in, float *complex_data_out, int nx,int ny,int nz);// ming add
 	  private:
 #ifdef FFTW_PLAN_CACHING
-#define EMFFTW3_CACHE_SIZE 20
+#define EMFFTW3_CACHE_SIZE 32
 		static const int EMAN2_REAL_2_COMPLEX;
 		static const int EMAN2_COMPLEX_2_REAL;
 		static const int EMAN2_FFTW2_INPLACE;
@@ -228,6 +228,7 @@ namespace EMAN
 			fftwf_plan fftwplans[EMFFTW3_CACHE_SIZE];
 			// Store whether or not the plan was inplace
 			int ip[EMFFTW3_CACHE_SIZE];
+			// Thread number (plans are thread-specific)
 		
 		};
 

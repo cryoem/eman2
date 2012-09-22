@@ -473,7 +473,6 @@ class EMMotion(QtGui.QMainWindow):
 		
 		lock=threading.Lock()
 
-		print "b1"
 		while len(tree)>1:
 			maxt=len(tree)
 			tree2=[]
@@ -481,14 +480,12 @@ class EMMotion(QtGui.QMainWindow):
 			# launch nthr threads to do the alignments
 			thrs=[]
 			for i in range(nthr):
-				print i
 				thrs.append(threading.Thread(target=self.threadTreeAlign, args=(tree,tree2,lock)))
 				thrs[-1].start()
 				
 			# Wait for threads to finish
 			while 1:
 				time.sleep(0.2)
-				print len(tree)
 				self.wpbprogress.setValue(int((maxt-len(tree))*100/maxt))
 				QtGui.qApp.processEvents()
 
@@ -520,17 +517,14 @@ class EMMotion(QtGui.QMainWindow):
 		avgr=Averagers.get("mean",{"sigma":self.alisig})
 		thrs=[]
 		
-		print "b2"
 		# launch nthr threads to do the alignments
 		for i in range(nthr):
-			print i
 			thrs.append(threading.Thread(target=self.threadAlign, args=(self.particles[i::nthr],tree[0],self.particles_ali)))
 			thrs[-1].start()
 
 		# wait for the threads to finish running
 		while (1):
 			time.sleep(0.2)
-			print len(self.particles_ali)
 			self.wpbprogress.setValue(int(len(self.particles_ali)*100/len(self.particles)))
 			QtGui.qApp.processEvents()
 			
@@ -540,7 +534,6 @@ class EMMotion(QtGui.QMainWindow):
 			else:
 				break
 		
-		print "b3"
 		self.particles_ali.sort()
 		for i,a in self.particles_ali[:len(self.particles)/2]: avgr.add_image(a)
 		

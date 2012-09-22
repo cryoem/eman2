@@ -32,12 +32,12 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  * 
  * */
- 
+
+#include <pthread.h>	# This MUST be first !
 #include <string>
 #include <cstring>
 #include "emfft.h"
 #include "log.h"
-
 
 #include <iostream>
 using std::cout;
@@ -70,6 +70,8 @@ namespace {
 		return rank;
 	}
 }
+
+pthread_mutex_t fft_mutex=PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef FFTW_PLAN_CACHING
 // The only thing important about these constants is that they don't equal each other
@@ -113,7 +115,9 @@ EMfft::EMfftw3_cache::~EMfftw3_cache()
 	{
 		if (fftwplans[i] != NULL)
 		{
+			int mrt = pthread_mutex_lock(&fft_mutex);
 			fftwf_destroy_plan(fftwplans[i]);
+			mrt = pthread_mutex_unlock(&fft_mutex);
 			fftwplans[i] = NULL;
 		}
 	}
@@ -140,6 +144,8 @@ fftwf_plan EMfft::EMfftw3_cache::get_plan(const int rank_in, const int x, const 
 				  && rank[i]==rank_in && r2c[i]==r2c_flag && ip[i]==ip_flag) return fftwplans[i];
 	}
 	
+	int mrt = pthread_mutex_lock(&fft_mutex);
+	
 	fftwf_plan plan;
 	// Create the plan
 	if ( y == 1 && z == 1 )
@@ -162,6 +168,8 @@ fftwf_plan EMfft::EMfftw3_cache::get_plan(const int rank_in, const int x, const 
 		fftwf_destroy_plan(fftwplans[EMFFTW3_CACHE_SIZE-1]);
 		fftwplans[EMFFTW3_CACHE_SIZE-1] = NULL;
 	}
+	
+	mrt = pthread_mutex_unlock(&fft_mutex);
 				
 	int upper_limit = num_plans;
 	if ( upper_limit == EMFFTW3_CACHE_SIZE ) upper_limit -= 1;
@@ -259,6 +267,8 @@ rfftwnd_plan EMfft::EMfftw2_cache_nd::get_plan(const int rank_in, const int x, c
 	}	
 	else
 	{
+		int mrt = pthread_mutex_lock(&fft_mutex);
+		
 		rfftwnd_plan plan;
 		// Create the plan
 		if ( r2c_flag == EMAN2_REAL_2_COMPLEX )
@@ -282,6 +292,7 @@ rfftwnd_plan EMfft::EMfftw2_cache_nd::get_plan(const int rank_in, const int x, c
 			rfftwnd_destroy_plan(rfftwnd_plans[EMFFTW2_ND_CACHE_SIZE-1]);
 			rfftwnd_plans[EMFFTW2_ND_CACHE_SIZE-1] = NULL;
 		}
+		mrt = pthread_mutex_unlock(&fft_mutex);
 		
 		int upper_limit = num_plans;
 		if ( upper_limit == EMFFTW2_ND_CACHE_SIZE ) upper_limit -= 1;
@@ -351,7 +362,9 @@ rfftw_plan EMfft::EMfftw2_cache_1d::get_plan(const int x, const int r2c_flag )
 	for (i=0; i<num_plans; i++) {
 		if (plan_dims[i]==x && r2c[i]==r2c_flag ) return rfftw1d_plans[i];
 	}
-	
+
+	int mrt = pthread_mutex_lock(&fft_mutex);
+
 	rfftw_plan plan;
 	// Create the plan
 	if ( r2c_flag == EMAN2_REAL_2_COMPLEX )
@@ -366,7 +379,9 @@ rfftw_plan EMfft::EMfftw2_cache_1d::get_plan(const int x, const int r2c_flag )
 		rfftw_destroy_plan(rfftw1d_plans[EMFFTW2_1D_CACHE_SIZE-1]);
 		rfftw1d_plans[EMFFTW2_1D_CACHE_SIZE-1] = NULL;
 	}
-				
+
+	mrt = pthread_mutex_unlock(&fft_mutex);
+
 	int upper_limit = num_plans;
 	if ( upper_limit == EMFFTW2_1D_CACHE_SIZE ) upper_limit -= 1;
 	for (int i=upper_limit-1; i>0; i--)
@@ -797,10 +812,15 @@ int EMfft::real_to_complex_1d(float *real_data, float *complex_data, int n)
 	// According to FFTW3, this is making use of the "guru" interface - this is necessary if plans are to be reused
 	fftwf_execute_dft_r2c(plan, real_data,(fftwf_complex *) complex_data);
 #else
+	int mrt = pthread_mutex_lock(&fft_mutex);
 	fftwf_plan plan = fftwf_plan_dft_r2c_1d(n, real_data, (fftwf_complex *) complex_data,
 											FFTW_ESTIMATE);
+	mrt = pthread_mutex_unlock(&fft_mutex);
+
 	fftwf_execute(plan);
+	mrt = pthread_mutex_lock(&fft_mutex);
 	fftwf_destroy_plan(plan);
+	mrt = pthread_mutex_unlock(&fft_mutex);
 #endif // FFTW_PLAN_CACHING
 	return 0;
 };
@@ -813,10 +833,14 @@ int EMfft::complex_to_real_1d(float *complex_data, float *real_data, int n)
 	// According to FFTW3, this is making use of the "guru" interface - this is necessary if plans are to be reused
 	fftwf_execute_dft_c2r(plan, (fftwf_complex *) complex_data, real_data);
 #else
+	int mrt = pthread_mutex_lock(&fft_mutex);
 	fftwf_plan plan = fftwf_plan_dft_c2r_1d(n, (fftwf_complex *) complex_data, real_data,
 											FFTW_ESTIMATE);
+	mrt = pthread_mutex_unlock(&fft_mutex);
 	fftwf_execute(plan);
+	mrt = pthread_mutex_lock(&fft_mutex);
 	fftwf_destroy_plan(plan);
+	mrt = pthread_mutex_unlock(&fft_mutex);
 #endif // FFTW_PLAN_CACHING
 	
 	return 0;
@@ -829,9 +853,13 @@ int EMfft::complex_to_complex_1d(float *complex_data_in, float *complex_data_out
 	fftwf_plan p;
 	fftwf_complex *in=(fftwf_complex *) complex_data_in;
 	fftwf_complex *out=(fftwf_complex *) complex_data_out;
+	int mrt = pthread_mutex_lock(&fft_mutex);
 	p=fftwf_plan_dft_1d(n/2,in,out, FFTW_FORWARD, FFTW_ESTIMATE);
+	mrt = pthread_mutex_unlock(&fft_mutex);
 	fftwf_execute(p);
+	mrt = pthread_mutex_lock(&fft_mutex);
 	fftwf_destroy_plan(p);
+	mrt = pthread_mutex_unlock(&fft_mutex);
 	return 0;
 }
 
@@ -854,6 +882,8 @@ int EMfft::complex_to_complex_nd(float *in, float *out, int nx,int ny,int nz)
 		{
 			fftwf_plan p;
 
+			int mrt = pthread_mutex_lock(&fft_mutex);
+
 			if(out == in) {
 				p=fftwf_plan_dft_3d(nx/2,ny,nz,(fftwf_complex *) in,(fftwf_complex *) out, FFTW_FORWARD, FFTW_ESTIMATE);
 			}
@@ -861,8 +891,14 @@ int EMfft::complex_to_complex_nd(float *in, float *out, int nx,int ny,int nz)
 
 				p=fftwf_plan_dft_3d(nx/2,ny,nz,(fftwf_complex *) in,(fftwf_complex *) out, FFTW_FORWARD, FFTW_ESTIMATE);
 			}
+			mrt = pthread_mutex_unlock(&fft_mutex);
+
 			fftwf_execute(p);
+			
+			mrt = pthread_mutex_lock(&fft_mutex);
 			fftwf_destroy_plan(p);
+			mrt = pthread_mutex_unlock(&fft_mutex);
+
 		}
 	}
 	return 0;
@@ -892,10 +928,17 @@ int EMfft::real_to_complex_nd(float *real_data, float *complex_data, int nx, int
 			// According to FFTW3, this is making use of the "guru" interface - this is necessary if plans are to be re-used
 			fftwf_execute_dft_r2c(plan, real_data,(fftwf_complex *) complex_data );
 #else
+			int mrt = pthread_mutex_lock(&fft_mutex);
 			fftwf_plan plan = fftwf_plan_dft_r2c(rank, dims + (3 - rank), 
 					real_data, (fftwf_complex *) complex_data, FFTW_ESTIMATE);
+			mrt = pthread_mutex_unlock(&fft_mutex);
+			
 			fftwf_execute(plan);
+			
+			mrt = pthread_mutex_lock(&fft_mutex);
 			fftwf_destroy_plan(plan);
+			mrt = pthread_mutex_unlock(&fft_mutex);
+
 #endif // FFTW_PLAN_CACHING
 		}
 			break;
@@ -930,10 +973,17 @@ int EMfft::complex_to_real_nd(float *complex_data, float *real_data, int nx, int
 			// According to FFTW3, this is making use of the "guru" interface - this is necessary if plans are to be re-used
 			fftwf_execute_dft_c2r(plan, (fftwf_complex *) complex_data, real_data);
 #else
+			int mrt = pthread_mutex_lock(&fft_mutex);
 			fftwf_plan plan = fftwf_plan_dft_c2r(rank, dims + (3 - rank), 
 					(fftwf_complex *) complex_data, real_data, FFTW_ESTIMATE);
+			mrt = pthread_mutex_unlock(&fft_mutex);
+
 			fftwf_execute(plan);
+			
+			mrt = pthread_mutex_lock(&fft_mutex);
 			fftwf_destroy_plan(plan);
+			mrt = pthread_mutex_unlock(&fft_mutex);
+
 #endif // FFTW_PLAN_CACHING
 			
 			
