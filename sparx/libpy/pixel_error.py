@@ -679,7 +679,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	for i in xrange(nima):
 		if i in mir_stab_part:
 			j = mir_stab_part.index(i)
-			err = sqrt(pixel_error[j])
+			err = sqrt(pixel_error_after[j])
 			if err < err_thld:
 				stable_set.append([err, mir_stab_part[j], ave_params[j]])
 				val += err
