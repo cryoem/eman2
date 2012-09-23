@@ -40,7 +40,7 @@ import sys
 def main():
 	from utilities import get_input_from_string
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack <averages> --ou=ou --xr=xr --yr=yr --ts=ts --thld_grp=thld_grp --thld_err=thld_err --num_ali=num_ali --fl=fl --aa=aa --CTF --verbose --stab_part"
+	usage = progname + " stack <averages> --ou=ou --xr=xr --yr=yr --ts=ts --thld_grp=thld_grp --thld_err=thld_err --num_ali=num_ali --fl=fl --aa=aa --CTF --verbose --stables"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ou",           type="int",              default=-1,          help=" outer radius for alignment")
 	parser.add_option("--xr",           type="string"      ,     default="2 1",       help="range for translation search in x direction, search is +/xr")
@@ -53,7 +53,7 @@ def main():
 	parser.add_option("--aa",           type="float"       ,     default=0.2,         help="fall-off of hyperbolic tangent low-pass Fourier filter")
 	parser.add_option("--CTF",          action="store_true",     default=False,       help="Consider CTF correction during the alignment ")
 	parser.add_option("--verbose",      action="store_true",     default=False,       help="print individual pixel error (default = False)")
-	parser.add_option("--stab_part",	action="store_true",	 default=False,	      help="output the stable particles number in file")
+	parser.add_option("--stables",		action="store_true",	 default=False,	      help="output the stable particles number in file")
 	(options, args) = parser.parse_args()
 	if len(args) != 1 and len(args) != 2:
     		print "usage: " + usage
@@ -118,7 +118,6 @@ def main():
 						SX = []
 						SY = []
 						MIRROR = []
-						SCALE = []
 					if( xrng[0] == 0.0 and yrng[0] == 0.0 ):
 						dummy = ali2d_ras(class_data, randomize = True, ir = 1, ou = ou, rs = 1, step = 1.0, dst = 90.0, maxit = 30, check_mirror = True, FH=options.fl, FF=options.aa)
 					else:
@@ -131,13 +130,22 @@ def main():
 							SX.append(sx)
 							SY.append(sy)
 							MIRROR.append(mirror)
-							SCALE.append(scale)
 					all_ali_params.append(ali_params)
 					if options.verbose:
-						write_text_file([ALPHA, SX, SY, MIRROR, SCALE], "ali_params_grp_%03d_run_%d"%(i, ii)) 
+						write_text_file([ALPHA, SX, SY, MIRROR], "ali_params_grp_%03d_run_%d"%(i, ii))
+				"""
+				from utilities import read_text_file
+				all_ali_params = []
+				for ii in xrange(5):
+					temp = read_text_file( "ali_params_grp_%03d_run_%d"%(i, ii),-1)
+					uuu = []
+					for k in xrange(len(temp[0])):
+						uuu.extend([temp[0][k],temp[1][k],temp[2][k],temp[3][k]])
+					all_ali_params.append(uuu)
+				"""
 				stable_set, mir_stab_rate, pix_err = multi_align_stability(all_ali_params, 0.0, 10000.0, options.thld_err, options.verbose, 2*ou+1)
 				print "Average %4d : %20.3f %20.3f %20d %20d"%(i, mir_stab_rate, pix_err, len(stable_set), len(mem))
-				if options.stab_part and len(stable_set) >= options.thld_grp:
+				if options.stables and len(stable_set) >= options.thld_grp:
 					stab_mem = [[0,0.0,0] for j in xrange(len(stable_set))]
 					for j in xrange(len(stable_set)): stab_mem[j] = [mem[int(stable_set[j][1])], stable_set[j][0], j]
 					write_text_row(stab_mem, "stab_part_%06d.txt"%i)
