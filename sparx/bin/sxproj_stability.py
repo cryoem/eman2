@@ -332,60 +332,66 @@ def main():
 		#write_text_file(all_ali_params, "all_ali_params%03d.txt"%myid)
 		stable_set, mir_stab_rate, pix_err = multi_align_stability(all_ali_params, 0.0, 10000.0, thld_err, False, 2*radius+1)
 		#print "  H  ",myid,"  ",time()-st
-
-		stable_set_id = []
-		particle_pixerr = []
-		for s in stable_set:
-			stable_set_id.append(s[1])
-			particle_pixerr.append(s[0])
-		members = []
-		pix_err = []
-		# First put the stable members into attr 'members' and 'pix_err'
-		for s in stable_set:
-			members.append(proj_list[i][s[1]])
-			pix_err.append(s[0])
-		# Then put the unstable members into attr 'members' and 'pix_err'
-		from fundamentals import rot_shift2D
-		avet.to_zero()
-		l = -1
-		if options.grouping == "GRP":
-			aphi = 0.0
-			atht = 0.0
-			vphi = 0.0
-			vtht = 0.0
-		for j in xrange(len(proj_list[i])):
-			if j in stable_set_id:
-				l += 1
-				avet += rot_shift2D(class_data[j], stable_set[l][2][0], stable_set[l][2][1], stable_set[l][2][2], stable_set[l][2][3] )
-				if options.grouping == "GRP":
-					phi, theta, psi, sxs, sys = get_params_proj(class_data[j])
-					if( theta > 90.0):
-						phi = (phi+540.0)%360.0
-						theta = 180.0 - theta
-					aphi += phi
-					atht += theta
-					vphi += phi*phi
-					vtht += theta*theta
-			else:
-				members.append(proj_list[i][j])
-				pix_err.append(99999.99)
-		aveList[i] = avet.copy()
-		if l>1 :
-			l += 1
-			aveList[i] /= l
+		if(len(stable_set) > 5):
+			stable_set_id = []
+			particle_pixerr = []
+			for s in stable_set:
+				stable_set_id.append(s[1])
+				particle_pixerr.append(s[0])
+			members = []
+			pix_err = []
+			# First put the stable members into attr 'members' and 'pix_err'
+			for s in stable_set:
+				members.append(proj_list[i][s[1]])
+				pix_err.append(s[0])
+			# Then put the unstable members into attr 'members' and 'pix_err'
+			from fundamentals import rot_shift2D
+			avet.to_zero()
+			l = -1
 			if options.grouping == "GRP":
-				aphi /= l
-				atht /= l
-				vphi = (vphi - l*aphi*aphi)/l
-				vtht = (vtht - l*atht*atht)/l
-				from math import sqrt
-				refprojdir[i] = [aphi, atht, (sqrt(max(vphi,0.0))+sqrt(max(vtht,0.0)))/2.0]
-
-		# Here more information has to be stored, PARTICULARLY WHAT IS THE REFERENCE DIRECTION
-		aveList[i].set_attr('members', members)
-		aveList[i].set_attr('pix_err', pix_err)
-		aveList[i].set_attr('refprojdir',refprojdir[i])
-		aveList[i].set_attr('pixerr', particle_pixerr)
+				aphi = 0.0
+				atht = 0.0
+				vphi = 0.0
+				vtht = 0.0
+			for j in xrange(len(proj_list[i])):
+				if j in stable_set_id:
+					l += 1
+					avet += rot_shift2D(class_data[j], stable_set[l][2][0], stable_set[l][2][1], stable_set[l][2][2], stable_set[l][2][3] )
+					if options.grouping == "GRP":
+						phi, theta, psi, sxs, sys = get_params_proj(class_data[j])
+						if( theta > 90.0):
+							phi = (phi+540.0)%360.0
+							theta = 180.0 - theta
+						aphi += phi
+						atht += theta
+						vphi += phi*phi
+						vtht += theta*theta
+				else:
+					members.append(proj_list[i][j])
+					pix_err.append(99999.99)
+			aveList[i] = avet.copy()
+			if l>1 :
+				l += 1
+				aveList[i] /= l
+				if options.grouping == "GRP":
+					aphi /= l
+					atht /= l
+					vphi = (vphi - l*aphi*aphi)/l
+					vtht = (vtht - l*atht*atht)/l
+					from math import sqrt
+					refprojdir[i] = [aphi, atht, (sqrt(max(vphi,0.0))+sqrt(max(vtht,0.0)))/2.0]
+	
+			# Here more information has to be stored, PARTICULARLY WHAT IS THE REFERENCE DIRECTION
+			aveList[i].set_attr('members', members)
+			aveList[i].set_attr('pix_err', pix_err)
+			aveList[i].set_attr('refprojdir',refprojdir[i])
+			aveList[i].set_attr('pixerr', particle_pixerr)
+		else:
+			aveList[i].set_attr('members',[-1])
+			aveList[i].set_attr('pix_err', 999999.)
+			aveList[i].set_attr('refprojdir',refprojdir[i])
+			aveList[i].set_attr('pixerr', [99999.])
+			
 
 
 	del class_data
