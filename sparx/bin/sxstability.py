@@ -40,13 +40,12 @@ import sys
 def main():
 	from utilities import get_input_from_string
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack <averages> --ou=ou --xr=xr --yr=yr --ts=ts --thld_grp=thld_grp --thld_err=thld_err --num_ali=num_ali --fl=fl --aa=aa --CTF --verbose --stables"
+	usage = progname + " stack averages --ou=ou --xr=xr --yr=yr --ts=ts --thld_err=thld_err --num_ali=num_ali --fl=fl --aa=aa --CTF --verbose --stables"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ou",           type="int",              default=-1,          help=" outer radius for alignment")
 	parser.add_option("--xr",           type="string"      ,     default="2 1",       help="range for translation search in x direction, search is +/xr")
 	parser.add_option("--yr",           type="string"      ,     default="-1",        help="range for translation search in y direction, search is +/yr (default = same as xr)")
 	parser.add_option("--ts",           type="string"      ,     default="1 0.5",     help="step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional")
-	parser.add_option("--thld_grp",     type="int",              default=5,           help="mininum number of objects to consider for stability (default = 5)")
 	parser.add_option("--thld_err",     type="float",            default=1.732,       help="threshld of pixel error (default = 1.732)")
 	parser.add_option("--num_ali",      type="int",              default=5,           help="number of alignments performed for stability (default = 5)")
 	parser.add_option("--fl",           type="float"       ,     default=0.3,         help="cut-off frequency of hyperbolic tangent low-pass Fourier filter")
@@ -74,14 +73,10 @@ def main():
 		else          :  yrng = get_input_from_string(options.yr)
 		step        = get_input_from_string(options.ts)
 
-		data = EMData.read_images(args[0])
-		if len(args) > 1:
-			averages = EMData.read_images(args[1])
-		else:
-			averages = [ EMData() ]
-			averages[0].set_attr( "members", range(len(data)) )
+		class_data = EMData.read_images(args[0])
+		fofo = args[1]
 
-		nx = data[0].get_xsize()
+		nx = class_data[0].get_xsize()
 		ou = options.ou
 		num_ali = options.num_ali
 		if ou == -1: ou = nx/2-2
@@ -89,66 +84,80 @@ def main():
 		mask = model_circle(ou, nx, nx)
 
 		print "%14s %20s %20s %20s %20s"%("", "Mirror stab rate", "Pixel error", "Size of stable set", "Size of set")
-		for i in xrange(len(averages)):
-			mem = averages[i].get_attr('members')
-			mem = map(int, mem)
-			if len(mem) < options.thld_grp:
-				print "Average %4d: Group size too small to consider for stability."%i
+		if options.CTF :
+			from filter import filt_ctf
+			for im in xrange(len(class_data)):
+				atemp = class_data[im].copy()
+				btemp = filt_ctf(atemp, class_data[im].get_attr("ctf"), binary=1)
+				class_data[im] = btemp.copy()
+		"""
+		for im in class_data:
+			try:
+				t = im.get_attr("xform.align2d") # if they are there, no need to set them!
+			except:
+				try:
+					t = im.get_attr("xform.projection")
+					d = t.get_params("spider")
+					set_params2D(im, [0.0,-d["tx"],-d["ty"],0,1.0])
+				except:
+					set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0])
+		all_ali_params = []
+		for ii in xrange(num_ali):
+			ali_params = []
+			if options.verbose:
+				ALPHA = []
+				SX = []
+				SY = []
+				MIRROR = []
+			if( xrng[0] == 0.0 and yrng[0] == 0.0 ):
+				avet = ali2d_ras(class_data, randomize = True, ir = 1, ou = ou, rs = 1, step = 1.0, dst = 90.0, maxit = 30, check_mirror = True, FH=options.fl, FF=options.aa)
 			else:
-				class_data = [data[im] for im in mem]
-				if options.CTF :
-					from filter import filt_ctf
-					for im in xrange(len(class_data)):
-						class_data[im] = filt_ctf(class_data[im], class_data[im].get_attr("ctf"), binary=1)
-				for im in class_data:
-					try:
-						t = im.get_attr("xform.align2d") # if they are there, no need to set them!
-					except:
-						try:
-							t = im.get_attr("xform.projection")
-							d = t.get_params("spider")
-							set_params2D(im, [0.0,-d["tx"],-d["ty"],0,1.0])
-						except:
-							set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0])
-				all_ali_params = []
-				for ii in xrange(num_ali):
-					ali_params = []
-					if options.verbose:
-						ALPHA = []
-						SX = []
-						SY = []
-						MIRROR = []
-					if( xrng[0] == 0.0 and yrng[0] == 0.0 ):
-						dummy = ali2d_ras(class_data, randomize = True, ir = 1, ou = ou, rs = 1, step = 1.0, dst = 90.0, maxit = 30, check_mirror = True, FH=options.fl, FF=options.aa)
-					else:
-						dummy = within_group_refinement(class_data, mask, True, 1, ou, 1, xrng, yrng, step, 90.0, 30, options.fl, options.aa)
-					for im in class_data:
-						alpha, sx, sy, mirror, scale = get_params2D(im)
-						ali_params.extend([alpha, sx, sy, mirror])
-						if options.verbose:
-							ALPHA.append(alpha)
-							SX.append(sx)
-							SY.append(sy)
-							MIRROR.append(mirror)
-					all_ali_params.append(ali_params)
-					if options.verbose:
-						write_text_file([ALPHA, SX, SY, MIRROR], "ali_params_grp_%03d_run_%d"%(i, ii))
-				"""
-				from utilities import read_text_file
-				all_ali_params = []
-				for ii in xrange(5):
-					temp = read_text_file( "ali_params_grp_%03d_run_%d"%(i, ii),-1)
-					uuu = []
-					for k in xrange(len(temp[0])):
-						uuu.extend([temp[0][k],temp[1][k],temp[2][k],temp[3][k]])
-					all_ali_params.append(uuu)
-				"""
-				stable_set, mir_stab_rate, pix_err = multi_align_stability(all_ali_params, 0.0, 10000.0, options.thld_err, options.verbose, 2*ou+1)
-				print "Average %4d : %20.3f %20.3f %20d %20d"%(i, mir_stab_rate, pix_err, len(stable_set), len(mem))
-				if options.stables and len(stable_set) >= options.thld_grp:
-					stab_mem = [[0,0.0,0] for j in xrange(len(stable_set))]
-					for j in xrange(len(stable_set)): stab_mem[j] = [mem[int(stable_set[j][1])], stable_set[j][0], j]
-					write_text_row(stab_mem, "stab_part_%06d.txt"%i)
+				avet = within_group_refinement(class_data, mask, True, 1, ou, 1, xrng, yrng, step, 90.0, 30, options.fl, options.aa)
+			for im in class_data:
+				alpha, sx, sy, mirror, scale = get_params2D(im)
+				ali_params.extend([alpha, sx, sy, mirror])
+				if options.verbose:
+					ALPHA.append(alpha)
+					SX.append(sx)
+					SY.append(sy)
+					MIRROR.append(mirror)
+			all_ali_params.append(ali_params)
+			if options.verbose:
+				write_text_file([ALPHA, SX, SY, MIRROR], "ali_params_grp_%03d_run_%d"%(i, ii))
+		"""
+		avet = class_data[0]
+		from utilities import read_text_file
+		all_ali_params = []
+		for ii in xrange(5):
+			i=0
+			temp = read_text_file( "ali_params_grp_%03d_run_%d"%(i, ii),-1)
+			uuu = []
+			for k in xrange(len(temp[0])):
+				uuu.extend([temp[0][k],temp[1][k],temp[2][k],temp[3][k]])
+			all_ali_params.append(uuu)
+		stable_set, mir_stab_rate, pix_err = multi_align_stability(all_ali_params, 0.0, 10000.0, options.thld_err, options.verbose, 2*ou+1)
+		print "Average %4d : %20.3f %20.3f %20d %20d"%(i, mir_stab_rate, pix_err, len(stable_set), len(class_data))
+		if options.stables:
+			stab_mem = [[0,0.0,0] for j in xrange(len(stable_set))]
+			for j in xrange(len(stable_set)): stab_mem[j] = [int(stable_set[j][1]), stable_set[j][0], j]
+			write_text_row(stab_mem, "stable_particles_%06d.txt"%i)
+
+		stable_set_id = []
+		for s in stable_set: stable_set_id.append(s[1])
+		from fundamentals import rot_shift2D
+		avet.to_zero()
+		l = -1
+		print "avergae params"
+		for j in stable_set_id:
+			l += 1
+			print l,j, stable_set[l][2][0], stable_set[l][2][1], stable_set[l][2][2], stable_set[l][2][3]
+			avet += rot_shift2D(class_data[j], stable_set[l][2][0], stable_set[l][2][1], stable_set[l][2][2], stable_set[l][2][3] )
+		avet /= (l+1)
+		avet.set_attr('members', stable_set_id)
+		avet.set_attr('pix_err', pix_err)
+		avet.write_image(fofo,i)
+
+
 
 		global_def.BATCH = False
 
