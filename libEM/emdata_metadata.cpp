@@ -863,13 +863,12 @@ void EMData::set_size(int x, int y, int z, bool noalloc)
 	}
 	
 	if (rdata != 0) {
-		rdata = (float*)EMUtil::em_realloc(rdata,size);
-	} else {
-		// Just pass on this for a while....see what happens
-		rdata = (float*)EMUtil::em_malloc(size);
+		EMUtil::em_free(rdata);
 	}
-// 	rdata = static_cast < float *>(realloc(rdata, size));
-	if ( rdata == 0 )
+
+ 	rdata = static_cast < float *>(EMUtil::em_malloc(size));
+
+ 	if ( rdata == 0 )
 	{
 		stringstream ss;
 		string gigs;
