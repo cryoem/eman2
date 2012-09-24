@@ -40,7 +40,7 @@ import sys
 def main():
 	from utilities import get_input_from_string
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack averages --ou=ou --xr=xr --yr=yr --ts=ts --thld_err=thld_err --num_ali=num_ali --fl=fl --aa=aa --CTF --verbose --stables"
+	usage = progname + " stack average --ou=ou --xr=xr --yr=yr --ts=ts --thld_err=thld_err --num_ali=num_ali --fl=fl --aa=aa --CTF --verbose --stables"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ou",           type="int",              default=-1,          help=" outer radius for alignment")
 	parser.add_option("--xr",           type="string"      ,     default="2 1",       help="range for translation search in x direction, search is +/xr")
@@ -90,7 +90,6 @@ def main():
 				atemp = class_data[im].copy()
 				btemp = filt_ctf(atemp, class_data[im].get_attr("ctf"), binary=1)
 				class_data[im] = btemp.copy()
-		"""
 		for im in class_data:
 			try:
 				t = im.get_attr("xform.align2d") # if they are there, no need to set them!
@@ -102,6 +101,8 @@ def main():
 				except:
 					set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0])
 		all_ali_params = []
+
+
 		for ii in xrange(num_ali):
 			ali_params = []
 			if options.verbose:
@@ -123,7 +124,7 @@ def main():
 					MIRROR.append(mirror)
 			all_ali_params.append(ali_params)
 			if options.verbose:
-				write_text_file([ALPHA, SX, SY, MIRROR], "ali_params_grp_%03d_run_%d"%(i, ii))
+				write_text_file([ALPHA, SX, SY, MIRROR], "ali_params_run_%d"%ii)
 		"""
 		avet = class_data[0]
 		from utilities import read_text_file
@@ -135,19 +136,22 @@ def main():
 			for k in xrange(len(temp[0])):
 				uuu.extend([temp[0][k],temp[1][k],temp[2][k],temp[3][k]])
 			all_ali_params.append(uuu)
+		"""
+
+
 		stable_set, mir_stab_rate, pix_err = multi_align_stability(all_ali_params, 0.0, 10000.0, options.thld_err, options.verbose, 2*ou+1)
-		print "Average %4d : %20.3f %20.3f %20d %20d"%(i, mir_stab_rate, pix_err, len(stable_set), len(class_data))
+		print "Average stat: %20.3f %20.3f %20d %20d"%(mir_stab_rate, pix_err, len(stable_set), len(class_data))
 		if options.stables:
 			stab_mem = [[0,0.0,0] for j in xrange(len(stable_set))]
 			for j in xrange(len(stable_set)): stab_mem[j] = [int(stable_set[j][1]), stable_set[j][0], j]
-			write_text_row(stab_mem, "stable_particles_%06d.txt"%i)
+			write_text_row(stab_mem, "stable_particles.txt")
 
 		stable_set_id = []
 		for s in stable_set: stable_set_id.append(s[1])
 		from fundamentals import rot_shift2D
 		avet.to_zero()
 		l = -1
-		print "avergae params"
+		print "average params"
 		for j in stable_set_id:
 			l += 1
 			print l,j, stable_set[l][2][0], stable_set[l][2][1], stable_set[l][2][2], stable_set[l][2][3]
@@ -155,7 +159,7 @@ def main():
 		avet /= (l+1)
 		avet.set_attr('members', stable_set_id)
 		avet.set_attr('pix_err', pix_err)
-		avet.write_image(fofo,i)
+		avet.write_image(fofo)
 
 
 
