@@ -102,6 +102,7 @@ def main():
 					set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0])
 		all_ali_params = []
 
+		"""
 
 		for ii in xrange(num_ali):
 			ali_params = []
@@ -130,13 +131,11 @@ def main():
 		from utilities import read_text_file
 		all_ali_params = []
 		for ii in xrange(5):
-			i=0
-			temp = read_text_file( "ali_params_grp_%03d_run_%d"%(i, ii),-1)
+			temp = read_text_file( "ali_params_run_%d"%ii,-1)
 			uuu = []
 			for k in xrange(len(temp[0])):
 				uuu.extend([temp[0][k],temp[1][k],temp[2][k],temp[3][k]])
 			all_ali_params.append(uuu)
-		"""
 
 
 		stable_set, mir_stab_rate, pix_err = multi_align_stability(all_ali_params, 0.0, 10000.0, options.thld_err, options.verbose, 2*ou+1)
@@ -147,7 +146,10 @@ def main():
 			write_text_row(stab_mem, "stable_particles.txt")
 
 		stable_set_id = []
-		for s in stable_set: stable_set_id.append(s[1])
+		particle_pixerr = []
+		for s in stable_set:
+			stable_set_id.append(s[1])
+			particle_pixerr.append(s[0])
 		from fundamentals import rot_shift2D
 		avet.to_zero()
 		l = -1
@@ -159,6 +161,7 @@ def main():
 		avet /= (l+1)
 		avet.set_attr('members', stable_set_id)
 		avet.set_attr('pix_err', pix_err)
+		avet.set_attr('pixerr', particle_pixerr)
 		avet.write_image(fofo)
 
 

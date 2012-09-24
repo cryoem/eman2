@@ -334,7 +334,10 @@ def main():
 		#print "  H  ",myid,"  ",time()-st
 
 		stable_set_id = []
-		for s in stable_set: stable_set_id.append(s[1])
+		particle_pixerr = []
+		for s in stable_set:
+			stable_set_id.append(s[1])
+			particle_pixerr.append(s[0])
 		members = []
 		pix_err = []
 		# First put the stable members into attr 'members' and 'pix_err'
@@ -382,6 +385,8 @@ def main():
 		aveList[i].set_attr('members', members)
 		aveList[i].set_attr('pix_err', pix_err)
 		aveList[i].set_attr('refprojdir',refprojdir[i])
+		aveList[i].set_attr('pixerr', particle_pixerr)
+
 
 	del class_data
 	if myid == main_node:
@@ -401,6 +406,8 @@ def main():
 					members = mpi_recv(nm, MPI_INT, i, MPI_TAG_UB, MPI_COMM_WORLD)
 					ave.set_attr('members', map(int, members))
 					members = mpi_recv(nm, MPI_FLOAT, i, MPI_TAG_UB, MPI_COMM_WORLD)
+					ave.set_attr('pixerr', map(float, members))
+					members = mpi_recv(nm, MPI_FLOAT, i, MPI_TAG_UB, MPI_COMM_WORLD)
 					ave.set_attr('pix_err', map(float, members))
 					members = mpi_recv(3, MPI_FLOAT, i, MPI_TAG_UB, MPI_COMM_WORLD)
 					ave.set_attr('refprojdir', map(float, members))
@@ -413,6 +420,8 @@ def main():
 			members = aveList[im].get_attr('members')
 			mpi_send(len(members), 1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 			mpi_send(members, len(members), MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+			members = aveList[im].get_attr('pixerr')
+			mpi_send(members, len(members), MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 			members = aveList[im].get_attr('pix_err')
 			mpi_send(members, len(members), MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 			try:
