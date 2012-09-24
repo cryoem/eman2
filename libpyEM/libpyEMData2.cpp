@@ -82,11 +82,11 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_get_attr_default_overloads_1_
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_clip_inplace_overloads_1_2, EMAN::EMData::clip_inplace, 1, 2)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_process_inplace_overloads_1_2, EMAN::EMData::process_inplace, 1, 2)
+//BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_process_inplace_overloads_1_2, EMAN::EMData::process_inplace, 1, 2)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_process_overloads_1_2, EMAN::EMData::process, 1, 2)
+//BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_process_overloads_1_2, EMAN::EMData::process, 1, 2)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_cmp_overloads_2_3, EMAN::EMData::cmp, 2, 3)
+//BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_cmp_overloads_2_3, EMAN::EMData::cmp, 2, 3)
 
 //BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_align_overloads_2_5, EMAN::EMData::align, 2, 5)
 
@@ -245,6 +245,46 @@ EMData *EMData_align_wrapper5(EMData &ths, const string & aligner_name, EMData *
 	return ret;
 }
 
+void EMData_process_inplace_wrapper1(EMData &ths,const string & processorname) { 
+	Py_BEGIN_ALLOW_THREADS
+	ths.process_inplace(processorname); 
+	Py_END_ALLOW_THREADS
+}
+void EMData_process_inplace_wrapper2(EMData &ths,const string & processorname, const Dict & params) { 
+	Py_BEGIN_ALLOW_THREADS
+	ths.process_inplace(processorname,params); 
+	Py_END_ALLOW_THREADS
+}
+EMData *EMData_process_wrapper1(EMData &ths,const string & processorname) { 
+	EMData *ret;
+	Py_BEGIN_ALLOW_THREADS
+	ret=ths.process(processorname); 
+	Py_END_ALLOW_THREADS
+	return ret;
+}
+EMData *EMData_process_wrapper2(EMData &ths,const string & processorname, const Dict & params) { 
+	EMData *ret;
+	Py_BEGIN_ALLOW_THREADS
+	ret=ths.process(processorname,params); 
+	Py_END_ALLOW_THREADS
+	return ret;
+}
+
+float EMData_cmp_wrapper2(EMData &ths,const string & cmpname, EMData * with) { 
+	float ret;
+	Py_BEGIN_ALLOW_THREADS
+	ret=ths.cmp(cmpname,with); 
+	Py_END_ALLOW_THREADS
+	return ret;
+}
+float EMData_cmp_wrapper3(EMData &ths,const string & cmpname, EMData * with, const Dict & params) { 
+	float ret;
+	Py_BEGIN_ALLOW_THREADS
+	ret=ths.cmp(cmpname,with,params); 
+	Py_END_ALLOW_THREADS
+	return ret;
+}
+
 
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyEMData2)
@@ -348,11 +388,14 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 //	.def("get_pathnum", &EMAN::EMData::get_pathnum)
 	.def("write_data",&EMAN::EMData::write_data,EMAN_EMData_write_data_overloads_2_6(args("fsp", "loc", "area", "file_nx", "file_ny", "file_nz"), "Dump the image pixel data in native byte order to a disk file.\n \nfsp - The filename to read the image data from\nloc - Location to seek to in the file before writing (size_t)\narea - The image region you want to read, default 0 means read the whole image(default=Null)\nfile_nx - Image x size.(default=0)\nfile_ny - Image y size.(default=0)\nfile_nz Image z size.(default=0)"))
 	.def("read_data",&EMAN::EMData::read_data,EMAN_EMData_read_data_overloads_2_6(args("fsp", "loc", "area", "file_nx", "file_ny", "file_nz"), "Read the image pixel data in native byte order from a disk file.\nThe image should already have the correct dimensions.\n \nfsp - The filename to read the image data from\nloc - Location to seek to in the file before writing (size_t)\narea - The image region you want to read, default 0 means read the whole image(default=Null)\nfile_nx - Image x size.(default=0)\nfile_ny - Image y size.(default=0)\nfile_nz Image z size.(default=0)"))
-	.def("process_inplace", (void (EMAN::EMData::*)(const std::string&, const EMAN::Dict&) )&EMAN::EMData::process_inplace, EMAN_EMData_process_inplace_overloads_1_2(args("processorname", "params"), "Apply a processor with its parameters on this image.\n \nprocessorname - Processor Name.\nparams - Processor parameters in a keyed dictionary. default to None.\n \nNotExistingObjectError If the processor doesn't exist."))
-	.def("process_inplace", (void (EMAN::EMData::*)(EMAN::Processor*) )&EMAN::EMData::process_inplace, args("p"), "Call the process_inplace with an instance od Processor, usually this instancecan\nbe get by (in Python) Processors.get('name', {'k':v, 'k':v}).\n \np - the processor object")
-	.def("process", (EMAN::EMData* (EMAN::EMData::*)(const std::string&, const EMAN::Dict&) const )&EMAN::EMData::process, EMAN_EMData_process_overloads_1_2(args("processorname", "params"), "Apply a processor with its parameters on a copy of this image, return result\nas a a new image. The returned image may or may not be the same size as this image.\n \nprocessorname - Processor Name.\nparams - Processor parameters in a keyed dictionary.\n \nreturn the processed result, a new image\n \nexception - NotExistingObjectError If the processor doesn't exist.")[ return_value_policy< manage_new_object >() ])
+	.def("process_inplace", &EMData_process_inplace_wrapper1,args("processorname"),return_value_policy< manage_new_object >(), "Apply a processor with its parameters on this image.\n \nprocessorname - Processor Name.\nparams - Processor parameters in a keyed dictionary. default to None.\n \nNotExistingObjectError If the processor doesn't exist.")
+	.def("process_inplace", &EMData_process_inplace_wrapper2,args("processorname", "params"),return_value_policy< manage_new_object >(), "Apply a processor with its parameters on this image.\n \nprocessorname - Processor Name.\nparams - Processor parameters in a keyed dictionary. default to None.\n \nNotExistingObjectError If the processor doesn't exist.")
+	.def("process", &EMData_process_wrapper1,args("processorname"),return_value_policy< manage_new_object >(), "Apply a processor with its parameters on a copy of this image, return result\nas a a new image. The returned image may or may not be the same size as this image.\n \nprocessorname - Processor Name.\nparams - Processor parameters in a keyed dictionary.\n \nreturn the processed result, a new image\n \nexception - NotExistingObjectError If the processor doesn't exist.")
+	.def("process", &EMData_process_wrapper2,args("processorname", "params"),return_value_policy< manage_new_object >(), "Apply a processor with its parameters on a copy of this image, return result\nas a a new image. The returned image may or may not be the same size as this image.\n \nprocessorname - Processor Name.\nparams - Processor parameters in a keyed dictionary.\n \nreturn the processed result, a new image\n \nexception - NotExistingObjectError If the processor doesn't exist.")
 	.def("process", (EMAN::EMData* (EMAN::EMData::*)(EMAN::Processor*) const )&EMAN::EMData::process, args("p"), "Call the process with an instance od Processor, usually this instance can\nbe get by (in Python) Processors.get('name', {'k':v, 'k':v})\n \np - the processor object", return_value_policy< manage_new_object >())
-	.def("cmp", &EMAN::EMData::cmp, EMAN_EMData_cmp_overloads_2_3(args("cmpname", "with", "params"), "Compare this image with another image.\n \ncmpname - Comparison algorithm name.\nwith - The image you want to compare to.\nparams - Comparison parameters in a keyed dictionary, default to Null.\n \nreturn comparison score. The bigger, the better.\nexception - NotExistingObjectError If the comparison algorithm doesn't exist."))
+	.def("process_inplace", (void (EMAN::EMData::*)(EMAN::Processor*) )&EMAN::EMData::process_inplace, args("p"), "Call the process_inplace with an instance od Processor, usually this instancecan\nbe get by (in Python) Processors.get('name', {'k':v, 'k':v}).\n \np - the processor object")
+	.def("cmp", &EMData_cmp_wrapper2, args("cmpname", "with"), "Compare this image with another image.\n \ncmpname - Comparison algorithm name.\nwith - The image you want to compare to.\nparams - Comparison parameters in a keyed dictionary, default to Null.\n \nreturn comparison score. The bigger, the better.\nexception - NotExistingObjectError If the comparison algorithm doesn't exist.")
+	.def("cmp", &EMData_cmp_wrapper3, args("cmpname", "with", "params"), "Compare this image with another image.\n \ncmpname - Comparison algorithm name.\nwith - The image you want to compare to.\nparams - Comparison parameters in a keyed dictionary, default to Null.\n \nreturn comparison score. The bigger, the better.\nexception - NotExistingObjectError If the comparison algorithm doesn't exist.")
 	.def("xform_align_nbest", &EMAN::EMData::xform_align_nbest, EMAN_EMData_xform_align_nbest_overloads_2_6(args("aligner_name", "to_img", "params", "nsoln", "cmp_name", "cmp_params"), "Align this image with another image, return the parameters of the \"n best\" solutions.\nThis function first added in the context of the 3D aligners used by e2tomohunter:\nwhich wants the n best solutions, as opposed to just the best. Return value is an\nordered vector of Dicts of length nsoln. The data with idx 0 has the best solution in it.\n \naligner_name - Alignment algorithm name.\nto_img - The image 'this' image aligns to.\nparams - Alignment algorithm parameters in a keyed dictionary, default to Null.\nnsoln - the number of solutions you want to receive in the return vector, default to 1.\ncmp_name - Comparison algorithm used in alignment, default to 'dot'.\ncmp_params - Parameter dictionary for comparison algorithm, default to NUll.\n \nreturn an ordered vector of Dicts of length nsoln. The Dicts in the vector have keys \"score\" (i.e. correlation score) and \"xform.align3d\" (Transform containing the alignment)\nexception - NotExistingObjectError If the alignment algorithm doesn't exist."))
 	.def("align", &EMData_align_wrapper2,args("aligner_name", "to_img"),return_value_policy< manage_new_object >(), "Align this image with another image and return the result image.\n \naligner_name - Alignment algorithm name.\nto_img - The image 'this' image aligns to.\nparams - Alignment algorithm parameters in a keyed dictionary, default to Null.\ncmp_name - Comparison algorithm used in alignment, default to 'dot'.\ncmp_params - Parameter dictionary for comparison algorithm, default to Null.\n \nreturn The result image.\nexception - NotExistingObjectError If the alignment algorithm doesn't exist.")
 	.def("align", &EMData_align_wrapper3,args("aligner_name", "to_img", "params"),return_value_policy< manage_new_object >(), "Align this image with another image and return the result image.\n \naligner_name - Alignment algorithm name.\nto_img - The image 'this' image aligns to.\nparams - Alignment algorithm parameters in a keyed dictionary, default to Null.\ncmp_name - Comparison algorithm used in alignment, default to 'dot'.\ncmp_params - Parameter dictionary for comparison algorithm, default to Null.\n \nreturn The result image.\nexception - NotExistingObjectError If the alignment algorithm doesn't exist.")

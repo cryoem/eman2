@@ -228,8 +228,6 @@ namespace EMAN
 			fftwf_plan fftwplans[EMFFTW3_CACHE_SIZE];
 			// Store whether or not the plan was inplace
 			int ip[EMFFTW3_CACHE_SIZE];
-			// Thread number (plans are thread-specific)
-		
 		};
 
 		static EMfftw3_cache plan_cache;
