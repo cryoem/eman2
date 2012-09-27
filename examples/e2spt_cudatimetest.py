@@ -191,7 +191,7 @@ def doit(corg,options):
 
 	if options.extensive:
 		mults = []
-		for i in xrange(12:257):
+		for i in xrange(12,257):
 			mults.append(i)
 	
 	computer = options.ID
