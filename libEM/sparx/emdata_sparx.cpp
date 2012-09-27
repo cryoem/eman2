@@ -6264,8 +6264,8 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 				if(d2 <= r2 && d2>=ir) {
 					int nq = 0;
 					for ( int ist = nst1; ist < nst2; ist++) {
-						float zold = (k*pixel_size + ist*dp)/pixel_size;
-						
+						float zold = nz - 1 - (k*pixel_size + ist*dp)/pixel_size;
+
 						if(zold >= nb && zold <= ne) {
 							// now x-y position
 							float cphi = ist*dphi*(float)DGR_TO_RAD;
