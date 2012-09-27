@@ -113,17 +113,12 @@ def main():
 		print "I will make the path", options.path
 		os.system('mkdir ' + options.path)
 	
-	
 	retcpu=[]
 	retgpu=[]
 	if options.cpu:
 		corg = 'cpu'
-		print "I will test the CPU"
-		print "Because options.cpu is", options.cpu
+		
 		retcpu=doit(corg,options)
-		print "\n\nThe received data for retCPU is\n", retcpu
-		print "\n"
-		print "Thus the length is", len(retcpu)
 		
 		for i in range(len(retcpu)):
 			step = retcpu[i][0]
@@ -132,16 +127,16 @@ def main():
 			sizes = numpy.array(retcpu[i][1])
 			print "\n$$$$$$$\nThe step is", step
 			print "\n\n"
+			print "for which sizes to plot are", sizes
+			print "and cnums to plot are", cnums
+			print "\n"
 			plotter(name,sizes,cnums,step,step/2)
 		
 	if options.gpu:
 		corg = 'gpu'
-		print "I will test the GPU"
-		print "Because options.gpu is", options.gpu
-		retgpu=doit(corg,options)
-		print "\n\nThe received data is\n", retgpu
-		print "\n"
 		
+		retgpu=doit(corg,options)
+	
 		for i in range(len(retgpu)):
 			step = retgpu[i][0]
 			name = options.path + "/CS"+str(step).zfill(2) + '_' + 'GPU.png'
@@ -149,6 +144,9 @@ def main():
 			sizes = numpy.array(retgpu[i][1])
 			print "\n$$$$$$$\nThe step is", step
 			print "\n\n"
+			print "for which sizes to plot are", sizes
+			print "and gnums to plot are", gnums
+			print '\n'
 			plotter(name,sizes,gnums,step,step/2)
 	
 	if retcpu and retgpu:
@@ -275,18 +273,11 @@ def plotter(name,xaxis,yaxis,CS,FS):
 		tag='cpu 3D alignment Time'
 		labelfory='Time (s)'
 	
-	#CS=name.split('CS')[1].split('_')[0]
-	#FS=name.split('FS')[1].split('.')[0]
-		
-	#plot_name = name.replace('.txt','.png')
 	stepslabel='\ncoarse step=' + str(CS) + ' : fine step=' + str(FS)
 
 	plt.plot(xaxis, yaxis, linewidth=1)
 	plt.title(tag + ' VS box-size' + stepslabel)
 	
-
-	#if 'dif' in name:
-
 	plt.ylabel(labelfory)
 	plt.xlabel("Box side-length (pixels)")
 		
@@ -298,171 +289,6 @@ def plotter(name,xaxis,yaxis,CS,FS):
 	plt.savefig(name)
 	plt.clf()
 	return()
-
-'''
-if what != 'dif' and '.' not in what:
-	for i in fs:
-		if what in i and '.txt' in i:
-			testos.append(i)
-	
-	for i in testos:
-	       g=open(i)
-	       name=i
-	       lines=g.readlines()
-	       g.close()
-
-	       mults=[]
-	       x=[]
-	       for line in lines:
-		       m=line.split()[0]
-		       mults.append(m)
-		       xnum=line.split()[1]
-		       x.append(float(xnum))
-	       plotthis(name,mults,x)
-	
-elif what == 'dif':
-	for i in fs:
-		if 'gpu' in i and '.txt' in i:
-			gpus.append(i)
-			gpus.sort()
-			print "I have found a gpu"
-			
-		if 'cpu' in i and '.txt' in i:
-			cpus.append(i)
-			cpus.sort()
-			print "I have found a cpu"
-
-	if len(gpus) != len(cpus):
-		print "ERROR! G and C are not the same length!"
-		print "Gs are", gpus
-		print "Cs are", cpus
-		sys.exit()
-
-	else:
-		for i in range(len(gpus)):
-			gpuname=gpus[i]
-			cpuname=cpus[i]
-
-			if gpuname.replace('gpu','cpu') != cpuname:
-				print "WARNING! You are not comparing the same files, see"
-				print "GPU NAME IS", gpuname
-				print "CPU name IS", cpuname
-			if gpuname.split('_C')[1] == cpuname.split('_C')[1]:
-				print "But they're the same step sizes..."
-				finalname=gpuname.replace('gpu','dif')
-				mults=[]
-				x=[]
-				print "gpus are", gpus
-				gf=open(gpus[i],'r')
-				glines=gf.readlines()
-				print "glines are", glines
-
-				print "cpus are", cpus
-				cf=open(cpus[i],'r')
-				clines=cf.readlines()
-				print "clines are", clines
-				for j in range(len(glines)):
-
-					mg=glines[j].split()[0]
-					mults.append(mg)
-					xgnum=glines[j].split()[1]
-			
-					xcnum=clines[j].split()[1]
-					x.append(float(xcnum)/float(xgnum))
-				plotthis(finalname,mults,x)
-
-
-else:	
-	files=argv[2:-1]
-	normalization=argv[1]
-	plot_name=argv[-1]	
-	print "The files to plot are", files
-	print "And the name for the final plot is", plot_name
-	print "And the file used for normalization is", normalization
-	
-	plt.title(plot_name.split('.')[0])
-	#plots=[]
-	a = plt.gca()
-	mults=[]
-	maxesx=[]
-	maxesy=[]
-	
-	norm=open(normalization,'r')
-	linesn=norm.readlines()
-	norm.close()
-	
-	normnums=[]
-	#normnums2=[]
-	for line in linesn:
-		normnum=line.split()[1]
-		normnums.append(float(normnum))
-		#normnums2.append(float(normnum/6.0))
-		#normnums.append(1.0)
-	
-	print "There are these many files", len(files)
-	print files
-	for i in range(len(files)):
-		#print "plotting this file", i
-		g=open(files[i],'r')
-	       	lines=g.readlines()
-	       	g.close()
-		
-	       	mults=[]
-	       	x=[]
-	       	for j in range(len(lines)):
-			m=lines[j].split()[0]
-		       	mults.append(m)
-		       	xnum=lines[j].split()[1]
-		       	for j in len(sizes):
-					gnums=retgpu[i][j][
-			if i == 0:
-				
-				x.append(float(xnum)/normnums[j])
-			
-			if i>0:
-				x.append(float(xnum)/(6.0*normnums[j]))
-				
-			#print "Values are", i, m, x
-		
-		if len(mults) >0:
-			maxesx.append(mults[-1])				
-		if len(x) > 0:		
-			maxesy.append(max(x))	
-		
-		if len(mults) != len(x):
-			print "The length of mults and x are not equal, see"
-			print len(mults)
-			print len(x)
-			print mults
-			print x
-		
-		plt.plot(mults, x, linewidth=1)		
-		#plt.legend(pi,(i))
-
-		#plots.append(pi)
-			
-	if len(maxesx)>0:	
-		a.set_xlim(1,int(max(maxesx)))
-	if len(maxesy)>0:
-		a.set_ylim(0,int(max(maxesy)))
-	
-
-	plt.ylabel('cpu_time / gpu_time')
-	plt.xlabel("Box side-length (pixels)")
-		
-	#plt.legend( (pi[0][0], pi[1][0]), ('Men', 'Women') )
-
-	plt.savefig(plot_name)
-	plt.clf()
-'''
-
-
-
-
-
-
-
-
 
 
 '''
