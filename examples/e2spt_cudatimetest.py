@@ -18,6 +18,7 @@
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
+
 # (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
@@ -75,22 +76,24 @@ def main():
 		print "I will test the GPU"
 		print "Because options.gpu is", options.gpu
 		retgpu=doit(corg,options)
+		print "\n\nThe received data is\n", retgpu
+		print "\n"
 	
 	if retcpu and retgpu:
 		if len(retcpu) == len(retgpu):
 
-			steps=[]
+			#steps=[]
 			difs=[]
-			for i in len(retgpu):
-				step = retgpu[0]
-				name = "step"+str(step).zfill(2) + '_' + 'gpuVScpu.png'
+			for i in range(len(retgpu)):
+				step = retgpu[i][0]
+				name = "CS"+str(step).zfill(2) + '_' + 'gpuVScpu.png'
 				gnums = numpy.array(retgpu[i][-1])
 				cnums = numpy.array(retcpu[i][-1])
 				sizes = numpy.array(retgpu[i][1])
-				difs = cnum/gnum
+				difs = cnums/gnums
 				print "\n$$$$$$$\nThe step is", step
 				print "\n\n"
-				plotter(name,sizes,difs)
+				plotter(name,sizes,difs,step,step/2)
 			print "I should be plotting this"
 	
 		else:
@@ -110,7 +113,7 @@ def doit(corg,options):
 	steps = [10,8,6,4,2]
 	if options.test:
 		mults = [12,14,15,22,32]
-		steps = [3]
+		steps = [6]
 
 	#,81,84,88,91,96,98,100]
 	
@@ -172,9 +175,9 @@ def doit(corg,options):
 			#	a=test_image()
 			#	a.do_fft_cuda()
 			
-			ta= time()
+			ta = time()
 			os.system(cmd)
-			tb =time()
+			tb = time()
 			
 			#t=eman2time()
 			#print "The total alignment time was", t
@@ -187,38 +190,42 @@ def doit(corg,options):
 		txt.close()
 	
 		data.append([step,mults,times])
-
+		print "\n\nThe data to return is\n", data
+		print "\n"
 	return(data)
 
 
-def plotter(name,xaxis,yaxis):
+def plotter(name,xaxis,yaxis,CS,FS):
 	tag='gpu speed gain factor'
-	if 'gpu' in name:
+	labelfory='CPU time / GPU time'
+	if 'gpu' in name and 'cpu' not in name:
 		tag='gpu 3D alignment Time'
-	if 'cpu' in name:
+		labelfory='Time (s)'
+	if 'cpu' in name and 'gpu' not in name:
 		tag='cpu 3D alignment Time'
+		labelfory='Time (s)'
 	
-	CS=name.split('CS')[1].split('_')[0]
-	FS=name.split('FS')[1].split('.')[0]
+	#CS=name.split('CS')[1].split('_')[0]
+	#FS=name.split('FS')[1].split('.')[0]
 		
-	plot_name = name.replace('.txt','.png')
-	stepslabel='\ncoarse step=' + CS + ' : fine step=' + FS
+	#plot_name = name.replace('.txt','.png')
+	stepslabel='\ncoarse step=' + str(CS) + ' : fine step=' + str(FS)
 
-	plt.plot(mults, x, linewidth=1)
+	plt.plot(xaxis, yaxis, linewidth=1)
 	plt.title(tag + ' VS box-size' + stepslabel)
 	
-	labelfory='Time (s)'
-	if 'dif' in name:
-		labelfory='Speed factor compared to CPU'
+
+	#if 'dif' in name:
+
 	plt.ylabel(labelfory)
 	plt.xlabel("Box side-length (pixels)")
 		
 	a = plt.gca()
-	a.set_xlim(1,int(mults[-1]))
-	a.set_ylim(0,max(x)+0.25*max(x))
+	a.set_xlim(1,int(xaxis[-1]))
+	a.set_ylim(0,max(yaxis)+0.25*max(xaxis))
 	#a.legend(stepslabel)
 
-	plt.savefig(plot_name)
+	plt.savefig(name)
 	plt.clf()
 	return()
 
