@@ -86,7 +86,7 @@ def main():
 
 	if not options.path: 
 		#options.path="bdb:"+numbered_path("sptavsa",True)
-		options.path = "sptsim_01"
+		options.path = "sptCudaTest_01"
 	
 	files=os.listdir(os.getcwd())
 	print "right before while loop"
@@ -115,14 +115,18 @@ def main():
 	
 	retcpu=[]
 	retgpu=[]
+	
+	if options.ID:
+		options.ID = options.ID + '_'
+	
 	if options.cpu:
-		corg = 'cpu'
+		corg = 'CPU'
 		
 		retcpu=doit(corg,options)
 		
 		for i in range(len(retcpu)):
 			step = retcpu[i][0]
-			name = options.path + "/CS"+str(step).zfill(2) + '_' + 'CPU.png'
+			name = options.path + "/" + options.ID + "CS"+str(step).zfill(2) + '_' + 'CPU.png'
 			cnums = numpy.array(retcpu[i][-1])
 			sizes = numpy.array(retcpu[i][1])
 			print "\n$$$$$$$\nThe step is", step
@@ -133,13 +137,13 @@ def main():
 			plotter(name,sizes,cnums,step,step/2)
 		
 	if options.gpu:
-		corg = 'gpu'
+		corg = 'GPU'
 		
 		retgpu=doit(corg,options)
 	
 		for i in range(len(retgpu)):
 			step = retgpu[i][0]
-			name = options.path + "/CS"+str(step).zfill(2) + '_' + 'GPU.png'
+			name = options.path + "/" + options.ID + "CS"+str(step).zfill(2) + '_' + 'GPU.png'
 			gnums = numpy.array(retgpu[i][-1])
 			sizes = numpy.array(retgpu[i][1])
 			print "\n$$$$$$$\nThe step is", step
@@ -156,7 +160,7 @@ def main():
 			difs=[]
 			for i in range(len(retgpu)):
 				step = retgpu[i][0]
-				name = options.path + "/CS"+str(step).zfill(2) + '_' + 'gpuVScpu.png'
+				name = options.path + "/" + options.ID + "CS"+str(step).zfill(2) + '_' + 'GPUvsCPU.png'
 				gnums = numpy.array(retgpu[i][-1])
 				cnums = numpy.array(retcpu[i][-1])
 				sizes = numpy.array(retgpu[i][1])
@@ -194,9 +198,9 @@ def doit(corg,options):
 		coarsestep=step
 		finestep=coarsestep/2
 		
-		name = options.path + '/' + corg + '_' + 'CS' + str(coarsestep).zfill(len(str(max(steps)))) + '_FS' + str(finestep) + '.txt'
-		if computer:
-			name = corg + '_' + computer + '_CS' + str(coarsestep).zfill(len(str(max(steps)))) + '_FS' + str(finestep) + '.txt'
+		#name = options.path + '/CS' + str(coarsestep).zfill(len(str(max(steps)))) + '_FS' + str(finestep) + '.txt'
+		#if computer:
+		name = options.path + '/' + computer + 'CS' + str(coarsestep).zfill(len(str(max(steps)))) + '_FS' + str(finestep) + '_' + corg + '.txt'
 
 		txt = open(name,'w')
 		
