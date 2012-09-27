@@ -56,12 +56,63 @@ def main():
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--path",type=str,default=None,help="Directory to store results in. The default is a numbered series of directories containing the prefix 'sptsimjob'; for example, sptsimjob_02 will be the directory by default if 'sptsimjob_01' already exists.")
 	
 	(options, args) = parser.parse_args()
 	
 	print "options are", options
 	
 	logger = E2init(sys.argv, options.ppid)
+	
+	'''
+	Make the directory where to create the database where the results will be stored
+	'''
+	
+	#if options.path and ("/" in options.path or "#" in options.path) :
+	#	print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
+	#	sys.exit(1)
+		
+	#if options.path and options.path[:4].lower()!="bdb:": 
+	#	options.path="bdb:"+options.path
+
+	#if not options.path: 
+	#	#options.path="bdb:"+numbered_path("sptavsa",True)
+	#	options.path = "sptsim_01"
+	
+	
+	if options.path and ("/" in options.path or "#" in options.path) :
+		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
+		sys.exit(1)
+
+	if not options.path: 
+		#options.path="bdb:"+numbered_path("sptavsa",True)
+		options.path = "sptsim_01"
+	
+	files=os.listdir(os.getcwd())
+	print "right before while loop"
+	while options.path in files:
+		print "in while loop, options.path is", options.path
+		#path = options.path
+		if '_' not in options.path:
+			print "I will add the number"
+			options.path = options.path + '_00'
+		else:
+			jobtag=''
+			components=options.path.split('_')
+			if components[-1].isdigit():
+				components[-1] = str(int(components[-1])+1).zfill(2)
+			else:
+				components.append('00')
+						
+			options.path = '_'.join(components)
+			#options.path = path
+			print "The new options.path is", options.path
+
+	if options.path not in files:
+		
+		print "I will make the path", options.path
+		os.system('mkdir ' + options.path)
+	
 	
 	retcpu=[]
 	retgpu=[]
@@ -70,6 +121,18 @@ def main():
 		print "I will test the CPU"
 		print "Because options.cpu is", options.cpu
 		retcpu=doit(corg,options)
+		print "\n\nThe received data for retCPU is\n", retcpu
+		print "\n"
+		print "Thus the length is", len(retcpu)
+		
+		for i in range(len(retcpu)):
+			step = retcpu[i][0]
+			name = options.path + "/CS"+str(step).zfill(2) + '_' + 'CPU.png'
+			cnums = numpy.array(retcpu[i][-1])
+			sizes = numpy.array(retcpu[i][1])
+			print "\n$$$$$$$\nThe step is", step
+			print "\n\n"
+			plotter(name,sizes,cnums,step,step/2)
 		
 	if options.gpu:
 		corg = 'gpu'
@@ -78,6 +141,15 @@ def main():
 		retgpu=doit(corg,options)
 		print "\n\nThe received data is\n", retgpu
 		print "\n"
+		
+		for i in range(len(retgpu)):
+			step = retgpu[i][0]
+			name = options.path + "/CS"+str(step).zfill(2) + '_' + 'GPU.png'
+			gnums = numpy.array(retgpu[i][-1])
+			sizes = numpy.array(retgpu[i][1])
+			print "\n$$$$$$$\nThe step is", step
+			print "\n\n"
+			plotter(name,sizes,gnums,step,step/2)
 	
 	if retcpu and retgpu:
 		if len(retcpu) == len(retgpu):
@@ -86,7 +158,7 @@ def main():
 			difs=[]
 			for i in range(len(retgpu)):
 				step = retgpu[i][0]
-				name = "CS"+str(step).zfill(2) + '_' + 'gpuVScpu.png'
+				name = options.path + "/CS"+str(step).zfill(2) + '_' + 'gpuVScpu.png'
 				gnums = numpy.array(retgpu[i][-1])
 				cnums = numpy.array(retcpu[i][-1])
 				sizes = numpy.array(retgpu[i][1])
@@ -94,15 +166,13 @@ def main():
 				print "\n$$$$$$$\nThe step is", step
 				print "\n\n"
 				plotter(name,sizes,difs,step,step/2)
-			print "I should be plotting this"
+			#print "I should be plotting this"
 	
 		else:
 			print "For some sick reason, you don't have the same number of data points for gpu and cpu, therefore, you cannot compare them, see", len(retgpu), len(retcpu)
 			sys.exit()
 	else:
 		return()
-	
-		
 	return()
 
 def doit(corg,options):
@@ -126,7 +196,7 @@ def doit(corg,options):
 		coarsestep=step
 		finestep=coarsestep/2
 		
-		name = corg + '_' + 'CS' + str(coarsestep).zfill(len(str(max(steps)))) + '_FS' + str(finestep) + '.txt'
+		name = options.path + '/' + corg + '_' + 'CS' + str(coarsestep).zfill(len(str(max(steps)))) + '_FS' + str(finestep) + '.txt'
 		if computer:
 			name = corg + '_' + computer + '_CS' + str(coarsestep).zfill(len(str(max(steps)))) + '_FS' + str(finestep) + '.txt'
 
@@ -146,12 +216,12 @@ def doit(corg,options):
 	
 			#a.to_one()
 			aname = 'a_stack.hdf'
-			a.write_image(aname)
+			a.write_image(options.path+ '/' + aname)
 
 			b=EMData(size,size,size)
 			b=b.process('testimage.noise.gauss')
-			bname ='b_stack.hdf'
-			b.write_image(bname)
+			bname = 'b_stack.hdf'
+			b.write_image(options.path+ '/' + bname)
 			
 			#if 'gpu' not in corg:
 			#	b.switchoffcuda()
@@ -167,7 +237,7 @@ def doit(corg,options):
 				setcuda = 'export EMANUSECUDA=0 && '
 				print "\n\n\n !!!! I Have turned cuda OFF!!!\n\n\n"
 			
-			instruction1 = setcuda + '''e2spt_classaverage.py --input=''' + aname + ''' --output=''' + out + ''' --ref=''' + bname + ''' --iter=1 --npeakstorefine=1 -v 1 --mask=mask.sharp:outer_radius=-2 --preprocess=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --align=rotate_translate_3d:search=6:delta=''' + str(coarsestep) + ''':dphi=''' + str(coarsestep) + ''':verbose=1:sym=icos --parallel=thread:1 --ralign=refine_3d_grid:delta=''' + str(finestep) + ''':range=''' + str(coarsestep) + ''' --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --normproc=normalize.mask'''
+			instruction1 = setcuda + ''' && cd ''' + options.path + '''e2spt_classaverage.py --input=''' + aname + ''' --output=''' + out + ''' --ref=''' + bname + ''' --iter=1 --npeakstorefine=1 -v 1 --mask=mask.sharp:outer_radius=-2 --preprocess=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --align=rotate_translate_3d:search=6:delta=''' + str(coarsestep) + ''':dphi=''' + str(coarsestep) + ''':verbose=1:sym=icos --parallel=thread:1 --ralign=refine_3d_grid:delta=''' + str(finestep) + ''':range=''' + str(coarsestep) + ''' --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --normproc=normalize.mask'''
 			cmd = instruction1
 			print "The instruction is", cmd
 	
