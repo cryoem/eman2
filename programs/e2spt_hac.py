@@ -63,7 +63,7 @@ def main():
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_argument("--path",type=str,default=None,help="Path for the refinement, default=auto")
+	parser.add_argument("--path",type=str,default=None,help="Directory to store results in. The default is a numbered series of directories containing the prefix 'sptsimjob'; for example, sptsimjob_02 will be the directory by default if 'sptsimjob_01' already exists.")
 	
 	parser.add_argument("--groups",type=int,default=1,help="Breaks the set into subgroups and does ALL vs ALL on the subgroups separately. Recommended when the set is > 100")
 	
@@ -143,37 +143,55 @@ def main():
 	if options.postprocess: 
 		options.postprocess=parsemodopt(options.postprocess)
 
-	if options.path and ("/" in options.path or "#" in options.path) :
-		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
-		sys.exit(1)
+	'''
+	Make the directory where to create the database where the results will be stored
+	'''
+	
+	#if options.path and ("/" in options.path or "#" in options.path) :
+	#	print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
+	#	sys.exit(1)
 		
 	#if options.path and options.path[:4].lower()!="bdb:": 
 	#	options.path="bdb:"+options.path
 
+	#if not options.path: 
+	#	#options.path="bdb:"+numbered_path("sptavsa",True)
+	#	options.path = "sptsim_01"
+	
+	
+	if options.path and ("/" in options.path or "#" in options.path) :
+		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
+		sys.exit(1)
+
 	if not options.path: 
 		#options.path="bdb:"+numbered_path("sptavsa",True)
-		options.path = "sptavsa_01"
-
-	files=os.listdir(os.getcwd())
+		options.path = "sptsim_01"
 	
+	files=os.listdir(os.getcwd())
+	print "right before while loop"
 	while options.path in files:
-		path = options.path		
-		if '_' not in path:
-			path = path + '_00'
+		print "in while loop, options.path is", options.path
+		#path = options.path
+		if '_' not in options.path:
+			print "I will add the number"
+			options.path = options.path + '_00'
 		else:
 			jobtag=''
-			components=path.split('_')
+			components=options.path.split('_')
 			if components[-1].isdigit():
 				components[-1] = str(int(components[-1])+1).zfill(2)
 			else:
 				components.append('00')
 						
-			path = '_'.join(components)
-			options.path = path
+			options.path = '_'.join(components)
+			#options.path = path
 			print "The new options.path is", options.path
 
 	if options.path not in files:
+		
+		print "I will make the path", options.path
 		os.system('mkdir ' + options.path)
+	
 	
 	group_ranges=[]
 	data_files = []
