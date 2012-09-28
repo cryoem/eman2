@@ -627,6 +627,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	mir_stab_part.sort()
 	
 	
+	print  mir_stab_part[0], mir_stab_part[4], mir_stab_part[8]
 	del mir_stab_part[0]
 	del mir_stab_part[4]
 	del mir_stab_part[8]
