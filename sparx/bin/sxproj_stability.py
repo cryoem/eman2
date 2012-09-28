@@ -283,7 +283,7 @@ def main():
 
 	from utilities import model_blank
 	aveList = [model_blank(nx,ny)]*len(proj_list)
-	if options.grouping == "GRP":  refprojdir = [[0.0,0.0,0.0]]*len(proj_list)
+	if options.grouping == "GRP":  refprojdir = [[0.0,0.0,-1.0]]*len(proj_list)
 	for i in xrange(len(proj_list)):
 		print "  E  ",myid,"  ",time()-st
 		class_data = EMData.read_images(stack, proj_list[i])

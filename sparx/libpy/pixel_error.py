@@ -625,6 +625,12 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	mir_stab_rate = len(mir_stab_part)/float(nima)
 	if mir_stab_rate <= mir_stab_thld: return [], mir_stab_rate, -1.0
 	mir_stab_part.sort()
+	
+	
+	del mir_stab_part[0]
+	del mir_stab_part[4]
+	del mir_stab_part[8]
+	
 	del all_part, match, stab_part, CT_s, CT_t, ST, st	
 
 	#for i in xrange(len(mir_stab_part)):  print i, mir_stab_part[i]
