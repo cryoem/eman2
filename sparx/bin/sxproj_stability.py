@@ -283,7 +283,7 @@ def main():
 
 	from utilities import model_blank
 	aveList = [model_blank(nx,ny)]*len(proj_list)
-	if options.grouping == "GRP":  refprojdir = [0.0,0.0,0.0]*len(proj_list)
+	if options.grouping == "GRP":  refprojdir = [[0.0,0.0,0.0]]*len(proj_list)
 	for i in xrange(len(proj_list)):
 		print "  E  ",myid,"  ",time()-st
 		class_data = EMData.read_images(stack, proj_list[i])
@@ -330,18 +330,20 @@ def main():
 		# stable_set is sorted based on pixel error
 		#from utilities import write_text_file
 		#write_text_file(all_ali_params, "all_ali_params%03d.txt"%myid)
-		stable_set, mir_stab_rate, pix_err = multi_align_stability(all_ali_params, 0.0, 10000.0, thld_err, False, 2*radius+1)
+		stable_set, mir_stab_rate, average_pix_err = multi_align_stability(all_ali_params, 0.0, 10000.0, thld_err, False, 2*radius+1)
 		#print "  H  ",myid,"  ",time()-st
 		if(len(stable_set) > 5):
 			stable_set_id = []
+			"""
 			particle_pixerr = []
 			for s in stable_set:
-				stable_set_id.append(s[1])
 				particle_pixerr.append(s[0])
+			"""
 			members = []
 			pix_err = []
 			# First put the stable members into attr 'members' and 'pix_err'
 			for s in stable_set:
+				stable_set_id.append(s[1])
 				members.append(proj_list[i][s[1]])
 				pix_err.append(s[0])
 			# Then put the unstable members into attr 'members' and 'pix_err'
@@ -380,15 +382,14 @@ def main():
 					vtht = (vtht - l*atht*atht)/l
 					from math import sqrt
 					refprojdir[i] = [aphi, atht, (sqrt(max(vphi,0.0))+sqrt(max(vtht,0.0)))/2.0]
-	
+
 			# Here more information has to be stored, PARTICULARLY WHAT IS THE REFERENCE DIRECTION
 			aveList[i].set_attr('members', members)
-			aveList[i].set_attr('pix_err', pix_err)
 			aveList[i].set_attr('refprojdir',refprojdir[i])
-			aveList[i].set_attr('pixerr', particle_pixerr)
+			aveList[i].set_attr('pixerr', pix_err)
 		else:
+			print  " empty group ",i, refprojdir[i]
 			aveList[i].set_attr('members',[-1])
-			aveList[i].set_attr('pix_err', 999999.)
 			aveList[i].set_attr('refprojdir',refprojdir[i])
 			aveList[i].set_attr('pixerr', [99999.])
 			
@@ -410,11 +411,11 @@ def main():
 					nm = mpi_recv(1, MPI_INT, i, MPI_TAG_UB, MPI_COMM_WORLD)
 					nm = int(nm[0])
 					members = mpi_recv(nm, MPI_INT, i, MPI_TAG_UB, MPI_COMM_WORLD)
+					if(nm == 1):  print  "  m  ",members
 					ave.set_attr('members', map(int, members))
 					members = mpi_recv(nm, MPI_FLOAT, i, MPI_TAG_UB, MPI_COMM_WORLD)
+					if(nm == 1):  print  "  e  ",members
 					ave.set_attr('pixerr', map(float, members))
-					members = mpi_recv(1, MPI_FLOAT, i, MPI_TAG_UB, MPI_COMM_WORLD)
-					ave.set_attr('pix_err', float(members[0]) )
 					members = mpi_recv(3, MPI_FLOAT, i, MPI_TAG_UB, MPI_COMM_WORLD)
 					ave.set_attr('refprojdir', map(float, members))
 					ave.write_image(args[1], km)
@@ -428,8 +429,6 @@ def main():
 			mpi_send(members, len(members), MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 			members = aveList[im].get_attr('pixerr')
 			mpi_send(members, len(members), MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
-			members = aveList[im].get_attr('pix_err')
-			mpi_send(members, 1, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 			try:
 				members = aveList[im].get_attr('refprojdir')
 				mpi_send(members, 3, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
