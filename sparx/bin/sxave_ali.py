@@ -40,18 +40,22 @@ import sys
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack <name_output> --ali --active"
+	usage = progname + " stack <name_output> --ali --active --set_size=param_name_with_size --set_members=param_name_with_id"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--ali",    action = "store_true", default=False, help="Perform average using alignment parameters")
-	parser.add_option("--active", action = "store_true", default=False, help="Perform average only for active images")
+	parser.add_option("--ali"        , action = "store_true", default=False, help="Perform average using alignment parameters")
+	parser.add_option("--active"     , action = "store_true", default=False, help="Perform average only for active images")
+	parser.add_option("--set_size"   , type   = "string"    , default=None , help="Save number of input images to parameter with given name")
+	parser.add_option("--set_members", type   = "string"    , default=None , help="Save list of id of input images to parameter named \"members\", id of input images are taken from parameter with given name")
 	(options, args) = parser.parse_args()
-    	if len(args) < 1 or len(args) > 2:
-				print "usage: " + usage
-        			print "Please run '" + progname + " -h' for detailed options"
+	if len(args) < 1 or len(args) > 2:
+		print "usage: " + usage
+		print "Please run '" + progname + " -h' for detailed options"
 	else: 
-		if len(args) == 1: name_output = None
-		else:              name_output = args[1]
-		 
+		if len(args) == 1: 
+			name_output = None
+		else:
+			name_output = args[1]
+
 		from applications import ave_ali
 
 		if global_def.CACHE_DISABLE:
@@ -59,7 +63,7 @@ def main():
 			disable_bdb_cache()
 
 		global_def.BATCH = True
-		ave_ali(args[0], name_output, options.ali, options.active)
+		ave_ali(args[0], name_output, options.ali, options.active, options.set_size, options.set_members)
 		global_def.BATCH = False
 
 if __name__ == "__main__":
