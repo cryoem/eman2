@@ -12856,20 +12856,33 @@ def tomo(box):
 	print 'status: ', status
 
 # Calculate averages to a given stack (wrap for ave_var in statistics)
-def ave_ali(name_stack, name_out = None, ali = False, active = False):
+def ave_ali(name_stack, name_out = None, ali = False, active = False, param_to_save_size = None, set_as_member_id = None):
 	from statistics import ave_var, add_ave_varf, k_means_list_active
 	from utilities  import file_type
 	"""
 	   This function is called by sxave_ali.py
 	"""
 	N = EMUtil.get_image_count(name_stack)
-	if ali:	mode = 'a'
-	else:	mode = ''
-	if active: listID, N = k_means_list_active(name_stack)
-	else:      listID    = range(N)
+	if ali:
+		mode = 'a'
+	else:
+		mode = ''
+	if active: 
+		listID, N = k_means_list_active(name_stack)
+	else:
+		listID    = range(N)
 	data = EMData().read_images(name_stack, listID)
 	
 	ave, var = ave_var(data, mode)
+	
+	if param_to_save_size:
+		ave.set_attr(param_to_save_size, len(data))
+	
+	if set_as_member_id:
+		members = []
+		for in_img in data:
+			members.append( int(in_img.get_attr(set_as_member_id)) )
+		ave.set_attr("members", members)
 
 	ext = file_type(name_stack)
 	if name_out is None:
