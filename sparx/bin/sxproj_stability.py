@@ -328,9 +328,16 @@ def main():
 		# stable_set is sorted based on pixel error
 		#from utilities import write_text_file
 		#write_text_file(all_ali_params, "all_ali_params%03d.txt"%myid)
-		stable_set, mir_stab_rate, average_pix_err = multi_align_stability(all_ali_params, 0.0, 10000.0, thld_err, False, 2*radius+1)
+		stable_set, mir_stab_rate, average_pix_err,unstable = multi_align_stability(all_ali_params, 0.0, 10000.0, thld_err, False, 2*radius+1)
 		#print "  H  ",myid,"  ",time()-st
 		if(len(stable_set) > 5):
+
+
+			if(len(unstable)>0):
+				for mmm in unstable:
+					print  "unstable", proj_list[i][mmm]
+
+
 			stable_set_id = []
 			"""
 			particle_pixerr = []
