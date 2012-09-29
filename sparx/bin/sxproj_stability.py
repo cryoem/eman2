@@ -274,7 +274,8 @@ def main():
 		write_text_file(proj_list[i],"projlist%06d_%04d"%(i,myid))
 	"""
 
-	# Begin stability test	
+	###########################################################################################################
+	# Begin stability test
 	from utilities import get_params_proj, read_text_file
 	#if myid == 0:
 	#	from utilities import read_text_file
@@ -287,9 +288,6 @@ def main():
 	for i in xrange(len(proj_list)):
 		print "  E  ",myid,"  ",time()-st
 		class_data = EMData.read_images(stack, proj_list[i])
-		#if myid == 0:
-		#	p1,p2,p3,p4,p5 = get_params_proj(class_data[0])
-		#	refprojdir[0] = [p1,p2,p3]
 		#print "  R  ",myid,"  ",time()-st
 		if options.CTF :
 			from filter import filt_ctf
@@ -343,19 +341,22 @@ def main():
 			pix_err = []
 			# First put the stable members into attr 'members' and 'pix_err'
 			for s in stable_set:
+				# s[1] - number in this subset
 				stable_set_id.append(s[1])
+				# the original image number
 				members.append(proj_list[i][s[1]])
 				pix_err.append(s[0])
 			# Then put the unstable members into attr 'members' and 'pix_err'
 			from fundamentals import rot_shift2D
 			avet.to_zero()
-			l = -1
 			if options.grouping == "GRP":
 				aphi = 0.0
 				atht = 0.0
 				vphi = 0.0
 				vtht = 0.0
+			l = -1
 			for j in xrange(len(proj_list[i])):
+				#  Here it will only work if stable_set_id is sorted in the increasing number, see how l progresses
 				if j in stable_set_id:
 					l += 1
 					avet += rot_shift2D(class_data[j], stable_set[l][2][0], stable_set[l][2][1], stable_set[l][2][2], stable_set[l][2][3] )

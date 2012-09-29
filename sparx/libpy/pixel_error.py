@@ -636,16 +636,16 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 
 	#for i in xrange(len(mir_stab_part)):  print i, mir_stab_part[i]
 
-
-	# Keep the alignment paramters of mirror stable particles
-	ali_params_mir_stab = [[] for i in xrange(num_ali)]
-	for j in mir_stab_part:
-		for i in xrange(num_ali):
-			ali_params_mir_stab[i].extend(ali_params[i][j*4:j*4+4])
 	nima2 = len(mir_stab_part)
 
 	#print "  mirror stable  ",nima2
 
+
+	# Keep the alignment paramters of mirror stable particles
+	ali_params_mir_stab = [[] for i in xrange(num_ali)]
+	for i in xrange(num_ali):
+		for j in mir_stab_part:
+			ali_params_mir_stab[i].extend(ali_params[i][j*4:j*4+4])
 	# Find out the alignment parameters for each iteration against the last one
 	args = []
 	for i in xrange(num_ali-1):
@@ -667,7 +667,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 		if sqrt(pixel_error_before[j]) > 3*err_thld:
 			pass  #print "  removed ",3*err_thld,j,sqrt(pixel_error_before[j])
 		else:
-			cleaned_part.append(j)
+			cleaned_part.append(mir_stab_part[j])
 			for i in xrange(num_ali):
 				ali_params_cleaned[i].extend(ali_params_mir_stab[i][j*4:j*4+4])
 	nima3 = len(cleaned_part)
@@ -715,7 +715,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 			err = sqrt(pixel_error_after[j])
 			if err < err_thld:
 				#print i,j, mir_stab_part[i]
-				stable_set.append([err, mir_stab_part[i], ave_params[j]])
+				stable_set.append([err, i, ave_params[j]])
 				val += err
 				if print_individual:  print "Particle %4d :  pixel error = %18.4f"%(i, err)
 			else:
