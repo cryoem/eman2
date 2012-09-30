@@ -141,7 +141,9 @@ def main():
 	parser.add_argument("--testalignment",action="store_true",default=False,help="This will run e2spt_classaverage.py to test the alignment of the particles against the simulated reference.")
 
 	parser.add_argument("--quicktest",action="store_true",default=False,help="This will run e2spt_classaverage.py with minimal parameters to quickly test the program.")
-
+	parser.add_argument("--plotonly",type=str,default='',help="""Text files to be plotted, with information in the correct format. To enter multiple files, separate them with commas: file1,file2,etc...
+								Each file must contain lines with the following values:
+								tr= ts= snr= angular_error= translational_error=""")
 	(options, args) = parser.parse_args()	
 	
 	logger = E2init(sys.argv, options.ppid)
@@ -183,9 +185,11 @@ def main():
 
 	if not options.path: 
 		#options.path="bdb:"+numbered_path("sptavsa",True)
-		options.path = "sptsim_01"
+		options.path = "sptsimjob_01"
 	
-	files=os.listdir(os.getcwd())
+	rootpath = os.getcwd()
+	
+	files=os.listdir(rootpath)
 	print "right before while loop"
 	while options.path in files:
 		print "in while loop, options.path is", options.path
@@ -208,226 +212,316 @@ def main():
 	if options.path not in files:
 		
 		print "I will make the path", options.path
-		os.system('mkdir ' + options.path)
-	
-	#if options.testalignment:
-	#	resultsdir = 'results_ali_errors'
-	#	os.system('cd ' + options.path + ' && mkdir ' + resultsdir)
-	
-	nrefs = EMUtil.get_image_count(options.input)
+		os.system('mkdir ' + options.path)	
 		
-	tiltrange=tiltrangel
-	while tiltrange <tiltrangeu:
-		print "tiltrage is", tiltrange
+	if not options.plotonly:
+		#if options.testalignment:	
+		#	resultsdir = 'results_ali_errors'
+		#	os.system('cd ' + options.path + ' && mkdir ' + resultsdir)
+	
+		nrefs = EMUtil.get_image_count(options.input)
 		
-		tiltstep=tiltstepl		
-		while tiltstep < tiltstepu:
-			print "Tilt step is", tiltstep
-				
-			snr=snrl
-			while snr < snru:
-				print "Snr is", snr
-								
-				rootpath = os.getcwd()
-
-				for d in range(nrefs):
+		tiltrange=tiltrangel	
+		while tiltrange <tiltrangeu:
+			print "tiltrage is", tiltrange
+		
+			tiltstep=tiltstepl		
+			while tiltstep < tiltstepu:
+				print "Tilt step is", tiltstep
 					
-					modeltag = ''
-					subpath = 'TR' + str(tiltrange).zfill(2) + '_TS' + str(tiltstep).zfill(2) + '_SNR' + str(snr).zfill(2)
-					
-					inputdata = options.input
-					
-					if nrefs > 1:
-						modeltag = 'model' + str(d).zfill(2)
-						subpath += '_' + modeltag
+				snr=snrl
+				while snr < snru:
+					print "Snr is", snr
+									
+					for d in range(nrefs):
 						
-						model = EMData(options.input,d)
-						newname = options.path + '/' + inputdata.split('/')[-1].replace('.hdf','_' + modeltag + '.hdf')
-						model.write_image(newname,0)
-						
-						inputdata = newname.split('/')[-1]
+						modeltag = ''
+						subpath = 'TR' + str(tiltrange).zfill(2) + '_TS' + str(tiltstep).zfill(2) + '_SNR' + str(snr).zfill(2)
 					
-					subtomos =  subpath + '.hdf'
+						inputdata = options.input
+					
+						if nrefs > 1:
+							modeltag = 'model' + str(d).zfill(2)
+							subpath += '_' + modeltag
+							
+							model = EMData(options.input,d)
+							newname = options.path + '/' + inputdata.split('/')[-1].replace('.hdf','_' + modeltag + '.hdf')
+							model.write_image(newname,0)
+							
+							inputdata = newname.split('/')[-1]
+					
+						subtomos =  subpath + '.hdf'
 
-					jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --tiltstep=' + str(tiltstep) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrink) + ' --finalboxsize=' + str(options.finalboxsize)
+						jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --tiltstep=' + str(tiltstep) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrink) + ' --finalboxsize=' + str(options.finalboxsize)
 
-					if options.simref:
-						jobcmd += ' --simref'
-					if options.addnoise:
-						jobcmd += ' --addnoise'
-					if options.saveprjs:
-						jobcmd += ' --saveprjs'
-					if options.negativecontrast:
-						jobcmd += ' --negativecontrast'
+						if options.simref:
+							jobcmd += ' --simref'
+						if options.addnoise:
+							jobcmd += ' --addnoise'
+						if options.saveprjs:
+							jobcmd += ' --saveprjs'
+						if options.negativecontrast:
+							jobcmd += ' --negativecontrast'
 
-					jobcmd += ' --path=' + subpath				
-
-					cmd = 'cd ' + options.path + ' && ' + jobcmd
-
-					resultsfiles=[]
-
-					if options.testalignment:
-
-						#modeldir = ''
-						#if nrefs > 1:
-						#	modeldir = '/model' + str(d).zfill(2)
-
-						cmd = cmd + ' && cd ' + rootpath + '/' + options.path + '/' + subpath
-
-						#subtomos = options.input.split('/')[-1].replace('.hdf','_sptsimMODEL_randst_n' + str(options.nptcls) + '_' + subpath + '_subtomos.hdf')
-
-						#print "\n\nSubtomos name will be\n", subtomos
-
-						ref = inputdata.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf')
-
-						#if nrefs > 1:
-						#	modd = 'model' + str(d).zfill(2)
-						#	ref = options.input.split('/')[-1].replace('.hdf','_sptsimMODELS_' + modd + '.hdf')
-
-						output=subtomos.replace('.hdf', '_avg.hdf')
-						#print "\n\n$$$$$$$$$$$$$$$$$$$$$$\nRef name is\n$$$$$$$$$$$$$$$$$$$\n", ref
-
-						#print "\n\noutput name is\n", output
-
-						alipath=output.replace('_avg.hdf','_ali')
-						#print "\n\nAlipath for results will be\n", alipath
-
-						alicmd = " && e2spt_classaverage.py --path=" + alipath + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --npeakstorefine=4 -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=0 --parallel=thread:8 --ralign=refine_3d_grid:delta=12:range=12:search=2 --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --shrink=2 --savesteps --saveali --normproc=normalize.mask"
-
-						if options.quicktest:
-							alicmd = " && e2spt_classaverage.py --path=" + alipath + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=thread:8 --ralign=None --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --shrink=3 --savesteps --saveali --normproc=normalize.mask"
-
-						aliptcls = output.replace('_avg.hdf','_ptcls_ali.hdf')
-
-						#print "\n\aliptcls name is\n", aliptcls
-
-						extractcmd = " && cd " + alipath + " && e2proc3d.py bdb:class_ptcl " + aliptcls
-
-						resultsfile=aliptcls.replace('_ptcls_ali.hdf','_ali_error.txt')
-
-						solutioncmd = " && e2spt_transformdistance.py --input=" + aliptcls + ' --output=' + resultsfile
-
-						rfilecmd =  ' && mv ' + resultsfile + ' ' +  rootpath + '/' + options.path
-
-						cmd = cmd + alicmd + extractcmd + solutioncmd + rfilecmd
-
-					#print "The command to execute is \n\n %s \n\n" %(cmd)
-
-					os.system(cmd)
-
-				snr += snrch
-				
-			tiltstep += tiltstepch
-		
-		tiltrange += tiltrangech
-		
-	if nrefs > 1:
-		for i in range(nrefs):
-		
-			modname = 'model' + str(i).zfill(2)
-			#print "\nI will make this moddir", modname
-			cmdd='cd ' + options.path + ' && mkdir ' + modname + ' && mv *' + modname + '* ' + modname
-			#print "\nBy executing this command", cmdd
-			os.system(cmdd)
-
-		for i in range(nrefs):
-			modname = 'model' + str(i).zfill(2)
-			
-			resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
-			#print "\n\n\n\n*******************\nResults dir is\n", resultsdir
-			
-			os.system('mkdir ' +  resultsdir + ' && cd ' + options.path + '/' + modname + ' && mv *error.txt ' + resultsdir)
+						jobcmd += ' --path=' + subpath				
 	
-	else:
-		resultsdir = 'results_ali_error'
-		os.system('cd ' + options.path + ' && mkdir ' + resultsdir + ' && mv *error.txt ' + resultsdir)
-			 	
-	for i in range(nrefs):
+						cmd = 'cd ' + options.path + ' && ' + jobcmd
+	
+						resultsfiles=[]
+	
+						if options.testalignment:
+	
+							#modeldir = ''
+							#if nrefs > 1:
+							#	modeldir = '/model' + str(d).zfill(2)
+	
+							cmd = cmd + ' && cd ' + rootpath + '/' + options.path + '/' + subpath
+	
+							#subtomos = options.input.split('/')[-1].replace('.hdf','_sptsimMODEL_randst_n' + str(options.nptcls) + '_' + subpath + '_subtomos.hdf')
+	
+							#print "\n\nSubtomos name will be\n", subtomos
+	
+							ref = inputdata.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf')
+	
+							#if nrefs > 1:
+							#	modd = 'model' + str(d).zfill(2)
+							#	ref = options.input.split('/')[-1].replace('.hdf','_sptsimMODELS_' + modd + '.hdf')
+	
+							output=subtomos.replace('.hdf', '_avg.hdf')
+							#print "\n\n$$$$$$$$$$$$$$$$$$$$$$\nRef name is\n$$$$$$$$$$$$$$$$$$$\n", ref
+	
+							#print "\n\noutput name is\n", output
+	
+							alipath=output.replace('_avg.hdf','_ali')
+							#print "\n\nAlipath for results will be\n", alipath
+	
+							alicmd = " && e2spt_classaverage.py --path=" + alipath + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --npeakstorefine=4 -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=0 --parallel=thread:8 --ralign=refine_3d_grid:delta=12:range=12:search=2 --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --shrink=2 --savesteps --saveali --normproc=normalize.mask"
+	
+							if options.quicktest:
+								alicmd = " && e2spt_classaverage.py --path=" + alipath + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=thread:8 --ralign=None --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --shrink=3 --savesteps --saveali --normproc=normalize.mask"
+	
+							aliptcls = output.replace('_avg.hdf','_ptcls_ali.hdf')
+	
+							#print "\n\aliptcls name is\n", aliptcls
+	
+							extractcmd = " && cd " + alipath + " && e2proc3d.py bdb:class_ptcl " + aliptcls
+	
+							resultsfile=aliptcls.replace('_ptcls_ali.hdf','_ali_error.txt')
+	
+							solutioncmd = " && e2spt_transformdistance.py --input=" + aliptcls + ' --output=' + resultsfile
+
+							rfilecmd =  ' && mv ' + resultsfile + ' ' +  rootpath + '/' + options.path
+	
+							cmd = cmd + alicmd + extractcmd + solutioncmd + rfilecmd
+	
+						#print "The command to execute is \n\n %s \n\n" %(cmd)
+	
+						os.system(cmd)
+	
+					snr += snrch
+					
+				tiltstep += tiltstepch
+			
+			tiltrange += tiltrangech
 		
-		resultsdir = rootpath + '/' + options.path + '/results_ali_error'
 		if nrefs > 1:
-			modname = 'model' + str(i).zfill(2)
-			resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
+			for i in range(nrefs):
+			
+				modname = 'model' + str(i).zfill(2)
+				#print "\nI will make this moddir", modname
+				cmdd='cd ' + options.path + ' && mkdir ' + modname + ' && mv *' + modname + '* ' + modname
+				#print "\nBy executing this command", cmdd
+				os.system(cmdd)
 
+			for i in range(nrefs):
+				modname = 'model' + str(i).zfill(2)
+				
+				resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
+				#print "\n\n\n\n*******************\nResults dir is\n", resultsdir
+				
+				os.system('mkdir ' +  resultsdir + ' && cd ' + options.path + '/' + modname + ' && mv *error.txt ' + resultsdir)
+		
+		else:
+			resultsdir = 'results_ali_error'
+			os.system('cd ' + options.path + ' && mkdir ' + resultsdir + ' && mv *error.txt ' + resultsdir)
+			
+		resultsdir = rootpath + '/' + options.path + '/results_ali_error' 	
+		for i in range(nrefs):
+			if nrefs > 1:
+				modname = 'model' + str(i).zfill(2)
+				resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
 	
-		resfiles = []
-		ang_errors = []
-		trans_errors = []
 		
-		snrs = []
-		trs = []
-		tss = []
+			resfiles = []
+			ang_errors = []
+			trans_errors = []
+		
+			snrs = []
+			trs = []
+			tss = []
+		
+			twoD_tr_ts_points = []
+			twoD_snr_tr_points = []	
+			twoD_snr_ts_points = []
+			
+			threeD_points = []
+		
+			findir = os.listdir(resultsdir)
+			for f in findir:
+				if 'error.txt' in f:
+					resfiles.append(f)
+			
+			resfiles.sort()
+			for ff in resfiles:
+				tr = float(ff.split('TR')[-1].split('_')[0])
+				trs.append(tr)
 	
-		twoD_tr_ts_points = []
-		twoD_snr_tr_points = []	
-		twoD_snr_ts_points = []
+				snr = float(ff.split('SNR')[-1].split('_')[0])
+				snrs.append(snr)
+				
+				ts = float(ff.split('TS')[-1].split('_')[0])
+				tss.append(ts)
+				
+				#3dpoints.append([tr,snr,ts])
+			
+				
+				resultsfilelocation = resultsdir + '/' + ff
+				#print "\n\n%%%%%%%%%%%%\nThe results file is here\n%%%%%%%%%%%%%%%%%\n\n", resultsfilelocation
+				
+				fff = open(resultsfilelocation,'r')
+				lines = fff.readlines()
+				
+				ang = float( lines[0].split('=')[-1].replace('\n','') )
+				ang_errors.append(ang)
+				
+				trans = float( lines[1].split('=')[-1].replace('\n','') )
+				trans_errors.append(trans)
+				
+				threeD_points.append({'tilt range':tr,'tilt step':ts,'noise level':snr,'angular_error':ang,'translational_error':trans})
+				twoD_tr_ts_points.append({'tilt range':tr,'tilt step':ts,'angular_error':ang,'translational_error':trans})
+				twoD_snr_tr_points.append({'tilt range':tr,'noise level':snr,'angular_error':ang,'translational_error':trans})
+				twoD_snr_ts_points.append({'tilt step':ts,'noise level':snr,'angular_error':ang,'translational_error':trans})
+				
+			if len(set(snrs)) == 1: 
+				if len(set(trs)) == 1:
+					oneD_plot(tss,ang_errors,resultsdir+'/angular_error.png','tilt step')
+					oneD_plot(tss,trans_errors,resultsdir+'/translational_error.png','tilt step')
+				
+				if len(set(tss)) == 1:
+					oneD_plot(trs,ang_errors,resultsdir+'/angular_error.png','tilt range')
+					oneD_plot(trs,trans_errors,resultsdir+'/translational_error.png','tilt range')
+				
+			if len(set(trs)) == 1: 
+				if len(set(tss)) == 1:
+					oneD_plot(snrs,ang_errors,resultsdir+'/angular_error.png','noise level')
+					oneD_plot(snrs,trans_errors,resultsdir+'/translational_error.png','noise level')
 		
-		threeD_points = []
-		
-		findir = os.listdir(resultsdir)
-		for f in findir:
-			if 'error.txt' in f:
-				resfiles.append(f)
-		
+			if len(set(snrs)) == 1 and len(set(trs)) > 1 and len(set(tss)) > 1:
+				twoD_plot(twoD_tr_ts_points,val1='tilt range',val2='tilt step',location=resultsdir +'/')
+			
+			if len(set(trs)) == 1 and len(set(snrs)) > 1 and len(set(tss)) > 1:
+				twoD_plot(twoD_snr_ts_points,val1='noise level',val2='tilt step',location=resultsdir +'/')
+			
+			if len(set(tss)) == 1 and len(set(trs)) > 1 and len(set(snrs)) > 1:
+				twoD_plot(twoD_snr_tr_points,val1='noise level',val2='tilt range',location=resultsdir +'/')
+			
+			if len(set(tss)) > 1 and len(set(trs)) > 1 and len(set(snrs)) > 1:
+				threeD_plot(threeD_points,resultsdir +'/')
+			
+	elif options.plotonly:
+		files=options.plotonly.split(',')
+		print "\n\nI'm in PLOTONLY \n\n"
+		print "\n\nAnd these are the files", files
+		print "\n\n"
 		d=0
-		resfiles.sort()
-		for ff in resfiles:
-			tr = float(ff.split('TR')[-1].split('_')[0])
-			trs.append(tr)
-
-			snr = float(ff.split('SNR')[-1].split('_')[0])
-			snrs.append(snr)
-			
-			ts = float(ff.split('TS')[-1].split('_')[0])
-			tss.append(ts)
-			
-			#3dpoints.append([tr,snr,ts])
+		resultsdir = rootpath + '/' + options.path
 		
+		for ff in files:
+			print "\n\nI'm analyzing file %d\n\n" %(d)	
+			if len(files) > 1:
+				modname = 'file' + str(d).zfill(2) + 'plots'
+				resultsdir = rootpath + '/' + options.path + '/' + modname
+				os.system('mkdir ' + resultsdir)
+				
+				print "\n\nSupposedly I made this results dir %s\n\n" %(resultsdir)
+			else:
+				print "\n\nThere's only one file therefore resultsdir is %s\n\n" %(resultsdir)
+				print "\n\nSee, files are", files
 			
-			resultsfilelocation = resultsdir + '/' + ff
-			#print "\n\n%%%%%%%%%%%%\nThe results file is here\n%%%%%%%%%%%%%%%%%\n\n", resultsfilelocation
+			#resfiles = []
+			ang_errors = []
+			trans_errors = []
+		
+			snrs = []
+			trs = []
+			tss = []
+		
+			twoD_tr_ts_points = []
+			twoD_snr_tr_points = []	
+			twoD_snr_ts_points = []
 			
-			fff = open(resultsfilelocation,'r')
+			threeD_points = []
+			
+			fff = open(ff,'r')
 			lines = fff.readlines()
 			
-			ang = lines[0].split('=')[-1].replace('\n','')
-			ang_errors.append(ang)
+			#findir = os.listdir(resultsdir)
+			#for f in findir:
+			#	if 'error.txt' in f:
+			#		resfiles.append(f)
 			
-			trans = lines[1].split('=')[-1].replace('\n','')
-			trans_errors.append(trans)
-			
-			threeD_points.append({'n':d,'tilt range':tr,'tilt step':ts,'noise level':snr,'angular_error':ang,'translational_error':trans})
-			twoD_tr_ts_points.append({'n':d,'tilt range':tr,'tilt step':ts,'angular_error':ang,'translational_error':trans})
-			twoD_snr_tr_points.append({'n':d,'tilt range':tr,'noise level':snr,'angular_error':ang,'translational_error':trans})
-			twoD_snr_ts_points.append({'n':d,'tilt step':ts,'noise level':snr,'angular_error':ang,'translational_error':trans})
-			
-		if len(set(snrs)) == 1: 
-			if len(set(trs)) == 1:
-				oneD_plot(tss,ang_errors,resultsdir+'/angular_error.png','tilt step')
-				oneD_plot(tss,trans_errors,resultsdir+'/translational_error.png','tilt step')
-			
-			if len(set(tss)) == 1:
-				oneD_plot(trs,ang_errors,resultsdir+'/angular_error.png','tilt range')
-				oneD_plot(trs,trans_errors,resultsdir+'/translational_error.png','tilt range')
-			
-		if len(set(trs)) == 1: 
-			if len(set(tss)) == 1:
-				oneD_plot(snrs,ang_errors,resultsdir+'/angular_error.png','noise level')
-				oneD_plot(snrs,trans_errors,resultsdir+'/translational_error.png','noise level')
+			#resfiles.sort()
+			for line in lines:
+				tr = float( line.split('tr=')[-1].split(' ')[0] )
+				trs.append(tr)
+	
+				snr = float( line.split('snr=')[-1].split(' ')[0] )
+				snrs.append(snr)
+				
+				ts = float( line.split('ts=')[-1].split(' ')[0] )
+				tss.append(ts)
+				
+				#threeD_points.append( [tr,snr,ts] )
+				
+				ang = float( line.split('angular_error=')[-1].split(' ')[0] )
+				ang_errors.append(ang)
+				
+				trans = float( line.split('translational_error=')[-1].split(' ')[0] )
+				trans_errors.append(trans)
+				
+				threeD_points.append({'tilt range':tr,'tilt step':ts,'noise level':snr,'angular_error':ang,'translational_error':trans})
+				twoD_tr_ts_points.append({'tilt range':tr,'tilt step':ts,'angular_error':ang,'translational_error':trans})
+				twoD_snr_tr_points.append({'tilt range':tr,'noise level':snr,'angular_error':ang,'translational_error':trans})
+				twoD_snr_ts_points.append({'tilt step':ts,'noise level':snr,'angular_error':ang,'translational_error':trans})
+				
+			if len(set(snrs)) == 1: 
+				if len(set(trs)) == 1:
+					oneD_plot(tss,ang_errors,resultsdir+'/angular_error_varTS_' + str(d).zfill(len(files)) + '.png','tilt step')
+					oneD_plot(tss,trans_errors,resultsdir+'/translational_error_varTS_' + str(d).zfill(len(files)) + '.png','tilt step')
+				
+				if len(set(tss)) == 1:
+					oneD_plot(trs,ang_errors,resultsdir+'/angular_error_varTR_' + str(d).zfill(len(files)) + '.png','tilt range')
+					oneD_plot(trs,trans_errors,resultsdir+'/translational_error_varTR_' + str(d).zfill(len(files)) + '.png','tilt range')
+				
+			if len(set(trs)) == 1: 
+				if len(set(tss)) == 1:
+					oneD_plot(snrs,ang_errors,resultsdir+'/angular_error_varSNR_' + str(d).zfill(len(files)) + '.png','noise level')
+					oneD_plot(snrs,trans_errors,resultsdir+'/translational_error_varSNR_' + str(d).zfill(len(files)) + '.png','noise level')
 		
-		if len(set(snrs)) == 1 and len(set(trs)) > 1 and len(set(tss)) > 1:
-			twoD_plot(twoD_tr_ts_points,val1='tilt range',val2='tilt step',location=resultsdir +'/')
+			if len(set(snrs)) == 1 and len(set(trs)) > 1 and len(set(tss)) > 1:
+				twoD_plot(twoD_tr_ts_points,val1='tilt range',val2='tilt step',location=resultsdir +'/')
 			
-		if len(set(trs)) == 1 and len(set(snrs)) > 1 and len(set(tss)) > 1:
-			twoD_plot(twoD_snr_ts_points,val1='noise level',val2='tilt step',location=resultsdir +'/')
+			if len(set(trs)) == 1 and len(set(snrs)) > 1 and len(set(tss)) > 1:
+				twoD_plot(twoD_snr_ts_points,val1='noise level',val2='tilt step',location=resultsdir +'/')
 			
-		if len(set(tss)) == 1 and len(set(trs)) > 1 and len(set(snrs)) > 1:
-			twoD_plot(twoD_snr_tr_points,val1='noise level',val2='tilt range',location=resultsdir +'/')
+			if len(set(tss)) == 1 and len(set(trs)) > 1 and len(set(snrs)) > 1:
+				twoD_plot(twoD_snr_tr_points,val1='noise level',val2='tilt range',location=resultsdir +'/')
+			
+			if len(set(tss)) > 1 and len(set(trs)) > 1 and len(set(snrs)) > 1:
+				threeD_plot(threeD_points,resultsdir +'/')
 		
-		if len(set(tss)) > 1 and len(set(trs)) > 1 and len(set(snrs)) > 1:
-			threeD_plot(threeD_points,resultsdir +'/')
-		
-		
+			d=+1
+				
 	E2end(logger)
 
 	return()
