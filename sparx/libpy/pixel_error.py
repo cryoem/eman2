@@ -594,12 +594,12 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 
 	        return g
 	'''
-	
+
 	from statistics import k_means_stab_bbenum
 	from utilities import combine_params2
 	from numpy import array
 	from math import sqrt
-	
+
 	# I decided not to use scipy in order to reduce the dependency, I wrote the C++ code instead
 	# from scipy import array, int32
 	# from scipy.optimize.lbfgsb import fmin_l_bfgs_b
@@ -619,8 +619,6 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 		all_part.append([mirror0, mirror1])
 	match, stab_part, CT_s, CT_t, ST, st = k_means_stab_bbenum(all_part, T=0, nguesses=1)
 	mir_stab_part = stab_part[0] + stab_part[1]
-	#print match
-
 
 	mir_stab_rate = len(mir_stab_part)/float(nima)
 	if mir_stab_rate <= mir_stab_thld: return [], mir_stab_rate, -1.0
@@ -632,15 +630,6 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	#for i in xrange(len(mir_stab_part)):  print i, mir_stab_part[i]
 
 	nima2 = len(mir_stab_part)
-
-	mirror_unstable = []
-	if(nima2<nima):
-		for i in xrange(nima):
-			if i in mir_stab_part:
-				pass
-			else:
-				mirror_unstable.append(i)
-		
 
 	#print "  mirror stable  ",nima2
 
@@ -659,11 +648,6 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	# Do an initial analysis, purge all outlier particles, whose pixel error are larger than three times of threshold
 	data = [ali_params_mir_stab, d]
 	pixel_error_before, ave_params = func(array(args), data, return_avg_pixel_error=False)
-
-	"""
-	print  "pixel_error_before"
-	for j in xrange(len(pixel_error_before)):  print j, sqrt(pixel_error_before[j])
-	"""
 
 	ali_params_cleaned = [[] for i in xrange(num_ali)]
 	cleaned_part = []
@@ -704,13 +688,6 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 
 	pixel_error_after, ave_params = func(ps_lp, data, return_avg_pixel_error=False)
 
-	"""
-	print mir_stab_part
-	print cleaned_part
-	print "  A "
-	print  pixel_error_after
-	"""
-
 	stable_set = []
 	val = 0.0
 	for i in xrange(nima):
@@ -718,7 +695,6 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 			j = cleaned_part.index(i)
 			err = sqrt(pixel_error_after[j])
 			if err < err_thld:
-				#print i,j, mir_stab_part[i]
 				stable_set.append([err, i, ave_params[j]])
 				val += err
 				if print_individual:  print "Particle %4d :  pixel error = %18.4f"%(i, err)
@@ -727,7 +703,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 		else:
 			if print_individual:  print "Particle %4d :  Mirror unstable"%i
 
-	return stable_set, mir_stab_rate, sqrt(val), mirror_unstable
+	return stable_set, mir_stab_rate, sqrt(val)
 
 
 

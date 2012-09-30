@@ -73,8 +73,8 @@ def main():
 	parser.add_option("--ts",           type="string"      ,    default="1 0.5",            help="step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional")
 	parser.add_option("--iter", 		type="int"         ,	default=30,                 help="number of iterations within alignment (default = 30)" )
 	parser.add_option("--num_ali",      type="int"     	   ,    default=5,         			help="number of alignments performed for stability (default = 5)" )
-	parser.add_option("--thld_err",     type="float"       ,    default=1.732,         		help="threshold of pixel error (default = 1.732)" )
-	parser.add_option("--grouping" , 	type="string"      ,	default="PPR",				help="do grouping of projections: PPR - per projection (default), GRP - different size groups, exclusive, GEV - grouping equal size")
+	parser.add_option("--thld_err",     type="float"       ,    default=1.0,         		help="threshold of pixel error (default = 1.732)" )
+	parser.add_option("--grouping" , 	type="string"      ,	default="GRP",				help="do grouping of projections: PPR - per projection (default), GRP - different size groups, exclusive, GEV - grouping equal size")
 	parser.add_option("--delta",        type="float"       ,    default=-1.0,         		help="angular step for reference projections (required for GEV method)")
 	parser.add_option("--fl",           type="float"       ,    default=0.3,                help="cut-off frequency of hyperbolic tangent low-pass Fourier filter")
 	parser.add_option("--aa",           type="float"       ,    default=0.2,                help="fall-off of hyperbolic tangent low-pass Fourier filter")
@@ -306,7 +306,7 @@ def main():
 					set_params2D(im, [0.0,-d["tx"],-d["ty"],0,1.0])
 				except:
 					set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0])
-		print "  F  ",myid,"  ",time()-st
+		#print "  F  ",myid,"  ",time()-st
 		# Here, we perform realignment num_ali times
 		all_ali_params = []
 		for j in xrange(num_ali):
@@ -320,7 +320,7 @@ def main():
 				ali_params.extend( [alpha, sx, sy, mirror] )
 			all_ali_params.append(ali_params)
 		#aveList[i] = avet
-		print "  G  ",myid,"  ",time()-st
+		#print "  G  ",myid,"  ",time()-st
 		del ali_params
 		# We determine the stability of this group here.
 		# stable_set contains all particles deemed stable, it is a list of list
@@ -328,22 +328,10 @@ def main():
 		# stable_set is sorted based on pixel error
 		#from utilities import write_text_file
 		#write_text_file(all_ali_params, "all_ali_params%03d.txt"%myid)
-		stable_set, mir_stab_rate, average_pix_err,unstable = multi_align_stability(all_ali_params, 0.0, 10000.0, thld_err, False, 2*radius+1)
+		stable_set, mir_stab_rate, average_pix_err = multi_align_stability(all_ali_params, 0.0, 10000.0, thld_err, False, 2*radius+1)
 		#print "  H  ",myid,"  ",time()-st
 		if(len(stable_set) > 5):
-
-
-			if(len(unstable)>0):
-				for mmm in unstable:
-					print  "unstable", proj_list[i][mmm]
-
-
 			stable_set_id = []
-			"""
-			particle_pixerr = []
-			for s in stable_set:
-				particle_pixerr.append(s[0])
-			"""
 			members = []
 			pix_err = []
 			# First put the stable members into attr 'members' and 'pix_err'
@@ -400,10 +388,9 @@ def main():
 			aveList[i].set_attr('members',[-1])
 			aveList[i].set_attr('refprojdir',refprojdir[i])
 			aveList[i].set_attr('pixerr', [99999.])
-			
-
 
 	del class_data
+
 	if myid == main_node:
 		km = 0
 		for i in xrange(number_of_proc):
@@ -419,10 +406,8 @@ def main():
 					nm = mpi_recv(1, MPI_INT, i, MPI_TAG_UB, MPI_COMM_WORLD)
 					nm = int(nm[0])
 					members = mpi_recv(nm, MPI_INT, i, MPI_TAG_UB, MPI_COMM_WORLD)
-					if(nm == 1):  print  "  m  ",members
 					ave.set_attr('members', map(int, members))
 					members = mpi_recv(nm, MPI_FLOAT, i, MPI_TAG_UB, MPI_COMM_WORLD)
-					if(nm == 1):  print  "  e  ",members
 					ave.set_attr('pixerr', map(float, members))
 					members = mpi_recv(3, MPI_FLOAT, i, MPI_TAG_UB, MPI_COMM_WORLD)
 					ave.set_attr('refprojdir', map(float, members))
