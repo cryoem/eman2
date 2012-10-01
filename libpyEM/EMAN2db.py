@@ -43,11 +43,12 @@ import fnmatch
 import random
 import threading
 import traceback
+
 try:
 	from bsddb3 import db
-except:
+except ImportError, e:
+	print "WARNING: Could not import bsddb3; falling back on the older bsddb. Consider installing BerkeleyDB and bsddb3:", e
 	from bsddb import db
-	print "WARNING: Using the out of date 'bsddb' module instead of bsddb3. Consider installing newer berkeleydb and bsddb3."
 
 from libpyEMData2 import EMData
 from libpyUtils2 import EMUtil
