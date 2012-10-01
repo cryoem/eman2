@@ -83,7 +83,13 @@ def main():
 										If, on the other hand, the tilt step was 4deg, the tilt series will only have 31 images.
 										--tiltstepupperlimit is the largest step size you want to simulate.""")
 	parser.add_argument("--tiltstepchange", type=int,default=1,help="""Increase in size of tilt step from one run to another. 
-											Jobs will be run using --tiltstepstep as the first value, and then adding that value on subsequent runs until --tiltsteplimit is reached""")	
+											Jobs will be run using --tiltstepstep as the first value, and then adding that value on subsequent runs until --tiltsteplimit is reached""")
+											
+	parser.add_argument("--nsliceslowerlimit", type=int,default=0,help="Lowest number of slices to divide the tiltrange in. If on and --nslicesupperlimit is ALSO on (any number other than zero), this will turn off all tiltstep parameters.")	
+
+	parser.add_argument("--nslicesupperlimit", type=int,default=0,help="Largest number of slices to divide the tiltrange in. If on and --nsliceslowerlimit is ALSO on (values other than zero), this will turn off all tiltstep parameters.")	
+
+	parser.add_argument("--nsliceschange", type=int,default=1,help="Change with which the nslices parameter in e2spt_simulation.py will be varied. Will only work if --nslicesupperlimit and --nsliceslowerlimit are different than zero.")
 	
 	"""
 	Parameters to be passed on to e2spt_simulation.py
@@ -148,21 +154,6 @@ def main():
 	
 	logger = E2init(sys.argv, options.ppid)
 	
-	snrl = options.snrlowerlimit
-	snru = options.snrupperlimit
-	snrch = options.snrchange
-
-	tiltrangel = options.tiltrangelowerlimit
-	tiltrangeu = options.tiltrangeupperlimit
-	tiltrangech = options.tiltrangechange
-
-	tiltstepl = options.tiltsteplowerlimit
-	tiltstepu = options.tiltstepupperlimit
-	tiltstepch = options.tiltstepchange
-	
-	if tiltstepl == 0:
-		print "ERROR! You cannot start with a tilt step of 0. The minimum tiltstep is 1, thus, the lower limit for this parameter, tiltsteplowerlimit, must be at least 1."
-	
 	'''
 	Make the directory where to create the database where the results will be stored
 	'''
@@ -219,40 +210,80 @@ def main():
 		#	resultsdir = 'results_ali_errors'
 		#	os.system('cd ' + options.path + ' && mkdir ' + resultsdir)
 	
+	
+		snrl = options.snrlowerlimit
+		snru = options.snrupperlimit
+		snrch = options.snrchange
+
+		tiltrangel = options.tiltrangelowerlimit
+		tiltrangeu = options.tiltrangeupperlimit
+		tiltrangech = options.tiltrangechange
+
+		tiltstepl = options.tiltsteplowerlimit
+		tiltstepu = options.tiltstepupperlimit
+		tiltstepch = options.tiltstepchange
+	
+		if options.nsliceschange and options.nsliceslowerlimit and options.nslicesupperlimit:
+			tiltstepl = options.nsliceslowerlimit
+			tiltstepu = options.nslicesupperlimit
+			tiltstepch = options.nsliceschange
+	
+		if tiltstepl == 0:
+			print "ERROR! You cannot start with a tilt step of 0. The minimum tiltstep is 1, thus, the lower limit for this parameter, tiltsteplowerlimit, must be at least 1."
+	
+	
+	
 		nrefs = EMUtil.get_image_count(options.input)
 		
-		tiltrange=tiltrangel	
+		tiltrange=tiltrangel
 		while tiltrange <tiltrangeu:
 			print "tiltrage is", tiltrange
-		
-			tiltstep=tiltstepl		
+
+			tiltstep=tiltstepl
+			#if options.nsliceschange and options.nsliceslowerlimit and options.nslicesupperlimit:
+			#	tiltstep = options.nsliceslowerlimit
+
+
 			while tiltstep < tiltstepu:
-				print "Tilt step is", tiltstep
-					
+				tiltsteptag = str(tiltstep).zfill(2)
+
+				if options.nsliceschange and options.nsliceslowerlimit and options.nslicesupperlimit:
+					print "The number of slices is", tiltstep
+					tiltsteptag = str( round(2.0 * tiltrange / tiltstep,1) ).zfill(4)
+				else:
+					print "The tilt step is", tiltstep
+
+
 				snr=snrl
 				while snr < snru:
 					print "Snr is", snr
-									
+
+					rootpath = os.getcwd()
+
 					for d in range(nrefs):
-						
 						modeltag = ''
-						subpath = 'TR' + str(tiltrange).zfill(2) + '_TS' + str(tiltstep).zfill(2) + '_SNR' + str(snr).zfill(2)
-					
+						subpath = 'TR' + str(tiltrange).zfill(2) + '_TS' + tiltsteptag + '_SNR' + str(snr).zfill(2)
+
 						inputdata = options.input
-					
+
 						if nrefs > 1:
 							modeltag = 'model' + str(d).zfill(2)
 							subpath += '_' + modeltag
-							
+
 							model = EMData(options.input,d)
 							newname = options.path + '/' + inputdata.split('/')[-1].replace('.hdf','_' + modeltag + '.hdf')
 							model.write_image(newname,0)
-							
+
 							inputdata = newname.split('/')[-1]
-					
+
 						subtomos =  subpath + '.hdf'
 
 						jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --tiltstep=' + str(tiltstep) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrink) + ' --finalboxsize=' + str(options.finalboxsize)
+
+						if options.nsliceschange and options.nsliceslowerlimit and options.nslicesupperlimit:
+							print "\n\n\n$$$$$$$$$$$$$$\nYou hvae provided the number of slices\n$$$$$$$$\n\n\n",tiltstep
+							jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --nslices=' + str(tiltstep) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrink) + ' --finalboxsize=' + str(options.finalboxsize)
+
 
 						if options.simref:
 							jobcmd += ' --simref'
@@ -264,69 +295,69 @@ def main():
 							jobcmd += ' --negativecontrast'
 
 						jobcmd += ' --path=' + subpath				
-	
+
 						cmd = 'cd ' + options.path + ' && ' + jobcmd
-	
+
 						resultsfiles=[]
-	
+
 						if options.testalignment:
-	
+
 							#modeldir = ''
 							#if nrefs > 1:
 							#	modeldir = '/model' + str(d).zfill(2)
-	
+
 							cmd = cmd + ' && cd ' + rootpath + '/' + options.path + '/' + subpath
-	
+
 							#subtomos = options.input.split('/')[-1].replace('.hdf','_sptsimMODEL_randst_n' + str(options.nptcls) + '_' + subpath + '_subtomos.hdf')
-	
+
 							#print "\n\nSubtomos name will be\n", subtomos
-	
+
 							ref = inputdata.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf')
-	
+
 							#if nrefs > 1:
 							#	modd = 'model' + str(d).zfill(2)
 							#	ref = options.input.split('/')[-1].replace('.hdf','_sptsimMODELS_' + modd + '.hdf')
-	
+
 							output=subtomos.replace('.hdf', '_avg.hdf')
 							#print "\n\n$$$$$$$$$$$$$$$$$$$$$$\nRef name is\n$$$$$$$$$$$$$$$$$$$\n", ref
-	
+
 							#print "\n\noutput name is\n", output
-	
+
 							alipath=output.replace('_avg.hdf','_ali')
 							#print "\n\nAlipath for results will be\n", alipath
-	
-							alicmd = " && e2spt_classaverage.py --path=" + alipath + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --npeakstorefine=4 -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=0 --parallel=thread:8 --ralign=refine_3d_grid:delta=12:range=12:search=2 --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --shrink=2 --savesteps --saveali --normproc=normalize.mask"
-	
+
+							alicmd = " && e2spt_classaverage.py --path=" + alipath + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --npeakstorefine=4 -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=0 --parallel=thread:7 --ralign=refine_3d_grid:delta=12:range=12:search=2 --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --shrink=2 --savesteps --saveali --normproc=normalize.mask"
+
 							if options.quicktest:
-								alicmd = " && e2spt_classaverage.py --path=" + alipath + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=thread:8 --ralign=None --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --shrink=3 --savesteps --saveali --normproc=normalize.mask"
-	
+								alicmd = " && e2spt_classaverage.py --path=" + alipath + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=thread:7 --ralign=None --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --shrink=3 --savesteps --saveali --normproc=normalize.mask"
+
 							aliptcls = output.replace('_avg.hdf','_ptcls_ali.hdf')
-	
+
 							#print "\n\aliptcls name is\n", aliptcls
-	
+
 							extractcmd = " && cd " + alipath + " && e2proc3d.py bdb:class_ptcl " + aliptcls
-	
+
 							resultsfile=aliptcls.replace('_ptcls_ali.hdf','_ali_error.txt')
-	
+
 							solutioncmd = " && e2spt_transformdistance.py --input=" + aliptcls + ' --output=' + resultsfile
 
 							rfilecmd =  ' && mv ' + resultsfile + ' ' +  rootpath + '/' + options.path
-	
+
 							cmd = cmd + alicmd + extractcmd + solutioncmd + rfilecmd
-	
-						#print "The command to execute is \n\n %s \n\n" %(cmd)
-	
+
+						print "\n\n\n*********************The command to execute is \n %s \n*********************\n" %(cmd)
+
 						os.system(cmd)
-	
+
 					snr += snrch
-					
+
 				tiltstep += tiltstepch
-			
+
 			tiltrange += tiltrangech
-		
+
 		if nrefs > 1:
 			for i in range(nrefs):
-			
+
 				modname = 'model' + str(i).zfill(2)
 				#print "\nI will make this moddir", modname
 				cmdd='cd ' + options.path + ' && mkdir ' + modname + ' && mv *' + modname + '* ' + modname
@@ -335,15 +366,18 @@ def main():
 
 			for i in range(nrefs):
 				modname = 'model' + str(i).zfill(2)
-				
+
 				resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
 				#print "\n\n\n\n*******************\nResults dir is\n", resultsdir
-				
+
 				os.system('mkdir ' +  resultsdir + ' && cd ' + options.path + '/' + modname + ' && mv *error.txt ' + resultsdir)
-		
+
 		else:
+			print "\n\n***************\nThere was only one reference\n************\n\n"
+			
 			resultsdir = 'results_ali_error'
 			os.system('cd ' + options.path + ' && mkdir ' + resultsdir + ' && mv *error.txt ' + resultsdir)
+		
 			
 		resultsdir = rootpath + '/' + options.path + '/results_ali_error' 	
 		for i in range(nrefs):
