@@ -98,8 +98,8 @@ def main():
 	
 	parser.add_argument("--finalboxsize", type=int,default=0,help="""The final box size to clip the subtomograms to.""")								
 
-	parser.add_argument("--snr",type=int,help="Weighing noise factor for noise added to the image. Only words if --addnoise is on.",default=0)
-	parser.add_argument("--addnoise",action="store_true",default=False,help="If on, it adds random noise to the particles")
+	parser.add_argument("--snr",type=int,help="Weighing noise factor for noise added to the image.",default=0)
+	#parser.add_argument("--addnoise",action="store_true",default=False,help="If on, it adds random noise to the particles")
 	
 	parser.add_argument("--sym",type=str,default='c1',help="If your particle is symmetrical, you should randomize it's orientation withing the asymmetric unit only. Thus, provide the symmetry.")
 
@@ -451,7 +451,7 @@ def subtomosim(options,ptcls,stackname):
 			
 			prj_r = prj_fft.do_ift()							#Go back to real space
 			
-			if options.addnoise and options.snr:
+			if options.snr:
 				#prj_r.process_inplace('math.addnoise',{'noise':options.snr})
 				
 				#prj_n = EMData(nx,ny)
@@ -471,7 +471,7 @@ def subtomosim(options,ptcls,stackname):
 
 			ctfed_projections.append(prj_r)		
 
-			if options.saveprjs and options.applyctf or options.saveprjs and options.addnoise:
+			if options.saveprjs and options.applyctf or options.saveprjs and options.snr:
 				prj_r.write_image(options.path + '/' + stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsEDITED.hdf') , j)	
 			
 						
