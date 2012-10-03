@@ -11161,7 +11161,7 @@ def extract_value( s ):
 	
 	return s 
 
-def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=False, fimport=None, 
+def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, rand_alpha=False, fimport=None, 
 	   fexport=None, fprint=False, backup=False, suffix='_backup', restore=False, delete=False):
 	from string    import split
 	from utilities import write_header, file_type,generate_ctf
@@ -11169,8 +11169,10 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 	from utilities import set_params2D, get_params2D, set_params3D, get_params3D, set_params_proj, get_params_proj, set_ctf, get_ctf
 	from EMAN2 import Vec2f
 
+	if set == 0.0: doset = False
+	else:          doset = True
 
-	op = zero+one+randomize+rand_alpha+(fimport!=None)+(fexport!=None)+fprint+backup+restore+delete
+	op = zero+one+randomize+rand_alpha+(fimport!=None)+(fexport!=None)+fprint+backup+restore+delete+doset
 	if op == 0:
 		print "Error: no operation selected!"
 		return
@@ -11331,6 +11333,16 @@ def header(stack, params, zero=False, one=False, randomize=False, rand_alpha=Fal
 							DB.set_attr(i, p, 1)
 						elif ext == "hdf":
 							EMUtil.write_hdf_attribute(stack, p, 1, i)
+				elif doset:
+					if p[:6] == "xform." or p == "ctf":
+						print "Invalid operation!"
+						return
+					else:
+						#img.set_attr(p, 1)
+						if ext == "bdb":
+							DB.set_attr(i, p, set)
+						elif ext == "hdf":
+							EMUtil.write_hdf_attribute(stack, p, set, i)
 				elif randomize:
 					if p[:13] == "xform.align2d":
 						alpha = random()*360.0
