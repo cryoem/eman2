@@ -405,7 +405,7 @@ def ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0):
 	kx = int(2*xrng/step+0.5)//2
 	for i in xrange(-ky, ky+1):
 		iy = i*step
-	 	for  j in xrange(-kx, kx+1):
+		for j in xrange(-kx, kx+1):
 			ix = j*step
 			cimage = Util.Polar2Dm(image, cnx+ix, cny+iy, numr, mode)
 			Util.Frngs(cimage, numr)
@@ -417,16 +417,16 @@ def ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0):
 			qn = retvals["qn"]
 			qm = retvals["qm"]
 			if (qn >= peak or qm >= peak):
-		 		sx = -ix
-		 		sy = -iy
+				sx = -ix
+				sy = -iy
 				if (qn >= qm):
-			 		ang = ang_n(retvals["tot"], mode, numr[-1])
-			 		peak = qn
-			 		mirror = 0
-		   		else:
-			 		ang = ang_n(retvals["tmt"], mode, numr[-1])
-			 		peak = qm
-			 		mirror = 1
+					ang = ang_n(retvals["tot"], mode, numr[-1])
+					peak = qn
+					mirror = 0
+				else:
+					ang = ang_n(retvals["tmt"], mode, numr[-1])
+					peak = qm
+					mirror = 1
 			'''
 			# The following code is used when mirror is not considered
 			retvals = Util.Crosrng_e(crefim, cimage, numr, 0)
@@ -1941,3 +1941,4 @@ def alivol_mask( v, vref, mask ):
 	dun,dum,dum,cnx,cny,cnz,mirror,scale = get_params3D( vref )
 	phi,tht,psi,s3x,s3y,s3z,scale = compose_transform3(phi,tht,psi,s3x,s3y,s3z,1.0,0.0,0.0,0.0,-cnx,-cny,-cnz,1.0)
 	return phi,tht,psi,s3x,s3y,s3z
+
