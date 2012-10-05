@@ -4523,7 +4523,7 @@ float Util::ener_tot(const vector<EMData*>& data, vector<int> numr, vector<float
 	return static_cast<float>(ener);
 }
 
-void Util::update_fav (EMData* avep, EMData* datp, float tot, int mirror, vector<int> numr) {
+void Util::update_fav(EMData* avep, EMData* datp, float tot, int mirror, vector<int> numr) {
 	int nring = numr.size()/3;
 	float *ave = avep->get_data();
 	float *dat = datp->get_data();
