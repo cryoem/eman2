@@ -496,7 +496,7 @@ def main():
 					if i == main_node :
 						for im in xrange(len(varList)):
 							aveList[im].write_image(options.var2D, km)
-							km+ = 1
+							km += 1
 					else:
 						nl = mpi_recv(1, MPI_INT, i, MPI_TAG_UB, MPI_COMM_WORLD)
 						nl = int(nl[0])
