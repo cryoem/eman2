@@ -163,7 +163,7 @@ def main():
 			vol = recons3d_4nn_ctf_MPI(myid, imgdata, 1.0, symmetry=options.sym, npad=options.npad, xysize=-1, zsize=-1)
 		else:
 			vol = recons3d_4nn_MPI(myid, imgdata, symmetry=options.sym, npad=options.npad, xysize=-1, zsize=-1)
-	
+
 		bcast_EMData_to_all(vol, myid)
 		volft, kb = prep_vol(vol)
 
@@ -267,7 +267,7 @@ def main():
 		imgdata = EMData.read_images(stack, all_proj)
 		if options.VERBOSE:
 			print "Reading images on processor %d done, time = %.2f"%(myid, time()-ttt)
-			print "One processor %d, we got %d images"%(myid, len(imgdata))
+			print "On processor %d, we got %d images"%(myid, len(imgdata))
 		mpi_barrier(MPI_COMM_WORLD)
 
 		'''	
