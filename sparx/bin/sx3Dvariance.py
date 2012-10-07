@@ -52,7 +52,7 @@ def main():
 		return  alpha, sx, sy, m
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " prj_stack volume --iter= --var2D=  --sym=symmetry --MPI"
+	usage = progname + " prj_stack  --ave2D= --var2D=  --var3D= --sym=symmetry --MPI --CTF"
 	parser = OptionParser(usage, version=SPARXVERSION)
 
 	parser.add_option("--radiuspca", 	type="int"         ,	default=-1   ,				help="radius for PCA" )
@@ -93,9 +93,8 @@ def main():
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	main_node = 0
 
-	if len(args) == 2:
+	if len(args) == 1:
 		stack = args[0]
-		vol_stack = args[1]
 	else:
 		ERROR("Incomplete list of arguments", "sxvariances3d", 1, myid=myid)
 		exit()
@@ -320,6 +319,7 @@ def main():
 				nx2 = 2*nx
 				ny2 = 2*ny
 				if options.CTF:
+					from utilities import pad
 					for k in xrange(img_per_grp):
 						grp_imgdata[k] = window2d(fft( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.freq, options.fall_off) ),nx,ny)
 						#grp_imgdata[k] = window2d(fft( filt_table( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.freq, options.fall_off), fifi) ),nx,ny)
@@ -336,6 +336,7 @@ def main():
 				nx2 = 2*nx
 				ny2 = 2*ny
 				if options.CTF:
+					from utilities import pad
 					for k in xrange(img_per_grp):
 						grp_imgdata[k] = window2d( fft( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1) ) , nx,ny)
 						#grp_imgdata[k] = window2d(fft( filt_table( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.freq, options.fall_off), fifi) ),nx,ny)
@@ -517,7 +518,7 @@ def main():
 		res = recons3d_4nn_MPI(myid, varList, symmetry=options.sym, npad=options.npad)
 		#res = recons3d_em_MPI(varList, vol_stack, options.iter, radiusvar, options.abs, True, options.sym, options.squ)
 		if myid == main_node:
-			res.write_image(vol_stack)
+			res.write_image(options.var3D)
 
 		if myid == main_node:
 			print_msg("%-70s:  %.2f\n"%("Reconstructing 3D variance took [s]", time()-t6))
