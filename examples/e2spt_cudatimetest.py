@@ -240,10 +240,10 @@ def doit(corg,options):
 			
 			setcuda=''
 			if corg=='gpu' or corg=='GPU':
-				setcuda= 'EMANUSECUDA=1 && '
+				setcuda= 'EMANUSECUDA=1 && NOCUDAINIT=0 && '
 				print "\n\n\n !!!! I Have turned cuda ON!!!\n\n\n"
 			elif corg=='cpu' or corg=='CPU':
-				setcuda = 'export EMANUSECUDA=0 && '
+				setcuda = 'export NOCUDAINIT=1 && '
 				print "\n\n\n !!!! I Have turned cuda OFF!!!\n\n\n"
 			else:
 				print "Something is wrong; you're supposed to select GPU or CPU. TERMINATING!"
