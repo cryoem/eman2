@@ -52,8 +52,10 @@ def main():
 	parser.add_argument("--cpu", action='store_true', help="Will test SPT alignment using CPU.",default=False)
 	parser.add_argument("--gpu", action='store_true', help="Will test SPT alignment using GPU.",default=False)
 	
-	parser.add_argument("--test", action='store_true', help="Will run quick tests just to see if EMAN2 and this script are functional on your computer.",default=False)
-	parser.add_argument("--extensive", action='store_true', help="Will run quick tests just to see if EMAN2 and this script are functional on your computer.",default=False)
+	parser.add_argument("--test", action='store_true', help="Will run a quick tests using a few box sizes, with a coarse tilt step of 30 and a fine step of 15.",default=False)
+	parser.add_argument("--medium", action='store_true', help="Will test boxsizes in multiples of 10 between 10 and 240, with a coarse step of 30 and fine step of 15",default=False)
+	parser.add_argument("--extensive", action='store_true', help="Will test EVERY box size between 12 and 256, for coarse steps of 10,8,6,4,2 (fine step is always half of coarse step).",default=False)
+	
 	parser.add_argument("--ID", type=str, help="Tag files generated on a particular computer.",default='')
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -185,16 +187,22 @@ def doit(corg,options):
 	f=os.listdir(c)
 
 	mults = [12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,35,36,40,42,44,45,48,49,50,52,54,56,60,64,65,66,70,72,75,77,78,80,81,84,88,91,96,98,100,104,112,120,128,136,144,152,160,168,176,184,192,200,208,216,224,232,240,248,256]
-	steps = [10,8,6,4,2]
+	steps = [30]
 	if options.test:
 		mults = [32,64,96,128]
-		steps = [12]
+		steps = [30]
 
+	if options.medium:
+		mults=[]
+		for i in xrange(1,25):
+			mults.append(i*10)
+		steps = [30]
 
 	if options.extensive:
 		mults = []
 		for i in xrange(12,257):
 			mults.append(i)
+		steps=[10,8,6,4,2]
 	
 	computer = options.ID
 	
