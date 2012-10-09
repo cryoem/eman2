@@ -57,6 +57,7 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--path",type=str,default=None,help="Directory to store results in. The default is a numbered series of directories containing the prefix 'sptsimjob'; for example, sptsimjob_02 will be the directory by default if 'sptsimjob_01' already exists.")
+	parser.add_argument("--noplot", action='store_true', help="To run jobs on a cluster or other interfaces that don't support plotting, turn this option on.",default=False)
 	
 	(options, args) = parser.parse_args()
 	
@@ -237,13 +238,16 @@ def doit(corg,options):
 			out = 'garbage.hdf'
 			
 			setcuda=''
-			if corg=='gpu':
+			if corg=='gpu' or corg=='GPU':
 				setcuda= 'EMANUSECUDA=1 && '
 				print "\n\n\n !!!! I Have turned cuda ON!!!\n\n\n"
-			else:
+			elif corg=='cpu' or corg=='CPU':
 				setcuda = 'export EMANUSECUDA=0 && '
 				print "\n\n\n !!!! I Have turned cuda OFF!!!\n\n\n"
-			
+			else:
+				print "Something is wrong; you're supposed to select GPU or CPU. TERMINATING!"
+				sys.exit()
+							
 			instruction1 = setcuda + '''cd ''' + options.path + ''' && e2spt_classaverage.py --input=''' + aname + ''' --output=''' + out + ''' --ref=''' + bname + ''' --iter=1 --npeakstorefine=1 -v 1 --mask=mask.sharp:outer_radius=-2 --preprocess=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --align=rotate_translate_3d:search=6:delta=''' + str(coarsestep) + ''':dphi=''' + str(coarsestep) + ''':verbose=1:sym=icos --parallel=thread:1 --ralign=refine_3d_grid:delta=''' + str(finestep) + ''':range=''' + str(coarsestep) + ''' --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --normproc=normalize.mask'''
 			cmd = instruction1
 			print "The instruction is", cmd
@@ -274,10 +278,10 @@ def doit(corg,options):
 def plotter(name,xaxis,yaxis,CS,FS):
 	tag='gpu speed gain factor'
 	labelfory='CPU time / GPU time'
-	if 'gpu' in name and 'cpu' not in name:
+	if 'gpu' in name or 'GPU' in name and 'cpu' not in name and 'CPU' not in name:
 		tag='gpu 3D alignment Time'
 		labelfory='Time (s)'
-	if 'cpu' in name and 'gpu' not in name:
+	if 'cpu' in name or 'CPU' in name and 'gpu' not in name and 'GPU' not in name:
 		tag='cpu 3D alignment Time'
 		labelfory='Time (s)'
 	
@@ -289,11 +293,14 @@ def plotter(name,xaxis,yaxis,CS,FS):
 	plt.ylabel(labelfory)
 	plt.xlabel("Box side-length (pixels)")
 		
-	a = plt.gca()
-	a.set_xlim(1,int(xaxis[-1]))
-	a.set_ylim(0,max(yaxis)+0.25*max(xaxis))
+	#a = plt.gca()
+	#a.set_xlim(1,int(xaxis[-1]))
+	#a.set_ylim(0,max(yaxis)+0.25*max(xaxis))
 	#a.legend(stepslabel)
-
+	
+	plt.xlin( (1,int(xaxis[-1]) ) )
+	plt.ylim( ( 0,max(yaxis)+0.25*max(xaxis) ) )
+	
 	plt.savefig(name)
 	plt.clf()
 	return()
