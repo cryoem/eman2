@@ -36,7 +36,9 @@ import os
 from EMAN2 import *
 from time import time
 		 
-import matplotlib.pyplot as plt
+import matplotlib as mpl; mpl.use('Agg')		 
+		 
+#import matplotlib.pyplot as plt
 import sys
 import numpy		 
 		 
@@ -287,22 +289,22 @@ def plotter(name,xaxis,yaxis,CS,FS):
 	
 	stepslabel='\ncoarse step=' + str(CS) + ' : fine step=' + str(FS)
 
-	plt.plot(xaxis, yaxis, linewidth=1)
-	plt.title(tag + ' VS box-size' + stepslabel)
+	mpl.pyplot.plot(xaxis, yaxis, linewidth=1)
+	mpl.pyplot.title(tag + ' VS box-size' + stepslabel)
 	
-	plt.ylabel(labelfory)
-	plt.xlabel("Box side-length (pixels)")
+	mpl.pyplot.ylabel(labelfory)
+	mpl.pyplot.xlabel("Box side-length (pixels)")
 		
 	#a = plt.gca()
 	#a.set_xlim(1,int(xaxis[-1]))
 	#a.set_ylim(0,max(yaxis)+0.25*max(xaxis))
 	#a.legend(stepslabel)
 	
-	plt.xlin( (1,int(xaxis[-1]) ) )
-	plt.ylim( ( 0,max(yaxis)+0.25*max(xaxis) ) )
+	mpl.pyplot.xlim( (1,int(xaxis[-1]) ) )
+	mpl.pyplot.ylim( ( 0,max(yaxis)+0.25*max(xaxis) ) )
 	
-	plt.savefig(name)
-	plt.clf()
+	mpl.pyplot.savefig(name)
+	mpl.pyplot.clf()
 	return()
 
 '''
