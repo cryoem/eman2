@@ -89,6 +89,8 @@ int PifIO::get_mode_size(PifDataMode mode)
 	case PIF_FLOAT_INT:
 	case PIF_FLOAT_INT_COMPLEX:
 	case PIF_MAP_FLOAT_INT:
+	case PIF_MAP_FLOAT_INT_2:
+	case PIF_BOXED_FLOAT_INT:
 		size = sizeof(int);
 		break;
 	default:
@@ -109,6 +111,8 @@ bool PifIO::is_float_int(int m)
 	case PIF_FLOAT_INT_COMPLEX:
 	case PIF_MAP_FLOAT_SHORT:
 	case PIF_MAP_FLOAT_INT:
+	case PIF_MAP_FLOAT_INT_2:
+	case PIF_BOXED_FLOAT_INT:
 		return true;
 	default:
 		break;
@@ -570,6 +574,8 @@ int PifIO::to_em_datatype(int p)
 	case PIF_FLOAT:
 	case PIF_FLOAT_INT:
 	case PIF_MAP_FLOAT_INT:
+	case PIF_MAP_FLOAT_INT_2:
+	case PIF_BOXED_FLOAT_INT:
 		e = EMUtil::EM_FLOAT;
 		break;
 	case PIF_FLOAT_COMPLEX:

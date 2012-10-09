@@ -792,7 +792,7 @@ class EMMotion(QtGui.QMainWindow):
 		# outer loop over images to be projected
 		projlist=[]
 		for i,im in enumerate(ptcl4an):
-			try: im.process_inplace(options.normalize)
+			try: im.process_inplace("normalize.unitlen")
 			except: print "Warning: Normalization failed"
 			im-=basis[0]
 

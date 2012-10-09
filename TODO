@@ -24,6 +24,8 @@ High priority
 9/6/12		Histogram normalization in image display ?
 9/6/12		--maxshift seems to cause segfaults sometimes
 
+9/27/12		3D fallback for old OpenGL
+10/5/12		Doesn't handle projects with >1000 files very gracefully (slow, ryr-open)
 
 Low priority
 7/25/12		In orthographic projection in 3-D viewer, mouse wheel behavior is inverted

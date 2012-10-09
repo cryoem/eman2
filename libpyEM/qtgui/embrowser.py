@@ -1233,6 +1233,7 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 	def parent(self,index):
 		"Returns the parent of the specified index"
 		
+#		print "parent ",index.row()
 		if index.isValid(): 
 			try: data=index.internalPointer().parent()
 			except:
@@ -1252,6 +1253,7 @@ class EMFileItemModel(QtCore.QAbstractItemModel):
 	
 	def findSelected(self,toplevel=True):
 		"Makes a list of QModelIndex items for all items marked as selected"
+		print "findsel"
 		sel=[]
 		self.root.findSelected(sel)
 		if toplevel : return [self.createIndex(i[1],0,i[0]) for i in sel if i[0]==self.root]
@@ -1626,6 +1628,7 @@ class EMBDBInfoPane(EMInfoPane):
 	def imSelChange(self):
 		"New image selection"
 		
+		print "isc"
 		val=self.wimlist.currentItem().text()
 		try:
 			val=int(val)
@@ -1962,7 +1965,6 @@ class SortSelTree(QtGui.QTreeView):
 		self.sortByColumn(self.scol,self.sdir)
 
 	def sortByColumn(self,col,ascend):
-		
 		if col==-1 : return
 		
 		# we mark all selected records
@@ -2205,7 +2207,7 @@ dirregex - default "", a regular expression for filtering filenames (directory n
 
 		self.setPath(startpath)	# start in the local directory
 		self.updthread.start()
-		self.updtimer.start(300)
+		self.updtimer.start(500)
 
 		self.result=None			# used in modal mode. Holds final selection
 
@@ -2244,11 +2246,15 @@ dirregex - default "", a regular expression for filtering filenames (directory n
 		if len(self.redrawlist)==0 : 
 			return
 		
-		# we emit a datachanged event for each item
-		while len(self.redrawlist)>0:
+		# we emit a datachanged event
+		rdr=[]
+		while len(self.redrawlist)>0: 
 			i=self.redrawlist.pop()
-			self.curmodel.dataChanged.emit(i,self.curmodel.createIndex(i.row(),5,i.internalPointer()))
-			
+			rdr.append((i.row(),i.internalPointer()))		# due to threads, we do it this way to make sure we don't miss any
+
+		# We emit only a single event here for efficiency
+		self.curmodel.dataChanged.emit(self.curmodel.createIndex(min(rdr)[0],0,min(rdr)[1]),self.curmodel.createIndex(max(rdr)[0],5,max(rdr)[1]))
+		
 		self.needresize=2
 
 	def editFilter(self,newfilt):

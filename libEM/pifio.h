@@ -81,13 +81,15 @@ namespace EMAN
 			PIF_FLOAT_INT = 2,
 			PIF_SHORT_COMPLEX = 3,
 			PIF_FLOAT_INT_COMPLEX = 4,
-			PIF_BOXED_DATA = 6,
+			PIF_BOXED_DATA = 6,			// byte, read as 0
 			PIF_SHORT_FLOAT = 7,
 			PIF_SHORT_FLOAT_COMPLEX = 8,
 			PIF_FLOAT = 9,
 			PIF_FLOAT_COMPLEX = 10,
 			PIF_MAP_FLOAT_SHORT = 20,
 			PIF_MAP_FLOAT_INT = 21,
+			PIF_MAP_FLOAT_INT_2 = 40,			// 4 byte floatint, read as 2
+			PIF_BOXED_FLOAT_INT = 46,		// 4 byte floatint, read as 2
 			PIF_INVALID
 		};
 
@@ -105,7 +107,19 @@ namespace EMAN
 			int ny;				// number of rows
 			int nz;				// number of sections
 			int mode;			// image data type
-			int pad[107];
+
+			int even;
+			int mrcX;			// MRC X dim
+			int mrcY;			// MRC Y dim
+			int mrcZ;			// MRC Z dim
+			char scale_fac[16];
+			char ctf_a0[13];
+			char ctf_a1[13];
+			char ctf_a2[13];
+			char ctf_a3[13];
+			char ctf_a4[13];
+			char ctf_a5[13];
+			char pad[318];
 		};
 
 		struct PifColorMap
