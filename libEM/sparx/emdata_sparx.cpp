@@ -6233,53 +6233,61 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 		throw ImageDimensionException("helicise needs a 3-D image.");
 	if (is_complex())
 		throw ImageFormatException("helicise requires a real image");
+	if(int(section_use*nz+0.5)>=nz-2)
+		throw ImageFormatException("Reduce section used for helicise");
+
 	EMData* result = this->copy_head();
 	result->to_zero();
-	int nyc = ny/2;
-	int nxc = nx/2;
-	int vl = nz-1; //lengh of the volume in pixel
-	if ( section_use < dp/int(vl*pixel_size) )	
-		section_use = (dp)/int(vl*pixel_size);
-		
-	float nb = vl*(1.0f - section_use)/2.0f;
 
-	float ne =  nb+vl*section_use;
-	int numst = int( (ne-nb)*pixel_size/dp );
-	
-	
+
+	int nxc = nx/2;
+	int nyc = ny/2;
+	int nzc = nz/2;
+	//  calculations are done in Angstroms
+	float volen = nz*pixel_size;
+	float nzcp  = nzc*pixel_size;
+	float sectl = nz*pixel_size*section_use;
+	float nb = nzcp - sectl/2.0f;
+	float ne = nzcp + sectl/2.0f;
+	int numst = int( nz*pixel_size/dp );
+	int numri = int(sectl/dp);
+
 	float r2, ir;
 	if(radius < 0.0f) r2 = (float)((nxc-1)*(nxc-1));
 	else r2 = radius*radius;
 	if(minrad < 0.0f) ir = 0.0f;
 	else ir = minrad*minrad;
+
 	for (int k = 0; k<nz; k++) {
-		int nst1 = int ( (nb-k)*pixel_size/dp) -1;
-		int nst2 = int ( (ne-k)*pixel_size/dp) +1;
-		for (int j = 0; j<ny; j++) {
-			int jy = j - nyc;
-			int jj = jy*jy;
-			for (int i = 0; i<nx; i++) {
-				int ix = i - nxc;
-				float d2 = (float)(ix*ix + jj);
-				if(d2 <= r2 && d2>=ir) {
-					int nq = 0;
-					for ( int ist = nst1; ist < nst2; ist++) {
-						float zold = nz - 1 - (k*pixel_size + ist*dp)/pixel_size;
+		int nq = 0;
+		for (int ist = 0; ist<numst; ist++) {
+			float z = k*pixel_size + ist*dp;
+			float phi = ist*dphi;
+			if( z >= volen ) {
+				z = k*pixel_size + (ist-numst)*dp;
+				phi = (ist-numst)*dphi;
+			} 
+			float ca = cos(phi*(float)DGR_TO_RAD);
+			float sa = sin(phi*(float)DGR_TO_RAD);
+			if(z >= nb and z <= ne ) {
+				nq++;
+				if( nq > numri ) break;
+				float zz = z/pixel_size;
+				for (int j=0; j<ny; j++) {
+					int jy = j - nyc;
+					int jj = jy*jy;
+					for (int i=0; i<nx; i++) {
+						int ix = i - nxc;
+						float d2 = float((ix*ix + jj));
+						if(d2 <= r2 && d2>=ir) {
+							float xx =  ix*ca + jy*sa + nxc;
+							float yy = -ix*sa + jy*ca + nyc;
 
-						if(zold >= nb && zold <= ne) {
-							// now x-y position
-							float cphi = ist*dphi*(float)DGR_TO_RAD;
-							float ca = cos(cphi);
-							float sa = sin(cphi);
-							float xold = ix*ca - jy*sa + nxc;
-							float yold = ix*sa + jy*ca + nyc;
-							nq++;
 
-	int IOZ = int(zold);
 	//  Do tri-linear interpolation
-	int IOX = int(xold);
-	int IOY = int(yold);
-	//int IOZ = int(zold);
+	int IOX = int(xx);
+	int IOY = int(yy);
+	int IOZ = int(zz);
 
 	#ifdef _WIN32
 	int IOXp1 = _cpp_min( nx-1 ,IOX+1);
@@ -6299,9 +6307,9 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 	int IOZp1 = std::min( nz-1 ,IOZ+1);
 	#endif  //_WIN32
 
-	float dx = xold-IOX;
-	float dy = yold-IOY;
-	float dz = zold-IOZ;
+	float dx = xx-IOX;
+	float dy = yy-IOY;
+	float dz = zz-IOZ;
 
 	float a1 = (*this)(IOX,IOY,IOZ);
 	float a2 = (*this)(IOXp1,IOY,IOZ) - (*this)(IOX,IOY,IOZ);
@@ -6317,14 +6325,12 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 
 
 							(*result)(i,j,k) += a1 + dz*(a4 + a6*dx + (a7 + a8*dx)*dy) + a3*dy + dx*(a2 + a5*dy);
-							if(nq == numst) break;
 						}
 					}
-					if(nq != numst)
-						throw InvalidValueException(nq, "Helicise: incorrect number of repeats encoutered.");
 				}
 			}
 		}
+		if(nq < numri) throw InvalidValueException(nq, "Helicise: incorrect number of repeats encoutered.");
 	}
 	for (int k = 0; k<nz; k++) for (int j = 0; j<ny; j++) for (int i = 0; i<nx; i++) (*result)(i,j,k) /= numst ;
 
@@ -6389,7 +6395,7 @@ EMData* EMData::helicise_grid(float pixel_size, float dp, float dphi, Util::Kais
 	// rotation matrix (the transpose is used in the loop to get (xold,yold,zold)):
 	 
 	//float a13 = -0.0f;	float a23 =  0.0f;
-	//float a31 =  0.0f;          float a32 =  0.0f;          float a33 =  1.0f;
+	//float a31 =  0.0f;    float a32 =  0.0f;        float a33 =  1.0f;
 		
 	//end gridding
 
