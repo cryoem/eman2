@@ -202,7 +202,7 @@ def doit(corg,options):
 		mults = []
 		for i in xrange(12,257):
 			mults.append(i)
-		steps=[10,8,6,4,2]
+		steps=[10]
 	
 	computer = options.ID
 	
