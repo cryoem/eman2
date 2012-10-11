@@ -196,9 +196,9 @@ void set_col(const EMData * data, int col_index);
 /** Get the pixel density value at coordinates (x,y,z).
  * The validity of x, y, and z is not checked.
  *
- * @param x The x cooridinate.
- * @param y The y cooridinate.
- * @param z The z cooridinate.
+ * @param x The x coordinate.
+ * @param y The y coordinate.
+ * @param z The z coordinate.
  * @return The pixel density value at coordinates (x,y,z).
  */
 inline float get_value_at(int x, int y, int z) const
@@ -217,8 +217,8 @@ inline float get_value_at_index(int i)
 /** Get the pixel density value at coordinates (x,y). 2D only.
  * The validity of x, y is not checked.
  *
- * @param x The x cooridinate.
- * @param y The y cooridinate.
+ * @param x The x coordinate.
+ * @param y The y coordinate.
  * @return The pixel density value at coordinates (x,y).
  */
 inline float get_value_at(int x, int y) const
@@ -369,9 +369,9 @@ size_t add_complex_at(int x,int y,int z,const int &subx0,const int &suby0,const 
  * Should only be called on 3D images - no errors are thrown
  * Wraps pixel values if they are negative - i.e. is circulant
  * For example, if x = -1, then the pixel at nx-1  is returned
- * @param x The x cooridinate.
- * @param y The y cooridinate.
- * @param z The z cooridinate.
+ * @param x The x coordinate.
+ * @param y The y coordinate.
+ * @param z The z coordinate.
  * @return The pixel density value at circulant coordinates (x,y,z).
  */
 float get_value_at_wrap(int x, int y, int z) const;
@@ -381,8 +381,8 @@ float& get_value_at_wrap(int x, int y, int z);
  * Should only be called on 2D images - no errors are thrown
  * Wraps pixel values if they are negative - i.e. is circulant
  * For example, if x = -1, then the pixel at nx-1  is returned
- * @param x The x cooridinate.
- * @param y The y cooridinate.
+ * @param x The x coordinate.
+ * @param y The y coordinate.
  * @return The pixel density value at circulant coordinates (x,y).
  */
 float get_value_at_wrap(int x, int y) const;
@@ -392,7 +392,7 @@ float& get_value_at_wrap(int x, int y);
  * Should only be called on 1D images - no errors are thrown
  * Wraps pixel values if they are negative - i.e. is circulant
  * For example, if x = -1, then the pixel at nx-1  is returned
- * @param x The x cooridinate.
+ * @param x The x coordinate.
  * @return The pixel density value at circulant coordinates (x).
  */
 float get_value_at_wrap(int x) const;
@@ -402,9 +402,9 @@ float& get_value_at_wrap(int x);
  * coordinates (x,y,z). The validity of x, y, and z is checked.
  * If the coordinates are out of range, return 0;
  *
- * @param x The x cooridinate.
- * @param y The y cooridinate.
- * @param z The z cooridinate.
+ * @param x The x coordinate.
+ * @param y The y coordinate.
+ * @param z The z coordinate.
  * @return The pixel density value at coordinates (x,y,z).
  */
 float sget_value_at(int x, int y, int z) const;
@@ -414,8 +414,8 @@ float sget_value_at(int x, int y, int z) const;
  * coordinates (x,y). 2D only. The validity of x, y is checked.
  * If the coordinates are out of range, return 0;
  *
- * @param x The x cooridinate.
- * @param y The y cooridinate.
+ * @param x The x coordinate.
+ * @param y The y coordinate.
  * @return The pixel density value at coordinates (x,y).
  */
 float sget_value_at(int x, int y) const;
@@ -435,8 +435,8 @@ float sget_value_at(size_t i) const;
 /** Get pixel density value at interpolation of (x,y).
  * The validity of x, y is checked.2D image only.
  *
- * @param x The x cooridinate.
- * @param y The y cooridinate.
+ * @param x The x coordinate.
+ * @param y The y coordinate.
  * @return The pixel density value at coordinates (x,y).
  */
 float sget_value_at_interp(float x, float y) const;
@@ -445,9 +445,9 @@ float sget_value_at_interp(float x, float y) const;
 /** Get the pixel density value at interpolation of (x,y,z).
  * The validity of x, y, and z is checked.
  *
- * @param x The x cooridinate.
- * @param y The y cooridinate.
- * @param z The z cooridinate.
+ * @param x The x coordinate.
+ * @param y The y coordinate.
+ * @param z The z coordinate.
  * @return The pixel density value at coordinates (x,y,z).
  */
 float sget_value_at_interp(float x, float y, float z) const;
@@ -456,9 +456,9 @@ float sget_value_at_interp(float x, float y, float z) const;
 /** Set the pixel density value at coordinates (x,y,z).
  * This implementation does bounds checking.
  *
- * @param x The x cooridinate.
- * @param y The y cooridinate.
- * @param z The z cooridinate.
+ * @param x The x coordinate.
+ * @param y The y coordinate.
+ * @param z The z coordinate.
  * @param v The pixel density value at coordinates (x,y,z).
  * @exception OutofRangeException wehn index out of image data's range.
  */
@@ -489,9 +489,9 @@ inline void set_value_at(int x, int y, int z, float v)
  * The validity of x, y, and z is not checked.
  * This implementation has no bounds checking.
  *
- * @param x The x cooridinate.
- * @param y The y cooridinate.
- * @param z The z cooridinate.
+ * @param x The x coordinate.
+ * @param y The y coordinate.
+ * @param z The z coordinate.
  * @param v The pixel density value at coordinates (x,y,z).
  */
 inline void set_value_at_fast(int x, int y, int z, float v)
@@ -515,8 +515,8 @@ inline void set_value_at_index(int i, float v)
 /** Set the pixel density value at coordinates (x,y).
  * 2D image only.
  *
- * @param x The x cooridinate.
- * @param y The y cooridinate.
+ * @param x The x coordinate.
+ * @param y The y coordinate.
  * @param v The pixel density value at coordinates (x,y).
  * @exception OutofRangeException wehn index out of image data's range.
  */
@@ -542,8 +542,8 @@ inline void set_value_at(int x, int y, float v)
 /** Set the pixel density value at coordinates (x,y).
  * 2D image only. The validity of x, y, is not checked.
  *
- * @param x The x cooridinate.
- * @param y The y cooridinate.
+ * @param x The x coordinate.
+ * @param y The y coordinate.
  * @param v The pixel density value at coordinates (x,y).
  */
 inline void set_value_at_fast(int x, int y, float v)
@@ -557,7 +557,7 @@ inline void set_value_at_fast(int x, int y, float v)
 /** Set the pixel density value at coordinate (x).
  * 1D image only.
  *
- * @param x The x cooridinate.
+ * @param x The x coordinate.
  * @param v The pixel density value at coordinate (x).
  * @exception OutofRangeException wehn index out of image data's range.
  */
@@ -578,7 +578,7 @@ inline void set_value_at(int x, float v)
 /** Set the pixel density value at coordinate (x).
  * 1D image only.
  *
- * @param x The x cooridinate.
+ * @param x The x coordinate.
  * @param v The pixel density value at coordinate (x).
  */
 inline void set_value_at_fast(int x, float v)
