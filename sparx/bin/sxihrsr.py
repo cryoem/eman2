@@ -83,6 +83,8 @@ def main():
 	parser.add_option("--WRAP",     type="int",    default= 1,                  help="do helical wrapping")
 	parser.add_option("--y_restrict",    type="float",  default= -1,                 help="range for translational search in y-direction, search is +/-y_restrict/2 in Angstroms. This only applies to local search, i.e., when an is not -1. If y_restrict=-1, the default value, then there is no y search range restriction")
 	parser.add_option("--consnbr",      type="string", default="",               help="Files containing neighborhoods to which angular and y-shift searches should be restricted to so helical consistency is maintained.")
+	parser.add_option("--searchxshift",     action="store_true", default= False,               help="x-shift determination")
+	parser.add_option("--center",   type="float",  default= -1,                 help="-1: average shift method; 0: no centering; 1: center of gravity (default=-1)")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
     		print "usage: " + usage
@@ -110,11 +112,17 @@ def main():
 			#global_def.BATCH = False
 		
 		#else:
-		from applications import ihrsr
-		global_def.BATCH = True
-			#print (options.ynumber,options.txs)
-		ihrsr(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.ynumber, options.txs, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, options.rmin, options.rmax, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.fourvar, options.debug, options.MPI, options.chunk, options.WRAP,options.y_restrict,options.consnbr) 
-		global_def.BATCH = False
+		
+		if options.searchxshift:
+			from development import volalixshift_MPI
+			global_def.BATCH = True
+			volalixshift_MPI(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.center, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.fourvar, options.npad, options.debug)
+			global_def.BATCH = False
+		else:
+			from applications import ihrsr
+			global_def.BATCH = True
+			ihrsr(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.ynumber, options.txs, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, options.rmin, options.rmax, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.fourvar, options.debug, options.MPI, options.chunk, options.WRAP,options.y_restrict,options.consnbr) 
+			global_def.BATCH = False
 		
 		if options.MPI:
 			from mpi import mpi_finalize
