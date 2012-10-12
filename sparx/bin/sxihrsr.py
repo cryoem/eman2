@@ -42,7 +42,7 @@ def main():
         for arg in sys.argv:
         	arglist.append( arg )
 	progname = os.path.basename(arglist[0])
-	usage = progname + " stack ref_vol outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --ynumber=y_numbers  --txs=translational_search_stepx  --delta=angular_step --an=angular_neighborhood --center=1 --maxit=max_iter --CTF --snr=1.0  --ref_a=S --sym=c1 --datasym=symdoc --new"
+	usage = progname + " stack ref_vol outdir <search_rng> <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --ynumber=y_numbers  --txs=translational_search_stepx  --delta=angular_step --an=angular_neighborhood --center=1 --maxit=max_iter --CTF --snr=1.0  --ref_a=S --sym=c1 --datasym=symdoc --new"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",       type="int",    default= 1,                  help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou",       type="int",    default= -1,                 help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
@@ -86,14 +86,26 @@ def main():
 	parser.add_option("--searchxshift",     action="store_true", default= False,               help="x-shift determination")
 	parser.add_option("--center",   type="float",  default= -1,                 help="-1: average shift method; 0: no centering; 1: center of gravity (default=-1)")
 	(options, args) = parser.parse_args(arglist[1:])
-	if len(args) < 3 or len(args) > 4:
+	if len(args) < 3 or len(args) > 5:
     		print "usage: " + usage
     		print "Please run '" + progname + " -h' for detailed options"
 	else:
 		if len(args) == 3 :
 			mask = None
+			if options.searchxshift:
+				print "Must specify search range if option searchxshift is set to True"
+				sys.exit()
 		else:
-			mask = args[3]
+			if len(args) == 4:
+				if options.searchxshift:
+					search_rng = int(args[3])
+					mask = None
+				else:
+					mask = args[3]
+			else:
+				search_rng = int(args[3])
+				mask = args[4]
+				
 		if options.MPI:
 			from mpi import mpi_init
 			sys.argv = mpi_init(len(sys.argv), sys.argv)
@@ -116,7 +128,7 @@ def main():
 		if options.searchxshift:
 			from development import volalixshift_MPI
 			global_def.BATCH = True
-			volalixshift_MPI(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.center, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.fourvar, options.npad, options.debug)
+			volalixshift_MPI(args[0], args[1], args[2], search_rng, mask, options.ir, options.ou, options.rs, options.center, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.fourvar, options.npad, options.debug)
 			global_def.BATCH = False
 		else:
 			from applications import ihrsr
