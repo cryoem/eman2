@@ -3798,17 +3798,9 @@ def ali3dpsi_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 				start_time = time()
 				print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f, delta psi = %5.2f, start psi = %5.2f\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],yrng[N_step],step[N_step],deltapsi[N_step],startpsi[N_step]))
 
-			if CTF:
-				previous_defocus = -1.0
-			else:
-				volft,kb = prep_vol(vol)
+			volft,kb = prep_vol(vol)
 
 			for im in xrange(nima):
-				if(CTF):
-					ctf_params = data[im].get_attr("ctf")
-					if(ctf_params.defocus != previous_defocus):
-						previous_defocus = ctf_params.defocus
-						volft,kb = prep_vol(filt_ctf(vol, ctf_params))
 				phi,tht,psi,s2x,s2y = get_params_proj(data[im])
 				refim = prgs( volft,kb,[phi,tht,0.0,0.0,0.0] )
 				from alignment import align2d
@@ -3825,7 +3817,7 @@ def ali3dpsi_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 				print_msg("Time of alignment = %d\n"%(time()-start_time))
 				start_time = time()
 
-			if CTF: vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution%04d"%(total_iter)), myid, main_node, npad = npad)
+			if CTF:  vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution%04d"%(total_iter)), myid, main_node, npad = npad)
 			else:    vol, fscc = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution%04d"%(total_iter)), myid, main_node, npad = npad)
 
 			if myid == main_node:
