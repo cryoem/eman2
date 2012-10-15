@@ -3835,3 +3835,18 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 	#tt2 = time()
 	#print tt2-tt1
 	return proj_list, mirror_list
+
+
+def findall(value, L, start=0):
+	# retrun a list of all indexes of a value on the list L beginning from position start
+	positions = []
+	lL = len(L) - 1
+	i = start - 1
+	while( i < lL  ):
+		i += 1
+		try:
+			i = L.index(value, i)
+			positions.append(i)
+		except:
+			pass
+	return positions
