@@ -80,6 +80,7 @@ def main():
 	ptcls=db_list_dicts("bdb:particles")
 	groups=None
 	for f in args:
+		if "_ctf" in f : f=f.split("_ctf")[0]						# if the user provided ctf modified names, we clean up the mess for them
 		group=set([i.replace(f,"") for i in ptcls if f in i])		# files matching current name with i removed
 		
 		# groups includes only those filetypes common to ALL specified files
@@ -97,6 +98,7 @@ def main():
 			for t in groups:
 				cmd="e2bdb.py "
 				for f in args[n:n+10]:
+					if "_ctf" in f : f=f.split("_ctf")[0]						# if the user provided ctf modified names, we clean up the mess for them
 					if options.excludebad: cmd+="bdb:particles#%s%s?exclude.%s "%(f,t,f)
 					else : cmd+="bdb:particles#%s%s "%(f,t)
 				

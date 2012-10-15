@@ -1372,7 +1372,7 @@ of these occasional errors"""
 				if i not in ('nx', 'ny', 'nz'):
 					ret.set_attr(i,r[i])
 
-			ret["source_path"]=pkey[:-1]
+			ret["source_path"]="bdb:"+pkey[:-1].replace("/EMAN2DB/","#")
 			ret["source_n"]=key
 			return ret
 		return r
@@ -1458,7 +1458,7 @@ of these occasional errors"""
 			for i in k:
 				if i not in ('nx', 'ny', 'nz'):
 					ret.set_attr(i,r[i])
-			ret["source_path"]=pkey[:-1]
+			ret["source_path"]="bdb:"+pkey[:-1].replace("/EMAN2DB/","#")
 			ret["source_n"]=key
 				
 			# binary data

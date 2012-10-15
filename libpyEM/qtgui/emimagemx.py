@@ -1397,6 +1397,22 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 	
 		if event.key() == Qt.Key_F1:
 			self.display_web_help("http://blake.bcm.edu/emanwiki/EMAN2/Programs/emimagemx")
+		elif event.key()==Qt.Key_I :
+			if self.data==None or len(self.data)==0: return
+			
+			for j,i in enumerate(self.data):
+				i.mult(-1)
+				try: 
+					i.write_image(i["source_path"],i["source_n"])
+#					print j,i["source_path"],i["source_n"]
+				except:
+					QtGui.QMessageBox.warning(None,"Error","Failed to save inverted image at: %s %d"%(i["source_path"],i["source_n"]))
+					return
+
+				
+			QtGui.QMessageBox.warning(None,"Images Saved","Images have been inverted on-disk")
+			return
+
 		elif event.key()==Qt.Key_Up :
 			self.scroll_bar.up_button_pressed(False)
 		elif event.key()==Qt.Key_Down:
@@ -3380,7 +3396,7 @@ class EMDataListCache(EMMXDataCache):
 	
 	def next(self):
 		''' Iteration support '''
-		if self.current_iter > self.max_idx:
+		if self.current_iter >= self.max_idx:
 			raise StopIteration
 		else:
 			self.current_iter += 1
