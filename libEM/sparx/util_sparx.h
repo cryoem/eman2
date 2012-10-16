@@ -1066,7 +1066,7 @@ public:
 	 *  It allows to omit problem with passing Transform object through C++/Python layer (It causes memory leak). */
 	static Dict get_params2D(EMData* image, string xform = "xform.align2d");
 
-// ===================================== test ORMQ
-	static std::vector<float> ormq(EMData * image, EMData * crefim, int xrng, int yrng, float step, std::string cmode, std::vector<int> numr, int cnx, int cny, float delta = 0.0, int threads = 1);
+// ===================================== test ORMQ (OpenMP)
+//	static std::vector<float> ormq(EMData * image, EMData * crefim, int xrng, int yrng, float step, std::string cmode, std::vector<int> numr, int cnx, int cny, float delta = 0.0, int threads = 1);
 
 #endif	//util__sparx_h__
