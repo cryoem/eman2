@@ -2760,8 +2760,6 @@ def get_params2D(ima, xform = "xform.align2d"):
 	  retrieve 2D alignment parameters from the header
 	  alpha tx ty mirror scale
 	"""
-	#t = ima.get_attr(xform)
-	#d = t.get_params("2D")
 	d = Util.get_params2D(ima, xform)
 	return d["alpha"],d["tx"],d["ty"],d["mirror"],d["scale"]
 
@@ -2875,30 +2873,29 @@ def delete_bdb(name):
 #    function; this will have the form --function=/path/module/function
 
 def parse_user_function(opt_string):
+	# check if option string is a string and return None if not. this
+	# will cause the user function to be set to default value
+	# "ref_ali3d" in the ali functions....
+	if not(type(opt_string) is str):
+		return None
 
-    # check if option string is a string and return None if not. this
-    #    will cause the user function to be set to default value
-    #    "ref_ali3d" in the ali functions....
-    if not(type(opt_string) is str):
-        return None
-
-    # check opt_string for format:
-    if (opt_string.startswith("[") and opt_string.endswith("]")):
-        # options string is [path,file,function]
-        opt_list = opt_string[1:-1].split(",")
-        if (2 == len(opt_list)):
-            # options are [file,function]
-            return [opt_list[0],opt_list[1]]
-        elif (3 == len(opt_list)):
-            # options are [path,file,function]. note the order!
-            return [opt_list[1],opt_list[2],opt_list[0]]
-        else:
-            # neither. assume this is an error and return default
-            return None
-    else:
-        # no list format used, so we assume this is a function name
-        #    defined (and referenced) in user_functions.
-        return opt_string
+	# check opt_string for format:
+	if (opt_string.startswith("[") and opt_string.endswith("]")):
+		# options string is [path,file,function]
+		opt_list = opt_string[1:-1].split(",")
+		if (2 == len(opt_list)):
+			# options are [file,function]
+			return [opt_list[0],opt_list[1]]
+		elif (3 == len(opt_list)):
+			# options are [path,file,function]. note the order!
+			return [opt_list[1],opt_list[2],opt_list[0]]
+		else:
+			# neither. assume this is an error and return default
+			return None
+	else:
+		# no list format used, so we assume this is a function name
+		# defined (and referenced) in user_functions.
+		return opt_string
 
 
 def getvec( phi, tht ):
