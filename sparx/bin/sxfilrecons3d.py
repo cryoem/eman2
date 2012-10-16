@@ -40,7 +40,7 @@ def main():
 	for arg in sys.argv:
 		arglist.append( arg )
 	progname = os.path.basename(arglist[0])
-	usage = progname + " stack filament_list ref_vol outdir --dp=rise --dphi=rotation --apix=pixel_size --phistep=phi_step --zstep=z_step --fract=helicising_fraction --rmax=maximum_radius --rmin=min_radius --CTF --sym=c1 --function=user_function --maxit=max_iter --MPI"
+	usage = progname + " stack ref_vol outdir --dp=rise --dphi=rotation --apix=pixel_size --phistep=phi_step --zstep=z_step --fract=helicising_fraction --rmax=maximum_radius --rmin=min_radius --CTF --sym=c1 --function=user_function --maxit=max_iter --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--dp",       type="float",        default= 1.0,                help="delta z - translation in Angstroms")   
 	parser.add_option("--dphi",     type="float",        default= 1.0,                help="delta phi - rotation in degrees")  
@@ -55,7 +55,7 @@ def main():
 	parser.add_option("--maxit",    type="int",          default=5,                   help="maximum number of iterations performed")
 	parser.add_option("--MPI",      action="store_true", default=False,               help="use MPI version")
 	(options, args) = parser.parse_args(arglist[1:])
-	if len(args) < 4 or len(args) > 4:
+	if len(args) != 3:
 		print "usage: " + usage
 		print "Please run '" + progname + " -h' for detailed options"
 	else:
@@ -72,7 +72,7 @@ def main():
 
 		from development import filrecons3D_MPI
 		global_def.BATCH = True
-		filrecons3D_MPI(args[0], args[1], args[2], args[3], options.dp, options.dphi, options.apix, options.function, options.zstep, options.fract, options.rmax, options.rmin,
+		filrecons3D_MPI(args[0], args[1], args[2], options.dp, options.dphi, options.apix, options.function, options.zstep, options.fract, options.rmax, options.rmin,
 		                options.CTF, options.maxit, options.sym)
 		
 		global_def.BATCH = False
