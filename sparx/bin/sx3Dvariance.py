@@ -52,7 +52,7 @@ def main():
 		return  alpha, sx, sy, m
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " prj_stack  --ave2D= --var2D=  --var3D= --sym=symmetry --MPI --CTF"
+	usage = progname + " prj_stack  --ave2D= --var2D=  --ave3D= --var3D= --freq= --fall_off= --npad= --sym=symmetry --MPI --CTF"
 	parser = OptionParser(usage, version=SPARXVERSION)
 
 	parser.add_option("--radiuspca", 	type="int"         ,	default=-1   ,				help="radius for PCA" )
