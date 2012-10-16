@@ -3467,7 +3467,7 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	recvcount = []
 	for im in xrange(number_of_proc):
 		if im == main_node :  disps.append(0)
-		else:                  disps.append(disps[im-1] + recvcount[im-1])
+		else:                 disps.append(disps[im-1] + recvcount[im-1])
 		ib, ie = MPI_start_end(total_nima, number_of_proc, im)
 		recvcount.append(ie-ib)
 

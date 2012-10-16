@@ -42,18 +42,18 @@ def main():
 	progname = os.path.basename(arglist[0])
 	usage = progname + " stack filament_list ref_vol outdir --dp=rise --dphi=rotation --apix=pixel_size --phistep=phi_step --zstep=z_step --fract=helicising_fraction --rmax=maximum_radius --rmin=min_radius --CTF --sym=c1 --function=user_function --maxit=max_iter --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--dp",       type="float",  default= 1.0,                help="delta z - translation in Angstroms")   
-	parser.add_option("--dphi",     type="float",  default= 1.0,                help="delta phi - rotation in degrees")  
-	parser.add_option("--apix",  type="float",  default= 1.84,               help="pixel size in Angstroms")
-	parser.add_option("--rmin",     type="int",  default= 0,                help="minimal radial extent of structure")   
-	parser.add_option("--rmax",     type="int",  default= 70,               help="maximal radial extent of structure")
-	parser.add_option("--fract",    type="float",  default= 0.66,                help="fraction of the volume used for helical search")
-	parser.add_option("--sym",      type="string", default="c1",               help="symmetry of the structure")
-	parser.add_option("--function", type="string", default="helical",  	    help="name of the reference preparation function")
-	parser.add_option("--zstep",       type="int",  default= 1,                help="Step size for translational search along z")   
-	parser.add_option("--CTF",      action="store_true", default=False,         help="CTF correction")
-	parser.add_option("--maxit",    type="int",  default=5,                 help="maximum number of iterations performed")
-	parser.add_option("--MPI",      action="store_true", default=False,         help="use MPI version")
+	parser.add_option("--dp",       type="float",        default= 1.0,                help="delta z - translation in Angstroms")   
+	parser.add_option("--dphi",     type="float",        default= 1.0,                help="delta phi - rotation in degrees")  
+	parser.add_option("--apix",     type="float",        default= 1.84,               help="pixel size in Angstroms")
+	parser.add_option("--rmin",     type="int",          default= 0,                  help="minimal radial extent of structure")   
+	parser.add_option("--rmax",     type="int",          default= 70,                 help="maximal radial extent of structure")
+	parser.add_option("--fract",    type="float",        default= 0.66,               help="fraction of the volume used for helical search")
+	parser.add_option("--sym",      type="string",       default="c1",                help="symmetry of the structure")
+	parser.add_option("--function", type="string",       default="helical",  	      help="name of the reference preparation function")
+	parser.add_option("--zstep",    type="int",          default= 1,                  help="Step size for translational search along z")   
+	parser.add_option("--CTF",      action="store_true", default=False,               help="CTF correction")
+	parser.add_option("--maxit",    type="int",          default=5,                   help="maximum number of iterations performed")
+	parser.add_option("--MPI",      action="store_true", default=False,               help="use MPI version")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 4 or len(args) > 4:
 		print "usage: " + usage
@@ -63,7 +63,7 @@ def main():
 			from mpi import mpi_init, mpi_finalize
 			sys.argv = mpi_init(len(sys.argv), sys.argv)
 		else:
-			print "There is no non-MPI version of sxfilrecons3d.py. See SPARX wiki page for downloading MyMPI details."
+			print "There is only MPI version of sxfilrecons3d.py. See SPARX wiki page for downloading MyMPI details."
 			sys.exit()
 			
 		if global_def.CACHE_DISABLE:
@@ -72,8 +72,8 @@ def main():
 
 		from development import filrecons3D_MPI
 		global_def.BATCH = True
-		# optional arguments phistep and filt are never used in filrecons3d_MPI, so I just put dummy placeholders here (-1 and False respectively) until those arguments are removed from filrecons3d_MPI in development.py
-		filrecons3D_MPI(args[0], args[1], args[2], args[3], options.dp, options.dphi, options.apix,options.function,-1,options.zstep,options.fract,options.rmax, options.rmin,False, options.CTF, options.maxit, options.sym)
+		filrecons3D_MPI(args[0], args[1], args[2], args[3], options.dp, options.dphi, options.apix, options.function, options.zstep, options.fract, options.rmax, options.rmin,
+		                options.CTF, options.maxit, options.sym)
 		
 		global_def.BATCH = False
 
