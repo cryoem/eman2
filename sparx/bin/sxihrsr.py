@@ -42,7 +42,7 @@ def main():
         for arg in sys.argv:
         	arglist.append( arg )
 	progname = os.path.basename(arglist[0])
-	usage = progname + " stack ref_vol outdir <search_rng> <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --ynumber=y_numbers  --txs=translational_search_stepx  --delta=angular_step --an=angular_neighborhood --center=1 --maxit=max_iter --CTF --snr=1.0  --ref_a=S --sym=c1 --datasym=symdoc --new"
+	usage = progname + " stack ref_vol outdir  <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --ynumber=y_numbers  --txs=translational_search_stepx  --delta=angular_step --an=angular_neighborhood --center=1 --maxit=max_iter --CTF --snr=1.0  --ref_a=S --sym=c1 --datasym=symdoc --new"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",       type="int",    default= 1,                  help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou",       type="int",    default= -1,                 help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
@@ -83,52 +83,34 @@ def main():
 	parser.add_option("--WRAP",     type="int",    default= 1,                  help="do helical wrapping")
 	parser.add_option("--y_restrict",    type="float",  default= -1,                 help="range for translational search in y-direction, search is +/-y_restrict/2 in Angstroms. This only applies to local search, i.e., when an is not -1. If y_restrict=-1, the default value, then there is no y search range restriction")
 	parser.add_option("--consnbr",      type="string", default="",               help="Files containing neighborhoods to which angular and y-shift searches should be restricted to so helical consistency is maintained.")
-	parser.add_option("--searchxshift",     action="store_true", default= False,               help="x-shift determination")
-	parser.add_option("--center",   type="float",  default= -1,                 help="-1: average shift method; 0: no centering; 1: center of gravity (default=-1)")
+	parser.add_option("--searchxshift",  type="int",    default= -1,               help="x-shift determination")
+	parser.add_option("--center",     type="float",  default= -1,                 help="-1: average shift method; 0: no centering; 1: center of gravity (default=-1)")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 5:
     		print "usage: " + usage
     		print "Please run '" + progname + " -h' for detailed options"
 	else:
-		if len(args) == 3 :
-			mask = None
-			if options.searchxshift:
-				print "Must specify search range if option searchxshift is set to True"
-				sys.exit()
+		if len(args) == 3 : mask = None
+		elif len(args) == 4: mask = args[4]
 		else:
-			if len(args) == 4:
-				if options.searchxshift:
-					search_rng = int(args[3])
-					mask = None
-				else:
-					mask = args[3]
-			else:
-				search_rng = int(args[3])
-				mask = args[4]
+			print  "Incorrect number of parameters"
+			sys.exit()
 				
 		if options.MPI:
 			from mpi import mpi_init
 			sys.argv = mpi_init(len(sys.argv), sys.argv)
 		else:
-			print "The single processor version of IHRSR is no longer supported, please run the mpi version of IHRSR instead with the --MPI option. To install MPI (if it is not already installed), see http://sparx-em.org/sparxwiki/MPI-installation" 
+			print "The single processor version of IHRSR is not supported, please run the mpi version of IHRSR instead with the --MPI option. To install MPI (if it is not already installed), see http://sparx-em.org/sparxwiki/MPI-installation" 
 			sys.exit()
 			
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
-		#if (options.n):
-			#from development import ihrsr_n
-			#global_def.BATCH = True
-			
-			#ihrsr_n(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.ynumber, options.txs, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, options.rmin, options.rmax, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.fourvar, options.debug, options.MPI, options.chunk)
-			#global_def.BATCH = False
-		
-		#else:
 		
 		if options.searchxshift:
 			from development import volalixshift_MPI
 			global_def.BATCH = True
-			volalixshift_MPI(args[0], args[1], args[2], search_rng,options.dp, options.dphi, options.fract, options.rmax, options.rmin, mask,options.maxit, options.CTF, options.snr, options.sym,  options.function, options.fourvar, options.npad, options.debug)
+			volalixshift_MPI(args[0], args[1], args[2], options.search_rng, options.dp, options.dphi, options.fract, options.rmax, options.rmin, mask,options.maxit, options.CTF, options.snr, options.sym,  options.function, options.fourvar, options.npad, options.debug)
 			global_def.BATCH = False
 		else:
 			from applications import ihrsr
