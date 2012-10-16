@@ -58,6 +58,7 @@ using namespace EMAN;
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_sf_bessel.h>
 #include <cmath>
+#include <omp.h>
 using namespace std;
 using std::complex;
 
@@ -6209,7 +6210,9 @@ EMData* Util::compress_image_mask(EMData* image, EMData* mask)
 	/***********
 	***get the size of the image for validation purpose
 	**************/
-	int nx = image->get_xsize(),ny = image->get_ysize(),nz = image->get_zsize();  //Aren't  these  implied?  Please check and let me know, PAP.
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
 	/********
 	***Exception Handle
 	*************/
@@ -22053,4 +22056,71 @@ int Util::branch_factor_0(int* costlist, int* matchlist, int J, int T, int nPart
 	return B;
 	
 
+}
+
+
+Dict Util::get_params2D(EMData* image, string xform)
+{
+	const Transform * transform = image->get_attr(xform);
+	Dict transform_params = transform->get_params("2D");
+	delete transform;
+	return transform_params;
+}
+
+
+std::vector<float> Util::ormq(EMData * image, EMData * crefim, int xrng, int yrng, float step, std::string mode, std::vector<int> numr, int cnx, int cny, float delta, int threads)
+{
+	float ang, sx, sy, mirror;
+	float peak = -1.0E23;
+	const int ky = int(2*yrng/step+0.5) / 2;
+	const int kx = int(2*xrng/step+0.5) / 2;
+	const int iters = (2*kx+1) * (2*ky+1);
+	#pragma omp parallel shared(ang, sx, sy, mirror, peak) num_threads(threads)
+	{
+		const int thrId = omp_get_thread_num();
+		const int it_begin = iters / threads *  thrId    + ((thrId < iters%threads) ? (thrId) : (iters%threads));
+		const int it_end   = iters / threads * (thrId+1) + ((thrId < iters%threads) ? (thrId) : (iters%threads));
+		for (int it = it_begin; it < it_end; ++it) {
+			const int i = it / (2*kx+1) - ky;
+			const int j = it % (2*kx+1) - kx;
+			float iy = i*step;
+			float ix = j*step;
+			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+			Frngs(cimage, numr);
+			// The following code it used when mirror is considered
+			Dict retvals;
+			if (delta == 0.0) {
+				retvals = Crosrng_ms(crefim, cimage, numr);
+			} else {
+				retvals = Crosrng_ms_delta(crefim, cimage, numr, 0.0, delta);
+			}
+			const float qn = retvals["qn"];
+			const float qm = retvals["qm"];
+			#pragma omp critical (saveResult)
+			{
+				if (qn >= peak || qm >= peak) {
+					sx = -ix;
+					sy = -iy;
+					if (qn >= qm) {
+						ang = ang_n(retvals["tot"], mode, numr.back());
+						peak = qn;
+						mirror = 0;
+					} else {
+						ang = ang_n(retvals["tmt"], mode, numr.back());
+						peak = qm;
+						mirror = 1;
+					}
+				}
+			}
+		}
+	}
+	const float co =  cos(ang*pi/180.0);
+	const float so = -sin(ang*pi/180.0);
+	std::vector<float> results(5);
+	results[0] = ang;
+	results[1] = sx*co - sy*so;
+	results[2] = sx*so + sy*co;
+	results[3] = mirror;
+	results[4] = peak;
+	return results;
 }

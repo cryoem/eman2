@@ -39,7 +39,9 @@ import sys, ConfigParser
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack_file --ir=ir --ou=ou --rs=rs --xr=xr --yr=yr --ts=ts --maxit=maxit --CTF --snr=snr --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --main_maxit=main_iter --iter_reali=iter_reali --match_first=match_first --max_round=max_round --match_second=match_second --stab_ali=stab_ali --thld_err=thld_err --indep_run=indep_run --thld_grp=thld_grp --img_per_grp=img_per_grp --generation=generation --MPI"
+	usage = ( progname + " stack_file --ir=ir --ou=ou --rs=rs --xr=xr --yr=yr --ts=ts --maxit=maxit --CTF --snr=snr --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --main_maxit=main_iter" +
+			" --iter_reali=iter_reali --match_first=match_first --max_round=max_round --match_second=match_second --stab_ali=stab_ali --thld_err=thld_err --indep_run=indep_run --thld_grp=thld_grp" +
+			" --img_per_grp=img_per_grp --generation=generation --rand_seed=rand_seed --MPI" )
 
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",             type="int",          default=1,       help="inner ring of the resampling to polar coordinates ")
@@ -67,12 +69,13 @@ def main():
 	parser.add_option("--thld_grp",       type="int",          default=10,      help="the threshold of size of reproducible class (essentially minimum size of class)")
 	parser.add_option("--img_per_grp",    type="int",          default=100,     help="number of images per group in the ideal case (essentially maximum size of class)")
 	parser.add_option("--generation",     type="int",          default=1,       help="the n-th approach on the dataset ")
+	parser.add_option("--rand_seed",      type="int",          default=None,    help="random seed set before calculations, useful for testing purposes (default None - total randomness)")
 	parser.add_option("--MPI",            action="store_true", default=True,    help="use MPI version (default=True, currently False is not supported)")
 	(options, args) = parser.parse_args()
 
 	if len(args) != 1:
-    		print "usage: " + usage
-    		print "Please run '" + progname + " -h' for detailed options"
+		print "usage: " + usage
+		print "Please run '" + progname + " -h' for detailed options"
 		sys.exit()
 
 	if global_def.CACHE_DISABLE:
@@ -88,7 +91,7 @@ def main():
 	iter_isac(args[0], options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.maxit, options.CTF, options.snr, \
 		options.dst, options.FL, options.FH, options.FF, options.init_iter, options.main_iter, options.iter_reali, options.match_first, \
 		options.max_round, options.match_second, options.stab_ali, options.thld_err, options.indep_run, options.thld_grp, \
-		options.img_per_grp, options.generation)
+		options.img_per_grp, options.generation, random_seed=options.rand_seed)
 	global_def.BATCH = False
 
 	if options.MPI:

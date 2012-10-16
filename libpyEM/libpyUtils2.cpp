@@ -587,6 +587,8 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.def("Normalize_ring", &EMAN::Util::Normalize_ring, args("ring", "numr"), "")
 		.def("image_mutation", &EMAN::Util::image_mutation, args("img", "mutation_rate"), "")
 		.def("list_mutation", &EMAN::Util::list_mutation, args("list", "rate", "min_val", "max_val", "K", "is_mirror"), "")
+		.def("get_params2D", &EMAN::Util::get_params2D, args("image", "xform"), "")
+//		.def("ormq", &EMAN::Util::ormq, args("image", "crefim", "xrng", "yrng", "step", "cmode", "numr", "cnx", "cny", "delta", "threads"), "")
 		.staticmethod("point_is_in_triangle_2d")
 		.staticmethod("point_is_in_convex_polygon_2d")
 		.staticmethod("infomask")
@@ -757,6 +759,8 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.staticmethod("Normalize_ring")
 		.staticmethod("image_mutation")
 		.staticmethod("list_mutation")
+		.staticmethod("get_params2D")
+//		.staticmethod("ormq")
 	);
 
     scope* EMAN_Util_sincBlackman_scope = new scope(

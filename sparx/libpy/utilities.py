@@ -2760,8 +2760,9 @@ def get_params2D(ima, xform = "xform.align2d"):
 	  retrieve 2D alignment parameters from the header
 	  alpha tx ty mirror scale
 	"""
-	t = ima.get_attr(xform)
-	d = t.get_params("2D")
+	#t = ima.get_attr(xform)
+	#d = t.get_params("2D")
+	d = Util.get_params2D(ima, xform)
 	return d["alpha"],d["tx"],d["ty"],d["mirror"],d["scale"]
 
 def set_params2D(ima, p, xform = "xform.align2d"):
