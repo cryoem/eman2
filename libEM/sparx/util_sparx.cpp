@@ -58,7 +58,7 @@ using namespace EMAN;
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_sf_bessel.h>
 #include <cmath>
-#include <omp.h>
+//#include <omp.h>
 using namespace std;
 using std::complex;
 
@@ -22067,7 +22067,7 @@ Dict Util::get_params2D(EMData* image, string xform)
 	return transform_params;
 }
 
-
+/*
 std::vector<float> Util::ormq(EMData * image, EMData * crefim, int xrng, int yrng, float step, std::string mode, std::vector<int> numr, int cnx, int cny, float delta, int threads)
 {
 	float ang, sx, sy, mirror;
@@ -22124,3 +22124,4 @@ std::vector<float> Util::ormq(EMData * image, EMData * crefim, int xrng, int yrn
 	results[4] = peak;
 	return results;
 }
+*/
