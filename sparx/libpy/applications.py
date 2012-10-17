@@ -6709,25 +6709,19 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, \
 		txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max, \
 		rmin, rmax, fract, nise, npad, sym, user_func_name, datasym, \
 		fourvar, debug = False, MPI = False, chunk = -1.0, WRAP = 1, y_restrict=-1.0, consnbr=""):
-	if MPI:
-		if (chunk <= 0.0):
-			if WRAP == 1:
-				ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
+	
+	if WRAP == 1:
+		ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
 			txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max,
 			rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
 			fourvar, debug, y_restrict)
 			
-			else: ihrsr_MPI_no_wrap(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, \
+	else: ihrsr_MPI_no_wrap(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, \
 			txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max,\
 			rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
 			fourvar, debug)
-		else:
-			ihrsr_chunk_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, \
-			txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max, \
-			rmin, rmax, fract, nise, npad, sym, user_func_name, datasym, \
-			fourvar, debug, chunk)
-
-		return
+		
+	return
 
 def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
 	txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndphi, dphi_step, psi_max,
