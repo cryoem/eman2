@@ -6705,36 +6705,33 @@ def autowin_MPI(indir,outdir, noisedoc, noisemic, templatefile, deci, CC_method,
 		out.close()
 
 
-def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
-          txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max,
-	  rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
-	  fourvar, debug = False, MPI = False, chunk = -1.0, WRAP = 1, y_restrict=-1.0, consnbr=""):
+def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, \
+		txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max, \
+		rmin, rmax, fract, nise, npad, sym, user_func_name, datasym, \
+		fourvar, debug = False, MPI = False, chunk = -1.0, WRAP = 1, y_restrict=-1.0, consnbr=""):
 	if MPI:
 		if (chunk <= 0.0):
 			if WRAP == 1:
-			        if len(consnbr) > 0:
-			                ihrsr_MPI_cons(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
-			txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max,
-			rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
+				if len(consnbr) > 0: ihrsr_MPI_cons(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, \
+			txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max,\
+			rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,\
 			fourvar, debug, y_restrict, consnbr)
 			
-	                        else:
-				        ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
+				else: ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
 			txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max,
 			rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
 			fourvar, debug, y_restrict)
 			
-			else:
-				ihrsr_MPI_no_wrap(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
-			txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max,
+			else: ihrsr_MPI_no_wrap(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, \
+			txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max,\
 			rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
 			fourvar, debug)
 		else:
-			ihrsr_chunk_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
-			txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max,
-			rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
+			ihrsr_chunk_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, \
+			txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max, \
+			rmin, rmax, fract, nise, npad, sym, user_func_name, datasym, \
 			fourvar, debug, chunk)
-		
+
 		return
 	'''
 	from utilities      import model_circle, drop_image
@@ -6964,13 +6961,10 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 	
-	'''ndp    = 12
-	sndp   = 0.1
-	ndphi  = 12
-	sndphi = 0.1'''
+
 	nlprms = (2*ndp+1)*(2*ndphi+1)
 	if nlprms< number_of_proc:
-		ERROR('number of cpus is larger than the number of helical search, please reduce it or at this moment modify ndp,dphi in the program', "ihrsr_MPI", 1,myid)
+		ERROR('number of CPUs is larger than the number of helical search, please reduce it or at this moment modify ndp,dphi in the program', "ihrsr_MPI", 1,myid)
 	
 
 
@@ -6985,8 +6979,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	else:
 		finfo = None
 
-
-	#sym = "c1"
 	symref = "s"+sym
 
 	ref_a= "P"
@@ -6996,20 +6988,16 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	xrng        = get_input_from_string(xr)
 	ynumber	    = get_input_from_string(ynumber)
 	for i in xrange(len(ynumber)):
-		if(ynumber[i]%2==1):
-			ynumber[i]=ynumber[i]+1
+		if(ynumber[i]%2==1): ynumber[i]=ynumber[i]+1
 	yrng =[]
 
-	for i in xrange(len(xrng)):
-		yrng.append(dp/2)
+	for i in xrange(len(xrng)): yrng.append(dp/2)
 
 	stepx        = get_input_from_string(txs)
 	delta       = get_input_from_string(delta)
 	lstp = min(len(xrng), len(yrng), len(stepx), len(delta))
-	if an == "-1":
-		an = [-1] * lstp
-	else:
-		an = get_input_from_string(an)
+	if an == "-1": an = [-1] * lstp
+	else:          an = get_input_from_string(an)
 
 	first_ring  = int(ir)
 	rstep       = int(rs)
@@ -7035,7 +7023,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	
 	else:
 		ERROR('the x and y size have to be same, please change the reference volume and restart the program', "ihrsr_MPI", 1,myid)
-	
 
 	if last_ring < 0:	last_ring = int(nx/2) - 2
 
@@ -7065,7 +7052,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 		print_msg("Data with CTF                             : %s\n"%(CTF))
 		print_msg("Signal-to-Noise Ratio                     : %5.4f\n"%(snr))
 		print_msg("symmetry output doc file                  : %s\n"%(datasym))
-		print_msg("number of times initial symmetry is imposed: %i\n"%(nise))
+		print_msg("number of times to impose initial symmetry: %i\n"%(nise))
 		print_msg("npad                                      : %i\n"%(npad))
 		print_msg("User function                             : %s\n"%(user_func_name))
 
@@ -7122,7 +7109,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 				ctf_params = data[im].get_attr("ctf")
 				data[im] = filt_ctf(data[im], ctf_params)
 				data[im].set_attr('ctf_applied', 1)
-		#Util.mul_img(data[im], mask2D)  #?????
 	del mask2D
 
 	if debug:
@@ -7143,7 +7129,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 		print_msg("Pixel size in Angstroms                   : %5.4f\n\n"%(pixel_size))
 		print_msg("Y search range (pix) initialized as       : %s\n\n"%(yrng))
 
-
 	from time import time	
 
 	#  this is needed for gathering of pixel errors
@@ -7155,7 +7140,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 		ib, ie = MPI_start_end(total_nima, number_of_proc, im)
 		recvcount.append( ie - ib )
 
-	#jeanmod
 	total_iter = 0
 	# do the projection matching
 	if y_restrict < 0:
@@ -7197,7 +7181,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 			for i in xrange( len(refrings) ):
 				if( sn%2 ==0 and abs( refrings[i].get_attr('n3') ) <1.0e-6 and (symmetry_string[0] == "c" or symmetry_string[0] =="d" ) ):
 					refrings1.append( refrings[i])
-		
 				else:
 					refrings2.append( refrings[i])
 					'''if myid == main_node:
@@ -7259,7 +7242,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 				#peak, phihi, theta, psi, sxi, syi, t1 = proj_ali_helical(data[im],refrings,numr,xrng[N_step],yrng[N_step],stepx[N_step],ynumber[N_step],psi_max,finfo,)
 				if(peak > -1.0e22):
 					#Guozhi Tao: wrap y-shifts back into box within rise of one helical unit by changing phi
-					
 					tp = Transform({"type":"spider","phi":phihi,"theta":theta,"psi":psi})
 					tp.set_trans( Vec2f( -sxi, -syi ) )
 					dtp = tp.get_params("spider")
@@ -7286,10 +7268,10 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 						phihi = float(df["phi"])
 						sxi   = float(-df["tx"])
 						syi   = float(-df["ty"])
-		
+
 					# unique ranges of azimuthal angle for ortho-axial and non-ortho-axial projection directions are identified by [k0,k1) and [k2,k3), where k0, k1, k2, k3 are floats denoting azimuthal angles.
 					# Eulerian angles whose azimuthal angles are mapped into [k2, k3) are related to Eulerian angles whose azimuthal angles are mapped into [k0, k1) by an in-plane mirror operaton along the x-axis.
-					
+
 					tp = Transform({"type":"spider","phi":phihi,"theta":theta,"psi":psi})
 					tp.set_trans( Vec2f( -sxi, -syi ) )
 					k0 = 0.0
@@ -7536,7 +7518,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 			#search for helical symmetry
 			if myid == main_node:
 				drop_image(vol, os.path.join(outdir, "vol%04d.hdf"%(total_iter)))
-							
+
 			if(total_iter > nise):
 				bcast_EMData_to_all(vol, myid, main_node)
 				#from filter import filt_gaussl
@@ -7631,6 +7613,8 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 		start_time = time()
 	else:	       send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node: print_end_msg("ihrsr_MPI")
+
+
 def ihrsr_MPI_no_wrap(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
 	txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndphi, dphi_step, psi_max,
 	rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
@@ -7674,10 +7658,6 @@ def ihrsr_MPI_no_wrap(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
 	
-	'''ndp    = 12
-	sndp   = 0.1
-	ndphi  = 12
-	sndphi = 0.1'''
 	nlprms = (2*ndp+1)*(2*ndphi+1)
 	if nlprms< number_of_proc:
 		ERROR('number of cpus is larger than the number of helical search, please reduce it or at this moment modify ndp,dphi in the program', "ihrsr_MPI", 1,myid)
