@@ -6710,23 +6710,17 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, \
 		rmin, rmax, fract, nise, npad, sym, user_func_name, datasym, \
 		fourvar, pixel_size, debug = False, MPI = False, WRAP = 1, y_restrict=-1.0):
 	
-	if WRAP == 1:
-		ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
+	ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
 			txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max,
 			rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
-			fourvar, pixel_size, debug, y_restrict)
-			
-	else: ihrsr_MPI_no_wrap(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, \
-			txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max,\
-			rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
-			fourvar, debug)
+			fourvar, pixel_size, debug, y_restrict, WRAP)
 		
 	return
 
 def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
 	txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndphi, dphi_step, psi_max,
 	rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
-	fourvar, pixel_size, debug, y_restrict):
+	fourvar, pixel_size, debug, y_restrict, WRAP):
 
 	from alignment      import Numrinit, prepare_refrings, proj_ali_helical, proj_ali_helical_90, proj_ali_helical_local, proj_ali_helical_90_local, helios,helios7
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string, pad, model_blank
@@ -7043,33 +7037,34 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 						t1 = t12
 				#peak, phihi, theta, psi, sxi, syi, t1 = proj_ali_helical(data[im],refrings,numr,xrng[N_step],yrng[N_step],stepx[N_step],ynumber[N_step],psi_max,finfo,)
 				if(peak > -1.0e22):
-					#Guozhi Tao: wrap y-shifts back into box within rise of one helical unit by changing phi
-					tp = Transform({"type":"spider","phi":phihi,"theta":theta,"psi":psi})
-					tp.set_trans( Vec2f( -sxi, -syi ) )
-					dtp = tp.get_params("spider")
-					dtp_ty = float( dtp["ty"] )
-					del dtp
-					if( abs(dtp_ty) >dpp_half):
-						dtp_ty_temp = dtp_ty
-						if( abs(psi-90) < 90  ):
-							sign_psi = 1
-						else:
-							sign_psi = -1
-						if( dtp_ty > 0):
-							period_step = -1*sign_psi
-						else:
-							period_step = 1*sign_psi
-						nperiod = 0
-						while( abs( dtp_ty_temp ) > dpp_half ):
-							nperiod += period_step
-							th = Transform({"type":"spider","phi": -nperiod*dphi, "tz":nperiod*dpp})
-							tfinal = tp*th
-							df = tfinal.get_params("spider")
-							dtp_ty_temp = float( df["ty"] )
-							
-						phihi = float(df["phi"])
-						sxi   = float(-df["tx"])
-						syi   = float(-df["ty"])
+					if WRAP == 1:
+						#Guozhi Tao: wrap y-shifts back into box within rise of one helical unit by changing phi
+						tp = Transform({"type":"spider","phi":phihi,"theta":theta,"psi":psi})
+						tp.set_trans( Vec2f( -sxi, -syi ) )
+						dtp = tp.get_params("spider")
+						dtp_ty = float( dtp["ty"] )
+						del dtp
+						if( abs(dtp_ty) >dpp_half):
+							dtp_ty_temp = dtp_ty
+							if( abs(psi-90) < 90  ):
+								sign_psi = 1
+							else:
+								sign_psi = -1
+							if( dtp_ty > 0):
+								period_step = -1*sign_psi
+							else:
+								period_step = 1*sign_psi
+							nperiod = 0
+							while( abs( dtp_ty_temp ) > dpp_half ):
+								nperiod += period_step
+								th = Transform({"type":"spider","phi": -nperiod*dphi, "tz":nperiod*dpp})
+								tfinal = tp*th
+								df = tfinal.get_params("spider")
+								dtp_ty_temp = float( df["ty"] )
+								
+							phihi = float(df["phi"])
+							sxi   = float(-df["tx"])
+							syi   = float(-df["ty"])
 
 					# unique ranges of azimuthal angle for ortho-axial and non-ortho-axial projection directions are identified by [k0,k1) and [k2,k3), where k0, k1, k2, k3 are floats denoting azimuthal angles.
 					# Eulerian angles whose azimuthal angles are mapped into [k2, k3) are related to Eulerian angles whose azimuthal angles are mapped into [k0, k1) by an in-plane mirror operaton along the x-axis.
