@@ -214,10 +214,10 @@ for k in range(num_ptcl):
 		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".hdf --verbose="+str(options.verbosity)+" --step=" + str(i) + ",1 --last=" + str(k-1)
 		call(s, shell=True)
 		if (k-i-1) == 0:
-			s = "e2proc2d.py " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose="+str(options.verbosity)
+			s = "e2proc2d.py " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose="+str(options.verbosity) + " --process=normalize.edgemean"
                         call(s, shell=True)
 		else:
-			s = "e2proc2d.py " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose="+str(options.verbosity)+" --twod2threed" 
+			s = "e2proc2d.py " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose=" + str(options.verbosity) + " --process=normalize.edgemean --twod2threed" 
 			call(s, shell=True)
 		s1 = E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrc"
 		s2 = s1 + "s"
@@ -238,9 +238,9 @@ for k in range(num_ptcl):
 		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".hdf --verbose="+str(options.verbosity)+" --step=" + str(i) + ",1 --last=" + str(k)
 		call(s, shell=True)
 		if (k-i-1) == 0:
-			s = "e2proc2d.py " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose="+str(options.verbosity)
+			s = "e2proc2d.py " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose="+str(options.verbosity) + " --process=normalize.edgemean"
 		else:
-			s = "e2proc2d.py " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose="+str(options.verbosity) + " --twod2threed"
+			s = "e2proc2d.py " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose="+str(options.verbosity) + " --process=normalize.edgemean --twod2threed"
 		call(s, shell=True)
 		s1 = E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".mrc"
 		s2 = s1 + "s"
