@@ -6708,13 +6708,13 @@ def autowin_MPI(indir,outdir, noisedoc, noisemic, templatefile, deci, CC_method,
 def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, \
 		txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max, \
 		rmin, rmax, fract, nise, npad, sym, user_func_name, datasym, \
-		fourvar, debug = False, MPI = False, WRAP = 1, y_restrict=-1.0):
+		fourvar, pixel_size, debug = False, MPI = False, WRAP = 1, y_restrict=-1.0):
 	
 	if WRAP == 1:
 		ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
 			txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max,
 			rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
-			fourvar, debug, y_restrict)
+			fourvar, pixel_size, debug, y_restrict)
 			
 	else: ihrsr_MPI_no_wrap(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, \
 			txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max,\
@@ -6726,7 +6726,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, \
 def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
 	txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndphi, dphi_step, psi_max,
 	rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
-	fourvar, debug, y_restrict):
+	fourvar, pixel_size, debug, y_restrict):
 
 	from alignment      import Numrinit, prepare_refrings, proj_ali_helical, proj_ali_helical_90, proj_ali_helical_local, proj_ali_helical_90_local, helios,helios7
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string, pad, model_blank
@@ -6919,10 +6919,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	if debug:
 		finfo.write( '%d loaded  \n' % nima )
 		finfo.flush()
-	if CTF:
-		pixel_size = data[0].get_attr('ctf').apix
-	else:
-		pixel_size = data[0].get_attr('pixel_size')
+	
 	for i in xrange(len(xrng)):
 		yrng[i]=dp/(2*pixel_size)
 	from math import sin, pi
