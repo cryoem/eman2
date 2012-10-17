@@ -82,11 +82,10 @@ def main():
 	parser.add_option("--WRAP",               type="int",    default= 1,                  help="do helical wrapping")
 	parser.add_option("--y_restrict",         type="float",  default= -1,                 help="range for translational search in y-direction, search is +/-y_restrict/2 in Angstroms. This only applies to local search, i.e., when an is not -1. If y_restrict=-1, the default value, then there is no y search range restriction")
 	parser.add_option("--searchxshift",       type="int",    default= -1,                 help="x-shift determination")
-	parser.add_option("--center",             type="float",  default= -1,                 help="-1: average shift method; 0: no centering; 1: center of gravity (default=-1)")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 5:
-    		print "usage: " + usage
-    		print "Please run '" + progname + " -h' for detailed options"
+		print "usage: " + usage
+		print "Please run '" + progname + " -h' for detailed options"
 	else:
 		if len(args) == 3 : mask = None
 		elif len(args) == 4: mask = args[4]
@@ -113,7 +112,7 @@ def main():
 		else:
 			from applications import ihrsr
 			global_def.BATCH = True
-			ihrsr(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.ynumber, options.txs, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, options.rmin, options.rmax, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.fourvar, options.debug, options.MPI, options.WRAP,options.y_restrict) 
+			ihrsr(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.ynumber, options.txs, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, options.rmin, options.rmax, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.fourvar, options.apix, options.debug, options.MPI, options.WRAP,options.y_restrict) 
 			global_def.BATCH = False
 		
 		if options.MPI:
