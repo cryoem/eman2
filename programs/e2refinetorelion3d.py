@@ -69,7 +69,7 @@ parser.add_argument("--ppid", type=int, help="Set the PID of the parent process,
 parser.add_argument("--verbosity", type=int, help="Set the level of verbosity for the code",default=0, guitype='intbox',row=18, col=2, rowspan=1, colspan=1)
 parser.add_argument("--limit_tilt",type=int, help="Limited tilt angle: positive for keeping side views, negative for keeping top views", default = -91, guitype='intbox', row=19, col=0, rowspan=1, colspan=1)
 parser.add_argument("--print_symmetry", action="store_true",help="Print all symmetry transformation matrices, and exit", default=False, guitype='boolbox', row=19, col=1, rowspan=1, colspan=1)
-parser.add_argument("--autosample", action="store_true", help="Perform automated orientational sampling?", default=False, guitype='boolbox', row=20, col=0, rowspan=1, colspan=1)
+#parser.add_argument("--autosample", action="store_true", help="Perform automated orientational sampling?", default=False, guitype='boolbox', row=20, col=0, rowspan=1, colspan=1)
 parser.add_argument("--nearest_neighbor", action="store_true", help="Perform nearest-neighbor instead of linear Fourier-space interpolation", default=False, guitype='boolbox', row=20, col=1, rowspan=1, colspan=1)
 optionList = pyemtbx.options.get_optionlist(sys.argv[1:])
 (options, args) = parser.parse_args()
@@ -85,9 +85,9 @@ for option1 in optionList:
 		ctf_corr = 1
 	if option1 == "amplitudecontrast":
 		amplitude_contrast = str(options.amplitudecontrast)
-	if option1 == "auto_healpix":
-		if options.autosample == False:
-			print "The --auto_healpix option can only be used when the --autosample option is checked. Please rectify this and re-run if you wish to use the auto sampling"
+	#if option1 == "auto_healpix":
+	#	if options.autosample == False:
+	#		print "The --auto_healpix option can only be used when the --autosample option is checked. Please rectify this and re-run if you wish to use the auto sampling"
 			
 
 current_dir = os.getcwd()
@@ -276,14 +276,14 @@ RUNDIR = E2RLN + "/run" + run_dir
 os.mkdir(RUNDIR)
 
 #Parse the options and create the command to run Relion
-s = RELION_RUN + "--i " + E2RLN + "/all_images.star --o " + RUNDIR + "/" + E2RLN + " --angpix " + str(apix)
+s = RELION_RUN + "--i " + E2RLN + "/all_images.star --o " + RUNDIR + "/" + E2RLN + " --angpix " + str(apix) + " --auto_sampling"
 grey = 0
 
 for option1 in optionList:
 	if option1 == "imagemaskd":
 		s = s + " --particle_diameter " + str(options.imagemaskd)
-	elif option1 == "autosample":
-		s = s + " --auto_sampling"
+	#elif option1 == "autosample":
+	#	s = s + " --auto_sampling"
 	elif option1 == "auto_healpix":
 		if options.auto_healpix == '30':
 			s = s + " --auto_local_healpix_order 0"
@@ -320,11 +320,11 @@ for option1 in optionList:
 		s = s + " --ctf"
 	elif option1 == "verbosity":
 		if options.verbosity == 0:
-			s = s + " -- verb 0"
+			s = s + " --verb 0"
 		else:
-			s = s + " -- verb 1"
+			s = s + " --verb 1"
 	elif option1 == "limit_tilt":
-		s = s + " -- limit_tilt " + str(options.limit_tilt)
+		s = s + " --limit_tilt " + str(options.limit_tilt)
 	elif option1 == "print_symmetry":
 		s = s + " --print_symmetry_ops"
 	elif option1 == "onlyflipphase":
