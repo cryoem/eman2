@@ -110,7 +110,7 @@ def main():
 		if options.searchxshift >0:
 			from development import volalixshift_MPI
 			global_def.BATCH = True
-			volalixshift_MPI(args[0], args[1], args[2], options.search_rng, options.apix, options.dp, options.dphi, options.fract, options.rmax, options.rmin, mask,options.maxit, options.CTF, options.snr, options.sym,  options.function, options.fourvar, options.npad, options.debug)
+			volalixshift_MPI(args[0], args[1], args[2], options.search_rng, options.apix, options.dp, options.dphi, options.fract, options.rmax, options.rmin, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.fourvar, options.npad, options.debug)
 			global_def.BATCH = False
 		else:
 			from applications import ihrsr
