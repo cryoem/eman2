@@ -210,7 +210,6 @@ for k in range(num_ptcl):
 #	print k, '\t',temp['data_source'].split('?')[0].split('#')[1],'\t', temp['defocus'],'\t', temp['voltage'],'\t', temp['cs'],'\t', '1.8'	
 	src = EMData(set_name,k)['data_source']
 	if (src != old_src):
-		print "Entered top half of loop. I: " + str(i) + " K: " + str(k) 
 		temp=EMData("bdb:./sets#"+db,k-1)
 		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".hdf --verbose="+str(options.verbosity)+" --step=" + str(i) + ",1 --last=" + str(k-1)
 		call(s, shell=True)
@@ -234,7 +233,6 @@ for k in range(num_ptcl):
 		i = k
 		old_src = src
 	elif (k+1) == num_ptcl:
-		print "Entered top bottom of loop. I: " + str(i) + " K: " + str(k)
 		diff = k-i
 		temp=EMData("bdb:./sets#"+db,k)
 		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".hdf --verbose="+str(options.verbosity)+" --step=" + str(i) + ",1 --last=" + str(k)
