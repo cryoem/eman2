@@ -56,7 +56,8 @@ parser.add_argument("--joinhalves", action="store_true", help="(T/F)Join random 
 parser.add_argument("--pad", type=int,help="Padding factor",default=2, guitype='combobox', choicelist='1,2,3', row=13 ,col=0, rowspan=1, colspan=1)
 parser.add_argument("--lowpass",type=float,help="Initial low-pass filter (Ang)",default=60.0, guitype='floatbox', row=13, col=1, rowspan=1, colspan=1)
 parser.add_argument("--regparam", type=float, help="Regularization Parameter T (weights experimental data vs. prior", default=1.0, guitype='floatbox', row=14, col=0, rowspan=1, colspan=1)
-parser.add_argument("--healpix", type=str, default=30, help="Angular Sampling Interval (Degrees)", guitype='combobox', choicelist='30,15,7.5,3.7,1.8,0.9,0.5,0.2,0.1', row=14, col=1, rowspan=1, colspan=1)
+parser.add_argument("--healpix", type=str, default=7.5, help="Angular Sampling Interval (Degrees)", guitype='combobox', choicelist='30,15,7.5,3.7,1.8,0.9,0.5,0.2,0.1', row=14, col=1, rowspan=1, colspan=1)
+parser.add_argument("--auto_healpix", type=str, default=1.8, help="Local angular search value", guitype='combobox', choicelist='30,15,7.5,3.7,1.8,0.9,0.5,0.2,0.1', row=14, col=2, rowspan=1, colspan=1)
 parser.add_argument("--local", type=float,help="Perform local angular search at what range?",default=None, guitype='floatbox', row=15, col=0, rowspan=1, colspan=1)
 parser.add_argument("--inplaneang", type=float, help="In-plane angular sampling", default=None, guitype='floatbox', row=15, col=1, rowspan=1, colspan=1)
 parser.add_argument("--offsetrange", type=float, help="Offset search range (pix)", default=10.0, guitype='floatbox', row=16, col=0, rowspan=1, colspan=1) 
@@ -66,6 +67,10 @@ parser.add_argument("--threads", type=int, help="# of threads", default=1, guity
 parser.add_argument("--maxmemory", type=float, help="Maximum memory available for each node", guitype='floatbox', row=18, col=1, rowspan=1, colspan=1)
 parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 parser.add_argument("--verbosity", type=int, help="Set the level of verbosity for the code",default=0, guitype='intbox',row=18, col=2, rowspan=1, colspan=1)
+parser.add_argument("--limit_tilt",type=int, help="Limited tilt angle: positive for keeping side views, negative for keeping top views", default = -91, guitype='intbox', row=19, col=0, rowspan=1, colspan=1)
+parser.add_argument("--print_symmetry", action="store_true",help="Print all symmetry transformation matrices, and exit", default=False, guitype='boolbox', row=19, col=1, rowspan=1, colspan=1)
+parser.add_argument("--autosample", action="store_true", help="Perform automated orientational sampling?", default=False, guitype='boolbox', row=20, col=0, rowspan=1, colspan=1)
+parser.add_argument("--nearest_neighbor", action="store_true", help="Perform nearest-neighbor instead of linear Fourier-space interpolation", default=False, guitype='boolbox', row=20, col=1, rowspan=1, colspan=1)
 optionList = pyemtbx.options.get_optionlist(sys.argv[1:])
 (options, args) = parser.parse_args()
 
@@ -74,6 +79,16 @@ if len(args) != 2:
    print "usage:" + usage
    print "Please run'" + progname + " -h' for detailed options"
    sys.exit(1)
+
+for option1 in optionList:
+	if option1 == "ctfcorrect":
+		ctf_corr = 1
+	if option1 == "amplitudecontrast":
+		amplitude_contrast = str(options.amplitudecontrast)
+	if option1 == "auto_healpix":
+		if options.autosample == False:
+			print "The --auto_healpix option can only be used when the --autosample option is checked. Please rectify this and re-run if you wish to use the auto sampling"
+			
 
 current_dir = os.getcwd()
 # Create the E2RLN directory structure if it does not exist
@@ -167,7 +182,9 @@ for option1 in optionList:
 	if option1 == "ctfcorrect":
 		ctf_corr = 1
 	if option1 == "amplitudecontrast":
-		amplitude_contrast = str(options.amplitudecontrast)		
+		amplitude_contrast = str(options.amplitudecontrast)
+	if option1 == "autosample":
+		asample = True
 if ctf_corr == 1:
 
 	dblist = db_list_dicts("bdb:./sets")	
@@ -193,8 +210,9 @@ for k in range(num_ptcl):
 #	print k, '\t',temp['data_source'].split('?')[0].split('#')[1],'\t', temp['defocus'],'\t', temp['voltage'],'\t', temp['cs'],'\t', '1.8'	
 	src = EMData(set_name,k)['data_source']
 	if (src != old_src):
+		print "Entered top half of loop. I: " + str(i) + " K: " + str(k) 
 		temp=EMData("bdb:./sets#"+db,k-1)
-		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".hdf --verbose="+str(options.verbosity)+" --first=" + str(i) + " --last=" + str(k-1)
+		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".hdf --verbose="+str(options.verbosity)+" --step=" + str(i) + ",1 --last=" + str(k-1)
 		call(s, shell=True)
 		if (k-i-1) == 0:
 			s = "e2proc2d.py " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose="+str(options.verbosity)
@@ -216,31 +234,35 @@ for k in range(num_ptcl):
 		i = k
 		old_src = src
 	elif (k+1) == num_ptcl:
+		print "Entered top bottom of loop. I: " + str(i) + " K: " + str(k)
 		diff = k-i
 		temp=EMData("bdb:./sets#"+db,k)
-		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".hdf --verbose="+str(options.verbosity)+" --first=" + str(i) + " --last=" + str(k)
+		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".hdf --verbose="+str(options.verbosity)+" --step=" + str(i) + ",1 --last=" + str(k)
 		call(s, shell=True)
-		s = "e2proc2d.py " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose="+str(options.verbosity)
-                call(s, shell=True)
+		if (k-i-1) == 0:
+			s = "e2proc2d.py " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose="+str(options.verbosity)
+		else:
+			s = "e2proc2d.py " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose="+str(options.verbosity) + " --twod2threed"
+		call(s, shell=True)
 		s1 = E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".mrc"
 		s2 = s1 + "s"
 		shutil.move(s1, s2)
 		if ctf_corr == 1:
 			defocus1 = defocus2 = str(temp['ctf'].to_dict()['defocus']*1000)
-			s = "relion_star_datablock_stack " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + str(defocus1) + " " + str(defocus2) + " 0 " + str(voltage) + " " + str(cs) + " " + str(amplitude_contrast) + " >> " + E2RLN + "/all_images.star"
+			s = "relion_star_datablock_stack " + str(k-i+1) + " " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + str(defocus1) + " " + str(defocus2) + " 0 " + str(voltage) + " " + str(cs) + " " + str(amplitude_contrast) + " >> " + E2RLN + "/all_images.star"
 		else:
-			s = "relion_star_datablock_stack 1 "+  E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + str(voltage) + " " + amplitude_contrast + "  >> " + E2RLN + "/all_images.star" 
+			s = "relion_star_datablock_stack " + str(k-i+1) + " " +  E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + str(voltage) + " " + amplitude_contrast + "  >> " + E2RLN + "/all_images.star" 
 		call(s,shell=True)
 		s = "rm " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".hdf" 
 		call(s,shell=True)
 		i = k
 		old_src = src
 		
-	print k, i
 
 s = "rm " + E2RLN + "/ptcl_stack.hdf"
 call(s,shell=True)
 print "File Conversion Complete"
+
 
 # Create the run directory structure if it does not exist
 i = 1
@@ -262,6 +284,30 @@ grey = 0
 for option1 in optionList:
 	if option1 == "imagemaskd":
 		s = s + " --particle_diameter " + str(options.imagemaskd)
+	elif option1 == "autosample":
+		s = s + " --auto_sampling"
+	elif option1 == "auto_healpix":
+		if options.auto_healpix == '30':
+			s = s + " --auto_local_healpix_order 0"
+		elif options.auto_healpix =='15':
+			s = s + " --auto_local_healpix_order 1"
+		elif options.auto_healpix =='7.5':
+			s = s + " --auto_local_healpix_order 2"
+		elif options.auto_healpix =='3.7':
+			s = s + " --auto_local_healpix_order 3"
+		elif options.auto_healpix =='1.8':
+			s = s + " --auto_local_healpix_order 4"
+		elif options.auto_healpix =='0.9':
+			s = s + " --auto_local_healpix_order 5"
+		elif options.auto_healpix =='0.5':
+			s = s + " --auto_local_healpix_order 6"
+		elif options.auto_healpix =='0.2':
+			s = s + " --auto_local_healpix_order 7"
+		elif options.auto_healpix =='0.1':
+			s = s + " --auto_local_healpix_order 8"
+		else:
+			print "Invalid angular sampling interval (--auto_healpix). Defaulting to 1.8 degrees"
+			s = s + " --auto_local_healpix_order 4"
 	elif option1 == "numiter":
 		s = s + " --iter " + str(options.numiter)
 	elif option1 == "regparam":
@@ -274,6 +320,15 @@ for option1 in optionList:
 		s = s + " --split_random_halves"
 	elif option1 == "ctfcorrect":
 		s = s + " --ctf"
+	elif option1 == "verbosity":
+		if options.verbosity == 0:
+			s = s + " -- verb 0"
+		else:
+			s = s + " -- verb 1"
+	elif option1 == "limit_tilt":
+		s = s + " -- limit_tilt " + str(options.limit_tilt)
+	elif option1 == "print_symmetry":
+		s = s + " --print_symmetry_ops"
 	elif option1 == "onlyflipphase":
 		s = s + " --only_flip_phases" 
 	elif option1 == "dataphaseflipped":
@@ -308,6 +363,8 @@ for option1 in optionList:
 		s = s + " --ini_high " + str(options.lowpass)
 	elif option1 == "local":
 		s = s + " --sigma_ang " + str(options.local / 3)
+	elif option1 == "nearest_neighbor":
+		s = s + " --NN"
 	elif option1 == "queue":
 		submit_queue = str(options.queue)
 	elif option1 == "healpix":
@@ -330,8 +387,8 @@ for option1 in optionList:
 		elif options.healpix =='0.1':
 			s = s + " --healpix_order 8"
 		else:
-			print "Invalid angular sampling interval (--healpix). Defaulting to 30 degrees"
-			s = s + " --healpix_order 0"
+			print "Invalid angular sampling interval (--healpix). Defaulting to 7.5 degrees"
+			s = s + " --healpix_order 2"
 			
 s = s + " --sym " + str(options.symmgroup) + str(options.symmnumber) + " --ref " + E2RLN + "/3DRefMap.mrc"
 
