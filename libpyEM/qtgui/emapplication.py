@@ -220,6 +220,7 @@ class EMInstance:
 em_app_instance = EMInstance()
 
 get_application = em_app_instance.get_instance
+#def get_application() : return QtGui.qApp
 
 
 class EMApp(QtGui.QApplication):

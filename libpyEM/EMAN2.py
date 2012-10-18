@@ -68,8 +68,14 @@ Vec3f.__str__=lambda x:"Vec3f"+str(x.as_list())
 # Who is using this? Transform3D is deprecated use the Transform insteand
 #Transform3D.__str__=lambda x:"Transform3D(\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g)\nPretrans:%s\nPosttrans:%s"%(x.at(0,0),x.at(0,1),x.at(0,2),x.at(1,0),x.at(1,1),x.at(1,2),x.at(2,0),x.at(2,1),x.at(2,2),str(x.get_pretrans()),str(x.get_posttrans()))
 
-GUIMode=0
-app = 0
+try:
+	if __IPYTHON__ : GUIMode=True
+	import PyQt4
+	app=PyQt4.QtGui.qApp
+except:
+	GUIMode=False
+	app = 0
+	
 GUIbeingdragged=None
 originalstdout = sys.stdout
 
@@ -601,7 +607,7 @@ def display(img,force_2d=False,force_plot=False):
 		import emimage
 		if isinstance(img,tuple) : img=list(img)
 		image = emimage.EMImageWidget(img,None,app,force_2d,force_plot)
-		app.show_specific(image)
+		image.show()
 		try: 
 			image.optimally_resize()
 		except: pass
@@ -638,8 +644,9 @@ def browse():
 	if GUIMode:
 		from emselector import EMBrowser
 		browser = EMBrowser()
-		app.attach_child(browser)
-		app.show_specific(browser)
+		browser.show()
+		#app.attach_child(browser)
+		#app.show_specific(browser)
 	else:
 		os.system("e2display.py")
 		
@@ -652,7 +659,8 @@ class EMImage(object):
 		if GUIMode:	
 			import emimage
 			image = emimage.EMImageWidget(data,old,app)
-			app.show_specific(image)
+			image.show()
+			#app.show_specific(image)
 			try: image.optimally_resize()
 			except: pass
 			return image
@@ -684,7 +692,8 @@ def plot(data,data2=None,data3=None,show=1,size=(800,600),path="plot.png"):
 		if data2!=None : plotw.set_data(data2,"interactive2")
 		if data3!=None : plotw.set_data(data3,"interactive3")
 		plotw.setWindowTitle("2D Plot")
-		app.show_specific(plotw)
+		plotw.show()
+#		app.show_specific(plotw)
 		return plotw
 	else :
 		import matplotlib

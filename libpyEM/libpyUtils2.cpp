@@ -84,14 +84,14 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_multiref_polar_ali_helical_local_overl
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_multiref_polar_ali_helical_90_overloads_10_11, EMAN::Util::multiref_polar_ali_helical_90, 10, 11)
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_multiref_polar_ali_helical_90_local_overloads_11_12, EMAN::Util::multiref_polar_ali_helical_90_local, 11, 12)
 
-void process_region_io(EMAN::EMData *ths, const char* path, size_t offset, int rw_mode, int image_index, size_t mode_size, int nx, int ny, int nz=1, const EMAN::Region * area=0) { 
+void process_region_io(EMAN::EMData *ths, const char* path, size_t offset, int rw_mode, int image_index, size_t mode_size, const EMAN::Region * area=0) { 
 	Py_BEGIN_ALLOW_THREADS
 	const char *mode;
 	if (rw_mode==1) mode="r";	// 1 is READ_ONLY
 	else mode="r+";
 	FILE *file = fopen(path,mode);
 	portable_fseek(file,offset,SEEK_SET);
-	EMAN::EMUtil::process_region_io(ths->get_data(),file,rw_mode,image_index,mode_size,nx,ny,nz,area);
+	EMAN::EMUtil::process_region_io(ths->get_data(),file,rw_mode,image_index,mode_size,ths->nx,ths->ny,ths->nz,area);
 	fclose(file);
 	Py_END_ALLOW_THREADS
 }
@@ -872,7 +872,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("get_imagetype_name", &EMAN::EMUtil::get_imagetype_name, args("type"), "Give each image type a meaningful name.\n \ntype - Image format type.\n \nreturn A name for that type.")
         .def("get_datatype_string", &EMAN::EMUtil::get_datatype_string, args("type"), "Give each data type a meaningful name\n \ntype - the EMDataType\n \nreturn a name for that data type")
         .def("process_ascii_region_io", &EMAN::EMUtil::process_ascii_region_io, args("data", "file", "rw_mode", "image_index", "mode_size", "nx", "ny", "nz", "area", "has_index_line", "nitems_per_line", "outformat"), "Works for regions that are outside the image data dimension area.\nThe only function that calls this is in xplorio.cpp - that function\nthrows if the region is invalid.")
-        .def("process_region_io", process_region_io, args("emdata", "filename", "offset", "rw_mode", "image_index", "mode_size", "nx", "ny", "nz", "area"), "Works for regions that are outside the image data dimension area.\nThe only function that calls this is in xplorio.cpp - that function\nthrows if the region is invalid.")
+        .def("process_region_io", process_region_io, args("emdata", "filename", "offset", "rw_mode", "image_index", "mode_size",  "area"), "Works for regions that are outside the image data dimension area.\nThe only function that calls this is in xplorio.cpp - that function\nthrows if the region is invalid.")
         .def("dump_dict", &EMAN::EMUtil::dump_dict, args("dict"), "Dump a Dict object.\n \ndict - A Dict object")
         .def("is_same_size", &EMAN::EMUtil::is_same_size, args("image1", "image2"), "Check whether two EMData images are of the same size.\n \nimage1 - The first EMData image.\nimage2 - The second EMData image.return Whether two EMData images are of the same size.")
         .def("is_same_ctf", &EMAN::EMUtil::is_same_ctf,args("image1", "image2"), "Check whether two EMData images have the same CTF parameters.\n \nimage1 - The first EMData image.\nimage2 The second EMData image.\n \nreturn whether two EMData images have the same CTF.")
