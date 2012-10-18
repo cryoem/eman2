@@ -518,8 +518,9 @@ def get_maskproj_cmd(options,check=False):
 		model = options.filtered_model.replace("filt","mask")
 	else:
 		print "WARNING: automaskalign option specified, but automask not found. Generating non-zero mask from %s. This is normal in the first iteration."%options.model
-		launch_childprocess("e2proc3d.py %s %s_mask --process=threshold.notzero"%(options.model,options.model))
-		model = options.model+"_mask"
+		if options.model[:4].lower()=="bdb:" : model=options.model+"_mask"
+		else: model=options.model.rsplit(".",1)[0]+"_mask."+options.model.rsplit(".",1)[1]
+		launch_childprocess("e2proc3d.py %s %s --process=threshold.notzero"%(model,options.model))
 		
 	e2projcmd = "e2project3d.py %s -f --sym=%s --projector=%s --outfile=%s --orientgen=%s --postprocess=normalize.circlemean" %(model,options.sym,options.projector,options.projmask,options.orientgen)
 
