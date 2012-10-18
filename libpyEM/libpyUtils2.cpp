@@ -91,7 +91,7 @@ void process_region_io(EMAN::EMData *ths, const char* path, size_t offset, int r
 	else mode="r+";
 	FILE *file = fopen(path,mode);
 	portable_fseek(file,offset,SEEK_SET);
-	EMAN::EMUtil::process_region_io(ths->get_data(),file,rw_mode,image_index,mode_size,ths->nx,ths->ny,ths->nz,area);
+	EMAN::EMUtil::process_region_io(ths->get_data(),file,rw_mode,image_index,mode_size,ths->get_xsize(),ths->get_ysize(),ths->get_zsize(),area);
 	fclose(file);
 	Py_END_ALLOW_THREADS
 }
