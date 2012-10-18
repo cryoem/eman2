@@ -288,7 +288,7 @@ def ctf_2(nx, ctf):
 
 	ctf_2  = []
 	scl    = 1.0/pixel_size/nx
-	length = int(1.41*float(nx/2)) + 1
+	length = int(1.7321*float(nx/2)) + 2
 	ctf_2 = [0.0]*length
 	for i in xrange(length):
 		ctf_val = Util.tf(dz, i*scl, voltage, cs, ampcont, b_factor)
