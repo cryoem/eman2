@@ -384,7 +384,7 @@ def main():
 			print "\n\n***************\nThere was only one reference\n************\n\n"
 			
 			resultsdir = rootpath + '/' + options.path + '/results_ali_error'
-			os.system('mkdir ' + resultsdir + ' && cd ' + rootpath + '/' + options.path + ' && mv *error.txt ' + resultsdir)
+			os.system('mkdir ' + resultsdir + ' && cd ' + options.path + ' && mv *error.txt ' + resultsdir)
 		
 			
 		resultsdir = rootpath + '/' + options.path + '/results_ali_error' 	
