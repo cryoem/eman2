@@ -1062,9 +1062,9 @@ public:
 		return x;
 	}
 
-	/** This function returns parameters from 2D Transform object: alpha, sx, sy, mirror, scale.
+	/** This function returns parameters from Transform object as a Dict object.
 	 *  It allows to omit problem with passing Transform object through C++/Python layer (It causes memory leak). */
-	static Dict get_params2D(EMData* image, string xform = "xform.align2d");
+	static Dict get_transform_params(EMData* image, string xform, string convention);
 
 // ===================================== test ORMQ (OpenMP)
 //	static std::vector<float> ormq(EMData * image, EMData * crefim, int xrng, int yrng, float step, std::string cmode, std::vector<int> numr, int cnx, int cny, float delta = 0.0, int threads = 1);

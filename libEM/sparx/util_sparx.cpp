@@ -22059,10 +22059,10 @@ int Util::branch_factor_0(int* costlist, int* matchlist, int J, int T, int nPart
 }
 
 
-Dict Util::get_params2D(EMData* image, string xform)
+Dict Util::get_transform_params(EMData* image, string xform, string convention)
 {
 	const Transform * transform = image->get_attr(xform);
-	Dict transform_params = transform->get_params("2D");
+	Dict transform_params = transform->get_params(convention);
 	delete transform;
 	return transform_params;
 }
