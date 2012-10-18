@@ -56,7 +56,7 @@ def main():
 	parser.add_option("--CTF",                action="store_true", default=False,         help="CTF correction")
 	parser.add_option("--snr",                type="float",  default= 1.0,                help="Signal-to-Noise Ratio of the data")	
 	parser.add_option("--MPI",                action="store_true", default=False,         help="use MPI version")
-	parser.add_option("--fourvar",            action="store_true", default=False,         help="compute Fourier variance")
+	#parser.add_option("--fourvar",            action="store_true", default=False,         help="compute Fourier variance")
 	parser.add_option("--apix",               type="float",  default= -1.0,               help="pixel size in Angstroms")   
 	parser.add_option("--dp",                 type="float",  default= -1.0,               help="delta z - translation in Angstroms")   
 	parser.add_option("--dphi",               type="float",  default= -1.0,               help="delta phi - rotation in degrees")  
@@ -107,7 +107,7 @@ def main():
 		if options.searchxshift >0:
 			from development import volalixshift_MPI
 			global_def.BATCH = True
-			volalixshift_MPI(args[0], args[1], args[2], options.searchxshift, options.apix, options.dp, options.dphi, options.fract, options.rmax, options.rmin, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.fourvar, options.npad, options.debug)
+			volalixshift_MPI(args[0], args[1], args[2], options.searchxshift, options.apix, options.dp, options.dphi, options.fract, options.rmax, options.rmin, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
 			global_def.BATCH = False
 		else:
 			from applications import ihrsr
