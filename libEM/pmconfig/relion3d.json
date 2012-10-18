@@ -7,7 +7,7 @@
   },
   {
     "TITLE":"Input files",
-    "INST":"Please enter the location of the particle stack you wish to use as well as the reference map you wish to use.",
+    "INST":"Please enter the location of the particle stack you wish to use as well as the reference map you wish to use. Please also check the greyscale box if the reference map is in greyscale and the refctfcorrected box if the reference map has been ctf corrected.",
     "WIDGETS":[
       "set_name",
       "refmap",
@@ -17,40 +17,34 @@
   },
   {
     "TITLE":"Solvent Mask",
-    "INST":"Enter the user provided mask for the reference(s). If no mask is provided a spherical mask with the particle diameter is used",
+    "INST":"Enter the user provided mask for the reference(s). If no mask is provided, a spherical mask with the particle diameter is used",
     "WIDGETS":[
       "solventmask"
     ]
   },
   {
     "TITLE":"Project Parameters",
-    "INST":"Enter various particle and microscope parameters. The symm group and number are required, as is the image mask diameter. If the voltage, cs, and apix values reside in the image header or in the project database, it will attempt to fill these in with those values.",
+    "INST":"Enter various particle and microscope parameters. The symm group and number are required, as is the image mask diameter. The amplitude contrast defaults to 10% (.1) but if yours is different, please change this value.",
     "WIDGETS":[
       "symmgroup",
       "symmnumber",
-      "voltage",
-      "cs",
-      "apix",
       "imagemaskd",
-      "defocus",
       "amplitudecontrast"
     ]
   },
   {
-    "TITLE":"Relion Options 1",
-    "INST":"Please enter the number of iterations you wish Relion to do and the number of classes you wish Relion to refine into",
-    "WIDGETS":[
-      "numiter",
-      "numclasses"
-    ]
-  },
-  {
-    "TITLE":"Relion T/F Refinement Options",
-    "INST":"Do you want Relion to perform CTF Correction?  Do you want Relion to perform intensity scale corrections on image groups?  Do you wish Relion to only flip phases?(If no then Relion will perform full amplitude-correction)  Is the data already phase-flipped?  Do you wish Relion to ignore CTF's until their first peak?  Do you wish to perform masking on the reference structure?",
+    "TITLE":"Relion T/F Refinement Options 1",
+    "INST":"Do you want Relion to perform CTF Correction?  Do you want Relion to perform intensity scale corrections on image groups?  Do you wish Relion to only flip phases?(If no then Relion will perform full amplitude-correction)",
     "WIDGETS":[
       "ctfcorrect",
       "intensitycorrection",
-      "onlyflipphase",
+      "onlyflipphase"
+    ]
+  },
+  {
+    "TITLE":"Relion T/F Refinement Options 2",
+    "INST":"Is the data already phase-flipped?  Do you wish Relion to ignore CTF's until their first peak?  Do you wish to perform masking on the reference structure?",
+    "WIDGETS":[
       "dataphaseflipped",
       "ignoretofirstpeak",
       "maskrefstructure"
@@ -65,24 +59,44 @@
     ]
   },
   {
-    "TITLE":"Relion Options 2",
-    "INST":"What padding factor do you wish to use? 1 = 1x, 2=2x, and 3=3x padding.  What resolution do you wish to limit the refinement to for its first iteration?  The regparam is a regularisation parameter (values higher than 1 give more weight to the data).  The healpix is the angular sampling (before oversampling)",
+    "TITLE":"Relion Options 1",
+    "INST":"Do you wish to print the symmetry matrices and then exit? Do you wish to perform nearest-neighbor instead of linear Fourier-space interpolation?",
     "WIDGETS":[
-      "pad",
-      "lowpass",
-      "regparam",
-      "healpix"
+      "print_symmetry",
+      "nearest_neighbor"
     ]
   },
   {
-    "TITLE":"Relion Options 3",
-    "INST":"Local represents the stddev on all three Euler angles for local angular searches (of +/- 3 stddev)  The inplaneang represents the sampling rate for the in-plane angle (before oversampling)  The offsetrange represents the search range for origin offsets in pixels and the offsetstep represents the sampling rate (before oversampling) of origin offsets in pixels. The oversampling represents the value for adaptive oversampling to speed up calculations (0=no oversampling, 1=2x, 2=4x etc)",
+    "TITLE":"Relion Options 2",
+    "INST":"What padding factor do you wish to use? 1 = 1x, 2=2x, and 3=3x padding.  What resolution do you wish to limit the refinement to for its first iteration?",
     "WIDGETS":[
-      "local",
-      "inplaneang",
+      "pad",
+      "lowpass"
+     ]
+  },
+  {
+    "TITLE":"Relion Options 4",
+    "INST":"The healpix is the angular sampling (before oversampling). The auto_healpix value is the value for the local angular sampling performed in the auto sampling. The inplaneang represents the sampling rate for the in-plane angle (before oversampling).",
+    "WIDGETS":[
+      "healpix",
+      "auto_healpix",
+      "inplaneang"
+    ]
+  },
+  {
+    "TITLE":"Relion Options 5",
+    "INST":"The offsetrange represents the search range for origin offsets in pixels and the offsetstep represents the sampling rate (before oversampling) of origin offsets in pixels. ",
+    "WIDGETS":[
       "offsetrange",
-      "offsetstep",
-      "oversampling"
+      "offsetstep"
+    ]
+  },
+  {
+    "TITLE":"Relion Options 6",
+    "INST":"The oversampling represents the value for adaptive oversampling to speed up calculations (0=no oversampling, 1=2x, 2=4x etc) The final option is the limit_tilt option. This option lets you provide a limiting tilt angle: positive for keeping side views, negative for keeping top views",
+    "WIDGETS":[
+      "oversampling",
+      "limit_tilt"
     ]
   },
   {
@@ -91,6 +105,13 @@
     "WIDGETS":[
       "threads",
       "maxmemory"
+    ]
+  },
+  {
+    "TITLE":"Relion Verbosity",
+    "INST":"This is the verbosity variable for EMAN2 and Relion. If set to 0, EMAN2 and Relion give no output to the terminal window. If the variable is 1-9, EMAN2 will output progressively more information (1 is least, 9 is most) and and anything above 0 will allow Relion to output to the terminal as normal.",
+    "WIDGETS":[
+      "verbosity"
     ]
   }
 ]
