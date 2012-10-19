@@ -143,6 +143,10 @@ def main():
 	try: s.mkdir(options.path) # we at least need a place to put refinement results
 	except: pass
 
+	if options.path==None:
+		print "ERROR: --path=refine_xx is a required option"
+		sys.exit(1)
+
 	# create the even and odd data sets
 	# note that this is very inefficient if not using bdb: as a source 
 	print "### Creating virtual stacks for even/odd data"
@@ -164,7 +168,7 @@ def main():
 		print "Sorry, at the moment this program supports only BDB format input particle stacks !"
 		sys.exit(1)
 
-	if options.usefile!=None :
+	if options.usefilt!=None :
 		if options.usefilt[:4].lower()=="bdb:" :
 			efset=options.usefilt+"_even"
 			ofset=options.usefilt+"_odd"
