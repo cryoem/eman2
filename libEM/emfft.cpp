@@ -33,7 +33,7 @@
  * 
  * */
 
-#include <pthread.h>	# This MUST be first !
+#include <pthread.h>	//This MUST be first !
 #include <string>
 #include <cstring>
 #include "emfft.h"
