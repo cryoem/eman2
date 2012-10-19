@@ -164,28 +164,29 @@ def main():
 		print "Sorry, at the moment this program supports only BDB format input particle stacks !"
 		sys.exit(1)
 
-	if options.usefilt!=None and options.usefilt[:4].lower()=="bdb:" :
-		efset=options.usefilt+"_even"
-		ofset=options.usefilt+"_odd"
+	if options.usefile!=None :
+		if options.usefilt[:4].lower()=="bdb:" :
+			efset=options.usefilt+"_even"
+			ofset=options.usefilt+"_odd"
+			
+			# This creates the even/odd input data sets so we can just use the stock 'e2refine.py' command for refinement
+			if db_check_dict(efset) :
+				print "Warning: %s already exists. Trusting that this file is correct and complete."%efset
+			else:
+				error = launch_childprocess("e2bdb.py %s --makevstack=%s --step=0,2"%(options.usefilt,efset))
 		
-		# This creates the even/odd input data sets so we can just use the stock 'e2refine.py' command for refinement
-		if db_check_dict(efset) :
-			print "Warning: %s already exists. Trusting that this file is correct and complete."%efset
+			if db_check_dict(ofset) :
+				print "Warning: %s already exists. Trusting that this file is correct and complete."%ofset
+			else:
+				error = launch_childprocess("e2bdb.py %s --makevstack=%s --step=1,2"%(options.usefilt,ofset))
 		else:
-			error = launch_childprocess("e2bdb.py %s --makevstack=%s --step=0,2"%(options.usefilt,efset))
-	
-		if db_check_dict(ofset) :
-			print "Warning: %s already exists. Trusting that this file is correct and complete."%ofset
-		else:
-			error = launch_childprocess("e2bdb.py %s --makevstack=%s --step=1,2"%(options.usefilt,ofset))
-	else:
-		print "Sorry, at the moment this program supports only BDB format usefilt particle stacks !"
-		sys.exit(1)
+			print "Sorry, at the moment this program supports only BDB format usefilt particle stacks !"
+			sys.exit(1)
 
 
-	if options.path==None :
-		print "The --path argument is required, and must point to the 'parent' refinement for the desired resolution test, ie --path=refine_05"
-		sys.exit(1)
+		if options.path==None :
+			print "The --path argument is required, and must point to the 'parent' refinement for the desired resolution test, ie --path=refine_05"
+			sys.exit(1)
 
 	# Prepare the starting models for each run
 	# each model will have different random phases beyond the specified resolution
