@@ -963,7 +963,7 @@ def rtshgkb(image, angle, sx, sy, kb, scale = 1.0):
 def shift2d(image, dx=0, dy=0):
 	"""Shift a 2-d image."""
 	# split shift into integer and fractional parts  DOES NOT SEEM TO MAKE MUCH SENSE
-	from filter import fshift
+	from fundamentals import fshift
 	from fundamentals import cyclic_shift
 	idx = int(dx)
 	fdx = dx - idx
