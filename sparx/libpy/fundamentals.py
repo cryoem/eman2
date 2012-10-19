@@ -972,7 +972,7 @@ def shift2d(image, dx=0, dy=0):
 	# perform cyclic integer shift 
 	rimage=cyclic_shift(image, idx, idy)
 	# perform fractional shift in Fourier space and return
-	return fshift(image, fdx, fdy)
+	return fshift(rimage, fdx, fdy)
 	
 def smallprime(arbit_num, numprime=3):
 	primelist = [2,3,5,7,11,13,17,19,23]
