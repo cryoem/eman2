@@ -164,7 +164,7 @@ def main():
 		print "Sorry, at the moment this program supports only BDB format input particle stacks !"
 		sys.exit(1)
 
-	if options.usefilt[:4].lower()=="bdb:" :
+	if options.usefilt!=None and options.usefilt[:4].lower()=="bdb:" :
 		efset=options.usefilt+"_even"
 		ofset=options.usefilt+"_odd"
 		

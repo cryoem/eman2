@@ -77,7 +77,7 @@ const string BooleanProcessor::NAME = "threshold.notzero";
 const string KmeansSegmentProcessor::NAME = "segment.kmeans";
 const string DistanceSegmentProcessor::NAME = "segment.distance";
 const string WatershedProcessor::NAME = "segment.watershed";
-const string InvertCarefullyProcessor::NAME = "math.invert.carefully";
+const string RecipCarefullyProcessor::NAME = "math.reciprocal";
 const string ValuePowProcessor::NAME = "math.pow";
 const string ValueSquaredProcessor::NAME = "math.squared";
 const string ValueSqrtProcessor::NAME = "math.sqrt";
@@ -280,7 +280,7 @@ template <> Factory < Processor >::Factory()
 	force_add<ScaleTransformProcessor>();
 	force_add<ApplySymProcessor>();
 	force_add<IntTranslateProcessor>();
-	force_add<InvertCarefullyProcessor>();
+	force_add<RecipCarefullyProcessor>();
 
 	force_add<ClampingProcessor>();
 	force_add<NSigmaClampingProcessor>();

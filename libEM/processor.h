@@ -1288,10 +1288,10 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
-	/**Invert image as if f(x) != 0: f(x) = 1/f(x) else: f(x) = zero_to
+	/**Reciprocal image as if f(x) != 0: f(x) = 1/f(x) else: f(x) = zero_to
 	 *@param zero_to  Inverted zero values are set to this value, default is 0
 	 */
-	class InvertCarefullyProcessor:public RealPixelProcessor
+	class RecipCarefullyProcessor:public RealPixelProcessor
 	{
 		public:
 			string get_name() const
@@ -1300,7 +1300,7 @@ The basic design of EMAN Processors: <br>\
 			}
 			static Processor *NEW()
 			{
-				return new InvertCarefullyProcessor();
+				return new RecipCarefullyProcessor();
 			}
 
 			void set_params(const Dict & new_params)
@@ -1326,8 +1326,8 @@ The basic design of EMAN Processors: <br>\
 		protected:
 			void process_pixel(float *x) const
 			{
-				if (*x == 0) *x = zero_to;
-				else *x = 1/(*x);
+				if (*x == 0.0) *x = zero_to;
+				else *x = 1.0f/(*x);
 			}
 		private:
 			float zero_to;
