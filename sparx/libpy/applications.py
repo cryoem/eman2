@@ -6708,19 +6708,19 @@ def autowin_MPI(indir,outdir, noisedoc, noisemic, templatefile, deci, CC_method,
 def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, \
 		txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max, \
 		rmin, rmax, fract, nise, npad, sym, user_func_name, datasym, \
-		fourvar, pixel_size, debug = False, MPI = False, WRAP = 1, y_restrict=-1.0):
+		pixel_size, debug = False, MPI = False, WRAP = 1, y_restrict=-1.0):
 	
 	ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
 			txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max,
 			rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
-			fourvar, pixel_size, debug, y_restrict, WRAP)
-		
+			pixel_size, debug, y_restrict, WRAP)
+
 	return
 
 def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
 	txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndphi, dphi_step, psi_max,
 	rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
-	fourvar, pixel_size, debug, y_restrict, WRAP):
+	pixel_size, debug, y_restrict, WRAP):
 
 	from alignment      import Numrinit, prepare_refrings, proj_ali_helical, proj_ali_helical_90, proj_ali_helical_local, proj_ali_helical_90_local, helios,helios7
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string, pad, model_blank
@@ -6970,7 +6970,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 			if myid== main_node:
 				print_msg( "Time to prepare rings: %d\n" % (time()-start_time) )
 				start_time = time()
-			#split refrings to two list: refrings1 (theta =90), and refrings2( theat not 90)
+			#split refrings to two list: refrings1 (theta = 90), and refrings2 ( theta not 90)
 			refrings1= []
 			refrings2= []
 			sn = int(symmetry_string[1:])
@@ -6979,29 +6979,60 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 					refrings1.append( refrings[i])
 				else:
 					refrings2.append( refrings[i])
-					'''if myid == main_node:
+					'''
+					if myid == main_node:
 						print_msg("\nphi = %5.2f, theta = %5.2f, psi=%5.2f\n"%( refrings[i].get_attr('phi'), refrings[i].get_attr('theta'), refrings[i].get_attr('psi') ) )
-			if myid == main_node:
-				print_msg("\nlen(ref1) = %4d, len(ref2) = %4d\n"%(len(refrings1), len(refrings2)) )'''		
+					if myid == main_node:
+						print_msg("\nlen(ref1) = %4d, len(ref2) = %4d\n"%(len(refrings1), len(refrings2)) )
+					'''		
 			del refrings
 			from numpy import float32
 			dpp = float32(float(dp)/pixel_size)
 			dpp = float( dpp )
 			dpp_half = dpp/2.0
-			
+
 			for im in xrange( nima ):
+				"""
+					Logic of searches:
+						refrings1 (theta = 90), and refrings2 ( theta not 90)
+						an == -1 exhaustive search
+						psi_max - how far rotation in plane can can deviate from 90 or 270 degrees
+						psi_max -s used in both exhaustive and local searches
+						:::
+						theta = 90
+							exhaustive   proj_ali_helical_90   psi_max
+											Util.multiref_polar_ali_helical_90  psi_max
+											Crosrng_sm_psi  (in util_sparx.cpp)  psi_max - WILL SEARCH for BOTH PSI=0 AND 180 NO MATTER WHAT					
+																					flag - no mirror or mirror, DOES NOT CHECK MIRRORED
+											
+							local        proj_ali_helical_90_local   an[N_step], psi_max,  (alignment.py)
+											Util.multiref_polar_ali_helical_90_local   psi_max
+											Crosrng_psi_0_180_no_mirror		(in util_sparx.cpp)   psi_max - WILL SEARCH AROUND BOTH PSI=0 AND 180 NO MATTER WHAT					
+							
+						theta != 90
+							exhaustive   proj_ali_helical           psi_max
+											Util.multiref_polar_ali_helical  psi_max
+												CALLS Crosrng_pi twice, for 0 and for 180, thus duplicates the work!!
+											Crosrng_psi  checks MIRROR
+											
+							local        proj_ali_helical_local  
+				"""
 				peak1 = None
 				peak2 = None
 				if ( len(refrings1) > 0):
 					if  an[N_step] == -1:
-						peak1, phihi1, theta1, psi1, sxi1, syi1, t11 = proj_ali_helical_90(data[im],refrings1,numr,xrng[N_step],yrng[N_step],stepx[N_step],ynumber[N_step],psi_max,finfo,)
+						peak1, phihi1, theta1, psi1, sxi1, syi1, t11 = \
+						proj_ali_helical_90(data[im], refrings1, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], psi_max, finfo)
 					else:
-						peak1, phihi1, theta1, psi1, sxi1, syi1, t11 = proj_ali_helical_90_local(data[im],refrings1,numr,xrng[N_step],yrng[N_step],stepx[N_step],ynumber[N_step], an[N_step], psi_max,  finfo,)
+						peak1, phihi1, theta1, psi1, sxi1, syi1, t11 = \
+						proj_ali_helical_90_local(data[im], refrings1, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], an[N_step], psi_max, finfo)
 				if( len(refrings2) > 0):
 					if  an[N_step] == -1:
-						peak2, phihi2, theta2, psi2, sxi2, syi2, t12 = proj_ali_helical(data[im],refrings2,numr,xrng[N_step],yrng[N_step],stepx[N_step],ynumber[N_step],psi_max,finfo,)
+						peak2, phihi2, theta2, psi2, sxi2, syi2, t12 = \
+						proj_ali_helical(data[im], refrings2, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], psi_max, finfo)
 					else:
-						peak2, phihi2, theta2, psi2, sxi2, syi2, t12 = proj_ali_helical_local(data[im],refrings2,numr,xrng[N_step],yrng[N_step],stepx[N_step],ynumber[N_step], an[N_step], psi_max,finfo,sym_string=symmetry_string,yrnglocal=yrnglocal)
+						peak2, phihi2, theta2, psi2, sxi2, syi2, t12 = \
+						proj_ali_helical_local(data[im], refrings2, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], an[N_step], psi_max, finfo, sym_string=symmetry_string, yrnglocal=yrnglocal)
 				if peak1 is None: 
 					peak = peak2
 					phihi = phihi2
@@ -7372,13 +7403,13 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 					dphi = float(dphi)
 					#print  "  GOT dp dphi",dp,dphi
 
-					vol  = vol.helicise(pixel_size,dp, dphi, fract, rmax, rmin)
+					vol  = vol.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
 					print_msg("New delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))		
 			
 			else:
 				if myid==main_node:
 					#  in the first nise steps the symmetry is imposed
-					vol = vol.helicise(pixel_size,dp, dphi, fract, rmax, rmin)
+					vol = vol.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
 					print_msg("Imposed delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))
 			if(myid==main_node):
 				fofo = open(os.path.join(outdir,datasym),'a')
@@ -7387,7 +7418,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 				ref_data = [vol]
 				if  fourvar:  ref_data.append(varf)
 				vol = user_func(ref_data)
-				vol = vol.helicise(pixel_size,dp, dphi, fract, rmax, rmin)
+				vol = vol.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
 
 				drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(total_iter)))
 				print_msg("\nSymmetry search and user function time = %d\n"%(time()-start_time))

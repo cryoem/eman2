@@ -1206,7 +1206,7 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=1
 	  dpsi - how far psi can be from the original value.
 	"""
 	from utilities    import compose_transform2
-	#from utilities    import set_params_proj, get_params_proj
+	#from utilities   import set_params_proj, get_params_proj
 	from math         import cos, sin, pi
 	from EMAN2 import Vec2f
 	
@@ -1270,9 +1270,9 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=1
 	else:
 		return -1.0e23, 0.0
 
-def proj_ali_helical(data, refrings, numr, xrng, yrng, stepx,ynumber,dpsi=180.0, finfo=None):
+def proj_ali_helical(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_max=180.0, finfo=None):
 	"""
-	  dpsi - how much psi can differ from 90 or 270 degrees
+	  psi_max - how much psi can differ from 90 or 270 degrees
 	"""
 	from utilities    import compose_transform2
 	from math         import cos, sin, pi
@@ -1285,15 +1285,14 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, stepx,ynumber,dpsi=180.0,
 	#  center is in SPIDER convention
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
-
-	t1 = data.get_attr("xform.projection")
-	dp = t1.get_params("spider")
+	phi, theta, psi, tx, ty = get_params_proj(data)
+	t1 = Transform({"type":"spider","phi":phihi,"theta":theta,"psi":psi})
+	t1.set_trans( Vec2f( -tx, -ty ) )
 	if finfo:
 		finfo.write("Image id: %6d\n"%(ID))
-		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
+		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
-
-	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_helical(data, refrings, xrng, yrng, stepx,dpsi, mode, numr, cnx+dp["tx"], cny+dp["ty"],int(ynumber))
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_helical(data, refrings, xrng, yrng, stepx, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber))
 	iref = int(iref)
 	#print  " IN ", ang, sxs, sys, mirror, iref, peak
 	if iref > -1:
@@ -1304,17 +1303,15 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, stepx,ynumber,dpsi=180.0,
 			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 			theta = 180.0-refrings[iref].get_attr("theta")
 			psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
-			s2x   = sxb - dp["tx"]
-			s2y   = syb - dp["ty"]
 		else:
 			phi   = refrings[iref].get_attr("phi")
 			theta = refrings[iref].get_attr("theta")
 			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-			s2x   = sxb - dp["tx"]
-			s2y   = syb - dp["ty"]
+		s2x   = sxb + tx
+		s2y   = syb + ty
 
 		if finfo:
-			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
+			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f\n\n" %(phi, theta, psi, s2x, s2y, peak))
 			finfo.flush()
 		return peak, phi, theta, psi, s2x, s2y, t1
 	else:
@@ -1336,11 +1333,12 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
 	ant = cos(an*pi/180.0)
-	t1 = data.get_attr("xform.projection")
-	dp = t1.get_params("spider")
+	phi, theta, psi, tx, ty = get_params_proj(data)
+	t1 = Transform({"type":"spider","phi":phihi,"theta":theta,"psi":psi})
+	t1.set_trans( Vec2f( -tx, -ty ) )
 	if finfo:
 		finfo.write("Image id: %6d\n"%(ID))
-		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
+		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
 	
 	mirror_only = False
@@ -1418,11 +1416,11 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	else:
 		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
 
-def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx, ynumber, dpsi=180.0, finfo=None):
+def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_max=180.0, finfo=None):
 	"""
-	  dpsi - how much psi can differ from 90 or 270 degrees
+	  psi_max - how much psi can differ from 90 or 270 degrees
 	"""
-	from utilities    import compose_transform2
+	from utilities    import compose_transform2, get_params_proj
 	from math         import cos, sin, pi
 	
 	ID = data.get_attr("ID")
@@ -1433,14 +1431,15 @@ def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx, ynumber, dpsi=1
 	#  center is in SPIDER convention
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
-	t1 = data.get_attr("xform.projection")
-	dp = t1.get_params("spider")
+	phi, theta, psi, tx, ty = get_params_proj(data)
+	t1 = Transform({"type":"spider","phi":phihi,"theta":theta,"psi":psi})
+	t1.set_trans( Vec2f( -tx, -ty ) )
 	if finfo:
 		finfo.write("Image id: %6d\n"%(ID))
-		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
+		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
 
-	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_helical_90(data, refrings, xrng, yrng, stepx, dpsi, mode, numr, cnx+dp["tx"], cny+dp["ty"], int(ynumber))
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_helical_90(data, refrings, xrng, yrng, stepx, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber))
 	iref = int(iref)
 	#print  " IN ", ang, sxs, sys, mirror, iref, peak
 	if iref > -1:
@@ -1448,21 +1447,21 @@ def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx, ynumber, dpsi=1
 		phi   = refrings[iref].get_attr("phi")
 		theta = refrings[iref].get_attr("theta")
 		psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-		s2x   = sxb - dp["tx"]
-		s2y   = syb - dp["ty"]
+		s2x   = sxb + tx
+		s2y   = syb + ty
 
 		if finfo:
-			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
+			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f\n\n" %(phi, theta, psi, s2x, s2y, peak))
 			finfo.flush()
 		return peak, phi, theta, psi, s2x, s2y, t1
 	else:
 		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
 
-def proj_ali_helical_90_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, dpsi=180.0, finfo=None):
+def proj_ali_helical_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, an, psi_max=180.0, finfo=None):
 	"""
-	  dpsi - how much psi can differ from 90 or 270 degrees
+	  psi_max - how much psi can differ from 90 or 270 degrees
 	"""
-	from utilities    import compose_transform2
+	from utilities    import compose_transform2, get_params_proj
 	from math         import cos, sin, pi
 	
 	ID = data.get_attr("ID")
@@ -1474,31 +1473,30 @@ def proj_ali_helical_90_local(data, refrings, numr, xrng, yrng, stepx,ynumber, a
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
 	ant = cos(an*pi/180.0)
-	t1 = data.get_attr("xform.projection")
-	dp = t1.get_params("spider")
+	phi, theta, psi, tx, ty = get_params_proj(data)
+	t1 = Transform({"type":"spider","phi":phihi,"theta":theta,"psi":psi})
+	t1.set_trans( Vec2f( -tx, -ty ) )
 	if finfo:
 		finfo.write("Image id: %6d\n"%(ID))
-		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
+		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
 
-	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_helical_90_local(data, refrings, xrng, yrng, stepx, ant, dpsi, mode, numr, cnx+dp["tx"], cny+dp["ty"],int(ynumber))
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_helical_90_local(data, refrings, xrng, yrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber))
 	iref = int(iref)
-	#print  " IN ", ang, sxs, sys, mirror, iref, peak
 	if iref > -1:
 		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
 		phi   = refrings[iref].get_attr("phi")
 		theta = refrings[iref].get_attr("theta")
 		psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-		s2x   = sxb - dp["tx"]
-		s2y   = syb - dp["ty"]
+		s2x   = sxb + tx
+		s2y   = syb + ty
 		
 		if finfo:
-			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
+			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f\n\n" %(phi, theta, psi, s2x, s2y, peak))
 			finfo.flush()
 		return peak, phi, theta, psi, s2x, s2y, t1
 	else:
 		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
-
 
 def ali_vol_func(params, data):
 	from utilities    import model_gauss
