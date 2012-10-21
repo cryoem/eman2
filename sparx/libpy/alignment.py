@@ -1317,9 +1317,9 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_max=1
 	else:
 		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
 
-def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, dpsi=180.0, finfo=None, sym_string='d3', yrnglocal=-1.0, CONS=False):
+def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, psi_max=180.0, finfo=None, sym_string='d3', yrnglocal=-1.0, CONS=False):
 	"""
-	  dpsi - how much psi can differ from 90 or 270 degrees
+	  psi_max - how much psi can differ from 90 or 270 degrees
 	"""
 	from utilities    import compose_transform2
 	from math         import cos, sin, pi
@@ -1345,50 +1345,40 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	sn = int(sym_string[1:])
 	
 	k0 = 0.0
-	k2 = k0+180.0
+	k2 = k0 + 180.0
 	
 	if( abs( t1.at(2,2) )<1.0e-6 ):
 		if (sym_string[0] =="c") or (sym_string[0] =="C"):
-			if sn%2 == 0:
-				k1=360.0/sn
-			else:
-				k1=360.0/2/sn
+			if sn%2 == 0:  k1=360.0/sn
+			else:          k1=360.0/2/sn
 		elif (sym_string[0] =="d") or (sym_string[0] =="D"):
-			if sn%2 == 0:
-				k1=360.0/2/sn
-			else:
-				k1=360.0/4/sn
+			if sn%2 == 0:  k1=360.0/2/sn
+			else:          k1=360.0/4/sn
 	else:
-		if (sym_string[0] =="c") or (sym_string[0] =="C"):
-			k1=360.0/sn
-		elif (sym_string[0] =="d") or (sym_string[0] =="D"):
-			k1=360.0/2/sn	
-	
+		if (sym_string[0] =="c") or (sym_string[0] =="C"):    k1=360.0/sn
+		elif (sym_string[0] =="d") or (sym_string[0] =="D"):  k1=360.0/2/sn	
+
 	k3 = k1 +180.0
 	from numpy import float32
-	dpphi = float32(dp['phi'])
+	dpphi = float32(phi)
 	if sn%2 == 1:
-		if (abs(cos(dp['theta']*pi/180.0)) < 1.0e-6): 
-			if  ( dpphi >= float(k2) and dpphi < float(k3) ):
-				mirror_only = True 
-			
+		if (abs(cos(theta*pi/180.0)) < 1.0e-6): 
+			if  ( dpphi >= float(k2) and dpphi < float(k3) ): mirror_only = True
 			# temporary hack to deal with parameters whose phi angles may land exactly on k3 since the parameters were generated with old
 			# even_angles code.	
-			if dpphi == k3:
-				mirror_only = True
+			if dpphi == k3: mirror_only = True
 		else:
-			if( cos( pi*float( dp['theta'] )/180.0 )<0.0 ): # dp['theta'] > 90.0
-				mirror_only=True
+			if( cos( pi*float( theta )/180.0 )<0.0 ): mirror_only = True  # theta > 90.0
+
 	else:
 		# sn is even
-		if dp['theta'] > 90.0: # assumes that when theta is allowed to vary, it only varies from theta1 to 90 where theta1<90.
-				mirror_only=True
-		
-	#[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_helical_local(data, refrings, xrng, yrng, stepx, ant, dpsi, mode, numr, cnx+dp["tx"], cny+dp["ty"],int(ynumber))
-	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_helical_local(data, refrings, xrng, yrng, stepx, ant, dpsi, mode, numr, cnx+dp["tx"], cny+dp["ty"],int(ynumber),mirror_only, yrnglocal, CONS)
-	
+		if theta > 90.0: mirror_only=True # assumes that when theta is allowed to vary, it only varies from theta1 to 90 where theta1<90.			
+
+	#[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_helical_local(data, refrings, xrng, yrng, stepx, ant, psi_max, mode, numr, cnx+dp["tx"], cny+dp["ty"],int(ynumber))
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_helical_local(data, refrings, xrng, yrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty,int(ynumber),mirror_only, yrnglocal, CONS)
+
 	iref = int(iref)
-	
+
 	if iref > -1:
 		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
@@ -1397,21 +1387,20 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 			theta = 180.0-refrings[iref].get_attr("theta")
 			psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
-			s2x   = sxb - dp["tx"]
-			s2y   = syb - dp["ty"]
 		else:
 			phi   = refrings[iref].get_attr("phi")
 			theta = refrings[iref].get_attr("theta")
 			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-			s2x   = sxb - dp["tx"]
-			s2y   = syb - dp["ty"]
-		
+		s2x   = sxb + tx
+		s2y   = syb + ty
+
 		if finfo:
 			if mirror_only:
 				finfo.write("mirror only\n")
 			finfo.write("ref phi: %9.4f\n"%(refrings[iref].get_attr("phi")))
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f \n\n" %(phi, theta, psi, s2x, s2y, peak))
 			finfo.flush()
+
 		return peak, phi, theta, psi, s2x, s2y, t1
 	else:
 		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
