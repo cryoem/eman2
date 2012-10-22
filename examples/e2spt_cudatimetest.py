@@ -215,7 +215,7 @@ def doit(corg,options):
 		
 	#name = options.path + '/CS' + str(coarsestep).zfill(len(str(max(steps)))) + '_FS' + str(finestep) + '.txt'
 	#if computer:
-	name = options.path + '/' + computer + 'CS' + str(coarsestep).zfill(len(str(max(coarsestep)))) + '_FS' + str(finestep) + '_' + corg + '.txt'
+	name = options.path + '/' + computer + 'CS' + str(coarsestep).zfill(len(str(coarsestep))) + '_FS' + str(finestep) + '_' + corg + '.txt'
 	
 	txt = open(name,'w')
 		
