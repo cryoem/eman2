@@ -515,9 +515,7 @@ def parse2float(name,listopt,lenname,counter):
 				print 'invalid input %s' %(temp[1])
 		temp1=temp1+1
 		temp2=temp2+1 
-		########################################
-	
-	print 123
+		########################################	
 	return dopt
 
 def parse_transform(optstr):

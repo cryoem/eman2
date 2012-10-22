@@ -87,7 +87,7 @@ def main():
 
 	parser.add_option("--meanshrink", metavar="n", type="int", action="append", 
 								help="Shrinks the image by integer n using mean filter")
-	
+
 #    parser.add_option("--tomoshrink", metavar="n", type="int", action="append", 
 #                                help="Mean shrinks the image but is careful of memory - reads small pixel blocks from disk and slowly builds up the result")
 
@@ -148,8 +148,7 @@ def main():
 	parser.add_option("--trans", metavar="dx,dy,dz", type="string", action="append", 
 								help="Translate map by dx,dy,dz ")
 
-	parser.add_option("--rot", metavar="az,alt,phi or convention,a1,a2,a3,a4", type="string", action="append", 
-								help="Rotate map using EMAN Euler angles z,x,z' or an arbitrary convention. NOTE, at the moment users may only specify az,alt,phi - this is a bug that will be resolved")
+	parser.add_option("--rot",type=str,help="Rotate map using EMAN Euler angles z,x,z' or an arbitrary convention.", default="0,0,0")
 
 	parser.add_option("--icos5to2",action="store_true",help="Rotate an icosahedral map from 5-fold on Z (EMAN standard) to 2-fold on Z (MRC standard) orientation")
 	parser.add_option("--icos2to5",action="store_true",help="Rotate an icosahedral map from 2-fold on Z (MRC standard) to 5-fold on Z (EMAN standard)  orientation")
@@ -173,6 +172,11 @@ def main():
 	optionlist = pyemtbx.options.get_optionlist(sys.argv[1:])
 	
 	(options, args) = parser.parse_args()
+	
+	transformmatrix=parse_transform(options.rot)
+	print transformmatrix
+	sys.exit(1)
+	######################
 	
 	if len(args) != 2:
 		print "usage: " + usage
