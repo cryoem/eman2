@@ -279,7 +279,7 @@ def doit(corg,options):
 		txt.write(line2write)
 	txt.close()
 	
-	data.append([step,mults,times])
+	data.append([coarsestep,mults,times])
 	print "\n\nThe data to return is\n", data
 	print "\n"
 	return(data)
