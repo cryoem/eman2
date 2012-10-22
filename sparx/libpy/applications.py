@@ -6764,7 +6764,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	nlprms = (2*ndp+1)*(2*ndphi+1)
 	if nlprms< number_of_proc:
 		ERROR('number of CPUs is larger than the number of helical search, please reduce it or at this moment modify ndp,dphi in the program', "ihrsr_MPI", 1,myid)
-	
 
 
 	if debug:
@@ -6896,12 +6895,12 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	mask2D = pad( model_blank( int(nmax-20),nmax,1,bckg=1.0), nmax, nmax, 1,0.0)
 
 	data = EMData.read_images(stack, list_of_particles)
-	if fourvar:  original_data = []
+	#if fourvar:  original_data = []
 	for im in xrange(nima):
 		data[im].set_attr('ID', list_of_particles[im])
 		sttt = Util.infomask(data[im], mask2D, False)
 		data[im] = data[im] - sttt[0]
-		if fourvar: original_data.append(data[im].copy())
+		#if fourvar: original_data.append(data[im].copy())
 		if CTF:
 			st = data[im].get_attr_default("ctf_applied", 0)
 			if(st == 0):
@@ -6914,13 +6913,11 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 		finfo.write( '%d loaded  \n' % nima )
 		finfo.flush()
 	
-	for i in xrange(len(xrng)):
-		yrng[i]=dp/(2*pixel_size)
+	for i in xrange(len(xrng)): yrng[i]=dp/(2*pixel_size)
 	from math import sin, pi
-	ou_max = ( nmax/2.0)*sin( initial_theta*pi/180) - dp/2.0/pixel_size -1.0
-	if ( ou > ou_max):
+	if ( ou > ( nmax/2.0)*sin( initial_theta*pi/180) - dp/2.0/pixel_size -1.0 ):
 		ERROR('ou should be less than or equal to ----( nmax/2.0)*sin( initial_theta*pi/180) - dp/2.0/pixel_size -1.0 ', "ihrsr_MPI", 1,myid)
-	del ou_max
+
 	if myid == main_node:
 		print_msg("Pixel size in Angstroms                   : %5.4f\n\n"%(pixel_size))
 		print_msg("Y search range (pix) initialized as       : %s\n\n"%(yrng))
@@ -6932,7 +6929,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 	recvcount = []
 	for im in xrange(number_of_proc):
 		if( im == main_node ):  disps.append(0)
-		else:                  disps.append(disps[im-1] + recvcount[im-1])
+		else:                   disps.append(disps[im-1] + recvcount[im-1])
 		ib, ie = MPI_start_end(total_nima, number_of_proc, im)
 		recvcount.append( ie - ib )
 
@@ -6946,10 +6943,8 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
  		while(Iter < max_iter and terminate == 0):
 			yrnglocal = float(y_restrict)/(2*pixel_size)
 			yrng[N_step]=float(dp)/(2*pixel_size) #will change it later according to dp
-			if(ynumber[N_step]==0):
-				stepy = 0.0
-			else:
-				stepy = (2*yrng[N_step]/ynumber[N_step])
+			if(ynumber[N_step]==0): stepy = 0.0
+			else:                   stepy = (2*yrng[N_step]/ynumber[N_step])
 
 			pixer  = [0.0]*nima
 			modphi = [0.0]*nima
@@ -6966,19 +6961,22 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 				volft, kbx, kby, kbz = prep_vol( vol )
 				refrings = prepare_refrings( volft, kbz, nmax, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero", kbx = kbx, kby = kby, initial_theta =initial_theta, delta_theta = delta_theta)
 				del volft, kbx, kby, kbz
-			
+
 			if myid== main_node:
 				print_msg( "Time to prepare rings: %d\n" % (time()-start_time) )
 				start_time = time()
-			#split refrings to two list: refrings1 (theta = 90), and refrings2 ( theta not 90)
+			#split refrings to two list: refrings1 (even point-group symmetry AND theta = 90. ), 
+			#   or refrings2 ( odd point-group symmetry AND any theta (including theta=90), OR even point-group symmetry AND theta <> 90.
 			refrings1= []
 			refrings2= []
 			sn = int(symmetry_string[1:])
 			for i in xrange( len(refrings) ):
-				if( sn%2 ==0 and abs( refrings[i].get_attr('n3') ) <1.0e-6 and (symmetry_string[0] == "c" or symmetry_string[0] =="d" ) ):
-					refrings1.append( refrings[i])
+				if( sn%2 ==0 and abs( refrings[i].get_attr('n3') ) <1.0e-6 ):
+					#  even point-group symmetry AND theta = 90. 
+					refrings1.append( refrings[i] )
 				else:
-					refrings2.append( refrings[i])
+					# odd point-group symmetry AND any theta (including theta=90), OR even point-group symmetry AND theta <> 90.
+					refrings2.append( refrings[i] )
 					'''
 					if myid == main_node:
 						print_msg("\nphi = %5.2f, theta = %5.2f, psi=%5.2f\n"%( refrings[i].get_attr('phi'), refrings[i].get_attr('theta'), refrings[i].get_attr('psi') ) )
@@ -6994,38 +6992,52 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 			for im in xrange( nima ):
 				"""
 					Logic of searches:
-						refrings1 (theta = 90), and refrings2 ( theta not 90)
+						refrings1 (even point-group symmetry AND theta = 90.), and refrings2 ( odd point-group symmetry AND any theta (including theta=90), OR even point-group symmetry AND theta <> 90.)
 						an == -1 exhaustive search
 						psi_max - how far rotation in plane can can deviate from 90 or 270 degrees
 						psi_max -s used in both exhaustive and local searches
 						:::
-						theta = 90
+						>even point-group symmetry AND theta = 90. 
 							exhaustive   proj_ali_helical_90   psi_max
 											Util.multiref_polar_ali_helical_90  psi_max
 											Crosrng_sm_psi  (in util_sparx.cpp)  psi_max - WILL SEARCH for BOTH PSI=0 AND 180 NO MATTER WHAT					
 																					flag - no mirror or mirror, DOES NOT CHECK MIRRORED
 											
-							local        proj_ali_helical_90_local   an[N_step], psi_max,  (alignment.py)
+							local       reference projections phi= [0,180,delta], theta=90 
+										proj_ali_helical_90_local   an[N_step], psi_max,  (alignment.py)
 											Util.multiref_polar_ali_helical_90_local   psi_max
 											Crosrng_psi_0_180_no_mirror		(in util_sparx.cpp)   psi_max - WILL SEARCH AROUND BOTH PSI=0 AND 180 NO MATTER WHAT					
-							
-						theta != 90
+
+					>odd point-group symmetry AND any theta (including theta=90), OR even point-group symmetry AND theta <> 90.
 							exhaustive   proj_ali_helical           psi_max
 											Util.multiref_polar_ali_helical  psi_max
 												CALLS Crosrng_pi twice, for 0 and for 180, thus duplicates the work!!
 											Crosrng_psi  checks MIRROR
 											
-							local        proj_ali_helical_local  
+							local        proj_ali_helical_local   psi_max
+											Util.multiref_polar_ali_helical_local  psi_max
+												Uses the following construct
+												if (mirror_only == true) {
+													if ((psi-90) < 90) retvals = Crosrng_sm_psi(crefim[iref], cimage, numr,   0, 1, psi_max);
+													else               retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, 180, 1, psi_max); 
+												} else { 
+													if ((psi-90) < 90) retvals = Crosrng_sm_psi(crefim[iref], cimage, numr,   0, 0, psi_max);
+													else               retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, 180, 0, psi_max);
+												}
+											where Crosrng_sm_psi will do search for psi around one angle and do mirror or not.
+
 				"""
 				peak1 = None
 				peak2 = None
-				if ( len(refrings1) > 0):
+				print im, get_params_proj(data[im])
+				if( len(refrings1) > 0):
 					if  an[N_step] == -1:
 						peak1, phihi1, theta1, psi1, sxi1, syi1, t11 = \
 						proj_ali_helical_90(data[im], refrings1, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], psi_max, finfo)
 					else:
 						peak1, phihi1, theta1, psi1, sxi1, syi1, t11 = \
 						proj_ali_helical_90_local(data[im], refrings1, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], an[N_step], psi_max, finfo)
+					#print "  1  ",im, peak1, phihi1, theta1, psi1, sxi1, syi1
 				if( len(refrings2) > 0):
 					if  an[N_step] == -1:
 						peak2, phihi2, theta2, psi2, sxi2, syi2, t12 = \
@@ -7033,6 +7045,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 					else:
 						peak2, phihi2, theta2, psi2, sxi2, syi2, t12 = \
 						proj_ali_helical_local(data[im], refrings2, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], an[N_step], psi_max, finfo, sym_string=symmetry_string, yrnglocal=yrnglocal)
+					#print "  2  ",im, peak2, phihi2, theta2, psi2, sxi2, syi2
 				if peak1 is None: 
 					peak = peak2
 					phihi = phihi2
@@ -7066,7 +7079,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 						sxi = sxi2
 						syi = syi2
 						t1 = t12
-				#peak, phihi, theta, psi, sxi, syi, t1 = proj_ali_helical(data[im],refrings,numr,xrng[N_step],yrng[N_step],stepx[N_step],ynumber[N_step],psi_max,finfo,)
+				#print "  3  ",im, peak, phihi, theta, psi, sxi, syi
 				if(peak > -1.0e22):
 					if WRAP == 1:
 						#Guozhi Tao: wrap y-shifts back into box within rise of one helical unit by changing phi
@@ -7092,62 +7105,60 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 								tfinal = tp*th
 								df = tfinal.get_params("spider")
 								dtp_ty_temp = float( df["ty"] )
-								
+
 							phihi = float(df["phi"])
 							sxi   = float(-df["tx"])
 							syi   = float(-df["ty"])
+					#print "  4  ",im, peak, phihi, theta, psi, sxi, syi
 
 					# unique ranges of azimuthal angle for ortho-axial and non-ortho-axial projection directions are identified by [k0,k1) and [k2,k3), where k0, k1, k2, k3 are floats denoting azimuthal angles.
 					# Eulerian angles whose azimuthal angles are mapped into [k2, k3) are related to Eulerian angles whose azimuthal angles are mapped into [k0, k1) by an in-plane mirror operaton along the x-axis.
 
 					tp = Transform({"type":"spider","phi":phihi,"theta":theta,"psi":psi})
 					tp.set_trans( Vec2f( -sxi, -syi ) )
-					k0 = 0.0
-					k2 = k0+180.0
 
+					k0 =   0.0
+					k2 = 180.0
 					if( abs( tp.at(2,2) )<1.0e-6 ):
 						if (symmetry_string[0] =="c"):
-							if sn%2 == 0:
-								k1=360.0/sn
-							else:
-								k1=360.0/2/sn
+							if sn%2 == 0:  k1=360.0/sn
+							else:          k1=360.0/2/sn
 						elif (symmetry_string[0] =="d"):
-							if sn%2 == 0:
-								k1=360.0/2/sn
-							else:
-								k1=360.0/4/sn
+							if sn%2 == 0:  k1=360.0/2/sn
+							else:          k1=360.0/4/sn
 					else:
-						if (symmetry_string[0] =="c"):
-							k1=360.0/sn
-						if (symmetry_string[0] =="d"):
-							k1=360.0/2/sn
-
+						if (symmetry_string[0] =="c"):  k1=360.0/sn
+						if (symmetry_string[0] =="d"):  k1=360.0/2/sn
 					k3 = k1 +180.0
+
 					from utilities import get_sym
 					T = get_sym(symmetry_string[0:])
 
 					d1tp = tp.get_params('spider')
-					sxnew = - d1tp["tx"]
-					synew = - d1tp["ty"]
-					phinew = d1tp['phi']
-					thetanew = d1tp["theta"]
-					psinew = d1tp["psi"]
+					sxnew    = -d1tp["tx"]
+					synew    = -d1tp["ty"]
+					phinew   =  d1tp['phi']
+					thetanew =  d1tp["theta"]
+					psinew   =  d1tp["psi"]
 					del d1tp
+
+					#print "  5  ",im, phinew, thetanew, psinew, sxnew, synew
+					#print k0,k1,k2,k3
 
 					for i in xrange( len(T) ):
 						ttt = tp*Transform({"type":"spider","phi":T[i][0],"theta":T[i][1],"psi":T[i][2]})
-						d1 = ttt.get_params("spider")
+						d1  = ttt.get_params("spider")
 						
 						if ( abs( tp.at(2,2) )<1.0e-6 ):
 							if( sn%2==1 ): # theta=90 and n odd, only one of the two region match
 
-								if( ( d1['phi'] >= float(k0) and d1['phi'] < float(k1) ) or ( d1['phi'] >= float(k2) and d1['phi'] < float(k3) )):
+								if( ( d1['phi'] >= k0 and d1['phi'] < k1 ) or ( d1['phi'] >= k2 and d1['phi'] < k3 )):
 
-									sxnew = - d1["tx"]
-									synew = - d1["ty"]
-									phinew = d1['phi']
-									thetanew = d1["theta"]
-									psinew = d1["psi"]
+									sxnew    = -d1["tx"]
+									synew    = -d1["ty"]
+									phinew   =  d1['phi']
+									thetanew =  d1["theta"]
+									psinew   =  d1["psi"]
 
 									# For boundary cases where phihi is exactly on the boundary of the unique range, there may be two symmetry related Eulerian angles which are both in the unique 
 									# range but whose psi differ by 180. 
@@ -7211,6 +7222,11 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 					pixer[im]  = 0.0
 					phihi, theta, psi, sxi, syi = get_params_proj(data[im])
 					modphi[im] = phihi
+				#print "  6  ",im, phinew, thetanew, psinew, sxnew, synew
+
+				#if(im==2):
+				#	from sys import exit
+				#	exit()
 
 			del refrings1, refrings2
 			if myid == main_node:
@@ -7331,6 +7347,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 				print_msg("\n3D reconstruction time = %d\n"%(time()-start_time))
 				start_time = time()
 
+			"""
 			if fourvar:
 			#  Compute Fourier variance
 				for im in xrange(nima):
@@ -7342,7 +7359,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 					varf = 1.0/varf
 					drop_image(varf, os.path.join(outdir, "varf%04d.hdf"%(total_iter)))
 			else:  varf = None
-
+			"""
 			#search for helical symmetry
 			if myid == main_node:
 				drop_image(vol, os.path.join(outdir, "vol%04d.hdf"%(total_iter)))
@@ -7416,7 +7433,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 				fofo.write('  %12.4f   %12.4f\n'%(dp,dphi))
 				fofo.close()
 				ref_data = [vol]
-				if  fourvar:  ref_data.append(varf)
+				#if  fourvar:  ref_data.append(varf)
 				vol = user_func(ref_data)
 				vol = vol.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
 
@@ -7427,8 +7444,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 			bcast_EMData_to_all(vol, myid, main_node)
 			dp   = bcast_number_to_all(dp,   source_node = main_node)
 			dphi = bcast_number_to_all(dphi, source_node = main_node)
-			#
-			del varf
+			# del varf
 	par_str = ["xform.projection"]
 	if myid == main_node:
 	   	if(file_type(stack) == "bdb"):

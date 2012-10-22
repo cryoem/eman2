@@ -952,8 +952,7 @@ def prepare_refrings( volft, kb, nz, delta, ref_a, sym, numr, MPI=False, phiEqps
 	if initial_theta is None:
 		ref_angles = even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
 	else:
-		if delta_theta is None:
-			delta_theta = 1.0
+		if delta_theta is None: delta_theta = 1.0
 		ref_angles = even_angles(delta, theta1 = initial_theta, theta2 = delta_theta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
 	wr_four  = ringwe(numr, mode)
 	cnx = nz//2 + 1
@@ -1207,8 +1206,8 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=1
 	"""
 	from utilities    import compose_transform2
 	#from utilities   import set_params_proj, get_params_proj
-	from math         import cos, sin, pi
 	from EMAN2 import Vec2f
+	from math         import cos, sin, pi
 	
 	ID = data.get_attr("ID")
 	if finfo:
@@ -1274,7 +1273,8 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_max=1
 	"""
 	  psi_max - how much psi can differ from 90 or 270 degrees
 	"""
-	from utilities    import compose_transform2
+	from utilities    import compose_transform2, get_params_proj
+	from EMAN2 import Vec2f
 	from math         import cos, sin, pi
 	
 	ID = data.get_attr("ID")
@@ -1286,7 +1286,7 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_max=1
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
 	phi, theta, psi, tx, ty = get_params_proj(data)
-	t1 = Transform({"type":"spider","phi":phihi,"theta":theta,"psi":psi})
+	t1 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 	t1.set_trans( Vec2f( -tx, -ty ) )
 	if finfo:
 		finfo.write("Image id: %6d\n"%(ID))
@@ -1321,7 +1321,8 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	"""
 	  psi_max - how much psi can differ from 90 or 270 degrees
 	"""
-	from utilities    import compose_transform2
+	from utilities    import compose_transform2, get_params_proj
+	from EMAN2 import Vec2f
 	from math         import cos, sin, pi
 	
 	ID = data.get_attr("ID")
@@ -1334,19 +1335,18 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	cny  = ny//2 + 1
 	ant = cos(an*pi/180.0)
 	phi, theta, psi, tx, ty = get_params_proj(data)
-	t1 = Transform({"type":"spider","phi":phihi,"theta":theta,"psi":psi})
+	t1 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 	t1.set_trans( Vec2f( -tx, -ty ) )
 	if finfo:
 		finfo.write("Image id: %6d\n"%(ID))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
-	
-	mirror_only = False
+
 	sn = int(sym_string[1:])
-	
-	k0 = 0.0
-	k2 = k0 + 180.0
-	
+
+	k0 =   0.0
+	k2 = 180.0
+
 	if( abs( t1.at(2,2) )<1.0e-6 ):
 		if (sym_string[0] =="c") or (sym_string[0] =="C"):
 			if sn%2 == 0:  k1=360.0/sn
@@ -1355,27 +1355,27 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 			if sn%2 == 0:  k1=360.0/2/sn
 			else:          k1=360.0/4/sn
 	else:
-		if (sym_string[0] =="c") or (sym_string[0] =="C"):    k1=360.0/sn
-		elif (sym_string[0] =="d") or (sym_string[0] =="D"):  k1=360.0/2/sn	
+		if   (sym_string[0] =="c")   or (sym_string[0] =="C"):    k1=360.0/sn
+		elif (sym_string[0] =="d")   or (sym_string[0] =="D"):    k1=360.0/2/sn
 
 	k3 = k1 +180.0
 	from numpy import float32
 	dpphi = float32(phi)
+	mirror_only = False
 	if sn%2 == 1:
-		if (abs(cos(theta*pi/180.0)) < 1.0e-6): 
+		if (abs(cos(theta*pi/180.0)) < 1.0e-6):
 			if  ( dpphi >= float(k2) and dpphi < float(k3) ): mirror_only = True
 			# temporary hack to deal with parameters whose phi angles may land exactly on k3 since the parameters were generated with old
 			# even_angles code.	
 			if dpphi == k3: mirror_only = True
 		else:
-			if( cos( pi*float( theta )/180.0 )<0.0 ): mirror_only = True  # theta > 90.0
-
+			if( cos( pi*float( theta )/180.0 ) < 0.0 ): mirror_only = True  # theta > 90.0
 	else:
 		# sn is even
-		if theta > 90.0: mirror_only=True # assumes that when theta is allowed to vary, it only varies from theta1 to 90 where theta1<90.			
+		if theta > 90.0: mirror_only = True # assumes that when theta is allowed to vary, it only varies from theta1 to 90 where theta1<90.			
 
-	#[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_helical_local(data, refrings, xrng, yrng, stepx, ant, psi_max, mode, numr, cnx+dp["tx"], cny+dp["ty"],int(ynumber))
-	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_helical_local(data, refrings, xrng, yrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty,int(ynumber),mirror_only, yrnglocal, CONS)
+	[ang, sxs, sys, mirror, iref, peak] = \
+	Util.multiref_polar_ali_helical_local(data, refrings, xrng, yrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber), mirror_only, yrnglocal, CONS)
 
 	iref = int(iref)
 
@@ -1410,6 +1410,7 @@ def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_ma
 	  psi_max - how much psi can differ from 90 or 270 degrees
 	"""
 	from utilities    import compose_transform2, get_params_proj
+	from EMAN2 import Vec2f
 	from math         import cos, sin, pi
 	
 	ID = data.get_attr("ID")
@@ -1421,7 +1422,7 @@ def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_ma
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
 	phi, theta, psi, tx, ty = get_params_proj(data)
-	t1 = Transform({"type":"spider","phi":phihi,"theta":theta,"psi":psi})
+	t1 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 	t1.set_trans( Vec2f( -tx, -ty ) )
 	if finfo:
 		finfo.write("Image id: %6d\n"%(ID))
@@ -1451,6 +1452,7 @@ def proj_ali_helical_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 	  psi_max - how much psi can differ from 90 or 270 degrees
 	"""
 	from utilities    import compose_transform2, get_params_proj
+	from EMAN2 import Vec2f
 	from math         import cos, sin, pi
 	
 	ID = data.get_attr("ID")
@@ -1463,7 +1465,7 @@ def proj_ali_helical_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 	cny  = ny//2 + 1
 	ant = cos(an*pi/180.0)
 	phi, theta, psi, tx, ty = get_params_proj(data)
-	t1 = Transform({"type":"spider","phi":phihi,"theta":theta,"psi":psi})
+	t1 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 	t1.set_trans( Vec2f( -tx, -ty ) )
 	if finfo:
 		finfo.write("Image id: %6d\n"%(ID))
