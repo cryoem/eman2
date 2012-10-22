@@ -57,6 +57,8 @@ def main():
 	parser.add_argument("--extensive", action='store_true', help="Will test EVERY box size between 12 and 256, for coarse steps of 10,8,6,4,2 (fine step is always half of coarse step).",default=False)
 	
 	parser.add_argument("--ID", type=str, help="Tag files generated on a particular computer.",default='')
+	parser.add_argument("--coarsestep", type=str, help="Step size for coarse alignment.",default='')
+	parser.add_argument("--finestep", type=str, help="Step size for fine alignment.",default='')
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
