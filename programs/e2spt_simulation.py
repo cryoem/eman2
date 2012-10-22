@@ -41,10 +41,8 @@ import random
 import numpy
 
 def main():
-	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options]
 
-	This program produces simulated sub volumes in random orientations from a given PDB or EM file. The output is ALWAYS in HDF format, since it's the only format supported by E2SPT programs.
+	usage = """e2spt_simulation.py <options> . The options should be supplied in "--option=value", replacing "option" for a valid option name, and "value" for an acceptable value for that option. This program produces simulated sub volumes in random orientations from a given PDB or EM file. The output is ALWAYS in HDF format, since it's the only format supported by E2SPT programs.
 	"""
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)	
@@ -464,10 +462,10 @@ def subtomosim(options,ptcls,stackname):
 				ny=prj_r['ny']
 				
 		 		noise = test_image(1,size=(nx,ny))
-	                        noise2 = noise.process("filter.lowpass.gauss",{"cutoff_abs":.25})
-	                        noise.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.75})
-	                        noise = ( noise*3 + noise2*3 ) * options.snr
-	                        prj_r.add(noise)
+	            noise2 = noise.process("filter.lowpass.gauss",{"cutoff_abs":.25})
+	        	noise.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.75})
+	        	noise = ( noise*3 + noise2*3 ) * options.snr
+	        	prj_r.add(noise)
 
 			ctfed_projections.append(prj_r)		
 
