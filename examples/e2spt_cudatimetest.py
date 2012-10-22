@@ -52,13 +52,13 @@ def main():
 	parser.add_argument("--cpu", action='store_true', help="Will test SPT alignment using CPU.",default=False)
 	parser.add_argument("--gpu", action='store_true', help="Will test SPT alignment using GPU.",default=False)
 	
-	parser.add_argument("--test", action='store_true', help="Will run a quick tests using a few box sizes, with a coarse tilt step of 30 and a fine step of 15.",default=False)
-	parser.add_argument("--medium", action='store_true', help="Will test boxsizes in multiples of 10 between 10 and 240, with a coarse step of 30 and fine step of 15",default=False)
-	parser.add_argument("--extensive", action='store_true', help="Will test EVERY box size between 12 and 256, for coarse steps of 10,8,6,4,2 (fine step is always half of coarse step).",default=False)
+	parser.add_argument("--test", action='store_true', help="Will run a quick tests using a few box sizes.",default=False)
+	parser.add_argument("--medium", action='store_true', help="Will test boxsizes in multiples of 10 between 10 and 240.",default=False)
+	parser.add_argument("--extensive", action='store_true', help="Will test EVERY box size between 12 and 256.",default=False)
 	
 	parser.add_argument("--ID", type=str, help="Tag files generated on a particular computer.",default='')
-	parser.add_argument("--coarsestep", type=str, help="Step size for coarse alignment.",default='')
-	parser.add_argument("--finestep", type=str, help="Step size for fine alignment.",default='')
+	parser.add_argument("--coarsestep", type=int, help="Step size for coarse alignment.",default=30)
+	parser.add_argument("--finestep", type=int, help="Step size for fine alignment.",default=15)
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -189,101 +189,99 @@ def doit(corg,options):
 	f=os.listdir(c)
 
 	mults = [12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,35,36,40,42,44,45,48,49,50,52,54,56,60,64,65,66,70,72,75,77,78,80,81,84,88,91,96,98,100,104,112,120,128,136,144,152,160,168,176,184,192,200,208,216,224,232,240,248,256]
-	steps = [30]
+	#steps = [options.coarse]
 	if options.test:
 		mults = [32,64,96,128]
-		steps = [30]
+		#steps = [30]
 
 	if options.medium:
 		mults=[]
 		for i in xrange(1,25):
 			mults.append(i*10)
-		steps = [30]
+		#steps = [30]
 
 	if options.extensive:
 		mults = []
 		for i in xrange(12,257):
 			mults.append(i)
-		steps=[10]
+		#steps=[10]
 	
 	computer = options.ID
 	
 	data = []
 	
-	for step in steps:
-
-		coarsestep=step
-		finestep=coarsestep/2
+	coarsestep=options.coarsestep
+	finestep=options.finestep
 		
-		#name = options.path + '/CS' + str(coarsestep).zfill(len(str(max(steps)))) + '_FS' + str(finestep) + '.txt'
-		#if computer:
-		name = options.path + '/' + computer + 'CS' + str(coarsestep).zfill(len(str(max(steps)))) + '_FS' + str(finestep) + '_' + corg + '.txt'
-
-		txt = open(name,'w')
+	#name = options.path + '/CS' + str(coarsestep).zfill(len(str(max(steps)))) + '_FS' + str(finestep) + '.txt'
+	#if computer:
+	name = options.path + '/' + computer + 'CS' + str(coarsestep).zfill(len(str(max(coarsestep)))) + '_FS' + str(finestep) + '_' + corg + '.txt'
+	
+	txt = open(name,'w')
 		
-		times=[]
-		for size in mults:
-			t=t1=t2=t1h=t2h=t1m=t2m=t1s=t2s=t1tot=t2tot=0
+	times=[]
+	for size in mults:
+		t=t1=t2=t1h=t2h=t1m=t2m=t1s=t2s=t1tot=t2tot=0
 
-			#a=EMData(argv[1])
-			a=EMData(size,size,size)
-			a=a.process('testimage.noise.gauss')
-			#a=a.process("xform.scale",{'scale':1,'clip':size})
+		#a=EMData(argv[1])
+		a=EMData(size,size,size)
+		a=a.process('testimage.noise.gauss')
+		#a=a.process("xform.scale",{'scale':1,'clip':size})
 			
-			#if 'gpu' not in corg:
-			#	a.switchoffcuda()
+		#if 'gpu' not in corg:
+		#	a.switchoffcuda()
 	
-			#a.to_one()
-			aname = 'a_stack.hdf'
-			a.write_image(options.path+ '/' + aname)
+		#a.to_one()
+		aname = 'a_stack.hdf'
+		a.write_image(options.path+ '/' + aname)
 
-			b=EMData(size,size,size)
-			b=b.process('testimage.noise.gauss')
-			bname = 'b_stack.hdf'
-			b.write_image(options.path+ '/' + bname)
+		b=EMData(size,size,size)
+		b=b.process('testimage.noise.gauss')
+		bname = 'b_stack.hdf'
+		b.write_image(options.path+ '/' + bname)
 			
-			#if 'gpu' not in corg:
-			#	b.switchoffcuda()
-			#	print "\n\n\n !!!! I Have turned cuda OFF!!!\n\n\n"
+		#if 'gpu' not in corg:
+		#	b.switchoffcuda()
+		#	print "\n\n\n !!!! I Have turned cuda OFF!!!\n\n\n"
 	
-			out = 'garbage.hdf'
+		out = 'garbage.hdf'
 			
-			setcuda=''
-			if corg=='gpu' or corg=='GPU':
-				setcuda= 'EMANUSECUDA=1 && NOCUDAINIT=0 && '
-				print "\n\n\n !!!! I Have turned cuda ON!!!\n\n\n"
-			elif corg=='cpu' or corg=='CPU':
-				setcuda = 'export NOCUDAINIT=1 && '
-				print "\n\n\n !!!! I Have turned cuda OFF!!!\n\n\n"
-			else:
-				print "Something is wrong; you're supposed to select GPU or CPU. TERMINATING!"
-				sys.exit()
+		setcuda=''
+		if corg=='gpu' or corg=='GPU':
+			setcuda= 'EMANUSECUDA=1 && NOCUDAINIT=0 && '
+			print "\n\n\n !!!! I Have turned cuda ON!!!\n\n\n"
+		elif corg=='cpu' or corg=='CPU':
+			setcuda = 'export NOCUDAINIT=1 && '
+			print "\n\n\n !!!! I Have turned cuda OFF!!!\n\n\n"
+		else:
+			print "Something is wrong; you're supposed to select GPU or CPU. TERMINATING!"
+			sys.exit()
 							
-			instruction1 = setcuda + '''cd ''' + options.path + ''' && e2spt_classaverage.py --input=''' + aname + ''' --output=''' + out + ''' --ref=''' + bname + ''' --iter=1 --npeakstorefine=1 -v 1 --mask=mask.sharp:outer_radius=-2 --preprocess=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --align=rotate_translate_3d:search=6:delta=''' + str(coarsestep) + ''':dphi=''' + str(coarsestep) + ''':verbose=1:sym=icos --parallel=thread:1 --ralign=refine_3d_grid:delta=''' + str(finestep) + ''':range=''' + str(coarsestep) + ''' --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --normproc=normalize.mask'''
-			cmd = instruction1
-			print "The instruction is", cmd
+		instruction1 = setcuda + '''cd ''' + options.path + ''' && e2spt_classaverage.py --input=''' + aname + ''' --output=''' + out + ''' --ref=''' + bname + ''' --iter=1 --npeakstorefine=1 -v 1 --mask=mask.sharp:outer_radius=-2 --preprocess=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --align=rotate_translate_3d:search=6:delta=''' + str(coarsestep) + ''':dphi=''' + str(coarsestep) + ''':verbose=1:sym=icos --parallel=thread:1 --ralign=refine_3d_grid:delta=''' + str(finestep) + ''':range=''' + str(coarsestep) + ''' --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --normproc=normalize.mask'''
+		cmd = instruction1
+		print "The instruction is", cmd
 	
-			#if 'gpu' in corg:
-			#	a=test_image()
-			#	a.do_fft_cuda()
+		#if 'gpu' in corg:
+		#	a=test_image()
+		#	a.do_fft_cuda()
 			
-			ta = time()
-			os.system(cmd)
-			tb = time()
+		ta = time()
+		os.system(cmd)
+		tb = time()
 			
-			#t=eman2time()
-			#print "The total alignment time was", t
+		#t=eman2time()
+		#print "The total alignment time was", t
 			
-			td = tb - ta
-			print "BUt the real time is", td
-			times.append(float(td))
-			line2write= str(size) + ' ' + str(td)+'\n'
-			txt.write(line2write)
-		txt.close()
+		td = tb - ta
+		print "BUt the real time is", td
+		times.append(float(td))
+		line2write= str(size) + ' ' + str(td)+'\n'
+		txt.write(line2write)
+	txt.close()
 	
-		data.append([step,mults,times])
-		print "\n\nThe data to return is\n", data
-		print "\n"
+	data.append([step,mults,times])
+	print "\n\nThe data to return is\n", data
+	print "\n"
 	return(data)
 
 def plotter(name,xaxis,yaxis,CS,FS):
