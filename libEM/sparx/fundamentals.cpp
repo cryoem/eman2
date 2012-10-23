@@ -179,7 +179,7 @@ Output: 1-2-3D real image with the result
         (correlation F*conjg(G), convolution F*G, 
 		autocorrelation |F|^2, self-correlation |F|)
         and with the origin at the image center int[n/2]+1.
-*/  
+*/
 	EMData* 
 	fourierproduct(EMData* f, EMData* g, fp_flag flag, fp_type ptype, bool center) {
 		size_t normfact;
