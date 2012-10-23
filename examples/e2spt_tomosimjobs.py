@@ -60,11 +60,11 @@ def main():
 	
 	parser.add_argument("--path",type=str,default=None,help="Directory to store results in. The default is a numbered series of directories containing the prefix 'sptsimjob'; for example, sptsimjob_02 will be the directory by default if 'sptsimjob_01' already exists.")
 	
-	parser.add_argument("--snrlowerlimit", type=int,default=0,help="Minimum weight for noise compared to singal.")
-	parser.add_argument("--snrupperlimit", type=int,default=1,help="Maximum weight for noise compared to singal.")
+	parser.add_argument("--snrlowerlimit", type=float,default=0.0,help="Minimum weight for noise compared to singal.")
+	parser.add_argument("--snrupperlimit", type=float,default=1.0,help="Maximum weight for noise compared to singal.")
 
-	parser.add_argument("--snrchange", type=int,default=1,help="""Step to vary snr from one run to another. 
-										For example, if this parameter is set to 2, snr will be tested at 1,3,5... up to --snrupperlimit.""")
+	parser.add_argument("--snrchange", type=float,default=1.0,help="""Step to vary snr from one run to another. 
+										For example, if this parameter is set to 2.0, snr will be tested from --snrlowerlimit (for example, 0.0), increasing by --snrchange, 0.0,2.0,4.0... up to --snrupperlimit.""")
 
 	parser.add_argument("--tiltrangelowerlimit", type=int,default=60,help="""Minimum value for imaging range (at a value of 90, there's no missing wedge. 
 											60 would mean the data will be simulated, as if it came from a tomogram that was reconstructed from a til series
@@ -154,8 +154,8 @@ def main():
 	"""
 	Parameters to be passed on to e2spt_classaverage.py
 	"""
-	parser.add_argument("--raligncmp",type=str,default='ccc.tomo',help="Comparator to use for missing wedge compensation during fine alignment.")
-	parser.add_argument("--aligncmp",type=str,default='ccc.tomo',help="Comparator to use for missing wedge compensation during coarse alignment.")
+	parser.add_argument("--raligncmp",type=str,default='ccc',help="Comparator to use for missing wedge compensation during fine alignment.")
+	parser.add_argument("--aligncmp",type=str,default='ccc',help="Comparator to use for missing wedge compensation during coarse alignment.")
 	parser.add_argument("--parallel",type=str,default='thread:7',help="Parallelization to use.")
 
 	(options, args) = parser.parse_args()	
