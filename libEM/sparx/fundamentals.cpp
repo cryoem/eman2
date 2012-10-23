@@ -226,7 +226,7 @@ Output: 1-2-3D real image with the result
 		} else {
 			//  [normalize] [pad] compute fft
 			fp = f->norm_pad(donorm, npad);
-                        fp->do_fft_inplace();
+            fp->do_fft_inplace();
 		}
 		// The [padded] fft-extended version of g is gp.
 		EMData* gp = NULL;
