@@ -43,6 +43,14 @@ def main():
         	arglist.append( arg )
 	progname = os.path.basename(arglist[0])
 	usage = progname + " stack ref_vol outdir  <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --ynumber=y_numbers  --txs=translational_search_stepx  --delta=angular_step --an=angular_neighborhood --center=1 --maxit=max_iter --CTF --snr=1.0  --ref_a=S --sym=c1 --datasym=symdoc --new"
+	usage2 = progname + """ inputfile outputfile [options]
+        Examples:
+
+        Helicise input volume and save the result to output volume:
+        
+        	sxihrsr.py input_vol.hdf output_vol.hdf --helicise --dp=27.6 --dphi=166.5 --fract=0.65 --rmax=70 --rmin=1 --apix=1.84         
+
+"""
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",                 type="int",    default= 1,                  help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou",                 type="int",    default= -1,                 help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
@@ -83,17 +91,38 @@ def main():
 	parser.add_option("--y_restrict",         type="float",  default= -1,                 help="range for translational search in y-direction, search is +/-y_restrict/2 in Angstroms. This only applies to local search, i.e., when an is not -1. If y_restrict=-1, the default value, then there is no y search range restriction")
 	parser.add_option("--searchxshift",       type="int",    default= -1,                 help="x-shift determination")
 	parser.add_option("--nearby",             type="int",    default= 3,                  help="neighborhood in which to search for peaks in 1D ccf for x-shift search")
+	
+	parser.add_option("--helicise",                action="store_true", default=False,         help="helicise input volume and save results to output volume")
+	
 	(options, args) = parser.parse_args(arglist[1:])
-	if len(args) < 3 or len(args) > 5:
-		print "usage: " + usage
+	if len(args) < 2 or len(args) > 5:
+		print "usage: " + usage + "\n"
+		print "Also includes various helical reconstruction related functionalities: " + usage2
 		print "Please run '" + progname + " -h' for detailed options"
 	else:
+	
+		if options.helicise:	
+			if len(args) != 2:
+				print "Incorrect number of parameters"
+				sys.exit()
+			if options.dp < 0:
+				print "Helical symmetry paramter rise --dp should not be negative"
+				sys.exit()
+			if options.apix < 0:
+				print "Please enter pixel size"
+				sys.exit()
+			from utilities import get_im
+			vol = get_im(args[0])
+			hvol = vol.helicise(options.apix, options.dp, options.dphi, options.fract, options.rmax, options.rmin)
+			hvol.write_image(args[1])
+			sys.exit()
+			
 		if len(args) == 3 : mask = None
 		elif len(args) == 4: mask = args[4]
 		else:
 			print  "Incorrect number of parameters"
 			sys.exit()
-				
+			
 		if options.MPI:
 			from mpi import mpi_init
 			sys.argv = mpi_init(len(sys.argv), sys.argv)
