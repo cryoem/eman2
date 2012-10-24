@@ -42,8 +42,7 @@ periodogram(EMData* f) {
 	int nx  = f->get_xsize();
 	int ny  = f->get_ysize();
 	int nz  = f->get_zsize();
-	
-	
+
  		// We manifestly assume no zero-padding here, just the 
 		// necessary extension along x for the fft
 
@@ -58,9 +57,7 @@ periodogram(EMData* f) {
 		fp = f->norm_pad(false, 1); // Extend and do the FFT if f is real
 		fp->do_fft_inplace();
 
-		
-		
-		
+
 	}
 	fp->set_array_offsets(1,1,1);
 
@@ -139,7 +136,7 @@ periodogram(EMData* f) {
 		}
 		
 	}
-		
+
 	if( fp ) {
 		delete fp; // avoid a memory leak!
 		fp = 0;
@@ -245,7 +242,7 @@ Output: 1-2-3D real image with the result
 		// Get complex matrix views of fp and gp; matrices start from 1 (not 0)
 		fp->set_array_offsets(1,1,1);
 		gp->set_array_offsets(1,1,1);
-		
+
 		// If the center flag is true, put the center of the correlation in the middle
 		// If it is false, put it in (0,0), this approach saves time, but it is diffcult to manage the result
 		if (center) {
@@ -486,7 +483,7 @@ Output: 1-2-3D real image with the result
 						(*fp)(ix,iy,iz) *= lagyz/(nx-abs(ix-nxc));
 					}
 				}
-			}	
+			}
 		}
 		//OVER AND OUT
 		//fp->set_array_offsets(saved_offsets);  This was strange and did not work, PAP
