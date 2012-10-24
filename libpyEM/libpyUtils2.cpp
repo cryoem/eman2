@@ -84,15 +84,48 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_multiref_polar_ali_helical_local_overl
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_multiref_polar_ali_helical_90_overloads_10_11, EMAN::Util::multiref_polar_ali_helical_90, 10, 11)
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_multiref_polar_ali_helical_90_local_overloads_11_12, EMAN::Util::multiref_polar_ali_helical_90_local, 11, 12)
 
-void process_region_io(EMAN::EMData *ths, const char* path, size_t offset, int rw_mode, int image_index, size_t mode_size, const EMAN::Region * area=0) { 
+void read_raw_emdata(EMAN::EMData *ths, const char* path, size_t offset, int rw_mode, int image_index, int mode, const EMAN::Region * area=0) { 
 	Py_BEGIN_ALLOW_THREADS
-	const char *mode;
-	if (rw_mode==1) mode="r";	// 1 is READ_ONLY
-	else mode="r+";
-	FILE *file = fopen(path,mode);
+	const char *iomode;
+	if (rw_mode==1) iomode="r";	// 1 is READ_ONLY
+	else iomode="r+";
+	FILE *file = fopen(path,iomode);
+	if (file==NULL) { printf("ERROR: cannot open %s\n",path); return; }
 	portable_fseek(file,offset,SEEK_SET);
+	size_t mode_size;
+	if (mode==0) mode_size=4;			// single precision float
+	else if (mode==1) mode_size=4;	// unsigned 32 bit int
+	else if (mode==2) mode_size=4;	// signed 32 bit int 
+	else if (mode==3) mode_size=2;	// unsigned 16 bit int
+	else if (mode==4) mode_size=2;	// signed 16 bit int 
+		
 	EMAN::EMUtil::process_region_io(ths->get_data(),file,rw_mode,image_index,mode_size,ths->get_xsize(),ths->get_ysize(),ths->get_zsize(),area);
 	fclose(file);
+	
+	// Now we convert the data we read into floating point
+	size_t n=ths->get_xsize()*ths->get_ysize()*ths->get_zsize();
+	float *data=ths->get_data();
+	if (mode==0) ;
+	else if (mode==1) {
+		unsigned int *idata=(unsigned int *)ths->get_data();
+		for (size_t i=n; i>0; i--) data[i-1]=(float)idata[i-1];		// not as silly as it looks, size_t is unsigned. Not a perfect solution, but it works
+	}
+	else if (mode==2) {
+		int *idata=(int *)ths->get_data();
+		for (size_t i=n; i>0; i--) data[i-1]=(float)idata[i-1];
+	}
+	else if (mode==3) {
+		unsigned short *idata=(unsigned short *)ths->get_data();
+		for (size_t i=n; i>0; i--) data[i-1]=(float)idata[i-1];
+	}
+	else if (mode==4) {
+		short *idata=(short *)ths->get_data();
+		for (size_t i=n; i>0; i--) data[i-1]=(float)idata[i-1];
+	}
+	else printf("read_raw_emdata: Unknown mode\n");
+	
+	ths->update();
+	
 	Py_END_ALLOW_THREADS
 }
 
@@ -390,12 +423,14 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.def("cluster_pairwise", &EMAN::Util::cluster_pairwise, args("d", "K", "T", "F"))
 		.def("cluster_equalsize", &EMAN::Util::cluster_equalsize, args("d"))
 		.def("vareas", &EMAN::Util::vareas, args("d"))
-		.def("cyclicshift", &EMAN::Util::cyclicshift, args("image", "params"), "Performs inplace integer cyclic shift as specified by the 'dx','dy','dz' parameters on a 3d volume.\nImplements the inplace swapping using reversals as descibed in  also:\nhttp://www.csse.monash.edu.au/~lloyd/tildeAlgDS/Intro/Eg01/\n@author  Phani Ivatury\n@date 18-2006\n@see http://www.csse.monash.edu.au/~lloyd/tildeAlgDS/Intro/Eg01/\n\nA[0] A[1] A[2] A[3] A[4] A[5] A[6] A[7] A[8] A[9]\n\n10   20   30   40   50   60   70   80   90   100\n------------\n  m = 3 (shift left three places)\n\n  Reverse the items from 0..m-1 and m..N-1:\n\n 30   20   10   100  90   80   70   60   50   40\n\n Now reverse the entire sequence:\n\n  40   50   60   70   80   90   100  10   20   30\n\n\n  cycl_shift() in libpy/fundementals.py calls this function\n\n Usage:\n EMData *im1 = new EMData();\n im1->set_size(70,80,85);\n im1->to_one();\nDict params; params['dx'] = 10;params['dy'] = 10000;params['dz'] = -10;\nUtils::cyclicshift(im1,params);\nim1.peak_search(1,1)")
+		.def("cyclicshift", &EMAN::Util::cyclicshift, args("image", "params"), "Performs inplace integer cyclic shift as specified by the 'dx','dy','dz' parameters on a 3d volume.\nImplements the inplace swapping using reversals as descibed in  also:\nhttp://www.csse.monash.edu.au/~lloyd/tildeAlgDS/Intro/Eg01/\n@author  Phani Ivatury\n@date 18-2006\n@see http://www.csse.monash.edu.au/~lloyd/tildeAlgDS/Intro/Eg01/\n\nA[0] A[1] A[2] A[3] A[4] A[5] A[6] A[7] A[8] A[9]\n\n10   20   30   40   50   60   70   80   90   100\n------------\n  m = 3 (shift left three places)\n\n  Reverse the items from 0..m-1 and m..N-1:\n\n 30   20   10   100  90   80   70   60   50   40\n\n Now reverse the entire sequence:\n\n  40   50   60   70   80   90   100  10   20   30\n\n\n  cycl_shift() in libpy/fundementals.py calls this function\n\n\
+Usage:\n EMData *im1 = new EMData();\n im1->set_size(70,80,85);\n im1->to_one();\nDict params; params['dx'] = 10;params['dy'] = 10000;params['dz'] = -10;\nUtils::cyclicshift(im1,params);\nim1.peak_search(1,1)")
 		.def("im_diff", &EMAN::Util::im_diff, EMAN_Util_im_diff_overloads_2_3(args("V1", "V2", "mask"), "V1 - \nV2 - \nmask - (default=Null)"))
 		.def("TwoDTestFunc", &EMAN::Util::TwoDTestFunc, EMAN_Util_TwoDTestFunc_overloads_5_7(args("Size", "p", "q", "a", "b", "flag", "alphaDeg"), "Creates a Two D Test Pattern\n \nSize - must be odd\np - the x frequency\nq - the y frequency\na - the x falloff\nb - the y falloff\nflag - (default=0)\nalphaDeg - the projection angle(default=0)\n \nreturn The 2D test pattern in real space, fourier space,\nor the projection in real or fourier space\nor the FH of the pattern")[return_value_policy< manage_new_object >()])
 		.def("splint", &EMAN::Util::splint, args("xa", "ya", "y2a", "n", "xq", "yq", "m"), "Given the arrays xa(ordered, ya of length n, which tabulate a function\nand given the array y2a which is the output of spline and an unordered array xq,\nthis routine returns a cubic-spline interpolated array yq.\n \nxa - \nya - of x is the tabulated function of length n\ny2a - is returned from spline: second derivs\nn - \nxq - is the x values to be splined: has m points.\nyq - are the splined values\nm -")
 		.def("even_angles", &EMAN::Util::even_angles, EMAN_Util_even_angles_overloads_1_5(args("delta", "t1", "t2", "p1", "p2"), "Compute a vector containing quasi-evenly spaced Euler angles.\nThe order of angles in the vector is phi, theta, psi.\n \ndelta - Delta theta (spacing in theta).\nt1 - Starting (min) value of theta in degrees(default=0).\nt2 - Ending (max) value of theta in degrees(default=90).\np1 - Starting (min) value of phi in degrees(default=0)\np2 - Ending (max) value of phi in degrees(default = 359.9)\n \nreturn Vector of angles as a flat list of phi_0, theta_0, psi_0, ..., phi_N, theta_N, psi_N."))
-		.def("quadri", &EMAN::Util::quadri, args("x", "y", "nx", "ny", "image"), "Quadratic interpolation (2D).\n \nNote:  This routine starts counting from 1, not 0!\n \nThis routine uses six image points for interpolation:\n \n@see M. Abramowitz & I.E. Stegun, Handbook of Mathematical\nFunctions (Dover, New York, 1964), Sec. 25.2.67.\nhttp://www.math.sfu.ca/~cbm/aands/page_882.htm\n \n@see http://www.cl.cam.ac.uk/users/nad/pubs/quad.pdf\n \n@verbatim\n       f3    fc\n       |\n       | x\nf2-----f0----f1\n       |\n       |\n       f4\n@endverbatim\n \nf0 - f4 are image values near the interpolated point X.\nf0 is the interior mesh point nearest x.\n \nCoords:\nf0 = (x0, y0)\nf1 = (xb, y0)\nf2 = (xa, y0)\nf3 = (x0, yb)\nf4 = (x0, ya)\nfc = (xc, yc)\n \nMesh spacings:\nhxa -- x- mesh spacing to the left of f0\nhxb -- x- mesh spacing to the right of f0\nhyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant:\n  f = f0 + c1*(x-x0) + c2*(x-x0)*(x-x1)\n		 + c3*(y-y0) + c4*(y-y0)*(y-y1)\n		 + c5*(x-x0)*(y-y0)\n \nx - x-coord value\ny - y-coord value\nnx - \nny - \nimage - Image object (pointer)\n \nreturn Interpolated value.")
+		.def("quadri", &EMAN::Util::quadri, args("x", "y", "nx", "ny", "image"), "Quadratic interpolation (2D).\n \nNote:  This routine starts counting from 1, not 0!\n \nThis routine uses six image points for interpolation:\n \n@see M. Abramowitz & I.E. Stegun, Handbook of Mathematical\nFunctions (Dover, New York, 1964), Sec. 25.2.67.\nhttp://www.math.sfu.ca/~cbm/aands/page_882.htm\n \n@see http://www.cl.cam.ac.uk/users/nad/pubs/quad.pdf\n \n@verbatim\n       f3    fc\n       |\n       | x\nf2-----f0----f1\n       |\n       |\n       f4\n@endverbatim\n \nf0 - f4 are image values near the interpolated point X.\nf0 is the interior mesh point nearest x.\n \nCoords:\nf0 = (x0, y0)\nf1 = (xb, y0)\nf2 = (xa, y0)\nf3 = (x0, yb)\nf4 = (x0, ya)\nfc = (xc, yc)\n \nMesh spacings:\nhxa -- x- mesh spacing to the left of f0\nhxb -- x- mesh spacing to the right of f0\n\
+hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant:\n  f = f0 + c1*(x-x0) + c2*(x-x0)*(x-x1)\n		 + c3*(y-y0) + c4*(y-y0)*(y-y1)\n		 + c5*(x-x0)*(y-y0)\n \nx - x-coord value\ny - y-coord value\nnx - \nny - \nimage - Image object (pointer)\n \nreturn Interpolated value.")
 		.def("get_pixel_conv_new", &EMAN::Util::get_pixel_conv_new, args("nx", "ny", "nz", "delx", "dely", "delz", "data", "kb"), "Here counting is in C style, so coordinates of the pixel delx should be [0-nx-1]\nCommented by Zhengfan Yang on 04/20/07\nThis function is written to replace get_pixel_conv(), which is too slow to use in practice.\nI made the following changes to get_pixel_conv():1. Use the same data passing scheme as quadri() and move the function from emdata_sparx.cpp to util_sparx.cpp\n2. Reduce usage of i0win_tab (from 98 calls to 14 calls in 2D case, from 1029 calls to 21 calls in 3D case!)\n3. Unfold the 'for' loop\n4. Reduce the usage of multiplications through some bracketing (from 98 times to 57 times in 2D case, from 1029 times to 400 times in 3D case)\nThe shortcoming of this routine is that it only works for window size N=7. In case you want to use other window\nsize, say N=5, you can easily modify it by referring my code.")
 		.def("bilinear", &EMAN::Util::bilinear, args("xold", "yold", "nsam", "nrow", "xim"), "")
 		.def("Polar2D", &EMAN::Util::Polar2D, return_value_policy< manage_new_object >(), args("image", "numr", "mode"), "")
@@ -872,7 +907,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("get_imagetype_name", &EMAN::EMUtil::get_imagetype_name, args("type"), "Give each image type a meaningful name.\n \ntype - Image format type.\n \nreturn A name for that type.")
         .def("get_datatype_string", &EMAN::EMUtil::get_datatype_string, args("type"), "Give each data type a meaningful name\n \ntype - the EMDataType\n \nreturn a name for that data type")
         .def("process_ascii_region_io", &EMAN::EMUtil::process_ascii_region_io, args("data", "file", "rw_mode", "image_index", "mode_size", "nx", "ny", "nz", "area", "has_index_line", "nitems_per_line", "outformat"), "Works for regions that are outside the image data dimension area.\nThe only function that calls this is in xplorio.cpp - that function\nthrows if the region is invalid.")
-        .def("process_region_io", process_region_io, args("emdata", "filename", "offset", "rw_mode", "image_index", "mode_size",  "area"), "Works for regions that are outside the image data dimension area.\nThe only function that calls this is in xplorio.cpp - that function\nthrows if the region is invalid.")
+        .def("read_raw_emdata", read_raw_emdata, args("emdata", "filename", "offset", "rw_mode", "image_index", "mode",  "area"), "This function will read raw binary data from disk into an existing EMData objects (with the correct dimensions). mode: 0- float, 1- unsigned 32 bit int, 2- signed 32 bit int, 3- unsigned 16 bit int, 4- signed 16 bit int")
         .def("dump_dict", &EMAN::EMUtil::dump_dict, args("dict"), "Dump a Dict object.\n \ndict - A Dict object")
         .def("is_same_size", &EMAN::EMUtil::is_same_size, args("image1", "image2"), "Check whether two EMData images are of the same size.\n \nimage1 - The first EMData image.\nimage2 - The second EMData image.return Whether two EMData images are of the same size.")
         .def("is_same_ctf", &EMAN::EMUtil::is_same_ctf,args("image1", "image2"), "Check whether two EMData images have the same CTF parameters.\n \nimage1 - The first EMData image.\nimage2 The second EMData image.\n \nreturn whether two EMData images have the same CTF.")
@@ -887,7 +922,8 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 		.def("write_hdf_attribute", &EMAN::EMUtil::write_hdf_attribute, EMAN_EMUtil_write_hdf_attribute_3_4(args("filename", "key", "value", "image_index"), "Write a single attribute value from a HDF5 image file.\n \nfilename - HDF5 image's file name\nkey - the attribute's key name\nvalue - the attribute's value\nimage_index - the image index, default=0\n \nreturn 0 for success"))
 		.def("delete_hdf_attribute", &EMAN::EMUtil::delete_hdf_attribute, EMAN_EMUtil_delete_hdf_attribute_2_3(args("filename", "key", "image_index"), "Delete a single attribute from a HDF5 image file.\n \nfilename - HDF5 image's file name\nkey - the attribute's key name\nimage_index - the image index, default=0\n \nreturn 0 for success, -1 for failure."))
 #endif	//EM_HDF5
-		.staticmethod("cuda_available")
+        .staticmethod("cuda_available")
+        .staticmethod("read_raw_emdata")
         .staticmethod("vertical_acf")
         .staticmethod("get_datatype_string")
         .staticmethod("dump_dict")

@@ -1037,7 +1037,7 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 				if (fread(&cdata[k2 + jj * memory_row_size+dx0*mode_size],
 						  area_row_size, 1, file) != 1) {
 					cout << jj << " " << k2 << " " << memory_row_size << " " << dx0 << " " << mode_size << " " << area_row_size << " " << cdata << "done" << endl;
-					throw ImageReadException("", "incomplete data read");
+					throw ImageReadException("Unknownfilename", "incomplete data read");
 				}
 			}
 			else {
