@@ -49,7 +49,8 @@ def main():
         Helicise input volume and save the result to output volume:
         
         	sxihrsr.py input_vol.hdf output_vol.hdf --helicise --dp=27.6 --dphi=166.5 --fract=0.65 --rmax=70 --rmin=1 --apix=1.84         
-
+			
+			sxihrsr.py bdb:big_stack --hfsc='flst_' --filament_attr=filament
 """
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",                 type="int",    default= 1,                  help="inner radius for rotational correlation > 0 (set to 1)")
@@ -91,16 +92,26 @@ def main():
 	parser.add_option("--y_restrict",         type="float",  default= -1,                 help="range for translational search in y-direction, search is +/-y_restrict/2 in Angstroms. This only applies to local search, i.e., when an is not -1. If y_restrict=-1, the default value, then there is no y search range restriction")
 	parser.add_option("--searchxshift",       type="int",    default= -1,                 help="x-shift determination")
 	parser.add_option("--nearby",             type="int",    default= 3,                  help="neighborhood in which to search for peaks in 1D ccf for x-shift search")
-	
+	# Helical reconstruction related functionalities
 	parser.add_option("--helicise",                action="store_true", default=False,         help="helicise input volume and save results to output volume")
+	parser.add_option( "--hfsc", type="string",       default="",    help="generate two list of image indices used to split segment stack into two for helical fsc calculation. The two lists will be stored in two text files named using file_prefix with '_even' and '_odd' suffixes respectively." )
+	parser.add_option( "--filament_attr", type="string",       default="filament",    help="attribute under which filament identification is stored" )
 	
 	(options, args) = parser.parse_args(arglist[1:])
-	if len(args) < 2 or len(args) > 5:
+	if len(args) < 1 or len(args) > 5:
 		print "usage: " + usage + "\n"
 		print "Also includes various helical reconstruction related functionalities: " + usage2
 		print "Please run '" + progname + " -h' for detailed options"
 	else:
-	
+		
+		if len(options.hfsc) > 0:
+			if len(args) != 1:
+				print  "Incorrect number of parameters"
+				sys.exit()
+			from development import imgstat_hfsc
+			imgstat_hfsc( args[0], options.hfsc, options.filament_attr)
+			sys.exit()
+			
 		if options.helicise:	
 			if len(args) != 2:
 				print "Incorrect number of parameters"
