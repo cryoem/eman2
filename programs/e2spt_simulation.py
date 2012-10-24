@@ -96,7 +96,7 @@ def main():
 	
 	parser.add_argument("--finalboxsize", type=int,default=0,help="""The final box size to clip the subtomograms to.""")								
 
-	parser.add_argument("--snr",type=int,help="Weighing noise factor for noise added to the image.",default=0)
+	parser.add_argument("--snr",type=float,help="Weighing noise factor for noise added to the image.",default=0)
 	#parser.add_argument("--addnoise",action="store_true",default=False,help="If on, it adds random noise to the particles")
 	
 	parser.add_argument("--sym",type=str,default='c1',help="If your particle is symmetrical, you should randomize it's orientation withing the asymmetric unit only. Thus, provide the symmetry.")
