@@ -51,6 +51,8 @@ def main():
         	sxihrsr.py input_vol.hdf output_vol.hdf --helicise --dp=27.6 --dphi=166.5 --fract=0.65 --rmax=70 --rmin=1 --apix=1.84         
 			
 			sxihrsr.py bdb:big_stack --hfsc='flst_' --filament_attr=filament
+			
+			sxihrsr.py bdb:big_stack --predict_helical='helical_params.txt' --dp=27.6 --dphi=166.5 --apix=1.84
 """
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",                 type="int",    default= 1,                  help="inner radius for rotational correlation > 0 (set to 1)")
@@ -96,6 +98,7 @@ def main():
 	parser.add_option("--helicise",                action="store_true", default=False,         help="helicise input volume and save results to output volume")
 	parser.add_option( "--hfsc", type="string",       default="",    help="generate two list of image indices used to split segment stack into two for helical fsc calculation. The two lists will be stored in two text files named using file_prefix with '_even' and '_odd' suffixes respectively." )
 	parser.add_option( "--filament_attr", type="string",       default="filament",    help="attribute under which filament identification is stored" )
+	parser.add_option( "--predict_helical", type="string",       default="",    help="Generate projection parameters consistent with helical symmetry")
 	
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1 or len(args) > 5:
@@ -104,6 +107,20 @@ def main():
 		print "Please run '" + progname + " -h' for detailed options"
 	else:
 		
+		if len(options.predict_helical) > 0:
+			if len(args) != 1:
+				print  "Incorrect number of parameters"
+				sys.exit()
+			if options.dp < 0:
+				print "Helical symmetry paramter rise --dp should not be negative"
+				sys.exit()
+			if options.apix < 0:
+				print "Please enter pixel size"
+				sys.exit()
+			from development import predict_helical_params
+			predict_helical_params(args[0], options.dp, options.dphi, options.apix, options.predict_helical)
+			sys.exit()
+			
 		if len(options.hfsc) > 0:
 			if len(args) != 1:
 				print  "Incorrect number of parameters"
