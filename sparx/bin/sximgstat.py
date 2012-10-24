@@ -44,35 +44,28 @@ def main():
 		arglist.append( arg )
 
 	progname = os.path.basename( arglist[0] )
-	usage = progname + "  stack1 <stack2> <mask> --ccc --fsc file --inf --rad=r --hfsc=file_prefix --filament_attr='filament'"
+	usage = progname + "  stack1 <stack2> <mask> --ccc --fsc file --inf --rad=r"
 	parser = OptionParser(usage, version=SPARXVERSION)
 
 	parser.add_option( "--ccc", action="store_true", default=False, help="print cross corelation coefficient" )
 	parser.add_option( "--fsc", type="string",       default="",    help="calculate resolution curve" )
 	parser.add_option( "--inf", action="store_true", default=False, help="print basic infomation of the img" )
 	parser.add_option( "--rad", type="int",          default=-1,    help="radius of operation" )
-	parser.add_option( "--hfsc", type="string",       default="",    help="generate two list of image indices used to split segment stack into two for helical fsc calculation. The two lists will be stored in two text files named using file_prefix with '_even' and '_odd' suffixes respectively." )
-	parser.add_option( "--filament_attr", type="string",       default="filament",    help="attribute under which filament identification is stored" )
-	(options,args) = parser.parse_args( arglist[1:] )
 
+        (options,args) = parser.parse_args( arglist[1:] )
+     
 	if len(args)<1 or len(args)>3:
-		print "usage: " + usage
-		print "Please run '" + progname + " -h' for detailed options"
+    		print "usage: " + usage
+    		print "Please run '" + progname + " -h' for detailed options"
 		sys.exit(-1)
 
 
 	if global_def.CACHE_DISABLE:
 		from utilities import disable_bdb_cache
 		disable_bdb_cache()
-		
-	if len(options.hfsc) > 0:
-		from development import imgstat_hfsc
-		global_def.BATCH = True
-		imgstat_hfsc( args[0], options.hfsc, options.filament_attr)
-	else:
-		from applications import imgstat
-		global_def.BATCH = True
-		imgstat( args, options.ccc, options.fsc, options.inf, options.rad )
+	from applications import imgstat
+	global_def.BATCH = True
+	imgstat( args, options.ccc, options.fsc, options.inf, options.rad )
 
 if __name__=="__main__":
 	main()
