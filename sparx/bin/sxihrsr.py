@@ -94,11 +94,15 @@ def main():
 	parser.add_option("--y_restrict",         type="float",  default= -1,                 help="range for translational search in y-direction, search is +/-y_restrict/2 in Angstroms. This only applies to local search, i.e., when an is not -1. If y_restrict=-1, the default value, then there is no y search range restriction")
 	parser.add_option("--searchxshift",       type="int",    default= -1,                 help="x-shift determination")
 	parser.add_option("--nearby",             type="int",    default= 3,                  help="neighborhood in which to search for peaks in 1D ccf for x-shift search")
-	# Helical reconstruction related functionalities
+	
+	parser.add_option("--vol_ali",                action="store_true", default=False,         help="volume alignment")
+	parser.add_option("--zstep",    type="int",          default= 1,                  help="Step size for translational search along z")   
+	
 	parser.add_option("--helicise",                action="store_true", default=False,         help="helicise input volume and save results to output volume")
 	parser.add_option( "--hfsc", type="string",       default="",    help="generate two list of image indices used to split segment stack into two for helical fsc calculation. The two lists will be stored in two text files named using file_prefix with '_even' and '_odd' suffixes respectively." )
 	parser.add_option( "--filament_attr", type="string",       default="filament",    help="attribute under which filament identification is stored" )
 	parser.add_option( "--predict_helical", type="string",       default="",    help="Generate projection parameters consistent with helical symmetry")
+	
 	
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1 or len(args) > 5:
@@ -166,6 +170,11 @@ def main():
 			from development import volalixshift_MPI
 			global_def.BATCH = True
 			volalixshift_MPI(args[0], args[1], args[2], options.searchxshift, options.apix, options.dp, options.dphi, options.fract, options.rmax, options.rmin, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug, options.nearby)
+			global_def.BATCH = False
+		elif options.vol_ali:
+			from development import filrecons3D_MPI
+			global_def.BATCH = True
+			filrecons3D_MPI(args[0], args[1], args[2], options.dp, options.dphi, options.apix, options.function, options.zstep, options.fract, options.rmax, options.rmin, options.CTF, options.maxit, options.sym)
 			global_def.BATCH = False
 		else:
 			from applications import ihrsr
