@@ -133,7 +133,7 @@ def main():
 		
 		for i in range(len(retcpu)):
 			step = retcpu[i][0]
-			name = options.path + "/" + options.ID + "CS"+str(step).zfill(2) + '_' + 'CPU.png'
+			name = options.path + "/" + options.ID + "CS"+ str(step).zfill(2)  + "_FS" + str( float(step)/2.0 ).zfill(4) + '_CPU.png'
 			cnums = numpy.array(retcpu[i][-1])
 			sizes = numpy.array(retcpu[i][1])
 			print "\n$$$$$$$\nThe step is", step
@@ -150,7 +150,7 @@ def main():
 	
 		for i in range(len(retgpu)):
 			step = retgpu[i][0]
-			name = options.path + "/" + options.ID + "CS"+str(step).zfill(2) + '_' + 'GPU.png'
+			name = options.path + "/" + options.ID + "CS"+str(step).zfill(2) + "_FS"+str( float(step)/2 ).zfill(4) + '_GPU.png'
 			gnums = numpy.array(retgpu[i][-1])
 			sizes = numpy.array(retgpu[i][1])
 			print "\n$$$$$$$\nThe step is", step
@@ -167,11 +167,19 @@ def main():
 			difs=[]
 			for i in range(len(retgpu)):
 				step = retgpu[i][0]
-				name = options.path + "/" + options.ID + "CS"+str(step).zfill(2) + '_' + 'GPUvsCPU.png'
+				name = options.path + "/" + options.ID + "CS"+str(step).zfill(2) + '_FS' + str( int(step)/2 ).zfill(2) + '_GPUvsCPU.png'
 				gnums = numpy.array(retgpu[i][-1])
 				cnums = numpy.array(retcpu[i][-1])
 				sizes = numpy.array(retgpu[i][1])
 				difs = cnums/gnums
+
+				difsl = list(difs)
+				for i in range(len(difsl)):
+					difsl[i] = str(difsl[i]) + '\n'
+				f = open(name.replace('.png','.txt'),'w')
+				f.writelines(difsl)
+				f.close()
+				
 				print "\n$$$$$$$\nThe step is", step
 				print "\n\n"
 				plotter(name,sizes,difs,step,step/2)
@@ -188,7 +196,7 @@ def doit(corg,options):
 	c=os.getcwd()
 	f=os.listdir(c)
 
-	mults [12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,35,36,40,42,44,45,48,49,50,52,54,56,60,64,65,66,70,72,75,77,78,80,81,84,88,91,96,98,100,104,112,120,128,136,144,152,160,168,176,184,192,200,208,216,224,232,240,248,256]
+	mults = [12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,35,36,40,42,44,45,48,49,50,52,54,56,60,64,65,66,70,72,75,77,78,80,81,84,88,91,96,98,100,104,112,120,128,136,144,152,160,168,176,184,192,200,208,216,224,232,240,248,256]
 
 	if options.test:
 		mults = [32,64,96,128]
@@ -248,7 +256,7 @@ def doit(corg,options):
 			
 		setcuda=''
 		if corg=='gpu' or corg=='GPU':
-			setcuda= 'EMANUSECUDA=1 && NOCUDAINIT=0 && '
+			setcuda= 'export NOCUDAINIT=0 && '
 			print "\n\n\n !!!! I Have turned cuda ON!!!\n\n\n"
 		elif corg=='cpu' or corg=='CPU':
 			setcuda = 'export NOCUDAINIT=1 && '
