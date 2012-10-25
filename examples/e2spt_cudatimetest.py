@@ -188,8 +188,8 @@ def doit(corg,options):
 	c=os.getcwd()
 	f=os.listdir(c)
 
-	mults = [12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,35,36,40,42,44,45,48,49,50,52,54,56,60,64,65,66,70,72,75,77,78,80,81,84,88,91,96,98,100,104,112,120,128,136,144,152,160,168,176,184,192,200,208,216,224,232,240,248,256]
-	#steps = [options.coarse]
+	mults [12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,35,36,40,42,44,45,48,49,50,52,54,56,60,64,65,66,70,72,75,77,78,80,81,84,88,91,96,98,100,104,112,120,128,136,144,152,160,168,176,184,192,200,208,216,224,232,240,248,256]
+
 	if options.test:
 		mults = [32,64,96,128]
 		#steps = [30]
@@ -296,7 +296,7 @@ def plotter(name,xaxis,yaxis,CS,FS):
 	
 	stepslabel='\ncoarse step=' + str(CS) + ' : fine step=' + str(FS)
 
-	plt.plot(xaxis, yaxis, linewidth=1)
+	plt.plot(xaxis, yaxis, linewidth=3)
 	plt.title(tag + ' VS box-size' + stepslabel)
 	
 	plt.ylabel(labelfory)
@@ -308,7 +308,7 @@ def plotter(name,xaxis,yaxis,CS,FS):
 	#a.legend(stepslabel)
 	
 	plt.xlim( (1,int(xaxis[-1]) ) )
-	plt.ylim( ( 0,max(yaxis)+0.25*max(xaxis) ) )
+	plt.ylim( ( 0,max(yaxis)+0.25*max(yaxis) ) )
 	
 	plt.savefig(name)
 	plt.clf()
