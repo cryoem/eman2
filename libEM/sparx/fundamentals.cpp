@@ -259,7 +259,7 @@ Output: 1-2-3D real image with the result
 			//float sz  = float(-twopi*float(itmp)/float(nzp));
 			float szn = 2*float(itmp)/float(nzp);
 			float sz = -M_PI*szn;
-			if ( nx%2==0 && (ny%2==0 || ny==1 ) && (nz%2==0 || nz==1 ) ) {
+			if ( (flag > 2) || (nx%2==0 && (ny%2==0 || ny==1) && (nz%2==0 || nz==1)) ) {  // padded images have always even size:  if ( (padded) || (even) ) ...
 				switch (ptype) {
 					case AUTOCORRELATION:
 					// fpmat := |fpmat|^2
@@ -318,7 +318,7 @@ Output: 1-2-3D real image with the result
 						}
 					}
 				}
-			} else {			
+			} else {
 				switch (ptype) {
 					case AUTOCORRELATION:
 					// fpmat := |fpmat|^2
@@ -467,10 +467,10 @@ Output: 1-2-3D real image with the result
 		//vector<int> saved_offsets = fp->get_array_offsets();  I do not know what the meaning of it was, did not work anyway PAP
 		fp->set_array_offsets(1,1,1);
 
-		normfact = (size_t)(nxp/nx)*(nyp/ny)*(nzp/nz);  // Normalization factor for the padded operations
-		if(normfact>1) {
-			for (int iz = 1; iz <= nz; iz++) for (int iy = 1; iy <= ny; iy++) for (int ix = 1; ix <= nx; ix++) (*fp)(ix,iy,iz) *= normfact;
-		}
+	//	normfact = (size_t)(nxp/nx)*(nyp/ny)*(nzp/nz);  // Normalization factor for the padded operations
+	//	if(normfact>1) {
+	//		for (int iz = 1; iz <= nz; iz++) for (int iy = 1; iy <= ny; iy++) for (int ix = 1; ix <= nx; ix++) (*fp)(ix,iy,iz) *= normfact;
+	//	}
 		// Lag normalization
 		if(flag>4)  {
 			normfact = (size_t)nx*ny*nz;  // Normalization factor
