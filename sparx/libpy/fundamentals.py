@@ -181,7 +181,7 @@ def ccfpl(e, f, center=True):
 			cross-correlation function between image and ref. Real. 
 	"""
 	from EMAN2 import correlation, fp_flag
-	return correlation(e,f,fp_flag.PADDED_LAG, center)
+	return correlation(e,f, fp_flag.PADDED_LAG, center)
 
 def ccfnpl(e, f, center=True):
 	"""

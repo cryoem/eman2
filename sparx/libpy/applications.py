@@ -6717,9 +6717,9 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, \
 
 	return
 
-def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
-	txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndphi, dphi_step, psi_max,
-	rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
+def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
+	txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndphi, dphi_step, psi_max,\
+	rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,\
 	pixel_size, debug, y_restrict, WRAP):
 
 	from alignment      import Numrinit, prepare_refrings, proj_ali_helical, proj_ali_helical_90, proj_ali_helical_local, proj_ali_helical_90_local, helios,helios7
@@ -7008,7 +7008,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 											Util.multiref_polar_ali_helical_90_local   psi_max
 											Crosrng_psi_0_180_no_mirror		(in util_sparx.cpp)   psi_max - WILL SEARCH AROUND BOTH PSI=0 AND 180 NO MATTER WHAT					
 
-					>odd point-group symmetry AND any theta (including theta=90), OR even point-group symmetry AND theta <> 90.
+						>odd point-group symmetry AND any theta (including theta=90), OR even point-group symmetry AND theta <> 90.
 							exhaustive   proj_ali_helical           psi_max
 											Util.multiref_polar_ali_helical  psi_max
 												CALLS Crosrng_pi twice, for 0 and for 180, thus duplicates the work!!
@@ -7020,7 +7020,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 												if (mirror_only == true) {
 													if ((psi-90) < 90) retvals = Crosrng_sm_psi(crefim[iref], cimage, numr,   0, 1, psi_max);
 													else               retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, 180, 1, psi_max); 
-												} else { 
+												} else {
 													if ((psi-90) < 90) retvals = Crosrng_sm_psi(crefim[iref], cimage, numr,   0, 0, psi_max);
 													else               retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, 180, 0, psi_max);
 												}
@@ -7029,7 +7029,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 				"""
 				peak1 = None
 				peak2 = None
-				print im, get_params_proj(data[im])
+				#print im, get_params_proj(data[im])
 				if( len(refrings1) > 0):
 					if  an[N_step] == -1:
 						peak1, phihi1, theta1, psi1, sxi1, syi1, t11 = \
@@ -7148,7 +7148,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 					for i in xrange( len(T) ):
 						ttt = tp*Transform({"type":"spider","phi":T[i][0],"theta":T[i][1],"psi":T[i][2]})
 						d1  = ttt.get_params("spider")
-						
+
 						if ( abs( tp.at(2,2) )<1.0e-6 ):
 							if( sn%2==1 ): # theta=90 and n odd, only one of the two region match
 
@@ -7172,20 +7172,20 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 
 								if( d1['phi'] >= float(k0) and d1['phi'] < float(k1)  ) :
 
-									sxnew = - d1["tx"]
-									synew = - d1["ty"]
-									phinew = d1['phi']
+									sxnew    = - d1["tx"]
+									synew    = - d1["ty"]
+									phinew   = d1['phi']
 									thetanew = d1["theta"]
-									psinew = d1["psi"]
+									psinew   = d1["psi"]
 
 						else: #theta !=90, # if theta >90, put the projection into [k2,k3]. Otherwise put it into the region [k0,k1]
 
 							if( sn==1):
-								sxnew = sxi
-								synew = syi
-								phinew = phihi
+								sxnew    = sxi
+								synew    = syi
+								phinew   = phihi
 								thetanew = theta
-								psinew = psi
+								psinew   = psi
 							else:
 
 								if (tp.at(2,2) >0.0): #theta <90
@@ -7193,21 +7193,21 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,
 									if(  d1['phi'] >= float(k0) and d1['phi'] < float(k1)):
 										if( cos( pi*float( d1['theta'] )/180.0 )>0.0 ):
 			
-											sxnew = - d1["tx"]
-											synew = - d1["ty"]
-											phinew = d1['phi']
+											sxnew    = - d1["tx"]
+											synew    = - d1["ty"]
+											phinew   = d1['phi']
 											thetanew = d1["theta"]
-											psinew = d1["psi"]
+											psinew   = d1["psi"]
 		
 								else:
 									if(  d1['phi'] >= float(k2) and d1['phi'] < float(k3)):
 										if( cos( pi*float( d1['theta'] )/180.0 )<0.0 ):
 
-											sxnew = - d1["tx"]
-											synew = - d1["ty"]
-											phinew = d1['phi']
+											sxnew    = - d1["tx"]
+											synew    = - d1["ty"]
+											phinew   = d1['phi']
 											thetanew = d1["theta"]
-											psinew = d1["psi"]
+											psinew   = d1["psi"]
 
 						del ttt,d1
 

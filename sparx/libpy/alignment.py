@@ -1009,9 +1009,9 @@ def prepare_refrings( volft, kb, nz, delta, ref_a, sym, numr, MPI=False, phiEqps
 		n2 = sin(ref_angles[i][1]*qv)*sin(ref_angles[i][0]*qv)
 		n3 = cos(ref_angles[i][1]*qv)
 		refrings[i].set_attr_dict( {"n1":n1, "n2":n2, "n3":n3} )
-		refrings[i].set_attr("phi", ref_angles[i][0])
+		refrings[i].set_attr("phi",   ref_angles[i][0])
 		refrings[i].set_attr("theta", ref_angles[i][1])
-		refrings[i].set_attr("psi", ref_angles[i][2])
+		refrings[i].set_attr("psi",   ref_angles[i][2])
 
 	return refrings
 
