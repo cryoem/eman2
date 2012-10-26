@@ -488,117 +488,35 @@ parseparmobj2=re.compile("([^=,]*)=([^,]*)")		# This parses "n=v,n2=v2" into [("
 parseparmobj3=re.compile("[^:]\w*=*[-\w.]*") # This parses ("a:v1=2:v2=3") into ("a", "v1=2", "v2=3") 
 parseparmobj4=re.compile("\w*[^=][\w.]*") # This parses ("v1=2") into ("v1", "2")
 
-def parse2float(name,listopt,lenname,counter):
-	
-	temp1=0
-	temp2=0
-	temp3=0
-	dopt=[0 for n in range(counter)]
-	
-	while (temp1<len(name)) and (temp2<counter):
-		
-		if(name[temp1].find('=')!=-1):
-			temp= name[temp1].split('=')
-			#########################
-			temp3=0
-			while(temp3<counter):
-				if(temp[0].find(listopt[temp3])!=-1):
-					try:
-						dopt[temp3] = float(temp[1])  
-					except ValueError:
-						print 'invalid input %s' %(temp[1]),sys.exit(1)
-				temp3=temp3+1
-		else:
-			try:
-				dopt[temp1]=float(name[temp1])
-			except ValueError:
-				print 'invalid input %s' %(temp[1])
-		temp1=temp1+1
-		temp2=temp2+1 
-		########################################	
-	return dopt
-
 def parse_transform(optstr):
 	"""This is used so the user can provide the rotation information and get the transform matrix in a convenient form. 
-	It will parse "dot0,dot1,dot2" and map az=dot0, alt=dot1, phi=dot2, then return the tranform matrix t=transform(az,alt,phi)"""
+	It will parse "dot0,dot1,dot2" and type:name=val:name=val:... then return the tranform matrix t=transform(az,alt,phi)"""
 
-	if not optstr or len(optstr)==0 : return (None)
-	if optstr.lower()=="none" : return None					# special case doesn't return a tuple		
-	optstr=optstr.lower()
-	optstr=optstr.replace(",",":")
-	name = optstr.split(':')
-	######################################################
-	type='eman'
-	inopt=[0,0,0]
+	# We first check for the 'EMAN-style' special case
+	tpl=optstr.split(",")
+	if len(tpl)==3 :
+		try: tpl=[float(i) for i in tpl]
+		except:
+			raise Exception,"Invalid EMAN transform: %s"%optstr
+		return Transform(tpl)
+
+	# Now we must assume that we have a type:name=val:... specification
+	tpl=optstr.split(":")
+	parms={"type":tpl[0]}
 	
-	t=Transform()
-	
-	if (name[0]=='eman'):
-		type='eman'
-		r1=['az','alt','phi']
-		r2=[0,0,0]
-		r2=parse2float(name[1:],r1,(len(name)-1),3)
-		t.set_params({"type":type,"az":r2[0],"alt":r2[1],"phi":r2[2]})
-	elif (name[0]=='imagic'):
-		type='imagic'
-		r1=['alpha','beta','gamma']
-		r2=[0,0,0]
-		r2=parse2float(name[1:],r1,(len(name)-1),3)
-		t.set_params({"type":type,"alpha":r2[0],"beta":r2[1],"gamma":r2[2]})
-	elif (name[0]=='imagic'):
-		type='spider'
-		r1=['phi','theta','psi']
-		r2=[0,0,0]
-		r2=parse2float(name[1:],r1,(len(name)-1),3)
-		t.set_params({"type":type,"phi":r2[0],"theta":r2[1],"psi":r2[2]})		
-	elif (name[0]=='xyz'):
-		type='xyz'
-		r1=['xtilt','ytilt','ztilt']
-		r2=[0,0,0]
-		r2=parse2float(name[1:],r1,(len(name)-1),3)
-		t.set_params({"type":type,"xtilt":r2[0],"ytilt":r2[1],"ztilt":r2[2]})
-	elif (name[0]=='mrc'):
-		type='mrc'
-		r1=['phi','theta','omega']
-		r2=[0,0,0]
-		r2=parse2float(name[1:],r1,(len(name)-1),3)
-		t.set_params({"type":type,"phi":r2[0],"theta":r2[1],"omega":r2[2]})
-	elif (name[0]=='quaternion'):
-		type='quaternion'
-		r1=['e0','e1','e2','e3']
-		r2=[0,0,0,0]
-		r2=parse2float(name[1:],r1,(len(name)-1),4)
-		t.set_params({"type":type,"e0":r2[0],"e1":r2[1],"e2":r2[2],"e3":r2[3]})
-	elif (name[0]=='spin'):
-		type='spin'
-		r1=['Omega','n1','n2','n3']
-		r2=[0,0,0,0]
-		r2=parse2float(name[1:],r1,(len(name)-1),4)
-		t.set_params({"type":type,"Omega":r2[0],"n1":r2[1],"n2":r2[2],"n3":r2[3]})
-	elif (name[0]=='sgirot'):
-		type='sgirot'
-		r1=['q','n1','n2','n3']
-		r2=[0,0,0,0]
-		r2=parse2float(name[1:],r1,(len(name)-1),4)
-		t.set_params({"type":type,"q":r2[0],"n1":r2[1],"n2":r2[2],"n3":r2[3]})
-	elif (name[0]=='matrix'):
-		type='matrix'
-		r1=['m0','m1','m2','m3','m4','m5','m6','m7','m8','m9','m10','m11']
-		r2=[0,0,0,0,0,0,0,0,0,0,0,0]
-		r2=parse2float(name[1:],r1,(len(name)-1),12)
-		t=([float(r2[0]),float(r2[1]),float(r2[2]),float(r2[3]),float(r2[4]),float(r2[5]),float(r2[6]),float(r2[7]),float(r2[8]),float(r2[9]),float(r2[10]),float(r2[11])])
+	# loop over parameters and add them to the dictionary
+	for parm in tpl[1:]:
+		s=parm.split("=")
+		try : parms[s[0]]=float(s[1])
+		except :
+			raise Exception,"Invalid transform parameter: %s"%parm
 		
-	elif (name[0].find('=')!=-1) or (name[0].find('.')!=-1) or (name[0].isdigit()==True): 		
-		type='eman'
-		r1=['az','alt','phi']
-		r2=[0,0,0]
-		r2=parse2float(name,r1,(len(name)-1),3)
-		t.set_params({"type":type,"az":r2[0],"alt":r2[1],"phi":r2[2]})
-	else: 
-		print "invalid input",sys.exit(1)
-	return t
-	#########################################
-
+	try: ret=Transform(parms)
+	except:
+		raise Exception,"Invalid transform: %s"%optstr
+	
+	return ret
+	
 def parsemodopt(optstr):
 	"""This is used so the user can provide the name of a comparator, processor, etc. with options
 	in a convenient form. It will parse "dot:normalize=1:negative=0" and return

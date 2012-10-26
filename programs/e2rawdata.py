@@ -100,7 +100,8 @@ def get_proc2dcmd(options, filename):
 		
 	if options.invert: cmd += " --mult=-1"
 	if options.edgenorm: cmd += " --process=normalize.edgemean"
-	if options.xraypixel: cmd += " --process=threshold.clampminmax.nsigma:nsigma=4:tomean=1"
+#	if options.xraypixel: cmd += " --process=threshold.clampminmax.nsigma:nsigma=4:tomean=1"
+	if options.xraypixel: cmd += " --process=threshold.clampminmax.nsigma:nsigma=4"
 	if options.inplace: cmd += " --inplace"
 	
 	return cmd

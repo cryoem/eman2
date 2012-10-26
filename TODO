@@ -27,6 +27,8 @@ High priority
 9/27/12		3D fallback for old OpenGL
 10/5/12		Doesn't handle projects with >1000 files very gracefully (slow, ryr-open)
 
+10/23/12	Euler display in refine_multi
+10/24/12	Azimuthal filtering to remove 'hair'. "How to legally give a molecule a shave"
 Low priority
 7/25/12		In orthographic projection in 3-D viewer, mouse wheel behavior is inverted
 

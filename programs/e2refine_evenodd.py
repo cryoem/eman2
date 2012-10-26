@@ -225,18 +225,26 @@ def main():
 	argv[iinp]="--input=%s"%oset
 	if iuf>0: argv[iuf]="--usefilt=%s"%ofset
 	launch_childprocess("e2refine.py "+" ".join(argv))
-
-	# measure resolution curve
-	print "### Computing resolution curve as fsc_gold_%s.txt"%options.path[-2:]
-	launch_childprocess("e2proc3d.py bdb:%s_even#threed_filt_%02d fsc_gold_%s.txt --calcfsc=bdb:%s_odd#threed_filt_%02d"%(options.path,options.iter-1,options.path[-2:],options.path,options.iter-1))
 	
 	# compute convergence results for even odd test
 	for i in xrange(options.startiter,options.iter):
+		# do a refine alignment of each odd map to the corresponding even map before resolution calc
+		try:
+			print "aligning iteration %d"%i
+			launch_childprocess("e2proc3d.py bdb:%s_odd#threed_filt_%02d bdb:%s_odd#threed_filt_%02d --alignref=bdb:%s_even#threed_filt_%02d --align=refine_3d"%(options.path,i,options.path,i,options.path,i))
+		except:
+			print "Alignment failed"
+			
 		try:
 			db_compute_fsc(EMData("bdb:%s_even#threed_filt_%02d"%(options.path,i)), EMData("bdb:%s_odd#threed_filt_%02d"%(options.path,i)), e2refine.get_apix_used(options), options.path, "conv_even_odd_%02d"%i)
 		except:
 			print "Could not compute FSC for iteration %d"%i
-	
+
+	# measure resolution curve
+	print "### Computing resolution curve as fsc_gold_%s.txt"%options.path[-2:]
+	launch_childprocess("e2proc3d.py bdb:%s_even#threed_filt_%02d fsc_gold_%s.txt --calcfsc=bdb:%s_odd#threed_filt_%02d"%(options.path,options.iter-1,options.path[-2:],options.path,options.iter-1))
+
+
 	E2end(logid)
 
 if __name__ == "__main__":
