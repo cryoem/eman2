@@ -113,7 +113,7 @@ def shiftali_MPI(stack, outdir, maskfile=None, maxit=100, CTF=False, snr=1.0, Fo
 	max_iter=int(maxit)
 
 	if myid == main_node:
-       		if ftp == "bdb":
+		if ftp == "bdb":
 			from EMAN2db import db_open_dict
 			dummy = db_open_dict(stack, True)
 		active = EMUtil.get_all_attributes(stack, 'active')
