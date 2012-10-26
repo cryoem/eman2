@@ -36,7 +36,8 @@ import os
 from EMAN2 import *
 from time import time
 		 
-import matplotlib as mpl; mpl.use('Agg')		 
+import matplotlib
+matplotlib.use('Agg')
 		 
 import matplotlib.pyplot as plt
 import sys
