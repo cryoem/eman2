@@ -178,9 +178,9 @@ def main():
 	#	options.path = "sptsim_01"
 	
 	
-	if options.path and ("/" in options.path or "#" in options.path) :
-		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
-		sys.exit(1)
+	#if options.path and ("/" in options.path or "#" in options.path) :
+	#	print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
+	#	sys.exit(1)
 
 	if not options.path: 
 		#options.path="bdb:"+numbered_path("sptavsa",True)
@@ -212,7 +212,7 @@ def main():
 		
 		print "I will make the path", options.path
 		os.system('mkdir ' + options.path)	
-		
+	
 	if not options.plotonly:
 		#if options.testalignment:	
 		#	resultsdir = 'results_ali_errors'
@@ -266,32 +266,35 @@ def main():
 				while snr < snru:
 					print "Snr is", snr
 
-					rootpath = os.getcwd()
+					#rootpath = os.getcwd()
 
 					for d in range(nrefs):
 						modeltag = ''
-						subpath = 'TR' + str(tiltrange).zfill(2) + '_TS' + tiltsteptag + '_SNR' + str(snr).zfill(2)
+						subpath = rootpath + '/' + options.path + '/' +'TR' + str(tiltrange).zfill(2) + '_TS' + tiltsteptag + '_SNR' + str(snr).zfill(2)
+						
+						print '\n.....\n.......\n.....\n......\n.. subpath is %s .......\n.......\n.......\n' %(subpath)
+						print '\n.....\n.......\n.....\n......\n.. subpath is %s .......\n.......\n.......\n' %(subpath)
 
 						inputdata = options.input
+						print '\n.....\n.......\n.....\n......\n.. inputdata is %s .......\n.......\n.......\n' %(inputdata)
 
 						if nrefs > 1:
 							modeltag = 'model' + str(d).zfill(2)
 							subpath += '_' + modeltag
 
 							model = EMData(options.input,d)
-							newname = options.path + '/' + inputdata.split('/')[-1].replace('.hdf','_' + modeltag + '.hdf')
+							newname = rootpath + '/' + options.path + '/' + inputdata.split('/')[-1].replace('.hdf','_' + modeltag + '.hdf')
 							model.write_image(newname,0)
 
-							inputdata = newname.split('/')[-1]
+							#inputdata = newname.split('/')[-1] #UPDATE
 
-						subtomos =  subpath + '.hdf'
+						subtomos =  subpath.split('/')[-1] + '.hdf'
 
 						jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --tiltstep=' + str(tiltstep) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrink) + ' --finalboxsize=' + str(options.finalboxsize)
 
 						if options.nsliceschange and options.nsliceslowerlimit and options.nslicesupperlimit:
 							print "\n\n\n$$$$$$$$$$$$$$\nYou hvae provided the number of slices\n$$$$$$$$\n\n\n",tiltstep
 							jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --nslices=' + str(tiltstep) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrink) + ' --finalboxsize=' + str(options.finalboxsize)
-
 
 						if options.simref:
 							jobcmd += ' --simref'
@@ -302,7 +305,7 @@ def main():
 						if options.negativecontrast:
 							jobcmd += ' --negativecontrast'
 
-						jobcmd += ' --path=' + subpath				
+						jobcmd += ' --path=' + subpath.split('/')[-1]				
 
 						cmd = 'cd ' + options.path + ' && ' + jobcmd
 
@@ -314,11 +317,12 @@ def main():
 							#if nrefs > 1:
 							#	modeldir = '/model' + str(d).zfill(2)
 
-							cmd = cmd + ' && cd ' + rootpath + '/' + options.path + '/' + subpath
+							#cmd = cmd + ' && cd ' + rootpath + '/' + options.path + '/' + subpath #UPDATE
+							cmd = cmd + ' && cd ' + subpath
 
 							#subtomos = options.input.split('/')[-1].replace('.hdf','_sptsimMODEL_randst_n' + str(options.nptcls) + '_' + subpath + '_subtomos.hdf')
 
-							#print "\n\nSubtomos name will be\n", subtomos
+							print "\nRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR\nRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR\nSubtomos name will be\n", subtomos
 
 							ref = inputdata.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf')
 
@@ -329,23 +333,26 @@ def main():
 							output=subtomos.replace('.hdf', '_avg.hdf')
 							#print "\n\n$$$$$$$$$$$$$$$$$$$$$$\nRef name is\n$$$$$$$$$$$$$$$$$$$\n", ref
 
-							#print "\n\noutput name is\n", output
+							print "\n\%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%noutput name is\n", output
 
-							alipath=output.replace('_avg.hdf','_ali')
-							#print "\n\nAlipath for results will be\n", alipath
+							alipath1=output.split('/')[-1].replace('_avg.hdf','_ali')
+							alipath2=output.replace('_avg.hdf','_ali')
+							print "\n##################################\nAlipath for results will be\n", alipath2
 
-							alicmd = " && e2spt_classaverage.py --path=" + alipath + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --npeakstorefine=4 -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=0 --parallel=" + options.parallel + " --ralign=refine_3d_grid:delta=12:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=2 --savesteps --saveali --normproc=normalize.mask"
+							alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --npeakstorefine=4 -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=0 --parallel=" + options.parallel + " --ralign=refine_3d_grid:delta=12:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=2 --savesteps --saveali --normproc=normalize"
 
 							if options.quicktest:
-								alicmd = " && e2spt_classaverage.py --path=" + alipath + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=" + options.parallel + " --ralign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=3 --savesteps --saveali --normproc=normalize.mask"
+								alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=" + options.parallel + " --ralign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=3 --savesteps --saveali --normproc=normalize"
 
 							aliptcls = output.replace('_avg.hdf','_ptcls_ali.hdf')
 
 							#print "\n\aliptcls name is\n", aliptcls
 
-							extractcmd = " && cd " + alipath + " && e2proc3d.py bdb:class_ptcl " + aliptcls
+							extractcmd = " && cd " + alipath2 + " && e2proc3d.py bdb:class_ptcl " + aliptcls
 
 							resultsfile=aliptcls.replace('_ptcls_ali.hdf','_ali_error.txt')
+							
+							print "\n@@@@@@@\n@@@@@@@\n@@@@@@@@@\n@@@@@@@ Results file is %s \n@@@@@@@\n@@@@@@@\n@@@@@@@@@\n@@@@@@@" %(resultsfile)
 
 							solutioncmd = " && e2spt_transformdistance.py --input=" + aliptcls + ' --output=' + resultsfile
 
