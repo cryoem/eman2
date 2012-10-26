@@ -6,7 +6,7 @@
 # this statement from one of the other programs. You must agree to use this license if your
 # code is distributed with EMAN2. While you may use your own institution for the copyright notice
 # the terms of the GPL/BSD license permit us to redistribute it.
-
+#    
 #import block
 from EMAN2 import *
 from EMAN2db import db_open_dict
