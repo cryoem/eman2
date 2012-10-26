@@ -336,8 +336,9 @@ def main():
 							print "\n\%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%noutput name is\n", output
 
 							alipath1=output.split('/')[-1].replace('_avg.hdf','_ali')
-							alipath2=output.replace('_avg.hdf','_ali')
-							print "\n##################################\nAlipath for results will be\n", alipath2
+							alipath2= subpath + '/' + output.replace('_avg.hdf','_ali')
+							print "\n##################################\nAlipath1 for results will be\n", alipath1
+							print "\n##################################\nAlipath2 for results will be\n", alipath2
 
 							alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --npeakstorefine=4 -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=0 --parallel=" + options.parallel + " --ralign=refine_3d_grid:delta=12:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=2 --savesteps --saveali --normproc=normalize"
 
