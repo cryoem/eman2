@@ -702,6 +702,9 @@ class Align3DTask(EMTask):
 		
 		if options["mask"]:
 			print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options["mask"][0],options["mask"][1]) 
+			
+			print "The size of the mask is", mask['nx'],mask['ny'],mask['nz']
+			print "Whereas the size of the image is", image['nx'],image['ny'],image['nz']
 			mask.process_inplace(options["mask"][0],options["mask"][1])
 		
 		# normalize
