@@ -6190,7 +6190,6 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 		import user_functions
 		user_func = user_functions.factory[user_func_name]
 
-		print_begin_msg("local_ali3d_MPI")
 		print_msg("Input stack                 : %s\n"%(stack))
 		print_msg("Output directory            : %s\n"%(outdir))
 		print_msg("Maskfile                    : %s\n"%(maskfile))
@@ -6327,7 +6326,7 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 				vol, dummy = user_func(ref_data)
 				drop_image(vol, os.path.join(outdir, "volf%03d_%03d.hdf"%(iteration, ic)))
 			del varf
-			
+
 			# in last iteration return here
 			if(iteration == maxit):
 				if myid == main_node: print_end_msg("local_ali3d_MPI")
