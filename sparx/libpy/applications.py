@@ -6783,13 +6783,14 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 	symmetry_string = split(symmetryLower)[0]
 
 	xrng        = get_input_from_string(xr)
+	y_restrict       = get_input_from_string(y_restrict)
 	ynumber	    = get_input_from_string(ynumber)
 	for i in xrange(len(ynumber)):
 		if(ynumber[i]%2==1): ynumber[i]=ynumber[i]+1
 	yrng =[]
 
 	for i in xrange(len(xrng)): yrng.append(dp/2)
-
+	
 	stepx        = get_input_from_string(txs)
 	delta       = get_input_from_string(delta)
 	lstp = min(len(xrng), len(yrng), len(stepx), len(delta))
@@ -6934,13 +6935,10 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 
 	total_iter = 0
 	# do the projection matching
-	if y_restrict < 0:
-		y_restrict = dp
 	for N_step in xrange(lstp):
 		terminate = 0
 		Iter = 0
  		while(Iter < max_iter and terminate == 0):
-			yrnglocal = float(y_restrict)/(2*pixel_size)
 			yrng[N_step]=float(dp)/(2*pixel_size) #will change it later according to dp
 			if(ynumber[N_step]==0): stepy = 0.0
 			else:                   stepy = (2*yrng[N_step]/ynumber[N_step])
@@ -6951,7 +6949,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 			total_iter += 1
 			if myid == main_node:
 				start_time = time()
-				print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.4f, xrange = %5.4f,stepx = %5.4f, yrange = %5.4f,  stepy = %5.4f, ynumber = %3d\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],stepx[N_step],yrng[N_step],stepy,ynumber[N_step]))
+				print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.4f, xrange (Pixels) = %5.4f,stepx (Pixels) = %5.4f, yrng (Pixels) = %5.4f,  stepy (Pixels) = %5.4f, y_restrict (Pixels)=%5.4f, ynumber = %3d\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],stepx[N_step],yrng[N_step],stepy,y_restrict[N_step], ynumber[N_step]))
 			if( xysize == -1 and zsize==-1 ):
 				volft,kb = prep_vol( vol )
 				refrings = prepare_refrings( volft, kb, nmax, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero", initial_theta =initial_theta, delta_theta = delta_theta)
@@ -7043,7 +7041,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 						proj_ali_helical(data[im], refrings2, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], psi_max, finfo)
 					else:
 						peak2, phihi2, theta2, psi2, sxi2, syi2, t12 = \
-						proj_ali_helical_local(data[im], refrings2, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], an[N_step], psi_max, finfo, sym_string=symmetry_string, yrnglocal=yrnglocal)
+						proj_ali_helical_local(data[im], refrings2, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], an[N_step], psi_max, finfo, sym_string=symmetry_string, yrnglocal=y_restrict[N_step])
 					#print "  2  ",im, peak2, phihi2, theta2, psi2, sxi2, syi2
 				if peak1 is None: 
 					peak = peak2
