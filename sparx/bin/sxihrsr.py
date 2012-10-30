@@ -55,15 +55,16 @@ def main():
 			sxihrsr.py bdb:big_stack --predict_helical='helical_params.txt' --dp=27.6 --dphi=166.5 --apix=1.84
 """
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--ir",                 type="int",    default= 1,                  help="inner radius for rotational correlation > 0 (set to 1)")
-	parser.add_option("--ou",                 type="int",    default= -1,                 help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
+	parser.add_option("--ir",                 type="float",    default= 1,                  help="inner radius for rotational correlation > 0 (set to 1) (Angstroms)")
+	parser.add_option("--ou",                 type="float",    default= -1,                 help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle) (Angstroms)")
 	parser.add_option("--rs",                 type="int",    default= 1,                  help="step between rings in rotational correlation >0  (set to 1)" ) 
-	parser.add_option("--xr",                 type="string", default= " 4  2 1  1   1",   help="range for translation search in x direction, search is +/xr ")
-	parser.add_option("--txs",                type="string", default= "1 1 1 0.5 0.25",   help="step size of the translation search in x directions, search is -xr, -xr+ts, 0, xr-ts, xr ")
+	parser.add_option("--xr",                 type="string", default= " 4  2 1  1   1",   help="range for translation search in x direction, search is +/-xr (Angstroms) ")
+	parser.add_option("--txs",                type="string", default= "1 1 1 0.5 0.25",   help="step size of the translation search in x directions, search is -xr, -xr+ts, 0, xr-ts, xr (Angstroms)")
+	parser.add_option("--y_restrict",         type="string",  default= "-1 -1 -1 -1 -1",                 help="range for translational search in y-direction, search is +/-y_restrict in Angstroms. This only applies to local search, i.e., when an is not -1. If y_restrict < 0, then there is no y search range restriction. Default is -1.")
 	parser.add_option("--ynumber",            type="string", default= "4 8 16 32 32",     help="even number of the translation search in y direction, search is (-dpp/2,-dpp/2+dpp/ny,,..,0,..,dpp/2-dpp/ny dpp/2]")
 	parser.add_option("--delta",              type="string", default= " 10 6 4  3   2",   help="angular step of reference projections")
 	parser.add_option("--an",                 type="string", default= "-1",               help="angular neighborhood for local searches")
-	parser.add_option("--maxit",              type="float",  default= 30,                 help="maximum number of iterations performed for each angular step (set to 30) ")
+	parser.add_option("--maxit",              type="int",  default= 30,                 help="maximum number of iterations performed for each angular step (set to 30) ")
 	parser.add_option("--CTF",                action="store_true", default=False,         help="CTF correction")
 	parser.add_option("--snr",                type="float",  default= 1.0,                help="Signal-to-Noise Ratio of the data")	
 	parser.add_option("--MPI",                action="store_true", default=False,         help="use MPI version")
@@ -78,8 +79,8 @@ def main():
 	parser.add_option("--dphi_step",          type="float",  default= 0.1,                help="dphi step for symmetrization")
 	   
 	parser.add_option("--psi_max",            type="float",  default= 20.0,               help="maximum psi - how far rotation in plane can can deviate from 90 or 270 degrees")   
-	parser.add_option("--rmin",               type="float",  default= 0.0,                help="minimal radius for hsearch")   
-	parser.add_option("--rmax",               type="float",  default= 80.0,               help="maximal radius for hsearch")
+	parser.add_option("--rmin",               type="float",  default= 0.0,                help="minimal radius for hsearch (Angstroms)")   
+	parser.add_option("--rmax",               type="float",  default= 80.0,               help="maximal radius for hsearch (Angstroms)")
 	parser.add_option("--fract",              type="float",  default= 0.7,                help="fraction of the volume used for helical search")
 	parser.add_option("--sym",                type="string", default= "c1",               help="symmetry of the structure")
 	parser.add_option("--function",           type="string", default="helical",  	      help="name of the reference preparation function")
@@ -91,12 +92,11 @@ def main():
 	parser.add_option("--initial_theta",      type="float", default=90.0,                 help="intial theta for reference projection")
 	parser.add_option("--delta_theta",        type="float", default=1.0,                  help="delta theta for reference projection")
 	parser.add_option("--WRAP",               type="int",    default= 1,                  help="do helical wrapping")
-	parser.add_option("--y_restrict",         type="float",  default= -1,                 help="range for translational search in y-direction, search is +/-y_restrict/2 in Angstroms. This only applies to local search, i.e., when an is not -1. If y_restrict=-1, the default value, then there is no y search range restriction")
-	parser.add_option("--searchxshift",       type="int",    default= -1,                 help="x-shift determination")
-	parser.add_option("--nearby",             type="int",    default= 3,                  help="neighborhood in which to search for peaks in 1D ccf for x-shift search")
+	parser.add_option("--searchxshift",       type="float",    default= -1,                 help="search range for x-shift determination: +/- searchxshift (Angstroms)")
+	parser.add_option("--nearby",             type="float",    default= 6.0,                  help="neighborhood in which to search for peaks in 1D ccf for x-shift search (Angstroms)")
 	
 	parser.add_option("--vol_ali",                action="store_true", default=False,         help="volume alignment")
-	parser.add_option("--zstep",    type="int",          default= 1,                  help="Step size for translational search along z")   
+	parser.add_option("--zstep",    type="float",          default= 1,                  help="Step size for translational search along z (Angstroms)")   
 	
 	parser.add_option("--helicise",                action="store_true", default=False,         help="helicise input volume and save results to output volume")
 	parser.add_option( "--hfsc", type="string",       default="",    help="generate two list of image indices used to split segment stack into two for helical fsc calculation. The two lists will be stored in two text files named using file_prefix with '_even' and '_odd' suffixes respectively." )
@@ -111,6 +111,46 @@ def main():
 		print "Please run '" + progname + " -h' for detailed options"
 	else:
 		
+		if len(options.hfsc) > 0:
+			if len(args) != 1:
+				print  "Incorrect number of parameters"
+				sys.exit()
+			from development import imgstat_hfsc
+			imgstat_hfsc( args[0], options.hfsc, options.filament_attr)
+			sys.exit()
+			
+		# Convert input arguments in the units/format as expected by ihrsr_MPI in applications.
+		if options.apix < 0:
+			print "Please enter pixel size"
+			sys.exit()
+		
+		rminp = int((float(options.rmin)/options.apix) + 0.5)
+		rmaxp = int((float(options.rmax)/options.apix) + 0.5)
+		
+		from utilities import get_input_from_string
+		
+		xr = get_input_from_string(options.xr)
+		txs = get_input_from_string(options.txs)
+		y_restrict = get_input_from_string(options.y_restrict)
+		
+		xrp = ''
+		txsp = ''
+		y_restrict2 = ''
+		
+		for i in xrange(len(xr)):
+			xrp += " "+str(float(xr[i])/options.apix)
+		for i in xrange(len(txs)):
+			txsp += " "+str(float(txs[i])/options.apix)
+		# now y_restrict has the same format as x search range .... has to change ihrsr accordingly
+		for i in xrange(len(y_restrict)):
+			y_restrict2 += " "+str(float(y_restrict[i])/options.apix)
+		
+		irp = int( (options.ir/options.apix) + 0.5)
+		oup = int( (options.ou/options.apix) + 0.5)
+		searchxshiftp = int( (options.searchxshift/options.apix) + 0.5)
+		nearbyp = int( (options.nearby/options.apix) + 0.5)
+		zstepp = int( (options.zstep/options.apix) + 0.5)
+		
 		if len(options.predict_helical) > 0:
 			if len(args) != 1:
 				print  "Incorrect number of parameters"
@@ -118,19 +158,8 @@ def main():
 			if options.dp < 0:
 				print "Helical symmetry paramter rise --dp should not be negative"
 				sys.exit()
-			if options.apix < 0:
-				print "Please enter pixel size"
-				sys.exit()
 			from development import predict_helical_params
 			predict_helical_params(args[0], options.dp, options.dphi, options.apix, options.predict_helical)
-			sys.exit()
-			
-		if len(options.hfsc) > 0:
-			if len(args) != 1:
-				print  "Incorrect number of parameters"
-				sys.exit()
-			from development import imgstat_hfsc
-			imgstat_hfsc( args[0], options.hfsc, options.filament_attr)
 			sys.exit()
 			
 		if options.helicise:	
@@ -140,12 +169,9 @@ def main():
 			if options.dp < 0:
 				print "Helical symmetry paramter rise --dp should not be negative"
 				sys.exit()
-			if options.apix < 0:
-				print "Please enter pixel size"
-				sys.exit()
 			from utilities import get_im
 			vol = get_im(args[0])
-			hvol = vol.helicise(options.apix, options.dp, options.dphi, options.fract, options.rmax, options.rmin)
+			hvol = vol.helicise(options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp)
 			hvol.write_image(args[1])
 			sys.exit()
 			
@@ -169,17 +195,17 @@ def main():
 		if options.searchxshift >0:
 			from development import volalixshift_MPI
 			global_def.BATCH = True
-			volalixshift_MPI(args[0], args[1], args[2], options.searchxshift, options.apix, options.dp, options.dphi, options.fract, options.rmax, options.rmin, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug, options.nearby)
+			volalixshift_MPI(args[0], args[1], args[2], searchxshiftp, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug, nearbyp)
 			global_def.BATCH = False
 		elif options.vol_ali:
 			from development import filrecons3D_MPI
 			global_def.BATCH = True
-			filrecons3D_MPI(args[0], args[1], args[2], options.dp, options.dphi, options.apix, options.function, options.zstep, options.fract, options.rmax, options.rmin, options.CTF, options.maxit, options.sym)
+			filrecons3D_MPI(args[0], args[1], args[2], options.dp, options.dphi, options.apix, options.function, zstepp, options.fract, rmaxp, rminp, options.CTF, options.maxit, options.sym)
 			global_def.BATCH = False
 		else:
 			from applications import ihrsr
 			global_def.BATCH = True
-			ihrsr(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.ynumber, options.txs, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, options.rmin, options.rmax, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.apix, options.debug, options.MPI, options.WRAP, options.y_restrict) 
+			ihrsr(args[0], args[1], args[2], mask, irp, oup, options.rs, xrp, options.ynumber, txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, rminp, rmaxp, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.apix, options.debug, options.MPI, options.WRAP, y_restrict2) 
 			global_def.BATCH = False
 		
 		if options.MPI:
