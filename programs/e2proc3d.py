@@ -367,10 +367,11 @@ def main():
 			
 			elif option1 == "rot":
 				fi = index_d[option1]
-				try: xform=parse_transform(options.rot[fi])
-				except:
-					print "Invalid rotation specified: ",options.rot[fi]
-					print "Please see e2help.py transform"
+				#try: 
+				xform=parse_transform(options.rot[fi])
+				#except:
+				#	print "Invalid rotation specified: ",options.rot[fi]
+				#	print "Please see e2help.py transform"
 
 				data.transform(xform)
 				index_d[option1] += 1

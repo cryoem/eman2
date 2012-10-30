@@ -498,7 +498,7 @@ def parse_transform(optstr):
 		try: tpl=[float(i) for i in tpl]
 		except:
 			raise Exception,"Invalid EMAN transform: %s"%optstr
-		return Transform(tpl)
+		return Transform({"type":"eman","az":tpl[0],"alt":tpl[1],"phi":tpl[2]})
 
 	# Now we must assume that we have a type:name=val:... specification
 	tpl=optstr.split(":")
