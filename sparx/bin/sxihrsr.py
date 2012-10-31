@@ -193,11 +193,17 @@ def main():
 			disable_bdb_cache()
 		
 		if options.searchxshift >0:
+			if options.maxit > 1:
+				print "Inner iteration for x-shift determinatin is restricted to 1"
+				sys.exit()
 			from development import volalixshift_MPI
 			global_def.BATCH = True
 			volalixshift_MPI(args[0], args[1], args[2], searchxshiftp, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug, nearbyp)
 			global_def.BATCH = False
 		elif options.vol_ali:
+			if options.maxit > 1:
+				print "Inner iteration for disk alignment is restricted to 1"
+				sys.exit()
 			from development import filrecons3D_MPI
 			global_def.BATCH = True
 			filrecons3D_MPI(args[0], args[1], args[2], options.dp, options.dphi, options.apix, options.function, zstepp, options.fract, rmaxp, rminp, options.CTF, options.maxit, options.sym)
