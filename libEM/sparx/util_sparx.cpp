@@ -5796,12 +5796,16 @@ void Util::BPCQ( EMData *B, EMData *CUBE, const int radius )
 
 		const int sizeX = CUBE->get_xsize();
 		const int sizeY = CUBE->get_ysize();
+		const int sizeZ = CUBE->get_zsize();
 
 		const int centerX = sizeX / 2;
 		const int centerY = sizeY / 2;
-		const int centerZ = CUBE->get_zsize() /2;
+		const int centerZ = sizeZ / 2;
 
-		for ( int rZ=-radius; rZ<=radius; ++rZ ) {
+		const int minRZ = (centerZ >= radius) ? (-radius) : (-centerZ);
+		const int maxRZ = (sizeZ > centerZ+radius) ? (radius) : (sizeZ-centerZ-1);
+
+		for ( int rZ=minRZ; rZ<=maxRZ; ++rZ ) {
 			for ( int rY=-radius; rY<=radius; ++rY ) {
 				const int sqRX = radius*radius - rZ*rZ - rY*rY;
 				if (sqRX >= 0) {
