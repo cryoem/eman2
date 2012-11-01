@@ -7866,7 +7866,9 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 			else:
 				volft, kbx,kby,kbz = prep_vol(vol)
 	else:
+		vol = volume
 		if(mask):
+			vol = vol.copy()
 			if(type(mask) is types.StringType):
 				maski = EMData()
 				maski.read_image(volume)
