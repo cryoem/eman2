@@ -76,6 +76,7 @@ EMUtil::ImageType EMUtil::get_image_ext_type(const string & file_ext)
 		imagetypes["mrc"] = IMAGE_MRC;
 		imagetypes["MRC"] = IMAGE_MRC;
 		imagetypes["ali"] = IMAGE_MRC;
+		imagetypes["st"] = IMAGE_MRC;		// IMOD stack file
 
 		imagetypes["tnf"] = IMAGE_MRC;
 		imagetypes["TNF"] = IMAGE_MRC;
