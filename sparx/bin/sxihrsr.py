@@ -55,7 +55,7 @@ def main():
 			sxihrsr.py bdb:big_stack --predict_helical='helical_params.txt' --dp=27.6 --dphi=166.5 --apix=1.84
 """
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--ir",                 type="float",    default= 1,                  help="inner radius for rotational correlation > 0 (set to 1) (Angstroms)")
+	parser.add_option("--ir",                 type="float",    default= -1,                  help="inner radius for rotational correlation > 0 (set to 1) (Angstroms)")
 	parser.add_option("--ou",                 type="float",    default= -1,                 help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle) (Angstroms)")
 	parser.add_option("--rs",                 type="int",    default= 1,                  help="step between rings in rotational correlation >0  (set to 1)" ) 
 	parser.add_option("--xr",                 type="string", default= " 4  2 1  1   1",   help="range for translation search in x direction, search is +/-xr (Angstroms) ")
@@ -145,8 +145,16 @@ def main():
 		for i in xrange(len(y_restrict)):
 			y_restrict2 += " "+str(float(y_restrict[i])/options.apix)
 		
-		irp = int( (options.ir/options.apix) + 0.5)
-		oup = int( (options.ou/options.apix) + 0.5)
+		if options.ir < 0:
+			irp = 1
+		else:
+			irp = int( (options.ir/options.apix) + 0.5)
+		if options.ou < 0:
+			rvol = get_im(args[1])
+			nx = rvol.get_xsize()
+			oup = nx/2 - 2
+		else:
+			oup = int( (options.ou/options.apix) + 0.5)
 		searchxshiftp = int( (options.searchxshift/options.apix) + 0.5)
 		nearbyp = int( (options.nearby/options.apix) + 0.5)
 		zstepp = int( (options.zstep/options.apix) + 0.5)
