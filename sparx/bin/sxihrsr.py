@@ -176,7 +176,7 @@ def main():
 			sys.exit()
 			
 		if len(args) == 3 : mask = None
-		elif len(args) == 4: mask = args[4]
+		elif len(args) == 4: mask = args[3]
 		else:
 			print  "Incorrect number of parameters"
 			sys.exit()
@@ -201,12 +201,12 @@ def main():
 			volalixshift_MPI(args[0], args[1], args[2], searchxshiftp, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug, nearbyp)
 			global_def.BATCH = False
 		elif options.vol_ali:
-			if options.maxit > 1:
-				print "Inner iteration for disk alignment is restricted to 1"
-				sys.exit()
+			#if options.maxit > 1:
+			#	print "Inner iteration for disk alignment is restricted to 1"
+			#	sys.exit()
 			from development import filrecons3D_MPI
 			global_def.BATCH = True
-			filrecons3D_MPI(args[0], args[1], args[2], options.dp, options.dphi, options.apix, options.function, zstepp, options.fract, rmaxp, rminp, options.CTF, options.maxit, options.sym)
+			filrecons3D_MPI(args[0], args[1], args[2], args[3], options.dp, options.dphi, options.apix, options.function, zstepp, options.fract, rmaxp, rminp, options.CTF, options.maxit, options.sym)
 			global_def.BATCH = False
 		else:
 			from applications import ihrsr
