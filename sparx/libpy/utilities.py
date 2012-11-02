@@ -2809,7 +2809,7 @@ def get_ctf(ima):
 	"""
 	  recover numerical values of CTF parameters from EMAN2 CTF object stored in a header of the input image
 	  order of returned parameters:
-        [defocus, cs, voltage, apix, bfactor, ampcont]
+        [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism amplitude, astigmatism angle]
 	"""
 	from EMAN2 import EMAN2Ctf
 	ctf_params = ima.get_attr("ctf")	
@@ -2820,7 +2820,7 @@ def generate_ctf(p):
 	  generate EMAN2 CTF object using values of CTF parameters given in the list p
 	  order of parameters:
         [defocus, cs, voltage, apix, bfactor, ampcont, astigmastism_amplitude, astigmatism_angle]
-	[ microns, mm, kV, Angstroms, A^2, microns, radians]
+	    [ microns, mm, kV, Angstroms, A^2, microns, radians]
 	"""
 	from EMAN2 import EMAN2Ctf
 
@@ -2850,7 +2850,7 @@ def set_ctf(ima, p):
 	"""
 	  set EMAN2 CTF object in the header of input image using values of CTF parameters given in the list p
 	  order of parameters:
-        [defocus, cs, voltage, apix, bfactor, ampcont]
+        [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism amplitude, astigmatism angle]
 	"""
 	from utilities import generate_ctf
 	ctf = generate_ctf( p )
