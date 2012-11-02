@@ -127,7 +127,7 @@ def main():
 		rminp = int((float(options.rmin)/options.apix) + 0.5)
 		rmaxp = int((float(options.rmax)/options.apix) + 0.5)
 		
-		from utilities import get_input_from_string
+		from utilities import get_input_from_string, get_im
 		
 		xr = get_input_from_string(options.xr)
 		txs = get_input_from_string(options.txs)
