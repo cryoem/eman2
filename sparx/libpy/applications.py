@@ -6857,6 +6857,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 	if maskfile:
 		if type(maskfile) is types.StringType: mask3D = get_image(maskfile)
 		else:                                  mask3D = maskfile
+	else: mask3D = None
 	#else: mask3D = model_circle(last_ring, nx, nx, nx)
 
 	numr	= Numrinit(first_ring, last_ring, rstep, "F")
@@ -7429,7 +7430,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 				fofo = open(os.path.join(outdir,datasym),'a')
 				fofo.write('  %12.4f   %12.4f\n'%(dp,dphi))
 				fofo.close()
-				ref_data = [vol]
+				ref_data = [vol, mask3D]
 				#if  fourvar:  ref_data.append(varf)
 				vol = user_func(ref_data)
 				vol = vol.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
