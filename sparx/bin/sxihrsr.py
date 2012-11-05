@@ -55,8 +55,8 @@ def main():
 			sxihrsr.py bdb:big_stack --predict_helical='helical_params.txt' --dp=27.6 --dphi=166.5 --apix=1.84
 """
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--ir",                 type="float",    default= -1,                  help="inner radius for rotational correlation > 0 (set to 1) (Angstroms)")
-	parser.add_option("--ou",                 type="float",    default= -1,                 help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle) (Angstroms)")
+	parser.add_option("--ir",                 type="float",    default= -1,               help="inner radius for rotational correlation > 0 (set to 1) (Angstroms)")
+	parser.add_option("--ou",                 type="float",    default= -1,               help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle) (Angstroms)")
 	parser.add_option("--rs",                 type="int",    default= 1,                  help="step between rings in rotational correlation >0  (set to 1)" ) 
 	parser.add_option("--xr",                 type="string", default= " 4  2 1  1   1",   help="range for translation search in x direction, search is +/-xr (Angstroms) ")
 	parser.add_option("--txs",                type="string", default= "1 1 1 0.5 0.25",   help="step size of the translation search in x directions, search is -xr, -xr+ts, 0, xr-ts, xr (Angstroms)")
@@ -221,7 +221,7 @@ def main():
 		elif len(options.gendisk)> 0:
 			from development import gendisks_MPI
 			global_def.BATCH = True
-			gendisks_MPI(stack, refvol, outdir, options.dp, options.dphi, options.apix,  fract=options.fract, rmax=rmaxp, rmin=rminp, CTF=options.CTF, maxit=options.maxit, sym=options.sym, dskfilename=options.gendisk)
+			gendisks_MPI(args[0], args[1], options.apix,  options.dp, options.dphi, fract=options.fract, rmax=rmaxp, rmin=rminp, CTF=options.CTF, maxit=options.maxit, sym=options.sym, dskfilename=options.gendisk)
 			global_def.BATCH = False
 		else:
 			from applications import ihrsr
