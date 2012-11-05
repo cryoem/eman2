@@ -359,8 +359,9 @@ def helical2( ref_data ):
 	global  ref_ali2d_counter
 	ref_ali2d_counter += 1
 	print_msg("helical2   #%6d\n"%(ref_ali2d_counter))
-	#stat = Util.infomask(ref_data[2], None, True)
-	#volf = ref_data[2] - stat[0]
+	volf = ref_data[0]
+	#stat = Util.infomask(ref_data[1], None, True)
+	#volf = ref_data[0] - stat[0]
 	#volf = threshold(volf)
 	fl = 0.17
 	aa = 0.2
