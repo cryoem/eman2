@@ -816,6 +816,7 @@ class factory_class:
 		self.contents["ref_ali3dm_new"]     = ref_ali3dm_new
 		self.contents["ref_ali3dm_ali_50S"] = ref_ali3dm_ali_50S
 		self.contents["helical"]            = helical
+		self.contents["helical2"]           = helical2
 		self.contents["spruce_up_var_m"]    = spruce_up_var_m
 		self.contents["reference3"]         = reference3
 		self.contents["reference4"]         = reference4
