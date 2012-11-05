@@ -175,6 +175,18 @@ def main():
 			hvol.write_image(args[1])
 			sys.exit()
 			
+		if len(args) == 3 : mask = None
+		elif len(args) == 4: mask = args[3]
+		else:
+			print  "Incorrect number of parameters"
+			sys.exit()
+			
+		if options.MPI:
+			from mpi import mpi_init
+			sys.argv = mpi_init(len(sys.argv), sys.argv)
+		else:
+			print "The single processor version of IHRSR is not supported, please run the mpi version of IHRSR instead with the --MPI option. To install MPI (if it is not already installed), see http://sparx-em.org/sparxwiki/MPI-installation" 
+			sys.exit()
 			
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
@@ -199,7 +211,7 @@ def main():
 		elif len(options.gendisk)> 0:
 			from development import gendisks_MPI
 			global_def.BATCH = True
-			gendisks_MPI(args[0], options.apix,  options.dp, options.dphi, fract=options.fract, rmax=rmaxp, rmin=rminp, CTF=options.CTF, sym=options.sym, dskfilename=options.gendisk)
+			gendisks_MPI(args[0], options.apix,  options.dp, options.dphi, fract=options.fract, rmax=rmaxp, rmin=rminp, CTF=options.CTF, maxit=options.maxit, sym=options.sym, dskfilename=options.gendisk)
 			global_def.BATCH = False
 		else:
 			from applications import ihrsr
