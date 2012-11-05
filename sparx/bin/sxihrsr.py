@@ -205,7 +205,9 @@ def main():
 		elif len(options.gendisk)> 0:
 			from development import gendisks_MPI
 			global_def.BATCH = True
-			gendisks_MPI(args[0], options.ref_nx, options.ref_nx, options.ref_nz, options.apix, options.dp, options.dphi, fract=options.fract, rmax=rmaxp, rmin=rminp, CTF=options.CTF, sym=options.sym, dskfilename=options.gendisk)
+			if len(args) == 1:  mask3d = None
+			else:               mask3d = args[1]
+			gendisks_MPI(args[0], mask3d, options.ref_nx, options.ref_nx, options.ref_nz, options.apix, options.dp, options.dphi, fract=options.fract, rmax=rmaxp, rmin=rminp, CTF=options.CTF, sym=options.sym, dskfilename=options.gendisk)
 			global_def.BATCH = False
 		else:
 			from applications import ihrsr
