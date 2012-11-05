@@ -2271,9 +2271,15 @@ def send_EMData(img, dst, tag, comm=-1):
 	img_head.append(img.get_zsize())
 	img_head.append(img.is_complex())
 	img_head.append(img.is_ri())
+	img_head.append(img.changecount())
+	img_head.append(img.is_complex_x())
+	img_head.append(img.is_complex_ri())
+	img_head.append(int(img.apix_x()*10000))
+	img_head.append(int(img.apix_y()*10000))
+	img_head.append(int(img.apix_z()*10000))
 
 	head_tag = 2*tag
-	mpi_send(img_head, 5, MPI_INT, dst, head_tag, comm)
+	mpi_send(img_head, 11, MPI_INT, dst, head_tag, comm)
 
 	img_data = get_image_data(img)
 	data_tag = 2*tag+1
@@ -2323,6 +2329,7 @@ def recv_EMData(src, tag, comm=-1):
 	img = EMNumPy.numpy2em(img_data)
 	img.set_complex(is_complex)
 	img.set_ri(is_ri)
+	ing.set_attr_dict({"changecount":int(img_head[5]),  "is_complex_x":int(img_head[6]),  "is_complex_ri":int(img_head[7]),  "apix_x":int(img_head[8])/10000.0,  "apix_y":int(img_head[9])/10000.0,  "apix_z":int(img_head[10])/10000.0})
 	return img
 		
 	'''
