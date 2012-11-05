@@ -60,11 +60,11 @@ def main():
 	parser.add_option("--rs",                 type="int",    default= 1,                  help="step between rings in rotational correlation >0  (set to 1)" ) 
 	parser.add_option("--xr",                 type="string", default= " 4  2 1  1   1",   help="range for translation search in x direction, search is +/-xr (Angstroms) ")
 	parser.add_option("--txs",                type="string", default= "1 1 1 0.5 0.25",   help="step size of the translation search in x directions, search is -xr, -xr+ts, 0, xr-ts, xr (Angstroms)")
-	parser.add_option("--y_restrict",         type="string",  default= "-1 -1 -1 -1 -1",                 help="range for translational search in y-direction, search is +/-y_restrict in Angstroms. This only applies to local search, i.e., when an is not -1. If y_restrict < 0, then there is no y search range restriction. Default is -1.")
+	parser.add_option("--y_restrict",         type="string",  default= "-1 -1 -1 -1 -1",  help="range for translational search in y-direction, search is +/-y_restrict in Angstroms. This only applies to local search, i.e., when an is not -1. If y_restrict < 0, then there is no y search range restriction. Default is -1.")
 	parser.add_option("--ynumber",            type="string", default= "4 8 16 32 32",     help="even number of the translation search in y direction, search is (-dpp/2,-dpp/2+dpp/ny,,..,0,..,dpp/2-dpp/ny dpp/2]")
 	parser.add_option("--delta",              type="string", default= " 10 6 4  3   2",   help="angular step of reference projections")
 	parser.add_option("--an",                 type="string", default= "-1",               help="angular neighborhood for local searches")
-	parser.add_option("--maxit",              type="int",  default= 30,                 help="maximum number of iterations performed for each angular step (set to 30) ")
+	parser.add_option("--maxit",              type="int",  default= 30,                   help="maximum number of iterations performed for each angular step (set to 30) ")
 	parser.add_option("--CTF",                action="store_true", default=False,         help="CTF correction")
 	parser.add_option("--snr",                type="float",  default= 1.0,                help="Signal-to-Noise Ratio of the data")	
 	parser.add_option("--MPI",                action="store_true", default=False,         help="use MPI version")
@@ -93,7 +93,7 @@ def main():
 	parser.add_option("--delta_theta",        type="float", default=1.0,                  help="delta theta for reference projection")
 	parser.add_option("--WRAP",               type="int",    default= 1,                  help="do helical wrapping")
 	parser.add_option("--searchxshift",       type="float",    default= -1,                 help="search range for x-shift determination: +/- searchxshift (Angstroms)")
-	parser.add_option("--nearby",             type="float",    default= 6.0,                  help="neighborhood in which to search for peaks in 1D ccf for x-shift search (Angstroms)")
+	parser.add_option("--nearby",             type="float",    default= 6.0,              help="neighborhood in which to search for peaks in 1D ccf for x-shift search (Angstroms)")
 	
 	parser.add_option("--vol_ali",                action="store_true", default=False,         help="volume alignment")
 	parser.add_option("--zstep",    type="float",          default= 1,                  help="Step size for translational search along z (Angstroms)")   
@@ -221,7 +221,7 @@ def main():
 		elif len(options.gendisk)> 0:
 			from development import gendisks_MPI
 			global_def.BATCH = True
-			gendisks_MPI(args[0], args[1], options.apix,  options.dp, options.dphi, fract=options.fract, rmax=rmaxp, rmin=rminp, CTF=options.CTF, maxit=options.maxit, sym=options.sym, dskfilename=options.gendisk)
+			gendisks_MPI(args[0], options.apix,  options.dp, options.dphi, fract=options.fract, rmax=rmaxp, rmin=rminp, CTF=options.CTF, maxit=options.maxit, sym=options.sym, dskfilename=options.gendisk)
 			global_def.BATCH = False
 		else:
 			from applications import ihrsr
