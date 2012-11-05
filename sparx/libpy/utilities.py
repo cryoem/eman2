@@ -2329,7 +2329,7 @@ def recv_EMData(src, tag, comm=-1):
 	img = EMNumPy.numpy2em(img_data)
 	img.set_complex(is_complex)
 	img.set_ri(is_ri)
-	ing.set_attr_dict({"changecount":int(img_head[5]),  "is_complex_x":int(img_head[6]),  "is_complex_ri":int(img_head[7]),  "apix_x":int(img_head[8])/10000.0,  "apix_y":int(img_head[9])/10000.0,  "apix_z":int(img_head[10])/10000.0})
+	img.set_attr_dict({"changecount":int(img_head[5]),  "is_complex_x":int(img_head[6]),  "is_complex_ri":int(img_head[7]),  "apix_x":int(img_head[8])/10000.0,  "apix_y":int(img_head[9])/10000.0,  "apix_z":int(img_head[10])/10000.0})
 	return img
 		
 	'''
