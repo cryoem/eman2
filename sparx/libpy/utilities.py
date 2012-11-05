@@ -2280,7 +2280,7 @@ def send_EMData(img, dst, tag, comm=-1):
 	ntot = img_head[0]*img_head[1]*img_head[2]
 	mpi_send(img_data, ntot, MPI_FLOAT, dst, data_tag, comm)
 
-        '''
+	'''
 	count = 100000
 	data1d = reshape(img_data, (ntot,))
 	ntime = (ntot-1) /count + 1
@@ -2292,7 +2292,7 @@ def send_EMData(img, dst, tag, comm=-1):
 		    block_end = ntot
 		block_size  = block_end - block_begin
 		mpi_send(data1d[block_begin], block_size, MPI_FLOAT, dst, data_tag*ntime+i, comm)
-        '''
+	'''
 
 def recv_EMData(src, tag, comm=-1):
 	from mpi import mpi_recv, MPI_INT, MPI_FLOAT, MPI_COMM_WORLD
