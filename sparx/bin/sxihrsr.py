@@ -104,7 +104,9 @@ def main():
 	parser.add_option( "--predict_helical", type="string",       default="",    help="Generate projection parameters consistent with helical symmetry")
 	
 	# input options for generating disks
-	parser.add_option( "--gendisk", type="string",       default="",    help="Name of file under which generated disks will be saved to") 
+	parser.add_option("--gendisk",            type="string", default="",                  help="Name of file under which generated disks will be saved to") 
+	parser.add_option("--ref_nx",             type="int",    default= 1,                  help="nx=ny volume size" ) 
+	parser.add_option("--ref_nz",             type="int",    default= 1,                  help="nz volume size - computed disks will be nx x ny x rise/apix" ) 
 	
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1 or len(args) > 5:
@@ -203,7 +205,7 @@ def main():
 		elif len(options.gendisk)> 0:
 			from development import gendisks_MPI
 			global_def.BATCH = True
-			gendisks_MPI(args[0], options.apix,  options.dp, options.dphi, fract=options.fract, rmax=rmaxp, rmin=rminp, CTF=options.CTF, sym=options.sym, dskfilename=options.gendisk)
+			gendisks_MPI(args[0], options.ref_nx, options.ref_nx, options.ref_nz, options.apix, options.dp, options.dphi, fract=options.fract, rmax=rmaxp, rmin=rminp, CTF=options.CTF, sym=options.sym, dskfilename=options.gendisk)
 			global_def.BATCH = False
 		else:
 			from applications import ihrsr
