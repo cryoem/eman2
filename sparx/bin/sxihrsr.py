@@ -108,6 +108,12 @@ def main():
 	parser.add_option("--ref_nx",             type="int",   		 default= 1,                  help="nx=ny volume size" ) 
 	parser.add_option("--ref_nz",             type="int",   		 default= 1,                  help="nz volume size - computed disks will be nx x ny x rise/apix" ) 
 	
+	# get consistency
+	parser.add_option("--consistency",        type="string",		 default="",                  help="Name of parameters to get consistency statisticsf for") 
+	parser.add_option("--phithr",             type="float", 		 default= 2.0,                help="phi threshold for consistency check")  
+	parser.add_option("--ythr",               type="float", 		 default= 2.0,                help="y threshold (in Angstroms) for consistency check")  
+	parser.add_option("--segthr",             type="int", 		     default= 3,                  help="minimum number of segments/filament for consistency check")  
+
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1 or len(args) > 5:
 		print "usage: " + usage + "\n"
@@ -122,12 +128,20 @@ def main():
 			from development import imgstat_hfsc
 			imgstat_hfsc( args[0], options.hfsc, options.filament_attr)
 			sys.exit()
-			
+		
 		# Convert input arguments in the units/format as expected by ihrsr_MPI in applications.
 		if options.apix < 0:
 			print "Please enter pixel size"
 			sys.exit()
 		
+		if len(options.consistency) > 0:
+			if len(args) != 1:
+				print  "Incorrect number of parameters"
+				sys.exit()
+			from development import consistency_params	
+			consistency_params(args[0], options.consistency, options.dphi, options.dp, options.apix,phithr=options.phithr, ythr=options.ythr, THR=options.segthr)
+			sys.exit()
+			
 		rminp = int((float(options.rmin)/options.apix) + 0.5)
 		rmaxp = int((float(options.rmax)/options.apix) + 0.5)
 		
