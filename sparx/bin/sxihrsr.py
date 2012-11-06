@@ -151,6 +151,11 @@ def main():
 		txs = get_input_from_string(options.txs)
 		y_restrict = get_input_from_string(options.y_restrict)
 		
+		if options.ir < 0:
+			irp = 1
+		else:
+			irp = int( (options.ir/options.apix) + 0.5)
+		oup = int( (options.ou/options.apix) + 0.5)
 		xrp = ''
 		txsp = ''
 		y_restrict2 = ''
