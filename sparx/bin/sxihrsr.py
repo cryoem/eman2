@@ -53,6 +53,8 @@ def main():
             sxihrsr.py bdb:big_stack --hfsc='flst_' --filament_attr=filament
 			
             sxihrsr.py bdb:big_stack --predict_helical='helical_params.txt' --dp=27.6 --dphi=166.5 --apix=1.84
+            
+            sxihrsr.py disk_to_stack.hdf --stackdisk='stacked_disks.hdf' --dphi=166.5 --dp=27.6 --ref_nx=160 --ref_ny=160 --ref_nz=220
 """
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",                 type="float", 	     default= -1,                 help="inner radius for rotational correlation > 0 (set to 1) (Angstroms)")
@@ -114,6 +116,10 @@ def main():
 	parser.add_option("--ythr",               type="float", 		 default= 2.0,                help="y threshold (in Angstroms) for consistency check")  
 	parser.add_option("--segthr",             type="int", 		     default= 3,                  help="minimum number of segments/filament for consistency check")  
 
+	# stack disks
+	parser.add_option("--stackdisk",            type="string",		 default="",                  help="Name of file under which output volume will be saved to.")
+	parser.add_option("--ref_ny",             type="int",   		 default=-1,                  help="ny of output volume size. Default is ref_nx" ) 
+	
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1 or len(args) > 5:
 		print "usage: " + usage + "\n"
@@ -132,6 +138,25 @@ def main():
 		# Convert input arguments in the units/format as expected by ihrsr_MPI in applications.
 		if options.apix < 0:
 			print "Please enter pixel size"
+			sys.exit()
+		
+		if len(options.stackdisk) > 0:
+			if len(args) != 1:
+				print  "Incorrect number of parameters"
+				sys.exit()
+			dpp = (float(options.dp)/options.apix)
+			rise = int(dpp)
+			if(float(rise) != dpp):
+				print "  dpp has to be integer multiplicity of the pixel size"
+				sys.exit()
+			from utilities import get_im
+			v = get_im(args[0])
+			from development import stack_disks
+			ref_ny = options.ref_ny
+			if ref_ny < 0:
+				ref_ny = options.ref_nx
+			sv = stack_disks(v, options.ref_nx, ref_ny, options.ref_nz, options.dphi, rise)
+			sv.write_image(options.stackdisk)
 			sys.exit()
 		
 		if len(options.consistency) > 0:
