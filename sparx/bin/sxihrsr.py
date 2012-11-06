@@ -48,11 +48,11 @@ def main():
 
         Helicise input volume and save the result to output volume:
         
-        	sxihrsr.py input_vol.hdf output_vol.hdf --helicise --dp=27.6 --dphi=166.5 --fract=0.65 --rmax=70 --rmin=1 --apix=1.84         
+            sxihrsr.py input_vol.hdf output_vol.hdf --helicise --dp=27.6 --dphi=166.5 --fract=0.65 --rmax=70 --rmin=1 --apix=1.84         
 			
-			sxihrsr.py bdb:big_stack --hfsc='flst_' --filament_attr=filament
+            sxihrsr.py bdb:big_stack --hfsc='flst_' --filament_attr=filament
 			
-			sxihrsr.py bdb:big_stack --predict_helical='helical_params.txt' --dp=27.6 --dphi=166.5 --apix=1.84
+            sxihrsr.py bdb:big_stack --predict_helical='helical_params.txt' --dp=27.6 --dphi=166.5 --apix=1.84
 """
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",                 type="float", 	     default= -1,                 help="inner radius for rotational correlation > 0 (set to 1) (Angstroms)")
