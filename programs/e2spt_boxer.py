@@ -106,7 +106,9 @@ def main():
 		parser.error("%s does not exist" %args[0])
 
 	if options.coords:
-		commandline_tomoboxer(args[0],options.coords,options.subset,options.boxsize,options.cshrink,options.output,options.output_format,options.swapyz,options.invert,options.centerbox)
+		#commandline_tomoboxer(args[0],options.coords,options.subset,options.boxsize,options.cshrink,options.output,options.output_format,options.swapyz,options.invert,options.centerbox)
+		commandline_tomoboxer(args[0],options)
+
 	else:	
 	
 		# Lets save our subtomograms to a diectory called 'subtomogRAMS', ONLY if they are single files
@@ -290,32 +292,31 @@ This function enables extracting sub-volumes from the command line, without open
 Usually used when "re-extracting" sub-volumes (for whatever reason) from a coordinates file previously generated.
 It allows for extraction of smaller sub-sets too.
 """
-def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cshrink,output,output_format,swapyz,contrast,center):
+def commandline_tomoboxer(tomogram,options):
 	
-	clines = open(coordinates,'r').readlines()
+	clines = open(options.coordinates,'r').readlines()
 	set = len(clines)
 	
-	if subset:
-		if subset > set:
+	if options.subset:
+		if options.subset > set:
 			print "WARNING: The total amount of lines in the coordinates files is LESS that the subset of particles to box you specified; therefore, ALL particles will be extracted"
 		else:
-			set=subset
+			set=options.subset
 	
 	print "The size of the set of sub-volumes to extract is", set
 	
 	k=-1
-	name = output
+	name = options.output
 	for i in range(set):
 	
 		#Some people might manually make ABERRANT coordinates files with commas, tabs, or more than once space in between coordinates
-    	
-	       	clines[i] = clines[i].replace(", ",' ')	
+		clines[i] = clines[i].replace(", ",' ')	
 		clines[i] = clines[i].replace(",",' ')
 		clines[i] = clines[i].replace("x",'')
 		clines[i] = clines[i].replace("y",'')
 		clines[i] = clines[i].replace("z",'')
 		clines[i] = clines[i].replace("=",'')
-        	clines[i] = clines[i].replace("_",' ')
+		clines[i] = clines[i].replace("_",' ')
 		clines[i] = clines[i].replace("\n",' ')
 		clines[i] = clines[i].replace("\t",' ')
 		clines[i] = clines[i].replace("  ",' ')
@@ -328,7 +329,7 @@ def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cshrink,output,out
 		
 		print "The raw coordinates from the coordinates file provided for particle#%d are x=%d, y=%d, z=%d " % (i,x,y,z)
 
-		if swapyz:
+		if options.swapyz:
 			print "You indicated Y and Z are flipped in the coords file, respect to the tomogram's orientation; therefore, they will be swapped"
 			aux = y
 			y = z
@@ -336,19 +337,29 @@ def commandline_tomoboxer(tomogram,coordinates,subset,boxsize,cshrink,output,out
 			print "Therefore, the swapped coordinates are", x, y, z
 
 
-		e = unbinned_extractor(boxsize,x,y,z,cshrink,contrast,center)
+		e = unbinned_extractor(options.boxsize,x,y,z,options.cshrink,options.invert,options.center)
 		
 		if e:
 			print "There was a particle successfully returned, with the following box size and normalized mean value"
 			print e['nx'],e['ny'],e['nz']
 			print e['mean']
 			
-			if output_format == 'single':
+			if options.output_format == 'single':
 				k = 0
-				name = output.split('.')[0] + '_' + str(i).zfill(len(set)) + '.' + output.split('.')[1]
+				name = options.output.split('.')[0] + '_' + str(i).zfill(len(set)) + '.' + options.output.split('.')[1]
 			else:
 				print "The format is stack format!"
 				k += 1
+			
+			if options.apix:
+				e['apix_x'] = options.apix
+				e['apix_y'] = options.apix
+				e['apix_z'] = options.apix
+			
+			e['origin_x'] = 0						
+			e['origin_y'] = 0				
+			e['origin_z'] = 0
+			
 			print "\nThe file name to write out to is", name
 			print "And the particle number is %d\n" % k
 			e.write_image(name,k)
