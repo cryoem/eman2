@@ -294,7 +294,7 @@ It allows for extraction of smaller sub-sets too.
 """
 def commandline_tomoboxer(tomogram,options):
 	
-	clines = open(options.coordinates,'r').readlines()
+	clines = open(options.coords,'r').readlines()
 	set = len(clines)
 	
 	if options.subset:
@@ -337,7 +337,7 @@ def commandline_tomoboxer(tomogram,options):
 			print "Therefore, the swapped coordinates are", x, y, z
 
 
-		e = unbinned_extractor(options.boxsize,x,y,z,options.cshrink,options.invert,options.center)
+		e = unbinned_extractor(options.boxsize,x,y,z,options.cshrink,options.invert,options.centerbox)
 		
 		if e:
 			print "There was a particle successfully returned, with the following box size and normalized mean value"
