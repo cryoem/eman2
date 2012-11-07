@@ -346,7 +346,7 @@ def commandline_tomoboxer(tomogram,options):
 			
 			if options.output_format == 'single':
 				k = 0
-				name = options.output.split('.')[0] + '_' + str(i).zfill(len(set)) + '.' + options.output.split('.')[1]
+				name = options.output.split('.')[0] + '_' + str(i).zfill(len(str(set))) + '.' + options.output.split('.')[1]
 			else:
 				print "The format is stack format!"
 				k += 1
