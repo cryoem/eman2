@@ -504,8 +504,8 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				n_objects = mpi_bcast(n_objects, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 				if myid != main_node:  refim_all[k].set_attr('n_objects', int(n_objects[0]))
 			refim = refim_all[color*K:(color+1)*K]
-		#if key == group_main_node:
-			#	for k in xrange(K): refim[k].write_image("%s_way_match_%02d_%02d.hdf"%(wayness_english, mloop, color), k)
+#			if key == group_main_node:
+#				for k in xrange(K): refim[k].write_image("%d_way_match_%02d_%02d.hdf"%(wayness, mloop, color), k)
 		mpi_barrier(MPI_COMM_WORLD)
 #		if key == group_main_node:
 #			for i in xrange(len(refim)):
