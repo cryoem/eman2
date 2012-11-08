@@ -391,11 +391,17 @@ def commandline_tomoboxer(tomogram,options):
 			print e['mean']
 			
 			if options.output_format == 'single':
-				k = 0
-				name = options.output.split('.')[0] + '_' + str(i).zfill(len(str(set))) + '.' + options.output.split('.')[1]
+				#k = 0
+				if 'bdb:' in options.output:
+					name = options.output.replace('bdb:','') + '_' + str(i).zfill(len(str(set)))
+				else:
+					name = options.output.split('.')[0] + '_' + str(i).zfill(len(str(set))) + '.' + options.output.split('.')[1]
+
 			else:
 				print "The format is stack format!"
-				k += 1
+				#k += 1
+				if 'bdb:' in options.output:
+					name = options.output.replace('bdb:','')
 			
 			if options.apix:
 				e['apix_x'] = options.apix
@@ -408,30 +414,39 @@ def commandline_tomoboxer(tomogram,options):
 			
 			
 			print "\nThe file name to write out to is", name
-			print "And the particle number is %d\n" % k
+			print "And the particle number is %d\n" % i
+			
+			print "!!!!!!\n!!!!!!!\n!!!!!!!\n fsp is", fsp 
 			
 			if options.output_format != 'single':
-					fsp=os.path.join(options.path,os.path.basename(name))
-					if fsp[:4].lower()!="bdb:" and fsp[-4:].lower()!=".hdf" :
+					fsp = options.path + '/' + name
+					
+					if "bdb:" in options.output:
+						fsp='bdb:'+ fsp
+
+					if "bdb:" not in fsp and ".hdf" not in fsp:
 						print "ERROR: 3-D stacks supported only for bdb: and .hdf files"
 						sys.exit()
 					else:
-						e.write_image(fsp,k)
+						print "!!!!!!\n!!!!!!!\n!!!!!!!\n STACK Image being written to!", fsp, i 
+						e.write_image(fsp,i)
 
 			else:
-				fsp=os.path.basename(str(name))
-
-				if fsp[:4].lower()=="bdb:": 
+				fsp=name
+				
+				print "In single mode, fsp is", fsp
+				
+				if "bdb:" in fsp: 
 					#e.write_image(os.path.join(options.path,"%s_%" + str(len(str(set))) + "d" %(fsp,k),0))
-					e.write_image(os.path.join(options.path,"%s" %(fsp),0))
+					e.write_image("bdb:" + options.path + '/' + fsp,0)
 
-				elif "." in fsp:
+				elif ".hdf" in fsp or '.mrc' in fsp:
 					#e.write_image(os.path.join(options.path,"%s_%" + str(len(str(set))) + "d.%s"%(fsp.rsplit(".",1)[0],k,fsp.rsplit(".",1)[1])))
 					e.write_image(os.path.join(options.path,"%s.%s"%(fsp.rsplit(".",1)[0],fsp.rsplit(".",1)[1])))
-			
+				else:
+					print "ERROR: Only .hdf, .mrc and bdb: formats are supported!"
+					sys.exit()
 			#e.write_image(name,k)
-			
-
 	return()
 
 
