@@ -570,15 +570,15 @@ class EMParticlesEditTable(EMBrowserWidget):
 class EMParticlesEditModel(EMFileItemModel):
 	""" Item model for the raw data """
 	
-	headers=("Row","Raw Data Files", "Num Particles", "Bad Particles", "Defocus", "B Factor", "SNR", "Quality", "Sampling", "Particle Dims")
+	headers=("Row","Raw Data Files", "Num Particles", "Bad Particles", "Defocus", "B Factor", "SNR-lo", "SNR-hi", "Quality", "Sampling", "Particle Dims")
 	
 	def __init__(self,startpath=None,dirregex=None):
 		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMParticlesEditEntry,dirregex=dirregex)
 		
 	def columnCount(self,parent):
-		"Always 10 columns"
+		"Always 11 columns"
 		#print "EMFileItemModel.columnCount()=6"
-		return 10
+		return 11
 		
 	def data(self,index,role):
 		"Returns the data for a specific location as a string"
@@ -614,19 +614,22 @@ class EMParticlesEditModel(EMFileItemModel):
 			if data.snr==0 : return "-"
 			return nonone(data.snr)
 		elif col==7 :
+			if data.snrhi==0 : return "-"
+			return nonone(data.snrhi)
+		elif col==8 :
 			if data.quality==0 : return "-"
 			return nonone(data.quality)
-		elif col==8 :
+		elif col==9 :
 			if data.sampling==0 : return "-"
 			return nonone(data.sampling)
-		elif col==9 :
+		elif col==10 :
 			if data.particledim==0 : return "-"
 			return nonone(data.particledim)
 
 class EMParticlesEditEntry(EMCTFParticlesEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 	
-	col=(lambda x:int(x.index),lambda x:x.name,lambda x:safe_int(x.nimg), lambda x:safe_int(x.badparticlecount), lambda x:safe_float(x.defocus), lambda x:safe_float(x.bfactor), lambda x:safe_float(x.snr), lambda x:safe_int(x.quality), lambda x:x.sampling, lambda x:x.particledim)
+	col=(lambda x:int(x.index),lambda x:x.name,lambda x:safe_int(x.nimg), lambda x:safe_int(x.badparticlecount), lambda x:safe_float(x.defocus), lambda x:safe_float(x.bfactor), lambda x:safe_float(x.snr), lambda x:safe_float(x.snrhi), lambda x:safe_int(x.quality), lambda x:x.sampling, lambda x:x.particledim)
 	
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMCTFParticlesEntry.__init__(self,root=root,name=name,i=i,parent=parent,hidedot=hidedot,dirregex=dirregex)

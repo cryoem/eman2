@@ -2014,7 +2014,7 @@ class ProjectDialog(QtGui.QDialog):
 		grid.addWidget(icon_path_label, 2, 0)
 		grid.addWidget(self.icon_path, 2, 1)
 		# Mass
-		particle_mass_label = QtGui.QLabel("Particle Mass (Da)")
+		particle_mass_label = QtGui.QLabel("Particle Mass (kDa)")
 		self.particle_mass = QtGui.QLineEdit()
 		grid.addWidget(particle_mass_label, 3, 0)
 		grid.addWidget(self.particle_mass, 3, 1)

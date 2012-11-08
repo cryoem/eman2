@@ -631,7 +631,8 @@ class Cache:
 		
 		image = encapsulated_image.get_image_carefully( *args, **kargs)
 		if image != None:
-			return image
+			# A segfault was occuring at this return statement
+			return image.copy()
 		else:
 			print "there was an error getting the image, class name is",self.class_name
 			return None
@@ -956,7 +957,7 @@ class CoarsenedFlattenedImage:
 		if self.smallimage == None or not self.query_params_match(params_mediator):
 #			print "self. small image is", self.smallimage,self.query_params_match(params_mediator)
 #			print "regenerating cf image"
-			self.__update_image(params_mediator)
+			self.__update_image(params_mediator) 
 #		else: print "cf image is up to date"
 		
 		return self.get_image()
@@ -1019,7 +1020,7 @@ class InverseSigmaImage:
 		self.image.set_attr("flatten_radius",flattenradius)
 		self.image.set_attr("shrink_factor",shrinkfactor)
 		
-		self.image.process_inplace("math.invert.carefully",{"zero_to":1.0})
+		self.image.process_inplace("math.reciprocal",{"zero_to":1.0})
 		
 		set_idd_image_entry(self.image_name,"coarse_sigma_image",self.image)
 		
@@ -1260,7 +1261,7 @@ class FLCFBoxImage:
 		inv_sigma_image = image.calc_fast_sigma_image(tmp)
 		inv_sigma_image.write_image("inv_sigma_image.hdf",-1)
 		
-		inv_sigma_image.process_inplace("math.invert.carefully",{"zero_to":1.0})
+		inv_sigma_image.process_inplace("math.reciprocal",{"zero_to":1.0})
 		
 		cfimage = image.calc_ccf(t)
 		cfimage.write_image("cfimage.hdf",-1)

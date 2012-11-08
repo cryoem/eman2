@@ -624,8 +624,10 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 				imageio = new HdfIO(filename, rw_mode);
 			}
 
-			FileItem * fitem = new FileItem(full_p.string(), imageio, time(0), readonly);
-			HDFCache::instance()->add_file(fitem);
+i			if (imageio !=NULL) {
+				FileItem * fitem = new FileItem(full_p.string(), imageio, time(0), readonly);
+				HDFCache::instance()->add_file(fitem);
+			}
 		}
 	}
 		break;

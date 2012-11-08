@@ -168,7 +168,7 @@ class GUIEvalImage(QtGui.QWidget):
 				if self.defaultvoltage!=None : ctf.voltage=self.defaultvoltage
 				if self.defaultcs!=None : ctf.cs=self.defaultcs
 				if self.defaultapix!=None : ctf.apix=self.defaultapix
-				parms=[int(box),ctf,(256,256),set(),5]
+				parms=[int(box),ctf,(256,256),set(),5,1]
 				print "no parms for ",item_name(i)
 			
 			self.parms.append(parms)
@@ -288,6 +288,11 @@ class GUIEvalImage(QtGui.QWidget):
 		self.sboxsize.intonly=True
 		self.gbl.addWidget(self.sboxsize,13,2)
 
+		self.soversamp=ValBox(self,(0,500),"Oversample:",1,90)
+		self.soversamp.intonly=True
+#		self.gbl.addWidget(self.soversamp,14,2)					# disable oversampling for now, not properly integrated with save/recall mechanism, and not clear if it's really useful
+
+
 		# this is just a spacer
 		self.gbl.setColumnStretch(3,2)
 
@@ -314,6 +319,7 @@ class GUIEvalImage(QtGui.QWidget):
 		QtCore.QObject.connect(self.svoltage, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.scs, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.sboxsize, QtCore.SIGNAL("valueChanged"), self.newBox)
+		QtCore.QObject.connect(self.soversamp, QtCore.SIGNAL("valueChanged"), self.newBox)
 		QtCore.QObject.connect(self.sang45, QtCore.SIGNAL("valueChanged"), self.recalc_real)
 		QtCore.QObject.connect(self.squality,QtCore.SIGNAL("activated(int)"),self.newQualityFactor)
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
@@ -342,11 +348,24 @@ class GUIEvalImage(QtGui.QWidget):
 		self.timer.start(0.1)
 		
 		self.setWindowTitle("e2evalimage - Control Panel")
+		
+		self.wimage.show()
+		self.wfft.show()
+		self.wplot.show()
+		E2loadappwin("e2evalimage","main",self)
+		E2loadappwin("e2evalimage","image",self.wimage)
+		E2loadappwin("e2evalimage","fft",self.wfft)
+		E2loadappwin("e2evalimage","plot",self.wplot)
 #		self.recalc()
 
 		
 	def closeEvent(self,event):
 #		QtGui.QWidget.closeEvent(self,event)
+		E2saveappwin("e2evalimage","main",self)
+		E2saveappwin("e2evalimage","image",self.wimage)
+		E2saveappwin("e2evalimage","fft",self.wfft)
+		E2saveappwin("e2evalimage","plot",self.wplot)
+
 		self.writeCurParm()
 		event.accept()
 		QtGui.qApp.exit(0)
@@ -368,7 +387,7 @@ class GUIEvalImage(QtGui.QWidget):
 		
 		parms=self.parms[self.curset]
 		apix=self.sapix.getValue()
-		ds=1.0/(apix*parms[0])
+		ds=1.0/(apix*parms[0]*parms[5])
 		ctf=parms[1]
 		bg1d=array(ctf.background)
 		r=len(ctf.background)
@@ -644,7 +663,9 @@ class GUIEvalImage(QtGui.QWidget):
 		# To simplify expressions
 		parms=self.parms[self.curset]
 		apix=self.sapix.getValue()
-		ds=1.0/(apix*parms[0])
+		if len(parms)==5 : parms.append(1)		# for old projects where there was no oversampling specification
+		else: parms[5]=max(1,int(parms[5]))
+		ds=1.0/(apix*parms[0]*parms[5])
 
 		# Mode where user drags the box around the parent image
 		if self.calcmode==0:
@@ -652,6 +673,9 @@ class GUIEvalImage(QtGui.QWidget):
 			# extract the data and do an fft
 			clip=self.data.get_clip(Region(parms[2][0],parms[2][1],parms[0],parms[0]))
 			clip.process_inplace("normalize.edgemean")
+			
+			if parms[5]>1 :
+				clip=clip.get_clip(Region(0,0,parms[0]*parms[5],parms[0]*parms[5]))		# since we aren't using phases, doesn't matter if we center it or not
 			self.fft=clip.do_fft()
 #			self.fft.mult(1.0/parms[0]**2)
 			self.fft.mult(1.0/parms[0])
@@ -670,6 +694,8 @@ class GUIEvalImage(QtGui.QWidget):
 					# read the data and make the FFT
 					clip=self.data.get_clip(Region(x*parms[0]+parms[0]/2,y*parms[0]+parms[0]/2,parms[0],parms[0]))
 					clip.process_inplace("normalize.edgemean")
+					if parms[5]>1 :
+						clip=clip.get_clip(Region(0,0,parms[0]*parms[5],parms[0]*parms[5]))		# since we aren't using phases, doesn't matter if we center it or not
 					fft=clip.do_fft()
 #					fft.mult(parms[0])
 					fft.ri2inten()
@@ -715,7 +741,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.busy=True
 		parms=self.parms[self.curset]
 		apix=self.sapix.getValue()
-		ds=1.0/(apix*parms[0])
+		ds=1.0/(apix*parms[0]*parms[5])
 		
 
 		# Fitting not done yet. Need to make 2D background somehow
@@ -788,6 +814,7 @@ class GUIEvalImage(QtGui.QWidget):
 	def newBox(self):
 		parms=self.parms[self.curset]
 		parms[0]=self.sboxsize.value
+		parms[5]=self.soversamp.value
 		parms[3]=set()
 		self.recalc()
 

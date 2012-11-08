@@ -69,8 +69,10 @@ int EMAN1Ctf::from_string(const string & ctf)
 				   &type,&defocus, &bfactor, &amplitude, &ampcont, &noise1,
 				   &noise2, &noise3, &noise4, &voltage, &cs, &apix);
 	if (i != 11) {
-		return 1;
+		const char *s=ctf.c_str();
+		throw InvalidValueException(s," Invalid CTF string");
 	}
+		
 	return 0;
 }
 
@@ -492,7 +494,7 @@ int EMAN2Ctf::from_string(const string & ctf)
 {
 	Assert(ctf != "");
 	char type=' ';
-	int pos,i,j;
+	int pos=-1,i,j;
 	int bglen=0,snrlen=0;
 	float v;
 	const char *s=ctf.c_str();
@@ -500,7 +502,8 @@ int EMAN2Ctf::from_string(const string & ctf)
 	sscanf(s, "%c%f %f %f %f %f %f %f %f %f %d%n",
 				   &type,&defocus, &dfdiff,&dfang,&bfactor,&ampcont,&voltage, &cs, &apix,&dsbg,&bglen,&pos);
 	if (type!='E') throw InvalidValueException(type,"Trying to initialize Ctf object with bad string");
-
+	if (pos==-1) throw InvalidValueException(s," Invalid CTF string");
+	
 
 	background.resize(bglen);
 	for (i=0; i<bglen; i++) {

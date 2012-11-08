@@ -29,6 +29,8 @@ High priority
 
 10/23/12	Euler display in refine_multi
 10/24/12	Azimuthal filtering to remove 'hair'. "How to legally give a molecule a shave"
+11/06/12	Use new particle centers to readjust box locations and rebox particles.
+
 Low priority
 7/25/12		In orthographic projection in 3-D viewer, mouse wheel behavior is inverted
 11/1/12		Remember windows need to recall their screen location when repening, and we need to put better labels on windows.

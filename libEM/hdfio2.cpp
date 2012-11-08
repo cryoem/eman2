@@ -183,14 +183,25 @@ EMObject HdfIO2::read_attr(hid_t attr) {
 //		H5Aread(attr,H5T_NATIVE_CHAR,s);
 		if(s[0] == 'O' && isdigit(s[1])) {
 			ctf = new EMAN1Ctf();
-			ctf->from_string(string(s));
-			ret = EMObject(ctf);
+			try {
+				ctf->from_string(string(s));
+				ret = EMObject(ctf);
+			}
+			catch(...) {
+				ret=EMObject(s);
+			}
 			delete ctf;
 		}
 		else if(s[0] == 'E' && isdigit(s[1])) {
 			ctf = new EMAN2Ctf();
-			ctf->from_string(string(s));
-			ret = EMObject(ctf);
+			try {
+				ctf->from_string(string(s));
+				ret = EMObject(ctf);
+			}
+			catch(...) {
+				ret=EMObject(s);
+			}
+
 			delete ctf;
 		}
 		else {
@@ -570,8 +581,13 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 			H5Aclose(attr);
 			continue;
 		}
-		EMObject val=read_attr(attr);
-		dict[name+5]=val;
+		try {
+			EMObject val=read_attr(attr);
+			dict[name+5]=val;
+		}
+		catch(...) {
+			printf("Error reading HDF attribute %s\n",name+5);
+		}
 		H5Aclose(attr);
 	}
 

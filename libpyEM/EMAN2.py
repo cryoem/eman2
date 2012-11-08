@@ -176,16 +176,23 @@ This function is called to log the end of the current job. n is returned by E2in
 def E2saveappwin(app,key,win):
 	"""stores the window geometry using the application default mechanism for later restoration. Note that
 	this will only work with Qt windows"""
-	pos=win.pos()
-	sz=win.size()
-	geom=(pos.x(),pos.y(),win.width(),win.height())
-	E2setappval(app,key,geom)
+	try:
+		pos=win.pos()
+		sz=win.size()
+		geom=(pos.x(),pos.y(),win.width(),win.height())
+		E2setappval(app,key,geom)
+	except:
+		print "Error saving window location"
 	
 def E2loadappwin(app,key,win):
 	"""restores a geometry saved with E2saveappwin"""
-	geom=E2getappval(app,key)
-	win.resize(geom[2],geom[3])
-	win.move(geom[0],geom[1])
+	try: 
+		geom=E2getappval(app,key)
+		if geom==None : raise Exception
+		win.resize(geom[2],geom[3])
+		win.move(geom[0],geom[1])
+	except: return
+	
 
 def E2setappval(app,key,value):
 	"""E2setappval
