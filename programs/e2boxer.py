@@ -1455,9 +1455,7 @@ class SwarmBoxer:
 		
 		mediator = SwarmFLCFImageMediator(self.particle_diameter/(shrink*2), shrink, self.templates[-1])
 		if self.gui_mode: self.target().set_status_message("Getting Correlation Image",0)
-		print "gi"
 		correlation_image = FLCFImageCache.get_image(image_name,mediator)
-		print "/gi"
 		if self.gui_mode: self.target().set_status_message("Correlation Image Done",1000)
 		
 		exclusion_shrink = exclusion_image.get_attr("shrink")
