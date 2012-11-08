@@ -99,6 +99,45 @@ def main():
 
 	global options
 	(options, args) = parser.parse_args()
+	
+	
+	'''
+	Create the path where subtomograms will be saved
+	'''
+	
+	if options.path and ("/" in options.path or "#" in options.path) :
+		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
+		sys.exit(1)
+
+	if not options.path: 
+		#options.path="bdb:"+numbered_path("sptavsa",True)
+		options.path = "sptsim_01"
+	
+	files=os.listdir(os.getcwd())
+	while options.path in files:
+		#path = options.path
+		if '_' not in options.path:
+			print "I will add the number"
+			options.path = options.path + '_00'
+		else:
+			jobtag=''
+			components=options.path.split('_')
+			if components[-1].isdigit():
+				components[-1] = str(int(components[-1])+1).zfill(2)
+			else:
+				components.append('00')
+						
+			options.path = '_'.join(components)
+			#options.path = path
+			print "The new options.path is", options.path
+
+	if options.path not in files:
+		
+		print "I will make the path", options.path
+		os.system('mkdir ' + options.path)
+	
+	
+	
 		
 	if len(args) != 1: 
 		parser.error("You must specify a single volume data file on the command-line.")
@@ -107,7 +146,14 @@ def main():
 
 	if options.coords:
 		#commandline_tomoboxer(args[0],options.coords,options.subset,options.boxsize,options.cshrink,options.output,options.output_format,options.swapyz,options.invert,options.centerbox)
+		
+		logger = E2init(sys.argv, options.ppid)
+
 		commandline_tomoboxer(args[0],options)
+
+		E2end(logger)
+
+
 
 	else:	
 	
@@ -326,7 +372,6 @@ def commandline_tomoboxer(tomogram,options):
 		y = int(clines[i][1])
 		z = int(clines[i][2])
 
-		
 		print "The raw coordinates from the coordinates file provided for particle#%d are x=%d, y=%d, z=%d " % (i,x,y,z)
 
 		if options.swapyz:
@@ -336,8 +381,9 @@ def commandline_tomoboxer(tomogram,options):
 			z = aux
 			print "Therefore, the swapped coordinates are", x, y, z
 
-
 		e = unbinned_extractor(options.boxsize,x,y,z,options.cshrink,options.invert,options.centerbox)
+		
+		fsp=os.path.basename(str(name))
 		
 		if e:
 			print "There was a particle successfully returned, with the following box size and normalized mean value"
@@ -360,9 +406,30 @@ def commandline_tomoboxer(tomogram,options):
 			e['origin_y'] = 0				
 			e['origin_z'] = 0
 			
+			
 			print "\nThe file name to write out to is", name
 			print "And the particle number is %d\n" % k
-			e.write_image(name,k)
+			
+			if options.output_format != 'single':
+					fsp=os.path.join(options.path,os.path.basename(name))
+					if fsp[:4].lower()!="bdb:" and fsp[-4:].lower()!=".hdf" :
+						print "ERROR: 3-D stacks supported only for bdb: and .hdf files"
+						sys.exit()
+					else:
+						e.write_image(fsp,k)
+
+			else:
+				fsp=os.path.basename(str(name))
+
+				if fsp[:4].lower()=="bdb:": 
+					#e.write_image(os.path.join(options.path,"%s_%" + str(len(str(set))) + "d" %(fsp,k),0))
+					e.write_image(os.path.join(options.path,"%s" %(fsp),0))
+
+				elif "." in fsp:
+					#e.write_image(os.path.join(options.path,"%s_%" + str(len(str(set))) + "d.%s"%(fsp.rsplit(".",1)[0],k,fsp.rsplit(".",1)[1])))
+					e.write_image(os.path.join(options.path,"%s.%s"%(fsp.rsplit(".",1)[0],fsp.rsplit(".",1)[1])))
+			
+			#e.write_image(name,k)
 			
 
 	return()
