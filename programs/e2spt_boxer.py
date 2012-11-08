@@ -436,7 +436,7 @@ def commandline_tomoboxer(tomogram,options):
 				
 				print "In single mode, fsp is", fsp
 				
-				if "bdb:" in fsp: 
+				if "bdb:" in options.output: 
 					#e.write_image(os.path.join(options.path,"%s_%" + str(len(str(set))) + "d" %(fsp,k),0))
 					e.write_image("bdb:" + options.path + '/' + fsp,0)
 
