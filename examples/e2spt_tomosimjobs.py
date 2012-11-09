@@ -157,8 +157,8 @@ def main():
 	"""
 	Parameters to be passed on to e2spt_classaverage.py
 	"""
-	parser.add_argument("--raligncmp",type=str,default='ccc',help="Comparator to use for missing wedge compensation during fine alignment.")
-	parser.add_argument("--aligncmp",type=str,default='ccc',help="Comparator to use for missing wedge compensation during coarse alignment.")
+	parser.add_argument("--raligncmp",type=str,default='ccc.tomo',help="Comparator to use for missing wedge compensation during fine alignment.")
+	parser.add_argument("--aligncmp",type=str,default='ccc.tomo',help="Comparator to use for missing wedge compensation during coarse alignment.")
 	parser.add_argument("--parallel",type=str,default='thread:7',help="Parallelization to use.")
 
 	(options, args) = parser.parse_args()	
@@ -613,11 +613,14 @@ def oneD_plot(points,errors,name,concept):
 	
 	title=name.split('/')[-1].replace('.png','').replace('_',' ')
 	#plt.title(title)
-	plt.xlabel(concept)
-	plt.ylabel(title)
+	plt.xlabel(concept,fontweight='bold')
+	plt.ylabel(title,fontweight='bold')
 	#plt.xlim([min(points)-min(points)*0.1,max(points)+max(points)*0.1])
 	plt.xlim( [min(points),max(points)+max(points)*0.1] )
 	plt.ylim( [0,max(errors)+max(errors)*0.1] )
+	plt.tick_params(axis='both', which='major', labelsize=16)
+	plt.tick_params(axis='both', which='minor', labelsize=12)
+	
 	plt.plot(points,errors,color='b',linewidth=3)
 	plt.savefig(name,bbox_inches=0)
 	plt.clf()
