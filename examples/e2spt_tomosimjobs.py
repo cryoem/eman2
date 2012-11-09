@@ -259,15 +259,16 @@ def main():
 				tiltsteptag = str(tiltstep).zfill(2)
 
 				if options.nsliceschange and options.nsliceslowerlimit and options.nslicesupperlimit:
-					print "The number of slices is", tiltstep
+					#print "The number of slices is", tiltstep
 					tiltsteptag = str( round(2.0 * tiltrange / tiltstep,1) ).zfill(4)
 				else:
-					print "The tilt step is", tiltstep
+					t=1
+					#print "The tilt step is", tiltstep
 
 
 				snr=snrl
 				while snr < snru:
-					print "Snr is", snr
+					#print "Snr is", snr
 
 					#rootpath = os.getcwd()
 
@@ -275,11 +276,11 @@ def main():
 						modeltag = ''
 						subpath = rootpath + '/' + options.path + '/' +'TR' + str(tiltrange).zfill(2) + '_TS' + tiltsteptag + '_SNR' + str(snr).zfill(2)
 						
-						print '\n.....\n.......\n.....\n......\n.. subpath is %s .......\n.......\n.......\n' %(subpath)
-						print '\n.....\n.......\n.....\n......\n.. subpath is %s .......\n.......\n.......\n' %(subpath)
+						#print '\n.....\n.......\n.....\n......\n.. subpath is %s .......\n.......\n.......\n' %(subpath)
+						#print '\n.....\n.......\n.....\n......\n.. subpath is %s .......\n.......\n.......\n' %(subpath)
 
 						inputdata = options.input
-						print '\n.....\n.......\n.....\n......\n.. inputdata is %s .......\n.......\n.......\n' %(inputdata)
+						#print '\n.....\n.......\n.....\n......\n.. inputdata is %s .......\n.......\n.......\n' %(inputdata)
 
 						if nrefs > 1:
 							modeltag = 'model' + str(d).zfill(2)
@@ -325,7 +326,7 @@ def main():
 
 							#subtomos = options.input.split('/')[-1].replace('.hdf','_sptsimMODEL_randst_n' + str(options.nptcls) + '_' + subpath + '_subtomos.hdf')
 
-							print "\nRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR\nRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR\nSubtomos name will be\n", subtomos
+							#print "\nRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR\nRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR\nSubtomos name will be\n", subtomos
 
 							ref = inputdata.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf')
 
@@ -336,14 +337,14 @@ def main():
 							output=subtomos.replace('.hdf', '_avg.hdf')
 							#print "\n\n$$$$$$$$$$$$$$$$$$$$$$\nRef name is\n$$$$$$$$$$$$$$$$$$$\n", ref
 
-							print "\n\%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%noutput name is\n", output
+							#print "\n\%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%noutput name is\n", output
 
 							alipath1=output.split('/')[-1].replace('_avg.hdf','_ali')
 							alipath2= subpath + '/' + output.replace('_avg.hdf','_ali')
-							print "\n##################################\nAlipath1 for results will be\n", alipath1
-							print "\n##################################\nAlipath2 for results will be\n", alipath2
+							#print "\n##################################\nAlipath1 for results will be\n", alipath1
+							#print "\n##################################\nAlipath2 for results will be\n", alipath2
 
-							alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --npeakstorefine=4 -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=0 --parallel=" + options.parallel + " --ralign=refine_3d_grid:delta=12:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=2 --savesteps --saveali --normproc=normalize"
+							alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --npeakstorefine=4 -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=0 --parallel=" + options.parallel + " --ralign=refine_3d_grid:delta=3:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=2 --savesteps --saveali --normproc=normalize"
 
 							if options.quicktest:
 								alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=" + options.parallel + " --ralign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=3 --savesteps --saveali --normproc=normalize"
@@ -356,7 +357,7 @@ def main():
 
 							resultsfile=aliptcls.replace('_ptcls_ali.hdf','_ali_error.txt')
 							
-							print "\n@@@@@@@\n@@@@@@@\n@@@@@@@@@\n@@@@@@@ Results file is %s \n@@@@@@@\n@@@@@@@\n@@@@@@@@@\n@@@@@@@" %(resultsfile)
+							#print "\n@@@@@@@\n@@@@@@@\n@@@@@@@@@\n@@@@@@@ Results file is %s \n@@@@@@@\n@@@@@@@\n@@@@@@@@@\n@@@@@@@" %(resultsfile)
 
 							solutioncmd = " && e2spt_transformdistance.py --input=" + aliptcls + ' --output=' + resultsfile
 
@@ -454,21 +455,32 @@ def main():
 				twoD_tr_ts_points.append({'tilt range':tr,'tilt step':ts,'angular_error':ang,'translational_error':trans})
 				twoD_snr_tr_points.append({'tilt range':tr,'noise level':snr,'angular_error':ang,'translational_error':trans})
 				twoD_snr_ts_points.append({'tilt step':ts,'noise level':snr,'angular_error':ang,'translational_error':trans})
-				
+			
+			angfilename=resultsdir+'/angular_error.txt'
+			transfilename=resultsdir+'/translational_error.txt'	
 			if len(set(snrs)) == 1: 
 				if len(set(trs)) == 1:
-					oneD_plot(tss,ang_errors,resultsdir+'/angular_error.png','tilt step')
-					oneD_plot(tss,trans_errors,resultsdir+'/translational_error.png','tilt step')
+					oneD_plot(tss,ang_errors,angfilename.replace('.txt','.png'),'tilt step')
+					writeresultsfile(tss,ang_errors,angfilename)		
+
+					oneD_plot(tss,trans_errors,transfilename.replace('.txt','.png'),'tilt step')
+					writeresultsfile(tss,trans_errors,transfilename)
+					
+				elif len(set(tss)) == 1:
+					oneD_plot(trs,ang_errors,angfilename.replace('.txt','.png'),'tilt range')
+					writeresultsfile(trs,ang_errors,angfilename)
+					
+					oneD_plot(trs,trans_errors,transfilename.replace('.txt','.png'),'tilt range')
+					writeresultsfile(trs,trans_errors,transfilename)
 				
+			elif len(set(trs)) == 1: 
 				if len(set(tss)) == 1:
-					oneD_plot(trs,ang_errors,resultsdir+'/angular_error.png','tilt range')
-					oneD_plot(trs,trans_errors,resultsdir+'/translational_error.png','tilt range')
-				
-			if len(set(trs)) == 1: 
-				if len(set(tss)) == 1:
-					oneD_plot(snrs,ang_errors,resultsdir+'/angular_error.png','noise level')
-					oneD_plot(snrs,trans_errors,resultsdir+'/translational_error.png','noise level')
-		
+					oneD_plot(snrs,ang_errors,angfilename.replace('.txt','.png'),'noise level')
+					writeresultsfile(snrs,ang_errors,angfilename)
+					
+					oneD_plot(snrs,trans_errors,transfilename.replace('.txt','.png'),'noise level')
+					writeresultsfile(snrs,trans_errors,transfilename)
+			
 			if len(set(snrs)) == 1 and len(set(trs)) > 1 and len(set(tss)) > 1:
 				twoD_plot(twoD_tr_ts_points,val1='tilt range',val2='tilt step',location=resultsdir +'/')
 			
@@ -585,6 +597,18 @@ def color(value):
 	return(color)
 
 
+def writeresultsfile(x,y,filename):
+	aa = open(filename,'w')
+	lines=[]
+	for i in range(len(x)):
+		line=str(x[i]) + ' ' + str(y[i]) + '\n'
+		lines.append(line)
+	aa.writelines(lines)
+	aa.close()
+		
+	return()
+
+
 def oneD_plot(points,errors,name,concept):
 	
 	title=name.split('/')[-1].replace('.png','').replace('_',' ')
@@ -592,7 +616,7 @@ def oneD_plot(points,errors,name,concept):
 	plt.xlabel(concept)
 	plt.ylabel(title)
 	#plt.xlim([min(points)-min(points)*0.1,max(points)+max(points)*0.1])
-	plt.xlim( [0,max(points)+max(points)*0.1] )
+	plt.xlim( [min(points),max(points)+max(points)*0.1] )
 	plt.ylim( [0,max(errors)+max(errors)*0.1] )
 	plt.plot(points,errors,color='b',linewidth=3)
 	plt.savefig(name,bbox_inches=0)
