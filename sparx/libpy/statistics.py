@@ -8804,16 +8804,23 @@ def histogram2d(datai, dataj, nbini, nbinj):
 
 	return region,hist
 
-def hist_list(data, nbin = -1):
+def hist_list(data, nbin = -1, fminiu = None, fmaxiu = None):
 	"""
 	  Calculate histogram of the list elements
-	  nbin will be set such that in average there is 10 elements per bin
+	  nbin - number of bins, if not provided it will be set such that in average there is 10 elements per bin
+	  fminiu - user provided minimum value for the histogram, it has to be smaller than the smallest element in data
+	  fmaxiu - user provided maximum value for the histogram, it has to be larger than the largest element in data
 	"""
 	if nbin < 0:  nbin = len(data)/10
 	fmaxi = max(data)
 	fmini = min(data)
+
 	if fmaxi == fmini:
 		return [fmaxi]*nbin, [0]*nbin
+	if fminiu != None:
+		if fminiu < fmini : fmini = fminiu
+	if fmaxiu != None:
+		if fmaxiu > fmaxi : fmaxi = fmaxiu
 
 	binsize_i = (fmaxi-fmini)/float(nbin)
 	start_i = fmini
