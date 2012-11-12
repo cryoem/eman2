@@ -1287,6 +1287,10 @@ class EMInfoPane(QtGui.QWidget):
 	def __init__(self,parent=None):
 		"Set our GUI up"
 		QtGui.QWidget.__init__(self,parent)
+		
+		#self.setTitle("e2dispaly.py Information Pane")
+
+		self.setWindowTitle("e2display.py Information Pane") #Jesus
 
 		# Root class represents no target
 		self.hbl=QtGui.QHBoxLayout(self)
@@ -1296,13 +1300,18 @@ class EMInfoPane(QtGui.QWidget):
 	def display(self,target):
 		"display information for the target EMDirEntry with EMFileType ftype"
 		
+		#self.setTitle("e2dispaly.py Information Pane")
+
 		self.target=target
-		
+		self.setWindowTitle("e2display.py Information Pane") #Jesus
+
 		return
 		
-	def busy(self) : pass
+	def busy(self): 
+		pass
 	
-	def notbusy(self) : pass 	
+	def notbusy(self): 
+		pass 	
 
 class EMTextInfoPane(EMInfoPane):
 	
@@ -1498,6 +1507,7 @@ class EMFolderInfoPane(EMInfoPane):
 
 	def display(self,target):
 		"display information for the target EMDirEntry"
+		
 		self.target=target
 
 class EMBDBInfoPane(EMInfoPane):
@@ -1691,8 +1701,6 @@ class EMImageInfoPane(EMInfoPane):
 		self.wheadtree.setColumnCount(2)
 		self.wheadtree.setHeaderLabels(["Item","Value"])
 		self.gbl.addWidget(self.wheadtree,0,0)
-		
-		
 
 	def display(self,target):
 		"display information for the target EMDirEntry"
@@ -1743,36 +1751,60 @@ class EMStackInfoPane(EMInfoPane):
 	def __init__(self,parent=None):
 		QtGui.QWidget.__init__(self,parent)
 		
+		self.setWindowTitle("e2display.py Information Pane") #Jesus
+		
+		#self.setTitle("e2dispaly.py Information Pane")
+		
 		self.gbl=QtGui.QGridLayout(self)
 		
-		# Spinbox for selecting image number
+		self.gbl.label1=QtGui.QLabel("Images") #Jesus
+		self.gbl.addWidget(self.gbl.label1,0,0) #Jesus
+		
+		self.gbl.label2=QtGui.QLabel("Header Info") #Jesus
+		self.gbl.addWidget(self.gbl.label2,0,1) #Jesus
+		
+		'''Spinbox for selecting image number'''
 		self.wimnum=QtGui.QSpinBox()
-		self.wimnum.setRange(0,0)
-		self.gbl.addWidget(self.wimnum,0,0)
 		
-		# List as alternate mechanism for selecting image number(s)
+		#self.wimnum.setRange(0,0) #JOHN
+		#self.gbl.addWidget(self.wimnum,0,0) #JOHN
+		
+		#self.wimnum.setRange(1,0) #Jesus
+		self.gbl.addWidget(self.wimnum,1,0) #Jesus
+		
+		'''List as alternate mechanism for selecting image number(s)'''
 		self.wimlist=QtGui.QListWidget()
-		self.gbl.addWidget(self.wimlist,1,0)
-		
-		# Actual header contents
-		self.wheadtree=QtGui.QTreeWidget()
-		self.wheadtree.setColumnCount(2)
-		self.wheadtree.setHeaderLabels(["Item","Value"])
-		self.gbl.addWidget(self.wheadtree,0,1,2,1)
-		
-		self.gbl.setColumnStretch(0,1)
-		self.gbl.setColumnStretch(1,4)
+		#self.gbl.addWidget(self.wimlist,1,0) #JOHN
 
-		# Lower region has buttons for actions
+		self.gbl.addWidget(self.wimlist,2,0) #Jesus	
+		
+		'''Actual header contents'''
+		self.wheadtree=QtGui.QTreeWidget()
+
+		#self.wheadtree.setColumnCount(2) #
+		self.wheadtree.setHeaderLabels(["Item","Value"])
+		#self.gbl.addWidget(self.wheadtree,0,1,2,1) #JOHN
+		self.gbl.addWidget(self.wheadtree,1,1,2,1) #Jesus
+		
+		#self.gbl.setColumnStretch(0,1) #JOHN
+		#self.gbl.setColumnStretch(1,4) #JOHN
+		
+		self.gbl.setColumnStretch(0,1) #Jesus
+		self.gbl.setColumnStretch(1,4) #Jesus
+
+		'''Lower region has buttons for actions'''
 		self.hbl2 = QtGui.QGridLayout()
 
 		self.wbutmisc=[]
 	
 		# 10 buttons for context-dependent actions
-		self.hbl2.setRowStretch(0,1)
-		self.hbl2.setRowStretch(1,1)
+		#self.hbl2.setRowStretch(0,1) #JOHN
+		#self.hbl2.setRowStretch(1,1) #JOHN
 		
-		for i in range(5):
+		self.hbl2.setRowStretch(1,1) #Jesus
+		self.hbl2.setRowStretch(2,1) #Jesus		
+		
+		for i in xrange(1,6):
 			self.hbl2.setColumnStretch(i,2)
 			for j in range(2):
 				self.wbutmisc.append(QtGui.QPushButton(""))
@@ -1783,12 +1815,17 @@ class EMStackInfoPane(EMInfoPane):
 		# These just clean up the layout a bit
 		self.wbutxx=QtGui.QLabel("")
 		self.wbutxx.setMaximumHeight(12)
-		self.hbl2.addWidget(self.wbutxx,0,6)
+		#self.hbl2.addWidget(self.wbutxx,0,6) #JOHN
+		self.hbl2.addWidget(self.wbutxx,1,6) #Jesus
+		
 		self.wbutyy=QtGui.QLabel("")
 		self.wbutyy.setMaximumHeight(12)
-		self.hbl2.addWidget(self.wbutyy,1,6)
 		
-		self.gbl.addLayout(self.hbl2,2,0,1,2)
+		#self.hbl2.addWidget(self.wbutyy,1,6) #JOHN
+		self.hbl2.addWidget(self.wbutyy,2,6) #Jesus
+		
+		#self.gbl.addLayout(self.hbl2,2,0,1,2) #JOHN
+		self.gbl.addLayout(self.hbl2,3,0,1,2) #Jesus
 
 		QtCore.QObject.connect(self.wimnum, QtCore.SIGNAL("valueChanged(int)"),self.imNumChange)
 		QtCore.QObject.connect(self.wimlist, QtCore.SIGNAL("itemSelectionChanged()"),self.imSelChange)
@@ -2011,6 +2048,11 @@ dirregex - default "", a regular expression for filtering filenames (directory n
 		import emdataitem3d 
 		QtGui.QWidget.__init__(self,parent)
 		
+		self.setWindowTitle("e2display.py Browser") #Jesus
+		
+		#label=QtGui.QLabel(self);
+        #label.setText("Window Title");
+        #self.setWindowTitle("Window Title");
 		
 		self.withmodal=withmodal
 		self.multiselect=multiselect
