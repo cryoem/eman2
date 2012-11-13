@@ -3725,7 +3725,7 @@ def ali3dpsi_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 	else:	 from reconstruction import rec3D_MPI_noCTF
 
 	if myid == main_node:
-       		if file_type(stack) == "bdb":
+		if file_type(stack) == "bdb":
 			from EMAN2db import db_open_dict
 			dummy = db_open_dict(stack, True)
 		active = EMUtil.get_all_attributes(stack, 'active')
