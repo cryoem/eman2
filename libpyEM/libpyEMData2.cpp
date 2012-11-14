@@ -215,73 +215,157 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_compute_missingwedge_overload
 
 }// namespace
 
+using namespace EMAN;
+
 //// These give us threadsafety. Couldn't find a more elegant way to do it with overloading :^/
 EMData *EMData_align_wrapper2(EMData &ths, const string & aligner_name, EMData * to_img) {
 	EMData *ret;
-	Py_BEGIN_ALLOW_THREADS
-	ret = ths.align(aligner_name,to_img); 
-	Py_END_ALLOW_THREADS
+	PyThreadState *_save = PyEval_SaveThread();
+
+	try {
+		ret = ths.align(aligner_name,to_img);
+	}
+	catch (std::exception &e) {
+		PyEval_RestoreThread(_save);
+		cerr << e.what() << endl;
+		throw e;
+	}
+	PyEval_RestoreThread(_save);
 	return ret;
 }
 EMData *EMData_align_wrapper3(EMData &ths, const string & aligner_name, EMData * to_img,const Dict & params) {
 	EMData *ret;
-	Py_BEGIN_ALLOW_THREADS
-	ret=ths.align(aligner_name,to_img,params); 
-	Py_END_ALLOW_THREADS
+	PyThreadState *_save = PyEval_SaveThread();
+
+	try {
+		ret=ths.align(aligner_name,to_img,params);
+	}
+	catch (std::exception &e) {
+		PyEval_RestoreThread(_save);
+		cerr << e.what() << endl;
+		throw e;
+	}
+	PyEval_RestoreThread(_save);
 	return ret;
 }
 EMData *EMData_align_wrapper4(EMData &ths, const string & aligner_name, EMData * to_img,const Dict & params, const string & cmp_name) {
 	EMData *ret;
-	Py_BEGIN_ALLOW_THREADS
-	ret=ths.align(aligner_name,to_img,params,cmp_name); 
-	Py_END_ALLOW_THREADS
+	PyThreadState *_save = PyEval_SaveThread();
+
+	try {
+		ret=ths.align(aligner_name,to_img,params,cmp_name);
+	}
+	catch (std::exception &e) {
+		PyEval_RestoreThread(_save);
+		cerr << e.what() << endl;
+		throw e;
+	}
+	PyEval_RestoreThread(_save);
 	return ret;
 }
 EMData *EMData_align_wrapper5(EMData &ths, const string & aligner_name, EMData * to_img,const Dict & params, const string & cmp_name, const Dict& cmp_params) {
 	EMData *ret;
-	Py_BEGIN_ALLOW_THREADS
-	ret=ths.align(aligner_name,to_img,params,cmp_name,cmp_params); 
-	Py_END_ALLOW_THREADS
+	PyThreadState *_save = PyEval_SaveThread();
+
+	try {
+		ret=ths.align(aligner_name,to_img,params,cmp_name,cmp_params);
+	}
+	catch (std::exception &e) {
+		PyEval_RestoreThread(_save);
+		cerr << e.what() << endl;
+		throw e;
+	}
+	PyEval_RestoreThread(_save);
 	return ret;
 }
 
-void EMData_process_inplace_wrapper1(EMData &ths,const string & processorname) { 
-	Py_BEGIN_ALLOW_THREADS
-	ths.process_inplace(processorname); 
-	Py_END_ALLOW_THREADS
+void EMData_process_inplace_wrapper1(EMData &ths,const string & processorname) {
+	PyThreadState *_save = PyEval_SaveThread();
+
+	try {
+		ths.process_inplace(processorname);
+	}
+	catch (std::exception &e) {
+		PyEval_RestoreThread(_save);
+		cerr << e.what() << endl;
+		throw e;
+	}
+	PyEval_RestoreThread(_save);
 }
-void EMData_process_inplace_wrapper2(EMData &ths,const string & processorname, const Dict & params) { 
-	Py_BEGIN_ALLOW_THREADS
-	ths.process_inplace(processorname,params); 
-	Py_END_ALLOW_THREADS
+
+void EMData_process_inplace_wrapper2(EMData &ths,const string & processorname, const Dict & params) {
+	PyThreadState *_save = PyEval_SaveThread();
+
+	try {
+		ths.process_inplace(processorname,params);
+	}
+	catch (std::exception &e) {
+		PyEval_RestoreThread(_save);
+		cerr << e.what() << endl;
+		throw e;
+	}
+	PyEval_RestoreThread(_save);
 }
-EMData *EMData_process_wrapper1(EMData &ths,const string & processorname) { 
+
+EMData *EMData_process_wrapper1(EMData &ths,const string & processorname) {
 	EMData *ret;
-	Py_BEGIN_ALLOW_THREADS
-	ret=ths.process(processorname); 
-	Py_END_ALLOW_THREADS
+	PyThreadState *_save = PyEval_SaveThread();
+
+	try {
+		ret=ths.process(processorname);
+	}
+	catch (std::exception &e) {
+		PyEval_RestoreThread(_save);
+		cerr << e.what() << endl;
+		throw e;
+	}
+	PyEval_RestoreThread(_save);
 	return ret;
 }
-EMData *EMData_process_wrapper2(EMData &ths,const string & processorname, const Dict & params) { 
+EMData *EMData_process_wrapper2(EMData &ths,const string & processorname, const Dict & params) {
 	EMData *ret;
-	Py_BEGIN_ALLOW_THREADS
-	ret=ths.process(processorname,params); 
-	Py_END_ALLOW_THREADS
+	PyThreadState *_save = PyEval_SaveThread();
+
+	try {
+		ret=ths.process(processorname,params);
+	}
+	catch (std::exception &e) {
+		PyEval_RestoreThread(_save);
+		cerr << e.what() << endl;
+		throw e;
+	}
+	PyEval_RestoreThread(_save);
 	return ret;
 }
 
-float EMData_cmp_wrapper2(EMData &ths,const string & cmpname, EMData * with) { 
+float EMData_cmp_wrapper2(EMData &ths,const string & cmpname, EMData * with) {
 	float ret;
-	Py_BEGIN_ALLOW_THREADS
-	ret=ths.cmp(cmpname,with); 
-	Py_END_ALLOW_THREADS
+	PyThreadState *_save = PyEval_SaveThread();
+
+	try {
+		ret=ths.cmp(cmpname,with);
+	}
+	catch (std::exception &e) {
+		PyEval_RestoreThread(_save);
+		cerr << e.what() << endl;
+		throw e;
+	}
+	PyEval_RestoreThread(_save);
 	return ret;
 }
-float EMData_cmp_wrapper3(EMData &ths,const string & cmpname, EMData * with, const Dict & params) { 
+float EMData_cmp_wrapper3(EMData &ths,const string & cmpname, EMData * with, const Dict & params) {
 	float ret;
-	Py_BEGIN_ALLOW_THREADS
-	ret=ths.cmp(cmpname,with,params); 
-	Py_END_ALLOW_THREADS
+	PyThreadState *_save = PyEval_SaveThread();
+
+	try {
+		ret=ths.cmp(cmpname,with,params);
+	}
+	catch (std::exception &e) {
+		PyEval_RestoreThread(_save);
+		cerr << e.what() << endl;
+		throw e;
+	}
+	PyEval_RestoreThread(_save);
 	return ret;
 }
 
