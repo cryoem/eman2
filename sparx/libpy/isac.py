@@ -53,11 +53,19 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	seed(rand1 + rand2)
 
 	if main_iter%iter_reali != 0:
-		ERROR("main_iter should be a multiple of iter_reali, please reset them and restart and program", "iter_isac", 1, myid)
+		ERROR("main_iter should be a multiple of iter_reali, please reset them and restart the program", "iter_isac", 1, myid)
 	mpi_barrier(MPI_COMM_WORLD)
 
 	if generation == 0:
-		ERROR("Generation should begin from 1, please reset it and restart and program", "iter_isac", 1, myid)
+		ERROR("Generation should begin from 1, please reset it and restart the program", "iter_isac", 1, myid)
+	mpi_barrier(MPI_COMM_WORLD)
+
+	if indep_run < 2 or indep_run > 4:
+		ERROR("indep_run must equals 2, 3 or 4, please reset it and restart the program", "iter_isac", 1, myid)
+	mpi_barrier(MPI_COMM_WORLD)
+
+	if number_of_proc % indep_run != 0:
+		ERROR("Number of MPI processes must be a multiplicity of indep_run, please reset it and restart the program", "iter_isac", 1, myid)
 	mpi_barrier(MPI_COMM_WORLD)
 
 	ali_params_dir = "ali_params_generation_%d"%generation
@@ -77,7 +85,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		print '*            Alignment and Clustering of 2D Transmission Electron Microscope Images",              *' 
 		print '*            Structure 20, 237-247, February 8, 2012.                                              *'
 		print "*                                                                                                  *"
-		print "* Last updated: 09/10/12                                                                           *"
+		print "* Last updated: 11/13/12                                                                           *"
 		print "****************************************************************************************************"
 		print "*                                       Generation %3d                                             *"%(generation)
 		print "****************************************************************************************************"
@@ -364,9 +372,15 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		if mloop <= two_way_loop:
 			wayness = 2
 		elif mloop != match_second:
-			wayness = 3
+			if indep_run >= 3:
+				wayness = 3
+			else:
+				wayness = 2
 		else:
-			wayness = 4
+			if indep_run >= 4:
+				wayness = 4
+			else:
+				wayness = indep_run
 		if myid == main_node:		
 			print "################################################################################"
 			print "#       Iteration %2d for %d-way matching       "%(mloop, wayness)+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"        #"
@@ -516,7 +530,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 	if myid == main_node:
 		print "**********************************************************************"
-		print "                   Run the 4-way matching algorithm                   "
+		print "                   Run the final %d-way matching algorithm             "%indep_run
 		print "**********************************************************************"
 	
 	# Run 4-way Matching

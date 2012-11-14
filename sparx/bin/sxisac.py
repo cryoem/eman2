@@ -65,7 +65,7 @@ def main():
 	parser.add_option("--match_second",   type="int",          default=5,       help="number of iterations to run 2-way (or 3-way) matching in the second phase ")
 	parser.add_option("--stab_ali",       type="int",          default=5,       help="number of alignments when checking stability ")
 	parser.add_option("--thld_err",       type="float",        default=0.7,     help="the threshold of pixel error when checking stability ")
-	parser.add_option("--indep_run",      type="int",          default=4,       help="number of indepentdent runs for reproducibility (default=4, currently other values not supported")
+	parser.add_option("--indep_run",      type="int",          default=4,       help="number of indepentdent runs for reproducibility (default=4, only values 2, 3 and 4 are supported")
 	parser.add_option("--thld_grp",       type="int",          default=10,      help="the threshold of size of reproducible class (essentially minimum size of class)")
 	parser.add_option("--img_per_grp",    type="int",          default=100,     help="number of images per group in the ideal case (essentially maximum size of class)")
 	parser.add_option("--generation",     type="int",          default=1,       help="the n-th approach on the dataset ")
