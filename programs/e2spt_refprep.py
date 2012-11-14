@@ -231,24 +231,27 @@ def main():
 	if options.sharplowpassresolution:
 		ref_box = ref['nx']
 		ref_apix = ref['apix_x']
+		resfac = 1.0/float(options.sharplowpassresolution)
+		npixels = int(round(float( ref_box * ref_apix * res_fac )))
 
-		npixels = int(round(float( ref_box * ref_apix * res_fac)))
-
-		actual_res=float(ref_box*ref_apix)/npixels
-
-		print "the actual resolution is", actual_res
-		print "npixels is", npixels
-		print "refbox is", ref_box
-
-		ref_table=[1.0]*npixels + [0.0]*((ref_box/2)-npixels)
-
-		print "I HAAAAVE applied a sharp filter; the length of ref_table, and itself are", len(ref_table), ref_table
-
-		ref_model = ref_model.process("filter.radialtable",{"table":ref_table})
+		actual_res = float(ref_box * ref_apix) / npixels
+		
+		if options.verbose:
+			print "The sharp lowpass filter will be actually applied at this resolution", actual_res
+			print "Becuase these many pixels in Fourier space will be zeroed out", ref_box/2) - npixels
+		
+		ref_table = [1.0] * npixels + [0.0] * (( ref_box/2) - npixels )
+		
+		ref = ref.process("filter.radialtable",{"table":ref_table})
 
 	ref.write_image(options.output,0)
 	
+	if options.refsym and options.refsym != 'c1':
+		os.system( 'e2proc3d.py --sym=' + options.refsym + ' ' + options.output + ' ' + options.output )
+	
 	if options.mirrorref:
+		ref = EMData(options.output)
+	
 		t = Transform({'type':'eman','mirror':True})
 		refm = ref.transform(t)
 		
@@ -259,19 +262,7 @@ def main():
 		elif '.mrc' in options.output:
 			refmname = options.output.replace('.mrc','_mirror.mrc')
 			refm.write_image(refmname)
-	
-	if parameters['symmetry'] != 'c1':
-		os.system('e2proc3d.py --sym=' + parameters['symmetry'] + ' reference.hdf reference_sym.hdf')
-		os.system('mv reference_sym.hdf reference.hdf')
-		reference = EMData('reference.hdf',0)
 
-	if parameters['verbose']:
-		print "The reference was prepared"
-
-	if parameters['mirror_particle'] == 'yes':
-		t=Transform({'type':'eman','mirror':True})
-		a.transform(t)
-	
 	E2end(logger)
 		
 	return()
