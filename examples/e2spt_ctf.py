@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus Galaz, 04/28/2012; last update 10/26/2012
+# Author: Jesus Galaz, 11/01/2012; last update 11/14/2012
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -53,10 +53,10 @@ def main():
 	
 	#parser.add_argument("--cpu", action='store_true', help="Will test SPT alignment using CPU.",default=False)
 	parser.add_argument("--input", type=int, help="Aligned tilt series.",default='')
-	parser.add_argument("--input", type=int, help="Aligned tilt series.",default='')
+	parser.add_argument("--output", type=int, help="Name for the tilt series saved as an .hdf stack; also, this name will be used as the <<stem>> for all other files produced.",default='')
 
-	parser.add_argument("--gridsize", type=int, help="Tag files generated on a particular computer.",default='')
-	
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--path",type=str,default=None,help="Directory to store results in. The default is a numbered series of directories containing the prefix 'sptsimjob'; for example, sptsimjob_02 will be the directory by default if 'sptsimjob_01' already exists.")
@@ -130,7 +130,8 @@ def main():
 			img.get_clip(R)
 			
 		
-	
+	E2end(logger)
+	return()
 	
 		
 			 
