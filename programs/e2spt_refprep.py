@@ -52,7 +52,7 @@ def main():
 	parser.add_argument("--preprocess",type=str,help="Any processor (as in e2proc3d.py) to be applied to the edited reference.", default=None)
 	parser.add_argument("--lowpass",type=str,help="A lowpass filtering processor (as in e2proc3d.py) be applied to the edited reference.", default=None)
 	parser.add_argument("--highpass",type=str,help="A highpass filtering processor (as in e2proc3d.py) to be applied to the edited reference.", default=None)
-	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", returnNone=True, default="mask.sharp:outer_radius=-2", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=11, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
 	parser.add_argument("--normproc",type=str,help="Normalization processor applied to particles before alignment. Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'", default="normalize.mask")
 	parser.add_argument("--mirrorref", action="store_true", help="Will generate a mirrored copy of the reference.", default=False)
 	parser.add_argument("--sharplowpassresolution",type=float,default=None,help="If specified, the reference will be sharply filtered to this resolution.")
@@ -61,27 +61,6 @@ def main():
 	(options, args) = parser.parse_args()
 
 	logger = E2init(sys.argv, options.ppid)
-	
-	'''
-	Parse processing options, if supplied
-	'''	
-	if options.normproc: 
-		options.normproc=parsemodopt(options.normproc)
-	
-	if options.mask: 
-		options.mask=parsemodopt(options.mask)
-	
-	if options.preprocess: 
-		options.preprocess=parsemodopt(options.preprocess)
-		
-	if options.lowpass: 
-		options.lowpass=parsemodopt(options.lowpass)
-	
-	if options.highpass: 
-		options.highpass=parsemodopt(options.highpass)
-	
-	if options.verbose:
-		print "I have parsed the processing options."
 	
 	'''
 	Check for sane formats for ref and output
@@ -235,8 +214,29 @@ def main():
 		print "The reference has now been precisely shrunk."
 
 	''' 
-	Apply processing options. Make the mask first (if specified), use it to normalize (optionally), then apply it. Then apply any specified filters.
-	''' 
+	Apply processing options. First, parse those that need to be parsed, then apply
+	'''	
+	if options.normproc: 
+		options.normproc=parsemodopt(options.normproc)
+	
+	if options.mask: 
+		options.mask=parsemodopt(options.mask)
+	
+	if options.preprocess: 
+		options.preprocess=parsemodopt(options.preprocess)
+		
+	if options.lowpass: 
+		options.lowpass=parsemodopt(options.lowpass)
+	
+	if options.highpass: 
+		options.highpass=parsemodopt(options.highpass)
+	
+	if options.verbose:
+		print "I have parsed the processing options."
+
+	'''
+	Make the mask first (if specified), use it to normalize (optionally), then apply it.
+	'''
 	mask=EMData(ref["nx"],ref["ny"],ref["nz"])
 	mask.to_one()
 		
@@ -252,14 +252,14 @@ def main():
 	ref.mult(mask)
 		
 	'''
-	#If normalizing, it's best to do normalize->mask->normalize>mask
+	If normalizing, it's best to do normalize->mask->normalize>mask
 	'''
 	if options.normproc:		
 		ref.process_inplace(options.normproc[0],options.normproc[1])
 		ref.mult(mask)
 		
 	'''
-	#Preprocess, lowpass and/or highpass
+	Apply any specified filters (preprocess, lowpass and/or highpass)
 	'''
 	if options.preprocess != None:
 		ref.process_inplace(options.preprocess[0],options.preprocess[1])
