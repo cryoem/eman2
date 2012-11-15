@@ -1751,7 +1751,7 @@ class EMStackInfoPane(EMInfoPane):
 	def __init__(self,parent=None):
 		QtGui.QWidget.__init__(self,parent)
 		
-		self.setWindowTitle("e2display.py Information Pane") #Jesus
+		#self.setWindowTitle("e2display.py Information Pane") #Jesus
 		
 		#self.setTitle("e2dispaly.py Information Pane")
 		
@@ -1769,7 +1769,7 @@ class EMStackInfoPane(EMInfoPane):
 		#self.wimnum.setRange(0,0) #JOHN
 		#self.gbl.addWidget(self.wimnum,0,0) #JOHN
 		
-		#self.wimnum.setRange(1,0) #Jesus
+		self.wimnum.setRange(1,0) #Jesus
 		self.gbl.addWidget(self.wimnum,1,0) #Jesus
 		
 		'''List as alternate mechanism for selecting image number(s)'''
@@ -1786,25 +1786,22 @@ class EMStackInfoPane(EMInfoPane):
 		#self.gbl.addWidget(self.wheadtree,0,1,2,1) #JOHN
 		self.gbl.addWidget(self.wheadtree,1,1,2,1) #Jesus
 		
-		#self.gbl.setColumnStretch(0,1) #JOHN
-		#self.gbl.setColumnStretch(1,4) #JOHN
+		self.gbl.setColumnStretch(0,1)
+		self.gbl.setColumnStretch(1,4)
 		
-		self.gbl.setColumnStretch(0,1) #Jesus
-		self.gbl.setColumnStretch(1,4) #Jesus
-
 		'''Lower region has buttons for actions'''
 		self.hbl2 = QtGui.QGridLayout()
 
 		self.wbutmisc=[]
 	
-		# 10 buttons for context-dependent actions
+		'''10 buttons for context-dependent actions'''
 		#self.hbl2.setRowStretch(0,1) #JOHN
 		#self.hbl2.setRowStretch(1,1) #JOHN
 		
 		self.hbl2.setRowStretch(1,1) #Jesus
 		self.hbl2.setRowStretch(2,1) #Jesus		
 		
-		for i in xrange(1,6):
+		for i in xrange(5):
 			self.hbl2.setColumnStretch(i,2)
 			for j in range(2):
 				self.wbutmisc.append(QtGui.QPushButton(""))
