@@ -942,7 +942,7 @@ void EMData::rotate(const Transform & t)
 }
 
 float EMData::max_3D_pixel_error(const Transform &t1, const Transform & t2, float r) {
-	
+
 	Transform t;
 	int r0 = (int)r;
 	float ddmax = 0.0f;

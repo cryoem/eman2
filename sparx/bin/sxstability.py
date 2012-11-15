@@ -46,7 +46,7 @@ def main():
 	parser.add_option("--xr",           type="string"      ,     default="2 1",       help="range for translation search in x direction, search is +/xr")
 	parser.add_option("--yr",           type="string"      ,     default="-1",        help="range for translation search in y direction, search is +/yr (default = same as xr)")
 	parser.add_option("--ts",           type="string"      ,     default="1 0.5",     help="step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional")
-	parser.add_option("--thld_err",     type="float",            default=1.732,       help="threshld of pixel error (default = 1.732)")
+	parser.add_option("--thld_err",     type="float",            default=0.75,        help="threshld of pixel error (default = 1.732)")
 	parser.add_option("--num_ali",      type="int",              default=5,           help="number of alignments performed for stability (default = 5)")
 	parser.add_option("--fl",           type="float"       ,     default=0.3,         help="cut-off frequency of hyperbolic tangent low-pass Fourier filter")
 	parser.add_option("--aa",           type="float"       ,     default=0.2,         help="fall-off of hyperbolic tangent low-pass Fourier filter")
@@ -87,9 +87,7 @@ def main():
 		if options.CTF :
 			from filter import filt_ctf
 			for im in xrange(len(class_data)):
-				atemp = class_data[im].copy()
-				btemp = filt_ctf(atemp, class_data[im].get_attr("ctf"), binary=1)
-				class_data[im] = btemp.copy()
+				class_data[im] = filt_ctf(class_data[im], class_data[im].get_attr("ctf"), binary=1)
 		for im in class_data:
 			try:
 				t = im.get_attr("xform.align2d") # if they are there, no need to set them!
@@ -97,12 +95,10 @@ def main():
 				try:
 					t = im.get_attr("xform.projection")
 					d = t.get_params("spider")
-					set_params2D(im, [0.0,-d["tx"],-d["ty"],0,1.0])
+					set_params2D(im, [0.0, -d["tx"], -d["ty"], 0, 1.0])
 				except:
 					set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0])
 		all_ali_params = []
-
-		"""
 
 		for ii in xrange(num_ali):
 			ali_params = []
@@ -137,6 +133,8 @@ def main():
 				uuu.extend([temp[0][k],temp[1][k],temp[2][k],temp[3][k]])
 			all_ali_params.append(uuu)
 
+
+		"""
 
 		stable_set, mir_stab_rate, pix_err = multi_align_stability(all_ali_params, 0.0, 10000.0, options.thld_err, options.verbose, 2*ou+1)
 		print "Average stat: %20.3f %20.3f %20d %20d"%(mir_stab_rate, pix_err, len(stable_set), len(class_data))
