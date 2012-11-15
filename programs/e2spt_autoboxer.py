@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus Galaz, 04/28/2012; last update 10/26/2012
+# Author: Jesus Galaz, 10/20/2012; last update 11/15/2012
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -73,7 +73,7 @@ def main():
 	
 	parser.add_argument("--gridradius", type=int, help="Radius of the grid in pixels. Supply this parameter only if also supplying --mask.",default='')
 	parser.add_argument("--gridoffset", tpe='str', help="""x,y coordinates for the center of the grid hole in the center slice of the tomogram (or if you generated a 2D projection of the tomogram. 
-														The left bottom corner would be 0,0. Supply this parameter only if also supplying --mask.""")
+														The left bottom corner would be 0,0. Supply this parameter only if also supplying --mask and the grid hole is not centered in the tomogram.""")
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -144,7 +144,6 @@ def main():
 	if options.verbose:
 		print "I have parsed the processing options."
 	
-	
 	tomogramfile=options.tomgram
 	if options.shrink:
 		binnedname = ''
@@ -161,13 +160,25 @@ def main():
 			os.system('e2proc3d.py ' + options.tomogram + ' ' + binnedname + ' --process=math.meanshrink:n=' + options.shrink)
 			tomogramfile = binnedname
 			
-
-	if options.mask and options.gridradius and options.gridoffset:
+	if options.mask and options.gridradius:
 		tomohdr = EMData(tomogramfile,0,True)
 		mask=EMData(tomohdr["nx"],tomohdr["ny"],tomohdr["nz"])
+		height = tomohdr['nz']
+		if options.yshort:
+				mask=EMData(tomohdr["nx"],tomohdr["nz"],tomohdr["ny"])			
+				height = tomohdr['ny']
 		mask.to_one()
+		mask.process_inplace('testimage.cylinder',{'radius':options.gridradius,'height':height})
 		
-		ref.mult(mask)
+		if options.gridoffset:
+			x=options.gridoffset.split(',')[0]
+			y=options.gridoffset.split(',')[-1]
+			mask.translate(x,y)	
+		
+		tomo=EMData(tomogramfile,0)
+		tomo.mult(mask)
+		
+		
 		
 	'''
 	Apply any specified filters (preprocess, lowpass and/or highpass)
