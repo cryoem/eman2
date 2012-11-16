@@ -138,7 +138,7 @@ namespace EMAN
 								  Density2PointsArrayAlgorithm mode = PEAKS_DIV);
 		void sort_by_axis(int axis = 1);	// x,y,z axes = 0, 1, 2
 		EMData *pdb2mrc_by_nfft(int map_size, float apix, float res);	// return real space 3-D map
-		EMData *pdb2mrc_by_summation(int map_size, float apix, float res);	// return real space 3-D map
+		EMData *pdb2mrc_by_summation(int map_size, float apix, float res, int addpdbbfactor);	// return real space 3-D map
 		EMData *projection_by_nfft(int image_size, float apix, float res = 0);	// return 2-D Fourier Transform
 		EMData *projection_by_summation(int image_size, float apix, float res);	// return 2-D real space image
 		void replace_by_summation(EMData *image, int i, Vec3f vec, float amp, float apix, float res); // changes a single Gaussian from the projection
@@ -155,6 +155,7 @@ namespace EMAN
 		private:
 		double *points;
 		size_t n;
+		double *bfactor;
 	};
 }
 
