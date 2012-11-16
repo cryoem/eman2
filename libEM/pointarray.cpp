@@ -95,6 +95,7 @@ int cmp_float(const void *a, const void *b)
 PointArray::PointArray()
 {
 	points = 0;
+	bfactor = 0;
 	n = 0;
 }
 
@@ -143,10 +144,11 @@ PointArray & PointArray::operator=(PointArray & pa)
 }
 
 void PointArray::set_number_points(size_t nn)
-{
+{	
 	if (n != nn) {
-		n = nn;
+		n = nn;		
 		points = (double *) realloc(points, 4 * n * sizeof(double));
+		bfactor = (double *) realloc(bfactor, 4 * n * sizeof(double));
 	}
 }
 
@@ -422,9 +424,10 @@ bool PointArray::read_from_pdb(const char *file)
 	struct stat filestat;
 	stat(file, &filestat);
 	set_number_points(( int)(filestat.st_size / 80 + 1));
-#ifdef DEBUG
+
+	#ifdef DEBUG
 	printf("PointArray::read_from_pdb(): try %4lu atoms first\n", get_number_points());
-#endif
+	#endif
 
 	FILE *fp = fopen(file, "r");
 	if(!fp) {
@@ -433,6 +436,7 @@ bool PointArray::read_from_pdb(const char *file)
 	}
 	char s[200];
 	size_t count = 0;
+	
 	while ((fgets(s, 200, fp) != NULL)) {
 		if (strncmp(s, "ENDMDL", 6) == 0)
 			break;
@@ -492,11 +496,13 @@ bool PointArray::read_from_pdb(const char *file)
 		if (e == 0)
 			continue;
 
-		float x, y, z;
+		float x, y, z, q;
 		sscanf(&s[28], " %f %f %f", &x, &y, &z);
+		sscanf(&s[60], " %f", &q);
 
 		if (count + 1 > get_number_points())
 			set_number_points(2 * (count + 1));    //makes sure point array is big enough
+		
 #ifdef DEBUG
 		printf("Atom %4lu: x,y,z = %8g,%8g,%8g\te = %g\n", count, x, y, z, e);
 #endif
@@ -504,6 +510,7 @@ bool PointArray::read_from_pdb(const char *file)
 		points[4 * count + 1] = y;
 		points[4 * count + 2] = z;
 		points[4 * count + 3] = e;
+		bfactor[count] = q;
 		count++;
 	}
 	fclose(fp);
@@ -1029,12 +1036,11 @@ void PointArray::sort_by_axis(int axis)
 }
 
 
-EMData *PointArray::pdb2mrc_by_summation(int map_size, float apix, float res)
+EMData *PointArray::pdb2mrc_by_summation(int map_size, float apix, float res, int addpdbbfactor)
 {
 #ifdef DEBUG
 	printf("PointArray::pdb2mrc_by_summation(): %lu points\tmapsize = %4d\tapix = %g\tres = %g\n",get_number_points(),map_size, apix, res);
 #endif
-	double gauss_real_width = res / (M_PI);	// in Angstrom, res is in Angstrom
 	//if ( gauss_real_width < apix) LOGERR("PointArray::projection_by_summation(): apix(%g) is too large for resolution (%g Angstrom in Fourier space) with %g pixels of 1/e half width", apix, res, gauss_real_width);
 
 	double min_table_val = 1e-7;
@@ -1042,30 +1048,48 @@ EMData *PointArray::pdb2mrc_by_summation(int map_size, float apix, float res)
 
 	double table_step_size = 0.001;	// number of steps for each pixel
 	double inv_table_step_size = 1.0 / table_step_size;
-	int table_size = int (max_table_x * gauss_real_width / (apix * table_step_size) * 1.25);
-	vector<double> table;
-	table.resize(table_size);
-	//double *table = (double *) malloc(sizeof(double) * table_size);
-	for (int i = 0; i < table_size; i++) {
-		double x = -i * table_step_size * apix / gauss_real_width;
-		table[i] = exp(-x * x);
-	}
-
-	int gbox = int (max_table_x * gauss_real_width / apix);	// local box half size in pixels to consider for each point
-	if (gbox <= 0)
-		gbox = 1;
-
-	sort_by_axis(2);			// sort by Z-axis
+	
+//	sort_by_axis(2);			// sort by Z-axis
 
 	EMData *map = new EMData();
 	map->set_size(map_size, map_size, map_size);
 	map->to_zero();
 	float *pd = map->get_data();
+	
+	vector<double> table;
+	double gauss_real_width;
+	int table_size;
+	int gbox;
+	
+	if(addpdbbfactor==-1){
+		for ( size_t s = 0; s < get_number_points(); ++s) {
+			bfactor[s]=res;
+		}
+	}
+	
 	for ( size_t s = 0; s < get_number_points(); ++s) {
 		double xc = points[4 * s] / apix + map_size / 2;
 		double yc = points[4 * s + 1] / apix + map_size / 2;
 		double zc = points[4 * s + 2] / apix + map_size / 2;
 		double fval = points[4 * s + 3];
+		
+		gauss_real_width = (bfactor[s])/M_PI;	// in Angstrom, res is in Angstrom
+		
+		table_size = int (max_table_x * gauss_real_width / (apix * table_step_size) * 1.25);
+		table.resize(table_size);
+		for (int i = 0; i < table_size; i++){
+			table[i] = 0;
+		}
+		
+		for (int i = 0; i < table_size; i++) {
+			double x = -i * table_step_size * apix / gauss_real_width;
+			table[i] =  exp(-x * x)/sqrt(gauss_real_width * gauss_real_width * 2 * M_PI);
+		}
+
+		gbox = int (max_table_x * gauss_real_width / apix);	// local box half size in pixels to consider for each point
+		if (gbox <= 0)
+			gbox = 1;
+		
 		int imin = int (xc) - gbox, imax = int (xc) + gbox;
 		int jmin = int (yc) - gbox, jmax = int (yc) + gbox;
 		int kmin = int (zc) - gbox, kmax = int (zc) + gbox;
@@ -1080,13 +1104,14 @@ EMData *PointArray::pdb2mrc_by_summation(int map_size, float apix, float res)
 		if (jmax > map_size)
 			jmax = map_size;
 		if (kmax > map_size)
-			kmax = map_size;
-
+			kmax = map_size;		
+		
 		for (int k = kmin; k < kmax; k++) {
 			size_t table_index_z = size_t (fabs(k - zc) * inv_table_step_size);
 			if ( table_index_z >= table.size() ) continue;
 			double zval = table[table_index_z];
 			size_t pd_index_z = k * map_size * map_size;
+			
 			for (int j = jmin; j < jmax; j++) {
 				size_t table_index_y = size_t (fabs(j - yc) * inv_table_step_size);
 				if ( table_index_y >= table.size() ) continue;
@@ -1101,7 +1126,7 @@ EMData *PointArray::pdb2mrc_by_summation(int map_size, float apix, float res)
 			}
 		}
 	}
-	//for(int i=0; i<map_size*map_size; i++) pd[i]/=sqrt(M_PI);
+
 	map->update();
 	map->set_attr("apix_x", apix);
 	map->set_attr("apix_y", apix);
