@@ -53,7 +53,10 @@ def main():
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	#parser.add_argument("--cpu", action='store_true', help="Will test SPT alignment using CPU.",default=False)
+	parser.add_argument("--pad", action='store_true', help="""Provide this if the particles in the --particlestack used to create a template are in a tight box. 
+															Also, provide it if you will be doing rotational searches if providing a --template in a tight box.""",default=False)
+	parser.add_argument("--rotationalsearch", action='store_true', help="""At each translation position, vary euler angles as well when searching for particles.""",default=False)
+	
 	parser.add_argument("--tomogram", type=int, help="Name of the tomogram.",default='')
 	parser.add_argument("--goldstack", type=int, help="Name of the stack containing a few gold particles picked from the tomogram.",default='')
 	parser.add_argument("--particlestack", type=int, help="""Name of the stack containing a few sample particles picked from the tomogram, used to create an initial template.
@@ -272,14 +275,27 @@ def main():
 		z=y
 		y=aux
 	
-	for i in xrange(boxsize/2, x - boxsize/2):
-		for j in xrange(boxsize/2 , y - boxsize/2):
-			for k in xrange(boxsize/2 , z - boxsize/2):
-				if options.mask:
-					if (x - xo)*(x - xo) + (y - yo)*(y - yo) < options.gridradius * options.gridradius
-						scanposition(options,i,j,k)
-				else:
-					scanposition(options,i,j,k)
+	'''
+	Make a pseudo-spherical or shell-like template with the radius of gyration of the actual template
+	for purposes of translational search
+	'''
+	
+	transtemplate = EMData(options.template,0)
+	transtemplate = transtemplate.rotavg_i()
+	transtemplatename = options.template.replace('.','_sphavg.')
+	boxsize = z
+	transtemplate.process_inplace('xform.scale',{'scale':1,'clip',boxsize})
+	transtemplate.write_image(transtemplatename,0)
+	k=boxsize/2
+	for i in xrange(boxsize/2, x - boxsize/2 + 1):
+		if not i % boxsize/2:
+			for j in xrange(boxsize/2 , y - boxsize/2 + 1):
+				if not j % boxsize/2:
+					if options.mask:
+						if (x - xo)*(x - xo) + (y - yo)*(y - yo) < options.gridradius * options.gridradius
+							scanposition(options,transtemplate,i,j,k)
+						else:
+							scanposition(options,transtemplate,i,j,k)
 	return()
 	
 	
@@ -292,12 +308,32 @@ def generateref(options):
 	return(options)
 	
 
-def scanposition(options,x,y,z):
-	boxsize = EMData(options.template,0,True)['nx']
-	r = Region((2*x-boxsize)/2,(2*y-boxsize)/2, (2*z-boxsize)/2, boxsize, boxsize, boxsize)
-	e = EMData()
-	e.read_image(tomogram,0,False,r)
+def scanposition(options,template,x,y,z):
+	boxsize = template['nx']
+	r = Region( (2*x-boxsize)/2,(2*y-boxsize)/2, (2*z-boxsize)/2, boxsize, boxsize, boxsize )
+	subox = EMData()
+	subox.read_image(options.tomogram,0,False,r)
+	
+	ccf = template.calc_ccf(subox)
+	ccf.process_inplace("xform.phaseorigin.tocorner") 
+	ccf.process_inplace('normalize')
+
+	#box = ccf.get_zsize()
+	#r =  Region((box/2) - int(parameters['searchx']), (box/2) - int(parameters['searchy']), (box/2) - int(parameters['searchz']), 2 * int(parameters['searchx']) + 1, 2 * int(parameters['searchy']) + 1, 2 * int(parameters['searchz']) + 1) 
+	#sub_ccf = ccf.get_clip(r)
+
+	locmax = ccf.calc_max_location()
+	xmax = locmax[0]
+	ymax = locmax[1]
+	zmax = locmax[2]
+	max = ccf['maximum']
+	
+	
+	
+	
 	return(e)
+	
+	
 			 
 
 if '__main__' == __name__:
