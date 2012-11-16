@@ -72,6 +72,9 @@ def main():
 	parser.add_argument("--quiet",action="store_true",default=False,help="Verbose is the default")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--usenufft", type=int, help="Use the summation calculation",default=-1)
+	parser.add_argument("--addpdbbfactor", type=int, help="Use the bfactor as the atom radius",default=-1)
+	parser.add_argument("--boxsize", type=int, help="Box size in pixel",default=0)
 	
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")
@@ -79,9 +82,21 @@ def main():
 	except: chains=None
 	try: box=options.box
 	except: box=None
-	outmap = pdb_2_mrc(args[0],options.apix,options.res,options.het,box,chains,options.quiet)
-	outmap.write_image(args[1])
-
+	
+	if (options.usenufft==-1):
+		outmap = pdb_2_mrc(args[0],options.apix,options.res,options.het,box,chains,options.quiet)
+		outmap.write_image(args[1])
+	else:
+		if options.boxsize==0: 
+			print("Box size required")
+			sys.exit(1)
+		
+		pa=PointArray()
+		pa.read_from_pdb(args[0])
+		out=pa.pdb2mrc_by_summation(options.boxsize,options.apix,options.res,options.addpdbbfactor)
+		sys.exit(1)
+		out.write_image(args[1])
+		
 # this function originally added so that it could be accessed independently (for Junjie Zhang by David Woolford)
 def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,quiet=False):
 	'''
@@ -160,7 +175,10 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,quiet=Fa
 	gaus=EMData()
 	gaus.set_size(64,64,64)
 	gaus.to_one()
+	
 	gaus.process_inplace("mask.gaussian",{"outer_radius":12.0})
+	
+	sys.exit(1)
 
 	# find the output box size, either user specified or from bounding box
 	outbox=[0,0,0]
