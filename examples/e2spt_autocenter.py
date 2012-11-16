@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus Galaz, 12/08/2011
+# Author: Jesus Galaz, 12/08/2011 - Last Update 11/16/2012
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -85,6 +85,7 @@ def main():
 
 	if options.averager: 
 		options.averager=parsemodopt(options.averager)
+	
 	if options.mask: 
 		options.mask=parsemodopt(options.mask)
 
@@ -107,12 +108,64 @@ def main():
 		if i == 0:
 			for k in range(n):
 				a=EMData(data,k)
-				a.process_inplace("normalize.edgemean")
+				
+				'''
+				Make the mask first, use it to normalize (optionally), then apply it
+				'''
+				mask = EMData(a["nx"],a["ny"],a["nz"])
+				mask.to_one()
+				if options.mask:
+					mask.process_inplace(options.mask[0],options.mask[1])
+
+				'''
+				Normalize
+				'''
+				if options.normproc:
+					if options.normproc[0]=="normalize.mask": 
+						options.normproc[1]["mask"]=mask			
+					a.process_inplace(options.normproc[0],options.normproc[1])
+		
+				'''
+				Mask after normalizing with the mask you just made, which is just a box full of 1s if no mask is specified
+				'''
+				a.mult(mask)
+		
+				'''
+				If normalizing, it's best to do normalize-mask-normalize-mask
+				'''
+				if options.normproc:
+					a.process_inplace(options.normproc[0],options.normproc[1])	
+					a.mult(mask)
+		
+				'''
+				preprocess
+				'''
+				if options.preprocess != None:
+					vol1.process_inplace(options.preprocess[0],options.preprocess[1])
+				
+				'''
+				lowpass
+				'''
+				if options.lowpass != None:
+					vol1.process_inplace(options.lowpass[0],options.lowpass[1])
+				
+				'''
+				highpass
+				'''
+				if options.highpass != None:
+					vol1.process_inplace(options.highpass[0],options.highpass[1])
+				
+				'''
+				Shrinking both for initial alignment and reference
+				'''
+				if options.shrink! = None and options.shrink > 1 :
+					a = a.process("math.meanshrink",{"n":options.shrink})
+				
+				a.process_inplace('xform.centeroffmass')				
+				
 				avgr.add_image(a)
 			avg=avgr.finish()
-		
-		#avg = process(avg,options.mask,options.normproc,options.filter,options.shrink)
-		
+				
 		avg_sph=avg.rotavg_i()
 		
 		#if options.boxclip:
@@ -189,33 +242,7 @@ def main():
 		if i == options.iter -1:
 			os.system('rm temp_stack.hdf')	
 	return()
-
-'''
-def process(ptcl,mask,normproc,filt,shrink):
-	# mask
-	box = int(ptcl['nx'])
-	mask = EMData(box,box,box)
-	mask.to_one()
-
-	if mask != None:
-		mask.process_inplace(mask[0],mask[1])
-		if normproc[0] != "normalize.mask":
-			ptcl = ptcl * mask
-			ptcl.write_image('masked_particle.hdf',0)
-
-	if normproc != None:
-		if normproc[0] == "normalize.mask": 
-			normproc[1]["mask"]=mask
-		ptcl.process_inplace(normproc[0],normproc[1])
-
-	if filt != None:
-		ptcl.process_inplace(filt[0],filt[1])
-
-	if shrink!=None and shrink > 1 :
-		ptcl=ptcl.process("math.meanshrink",{"n":shrink})
-
-	return(ptcl)
-'''
+	
 
 if __name__ == "__main__":
 	main()
