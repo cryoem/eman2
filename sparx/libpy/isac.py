@@ -165,7 +165,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	couldnt_find_stable = 0
 	#	(b)  if number of groups to process is less than three
 	K = ndata/img_per_grp
-	
+
 	while Iter <= max_round and couldnt_find_stable < 3 and K > 3:
 		if myid == main_node: 
 			print "################################################################################"
