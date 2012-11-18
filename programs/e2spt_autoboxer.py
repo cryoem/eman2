@@ -53,23 +53,25 @@ def main():
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_argument("--pad", action='store_true', help="""Provide this if the particles in the --particlestack used to create a template are in a tight box. 
-															Also, provide it if you will be doing rotational searches if providing a --template in a tight box.""",default=False)
+	parser.add_argument("--pad", action='store_true', help="""Provide this if the particles in the --particlestack used to create a template, or the template supplied 
+															through --template are in a tight box. The size""",default=False)
 	parser.add_argument("--rotationalsearch", action='store_true', help="""At each translation position, vary euler angles as well when searching for particles.""",default=False)
 	
-	parser.add_argument("--tomogram", type=int, help="Name of the tomogram.",default='')
-	parser.add_argument("--goldstack", type=int, help="Name of the stack containing a few gold particles picked from the tomogram.",default='')
-	parser.add_argument("--particlestack", type=int, help="""Name of the stack containing a few sample particles picked from the tomogram, used to create an initial template.
+	parser.add_argument("--tomogram", type=str, help="Name of the tomogram.",default='')
+	parser.add_argument("--goldstack", type=str, help="Name of the stack containing a few gold particles picked from the tomogram.",default='')
+	parser.add_argument("--particlestack", type=str, help="""Name of the stack containing a few sample particles picked from the tomogram, used to create an initial template.
 															with which to search for particles throughout the tomogram.""",default='')
 	
-	parser.add_argument("--template", type=int, help="Name of the file containing the template to search for particles throughout the tomogram.",default='')
+	parser.add_argument("--template", type=str, help="Name of the file containing the template to search for particles throughout the tomogram.",default='')
 
-	parser.add_argument("--backgroundstack", type=int, help="Name of the stack containing a few boxes picked from regions of the tomogram where there where no particles, no gold, and no carbon.",default='')
-	parser.add_argument("--carbonstack", type=int, help="Name of the stack containing a few boxes picked from the grid hole (or carbon).",default='')
+	parser.add_argument("--backgroundstack", type=str, help="Name of the stack containing a few boxes picked from regions of the tomogram where there where no particles, no gold, and no carbon.",default='')
+	parser.add_argument("--carbonstack", type=str, help="Name of the stack containing a few boxes picked from the grid hole (or carbon).",default='')
 
-	parser.add_argument("--output", type=int, help="Name to output the auto-boxed particles.",default='')
+	parser.add_argument("--output", type=str, help="Name to output the auto-boxed particles.",default='')
 	parser.add_argument("--shrink", type=int, help="Integer factor by which the tomogram will be shrunk.", default=1)
 	
+	parser.add_argument("--boxsize", type=int, help="Boxsize to resize the template, either provided through --template or computed from --particlestack", default=1)
+
 	parser.add_argument("--preprocess",type=str,help="Any processor (as in e2proc3d.py) to be applied to the tomogram", default=None)
 	parser.add_argument("--lowpass",type=str,help="A lowpass filtering processor (as in e2proc3d.py) be applied to the tomogram", default=None)
 	parser.add_argument("--highpass",type=str,help="A highpass filtering processor (as in e2proc3d.py) to be applied to the tomogram.", default=None)
@@ -206,6 +208,8 @@ def main():
 	'''
 	If a template is provided, check that it is sane. If not, fix it.	
 	'''
+	
+	ptclboxsize=''
 	if options.template:
 		if '.hdf' not in options.template and '.pdb' not in options.template and '.mrc' not in options.template:
 			print "ERROR: The format of the template to use must be .pdb, .mrc or .hdf"
@@ -249,9 +253,16 @@ def main():
 				z0 = template['nz']
 	
 				side = max(x0,y0,z0)
+				
+				if options.boxsize:
+					side = options.boxsize
+				
+				elif options.pad:
+					side *= 2
+				
 				if side % 2:
 					side += 1
-		
+				
 				R = Region((x0 - side)/2, (y0 - side)/2, (z0 - side)/2, side, side, side)
 				template.clip_inplace(R)
 		
@@ -260,9 +271,12 @@ def main():
 				
 				options.template = options.template.replace('.','_fixed.')
 				template.write_image(options.path + '/' + options.template,0)
+				side = ptclboxsize
 		
 	elif options.particlestack:
-		options = generateref(options)
+		ret = generateref(options)
+		options = ret[0]
+		ptclboxsize = ret[1]
 			
 	'''
 	Scan the tomogram to extract subvolumes to compare against the template, only if they are inside the grid-hole (in this case, in side the mask if there is any)
@@ -293,24 +307,35 @@ def main():
 				if not j % boxsize/2:
 					if options.mask:
 						if (x - xo)*(x - xo) + (y - yo)*(y - yo) < options.gridradius * options.gridradius
-							scanposition(options,transtemplate,i,j,k)
+							scanposition(options,transtemplate,ptclboxsize,i,j,k)
 						else:
-							scanposition(options,transtemplate,i,j,k)
+							scanposition(options,transtemplate,ptclboxsize,i,j,k)
 	return()
 	
 	
 def generateref(options):
 	ptclhdr = EMData(options.particlestack,0,True)
-	boxsize = ptclhdr['nx']		
-	alicmd = "e2spt_classaverage.py --path=" + options.path + "/generatereference" + " --input=" + options.input + " --output=" + options.input.replace('.hdf','_avg.hdf') + " --npeakstorefine=10 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_translate_3d:search=" +str( int(boxsize/4) ) + ":delta=15:dphi=15:verbose=0 --parallel=thread:7 --ralign=refine_3d_grid:delta=5:range=15:search=2 --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --savesteps --saveali --normproc=normalize.mask"
+	ptclboxsize = ptclhdr['nx']
+	if options.pad:
+		ptclboxsize *= 2
+	elif options.boxsize:
+		ptclboxsize = options.boxsize
+		n=EMUtil.get_image_count(options.particlestack)
+		for i in range(n):
+			a=EMData(options.particlestack,i)
+			a.process_inplace('xform.scale',{'scale':1,'clip':ptclboxsize})
+			a.write_image(options.particlestack.replace('.hdf','_ed.hdf'),i)
+		options.particlestack=options.particlestack.replace('.hdf','_ed.hdf')
+	
+	alicmd = "e2spt_classaverage.py --path=" + options.path + "/generatereference" + " --input=" + options.particlestack + " --output=" + options.particlestack.replace('.hdf','_avg.hdf') + " --npeakstorefine=10 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_translate_3d:search=" +str( int(boxsize/4) ) + ":delta=15:dphi=15:verbose=0 --parallel=thread:7 --ralign=refine_3d_grid:delta=5:range=15:search=2 --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --savesteps --saveali --normproc=normalize.mask"
 	os.system(cmd)
-	options.template = options.path + "/generatereference/" + options.input.replace('.hdf','_avg.hdf')
-	return(options)
+	options.template = options.path + "/generatereference/" + options.particlestack.replace('.hdf','_avg.hdf')
+	return(options, ptclboxsize)
 	
 
-def scanposition(options,template,x,y,z):
-	boxsize = template['nx']
-	r = Region( (2*x-boxsize)/2,(2*y-boxsize)/2, (2*z-boxsize)/2, boxsize, boxsize, boxsize )
+def scanposition(options,template,ptclboxsize,x,y,z):
+	subboxsize = template['nx']
+	r = Region( (2*x-subboxsize)/2,(2*y-subboxsize)/2, (2*z-subboxsize)/2, subboxsize, subboxsize, subboxsize )
 	subox = EMData()
 	subox.read_image(options.tomogram,0,False,r)
 	
@@ -328,7 +353,8 @@ def scanposition(options,template,x,y,z):
 	zmax = locmax[2]
 	max = ccf['maximum']
 	
-	
+	realxmax = xmax + ( x/(subboxsize/2) - 1 ) * subboxsize/2
+	realymax = ymax + ( y/(subboxsize/2) - 1 ) * subboxsize/2
 	
 	
 	return(e)
