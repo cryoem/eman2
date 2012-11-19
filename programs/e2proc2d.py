@@ -117,6 +117,7 @@ def main():
 	parser.add_argument("--averager",type=str,help="If --average is specified, this is the averager to use (e2help.py averager). Default=mean",default="mean")
 	parser.add_argument("--calcsf", metavar="n outputfile", type=str, nargs=2,
 					help="calculate a radial structure factor for the image and write it to the output file, must specify apix. divide into <n> angular bins")    
+	parser.add_argument("--calccont", action="store_true", help="Compute the low resolution azimuthal contrast of each image and put it in the header as eval_contrast_lowres. Larger values imply more 'interesting' images.")
 	parser.add_argument("--clip", metavar="xsize,ysize", type=str, action="append",
 					help="Specify the output size in pixels xsize,ysize[,xcenter,ycenter], images can be made larger or smaller.")
 	parser.add_argument("--exclude", metavar="exclude-list-file",
@@ -390,6 +391,18 @@ def main():
 				d.mult(mf)
 				mf=None
 				index_d[option1] += 1
+
+			elif option1 == "calccont":
+				dd=d.process("math.rotationalsubtract")
+				f=dd.do_fft()
+				#f=d.do_fft()
+				lopix=int(d["nx"]*d["apix_x"]/200.0)
+				hipix=int(d["nx"]*d["apix_x"]/25.0)
+				r=f.calc_radial_dist(d["ny"]/2,0,1.0,1)
+				lo=sum(r[lopix:hipix])/(hipix-lopix)
+				hi=sum(r[hipix+1:-1])/(len(r)-hipix-2)
+				d["eval_contrast_lowres"]=lo/hi
+#				print lopix,hipix,lo,hi,lo/hi
 				
 			elif option1 == "norefs" and d["ptcl_repr"] <= 0:
 				continue

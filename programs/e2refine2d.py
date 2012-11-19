@@ -170,6 +170,15 @@ def main():
 #	if not options.initial and not "classes_init" in dcts:
 	if not options.initial:
 		print "Building initial averages"
+
+		# we only want to use ~2000 particles for the initial averages
+		n=EMUtil.get_image_count(options.input)
+		options.input2=options.input
+		nmax=max(2000,options.ncls*10)
+		if n>nmax:
+			print "Making subset of ~%d particles for initial averages"%nmax
+			options.input=options.path+"#input_subset"
+			run("e2proc2d.py %s %s --step=0,%d"%(options.input2,options.input,int(n/nmax)))
 		
 		# make footprint images (rotational/translational invariants)
 		fpfile=options.path+"#input_fp"
@@ -225,6 +234,8 @@ def main():
 			tmp_data[most_recent_classes]= s
 			# global.spr_ref_free_class_aves
 			pdb[options.dbls] = tmp_data
+
+		options.input=options.input2
 			
 	if not options.initial : options.initial=options.path+"#classes_init"
 		
@@ -232,7 +243,7 @@ def main():
 	# this is the main refinement loop
 	for it in range(fit,options.iter+1) :		
 		# first we sort and align the class-averages from the last step
-		run("e2proc2d.py %s %s#allrefs_%02d --inplace --process=filter.highpass.gauss:cutoff_abs=.02 --process=normalize.edgemean --process=xform.centerofmass:threshold=1"%(options.initial,options.path,it))
+		run("e2proc2d.py %s %s#allrefs_%02d --inplace --calccont --process=filter.highpass.gauss:cutoff_abs=.01 --process=normalize.edgemean --process=xform.centerofmass:threshold=1"%(options.initial,options.path,it))
 		# now we try for mutual alignment of particle orientations
 		run("e2stacksort.py %s#allrefs_%02d %s#allrefs_%02d --simcmp=sqeuclidean:normto=1 --simalign=rotate_translate_flip --useali --iterative"%(options.path,it,options.path,it))
 		# however we don't want things off-center, so we do a final recentering
@@ -249,7 +260,10 @@ def main():
 #		run("e2stacksort.py %s aliref.%02d.hdf --simcmp=sqeuclidean --reverse --nsort=%d"%(options.initial,it,options.naliref))
 
 		# sort by class-average quality
-		run("e2stacksort.py %s#allrefs_%02d %s#allrefs_%02d --byheader=class_ptcl_qual"%(options.path,it,options.path,it))
+#		run("e2stacksort.py %s#allrefs_%02d %s#allrefs_%02d --byheader=class_ptcl_qual"%(options.path,it,options.path,it))
+
+		# instead we sort by how much azimuthally varying low resolution contrast we have
+		run("e2stacksort.py %s#allrefs_%02d %s#allrefs_%02d --byheader=eval_contrast_lowres --reverse"%(options.path,it,options.path,it))
 
 		# number of 'best' particles to select from
 		ncheck=options.ncls/3

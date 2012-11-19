@@ -109,10 +109,13 @@ def main():
 	if options.nsort<1 : options.nsort=len(a)
 	if options.byptcl : 
 		b=sortstackptcl(a,options.nsort)
+		if options.reverse : b.reverse()
 	elif options.bykurtosis:
 		b=sortstackkurt(a,options.nsort)
+		if options.reverse : b.reverse()
 	elif options.byheader!=None:
 		b=sortstackheader(a,options.nsort,options.byheader)
+		if options.reverse : b.reverse()
 	elif options.iterative: b=sortstackiter(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center,options.simmask)
 	elif options.reverse: b=sortstackrev(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center,options.simmask)
 	else : b=sortstack(a,options.simcmp[0],options.simcmp[1],options.simalign[0],options.simalign[1],options.nsort,options.shrink,options.useali,options.center,options.simmask)

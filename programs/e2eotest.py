@@ -47,10 +47,13 @@ def main():
 	usage = """prog [options] 
 	EMAN2 even odd test to assess resolution of a single particle reconstruction. Arguments are a subset of the
 	arguments passed to e2refine.py, and should generally be identical to those used during refinement.
-	
+		
 	Typically usage is e2eotest.py [similar options that were passed to e2refine] --path=refine_02
 	
 	Output is written to the EMAN2 database corresponding to the path argument, specifically it is inserted the fsc.results entry.
+	
+	NOTE: This test performs a 'traditional' even/odd test, which is subject to model-bias which can cause resolution exaggeration. 
+	Consider using e2refine_evenodd.py instead.
 	
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
@@ -68,7 +71,7 @@ def main():
 	parser.add_argument("--prefilt",action="store_true",help="Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison",default=False, guitype='boolbox', row=2, col=2, rowspan=1, colspan=1)
 	parser.add_argument("--mass", default=0, type=float,help="The mass of the particle in kilodaltons, used to run normalize.bymass. If unspecified (set to 0) nothing happens. Requires the --apix argument.")
 	parser.add_argument("--apix", default=0, type=float,help="The angstrom per pixel of the input particles. This argument is required if you specify the --mass argument. If unspecified (set to 0), the convergence plot is generated using either the project apix, or if not an apix of 1.")
-	parser.add_argument("--automask3d", default=None, type=str,help="The 5 parameters of the mask.auto3d processor, applied after 3D reconstruction. \n These parameters are, in order, isosurface threshold, radius, nshells, ngaussshells, nmaxseed. \n From e2proc3d.py you could achieve the same thing using: \n --process=mask.auto3d:threshold=1.1:radius=30:nshells=5:ngaussshells=5:nmaxseed=0.")
+	parser.add_argument("--automask3d", default=None, type=str,help="The 5 parameters of the mask.auto3d processor, applied after 3D reconstruction. \n These parameters are, in order, isosurface threshold, radius, nshells, nshellsgauss, nmaxseed. \n From e2proc3d.py you could achieve the same thing using: \n --process=mask.auto3d:threshold=1.1:radius=30:nshells=5:nshellsgauss=5:nmaxseed=0.", guitype='automask3d', row=18, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--automaskalign",action="store_true",help="This will use the automask to improve 2-D alignments and classification.",default=False, guitype='boolbox', row=7, col=0, rowspan=1, colspan=1,mode="refinement")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
@@ -157,7 +160,7 @@ def main():
 			sys.exit(1)
 		try: options.automask3d=db["automask3d"]
 		except : 
-			print "Cannot get automask parameter from register, no mask applied"
+			print "Cannot get automask parameter from register. This parameter is required. If necessary copy from e2refine.py command-line."
 			sys.exit(1)
 	else: options.automask3d=None
 
