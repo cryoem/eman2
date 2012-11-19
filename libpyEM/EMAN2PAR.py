@@ -2060,13 +2060,13 @@ class EMDCTaskClient(EMTaskClient):
 		except:
 #			print "Sleeping (not listening)"
 			sock=None
-			time.sleep(30)
+			time.sleep(60)
 			return
 
 		signal.signal(signal.SIGALRM,DCclient_alarm2)	# this is used for network timeouts
 		try:
-#			signal.alarm(15)
-			sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVTIMEO, pack('LL', 30, 0))
+#			signal.alarm(30)
+			sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVTIMEO, pack('LL', 45, 0))
 			sock.listen(1)
 			sock2=sock.accept()[0]
 			sockf=sock2.makefile()
@@ -2074,7 +2074,7 @@ class EMDCTaskClient(EMTaskClient):
 		except:
 			sock=None
 			return
-#		sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVTIMEO, pack('LL', 15, 0))
+#		sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVTIMEO, pack('LL', 30, 0))
 
 		signal.signal(signal.SIGALRM,DCclient_alarm)	# this is used for network timeouts
 		#cq=[]	# a list of returned images, gradually written by the thread
