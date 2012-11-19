@@ -57,7 +57,7 @@ def main():
             sxihrsr.py disk_to_stack.hdf --stackdisk='stacked_disks.hdf' --dphi=166.5 --dp=27.6 --ref_nx=160 --ref_ny=160 --ref_nz=220
 """
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--ir",                 type="float", 	     default= -1,                 help="inner radius for rotational correlation > 0 (set to 1) (Angstroms)")
+	#parser.add_option("--ir",                 type="float", 	     default= -1,                 help="inner radius for rotational correlation > 0 (set to 1) (Angstroms)")
 	parser.add_option("--ou",                 type="float", 	     default= -1,                 help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle) (Angstroms)")
 	parser.add_option("--rs",                 type="int",   		 default= 1,                  help="step between rings in rotational correlation >0  (set to 1)" ) 
 	parser.add_option("--xr",                 type="string",		 default= " 4  2 1  1   1",   help="range for translation search in x direction, search is +/-xr (Angstroms) ")
@@ -176,10 +176,7 @@ def main():
 		txs = get_input_from_string(options.txs)
 		y_restrict = get_input_from_string(options.y_restrict)
 		
-		if options.ir < 0:
-			irp = 1
-		else:
-			irp = int( (options.ir/options.apix) + 0.5)
+		irp = 1
 		oup = int( (options.ou/options.apix) + 0.5)
 		xrp = ''
 		txsp = ''
