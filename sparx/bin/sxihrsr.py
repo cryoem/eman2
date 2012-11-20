@@ -97,7 +97,7 @@ def main():
 	parser.add_option("--searchxshift",       type="float",		     default= -1,                 help="search range for x-shift determination: +/- searchxshift (Angstroms)")
 	parser.add_option("--nearby",             type="float",		     default= 6.0,                help="neighborhood in which to search for peaks in 1D ccf for x-shift search (Angstroms)")
 	
-	parser.add_option("--vol_ali",            action="store_true",   default=False,               help="volume alignment")
+	parser.add_option("--diskali",            action="store_true",   default=False,               help="volume alignment")
 	parser.add_option("--zstep",              type="float",          default= 1,                  help="Step size for translational search along z (Angstroms)")   
 	
 	parser.add_option("--helicise",           action="store_true",	 default=False,               help="helicise input volume and save results to output volume")
@@ -235,7 +235,7 @@ def main():
 			global_def.BATCH = True
 			volalixshift_MPI(args[0], args[1], args[2], searchxshiftp, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, args[3], options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug, nearbyp)
 			global_def.BATCH = False
-		elif options.vol_ali:
+		elif options.diskali:
 			#if options.maxit > 1:
 			#	print "Inner iteration for disk alignment is restricted to 1"
 			#	sys.exit()
