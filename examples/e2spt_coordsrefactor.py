@@ -1,5 +1,3 @@
-#/usr/bin/env
-
 #!/usr/bin/env python
 #
 # Author: Jesus Galaz, 06/05/2012
@@ -44,14 +42,20 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_argument("--coords", type=str, help="""Text file containing the coordinates for SPT subvolumes of a tomogram, in a sane format X, Y, Z or X, Z, Y, 
-													with ONE set of coordinates per line, and NO EXTRA CHARACTERS, except blank spaces (a tab is fine too) in between coordinates.""", default=None)
-	parser.add_argument("--output", type=str, help="Output name for the refactored coordinates file.", default=None)
+													with ONE set of coordinates per line, and NO EXTRA CHARACTERS, except blank spaces (a tab is fine too) in between coordinates.""", default='')
+	parser.add_argument("--output", type=str, help="Output name for the refactored coordinates file.", default='')
 	parser.add_argument("--swapyz", action="store_true", help="This will swap the Y and Z coordinates.", default=False)
 		
-	parser.add_argument("--mult", type=float,default=1.0,help="Factor to multiply the coordinates by. This can allow to expand or shrink the coordinates, but note that the resulting number will be rounded to the nearest integer.")	
-	parser.add_argument("--subset", type=int,default=None,help="--subset=n will select a subset of coordinate lines, from 1 to n, to write into the refactored file.")
+	parser.add_argument("--mult", type=float,default=1.0,help="""Factor to multiply the coordinates by. This can allow to expand or shrink the coordinates, 
+																but note that the resulting number will be rounded to the nearest integer.""")	
+	parser.add_argument("--subset", type=int,default=0,help="--subset=n will select a subset of coordinate lines, from 1 to n, to write into the refactored file.")
 	parser.add_argument("--randomize", action="store_true",default=False,help="Randomizes the coordinates so that they are in no preferential order.")
-	parser.add_argument("--sort", type=int default=None,help="Will sort the coordinates in the file, by the order provided (it can sort onbly by 1 coordinate, or 2, or 3); for example, 'z' will sort by z only, so that all the coordinates in the same 'slice', or at the same z height, will be together in the file (assuming 'z' is the shortest dimension); 'zx' would leave y unsorted; zxy will sort by z, and then at each z height, it will sort by x, then by y. You can provide ANY combination of of sorting: xyz, xy, xz, yx, yzx... etc")
+	
+	parser.add_argument("--sort", type=int, default=0,help="""Will sort the coordinates in the file, by the order provided; it can sort onbly by 1 coordinate, 
+																or 2, or 3); for example, 'z' will sort by z only, so that all the coordinates in the same 'slice', 
+																or at the same z height, will be together in the file [assuming 'z' is the shortest dimension]; 
+																'zx' would leave y unsorted; zxy will sort by z, and then at each z height, it will sort by x, then by y. 
+																You can provide ANY combination of of sorting: xyz, xy, xz, yx, yzx... etc""")
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -60,7 +64,7 @@ def main():
 	
 	logger = E2init(sys.argv, options.ppid)
 
-	cfile = otpions.coords
+	cfile = options.coords
 	
 	if not cfile:
 		print "ERROR: Must profile a coordinates file"
@@ -74,8 +78,10 @@ def main():
 	
 	sanelines = []
 	for line in clines:
-		if len(line)<5:
+		print "The len of this line is", len(line)
+		if len(line)<5 or len(line) > 30:
 			print "This line is insane and therefore will be removed", line
+		else:
 			sanelines.append(line)
 	
 	n=len(sanelines)
@@ -83,18 +89,18 @@ def main():
 	
 	if options.subset and not options.randomize and not options.sort:
 		n = options.subset
-	newlines = ['']*n
+	#newlines = ['']*n
+	newlines = []
 
-	for line in range(n):
-		#Some people might manually make ABERRANT coordinates files with commas, tabs, or more than once space in between coordinates
-    	
-	       	sanelines[i] = sanelines[i].replace(", ",' ')	
+	'''Some people might manually make ABERRANT coordinates files with commas, tabs, or more than once space in between coordinates'''
+	for i in range(n):                             
+		sanelines[i] = sanelines[i].replace(", ",' ')	
 		sanelines[i] = sanelines[i].replace(",",' ')
 		sanelines[i] = sanelines[i].replace("x",'')
 		sanelines[i] = sanelines[i].replace("y",'')
 		sanelines[i] = sanelines[i].replace("z",'')
 		sanelines[i] = sanelines[i].replace("=",'')
-        	sanelines[i] = sanelines[i].replace("_",' ')
+		sanelines[i] = sanelines[i].replace("_",' ')
 		sanelines[i] = sanelines[i].replace("\n",' ')
 		sanelines[i] = sanelines[i].replace("\t",' ')
 		sanelines[i] = sanelines[i].replace("  ",' ')
@@ -113,9 +119,19 @@ def main():
 		newline = x + ' ' + y + ' ' + z + '\n'
 		newlines.append(newline)
 	
-	if options.randomize and not options.sort:
+	if options.output:
+		f=open(options.output,'w')
+		f.writelines(newlines)
+		f.close()
+	else:
+		print "ERROR: Terminating. You must specify the output file in .txt format"
+		sys.exit()
 	
+	if options.randomize and not options.sort:
+		pass
+		
 	if options.sort and not options.randomze:
+		pass
 		
 	return()
 
