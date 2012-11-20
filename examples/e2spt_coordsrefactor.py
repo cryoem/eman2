@@ -29,27 +29,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
-#
-#
-	
-import os, sys, commands
+
+import os
+import sys 
+import commands
 from EMAN2 import *
-import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator
-from pylab import figure, show
-from sys import argv
-	
 
 def main():
-
 	progname = os.path.basename(sys.argv[0])
+	
 	usage = """Aligns a 3d volume to another by executing e2classaverage3d.py and then calculates the FSC between them by calling e2proc3d.py . It returns both a number for the resolution based on the FSC0.5 
 	criterion(on the screen) and a plot as an image in .png format."""
-			
+		
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_argument("--coords", type=str, help="Text file containing the coordinates for SPT subvolumes of a tomogram, in a sane format X, Y, Z or X, Z, Y, with ONE set of coordinates per line, and NO EXTRA CHARACTERS, except blank spaces (a tab is fine too) in between coordinates.", default=None)
-	parser.add_argument("--output", type=str, help="Output name for the refactored coordinates file.", default=None)\
+	parser.add_argument("--coords", type=str, help="""Text file containing the coordinates for SPT subvolumes of a tomogram, in a sane format X, Y, Z or X, Z, Y, 
+													with ONE set of coordinates per line, and NO EXTRA CHARACTERS, except blank spaces (a tab is fine too) in between coordinates.""", default=None)
+	parser.add_argument("--output", type=str, help="Output name for the refactored coordinates file.", default=None)
 	parser.add_argument("--swapyz", action="store_true", help="This will swap the Y and Z coordinates.", default=False)
 		
 	parser.add_argument("--mult", type=float,default=1.0,help="Factor to multiply the coordinates by. This can allow to expand or shrink the coordinates, but note that the resulting number will be rounded to the nearest integer.")	
@@ -123,6 +119,5 @@ def main():
 		
 	return()
 
-if __name__ == '__main__':
+if '__main__' == __name__:
 	main()
-
