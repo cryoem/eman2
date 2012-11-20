@@ -239,9 +239,13 @@ def main():
 			#if options.maxit > 1:
 			#	print "Inner iteration for disk alignment is restricted to 1"
 			#	sys.exit()
-			from development import filrecons3D_MPI
 			global_def.BATCH = True
-			filrecons3D_MPI(args[0], args[1], args[2], args[3], options.dp, options.dphi, options.apix, options.function, zstepp, options.fract, rmaxp, rminp, options.CTF, options.maxit, options.sym)
+			if(options.sym[:1] == "d" or options.sym[:1] == "D" ):
+				from development import diskali_MPI
+				diskaliD_MPI(args[0], args[1], args[2], args[3], options.dp, options.dphi, options.apix, options.function, zstepp, options.fract, rmaxp, rminp, options.CTF, options.maxit, options.sym)
+			else:
+				from development import diskali_MPI
+				diskali_MPI(args[0], args[1], args[2], args[3], options.dp, options.dphi, options.apix, options.function, zstepp, options.fract, rmaxp, rminp, options.CTF, options.maxit, options.sym)
 			global_def.BATCH = False
 		elif len(options.gendisk)> 0:
 			from development import gendisks_MPI
