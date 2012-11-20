@@ -241,7 +241,7 @@ def main():
 			#	sys.exit()
 			global_def.BATCH = True
 			if(options.sym[:1] == "d" or options.sym[:1] == "D" ):
-				from development import diskali_MPI
+				from development import diskaliD_MPI
 				diskaliD_MPI(args[0], args[1], args[2], args[3], options.dp, options.dphi, options.apix, options.function, zstepp, options.fract, rmaxp, rminp, options.CTF, options.maxit, options.sym)
 			else:
 				from development import diskali_MPI
