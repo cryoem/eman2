@@ -292,25 +292,21 @@ def main():
 	ref.write_image(options.output,0)
 	
 	if options.refsym and options.refsym != 'c1':
-		os.system( 'e2proc3d.py --sym=' + options.refsym + ' ' + options.output + ' ' + options.output )
-	
+		refs=ref.process('xform.applysym',{'sym':options.refsym})
+		refsymname=options.output.replace('.','_' + options.refsym + '.')
+		refs.write_image(refsymname)
+
 	if options.mirrorref:
-		ref = EMData(options.output)
-	
-		t = Transform({'type':'eman','mirror':True})
-		refm = ref.transform(t)
-		
-		if '.hdf' in options.output:
-			refmname = options.output.replace('.hdf','_mirror.hdf')
-			refm.write_image(refmname)
-	
-		elif '.mrc' in options.output:
-			refmname = options.output.replace('.mrc','_mirror.mrc')
-			refm.write_image(refmname)
+		refm=ref.process('xform.mirror',{'axis':'x'})
+		refmname = options.output.replace('.','_mirror.')
+		refm.write_image(refmname)
 
 	E2end(logger)
 		
 	return()
+
+	
+	
 
 if __name__ == '__main__':
 	main()
