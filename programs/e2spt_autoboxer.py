@@ -70,6 +70,9 @@ def main():
 
 	parser.add_argument("--output", type=str, help="Name to output the auto-boxed particles.",default='')
 	parser.add_argument("--shrink", type=int, help="Integer factor by which the tomogram will be shrunk.", default=1)
+	
+	parser.add_argument("--subsettrans", type=int, help="Subset of particles to keep/consider after translational alignment.", default=0)
+
 	parser.add_argument("--apix", type=float, help="The actual apix of the tomogram if for some reason it is wrong on the header.", default=0.0)
 
 	parser.add_argument("--cshrink", type=int, help="""If the tomogram was PREVIOUSLY shrunk, --cshrink is the factor by which the tomogram supplied through --tomogram was shrunk with respect to 
@@ -94,7 +97,7 @@ def main():
 	parser.add_argument("--path",type=str,default=None,help="""Directory to store results in. The default is a numbered series of directories containing the prefix 'sptautobox'; 
 															for example, sptautobox_01 will be the directory by default if 'sptautobox' already exists.""")
 	
-	parser.add_argument("--yshort",action="store_true",default=False,help="This means you have provided a --tomogram in which 'y' is the short axis.")
+	#parser.add_argument("--yshort",action="store_true",default=False,help="This means you have provided a --tomogram in which 'y' is the short axis.")
 	parser.add_argument("--test",action="store_true",default=False,help="This means you have provided a --tomogram in which 'y' is the short axis.")
 
 	(options, args) = parser.parse_args()
@@ -161,6 +164,7 @@ def main():
 	else:
 		tomogramfile = options.tomogram		
 	
+	yshort=False
 	
 	print "Before preprocessing, the tomogram is located at", tomogramfile	
 	'''
@@ -190,16 +194,30 @@ def main():
 	xo=0
 	yo=0
 	
-	tomohdr = EMData(tomogramfile,0,True)		
+	tomo = EMData(tomogramfile,0)
+	if options.apix:
+		tomo['apix_x'] = options.apix
+		tomo['apix_y'] = options.apix
+		tomo['apix_z'] = options.apix
+	
+	tomo['origin_x'] = 0
+	tomo['origin_y'] = 0
+	tomo['origin_z'] = 0
+	
+	tomo.write_image(tomogramfile,0)
+	
+	if tomo['ny'] < tomo['nz']:
+		yshort = True
+			
 	if options.mask and options.gridradius:
-		height = tomohdr['nz']
+		height = tomo['nz']
 		#mask=EMData(options.gridradius*2,options.gridradius*2,height])
-		mask=EMData(tomohdr['nx'],tomohdr['ny'],height)
+		mask=EMData(tomo['nx'],tomo['ny'],height)
 
-		if options.yshort:
-				height = tomohdr['ny']
+		if yshort:
+				height = tomo['ny']
 				#mask=EMData(options.gridradius*2,height,options.gridradius*2)			
-				mask=EMData(tomohdr['nx'],tomohdr['nz'],height)
+				mask=EMData(tomo['nx'],tomo['nz'],height)
 		mask.to_one()
 		mask.process_inplace('testimage.cylinder',{'radius':options.gridradius,'height':height})
 		
@@ -208,7 +226,7 @@ def main():
 			yo=options.gridoffset.split(',')[-1]
 			mask.translate(xo,yo)	
 		
-		tomo=EMData(tomogramfile)
+		#tomo=EMData(tomogramfile)
 		tomo.mult(mask)
 		
 		tomogramfile=tomogramfile.replace('.','_msk.')
@@ -298,12 +316,12 @@ def main():
 	'''
 	Scan the tomogram to extract subvolumes to compare against the template
 	'''
-	x = tomohdr['nx']
-	y = tomohdr['ny']
-	z = tomohdr['nz']
+	x = tomo['nx']
+	y = tomo['ny']
+	z = tomo['nz']
 	
 	print "!!!!Original tomo dimensions are", x,y,z
-	tomogramapix = tomohdr['apix_x']
+	tomogramapix = tomo['apix_x']
 	if options.apix:
 		tomogramapix = options.apix
 	
@@ -366,17 +384,17 @@ def main():
 		transtemplatename = options.path + '/' + transtemplatename
 	transtemplate.write_image(transtemplatename,0)
 	
-	boxsize = z
-	if options.yshort:
-		boxsize = y
+	regionboxsize = z
+	if yshort:
+		regionboxsize = y
 	print "The volume of the tomogram is", x*y*z 
-	print "The volume if the subregions is", boxsize*boxsize*boxsize
-	subcubes = int( (x*y*z) / (boxsize*boxsize*boxsize) )
+	print "The volume if the subregions is", regionboxsize*regionboxsize*regionboxsize
+	subcubes = int( (x*y*z) / (regionboxsize*regionboxsize*regionboxsize) )
 
 	if options.verbose:
 		print "Therefore, for boxing purposes, the tomogram will be divided into approximately these many sections", subcubes
 	
-	transtemplate.process_inplace('xform.scale',{'scale':1,'clip':boxsize})
+	transtemplate.process_inplace('xform.scale',{'scale':1,'clip':regionboxsize})
 	#mskrad = ptclboxsize/2 - 1
 	#transtemplate.process_inplace('mask.sharp',{'outer.radius':mskrad})
 	transtemplate.write_image(transtemplatename,0)
@@ -393,51 +411,71 @@ def main():
 	
 	if options.verbose:
 		print "I will look for subvolumes throughout the tomogram, which has these x, y, z dimensions", x, y, z
-		print "Where the boxsize of SUBREGIONS to examine is", boxsize
+		print "Where the boxsize of SUBREGIONS to examine is", regionboxsize
 		print "And the ptclboxsize of ptcls to extract is", ptclboxsize
 	
 	lines=[]
 	coordsset = set()
 	i=0
-	xc =  boxsize/2
+	xc = regionboxsize/2
 	otherlong = y
-	if options.yshort:
+	if yshort:
 		otherlong = z
 	
-	while xc >= boxsize/2 and xc <= x - boxsize/2:
-		xc = boxsize/2 + i * ((boxsize/2) - ptclboxsize )
-		xi = xc - boxsize/2
+	data=[]
+	coordset=set()
+	ret=None
+	while xc >= regionboxsize/2 and xc <= x - regionboxsize/2:
+		xc = regionboxsize/2 + i * ((regionboxsize/2) - ptclboxsize )
+		xi = xc - regionboxsize/2
 		
 		j = 0
-		yc =  boxsize/2
-		while yc >= boxsize/2 and yc <= otherlong - boxsize/2:
-			yc = boxsize/2 + j * ((boxsize/2) - ptclboxsize )
-			yi = yc - boxsize/2
+		yc =  regionboxsize/2
+		while yc >= regionboxsize/2 and yc <= otherlong - regionboxsize/2:
+			yc = regionboxsize/2 + j * ((boxsize/2) - ptclboxsize )
+			yi = yc - regionboxsize/2
 			
 			'''
 			If masking, to exlcude the carbon and include the grid-hole only, scan the region of the tomogram inside the mask only.
 			'''
 			if options.mask and options.gridradius:
 				if (xc - xo)*(xc - xo) + (yc - yo)*(yc - yo) < options.gridradius * options.gridradius:
-					coordsset.update( scanposition(options,transtemplate,ptclboxsize,xi,yi,i,j,zc) )
+					ret = scanposition(options,transtemplate,ptclboxsize,yshort,xi,yi,i,j,zc)
 			else:
-				coordsset.update( scanposition(options,transtemplate,ptclboxsize,xi,yi,xc,yc,zc) )
+				ret = scanposition(options,transtemplate,ptclboxsize,yshort,xi,yi,xc,yc,zc)
 			j+=1
 			if options.test:
 				j+=4
+			
+			if ret:
+				mean=ret[0]
+				coords=ret[1]
+				for cc in coords:
+					if coords in coordset:
+						pass
+					else:
+						coordset.update(cc)
+						data.append( [mean,cc] )
 		i+=1
 		if options.test:
 			i+=4
 	
+	data.sort()
+	data.reverse()
+	if options.subsettrans:
+		data = data[0:options.subsettrans]
+		
+		print "The sorted subset of data is", data
+	
 	if options.verbose:
 		print "The program has finished scanning the tomogram for subvolumes"
 			
-	for i in coordsset:
-		line = str(i[0]) + ' ' + str(i[1]) + ' ' + str(i[2]) + '\n'
+	for i in data:
+		line = str(i[1][0]) + ' ' + str(i[1][1]) + ' ' + str(i[1][2]) + '\n'
 		if options.shrink > 1:
-			line = str(i[0] * options.shrink) + ' ' + str(i[1] * options.shrink) + ' ' + str(i[2] * options.shrink) + '\n'
+			line = str(i[1][0] * options.shrink) + ' ' + str(i[1][1] * options.shrink) + ' ' + str(i[1][2] * options.shrink) + '\n'
 		if options.cshrink > 1:
-			line = str(i[0] * options.cshrink) + ' ' + str(i[1] * options.cshrink) + ' ' + str(i[2] * options.cshrink) + '\n'	
+			line = str(i[1][0] * options.cshrink) + ' ' + str(i[1][1] * options.cshrink) + ' ' + str(i[1][2] * options.cshrink) + '\n'	
 		if options.verbose:
 			print "I have found a particle at these coordinates", line
 		lines.append(line)
@@ -478,7 +516,7 @@ def generateref(options):
 	return(options, ptclboxsize)
 	
 
-def scanposition(options,template,ptclboxsize,xi,yi,xc,yc,zc):
+def scanposition(options,template,ptclboxsize,yshort,xi,yi,xc,yc,zc):
 	
 	print "These are the parameters received in scanposition function: xi=%d, OtherLongI=%d, xc=%d, OtherLongC=%d, zc=%d" %(xi,yi,xc,yc,zc)
 	
@@ -486,7 +524,7 @@ def scanposition(options,template,ptclboxsize,xi,yi,xc,yc,zc):
 	ptclmaskrad = ptclboxsize/2 - 1
 	print "The radius to melon ball with is", ptclmaskrad
 	r = Region( (2*xc-subboxsize)/2,(2*yc-subboxsize)/2, (2*zc-subboxsize)/2, subboxsize, subboxsize, subboxsize )
-	if options.yshort:
+	if yshort:
 		r = Region( (2*xc-subboxsize)/2, (2*zc-subboxsize)/2, (2*yc-subboxsize)/2, subboxsize, subboxsize, subboxsize )
 		
 	subox = EMData()
@@ -501,9 +539,10 @@ def scanposition(options,template,ptclboxsize,xi,yi,xc,yc,zc):
 		ccf = template.calc_ccf(subox)
 		ccf.process_inplace("xform.phaseorigin.tocorner") 
 		ccf.process_inplace('normalize')
-		if xi<80:
-			print "$$$$$$$$$$$$$$$$$$$ I will write the ccf!"
-			ccf.write_image('zzccf.hdf',0)
+		
+		#if xi<80:
+		#	print "$$$$$$$$$$$$$$$$$$$ I will write the ccf!"
+		#	ccf.write_image('zzccf.hdf',0)
 			
 		coordssubset = set()
 		for p in range(nptcls):
@@ -519,22 +558,34 @@ def scanposition(options,template,ptclboxsize,xi,yi,xc,yc,zc):
 			zmax = locmax[2] 
 			max = ccf['maximum']
 			print "Whole max location in the relative box is", xmax,ymax,zmax
+			print "The boxsize for this thing is", subboxsize
 			print "And max value is", max
-	
-			realxmax = xmax + template['nx']/2 + xi
-			realymax = ymax + template['nx']/2 + yi
-			realzmax = zmax + template['nx']/2
-			if options.yshort:
-				realzmax = ymax + template['nx']/2 + yi
-				realymax = zmax + template['nx']/2
 			
-			ccf.process_inplace('mask.sharp',{'inner_radius':ptclmaskrad,'dx':xmax-subboxsize/2,'dy':ymax-subboxsize/2,'dz':zmax-subboxsize/2})
-			coordssubset.add(( realxmax, realymax, realzmax )) 
+			if not max:
+				return(None)			
+			else:
+				#realxmax = xmax + template['nx']/2 + xi
+				#realymax = ymax + template['nx']/2 + yi
+				#realzmax = zmax + template['nx']/2
+				
+				realxmax = xmax + xi
+				realymax = ymax + yi
+				realzmax = zmax
+				
+				if yshort:
+					#realzmax = ymax + template['nx']/2 + yi
+					#realymax = zmax + template['nx']/2
+					
+					realzmax = ymax + yi
+					realymax = zmax
+			
+				ccf.process_inplace('mask.sharp',{'inner_radius':ptclmaskrad,'dx':xmax-subboxsize/2,'dy':ymax-subboxsize/2,'dz':zmax-subboxsize/2})
+				coordssubset.add(( realxmax, realymax, realzmax )) 
 		
-		if xi<80 and p == 2:
-			print "$$$$$$$$$$$$$$$$$$$ I will write the melon ball!"
-			ccf.write_image('zzmelonedball.hdf',0)
-		return(coordssubset)
+				#if xi<80 and p == 2:
+				#	print "$$$$$$$$$$$$$$$$$$$ I will write the melon ball!"
+				#	ccf.write_image('zzmelonedball.hdf',0)
+				return(max, coordssubset)
 	else:
 		print "You're scanning empty regions of the tomogram. You might have a --yshort tomogram and haven't realized so."
 		return(set())
