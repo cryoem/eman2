@@ -94,7 +94,6 @@ def main():
 		pa=PointArray()
 		pa.read_from_pdb(args[0])
 		out=pa.pdb2mrc_by_summation(options.boxsize,options.apix,options.res,options.addpdbbfactor)
-		sys.exit(1)
 		out.write_image(args[1])
 		
 # this function originally added so that it could be accessed independently (for Junjie Zhang by David Woolford)

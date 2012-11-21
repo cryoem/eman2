@@ -148,7 +148,7 @@ void PointArray::set_number_points(size_t nn)
 	if (n != nn) {
 		n = nn;		
 		points = (double *) realloc(points, 4 * n * sizeof(double));
-		bfactor = (double *) realloc(bfactor, 4 * n * sizeof(double));
+		bfactor = (double *) realloc(bfactor, n * sizeof(double));
 	}
 }
 
@@ -1072,6 +1072,8 @@ EMData *PointArray::pdb2mrc_by_summation(int map_size, float apix, float res, in
 		double yc = points[4 * s + 1] / apix + map_size / 2;
 		double zc = points[4 * s + 2] / apix + map_size / 2;
 		double fval = points[4 * s + 3];
+		
+		//printf("\n bfactor=%f",bfactor[s]);
 		
 		gauss_real_width = (bfactor[s])/M_PI;	// in Angstrom, res is in Angstrom
 		
