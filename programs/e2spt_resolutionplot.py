@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus Galaz, 04/28/2012; last update 06/10/2012
+# Author: Jesus Galaz, 04/28/2012; last update 11/21/2012
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -40,7 +40,8 @@ import pylab
 #from operator import itemgetter
 from matplotlib.ticker import MaxNLocator
 from pylab import figure, show	
-import matplotlib.pyplot as plt	
+import matplotlib.pyplot as plt
+
 
 #import scipy.optimize			 
 
@@ -93,10 +94,7 @@ def main():
 	parser.add_argument("--fsconly",action="store_true", help="Assumes vol1 and vol2 are already aligned with respect to each other and thus skips alignment", default=False)
 	parser.add_argument("--curves",help="FSC curves to plot in separate plots. Skips alignment and fsc curve generation. Provide .txt. files separated by commas --curves=file1.txt,file2.txt,file3.txt etc...", default=None)
 	parser.add_argument("--singleplot",action="store_true",help="If --singleplot and --curves are provided, they will be plotted in the same image.", default=False)
-
-	
-	#print "Before parsing, options are", parser.args()
-	
+		
 	(options, args) = parser.parse_args()
 	
 	print "options are", options
@@ -178,13 +176,15 @@ def main():
 		
 		print "The reformed aligner is", options.align
 			
+		print "Types of vol1 and vol2 are", type(vol1), type(vol2)	
+				
 		vol2ALIname = vol2.replace('.hdf','_ALI.hdf')
-		alicmd = 'e2spt_classaverage.py --path=. --input=' + vol2 + ' --output=' + vol2ALIname + ' --ref=' + vol1 + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + options.mask + ' --preprocess=' + options.preprocess + ' --align=' + options.align + ' --parallel=' + options.parallel + ' --ralign=' + options.ralign + ' --aligncmp=' + options.aligncmp + ' --raligncmp=' + options.raligncmp + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + options.normproc + ' --sym=' + options.sym + ' --breaksym'
+		alicmd = 'e2spt_classaverage.py --path=. --input=' + vol2 + ' --output=' + vol2ALIname + ' --ref=' + vol1 + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + options.mask + ' --lowpass=' + options.lowpass + ' --align=' + options.align + ' --parallel=' + options.parallel + ' --ralign=' + options.ralign + ' --aligncmp=' + options.aligncmp + ' --raligncmp=' + options.raligncmp + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + options.normproc + ' --sym=' + options.sym + ' --breaksym'
 		vol2final = vol2ALIname
 		
 		if options.mirror:
 			vol2mirrorALIname = vol2mirror.replace('.hdf','_ALI.hdf')
-			alicmd += ' && e2spt_classaverage.py --path=. --input=' + vol2mirror + ' --output=' + vol2mirrorALIname + ' --ref=' + vol1 + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + options.mask + ' --preprocess=' + options.preprocess + ' --align=' + options.align + ' --parallel=' + options.parallel + ' --ralign=' + options.ralign + ' --aligncmp=' + options.aligncmp + ' --raligncmp=' + options.raligncmp + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + options.normproc + ' --sym=' + options.sym + ' --breaksym'
+			alicmd += ' && e2spt_classaverage.py --path=. --input=' + vol2mirror + ' --output=' + vol2mirrorALIname + ' --ref=' + vol1 + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + options.mask + ' --lowpass=' + options.lowpass + ' --align=' + options.align + ' --parallel=' + options.parallel + ' --ralign=' + options.ralign + ' --aligncmp=' + options.aligncmp + ' --raligncmp=' + options.raligncmp + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + options.normproc + ' --sym=' + options.sym + ' --breaksym'
 			vol2mirrorfinal = vol2mirrorALIname
 		
 		if options.sym is not 'c1' and options.sym is not "C1":
@@ -245,8 +245,11 @@ def main():
 		
 		if not options.singleplot:
 			print "\n\n\n\noptions.singleplot is NOT on\n\n\n\n"
+			
+			
 			for curve in curves:
 				fscplotter([curve],options)
+				
 		elif options.singleplot:
 			print "\n\n\n\nAnd single plot is seleccted!!!!\n\n\n\n"
 			fscplotter(curves,options)
@@ -258,6 +261,12 @@ def fscplotter(fscs,options):
 	print "\n\n\n\n\n\n\nTHE PLOTTER HAS BEEN CAWLED\n\n\n\n\n\n\n\n"
 	fig = figure()
 
+	from itertools import product
+	markers=["-","--","x"]
+	colors=["k","r","b","g","m","y","c"]
+	colorsANDmarkers = [a+b for a,b in product(colors,markers)]
+	
+	kont=0
 	for fscoutputname in fscs:
 	
 		print "I found THIS FSC file and will thus plot it", fscoutputname
@@ -398,18 +407,43 @@ def fscplotter(fscs,options):
 			print "FSC0.5 resolution calculations 1 and 2 are", fsc0p5resolution1, fsc0p5resolution2
 			print "FSC0.143 resolution calculations 1 and 2 are", fsc0p143resolution1, fsc0p143resolution2
 		
-		pylab.plot(x, values, linewidth=2)
+		
+		'''
+		ACTUAL PLOT
+		'''
+		pylab.rc("axes", linewidth=2.0)
+		
+		pylab.plot(x, values, colors[kont], linewidth=2)
 	
 		yy1=[0.5]*len(values)	
 		yy2=[0.143]*len(values)
 		#pylab.axhline(linewidth=0.5)
 		#pylab.axhline(linewidth=0.143)
+		
+		#ax1 = fig.add_subplot(111)
+
+		#ax1.axhline(linewidth=4, color="k")
+		#ax1.axvline(linewidth=4, color="k")
+		
 		pylab.plot(x, yy1, 'k--', linewidth=1)
 		pylab.plot(x, yy2, 'k--', linewidth=1)
 
 		#fit = pylab.plot(x, yfit, 'r-')
 
 		ax = fig.add_subplot(111)
+		
+		for tick in ax.xaxis.get_major_ticks():
+			tick.label1.set_fontsize(16)
+			tick.label1.set_fontweight('bold')
+		for tick in ax.yaxis.get_major_ticks():
+  			tick.label1.set_fontsize(16)
+  			tick.label1.set_fontweight('bold')
+  		 
+  		pylab.xlabel('X Axis', fontsize=16, fontweight='bold')
+  		pylab.ylabel('Y Axis', fontsize=16, fontweight='bold')
+
+
+		
 		plt.xticks(x,inversefreqslabels)
 		print "Len of x and inversefreqslabels are", len(x), len(inversefreqslabels)
 
@@ -497,7 +531,9 @@ def fscplotter(fscs,options):
 		"""
 		SIGMOID FITTING
 		"""
-	
+		
+		kont+=1
+		
 	pylab.title(plot_name)
 	pylab.ylabel('FSC')
 	pylab.xlabel('Frequency 1/Angstroms')
