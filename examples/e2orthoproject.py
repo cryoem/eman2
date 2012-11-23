@@ -2,7 +2,7 @@
 
 '''
 ====================
-Author: Jesus Galaz - 2011, Last update: 02/2011
+Author: Jesus Galaz - whoknows-2012, Last update: 11/23/2012
 ====================
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -54,9 +54,6 @@ def main():
 	parser.add_argument("--input", type=str, help="""The name of the input volume from which you want to generate orthogonal projections.
 													You can supply more than one model either by providing an .hdf stack of models, or by providing multiple files
 													separated by commas.""", default=None)
-				
-	#parser.add_argument("--filter",type=str,help="""A filter (as in a processor from e2proc3d.py) apply to the model before generating simulated particles from it.
-	#						Type 'e2help.py processors' at the command line and find the options availbale from the processors list)""",default=None)
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -68,33 +65,16 @@ def main():
 	Make the directory where to create the database where the results will be stored
 	'''
 	
-	#if options.path and ("/" in options.path or "#" in options.path) :
-	#	print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
-	#	sys.exit(1)
-		
-	#if options.path and options.path[:4].lower()!="bdb:": 
-	#	options.path="bdb:"+options.path
-
-	#if not options.path: 
-	#	#options.path="bdb:"+numbered_path("sptavsa",True)
-	#	options.path = "sptsim_01"
-	
-	
 	if options.path and ("/" in options.path or "#" in options.path) :
 		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
 		sys.exit(1)
 
 	if not options.path: 
-		#options.path="bdb:"+numbered_path("sptavsa",True)
-		options.path = "sptsim_01"
+		options.path = "orthoproject_01"
 	
 	files=os.listdir(os.getcwd())
-	print "right before while loop"
 	while options.path in files:
-		print "in while loop making path in e2spt_simulation.py, options.path is", options.path
-		#path = options.path
 		if '_' not in options.path:
-			print "I will add the number"
 			options.path = options.path + '_00'
 		else:
 			jobtag=''
@@ -106,23 +86,23 @@ def main():
 						
 			options.path = '_'.join(components)
 			#options.path = path
-			print "The new options.path is", options.path
 
 	if options.path not in files:
 		
-		print "I will make the path", options.path
 		os.system('mkdir ' + options.path)
 	
 	models=options.input.split(',')
 	
-	tz = Transform({'type':'eman','az':0,'alt':0,'phi':0})				#Generate the projection orientation for each picture in the tilt series
-	tx = Transform({'type':'eman','az':0,'alt':-90,'phi':0})		
-	ty = Transform({'type':'eman','az':0,'alt':-90,'phi':-90})
+	tz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
+	#tx = Transform({'type':'eman','az':-90,'alt':0,'phi':0})
+	v = Transform({'type':'eman','az':0,'alt':-90,'phi':0})
+	w = Transform({'type':'eman','az':-90,'alt':-90,'phi':0})
+	#ty = Transform({'type':'eman','az':0,'alt':-90,'phi':-90})
 	
-	projectiondirections = [tx,ty,tz]
+	projectiondirections = [tz,v,w]
 	
 	rootpath = os.getcwd()
-	path = rootpath + '/' options.path
+	path = rootpath + '/' + options.path
 	
 	for model in models:
 		n = EMUtil.get_image_count(model)
@@ -130,22 +110,24 @@ def main():
 		newpath = path
 		if len(models) > 1:
 			newpath = path + '/' + model.split('.')[0]
+			os.system('mkdir ' + newpath)
 		
 		for i in range(n):
 			subpath = newpath
 			if n > 1:
-				subpath = newpath + '/ptcl' + str(i).zfill(len(str(n))) 
+				subpath = newpath + '/ptcl' + str(i).zfill(len(str(n)))
+				os.system('mkdir ' + subpath) 
 		
 			submodel = EMData(model,i)	
 			
-			submodelname = model.split('.')[0] + '_ptcl' + str(i).zfill(len(str(n))) + 'prjs.hdf'
+			submodelname = subpath + '/' + model.split('.')[0] + '_ptcl' + str(i).zfill(len(str(n))) + '_prjs.hdf'
 			
 			apix = submodel['apix_x']
 			
 			k=0
 			for d in projectiondirections:					
-				prj = ptcls[i].project("standard",d)
-				prj.set_attr('xform.projection',t)
+				prj = submodel.project("standard",d)
+				prj.set_attr('xform.projection',d)
 				prj['apix_x']=apix
 				prj['apix_y']=apix
 			
