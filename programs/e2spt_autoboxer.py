@@ -88,9 +88,9 @@ def main():
 															--gridradius and --gridoffest must be specified.""", default=False)
 	
 	parser.add_argument("--gridradius", type=int, help="Radius of the grid in pixels. Supply this parameter only if also supplying --mask.",default=0)
-	parser.add_argument("--gridoffset", type=int, help="""x,y coordinates for the center of the grid hole in the center slice of the tomogram (or if you generated a 2D projection of the tomogram. 
+	parser.add_argument("--gridoffset", type=str, help="""x,y coordinates for the center of the grid hole in the center slice of the tomogram (or if you generated a 2D projection of the tomogram. 
 														The left bottom corner would be 0,0. Supply this parameter only if also supplying 
-														--mask and the grid hole is not centered in the tomogram.""", default=0)
+														--mask and the grid hole is not centered in the tomogram.""", default='')
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -211,22 +211,27 @@ def main():
 			
 	if options.mask and options.gridradius:
 		height = tomo['nz']
-		#mask=EMData(options.gridradius*2,options.gridradius*2,height])
 		mask=EMData(tomo['nx'],tomo['ny'],height)
 
 		if yshort:
 				height = tomo['ny']
-				#mask=EMData(options.gridradius*2,height,options.gridradius*2)			
 				mask=EMData(tomo['nx'],tomo['nz'],height)
+		
 		mask.to_one()
 		mask.process_inplace('testimage.cylinder',{'radius':options.gridradius,'height':height})
 		
+		if yshort:
+			print "I will rotate the mask"
+			mask.rotate(0,90,0)
+	
+		print "The dimensions of the mask are", mask['nx'],mask['ny'],mask['nz']
+		print "The dimensions of the tomogram are", tomohdr['nx'],tomohdr['ny'],tomohdr['nz']
+	
 		if options.gridoffset:
 			xo=options.gridoffset.split(',')[0]
 			yo=options.gridoffset.split(',')[-1]
 			mask.translate(xo,yo)	
 		
-		#tomo=EMData(tomogramfile)
 		tomo.mult(mask)
 		
 		tomogramfile=tomogramfile.replace('.','_msk.')
@@ -593,3 +598,10 @@ def scanposition(options,template,ptclboxsize,yshort,xi,yi,xc,yc,zc):
 
 if '__main__' == __name__:
 	main()
+	
+	
+	
+	
+	
+	
+	
