@@ -256,11 +256,11 @@ def main():
 
 
 			while tiltstep < tiltstepu:
-				tiltsteptag = str(tiltstep).zfill(2)
+				tiltsteptag = str(tiltstep).zfill(5)
 
 				if options.nsliceschange and options.nsliceslowerlimit and options.nslicesupperlimit:
 					#print "The number of slices is", tiltstep
-					tiltsteptag = str( round(2.0 * tiltrange / tiltstep,1) ).zfill(4)
+					tiltsteptag = str( round(2.0 * tiltrange / tiltstep,1) ).zfill(5)
 				else:
 					t=1
 					#print "The tilt step is", tiltstep
@@ -274,7 +274,7 @@ def main():
 
 					for d in range(nrefs):
 						modeltag = ''
-						subpath = rootpath + '/' + options.path + '/' +'TR' + str(tiltrange).zfill(2) + '_TS' + tiltsteptag + '_SNR' + str(snr).zfill(2)
+						subpath = rootpath + '/' + options.path + '/' +'TR' + str(tiltrange).zfill(5) + '_TS' + tiltsteptag + '_SNR' + str(snr).zfill(5)
 						
 						#print '\n.....\n.......\n.....\n......\n.. subpath is %s .......\n.......\n.......\n' %(subpath)
 						#print '\n.....\n.......\n.....\n......\n.. subpath is %s .......\n.......\n.......\n' %(subpath)
@@ -283,7 +283,7 @@ def main():
 						#print '\n.....\n.......\n.....\n......\n.. inputdata is %s .......\n.......\n.......\n' %(inputdata)
 
 						if nrefs > 1:
-							modeltag = 'model' + str(d).zfill(2)
+							modeltag = 'model' + str(d).zfill(5)
 							subpath += '_' + modeltag
 
 							model = EMData(options.input,d)
@@ -378,14 +378,14 @@ def main():
 		if nrefs > 1:
 			for i in range(nrefs):
 
-				modname = 'model' + str(i).zfill(2)
+				modname = 'model' + str(i).zfill(5)
 				#print "\nI will make this moddir", modname
 				cmdd='cd ' + options.path + ' && mkdir ' + modname + ' && mv *' + modname + '* ' + modname
 				#print "\nBy executing this command", cmdd
 				os.system(cmdd)
 
 			for i in range(nrefs):
-				modname = 'model' + str(i).zfill(2)
+				modname = 'model' + str(i).zfill(5)
 
 				resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
 				#print "\n\n\n\n*******************\nResults dir is\n", resultsdir
@@ -402,7 +402,7 @@ def main():
 		resultsdir = rootpath + '/' + options.path + '/results_ali_error' 	
 		for i in range(nrefs):
 			if nrefs > 1:
-				modname = 'model' + str(i).zfill(2)
+				modname = 'model' + str(i).zfill(5)
 				resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
 	
 		
