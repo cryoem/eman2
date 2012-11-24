@@ -124,16 +124,12 @@ def main():
 		sys.exit(1)
 
 	if not options.path: 
-		#options.path="bdb:"+numbered_path("sptavsa",True)
 		options.path = "sptAutoBox_01"
 	
 	files=os.listdir(os.getcwd())
-	print "right before while loop"
 	while options.path in files:
-		print "in while loop, options.path is", options.path
 		#path = options.path
 		if '_' not in options.path:
-			print "I will add the number"
 			options.path = options.path + '_00'
 		else:
 			jobtag=''
@@ -145,11 +141,9 @@ def main():
 						
 			options.path = '_'.join(components)
 			#options.path = path
-			print "The new options.path is", options.path
 
 	if options.path not in files:
 		
-		print "I will make the path", options.path
 		os.system('mkdir ' + options.path)	
 	
 	options.path = rootpath + '/' + options.path
@@ -195,6 +189,7 @@ def main():
 	yo=0
 	
 	tomo = EMData(tomogramfile,0)
+	
 	if options.apix:
 		tomo['apix_x'] = options.apix
 		tomo['apix_y'] = options.apix
@@ -204,38 +199,52 @@ def main():
 	tomo['origin_y'] = 0
 	tomo['origin_z'] = 0
 	
+	tomox = tomo['nx']
+	tomoy = tomo['ny']
+	tomoz = tomo['nz']
+	
 	tomo.write_image(tomogramfile,0)
 	
 	if tomo['ny'] < tomo['nz']:
 		yshort = True
 			
 	if options.mask and options.gridradius:
-		height = tomo['nz']
-		mask=EMData(tomo['nx'],tomo['ny'],height)
+		height = tomoz
+		
+		'''
+		testimage.cylinder only works on cubical boxes. Therefore, make a cubical box to generate the mask.
+		'''
+		cubem=max(tomox,tomoy,tomoz)
+		mask=EMData(cubem,cubem,cubem)
 
 		if yshort:
-				height = tomo['ny']
-				mask=EMData(tomo['nx'],tomo['nz'],height)
+			height = tomoy
 		
 		mask.to_one()
 		mask.process_inplace('testimage.cylinder',{'radius':options.gridradius,'height':height})
 		
-		if yshort:
-			print "I will rotate the mask"
-			mask.rotate(0,90,0)
-	
-		print "The dimensions of the mask are", mask['nx'],mask['ny'],mask['nz']
-		print "The dimensions of the tomogram are", tomohdr['nx'],tomohdr['ny'],tomohdr['nz']
-	
 		if options.gridoffset:
 			xo=options.gridoffset.split(',')[0]
 			yo=options.gridoffset.split(',')[-1]
 			mask.translate(xo,yo)	
 		
+		if yshort:
+			print "I will rotate the mask"
+			yo*=-1
+			mask.rotate(0,90,0)
+		
+		'''
+		Then, clip mask to actual tomogram size
+		'''
+		r=Region(-tomox/2,-tomoy/2,-tomoz/2,tomox,tomoy,tomoz)
+		mask=mask.get_clip(r)
+		
+		print "The dimensions of the mask are", mask['nx'],mask['ny'],mask['nz']
+		print "The dimensions of the tomogram are", tomox,tomoy,tomoz
+	
 		tomo.mult(mask)
 		
-		tomogramfile=tomogramfile.replace('.','_msk.')
-				
+		tomogramfile=options.path + '/' + tomogramfile.split('/')[-1].replace('.','_msk.')
 		tomo.write_image(tomogramfile,0)
 		options.tomogram=tomogramfile
 
@@ -403,7 +412,7 @@ def main():
 	#mskrad = ptclboxsize/2 - 1
 	#transtemplate.process_inplace('mask.sharp',{'outer.radius':mskrad})
 	transtemplate.write_image(transtemplatename,0)
-	zc=boxsize/2
+	zc=regionboxsize/2
 	
 	'''
 	The tomogram ought to be divided in sub-blocks, which will be cubes with side length equal to the 
@@ -437,7 +446,7 @@ def main():
 		j = 0
 		yc =  regionboxsize/2
 		while yc >= regionboxsize/2 and yc <= otherlong - regionboxsize/2:
-			yc = regionboxsize/2 + j * ((boxsize/2) - ptclboxsize )
+			yc = regionboxsize/2 + j * ((regionboxsize/2) - ptclboxsize )
 			yi = yc - regionboxsize/2
 			
 			'''
