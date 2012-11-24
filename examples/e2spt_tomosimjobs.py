@@ -456,31 +456,59 @@ def main():
 				twoD_snr_tr_points.append({'tilt range':tr,'noise level':snr,'angular_error':ang,'translational_error':trans})
 				twoD_snr_ts_points.append({'tilt step':ts,'noise level':snr,'angular_error':ang,'translational_error':trans})
 			
-			angfilename=resultsdir+'/angular_error.txt'
-			transfilename=resultsdir+'/translational_error.txt'	
+			#angfilename=resultsdir+'/angular_error.txt'
+			#transfilename=resultsdir+'/translational_error.txt'	
+			#if len(set(snrs)) == 1: 
+			#	if len(set(trs)) == 1:
+			#		oneD_plot(tss,ang_errors,angfilename.replace('.txt','.png'),'tilt step')
+			#		writeresultsfile(tss,ang_errors,angfilename)		
+			#
+			#		oneD_plot(tss,trans_errors,transfilename.replace('.txt','.png'),'tilt step')
+			#		writeresultsfile(tss,trans_errors,transfilename)
+			#		
+			#	elif len(set(tss)) == 1:
+			#		oneD_plot(trs,ang_errors,angfilename.replace('.txt','.png'),'tilt range')
+			#		writeresultsfile(trs,ang_errors,angfilename)
+			#		
+			#		oneD_plot(trs,trans_errors,transfilename.replace('.txt','.png'),'tilt range')
+			#		writeresultsfile(trs,trans_errors,transfilename)
+			#	
+			#elif len(set(trs)) == 1: 
+			#	if len(set(tss)) == 1:
+			#		writeresultsfile(snrs,ang_errors,angfilename)
+			#		
+			#		oneD_plot(snrs,trans_errors,transfilename.replace('.txt','.png'),'noise level')
+			#		writeresultsfile(snrs,trans_errors,transfilename)
+			
 			if len(set(snrs)) == 1: 
 				if len(set(trs)) == 1:
+					angfilename = resultsdir+'/angular_error_varTS_' + str(d).zfill(len(files)) + '.txt'
 					oneD_plot(tss,ang_errors,angfilename.replace('.txt','.png'),'tilt step')
-					writeresultsfile(tss,ang_errors,angfilename)		
-
+					writeresultsfile(tss,ang_errors,angfilename)
+					
+					transfilename = angfilename.replace('angular','translational')
 					oneD_plot(tss,trans_errors,transfilename.replace('.txt','.png'),'tilt step')
 					writeresultsfile(tss,trans_errors,transfilename)
 					
-				elif len(set(tss)) == 1:
-					oneD_plot(trs,ang_errors,angfilename.replace('.txt','.png'),'tilt range')
-					writeresultsfile(trs,ang_errors,angfilename)
-					
-					oneD_plot(trs,trans_errors,transfilename.replace('.txt','.png'),'tilt range')
-					writeresultsfile(trs,trans_errors,transfilename)
-				
-			elif len(set(trs)) == 1: 
 				if len(set(tss)) == 1:
-					oneD_plot(snrs,ang_errors,angfilename.replace('.txt','.png'),'noise level')
-					writeresultsfile(snrs,ang_errors,angfilename)
+					angfilename = resultsdir+'/angular_error_varTR_' + str(d).zfill(len(files)) + '.txt'
+					oneD_plot(trs,ang_errors,angfilename.replace('.txt','.png'),'tilt range')
+					writeresultsfile(tss,ang_errors,angfilename)
 					
+					transfilename = angfilename.replace('angular','translational')
+					oneD_plot(trs,trans_errors,transfilename.replace('.txt','.png'),'tilt range')
+					writeresultsfile(tss,trans_errors,transfilename)
+					
+			if len(set(trs)) == 1: 
+				if len(set(tss)) == 1:
+					angfilename = resultsdir+'/angular_error_varSNR_' + str(d).zfill(len(files)) + '.txt'
+					oneD_plot(snrs,ang_errors,angfilename.replace('.txt','.png'),'noise level')
+					writeresultsfile(tss,ang_errors,angfilename)
+					
+					transfilename = angfilename.replace('angular','translational')
 					oneD_plot(snrs,trans_errors,transfilename.replace('.txt','.png'),'noise level')
-					writeresultsfile(snrs,trans_errors,transfilename)
-			
+					writeresultsfile(tss,trans_errors,transfilename)
+					
 			if len(set(snrs)) == 1 and len(set(trs)) > 1 and len(set(tss)) > 1:
 				twoD_plot(twoD_tr_ts_points,val1='tilt range',val2='tilt step',location=resultsdir +'/')
 			
@@ -559,20 +587,58 @@ def main():
 				twoD_snr_tr_points.append({'tilt range':tr,'noise level':snr,'angular_error':ang,'translational_error':trans})
 				twoD_snr_ts_points.append({'tilt step':ts,'noise level':snr,'angular_error':ang,'translational_error':trans})
 				
+			#if len(set(snrs)) == 1: 
+			#	if len(set(trs)) == 1:
+			#		oneD_plot(tss,ang_errors,resultsdir+'/angular_error_varTS_' + str(d).zfill(len(files)) + '.png','tilt step')
+			#		writeresultsfile(tss,ang_errors,angfilename)
+			#		
+			#		oneD_plot(tss,trans_errors,resultsdir+'/translational_error_varTS_' + str(d).zfill(len(files)) + '.png','tilt step')
+			#		writeresultsfile(tss,trans_errors,transfilename)
+			#	
+			#	if len(set(tss)) == 1:
+			#		oneD_plot(trs,ang_errors,resultsdir+'/angular_error_varTR_' + str(d).zfill(len(files)) + '.png','tilt range')
+			#		writeresultsfile(tss,ang_errors,angfilename)
+			##		oneD_plot(trs,trans_errors,resultsdir+'/translational_error_varTR_' + str(d).zfill(len(files)) + '.png','tilt range')
+			#		writeresultsfile(tss,trans_errors,transfilename)
+			#		
+			#if len(set(trs)) == 1: 
+			#	if len(set(tss)) == 1:
+			#		oneD_plot(snrs,ang_errors,resultsdir+'/angular_error_varSNR_' + str(d).zfill(len(files)) + '.png','noise level')
+			#		writeresultsfile(tss,ang_errors,angfilename)
+			#		
+			#		oneD_plot(snrs,trans_errors,resultsdir+'/translational_error_varSNR_' + str(d).zfill(len(files)) + '.png','noise level')
+			#		writeresultsfile(tss,trans_errors,transfilename)
+			
 			if len(set(snrs)) == 1: 
 				if len(set(trs)) == 1:
-					oneD_plot(tss,ang_errors,resultsdir+'/angular_error_varTS_' + str(d).zfill(len(files)) + '.png','tilt step')
-					oneD_plot(tss,trans_errors,resultsdir+'/translational_error_varTS_' + str(d).zfill(len(files)) + '.png','tilt step')
-				
+					angfilename = resultsdir+'/angular_error_varTS_' + str(d).zfill(len(files)) + '.txt'
+					oneD_plot(tss,ang_errors,angfilename.replace('.txt','.png'),'tilt step')
+					writeresultsfile(tss,ang_errors,angfilename)
+					
+					transfilename = angfilename.replace('angular','translational')
+					oneD_plot(tss,trans_errors,transfilename.replace('.txt','.png'),'tilt step')
+					writeresultsfile(tss,trans_errors,transfilename)
+					
 				if len(set(tss)) == 1:
-					oneD_plot(trs,ang_errors,resultsdir+'/angular_error_varTR_' + str(d).zfill(len(files)) + '.png','tilt range')
-					oneD_plot(trs,trans_errors,resultsdir+'/translational_error_varTR_' + str(d).zfill(len(files)) + '.png','tilt range')
-				
+					angfilename = resultsdir+'/angular_error_varTR_' + str(d).zfill(len(files)) + '.txt'
+					oneD_plot(trs,ang_errors,angfilename.replace('.txt','.png'),'tilt range')
+					writeresultsfile(tss,ang_errors,angfilename)
+					
+					transfilename = angfilename.replace('angular','translational')
+					oneD_plot(trs,trans_errors,transfilename.replace('.txt','.png'),'tilt range')
+					writeresultsfile(tss,trans_errors,transfilename)
+					
 			if len(set(trs)) == 1: 
 				if len(set(tss)) == 1:
-					oneD_plot(snrs,ang_errors,resultsdir+'/angular_error_varSNR_' + str(d).zfill(len(files)) + '.png','noise level')
-					oneD_plot(snrs,trans_errors,resultsdir+'/translational_error_varSNR_' + str(d).zfill(len(files)) + '.png','noise level')
-		
+					angfilename = resultsdir+'/angular_error_varSNR_' + str(d).zfill(len(files)) + '.txt'
+					oneD_plot(snrs,ang_errors,angfilename.replace('.txt','.png'),'noise level')
+					writeresultsfile(tss,ang_errors,angfilename)
+					
+					transfilename = angfilename.replace('angular','translational')
+					oneD_plot(snrs,trans_errors,transfilename.replace('.txt','.png'),'noise level')
+					writeresultsfile(tss,trans_errors,transfilename)
+			
+					
 			if len(set(snrs)) == 1 and len(set(trs)) > 1 and len(set(tss)) > 1:
 				twoD_plot(twoD_tr_ts_points,val1='tilt range',val2='tilt step',location=resultsdir +'/')
 			
