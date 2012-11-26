@@ -632,12 +632,16 @@ def db_save_particles(micrograph_filepath, ptcl_filepath = None, px_overlap = No
     
     all_particles = []
     micrograph = EMData(micrograph_filepath)
+    nhelix = 0
     for coords in helices_dict:
         helix = helices_dict[coords]
         if rotated:
             helix_particles = get_rotated_particles(micrograph, coords, px_overlap, px_length, px_width, gridding, mic_name = micrograph_filename)
         else:
             helix_particles = get_unrotated_particles(micrograph, coords, px_overlap, px_length, px_width,mic_name = micrograph_filename)
+        for ii in xrange(len(helix_particles)):
+            (helix_particles[ii]).set_attr("filament", micrograph_filename+"%04d"%nhelix)
+        nhelix = nhelix + 1
         all_particles.append(helix_particles)
     
     save_particles(all_particles, ptcl_filepath, do_edge_norm, stack_file_mode)
@@ -911,6 +915,7 @@ if ENABLE_GUI:
                         stack_mode = "none"
                     
                     all_particles = []
+                    nhelix = 0
                     for coords_key in helices_dict:
                         if self.ptcls_bilinear_rotation_radiobutton.isChecked():
                             helix_particles = get_rotated_particles(micrograph, coords_key, px_overlap, px_length, px_width, gridding=False, mic_name=self.micrograph_filename)
@@ -921,6 +926,9 @@ if ENABLE_GUI:
                         elif self.ptcls_no_rotation_radiobutton.isChecked():
                             side = max(px_length, px_width)
                             helix_particles = get_unrotated_particles(micrograph, coords_key, px_overlap, side, side, mic_name=self.micrograph_filename)
+                        for ii in xrange(len(helix_particles)):
+                        	(helix_particles[ii]).set_attr("filament", self.micrograph_filename+"%04d"%nhelix)
+                        nhelix = nhelix + 1
                         all_particles.append(helix_particles)
                     save_particles(all_particles, ptcl_filepath, do_edge_norm, stack_mode)
                 if self.ptcls_coords_groupbox.isChecked():
