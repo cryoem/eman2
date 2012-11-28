@@ -60,6 +60,10 @@ def main():
 	
 	parser.add_argument("--daz", type=int,default=3,help="Step size to vary azimuth.")
 	parser.add_argument("--dalt", type=int,default=0,help="Step size to vary altitude.")
+	parser.add_argument("--alti", type=int,default=0,help="""Initial position to check in altitude. For example, for a D symmetric chaperonin, 
+															if you want to check alt=0 ONLY, provide --alti=0 and --dalt=181 as options.
+															if you want to check alt=180 ONLY, provide --alti=180, --dalt=1 or greater.
+															if you want to check BOTH alt=0 and alt=180 in the same plot, provide --alti=0, --dalt=180""")
 	
 	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:1")
 	
@@ -71,6 +75,13 @@ def main():
 		
 	logger = E2init(sys.argv, options.ppid)
 
+	'''
+	Check that the input format is sane, to prevent crashes later.
+	'''
+	
+	if '.hdf' not in options.input and '.mrc' not in options.input:
+		print "ERROR: The input image must be in .mrc, .rec (which is also just a .mrc file) or .hdf format."
+	
 	vol1hdr = EMData(options.input,0,True)
 	apix = vol1hdr['apix_x']
 	boxsize = vol1hdr['nx']
@@ -118,14 +129,14 @@ def main():
 	if options.shrink!=None and options.shrink > 1 :
 		vol1=vol1.process("math.meanshrink",{"n":options.shrink})
 
-	alt=0
+	alt=options.alti
 	
 	values = []
 	azs=[]
 	
 	if options.dalt == 180:
 		maxaz = 360 * 2
-	
+		
 	while alt <= 180:
 		#if not options.dalt:
 		#	alt = 180
@@ -162,6 +173,10 @@ def main():
 			az += options.daz
 		azs.append(azlist)
 		values.append(valueslist)
+		
+		if not options.dalt:
+			alt = 179
+			options.dalt=2
 			
 		alt = alt + options.dalt
 		print "ALT now is!!!", alt
@@ -190,7 +205,15 @@ def main():
 
 	plot_name = fileoutputname.replace('.txt','_PLOT.png')
 	
+	"""
+	Scale the correlation values so that the maximum correlation in the curve is 1
+	"""
+	
+	#values = values/ max(values)
+	
 	for i in range(len(values)):
+		for j in range(len(values[i])):
+			values[i][j]= values[i][j] / max(values[i])
 		pylab.plot(azs[i], values[i], linewidth=2)
 	#fit = pylab.plot(x, yfit, 'r-')
 
