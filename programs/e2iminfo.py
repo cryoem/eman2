@@ -119,7 +119,7 @@ def main():
 		nptcl=0
 		d=EMData()
 		for i in imgn:
-			d.read_image(imagefile,i)
+			d.read_image(imagefile,i,True) #Jesus
 			print "%d. "%i,
 			try:
 				print "%d ptcl\t"%d["ptcl_repr"],
@@ -136,12 +136,12 @@ def main():
 					print " "
 						
 			if options.euler:
-				d=EMData(imagefile,i)
+				d=EMData(imagefile,i,True) #Jesus
 				try: print "%s"%(str(d["xform.projection"])),
 				except : print "No transform information",
 
 			if options.header :
-				d=EMData(imagefile,i)
+				d=EMData(imagefile,i, True) #Jesus
 				print ""
 				keys=d.get_attr_dict().keys()
 				keys.sort()
