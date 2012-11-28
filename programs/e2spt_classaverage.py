@@ -703,7 +703,7 @@ class Align3DTask(EMTask):
 		mask.to_one()
 		
 		if options["mask"]:
-			if options["verbose"]
+			if options["verbose"]:
 				print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options["mask"][0],options["mask"][1]) 
 			mask.process_inplace(options["mask"][0],options["mask"][1])
 		
