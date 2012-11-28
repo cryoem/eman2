@@ -394,7 +394,8 @@ def main():
 				outdir += '/'
 			finaloutput = outdir + options.output
 			
-			print "Final output is", finaloutput
+			if options.verbose:
+				print "The file to write the final output to is", finaloutput
 			ref.write_image(finaloutput,0)
 
 	if options.inixforms: 
@@ -518,7 +519,8 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 			
 			if not nocenterofmass: 
 				avg.process_inplace("xform.centerofmass")
-				print "I will apply centerofmass"
+				if verbose:
+					print "I will apply centerofmass"
 			
 			avgs.append(avg)
 			
@@ -553,16 +555,14 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 		included=[]
 		
 		
-		print "The path is", path
+		print "The path the save the alignments is", path
 		#sys.exit()
 		
 		db = db_open_dict("%s#%s"%(path,"tomo_xforms"))
 		for i,ptcl_parms in enumerate(align_parms):
 			ptcl=EMData(ptcl_file,i)
 			ptcl.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
-			
-			print "\n@@@@@\n@@@@@\n@@@@@Align_parms for this particle are ptcl_parms and are\n@@@@@\n@@@@@\n@@@@@", ptcl_parms
-			
+						
 			if ptcl_parms[0]["score"]<=thresh: 
 				avgr.add_image(ptcl)
 				included.append(i)
@@ -573,8 +573,10 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 				ptcl['origin_y'] = 0		# jesus - the origin needs to be reset to ZERO to avoid display issues in Chimera
 				ptcl['origin_z'] = 0
 				ptcl['spt_score'] = ptcl_parms[0]['score']
-				print "\nThe score is", ptcl_parms[0]['score']
-				print "Because the zero element is", ptcl_parms[0]
+				
+				#print "\nThe score is", ptcl_parms[0]['score']
+				#print "Because the zero element is", ptcl_parms[0]
+				
 				ptcl['spt_ali_param'] = ptcl_parms[0]['xform.align3d']
 				
 				classname=path+"/class_ptcl"
@@ -701,10 +703,8 @@ class Align3DTask(EMTask):
 		mask.to_one()
 		
 		if options["mask"]:
-			print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options["mask"][0],options["mask"][1]) 
-			
-			print "The size of the mask is", mask['nx'],mask['ny'],mask['nz']
-			print "Whereas the size of the image is", image['nx'],image['ny'],image['nz']
+			if options["verbose"]
+				print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options["mask"][0],options["mask"][1]) 
 			mask.process_inplace(options["mask"][0],options["mask"][1])
 		
 		# normalize
@@ -716,7 +716,7 @@ class Align3DTask(EMTask):
 			image.process_inplace(options["normproc"][0],options["normproc"][1])
 		
 		'''
-		#Mask after normalizing with the mask you just made, which is just a box full of 1s if not mask is specified
+		#Mask after normalizing with the mask you just made, which is just a box full of 1s if no mask is specified
 		'''
 		fixedimage.mult(mask)
 		image.mult(mask)
@@ -725,8 +725,8 @@ class Align3DTask(EMTask):
 		#If normalizing, it's best to do normalize-mask-normalize-mask
 		'''
 		if options["normproc"]:
-			if options["normproc"][0]=="normalize.mask": 
-				options["normproc"][1]["mask"]=mask
+			#if options["normproc"][0]=="normalize.mask": 
+			#	options["normproc"][1]["mask"]=mask
 			
 			fixedimage.process_inplace(options["normproc"][0],options["normproc"][1])
 			image.process_inplace(options["normproc"][0],options["normproc"][1])
@@ -797,7 +797,8 @@ class Align3DTask(EMTask):
 		
 		# In some cases we want to prealign the particles
 		if options["transform"]:
-			print "Moving Xfrom", options["transform"]
+			if options["verbose"]:
+				print "Moving Xfrom", options["transform"]
 			options["align"][1]["initxform"] = options["transform"]
 			
 			if options["shrink"]>1:
@@ -877,18 +878,17 @@ class Align3DTask(EMTask):
 		from operator import itemgetter						#If you just sort 'bestfinal' it will be sorted based on the 'coarse' key in the dictionaries of the list
 											#because they come before the 'score' key of the dictionary (alphabetically)
 		bestfinal = sorted(bestfinal, key=itemgetter('score'))
-
-		print "\n$$$$\n$$$$\n$$$$\n$$$$\n$$$$\n$$$$The best peaks sorted are"	#confirm the peaks are adequately sorted
-		for i in bestfinal:
-			print i
+		
+		if options["verbose"]:
+			print "\nThe best peaks sorted are"	#confirm the peaks are adequately sorted
+			for i in bestfinal:
+				print i
 		
 		if bestfinal[0]["score"] == 1.0e10 :
 			print "Error: all refine alignments failed for %s. May need to consider altering filter/shrink parameters. Using coarse alignment, but results are likely invalid."%self.options["label"]
 		
 		if options["verbose"]: 
 			print "Best %1.5g\t %s"%(bestfinal[0]["score"],str(bestfinal[0]["xform.align3d"]))
-
-		if options["verbose"]: 
 			print "Done aligning ",options["label"]
 		
 		return {"final":bestfinal,"coarse":bestcoarse}
