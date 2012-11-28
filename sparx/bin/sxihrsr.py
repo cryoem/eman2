@@ -151,7 +151,7 @@ def main():
 				sys.exit()
 			from utilities import get_im
 			v = get_im(args[0])
-			from development import stack_disks
+			from applications import stack_disks
 			ref_ny = options.ref_ny
 			if ref_ny < 0:
 				ref_ny = options.ref_nx
@@ -205,7 +205,7 @@ def main():
 			if options.dp < 0:
 				print "Helical symmetry paramter rise --dp should not be negative"
 				sys.exit()
-			from development import predict_helical_params
+			from applications import predict_helical_params
 			predict_helical_params(args[0], options.dp, options.dphi, options.apix, options.predict_helical)
 			sys.exit()
 			
@@ -231,7 +231,7 @@ def main():
 			if options.maxit > 1:
 				print "Inner iteration for x-shift determinatin is restricted to 1"
 				sys.exit()
-			from development import volalixshift_MPI
+			from applications import volalixshift_MPI
 			global_def.BATCH = True
 			volalixshift_MPI(args[0], args[1], args[2], searchxshiftp, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, args[3], options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug, nearbyp)
 			global_def.BATCH = False
@@ -246,7 +246,7 @@ def main():
 				from development import diskaliD_MPI
 				diskaliD_MPI(args[0], args[1], args[2], mask, options.dp, options.dphi, options.apix, options.function, zstepp, options.fract, rmaxp, rminp, options.CTF, options.maxit, options.sym)
 			else:
-				from development import diskali_MPI
+				from applications import diskali_MPI
 				diskali_MPI(args[0], args[1], args[2], mask, options.dp, options.dphi, options.apix, options.function, zstepp, options.fract, rmaxp, rminp, options.CTF, options.maxit, options.sym)
 			global_def.BATCH = False
 		elif len(options.gendisk)> 0:
