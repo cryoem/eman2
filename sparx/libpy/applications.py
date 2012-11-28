@@ -11448,3 +11448,731 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF=False, delta=delta)
 
 
+def predict_helical_params(stack, dp, dphi, pixel_size, outfile=''):
+	
+	from utilities import write_text_row
+	from development import get_dist
+	
+	filaments = EMUtil.get_all_attributes(stack, 'filament')
+	coords    = EMUtil.get_all_attributes(stack, 'ptcl_source_coord')
+
+	N = len(filaments)
+	params = [[0,90,90,0,0] for ii in xrange(N)]
+	rise = dp/pixel_size  # in pixels
+	permitrange = rise/2.0
+	cfil = filaments[0]
+	start = 0
+	for i in xrange(1,N):
+		if(filaments[i] != cfil ):
+			cfil = filaments[i]
+			start = i
+		else:
+			dA = pixel_size * get_dist(coords[i], coords[start])
+			params[i][0] = (dA/dp*dphi)%360.0
+			params[i][4] = (dA%dp)/pixel_size # in pixels
+			if( params[i][4] > permitrange ): params[i][4] -= rise
+
+	if len(outfile) > 0:
+		write_text_row(params, outfile)
+
+	return params
+
+def volalixshift_MPI(stack, ref_vol, outdir, search_rng, pixel_size, dp, dphi, fract, rmax, rmin, maskfile = None, \
+	    maxit = 1, CTF = False, snr = 1.0, sym = "c1",  user_func_name = "helical", \
+	    npad = 2, debug = False, nearby=3):
+
+	from alignment       import Numrinit, prepare_refrings, proj_ali_incore, proj_ali_incore_local, proj_ali_incore_local_psi
+	from utilities       import model_circle, get_image, drop_image, get_input_from_string, peak_search, model_cylinder, pad, model_blank
+	from utilities       import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all
+	from utilities       import send_attr_dict, sym_vol
+	from utilities       import get_params_proj, set_params_proj, file_type
+	from fundamentals    import rot_avg_image, ccf
+	import os
+	import types
+	from utilities       import print_begin_msg, print_end_msg, print_msg
+	from mpi             import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
+	from mpi             import mpi_reduce, MPI_INT, MPI_SUM
+	from filter          import filt_ctf
+	from projection      import prep_vol, prgs
+	from statistics      import hist_list, varf3d_MPI, fsc_mask
+	from applications	 import MPI_start_end
+	from time            import time	
+	
+	nproc     = mpi_comm_size(MPI_COMM_WORLD)
+	myid      = mpi_comm_rank(MPI_COMM_WORLD)
+	main_node = 0
+
+	search_rng    = int(search_rng)
+	if(search_rng < 1 ):  ERROR('Search range has to be provided', "volalixshift_MPI", 1, myid)
+	if(pixel_size < 0.0 or dp < 0.0 ):  ERROR('Helical symmetry parameters have to be provided', "volalixshift_MPI", 1, myid)
+
+	if os.path.exists(outdir):  ERROR('Output directory %s  exists, please change the name and restart the program'%outdir, "volalixshift_MPI", 1, myid)
+	mpi_barrier(MPI_COMM_WORLD)
+	
+	if myid == main_node:
+		print_begin_msg("volalixshift_MPI")
+		os.mkdir(outdir)
+	mpi_barrier(MPI_COMM_WORLD)
+
+	if debug:
+		from time import sleep
+		while not os.path.exists(outdir):
+			print  "Node ",myid,"  waiting..."
+			sleep(5)
+
+		info_file = os.path.join(outdir, "progress%04d"%myid)
+		finfo = open(info_file, 'w')
+	else:
+		finfo = None
+	max_iter    = int(maxit)
+	
+	vol     = EMData()
+	vol.read_image(ref_vol)
+	nx      = vol.get_xsize()
+	ny      = vol.get_ysize()
+	nz      = vol.get_zsize()
+
+	xysize = nx
+	zsize = -1
+
+	if myid == main_node:
+		import user_functions
+		user_func = user_functions.factory[user_func_name]
+
+		print_msg("Input stack                 : %s\n"%(stack))
+		print_msg("Reference volume            : %s\n"%(ref_vol))	
+		print_msg("Output directory            : %s\n"%(outdir))
+		print_msg("Maskfile                    : %s\n"%(maskfile))
+		print_msg("Search range                : %f\n"%(search_rng))
+		print_msg("Pixel size [A]              : %f\n"%(pixel_size))
+		print_msg("dp [A]                      : %f\n"%(dp))
+		print_msg("dphi                        : %f\n"%(dphi))
+		print_msg("Maximum iteration           : %i\n"%(max_iter))
+		print_msg("CTF correction              : %s\n"%(CTF))
+		print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
+		print_msg("Symmetry group              : %s\n\n"%(sym))
+	
+	
+	if maskfile:
+		if type(maskfile) is types.StringType: mask3D = get_image(maskfile)
+		else:                                  mask3D = maskfile
+	else: mask3D = model_cylinder(rmax, nx, ny, nz)
+
+	fscmask = mask3D  #model_circle(last_ring,nx,nx,nx)  For a fancy mask circle would work better  PAP 7/21/11
+	if CTF:
+		from reconstruction import recons3d_4nn_ctf_MPI
+		from filter         import filt_ctf
+	else:	 from reconstruction import recons3d_4nn_MPI
+
+	allfilaments = EMUtil.get_all_attributes(stack, 'filament')
+	for i in xrange(len(allfilaments)):
+		allfilaments[i] = [allfilaments[i],i]
+	allfilaments.sort()
+	filaments = []
+	current = allfilaments[0][0]
+	temp = [allfilaments[0][1]]
+	for i in xrange(1,len(allfilaments)):
+		if( allfilaments[i][0] == current ):
+			temp.extend([allfilaments[i][1]])
+		else:
+			filaments.append(temp)
+			current = allfilaments[i][0]
+			temp = [allfilaments[i][1]]
+	filaments.append(temp)
+	
+	del allfilaments, temp
+	
+	total_nfils = len(filaments)
+	fstart, fend = MPI_start_end(total_nfils, nproc, myid)
+	filaments = filaments[fstart:fend]
+	nfils = len(filaments)
+
+	list_of_particles = []
+	indcs = []
+	k = 0
+	for i in xrange(nfils):
+		list_of_particles += filaments[i]
+		k1 = k+len(filaments[i])
+		indcs.append([k,k1])
+		k = k1
+
+	data = EMData.read_images(stack, list_of_particles)
+	nima = len(data)
+
+	data_nx = data[0].get_xsize()
+	data_ny = data[0].get_xsize()
+	mask2D  = pad(model_blank(2*int(rmax), data_ny, 1, 1.0), data_nx, data_ny, 1, 0.0)
+	for im in xrange(nima):
+		data[im].set_attr('ID', list_of_particles[im])
+		if CTF:
+			ctf_params = data[im].get_attr("ctf")
+			st = Util.infomask(data[im], mask2D, False)
+			data[im] -= st[0]
+			data[im] = filt_ctf(data[im], ctf_params)
+			data[im].set_attr('ctf_applied', 1)
+	del list_of_particles
+	
+	if debug:
+		finfo.write( '%d loaded  \n' % nima )
+		finfo.flush()
+	if myid == main_node:
+		# initialize data for the reference preparation function
+		# No centering for helical reconstruction
+		ref_data = [None, mask3D, None, None, None ]
+
+	from time import time	
+
+	nwx = 2*search_rng+1
+	terminate = 0
+	Iter = -1
+ 	while Iter < max_iter-1 and terminate == 0:
+		Iter += 1
+		if myid == main_node:
+			start_time = time()
+			print_msg("\nITERATION #%3d\n"%(Iter))
+
+		volft, kbx, kby, kbz = prep_vol( vol )
+		del vol
+
+		for ifil in xrange(nfils):
+			ctxsum = model_blank(nwx+2, 1)
+			segsctx = []
+			start = indcs[ifil][0]
+			for im in xrange(start, indcs[ifil][1]):
+				phi,tht,psi,s2x,s2y = get_params_proj(data[im])
+				refim = (prgs( volft, kbz, [phi, tht, psi, 0.0, s2y], kbx, kby ))*mask2D
+				ctx = Util.window(ccf(data[im],refim), nwx+2, 1)
+				segsctx.append(ctx)
+				Util.add_img(ctxsum, ctx)
+
+			# find overall peak	
+			sump1 = peak_search(ctxsum)
+			peakval = sump1[0][0]/(indcs[ifil][1] - start)
+			sump1   = int(sump1[0][1])
+
+			for im in xrange(start, indcs[ifil][1]):
+				phi,tht,psi,s2x,s2y = get_params_proj(data[im])
+				loc = sump1
+				cim = im - start
+				for k in xrange(max(1,sump1-nearby), min(nwx+1, sump1+nearby)):
+					if( segsctx[cim].get_value_at(k) > segsctx[cim].get_value_at(k-1) and segsctx[cim].get_value_at(k) > segsctx[cim].get_value_at(k+1) and segsctx[cim].get_value_at(k) > peakval):
+						peakval = segsctx[cim].get_value_at(k)
+						loc = k
+
+				set_params_proj(data[im], [phi, tht, psi, float(loc - (nwx+2)//2), s2y])
+				
+		del volft, refim, segsctx
+
+		if myid == main_node:
+			print_msg("Time of alignment = %d\n"%(time()-start_time))
+			start_time = time()
+
+		if CTF:  vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad, xysize = xysize, zsize = zsize)
+		else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, npad = npad, xysize = xysize, zsize = zsize)
+
+		if myid == main_node:
+			print_msg("3D reconstruction time = %d\n"%(time()-start_time))
+			start_time = time()
+
+		if myid == main_node:
+			vol = vol.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
+			vol = sym_vol(vol, symmetry=sym)
+			ref_data[0] = vol
+			vol = user_func(ref_data)
+			vol = vol.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
+			vol = sym_vol(vol, symmetry=sym)
+			#vol.write_image(os.path.join(outdir, "volfshift%03d.hdf"%Iter))
+			if(Iter == max_iter-1):  drop_image(vol, os.path.join(outdir, "volfshift.hdf"))
+
+		bcast_EMData_to_all(vol, myid, main_node)
+	#In the last iteration calculate hfsc
+	"""
+	ndat = 0
+	for i in xrange(0, nfils, 2): ndat += len(filaments[i])
+	td = [None]*ndat
+	k = 0
+	for i in xrange(0, nfils, 2):
+		for j in xrange(indcs[i][0],indcs[i][1]):
+			td[k] = data[j]
+			k += 1
+
+	if CTF:  vol_even = recons3d_4nn_ctf_MPI(myid, td, symmetry=sym, snr = snr, npad = npad, xysize = xysize, zsize = zsize)
+	else:    vol_even = recons3d_4nn_MPI(myid, td, symmetry=sym, npad = npad, xysize = xysize, zsize = zsize)
+
+	ndat = 0
+	for i in xrange(1, nfils, 2): ndat += len(filaments[i])
+	td = [None]*ndat
+	k = 0
+	for i in xrange(1, nfils, 2):
+		for j in xrange(indcs[i][0],indcs[i][1]):
+			td[k] = data[j]
+			k += 1
+
+	if CTF:  vol_odd = recons3d_4nn_ctf_MPI(myid, td, symmetry=sym, snr = snr, npad = npad, xysize = xysize, zsize = zsize)
+	else:    vol_odd = recons3d_4nn_MPI(myid, td, symmetry=sym, npad = npad, xysize = xysize, zsize = zsize)
+
+	del td
+
+	if  myid == main_node  :
+		vol_even = vol_even.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
+		vol_even = sym_vol(vol_even, symmetry=sym)
+		vol_odd  = vol_odd.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
+		vol_odd = sym_vol(vol_odd, symmetry=sym)
+	
+		f = fsc_mask( vol_even, vol_odd, fscmask, 1.0, os.path.join(outdir, "hfsc.txt"))
+
+	del vol_even, vol_odd
+	"""
+	# write out headers, under MPI writing has to be done sequentially
+	mpi_barrier(MPI_COMM_WORLD)
+	par_str = ['xform.projection', 'ID']
+	if myid == main_node:
+		if(file_type(stack) == "bdb"):
+			from utilities import recv_attr_dict_bdb
+			recv_attr_dict_bdb(main_node, stack, data, par_str, 0, nima, nproc)
+		else:
+			from utilities import recv_attr_dict
+			recv_attr_dict(main_node, stack, data, par_str, 0, nima, nproc)
+		print_msg("Time to write header information= %d\n"%(time()-start_time))
+		start_time = time()
+	else:		send_attr_dict(main_node, data, par_str, 0, nima)
+	if myid == main_node: print_end_msg("volalixshift_MPI")
+
+
+def diskali_MPI(stack, ref_vol, outdir, maskfile, dp, dphi, pixel_size, user_func_name, zstep=1.0, fract=0.67, rmax=70, rmin=0, \
+					 CTF=False, maxit=1, sym = "c1"):
+	from mpi              import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier, MPI_INT, MPI_TAG_UB, MPI_FLOAT, mpi_recv, mpi_send
+	from utilities        import get_params_proj, read_text_row, model_cylinder,pad, set_params3D, get_params3D, reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, drop_image, bcast_EMData_to_all, model_blank
+	from utilities        import send_attr_dict, file_type, sym_vol, get_image
+	from fundamentals     import resample, rot_shift3D
+	from applications     import MPI_start_end
+	from math             import fmod, atan, pi
+	from development      import match_pixel_rise
+	from utilities        import model_blank
+	from filter           import filt_tanl, filt_ctf
+	import os
+	from statistics       import fsc_mask
+	from copy             import copy
+	from os               import sys
+	from time             import time	
+	from alignment        import Numrinit, ringwe
+	from reconstruction   import recons3d_wbp
+	from morphology       import ctf_2
+	import types
+	
+	myid  = mpi_comm_rank(MPI_COMM_WORLD)
+	nproc = mpi_comm_size(MPI_COMM_WORLD)
+	main_node = 0
+
+	mpi_barrier(MPI_COMM_WORLD)
+
+	if myid == main_node:
+		if not(os.path.exists(outdir)):
+			os.mkdir(outdir)
+	mpi_barrier(MPI_COMM_WORLD)
+
+	dpp = (float(dp)/pixel_size)
+	rise = int(dpp)
+	winxy = int(rmax)*2 + 4
+	if(float(rise) != dpp):
+		print "  dpp has to be integer multiplicity of the pixel size"
+		sys.exit()
+	rise3 = 3*rise
+	# for resampling to polar rmin>1
+	rminpolar = max(1,rmin)
+
+	from utilities import get_im
+	refvol = get_im(ref_vol)
+	ref_nx = refvol.get_xsize()
+	ref_ny = refvol.get_ysize()
+	ref_nz = refvol.get_zsize()
+	if(ref_nz < rise3):
+		print  "  reference volumes has to be at least 3*rise long "
+		sys.exit()
+	
+	if maskfile:
+		if type(maskfile) is types.StringType: mask3D = get_image(maskfile)
+		else:                                  mask3D = maskfile
+	else:
+		if rmin > 0:
+			mask3D = model_cylinder(rmax, ref_nx, ref_ny, ref_nz) - model_cylinder(rmin, ref_nx, ref_ny, ref_nz)
+		else:
+			mask3D = model_cylinder(rmax, ref_nx, ref_ny, ref_nz)
+	
+	allfilaments = EMUtil.get_all_attributes(stack, 'filament')
+	for i in xrange(len(allfilaments)):
+		allfilaments[i] = [allfilaments[i],i]
+	allfilaments.sort()
+	filaments = []
+	current = allfilaments[0][0]
+	temp = [allfilaments[0][1]]
+	for i in xrange(1,len(allfilaments)):
+		if( allfilaments[i][0] == current ):
+			temp.extend([allfilaments[i][1]])
+		else:
+			filaments.append(temp)
+			current = allfilaments[i][0]
+			temp = [allfilaments[i][1]]
+	filaments.append(temp)
+	
+	del allfilaments, temp
+	
+	total_nfils = len(filaments)
+	fstart, fend = MPI_start_end(total_nfils, nproc, myid)
+	filaments = filaments[fstart:fend]
+	nfils = len(filaments)
+
+	list_of_particles = []
+	indcs = []
+	k = 0
+	for i in xrange(nfils):
+		list_of_particles += filaments[i]
+		k1 = k+len(filaments[i])
+		indcs.append([k,k1])
+		k = k1
+
+	if( myid == 0 ):
+		# Build a 3D dedicated correction function
+		if CTF:
+			from morphology import ctf_2
+			cc = EMUtil.get_all_attributes(stack, 'ctf')
+			ctf2 = ctf_2(ref_nz, cc[0])
+			ncc = len(ctf2)
+			for i in xrange(1,len(cc)):
+				temp = ctf_2(ref_nz, cc[i])
+				for k in xrange(ncc): ctf2[k] += temp[k]
+			del temp
+		from math import sqrt
+		rrc = model_blank(ref_nz, ref_nz, ref_nz)
+		rc = ref_nz//2
+		for i in xrange(ref_nz):
+			ic = (i-rc)**2
+			for j in xrange(ref_nz):
+				jc = (j-rc)**2
+				dc = sqrt(ic+jc)
+				for k in xrange(ref_nz):
+					if CTF:
+						rr = sqrt((k-rc)**2 + ic + jc)
+						rin = int(rr)
+						drin = rr-rin
+						rrc.set_value_at(i,j,k, dc/(1.0+(1.0-drin)*ctf2[rin] + drin*ctf2[rin+1]) )
+					else:
+						rrc.set_value_at(i,j,k, dc )
+
+	data = EMData.read_images(stack, list_of_particles)
+	nima = len(data)
+
+	data_nx = data[0].get_xsize()
+	data_ny = data[0].get_xsize()
+	mask2D  = pad(model_blank(2*int(rmax), data_ny, 1, 1.0), data_nx, data_ny, 1, 0.0)
+	for im in xrange(nima):
+		data[im].set_attr('ID', list_of_particles[im])
+		if CTF:
+			ctf_params = data[im].get_attr("ctf")
+			st = Util.infomask(data[im], mask2D, False)
+			data[im] -= st[0]
+			data[im] = filt_ctf(data[im], ctf_params)
+			data[im].set_attr('ctf_applied', 1)
+	del list_of_particles, mask2D
+
+	# This is the part sufficient to get polar resampling
+	refvol = Util.window(refvol, winxy, winxy, rise)
+	rr = ref_nz//2-2
+	# do full sized reconstruction with the projection parameters BEFORE they are modified by disk alignment step
+	fullvolsum0 = model_blank(ref_nx, ref_ny, ref_nz)
+	filvols = []
+	data_slices = []
+	start = time()
+	Torg = [None]*len(data)
+	for i in xrange(len(data)):  Torg[i] = data[i].get_attr("xform.projection")
+	msk = model_cylinder(rmax-1, ref_nx, ref_ny, ref_nz) - model_cylinder(rmax-2, ref_nx, ref_ny, ref_nz)
+	ms3 = model_cylinder(rmax, ref_nx, ref_ny, ref_nz)
+	for ivol in xrange(nfils):
+		fullvol0 = Util.window(recons3d_wbp(data, list_proj=range(indcs[ivol][0],indcs[ivol][1]), method = None, symmetry=sym, radius=rr), ref_nx, ref_ny, ref_nz, 0, 0, 0)
+		fullvol0 = fullvol0.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
+		fullvol0 = sym_vol(fullvol0, symmetry=sym)
+		stat = Util.infomask(fullvol0, msk, True)
+		fullvol0 -= stat[0]
+		fullvol0 *= ms3
+		"""
+		from filter import filt_tanl
+		fullvol0 = filt_tanl(fullvol0, 0.3, 0.2)
+		fullvol0 = fullvol0.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
+		fullvol0 = sym_vol(fullvol0, symmetry=sym)
+		"""
+		Util.add_img(fullvolsum0, fullvol0)
+
+		filvols.append(Util.window(fullvol0, winxy, winxy, rise3))
+
+		data_slices.append(cylindrical_trans(filvols[ivol], rminpolar, rmax, rise, True))
+		#print  " DONE ", myid,ivol
+	#  original projection data no longer needed
+	del data, fullvol0, ms3, msk
+	if myid == main_node:
+		tt = time()
+		print " TIME to do initial reconstructions :", tt-start
+		start = tt
+	reduce_EMData_to_root(fullvolsum0, myid)
+	if myid == main_node and False:
+		fullvolsum0.write_image("verify0.hdf")
+		rrc.write_image("verify1.hdf")
+		fullvolsum0 = Util.window( pad(fullvolsum0, ref_nz, ref_nz, ref_nz, 0.0).filter_by_image(rrc), ref_nx, ref_ny, ref_nz, 0, 0, 0)
+		fullvolsum0 = fullvolsum0.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
+		fullvolsum0 = sym_vol(fullvolsum0, symmetry=sym)
+		stat = Util.infomask(fullvolsum0,  model_cylinder(rmax-1, ref_nx, ref_ny, ref_nz) - model_cylinder(rmax-2, ref_nx, ref_ny, ref_nz), True)
+		fullvolsum0 -= stat[0]
+		fullvolsum0 *= model_cylinder(rmax-1, ref_nx, ref_ny, ref_nz)
+		fullvolsum0.write_image("verify2.hdf")
+		#for i in xrange(len(filvols)):
+		#	filvols[i].write_image("verify7.hdf",i)
+	mpi_barrier(MPI_COMM_WORLD)
+	#sys.exit()
+
+	T_filament = [None]*nfils
+	for iter in xrange(1,maxit+1):
+		if myid == main_node: print " ITERATION:  ", iter
+		refslices = cylindrical_trans(refvol, rminpolar, rmax, rise)
+
+		for ivol in xrange(nfils):
+			#if myid == main_node: print "  ALI  ",myid,ivol,Util.infomask(data_slices[ivol][0], None, True)
+			T_filament[ivol] = alihelical3(data_slices[ivol], refslices, zstep, dphi, rise, rminpolar, rmax, sym)
+
+		refvol = model_blank(winxy, winxy, rise3)
+		for ivol in xrange(nfils):
+			d = T_filament[ivol].get_params('spider')
+			#if myid == main_node: print  d["phi"], d["theta"], d["psi"], d["tz"]
+			#if myid == main_node:
+			#	pad(rot_shift3D(filvols[ivol],  d["phi"], d["theta"], d["psi"], sz=d["tz"]), ref_nx, ref_ny, ref_nz, 0.0).write_image("verify1.hdf")
+			Util.add_img(refvol, rot_shift3D(filvols[ivol],  d["phi"], d["theta"], d["psi"], sz=d["tz"]))
+		reduce_EMData_to_root(refvol, myid)
+			
+		if myid == main_node:
+			#refvol.write_image("verify3.hdf")
+			#Util.window(refvol, winxy, winxy, rise).write_image("verify4.hdf")
+			refvol =  stack_disks(Util.window(refvol, winxy, winxy, rise), winxy, winxy, ref_nz, dphi, rise)
+			#refvol.write_image("verify5.hdf")
+			refvol = sym_vol(refvol, symmetry=sym)
+			#refvol.write_image("verify6.hdf")
+			if CTF:
+				refvol = Util.window( pad(refvol, ref_nz, ref_nz, ref_nz, 0.0).filter_by_image(rrc), ref_nx, ref_ny, ref_nz, 0, 0, 0)
+				refvol = refvol.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
+				refvol = sym_vol(refvol, symmetry=sym)
+				stat = Util.infomask(refvol,  model_cylinder(rmax-1, ref_nx, ref_ny, ref_nz) - model_cylinder(rmax-2, ref_nx, ref_ny, ref_nz), True)
+				refvol -= stat[0]
+				refvol *= model_cylinder(rmax-1, ref_nx, ref_ny, ref_nz)
+
+			import user_functions
+			user_func = user_functions.factory[user_func_name]
+
+			ref_data = [refvol, mask3D]
+			refvol = user_func(ref_data)
+			refvol = refvol.helicise( pixel_size , dp, dphi, fract, rmax, rmin)
+			refvol = sym_vol(refvol, symmetry=sym)
+			if(iter == maxit):  drop_image(refvol, os.path.join(outdir, 'fvheli.hdf'))
+			refvol = Util.window(refvol, winxy, winxy, rise)
+
+			tt = time()
+			print " TIME of one iteration :", tt-start
+			start = tt
+		else:
+			refvol = model_blank(winxy, winxy, rise)
+
+		bcast_EMData_to_all(refvol, myid, main_node)
+
+	del refvol, data_slices
+
+	# update rotations of individual images
+	data = [EMData() for i in xrange(nima)]
+	forg = []
+	helisym = Transform({"type":"spider","phi":dphi,"tz":dpp})
+	ihelisym = helisym.inverse()
+	from utilities import get_params_proj, set_params_proj
+	permitrange = rise/2.0
+	
+	for ivol in xrange(nfils):
+		#  This is for printout
+		d = T_filament[ivol].get_params('spider')
+		#print  d["phi"],d["theta"],d["psi"],d["tx"],d["ty"],d["tz"]
+		if( d["tz"] < 0.0 ):  d = (helisym*T_filament[ivol]).get_params('spider')
+		#print  d["phi"],d["theta"],d["psi"],d["tx"],d["ty"],d["tz"]
+		#forg.append([d["phi"],d["theta"],d["psi"],d["tx"],d["ty"],d["tz"]])
+		#  Use inverse transformation to modify projection directions.
+		Tinv = T_filament[ivol].inverse()
+		for im in xrange(indcs[ivol][0],indcs[ivol][1]):
+			#d = Torg[im].get_params('spider')
+			#print  d["phi"],d["theta"],d["psi"],d["tx"],d["ty"],d["tz"]
+			Torg[im] = Torg[im]*Tinv
+			d = Torg[im].get_params('spider')
+			d["tx"] = -d["tx"]
+			d["ty"] = -d["ty"]
+			#if myid == 0: print  " A ",d["phi"],d["theta"],d["psi"],d["tx"],d["ty"]
+			#finfo.write(" %d  %f  %f7.2  %f  %f  %f\n" %(im,d["phi"],d["theta"],d["psi"],d["tx"],d["ty"]))
+			#finfo.flush()
+			psi = d["psi"]
+			while( d["ty"] < -permitrange ):
+				if( psi > 180.0):  Torg[im] = Torg[im]*helisym
+				else:              Torg[im] = Torg[im]*ihelisym
+				d = Torg[im].get_params('spider')
+				d["tx"] = -d["tx"]
+				d["ty"] = -d["ty"]
+			while( d["ty"] > permitrange ):
+				if( psi > 180.0):  Torg[im] = Torg[im]*ihelisym
+				else:              Torg[im] = Torg[im]*helisym
+				d = Torg[im].get_params('spider')
+				d["tx"] = -d["tx"]
+				d["ty"] = -d["ty"]
+			#finfo.write(" %d  %f  %f7.2  %f  %f  %f\n" %(im,d["phi"],d["theta"],d["psi"],d["tx"],d["ty"]))
+			#finfo.flush()
+
+			#if myid == 0: print  " B ",d["phi"],d["theta"],d["psi"],d["tx"],d["ty"]
+			set_params_proj(data[im], [d["phi"],d["theta"],d["psi"],d["tx"],d["ty"]])
+			data[im].set_attr('ID', filaments[ivol][im-indcs[ivol][0]])
+	#from utilities import write_text_row
+	#write_text_row(forg,"forg%03d.txt"%myid)
+	"""
+	forg = []
+	for ivol in xrange(nfils):
+		for im in xrange(inds[ivol][0],inds[ivol][1]):
+				T = data[im].get_attr("xform.projection")
+				d = T.get_params('spider')
+				forg.append([d["phi"],d["theta"],d["psi"],-d["tx"],-d["ty"],data[im].get_attr('ID')])
+	write_text_row(forg,"pheader%03d.txt"%myid)
+	"""
+	mpi_barrier(MPI_COMM_WORLD)
+
+	# write out headers, under MPI writing has to be done sequentially
+	from mpi import mpi_recv, mpi_send, MPI_TAG_UB, MPI_COMM_WORLD, MPI_FLOAT
+	par_str = ['xform.projection', 'ID']
+	if myid == main_node:
+		if(file_type(stack) == "bdb"):
+			from utilities import recv_attr_dict_bdb
+			recv_attr_dict_bdb(main_node, stack, data, par_str, 0, nima, nproc)
+		else:
+			from utilities import recv_attr_dict
+			recv_attr_dict(main_node, stack, data, par_str, 0, nima, nproc)
+	else:
+		send_attr_dict(main_node, data, par_str, 0, nima)
+
+def cylindrical_trans(vol, rmin, rmax, rise, apply_weights = False):
+	from alignment import Numrinit, ringwe
+	refslices=[]
+	mode="F"
+	numr = Numrinit(rmin, rmax, 1, mode)
+	maxrin = numr[len(numr)-1]
+	wr_four  = ringwe(numr, mode)
+	ref_nx2 = vol.get_xsize()
+	ref_ny2 = vol.get_ysize()
+	cnx = ref_nx2//2 + 1
+	cny = ref_ny2//2 + 1
+	cnz = rise//2
+	for i in xrange(rise):
+		cimage = Util.Polar2Dm(Util.window(vol, ref_nx2, ref_ny2, 1, 0, 0, i-cnz), cnx, cny, numr, mode)
+		Util.Frngs(cimage, numr)
+		if apply_weights:  Util.Applyws(cimage, numr, wr_four)
+		refslices.append(cimage)
+	return refslices
+
+def alihelical3(slices, refslices, zstep, dphi, rise, rmin, rmax, sym="c1"):
+	from applications import  alihelical4
+
+	T,qn = alihelical4(slices, refslices, zstep, dphi, rise, rmin, rmax, theta=0.0)
+	if( sym[:1] != "d" and  sym[:1] != "D" ):
+		R,qr = alihelical4(slices, refslices, zstep, dphi, rise, rmin, rmax, theta=180.0)
+		if( qr > qn ):
+			qn = qr
+			T = R
+	# The transformation returned is to be applied to the disk.  To projection data apply the inverse.
+	return T
+
+# standalone code for aligning two disks 
+def alihelical4(slices, refslices, zstep, dphi, rise, rmin, rmax, theta=0.0):
+
+	from fundamentals import rot_shift3D, cyclic_shift
+	from statistics import ccc
+	from math import ceil, fmod
+	from utilities import pad, model_cylinder
+	from random import randrange, randint
+	from math         import fmod
+	from alignment    import Numrinit, ringwe, ang_n
+	from utilities    import model_blank
+
+
+	pdphi = -dphi
+	if(pdphi < 0.0):  pdphi = 360.0 - pdphi
+
+	mode="F"
+	numr = Numrinit(rmin, rmax, 1, mode) # pull this to the calling program
+	maxrin = numr[len(numr)-1]
+
+	lren = refslices[0].get_xsize()
+
+	maxqn = -1.0e23
+	#slices = cylindrical_trans(vol, rmax, rise)
+	cyclic_slices = [None]*rise
+	local_slices  = [None]*rise
+	if( theta == 0.0 ):
+		for j in xrange(rise):  local_slices[j] = slices[j]
+	else:
+		# inverse the order
+		for j in xrange(rise):  local_slices[j] = slices[rise-1 - j]
+	for j in xrange(rise):
+		iz = j * zstep
+		for k in xrange(rise):
+			kiz = k + iz
+			if( kiz < rise ):
+				cyclic_slices[k] = local_slices[kiz]
+			else:
+				cslice = kiz%rise
+				cyclic_slices[k] = local_slices[cslice]  # shifted have to be rotated in Fourier space
+				refim = model_blank(lren)
+				if(theta == 0.0):  Util.update_fav(refim, local_slices[cslice],  iang( pdphi, maxrin), 0, numr)
+				else:              Util.update_fav(refim, local_slices[cslice],  iang( 360.0 - pdphi, maxrin), 0, numr)
+				cyclic_slices[k] = refim.copy()
+
+		linesum = model_blank(maxrin)
+
+		for i in xrange(rise):
+			if(theta == 0.0):  temp = Util.Crosrng_msg_s(refslices[i], cyclic_slices[i], numr)
+			else:              temp = Util.Crosrng_msg_m(refslices[i], cyclic_slices[i], numr)
+			linesum += temp
+
+		qn  = -1.0e20
+		tot = 0
+		for i in xrange(maxrin):
+			if (linesum[i] >= qn):
+				qn  = linesum[i]
+				tot = i+1
+
+		if qn > maxqn:
+			maxqn = qn
+			#  It is somewhat strange that both theta cases have the same setting
+			maxphi = ang_n(tot, mode, maxrin)
+			maxz = -iz
+
+		
+	T = Transform({"type":"spider","phi":maxphi,"theta":theta,"tz":maxz})
+	return T, maxqn
+
+def iang(alpha, maxrin):
+	# compute position on maxrin  
+	return  alpha*maxrin/360.+1
+
+def stack_disks(v, nx, ny, ref_nz, dphi, rise):
+	from utilities    import model_blank
+	from fundamentals import rot_shift3D
+	refc = ref_nz//2
+	rsc = rise//2
+	
+	heli = model_blank(nx, ny, ref_nz)
+
+	lb = -((refc-rsc)/rise)
+	if(lb*rise+refc-rsc > 0):  lb -= 1
+	
+	le = (ref_nz-refc-rsc)/rise
+	if((le+1)*rise+refc-rsc < ref_nz): le +=1
+	
+	for i in xrange(lb,le+1):
+		#print i,refc + i*rise - rsc
+		heli.insert_clip(rot_shift3D(v, i*dphi),(0,0,refc + i*rise - rsc))
+
+	return heli
