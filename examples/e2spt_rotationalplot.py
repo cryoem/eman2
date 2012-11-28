@@ -68,8 +68,10 @@ def main():
 	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:1")
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_argument("--plotonly",action="store_true", help="Assumes vol1 and vol2 are already aligned with respect to each other and thus skips alignment", default=False)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
+	parser.add_argument("--plotonly",action="store_true", help="Assumes vol1 and vol2 are already aligned with respect to each other and thus skips alignment.", default=False)
+	parser.add_argument("--normalizeplot",action="store_true", help="Make maximum correlation value on plot equal to 1 and scale all other values accordingly.", default=False)
+
 	
 	(options, args) = parser.parse_args()
 		
@@ -212,8 +214,9 @@ def main():
 	#values = values/ max(values)
 	
 	for i in range(len(values)):
-		for j in range(len(values[i])):
-			values[i][j]= values[i][j] / max(values[i])
+		if options.normalizeplot:
+			for j in range(len(values[i])):
+				values[i][j]= values[i][j] / max(values[i])
 		pylab.plot(azs[i], values[i], linewidth=2)
 	#fit = pylab.plot(x, yfit, 'r-')
 
