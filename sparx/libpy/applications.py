@@ -11583,6 +11583,10 @@ def volalixshift_MPI(stack, ref_vol, outdir, search_rng, pixel_size, dp, dphi, f
 	del allfilaments, temp
 	
 	total_nfils = len(filaments)
+
+	if total_nfils< nproc:
+		ERROR('number of CPUs (%i) is larger than the number of filaments (%i), please reduce the number of CPUs used'%(nproc, total_nfils), "volalixshift_MPI", 1,myid)
+
 	fstart, fend = MPI_start_end(total_nfils, nproc, myid)
 	filaments = filaments[fstart:fend]
 	nfils = len(filaments)
