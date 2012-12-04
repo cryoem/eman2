@@ -927,7 +927,7 @@ def least_square(data):
 	return(m,b)
 
 def snr_safe(s,n) :
-	if s<=0 or n<=0 : return 0.0
+	if s<=0 or n<=0 or s-n<0 : return 0.001		# this used to return 0, but I think it may have been causing some snr weighting problems
 	return (s-n)/n
 
 def sfact2(s):
@@ -1000,10 +1000,10 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 
 #	plot(bglowsub)
 	# We find the first minimum (also <1/50 max) after the value has fallen to 1/5 max
-	maxsub=max(bglowsub[4:])
+	maxsub=max(bglowsub[int(.01/ds):])
 	for i in range(len(bglowsub)-1,0,-1):
 		if bglowsub[i]>maxsub/5.0 : break
-	s0=max(int(.005/ds),i)
+	s0=max(int(.01/ds),i)
 	while bglowsub[s0]>bglowsub[s0+1] or bglowsub[s0+1]>maxsub/50.0: s0+=1	# look for a minimum in the data curve
 	if verbose: print "Minimum at 1/%1.1f 1/A (%1.4f), highest s considered 1/%1.1f 1/A (%1.4f)"%(1.0/(s0*ds),s0*ds,1.0/(s1*ds),s1*ds)
 	
