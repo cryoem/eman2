@@ -1412,7 +1412,7 @@ def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_ma
 	from utilities    import compose_transform2, get_params_proj
 	from EMAN2 import Vec2f
 	from math         import cos, sin, pi
-	
+
 	ID = data.get_attr("ID")
 
 	mode = "F"
@@ -1481,7 +1481,7 @@ def proj_ali_helical_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 		psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
 		s2x   = sxb + tx
 		s2y   = syb + ty
-		
+
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f\n\n" %(phi, theta, psi, s2x, s2y, peak))
 			finfo.flush()
@@ -1615,7 +1615,7 @@ def helios_func(params, data):
 	#q = sm.cmp("dot", data[0], {"negative":0})# corelation  with the recon data
 	#print  params,q
 	return  q
-	
+
 def helios(vol, pixel_size, dp, dphi, section_use = 0.75, radius = 0.0, rmin = 0.0):
 	from alignment    import helios_func
 	from utilities    import amoeba
@@ -1630,7 +1630,7 @@ def helios(vol, pixel_size, dp, dphi, section_use = 0.75, radius = 0.0, rmin = 0
 	new_params = amoeba(new_params, [0.05*dp, 0.05*abs(dphi)], helios_func, 1.0e-2, 1.0e-2, 50, data)
 	#print  " new params ", new_params[0], new_params[1]
 	return  vol.helicise(pixel_size, new_params[0][0], new_params[0][1], section_use, radius), new_params[0][0], new_params[0][1]
-	
+
 def helios7(vol, pixel_size, dp, dphi, section_use = 0.75, radius = 0.0, rmin = 0.0):
 	from alignment    import helios_func
 	nx = vol.get_xsize()
@@ -1906,7 +1906,6 @@ def align2d_g(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, r
 	return ormy2(image,refim,crefim,xrng,yrng,step,mode,numr,cnx,cny,"gridding")
 
 
-
 def ali_nvol(v, mask):
 	from alignment    import alivol_mask_getref, alivol_mask
 	from statistics   import ave_var
@@ -1962,4 +1961,3 @@ def alivol_mask( v, vref, mask ):
 	dun,dum,dum,cnx,cny,cnz,mirror,scale = get_params3D( vref )
 	phi,tht,psi,s3x,s3y,s3z,scale = compose_transform3(phi,tht,psi,s3x,s3y,s3z,1.0,0.0,0.0,0.0,-cnx,-cny,-cnz,1.0)
 	return phi,tht,psi,s3x,s3y,s3z
-

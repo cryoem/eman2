@@ -1706,7 +1706,7 @@ def read_spider_doc(fnam):
 			data.append(line_data)
 			line = inf.readline()
 	return data
-	
+
 def read_text_row(fnam, format="", skip=";"):
 	"""
 	 	Read a column-listed txt file.
@@ -1883,7 +1883,7 @@ def rotate_about_center(alpha, cx, cy):
 
 	#   return compalpha, comptrans.at(0),comptrans.at(1), compscale
 	return cmp2[0], cmp2[1], cmp2[2], cmp2[3]
-	
+
 def reshape_1d(input_object, length_current=0, length_interpolated=0, Pixel_size_current = 0., Pixel_size_interpolated = 0.):
 	"""
 		linearly interpolate a 1D power spectrum to required length with required Pixel size
@@ -1917,7 +1917,7 @@ def reshape_1d(input_object, length_current=0, length_interpolated=0, Pixel_size
 		xval = (1.0-df)*input_object[ix] + df*input_object[ix+1]
 		interpolated.append(xval)
 	return interpolated
-	
+
 def rops_dir(indir, output_dir = "1dpw2_dir"):
 	"""
 		Calculate 1D rotationally averaged power spectra from 
@@ -2005,7 +2005,7 @@ def estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node):
 				n_params = (image_end_proc - image_start_proc)*5
 				temp = mpi_recv(n_params, MPI_FLOAT, proc, proc, MPI_COMM_WORLD)
 				for nn in xrange(n_params): 	ali_params_series.append(float(temp[nn]))
-					
+
 		ali_params = []
 		N = len(ali_params_series)/5
 		for im in xrange(N):
@@ -2826,7 +2826,7 @@ def generate_ctf(p):
 	"""
 	  generate EMAN2 CTF object using values of CTF parameters given in the list p
 	  order of parameters:
-        [defocus, cs, voltage, apix, bfactor, ampcont, astigmastism_amplitude, astigmatism_angle]
+        [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism_amplitude, astigmatism_angle]
 	    [ microns, mm, kV, Angstroms, A^2, microns, radians]
 	"""
 	from EMAN2 import EMAN2Ctf
@@ -3075,21 +3075,6 @@ def cone_ang( projangles, phi, tht, ant ) :
 
 	return la
 
-def findall(lo,val):
-	"""
-	  Find all occurences of val in list lo
-	  Returns a list of indices of val in lo.
-	"""
-	u = []
-	i = -1
-	while( i < len(lo)-1):
-		try:
-			i = lo.index(val,i+1)
-			u.append(i)
-		except:
-			i += 1
-	return  u
-
 def disable_bdb_cache():
 	import EMAN2db
 	EMAN2db.BDB_CACHE_DISABLE = True
@@ -3193,12 +3178,10 @@ def helical_consistency(p2i, p1):
 		
 	return p2o, errormo, agree, delta_phi, phi1o, phi2o
 
-# according two lists of orientation or marker (phi, theta, psi for each one)
-# return the global rotation (dphi, dtheta, dpsi) between the two systems
 def rotation_between_anglesets(agls1, agls2):
 	"""
-	  Find overall 3D rotation (phi theta psi) between two sets of Eulerian angles.
-	  The two sets have to be of the same length and it is assume that k'th element on the first
+	  Find an overall 3D rotation (phi theta psi) between two sets of Eulerian angles.
+	  The two sets have to have the same number of elements and it is assumed that k'th element on the first
 	  list corresponds to the k'th element on the second list.
 	  Input: two lists [[phi1, theta1, psi1], [phi2, theta2, psi2], ...].  Second list is considered reference.
 	  Output: overall rotation phi, theta, psi that has to be applied to the first list (agls1) so resulting
@@ -3841,7 +3824,9 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 
 
 def findall(value, L, start=0):
-	# retrun a list of all indexes of a value on the list L beginning from position start
+	"""
+	 return a list of all indexes of a value on the list L beginning from position start
+	"""
 	positions = []
 	lL = len(L) - 1
 	i = start - 1
@@ -3853,3 +3838,19 @@ def findall(value, L, start=0):
 		except:
 			pass
 	return positions
+"""
+def findall(val, lo):
+	'''
+	  Find all occurrences of val in list lo
+	  Returns a list of indices of val in lo.
+	'''
+	u = []
+	i = -1
+	while( i < len(lo)-1):
+		try:
+			i = lo.index(val,i+1)
+			u.append(i)
+		except:
+			i += 1
+	return  u
+"""

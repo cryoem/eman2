@@ -96,20 +96,20 @@ def main():
 	parser.add_option("--WRAP",               type="int",  		     default= 1,                  help="do helical wrapping")
 	parser.add_option("--searchxshift",       type="float",		     default= -1,                 help="search range for x-shift determination: +/- searchxshift (Angstroms)")
 	parser.add_option("--nearby",             type="float",		     default= 6.0,                help="neighborhood in which to search for peaks in 1D ccf for x-shift search (Angstroms)")
-	
+
 	parser.add_option("--diskali",            action="store_true",   default=False,               help="volume alignment")
 	parser.add_option("--zstep",              type="float",          default= 1,                  help="Step size for translational search along z (Angstroms)")   
-	
+
 	parser.add_option("--helicise",           action="store_true",	 default=False,               help="helicise input volume and save results to output volume")
 	parser.add_option( "--hfsc",              type="string",      	 default="",                  help="generate two list of image indices used to split segment stack into two for helical fsc calculation. The two lists will be stored in two text files named using file_prefix with '_even' and '_odd' suffixes respectively." )
 	parser.add_option( "--filament_attr",     type="string",      	 default="filament",          help="attribute under which filament identification is stored" )
 	parser.add_option( "--predict_helical",   type="string",      	 default="",                  help="Generate projection parameters consistent with helical symmetry")
-	
+
 	# input options for generating disks
 	parser.add_option("--gendisk",            type="string",		 default="",                  help="Name of file under which generated disks will be saved to") 
 	parser.add_option("--ref_nx",             type="int",   		 default= 1,                  help="nx=ny volume size" ) 
 	parser.add_option("--ref_nz",             type="int",   		 default= 1,                  help="nz volume size - computed disks will be nx x ny x rise/apix" ) 
-	
+
 	# get consistency
 	parser.add_option("--consistency",        type="string",		 default="",                  help="Name of parameters to get consistency statisticsf for") 
 	parser.add_option("--phithr",             type="float", 		 default= 2.0,                help="phi threshold for consistency check")  
@@ -119,14 +119,14 @@ def main():
 	# stack disks
 	parser.add_option("--stackdisk",            type="string",		 default="",                  help="Name of file under which output volume will be saved to.")
 	parser.add_option("--ref_ny",             type="int",   		 default=-1,                  help="ny of output volume size. Default is ref_nx" ) 
-	
+
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1 or len(args) > 5:
 		print "usage: " + usage + "\n"
 		print "Also includes various helical reconstruction related functionalities: " + usage2
 		print "Please run '" + progname + " -h' for detailed options"
 	else:
-		
+
 		if len(options.hfsc) > 0:
 			if len(args) != 1:
 				print  "Incorrect number of parameters"
@@ -263,7 +263,7 @@ def main():
 			else:               mask = args[3]
 			ihrsr(args[0], args[1], args[2], mask, irp, oup, options.rs, xrp, options.ynumber, txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, rminp, rmaxp, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.apix, options.debug, options.MPI, options.WRAP, y_restrict2) 
 			global_def.BATCH = False
-		
+
 		if options.MPI:
 			from mpi import mpi_finalize
 			mpi_finalize()

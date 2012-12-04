@@ -6363,7 +6363,7 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 				if debug:
 					# we have to distiguish between no shift situation, which is done through ccc, and shift, which is done using gridding in 2D
 					if(ts == 0.0):  data[6] = 0.0
-					else:  data[6] = -1.0#ts#-1.0
+					else:           data[6] = -1.0#ts#-1.0
 					initial, dummy = eqproj_cascaded_ccc(atparams, data)  # this is if we need initial discrepancy
 					finfo.write("Image "+str(imn)+"\n")
 					finfo.write('Old  %6.1f  %6.1f  %6.1f   %5.2f  %5.2f  %11.4e\n'%(atparams[0],atparams[1],atparams[2], -dummy[0], -dummy[1], initial))
@@ -6708,7 +6708,7 @@ def ihrsr(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, \
 		txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max, \
 		rmin, rmax, fract, nise, npad, sym, user_func_name, datasym, \
 		pixel_size, debug = False, MPI = False, WRAP = 1, y_restrict=-1.0):
-	
+
 	ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber, 
 			txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndhpi, dphi_step, psi_max,
 			rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,
@@ -6745,20 +6745,20 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
-	
+
 	if myid == 0:
 		if os.path.exists(outdir):  nx = 1
 		else:  nx = 0
 	else:  nx = 0
 	ny = bcast_number_to_all(nx, source_node = main_node)
-	
+
 	if ny == 1:  ERROR('Output directory exists, please change the name and restart the program', "ihrsr_MPI", 1,myid)
 	mpi_barrier(MPI_COMM_WORLD)
 
 	if myid == main_node:
 		os.mkdir(outdir)
 	mpi_barrier(MPI_COMM_WORLD)
-	
+
 
 	nlprms = (2*ndp+1)*(2*ndphi+1)
 	if nlprms< number_of_proc:
@@ -7702,7 +7702,7 @@ def dele_flist(flist):
 		delist.append(sh_com)
 		strg=inf.readline()
 	for i in xrange(len(delist)):  os.system(delist[i])
-		
+
 def defocus_calc(roodir, method, writetodoc="w", Pixel_size=1, voltage=120, Cs=1, amp_contrast=.1, round_off=100, dz_max=50000., frequency_low=30, frequency_high=5, polynomial_rank_baseline=5, polynomial_rank_envelope=5, prefix="roo", format="spider", skip_comment="#", micdir = "no", print_screen="no"):	
 	from morphology import defocus_get_slow, defocus_get_fast
 	if( method == "s"): 	defocus_get_slow(roodir, writetodoc, Pixel_size, voltage, Cs, amp_contrast, round_off, dz_max, frequency_low, frequency_high, prefix, format, skip_comment, micdir, print_screen)
@@ -8005,7 +8005,7 @@ def pw2sp(indir, outdir = None, w =256, xo =50, yo = 50, xd = 0, yd = 0, r = 0, 
 			rotxtname = os.path.join(outdir,roofile)
 			ro_textfile(pw2, rotxtname)
 	if ncount < 1: 	ERROR("No micrograph is found, check either directory or prefix of micrographs is correctly given","pw2sp",1)
- 
+
 def pw2sp_MPI(indir, outdir, w =256, xo =50, yo = 50, xd = 0, yd = 0, r = 0, prefix_of_micrograph="micrograph"):
 	""" 
 		Purpose: 
@@ -8077,7 +8077,7 @@ def pw2sp_MPI(indir, outdir, w =256, xo =50, yo = 50, xd = 0, yd = 0, r = 0, pre
 		drop_image(pw2_mask, pw2name)
 		rotxtname = os.path.join(outdir,roofile)
 		ro_textfile(pw2, rotxtname)
-	
+
 def ra_cef(indir, noise, outdir, prf, num):
 	"""
 		Apply ramp and cefit to detected particles
@@ -8189,7 +8189,7 @@ def ali_vol(vol, refv, ang_scale, shift_scale, radius=None, discrepancy = "ccc")
 	params = [phi, theta, psi, s3x, s3y, s3z]
 	data = [e, ref, mask, params, discrepancy]
 	new_params = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-	
+
 	new_params = amoeba(new_params, [ang_scale, ang_scale, ang_scale, shift_scale, shift_scale, shift_scale], ali_vol_func, 1.e-4, 1.e-4, 500, data)
 	print "amoeba: func_value =",new_params[1], "iter =",new_params[2]
 
@@ -8579,14 +8579,14 @@ def rot_sym(infile, outfile, sym_gp="d4", \
 	sym = sym_vol(rot_shift3D(e, res[0][0], res[0][1], res[0][2] ), sym_gp)
 
 	drop_image(sym, outfile)
-	
+
 def transform2d(stack_data, stack_data_ali):
 # apply 2D alignment parameters stored in the header of the input stack file using gridding interpolation and create an output stack file
 	from fundamentals   import rot_shift2D
 	from utilities 	    import set_arb_params, set_params2D, get_params2D
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	import os
-	
+
 	print_begin_msg("transform2d")	
 	print_msg("Input stack                 : %s\n"%(stack_data))
 	print_msg("Output stack                : %s\n\n"%(stack_data_ali))
@@ -8770,7 +8770,7 @@ def recons3d_f_MPI(prj_stack, vol_stack, fsc_file, mask, CTF=True, snr=1.0, sym=
 	from utilities import drop_image, bcast_number_to_all
 	nproc = mpi_comm_size( MPI_COMM_WORLD )
 	myid  = mpi_comm_rank( MPI_COMM_WORLD )
-	
+
 	if(myid == 0):
 		if(listfile):
 			from utilities import read_text_file
@@ -9052,7 +9052,7 @@ def pca(input_stacks, subavg="", mask_radius=-1, nvec=3, incore=False, shuffle=F
 	from utilities import get_image, get_im, model_circle, model_blank
 	from statistics import pcanalyzer
 	import types
-	
+
 	if type(input_stacks[0]) is types.StringType: data_on_disk = True	 # input_stacks is a file name
 	else:
 		data_on_disk = False # input_stacks is a list of images not a file name
@@ -9649,7 +9649,7 @@ def extract_value( s ):
 		return f
 	except:
 		pass
-	
+
 	return s 
 
 def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, rand_alpha=False, fimport=None, 
@@ -9781,7 +9781,7 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 			
 		else:
 			for p in params:
-			
+
 				if zero:
 					if p[:13] == "xform.align2d":
 						#set_params2D(img, [0.0, 0.0, 0.0, 0, 1.0], p)
@@ -10168,7 +10168,7 @@ def imgstat_fsc( stacks, fscfile, rad ):
 		else:    mask = model_circle( rad, nx, ny, nz )
 
 	fsc_mask( img1, img2, mask, filename=fscfile )
-	
+
 def imgstat_inf( stacks, rad ):
 	from EMAN2 import EMUtil
 	from utilities import get_im, model_circle
@@ -10176,7 +10176,7 @@ def imgstat_inf( stacks, rad ):
 
 	nimg = EMUtil.get_image_count( stacks[0] )
 	img1 = get_im( stacks[0] )
-	
+
 	nx = img1.get_xsize()
 	ny = img1.get_ysize()
 	nz = img1.get_zsize()
@@ -10673,7 +10673,7 @@ def var_mpi(files, outdir, fl, aa, radccc, frepa = "default", pca=False, pcamask
         myid = mpi_comm_rank( MPI_COMM_WORLD )
         ncpu = mpi_comm_size( MPI_COMM_WORLD )
 	main_node=0
-	
+
 	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "mref_ali2d_MPI ", 1)
 	mpi_barrier(MPI_COMM_WORLD)
         if myid== main_node:   os.mkdir(outdir)
@@ -10997,7 +10997,7 @@ def spill_out(ltot, base, d, neigvol, foutput):
 		for j in xrange( neigvol):
 			foutput.write( "    %e" % d[loc] )
 			ltot += 1
-			loc += 1
+			loc  += 1
 		foutput.write( "    %d" % (i+base) )
 		foutput.write( "\n" )
 	foutput.flush()

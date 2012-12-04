@@ -326,13 +326,13 @@ def defocus_env_baseline_fit(roo, i_start, i_stop, nrank, iswi):
 	TMP_roo = []
 	curve   = [0]*len(roo)
 	for i in xrange(i_start,i_stop,1):	TMP_roo.append(roo[i])
-	nc     = -1								 
+	nc  = -1
 	TMP = imf_params_cl1(TMP_roo, nrank, iswi)
 	for i in xrange(i_start, i_stop, 1):
 		nc      += 1
 		curve[i] = TMP[1][nc]
 	return curve
-			
+
 def defocus_get(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0, f_stop=-1, docf="a", skip="#", round_off=1, nr1=3, nr2=6):
 	"""
 	
@@ -374,7 +374,7 @@ def defocus_get(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0, f_sto
 	del    Res_TE
 	del    Res_roo	
 	return defocus
-			
+
 def defocus_gett(roo, voltage=300.0, Pixel_size=1.0, Cs=2.0, wgh=0.1, f_start=0.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None):
 	"""
 	
@@ -389,7 +389,7 @@ def defocus_gett(roo, voltage=300.0, Pixel_size=1.0, Cs=2.0, wgh=0.1, f_start=0.
 	Res_roo = []
 	Res_TE  = []	
 	if f_start == 0 : 	i_start = 0
-	else: 			i_start = int(Pixel_size*2.*len(roo)*f_start)
+	else: 			    i_start = int(Pixel_size*2.*len(roo)*f_start)
 	if f_stop <= f_start : 	i_stop  = len(roo)
 		
 	else: 			
@@ -469,13 +469,13 @@ def defocus_L2_euc(v1,v2, ist,istp):
 	dis    = 0.0
 	pw_sum = 0.0
 	if ist == istp :	ERROR("No pw2 curve is included  ", "defocus_L2_euc", 0)
-	else:			tfeq=istp-ist
+	else:			tfeq = istp-ist
 	for i in xrange(ist,istp,1):
 		dis+=    (v1[i]-v2[2])**2
 		pw_sum+= (v1[i])**2
 	if pw_sum <= 0:		ERROR("negative or zero power ", "defocus_L2_euc", 1)
 	if dis    <= 0:		ERROR("bad fitting, change options settings and try again  ", "defocus_L2_euc", 0)
-	else:	
+	else:
 		res = sqrt(dis)/sqrt(pw_sum)/tfeq	
 		return res
 
@@ -552,7 +552,7 @@ def defocus_get_fast(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1
 	from utilities import set_arb_params, get_image
 	if writetodoc[0]   != "a" and writetodoc[0]   != "l" and writetodoc[0] != "a": 	writetodoc= "a"
 	if print_screen[0] != "p" and print_screen[0] != "n"			     : 	print_screen = "n"
-	if os.path.exists(indir) == False					     : 	ERROR("roodir doesn't exist", "defocus_get_fast",1)
+	if os.path.exists(indir) == False: 	ERROR("roodir doesn't exist", "defocus_get_fast",1)
 	ctf_dicts = ["defocus", "Pixel_size", "voltage", "Cs", "amp_contrast", "B_factor", "sign"] 
 	flist = os.listdir(indir)
 	res   = []
@@ -846,7 +846,7 @@ def flcc(t, e):
 	return cc_map
 
 ##-----------------------------img formation parameters related functions---------------------------------
-def imf_params_cl1(pw,n=2,iswi=3,Pixel_size=1):
+def imf_params_cl1(pw, n=2, iswi=3, Pixel_size=1):
 	"""
 		Extract image formation parameters using contrained simplex method
 		The output is a list of list, which contains the following four elements:
@@ -855,7 +855,7 @@ def imf_params_cl1(pw,n=2,iswi=3,Pixel_size=1):
 		3. original power spectrum to be fitted
 		4. The parameters
 		Attension:
-		        iswi= 2 using polynomial n rank to fit no-Gaussian envelope function
+		    iswi= 2 using polynomial n rank to fit no-Gaussian envelope function
 			iswi =3 using polynomail n rank to fit background
 			n = the polynomial rank +1
 			The optimization tend to fail when the polynomial rank is higher than 6 
@@ -866,10 +866,8 @@ def imf_params_cl1(pw,n=2,iswi=3,Pixel_size=1):
 	parm = []
 	t    = Util.pw_extract(pw, n, iswi, Pixel_size)
 	for i in xrange(len(pw)):
-		j = i*2
-		k = i*2+1
-		cur.append(t[j])
-		feq.append(t[k])
+		cur.append(t[i*2])
+		feq.append(t[i*2+1])
 	npam = len(t)-2*len(pw)
 	for i in xrange(npam):
 		k    = 2*len(pw)+i
@@ -877,7 +875,7 @@ def imf_params_cl1(pw,n=2,iswi=3,Pixel_size=1):
 	res.append(feq )
 	res.append(cur )
 	res.append(pw  )
-	res.append(parm)	
+	res.append(parm)
 	return res
 
 def imf_get_1dpw_list(fstr):
