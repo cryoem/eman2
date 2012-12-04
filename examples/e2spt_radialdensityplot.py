@@ -39,14 +39,17 @@ from pylab import figure, show
 def main():
 
 	progname = os.path.basename(sys.argv[0])
-	usage = """Aligns a 3d volume to another by executing e2classaverage3d.py and then calculates the FSC between them by calling e2proc3d.py . It returns both a number for the resolution based on the FSC0.5 
-	criterion(on the screen) and a plot as an image in .png format."""
+	usage = """This program allows you to examine density variations along one or more given volume (at the same time).
+				It calculates the mean intensity either for slices (planes) along any the three cartesian axes (X, Y or Z), or for radial consecutive shells of increasing radius, 
+				or for cylindrical shells of varying or fixed height, starting from the center of the volume. 
+				All mean density values are saved to .txt files, and plots are produced with them and saved as .png images. In fact, to compare different volumes you can plot all curves in a single plot."""
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_argument("--vols", type=str, help="Volume whose radial density plot you want to compute. For multiple volumes, either provide them as an .hdf stack, or separate them by commas --vols=first.hdf,second.hdf,etc...", default=None)
 	parser.add_argument("--output", type=str, help="Name for the output .png and .txt files that contain the plots and the numeric values for them. Must be specified if --singleplot is on.", default=None)
-	parser.add_argument("--mode", type=str, help="provide --mode=x, y, or z to get the average density per slice in the indicated direction. --mode=cylinder for concentric cylindrical shell; default is --mode=sphere", default='sphere')
+	parser.add_argument("--mode", type=str, help="""provide --mode=x, y, or z to get the average density per slice in the indicated direction. 
+	--mode=cylinder for concentric cylindrical shell; default is --mode=sphere. For MULTIPLE modes, separate them by commas, for example --mode=x,y,z,cylinder""", default='sphere')
 	parser.add_argument("--fixedcylinderheight", type=int, help="Works only if --mode=cylinder, and keeps the height of the cylinder at a constant value, while varying the radius.", default=0)
 
 	parser.add_argument("--mask",type=str,help="Mask processor applied to volumes before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
@@ -58,7 +61,7 @@ def main():
 	#parser.add_argument("--apix", type=float, help="Provide --apix to overrride the value found in the volumes' header paramter.", default=0)
 	parser.add_argument("--singleplot", action="store_true",default=False,help="Plot all the Radial Density Profiles of the volumes provided in one single plot.")	
 	parser.add_argument("--threshold", action="store_true",default=False,help="If on, this will turn all negative pixel values into 0.")	
-
+	parser.add_argument("--normalizeplot", action="store_true",default=False,help="This will make the maximum density in each plot or curve equal to 1.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
@@ -80,106 +83,63 @@ def main():
 	
 	if options.highpass: 
 		options.highpass=parsemodopt(options.highpass)
-		
+	
+	if '.txt' not in options.output:
+		print "ERROR: output must be in .txt format"
+		sys.exit()
+
 	names = options.vols
 	names = names.split(',')
 	
-	finalvalues = {}
-	for i in names:
-		
-		n = EMUtil.get_image_count(i)
-		
-		stackvalues = []
-		print "The stack %s has %d images in it" % ( i, n ) 
-		for j in range(n):
-			ptcl = EMData(i,j)
-			#radius = a.get_xsize()/2
-			values = calcvalues(ptcl,options)	
-			stackvalues.append(values)
-		finalvalues.update({i:stackvalues})	
+	modes=options.mode.split(',')
 	
-	print "\n\nfinal values are", finalvalues
-	
-	if options.singleplot and len(names) > 1:
-		for i in names:
-			if len(finalvalues[i]) > 1:
-				print "ERROR: You can plot RD profiles for multiple particles IN ONE PLOT if each individual .hdf file has one particle only, or if you supply ONE stack only with all the particles in it."
-				print "In this case, you've supplied %d files, and the file %s has %d particles in it" % (len(names), i, len(finalvalues[i]))
+	for m in modes:
+		options.mode = m
+		output=''
+		if options.output:
+			output=options.output
+		if len(modes) > 1:
+			if not options.output:
+				print "ERROR: You must supply and output name if you want to plot multiple RD profiels from different .hdf files into one plot."
 				sys.exit()
-
-		if not options.output:
-			print "ERROR: You must supply and output name if you want to plot multiple RD profiels from different .hdf files into one plot."
-			sys.exit()
-		else:	
-			plotname = options.output
-			if '.png' not in plotname:
-				plotname += '.png'
-
-			plt.title("Spherical radial density plot")
-			plt.ylabel("Density (arbitrary units)")
-			plt.xlabel("Radius (angstroms)")
-
-			if options.mode == 'x':
-				plt.title("Density plot of slices along x-axis")
-				plt.xlabel("X (angstroms)")
-
-			if options.mode == 'y':
-				plt.title("Density plot of slices along y-axis")
-				plt.xlabel("Y (angstroms)")
-
-			if options.mode == 'z':
-				plt.title("Density plot of slices along z-axis")
-				plt.xlabel("Z (angstroms)")
-				
-			if options.mode == 'cylinder':
-				plt.title("Density plot of concentric cylyndrical shells")
-				plt.xlabel("Radius (angstroms)")
-			
-			for i in names:
-				apix = EMData(i,0,True)['apix_x']
-	
-				x = range(len(values))
-				for j in range(len(x)):
-					x[j] = int(round(x[j] * apix))		
-			
-				values = finalvalues[i][0]
-				txtname = plotname.replace('.png', '_' + str(j).zfill(len(names)) + '.txt') 
-				f = open(txtname,'w')
-				lines = []
-				for value in values:
-					line = str(value) + '\n'
-					lines.append(line)
-				f.writelines(lines)
-				f.close()
-				
-				plt.plot(x,values, linewidth=2)
-
-			p = plt.gca()
-			plt.savefig(plotname)
-			plt.clf()
-
-	else:
-		for i in names:
-			plotname = ''
-			if options.output:
-				plotname = options.output
 			else:
-				plotname = i.replace('.hdf','.png')
-			
-			if plotname and '.png' not in plotname:
-				plotname += '.png'
-				
-			for j in range(len(finalvalues[i])):
-				apix = EMData(i,j,True)['apix_x']
+				output = options.output.replace('.','_MODE' + m + '.')
 
-				plotname = plotname.replace('.png','_' + str(j).zfill(len(finalvalues[i])) + '.png')
-				txtname = plotname.replace('.png','.txt')
-				values = finalvalues[i][j]
-				
-				x=range(len(values))
-				for i in range(len(x)):
-					x[i] = int(round(x[i] * apix))
-				
+		finalvalues = {}
+		for i in names:
+		
+			n = EMUtil.get_image_count(i)
+			
+			stackvalues = []
+			print "The stack %s has %d images in it" % ( i, n ) 
+			for j in range(n):
+				ptcl = EMData(i,j)
+				#radius = a.get_xsize()/2
+				values = calcvalues(ptcl,options)
+			
+				if options.normalizeplot:
+					maxv = max(values)
+					for v in range(len(values)):
+						values[v] = values[v]/maxv	
+			
+				stackvalues.append(values)
+			finalvalues.update({i:stackvalues})	
+	
+		print "\n\nfinal values are", finalvalues
+	
+		if options.singleplot and len(names) > 1:
+			for i in names:
+				if len(finalvalues[i]) > 1:
+					print "ERROR: You can plot RD profiles for multiple particles IN ONE PLOT if each individual .hdf file has one particle only, or if you supply ONE stack only with all the particles in it."
+					print "In this case, you've supplied %d files, and the file %s has %d particles in it" % (len(names), i, len(finalvalues[i]))
+					sys.exit()
+
+			if not output:
+				print "ERROR: You must supply and output name if you want to plot multiple RD profiels from different .hdf files into one plot."
+				sys.exit()
+			else:	
+				plotname = output.replace('.txt', '.png')
+			
 				plt.title("Spherical radial density plot")
 				plt.ylabel("Density (arbitrary units)")
 				plt.xlabel("Radius (angstroms)")
@@ -187,23 +147,88 @@ def main():
 				if options.mode == 'x':
 					plt.title("Density plot of slices along x-axis")
 					plt.xlabel("X (angstroms)")
-				
+
 				if options.mode == 'y':
 					plt.title("Density plot of slices along y-axis")
 					plt.xlabel("Y (angstroms)")
-				
+
 				if options.mode == 'z':
 					plt.title("Density plot of slices along z-axis")
 					plt.xlabel("Z (angstroms)")
-					
+				
 				if options.mode == 'cylinder':
 					plt.title("Density plot of concentric cylyndrical shells")
 					plt.xlabel("Radius (angstroms)")
+			
+				for i in names:
+					apix = EMData(i,0,True)['apix_x']
+	
+					x = range(len(values))
+					for j in range(len(x)):
+						x[j] = int(round(x[j] * apix))		
+			
+					values = finalvalues[i][0]
+					txtname = plotname.replace('.png', '_' + str(j).zfill(len(names)) + '.txt') 
+					f = open(txtname,'w')
+					lines = []
+					for value in values:
+						line = str(value) + '\n'
+						lines.append(line)
+					f.writelines(lines)
+					f.close()
+				
+					plt.plot(x,values, linewidth=2)
 
-				plt.plot(x,values,linewidth=2)
 				p = plt.gca()
 				plt.savefig(plotname)
 				plt.clf()
+
+		else:
+			for i in names:
+				plotname = ''
+				if output:
+					plotname = output
+				else:
+					plotname = i.replace('.hdf','.png')
+			
+				if plotname and '.png' not in plotname:
+					plotname += '.png'
+				
+				for j in range(len(finalvalues[i])):
+					apix = EMData(i,j,True)['apix_x']
+
+					plotname = plotname.replace('.png','_' + str(j).zfill(len(finalvalues[i])) + '.png')
+					txtname = plotname.replace('.png','.txt')
+					values = finalvalues[i][j]
+				
+					x=range(len(values))
+					for i in range(len(x)):
+						x[i] = int(round(x[i] * apix))
+				
+					plt.title("Spherical radial density plot")
+					plt.ylabel("Density (arbitrary units)")
+					plt.xlabel("Radius (angstroms)")
+
+					if options.mode == 'x':
+						plt.title("Density plot of slices along x-axis")
+						plt.xlabel("X (angstroms)")
+				
+					if options.mode == 'y':
+						plt.title("Density plot of slices along y-axis")
+						plt.xlabel("Y (angstroms)")
+				
+					if options.mode == 'z':
+						plt.title("Density plot of slices along z-axis")
+						plt.xlabel("Z (angstroms)")
+					
+					if options.mode == 'cylinder':
+						plt.title("Density plot of concentric cylyndrical shells")
+						plt.xlabel("Radius (angstroms)")
+
+					plt.plot(x,values,linewidth=2)
+					p = plt.gca()
+					plt.savefig(plotname)
+					plt.clf()
 
 	return()				
 				
