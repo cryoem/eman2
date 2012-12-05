@@ -86,9 +86,9 @@ def main():
 	parser.add_argument("--voltage", type=int,default=200,help="Voltage of the microscope, used to simulate the ctf added to the subtomograms.")
 	parser.add_argument("--cs", type=float,default=2.1,help="Cs of the microscope, used to simulate the ctf added to the subtomograms.")
 
-	parser.add_argument("--gridholesize", type=int,default=0.5,help="""Size of the carbon hole in micrometers for the simulated grid (this will determine shifts in defocus for each particle at 
+	parser.add_argument("--gridholesize", type=float,default=0.5,help="""Size of the carbon hole in micrometers for the simulated grid (this will determine shifts in defocus for each particle at 
 									each tilt step, depending on the position of the particle respect to the tilt axis, which is assigned randomly.""")
-	parser.add_argument("--icethickness", type=int,default=200,help="If --tomogramoutput is supplied, this will define the size in Z for the simulated tomogram.")
+	parser.add_argument("--icethickness", type=float,default=100,help="If --tomogramoutput is supplied, this will define the size in Z for the simulated tomogram.")
 
 	parser.add_argument("--saverandstack", action="store_true",default=False,help="Save the stack of randomly oriented particles, before subtomogram simulation (before the missing wedge and noise are added).")
 	parser.add_argument("--saveprjs", action="store_true",default=False,help="Save the projections (the 'tilt series') for each simulated subtomogram.")
@@ -216,8 +216,8 @@ def main():
 
 		randptcls = []
 		model = EMData(options.input,0,True)
-		#print "The apix of the model is", model['apix_x']
-		
+		print "\n\nAAAAAAAAAA\n\nThe apix of the model is", model['apix_x']
+		print "\n\nAAAAAAAAAAAAA\n\n"
 		newsize = model['nx']
 		oldx = model['nx']
 	
@@ -251,15 +251,19 @@ def main():
 		model['origin_y'] = 0
 		model['origin_z'] = 0
 		
+		#model = EMData(options.input,0,True)
+		print "\n\nCCCCCCCCCCCC\n\nThe apix of the FINAL model is", model['apix_x']
+		print "\n\nCCCCCCCCCCCCC\n\n"
+		
 		'''
 		Transform gridholesize and icethickness to pixels
 		'''
 	
 		if options.gridholesize:
-			options.gridholesize = options.gridholesize * math.pow(10,6) / model['apix_x']
+			options.gridholesize = int( options.gridholesize * math.pow(10,6) / model['apix_x'] )
 		
 		if options.icethickness:
-			options.icethickness = options.icethickness * math.pow(10,6) / model['apix_x']
+			options.icethickness = int( options.icethickness * math.pow(10,1) / model['apix_x'] )
 		
 		stackname = options.input.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
 		if options.output:
@@ -398,6 +402,9 @@ def subtomosim(options,ptcls,stackname):
 
 		apix = ptcls[i]['apix_x']
 		
+		print "\n\nBBBBBBBBBB\n\nThe apix of the simulated ptcl is", apix
+		print "\n\nBBBBBBBBBB\n\n"
+		
 		px = random.uniform(-1* options.gridholesize/2 + ptcls[i]['nx']/2, options.gridholesize/2 - ptcls[i]['nx']/2)			#random distance in X of the particle's center from the tilt axis, at tilt=0
 																																#The center of a particle cannot be right at the edge of the tomogram; it has to be
 																																#at least ptcl_size/2 away from it
@@ -493,7 +500,7 @@ def subtomosim(options,ptcls,stackname):
 		rec['apix_z']=apix
 		rec['sptsim_randT'] = randT
 		
-		if options.tomogram:
+		if options.tomogramoutput:
 			py = random.uniform(0 + ptcls[i]['nx']/2, options.gridholesize - ptcls[i]['nx']/2)									#random distance in Y of the particle's center from the bottom edge in the XY plane, at tilt=0
 			pz = random.uniform(0 + ptcls[i]['nx']/2, options.icethickness - ptcls[i]['nx']/2) 
 			tomogramdata.append({'ptcl':rec,'px':px,'py':py,'pz':pz})
@@ -501,7 +508,7 @@ def subtomosim(options,ptcls,stackname):
 		#print "The apix of rec is", rec['apix_x']
 		rec.write_image(options.path + '/' + outname,i)
 	
-	if options.tomogram:
+	if options.tomogramoutput:
 		tomogramsim(options,tomogramdata)
 		
 	return(1)	
@@ -511,22 +518,27 @@ def tomogramsim(options,tomogramdata):
 	tomox=options.gridholesize 						
 	tomoy=options.gridholesize
 	tomoz=options.icethickness
-	
+	print "Gridholesize and icethickness are"
+	print options.gridholesize 
+	print options.icethickness
 	#T=EMData(tomox,tomoy,tomoz)
+	print "The size of the tomogam to create is", tomox,tomoy,tomoz
+
 	ptcls=[]
 	for w in tomogramdata:
 		ptcl=w['ptcl']
 		x=w['px']+options.gridholesize/2
 		y=w['py']
 		z=w['pz']
+
 		r=Region( (x-tomox)/2, (y-tomoy)/2, (z-tomoz)/2, tomox,tomoy,tomoz )
 		ptclr=ptcl.get_clip(r)
 		ptcls.append(ptclr)
 	
 	T=sum(ptcls)/len(ptcls)	
-	T.process_inplace('math.addnoise',{'n':1})
+	T.process_inplace('math.addnoise',{'noise':1})
 	tomogrampath = options.path + '/' + options.tomogramoutput
-	T.write_imgae(tomgorampath,0)
+	T.write_image(tomogrampath,0)
 
 if __name__ == '__main__':
 	main()
