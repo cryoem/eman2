@@ -4419,7 +4419,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 			report_error = 0
 			for imrefa in xrange(numrefang):
 				from utilities import findall
-				N = findall(assigntorefa, imrefa)
+				N = findall(imrefa, assigntorefa)
 				current_nima = len(N)
 				if( current_nima >= numref and report_error == 0):
 					tasi = [[] for iref in xrange(numref)]
