@@ -112,7 +112,8 @@ def main():
 	parser.add_argument("--recon", dest="recon", default="fourier", help="Reconstructor to use. See 'e2help.py reconstructors -v' for more information", guitype='combobox', choicelist='dump_reconstructors_list()', row=39, col=0, rowspan=1, colspan=2, mode="refinement")
 	parser.add_argument("--m3dkeep", type=float, help="The percentage of slices to keep in e2make3d.py", default=0.8, guitype='floatbox', row=41, col=0, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--m3dkeepsig", default=False, action="store_true", help="The standard deviation alternative to the --m3dkeep argument", guitype='boolbox', row=41, col=1, rowspan=1, colspan=1, mode="refinement")
-	parser.add_argument("--m3dsetsf", default=False, action="store_true", help="The standard deviation alternative to the --m3dkeep argument", guitype='boolbox', row=41, col=2, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--m3dsetsf", default=False, action="store_true", help="This will filter the final map to match the precomputed structure factor", guitype='boolbox', row=41, col=2, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--m3dsffile", default=None, type=str, help="If specified, will use the structure factor from specified file rather than project default")
 	parser.add_argument("--m3diter", type=int, default=2, help="The number of times the 3D reconstruction should be iterated", guitype='intbox', row=39, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--m3dpreprocess", type=str, default="normalize.edgemean", help="Normalization processor applied before 3D reconstruction", guitype='combobox', choicelist='re_filter_list(dump_processors_list(),\'normalize\')', row=40, col=0, rowspan=1, colspan=2, mode="refinement")
 	parser.add_argument("--m3dpostprocess", type=str, default=None, help="Post processor to be applied to the 3D volume once the reconstruction is completed", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter.lowpass|filter.highpass\')', row=42, col=0, rowspan=1, colspan=3, mode="refinement")
@@ -357,8 +358,8 @@ def get_make3d_cmd(options,check=False,nofilecheck=False):
 		e2make3dcmd += " --keep=%f" %options.m3dkeep
 		if (options.m3dkeepsig): e2make3dcmd += " --keepsig"
 	
-	if options.m3dsetsf :
-		e2make3dcmd += " --setsf=auto"
+	if options.m3dsffile!=None: e2make3dcmd += " --setsf=%s"%options.m3dsffile
+	elif options.m3dsetsf : e2make3dcmd += " --setsf=auto"
 	
 	if (options.lowmem): e2make3dcmd += " --lowmem"
 
