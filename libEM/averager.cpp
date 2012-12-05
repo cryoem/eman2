@@ -687,7 +687,7 @@ void CtfCWautoAverager::add_image(EMData * image)
 
 	size_t sz=snr->get_xsize()*snr->get_ysize();
 	for (size_t i = 0; i < sz; i+=2) {
-		if (snrd[i]<0) snrd[i]=0;
+		if (snrd[i]<0) snrd[i]=0.001;	// Used to be 0. See ctfcauto averager
 		ctfd[i]=fabs(ctfd[i]);
 		if (ctfd[i]<.05) ctfd[i]=0.05f;
 //		{
@@ -799,7 +799,7 @@ void CtfCAutoAverager::add_image(EMData * image)
 
 	size_t sz=snr->get_xsize()*snr->get_ysize();
 	for (size_t i = 0; i < sz; i+=2) {
-		if (snrd[i]<0) snrd[i]=0;
+		if (snrd[i]<=0) snrd[i]=0.001;		// used to be 0. Trying to insure that there is always at least a little signal used. In cases with dense particles, SNR may be dramatically underestimated
 		ctfd[i]=fabs(ctfd[i]);
 		
 		// This limits the maximum possible amplification in CTF correction to 10x

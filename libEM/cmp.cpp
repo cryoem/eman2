@@ -1085,6 +1085,9 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 
 		float ds=1.0f/(ctf->apix*ny);
 		snr=ctf->compute_1d(ny,ds,Ctf::CTF_SNR); // note that this returns ny/2 values
+		for (int i=0; i<snr.size(); i++) {
+			if (snr[i]<=0) snr[i]=0.001;		// make sure that points don't get completely excluded due to SNR estimation issues, or worse, contribute with a negative weight
+		}
 		if(ctf) {delete ctf; ctf=0;}
 		np=snr.size();
 	}
@@ -1339,6 +1342,9 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 
 		float ds=1.0f/(ctf->apix*ny);
 		snr=ctf->compute_1d(ny,ds,Ctf::CTF_SNR);
+		for (int i=0; i<snr.size(); i++) {
+			if (snr[i]<=0) snr[i]=0.001;		// make sure that points don't get completely excluded due to SNR estimation issues, or worse, contribute with a negative weight
+		}
 		if(ctf) {delete ctf; ctf=0;}
 	}
 
