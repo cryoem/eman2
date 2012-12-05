@@ -11639,18 +11639,28 @@ def volalixshift_MPI(stack, ref_vol, outdir, search_rng, pixel_size, dp, dphi, f
 		del vol
 
 		for ifil in xrange(nfils):
-			ctxsum = model_blank(nwx+2, 1)
+			ctxsum = model_blank(data_nx, data_ny)
 			segsctx = []
 			start = indcs[ifil][0]
 			for im in xrange(start, indcs[ifil][1]):
 				phi,tht,psi,s2x,s2y = get_params_proj(data[im])
 				refim = (prgs( volft, kbz, [phi, tht, psi, 0.0, s2y], kbx, kby ))*mask2D
-				ctx = Util.window(ccf(data[im],refim), nwx+2, 1)
-				segsctx.append(ctx)
+				ctx = ccf(data[im],refim)
 				Util.add_img(ctxsum, ctx)
+				ct1 = model_blank(data_nx, 1)
+				for ii in xrange(data_nx):
+					for jj in xrange(data_ny):
+						ct1[ii] += ctx[ii,jj]
+				ct1 = Util.window(ct1, nwx+2, 1)
+				segsctx.append(ct1)
 
-			# find overall peak	
-			sump1 = peak_search(ctxsum)
+			# find overall peak
+			ct1 = model_blank(data_nx, 1)
+			for ii in xrange(data_nx):
+				for jj in xrange(data_ny):
+					ct1[ii] += ctxsum[ii,jj]
+			ct1 = Util.window(ct1, nwx+2, 1)
+			sump1 = peak_search(ct1)
 			peakval = sump1[0][0]/(indcs[ifil][1] - start)
 			sump1   = int(sump1[0][1])
 
@@ -11664,7 +11674,7 @@ def volalixshift_MPI(stack, ref_vol, outdir, search_rng, pixel_size, dp, dphi, f
 						loc = k
 
 				set_params_proj(data[im], [phi, tht, psi, float(loc - (nwx+2)//2), s2y])
-				
+
 		del volft, refim, segsctx
 
 		if myid == main_node:
