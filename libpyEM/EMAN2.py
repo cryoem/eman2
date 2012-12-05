@@ -638,6 +638,15 @@ def parsemodopt_operation(optstr):
 
 	return (p_1[0], p_2[0], p_1[1])
 
+def read_number_file(path):
+	"""This will read a text file containing a list of integers. The integers may be separated by any character(s). Any contiguous 
+	sequence of (0-9) in the file will be treated as a number. '#' is NOT respected as a comment character."""
+	
+	try:
+		regex = re.compile("[0-9]+")
+		return [int(i) for i in regex.findall(file(path,"r").read())]
+	except:
+		return []
 
 def display(img,force_2d=False,force_plot=False):
 	"""Generic display function for images or sets of images. You can force images to be displayed in 2-D or as a plot with

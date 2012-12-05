@@ -477,7 +477,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 			self.average.process_inplace("normalize.toimage",{"to":self.projection})
 			try:
 				self.class_idx = self.average.get_attr("projection_image_idx")
-				print self.class_idx
+				print "%d (%d)"%(self.class_idx,self.average["ptcl_repr"])
 			except:
 				self.class_idx = -1
 		else: return

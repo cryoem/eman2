@@ -52,39 +52,6 @@ threedplanes = xyplanes + xzplanes + yzplanes
 
 # usage: e2proc2d.py [options] input output
 
-def read_listfile(listfile, excludefile, nimg):
-	imagelist = None
-	infile = None
-	exclude = 0
-	
-	if listfile:
-		infile = listfile
-	elif excludefile:
-		infile = excludefile
-		exclude = 1
-		
-	if infile:
-		try:
-			lfp = open(infile, "rb")
-		except IOError:
-			print "Error: couldn't read list file '%s'" % infile
-			sys.exit(1)
-		
-		if exclude:
-			imagelist = [1] * nimg
-		else:
-			imagelist = [0] * nimg
-
-		imagelines = lfp.readlines()
-		for line in imagelines:
-			if line[0] != "#":
-				n = int(line.split()[0])
-				if n >= 0 and n < nimg:
-					if excludefile:
-						imagelist[n] = 0
-					else:
-						imagelist[n] = 1
-	return imagelist
 
 
 
@@ -112,59 +79,42 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_argument("--apix", type=float, help="A/pixel for S scaling")
-	parser.add_argument("--average", action="store_true",
-					help="Averages all input images (without alignment) and writes a single output image")
+	parser.add_argument("--average", action="store_true", help="Averages all input images (without alignment) and writes a single output image")
 	parser.add_argument("--averager",type=str,help="If --average is specified, this is the averager to use (e2help.py averager). Default=mean",default="mean")
-	parser.add_argument("--calcsf", metavar="n outputfile", type=str, nargs=2,
-					help="calculate a radial structure factor for the image and write it to the output file, must specify apix. divide into <n> angular bins")    
+	parser.add_argument("--calcsf", metavar="n outputfile", type=str, nargs=2, help="calculate a radial structure factor for the image and write it to the output file, must specify apix. divide into <n> angular bins")    
 	parser.add_argument("--calccont", action="store_true", help="Compute the low resolution azimuthal contrast of each image and put it in the header as eval_contrast_lowres. Larger values imply more 'interesting' images.")
-	parser.add_argument("--clip", metavar="xsize,ysize", type=str, action="append",
-					help="Specify the output size in pixels xsize,ysize[,xcenter,ycenter], images can be made larger or smaller.")
-	parser.add_argument("--exclude", metavar="exclude-list-file",
-					type=str, help="Excludes image numbers in EXCLUDE file")
-	parser.add_argument("--fftavg", metavar="filename", type=str,
-					help="Incoherent Fourier average of all images and write a single power spectrum image")
-	parser.add_argument("--process", metavar="processor_name:param1=value1:param2=value2", type=str,
-					action="append", help="apply a processor named 'processorname' with all its parameters/values.")
+	parser.add_argument("--clip", metavar="xsize,ysize", type=str, action="append", help="Specify the output size in pixels xsize,ysize[,xcenter,ycenter], images can be made larger or smaller.")
+	parser.add_argument("--exclude", metavar="exclude-list-file", type=str, help="Excludes image numbers in EXCLUDE file")
+	parser.add_argument("--fftavg", metavar="filename", type=str, help="Incoherent Fourier average of all images and write a single power spectrum image")
+	parser.add_argument("--process", metavar="processor_name:param1=value1:param2=value2", type=str, action="append", help="apply a processor named 'processorname' with all its parameters/values.")
 	parser.add_argument("--mult", metavar="k", type=float, help="Multiply image by a constant. mult=-1 to invert contrast.")
 	parser.add_argument("--first", metavar="n", type=int, default=0, help="the first image in the input to process [0 - n-1])")
 	parser.add_argument("--last", metavar="n", type=int, default=-1, help="the last image in the input to process")
-	parser.add_argument("--list", metavar="listfile", type=str,
-					help="Works only on the image numbers in LIST file")
-	parser.add_argument("--inplace", action="store_true",
-					help="Output overwrites input, USE SAME FILENAME, DO NOT 'clip' images.")
-	parser.add_argument("--interlv", metavar="interleave-file",
-					type=str, help="Specifies a 2nd input file. Output will be 2 files interleaved.")
-	parser.add_argument("--meanshrink", metavar="n", type=int, action="append",
-					help="Reduce an image size by an integral scaling factor using average. Clip is not required.")
-	parser.add_argument("--medianshrink", metavar="n", type=int, action="append",
-					help="Reduce an image size by an integral scaling factor, uses median filter. Clip is not required.")
+	parser.add_argument("--list", metavar="listfile", type=str, help="Works only on the image numbers in LIST file")
+	parser.add_argument("--select", metavar="selectname", type=str, help="Works only on the images in named selection set from bdb:select")
+	parser.add_argument("--inplace", action="store_true", help="Output overwrites input, USE SAME FILENAME, DO NOT 'clip' images.")
+	parser.add_argument("--interlv", metavar="interleave-file", type=str, help="Specifies a 2nd input file. Output will be 2 files interleaved.")
+	parser.add_argument("--meanshrink", metavar="n", type=int, action="append", help="Reduce an image size by an integral scaling factor using average. Clip is not required.")
+	parser.add_argument("--medianshrink", metavar="n", type=int, action="append", help="Reduce an image size by an integral scaling factor, uses median filter. Clip is not required.")
 	parser.add_argument("--mraprep",  action="store_true", help="this is an experimental option")
 	parser.add_argument("--mrc16bit",  action="store_true", help="output as 16 bit MRC file")
 	parser.add_argument("--mrc8bit",  action="store_true", help="output as 8 bit MRC file")
-	parser.add_argument("--multfile", type=str, action="append",
-								help="Multiplies the volume by another volume of identical size. This can be used to apply masks, etc.")
+	parser.add_argument("--multfile", type=str, action="append", help="Multiplies the volume by another volume of identical size. This can be used to apply masks, etc.")
 	
 	parser.add_argument("--norefs", action="store_true", help="Skip any input images which are marked as references (usually used with classes.*)")
-	parser.add_argument("--outtype", metavar="image-type", type=str,
-					help="output image format, 'mrc', 'imagic', 'hdf', etc. if specify spidersingle will output single 2D image rather than 2D stack.")
+	parser.add_argument("--outtype", metavar="image-type", type=str, help="output image format, 'mrc', 'imagic', 'hdf', etc. if specify spidersingle will output single 2D image rather than 2D stack.")
 	parser.add_argument("--radon",  action="store_true", help="Do Radon transform")
 	parser.add_argument("--randomize", type=str, action="append",help="Randomly rotate/translate the image. Specify: da,dxy,flip  da is a uniform distribution over +-da degrees, dxy is a uniform distribution on x/y, if flip is 1, random handedness changes will occur")
 	parser.add_argument("--rotate", type=float, action="append", help="Rotate clockwise (in degrees)")
 	parser.add_argument("--rfp",  action="store_true", help="this is an experimental option")
 	parser.add_argument("--fp",  type=int, help="This generates rotational/translational 'footprints' for each input particle, the number indicates which algorithm to use (0-6)")
-	parser.add_argument("--scale", metavar="f", type=float, action="append",
-					help="Scale by specified scaling factor. Clip must also be specified to change the dimensions of the output map.")
-	parser.add_argument("--selfcl", metavar="steps mode", type=int, nargs=2,
-					help="Output file will be a 180x180 self-common lines map for each image.")
-	parser.add_argument("--setsfpairs",  action="store_true",
-					help="Applies the radial structure factor of the 1st image to the 2nd, the 3rd to the 4th, etc") 
-	parser.add_argument("--split", metavar="n", type=int,
-					help="Splits the input file into a set of n output files")
+	parser.add_argument("--scale", metavar="f", type=float, action="append", help="Scale by specified scaling factor. Clip must also be specified to change the dimensions of the output map.")
+	parser.add_argument("--selfcl", metavar="steps mode", type=int, nargs=2, help="Output file will be a 180x180 self-common lines map for each image.")
+	parser.add_argument("--setsfpairs",  action="store_true", help="Applies the radial structure factor of the 1st image to the 2nd, the 3rd to the 4th, etc") 
+	parser.add_argument("--split", metavar="n", type=int, help="Splits the input file into a set of n output files")
 	parser.add_argument("--translate", type=str, action="append", help="Translate by x,y pixels")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higner number means higher level of verboseness",default=1)
-	parser.add_argument("--plane", metavar=threedplanes, type=str, default='xy',
-                      help="Change the plane of image processing, useful for processing 3D mrcs as 2D images.")
+	parser.add_argument("--plane", metavar=threedplanes, type=str, default='xy', help="Change the plane of image processing, useful for processing 3D mrcs as 2D images.")
 	parser.add_argument("--writejunk", action="store_true", help="Writes the image even if its sigma is 0.", default=False)
 	parser.add_argument("--swap", action="store_true", help="Swap the byte order", default=False)
 	parser.add_argument("--threed2threed", action="store_true", help="Process 3D image as a stack of 2D slices, then output as a 3D image", default=False)	
@@ -195,7 +145,7 @@ def main():
 		print "Invalid --step specification"
 		sys.exit(1)
 		
-	if options.step and options.first:
+	if options.step!=(0,1) and options.first:
 		print 'Invalid options. You used --first and --step. The --step option contains both a step size and the first image to step from. Please use only the --step option rather than --step and --first'
 		sys.exit(1)
 		
@@ -286,7 +236,23 @@ def main():
 	if options.verbose>0:
 		print "%d images, processing %d-%d stepping by %d"%(nimg,n0,n1,options.step[1])
 
-	imagelist = read_listfile(options.list, options.exclude, nimg)
+	# Now we deal with inclusion/exclusion lists
+	if options.list or options.select :
+		imagelist=[0]*nimg
+		
+		if options.list:
+			for i in read_number_file(options.list) : imagelist[i]=1
+			
+		if options.select:
+			db=db_open_dict("bdb:.#select",ro=True)
+			for i in db[options.select]: imagelist[i]=1
+			
+	else:
+		imagelist=[1]*nimg
+		
+	if options.exclude :
+		for i in read_number_file(options.exclude) : imagelist[i]=0
+	
 	sfcurve1 = None
 
 			
