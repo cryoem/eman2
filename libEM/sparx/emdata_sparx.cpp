@@ -6269,7 +6269,7 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 			} 
 			float ca = cos(phi*(float)DGR_TO_RAD);
 			float sa = sin(phi*(float)DGR_TO_RAD);
-			if(z >= nb and z <= ne ) {
+			if((z >= nb) && (z <= ne )) {
 				nq++;
 				if( nq > numri ) break;
 				float zz = z/pixel_size;
