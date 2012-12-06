@@ -56,9 +56,14 @@ using std::string;
 #include "vec3.h"
 
 #ifdef WIN32
-#include <windows.h>
-#define M_PI 3.14159265358979323846f
+	#include <windows.h>
+	#include <process.h>
+	#define M_PI 3.14159265358979323846f
+	#define MUTEX HANDLE
 //#define MAXPATHLEN (MAX_PATH * 4)
+#else 
+	#include <pthread.h>
+	#define MUTEX pthread_mutex_t
 #endif
 
 using std::string;
@@ -82,8 +87,15 @@ namespace EMAN
 	{
 		/** For those util function developed by Pawel's group */
 		#include "sparx/util_sparx.h"
-
+		
+		
 	  public:
+
+		//Functions do Cross-Platform Mutex 
+		static int MUTEX_INIT(MUTEX *mutex);
+		static int MUTEX_LOCK(MUTEX *mutex);
+		static int MUTEX_UNLOCK(MUTEX *mutex);
+
 		/** convert complex data array from Amplitude/Phase format
 		 * into Real/Imaginary format.
 		 * @param data complex data array.

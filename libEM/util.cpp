@@ -64,6 +64,40 @@ using namespace std;
 using namespace boost;
 using namespace EMAN;
 
+/////////////////////////////////////////s
+int Util::MUTEX_INIT(MUTEX *mutex)
+{
+	#ifdef WIN32
+		*mutex = CreateMutex(0, FALSE, 0);
+		return (*mutex==0);
+	#else
+		return pthread_mutex_init(mutex, NULL);
+	#endif
+	return -1;
+}
+
+int Util::MUTEX_LOCK(MUTEX *mutex)
+{
+	#ifdef WIN32
+		return (WaitForSingleObject(*mutex, INFINITE)==WAIT_FAILED?1:0);
+	#else
+		return pthread_mutex_lock(mutex);
+	#endif
+	return -1;
+}
+
+int Util::MUTEX_UNLOCK(MUTEX *mutex)
+{
+	#ifdef WIN32
+		return (ReleaseMutex(*mutex)==0);
+	#else 
+		return pthread_mutex_unlock(mutex);
+	#endif
+	return -1;
+}
+
+
+///////////////////////////////////////////
 void Util::ap2ri(float *data, size_t n)
 {
 	Assert(n > 0);
