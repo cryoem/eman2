@@ -97,7 +97,7 @@ images far from focus."""
 	parser.add_argument("--phasefliphp",action="store_true",help="Perform phase flipping with auto-high pass filter",default=False, guitype='boolbox', row=3, col=2, rowspan=1, colspan=1, mode='genoutp')
 	parser.add_argument("--wiener",action="store_true",help="Wiener filter (optionally phaseflipped) particles.",default=False, guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode='genoutp[True]')
 	parser.add_argument("--virtualout",type=str,help="Make a virtual stack copy of the input images with CTF parameters stored in the header. BDB only.",default=None)
-	parser.add_argument("--storeparm",action="store_true",help="Write the CTF parameters back to the header of the input images. BDB and HDF only.",default=False)
+	parser.add_argument("--storeparm",action="store_true",help="Output files will include CTF info. CTF parameters are used from the database, rather than values that may be present in the input image header. Critical to use this when generating output !",default=False,guitype='boolbox', row=2, col=1, rowspan=1, colspan=1, mode='genoutp[True]')
 	parser.add_argument("--oversamp",type=int,help="Oversampling factor",default=1, guitype='intbox', row=2, col=0, rowspan=1, colspan=2, mode='autofit')
 	parser.add_argument("--sf",type=str,help="The name of a file containing a structure factor curve. Specify 'none' to use the built in generic structure factor. Default=auto",default="auto",guitype='strbox',nosharedb=True,returnNone=True,row=7,col=1,rowspan=1,colspan=1, mode='autofit,tuning')
 	parser.add_argument("--debug",action="store_true",default=False)
@@ -296,12 +296,14 @@ def write_e2ctf_output(options):
 			#if options.wiener: wienerout=name+"_ctf_wiener.hed"
 			#else : wienerout=None
 			
+			ctf=EMAN2Ctf()
+			ctf.from_string(db_parms[name][0])
+			
 			if phaseout : print "Phase image out: ",phaseout,"\t",
 			if phasehpout : print "Phase-hp image out: ",phasehpout,"\t",
 			if wienerout : print "Wiener image out: ",wienerout,
-			print ""
-			ctf=EMAN2Ctf()
-			ctf.from_string(db_parms[name][0])
+			print "  defocus=",ctf.defocus
+			
 			process_stack(filename,phaseout,phasehpout,wienerout,not options.nonorm,options.oversamp,ctf,invert=options.invert,virtualout=options.virtualout,storeparm=options.storeparm,source_image=options.source_image)
 			if options.dbds != None:
 				pdb = db_open_dict("bdb:project")
