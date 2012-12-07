@@ -171,8 +171,8 @@ def main():
 					txtname = plotname.replace('.png', '_' + str(j).zfill(len(names)) + '.txt') 
 					f = open(txtname,'w')
 					lines = []
-					for value in values:
-						line = str(value) + '\n'
+					for v in range(len(values)):
+						line = str(v) +  ' ' + str(values[v]) + '\n'
 						lines.append(line)
 					f.writelines(lines)
 					f.close()
