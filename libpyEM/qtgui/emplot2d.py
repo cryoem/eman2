@@ -1909,9 +1909,9 @@ class EMPlot2DInspector(QtGui.QWidget):
 		if len(names) == 0: return
 
 		for name in names :
-			sname=name.convert(" ","_")
-			sname=sname.convert("(","_")
-			sname=sname.convert(")","")
+			sname=name.replace(" ","_")
+			sname=sname.replace("(","_")
+			sname=sname.replace(")","")
 			data=self.target().data[name]
 			name2="plt_%s.txt"%(sname)
 			i=0
