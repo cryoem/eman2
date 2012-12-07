@@ -69,9 +69,11 @@ namespace {
 		return rank;
 	}
 }
-
-//pthread_mutex_t fft_mutex=PTHREAD_MUTEX_INITIALIZER;
-MUTEX fft_mutex=PTHREAD_MUTEX_INITIALIZER;
+#ifdef _WIN32
+MUTEX fft_mutex;
+#else
+pthread_mutex_t fft_mutex=PTHREAD_MUTEX_INITIALIZER;
+#endif
 
 #ifdef FFTW_PLAN_CACHING
 // The only thing important about these constants is that they don't equal each other
