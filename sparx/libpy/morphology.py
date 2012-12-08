@@ -323,6 +323,10 @@ def ctf_img(nx, ctf, sign = 1, ny = 0, nz = 1):
 
 ###----D-----------------------		
 def defocus_env_baseline_fit(roo, i_start, i_stop, nrank, iswi):
+	"""
+		    iswi= 2 using polynomial n rank to fit no-Gaussian envelope function
+			iswi =3 using polynomial n rank to fit background
+	"""
 	TMP_roo = []
 	curve   = [0]*len(roo)
 	for i in xrange(i_start,i_stop,1):	TMP_roo.append(roo[i])
@@ -854,9 +858,9 @@ def imf_params_cl1(pw, n=2, iswi=3, Pixel_size=1):
 		2. fitted curve, either background noise or envelope function
 		3. original power spectrum to be fitted
 		4. The parameters
-		Attension:
+		Attention:
 		    iswi= 2 using polynomial n rank to fit no-Gaussian envelope function
-			iswi =3 using polynomail n rank to fit background
+			iswi =3 using polynomial n rank to fit background
 			n = the polynomial rank +1
 			The optimization tend to fail when the polynomial rank is higher than 6 
 	"""
@@ -884,12 +888,12 @@ def imf_get_1dpw_list(fstr):
 	for i in xrange(len(data)):
 		pw.append(data[i][0])
 	return pw
-	
-def imf_B_factor_get(res_N,x,ctf_params):
+
+def imf_B_factor_get(res_N, x, ctf_params):
 	from scipy.optimize import fmin
 	nx    = len(res_N)*2
 	ctf   = ctf_1d(nx, ctf_params)
-	p     = [1,1]	
+	p     = [1,1]
 	xopt  = fmin(residuals_B1, p, (res_N,x))
 	p     = xopt
 	xopt1 = fmin(residuals_B2, p, (res_N,ctf[1][0:nx-1], x))
