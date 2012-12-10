@@ -3,6 +3,8 @@
 # Author: Jesus Galaz, 06/05/2012
 # Copyright (c) 2011 Baylor College of Medicine
 #
+# ******** CHANGES FOR DONGHUA INCLUDED *********
+#
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
 # complete EMAN2 and SPARX software packages have some GPL dependencies,
@@ -125,7 +127,8 @@ def main():
 				stackvalues.append(values)
 			finalvalues.update({i:stackvalues})	
 	
-		print "\n\nfinal values are", finalvalues
+		if verbose:
+			print "\n\nfinal values are", finalvalues
 	
 		if options.singleplot and len(names) > 1:
 			for i in names:
@@ -184,20 +187,23 @@ def main():
 				plt.clf()
 
 		else:
+			print "I am in MULTIPLE plot mode"
 			for i in names:
-				plotname = ''
-				if output:
-					plotname = output
-				else:
-					plotname = i.replace('.hdf','.png')
 			
-				if plotname and '.png' not in plotname:
-					plotname += '.png'
+				if not output or ".png" in output:
+					print "ERROR: You must supply and output name if you want to plot multiple RD profiels from different .hdf files into one plot."
+					sys.exit()
+				else:	
+					plotname = output.replace('.txt', '.png')
+					print "The png name is", plotname
+					print "because output is", output
 				
 				for j in range(len(finalvalues[i])):
 					apix = EMData(i,j,True)['apix_x']
-
-					plotname = plotname.replace('.png','_' + str(j).zfill(len(finalvalues[i])) + '.png')
+					
+					if len(finalvalues[i]) > 1:
+						plotname = plotname.replace('.png','_' + str(j).zfill(len(finalvalues[i])) + '.png')
+					
 					txtname = plotname.replace('.png','.txt')
 					values = finalvalues[i][j]
 				
@@ -224,6 +230,14 @@ def main():
 					if options.mode == 'cylinder':
 						plt.title("Density plot of concentric cylyndrical shells")
 						plt.xlabel("Radius (angstroms)")
+
+					f = open(txtname,'w')
+					lines = []
+					for v in range(len(values)):
+						line = str(v) +  ' ' + str(values[v]) + '\n'
+						lines.append(line)
+					f.writelines(lines)
+					f.close()
 
 					plt.plot(x,values,linewidth=2)
 					p = plt.gca()
