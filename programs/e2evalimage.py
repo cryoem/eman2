@@ -619,14 +619,14 @@ class GUIEvalImage(QtGui.QWidget):
 		if ctf.voltage==0:
 			try: ctf.voltage=self.data["microscope_voltage"]
 			except: pass
-			if ctf.voltage==0 : ctf.voltage=200.0
+			if ctf.voltage==0 : ctf.voltage=self.default_voltage
 			try: ctf.cs=self.data["microscope_cs"]
 			except: pass
-			if ctf.cs==0 : ctf.cs=4.1
+			if ctf.cs==0 : ctf.cs=self.defaultcs
 			ctf.apix=self.data["apix_x"]
 			ctf.defocus=0.0		#triggers fitting
 			ctf.bfactor=200.0
-			ctf.ampcont=10.0
+			ctf.ampcont=self.defaultac
 
 		self.sdefocus.setValue(ctf.defocus,True)
 		self.sbfactor.setValue(ctf.bfactor,True)
