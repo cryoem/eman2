@@ -41,7 +41,7 @@ def main():
 	parser.add_argument("--chains",type=str,help="String list of chain identifiers to include, eg 'ABEFG'", default=None)
 	parser.add_argument("--trans", "-TR", type=str, help="transform, (0,0,0)",default='0,0,0')
 	parser.add_argument("--include", type=str,help="savetype", default=["helix","sheet","other"])
-	parser.add_argument("--mirror",type=str, help="mirror",default='False')
+	parser.add_argument("--mirror",type=bool, help="mirror",default='False')
 	parser.add_argument("--type", "-T", type=str, help="convention type", default='eman')
 	#eman input, default setting
 	parser.add_argument("--az", "-az", type=float, help="az in eman convention.", default=0)
@@ -59,7 +59,7 @@ def main():
 	parser.add_argument("--ytilt", "-ytilt", type=float, help="ytilt in xyz convention.", default=0)
 	parser.add_argument("--ztilt", "-ztilt", type=float, help="ztilt in xyz convention.", default=0)
 #mrc
-	parser.add_argument("--omega", "-omega", type=float, help="omega.", default=0)
+	parser.add_argument("--Omega", "-omega", type=float, help="omega.", default=0)
 #quaternion
 	parser.add_argument("--e0", "-e0", type=float, help="e0 in quaternion convention.", default=0)
 	parser.add_argument("--e1", "-e1", type=float, help="e1 in quaternion convention.", default=0)
@@ -73,73 +73,109 @@ def main():
 	parser.add_argument("--q", "-q", type=float, help="q in sgirot convention.", default=0)
 #matrix
 	parser.add_argument("--matrix", "-matrix", type=str, help="transform matrix.", default='0,0,0,0,0,0,0,0,0,0,0,0')
-	
+	parser.add_argument("--rot",type=str,metavar="az,alt,phi or convention:par=val:...",help="Rotate map. Specify az,alt,phi or convention:par=val:par=val:...  eg - mrc:psi=22:theta=15:omega=7", action="append",default=None)
+
 	(options, args) = parser.parse_args()
 	
-	matrix=options.matrix
-	trans=options.trans
-	mirror=options.mirror
-	
-	s=matrix.split(',')
-	mat=(float(s[0]),float(s[1]),float(s[2]),float(s[3]),float(s[4]),float(s[5]),float(s[6]),float(s[7]),float(s[8]),float(s[9]),float(s[10]),float(s[11]))
-	s=trans.split(',')
-	trans=(float(s[0]),float(s[1]),float(s[2]))
-	if (mirror=="True")or(mirror=="true"): mirror=1
-	else:mirror=0 
-
 	if len(args)<2 : 
 		parser.error("Input and output files required")
 		sys.eixt(1)
 
-	print args[0]
-	print args[0]
-	if (options.type=='eman'):
-		t=Transform()
-		t.set_params({"type":options.type,"az":options.az,"alt":options.alt,"phi":options.phi,"scale":options.scale,"mirror":mirror,"tx":trans[0],"ty":trans[1],"tz":trans[2]})
-		print type
-		v1=(1.6,-85.45,44.62)
-		v1_transformed=t.transform(v1)
-		print v1_transformed 
-	elif (options.type=='imagic'):
-		t=Transform()
-		t.set_params({"type":options.type,"alpha":options.alpha,"beta":options.beta,"gamma":options.gamma,"scale":options.scale,"mirror":mirror,"tx":trans[0],"ty":trans[1],"tz":trans[2]})
-	elif (options.type=='spider'):
-		t=Transform()
-		t.set_params({"type":options.type,"phi":options.phi,"theta":options.theta,"psi":options.psi,"scale":options.scale,"mirror":mirror,"tx":trans[0],"ty":trans[1],"tz":trans[2]})
-	elif (options.type=='xyz'):
-		t=Transform()
-		t.set_params({"type":options.type,"xtilt":options.xtilt,"ytilt":options.ytilt,"ztilt":options.ztilt,"scale":options.scale,"mirror":mirror,"tx":trans[0],"ty":trans[1],"tz":trans[2]})
-	elif (options.type=='mrc'):	
-		t=Transform()
-		t.set_params({"type":options.type,"phi":options.phi,"theta":options.theta,"omega":options.omega,"scale":options.scale,"mirror":mirror,"tx":trans[0],"ty":trans[1],"tz":trans[2]})
-	elif (options.type=='quaternion'):
-		t=Transform()
-		t.set_params({"type":options.type,"e0":options.e0,"e1":options.e1,"e2":options.e2,"e3":options.e3,"scale":options.scale,"mirror":mirror,"tx":trans[0],"ty":trans[1],"tz":trans[2]})
-	elif (options.type=='spin'):
-		t=Transform()
-		t.set_params({"type":options.type,"Omega":options.omega,"n1":options.n1,"n2":options.n2,"n3":options.n3,"scale":options.scale,"mirror":mirror,"tx":trans[0],"ty":trans[1],"tz":trans[2]})
-	elif (options.type=='sgirot'):
-		t=Transform()
-		t.set_params({"type":options.type,"q":options.q,"n1":options.n1,"n2":options.n2,"n3":options.n3,"scale":options.scale,"mirror":mirror,"tx":trans[0],"ty":trans[1],"tz":trans[2]})
-	elif (options.type=='matrix'):
-		t=Transform()
-		t=Transform([mat[0],mat[1],mat[2],mat[3],mat[4],mat[5],mat[6],mat[7],mat[8],mat[9],mat[10],mat[11]])
-	else: 
-		print"get error, please input the right convention, example eman, imagic, spider, mrc, xyz, spin, sgirot, quaternion"
-		sys.exit(1)
+	trans=options.trans
+	mirror=options.mirror
+	
+	mat=options.matrix.split(',')
+	try: mat=[float(i) for i in mat]
+	except:
+		raise Exception,"Invalid Input: %s"%optstr
+		
+	trans=options.trans.split(',')
+	try: trans=[float(i) for i in trans]
+	except:
+		raise Exception,"Invalid Input: %s"%optstr				
+
+	parms={"type":options.type}
+	parms["tx"]=trans[0]
+	parms["ty"]=trans[1]
+	parms["tz"]=trans[2]
+	parms["scale"]=options.scale
+	parms["mirror"]=options.mirror
+					
+	if options.rot==None:						
+		if options.type=="matrix":	
+			t=Transform(mat)
+		elif options.type=="eman":
+			parms["az"]=options.az
+			parms["alt"]=options.alt
+			parms["phi"]=options.phi
+			try: t=Transform(parms)
+			except:
+				raise Exception,"Invalid transform: %s"%parms
+		elif options.type=="imagic":
+			parms["alpha"]=options.alpha
+			parms["beta"]=options.beta
+			parms["gamma"]=options.gamma
+			try: t=Transform(parms)
+			except:
+				raise Exception,"Invalid transform: %s"%parms
+		elif options.type=="spider":
+			parms["phi"]=options.phi
+			parms["theta"]=options.theta
+			parms["psi"]=options.psi
+			try: t=Transform(parms)
+			except:
+				raise Exception,"Invalid transform: %s"%parms	
+		elif options.type=="xyz":
+			parms["xtilt"]=options.xtilt
+			parms["ytilt"]=options.ytilt
+			parms["ztilt"]=options.ztilt
+			try: t=Transform(parms)
+			except:
+				raise Exception,"Invalid transform: %s"%parms						
+		elif options.type=="mrc":
+			parms["phi"]=options.phi
+			parms["theta"]=options.theta
+			parms["omega"]=options.omega
+			try: t=Transform(parms)
+			except:
+				raise Exception,"Invalid transform: %s"%parms												
+		elif options.type=="quaternion":
+			parms["e0"]=options.e0
+			parms["e1"]=options.e1
+			parms["e2"]=options.e2
+			parms["e3"]=options.e3
+			try: t=Transform(parms)
+			except:
+				raise Exception,"Invalid transform: %s"%parms												
+		elif options.type=="spin":
+			parms["Omega"]=options.Omega
+			parms["n1"]=options.n1
+			parms["n2"]=options.n2
+			parms["n3"]=options.n3
+			try: t=Transform(parms)
+			except:
+				raise Exception,"Invalid transform: %s"%parms												
+		elif options.type=="sgirot":
+			parms["n1"]=options.n1
+			parms["n2"]=options.n2
+			parms["n3"]=options.n3
+			parms["q"]=options.q
+			try: t=Transform(parms)
+			except:
+				raise Exception,"Invalid transform: %s"%parms															
+		else:		
+			print "get error, please input the right convention, example eman, imagic, spider, mrc, xyz, sgirot, quaternion, matrix"
+	else:		
+		t=parse_transform(options.rot[0])
 
 	inp = open(args[0], 'r')
 	lines = inp.readlines()
 	inp.close()
 	
 	outputlines=pdb_transform(t,lines,options.center,options.include,options.animorph,options.apix,options.chains,trans)
-	print "output="
-	print len(outputlines)
-
 	out=open(args[1],"w")
 	for i in outputlines: out.write(i)
 	out.close()
-
 
 def pdb_transform(t,lines,center=0,savetypes=["helix","sheet","other"],animorph=None, apix=1.0,chains=None,trans=(0,0,0)):
 	
