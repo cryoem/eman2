@@ -83,6 +83,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 	parser.add_argument("--appendvstack",type=str,help="Appends to/creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--list",type=str,help="Specify the name of a file with a list of images to use in creation of virtual stacks. Please see source for details.",default=None)
+	parser.add_argument("--exlist",type=str,help="Specify the name of a file with a list of images to exclude in creation of virtual stacks. Please see source for details.",default=None)
 	parser.add_argument("--restore",type=str,help="Write changes in the derived virtual stack back to the original stack",default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--checkctf",action="store_true",help="Verfies that all images in the file contain CTF information, and gives some basic statistics",default=False)
@@ -181,7 +182,25 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 					slist.append(val)     		
 			del n,val,vdata
 		
-		
+		if options.exlist :
+			if options.makevstack==None:
+				print "ERROR, this option is used for virtual stack creation, please add makevstack or appendvstack options, and restart"
+				sys.exit(1)
+			vdata=open(options.exlist,'r').readlines()
+			n=len(vdata[0].split())
+			slist=[]
+			for line in vdata:
+				line=line.split()
+				for i in xrange(n):
+					val=int(line[i])
+					slist.append(val)     
+			n = EMUtil.get_image_count(args[0])
+			good = set(range(n)) - set(slist)
+			slist = [i for i in good]
+			print slist
+			slist.sort()
+			del n,val,vdata,good
+			
 		if options.makevstack!=None or options.appendvstack!=None :
 			
 			vspath=os.path.realpath(vstack.path)+"/"
@@ -196,7 +215,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 					if keys == None: vals = xrange(options.step[0],options.step[2],options.step[1])
 					else: vals = keys[options.step[0]:options.step[2]:options.step[1]]		# we apply --step even if we have a list of keys
 
-				if options.list !=None: vals=slist
+				if options.list !=None or options.exlist != None: vals=slist
 				for n in vals:
 					try: d=dct.get(n,nodata=1).get_attr_dict()
 					except:
