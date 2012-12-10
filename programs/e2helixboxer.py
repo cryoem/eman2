@@ -947,12 +947,16 @@ if ENABLE_GUI:
         """
         the GUI widget which contains the settings for boxing helices and writing results to files
         """
-        def __init__(self, micrograph_filepaths, app, box_width):
+        def __init__(self, micrograph_filepaths, app, box_width=100):
             """
             @param micrograph_filepath: the path to the image file for the micrograph
             @param app: the application to which this widget belongs
             """
             QtGui.QWidget.__init__(self)
+            
+            if box_width<1 : box_width=100
+            self.box_width=box_width
+
             self.app = app
             self.setWindowIcon(QtGui.QIcon(get_image_directory() +"green_boxes.png"))
             self.setWindowTitle("e2helixboxer")
@@ -1180,7 +1184,7 @@ if ENABLE_GUI:
             
             self.main_image.optimally_resize()
             
-            width = 100
+            width = self.box_width
             if self.helices_dict:
                 first_coords = self.helices_dict.keys()[0]
                 width = first_coords[4]
