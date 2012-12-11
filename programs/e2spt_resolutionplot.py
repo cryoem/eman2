@@ -118,7 +118,7 @@ def main():
 
 	if not options.output:
 		if not options.curves:
-			fscoutputname = 'FSC_' + vol1.split('.')[0] + '_VS_' + vol2.split('.')[0] + '.txt'
+			fscoutputname = 'FSC_' + vol1.split('/')[-1].split('.')[0] + '_VS_' + vol2.split('/')[-1].split('.')[0] + '.txt'
 		else:
 			fscoutputname = 'fsc_curves.txt'
 	
@@ -290,26 +290,27 @@ def fscplotter(fscs,options):
 		factorOfTicks = round(nlines/(round(nlines / (0.2*nlines))))
 		print "\n\n\nTHEE factor of ticks is!!!!\n", factorOfTicks
 		for line in lines:
-			x.append(float(k))
-			values.append( float( line.split()[-1] ) )
-			inverse =  float( line.split()[0] )
-			#print "inverse is"
-			inversefreqs.append(inverse)
+			if line:
+				x.append(float(k))
+				values.append( float( line.split()[-1] ) )
+				inverse =  float( line.split()[0] )
+				#print "inverse is"
+				inversefreqs.append(inverse)
 
-			element = ''
-			if inverse:
-				element = '1/' + str(int(round( 1.0/inverse  )))
-			else:
-				element='0'
-			#print "Therefore, turned into a number it is", element
-			inversefreqslabels.append(element)
-			if not k % factorOfTicks:
+				element = ''
+				if inverse:
+					element = '1/' + str(int(round( 1.0/inverse  )))
+				else:
+					element='0'
+				#print "Therefore, turned into a number it is", element
+				inversefreqslabels.append(element)
+				if not k % factorOfTicks:
 
-				print "I have appended this tick!", element
-				print "Because k is", k
-				print "And k mod factorOfTicks is", k % factorOfTicks
-				xticks.append(element)
-			k += 1
+					print "I have appended this tick!", element
+					print "Because k is", k
+					print "And k mod factorOfTicks is", k % factorOfTicks
+					xticks.append(element)
+				k += 1
 
 		plot_name = fscoutputname.replace('.txt','_PLOT.png')
 		if options.curves and options.singleplot:
