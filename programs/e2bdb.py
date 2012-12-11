@@ -197,7 +197,6 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 			n = EMUtil.get_image_count(args[0])
 			good = set(range(n)) - set(slist)
 			slist = [i for i in good]
-			print slist
 			slist.sort()
 			del n,val,vdata,good
 			
