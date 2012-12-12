@@ -463,7 +463,7 @@ class EMLightsDrawer:
 		
 		t = Transform()
 		quaternion = {}
-		quaternion["Omega"] = angle
+		quaternion["omega"] = angle
 		quaternion["n1"] = rotaxis_x
 		quaternion["n2"] = rotaxis_y
 		quaternion["n3"] = rotaxis_z

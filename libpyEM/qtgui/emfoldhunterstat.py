@@ -71,7 +71,7 @@ class E2FoldHunterStat:
 			qdict["n1"] = v[0]
 			qdict["n2"] = v[1]
 			qdict["n3"] = v[2]
-			qdict["Omega"] = Util.get_frand(0,180) # only need to 180 becaues the final rotation can be negative or positive
+			qdict["omega"] = Util.get_frand(0,180) # only need to 180 becaues the final rotation can be negative or positive
 			q = Transform(qdict)
 			normal_d = q*normal # this is the random axis of rotation
 
@@ -82,7 +82,7 @@ class E2FoldHunterStat:
 			qdict_d["n1"] = normal_d[0]
 			qdict_d["n2"] = normal_d[1]
 			qdict_d["n3"] = normal_d[2]
-			qdict_d["Omega"] = Util.get_gauss_rand(0,delta)
+			qdict_d["omega"] = Util.get_gauss_rand(0,delta)
 			qdict_d["type"] = "spin"
 			q_d = Transform(qdict_d)
 			# voila!

@@ -358,7 +358,7 @@ class OrientationListAnimation(Animatable):
 			
 			T = Transform()
 			d = {"type":"spin"}
-			d["Omega"] = self.omega
+			d["omega"] = self.omega
 			d["n1"] = normal[0]
 			d["n2"] = normal[1]
 			d["n3"] = normal[2]
@@ -414,7 +414,7 @@ class OrientationListAnimation(Animatable):
 		else:
 			T = Transform()
 			d = {"type":"spin"}
-			d["Omega"] = dt*360
+			d["omega"] = dt*360
 			d["n1"] = self.rot_vec[0]
 			d["n2"] = self.rot_vec[1]
 			d["n3"] = self.rot_vec[2]

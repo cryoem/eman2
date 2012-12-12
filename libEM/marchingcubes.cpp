@@ -657,7 +657,7 @@ void MarchingCubes::surface_face_z()
 	
 		Dict d;
 		d["type"] = "spin";
-		d["Omega"] =  90.f;
+		d["omega"] =  90.f;
 		d["n1"] = axis[0];
 		d["n2"] = axis[1];
 		d["n3"] = 0;

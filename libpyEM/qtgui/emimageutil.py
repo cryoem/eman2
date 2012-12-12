@@ -206,7 +206,7 @@ class EMTransformPanel:
 			self.alt.setLabel('theta')
 			self.phi.setLabel('omega')
 		elif ( self.src_map[str(val)] == "spin" ):
-			self.az.setLabel('Omega')
+			self.az.setLabel('omega')
 			self.alt.setRange(-1,1)
 			self.phi.setRange(-1,1)
 			

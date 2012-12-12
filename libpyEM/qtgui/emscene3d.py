@@ -1352,7 +1352,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.camera.setClipFar(1000)
 		self.reset_camera = True
 		current_xform = self.getTransform()
-		current_xform_side = Transform({"type":"spin","Omega":90,"n1":0,"n2":1,"n3":0})*current_xform
+		current_xform_side = Transform({"type":"spin","omega":90,"n1":0,"n2":1,"n3":0})*current_xform
 		self.setTransform(current_xform_side)
 		QtOpenGL.QGLWidget.updateGL(self)
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)

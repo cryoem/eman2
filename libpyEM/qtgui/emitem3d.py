@@ -429,7 +429,7 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 				if self.parent:
 					self.transform.rotate_origin_newbasis(self.getParentMatrixProduct(), params[0], params[1], params[2], params[3])
 				else:
-					self.transform.rotate_origin(Transform({"type":"spin","Omega":params[0],"n1":params[1],"n2":params[2],"n3":params[3]}))
+					self.transform.rotate_origin(Transform({"type":"spin","omega":params[0],"n1":params[1],"n2":params[2],"n3":params[3]}))
 			elif xformtype == "translate":
 				if self.parent: 
 					self.transform.translate_newbasis(self.getParentMatrixProduct(), params[0], params[1], params[2])
@@ -686,7 +686,7 @@ class EMItem3DInspector(QtGui.QTabWidget):
 				self.spinn2slider.setValue(0.0, quiet=1)
 				self.spinn3slider.setValue(1.0, quiet=1)				
 			else:
-				self.spinomegaslider .setValue(rotation["Omega"], quiet=1)
+				self.spinomegaslider .setValue(rotation["omega"], quiet=1)
 				# Don't change slider if reult is Nan
 				if rotation["n1"] == rotation["n1"]: self.spinn1slider.setValue(rotation["n1"], quiet=1)
 				if rotation["n2"] == rotation["n2"]: self.spinn2slider.setValue(rotation["n2"], quiet=1)
@@ -891,7 +891,7 @@ class EMItem3DInspector(QtGui.QTabWidget):
 	def _on_spin_rotation(self, value):
 		v = Vec3f(self.spinn1slider.getValue(), self.spinn2slider.getValue(), self.spinn3slider.getValue())
 		v.normalize()
-		self._set_rotation_std_coords(Transform({"type":"spin","Omega":self.spinomegaslider.getValue(),"n1":v[0],"n2":v[1],"n3":v[2]}))
+		self._set_rotation_std_coords(Transform({"type":"spin","omega":self.spinomegaslider.getValue(),"n1":v[0],"n2":v[1],"n3":v[2]}))
 		self.inspector().updateSceneGraph()
 		
 	def _on_sgirot_rotation(self, value):
