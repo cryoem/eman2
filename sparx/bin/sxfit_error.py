@@ -1142,7 +1142,7 @@ for cycle in xrange(max_cycles):
 	# pixel motion from rotation
 	tsx = Transform({"type":"xyz","xtilt":bparams[0],"ytilt":bparams[1],"ztilt":bparams[2], "tx":bparams[3], "ty":bparams[4], "tz":bparams[5]})
 	qts = tsx.get_params("spin")
-	rotp = red(qts['Omega'])*radius*3.14159/180.
+	rotp = red(qts['omega'])*radius*3.14159/180.
 
 	for j in range(lpar):
 		sumbp[j]  += bparams[j]

@@ -464,7 +464,7 @@ class EMHelloWorldInspector(QtGui.QWidget):
 			self.alt.setLabel('theta')
 			self.phi.setLabel('omega')
 		elif ( self.src_map[str(val)] == EULER_SPIN ):
-			self.az.setLabel('Omega')
+			self.az.setLabel('omega')
 			self.alt.setRange(-1,1)
 			self.phi.setRange(-1,1)
 			
