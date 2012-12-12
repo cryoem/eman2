@@ -124,7 +124,7 @@ def angdist(t1,t2):
 	t2inv = t2.inverse()
 	product = t2inv * t1
 	product_SPIN = product.get_rotation('spin')
-	angular_distance = round(float(product_SPIN["Omega"]),2)
+	angular_distance = round(float(product_SPIN["omega"]),2)
 	print "The angular distance is", angular_distance
 	
 	return(angular_distance)

@@ -1935,7 +1935,7 @@ static Transform refalin3d_perturbquat(const Transform*const t, const float& spi
 	float omega = spincoeff*sqrt(n0*n0 + n1*n1 + n2*n2); // Here we compute the spin by the rotation axis vector length
 	Dict d;
 	d["type"] = "spin";
-	d["Omega"] = omega;
+	d["omega"] = omega;
 	d["n1"] = normal[0];
 	d["n2"] = normal[1];
 	d["n3"] = normal[2];
