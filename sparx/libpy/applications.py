@@ -11451,7 +11451,7 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 def predict_helical_params(stack, dp, dphi, pixel_size, outfile=''):
 	
 	from utilities import write_text_row
-	from development import get_dist
+	from applications import get_dist
 	
 	filaments = EMUtil.get_all_attributes(stack, 'filament')
 	coords    = EMUtil.get_all_attributes(stack, 'ptcl_source_coord')
@@ -12194,3 +12194,8 @@ def stack_disks(v, nx, ny, ref_nz, dphi, rise):
 		heli.insert_clip(rot_shift3D(v, i*dphi),(0,0,refc + i*rise - rsc))
 
 	return heli
+
+def get_dist(c1, c2):
+	from math import sqrt
+	d = sqrt((c1[0] - c2[0])**2 + (c1[1] - c2[1])**2)
+	return d
