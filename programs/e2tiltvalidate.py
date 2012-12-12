@@ -319,13 +319,13 @@ class ComputeTilts:
 				tiltxform = tilt_euler_xform*sym.inverse()*untilt_euler_xform.inverse()
 				# Select the symmetry solution whose tiltaxis is in plane
 				if math.fabs(tiltxform.get_rotation("spin")["n3"]) < bestinplane:
-					if tiltxform.get_rotation("spin")["Omega"] < self.options.maxtiltangle:
+					if tiltxform.get_rotation("spin")["omega"] < self.options.maxtiltangle:
 						bestinplane = math.fabs(tiltxform.get_rotation("spin")["n3"])
-						besttiltangle = tiltxform.get_rotation("spin")["Omega"]
+						besttiltangle = tiltxform.get_rotation("spin")["omega"]
 						besttiltaxis = math.degrees(math.atan2(tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n1"]))
 						anglefound = True
 					
-				#self.test.write("\t%f %f %f %f\n"%(tiltxform.get_rotation("spin")["Omega"],tiltxform.get_rotation("spin")["n1"],tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n3"]))
+				#self.test.write("\t%f %f %f %f\n"%(tiltxform.get_rotation("spin")["omega"],tiltxform.get_rotation("spin")["n1"],tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n3"]))
 				#self.test.write("\t%f %f %f\n"%(tiltxform.get_rotation("eman")["az"],tiltxform.get_rotation("eman")["alt"],tiltxform.get_rotation("eman")["phi"]))
 		else:
 			bestinplane = 180.0
@@ -337,7 +337,7 @@ class ComputeTilts:
 						besttiltangle = tiltxform.get_rotation("eman")["alt"]
 						besttiltaxis = (tiltxform.get_rotation("eman")['az'] + (-tiltxform.get_rotation("eman")['phi'] % 360))/2.0
 						anglefound = True
-				#self.test.write("\t%f %f %f %f\n"%(tiltxform.get_rotation("spin")["Omega"],tiltxform.get_rotation("spin")["n1"],tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n3"]))
+				#self.test.write("\t%f %f %f %f\n"%(tiltxform.get_rotation("spin")["omega"],tiltxform.get_rotation("spin")["n1"],tiltxform.get_rotation("spin")["n2"],tiltxform.get_rotation("spin")["n3"]))
 				#self.test.write("\t%f %f %f Ip %f\n"%(tiltxform.get_rotation("eman")["az"],tiltxform.get_rotation("eman")["alt"],tiltxform.get_rotation("eman")["phi"], bestinplane))
 			
 		if anglefound:

@@ -334,7 +334,7 @@ void Transform::init_permissable_keys()
 	tmp.push_back("n1");
 	tmp.push_back("n2");
 	tmp.push_back("n3");
-	tmp.push_back("Omega");
+	tmp.push_back("omega");
 	permissable_rot_keys["spin"] = tmp;
 
 	tmp.clear();
@@ -521,7 +521,7 @@ void Transform::set_rotation(const Dict& rotation)
 
 
 	double e0=0; double e1=0; double e2=0; double e3=0;
-	double Omega=0;
+	double omega=0;
 	double az  = 0;
 	double alt = 0;
 	double phi = 0;
@@ -586,19 +586,19 @@ void Transform::set_rotation(const Dict& rotation)
 	} else if ( type == "spin" ) {
 // 		validate_and_set_type(THREED);
 		is_quaternion = 1;
-		Omega = (double)rotation["Omega"];
-		e0 = cos(Omega*EMConsts::deg2rad/2.0);
-		e1 = sin(Omega*EMConsts::deg2rad/2.0) * (double)rotation["n1"];
-		e2 = sin(Omega*EMConsts::deg2rad/2.0) * (double)rotation["n2"];
-		e3 = sin(Omega*EMConsts::deg2rad/2.0) * (double)rotation["n3"];
+		omega = (double)rotation["omega"];
+		e0 = cos(omega*EMConsts::deg2rad/2.0);
+		e1 = sin(omega*EMConsts::deg2rad/2.0) * (double)rotation["n1"];
+		e2 = sin(omega*EMConsts::deg2rad/2.0) * (double)rotation["n2"];
+		e3 = sin(omega*EMConsts::deg2rad/2.0) * (double)rotation["n3"];
 	} else if ( type == "sgirot" ) {
 // 		validate_and_set_type(THREED);
 		is_quaternion = 1;
-		Omega = (double)rotation["q"] ;
-		e0 = cos(Omega*EMConsts::deg2rad/2.0);
-		e1 = sin(Omega*EMConsts::deg2rad/2.0) * (double)rotation["n1"];
-		e2 = sin(Omega*EMConsts::deg2rad/2.0) * (double)rotation["n2"];
-		e3 = sin(Omega*EMConsts::deg2rad/2.0) * (double)rotation["n3"];
+		omega = (double)rotation["q"] ;
+		e0 = cos(omega*EMConsts::deg2rad/2.0);
+		e1 = sin(omega*EMConsts::deg2rad/2.0) * (double)rotation["n1"];
+		e2 = sin(omega*EMConsts::deg2rad/2.0) * (double)rotation["n2"];
+		e3 = sin(omega*EMConsts::deg2rad/2.0) * (double)rotation["n3"];
 	} else if ( type == "matrix" ) {
 		is_matrix = 1;
 		matrix[0][0] = (float)rotation["m11"];
@@ -721,7 +721,7 @@ void Transform::rotate_origin(const Transform& by)
 	}
 }
 
-void Transform::rotate_origin_newBasis(const Transform& tcs, const float& Omega, const float& n1, const float& n2, const float& n3)
+void Transform::rotate_origin_newBasis(const Transform& tcs, const float& omega, const float& n1, const float& n2, const float& n3)
 {
 	//Get the rotational inverse
 	Transform tcsinv = Transform(tcs);
@@ -738,7 +738,7 @@ void Transform::rotate_origin_newBasis(const Transform& tcs, const float& Omega,
 	//set the right rotation
 	Dict spinrot = Dict();
 	spinrot["type"] = "spin";
-	spinrot["Omega"] = Omega;
+	spinrot["omega"] = omega;
 	spinrot["n1"] = cctrans[0];
 	spinrot["n2"] = cctrans[1];
 	spinrot["n3"] = cctrans[2];
@@ -928,23 +928,23 @@ Dict Transform::get_rotation(const string& euler_type) const
 //	        double nphi = (az-phi)/2.0;
 //	        double cosOover2 = cos((az+phi)*EMConsts::deg2rad/2.0) * cos(alt*EMConsts::deg2rad/2.0);
 //		printf("%f %f %f",matrix[0][0],matrix[1][1],matrix[2][2]);
-		double traceR = matrix[0][0]+matrix[1][1]+matrix[2][2]; // This should be 1 + 2 cos Omega
-	        double cosOmega =  (traceR-1.0)/2.0;
-		if (cosOmega>1.0) cosOmega=1.0;
-		if (cosOmega<-1.0) cosOmega=-1.0;
+		double traceR = matrix[0][0]+matrix[1][1]+matrix[2][2]; // This should be 1 + 2 cos omega
+	        double cosomega =  (traceR-1.0)/2.0;
+		if (cosomega>1.0) cosomega=1.0;
+		if (cosomega<-1.0) cosomega=-1.0;
 		
-		  // matrix(x,y)-matrix(y,x) = 2 n_z   sin(Omega) etc
-		 // trace matrix = 1 + 2 cos(Omega)
-		double sinOover2= sqrt((1.0 -cosOmega)/2.0);
+		  // matrix(x,y)-matrix(y,x) = 2 n_z   sin(omega) etc
+		 // trace matrix = 1 + 2 cos(omega)
+		double sinOover2= sqrt((1.0 -cosomega)/2.0);
 		double cosOover2= sqrt(1.0 -sinOover2*sinOover2);
-		double sinOmega = 2* sinOover2*cosOover2; 
+		double sinomega = 2* sinOover2*cosOover2; 
 	        double n1 = 0; double n2 = 0;   double n3 = 0;
-		if (sinOmega>0) {
-		      n1 = (matrix[1][2]-matrix[2][1])/2.0/sinOmega ;
-		      n2 = (matrix[2][0]-matrix[0][2])/2.0/sinOmega ;
-		      n3 = (matrix[0][1]-matrix[1][0])/2.0/sinOmega ;
+		if (sinomega>0) {
+		      n1 = (matrix[1][2]-matrix[2][1])/2.0/sinomega ;
+		      n2 = (matrix[2][0]-matrix[0][2])/2.0/sinomega ;
+		      n3 = (matrix[0][1]-matrix[1][0])/2.0/sinomega ;
 		}
-//	        printf("traceR=%lf,OneMinusCosOmega=%lf,sinOover2=%lf,cosOover2=%lf,sinOmega=%lf,cosOmega=%lf,n3=%lf \n",traceR,1-cosOmega,sinOover2,cosOover2,sinOmega,cosOmega,n3);
+//	        printf("traceR=%lf,OneMinusCosomega=%lf,sinOover2=%lf,cosOover2=%lf,sinomega=%lf,cosomega=%lf,n3=%lf \n",traceR,1-cosomega,sinOover2,cosOover2,sinomega,cosomega,n3);
 
 		
 		if (type == "quaternion"){
@@ -955,14 +955,14 @@ Dict Transform::get_rotation(const string& euler_type) const
 		}
 
 		if (type == "spin"){
-		    result["Omega"] = EMConsts::rad2deg * acos(cosOmega);
+		    result["omega"] = EMConsts::rad2deg * acos(cosomega);
 		    result["n1"] = n1;
 		    result["n2"] = n2;
 		    result["n3"] = n3;
 		}
 
 		if (type == "sgirot"){
-		    result["q"] = EMConsts::rad2deg * acos(cosOmega);
+		    result["q"] = EMConsts::rad2deg * acos(cosomega);
 		    result["n1"] = n1;
 		    result["n2"] = n2;
 		    result["n3"] = n3;
@@ -1715,7 +1715,7 @@ int Transform::get_nsym(const string & sym_name)
 //{
 //	EulerType eulertype= SPIN ;
 //	Dict AA= get_rotation(eulertype);
-//	return AA["Omega"];
+//	return AA["omega"];
 //}
 //
 //Vec3f Transform3D::get_finger() const //
@@ -1877,19 +1877,19 @@ dwoolford says - this is wrong, the derivation of phi is the negative of the tru
 ---------------------------------------------------------------------------
 For the quaternion type operations, we can start with
 
-R = (1-nhat nhat) cos(Omega) - sin(Omega)nhat cross + nhat nhat
+R = (1-nhat nhat) cos(omega) - sin(omega)nhat cross + nhat nhat
 Notice that this is a clockwise rotation( the xy component, for nhat=zhat,
- is calculated as - sin(Omega) xhat dot zhat cross yhat= sin(Omega): this is the
+ is calculated as - sin(omega) xhat dot zhat cross yhat= sin(omega): this is the
  correct sign for clockwise rotations).
 Now we develop
 
-R =  cos(Omega) one + nhat nhat (1-cos(Omega)) - sin(Omega) nhat cross
-  = (cos^2(Omega/2) - sin^2(Omega/2)) one  + 2 ((sin(Omega/2)nhat ) ((sin(Omega/2)nhat )
-                                    - 2 cos(Omega/2) ((sin(Omega/2)nhat )  cross
+R =  cos(omega) one + nhat nhat (1-cos(omega)) - sin(omega) nhat cross
+  = (cos^2(omega/2) - sin^2(omega/2)) one  + 2 ((sin(omega/2)nhat ) ((sin(omega/2)nhat )
+                                    - 2 cos(omega/2) ((sin(omega/2)nhat )  cross
   = (e0^2 - evec^2) one  + 2 (evec evec )  - 2 e0 evec  cross
 
-  e0 = cos(Omega/2)
-  vec{e} = sin(Omega/2) nhat
+  e0 = cos(omega/2)
+  vec{e} = sin(omega/2) nhat
 
 
 SGIrot is the same as SPIN (see paper)
@@ -1963,7 +1963,7 @@ The update of rotations for quaternions is very easy.
 //			rot["n2"] = a3;
 //			rot["n3"] = a4;
 //		case SPIN:
-//			rot["Omega"]  = a1;
+//			rot["omega"]  = a1;
 //			rot["n1"] = a2;
 //			rot["n2"] = a3;
 //			rot["n3"] = a4;
@@ -1977,7 +1977,7 @@ The update of rotations for quaternions is very easy.
 //void Transform3D::set_rotation(EulerType euler_type, const Dict& rotation)
 //{
 //	double e0  = 0; double e1=0; double e2=0; double e3=0;
-//	double Omega=0;
+//	double omega=0;
 //	double az  = 0;
 //	double alt = 0;
 //	double phi = 0;
@@ -2032,20 +2032,20 @@ The update of rotations for quaternions is very easy.
 //
 //	case SPIN:
 //		is_quaternion = 1;
-//		Omega = (double)rotation["Omega"];
-//		e0 = cos(Omega*M_PI/360.0f);
-//		e1 = sin(Omega*M_PI/360.0f)* (double)rotation["n1"];
-//		e2 = sin(Omega*M_PI/360.0f)* (double)rotation["n2"];
-//		e3 = sin(Omega*M_PI/360.0f)* (double)rotation["n3"];
+//		omega = (double)rotation["omega"];
+//		e0 = cos(omega*M_PI/360.0f);
+//		e1 = sin(omega*M_PI/360.0f)* (double)rotation["n1"];
+//		e2 = sin(omega*M_PI/360.0f)* (double)rotation["n2"];
+//		e3 = sin(omega*M_PI/360.0f)* (double)rotation["n3"];
 //		break;
 //
 //	case SGIROT:
 //		is_quaternion = 1;
-//		Omega = (double)rotation["q"]  ;
-//		e0 = cos(Omega*M_PI/360.0f);
-//		e1 = sin(Omega*M_PI/360.0f)* (double)rotation["n1"];
-//		e2 = sin(Omega*M_PI/360.0f)* (double)rotation["n2"];
-//		e3 = sin(Omega*M_PI/360.0f)* (double)rotation["n3"];
+//		omega = (double)rotation["q"]  ;
+//		e0 = cos(omega*M_PI/360.0f);
+//		e1 = sin(omega*M_PI/360.0f)* (double)rotation["n1"];
+//		e2 = sin(omega*M_PI/360.0f)* (double)rotation["n2"];
+//		e3 = sin(omega*M_PI/360.0f)* (double)rotation["n3"];
 //		break;
 //
 //	case MATRIX:
@@ -2162,20 +2162,20 @@ The update of rotations for quaternions is very easy.
 //	Vec3f neAhat  = eAhatcp.cross(nhat);
 //	Vec3f neBhat  = eBhatcp.cross(nhat);
 //
-//	double cosOmegaA = (neahat.dot(neAhat))  / (neahat.dot(neahat));
-////	float cosOmegaB = (nebhat.dot(neBhat))  / (nebhat.dot(nebhat));
-//	double sinOmegaA = (neahat.dot(eAhatcp)) / (neahat.dot(neahat));
-////	printf("cosOmegaA=%f \n",cosOmegaA); 	printf("sinOmegaA=%f \n",sinOmegaA);
+//	double cosomegaA = (neahat.dot(neAhat))  / (neahat.dot(neahat));
+////	float cosomegaB = (nebhat.dot(neBhat))  / (nebhat.dot(nebhat));
+//	double sinomegaA = (neahat.dot(eAhatcp)) / (neahat.dot(neahat));
+////	printf("cosomegaA=%f \n",cosomegaA); 	printf("sinomegaA=%f \n",sinomegaA);
 //
-//	double OmegaA = atan2(sinOmegaA,cosOmegaA);
-////	printf("OmegaA=%f \n",OmegaA*180/M_PI);
+//	double omegaA = atan2(sinomegaA,cosomegaA);
+////	printf("omegaA=%f \n",omegaA*180/M_PI);
 //
 //	EulerType euler_type=SPIN;
 //	Dict rotation;
 //	rotation["n1"]= nhat[0];
 //	rotation["n2"]= nhat[1];
 //	rotation["n3"]= nhat[2];
-//	rotation["Omega"] = (float)(OmegaA*180.0/M_PI);
+//	rotation["omega"] = (float)(omegaA*180.0/M_PI);
 //	set_rotation(euler_type,  rotation);
 //}
 //
@@ -2310,7 +2310,7 @@ The update of rotations for quaternions is very easy.
 //		break;
 //
 //	case SPIN:
-//		result["Omega"] =360.0f* acos(cosOover2)/ M_PI ;
+//		result["omega"] =360.0f* acos(cosOover2)/ M_PI ;
 //		result["n1"] = n1;
 //		result["n2"] = n2;
 //		result["n3"] = n3;
@@ -2701,19 +2701,19 @@ dwoolford says - this is wrong, the derivation of phi is the negative of the tru
 ---------------------------------------------------------------------------
 For the quaternion type operations, we can start with
 
-R = (1-nhat nhat) cos(Omega) - sin(Omega)nhat cross + nhat nhat
+R = (1-nhat nhat) cos(omega) - sin(omega)nhat cross + nhat nhat
 Notice that this is a clockwise rotation( the xy component, for nhat=zhat,
- is calculated as - sin(Omega) xhat dot zhat cross yhat= sin(Omega): this is the
+ is calculated as - sin(omega) xhat dot zhat cross yhat= sin(omega): this is the
  correct sign for clockwise rotations).
 Now we develop
 
-R =  cos(Omega) one + nhat nhat (1-cos(Omega)) - sin(Omega) nhat cross
-  = (cos^2(Omega/2) - sin^2(Omega/2)) one  + 2 ((sin(Omega/2)nhat ) ((sin(Omega/2)nhat )
-                                    - 2 cos(Omega/2) ((sin(Omega/2)nhat )  cross
+R =  cos(omega) one + nhat nhat (1-cos(omega)) - sin(omega) nhat cross
+  = (cos^2(omega/2) - sin^2(omega/2)) one  + 2 ((sin(omega/2)nhat ) ((sin(omega/2)nhat )
+                                    - 2 cos(omega/2) ((sin(omega/2)nhat )  cross
   = (e0^2 - evec^2) one  + 2 (evec evec )  - 2 e0 evec  cross
 
-  e0 = cos(Omega/2)
-  vec{e} = sin(Omega/2) nhat
+  e0 = cos(omega/2)
+  vec{e} = sin(omega/2) nhat
 
 
 SGIrot is the same as SPIN (see paper)

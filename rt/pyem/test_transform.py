@@ -270,7 +270,7 @@ class TestTransform(unittest.TestCase):
 			# has more than one solution.
 			n = Vec3f(1,-1,-.5)
 			norm = n.normalize()
-			d = {"type":"spin","Omega":e0,"n1":n[0],"n2":n[1],"n3":n[2]}
+			d = {"type":"spin","omega":e0,"n1":n[0],"n2":n[1],"n3":n[2]}
 			t = Transform(d)
 			rot = t.get_rotation("spin")
 			self.assertEqual("spin",rot["type"])

@@ -59,7 +59,7 @@ def main():
 	parser.add_argument("--ytilt", "-ytilt", type=float, help="ytilt in xyz convention.", default=0)
 	parser.add_argument("--ztilt", "-ztilt", type=float, help="ztilt in xyz convention.", default=0)
 #mrc
-	parser.add_argument("--Omega", "-omega", type=float, help="omega.", default=0)
+	parser.add_argument("--omega", "-omega", type=float, help="omega.", default=0)
 #quaternion
 	parser.add_argument("--e0", "-e0", type=float, help="e0 in quaternion convention.", default=0)
 	parser.add_argument("--e1", "-e1", type=float, help="e1 in quaternion convention.", default=0)
@@ -148,7 +148,7 @@ def main():
 			except:
 				raise Exception,"Invalid transform: %s"%parms												
 		elif options.type=="spin":
-			parms["Omega"]=options.Omega
+			parms["omega"]=options.omega
 			parms["n1"]=options.n1
 			parms["n2"]=options.n2
 			parms["n3"]=options.n3

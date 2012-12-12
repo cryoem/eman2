@@ -154,7 +154,7 @@ namespace EMAN
 			* @param tcs, the stansfrom that moves us to a non standard coordinate system
 			* @param by multiplican, a tranform, R'', by which to multiply the current one, R' == R''R'
 			*/
-			void rotate_origin_newBasis(const Transform& tcs, const float& Omega, const float& n1, const float& n2, const float& n3);
+			void rotate_origin_newBasis(const Transform& tcs, const float& omega, const float& n1, const float& n2, const float& n3);
 			
 			/** Increment the rotation by multipling the rotation bit of the argument transfrom by the current transfrom
 			* @param rotation multiplican, a tranform, R'', by which to multiply the current one, R' == R''R'
@@ -690,7 +690,7 @@ namespace EMAN
 //		/** Construct a Transform3D object describing a rotation, using a specific Euler type.
 //		 * Works for Euler types that require 4 parameters
 //		 * @param euler_type the Euler type either QUATERNION, SPIN or SGIROT
-//		 * @param a1 QUATERNION - e0, SPN and SGIROT - Omega
+//		 * @param a1 QUATERNION - e0, SPN and SGIROT - omega
 //		 * @param a2 QUATERNION - e1, SPN and SGIROT - n1
 //		 * @param a3 QUATERNION - e2, SPN and SGIROT - n2
 //		 * @param a4 QUATERNION - e3, SPN and SGIROT - n3
@@ -746,7 +746,7 @@ namespace EMAN
 //		/** Set quaternion-based rotations
 //		 * Works for QUATERNION, SPIN and SGIROT
 //		 * @param euler_type the Euler type either QUATERNION, SPIN or SGIROT
-//		 * @param a1 QUATERNION - e0, SPN and SGIROT - Omega
+//		 * @param a1 QUATERNION - e0, SPN and SGIROT - omega
 //		 * @param a2 QUATERNION - e1, SPN and SGIROT - n1
 //		 * @param a3 QUATERNION - e2, SPN and SGIROT - n2
 //		 * @param a4 QUATERNION - e3, SPN and SGIROT - n3
