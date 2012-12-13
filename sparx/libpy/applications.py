@@ -11761,7 +11761,6 @@ def diskali_MPI(stack, ref_vol, outdir, maskfile, dp, dphi, pixel_size, user_fun
 	from fundamentals     import resample, rot_shift3D
 	from applications     import MPI_start_end
 	from math             import fmod, atan, pi
-	from development      import match_pixel_rise
 	from utilities        import model_blank
 	from filter           import filt_tanl, filt_ctf
 	import os
