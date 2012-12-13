@@ -71,9 +71,15 @@ def main():
 	parser.add_argument("--output", type=str, help="Name to output the auto-boxed particles.",default='')
 	parser.add_argument("--outputboxsize", type=int, help="Size of the box to put the extracted particles in, and amount by which the subregions will overlap, when searching for particles in the tomogram.", default=0)
 
-	parser.add_argument("--shrink", type=int, help="Integer factor by which the tomogram will be shrunk.", default=1)
+	parser.add_argument("--shrink", type=int, help="Integer factor by which the tomogram will be shrunk.", default=0)
 	
 	parser.add_argument("--subsettrans", type=int, help="Subset of particles to keep/consider after translational alignment.", default=0)
+	parser.add_argument("--concentrationfactor", type=int, help="""Determines how many particles will be pre-picked as putative particles. For example, if
+																if the tomogram is broken up into subregions of volume V to look for particles in each
+																and --concentrationfactor=1, then, the number of best-correlating subvolumes from the subregion
+																that will be initially selected as particles will be n=V/(pv*C) where 'pv' is the volume of one particle
+																calculated based on the outputboxsize, or the template's boxsize; 'C' is the concentration factor;
+																therefore, the largest it is, the fewer particles that will be initially picked.""", default=0)
 
 	parser.add_argument("--apix", type=float, help="The actual apix of the tomogram if for some reason it is wrong on the header.", default=0.0)
 	
@@ -81,7 +87,7 @@ def main():
 
 	parser.add_argument("--cshrink", type=int, help="""If the tomogram was PREVIOUSLY shrunk, --cshrink is the factor by which the tomogram supplied through --tomogram was shrunk with respect to 
 														the raw (unshrunk) tomgoram. This CAN work in conjuction with --shrink, so be careful. If both parameters are specified,
-														the coordinates found by the autoboxer will be multiplied by BOTH factors.""", default=1)
+														the coordinates found by the autoboxer will be multiplied by BOTH factors.""", default=0)
 
 	#parser.add_argument("--boxsize", type=int, help="Boxsize to resize the template, either provided through --template or computed from --particlestack", default=1)
 
@@ -112,6 +118,9 @@ def main():
 		
 	logger = E2init(sys.argv, options.ppid)
 	
+	
+	
+	print "THE particle radius at reading is!", options.ptclradius
 	'''
 	Check that the output and tomogam formats are sane, to prevent crashes later.
 	'''
@@ -153,8 +162,7 @@ def main():
 		os.system('mkdir ' + options.path)	
 	
 	options.path = rootpath + '/' + options.path
-	
-	
+
 	tomo = EMData(options.tomogram,0)
 	
 	if options.apix:
@@ -171,8 +179,6 @@ def main():
 
 		tomo.write_image(tomogramfile,0)
 		tomo = EMData(options.tomogram,0)
-
-	
 		
 	'''
 	Shrink tomogram (if required), then load it.
@@ -189,10 +195,6 @@ def main():
 		tomogramfile = options.tomogram
 		tomo = EMData(options.tomogram,0)
 
-	#else:
-	#	tomogramfile = options.tomogram		
-	
-	
 	tomox = tomo['nx']
 	tomoy = tomo['ny']
 	tomoz = tomo['nz']
@@ -203,21 +205,31 @@ def main():
 	'''
 	Apply any specified filters (preprocess, lowpass and/or highpass)
 	'''
-	if options.preprocess != None:
+	if options.preprocess:
 		print "Patience. Applying this processor to tomogram:", options.preprocess
-		tomogramfile = tomogramfile.replace('.','_pr.')
+		tomogramfile = options.path + '/' + tomogramfile.replace('.','_pr.')
 		os.system('e2proc3d.py ' + options.tomogram + ' ' + tomogramfile + ' --process=' + options.preprocess)
 		options.tomogram = tomogramfile
 		
-	if options.lowpass != None:
+	if options.lowpass:
 		print "Patience. Applying lowpass filter to tomogram:", options.lowpass
-		tomogramfile = tomogramfile.replace('.','_lp.')
+		print "Whose type is", type(options.lowpass)
+		
+		if options.path in tomogramfile:
+			tomogramfile = tomogramfile.replace('.','_lp.')
+		else:
+			tomogramfile = options.path + '/' + tomogramfile.replace('.','_lp.')
 		os.system('e2proc3d.py ' + options.tomogram + ' ' + tomogramfile + ' --process=' + options.lowpass)
 		options.tomogram = tomogramfile
 
-	if options.highpass != None:
+	if options.highpass:
 		print "Patience. Applying highpass filter to tomogram:", options.highpass
-		tomogramfile = tomogramfile.replace('.','_hp.')
+		
+		if options.path in tomogramfile:
+			tomogramfile = tomogramfile.replace('.','_hp.')
+		else:
+			tomogramfile = options.path + '/' + tomogramfile.replace('.','_hp.')
+		
 		os.system('e2proc3d.py ' + options.tomogram + ' ' + tomogramfile + ' --process=' + options.highpass)
 		options.tomogram = tomogramfile
 	
@@ -226,8 +238,6 @@ def main():
 	'''
 	xo=0
 	yo=0
-	
-
 	
 	if tomo['ny'] < tomo['nz']:
 		yshort = True
@@ -422,14 +432,16 @@ def main():
 	
 	if options.outputboxsize:
 		ptclradius = round( outputboxsize / 2.0 )
-		if options.shrink:
-			ptclradius = round( ptclradius/2.0 )
+		if options.shrink > 1:
+			ptclradius = round( ptclradius/ options.shrink )
 	
 	if options.ptclradius:
-		ptclradius = options.ptclradius		
-		if options.shrink:
-			ptclradius = round( ptclradius/2.0 )
+		ptclradius = options.ptclradius	
+		print "\n\nThe particle radis BEFORE any shrinking is", options.ptclradius	
+		if options.shrink > 1:
+			ptclradius = round( ptclradius/ options.shrink )
 			options.ptclradius = ptclradius
+			print "ptclradius being shrunk!!", options.ptclradius
 	
 	print "\n\n\nRRRRRRRRR\nThe particle radius in pixels is %f \nRRRRRRRRn\n\n" %(ptclradius)
 	
@@ -532,6 +544,7 @@ def main():
 	coeffset = set()
 	rmsdset = set()
 	
+	count=0
 	finalx=0
 	while xi < x and xc <= x -regionboxsize/2 and finalx < 2:
 		yi=0
@@ -557,27 +570,33 @@ def main():
 					ret = scanposition(options,transtemplate,outputboxsize,yshort,xi,yi,zi,xc,yc,zc,sbn)
 				
 				if ret:
+					#print "These many particles have been returned", len(ret)
+					asdfg=0
 					for r in ret:
-						print "This info has been returned", r
+						#print "I will examine particle", asdfg, r
+						#print "This info has been returned", r
 						newcoeff = r[0]
 						newcoefftuple = tuple( [newcoeff] )
 						coords=tuple( [ r[1],r[2],r[3] ] )
 						#oldcoeff=0
 						
 						if coords in coordset:
+							#print "The particle was already in coordset see", coordset							
 							for kkk in range(len(data)):
 								if list(coords) in data[kkk]:
 									oldcoeff = data[kkk][0]
 									if oldcoeff < newcoeff:
 										data[kkk][0]=newcoeff
-										print "The particlce was already in data, but the newcoeff is higher than the old", oldcoeff, newcoeff
+										#print "The particlce was already in data, but the newcoeff is higher than the old", oldcoeff, newcoeff
 										
 						elif coords not in coordset:
 								
 							coordset.add(coords)
 							coeffset.add(newcoefftuple)
 							data.append( [newcoeff,coords] )
-							print "I have appended a new particle!", [newcoeff,coords]
+							#print "I have appended a new particle!", [newcoeff,coords]
+							count+=1
+						asdfg+=1
 							
 				#print "And I have indeed appended such box", box
 				sbn+=1
@@ -590,10 +609,10 @@ def main():
 			yi += factor
 			yc += factor
 			if yi > y or yc > (y - regionboxsize/2 ) and y % factor:
-				print "I am at a special last box in Y! Therefore the old yi and yc", yi, yc 
+				#print "I am at a special last box in Y! Therefore the old yi and yc", yi, yc 
 				yi = y - regionboxsize
 				yc = y - regionboxsize/2
-				print "will be changed for", yi, yc
+				#print "will be changed for", yi, yc
 				finaly+=1
 			
 			if options.test:
@@ -605,91 +624,109 @@ def main():
 		xi += factor
 		xc += factor
 		if xi > x or xc > y - regionboxsize/2 and x % factor:
-			print "I am at a special last box in X! Therefore the old xi and xc", xi, xc 
+			#print "I am at a special last box in X! Therefore the old xi and xc", xi, xc 
 			xi = x - regionboxsize
 			xc = x - regionboxsize/2
-			print "will be changed for", xi, xc
+			#print "will be changed for", xi, xc
 			finalx+=1
 
 		if options.test:
 			xi*=2
 			xc*=2
-	
-	for m in range(len(boxes)):
-		print 'box', boxes[m]
-		print '\t center', centers[m]
+	print "\n\nCCCCCCCCCCCC\nThe total number of appended particles was %d\nCCCCCCCCCC\n\n" %(count)
+	#for m in range(len(boxes)):
+	#	print 'box', boxes[m]
+	#	print '\t center', centers[m]
 	
 	data.sort()
 	data.reverse()
 	
-	for i in data:
-		print "This is in data", i
+	#for i in data:
+	#	print "This is in data", i
+
+	print "the len of data WAS", len(data)
+	
+	coeffs = []
+	for d in range(len(data)):
+		coeffs.append(data[d][0])
+		
+	coeffsmean = numpy.mean(coeffs, dtype=numpy.float64)	
+	coeffssigma = numpy.std(coeffs, dtype=numpy.float64)
+	
+	print "The mean and sigma of the data is", coeffsmean, coeffssigma
+	print "Whereas the max and the min are", max(coeffs), min(coeffs)
+	lowerbound = coeffsmean - coeffssigma * 1.5
+	upperbound = coeffsmean + coeffssigma * 0.5
+	print "Therefore, one sigma away, the lower and upper bounds are", lowerbound, upperbound
+	
+	count=0
+	for d in data:
+		#print "The data element to examine", d
+		coeff = d[0]
+		#print "This is the coeff to examine", coeff
+		if coeff < lowerbound or coeff > upperbound:
+			count+=1
+			data.remove(d)
+			print "One element was removed. Data len is now", len(data)
+	
+	print "I have pruned out these many based on mean and sigma statistics", count
+	print "And therefore data now is", len(data)
+	
 	if options.subsettrans:
 		data = data[0:options.subsettrans]
+		print "I Have taken a subset of the data, see", options.subsettrans, len(data)
 		
-		print "The sorted subset of data is", data
-
-	print "the len of data is", len(data)
+		#print "The sorted subset of data is", data
+	print "I will now see if there are repeated elements"
 	
 	elementstoremove = []
 	for d in range(len(data)):
 		dvector = numpy.array( [ data[d][1][0],data[d][1][1],data[d][1][2] ] )
 		dcoeff = data[d][0]
+		#print"This is the d vector and its coeff", dvector, dcoeff
 		for e in range(d+1,len(data)):
 			evector = numpy.array( [ data[e][1][0],data[e][1][1],data[e][1][2] ] )
 			ecoeff = data[e][0]
-			print "The elements to compare are", dvector,evector
-			print "Their coeffs are", dcoeff, ecoeff
-		
-			#print "\nThe new vector to potentially add is", newvector
-			#print "\n"
-			'''
-			for element in data:
-				xs = element[1][0]
-				ys = element[1][1]
-				zs = element[1][2]
-				elementvector = numpy.array( [xs,ys,zs] )
-				elementcoeff = element[0]
-				#normelement = numpy.sqrt( xs*xs + ys*ys + zs*zs )
-								
-			print "The old element compared to the new one are", elementvector, newvector
-			'''
+			#if options.verbose:
+				#print ''
+				#print "The elements to compare are", dvector,evector
+				#print "Their coeffs are", dcoeff, ecoeff
 								
 			angle = numpy.degrees( numpy.arccos( numpy.dot(dvector,evector) / ( numpy.dot(evector,evector) * numpy.dot(dvector,dvector) ) ))
 			rmsd = numpy.linalg.norm(dvector - evector)
-			print "Their rmsd is", rmsd
+			#print "Their rmsd is", rmsd
 			
 			if rmsd < ptclradius*2.0:
 				#print "\n\n\nPPPPPPPP\n The particle is too close to another one or was already picked!!! %s, %s \nPPPPPPPP\n\n\n" %(elementvector,newvector)
-				pp = 1
+				#pp = 1
 				#print "And PP is ", pp
-				if rmsd < ptclradius:
+				#if rmsd < ptclradius:
 					#print "In fact, they seem to overlap at least in half of their volume; these are their coordinates", elementvector, newvector
 					#print "And PP is ", pp
-					if rmsd == 0:
-						print ''
+					#if rmsd == 0:
+					#	print ''
 				
-				print "which is lower than ptclradius*2, see", ptclradius*2	
+				#print "which is lower than ptclradius*2, see", ptclradius*2	
 				#print "Actually; the coordinates for their center are identical, and therefore this is a repeated particle", elementvector, newvector
 				#print "And PP is ", pp
 				if dcoeff > ecoeff:
 					if data[e] not in elementstoremove:
-						print "since evector has the lowest coeff, it will be added to elementstoremove", data[e]
+						#print "since evector has the lowest coeff, it will be added to elementstoremove", data[e]
 						elementstoremove.append(data[e])
 				elif ecoeff > dcoeff:
 					if data[d] not in elementstoremove:
-						print "since dvector has the lowest coeff, it will be added to elementstoremove", data[d]
+						#print "since dvector has the lowest coeff, it will be added to elementstoremove", data[d]
 						elementstoremove.append(data[d])
 	
-	print "\nThese are the elements to remove", elementstoremove
-	print "\nFrom this data", data			
-	print "\n"
+	#print "\nThese are the elements to remove", elementstoremove
+	#print "\nFrom this data", data			
+	#print "\n"
 	for ele in elementstoremove:
 		if ele in data:
-			print "I will remove this element", ele
+			#print "I will remove this element", ele
 			data.remove(ele)
 			#print "Therefore data now is", data
-											
+	print "\n\nEEEEEEE\nBut I have removed these many %d\nEEEEEEEE\n\n" %( len(elementstoremove))							
 	if options.verbose:
 		print "The program has finished scanning the tomogram for subvolumes"
 			
@@ -699,8 +736,9 @@ def main():
 			line = str(i[1][0] * options.shrink) + ' ' + str(i[1][1] * options.shrink) + ' ' + str(i[1][2] * options.shrink) + '\n'
 		if options.cshrink > 1:
 			line = str(i[1][0] * options.cshrink) + ' ' + str(i[1][1] * options.cshrink) + ' ' + str(i[1][2] * options.cshrink) + '\n'	
-		if options.verbose:
-			print "I have found a particle at these coordinates %s, and with this coefficient %f" %( line, i[0] )
+		if options.verbose > 3:
+			print ''
+			#print "I have found a particle at these coordinates %s, and with this coefficient %f" %( line, i[0] )
 		lines.append(line)
 	
 	coordsname = options.output.replace('.mrc','_coords.txt')
@@ -733,10 +771,9 @@ def generateref(options):
 	
 
 def scanposition(options,template,outputboxsize,yshort,xi,yi,zi,xc,yc,zc,sbn):
-	
-	
-	print "\n\nThese are the parameters received in scanposition function: xi=%d, OtherLongI=%d, xc=%d, OtherLongC=%d, zc=%d" %(xi,yi,xc,yc,zc)
-	print " I am scanning SUBREGION", sbn+1
+
+	#print "\n\nThese are the parameters received in scanposition function: xi=%d, OtherLongI=%d, xc=%d, OtherLongC=%d, zc=%d" %(xi,yi,xc,yc,zc)
+	#print " I am scanning SUBREGION", sbn+1
 	expandedtemplateboxsize = template['nx']
 	ptclmaskrad = outputboxsize/2
 	if options.ptclradius:
@@ -755,13 +792,14 @@ def scanposition(options,template,outputboxsize,yshort,xi,yi,zi,xc,yc,zc,sbn):
 		aux3=yc
 		yc=zc
 		zc=aux3
-	else:
-		print "ZSHORT!!!!!"
+	#else:
+		#print "ZSHORT!!!!!"
+	#	print ''
 		
 	r = Region( xi, yi, zi, expandedtemplateboxsize, expandedtemplateboxsize, expandedtemplateboxsize )
 
 	#print "\n\n$$$$$$$$$The coordinates of subregion %d are " %(sbn+1)
-	print xi, yi, zi, xi+expandedtemplateboxsize, yi+expandedtemplateboxsize, zi+expandedtemplateboxsize
+	#print xi, yi, zi, xi+expandedtemplateboxsize, yi+expandedtemplateboxsize, zi+expandedtemplateboxsize
 	#print "$$$$$$$$\n\n"
 	
 	subox = EMData()
@@ -775,12 +813,12 @@ def scanposition(options,template,outputboxsize,yshort,xi,yi,zi,xc,yc,zc,sbn):
 	subox['apix_y']=tomohdr['apix_y']
 	subox['apix_z']=tomohdr['apix_z']
 	
-	subox.write_image('subregion' +str(sbn+1).zfill(3) + '.hdf',0)
+	#subox.write_image('subregion' +str(sbn+1).zfill(3) + '.hdf',0)
 	#print "The dimensions of the EXTRACTED subox to write are", subox['nx'],subox['ny'],subox['nz']
 
 	if subox['mean']:
-		subox.process_inplace('normalize')
-		nptcls = int( round( ( (expandedtemplateboxsize * expandedtemplateboxsize * expandedtemplateboxsize) / (outputboxsize * outputboxsize * outputboxsize) ) ) )
+		#subox.process_inplace('normalize')
+		nptcls = int( round( ( (expandedtemplateboxsize * expandedtemplateboxsize * expandedtemplateboxsize) / (outputboxsize * outputboxsize * outputboxsize * options.concentrationfactor ) ) ) )
 		if options.test:
 			nptcls = 1	
 	
@@ -792,8 +830,8 @@ def scanposition(options,template,outputboxsize,yshort,xi,yi,zi,xc,yc,zc,sbn):
 		#print "The volume of the region is", expandedtemplateboxsize * expandedtemplateboxsize * expandedtemplateboxsize
 		#print "Whereas that of the output is", outputboxsize * outputboxsize * outputboxsize
 		#print "And therefore their ratio is", (expandedtemplateboxsize * expandedtemplateboxsize * expandedtemplateboxsize) / (outputboxsize * outputboxsize * outputboxsize)
-		print "The maximum is", ccf['maximum'] 
-		print "And it is at", ccf.calc_max_location()
+		#print "The maximum is", ccf['maximum'] 
+		#print "And it is at", ccf.calc_max_location()
 		#print "\n\nThe potential number of particles in this subregion is", nptcls
 		#print "\n\nDDDDDDDDDDDD\n\n\n\n\n\n"
 		coordssubset = set()
@@ -804,17 +842,16 @@ def scanposition(options,template,outputboxsize,yshort,xi,yi,zi,xc,yc,zc,sbn):
 		xmax=0
 		ymax=0
 		zmax=0
-		nptcls=2
 		
 		#edgeminval = ptclmaskrad
 		#edgemaxval = expandedtemplateboxsize - ptclmaskrad
 		
 		edgeminval = 0
 		edgemaxval = expandedtemplateboxsize
-		
+		#print "\n\n\nThe number of particles to look for in a subregion is %d\n\n\n" %(nptcls)
 		for p in range(nptcls):
-		 	print "\nAttempt numbr %d to find a particle" %(p)
-			print "in subregion", sbn+1
+		 	#print "\nAttempt numbr %d to find a particle" %(p)
+			#print "in subregion", sbn+1
 			#box = ccf.get_zsize()
 			#r =  Region((box/2) - int(parameters['searchx']), (box/2) - int(parameters['searchy']), (box/2) - int(parameters['searchz']), 2 * int(parameters['searchx']) + 1, 2 * int(parameters['searchy']) + 1, 2 * int(parameters['searchz']) + 1) 
 			#sub_ccf = ccf.get_clip(r)	
@@ -830,11 +867,12 @@ def scanposition(options,template,outputboxsize,yshort,xi,yi,zi,xc,yc,zc,sbn):
 			#print "Therefore, after subtracting this max from the subbox, the max is at", xmax,ymax,zmax
 			
 			if max < 1.0 or locmaxX < edgeminval or locmaxX > edgemaxval or locmaxY < edgeminval or locmaxY > edgemaxval or locmaxZ < edgeminval or locmaxZ > edgemaxval:
-				print "Either the max was less than 1; lets see", max
-				print "Or one of the coordinates of the maximum was too close to the edge", locmax
+				#print "Either the max was less than 1; lets see", max
+				#print "Or one of the coordinates of the maximum was too close to the edge", locmax
+				print "A particle has been skipped!"
 				pass			
 			else:
-				print "THE max for a potential particle was found at", locmax
+				#print "THE max for a potential particle was found at", locmax
 			
 				aux=0
 				if yshort:
@@ -844,30 +882,30 @@ def scanposition(options,template,outputboxsize,yshort,xi,yi,zi,xc,yc,zc,sbn):
 					zmax=aux
 				
 				#print "The SUBREGION BOXSIZE or expandedtemplateboxsize for this thing is", expandedtemplateboxsize
-				print "And max value is", max
+				#print "And max value is", max
 				
 				realxmax = (expandedtemplateboxsize - locmaxX) + xi
 				realymax = (expandedtemplateboxsize - locmaxY) + yi
 				realzmax = (expandedtemplateboxsize - locmaxZ) + zi
 				
-				print "Therefore, the REAL final coordinates are", realxmax,realymax,realzmax	
-				#maskx=locmaxX - expandedtemplateboxsize/2
-				#masky=locmaxY - expandedtemplateboxsize/2
-				#maskz=locmaxZ - expandedtemplateboxsize/2
+				#print "Therefore, the REAL final coordinates are", realxmax,realymax,realzmax	
+				maskx=locmaxX - expandedtemplateboxsize/2
+				masky=locmaxY - expandedtemplateboxsize/2
+				maskz=locmaxZ - expandedtemplateboxsize/2
 				
-				maskx = (expandedtemplateboxsize - locmaxX)
-				masky = (expandedtemplateboxsize - locmaxY)
-				maskz = (expandedtemplateboxsize - locmaxZ)
+				#maskx = (expandedtemplateboxsize - locmaxX)
+				#masky = (expandedtemplateboxsize - locmaxY)
+				#maskz = (expandedtemplateboxsize - locmaxZ)
 				
-				print "Therefore the mask will be centered at", maskx,masky,maskz
+				#print "Therefore the mask will be centered at", maskx,masky,maskz
 				ccf.process_inplace('mask.sharp',{'inner_radius':ptclmaskrad,'dx':maskx,'dy':masky,'dz':maskz})
 				#ccf.process_inplace('mask.sharp',{'inner_radius':ptclmaskrad,'dx':xmax-subboxsiz/2,'dy':ymax-subboxsiz/2,'dz':zmax-subboxsiz/2})
-				print "\nThe ptclmaskrad used is\n", ptclmaskrad
-				print "\n\n"
+				#print "\nThe ptclmaskrad used is\n", ptclmaskrad
+				#print "\n\n"
 				#ccf.write_image('subregion' +str(sbn+1).zfill(3) + '_ccf_mask' + str(p).zfill(3)+ '.hdf',0)				
 				results.append([max,realxmax,realymax,realzmax])
 				#coordssubset.add(( realxmax, realymax, realzmax )) 
-			
+				
 				#if xi<80 and p == 2:
 				#	print "$$$$$$$$$$$$$$$$$$$ I will write the melon ball!"
 				#	ccf.write_image('zzmelonedball.hdf',0)
