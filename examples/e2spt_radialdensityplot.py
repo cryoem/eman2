@@ -49,7 +49,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_argument("--vols", type=str, help="Volume whose radial density plot you want to compute. For multiple volumes, either provide them as an .hdf stack, or separate them by commas --vols=first.hdf,second.hdf,etc...", default=None)
-	parser.add_argument("--output", type=str, help="Name for the output .png and .txt files that contain the plots and the numeric values for them. Must be specified if --singleplot is on.", default=None)
+	parser.add_argument("--output", type=str, help="Name for the output .png and .txt files that contain the plots and the numeric values for them. Must be specified if --singleplot is on.", default='')
 	parser.add_argument("--mode", type=str, help="""provide --mode=x, y, or z to get the average density per slice in the indicated direction. 
 	--mode=cylinder for concentric cylindrical shell; default is --mode=sphere. For MULTIPLE modes, separate them by commas, for example --mode=x,y,z,cylinder""", default='sphere')
 	parser.add_argument("--fixedcylinderheight", type=int, help="Works only if --mode=cylinder, and keeps the height of the cylinder at a constant value, while varying the radius.", default=0)
@@ -89,10 +89,19 @@ def main():
 	if '.txt' not in options.output:
 		print "ERROR: output must be in .txt format"
 		sys.exit()
-
+	
+	if not options.output:
+		print "ERROR: You must provide an output in .txt format"
+		sys.exit()
+			
 	names = options.vols
 	names = names.split(',')
 	
+	for i in xrange(0,len(names)):
+		for j in range(i+1,len(names)):
+			if names[i] == names[j]:
+				print "ERROR: You have supplied a file twice, see", names[i],names[j]
+				sys.exit()
 	modes=options.mode.split(',')
 	
 	for m in modes:
@@ -127,7 +136,7 @@ def main():
 				stackvalues.append(values)
 			finalvalues.update({i:stackvalues})	
 	
-		if verbose:
+		if options.verbose:
 			print "\n\nfinal values are", finalvalues
 	
 		if options.singleplot and len(names) > 1:
@@ -197,7 +206,9 @@ def main():
 					plotname = output.replace('.txt', '.png')
 					print "The png name is", plotname
 					print "because output is", output
-				
+				print "Type of finalvalues is", type(finalvalues)
+				print "The key I want is", i
+				print "and the dict to get it from is", finalvalues
 				for j in range(len(finalvalues[i])):
 					apix = EMData(i,j,True)['apix_x']
 					
