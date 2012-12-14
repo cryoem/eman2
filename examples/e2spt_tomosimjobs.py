@@ -419,7 +419,7 @@ def main():
 			
 			if len(set(snrs)) == 1: 
 				if len(set(trs)) == 1:
-					angfilename = resultsdir+'/' + resultsdir.split('/')[-1] + '_angular_error_varTS_' + str(d).zfill(2) + '.txt'
+					angfilename = resultsdir+'/' + resultsdir.split('/')[-2] + '_angular_error_varTS_' + str(d).zfill(2) + '.txt'
 					oneD_plot(tss,ang_errors,angfilename.replace('.txt','.png'),'tilt step')
 					writeresultsfile(tss,ang_errors,angfilename)
 					
@@ -428,7 +428,7 @@ def main():
 					writeresultsfile(tss,trans_errors,transfilename)
 					
 				if len(set(tss)) == 1:
-					angfilename = resultsdir+'/' + resultsdir.split('/')[-1] + '_angular_error_varTR_' + str(d).zfill(2) + '.txt'
+					angfilename = resultsdir+'/' + resultsdir.split('/')[-2] + '_angular_error_varTR_' + str(d).zfill(2) + '.txt'
 					oneD_plot(trs,ang_errors,angfilename.replace('.txt','.png'),'tilt range')
 					writeresultsfile(trs,ang_errors,angfilename)
 					
@@ -438,7 +438,7 @@ def main():
 					
 			if len(set(trs)) == 1: 
 				if len(set(tss)) == 1:
-					angfilename = resultsdir+'/' + resultsdir.split('/')[-1] + '_angular_error_varSNR_' + str(d).zfill(2) + '.txt'
+					angfilename = resultsdir+'/' + resultsdir.split('/')[-2] + '_angular_error_varSNR_' + str(d).zfill(2) + '.txt'
 					oneD_plot(snrs,ang_errors,angfilename.replace('.txt','.png'),'noise level')
 					writeresultsfile(snrs,ang_errors,angfilename)
 					
@@ -519,7 +519,7 @@ def main():
 			
 			if len(set(snrs)) == 1: 
 				if len(set(trs)) == 1:
-					angfilename = resultsdir+'/' + resultsdir.split('/')[-1] + '_angular_error_varTS_' + str(d).zfill(2) + '.txt'
+					angfilename = resultsdir+'/' + resultsdir.split('/')[-2] + '_angular_error_varTS_' + str(d).zfill(2) + '.txt'
 					oneD_plot(tss,ang_errors,angfilename.replace('.txt','.png'),'tilt step')
 					writeresultsfile(tss,ang_errors,angfilename)
 					
@@ -528,7 +528,7 @@ def main():
 					writeresultsfile(tss,trans_errors,transfilename)
 					
 				if len(set(tss)) == 1:
-					angfilename = resultsdir+'/' + resultsdir.split('/')[-1] + '_angular_error_varTR_' + str(d).zfill(2) + '.txt'
+					angfilename = resultsdir+'/' + resultsdir.split('/')[-2] + '_angular_error_varTR_' + str(d).zfill(2) + '.txt'
 					oneD_plot(trs,ang_errors,angfilename.replace('.txt','.png'),'tilt range')
 					writeresultsfile(trs,ang_errors,angfilename)
 					
@@ -538,7 +538,7 @@ def main():
 					
 			if len(set(trs)) == 1: 
 				if len(set(tss)) == 1:
-					angfilename = resultsdir+'/' + resultsdir.split('/')[-1] + '_angular_error_varSNR_' + str(d).zfill(2) + '.txt'
+					angfilename = resultsdir+'/' + resultsdir.split('/')[-2] + '_angular_error_varSNR_' + str(d).zfill(2) + '.txt'
 					oneD_plot(snrs,ang_errors,angfilename.replace('.txt','.png'),'noise level')
 					writeresultsfile(snrs,ang_errors,angfilename)
 					
