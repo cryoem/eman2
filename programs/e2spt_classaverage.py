@@ -104,8 +104,8 @@ def main():
 	
 	#parser.add_argument('--reverse_contrast', action="store_true", default=False, help=""" This multiplies the input particles by -1. Remember that EMAN2 **MUST** work with 'white protein' """)
 	
-	parser.add_argument("--shrink", type=int,default=1,help="Optionally shrink the input volumes by an integer amount for coarse alignment.", guitype='shrinkbox', row=5, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
-	parser.add_argument("--shrinkrefine", type=int,default=1,help="Optionally shrink the input volumes by an integer amount for refine alignment.", guitype='intbox', row=5, col=2, rowspan=1, colspan=1, mode='alignment')
+	parser.add_argument("--shrink", type=int,default=0,help="Optionally shrink the input volumes by an integer amount for coarse alignment.", guitype='shrinkbox', row=5, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
+	parser.add_argument("--shrinkrefine", type=int,default=0,help="Optionally shrink the input volumes by an integer amount for refine alignment.", guitype='intbox', row=5, col=2, rowspan=1, colspan=1, mode='alignment')
 	
 	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:1", guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	#parser.add_argument("--automask",action="store_true",help="Applies a 3-D automask before centering. Can help with negative stain data, and other cases where centering is poor.")
@@ -173,6 +173,11 @@ def main():
 	if options.path and ("/" in options.path or "#" in options.path) :
 		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
 		sys.exit(1)
+	
+	if options.shrink < options.shrinkrefine:
+		options.shrink = options.shrinkrefine
+		print "It makes no sense for shrinkrefine to be larger than shrink; therefore, shrink will be made to match shrinkrefine"
+	
 		
 	if options.path and options.path[:4].lower()!="bdb:":
 		#if options.path == '.':
@@ -752,14 +757,14 @@ class Align3DTask(EMTask):
 		'''
 		#Shrinking both for initial alignment and reference
 		'''
-		if options["shrink"]!=None and options["shrink"]>1 :
+		if options["shrink"] and options["shrink"]>1 :
 			sfixedimage=fixedimage.process("math.meanshrink",{"n":options["shrink"]})
 			simage=image.process("math.meanshrink",{"n":options["shrink"]})
 		else:
 			sfixedimage=fixedimage
 			simage=image
 			
-		if options["shrinkrefine"]!=None and options["shrinkrefine"]>1 :
+		if options["shrinkrefine"] and options["shrinkrefine"]>1 :
 			if options["shrinkrefine"] == options["shrink"] :
 				s2fixedimage=sfixedimage
 				s2image=simage
@@ -836,12 +841,13 @@ class Align3DTask(EMTask):
 			bestcoarse = simage.xform_align_nbest(options["align"][0],sfixedimage,options["align"][1],options["npeakstorefine"],options["aligncmp"][0],options["aligncmp"][1])
 			
 			# Scale translation
-			if options["ralign"]!=None :
+			scaletrans=1.0
+			if options["ralign"] and options["shrinkrefine"] :
 				scaletrans=options["shrink"]/float(options["shrinkrefine"])
-			else:
+			elif options["shrink"]:
 				scaletrans=float(options["shrink"])
 				
-			if scaletrans!=1.0:
+			if scaletrans>1.0:
 				for c in bestcoarse:
 					c["xform.align3d"].set_trans(c["xform.align3d"].get_trans()*scaletrans)
 
