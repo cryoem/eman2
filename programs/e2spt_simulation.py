@@ -61,7 +61,7 @@ def main():
 	parser.add_argument("--filter",type=str,help="""A filter (as in a processor from e2proc3d.py) apply to the model before generating simulated particles from it.
 							Type 'e2help.py processors' at the command line and find the options availbale from the processors list)""",default=None)
 	
-	parser.add_argument("--shrink", type=int,default=1,help="Optionally shrink the input volume before the simulation if you want binned/down-sampled subtomograms.")
+	parser.add_argument("--shrink", type=int,default=0,help="Optionally shrink the input volume before the simulation if you want binned/down-sampled subtomograms.")
 	parser.add_argument("--verbose", "-v", type=int, dest="verbose", action="store", metavar="n", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	parser.add_argument("--nptcls", type=int,default=10,help="Number of simulated subtomograms tu generate per referece.")
@@ -224,7 +224,7 @@ def main():
 		if model['nx'] != model['ny'] or model['nx'] != model['nz'] or model['ny'] != model['nz']:
 			newsize = max(model['nx'], model['ny'], model['nz'])
 			
-		if options.shrink != None and options.shrink > 1:
+		if options.shrink and options.shrink > 1:
 			newsize = newsize/options.shrink	
 			if newsize % 2:
 				newsize += 1
@@ -451,7 +451,7 @@ def subtomosim(options,ptcls,stackname):
 			
 			prj_r = prj_fft.do_ift()							#Go back to real space
 			
-			if options.snr:
+			if options.snr and options.snr != 0.0 and options.snr != '0.0' and options.snr != '0':
 				#prj_r.process_inplace('math.addnoise',{'noise':options.snr})
 				
 				#prj_n = EMData(nx,ny)
