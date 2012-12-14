@@ -63,10 +63,10 @@ def main():
 	
 	parser.add_argument("--path",type=str,default=None,help="Directory to store results in. The default is a numbered series of directories containing the prefix 'sptsimjob'; for example, sptsimjob_02 will be the directory by default if 'sptsimjob_01' already exists.")
 	
-	parser.add_argument("--snrlowerlimit", type=float,default=0.0,help="Minimum weight for noise compared to singal.")
-	parser.add_argument("--snrupperlimit", type=float,default=1.0,help="Maximum weight for noise compared to singal.")
+	parser.add_argument("--snrlowerlimit", type=float,default=0.00,help="Minimum weight for noise compared to singal.")
+	parser.add_argument("--snrupperlimit", type=float,default=1.00,help="Maximum weight for noise compared to singal.")
 
-	parser.add_argument("--snrchange", type=float,default=1.0,help="""Step to vary snr from one run to another. 
+	parser.add_argument("--snrchange", type=float,default=1.00,help="""Step to vary snr from one run to another. 
 										For example, if this parameter is set to 2.0, snr will be tested from --snrlowerlimit (for example, 0.0), increasing by --snrchange, 0.0,2.0,4.0... up to --snrupperlimit.""")
 
 	parser.add_argument("--tiltrangelowerlimit", type=int,default=60,help="""Minimum value for imaging range (at a value of 90, there's no missing wedge. 
@@ -106,7 +106,8 @@ def main():
 	parser.add_argument("--filter",type=str,help="""A filter (as in a processor from e2proc3d.py) apply to the model before generating simulated particles from it.
 							Type 'e2help.py processors' at the command line and find the options availbale from the processors list)""",default=None)
 	
-	parser.add_argument("--shrink", type=int,default=1,help="Optionally shrink the input volume before the simulation if you want binned/down-sampled subtomograms.")
+	parser.add_argument("--shrinkalign", type=int,default=0,help="Optionally shrink the input volume before the simulation if you want binned/down-sampled subtomograms.")
+	parser.add_argument("--shrinksim", type=int,default=0,help="Optionally shrink the input volume before the simulation if you want binned/down-sampled subtomograms.")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	parser.add_argument("--nptcls", type=int,default=10,help="Number of simulated subtomograms tu generate per referece.")
@@ -169,22 +170,6 @@ def main():
 	Make the directory where to create the database where the results will be stored
 	'''
 	
-	#if options.path and ("/" in options.path or "#" in options.path) :
-	#	print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
-	#	sys.exit(1)
-		
-	#if options.path and options.path[:4].lower()!="bdb:": 
-	#	options.path="bdb:"+options.path
-
-	#if not options.path: 
-	#	#options.path="bdb:"+numbered_path("sptavsa",True)
-	#	options.path = "sptsim_01"
-	
-	
-	#if options.path and ("/" in options.path or "#" in options.path) :
-	#	print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
-	#	sys.exit(1)
-
 	if not options.path: 
 		#options.path="bdb:"+numbered_path("sptavsa",True)
 		options.path = "sptsimjob_01"
@@ -192,12 +177,9 @@ def main():
 	rootpath = os.getcwd()
 	
 	files=os.listdir(rootpath)
-	print "right before while loop"
+
 	while options.path in files:
-		print "in while loop, options.path is", options.path
-		#path = options.path
 		if '_' not in options.path:
-			print "I will add the number"
 			options.path = options.path + '_00'
 		else:
 			jobtag=''
@@ -208,19 +190,15 @@ def main():
 				components.append('00')
 						
 			options.path = '_'.join(components)
-			#options.path = path
-			print "The new options.path is", options.path
+
 
 	if options.path not in files:
-		
-		print "I will make the path", options.path
 		os.system('mkdir ' + options.path)	
 	
 	if not options.plotonly:
 		#if options.testalignment:	
 		#	resultsdir = 'results_ali_errors'
 		#	os.system('cd ' + options.path + ' && mkdir ' + resultsdir)
-	
 	
 		snrl = options.snrlowerlimit
 		snru = options.snrupperlimit
@@ -242,29 +220,25 @@ def main():
 		if tiltstepl == 0:
 			print "ERROR! You cannot start with a tilt step of 0. The minimum tiltstep is 1, thus, the lower limit for this parameter, tiltsteplowerlimit, must be at least 1."
 	
-	
-	
 		nrefs = EMUtil.get_image_count(options.input)
 		
 		tiltrange=tiltrangel
 		while tiltrange <tiltrangeu:
-			print "tiltrage is", tiltrange
-
+			#print "tiltrage is", tiltrange
+			tiltrangetag = ("%.2f" %(tiltrange) ).zfill(5)
 			tiltstep=tiltstepl
-			#if options.nsliceschange and options.nsliceslowerlimit and options.nslicesupperlimit:
-			#	tiltstep = options.nsliceslowerlimit
-
 
 			while tiltstep < tiltstepu:
-				tiltsteptag = str(tiltstep).zfill(5)
+				#tiltsteptag = str(tiltstep).zfill(5)
+				tiltsteptag = ("%.2f" %(tiltstep)).zfill(5)
 
 				if options.nsliceschange and options.nsliceslowerlimit and options.nslicesupperlimit:
 					#print "The number of slices is", tiltstep
-					tiltsteptag = str( round(2.0 * tiltrange / tiltstep,1) ).zfill(5)
+					#tiltsteptag = str( round(2.0 * tiltrange / tiltstep,1) ).zfill(5)
+					tiltsteptag = ("%.2f" %( round(2.0 * tiltrange / tiltstep,1) ) ).zfill(5)
 				else:
 					t=1
 					#print "The tilt step is", tiltstep
-
 
 				snr=snrl
 				while snr < snru:
@@ -274,16 +248,16 @@ def main():
 
 					for d in range(nrefs):
 						modeltag = ''
-						subpath = rootpath + '/' + options.path + '/' +'TR' + str(tiltrange).zfill(5) + '_TS' + tiltsteptag + '_SNR' + str(snr).zfill(5)
+						#subpath = rootpath + '/' + options.path + '/' +'TR' + str(tiltrange).zfill(5) + '_TS' + tiltsteptag + '_SNR' + str(snr).zfill(5)
 						
-						#print '\n.....\n.......\n.....\n......\n.. subpath is %s .......\n.......\n.......\n' %(subpath)
-						#print '\n.....\n.......\n.....\n......\n.. subpath is %s .......\n.......\n.......\n' %(subpath)
-
+						snrtag = ("%.2f" %(snr) ).zfill(5)
+						subpath = rootpath + '/' + options.path + '/' +'TR' + tiltrangetag + '_TS' + tiltsteptag + '_SNR' + snrtag
+						"%.2f"
+					
 						inputdata = options.input
-						#print '\n.....\n.......\n.....\n......\n.. inputdata is %s .......\n.......\n.......\n' %(inputdata)
 
 						if nrefs > 1:
-							modeltag = 'model' + str(d).zfill(5)
+							modeltag = 'model' + str(d).zfill(len(str(nrefs)))
 							subpath += '_' + modeltag
 
 							model = EMData(options.input,d)
@@ -294,11 +268,11 @@ def main():
 
 						subtomos =  subpath.split('/')[-1] + '.hdf'
 
-						jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --tiltstep=' + str(tiltstep) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrink) + ' --finalboxsize=' + str(options.finalboxsize)
+						jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --tiltstep=' + str(tiltstep) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrinksim) + ' --finalboxsize=' + str(options.finalboxsize)
 
 						if options.nsliceschange and options.nsliceslowerlimit and options.nslicesupperlimit:
-							print "\n\n\n$$$$$$$$$$$$$$\nYou hvae provided the number of slices\n$$$$$$$$\n\n\n",tiltstep
-							jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --nslices=' + str(tiltstep) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrink) + ' --finalboxsize=' + str(options.finalboxsize)
+							#print "\n\n\n$$$$$$$$$$$$$$\nYou hvae provided the number of slices\n$$$$$$$$\n\n\n",tiltstep
+							jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --nslices=' + str(tiltstep) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrinksim) + ' --finalboxsize=' + str(options.finalboxsize)
 
 						if options.simref:
 							jobcmd += ' --simref'
@@ -317,22 +291,9 @@ def main():
 
 						if options.testalignment:
 
-							#modeldir = ''
-							#if nrefs > 1:
-							#	modeldir = '/model' + str(d).zfill(2)
-
-							#cmd = cmd + ' && cd ' + rootpath + '/' + options.path + '/' + subpath #UPDATE
 							cmd = cmd + ' && cd ' + subpath
 
-							#subtomos = options.input.split('/')[-1].replace('.hdf','_sptsimMODEL_randst_n' + str(options.nptcls) + '_' + subpath + '_subtomos.hdf')
-
-							#print "\nRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR\nRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR\nSubtomos name will be\n", subtomos
-
 							ref = inputdata.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf')
-
-							#if nrefs > 1:
-							#	modd = 'model' + str(d).zfill(2)
-							#	ref = options.input.split('/')[-1].replace('.hdf','_sptsimMODELS_' + modd + '.hdf')
 
 							output=subtomos.replace('.hdf', '_avg.hdf')
 							#print "\n\n$$$$$$$$$$$$$$$$$$$$$$\nRef name is\n$$$$$$$$$$$$$$$$$$$\n", ref
@@ -344,7 +305,7 @@ def main():
 							#print "\n##################################\nAlipath1 for results will be\n", alipath1
 							#print "\n##################################\nAlipath2 for results will be\n", alipath2
 
-							alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --npeakstorefine=4 -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=0 --parallel=" + options.parallel + " --ralign=refine_3d_grid:delta=3:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=2 --savesteps --saveali --normproc=normalize"
+							alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --npeakstorefine=4 -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=0 --parallel=" + options.parallel + " --ralign=refine_3d_grid:delta=3:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=" + str(options.shrinkalign) + " --shrinkrefine=" + str(options.shrinkalign) +" --savesteps --saveali --normproc=normalize"
 
 							if options.quicktest:
 								alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=" + options.parallel + " --ralign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=3 --savesteps --saveali --normproc=normalize"
@@ -456,33 +417,9 @@ def main():
 				twoD_snr_tr_points.append({'tilt range':tr,'noise level':snr,'angular_error':ang,'translational_error':trans})
 				twoD_snr_ts_points.append({'tilt step':ts,'noise level':snr,'angular_error':ang,'translational_error':trans})
 			
-			#angfilename=resultsdir+'/angular_error.txt'
-			#transfilename=resultsdir+'/translational_error.txt'	
-			#if len(set(snrs)) == 1: 
-			#	if len(set(trs)) == 1:
-			#		oneD_plot(tss,ang_errors,angfilename.replace('.txt','.png'),'tilt step')
-			#		writeresultsfile(tss,ang_errors,angfilename)		
-			#
-			#		oneD_plot(tss,trans_errors,transfilename.replace('.txt','.png'),'tilt step')
-			#		writeresultsfile(tss,trans_errors,transfilename)
-			#		
-			#	elif len(set(tss)) == 1:
-			#		oneD_plot(trs,ang_errors,angfilename.replace('.txt','.png'),'tilt range')
-			#		writeresultsfile(trs,ang_errors,angfilename)
-			#		
-			#		oneD_plot(trs,trans_errors,transfilename.replace('.txt','.png'),'tilt range')
-			#		writeresultsfile(trs,trans_errors,transfilename)
-			#	
-			#elif len(set(trs)) == 1: 
-			#	if len(set(tss)) == 1:
-			#		writeresultsfile(snrs,ang_errors,angfilename)
-			#		
-			#		oneD_plot(snrs,trans_errors,transfilename.replace('.txt','.png'),'noise level')
-			#		writeresultsfile(snrs,trans_errors,transfilename)
-			
 			if len(set(snrs)) == 1: 
 				if len(set(trs)) == 1:
-					angfilename = resultsdir+'/angular_error_varTS_' + str(d).zfill(len(files)) + '.txt'
+					angfilename = resultsdir+'/' + resultsdir.split('/')[-1] + '_angular_error_varTS_' + str(d).zfill(2) + '.txt'
 					oneD_plot(tss,ang_errors,angfilename.replace('.txt','.png'),'tilt step')
 					writeresultsfile(tss,ang_errors,angfilename)
 					
@@ -491,23 +428,23 @@ def main():
 					writeresultsfile(tss,trans_errors,transfilename)
 					
 				if len(set(tss)) == 1:
-					angfilename = resultsdir+'/angular_error_varTR_' + str(d).zfill(len(files)) + '.txt'
+					angfilename = resultsdir+'/' + resultsdir.split('/')[-1] + '_angular_error_varTR_' + str(d).zfill(2) + '.txt'
 					oneD_plot(trs,ang_errors,angfilename.replace('.txt','.png'),'tilt range')
-					writeresultsfile(tss,ang_errors,angfilename)
+					writeresultsfile(trs,ang_errors,angfilename)
 					
 					transfilename = angfilename.replace('angular','translational')
 					oneD_plot(trs,trans_errors,transfilename.replace('.txt','.png'),'tilt range')
-					writeresultsfile(tss,trans_errors,transfilename)
+					writeresultsfile(trs,trans_errors,transfilename)
 					
 			if len(set(trs)) == 1: 
 				if len(set(tss)) == 1:
-					angfilename = resultsdir+'/angular_error_varSNR_' + str(d).zfill(len(files)) + '.txt'
+					angfilename = resultsdir+'/' + resultsdir.split('/')[-1] + '_angular_error_varSNR_' + str(d).zfill(2) + '.txt'
 					oneD_plot(snrs,ang_errors,angfilename.replace('.txt','.png'),'noise level')
-					writeresultsfile(tss,ang_errors,angfilename)
+					writeresultsfile(snrs,ang_errors,angfilename)
 					
 					transfilename = angfilename.replace('angular','translational')
 					oneD_plot(snrs,trans_errors,transfilename.replace('.txt','.png'),'noise level')
-					writeresultsfile(tss,trans_errors,transfilename)
+					writeresultsfile(snrs,trans_errors,transfilename)
 					
 			if len(set(snrs)) == 1 and len(set(trs)) > 1 and len(set(tss)) > 1:
 				twoD_plot(twoD_tr_ts_points,val1='tilt range',val2='tilt step',location=resultsdir +'/')
@@ -529,9 +466,9 @@ def main():
 		d=0
 		resultsdir = rootpath + '/' + options.path
 		
-		for ff in files:
+		for ff in resfiles:
 			print "\n\nI'm analyzing file %d\n\n" %(d)	
-			if len(files) > 1:
+			if len(resfiles) > 1:
 				modname = 'file' + str(d).zfill(2) + 'plots'
 				resultsdir = rootpath + '/' + options.path + '/' + modname
 				os.system('mkdir ' + resultsdir)
@@ -539,9 +476,8 @@ def main():
 				print "\n\nSupposedly I made this results dir %s\n\n" %(resultsdir)
 			else:
 				print "\n\nThere's only one file therefore resultsdir is %s\n\n" %(resultsdir)
-				print "\n\nSee, files are", files
+				print "\n\nSee, files are", resfiles
 			
-			#resfiles = []
 			ang_errors = []
 			trans_errors = []
 		
@@ -558,12 +494,7 @@ def main():
 			fff = open(ff,'r')
 			lines = fff.readlines()
 			
-			#findir = os.listdir(resultsdir)
-			#for f in findir:
-			#	if 'error.txt' in f:
-			#		resfiles.append(f)
-			
-			#resfiles.sort()
+		
 			for line in lines:
 				tr = float( line.split('tr=')[-1].split(' ')[0] )
 				trs.append(tr)
@@ -573,8 +504,6 @@ def main():
 				
 				ts = float( line.split('ts=')[-1].split(' ')[0] )
 				tss.append(ts)
-				
-				#threeD_points.append( [tr,snr,ts] )
 				
 				ang = float( line.split('angular_error=')[-1].split(' ')[0] )
 				ang_errors.append(ang)
@@ -587,31 +516,10 @@ def main():
 				twoD_snr_tr_points.append({'tilt range':tr,'noise level':snr,'angular_error':ang,'translational_error':trans})
 				twoD_snr_ts_points.append({'tilt step':ts,'noise level':snr,'angular_error':ang,'translational_error':trans})
 				
-			#if len(set(snrs)) == 1: 
-			#	if len(set(trs)) == 1:
-			#		oneD_plot(tss,ang_errors,resultsdir+'/angular_error_varTS_' + str(d).zfill(len(files)) + '.png','tilt step')
-			#		writeresultsfile(tss,ang_errors,angfilename)
-			#		
-			#		oneD_plot(tss,trans_errors,resultsdir+'/translational_error_varTS_' + str(d).zfill(len(files)) + '.png','tilt step')
-			#		writeresultsfile(tss,trans_errors,transfilename)
-			#	
-			#	if len(set(tss)) == 1:
-			#		oneD_plot(trs,ang_errors,resultsdir+'/angular_error_varTR_' + str(d).zfill(len(files)) + '.png','tilt range')
-			#		writeresultsfile(tss,ang_errors,angfilename)
-			##		oneD_plot(trs,trans_errors,resultsdir+'/translational_error_varTR_' + str(d).zfill(len(files)) + '.png','tilt range')
-			#		writeresultsfile(tss,trans_errors,transfilename)
-			#		
-			#if len(set(trs)) == 1: 
-			#	if len(set(tss)) == 1:
-			#		oneD_plot(snrs,ang_errors,resultsdir+'/angular_error_varSNR_' + str(d).zfill(len(files)) + '.png','noise level')
-			#		writeresultsfile(tss,ang_errors,angfilename)
-			#		
-			#		oneD_plot(snrs,trans_errors,resultsdir+'/translational_error_varSNR_' + str(d).zfill(len(files)) + '.png','noise level')
-			#		writeresultsfile(tss,trans_errors,transfilename)
 			
 			if len(set(snrs)) == 1: 
 				if len(set(trs)) == 1:
-					angfilename = resultsdir+'/angular_error_varTS_' + str(d).zfill(len(files)) + '.txt'
+					angfilename = resultsdir+'/' + resultsdir.split('/')[-1] + '_angular_error_varTS_' + str(d).zfill(2) + '.txt'
 					oneD_plot(tss,ang_errors,angfilename.replace('.txt','.png'),'tilt step')
 					writeresultsfile(tss,ang_errors,angfilename)
 					
@@ -620,23 +528,23 @@ def main():
 					writeresultsfile(tss,trans_errors,transfilename)
 					
 				if len(set(tss)) == 1:
-					angfilename = resultsdir+'/angular_error_varTR_' + str(d).zfill(len(files)) + '.txt'
+					angfilename = resultsdir+'/' + resultsdir.split('/')[-1] + '_angular_error_varTR_' + str(d).zfill(2) + '.txt'
 					oneD_plot(trs,ang_errors,angfilename.replace('.txt','.png'),'tilt range')
-					writeresultsfile(tss,ang_errors,angfilename)
+					writeresultsfile(trs,ang_errors,angfilename)
 					
 					transfilename = angfilename.replace('angular','translational')
 					oneD_plot(trs,trans_errors,transfilename.replace('.txt','.png'),'tilt range')
-					writeresultsfile(tss,trans_errors,transfilename)
+					writeresultsfile(trs,trans_errors,transfilename)
 					
 			if len(set(trs)) == 1: 
 				if len(set(tss)) == 1:
-					angfilename = resultsdir+'/angular_error_varSNR_' + str(d).zfill(len(files)) + '.txt'
+					angfilename = resultsdir+'/' + resultsdir.split('/')[-1] + '_angular_error_varSNR_' + str(d).zfill(2) + '.txt'
 					oneD_plot(snrs,ang_errors,angfilename.replace('.txt','.png'),'noise level')
-					writeresultsfile(tss,ang_errors,angfilename)
+					writeresultsfile(snrs,ang_errors,angfilename)
 					
 					transfilename = angfilename.replace('angular','translational')
 					oneD_plot(snrs,trans_errors,transfilename.replace('.txt','.png'),'noise level')
-					writeresultsfile(tss,trans_errors,transfilename)
+					writeresultsfile(snrs,trans_errors,transfilename)
 			
 					
 			if len(set(snrs)) == 1 and len(set(trs)) > 1 and len(set(tss)) > 1:
