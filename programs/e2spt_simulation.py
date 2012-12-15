@@ -74,7 +74,7 @@ def main():
 	parser.add_argument("--transrange", type=int,default=4,help="""Maximum number of pixels to randomly translate each subtomogram in all X, Y and Z. 
 									The random translation will be picked between -transrage and +transrange; --txrange, --tyrange and --tzrange overwrite --transrange for each specified direction.""")
 	
-	parser.add_argument("--tiltstep", type=float,default=5.0,help="Degrees between each image in the simulated tilt series for each subtomogram.")
+	#parser.add_argument("--tiltstep", type=float,default=5.0,help="Degrees between each image in the simulated tilt series for each subtomogram.")
 	parser.add_argument("--tiltrange", type=float,default=5.0,help="""Maximum angular value at which the highest tilt picture will be simulated. Projections will be simulated from -tiltrange to +titlrange. 
 									For example, if simulating a tilt series collected from -60 to 60 degrees, enter a --tiltrange value of 60. 
 									Note that this parameter will determine the size of the missing wedge.""")
@@ -109,7 +109,8 @@ def main():
 	parser.add_argument("--simref",action="store_true",default=False,help="This will make a simulated particle in the same orientation as the original input (or reference).")
 	parser.add_argument("--negativecontrast",action="store_true",default=False,help="This will make the simulated particles be like real EM data before contrast reversal. Otherwise, 'white protein' (positive density values) will be used.")
 
-	parser.add_argument("--nslices", type=int,default=0,help="If on, this will invalidate the tiltstep parameter.")	
+	parser.add_argument("--nslices", type=int,default=0,help="""This will determine the tilt step between slices, depending on tiltrange, For example, to simulate a 2 deg tilt step supply --nslices=61 --tiltrange=60.
+									Recall that --tiltrange goes from - to + the supplied value, and that there is a central slice or projection at 0 deg.""")	
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -379,12 +380,12 @@ def subtomosim(options,ptcls,stackname):
 	lower_bound = -1 * options.tiltrange
 	upper_bound = options.tiltrange
 	
-	nslices = int(round((upper_bound - lower_bound)/ options.tiltstep))
-	if options.nslices:
-		nslices = options.nslices
-		options.tiltstep = float(upper_bound) - float(lower_bound) / float(nslices)
-		
-		#nslices = int(round((upper_bound - lower_bound)/ options.tiltstep))		
+	#nslices = int(round((upper_bound - lower_bound)/ options.tiltstep))
+	#if options.nslices:
+	nslices = options.nslices
+	tiltstep = round(( float(upper_bound) - float(lower_bound) )/ float(nslices),2)	
+	
+	#nslices = int(round((upper_bound - lower_bound)/ options.tiltstep))		
 	
 	if options.verbose:
 		print "There are these many particles in the set", len(ptcls)
@@ -398,12 +399,12 @@ def subtomosim(options,ptcls,stackname):
 	tomogramdata=[]
 	for i in range(len(ptcls)):
 		if options.verbose:
-			print "Projecting and adding noise to particle #", i
+			print "Generating projections for particle #", i
 
 		apix = ptcls[i]['apix_x']
 		
-		print "\n\nBBBBBBBBBB\n\nThe apix of the simulated ptcl is", apix
-		print "\n\nBBBBBBBBBB\n\n"
+		#print "\n\nBBBBBBBBBB\n\nThe apix of the simulated ptcl is", apix
+		#print "\n\nBBBBBBBBBB\n\n"
 		
 		px = random.uniform(-1* options.gridholesize/2 + ptcls[i]['nx']/2, options.gridholesize/2 - ptcls[i]['nx']/2)			#random distance in X of the particle's center from the tilt axis, at tilt=0
 																																#The center of a particle cannot be right at the edge of the tomogram; it has to be
@@ -428,13 +429,19 @@ def subtomosim(options,ptcls,stackname):
 			prj.set_attr('xform.projection',t)
 			prj['apix_x']=apix
 			prj['apix_y']=apix
+			prj['sptsim_tiltangle']=alt
 			
 			#print "The size of the prj is", prj['nx']
 			
 			prj.process_inplace('normalize')
 			
 			if options.saveprjs:
-				prj.write_image( options.path + '/' + stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsRAW.hdf') , j)					#Write projections stack for particle i
+				if options.path in stackname:
+					prj.write_image( stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsRAW.hdf') , j)					#Write projections stack for particle i
+				else:
+					prj.write_image( options.path + '/' + stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsRAW.hdf') , j)					#Write projections stack for particle i
+				
+				
 			raw_projections.append(prj)
 					
 			prj_fft = prj.do_fft()
@@ -472,10 +479,13 @@ def subtomosim(options,ptcls,stackname):
 			ctfed_projections.append(prj_r)		
 
 			if options.saveprjs and options.applyctf or options.saveprjs and options.snr:
-				prj_r.write_image(options.path + '/' + stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsEDITED.hdf') , j)	
+				if options.path in stackname:
+					prj_r.write_image( stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsEDITED.hdf') , j)
+				else:
+					prj_r.write_image(options.path + '/' + stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsEDITED.hdf') , j)	
 			
 						
-			alt += int(options.tiltstep)
+			alt += tiltstep
 		
 		box = ptcls[i].get_xsize()
 		
