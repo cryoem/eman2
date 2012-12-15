@@ -77,17 +77,18 @@ def main():
 	parser.add_argument("--tiltrangechange", type=int,default=1,help="Amount (in degrees) to decrease the size of the missing wedge from one run to another.")	
 	
 	
-	parser.add_argument("--tiltsteplowerlimit", type=int,default=1,help="""Within each tiltrange simulated, you can simulate individual pictures taken with different tilt steps.
-										For example, if you collect images from -60deg to 60deg with a 2deg tilt step, the tilt series will have 61 images.
-										If, on the other hand, the tilt step was 4deg, the tilt series will only have 31 images.
-										--tiltstepupperlimit is the largest step size you want to simulate.""")
-	parser.add_argument("--tiltstepupperlimit", type=int,default=2,help="""Within each tiltrange simulated, you can simulate individual pictures taken with different tilt steps.
-										For example, if you collect images from -60deg to 60deg with a 2deg tilt step, the tilt series will have 61 images.
-										If, on the other hand, the tilt step was 4deg, the tilt series will only have 31 images.
-										--tiltstepupperlimit is the largest step size you want to simulate.""")
-	parser.add_argument("--tiltstepchange", type=int,default=1,help="""Increase in size of tilt step from one run to another. 
-											Jobs will be run using --tiltstepstep as the first value, and then adding that value on subsequent runs until --tiltsteplimit is reached""")
-											
+	#parser.add_argument("--tiltsteplowerlimit", type=int,default=1,help="""Within each tiltrange simulated, you can simulate individual pictures taken with different tilt steps.
+	#									For example, if you collect images from -60deg to 60deg with a 2deg tilt step, the tilt series will have 61 images.
+	#									If, on the other hand, the tilt step was 4deg, the tilt series will only have 31 images.
+	#									--tiltstepupperlimit is the largest step size you want to simulate.""")
+	#parser.add_argument("--tiltstepupperlimit", type=int,default=2,help="""Within each tiltrange simulated, you can simulate individual pictures taken with different tilt steps.
+	#									For example, if you collect images from -60deg to 60deg with a 2deg tilt step, the tilt series will have 61 images.
+	#									If, on the other hand, the tilt step was 4deg, the tilt series will only have 31 images.
+	#									--tiltstepupperlimit is the largest step size you want to simulate.""")
+	#parser.add_argument("--tiltstepchange", type=int,default=1,help="""Increase in size of tilt step from one run to another. 
+	#										Jobs will be run using --tiltstepstep as the first value, and then adding that value on subsequent runs until --tiltsteplimit is reached""")
+	#										
+	
 	parser.add_argument("--nsliceslowerlimit", type=int,default=0,help="Lowest number of slices to divide the tiltrange in. If on and --nslicesupperlimit is ALSO on (any number other than zero), this will turn off all tiltstep parameters.")	
 
 	parser.add_argument("--nslicesupperlimit", type=int,default=0,help="Largest number of slices to divide the tiltrange in. If on and --nsliceslowerlimit is ALSO on (values other than zero), this will turn off all tiltstep parameters.")	
@@ -208,42 +209,43 @@ def main():
 		tiltrangeu = options.tiltrangeupperlimit
 		tiltrangech = options.tiltrangechange
 
-		tiltstepl = options.tiltsteplowerlimit
-		tiltstepu = options.tiltstepupperlimit
-		tiltstepch = options.tiltstepchange
+		#tiltstepl = options.tiltsteplowerlimit
+		#tiltstepu = options.tiltstepupperlimit
+		#tiltstepch = options.tiltstepchange
 	
-		if options.nsliceschange and options.nsliceslowerlimit and options.nslicesupperlimit:
-			tiltstepl = options.nsliceslowerlimit
-			tiltstepu = options.nslicesupperlimit
-			tiltstepch = options.nsliceschange
+		#if options.nsliceschange and options.nsliceslowerlimit and options.nslicesupperlimit:
+		nslicesl = options.nsliceslowerlimit
+		nslicesu = options.nslicesupperlimit
+		nslicesch = options.nsliceschange
 	
-		if tiltstepl == 0:
-			print "ERROR! You cannot start with a tilt step of 0. The minimum tiltstep is 1, thus, the lower limit for this parameter, tiltsteplowerlimit, must be at least 1."
+		if nslicesl == 0:
+			print "ERROR! You cannot simulate a subvolume using 0 slices or projection images. The minimum --nsliceslowerlimit is 1."
 	
 		nrefs = EMUtil.get_image_count(options.input)
 		
 		tiltrange=tiltrangel
 		while tiltrange <tiltrangeu:
 			#print "tiltrage is", tiltrange
-			tiltrangetag = ("%.2f" %(tiltrange) ).zfill(5)
-			tiltstep=tiltstepl
+			tiltrangetag = ("%d" %(tiltrange) ).zfill(3)
+			nslices=nslicesl
 
-			while tiltstep < tiltstepu:
+			while nslices < nslicesu:
 				#tiltsteptag = str(tiltstep).zfill(5)
-				tiltsteptag = ("%.2f" %(tiltstep)).zfill(5)
-
-				if options.nsliceschange and options.nsliceslowerlimit and options.nslicesupperlimit:
-					#print "The number of slices is", tiltstep
-					#tiltsteptag = str( round(2.0 * tiltrange / tiltstep,1) ).zfill(5)
-					tiltsteptag = ("%.2f" %( round(2.0 * tiltrange / tiltstep,1) ) ).zfill(5)
-				else:
-					t=1
-					#print "The tilt step is", tiltstep
+				nslicestag = ("%d" %(nslices)).zfill(3)
+				
+				#tiltstep = round(2.0 * tiltrange / tiltstep,1)
+				#if options.nsliceschange and options.nsliceslowerlimit and options.nslicesupperlimit:
+				#	#print "The number of slices is", tiltstep
+				#	#tiltsteptag = str( round(2.0 * tiltrange / tiltstep,1) ).zfill(5)
+				#	tiltsteptag = ("%.2f" %( round(2.0 * tiltrange / tiltstep,1) ) ).zfill(5)
+				#else:
+				#	t=1
+				#	#print "The tilt step is", tiltstep
 
 				snr=snrl
 				while snr < snru:
+					print "The conditions tosimulate are tiltrange=%d, nslices=%d, snr=%.2f" % (tiltrange,nslices,snr)
 					#print "Snr is", snr
-
 					#rootpath = os.getcwd()
 
 					for d in range(nrefs):
@@ -251,7 +253,7 @@ def main():
 						#subpath = rootpath + '/' + options.path + '/' +'TR' + str(tiltrange).zfill(5) + '_TS' + tiltsteptag + '_SNR' + str(snr).zfill(5)
 						
 						snrtag = ("%.2f" %(snr) ).zfill(5)
-						subpath = rootpath + '/' + options.path + '/' +'TR' + tiltrangetag + '_TS' + tiltsteptag + '_SNR' + snrtag
+						subpath = rootpath + '/' + options.path + '/' +'TR' + tiltrangetag + '_NS' + nslicestag + '_SNR' + snrtag
 						"%.2f"
 					
 						inputdata = options.input
@@ -268,11 +270,11 @@ def main():
 
 						subtomos =  subpath.split('/')[-1] + '.hdf'
 
-						jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --tiltstep=' + str(tiltstep) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrinksim) + ' --finalboxsize=' + str(options.finalboxsize)
+						jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --nslices=' + str(nslices) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrinksim) + ' --finalboxsize=' + str(options.finalboxsize)
 
-						if options.nsliceschange and options.nsliceslowerlimit and options.nslicesupperlimit:
-							#print "\n\n\n$$$$$$$$$$$$$$\nYou hvae provided the number of slices\n$$$$$$$$\n\n\n",tiltstep
-							jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --nslices=' + str(tiltstep) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrinksim) + ' --finalboxsize=' + str(options.finalboxsize)
+						#if options.nsliceschange and options.nsliceslowerlimit and options.nslicesupperlimit:
+						#	#print "\n\n\n$$$$$$$$$$$$$$\nYou hvae provided the number of slices\n$$$$$$$$\n\n\n",tiltstep
+						#	jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --nslices=' + str(tiltstep) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrinksim) + ' --finalboxsize=' + str(options.finalboxsize)
 
 						if options.simref:
 							jobcmd += ' --simref'
@@ -326,13 +328,13 @@ def main():
 
 							cmd = cmd + alicmd + extractcmd + solutioncmd + rfilecmd
 
-						print "\n\n\n*********************The command to execute is \n %s \n*********************\n" %(cmd)
+						#print "\n\n\n*********************The command to execute is \n %s \n*********************\n" %(cmd)
 
 						os.system(cmd)
 
 					snr += snrch
 
-				tiltstep += tiltstepch
+				nslices += nslicesch
 
 			tiltrange += tiltrangech
 
@@ -394,7 +396,7 @@ def main():
 				snr = float(ff.split('SNR')[-1].split('_')[0])
 				snrs.append(snr)
 				
-				ts = float(ff.split('TS')[-1].split('_')[0])
+				ts = float(ff.split('NS')[-1].split('_')[0])
 				tss.append(ts)
 				
 				#3dpoints.append([tr,snr,ts])
@@ -419,7 +421,7 @@ def main():
 			
 			if len(set(snrs)) == 1: 
 				if len(set(trs)) == 1:
-					angfilename = resultsdir+'/' + resultsdir.split('/')[-2] + '_angular_error_varTS_' + str(d).zfill(2) + '.txt'
+					angfilename = resultsdir+'/' + resultsdir.split('/')[-2] + '_angular_error_varNS_' + str(d).zfill(2) + '.txt'
 					oneD_plot(tss,ang_errors,angfilename.replace('.txt','.png'),'tilt step')
 					writeresultsfile(tss,ang_errors,angfilename)
 					
@@ -519,7 +521,7 @@ def main():
 			
 			if len(set(snrs)) == 1: 
 				if len(set(trs)) == 1:
-					angfilename = resultsdir+'/' + resultsdir.split('/')[-2] + '_angular_error_varTS_' + str(d).zfill(2) + '.txt'
+					angfilename = resultsdir+'/' + resultsdir.split('/')[-2] + '_angular_error_varNS_' + str(d).zfill(2) + '.txt'
 					oneD_plot(tss,ang_errors,angfilename.replace('.txt','.png'),'tilt step')
 					writeresultsfile(tss,ang_errors,angfilename)
 					
