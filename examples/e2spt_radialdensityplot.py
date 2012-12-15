@@ -125,7 +125,18 @@ def main():
 			print "The stack %s has %d images in it" % ( i, n ) 
 			for j in range(n):
 				ptcl = EMData(i,j)
-				#radius = a.get_xsize()/2
+				
+				#dimensionality = calc_dimension(ptcl)
+				
+				#if dimensionality == 0:
+				#	print "Your image is a POINT. There's nothing to process"
+				#elif dimensionality == 1:
+				#	print "Your image is a LINE. There's nothing to process"
+				#elif dimensionality == 2:
+				#	print "You image is 2D"
+				#elif dimensionality == 3:		
+				#	print "Your image is 3D"
+			
 				values = calcvalues(ptcl,options)
 			
 				if options.normalizeplot:
@@ -220,7 +231,10 @@ def main():
 				
 					x=range(len(values))
 					for i in range(len(x)):
-						x[i] = int(round(x[i] * apix))
+						shrinkf = 1
+						if options.shrink > 1:
+							shrinkf = options.shrink
+						x[i] = int(round(x[i] * apix * shrinkf))
 				
 					plt.title("Spherical radial density plot")
 					plt.ylabel("Density (arbitrary units)")
@@ -294,13 +308,24 @@ def calcvalues(a,options):
 		a.process_inplace(options.highpass[0],options.highpass[1])
 
 	# Shrink
-	if options.shrink !=None and options.shrink>1 :
-		a=a.process("math.meanshrink",{"n":options.shrink})
+	if options.shrink>1 :
+		shrinkfactor = options.shrink
+		x = a['nx']
+		y = a['ny']
+		z = a['nz']
+		f = min(x,y,z)
+		if shrinkfactor > f:
+			print """You have supplied a shrinkfactor that is larger than the smallest dimensions of your image.
+				Therefore, the shrinkfactor will be changed to""", f
+			shrinkfactor = f
+			
+		a=a.process("math.meanshrink",{"n":shrinkfactor})
 	
 	if options.threshold:
 		a=a.process("threshold.belowtozero",{"minval":0.0})
 
 	if options.mode == 'sphere':
+		print "I will calculate the radial density"
 		values = a.calc_radial_dist(a['nx']/2, 0, 1, 1)
 		return(values)
 	
@@ -341,34 +366,73 @@ def cylinder(a,options):
 	return(values)
 
 
+def calc_dimension(a):
+	dimensionality = 0
+	nx=a['nx']
+	ny=a['ny']
+	nz=a['nz']
+	if nx == 1 and ny == 1 and nz == 1:
+		pass
+	if (nx == 1 and ny == 1 and nz > 1) or (nx == 1 and nz == 1 and ny > 1) or (ny == 1 and nz == 1 and nx > 1): 
+		dimensionality = 1
+	if (nx == 1 and ny > 1 and nz > 1) or (ny == 1 and nx > 1 and ny > 1) or (nz == 1 and nx > 1 and ny > 1):
+		dimensionality = 2
+	if nx >1 and ny > 1 and nz > 1:
+		dimensionality = 3
+	
+	return (dimensionality)
+
+
 def direction(a,options):
 	values = []
+	dimensionality = calc_dimension(a)
+	if dimensionality < 2:
+		if dimensionality == 0:
+			print "Your image is a point. There's nothing to analyze. Perhaps you over shrunk"
+			sys.exit()
+	x = a['nx']
+	y = a['ny']
+	z = a['nz']
 	mask = EMData(a['nx'],a['ny'],a['nz'])
 	mask.to_one()
-	
-	rng = a['nx']
+	#print "The size of the image is", x,y,z
+	rng = 0
+	if options.mode == 'x':
+		rng = x
 	if options.mode == 'y':
-		rng == a['ny']
-	
+		rng = y
 	if options.mode == 'z':
-		rng == a['nz']
+		rng = z
 	
-	print "The mode is", options.mode
-	print "And the range for values calculation is", rng
+	#print "The mode is", options.mode
+	#print "and it should be equal to y see", 'y' == options.mode
+	#print "And the range for values calculation is", rng
 	
 	for i in xrange(0,rng):
+		#print "\nFor slice", i
 		maskslice = mask
-		if options.mode == 'x':
-			maskslice = mask.process("mask.zeroedge3d",{'x0':i,'x1':a['nx'] -i -1,'y0':0,'y1':0,'z0':0,'z1':0})
-		
-		if options.mode == 'y':
-			maskslice = mask.process("mask.zeroedge3d",{'x0':0,'x1':0,'y0':i,'y1':a['ny'] -i -1,'z0':0,'z1':0})
-		
-		if options.mode == 'z':
-			maskslice = mask.process("mask.zeroedge3d",{'x0':0,'x1':0,'y0':0,'y1':0,'z0':i,'z1':a['nz'] -i -1})
-		
+		#print "I will mask the image, whose dimensionality is", dimensionality
+		if options.mode == 'x' and x > 1:
+			if dimensionality == 3:
+				maskslice = mask.process("mask.zeroedge3d",{'x0':i,'x1':a['nx'] -i -1,'y0':0,'y1':0,'z0':0,'z1':0})
+			elif dimensionality == 2:
+				maskslice = mask.process("mask.zeroedge2d",{'x0':i,'x1':a['nx'] -i -1,'y0':0,'y1':0})
+				
+		if options.mode == 'y' and y > 1:
+			if dimensionality == 3:
+				maskslice = mask.process("mask.zeroedge3d",{'x0':0,'x1':0,'y0':i,'y1':a['ny'] -i -1,'z0':0,'z1':0})
+			elif dimensionality == 2:
+				maskslice = mask.process("mask.zeroedge2d",{'x0':0,'x1':0,'y0':i,'y1':a['ny'] -i -1})
+			#print "The mask in Y was computed."
+		if options.mode == 'z' and z > 1:
+			if dimensionality == 3:
+				maskslice = mask.process("mask.zeroedge3d",{'x0':0,'x1':0,'y0':0,'y1':0,'z0':i,'z1':a['nz'] -i -1})
+			else:
+				print "ERROR: It makes no sense to look for density variations across z y a 2D image"
+				sys.exit()	
 		b = a.copy()
 		b.mult(maskslice)
+		#print "The mask was applied.\n"
 		value = b ['mean_nonzero']
 		values.append(value)
 		
