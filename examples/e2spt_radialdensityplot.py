@@ -142,8 +142,9 @@ def main():
 			
 				if options.normalizeplot:
 					maxv = max(values)
+					minv = min(values)
 					for v in range(len(values)):
-						values[v] = values[v]/maxv	
+						values[v] = (values[v] - minv)/maxv	
 			
 				stackvalues.append(values)
 			finalvalues.update({i:stackvalues})	
