@@ -67,35 +67,50 @@ def main():
 	parser.add_argument("--apix", "-A", type=float, help="A/voxel", default=1.0)
 	parser.add_argument("--res", "-R", type=float, help="Resolution in A, equivalent to Gaussian lowpass with 1/e width at 1/res",default=2.8)
 	parser.add_argument("--box", "-B", type=str, help="Box size in pixels, <xyz> or <x>,<y>,<z>")
-	parser.add_argument("--het", action="store_true", help="Include HET atoms in the map", default=False)
+	parser.add_argument("--het", action="store_true", help="Include HET atoms in the map", default=None)
 	parser.add_argument("--chains",type=str,help="String list of chain identifiers to include, eg 'ABEFG'")
 	parser.add_argument("--quiet",action="store_true",default=False,help="Verbose is the default")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_argument("--usenufft", type=int, help="Use the summation calculation",default=-1)
-	parser.add_argument("--addpdbbfactor", type=int, help="Use the bfactor as the atom radius",default=-1)
-	parser.add_argument("--boxsize", type=int, help="Box size in pixel",default=0)
+	
+	parser.add_argument("--usenufft", action="store_true", help="Use the summation calculation",default=False)
+	parser.add_argument("--addpdbbfactor", action="store_true", help="Use the bfactor/temperature factor as the atom blurring radius, equivalent to Gaussian lowpass with 1/e width at 1/bfactor",default=False)
 	
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")
 	try: chains=options.chains
 	except: chains=None
 	try: box=options.box
-	except: box=None
-	
-	if (options.usenufft==-1):
-		outmap = pdb_2_mrc(args[0],options.apix,options.res,options.het,box,chains,options.quiet)
-		outmap.write_image(args[1])
-	else:
-		if options.boxsize==0: 
-			print("Box size required")
-			sys.exit(1)
+	except: box=None	
 		
+	if (options.usenufft):		
+		if (options.box==None):
+			print "Must input the box size, <x>,<y>,<z>"
+			sys.exit(1)
+						
+		try: boxs=options.box.split(',')
+		except:
+			raise Exception,"Invalid Input: %s"%optstr 
+		try: boxs=[int(i) for i in boxs]
+		except:
+			raise Exception,"Invalid Input: %s"%optstr				
+				
+		boxsize=max(boxs)
+				
+		if options.addpdbbfactor==False:
+			addpdbbfactor=-1
+		else:
+			addpdbbfactor=1
+			
 		pa=PointArray()
 		pa.read_from_pdb(args[0])
-		out=pa.pdb2mrc_by_summation(options.boxsize,options.apix,options.res,options.addpdbbfactor)
+		out=pa.pdb2mrc_by_summation(boxsize,options.apix,options.res,addpdbbfactor)
 		out.write_image(args[1])
-		
+
+	else:
+		outmap = pdb_2_mrc(args[0],options.apix,options.res,options.het,box,chains,options.quiet)
+		outmap.write_image(args[1])
+						
 # this function originally added so that it could be accessed independently (for Junjie Zhang by David Woolford)
 def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,quiet=False):
 	'''
@@ -176,8 +191,6 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,quiet=Fa
 	gaus.to_one()
 	
 	gaus.process_inplace("mask.gaussian",{"outer_radius":12.0})
-	
-	sys.exit(1)
 
 	# find the output box size, either user specified or from bounding box
 	outbox=[0,0,0]
@@ -210,10 +223,8 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,quiet=Fa
 	# initialize the final output volume
 	outmap=EMData()
 	outmap.set_size(outbox[0],outbox[1],outbox[2])
-	outmap.to_zero()
-	
-	for i in range(len(aavg)): aavg[i] = aavg[i]/float(natm)
-	
+	outmap.to_zero()	
+	for i in range(len(aavg)): aavg[i] = aavg[i]/float(natm)	
 	# fill in the atom gaussians
 	xt = outbox[0]/2 - (amax[0]-amin[0])/(2*apix)
 	yt = outbox[1]/2 - (amax[1]-amin[1])/(2*apix)
@@ -226,16 +237,12 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,quiet=Fa
 			# This insertion strategy ensures the output is centered.
 			elec=atomdefs[a[0].upper()][0]
 			outmap.insert_scaled_sum(gaus,(a[1]/apix+xt-amin[0]/apix,a[2]/apix+yt-amin[1]/apix,a[3]/apix+zt-amin[2]/apix),res/(pi*12.0*apix),elec)
-		except: print "Skipping %d '%s'"%(i,a[0])
-		
-	if not quiet: print '\r   %d\nConversion complete'%len(atoms)
-	
+		except: print "Skipping %d '%s'"%(i,a[0])		
+	if not quiet: print '\r   %d\nConversion complete'%len(atoms)		
 	outmap.set_attr("apix_x",apix)
 	outmap.set_attr("apix_y",apix)
-	outmap.set_attr("apix_z",apix)
-	
+	outmap.set_attr("apix_z",apix)	
 	return outmap
 	
-
 if __name__ == "__main__":
     main()
