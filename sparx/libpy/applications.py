@@ -12231,3 +12231,144 @@ def imgstat_hfsc( stack, file_prefix, fil_attr='filament'):
 	
 	write_text_file(even_segs, file_prefix + '_even.txt')
 	write_text_file(odd_segs, file_prefix + '_odd.txt')	
+
+def match_pixel_rise(dz,px, nz, rele=0.1):
+	dnz = nz*px
+	ndisk = (int(dnz/dz)-1)//2
+
+	q=1.0
+	for i in xrange(900000):
+		q = 1.0 - 0.000001*i
+		error = ((int(ndisk*dz/q/px) - ndisk*dz/q/px)/px)**2
+		if (error < rele): return q, error
+	return -1.0, -1.0
+
+def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fract=0.67, rmax=70, rmin=0, CTF=False, user_func_name = "helical", sym = "c1", dskfilename='bdb:disks'):
+	from mpi              import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier, MPI_INT, MPI_TAG_UB, MPI_FLOAT, mpi_recv, mpi_send, mpi_reduce, MPI_MAX
+	from utilities        import get_params_proj, read_text_row, model_cylinder,pad, set_params3D, get_params3D, model_blank, drop_image
+	from utilities        import reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, bcast_EMData_to_all, send_EMData, recv_EMData
+	from utilities        import send_attr_dict, file_type, sym_vol
+	from fundamentals     import resample, rot_shift3D
+	from applications     import MPI_start_end, match_pixel_rise
+	from math             import fmod, atan, pi
+	from utilities        import model_blank
+	from filter           import filt_tanl, filt_ctf
+	import os
+	from statistics       import fsc_mask
+	from copy             import copy
+	from os               import sys
+	from time             import time
+	from alignment        import Numrinit, ringwe
+	from reconstruction   import recons3d_wbp
+	from morphology       import ctf_2
+
+	myid  = mpi_comm_rank(MPI_COMM_WORLD)
+	nproc = mpi_comm_size(MPI_COMM_WORLD)
+	main_node = 0
+
+	mpi_barrier(MPI_COMM_WORLD)
+
+	dpp = (float(dp)/pixel_size)
+	rise = int(dpp)
+	if(float(rise) != dpp):
+		print "  dpp has to be integer multiplicity of the pixel size"
+		sys.exit()
+	# for resampling to polar rmin>1
+	rminpolar = max(1,rmin)
+	rr = ref_nz//2-2
+
+	import user_functions
+	user_func = user_functions.factory[user_func_name]
+
+	allfilaments = EMUtil.get_all_attributes(stack, 'filament')
+	for i in xrange(len(allfilaments)):
+		allfilaments[i] = [allfilaments[i],i]
+	allfilaments.sort()
+	filaments = []
+	current = allfilaments[0][0]
+	temp = [allfilaments[0][1]]
+	for i in xrange(1,len(allfilaments)):
+		if( allfilaments[i][0] == current ):
+			temp.extend([allfilaments[i][1]])
+		else:
+			filaments.append(temp)
+			current = allfilaments[i][0]
+			temp = [allfilaments[i][1]]
+	filaments.append(temp)
+
+	del allfilaments, temp
+
+	total_nfils = len(filaments)
+	fstart, fend = MPI_start_end(total_nfils, nproc, myid)
+	filaments = filaments[fstart:fend]
+	nfils = len(filaments)
+	#  Get the maximum number of filaments on any node
+	mfils = nfils
+	mfils = mpi_reduce(mfils, 1, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD)
+	if myid == main_node:  mfils = int(mfils[0])
+	mfils = mpi_bcast(mfils, 1, MPI_INT, 0, MPI_COMM_WORLD)
+	mfils = int(mfils[0])
+
+	list_of_particles = []
+	indcs = []
+	k = 0
+	for i in xrange(nfils):
+		list_of_particles += filaments[i]
+		k1 = k+len(filaments[i])
+		indcs.append([k,k1])
+		k = k1
+
+	data = EMData.read_images(stack, list_of_particles)
+	nima = len(data)
+
+	data_nx = data[0].get_xsize()
+	data_ny = data[0].get_xsize()
+	mask2D  = pad(model_blank(2*int(rmax), data_ny, 1, 1.0), data_nx, data_ny, 1, 0.0)
+	for im in xrange(nima):
+		data[im].set_attr('ID', list_of_particles[im])
+		if CTF:
+			ctf_params = data[im].get_attr("ctf")
+			st = Util.infomask(data[im], mask2D, False)
+			data[im] -= st[0]
+			data[im] = filt_ctf(data[im], ctf_params)
+			data[im].set_attr('ctf_applied', 1)
+	del list_of_particles, mask2D
+
+	ref_data = [None, mask3d, None, None, None ]
+
+	# do full sized reconstruction with the projection parameters BEFORE they are modified by disk alignment step
+	if myid == main_node:  outvol = 0
+	start_time = time()
+	for ivol in xrange(mfils):
+		if( ivol < nfils ):
+			fullvol0 = Util.window(recons3d_wbp(data, list_proj=range(indcs[ivol][0],indcs[ivol][1]), method = None, symmetry=sym, radius=rr), ref_nx, ref_ny, ref_nz, 0, 0, 0)
+			#print "finished reconstruction"
+			fullvol0 = fullvol0.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
+			fullvol0 = sym_vol(fullvol0, symmetry=sym)
+			ref_data[0] = fullvol0
+			fullvol0 = user_func(ref_data)
+			fullvol0 = fullvol0.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
+			fullvol0 = sym_vol(fullvol0, symmetry=sym)
+			fullvol0 = Util.window(fullvol0, ref_nx, ref_ny, rise)
+			fullvol0.set_attr("filament",data[indcs[ivol][0]].get_attr("filament"))  # this will be lost due to mpi, find a way around it
+			if mask3d != None:  Util.mul_img(fullvol0, mask3d)
+			gotfil = 1
+		else:
+			gotfil = 0
+		if(myid == main_node):
+			for i in xrange(nproc):
+				if(i != main_node):
+					didfil = mpi_recv(1, MPI_INT, i, MPI_TAG_UB, MPI_COMM_WORLD)
+					didfil = int(didfil[0])
+					if(didfil == 1):
+						fil = recv_EMData(i, ivol+i+70000)
+						fil.write_image(dskfilename, outvol)
+						outvol += 1
+				else:
+					if( gotfil == 1 ):
+						fullvol0.write_image(dskfilename, outvol)
+						outvol += 1
+		else:
+			mpi_send(gotfil, 1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+			if(gotfil == 1):
+				send_EMData(fullvol0, main_node, ivol+myid+70000)
