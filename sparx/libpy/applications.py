@@ -12198,3 +12198,36 @@ def get_dist(c1, c2):
 	from math import sqrt
 	d = sqrt((c1[0] - c2[0])**2 + (c1[1] - c2[1])**2)
 	return d
+	
+def imgstat_hfsc( stack, file_prefix, fil_attr='filament'):
+	from utilities import write_text_file
+	
+	allfilaments = EMUtil.get_all_attributes(stack, fil_attr)
+	for i in xrange(len(allfilaments)):
+		allfilaments[i] = [allfilaments[i],i]
+	allfilaments.sort()
+	filaments = []
+	current = allfilaments[0][0]
+	temp = [allfilaments[0][1]]
+	for i in xrange(1,len(allfilaments)):
+		if( allfilaments[i][0] == current ):
+			temp.extend([allfilaments[i][1]])
+		else:
+			filaments.append(temp)
+			current = allfilaments[i][0]
+			temp = [allfilaments[i][1]]
+	filaments.append(temp)
+	
+	nfil = len(filaments)
+	
+	even_segs = []
+	odd_segs = []
+	
+	for ifil in xrange(nfil):
+		if ifil%2 == 0:
+			even_segs += filaments[ifil]
+		else:
+			odd_segs += filaments[ifil]
+	
+	write_text_file(even_segs, file_prefix + '_even.txt')
+	write_text_file(odd_segs, file_prefix + '_odd.txt')	

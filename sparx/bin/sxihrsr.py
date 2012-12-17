@@ -131,7 +131,7 @@ def main():
 			if len(args) != 1:
 				print  "Incorrect number of parameters"
 				sys.exit()
-			from development import imgstat_hfsc
+			from applications import imgstat_hfsc
 			imgstat_hfsc( args[0], options.hfsc, options.filament_attr)
 			sys.exit()
 		
