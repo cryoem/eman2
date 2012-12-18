@@ -1262,7 +1262,7 @@ void EMData::insert_rect_slice(EMData* w, EMData* myfft, const Transform& trans,
 				coordinate_3dnew[1] = ynew*yratio;
 				coordinate_3dnew[2] = znew*zratio;
 				
-				//binlinear interpolation
+				//bilinear interpolation
 				float xp = coordinate_2d_square[0];
 				float yp = ( coordinate_2d_square[1] >= 0) ? coordinate_2d_square[1]+1 : nxyz+coordinate_2d_square[1]+1;
 				std::complex<float> lin_interpolated(0,0);
@@ -1280,12 +1280,11 @@ void EMData::insert_rect_slice(EMData* w, EMData* myfft, const Transform& trans,
 						lin_interpolated=myfft->cmplx(xlow,ylow)*(1-tx)
  		  				+ myfft->cmplx(xhigh,ylow)*tx;
 									
-					}
-				else {
+				} else {
 						lin_interpolated=myfft->cmplx(xlow,ylow)*(1-tx)*(1-ty) + myfft->cmplx(xlow,yhigh)*(1-tx)*ty
 						+ myfft->cmplx(xhigh,ylow)*tx*(1-ty)+ myfft->cmplx(xhigh,yhigh)*tx*ty;
 					
-					}
+				}
 					
 				c1 = lin_interpolated;
 				
@@ -1835,7 +1834,7 @@ void EMData::insert_rect_slice_ctf(EMData* w, EMData* myfft, const Transform& tr
 				coordinate_3dnew[1] = ynew*yratio;
 				coordinate_3dnew[2] = znew*zratio;
 				
-				//binlinear interpolation
+				//bilinear interpolation
 				float xp = coordinate_2d_square[0];
 				float yp = ( coordinate_2d_square[1] >= 0) ? coordinate_2d_square[1]+1 : nxyz+coordinate_2d_square[1]+1;
 				std::complex<float> lin_interpolated(0,0);
@@ -1853,12 +1852,11 @@ void EMData::insert_rect_slice_ctf(EMData* w, EMData* myfft, const Transform& tr
 						lin_interpolated=myfft->cmplx(xlow,ylow)*(1-tx)
  		  				+ myfft->cmplx(xhigh,ylow)*tx;
 									
-					}
-				else {
+				} else {
 						lin_interpolated=myfft->cmplx(xlow,ylow)*(1-tx)*(1-ty) + myfft->cmplx(xlow,yhigh)*(1-tx)*ty
 						+ myfft->cmplx(xhigh,ylow)*tx*(1-ty)+ myfft->cmplx(xhigh,yhigh)*tx*ty;
 					
-					}
+				}
 					
 				c1 = lin_interpolated;
 				
@@ -1972,7 +1970,7 @@ void EMData::insert_rect_slice_ctf_applied(EMData* w, EMData* myfft,const Transf
 				coordinate_3dnew[1] = ynew*yratio;
 				coordinate_3dnew[2] = znew*zratio;
 				
-				//binlinear interpolation
+				//bilinear interpolation
 				float xp = coordinate_2d_square[0];
 				float yp = ( coordinate_2d_square[1] >= 0) ? coordinate_2d_square[1]+1 : nxyz+coordinate_2d_square[1]+1;
 				std::complex<float> lin_interpolated(0,0);
@@ -1986,16 +1984,14 @@ void EMData::insert_rect_slice_ctf_applied(EMData* w, EMData* myfft,const Transf
 					if(ylow<yp)
 						lin_interpolated=myfft->cmplx(xlow,ylow)*(1-tx)*(1-ty) + myfft->cmplx(xlow,yhigh)*(1-tx)*ty
 						+ myfft->cmplx(xhigh,ylow)*tx*(1-ty) + myfft->cmplx(xhigh,yhigh)*tx*ty;
-					else 
+					else
 						lin_interpolated=myfft->cmplx(xlow,ylow)*(1-tx)
  		  				+ myfft->cmplx(xhigh,ylow)*tx;
 									
-					}
-				else {
+				} else {
 						lin_interpolated=myfft->cmplx(xlow,ylow)*(1-tx)*(1-ty) + myfft->cmplx(xlow,yhigh)*(1-tx)*ty
 						+ myfft->cmplx(xhigh,ylow)*tx*(1-ty)+ myfft->cmplx(xhigh,yhigh)*tx*ty;
-					
-					}
+				}
 					
 				c1 = lin_interpolated;
 				
@@ -2008,7 +2004,7 @@ void EMData::insert_rect_slice_ctf_applied(EMData* w, EMData* myfft,const Transf
 					coordinate_3dnew[2] = -coordinate_3dnew[2];
 					btq = conj(c1);
 					} else {
-					btq = c1;
+						btq = c1;
 					}
 				int ixn = int(coordinate_3dnew[0] + 0.5 + nx) - nx;
 				int iyn = int(coordinate_3dnew[1] + 0.5 + ny) - ny;
