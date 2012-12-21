@@ -178,7 +178,10 @@ def main():
 		y_restrict = get_input_from_string(options.y_restrict)
 		
 		irp = 1
-		oup = int( (options.ou/options.apix) + 0.5)
+		if options.ou < 0:
+			oup = -1
+		else:
+			oup = int( (options.ou/options.apix) + 0.5)
 		xrp = ''
 		txsp = ''
 		y_restrict2 = ''
