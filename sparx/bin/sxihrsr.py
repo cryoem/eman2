@@ -248,7 +248,7 @@ def main():
 			from development import volalixshift3_MPI
 			global_def.BATCH = True
 			searchxshiftp = int( (options.volali3/options.apix) + 0.5)
-			volalixshift3_MPI(args[0], args[1], args[2], searchxshiftp, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
+			volalixshift3_MPI(args[0], args[1], args[2], options.delta, searchxshiftp, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
 			global_def.BATCH = False
 			
 		elif options.diskali:
