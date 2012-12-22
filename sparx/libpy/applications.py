@@ -6790,7 +6790,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 	yrng =[]
 
 	for i in xrange(len(xrng)): yrng.append(dp/2)
-	
+
 	stepx        = get_input_from_string(txs)
 	delta       = get_input_from_string(delta)
 	lstp = min(len(xrng), len(yrng), len(stepx), len(delta))
@@ -6818,7 +6818,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 		else:
 			zsize = nz
 			xysize = -1
-	
 	else:
 		ERROR('the x and y size have to be same, please change the reference volume and restart the program', "ihrsr_MPI", 1,myid)
 
@@ -6913,7 +6912,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 	if debug:
 		finfo.write( '%d loaded  \n' % nima )
 		finfo.flush()
-	
+
 	for i in xrange(len(xrng)): yrng[i]=dp/(2*pixel_size)
 	from math import sin, pi
 	if ( ou > ( nmax/2.0)*sin( initial_theta*pi/180) - dp/2.0/pixel_size -1.0 ):
@@ -6923,7 +6922,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 		print_msg("Pixel size in Angstroms                   : %5.4f\n\n"%(pixel_size))
 		print_msg("Y search range (pix) initialized as       : %s\n\n"%(yrng))
 
-	from time import time	
+	from time import time
 
 	#  this is needed for gathering of pixel errors
 	disps = []

@@ -58,7 +58,7 @@ def main():
 """
 	parser = OptionParser(usage,version=SPARXVERSION)
 	#parser.add_option("--ir",                 type="float", 	     default= -1,                 help="inner radius for rotational correlation > 0 (set to 1) (Angstroms)")
-	parser.add_option("--ou",                 type="float", 	     default= -1,                 help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle) (Angstroms)")
+	parser.add_option("--ou",                 type="float", 	     default= -1,                 help="outer radius for rotational 2D correlation < int(nx/2)-1 (set to the radius of the particle) (Angstroms)")
 	parser.add_option("--rs",                 type="int",   		 default= 1,                  help="step between rings in rotational correlation >0  (set to 1)" ) 
 	parser.add_option("--xr",                 type="string",		 default= " 4  2 1  1   1",   help="range for translation search in x direction, search is +/-xr (Angstroms) ")
 	parser.add_option("--txs",                type="string",		 default= "1 1 1 0.5 0.25",   help="step size of the translation search in x directions, search is -xr, -xr+ts, 0, xr-ts, xr (Angstroms)")
@@ -96,7 +96,7 @@ def main():
 	parser.add_option("--WRAP",               type="int",  		     default= 1,                  help="do helical wrapping")
 	parser.add_option("--searchxshift",       type="float",		     default= -1,                 help="search range for x-shift determination: +/- searchxshift (Angstroms)")
 	parser.add_option("--nearby",             type="float",		     default= 6.0,                help="neighborhood in which to search for peaks in 1D ccf for x-shift search (Angstroms)")
-	parser.add_option("--volali3",       type="float",		     default= -1,                     help="search range for x-shift determination: +/- searchxshift (Angstroms)")
+	parser.add_option("--volali3",            type="float",		     default= -1,                 help="search range for x-shift determination: +/- searchxshift (Angstroms)")
 	
 	parser.add_option("--diskali",            action="store_true",   default=False,               help="volume alignment")
 	parser.add_option("--zstep",              type="float",          default= 1,                  help="Step size for translational search along z (Angstroms)")   
@@ -140,7 +140,7 @@ def main():
 		if options.apix < 0:
 			print "Please enter pixel size"
 			sys.exit()
-		
+
 		if len(options.stackdisk) > 0:
 			if len(args) != 1:
 				print  "Incorrect number of parameters"
@@ -167,21 +167,19 @@ def main():
 			from development import consistency_params	
 			consistency_params(args[0], options.consistency, options.dphi, options.dp, options.apix,phithr=options.phithr, ythr=options.ythr, THR=options.segthr)
 			sys.exit()
-			
+
 		rminp = int((float(options.rmin)/options.apix) + 0.5)
 		rmaxp = int((float(options.rmax)/options.apix) + 0.5)
-		
+
 		from utilities import get_input_from_string, get_im
-		
+
 		xr = get_input_from_string(options.xr)
 		txs = get_input_from_string(options.txs)
 		y_restrict = get_input_from_string(options.y_restrict)
-		
+
 		irp = 1
-		if options.ou < 0:
-			oup = -1
-		else:
-			oup = int( (options.ou/options.apix) + 0.5)
+		if options.ou < 0:  oup = -1
+		else:               oup = int( (options.ou/options.apix) + 0.5)
 		xrp = ''
 		txsp = ''
 		y_restrict2 = ''
@@ -193,11 +191,11 @@ def main():
 		# now y_restrict has the same format as x search range .... has to change ihrsr accordingly
 		for i in xrange(len(y_restrict)):
 			y_restrict2 += " "+str(float(y_restrict[i])/options.apix)
-		
+
 		searchxshiftp = int( (options.searchxshift/options.apix) + 0.5)
 		nearbyp = int( (options.nearby/options.apix) + 0.5)
 		zstepp = int( (options.zstep/options.apix) + 0.5)
-		
+
 		if options.MPI:
 			from mpi import mpi_init, mpi_finalize
 			sys.argv = mpi_init(len(sys.argv), sys.argv)
@@ -212,7 +210,7 @@ def main():
 			from applications import predict_helical_params
 			predict_helical_params(args[0], options.dp, options.dphi, options.apix, options.predict_helical)
 			sys.exit()
-			
+
 		if options.helicise:	
 			if len(args) != 2:
 				print "Incorrect number of parameters"
@@ -225,12 +223,12 @@ def main():
 			hvol = vol.helicise(options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp)
 			hvol.write_image(args[1])
 			sys.exit()
-			
-			
+
+
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
-		
+
 		if options.searchxshift >0:
 			if options.maxit > 1:
 				print "Inner iteration for x-shift determinatin is restricted to 1"
@@ -241,7 +239,7 @@ def main():
 			global_def.BATCH = True
 			volalixshift_MPI(args[0], args[1], args[2], searchxshiftp, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug, nearbyp)
 			global_def.BATCH = False
-			
+
 		if options.volali3 >0:
 			if len(args) < 4:  mask = None
 			else:               mask = args[3]
@@ -250,7 +248,7 @@ def main():
 			searchxshiftp = int( (options.volali3/options.apix) + 0.5)
 			volalixshift3_MPI(args[0], args[1], args[2], options.delta, searchxshiftp, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
 			global_def.BATCH = False
-			
+
 		elif options.diskali:
 			#if options.maxit > 1:
 			#	print "Inner iteration for disk alignment is restricted to 1"
