@@ -65,10 +65,11 @@ int EMAN1Ctf::from_string(const string & ctf)
 {
 	Assert(ctf != "");
 	char type;
-	int i = sscanf(ctf.c_str(), "%c%f %f %f %f %f %f %f %f %f %f %f",
+	int pos;
+	int i = sscanf(ctf.c_str(), "%c%f %f %f %f %f %f %f %f %f %f %f%n",
 				   &type,&defocus, &bfactor, &amplitude, &ampcont, &noise1,
-				   &noise2, &noise3, &noise4, &voltage, &cs, &apix);
-	if (i != 11) {
+				   &noise2, &noise3, &noise4, &voltage, &cs, &apix, &pos);
+	if (pos==-1) {
 		const char *s=ctf.c_str();
 		throw InvalidValueException(s," Invalid CTF string");
 	}
