@@ -29,6 +29,9 @@ parser.add_pos_argument(name="frealigndir",help="The Frealign directory to use."
 parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 parser.add_argument("--icosahedral_symmetry", action="store_true", help="Does it have icosahedral symmetry?", default=False, guitype='boolbox', row=1, col=0, rowspan=1, colspan=1)
 #row=2, col=0, rowspan=1, colspan=1)
+
+optionList = pyemtbx.options.get_optionlist(sys.argv[1:])
+
 (options, args) = parser.parse_args()
 
 if len(args) != 1:

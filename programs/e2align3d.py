@@ -41,10 +41,10 @@ def main():
 	
 	This program is designed to rotationally and translationally align two 3D models 
 	Usually the two models are shrunk down to speed things up, then a global exhaustive 
-	search is down by the reine.3d.sphere and then this rough alignment is refined using
+	search is down by the refine.3d.sphere and then this rough alignment is refined using
 	refine.3d using the full size maps. The refiner is much quicker than the global aligner
 	as it uses a simplex algoritm to bring the alignment downhill, but if your inital global
-	alignmnet is too rough then the refiner might get stuck in a local minima."""
+	alignment is too rough then the refiner might get stuck in a local minima."""
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
