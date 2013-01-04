@@ -20442,6 +20442,53 @@ EMData* Util::ctf_img(int nx, int ny, int nz, float dz,float ps,float voltage,fl
 	if(nx%2==0) ctf_img1->set_fftodd(false); else ctf_img1->set_fftodd(true);
 	return ctf_img1;
 }
+
+
+
+EMData* Util::ctf2_img(int nx, int ny, int nz, float dz, float ps, float voltage, float cs, float wgh,float b_factor, float dza, float azz, float sign)
+{
+	int    ix, iy, iz;
+	int    i,  j, k;
+	float  az, ak;
+	float  scx, scy, scz;
+	EMData* ctf_img1 = new EMData();
+	ctf_img1->set_size(nx, ny, nz);
+	float freq = 1.0f/(2.0f*ps);
+	scx = 2.0f/float(nx);
+	if(ny>=1) scy = 2.0f/float(ny); else scy=0.0f;
+	if(nz>=1) scz = 2.0f/float(nz); else scz=0.0f;
+	int ns2 = nx/2 ;
+	int nr2 = ny/2 ;
+	int nl2 = nz/2 ;
+	float pihalf = M_PI/2.0f;
+	for ( k=0; k<nz;k++) {
+		iz = k - nl2;
+		float oz2 = iz*scz*iz*scz;
+		for ( j=0; j<ny;j++) {
+			iy = j - nr2;
+			float oy = iy*scy;
+			float oy2 = oy*oy;
+			for ( i=0; i<nx; i++) {
+				ix = i - ns2;
+				if( dza == 0.0f) {
+					ak=pow(ix*ix*scx*scx + oy2 + oz2, 0.5f)*freq;
+					(*ctf_img1) (i,j,k)   = pow(Util::tf(dz, ak, voltage, cs, wgh, b_factor, sign),2);
+				} else {
+					float ox = ix*scx;
+					ak=pow(ox*ox + oy2 + oz2, 0.5f)*freq;
+					az = atan2(oy, ox);
+					float dzz = dz + dza/2.0f*sin(2*(az-azz*M_PI/180.0f-pihalf));
+					(*ctf_img1) (i,j,k)   = pow(Util::tf(dzz, ak, voltage, cs, wgh, b_factor, sign),2);
+				}
+			}
+		}
+	}
+	ctf_img1->update();
+	return ctf_img1;
+}
+
+
+
 /*
 #define  cent(i)     out[i+N]
 #define  assign(i)   out[i]

@@ -321,6 +321,33 @@ def ctf_img(nx, ctf, sign = 1, ny = 0, nz = 1):
 	if(ny < 1):  ny = nx
 	return  Util.ctf_img(nx, ny, nz, dz, pixel_size, voltage, cs, ampcont, b_factor, dza, azz, sign)
 
+
+def ctf2_img(nx, ctf, sign = 1, ny = 0, nz = 1):
+	"""
+		Generate a 1-2-3-D real image containing the CTF^2.
+	 	Default is 2D output.
+	  	Input
+			nx: x image size.
+			ctf: ctf object, see CTF_info for description.
+			sign: sign of the CTF.
+			ny: y image size
+			nz: z image size 
+		Output
+			ctfimg: image containing CTF^2.
+	"""
+	dict = ctf.to_dict()
+	dz = dict["defocus"]
+	cs = dict["cs"]
+	voltage = dict["voltage"]
+	pixel_size = dict["apix"]
+	b_factor = dict["bfactor"]
+	ampcont = dict["ampcont"]
+	dza = dict["dfdiff"]
+	azz = dict["dfang"]
+
+	if(ny < 1):  ny = nx
+	return  Util.ctf2_img(nx, ny, nz, dz, pixel_size, voltage, cs, ampcont, b_factor, dza, azz, sign)
+
 ###----D-----------------------		
 def defocus_env_baseline_fit(roo, i_start, i_stop, nrank, iswi):
 	"""
