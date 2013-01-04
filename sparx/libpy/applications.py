@@ -12235,7 +12235,7 @@ def volalixshift_MPI(stack, ref_vol, outdir, search_rng, pixel_size, dp, dphi, f
 	from filter          import filt_ctf
 	from projection      import prep_vol, prgs
 	from statistics      import hist_list, varf3d_MPI, fsc_mask
-	from applications	 import MPI_start_end
+	from applications	 import MPI_start_end, ordersegments
 	from time            import time	
 	
 	nproc     = mpi_comm_size(MPI_COMM_WORLD)
@@ -12304,23 +12304,7 @@ def volalixshift_MPI(stack, ref_vol, outdir, search_rng, pixel_size, dp, dphi, f
 		from filter         import filt_ctf
 	else:	 from reconstruction import recons3d_4nn_MPI
 
-	allfilaments = EMUtil.get_all_attributes(stack, 'filament')
-	for i in xrange(len(allfilaments)):
-		allfilaments[i] = [allfilaments[i],i]
-	allfilaments.sort()
-	filaments = []
-	current = allfilaments[0][0]
-	temp = [allfilaments[0][1]]
-	for i in xrange(1,len(allfilaments)):
-		if( allfilaments[i][0] == current ):
-			temp.extend([allfilaments[i][1]])
-		else:
-			filaments.append(temp)
-			current = allfilaments[i][0]
-			temp = [allfilaments[i][1]]
-	filaments.append(temp)
-	
-	del allfilaments, temp
+	filaments = ordersegments(stack, filament_attr = 'filament', verify=False)
 	
 	total_nfils = len(filaments)
 
@@ -12499,7 +12483,7 @@ def diskali_MPI(stack, ref_vol, outdir, maskfile, dp, dphi, pixel_size, user_fun
 	from utilities        import get_params_proj, read_text_row, model_cylinder,pad, set_params3D, get_params3D, reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, drop_image, bcast_EMData_to_all, model_blank
 	from utilities        import send_attr_dict, file_type, sym_vol, get_image
 	from fundamentals     import resample, rot_shift3D
-	from applications     import MPI_start_end
+	from applications     import MPI_start_end, ordersegments
 	from math             import fmod, atan, pi
 	from utilities        import model_blank
 	from filter           import filt_tanl, filt_ctf
@@ -12552,23 +12536,7 @@ def diskali_MPI(stack, ref_vol, outdir, maskfile, dp, dphi, pixel_size, user_fun
 		else:
 			mask3D = model_cylinder(rmax, ref_nx, ref_ny, ref_nz)
 	
-	allfilaments = EMUtil.get_all_attributes(stack, 'filament')
-	for i in xrange(len(allfilaments)):
-		allfilaments[i] = [allfilaments[i],i]
-	allfilaments.sort()
-	filaments = []
-	current = allfilaments[0][0]
-	temp = [allfilaments[0][1]]
-	for i in xrange(1,len(allfilaments)):
-		if( allfilaments[i][0] == current ):
-			temp.extend([allfilaments[i][1]])
-		else:
-			filaments.append(temp)
-			current = allfilaments[i][0]
-			temp = [allfilaments[i][1]]
-	filaments.append(temp)
-	
-	del allfilaments, temp
+	filaments = ordersegments(stack, filament_attr = 'filament', verify=False)
 	
 	total_nfils = len(filaments)
 	
@@ -12941,22 +12909,9 @@ def get_dist(c1, c2):
 	
 def imgstat_hfsc( stack, file_prefix, fil_attr='filament'):
 	from utilities import write_text_file
+	from applications import ordersegments
 	
-	allfilaments = EMUtil.get_all_attributes(stack, fil_attr)
-	for i in xrange(len(allfilaments)):
-		allfilaments[i] = [allfilaments[i],i]
-	allfilaments.sort()
-	filaments = []
-	current = allfilaments[0][0]
-	temp = [allfilaments[0][1]]
-	for i in xrange(1,len(allfilaments)):
-		if( allfilaments[i][0] == current ):
-			temp.extend([allfilaments[i][1]])
-		else:
-			filaments.append(temp)
-			current = allfilaments[i][0]
-			temp = [allfilaments[i][1]]
-	filaments.append(temp)
+	filaments = ordersegments(stack, filament_attr = fil_attr, verify=False)
 	
 	nfil = len(filaments)
 	
@@ -12989,7 +12944,7 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 	from utilities        import reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, bcast_EMData_to_all, send_EMData, recv_EMData
 	from utilities        import send_attr_dict, file_type, sym_vol
 	from fundamentals     import resample, rot_shift3D
-	from applications     import MPI_start_end, match_pixel_rise
+	from applications     import MPI_start_end, match_pixel_rise, ordersegments
 	from math             import fmod, atan, pi
 	from utilities        import model_blank
 	from filter           import filt_tanl, filt_ctf
@@ -13019,25 +12974,9 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 
 	import user_functions
 	user_func = user_functions.factory[user_func_name]
-
-	allfilaments = EMUtil.get_all_attributes(stack, 'filament')
-	for i in xrange(len(allfilaments)):
-		allfilaments[i] = [allfilaments[i],i]
-	allfilaments.sort()
-	filaments = []
-	current = allfilaments[0][0]
-	temp = [allfilaments[0][1]]
-	for i in xrange(1,len(allfilaments)):
-		if( allfilaments[i][0] == current ):
-			temp.extend([allfilaments[i][1]])
-		else:
-			filaments.append(temp)
-			current = allfilaments[i][0]
-			temp = [allfilaments[i][1]]
-	filaments.append(temp)
-
-	del allfilaments, temp
-
+	
+	filaments = ordersegments(stack, filament_attr = 'filament', verify=False)
+	
 	total_nfils = len(filaments)
 	fstart, fend = MPI_start_end(total_nfils, nproc, myid)
 	filaments = filaments[fstart:fend]
@@ -13112,6 +13051,7 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 			mpi_send(gotfil, 1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 			if(gotfil == 1):
 				send_EMData(fullvol0, main_node, ivol+myid+70000)
+
 
 def ordersegments(stack, filament_attr = 'filament', verify=False):
 	'''
