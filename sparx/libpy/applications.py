@@ -13112,3 +13112,80 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 			mpi_send(gotfil, 1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 			if(gotfil == 1):
 				send_EMData(fullvol0, main_node, ivol+myid+70000)
+
+def ordersegments(stack, filament_attr = 'filament', verify=False):
+	'''
+	Input:
+	
+	stack: Input stack of images whose headers contain filament membership information and particle coordinates in the original micrograph (stored under attribute ptcl_source_coord).
+	filament_attr: Attribute under which filament membership ID is stored.
+	verify: Run test for verifying ordered segments lie in the same relative positions as their positions on the filament.
+	
+	Output: 
+	
+	Returns a list of lists, where each inner list consists of IDs of segments windowed from
+	a single filament ordered according to their relative positions on the filament.
+	
+	'''
+	from copy import copy
+	from operator import itemgetter
+	from math import sqrt
+	
+	allfilaments = EMUtil.get_all_attributes(stack, filament_attr)
+	for i in xrange(len(allfilaments)):
+		allfilaments[i] = [allfilaments[i],i]
+	allfilaments.sort()
+	filaments = []
+	current = allfilaments[0][0]
+	temp = [allfilaments[0][1]]
+	for i in xrange(1,len(allfilaments)):
+		if( allfilaments[i][0] == current ):
+			temp.extend([allfilaments[i][1]])
+		else:
+			filaments.append(temp)
+			current = allfilaments[i][0]
+			temp = [allfilaments[i][1]]
+	filaments.append(temp)
+	
+	del allfilaments, temp
+	
+	ptclcoords = EMUtil.get_all_attributes(stack, 'ptcl_source_coord')
+	
+	nfil = len(filaments)
+	
+	for i in xrange(nfil):
+		fil = filaments[i]
+		segcoords = []
+		nsegs = len(fil)
+		for ii in xrange(nsegs):
+			iseg = fil[ii]
+			segcoords.append([ptclcoords[iseg][0], ptclcoords[iseg][1], iseg])
+			
+		# sort by x, then by y
+		psort = sorted(segcoords, key=itemgetter(0,1))
+		
+		for j in xrange(nsegs):
+			filaments[i][j] = psort[j][2]
+		
+		# Verify the coordinates are indeed ordered according to their relative positions on a line
+		# Given points p1, p2, p3, p4, p5 on a line, if p2 lies between p1 and p3, p3 lies between p2 and p5
+		# and p4 lies between p3 and p5, then the points must be ordered as p1, p2, p3, p4, p5 on the line.
+		if verify:
+			if nsegs < 3:
+				continue
+			for ii in xrange(1, nsegs-1):
+				# check that coordinate filament[i][ii] lies between filament[i][ii-1] and filament[i][ii+1]
+				p = ptclcoords[fil[ii]]
+				p1 = ptclcoords[fil[ii-1]]
+				p2 = ptclcoords[fil[ii+1]]
+				
+				# p lies between p1 and p2 iff d(p,p1) + d(p,p2) = d(p1, p2)
+				d1 = sqrt((p[0] - p1[0])**2 + (p[1] - p1[1])**2)
+				d2 = sqrt((p[0] - p2[0])**2 + (p[1] - p2[1])**2)
+				d3 = sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)
+				
+				if abs(d1+d2 - d3) > 0.00001:
+					print "points are not ordered: ", i
+					sys.exit()
+				print i, nfil
+	return filaments	
