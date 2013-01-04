@@ -74,7 +74,8 @@ def main():
 	parser.add_option("--apix",               type="float",			 default= -1.0,               help="pixel size in Angstroms")   
 	parser.add_option("--dp",                 type="float",			 default= -1.0,               help="delta z - translation in Angstroms")   
 	parser.add_option("--dphi",               type="float",			 default= -1.0,               help="delta phi - rotation in degrees")  
-		
+	parser.add_option("--cons",                action="store_true",   default=False,      		  help="do local search taking into account helical consistency")
+			
 	parser.add_option("--ndp",                type="int",            default= 12,                 help="In symmetrization search, number of delta z steps equas to 2*ndp+1") 
 	parser.add_option("--ndphi",              type="int",            default= 12,                 help="In symmetrization search,number of dphi steps equas to 2*ndphi+1")  
 	parser.add_option("--dp_step",            type="float",          default= 0.1,                help="delta z (Angstroms) step  for symmetrization")  
@@ -271,12 +272,20 @@ def main():
 			gendisks_MPI(args[0], mask3d, options.ref_nx, options.ref_nx, options.ref_nz, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, options.CTF, options.function, options.sym, options.gendisk)
 			global_def.BATCH = False
 		else:
-			from applications import ihrsr
-			global_def.BATCH = True
-			if len(args) < 4:  mask = None
-			else:               mask = args[3]
-			ihrsr(args[0], args[1], args[2], mask, irp, oup, options.rs, xrp, options.ynumber, txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, rminp, rmaxp, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.apix, options.debug, options.MPI, options.WRAP, y_restrict2) 
-			global_def.BATCH = False
+			if options.cons:
+				from development import ihrsrlocalcons_MPI
+				global_def.BATCH = True
+				if len(args) < 4:  mask = None
+				else:               mask = args[3]
+				ihrsrlocalcons_MPI(args[0], args[1], args[2], mask, irp, oup, options.rs, xrp, options.ynumber, txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, rminp, rmaxp, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.apix, options.debug, options.MPI, options.WRAP, y_restrict2) 
+				global_def.BATCH = False
+			else:
+				from applications import ihrsr
+				global_def.BATCH = True
+				if len(args) < 4:  mask = None
+				else:               mask = args[3]
+				ihrsr(args[0], args[1], args[2], mask, irp, oup, options.rs, xrp, options.ynumber, txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, rminp, rmaxp, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.apix, options.debug, options.MPI, options.WRAP, y_restrict2) 
+				global_def.BATCH = False
 
 		if options.MPI:
 			from mpi import mpi_finalize
