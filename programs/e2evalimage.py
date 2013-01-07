@@ -288,8 +288,8 @@ class GUIEvalImage(QtGui.QWidget):
 		self.sboxsize.intonly=True
 		self.gbl.addWidget(self.sboxsize,13,2)
 
-		self.soversamp=ValBox(self,(0,500),"Oversample:",1,90)
-		self.soversamp.intonly=True
+#		self.soversamp=ValBox(self,(0,500),"Oversample:",1,90)
+#		self.soversamp.intonly=True
 #		self.gbl.addWidget(self.soversamp,14,2)					# disable oversampling for now, not properly integrated with save/recall mechanism, and not clear if it's really useful
 
 
@@ -319,7 +319,7 @@ class GUIEvalImage(QtGui.QWidget):
 		QtCore.QObject.connect(self.svoltage, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.scs, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.sboxsize, QtCore.SIGNAL("valueChanged"), self.newBox)
-		QtCore.QObject.connect(self.soversamp, QtCore.SIGNAL("valueChanged"), self.newBox)
+#		QtCore.QObject.connect(self.soversamp, QtCore.SIGNAL("valueChanged"), self.newBox)
 		QtCore.QObject.connect(self.sang45, QtCore.SIGNAL("valueChanged"), self.recalc_real)
 		QtCore.QObject.connect(self.squality,QtCore.SIGNAL("activated(int)"),self.newQualityFactor)
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
@@ -814,7 +814,8 @@ class GUIEvalImage(QtGui.QWidget):
 	def newBox(self):
 		parms=self.parms[self.curset]
 		parms[0]=self.sboxsize.value
-		parms[5]=self.soversamp.value
+#		parms[5]=self.soversamp.value
+		parms[5]=1
 		parms[3]=set()
 		self.recalc()
 

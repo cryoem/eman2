@@ -33,6 +33,10 @@ High priority
 11/28/12	When class-averages get averaged, the header particle numbers in the average of averages is messed up
 11/28/12	Need a good method for checking reference-free class-averages against reprojections
 
+12/12/12	User-specified pre-processing/masking of particles
+12/12/12	Euler display in browser
+12/17/12	Remember despiking filter
+
 Low priority
 7/25/12		In orthographic projection in 3-D viewer, mouse wheel behavior is inverted
 11/1/12		Remember windows need to recall their screen location when repening, and we need to put better labels on windows.

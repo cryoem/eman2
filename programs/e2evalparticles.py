@@ -45,16 +45,17 @@ from valslider import *
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """prog 
+	usage = """prog [classfile]
 	
 	This program provides tools for evaluating particle data in various ways. For example it will allow you to select class-averages
-	containing bad (or good) particles and manipulate the project to in/exclude them.
+	containing bad (or good) particles and manipulate the project to in/exclude them. It will locate files with class-averages automatically,
+	but you can specify additional files at the command-line.
 	
 """
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_header(name="runeval", help='Click Launch to run Steve\'s eval particle scheme', title="### Click Launch to run e2evalparticles ###", row=0, col=0, rowspan=1, colspan=1)
+	parser.add_header(name="runeval", help='Click Launch to launch the particle evaluation interface', title="### Click Launch to run e2evalparticles ###", row=0, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--gui",action="store_true",help="Start the GUI for interactive use (default=True)",default=True)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -64,7 +65,7 @@ def main():
 	#logid=E2init(sys.argv, options.ppid)
 	
 	app = EMApp()
-	control=EMEvalPtclTool(verbose=options.verbose)
+	control=EMEvalPtclTool(args,verbose=options.verbose)
 	control.show()
 	app.execute()
 
@@ -73,9 +74,11 @@ def main():
 class EMClassPtclTool(QtGui.QWidget):
 	"""This class is a tab widget for inspecting particles within class-averages"""
 	
-	def __init__(self):
+	def __init__(self,extrafiles=None):
 		QtGui.QWidget.__init__(self)
 		self.vbl = QtGui.QVBoxLayout(self)
+	
+		self.extrafiles=extrafiles
 	
 		# A listwidget for selecting which class-average file we're looking at
 		self.wclassfilel=QtGui.QLabel("Class-average File:")
@@ -411,6 +414,9 @@ class EMClassPtclTool(QtGui.QWidget):
 				if "classes_" in db or "allrefs_" in db :
 					self.wfilesel.addItem("bdb:%s#%s"%(d,db))
 
+		for f in self.extrafiles:
+			self.wfilesel.addItem(f)
+
 		dbs=db_list_dicts("bdb:sets")
 		dbs.sort()
 		for db in dbs:
@@ -536,7 +542,7 @@ class EMClassPtclTool(QtGui.QWidget):
 class EMEvalPtclTool(QtGui.QMainWindow):
 	"""This class represents the EMTomoBoxer application instance.  """
 	
-	def __init__(self,verbose=0):
+	def __init__(self,extrafiles=None,verbose=0):
 		QtGui.QMainWindow.__init__(self)
 		
 		app=QtGui.qApp
@@ -550,7 +556,7 @@ class EMEvalPtclTool(QtGui.QMainWindow):
 		self.wtabs=QtGui.QTabWidget()
 		self.setCentralWidget(self.wtabs)
 		
-		self.wclasstab=EMClassPtclTool()
+		self.wclasstab=EMClassPtclTool(extrafiles)
 		self.wtabs.addTab(self.wclasstab,"Classes")
 
 		
