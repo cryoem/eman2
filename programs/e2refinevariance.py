@@ -234,7 +234,7 @@ def main():
 		weight.add(1.0)
 	
 #	display(weight)
-	weight.process_inplace("math.invert.carefully",{"zero_to":1.0})		# this gives us 1/duplication on the symmetry axes and 1 off of the axes
+	weight.process_inplace("math.reciprocal",{"zero_to":1.0})		# this gives us 1/duplication on the symmetry axes and 1 off of the axes
 
 
 #	display(weight)
