@@ -18785,7 +18785,7 @@ vector<float> Util::multiref_polar_ali_helical(EMData* image, const vector< EMDa
 
 vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, float ant, float psi_max, string mode,
-                vector<int>numr, float cnx, float cny, int ynumber, bool mirror_only, float yrnglocal, bool CONS) {
+                vector<int>numr, float cnx, float cny, int ynumber, bool mirror_only, float yrnglocal) {
 
 	size_t crefim_len = crefim.size();
 
@@ -18794,12 +18794,6 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 	float y_lhs   = 1000.0;
 	float y_rhs   = 1000.0;
 
-	if (CONS) {
-		phi_lhs = image->get_attr("phi_lhs");
-		phi_rhs = image->get_attr("phi_rhs");
-		y_lhs   = image->get_attr("y_lhs");
-		y_rhs   = image->get_attr("y_rhs");
-	}
 	int   iref, nref=-1, mirror=0;
 	float iy, ix, sx=0, sy=0;
 	float peak = -1.0E23f;
@@ -18932,15 +18926,12 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 		
 		// when yrnglocal is not equal to -1.0, the search range is limited to +/- yrnglocal
 		// leave step size the same
-        if (CONS) {
-			ky_rhs = floor((abs(y_lhs))/stepy);
-			ky_lhs = -1.0*floor((abs(y_rhs))/stepy);
-        } else {
-			if (yrnglocal >= 0.0) {
-		    	ky_rhs = int(yrnglocal/stepy);
-				ky_lhs = -ky_rhs + 1;
-			}
+       
+		if (yrnglocal >= 0.0) {
+		    ky_rhs = int(yrnglocal/stepy);
+			ky_lhs = -ky_rhs + 1;
 		}
+		
 
 		//std::cout<<"yrnglocal="<<yrnglocal<<"ynumber="<<ynumber<<"stepy=="<<stepy<<"stepx=="<<step<<std::endl;
 		//cout<<"ky stepy: "<<ky<<" "<<stepy<<endl;
@@ -18961,17 +18952,13 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 					if (!mirror_only) {
 						// inner product of iref's Eulerian angles with that of the data
 						nbrinp = n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3;
-						if (CONS) {
-							if ((ref_phi[iref] <= phi_upper) && (ref_phi[iref] >= phi_lower))  use_ref = true;
-						} else {
-							if (nbrinp >= ant)   use_ref = true;
-						}
+						
+						if (nbrinp >= ant)   use_ref = true;
+						
 					} else if (mirror_only) {
 						// inner product of the mirror of iref's Eulerian angles with that of the data
 						nbrinp = n3[iref]*imn3 - n1[iref]*imn1 - n2[iref]*imn2;
-						if (CONS) {
-							if ((ref_phi[iref] + 180. <= phi_upper) && (ref_phi[iref]+180. >= phi_lower))  use_ref = true;
-						} else if (nbrinp >= ant)  use_ref = true;
+						if (nbrinp >= ant)  use_ref = true;
 					}
 					if(use_ref) {
 						//phichoice = phichoice + 1;

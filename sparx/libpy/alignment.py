@@ -1317,7 +1317,7 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_max=1
 	else:
 		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
 
-def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, psi_max=180.0, finfo=None, sym_string='d3', yrnglocal=-1.0, CONS=False):
+def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, psi_max=180.0, finfo=None, sym_string='d3', yrnglocal=-1.0):
 	"""
 	  psi_max - how much psi can differ from 90 or 270 degrees
 	"""
@@ -1375,7 +1375,7 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 		if theta > 90.0: mirror_only = True # assumes that when theta is allowed to vary, it only varies from theta1 to 90 where theta1<90.			
 
 	[ang, sxs, sys, mirror, iref, peak] = \
-	Util.multiref_polar_ali_helical_local(data, refrings, xrng, yrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber), mirror_only, yrnglocal, CONS)
+	Util.multiref_polar_ali_helical_local(data, refrings, xrng, yrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber), mirror_only, yrnglocal)
 
 	iref = int(iref)
 
