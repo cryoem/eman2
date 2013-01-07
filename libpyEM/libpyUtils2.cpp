@@ -80,7 +80,7 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_tf_overloads_2_7, EMAN::Util::tf, 2, 7
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_histogram_overloads_2_5, EMAN::Util::histogram, 2, 5)
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_multiref_polar_ali_helical_overloads_10_11, EMAN::Util::multiref_polar_ali_helical, 10, 11)
-BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_multiref_polar_ali_helical_local_overloads_11_14, EMAN::Util::multiref_polar_ali_helical_local, 11, 15)
+BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_multiref_polar_ali_helical_local_overloads_11_14, EMAN::Util::multiref_polar_ali_helical_local, 11, 14)
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_multiref_polar_ali_helical_90_overloads_10_11, EMAN::Util::multiref_polar_ali_helical_90, 10, 11)
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_multiref_polar_ali_helical_90_local_overloads_11_12, EMAN::Util::multiref_polar_ali_helical_90_local, 11, 12)
 
