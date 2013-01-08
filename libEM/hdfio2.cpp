@@ -59,7 +59,7 @@ static const int ATTR_NAME_LEN = 128;
 HdfIO2::HdfIO2(const string & hdf_filename, IOMode rw)
 :	nx(1), ny(1), nz(1), is_exist(false),
 	file(-1), group(-1), filename(hdf_filename),
-	rw_mode(rw), initialized(false)
+	rw_mode(rw), initialized(false), rendermin(0), rendermax(0)
 {
 	accprop=H5Pcreate(H5P_FILE_ACCESS);
 
@@ -1010,6 +1010,13 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 	}
 
 	H5Gclose(igrp);
+
+    // Set render_min and render_max from EMData attr's if possible.
+	if(dict.has_key("render_min")) rendermin=(float)dict["render_min"];
+	else rendermin=0;
+	if(dict.has_key("render_max")) rendermax=(float)dict["render_max"];
+	else rendermax=0;
+
 	EXITFUNC;
 	return 0;
 }
@@ -1076,9 +1083,9 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	hsize_t size = (hsize_t)nx*ny*nz;
 	unsigned char *cdata = 0;
 	unsigned short *usdata = 0;
-	float rendermin = 0.0f;
-	float rendermax = 0.0f;
-	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, nz);
+	// float rendermin = 0.0f;
+	// float rendermax = 0.0f;
+	if (!rendermin && !rendermax) EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, nz);
 
 	if(area) {
 		hid_t filespace = H5Dget_space(ds);

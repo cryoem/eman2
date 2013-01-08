@@ -130,6 +130,10 @@ namespace EMAN
 		 * @param image_index 
 		 * @return 0 for success*/
 		int erase_header(int image_index);
+
+        // render_min and render_max
+	    float rendermin;
+	    float rendermax;
 	};
 }
 
