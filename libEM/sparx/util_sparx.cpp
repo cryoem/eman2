@@ -6196,7 +6196,7 @@ float Util::tf(float dzz, float ak, float voltage, float cs, float wgh, float b_
 {
 	float cst  = cs*1.0e7f;
 
-        wgh /= 100.0;
+	wgh /= 100.0;
 	float phase = atan(wgh/sqrt(1.0f-wgh*wgh));
 	float lambda=12.398f/sqrt(voltage*(1022.0f+voltage));
 	float ak2 = ak*ak;
