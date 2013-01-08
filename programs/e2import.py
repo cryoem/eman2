@@ -85,7 +85,7 @@ def main():
 					db["micrographs/%s"%mat[0]]=boxlist
 					
 			db_close_dict(db)
-		if options.box_type == 'tiltedboxes':
+		elif options.box_type == 'tiltedboxes':
 			db = db_open_dict('bdb:e2boxercache#boxestilted')
 			for filename in args:
 				boxlist = []
@@ -95,7 +95,7 @@ def main():
 					boxlist.append([float(fields[0])+float(fields[3])/2, float(fields[1])+float(fields[3])/2, 'tilted'])
 				db[os.path.splitext(os.path.basename(filename))[0]+options.extension] = boxlist
 			db_close_dict(db)
-		if options.box_type == 'untiltedboxes':		
+		elif options.box_type == 'untiltedboxes':		
 			db = db_open_dict('bdb:e2boxercache#boxesuntilted')
 			for filename in args:
 				boxlist = []
@@ -105,6 +105,7 @@ def main():
 					boxlist.append([float(fields[0])+float(fields[3])/2, float(fields[1])+float(fields[3])/2, 'untilted'])
 				db[os.path.splitext(os.path.basename(filename))[0]+options.extension] = boxlist
 			db_close_dict(db)
+		else : print "ERROR: Unknown box_type"
 			
 	# Import particles
 	if options.import_particles:
