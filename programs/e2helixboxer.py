@@ -366,7 +366,7 @@ def load_helix_coords(coords_filepath, specified_width=None):
 	data = []
 	datum = [None]*5
 	for line in open(coords_filepath):
-		line = line.split("\t")
+		line = line.split()
 		for i in range(len(line)):
 			line[i] = int(line[i])
 		if line[4] == -1:
