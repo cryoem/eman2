@@ -18789,11 +18789,6 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 
 	size_t crefim_len = crefim.size();
 
-	float phi_lhs = 1000.0;
-	float phi_rhs = 1000.0;
-	float y_lhs   = 1000.0;
-	float y_rhs   = 1000.0;
-
 	int   iref, nref=-1, mirror=0;
 	float iy, ix, sx=0, sy=0;
 	float peak = -1.0E23f;
@@ -18803,8 +18798,6 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 	Dict d = t->get_params("spider");
 	if(t) {delete t; t=0;}
 	float phi       = d["phi"];
-	float phi_upper = phi+phi_rhs;
-	float phi_lower = phi+phi_lhs;
 	float theta     = d["theta"];
 	float psi       = d["psi"];
 	float imn1 = sin(theta*qv)*cos(phi*qv);
@@ -18988,8 +18981,6 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 			}
 		}
 	}
-	//if ((phichoice < 1) || (ychoice  < 1))
-	//        cout<<ychoice<<", "<<phichoice<<", ..."<<mirror_only<<"...,"<<phi<<","<<phi_lhs<<","<<phi_rhs<<endl;
 	
 	float co, so, sxs, sys;
 	co = static_cast<float>( cos(ang*pi/180.0) );
