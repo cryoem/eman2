@@ -90,10 +90,11 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 	from utilities    import print_msg, print_begin_msg, print_end_msg
 	import os
 	import sys
-	from mpi 	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-	from mpi 	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv
-	from mpi 	  import MPI_SUM, MPI_FLOAT, MPI_INT
-	from EMAN2	  import Processor
+	from mpi 	  	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from mpi 	  	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv
+	from mpi 	  	  import MPI_SUM, MPI_FLOAT, MPI_INT
+	from EMAN2	  	  import Processor
+	from time         import time	
 	
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
@@ -210,6 +211,9 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 	ishift_y = [0.0]*len(data)
 	
 	for Iter in xrange(max_iter):
+		if myid == main_node:
+			start_time = time()
+			print_msg("Iteration #%4d\n"%(total_iter))
 		total_iter += 1
 		avg = EMData(nx, nx, 1, False)
 		for im in data:  Util.add_img(avg, im)
@@ -217,7 +221,6 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 		reduce_EMData_to_root(avg, myid, main_node)
 
 		if myid == main_node:
-			print_msg("Iteration #%4d\n"%(total_iter))
 			if CTF:
 				tavg = Util.divn_filter(avg, ctf_2_sum)
 			else:	 tavg = Util.mult_scalar(avg, 1.0/float(nima))
@@ -309,6 +312,10 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 			not_zero_all = 0
 		not_zero_all = bcast_number_to_all(not_zero_all, source_node = main_node)
 		
+		if myid == main_node:
+			print_msg("Time of iteration = %12.2f\n"%(time()-start_time))
+			start_time = time()
+			
 		if not_zero_all == 0:
 			break
 		
