@@ -42,7 +42,7 @@ import sys
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack outdir <maskfile> --search_rng --maxit=max_iteration --CTF --snr=SNR --Fourvar=Fourier_variance --oneDx --MPI"
+	usage = progname + " stack <maskfile> --search_rng=10 --maxit=max_iteration --CTF --snr=SNR --Fourvar=Fourier_variance --oneDx --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--search_rng",       type="int",  default=-1,             help="Used to compute the dimension of a \nnwx by nwx section of the 2D ccf which is \nwindowed out for peak search: \nnwx=2*search_rng+1 (nwx=nx if search_rng is -1))")
 	parser.add_option("--maxit",    type="float",  default=100,             help="maximum number of iterations program will perform")
@@ -54,19 +54,17 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	if not(options.MPI):
-			print "Only MPI version is currently implemented."
-			print "Please run '" + progname + " -h' for detailed options"
-			return
+		print "Only MPI version is currently implemented."
+		print "Please run '" + progname + " -h' for detailed options"
+		return
 			
-	if len(args) < 2 or len(args) > 3:
-    		print "usage: " + usage
-    		print "Please run '" + progname + " -h' for detailed options"
+	if len(args) < 1 or len(args) > 2:
+		print "usage: " + usage
+		print "Please run '" + progname + " -h' for detailed options"
 	else:
-		if args[1] == 'None': outdir = None
-		else:		      outdir = args[1]
-
-		if len(args) == 2: mask = None
-		else:              mask = args[2]
+	
+		if len(args) == 1: mask = None
+		else:              mask = args[1]
 			
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
@@ -76,13 +74,13 @@ def main():
 		sys.argv = mpi_init(len(sys.argv),sys.argv)
 
 		global_def.BATCH = True
-		shiftali_MPI(args[0], outdir, mask, options.maxit, options.CTF, options.snr, options.Fourvar,options.search_rng,options.oneDx)
+		shiftali_MPI(args[0], mask, options.maxit, options.CTF, options.snr, options.Fourvar,options.search_rng,options.oneDx)
 		global_def.BATCH = False
 		
 		from mpi import mpi_finalize
 		mpi_finalize()
 
-def shiftali_MPI(stack, outdir, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=False, search_rng=-1, oneDx=False):  
+def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=False, search_rng=-1, oneDx=False):  
 	from applications import MPI_start_end
 	from utilities    import model_circle, model_blank, get_image, peak_search, get_im
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
@@ -102,13 +100,9 @@ def shiftali_MPI(stack, outdir, maskfile=None, maxit=100, CTF=False, snr=1.0, Fo
 	main_node = 0
 		
 	ftp = file_type(stack)
-	if outdir:
-		if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "shftali_MPI", 1, myid)
-		mpi_barrier(MPI_COMM_WORLD)
 
 	if myid == main_node:
 		print_begin_msg("shiftali_MPI")
-		if outdir:	os.mkdir(outdir)
 
 	max_iter=int(maxit)
 
@@ -147,13 +141,11 @@ def shiftali_MPI(stack, outdir, maskfile=None, maxit=100, CTF=False, snr=1.0, Fo
 	if CTF:
 		ctf_app = bcast_number_to_all(ctf_app, source_node = main_node)
 		if ctf_app > 0:	ERROR("data cannot be ctf-applied", "shiftali_MPI", 1, myid)
-        
-        if maskfile == None:
-	        mask = model_circle(nx//2-2, nx, nx)
-        else:
-                mask = get_im(maskfile)
-	cnx  = nx/2+1
- 	cny  = cnx
+
+	if maskfile == None:
+		mask = model_circle(nx//2-2, nx, nx)
+	else:
+		mask = get_im(maskfile)
 
 	if CTF:
 		from filter import filt_ctf
@@ -241,8 +233,6 @@ def shiftali_MPI(stack, outdir, maskfile=None, maxit=100, CTF=False, snr=1.0, Fo
 			if Fourvar:
 				tavg    = fft(Util.divn_img(fft(tavg), vav))
 				vav_r	= Util.pack_complex_to_real(vav)
-				if outdir:
-					vav_r.write_image(os.path.join(outdir, "varf.hdf"), total_iter-1)
 
 			# normalize and mask tavg in real space
 			tavg = fft(tavg)
