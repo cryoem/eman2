@@ -105,10 +105,12 @@ for source in sys.argv[1:]:
 		dest[k]=src[k]
 	
 	# Copy bad particles list
-	print "Copy bad particles lists"
-	src=db_open_dict("bdb:%s#select"%source,ro=True)
-	dest=db_open_dict("bdb:.#select")
-	for k in goodkeys: 
-		print k
-		dest[k]=src[k]
-
+	try:
+		print "Copy bad particles lists"
+		src=db_open_dict("bdb:%s#select"%source,ro=True)
+		dest=db_open_dict("bdb:.#select")
+		for k in goodkeys: 
+			print k
+			dest[k]=src[k]
+	except:
+		print "Error in copying bad particle list. No bad particles marked ?"
