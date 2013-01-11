@@ -351,8 +351,8 @@ def ctf2_img(nx, ctf, sign = 1, ny = 0, nz = 1):
 ###----D-----------------------		
 def defocus_env_baseline_fit(roo, i_start, i_stop, nrank, iswi):
 	"""
-		    iswi= 2 using polynomial n rank to fit no-Gaussian envelope function
-			iswi =3 using polynomial n rank to fit background
+		    iswi = 2 using polynomial n rank to fit envelope function
+			iswi = 3 using polynomial n rank to fit background
 	"""
 	TMP_roo = []
 	curve   = [0]*len(roo)
@@ -516,8 +516,11 @@ def defocus_guess(Res_roo, Res_TE, volt, Cs, Pixel_size, wgh, istart=0, istop=-1
 		1.  The searching range is limited to dz_low (.1um) ~ dz_high (20 um).
 		    The user can modify this limitation accordingly
 		2.  changing nloop can speed up the estimation
-		3.  mode=1 compare squared error 
-		    mode=2; compare cross correlation coefficients 
+		3.  defocus_estimation_method = 1  use squared error
+		    defocus_estimation_method = 2  use normalized inner product
+		Input:
+		  Res_roo - background-subtracted Power Spectrum
+		  Res_TE  - background-subtracted Envelope
 	"""
 	
 	from math import sqrt
@@ -525,50 +528,50 @@ def defocus_guess(Res_roo, Res_TE, volt, Cs, Pixel_size, wgh, istart=0, istop=-1
 
 	if istop <= istart : 			istop=len(Res_roo)
 	step = (dz_high-dz_low)/nloop
-	if step > 10000.   : 			step     =  10000.     # angstrom 
-	if defocus_estimation_method == 1 : 	diff_min =  1.e38
-	else: 					diff_min = -1.e38
-	xval_e = 0
+	if step > 10000.   : 			step     =  10000.     # Angstrom
+
+	xval_e = 0.0
 	for ifreq in xrange(len(Res_TE)):
 		xval_e += Res_TE[ifreq]**2
-	if (xval_e == 0):
-		defocus = 0 
-		return defocus
+	if (xval_e == 0.0): return xvale_e  #  This is strange, returns defocus=0.
+
 	if round_off >= 1: 			cut_off  =  1.
-	else: 					cut_off  =  round_off # do extreme fitting	
+	else: 					    cut_off  =  round_off # do extreme fitting	
+
+	length = len(Res_roo)
+	nx     = int(length*2)
+	if defocus_estimation_method == 1 : 	diff_min =  1.e38
+	else: 					                diff_min = -1.e38
 	while (step >= cut_off):
 		for i_dz in xrange(nloop):
 			dz     = dz_low + step*i_dz
-			diff   = 0
-			length = len(Res_roo)
-			nx     = int(length*2)
-			ctf    = ctf_2(nx, generate_ctf([dz,Cs,volt,Pixel_size,ampcont,wgh]))
+			ctf    = ctf_2(nx, generate_ctf([dz, Cs, volt, Pixel_size, ampcont ,wgh]))
+			diff   = 0.0
 			if defocus_estimation_method == 1:
 	        		for ifreq in xrange(istart, istop, 1):
 	        			diff += (ctf[ifreq]*Res_TE[ifreq] - Res_roo[ifreq])**2
-	        	       	if diff < diff_min or dz == dz_low:
+	        	       	if diff < diff_min :
 	        		       defocus  = dz
 	        		       diff_min = diff
 			else:
 				diff  = 0.0
 				sum_a = 0.0
 				sum_b = 0.0
-	        		for ifreq in xrange(istart, istop, 1):
-	        		       xval   =  ctf[ifreq]**2*Res_TE[ifreq]
-	        		       diff  +=  Res_roo[ifreq]**2*xval
-	        		       sum_a +=  Res_roo[ifreq]**4
-	        		       sum_b +=  xval**2
-	        	       	diff/=(sqrt(sum_a*sum_b)*( istop - istart + 1 ))
-	        	       	if diff > diff_min or dz == dz_low:
-	        		       defocus  = dz
-	        		       diff_min = diff
-	        		       xscore   = diff_min
+				for ifreq in xrange(istart, istop, 1):
+					xval   =  ctf[ifreq]*Res_TE[ifreq]
+					diff  +=  Res_roo[ifreq]*xval
+					sum_a +=  Res_roo[ifreq]**2
+					sum_b +=  xval**2
+					diff /= (sqrt(sum_a*sum_b)*( istop - istart + 1 ))
+					if diff > diff_min :
+						defocus  = dz
+						diff_min = diff
 
 		dz_low = defocus-step*2
 		if( dz_low < 0 ): 	dz_low=0.0
 		dz_high = defocus + step*2
-		step/=10.
-	defocus=int( defocus/round_off )*round_off
+		step /= 10.
+	defocus = int( defocus/round_off )*round_off
 	return defocus
 
 def defocus_get_fast(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1, round_off=100, dz_max0=50000, f_l0=30, f_h0=5, nr_1=5, nr_2=5, prefix="roo", docf="a",skip="#", micdir="no", print_screen="p"):
@@ -891,7 +894,6 @@ def imf_params_cl1(pw, n=2, iswi=3, Pixel_size=1):
 			n = the polynomial rank +1
 			The optimization tend to fail when the polynomial rank is higher than 6 
 	"""
-	res  = []
 	feq  = []
 	cur  = []
 	parm = []
@@ -903,11 +905,7 @@ def imf_params_cl1(pw, n=2, iswi=3, Pixel_size=1):
 	for i in xrange(npam):
 		k    = 2*len(pw)+i
 		parm.append(t[k])
-	res.append(feq )
-	res.append(cur )
-	res.append(pw  )
-	res.append(parm)
-	return res
+	return [feq, cur, pw, parm]
 
 def imf_get_1dpw_list(fstr):
 	pw   = []
