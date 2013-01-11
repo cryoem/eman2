@@ -1784,6 +1784,7 @@ def fine_2D_refinement(data, br, mask, tavg, group = -1):
 def align2d(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rstep=1, mode = "F"):
 	"""  Determine shift and rotation between image and reference image
 	     quadratic interpolation
+	     Output: ang, sxs, sys, mirror, peak
 	"""
 	#from utilities import print_col
 	from alignment import Numrinit, ringwe, Applyws
@@ -1816,6 +1817,7 @@ def align2d_no_mirror(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_r
 	"""  Determine shift and rotation between image and reference image
 	     no mirror
 	     quadratic interpolation
+	     Output: ang, sxs, sys, mirror, peak  # Mirror==0
 	"""
 	#from utilities import print_col
 	from alignment import Numrinit, ringwe, Applyws
@@ -1835,10 +1837,7 @@ def align2d_no_mirror(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_r
 	#precalculate rings
 	numr = Numrinit(first_ring, last_ring, rstep, mode)
 	wr   = ringwe(numr, mode)
-	#cimage=Util.Polar2Dmi(refim, cnx, cny, numr, mode, kb)
 	crefim = Util.Polar2Dm(refim, cnx, cny, numr, mode)
-	#crefim = Util.Polar2D(refim, numr, mode)
-	#print_col(crefim)
 	Util.Frngs(crefim, numr)
 	Applyws(crefim, numr, wr)
 	return ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny)
