@@ -562,10 +562,10 @@ def defocus_guess(Res_roo, Res_TE, volt, Cs, Pixel_size, wgh, istart=0, istop=-1
 					diff  +=  Res_roo[ifreq]*xval
 					sum_a +=  Res_roo[ifreq]**2
 					sum_b +=  xval**2
-					diff /= (sqrt(sum_a*sum_b)*( istop - istart + 1 ))
-					if diff > diff_min :
-						defocus  = dz
-						diff_min = diff
+				diff /= (sqrt(sum_a*sum_b)*( istop - istart + 1 ))
+				if diff > diff_min :
+					defocus  = dz
+					diff_min = diff
 
 		dz_low = defocus-step*2
 		if( dz_low < 0 ): 	dz_low=0.0

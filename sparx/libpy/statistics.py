@@ -8790,6 +8790,7 @@ def histogram2d(datai, dataj, nbini, nbinj):
 	region = [None]*nbini
 	hist = [None]*nbinj
 	for i in xrange(nbini):
+
 		region[i] = [None]*nbinj
 		hist[i] = [None]*nbinj
 		for j in xrange(nbinj) :
