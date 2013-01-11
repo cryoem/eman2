@@ -6935,7 +6935,13 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 		else:                   disps.append(disps[im-1] + recvcount[im-1])
 		ib, ie = MPI_start_end(total_nima, number_of_proc, im)
 		recvcount.append( ie - ib )
-
+	
+	for ii in xrange(lstp):
+		if stepx[ii] == 0.0:
+			if xrng[ii] != 0.0:
+				ERROR('xrange step size cannot be zero', "ihrsr_MPI", 1,myid)
+			else:
+				stepx[ii] = 1.0 # this is to prevent division by zero in c++ code
 	total_iter = 0
 	# do the projection matching
 	for N_step in xrange(lstp):
