@@ -246,7 +246,7 @@ def main():
 		if options.ehelix:
 			if len(args) < 4:  mask = None
 			else:               mask = args[3]
-			from development import eh3lix_MPI
+			from development import ehelix_MPI
 			global_def.BATCH = True
 			searchxshiftp = int( (options.xr/options.apix) + 0.5)
 			ehelix_MPI(args[0], args[1], args[2], options.delta, searchxshiftp, nearbyp, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
