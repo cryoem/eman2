@@ -536,7 +536,7 @@ def defocus_guess(Res_roo, Res_TE, volt, Cs, Pixel_size, wgh, istart=0, istop=-1
 	if (xval_e == 0.0): return xvale_e  #  This is strange, returns defocus=0.
 
 	if round_off >= 1: 			cut_off  =  1.
-	else: 					    cut_off  =  round_off # do extreme fitting	
+	else: 					    cut_off  =  round_off # do extreme fitting
 
 	length = len(Res_roo)
 	nx     = int(length*2)
