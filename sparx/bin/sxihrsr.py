@@ -95,7 +95,10 @@ def main():
 	parser.add_option("--initial_theta",      type="float",		     default=90.0,                help="intial theta for reference projection")
 	parser.add_option("--delta_theta",        type="float",		     default=1.0,                 help="delta theta for reference projection")
 	parser.add_option("--WRAP",               type="int",  		     default= 1,                  help="do helical wrapping")
-	parser.add_option("--searchxshift",       type="float",		     default= -1,                 help="search range for x-shift determination: +/- searchxshift (Angstroms)")
+
+
+	parser.add_option("--volalixshift",       action="store_true",   default=False,               help="Use volalixshift refinement")
+	parser.add_option("--searchxshift",       type="float",		     default= 0.0,                 help="search range for x-shift determination: +/- searchxshift (Angstroms)")
 	parser.add_option("--nearby",             type="float",		     default= 6.0,                help="neighborhood in which to search for peaks in 1D ccf for x-shift search (Angstroms)")
 
 
@@ -232,7 +235,7 @@ def main():
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
 
-		if options.searchxshift >0:
+		if options.volalixshift:
 			if options.maxit > 1:
 				print "Inner iteration for x-shift determinatin is restricted to 1"
 				sys.exit()
@@ -248,7 +251,6 @@ def main():
 			else:               mask = args[3]
 			from development import ehelix_MPI
 			global_def.BATCH = True
-			searchxshiftp = int( (options.xr[0]/options.apix) + 0.5)
 			ehelix_MPI(args[0], args[1], args[2], options.delta, searchxshiftp, nearbyp, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
 			global_def.BATCH = False
 
