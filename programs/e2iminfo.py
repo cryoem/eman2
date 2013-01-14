@@ -62,7 +62,7 @@ def main():
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_argument("-H", "--header", action="store_true",help="show all header information",default=False)
+	parser.add_argument("-H", "--header", action="store_true",help="Show all header information",default=False)
 	parser.add_argument("-N", "--number", type=int, help="Image number for single image info",default=-1)
 	parser.add_argument("-s", "--stat", action="store_true",help="Show statistical information about the image(s).",default=False)
 	parser.add_argument("-E", "--euler", action="store_true",help="Show Euler angles from header",default=False)
@@ -80,7 +80,7 @@ def main():
 	if options.header and options.stat : 
 		print "Only one of --header and --stat may be specified"
 		sys.exit(1)
-	
+		
 	nimgs=0
 	for imagefile in args:
 		
@@ -112,9 +112,15 @@ def main():
 			if d["nz"]==1 : print "%s\t %d images in BDB format\t%d x %d"%(imagefile,len(dct),d["nx"],d["ny"])
 			else : print "%s\t %d images in BDB format\t%d x %d x %d"%(imagefile,len(dct),d["nx"],d["ny"],d["nz"])
 
-		if options.all : imgn=xrange(nimg)
-		elif options.number>=0 : imgn=[options.number]
-		else: imgn=[]
+		if options.all:
+			imgn = xrange(nimg)
+		elif options.number >= 0:
+			imgn = [options.number]
+		elif options.header or options.stat or options.euler:
+			# If we request header information, without specifying an image #, assume the first image.
+			imgn = [0]
+		else:
+			imgn = []
 
 		nptcl=0
 		d=EMData()
