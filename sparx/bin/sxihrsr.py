@@ -97,8 +97,10 @@ def main():
 	parser.add_option("--WRAP",               type="int",  		     default= 1,                  help="do helical wrapping")
 	parser.add_option("--searchxshift",       type="float",		     default= -1,                 help="search range for x-shift determination: +/- searchxshift (Angstroms)")
 	parser.add_option("--nearby",             type="float",		     default= 6.0,                help="neighborhood in which to search for peaks in 1D ccf for x-shift search (Angstroms)")
-	parser.add_option("--ehelix",             type="float",		     default= -1,                 help="search range for x-shift determination: +/- searchxshift (Angstroms)")
-	
+
+
+	parser.add_option("--ehelix",              action="store_true",   default=False,              help="Use consistent helical refinement")
+
 	parser.add_option("--diskali",            action="store_true",   default=False,               help="volume alignment")
 	parser.add_option("--zstep",              type="float",          default= 1,                  help="Step size for translational search along z (Angstroms)")   
 
@@ -241,14 +243,13 @@ def main():
 			volalixshift_MPI(args[0], args[1], args[2], searchxshiftp, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug, nearbyp)
 			global_def.BATCH = False
 
-		if options.ehelix >0:
+		if options.ehelix:
 			if len(args) < 4:  mask = None
 			else:               mask = args[3]
 			from development import eh3lix_MPI
 			global_def.BATCH = True
-			searchxshiftp = int( (options.volali3/options.apix) + 0.5)
-			xwobble = int( (options.nearby/options.apix) + 0.5)
-			ehelix_MPI(args[0], args[1], args[2], options.delta, searchxshiftp, xwobble, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
+			searchxshiftp = int( (options.xr/options.apix) + 0.5)
+			ehelix_MPI(args[0], args[1], args[2], options.delta, searchxshiftp, nearbyp, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
 			global_def.BATCH = False
 
 		elif options.diskali:
