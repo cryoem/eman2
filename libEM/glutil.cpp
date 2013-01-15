@@ -340,6 +340,120 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 
 	int mid=nx*ny/2;
 	float * image_data = emdata->get_data();
+
+	//////Begin of Histogram Equalization//////
+
+	const int rangemax=4096;
+	int graypdf[rangemax]={0};//256	
+	unsigned int graycdf[rangemax-2]={0};//254
+	unsigned int grayhe[rangemax-2]={0};//#number=254
+	unsigned char graylookup[(int)(render_max-render_min)];//render_max-render_min
+	
+	if (flags&32){						
+		if (dsx != -1) {
+			int l = x0 + y0 * nx;
+			for (int j = ymax; j >= ymin; j--) {
+				int br = l;
+				for (int i = xmin; i < xsize; i++) {
+					if (l > lmax) {
+						break;
+					}
+					int k = 0;
+					int p;
+					float t;
+					if (dsx==1) t=image_data[l];
+					else {						// This block does local pixel averaging for nicer reduced views
+						t=0;
+						for (int iii=0; iii<dsx; iii++) {
+							for (int jjj=0; jjj<dsy; jjj+=nx) {
+								t+=image_data[l+iii+jjj];
+							}
+						}
+						t/=dsx*(dsy/nx);
+					}
+
+					if (t <= rm) graypdf[0]++;
+					else if (t >= render_max) graypdf[rangemax-1]++;			
+					else {
+						graypdf[(int)(ceil((rangemax-2)*(t - render_min)/(render_max-render_min)))]++;
+					}
+					l += dsx;
+				}
+				l = br + dsy;
+			}
+		}
+		else {
+			remy = 10;
+			int l = x0 + y0 * nx;
+			for (int j = ymax; j >= ymin; j--) {
+				int addj = addi;
+				// There seems to be some overflow issue happening
+				// where the statement if (l > lmax) break (below) doesn't work
+				// because the loop that iterates jjj can inadvertantly go out of bounds
+				if (( l + addi*nx ) >= nxy ) {
+					addj = (nxy-l)/nx;
+					if (addj <= 0) continue;
+				}
+				int br = l;
+				remx = 10;
+				for (int i = xmin; i < xsize; i++) {
+					if (l > lmax) break;
+					int k = 0;
+					int p;
+					float t;
+					if (addi<=1) t = image_data[l];
+					else {						// This block does local pixel averaging for nicer reduced views
+						t=0;
+						for (int jjj=0; jjj<addj; jjj++) {
+							for (int iii=0; iii<addi; iii++) {
+								t+=image_data[l+iii+jjj*nx];
+							}
+						}
+						t/=addi*addi;
+					}
+					////////////
+					if (t <= rm) graypdf[0]++;
+					else if (t >= render_max) graypdf[rangemax-1]++;
+					else {
+						graypdf[(int)(ceil((rangemax-2)*(t - render_min)/(render_max-render_min)))]++;
+					}
+
+					data[i * asrgb + j * bpl] = p;
+					if (hist) histd[p]++;
+					l += addi;
+					remx += addr;
+					if (remx > scale_n) {
+						remx -= scale_n;
+						l++;
+					}
+				}
+				l = br + addi * nx;
+				remy += addr;
+				if (remy > scale_n) {
+					remy -= scale_n;
+					l += nx;
+				}
+			}
+		}
+				
+		for (int i=0; i<(rangemax-2); i++) {//0~253
+			for (int j=0;j<(i+1);j++) {
+				graycdf[i]=graycdf[i]+graypdf[j+1];
+			}
+		}
+		
+		for (int i=0; i<(rangemax-2); i++) {			
+			grayhe[i]=floor(0.5+(((double)(rangemax-3)*graycdf[i])/graycdf[rangemax-3]));
+		}
+
+		for (int i=0; i<(int)(render_max-render_min); i++) {
+			graylookup[i]=(unsigned char)((maxgray-mingray-2)*grayhe[(int)(i*(rangemax-3)/(render_max-render_min))]/(rangemax-3)+1);
+		}
+	} 
+		
+	//////End of Histogram Equalization///////	
+	
+	
 	if (emdata->is_complex()) {
 		if (dsx != -1) {
 			int l = y0 * nx;
@@ -518,7 +632,13 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 //						k += mingray;
 					}
 					else {
-						p = (unsigned char) (gs * (t - render_min));
+						if (flags&32){
+							p = graylookup[(int)(t - render_min)];
+						}
+						else{
+							p=(unsigned char) (gs * (t - render_min));	
+						}
+						
 						p += mingray;
 					}
 					data[i * asrgb + j * bpl] = p;
@@ -568,7 +688,13 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 //						k += mingray;
 					}
 					else {
-						p = (unsigned char) (gs * (t - render_min));
+						if (flags&32){
+							p = graylookup[(int)(t - render_min)];
+						}
+						else{
+							p=(unsigned char) (gs * (t - render_min));	
+						}
+						
 						p += mingray;
 					}
 					data[i * asrgb + j * bpl] = p;
