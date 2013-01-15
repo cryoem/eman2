@@ -100,6 +100,7 @@ class EMImage2DWidget(EMGLWidget):
 		self.scale=1.0				# Scale factor for display
 		self.origin=(0,0)			# Current display origin
 		self.invert=0				# invert image on display
+		self.histogram=0            # histogram equalization         
 		self.gamma=1.0				# gamma for display (impact on inverted contrast ?
 		self.minden=0
 		self.maxden=1.0
@@ -203,8 +204,7 @@ class EMImage2DWidget(EMGLWidget):
 		if glIsEnabled(GL_STENCIL_TEST):
 			glClear(GL_STENCIL_BUFFER_BIT)
 
-		
-		
+				
 		#self.cam.position()
 		#context = OpenGL.contextdata.getContext(None)
 		#print "Image2D context is", context
@@ -644,9 +644,14 @@ class EMImage2DWidget(EMGLWidget):
 		except: pass
 		
 	def set_invert(self,val):
-		if val: self.invert=1
-		else : self.invert=0
+		if val: self.invert=1		
+		else : self.invert=0		
 		self.updateGL()
+	
+	def set_histogram(self,val):
+		if val: self.histogram=1
+		else : self.histogram=0
+		self.updateGL()		
 		
 	def set_FFT(self,val):
 		if self.data != None and self.data.is_complex():
@@ -762,6 +767,7 @@ class EMImage2DWidget(EMGLWidget):
 		display_states.append(self.origin[1])
 		display_states.append(self.scale)
 		display_states.append(self.invert)
+		display_states.append(self.histogram)
 		display_states.append(self.minden)
 		display_states.append(self.maxden)
 		display_states.append(self.gamma)
@@ -791,16 +797,21 @@ class EMImage2DWidget(EMGLWidget):
 		if self.curfft==1 :
 			if self.display_fft.is_complex() == False:
 				print "error, the fft is not complex, internal error"
-				return
+				return			
 			a=(3,(self.width()*3-1)/4*4+4,self.height(),self.display_fft.render_ap24(1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()*3-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,3))
-		elif self.curfft in (2,3) :
+		elif self.curfft in (2,3) :			
 			if not self.glflags.npt_textures_unsupported():
 				a=(1,(self.width()-1)/4*4+4,self.height(),GLUtil.render_amp8(self.display_fft, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,2))
-			else : a=(1,(self.width()-1)/4*4+4,self.height(),GLUtil.render_amp8(self.display_fft, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,6))
+			else :				
+				a=(1,(self.width()-1)/4*4+4,self.height(),GLUtil.render_amp8(self.display_fft, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,6))
 		else : 
-			if not self.glflags.npt_textures_unsupported():
-				a=(1,(self.width()-1)/4*4+4,self.height(),GLUtil.render_amp8(self.data, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,2))
-			else : a=(1,(self.width()-1)/4*4+4,self.height(),GLUtil.render_amp8(self.data, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,6))
+			if not self.glflags.npt_textures_unsupported():				
+				if self.histogram==1:
+					a=(1,(self.width()-1)/4*4+4,self.height(),GLUtil.render_amp8(self.data, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,34))
+				else :
+					a=(1,(self.width()-1)/4*4+4,self.height(),GLUtil.render_amp8(self.data, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,2))	
+			else :				 
+				a=(1,(self.width()-1)/4*4+4,self.height(),GLUtil.render_amp8(self.data, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,6))
 
 		return a
 
@@ -826,6 +837,7 @@ class EMImage2DWidget(EMGLWidget):
 		
 		if not self.invert : pixden=(0,255)
 		else: pixden=(255,0)
+				
 		
 		update = False
 		if self.display_state_changed():
@@ -1839,7 +1851,13 @@ class EMImageInspector2D(QtGui.QWidget):
 		
 		self.invtog = QtGui.QPushButton("Invert")
 		self.invtog.setCheckable(1)
-		self.vbl2.addWidget(self.invtog,0,0,1,2)
+		self.vbl2.addWidget(self.invtog,0,0,1,1)#0012
+		
+		
+		self.histoequal = QtGui.QPushButton("EqHist")
+		self.histoequal.setCheckable(1)
+		self.vbl2.addWidget(self.histoequal,0,1,1,1)
+		
 		
 		self.auto_contrast_button = QtGui.QPushButton("Auto contrast")
 		self.vbl2.addWidget(self.auto_contrast_button,1,0,1,2)
@@ -1917,6 +1935,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		QtCore.QObject.connect(self.gammas, QtCore.SIGNAL("valueChanged"), self.new_gamma)
 		QtCore.QObject.connect(self.pyinp, QtCore.SIGNAL("returnPressed()"),self.do_python)
 		QtCore.QObject.connect(self.invtog, QtCore.SIGNAL("toggled(bool)"), target.set_invert)
+		QtCore.QObject.connect(self.histoequal, QtCore.SIGNAL("toggled(bool)"), target.set_histogram)				
 		QtCore.QObject.connect(self.fftg, QtCore.SIGNAL("buttonClicked(int)"), target.set_FFT)
 		QtCore.QObject.connect(self.mmtab, QtCore.SIGNAL("currentChanged(int)"), target.set_mouse_mode)
 		QtCore.QObject.connect(self.auto_contrast_button, QtCore.SIGNAL("clicked(bool)"), target.auto_contrast)
