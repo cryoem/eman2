@@ -1084,6 +1084,8 @@ EMData *PointArray::pdb2mrc_by_summation(int map_size, float apix, float res, in
 		}
 		
 		for (int i = 0; i < table_size; i++) {
+			
+			
 			double x = -i * table_step_size * apix / gauss_real_width;
 			table[i] =  exp(-x * x)/sqrt(gauss_real_width * gauss_real_width * 2 * M_PI);
 		}
