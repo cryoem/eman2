@@ -47,9 +47,9 @@ e2refinetofrealign.py refine_04 7
 
 parser = EMArgumentParser(usage,version=EMANVERSION)
 
-parser.add_pos_argument(name="dir",help="The refinement directory to use for FreAlign.", default="", guitype='dirbox', dirbasename='refine',  row=0, col=0,rowspan=1, colspan=2)
-parser.add_pos_argument(name="refineiter",help="The refinement iteration to use.", default="", guitype='intbox',  row=0, col=2,rowspan=1, colspan=1)
-parser.add_header(name="frealignheader", help='Options below this label are specific to e2refinetofrealign', title="### e2refinetofrealign options ###", row=1, col=0, rowspan=1, colspan=3)
+parser.add_header(name="frealignheader", help='Options below this label are specific to e2refinetofrealign', title="### e2refinetofrealign options ###", row=0, col=0, rowspan=1, colspan=3)
+parser.add_pos_argument(name="dir",help="The refinement directory to use for FreAlign.", default="", guitype='dirbox', dirbasename='refine',  row=1, col=0,rowspan=1, colspan=2)
+parser.add_pos_argument(name="refineiter",help="The refinement iteration to use.", default="", guitype='intbox',  row=1, col=2,rowspan=1, colspan=1)
 parser.add_argument("--fbeaut", action="store_true", help="(T/F)Apply extra real space symmetry averaging and masking to beautify final map prior to output", default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1)
 parser.add_argument("--fcref", action="store_true", help="(T/F)Apply FOM filter to final reconstruction using function SQRT(2.0*FSC/(1.0+FSC))", default=False, guitype='boolbox', row=2, col=1, rowspan=1, colspan=1)
 parser.add_argument("--fstat", action="store_true", help="(T/F)Calculate additional statistics in resolution table at end (QFACT, SSNR, CC, etc.). T Uses more than 50 percent more memory.", default=False, guitype='boolbox', row=2, col=2, rowspan=1, colspan=1)
@@ -57,8 +57,8 @@ parser.add_argument("--rrec", type=float, help="Resolution of reconstruction in 
 parser.add_argument("--reslow", type=float, help="Resolution of the data included in the alignment. This is the low resolution value. ex:200", default=200.0, guitype='floatbox', row=3, col=0, rowspan=1, colspan=2)
 parser.add_argument("--reshigh", type=float, help="Resolution of the data included in the alignment. This is the high resolution value. ex:25", default=25.0, guitype='floatbox', row=3, col=2, rowspan=1, colspan=1)
 parser.add_argument("--thresh", type=float, help="Phase Residual cutoff. Particles with a higher phase residual will not be included in the refinement ", default=90.0, guitype='floatbox', row=4, col=2, rowspan=1, colspan=1)
+parser.add_argument("--randomizemodel", help="Optionally randomize the phases of the initial model to this resolution (in Angstroms)", default=0,  guitype='floatbox', row=5, col=0, rowspan=1, colspan=1)
 parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-
 optionList = pyemtbx.options.get_optionlist(sys.argv[1:])
 
 (options, args) = parser.parse_args()
@@ -171,23 +171,22 @@ f.close()
 RO = str(tmp['apix']*.375*(part[0]['nx']))
 
 for option1 in optionList:
-   if option1 == "fbeaut":
-      FBEAUT = 'T'
-
-   elif option1 == "fcref":
-      FCREF = 'T'
-  
-   elif option1 == "rrec":
-      RREC = str(options.rrec)
-
-   elif option1 == "reslow":
-      RMAX1 = str(options.reslow)
-
-   elif option1 == "reshigh":
-      RMAX2 = str(options.reshigh)
-
-   elif option1 == "fstat":
-         FSTAT = 'T'
+	if option1 == "fbeaut":
+		FBEAUT = 'T'
+	elif option1 == "fcref":
+		FCREF = 'T'
+  	elif option1 == "rrec":
+		RREC = str(options.rrec)
+	elif option1 == "reslow":
+		RMAX1 = str(options.reslow)
+	elif option1 == "reshigh":
+		RMAX2 = str(options.reshigh)
+	elif option1 == "fstat":
+		FSTAT = 'T'
+	elif option1 == "randomizemodel":
+		if options.randomizemodel != 0:
+			s1 = "e2proc3d.py " + E2FA + "/3DMapInOut.mrc " + E2FA + "/3DMapInOut.mrc --process=filter.lowpass.randomphase:apix=" + str(tmp['apix']) + ":cutoff_freq=" + str(1/options.randomizemodel)
+			call(s1, cd shell=True)
 
 OUTFILE2 = E2FA + "/card.txt"          # Cards required by FA
 f = open(OUTFILE2, 'w')      # card.txt to be placed in the E2FA subdirectory created above

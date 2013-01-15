@@ -35,49 +35,52 @@ Examples:
 print "Running e2refinetorelion3d.py"
 # Required Program Options and Parameters (GUI and Command Line)
 parser = EMArgumentParser(usage, version=EMANVERSION)
-parser.add_header(name="relion3dheader", help="Options below this label are specific to e2refinetorelion3d", title="   ### e2refinetorelion3d.py options ###", row=0, col=0, rowspan=1, colspan=3)
+parser.add_header(name="relion3dheader", help="Options below this label are specific to e2refinetorelion3d", title="   ### e2refinetorelion3d.py Options ###", row=0, col=0, rowspan=1, colspan=3)
 #I/O Options
 parser.add_header(name="io", help="Options in this section pertain to I/O", title="---I/O Options---", row=1, col=0, rowspan=1, colspan=1) 
 parser.add_pos_argument(name="set_name",help="The set name of the set of particles.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=2, col=0, rowspan=2, colspan=2)
 parser.add_pos_argument(name="refmap", type=str, help="Reference Map", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=4, col=0, rowspan=2, colspan=2)
-parser.add_argument("--greyscale", action="store_true", help="Is the reference map in greyscale?", default=False, guitype='boolbox', row=4, col=2, rowspan=1, colspan=1)
-parser.add_argument("--symmgroup", help="Symmetry group", guitype='combobox', default='C',choicelist="""'C','D','T','O','I'""", row=6, col=0, rowspan=1, colspan=1)
-parser.add_argument("--symmnumber",type=int,help="Symmetry number",default=1, guitype='intbox', row=6, col=1, rowspan=1, colspan=1)
+parser.add_argument("--randomizemodel", help="Optionally randomize the phases of the initial model to this resolution (in Angstroms)", default=0,  guitype='floatbox', row=6, col=0, rowspan=1, colspan=1)
+parser.add_argument("--greyscale", action="store_true", help="Is the reference map in greyscale?", default=False, guitype='boolbox', row=6, col=1, rowspan=1, colspan=1)
+parser.add_argument("--symmgroup", help="Symmetry group", guitype='combobox', default='C',choicelist="""'C','D','T','O','I'""", row=7, col=0, rowspan=1, colspan=1)
+parser.add_argument("--symmnumber",type=int,help="Symmetry number",default=1, guitype='intbox', row=7, col=1, rowspan=1, colspan=1)
 #CTF Options
-parser.add_header(name="ctf", help="Options in this section pertain to CTF parameters", title="---CTF Options---",row=7, col=0, rowspan=1, colspan=3)
-parser.add_argument("--ctfcorrect", action="store_true", help="(T/F)Do CTF Correction?", default=False, guitype='boolbox', row=8, col=0, rowspan=1, colspan=1)
-parser.add_argument("--dataphaseflipped", action="store_true", help="(T/F)Has the data been phase flipped already?", default=False, guitype='boolbox', row=9, col=0, rowspan=1, colspan=2)
-parser.add_argument("--ignoretofirstpeak", action="store_true", help="(T/F)Ignore CTF's until the first peak?", default=False, guitype='boolbox', row=10, col=0, rowspan=1, colspan=2)
+parser.add_header(name="ctf", help="Options in this section pertain to CTF parameters", title="---CTF Options---",row=8, col=0, rowspan=1, colspan=3)
+parser.add_argument("--ctfcorrect", action="store_true", help="(T/F)Do CTF Correction?", default=False, guitype='boolbox', row=9, col=0, rowspan=1, colspan=1)
+parser.add_argument("--dataphaseflipped", action="store_true", help="(T/F)Has the data been phase flipped already?", default=False, guitype='boolbox', row=10, col=0, rowspan=1, colspan=2)
+parser.add_argument("--ignoretofirstpeak", action="store_true", help="(T/F)Ignore CTF's until the first peak?", default=False, guitype='boolbox', row=11, col=0, rowspan=1, colspan=2)
 #Optimisation Options
-parser.add_header(name="optimisation", help="Options in this section pertain to Optimisation parameters", title="---Optimisation Options---", row=11, col=0, rowspan=1, colspan=3)
-parser.add_argument("--lowpass",type=float,help="Initial low-pass filter (Ang)",default=60.0, guitype='floatbox', row=12, col=0, rowspan=1, colspan=1)
-parser.add_argument("--imagemaskd", type=float, help="Diameter of the image mask", default=-1, guitype='floatbox', row=12, col=1, rowspan=1, colspan=1)
-parser.add_argument("--solventmask",type=str, help="Location of the mask to be used", guitype='filebox',default="", browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False,row=13, col=0, rowspan=2, colspan=2)
+parser.add_header(name="optimisation", help="Options in this section pertain to Optimisation parameters", title="---Optimisation Options---", row=12, col=0, rowspan=1, colspan=3)
+parser.add_argument("--lowpass",type=float,help="Initial low-pass filter (Ang)",default=60.0, guitype='floatbox', row=13, col=0, rowspan=1, colspan=1)
+parser.add_argument("--imagemaskd", type=float, help="Diameter of the image mask", default=-1, guitype='floatbox', row=13, col=1, rowspan=1, colspan=1)
+parser.add_argument("--solventmask",type=str, help="Location of the mask to be used", guitype='filebox',default="", browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False,row=14, col=0, rowspan=2, colspan=2)
 #Sampling Options
-parser.add_header(name="sampling", help="Options in this section pertain to Sampling parameters", title="---Sampling Options---", row=15, col=0, rowspan=1, colspan=3)
-parser.add_argument("--healpix", type=str, default=7.5, help="Angular Sampling Interval (Degrees)", guitype='combobox', choicelist='30,15,7.5,3.7,1.8,0.9,0.5,0.2,0.1', row=16, col=0, rowspan=1, colspan=1)
-parser.add_argument("--auto_healpix", type=str, default=1.8, help="Local angular search value", guitype='combobox', choicelist='30,15,7.5,3.7,1.8,0.9,0.5,0.2,0.1', row=16, col=1, rowspan=1, colspan=1)
-parser.add_argument("--offsetrange", type=float, help="Offset search range (pix)", default=10.0, guitype='floatbox', row=17, col=0, rowspan=1, colspan=1) 
-parser.add_argument("--offsetstep", type=float, help="Offset search step (pix)", default=2.0, guitype='floatbox', row=17, col=1, rowspan=1, colspan=1)
+parser.add_header(name="sampling", help="Options in this section pertain to Sampling parameters", title="---Sampling Options---", row=16, col=0, rowspan=1, colspan=3)
+parser.add_argument("--healpix", type=str, default=7.5, help="Angular Sampling Interval (Degrees)", guitype='combobox', choicelist='30,15,7.5,3.7,1.8,0.9,0.5,0.2,0.1', row=17, col=0, rowspan=1, colspan=1)
+parser.add_argument("--auto_healpix", type=str, default=1.8, help="Local angular search value", guitype='combobox', choicelist='30,15,7.5,3.7,1.8,0.9,0.5,0.2,0.1', row=17, col=1, rowspan=1, colspan=1)
+parser.add_argument("--offsetrange", type=float, help="Offset search range (pix)", default=10.0, guitype='floatbox', row=18, col=0, rowspan=1, colspan=1) 
+parser.add_argument("--offsetstep", type=float, help="Offset search step (pix)", default=2.0, guitype='floatbox', row=18, col=1, rowspan=1, colspan=1)
 #Run Options
-parser.add_header(name="running", help="Options in this section pertain to running RELION itself", title="---Run Options---", row=18, col=0, rowspan=1, colspan=3)
-parser.add_argument("--threads", type=int, help="# of threads", default=1, guitype='intbox', row=19, col=0, rowspan=1, colspan=1)
-parser.add_argument("--maxmemory", type=float, help="Maximum memory (in GB) available for each thread", guitype='floatbox', row=19, col=1, rowspan=1, colspan=1)
+parser.add_header(name="running", help="Options in this section pertain to running RELION itself", title="---Run Options---", row=19, col=0, rowspan=1, colspan=3)
+parser.add_argument("--threads", type=int, help="# of threads", default=1, guitype='intbox', row=20, col=0, rowspan=1, colspan=1)
+parser.add_argument("--maxmemory", type=float, help="Maximum memory (in GB) available for each thread", guitype='floatbox', row=20, col=1, rowspan=1, colspan=1)
 
 
-# Command line only parameters
-parser.add_argument("--refctfcorrected", action="store_true", help="Has the reference map been ctf corrected?")
-parser.add_argument("--amplitudecontrast", type=float, help="Amplitude Contrast value for the micrographs")
-parser.add_argument("--intensitycorrection", action="store_true", help="(T/F)Do intensity correction?")
-parser.add_argument("--onlyflipphase", action="store_true", help="(T/F)Only flip phases?")
-parser.add_argument("--print_symmetry", action="store_true",help="Print all symmetry transformation matrices, and exit")
-parser.add_argument("--nearest_neighbor", action="store_true", help="Perform nearest-neighbor instead of linear Fourier-space interpolation")
-parser.add_argument("--pad", type=int,help="Padding factor")
-parser.add_argument("--oversampling",help="Oversampling order")
-parser.add_argument("--inplaneang", type=float, help="In-plane angular sampling")
-parser.add_argument("--limit_tilt",type=int, help="Limited tilt angle: positive for keeping side views, negative for keeping top views")
-parser.add_argument("--verbosity", type=int, help="Set the level of verbosity for the code")
+# Command line only parameters (or expert parameters in hte GUI)
+parser.add_header(name="Expert Options", help="Options in this section are for expert users", title="---Expert Options---", expert=True, row=21, col=0, rowspan=1, colspan=3)
+parser.add_argument("--amplitudecontrast", type=float, help="Amplitude Contrast value for the micrographs", default=0.07, guitype='floatbox',row=22, col=0, rowspan=1, colspan=1, expert=True)
+parser.add_argument("--intensitycorrection", action="store_true", help="(T/F)Do intensity correction?", default=False, guitype='boolbox', row=22, col=1, rowspan=1, colspan=1, expert=True)
+parser.add_argument("--print_symmetry", action="store_true",help="Print all symmetry transformation matrices, and exit", default=False, guitype='boolbox', row=23, col=0, rowspan=1, colspan=1, expert=True)
+parser.add_argument("--nearest_neighbor", action="store_true", help="Perform nearest-neighbor instead of linear Fourier-space interpolation", default=False, guitype='boolbox', row=23, col=1, rowspan=1, colspan=1, expert=True)
+parser.add_argument("--pad", type=int,help="Padding factor",  default=1, guitype='combobox', choicelist='1,2,3', row=24, col=0, rowspan=1, colspan=1, expert=True)
+parser.add_argument("--oversampling",help="Oversampling order", default=0, guitype='combobox', choicelist='0,1,2,3,4', row=24, col=1, rowspan=1, colspan=1, expert=True)
+parser.add_argument("--limit_tilt",type=int, help="Limited tilt angle: positive for keeping side views, negative for keeping top views", default=-91, guitype='intbox', row=25, col=0, rowspan=1, colspan=1, expert=True)
+parser.add_argument("--verbosity", type=int, help="Set the level of verbosity for the code", default=1, guitype='combobox', choicelist='0,1,2,3,4,5,6,7,8,9', row=25, col=1, rowspan=1, colspan=1, expert=True)
+parser.add_argument("--onlyflipphase", action="store_true", help="(T/F)Only flip phases?", default=False, guitype='boolbox', row=26, col=0, rowspan=1, colspan=1, expert=True)
+
 parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+#parser.add_argument("--inplaneang", type=float, help="In-plane angular sampling", default=row=26, col=0, rowspan=1, colspan=2, expert=True)
+#parser.add_argument("--refctfcorrected", action="store_true", help="Has the reference map been ctf corrected?")
 #parser.add_argument("--maskrefstructure", action="store_true", help="(T/F)Mask reference structures?", default=False, guitype='boolbox', row=5, col=0, rowspan=1, colspan=2)
 #parser.add_argument("--splithalves", action="store_true", help="(T/F)Split data into random halves?")
 #parser.add_argument("--joinhalves", action="store_true", help="(T/F)Join random halves?")
@@ -150,9 +153,9 @@ if header.get_attr_dict().__contains__('apix') and header.get_attr_dict().__cont
 	if header['apix_x'] == 1.0:
 		apix=header['apix']
 		print """***An "apix" value was found in the header. This is an old style and apix values should be correctly stored in apix_x, apix_y, apix_z. The value in apix is """ + str(apix) + """. Be aware this may not be the value you intended***"""
-elif header.get_attr_dict().__contains__('apix_x'):
+elif header.get_attr_dict().__contains__('apix_x') && header['apix_x'] != None:
 	apix = header['apix_x']
-elif header.get_attr_dict().__contains__('apix'):
+elif header.get_attr_dict().__contains__('apix') && header['apix_x']:
 	apix = header['apix']
 	print """***An "apix" value was found in the header. This is an old style and apix values should be correctly stored in apix_x, apix_y, apix_z. The value in apix is """ + str(apix) + """. Be aware this may not be the value you intended***"""
 elif project_db.__contains__('global.apix'):
@@ -377,6 +380,10 @@ for option1 in optionList:
 		s = s + " --max_memory " + str(options.maxmemory)
 	elif option1 == "greyscale":
 		grey = 1
+	elif option1 == "randomizemodel":
+		if options.randomizemodel != 0:
+			s1 = "e2proc3d.py " + E2RLN + "/3DRefMap.mrc " + E2RLN + "/3DRefMap.mrc --process=filter.lowpass.randomphase:apix=" + apix + ":cutoff_freq=" + str(1/options.randomizemodel)
+			call(s1,shell=True)
 	elif option1 == "pad":
 		s = s + " --pad " + str(options.pad)
 	elif option1 == "lowpass":

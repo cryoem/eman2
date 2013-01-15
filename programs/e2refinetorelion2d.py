@@ -32,33 +32,48 @@ Examples:
 
 """
 
-# Program Options
+print "Running e2refinetorelion2d.py"
+# Required GUI Program Options
 parser = EMArgumentParser(usage, version=EMANVERSION)
-parser.add_header(name="relion2dheader", help='Options below this label are specific to e2refinetorelion2d', title="### e2refinetorelion options ###", row=0, col=0, rowspan=1, colspan=3)
-parser.add_pos_argument(name="set_name",help="The set name of the set of particles.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=1, col=0, rowspan=1, colspan=2)
-parser.add_argument("--numiter", type=int, help="# of iterations to refine", default=25, guitype='intbox',row=2, col=0, rowspan=1, colspan=1 )
-parser.add_argument("--numclasses", type=int, help="# of classes", default=8, guitype='intbox',row=2, col=1, rowspan=1, colspan=1 )
-parser.add_argument("--ctfcorrect", action="store_true", help="(T/F)Do CTF Correction?", default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1)
-parser.add_argument("--onlyflipphase", action="store_true", help="(T/F)Only flip phases?", default=False, guitype='boolbox',row=5, col=0, rowspan=1, colspan=1 )
-parser.add_argument("--dataphaseflipped", action="store_true", help="(T/F)Has the data been phase flipped already?", default=False, guitype='boolbox',row=5, col=1, rowspan=1, colspan=2 )
-parser.add_argument("--ignoretofirstpeak", action="store_true", help="(T/F)Ignore CTF's until the first peak?", default=False, guitype='boolbox',row=4, col=0, rowspan=1, colspan=2 )
-parser.add_argument("--intensitycorrection", action="store_true", help="(T/F)Do intensity correction?", default=False, guitype='boolbox',row=3, col=1, rowspan=1, colspan=2 )
-parser.add_argument("--maskrefstructure", action="store_true", help="(T/F)Mask reference structures?", default=False, guitype='boolbox',row=4, col=1, rowspan=1, colspan=1 )
-parser.add_argument("--splithalves", action="store_true", help="(T/F)Split data into random halves?", default=False, guitype='boolbox',row=6, col=0, rowspan=1, colspan=1 )
-parser.add_argument("--joinhalves", action="store_true", help="(T/F)Join random halves?", default=False, guitype='boolbox',row=6, col=1, rowspan=1, colspan=2 )
-parser.add_argument("--regparam", type=float, help="Regularization Parameter T (weights experimental data vs. prior", default=1.0, guitype='floatbox',row=7, col=0, rowspan=1, colspan=1 )
-parser.add_argument("--imagemaskd", type=float, help="Diameter of the image mask", default=-1, guitype='floatbox',row=7, col=1, rowspan=1, colspan=1 )
-parser.add_argument("--inplaneang", type=float, help="In-plane angular sampling", default=None, guitype='floatbox',row=8, col=0, rowspan=1, colspan=1 )
-parser.add_argument("--oversampling",help="Oversampling order",default='0', guitype='combobox', choicelist='0,1,2', row=9, col=0, rowspan=1, colspan=1 )
-parser.add_argument("--offsetrange", type=float, help="Offset search range (pix)", default=10.0, guitype='floatbox',row=8, col=1, rowspan=1, colspan=1 ) 
-parser.add_argument("--offsetstep", type=float, help="Offset search step (pix)", default=2.0, guitype='floatbox',row=8, col=2, rowspan=1, colspan=1 )
-parser.add_argument("--threads", type=int, help="# of threads", default=1, guitype='intbox',row=11, col=0, rowspan=1, colspan=1 )
+parser.add_header(name="relion2dheader", help="Options below this label are specific to e2refinetorelion2d", title="   ### e2refinetorelion.py Options ###", row=0, col=0, rowspan=1, colspan=3)
+#I/O Options
+parser.add_header(name="io", help="Options in this section are related to I/O", title="---I/O Options---",row=1, col=0, rowspan=1, colspan=3)
+parser.add_pos_argument(name="set_name",help="The set name of the set of particles.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=2, col=0, rowspan=2, colspan=2)
+parser.add_argument("--numclasses", type=int, help="# of classes", default=8, guitype='intbox',row=4, col=0, rowspan=1, colspan=1)
+#CTF Options
+parser.add_header(name="ctf", help="Options in this section are CTF correction-related", title="---CTF Options---", row=5, col=0, rowspan=1, colspan=3)
+parser.add_argument("--ctfcorrect", action="store_true", help="(T/F)Do CTF Correction?", default=False, guitype='boolbox', row=6, col=0, rowspan=1, colspan=1)
+parser.add_argument("--dataphaseflipped", action="store_true", help="(T/F)Has the data been phase flipped already?", default=False, guitype='boolbox',row=6, col=1, rowspan=1, colspan=2)
+parser.add_argument("--ignoretofirstpeak", action="store_true", help="(T/F)Ignore CTF's until the first peak?", default=False, guitype='boolbox',row=6, col=2, rowspan=1, colspan=2)
+#Optimisation Options
+parser.add_header(name="optimisation", help="Options in this section are Optimisation-related", title="---Optimisation Options---", row=7, col=0, rowspan=1, colspan=3)
+parser.add_argument("--numiter", type=int, help="# of iterations to refine", default=25, guitype='intbox',row=8, col=0, rowspan=1, colspan=1 )
+parser.add_argument("--regparam", type=float, help="Regularization Parameter T (weights experimental data vs. prior", default=1.0, guitype='floatbox',row=8, col=1, rowspan=1, colspan=1 )
+parser.add_argument("--imagemaskd", type=float, help="Diameter of the image mask", default=-1, guitype='floatbox',row=9, col=0, rowspan=1, colspan=1 )
+parser.add_argument("--maskzeroes", action="store_true", help="(T/F) For individual particles, the area outside a circle with the radius of the particle will be set to zeros prior to taking the Fourier transform", default=False, guitype='boolbox', row=9, col=1, rowspan=1, colspan=1)
+parser.add_argument("--solventmask",type=str, help="Location of the mask to be used", guitype='filebox',default="", browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=10, col=0, rowspan=2, colspan=2)
+#Sampling Options
+parser.add_header(name="sampling", help="Options in this section are Sampling-related", title="---Sampling Options---", row=12, col=0, rowspan=1, colspan=3)
+parser.add_argument("--inplaneang", type=float, help="In-plane angular sampling", default=None, guitype='floatbox',row=13, col=0, rowspan=1, colspan=1)
+parser.add_argument("--offsetrange", type=float, help="Offset search range (pix)", default=10.0, guitype='floatbox',row=13, col=1, rowspan=1, colspan=1) 
+parser.add_argument("--offsetstep", type=float, help="Offset search step (pix)", default=2.0, guitype='floatbox',row=13, col=2, rowspan=1, colspan=1)
+#Running Options
+parser.add_header(name="running", help="Options in this section are related to running e2refinetorelion2d.py", title="---Run Options---", row=14, col=0, rowspan=1, colspan=3)
+parser.add_argument("--threads", type=int, help="# of threads", default=1, guitype='intbox',row=15, col=0, rowspan=1, colspan=1 )
+parser.add_argument("--verbosity", type=int, help="Set the level of verbosity for the code", default=1, guitype='combobox', choicelist='0,1,2,3,4,5,6,7,8,9', row=15, col=1, rowspan=1, colspan=1)
+#Expert Options
+parser.add_header(name="expert", help="Options in this section are for experts to use", title="---Expert Options---", expert=True, row=16, col=0, rowspan=1, colspan=3)
+parser.add_argument("--voltage",type=int, default=None, help="Voltage of the Microscope (kV)", expert=True, guitype='intbox', row=17, col=0, rowspan=1, colspan=1)
+parser.add_argument("--cs", type=float, default=None, help="Spherical Aberration", expert=True, guitype='floatbox', row=17, col=1, rowspan=1, colspan=1)
+parser.add_argument("--apix", type=float, default=None, help="Angstrom per pixel", expert=True, guitype='floatbox', row=17, col=2, rowspan=1, colspan=1)
+parser.add_argument("--defocus", type=float, help="Defocus in A", default=10000, guitype='floatbox', expert=True, row=18, col=0, rowspan=1, colspan=1 )
+#Command line options only
 parser.add_argument("--echo",action="store_true", default=False, help="Echo Relion Command to terminal only")
-parser.add_argument("--defocus", type=float, help="Defocus in A", default=10000, guitype='floatbox',row=9, col=1, rowspan=1, colspan=1 )
 parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-parser.add_argument("--voltage",type=int, default=None, help="Voltage of the Microscope (kV)", guitype='intbox', row=10, col=0, rowspan=1, colspan=1)
-parser.add_argument("--cs", type=float, default=None, help="Spherical Aberration", guitype='floatbox', row=10, col=1, rowspan=1, colspan=1)
-parser.add_argument("--apix", type=float, default=None, help="Angstrom per pixel", guitype='floatbox', row=10, col=2, rowspan=1, colspan=1)
+
+
+
+
 optionList = pyemtbx.options.get_optionlist(sys.argv[1:])
 (options, args) = parser.parse_args()
 
@@ -88,10 +103,7 @@ while found == 1:
 E2RLN = "relion2d_" + rln_run
 os.mkdir(E2RLN)
 
-verbosity = '0'
-for option1 in optionList:
-	if option1 == "v":
-		verbosity=str(options.v)
+verbosity=str(options.verbosity)
 
 header= EMData(set_name,0,True)
 h_keys=header.get_attr_dict().keys()
@@ -151,9 +163,9 @@ set_orig = set_name
 i = 0
 old_src = EMData(set_name,0)['data_source']
 if mrc:
-        s =  "e2proc2d.py " + set_orig + " " + E2RLN + "/ptcl_stack.hdf --threed2twod --verbose=0"
+        s =  "e2proc2d.py " + set_orig + " " + E2RLN + "/ptcl_stack.hdf --threed2twod --process=normalize.edgemean --verbose=" + str(options.verbosity)
 else:
-        s =  "e2proc2d.py " + set_orig + " " + E2RLN + "/ptcl_stack.hdf --verbose=0"
+        s =  "e2proc2d.py " + set_orig + " " + E2RLN + "/ptcl_stack.hdf --process=normalize.edgemean --verbose=" + str(options.verbosity)
 call(s,shell=True)
 
 ctf_corr = 0
@@ -172,40 +184,40 @@ print "Converting EMAN2 Files to Formats Compatible with RELION"
 for k in range(num_images):
 	src = EMData(set_name,k)['data_source']
 	if src != old_src:
-		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + old_src.replace('bdb:particles#','') + ".hdf --first=" + str(i) + " --last=" + str(k-1) + " --verbose=" + verbosity
+		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + old_src.replace('bdb:particles#','').split('?')[0] + ".hdf --first=" + str(i) + " --last=" + str(k-1) + " --verbose=" + verbosity
 		call(s, shell=True)
 		if (k-i-1) == 0:
-			s = "e2proc2d.py " + E2RLN + "/" + old_src.replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + old_src.replace('bdb:particles#','') + ".mrc --verbose=" + verbosity
+			s = "e2proc2d.py " + E2RLN + "/" + old_src.replace('bdb:particles#','').split('?')[0] + ".hdf " + E2RLN + "/" + old_src.replace('bdb:particles#','').split('?')[0] + ".mrc --verbose=" + verbosity
 			call(s,shell=True)
 		else:
-			s = "e2proc2d.py " + E2RLN + "/" + old_src.replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + old_src.replace('bdb:particles#','') + ".mrc --twod2threed --verbose=" + verbosity 
+			s = "e2proc2d.py " + E2RLN + "/" + old_src.replace('bdb:particles#','').split('?')[0] + ".hdf " + E2RLN + "/" + old_src.replace('bdb:particles#','').split('?')[0] + ".mrc --twod2threed --verbose=" + verbosity 
 			call(s, shell=True)
-		s1 = E2RLN + "/" + old_src.replace('bdb:particles#','') + ".mrc"
+		s1 = E2RLN + "/" + old_src.replace('bdb:particles#','').split('?')[0] + ".mrc"
 		s2 = s1 + "s"
 		shutil.move(s1, s2)
 		if ctf_corr == 1:
-			s = "relion_star_datablock_stack " +  str(k-i) + " " +  E2RLN + "/" + old_src.replace('bdb:particles#','') + ".mrcs " + E2RLN + "/" + old_src.replace('bdb:particles#','') + ".mrcs " + str(voltage) + " " + amplitude_contrast + "  >> " + E2RLN + "/all_images.star" 
+			s = "relion_star_datablock_stack " +  str(k-i) + " " +  E2RLN + "/" + old_src.replace('bdb:particles#','').split('?')[0] + ".mrcs " + E2RLN + "/" + old_src.replace('bdb:particles#','').split('?')[0] + ".mrcs " + str(voltage) + " " + amplitude_contrast + "  >> " + E2RLN + "/all_images.star" 
 		else:
-			s = "relion_star_datablock_stack " +  str(k-i) + " " +  E2RLN + "/" + old_src.replace('bdb:particles#','') + ".mrcs " + E2RLN + "/" + old_src.replace('bdb:particles#','') + ".mrcs " + str(options.defocus) + " " + str(options.defocus) + " 0 " +str(voltage) + " " + str(options.cs) + " " + amplitude_contrast + "  >> " + E2RLN + "/all_images.star" 
+			s = "relion_star_datablock_stack " +  str(k-i) + " " +  E2RLN + "/" + old_src.replace('bdb:particles#','').split('?')[0] + ".mrcs " + E2RLN + "/" + old_src.replace('bdb:particles#','').split('?')[0] + ".mrcs " + str(options.defocus) + " " + str(options.defocus) + " 0 " +str(voltage) + " " + str(options.cs) + " " + amplitude_contrast + "  >> " + E2RLN + "/all_images.star" 
 		call(s,shell=True)
-		s = "rm " + E2RLN + "/" + old_src.replace('bdb:particles#','') + ".hdf" 
+		s = "rm " + E2RLN + "/" + old_src.replace('bdb:particles#','').split('?')[0] + ".hdf" 
 		call(s,shell=True)
 		i = k
 		old_src = src
 	if (k+1) == num_images:
-		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + src.replace('bdb:particles#','') + ".hdf --first=" + str(k) + " --last=" + str(k) + " --verbose=" + verbosity
+		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + src.replace('bdb:particles#','').split('?')[0] + ".hdf --first=" + str(k) + " --last=" + str(k) + " --verbose=" + verbosity
 		call(s, shell=True)
-		s = "e2proc2d.py " + E2RLN + "/" + src.replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + src.replace('bdb:particles#','') + ".mrc --verbose=" + verbosity
+		s = "e2proc2d.py " + E2RLN + "/" + src.replace('bdb:particles#','').split('?')[0] + ".hdf " + E2RLN + "/" + src.replace('bdb:particles#','').split('?')[0] + ".mrc --verbose=" + verbosity
 		call(s,shell=True)
-		s1 = E2RLN + "/" + src.replace('bdb:particles#','') + ".mrc"
+		s1 = E2RLN + "/" + src.replace('bdb:particles#','').split('?')[0] + ".mrc"
 		s2 = s1 + "s"
 		shutil.move(s1, s2)
 		if ctf_corr == 1:
-			s = "relion_star_datablock_stack 1 "+  E2RLN + "/" + src.replace('bdb:particles#','') + ".mrcs " + E2RLN + "/" + src.replace('bdb:particles#','') + ".mrcs "  + str(options.defocus) + " " + str(options.defocus) + " 0 " + str(voltage) + " " + str(options.cs) + " " + amplitude_contrast + "  >> " + E2RLN + "/all_images.star" 
+			s = "relion_star_datablock_stack 1 "+  E2RLN + "/" + src.replace('bdb:particles#','').split('?')[0] + ".mrcs " + E2RLN + "/" + src.replace('bdb:particles#','').split('?')[0] + ".mrcs "  + str(options.defocus) + " " + str(options.defocus) + " 0 " + str(voltage) + " " + str(options.cs) + " " + amplitude_contrast + "  >> " + E2RLN + "/all_images.star" 
 		else:
-			s = "relion_star_datablock_stack 1 "+  E2RLN + "/" + src.replace('bdb:particles#','') + ".mrcs " + E2RLN + "/" + src.replace('bdb:particles#','') + ".mrcs " + str(voltage) + " " + amplitude_contrast + "  >> " + E2RLN + "/all_images.star" 
+			s = "relion_star_datablock_stack 1 "+  E2RLN + "/" + src.replace('bdb:particles#','').split('?')[0] + ".mrcs " + E2RLN + "/" + src.replace('bdb:particles#','').split('?')[0] + ".mrcs " + str(voltage) + " " + amplitude_contrast + "  >> " + E2RLN + "/all_images.star" 
 		call(s,shell=True)
-		s = "rm " + E2RLN + "/" + src.replace('bdb:particles#','') + ".hdf" 
+		s = "rm " + E2RLN + "/" + src.replace('bdb:particles#','').split('?')[0] + ".hdf" 
 		call(s,shell=True)
 		i = k
 		old_src = src
@@ -231,7 +243,7 @@ os.mkdir(RUNDIR)
 
 echo=False
 #Parse the options and create the command to run Relion
-s = RELION_RUN + "--i " + E2RLN + "/all_images.star --o " + RUNDIR + "/" + E2RLN + " --angpix " + str(apix)
+s = RELION_RUN + "--i " + E2RLN + "/all_images.star --o " + RUNDIR + "/" + E2RLN + " --dont_check_norm --angpix " + str(apix)
 for option1 in optionList:
 	if option1 == "echo":
 		echo=True
@@ -250,6 +262,12 @@ for option1 in optionList:
 		s = s + " --split_random_halves"
 	elif option1 == "ctfcorrect":
 		s = s + " --ctf"
+	elif option1 == "solventmask":
+		s1 = "e2proc3d.py " + str(options.solventmask) + " " + E2RLN + "/mask.mrc"
+		call(s1,shell=True)
+		s = s + " --solvent_mask " + E2RLN + "/mask.mrc"
+	elif option1 == "maskzeroes":
+		s = s + " --zero_mask"
 	elif option1 == "onlyflipphase":
 		s = s + " --only_flip_phases" 
 	elif option1 == "dataphaseflipped":
@@ -306,7 +324,7 @@ if not(echo):
 		call(s,shell=True)
 	db_classes = db_open_dict("bdb:" + E2RLN + "#classes_" + rln_run)
 	
-	for i in range(options.k):
+	for i in range(options.numclasses):
 		a = EMData(E2RLN + "/tmp/classes-" + str(i+1) + ".mrc")
 		a['apix_x'] = a['apix_y'] = a['apix_z'] = apix
 		a['origin_z'] = 0
