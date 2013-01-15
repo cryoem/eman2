@@ -1061,11 +1061,6 @@ EMData *PointArray::pdb2mrc_by_summation(int map_size, float apix, float res, in
 	int table_size;
 	int gbox;
 	
-	if(addpdbbfactor==-1){
-		for ( size_t s = 0; s < get_number_points(); ++s) {
-			bfactor[s]=res;
-		}
-	}
 	
 	for ( size_t s = 0; s < get_number_points(); ++s) {
 		double xc = points[4 * s] / apix + map_size / 2;
@@ -1075,7 +1070,16 @@ EMData *PointArray::pdb2mrc_by_summation(int map_size, float apix, float res, in
 		
 		//printf("\n bfactor=%f",bfactor[s]);
 		
-		gauss_real_width = (bfactor[s])/M_PI;	// in Angstrom, res is in Angstrom
+		
+		
+		
+		
+		if(addpdbbfactor==-1){
+			gauss_real_width = res/M_PI;	// in Angstrom, res is in Angstrom
+		}else{
+			gauss_real_width = (bfactor[s])/(4*sqrt(2)*M_PI);	// in Angstrom, res is in Angstrom
+		}
+		
 		
 		table_size = int (max_table_x * gauss_real_width / (apix * table_step_size) * 1.25);
 		table.resize(table_size);
@@ -1083,11 +1087,14 @@ EMData *PointArray::pdb2mrc_by_summation(int map_size, float apix, float res, in
 			table[i] = 0;
 		}
 		
-		for (int i = 0; i < table_size; i++) {
-			
-			
+		for (int i = 0; i < table_size; i++) {						
 			double x = -i * table_step_size * apix / gauss_real_width;
+			if(addpdbbfactor==-1){
+				table[i] =  exp(-x * x);	
+			}
+			else{
 			table[i] =  exp(-x * x)/sqrt(gauss_real_width * gauss_real_width * 2 * M_PI);
+			}
 		}
 
 		gbox = int (max_table_x * gauss_real_width / apix);	// local box half size in pixels to consider for each point
