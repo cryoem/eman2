@@ -17419,8 +17419,8 @@ EMData* Util::mult_scalar(EMData* img, float scalar)
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	size_t size = (size_t)nx*ny*nz;
-	EMData * img2 = img->copy_head();
-	float *img_ptr  =img->get_data();
+	EMData * img2   = img->copy_head();
+	float *img_ptr  = img->get_data();
 	float *img2_ptr = img2->get_data();
 	for (size_t i=0;i<size;++i)img2_ptr[i] = img_ptr[i]*scalar;
 	img2->update();
@@ -17444,8 +17444,8 @@ EMData* Util::madn_scalar(EMData* img, EMData* img1, float scalar)
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	size_t size = (size_t)nx*ny*nz;
-	EMData * img2 = img->copy_head();
-	float *img_ptr  =img->get_data();
+	EMData * img2   = img->copy_head();
+	float *img_ptr  = img->get_data();
 	float *img2_ptr = img2->get_data();
 	float *img1_ptr = img1->get_data();
 	for (size_t i=0;i<size;++i) img2_ptr[i] = img_ptr[i] + img1_ptr[i]*scalar;
@@ -17470,8 +17470,8 @@ EMData* Util::addn_img(EMData* img, EMData* img1)
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	size_t size = (size_t)nx*ny*nz;
-	EMData * img2 = img->copy_head();
-	float *img_ptr  =img->get_data();
+	EMData * img2   = img->copy_head();
+	float *img_ptr  = img->get_data();
 	float *img2_ptr = img2->get_data();
 	float *img1_ptr = img1->get_data();
 	for (size_t i=0;i<size;++i) img2_ptr[i] = img_ptr[i] + img1_ptr[i];
@@ -17496,8 +17496,8 @@ EMData* Util::subn_img(EMData* img, EMData* img1)
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	size_t size = (size_t)nx*ny*nz;
-	EMData * img2 = img->copy_head();
-	float *img_ptr  =img->get_data();
+	EMData * img2   = img->copy_head();
+	float *img_ptr  = img->get_data();
 	float *img2_ptr = img2->get_data();
 	float *img1_ptr = img1->get_data();
 	for (size_t i=0;i<size;++i) img2_ptr[i] = img_ptr[i] - img1_ptr[i];
@@ -17522,8 +17522,8 @@ EMData* Util::muln_img(EMData* img, EMData* img1)
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	size_t size = (size_t)nx*ny*nz;
-	EMData * img2 = img->copy_head();
-	float *img_ptr  =img->get_data();
+	EMData * img2   = img->copy_head();
+	float *img_ptr  = img->get_data();
 	float *img2_ptr = img2->get_data();
 	float *img1_ptr = img1->get_data();
 	if(img->is_complex()) {
@@ -17553,8 +17553,8 @@ EMData* Util::divn_img(EMData* img, EMData* img1)
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	size_t size = (size_t)nx*ny*nz;
-	EMData * img2 = img->copy_head();
-	float *img_ptr  =img->get_data();
+	EMData * img2   = img->copy_head();
+	float *img_ptr  = img->get_data();
 	float *img2_ptr = img2->get_data();
 	float *img1_ptr = img1->get_data();
 	if(img->is_complex()) {
@@ -17586,8 +17586,8 @@ EMData* Util::divn_filter(EMData* img, EMData* img1)
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	size_t size = (size_t)nx*ny*nz;
-	EMData * img2 = img->copy_head();
-	float *img_ptr  =img->get_data();
+	EMData * img2   = img->copy_head();
+	float *img_ptr  = img->get_data();
 	float *img1_ptr = img1->get_data();
 	float *img2_ptr = img2->get_data();
 	if(img->is_complex()) {
@@ -17634,7 +17634,7 @@ void Util::mad_scalar(EMData* img, EMData* img1, float scalar)
 
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	size_t size = (size_t)nx*ny*nz;
-	float *img_ptr  =img->get_data();
+	float *img_ptr  = img->get_data();
 	float *img1_ptr = img1->get_data();
 	for (size_t i=0;i<size;++i)img_ptr[i] += img1_ptr[i]*scalar;
 	img1->update();
