@@ -59,7 +59,7 @@ def main():
 	
 	parser.add_argument("--tomogram", type=str, help="Name of the tomogram.",default='')
 	parser.add_argument("--goldstack", type=str, help="Name of the stack containing a few gold particles picked from the tomogram.",default='')
-	parser.add_argument("--particlestack", type=str, help="""Name of the stack containing a few sample particles picked from the tomogram, used to create an initial template.
+	parser.add_argument("--ptclstack", type=str, help="""Name of the stack containing a few sample particles picked from the tomogram, used to create an initial template.
 															with which to search for particles throughout the tomogram.""",default='')
 	
 	parser.add_argument("--template", type=str, help="Name of the file containing the template to search for particles throughout the tomogram.",default='')
@@ -118,7 +118,9 @@ def main():
 		
 	logger = E2init(sys.argv, options.ppid)
 	
-	
+	if not options.template and not options.ptclstack:
+		print "TERMINATING: You must provide either a template, through --template, or a stack of particles to build one, through --ptclstack."
+		sys.exit()
 	
 	print "THE particle radius at reading is!", options.ptclradius
 	'''
@@ -356,7 +358,7 @@ def main():
 			else:
 				expandedtemplateboxsize = x0
 		
-	elif options.particlestack:
+	elif options.ptclstack:
 		ret = generateref(options)
 		options = ret[0]
 		expandedtemplateboxsize = ret[1]
@@ -372,6 +374,8 @@ def main():
 	tomogramapix = tomo['apix_x']
 	if options.apix:
 		tomogramapix = options.apix
+	
+	print "The template is", options.template
 	
 	transtemplate = EMData(options.template,0)
 	transtemplateapix = transtemplate['apix_x']
@@ -755,18 +759,20 @@ def main():
 	
 	
 def generateref(options):
-	ptclhdr = EMData(options.particlestack,0,True)
+	ptclhdr = EMData(options.ptclstack,0,True)
 	box = ptclhdr['nx']
-	outputboxsize == box
+	outputboxsize = box
 	if options.outputboxsize:
 		outputboxsize == options.outputboxsize
-	
-	cmd = "e2spt_classaverage.py --path=" + options.path + "/generatereference" + " --input=" + options.particlestack + " --output=" + options.particlestack.replace('.hdf','_avg.hdf') + " --npeakstorefine=10 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_translate_3d:search=" +str( int(box/4) ) + ":delta=15:dphi=15:verbose=0 --parallel=thread:7 --ralign=refine_3d_grid:delta=5:range=15:search=2 --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --savesteps --saveali --normproc=normalize.mask"
+		
+	#genrefpath = options.path + "/genref"
+	#os.system('mkdir ' + genrefpath)
+	cmd = "cd " + options.path + " && e2spt_classaverage.py --path=genref --input=../" + options.ptclstack + " --output=" + options.ptclstack.replace('.hdf','_avg.hdf') + " --npeakstorefine=10 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_translate_3d:search=" +str( int(box/4) ) + ":delta=15:dphi=15:verbose=0 --parallel=thread:7 --ralign=refine_3d_grid:delta=5:range=15:search=2 --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --savesteps --saveali --normproc=normalize.mask"
 	if options.verbose:
 		print "I will generate a template from --particlestack by executing the following command:", cmd
 	
 	os.system(cmd)
-	options.template = options.path + "/generatereference/" + options.particlestack.replace('.hdf','_avg.hdf')
+	options.template = options.path + "/genref/" + options.ptclstack.replace('.hdf','_avg.hdf')
 	return(options, outputboxsize)
 	
 
