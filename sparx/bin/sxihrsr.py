@@ -88,7 +88,7 @@ def main():
 	parser.add_option("--sym",                type="string",		 default= "c1",               help="symmetry of the structure")
 	parser.add_option("--function",           type="string",		 default="helical",  	      help="name of the reference preparation function")
 	parser.add_option("--datasym",            type="string",		 default="datasym.txt",                help="symdoc")
-	parser.add_option("--nise",               type="int",   		 default= 2,                  help="start symmetrization after nise steps")
+	parser.add_option("--nise",               type="int",   		 default= 200,                  help="start symmetrization after nise steps")
 	parser.add_option("--npad",               type="int",   		 default= 4,                  help="padding size for 3D reconstruction")
 	parser.add_option("--debug",              action="store_true",   default=False,               help="debug")
 	parser.add_option("--new",                action="store_true",   default=False,               help="use rectangular recon and projection version")
