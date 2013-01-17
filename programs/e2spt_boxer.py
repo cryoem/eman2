@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Steven Ludtke  2/8/2011 (rewritten), Jesus Galaz 7/1/2011
+# Author: Steven Ludtke  2/8/2011 (rewritten), Jesus Galaz 11/10/2012
 # Author: John Flanagan  9/7/2011 (helixboxer)
 # Copyright (c) 2011- Baylor College of Medicine
 #
@@ -111,7 +111,8 @@ def main():
 
 	if not options.path: 
 		#options.path="bdb:"+numbered_path("sptavsa",True)
-		options.path = "sptsim_01"
+		#options.path = "sptsim_01"
+		options.path = ''
 	
 	files=os.listdir(os.getcwd())
 	while options.path in files:
@@ -131,7 +132,7 @@ def main():
 			#options.path = path
 			print "The new options.path is", options.path
 
-	if options.path not in files:
+	if options.path and options.path not in files:
 		
 		print "I will make the path", options.path
 		os.system('mkdir ' + options.path)
@@ -395,7 +396,7 @@ def commandline_tomoboxer(tomogram,options):
 				if 'bdb:' in options.output:
 					name = options.output.replace('bdb:','') + '_' + str(i).zfill(len(str(set)))
 				else:
-					name = options.output.split('.')[0] + '_' + str(i).zfill(len(str(set))) + '.' + options.output.split('.')[1]
+					name = options.output.split('.')[0] + '_' + str(i).zfill(len(str(set))) + '.' + options.output.split('.')[-1]
 
 			else:
 				print "The format is stack format!"
@@ -419,7 +420,9 @@ def commandline_tomoboxer(tomogram,options):
 			print "!!!!!!\n!!!!!!!\n!!!!!!!\n fsp is", fsp 
 			
 			if options.output_format != 'single':
-					fsp = options.path + '/' + name
+					fsp = name
+					if options.path:
+						fsp = options.path + '/' + name
 					
 					if "bdb:" in options.output:
 						fsp='bdb:'+ fsp
@@ -433,6 +436,8 @@ def commandline_tomoboxer(tomogram,options):
 
 			else:
 				fsp=name
+				#if options.path:
+				#		fsp = options.path + '/' + name
 				
 				print "In single mode, fsp is", fsp
 				
