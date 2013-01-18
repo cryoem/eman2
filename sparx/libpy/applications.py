@@ -10404,7 +10404,7 @@ def extract_value( s ):
 def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, rand_alpha=False, fimport=None, 
 	   fexport=None, fprint=False, backup=False, suffix='_backup', restore=False, delete=False):
 	from string    import split
-	from utilities import write_header, file_type,generate_ctf
+	from utilities import write_header, file_type, generate_ctf
 	from random    import random, randint
 	from utilities import set_params2D, get_params2D, set_params3D, get_params3D, set_params_proj, get_params_proj, set_ctf, get_ctf
 	from EMAN2 import Vec2f
@@ -10713,12 +10713,10 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 					elif p == "ctf":
 						#defocus, cs, voltage, apix, bfactor, ampcont = get_ctf(img)
 						if ext == "bdb":
-							t = DB.get_attr(i,"ctf")
-							fexp.write("%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %15.5f"%(t.defocus, t.cs, t.voltage, t.apix, t.bfactor, t.ampcont, t.dfdiff, t.dfang))
-							
+							t = DB.get_attr(i,"ctf")							
 						elif ext == "hdf":
 							t = EMUtil.read_hdf_attribute(stack, "ctf",i)
-							fexp.write("%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %15.5f"%(t.defocus, t.cs, t.voltage, t.apix, t.bfactor, t.ampcont, t.dfdiff, t.dfang))
+						fexp.write("%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %15.5f"%(t.defocus, t.cs, t.voltage, t.apix, t.bfactor, t.ampcont, t.dfdiff, t.dfang))
 
 					else:
 						if ext == "bdb":
@@ -10762,10 +10760,10 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 						#defocus, cs, voltage, apix, bfactor, ampcont = get_ctf(img)
 						if ext == "bdb":
 							t = DB.get_attr(i, "ctf")
-							print "%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f"%(t.defocus, t.cs, t.voltage, t.apix, t.bfactor, t.ampcont),
 						elif ext == "hdf":
 							t = EMUtil.read_hdf_attribute(stack,"ctf", i)
-							print "%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f"%(t.defocus, t.cs, t.voltage, t.apix, t.bfactor, t.ampcont),
+						print "%15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %15.5f %15.5f"%(t.defocus, t.cs, t.voltage, t.apix, t.bfactor, t.ampcont, t.dfdiff, t.dfang),
+
 					else:
 						if ext == "bdb":
 							print "%15s"%str(DB.get_attr(i, p)),

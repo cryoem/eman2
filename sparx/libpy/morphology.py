@@ -574,6 +574,72 @@ def defocus_guess(Res_roo, Res_TE, volt, Cs, Pixel_size, wgh, istart=0, istop=-1
 	defocus = int( defocus/round_off )*round_off
 	return defocus
 
+
+def defocus_guess1(Res_roo, Res_TE, volt, Cs, Pixel_size, wgh, istart=0, istop=-1, defocus_estimation_method=2, round_off=1, dz_low=1000., dz_high=200000., nloop=100, ampcont=0.0):
+	"""
+		Use specified frequencies area (istart-istop) to estimate defocus from crossresolution curve
+		1.  The searching range is limited to dz_low (.1um) ~ dz_high (20 um).
+		    The user can modify this limitation accordingly
+		2.  changing nloop can speed up the estimation
+		3.  defocus_estimation_method = 1  use squared error
+		    defocus_estimation_method = 2  use normalized inner product
+		Input:
+		  Res_roo - Cross-resolution
+		  Res_TE  - Envelope
+	"""
+	
+	from math import sqrt
+	from utilities import generate_ctf
+	from morphology import ctf_1d
+
+	if istop <= istart : 			istop=len(Res_roo)
+	step = (dz_high-dz_low)/nloop
+	if step > 10000.   : 			step     =  10000.     # Angstrom
+
+	xval_e = 0.0
+	for ifreq in xrange(len(Res_TE)):
+		xval_e += Res_TE[ifreq]**2
+	if (xval_e == 0.0): return xvale_e  #  This is strange, returns defocus=0.
+
+	if round_off >= 1: 			cut_off  =  1.
+	else: 					    cut_off  =  round_off # do extreme fitting
+
+	length = len(Res_roo)
+	nx     = int(length*2)
+	if defocus_estimation_method == 1 : 	diff_min =  1.e38
+	else: 					                diff_min = -1.e38
+	while (step >= cut_off):
+		for i_dz in xrange(nloop):
+			dz     = dz_low + step*i_dz
+			ctf    = ctf_1d(nx, generate_ctf([dz, Cs, volt, Pixel_size, ampcont ,wgh]))
+			diff   = 0.0
+			if defocus_estimation_method == 1:
+	        		for ifreq in xrange(istart, istop, 1):
+	        			diff += (ctf[ifreq]*Res_TE[ifreq] - Res_roo[ifreq])**2
+	        	       	if diff < diff_min :
+	        		       defocus  = dz
+	        		       diff_min = diff
+			else:
+				diff  = 0.0
+				sum_a = 0.0
+				sum_b = 0.0
+				for ifreq in xrange(istart, istop, 1):
+					xval   =  ctf[ifreq]*Res_TE[ifreq]
+					diff  +=  Res_roo[ifreq]*xval
+					sum_a +=  Res_roo[ifreq]**2
+					sum_b +=  xval**2
+				diff /= (sqrt(sum_a*sum_b)*( istop - istart + 1 ))
+				if diff > diff_min :
+					defocus  = dz
+					diff_min = diff
+
+		dz_low = defocus-step*2
+		if( dz_low < 0 ): 	dz_low=0.0
+		dz_high = defocus + step*2
+		step /= 10.
+	defocus = int( defocus/round_off )*round_off
+	return defocus
+
 def defocus_get_fast(indir, writetodoc="w", Pixel_size=1, volt=120, Cs=2, wgh=.1, round_off=100, dz_max0=50000, f_l0=30, f_h0=5, nr_1=5, nr_2=5, prefix="roo", docf="a",skip="#", micdir="no", print_screen="p"):
 	"""
 		Estimate defocus using user supplied 1D power spectrum area
