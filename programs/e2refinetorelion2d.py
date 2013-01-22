@@ -63,10 +63,10 @@ parser.add_argument("--threads", type=int, help="# of threads", default=1, guity
 parser.add_argument("--verbosity", type=int, help="Set the level of verbosity for the code", default=1, guitype='combobox', choicelist='0,1,2,3,4,5,6,7,8,9', row=15, col=1, rowspan=1, colspan=1)
 #Expert Options
 parser.add_header(name="expert", help="Options in this section are for experts to use", title="---Expert Options---", expert=True, row=16, col=0, rowspan=1, colspan=3)
-parser.add_argument("--voltage",type=int, default=None, help="Voltage of the Microscope (kV)", expert=True, guitype='intbox', row=17, col=0, rowspan=1, colspan=1)
-parser.add_argument("--cs", type=float, default=None, help="Spherical Aberration", expert=True, guitype='floatbox', row=17, col=1, rowspan=1, colspan=1)
-parser.add_argument("--apix", type=float, default=None, help="Angstrom per pixel", expert=True, guitype='floatbox', row=17, col=2, rowspan=1, colspan=1)
-parser.add_argument("--defocus", type=float, help="Defocus in A", default=10000, guitype='floatbox', expert=True, row=18, col=0, rowspan=1, colspan=1 )
+parser.add_argument("--voltage",type=int, default=None, help="(Expert Option) Voltage of the Microscope (kV)", expert=True, guitype='intbox', row=17, col=0, rowspan=1, colspan=1)
+parser.add_argument("--cs", type=float, default=None, help="(Expert Option) Spherical Aberration", expert=True, guitype='floatbox', row=17, col=1, rowspan=1, colspan=1)
+parser.add_argument("--apix", type=float, default=None, help="(Expert Option) Angstrom per pixel", expert=True, guitype='floatbox', row=17, col=2, rowspan=1, colspan=1)
+parser.add_argument("--defocus", type=float, help="(Expert Option) Defocus in A", default=10000, guitype='floatbox', expert=True, row=18, col=0, rowspan=1, colspan=1 )
 #Command line options only
 parser.add_argument("--echo",action="store_true", default=False, help="Echo Relion Command to terminal only")
 parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)

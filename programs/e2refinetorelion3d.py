@@ -153,9 +153,9 @@ if header.get_attr_dict().__contains__('apix') and header.get_attr_dict().__cont
 	if header['apix_x'] == 1.0:
 		apix=header['apix']
 		print """***An "apix" value was found in the header. This is an old style and apix values should be correctly stored in apix_x, apix_y, apix_z. The value in apix is """ + str(apix) + """. Be aware this may not be the value you intended***"""
-elif header.get_attr_dict().__contains__('apix_x') && header['apix_x'] != None:
+elif header.get_attr_dict().__contains__('apix_x') and header['apix_x'] != None:
 	apix = header['apix_x']
-elif header.get_attr_dict().__contains__('apix') && header['apix_x']:
+elif header.get_attr_dict().__contains__('apix') and header['apix_x']:
 	apix = header['apix']
 	print """***An "apix" value was found in the header. This is an old style and apix values should be correctly stored in apix_x, apix_y, apix_z. The value in apix is """ + str(apix) + """. Be aware this may not be the value you intended***"""
 elif project_db.__contains__('global.apix'):
