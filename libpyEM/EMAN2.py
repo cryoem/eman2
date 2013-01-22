@@ -124,7 +124,7 @@ file_mode_map={
 	"uint16":(EMUtil.EMDataType.EM_USHORT,0,65535 ),
 	"int32" :(EMUtil.EMDataType.EM_INT,-2147483647,2147483648 ),
 	"uint32":(EMUtil.EMDataType.EM_UINT,0,4294967295),
-	"float" :(EMUtil.EMDataType.EM_FLOAT,-3.40282347e+38F,3.40282347e+38F )  }
+	"float" :(EMUtil.EMDataType.EM_FLOAT,-3.40282347e+38,3.40282347e+38 )  }
 
 def E2init(argv, ppid=-1) :
 	"""E2init(argv)
