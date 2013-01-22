@@ -116,6 +116,15 @@ def stopautoflush():
 	""" Return to buffered stdout """
 	sys.stdout = originalstdout
 
+# This maps standard names for data types to internal representation, and provides a minimum and maximum value for each type
+file_mode_map={ 
+	"int8"  :(EMUtil.EMDataType.EM_CHAR,0,255),
+	"uint8" :(EMUtil.EMDataType.EM_UCHAR,-127,128),
+	"int16" :(EMUtil.EMDataType.EM_SHORT,-32767,32768 ),
+	"uint16":(EMUtil.EMDataType.EM_USHORT,0,65535 ),
+	"int32" :(EMUtil.EMDataType.EM_INT,-2147483647,2147483648 ),
+	"uint32":(EMUtil.EMDataType.EM_UINT,0,4294967295),
+	"float" :(EMUtil.EMDataType.EM_FLOAT,-3.40282347e+38F,3.40282347e+38F )  }
 
 def E2init(argv, ppid=-1) :
 	"""E2init(argv)

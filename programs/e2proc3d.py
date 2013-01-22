@@ -83,12 +83,14 @@ def main():
 	parser = OptionParser(usage)
 	
 	parser.add_option("--medianshrink", metavar="n", type="int", action="append", 
-								help="Shrinks the image by integer n using median filter")
+								help="Downsamples the volume by a factor of n by computing the local median")
 	parser.add_option("--meanshrink", metavar="n", type="int", action="append", 
-								help="Shrinks the image by integer n using mean filter")
+								help="Downsamples the volume by a factor of n by computing the local average")
+	parser.add_option("--meanshrinkbig", metavar="n", type="int", default=0, 
+								help="Downsamples the volume by a factor of n without reading the entire volume into RAM. The output file (after shrinking) must fit into RAM. If specified, this must be the ONLY option on the command line. Any other options will be ignored. Output data type will match input data type. Works only on single image files, not stack files.")
 
 #    parser.add_option("--tomoshrink", metavar="n", type="int", action="append", 
-#                                help="Mean shrinks the image but is careful of memory - reads small pixel blocks from disk and slowly builds up the result")
+f#                                help="Mean shrinks the image but is careful of memory - reads small pixel blocks from disk and slowly builds up the result")
 	parser.add_option("--scale", metavar="n", type="float", action="append",
 								help="Rescales the image by 'n', generally used with clip option.")
 	parser.add_option("--sym", dest = "sym", action="append", 
@@ -106,8 +108,12 @@ def main():
 								help="Scales the densities by a fixed number in the output")
 	parser.add_option("--multfile", type="string", action="append",
 								help="Multiplies the volume by another volume of identical size. This can be used to apply masks, etc.")
-	parser.add_option("--mrc16bit",  action="store_true", help="output as 16 bit MRC file")
-	parser.add_option("--mrc8bit",  action="store_true", help="output as 8 bit MRC file")
+								
+	parser.add_option("--outmode",type="string", default="float", help="All EMAN2 programs write images with 4-byte floating point values when possible by default. This allows specifying an alternate format when supported (int8, int16, int32, uint8, uint16, uint32). Values are rescaled to fill MIN-MAX range.")
+	parser.add_option("--outnorescale",action="store_true",default=False,"If specified, floating point values will not be rescaled when writing data as integers. Values outside of range are truncated.")
+	parser.add_option("--mrc16bit",  action="store_true", default=False, help="(deprecated, use --outmode instead) output as 16 bit MRC file")
+	parser.add_option("--mrc8bit",  action="store_true", default=False, help="(deprecated, use --outmode instead) output as 8 bit MRC file")
+	
 	parser.add_option("--add", metavar="f", type="float", 
 								help="Adds a constant 'f' to the densities")
 	parser.add_option("--calcfsc", type="string", metavar="with input",
@@ -160,9 +166,35 @@ def main():
 		print 'Invalid options. You used --first and --step. The --step option contains both a step size and the first image to step from. Please use only the --step option rather than --step and --first'
 		sys.exit(1)
 
+	if options.mrc16bit: 
+		print "Deprecated option mrc16bit, please use outmode=int16"
+		options.outmode="int16"
+	if options.mrc8bit:
+		print "Deprecated option mrc8bit, please use outmode=int8"
+		options.outmode="int8"
+
+	if not file_mode_map.has_key(options.outmode) :
+		print "Invalid output mode, please specify one of :\n",str(file_mode_map.keys()).translate(None,'"[]')
+		sys.exit(1)
+
 	infile = args[0]
 	outfile = args[1]
 	is_new_file = not os.path.isfile(outfile)
+	
+	# This is a specilalized option which doesn't play nice with ANY other options in the command
+	# it will do piecewise shrinking of a map which is too large for RAM
+	if options.meanshrinkbig>0 :
+		print "Dedicated large-map shrinking mode. No other operations will be performed."
+		hdr=EMData(infile,0,True)
+		nx,ny,nz=hdr["nx"],hdr["ny"],hdr["nz"]
+		nnx=nx/options.meanshrinkbig
+		nny=nx/options.meanshrinkbig
+		nnz=nx/options.meanshrinkbig
+		print "%d x %d x %d --> %d x %d x %d    %1.1f GB of RAM required"%(nx,ny,nz,nnx,nny,nnz,nnx*nny*nnz*4/1.0e9)
+		
+		out=EMData(nnx,nny,nnz)
+		
+		sys.exit(0)
 	
 	n0 = options.first
 	n1 = options.last
@@ -464,23 +496,22 @@ def main():
 					options.outtype = "unknown"
 		
 		#print_iminfo(data, "Final")
+		if options.outmode!="float":
+			if options.outnorescale :
+				# This sets the minimum and maximum values to the range for the specified type, which should result in no rescaling
+				data["render_min"]=file_mode_map(options.outmode)[1]
+				data["render_max"]=file_mode_map(options.outmode)[2]
+			else:
+				data["render_min"]=data["minimum"]
+				data["render_max"]=data["maximum"]
+		
 		if options.unstacking:	#output a series numbered single image files
-			if 'mrc8bit' in optionlist:
-				data.write_image(outfile.split('.')[0]+'-'+str(img_index+1).zfill(len(str(nimg)))+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
-			elif 'mrc16bit' in optionlist:
-				data.write_image(outfile.split('.')[0]+'-'+str(img_index+1).zfill(len(str(nimg)))+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
-			else:
-				data.write_image(outfile.split('.')[0]+'-'+str(img_index+1).zfill(len(str(nimg)))+'.'+outfile.split('.')[-1])
+			data.write_image(outfile.split('.')[0]+'-'+str(img_index+1).zfill(len(str(nimg)))+'.mrc', -1, EMUtil.ImageType.IMAGE_UNKNOWN, False, None, file_mode_map(options.outmode)[0], not(options.swap))
 		else:   #output a single 2D image or a 2D stack	
-			if 'mrc8bit' in optionlist:
-				data.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
-			elif 'mrc16bit' in optionlist:
-				data.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
+			if options.append:
+				data.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, file_mode_map(options.outmode)[0], not(options.swap))
 			else:
-				if options.append:
-					data.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
-				else:
-					data.write_image(outfile, img_index, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+				data.write_image(outfile, img_index, EMUtil.get_image_ext_type(options.outtype), False, None, file_mode_map(options.outmode)[0], not(options.swap))
 		
 		img_index += 1
 		for append_option in append_options:	#clean up the multi-option counter for next image
