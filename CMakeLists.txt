@@ -66,17 +66,28 @@ OPTION(ENABLE_X86_64 "enable x86_64 specific optimizations" OFF)
 OPTION(ENABLE_WINDOWS_VC "enable visual c++ specific optimization" OFF)
 
 OPTION(ENABLE_LEOPARD "enable OSX 10.5 support" OFF)
-OPTION(ENABLE_MOUNTAIN_LION "enable OSX 10.8 support" OFF)
 
+IF(CMAKE_SYSTEM MATCHES "Darwin-12*")
+	OPTION(ENABLE_MOUNTAIN_LION "enable OSX 10.8 support" ON)
+ELSE(CMAKE_SYSTEM MATCHES "Darwin-12*")
+	OPTION(ENABLE_MOUNTAIN_LION "enable OSX 10.8 support" OFF)
+ENDIF(CMAKE_SYSTEM MATCHES "Darwin-12*")
+
+
+#MESSAGE (FATAL_ERROR ${CMAKE_SYSTEM} )
 IF (ENABLE_LEOPARD)
 	SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dylib_file,/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib:/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib")
 	SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dylib_file,/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib:/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib")
 ENDIF (ENABLE_LEOPARD)
 
-#IF (ENABLE_MOUNTAIN_LION)
-#	SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dylib_file,/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib")
-#	SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dylib_file,/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib")
-#ENDIF (ENABLE_MOUNTAIN_LION)
+IF (ENABLE_MOUNTAIN_LION)
+	SET(GL_LIBRARY /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib)
+	SET(GLU_LIBRARY /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGLU.dylib)
+	SET(GL_INCLUDE_PATH /usr/include)
+	SET(GLU_INCLUDE_PATH /usr/include)
+#	SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dylib_file,/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib:/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGLU.dylib")
+#	SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dylib_file,/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib:/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGLU.dylib")
+ENDIF (ENABLE_MOUNTAIN_LION)
 
 IF (ENABLE_MEMDEBUG)
 	ADD_DEFINITIONS(-DMEMDEBUG -W -Wall)
@@ -195,6 +206,7 @@ SET(INCLUDE_DIRS
 	)
 
 SET(LIB_DIRS 
+	/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries
 	$ENV{EMANDIR}/lib 
 	$ENV{HOME}/lib 
 	${PLATFORMLIB} 
@@ -205,7 +217,6 @@ SET(LIB_DIRS
 	/usr/lib64 
 	/usr/lib 
 	/sw/lib
-	/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries
 	)
 
 
@@ -478,11 +489,12 @@ ENDIF(PYTHON_INCLUDE_PATH)
 IF(ENABLE_HDFIOCACHE)
     IF(APPLE)
         CHECK_OPTIONAL_LIB(BOOST_THREAD boost_thread boost/thread.hpp)
-        CHECK_OPTIONAL_LIB(BOOST_FILESYSTEM boost_filesystem boost_system boost/filesystem.hpp)
+        CHECK_OPTIONAL_LIB(BOOST_FILESYSTEM boost_filesystem boost/filesystem.hpp)
         CHECK_OPTIONAL_LIB(BOOST_SYSTEM boost_system boost/filesystem.hpp)
     ELSE(APPLE)
         CHECK_OPTIONAL_LIB(BOOST_THREAD boost_thread-mt boost/thread.hpp)
         CHECK_OPTIONAL_LIB(BOOST_FILESYSTEM boost_filesystem-mt boost/filesystem.hpp)
+        CHECK_OPTIONAL_LIB(BOOST_SYSTEM boost_system-mt boost/system.hpp)
     ENDIF(APPLE)
 ENDIF(ENABLE_HDFIOCACHE)
 

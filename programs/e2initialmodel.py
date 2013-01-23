@@ -143,7 +143,7 @@ def main():
 			for i in range(len(ptcls)):
 				sim=cmponetomany(projs,ptcls[i],align=("rotate_translate_flip",{"maxshift":boxsize/5}),alicmp=("ccc",{}),cmp=("frc",{"maxres":20}))
 				bs=min(sim)
-				#print bs[0]
+#				print bs[0]
 				bss+=bs[0]
 				bslst.append((bs[0],i))
 				if verbose>2 : print "align %d \t(%1.3f)\t%1.3g"%(i,bs[0],bss)
