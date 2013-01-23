@@ -204,7 +204,7 @@ def main():
 				print "  %d/%d\r"%(z,nz),
 				sys.stdout.flush()
 				ltime=time()
-			for y in xrange(0,ny,5*shrink):
+			for y in xrange(0,ny,4*shrink):
 				tmp=EMData(infile,0,False,Region(0,y,z,nx,4*shrink,shrink))
 				tmp.process_inplace("math.meanshrink",{"n":shrink})
 				out.insert_clip(tmp,(0,y/shrink,z/shrink))
