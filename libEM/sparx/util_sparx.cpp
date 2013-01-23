@@ -3903,7 +3903,8 @@ Dict Util::Crosrng_sm_psi(EMData* circ1p, EMData* circ2p, vector<int> numr, floa
 	const int psi_range = int(psi_max/360.0*maxrin + 0.5);
 
 	for (k=-psi_range; k<=psi_range; k++) {
-		j = ( k + psi_pos + maxrin -1 )%maxrin+1;
+		//j = ( k + psi_pos + maxrin -1 )%maxrin+1;
+		j = ( k + psi_pos + maxrin )%maxrin+1;
 		if (q(j) >= qn) {
 			qn  = q(j);
 			jtot = j;
