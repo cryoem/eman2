@@ -494,7 +494,7 @@ IF(ENABLE_HDFIOCACHE)
     ELSE(APPLE)
         CHECK_OPTIONAL_LIB(BOOST_THREAD boost_thread-mt boost/thread.hpp)
         CHECK_OPTIONAL_LIB(BOOST_FILESYSTEM boost_filesystem-mt boost/filesystem.hpp)
-        CHECK_OPTIONAL_LIB(BOOST_SYSTEM boost_system-mt boost/system.hpp)
+        CHECK_OPTIONAL_LIB(BOOST_SYSTEM boost_system-mt boost/filesystem.hpp)
     ENDIF(APPLE)
 ENDIF(ENABLE_HDFIOCACHE)
 
