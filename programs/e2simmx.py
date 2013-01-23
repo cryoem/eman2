@@ -846,7 +846,7 @@ def check(options,verbose):
 	if ( options.nofilecheck == False ):
 		if not file_exists(options.datafile) and not db_check_dict(options.datafile):
 			if verbose>0:
-				print "Error: the file expected to contain the particle images (%s) does not exist." %(options.reffile)
+				print "Error: the file expected to contain the particle images (%s) does not exist." %(options.datafile)
 			error = True
 		if not file_exists(options.reffile) and not db_check_dict(options.reffile):
 			if verbose>0:
