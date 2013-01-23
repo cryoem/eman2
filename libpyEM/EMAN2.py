@@ -116,15 +116,35 @@ def stopautoflush():
 	""" Return to buffered stdout """
 	sys.stdout = originalstdout
 
-# This maps standard names for data types to internal representation, and provides a minimum and maximum value for each type
+# These map standard names for data types to internal representation, and provide a minimum and maximum value for each type
 file_mode_map={ 
-	"int8"  :(EMUtil.EMDataType.EM_CHAR,0,255),
-	"uint8" :(EMUtil.EMDataType.EM_UCHAR,-127,128),
-	"int16" :(EMUtil.EMDataType.EM_SHORT,-32767,32768 ),
-	"uint16":(EMUtil.EMDataType.EM_USHORT,0,65535 ),
-	"int32" :(EMUtil.EMDataType.EM_INT,-2147483647,2147483648 ),
-	"uint32":(EMUtil.EMDataType.EM_UINT,0,4294967295),
-	"float" :(EMUtil.EMDataType.EM_FLOAT,-3.40282347e+38,3.40282347e+38 )  }
+	"int8"  :EMUtil.EMDataType.EM_CHAR,
+	"uint8" :EMUtil.EMDataType.EM_UCHAR,
+	"int16" :EMUtil.EMDataType.EM_SHORT,
+	"uint16":EMUtil.EMDataType.EM_USHORT,
+	"int32" :EMUtil.EMDataType.EM_INT,
+	"uint32":EMUtil.EMDataType.EM_UINT,
+	"float" :EMUtil.EMDataType.EM_FLOAT  }
+
+# inverse dictionary for getting printable names
+file_mode_imap=dict([[int(v),k] for k,v in file_mode_map.items()])
+
+#keyed both by type and by the integer version for flexibility
+file_mode_range={
+	EMUtil.EMDataType.EM_CHAR:(0,255),
+	EMUtil.EMDataType.EM_UCHAR:(-127,128),
+	EMUtil.EMDataType.EM_SHORT:(-32767,32768 ),
+	EMUtil.EMDataType.EM_USHORT:(0,65535 ),
+	EMUtil.EMDataType.EM_INT:(-2147483647,2147483648 ),
+	EMUtil.EMDataType.EM_UINT:(0,4294967295),
+	EMUtil.EMDataType.EM_FLOAT:(-3.40282347e+38,3.40282347e+38 ),
+	int(EMUtil.EMDataType.EM_CHAR):(0,255),
+	int(EMUtil.EMDataType.EM_UCHAR):(-127,128),
+	int(EMUtil.EMDataType.EM_SHORT):(-32767,32768 ),
+	int(EMUtil.EMDataType.EM_USHORT):(0,65535 ),
+	int(EMUtil.EMDataType.EM_INT):(-2147483647,2147483648 ),
+	int(EMUtil.EMDataType.EM_UINT):(0,4294967295),
+	int(EMUtil.EMDataType.EM_FLOAT):(-3.40282347e+38,3.40282347e+38 )  }
 
 def E2init(argv, ppid=-1) :
 	"""E2init(argv)

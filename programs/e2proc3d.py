@@ -46,6 +46,7 @@ import os.path
 import pyemtbx.options
 from pyemtbx.options import intvararg_callback
 from pyemtbx.options import floatvararg_callback
+from time import time
 
 def print_iminfo(data, label):
 	print "%s image : %dx%dx%d Mean=%1.3g Sigma=%1.3g Min=%1.3g Max=%1.3g" % \
@@ -90,7 +91,7 @@ def main():
 								help="Downsamples the volume by a factor of n without reading the entire volume into RAM. The output file (after shrinking) must fit into RAM. If specified, this must be the ONLY option on the command line. Any other options will be ignored. Output data type will match input data type. Works only on single image files, not stack files.")
 
 #    parser.add_option("--tomoshrink", metavar="n", type="int", action="append", 
-f#                                help="Mean shrinks the image but is careful of memory - reads small pixel blocks from disk and slowly builds up the result")
+#                                help="Mean shrinks the image but is careful of memory - reads small pixel blocks from disk and slowly builds up the result")
 	parser.add_option("--scale", metavar="n", type="float", action="append",
 								help="Rescales the image by 'n', generally used with clip option.")
 	parser.add_option("--sym", dest = "sym", action="append", 
@@ -110,7 +111,7 @@ f#                                help="Mean shrinks the image but is careful of
 								help="Multiplies the volume by another volume of identical size. This can be used to apply masks, etc.")
 								
 	parser.add_option("--outmode",type="string", default="float", help="All EMAN2 programs write images with 4-byte floating point values when possible by default. This allows specifying an alternate format when supported (int8, int16, int32, uint8, uint16, uint32). Values are rescaled to fill MIN-MAX range.")
-	parser.add_option("--outnorescale",action="store_true",default=False,"If specified, floating point values will not be rescaled when writing data as integers. Values outside of range are truncated.")
+	parser.add_option("--outnorescale",action="store_true",default=False,help="If specified, floating point values will not be rescaled when writing data as integers. Values outside of range are truncated.")
 	parser.add_option("--mrc16bit",  action="store_true", default=False, help="(deprecated, use --outmode instead) output as 16 bit MRC file")
 	parser.add_option("--mrc8bit",  action="store_true", default=False, help="(deprecated, use --outmode instead) output as 8 bit MRC file")
 	
@@ -186,14 +187,43 @@ f#                                help="Mean shrinks the image but is careful of
 	if options.meanshrinkbig>0 :
 		print "Dedicated large-map shrinking mode. No other operations will be performed."
 		hdr=EMData(infile,0,True)
+		shrink=options.meanshrinkbig
+		if shrink>10 : print "Shrinking by >10x is not recommended"
+		
 		nx,ny,nz=hdr["nx"],hdr["ny"],hdr["nz"]
-		nnx=nx/options.meanshrinkbig
-		nny=nx/options.meanshrinkbig
-		nnz=nx/options.meanshrinkbig
-		print "%d x %d x %d --> %d x %d x %d    %1.1f GB of RAM required"%(nx,ny,nz,nnx,nny,nnz,nnx*nny*nnz*4/1.0e9)
+		nnx=nx/shrink
+		nny=ny/shrink
+		nnz=nz/shrink
+		print "%d x %d x %d --> %d x %d x %d    %1.1f GB of RAM required"%(nx,ny,nz,nnx,nny,nnz,(nnx*nny*nnz*4+shrink*4*ny*shrink*4)/1.0e9)
 		
 		out=EMData(nnx,nny,nnz)
+		out.to_zero()
+		ltime=0
+		for z in xrange(0,nz,shrink):
+			if time()-ltime>0.5 : 
+				print "  %d/%d\r"%(z,nz),
+				sys.stdout.flush()
+				ltime=time()
+			for y in xrange(0,ny,5*shrink):
+				tmp=EMData(infile,0,False,Region(0,y,z,nx,4*shrink,shrink))
+				tmp.process_inplace("math.meanshrink",{"n":shrink})
+				out.insert_clip(tmp,(0,y/shrink,z/shrink))
 		
+		try: stype=tmp["datatype"]
+		except: stype=EM_FLOAT
+		print "  %d/%d"%(nz,nz),
+		print "\nWriting in data mode ",file_mode_imap[int(stype)]
+		
+		if stype!=EM_FLOAT:
+			out["render_min"]=file_mode_range[stype][0]
+			out["render_max"]=file_mode_range[stype][1]
+
+		try: out.write_image(outfile,0,IMAGE_UNKNOWN,0,None,EMUtil.EMDataType(stype))
+		except:
+			print "Failed to write in file mode matching input, reverting to floating point output"
+			out.write_image(outfile,0)
+			
+		print "Complete !"
 		sys.exit(0)
 	
 	n0 = options.first
@@ -499,19 +529,20 @@ f#                                help="Mean shrinks the image but is careful of
 		if options.outmode!="float":
 			if options.outnorescale :
 				# This sets the minimum and maximum values to the range for the specified type, which should result in no rescaling
-				data["render_min"]=file_mode_map(options.outmode)[1]
-				data["render_max"]=file_mode_map(options.outmode)[2]
+				outmode=file_mode_map[options.outmode]
+				data["render_min"]=file_mode_range[outmode][0]
+				data["render_max"]=file_mode_range[outmode][1]
 			else:
 				data["render_min"]=data["minimum"]
 				data["render_max"]=data["maximum"]
 		
 		if options.unstacking:	#output a series numbered single image files
-			data.write_image(outfile.split('.')[0]+'-'+str(img_index+1).zfill(len(str(nimg)))+'.mrc', -1, EMUtil.ImageType.IMAGE_UNKNOWN, False, None, file_mode_map(options.outmode)[0], not(options.swap))
+			data.write_image(outfile.split('.')[0]+'-'+str(img_index+1).zfill(len(str(nimg)))+'.mrc', -1, EMUtil.ImageType.IMAGE_UNKNOWN, False, None, file_mode_map[options.outmode], not(options.swap))
 		else:   #output a single 2D image or a 2D stack	
 			if options.append:
-				data.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, file_mode_map(options.outmode)[0], not(options.swap))
+				data.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, file_mode_map[options.outmode], not(options.swap))
 			else:
-				data.write_image(outfile, img_index, EMUtil.get_image_ext_type(options.outtype), False, None, file_mode_map(options.outmode)[0], not(options.swap))
+				data.write_image(outfile, img_index, EMUtil.get_image_ext_type(options.outtype), False, None, file_mode_map[options.outmode], not(options.swap))
 		
 		img_index += 1
 		for append_option in append_options:	#clean up the multi-option counter for next image
