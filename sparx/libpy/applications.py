@@ -7006,13 +7006,13 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 						>even point-group symmetry AND theta = 90. 
 							exhaustive   proj_ali_helical_90   psi_max
 											Util.multiref_polar_ali_helical_90  psi_max
-											Crosrng_sm_psi  (in util_sparx.cpp)  psi_max - WILL SEARCH for BOTH PSI=0 AND 180 NO MATTER WHAT					
+											Crosrng_sm_psi  (in util_sparx.cpp)  psi_max - WILL SEARCH for BOTH PSI=0 AND 180 NO MATTER WHAT
 																					flag - no mirror or mirror, DOES NOT CHECK MIRRORED
 											
-							local       reference projections phi= [0,180,delta], theta=90 
+							local       reference projections phi= [0,180,delta], theta=90
 										proj_ali_helical_90_local   an[N_step], psi_max,  (alignment.py)
 											Util.multiref_polar_ali_helical_90_local   psi_max
-											Crosrng_psi_0_180_no_mirror		(in util_sparx.cpp)   psi_max - WILL SEARCH AROUND BOTH PSI=0 AND 180 NO MATTER WHAT					
+											Crosrng_psi_0_180_no_mirror		(in util_sparx.cpp)   psi_max - WILL SEARCH AROUND BOTH PSI=0 AND 180 NO MATTER WHAT
 
 						>odd point-group symmetry AND any theta (including theta=90), OR even point-group symmetry AND theta <> 90.
 							exhaustive   proj_ali_helical           psi_max
