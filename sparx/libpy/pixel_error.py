@@ -80,12 +80,40 @@ def max_3D_pixel_error(t1, t2, r):
 	return EMData().max_3D_pixel_error(t1, t2, r)
 
 
+def angle_ave(angle1):
+	'''
+	This function computes average angle of a set of angles.
+	It also computes a measure of dispersion (incorrect).
+	'''
+	from math import cos, sin, pi, atan2, degrees, radians, sqrt
+	
+	nima = len(angle1)
+
+	cosi = 0.0
+	sini = 0.0
+	for i in xrange(nima):
+		qt = radians( angle1[i] )
+		cosi += cos(qt)
+		sini += sin(qt)
+	alphai = degrees(atan2(sini, cosi))%360.0
+	# what follows is not correct, it is just to give a measure of dispersion
+	stdv = 0.0
+	for i in xrange(nima):
+		qt = angle1[i] - alphai
+		if   qt >  180.0:   qt -= 360.
+		elif qt < -180.0:   qt += 360.
+		stdv += qt*qt
+	stdv = sqrt(stdv/nima)
+	
+	return alphai, stdv
+
+
 def angle_diff(angle1, angle2):
 	'''
 	This function determines the relative angle between two sets of angles.
 	The resulting angle has to be added (modulo 360) to the first set.
 	'''
-	from math import cos, sin, pi, atan
+	from math import cos, sin, pi, atan2, degrees, radians
 	
 	nima = len(angle1)
 	nima2 = len(angle2)
@@ -98,43 +126,36 @@ def angle_diff(angle1, angle2):
 	cosi = 0.0
 	sini = 0.0
 	for i in xrange(nima):
-		cosi += cos( (angle2[i]-angle1[i])*(pi/180.0) )
-		sini += sin( (angle2[i]-angle1[i])*(pi/180.0) )
-	if cosi > 0.0:
-		alphai = atan(sini/cosi) * (180.0/pi)
-	elif cosi < 0.0:
-		alphai = atan(sini/cosi) * (180.0/pi) + 180.0
-	else:
-		if sini > 0.0:	alphai = 90.0
-		else: alphai = 270.0
+		qt = radians(angle2[i]-angle1[i])
+		cosi += cos( qt )
+		sini += sin( qt )
+	alphai = degrees(atan2(sini, cosi))%360.0
 
-	return alphai%360.0
+	return alphai
 
 
 def angle_error(ang1, ang2, delta_ang=0.0):
 	'''
-	This function calculate the error (variance) between two sets of angle after delta_ang (angle difference) is added to the
+	This function calculate the error (variance) between two sets of angles after delta_ang (angle difference) is added to the
 	first sets. When the angle difference (delta_ang) is the true difference, this function will return maximum error.
 	'''
-	from math import cos, sin, pi
-	dg_to_rg = pi/180.0
+	from math import cos, sin, pi, radians
 	
 	erra = 0.0
 	errb = 0.0
-	err = 0.0
-	delta_ang = delta_ang*dg_to_rg
+	delta_ang = radians( delta_ang )
 	for i in xrange(len(ang1)):
-		p2 = ang2[i]*dg_to_rg
+		p2   = radians( ang2[i] )
 		p2_x = cos(p2)
 		p2_y = sin(p2)
-		p1 = ang1[i]*dg_to_rg
+		p1   = radians( ang1[i] )
 		p1_x = cos(p1)
 		p1_y = sin(p1)
 
 		erra += p2_x*p1_x+p2_y*p1_y
 		errb += p2_y*p1_x-p2_x*p1_y
-	err = erra*cos(delta_ang) + errb*sin(delta_ang)
-	return err
+
+	return erra*cos(delta_ang) + errb*sin(delta_ang)
 
 
 def align_diff_params(ali_params1, ali_params2):
@@ -142,7 +163,7 @@ def align_diff_params(ali_params1, ali_params2):
 	This function determines the relative angle, shifts and mirrorness between
 	two sets of alignment parameters.	
 	'''
-	from math import cos, sin, pi, atan
+	from math import cos, sin, pi
 	from utilities import combine_params2
 	
 	nima = len(ali_params1)
