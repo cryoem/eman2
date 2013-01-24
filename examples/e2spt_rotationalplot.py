@@ -129,7 +129,7 @@ def main():
 
 def rotcccplot(v1,v2,options):	
 	
-	nimg1 = EMUtil.get_image_count()
+	nimg1 = EMUtil.get_image_count(v1)
 	print "The first file actually has this many images in it", nimg1
 	nimg2 = nimg1
 	
@@ -137,7 +137,7 @@ def rotcccplot(v1,v2,options):
 	
 	vol2 = EMData()
 	if v1 != v2:
-		nimg2 = EMUtil.get_image_count()
+		nimg2 = EMUtil.get_image_count(v2)
 		if nimg2 > 1:
 			
 			print "The second file actually has this many images in it", nimg2
