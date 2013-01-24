@@ -19106,6 +19106,7 @@ vector<float> Util::multiref_polar_ali_helical_90_local(EMData* image, const vec
 	if(t) {delete t; t=0;}
 	float phi   = d["phi"];
 	float theta = d["theta"];
+	float psi       = d["psi"];
 	float imn1 = sin(theta*qv)*cos(phi*qv);
 	float imn2 = sin(theta*qv)*sin(phi*qv);
 	float imn3 = cos(theta*qv);
@@ -19140,7 +19141,10 @@ vector<float> Util::multiref_polar_ali_helical_90_local(EMData* image, const vec
 				// for iref in xrange(len(crefim)):
 				for ( iref = 0; iref < (int)crefim_len; iref++) {
 					if(fabs(n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3)>=ant) {
-						Dict retvals = Crosrng_psi_0_180_no_mirror(crefim[iref], cimage, numr, psi_max);
+						Dict retvals; // = Crosrng_psi_0_180_no_mirror(crefim[iref], cimage, numr, psi_max);
+						if ((psi-90.0f) < 90.0f) retvals = Crosrng_sm_psi(crefim[iref], cimage, numr,   0, 0, psi_max);
+						else                     retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, 180, 0, psi_max);
+						    
 						double qn = retvals["qn"];
 						if( qn >= peak) {
 							sx = -ix;
@@ -19171,7 +19175,9 @@ vector<float> Util::multiref_polar_ali_helical_90_local(EMData* image, const vec
 			// for iref in xrange(len(crefim)):
 			for ( iref = 0; iref < (int)crefim_len; iref++)  {
 				if(fabs(n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3)>=ant) {
-					Dict retvals = Crosrng_psi_0_180_no_mirror(crefim[iref], cimage, numr, psi_max);
+					Dict retvals; //= Crosrng_psi_0_180_no_mirror(crefim[iref], cimage, numr, psi_max);
+					if ((psi-90.0f) < 90.0f) retvals = Crosrng_sm_psi(crefim[iref], cimage, numr,   0, 0, psi_max);
+					else                     retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, 180, 0, psi_max);
 					double qn = retvals["qn"];
 					if( qn >= peak ) {
 						sx = -ix;
@@ -19201,7 +19207,9 @@ vector<float> Util::multiref_polar_ali_helical_90_local(EMData* image, const vec
 				// for iref in xrange(len(crefim)):
 				for ( iref = 0; iref < (int)crefim_len; iref++) {
 					if(fabs(n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3)>=ant) {
-						Dict retvals = Crosrng_psi_0_180_no_mirror(crefim[iref], cimage, numr, psi_max);
+						Dict retvals; // = Crosrng_psi_0_180_no_mirror(crefim[iref], cimage, numr, psi_max);
+						if ((psi-90.0f) < 90.0f) retvals = Crosrng_sm_psi(crefim[iref], cimage, numr,   0, 0, psi_max);
+						else                     retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, 180, 0, psi_max);
 						double qn = retvals["qn"];
 						if( qn >= peak) {
 							sx = -ix;
