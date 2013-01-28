@@ -97,7 +97,7 @@ def main():
 	
 	parser.add_argument("--groups",type=int,help="This parameter is EXPERIMENTAL. It's the number of final averages you want from the set after ONE iteration of alignment. Particles will be separated in groups based on their correlation to the reference",default=0)
 	parser.add_argument("--randomizewedge",action="store_true", help="This parameter is EXPERIMENTAL. It randomizes the position of the particles BEFORE alignment, to minimize missing wedge bias and artifacts during symmetric alignment where only a fraction of space is scanned", default=False,)
-
+	parser.add_argument("--savepreprocessed",action="store_true", help="Will save stacks of preprocessed particles (one for coarse alignment and one for fine alignment if preprocessing options are different).", default=False,)
 	parser.add_argument("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False, guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
 	parser.add_argument("--postprocess",type=str,help="A processor to be applied to the volume after averaging the raw volumes, before subsequent iterations begin.",default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=16, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	parser.add_argument("--nocenterofmass", action="store_true", help="Disable Centering of mass of the subtomogram every iteration.", default=False, guitype='boolbox', row=6, col=2, rowspan=1, colspan=1, mode='alignment,breaksym')
@@ -222,6 +222,10 @@ def main():
 			#sys.exit(1)
 
 	nptcl=EMUtil.get_image_count(options.input)
+
+	if options.savepreprocessed and options.mask or options.normproc or options.lowpass or options.highpass or options.preprocess or options.shrink or options.shrinkrefine:
+		preprocessing(options,nptcl)
+
 	if nptcl<1 : 
 		print "ERROR : at least 1 particle required in input stack"
 		sys.exit(1)
@@ -429,6 +433,70 @@ def postprocess(img,optmask,optnormproc,optpostprocess):
 	# Postprocess filter
 	if optpostprocess!=None : 
 		img.process_inplace(optpostprocess[0],optpostprocess[1])
+
+def preprocessing(options,nptcl):
+	for i in range(nptcl):
+		image=EMData(options.input,i)
+
+		# Make the mask first, use it to normalize (optionally), then apply it 
+		mask=EMData(image["nx"],image["ny"],image["nz"])
+		mask.to_one()
+		
+		if options.mask:
+			if options.verbose:
+				print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
+			mask.process_inplace(options.mask[0],options.mask[1])
+		
+		# normalize
+		if options.normproc:
+			if options.normproc[0]=="normalize.mask": 
+				options.normproc[1]["mask"]=mask
+			
+			image.process_inplace(options.normproc[0],options.normproc[1])
+		
+		'''
+		#Mask after normalizing with the mask you just made, which is just a box full of 1s if no mask is specified
+		'''
+		image.mult(mask)
+		
+		'''
+		#If normalizing, it's best to do normalize-mask-normalize-mask
+		'''
+		if options.normproc:
+			image.process_inplace(options.normproc[0],options.normproc[1])
+			image.mult(mask)
+		
+		'''
+		#Preprocess, lowpass and/or highpass
+		'''
+		if options.preprocess != None:
+			image.process_inplace(options.preprocess[0],options.preprocess[1])
+			
+		if options.lowpass != None:
+			image.process_inplace(options.lowpass[0],options.lowpass[1])
+			
+		if options.highpass != None:
+			image.process_inplace(options.highpass[0],options.highpass[1])
+		
+		'''
+		#Shrinking both for initial alignment and reference
+		'''
+		if options.shrink and options.shrink>1 :
+			simage=image.process("math.meanshrink",{"n":options.shrink})
+			simage.write_image(options.path + 'preprocessedCoarse.hdf',i)
+		else:
+			simage=image
+			simage.write_image(options.path + 'preprocessedCoarse.hdf',i)
+		
+		if options.shrinkrefine and options.shrinkrefine>1 :
+			if options.shrinkrefine == options.shrink:
+				s2image=simage
+			else:
+				s2image=image.process("math.meanshrink",{"n":options.shrinkrefine})
+				s2image.write_image(options.path + 'preprocessedFine.hdf',i)
+		else:
+			s2image=image
+	return()
 
 
 def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,keepsig,symmetry,groups,breaksym,nocenterofmass,verbose=1,it=1):
@@ -778,7 +846,6 @@ class Align3DTask(EMTask):
 		if options["verbose"]: 
 			print "Align size %d,  Refine Align size %d"%(sfixedimage["nx"],s2fixedimage["nx"])
 
-		
 		if options["aligncmp"][0] == "fsc.tomo" or options["raligncmp"][0] == "fsc.tomo":
 			retr = wedgestats(simage,options.wedgeangle,options.wedgei,options.wedgef)
 			simage['spt_wedge_mean'] = retr[0]
