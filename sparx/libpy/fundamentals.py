@@ -1002,12 +1002,9 @@ def welch_pw2(img, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0):
 	ny = img.get_ysize()
 	nx_fft = smallprime(nx)
 	ny_fft = smallprime(ny)
-	img1 = window2d(img,nx_fft,ny_fft,"l")
 	x_gaussian_hi = 1./win_size
-	del img
 	from filter    import filt_gaussh
-	from utilities import info, drop_image	
-	e_fil = filt_gaussh(img1, x_gaussian_hi)
+	e_fil = filt_gaussh(window2d(img,nx_fft,ny_fft,"l"), x_gaussian_hi)
 	x38 = 100/(100-overlp_x) # normalization of % of the overlap in x 
 	x39 = 100/(100-overlp_y) # normalization of % of the overlap in y
 	x26 = int(x38*((nx-2*edge_x)/win_size-1)+1)  # number of pieces horizontal dim.(X)
@@ -1019,10 +1016,9 @@ def welch_pw2(img, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0):
 		for ix in  xrange(1, x26+1):			 
 			x22 = (win_size/x38)*(ix-1) + edge_x  # x-direction it should start from 0 if edge_x =0
 			wi  = window2d(e_fil, win_size, win_size, "l", x22, x21)
-			ra  = ramp(wi)
 			iz  = iz+1
-			if (iz == 1): pw2  = periodogram(ra)
-			else:         pw2 += periodogram(ra)
+			if (iz == 1): pw2  = periodogram(ramp(wi))
+			else:         pw2 += periodogram(ramp(wi))
 	return  pw2/float(iz)
 
 def welch_pw2_tilt_band(img,theta,num_bnd=-1,overlp_y=50,edge_x=0,edge_y=0,win_s=256):
@@ -1065,14 +1061,41 @@ def welch_pw2_tilt_band(img,theta,num_bnd=-1,overlp_y=50,edge_x=0,edge_y=0,win_s
 		for iy in xrange(1, x29+1):	
 			x21 = (win_y/x39)*(iy-1) #  y-direction it should start from 0 if edge_y=0	      			 
 			wi = window2d(e_fil,win_x, win_y,"l",x22, x21)
-			ra = ramp(wi)
 			iz = iz+1
-			if (iz == 1): pw2  = periodogram(ra)
-			else:         pw2 += periodogram(ra)
+			if (iz == 1): pw2  = periodogram(ramp(wi))
+			else:         pw2 += periodogram(ramp(wi))
 		pw2/=float(iz)
 		# drop_image(pw2,"band%03d"%(ix))
 		pw2_band.append(pw2)	
 	return 	pw2_band
+
+
+def tilemic(img, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0):
+	""" 
+		Calculate the power spectrum using Welch periodograms (overlapped periodogram)
+	"""
+	from fundamentals import window2d, ramp
+	from EMAN2 import periodogram
+	nx = img.get_xsize()
+	ny = img.get_ysize()
+	nx_fft = smallprime(nx)
+	ny_fft = smallprime(ny)
+	x_gaussian_hi = 1./win_size
+	from filter    import filt_gaussh
+	e_fil = filt_gaussh(window2d(img,nx_fft,ny_fft,"l"), x_gaussian_hi)
+	x38 = 100/(100-overlp_x) # normalization of % of the overlap in x 
+	x39 = 100/(100-overlp_y) # normalization of % of the overlap in y
+	x26 = int(x38*((nx-2*edge_x)/win_size-1)+1)  # number of pieces horizontal dim.(X)
+	x29 = int(x39*((ny-2*edge_y)/win_size-1)+1)  # number of pieces vertical dim.(Y)
+	pw2 = []
+	for iy in xrange(1, x29+1):	
+		x21 = (win_size/x39)*(iy-1) + edge_y  #  y-direction it should start from 0 if edge_y=0	      
+		for ix in  xrange(1, x26+1):			 
+			x22 = (win_size/x38)*(ix-1) + edge_x  # x-direction it should start from 0 if edge_x =0
+			wi  = window2d(e_fil, win_size, win_size, "l", x22, x21)
+			pw2.append(periodogram(ramp(wi)))
+	return  pw2
+
 
 def window2d(img, isize_x, isize_y, opt="c", ix=0, iy=0):
 	"""
