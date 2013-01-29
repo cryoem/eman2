@@ -20382,7 +20382,7 @@ EMData* Util::get_biggest_cluster( EMData* mg )
 
 }
 
-EMData* Util::ctf_img(int nx, int ny, int nz, float dz,float ps,float voltage,float cs, float wgh,float b_factor,float dza, float azz, float sign)
+EMData* Util::ctf_img(int nx, int ny, int nz, float dz,float ps,float voltage,float cs, float wgh, float b_factor,float dza, float azz, float sign)
 {
 	int    ix, iy, iz;
 	int    i,  j, k;
@@ -20434,7 +20434,7 @@ EMData* Util::ctf_img(int nx, int ny, int nz, float dz,float ps,float voltage,fl
 
 
 
-EMData* Util::ctf_rimg(int nx, int ny, int nz, float dz, float ps, float voltage, float cs, float wgh,float b_factor, float dza, float azz, float sign)
+EMData* Util::ctf_rimg(int nx, int ny, int nz, float dz, float ps, float voltage, float cs, float wgh, float b_factor, float dza, float azz, float sign)
 {
 	int    ix, iy, iz;
 	int    i,  j, k;
@@ -20486,7 +20486,7 @@ EMData* Util::ctf_rimg(int nx, int ny, int nz, float dz, float ps, float voltage
 
 
 
-EMData* Util::ctf2_rimg(int nx, int ny, int nz, float dz, float ps, float voltage, float cs, float wgh,float b_factor, float dza, float azz, float sign)
+EMData* Util::ctf2_rimg(int nx, int ny, int nz, float dz, float ps, float voltage, float cs, float wgh, float b_factor, float dza, float azz, float sign)
 {
 	int    ix, iy, iz;
 	int    i,  j, k;

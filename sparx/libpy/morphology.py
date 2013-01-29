@@ -374,6 +374,75 @@ def ctf2_rimg(nx, ctf, sign = 1, ny = 0, nz = 1):
 	if(ny < 1):  ny = nx
 	return  Util.ctf2_rimg(nx, ny, nz, dz, pixel_size, voltage, cs, ampcont, b_factor, dza, azz, sign)
 
+
+def ctflimit(nx, defocus, cs, voltage, pix, w):
+	from math import sqrt
+	def g(x,z1,l,cs):
+		return (-0.5*z1*l*x**2+0.25*(cs*l*l*l*x**4))
+
+	n = nx//2+1
+	#  Width of Fourier pixel
+	fwpix = 1./(2*pix)/n
+	
+	# Fourier cycle
+	fcycle = 1./(2*fwpix)
+	#Fourier period
+	fper = 1.0/fcycle
+	#print "Image size %6d,   pixel size  %7.4f  Width of Fourier pixel %7.5f   Fourier period  %8.5f "%(nx,pix,fwpix,fper)
+
+	
+	#CTF
+	l = 12.398/sqrt(voltage*(1022.0+voltage))  #  All units in A
+	z1 = defocus*10000
+	csa=cs*1.e-6*1.e10
+	q1=w/100.0
+	#print  nx, pix, z1,voltage, n,l,csa,q1
+	for ii in xrange(n-1,1,-1):
+		#print ii
+		xr = ii/float(n-1)/(2*pix)
+		x1 = xr - fwpix
+		x2 = xr + fwpix
+		ctfper = abs(  (g(x2,z1,l,csa)-g(x1,z1,l,csa)) / (x2-x1)  )
+		#print i,xr,x1,x2,ctfper
+		if(ctfper >1.e-8):
+			ctfper = 1.0/ctfper
+			#print i,fper,ctfper
+			if(ctfper >  fper):
+				#print  " Limiting frequency is:",xr,"  limiting resolution is:",1.0/xr
+				return  int(xr/fwpix+0.5),xr
+	return nx//2,1.0/(2*pix)
+
+def compare_ctfs(nx, ctf1, ctf2):
+	sign = 1.0
+	dict       = ctf1.to_dict()
+	dz         = dict["defocus"]
+	cs         = dict["cs"]
+	voltage    = dict["voltage"]
+	pixel_size = dict["apix"]
+	b_factor   = dict["bfactor"]
+	ampcont    = dict["ampcont"]
+	dza        = dict["dfdiff"]
+	azz        = dict["dfang"]
+	cim1 = Util.ctf_rimg(nx, 1, 1, dz, pixel_size, voltage, cs, ampcont, b_factor, dza, azz, sign)
+	dict       = ctf2.to_dict()
+	dz         = dict["defocus"]
+	cs         = dict["cs"]
+	voltage    = dict["voltage"]
+	pixel_size2= dict["apix"]
+	b_factor   = dict["bfactor"]
+	ampcont    = dict["ampcont"]
+	dza        = dict["dfdiff"]
+	azz        = dict["dfang"]
+	if(pixel_size != pixel_size2):
+		ERROR("CTFs have different pixel sizes, pixel size from the first one used", "compare_ctfs", 0)
+	cim2 = Util.ctf_rimg(nx, 1, 1, dz, pixel_size, voltage, cs, ampcont, b_factor, dza, azz, sign)
+	for i in xrange(nx//2,nx):
+		if(cim1.get_value_at(i)*cim2.get_value_at(i) < 0.0):
+			limi = i-nx//2
+			break
+	return limi, pixel_size*nx/limi
+	
+
 ###----D-----------------------		
 def defocus_env_baseline_fit(roo, i_start, i_stop, nrank, iswi):
 	"""
