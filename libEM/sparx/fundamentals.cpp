@@ -43,7 +43,7 @@ periodogram(EMData* f) {
 	int ny  = f->get_ysize();
 	int nz  = f->get_zsize();
 
- 		// We manifestly assume no zero-padding here, just the 
+ 		// We manifestly assume no zero-padding here, just the
 		// necessary extension along x for the fft
 
 	if (f->is_complex()) nx = (nx - 2 + f->is_fftodd()); // nx is the real-space size of the input image
