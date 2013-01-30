@@ -224,6 +224,7 @@ def main():
 	nptcl=EMUtil.get_image_count(options.input)
 
 	if options.savepreprocessed and options.mask or options.normproc or options.lowpass or options.highpass or options.preprocess or options.shrink or options.shrinkrefine:
+		print "I will call preprocessing function"
 		preprocessing(options,nptcl)
 
 	if nptcl<1 : 
@@ -435,6 +436,7 @@ def postprocess(img,optmask,optnormproc,optpostprocess):
 		img.process_inplace(optpostprocess[0],optpostprocess[1])
 
 def preprocessing(options,nptcl):
+	print "I am in the preprocessing function"
 	for i in range(nptcl):
 		image=EMData(options.input,i)
 
@@ -483,17 +485,17 @@ def preprocessing(options,nptcl):
 		'''
 		if options.shrink and options.shrink>1 :
 			simage=image.process("math.meanshrink",{"n":options.shrink})
-			simage.write_image(options.path + 'preprocessedCoarse.hdf',i)
+			simage.write_image(options.path + '/preprocessedCoarse',i)
 		else:
 			simage=image
-			simage.write_image(options.path + 'preprocessedCoarse.hdf',i)
+			simage.write_image(options.path + '/preprocessedCoarse',i)
 		
 		if options.shrinkrefine and options.shrinkrefine>1 :
 			if options.shrinkrefine == options.shrink:
 				s2image=simage
 			else:
 				s2image=image.process("math.meanshrink",{"n":options.shrinkrefine})
-				s2image.write_image(options.path + 'preprocessedFine.hdf',i)
+				s2image.write_image(options.path + '/preprocessedFine',i)
 		else:
 			s2image=image
 	return()
