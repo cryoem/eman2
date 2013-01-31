@@ -427,7 +427,7 @@ if oversample:
 
 print "Generating qsub file"
 ###### create files to make the runs ######
-qsub_file = current_dir + "/" + RUNDIR + "/qsub.pbs"
+qsub_file = current_dir + "/qsub.pbs"
 f = open(qsub_file, 'w')
 f.write("""#!/bin/sh
 
