@@ -154,7 +154,7 @@ if header.get_attr_dict().__contains__('apix') and header.get_attr_dict().__cont
 		apix=header['apix']
 		print """***An "apix" value was found in the header. This is an old style and apix values should be correctly stored in apix_x, apix_y, apix_z. The value in apix is """ + str(apix) + """. Be aware this may not be the value you intended***"""
 	else:
-		apix=['apix_x']
+		apix=header['apix_x']
 elif header.get_attr_dict().__contains__('apix_x'):
 	print """***An "apix" value was found in the header. This is an old style and apix values should be correctly stored in apix_x, apix_y, apix_z. The value in apix is """ + str(apix) + """. Be aware this may not be the value you intended***"""
 	apix = header['apix_x']
