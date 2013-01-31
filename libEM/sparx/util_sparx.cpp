@@ -6440,31 +6440,29 @@ vector<float> Util::pw_extract(vector<float>pw, int n, int iswi, float ps)
 	int size_cu=nklmd*2;
 	static int i__;
 
-	 double *q ;
-	 double *x ;
-	 double *res;
-	 double *cu;
-	 float *q2;
-	 float *pw_;
-	 long int *iu;
-	 double *s;
-	 q = (double*)calloc(size_q,sizeof(double));
-	 x = (double*)calloc(n2d,sizeof(double));
-	 res = (double*)calloc(klmd,sizeof(double));
-	 cu =(double*)calloc(size_cu,sizeof(double));
-	 s = (double*)calloc(klmd,sizeof(double));
-	 q2 = (float*)calloc(size_q,sizeof(float));
-	 iu = (long int*)calloc(size_cu,sizeof(long int));
-	 pw_ = (float*)calloc(k,sizeof(float));
+	double *q ;
+	double *x ;
+	double *res;
+	double *cu;
+	float  *q2;
+	float  *pw_;
+	long int *iu;
+	double *s;
+	q   = (double*)calloc(size_q,sizeof(double));
+	x   = (double*)calloc(n2d,sizeof(double));
+	res = (double*)calloc(klmd,sizeof(double));
+	cu  = (double*)calloc(size_cu,sizeof(double));
+	s   = (double*)calloc(klmd,sizeof(double));
+	q2  = (float*)calloc(size_q,sizeof(float));
+	iu  = (long int*)calloc(size_cu,sizeof(long int));
+	pw_ = (float*)calloc(k,sizeof(float));
 
-	for( i__ =0;i__<k;++i__)
-		{
-		pw_[i__]=log(pw[i__]); }
+	for( i__ =0; i__<k; ++i__) pw_[i__] = log(pw[i__]);
 	long int l_k=k;
 	long int l_n=n;
 	long int l_iswi=iswi;
 	vector<float> cl1_res;
-	cl1_res=Util::call_cl1(&l_k, &l_n, &ps, &l_iswi, pw_, q2, q, x, res, cu, s, iu);
+	cl1_res = Util::call_cl1(&l_k, &l_n, &ps, &l_iswi, pw_, q2, q, x, res, cu, s, iu);
 	free(q);
 	free(x);
 	free(res);
@@ -6504,7 +6502,7 @@ vector<float> Util::call_cl1(long int *k, long int *n, float *ps, long int *iswi
 	for (i__ = 1; i__ <= i__2; ++i__) {
 	    r__1 = float(i__ - 1) /(float) *k / (*ps * 2);
 	    q2[i__ + j * q2_dim1] = pow(r__1, tmp__i);
-	}
+	    }
     }
     for  (i__ = 1; i__ <= i__2; ++i__)
       { q2[i__ + *n * q2_dim1] = 1.f;
@@ -6648,9 +6646,9 @@ vector<float> Util::lsfit(long int *ks,long int *n, long int *klm2d, long int *i
 	tmp = 0.f;
 	i__2 = *n - 1;
 	for (j = 1; j <= i__2; ++j) {
-	tmp__j=j;
+	    tmp__j=j;
 	    tmp += pow(q1[i__ + q1_dim1], tmp__j) * x[j];
-	}
+	    }
 	tmp += x[*n];
 	p.push_back(static_cast<float>(exp(tmp)));
 	p.push_back(q1[i__ + q1_dim1]);

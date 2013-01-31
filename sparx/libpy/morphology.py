@@ -449,14 +449,9 @@ def defocus_env_baseline_fit(roo, i_start, i_stop, nrank, iswi):
 		    iswi = 2 using polynomial n rank to fit envelope function
 			iswi = 3 using polynomial n rank to fit background
 	"""
-	TMP_roo = []
+	TMP = imf_params_cl1(roo[i_start:i_stop], nrank, iswi)
 	curve   = [0]*len(roo)
-	for i in xrange(i_start,i_stop,1):	TMP_roo.append(roo[i])
-	nc  = -1
-	TMP = imf_params_cl1(TMP_roo, nrank, iswi)
-	for i in xrange(i_start, i_stop, 1):
-		nc      += 1
-		curve[i] = TMP[1][nc]
+	curve[i_start:i_stop] = TMP[1][:i_stop-i_start]
 	return curve
 
 def defocus_get(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0, f_stop=-1, docf="a", skip="#", round_off=1, nr1=3, nr2=6):
@@ -467,7 +462,7 @@ def defocus_get(fnam_roo, volt=300, Pixel_size=1, Cs=2, wgh=.1, f_start=0, f_sto
 		2. Based one extracted ctf imprints, perform exhaustive defocus searching to get 
 		   defocus which matches the extracted CTF imprints 
 	"""
-	
+
 	from math 	import sqrt, atan
 	from utilities 	import read_text_row
 	roo     = []
@@ -511,16 +506,10 @@ def defocus_gett(roo, voltage=300.0, Pixel_size=1.0, Cs=2.0, wgh=0.1, f_start=0.
 	"""
 	from utilities  import generate_ctf
 	#print "CTF params:", voltage, Pixel_size, Cs, wgh, f_start, f_stop, round_off, nr1, nr2, parent
-	res     = []
-	Res_roo = []
-	Res_TE  = []	
 	if f_start == 0 : 	i_start = 0
 	else: 			    i_start = int(Pixel_size*2.*len(roo)*f_start)
 	if f_stop <= f_start : 	i_stop  = len(roo)
-		
-	else: 			
-		i_stop  = int(Pixel_size*2.*len(roo)*f_stop)
-		if i_stop > len(roo): i_stop  = len(roo)
+	else:                   i_stop  = min(len(roo), int(Pixel_size*2.*len(roo)*f_stop))
 
 	#print "f_start, i_start, f_stop, i_stop:", f_start, i_start, f_stop, i_stop
 	TE  = defocus_env_baseline_fit(roo, i_start, i_stop, int(nr1), 4)
@@ -534,7 +523,6 @@ def defocus_gett(roo, voltage=300.0, Pixel_size=1.0, Cs=2.0, wgh=0.1, f_start=0.
 	defocus = defocus_guess(Res_roo, Res_TE, voltage, Cs, Pixel_size, wgh, i_start, i_stop, 2, round_off)
 
 	nx  = int(len(Res_roo)*2)
-	#ctf = ctf_1d(nx, generate_ctf([defocus, Cs, voltage, Pixel_size, 0.0, wgh]))
 	ctf = ctf_2(nx, generate_ctf([defocus, Cs, voltage, Pixel_size, 0.0, wgh]))
 	if (parent is not None):
 		parent.ctf_data=[roo, Res_roo, Res_TE]
@@ -1033,9 +1021,9 @@ def flcc(t, e):
 	tmp        = ccf(e, m_pad)/n_pixele # calculate the local average
 	mic_avg_sq = tmp*tmp    # calculate average square
 	tmp        = e*e
-	mic_sq     = ccf(tmp,m_pad)/n_pixelt 	 # calculate the average of squared mic	       
+	mic_sq     = ccf(tmp,m_pad)/n_pixelt 	  # calculate the average of squared mic	       
 	tmp        = mic_sq-mic_avg_sq*n_pixelt   #  
-	mic_var    = tmp.get_pow(.5)          # Calculate the local variance of the image 
+	mic_var    = tmp.get_pow(.5)              # Calculate the local variance of the image 
 	cc_map     = ccf(e,t_pad)
 	cc_map    /= (mic_var*n_pixelt) # Normalize the cross correlation map 
 	return cc_map
@@ -1132,15 +1120,13 @@ def imf_params_get(fstrN, fstrP, ctf_params, pu, nrank, q, lowf=0.01):
 	n_lowf = lowf*ctf_params[0]*len(res_P)*2
 	n_lowf = int(n_lowf)
 	for i in xrange(len(res_P)):
-		if(i <= n_lowf):
-			w.append(0.)
-		else:
-			w.append(1.)
+		if(i <= n_lowf): w.append(0.)
+		else:            w.append(1.)
 	parm2 = imf_fit_pu(res_P,t_N[0],ctf_params,pu,parm1[0],parm1[1],q,w)
 	params.append(parm2[1])
 	params.append(parm2[0])
 	for i in xrange(len(res_N)):
-		res_N[i]*= q
+		res_N[i] *= q
 	params.append(res_N)
 	return params
 
