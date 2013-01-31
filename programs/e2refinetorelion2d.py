@@ -311,15 +311,15 @@ if not(echo):
 	#Move the classes created by Relion into an eman2 style format
 	os.mkdir(E2RLN + "/tmp")
 	if (options.numiter) < 10:
-		s = "e2proc2d.py " + RUNDIR + "/" + E2RLN + "_it00" + str(options.numiter) + "_classes.mrcs " + E2RLN + "/tmp/classes.mrc --unstacking --verbose=" + verbosity
+		s = "e2proc2d.py " + RUNDIR + "/" + E2RLN + "_it00" + str(options.numiter) + "_classes.mrcs " + E2RLN + "/tmp/classes.mrc --unstacking --threed2twod --verbose=" + verbosity
 		data_file =  RUNDIR + "/" + E2RLN + "_it00" + str(options.numiter) + "_data.star"
 		call(s,shell=True)
 	elif (options.numiter) < 100:
-		s = "e2proc2d.py " + RUNDIR + "/" + E2RLN + "_it0" + str(options.numiter) + "_classes.mrcs " + E2RLN + "/tmp/classes.mrc --unstacking --verbose=" + verbosity
+		s = "e2proc2d.py " + RUNDIR + "/" + E2RLN + "_it0" + str(options.numiter) + "_classes.mrcs " + E2RLN + "/tmp/classes.mrc --unstacking --threed2twod --verbose=" + verbosity
 		data_file =  RUNDIR + "/" + E2RLN + "_it0" + str(options.numiter) + "_data.star"
 		call(s,shell=True)
 	elif (options.numiter) < 1000:
-		s = "e2proc2d.py " + RUNDIR + "/" + E2RLN + "_it" + str(options.numiter) + "_classes.mrcs " + E2RLN + "/tmp/classes.mrc --unstacking --verbose=" + verbosity
+		s = "e2proc2d.py " + RUNDIR + "/" + E2RLN + "_it" + str(options.numiter) + "_classes.mrcs " + E2RLN + "/tmp/classes.mrc --unstacking --threed2twod --verbose=" + verbosity
 		data_file =  RUNDIR + "/" + E2RLN + "_it" + str(options.numiter) + "_data.star"
 		call(s,shell=True)
 	db_classes = db_open_dict("bdb:" + E2RLN + "#classes_" + rln_run)
