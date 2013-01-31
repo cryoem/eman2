@@ -123,7 +123,7 @@ while found == 1:
 	i = i+1
 E2RLN = "relion3d_" + rln_run
 os.mkdir(E2RLN)
-
+os.mkdir(E2RLN + "/stacks")
 #E2n = E2init(sys.argv,options.ppid)
 set_name, refmap = args[0], args[1]
 num_images = EMUtil.get_image_count(set_name)
@@ -243,13 +243,13 @@ for k in range(num_ptcl):
 		s1 = E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrc"
 		stemp="e2proc3d.py " + s1 + " " + s1 + " --process=normalize"
 		call(stemp, shell=True)
-		s2 = s1 + "s"
+		s2 = E2RLN + "/stacks/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs"
 		shutil.move(s1, s2)
 		if ctf_corr == 1:
 			defocus1 = defocus2 = str(temp['ctf'].to_dict()['defocus']*1000)
-			s = "relion_star_datablock_stack " + str(k-i) + " " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + str(defocus1) + " " + str(defocus2) + " 0 " + str(voltage) + " " + str(cs) + " " + str(amplitude_contrast) + " >> " + E2RLN + "/all_images.star"
+			s = "relion_star_datablock_stack " + str(k-i) + " " + E2RLN + "/stacks/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + E2RLN + "/stacks/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + str(defocus1) + " " + str(defocus2) + " 0 " + str(voltage) + " " + str(cs) + " " + str(amplitude_contrast) + " >> " + E2RLN + "/all_images.star"
 		else:
-			s = "relion_star_datablock_stack " + str(k-i) + " " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + str(voltage) + " " + str(amplitude_contrast) + "  >> " + E2RLN + "/all_images.star" 
+			s = "relion_star_datablock_stack " + str(k-i) + " " + E2RLN + "/stacks/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + E2RLN + "/stacks/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + str(voltage) + " " + str(amplitude_contrast) + "  >> " + E2RLN + "/all_images.star" 
 		call(s,shell=True)
 		s = "rm " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".hdf" 
 		call(s,shell=True)
@@ -268,13 +268,13 @@ for k in range(num_ptcl):
 		s1 = E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".mrc"
 		stemp="e2proc3d.py " + s1 + " " + s1 + " --process=normalize"
 		call(stemp, shell=True)
-		s2 = s1 + "s"
+		s2 = E2RLN + "/stacks/" + src.split('?')[0].replace('bdb:particles#','') + ".mrcs"
 		shutil.move(s1, s2)
 		if ctf_corr == 1:
 			defocus1 = defocus2 = str(temp['ctf'].to_dict()['defocus']*1000)
-			s = "relion_star_datablock_stack " + str(k-i+1) + " " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + str(defocus1) + " " + str(defocus2) + " 0 " + str(voltage) + " " + str(cs) + " " + str(amplitude_contrast) + " >> " + E2RLN + "/all_images.star"
+			s = "relion_star_datablock_stack " + str(k-i+1) + " " + E2RLN + "/stacks/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + E2RLN + "/stacks/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + str(defocus1) + " " + str(defocus2) + " 0 " + str(voltage) + " " + str(cs) + " " + str(amplitude_contrast) + " >> " + E2RLN + "/all_images.star"
 		else:
-			s = "relion_star_datablock_stack " + str(k-i+1) + " " +  E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + str(voltage) + " " + amplitude_contrast + "  >> " + E2RLN + "/all_images.star" 
+			s = "relion_star_datablock_stack " + str(k-i+1) + " " +  E2RLN + "/stacks/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + E2RLN + "/stacks/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + str(voltage) + " " + amplitude_contrast + "  >> " + E2RLN + "/all_images.star" 
 		call(s,shell=True)
 		s = "rm " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".hdf" 
 		call(s,shell=True)
