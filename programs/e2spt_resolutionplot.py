@@ -92,12 +92,10 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	#parser.add_argument("--plotonly",action="store_true", help="Assumes vol1 and vol2 are already aligned and fsc files will be provided through --curves; thus skips alignment and fsc curve generation", default=False)
 	parser.add_argument("--fsconly",action="store_true", help="Assumes vol1 and vol2 are already aligned with respect to each other and thus skips alignment", default=False)
-	parser.add_argument("--curves",help="FSC curves to plot in separate plots. Skips alignment and fsc curve generation. Provide .txt. files separated by commas --curves=file1.txt,file2.txt,file3.txt etc...", default=None)
+	parser.add_argument("--curves",type=str, help="FSC curves to plot in separate plots. Skips alignment and fsc curve generation. Provide .txt. files separated by commas --curves=file1.txt,file2.txt,file3.txt etc...", default=None)
 	parser.add_argument("--singleplot",action="store_true",help="If --singleplot and --curves are provided, they will be plotted in the same image.", default=False)
 		
 	(options, args) = parser.parse_args()
-	
-	print "options are", options
 	
 	logger = E2init(sys.argv, options.ppid)
 
@@ -115,7 +113,9 @@ def main():
 	
 	fscoutputname = options.output
 	fscoutputnamemirror = ''
+	
 
+	print "Done reading paramters for vol1"
 	if not options.output:
 		if not options.curves:
 			fscoutputname = 'FSC_' + vol1.split('/')[-1].split('.')[0] + '_VS_' + vol2.split('/')[-1].split('.')[0] + '.txt'
@@ -179,12 +179,12 @@ def main():
 		print "Types of vol1 and vol2 are", type(vol1), type(vol2)	
 				
 		vol2ALIname = vol2.replace('.hdf','_ALI.hdf')
-		alicmd = 'e2spt_classaverage.py --path=. --input=' + vol2 + ' --output=' + vol2ALIname + ' --ref=' + vol1 + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + options.mask + ' --lowpass=' + options.lowpass + ' --align=' + options.align + ' --parallel=' + options.parallel + ' --ralign=' + options.ralign + ' --aligncmp=' + options.aligncmp + ' --raligncmp=' + options.raligncmp + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + options.normproc + ' --sym=' + options.sym + ' --breaksym'
+		alicmd = 'e2spt_classaverage.py --path=. --input=' + str(vol2) + ' --output=' + str(vol2ALIname) + ' --ref=' + str(vol1) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + options.mask + ' --lowpass=' + options.lowpass + ' --align=' + options.align + ' --parallel=' + options.parallel + ' --ralign=' + options.ralign + ' --aligncmp=' + options.aligncmp + ' --raligncmp=' + options.raligncmp + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + options.normproc + ' --sym=' + options.sym + ' --breaksym'
 		vol2final = vol2ALIname
 		
 		if options.mirror:
 			vol2mirrorALIname = vol2mirror.replace('.hdf','_ALI.hdf')
-			alicmd += ' && e2spt_classaverage.py --path=. --input=' + vol2mirror + ' --output=' + vol2mirrorALIname + ' --ref=' + vol1 + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + options.mask + ' --lowpass=' + options.lowpass + ' --align=' + options.align + ' --parallel=' + options.parallel + ' --ralign=' + options.ralign + ' --aligncmp=' + options.aligncmp + ' --raligncmp=' + options.raligncmp + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + options.normproc + ' --sym=' + options.sym + ' --breaksym'
+			alicmd += ' && e2spt_classaverage.py --path=. --input=' + str(vol2mirror) + ' --output=' + str(vol2mirrorALIname) + ' --ref=' + str(vol1) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + options.mask + ' --lowpass=' + options.lowpass + ' --align=' + options.align + ' --parallel=' + options.parallel + ' --ralign=' + options.ralign + ' --aligncmp=' + options.aligncmp + ' --raligncmp=' + options.raligncmp + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + options.normproc + ' --sym=' + options.sym + ' --breaksym'
 			vol2mirrorfinal = vol2mirrorALIname
 		
 		if options.sym is not 'c1' and options.sym is not "C1":
