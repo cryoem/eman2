@@ -150,24 +150,24 @@ if not header.get_attr_dict().__contains__('data_source'):
 
 
 if header.get_attr_dict().__contains__('apix') and header.get_attr_dict().__contains__('apix_x'):
-	if header['apix_x'] == 1.0:
+	if header['apix_x'] == 1:
 		apix=header['apix']
 		print """***An "apix" value was found in the header. This is an old style and apix values should be correctly stored in apix_x, apix_y, apix_z. The value in apix is """ + str(apix) + """. Be aware this may not be the value you intended***"""
-elif header.get_attr_dict().__contains__('apix_x') and header['apix_x'] != None:
+	else:
+		apix=['apix_x']
+elif header.get_attr_dict().__contains__('apix_x'):
 	print """***An "apix" value was found in the header. This is an old style and apix values should be correctly stored in apix_x, apix_y, apix_z. The value in apix is """ + str(apix) + """. Be aware this may not be the value you intended***"""
 	apix = header['apix_x']
-elif header.get_attr_dict().__contains__('apix') and header['apix_x']:
+elif header.get_attr_dict().__contains__('apix'):
 	apix = header['apix']
 	print """***An "apix" value was found in the header. This is an old style and apix values should be correctly stored in apix_x, apix_y, apix_z. The value in apix is """ + str(apix) + """. Be aware this may not be the value you intended***"""
 elif project_db.__contains__('global.apix'):
 	apix = project_db['global.apix']
-
 else:
 	print "An Angstrom per pixel was not found in the project database nor in the images themselves. Please ensure it exists in the data header"
 	print "Exiting e2refinetorelion3d"
 	shutil.rmtree(E2RLN)
 	exit(-1)
-
 
 if header.get_attr_dict().__contains__('cs'):
 	cs = header['cs']
@@ -382,8 +382,8 @@ for option1 in optionList:
 	elif option1 == "greyscale":
 		grey = 1
 	elif option1 == "randomizemodel":
-		if options.randomizemodel != 0:
-			s1 = "e2proc3d.py " + E2RLN + "/3DRefMap.mrc " + E2RLN + "/3DRefMap.mrc --process=filter.lowpass.randomphase:apix=" + apix + ":cutoff_freq=" + str(1/options.randomizemodel)
+		if float(options.randomizemodel) != 0:
+			s1 = "e2proc3d.py " + E2RLN + "/3DRefMap.mrc " + E2RLN + "/3DRefMap.mrc --process=filter.lowpass.randomphase:apix=" + str(apix) + ":cutoff_freq=" + str(1/float(options.randomizemodel))
 			call(s1,shell=True)
 	elif option1 == "pad":
 		s = s + " --pad " + str(options.pad)
