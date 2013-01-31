@@ -31,6 +31,8 @@
 #
 #
 
+
+
 from optparse import OptionParser
 from EMAN2 import *
 from sys import argv
@@ -86,14 +88,16 @@ def main():
 	#									If, on the other hand, the tilt step was 4deg, the tilt series will only have 31 images.
 	#									--tiltstepupperlimit is the largest step size you want to simulate.""")
 	#parser.add_argument("--tiltstepchange", type=int,default=1,help="""Increase in size of tilt step from one run to another. 
-	#										Jobs will be run using --tiltstepstep as the first value, and then adding that value on subsequent runs until --tiltsteplimit is reached""")
-	#										
+	#									Jobs will be run using --tiltstepstep as the first value, and then adding that value on subsequent runs until --tiltsteplimit is reached""")
 	
-	parser.add_argument("--nsliceslowerlimit", type=int,default=0,help="Lowest number of slices to divide the tiltrange in. If on and --nslicesupperlimit is ALSO on (any number other than zero), this will turn off all tiltstep parameters.")	
+	parser.add_argument("--tiltstep", type=int,default=None,help="""This is the angular distance between different tilts. 
+									Should be supplied opposed to --nslices parameters, when variations in missing wedge size want to be tested, 										keeping a constant distance between tilts. --nslices should be used when the wedge size, determined by --tiltrange 										parameters, is kept constant.""")									
+	
+	parser.add_argument("--nsliceslowerlimit", type=int,default=None,help="Lowest number of slices to divide the tiltrange in. If on and --nslicesupperlimit is ALSO on (any number other than zero), this will turn off all tiltstep parameters.")	
 
-	parser.add_argument("--nslicesupperlimit", type=int,default=0,help="Largest number of slices to divide the tiltrange in. If on and --nsliceslowerlimit is ALSO on (values other than zero), this will turn off all tiltstep parameters.")	
+	parser.add_argument("--nslicesupperlimit", type=int,default=None,help="Largest number of slices to divide the tiltrange in. If on and --nsliceslowerlimit is ALSO on (values other than zero), this will turn off all tiltstep parameters.")	
 
-	parser.add_argument("--nsliceschange", type=int,default=1,help="Change with which the nslices parameter in e2spt_simulation.py will be varied. Will only work if --nslicesupperlimit and --nsliceslowerlimit are different than zero.")
+	parser.add_argument("--nsliceschange", type=int,default=None,help="Change with which the nslices parameter in e2spt_simulation.py will be varied. Will only work if --nslicesupperlimit and --nsliceslowerlimit are different than zero.")
 	
 	"""
 	Parameters to be passed on to e2spt_simulation.py
@@ -177,6 +181,9 @@ def main():
 	
 	rootpath = os.getcwd()
 	
+	if "/" not in options.input:
+		options.input = rootpath + "/" + options.input
+	
 	files=os.listdir(rootpath)
 
 	while options.path in files:
@@ -212,26 +219,39 @@ def main():
 		#tiltstepl = options.tiltsteplowerlimit
 		#tiltstepu = options.tiltstepupperlimit
 		#tiltstepch = options.tiltstepchange
-	
-		#if options.nsliceschange and options.nsliceslowerlimit and options.nslicesupperlimit:
-		nslicesl = options.nsliceslowerlimit
-		nslicesu = options.nslicesupperlimit
-		nslicesch = options.nsliceschange
-	
-		if nslicesl == 0:
-			print "ERROR! You cannot simulate a subvolume using 0 slices or projection images. The minimum --nsliceslowerlimit is 1."
-	
+		
+		tiltstep = options.tiltstep
+		
+		if options.nsliceschange and options.nsliceslowerlimit and options.nslicesupperlimit:
+			nslicesl = options.nsliceslowerlimit
+			nslicesu = options.nslicesupperlimit
+			nslicesch = options.nsliceschange
+			nslices = nslicesl
+			
+			if options.tiltstep:
+				print """ERROR: You must supply EITHER parameters for --nslices change and lower and upper limits, OR --tiltstep. 
+				DO NOT supply parameters for both."""
+				sys.exit()
+				
+		elif not options.tiltstep:
+			print """ERROR: You must supply parameters EITHER for --nslices change and lower and upper limits, OR --tiltstep."""
+			sys.exit()
+		
 		nrefs = EMUtil.get_image_count(options.input)
 		
-		tiltrange=tiltrangel
+		tiltrange = tiltrangel
 		while tiltrange <tiltrangeu:
 			#print "tiltrage is", tiltrange
 			tiltrangetag = ("%d" %(tiltrange) ).zfill(3)
-			nslices=nslicesl
+			
+			if options.tiltstep:
+				nslices = 2 * tiltrange / tiltstep
+				nslicesu = nslices + 1
+				nslicestag = str(int(tiltstep)).zfill(3)
 
 			while nslices < nslicesu:
-				#tiltsteptag = str(tiltstep).zfill(5)
-				nslicestag = ("%d" %(nslices)).zfill(3)
+				if not options.tiltstep:
+					nslicestag = ("%d" %(nslices)).zfill(3)
 				
 				#tiltstep = round(2.0 * tiltrange / tiltstep,1)
 				#if options.nsliceschange and options.nsliceslowerlimit and options.nslicesupperlimit:
@@ -244,7 +264,7 @@ def main():
 
 				snr=snrl
 				while snr < snru:
-					print "The conditions tosimulate are tiltrange=%d, nslices=%d, snr=%.2f" % (tiltrange,nslices,snr)
+					print "The conditions to simulate are tiltrange=%d, nslices=%d, snr=%.2f" % (tiltrange,nslices,snr)
 					#print "Snr is", snr
 					#rootpath = os.getcwd()
 
@@ -334,7 +354,10 @@ def main():
 
 					snr += snrch
 
-				nslices += nslicesch
+				if options.tiltstep:
+					nslices += tiltstep
+				else:
+					nslices += nslicesch
 
 			tiltrange += tiltrangech
 
