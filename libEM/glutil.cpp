@@ -764,6 +764,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 	}
 
 	delete [] graylookup;
+	delete [] grayhe;
 	return ret;
 }
 
