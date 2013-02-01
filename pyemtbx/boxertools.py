@@ -632,7 +632,8 @@ class Cache:
 		image = encapsulated_image.get_image_carefully( *args, **kargs)
 		if image != None:
 			# A segfault was occuring at this return statement
-			return image.copy()
+			#return image.copy()
+			return image
 		else:
 			print "there was an error getting the image, class name is",self.class_name
 			return None

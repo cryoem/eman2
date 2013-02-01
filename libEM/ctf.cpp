@@ -690,6 +690,10 @@ vector < float >EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * s
 		break;
 
 	case CTF_SNR:
+		if (snr.size()<1) {
+			throw InvalidValueException("CTF_SNR"," ERROR: No SNR info in CTF header.");
+			break;
+		}
 		for (int i = 0; i < np; i++) {
 			float f = s/dsbg;
 			int j = (int)floor(f);

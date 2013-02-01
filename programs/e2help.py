@@ -44,7 +44,7 @@ from sys import exit
 def main():
 	progname = os.path.basename(sys.argv[0])
 	helpstring =  """Help is available on the following topics:
-processors, cmps, aligners, averagers, projectors, reconstructors, analyzers, symmetries, orientgens"""
+processors, cmps, aligners, averagers, projectors, reconstructors, analyzers, symmetries, orientgens, rotationtypes"""
 	usage = """prog <topic>
 	
 Interactive help on a variety of topics."""
@@ -121,6 +121,17 @@ Interactive help on a variety of topics."""
 	elif args[0] in ("orientgen","orientationgen","orientgens","orientationgens","orientationgenerators") :
 		print "Available orientation generators:"
 		l=dump_orientgens_list()
+	elif args[0][:8]=="rotation" :
+		print "Available rotation conventions:"
+		l={"eman":["EMAN convention, az(Z),alt(X),phi(Z') Eulers","alt","FLOAT","Altitude, X-axis","az","FLOAT","Azimuth, Z-axis","phi","FLOAT","Z' Axis. in-plane rotation in 2-D"],
+		"imagic":["IMAGIC convention","alpha","FLOAT","alpha","beta","FLOAT","beta","gamma","FLOAT","gamma"],
+		"spider":["SPIDER convention","phi","FLOAT","phi","theta","FLOAT","theta","psi","FLOAT","psi"],
+		"mrc":["MRC/CCP4 convention","omega","FLOAT","omega","theta","FLOAT","theta","psi","FLOAT","psi"],
+		"xyz":["XYZ convention (Chimera)","x","FLOAT","X-axis","y","FLOAT","Y-axis","z","FLOAT","Z-axis"],
+		"spin":["Spin-Axis (n1,n2,n3) vector with angle omega","n1","FLOAT","X vector component","n2","FLOAT","Y vector component","n3","FLOAT","Z vector component","omega","FLOAT","Angle of rotation in degrees"],
+		"sgirot":["SGI Spin-Axis (n1,n2,n3) vector with angle q","n1","FLOAT","X vector component","n2","FLOAT","Y vector component","n3","FLOAT","Z vector component","q","FLOAT","Angle of rotation in degrees"],
+		"quaternion":["Standard 4 component quaternion (e0,e1,e2,e3)","e0","FLOAT","e0","e1","FLOAT","e1","e2","FLOAT","e2","e3","FLOAT","e3"]}
+
 	elif args[0] in ("version"):
 	   print EMANVERSION + ' (CVS' + CVSDATESTAMP[6:-2] +')' 
 	else:
