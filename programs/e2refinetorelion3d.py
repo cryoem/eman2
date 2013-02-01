@@ -52,7 +52,7 @@ parser.add_argument("--ignoretofirstpeak", action="store_true", help="(T/F)Ignor
 #Optimisation Options
 parser.add_header(name="optimisation", help="Options in this section pertain to Optimisation parameters", title="---Optimisation Options---", row=12, col=0, rowspan=1, colspan=3)
 parser.add_argument("--lowpass",type=float,help="Initial low-pass filter (Ang)",default=60.0, guitype='floatbox', row=13, col=0, rowspan=1, colspan=1)
-parser.add_argument("--imagemaskd", type=float, help="Diameter of the image mask", default=-1, guitype='floatbox', row=13, col=1, rowspan=1, colspan=1)
+parser.add_argument("--particle_mask_diameter", type=float, help="Diameter of the soft spherical image mask in angstroms", default=-1, guitype='floatbox', row=13, col=1, rowspan=1, colspan=1)
 parser.add_argument("--solventmask",type=str, help="Location of the mask to be used", guitype='filebox',default="", browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False,row=14, col=0, rowspan=2, colspan=2)
 #Sampling Options
 parser.add_header(name="sampling", help="Options in this section pertain to Sampling parameters", title="---Sampling Options---", row=16, col=0, rowspan=1, colspan=3)
@@ -73,9 +73,9 @@ parser.add_argument("--intensitycorrection", action="store_true", help="(T/F)Do 
 parser.add_argument("--print_symmetry", action="store_true",help="Print all symmetry transformation matrices, and exit", default=False, guitype='boolbox', row=23, col=0, rowspan=1, colspan=1, expert=True)
 parser.add_argument("--nearest_neighbor", action="store_true", help="Perform nearest-neighbor instead of linear Fourier-space interpolation", default=False, guitype='boolbox', row=23, col=1, rowspan=1, colspan=1, expert=True)
 parser.add_argument("--pad", type=int,help="Padding factor",  default=1, guitype='combobox', choicelist='1,2,3', row=24, col=0, rowspan=1, colspan=1, expert=True)
-parser.add_argument("--oversampling",help="Oversampling order", default=0, guitype='combobox', choicelist='0,1,2,3,4', row=24, col=1, rowspan=1, colspan=1, expert=True)
+#parser.add_argument("--oversampling",help="Oversampling order", default=0, guitype='combobox', choicelist='0,1,2,3,4', row=24, col=1, rowspan=1, colspan=1, expert=True)
 parser.add_argument("--limit_tilt",type=int, help="Limited tilt angle: positive for keeping side views, negative for keeping top views", default=-91, guitype='intbox', row=25, col=0, rowspan=1, colspan=1, expert=True)
-parser.add_argument("--verbosity", type=int, help="Set the level of verbosity for the code", default=1, guitype='combobox', choicelist='0,1,2,3,4,5,6,7,8,9', row=25, col=1, rowspan=1, colspan=1, expert=True)
+parser.add_argument("--verbose", type=int, help="Set the level of verbosity for the code", default=1, guitype='combobox', choicelist='0,1,2,3,4,5,6,7,8,9', row=25, col=1, rowspan=1, colspan=1, expert=True)
 parser.add_argument("--onlyflipphase", action="store_true", help="(T/F)Only flip phases?", default=False, guitype='boolbox', row=26, col=0, rowspan=1, colspan=1, expert=True)
 
 parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -127,7 +127,7 @@ os.mkdir(E2RLN + "/stacks")
 #E2n = E2init(sys.argv,options.ppid)
 set_name, refmap = args[0], args[1]
 num_images = EMUtil.get_image_count(set_name)
-s1 = "e2proc3d.py " + refmap + " " + E2RLN + "/3DRefMap.mrc --process=normalize.edgemean --verbose="+str(options.verbosity)
+s1 = "e2proc3d.py " + refmap + " " + E2RLN + "/3DRefMap.mrc --process=normalize.edgemean --verbose="+str(options.verbose)
 call(s1, shell=True)
 header = EMData(set_name,0,True)
 h_keys = header.get_attr_dict().keys()
@@ -196,7 +196,7 @@ set_orig = set_name
 #set_db = db_open_dict(set_orig)
 i = 0
 old_src = EMData(set_name,0)['data_source']
-s =  "e2proc2d.py " + set_orig + " " + E2RLN + "/ptcl_stack.hdf --verbose="+str(options.verbosity)
+s =  "e2proc2d.py " + set_orig + " " + E2RLN + "/ptcl_stack.hdf --verbose="+str(options.verbose)
 call(s,shell=True)
 ctf_corr = 0
 for option1 in optionList:
@@ -232,13 +232,13 @@ for k in range(num_ptcl):
 	src = EMData(set_name,k)['data_source']
 	if (src != old_src):
 		temp=EMData("bdb:./sets#"+db,k-1)
-		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".hdf --verbose="+str(options.verbosity)+" --step=" + str(i) + ",1 --last=" + str(k-1)
+		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".hdf --verbose="+str(options.verbose)+" --step=" + str(i) + ",1 --last=" + str(k-1)
 		call(s, shell=True)
 		if (k-i-1) == 0:
-			s = "e2proc2d.py " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose="+str(options.verbosity) + " --process=normalize.edgemean"
+			s = "e2proc2d.py " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose="+str(options.verbose) + " --process=normalize.edgemean"
                         call(s, shell=True)
 		else:
-			s = "e2proc2d.py " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose=" + str(options.verbosity) + " --process=normalize.edgemean --twod2threed" 
+			s = "e2proc2d.py " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose=" + str(options.verbose) + " --process=normalize.edgemean --twod2threed" 
 			call(s, shell=True)
 		s1 = E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrc"
 		stemp="e2proc3d.py " + s1 + " " + s1 + " --process=normalize"
@@ -258,12 +258,12 @@ for k in range(num_ptcl):
 	elif (k+1) == num_ptcl:
 		diff = k-i
 		temp=EMData("bdb:./sets#"+db,k)
-		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".hdf --verbose="+str(options.verbosity)+" --step=" + str(i) + ",1 --last=" + str(k)
+		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".hdf --verbose="+str(options.verbose)+" --step=" + str(i) + ",1 --last=" + str(k)
 		call(s, shell=True)
 		if (k-i-1) == 0:
-			s = "e2proc2d.py " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose="+str(options.verbosity) + " --process=normalize.edgemean"
+			s = "e2proc2d.py " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose="+str(options.verbose) + " --process=normalize.edgemean"
 		else:
-			s = "e2proc2d.py " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose="+str(options.verbosity) + " --process=normalize.edgemean --twod2threed"
+			s = "e2proc2d.py " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose="+str(options.verbose) + " --process=normalize.edgemean --twod2threed"
 		call(s, shell=True)
 		s1 = E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".mrc"
 		stemp="e2proc3d.py " + s1 + " " + s1 + " --process=normalize"
@@ -305,8 +305,8 @@ s = RELION_RUN + "--i " + E2RLN + "/all_images.star --o " + RUNDIR + "/" + E2RLN
 grey = oversample = 0
 
 for option1 in optionList:
-	if option1 == "imagemaskd":
-		s = s + " --particle_diameter " + str(options.imagemaskd)
+	if option1 == "particle_mask_diameter":
+		s = s + " --particle_diameter " + str(options.particle_mask_diameter)
 	#elif option1 == "autosample":
 	#	s = s + " --auto_sampling"
 	elif option1 == "auto_healpix":
@@ -343,8 +343,8 @@ for option1 in optionList:
 		s = s + " --split_random_halves"
 	elif option1 == "ctfcorrect":
 		s = s + " --ctf"
-	elif option1 == "verbosity":
-		if options.verbosity == 0:
+	elif option1 == "verbose":
+		if options.verbose == 0:
 			s = s + " --verb 0"
 		else:
 			s = s + " --verb 1"
