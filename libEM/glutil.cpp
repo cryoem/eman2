@@ -344,12 +344,19 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 	//////Begin of Histogram Equalization//////
 
 	const int rangemax=4096;
-	int graypdf[rangemax]={0};//256	
-	unsigned int graycdf[rangemax-2]={0};//254
-	unsigned int grayhe[rangemax-2]={0};//#number=254
-	unsigned char graylookup[(int)(render_max-render_min)];//render_max-render_min
-	
-	if (flags&32){						
+	unsigned char* graylookup=NULL;
+	unsigned int* grayhe=NULL;
+	if (flags&32){
+		int graypdf[rangemax]={0};//256	
+		unsigned int graycdf[rangemax-2]={0};//254
+		//unsigned int grayhe[rangemax-2]={0};//#number=254
+		grayhe = new unsigned int[rangemax-2];
+		graylookup = new unsigned char[(int)(render_max-render_min)];
+		//unsigned char graylookup[(int)(render_max-render_min)];//render_max-render_min
+		
+		for (int i=0; i<(int)(rangemax-2); i++) {
+		    grayhe[i] = 0;    // Initialize all elements to zero.
+		}
 		if (dsx != -1) {
 			int l = x0 + y0 * nx;
 			for (int j = ymax; j >= ymin; j--) {
@@ -633,7 +640,9 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 					}
 					else {
 						if (flags&32){
-							p = graylookup[(int)(t - render_min)];
+							//p = graylookup[(int)(t - render_min)];
+							//graylookup[i]=(unsigned char)((maxgray-mingray-2)*grayhe[(int)(i*(rangemax-3)/(render_max-render_min))]/(rangemax-3)+1);
+							p=(unsigned char)(grayhe[(int)((t - render_min)*(rangemax-3)/(render_max-render_min))]*(maxgray-mingray-2)/(rangemax-3)+1);								
 						}
 						else{
 							p=(unsigned char) (gs * (t - render_min));	
@@ -689,7 +698,8 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 					}
 					else {
 						if (flags&32){
-							p = graylookup[(int)(t - render_min)];
+							//p = graylookup[(int)(t - render_min)];
+							p=(unsigned char)(grayhe[(int)((t - render_min)*(rangemax-3)/(render_max-render_min))]*(maxgray-mingray-2)/(rangemax-3)+1);
 						}
 						else{
 							p=(unsigned char) (gs * (t - render_min));	
@@ -753,6 +763,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 		glDrawPixels(ixsize,iysize,GL_LUMINANCE,GL_UNSIGNED_BYTE,(const GLvoid *)ret.data());
 	}
 
+	delete [] graylookup;
 	return ret;
 }
 
