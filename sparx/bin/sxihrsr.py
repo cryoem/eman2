@@ -75,6 +75,8 @@ def main():
 	parser.add_option("--dp",                 type="float",			 default= -1.0,               help="delta z - translation in Angstroms")   
 	parser.add_option("--dphi",               type="float",			 default= -1.0,               help="delta phi - rotation in degrees")  
 	parser.add_option("--cons",               type="string",		 default="",  	              help="do local search taking into account helical consistency using the consistent parameters in the specified file")
+	parser.add_option("--recons_iter",          type="int",			 default= -1,                help="Do reconstruction every recons_iter iterations. Default is -1, in which case only reconstruction of last iteration is done")   
+	parser.add_option("--ref_iter",          type="int",			 default= -1,                help="Use the reconstruction from ever ref_iter as reference volume. Default is -1, in which case starting volume always used as reference volume")   
 	
 	parser.add_option("--ndp",                type="int",            default= 12,                 help="In symmetrization search, number of delta z steps equas to 2*ndp+1") 
 	parser.add_option("--ndphi",              type="int",            default= 12,                 help="In symmetrization search,number of dphi steps equas to 2*ndphi+1")  
@@ -277,11 +279,11 @@ def main():
 			global_def.BATCH = False
 		else:
 			if len(options.cons) > 0:
-				from development import ihrsrlocalcons_MPI
+				from development import debugihrsrlocalcons_MPI
 				global_def.BATCH = True
 				if len(args) < 4:  mask = None
 				else:               mask = args[3]
-				ihrsrlocalcons_MPI(args[0], args[1], args[2], mask, options.cons, irp, oup, options.rs, xrp, options.ynumber, txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, rminp, rmaxp, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.apix, options.debug, y_restrict2, options.WRAP) 
+				debugihrsrlocalcons_MPI(args[0], args[1], args[2], mask, options.cons, irp, oup, options.rs, xrp, options.ynumber, txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, rminp, rmaxp, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.apix, options.debug, y_restrict2, options.WRAP, options.recons_iter, options.ref_iter) 
 				global_def.BATCH = False
 			else:
 				from applications import ihrsr
