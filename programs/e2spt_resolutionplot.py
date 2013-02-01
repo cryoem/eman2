@@ -53,8 +53,8 @@ def main():
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_argument("--vol1", type=str, help="File for volume 1. Note that volume 1 will be aligned TO volume 2; that is, volume 1 will be 'moved' to find its best fit to volume 2. The format MUST be '.hdf' or '.mrc' ", default=None)
-	parser.add_argument("--vol2", type=str, help="File for volume 2. Volume 2 to will be 'static' (the 'reference' to which volume 1 will be aligned to). The format MUST be '.hdf' or '.mrc' ", default=None)
+	parser.add_argument("--input", type=str, help="Volume or stack of volumes to be aligned to --ref; that is, volumes in --input will be 'moved' (rotated and translated) to find the best fit with --ref. The format MUST be '.hdf' or '.mrc' ", default=None)
+	parser.add_argument("--ref", type=str, help="Volume that will be 'static' (the 'reference' to which volumes in --input will be aligned to). The format MUST be '.hdf' or '.mrc' ", default=None)
 	parser.add_argument("--output", type=str, help="Name for the .txt file that will contain the FSC data. If not specified, a default name will be used, vol1_VS_vol2, where vol1 and vol2 are taken from --vol1 and --vol2 without the format.", default=None)
 
 	parser.add_argument("--sym", type=str, default='c1', help = """Will symmetrize the reference (--vol1) and limit alignment of other structure (--vol2) against the model to searching the asymmetric unit only. 
@@ -99,8 +99,9 @@ def main():
 	
 	logger = E2init(sys.argv, options.ppid)
 
-	vol1 = options.vol1
-	vol2 = options.vol2
+	vol1 = options.ref
+	vol2 = options.input
+	
 	vol2final = ''
 	vol2mirrorfinal = ''
 	
@@ -131,29 +132,25 @@ def main():
 		fscoutputname = fscoutputname + '.txt'
 
 	if options.mirror:
-		vol2mirror=vol2.replace('.hdf','_mirror.hdf')
-		os.system('e2proc3d.py ' + vol2 + ' ' + vol2mirror  + ' --process=xform.mirror:axis=x')
+		vol1mirror=vol1.replace('.hdf','_mirror.hdf')
+		os.system('e2proc3d.py ' + vol1 + ' ' + vol1mirror  + ' --process=xform.mirror:axis=x')
 		fscoutputnamemirror = fscoutputname.replace('.txt','_mirror.txt')
 		
-	if options.sym is not 'c1' and options.sym is not "C1" and not options.align and not options.curves:
+	if options.sym is not 'c1' and options.sym is not "C1" and not options.curves:
 		vol1symname = vol1.replace('.hdf','_' + options.sym + '.hdf')
 		os.system('e2proc3d.py ' + vol1 + ' ' + vol1symname + ' --sym=' + options.sym)
-		
 		vol1 = vol1symname
 		
-		vol2sym = vol2.replace('.','_' + options.sym + '.')
+		vol2symname = vol2.replace('.','_' + options.sym + '.')
+		os.system('e2proc3d.py ' + vol2 + ' ' + vol2symname + ' --sym=' + options.sym)
+		vol2 = vol2symname
+
 		fscoutputname = fscoutputname.replace('.','_' + options.sym + '.')
-		os.system('e2proc3d.py ' + vol1 + ' ' + vol2sym + ' --sym=' + options.sym)
-		vol2final = vol2sym
 		
-		vol2mirrorsym = vol2mirror.replace('.','_' + options.sym + '.')
-		fscoutputnamemirror = fscoutputnamemirror.replace('.','_' + options.sym + '.')
-		os.system('e2proc3d.py ' + vol1 + ' ' + vol2mirrorsym + ' --sym=' + options.sym)
-		vol2mirrorfinal = vol2mirrorsy
-	else:
-		vol2final = vol2
-		if options.mirror:			
-			vol2mirrorfinal = vol2mirror
+		if options.mirror:
+			vol1mirrorsym = vol1mirror.replace('.','_' + options.sym + '.')
+			fscoutputnamemirror = fscoutputnamemirror.replace('.','_' + options.sym + '.')
+			os.system('e2proc3d.py ' + vol1 + ' ' + vol1mirrorsym + ' --sym=' + options.sym)
 
 	alicmd = 'echo'
 	fsccmd = 'echo'
@@ -183,8 +180,8 @@ def main():
 		vol2final = vol2ALIname
 		
 		if options.mirror:
-			vol2mirrorALIname = vol2mirror.replace('.hdf','_ALI.hdf')
-			alicmd += ' && e2spt_classaverage.py --path=. --input=' + str(vol2mirror) + ' --output=' + str(vol2mirrorALIname) + ' --ref=' + str(vol1) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + options.mask + ' --lowpass=' + options.lowpass + ' --align=' + options.align + ' --parallel=' + options.parallel + ' --ralign=' + options.ralign + ' --aligncmp=' + options.aligncmp + ' --raligncmp=' + options.raligncmp + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + options.normproc + ' --sym=' + options.sym + ' --breaksym'
+			vol2ALInameVSmirror = vol2.replace('.hdf','_ALI_mirror.hdf')
+			alicmd += ' && e2spt_classaverage.py --path=. --input=' + str(vol2) + ' --output=' + str(vol2ALInameVSmirror) + ' --ref=' + str(vol1mirror) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + options.mask + ' --lowpass=' + options.lowpass + ' --align=' + options.align + ' --parallel=' + options.parallel + ' --ralign=' + options.ralign + ' --aligncmp=' + options.aligncmp + ' --raligncmp=' + options.raligncmp + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + options.normproc + ' --sym=' + options.sym + ' --breaksym'
 			vol2mirrorfinal = vol2mirrorALIname
 		
 		if options.sym is not 'c1' and options.sym is not "C1":
@@ -192,7 +189,6 @@ def main():
 			
 			vol2ALIsym = vol2ALIname.replace('.','_' + options.sym + '.')
 			alicmd = alicmd + ' && e2proc3d.py ' + vol2ALIname + ' ' + vol2ALIsym + ' --sym=' + options.sym
-			vol2final = vol2ALIsym
 			
 			if options.mirror:
 				vol2mirrorALIsym = vol2mirrorALIname.replace('.','_' + options.sym + '.')
@@ -204,8 +200,7 @@ def main():
 	if not options.curves:
 		
 		print "\n\nWIll compute the FSC now!!"
-		print "\nBecuase options.plotonly is NEGATIVE, see", options.curves
-		print "Where vol2final is", vol2final
+		print "\nBecuase options.plotonly is NEGATIVE, see", options.plotonly
 		
 		fsccmd = 'e2proc3d.py ' + vol2final + ' ' + fscoutputname + ' --calcfsc=' + vol1
 		if options.mirror:
@@ -256,7 +251,20 @@ def main():
 			
 	E2end(logger)
 	return()
-			
+
+
+def calcfsc(v1,v2):
+	#datafsc=EMData(options.calcfsc)
+	fsc = data.calc_fourier_shell_correlation(datafsc)
+	third = len(fsc)/3
+	xaxis = fsc[0:third]
+	fsc = fsc[third:2*third]
+	saxis = [x/apix for x in xaxis]
+	Util.save_data(saxis[1],saxis[1]-saxis[0],fsc[1:],args[1])
+	print "Exiting after FSC calculation"
+	return()	
+	#sys.exit(0)
+		
 def fscplotter(fscs,options):
 	print "\n\n\n\n\n\n\nTHE PLOTTER HAS BEEN CAWLED\n\n\n\n\n\n\n\n"
 	fig = figure()
