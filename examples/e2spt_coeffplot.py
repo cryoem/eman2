@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus Galaz, 04/xx/2012 - using code and concepts drawn from Jesus Galaz's scripts
+# Author: Jesus Galaz, 04/01/2012 - Last update 05/01/2012
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -31,34 +31,49 @@
 
 
 from EMAN2 import *
-from sys import argv
 from operator import itemgetter	
 import matplotlib.pyplot as plt
 import sys
+import numpy
 
 def main():
 	print "I have entered main"
-
 	progname = os.path.basename(sys.argv[0])
 	usage = """Aligns a 3d volume to another by executing e2spt_classaverage.py and then calculates the FSC between them by calling e2proc3d.py . It returns both a number for the resolution based on the FSC0.5 
 	criterion(on the screen) and a plot as an image in .png format."""
-
-	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-
-	parser.add_argument("--input", type=str, help="Stack of 3D volumes that have been aligned with EMAN2 SPT programs. The format MUST be '.hdf', and the files must contain the header parameter 'spt_coefficient'.", default=None)
-	parser.add_argument("--cutoff", type=float, help="Fraction of particles (as a decimal, where 1.0 is the entire set, 0.8 is 80%. 0.5 is 50%, etc); where to make the cutoff to divide the set into two groups. For example, if you specify --cutoff=0.2, the 20% of particles with the highest correlation scores will be bundled into the first group, and the remaining 80% into the second group.", default=None)
-	parser.add_argument("--groups", type=int, help="Number of groups you want the data to be divided into.", default=None)
-
-	(options, args) = parser.parse_args()
 	
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+	parser.add_argument("--input", type=str,help="Stack of 3D volumes that have been aligned with EMAN2 SPT programs. The format MUST be .hdf, and the files must contain the header parameter spt_coefficient.", default=None)
+	parser.add_argument("--cutoff", type=float,help="Fraction of particles (as a decimal, where 1.0 is the entire set, 0.8 is 80%. 0.5 is 50%, etc); where to make the cutoff to divide the set into two groups. For example, if you specify --cutoff=0.2, the 20% of particles with the highest correlation scores will be bundled into the first group, and the remaining 80% into the second group.", default=None)
+	parser.add_argument("--groups", type=int,help="Number of groups you want the data to be divided into.", default=None)
+	parser.add_argument("--topn", type=int,help="Number of particles from best to worst that you want to be written as a substack,averaged, and generate a coordinates .txt file with their coordinates.", default=None)
+	parser.add_argument("--sigmaprune", type=float,help="Number of standard deviations to below the mean cut off particles; that is, the mean cross correlation coefficient of all particles will be computed, and those that are --sigmaprune=N standard deviations below the mean will not be considered.",default=None)
+	(options,args)=parser.parse_args()
+	
+	
+	if options.groups and (options.cutoff or options.topn):
+		print "ERROR: you cannot specify --cutoff, --groups and --topn all at the same time. Choose one."
+		sys.exit()
+
+	if options.cutoff and (options.groups or options.topn):
+		print "ERROR: you cannot specify --cutoff, --groups and --topn all at the same time. Choose one."
+		sys.exit()
+		
+	if options.topn and (options.cutoff or options.groups):
+		print "ERROR: you cannot specify --cutoff, --groups and --topn all at the same time. Choose one."
+		sys.exit()
+		
+	
+	logger = E2init(sys.argv, options.ppid)
+
 	data=options.input
 	cutoff=options.cutoff
-	
+		
 	print "I have read the parameters"
 	
 	scores=[]
 	dataset=[]
-	x=[]
+	#x=[]
 
 	n=EMUtil.get_image_count(data)
 	
@@ -71,49 +86,59 @@ def main():
 		if 'spt_score' in hdr:
 			score=-1*a['spt_score']
 		elif 'spt_coefficient' in hdr:
-			score=a['spt_coefficient']
+			score=a['spt_coefficient']*-1
 		else:
 			print "No score found in header. Terminating!"
 			sys.exit()
 		scores.append(score)
 		dataset.append({'score':float(score), 'particle':a})
-		x.append(i)
+		#x.append(i)
 
 	dataset = sorted(dataset, key=itemgetter('score'), reverse=True)
 
-	halfptclnum=int(round(n/2.0))
-	halfptcl=dataset[halfptclnum]
-	print "halfptcl is", halfptcl
-	halfscore=halfptcl['score']
+	newscores=[]
+	if options.sigmaprune:
 
-	print "Will analyze scores to remove aberrantly low ones"
+		print "Will analyze scores to remove aberrantly low ones"
 	
-	for s in scores:
-		if s < halfscore/2.0:
-			scores.remove(s)
-			x=x[0:-1]
-			print "I have removed this aberrantly low score", s
+		mu=numpy.mean(scores)
+		sigma=numpi.std(scores)
+	
+		print "Mean is", mu
+		print "Std is", sigma
+		filter = mean - sigma * (options.prune)
+		
+		#for s in scores:
+		#	if s < halfscore/2.0:
+		#		scores.remove(s)
+				#x=x[0:-1]
+				#print "X is", x
+		#		print "I have removed this aberrantly low score", s
 
-	for d in dataset:
-		if d['score'] < halfscore/2.0:
-			dataset.remove(d)
-			print "I have removed this aberrant particle from the dataset due to its low score", d['score']
-
-	for d in dataset:
-		if d['score'] < halfscore/2.0:
-			dataset.remove(d)
-			print "I have removed this aberrant particle from the dataset due to its low score", d['score']
+		for d in dataset:
+			if float(d['score']) < float(filter):
+				dataset.remove(d)
+				print "I have removed this aberrant particle from the dataset due to its low score", d['score']
+			else:
+				newscores.append(float(d['score']))
+				print "This score is high enough to survive", d['score']
+		#for d in dataset:
+		#	if d['score'] < halfscore/2.0:
+		#		dataset.remove(d)
+		#		print "I have removed this aberrant particle from the dataset due to its low score", d['score']
 
 	newN=len(dataset)
-
+	
+	scores = newscores
 	scores.sort()
 	scores.reverse()
 	
-	if options.groups and options.cutoff:
-		print "ERROR; you cannot specify both --cutoff and --groups at the same time"
-		sys.exit()
-
-	if options.groups and not options.cutoff:
+	if options.groups:
+		halfptclnum=int(round(n/2.0))
+		halfptcl=dataset[halfptclnum]
+		print "halfptcl is", halfptcl
+		halfscore=halfptcl['score']
+		
 		subdatasetsSET=[]
 		N=len(dataset)
 		#print "THe type of dataset is", type(dataset)
@@ -146,8 +171,7 @@ def main():
 			print "\nThe group average has been written to", averageNAME
 			kk+=1	
 			
-	if options.cutoff and not options.group:
-	
+	if options.cutoff:
 		threshptclnum=int(round(newN/(1/options.cutoff)))
 		threshptcl=dataset[threshptclnum]	
 		print "The new threshptcl is", threshptcl
@@ -179,9 +203,33 @@ def main():
 		if group2:
 			g2avg = sum(group2)/len(group2)
 			g2avg.write_image(g2name.replace('.hdf','_avg.hdf'),0)
-
+	
+	if options.topn:
+		topndataset = dataset[0:options.topn]
+		outnamestack = os.path.basename(options.input).replace('.','top' + str(options.topn) + '.')
+		coordsname = outnamestack.split('.')[0] + '_coords.txt'
+		indxsname = coordsname.replace('coords','indxs')
+		k=0
+		linescoords=[]
+		linesindxs=[]
+		for ptcl in topndataset:
+			p = topndataset['particle']
+			p.write_image(outnamestack,k)
+			linescoords.append(str(p['ptcl_source_coord'])+ '\n')
+			linescoords.append(str(p['ptcl_indx'])+ '\n')
+			k+=1
+		f=open(coordsname,'w')
+		f.writelines(linescoords)
+		f.close()
+	
+		f=open(linesindxs,'w')
+		f.writelines()
+		f.close()
+	
+	x=range(len(scores))
+	
 	plot_name = data.replace('.hdf', '_SCORES.png')
-	plt.plot(x, scores, linewidth=1, marker='o', linestyle='--', color='r')
+	plt.plot(x, scores, marker='+', color='r', linewidth=2)
 	plt.title(plot_name)
 	plt.ylabel('score')
 	plt.xlabel('n ptcl')
@@ -192,6 +240,10 @@ def main():
 
 	plt.savefig(plot_name)
 	plt.clf()
+	
+	E2end(logger)
+
+	return()
 
 if __name__ == '__main__':
 	main()
