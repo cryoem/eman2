@@ -99,27 +99,27 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	logger = E2init(sys.argv, options.ppid)
-	
+
 	if not options.output and not options.plotonly:
 		print "ERROR: Unless you provide .txt files through --plotonly, you must specify an --output in .txt format."
 	elif options.output and not options.plotonly:
 		if '.txt' not in options.output:
 			print "ERROR: Output must be in .txt format"
 			sys.exit()
-			
+		
+	findir=os.listdir(os.getcwd())
+	if options.path not in findir:
+		os.system('mkdir ' + options.path)
+	
 	if options.plotonly:
 		curves = options.plotonly
-		print "I will compute the plots only!"
-		#curves = curves.replace('--curves=','')
 		curves = curves.split(',')
 		
 		if not options.singleplot:
-			print "\n\n\n\noptions.singleplot is NOT on\n\n\n\n"	
 			for curve in curves:
 				fscplotter([curve],options)
 				
 		elif options.singleplot:
-			print "\n\n\n\nAnd single plot is seleccted!!!!\n\n\n\n"
 			fscplotter(curves,options)
 		
 		print "Done plotting"
@@ -130,37 +130,36 @@ def main():
 	
 		print "Done calculating FSCs and plotting them."
 		sys.exit()
-
+	
 	elif options.align:
 		if options.sym and options.sym is not 'c1' and options.sym is not 'C1':		
 			ref = EMData(options.ref,0)
 			ref = symmetrize(ref,options)
-			options.ref = options.ref.replace('.','_' + options.sym + '.')
+			options.ref = options.path + '/' + options.ref.replace('.','_' + options.sym + '.')
 			ref.write_image(options.ref,0)
 		
 		ptclali = alignment(options)
-		findir = os.listdir(os.getcwd())
-	
-		if ptclali in os.listdir(options.path):
-			options.input = options.path + '/' + ptclali
-			getfscs(options)
-		else: print "Could not find", ptclali
-			
+		inputbackup = options.input
+		options.input = ptclali
+		
+		getfscs(options)
+
 		if options.mirror:
+			options.input = inputbackup
 			ref = EMData(options.ref,0)
 			t=Transform({'type':'eman','mirror':True})
-			options.ref = options.ref.replace('.','_mirror.')
+			
+			options.ref = os.path.basename(options.ref).replace('.','_mirror.')
+			if options.path not in options.ref:
+				options.ref = options.path + '/' + options.ref
+		
 			ref.transform(t)
-			ref.write_imag(options.ref,0)
+			ref.write_image(options.ref,0)
 			
 			ptclalimirror = alignment(options)
 		
-			findir = os.listdir(os.getcwd())
-		
-			if ptclalimirror in os.listdir(options.path):
-				options.input = path + '/' + ptclalimirror
-				getfscs(options)
-			else: print "Could not find", ptclalimirror
+			options.input = ptclalimirror
+			getfscs(options)
 		
 	E2end(logger)
 	return
@@ -169,9 +168,8 @@ def main():
 def getfscs(options):
 	print "Inside GETFSCS"
 	n = EMUtil.get_image_count(options.input)
-	path = 'e2sptfscs'
-	if options.path:
-		path = options.path
+	
+	path = options.path
 	fscs = []
 	fscsm = []
 	for i in range(n):
@@ -188,26 +186,22 @@ def getfscs(options):
 		if not options.singleplot:
 			fscplotter([fscfilename],options)
 		else:
-			print "THis is the fscfilename to append"
 			fscs.append(fscfilename)
 	
 		if options.mirror:
 			t = Transform({'type':'eman','mirror':True})
 			refm = ref.copy()
 			refm.transform(t)
-			fscmfilename = path + '/' + fscfilename.replace('.txt','_VSmirror.txt')
+			fscmfilename = fscfilename.replace('.txt','_VSmirror.txt')
 			
 			calcfsc(ptcl,refm,fscmfilename)
 			
-			fscplotter([fscoutputname],options)
 			if not options.singleplot:
 				fscplotter([fscmfilename],options)
 			else:
 				fscsm.append(fscmfilename)
 	
 	if options.singleplot:
-		#for i in fscs:
-		#	print "I will add this fsc file to the plot", i
 		fscplotter(fscs,options)
 		fscplotter(fscsm,options)
 	print "Done with GETFSCS"
@@ -218,7 +212,6 @@ def alignment(options):
 	print "Inside ALINGNMENT"
 	aligner=options.align
 	aligner=aligner.split(':')
-	#print "The split aligner is", aligner
 	newaligner=''
 		
 	if 'sym='+options.sym not in aligner:
@@ -234,8 +227,10 @@ def alignment(options):
 	alicmd = 'e2spt_classaverage.py --path=' + options.path + ' --input=' + str(options.input) + ' --output=' + alivolfile + ' --ref=' + str(options.ref) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + options.mask + ' --lowpass=' + options.lowpass + ' --align=' + options.align + ' --parallel=' + options.parallel + ' --ralign=' + options.ralign + ' --aligncmp=' + options.aligncmp + ' --raligncmp=' + options.raligncmp + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + options.normproc + ' --sym=' + options.sym + ' --breaksym'
 			
 	os.system(alicmd)
+	print "BEFORE ALIGNMENT, input was", options.input
+	print "BEFORE ALIGNMENT, ref was", options.ref
 	print "Returning this from ALIGNMENT", alivolfile
-	return alivolfile
+	return options.path + '/' + alivolfile
 
 
 def calcfsc(v1,v2,fscfilename):
