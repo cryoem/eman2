@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus Galaz, 04/28/2012; last update 11/21/2012
+# Author: Jesus Galaz, 04/28/2012; last update 02/01/2013
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -42,7 +42,6 @@ from matplotlib.ticker import MaxNLocator
 from pylab import figure, show	
 import matplotlib.pyplot as plt
 
-
 #import scipy.optimize			 
 
 def main():
@@ -54,6 +53,8 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_argument("--input", type=str, help="Volume or stack of volumes to be aligned to --ref; that is, volumes in --input will be 'moved' (rotated and translated) to find the best fit with --ref. The format MUST be '.hdf' or '.mrc' ", default=None)
+	parser.add_argument("--path", type=str, help="Results directory. If not specified, defaults to e2sptfscs/", default='e2sptfscs')
+
 	parser.add_argument("--ref", type=str, help="Volume that will be 'static' (the 'reference' to which volumes in --input will be aligned to). The format MUST be '.hdf' or '.mrc' ", default=None)
 	parser.add_argument("--output", type=str, help="Name for the .txt file that will contain the FSC data. If not specified, a default name will be used, vol1_VS_vol2, where vol1 and vol2 are taken from --vol1 and --vol2 without the format.", default=None)
 
@@ -92,189 +93,193 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	#parser.add_argument("--plotonly",action="store_true", help="Assumes vol1 and vol2 are already aligned and fsc files will be provided through --curves; thus skips alignment and fsc curve generation", default=False)
 	parser.add_argument("--fsconly",action="store_true", help="Assumes vol1 and vol2 are already aligned with respect to each other and thus skips alignment", default=False)
-	parser.add_argument("--curves",type=str, help="FSC curves to plot in separate plots. Skips alignment and fsc curve generation. Provide .txt. files separated by commas --curves=file1.txt,file2.txt,file3.txt etc...", default=None)
-	parser.add_argument("--singleplot",action="store_true",help="If --singleplot and --curves are provided, they will be plotted in the same image.", default=False)
+	parser.add_argument("--plotonly",type=str, help="FSC curves to plot in separate plots. Skips alignment and fsc curve generation. Provide .txt. files separated by commas --plotonly=file1.txt,file2.txt,file3.txt etc...", default=None)
+	parser.add_argument("--singleplot",action="store_true",help="If --singleplot and --plotonly are provided, they will be plotted in the same image.", default=False)
 		
 	(options, args) = parser.parse_args()
 	
 	logger = E2init(sys.argv, options.ppid)
-
-	vol1 = options.ref
-	vol2 = options.input
 	
-	vol2final = ''
-	vol2mirrorfinal = ''
-	
-	if vol1:
-		vol1hdr = EMData(vol1,0,True)
-		apix = vol1hdr['apix_x']
-		boxsize = vol1hdr['nx']
-		options.apix = apix
-		options.boxsize = boxsize
-	
-	fscoutputname = options.output
-	fscoutputnamemirror = ''
-	
-
-	print "Done reading paramters for vol1"
-	if not options.output:
-		if not options.curves:
-			fscoutputname = 'FSC_' + vol1.split('/')[-1].split('.')[0] + '_VS_' + vol2.split('/')[-1].split('.')[0] + '.txt'
-		else:
-			fscoutputname = 'fsc_curves.txt'
-	
-	if '.hdf' in fscoutputname:
-		#output = options.output
-		fscoutputname = fscoutputname.replace('.hdf','.txt')
-		#options.output = output
-		
-	if '.txt' not in fscoutputname:
-		fscoutputname = fscoutputname + '.txt'
-
-	if options.mirror:
-		vol1mirror=vol1.replace('.hdf','_mirror.hdf')
-		os.system('e2proc3d.py ' + vol1 + ' ' + vol1mirror  + ' --process=xform.mirror:axis=x')
-		fscoutputnamemirror = fscoutputname.replace('.txt','_mirror.txt')
-		
-	if options.sym is not 'c1' and options.sym is not "C1" and not options.curves:
-		vol1symname = vol1.replace('.hdf','_' + options.sym + '.hdf')
-		os.system('e2proc3d.py ' + vol1 + ' ' + vol1symname + ' --sym=' + options.sym)
-		vol1 = vol1symname
-		
-		vol2symname = vol2.replace('.','_' + options.sym + '.')
-		os.system('e2proc3d.py ' + vol2 + ' ' + vol2symname + ' --sym=' + options.sym)
-		vol2 = vol2symname
-
-		fscoutputname = fscoutputname.replace('.','_' + options.sym + '.')
-		
-		if options.mirror:
-			vol1mirrorsym = vol1mirror.replace('.','_' + options.sym + '.')
-			fscoutputnamemirror = fscoutputnamemirror.replace('.','_' + options.sym + '.')
-			os.system('e2proc3d.py ' + vol1 + ' ' + vol1mirrorsym + ' --sym=' + options.sym)
-
-	alicmd = 'echo'
-	fsccmd = 'echo'
-
-	if not options.curves and not options.fsconly and options.align:
-		print "Will compute all alignment, fsc and plotting"
-		aligner=options.align
-		aligner=aligner.split(':')
-		print "The split aligner is", aligner
-		newaligner=''
-		
-		if 'sym='+options.sym not in aligner:
-			for element in aligner:
-				if 'sym' in element:
-					element='sym=' +options.sym
-				newaligner=newaligner + element + ":"
-			if newaligner[-1] == ':':
-				newaligner = newaligner[:-1]
-				options.align=newaligner
-		
-		print "The reformed aligner is", options.align
-			
-		print "Types of vol1 and vol2 are", type(vol1), type(vol2)	
-				
-		vol2ALIname = vol2.replace('.hdf','_ALI.hdf')
-		alicmd = 'e2spt_classaverage.py --path=. --input=' + str(vol2) + ' --output=' + str(vol2ALIname) + ' --ref=' + str(vol1) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + options.mask + ' --lowpass=' + options.lowpass + ' --align=' + options.align + ' --parallel=' + options.parallel + ' --ralign=' + options.ralign + ' --aligncmp=' + options.aligncmp + ' --raligncmp=' + options.raligncmp + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + options.normproc + ' --sym=' + options.sym + ' --breaksym'
-		vol2final = vol2ALIname
-		
-		if options.mirror:
-			vol2ALInameVSmirror = vol2.replace('.hdf','_ALI_mirror.hdf')
-			alicmd += ' && e2spt_classaverage.py --path=. --input=' + str(vol2) + ' --output=' + str(vol2ALInameVSmirror) + ' --ref=' + str(vol1mirror) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + options.mask + ' --lowpass=' + options.lowpass + ' --align=' + options.align + ' --parallel=' + options.parallel + ' --ralign=' + options.ralign + ' --aligncmp=' + options.aligncmp + ' --raligncmp=' + options.raligncmp + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + options.normproc + ' --sym=' + options.sym + ' --breaksym'
-			vol2mirrorfinal = vol2mirrorALIname
-		
-		if options.sym is not 'c1' and options.sym is not "C1":
-			print "\n@@@@@@@@@@@@@@@@@@@@@@@@@@@\nSym is NOT C1, therefore, the vol2 must be symmetrized after alignment\n"
-			
-			vol2ALIsym = vol2ALIname.replace('.','_' + options.sym + '.')
-			alicmd = alicmd + ' && e2proc3d.py ' + vol2ALIname + ' ' + vol2ALIsym + ' --sym=' + options.sym
-			
-			if options.mirror:
-				vol2mirrorALIsym = vol2mirrorALIname.replace('.','_' + options.sym + '.')
-				alicmd +=  ' && e2proc3d.py ' + vol2mirrorALIname + ' ' + vol2mirrorALIsym + ' --sym=' + options.sym
-				vol2mirrorfinal = vol2mirrorALIsym
-			
-		print "\nFINAL alicmd INSIDE alignment is", alicmd		
-	
-	if not options.curves:
-		
-		print "\n\nWIll compute the FSC now!!"
-		print "\nBecuase options.plotonly is NEGATIVE, see", options.plotonly
-		
-		fsccmd = 'e2proc3d.py ' + vol2final + ' ' + fscoutputname + ' --calcfsc=' + vol1
-		if options.mirror:
-			print "Where vol2mirrorfinal is", vol2mirrorfinal
-			fsccmd += ' && e2proc3d.py ' + vol2mirrorfinal + ' ' + fscoutputnamemirror + ' --calcfsc=' + vol1
-			
-		cmd = alicmd + ' && ' + fsccmd 
-		print "\nFinal command ali and fsc in FSC calculation is\n", cmd
-
-		if options.verbose:
-			print "\n\nAli command is\n", alicmd
-			print "\n\nFSC command is\n", fsccmd	
-			print "\n\nThus together they are\n", cmd
-		
-		os.system(cmd)
-		
-		findir=os.listdir(os.getcwd())
-		print "\n\n\n\nFiles in dir are", findir
-		
-		if fscoutputname not in findir:
-			print "\n\nERROR: Could not find the FSC file", fscoutputname
+	if not options.output and not options.plotonly:
+		print "ERROR: Unless you provide .txt files through --plotonly, you must specify an --output in .txt format."
+	elif options.output and not options.plotonly:
+		if '.txt' not in options.output:
+			print "ERROR: Output must be in .txt format"
 			sys.exit()
-		elif fscoutputname:
-			fscplotter([fscoutputname],options)
 			
-		if options.mirror and fscoutputnamemirror not in findir:
-			print "\n\nERROR: Could not fine the FSC file for the mirrored version of things", fscoutputnamemirror
-			sys.exit()
-		elif options.mirror and fscoutputnamemirror:
-			fscplotter([fscoutputnamemirror],options)
-			
-	elif options.curves:
-		curves = options.curves
+	if options.plotonly:
+		curves = options.plotonly
 		print "I will compute the plots only!"
-		curves = curves.replace('--curves=','')
+		#curves = curves.replace('--curves=','')
 		curves = curves.split(',')
 		
 		if not options.singleplot:
-			print "\n\n\n\noptions.singleplot is NOT on\n\n\n\n"
-			
-			
+			print "\n\n\n\noptions.singleplot is NOT on\n\n\n\n"	
 			for curve in curves:
 				fscplotter([curve],options)
 				
 		elif options.singleplot:
 			print "\n\n\n\nAnd single plot is seleccted!!!!\n\n\n\n"
 			fscplotter(curves,options)
+		
+		print "Done plotting"
+		sys.exit()
+		
+	elif options.fsconly:
+		getfscs(options)
+	
+		print "Done calculating FSCs and plotting them."
+		sys.exit()
+
+	elif options.align:
+		if options.sym and options.sym is not 'c1' and options.sym is not 'C1':		
+			ref = EMData(options.ref,0)
+			ref = symmetrize(ref,options)
+			options.ref = options.ref.replace('.','_' + options.sym + '.')
+			ref.write_image(options.ref,0)
+		
+		ptclali = alignment(options)
+		findir = os.listdir(os.getcwd())
+	
+		if ptclali in os.listdir(options.path):
+			options.input = options.path + '/' + ptclali
+			getfscs(options)
+		else: print "Could not find", ptclali
 			
+		if options.mirror:
+			ref = EMData(options.ref,0)
+			t=Transform({'type':'eman','mirror':True})
+			options.ref = options.ref.replace('.','_mirror.')
+			ref.transform(t)
+			ref.write_imag(options.ref,0)
+			
+			ptclalimirror = alignment(options)
+		
+			findir = os.listdir(os.getcwd())
+		
+			if ptclalimirror in os.listdir(options.path):
+				options.input = path + '/' + ptclalimirror
+				getfscs(options)
+			else: print "Could not find", ptclalimirror
+		
 	E2end(logger)
-	return()
+	return
 
 
-def calcfsc(v1,v2):
-	#datafsc=EMData(options.calcfsc)
-	fsc = data.calc_fourier_shell_correlation(datafsc)
+def getfscs(options):
+	print "Inside GETFSCS"
+	n = EMUtil.get_image_count(options.input)
+	path = 'e2sptfscs'
+	if options.path:
+		path = options.path
+	fscs = []
+	fscsm = []
+	for i in range(n):
+		ptcl = EMData(options.input,i)
+		ref = EMData(options.ref,0)
+		fscfilename = path + '/' + options.output.replace('.txt','_' + str(i).zfill(len(str(n))) + '.txt')
+		if options.sym and options.sym is not 'c1' and options.sym is not 'C1':
+			ptcl = symmetrize(ptcl,options) 
+			ref = symmetrize(ref,options)
+			fscfilename = options.output.replace('.txt','_' + str(i).zfill(len(str(n))) + '_' + options.sym + '.txt')
+			
+		calcfsc(ptcl,ref,fscfilename)
+		
+		if not options.singleplot:
+			fscplotter([fscfilename],options)
+		else:
+			print "THis is the fscfilename to append"
+			fscs.append(fscfilename)
+	
+		if options.mirror:
+			t = Transform({'type':'eman','mirror':True})
+			refm = ref.copy()
+			refm.transform(t)
+			fscmfilename = path + '/' + fscfilename.replace('.txt','_VSmirror.txt')
+			
+			calcfsc(ptcl,refm,fscmfilename)
+			
+			fscplotter([fscoutputname],options)
+			if not options.singleplot:
+				fscplotter([fscmfilename],options)
+			else:
+				fscsm.append(fscmfilename)
+	
+	if options.singleplot:
+		#for i in fscs:
+		#	print "I will add this fsc file to the plot", i
+		fscplotter(fscs,options)
+		fscplotter(fscsm,options)
+	print "Done with GETFSCS"
+	return
+
+
+def alignment(options):
+	print "Inside ALINGNMENT"
+	aligner=options.align
+	aligner=aligner.split(':')
+	#print "The split aligner is", aligner
+	newaligner=''
+		
+	if 'sym='+options.sym not in aligner:
+		for element in aligner:
+			if 'sym' in element:
+				element='sym=' +options.sym
+			newaligner=newaligner + element + ":"
+		if newaligner[-1] == ':':
+			newaligner = newaligner[:-1]
+			options.align=newaligner
+
+	alivolfile = os.path.basename(options.input).split('.')[0] + '_VS_' + os.path.basename(options.ref).split('.')[0] + '.hdf'
+	alicmd = 'e2spt_classaverage.py --path=' + options.path + ' --input=' + str(options.input) + ' --output=' + alivolfile + ' --ref=' + str(options.ref) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + options.mask + ' --lowpass=' + options.lowpass + ' --align=' + options.align + ' --parallel=' + options.parallel + ' --ralign=' + options.ralign + ' --aligncmp=' + options.aligncmp + ' --raligncmp=' + options.raligncmp + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + options.normproc + ' --sym=' + options.sym + ' --breaksym'
+			
+	os.system(alicmd)
+	print "Returning this from ALIGNMENT", alivolfile
+	return alivolfile
+
+
+def calcfsc(v1,v2,fscfilename):
+	fsc = v1.calc_fourier_shell_correlation(v2)
 	third = len(fsc)/3
 	xaxis = fsc[0:third]
 	fsc = fsc[third:2*third]
+	apix=v1['apix_x']
 	saxis = [x/apix for x in xaxis]
-	Util.save_data(saxis[1],saxis[1]-saxis[0],fsc[1:],args[1])
-	print "Exiting after FSC calculation"
-	return()	
-	#sys.exit(0)
+	Util.save_data(saxis[1],saxis[1]-saxis[0],fsc[1:], fscfilename)
+	print "Done with calcfsc"
+	return fsc	
+		
+
+def symmetrize(vol,options):
+	sym = options.sym[index_d[option1]]
+	xf = Transform()
+	xf.to_identity()
+	nsym=xf.get_nsym(sym)
+	volsym=vol.copy()
+	for i in range(1,nsym):
+		dc=vol.copy()
+		dc.transform(xf.get_sym(sym,i))
+		volsym.add(dc)
+		volsym.mult(1.0/nsym)	
+	return(volsym)
+	
 		
 def fscplotter(fscs,options):
 	print "\n\n\n\n\n\n\nTHE PLOTTER HAS BEEN CAWLED\n\n\n\n\n\n\n\n"
 	fig = figure()
 
-	from itertools import product
-	markers=["-","--","x"]
-	colors=["k","r","b","g","m","y","c"]
-	colorsANDmarkers = [a+b for a,b in product(colors,markers)]
+	#from itertools import product
+	#markers=["-","--","x"]
+	#colors=["k","r","b","g","m","y","c"]
+	#colorsANDmarkers = [a+b for a,b in product(colors,markers)]
+	
+	import colorsys
+	N = len(fscs)
+	HSV_tuples = [(x*1.0/N, 0.5, 0.5) for x in range(N)]
+	RGB_tuples = map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples)
 	
 	kont=0
+	plot_name = ''
 	for fscoutputname in fscs:
 	
 		print "I found THIS FSC file and will thus plot it", fscoutputname
@@ -321,12 +326,12 @@ def fscplotter(fscs,options):
 				k += 1
 
 		plot_name = fscoutputname.replace('.txt','_PLOT.png')
-		if options.curves and options.singleplot:
+		if options.plotonly and options.singleplot:
 			if options.output:
-				plot_name = options.output
+				plot_name = path + '/' + options.output
 				plot_name = plot_name.replace('.txt','.png')
 			else:
-				plot_name = 'fsc_curves.png'
+				plot_name = path + '/fsc_curves.png'
 
 		fullinfo = {}
 
@@ -421,8 +426,11 @@ def fscplotter(fscs,options):
 		ACTUAL PLOT
 		'''
 		pylab.rc("axes", linewidth=2.0)
-		
-		pylab.plot(x, values, colors[kont], linewidth=2)
+		#print "\n\n\nThe selected color is", RGB_tuples[kont]
+		#print "And there are these many in total", len(RGB_tuples)
+		#print "And at the moment, kont is", kont
+		#print "\n\n\n"
+		pylab.plot(x, values, color=RGB_tuples[kont], linewidth=2)
 	
 		yy1=[0.5]*len(values)	
 		yy2=[0.143]*len(values)
