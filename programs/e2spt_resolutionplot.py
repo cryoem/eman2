@@ -166,7 +166,6 @@ def main():
 
 
 def getfscs(options):
-	print "Inside GETFSCS"
 	n = EMUtil.get_image_count(options.input)
 	
 	path = options.path
@@ -204,12 +203,10 @@ def getfscs(options):
 	if options.singleplot:
 		fscplotter(fscs,options)
 		fscplotter(fscsm,options)
-	print "Done with GETFSCS"
 	return
 
 
 def alignment(options):
-	print "Inside ALINGNMENT"
 	aligner=options.align
 	aligner=aligner.split(':')
 	newaligner=''
@@ -241,7 +238,6 @@ def calcfsc(v1,v2,fscfilename):
 	apix=v1['apix_x']
 	saxis = [x/apix for x in xaxis]
 	Util.save_data(saxis[1],saxis[1]-saxis[0],fsc[1:], fscfilename)
-	print "Done with calcfsc"
 	return fsc	
 		
 
@@ -250,12 +246,10 @@ def symmetrize(vol,options):
 	xf = Transform()
 	xf.to_identity()
 	nsym=xf.get_nsym(sym)
-	print "THere are these many symmetry position", nsym
 	volsym=vol.copy()
 	for i in range(1,nsym):
 		dc=vol.copy()
 		t=xf.get_sym(sym,i)
-		print "I will apply this transform", t
 		dc.transform(t)
 		volsym.add(dc)
 	volsym.mult(1.0/nsym)	
@@ -263,7 +257,6 @@ def symmetrize(vol,options):
 	
 		
 def fscplotter(fscs,options):
-	print "\n\n\n\n\n\n\nTHE PLOTTER HAS BEEN CAWLED\n\n\n\n\n\n\n\n"
 	fig = figure()
 
 	#from itertools import product
@@ -299,7 +292,6 @@ def fscplotter(fscs,options):
 		nlines=len(lines)
 		arbfactor = round(0.2*nlines)
 		factorOfTicks = round(nlines/(round(nlines / (0.2*nlines))))
-		print "\n\n\nTHEE factor of ticks is!!!!\n", factorOfTicks
 		for line in lines:
 			if line:
 				x.append(float(k))
