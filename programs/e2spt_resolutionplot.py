@@ -135,7 +135,7 @@ def main():
 		if options.sym and options.sym is not 'c1' and options.sym is not 'C1':		
 			ref = EMData(options.ref,0)
 			ref = symmetrize(ref,options)
-			options.ref = options.path + '/' + options.ref.replace('.','_' + options.sym + '.')
+			options.ref = options.path + '/' + os.path.basename(options.ref).replace('.','_' + options.sym + '.')
 			ref.write_image(options.ref,0)
 		
 		ptclali = alignment(options)
@@ -246,16 +246,19 @@ def calcfsc(v1,v2,fscfilename):
 		
 
 def symmetrize(vol,options):
-	sym = options.sym[index_d[option1]]
+	sym = options.sym
 	xf = Transform()
 	xf.to_identity()
 	nsym=xf.get_nsym(sym)
+	print "THere are these many symmetry position", nsym
 	volsym=vol.copy()
 	for i in range(1,nsym):
 		dc=vol.copy()
-		dc.transform(xf.get_sym(sym,i))
+		t=xf.get_sym(sym,i)
+		print "I will apply this transform", t
+		dc.transform(t)
 		volsym.add(dc)
-		volsym.mult(1.0/nsym)	
+	volsym.mult(1.0/nsym)	
 	return(volsym)
 	
 		
