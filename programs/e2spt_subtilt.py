@@ -43,7 +43,7 @@ import matplotlib.pyplot as plt
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """Extracts particles from each image in an aligned tilt series based on their position in the reconstructed tomogram."""
+	usage = """UNDER DEVELOPOMENT. Extracts particles from each image in an aligned tilt series based on their position in the reconstructed tomogram."""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
