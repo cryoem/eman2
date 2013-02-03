@@ -38,18 +38,32 @@ import numpy
 
 def main():
 	print "I have entered main"
+	#progname = os.path.basename(sys.argv[0])
+	#usage = """Aligns a 3d volume to another by executing e2spt_classaverage.py and then calculates the FSC between them by calling e2proc3d.py . It returns both a number for the resolution based on the FSC0.5 
+	#criterion(on the screen) and a plot as an image in .png format."""
+	
 	progname = os.path.basename(sys.argv[0])
 	usage = """Aligns a 3d volume to another by executing e2spt_classaverage.py and then calculates the FSC between them by calling e2proc3d.py . It returns both a number for the resolution based on the FSC0.5 
 	criterion(on the screen) and a plot as an image in .png format."""
-	
+			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--input", type=str,help="Stack of 3D volumes that have been aligned with EMAN2 SPT programs. The format MUST be .hdf, and the files must contain the header parameter spt_coefficient.", default=None)
-	parser.add_argument("--cutoff", type=float,help="Fraction of particles (as a decimal, where 1.0 is the entire set, 0.8 is 80%. 0.5 is 50%, etc); where to make the cutoff to divide the set into two groups. For example, if you specify --cutoff=0.2, the 20% of particles with the highest correlation scores will be bundled into the first group, and the remaining 80% into the second group.", default=None)
-	parser.add_argument("--groups", type=int,help="Number of groups you want the data to be divided into.", default=None)
-	parser.add_argument("--topn", type=int,help="Number of particles from best to worst that you want to be written as a substack,averaged, and generate a coordinates .txt file with their coordinates.", default=None)
-	parser.add_argument("--sigmaprune", type=float,help="Number of standard deviations to below the mean cut off particles; that is, the mean cross correlation coefficient of all particles will be computed, and those that are --sigmaprune=N standard deviations below the mean will not be considered.",default=None)
-	(options,args)=parser.parse_args()
+		
+	parser.add_argument("--input", type=str, help="Volume or stack of volumes to be aligned to --ref; that is, volumes in --input will be 'moved' (rotated and translated) to find the best fit with --ref. The format MUST be '.hdf' or '.mrc' ", default=None)
+	parser.add_argument("--cutoff", type=float, help="""Fraction of particles (as a decimal, where 1.0 is the entire set, 0.8 is 80 percent. 0.5 is 50 percent, etc); 
+														where to make the cutoff to divide the set into two groups. For example, if you specify 
+														--cutoff=0.2, the 20 percent of particles with the highest correlation scores will be bundled into the first group, 
+														and the remaining 80 percent into the second group.""", default=None)
+	parser.add_argument("--groups", type=int, help="Number of groups you want the data to be divided into.", default=None)
+	parser.add_argument("--topn", type=int, help="Number of particles from best to worst that you want to be written as a substack, averaged, and generate a coordinates .txt file with their coordinates.", default=None)
+
+	parser.add_argument("--sigmaprune", type=float, default=0.0, help = """Number of standard deviations to below the mean cut off particles; 
+																		that is, the mean cross correlation coefficient of all particles will be computed, and those that are 
+																		--sigmaprune=N standard deviations below the mean will not be considered.""")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--path", type=str, help="Results directory. If not specified, defaults to e2sptcoeff/", default='e2sptcoeff')
 	
+	(options, args) = parser.parse_args()
 	
 	if options.groups and (options.cutoff or options.topn):
 		print "ERROR: you cannot specify --cutoff, --groups and --topn all at the same time. Choose one."
@@ -65,9 +79,10 @@ def main():
 		
 	
 	logger = E2init(sys.argv, options.ppid)
-
-	data=options.input
-	cutoff=options.cutoff
+	
+	findir = os.listdir(os.getcwd())
+	if options.path not in findir:
+		os.system('mkdir ' + options.path)
 		
 	print "I have read the parameters"
 	
@@ -75,12 +90,12 @@ def main():
 	dataset=[]
 	#x=[]
 
-	n=EMUtil.get_image_count(data)
+	n=EMUtil.get_image_count(options.input)
 	
 	print "The set has these many particles", n
 	
 	for i in range(n):
-		a=EMData(data,i)
+		a=EMData(options.input,i)
 		hdr=a.get_attr_dict()
 		print  "analyzing header for particle", i
 		if 'spt_score' in hdr:
@@ -95,25 +110,36 @@ def main():
 		#x.append(i)
 
 	dataset = sorted(dataset, key=itemgetter('score'), reverse=True)
+	
+	scores.sort()
+	scores.reverse()
+	x=range(len(scores))
+	
+	plottitle = os.path.basename(options.input).replace('.hdf', '_completeSCORES')
+	plt.plot(x, scores, marker='o', color='r', linewidth=2)
+	plt.title(plottitle)
+	plt.ylabel('score')
+	plt.xlabel('n ptcl')
+	#a = plt.gca()
 
+	plotfile = options.path + '/' + plottitle + '.png'
+	plt.savefig(plotfile)
+	plt.clf()
+	
+	
+	
 	newscores=[]
 	if options.sigmaprune:
 
-		print "Will analyze scores to remove aberrantly low ones"
+		#print "Will analyze scores to remove aberrantly low ones"
 	
 		mu=numpy.mean(scores)
-		sigma=numpi.std(scores)
+		sigma=numpy.std(scores)
 	
 		print "Mean is", mu
 		print "Std is", sigma
-		filter = mean - sigma * (options.prune)
-		
-		#for s in scores:
-		#	if s < halfscore/2.0:
-		#		scores.remove(s)
-				#x=x[0:-1]
-				#print "X is", x
-		#		print "I have removed this aberrantly low score", s
+		filter = mu - sigma * (options.sigmaprune)
+		print "Therefore, filter is", filter
 
 		for d in dataset:
 			if float(d['score']) < float(filter):
@@ -122,16 +148,22 @@ def main():
 			else:
 				newscores.append(float(d['score']))
 				print "This score is high enough to survive", d['score']
-		#for d in dataset:
-		#	if d['score'] < halfscore/2.0:
-		#		dataset.remove(d)
-		#		print "I have removed this aberrant particle from the dataset due to its low score", d['score']
-
-	newN=len(dataset)
+		
+		newscores.sort()
+		newscores.reverse()
+		x=range(len(newscores))
 	
-	scores = newscores
-	scores.sort()
-	scores.reverse()
+		plottitle = os.path.basename(options.input).replace('.hdf', '_prunedSCORES')
+		plt.plot(x, newscores, marker='o', color='r', linewidth=2)
+		plt.title(plottitle)
+		plt.ylabel('score')
+		plt.xlabel('n ptcl')
+		#a = plt.gca()
+		plotfile = options.path + '/' + plottitle + '.png'
+		plt.savefig(plotfile)
+		plt.clf()
+		
+	newN=len(dataset)
 	
 	if options.groups:
 		halfptclnum=int(round(n/2.0))
@@ -156,7 +188,7 @@ def main():
 		for subdataset in subdatasetsSET:
 			print "The len of subset %d is %d" % (kk, len(subdataset))
 			jj = 0		
-			groupname = data.replace('.hdf', '_'+ str(kk).zfill(len(str(options.groups))) + '.hdf')
+			groupname = options.path + '/' + os.path.basename(options.input).replace('.', '_'+ str(kk).zfill(len(str(options.groups))) + '.')
 			particleLIST = []			
 			for element in subdataset:
 				particle = element['particle']
@@ -166,9 +198,9 @@ def main():
 			averageNAME = groupname.replace('.hdf','_AVG.hdf')		
 			average = sum(particleLIST)/len(particleLIST)
 			average.process_inplace('normalize')
-			print "\nThe group %d has been written to %s, and has these many particles in it %d" % ( kk, groupname, len(particleLIST) )
+			#print "\nThe group %d has been written to %s, and has these many particles in it %d" % ( kk, groupname, len(particleLIST) )
 			average.write_image(averageNAME,0)
-			print "\nThe group average has been written to", averageNAME
+			#print "\nThe group average has been written to", averageNAME
 			kk+=1	
 			
 	if options.cutoff:
@@ -177,24 +209,25 @@ def main():
 		print "The new threshptcl is", threshptcl
 		threshscore=threshptcl['score']
 
-		threshlabel="%0.2f" %(cutoff)
+		threshlabel="%0.2f" %(options.cutoff)
 		threshlabel=str(threshlabel).replace('.','p')	
 		group1=[]
 		group2=[]
-		kk=0
+		k1=0
+		k2=0
+		g1name = options.path + '/' + os.path.basename(options.input).replace('.', '_G1.')
+		g2name = options.path + '/' + os.path.basename(options.input).replace('.', '_G2.')
 		for i in dataset:
-				
 			if i['score'] >= threshscore:
 				group1.append(i['particle'])
 				i['particle'].write_image(g1name,k1)
 				k1+=1
 			else:
-				if ['score'] > halfscore/2.0:
-					group2.append(i['particle'])
-					i['particle'].write_image(g2name,k2)
-					k2+=1
-				else:
-					print "\n\n@@@@ Found a garbage particle, and thus did not consider it!\n\n"	
+				group2.append(i['particle'])
+				i['particle'].write_image(g2name,k2)
+				k2+=1
+				#else:
+				#	print "\n\n@@@@ Found a garbage particle, and thus did not consider it!\n\n"	
 
 		if group1:	
 			g1avg = sum(group1)/len(group1)	
@@ -206,40 +239,49 @@ def main():
 	
 	if options.topn:
 		topndataset = dataset[0:options.topn]
-		outnamestack = os.path.basename(options.input).replace('.','top' + str(options.topn) + '.')
-		coordsname = outnamestack.split('.')[0] + '_coords.txt'
-		indxsname = coordsname.replace('coords','indxs')
+		bottomdataset = dataset[options.topn:]
+		
+		outnamestack = options.path + '/' + os.path.basename(options.input).replace('.','top' + str(options.topn) + '.')
+		
+		coordsname = options.path + '/' + os.path.basename(outnamestack).split('.')[0] + '_coords.txt'
+		
+		indxsname = options.path + '/' + os.path.basename(coordsname).replace('coords','indxs')
+		
 		k=0
 		linescoords=[]
 		linesindxs=[]
+		topptcls=[]
 		for ptcl in topndataset:
-			p = topndataset['particle']
+			p = ptcl['particle']
 			p.write_image(outnamestack,k)
+			topptcls.append(p)
 			linescoords.append(str(p['ptcl_source_coord'])+ '\n')
-			linescoords.append(str(p['ptcl_indx'])+ '\n')
+			linesindxs.append(str(p['source_n'])+ '\n')
 			k+=1
+		avg=sum(topptcls)/len(topptcls)
+		avgname = options.path + '/' + os.path.basename(outnamestack).replace('.','_avg.') 
+		
+		avg.write_image(avgname,0)
 		f=open(coordsname,'w')
 		f.writelines(linescoords)
 		f.close()
 	
-		f=open(linesindxs,'w')
-		f.writelines()
+		f=open(indxsname,'w')
+		f.writelines(linesindxs)
 		f.close()
 	
-	x=range(len(scores))
+	#x=range(len(scores))
 	
-	plot_name = data.replace('.hdf', '_SCORES.png')
-	plt.plot(x, scores, marker='+', color='r', linewidth=2)
-	plt.title(plot_name)
-	plt.ylabel('score')
-	plt.xlabel('n ptcl')
-	a = plt.gca()
-
-	#a.set_xlim(1,mults[-1])
-	#a.set_ylim(0,max(x))
-
-	plt.savefig(plot_name)
-	plt.clf()
+	#plottitle = os.path.basename(options.input).replace('.hdf', '_prunedSCORES')
+	#plt.plot(x, scores, marker='o', color='r', linewidth=2)
+	#plt.title(plottitle)
+	#plt.ylabel('score')
+	#plt.xlabel('n ptcl')
+	#a = plt.gca()
+	
+	#plotfile = options.path + '/' + plottitle + '.png'
+	#plt.savefig(plotfile)
+	#plt.clf()
 	
 	E2end(logger)
 
