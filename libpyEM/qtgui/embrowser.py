@@ -1638,7 +1638,6 @@ class EMBDBInfoPane(EMInfoPane):
 	def imSelChange(self):
 		"New image selection"
 		
-		print "isc"
 		val=self.wimlist.currentItem().text()
 		try:
 			val=int(val)
