@@ -58,9 +58,9 @@ def main():
 	parser.add_argument("--ref", type=str, help="Volume that will be 'static' (the 'reference' to which volumes in --input will be aligned to). The format MUST be '.hdf' or '.mrc' ", default=None)
 	parser.add_argument("--output", type=str, help="Name for the .txt file that will contain the FSC data. If not specified, a default name will be used, vol1_VS_vol2, where vol1 and vol2 are taken from --vol1 and --vol2 without the format.", default=None)
 
-	parser.add_argument("--sym", type=str, default='c1', help = """Will symmetrize the reference (--vol1) and limit alignment of other structure (--vol2) against the model to searching the asymmetric unit only. 
+	parser.add_argument("--sym", type=str, default='c1', help = """Will symmetrize the reference --vol1 and limit alignment of other structure --vol2 against the model to searching the asymmetric unit only. 
 								Then, after alignment, vol2 will be symmetrized as well, and the FSC will be calculated. 
-								Note that this will only work IF the reference (--vol1) is ALREADY aligned to the symmetry axis as defined by EMAN2.""", default='c1')
+								Note that this will only work IF the reference (--vol1) is ALREADY aligned to the symmetry axis as defined by EMAN2.""")
 	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
 	parser.add_argument("--normproc",type=str,help="Normalization processor applied to particles before alignment. Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'", default="normalize.mask")
 	parser.add_argument("--preprocess",type=str,help="Any processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.", default=None)
