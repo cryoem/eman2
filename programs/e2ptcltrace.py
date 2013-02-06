@@ -96,7 +96,7 @@ def main():
 			diff=min(diffs)			# The angular error for the best-agreeing orientation
 				
 			
-			print "%1.1f,%1.1f -> %1.1f,%1.1f\t%1.2f"%(ort1.get_rotation("eman")["alt"],ort1.get_rotation("eman")["az"],ort2.get_rotation("eman")["alt"],ort2.get_rotation("eman")["az"],diff),
+			if options.verbose>0 : print "%1.1f,%1.1f (%d) -> %1.1f,%1.1f (%d)\t%1.2f"%(ort1.get_rotation("eman")["alt"],ort1.get_rotation("eman")["az"],cls[i-1][0][0,p],ort2.get_rotation("eman")["alt"],ort2.get_rotation("eman")["az"],cls[i][0][0,p],diff),
 		print ""
 		
 	

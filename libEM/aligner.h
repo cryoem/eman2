@@ -300,7 +300,7 @@ namespace EMAN
 
 		virtual string get_desc() const
 		{
-			return "Performs rotational alignment,works accurately if the image is precentered, normally called internally in combination with translational and flip alignment";
+			return "Performs rotational alignment, even on poorly centered images, but leaves a 180 degree ambiguity which requires a translational alignment to resolve. Usually called internally by rotate_translate aligner.";
 		}
 
 		static Aligner *NEW()
@@ -308,12 +308,14 @@ namespace EMAN
 			return new RotationalAligner();
 		}
 
-		static EMData * align_180_ambiguous(EMData * this_img, EMData * to_img, int rfp_mode = 2);
+		static EMData * align_180_ambiguous(EMData * this_img, EMData * to_img, int rfp_mode = 2,int zscore=0);
 
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print. O is the original eman1 way. 1 is just using calc_ccf without padding. 2 is using calc_mutual_correlation without padding.");
+			d.put("zscore", EMObject::INT,"Either 0 or 1. If set, will convert per-radius CCF curves into Z-score significnace curves before averaging. In theory this should produce better results by focusing on radii with more alignment information. (default=false)");
+			d.put("ambig180", EMObject::INT,"Either 0 or 1. If set, will not try and resolve the 180 degree ambiguity. If not set, it will assume the particle is well centered and resolve the ambiguity that way. default=false");
 			return d;
 		}
 		
@@ -441,6 +443,7 @@ namespace EMAN
 			d.put("nozero", EMObject::INT,"Zero translation not permitted (useful for CCD images)");
 			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print");
 			d.put("useflcf", EMObject::INT,"Use Fast Local Correlation Function rather than CCF for translational alignment");
+			d.put("zscore", EMObject::INT,"Either 0 or 1. This option is passed directly to the rotational aligner (default=false)");
 			return d;
 		}
 		
@@ -499,6 +502,7 @@ namespace EMAN
 			d.put("nozero", EMObject::INT,"Zero translation not permitted (useful for CCD images)");
 			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print");
 			d.put("useflcf", EMObject::INT,"Use Fast Local Correlation Function rather than CCF for translational alignment");
+			d.put("zscore", EMObject::INT,"Either 0 or 1. This option is passed directly to the rotational aligner (default=false)");
 			return d;
 		}
 		
@@ -842,6 +846,7 @@ namespace EMAN
 			d.put("maxshift", EMObject::INT, "Maximum translation in pixels");
 			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print");
 			d.put("useflcf", EMObject::INT,"Use Fast Local Correlation Function rather than CCF for translational alignment");
+			d.put("zscore", EMObject::INT,"Either 0 or 1. This option is passed directly to the rotational aligner (default=false)");
 			return d;
 		}
 		
@@ -901,6 +906,7 @@ namespace EMAN
 			d.put("nozero", EMObject::INT,"Zero translation not permitted (useful for CCD images)");
 			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print");
 			d.put("useflcf", EMObject::INT,"Use Fast Local Correlation Function rather than CCF for translational alignment");
+			d.put("zscore", EMObject::INT,"Either 0 or 1. This option is passed directly to the rotational aligner (default=false)");
 			return d;
 		}
 		

@@ -42,6 +42,7 @@
 #include "emfft.h"
 #include "projector.h"
 #include "geometry.h"
+#include <math.h>
 
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_errno.h>
@@ -1566,7 +1567,7 @@ EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag,bool center)
 	}
 }
 
-EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum, bool flip)
+EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum, bool flip,bool usez)
 {
 	ENTERFUNC;
 
@@ -1690,6 +1691,22 @@ EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum, boo
 	float* rd = rslt.get_data();
 	for (int j = y0; j < y1; j++) {
 		EMfft::complex_to_real_1d(f1d+j*wpad, rd+j*nx, nx);
+	}
+
+	// This converts the CCF values to Z values (in terms of standard deviations above the mean), on a per-row basis
+	// The theory is that this should better weight the radii that contribute most strongly to the orientation determination
+	if (usez) {
+		for (int y=0; y<height; y++) {
+			float mn=0,sg=0;
+			for (int x=0; x<nx; x++) {
+				mn+=rd[x+y*nx];
+				sg+=rd[x+y*nx]*rd[x+y*nx];
+			}
+			mn/=(float)nx;						//mean
+			sg=std::sqrt(sg/(float)nx-mn*mn);	//sigma
+			
+			for (int x=0; x<nx; x++) rd[x+y*nx]=(rd[x+y*nx]-mn)/sg;
+		}
 	}
 
 	if (no_sum) {
@@ -2504,7 +2521,8 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360, bool 
 	}
 
 	if (xs < 1) {
-		xs = (int) Util::fast_floor(p * M_PI * ny / 5.0);
+		xs = (int) Util::fast_floor(p * M_PI * ny / 3.0);
+		xs-=xs%4;			// 128 bit alignment, though best_fft_size may override
 		xs = Util::calc_best_fft_size(xs);
 		if (xs<=8) xs=16;
 	}

@@ -636,7 +636,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		
 		if auto_contrast:
 			mn=max(m0,mean-3.0*sigma)
-			mx=min(m1,mean+3.0*sigma)
+			mx=min(m1,mean+4.0*sigma)
 		else:
 			mn=m0
 			mx=m1

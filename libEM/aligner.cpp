@@ -383,7 +383,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	return cf;
 }
 
-EMData * RotationalAligner::align_180_ambiguous(EMData * this_img, EMData * to, int rfp_mode) {
+EMData * RotationalAligner::align_180_ambiguous(EMData * this_img, EMData * to, int rfp_mode,int zscore) {
 
 	// Make translationally invariant rotational footprints
 	EMData* this_img_rfp, * to_rfp;
@@ -402,8 +402,14 @@ EMData * RotationalAligner::align_180_ambiguous(EMData * this_img, EMData * to, 
 	int this_img_rfp_nx = this_img_rfp->get_xsize();
 
 	// Do row-wise correlation, returning a sum.
-	EMData *cf = this_img_rfp->calc_ccfx(to_rfp, 0, this_img->get_ysize());
-	
+	EMData *cf = this_img_rfp->calc_ccfx(to_rfp, 0, this_img->get_ysize(),false,false,zscore);
+// cf->process_inplace("normalize");
+// cf->write_image("ralisum.hdf",-1);
+// 	
+// EMData *cf2 = this_img_rfp->calc_ccfx(to_rfp, 0, this_img->get_ysize(),true);
+// cf2->write_image("ralistack.hdf",-1);
+// delete cf2;
+
 	// Delete them, they're no longer needed
 	delete this_img_rfp; this_img_rfp = 0;
 	delete to_rfp; to_rfp = 0;
@@ -445,12 +451,20 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 
 	// Perform 180 ambiguous alignment
 	int rfp_mode = params.set_default("rfp_mode",2);
-	EMData* rot_aligned = RotationalAligner::align_180_ambiguous(this_img,to,rfp_mode);
+	int zscore = params.set_default("zscore",0);
+	int ambig180 = params.set_default("ambig180",0);
+	
+	EMData* rot_aligned = RotationalAligner::align_180_ambiguous(this_img,to,rfp_mode,zscore);
 	Transform * tmp = rot_aligned->get_attr("xform.align2d");
 	Dict rot = tmp->get_rotation("2d");
 	float rotate_angle_solution = rot["alpha"];
 	delete tmp;
 
+	// Don't resolve the 180 degree ambiguity here
+	if (ambig180) {
+		return rot_aligned;
+	}
+	
 	EMData *rot_align_180 = rot_aligned->process("math.rotate.180");
 
 	// Generate the comparison metrics for both rotational candidates
@@ -701,15 +715,15 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 #endif
 
 	// Get the 180 degree ambiguously rotationally aligned and its 180 degree rotation counterpart
+	int zscore = params.set_default("zscore",0);
 	int rfp_mode = params.set_default("rfp_mode",2);
-	EMData *rot_align  =  RotationalAligner::align_180_ambiguous(this_img,to,rfp_mode);
+	EMData *rot_align  =  RotationalAligner::align_180_ambiguous(this_img,to,rfp_mode,zscore);
 	Transform * tmp = rot_align->get_attr("xform.align2d");
 	Dict rot = tmp->get_rotation("2d");
 	float rotate_angle_solution = rot["alpha"];
 	delete tmp;
 
-	EMData *rot_align_180 = rot_align->copy();
-	rot_align_180->process_inplace("math.rotate.180");
+	EMData *rot_align_180 = rot_align->process("math.rotate.180");
 
 	Dict trans_params;
 	trans_params["intonly"]  = 0;
@@ -736,7 +750,7 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 	float cmp2 = rot_180_trans->cmp(cmp_name, to, cmp_params);
 
 	EMData *result = 0;
-	if (cmp1 < cmp2) { // Assumes smaller is better - thus all comparitors should support "smaller is better"
+	if (cmp1 < cmp2) { // All comparators are defined so default return is "smaller is better"
 		if( rot_180_trans )	{
 			delete rot_180_trans;
 			rot_180_trans = 0;
@@ -769,6 +783,7 @@ EMData *RotateTranslateScaleAligner::align(EMData * this_img, EMData *to,
 	basealigner_params["maxshift"] = params.set_default("maxshift", -1);
 	basealigner_params["rfp_mode"] = params.set_default("rfp_mode",2);
 	basealigner_params["useflcf"] = params.set_default("useflcf",0);
+	basealigner_params["zscore"] = params.set_default("zscore",0);
 	
 	//return the correct results
 	return align_using_base(this_img, to, cmp_name, cmp_params);
@@ -779,7 +794,7 @@ EMData* RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 										  const string & cmp_name, const Dict& cmp_params) const
 {
 	// Get the non flipped rotational, tranlsationally aligned image
-	Dict rt_params("maxshift", params["maxshift"], "rfp_mode", params.set_default("rfp_mode",2),"useflcf",params.set_default("useflcf",0));
+	Dict rt_params("maxshift", params["maxshift"], "rfp_mode", params.set_default("rfp_mode",2),"useflcf",params.set_default("useflcf",0),"zscore",params.set_default("zscore",0));
 	EMData *rot_trans_align = this_img->align("rotate_translate",to,rt_params,cmp_name, cmp_params);
 	
 	// Do the same alignment, but using the flipped version of the image
@@ -837,6 +852,7 @@ EMData *RotateTranslateFlipScaleAligner::align(EMData * this_img, EMData *to,
 	basealigner_params["maxshift"] = params.set_default("maxshift", -1);
 	basealigner_params["rfp_mode"] = params.set_default("rfp_mode",2);
 	basealigner_params["useflcf"] = params.set_default("useflcf",0);
+	basealigner_params["zscore"] = params.set_default("zscore",0);
 	
 	//return the correct results
 	return align_using_base(this_img, to, cmp_name, cmp_params);

@@ -445,6 +445,7 @@ namespace EMAN
 		 * @param y1 Ending position in x-direction. '-1' means the
 		 *        end of the row.
 		 * @param nosum If true, returns an image y1-y0+1 pixels high.
+		 * @param usez If true, will convert each line in the CCF stack to a Z value, indicating its relative strength as a predictor of alignment
 		 * @see #calc_ccf()
 		 * @exception NullPointerException If input image 'with' is NULL.
 		 * @exception ImageFormatException If 'with' and 'this' are
@@ -452,7 +453,7 @@ namespace EMAN
 		 * @exception ImageDimensionException If 'this' image is 3D.
 		 * @return The result image containing the CCF.
 		 */
-		EMData *calc_ccfx( EMData * const with, int y0 = 0, int y1 = -1, bool nosum = false, bool flip = false);
+		EMData *calc_ccfx( EMData * const with, int y0 = 0, int y1 = -1, bool nosum = false, bool flip = false,bool usez=false);
 
 
 		/** Makes a 'rotational footprint', which is an 'unwound'

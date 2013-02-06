@@ -287,7 +287,7 @@ class EMPlot2DWidget(EMGLWidget):
 				for idx,image in enumerate(im):
 					l = [i for i in range(image.get_size())]
 					k = image.get_data_as_vector()
-					self.set_data([l,k],"Image "+str(idx))
+					self.set_data([l,k],filename+":"+str(idx))
 				
 		elif file_type == 'fp':
 			fin=file(filename)
