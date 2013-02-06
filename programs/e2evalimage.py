@@ -737,6 +737,9 @@ class GUIEvalImage(QtGui.QWidget):
 		except: self.squality.setValue(5)
 		
 	def redisplay(self):
+		
+		if self.incalc: return
+		
 		self.needredisp=False
 		self.busy=True
 		parms=self.parms[self.curset]
