@@ -194,6 +194,7 @@ namespace EMAN
 		{
 			TypeDict d;
 			d.put("sigma", EMObject::EMDATA, "sigma value");
+			d.put("normimage", EMObject::EMDATA, "In conjunction with ignore0, the number of non zero values for each pixel will be stored in this image.");
 			d.put("ignore0", EMObject::INT, "if set, ignore zero value pixels");
 			return d;
 		}
@@ -203,10 +204,10 @@ namespace EMAN
 		static const string NAME;
 		
 	private:
-		EMData *sigma_image;
-		int *nimg_n0;
+		EMData *sigma_image,*normimage;
 		int ignore0;
 		int nimg;
+		int freenorm;
 	};
 
 	/** TomoAverager averages a list of volumes in Fourier space. It excludes values near zero

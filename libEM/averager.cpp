@@ -186,7 +186,7 @@ EMData * TomoAverager::finish()
 
 
 ImageAverager::ImageAverager()
-	: sigma_image(0), nimg_n0(0), ignore0(0), nimg(0)
+	: sigma_image(0), ignore0(0), normimage(0), freenorm(0), nimg(0)
 {
 
 }
@@ -216,10 +216,9 @@ void ImageAverager::add_image(EMData * image)
 		sigma_image = params.set_default("sigma", (EMData*)0);
 		ignore0 = params["ignore0"];
 
-		nimg_n0 = new int[image_size];
-		for (size_t i = 0; i < image_size; ++i) {
-			nimg_n0[i] = 0;
-		}
+		normimage = params.set_default("normimage", (EMData*)0);
+		if (ignore0 && normimage==0) { normimage=new EMData(nx,ny,nz); freenorm=1; }
+		if (normimage) normimage->to_zero();
 	}
 
 	float *result_data = result->get_data();
@@ -248,7 +247,7 @@ void ImageAverager::add_image(EMData * image)
 				if (sigma_image_data) {
 					sigma_image_data[j] += f * f;
 				}
-				nimg_n0[j]++;
+				normimage->set_value_at_fast(j,normimage->get_value_at(j)+1.0);
 			}
 		}
 	}
@@ -279,13 +278,14 @@ EMData * ImageAverager::finish()
 		}
 		else {
 			for (size_t j = 0; j < image_size; ++j) {
-				if (nimg_n0[j]>0) result_data[j] /= nimg_n0[j];
+				if (normimage->get_value_at(j)>0) result_data[j] /= normimage->get_value_at(j);
 			}
 			if (sigma_image) {
 				float * sigma_image_data = sigma_image->get_data();
 
 				for (size_t j = 0; j < image_size; ++j) {
-					float f1 = sigma_image_data[j] / nimg_n0[j];
+					float f1 = 0;
+					if (normimage->get_value_at(j)>0) f1=sigma_image_data[j] / normimage->get_value_at(j);
 					float f2 = result_data[j];
 					sigma_image_data[j] = sqrt(f1 - f2 * f2);
 				}
@@ -299,11 +299,7 @@ EMData * ImageAverager::finish()
 	}
 	result->set_attr("ptcl_repr",nimg);
 
-	if( nimg_n0 )
-	{
-		delete [] nimg_n0;
-		nimg_n0 = 0;
-	}
+	if (freenorm) { delete normimage; normimage=(EMData*)0; }
 
 	return result;
 }
