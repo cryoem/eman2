@@ -1062,7 +1062,7 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 	int ampweight = params.set_default("ampweight",0);
 	int zeromask = params.set_default("zeromask",0);
 	float minres = params.set_default("minres",500.0f);
-	float maxres = params.set_default("maxres",2.0f);
+	float maxres = params.set_default("maxres",10.0f);
 
 	if (snrweight && snrfn) throw InvalidCallException("SNR weight and SNRfn cannot both be set in the phase comparator");
 
@@ -1256,7 +1256,7 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 	int nweight = params.set_default("nweight", 0);
 	int zeromask = params.set_default("zeromask",0);
 	float minres = params.set_default("minres",500.0f);
-	float maxres = params.set_default("maxres",2.0f);
+	float maxres = params.set_default("maxres",10.0f);
 
 	vector < float >fsc;
 	bool use_cpu = true;
