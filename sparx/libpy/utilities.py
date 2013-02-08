@@ -2831,11 +2831,11 @@ def generate_ctf(p):
 	"""
 	from EMAN2 import EMAN2Ctf
 
-	defocus = p[0]
-	cs = p[1]
-	voltage = p[2]
-	pixel_size = p[3]
-	bfactor = p[4]
+	defocus      = p[0]
+	cs           = p[1]
+	voltage      = p[2]
+	pixel_size   = p[3]
+	bfactor      = p[4]
 	amp_contrast = p[5]
 	
 	if defocus > 100:  # which means it is very likely in Angstrom, therefore we are using the old convention
@@ -2850,7 +2850,7 @@ def generate_ctf(p):
 		ctf.from_dict({"defocus":defocus, "cs":cs, "voltage":voltage, "apix":pixel_size, "bfactor":bfactor, "ampcont":amp_contrast})
 	else:
 		ctf.from_dict({"defocus":defocus, "cs":cs, "voltage":voltage, "apix":pixel_size, "bfactor":bfactor, "ampcont":amp_contrast,'dfdiff':p[6],'dfang':p[7]})
-		
+
 	return ctf
 
 def set_ctf(ima, p):
