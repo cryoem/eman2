@@ -238,7 +238,7 @@ def main():
 			sys.exit()
 		
 		nrefs = EMUtil.get_image_count(options.input)
-		
+		kk=0
 		tiltrange = tiltrangel
 		while tiltrange <tiltrangeu:
 			#print "tiltrage is", tiltrange
@@ -347,10 +347,21 @@ def main():
 							rfilecmd =  ' && mv ' + resultsfile + ' ' +  rootpath + '/' + options.path
 
 							cmd = cmd + alicmd + extractcmd + solutioncmd + rfilecmd
+							
+							if 'mpi' in options.parallel:
+								genpbs(cmd,kk)
+								#a=open('temp.pbs',r)
+								#a.write(cmd)
+								#a.close()
+							kk+=1
 
 						#print "\n\n\n*********************The command to execute is \n %s \n*********************\n" %(cmd)
 
-						os.system(cmd)
+						if 'mpi' in options.parallel:
+							
+							os.system('qsub temp'+str(kk)+'.pbs')
+						else:
+							os.system(cmd)
 
 					snr += snrch
 
@@ -589,6 +600,44 @@ def main():
 	E2end(logger)
 
 	return()
+
+
+
+
+
+def genpbs(cmd,kk):
+	lines = """#!/bin/bash
+#
+# This is an example PBS/Torque script for testing your EMAN2 MPI installation. Clearly you should
+# modify the number of nodes and ppn (processors per node) before running it on a cluster.
+#
+#PBS -l nodes=21:ppn=8
+#PBS -l walltime=47:59:00
+
+cd $PBS_O_WORKDIR
+
+cat $PBS_NODEFILE 
+
+#mpirun /home2/jgalaz/EMAN2/Python/bin/python mpi_test_basic.py > pbs.test.results
+#mpirun /home2/jgalaz/EMAN2/Python/bin/python mpi_test.py > pbs.test.results
+
+# NOTE : if you want to run an EMAN2 refinement or somesuch using PBS, you do NOT call mpirun directly
+# as in the above statment. Instead, you use the native --parallel option, and EMAN2 will call
+# mpirun itself. The number of processors you specify to the --parallel option MUST match the
+# number of processors (nodes * ppn) you specify above in the PBS lines. Note the --parallel option
+# in the e2refine.py command below. This is otherwise a normal EMAN2 command.
+
+# This is just a commented out example. NOTE: the 'e2bdb.py -c' command at the end of the script. THIS IS CRITICAL !
+# You MUST also run 'e2bdb.py -c' manually on the head-node before issuing the 'qsub' command, and should not work
+# on any files in the project directory from the head node while the job is running. See the Wiki for more."""
+	lines+= '\n\ne2bdb.py - c &&' + cmd + '\n'
+	
+	a=open('temp'+str(kk)+'.pbs','w')
+	a.write(lines)
+	a.close()
+
+	return
+
 
 
 def color(value):
