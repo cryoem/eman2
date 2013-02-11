@@ -95,7 +95,7 @@ def main():
 	parser.add_argument("--inixforms",type=str,help="directory containing a dict of transform to apply before reference generation", default="", guitype='dirbox', dirbasename='spt_|sptsym_', row=7, col=0,rowspan=1, colspan=2, nosharedb=True, mode='breaksym')
 	parser.add_argument("--breaksym",action="store_true", help="Break symmetry. Do not apply symmetrization after averaging", default=False, guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, nosharedb=True, mode=',breaksym[True]')
 	
-	parser.add_argument("--groups",type=int,help="This parameter is EXPERIMENTAL. It's the number of final averages you want from the set after ONE iteration of alignment. Particles will be separated in groups based on their correlation to the reference",default=0)
+	parser.add_argument("--groups",type=int,help="WARNING: This parameter is EXPERIMENTAL, and will only work if --iter=1. It's the number of final averages you want from the set after ONE iteration of alignment. Particles will be separated in groups based on their correlation to the reference",default=0)
 	parser.add_argument("--randomizewedge",action="store_true", help="This parameter is EXPERIMENTAL. It randomizes the position of the particles BEFORE alignment, to minimize missing wedge bias and artifacts during symmetric alignment where only a fraction of space is scanned", default=False,)
 	parser.add_argument("--savepreprocessed",action="store_true", help="Will save stacks of preprocessed particles (one for coarse alignment and one for fine alignment if preprocessing options are different).", default=False,)
 	parser.add_argument("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False, guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
@@ -113,11 +113,24 @@ def main():
 	#parser.add_argument("--odd", default=False, help="Used by EMAN2 when running eotests. Includes only odd numbered particles in class averages.", action="store_true")
 	#parser.add_argument("--even", default=False, help="Used by EMAN2 when running eotests. Includes only even numbered particles in class averages.", action="store_true")
 	
+	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
-	(options, args) = parser.parse_args()
+	'''
+	Parameters to compensate for the missing wedge using --cpm=fsc.tomo
+	'''
+	parser.add_argument("--wedgeangle",type=float,help="Missing wedge angle",default=60.0, guitype='floatbox', row=2, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--wedgei",type=float,help="Missingwedge begining", default=0.05)
+	parser.add_argument("--wedgef",type=float,help="Missingwedge ending", default=0.5)
 
+	(options, args) = parser.parse_args()
+	print "Wedge paramters ARE defined, see", options.wedgeangle, options.wedgei, options.wedgef
+
+
+	if int(options.groups) > 1 and int(options.iter) > 1:
+		print "ERROR: --groups cannot be > 1 if --iter is > 1."
+		
 	#print help 
 	if options.input == None:
 		parser.print_help()
@@ -309,7 +322,7 @@ def main():
 
 					# Unfortunately this tree structure limits the parallelism to the number of pairs at the current level :^(
 					task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
-						options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,transform,options.verbose-1,options.randomizewedge)
+						options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,transform,options.verbose-1,options.randomizewedge,options.wedgeangle,options.wedgei,options.wedgef)
 					tasks.append(task)
 
 				# Start the alignments for this level
@@ -344,7 +357,7 @@ def main():
 				else:
 					transform = None
 				task=Align3DTask(ref,["cache",options.input,p],p,"Ptcl %d in iter %d"%(p,it),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
-					options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,transform,options.verbose-1,options.randomizewedge)
+					options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,transform,options.verbose-1,options.randomizewedge,options.wedgeangle,options.wedgei,options.wedgef)
 				tasks.append(task)
 			
 			# start the alignments running
@@ -731,6 +744,7 @@ def get_results(etc,tids,verbose):
 
 
 def wedgestats(volume,angle, wedgei, wedgef):
+	print "RECEIEVE, in wedge statistics, angle, wedgei and wedgef", angle, wedgei, wedgef
 	vfft = volume.do_fft()
 	wedge = vfft.getwedge(angle, wedgei, wedgef)		
 	mean = vfft.get_attr('spt_wedge_mean')
@@ -741,7 +755,7 @@ def wedgestats(volume,angle, wedgei, wedgef):
 class Align3DTask(EMTask):
 	"""This is a task object for the parallelism system. It is responsible for aligning one 3-D volume to another, with a variety of options"""
 
-	def __init__(self,fixedimage,image,ptcl,label,mask,normproc,preprocess,lowpass,highpass,npeakstorefine,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,transform,verbose,randomizewedge):
+	def __init__(self,fixedimage,image,ptcl,label,mask,normproc,preprocess,lowpass,highpass,npeakstorefine,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,transform,verbose,randomizewedge,wedgeangle,wedgei,wedgef):
 		"""fixedimage and image may be actual EMData objects, or ["cache",path,number]
 	label is a descriptive string, not actually used in processing
 	ptcl is not used in executing the task, but is for reference
@@ -751,7 +765,7 @@ class Align3DTask(EMTask):
 		data={"fixedimage":fixedimage,"image":image}
 		EMTask.__init__(self,"ClassAv3d",data,{},"")
 
-		self.options={"ptcl":ptcl,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"lowpass":lowpass,"highpass":highpass,"npeakstorefine":npeakstorefine,"align":align,"aligncmp":aligncmp,"ralign":ralign,"raligncmp":raligncmp,"shrink":shrink,"shrinkrefine":shrinkrefine,"transform":transform,"verbose":verbose,"randomizewedge":randomizewedge}
+		self.options={"ptcl":ptcl,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"lowpass":lowpass,"highpass":highpass,"npeakstorefine":npeakstorefine,"align":align,"aligncmp":aligncmp,"ralign":ralign,"raligncmp":raligncmp,"shrink":shrink,"shrinkrefine":shrinkrefine,"transform":transform,"verbose":verbose,"randomizewedge":randomizewedge,"wedgeangle":wedgeangle,"wedgei":wedgei,"wedgef":wedgef}
 	
 	def execute(self,callback=None):
 		"""This aligns one volume to a reference and returns the alignment parameters"""
@@ -849,19 +863,20 @@ class Align3DTask(EMTask):
 			print "Align size %d,  Refine Align size %d"%(sfixedimage["nx"],s2fixedimage["nx"])
 
 		if options["aligncmp"][0] == "fsc.tomo" or options["raligncmp"][0] == "fsc.tomo":
-			retr = wedgestats(simage,options.wedgeangle,options.wedgei,options.wedgef)
+			print "THE FSC.TOMO comparator is on", 
+			retr = wedgestats(simage,options['wedgeangle'],options['wedgei'],options['wedgef'])
 			simage['spt_wedge_mean'] = retr[0]
 			simage['spt_wedge_sigma'] = retr[1]
 			
-			retr = wedgestats(sfixedimage,options.wedgeangle,options.wedgei,options.wedgef)
+			retr = wedgestats(sfixedimage,options['wedgeangle'],options['wedgei'],options['wedgef'])
 			sfixedimage['spt_wedge_mean'] = retr[0]
 			sfixedimage['spt_wedge_sigma'] = retr[1]
 			
-			retr = wedgestats(s2image,options.wedgeangle,options.wedgei,options.wedgef)
+			retr = wedgestats(s2image,options['wedgeangle'],options['wedgei'],options['wedgef'])
 			s2image ['spt_wedge_mean'] = retr[0]
 			s2image['spt_wedge_sigma'] = retr[1]
 			
-			retr = wedgestats(s2fixedimage,options.wedgeangle,options.wedgei,options.wedgef)
+			retr = wedgestats(s2fixedimage,options['wedgeangle'],options['wedgei'],options['wedgef'])
 			s2fixedimage['spt_wedge_mean'] = retr[0]
 			s2fixedimage['spt_wedge_sigma'] = retr[1]
 			
