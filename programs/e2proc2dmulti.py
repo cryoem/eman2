@@ -102,9 +102,9 @@ def main():
 
 	for infile in args:
 		if options.postfix!=None :
-			if infile[:4].lower()=="bdb:" : outfile=infile+postfix
-			elif "." in infile : outfile=infile.rsplit(".",1)[0]+postfix+"."+infile.rsplit(".",1)[1]
-			else : outfile=infile+postfix
+			if infile[:4].lower()=="bdb:" : outfile=infile+options.postfix
+			elif "." in infile : outfile=infile.rsplit(".",1)[0]+options.postfix+"."+infile.rsplit(".",1)[1]
+			else : outfile=infile+options.postfix
 		else : outfile=infile
 		
 		if options.verbose>2:
