@@ -72,7 +72,9 @@ def main():
 	parser.add_argument("--apix",type=float,help="Use THIS A/pix value to display the tomogram (if filtering) and to write to the header of the extracted subvolumes, instead of using the apix value one stored in the tomogram's header.",default=0.0, guitype='floatbox', row=3, col=0, rowspan=1, colspan=1, mode="boxing['self.pm().getAPIX()']")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--helixboxer",action="store_true",default=False,help="Helix Boxer Mode", guitype='boolbox', row=2, col=2, rowspan=1, colspan=1, mode="boxing")
-		
+	parser.add_argument("--normproc",type=str,help="""Normalization processor applied to particles before alignment. Default is None. 
+													Use --normproc=normalize or --normproc=normalize.edgemean.""", default=None)
+
 	#parser.add_argument('--bin', type=int, default=1, help="""Specify the binning/shrinking factor you want to use (for X,Y and Z) when opening the tomogram for boxing. \nDon't worry, the sub-volumes will be extracted from the UNBINNED tomogram. \nIf binx, biny or binz are also specified, they will override the general bin value for the corresponding X, Y or Z directions""", guitype='intbox', row=3, col=1, rowspan=1, colspan=1, mode="boxing")
 	
 	parser.add_argument('--shrink', type=int, default=1, help="""Specify the binning/shrinking factor you want to use (for X,Y and Z) when opening the tomogram for boxing. \nDon't worry, the sub-volumes will be extracted from the UNBINNED tomogram.""", guitype='intbox', row=3, col=1, rowspan=1, colspan=1, mode="boxing")
@@ -321,8 +323,9 @@ def unbinned_extractor(boxsize,x,y,z,cshrink,contrast,center,tomogram=argv[1]):
 		print "The extracted particle has this boxsize", e['nx'],e['ny'],e['nz']
 		print "And the following mean BEFORE normalization", e['mean']
 		
-		e.process_inplace('normalize.edgemean')
-		e['e2spt_normalize.edgemean'] = 'yes'
+		if options.normproc:
+			e.process_inplace(options.normproc)
+			e['e2spt_normalization'] = options.normproc
 
 		return(e)
 
@@ -901,12 +904,14 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		if self.yshort:
 			if self.data!=None:
 				r=self.data.get_clip(Region(x-bs/2,z-bs/2,y-bs/2,bs,bs,bs))
-				r.process_inplace("normalize.edgemean")
+				if options.normproc:
+					r.process_inplace(options.normproc)
 				r.process_inplace("xform",{"transform":Transform({"type":"eman","alt":90.0})})
 				r.process_inplace("xform.mirror",{"axis":"z"})
 			elif self.datafile!=None:
 				r=EMData(self.datafile,0,0,Region(x-bs/2,z-bs/2,y-bs/2,bs,bs,bs))
-				r.process_inplace("normalize.edgemean")
+				if options.normproc:
+					r.process_inplace(options.normproc)
 				r.process_inplace("xform",{"transform":Transform({"type":"eman","alt":90.0})})
 				r.process_inplace("xform.mirror",{"axis":"z"})
 			else: return None
@@ -922,8 +927,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			r["apix_x"]=self.apix
 			r["apix_y"]=self.apix
 			r["apix_z"]=self.apix
-			
-		r.process_inplace("normalize.edgemean")
+		
+		if options.normproc:
+			r.process_inplace(options.normproc)	
 		return r
 
 	def get_slice(self,n,xyz):
