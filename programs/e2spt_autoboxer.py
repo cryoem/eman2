@@ -57,16 +57,22 @@ def main():
 															through --template are in a tight box. The size""",default=False)
 	parser.add_argument("--rotationalsearch", action='store_true', help="""At each translation position, vary euler angles as well when searching for particles.""",default=False)
 	
+	parser.add_argument("--pruneccc", action='store_true', help="""Pruned based on ccc mean and sigma.""",default=False)
+	parser.add_argument("--invert", action='store_true', help="""Multiply tomogram subsections my -1 to invert the contrast BEFORE looking for particles.""",default=False)
+	parser.add_argument("--prunerepeated", action='store_true', help="""Multiply tomogram subsections my -1 to invert the contrast BEFORE looking for particles.""",default=False)
+
+
+	
 	parser.add_argument("--tomogram", type=str, help="Name of the tomogram.",default='')
-	parser.add_argument("--goldstack", type=str, help="Name of the stack containing a few gold particles picked from the tomogram.",default='')
+	parser.add_argument("--goldstack", type=str, help="Name of the stack containing a few gold particles picked from the tomogram.",default=None)
 	parser.add_argument("--ptclstack", type=str, help="""Name of the stack containing a few sample particles picked from the tomogram, used to create an initial template.
-															with which to search for particles throughout the tomogram.""",default='')
+															with which to search for particles throughout the tomogram.""",default=None)
 	
 	parser.add_argument("--template", type=str, help="Name of the file containing the template to search for particles throughout the tomogram.",default='')
 
 	parser.add_argument("--backgroundstack", type=str, help="""Name of the stack containing a few boxes picked from regions of the tomogram where there where no particles, 
-															no gold, and no carbon.""",default='')
-	parser.add_argument("--carbonstack", type=str, help="Name of the stack containing a few boxes picked from the grid hole (or carbon).",default='')
+															no gold, and no carbon.""",default=None)
+	parser.add_argument("--carbonstack", type=str, help="Name of the stack containing a few boxes picked from the grid hole (or carbon).",default=None)
 
 	parser.add_argument("--output", type=str, help="Name to output the auto-boxed particles.",default='')
 	parser.add_argument("--outputboxsize", type=int, help="Size of the box to put the extracted particles in, and amount by which the subregions will overlap, when searching for particles in the tomogram.", default=0)
@@ -118,9 +124,9 @@ def main():
 		
 	logger = E2init(sys.argv, options.ppid)
 	
-	if not options.template and not options.ptclstack:
-		print "TERMINATING: You must provide either a template, through --template, or a stack of particles to build one, through --ptclstack."
-		sys.exit()
+	#if not options.template and not options.ptclstack:
+	#	print "TERMINATING: You must provide either a template, through --template, or a stack of particles to build one, through --ptclstack."
+	#	sys.exit()
 	
 	print "THE particle radius at reading is!", options.ptclradius
 	'''
@@ -165,7 +171,7 @@ def main():
 	
 	options.path = rootpath + '/' + options.path
 
-	tomo = EMData(options.tomogram,0)
+	tomo = EMData(options.tomogram,0)	
 	
 	if options.apix:
 		tomo['apix_x'] = options.apix
@@ -181,7 +187,7 @@ def main():
 
 		tomo.write_image(tomogramfile,0)
 		tomo = EMData(options.tomogram,0)
-		
+	
 	'''
 	Shrink tomogram (if required), then load it.
 	'''
@@ -200,6 +206,11 @@ def main():
 	tomox = tomo['nx']
 	tomoy = tomo['ny']
 	tomoz = tomo['nz']
+	
+	
+	tomogramapix = tomo['apix_x']
+	if options.apix:
+		tomogramapix = options.apix
 	
 	yshort=False
 	
@@ -359,9 +370,51 @@ def main():
 				expandedtemplateboxsize = x0
 		
 	elif options.ptclstack:
-		ret = generateref(options)
-		options = ret[0]
-		expandedtemplateboxsize = ret[1]
+		#ret = generateref(options)
+		#options = ret[0]
+		#expandedtemplateboxsize = ret[1]
+		
+		print "\n\n\n\n YOU HAVE PROVIDED A PTCLSTACK!!!!"
+		print "\n\n\n"
+		ptclhdr = EMData(options.ptclstack,0,True)
+		box = ptclhdr['nx']
+		outputboxsize = box
+		if options.outputboxsize:
+			outputboxsize == options.outputboxsize
+		
+		#genrefpath = options.path + "/genref"
+		#os.system('mkdir ' + genrefpath)
+		cmd = "cd " + options.path + " && e2spt_classaverage.py --path=genref --input=../" + options.ptclstack + " --output=" + options.ptclstack.replace('.hdf','_sphavg.hdf') + " --npeakstorefine=10 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_translate_3d:search=" +str( int(box/4) ) + ":delta=15:dphi=15:verbose=0 --parallel=thread:7 --ralign=refine_3d_grid:delta=5:range=15:search=2 --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --savesteps --saveali --normproc=normalize.mask --nocenterofmass"
+		if options.verbose:
+			print "I will generate a template from --particlestack by executing the following command:", cmd
+	
+		os.system(cmd)
+		options.template = options.path + "/genref/" + options.ptclstack.replace('.hdf','_sphavg.hdf')
+		
+		
+	elif options.outputboxsize:
+		
+		if options.ptclradius:
+			outputboxsize = options.outputboxsize
+			a = EMData(outputboxsize,outputboxsize,outputboxsize)
+			a.to_one()
+			a.process_inplace('mask.sharp',{'outer_radius':options.ptclradius})
+			a['apix_x'] = tomogramapix
+			a['apix_y'] = tomogramapix
+			a['apix_z'] = tomogramapix
+
+			a.write_image(options.path + '/sph_template.hdf',0)
+			#if not options.invert:
+			#	a.mult(-1)
+				
+			options.template = options.path + '/sph_template.hdf'
+		
+		else:
+			print "ERROR: You didn't provide --template or --ptclstack. In the absence of these, you must provide --outputboxsize AND --ptclradius."
+			sys.exit()
+	else:
+		print "ERROR: You didn't provide --template or --ptclstack. In the absence of these, you must provide --outputboxsize."
+		sys.exit()
 			
 	'''
 	Scan the tomogram to extract subvolumes to compare against the template
@@ -371,14 +424,14 @@ def main():
 	z = tomoz
 	
 	print "!!!!Original tomo dimensions are", x,y,z
-	tomogramapix = tomo['apix_x']
-	if options.apix:
-		tomogramapix = options.apix
+	
 	
 	print "The template is", options.template
 	
 	transtemplate = EMData(options.template,0)
 	transtemplateapix = transtemplate['apix_x']
+	print "With an apix of", transtemplateapix
+	
 	'''
 	Calculate the scale between the reference model and the data, round to the nearest integer to be able to use math.meanshrink (which preserves features),
 	then calculate the scale factor again and use xform.scale, to get the exact scaling, even if features might become a bit distorted by xform.scale
@@ -411,11 +464,12 @@ def main():
 	
 
 	
-	if options.verbose:
-		print "The finer scale factor to apply is", scalefactor
+	#if options.verbose:
+	print "The finer scale factor to apply is", scalefactor
 	
-	transtemplate.process_inplace("xform.scale",{"scale":scalefactor,"clip":expandedtemplateboxsize})
-	expandedtemplateboxsize = transtemplate['nx']
+	if float(scalefactor) != 1.0:
+		transtemplate.process_inplace("xform.scale",{"scale":scalefactor,"clip":expandedtemplateboxsize})
+		expandedtemplateboxsize = transtemplate['nx']
 	#transtemplate.process_inplace("xform.scale",{"scale":1,"clip":transtemplatebox})
 	
 	print "\n\n\n AAAAAAAAAAAA\n after all necessary APIX MATCHING, the expandedboxsize of the template is", expandedtemplateboxsize
@@ -449,15 +503,20 @@ def main():
 	
 	print "\n\n\nRRRRRRRRR\nThe particle radius in pixels is %f \nRRRRRRRRn\n\n" %(ptclradius)
 	
-	transtemplate = transtemplate.rotavg_i()
+	transtemplatename = options.template
+	if options.ptclstack:
+		transtemplate.process_inplace('mask.sharp',{'outer_radius':ptclradius})
+		transtemplate = transtemplate.rotavg_i()
 	
-	if options.templatethreshold:
-		transtemplate.process_inplace('threshold.binary',{'value':options.templatethreshold})
+		if options.templatethreshold:
+			transtemplate.process_inplace('threshold.binary',{'value':options.templatethreshold})
 	
-	transtemplatename = options.template.split('/')[-1].replace('.','_sphavg.')
-	if options.path not in transtemplatename:
-		transtemplatename = options.path + '/' + transtemplatename
-	transtemplate.write_image(transtemplatename,0)
+		transtemplatename = options.template.split('/')[-1].replace('.','_sphavg.')
+		if options.path not in transtemplatename:
+			transtemplatename = options.path + '/' + transtemplatename
+		transtemplate.write_image(transtemplatename,0)
+	
+	
 	
 	regionboxsize = z
 	if yshort:
@@ -650,98 +709,204 @@ def main():
 
 	print "the len of data WAS", len(data)
 	
-	coeffs = []
-	for d in range(len(data)):
-		coeffs.append(data[d][0])
+
+	'''
+	bg_stack_mean=0
+	bg_stack_sigma=0
+	if options.backgroundstack:
+		ret=meancalc(options.backgroundstack)
+		bg_stack_mean=ret[0]
+		bg_stack_sigma=ret[1]
+	
+	gold_stack_mean=0
+	gold_stack_sigma=0
+	if options.goldstack:
+		gold=meancalc(options.goldstack)
+		gold_stack_mean=ret[0]
+		gold_stack_sigma=ret[1]
+	
+	carb_stack_mean=0
+	carb_stack_sigma=0
+	if options.cabonstack:
+		ret=meancalc(options.carbonstack)
+		carb_stack_mean=ret[0]
+		carb_stack_sigma=ret[1]
+	'''
+	
+	lendata1=len(data)
+	if options.backgroundstack:
+		print "BG Stack to send is", options.backgroundstack
+		ret = meancalc(options,data,options.backgroundstack,tag='background')
+		data=ret[0]
+		lendata2=len(data)
+		pruned= lendata1-lendata2
+		print "These many particles were pruned using the background stack",pruned
+	
+	lendata1=len(data)
+	if options.carbonstack:
+		print "CARBON Stack to send is", options.carbonstack
+		ret = meancalc(options,data,options.carbonstack,tag='carbon')
+		data=ret[0]
+		lendata2=len(data)
+		pruned= lendata1-lendata2
+		print "These many particles were pruned using the carbon stack",pruned
+	
+	lendata1=len(data)
+	if options.goldstack:
+		print "GOLD Stack to send is", options.goldstack
+		ret = meancalc(options,data,options.goldstack,tag='gold')
+		data=ret[0]
+		lendata2=len(data)
+		pruned= lendata1-lendata2
+		print "These many particles were pruned using the gold stack",pruned
+	
+	
+	
+	
+	
+	
+	
+	'''
+	Prune particles based on correlation. Peaks in correlation should be representative of particles, and only N of those
+	peaks are kept for non-overlapping boxes when scanning sub-regions of the tomogram, based on --concentrationfactor .
+	These can be further pruned by eliminating particles that deviate a lot from the mean correlation of the selected peaks.
+	'''
+	
+	if options.pruneccc:
+	
+		coeffs = []
+		for d in range(len(data)):
+			coeffs.append(data[d][0])
 		
-	coeffsmean = numpy.mean(coeffs, dtype=numpy.float64)	
-	coeffssigma = numpy.std(coeffs, dtype=numpy.float64)
+		coeffsmean = numpy.mean(coeffs, dtype=numpy.float64)	
+		coeffssigma = numpy.std(coeffs, dtype=numpy.float64)
+		
+		#print "Coeffs are", coeffs
+		print "These many ptcls before ccc pruning", len(data)
+		ncoeffs = len(coeffs)
+		topncoeffs = int(ncoeffs*(0.05))
+		print "Therefore, 5% are", topncoeffs
+		topcoeffs = coeffs[:topncoeffs]
+		bottomcoeffs = coeffs[topncoeffs:]
+		print "The top coeffs are", topcoeffs
+		print "And the len of bottom coeffs are", len(bottomcoeffs)
+		
+		print "The sum of bottom and top coeffs should equal the len of data", len(data), len(topcoeffs) + len(bottomcoeffs)
+		
+		print "\n\n\n\nThe mean and sigma of the datas CCC", coeffsmean, coeffssigma
+		print "\n\n\n\nWhereas the max and the min of the data's ccc are CCC", max(coeffs), min(coeffs)
+		print "\n\n\n\n"
+		lowerbound = coeffsmean + coeffssigma * 2.0
+		#upperbound = coeffsmean + coeffssigma * 1.0
+		upperbound = max(coeffs)
+		#print "Therefore, one sigma away, the lower and upper bounds are", lowerbound, upperbound
 	
-	print "The mean and sigma of the data is", coeffsmean, coeffssigma
-	print "Whereas the max and the min are", max(coeffs), min(coeffs)
-	lowerbound = coeffsmean - coeffssigma * 1.5
-	upperbound = coeffsmean + coeffssigma * 0.5
-	print "Therefore, one sigma away, the lower and upper bounds are", lowerbound, upperbound
+		removed_count=0
+		conserved_count=0
+		
+		pruneddata = []
+		print "Will now do correlation coefficient based pruning"	
+		for d in data:
+			#print "The data element to examine", d
+			coeff = d[0]
+			#print "This is the coeff to examine", coeff
+			if coeff < lowerbound or coeff > upperbound:
+				removed_count+=1
+				data.remove(d)
+				coeffs.remove(coeff)
+				print "One element was removed because it has coeff < lowerbound or coeff > upperbound", coeff, lowerbound, upperbound
+			elif coeff in coeffs and coeff in bottomcoeffs:
+				coeffs.remove(coeff)
+				data.remove(d)
+				removed_count+=1
+				print "Element removed because coeff was in bottomcoeffs", coeff
+			elif coeff in coeffs and coeff not in topcoeffs:
+				coeffs.remove(coeff)
+				data.remove(d)
+				removed_count+=1
+				print "Element removed because coeff was in top coeff", coeff
+			else:
+				conserved_count+=1
+				print "not removed", coeff
+				if d not in pruneddata:
+					pruneddata.append(d)
+			print "removed count", removed_count
+			print "preserved count", conserved_count
 	
-	count=0
-	for d in data:
-		#print "The data element to examine", d
-		coeff = d[0]
-		#print "This is the coeff to examine", coeff
-		if coeff < lowerbound or coeff > upperbound:
-			count+=1
-			data.remove(d)
-			print "One element was removed. Data len is now", len(data)
-	
-	print "I have pruned out these many based on mean and sigma statistics", count
-	print "And therefore data now is", len(data)
+		print "I have pruned out these many based on mean and sigma statistics", count
+		print "And therefore data now is", len(data)
+		print "But pruned data is more accurately", len(pruneddata)
 	
 	if options.subsettrans:
 		data = data[0:options.subsettrans]
 		print "I Have taken a subset of the data, see", options.subsettrans, len(data)
 		
 		#print "The sorted subset of data is", data
-	print "I will now see if there are repeated elements"
 	
-	elementstoremove = []
-	for d in range(len(data)):
-		dvector = numpy.array( [ data[d][1][0],data[d][1][1],data[d][1][2] ] )
-		dcoeff = data[d][0]
-		#print"This is the d vector and its coeff", dvector, dcoeff
-		for e in range(d+1,len(data)):
-			evector = numpy.array( [ data[e][1][0],data[e][1][1],data[e][1][2] ] )
-			ecoeff = data[e][0]
-			#if options.verbose:
-				#print ''
-				#print "The elements to compare are", dvector,evector
-				#print "Their coeffs are", dcoeff, ecoeff
-								
-			angle = numpy.degrees( numpy.arccos( numpy.dot(dvector,evector) / ( numpy.dot(evector,evector) * numpy.dot(dvector,dvector) ) ))
-			rmsd = numpy.linalg.norm(dvector - evector)
-			#print "Their rmsd is", rmsd
-			
-			if rmsd < ptclradius*2.0:
-				#print "\n\n\nPPPPPPPP\n The particle is too close to another one or was already picked!!! %s, %s \nPPPPPPPP\n\n\n" %(elementvector,newvector)
-				#pp = 1
-				#print "And PP is ", pp
-				#if rmsd < ptclradius:
-					#print "In fact, they seem to overlap at least in half of their volume; these are their coordinates", elementvector, newvector
-					#print "And PP is ", pp
-					#if rmsd == 0:
-					#	print ''
+	
+	if options.prunerepeated:
+		print "I will now see if there are repeated elements"
+		elementstoremove = []
+		for d in range(len(data)):
+			dvector = numpy.array( [ data[d][1][0],data[d][1][1],data[d][1][2] ] )
+			dcoeff = data[d][0]
+			#print"This is the d vector and its coeff", dvector, dcoeff
+			for e in range(d+1,len(data)):
+				evector = numpy.array( [ data[e][1][0],data[e][1][1],data[e][1][2] ] )
+				ecoeff = data[e][0]
+				#if options.verbose:
+					#print ''
+					#print "The elements to compare are", dvector,evector
+					#print "Their coeffs are", dcoeff, ecoeff
+									
+				angle = numpy.degrees( numpy.arccos( numpy.dot(dvector,evector) / ( numpy.dot(evector,evector) * numpy.dot(dvector,dvector) ) ))
+				rmsd = numpy.linalg.norm(dvector - evector)
+				#print "Their rmsd is", rmsd
 				
-				#print "which is lower than ptclradius*2, see", ptclradius*2	
-				#print "Actually; the coordinates for their center are identical, and therefore this is a repeated particle", elementvector, newvector
-				#print "And PP is ", pp
-				if dcoeff > ecoeff:
-					if data[e] not in elementstoremove:
-						#print "since evector has the lowest coeff, it will be added to elementstoremove", data[e]
-						elementstoremove.append(data[e])
-				elif ecoeff > dcoeff:
-					if data[d] not in elementstoremove:
-						#print "since dvector has the lowest coeff, it will be added to elementstoremove", data[d]
-						elementstoremove.append(data[d])
+				if rmsd < ptclradius*2.0:
+					#print "\n\n\nPPPPPPPP\n The particle is too close to another one or was already picked!!! %s, %s \nPPPPPPPP\n\n\n" %(elementvector,newvector)
+					#pp = 1
+					#print "And PP is ", pp
+					#if rmsd < ptclradius:
+						#print "In fact, they seem to overlap at least in half of their volume; these are their coordinates", elementvector, newvector
+						#print "And PP is ", pp
+						#if rmsd == 0:
+						#	print ''
+					
+					#print "which is lower than ptclradius*2, see", ptclradius*2	
+					#print "Actually; the coordinates for their center are identical, and therefore this is a repeated particle", elementvector, newvector
+					#print "And PP is ", pp
+					if dcoeff > ecoeff:
+						if data[e] not in elementstoremove:
+							#print "since evector has the lowest coeff, it will be added to elementstoremove", data[e]
+							elementstoremove.append(data[e])
+					elif ecoeff > dcoeff:
+						if data[d] not in elementstoremove:
+							#print "since dvector has the lowest coeff, it will be added to elementstoremove", data[d]
+							elementstoremove.append(data[d])
 	
-	#print "\nThese are the elements to remove", elementstoremove
-	#print "\nFrom this data", data			
-	#print "\n"
-	for ele in elementstoremove:
-		if ele in data:
-			#print "I will remove this element", ele
-			data.remove(ele)
-			#print "Therefore data now is", data
-	print "\n\nEEEEEEE\nBut I have removed these many %d\nEEEEEEEE\n\n" %( len(elementstoremove))							
+		#print "\nThese are the elements to remove", elementstoremove
+		#print "\nFrom this data", data			
+		#print "\n"
+		for ele in elementstoremove:
+			if ele in data:
+				#print "I will remove this element", ele
+				data.remove(ele)
+				#print "Therefore data now is", data
+		print "\n\nEEEEEEE\nBut I have removed these many %d\nEEEEEEEE\n\n" %( len(elementstoremove))							
+	
 	if options.verbose:
 		print "The program has finished scanning the tomogram for subvolumes"
-			
+		
+	data = pruneddata		
 	for i in data:
 		line = str(i[1][0]) + ' ' + str(i[1][1]) + ' ' + str(i[1][2]) + '\n'
 		if options.shrink > 1:
 			line = str(i[1][0] * options.shrink) + ' ' + str(i[1][1] * options.shrink) + ' ' + str(i[1][2] * options.shrink) + '\n'
 		if options.cshrink > 1:
 			line = str(i[1][0] * options.cshrink) + ' ' + str(i[1][1] * options.cshrink) + ' ' + str(i[1][2] * options.cshrink) + '\n'	
-		if options.verbose > 3:
-			print ''
+		#if options.verbose > 3:
+		#	print ''
 			#print "I have found a particle at these coordinates %s, and with this coefficient %f" %( line, i[0] )
 		lines.append(line)
 	
@@ -757,23 +922,81 @@ def main():
 
 	return()
 	
+
+def meancalc(options,data,stack,tag=''):
+	print "Stack RECEIVED is", stack
+	n=EMUtil.get_image_count(stack)
+	means=[]
+	maxs=[]
+	mins=[]
 	
-def generateref(options):
-	ptclhdr = EMData(options.ptclstack,0,True)
-	box = ptclhdr['nx']
-	outputboxsize = box
-	if options.outputboxsize:
-		outputboxsize == options.outputboxsize
+	for i in range(n):
+		a=EMData(stack,i,True)
+		meana=a['mean']
+		means.append(meana)
 		
-	#genrefpath = options.path + "/genref"
-	#os.system('mkdir ' + genrefpath)
-	cmd = "cd " + options.path + " && e2spt_classaverage.py --path=genref --input=../" + options.ptclstack + " --output=" + options.ptclstack.replace('.hdf','_avg.hdf') + " --npeakstorefine=10 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_translate_3d:search=" +str( int(box/4) ) + ":delta=15:dphi=15:verbose=0 --parallel=thread:7 --ralign=refine_3d_grid:delta=5:range=15:search=2 --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --savesteps --saveali --normproc=normalize.mask"
-	if options.verbose:
-		print "I will generate a template from --particlestack by executing the following command:", cmd
+		max=a['maximum']
+		maxs.append(max)
+		
+		min=a['minimum']
+		mins.append(min)
 	
-	os.system(cmd)
-	options.template = options.path + "/genref/" + options.ptclstack.replace('.hdf','_avg.hdf')
-	return(options, outputboxsize)
+	mean=numpy.mean(means, dtype=numpy.float64)
+	sigma_mean=numpy.std(means, dtype=numpy.float64)
+	
+	mean_maxs=numpy.mean(maxs, dtype=numpy.float64)
+	sigma_maxs=numpy.std(maxs, dtype=numpy.float64)
+	
+	mean_mins=numpy.mean(mins, dtype=numpy.float64)
+	sigma_mins=numpy.std(mins, dtype=numpy.float64)
+	
+	
+	for d in data:
+		#print "d in data is", d
+		#print "d[1] is ", d[1]
+		x=d[1][0]
+		y=d[1][1]
+		z=d[1][2]
+		#print "The actual coordinates used for extraction are", x, y, z
+		r = Region((2*x- options.outputboxsize)/2,(2*y-options.outputboxsize)/2, (2*z-options.outputboxsize)/2, options.outputboxsize, options.outputboxsize, options.outputboxsize)
+		e = EMData()
+		e.read_image(options.tomogram,0,False,r)
+		min = e['minimum']
+		max = e['maximum']
+		#print "min and max of ptcl are", min, max
+		if tag=='gold':
+			#print "tag is", tag
+			#print "and mean_maxs and sigma_maxs are", mean_maxs, sigma_maxs
+			#print "and mean_mins and sigma_mins are", mean_mins, sigma_mins
+			if max > (mean_maxs - (sigma_maxs * 2)) or min < (mean_mins - (sigma_mins * 2)):
+				data.remove(d)
+				print "particle REMOVED based on GOLD PRUNING!"
+		elif tag == 'background':
+			 if max < (mean_maxs + sigma_maxs):
+				data.remove(d)
+				print "particle REMOVED based on BACKGROUND PRUNING!"
+		elif tag == 'carbon':
+			print "NO cabron pruning method yet"			
+	
+	return (data,mean,sigma_mean,mean_maxs,sigma_maxs,mean_mins,sigma_mins)
+
+
+#def generateref(options):
+#	ptclhdr = EMData(options.ptclstack,0,True)
+#	box = ptclhdr['nx']
+#	outputboxsize = box
+#	if options.outputboxsize:
+#		outputboxsize == options.outputboxsize
+#		
+#	#genrefpath = options.path + "/genref"
+#	#os.system('mkdir ' + genrefpath)
+#	cmd = "cd " + options.path + " && e2spt_classaverage.py --path=genref --input=../" + options.ptclstack + " --output=" + options.ptclstack.replace('.hdf','_avg.hdf') + " --npeakstorefine=10 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=.02 --align=rotate_translate_3d:search=" +str( int(box/4) ) + ":delta=15:dphi=15:verbose=0 --parallel=thread:7 --ralign=refine_3d_grid:delta=5:range=15:search=2 --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --savesteps --saveali --normproc=normalize.mask"
+#	if options.verbose:
+#		print "I will generate a template from --particlestack by executing the following command:", cmd
+#	
+#	os.system(cmd)
+#	options.template = options.path + "/genref/" + options.ptclstack.replace('.hdf','_avg.hdf')
+#	return(options, outputboxsize)
 	
 
 def scanposition(options,template,outputboxsize,yshort,xi,yi,zi,xc,yc,zc,sbn):
