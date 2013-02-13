@@ -45,8 +45,10 @@ def main():
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_argument("--darkgain", action="store_true",help="Performs dark and gain correction on each frame as a preprocessing step. Default = false, but should usually be performed",default=False)
 	parser.add_argument("--align_frames", action="store_true",help="Perform whole-frame alignment of the stack",default=False)
+	parser.add_argument("--dark",type=str,default=None,help="Perform dark image correction using the specified image file")
+	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
+	parser.add_argument("--step",type=str,default="1,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 1,1 (first image skipped)")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
@@ -56,8 +58,34 @@ def main():
 		print usage
 		parser.error("Specify input DDD stack")
 
+	if options.dark : 
+		dark=EMData(options.dark,0)
+		dark.mult(1.0/99.0)
+		dark.process_inplace("threshold.clampminmax.nsigma",{"nsigma":2.0})
+	else : dark=None
+	if options.gain : 
+		gain=EMData(options.gain,0)
+		gain.mult(1.0/99.0)
+		gain.process_inplace("threshold.clampminmax.nsigma",{"nsigma":2.0})
+	else : gain=None
+	if dark!=None and gain!=None : gain.sub(dark)												# dark correct the gain-reference
+	if gain!=None : 
+		gain.process_inplace("math.reciprocal",{"zero_to":1.0})		 
+		gain.mult(1.0/gain["mean"])									# normalize so gain reference on average multiplies by 1.0
+
+	display(dark)
+	display(gain)
+
+	step=options.step.split(",")
+	if len(step)==3 : last=int(step[2])
+	else: last=-1
+	first=int(step[0])
+	step=int(step[1])
+	if options.verbose: print "Range={} - {}, Step={}".format(first,last,step)
+
 	# the user may provide multiple movies to process at once
 	for fsp in args:
+		if options.verbose : print "Processing ",fsp
 		outname=fsp.rsplit(".",1)[0]+"_proc.hdf"		# always output to an HDF file. Output contents vary with options
 		
 		n=EMUtil.get_image_count(fsp)
@@ -65,20 +93,15 @@ def main():
 			print "ERROR: {} has only {} images. Min 3 required.".format(fsp,n)
 			continue
 		
-		dark=EMData(fsp,0)
-		gain=EMData(fsp,0)
-		gain.sub(dark)												# dark correct the gain-reference
-		gain.process_inplace("math.reciprocal",{"zero_to":1.0})		# so we can multiply by the gain reference
-		gain.mult(1.0/gain["mean"])									# normalize so gain reference on average multiplies by 1.0
-		
-		for ii in xrange(2,n):
+		if last<=0 : flast=n
+		else : flast=last
+		for ii in xrange(first,flast,step):
 			im=EMData(fsp,ii)
 			
-			if options.darkgain:
-				im.sub(dark)
-				im.mult(gain)
+			if dark!=None : im.sub(dark)
+			if gain!=None : im.mult(gain)
 				
-				im.write_image(outname,ii-2)
+			im.write_image(outname,ii-first)
 
 if __name__ == "__main__":
 	main()

@@ -84,7 +84,7 @@ as not all elements are computed.
 		if len(args)<1 :
 			args.extend(sorted([ "bdb:%s#"%options.refine+i for i in db_list_dicts("bdb:"+options.refine) if "simmx" in i and len(i)==8]))
 			print ", ".join(args)
-		options.refs="bdb:%s#projections_%s"%(options.refine,args[0][-2:])
+		options.refs="bdb:%s#projections_%s"%(options.refine,args[-1][-2:])
 		print "refs: ",options.refs
 
 		db=db_open_dict("bdb:%s#register"%options.refine,True)
