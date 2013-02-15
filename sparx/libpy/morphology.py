@@ -278,13 +278,13 @@ def ctf_2(nx, ctf):
 		Output
 			a list of CTF2 values.
 	"""
-	dict = ctf.to_dict()
-	dz = dict["defocus"]
-	cs = dict["cs"]
-	voltage = dict["voltage"]
+	dict       = ctf.to_dict()
+	dz         = dict["defocus"]
+	cs         = dict["cs"]
+	voltage    = dict["voltage"]
 	pixel_size = dict["apix"]
-	b_factor = dict["bfactor"]
-	ampcont = dict["ampcont"]
+	b_factor   = dict["bfactor"]
+	ampcont    = dict["ampcont"]
 
 	ctf_2  = []
 	scl    = 1.0/pixel_size/nx
@@ -378,7 +378,8 @@ def ctf2_rimg(nx, ctf, sign = 1, ny = 0, nz = 1):
 def ctflimit(nx, defocus, cs, voltage, pix, w):
 	from math import sqrt
 	def g(x,z1,l,cs):
-		return (-0.5*z1*l*x**2+0.25*(cs*l*l*l*x**4))
+		xx = x*x
+		return (-0.5*z1*l+0.25*cs*l*l*l*xx)*xx
 
 	n = nx//2+1
 	#  Width of Fourier pixel
@@ -388,27 +389,27 @@ def ctflimit(nx, defocus, cs, voltage, pix, w):
 	fcycle = 1./(2*fwpix)
 	#Fourier period
 	fper = 1.0/fcycle
-	#print "Image size %6d,   pixel size  %7.4f  Width of Fourier pixel %7.5f   Fourier period  %8.5f "%(nx,pix,fwpix,fper)
+	print "Image size %6d,   pixel size  %7.4f  Width of Fourier pixel %7.5f   Fourier period  %8.5f "%(nx,pix,fwpix,fper)
 
 	
 	#CTF
 	l = 12.398/sqrt(voltage*(1022.0+voltage))  #  All units in A
-	z1 = defocus*10000
-	csa=cs*1.e-6*1.e10
-	q1=w/100.0
-	#print  nx, pix, z1,voltage, n,l,csa,q1
+	z1 = defocus*10000.0
+	csa=cs*1.e7
+	#q1=w/100.0
+	print  nx, pix, z1,voltage, n,l,csa
 	for ii in xrange(n-1,1,-1):
 		#print ii
 		xr = ii/float(n-1)/(2*pix)
 		x1 = xr - fwpix
 		x2 = xr + fwpix
 		ctfper = abs(  (g(x2,z1,l,csa)-g(x1,z1,l,csa)) / (x2-x1)  )
-		#print i,xr,x1,x2,ctfper
+		print ii,xr,x1,x2,ctfper
 		if(ctfper >1.e-8):
 			ctfper = 1.0/ctfper
-			#print i,fper,ctfper
+			print ii,fper,ctfper
 			if(ctfper >  fper):
-				#print  " Limiting frequency is:",xr,"  limiting resolution is:",1.0/xr
+				print  " Limiting frequency is:",xr,"  limiting resolution is:",1.0/xr
 				return  int(xr/fwpix+0.5),xr
 	return nx//2,1.0/(2*pix)
 
