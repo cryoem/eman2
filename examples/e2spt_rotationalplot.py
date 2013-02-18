@@ -79,13 +79,39 @@ def main():
 	parser.add_argument("--plotonly",action="store_true", help="Assumes vol1 and vol2 are already aligned with respect to each other and thus skips alignment.", default=False)
 	parser.add_argument("--normalizeplot",action="store_true", help="Make maximum correlation value on plot equal to 1 and scale all other values accordingly.", default=False)
 	parser.add_argument("--singleplot",action="store_true", help="Plot all alts, or each vertex of --icosvertices is on, in a single .png file.", default=False)
+	parser.add_argument("--plot2d",action="store_true", help="Produces 2D plot if both az and alt are varied.", default=False)
 	parser.add_argument("--only2dplot",action="store_true", help="Skips all plots, except 2dplot.", default=False)
 	parser.add_argument("--savetxt",action="store_true", help="Will save the values for each plot into .txt files.", default=False)
 
 	
 	(options, args) = parser.parse_args()
-		
+	
 	logger = E2init(sys.argv, options.ppid)
+	
+	
+	if options.only2dplot:
+		options.plot2d = True	
+	
+	
+	if options.mask: 
+		print "options.mask before parsing is", 
+		options.mask = parsemodopt(options.mask)
+		print "mask is", options.mask
+	
+	if options.preprocess: 
+		options.preprocess = parsemodopt(options.preprocess)
+		print "Preprocessor is", options.preprocess
+	
+	if options.lowpass: 
+		options.lowpass = parsemodopt(options.lowpass)
+		print "lowpass is", options.lowpass
+		
+	if options.highpass: 
+		options.highpass = parsemodopt(options.highpass)
+		print "Highpass is", options.highpass
+		
+	
+	
 	
 	if options.icosvertices and options.vols2:
 			print "ERROR: You can only use --icosvertices for volumes in --vols1. You must NOT supply --vols2."
@@ -237,12 +263,13 @@ def rotcccplot(v1,v2,options):
 					f.writelines(lines)
 					f.close()
 
-				lab = 'alt='+str(ele).zfill(3)
-				if options.icosvertices:
-					lab = 'vertex' + str(loop).zfill(2)
+				#lab = 'alt='+str(ele).zfill(3)
+				#if options.icosvertices:
+				#	lab = 'vertex' + str(loop).zfill(2)
 				if not options.only2dplot:
-					pylab.plot(azs, values[ele], linewidth=2, label=lab)
-					legend()
+					#pylab.plot(azs, values[ele], linewidth=2, label=lab)
+					pylab.plot(azs, values[ele], linewidth=2)
+					#legend()
 			
 				if options.normalizeplot:
 					print "Normalize plot is on"
@@ -257,7 +284,7 @@ def rotcccplot(v1,v2,options):
 							ylim([0,1.5])
 						
 				else:
-					ylim([0,1.5*max(values[ele])])
+					ylim([min(values[ele]),max(values[ele])])
 			
 				if not options.singleplot:
 					plotname = txtname.replace('.txt','.png')
@@ -276,7 +303,7 @@ def rotcccplot(v1,v2,options):
 				pylab.savefig(plotname)
 				clf()
 		
-			if not options.icosvertices:
+			if not options.icosvertices and options.plot2d:
 				print "I will call 2dplot"
 				twoD_plot(plotname,values,options)
 	return()
@@ -284,22 +311,7 @@ def rotcccplot(v1,v2,options):
 	
 def preprocess(vol,options):
 	print "Entering preprocessing function"
-	if options.mask: 
-		options.mask = parsemodopt(options.mask)
-		print "mask is", options.mask
-	
-	if options.preprocess: 
-		options.preprocess = parsemodopt(options.preprocess)
-		print "Preprocessor is", options.preprocess
-	
-	if options.lowpass: 
-		options.lowpass = parsemodopt(options.lowpass)
-		print "lowpass is", options.lowpass
-		
-	if options.highpass: 
-		options.highpass = parsemodopt(options.highpass)
-		print "Highpass is", options.highpass
-		
+
 	apix = vol['apix_x']
 	boxsize = vol['nx']
 	
@@ -314,9 +326,9 @@ def preprocess(vol,options):
 
 	# normalize
 	print "Normalizing and masking"
-	vol.process_inplace('normalize')
+	vol.process_inplace('normalize.edgemean')
 	vol.mult(mask)
-	vol.process_inplace('normalize')
+	vol.process_inplace('normalize.edgemean')
 	vol.mult(mask)
 
 	# preprocess
