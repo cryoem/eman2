@@ -76,17 +76,23 @@ def main():
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
-	parser.add_argument("--plotonly",action="store_true", help="Assumes vol1 and vol2 are already aligned with respect to each other and thus skips alignment.", default=False)
+	#parser.add_argument("--plotonly",type=str, help="Provide .txt files for a given alt, with 2 columns (az ccc) with the values to plot. For example, --plotonly=alt000.txt,alt180.txt", default=None)
 	parser.add_argument("--normalizeplot",action="store_true", help="Make maximum correlation value on plot equal to 1 and scale all other values accordingly.", default=False)
 	parser.add_argument("--singleplot",action="store_true", help="Plot all alts, or each vertex of --icosvertices is on, in a single .png file.", default=False)
 	parser.add_argument("--plot2d",action="store_true", help="Produces 2D plot if both az and alt are varied.", default=False)
 	parser.add_argument("--only2dplot",action="store_true", help="Skips all plots, except 2dplot.", default=False)
 	parser.add_argument("--savetxt",action="store_true", help="Will save the values for each plot into .txt files.", default=False)
 
+	parser.add_argument("--plotonly",type=str, help="FSC curves to plot in separate plots. Skips alignment and fsc curve generation. Provide .txt. files separated by commas --plotonly=file1.txt,file2.txt,file3.txt etc...", default=None)
+
+
 	
 	(options, args) = parser.parse_args()
-	
+
+	print "args are", args	
 	logger = E2init(sys.argv, options.ppid)
+	
+	#print "plotonly is", options.plotonly
 	
 	
 	if options.only2dplot:
@@ -109,45 +115,91 @@ def main():
 	if options.highpass: 
 		options.highpass = parsemodopt(options.highpass)
 		print "Highpass is", options.highpass
-		
-	
-	
 	
 	if options.icosvertices and options.vols2:
 			print "ERROR: You can only use --icosvertices for volumes in --vols1. You must NOT supply --vols2."
 			sys.exit()
 	
-
-	vols1=[]
-	if options.vols1:
-		vols1 = options.vols1.split(',')
 	
-	vols = vols1
+	if not options.plotonly:
+		vols1=[]
+		if options.vols1:
+			vols1 = options.vols1.split(',')
+	
+		vols = vols1
 
-	vols2=[]
-	if options.vols2:
-		vols2 = options.vols2.split(',')
-		vols = vols1 + vols2
+		vols2=[]
+		if options.vols2:
+			vols2 = options.vols2.split(',')
+			vols = vols1 + vols2
 		
-		for v in vols:
-			if '.hdf' not in v and '.mrc' not in v:
-				print "ERROR: The input volumes must all be either .hdf, .mrc or .rec (which is also just a .mrc file)."
-				sys.exit()
+			for v in vols:
+				if '.hdf' not in v and '.mrc' not in v:
+					print "ERROR: The input volumes must all be either .hdf, .mrc or .rec (which is also just a .mrc file)."
+					sys.exit()
 					
-			rotcccplot(v,v,options)
+				rotcccplot(v,v,options)
 	
-		for v1 in vols1:
-			for v2 in vols2:
-				rotcccplot(v1,v2,options)
+			for v1 in vols1:
+				for v2 in vols2:
+					rotcccplot(v1,v2,options)
 				
+		else:
+			for v in vols:
+				if '.hdf' not in v and '.mrc' not in v:
+					print "ERROR: The input volumes must all be either .hdf, .mrc or .rec (which is also just a .mrc file)."
+					sys.exit()
+	
+				rotcccplot(v,v,options)
 	else:
-		for v in vols:
-			if '.hdf' not in v and '.mrc' not in v:
-				print "ERROR: The input volumes must all be either .hdf, .mrc or .rec (which is also just a .mrc file)."
-				sys.exit()
+
+		files=options.plotonly.split(',')
+		print "Will plot these files", files
+		
+		values={}
+		
+		k=0
+		for F in files:
+			print "Working with this file now", F
+			azs=[]
+			valuesforthisfile=[]
+			
+			f=open(F,'r')
+			lines = f.readlines()
+			f.close()
+			
+			for line in lines:
+				print "Line is\n", line
+				az=line.split()[0]
+				azs.append(int(az))
+				value=line.split()[-1].replace('\n','')
+				valuesforthisfile.append(float(value))
+				print "Thus az, value are", az, value
 	
-			rotcccplot(v,v,options)
-	
+			#title=F.replace('.txt','')
+		
+			values.update({k:valuesforthisfile})
+			k+=1
+		plotter(options,azs,values,options.output.replace('.txt',''),None,k)
+		print "I have returned from the plotter"
+			
+		if options.singleplot:	
+			print "And single plot is on"
+			
+			plotname = options.output.replace('.txt','')
+			if not options.only2dplot:
+				print "While only 2D plot is off"
+				pylab.savefig(plotname)	
+				pylab.title(title)
+				pylab.ylabel('Correlation')
+				pylab.xlabel('Azimuth')	
+				pylab.savefig(plotname)
+				clf()
+		
+			if not options.icosvertices and options.plot2d:
+				print "I will call 2dplot"
+				twoD_plot(plotname,values,options)
+			
 	E2end(logger)
 			
 	return()
@@ -158,8 +210,6 @@ def rotcccplot(v1,v2,options):
 	nimg1 = EMUtil.get_image_count(v1)
 	print "The first file actually has this many images in it", nimg1
 	nimg2 = nimg1
-	
-	
 	
 	vol2 = EMData()
 	if v1 != v2:
@@ -209,93 +259,13 @@ def rotcccplot(v1,v2,options):
 			azs = ret[0]
 			values = ret[1]
 		
-			print "I have acquired azs and values and will proceed to plot."
-	
-			if options.normalizeplot:
-				for ele in values:
-					#val = values[ele]
-				
-					minv = min(values[ele])
-					maxv1 = max(values[ele])
-					#print "Min max before normalization was", minv,maxv1
-					for k in range(len(values[ele])):
-						values[ele][k] = values[ele][k] - minv 
-				
-					minv2 = min(values[ele])
-					maxv = max(values[ele])
-					#print "After subtracting min, the are", minv2,maxv
-					#print "Max before normalization was", maxv
-					for k in range(len(values[ele])):
-						values[ele][k] = values[ele][k] / maxv
-				
-					#print "after norm they are", min(values[ele]), max(values[ele])
-		
-			#print "Len of azs and values is", len(azs), len(values)
-			#print "therefore the az,values to plot are"
-		
-			vertextag=''
-		
-			for ele in values:
-				plotname = title.replace('.hdf','').replace('.mrc','') + '.png'
-				#alt = ele
-				#print "There's a plot for this alt", ele
-				#print "BASE plot name will be", plotname
-				#print "because title is", title
+			plotter(options,azs,values,title,title,ts,loop)
+			print "I have returned from the plotter"
 			
-				lines=[]
-		
-				vertextag = '_alt' + str(ele).zfill(3)
-				if ts:
-					vertextag = vertextag + '_' + str(loop).zfill(2)
-		
-				print "Vertextag is", vertextag
-			
-				txtname = plotname.replace('.png',vertextag + '.txt')
-				if options.savetxt:
-			
-					print "txtname is", txtname
-				
-					f = open(txtname,'w')
-					for i in range(len(values[ele])):
-						line = str(azs[i]) + ' ' + str(values[ele][i]) + '\n'
-						lines.append(line)
-						#print "Line to write is", line
-					f.writelines(lines)
-					f.close()
-
-				#lab = 'alt='+str(ele).zfill(3)
-				#if options.icosvertices:
-				#	lab = 'vertex' + str(loop).zfill(2)
-				if not options.only2dplot:
-					#pylab.plot(azs, values[ele], linewidth=2, label=lab)
-					pylab.plot(azs, values[ele], linewidth=2)
-					#legend()
-			
-				if options.normalizeplot:
-					print "Normalize plot is on"
-					ylim([0,1.5])
-					if options.icosvertices:
-						print "icosvertices is on"
-						if options.singleplot:
-							print "Single plot is on"
-							ylim([0,6])
-						else:
-							print "Single plot is NOT on"
-							ylim([0,1.5])
-						
-				else:
-					ylim([min(values[ele]),max(values[ele])])
-			
-				if not options.singleplot:
-					plotname = txtname.replace('.txt','.png')
-					pylab.title(title)
-					pylab.ylabel('Correlation')
-					pylab.xlabel('Azimuth')
-					pylab.savefig(plotname)
-					clf()
-		
 		if options.singleplot:	
+			print "And single plot is on"
 			if not options.only2dplot:
+				print "While only 2D plot is off"
 				pylab.savefig(plotname)	
 				pylab.title(title)
 				pylab.ylabel('Correlation')
@@ -307,6 +277,134 @@ def rotcccplot(v1,v2,options):
 				print "I will call 2dplot"
 				twoD_plot(plotname,values,options)
 	return()
+	
+	
+	
+def plotter(options,azs,values,title,ts,loop):
+
+	print "I have acquired azs and values and will proceed to plot."
+	
+	if options.normalizeplot:
+		for ele in values:
+			#val = values[ele]
+		
+			minv = min(values[ele])
+			maxv1 = max(values[ele])
+			#print "Min max before normalization was", minv,maxv1
+			for k in range(len(values[ele])):
+				values[ele][k] = values[ele][k] - minv 
+		
+			minv2 = min(values[ele])
+			maxv = max(values[ele])
+			#print "After subtracting min, the are", minv2,maxv
+			#print "Max before normalization was", maxv
+			for k in range(len(values[ele])):
+				values[ele][k] = values[ele][k] / maxv
+				
+			#print "after norm they are", min(values[ele]), max(values[ele])		
+			#print "Len of azs and values is", len(azs), len(values)
+			#print "therefore the az,values to plot are"
+		
+	vertextag=''
+	
+	mins = []
+	maxs = []
+	for ele in values:
+		plotname = title.replace('.hdf','').replace('.mrc','') + '.png'
+		#alt = ele
+		#print "There's a plot for this alt", ele
+		#print "BASE plot name will be", plotname
+		#print "because title is", title
+			
+		lines=[]
+		
+		vertextag = '_alt' + str(ele).zfill(3)
+		if ts:
+			vertextag = vertextag + '_' + str(loop).zfill(2)
+		
+		#print "Vertextag is", vertextag
+			
+		txtname = plotname.replace('.png',vertextag + '.txt')
+		if options.savetxt and not options.plotonly:
+			
+			#print "txtname is", txtname
+				
+			f = open(txtname,'w')
+			for i in range(len(values[ele])):
+				line = str(azs[i]) + ' ' + str(values[ele][i]) + '\n'
+				lines.append(line)
+				#print "Line to write is", line
+			f.writelines(lines)
+			f.close()
+
+		#lab = 'alt='+str(ele).zfill(3)
+		#if options.icosvertices:
+		#	lab = 'vertex' + str(loop).zfill(2)
+		if not options.only2dplot:
+			#pylab.plot(azs, values[ele], linewidth=2, label=lab)
+			
+			
+			#if loop == 0:
+			#	fig = plt.figure()
+			#	ax = fig.add_subplot(111)
+			#	
+			#	for tick in ax.xaxis.get_major_ticks():
+			#		tick.label1.set_fontsize(16)
+			#		tick.label1.set_fontweight('bold')
+			#	for tick in ax.yaxis.get_major_ticks():
+  			#		tick.label1.set_fontsize(16)
+ 			#		tick.label1.set_fontweight('bold')
+  		 	
+  		 	import matplotlib
+  		 	
+  		 	matplotlib.rc('xtick', labelsize=16) 
+			matplotlib.rc('ytick', labelsize=16) 
+  		 	
+  		 	font = {'weight':'bold','size':16}
+			matplotlib.rc('font', **font)
+  		 	
+			
+			pylab.plot(azs, values[ele], linewidth=2)
+			pylab.rc("axes", linewidth=2.0)
+		
+			pylab.xlabel('X Axis', fontsize=16, fontweight='bold')
+  			pylab.ylabel('Y Axis', fontsize=16, fontweight='bold')
+			
+			mins.append( min( values[ele] ) )
+			maxs.append( max( values[ele] ) )
+					
+			#legend()
+			
+		if options.normalizeplot:
+			print "Normalize plot is on"
+			ylim([0,1.5])
+			if options.icosvertices:
+				print "icosvertices is on"
+				if options.singleplot:
+					print "Single plot is on"
+					ylim([0,6])
+				else:
+					print "Single plot is NOT on"
+					ylim([0,1.5])
+						
+		#else:
+		#	ylim([min(values[ele]),max(values[ele])])
+		
+		ylim([ min(mins),max(maxs) ])
+			
+		if not options.singleplot:
+			plotname = txtname.replace('.txt','.png')
+			pylab.title(title)
+			pylab.ylabel('Correlation')
+			pylab.xlabel('Azimuth')
+			pylab.savefig(plotname)
+			print "I have saved the figure"
+			clf()	
+	
+	print "I am exiting the plotter"
+	return()
+	
+	
 	
 	
 def preprocess(vol,options):
