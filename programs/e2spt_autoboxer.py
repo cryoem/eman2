@@ -104,9 +104,9 @@ def main():
 															--gridradius and --gridoffest must be specified.""", default=False)
 	
 	parser.add_argument("--gridradius", type=int, help="Radius of the grid in pixels. Supply this parameter only if also supplying --mask.",default=0)
-	parser.add_argument("--gridoffset", type=str, help="""x,y coordinates for the center of the grid hole in the center slice of the tomogram (or if you generated a 2D projection of the tomogram. 
-														The left bottom corner would be 0,0. Supply this parameter only if also supplying 
-														--mask and the grid hole is not centered in the tomogram.""", default='')
+	parser.add_argument("--gridoffset", type=str, help="""x,y amount of pixels to translate the cylindrical mask if the carbon hole in your tomogram is off center. 
+								The left bottom corner would be 0,0. Supply this parameter only if also supplying 
+								--mask and the grid hole is not centered in the tomogram.""", default='')
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -262,18 +262,29 @@ def main():
 		testimage.cylinder only works on cubical boxes. Therefore, make a cubical box to generate the mask.
 		'''
 		cubem=max(tomox,tomoy,tomoz)
-		mask=EMData(cubem,cubem,cubem)
-
+		masksize=cubem
+		if options.gridradius*2 > cubem:
+			print "Grid radius is larger than the largest tomogram dimension"
+			masksize=int(options.gridradius*2)
+			print "Therefore, mask size is", masksize		
+		
+		mask=EMData(masksize,masksize,masksize)
+		
+		print "I have created the mask box"
 		if yshort:
 			height = tomoy
 		
 		mask.to_one()
-		mask.process_inplace('testimage.cylinder',{'radius':options.gridradius,'height':height})
-		
+		print "Mask to one"
+		mask.process_inplace('testimage.cylinder',{'radius':options.gridradius,'height':cubem})
+		mskfileORIG=options.path + '/mskORIG.rec'
+		mask.write_image(mskfileORIG,0)
 		if options.gridoffset:
-			xo=options.gridoffset.split(',')[0]
-			yo=options.gridoffset.split(',')[-1]
-			mask.translate(xo,yo)	
+			xo=int(options.gridoffset.split(',')[0])
+			yo=int(options.gridoffset.split(',')[-1])
+			mask.translate(float(xo),float(yo),0.0)
+			mskfileTRANS=options.path + '/mskTRANS.rec'
+			mask.write_image(mskfileTRANS,0)
 		
 		if yshort:
 			print "I will rotate the mask"
@@ -283,14 +294,19 @@ def main():
 		'''
 		Then, clip mask to actual tomogram size
 		'''
-		r=Region(-tomox/2,-tomoy/2,-tomoz/2,tomox,tomoy,tomoz)
-		mask=mask.get_clip(r)
+		r = Region(0,0,0, cubem, cubem, tomoz)
+		#e = EMData()
+		#e.read_image(tomogram,0,False,r)
+		
+		#r=Region(-tomox/2,-tomoy/2,-tomoz/2,tomox,tomoy,tomoz)
+		maskc=mask.get_clip(r)
 		
 		print "The dimensions of the mask are", mask['nx'],mask['ny'],mask['nz']
 		print "The dimensions of the tomogram are", tomox,tomoy,tomoz
 	
-		tomo.mult(mask)
-		
+		tomo.mult(maskc)
+		mskfile=options.path + '/mskC.rec'
+		maskc.write_image(mskfile,0)
 		tomogramfile=options.path + '/' + tomogramfile.split('/')[-1].replace('.','_msk.')
 		tomo.write_image(tomogramfile,0)
 		options.tomogram=tomogramfile
@@ -627,10 +643,15 @@ def main():
 				centers.append(center)
 				
 				if options.mask and options.gridradius:
-					if (xc - xo)*(xc - xo) + (yc - yo)*(yc - yo) < options.gridradius * options.gridradius:
-						ret = scanposition(options,transtemplate,outputboxsize,yshort,xi,yi,zi,xc,yc,zc,sbn)
+					print "Because mask is on, I will go to the scanner considering that!"
+					criteria=(xc - (xo + x) )*(xc - (xo + x)) + (yc - (yo + y))*(yc - (yo + y))
+					print "Criteria is", criteria
+					print "And must be less than grdiradius squared which is", options.gridradius * options.gridradius
+					if (xc - (xo + x) )*(xc - (xo + x)) + (yc - (yo + y))*(yc - (yo + y)) < options.gridradius * options.gridradius:
+						print "The center of the subox is inside the mask"
+						ret = scanposition(options,transtemplate,outputboxsize,yshort,xi,yi,zi,xc,yc,zc,sbn,x,y,xo,yo)
 				else:
-					ret = scanposition(options,transtemplate,outputboxsize,yshort,xi,yi,zi,xc,yc,zc,sbn)
+					ret = scanposition(options,transtemplate,outputboxsize,yshort,xi,yi,zi,xc,yc,zc,sbn,x,y,xo,yo)
 				
 				if ret:
 					#print "These many particles have been returned", len(ret)
@@ -796,7 +817,7 @@ def main():
 		print "\n\n\n\nThe mean and sigma of the datas CCC", coeffsmean, coeffssigma
 		print "\n\n\n\nWhereas the max and the min of the data's ccc are CCC", max(coeffs), min(coeffs)
 		print "\n\n\n\n"
-		lowerbound = coeffsmean + coeffssigma * 2.0
+		lowerbound = coeffsmean
 		#upperbound = coeffsmean + coeffssigma * 1.0
 		upperbound = max(coeffs)
 		#print "Therefore, one sigma away, the lower and upper bounds are", lowerbound, upperbound
@@ -836,7 +857,9 @@ def main():
 		print "I have pruned out these many based on mean and sigma statistics", count
 		print "And therefore data now is", len(data)
 		print "But pruned data is more accurately", len(pruneddata)
-	
+		
+		data = pruneddata
+
 	if options.subsettrans:
 		data = data[0:options.subsettrans]
 		print "I Have taken a subset of the data, see", options.subsettrans, len(data)
@@ -898,7 +921,7 @@ def main():
 	if options.verbose:
 		print "The program has finished scanning the tomogram for subvolumes"
 		
-	data = pruneddata		
+			
 	for i in data:
 		line = str(i[1][0]) + ' ' + str(i[1][1]) + ' ' + str(i[1][2]) + '\n'
 		if options.shrink > 1:
@@ -968,7 +991,7 @@ def meancalc(options,data,stack,tag=''):
 			#print "tag is", tag
 			#print "and mean_maxs and sigma_maxs are", mean_maxs, sigma_maxs
 			#print "and mean_mins and sigma_mins are", mean_mins, sigma_mins
-			if max > (mean_maxs - (sigma_maxs * 2)) or min < (mean_mins - (sigma_mins * 2)):
+			if max > (mean_maxs - (sigma_maxs * 3)) or min < (mean_mins - (sigma_mins * 3)):
 				data.remove(d)
 				print "particle REMOVED based on GOLD PRUNING!"
 		elif tag == 'background':
@@ -999,7 +1022,7 @@ def meancalc(options,data,stack,tag=''):
 #	return(options, outputboxsize)
 	
 
-def scanposition(options,template,outputboxsize,yshort,xi,yi,zi,xc,yc,zc,sbn):
+def scanposition(options,template,outputboxsize,yshort,xi,yi,zi,xc,yc,zc,sbn,x,y,xo,yo):
 
 	#print "\n\nThese are the parameters received in scanposition function: xi=%d, OtherLongI=%d, xc=%d, OtherLongC=%d, zc=%d" %(xi,yi,xc,yc,zc)
 	#print " I am scanning SUBREGION", sbn+1
@@ -1048,10 +1071,12 @@ def scanposition(options,template,outputboxsize,yshort,xi,yi,zi,xc,yc,zc,sbn):
 	if subox['mean']:
 		#subox.process_inplace('normalize')
 		nptcls = int( round( ( (expandedtemplateboxsize * expandedtemplateboxsize * expandedtemplateboxsize) / (outputboxsize * outputboxsize * outputboxsize * options.concentrationfactor ) ) ) )
+		print "Nptcls based on volume per subox is", nptcls		
 		if options.test:
 			nptcls = 1	
-	
-		ccf = template.calc_ccf(subox)
+		suboxnorm=subox.process('normalize.edgemean')
+
+		ccf = template.calc_ccf(suboxnorm)
 		ccf.process_inplace("xform.phaseorigin.tocorner") 
 		ccf.process_inplace('normalize')
 		#ccf.write_image('subregion' +str(sbn+1).zfill(3) + '_ccf.hdf',0)
@@ -1075,8 +1100,9 @@ def scanposition(options,template,outputboxsize,yshort,xi,yi,zi,xc,yc,zc,sbn):
 		#edgeminval = ptclmaskrad
 		#edgemaxval = expandedtemplateboxsize - ptclmaskrad
 		
-		edgeminval = 0
-		edgemaxval = expandedtemplateboxsize
+		edgeminval = 0 + int(options.ptclradius/2)
+		edgemaxval = expandedtemplateboxsize - int(options.ptclradius/2)
+		print "Edge min and max vals are", edgeminval, edgemaxval
 		#print "\n\n\nThe number of particles to look for in a subregion is %d\n\n\n" %(nptcls)
 		for p in range(nptcls):
 		 	#print "\nAttempt numbr %d to find a particle" %(p)
@@ -1094,14 +1120,14 @@ def scanposition(options,template,outputboxsize,yshort,xi,yi,zi,xc,yc,zc,sbn):
 			max = ccf['maximum']
 			
 			#print "Therefore, after subtracting this max from the subbox, the max is at", xmax,ymax,zmax
-			
-			if max < 1.0 or locmaxX < edgeminval or locmaxX > edgemaxval or locmaxY < edgeminval or locmaxY > edgemaxval or locmaxZ < edgeminval or locmaxZ > edgemaxval:
+			#if max < 1.0
+			if locmaxX < edgeminval or locmaxX > edgemaxval or locmaxY < edgeminval or locmaxY > edgemaxval or locmaxZ < edgeminval or locmaxZ > edgemaxval:
 				#print "Either the max was less than 1; lets see", max
 				#print "Or one of the coordinates of the maximum was too close to the edge", locmax
-				print "A particle has been skipped!"
+				#print "A particle has been skipped!"
 				pass			
 			else:
-				#print "THE max for a potential particle was found at", locmax
+				print "THE max for a potential particle was found at", locmax
 			
 				aux=0
 				if yshort:
@@ -1117,22 +1143,32 @@ def scanposition(options,template,outputboxsize,yshort,xi,yi,zi,xc,yc,zc,sbn):
 				realymax = (expandedtemplateboxsize - locmaxY) + yi
 				realzmax = (expandedtemplateboxsize - locmaxZ) + zi
 				
+				go=True
+				if options.mask and options.gridradius:
+					print "Because mask is on, I will see if the real center of the putative particle is within"
+					if (realxmax - (xo + x)) * (realxmax - (xo + x)) + (realymax - (yo + y)) * (realymax - (yo + y)) < (options.gridradius * options.gridradius) :
+						print "particle inside mask!"
+					else:
+						go=False
+						print "Particle outside mask!"
+				if go:
+
 				#print "Therefore, the REAL final coordinates are", realxmax,realymax,realzmax	
-				maskx=locmaxX - expandedtemplateboxsize/2
-				masky=locmaxY - expandedtemplateboxsize/2
-				maskz=locmaxZ - expandedtemplateboxsize/2
+					maskx=locmaxX - expandedtemplateboxsize/2
+					masky=locmaxY - expandedtemplateboxsize/2
+					maskz=locmaxZ - expandedtemplateboxsize/2
 				
 				#maskx = (expandedtemplateboxsize - locmaxX)
 				#masky = (expandedtemplateboxsize - locmaxY)
 				#maskz = (expandedtemplateboxsize - locmaxZ)
 				
 				#print "Therefore the mask will be centered at", maskx,masky,maskz
-				ccf.process_inplace('mask.sharp',{'inner_radius':ptclmaskrad,'dx':maskx,'dy':masky,'dz':maskz})
+					ccf.process_inplace('mask.sharp',{'inner_radius':ptclmaskrad,'dx':maskx,'dy':masky,'dz':maskz})
 				#ccf.process_inplace('mask.sharp',{'inner_radius':ptclmaskrad,'dx':xmax-subboxsiz/2,'dy':ymax-subboxsiz/2,'dz':zmax-subboxsiz/2})
 				#print "\nThe ptclmaskrad used is\n", ptclmaskrad
 				#print "\n\n"
 				#ccf.write_image('subregion' +str(sbn+1).zfill(3) + '_ccf_mask' + str(p).zfill(3)+ '.hdf',0)				
-				results.append([max,realxmax,realymax,realzmax])
+					results.append([max,realxmax,realymax,realzmax])
 				#coordssubset.add(( realxmax, realymax, realzmax )) 
 				
 				#if xi<80 and p == 2:
