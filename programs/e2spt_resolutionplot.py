@@ -354,12 +354,22 @@ def fscplotter(fscs,options):
 				
 		xticks = []
 		nele=len(values)
-		print "nele is", nele
-		factorOfTicks = 1
-		if nele >10 and nele < 20:
-			factorOfTicks = 3
-		if nele > 20 and nele < 50:
-			factorOfTicks = 4
+		print "\n\nnele is", nele
+		import math
+		factorOfTicks = int(math.ceil(nele/10.0) + 1.0)
+		
+		#factorOfTicks = 1
+		#if nele >10 and nele <= 20:
+		#	factorOfTicks = 3
+		#if nele > 20 and nele <= 30:
+		#	factorOfTicks = 4
+		#if nele > 30 and nele <= 40:
+		#	factorOfTicks = 5
+		#if nele > 40 and nele <= 50:
+		#	factorOfTicks = 6
+		#if nele > 50:
+		#	factorOfTicks = 8
+		
 		kk=0
 		print "factorOfTicksIs", factorOfTicks
 		print "And the final number of values is", len(values)
@@ -481,7 +491,7 @@ def fscplotter(fscs,options):
 		#print "And there are these many in total", len(RGB_tuples)
 		#print "And at the moment, kont is", kont
 		#print "\n\n\n"
-		pylab.plot(x, values, color=RGB_tuples[kont], linewidth=2)
+		pylab.plot(x, values, color=RGB_tuples[kont], linewidth=2,alpha=0.5)
 	
 		yy1=[0.5]*len(values)	
 		yy2=[0.143]*len(values)
