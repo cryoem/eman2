@@ -285,7 +285,8 @@ def main():
 				global_def.BATCH = True
 				if len(args) < 4:  mask = None
 				else:               mask = args[3]
-				debugihrsrlocalcons_MPI(args[0], args[1], args[2], mask, options.cons, irp, oup, options.rs, xrp, options.ynumber, txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, rminp, rmaxp, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.apix, options.debug, y_restrict2, options.WRAP, options.recons_iter, options.ref_iter, options.NOROUND, options.fcutoff) 
+				#debugihrsrlocalcons_MPI(args[0], args[1], args[2], mask, options.cons, irp, oup, options.rs, xrp, options.ynumber, txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, rminp, rmaxp, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.apix, options.debug, y_restrict2, options.WRAP, options.recons_iter, options.ref_iter, options.NOROUND, options.fcutoff) 
+				ihrsrlocalcons_MPI(args[0], args[1], args[2], mask, options.cons, irp, oup, options.rs, xrp, options.ynumber, txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, rminp, rmaxp, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.apix, options.debug, y_restrict2, options.WRAP,options.fcutoff)
 				global_def.BATCH = False
 			else:
 				from applications import ihrsr
