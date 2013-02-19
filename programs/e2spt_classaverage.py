@@ -574,7 +574,9 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 				ptcl['origin_y'] = 0		
 				ptcl['origin_z'] = 0
 				ptcl['spt_score'] = ptcl_parms[0]['score']
-				ptcl['spt_ali_param'] = ptcl_parms[0]['xform.align3d']
+				ptcl['xform.align3d'] = Transform()
+				#ptcl['spt_ali_param'] = ptcl_parms[0]['xform.align3d']
+				ptcl['xform.align3d'] = ptcl_parms[0]['xform.align3d']
 				
 		db_close_dict(db)
 		avgs=[]
@@ -665,7 +667,9 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 				#print "\nThe score is", ptcl_parms[0]['score']
 				#print "Because the zero element is", ptcl_parms[0]
 				
-				ptcl['spt_ali_param'] = ptcl_parms[0]['xform.align3d']
+				ptcl['xform.align3d'] = Transform()
+				#ptcl['spt_ali_param'] = ptcl_parms[0]['xform.align3d']
+				ptcl['xform.align3d'] = ptcl_parms[0]['xform.align3d']
 				
 				classname=path+"/class_ptcl"
 				#print "The class name is", classname
