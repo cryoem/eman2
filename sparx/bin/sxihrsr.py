@@ -281,7 +281,8 @@ def main():
 			global_def.BATCH = False
 		else:
 			if len(options.cons) > 0:
-				from development import debugihrsrlocalcons_MPI
+				#from development import debugihrsrlocalcons_MPI
+				from development import ihrsrlocalcons_MPI
 				global_def.BATCH = True
 				if len(args) < 4:  mask = None
 				else:               mask = args[3]
