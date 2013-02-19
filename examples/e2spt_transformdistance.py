@@ -61,7 +61,7 @@ def main():
 
 	parser.add_argument("--input", type=str, help="""The name of the input stack in .hdf format containing the ALIGNED PARTICLES after aligning the simulated 
 							subtomograms with e2spt_classaverage.py to the reference from which they were generated. The particle must contain
-							the header parameters 'spt_randT' and 'spt_ali_params' """, default=None)
+							the header parameters 'spt_randT' and 'xform.align3d' """, default=None)
 	parser.add_argument("--output", type=str, help="""The name of the output text file in .txt format containing the average angular distance and translational distance of the solutions proposed
 							by e2spt_classaverage3d.py respect to the simulated transforms.""", default=None) 
 	
@@ -88,8 +88,9 @@ def main():
 		print "I am working on ptcl number", i
 		ptcl = EMData(options.input,i, True)
 		simT = ptcl['sptsim_randT']
-		solutionT = ptcl['spt_ali_param']	#If the solution IS an aproximate solution, its inverse should be almost equal to simT, and thus
+		#solutionT = ptcl['spt_ali_param']	#If the solution IS an aproximate solution, its inverse should be almost equal to simT, and thus
 							#the distance between simT and solutionT.inverse() should be small.
+		solutionT = ptcl['xform.align3d']
 		solutionTinverse = solutionT.inverse()
 		
 		angles.append(angdist(simT,solutionTinverse))
