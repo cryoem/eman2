@@ -35,6 +35,7 @@ from operator import itemgetter
 import matplotlib.pyplot as plt
 import sys
 import numpy
+import pylab
 
 def main():
 	print "I have entered main"
@@ -63,6 +64,9 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--path", type=str, help="Results directory. If not specified, defaults to e2sptcoeff/", default='e2sptcoeff')
 	
+	parser.add_argument("--normalizeplot",action="store_true", help="Make maximum correlation value on plot equal to 1 and the minimum equal to 0, and scale all other values accordingly.", default=False)
+
+	
 	(options, args) = parser.parse_args()
 	
 	if options.groups and (options.cutoff or options.topn):
@@ -77,7 +81,6 @@ def main():
 		print "ERROR: you cannot specify --cutoff, --groups and --topn all at the same time. Choose one."
 		sys.exit()
 		
-	
 	logger = E2init(sys.argv, options.ppid)
 	
 	findir = os.listdir(os.getcwd())
@@ -97,7 +100,8 @@ def main():
 	for i in range(n):
 		a=EMData(options.input,i)
 		hdr=a.get_attr_dict()
-		print  "analyzing header for particle", i
+		if options.verbose:
+			print  "analyzing header for particle", i
 		if 'spt_score' in hdr:
 			score=-1*a['spt_score']
 		elif 'spt_coefficient' in hdr:
@@ -111,17 +115,53 @@ def main():
 
 	dataset = sorted(dataset, key=itemgetter('score'), reverse=True)
 	
+	
+	if options.normalizeplot:
+		#for s in scores:
+			#val = values[ele]
+		minv1 = min(scores)
+		#maxv1 = max(scores)
+		#print "Min max before normalization was", minv,maxv1
+		for k in range(len(scores)):
+			scores[k] = scores[k] - minv1
+		
+		#minv2 = min(scores)
+		maxv2 = max(scores)
+		#print "After subtracting min, the are", minv2,maxv
+		#print "Max before normalization was", maxv
+		for k in range(len(scores)):
+			scores[k] = scores[k] / maxv2
+	
+	
 	scores.sort()
 	scores.reverse()
+	scores=scores[:-2]
 	x=range(len(scores))
 	
+	import matplotlib
+  		 	
+  	matplotlib.rc('xtick', labelsize=16) 
+	matplotlib.rc('ytick', labelsize=16) 
+  		 	
+  	font = {'weight':'bold','size':16}
+	matplotlib.rc('font', **font)
+  		 	
+			
+			#pylab.plot(azs, values[ele], linewidth=2)
+	pylab.rc("axes", linewidth=2.0)
+		
+	pylab.xlabel('X Axis', fontsize=16, fontweight='bold')
+  	pylab.ylabel('Y Axis', fontsize=16, fontweight='bold')
+	
 	plottitle = os.path.basename(options.input).replace('.hdf', '_completeSCORES')
-	plt.plot(x, scores, marker='o', color='r', linewidth=2)
-	plt.title(plottitle)
-	plt.ylabel('score')
-	plt.xlabel('n ptcl')
+	plt.plot(x, scores, color='k', linewidth=2)
+	pylab.xlim([min(x),max(x)+0.1*max(x)])
+	#plt.title('')
+	#plt.ylabel('score')
+	#plt.xlabel('n ptcl')
 	#a = plt.gca()
-
+	plt.ylabel('CC coefficient')
+	plt.xlabel('Particle number')
 	plotfile = options.path + '/' + plottitle + '.png'
 	plt.savefig(plotfile)
 	plt.clf()
@@ -154,10 +194,11 @@ def main():
 		x=range(len(newscores))
 	
 		plottitle = os.path.basename(options.input).replace('.hdf', '_prunedSCORES')
-		plt.plot(x, newscores, marker='o', color='r', linewidth=2)
-		plt.title(plottitle)
-		plt.ylabel('score')
-		plt.xlabel('n ptcl')
+		plt.plot(x, newscores,color='k', linewidth=2)
+		pylab.xlim([min(x),max(x)+0.1*max(x)])
+		#plt.title(plottitle)
+		plt.ylabel('CC coefficient')
+		plt.xlabel('Particle number')
 		#a = plt.gca()
 		plotfile = options.path + '/' + plottitle + '.png'
 		plt.savefig(plotfile)
