@@ -223,7 +223,10 @@ Output: 1-2-3D real image with the result
 		} else {
 			//  [normalize] [pad] compute fft
 			fp = f->norm_pad(donorm, npad);
-            fp->do_fft_inplace();
+			if (donorm) {
+				fp->div( sqrtf(nx) * sqrtf(ny) * sqrtf(nz) );
+			}
+			fp->do_fft_inplace();
 		}
 		// The [padded] fft-extended version of g is gp.
 		EMData* gp = NULL;
@@ -237,6 +240,9 @@ Output: 1-2-3D real image with the result
 		} else {
 			// normal case: g is real and different from f, so compute gp
 			gp = g->norm_pad(donorm, npad);
+			if (donorm) {
+				gp->div( sqrtf(nx) * sqrtf(ny) * sqrtf(nz) );
+			}
 			gp->do_fft_inplace();
 		}
 		// Get complex matrix views of fp and gp; matrices start from 1 (not 0)
@@ -467,20 +473,19 @@ Output: 1-2-3D real image with the result
 		//vector<int> saved_offsets = fp->get_array_offsets();  I do not know what the meaning of it was, did not work anyway PAP
 		fp->set_array_offsets(1,1,1);
 
-	//	normfact = (size_t)(nxp/nx)*(nyp/ny)*(nzp/nz);  // Normalization factor for the padded operations
-	//	if(normfact>1) {
-	//		for (int iz = 1; iz <= nz; iz++) for (int iy = 1; iy <= ny; iy++) for (int ix = 1; ix <= nx; ix++) (*fp)(ix,iy,iz) *= normfact;
-	//	}
+//		normfact = (size_t)(nxp/nx)*(nyp/ny)*(nzp/nz);  // Normalization factor for the padded operations
+//		if(normfact>1) {
+//			for (int iz = 1; iz <= nz; iz++) for (int iy = 1; iy <= ny; iy++) for (int ix = 1; ix <= nx; ix++) (*fp)(ix,iy,iz) *= normfact;
+//		}
 		// Lag normalization
 		if(flag>4)  {
-			normfact = (size_t)nx*ny*nz;  // Normalization factor
 			int nxc=nx/2+1, nyc=ny/2+1, nzc=nz/2+1;
 			for (int iz = 1; iz <= nz; iz++) {
-				float lagz=float(normfact/(nz-abs(iz-nzc)));
+				const float lagz = float(nz) / (nz-abs(iz-nzc));
 				for (int iy = 1; iy <= ny; iy++) {
-					float lagyz=lagz/(ny-abs(iy-nyc));
+					const float lagyz = lagz * (float(ny) / (ny-abs(iy-nyc)));
 					for (int ix = 1; ix <= nx; ix++) {
-						(*fp)(ix,iy,iz) *= lagyz/(nx-abs(ix-nxc));
+						(*fp)(ix,iy,iz) *= lagyz * (float(nx) / (nx-abs(ix-nxc)));
 					}
 				}
 			}
