@@ -190,7 +190,7 @@ def main():
 			if not options.only2dplot:
 				print "While only 2D plot is off"
 				pylab.savefig(plotname)	
-				pylab.title(title)
+				#pylab.title(title)
 				pylab.ylabel('Correlation')
 				pylab.xlabel('Azimuth')	
 				pylab.savefig(plotname)
@@ -259,15 +259,16 @@ def rotcccplot(v1,v2,options):
 			azs = ret[0]
 			values = ret[1]
 		
-			plotter(options,azs,values,title,title,ts,loop)
+			plotter(options,azs,values,title,ts,loop)
 			print "I have returned from the plotter"
 			
 		if options.singleplot:	
 			print "And single plot is on"
+			plotname=options.output.replace('.txt','.png')
 			if not options.only2dplot:
 				print "While only 2D plot is off"
 				pylab.savefig(plotname)	
-				pylab.title(title)
+				#pylab.title(title)
 				pylab.ylabel('Correlation')
 				pylab.xlabel('Azimuth')	
 				pylab.savefig(plotname)
@@ -394,7 +395,7 @@ def plotter(options,azs,values,title,ts,loop):
 			
 		if not options.singleplot:
 			plotname = txtname.replace('.txt','.png')
-			pylab.title(title)
+			#pylab.title(title)
 			pylab.ylabel('Correlation')
 			pylab.xlabel('Azimuth')
 			pylab.savefig(plotname)
