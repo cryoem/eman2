@@ -1092,8 +1092,10 @@ def tilemic(img, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0):
 		x21 = (win_size/x39)*(iy-1) + edge_y  #  y-direction it should start from 0 if edge_y=0	      
 		for ix in  xrange(1, x26+1):			 
 			x22 = (win_size/x38)*(ix-1) + edge_x  # x-direction it should start from 0 if edge_x =0
-			wi  = window2d(e_fil, win_size, win_size, "l", x22, x21)
-			pw2.append(periodogram(ramp(wi)))
+			wi  = ramp( window2d(e_fil, win_size, win_size, "l", x22, x21) )
+			st = Util.infomask(wi, None, True)
+			wi = (wi - st[0])/st[1]*win_size
+			pw2.append(periodogram(wi))
 	return  pw2
 
 
