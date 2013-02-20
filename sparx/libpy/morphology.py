@@ -375,11 +375,24 @@ def ctf2_rimg(nx, ctf, sign = 1, ny = 0, nz = 1):
 	return  Util.ctf2_rimg(nx, ny, nz, dz, pixel_size, voltage, cs, ampcont, b_factor, dza, azz, sign)
 
 
-def ctflimit(nx, defocus, cs, voltage, pix, w):
-	from math import sqrt
-	def g(x,z1,l,cs):
-		xx = x*x
-		return (-0.5*z1*l+0.25*cs*l*l*l*xx)*xx
+def ctflimit(nx, defocus, cs, voltage, pix):
+	import numpy as np
+	def ctfperiod(defocus, Cs, lam, freq):
+		# find local "period" T by solving fourth order polynomial resulting from equation:
+		#  sin( 2pi (gamma(freq) + 1) ) = sin( 2pi (gamma(freq+T) )
+		cis = Cs*1.e7
+		A = 0.5*defocus*10000.0*lam
+		B = 0.25*cis*lam*lam*lam
+		f2 = freq*freq
+		"""
+		for i in xrange(800):
+			ff = freq+(i-400)*0.00002
+			print  ff,Util.tf(defocus, ff, voltage, Cs, 10., 0.0, 1.0)
+		"""
+		rot = np.roots([B, 4*B*freq, 6*B*f2-A, 4*B*f2*freq-2*A*freq, -1.0])
+		#print np.roots([A,2*A*freq,1.0]),-freq-np.sqrt(f2/2-1./A),-freq+np.sqrt(f2-1./A)
+		#print  Util.tf(defocus, freq, voltage, Cs, 10., 0.0, 1.0),Util.tf(defocus, freq+min(rot), voltage, Cs, 10., 0.0, 1.0)
+		return min(abs(rot))
 
 	n = nx//2+1
 	#  Width of Fourier pixel
@@ -393,24 +406,18 @@ def ctflimit(nx, defocus, cs, voltage, pix, w):
 
 	
 	#CTF
-	l = 12.398/sqrt(voltage*(1022.0+voltage))  #  All units in A
+	lam = 12.398/np.sqrt(voltage*(1022.0+voltage))  #  All units in A
 	z1 = defocus*10000.0
-	csa=cs*1.e7
-	#q1=w/100.0
-	print  nx, pix, z1,voltage, n,l,csa
+	ctfper = ctfperiod(defocus, cs, lam, 1./(2*pix))
+	print " At Nyquist, the CTF period is ",ctfper
 	for ii in xrange(n-1,1,-1):
 		#print ii
 		xr = ii/float(n-1)/(2*pix)
-		x1 = xr - fwpix
-		x2 = xr + fwpix
-		ctfper = abs(  (g(x2,z1,l,csa)-g(x1,z1,l,csa)) / (x2-x1)  )
-		print ii,xr,x1,x2,ctfper
-		if(ctfper >1.e-8):
-			ctfper = 1.0/ctfper
-			print ii,fper,ctfper
-			if(ctfper >  fper):
-				print  " Limiting frequency is:",xr,"  limiting resolution is:",1.0/xr
-				return  int(xr/fwpix+0.5),xr
+		ctfper = ctfperiod(defocus, cs, lam, xr)
+		#print ii,xr,ctfper
+		if(ctfper >  fper):
+			print  " Limiting frequency is:",xr,"  limiting resolution is:",1.0/xr
+			return  int(xr/fwpix+0.5),xr
 	return nx//2,1.0/(2*pix)
 
 def compare_ctfs(nx, ctf1, ctf2):
