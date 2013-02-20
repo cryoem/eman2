@@ -223,7 +223,9 @@ def rotcccplot(v1,v2,options):
 				 and the single volume through --vol2."""
 			sys.exit()
 
-
+	absMAX=-1.0
+	absMIN=1000000.0
+	#mastervalues=[]
 	for ni in range(nimg1):
 		vol1 = EMData(v1,ni)
 		vol1 = preprocess(vol1,options)
@@ -258,10 +260,24 @@ def rotcccplot(v1,v2,options):
 			ret = azimuthalccc(vol1,vol2,options)
 			azs = ret[0]
 			values = ret[1]
-		
-			plotter(options,azs,values,title,ts,loop)
-			print "I have returned from the plotter"
 			
+		
+			if not options.normalizeplot or not options.singleplot:
+				plotter(options,azs,values,title,ts,loop,0,0)
+				print "I have returned from the plotter"
+			else:
+				#mastervalues.append(values)
+				for ele in values:
+					minv = float(min(values[ele]))
+					if minv < absMIN:
+						absMIN = minv
+
+					maxv = float(max(values[ele]))
+					if maxv > absMAX:
+						absMAX = maxv
+
+				plotter(options,azs,values,title,ts,loop,absMIN,absMAX)	
+		
 		if options.singleplot:	
 			print "And single plot is on"
 			plotname=options.output.replace('.txt','.png')
@@ -281,7 +297,7 @@ def rotcccplot(v1,v2,options):
 	
 	
 	
-def plotter(options,azs,values,title,ts,loop):
+def plotter(options,azs,values,title,ts,loop,absMIN,absMAX):
 
 	print "I have acquired azs and values and will proceed to plot."
 	
@@ -289,18 +305,22 @@ def plotter(options,azs,values,title,ts,loop):
 		for ele in values:
 			#val = values[ele]
 		
-			minv = min(values[ele])
-			maxv1 = max(values[ele])
+			minv1 = min(values[ele])
+			if absMIN:
+				minv1 = absMIN
+			#maxv1 = max(values[ele])
 			#print "Min max before normalization was", minv,maxv1
 			for k in range(len(values[ele])):
-				values[ele][k] = values[ele][k] - minv 
+				values[ele][k] = values[ele][k] - minv1 
 		
-			minv2 = min(values[ele])
-			maxv = max(values[ele])
+			#minv2 = min(values[ele])
+			maxv2 = max(values[ele])
+			if absMAX:
+				maxv2 = absMAX -absMIN
 			#print "After subtracting min, the are", minv2,maxv
 			#print "Max before normalization was", maxv
 			for k in range(len(values[ele])):
-				values[ele][k] = values[ele][k] / maxv
+				values[ele][k] = values[ele][k] / maxv2
 				
 			#print "after norm they are", min(values[ele]), max(values[ele])		
 			#print "Len of azs and values is", len(azs), len(values)
