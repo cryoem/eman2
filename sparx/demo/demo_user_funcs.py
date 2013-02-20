@@ -105,4 +105,5 @@ def localali3d_reference4( ref_data ):
 		msg = "Center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
 		print_msg(msg)
 		volf  = fshift(volf, -cs[0], -cs[1], -cs[2])
-	return  volf, cs	
+	return  volf, cs
+	
