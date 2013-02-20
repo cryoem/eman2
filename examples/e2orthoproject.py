@@ -51,9 +51,17 @@ def main():
 	parser.add_argument("--path",type=str,default=None,help="""Directory to store results in. The default is a numbered series of directories containing the prefix 'orthoproject';
 														for example, orthoproject_02 will be the directory by default if 'orthoproject_01' already exists.""")
 
+	parser.add_argument("--onlyx",type=str,default=None,help="Only projection of the YZ plane will be generated (a 'side view').")
+	parser.add_argument("--onlyy",type=str,default=None,help="Only projection of the XZ plane will be generated (another 'side view').")
+	parser.add_argument("--onlyz",type=str,default=None,help="Only projection of the XY plane will be generated (a 'top view')")
+	
+	#parser.add_argument("--stack",acto=ion='store_false',default=True,help="If on, projections will be in an hdf stack; otherwise, they'll be their own separate file. On by default. Supply --stack=None to turn off.")
+
 	parser.add_argument("--input", type=str, help="""The name of the input volume from which you want to generate orthogonal projections.
 													You can supply more than one model either by providing an .hdf stack of models, or by providing multiple files
 													separated by commas.""", default=None)
+
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -61,10 +69,31 @@ def main():
 	
 	logger = E2init(sys.argv, options.ppid)
 
-	'''
-	Make the directory where to create the database where the results will be stored
-	'''
 	
+	'''
+	Check for sanity of some supplied parameters
+	'''
+
+	if options.onlyz:
+		if options.onlyx or options.onlyy:
+			print "ERROR: You can only supply one of --onlyx, --onlyy or --onlyz at a time."
+			sys.exit()
+	
+	if options.onlyx:
+		if options.onlyy or options.onlyz:
+			print "ERROR: You can only supply one of --onlyx, --onlyy or --onlyz at a time."
+			sys.exit()
+			
+	if options.onlyy:
+		if options.onlyx or options.onlyz:
+			print "ERROR: You can only supply one of --onlyx, --onlyy or --onlyz at a time."
+			sys.exit()
+
+
+	'''
+	Make a directory where to store the results
+	'''
+
 	if options.path and ("/" in options.path or "#" in options.path) :
 		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
 		sys.exit(1)
@@ -91,15 +120,33 @@ def main():
 		
 		os.system('mkdir ' + options.path)
 	
+	
+	'''
+	Generate projection transforms
+	'''
+	
+	projectiondirections = []
+	if options.onlyz:
+		tz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
+		projectiondirections=[tz]
+	elif options.onlyx:
+		tx = Transform({'type':'eman','az':0,'alt':-90,'phi':0})
+		projectiondirections=[tx]
+	elif options.onlyy:
+		ty = Transform({'type':'eman','az':-90,'alt':-90,'phi':0})
+		projectiondirections=[ty]
+	else:	
+		tz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
+		tx = Transform({'type':'eman','az':0,'alt':-90,'phi':0})
+		ty = Transform({'type':'eman','az':-90,'alt':-90,'phi':0})
+		projectiondirections = [tz,tx,ty]
+
+		
+	'''
+	Read input
+	'''
+
 	models=options.input.split(',')
-	
-	tz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
-	#tx = Transform({'type':'eman','az':-90,'alt':0,'phi':0})
-	v = Transform({'type':'eman','az':0,'alt':-90,'phi':0})
-	w = Transform({'type':'eman','az':-90,'alt':-90,'phi':0})
-	#ty = Transform({'type':'eman','az':0,'alt':-90,'phi':-90})
-	
-	projectiondirections = [tz,v,w]
 	
 	rootpath = os.getcwd()
 	path = rootpath + '/' + options.path
@@ -137,7 +184,7 @@ def main():
 				prj.write_image(submodelname,k)
 				k+=1
 			
-	return(1)	
+	return()	
 
 if __name__ == '__main__':
 	main()
