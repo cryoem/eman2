@@ -1077,7 +1077,7 @@ EMData *PointArray::pdb2mrc_by_summation(int map_size, float apix, float res, in
 		if(addpdbbfactor==-1){
 			gauss_real_width = res/M_PI;	// in Angstrom, res is in Angstrom
 		}else{
-			gauss_real_width = (bfactor[s])/(4*sqrt(2)*M_PI);	// in Angstrom, res is in Angstrom
+			gauss_real_width = (bfactor[s])/(4*sqrt(2.0)*M_PI);	// in Angstrom, res is in Angstrom
 		}
 		
 		
