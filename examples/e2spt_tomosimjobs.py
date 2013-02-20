@@ -245,9 +245,12 @@ def main():
 			tiltrangetag = ("%d" %(tiltrange) ).zfill(3)
 			
 			if options.tiltstep:
-				nslices = 2 * tiltrange / tiltstep
+				print "Tilt step is", tiltstep
+				print "Tilt range is", tiltrange
+				nslices = (2 * tiltrange) / tiltstep
+				print "Therefore, 2*tiltrange/tiltstep is nslices",nslices
 				nslicesu = nslices + 1
-				nslicestag = str(int(tiltstep)).zfill(3)
+				nslicestag = str(int(nslices)).zfill(3)
 
 			while nslices < nslicesu:
 				if not options.tiltstep:
