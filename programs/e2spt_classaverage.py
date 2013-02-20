@@ -120,7 +120,7 @@ def main():
 	'''
 	Parameters to compensate for the missing wedge using --cpm=fsc.tomo
 	'''
-	parser.add_argument("--wedgeangle",type=float,help="Missing wedge angle",default=60.0, guitype='floatbox', row=2, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--wedgeangle",type=float,help="Missing wedge angle",default=60.0)
 	parser.add_argument("--wedgei",type=float,help="Missingwedge begining", default=0.05)
 	parser.add_argument("--wedgef",type=float,help="Missingwedge ending", default=0.5)
 
@@ -236,9 +236,9 @@ def main():
 
 	nptcl=EMUtil.get_image_count(options.input)
 
-	if options.savepreprocessed and options.mask or options.normproc or options.lowpass or options.highpass or options.preprocess or options.shrink or options.shrinkrefine:
+	if options.savepreprocessed and (options.mask or options.normproc or options.lowpass or options.highpass or options.preprocess or options.shrink or options.shrinkrefine):
 		print "I will call preprocessing function"
-		preprocessing(options,nptcl)
+		#preprocessing(options,nptcl)
 
 	if nptcl<1 : 
 		print "ERROR : at least 1 particle required in input stack"
@@ -447,7 +447,9 @@ def postprocess(img,optmask,optnormproc,optpostprocess):
 	# Postprocess filter
 	if optpostprocess!=None : 
 		img.process_inplace(optpostprocess[0],optpostprocess[1])
+	return()
 
+"""
 def preprocessing(options,nptcl):
 	print "I am in the preprocessing function"
 	for i in range(nptcl):
@@ -512,7 +514,7 @@ def preprocessing(options,nptcl):
 		else:
 			s2image=image
 	return()
-
+"""
 
 def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,keepsig,symmetry,groups,breaksym,nocenterofmass,verbose=1,it=1):
 	"""Will take a set of alignments and an input particle stack filename and produce a new class-average.
