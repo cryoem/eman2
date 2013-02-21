@@ -260,6 +260,7 @@ def main():
 	lasttime=time.time()
 	outfilename_no_ext = outfile[:-4]
 	outfilename_ext = outfile[-3:]
+	dummy=0										#JESUS
 	for i in range(n0, n1+1, options.step[1]):
 		if options.verbose >= 1:
 			
@@ -555,26 +556,60 @@ def main():
 				if not options.average:	#skip writing the input image to output file 
 					#write processed image to file
 					if options.threed2threed or options.twod2threed:    #output a single 3D image
-						if i==0:
-							if not os.path.isfile(outfile):	#create a dummy 3D image for regional writing if not already exist
-								out3d_img = EMData(d.get_xsize(), d.get_ysize(), nimg)
-								if 'mrc8bit' in optionlist:
-									out3d_img.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', 0, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
-								elif 'mrc16bit' in optionlist:
-									out3d_img.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', 0, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
-								else:
-									out3d_img.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+						#shift = 0
 						
-						if options.list:
+						if dummy==0:										#The "dummy" volume, as termed by Grant, only needs to be created once
+																			#This dummy variable changes to dummy=1 after that happens.
+							#print "\n\n\n\nTOMO OPTION IS ON!"
+							#print "And this is i", i
+							#print "\n\n\n\nI will create DUMMY!!!"
+							z = nimg
+							#print "Z should be equal to nimg, lets see: nimg,z",nimg,z
+							if options.list:
+								f=open(options.list,'r')
+								lines = f.read().split(',')
+								#print "Lines are", lines
+								f.close()
+								z = len( lines )
+								#shift = nimg - z
+								#print "If --list, z should be the length of lines in list; lines,z", len(lines),z
+							elif options.exclude:
+								f=open(options.exclude,'r')
+								lines=f.read().split(',')
+								#print "lines are", lines
+								f.close()
+								z = nimg - len(lines)
+								#shift = len(lines)
+								#print "If --exclude, z should be z size of input minus lines in exclude; nimg, len lines,zout", nimg, len(lines), z 
+								
+							out3d_img = EMData(d.get_xsize(), d.get_ysize(), z)
+							if 'mrc8bit' in optionlist:
+								#print "Writing dummy mrc8bit"
+								out3d_img.write_image(outfile, 0, EMUtil.get_image_ext_type('mrc'), False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
+								dummy=1		
+								#print "Wrote dummy mrc8bit"			
+							elif 'mrc16bit' in optionlist:
+								#print "Writting dummy mrc16bit"
+								out3d_img.write_image(outfile, 0, EMUtil.get_image_ext_type('mrc'), False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
+								dummy=1
+								#print "Wrote dummy mrc16bit"
+							else:
+								#print "Writting dummy float"
+								out3d_img.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+								dummy=1
+								#print "Wrote dummy float"
+						
+						#print "imagelist is", imagelist
+						if options.list or options.exclude:
 							if imagelist[i] != 0:
 								region = Region(0, 0, imagelist[0:i].count(1), d.get_xsize(), d.get_ysize(), 1)
 						else:
 							region = Region(0, 0, i, d.get_xsize(), d.get_ysize(), 1)
 										
 						if 'mrc8bit' in optionlist:
-								d.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', 0, EMUtil.get_image_ext_type(options.outtype), False, region, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
+								d.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', 0, EMUtil.get_image_ext_type('mrc'), False, region, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
 						elif 'mrc16bit' in optionlist:
-								d.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', 0, EMUtil.get_image_ext_type(options.outtype), False, region, EMUtil.EMDataType.EM_SHORT, not(options.swap))
+								d.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', 0, EMUtil.get_image_ext_type('mrc'), False, region, EMUtil.EMDataType.EM_SHORT, not(options.swap))
 						else:
 								d.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, region, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
 						
