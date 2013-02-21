@@ -288,7 +288,9 @@ def main():
 		ref_table = [1.0] * npixels + [0.0] * (( ref_box/2) - npixels )
 		
 		ref = ref.process("filter.radialtable",{"table":ref_table})
-
+	ref['origin_x']=0
+	ref['origin_y']=0
+	ref['origin_z']=0
 	ref.write_image(options.output,0)
 	
 	if options.refsym and options.refsym != 'c1':
