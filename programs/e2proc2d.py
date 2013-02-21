@@ -585,12 +585,12 @@ def main():
 							out3d_img = EMData(d.get_xsize(), d.get_ysize(), z)
 							if 'mrc8bit' in optionlist:
 								#print "Writing dummy mrc8bit"
-								out3d_img.write_image(outfile, 0, EMUtil.get_image_ext_type('mrc'), False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
+								out3d_img.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
 								dummy=1		
 								#print "Wrote dummy mrc8bit"			
 							elif 'mrc16bit' in optionlist:
 								#print "Writting dummy mrc16bit"
-								out3d_img.write_image(outfile, 0, EMUtil.get_image_ext_type('mrc'), False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
+								out3d_img.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
 								dummy=1
 								#print "Wrote dummy mrc16bit"
 							else:
@@ -598,21 +598,27 @@ def main():
 								out3d_img.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
 								dummy=1
 								#print "Wrote dummy float"
-						
+							
 						#print "imagelist is", imagelist
 						if options.list or options.exclude:
 							if imagelist[i] != 0:
+								#if options.twod2threed:
+								#	region = Region(0, 0, imagelist[0:i].count(1), d.get_xsize(), d.get_ysize(), 1)
+								#elif options.threed2threed:
 								region = Region(0, 0, imagelist[0:i].count(1), d.get_xsize(), d.get_ysize(), 1)
 						else:
+							#if options.twod2threed:
+							#	region = Region(0, 0, i, d.get_xsize(), d.get_ysize(), 1)
+							#elif options.threed2threed:
 							region = Region(0, 0, i, d.get_xsize(), d.get_ysize(), 1)
-										
+						print "outtype is", options.outtype
 						if 'mrc8bit' in optionlist:
-								d.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', 0, EMUtil.get_image_ext_type('mrc'), False, region, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
+								d.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, region, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
 						elif 'mrc16bit' in optionlist:
-								d.write_image(outfile.split('.')[0]+'-'+str(i+1)+'.mrc', 0, EMUtil.get_image_ext_type('mrc'), False, region, EMUtil.EMDataType.EM_SHORT, not(options.swap))
+								d.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, region, EMUtil.EMDataType.EM_SHORT, not(options.swap))
 						else:
 								d.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, region, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
-						
+					
 					elif options.unstacking:	#output a series numbered single image files
 						if 'mrc8bit' in optionlist:
 							d.write_image(outfile.split('.')[0]+'-'+str(i+1).zfill(len(str(nimg)))+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
