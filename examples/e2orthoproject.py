@@ -43,19 +43,21 @@ import numpy
 
 def main():
 
-	usage = """e2orthoproject.py <options> . The options should be supplied in "--option=value", replacing "option" for a valid option name, and "value" for an acceptable value for that option. This program produces simulated sub volumes in random orientations from a given PDB or EM file. The output is ALWAYS in HDF format, since it's the only format supported by E2SPT programs.
-	"""
+	usage = """e2orthoproject.py <options> . 
+			The options should be supplied in "--option=value", replacing "option" for a valid option name, and "value" for an acceptable value for that option. 
+			This program produces orthogonal projections of an EM volume.
+			"""
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)	
 	
 	parser.add_argument("--path",type=str,default=None,help="""Directory to store results in. The default is a numbered series of directories containing the prefix 'orthoproject';
 														for example, orthoproject_02 will be the directory by default if 'orthoproject_01' already exists.""")
 
-	parser.add_argument("--onlyx",type=str,default=None,help="Only projection of the YZ plane will be generated (a 'side view').")
-	parser.add_argument("--onlyy",type=str,default=None,help="Only projection of the XZ plane will be generated (another 'side view').")
-	parser.add_argument("--onlyz",type=str,default=None,help="Only projection of the XY plane will be generated (a 'top view')")
+	parser.add_argument("--onlyx",action='store_true',default=False,help="Only projection of the YZ plane will be generated [a 'side view'].")
+	parser.add_argument("--onlyy",action='store_true',default=False,help="Only projection of the XZ plane will be generated [another 'side view'].")
+	parser.add_argument("--onlyz",action='store_true',default=False,help="Only projection of the XY plane will be generated a 'top view']")
 	
-	#parser.add_argument("--stack",acto=ion='store_false',default=True,help="If on, projections will be in an hdf stack; otherwise, they'll be their own separate file. On by default. Supply --stack=None to turn off.")
+	#parser.add_argument("--stack",action='store_false',default=True,help="If on, projections will be in an hdf stack; otherwise, they'll be their own separate file. On by default. Supply --stack=None to turn off.")
 
 	parser.add_argument("--input", type=str, help="""The name of the input volume from which you want to generate orthogonal projections.
 													You can supply more than one model either by providing an .hdf stack of models, or by providing multiple files
