@@ -402,21 +402,21 @@ def ctflimit(nx, defocus, cs, voltage, pix):
 	fcycle = 1./(2*fwpix)
 	#Fourier period
 	fper = 1.0/fcycle
-	print "Image size %6d,   pixel size  %7.4f  Width of Fourier pixel %7.5f   Fourier period  %8.5f "%(nx,pix,fwpix,fper)
+	#print "Image size %6d,   pixel size  %7.4f  Width of Fourier pixel %7.5f   Fourier period  %8.5f "%(nx,pix,fwpix,fper)
 
 	
 	#CTF
 	lam = 12.398/np.sqrt(voltage*(1022.0+voltage))  #  All units in A
 	z1 = defocus*10000.0
 	ctfper = ctfperiod(defocus, cs, lam, 1./(2*pix))
-	print " At Nyquist, the CTF period is ",ctfper
+	#print " At Nyquist, the CTF period is ",ctfper
 	for ii in xrange(n-1,1,-1):
 		#print ii
 		xr = ii/float(n-1)/(2*pix)
 		ctfper = ctfperiod(defocus, cs, lam, xr)
 		#print ii,xr,ctfper
 		if(ctfper >  fper):
-			print  " Limiting frequency is:",xr,"  limiting resolution is:",1.0/xr
+			#print  " Limiting frequency is:",xr,"  limiting resolution is:",1.0/xr
 			return  int(xr/fwpix+0.5),xr
 	return nx//2,1.0/(2*pix)
 
