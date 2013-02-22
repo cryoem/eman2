@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Steven Ludtke  2/8/2011 (rewritten), Jesus Galaz 11/10/2012
+# Author: Steven Ludtke  2/8/2011 (rewritten), Jesus Galaz-Montoya (updates/enhancements/fixes), LAST: 21/Feb/2013
 # Author: John Flanagan  9/7/2011 (helixboxer)
 # Copyright (c) 2011- Baylor College of Medicine
 #
@@ -95,8 +95,11 @@ def main():
 	parser.add_argument('--subset', type=int, default=0, help='''Specify how many sub-volumes from the coordinates file you want to extract; e.g, if you specify 10, the first 10 particles will be boxed.\n0 means "box them all" because it makes no sense to box none''')
 	parser.add_argument('--output', type=str, default='stack.hdf', help="Specify the name of the stack file where to write the extracted sub-volumes")
 	parser.add_argument('--output_format', type=str, default='stack', help='''Specify 'single' if you want the sub-volumes to be written to individual files. You MUST still provide an output name in the regular way.\nFor example, if you specify --output=myparticles.hdf\nbut also specify --output_format=single\nthen the particles will be written as individual files named myparticles_000.hdf myparticles_001.hdf...etc''')
-	
+		
+	parser.add_argument('--bruteaverage', action="store_true", default=False, help='Will generate an average of all the subvolumes (no alignment done). This is useful to see if, on average, particles are the desired specimen and reasonably centered')
+
 	parser.add_argument('--swapyz', action="store_true", default=False, help='''This means that the coordinates file and the actual tomogram do not agree regarding which is the "short" direction.\nFor example, the coordinates file migh thave a line like this:\n1243 3412 45\nwhere clearly the "short" direction is Z; yet, if in the actual tomogram the short direction is Y, as they come out fromIMOD by default, then the line should have been:\n1243 45 3412\n''')
+	#parser.add_argument('--normalize', action="store_true", default=False, help='Will normalize each subvolume so that the mean is zero and standard deviation one').	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	global options
@@ -191,7 +194,7 @@ def main():
 				
 			print "Done !"
 			
-			boxer = EMTomoBoxer(app,data=img,yshort=options.yshort,boxsize=options.boxsize,shrink=options.shrink,contrast=options.invert,center=options.centerbox)
+			boxer = EMTomoBoxer(app,data=img,yshort=options.yshort,boxsize=options.boxsize,shrink=options.shrink,contrast=options.invert,center=options.centerbox,mod=None,normalize=options.normproc)
 		else : 
 	#		boxer=EMTomoBoxer(app,datafile=args[0],yshort=options.yshort,apix=options.apix,boxsize=options.boxsize)		
 			img=args[0]
@@ -256,7 +259,7 @@ shrunk and/or lowpass filtered).
 It is also called when boxing from the commandline, without GUI usage, as when you already have
 a coordinates file
 """
-def unbinned_extractor(boxsize,x,y,z,cshrink,contrast,center,tomogram=argv[1]):
+def unbinned_extractor(boxsize,x,y,z,cshrink,invert,center,tomogram=argv[1]):
 	
 	tomo_header=EMData(tomogram,0,True)
 	print "Which has a size of", tomo_header['nx'],tomo_header['ny'],tomo_header['nz']
@@ -295,14 +298,17 @@ def unbinned_extractor(boxsize,x,y,z,cshrink,contrast,center,tomogram=argv[1]):
 			r = Region((2*x - boxsize)/2,(2*y - boxsize)/2, (2*z - boxsize)/2, boxsize, boxsize, boxsize)
 			e = EMData()
 			e.read_image(tomogram,0,False,r)
-		if contrast:
+		if invert:
+			print "Particle has the following mean BEFORE contrast inversion", e['mean']			
+			print "Inverting contrast because --invert is", invert
 			e=e*-1
+			print "Particle has the following mean AFTER contrast inversion", e['mean']			
 		
 		#It IS CONVENIENT to record any processing done on the particles as header parameters
 
 		#e['e2spt_tomogram'] = tomogram
 		
-		e['ptcl_source_image'] = tomogram
+		e['ptcl_source_image'] = os.path.basename(tomogram)
 		
 		#e['e2spt_coordx'] = x
 		#e['e2spt_coordy'] = y
@@ -357,6 +363,11 @@ def commandline_tomoboxer(tomogram,options):
 	
 	k=-1
 	name = options.output
+
+
+	if options.bruteaverage:
+		avgr=Averagers.get('mean.tomo')
+	
 	for i in range(set):
 	
 		#Some people might manually make ABERRANT coordinates files with commas, tabs, or more than once space in between coordinates
@@ -390,7 +401,7 @@ def commandline_tomoboxer(tomogram,options):
 		fsp=os.path.basename(str(name))
 		
 		if e:
-			print "There was a particle successfully returned, with the following box size and normalized mean value"
+			print "There was a particle successfully returned, with the following box size and mean value"
 			print e['nx'],e['ny'],e['nz']
 			print e['mean']
 			
@@ -416,11 +427,12 @@ def commandline_tomoboxer(tomogram,options):
 			e['origin_y'] = 0				
 			e['origin_z'] = 0
 			
-			
-			print "\nThe file name to write out to is", name
-			print "And the particle number is %d\n" % i
-			
-			print "!!!!!!\n!!!!!!!\n!!!!!!!\n fsp is", fsp 
+			if options.normproc:
+				e.process_inplace(options.normproc)
+			#print "\nThe file name to write out to is", name
+			#print "And the particle number is %d\n" % i
+			#
+			#print "!!!!!!\n!!!!!!!\n!!!!!!!\n fsp is", fsp 
 			
 			if options.output_format != 'single':
 					fsp = name
@@ -435,6 +447,7 @@ def commandline_tomoboxer(tomogram,options):
 						sys.exit()
 					else:
 						print "!!!!!!\n!!!!!!!\n!!!!!!!\n STACK Image being written to!", fsp, i 
+						
 						e.write_image(fsp,i)
 
 			else:
@@ -455,6 +468,13 @@ def commandline_tomoboxer(tomogram,options):
 					print "ERROR: Only .hdf, .mrc and bdb: formats are supported!"
 					sys.exit()
 			#e.write_image(name,k)
+			if options.bruteaverage:
+				avgr.add_image(e)
+		
+	if options.bruteaverage:	
+		avg=avgr.finish()
+		avg.write_image(options.output.split('.')[0] + '_AVG.' + options.output.split('.')[-1])
+			
 	return()
 
 
@@ -695,7 +715,7 @@ class EMBoxViewer(QtGui.QWidget):
 class EMTomoBoxer(QtGui.QMainWindow):
 	"""This class represents the EMTomoBoxer application instance.  """
 	
-	def __init__(self,application,data=None,datafile=None,yshort=False,apix=0.0,boxsize=32,shrink=1,contrast=None,center=None,mod=False):
+	def __init__(self,application,data=None,datafile=None,yshort=False,apix=0.0,boxsize=32,shrink=1,contrast=None,center=None,mod=False,normalize=False):
 		QtGui.QWidget.__init__(self)
 		
 		self.app=weakref.ref(application)
@@ -1087,7 +1107,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				#img['origin_x'] = 0						
 				#img['origin_y'] = 0				
 				#img['origin_z'] = 0
-			
+				
+				if normalize:
+					img.process_inplace(normalize)
 				#img=img.process('normalize.edgemean')
 
 				if fsp[:4].lower()=="bdb:": 
@@ -1142,7 +1164,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				#img['origin_x'] = 0						
 				#img['origin_y'] = 0				
 				#img['origin_z'] = 0
-			
+				if normalize:
+					e.process_inplace(normalize)
 				#img=img.process('normalize.edgemean')
 			
 				img.write_image(fsp,i)
@@ -1169,7 +1192,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				#img['origin_x'] = 0						
 				#img['origin_y'] = 0				
 				#img['origin_z'] = 0
-			
+				if normalize:
+					img.process_inplace(normalize)
 				#img=img.process('normalize.edgemean')
 			
 				img.write_image(fsp,i)
