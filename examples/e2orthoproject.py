@@ -2,7 +2,7 @@
 
 '''
 ====================
-Author: Jesus Galaz - whoknows-2012, Last update: 11/23/2012
+Author: Jesus Galaz - whoknows-2012, Last update: 23/Feb/2013
 ====================
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -67,10 +67,14 @@ def main():
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
+	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
+
 	(options, args) = parser.parse_args()	
 	
 	logger = E2init(sys.argv, options.ppid)
 
+	if options.mask: 
+		options.mask=parsemodopt(options.mask)
 	
 	'''
 	Check for sanity of some supplied parameters
@@ -172,6 +176,10 @@ def main():
 			submodelname = subpath + '/' + model.split('.')[0] + '_ptcl' + str(i).zfill(len(str(n))) + '_prjs.hdf'
 			
 			apix = submodel['apix_x']
+			
+			if options.mask:
+				print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
+				submodel.process_inplace(options.mask[0],options.mask[1])
 			
 			k=0
 			for d in projectiondirections:					
