@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus Galaz, 04/28/2012; last update 02/01/2013
+# Author: Jesus Galaz, 04/28/2012; last update 24/Feb/2013
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -107,6 +107,13 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	logger = E2init(sys.argv, options.ppid)
+
+
+	if options.mask: 
+		options.mask=parsemodopt(options.mask)
+
+	if options.lowpass: 
+		options.lowpass=parsemodopt(options.lowpass)
 
 	if not options.output and not options.plotonly:
 		print "ERROR: Unless you provide .txt files through --plotonly, you must specify an --output in .txt format."
