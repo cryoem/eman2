@@ -538,6 +538,8 @@ float* ColorRGBGenerator::getRGBColor(int x, int y, int z)
 MarchingCubes::MarchingCubes()
 	: _isodl(0), needtobind(1)
 {
+
+if ((int(glGetString(GL_VERSION)[0])-48)>2){
 	rgbgenerator = ColorRGBGenerator();
 
 #ifdef _WIN32
@@ -547,12 +549,14 @@ MarchingCubes::MarchingCubes()
 #endif	//_WIN32
 
 	glGenBuffers(4, buffer);
+}
 
 }
 
 MarchingCubes::MarchingCubes(EMData * em)
-	: _isodl(0), needtobind(1)
+	: _isodl(0)
 {
+if ((int(glGetString(GL_VERSION)[0])-48)>2){
 	rgbgenerator = ColorRGBGenerator();
 
 #ifdef _WIN32
@@ -561,9 +565,14 @@ MarchingCubes::MarchingCubes(EMData * em)
 	glGenBuffers = (PFNGLGENBUFFERSPROC) wglGetProcAddress("glGenBuffers");
 #endif	//_WIN32
 
-	glGenBuffers(4, buffer);
+	glGenBuffers(4, buffer);		
+	set_data(em);}
+else{
 	set_data(em);
+	}
 }
+
+
 
 void MarchingCubes::clear_min_max_vals()
 {
@@ -624,6 +633,7 @@ bool MarchingCubes::calculate_min_max_vals()
 MarchingCubes::~MarchingCubes() {
 	clear_min_max_vals();
 
+if ((int(glGetString(GL_VERSION)[0])-48)>2){
 #ifdef _WIN32
 	typedef void (APIENTRYP PFNGLDELETEBUFFERSPROC) (GLsizei n, const GLuint *buffers);
 	PFNGLDELETEBUFFERSPROC glDeleteBuffers;
@@ -631,6 +641,7 @@ MarchingCubes::~MarchingCubes() {
 #endif	//_WIN32
 
 	glDeleteBuffers(4, buffer);
+}
 }
 
 Dict MarchingCubes::get_isosurface()
@@ -657,7 +668,7 @@ void MarchingCubes::surface_face_z()
 	
 		Dict d;
 		d["type"] = "spin";
-		d["omega"] =  90.f;
+		d["Omega"] =  90.f;
 		d["n1"] = axis[0];
 		d["n2"] = axis[1];
 		d["n3"] = 0;

@@ -42,7 +42,10 @@ from valslider import ValSlider, EMSpinWidget
 from emshapeitem3d import EMInspectorControlShape
 from emglobjects import get_default_gl_colors
 import os.path
+import sys
 import math
+
+from emglobjects import EMViewportDepthTools, Camera2, get_default_gl_colors,get_RGB_tab, EM3DModel
 
 
 
@@ -1098,7 +1101,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		self.sampling_spinbox.setMinimum(1)
 		self.sampling_spinbox.setMaximum(1+range-1)
 
-class EMIsosurface(EMItem3D):
+class EMIsosurface(EMItem3D,EM3DModel):
 	"""
 	This displays an isosurface, which is a surface containing all the voxels that have the value of the given threshold.
 	It must have an EMDataItem3D as its parent in the tree data structure for the scene graph.
@@ -1124,6 +1127,7 @@ class EMIsosurface(EMItem3D):
 	
 	@staticmethod
 	def getNodeForDialog(attribdict):
+
 		"""
 		Create a new node using a attribdict
 		"""
@@ -1135,7 +1139,10 @@ class EMIsosurface(EMItem3D):
 		"""
 		if not transform: transform = Transform()	# Object initialization should not be put in the constructor. Causes issues
 		EMItem3D.__init__(self, parent, children, transform=transform)
-		
+		self.data = None
+		self.data_copy = None		
+
+		self.light= True
 		self.isothr = None #Will be set in self.dataChanged()
 		self.isodl = 0
 		self.smpval=-1
@@ -1150,10 +1157,17 @@ class EMIsosurface(EMItem3D):
 		self.cmapmax = 0.0
 		self.cmapdata = None
 		self.cmapfilename = ""
+		self.dxsize=0
+		self.dysize=0
+		self.dzsize=0
+		
+		self.cube=False
+		self.cam=Camera2(self)
+		self.vdtools = EMViewportDepthTools(self)
 
 #		self.brightness = 0
 #		self.contrast = 10
-#		self.rank = 1
+		self.rank = 1
 		self.data_copy = None
 		self.force_update = False
 		self.loadColors()
@@ -1163,18 +1177,18 @@ class EMIsosurface(EMItem3D):
 		self.specular = self.colors[self.isocolor]["specular"]
 		self.ambient = self.colors[self.isocolor]["ambient"]		
 		self.shininess = self.colors[self.isocolor]["shininess"]
-		
+
 		if parent: self.dataChanged()
 		
 	def getEvalString(self):
-		return "EMIsosurface()"
+		return "EMIsosurface(),getEvalString"
 	
 	def dataChanged(self):
 		"""
 		When the EMData changes for EMDataItem3D parent node, this method is called. It is responsible for updating the state of the slice node.
 		"""
 		data = self.getParent().getData()
-	
+		
 		self.minden = data.get_attr("minimum")
 		self.maxden = data.get_attr("maximum")
 		self.mean   = data.get_attr("mean")
@@ -1193,6 +1207,11 @@ class EMIsosurface(EMItem3D):
 		self.isorender = MarchingCubes(data)
 		self.outerrad = data.get_xsize()/2.0
 		
+		self.dxsize=data.get_xsize()/2.0
+		self.dysize=data.get_ysize()/2.0
+		self.dzsize=data.get_zsize()/2.0
+		
+		if ( self.texture ): self.gen_texture()
 		if self.item_inspector: self.getItemInspector().updateItemControls() # The idea is to use lazy evaluation for the item inspectors. Forcing inspector creation too early causes bugs!
 	
 		
@@ -1294,123 +1313,211 @@ class EMIsosurface(EMItem3D):
 		# create the isosurface display list
 		self.isorender.set_surface_value(self.isothr)
 		self.isorender.set_sampling(self.smpval)
-		
-		GLUtil.contour_isosurface(self.isorender)
-	
+
+		if (float(glGetString(GL_VERSION).split(".")[0])>2):
+			GLUtil.contour_isosurface(self.isorender)
+		else: 
+			if ( self.texture ):
+				if ( self.tex_name == 0 ):
+					self.update_data_and_texture()
+			
+			face_z = False
+			if self.dzsize <= 2:
+				face_z = True
+			
+			if ( self.texture  ):
+				self.isodl = GLUtil.get_isosurface_dl(self.isorender, self.tex_name,face_z)
+			else:
+				self.isodl = GLUtil.get_isosurface_dl(self.isorender, 0,face_z)
 
 	def renderNode(self):
 		if (not isinstance(self.parent.data,EMData)): return
 		#a = time()
+		if (float(glGetString(GL_VERSION).split(".")[0])>2):
 
-		scenegraph = self.getRootNode()
-		cull = glIsEnabled(GL_CULL_FACE)
-		polygonmode = glGetIntegerv(GL_POLYGON_MODE)
-
-		if self.cullbackfaces:
+			scenegraph = self.getRootNode()
+			cull = glIsEnabled(GL_CULL_FACE)
+			polygonmode = glGetIntegerv(GL_POLYGON_MODE)
+	
+			if self.cullbackfaces:
+				glEnable(GL_CULL_FACE)
+				glCullFace(GL_BACK)
+			else:
+				if not cull:
+					glDisable(GL_CULL_FACE)
+	
+			if ( self.wire ):
+				glPolygonMode(GL_FRONT,GL_LINE);
+			else:
+				glPolygonMode(GL_FRONT,GL_FILL);
+			
+			glShadeModel(GL_SMOOTH)
+			if (self.force_update):
+				self.getIsosurfaceContours()
+				self.force_update = False
+			
+			if self.rgbmode != 0:
+				glEnable(GL_COLOR_MATERIAL)	
+				glColorMaterial(GL_FRONT, GL_AMBIENT)
+				glColorMaterial(GL_FRONT, GL_DIFFUSE)
+			else:
+				glDisable(GL_COLOR_MATERIAL)
+			# This code draws an outline around the isosurface
+			if (self.is_selected or self.getParent().is_selected) and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded(): # No need for outlining in selection mode			
+				glPushAttrib( GL_ALL_ATTRIB_BITS )
+			
+				if scenegraph.camera.getCappingMode(): glDisable(GL_CULL_FACE)
+				# First get a stencil of the object silluette
+				glClearStencil(0)
+				glClear( GL_STENCIL_BUFFER_BIT )
+				glEnable( GL_STENCIL_TEST )
+				glStencilFunc( GL_ALWAYS, 1, 0xFFFF )		# Write to stencil buffer
+				glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )	# Make stencil of object outline
+				if ( self.wire ):
+					glPolygonMode(GL_FRONT_AND_BACK,GL_LINE)
+				else:
+					glPolygonMode(GL_FRONT_AND_BACK,GL_FILL)	
+				self.renderIso()
+			
+				# Then render the outline
+				glStencilFunc( GL_NOTEQUAL, 1, 0xFFFF )		# The object itself is stenciled out
+				glLineWidth( 4.0 )				# By increasing the line width only the outline is drawn
+				glPolygonMode( GL_FRONT_AND_BACK, GL_LINE )
+				glMaterialfv(GL_FRONT, GL_EMISSION, [0.0, 1.0, 0.0, 1.0])
+				self.renderIso()
+		
+				glPopAttrib()	
+				
+			elif (scenegraph.camera.getCappingMode() and not scenegraph.zslicemode and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER):
+				# First get a stencil of the object silluette
+				glPushAttrib( GL_ALL_ATTRIB_BITS )
+	
+				glDisable(GL_CULL_FACE)
+				glClear( GL_STENCIL_BUFFER_BIT )
+				glClearStencil(0)
+				glEnable( GL_STENCIL_TEST )
+				glStencilFunc( GL_ALWAYS, 1, 0xFFFF )		# Write to stencil buffer
+				glStencilOp( GL_KEEP, GL_INVERT, GL_INVERT )	# Stencil buffer is 0 along clipping planes
+				
+				self.renderIso()
+				
+				glStencilFunc( GL_NOTEQUAL, 0, 0xFFFF )	
+	
+				glDisable(GL_COLOR_MATERIAL)
+				glMaterialfv(GL_FRONT, GL_SPECULAR, [0.0,0.0,0.0,1.0])
+				glMaterialfv(GL_FRONT, GL_AMBIENT, scenegraph.camera.getCapColor())
+				glMaterialfv(GL_FRONT, GL_DIFFUSE, scenegraph.camera.getCapColor())
+	
+				# Draw plane of the capping color
+				glPushMatrix()
+				glLoadIdentity()
+				
+				x = float(scenegraph.camera.getWidth()/2.0)
+				y = float(scenegraph.camera.getHeight()/2.0)
+				z = -float(scenegraph.camera.getClipNear() + 0.5)
+				
+				glBegin(GL_QUADS)
+				glVertex3f(-x, -y, z)
+				glVertex3f(x, -y, z)
+				glVertex3f(x, y, z)
+				glVertex3f(-x, y, z)
+				glEnd()
+				
+				glPopMatrix()
+	
+				glPopAttrib()
+			else:
+				glPushAttrib( GL_ALL_ATTRIB_BITS )
+				
+				self.renderIso()
+				
+				glPopAttrib()
+	#		self.draw_bc_screen() #TODO: check into porting this from EM3DModel
+					
+			if cull: glEnable(GL_CULL_FACE)
+			else: glDisable(GL_CULL_FACE)
+			
+			if ( polygonmode[0] == GL_LINE ): 
+				glPolygonMode(GL_FRONT, GL_LINE)
+			else: 
+				glPolygonMode(GL_FRONT, GL_FILL)
+			
+			#print "total time is", time()-a
+		else:
+			lighting = glIsEnabled(GL_LIGHTING)
+			cull = glIsEnabled(GL_CULL_FACE)
+			depth = glIsEnabled(GL_DEPTH_TEST)
+			polygonmode = glGetIntegerv(GL_POLYGON_MODE)
+			normalize = glIsEnabled(GL_NORMALIZE)
+		
+		
 			glEnable(GL_CULL_FACE)
 			glCullFace(GL_BACK)
-		else:
-			if not cull:
-				glDisable(GL_CULL_FACE)
-
-		if ( self.wire ):
-			glPolygonMode(GL_FRONT,GL_LINE);
-		else:
-			glPolygonMode(GL_FRONT,GL_FILL);
-		
-		glShadeModel(GL_SMOOTH)
-		if (self.force_update):
-			self.getIsosurfaceContours()
-			self.force_update = False
-		
-		if self.rgbmode != 0:
-			glEnable(GL_COLOR_MATERIAL)	
-			glColorMaterial(GL_FRONT, GL_AMBIENT)
-			glColorMaterial(GL_FRONT, GL_DIFFUSE)
-		else:
-			glDisable(GL_COLOR_MATERIAL)
-		# This code draws an outline around the isosurface
-		if (self.is_selected or self.getParent().is_selected) and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded(): # No need for outlining in selection mode			
-			glPushAttrib( GL_ALL_ATTRIB_BITS )
-		
-			if scenegraph.camera.getCappingMode(): glDisable(GL_CULL_FACE)
-			# First get a stencil of the object silluette
-			glClearStencil(0)
-			glClear( GL_STENCIL_BUFFER_BIT )
-			glEnable( GL_STENCIL_TEST )
-			glStencilFunc( GL_ALWAYS, 1, 0xFFFF )		# Write to stencil buffer
-			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )	# Make stencil of object outline
+			#glDisable(GL_CULL_FACE)
+			glEnable(GL_DEPTH_TEST)
+			glEnable(GL_NORMALIZE)
+			#glDisable(GL_NORMALIZE)
 			if ( self.wire ):
-				glPolygonMode(GL_FRONT_AND_BACK,GL_LINE)
+				glPolygonMode(GL_FRONT,GL_LINE);
 			else:
-				glPolygonMode(GL_FRONT_AND_BACK,GL_FILL)	
-			self.renderIso()
+				glPolygonMode(GL_FRONT,GL_FILL);
 		
-			# Then render the outline
-			glStencilFunc( GL_NOTEQUAL, 1, 0xFFFF )		# The object itself is stenciled out
-			glLineWidth( 4.0 )				# By increasing the line width only the outline is drawn
-			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE )
-			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0, 1.0, 0.0, 1.0])
-			self.renderIso()
-	
-			glPopAttrib()	
-			
-		elif (scenegraph.camera.getCappingMode() and not scenegraph.zslicemode and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER):
-			# First get a stencil of the object silluette
-			glPushAttrib( GL_ALL_ATTRIB_BITS )
+			if self.light:
+				glEnable(GL_LIGHTING)
+			else:
+				glDisable(GL_LIGHTING)
 
-			glDisable(GL_CULL_FACE)
-			glClear( GL_STENCIL_BUFFER_BIT )
-			glClearStencil(0)
-			glEnable( GL_STENCIL_TEST )
-			glStencilFunc( GL_ALWAYS, 1, 0xFFFF )		# Write to stencil buffer
-			glStencilOp( GL_KEEP, GL_INVERT, GL_INVERT )	# Stencil buffer is 0 along clipping planes
-			
-			self.renderIso()
-			
-			glStencilFunc( GL_NOTEQUAL, 0, 0xFFFF )	
-
-			glDisable(GL_COLOR_MATERIAL)
-			glMaterialfv(GL_FRONT, GL_SPECULAR, [0.0,0.0,0.0,1.0])
-			glMaterialfv(GL_FRONT, GL_AMBIENT, scenegraph.camera.getCapColor())
-			glMaterialfv(GL_FRONT, GL_DIFFUSE, scenegraph.camera.getCapColor())
-
-			# Draw plane of the capping color
+		
 			glPushMatrix()
-			glLoadIdentity()
-			
-			x = float(scenegraph.camera.getWidth()/2.0)
-			y = float(scenegraph.camera.getHeight()/2.0)
-			z = -float(scenegraph.camera.getClipNear() + 0.5)
-			
-			glBegin(GL_QUADS)
-			glVertex3f(-x, -y, z)
-			glVertex3f(x, -y, z)
-			glVertex3f(x, y, z)
-			glVertex3f(-x, y, z)
-			glEnd()
-			
+			self.cam.position(True)
+		# the ones are dummy variables atm... they don't do anything
+			self.vdtools.update(1,1)
 			glPopMatrix()
+		
+			self.cam.position()
+			glShadeModel(GL_SMOOTH)
+			if ( self.isodl == 0 or self.force_update ):
+				self.getIsosurfaceContours()
+				self.force_update = False
+			
+			glStencilFunc(GL_EQUAL,self.rank,0)
+			glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE)
+			glMaterial(GL_FRONT, GL_AMBIENT, self.colors[self.isocolor]["ambient"])
+			glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.isocolor]["diffuse"])
+			glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.isocolor]["specular"])
+			glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.isocolor]["shininess"])
+			glMaterial(GL_FRONT, GL_EMISSION, self.colors[self.isocolor]["emission"])
+			glColor(self.colors[self.isocolor]["ambient"])
+			glPushMatrix()
+			glTranslate(-self.dxsize,-self.dysize,-self.dzsize)
+			if ( self.texture ):
+				glScalef(self.dxsize*2.0,self.dysize*2.0,self.dzsize*2.0)
+#			print self.isodl
+			glCallList(self.isodl)
+			glPopMatrix()
+			
+			self.draw_bc_screen()
 
-			glPopAttrib()
-		else:
-			glPushAttrib( GL_ALL_ATTRIB_BITS )
-			
-			self.renderIso()
-			
-			glPopAttrib()
-#		self.draw_bc_screen() #TODO: check into porting this from EM3DModel
+			glStencilFunc(GL_ALWAYS,1,1)
+			if self.cube:
+				glDisable(GL_LIGHTING)
+				glPushMatrix()
+				self.draw_volume_bounds()
+				glPopMatrix()
 				
-		if cull: glEnable(GL_CULL_FACE)
-		else: glDisable(GL_CULL_FACE)
-		
-		if ( polygonmode[0] == GL_LINE ): 
-			glPolygonMode(GL_FRONT, GL_LINE)
-		else: 
-			glPolygonMode(GL_FRONT, GL_FILL)
-		
-		#print "total time is", time()-a
-	
+			if ( lighting ): glEnable(GL_LIGHTING)
+			else: glDisable(GL_LIGHTING)
+			if ( not cull ): glDisable(GL_CULL_FACE)
+			else: glDisable(GL_CULL_FACE)
+			if ( depth ): glEnable(GL_DEPTH_TEST)
+			else : glDisable(GL_DEPTH_TEST)
+			
+			if ( not normalize ): glDisable(GL_NORMALIZE)
+			
+			if ( polygonmode[0] == GL_LINE ): glPolygonMode(GL_FRONT, GL_LINE)
+			else: glPolygonMode(GL_FRONT, GL_FILL)
+			
+
 	def renderIso(self):
 		# This is needed for the inspector to work John Flanagan	
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
@@ -1434,5 +1541,16 @@ class EMIsosurface(EMItem3D):
 #			self.brightness = -val
 
 			self.getIsosurfaceContours()
+	
+	def gen_texture(self):
+		if ( self.texture == False ): return
+		if ( self.tex_name != 0 ):
+			glDeleteTextures(self.tex_name)
 		
+		if ( self.data_copy == None ):
+			self.tex_name = GLUtil.gen_gl_texture(self.data)
+		else:
+			self.tex_name = GLUtil.gen_gl_texture(self.data_copy)
 		
+	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
+		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)	
