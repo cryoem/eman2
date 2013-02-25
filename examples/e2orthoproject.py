@@ -2,7 +2,7 @@
 
 '''
 ====================
-Author: Jesus Galaz - whoknows-2012, Last update: 23/Feb/2013
+Author: Jesus Galaz - whoknows-2012, Last update: 24/Feb/2013
 ====================
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -68,6 +68,7 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
+	parser.add_argument("--lowpass",type=str,help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.", default=None)
 
 	(options, args) = parser.parse_args()	
 	
@@ -75,6 +76,9 @@ def main():
 
 	if options.mask: 
 		options.mask=parsemodopt(options.mask)
+		
+	if options.lowpass: 
+		options.lowpass=parsemodopt(options.lowpass)
 	
 	'''
 	Check for sanity of some supplied parameters
@@ -176,6 +180,9 @@ def main():
 			submodelname = subpath + '/' + model.split('.')[0] + '_ptcl' + str(i).zfill(len(str(n))) + '_prjs.hdf'
 			
 			apix = submodel['apix_x']
+			
+			if options.lowpass:
+				submodel.process_inplace(options.lowpass[0],options.lowpass[1])
 			
 			if options.mask:
 				print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
