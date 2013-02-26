@@ -9335,7 +9335,7 @@ def rot_sym(infile, outfile, sym_gp="d4", \
 def transform2d(stack_data, stack_data_ali):
 # apply 2D alignment parameters stored in the header of the input stack file using gridding interpolation and create an output stack file
 	from fundamentals   import rot_shift2D
-	from utilities 	    import set_arb_params, set_params2D, get_params2D
+	from utilities 	    import set_params2D, get_params2D, get_im
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	import os
 
@@ -9343,29 +9343,12 @@ def transform2d(stack_data, stack_data_ali):
 	print_msg("Input stack                 : %s\n"%(stack_data))
 	print_msg("Output stack                : %s\n\n"%(stack_data_ali))
 
-	if os.path.exists(stack_data_ali): os.system("rm -f "+stack_data_ali)
-
-	attributes = ['nclass', 'assign']
-	t = Transform({"type":"2D"})
-	data = EMData()
 	nima = EMUtil.get_image_count(stack_data)
-	data.read_image(stack_data, 0)
 	for im in xrange(nima):
-		if im>0:
-			data = EMData()
-			data.read_image(stack_data, im)
-		l = data.get_attr_dict()
-		params = []
-		for ia in xrange(len(attributes)):
-			if(attributes[ia] in l):
-				params.append(data.get_attr(attributes[ia]))
-			else:
-				params.append(0)
-		al2d = get_params2D(data)
-		# apply params to the image
-		temp = rot_shift2D(data, al2d[0], al2d[1], al2d[2], al2d[3])
-		temp.set_attr("xform.align2d", t)
-		set_arb_params(temp, params, attributes)
+		data = get_im(stack_data, im)
+		a,b,c,d = get_params2D(data)
+		temp = rot_shift2D(data, a,b,c,d)
+		set_arb_params(temp, [0.,0.,0.,1.0])
 		temp.write_image(stack_data_ali, im)
 	print_end_msg("transform2d")
 
