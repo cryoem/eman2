@@ -79,7 +79,7 @@ def main():
 	if options.transformsfile:
 		n=EMUtil.get_image_count(options.input)
 		if n>1:
-			print "ERROR: You cannot supply --transformsfile for particle stacks; it only works for individual volumes".
+			print "ERROR: You cannot supply --transformsfile for particle stacks; it only works for individual volumes."
 			sys.exit()
 			
 	logger = E2init(sys.argv, options.ppid)
