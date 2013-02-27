@@ -3141,14 +3141,9 @@ void Util::Applyws(EMData* circp, vector<int> numr, vector<float> wr)
 		const int numr2i = numr[1+i*3]-1;
 		const float w = wr[i];
 		circ[numr2i] *= w;
-		if (numr3i == maxrin) {
-			circ[numr2i+1] *= w;
-		} else {
-			circ[numr2i+1] *= 0.5*w;
-		}
-		for (int j = 2+numr2i; j < numr3i+numr2i; ++j) {
-			circ[j] *= w;
-		}
+		if (numr3i == maxrin)  circ[numr2i+1] *= w;
+		else                   circ[numr2i+1] *= 0.5*w;
+		for (int j = 2+numr2i; j < numr3i+numr2i; ++j)  circ[j] *= w;
 	}
 }
 
@@ -3967,7 +3962,7 @@ c
 		q(1) += circ1(numr2i) * circ2(numr2i);
 
 		if (numr3i == maxrin)   q(2) += circ1(numr2i+1) * circ2(numr2i+1);
-		else  q(numr3i+1) += circ1(numr2i+1) * circ2(numr2i+1);
+		else                 q(numr3i+1) += circ1(numr2i+1) * circ2(numr2i+1);
 
 		for (j=3; j<=numr3i; j += 2) {
 			jc     = j+numr2i-1;
@@ -4057,8 +4052,8 @@ EMData* Util::Crosrng_msg(EMData* circ1, EMData* circ2, vector<int> numr) {
 		numr2i = numr(2,i);
 
 		t1   = circ1b(numr2i) * circ2b(numr2i);
-		q(1) = q(1)+t1;
-		t(1) = t(1)+t1;
+		q(1) += t1;
+		t(1) += t1;
 
 		t1   = circ1b(numr2i+1) * circ2b(numr2i+1);
 		if (numr3i == maxrin)  {
@@ -4199,7 +4194,7 @@ EMData* Util::Crosrng_msg_s(EMData* circ1, EMData* circ2, vector<int> numr)
 {
 
 	int   ip, jc, numr3i, numr2i, i, j;
-	float t1, t2, t3, t4, c1, c2, d1, d2;
+	float c1, c2, d1, d2;
 
 	int nring = numr.size()/3;
 	int maxrin = numr[numr.size()-1];
@@ -4224,16 +4219,10 @@ EMData* Util::Crosrng_msg_s(EMData* circ1, EMData* circ2, vector<int> numr)
 		numr3i = numr(3,i);
 		numr2i = numr(2,i);
 
-		t1   = circ1b(numr2i) * circ2b(numr2i);
-		q(1) = q(1)+t1;
+		q(1) += circ1b(numr2i) * circ2b(numr2i);
 
-		if (numr3i == maxrin)  {
-			t1   = circ1b(numr2i+1) * circ2b(numr2i+1);
-			q(2) = q(2)+t1;
-		} else {
-			t1  		= circ1b(numr2i+1) * circ2b(numr2i+1);
-			q(numr3i+1) = q(numr3i+1)+t1;
-		}
+		if (numr3i == maxrin)   q(2) += circ1b(numr2i+1) * circ2b(numr2i+1);
+		else             q(numr3i+1) += circ1b(numr2i+1) * circ2b(numr2i+1);
 
 		for (j=3;j<=numr3i;j=j+2) {
 			jc     = j+numr2i-1;
@@ -4243,13 +4232,8 @@ EMData* Util::Crosrng_msg_s(EMData* circ1, EMData* circ2, vector<int> numr)
 			d1     = circ2b(jc);
 			d2     = circ2b(jc+1);
 
-			t1     = c1 * d1;
-			t3     = c1 * d2;
-			t2     = c2 * d2;
-			t4     = c2 * d1;
-
-			q(j)   = q(j)	+ t1 + t2;
-			q(j+1) = q(j+1) - t3 + t4;
+			q(j)   += c1 * d1 + c2 * d2;
+			q(j+1) += -c1 * d2 + c2 * d1;
 		}
 	}
 
@@ -4270,7 +4254,7 @@ EMData* Util::Crosrng_msg_m(EMData* circ1, EMData* circ2, vector<int> numr)
 {
 
 	int   ip, jc, numr3i, numr2i, i, j;
-	float t1, t2, t3, t4, c1, c2, d1, d2;
+	float c1, c2, d1, d2;
 
 	int nring = numr.size()/3;
 	int maxrin = numr[numr.size()-1];
@@ -4294,14 +4278,10 @@ EMData* Util::Crosrng_msg_m(EMData* circ1, EMData* circ2, vector<int> numr)
 
 		numr3i = numr(3,i);
 		numr2i = numr(2,i);
+		t(1) += circ1b(numr2i) * circ2b(numr2i);
 
-		t1   = circ1b(numr2i) * circ2b(numr2i);
-		t(1) = t(1)+t1;
-
-		if (numr3i == maxrin)  {
-			t1   = circ1b(numr2i+1) * circ2b(numr2i+1);
-			t(2) = t(2)+t1;
-		}
+		if (numr3i == maxrin)  t(2) += circ1b(numr2i+1) * circ2b(numr2i+1);
+		else          t(numr3i+1) += circ1b(numr2i+1) * circ2b(numr2i+1);
 
 		for (j=3;j<=numr3i;j=j+2) {
 			jc     = j+numr2i-1;
@@ -4311,13 +4291,8 @@ EMData* Util::Crosrng_msg_m(EMData* circ1, EMData* circ2, vector<int> numr)
 			d1     = circ2b(jc);
 			d2     = circ2b(jc+1);
 
-			t1     = c1 * d1;
-			t3     = c1 * d2;
-			t2     = c2 * d2;
-			t4     = c2 * d1;
-
-			t(j)   = t(j)	+ t1 - t2;
-			t(j+1) = t(j+1) - t3 - t4;
+			t(j)   +=  c1 * d1 - c2 * d2;
+			t(j+1) += -c1 * d2 - c2 * d1;
 		}
 	}
 
@@ -19022,7 +18997,7 @@ vector<float> Util::multiref_polar_ali_helical_90_local(EMData* image, const vec
 						Dict retvals; 
 						if ((psi-90.0f) < 90.0f) retvals = Crosrng_sm_psi(crefim[iref], cimage, numr,   0, 0, psi_max);
 						else                     retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, 180, 0, psi_max);
-						    
+
 						double qn = retvals["qn"];
 						if( qn >= peak) {
 							sx = -ix;
