@@ -7988,7 +7988,7 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 
 	from utilities    import   model_blank, print_msg, amoeba, combine_params2
 	from random       import   seed, randint
-	from alignment    import   Applyws, ang_n
+	from alignment    import   ang_n
 	from development  import   oned_search_func
 	from random       import   gauss
 	from EMAN2 import Processor
@@ -8005,7 +8005,7 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 	# calculate random approximation of the total average
 	tave = data[rnd[0]].copy()
 	tave_w = tave.copy()
-	Applyws(tave_w, numr, wr)
+	Util.Applyws(tave_w, numr, wr)
 	maxrin = numr[len(numr)-1]
 		
 	line = EMData()
@@ -8086,7 +8086,7 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 		data[im].set_attr_dict({'alpha':alpha, 'mirror': mirror})		
 		Util.update_fav(tave, data[im], alpha, mirror, numr)
 		tave_w = tave.copy()
-		Applyws(tave_w, numr, wr)
+		Util.Applyws(tave_w, numr, wr)
 	
 	nx = tave.get_xsize()
 	a0 = Util.ener(tave, numr)
@@ -8108,7 +8108,7 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 			refim = tave.copy()
 			Util.sub_fav(refim, data[im], alpha, mirror, numr)
 			refim_w = refim.copy()
-			Applyws(refim_w, numr, wr)
+			Util.Applyws(refim_w, numr, wr)
 			# align current image to the reference minus this image
 			if (check_mirror):
 				qt = Util.Crosrng_msg(refim_w, data[im], numr)

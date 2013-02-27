@@ -681,7 +681,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			 stability=False, stab_ali=5, iter_reali=1, thld_err=1.732, FL=0.1, FH=0.3, FF=0.2, dst=90.0):
 	
 	from global_def   import EMData, Util
-	from alignment	import Numrinit, ringwe, Applyws
+	from alignment	import Numrinit, ringwe
 	from applications import MPI_start_end, within_group_refinement
 	from filter	   import filt_tanl
 	from fundamentals import rot_shift2D, fshift
@@ -781,7 +781,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			refi[j].process_inplace("normalize.mask", {"mask":mask, "no_sigma":1}) # normalize reference images to N(0,1)
 			cimage = Util.Polar2Dm(refi[j] , cnx, cny, numr, mode)
 			Util.Frngs(cimage, numr)
-			Applyws(cimage, numr, wr)
+			Util.Applyws(cimage, numr, wr)
 			ringref.append(cimage)
 #		if CTF: ctf2 = [[[0.0]*lctf for k in xrange(2)] for j in xrange(numref)]
 		peak_list = [[] for i in xrange(numref)]

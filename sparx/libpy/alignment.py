@@ -1844,6 +1844,43 @@ def align2d_no_mirror(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_r
 	Util.Applyws(crefim, numr, wr)
 	return ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny)
 
+def get_inplane_angle(ima, ref, iring=1, fring=-1, ringstep=1, xtransSearch=0, ytransSearch=0, stp=1, center=1):
+	""" 
+		Get the in_plane angle from two images
+		and output the crosss correlation value
+		The function won't destroy input two images
+		This is the angle that rotates the first image, ima, into the second image, ref.
+		The sense of the rotation is clockwise.
+		center=1 means image is first centered, then rotation angle is found
+	"""
+
+	from alignment import Numrinit, ringwe, ormq
+	from filter import fshift
+
+	first_ring=int(iring); last_ring=int(fring); rstep=int(ringstep); xrng=int(xtransSearch); yrng=int(ytransSearch); step=int(stp)	
+	nx=ima.get_xsize()
+	if(last_ring == -1): last_ring=int(nx/2)-2
+	cnx = int(nx/2)+1
+ 	cny = cnx
+ 	mode = "F"
+ 	#precalculate rings
+	numr = Numrinit(first_ring, last_ring, rstep, mode)
+ 	wr = ringwe(numr, mode)
+	if(center==1):
+		cs = [0.0]*2  # additio
+		cs = ref.phase_cog()
+		ref1 = fshift(ref, -cs[0], -cs[1])
+		cimage=Util.Polar2Dm(ref1, cnx, cny, numr, mode)
+		cs = ima.phase_cog()
+		ima1 = fshift(ima, -cs[0], -cs[1])
+	else:
+		ima1=ima.copy()
+		cimage=Util.Polar2Dm(ref, cnx, cny, numr, mode)
+	Util.Frngs(cimage, numr)
+	Util.Applyws(cimage, numr, wr)
+	[angt, sxst, syst, mirrort, peakt]=ormq(ima1, cimage, xrng, yrng, step, mode, numr, cnx, cny)
+	return angt,sxst, syst, mirrort, peakt
+
 
 def align2d_peaks(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rstep=1, mode = "F"):
 	"""  Determine shift and rotation between image and reference image

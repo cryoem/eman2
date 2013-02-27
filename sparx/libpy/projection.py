@@ -158,7 +158,7 @@ def gen_rings_ctf( prjref, nx, ctf, numr):
 	"""
         from math         import sin, cos, pi
 	from fundamentals import fft
-	from alignment    import ringwe, Applyws
+	from alignment    import ringwe
 	from filter       import filt_ctf
 	mode = "F"
 	wr_four  = ringwe(numr, "F")
@@ -173,7 +173,7 @@ def gen_rings_ctf( prjref, nx, ctf, numr):
 		Util.Normalize_ring(cimage, numr)
 
 		Util.Frngs(cimage, numr)
-		Applyws(cimage, numr, wr_four)
+		Util.Applyws(cimage, numr, wr_four)
 		refrings.append(cimage)
 		phi   = prjref[i].get_attr('phi')
 		theta = prjref[i].get_attr('theta')

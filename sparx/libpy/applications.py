@@ -1541,7 +1541,7 @@ def mref_ali2d(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, y
 	from utilities      import   model_circle, combine_params2, inverse_transform2, drop_image, get_image
 	from utilities	    import   center_2D, get_im, get_params2D, set_params2D
 	from statistics     import   fsc
-	from alignment      import   Numrinit, ringwe, Applyws, fine_2D_refinement
+	from alignment      import   Numrinit, ringwe, fine_2D_refinement
 	from fundamentals   import   rot_shift2D, fshift
 	from morphology     import   ctf_2
 	from filter         import   filt_btwl, filt_params
@@ -1643,7 +1643,7 @@ def mref_ali2d(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, y
 			refi[j][0].process_inplace("normalize.mask", {"mask":mask, "no_sigma":1})
 			cimage = Util.Polar2Dm(refi[j][0], cnx, cny, numr, mode)
 			Util.Frngs(cimage, numr)
-			Applyws(cimage, numr, wr)
+			Util.Applyws(cimage, numr, wr)
 			ringref.append(cimage)
 			# zero refi
 			refi[j][0].to_zero()
@@ -1784,7 +1784,7 @@ def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrn
 	from utilities      import   send_attr_dict
 	from utilities	    import   center_2D
 	from statistics     import   fsc_mask
-	from alignment      import   Numrinit, ringwe, Applyws
+	from alignment      import   Numrinit, ringwe
 	from fundamentals   import   rot_shift2D, fshift
 	from utilities      import   get_params2D, set_params2D
 	from random         import   seed, randint
@@ -1909,7 +1909,7 @@ def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrn
 			refi[j][0].process_inplace("normalize.mask", {"mask":mask, "no_sigma":1}) # normalize reference images to N(0,1)
 			cimage = Util.Polar2Dm(refi[j][0] , cnx, cny, numr, mode)
 			Util.Frngs(cimage, numr)
-			Applyws(cimage, numr, wr)
+			Util.Applyws(cimage, numr, wr)
 			ringref.append(cimage)
 			# zero refi
 			refi[j][0].to_zero()
