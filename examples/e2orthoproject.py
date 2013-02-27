@@ -76,6 +76,11 @@ def main():
 
 	(options, args) = parser.parse_args()	
 	
+	
+	if not options.input:
+		print "ERROR: Supply volume(s) through --input=."
+		sys.exit()
+		
 	if options.transformsfile:
 		n=EMUtil.get_image_count(options.input)
 		if n>1:
@@ -179,7 +184,7 @@ def main():
 			k+=1
 	
 	elif options.angles:
-		angles=option.angles
+		angles=options.angles
 		angles=angles.replace(',',' ')
 		angles=angles.split()
 		t=Transform({'type':'eman','az':float(angles[0]),'alt':float(angles[1]),'phi':float(angles[2])})
@@ -239,11 +244,20 @@ def main():
 				#print "The size of the prj is", prj['nx']
 			
 				#prj.process_inplace('normalize')
-				prj.write_image(submodelname,k)
+				
+				tag=''
+				
+				if options.angles:
+					if options.tag:
+						tag=options.tag
+					
+				prj.write_image(submodelname.replace('.','_' + tag + '.'),k)
+				
 				#print "Options.saverotvol is", options.saverotvol
 				if options.saverotvol:
 					submodel_rot = submodel.copy()
 					submodel_rot.transform(projectiondirections[d])
+					
 					volname = submodelname.replace('prjs.', '_vol' + d + '.')
 					#print "I will save the rotated volume to this file", volname
 					submodel_rot.write_image( volname , 0)
