@@ -44,7 +44,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 	# 2D alignment using rotational ccf in polar coords and quadratic interpolation
 	cimage = Util.Polar2Dm(tavg, cnx, cny, numr, mode)
 	Util.Frngs(cimage, numr)
-	Applyws(cimage, numr, wr)
+	Util.Applyws(cimage, numr, wr)
 
 	maxrin = numr[-1]
 	sx_sum = 0.0
@@ -1025,7 +1025,7 @@ def refprojs( volft, kb, ref_angles, last_ring, mask2D, cnx, cny, numr, mode, wr
 		prjref.process_inplace("normalize.mask", {"mask":mask2D, "no_sigma":1})  # (i-a)/s
 		cimage = Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
 		Util.Frngs(cimage, numr)
-		Applyws(cimage, numr, wr)
+		Util.Applyws(cimage, numr, wr)
 		ref_proj_rings.append(cimage)
 
 	return ref_proj_rings
@@ -1787,7 +1787,7 @@ def align2d(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rst
 	     Output: ang, sxs, sys, mirror, peak
 	"""
 	#from utilities import print_col
-	from alignment import Numrinit, ringwe, Applyws
+	from alignment import Numrinit, ringwe
 	step = float(step)
 	nx = refim.get_xsize()
 	ny = refim.get_ysize()
@@ -1809,7 +1809,7 @@ def align2d(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rst
 	#crefim = Util.Polar2D(refim, numr, mode)
 	#print_col(crefim)
 	Util.Frngs(crefim, numr)
-	Applyws(crefim, numr, wr)
+	Util.Applyws(crefim, numr, wr)
 	return ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny)
 
 
@@ -1820,7 +1820,7 @@ def align2d_no_mirror(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_r
 	     Output: ang, sxs, sys, mirror, peak  # Mirror==0
 	"""
 	#from utilities import print_col
-	from alignment import Numrinit, ringwe, Applyws
+	from alignment import Numrinit, ringwe
 	step = float(step)
 	nx = refim.get_xsize()
 	ny = refim.get_ysize()
@@ -1839,7 +1839,7 @@ def align2d_no_mirror(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_r
 	wr   = ringwe(numr, mode)
 	crefim = Util.Polar2Dm(refim, cnx, cny, numr, mode)
 	Util.Frngs(crefim, numr)
-	Applyws(crefim, numr, wr)
+	Util.Applyws(crefim, numr, wr)
 	return ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny)
 
 
@@ -1848,7 +1848,7 @@ def align2d_peaks(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=
 	     quadratic interpolation
 	"""
 	#from utilities import print_col
-	from alignment import Numrinit, ringwe, Applyws
+	from alignment import Numrinit, ringwe
 	step = float(step)
 	nx = refim.get_xsize()
 	ny = refim.get_ysize()
@@ -1864,7 +1864,7 @@ def align2d_peaks(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=
 	#crefim = Util.Polar2D(refim, numr, mode)
 	#print_col(crefim)
 	Util.Frngs(crefim, numr)
-	Applyws(crefim, numr, wr)
+	Util.Applyws(crefim, numr, wr)
 	return ormq_peaks(image, crefim, xrng, yrng, step, mode, numr, cnx, cny)
 
 def align2d_g(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rstep=1, mode = "F"):
@@ -1872,7 +1872,7 @@ def align2d_g(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, r
 	     quadratic interpolation
 	"""
 	from development import ormy2
-	from alignment import Numrinit, ringwe, Applyws
+	from alignment import Numrinit, ringwe
 	from fundamentals import fft
 	
 	step = float(step)
@@ -1899,7 +1899,7 @@ def align2d_g(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, r
 	crefim = Util.Polar2Dmi(refi,cnx,cny,numr,mode,kb)
 
 	Util.Frngs(crefim, numr)
-	Applyws(crefim, numr, wr)
+	Util.Applyws(crefim, numr, wr)
 	numr = Numrinit(first_ring, last_ring, rstep, mode)
 
 	return ormy2(image,refim,crefim,xrng,yrng,step,mode,numr,cnx,cny,"gridding")
