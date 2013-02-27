@@ -2,7 +2,7 @@
 
 '''
 ====================
-Author: Jesus Galaz - whoknows-2012, Last update: 24/Feb/2013
+Author: Jesus Galaz - whoknows-2012, Last update: 25/Feb/2013
 ====================
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -33,7 +33,7 @@ Author: Jesus Galaz - whoknows-2012, Last update: 24/Feb/2013
 
 from optparse import OptionParser
 from EMAN2 import *
-from sys import argv
+import sys
 import EMAN2
 import heapq
 import operator
@@ -57,7 +57,7 @@ def main():
 	parser.add_argument("--onlyy",action='store_true',default=False,help="Only projection of the XZ plane will be generated [another 'side view'].")
 	parser.add_argument("--onlyz",action='store_true',default=False,help="Only projection of the XY plane will be generated a 'top view']")
 	
-	#parser.add_argument("--stack",action='store_false',default=True,help="If on, projections will be in an hdf stack; otherwise, they'll be their own separate file. On by default. Supply --stack=None to turn off.")
+	parser.add_argument("--saverotvol",action='store_true',default=False,help="Will save the volume in each rotated position used to generate a projection.")
 
 	parser.add_argument("--input", type=str, help="""The name of the input volume from which you want to generate orthogonal projections.
 													You can supply more than one model either by providing an .hdf stack of models, or by providing multiple files
@@ -70,8 +70,18 @@ def main():
 	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
 	parser.add_argument("--lowpass",type=str,help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.", default=None)
 
+	parser.add_argument("--transformsfile",type=str,help="A text files containing lines with one triplet of az,alt,phi values each, representing the transforms to use to project a single volume supplied. ", default='')
+	parser.add_argument("--angles",type=str,help="A single comma or space separated triplet of az,alt,phi values representing the particle rotation to apply before projecting it.", default='')
+	parser.add_argument("--tag",type=str,help="When supplying --angles, tag the output projection with a string provided through --tag", default='')
+
 	(options, args) = parser.parse_args()	
 	
+	if options.transformsfile:
+		n=EMUtil.get_image_count(options.input)
+		if n>1:
+			print "ERROR: You cannot supply --transformsfile for particle stacks; it only works for individual volumes".
+			sys.exit()
+			
 	logger = E2init(sys.argv, options.ppid)
 
 	if options.mask: 
@@ -137,21 +147,49 @@ def main():
 	
 	projectiondirections = []
 	if options.onlyz:
-		tz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
-		projectiondirections=[tz]
+		pz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
+		projectiondirections={'pz':pz}
 	elif options.onlyx:
-		tx = Transform({'type':'eman','az':0,'alt':-90,'phi':0})
-		projectiondirections=[tx]
+		px = Transform({'type':'eman','az':0,'alt':-90,'phi':0})
+		projectiondirections={'px':px}
 	elif options.onlyy:
-		ty = Transform({'type':'eman','az':-90,'alt':-90,'phi':0})
-		projectiondirections=[ty]
+		py = Transform({'type':'eman','az':-90,'alt':-90,'phi':0})
+		projectiondirections={'py':py}
 	else:	
-		tz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
-		tx = Transform({'type':'eman','az':0,'alt':-90,'phi':0})
-		ty = Transform({'type':'eman','az':-90,'alt':-90,'phi':0})
-		projectiondirections = [tz,tx,ty]
+		pz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
+		px = Transform({'type':'eman','az':0,'alt':-90,'phi':0})
+		py = Transform({'type':'eman','az':-90,'alt':-90,'phi':0})
+		projectiondirections = {'pz':pz,'px':px,'py':py}
 
+	if options.transformsfile:
+		f = open(options.transformsfile, 'r')
+		lines = f.readlines()
+		f.close()
 		
+		np = len(lines)
+		k=0
+		for line in lines:
+			line=line.replace(',',' ')
+			line=line.replace('\n','')
+			line=line.replace('\t',' ')
+			line=line.split()
+			t=Transform({'type':'eman','az':float(line[0]),'alt':float(line[1]),'phi':float(line[2])})
+			tag = 'p' + str(k).zfill(len(str(np)))
+			projectiondirections.update({ tag:t })
+			k+=1
+	
+	elif options.angles:
+		angles=option.angles
+		angles=angles.replace(',',' ')
+		angles=angles.split()
+		t=Transform({'type':'eman','az':float(angles[0]),'alt':float(angles[1]),'phi':float(angles[2])})
+		
+		tag = 'p' + 'az' + str(int(round(float( angles[0] )))) + 'alt' + str(int(round(float( angles[1] ))))  + 'phi' + str(int(round(float( angles[2] ))))  
+		if options.tag:
+			tag = options.tag
+		projectiondirections.update({ tag:t })
+		
+	
 	'''
 	Read input
 	'''
@@ -185,20 +223,31 @@ def main():
 				submodel.process_inplace(options.lowpass[0],options.lowpass[1])
 			
 			if options.mask:
-				print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
+				#print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
 				submodel.process_inplace(options.mask[0],options.mask[1])
 			
 			k=0
-			for d in projectiondirections:					
-				prj = submodel.project("standard",d)
-				prj.set_attr('xform.projection',d)
+			for d in projectiondirections:	
+				print "\nThis is the projection direction", d
+				print "And this the corresponding transform",projectiondirections[d]		
+				print "\n"
+				prj = submodel.project("standard",projectiondirections[d])
+				prj.set_attr('xform.projection',projectiondirections[d])
 				prj['apix_x']=apix
 				prj['apix_y']=apix
 			
 				#print "The size of the prj is", prj['nx']
 			
-				prj.process_inplace('normalize')
+				#prj.process_inplace('normalize')
 				prj.write_image(submodelname,k)
+				#print "Options.saverotvol is", options.saverotvol
+				if options.saverotvol:
+					submodel_rot = submodel.copy()
+					submodel_rot.transform(projectiondirections[d])
+					volname = submodelname.replace('prjs.', '_vol' + d + '.')
+					#print "I will save the rotated volume to this file", volname
+					submodel_rot.write_image( volname , 0)
+					
 				k+=1
 			
 	return()	
