@@ -36,7 +36,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, mode
 		if CTF = True, apply CTF to data (not to reference!)
 	"""
 	from utilities import combine_params2, inverse_transform2, get_params2D, set_params2D
-	from alignment import Applyws, ormq
+	from alignment import ormq
 
 	if CTF:
 		from filter  import filt_ctf

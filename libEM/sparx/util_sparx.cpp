@@ -3718,7 +3718,7 @@ Dict Util::Crosrng_sm_psi(EMData* circ1p, EMData* circ2p, vector<int> numr, floa
 	double *q;
 
 	int   ip, jc, numr3i, numr2i, i, j, k, jtot = 0;
-	float t1, t2, t3, t4, c1, c2, d1, d2;
+	float c1, c2, d1, d2;
 
 	qn  = 0.0f;
 	tot = 0.0f;
@@ -3740,15 +3740,11 @@ Dict Util::Crosrng_sm_psi(EMData* circ1p, EMData* circ2p, vector<int> numr, floa
 		numr3i = numr(3,i);   // Number of samples of this ring
 		numr2i = numr(2,i);   // The beginning point of this ring
 
-		t1   = circ1(numr2i) * circ2(numr2i);
-		q(1) += t1;
+		q(1) += circ1(numr2i) * circ2(numr2i);
 
-		t1   = circ1(numr2i+1) * circ2(numr2i+1);
-		if (numr3i == maxrin)  {
-			q(2) += t1;
-		} else {
-			q(numr3i+1) += t1;
-		}
+		float t1 = circ1(numr2i+1) * circ2(numr2i+1);
+		if (numr3i == maxrin)   q(2) += t1;
+		else  q(numr3i+1) += t1;
 
 		for (j=3; j<=numr3i; j += 2) {
 			jc     = j+numr2i-1;
@@ -3762,13 +3758,8 @@ Dict Util::Crosrng_sm_psi(EMData* circ1p, EMData* circ2p, vector<int> numr, floa
 			d1     = circ2(jc);
 			d2     = circ2(jc+1);
 
-			t1     = c1 * d1;
-			t3     = c1 * d2;
-			t2     = c2 * d2;
-			t4     = c2 * d1;
-
-			q(j)   +=  t1 + t2*neg;
-			q(j+1) += -t3 + t4*neg;
+			q(j)   +=  c1 * d1 + c2 * d2*neg;
+			q(j+1) += -c1 * d2 + c2 * d1*neg;
 		}
 	}
 
@@ -3866,9 +3857,9 @@ Dict Util::Crosrng_psi(EMData* circ1p, EMData* circ2p, vector<int> numr, float p
 			t2     = c2 * d2;
 			t4     = c2 * d1;
 
-			q(j)   += t1 + t2;
+			q(j)   +=  t1 + t2;
 			q(j+1) += -t3 + t4;
-			t(j)   += t1 - t2;
+			t(j)   +=  t1 - t2;
 			t(j+1) += -t3 - t4;
 		}
 	}
@@ -3976,7 +3967,7 @@ c
 			d1     = circ2(jc);
 			d2     = circ2(jc+1);
 
-			q(j)   += c1 * d1 + c2 * d2;
+			q(j)   +=  c1 * d1 + c2 * d2;
 			q(j+1) += -c1 * d2 + c2 * d1;
 		}
 	}
@@ -4077,10 +4068,10 @@ EMData* Util::Crosrng_msg(EMData* circ1, EMData* circ2, vector<int> numr) {
 			t2     = c2 * d2;
 			t4     = c2 * d1;
 
-			q(j)   += t1 + t2;
-			q(j+1) += - t3 + t4;
-			t(j)   += t1 - t2;
-			t(j+1) += - t3 - t4;
+			q(j)   +=  t1 + t2;
+			q(j+1) += -t3 + t4;
+			t(j)   +=  t1 - t2;
+			t(j+1) += -t3 - t4;
 		}
 	}
 
@@ -4174,9 +4165,9 @@ void Util::Crosrng_msg_vec(EMData* circ1, EMData* circ2, vector<int> numr, float
 			t2     = c2 * d2;
 			t4     = c2 * d1;
 
-			q(j)   += t1 + t2;
+			q(j)   +=  t1 + t2;
 			q(j+1) += -t3 + t4;
-			t(j)   += t1 - t2;
+			t(j)   +=  t1 - t2;
 			t(j+1) += -t3 - t4;
 		}
 	}
@@ -4232,7 +4223,7 @@ EMData* Util::Crosrng_msg_s(EMData* circ1, EMData* circ2, vector<int> numr)
 			d1     = circ2b(jc);
 			d2     = circ2b(jc+1);
 
-			q(j)   += c1 * d1 + c2 * d2;
+			q(j)   +=  c1 * d1 + c2 * d2;
 			q(j+1) += -c1 * d2 + c2 * d1;
 		}
 	}
