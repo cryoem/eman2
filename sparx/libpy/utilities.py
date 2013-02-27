@@ -1034,7 +1034,7 @@ def get_image_data(img):
 	from EMAN2 import EMNumPy
 	return EMNumPy.em2numpy(img)
 
-def get_inplane_angle(ima,ref, iring=1, fring=-1, ringstep=1, xtransSearch=0, ytransSearch=0, stp=1, center=1):
+def get_inplane_angle(ima, ref, iring=1, fring=-1, ringstep=1, xtransSearch=0, ytransSearch=0, stp=1, center=1):
 	""" 
 		Get the in_plane angle from two images
 		and output the crosss correlation value
@@ -1044,7 +1044,7 @@ def get_inplane_angle(ima,ref, iring=1, fring=-1, ringstep=1, xtransSearch=0, yt
 		center=1 means image is first centered, then rotation angle is found
 	"""
 
-	from alignment import Numrinit, ringwe, Applyws, ormq
+	from alignment import Numrinit, ringwe, ormq
 	from filter import fshift
 
 	first_ring=int(iring); last_ring=int(fring); rstep=int(ringstep); xrng=int(xtransSearch); yrng=int(ytransSearch); step=int(stp)	
@@ -1067,7 +1067,7 @@ def get_inplane_angle(ima,ref, iring=1, fring=-1, ringstep=1, xtransSearch=0, yt
 		ima1=ima.copy()
 		cimage=Util.Polar2Dm(ref, cnx, cny, numr, mode)
 	Util.Frngs(cimage, numr)
-	Applyws(cimage, numr, wr)
+	Util.Applyws(cimage, numr, wr)
 	[angt, sxst, syst, mirrort, peakt]=ormq(ima1, cimage, xrng, yrng, step, mode, numr, cnx, cny)
 	return angt,sxst, syst, mirrort, peakt
 

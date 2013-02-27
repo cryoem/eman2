@@ -89,6 +89,7 @@ def ang_n(tot, mode, maxrin):
 	else:                            return fmod(((tot-1.0) / maxrin+1.0)*180.0, 180.0)
 
 # Copy of this function is implemented in C++ in Util (Util.Applyws). It works much faster than this one.
+'''
 def Applyws(circ, numr, wr):
 	"""
 	  Apply weights to FTs of rings
@@ -105,6 +106,7 @@ def Applyws(circ, numr, wr):
 		for j in xrange(2,numr3i):
 			jc = j+numr2i
 			circ[jc] *= w
+'''
 
 def crit2d(args, data):
 	#print  " AMOEBA ",args
