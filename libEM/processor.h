@@ -1728,6 +1728,7 @@ The basic design of EMAN Processors: <br>\
 			d.put("minval", EMObject::FLOAT, "The pixel values that bounds the smallest pixel value in the output image" );
 			d.put("maxval", EMObject::FLOAT, "The pixel values that bounds the largest pixel value in the output image" );
 			d.put("tomean", EMObject::BOOL, "Replace outlying pixels values with the mean pixel value instead" );
+			d.put("tozero", EMObject::BOOL, "Replace outlying pixels values with zero" );
 			return d;
 		}
 
@@ -1767,6 +1768,7 @@ The basic design of EMAN Processors: <br>\
 				TypeDict d;
 				d.put("nsigma", EMObject::FLOAT, "The number (n) of sigmas to clamp min and max vals at, so that the clamped boundaries are mean-n*sigma and mean+n*sigma" );
 				d.put("tomean", EMObject::BOOL, "Replace outlying pixels values with the mean pixel value instead" );
+				d.put("tozero", EMObject::BOOL, "Replace outlying pixels values with zero" );
 				return d;
 			}
 

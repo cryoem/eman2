@@ -8919,13 +8919,11 @@ void ClampingProcessor::process_inplace( EMData* image )
 	float min = params.set_default("minval",default_min);
 	float max = params.set_default("maxval",default_max);
 	bool tomean = params.set_default("tomean",false);
+	bool tozero = params.set_default("tozero",false);
 	float new_min_vals = min;
 	float new_max_vals = max;
-	if (tomean){
-
-		new_min_vals = image->get_attr("mean");
-		new_max_vals = image->get_attr("mean");
-	}
+	if (tomean) new_min_vals = new_max_vals = image->get_attr("mean");
+	if (tozero) new_min_vals = new_max_vals = 0.0;
 
 	// Okay, throwing such an error is probably overkill - but atleast the user will get a loud message
 	// saying what went wrong.
