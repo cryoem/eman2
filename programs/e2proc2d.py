@@ -611,7 +611,7 @@ def main():
 							#	region = Region(0, 0, i, d.get_xsize(), d.get_ysize(), 1)
 							#elif options.threed2threed:
 							region = Region(0, 0, i, d.get_xsize(), d.get_ysize(), 1)
-						print "outtype is", options.outtype
+						#print "outtype is", options.outtype
 						if 'mrc8bit' in optionlist:
 								d.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, region, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
 						elif 'mrc16bit' in optionlist:

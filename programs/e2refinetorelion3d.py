@@ -220,7 +220,8 @@ if ctf_corr == 1:
 				break
 	print "CTF information being pulled from: " + db
 	s = "relion_star_loopheader rlnImageName rlnMicrographName rlnDefocusU rlnDefocusV rlnDefocusAngle rlnVoltage rlnSphericalAberration rlnAmplitudeContrast > " + E2RLN + "/all_images.star"
-	defocus1 = defocus2 = 0
+#	if db_set.get_attr_dict().__contains__('ctf'):
+#		amplitude_contrast = float(db_set['ctf'].to_dict()['ampcont']) / 10
 else:
 	s = "relion_star_loopheader rlnImageName rlnMicrographName rlnVoltage rlnAmplitudeContrast > " + E2RLN + "/all_images.star"
 call(s,shell=True)
@@ -246,6 +247,7 @@ for k in range(num_ptcl):
 		call(stemp, shell=True)
 		s2 = E2RLN + "/stacks/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs"
 		shutil.move(s1, s2)
+		amplitude_contrast=str(temp['ctf'].to_dict()['ampcont']/100)
 		if ctf_corr == 1:
 			defocus1 = defocus2 = str(temp['ctf'].to_dict()['defocus']*1000)
 			s = "relion_star_datablock_stack " + str(k-i) + " " + E2RLN + "/stacks/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + E2RLN + "/stacks/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + str(defocus1) + " " + str(defocus2) + " 0 " + str(voltage) + " " + str(cs) + " " + str(amplitude_contrast) + " >> " + E2RLN + "/all_images.star"
@@ -271,6 +273,7 @@ for k in range(num_ptcl):
 		call(stemp, shell=True)
 		s2 = E2RLN + "/stacks/" + src.split('?')[0].replace('bdb:particles#','') + ".mrcs"
 		shutil.move(s1, s2)
+		amplitude_contrast=str(temp['ctf'].to_dict()['ampcont']/100)
 		if ctf_corr == 1:
 			defocus1 = defocus2 = str(temp['ctf'].to_dict()['defocus']*1000)
 			s = "relion_star_datablock_stack " + str(k-i+1) + " " + E2RLN + "/stacks/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + E2RLN + "/stacks/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + str(defocus1) + " " + str(defocus2) + " 0 " + str(voltage) + " " + str(cs) + " " + str(amplitude_contrast) + " >> " + E2RLN + "/all_images.star"
