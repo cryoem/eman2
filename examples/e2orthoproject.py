@@ -101,7 +101,7 @@ def main():
 		options.lowpass=parsemodopt(options.lowpass)
 		
 	if options.normproc: 
-		options.lowpass=parsemodopt(options.normproc)
+		options.normproc=parsemodopt(options.normproc)
 
 	
 	'''
@@ -259,7 +259,7 @@ def main():
 			'''
 			#If normalizing, it's best to do normalize-mask-normalize-mask
 			'''
-			if options["normproc"]:
+			if options.normproc:
 				#if options["normproc"][0]=="normalize.mask": 
 				#	options["normproc"][1]["mask"]=mask
 				
