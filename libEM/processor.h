@@ -5340,6 +5340,43 @@ Next, the mask is expanded by 'nshells'+'nshellsgauss'/2 voxels. Finally a gauss
 		static const string NAME;
 	};
 
+	/** This processor will remove localized 'striping' along the x/y axes, caused by issues with CCD/CMOS readout. In theory this should be done by dark/gain correction, but in many cases, there are residual effects that this will help eliminate.
+	 *@param threshold an isosurface threshold at which all desired features are visible
+	 *@param radius a normalization size similar to an lp= value
+	 *@param apix Angstrom per pixel ratio
+	 */
+	class StripeXYProcessor:public Processor
+	{
+	  public:
+		void process_inplace(EMData * image);
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		static Processor *NEW()
+		{
+			return new StripeXYProcessor();
+		}
+
+		virtual string get_desc() const
+		{
+			return "This processor will remove localized 'striping' along the x/y axes, caused by issues with CCD/CMOS readout. In theory this should be done by dark/gain correction, but in many cases, there are residual effects that this will help eliminate. This can produce high-pass filter-like effects, so generally large length values are suggested. Integration covers +-xlen/ylen. Y and X axes are corrected sequentially, not simultaneously, Y first";
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("xlen", EMObject::INT, "Integration 1/2 length on x axis in pixels. Default=10");
+			d.put("ylen", EMObject::INT, "Integration 1/2 length on y axis in pixels. Default=10");
+			return d;
+		}
+
+		static const string NAME;
+	};
+
+	
 	/**This processor attempts to perform a 'local normalization' so low density and high density features will be on a more even playing field in an isosurface display. threshold is an isosurface threshold at which all desired features are visible, radius is a normalization size similar to an lp= value.
 	 *@param threshold an isosurface threshold at which all desired features are visible
 	 *@param radius a normalization size similar to an lp= value
@@ -5368,9 +5405,9 @@ Next, the mask is expanded by 'nshells'+'nshellsgauss'/2 voxels. Finally a gauss
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("threshold", EMObject::FLOAT, "an isosurface threshold at which all desired features are visible");
-			d.put("radius", EMObject::FLOAT, "a normalization size similar to an lp= value");
-			d.put("apix", EMObject::FLOAT, "Angstrom per pixel ratio");
+			d.put("threshold", EMObject::FLOAT, "Only values above the threshold will be used to compute the normalization. Generally a good isosurface value.");
+			d.put("radius", EMObject::FLOAT, "Fourier filter radius expressed in pixels in Fourier space. cutoff_pixels in filter.lowpass.gauss");
+			d.put("apix", EMObject::FLOAT, "Angstroms per pixel");
 			return d;
 		}
 

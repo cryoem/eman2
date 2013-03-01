@@ -104,7 +104,8 @@ def main():
 	
 	pid=E2init(sys.argv)
 
-	#display((dark,sigd,gain,sigg))
+	#try: display((dark,gain,sigd,sigg))
+	#except: display((dark,gain))
 
 	step=options.step.split(",")
 	if len(step)==3 : last=int(step[2])
@@ -139,7 +140,7 @@ def main():
 
 			#im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
 			im.process_inplace("threshold.clampminmax",{"minval":0,"maxval":im["mean"]+im["sigma"]*2.0,"tozero":1})		# TODO - not sure if 2 is really safe here, even on the high end
-			im.mult(-1.0)
+#			im.mult(-1.0)
 			
 			outim.append(im)
 			#im.write_image(outname,ii-first)
@@ -155,21 +156,21 @@ def main():
 		for i in xrange(5,len(outim),5):
 			im=sum(outim[i-5:i])
 #			im.process_inplace("normalize.edgemean")
-			im.write_image("movie%d.hdf"%(i/5-1),0)
-			im.process_inplace("filter.lowpass.gauss",{"cutoff_freq":.02})
+			#im.write_image("movie%d.hdf"%(i/5-1),0)
+			#im.process_inplace("filter.lowpass.gauss",{"cutoff_freq":.02})
 			mov.append(im)
 		display(mov)
 
-		# save 10-frame averages without alignment
-		im=sum(outim[:10])
-		im.process_inplace("normalize.edgemean")
-		im.write_image("sum0-10.hdf",0)
-		im=sum(outim[10:20])
-		im.process_inplace("normalize.edgemean")
-		im.write_image("sum10-20.hdf",0)
-		im=sum(outim[20:30])
-		im.process_inplace("normalize.edgemean")
-		im.write_image("sum20-30.hdf",0)
+		## save 10-frame averages without alignment
+		#im=sum(outim[:10])
+		#im.process_inplace("normalize.edgemean")
+		#im.write_image("sum0-10.hdf",0)
+		#im=sum(outim[10:20])
+		#im.process_inplace("normalize.edgemean")
+		#im.write_image("sum10-20.hdf",0)
+		#im=sum(outim[20:30])
+		#im.process_inplace("normalize.edgemean")
+		#im.write_image("sum20-30.hdf",0)
 	
 	
 
@@ -196,12 +197,14 @@ def align(s1,s2):
 
 	s11=s1.get_clip(Region(1024,500,2048,2048))
 #	s11.process_inplace("math.addsignoise",{"noise":0.5})
-	s11.process_inplace("normalize.local",{"radius":6,"threshold":0})
+#	s11.process_inplace("normalize.local",{"radius":6,"threshold":0})
+	s11.process_inplace("math.xystripefix",{"xlen":200,"ylen":200})
 	#s11.process_inplace("threshold.compress",{"value":s11["mean"],"range":s11["sigma"]})
 	#s11.process_inplace("filter.lowpass.tophat",{"cutoff_abs":.1})
 	s21=s2.get_clip(Region(1024,500,2048,2048))
 #	s21.process_inplace("math.addsignoise",{"noise":0.5})
-	s21.process_inplace("normalize.local",{"radius":6,"threshold":0})
+#	s21.process_inplace("normalize.local",{"radius":6,"threshold":0})
+	s21.process_inplace("math.xystripefix",{"xlen":200,"ylen":200})
 	#s21.process_inplace("threshold.compress",{"value":s21["mean"],"range":s21["sigma"]})
 	#s21.process_inplace("filter.lowpass.tophat",{"cutoff_abs":.1})
 
@@ -214,11 +217,14 @@ def align(s1,s2):
 	# This peak is the false peak caused by the imperfect dark noise subtraction
 	# we want to wipe this peak out
 	dx,dy,dz=tuple(c12.calc_max_location())		# dz is obviously 0
-	c12[dx-1,dy]=(c12[dx-1,dy-1]+c12[dx-1,dy+1])/2.0
-	c12[dx+1,dy]=(c12[dx+1,dy-1]+c12[dx+1,dy+1])/2.0
-	c12[dx,dy+1]=(c12[dx+1,dy+1]+c12[dx-1,dy+1])/2.0
-	c12[dx,dy-1]=(c12[dx+1,dy-1]+c12[dx-1,dy-1])/2.0
-	c12[dx,dy]=(c12[dx-1,dy]+c12[dx+1,dy]+c12[dx,dy+1]+c12[dx,dy-1])/4.0
+	for x in xrange(dx-2,dx+3):
+		for y in xrange(dy-2,dy+3):
+			c12[x,y]=(c12[dx-3,dy]+c12[dx+3,dy])/2
+	#c12[dx-1,dy]=(c12[dx-1,dy-1]+c12[dx-1,dy+1])/2.0
+	#c12[dx+1,dy]=(c12[dx+1,dy-1]+c12[dx+1,dy+1])/2.0
+	#c12[dx,dy+1]=(c12[dx+1,dy+1]+c12[dx-1,dy+1])/2.0
+	#c12[dx,dy-1]=(c12[dx+1,dy-1]+c12[dx-1,dy-1])/2.0
+	#c12[dx,dy]=(c12[dx-1,dy]+c12[dx+1,dy]+c12[dx,dy+1]+c12[dx,dy-1])/4.0
 	
 	display((s11,s21))
 	display(c12)

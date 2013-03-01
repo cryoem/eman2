@@ -72,11 +72,13 @@ images far from focus."""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_pos_argument(name="particles",help="List the file to process with e2ctf here.", default="", guitype='filebox', browser="EMCTFParticlesTable(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=2, mode='autofit,tuning,genoutp,gensf')
-	parser.add_header(name="ctfheader", help='Options below this label are specific to e2ctflassaverage3d', title="### e2ctf options ###", default=None, row=1, col=0, rowspan=1, colspan=2, mode="autofit,tuning,genoutp,gensf")
-	
-	parser.add_argument("--allparticles",action="store_true",help="Will process all particle sets stored in BDB in the particles subdirectory",default=False)
+#	parser.add_header(name="ctfheader", help='Options below this label are specific to e2ctflassaverage3d', title="### e2ctf options ###", default=None, row=1, col=0, rowspan=1, colspan=2, mode="autofit,tuning,genoutp,gensf")
+
+	parser.add_argument("--allparticles",action="store_true",help="Will process all particle stacks stored in the particles subdirectory (no list of files required)",default=False, guitype='boolbox',row=1, col=0, mode='autofit,tuning,genoutp,gensf')
 	parser.add_argument("--onlynew",action="store_true",help="Will skip any files for which _ctf_flip files already exist.",default=False)
 	parser.add_argument("--minptcl",type=int,help="Files with fewer than the specified number of particles will be skipped",default=0)
+	parser.add_argument("--minqual",type=int,help="Files with a quality value lower than specified will be skipped",default=0)
+	parser.add_argument("--chunk",type=str,help="<chunksize>,<nchunk>. Will process files in groups of chunksize, and process the <nchunk>th group. eg - 100,3 will read files 300-399 ",default=None,guitype='strbox',row=1,col=1, mode='autofit,tuning,genoutp,gensf')
 	parser.add_argument("--gui",action="store_true",help="Start the GUI for interactive fitting",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode="tuning[True]")
 	parser.add_argument("--autofit",action="store_true",help="Runs automated CTF fitting on the input images",default=False, guitype='boolbox', row=6, col=0, rowspan=1, colspan=1, mode='autofit[True]')
 	parser.add_argument("--curdefocushint",action="store_true",help="Rather than doing the defocus from scratch, use existing values in the project as a starting point",default=False, guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='autofit[True]')
@@ -111,12 +113,19 @@ images far from focus."""
 	if options.allparticles:
 		args=["bdb:particles#"+i for i in db_list_dicts("bdb:particles") if "_ctf_" not in i]
 		args.sort()
-		if options.verbose : print "%d particle files identified"%len(args)
+		if options.verbose : print "%d particle stacks identified"%len(args)
+	
+	if options.chunk!=None:
+		ninchunk,nchunk=options.chunk.split(",")
+		ninchunk=int(ninchunk)
+		nchunk=int(nchunk)
+		args=args[ninchunk*nchunk:ninchunk*(nchunk+1)]
+		if options.verbose: print "{} stacks in specified chunk".format(len(args))
 
 	if options.onlynew:
 		print "%d files to process"%len(args)
 		args=[i for i in args if not db_check_dict(i+"_ctf_flip")]
-		print "reduced to %d"%len(args)
+		if options.verbose: print "{} stacks after onlynew filter".format(len(args))
 
 		
 	if len(args)<1 : parser.error("Input image required")
@@ -143,6 +152,14 @@ images far from focus."""
 	# remove any files that don't have enough particles from the list
 	if options.minptcl>0 :
 		args=[i for i in args if EMUtil.get_image_count(i)>=options.minptcl]
+		if options.verbose: print "{} stacks after minptcl filter".format(len(args))
+
+
+	# remove files with quality too low
+	if options.minqual>0 :
+		db_parms=db_open_dict("bdb:e2ctf.parms",ro=True)
+		args=[i for i in args if db_qual(db_parms,i.split("#")[-1])>=options.minqual]
+		if options.verbose: print "{} stacks after quality filter".format(len(args))
 
 	options.filenames = args
 		
@@ -193,6 +210,11 @@ images far from focus."""
 
 	E2end(logid)
 
+def db_qual(db,name):
+	try: return db[name][3]
+	except:
+		print "No quality for ",name
+		return 0
 
 def init_sfcurve(opt):
 	
@@ -447,7 +469,7 @@ def pspec_and_ctf_fit(options,debug=False):
 				ctf=EMAN2Ctf()
 				ctf.from_string(db_parms[name][0])
 				curdf=ctf.defocus
-				dfhint=(curdf-0.4,curdf+0.4)
+				dfhint=(curdf-0.1,curdf+0.1)
 				print "Using existing defocus as hint :",dfhint
 			except : 
 				dfhint=None

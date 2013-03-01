@@ -175,6 +175,7 @@ const string SNRProcessor::NAME = "eman1.filter.snr";
 const string FileFourierProcessor::NAME = "eman1.filter.byfile";
 const string SymSearchProcessor::NAME = "misc.symsearch";
 const string LocalNormProcessor::NAME = "normalize.local";
+const string StripeXYProcessor::NAME = "math.xystripefix";
 const string IndexMaskFileProcessor::NAME = "mask.fromfile";
 const string CoordinateMaskFileProcessor::NAME = "mask.fromfile.sizediff";
 const string PaintProcessor::NAME = "mask.paint";
@@ -405,6 +406,7 @@ template <> Factory < Processor >::Factory()
 	force_add<FileFourierProcessor>();
 
 	force_add<SymSearchProcessor>();
+	force_add<StripeXYProcessor>();
 	force_add<LocalNormProcessor>();
 
 	force_add<IndexMaskFileProcessor>();
@@ -5986,6 +5988,59 @@ void FileFourierProcessor::process_inplace(EMData * image)
 	d2->apply_radial_func(xd[0], xd[1] - xd[0], yd, 1);
 	image = d2->do_ift();
 }
+
+void StripeXYProcessor::process_inplace(EMData * image)
+{
+	if (!image) {
+		LOGWARN("NULL Image");
+		return;
+	}
+	int xlen = params.set_default("xlen",10);
+	int ylen = params.set_default("ylen",10);
+
+	int nx=image->get_attr("nx");
+	int ny=image->get_attr("ny");
+	EMData *tmp=new EMData(nx,ny,1);
+	
+	// we do this in real-space, since the integration size is small, and we don't want Fourier edge effects
+	// we use a 'moving window' to avoid summing the same points multiple times 
+	// start with y
+	if (ylen>0) {
+		for (int x=0; x<nx; x++) {
+			float sum=0.0;
+			float sumn=0.0;
+			for (int y=0; y<(ylen<ny?ylen:ny); y++) { sum+=image->get_value_at(x,y); sumn+=1.0; } // we seed the process with a 1/2 stripe
+			// now loop over each final pixel
+			for (int y=0; y<ny; y++) {
+				if (y+ylen<ny) { sum+=image->get_value_at(x,y+ylen); sumn+=1.0; }
+				if (y-ylen-1>=0) { sum-=image->get_value_at(x,y-ylen-1); sumn-=1.0; }
+				tmp->set_value_at_fast(x,y,sum/sumn);
+			}
+		}
+		tmp->write_image("tmp.hdf",0);
+		image->sub(*tmp);
+	}
+	
+	// now x
+	if (xlen>0) {
+		for (int y=0; y<ny; y++) {
+			float sum=0.0;
+			float sumn=0.0;
+			for (int x=0; x<(xlen<nx?xlen:nx); x++) { sum+=image->get_value_at(x,y); sumn+=1.0; } // we seed the process with a 1/2 stripe
+			// now loop over each final pixel
+			for (int x=0; x<nx; x++) {
+				if (x+xlen<nx) { sum+=image->get_value_at(x+xlen,y); sumn+=1.0; }
+				if (x-xlen-1>=0) { sum-=image->get_value_at(x-xlen-1,y); sumn-=1.0; }
+				tmp->set_value_at_fast(x,y,sum/sumn);
+			}
+		}
+		tmp->write_image("tmp.hdf",1);
+		image->sub(*tmp);
+	}
+	
+	delete tmp;
+}
+
 
 void LocalNormProcessor::process_inplace(EMData * image)
 {
