@@ -1652,7 +1652,7 @@ class EMBDBInfoPane(EMInfoPane):
 		self.wheadtree.clear()
 		trg=self.bdb.get_header(key)
 		
-		if trg==None :
+		if trg==None and key!="...":
 			print "Warning: tried to read unavailable key: %s"%key
 			#print self.bdb.keys()
 			return

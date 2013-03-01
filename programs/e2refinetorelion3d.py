@@ -68,16 +68,16 @@ parser.add_argument("--maxmemory", type=float, help="Maximum memory (in GB) avai
 
 
 # Command line only parameters (or expert parameters in hte GUI)
-parser.add_header(name="Expert Options", help="Options in this section are for expert users", title="---Expert Options---", expert=True, row=21, col=0, rowspan=1, colspan=3)
-parser.add_argument("--amplitudecontrast", type=float, help="Amplitude Contrast value for the micrographs", default=0.07, guitype='floatbox',row=22, col=0, rowspan=1, colspan=1, expert=True)
-parser.add_argument("--intensitycorrection", action="store_true", help="(T/F)Perform intensity-scale corrections on image groups?", default=False, guitype='boolbox', row=22, col=1, rowspan=1, colspan=1, expert=True)
-parser.add_argument("--print_symmetry", action="store_true",help="Print all symmetry transformation matrices, and exit", default=False, guitype='boolbox', row=23, col=0, rowspan=1, colspan=1, expert=True)
-parser.add_argument("--nearest_neighbor", action="store_true", help="Perform nearest-neighbor instead of linear Fourier-space interpolation", default=False, guitype='boolbox', row=23, col=1, rowspan=1, colspan=1, expert=True)
-parser.add_argument("--pad", type=int,help="Padding factor",  default=1, guitype='combobox', choicelist='1,2,3', row=24, col=0, rowspan=1, colspan=1, expert=True)
+parser.add_header(name="Expert Options", help="Options in this section are for expert users", title="---Expert Options---", expert=True, row=22, col=0, rowspan=1, colspan=3)
+parser.add_argument("--amplitudecontrast", type=float, help="Amplitude Contrast value for the micrographs", default=0.07, guitype='floatbox',row=23, col=0, rowspan=1, colspan=1, expert=True)
+parser.add_argument("--intensitycorrection", action="store_true", help="(T/F)Perform intensity-scale corrections on image groups?", default=False, guitype='boolbox', row=23, col=1, rowspan=1, colspan=1, expert=True)
+parser.add_argument("--print_symmetry", action="store_true",help="Print all symmetry transformation matrices, and exit", default=False, guitype='boolbox', row=24, col=0, rowspan=1, colspan=1, expert=True)
+parser.add_argument("--nearest_neighbor", action="store_true", help="Perform nearest-neighbor instead of linear Fourier-space interpolation", default=False, guitype='boolbox', row=24, col=1, rowspan=1, colspan=1, expert=True)
+parser.add_argument("--pad", type=int,help="Padding factor",  default=1, guitype='combobox', choicelist='1,2,3', row=25, col=0, rowspan=1, colspan=1, expert=True)
 #parser.add_argument("--oversampling",help="Oversampling order", default=0, guitype='combobox', choicelist='0,1,2,3,4', row=24, col=1, rowspan=1, colspan=1, expert=True)
-parser.add_argument("--limit_tilt",type=int, help="Limited tilt angle: positive for keeping side views, negative for keeping top views", default=-91, guitype='intbox', row=25, col=0, rowspan=1, colspan=1, expert=True)
-parser.add_argument("--verbose", type=int, help="Set the level of verbosity for the code", default=1, guitype='combobox', choicelist='0,1,2,3,4,5,6,7,8,9', row=25, col=1, rowspan=1, colspan=1, expert=True)
-parser.add_argument("--onlyflipphase", action="store_true", help="(T/F)Only flip phases?", default=False, guitype='boolbox', row=26, col=0, rowspan=1, colspan=1, expert=True)
+parser.add_argument("--limit_tilt",type=int, help="Limited tilt angle: positive for keeping side views, negative for keeping top views", default=-91, guitype='intbox', row=26, col=0, rowspan=1, colspan=1, expert=True)
+parser.add_argument("--verbose", type=int, help="Set the level of verbosity for the code", default=1, guitype='combobox', choicelist='0,1,2,3,4,5,6,7,8,9', row=26, col=1, rowspan=1, colspan=1, expert=True)
+parser.add_argument("--onlyflipphase", action="store_true", help="(T/F)Only flip phases?", default=False, guitype='boolbox', row=27, col=0, rowspan=1, colspan=1, expert=True)
 
 parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 #parser.add_argument("--inplaneang", type=float, help="In-plane angular sampling", default=row=26, col=0, rowspan=1, colspan=2, expert=True)
@@ -220,8 +220,8 @@ if ctf_corr == 1:
 				break
 	print "CTF information being pulled from: " + db
 	s = "relion_star_loopheader rlnImageName rlnMicrographName rlnDefocusU rlnDefocusV rlnDefocusAngle rlnVoltage rlnSphericalAberration rlnAmplitudeContrast > " + E2RLN + "/all_images.star"
-#	if db_set.get_attr_dict().__contains__('ctf'):
-#		amplitude_contrast = float(db_set['ctf'].to_dict()['ampcont']) / 10
+	if db_set.get_attr_dict().__contains__('ctf'):
+		amplitude_contrast = float(db_set['ctf'].to_dict()['ampcont']) / 10
 else:
 	s = "relion_star_loopheader rlnImageName rlnMicrographName rlnVoltage rlnAmplitudeContrast > " + E2RLN + "/all_images.star"
 call(s,shell=True)
