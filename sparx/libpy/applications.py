@@ -12108,17 +12108,18 @@ def ave_ali(name_stack, name_out = None, ali = False, active = False, param_to_s
 		listID, N = k_means_list_active(name_stack)
 	else:
 		listID    = range(N)
-	data = EMData().read_images(name_stack, listID)
 	
-	ave, var = ave_var(data, mode)
-	
+	ave, var = ave_var(name_stack, mode, listID)
+	nlistID = len(listID)
 	if param_to_save_size:
-		ave.set_attr(param_to_save_size, len(data))
+		ave.set_attr(param_to_save_size, nlistID)
 	
 	if set_as_member_id:
 		members = []
-		for in_img in data:
+		for i in xrange(nlistID):
+			in_img = get_im(name_stack, listID[i])
 			members.append( int(in_img.get_attr(set_as_member_id)) )
+			
 		ave.set_attr("members", members)
 
 	ext = file_type(name_stack)
