@@ -70,29 +70,29 @@ def main():
 	parser.add_option("--CTF",                action="store_true",   default=False,      		  help="CTF correction")
 	parser.add_option("--snr",                type="float",          default= 1.0,                help="Signal-to-Noise Ratio of the data")	
 	parser.add_option("--MPI",                action="store_true",   default=False,               help="use MPI version")
-	#parser.add_option("--fourvar",            action="store_true", default=False,                help="compute Fourier variance")
+	#parser.add_option("--fourvar",           action="store_true",   default=False,               help="compute Fourier variance")
 	parser.add_option("--apix",               type="float",			 default= -1.0,               help="pixel size in Angstroms")   
 	parser.add_option("--dp",                 type="float",			 default= -1.0,               help="delta z - translation in Angstroms")   
 	parser.add_option("--dphi",               type="float",			 default= -1.0,               help="delta phi - rotation in degrees")  
 	parser.add_option("--cons",               type="string",		 default="",  	              help="do local search taking into account helical consistency using the consistent parameters in the specified file")
-	parser.add_option("--recons_iter",          type="int",			 default= -1,                help="Do reconstruction every recons_iter iterations. Default is -1, in which case only reconstruction of last iteration is done")   
-	parser.add_option("--ref_iter",          type="int",			 default= -1,                help="Use the reconstruction from ever ref_iter as reference volume. Default is -1, in which case starting volume always used as reference volume")   
-	parser.add_option("--NOROUND",                action="store_true",   default=False,      		  help="Do NOT round parameters around which to perform local search according to step size")
-	parser.add_option("--fcutoff",          type="float",          default= 0.15,                help="cut-off for low pass filtration, in absolute frequency")
+	parser.add_option("--recons_iter",        type="int",			 default= -1,                 help="Do reconstruction every recons_iter iterations. Default is -1, in which case only reconstruction of last iteration is done")   
+	parser.add_option("--ref_iter",           type="int",			 default= -1,                 help="Use the reconstruction from ever ref_iter as reference volume. Default is -1, in which case starting volume always used as reference volume")   
+	parser.add_option("--NOROUND",            action="store_true",   default=False,      		  help="Do NOT round parameters around which to perform local search according to step size")
+	parser.add_option("--fcutoff",            type="float",          default= 0.15,               help="cut-off for low pass filtration, in absolute frequency")
 	
 	parser.add_option("--ndp",                type="int",            default= 12,                 help="In symmetrization search, number of delta z steps equas to 2*ndp+1") 
 	parser.add_option("--ndphi",              type="int",            default= 12,                 help="In symmetrization search,number of dphi steps equas to 2*ndphi+1")  
 	parser.add_option("--dp_step",            type="float",          default= 0.1,                help="delta z (Angstroms) step  for symmetrization")  
 	parser.add_option("--dphi_step",          type="float",          default= 0.1,                help="dphi step for symmetrization")
 	   
-	parser.add_option("--psi_max",            type="float", 		 default= 20.0,               help="maximum psi - how far rotation in plane can can deviate from 90 or 270 degrees")   
+	parser.add_option("--psi_max",            type="float", 		 default= 10.0,               help="maximum psi - how far rotation in plane can can deviate from 90 or 270 degrees")   
 	parser.add_option("--rmin",               type="float", 		 default= 0.0,                help="minimal radius for hsearch (Angstroms)")   
 	parser.add_option("--rmax",               type="float", 		 default= 80.0,               help="maximal radius for hsearch (Angstroms)")
 	parser.add_option("--fract",              type="float", 		 default= 0.7,                help="fraction of the volume used for helical search")
 	parser.add_option("--sym",                type="string",		 default= "c1",               help="symmetry of the structure")
 	parser.add_option("--function",           type="string",		 default="helical",  	      help="name of the reference preparation function")
-	parser.add_option("--datasym",            type="string",		 default="datasym.txt",                help="symdoc")
-	parser.add_option("--nise",               type="int",   		 default= 200,                  help="start symmetrization after nise steps")
+	parser.add_option("--datasym",            type="string",		 default="datasym.txt",       help="symdoc")
+	parser.add_option("--nise",               type="int",   		 default= 200,                help="start symmetrization after nise steps")
 	parser.add_option("--npad",               type="int",   		 default= 4,                  help="padding size for 3D reconstruction")
 	parser.add_option("--debug",              action="store_true",   default=False,               help="debug")
 	parser.add_option("--new",                action="store_true",   default=False,               help="use rectangular recon and projection version")
@@ -102,11 +102,11 @@ def main():
 
 
 	parser.add_option("--volalixshift",       action="store_true",   default=False,               help="Use volalixshift refinement")
-	parser.add_option("--searchxshift",       type="float",		     default= 0.0,                 help="search range for x-shift determination: +/- searchxshift (Angstroms)")
+	parser.add_option("--searchxshift",       type="float",		     default= 0.0,                help="search range for x-shift determination: +/- searchxshift (Angstroms)")
 	parser.add_option("--nearby",             type="float",		     default= 6.0,                help="neighborhood in which to search for peaks in 1D ccf for x-shift search (Angstroms)")
 
 
-	parser.add_option("--ehelix",              action="store_true",   default=False,              help="Use consistent helical refinement")
+	parser.add_option("--ehelix",             action="store_true",   default=False,               help="Use consistent helical refinement")
 
 	parser.add_option("--diskali",            action="store_true",   default=False,               help="volume alignment")
 	parser.add_option("--zstep",              type="float",          default= 1,                  help="Step size for translational search along z (Angstroms)")   
@@ -128,7 +128,7 @@ def main():
 	parser.add_option("--segthr",             type="int", 		     default= 3,                  help="minimum number of segments/filament for consistency check")  
 
 	# stack disks
-	parser.add_option("--stackdisk",            type="string",		 default="",                  help="Name of file under which output volume will be saved to.")
+	parser.add_option("--stackdisk",          type="string",		 default="",                  help="Name of file under which output volume will be saved to.")
 	parser.add_option("--ref_ny",             type="int",   		 default=-1,                  help="ny of output volume size. Default is ref_nx" ) 
 
 	(options, args) = parser.parse_args(arglist[1:])
@@ -255,7 +255,7 @@ def main():
 			else:               mask = args[3]
 			from development import ehelix_MPI
 			global_def.BATCH = True
-			ehelix_MPI(args[0], args[1], args[2], options.delta, searchxshiftp, nearbyp, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
+			ehelix_MPI(args[0], args[1], args[2], options.delta, options.psi_max, searchxshiftp, nearbyp, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
 			global_def.BATCH = False
 
 		elif options.diskali:

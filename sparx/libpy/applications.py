@@ -6840,6 +6840,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 		print_msg("Angular step                              : %s\n"%(delta))
 		print_msg("Angular search range                      : %s\n"%(an))
 		print_msg("Initial Theta                             : %s\n"%(initial_theta))
+		print_msg("Maximum range for psi search              : %s\n"%(psi_max))
 		print_msg("min radius for helical search (in pix)    : %5.4f\n"%(rmin))
 		print_msg("max radius for helical search (in pix)    : %5.4f\n"%(rmax))
 		print_msg("fraction of volume used for helical search: %5.4f\n"%(fract))
