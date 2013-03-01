@@ -240,24 +240,21 @@ def main():
 			mask=EMData(image["nx"],image["ny"],image["nz"])
 			mask.to_one()
 			
-			if options["mask"]:
-				if options["verbose"]:
-					print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options["mask"][0],options["mask"][1]) 
-				mask.process_inplace(options["mask"][0],options["mask"][1])
+			if options.mask:
+				#print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
+				mask.process_inplace(options.mask[0],options.mask[1])
 			
 			# normalize
-			if options["normproc"]:
-				if options["normproc"][0]=="normalize.mask": 
-					options["normproc"][1]["mask"]=mask
+			if options.normproc:
+				if options.normproc[0]=="normalize.mask": 
+					options.normproc[1]["mask"]=mask
 				
-				fixedimage.process_inplace(options["normproc"][0],options["normproc"][1])
-				image.process_inplace(options["normproc"][0],options["normproc"][1])
+				submodel.process_inplace(options.normproc[0],options.normproc[1])
 			
 			'''
 			#Mask after normalizing with the mask you just made, which is just a box full of 1s if no mask is specified
 			'''
-			fixedimage.mult(mask)
-			image.mult(mask)
+			submodel.mult(mask)
 			
 			'''
 			#If normalizing, it's best to do normalize-mask-normalize-mask
@@ -266,11 +263,9 @@ def main():
 				#if options["normproc"][0]=="normalize.mask": 
 				#	options["normproc"][1]["mask"]=mask
 				
-				fixedimage.process_inplace(options["normproc"][0],options["normproc"][1])
-				image.process_inplace(options["normproc"][0],options["normproc"][1])
+				submodel.process_inplace(options.normproc[0],options.normproc[1])
 			
-				fixedimage.mult(mask)
-				image.mult(mask)
+				submodel.mult(mask)
 			
 			if options.lowpass:
 				submodel.process_inplace(options.lowpass[0],options.lowpass[1])
