@@ -67,12 +67,17 @@ def main():
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
-	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
+	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", default='mask.sharp:outer_radius=-2')
 	parser.add_argument("--lowpass",type=str,help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.", default=None)
 
 	parser.add_argument("--transformsfile",type=str,help="A text files containing lines with one triplet of az,alt,phi values each, representing the transforms to use to project a single volume supplied. ", default='')
 	parser.add_argument("--angles",type=str,help="A single comma or space separated triplet of az,alt,phi values representing the particle rotation to apply before projecting it.", default='')
 	parser.add_argument("--tag",type=str,help="When supplying --angles, tag the output projection with a string provided through --tag", default='')
+
+	parser.add_argument("--normproc",type=str,help="""Normalization processor applied to particles before alignment. 
+													Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. 
+													If you want to turn this option off specify \'None\'""", default="normalize.mask")
+
 
 	(options, args) = parser.parse_args()	
 	
@@ -94,6 +99,10 @@ def main():
 		
 	if options.lowpass: 
 		options.lowpass=parsemodopt(options.lowpass)
+		
+	if options.normproc: 
+		options.lowpass=parsemodopt(options.normproc)
+
 	
 	'''
 	Check for sanity of some supplied parameters
@@ -223,13 +232,48 @@ def main():
 			submodelname = subpath + '/' + model.split('.')[0] + '_ptcl' + str(i).zfill(len(str(n))) + '_prjs.hdf'
 			
 			apix = submodel['apix_x']
+			'''
+			Pre-process/enhance subvolume if specified
+			'''
+			
+			# Make the mask first, use it to normalize (optionally), then apply it 
+			mask=EMData(image["nx"],image["ny"],image["nz"])
+			mask.to_one()
+			
+			if options["mask"]:
+				if options["verbose"]:
+					print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options["mask"][0],options["mask"][1]) 
+				mask.process_inplace(options["mask"][0],options["mask"][1])
+			
+			# normalize
+			if options["normproc"]:
+				if options["normproc"][0]=="normalize.mask": 
+					options["normproc"][1]["mask"]=mask
+				
+				fixedimage.process_inplace(options["normproc"][0],options["normproc"][1])
+				image.process_inplace(options["normproc"][0],options["normproc"][1])
+			
+			'''
+			#Mask after normalizing with the mask you just made, which is just a box full of 1s if no mask is specified
+			'''
+			fixedimage.mult(mask)
+			image.mult(mask)
+			
+			'''
+			#If normalizing, it's best to do normalize-mask-normalize-mask
+			'''
+			if options["normproc"]:
+				#if options["normproc"][0]=="normalize.mask": 
+				#	options["normproc"][1]["mask"]=mask
+				
+				fixedimage.process_inplace(options["normproc"][0],options["normproc"][1])
+				image.process_inplace(options["normproc"][0],options["normproc"][1])
+			
+				fixedimage.mult(mask)
+				image.mult(mask)
 			
 			if options.lowpass:
 				submodel.process_inplace(options.lowpass[0],options.lowpass[1])
-			
-			if options.mask:
-				#print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
-				submodel.process_inplace(options.mask[0],options.mask[1])
 			
 			k=0
 			for d in projectiondirections:	
