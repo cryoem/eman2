@@ -237,7 +237,7 @@ def main():
 			'''
 			
 			# Make the mask first, use it to normalize (optionally), then apply it 
-			mask=EMData(image["nx"],image["ny"],image["nz"])
+			mask=EMData(submodel["nx"],submodel["ny"],submodel["nz"])
 			mask.to_one()
 			
 			if options.mask:
