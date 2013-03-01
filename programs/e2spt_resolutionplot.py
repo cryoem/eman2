@@ -243,16 +243,16 @@ def alignment(options):
 	
 	
 	alivolfile = os.path.basename(options.input).split('.')[0] + '_VS_' + os.path.basename(options.ref).split('.')[0] + '.hdf'
-	#print "alivolfile is", alivolfile
-	#print "Path is", options.path
-	#print "input is", options.input
-	#print "ref is", options.ref
-	#print "npeakstorefine is", options.npeakstorefine
-	#print "verbose is", options.verbose
-	#print "mask is", options.mask
-	#print "lowpass is", options.lowpass
-	#print "align is", options.align
-	#print "ralign is", options.ralign
+	print "alivolfile is", alivolfile
+	print "Path is", options.path
+	print "input is", options.input
+	print "ref is", options.ref
+	print "npeakstorefine is", options.npeakstorefine
+	print "verbose is", options.verbose
+	print "mask is", options.mask
+	print "lowpass is", options.lowpass
+	print "align is", options.align
+	print "ralign is", options.ralign
 
 	alicmd = 'e2spt_classaverage.py --path=' + options.path + ' --input=' + str(options.input) + ' --output=' + alivolfile + ' --ref=' + str(options.ref) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + options.mask + ' --lowpass=' + options.lowpass + ' --align=' + options.align + ' --parallel=' + options.parallel + ' --ralign=' + options.ralign + ' --aligncmp=' + options.aligncmp + ' --raligncmp=' + options.raligncmp + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + options.normproc + ' --sym=' + options.sym + ' --breaksym'
 			
@@ -321,43 +321,65 @@ def fscplotter(fscs,options):
 		values = []
 		inversefreqs = []
 		inversefreqslabels = []
-
+		
+		newlines=[]
+		firstline=False
 		for line in lines:
 			if line:
 				inverse = float( line.split()[0] )
-				print "Inverse is", inverse
-	
-				#if 1.0/inverse > options.maxres:
-				#x.append(float(k))
-				values.append( float( line.split()[-1] ) )
-				inversefreqs.append(inverse)
-
-				element = ''
-				if inverse: 
-					element = '1/' + str(int( 1.0/inverse  ))
-				else:
-					element='0'
-				#print "Therefore, turned into a number it is", element
-				inversefreqslabels.append(element)
-		k=0
-		x = []
-		valuesF=[]
-		inversefreqsF=[]
-		inversefreqslabelsF=[]
-	
-		for i in range(len(values)):
-			print "1.0/inversefreqs[i] is", 1.0/inversefreqs[i]
-			if 1.0/inversefreqs[i] > float(options.maxres):
-				print "It was bigger than options.maxres, see", options.maxres
-				valuesF.append(values[i])
-				inversefreqsF.append(inversefreqs[i])
-				inversefreqslabelsF.append(inversefreqslabels[i])
-				x.append(float(k))
-				k+=1
 				
-		values=valuesF
-		inversefreqs=inversefreqsF
-		inversefreqslabels=inversefreqslabelsF
+				if inverse:
+					if 1.0/inverse > options.maxres:
+						newlines.append(line)
+				else:
+					firstline=True
+					newlines.append(line)
+		
+		if not firstline:
+			newlines = ['0 1.0']+newlines
+		else:
+			pass
+		x=[]
+		k=0		
+		for line in newlines:
+			inverse = float( line.split()[0] )
+			print "NEW inverse is", inverse
+			#x.append(float(k))
+			
+			values.append( float( line.split()[-1] ) )
+			inversefreqs.append(inverse)
+
+			element = ''
+			if inverse: 
+				element = '1/' + str(int( 1.0/inverse  ))
+			else:
+				element='0'
+			#print "Therefore, turned into a number it is", element
+			inversefreqslabels.append(element)
+			x.append(k)
+			k+=1
+			
+		#k=0
+		#x = []
+		#valuesF=[]
+		#inversefreqsF=[]
+		#inversefreqslabelsF=[]
+	
+		#for i in range(len(values)):
+			#print "1.0/inversefreqs[i] is", 1.0/inversefreqs[i]
+			#if 1.0/inversefreqs[i] > float(options.maxres):
+			#print "It was bigger than options.maxres, see", options.maxres
+		#	valuesF.append(values[i])
+		#	inversefreqsF.append(inversefreqs[i])
+		#	inversefreqslabelsF.append(inversefreqslabels[i])
+		#	x.append(float(k))
+		#	k+=1
+		
+		#x.append(x[-1]+1.0)
+		#values=valuesF
+		print "values are", values
+		#inversefreqs=inversefreqsF
+		#inversefreqslabels=inversefreqslabelsF
 				
 		xticks = []
 		nele=len(values)
@@ -388,7 +410,7 @@ def fscplotter(fscs,options):
 				xticks.append(inversefreqslabels[i])
 			kk += 1
 	
-		xticks[0]='0'
+		#xticks[0]='0'
 		plot_name = fscoutputname.replace('.txt','_PLOT.png')
 		#if options.plotonly:
 		if options.singleplot:
@@ -619,7 +641,7 @@ def fscplotter(fscs,options):
 		
 		kont+=1
 		
-	pylab.title(plot_name)
+	#pylab.title(plot_name)
 	pylab.ylabel('FSC')
 	pylab.xlabel('Frequency 1/Angstroms')
 	#pylab.grid(True)
