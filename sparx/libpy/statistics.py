@@ -463,7 +463,7 @@ def sum_oe(data, mode = "a", CTF = False, ctf_2_sum = None):
 		else:        return  ave1, ave2
 	else:        return  ave1, ave2
 
-def ave_var(data, mode = "a"):
+def ave_var(data, mode = "a", listID=None):
 	"""
 		Calculate average and variance of a 2D or 3D image series
 		with optional application of orientation parameters
@@ -472,6 +472,8 @@ def ave_var(data, mode = "a"):
 	from utilities import model_blank, get_im
 	if  type(data) == type(""): n = EMUtil.get_image_count(data)
 	else:                       n = len(data)
+	if listID == None:
+		listID = range(n)
 	img = get_im(data, 0)
 	nx = img.get_xsize()
 	ny = img.get_ysize()
@@ -488,8 +490,9 @@ def ave_var(data, mode = "a"):
 
 	ave = model_blank(nx,ny,nz)
 	var = model_blank(nx,ny,nz)
-	for i in xrange(n):
-		img = get_im(data,i)
+	nlistID = len(listID)
+	for i in xrange(nlistID):
+		img = get_im(data,listID[i])
 		if(mode == "a"):
 			if(nz > 1):
 				phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(img)
@@ -499,9 +502,9 @@ def ave_var(data, mode = "a"):
 				img = rot_shift2D(img, angle, sx, sy, mirror, scale)
 		Util.add_img(ave, img)
 		Util.add_img2(var, img)
-	Util.mul_scalar(ave, 1.0 /float(n) )
+	Util.mul_scalar(ave, 1.0 /float(nlistID) )
 
-	return ave, (var - ave*ave*n)/(n-1)
+	return ave, (var - ave*ave*nlistID)/(nlistID-1)
 
 def add_oe(data):
 	"""
