@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus Galaz, 07/2011
+# Author: Jesus Galaz, 07/2011; modified 01/March/2013
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -81,9 +81,15 @@ def main():
 									generated in) whose members are not present in any other of the extracted classes. The mutually exclusive classes
 									will be put into a separate sub-directory starting with the character 'me_classes'.""", default=None)
 	
-	parser.add_argument("--savesteps",action="store_true", help="If set, will save the averages after each iteration to round#_averages.hdf. There will be one .hdf stack per round, and the averages of 2 or more particles generated in that round will be images in that stack",default=False)
-	parser.add_argument("--saveali",action="store_true", help="If set, will save the aligned particle volumes in round#_particles.hdf. Overwrites existing file.",default=False)
-	
+	parser.add_argument("--savesteps",action="store_true", help="""If set, this will save the averages after each iteration to round#_averages.hdf. 
+																There will be one .hdf stack per round, and the averages of 2 or more particles generated in that round will be images in that stack.""", default=False)
+	parser.add_argument("--saveali",action="store_true", help="""If set, this will save the aligned/averaged volumes from the immediately PREVIOUS round 
+																that went into the NEW particles in the "current" round, to round#_particles.hdf. 
+																It will also save the latest state of alignment (for the LAST iteration only) of ALL particles provided in the input stack.
+																Overwrites existing files.""",default=False)
+	parser.add_argument("--saveallalign",action="store_true", help="""NOT WORKING YET: If set, will save the alignment parameters for ALL particles, 
+																	aligned and unaligned (averaged and unaveraged), at each iteration""",default=False)
+
 	#Does save ali save the stack off ALL currently UNAVERAGED particles???
 	
 	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
@@ -346,7 +352,7 @@ def allvsall(options):
 	
 	fillfactor = len(str(nptcl))							#Calculate this based on the number of particles so that tags are adequate ("pretty") and ordered
 	roundtag='round' + str(0).zfill(fillfactor)					#We need to keep track of what round we're in
-	newptcls={}									#This dictionary stores 'new particles' produced in each round as { particleID : particleDATA } elements
+	newptcls={}													#This dictionary stores 'new particles' produced in each round as { particleID : particleDATA } elements
 	allptclsRound={}								#This dictionary stores all particlces in a round ("new" and "old") as 
 											#{particle_id : [EMData,{index1:totalTransform1, index2:totalTransform2...}]} elements
 											#The totalTransform needs to be calculated for each particle after each round, to avoid multiple interpolations
@@ -373,7 +379,7 @@ def allvsall(options):
 		elif not a['spt_ID']:
 			a['spt_ID'] = particletag	
 		
-		a.write_image(options.input,i)						#Overwrite the raw stack with one that has the appropriate header parameters set to work with e2sptallvsall		
+		a.write_image(options.input,i)						#Overwrite the raw stack with one that has the appropriate header parameters set to work with e2spt_hac	
 		
 		allptclsRound.update({particletag : [a,{i:totalt}]})			
 		
@@ -383,16 +389,40 @@ def allvsall(options):
 	allptclsMatrix = []								#Massive matrix listing all the allptclsRound dictionaries produced after each iteration
 	allptclsMatrix.append(allptclsRound)
 	
+	
+	FinalAliStack = {}								#This will keep track of the most updated alignment state of ALL particles regardless of whether they've participated 
+													#in averages or not.
+													
+	nptcls = EMUtil.get_image_count(options.input)
+	for i in range(nptcls):
+		rawptcl = EMData(options.input,i)
+		rawptcl['xform.alignd3d']=Transform()
+		FinalAliStack.update({i:rawptcl})
+	
+	
 	for k in range(options.iter):							#Start the loop over the user-defined number of iterations
 		#avgname = options.path + '/round' + str(k).zfill(fillfactor) + '_averages.hdf'
 		newstack = options.path + '/round' + str(k-1).zfill(fillfactor) + '_averages.hdf'
 		if k== 0:
 			newstack =options.input
 		
+		print "\n\n\n\n\n\n\n$$$$$$$$$$$$$$$$$\n$$$$$$$$$$$$$$$$$\nStarting this iteration!", k
+		print "\n\n"
+		
 		nnew = len(newptcls)
+		if k == (int(options.iter) - 1) or (nnew + len(oldptcls) ) == 1 :
+			print "This is the final round,k"
+			if options.saveali:
+				print "You selected ; therefore, I will write the latest state of all particles in the inpust stack."
+			
+				for key in FinalAliStack:
+					aliptcl = FinalAliStack[key]
+					aliptcl.write_image(options.path + '/finalAliStack.hdf',key)
+					print "Wrote this ptcl to final stack", key
+		
 		if nnew + len(oldptcls) == 1:						#Stop the loop if the data has converged and you're left with one final particle (an average of all)
-				print "The all vs all algorithm has converged into one average"
-				break
+			print "The all vs all algorithm has converged into one average"
+			break
 		
 		allptclsRound = {}							
 		
@@ -470,10 +500,12 @@ def allvsall(options):
 		results = results + surviving_results					#The total results to process/analyze includes results (comparisons) from previous rounds that were not used
 		results = sorted(results, key=itemgetter('score'))			#Sort/rank the results by score
 		
+		print "results are", results
+		
 		if options.verbose > 0:
 			print "In iteration %d the SORTED results are:", k
 			for i in results:
-				print "%s VS %s , score=%f" %(i['ptcl1'], i['ptcl2'], i['score'])
+				print "%s VS %s , score=%f, transform=%s" %(i['ptcl1'], i['ptcl2'], i['score'], i['xform.align3d'] )
 		
 		print "\n\n\n\nIn iteration %d, the total number of comparisons in the ranking list, either new or old that survived, is %d" % (k, len(results))
 		
@@ -487,7 +519,7 @@ def allvsall(options):
 		for z in range(len(results)):
 			if results[z]['ptcl1'] not in tried and results[z]['ptcl2'] not in tried:
 				tried.add(results[z]['ptcl1'])							#If the two particles in the pair have not been tried, and they're the next "best pair", they MUST be averaged
-				tried.add(results[z]['ptcl2'])							#Add both to "tried" AND "averages" 
+				tried.add(results[z]['ptcl2'])							#Add both to "tried" AND "used" 
 				used.add(results[z]['ptcl1'])		
 				used.add(results[z]['ptcl2'])
 													
@@ -502,23 +534,36 @@ def allvsall(options):
 														#worry about "multiplicity", since it takes care of itself by doing this.
 				indx_trans_pairs = {}
 
-				print "The indexes in particle 1 are", ptcl1['spt_ptcl_indxs']
+				#print "\n\n\nThe indexes in particle 1 are", ptcl1['spt_ptcl_indxs']
 				
 				ptcl1info = allptclsMatrix[k][results[z]['ptcl1']]
+				#print "\n\nptcl1 info attached is", ptcl1info
 				
 				ptcl1_indxs_transforms = ptcl1info[-1]
+				#print "\n\nptcl1_indexes_transforms is", ptcl1_indxs_transforms
+				#print "\n\n"
 								
 				for p in ptcl1['spt_ptcl_indxs']:											
 					pastt = ptcl1_indxs_transforms[p]
 					
 					subp1 = EMData(options.input,p)
-					subp1.process_inplace("xform",{"transform":pastt})
+					
+					#subp1.process_inplace("xform",{"transform":pastt})					#RADICAL CHANGE ****************************************					
+					subp1.transform(pastt)
+					
+					subp1['xform.align3d']=pastt
 					
 					avgr.add_image(subp1)
 					
 					if options.saveali:
 						avg_ptcls.append(subp1)
-					
+				
+						subp1_forFinalAliStack =subp1.copy()							#It would be insane to write out ALL the particles in each iteration in the final aligned state
+						subp1_forFinalAliStack['xform.align3d']=pastt
+						
+						FinalAliStack.update({int(p):subp1_forFinalAliStack})		#But let's keep track of them, and write them out only when the LAST iteration has been reached
+						print "I have CHANGED a particle1 in finalAliStack to have this transform", totalt
+
 					indx_trans_pairs.update({p:pastt})
 					
 						
@@ -528,32 +573,56 @@ def allvsall(options):
 						
 				resultingt = results[z]["xform.align3d"]					
 					
-				print "The indexes in particle 2 are", ptcl2['spt_ptcl_indxs']
+				print "\n\n\nThe indexes in particle 2 are", ptcl2['spt_ptcl_indxs']
 				
 				ptcl2info = allptclsMatrix[k][results[z]['ptcl2']]
+				
+				print "\n\nptcl2 info attached is", ptcl2info
 					
 				ptcl2_indxs_transforms = ptcl2info[-1]
-								
+				
+				print "\n\nptcl2_indexes_transforms is", ptcl2_indxs_transforms
+				print "\n\n"
+				
 				#ptcl2avgr = Averagers.get(options.averager[0], options.averager[1])		#You need to recompute ptcl2 "fresh" from the raw data to avoid multiple interpolations
 				
 				for p in ptcl2['spt_ptcl_indxs']:						#All the particles in ptcl2's history need to undergo the new transformation before averaging
 					print "I'm fixing the transform for this index in the new average", p	#(multiplied by any old transforms, all in one step, to avoid multiple interpolations)
 					
-					
 					pastt = ptcl2_indxs_transforms[p]
 					
+					print "\n\n\n@@@@@@@@@@@@@@@@@"
+					print "So the past transform for ptcl2 was", pastt
+					print "But the resulting transform is", resultingt
+					
 					totalt = resultingt * pastt
+					print "Which means their product is", totalt
+
 					subp2 = EMData(options.input,p)
-					subp2.process_inplace("xform",{"transform":totalt})
+					#subp2.process_inplace("xform",{"transform":totalt})					#RADICAL CHANGE **********************************
+					subp2.transform(totalt)
+					subp2['xform.align3d']=totalt
+					
+					print "Which should coincide with the xform.align3d parameter on the rotated particle's header", subp2['xform.align3d']
 					
 					avgr.add_image(subp2)
 					
-					if options.saveali:
-						avg_ptcls.append(subp2)					
 					
+					if options.saveali:
+						avg_ptcls.append(subp2)
+
+						subp2_forFinalAliStack =subp2.copy()							#It would be insane to write out ALL the particles in each iteration in the final aligned state
+						subp2_forFinalAliStack['xform.align3d']=totalt
+						
+						FinalAliStack.update({int(p):subp2_forFinalAliStack})			#But let's keep track of them, and write them out only when the LAST iteration has been reached			
+						print "I have CHANGED a particle2 in finalAliStack to have this transform", totalt
+
 					indx_trans_pairs.update({p:totalt})
 								
 				avg=avgr.finish()
+				
+				
+				
 				
 				print "THe average was successfully finished"
 
@@ -571,21 +640,43 @@ def allvsall(options):
 						totalt = tcenter * pastt
 						indx_trans_pairs.update({p:totalt})
 						
-						if options.saveali:
-							subp1 = EMData(options.input,p)
-							subp1.process_inplace("xform",{"transform":totalt})
-							avg_ptcls.append(subp1)
+						
+						subp1 = EMData(options.input,p)
+						subp1.process_inplace("xform",{"transform":totalt})
+						avg_ptcls.append(subp1)
+						
+						if options.saveali:	
+							subp1_forFinalAliStack =subp1.copy()							#It would be insane to write out ALL the particles in each iteration in the final aligned state
+							subp1_forFinalAliStack['xform.align3d']=totalt
+							
+							FinalAliStack.update({int(p):subp1_forFinalAliStack})		#But let's keep track of them, and write them out only when the LAST iteration has been reached
+							print "After AUTOCENTER have CHANGED a particle1 in finalAliStack to have this transform", totalt
+
+					
 						
 					for p in ptcl2['spt_ptcl_indxs']:
 						pastt = ptcl2_indxs_transforms[p]
-						totalt = tcenter * pastt
+						totalt = tcenter * resultingt * pastt
 						indx_trans_pairs.update({p:totalt})
 						
-						if options.saveali:
-							subp2 = EMData(options.input,p)
-							subp2.process_inplace("xform",{"transform":totalt})
-							avg_ptcls.append(subp2)
+						subp2 = EMData(options.input,p)
+						subp2.process_inplace("xform",{"transform":totalt})
+						avg_ptcls.append(subp2)
 						
+						if options.saveali:
+							subp2_forFinalAliStack =subp2.copy()							#It would be insane to write out ALL the particles in each iteration in the final aligned state
+							subp2_forFinalAliStack['xform.align3d']=totalt
+							
+							FinalAliStack.update({int(p):subp2_forFinalAliStack})		#But let's keep track of them, and write them out only when the LAST iteration has been reached
+							print "After AUTOCENTER I have CHANGED a particle2 in finalAliStack to have this transform", totalt
+				
+				
+				
+				
+				
+				
+				
+				
 				print "I will set the multiplicity of the average"
 				avgmultiplicity = ptcl1['spt_multiplicity'] + ptcl2['spt_multiplicity']		#Define and set the multiplicity of the average
 				avg['spt_multiplicity'] = avgmultiplicity
@@ -665,6 +756,7 @@ def allvsall(options):
 			if results[z]['ptcl2'] not in tried:
 				tried.add(results[z]['ptcl2'])
 		
+		
 		surviving_results = []
 		for z in range(len(results)):
 			if results[z]['ptcl1'] not in used and results[z]['ptcl2'] not in used:
@@ -729,7 +821,9 @@ def allvsall(options):
 		#if k>0:
 		#	os.system('rm ' + newstack)
 
+	
 	return()
+
 
 def get_results(etc,tids,verbose):
 	"""This will get results for a list of submitted tasks. Won't return until it has all requested results.
