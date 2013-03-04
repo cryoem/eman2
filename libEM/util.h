@@ -562,6 +562,14 @@ namespace EMAN
 		 */
 		static int calc_best_fft_size(int low);
 
+		/** Returns a non-convex version of a curve. This is used for finding a good approximate 
+		 * background curve when evaluating power spectra.
+		 *
+		 * @param[in] curve The data array (vector<float>)
+		 * @param[in] first First point to consider, default = 3
+		 * @param[out] outcurve Returned data array
+		*/
+		static vector<float> nonconvex(const vector<float>&curve,int first=3);
 
 		static EMData* calc_bessel(const int n, const float& x);
 

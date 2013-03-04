@@ -145,11 +145,6 @@ def main():
 			outim.append(im)
 			#im.write_image(outname,ii-first)
 
-		# alignment
-		s1=sum(outim[:len(outim)/4])
-		s1.process_inplace("normalize.edgemean")
-		s2=sum(outim[len(outim)/2:len(outim)*3/4])
-		s2.process_inplace("normalize.edgemean")
 
 		# show a little movie of 5 averaged frames
 		mov=[]
@@ -185,15 +180,48 @@ def main():
 		#except:
 			#print "no dark"
 
+		# alignment
+		ni=len(outim)		# number of input images in movie
+		
+		s1=sum(outim[:ni/2])
+		s1.process_inplace("normalize.edgemean")
+		s2=sum(outim[ni/2:])
+		s2.process_inplace("normalize.edgemean")
 		dx,dy=align(s1,s2)
+		print "half vs half: ",dx,dy
+		
+		dxn=dx/(ni/2.0)		# dx per n
+		dyn=dy/(ni/2.0)
+		
+		s1=sum(outim[:ni/4])
+		s1.process_inplace("normalize.edgemean")
+		s2=sum(outim[ni/4:ni/2])
+		s2.process_inplace("normalize.edgemean")
+		dx,dy=align(s1,s2,(dxn*ni/4.0,dyn*ni/4.0))
 		print dx,dy
+		
+		s1=sum(outim[ni/4:ni/2])
+		s1.process_inplace("normalize.edgemean")
+		s2=sum(outim[ni/2:ni*3/4])
+		s2.process_inplace("normalize.edgemean")
+		dx,dy=align(s1,s2,(dxn*ni/4.0,dyn*ni/4.0))
+		print dx,dy
+		
+		s1=sum(outim[ni/2:ni*3/4])
+		s1.process_inplace("normalize.edgemean")
+		s2=sum(outim[ni*3/4:])
+		s2.process_inplace("normalize.edgemean")
+		dx,dy=align(s1,s2,(dxn*ni/4.0,dyn*ni/4.0))
+		print dx,dy
+		
+		
 		s2.translate(dx,dy,0)
 
 		display((s1,s2))
 	
 		E2end(pid)
 
-def align(s1,s2):
+def align(s1,s2,hint=None):
 
 	s11=s1.get_clip(Region(1024,500,2048,2048))
 #	s11.process_inplace("math.addsignoise",{"noise":0.5})
@@ -216,10 +244,12 @@ def align(s1,s2):
 
 	# This peak is the false peak caused by the imperfect dark noise subtraction
 	# we want to wipe this peak out
-	dx,dy,dz=tuple(c12.calc_max_location())		# dz is obviously 0
+	#dx,dy,dz=tuple(c12.calc_max_location())		# dz is obviously 0
+	dx,dy=(c12["nx"]/2,c12["ny"]/2)					# the 'false peak' should always be at the origin, ie - no translation
+	newval=(c12[dx-3,dy]+c12[dx+3,dy]+c12[dx,dy-3]+c12[dx,dy+3])/4
 	for x in xrange(dx-2,dx+3):
 		for y in xrange(dy-2,dy+3):
-			c12[x,y]=(c12[dx-3,dy]+c12[dx+3,dy])/2
+			c12[x,y]=newval
 	#c12[dx-1,dy]=(c12[dx-1,dy-1]+c12[dx-1,dy+1])/2.0
 	#c12[dx+1,dy]=(c12[dx+1,dy-1]+c12[dx+1,dy+1])/2.0
 	#c12[dx,dy+1]=(c12[dx+1,dy+1]+c12[dx-1,dy+1])/2.0
@@ -227,13 +257,19 @@ def align(s1,s2):
 	#c12[dx,dy]=(c12[dx-1,dy]+c12[dx+1,dy]+c12[dx,dy+1]+c12[dx,dy-1])/4.0
 	
 	display((s11,s21))
-	display(c12)
+#	display(c12)
 	
-	dx,dy,dz=c12.calc_max_location()
-	cl=c12.get_clip(Region(dx-8,dy-8,17,17))
-	cm=cl.calc_center_of_mass(0)
-	
-	return dx+cm[0]-8-1024,dy+cm[1]-8-1024
+	if hint!=None:
+		cl=c12.get_clip(Region(1024+hint[0]-4,1024+hint[1]-4,9,9))
+		dx,dy,dz=cl.calc_max_location()
+		cl=c12.get_clip(Region(1024+dx-3,1024+dy-3,7,7))
+		cm=cl.calc_center_of_mass(0)
+		return dx+cm[0]-3-1024,dy+cm[1]-3-1024
+	else:
+		dx,dy,dz=c12.calc_max_location()
+		cl=c12.get_clip(Region(dx-8,dy-8,17,17))
+		cm=cl.calc_center_of_mass(0)
+		return dx+cm[0]-8-1024,dy+cm[1]-8-1024
 
 if __name__ == "__main__":
 	main()

@@ -1058,6 +1058,27 @@ int Util::calc_best_fft_size(int low)
 	return 1;
 }
 
+// This takes a 1-D curve and makes it non-convex, by iteratively constraining each point to be
+// lower than the mean of the surrounding 2 values
+vector<float> Util::nonconvex(const vector<float>&curve,int first) {
+	
+	vector<float> ret(curve);
+	if (first<1) first=1;		// we need one point at each end as an anchor
+	
+	int cont=1;
+	while (cont) {
+		cont=0;
+		for (int i=first; i<ret.size()-1; i++) {
+			float q= (ret[i-1]+ret[i+1])/2.0;
+			if (ret[i]>q) { ret[i]=q; cont=1; }
+//			printf("%1.2f (%1.2f) ",ret[i],q);
+		}
+//		printf("\n");
+	}
+	
+	return ret;
+}
+
 #ifndef _WIN32
 #include <sys/types.h>
 #include <sys/socket.h>

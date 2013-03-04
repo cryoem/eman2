@@ -983,19 +983,22 @@ def sfact(s):
 def low_bg_curve(bg_1d,ds):
 	"Computes a 1-D curve that follows the minima of a background function as best possible, focusing on the lower resolution range"
 
-	ret=bg_1d[:]
+	# This code has been replaced by an equivalent C++ function
+	#ret=bg_1d[:]
 
-	# force the curve to be non-convex, after a point
-	cont=True
-	while cont:
-		cont=False
-		for i in range(3,len(ret)-1):
-			qt = (ret[i-1]+ret[i+1])/2.0
-			if ret[i]>qt : 
-				ret[i] = qt
-				cont = True
+	## force the curve to be non-convex, after a point
+	#cont=True
+	#while cont:
+		#cont=False
+		#for i in range(3,len(ret)-1):
+			#qt = (ret[i-1]+ret[i+1])/2.0
+			#if ret[i]>qt : 
+				#ret[i] = qt
+				#cont = True
 
-	return ret
+	#return ret
+
+	return Util::nonconvex(bg_1d,3);
 
 def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhint=None,verbose=1):
 	"""Determines CTF parameters given power spectra produced by powspec_with_bg()
