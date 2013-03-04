@@ -109,11 +109,11 @@ def main():
 	logger = E2init(sys.argv, options.ppid)
 
 
-	if options.mask: 
-		options.mask=parsemodopt(options.mask)
+	#if options.mask: 
+	#	options.mask=parsemodopt(options.mask)
 
-	if options.lowpass: 
-		options.lowpass=parsemodopt(options.lowpass)
+	#if options.lowpass: 
+	#	options.lowpass=parsemodopt(options.lowpass)
 
 	if not options.output and not options.plotonly:
 		print "ERROR: Unless you provide .txt files through --plotonly, you must specify an --output in .txt format."
