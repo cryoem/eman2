@@ -61,7 +61,7 @@ def main():
 	parser.add_argument("--allz",action='store_true',default=False,help="Get ALL the slices in a volume along the z axis.")
 	
 	parser.add_argument("--orthogonaloff",action='store_true',default=False,help="""By default, the program will extract three orthogonal slices through the middle of the volume. 
-																				If this parameter is specified, it will not.""".)
+																				If this parameter is specified, it will not.""")
 	
 	#parser.add_argument("--saverotvol",action='store_true',default=False,help="Will save the volume in each rotated position used to generate a projection.")
 
@@ -73,7 +73,7 @@ def main():
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
-	#parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is None", default=None)
+	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is None", default=None)
 	parser.add_argument("--lowpass",type=str,help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.", default=None)
 
 	#parser.add_argument("--transformsfile",type=str,help="A text files containing lines with one triplet of az,alt,phi values each, representing the transforms to use to project a single volume supplied. ", default='')
@@ -158,7 +158,6 @@ def main():
 	Generate orthogonal slice regions
 	'''
 	
-	
 	sliceRs = []
 	a=EMData(options.input,0)
 	nx=a['nx']
@@ -166,17 +165,21 @@ def main():
 	nz=a['nz']
 	
 	if options.onlymidz:	
-		rmidz=Region(0, 0, nz/2, nx, ny, nz/2+1)
+		rmidz=Region(0, 0, nz/2, nx, ny, 1)
+		print "The region for the orthogonal y slice is", rmidz
 		slicemidz=a.get_clip(rmidz)
 		slicemidz.write_image(options.path + '/' + options.input.replace('.','_SLICEmidz.'),0)
 	
 	elif options.onlymidx:
-		rmidx=Region(nx/2, 0, 0, nx/2+1, ny, nz)
+		rmidx=Region(nx/2, 0, 0, 1, ny, nz)
+		print "The region for the orthogonal y slice is", rmidx
+
 		slicemidx=a.get_clip(rmidx)
 		slicemidx.write_image(options.path + '/' + options.input.replace('.','_SLICEmidx.'),0)
 			
 	elif options.onlymidy:
-		rmidy=Region(0, ny/2, 0, nx, ny/2+1, nz)
+		rmidy=Region(0, ny/2, 0, nx, 1, nz)
+		print "The region for the orthogonal y slice is", rmidy
 		slicemidy=a.get_clip(rmidy)
 		slicemidy.write_image(options.path + '/' + options.input.replace('.','_SLICEmidy.'),0)
 	else:
@@ -184,16 +187,38 @@ def main():
 		#regions={}
 		if not options.orthogonaloff:
 			print "Generating orthogonal slices"
-			rmidz=Region(0, 0, nz/2, nx, ny, nz/2+1)
-			rmidx=Region(nx/2, 0, 0, nx/2+1, ny, nz)
-			rmidy=Region(0, ny/2, 0, nx, ny/2+1, nz)
-			
+			rmidz = Region(0, 0, nz/2, nx, ny, 1)
+			rmidx = Region(nx/2, 0, 0, 1, ny, nz)
+			rmidy = Region(0, ny/2, 0, nx, 1, nz)
+			#tz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
+
 			regions={'SLICEmidz':rmidz,'SLICEmidx':rmidx,'SLICEmidy':rmidy}
-			
+			k=0
 			for tag in regions:
+				z=1
+				if 'midz' in tag:
+					x=nx
+					y=ny
+				
+				elif 'midx' in tag:
+					x=nz
+					y=ny
+					
+				elif 'midy' in tag:
+					x=nx
+					y=nz
+				
+				#if options.threed2threed or options.threed2twod:
+				#d = EMData()
+				#d.read_image(options.input, 0, False, regions[tag])
+				
+				print "I have extracted this orthogonal region", regions[tag]
 				slice = a.get_clip(regions[tag])
-				slice.write_image(options.path + '/' + options.input.replace('.','_SLICESortho.'),0)
-		
+				slice.set_size(x,y,1)
+				slice.write_image(options.path + '/' + options.input.replace('.','_SLICESortho.'),k)
+				print "The mean and index are", slice['mean'],k
+				k+=1
+				
 		if options.allz:
 			print "Generating all z slices"
 			tz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
