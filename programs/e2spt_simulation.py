@@ -471,10 +471,10 @@ def subtomosim(options,ptcls,stackname):
 				ny=prj_r['ny']
 				
 		 		noise = test_image(1,size=(nx,ny))
-	            		noise2 = noise.process("filter.lowpass.gauss",{"cutoff_abs":.25})
-	        		noise.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.75})
-	        		noise = ( noise*3 + noise2*3 ) * options.snr
-	        		prj_r.add(noise)
+	            noise2 = noise.process("filter.lowpass.gauss",{"cutoff_abs":.25})
+	        	noise.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.75})
+	        	noise = ( noise*3 + noise2*3 ) * options.snr
+	        	prj_r.add(noise)
 
 			ctfed_projections.append(prj_r)		
 
