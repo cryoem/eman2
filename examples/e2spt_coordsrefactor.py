@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Author: Jesus Galaz, 06/05/2012
+# Author: Jesus Galaz, 06/05/2012 - Modifid 27/Feb/2013
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -45,7 +45,12 @@ def main():
 													with ONE set of coordinates per line, and NO EXTRA CHARACTERS, except blank spaces (a tab is fine too) in between coordinates.""", default='')
 	parser.add_argument("--output", type=str, help="Output name for the refactored coordinates file.", default='')
 	parser.add_argument("--swapyz", action="store_true", help="This will swap the Y and Z coordinates.", default=False)
-		
+	parser.add_argument("--rotx", action="store_true", help="""Will produce the effects of rotating the coordinates about the x axis. 
+															--tomothickness needs to be supplied if --rotx is on.""", default=False)
+	parser.add_argument("--tomothickness", type=int, help="""Lentgth of the 'short' direction in the tomogram whence the cooridates came from. 
+															Must be in the same scale as the coordinates file supplied through --cords. 
+															This parameter is required if --rotx is used.""", default=0)
+
 	parser.add_argument("--mult", type=float,default=1.0,help="""Factor to multiply the coordinates by. This can allow to expand or shrink the coordinates, 
 																but note that the resulting number will be rounded to the nearest integer.""")	
 	parser.add_argument("--subset", type=int,default=0,help="--subset=n will select a subset of coordinate lines, from 1 to n, to write into the refactored file.")
@@ -66,6 +71,10 @@ def main():
 
 	cfile = options.coords
 	
+	if options.rotx and not options.tomothickness:
+		print "ERROR: You must supply --tomothickness if you intend to use --rotx"
+		sys.exit()
+		
 	if not cfile:
 		print "ERROR: Must profile a coordinates file"
 	
@@ -106,16 +115,25 @@ def main():
 		sanelines[i] = sanelines[i].replace("  ",' ')
 		sanelines[i] = sanelines[i].split()		
 		
-		x = str(round( float(sanelines[i][0]) * options.mult ))
-		y = str(round( float(sanelines[i][1]) * options.mult ))
-		z = str(round( float(sanelines[i][2]) * options.mult ))
-
+		x = str(round( float(sanelines[i][0]) ))
+		y = str(round( float(sanelines[i][1]) ))
+		z = str(round( float(sanelines[i][2]) ))
+		
+	
 		if options.swapyz:
 			print "You indicated Y and Z are flipped in the coords file, respect to the tomogram's orientation; therefore, they will be swapped"
 			aux = y
 			y = z
 			z = aux
 		
+		if options.rotx and options.tomothickness:
+			z = float( options.tomothickness ) - float(z)
+		
+		if options.mult:
+			x = str(round( float(x) * options.mult ))
+			y = str(round( float(y) * options.mult ))
+			z = str(round( float(z) * options.mult ))
+
 		newline = x + ' ' + y + ' ' + z + '\n'
 		newlines.append(newline)
 	
