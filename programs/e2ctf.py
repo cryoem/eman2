@@ -998,7 +998,7 @@ def low_bg_curve(bg_1d,ds):
 
 	#return ret
 
-	return Util::nonconvex(bg_1d,3);
+	return Util.nonconvex(bg_1d,3);
 
 def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhint=None,verbose=1):
 	"""Determines CTF parameters given power spectra produced by powspec_with_bg()
