@@ -242,6 +242,44 @@ def threshold_maxval(img, maxval = 0.0):
 	return img.process( "threshold.clampminmax", {"minval": st[2], "maxval": maxval } )	
 
 ## CTF related functions
+def rotavg_ctf(img, defocus, voltage, Pixel_size, Cs, bfactor, wgh, amp, ang):
+	"""1D rotational average of a 2D power spectrum (img)
+	   based on estimated CTF parameters, including astigmatism amplitude and angle
+	"""
+	from math import sqrt,atan2,pi,sin
+	defc = defocus*10000
+	astigmamp = amp*10000
+	Cs *= 1.e7
+	lam = 12.398/sqrt(voltage*(1022.0+voltage))
+	angrad = ang/180.0*pi
+	nx = img.get_xsize()
+	lr = [0.0]*2*(nx//2+1)
+	cnt = [0.0]*2*(nx//2+1)
+	nc = nx//2
+	nr2 = nc*nc + 1
+	for ix in xrange(nx):
+		x = ix - nc
+		for iy in xrange(nx):
+			y = iy - nc
+			r2 = x*x + y*y
+			if( r2 < nr2 ):
+				s = sqrt(r2)/(nc*2*Pixel_size)
+				dfa = defc - astigmamp/2*sin(2*(atan2(y,x) + angrad))
+				u = sqrt( Cs*(defc - sqrt( defc**2 + Cs**2*lam**4*s**4 - 2*Cs*lam**2*s**2*dfa)))/(Cs*lam) * nc*2*Pixel_size
+				#u = sqrt(r2)*sqrt(1.0 -  astigmamp/2./defc*sin(2*(atan2(y,x) - angrad)))
+				#print ix,iy,sqrt(r2),dfa,lam,s,u
+				iu = int(u)
+				du = u - iu
+				lr[iu]    += (1.0-du)*img.get_value_at(ix,iy)
+				lr[iu+1]  +=       du*img.get_value_at(ix,iy)
+				cnt[iu]   += 1.0-du
+				cnt[iu+1] +=     du
+	for ix in xrange(nc):  lr[ix] /= max(cnt[ix], 1.0)
+	return lr[:nc]
+
+
+
+
 def ctf_1d(nx, ctf, sign = 1):
 	"""
 		Generate a list of 1D CTF values 
