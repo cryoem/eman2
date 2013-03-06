@@ -249,7 +249,7 @@ def rotavg_ctf(img, defocus, voltage, Pixel_size, Cs, bfactor, wgh, amp, ang):
 	from math import sqrt,atan2,pi,sin
 	defc = defocus*10000
 	astigmamp = amp*10000
-	Cs *= 1.e7
+	Cst = Cs*1.e7
 	lam = 12.398/sqrt(voltage*(1022.0+voltage))
 	angrad = ang/180.0*pi
 	nx = img.get_xsize()
@@ -265,7 +265,7 @@ def rotavg_ctf(img, defocus, voltage, Pixel_size, Cs, bfactor, wgh, amp, ang):
 			if( r2 < nr2 ):
 				s = sqrt(r2)/(nc*2*Pixel_size)
 				dfa = defc - astigmamp/2*sin(2*(atan2(y,x) + angrad))
-				u = sqrt( Cs*(defc - sqrt( defc**2 + Cs**2*lam**4*s**4 - 2*Cs*lam**2*s**2*dfa)))/(Cs*lam) * nc*2*Pixel_size
+				u = sqrt( Cst*(defc - sqrt( defc**2 + Cst**2*lam**4*s**4 - 2*Cst*lam**2*s**2*dfa)))/(Cst*lam) * nc*2*Pixel_size
 				#u = sqrt(r2)*sqrt(1.0 -  astigmamp/2./defc*sin(2*(atan2(y,x) - angrad)))
 				#print ix,iy,sqrt(r2),dfa,lam,s,u
 				iu = int(u)
