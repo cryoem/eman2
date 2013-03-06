@@ -20231,7 +20231,7 @@ EMData* Util::ctf_img(int nx, int ny, int nz, float dz,float ps,float voltage,fl
 	int    ix, iy, iz;
 	int    i,  j, k;
 	int    nr2, nl2;
-	float  az, ak;
+	float  ak;
 	float  scx, scy, scz;
 	int    offset = 2 - nx%2;
 	int    lsm = nx + offset;
@@ -20243,7 +20243,6 @@ EMData* Util::ctf_img(int nx, int ny, int nz, float dz,float ps,float voltage,fl
 	if(nz>=1) scz = 2.0f/float(nz); else scz=0.0f;
 	nr2 = ny/2 ;
 	nl2 = nz/2 ;
-	float pihalf = M_PI/2.0f;
 	for ( k=0; k<nz;k++) {
 		iz = k;  if(k>nl2) iz=k-nz;
 		float oz2 = iz*scz*iz*scz;
@@ -20259,8 +20258,7 @@ EMData* Util::ctf_img(int nx, int ny, int nz, float dz,float ps,float voltage,fl
 				} else {
 					float ox = ix*scx;
 					ak=pow(ox*ox + oy2 + oz2, 0.5f)*freq;
-					az = atan2(oy, ox);
-					float dzz = dz + dza/2.0f*sin(2*(az-azz*M_PI/180.0f-pihalf));
+					float dzz = dz - dza/2.0f*sin(2*(atan2(oy, ox)+azz*M_PI/180.0f));
 					(*ctf_img1) (i*2,j,k)   = Util::tf(dzz, ak, voltage, cs, wgh, b_factor, sign);
 				}
 				//(*ctf_img1) (i*2+1,j,k) = 0.0f;  PAP  I assumed new EMData sets to zero
@@ -20282,7 +20280,7 @@ EMData* Util::ctf_rimg(int nx, int ny, int nz, float dz, float ps, float voltage
 {
 	int    ix, iy, iz;
 	int    i,  j, k;
-	float  az, ak;
+	float  ak;
 	float  scx, scy, scz;
 	EMData* ctf_img1 = new EMData();
 	ctf_img1->set_size(nx, ny, nz);
@@ -20296,7 +20294,6 @@ EMData* Util::ctf_rimg(int nx, int ny, int nz, float dz, float ps, float voltage
 	int nod = nx%2 ;
 	int nok = ny%2 ;
 	int noz = nz%2 ;
-	float pihalf = M_PI/2.0f;
 	for ( k=0; k<nz;k++) {
 		iz = k - nl2;
 		int kz = (nz - k - noz)%nz;
@@ -20314,8 +20311,7 @@ EMData* Util::ctf_rimg(int nx, int ny, int nz, float dz, float ps, float voltage
 				} else {
 					float ox = ix*scx;
 					ak=pow(ox*ox + oy2 + oz2, 0.5f)*freq;
-					az = atan2(oy, ox);
-					float dzz = dz + dza/2.0f*sin(2*(az-azz*M_PI/180.0f-pihalf));
+					float dzz = dz - dza/2.0f*sin(2*(atan2(oy, ox)+azz*M_PI/180.0f));
 					(*ctf_img1) (i,j,k)   = Util::tf(dzz, ak, voltage, cs, wgh, b_factor, sign);
 				}
 				ix = nx - i - nod;
@@ -20334,7 +20330,7 @@ EMData* Util::ctf2_rimg(int nx, int ny, int nz, float dz, float ps, float voltag
 {
 	int    ix, iy, iz;
 	int    i,  j, k;
-	float  az, ak;
+	float  ak;
 	float  scx, scy, scz;
 	EMData* ctf_img1 = new EMData();
 	ctf_img1->set_size(nx, ny, nz);
@@ -20348,7 +20344,6 @@ EMData* Util::ctf2_rimg(int nx, int ny, int nz, float dz, float ps, float voltag
 	int nod = nx%2 ;
 	int nok = ny%2 ;
 	int noz = nz%2 ;
-	float pihalf = M_PI/2.0f;
 	for ( k=0; k<nz;k++) {
 		iz = k - nl2;
 		int kz = (nz - k - noz)%nz;
@@ -20366,8 +20361,9 @@ EMData* Util::ctf2_rimg(int nx, int ny, int nz, float dz, float ps, float voltag
 				} else {
 					float ox = ix*scx;
 					ak=pow(ox*ox + oy2 + oz2, 0.5f)*freq;
-					az = atan2(oy, ox);
-					float dzz = dz + dza/2.0f*sin(2*(az-azz*M_PI/180.0f-pihalf));
+					//az = atan2(oy, ox);
+					//float dzz = dz + dza/2.0f*sin(2*(az-azz*M_PI/180.0f-pihalf));
+					float dzz = dz - dza/2.0f*sin(2*(atan2(oy, ox)+azz*M_PI/180.0f));
 					(*ctf_img1) (i,j,k)   = pow(Util::tf(dzz, ak, voltage, cs, wgh, b_factor, sign),2);
 				}
 				ix = nx - i - nod;
