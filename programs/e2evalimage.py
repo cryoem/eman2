@@ -619,7 +619,7 @@ class GUIEvalImage(QtGui.QWidget):
 		if ctf.voltage==0:
 			try: ctf.voltage=self.data["microscope_voltage"]
 			except: pass
-			if ctf.voltage==0 : ctf.voltage=self.default_voltage
+			if ctf.voltage==0 : ctf.voltage=self.defaultvoltage
 			try: ctf.cs=self.data["microscope_cs"]
 			except: pass
 			if ctf.cs==0 : ctf.cs=self.defaultcs
