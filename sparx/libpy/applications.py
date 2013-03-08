@@ -13127,7 +13127,7 @@ def ordersegments(stack, filament_attr = 'filament', verify=False):
 	
 	
 
-def map(x, y, r, nx, ny):
+def mapcoords(x, y, r, nx, ny):
 	from math 			import ceil, floor
 	from applications 	import get_dist
 	'''
@@ -13218,6 +13218,7 @@ def getnewhelixcoords(hcoordsname, outdir, ratio,nx,ny, newpref="resampled_", bo
 	'''
 	import os
 	from utilities 		import read_text_row
+	from applications	import mapcoords
 	
 	fname = (hcoordsname.split('/'))[-1] # name of old coordinates files minus the path
 	newhcoordsname = os.path.join(outdir , newpref+fname) # full path name of new coordinates file to be created
@@ -13232,7 +13233,7 @@ def getnewhelixcoords(hcoordsname, outdir, ratio,nx,ny, newpref="resampled_", bo
 	for i in xrange(ncoords):
 		xold = coords[i][0] + w/2
 		yold = coords[i][1] + w/2
-		xnew, ynew = map(xold,yold,ratio,nx,ny)
+		xnew, ynew = mapcoords(xold,yold,ratio,nx,ny)
 		s = '%d\t%d\t%d\t%d\t%d\n'%(xnew-new_w/2,ynew-new_w/2, new_w, new_w, coords[i][4])
 		f.write(s)
 	return newhcoordsname	
