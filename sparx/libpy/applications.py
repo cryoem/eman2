@@ -2729,6 +2729,7 @@ def ali2d_ras(data2d, randomize = False, ir = 1, ou = -1, rs = 1, step = 1.0, ds
 		#  Convert average to polar
 		cimage = Util.Polar2Dm(tavg, cnx, cny, numr, mode)
 		Util.Frngs(cimage, numr)
+		Util.Applyws(cimage, numr, wr)
 		for im in xrange(nima):
 			# align current image to the reference 
 			if(check_mirror):
@@ -2748,6 +2749,83 @@ def ali2d_ras(data2d, randomize = False, ir = 1, ou = -1, rs = 1, step = 1.0, ds
 			# combine parameters and store in data2d header
 			alphan, sxn, syn, mir = combine_params2(0.0, -params[im][0], -params[im][1], 0, ang, 0.0 ,0.0, mirror)
 			set_params2D(data2d[im], [alphan, sxn, syn, mir, 1.0])
+
+def ali2d_friedel(data2d, randomize = False, orient=True, ir = 1, ou = -1, rs = 1, maxit = 10):
+# stripped down 2D rotational alignment in polar coordinates
+#  I did not check the version with no check mirror, I doubt it works.
+
+	from utilities    import get_params2D, set_params2D, model_blank
+	from alignment    import Numrinit, ringwe, ang_n
+	from fundamentals import rot_shift2D, mirror
+	from statistics   import ave_series
+	from random       import randint
+
+	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit); 
+
+	nx = data2d[0].get_xsize()
+	ny = nx
+	# default value for the last ring
+	if (last_ring == -1): last_ring=nx//2-2
+	mode = "H"
+
+	nima = len(data2d)
+
+	# precalculate rings
+	numr = Numrinit(first_ring, last_ring, rstep, mode)
+	wr   = ringwe(numr, mode)
+	maxrin = numr[len(numr)-1]
+
+	#  center is in SPIDER convention
+	cnx = int(nx/2) + 1
+	cny = int(ny/2) + 1
+	# resample images into polar coordinates
+	data = []
+	if randomize:  angle = [float(randint(1,maxrin)) for i in xrange(nima)]
+	else:          angle = [0.0]*nima
+	for im in xrange(nima):
+		#  Here we need inverse transformation shifts for resampling into polar
+		cimage = Util.Polar2Dm(data2d[im], cnx, cny, numr, mode)
+		Util.Frngs(cimage, numr)
+		data.append(cimage)
+
+	total_iter = 0
+	change = False
+	for Iter in xrange(max_iter):
+		total_iter += 1
+		if total_iter == max_iter or not change:
+			tavg = model_blank(nx,ny)
+			#compute average
+			for i in xrange(nima):
+				angle[im] = ang_n(retvals["tot"], mode, numr[-1])
+				set_params2D(data2d[im], [angle[im], 0.0, 0.0, 0, 1.0])
+			tavg = ave_series(data2d)
+			if orient:
+				qet = -1.e23
+				mask = model_circle(ou,nx,ny)-model_circle(ir,nx,ny)
+				for i in xrange(360):
+					temp = rot_shift2D(tavg,i/2.0)
+					qt = mirror(temp,'y').cmp("dot", temp, {"negative":0, "mask":mask})
+					if(qt > qet):
+						qet = qt
+						mang = i/2.0
+				if( man != 0.0 ):
+					for i in xrange(nima):
+						ang[i] += mang
+						set_params2D(data2d[im], [angle[im], 0.0, 0.0, 0, 1.0])
+					tavg = ave_series(data2d)
+			return tavg
+		else:
+			cimage.to_zero()
+			for im in xrange(nima):  Util.update_fav(cimage, data[im], angle[im], 0, numr)
+			Util.mul_scalar(cimage, 1.0/float(nima))
+			Util.Applyws(cimage, numr, wr)
+		change = False
+		for im in xrange(nima):
+			# align current image to the reference 
+			retvals = Util.Crosrng_e(cimage, data[im], numr, 0)
+			if( (retvals["tot"] - angle[im])>1.e5):
+				change = True
+				angle[im] = retvals["tot"]
 
 def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=1, maxit=0, CTF=False, snr=1.0, user_func_name="ref_ali2d"):
  	"""
