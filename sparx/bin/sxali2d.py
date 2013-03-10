@@ -51,7 +51,7 @@ def main():
 	parser.add_option("--dst",      type="float",  default=0.0,           help="delta")
 	parser.add_option("--center",   type="float",  default=-1,            help="-1.average center method; 0.not centered; 1.phase approximation; 2.cc with Gaussian function; 3.cc with donut-shaped image 4.cc with user-defined reference 5.cc with self-rotated average")
 	parser.add_option("--maxit",    type="float",  default=0,             help="maximum number of iterations (0 means the maximum iterations is 10, but it will automatically stop should the criterion falls")
-	parser.add_option("--CTF",      action="store_true", default=False,   help="use CTF correction during alignment ")
+	parser.add_option("--CTF",      action="store_true", default=False,   help="use CTF correction during alignment")
 	parser.add_option("--snr",      type="float",  default=1.0,           help="signal-to-noise ratio of the data (set to 1.0)")
 	parser.add_option("--Fourvar",  action="store_true", default=False,   help="compute Fourier variance")
 	parser.add_option("--Ng",       type="int",    default=-1,            help="number of groups in the new CTF filteration")
@@ -59,13 +59,19 @@ def main():
 	parser.add_option("--CUDA",     action="store_true", default=False,   help="use CUDA program")
 	parser.add_option("--GPUID",    type="string",    default="",         help="ID of GPUs available")
 	parser.add_option("--MPI",      action="store_true", default=False,   help="use MPI version ")
+	parser.add_option("--friedel",  action="store_true", default=False,   help="rotational alignment of power spectra or autocorrelation functions, the only parameters are: ir, ou, rs, maxit, orient, randomize")
+	parser.add_option("--randomize",  action="store_true", default=False,   help="randomize initial rotations (suboption of friedel, default False)")
+	parser.add_option("--orient",   action="store_true", default=False,   help="orient images such that the average is symmetric about x-axis, for layer lines (suboption of friedel, default False)")
 	(options, args) = parser.parse_args()
 	if len(args) < 2 or len(args) > 3:
     		print "usage: " + usage
     		print "Please run '" + progname + " -h' for detailed options"
+	elif(options.friedel):
+		from applications import ali2d_friedeltop
+		ali2d_friedeltop(args[1], args[0], options.randomize, options.orient, options.ir, options.ou, options.rs, options.maxit)
 	else:
 		if args[1] == 'None': outdir = None
-		else:		      outdir = args[1]
+		else:		          outdir = args[1]
 
 		if len(args) == 2: mask = None
 		else:              mask = args[2]
