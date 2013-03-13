@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus Galaz, 04/28/2012; last update 06/10/2012
+# Author: Jesus Galaz, 04/28/2012; last update 05/March/2013
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -66,9 +66,17 @@ def main():
 	parser.add_argument("--path",type=str,default=None,help="Directory to store results in. The default is a numbered series of directories containing the prefix 'sptsimjob'; for example, sptsimjob_02 will be the directory by default if 'sptsimjob_01' already exists.")
 	parser.add_argument("--noplot", action='store_true', help="To run jobs on a cluster or other interfaces that don't support plotting, turn this option on.",default=False)
 	
+	parser.add_argument("--plotonly",type=str, help="""If you already have the time variation with boxsize (for a particular cpu or gpu) in a text file in rows of 'boxsize,time', 
+												provide the txt file(s) separated by commas --plotonly=file1.txt,file2.txt,file3.txt etc...""", default=None)
+	parser.add_argument("--singleplot",action="store_true", help="Plot all cpus and/or gpus provided through --plotonly, in a single .png file.", default=False)
+	
+	parser.add_argument("--plotminima",action="store_true", help="Plot all cpus and/or gpus provided through --plotonly, in a single .png file.", default=False)
+
+	
+	
 	(options, args) = parser.parse_args()
 	
-	print "options are", options
+	#print "options are", options
 	
 	logger = E2init(sys.argv, options.ppid)
 	
@@ -143,6 +151,13 @@ def main():
 			print "and cnums to plot are", cnums
 			print "\n"
 			plotter(name,sizes,cnums,step,step/2)
+			
+			if options.plotminima:
+				ret=minima(sizes,cnums)
+				sizesmin=ret[0]
+				cnumsmin=ret[1]
+				namemin=name.replace('.png','_MIN.png')
+				plotter(namemin,sizesmin,cnumsmin,step,step/2)
 		
 	if options.gpu:
 		corg = 'GPU'
@@ -160,6 +175,13 @@ def main():
 			print "and gnums to plot are", gnums
 			print '\n'
 			plotter(name,sizes,gnums,step,step/2)
+			
+			if options.plotminima:
+				ret=minima(sizes,gnums)
+				sizesmin=ret[0]
+				gnumsmin=ret[1]
+				namemin=name.replace('.png','_MIN.png')
+				plotter(namemin,sizesmin,gnumsmin,step,step/2)
 	
 	if retcpu and retgpu:
 		if len(retcpu) == len(retgpu):
@@ -184,6 +206,15 @@ def main():
 				print "\n$$$$$$$\nThe step is", step
 				print "\n\n"
 				plotter(name,sizes,difs,step,step/2)
+				
+				
+				if options.plotminima:
+					ret=minima(sizes,difs)
+					sizesmin=ret[0]
+					difsmin=ret[1]
+					namemin=name.replace('.png','_MIN.png')
+					plotter(namemin,sizesmin,difsmin,step,step/2)
+				
 			#print "I should be plotting this"
 	
 		else:
@@ -293,6 +324,7 @@ def doit(corg,options):
 	print "\n"
 	return(data)
 
+
 def plotter(name,xaxis,yaxis,CS,FS):
 	tag='gpu speed gain factor'
 	labelfory='CPU time / GPU time'
@@ -322,6 +354,29 @@ def plotter(name,xaxis,yaxis,CS,FS):
 	plt.savefig(name)
 	plt.clf()
 	return()
+
+
+
+def minima(sizes,vals):
+	
+	finalsizes=[]
+	finalvals=[]
+	
+	for i in xrange(0,len(vals)-1-1):
+		aux = 0 
+		for j in xrange(i+1,(len(vals)-1-1))
+			if vals[j]< vals[i]:
+				aux=0
+				print "Because a downstream value is lower, I will break the loop, see", vals[j],vals[i]
+				break
+			else:
+				aux=1
+		if aux==1:
+			finalsizes.append(sizes[i])
+			finalvals.append(vals[i])
+			print "I have appended this box, value", sizes[i], vals[i]
+	
+	return(sizesmin,valsmin)
 
 '''
 def eman2time():
