@@ -7148,7 +7148,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 				"""
 				peak1 = None
 				peak2 = None
-				#print im, get_params_proj(data[im])
+				print myid, im, get_params_proj(data[im])
 				if( len(refrings1) > 0):
 					if  an[N_step] == -1:
 						peak1, phihi1, theta1, psi1, sxi1, syi1, t11 = \
@@ -13157,13 +13157,13 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 				send_EMData(fullvol0, main_node, ivol+myid+70000)
 
 
-def ordersegments(stack, filament_attr = 'filament', verify=False):
+def ordersegments(stack, filament_attr = 'filament'):
 	'''
 	Input:
 	
 	stack: Input stack of images whose headers contain filament membership information and particle coordinates in the original micrograph (stored under attribute ptcl_source_coord).
 	filament_attr: Attribute under which filament membership ID is stored.
-	verify: Run test for verifying ordered segments lie in the same relative positions as their positions on the filament.
+	It is assumed the prtl coords are nonnegative
 	
 	Output: 
 	
@@ -13171,10 +13171,37 @@ def ordersegments(stack, filament_attr = 'filament', verify=False):
 	a single filament ordered according to their relative positions on the filament.
 	
 	'''
-	from copy import copy
-	from operator import itemgetter
-	from math import sqrt
-	
+
+	def orderbymodule(xp,yp):
+		from math import atan,sin,cos,pi, atan2
+		from statistics import linreg
+		nq = len(xp)
+		xs = sum(xp)/nq
+		ys = sum(yp)/nq
+		for i in xrange(nq):
+			xp[i] -= xs
+			yp[i] -= ys
+		
+		try:
+			a,b = linreg(xp,yp)
+			alpha = pi/4-atan(a)
+		except:
+			a,b = linreg([(xp[i]-yp[i]) for i in xrange(nq)], [(xp[i]+yp[i]) for i in xrange(nq)])
+			alpha = atan(a)
+			#print "except"
+		
+		cs = cos(alpha)
+		ss = sin(alpha)
+		qm = 1.e23
+		dd = [[0.0, 0] for i in xrange(nq)]
+		for i in xrange(nq):
+			xt =  cs*xp[i] - ss*yp[i] + xs
+			yt =  ss*xp[i] + cs*yp[i] + ys
+			dd[i] = [xt**2+yt**2, i]
+		dd.sort()
+		if(atan2(yp[dd[-1][1]]-yp[dd[0][1]],xp[dd[-1][1]]-xp[dd[0][1]]) >0.0 ):  return [dd[i][1] for i in xrange(nq)]
+		else:                                                                    return [dd[nq -1 -i][1] for i in xrange(nq)]
+
 	allfilaments = EMUtil.get_all_attributes(stack, filament_attr)
 	for i in xrange(len(allfilaments)):
 		allfilaments[i] = [allfilaments[i],i]
@@ -13190,51 +13217,19 @@ def ordersegments(stack, filament_attr = 'filament', verify=False):
 			current = allfilaments[i][0]
 			temp = [allfilaments[i][1]]
 	filaments.append(temp)
-	
+
 	del allfilaments, temp
-	
 	ptclcoords = EMUtil.get_all_attributes(stack, 'ptcl_source_coord')
-	
+
 	nfil = len(filaments)
-	
+
 	for i in xrange(nfil):
-		fil = filaments[i]
-		segcoords = []
-		nsegs = len(fil)
-		for ii in xrange(nsegs):
-			iseg = fil[ii]
-			segcoords.append([ptclcoords[iseg][0], ptclcoords[iseg][1], iseg])
-			
-		# sort by x, then by y
-		psort = sorted(segcoords, key=itemgetter(0,1))
-		
-		for j in xrange(nsegs):
-			filaments[i][j] = psort[j][2]
-		
-		# Verify the coordinates are indeed ordered according to their relative positions on a line
-		# Given points p1, p2, p3, p4, p5 on a line, if p2 lies between p1 and p3, p3 lies between p2 and p5
-		# and p4 lies between p3 and p5, then the points must be ordered as p1, p2, p3, p4, p5 on the line.
-		if verify:
-			if nsegs < 3:
-				continue
-			for ii in xrange(1, nsegs-1):
-				# check that coordinate filament[i][ii] lies between filament[i][ii-1] and filament[i][ii+1]
-				p = ptclcoords[fil[ii]]
-				p1 = ptclcoords[fil[ii-1]]
-				p2 = ptclcoords[fil[ii+1]]
-				
-				# p lies between p1 and p2 iff d(p,p1) + d(p,p2) = d(p1, p2)
-				d1 = sqrt((p[0] - p1[0])**2 + (p[1] - p1[1])**2)
-				d2 = sqrt((p[0] - p2[0])**2 + (p[1] - p2[1])**2)
-				d3 = sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)
-				
-				if abs(d1+d2 - d3) > 0.00001:
-					print "points are not ordered: ", i
-					sys.exit()
-				print i, nfil
+		nsegs = len(filaments[i])
+		if(nsegs > 1):
+			ord = orderbymodule([ptclcoords[filaments[i][ii]][0] for ii in xrange(nsegs)],[ptclcoords[filaments[i][ii]][1] for ii in xrange(nsegs)])
+			filaments[i] = [filaments[i][ord[ii]] for ii in xrange(nsegs)]
 	return filaments	
-	
-	
+
 
 def mapcoords(x, y, r, nx, ny):
 	from math 			import ceil, floor
