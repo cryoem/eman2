@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus Galaz, 04/28/2012 - Last update 12/07/2012
+# Author: Jesus Galaz, 04/28/2012 - Last update 05/March/2013
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -78,12 +78,13 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
 	#parser.add_argument("--plotonly",type=str, help="Provide .txt files for a given alt, with 2 columns (az ccc) with the values to plot. For example, --plotonly=alt000.txt,alt180.txt", default=None)
 	parser.add_argument("--normalizeplot",action="store_true", help="Make maximum correlation value on plot equal to 1 and scale all other values accordingly.", default=False)
-	parser.add_argument("--singleplot",action="store_true", help="Plot all alts, or each vertex of --icosvertices is on, in a single .png file.", default=False)
 	parser.add_argument("--plot2d",action="store_true", help="Produces 2D plot if both az and alt are varied.", default=False)
 	parser.add_argument("--only2dplot",action="store_true", help="Skips all plots, except 2dplot.", default=False)
 	parser.add_argument("--savetxt",action="store_true", help="Will save the values for each plot into .txt files.", default=False)
 
-	parser.add_argument("--plotonly",type=str, help="FSC curves to plot in separate plots. Skips alignment and fsc curve generation. Provide .txt. files separated by commas --plotonly=file1.txt,file2.txt,file3.txt etc...", default=None)
+	parser.add_argument("--plotonly",type=str, help="""If you already have the correlation variation with azimuth (for a particular altitude) in a text file in rows of 'az,ccc', 
+												provide the txt file(s) separated by commas --plotonly=file1.txt,file2.txt,file3.txt etc...""", default=None)
+	parser.add_argument("--singleplot",action="store_true", help="Plot all alts, or each vertex of --icosvertices is on, in a single .png file.", default=False)
 
 
 	
