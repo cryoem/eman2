@@ -13172,15 +13172,17 @@ def ordersegments(stack, filament_attr = 'filament'):
 	
 	'''
 
-	def orderbymodule(xp,yp):
+	def orderbymodule(xxp,yyp):
 		from math import atan,sin,cos,pi, atan2
 		from statistics import linreg
-		nq = len(xp)
-		xs = sum(xp)/nq
-		ys = sum(yp)/nq
+		nq = len(xxp)
+		xs = sum(xxp)/nq
+		ys = sum(yyp)/nq
+		xp = [0.0]*nq
+		yp = [0.0]*nq
 		for i in xrange(nq):
-			xp[i] -= xs
-			yp[i] -= ys
+			xp[i] = xxp[i] - xs
+			yp[i] = yyp[i] - ys
 		try:
 			a,b = linreg(xp,yp)
 			alpha = pi/4-atan(a)
@@ -13202,8 +13204,8 @@ def ordersegments(stack, filament_attr = 'filament'):
 		for i in xrange(nq):
 			dd[i] = [(xp[i]+xs)**2+(yp[i]+ys)**2, i]
 		dd.sort()
-		if(atan2(yp[dd[-1][1]]-yp[dd[0][1]],xp[dd[-1][1]]-xp[dd[0][1]]) >0.0 ):  return [dd[i][1] for i in xrange(nq)]
-		else:                                                                    return [dd[nq -1 -i][1] for i in xrange(nq)]
+		if(atan2(yyp[dd[-1][1]]-yyp[dd[0][1]],xxp[dd[-1][1]]-xxp[dd[0][1]]) >0.0 ):  return [dd[i][1] for i in xrange(nq)]
+		else:                                                                        return [dd[nq -1 -i][1] for i in xrange(nq)]
 
 	allfilaments = EMUtil.get_all_attributes(stack, filament_attr)
 	for i in xrange(len(allfilaments)):
