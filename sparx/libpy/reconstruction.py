@@ -1038,7 +1038,7 @@ def recons3d_sirt(stack_name, list_proj, radius, lam=1.0e-4, maxit=100, symmetry
 		iter = iter + 1
 
 	return  xvol
-      
+
 def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetry="c1", radius=None): 
 	"""
 		Weigthed back-projection algorithm.
