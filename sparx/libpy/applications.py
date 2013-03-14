@@ -13181,7 +13181,6 @@ def ordersegments(stack, filament_attr = 'filament'):
 		for i in xrange(nq):
 			xp[i] -= xs
 			yp[i] -= ys
-		
 		try:
 			a,b = linreg(xp,yp)
 			alpha = pi/4-atan(a)
@@ -13189,15 +13188,19 @@ def ordersegments(stack, filament_attr = 'filament'):
 			a,b = linreg([(xp[i]-yp[i]) for i in xrange(nq)], [(xp[i]+yp[i]) for i in xrange(nq)])
 			alpha = atan(a)
 			#print "except"
-		
+
 		cs = cos(alpha)
 		ss = sin(alpha)
 		qm = 1.e23
 		dd = [[0.0, 0] for i in xrange(nq)]
 		for i in xrange(nq):
-			xt =  cs*xp[i] - ss*yp[i] + xs
-			yt =  ss*xp[i] + cs*yp[i] + ys
-			dd[i] = [xt**2+yt**2, i]
+			xt =  cs*xp[i] - ss*yp[i]
+			yt =  ss*xp[i] + cs*yp[i]
+			xp[i] = xt; yp[i] = yt
+		xs = min(xp)
+		ys = min(yp)
+		for i in xrange(nq):
+			dd[i] = [(xp[i]+xs)**2+(yp[i]+ys)**2, i]
 		dd.sort()
 		if(atan2(yp[dd[-1][1]]-yp[dd[0][1]],xp[dd[-1][1]]-xp[dd[0][1]]) >0.0 ):  return [dd[i][1] for i in xrange(nq)]
 		else:                                                                    return [dd[nq -1 -i][1] for i in xrange(nq)]
