@@ -9453,12 +9453,13 @@ def transform2d(stack_data, stack_data_ali):
 	print_msg("Input stack                 : %s\n"%(stack_data))
 	print_msg("Output stack                : %s\n\n"%(stack_data_ali))
 
+	t = Transform({"type":"2D"})
 	nima = EMUtil.get_image_count(stack_data)
 	for im in xrange(nima):
 		data = get_im(stack_data, im)
-		a,b,c,d = get_params2D(data)
-		temp = rot_shift2D(data, a,b,c,d)
-		set_arb_params(temp, [0.,0.,0.,1.0])
+		al2d = get_params2D(data)
+		temp = rot_shift2D(data, al2d[0], al2d[1], al2d[2], al2d[3], al2d[4])
+		temp.set_attr("xform.align2d", t)
 		temp.write_image(stack_data_ali, im)
 	print_end_msg("transform2d")
 
