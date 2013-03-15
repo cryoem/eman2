@@ -2751,13 +2751,13 @@ def ali2d_ras(data2d, randomize = False, ir = 1, ou = -1, rs = 1, step = 1.0, ds
 			set_params2D(data2d[im], [alphan, sxn, syn, mir, 1.0])
 
 
-def ali2d_friedeltop(outdir, stack, randomize = False, orient=True, ir = 4, ou = -1, rs = 1, maxit = 10):
+def ali2d_rotationaltop(outdir, stack, randomize = False, orient=True, ir = 4, ou = -1, rs = 1, psi_max = 180.0, mode = "F", maxit = 10):
 	# calling program for rotational alignment of power spectra
 	from utilities    import print_begin_msg, print_end_msg, print_msg
 	from utilities    import file_type
 	import os
 
-	print_begin_msg("ali2d_friedel")
+	print_begin_msg("ali2d_rotational")
 	
 	if os.path.exists(outdir):   ERROR('Output directory exists, please change the name and restart the program', "ali2d_friedel", 1)
 	os.mkdir(outdir)
@@ -2776,15 +2776,15 @@ def ali2d_friedeltop(outdir, stack, randomize = False, orient=True, ir = 4, ou =
 	print_msg("Ring step                   : %i\n"%(rstep))
 	print_msg("Maximum iteration           : %i\n"%(max_iter))
 	
-	tavg = ali2d_friedel(data2d, randomize, orient, first_ring, last_ring, rstep, max_iter)
+	tavg = ali2d_rotational(data2d, randomize, orient, first_ring, last_ring, rstep, psi_max, mode, max_iter)
 	tavg.write_image(os.path.join(outdir, "aqfinal.hdf"))
 	# write out headers
 	from utilities import write_headers
 	write_headers(stack, data2d, range(nima))
-	print_end_msg("ali2d_friedel")
+	print_end_msg("ali2d_rotational")
 	
 
-def ali2d_friedel(data2d, randomize = False, orient=True, ir = 1, ou = -1, rs = 1, maxit = 10):
+def ali2d_rotational(data2d, randomize = False, orient=True, ir = 1, ou = -1, rs = 1, psi_max = 180.0, mode = "F", maxit = 10):
 # 2D rotational alignment of power spectra in polar coordinates
 
 	from utilities    import get_params2D, set_params2D, model_blank, model_circle
@@ -2799,7 +2799,6 @@ def ali2d_friedel(data2d, randomize = False, orient=True, ir = 1, ou = -1, rs = 
 	ny = nx
 	# default value for the last ring
 	if (last_ring == -1): last_ring=nx//2-2
-	mode = "H"
 
 	nima = len(data2d)
 
@@ -2853,7 +2852,8 @@ def ali2d_friedel(data2d, randomize = False, orient=True, ir = 1, ou = -1, rs = 
 		change = False
 		for im in xrange(nima):
 			# align current image to the reference 
-			retvals = Util.Crosrng_e(cimage, data[im], numr, 0)
+			#retvals = Util.Crosrng_e(cimage, data[im], numr, 0)
+			retvals = Util.Crosrng_sm_psi(cimage, data[im], numr, 0.0, 0, psi_max)
 			if( abs(retvals["tot"] - angle[im]) > 1.e-2):
 				change = True
 				angle[im] = retvals["tot"]

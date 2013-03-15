@@ -342,21 +342,6 @@ def ringwe(numr, mode="F"):
 	for i in xrange(0,nring): wr[i] = numr[i*3]*dpi/float(numr[2+i*3])*maxrin/float(numr[2+i*3])
 	return wr
 
-def ringw_real(numr, mode="F"):
-	"""Calculate ring weights for rotational alignment
-	   Roughly speaking, this weight is inversely proportional to the radius of the ring.
-	"""
-	from math import pi
-	if (mode == 'f' or mode == 'F'):
-		dpi = 2*pi
-	else:
-		dpi = pi
-	nring = len(numr)/3
-	wr=[0.0]*nring
-	for i in xrange(nring): wr[i] = numr[i*3]*dpi/float(numr[2+i*3])
-	return wr
-
-
 def ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	"""Determine shift and rotation between image and reference image (refim)
 	   no mirror

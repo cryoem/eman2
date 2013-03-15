@@ -59,16 +59,19 @@ def main():
 	parser.add_option("--CUDA",     action="store_true", default=False,   help="use CUDA program")
 	parser.add_option("--GPUID",    type="string",    default="",         help="ID of GPUs available")
 	parser.add_option("--MPI",      action="store_true", default=False,   help="use MPI version ")
-	parser.add_option("--friedel",  action="store_true", default=False,   help="rotational alignment of power spectra or autocorrelation functions, the only parameters are: ir, ou, rs, maxit, orient, randomize")
+	parser.add_option("--rotational",  action="store_true", default=False,   help="rotational alignment with optional limited in-plane angle, the parameters are: ir, ou, rs, psi_max, mode(F or H), maxit, orient, randomize")
+	parser.add_option("--psi_max",      type="float",  default=180.0,           help="psi_max")
+	parser.add_option("--mode",       type="string", default="F",     help="Full or Half rings, default F")
 	parser.add_option("--randomize",  action="store_true", default=False,   help="randomize initial rotations (suboption of friedel, default False)")
 	parser.add_option("--orient",   action="store_true", default=False,   help="orient images such that the average is symmetric about x-axis, for layer lines (suboption of friedel, default False)")
 	(options, args) = parser.parse_args()
 	if len(args) < 2 or len(args) > 3:
     		print "usage: " + usage
     		print "Please run '" + progname + " -h' for detailed options"
-	elif(options.friedel):
-		from applications import ali2d_friedeltop
-		ali2d_friedeltop(args[1], args[0], options.randomize, options.orient, options.ir, options.ou, options.rs, options.maxit)
+	elif(options.rotational):
+		from applications import ali2d_rotationaltop
+		global_def.BATCH = True
+		ali2d_rotationaltop(args[1], args[0], options.randomize, options.orient, options.ir, options.ou, options.rs, options.psi_max, options.mode, options.maxit)
 	else:
 		if args[1] == 'None': outdir = None
 		else:		          outdir = args[1]
