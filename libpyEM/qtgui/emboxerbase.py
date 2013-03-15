@@ -44,10 +44,11 @@ The EMBoxerModule is basically the epicenter of everything: functions like "add_
 points in terms of figuring out how to adapt this code to application specific needs
 '''
 from optparse import OptionParser
-from emapplication import EMApp,get_application
+from emapplication import *
 from pyemtbx.boxertools import BigImageCache,BinaryCircleImageCache,Cache
 from EMAN2 import file_exists,EMANVERSION,gimme_image_dimensions2D,EMData,get_file_tag,get_image_directory,Region,file_exists,gimme_image_dimensions3D,abs_path,get_platform
 from EMAN2db import db_open_dict,db_check_dict,db_close_dict
+from EMAN2 import *
 from emsprworkflow import workflow_path
 
 import os,sys,weakref,math
@@ -1918,8 +1919,18 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 
 
 	def done(self):
-		for widget in [self.main_2d_window, self.thumbs_window,self.particles_window ]:
-			if widget != None: widget.close()
+		
+		if self.main_2d_window != None:
+			E2saveappwin("e2boxer","image",self.main_2d_window)
+			self.main_2d_window.close()
+		
+		if self.thumbs_window != None:
+			E2saveappwin("e2boxer","thumbs",self.thumbs_window)
+			self.thumbs_window.close()
+		
+		if self.particles_window != None:
+			E2saveappwin("e2boxer","particles",self.particles_window)
+			self.particles_window.close()
 
 		self.emit(PyQt4.QtCore.SIGNAL("module_closed"))
 
@@ -1963,6 +1974,10 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 			get_application().setOverrideCursor(QtCore.Qt.ArrowCursor)
 
 	def thumbs_window_closed(self):
+		
+		if self.thumbs_window != None: 
+			E2saveappwin("e2boxer","thumbs",self.thumbs_window)
+		
 		self.thumbs_window = None
 		if self.inspector:
 			self.inspector.set_thumbs_visible(False)
@@ -1995,17 +2010,17 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 
 
 	def particles_window_closed(self):
-		self.particles_window = None
+		if self.particles_window != None: 
+			E2saveappwin("e2boxer","particles",self.particles_window)
+		self.particles_window = None		
 		if self.inspector:
 			self.inspector.set_particles_visible(False)
 
 
 	def show_thumbs_window(self,bool):
-		print self.thumbs_window
 		if self.thumbs_window == None: 
 			self.__init_thumbs_window()
-
-		print self.thumbs_window,"now"
+			
 		if bool:
 			get_application().show_specific(self.thumbs_window)
 		else:
@@ -2046,20 +2061,24 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 		if len(self.file_names) > 0:
 			self.set_current_file_by_idx(0)
 
-		if self.main_2d_window != None:
+		if self.main_2d_window != None: 			
 			get_application().show_specific(self.main_2d_window)
-			self.main_2d_window.optimally_resize()
-
-		if self.thumbs_window != None: 
+			self.main_2d_window.optimally_resize()			
+			E2loadappwin("e2boxer","image",self.main_2d_window)
+			
+		if self.thumbs_window != None:			 
 			get_application().show_specific(self.thumbs_window)
 			self.thumbs_window.optimally_resize()
+			E2loadappwin("e2boxer","thumbs",self.thumbs_window)
 
 		if self.inspector != None: 
 			get_application().show_specific(self.inspector)
+			E2loadappwin("e2boxer","main",self.inspector)
 
-		if self.particles_window != None: 
+		if self.particles_window != None:
 			get_application().show_specific(self.particles_window)
 			self.particles_window.optimally_resize()
+			E2loadappwin("e2boxer","particles",self.particles_window)
 
 
 	def __update_2d_window(self,file_name):
@@ -2141,6 +2160,8 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 
 
 	def main_2d_window_closed(self):
+		if self.main_2d_window != None: 
+			E2saveappwin("e2boxer","image",self.main_2d_window)
 		self.main_2d_window = None
 		if self.inspector:
 			self.inspector.set_2d_window_visible(False)
@@ -2396,6 +2417,9 @@ class EMBoxerInspector(QtGui.QWidget):
 		self.close()
 	
 	def closeEvent(self,event):
+		
+		E2saveappwin("e2boxer","main",self)
+		
 		self.target().done()
 		
 	def write_output_clicked(self,val):
