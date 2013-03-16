@@ -40,6 +40,9 @@ import matplotlib
 matplotlib.use('Agg')
 		 
 import matplotlib.pyplot as plt
+import pylab
+from pylab import *
+
 import sys
 import numpy		 
 		 
@@ -71,8 +74,12 @@ def main():
 	parser.add_argument("--singleplot",type=str, help="Provide the name of the .png file to plot all cpus and/or gpus provided through --plotonly, in a single .png file.", default='')
 	
 	parser.add_argument("--plotminima",action="store_true", help="Plot all cpus and/or gpus provided through --plotonly, in a single .png file.", default=False)
+	parser.add_argument("--colorlessplot",action="store_true", help="Plot all cpus and/or gpus provided through --plotonly, in a single .png file.", default=False)
+	
+	global options
 	
 	(options, args) = parser.parse_args()
+	
 	
 	#print "options are", options
 	
@@ -156,7 +163,7 @@ def main():
 				print "and cnums to plot are", cnums
 				print "\n"
 				plotter(sizes,cnums,name,step,step/2)				
-				plt.savefig(name)
+				plt.savefig(options.path + '/' + name)
 				plt.clf()
 				
 				if options.plotminima:
@@ -165,7 +172,7 @@ def main():
 					cnumsmin=ret[1]
 					namemin=name.replace('.png','_MIN.png')
 					plotter(sizesmin,cnumsmin,namemin,step,step/2)
-					plt.savefig(namemin)
+					plt.savefig(options.path + '/' + namemin)
 					plt.clf()
 						
 		'''
@@ -187,7 +194,7 @@ def main():
 				print "and gnums to plot are", gnums
 				print '\n'
 				plotter(sizes,gnums,name,step,step/2)
-				plt.savefig(name)
+				plt.savefig(options.path + '/' + name)
 				plt.clf()
 	
 				if options.plotminima:
@@ -196,7 +203,7 @@ def main():
 					gnumsmin=ret[1]
 					namemin=name.replace('.png','_MIN.png')
 					plotter(sizesmin,gnumsmin,namemin,step,step/2)
-					plt.savefig(namemin)
+					plt.savefig(options.path + '/' + namemin)
 					plt.clf()
 
 		'''
@@ -225,7 +232,7 @@ def main():
 					print "\n$$$$$$$\nThe step is", step
 					print "\n\n"
 					plotter(sizes,difs,name,step,step/2)
-					plt.savefig(name)
+					plt.savefig(options.path + '/' + name)
 					plt.clf()
 		
 					if options.plotminima:
@@ -234,7 +241,7 @@ def main():
 						difsmin=ret[1]
 						namemin=name.replace('.png','_MIN.png')
 						plotter(sizesmin,difsmin,namemin,step,step/2)
-						plt.savefig(nameMIN)
+						plt.savefig(options.path + '/' + namemin)
 						plt.clf()
 		
 				#print "I should be plotting this"
@@ -245,10 +252,12 @@ def main():
 		else:
 			return()
 
-	'''
-	If options.plotonly received some files, parse them and plot them
-	'''
+	
 	else:
+		'''
+		If options.plotonly received some files, parse them and plot them
+		'''
+		
 		files=options.plotonly.split(',')
 		print "Will plot these files", files
 		
@@ -257,7 +266,7 @@ def main():
 		#k=0
 		for F in files:
 			print "Working with this file now", F
-			name=F.replace('.txt','.png')
+			name=os.path.basename(F).replace('.txt','.png')
 			sizes=[]
 			valuesforthisfile=[]
 			
@@ -266,12 +275,12 @@ def main():
 			f.close()
 			
 			for line in lines:
-				print "Line is\n", line
+				#print "Line is\n", line
 				size=line.split()[0]
 				sizes.append(int(size))
 				value=line.split()[-1].replace('\n','')
 				valuesforthisfile.append(float(value))
-				print "Thus size, value are", size, value
+				#print "Thus size, value are", size, value
 			
 			if options.plotminima:
 				ret=minima(sizes,valuesforthisfile)
@@ -283,7 +292,7 @@ def main():
 				if options.singleplot:
 					pass
 				else:
-					plt.savefig(namemin)
+					plt.savefig(options.path + '/' + namemin)
 					plt.clf()
 					
 			else:
@@ -292,7 +301,7 @@ def main():
 				if options.singleplot:
 					pass
 				else:
-					plt.savefig(name)
+					plt.savefig(options.path + '/' + name)
 					plt.clf()
 			
 			#values.update({k:valuesforthisfile})
@@ -415,6 +424,28 @@ FUNCTION TO PLOT RESULTS
 '''
 def plotter(xaxis,yaxis,name='',CS=0,FS=0):
 	
+	matplotlib.rc('xtick', labelsize=16) 
+	matplotlib.rc('ytick', labelsize=16) 
+	
+	font = {'weight':'bold','size':16}
+	matplotlib.rc('font', **font)
+	
+	pylab.rc("axes", linewidth=2.0)
+	pylab.xlabel('X Axis', fontsize=16, fontweight='bold')
+	pylab.ylabel('Y Axis', fontsize=16, fontweight='bold')
+	print "BOLD IS ON!"
+	
+	mark=''
+	if '_MIN.png' in name or '_min.png' in name:
+		mark='o'
+		
+	if options.colorlessplot:
+		plt.plot(xaxis, yaxis, linewidth=3, marker=mark,color = 'k')
+	else:
+		plt.plot(xaxis, yaxis, linewidth=3, marker=mark)
+
+	labelfory='Time (s)'
+	
 	if name and CS and FS:
 		tag='gpu speed gain factor'
 		labelfory='CPU time / GPU time'
@@ -425,14 +456,14 @@ def plotter(xaxis,yaxis,name='',CS=0,FS=0):
 			tag='cpu 3D alignment Time'
 			labelfory='Time (s)'
 	
-	stepslabel='\ncoarse step=' + str(CS) + ' : fine step=' + str(FS)
-
-	plt.plot(xaxis, yaxis, linewidth=3)
-	plt.title(tag + ' VS box-size' + stepslabel)
+		stepslabel='\ncoarse step=' + str(CS) + ' : fine step=' + str(FS)
+		plt.title(tag + ' VS box-size' + stepslabel)
 	
 	plt.ylabel(labelfory)
 	plt.xlabel("Box side-length (pixels)")
-		
+
+	#plt.legend(['y = x', 'y = 2x', 'y = 3x', 'y = 4x'], loc='upper left')
+	
 	#a = plt.gca()
 	#a.set_xlim(1,int(xaxis[-1]))
 	#a.set_ylim(0,max(yaxis)+0.25*max(xaxis))
@@ -451,22 +482,22 @@ FUNCTION TO DETERMINE MINIMA to be plotted later, instead of plotting ALL values
 '''
 def minima(sizes,vals):
 	
-	finalsizes=[]
-	finalvals=[]
+	sizesmin=[sizes[0]]
+	valsmin=[vals[0]]
 	
-	for i in xrange(0,len(vals)-1-1):
+	for i in xrange(0,len(vals) - 1 - 1 ):
 		aux = 0 
-		for j in xrange(i+1,(len(vals)-1-1))
+		for j in xrange(i+1,len(vals) - 1 - 1 ):
 			if vals[j]< vals[i]:
 				aux=0
-				print "Because a downstream value is lower, I will break the loop, see", vals[j],vals[i]
+				#print "Because a downstream value is lower, I will break the loop, see", vals[j],vals[i]
 				break
 			else:
 				aux=1
 		if aux==1:
-			finalsizes.append(sizes[i])
-			finalvals.append(vals[i])
-			print "I have appended this box, value", sizes[i], vals[i]
+			sizesmin.append(sizes[i])
+			valsmin.append(vals[i])
+			#print "I have appended this box, value", sizes[i], vals[i]
 	
 	return(sizesmin,valsmin)
 
