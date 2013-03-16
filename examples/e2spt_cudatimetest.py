@@ -68,11 +68,9 @@ def main():
 	
 	parser.add_argument("--plotonly",type=str, help="""If you already have the time variation with boxsize (for a particular cpu or gpu) in a text file in rows of 'boxsize,time', 
 												provide the txt file(s) separated by commas --plotonly=file1.txt,file2.txt,file3.txt etc...""", default=None)
-	parser.add_argument("--singleplot",action="store_true", help="Plot all cpus and/or gpus provided through --plotonly, in a single .png file.", default=False)
+	parser.add_argument("--singleplot",type=str, help="Provide the name of the .png file to plot all cpus and/or gpus provided through --plotonly, in a single .png file.", default='')
 	
 	parser.add_argument("--plotminima",action="store_true", help="Plot all cpus and/or gpus provided through --plotonly, in a single .png file.", default=False)
-
-	
 	
 	(options, args) = parser.parse_args()
 	
@@ -129,101 +127,188 @@ def main():
 		print "I will make the path", options.path
 		os.system('mkdir ' + options.path)
 	
-	retcpu=[]
-	retgpu=[]
 	
-	if options.ID:
-		options.ID = options.ID + '_'
-	
-	if options.cpu:
-		corg = 'CPU'
+	'''
+	If options.plotonly is off (no files provided) you actually have to measure alignment time....
+	'''
+	if not options.plotonly:
+		retcpu=[]
+		retgpu=[]
+		if options.ID:
+			options.ID = options.ID + '_'
 		
-		retcpu=doit(corg,options)
-		
-		for i in range(len(retcpu)):
-			step = retcpu[i][0]
-			name = options.path + "/" + options.ID + "CS"+ str(step).zfill(2)  + "_FS" + str( float(step)/2.0 ).zfill(4) + '_CPU.png'
-			cnums = numpy.array(retcpu[i][-1])
-			sizes = numpy.array(retcpu[i][1])
-			print "\n$$$$$$$\nThe step is", step
-			print "\n\n"
-			print "for which sizes to plot are", sizes
-			print "and cnums to plot are", cnums
-			print "\n"
-			plotter(name,sizes,cnums,step,step/2)
-			
-			if options.plotminima:
-				ret=minima(sizes,cnums)
-				sizesmin=ret[0]
-				cnumsmin=ret[1]
-				namemin=name.replace('.png','_MIN.png')
-				plotter(namemin,sizesmin,cnumsmin,step,step/2)
-		
-	if options.gpu:
-		corg = 'GPU'
-		
-		retgpu=doit(corg,options)
-	
-		for i in range(len(retgpu)):
-			step = retgpu[i][0]
-			name = options.path + "/" + options.ID + "CS"+str(step).zfill(2) + "_FS"+str( float(step)/2 ).zfill(4) + '_GPU.png'
-			gnums = numpy.array(retgpu[i][-1])
-			sizes = numpy.array(retgpu[i][1])
-			print "\n$$$$$$$\nThe step is", step
-			print "\n\n"
-			print "for which sizes to plot are", sizes
-			print "and gnums to plot are", gnums
-			print '\n'
-			plotter(name,sizes,gnums,step,step/2)
-			
-			if options.plotminima:
-				ret=minima(sizes,gnums)
-				sizesmin=ret[0]
-				gnumsmin=ret[1]
-				namemin=name.replace('.png','_MIN.png')
-				plotter(namemin,sizesmin,gnumsmin,step,step/2)
-	
-	if retcpu and retgpu:
-		if len(retcpu) == len(retgpu):
+		'''
+		Compute CPU alignment times and plot them
+		'''
+		if options.cpu:
+			corg = 'CPU'
 
-			#steps=[]
-			difs=[]
-			for i in range(len(retgpu)):
-				step = retgpu[i][0]
-				name = options.path + "/" + options.ID + "CS"+str(step).zfill(2) + '_FS' + str( int(step)/2 ).zfill(2) + '_GPUvsCPU.png'
-				gnums = numpy.array(retgpu[i][-1])
+			retcpu=doit(corg,options)
+
+			for i in range(len(retcpu)):
+				step = retcpu[i][0]
+				name = options.path + "/" + options.ID + "CS"+ str(step).zfill(2)  + "_FS" + str( float(step)/2.0 ).zfill(4) + '_CPU.png'
 				cnums = numpy.array(retcpu[i][-1])
-				sizes = numpy.array(retgpu[i][1])
-				difs = cnums/gnums
-
-				difsl = list(difs)
-				for i in range(len(difsl)):
-					difsl[i] = str(difsl[i]) + '\n'
-				f = open(name.replace('.png','.txt'),'w')
-				f.writelines(difsl)
-				f.close()
-				
+				sizes = numpy.array(retcpu[i][1])
 				print "\n$$$$$$$\nThe step is", step
 				print "\n\n"
-				plotter(name,sizes,difs,step,step/2)
-				
+				print "for which sizes to plot are", sizes
+				print "and cnums to plot are", cnums
+				print "\n"
+				plotter(sizes,cnums,name,step,step/2)				
+				plt.savefig(name)
+				plt.clf()
 				
 				if options.plotminima:
-					ret=minima(sizes,difs)
+					ret=minima(sizes,cnums)
 					sizesmin=ret[0]
-					difsmin=ret[1]
+					cnumsmin=ret[1]
 					namemin=name.replace('.png','_MIN.png')
-					plotter(namemin,sizesmin,difsmin,step,step/2)
-				
-			#print "I should be plotting this"
-	
-		else:
-			print "For some sick reason, you don't have the same number of data points for gpu and cpu, therefore, you cannot compare them, see", len(retgpu), len(retcpu)
-			sys.exit()
-	else:
-		return()
-	return()
+					plotter(sizesmin,cnumsmin,namemin,step,step/2)
+					plt.savefig(namemin)
+					plt.clf()
+						
+		'''
+		Compute GPU alignment times and plot them
+		'''
+		if options.gpu:
+			corg = 'GPU'
 
+			retgpu=doit(corg,options)
+
+			for i in range(len(retgpu)):
+				step = retgpu[i][0]
+				name = options.path + "/" + options.ID + "CS"+str(step).zfill(2) + "_FS"+str( float(step)/2 ).zfill(4) + '_GPU.png'
+				gnums = numpy.array(retgpu[i][-1])
+				sizes = numpy.array(retgpu[i][1])
+				print "\n$$$$$$$\nThe step is", step
+				print "\n\n"
+				print "for which sizes to plot are", sizes
+				print "and gnums to plot are", gnums
+				print '\n'
+				plotter(sizes,gnums,name,step,step/2)
+				plt.savefig(name)
+				plt.clf()
+	
+				if options.plotminima:
+					ret=minima(sizes,gnums)
+					sizesmin=ret[0]
+					gnumsmin=ret[1]
+					namemin=name.replace('.png','_MIN.png')
+					plotter(sizesmin,gnumsmin,namemin,step,step/2)
+					plt.savefig(namemin)
+					plt.clf()
+
+		'''
+		I you have both CPU and GPU times, compute the ratio and plot it
+		'''
+		if retcpu and retgpu:
+			if len(retcpu) == len(retgpu):
+
+				#steps=[]
+				difs=[]
+				for i in range(len(retgpu)):
+					step = retgpu[i][0]
+					name = options.path + "/" + options.ID + "CS"+str(step).zfill(2) + '_FS' + str( int(step)/2 ).zfill(2) + '_GPUvsCPU.png'
+					gnums = numpy.array(retgpu[i][-1])
+					cnums = numpy.array(retcpu[i][-1])
+					sizes = numpy.array(retgpu[i][1])
+					difs = cnums/gnums
+
+					difsl = list(difs)
+					for i in range(len(difsl)):
+						difsl[i] = str(difsl[i]) + '\n'
+					f = open(name.replace('.png','.txt'),'w')
+					f.writelines(difsl)
+					f.close()
+		
+					print "\n$$$$$$$\nThe step is", step
+					print "\n\n"
+					plotter(sizes,difs,name,step,step/2)
+					plt.savefig(name)
+					plt.clf()
+		
+					if options.plotminima:
+						ret=minima(sizes,difs)
+						sizesmin=ret[0]
+						difsmin=ret[1]
+						namemin=name.replace('.png','_MIN.png')
+						plotter(sizesmin,difsmin,namemin,step,step/2)
+						plt.savefig(nameMIN)
+						plt.clf()
+		
+				#print "I should be plotting this"
+
+			else:
+				print "For some sick reason, you don't have the same number of data points for gpu and cpu, therefore, you cannot compare them, see", len(retgpu), len(retcpu)
+				sys.exit()
+		else:
+			return()
+
+	'''
+	If options.plotonly received some files, parse them and plot them
+	'''
+	else:
+		files=options.plotonly.split(',')
+		print "Will plot these files", files
+		
+		values={}
+		
+		#k=0
+		for F in files:
+			print "Working with this file now", F
+			name=F.replace('.txt','.png')
+			sizes=[]
+			valuesforthisfile=[]
+			
+			f=open(F,'r')
+			lines = f.readlines()
+			f.close()
+			
+			for line in lines:
+				print "Line is\n", line
+				size=line.split()[0]
+				sizes.append(int(size))
+				value=line.split()[-1].replace('\n','')
+				valuesforthisfile.append(float(value))
+				print "Thus size, value are", size, value
+			
+			if options.plotminima:
+				ret=minima(sizes,valuesforthisfile)
+				sizesmin=ret[0]
+				valuesmin=ret[1]
+				namemin=name.replace('.png','_MIN.png')
+				plotter(sizesmin,valuesmin,namemin)
+				
+				if options.singleplot:
+					pass
+				else:
+					plt.savefig(namemin)
+					plt.clf()
+					
+			else:
+				plotter(sizes,valuesforthisfile,name)
+				
+				if options.singleplot:
+					pass
+				else:
+					plt.savefig(name)
+					plt.clf()
+			
+			#values.update({k:valuesforthisfile})
+			#k+=1
+		
+		if options.singleplot:
+			
+			plt.savefig(options.path + '/' + options.singleplot)
+			plt.clf()
+			print "I have saved a single plot to", options.path + '/' + options.singleplot
+			
+	return()
+	
+'''
+FUNCTION TO COMPUTE ALIGNMENT TIMES
+'''
 def doit(corg,options):
 	c=os.getcwd()
 	f=os.listdir(c)
@@ -325,15 +410,20 @@ def doit(corg,options):
 	return(data)
 
 
-def plotter(name,xaxis,yaxis,CS,FS):
-	tag='gpu speed gain factor'
-	labelfory='CPU time / GPU time'
-	if 'gpu' in name or 'GPU' in name and 'cpu' not in name and 'CPU' not in name:
-		tag='gpu 3D alignment Time'
-		labelfory='Time (s)'
-	if 'cpu' in name or 'CPU' in name and 'gpu' not in name and 'GPU' not in name:
-		tag='cpu 3D alignment Time'
-		labelfory='Time (s)'
+'''
+FUNCTION TO PLOT RESULTS
+'''
+def plotter(xaxis,yaxis,name='',CS=0,FS=0):
+	
+	if name and CS and FS:
+		tag='gpu speed gain factor'
+		labelfory='CPU time / GPU time'
+		if 'gpu' in name or 'GPU' in name and 'cpu' not in name and 'CPU' not in name:
+			tag='gpu 3D alignment Time'
+			labelfory='Time (s)'
+		if 'cpu' in name or 'CPU' in name and 'gpu' not in name and 'GPU' not in name:
+			tag='cpu 3D alignment Time'
+			labelfory='Time (s)'
 	
 	stepslabel='\ncoarse step=' + str(CS) + ' : fine step=' + str(FS)
 
@@ -348,15 +438,17 @@ def plotter(name,xaxis,yaxis,CS,FS):
 	#a.set_ylim(0,max(yaxis)+0.25*max(xaxis))
 	#a.legend(stepslabel)
 	
-	plt.xlim( (1,int(xaxis[-1]) ) )
-	plt.ylim( ( 0,max(yaxis)+0.25*max(yaxis) ) )
+	#plt.xlim( (1,int(xaxis[-1]) ) )
+	#plt.ylim( ( 0,max(yaxis)+0.25*max(yaxis) ) )
 	
-	plt.savefig(name)
-	plt.clf()
+	#plt.savefig(name)
+	#plt.clf()
 	return()
 
 
-
+'''
+FUNCTION TO DETERMINE MINIMA to be plotted later, instead of plotting ALL values in alignment time plots
+'''
 def minima(sizes,vals):
 	
 	finalsizes=[]
