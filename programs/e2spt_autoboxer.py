@@ -117,6 +117,7 @@ def main():
 	parser.add_argument("--test",action="store_true",default=False,help="This means you have provided a --tomogram in which 'y' is the short axis.")
 	parser.add_argument("--templatethreshold",type=float,default=0.0,help="""A binary threshold will be applied to the template which will zero out all the densities below the supplied value, 
 												and will make the densities above the supplied value equal to one.""")
+	parser.add_argument("--goldthreshtomo",action='store_true',default=False,help="""Zero out all densities above mean of max and min.""")
 
 	(options, args) = parser.parse_args()
 	
@@ -206,7 +207,6 @@ def main():
 	tomox = tomo['nx']
 	tomoy = tomo['ny']
 	tomoz = tomo['nz']
-	
 	
 	tomogramapix = tomo['apix_x']
 	if options.apix:
@@ -757,8 +757,10 @@ def main():
 	lendata1=len(data)
 	if options.backgroundstack:
 		print "BG Stack to send is", options.backgroundstack
-		ret = meancalc(options,data,options.backgroundstack,tag='background')
-		data=ret[0]
+		ret = meancalc(options,options.backgroundstack)
+		tag='background'
+		data = pruner(data,tag,ret[0],ret[1],ret[2],ret[3])
+		
 		lendata2=len(data)
 		pruned= lendata1-lendata2
 		print "These many particles were pruned using the background stack",pruned
@@ -766,8 +768,10 @@ def main():
 	lendata1=len(data)
 	if options.carbonstack:
 		print "CARBON Stack to send is", options.carbonstack
-		ret = meancalc(options,data,options.carbonstack,tag='carbon')
-		data=ret[0]
+		ret = meancalc(options,options.carbonstack)
+		tag='carbon'
+		data = pruner(data,tag,ret[0],ret[1],ret[2],ret[3])
+		
 		lendata2=len(data)
 		pruned= lendata1-lendata2
 		print "These many particles were pruned using the carbon stack",pruned
@@ -775,15 +779,13 @@ def main():
 	lendata1=len(data)
 	if options.goldstack:
 		print "GOLD Stack to send is", options.goldstack
-		ret = meancalc(options,data,options.goldstack,tag='gold')
-		data=ret[0]
+		ret = meancalc(options,options.goldstack)
+		tag='gold'
+		data = pruner(data,tag,ret[0],ret[1],ret[2],ret[3])
+		
 		lendata2=len(data)
 		pruned= lendata1-lendata2
 		print "These many particles were pruned using the gold stack",pruned
-	
-	
-	
-	
 	
 	
 	
@@ -946,7 +948,7 @@ def main():
 	return()
 	
 
-def meancalc(options,data,stack,tag=''):
+def meancalc(options,stack,normalize=False):
 	print "Stack RECEIVED is", stack
 	n=EMUtil.get_image_count(stack)
 	means=[]
@@ -955,6 +957,10 @@ def meancalc(options,data,stack,tag=''):
 	
 	for i in range(n):
 		a=EMData(stack,i,True)
+		if normalize:
+			a=EMData(stack,i,True)
+			a.process_inplace('normalize.edgemean')		
+		
 		meana=a['mean']
 		means.append(meana)
 		
@@ -973,7 +979,10 @@ def meancalc(options,data,stack,tag=''):
 	mean_mins=numpy.mean(mins, dtype=numpy.float64)
 	sigma_mins=numpy.std(mins, dtype=numpy.float64)
 	
+	return (mean_maxs,sigma_maxs,mean_mins,sigma_mins,mean,sigma_mean)
 	
+	
+def pruner(data,tag,mean_maxs,sigma_maxs,mean_mins,sigma_mins):	
 	for d in data:
 		#print "d in data is", d
 		#print "d[1] is ", d[1]
@@ -1001,7 +1010,7 @@ def meancalc(options,data,stack,tag=''):
 		elif tag == 'carbon':
 			print "NO cabron pruning method yet"			
 	
-	return (data,mean,sigma_mean,mean_maxs,sigma_maxs,mean_mins,sigma_mins)
+	return (data)
 
 
 #def generateref(options):
@@ -1075,7 +1084,24 @@ def scanposition(options,template,outputboxsize,yshort,xi,yi,zi,xc,yc,zc,sbn,x,y
 		if options.test:
 			nptcls = 1	
 		suboxnorm=subox.process('normalize.edgemean')
-
+		
+		if options.goldthreshtomo and options.goldstack:
+			print "I will THRESHOLD the subsection based on gold stats"
+			ret = meancalc(options,options.backgroundstack,normalize=True)
+			max_m = ret[0]
+			max_s = ret[1]
+			
+			min_m = ret[2]
+			min_s = ret[3]
+			
+			print "The mean of the gold maxes is", max_m
+			print "The mean of the gold minimums is", min_m
+			max_val = max_m - max_s
+			min_val = min_m + math.fabs(min_s)
+			
+			
+			suboxnorm.process_inplace('threshold.clampminmax',{'maxval':,'minval','tozero'})
+			
 		ccf = template.calc_ccf(suboxnorm)
 		ccf.process_inplace("xform.phaseorigin.tocorner") 
 		ccf.process_inplace('normalize')
