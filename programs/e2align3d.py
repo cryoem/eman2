@@ -183,17 +183,14 @@ def main():
 		print str(thesame)+" solns refined to the 'same' point within a precision of "+str(options.prec)
         
 	#apply the transform to the original model
-	moving.read_image(sys.argv[2])
+	moving.read_image(args[1])
 	ft = galignedref[bestmodel].get_attr("xform.align3d")
 	tft = ft.get_trans()
 	ft.set_trans([tft[0]*options.shrink,tft[1]*options.shrink,tft[2]*options.shrink]) # Rescale the translation pars, otherwise it will be crap!
 	moving.process_inplace("xform",{"transform":ft})
         
 	#now write out the aligned model
-	if sys.argv[3]:
-		outfile = sys.argv[3]
-	else:
-		outfile = 'alignedmodel.hdf'
+	outfile=args[2]
 	    
 	#if output is mrc format or bdb 
 	if outfile[-4:].lower() == ".mrc":

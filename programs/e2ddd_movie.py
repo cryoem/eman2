@@ -50,6 +50,8 @@ def main():
 	parser.add_argument("--dark",type=str,default=None,help="Perform dark image correction using the specified image file")
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
 	parser.add_argument("--step",type=str,default="1,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 1,1 (first image skipped)")
+	parser.add_argument("--movie", action="store_true",help="Display a 5-frame averaged 'movie' of the frames",default=False)
+	parser.add_argument("--parallel", default=None, help="parallelism argument. This program supports only thread:<n>")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
@@ -147,14 +149,42 @@ def main():
 
 
 		# show a little movie of 5 averaged frames
-		mov=[]
-		for i in xrange(5,len(outim),5):
-			im=sum(outim[i-5:i])
-#			im.process_inplace("normalize.edgemean")
-			#im.write_image("movie%d.hdf"%(i/5-1),0)
-			#im.process_inplace("filter.lowpass.gauss",{"cutoff_freq":.02})
-			mov.append(im)
-		display(mov)
+		if options.movie :
+			mov=[]
+			for i in xrange(5,len(outim),5):
+				im=sum(outim[i-5:i])
+	#			im.process_inplace("normalize.edgemean")
+				#im.write_image("movie%d.hdf"%(i/5-1),0)
+				#im.process_inplace("filter.lowpass.gauss",{"cutoff_freq":.02})
+				mov.append(im)
+			display(mov)
+		
+		# we iterate the process several times
+		outim2=[]
+		av=sum(outim)
+		av.mult(1.0/len(outim))
+		fav=[av]
+		for it in xrange(4):
+
+			for im in outim:
+				dx,dy=zonealign(im,av)
+				im2=im.process("xform",{"transform":Transform({"type":"2d","tx":dx,"ty":dy})})
+				print "{}, {}".format(dx,dy)
+				outim2.append(im2)
+
+			print "-----"
+			
+			av=sum(outim2)
+			av.mult(1.0/len(outim))
+			fav.append(av)
+			outim2=[]
+			
+		display(fav)
+
+		# show CCF between first and last frame
+		#cf=mov[0].calc_ccf(mov[-1])
+		#cf.process_inplace("xform.phaseorigin.tocenter")
+		#display(cf)
 
 		## save 10-frame averages without alignment
 		#im=sum(outim[:10])
@@ -181,60 +211,95 @@ def main():
 			#print "no dark"
 
 		# alignment
-		ni=len(outim)		# number of input images in movie
+		#ni=len(outim)		# number of input images in movie
 		
-		s1=sum(outim[:ni/2])
-		s1.process_inplace("normalize.edgemean")
-		s2=sum(outim[ni/2:])
-		s2.process_inplace("normalize.edgemean")
-		dx,dy=align(s1,s2)
-		print "half vs half: ",dx,dy
+		#s1=sum(outim[:ni/4])
+		#s1.process_inplace("normalize.edgemean")
+		#s2=sum(outim[ni*3/4:])
+		#s2.process_inplace("normalize.edgemean")
+		#dx,dy=align(s1,s2)
+		#print "half vs half: ",dx,dy
 		
-		dxn=dx/(ni/2.0)		# dx per n
-		dyn=dy/(ni/2.0)
+		#dxn=dx/(ni/2.0)		# dx per n
+		#dyn=dy/(ni/2.0)
 		
-		s1=sum(outim[:ni/4])
-		s1.process_inplace("normalize.edgemean")
-		s2=sum(outim[ni/4:ni/2])
-		s2.process_inplace("normalize.edgemean")
-		dx,dy=align(s1,s2,(dxn*ni/4.0,dyn*ni/4.0))
-		print dx,dy
+		#s1=sum(outim[:ni/4])
+		#s1.process_inplace("normalize.edgemean")
+		#s2=sum(outim[ni/4:ni/2])
+		#s2.process_inplace("normalize.edgemean")
+		#dx,dy=align(s1,s2,(dxn*ni/4.0,dyn*ni/4.0))
+		#print dx,dy
 		
-		s1=sum(outim[ni/4:ni/2])
-		s1.process_inplace("normalize.edgemean")
-		s2=sum(outim[ni/2:ni*3/4])
-		s2.process_inplace("normalize.edgemean")
-		dx,dy=align(s1,s2,(dxn*ni/4.0,dyn*ni/4.0))
-		print dx,dy
+		#s1=sum(outim[ni/4:ni/2])
+		#s1.process_inplace("normalize.edgemean")
+		#s2=sum(outim[ni/2:ni*3/4])
+		#s2.process_inplace("normalize.edgemean")
+		#dx,dy=align(s1,s2,(dxn*ni/4.0,dyn*ni/4.0))
+		#print dx,dy
 		
-		s1=sum(outim[ni/2:ni*3/4])
-		s1.process_inplace("normalize.edgemean")
-		s2=sum(outim[ni*3/4:])
-		s2.process_inplace("normalize.edgemean")
-		dx,dy=align(s1,s2,(dxn*ni/4.0,dyn*ni/4.0))
-		print dx,dy
+		#s1=sum(outim[ni/2:ni*3/4])
+		#s1.process_inplace("normalize.edgemean")
+		#s2=sum(outim[ni*3/4:])
+		#s2.process_inplace("normalize.edgemean")
+		#dx,dy=align(s1,s2,(dxn*ni/4.0,dyn*ni/4.0))
+		#print dx,dy
 		
-		
-		s2.translate(dx,dy,0)
-
-		display((s1,s2))
-	
+			
 		E2end(pid)
+
+def zonealign(s1,s2):
+	s1a=s1.copy()
+	s1a.process_inplace("math.xystripefix",{"xlen":200,"ylen":200})
+	s1a.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.02})
+	
+	s2a=s2.copy()
+	s2a.process_inplace("math.xystripefix",{"xlen":200,"ylen":200})
+	s1a.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.02})
+	
+	tot=None
+	for x in range(256,s1["nx"]-512,512):
+		for y in range(256,s1["ny"]-512,512):
+			s1b=s1a.get_clip(Region(x,y,512,512))
+			s2b=s2a.get_clip(Region(x,y,512,512))
+			
+			c12=s1b.calc_ccf(s2b)
+			c12.process_inplace("xform.phaseorigin.tocenter")
+			c12.process_inplace("normalize.edgemean")
+						
+			cm=c12.calc_center_of_mass(0)
+			try: tot.add(cm)
+			except: tot=c12
+			
+	dx,dy=(c12["nx"]/2,c12["ny"]/2)					# the 'false peak' should always be at the origin, ie - no translation
+	for x in xrange(dx-2,dx+3):
+		for y in xrange(dy-2,dy+3):
+			tot[x,y]=-1.0		# exclude from COM
+
+
+	dx,dy,dz=tot.calc_max_location()
+	while hypot(dx-256,dy-256)>50 :
+		tot[dx,dy]=0
+		dx,dy,dz=tot.calc_max_location()
+		
+		
+	cl=tot.get_clip(Region(dx-8,dy-8,17,17))
+	cm=cl.calc_center_of_mass(0)
+	return dx+cm[0]-8-256,dy+cm[1]-8-256
 
 def align(s1,s2,hint=None):
 
 	s11=s1.get_clip(Region(1024,500,2048,2048))
 #	s11.process_inplace("math.addsignoise",{"noise":0.5})
 #	s11.process_inplace("normalize.local",{"radius":6,"threshold":0})
-	s11.process_inplace("math.xystripefix",{"xlen":200,"ylen":200})
+#	s11.process_inplace("math.xystripefix",{"xlen":200,"ylen":200})
 	#s11.process_inplace("threshold.compress",{"value":s11["mean"],"range":s11["sigma"]})
-	#s11.process_inplace("filter.lowpass.tophat",{"cutoff_abs":.1})
+	s11.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.02})
 	s21=s2.get_clip(Region(1024,500,2048,2048))
 #	s21.process_inplace("math.addsignoise",{"noise":0.5})
 #	s21.process_inplace("normalize.local",{"radius":6,"threshold":0})
-	s21.process_inplace("math.xystripefix",{"xlen":200,"ylen":200})
+#	s21.process_inplace("math.xystripefix",{"xlen":200,"ylen":200})
 	#s21.process_inplace("threshold.compress",{"value":s21["mean"],"range":s21["sigma"]})
-	#s21.process_inplace("filter.lowpass.tophat",{"cutoff_abs":.1})
+	s21.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.02})
 
 	c12=s11.calc_ccf(s21)
 	m=c12["minimum"]
@@ -246,7 +311,7 @@ def align(s1,s2,hint=None):
 	# we want to wipe this peak out
 	#dx,dy,dz=tuple(c12.calc_max_location())		# dz is obviously 0
 	dx,dy=(c12["nx"]/2,c12["ny"]/2)					# the 'false peak' should always be at the origin, ie - no translation
-	newval=(c12[dx-3,dy]+c12[dx+3,dy]+c12[dx,dy-3]+c12[dx,dy+3])/4
+	newval=(c12[dx-3,dy]+c12[dx+3,dy]+c12[dx,dy-3]+c12[dx,dy+3])/8		# /4 would be the average, we intentionally downweight it
 	for x in xrange(dx-2,dx+3):
 		for y in xrange(dy-2,dy+3):
 			c12[x,y]=newval
@@ -256,7 +321,7 @@ def align(s1,s2,hint=None):
 	#c12[dx,dy-1]=(c12[dx+1,dy-1]+c12[dx-1,dy-1])/2.0
 	#c12[dx,dy]=(c12[dx-1,dy]+c12[dx+1,dy]+c12[dx,dy+1]+c12[dx,dy-1])/4.0
 	
-	display((s11,s21))
+	display((s11,s21,c12))
 #	display(c12)
 	
 	if hint!=None:
@@ -264,7 +329,7 @@ def align(s1,s2,hint=None):
 		dx,dy,dz=cl.calc_max_location()
 		cl=c12.get_clip(Region(1024+dx-3,1024+dy-3,7,7))
 		cm=cl.calc_center_of_mass(0)
-		return dx+cm[0]-3-1024,dy+cm[1]-3-1024
+		return dx+cm[0]-3,dy+cm[1]-3
 	else:
 		dx,dy,dz=c12.calc_max_location()
 		cl=c12.get_clip(Region(dx-8,dy-8,17,17))
