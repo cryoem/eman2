@@ -41,6 +41,7 @@
 #include <cstring>
 #include <ctime>
 #include <iostream>
+#include <boost/shared_ptr.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <cassert>
@@ -21970,6 +21971,8 @@ void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
 //	start_time = time()
 	const int ndata = data.size();
 
+	std::vector< boost::shared_ptr<EMData> > objectsToDelete; // objects added to this vector are automatically deleted at the end of this function
+
 	vector<float> c0 = data[0]->get_attr("ptcl_source_coord");
 	vector< vector<EMData*> > ccfs(ndata, vector<EMData*>(nphi, NULL));
 	vector< vector<EMData*> > ccfr(0);
@@ -21978,13 +21981,17 @@ void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
 	}
 	for (int im = 0; im < ndata; ++im) {
 		for (int iphi = 0; iphi < nphi; ++iphi) {
-			EMData * obj = Util::window( correlation( refproj[iphi], fdata[im], CIRCULANT, true), nwx, nwy);
+			std::auto_ptr<EMData> corr( correlation( refproj[iphi], fdata[im], CIRCULANT, true) );
+			EMData * obj = Util::window( corr.get(), nwx, nwy);
 			ccfs[im][iphi] = obj;
+			objectsToDelete.push_back(boost::shared_ptr<EMData>(obj));
 			if (! Dsym) {
 				ccfr[im][iphi] = obj->copy();
+				objectsToDelete.push_back(boost::shared_ptr<EMData>(ccfr[im][iphi]));
 			}
 		}
 	}
+
 //	if (myid == main_node) cout << " ccfs computed     " << time()-start_time << start_time = time()
 	vector<float> xshiftlocal(ndata, 0);
 	vector<float> xrshiftlocal(ndata, 0);
@@ -22201,9 +22208,9 @@ if (cim.size() < 2 || c0.size() < 2) {
 			//#fft(refproj[iphi]).write_image("reference.hdf",im)
 			//#from utilities import info
 
-			EMData * cimage = Util::Polar2Dm(data[im], cnx+nnsx, cny+nnsy, numr, mode);
-			Util::Frngs(cimage, numr);
-			EMData * temp = Util::Crosrng_msg_s( cimage, crefim[iphi], numr);
+			std::auto_ptr<EMData> cimage( Util::Polar2Dm(data[im], cnx+nnsx, cny+nnsy, numr, mode) );
+			Util::Frngs(cimage.get(), numr);
+			std::auto_ptr<EMData> temp( Util::Crosrng_msg_s( cimage.get(), crefim[iphi], numr) );
 
 			//#from utilities import write_text_file
 			//#write_text_file([temp[qqq] for qqq in xrange(maxrin)],"ccf1d.txt")
@@ -22227,8 +22234,10 @@ if (cim.size() < 2 || c0.size() < 2) {
 			for (; bestang >= 360; bestang -= 360);
 			//#cout << " angle applied ",bestang
 			//#rot_shift2D(data[im],-bestang).write_image("rotated.hdf",im)
-			EMData* rot_data_im = data[im]->rot_scale_trans2D_background(-bestang, 0, 0, 1);
+			std::auto_ptr<EMData> rot_data_im( data[im]->rot_scale_trans2D_background(-bestang, 0, 0, 1) );
 			fdata[im] = (rot_data_im->is_complex()) ? (rot_data_im->do_ift()) : (rot_data_im->do_fft());
+
+			objectsToDelete.push_back(boost::shared_ptr<EMData>(fdata[im]));
 			//#cout <<  " New composed 3D  ",mpsi,bestang, nnsx, nnsy
 
 			epsi = (bestang+mpsi);
