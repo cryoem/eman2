@@ -13203,7 +13203,7 @@ def ordersegments(stack, filament_attr = 'filament'):
 		xs = min(xp)
 		ys = min(yp)
 		for i in xrange(nq):
-			dd[i] = [(xp[i]+xs)**2+(yp[i]+ys)**2, i]
+			dd[i] = [(xp[i]-xs)**2+(yp[i]-ys)**2, i]
 		dd.sort()
 		if(atan2(yyp[dd[-1][1]]-yyp[dd[0][1]],xxp[dd[-1][1]]-xxp[dd[0][1]]) >0.0 ):  return [dd[i][1] for i in xrange(nq)]
 		else:                                                                        return [dd[nq -1 -i][1] for i in xrange(nq)]
