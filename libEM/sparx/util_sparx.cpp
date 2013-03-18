@@ -21919,61 +21919,336 @@ Dict Util::get_transform_params(EMData* image, string xform, string convention)
 	return transform_params;
 }
 
-/*
-std::vector<float> Util::ormq(EMData * image, EMData * crefim, int xrng, int yrng, float step, std::string mode, std::vector<int> numr, int cnx, int cny, float delta, int threads)
+
+static void compose_transform2(float psi1, float sx1, float sy1, float psi2, float sx2, float sy2, float & out_psi, float & out_sx, float & out_sy)
 {
-	float ang, sx, sy, mirror;
-	float peak = -1.0E23;
-	const int ky = int(2*yrng/step+0.5) / 2;
-	const int kx = int(2*xrng/step+0.5) / 2;
-	const int iters = (2*kx+1) * (2*ky+1);
-	#pragma omp parallel shared(ang, sx, sy, mirror, peak) num_threads(threads)
-	{
-		const int thrId = omp_get_thread_num();
-		const int it_begin = iters / threads *  thrId    + ((thrId < iters%threads) ? (thrId) : (iters%threads));
-		const int it_end   = iters / threads * (thrId+1) + ((thrId < iters%threads) ? (thrId) : (iters%threads));
-		for (int it = it_begin; it < it_end; ++it) {
-			const int i = it / (2*kx+1) - ky;
-			const int j = it % (2*kx+1) - kx;
-			float iy = i*step;
-			float ix = j*step;
-			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
-			Frngs(cimage, numr);
-			// The following code it used when mirror is considered
-			Dict retvals;
-			if (delta == 0.0) {
-				retvals = Crosrng_ms(crefim, cimage, numr);
-			} else {
-				retvals = Crosrng_ms_delta(crefim, cimage, numr, 0.0, delta);
+	Dict t_params;
+	t_params["type"]   = "2D";
+	t_params["alpha"]  = psi1;
+    t_params["tx"]     = sx1;
+    t_params["ty"]     = sy1;
+    t_params["mirror"] = 0;
+    t_params["scale"]  = 1.0;
+	Transform t1(t_params);
+	t_params["alpha"]  = psi2;
+    t_params["tx"]     = sx2;
+    t_params["ty"]     = sy2;
+	Transform t2(t_params);
+	Transform tt = t2*t1;
+	Dict d = tt.get_params("2D");
+	out_psi = d["alpha"];
+	out_sx  = d["tx"];
+	out_sy  = d["ty"];
+}
+
+void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector<EMData*> refproj, vector<EMData*> rotproj
+		, vector<float> dp_dphi_rise_delta, vector<int> nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc
+		, bool FindPsi, float psi_max, vector<EMData*> crefim, vector<int> numr, int maxrin, string mode, int cnx, int cny)
+{
+	if (dp_dphi_rise_delta.size() < 4) {
+		printf("Not enough parameters (dp_dphi_rise_delta)");
+		return;
+	}
+	if (nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc.size() < 9) {
+		printf("Not enough parameters (nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc)");
+		return;
+	}
+	float dp    = dp_dphi_rise_delta[0];
+	float dphi  = dp_dphi_rise_delta[1];
+	int   rise  = static_cast<int>(dp_dphi_rise_delta[2] + 0.2);
+	float delta = dp_dphi_rise_delta[3];
+	int   nphi     = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[0];
+	int  phiwobble = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[1];
+	int  range     = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[2];
+	int  ywobble   = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[3];
+	bool Dsym      = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[4];
+	int  nwx       = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[5];
+	int  nwy       = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[6];
+	int  nwxc      = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[7];
+	int  nwyc      = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[8];
+
+//	start_time = time()
+	const int ndata = data.size();
+
+	vector<float> c0 = data[0]->get_attr("ptcl_source_coord");
+	vector< vector<EMData*> > ccfs(ndata, vector<EMData*>(nphi, NULL));
+	vector< vector<EMData*> > ccfr(0);
+	if (! Dsym) {
+		ccfr.resize(ndata, vector<EMData*>(nphi, NULL));
+	}
+	for (int im = 0; im < ndata; ++im) {
+		for (int iphi = 0; iphi < nphi; ++iphi) {
+			EMData * obj = Util::window( correlation( refproj[iphi], fdata[im], CIRCULANT, true), nwx, nwy);
+			ccfs[im][iphi] = obj;
+			if (! Dsym) {
+				ccfr[im][iphi] = obj->copy();
 			}
-			const float qn = retvals["qn"];
-			const float qm = retvals["qm"];
-			#pragma omp critical (saveResult)
-			{
-				if (qn >= peak || qm >= peak) {
-					sx = -ix;
-					sy = -iy;
-					if (qn >= qm) {
-						ang = ang_n(retvals["tot"], mode, numr.back());
-						peak = qn;
-						mirror = 0;
+		}
+	}
+//	if (myid == main_node) cout << " ccfs computed     " << time()-start_time << start_time = time()
+	vector<float> xshiftlocal(ndata, 0);
+	vector<float> xrshiftlocal(ndata, 0);
+	vector<float> mxshiftlocal(ndata, 0);
+	vector<float> yshiftlocal(ndata, 0);
+	vector<float> yrshiftlocal(ndata, 0);
+	vector<float> myshiftlocal(ndata, 0);
+	vector<float> philocal(ndata, 0);
+	vector<float> phirlocal(ndata, 0);
+	vector<float> mphilocal(ndata, 0);
+	float tmax = -1.0e23;
+	float mpsi;
+	for (int ix = 1; ix < nwx-1; ++ix) {                                         //#  X shift
+		//#cout << "im: ", len(ccfs), ix,time()-start_time
+		int six = ix - nwxc;
+		for (int iy = 1+ywobble; iy < nwy-ywobble-1; ++iy) {                     //#  Y shift
+			int siy = iy - nwyc;
+			yshiftlocal[0] = float(iy-nwyc);
+			for (int iphi = 0; iphi < nphi; ++iphi) {                                  //#  phi search
+				//#qphi = iphi*delta
+				philocal[0]  = iphi*delta;
+				phirlocal[0] = iphi*delta;
+				//# we use the first segment as a reference, so there is no interpolation, just copy the correlation
+				//#  Select largest correlation within +/- range pixels from the location we explore
+				float mxm = -1.023;
+				float mxr;
+				for (int iux = max(1, ix - range); iux < min(nwx - 1, ix+range+1); ++iux) {    //#  X wobble
+					float qcf = ccfs[0][iphi]->get_value_at(iux,iy);
+					if (qcf > mxm) {
+						mxm = qcf;
+						xshiftlocal[0] = float(iux-nwxc);
+					}
+				}
+				//#mxm = ccfs[0][iphi].get_value_at(ix,iy)
+				if (! Dsym) {
+					mxr = -1.023;
+					for (int iux = max(1, ix - range); iux < min(nwx - 1, ix+range+1); ++iux) {     //# Xr wobble
+						float qcf = ccfr[0][iphi]->get_value_at(iux,iy);
+						if (qcf > mxr) {
+							mxr = qcf;
+							xrshiftlocal[0] = float(iux-nwxc);
+						}
+					}
+					//#mxr = ccfr[0][iphi].get_value_at(ix,iy)
+				}
+				//#cout <<  ix,six,iy,siy,iphi,mxm,mxr,xshiftlocal[0],xrshiftlocal[0]
+				for ( int im = 1; im < ndata; ++im) {                                    //#  predicted locations
+					//#cout << "im: ", len(ccfs), im,time()-start_time
+					//# dst is distance between segment 0 and current segment in pixels
+					vector<float> cim = data[im]->get_attr("ptcl_source_coord");
+if (cim.size() < 2 || c0.size() < 2) {
+	std::cout << "cim.size() < 2 || c0.size() < 2" << std::endl;
+	return;
+}
+					float dst = sqrt( (c0[0] - cim[0])*(c0[0] - cim[0]) + (c0[1] - cim[1])*(c0[1] - cim[1]));
+					//#dst = 15.0
+					//#cout << im,dst,rise
+					//# predict for all remaining segments assuming number 0
+					//#  has parameters (qphi, six, siy)
+					//# Assume for now inter-segment distances are multiples of rise -- jia
+					float pphi = (philocal[0] + (dst/rise)*dphi);                          //#  predicted phi with full angular accuracy, not an integer  //#USED TO BE -
+					for (; pphi >= 360; pphi -= 360);
+					int pix = six; //# predicted x shift
+					int piy = siy; //#  predicted y shift
+					int xix = pix + nwxc;
+					int yiy = piy + nwyc;
+					//#  Local x search
+					int fix = int(xix);     // ???
+					float xdif = xix - fix;
+					float xrem = 1.0 - xdif;
+					int fiy = int(yiy);     // ???
+					float ydif = yiy - fiy;
+					float yrem = 1.0 - ydif;
+					float ciq = -1.023;
+					//# interpolate correlation at pphi
+					int ttphi = int(pphi/delta + 0.5)%nphi;
+					for (int lphi = -phiwobble; lphi < phiwobble+1; ++lphi) {                                         //#  phi wobble
+						int tphi = (ttphi+lphi) % nphi;
+						if (tphi < 0) {
+							continue;
+						}
+						for (int iux = max(1, fix - range); iux < min(nwx - 1, fix+range+1); ++iux) {           //#  X wobble
+							for (int iuy = max(1, fiy - ywobble); iuy < min(nwy - 1, fiy+ywobble+1); ++iuy) {   //#  Y wobble
+								float qcf = xrem*yrem*ccfs[im][tphi]->get_value_at(iux,iuy)   + xdif*yrem*ccfs[im][tphi]->get_value_at(iux+1,iuy)
+								          + xrem*ydif*ccfs[im][tphi]->get_value_at(iux,iuy+1) + xdif*ydif*ccfs[im][tphi]->get_value_at(iux+1,iuy+1);
+								if (qcf > ciq) {
+									ciq = qcf;
+									xshiftlocal[im] = iux + xdif - nwxc;
+									yshiftlocal[im] = iuy + ydif - nwyc;
+									philocal[im] = tphi;
+								}
+							}
+						}
+						//#cout <<  "straight ",ix,iy,iphi, "    ", six,siy,qphi, "    ",pix,piy,xix,yiy,pphi,   "    ",fix,fiy,tphi
+					}
+					//#ciq = xrem*yrem*ccfs[im][tphi].get_value_at(fix,fiy) + xdif*yrem*ccfs[im][tphi].get_value_at(fix+1,fiy) + xrem*ydif*ccfs[im][tphi].get_value_at(fix,fiy+1) + xdif*ydif*ccfs[im][tphi].get_value_at(fix+1,fiy+1)
+					mxm += ciq;
+					//# now for rotated
+					if (! Dsym) {
+						//# Assume for now inter-segment distances are multiples of rise -- jia
+						pphi = (phirlocal[0] + (dst/rise)*dphi); //#  predicted phi for rotated 180 defs with full angular accuracy, not an integer
+						for (; pphi >= 360; pphi -= 360);
+						pix = six; //# predicted x shift
+						piy = siy; //#  predicted y shift
+						xix = pix + nwxc;
+						yiy = piy + nwyc;
+						fix = int(xix);
+						xdif = xix - fix;
+						xrem = 1.0 - xdif;
+						fiy = int(yiy);
+						ydif = yiy - fiy;
+						yrem = 1.0 - ydif;
+						ciq = -1.023;
+						//# interpolate correlation at pphi
+						ttphi = int(pphi/delta + 0.5) % nphi;
+						for (int lphi = -phiwobble; lphi < phiwobble+1; ++lphi) {                                           //#  phi wobble
+							int tphi = (ttphi+lphi) % nphi;
+							if (tphi < 0) {
+								continue;
+							}
+							for (int iux = max(1, fix - range); iux < min(nwx - 1, fix+range+1); ++iux) {             //#  X wobble
+								for (int iuy = max(1, fiy - ywobble); iuy < min(nwy - 1, fiy+ywobble+1); ++iuy) {     //#  Y wobble
+									float qcf = xrem*yrem*ccfs[im][tphi]->get_value_at(iux,iuy)   + xdif*yrem*ccfs[im][tphi]->get_value_at(iux+1,iuy)
+									          + xrem*ydif*ccfs[im][tphi]->get_value_at(iux,iuy+1) + xdif*ydif*ccfs[im][tphi]->get_value_at(iux+1,iuy+1);
+									if (qcf > ciq) {
+										ciq = qcf;
+										xrshiftlocal[im] = iux + xdif - nwxc;
+										yrshiftlocal[im] = iuy + ydif - nwyc;
+										phirlocal[im] = tphi;
+									}
+								}
+							}
+						}
+						//#cout <<  "rotated ",ix,iy,iphi, "    ", six,siy,qphi, "    ",pix,piy,xix,yiy,pphi,   "    ",fix,fiy,tphi,iux + xdif - nwxc,ciq
+						//#ciq = xrem*yrem*ccfr[im][tphi].get_value_at(fix,fiy) + xdif*yrem*ccfr[im][tphi].get_value_at(fix+1,fiy) + xrem*ydif*ccfr[im][tphi].get_value_at(fix,fiy+1) + xdif*ydif*ccfr[im][tphi].get_value_at(fix+1,fiy+1)
+						mxr += ciq;
 					} else {
-						ang = ang_n(retvals["tmt"], mode, numr.back());
-						peak = qm;
-						mirror = 1;
+						mxr = mxm-1.e5;
+					}
+				}
+				//# The parameters are stored only for the first segment, the remaining one will have to be recomputed
+				//#if myid == main_node:  cout <<  mxm,mxr
+				//#if Iter == 1:  mxm = 2*mxr
+				if ( mxr > mxm ) {
+					if (mxr > tmax) {
+						tmax = mxr;
+						mpsi = 270.0;
+						//#mphi = iphi*delta
+						for (int im = 0; im < xshiftlocal.size(); ++im) mxshiftlocal[im] = xrshiftlocal[im];
+						for (int im = 0; im < yshiftlocal.size(); ++im) myshiftlocal[im] = yrshiftlocal[im];
+						for (int im = 0; im < phirlocal  .size(); ++im) mphilocal   [im] = phirlocal   [im]*delta;
+						//#msx = six
+						//#msy = siy
+						//#if myid == main_node:  cout <<  ifil,ix, iy, iphi,pphi,tphi,mxshiftlocal
+					}
+				} else {
+					if (mxm > tmax) {
+						tmax = mxm;
+						mpsi = 90.0;
+						//#mphi = iphi*delta
+						for (int im = 0; im < xshiftlocal.size(); ++im) mxshiftlocal[im] = xshiftlocal[im];
+						for (int im = 0; im < yshiftlocal.size(); ++im) myshiftlocal[im] = yshiftlocal[im];
+						for (int im = 0; im < philocal   .size(); ++im) mphilocal   [im] = philocal   [im]*delta;
+						//#msx = six
+						//#msy = siy
+						//#if myid == main_node:  cout <<  ifil,ix, iy, iphi,mxm,mxshiftlocal
 					}
 				}
 			}
 		}
 	}
-	const float co =  cos(ang*pi/180.0);
-	const float so = -sin(ang*pi/180.0);
-	std::vector<float> results(5);
-	results[0] = ang;
-	results[1] = sx*co - sy*so;
-	results[2] = sx*so + sy*co;
-	results[3] = mirror;
-	results[4] = peak;
-	return results;
+
+	//#cout << "  PARAMETERS FOR  0 ",mphi, 90.0, mpsi,mxm,mxr
+	for (int im = 0; im < ndata; ++im) {
+		//# Do the prediction using set (mphi, theta=90., mpsi, msx, msy)
+		//#cim = data[im].get_attr('ptcl_source_coord')
+		//#dst = sqrt((c0[0] - cim[0])**2 + (c0[1] - cim[1])**2)
+		float psx  = mxshiftlocal[im];
+		float psy  = myshiftlocal[im];
+		float pphi = mphilocal[im];
+		/*"""
+		if mpsi == 90.0:
+			psx  = mxshiftlocal[imstart] //#msx
+			psy  = myshiftlocal[imstart]
+			pphi = mphilocal[imstart]//# ( mphilocal[imstart] + (dst/rise)*dphi )%360.0
+		else:
+			psx  = mxshiftlocal[imstart] //#msx
+			psy  = myshiftlocal[imstart]
+			pphi = ( mphilocal[imstart] + (dst/rise)*dphi )%360.0             //#  USED TO BE - !!!!!!!!!!!!!!!!!!!!!!
+		"""*/
+		//#cout << "  PARAMETERS FOR IM ",im,pphi, 90.0, mpsi, psx, psy
+		float epsi;
+		if (FindPsi) {
+			int iphi = int(pphi/delta + 0.5) % nphi;
+			//#cout <<  " ref number and current parameters reduced to 2D  ",iphi,0.0, psx, psy
+			//#  I should only care what the previous residual angle was
+			Dict params = Util::get_transform_params(data[im], "xform.projection", "spider");
+			float opsi3 = params["psi"];
+			float opx3 = -static_cast<float>(params["tx"]);
+			float opy3 = -static_cast<float>(params["ty"]);
+			//#cout << " old 3D params in data ",ophi, otheta, opsi3, opx3, opy3
+			float gamma = (abs(opsi3 - 90) < abs(opsi3 - 270)) ? (90) : (270);
+			float oalpha, osx, osy;
+			compose_transform2(0, opx3, opy3, gamma-opsi3, 0, 0, oalpha, osx, osy); //# reduce 3D to 2D
+			//#cout << " old 3D params, -> 2D ",oalpha, osx, osy
+			//# combine previous with the current in plane
+			//#cout << " current 2D combined with old 2D rotation",oalpha, csx, csy
+			//#  Find what the shift is without the angle
+			float junk, nnsx, nnsy;
+			compose_transform2(0, psx, psy, -oalpha, 0, 0, junk, nnsx, nnsy);
+			//#cout << " 2D shift without angle ",nnsx, nnsy
+
+			//#rot_shift2D(data[im], 0.0, nnsx, nnsy).write_image("shifted.hdf",im)
+			//#fft(refproj[iphi]).write_image("reference.hdf",im)
+			//#from utilities import info
+
+			EMData * cimage = Util::Polar2Dm(data[im], cnx+nnsx, cny+nnsy, numr, mode);
+			Util::Frngs(cimage, numr);
+			EMData * temp = Util::Crosrng_msg_s( cimage, crefim[iphi], numr);
+
+			//#from utilities import write_text_file
+			//#write_text_file([temp[qqq] for qqq in xrange(maxrin)],"ccf1d.txt")
+			//#exit()
+
+			int ipr = int(psi_max*maxrin/360.0 + 0.5);
+			int incpsi = (mpsi == 270) ? (maxrin/2) : (0);
+			float qn = -1.020;
+			float bestang;
+			for (int ips = -ipr; ips < ipr+1; ++ips) {
+				int tot = (ips + incpsi + maxrin) % maxrin;
+				float tval = temp->get_value_at(tot);
+				//#cout <<  ips,incpsi,tot,tval
+				if (tval > qn) {
+					qn = tval;
+					bestang = ang_n(tot+1.0, mode, maxrin);
+				}
+			}
+			//#cout << " best angle ",bestang
+			bestang = (bestang - (mpsi-90.0));
+			for (; bestang >= 360; bestang -= 360);
+			//#cout << " angle applied ",bestang
+			//#rot_shift2D(data[im],-bestang).write_image("rotated.hdf",im)
+			EMData* rot_data_im = data[im]->rot_scale_trans2D_background(-bestang, 0, 0, 1);
+			fdata[im] = (rot_data_im->is_complex()) ? (rot_data_im->do_ift()) : (rot_data_im->do_fft());
+			//#cout <<  " New composed 3D  ",mpsi,bestang, nnsx, nnsy
+
+			epsi = (bestang+mpsi);
+			while (epsi >= 360) epsi -= 360;
+			psx = nnsx; psy = nnsy;
+			//#cout <<  " New composed 3D  ",pphi,90.0,epsi, psx, psy
+			//#exit()
+		} else {
+			epsi = mpsi;
+		}
+		printf("  %7.2f  %7.2f  %7.2f  %7.2f  %7.2f\n", pphi, 90.0, epsi, psx, psy);
+		Dict t_params;
+		t_params["type"]  = "spider";
+		t_params["phi"]   = pphi;
+        t_params["theta"] = 90.0;
+        t_params["psi"]   = epsi;
+        t_params["tx"]    = -psx;
+        t_params["ty"]    = -psy;
+        Transform t(t_params);
+        data[im]->set_attr("xform.projection", &t);
+		//#cout << get_params_proj(data[im])
+	}
 }
-*/
