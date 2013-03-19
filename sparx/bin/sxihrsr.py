@@ -107,6 +107,7 @@ def main():
 
 
 	parser.add_option("--ehelix",             action="store_true",   default=False,               help="Use consistent helical refinement")
+	parser.add_option("--ywobble",            type="float",          default=0.0,                 help="wobble in y-directions (default = 0.0)")
 
 	parser.add_option("--diskali",            action="store_true",   default=False,               help="volume alignment")
 	parser.add_option("--zstep",              type="float",          default= 1,                  help="Step size for translational search along z (Angstroms)")   
@@ -180,6 +181,7 @@ def main():
 
 		rminp = int((float(options.rmin)/options.apix) + 0.5)
 		rmaxp = int((float(options.rmax)/options.apix) + 0.5)
+		ywobble = int(options.ywobble/options.apix+0.5)  # this should be full real.
 
 		from utilities import get_input_from_string, get_im
 
@@ -255,7 +257,7 @@ def main():
 			else:               mask = args[3]
 			from development import ehelix_MPI
 			global_def.BATCH = True
-			ehelix_MPI(args[0], args[1], args[2], options.delta, options.psi_max, searchxshiftp, nearbyp, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
+			ehelix_MPI(args[0], args[1], args[2], options.delta, options.psi_max, searchxshiftp, nearbyp, ywobble, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
 			global_def.BATCH = False
 
 		elif options.diskali:
