@@ -3817,3 +3817,78 @@ def findall(val, lo):
 			i += 1
 	return  u
 """
+
+"""
+Iterators over sequence of images. They work for lists and stacks of images.
+Additional time cost: about 1 second per 10^6 iterations on 3 GHz processor.
+
+Usage:
+
+it = iterImagesList(list_of_images)  <-or->  it = iterImagesStack(stack_with_images)
+while it.goToNext():
+	do_something(it.image())
+	
+"""
+# ================ Iterator for list of images
+class iterImagesList:
+	images = []
+	imagesIndexes = []
+	position = -1
+	def __init__(self, list_of_images, list_of_indexes = None):
+		if list_of_indexes == None:
+			self.images = list_of_images[:]
+			self.imagesIndexes = range(len(self.images))
+		else:
+			for i in list_of_indexes:
+				self.images.append(list_of_images[i])
+			self.imagesIndexes = list_of_indexes[:]
+	def iterNo(self):
+		return self.position
+	def imageIndex(self):
+		return self.imagesIndexes[self.position]
+	def image(self):
+		return self.images[self.position]
+	def goToNext(self):
+		if len(self.imagesIndexes) <= self.position:
+			return False
+		self.position += 1
+		return (self.position < len(self.imagesIndexes))
+	def goToPrev(self):
+		if 0 > self.position:
+			return False
+		self.position -= 1
+		return (self.position >= 0)
+# ================ Iterator for stack of images
+class iterImagesStack:
+	stackName = ""
+	currentImage = None
+	imagesIndexes = []
+	position = -1
+	def __init__(self, stack_name, list_of_indexes = None):
+		if list_of_indexes == None:
+			self.imagesIndexes = range(EMUtil.get_image_count(stack_name))
+		else:
+			self.imagesIndexes = list_of_indexes[:]
+		self.stackName = stack_name
+	def iterNo(self):
+		return self.position
+	def imageIndex(self):
+		return self.imagesIndexes[self.position]
+	def image(self):
+		if self.currentImage == None:
+			self.currentImage = EMData()
+			self.currentImage.read_image(self.stackName, self.imagesIndexes[self.position])
+		return self.currentImage
+	def goToNext(self):
+		self.currentImage = None
+		if len(self.imagesIndexes) <= self.position:
+			return False
+		self.position += 1
+		return (self.position < len(self.imagesIndexes))
+	def goToPrev(self):
+		self.currentImage = None
+		if 0 > self.position:
+			return False
+		self.position -= 1
+		return (self.position >= 0)
+

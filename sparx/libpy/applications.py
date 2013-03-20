@@ -6977,7 +6977,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 	else:	 from reconstruction import recons3d_4nn_MPI
 
 	if myid == main_node:
-       		if(file_type(stack) == "bdb"):
+		if(file_type(stack) == "bdb"):
 			from EMAN2db import db_open_dict
 			dummy = db_open_dict(stack, True)
 		active = EMUtil.get_all_attributes(stack, 'active')
@@ -9507,7 +9507,8 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, li
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from string         import replace
 	from time           import time
-	from mpi 	    import mpi_comm_size, mpi_comm_rank, mpi_bcast, MPI_INT, MPI_COMM_WORLD
+	from utilities      import iterImagesStack
+	from mpi            import mpi_comm_size, mpi_comm_rank, mpi_bcast, MPI_INT, MPI_COMM_WORLD
 
 	myid  = mpi_comm_rank(MPI_COMM_WORLD)
 	nproc = mpi_comm_size(MPI_COMM_WORLD)
@@ -9556,7 +9557,7 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, li
 
 	image_start, image_end = MPI_start_end(nima, nproc, myid)
 
-	prjlist = EMData.read_images(prj_stack, pid_list[image_start:image_end])
+	prjlist = iterImagesStack(prj_stack, pid_list[image_start:image_end])
 	del pid_list
 
 	if CTF: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, finfo, npad,xysize, zsize)

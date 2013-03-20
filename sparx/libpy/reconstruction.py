@@ -62,7 +62,7 @@ def rec2D(  lines, idrange=None, snr=None ):
 
 def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weighting=1, varsnr=True, xysize=-1, zsize = -1):
 	"""
-	Perform a 3-D reconstruction using Pawel's FFT Back Projection algoritm.
+	Perform a 3-D reconstruction using Pawel's FFT Back Projection algorithm.
 	   
 	Input:
 	   stack_name - name of the file with projection data.
@@ -161,13 +161,20 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weig
 def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad=4, xysize=-1, zsize=-1):
 	from utilities import reduce_EMData_to_root
 	from EMAN2 import Reconstructors
+	from utilities import iterImagesList
+	import types
 
-	if len(prjlist) == 0:
+	if type(prjlist) == types.ListType:
+		prjlist = iterImagesList(prjlist)
+
+	if not prjlist.goToNext():
 		ERROR("empty input list","recons3d_4nn_MPI",1)
 
-	imgsize = prjlist[0].get_xsize()
-	if prjlist[0].get_ysize() != imgsize:
+	imgsize = prjlist.image().get_xsize()
+	if prjlist.image().get_ysize() != imgsize:
 		ERROR("input data has to be square","recons3d_4nn_MPI",1)
+
+	prjlist.goToPrev()
 
 	fftvol = EMData()
 	weight = EMData()
@@ -192,7 +199,8 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad=4, xysize=-1,
 	r.setup()
 
 	if not (info is None): nimg = 0
-	for prj in prjlist :
+	while prjlist.goToNext():
+		prj = prjlist.image()
 		if prj.get_xsize() != imgsize or prj.get_ysize() != imgsize:
 			ERROR("inconsistent image size","recons3d_4nn_MPI",1)
 
@@ -320,21 +328,24 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None, n
 		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
 		Input
 			stack: name of the stack file containing projection data, projections have to be squares
-			list_proj: list of projections to be included in the reconstruction
+			list_proj: list of projections to be included in the reconstruction or image iterator
 			snr: Signal-to-Noise Ratio of the data 
 			sign: sign of the CTF 
 			symmetry: point-group symmetry to be enforced, each projection will enter the reconstruction in all symmetry-related directions.
 	"""
 	from utilities import reduce_EMData_to_root
 	from EMAN2 import Reconstructors
+	from utilities import iterImagesList
+	import types
 
-	if  len(prjlist) == 0:
-	    ERROR("empty input list","recons3d_4nn_ctf_MPI",1)
-
-	imgsize = prjlist[0].get_xsize()
-	if prjlist[0].get_ysize() != imgsize:
+	if type(prjlist) == types.ListType:
+		prjlist = iterImagesList(prjlist)
+	if not prjlist.goToNext():
+		ERROR("empty input list","recons3d_4nn_ctf_MPI",1)
+	imgsize = prjlist.image().get_xsize()
+	if prjlist.image().get_ysize() != imgsize:
 		ERROR("input data has to be square","recons3d_4nn_ctf_MPI",1)
-
+	prjlist.goToPrev()
 
 	fftvol = EMData()
 	weight = EMData()
@@ -359,7 +370,8 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None, n
 	r.setup()
 
 	if not (info is None): nimg = 0
-	for prj in prjlist:
+	while prjlist.goToNext():
+		prj = prjlist.image()
 		if prj.get_xsize() != imgsize or prj.get_ysize() != imgsize:
 			ERROR("inconsistent image size","recons3d_4nn_ctf_MPI",1)
 
