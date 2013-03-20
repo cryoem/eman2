@@ -1385,17 +1385,18 @@ class EMImage2DWidget(EMGLWidget):
 
 	def do_probe(self,x,y):
 		"response to a probe mouse click/drag"
-		try: sz=int(inspector.ptareasize.text())
+		try: sz=int(self.inspector.ptareasize.text())
 		except: sz=16
+		x,y=int(x),int(y)
 
 		self.del_shape("PROBE")
-		self.add_shape("PROBE",EMShape(("rectpoint",.5,.5,.1,lc[0]-sz/2,lc[1]-sz/2,lc[0]+(sz+1)/2,lc[1]+(sz+1)/2,2)))
+		self.add_shape("PROBE",EMShape(("rectpoint",.5,.5,.1,x-sz/2,y-sz/2,x+(sz+1)/2,y+(sz+1)/2,2)))
 		self.updateGL()
 
-		clp=self.get_data().get_clip(Region(lc[0]-sz/2,lc[1]-sz/2,sz,sz))
-		inspector.ptpointval.setText("Point Value: %1.3f"%(self.get_data()[lc[0],lc[1]]))
-		inspector.ptareasize.setText("Area Avg: %1.3d"%clp["average"])
-		inspector.ptareasize.setText("Area Sig: %1.3d"%clp["sigma"])
+		clp=self.get_data().get_clip(Region(x-sz/2,y-sz/2,sz,sz))
+		self.inspector.ptpointval.setText("Point Value: %1.3f"%(self.get_data())[x,y])
+		self.inspector.ptareaavg.setText("Area Avg: %1.3f"%clp["mean"])
+		self.inspector.ptareasig.setText("Area Sig: %1.3f"%clp["sigma"])
 
 
 	def mousePressEvent(self, event):
@@ -1773,7 +1774,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.ptareaavg= QtGui.QLabel("Area Avg: ")
 		self.ptlay.addWidget(self.ptareaavg,2,0,1,2,Qt.AlignLeft)
 
-		self.ptareasig= QtGui.QLabel("AreaSig: ")
+		self.ptareasig= QtGui.QLabel("Area Sig: ")
 		self.ptlay.addWidget(self.ptareasig,3,0,1,2,Qt.AlignLeft)
 
 		self.ptpixels= QtGui.QWidget()
