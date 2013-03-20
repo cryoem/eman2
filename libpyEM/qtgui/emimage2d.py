@@ -36,7 +36,7 @@ from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
-from valslider import ValSlider
+from valslider import ValSlider,ValBox
 from math import *
 import EMAN2db
 from EMAN2 import *
@@ -1385,7 +1385,7 @@ class EMImage2DWidget(EMGLWidget):
 
 	def do_probe(self,x,y):
 		"response to a probe mouse click/drag"
-		try: sz=int(self.inspector.ptareasize.text())
+		try: sz=int(self.inspector.ptareasize.getValue())
 		except: sz=16
 		x,y=int(x),int(y)
 
@@ -1396,7 +1396,11 @@ class EMImage2DWidget(EMGLWidget):
 		clp=self.get_data().get_clip(Region(x-sz/2,y-sz/2,sz,sz))
 		self.inspector.ptpointval.setText("Point Value: %1.3f"%(self.get_data())[x,y])
 		self.inspector.ptareaavg.setText("Area Avg: %1.3f"%clp["mean"])
+		self.inspector.ptareaavgnz.setText("Area Avg (!=0): %1.3f"%clp["mean_nonzero"])
 		self.inspector.ptareasig.setText("Area Sig: %1.3f"%clp["sigma"])
+		self.inspector.ptareasignz.setText("Area Sig (!=0): %1.3f"%clp["sigma_nonzero"])
+		self.inspector.ptareaskew.setText("Area Skewness: %1.3f"%clp["skewness"])
+		self.inspector.ptareakurt.setText("Area Kurtosis: %1.3f"%clp["kurtosis"])
 
 
 	def mousePressEvent(self, event):
@@ -1760,25 +1764,35 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.probetab = QtGui.QWidget()
 		self.ptlay=QtGui.QGridLayout(self.probetab)
 
-
-		self.ptl1 = QtGui.QLabel("Probe Size:")
-		self.ptl1.setAlignment(Qt.AlignRight)
-		self.ptlay.addWidget(self.ptl1,0,0)
-
-		self.ptareasize= QtGui.QLineEdit("32")
-		self.ptlay.addWidget(self.ptareasize,0,1)
-
-		self.ptpointval= QtGui.QLabel("Point Value: ")
+		self.ptareasize= ValBox(label="Probe Size:",value=32)
+		self.ptareasize.setIntonly(True)
+		self.ptlay.addWidget(self.ptareasize,0,0,1,2)
+		
+		self.ptpointval= QtGui.QLabel("Point Value (ctr pix): ")
 		self.ptlay.addWidget(self.ptpointval,1,0,1,2,Qt.AlignLeft)
 
 		self.ptareaavg= QtGui.QLabel("Area Avg: ")
-		self.ptlay.addWidget(self.ptareaavg,2,0,1,2,Qt.AlignLeft)
+		self.ptlay.addWidget(self.ptareaavg,2,0,Qt.AlignLeft)
+
+		self.ptareaavgnz= QtGui.QLabel("Area Avg (!=0): ")
+		self.ptlay.addWidget(self.ptareaavgnz,2,1,Qt.AlignLeft)
 
 		self.ptareasig= QtGui.QLabel("Area Sig: ")
-		self.ptlay.addWidget(self.ptareasig,3,0,1,2,Qt.AlignLeft)
+		self.ptlay.addWidget(self.ptareasig,3,0,Qt.AlignLeft)
+		
+		self.ptareasignz= QtGui.QLabel("Area Sig (!=0): ")
+		self.ptlay.addWidget(self.ptareasignz,3,1,Qt.AlignLeft)
 
-		self.ptpixels= QtGui.QWidget()
-		self.ptlay.addWidget(self.ptpixels,0,2)
+		self.ptareaskew= QtGui.QLabel("Skewness: ")
+		self.ptlay.addWidget(self.ptareaskew,4,0,Qt.AlignLeft)
+		
+		self.ptareakurt= QtGui.QLabel("Kurtosis: ")
+		self.ptlay.addWidget(self.ptareakurt,5,0,Qt.AlignLeft)
+
+		
+		# not really necessary since the pointbox accurately labels the pixel when zoomed in
+		#self.ptpixels= QtGui.QWidget()
+		#self.ptlay.addWidget(self.ptpixels,0,2)
 
 		self.mmtab.addTab(self.probetab,"Probe")
 
