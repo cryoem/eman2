@@ -13494,7 +13494,7 @@ def windowmic(outdir, micname, hcoordsname, pixel_size, segnx, segny, ptcl_overl
 					Util.mul_scalar(prj, -1.0)
 				prj.write_image(otcl_images, j)
 				
-def windowallmic(dirid, micid, micsuffix, outdir, rise, pixel_size, boxsize='160 45', outstacknameall='bdb:data', hcoords_suffix = "_boxes.txt", ptcl_overlap=-1, inv_contrast=False, new_pixel_size=-1, rmax = -1.0, freq = -1):
+def windowallmic(dirid, micid, micsuffix, outdir, dp, pixel_size, boxsize='160 45', outstacknameall='bdb:data', hcoords_suffix = "_boxes.txt", ptcl_overlap=-1, inv_contrast=False, new_pixel_size=-1, rmax = -1.0, freq = -1):
 	'''
 	
 	Windows segments from helices boxed from micrographs using e2helixboxer. 
@@ -13520,7 +13520,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, rise, pixel_size, boxsize='160
 		        The segments windowed from the helices boxed from the micrographs in the directory,
 		        and possibly resampled micrographs (if pixel size changed), will be put here.
 		
-		rise:  Helical symmetry parameter rise in Angstroms.
+		dp:  Helical symmetry parameter rise in Angstroms.
 		
 		pixel_size: The pixel size of the micrographs which were used to box the helices.
 		
@@ -13550,7 +13550,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, rise, pixel_size, boxsize='160
 						where (x1, y1) and (x2, y2) are the coordinates on the micrograph for the helical axis endpoints, and w is the width of the helix boxes
 						
 		ptcl_overlap: Integer. Overlap between adjacent segments windowed from a single boxed helix. If ptcl_overlap < 0, then the
-			          program will set it so the distance between adjacent segments is ~ one rise in pixels: int( (rise/new_pixel_size) + 0.5)
+			          program will set it so the distance between adjacent segments is ~ one rise in pixels: int( (dp/new_pixel_size) + 0.5)
 		
 		inv_contrast: True/False, default is False. If cryo, then set to true to invert contrast so particles show up bright against dark background. 
 		
@@ -13607,7 +13607,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, rise, pixel_size, boxsize='160
 		
 		The pixel size of the segments is 1.84 and the box size is 200 by 200.
 		
-		windowallmic(dirid='mic', micid='mic', micsuffix='hdf', outdir='out',  rise=27.6, pixel_size=1.2, boxsize=200, outstacknameall='bdb:adata', hcoords_suffix = "_boxes.txt", ptcl_overlap=196, inv_contrast=False, new_pixel_size=1.84, rmax = 60.0)
+		windowallmic(dirid='mic', micid='mic', micsuffix='hdf', outdir='out',  dp=27.6, pixel_size=1.2, boxsize=200, outstacknameall='bdb:adata', hcoords_suffix = "_boxes.txt", ptcl_overlap=196, inv_contrast=False, new_pixel_size=1.84, rmax = 60.0)
 	'''
 	import os
 	from utilities      import print_begin_msg, print_end_msg, print_msg
@@ -13640,7 +13640,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, rise, pixel_size, boxsize='160
 		
 	# Calculate overlap as ~1 rise in pixels if not set by user
 	if ptcl_overlap < 0:
-		ptcl_overlap = segny - int( (rise/new_pixel_size) + 0.5)
+		ptcl_overlap = segny - int( (dp/new_pixel_size) + 0.5)
 		
 	print_msg("Overlap in pixels (using pixel size %f) between adjacent segments: %d\n"%(new_pixel_size, ptcl_overlap))
 	
