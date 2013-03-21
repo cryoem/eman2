@@ -22244,7 +22244,6 @@ if (cim.size() < 2 || c0.size() < 2) {
 			//std::auto_ptr<EMData> rot_data_im( data[im]->rot_scale_trans2D_background(-bestang, 0, 0, 1) );
 			//fdata[im] = (rot_data_im->is_complex()) ? (rot_data_im->do_ift()) : (rot_data_im->do_fft());
 
-			objectsToDelete.push_back(boost::shared_ptr<EMData>(fdata[im]));
 			//#cout <<  " New composed 3D  ",mpsi,bestang, nnsx, nnsy
 
 			epsi = modulo(bestang+mpsi, 360.0f);
