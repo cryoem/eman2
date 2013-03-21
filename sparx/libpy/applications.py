@@ -13511,7 +13511,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, rise, pixel_size, boxsize='160
 		       
 		micid: A string for identifying the name (minus extension) of relevant micrographs.
 		       
-		mictype: A string denoting micrograph type. Currently only handles suffix types, i.e. 'hdf', 'ser' etc.
+		micsuffix: A string denoting micrograph type. Currently only handles suffix types, i.e. 'hdf', 'ser' etc.
 		
 		outdir: Output directory to be created in EACH micrograph directory.
 		        
