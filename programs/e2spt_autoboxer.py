@@ -1007,9 +1007,9 @@ def main():
 			kkk+=1
 		newdata.sort()
 		
-		print "\n\n\nsorted newdata are", newdata
+		#print "\n\n\nsorted newdata are", newdata
 		newdata.reverse()
-		print "\n\n\nreversed", newdata 
+		#print "\n\n\nreversed", newdata 
 		
 		mmm=0
 		ppp=0
@@ -1236,7 +1236,7 @@ def main():
 		finaldata = []
 		nnn=0
 		for d in newestdata:
-			finaldata.append([ d[0],d[1],d[1],d[1] ])
+			finaldata.append([ d[0],d[1],d[2],d[3] ])
 			fpprj=d[-1]	
 			fpprj.write_image(options.path + '/' + 'pprj_corrected_sorted_pruned.hdf',nnn)
 			nnn+=1	
@@ -1284,10 +1284,12 @@ def main():
 	
 	coords=[]	
 	for i in data:
+		#print "The data element to get coords is", data
 		x=round(i[1])
 		y=round(i[2])
 		z=round(i[3])
 		coords.append( (x,y,z) )
+		#print "Therefore coords are", (x,y,z)
 	
 	coords=set(coords)
 	coords=list(coords)
@@ -1311,7 +1313,7 @@ def main():
 			#print "I have found a particle at these coordinates %s, and with this coefficient %f" %( line, i[0] )
 		lines.append(line)
 		
-	print "Coordinates for THESE many FINAL particles were written", len(data) 
+	print "Coordinates for THESE many FINAL particles were written", len(coords) 
 	coordsname = options.output.replace('.mrc','_coords.txt')
 	coordsname = options.output.replace('.hdf','_coords.txt')
 	coordsname = options.path + '/' + coordsname
@@ -1523,7 +1525,7 @@ def scanposition(options,template,outputboxsize,yshort,xi,yi,zi,xc,yc,zc,sbn,x,y
 	if subox['mean']:
 		#subox.process_inplace('normalize')
 		nptcls = int( round( ( (expandedtemplateboxsize * expandedtemplateboxsize * expandedtemplateboxsize) / (outputboxsize * outputboxsize * outputboxsize * options.concentrationfactor ) ) ) )
-		print "Nptcls based on volume per subox is", nptcls		
+		#print "Nptcls based on volume per subox is", nptcls		
 		if options.test:
 			nptcls = 1	
 		suboxnorm=subox.process('normalize.edgemean')
@@ -1546,8 +1548,8 @@ def scanposition(options,template,outputboxsize,yshort,xi,yi,zi,xc,yc,zc,sbn,x,y
 			#print "Therefore the max val to filter is", max_val
 			#print "the min is", min_val
 			
-			print "BEFORE CLAMPING, max and min are", suboxnorm['maximum'],suboxnorm['minimum']
-			print "count is", count
+			#print "BEFORE CLAMPING, max and min are", suboxnorm['maximum'],suboxnorm['minimum']
+			#print "count is", count
 			suboxnorm.process_inplace('threshold.clampminmax',{'maxval':2,'minval':-1,'tozero':1})
 			suboxnorm.write_image('clamped.hdf',count)
 			
@@ -1579,7 +1581,7 @@ def scanposition(options,template,outputboxsize,yshort,xi,yi,zi,xc,yc,zc,sbn,x,y
 		
 		edgeminval = int(options.ptclradius) - 1
 		edgemaxval = expandedtemplateboxsize - int(options.ptclradius/2) + 1
-		print "Edge min and max vals are", edgeminval, edgemaxval
+		#print "Edge min and max vals are", edgeminval, edgemaxval
 		#print "\n\n\nThe number of particles to look for in a subregion is %d\n\n\n" %(nptcls)
 		for p in range(nptcls):
 		 	#print "\nAttempt numbr %d to find a particle" %(p)
