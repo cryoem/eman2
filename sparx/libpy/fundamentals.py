@@ -1102,9 +1102,9 @@ def tilemic(img, win_size=512, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0):
 def window2d(img, isize_x, isize_y, opt="c", ix=0, iy=0):
 	"""
 		Three ways of windowing a portion of image from a large image field:
-		1. Always get the central part: "c" option ( used for reduce image size )
-		2. Get clip starts from the top teft corner: "l" option  ( used for get fft-friendly image dimensions )
-		3. Get clip with arbitrary point (ix, iy) as imge center point ( used for particle detection )
+		1. "c" Get the central part: "c" ( used for reduce image size )
+		2. "l" Get clip starts from the top teft corner: ( used for get fft-friendly image dimensions )
+		3. "a" Get clip with arbitrary point (ix, iy) as image center point ( nx//2,ny//2 corresponds to image center )
 	"""
 	lx = img.get_xsize()
 	ly = img.get_ysize()
@@ -1112,12 +1112,12 @@ def window2d(img, isize_x, isize_y, opt="c", ix=0, iy=0):
 	from EMAN2 import Region
 	if(opt == "l"): reg = Region(ix, iy, isize_x, isize_y)
 	elif(opt == "c"):
-		mx = int((lx-isize_x)/2)
-		my = int((ly-isize_y)/2)
+		mx = (lx-isize_x)//2
+		my = (ly-isize_y)//2
 		reg = Region(mx, my, isize_x, isize_y)
 	elif(opt == "a"):
-		mx = ix-int(isize_x/2)
-		my = iy-int(isize_y/2)
+		mx = ix-isize_x//2
+		my = iy-isize_y//2
 		reg = Region(mx, my, isize_x, isize_y)
 	else:  ERROR("Unknown window2d option","window2d",1)
 	return img.get_clip(reg)
