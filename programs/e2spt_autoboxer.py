@@ -1284,9 +1284,9 @@ def main():
 	
 	coords=[]	
 	for i in data:
-		x=i[1]
-		y=i[2]
-		z=i[3]
+		x=round(i[1])
+		y=round(i[2])
+		z=round(i[3])
 		coords.append( (x,y,z) )
 	
 	coords=set(coords)
