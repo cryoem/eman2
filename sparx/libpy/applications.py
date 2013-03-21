@@ -13334,7 +13334,7 @@ def getnewhelixcoords(hcoordsname, outdir, ratio,nx,ny, newpref="resampled_", bo
 	'''
 	import os
 	from utilities 		import read_text_row
-	from development	import mapcoords
+	from applications	import mapcoords
 	
 	fname = (hcoordsname.split('/'))[-1] # name of old coordinates files minus the path
 	newhcoordsname = os.path.join(outdir , newpref+fname) # full path name of new coordinates file to be created
@@ -13354,7 +13354,7 @@ def getnewhelixcoords(hcoordsname, outdir, ratio,nx,ny, newpref="resampled_", bo
 		f.write(s)
 	return newhcoordsname	
 	
-def windowmic(outdir, micname, hcoordsname, pixel_size, segnx, segny, ptcl_overlap, inv_contrast, new_pixel_size, rmax):
+def windowmic(outdir, micname, hcoordsname, pixel_size, segnx, segny, ptcl_overlap, inv_contrast, new_pixel_size, rmax, freq):
 	'''
 	
 	INPUT
@@ -13379,6 +13379,8 @@ def windowmic(outdir, micname, hcoordsname, pixel_size, segnx, segny, ptcl_overl
 			new_pixel_size: Float. New target pixel size to which the micrograph should be resampled. 
 			
 			rmax: Float. Radius of filament in Angstroms. If rmax < 0, then it's set to segnx/2 - 2 in pixels using pixel size new_pixel_size.
+			
+			freq: Cut-off frequency at which to high-pass filter micrographs before windowing. 
 	
 	OUTPUT
 	
@@ -13444,7 +13446,7 @@ def windowmic(outdir, micname, hcoordsname, pixel_size, segnx, segny, ptcl_overl
 	
 	#smic[-1] is micrograph name minus path
 	tmpfile = os.path.join(outdir,'filt_%s'%smic[-1])	
-	filt_gaussh(get_im(micname), 1./segnx).write_image(tmpfile)  # remove frequencies too low for the box size
+	filt_gaussh(get_im(micname), freq).write_image(tmpfile)  # remove frequencies too low for the box size
 	
 	# Set box coordinates in e2helixboxer database
 	cmd ="e2helixboxer.py %s"%(tmpfile) + helix_coords+" --helix-width=%d"%(segnx)
@@ -13492,7 +13494,7 @@ def windowmic(outdir, micname, hcoordsname, pixel_size, segnx, segny, ptcl_overl
 					Util.mul_scalar(prj, -1.0)
 				prj.write_image(otcl_images, j)
 				
-def windowallmic(dirid, micid, micsuffix, outdir, rise, pixel_size, boxsize='160 45', outstacknameall='bdb:data', hcoords_suffix = "_boxes.txt", ptcl_overlap=-1, inv_contrast=False, new_pixel_size=-1, rmax = -1.0):
+def windowallmic(dirid, micid, micsuffix, outdir, rise, pixel_size, boxsize='160 45', outstacknameall='bdb:data', hcoords_suffix = "_boxes.txt", ptcl_overlap=-1, inv_contrast=False, new_pixel_size=-1, rmax = -1.0, freq = -1):
 	'''
 	
 	Windows segments from helices boxed from micrographs using e2helixboxer. 
@@ -13558,6 +13560,10 @@ def windowallmic(dirid, micid, micsuffix, outdir, rise, pixel_size, boxsize='160
 	
 		rmax: Float. Radius of filament in Angstroms. 
 		
+		freq: Cut-off frequency at which to high-pass filter micrographs before windowing. 
+		
+		      Default is -1, in which case, the micrographs will be high-pass filtered with cut-off frequency 1.0/segnx, where segnx is the target x dimension of the segments.
+		
 	Output
 	
 		outdir: In each micrograph directory, the program will write the stack of segments windowed from all micrographs in 
@@ -13605,7 +13611,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, rise, pixel_size, boxsize='160
 	'''
 	import os
 	from utilities      import print_begin_msg, print_end_msg, print_msg
-	from development	import windowmic
+	from applications	import windowmic
 	from subprocess     import call
 	
 	print_begin_msg("windowallmic\n")
@@ -13622,7 +13628,10 @@ def windowallmic(dirid, micid, micsuffix, outdir, rise, pixel_size, boxsize='160
 		segny = int(boxdims[1])
 	except:
 		ERROR("Specified dimensions in boxsize are not valid integers.")
-					
+	
+	if freq < 0:
+		freq = 1.0/segnx
+		
 	if micsuffix[0] == '.':
 		micsuffix = micsuffix[1:]
 	
@@ -13674,7 +13683,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, rise, pixel_size, boxsize='160
 				if( os.path.exists(hcoordsname) ):
 					micname = os.path.join(os.path.join(topdir,v1), v2)
 					print_msg("\n\nPreparing to window helices from micrograph %s with box coordinate file %s\n\n"%(micname, hcoordsname))
-					windowmic(coutdir, micname, hcoordsname, pixel_size, segnx, segny, ptcl_overlap, inv_contrast, new_pixel_size, rmax)
+					windowmic(coutdir, micname, hcoordsname, pixel_size, segnx, segny, ptcl_overlap, inv_contrast, new_pixel_size, rmax, freq)
 					
 		# Done windowing micrograph directory v1
 		

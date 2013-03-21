@@ -132,13 +132,33 @@ def main():
 	parser.add_option("--stackdisk",          type="string",		 default="",                  help="Name of file under which output volume will be saved to.")
 	parser.add_option("--ref_ny",             type="int",   		 default=-1,                  help="ny of output volume size. Default is ref_nx" ) 
 
+	# window segments from boxed filaments (or 'helices' in e2helixboxer lingo)
+	parser.add_option("--window",             action="store_true",	 default=False,               help="window segments from boxed filaments (or helices in e2helixboxer lingo)")
+	parser.add_option("--dirid",              type="string",		 default="",                  help="A string for identifying directories containing relevant micrographs. Any directory containing dirid as a contiguous string will be searched for micrographs. These micrographs are assumed to be those which were used to box the helices which are to be windowed.")
+	parser.add_option("--micid",              type="string",		 default="",                  help="A string for identifying the name (minus extension) of relevant micrographs.")
+	parser.add_option("--micsuffix",          type="string",		 default="",                  help="A string denoting micrograph type. Currently only handles suffix types, e.g. 'hdf', 'ser' etc.")
+	parser.add_option("--boxsize",            type="string",		 default="160,45",            help="String containing x and y dimensions (separated by comma) in pixels of segments to be windowed. E.g. boxsize='160,45' specifies a rectangular segment with x dimension equal to 160 pixels and y dimension equal to 45 pixels. Pixel size is assumed to be new_pixel_size.")
+	parser.add_option("--outstacknameall",    type="string",		 default="bdb:data",          help="File name plus type (only handles bdb and hdf right now) under which ALL windowed segments from ALL micrograph directories will be saved, e.g. 'bdb:adata' or 'adata.hdf'")
+	parser.add_option("--hcoords_suffix",     type="string",		 default="_boxes.txt",        help="String identifier which when concatenated with a micrograph name (minus extension) gives the name of the text file containing coordinates of ALL helices boxed from the micrograph. If there is no such file, helices boxed from the micrograph will not be windowed. Default is '_boxes.txt', so if mic0.hdf is a micrograph, then the text file containing coordinates of the helices boxed in it is mic0_boxes.txt. The coordinate file is assumed to be in the format used by e2helixboxer.")
+	parser.add_option("--ptcl_overlap",       type="int", 		     default=-1,                  help="Integer. Overlap in pixels (where pixel size is new_pixel_size) between adjacent segments windowed from a single boxed helix. If ptcl_overlap < 0, then the program will set it so the distance between adjacent segments is ~ one rise in pixels: int( (rise/new_pixel_size) + 0.5)")
+	parser.add_option("--inv_contrast",       action="store_true",	 default=False,               help="True/False, default is False. If cryo, then set to true to invert contrast so particles show up bright against dark background.")
+	parser.add_option("--new_apix",           type="float", 		 default=-1.0,                help="New target pixel size to which the micrograph should be resampled. Default is -1, in which case there is no resampling.")
+	parser.add_option("--freq",               type="float", 		 default=-1.0,                help="Cut-off frequency at which to high-pass filter micrographs before windowing. Default is -1, in which case, the micrographs will be high-pass filtered with cut-off frequency 1.0/segnx, where segnx is the target x dimension of the segments.") 
+	
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1 or len(args) > 5:
 		print "usage: " + usage + "\n"
 		print "Also includes various helical reconstruction related functionalities: " + usage2
 		print "Please run '" + progname + " -h' for detailed options"
 	else:
-
+		
+		# Window filaments 
+		if options.window:
+			from applications import windowallmic
+			outdir = args[0]
+			windowallmic(options.dirid, options.micid, options.micsuffix, outdir, rise=options.dp, pixel_size=options.apix, boxsize=options.boxsize, outstacknameall=options.outstacknameall, hcoords_suffix = options.hcoords_suffix, ptcl_overlap=options.ptcl_overlap, inv_contrast=options.inv_contrast, new_pixel_size=options.new_apix, rmax = options.rmax, freq=options.freq)
+			sys.exit()
+			
 		if len(options.hfsc) > 0:
 			if len(args) != 1:
 				print  "Incorrect number of parameters"
