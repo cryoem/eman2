@@ -21942,6 +21942,23 @@ static void compose_transform2(float psi1, float sx1, float sy1, float psi2, flo
 	out_sy  = d["ty"];
 }
 
+// b > 0, returns values from interval [0, b)
+inline int modulo(int a, int b)
+{
+	if (a < 0) {
+		a += ((-a)/b+1) * b;
+	}
+	return (a%b);
+}
+inline int modulo(float a, float b)
+{
+	if (a < 0) {
+		a += ( (int)((-a)/b) + 1 ) * b;
+	}
+	a -= (int)(a/b) * b;
+	return a;
+}
+
 void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector<EMData*> refproj, vector<EMData*> rotproj
 		, vector<float> dp_dphi_rise_delta, vector<int> nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc
 		, bool FindPsi, float psi_max, vector<EMData*> crefim, vector<int> numr, int maxrin, string mode, int cnx, int cny)
@@ -21968,7 +21985,6 @@ void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
 	int  nwxc      = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[7];
 	int  nwyc      = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[8];
 
-//	start_time = time()
 	const int ndata = data.size();
 
 	std::vector< boost::shared_ptr<EMData> > objectsToDelete; // objects added to this vector are automatically deleted at the end of this function
@@ -21982,17 +21998,16 @@ void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
 	for (int im = 0; im < ndata; ++im) {
 		for (int iphi = 0; iphi < nphi; ++iphi) {
 			std::auto_ptr<EMData> corr( correlation( refproj[iphi], fdata[im], CIRCULANT, true) );
-			EMData * obj = Util::window( corr.get(), nwx, nwy);
-			ccfs[im][iphi] = obj;
-			objectsToDelete.push_back(boost::shared_ptr<EMData>(obj));
+			ccfs[im][iphi] = Util::window( corr.get(), nwx, nwy);
+			objectsToDelete.push_back(boost::shared_ptr<EMData>(ccfs[im][iphi]));
 			if (! Dsym) {
-				ccfr[im][iphi] = obj->copy();
+				std::auto_ptr<EMData> corr2( correlation( rotproj[iphi], fdata[im], CIRCULANT, true) );
+				ccfr[im][iphi] = Util::window( corr2.get(), nwx, nwy);
 				objectsToDelete.push_back(boost::shared_ptr<EMData>(ccfr[im][iphi]));
 			}
 		}
 	}
 
-//	if (myid == main_node) cout << " ccfs computed     " << time()-start_time << start_time = time()
 	vector<float> xshiftlocal(ndata, 0);
 	vector<float> xrshiftlocal(ndata, 0);
 	vector<float> mxshiftlocal(ndata, 0);
@@ -22010,10 +22025,11 @@ void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
 		for (int iy = 1+ywobble; iy < nwy-ywobble-1; ++iy) {                     //#  Y shift
 			int siy = iy - nwyc;
 			yshiftlocal[0] = float(iy-nwyc);
-			for (int iphi = 0; iphi < nphi; ++iphi) {                                  //#  phi search
+			yrshiftlocal[0] = float(iy-nwyc);
+			for (int iphi = 0; iphi < nphi; ++iphi) {                            //#  phi search
 				//#qphi = iphi*delta
 				philocal[0]  = iphi*delta;
-				phirlocal[0] = iphi*delta;
+				phirlocal[0] = modulo( 180.0f - iphi*delta, 360.0f );
 				//# we use the first segment as a reference, so there is no interpolation, just copy the correlation
 				//#  Select largest correlation within +/- range pixels from the location we explore
 				float mxm = -1.023;
@@ -22052,8 +22068,7 @@ if (cim.size() < 2 || c0.size() < 2) {
 					//# predict for all remaining segments assuming number 0
 					//#  has parameters (qphi, six, siy)
 					//# Assume for now inter-segment distances are multiples of rise -- jia
-					float pphi = (philocal[0] + (dst/rise)*dphi);                          //#  predicted phi with full angular accuracy, not an integer  //#USED TO BE -
-					for (; pphi >= 360; pphi -= 360);
+					float pphi = modulo(philocal[0] + (dst/rise)*dphi, 360.0f);                          //#  predicted phi with full angular accuracy, not an integer  //#USED TO BE -
 					int pix = six; //# predicted x shift
 					int piy = siy; //#  predicted y shift
 					int xix = pix + nwxc;
@@ -22067,12 +22082,9 @@ if (cim.size() < 2 || c0.size() < 2) {
 					float yrem = 1.0 - ydif;
 					float ciq = -1.023;
 					//# interpolate correlation at pphi
-					int ttphi = int(pphi/delta + 0.5)%nphi;
+					int ttphi = modulo(int(pphi/delta + 0.5), nphi);
 					for (int lphi = -phiwobble; lphi < phiwobble+1; ++lphi) {                                         //#  phi wobble
-						int tphi = (ttphi+lphi) % nphi;
-						if (tphi < 0) {
-							continue;
-						}
+						int tphi = modulo(ttphi+lphi, nphi);
 						for (int iux = max(1, fix - range); iux < min(nwx - 1, fix+range+1); ++iux) {           //#  X wobble
 							for (int iuy = max(1, fiy - ywobble); iuy < min(nwy - 1, fiy+ywobble+1); ++iuy) {   //#  Y wobble
 								float qcf = xrem*yrem*ccfs[im][tphi]->get_value_at(iux,iuy)   + xdif*yrem*ccfs[im][tphi]->get_value_at(iux+1,iuy)
@@ -22081,7 +22093,7 @@ if (cim.size() < 2 || c0.size() < 2) {
 									ciq = qcf;
 									xshiftlocal[im] = iux + xdif - nwxc;
 									yshiftlocal[im] = iuy + ydif - nwyc;
-									philocal[im] = tphi;
+									philocal[im] = tphi * delta;
 								}
 							}
 						}
@@ -22092,8 +22104,7 @@ if (cim.size() < 2 || c0.size() < 2) {
 					//# now for rotated
 					if (! Dsym) {
 						//# Assume for now inter-segment distances are multiples of rise -- jia
-						pphi = (phirlocal[0] + (dst/rise)*dphi); //#  predicted phi for rotated 180 defs with full angular accuracy, not an integer
-						for (; pphi >= 360; pphi -= 360);
+						pphi = modulo(phirlocal[0] + (dst/rise)*dphi, 360.0f); //#  predicted phi for rotated 180 defs with full angular accuracy, not an integer
 						pix = six; //# predicted x shift
 						piy = siy; //#  predicted y shift
 						xix = pix + nwxc;
@@ -22106,21 +22117,18 @@ if (cim.size() < 2 || c0.size() < 2) {
 						yrem = 1.0 - ydif;
 						ciq = -1.023;
 						//# interpolate correlation at pphi
-						ttphi = int(pphi/delta + 0.5) % nphi;
 						for (int lphi = -phiwobble; lphi < phiwobble+1; ++lphi) {                                           //#  phi wobble
-							int tphi = (ttphi+lphi) % nphi;
-							if (tphi < 0) {
-								continue;
-							}
+							ttphi = modulo(int(pphi + lphi*delta + 0.2), 360);
+							int tphi =  modulo(int( modulo(180-ttphi, 360) / delta + 0.5), nphi);
 							for (int iux = max(1, fix - range); iux < min(nwx - 1, fix+range+1); ++iux) {             //#  X wobble
 								for (int iuy = max(1, fiy - ywobble); iuy < min(nwy - 1, fiy+ywobble+1); ++iuy) {     //#  Y wobble
-									float qcf = xrem*yrem*ccfs[im][tphi]->get_value_at(iux,iuy)   + xdif*yrem*ccfs[im][tphi]->get_value_at(iux+1,iuy)
-									          + xrem*ydif*ccfs[im][tphi]->get_value_at(iux,iuy+1) + xdif*ydif*ccfs[im][tphi]->get_value_at(iux+1,iuy+1);
+									float qcf = xrem*yrem*ccfr[im][tphi]->get_value_at(iux,iuy)   + xdif*yrem*ccfr[im][tphi]->get_value_at(iux+1,iuy)
+									          + xrem*ydif*ccfr[im][tphi]->get_value_at(iux,iuy+1) + xdif*ydif*ccfr[im][tphi]->get_value_at(iux+1,iuy+1);
 									if (qcf > ciq) {
 										ciq = qcf;
 										xrshiftlocal[im] = iux + xdif - nwxc;
 										yrshiftlocal[im] = iuy + ydif - nwyc;
-										phirlocal[im] = tphi;
+										phirlocal[im] = ttphi;
 									}
 								}
 							}
@@ -22142,7 +22150,7 @@ if (cim.size() < 2 || c0.size() < 2) {
 						//#mphi = iphi*delta
 						for (int im = 0; im < xshiftlocal.size(); ++im) mxshiftlocal[im] = xrshiftlocal[im];
 						for (int im = 0; im < yshiftlocal.size(); ++im) myshiftlocal[im] = yrshiftlocal[im];
-						for (int im = 0; im < phirlocal  .size(); ++im) mphilocal   [im] = phirlocal   [im]*delta;
+						for (int im = 0; im < phirlocal  .size(); ++im) mphilocal   [im] = phirlocal   [im];
 						//#msx = six
 						//#msy = siy
 						//#if myid == main_node:  cout <<  ifil,ix, iy, iphi,pphi,tphi,mxshiftlocal
@@ -22154,7 +22162,7 @@ if (cim.size() < 2 || c0.size() < 2) {
 						//#mphi = iphi*delta
 						for (int im = 0; im < xshiftlocal.size(); ++im) mxshiftlocal[im] = xshiftlocal[im];
 						for (int im = 0; im < yshiftlocal.size(); ++im) myshiftlocal[im] = yshiftlocal[im];
-						for (int im = 0; im < philocal   .size(); ++im) mphilocal   [im] = philocal   [im]*delta;
+						for (int im = 0; im < philocal   .size(); ++im) mphilocal   [im] = philocal   [im];
 						//#msx = six
 						//#msy = siy
 						//#if myid == main_node:  cout <<  ifil,ix, iy, iphi,mxm,mxshiftlocal
@@ -22185,7 +22193,7 @@ if (cim.size() < 2 || c0.size() < 2) {
 		//#cout << "  PARAMETERS FOR IM ",im,pphi, 90.0, mpsi, psx, psy
 		float epsi;
 		if (FindPsi) {
-			int iphi = int(pphi/delta + 0.5) % nphi;
+			int iphi = modulo( int(pphi/delta + 0.5), nphi );
 			//#cout <<  " ref number and current parameters reduced to 2D  ",iphi,0.0, psx, psy
 			//#  I should only care what the previous residual angle was
 			Dict params = Util::get_transform_params(data[im], "xform.projection", "spider");
@@ -22221,7 +22229,7 @@ if (cim.size() < 2 || c0.size() < 2) {
 			float qn = -1.020;
 			float bestang;
 			for (int ips = -ipr; ips < ipr+1; ++ips) {
-				int tot = (ips + incpsi + maxrin) % maxrin;
+				int tot = modulo(ips + incpsi + maxrin, maxrin);
 				float tval = temp->get_value_at(tot);
 				//#cout <<  ips,incpsi,tot,tval
 				if (tval > qn) {
@@ -22240,8 +22248,7 @@ if (cim.size() < 2 || c0.size() < 2) {
 			objectsToDelete.push_back(boost::shared_ptr<EMData>(fdata[im]));
 			//#cout <<  " New composed 3D  ",mpsi,bestang, nnsx, nnsy
 
-			epsi = (bestang+mpsi);
-			while (epsi >= 360) epsi -= 360;
+			epsi = modulo(bestang+mpsi, 360.0f);
 			psx = nnsx; psy = nnsy;
 			//#cout <<  " New composed 3D  ",pphi,90.0,epsi, psx, psy
 			//#exit()
