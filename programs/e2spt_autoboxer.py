@@ -44,7 +44,7 @@ import sys
 import numpy
 
 import math	 
-
+from operator import itemgetter
 	 
 def main():
 	
@@ -63,7 +63,7 @@ def main():
 	
 	parser.add_argument("--pruneccc", action='store_true', help="""Pruned based on ccc mean and sigma.""",default=False)
 	parser.add_argument("--invert", action='store_true', help="""Multiply tomogram subsections by -1 to invert the contrast BEFORE looking for particles.""",default=False)
-	parser.add_argument("--prunerepeated", action='store_true', help="""Prune potential particles that are too close to eachother and thus are likely repeated hits.""",default=False)
+	#parser.add_argument("--prunerepeated", action='store_true', help="""Prune potential particles that are too close to eachother and thus are likely repeated hits.""",default=False)
 	parser.add_argument("--pruneprj", action='store_true', help="""Generate a projection along the z-axis of potential particles, and compare to a projection of the template.""",default=False)
 	parser.add_argument("--keep", type=float, help="""Percentage of particles, expressed as a fraction, to keep right before writing the coordinates file and output stack.""",default=0.0)
 	parser.add_argument("--keepn", type=int, help="""Total number of particles to keep right before writing the coordinates file and output stack.
@@ -679,7 +679,7 @@ def main():
 								
 							coordset.add(coords)
 							coeffset.add(newcoefftuple)
-							data.append( [newcoeff,coords] )
+							data.append( (newcoeff,coords[0],coords[1],coords[2]) )
 							#print "I have appended a new particle!", [newcoeff,coords]
 							count+=1
 						asdfg+=1
@@ -724,6 +724,8 @@ def main():
 	#	print 'box', boxes[m]
 	#	print '\t center', centers[m]
 	
+	data=set(data)
+	data=list(data)
 	data.sort()
 	data.reverse()
 	
@@ -790,11 +792,11 @@ def main():
 		print "The sum of bottom and top coeffs should equal the len of data", len(data), len(topcoeffs) + len(bottomcoeffs)
 		
 		print "\n\n\n\nThe mean and sigma of the datas CCC", coeffsmean, coeffssigma
-		print "\n\n\n\nWhereas the max and the min of the data's ccc are CCC", max(coeffs), min(coeffs)
+		print "\n\n\n\nWhereas the max and the min of the data's ccc are CCC", numpy.max(coeffs), numpy.min(coeffs)
 		print "\n\n\n\n"
 		lowerbound = coeffsmean
 		#upperbound = coeffsmean + coeffssigma * 1.0
-		upperbound = max(coeffs)
+		upperbound = numpy.max(coeffs)
 		#print "Therefore, one sigma away, the lower and upper bounds are", lowerbound, upperbound
 	
 		removed_count=0
@@ -838,10 +840,23 @@ def main():
 	
 	if options.pruneprj:
 		print "I will do projection based pruning"
-		bx = options.outputboxsize
-		r=Region(-bx/2,-bx/2,-bx/2,bx,bx,bx)
+		bxf = options.outputboxsize
 		tempcrop = transtemplate.copy()
+	
+		bxi=tempcrop['nx']
+		byi=tempcrop['ny']
+		bzi=tempcrop['nz']
+		xct=bxi/2
+		yct=byi/2
+		zct=bzi/2
+	
+		r=Region( (2*xct - bxf)/2, (2*yct - bxf)/2, (2*zct - bxf)/2, bxf,bxf,bxf)	
+
 		tempcrop.clip_inplace(r)
+		print "THe copy if the template has this mean and max and size", tempcrop['mean'], tempcrop['maximum'], tempcrop['nx']
+
+		tempcrop.write_image(options.path + '/' + 'tempcrop.hdf',0)
+		
 		t = Transform({'type':'eman','az':0,'alt':0,'phi':0})	
 		tprj = tempcrop.project("standard",t)
 		tprj.set_attr('xform.projection',t)
@@ -851,59 +866,381 @@ def main():
 		
 		prjccfs = []
 		newdata=[]
+		kkk=0
+		
+		tside = Transform({'type':'eman','az':0,'alt':-90,'phi':0})
 		for d in data:
 			#print "d in data is", d
 			#print "d[1] is ", d[1]
-			x=d[1][0]
-			y=d[1][1]
-			z=d[1][2]
+			x=d[1]
+			y=d[2]
+			z=d[3]
 			#print "The actual coordinates used for extraction are", x, y, z
 			r = Region((2*x- options.outputboxsize)/2,(2*y-options.outputboxsize)/2, (2*z-options.outputboxsize)/2, options.outputboxsize, options.outputboxsize, options.outputboxsize)
 			e = EMData()
 			e.read_image(options.tomogram,0,False,r)
+			
+			print "dimensions of read e are", e['nx'],e['ny'],e['nz']
+			eb = e['nx']
+			mask=EMData(eb,eb,eb)
+			mask.to_one()
+			mask.process_inplace('mask.sharp',{'outer_radius':-2})
+			e.process_inplace('normalize.mask',{'mask':mask})
+			#e.process_inplace('mask.sharp',{'outer_radius':-2})
+			
+			e.mult(mask)
+			
+			print "I have masked e, its mean, meannonzero, min and max are", e['mean'], e['mean_nonzero'],e['minimum'],e['maximum']
 			#e.process_inplace('normalize.edgemean')
 			pprj=e.project("standard",t)
+			
+			#if kkk==0:
+			#	display(pprj)
+			
+			mask2d=EMData(eb,eb)
+			mask2d.to_one()
+			mask2d.process_inplace('mask.sharp',{'outer_radius':-2})
+			pprj.process_inplace('normalize.mask',{'mask':mask2d})
+			
+			#pprj.process_inpace('normalize')
+			#pprj.process_inplace('mask.sharp',{'outer_radius':-2})
+			pprj.mult(mask2d)
+			
+			#if kkk==0:
+			#	display(pprj)
+			pprj.process_inplace('mask.sharp',{'outer_radius':-2})
+			
+			#if kkk==0:
+			#	display(pprj)
+				
+			print "I have projected, masked, normalized and remasked e, whose mean, meannonzero, min, max are", pprj['mean'], pprj['mean_nonzero'],pprj['minimum'], pprj['maximum']
+			pprj['apix_x'] = e['apix_x']
+			pprj['apix_y'] = e['apix_x']
+			pprj.write_image(options.path + '/' + 'pprj.hdf',kkk)
+			
+		
 			#pprj.process_inplace('normalize.edgemean')
 			
 			print "The template prj has a size of", tprj['nx'],tprj['ny']
 			print "The particle prj has a size of", pprj['nx'],pprj['ny']
 			ccf = tprj.calc_ccf(pprj)
 			ccf.process_inplace("xform.phaseorigin.tocorner") 
-			#ccf.process_inplace('normalize')
+			ccf.process_inplace('normalize')
 			
 			locmax = ccf.calc_max_location()
 									
 			locmaxX = locmax[0]
 			locmaxY = locmax[1]
 			
-			transx = -bx/2 + locmaxX
-			transy = -bx/2 + locmaxY
+			#print "\nThe peak is at", locmaxX, locmaxY
+			
+			transx = bxf/2 - locmaxX
+			transy = bxf/2 - locmaxY
+			
+			#print "\nAnd the proposed translations are", transx,transy
 			
 			x=x+transx
 			y=y+transy
 			
-			newcoords=(x,y,z)
+			
+			'''
+			Generate side projections to center Z
+			'''
+			pprjside=e.project('standard',tside)
+			pprjside.process_inplace('normalize.mask',{'mask':mask2d})
+			pprjside.mult(mask2d)
+			pprjside.process_inplace('mask.sharp',{'outer_radius':-2})
+			
+			pprjside['apix_x'] = e['apix_x']
+			pprjside['apix_y'] = e['apix_x']
+			pprjside.write_image(options.path + '/' + 'pprjside.hdf',kkk)
+			
+			ccfside = tprj.calc_ccf(pprjside)
+			ccfside.process_inplace("xform.phaseorigin.tocorner") 
+			ccfside.process_inplace('normalize')
+			
+			locmaxside = ccfside.calc_max_location()
+									
+			locmaxXside = locmaxside[0]
+			locmaxZside = locmaxside[1]
+			
+			transz = bxf/2 - locmaxZside
+			print "Transz is", transz
+			z=z-transz
+			
+			
+			
+			#newcoords=(x,y,z)
 			newccf = ccf['maximum']
-			print "The ccf for this projection is", newccf
-			print "And the proposed translations are", x,y
+			print "\nThe ccf for this projection is", newccf
+			print "\nTherefore, the new coordinates are", x,y
 			
 			prjccfs.append(newccf)
 			
 			#coordset.add(coords)
 			#coeffset.add(newcoefftuple)
-			newdata.append( [newccf,newcoords] )
-		
+			newdata.append( [newccf,x,y,z] )
+			
+			r = Region((2*x- options.outputboxsize)/2,(2*y-options.outputboxsize)/2, (2*z-options.outputboxsize)/2, options.outputboxsize, options.outputboxsize, options.outputboxsize)
+			e = EMData()
+			e.read_image(options.tomogram,0,False,r)
+			
+			eb = e['nx']
+			mask=EMData(eb,eb,eb)
+			mask.to_one()
+			mask.process_inplace('mask.sharp',{'outer_radius':-2})
+			e.process_inplace('normalize.mask',{'mask':mask})
+			e.mult(mask)
+			
+			pprj=e.project("standard",t)
+			pprj['apix_x'] = e['apix_x']
+			pprj['apix_y'] = e['apix_x']
+			pprj.write_image(options.path + '/' + 'pprj_corrected.hdf',kkk)
+			
+			
+			pprjside=e.project("standard",tside)
+			pprjside['apix_x'] = e['apix_x']
+			pprjside['apix_y'] = e['apix_x']
+			pprjside.write_image(options.path + '/' + 'pprj_correctedside.hdf',kkk)
+			
+			
+			kkk+=1
 		newdata.sort()
+		
+		print "\n\n\nsorted newdata are", newdata
 		newdata.reverse()
+		print "\n\n\nreversed", newdata 
 		
-		prjccfs_mean = numpy.mean(prjccfs)
-		prjccfs_sigma = numpy.std(prjccfs)
+		mmm=0
+		ppp=0
+		#prjs=[]
+		#means=[]
+		#sigmas=[]
+		maxs2d=[]
+		#mins2d=[]
 		
-		print "mean and sigma of prjccfs is", prjccfs_mean , prjccfs_sigma
+		newestdata = []
 		for d in newdata:
-			if d[0] < prjccfs_mean + prjccfs_sigma:
-				newdata.remove(d)
-		data = newdata
+			x=d[1]
+			y=d[2]
+			z=d[3]
+			r = Region((2*x- options.outputboxsize)/2,(2*y-options.outputboxsize)/2, (2*z-options.outputboxsize)/2, options.outputboxsize, options.outputboxsize, options.outputboxsize)
+			e = EMData()
+			e.read_image(options.tomogram,0,False,r)
+			
+			eb = e['nx']
+			mask=EMData(eb,eb,eb)
+			mask.to_one()
+			mask.process_inplace('mask.sharp',{'outer_radius':-2})
+			e.process_inplace('normalize.mask',{'mask':mask})
+			e.mult(mask)
+			
+			pprj=e.project("standard",t)
+			pprj['apix_x'] = e['apix_x']
+			pprj['apix_y'] = e['apix_x']
+			pprj.write_image(options.path + '/' + 'pprj_corrected_sorted.hdf',mmm)
+			
+			pmx=pprj.process('xform.mirror',{'axis':'x'})
+			pmy=pprj.process('xform.mirror',{'axis':'y'})
+			
+			ccfpmx=pprj.calc_ccf(pmx)
+			ccfpmy=pprj.calc_ccf(pmy)
+			
+			ccfpmxC=ccfpmx.process('xform.phaseorigin.tocorner')
+			ccfpmyC=ccfpmy.process('xform.phaseorigin.tocorner')
+			
+			maxccfpmxC=ccfpmxC.calc_max_location()
+			maxccfpmyC=ccfpmyC.calc_max_location()
+			
+			xt=(eb/2.0 - maxccfpmxC[0])/2.0
+			yt=(eb/2.0 - maxccfpmyC[1])/2.0
+
+			pfix=pprj.copy()
+			pfix.translate( xt, yt, 0)
+			
+			newx=x+xt
+			newy=y+yt
+			
+			'''
+			Generate side projections to center Z
+			'''
+			pprjside=e.project("standard",tside)
+			pprjside['apix_x'] = e['apix_x']
+			pprjside['apix_y'] = e['apix_x']
+			pprjside.write_image(options.path + '/' + 'pprj_corrected_sorted_side.hdf',mmm)
+			
+			pmxside=pprjside.process('xform.mirror',{'axis':'x'})
+			pmzside=pprjside.process('xform.mirror',{'axis':'y'})
+			
+			ccfpmxside=pprjside.calc_ccf(pmxside)
+			ccfpmzside=pprjside.calc_ccf(pmzside)
+			
+			ccfpmxCside=ccfpmxside.process('xform.phaseorigin.tocorner')
+			ccfpmzCside=ccfpmzside.process('xform.phaseorigin.tocorner')
+			
+			maxccfpmxCside=ccfpmxCside.calc_max_location()
+			maxccfpmzCside=ccfpmzCside.calc_max_location()
+			
+			#xtside=(eb/2.0 - maxccfpmxCside[0])/2.0
+			ztside=(eb/2.0 - maxccfpmzCside[1])/2.0
+			#print "zt side is", ztside
+			pfixside=pprjside.copy()
+			pfixside.translate( 0, 0, ztside)
+			
+			#newx=x+xt
+			newz=z-ztside
+			
+			if math.fabs(xt) <= eb/8.0 and math.fabs(yt) <= eb/8.0 :
+				#newestcoords=(newx,newy,newz)
+				
+				newestccf = ccfpmy['maximum']
+				if ccfpmx['maximum'] > ccfpmy['maximum']:
+					newestccf = ccfpmx['maximum']
+				
+				#print "\n$$$$$$$$$$$$$$$$\nAUTOCORRELATION PARTICLE WRITTEN!\n"
+			
+				#prjccfs.append(newccf)
+			
+				#coordset.add(coords)
+				#coeffset.add(newcoefftuple)
+				#newestdata.append( [newestccf,newestcoords] )
+				
+				r = Region((2*newx- options.outputboxsize)/2,(2*newy-options.outputboxsize)/2, (2*newz-options.outputboxsize)/2, options.outputboxsize, options.outputboxsize, options.outputboxsize)
+				e = EMData()
+				e.read_image(options.tomogram,0,False,r)
+			
+				eb = e['nx']
+				mask=EMData(eb,eb,eb)
+				mask.to_one()
+				mask.process_inplace('mask.sharp',{'outer_radius':-2})
+				e.process_inplace('normalize.mask',{'mask':mask})
+				e.mult(mask)
+			
+				pprj=e.project("standard",t)
+				pprj['apix_x'] = e['apix_x']
+				pprj['apix_y'] = e['apix_x']
+				pprj.write_image(options.path + '/' + 'pprj_corrected_sorted_autocorrelated.hdf',ppp)	
+								
+				mean=pprj['mean']
+				#means.append(mean)
+			
+				sigma=pprj['sigma']
+				#sigmas.append(sigma)
+			
+				max=pprj['maximum']
+				maxs2d.append(max)
+			
+				min=pprj['minimum']
+				#mins2d.append(min)
+						
+				newestdata.append([newestccf,newx,newy,newz,ppp,max,min,sigma,mean,pprj])	
+				ppp+=1
+			else:
+				#print "\nParticle eliminated because translation from AUTOCORRELATION were too big!\n"
+				pass
+			mmm+=1
+			#if d[0] < prjccfs_mean - prjccfs_sigma:
+			#	newdata.remove(d)
+			#	print "I have removed a particle based new PRJ mask"
+	
+	
+		'''
+		MAX based prunning, intended to further get rid of golds
+		'''
+		MAXSmean = numpy.mean(maxs2d,dtype=numpy.float64)
+		MAXSsigma = numpy.std(maxs2d,dtype=numpy.float64)
+
+		print "The mean of MAXS", MAXSmean
+		print "The sgima of MAXS", MAXSsigma
+		print "\n"
+		
+		maxs_thresh = MAXSmean + 2*MAXSsigma
+		print "Because MAXSmean is %f and MAXSsigma is %f then maxs_thresh = MAXSmean + 2*MAXSsigma is %f" %(MAXSmean, MAXSsigma, maxs_thresh)
+		
+		for d in newestdata:
+			#print "Len d is", len(d)
+			if len(d) < 10:
+				print "Aberrant len detected! d is", d
+				
+				sys.exit()
+			if d[-5] > maxs_thresh:
+				#print "A particle has been removed because its max %f is larger maxs_thresh %f based on PRJ" %(d[-5],maxs_thresh)
+				newestdata.remove(d)
+	
+		
+		'''
+		MIN based prunning (not clear so far that min info can be used to prune in addition to max prunning)
+		'''
+		
+		newmins=[]
+		for d in newestdata:
+			newmins.append(d[-4])
+			
+		MINSmean = numpy.mean(newmins,dtype=numpy.float64)
+		MINSsigma = numpy.std(newmins,dtype=numpy.float64)
+		
+		print "The mean of MINS", MINSmean
+		print "The sgima of MINS", MINSsigma
+		print "\n"
+	
+	
+		'''
+		SIGMA based prunning; noise has a smaller std than noise + data; and gold + data has a much larger std
+		'''
+		
+		newsigmas=[]
+		for d in newestdata:
+			newsigmas.append(d[-3])
+			
+		SIGMASmean = numpy.mean(newsigmas,dtype=numpy.float64)
+		SIGMASsigma = numpy.std(newsigmas,dtype=numpy.float64)
+		
+		print "The mean of SIGMAS", SIGMASmean
+		print "The sgima of SIGMAS", SIGMASsigma
+		print "\n"
+		
+		sigmas_thresh_upper = SIGMASmean + SIGMASsigma
+		sigmas_thresh_lower = SIGMASmean - SIGMASsigma
+		print "Because SIGMASmean is %f and SIGMASsigma is %f then sgimas_thresh_upper and lower are %f, %f" %(SIGMASmean, SIGMASsigma, sigmas_thresh_upper, sigmas_thresh_lower)
+	
+		for d in newestdata:
+			if d[-3] > sigmas_thresh_upper or d[-3] < sigmas_thresh_lower:
+				#print "A particle has been removed because its sgima is larger or smaller than mean_thresh based on PRJ"
+				newestdata.remove(d)
+		
+		
+		'''
+		MEAN based prunning; noise has a mean closer to zero than noise + data
+		'''
+		
+		newmeans=[]
+		for d in newestdata:
+			newmeans.append(d[-2])
+		
+		MEANSmean = numpy.mean(newmeans,dtype=numpy.float64)
+		MEANSsigma = numpy.std(newmeans,dtype=numpy.float64)
+
+		print "\nThe mean of MEANS is", MEANSmean
+		print "The sigma of MEANS is", MEANSsigma
+		
+		means_thresh_lower = MEANSmean - MEANSsigma
+		means_thresh_upper = MEANSmean + MEANSsigma
+
+		print "Because MEANSmean is %f and MEANSsigma is %f then means_thresh_lower = MEANSmean - MEANSsigma is %f, and means_thresh_upper = MEANSmean - MEANSsigma is %f " %(MEANSmean, MEANSsigma, means_thresh_lower, means_thresh_upper)
+
+		for d in newestdata:
+			if d[-2] > means_thresh_upper or d[-2] < means_thresh_lower:
+				#print "A particle has been removed because its mean is larger or smaller than mean_thresh_upper or mean_thresh_lower based on PRJ"
+				newestdata.remove(d)
+			
+		finaldata = []
+		nnn=0
+		for d in newestdata:
+			finaldata.append([ d[0],d[1],d[1],d[1] ])
+			fpprj=d[-1]	
+			fpprj.write_image(options.path + '/' + 'pprj_corrected_sorted_pruned.hdf',nnn)
+			nnn+=1	
+		data = finaldata
 			
 
 	'''
@@ -919,57 +1256,14 @@ def main():
 		#print "The sorted subset of data is", data
 	
 	
-	if options.prunerepeated:
-		print "I will now see if there are repeated elements"
-		elementstoremove = []
-		for d in range(len(data)):
-			dvector = numpy.array( [ data[d][1][0],data[d][1][1],data[d][1][2] ] )
-			dcoeff = data[d][0]
-			#print"This is the d vector and its coeff", dvector, dcoeff
-			for e in range(d+1,len(data)):
-				evector = numpy.array( [ data[e][1][0],data[e][1][1],data[e][1][2] ] )
-				ecoeff = data[e][0]
-				#if options.verbose:
-					#print ''
-					#print "The elements to compare are", dvector,evector
-					#print "Their coeffs are", dcoeff, ecoeff
-									
-				angle = numpy.degrees( numpy.arccos( numpy.dot(dvector,evector) / ( numpy.dot(evector,evector) * numpy.dot(dvector,dvector) ) ))
-				rmsd = numpy.linalg.norm(dvector - evector)
-				#print "Their rmsd is", rmsd
-				
-				if rmsd < ptclradius*2.0:
-					#print "\n\n\nPPPPPPPP\n The particle is too close to another one or was already picked!!! %s, %s \nPPPPPPPP\n\n\n" %(elementvector,newvector)
-					#pp = 1
-					#print "And PP is ", pp
-					#if rmsd < ptclradius:
-						#print "In fact, they seem to overlap at least in half of their volume; these are their coordinates", elementvector, newvector
-						#print "And PP is ", pp
-						#if rmsd == 0:
-						#	print ''
-					
-					#print "which is lower than ptclradius*2, see", ptclradius*2	
-					#print "Actually; the coordinates for their center are identical, and therefore this is a repeated particle", elementvector, newvector
-					#print "And PP is ", pp
-					if dcoeff > ecoeff:
-						if data[e] not in elementstoremove:
-							#print "since evector has the lowest coeff, it will be added to elementstoremove", data[e]
-							elementstoremove.append(data[e])
-					elif ecoeff > dcoeff:
-						if data[d] not in elementstoremove:
-							#print "since dvector has the lowest coeff, it will be added to elementstoremove", data[d]
-							elementstoremove.append(data[d])
+	#if options.prunerepeated:
+	print "I will now see if there are repeated elements"
+	data=rmsdprune(data,options)
+	print "Data after FIRST rmsd prune has these many elements", len(data)
+	#print "And each element has these many subelements", len(data[0])
+	data=sorted(data, key=itemgetter(1,2,3))
 	
-		#print "\nThese are the elements to remove", elementstoremove
-		#print "\nFrom this data", data			
-		#print "\n"
-		for ele in elementstoremove:
-			if ele in data:
-				#print "I will remove this element", ele
-				data.remove(ele)
-				#print "Therefore data now is", data
-		print "\n\nEEEEEEE\nBut I have removed these many REPEATED elements%d\nEEEEEEEE\n\n" %( len(elementstoremove))							
-	
+	data=rmsdprune(data,options)
 	
 	if options.keep and not options.keepn:
 		print "I will keep these many particles based on --keep", options.keep 
@@ -983,13 +1277,35 @@ def main():
 	if options.verbose:
 		print "The program has finished scanning the tomogram for subvolumes"
 		
-			
+	
+	
+	
+	
+	
+	coords=[]	
 	for i in data:
-		line = str(i[1][0]) + ' ' + str(i[1][1]) + ' ' + str(i[1][2]) + '\n'
+		x=i[1]
+		y=i[2]
+		z=i[3]
+		coords.append( (x,y,z) )
+	
+	coords=set(coords)
+	coords=list(coords)
+	coords=sorted(coords, key=itemgetter(0,1,2))
+	
+	print "The sorted coords are",
+	for c in coords:
+		print c
+	
+	for c in coords:
+		x=c[0]
+		y=c[1]
+		z=c[2]
+		line = str(x) + ' ' + str(y) + ' ' + str(z) + '\n'
 		if options.shrink > 1:
-			line = str(i[1][0] * options.shrink) + ' ' + str(i[1][1] * options.shrink) + ' ' + str(i[1][2] * options.shrink) + '\n'
+			line = str(x * options.shrink) + ' ' + str(y * options.shrink) + ' ' + str(z * options.shrink) + '\n'
 		if options.cshrink > 1:
-			line = str(i[1][0] * options.cshrink) + ' ' + str(i[1][1] * options.cshrink) + ' ' + str(i[1][2] * options.cshrink) + '\n'	
+			line = str(x * options.cshrink) + ' ' + str(y * options.cshrink) + ' ' + str(z * options.cshrink) + '\n'	
 		#if options.verbose > 3:
 		#	print ''
 			#print "I have found a particle at these coordinates %s, and with this coefficient %f" %( line, i[0] )
@@ -1007,7 +1323,63 @@ def main():
 		print "I have written the coordinates to the following file", coordsname 
 
 	return()
-	
+
+
+
+
+def rmsdprune(data,options):		
+	elementstoremove = []
+	for d in range(len(data)):
+		dvector = numpy.array( [ data[d][1],data[d][2],data[d][3] ] )
+		dcoeff = data[d][0]
+		#print"This is the d vector and its coeff", dvector, dcoeff
+		for e in range(d+1,len(data)):
+			evector = numpy.array( [ data[e][1],data[e][2],data[e][3] ] )
+			ecoeff = data[e][0]
+			#if options.verbose:
+				#print ''
+				#print "The elements to compare are", dvector,evector
+				#print "Their coeffs are", dcoeff, ecoeff
+								
+			angle = numpy.degrees( numpy.arccos( numpy.dot(dvector,evector) / ( numpy.dot(evector,evector) * numpy.dot(dvector,dvector) ) ))
+			rmsd = numpy.linalg.norm(dvector - evector)
+			#print "Their rmsd is", rmsd
+			
+			if rmsd < options.ptclradius*2.0:
+				#print "\nPPPPPPPP\n The particle is too close to another one or was already picked!!! evec=%s, dvec=%s,rmsd=%f \nPPPPPPPP\n" %(evector,dvector,rmsd)
+				#pp = 1
+				#print "And PP is ", pp
+				#if rmsd < ptclradius:
+					#print "In fact, they seem to overlap at least in half of their volume; these are their coordinates", elementvector, newvector
+					#print "And PP is ", pp
+					#if rmsd == 0:
+					#	print ''
+				
+				#print "which is lower than ptclradius*2, see", ptclradius*2	
+				#print "Actually; the coordinates for their center are identical, and therefore this is a repeated particle", elementvector, newvector
+				#print "And PP is ", pp
+				if dcoeff > ecoeff:
+					if data[e] not in elementstoremove:
+						#print "since evector has the lowest coeff, it will be added to elementstoremove", data[e]
+						elementstoremove.append(data[e])
+				elif ecoeff > dcoeff:
+					if data[d] not in elementstoremove:
+						#print "since dvector has the lowest coeff, it will be added to elementstoremove", data[d]
+						elementstoremove.append(data[d])
+
+	#print "\nThese are the elements to remove", elementstoremove
+	#print "\nFrom this data", data			
+	#print "\n"
+	for ele in elementstoremove:
+		if ele in data:
+			print "I will remove this element", ele
+			data.remove(ele)
+			#print "Therefore data now is", data
+	print "\n\nEEEEEEE\nBut I have removed these many REPEATED elements%d\nEEEEEEEE\n\n" %( len(elementstoremove))							
+	return(data)
+
+
+
 
 def meancalc(options,stack,normalize=False):
 	print "Stack RECEIVED in meancalc is", stack
@@ -1021,8 +1393,13 @@ def meancalc(options,stack,normalize=False):
 		a=EMData(stack,i,True)
 		if normalize:
 			a=EMData(stack,i)
-			a.process_inplace('normalize.edgemean')		
-		
+			bx=a['nx']
+			mask = EMData(bx,bx,bx)
+			mask.to_one()
+			mask.process_inplace('mask.sharp',{'outer_radius':-2})
+			a.process_inplace('normalize.mask',{'mask':mask})		
+			a.mult(mask) #NEW
+			
 		meana=a['mean']
 		means.append(meana)
 		
@@ -1048,9 +1425,9 @@ def pruner(data,tag,mean_maxs,sigma_maxs,mean_mins,sigma_mins):
 	for d in data:
 		#print "d in data is", d
 		#print "d[1] is ", d[1]
-		x=d[1][0]
-		y=d[1][1]
-		z=d[1][2]
+		x=d[1]
+		y=d[2]
+		z=d[3]
 		#print "The actual coordinates used for extraction are", x, y, z
 		r = Region((2*x- options.outputboxsize)/2,(2*y-options.outputboxsize)/2, (2*z-options.outputboxsize)/2, options.outputboxsize, options.outputboxsize, options.outputboxsize)
 		e = EMData()
@@ -1200,8 +1577,8 @@ def scanposition(options,template,outputboxsize,yshort,xi,yi,zi,xc,yc,zc,sbn,x,y
 		#edgeminval = ptclmaskrad
 		#edgemaxval = expandedtemplateboxsize - ptclmaskrad
 		
-		edgeminval = 0 #+ int(options.ptclradius/2)
-		edgemaxval = expandedtemplateboxsize - int(options.ptclradius/2) + 5
+		edgeminval = int(options.ptclradius) - 1
+		edgemaxval = expandedtemplateboxsize - int(options.ptclradius/2) + 1
 		print "Edge min and max vals are", edgeminval, edgemaxval
 		#print "\n\n\nThe number of particles to look for in a subregion is %d\n\n\n" %(nptcls)
 		for p in range(nptcls):
@@ -1224,7 +1601,7 @@ def scanposition(options,template,outputboxsize,yshort,xi,yi,zi,xc,yc,zc,sbn,x,y
 			if locmaxX < edgeminval or locmaxX > edgemaxval or locmaxY < edgeminval or locmaxY > edgemaxval or locmaxZ < edgeminval or locmaxZ > edgemaxval:
 				#print "Either the max was less than 1; lets see", max
 				#print "Or one of the coordinates of the maximum was too close to the edge", locmax
-				print "A particle has been skipped based on EDGE VALUES!"
+				#print "A particle has been skipped based on EDGE VALUES!"
 				pass			
 			else:
 				#print "THE max for a potential particle was found at", locmax
