@@ -21950,7 +21950,7 @@ inline int modulo(int a, int b)
 	}
 	return (a%b);
 }
-inline int modulo(float a, float b)
+inline float modulo(float a, float b)
 {
 	if (a < 0) {
 		a += ( (int)((-a)/b) + 1 ) * b;
