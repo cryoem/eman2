@@ -22150,7 +22150,7 @@ if (cim.size() < 2 || c0.size() < 2) {
 						//#mphi = iphi*delta
 						for (int im = 0; im < xshiftlocal.size(); ++im) mxshiftlocal[im] = xrshiftlocal[im];
 						for (int im = 0; im < yshiftlocal.size(); ++im) myshiftlocal[im] = yrshiftlocal[im];
-						for (int im = 0; im < phirlocal  .size(); ++im) mphilocal   [im] = phirlocal   [im];
+						for (int im = 0; im < phirlocal  .size(); ++im) mphilocal   [im] = modulo(180.0f-phirlocal[im], 360.0f);
 						//#msx = six
 						//#msy = siy
 						//#if myid == main_node:  cout <<  ifil,ix, iy, iphi,pphi,tphi,mxshiftlocal
@@ -22192,6 +22192,7 @@ if (cim.size() < 2 || c0.size() < 2) {
 		"""*/
 		//#cout << "  PARAMETERS FOR IM ",im,pphi, 90.0, mpsi, psx, psy
 		float epsi;
+		float bestang;
 		if (FindPsi) {
 			int iphi = modulo( int(pphi/delta + 0.5), nphi );
 			//#cout <<  " ref number and current parameters reduced to 2D  ",iphi,0.0, psx, psy
@@ -22227,7 +22228,6 @@ if (cim.size() < 2 || c0.size() < 2) {
 			int ipr = int(psi_max*maxrin/360.0 + 0.5);
 			int incpsi = (mpsi == 270) ? (maxrin/2) : (0);
 			float qn = -1.020;
-			float bestang;
 			for (int ips = -ipr; ips < ipr+1; ++ips) {
 				int tot = modulo(ips + incpsi + maxrin, maxrin);
 				float tval = temp->get_value_at(tot);
@@ -22238,12 +22238,11 @@ if (cim.size() < 2 || c0.size() < 2) {
 				}
 			}
 			//#cout << " best angle ",bestang
-			bestang = (bestang - (mpsi-90.0));
-			for (; bestang >= 360; bestang -= 360);
+			bestang = modulo(bestang - (mpsi-90.0f), 360.0f);
 			//#cout << " angle applied ",bestang
 			//#rot_shift2D(data[im],-bestang).write_image("rotated.hdf",im)
-			std::auto_ptr<EMData> rot_data_im( data[im]->rot_scale_trans2D_background(-bestang, 0, 0, 1) );
-			fdata[im] = (rot_data_im->is_complex()) ? (rot_data_im->do_ift()) : (rot_data_im->do_fft());
+			//std::auto_ptr<EMData> rot_data_im( data[im]->rot_scale_trans2D_background(-bestang, 0, 0, 1) );
+			//fdata[im] = (rot_data_im->is_complex()) ? (rot_data_im->do_ift()) : (rot_data_im->do_fft());
 
 			objectsToDelete.push_back(boost::shared_ptr<EMData>(fdata[im]));
 			//#cout <<  " New composed 3D  ",mpsi,bestang, nnsx, nnsy
@@ -22254,7 +22253,9 @@ if (cim.size() < 2 || c0.size() < 2) {
 			//#exit()
 		} else {
 			epsi = mpsi;
+			bestang = 0;
 		}
+		data[im]->set_attr("bestang",360.0f-bestang);
 		printf("  %7.2f  %7.2f  %7.2f  %7.2f  %7.2f\n", pphi, 90.0, epsi, psx, psy);
 		Dict t_params;
 		t_params["type"]  = "spider";
