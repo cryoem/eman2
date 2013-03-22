@@ -21954,11 +21954,12 @@ void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
 		printf("Not enough parameters (nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc)");
 		return;
 	}
+	float dpsi;
 	//float dp    = dp_dphi_rise_delta[0];
 	float dphi  = dp_dphi_rise_delta[1];
 	int   rise  = static_cast<int>(dp_dphi_rise_delta[2] + 0.2);
 	float delta = dp_dphi_rise_delta[3];
-	int   nphi     = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[0];
+	int  nphi      = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[0];
 	int  phiwobble = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[1];
 	int  range     = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[2];
 	int  ywobble   = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[3];
@@ -21990,6 +21991,9 @@ void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
 			}
 		}
 	}
+	vector<float> dxshiftlocal(ndata, 0);
+	vector<float> dyshiftlocal(ndata, 0);
+	vector<float> dphilocal(ndata, 0);
 
 	vector<float> xshiftlocal(ndata, 0);
 	vector<float> xrshiftlocal(ndata, 0);
@@ -22000,154 +22004,163 @@ void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
 	vector<float> philocal(ndata, 0);
 	vector<float> phirlocal(ndata, 0);
 	vector<float> mphilocal(ndata, 0);
-	float tmax = -1.0e23;
-	float mpsi;
-	for (int ix = 1; ix < nwx-1; ++ix) {                                         //#  X shift
-		//#cout << "im: ", len(ccfs), ix,time()-start_time
-		int six = ix - nwxc;
-		for (int iy = 1+ywobble; iy < nwy-ywobble-1; ++iy) {                     //#  Y shift
-			int siy = iy - nwyc;
-			yshiftlocal[0] = float(iy-nwyc);
-			yrshiftlocal[0] = float(iy-nwyc);
-			for (int iphi = 0; iphi < nphi; ++iphi) {                            //#  phi search
-				float qphi = iphi*delta;
-				philocal[0]  = qphi;
-				phirlocal[0] = fmod( 180.0f - qphi + ((int)(fabs((180.0f-qphi)/360.0f))+1)*360.0f , 360.0f );
-				//# we use the first segment as a reference, so there is no interpolation, just copy the correlation
-				//#  Select largest correlation within +/- range pixels from the location we explore
-				float mxm = -1.023;
-				float mxr;
-				for (int iux = max(1, ix - range); iux < min(nwx - 1, ix+range+1); ++iux) {    //#  X wobble
-					float qcf = ccfs[0][iphi]->get_value_at(iux,iy);
-					if (qcf > mxm) {
-						mxm = qcf;
-						xshiftlocal[0] = float(iux-nwxc);
-					}
-				}
-				if (! Dsym) {
-					mxr = -1.023;
-					for (int iux = max(1, ix - range); iux < min(nwx - 1, ix+range+1); ++iux) {     //# Xr wobble
-						float qcf = ccfr[0][iphi]->get_value_at(iux,iy);
-						if (qcf > mxr) {
-							mxr = qcf;
-							xrshiftlocal[0] = float(iux-nwxc);
+	float dirma = -1.0e23;
+	for (int idir = -1; idir < 2; idir += 2) {
+		float tmax = -1.0e23;
+		float mpsi;
+		for (int ix = 1; ix < nwx-1; ++ix) {                                         //#  X shift
+			//#cout << "im: ", len(ccfs), ix,time()-start_time
+			int six = ix - nwxc;
+			for (int iy = 1+ywobble; iy < nwy-ywobble-1; ++iy) {                     //#  Y shift
+				int siy = iy - nwyc;
+				yshiftlocal[0] = float(iy-nwyc);
+				yrshiftlocal[0] = float(iy-nwyc);
+				for (int iphi = 0; iphi < nphi; ++iphi) {                            //#  phi search
+					float qphi = iphi*delta;
+					philocal[0]  = qphi;
+					phirlocal[0] = fmod( 180.0f - qphi + ((int)(fabs((180.0f-qphi)/360.0f))+1)*360.0f , 360.0f );
+					//# we use the first segment as a reference, so there is no interpolation, just copy the correlation
+					//#  Select largest correlation within +/- range pixels from the location we explore
+					float mxm = -1.023;
+					float mxr;
+					for (int iux = max(1, ix - range); iux < min(nwx - 1, ix+range+1); ++iux) {    //#  X wobble
+						float qcf = ccfs[0][iphi]->get_value_at(iux,iy);
+						if (qcf > mxm) {
+							mxm = qcf;
+							xshiftlocal[0] = float(iux-nwxc);
 						}
 					}
-				}
-				for ( int im = 1; im < ndata; ++im) {                                    //#  predicted locations
-					//# dst is distance between segment 0 and current segment in pixels
-					vector<float> cim = data[im]->get_attr("ptcl_source_coord");
-					float dst = sqrt( (c0[0] - cim[0])*(c0[0] - cim[0]) + (c0[1] - cim[1])*(c0[1] - cim[1]));
-					//# predict for all remaining segments assuming number 0
-					qphi = (dst/rise)*dphi;
-					float pphi = fmod(philocal[0] + qphi + ((int)(abs(qphi/360.0f))+1)*360.0f , 360.0f);                          //#  predicted phi with full angular accuracy, not an integer  //#USED TO BE -
-					int pix = six; //# predicted x shift
-					int piy = siy; //#  predicted y shift
-					int xix = pix + nwxc;
-					int yiy = piy + nwyc;
-					//#  Local x search
-					int fix = int(xix);
-					float xdif = xix - fix;
-					float xrem = 1.0f - xdif;
-					int fiy = int(yiy);
-					float ydif = yiy - fiy;
-					float yrem = 1.0f - ydif;
-					float ciq = -1.023;
-					//# interpolate correlation at pphi
-					qphi = pphi/delta;
-					int ttphi = (int( qphi +  ((int)(abs(qphi/nphi))+1)*nphi+ 0.5))%nphi;
-					for (int lphi = -phiwobble; lphi < phiwobble+1; ++lphi) {                                               //#  phi wobble
-						int tphi = (ttphi+lphi+nphi)%nphi;
-						for (int iux = max(1, fix - range); iux < min(nwx - 1, fix+range+1); ++iux) {                       //#  X wobble
-							for (int iuy = max(1, fiy - ywobble); iuy < min(nwy - 1, fiy+ywobble+1); ++iuy) {               //#  Y wobble
-								float qcf = xrem*yrem*ccfs[im][tphi]->get_value_at(iux,iuy)
-											+ xdif*yrem*ccfs[im][tphi]->get_value_at(iux+1,iuy)
-											+ xrem*ydif*ccfs[im][tphi]->get_value_at(iux,iuy+1)
-											+ xdif*ydif*ccfs[im][tphi]->get_value_at(iux+1,iuy+1);
-								if (qcf > ciq) {
-									ciq = qcf;
-									xshiftlocal[im] = iux + xdif - nwxc;
-									yshiftlocal[im] = iuy + ydif - nwyc;
-									philocal[im]    = tphi * delta;
-								}
+					if (! Dsym) {
+						mxr = -1.023;
+						for (int iux = max(1, ix - range); iux < min(nwx - 1, ix+range+1); ++iux) {     //# Xr wobble
+							float qcf = ccfr[0][iphi]->get_value_at(iux,iy);
+							if (qcf > mxr) {
+								mxr = qcf;
+								xrshiftlocal[0] = float(iux-nwxc);
 							}
 						}
 					}
-					mxm += ciq;
-					//# now for rotated
-					if (! Dsym) {
-						//# Assume for now inter-segment distances are multiples of rise -- jia
-						qphi = (dst/rise)*dphi;
-						pphi = fmod(phirlocal[0] + qphi + ((int)(abs(qphi/360.0f))+1)*360.0f, 360.0f); //#  predicted phi for rotated 180 defs with full angular accuracy, not an integer
-						pix = six; //# predicted x shift
-						piy = siy; //#  predicted y shift
-						xix = pix + nwxc;
-						yiy = piy + nwyc;
-						fix = int(xix);
-						xdif = xix - fix;
-						xrem = 1.0f - xdif;
-						fiy = int(yiy);
-						ydif = yiy - fiy;
-						yrem = 1.0f - ydif;
-						ciq = -1.023;
+					for ( int im = 1; im < ndata; ++im) {                                                                             //#  predicted locations
+						//# dst is distance between segment 0 and current segment in pixels
+						vector<float> cim = data[im]->get_attr("ptcl_source_coord");
+						float dst = sqrt( (c0[0] - cim[0])*(c0[0] - cim[0]) + (c0[1] - cim[1])*(c0[1] - cim[1]));
+						//# predict for all remaining segments assuming number 0
+						qphi = idir*(dst/rise)*dphi;
+						float pphi = fmod(philocal[0] + qphi + ((int)(abs(qphi/360.0f))+1)*360.0f , 360.0f);                          //#  predicted phi with full angular accuracy, not an integer
+						int pix = six; //# predicted x shift
+						int piy = siy; //#  predicted y shift
+						int xix = pix + nwxc;
+						int yiy = piy + nwyc;
+						//#  Local x search
+						int fix = int(xix);
+						float xdif = xix - fix;
+						float xrem = 1.0f - xdif;
+						int fiy = int(yiy);
+						float ydif = yiy - fiy;
+						float yrem = 1.0f - ydif;
+						float ciq = -1.023;
 						//# interpolate correlation at pphi
-						for (int lphi = -phiwobble; lphi < phiwobble+1; ++lphi) {                                           //#  phi wobble
-							qphi = lphi*delta;
-							ttphi = fmod( pphi + qphi + (int(fabs(qphi/360.0f))+1)*360.0f , 360.0f);
-							qphi = fmod(540.0f-ttphi, 360.0f) / delta;
-							int tphi = (int( qphi + (int(fabs(qphi/nphi))+1)*nphi  + 0.5))%nphi;
-							for (int iux = max(1, fix - range); iux < min(nwx - 1, fix+range+1); ++iux) {                   //#  X wobble
-								for (int iuy = max(1, fiy - ywobble); iuy < min(nwy - 1, fiy+ywobble+1); ++iuy) {           //#  Y wobble
-									float qcf = xrem*yrem*ccfr[im][tphi]->get_value_at(iux,iuy)
-												+ xdif*yrem*ccfr[im][tphi]->get_value_at(iux+1,iuy)
-												+ xrem*ydif*ccfr[im][tphi]->get_value_at(iux,iuy+1)
-												+ xdif*ydif*ccfr[im][tphi]->get_value_at(iux+1,iuy+1);
+						qphi = pphi/delta;
+						int ttphi = (int( qphi +  ((int)(abs(qphi/nphi))+1)*nphi+ 0.5))%nphi;
+						for (int lphi = -phiwobble; lphi < phiwobble+1; ++lphi) {                                               //#  phi wobble
+							int tphi = (ttphi+lphi+nphi)%nphi;
+							for (int iux = max(1, fix - range); iux < min(nwx - 1, fix+range+1); ++iux) {                       //#  X wobble
+								for (int iuy = max(1, fiy - ywobble); iuy < min(nwy - 1, fiy+ywobble+1); ++iuy) {               //#  Y wobble
+									float qcf = xrem*yrem*ccfs[im][tphi]->get_value_at(iux,iuy)
+												+ xdif*yrem*ccfs[im][tphi]->get_value_at(iux+1,iuy)
+												+ xrem*ydif*ccfs[im][tphi]->get_value_at(iux,iuy+1)
+												+ xdif*ydif*ccfs[im][tphi]->get_value_at(iux+1,iuy+1);
 									if (qcf > ciq) {
 										ciq = qcf;
-										xrshiftlocal[im] = iux + xdif - nwxc;
-										yrshiftlocal[im] = iuy + ydif - nwyc;
-										phirlocal[im]    = ttphi;
+										xshiftlocal[im] = iux + xdif - nwxc;
+										yshiftlocal[im] = iuy + ydif - nwyc;
+										philocal[im]    = tphi * delta;
 									}
 								}
 							}
 						}
-						mxr += ciq;
+						mxm += ciq;
+						//# now for rotated
+						if (! Dsym) {
+							//# Assume for now inter-segment distances are multiples of rise -- jia
+							qphi = idir*(dst/rise)*dphi;
+							pphi = fmod(phirlocal[0] + qphi + ((int)(abs(qphi/360.0f))+1)*360.0f, 360.0f);                      //#  predicted phi for rotated 180 defs with full angular accuracy, not an integer
+							pix = six; //# predicted x shift
+							piy = siy; //#  predicted y shift
+							xix = pix + nwxc;
+							yiy = piy + nwyc;
+							fix = int(xix);
+							xdif = xix - fix;
+							xrem = 1.0f - xdif;
+							fiy = int(yiy);
+							ydif = yiy - fiy;
+							yrem = 1.0f - ydif;
+							ciq = -1.023;
+							//# interpolate correlation at pphi
+							for (int lphi = -phiwobble; lphi < phiwobble+1; ++lphi) {                                           //#  phi wobble
+								qphi = lphi*delta;
+								ttphi = fmod( pphi + qphi + (int(fabs(qphi/360.0f))+1)*360.0f , 360.0f);
+								qphi = fmod(540.0f-ttphi, 360.0f) / delta;
+								int tphi = (int( qphi + (int(fabs(qphi/nphi))+1)*nphi  + 0.5))%nphi;
+								for (int iux = max(1, fix - range); iux < min(nwx - 1, fix+range+1); ++iux) {                   //#  X wobble
+									for (int iuy = max(1, fiy - ywobble); iuy < min(nwy - 1, fiy+ywobble+1); ++iuy) {           //#  Y wobble
+										float qcf = xrem*yrem*ccfr[im][tphi]->get_value_at(iux,iuy)
+													+ xdif*yrem*ccfr[im][tphi]->get_value_at(iux+1,iuy)
+													+ xrem*ydif*ccfr[im][tphi]->get_value_at(iux,iuy+1)
+													+ xdif*ydif*ccfr[im][tphi]->get_value_at(iux+1,iuy+1);
+										if (qcf > ciq) {
+											ciq = qcf;
+											xrshiftlocal[im] = iux + xdif - nwxc;
+											yrshiftlocal[im] = iuy + ydif - nwyc;
+											phirlocal[im]    = ttphi;
+										}
+									}
+								}
+							}
+							mxr += ciq;
+						} else {
+							mxr = mxm-1.e5;
+						}
+					}
+					if ( mxr > mxm ) {
+						if (mxr > tmax) {
+							tmax = mxr;
+							mpsi = 270.0f;
+							for (int im = 0; im < ndata; ++im) mxshiftlocal[im] = xrshiftlocal[im];
+							for (int im = 0; im < ndata; ++im) myshiftlocal[im] = yrshiftlocal[im];
+							for (int im = 0; im < ndata; ++im) mphilocal[im]    = fmod(540.0f-phirlocal[im], 360.0f);
+						}
 					} else {
-						mxr = mxm-1.e5;
-					}
-				}
-				if ( mxr > mxm ) {
-					if (mxr > tmax) {
-						tmax = mxr;
-						mpsi = 270.0f;
-						for (unsigned int im = 0; im < xshiftlocal.size(); ++im) mxshiftlocal[im] = xrshiftlocal[im];
-						for (unsigned int im = 0; im < yshiftlocal.size(); ++im) myshiftlocal[im] = yrshiftlocal[im];
-						for (unsigned int im = 0; im < phirlocal.size(); ++im) mphilocal[im]      = fmod(540.0f-phirlocal[im], 360.0f);
-					}
-				} else {
-					if (mxm > tmax) {
-						tmax = mxm;
-						mpsi = 90.0f;
-						for (unsigned int im = 0; im < xshiftlocal.size(); ++im) mxshiftlocal[im] = xshiftlocal[im];
-						for (unsigned int im = 0; im < yshiftlocal.size(); ++im) myshiftlocal[im] = yshiftlocal[im];
-						for (unsigned int im = 0; im < philocal.size(); ++im)    mphilocal[im]    = philocal[im];
+						if (mxm > tmax) {
+							tmax = mxm;
+							mpsi = 90.0f;
+							for (int im = 0; im < ndata; ++im) mxshiftlocal[im] = xshiftlocal[im];
+							for (int im = 0; im < ndata; ++im) myshiftlocal[im] = yshiftlocal[im];
+							for (int im = 0; im < ndata; ++im) mphilocal[im]    = philocal[im];
+						}
 					}
 				}
 			}
 		}
+		if (tmax > dirma) {
+			dirma = tmax;
+			dpsi = mpsi;
+			for (int im = 0; im < ndata; ++im) dxshiftlocal[im] = mxshiftlocal[im];
+			for (int im = 0; im < ndata; ++im) dyshiftlocal[im] = myshiftlocal[im];
+			for (int im = 0; im < ndata; ++im) dphilocal[im]    = mphilocal[im];
+		}
 	}
 
 	for (int im = 0; im < ndata; ++im) {
-		float psx  = mxshiftlocal[im];
-		float psy  = myshiftlocal[im];
-		float pphi = mphilocal[im];
+		float psx  = dxshiftlocal[im];
+		float psy  = dyshiftlocal[im];
+		float pphi = dphilocal[im];
 		float epsi;
 		float bestang;
 		if (FindPsi) {
 			float qphi = pphi/delta;
 			int iphi = ( int(qphi + ((int)(abs(qphi/nphi))+1)*nphi + 0.5f))%nphi ;
 			//#cout <<  " ref number and current parameters reduced to 2D  ",iphi,0.0, psx, psy
-			//#  I should only care what the previous residual angle was
 			Dict params = Util::get_transform_params(data[im], "xform.projection", "spider");
 			float opsi3 = params["psi"];
 			float opx3 = -static_cast<float>(params["tx"]);
@@ -22169,7 +22182,7 @@ void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
 			std::auto_ptr<EMData> temp( Util::Crosrng_msg_s( cimage.get(), crefim[iphi], numr) );
 
 			int ipr = int(psi_max*maxrin/360.0f + 0.5f);
-			int incpsi = (mpsi == 270.0f) ? (maxrin/2) : (0);
+			int incpsi = (dpsi == 270.0f) ? (maxrin/2) : (0);
 			float qn = -1.020f;
 			for (int ips = -ipr; ips < ipr+1; ++ips) {
 				int tot = (ips + incpsi + maxrin)%maxrin;
@@ -22180,20 +22193,20 @@ void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
 				}
 			}
 			//#cout << " best angle ",bestang
-			bestang = fmod(bestang - (mpsi-90.0f) + 720.0f, 360.0f);
+			bestang = fmod(bestang - (dpsi-90.0f) + 720.0f, 360.0f);
 			//#cout << " angle applied ",bestang
 			//#rot_shift2D(data[im],-bestang).write_image("rotated.hdf",im)
 			//std::auto_ptr<EMData> rot_data_im( data[im]->rot_scale_trans2D_background(-bestang, 0, 0, 1) );
 			//fdata[im] = (rot_data_im->is_complex()) ? (rot_data_im->do_ift()) : (rot_data_im->do_fft());
 
-			//#cout <<  " New composed 3D  ",mpsi,bestang, nnsx, nnsy
+			//#cout <<  " New composed 3D  ",dpsi,bestang, nnsx, nnsy
 
-			epsi = fmod(bestang+mpsi, 360.0f);
+			epsi = fmod(bestang+dpsi, 360.0f);
 			psx = nnsx;
 			psy = nnsy;
 			//#cout <<  " New composed 3D  ",pphi,90.0,epsi, psx, psy
 		} else {
-			epsi = mpsi;
+			epsi = dpsi;
 			bestang = 0;
 		}
 		data[im]->set_attr("bestang",fmod(720.0f-bestang, 360.0f));
