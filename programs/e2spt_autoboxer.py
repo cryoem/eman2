@@ -1616,7 +1616,7 @@ def scanposition(options,template,outputboxsize,yshort,xi,yi,zi,xc,yc,zc,sbn,x,y
 	expandedtemplateboxsize = template['nx']
 	ptclmaskrad = outputboxsize/2
 	if options.ptclradius:
-		ptclmaskrad = options.ptclradius
+		ptclmaskrad = options.ptclradius -1
 	
 	aux=0
 	aux2=0
@@ -1713,8 +1713,8 @@ def scanposition(options,template,outputboxsize,yshort,xi,yi,zi,xc,yc,zc,sbn,x,y
 		#edgeminval = ptclmaskrad
 		#edgemaxval = expandedtemplateboxsize - ptclmaskrad
 		
-		edgeminval = int(options.ptclradius) - 1
-		edgemaxval = expandedtemplateboxsize - int(options.ptclradius/2) + 1
+		edgeminval = int(options.ptclradius) - 2
+		edgemaxval = expandedtemplateboxsize - int(options.ptclradius/2) + 2
 		#print "Edge min and max vals are", edgeminval, edgemaxval
 		#print "\n\n\nThe number of particles to look for in a subregion is %d\n\n\n" %(nptcls)
 		for p in range(nptcls):
