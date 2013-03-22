@@ -22210,7 +22210,7 @@ void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
 			bestang = 0;
 		}
 		data[im]->set_attr("bestang",fmod(720.0f-bestang, 360.0f));
-		printf("  %7.2f  %7.2f  %7.2f  %7.2f  %7.2f\n", pphi, 90.0, epsi, psx, psy);
+		//printf("  %7.2f  %7.2f  %7.2f  %7.2f  %7.2f\n", pphi, 90.0, epsi, psx, psy);
 		Dict t_params;
 		t_params["type"]  = "spider";
 		t_params["phi"]   = pphi;
