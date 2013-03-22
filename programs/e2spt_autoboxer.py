@@ -853,7 +853,7 @@ def main():
 		r=Region( (2*xct - bxf)/2, (2*yct - bxf)/2, (2*zct - bxf)/2, bxf,bxf,bxf)	
 
 		tempcrop.clip_inplace(r)
-		print "THe copy if the template has this mean and max and size", tempcrop['mean'], tempcrop['maximum'], tempcrop['nx']
+		#print "THe copy if the template has this mean and max and size", tempcrop['mean'], tempcrop['maximum'], tempcrop['nx']
 
 		tempcrop.write_image(options.path + '/' + 'tempcrop.hdf',0)
 		
@@ -880,7 +880,7 @@ def main():
 			e = EMData()
 			e.read_image(options.tomogram,0,False,r)
 			
-			print "dimensions of read e are", e['nx'],e['ny'],e['nz']
+			#print "dimensions of read e are", e['nx'],e['ny'],e['nz']
 			eb = e['nx']
 			mask=EMData(eb,eb,eb)
 			mask.to_one()
@@ -890,7 +890,7 @@ def main():
 			
 			e.mult(mask)
 			
-			print "I have masked e, its mean, meannonzero, min and max are", e['mean'], e['mean_nonzero'],e['minimum'],e['maximum']
+			#print "I have masked e, its mean, meannonzero, min and max are", e['mean'], e['mean_nonzero'],e['minimum'],e['maximum']
 			#e.process_inplace('normalize.edgemean')
 			pprj=e.project("standard",t)
 			
@@ -913,7 +913,7 @@ def main():
 			#if kkk==0:
 			#	display(pprj)
 				
-			print "I have projected, masked, normalized and remasked e, whose mean, meannonzero, min, max are", pprj['mean'], pprj['mean_nonzero'],pprj['minimum'], pprj['maximum']
+			#print "I have projected, masked, normalized and remasked e, whose mean, meannonzero, min, max are", pprj['mean'], pprj['mean_nonzero'],pprj['minimum'], pprj['maximum']
 			pprj['apix_x'] = e['apix_x']
 			pprj['apix_y'] = e['apix_x']
 			pprj.write_image(options.path + '/' + 'pprj.hdf',kkk)
@@ -921,8 +921,8 @@ def main():
 		
 			#pprj.process_inplace('normalize.edgemean')
 			
-			print "The template prj has a size of", tprj['nx'],tprj['ny']
-			print "The particle prj has a size of", pprj['nx'],pprj['ny']
+			#print "The template prj has a size of", tprj['nx'],tprj['ny']
+			#print "The particle prj has a size of", pprj['nx'],pprj['ny']
 			ccf = tprj.calc_ccf(pprj)
 			ccf.process_inplace("xform.phaseorigin.tocorner") 
 			ccf.process_inplace('normalize')
@@ -965,15 +965,15 @@ def main():
 			locmaxZside = locmaxside[1]
 			
 			transz = bxf/2 - locmaxZside
-			print "Transz is", transz
+			#print "Transz is", transz
 			z=z-transz
 			
 			
 			
 			#newcoords=(x,y,z)
 			newccf = ccf['maximum']
-			print "\nThe ccf for this projection is", newccf
-			print "\nTherefore, the new coordinates are", x,y
+			#print "\nThe ccf for this projection is", newccf
+			#print "\nTherefore, the new coordinates are", x,y
 			
 			prjccfs.append(newccf)
 			
@@ -1223,8 +1223,8 @@ def main():
 		print "\nThe mean of MEANS is", MEANSmean
 		print "The sigma of MEANS is", MEANSsigma
 		
-		means_thresh_lower = MEANSmean - MEANSsigma
-		means_thresh_upper = MEANSmean + MEANSsigma
+		means_thresh_lower = MEANSmean - 2*MEANSsigma
+		means_thresh_upper = MEANSmean + 2*MEANSsigma
 
 		print "Because MEANSmean is %f and MEANSsigma is %f then means_thresh_lower = MEANSmean - MEANSsigma is %f, and means_thresh_upper = MEANSmean - MEANSsigma is %f " %(MEANSmean, MEANSsigma, means_thresh_lower, means_thresh_upper)
 
@@ -1233,10 +1233,11 @@ def main():
 				#print "A particle has been removed because its mean is larger or smaller than mean_thresh_upper or mean_thresh_lower based on PRJ"
 				newestdata.remove(d)
 			
-		finaldata = []
+		finaldata = set()
 		nnn=0
 		for d in newestdata:
-			finaldata.append([ d[0],d[1],d[2],d[3] ])
+			if set(d) not in finaldata:
+				finaldata.add( (d[0],d[1],d[2],d[3]) )
 			fpprj=d[-1]	
 			fpprj.write_image(options.path + '/' + 'pprj_corrected_sorted_pruned.hdf',nnn)
 			nnn+=1	
@@ -1263,7 +1264,7 @@ def main():
 	#print "And each element has these many subelements", len(data[0])
 	data=sorted(data, key=itemgetter(1,2,3))
 	
-	data=rmsdprune(data,options)
+	data=list(rmsdprune(data,options))
 	
 	if options.keep and not options.keepn:
 		print "I will keep these many particles based on --keep", options.keep 
@@ -1282,13 +1283,15 @@ def main():
 	
 	
 	
-	coords=[]	
+	coords=set()	
 	for i in data:
 		#print "The data element to get coords is", data
 		x=round(i[1])
 		y=round(i[2])
 		z=round(i[3])
-		coords.append( (x,y,z) )
+		c=(x,y,z)
+		if c not in coords:
+			coords.add(c)
 		#print "Therefore coords are", (x,y,z)
 	
 	coords=set(coords)
@@ -1330,7 +1333,8 @@ def main():
 
 
 def rmsdprune(data,options):		
-	elementstoremove = []
+	elementstoremove = set()
+	data=list(data)
 	for d in range(len(data)):
 		dvector = numpy.array( [ data[d][1],data[d][2],data[d][3] ] )
 		dcoeff = data[d][0]
@@ -1362,22 +1366,29 @@ def rmsdprune(data,options):
 				#print "And PP is ", pp
 				if dcoeff > ecoeff:
 					if data[e] not in elementstoremove:
+						print "I will remove this element", data[e]
+						print "Becauase its rmsd is", rmsd
 						#print "since evector has the lowest coeff, it will be added to elementstoremove", data[e]
-						elementstoremove.append(data[e])
+						#elementstoremove.append(data[e])
+					elementstoremove.add(data[e])
 				elif ecoeff > dcoeff:
 					if data[d] not in elementstoremove:
+						print "I will remove this element", data[d]
+						print "Becauase its rmsd is", rmsd
 						#print "since dvector has the lowest coeff, it will be added to elementstoremove", data[d]
-						elementstoremove.append(data[d])
+						#elementstoremove.append(data[d])
+					elementstoremove.add(data[d])
 
 	#print "\nThese are the elements to remove", elementstoremove
 	#print "\nFrom this data", data			
 	#print "\n"
 	for ele in elementstoremove:
 		if ele in data:
-			print "I will remove this element", ele
+			
 			data.remove(ele)
 			#print "Therefore data now is", data
 	print "\n\nEEEEEEE\nBut I have removed these many REPEATED elements%d\nEEEEEEEE\n\n" %( len(elementstoremove))							
+	data=set(data)
 	return(data)
 
 
