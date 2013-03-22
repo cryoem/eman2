@@ -679,7 +679,7 @@ def main():
 								
 							coordset.add(coords)
 							coeffset.add(newcoefftuple)
-							data.append( (newcoeff,coords[0],coords[1],coords[2]) )
+							data.append( (newcoeff, int(round(coords[0])), int(round(coords[1])), int(round(coords[2])) ) )
 							#print "I have appended a new particle!", [newcoeff,coords]
 							count+=1
 						asdfg+=1
@@ -729,11 +729,30 @@ def main():
 	data.sort()
 	data.reverse()
 	
+	data=list(rmsdprune(data,options))
+	
+	
+	data=sorted(data, key=itemgetter(1,2,3))
+	
+	print "rmsd round one DATA IS"
+		for d in data:
+			print d
+		
+	
 	#for i in data:
 	#	print "This is in data", i
 
-	print "the len of data WAS", len(data)
+	print "The len of data BEFORE ANY PRUNNING, except first round of rmsd IS", len(data)
 	
+	setdata = set()
+	for d in data:
+		if (d[0],d[1],d[2],d[3]) not in setdata:
+			setdata.add( (d[0],d[1],d[2],d[3]) )	
+		else:
+			print "repeated particle when prunning by set data!"
+	
+	data=list(setdata)
+	print "after set prunning by set, len data is", len(data)
 	
 	lendata1=len(data)
 	if options.backgroundstack:
@@ -768,13 +787,13 @@ def main():
 		pruned= lendata1-lendata2
 		print "These many particles were pruned using the gold stack",pruned
 	
-	
+	print "The len of data AFTER prunnin using stacks is", len(data)
 	
 	if options.pruneccc:
 	
 		coeffs = []
 		for d in range(len(data)):
-			coeffs.append(data[d][0])
+			coeffs.append(data[0])
 		
 		coeffsmean = numpy.mean(coeffs, dtype=numpy.float64)	
 		coeffssigma = numpy.std(coeffs, dtype=numpy.float64)
@@ -837,6 +856,7 @@ def main():
 		
 		data = pruneddata
 	
+		print "THe len of data AFTER CCC pruning is", len(data)
 	
 	if options.pruneprj:
 		print "I will do projection based pruning"
@@ -867,7 +887,7 @@ def main():
 		prjccfs = []
 		newdata=[]
 		kkk=0
-		
+		basicdata=set()
 		tside = Transform({'type':'eman','az':0,'alt':-90,'phi':0})
 		for d in data:
 			#print "d in data is", d
@@ -890,6 +910,8 @@ def main():
 			
 			e.mult(mask)
 			
+			#print "After normalization in 3D and masking, mean and mean nonzero are", e['mean'],e['mean_nonzero']
+			
 			#print "I have masked e, its mean, meannonzero, min and max are", e['mean'], e['mean_nonzero'],e['minimum'],e['maximum']
 			#e.process_inplace('normalize.edgemean')
 			pprj=e.project("standard",t)
@@ -908,7 +930,9 @@ def main():
 			
 			#if kkk==0:
 			#	display(pprj)
-			pprj.process_inplace('mask.sharp',{'outer_radius':-2})
+			#pprj.process_inplace('mask.sharp',{'outer_radius':-2})
+			
+			#print "After FIRST normalization in 2D and masking, mean and mean nonzero are", pprj['mean'],pprj['mean_nonzero']
 			
 			#if kkk==0:
 			#	display(pprj)
@@ -979,37 +1003,62 @@ def main():
 			
 			#coordset.add(coords)
 			#coeffset.add(newcoefftuple)
-			newdata.append( [newccf,x,y,z] )
 			
-			r = Region((2*x- options.outputboxsize)/2,(2*y-options.outputboxsize)/2, (2*z-options.outputboxsize)/2, options.outputboxsize, options.outputboxsize, options.outputboxsize)
-			e = EMData()
-			e.read_image(options.tomogram,0,False,r)
+			if (newccf,x,y,z) not in basicdata:
+				basicdata.add( (newccf,x,y,z) )		
+				
+				newdata.append( [newccf,x,y,z] )
 			
-			eb = e['nx']
-			mask=EMData(eb,eb,eb)
-			mask.to_one()
-			mask.process_inplace('mask.sharp',{'outer_radius':-2})
-			e.process_inplace('normalize.mask',{'mask':mask})
-			e.mult(mask)
+				r = Region((2*x- options.outputboxsize)/2,(2*y-options.outputboxsize)/2, (2*z-options.outputboxsize)/2, options.outputboxsize, options.outputboxsize, options.outputboxsize)
+				e = EMData()
+				e.read_image(options.tomogram,0,False,r)
 			
-			pprj=e.project("standard",t)
-			pprj['apix_x'] = e['apix_x']
-			pprj['apix_y'] = e['apix_x']
-			pprj.write_image(options.path + '/' + 'pprj_corrected.hdf',kkk)
+				eb = e['nx']
+				mask=EMData(eb,eb,eb)
+				mask.to_one()
+				mask.process_inplace('mask.sharp',{'outer_radius':-2})
+				e.process_inplace('normalize.mask',{'mask':mask})
+				e.mult(mask)
 			
-			
-			pprjside=e.project("standard",tside)
-			pprjside['apix_x'] = e['apix_x']
-			pprjside['apix_y'] = e['apix_x']
-			pprjside.write_image(options.path + '/' + 'pprj_correctedside.hdf',kkk)
+				pprj=e.project("standard",t)
+				pprj['apix_x'] = e['apix_x']
+				pprj['apix_y'] = e['apix_x']
+				pprj.write_image(options.path + '/' + 'pprj_corrected.hdf',kkk)
 			
 			
-			kkk+=1
-		newdata.sort()
+				pprjside=e.project("standard",tside)
+				pprjside['apix_x'] = e['apix_x']
+				pprjside['apix_y'] = e['apix_x']
+				pprjside.write_image(options.path + '/' + 'pprj_correctedside.hdf',kkk)
+			
+			
+				kkk+=1
+			else:
+				print "TRying to add repeated particle in FIRST PRJ loop!"
+			newdata.sort()
 		
 		#print "\n\n\nsorted newdata are", newdata
 		newdata.reverse()
 		#print "\n\n\nreversed", newdata 
+		
+		
+		setdata = set()
+		lll=0
+		for d in newdata:
+			if (d[0],d[1],d[2],d[3]) not in setdata:
+				setdata.add( (d[0],d[1],d[2],d[3]) )	
+		else:
+			lll+=1
+		
+		print "repeated particles when prunning by FIRST PRJ prune!",lll
+		
+		newdata = list(setdata)
+		print "Therefore data len is now", len(newdata)
+		
+		
+		newdata=sorted(newdata, key=itemgetter(1,2,3))
+		
+		
 		
 		mmm=0
 		ppp=0
@@ -1020,6 +1069,8 @@ def main():
 		#mins2d=[]
 		
 		newestdata = []
+		rrr=0
+		basicdata=set()
 		for d in newdata:
 			x=d[1]
 			y=d[2]
@@ -1121,10 +1172,11 @@ def main():
 				pprj['apix_y'] = e['apix_x']
 				pprj.write_image(options.path + '/' + 'pprj_corrected_sorted_autocorrelated.hdf',ppp)	
 								
-				mean=pprj['mean']
+				mean=pprj['mean_nonzero']
 				#means.append(mean)
+				#print "The mean_nonzero is %f, compared to mean %f" %( mean, pprj['mean'] )
 			
-				sigma=pprj['sigma']
+				sigma=pprj['sigma_nonzero']
 				#sigmas.append(sigma)
 			
 				max=pprj['maximum']
@@ -1132,10 +1184,15 @@ def main():
 			
 				min=pprj['minimum']
 				#mins2d.append(min)
-						
-				newestdata.append([newestccf,newx,newy,newz,ppp,max,min,sigma,mean,pprj])	
-				ppp+=1
+				if (newestccf,newx,newy,newz) not in basicdata:			
+					newestdata.append([newestccf,newx,newy,newz,ppp,max,min,sigma,mean,pprj])
+					basicdata.add( (newestccf,newx,newy,newz) )
+					ppp+=1
+				else:
+					print "TRYing to add repeated particle in second PRJ loop!"	
+				
 			else:
+				rrr+=1
 				#print "\nParticle eliminated because translation from AUTOCORRELATION were too big!\n"
 				pass
 			mmm+=1
@@ -1143,7 +1200,31 @@ def main():
 			#	newdata.remove(d)
 			#	print "I have removed a particle based new PRJ mask"
 	
-	
+		print "The number of particles pruned by AUTOCORRELATION is", rrr		
+		print "Therefore, AFTER AUTUCORRELATION prunning, the len of data is", len(newestdata)
+		
+		
+		#setdata = set()
+		#lll=0
+		#for d in newestdata:
+		#	if (d[0],d[1],d[2],d[3]) not in setdata:
+		#		setdata.add( (d[0],d[1],d[2],d[3]) )	
+		#else:
+		#	lll+=1
+		
+		#print "repeated particles when prunning by SECOND PRJ prune!",lll
+		
+		#newestdata = list(setdata)
+		#print "Therefore data len is now", len(newestdata)
+		
+				
+		newestdata=sorted(newestdata, key=itemgetter(1,2,3))
+		
+		#print "DATA IS"
+		#for d in newestdata:
+		#	print d
+		
+		
 		'''
 		MAX based prunning, intended to further get rid of golds
 		'''
@@ -1157,16 +1238,30 @@ def main():
 		maxs_thresh = MAXSmean + 2*MAXSsigma
 		print "Because MAXSmean is %f and MAXSsigma is %f then maxs_thresh = MAXSmean + 2*MAXSsigma is %f" %(MAXSmean, MAXSsigma, maxs_thresh)
 		
+		co=0
 		for d in newestdata:
 			#print "Len d is", len(d)
 			if len(d) < 10:
 				print "Aberrant len detected! d is", d
 				
 				sys.exit()
-			if d[-5] > maxs_thresh:
-				#print "A particle has been removed because its max %f is larger maxs_thresh %f based on PRJ" %(d[-5],maxs_thresh)
+			bad=0
+			tempprj=d[-1]
+			newprj=tempprj.copy()
+			for i in range(3):
+				#if d[-5] > maxs_thresh:
+				max=newprj['maximum']
+				if max > maxs_thresh:
+					#print "A particle has been removed because its max %f is larger maxs_thresh %f based on PRJ" %(d[-5],maxs_thresh)
+					loc=newprj.calc_max_location()
+					newprj.set_value_at(loc[0],loc[1],0.0)
+					bad+=1
+			if bad > 2:
 				newestdata.remove(d)
-	
+				co+=1
+		
+		print "These many particles were removed based on max value", co
+		print "Len data after max prunning is", len(newestdata)
 		
 		'''
 		MIN based prunning (not clear so far that min info can be used to prune in addition to max prunning)
@@ -1199,15 +1294,19 @@ def main():
 		print "The sgima of SIGMAS", SIGMASsigma
 		print "\n"
 		
-		sigmas_thresh_upper = SIGMASmean + SIGMASsigma
-		sigmas_thresh_lower = SIGMASmean - SIGMASsigma
+		sigmas_thresh_upper = SIGMASmean + 2*SIGMASsigma
+		sigmas_thresh_lower = SIGMASmean - 2*SIGMASsigma
 		print "Because SIGMASmean is %f and SIGMASsigma is %f then sgimas_thresh_upper and lower are %f, %f" %(SIGMASmean, SIGMASsigma, sigmas_thresh_upper, sigmas_thresh_lower)
-	
+		
+		co=0
 		for d in newestdata:
 			if d[-3] > sigmas_thresh_upper or d[-3] < sigmas_thresh_lower:
 				#print "A particle has been removed because its sgima is larger or smaller than mean_thresh based on PRJ"
 				newestdata.remove(d)
-		
+				co+=1
+		print "These many particles were removed based on sigma prunning", co
+		print "Len data after sigma prunning is", len(newestdata)
+
 		
 		'''
 		MEAN based prunning; noise has a mean closer to zero than noise + data
@@ -1226,23 +1325,37 @@ def main():
 		means_thresh_lower = MEANSmean - 2*MEANSsigma
 		means_thresh_upper = MEANSmean + 2*MEANSsigma
 
-		print "Because MEANSmean is %f and MEANSsigma is %f then means_thresh_lower = MEANSmean - MEANSsigma is %f, and means_thresh_upper = MEANSmean - MEANSsigma is %f " %(MEANSmean, MEANSsigma, means_thresh_lower, means_thresh_upper)
-
-		for d in newestdata:
-			if d[-2] > means_thresh_upper or d[-2] < means_thresh_lower:
-				#print "A particle has been removed because its mean is larger or smaller than mean_thresh_upper or mean_thresh_lower based on PRJ"
-				newestdata.remove(d)
-			
+		#print "Because MEANSmean is %f and MEANSsigma is %f then means_thresh_lower = MEANSmean - MEANSsigma is %f, and means_thresh_upper = MEANSmean - MEANSsigma is %f " %(MEANSmean, MEANSsigma, means_thresh_lower, means_thresh_upper)
+		
+		#co=0
+		#for d in newestdata:
+		#	if d[-2] > means_thresh_upper or d[-2] < means_thresh_lower:
+		#		#print "A particle has been removed because its mean is larger or smaller than mean_thresh_upper or mean_thresh_lower based on PRJ"
+		#		newestdata.remove(d)
+		#		co+=1
+		#print "These many particles were removed based on mean prunning", co
+		
+		
+		print "Final data to consider after all special prunnings is this long", len(newestdata)	
+		
 		finaldata = set()
 		nnn=0
+		repeat=0
 		for d in newestdata:
-			if set(d) not in finaldata:
+			if (d[0],d[1],d[2],d[3]) not in finaldata:
 				finaldata.add( (d[0],d[1],d[2],d[3]) )
-			fpprj=d[-1]	
-			fpprj.write_image(options.path + '/' + 'pprj_corrected_sorted_pruned.hdf',nnn)
-			nnn+=1	
-		data = finaldata
-			
+				fpprj=d[-1]	
+				fpprj.write_image(options.path + '/' + 'pprj_corrected_sorted_pruned.hdf',nnn)
+				nnn+=1
+			else:
+				repeat+=1
+				
+		data=finaldata
+		print "\nYet, I found these many repeated particles, who knows from where", repeat
+		
+		print "\nTHe total number of particles in the SET data should be", nnn
+		print "lets see", len (data)
+				
 
 	'''
 	Prune particles based on correlation. Peaks in correlation should be representative of particles, and only N of those
@@ -1258,11 +1371,12 @@ def main():
 	
 	
 	#if options.prunerepeated:
-	print "I will now see if there are repeated elements"
-	data=rmsdprune(data,options)
-	print "Data after FIRST rmsd prune has these many elements", len(data)
+	#print "I will now see if there are repeated elements"
+	#data=rmsdprune(data,options)
+	#print "Data after FIRST rmsd prune has these many elements", len(data)
 	#print "And each element has these many subelements", len(data[0])
 	data=sorted(data, key=itemgetter(1,2,3))
+	print "After RMSD prune, data len is", len(data)
 	
 	data=list(rmsdprune(data,options))
 	
@@ -1351,7 +1465,7 @@ def rmsdprune(data,options):
 			rmsd = numpy.linalg.norm(dvector - evector)
 			#print "Their rmsd is", rmsd
 			
-			if rmsd < options.ptclradius*2.0:
+			if float(rmsd) < float(options.ptclradius*2.0 - 2):
 				#print "\nPPPPPPPP\n The particle is too close to another one or was already picked!!! evec=%s, dvec=%s,rmsd=%f \nPPPPPPPP\n" %(evector,dvector,rmsd)
 				#pp = 1
 				#print "And PP is ", pp
@@ -1366,15 +1480,19 @@ def rmsdprune(data,options):
 				#print "And PP is ", pp
 				if dcoeff > ecoeff:
 					if data[e] not in elementstoremove:
-						print "I will remove this element", data[e]
-						print "Becauase its rmsd is", rmsd
+						pass
+						#print "I will remove this element", data[e]
+						#print "Becauase its rmsd is", rmsd
+						#print "And particle radius, supposedly is", options.ptclradius
+						#print "Therefore, the threshold is anything lower than twice that will be removed",float(options.ptclradius*2.0)
 						#print "since evector has the lowest coeff, it will be added to elementstoremove", data[e]
 						#elementstoremove.append(data[e])
 					elementstoremove.add(data[e])
 				elif ecoeff > dcoeff:
 					if data[d] not in elementstoremove:
-						print "I will remove this element", data[d]
-						print "Becauase its rmsd is", rmsd
+						pass
+						#print "I will remove this element", data[d]
+						#print "Becauase its rmsd is", rmsd
 						#print "since dvector has the lowest coeff, it will be added to elementstoremove", data[d]
 						#elementstoremove.append(data[d])
 					elementstoremove.add(data[d])
@@ -1382,13 +1500,17 @@ def rmsdprune(data,options):
 	#print "\nThese are the elements to remove", elementstoremove
 	#print "\nFrom this data", data			
 	#print "\n"
+	print "Inside the FUNCTION RMSDPRUNE, this is data len", len(data)
+	print "The number of elements to remove is", len(elementstoremove)
 	for ele in elementstoremove:
 		if ele in data:
 			
 			data.remove(ele)
 			#print "Therefore data now is", data
-	print "\n\nEEEEEEE\nBut I have removed these many REPEATED elements%d\nEEEEEEEE\n\n" %( len(elementstoremove))							
+	#print "\n\nEEEEEEE\nBut I have removed these many REPEATED elements%d\nEEEEEEEE\n\n" %( len(elementstoremove))							
+	print "Therefore the len of data tu RETRURN FROM rmsdpruner is", len(data)
 	data=set(data)
+	print "When turned to a set has this len", len(data)
 	return(data)
 
 
@@ -1435,6 +1557,7 @@ def meancalc(options,stack,normalize=False):
 	
 	
 def pruner(data,tag,mean_maxs,sigma_maxs,mean_mins,sigma_mins):	
+	data=list(data)
 	for d in data:
 		#print "d in data is", d
 		#print "d[1] is ", d[1]
@@ -1564,7 +1687,7 @@ def scanposition(options,template,outputboxsize,yshort,xi,yi,zi,xc,yc,zc,sbn,x,y
 			suboxnorm.process_inplace('threshold.clampminmax',{'maxval':2,'minval':-1,'tozero':1})
 			suboxnorm.write_image('clamped.hdf',count)
 			
-			print "AFTER CLAMPING, max and min", suboxnorm['maximum'],suboxnorm['minimum']
+			#print "AFTER CLAMPING, max and min", suboxnorm['maximum'],suboxnorm['minimum']
 			
 		ccf = template.calc_ccf(suboxnorm)
 		ccf.process_inplace("xform.phaseorigin.tocorner") 
