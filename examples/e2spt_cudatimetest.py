@@ -44,7 +44,8 @@ import pylab
 from pylab import *
 
 import sys
-import numpy		 
+import numpy
+import math	 
 		 
 def main():
 	
@@ -342,81 +343,94 @@ def doit(corg,options):
 	
 	computer = options.ID
 	
-	data = []
+	data = {}
 	
 	coarsestep=options.coarsestep
 	finestep=options.finestep
 		
 	#name = options.path + '/CS' + str(coarsestep).zfill(len(str(max(steps)))) + '_FS' + str(finestep) + '.txt'
 	#if computer:
-	name = options.path + '/' + computer + 'CS' + str(coarsestep).zfill(len(str(coarsestep))) + '_FS' + str(finestep) + '_' + corg + '.txt'
 	
-	txt = open(name,'w')
+	
+	IDS = []
+	
+	if options.icosali:		
+		IDS.append('icosali')
+
+	if options.oneorientationfull:
+		IDS.append('onefull')
+	
+	if options.oneorientationfft:
+		IDS.append('onefft')
+	
+	for id in IDS:
+		name=options.path + '/' + computer +'_' + corg + '.txt'
+		if id == 'icosali':	
+			name = options.path + '/' + computer + '_icos_CS' + str(coarsestep).zfill(len(str(coarsestep))) + '_FS' + str(finestep) + '_' + corg + '.txt'
+		if id == 'onefull':
+			name = options.path + '/' + computer + '_onefull_CS' + str(coarsestep).zfill(len(str(coarsestep))) + '_' + corg + '.txt'
+		if id == 'onefft':
+			name = options.path + '/' + computer + '_onefft_CS' + str(coarsestep).zfill(len(str(coarsestep))) + '_' + corg + '.txt'
 		
-	times=[]
-	for size in mults:
-		t=t1=t2=t1h=t2h=t1m=t2m=t1s=t2s=t1tot=t2tot=0
+		txt = open(name,'w')
+		times=[]
+		for size in mults:
+			t=t1=t2=t1h=t2h=t1m=t2m=t1s=t2s=t1tot=t2tot=0
 
-		#a=EMData(argv[1])
-		a=EMData(size,size,size)
-		a=a.process('testimage.noise.gauss')
-		#a=a.process("xform.scale",{'scale':1,'clip':size})
+			a=EMData(size,size,size)
+			a=a.process('testimage.noise.gauss')
 			
-		#if 'gpu' not in corg:
-		#	a.switchoffcuda()
-	
-		#a.to_one()
-		aname = 'a_stack.hdf'
-		a.write_image(options.path+ '/' + aname)
+			aname = 'a_stack.hdf'
+			a.write_image(options.path+ '/' + aname)
 
-		b=EMData(size,size,size)
-		b=b.process('testimage.noise.gauss')
-		bname = 'b_stack.hdf'
-		b.write_image(options.path+ '/' + bname)
+			b=EMData(size,size,size)
+			b=b.process('testimage.noise.gauss')
+			bname = 'b_stack.hdf'
+			b.write_image(options.path+ '/' + bname)
+
+			out = 'garbage.hdf'
 			
-		#if 'gpu' not in corg:
-		#	b.switchoffcuda()
-		#	print "\n\n\n !!!! I Have turned cuda OFF!!!\n\n\n"
+			setcuda=''
+			if corg=='gpu' or corg=='GPU':
+				setcuda= 'export NOCUDAINIT=0 && '
+				print "\n\n\n !!!! I Have turned cuda ON!!!\n\n\n"
+			elif corg=='cpu' or corg=='CPU':
+				setcuda = 'export NOCUDAINIT=1 && '
+				print "\n\n\n !!!! I Have turned cuda OFF!!!\n\n\n"
+			else:
+				print "Something is wrong; you're supposed to select GPU or CPU. TERMINATING!"
+				sys.exit()
+		
+			cmd=''
+			if id == 'icosali':		
+				cmd = setcuda + '''cd ''' + options.path + ''' && e2spt_classaverage.py --input=''' + aname + ''' --output=''' + out + ''' --ref=''' + bname + ''' --iter=1 --npeakstorefine=1 -v 0 --mask=mask.sharp:outer_radius=-2 --preprocess=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --align=rotate_translate_3d:search=6:delta=''' + str(coarsestep) + ''':dphi=''' + str(coarsestep) + ''':verbose=0:sym=icos --parallel=thread:1 --ralign=refine_3d_grid:delta=''' + str(finestep) + ''':range=''' + str( int(math.ceil(coarsestep/2.0)) ) + ''' --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --normproc=normalize.mask'''
+				#cmds.update('icosali':cmd1)
+		
+			if id == 'onefull':
+				cmd = setcuda + '''cd ''' + options.path + ''' && e2spt_classaverage.py --input=''' + aname + ''' --output=''' + out + ''' --ref=''' + bname + ''' --iter=1 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --highpass=filter.highpass.gauss:cutoff_freq=0.01:apix=1.0 --preprocess=filter.lowpass.gauss:cutoff_freq=0.2:apix=1.0 --align=rotate_symmetry_3d:sym=c1 --parallel=thread:1 --ralign=None --averager=mean.tomo --aligncmp=ccc.tomo --normproc=normalize.mask'''
+				#cmds.update('onefull':cmd2)
+			
+			if id == 'onefft':
+				cmd = setcuda + '''cd ''' + options.path + ''' && e2spt_classaverage.py --input=''' + aname + ''' --output=''' + out + ''' --ref=''' + bname + ''' --iter=1 -v 0 --align=rotate_symmetry_3d:sym=c1 --parallel=thread:1 --ralign=None --averager=mean.tomo --aligncmp=ccc.tomo'''
+				#cmds.update('onefft':cmd3)
+			
+			if cmd:				
+				print "The instruction is", cmds[ele]
+				ta = time()
+				os.system(cmd)
+				tb = time()
+		
+				td = tb - ta
+				print "Excution time was", td
+				times.append(float(td))
+				line2write= str(size) + ' ' + str(td)+'\n'
+				txt.write(line2write)
+		txt.close()
 	
-		out = 'garbage.hdf'
-			
-		setcuda=''
-		if corg=='gpu' or corg=='GPU':
-			setcuda= 'export NOCUDAINIT=0 && '
-			print "\n\n\n !!!! I Have turned cuda ON!!!\n\n\n"
-		elif corg=='cpu' or corg=='CPU':
-			setcuda = 'export NOCUDAINIT=1 && '
-			print "\n\n\n !!!! I Have turned cuda OFF!!!\n\n\n"
-		else:
-			print "Something is wrong; you're supposed to select GPU or CPU. TERMINATING!"
-			sys.exit()
-							
-		instruction1 = setcuda + '''cd ''' + options.path + ''' && e2spt_classaverage.py --input=''' + aname + ''' --output=''' + out + ''' --ref=''' + bname + ''' --iter=1 --npeakstorefine=1 -v 1 --mask=mask.sharp:outer_radius=-2 --preprocess=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --align=rotate_translate_3d:search=6:delta=''' + str(coarsestep) + ''':dphi=''' + str(coarsestep) + ''':verbose=1:sym=icos --parallel=thread:1 --ralign=refine_3d_grid:delta=''' + str(finestep) + ''':range=''' + str(coarsestep) + ''' --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --normproc=normalize.mask'''
-		cmd = instruction1
-		print "The instruction is", cmd
-	
-		#if 'gpu' in corg:
-		#	a=test_image()
-		#	a.do_fft_cuda()
-			
-		ta = time()
-		os.system(cmd)
-		tb = time()
-			
-		#t=eman2time()
-		#print "The total alignment time was", t
-			
-		td = tb - ta
-		print "BUt the real time is", td
-		times.append(float(td))
-		line2write= str(size) + ' ' + str(td)+'\n'
-		txt.write(line2write)
-	txt.close()
-	
-	data.append([coarsestep,mults,times])
-	print "\n\nThe data to return is\n", data
-	print "\n"
-	return(data)
+		data.add(id:[coarsestep,mults,times])
+		print "\n\nThe data to return is\n", data
+		print "\n"
+		return(data)
 
 
 '''
