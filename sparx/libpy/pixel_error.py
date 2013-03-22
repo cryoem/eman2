@@ -881,6 +881,43 @@ def mapcoords(x, y, r, nx, ny):
 	return minxnew, minynew
 
 
+
+def predict_helical_params(stack, dp, dphi, pixel_size, outfile=''):
+	
+	from utilities import write_text_row
+	from applications import get_dist
+
+	def get_dist(c1, c2):
+		from math import sqrt
+		d = sqrt((c1[0] - c2[0])**2 + (c1[1] - c2[1])**2)
+		return d
+
+	
+	filaments = EMUtil.get_all_attributes(stack, 'filament')
+	coords    = EMUtil.get_all_attributes(stack, 'ptcl_source_coord')
+
+	N = len(filaments)
+	params = [[0,90,90,0,0] for ii in xrange(N)]
+	rise = dp/pixel_size  # in pixels
+	permitrange = rise/2.0
+	cfil = filaments[0]
+	start = 0
+	for i in xrange(1,N):
+		if(filaments[i] != cfil ):
+			cfil = filaments[i]
+			start = i
+		else:
+			dA = pixel_size * get_dist(coords[i], coords[start])
+			params[i][0] = (dA/dp*dphi)%360.0
+			params[i][4] = (dA%dp)/pixel_size # in pixels
+			if( params[i][4] > permitrange ): params[i][4] -= rise
+
+	if len(outfile) > 0:
+		write_text_row(params, outfile)
+
+	return params
+
+
 def consistency_params(stack, dphi, dp, pixel_size, phithr=2.5, ythr=1.5, THR=3):
 	'''
 		stack        - contains coding of filaments and coordinates of segments ptcl_source_coord
@@ -888,10 +925,18 @@ def consistency_params(stack, dphi, dp, pixel_size, phithr=2.5, ythr=1.5, THR=3)
 	'''
 	from utilities import read_text_row, write_text_row
 	from applications import get_dist, ordersegments
-	
+	from pixel_error import angle_diff
+
+
+	def get_dist(c1, c2):
+		from math import sqrt
+		d = sqrt((c1[0] - c2[0])**2 + (c1[1] - c2[1])**2)
+		return d
+
+
 	filaments = ordersegments(stack)
 	ptclcoords = EMUtil.get_all_attributes(stack, 'ptcl_source_coord')
-	params=EMUtil.get_all_attributes(stack, 'xform.projection')
+	params     = EMUtil.get_all_attributes(stack, 'xform.projection')
 	for i in xrange(len(params)):
 		d = params[i].get_params("spider")
 		params[i] = [d["phi"], d["theta"], d["psi"], -d["tx"], -d["ty"] ]
@@ -909,7 +954,6 @@ def consistency_params(stack, dphi, dp, pixel_size, phithr=2.5, ythr=1.5, THR=3)
 		#mic = filaments[0]
 		imi += 1
 		#mic = mic[:4]
-		phierr = []
 		if len(mic) < THR:
 			#print "less than threshold"
 			allphier.append([[mic[0],mic[-1],0],[]])
@@ -931,7 +975,7 @@ def consistency_params(stack, dphi, dp, pixel_size, phithr=2.5, ythr=1.5, THR=3)
 
 			if( len(a90) > len(a270) ):
 				thetapsi1 =  a90
-				flip = +1
+				flip =  1
 			else:
 				thetapsi1 = a270
 				flip = -1
@@ -941,27 +985,35 @@ def consistency_params(stack, dphi, dp, pixel_size, phithr=2.5, ythr=1.5, THR=3)
 			phig = [0.0]*ns
 			for j in xrange(ns): phig[j] = params[thetapsi1[j]][0]
 			totpsicons += ns
-			ycoords = [0.0]*ns
-			for i in xrange(1,ns):  ycoords[i] = get_dist( ptclcoords[thetapsi1[i]], ptclcoords[thetapsi1[0]] )
-			#  get phi's
-			phis = [0.0]*ns
-			#print "  MIC  ",mic
-			for i in xrange(ns):
-				yy = ycoords[i] + params[thetapsi1[i]][4]
-				phis[i] = (yy*pixel_size/dp*flip*dphi)%360.0
-				#print " %7.3f   %7.3f   %7.3f  %7.3f   "%(ycoords[i],yy,phis[i], phig[i]),params[thetapsi1[i]]
+			distances = [0.0]*ns
+			for i in xrange(1,ns):  distances[i] = get_dist( ptclcoords[thetapsi1[i]], ptclcoords[thetapsi1[0]] )
+			ganger = [0.0]*ns
+			terr = 1.e23
+			for idir in xrange(-1,2,2):
+				phierr = []
+				#  get phi's
+				ddphi = pixel_size/dp*idir*dphi
+				phis = [0.0]*ns
+				#print "  MIC  ",mic
+				for i in xrange(ns):
+					yy = distances[i] + params[thetapsi1[i]][4]
+					phis[i] = (yy*ddphi)%360.0
+					#print " %7.3f   %7.3f   %7.3f  %7.3f   "%(ycoords[i],yy,phis[i], phig[i]),params[thetapsi1[i]]
 
-			# find the overall angle
-			from pixel_error import angle_diff
-			angdif = angle_diff(phis,phig)
-			#print " angdif ",angdif
-			for i in xrange(ns):
-				anger = (phis[i]+angdif - phig[i] + 360.0)%360.0
-				if( anger > 180.0 ): anger -= 360.0
-				phierr.append(anger)
-				#print  " %7.3f   %7.3f   %7.3f"%((phis[i]+angdif+360.0)%360.0 , phig[i],anger)
-			#if imi == 4: break
-			allphier.append([[mic[0],mic[-1],flip],phierr])
+				# find the overall angle
+				angdif = angle_diff(phis,phig)
+				#print " angdif ",angdif
+				lerr = 0.0
+				for i in xrange(ns):
+					anger = (phis[i]+angdif - phig[i] + 360.0)%360.0
+					if( anger > 180.0 ): anger -= 360.0
+					lerr += abs(anger)
+					phierr.append(anger)
+					#print  " %7.3f   %7.3f   %7.3f"%((phis[i]+angdif+360.0)%360.0 , phig[i],anger)
+				if(lerr < terr):
+					terr = lerr
+					for j in xrange(ns):  ganger[j] = phierr[j]
+			allphier.append([[mic[0], mic[-1], flip, terr/ns], ganger])
 
 	print "number of segments belonging to filaments from which at least %i segments were windowed: "%THR, totsegs
 	print "number of segments oriented 50/50 wrt psi (and therefore could not be predicted):       ", tot_nopred
