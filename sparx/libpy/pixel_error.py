@@ -726,6 +726,385 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 
 	return stable_set, mir_stab_rate, sqrt(val)
 
+def ordersegments(stack, filament_attr = 'filament'):
+	'''
+	Input:
+	
+	stack: Input stack of images whose headers contain filament membership information and particle coordinates in the original micrograph (stored under attribute ptcl_source_coord).
+	filament_attr: Attribute under which filament membership ID is stored.
+	It is assumed the prtl coords are nonnegative
+	
+	Output: 
+	
+	Returns a list of lists, where each inner list consists of IDs of segments windowed from
+	a single filament ordered according to their relative positions on the filament.
+	
+	'''
+
+	def orderbymodule(xxp,yyp):
+		from math import atan,sin,cos,pi, atan2
+		from statistics import linreg
+		nq = len(xxp)
+		xs = sum(xxp)/nq
+		ys = sum(yyp)/nq
+		xp = [0.0]*nq
+		yp = [0.0]*nq
+		for i in xrange(nq):
+			xp[i] = xxp[i] - xs
+			yp[i] = yyp[i] - ys
+		try:
+			a,b = linreg(xp,yp)
+			alpha = pi/4-atan(a)
+		except:
+			a,b = linreg([(xp[i]-yp[i]) for i in xrange(nq)], [(xp[i]+yp[i]) for i in xrange(nq)])
+			alpha = atan(a)
+			#print "except"
+
+		cs = cos(alpha)
+		ss = sin(alpha)
+		qm = 1.e23
+		dd = [[0.0, 0] for i in xrange(nq)]
+		for i in xrange(nq):
+			xt =  cs*xp[i] - ss*yp[i]
+			yt =  ss*xp[i] + cs*yp[i]
+			xp[i] = xt; yp[i] = yt
+		xs = min(xp)
+		ys = min(yp)
+		for i in xrange(nq):
+			dd[i] = [(xp[i]-xs)**2+(yp[i]-ys)**2, i]
+		dd.sort()
+		return [dd[i][1] for i in xrange(nq)]
+
+	allfilaments = EMUtil.get_all_attributes(stack, filament_attr)
+	for i in xrange(len(allfilaments)):
+		allfilaments[i] = [allfilaments[i],i]
+	allfilaments.sort()
+	filaments = []
+	current = allfilaments[0][0]
+	temp = [allfilaments[0][1]]
+	for i in xrange(1,len(allfilaments)):
+		if( allfilaments[i][0] == current ):
+			temp.extend([allfilaments[i][1]])
+		else:
+			filaments.append(temp)
+			current = allfilaments[i][0]
+			temp = [allfilaments[i][1]]
+	filaments.append(temp)
+
+	del allfilaments, temp
+	ptclcoords = EMUtil.get_all_attributes(stack, 'ptcl_source_coord')
+
+	nfil = len(filaments)
+
+	for i in xrange(nfil):
+		nsegs = len(filaments[i])
+		if(nsegs > 1):
+			ord = orderbymodule([ptclcoords[filaments[i][ii]][0] for ii in xrange(nsegs)],[ptclcoords[filaments[i][ii]][1] for ii in xrange(nsegs)])
+			filaments[i] = [filaments[i][ord[ii]] for ii in xrange(nsegs)]
+	return filaments	
+
+
+def mapcoords(x, y, r, nx, ny):
+	from math 			import ceil, floor
+	from applications 	import get_dist
+	import sys
+	'''
+	Input:
+	
+	(x,y): Coordinate in old image. 
+	r: ratio by which old image is resampled by. If r < 1, then pixel size of resampled image is original pixel size divided by r.
+	nx, ny: dimensions of old image
+	
+	Assumes coordinates are positive and run from 0 to nx-1 and 0 to ny-1, where nx and ny
+	are the x and y dimensions of the micrograph respectively.
+	
+	Output:
+	
+	x'',y'':	The pixel coordinate in the resampled image where
+	
+					(x',y') = (Util.round(x''/r), Util.round(y''/r))
+					
+				and (x',y') is the closest point to (x,y) over all other points (a,b) in the
+				old image where (a,b)=  (Util.round(a''/r), Util.round(b''/r)) for some
+				pixel coordinate (a'', b'') in resampled image.
+	'''	
+	
+	# Neighborhood of (x,y) in old image which contains a point (x',y') such that
+	# (x',y') = (Util.round(x''/r), Util.round(y''/r)) for some (x'', y'') in resampled image
+	if r > 1:
+		nbrhd = 1
+	else:
+		nbrhd = int(ceil(1.0/r))+1
+			
+	allxnew = []
+	allynew = []
+	
+	for i in xrange(-nbrhd, nbrhd+1):
+		xold = Util.round(x + i)
+		if xold < 0 or xold >= nx:
+			continue
+		# See if there is xnew in new image where xold == int(Util.round(xnew/r))
+		# If there is such a xnew, then xold == int(Util.round(xnew/r)) implies r*(xold-0.5) <= xnew < r*(xold+0.5)
+		lxnew = int(floor(r*(xold - 0.5)))
+		uxnew = int(ceil(r*(xold + 0.5))) 
+		for xn in xrange(lxnew, uxnew + 1):
+			if xold == Util.round(xn/r):
+				allxnew.append(xn)
+				
+	for j in xrange(-nbrhd, nbrhd+1):
+		yold = Util.round(y + j)
+		if yold < 0 or yold >= ny:
+			continue
+		lynew = int(floor(r*(yold - 0.5)))
+		uynew = int(ceil(r*(yold + 0.5)))
+		for yn in xrange(lynew, uynew + 1):
+			if yold == Util.round(yn/r):
+				allynew.append(yn)
+				
+	if len(allxnew) == 0 or len(allynew) == 0:
+		ERROR("Could not find mapping")
+	
+	mindist = -1
+	minxnew = -1
+	minynew = -1
+	
+	for xnew in allxnew:
+		for ynew in allynew:
+			xold = Util.round(xnew/r)
+			yold = Util.round(ynew/r)
+			dst = get_dist([x,y],[xold,yold])
+			if dst > mindist:
+				mindist = dst
+				minxnew = int(xnew)
+				minynew = int(ynew)
+					
+	return minxnew, minynew
+
+
+def consistency_params(stack, dphi, dp, pixel_size, phithr=2.5, ythr=1.5, THR=3):
+	'''
+		stack        - contains coding of filaments and coordinates of segments ptcl_source_coord
+		fname_params - parameters whose consistency is tested
+	'''
+	from utilities import read_text_row, write_text_row
+	from applications import get_dist, ordersegments
+	
+	filaments = ordersegments(stack)
+	ptclcoords = EMUtil.get_all_attributes(stack, 'ptcl_source_coord')
+	params=EMUtil.get_all_attributes(stack, 'xform.projection')
+	for i in xrange(len(params)):
+		d = params[i].get_params("spider")
+		params[i] = [d["phi"], d["theta"], d["psi"], -d["tx"], -d["ty"] ]
+	
+	N = len(filaments)
+	print "N: ", N
+	totsegs    = 0
+	totpsicons = 0
+	totphicons = 0
+	tot_nopred = 0
+	allphier = []
+	imi = 0
+	for mic in filaments:
+		#for kkk in xrange(1):
+		#mic = filaments[0]
+		imi += 1
+		#mic = mic[:4]
+		phierr = []
+		if len(mic) < THR:
+			#print "less than threshold"
+			allphier.append([[mic[0],mic[-1],0],[]])
+		else:
+
+			totsegs += len(mic)
+
+			a90  = [] # segments in this filament with psi ~ 90
+			a270 = [] # segments in this filament with psi ~ 270
+
+			for iseg in mic:
+				if abs(params[iseg][2] - 90.0) <45.0: a90.append(iseg)
+				else:                                 a270.append(iseg)
+
+			if (len(a90) == len(a270)):
+				# these cannot be predicted
+				tot_nopred += len(mic)
+				continue
+
+			if( len(a90) > len(a270) ):
+				thetapsi1 =  a90
+				flip = +1
+			else:
+				thetapsi1 = a270
+				flip = -1
+
+			ns = len(thetapsi1)
+			# given phi = phig
+			phig = [0.0]*ns
+			for j in xrange(ns): phig[j] = params[thetapsi1[j]][0]
+			totpsicons += ns
+			ycoords = [0.0]*ns
+			for i in xrange(1,ns):  ycoords[i] = get_dist( ptclcoords[thetapsi1[i]], ptclcoords[thetapsi1[0]] )
+			#  get phi's
+			phis = [0.0]*ns
+			#print "  MIC  ",mic
+			for i in xrange(ns):
+				yy = ycoords[i] + params[thetapsi1[i]][4]
+				phis[i] = (yy*pixel_size/dp*flip*dphi)%360.0
+				#print " %7.3f   %7.3f   %7.3f  %7.3f   "%(ycoords[i],yy,phis[i], phig[i]),params[thetapsi1[i]]
+
+			# find the overall angle
+			from pixel_error import angle_diff
+			angdif = angle_diff(phis,phig)
+			#print " angdif ",angdif
+			for i in xrange(ns):
+				anger = (phis[i]+angdif - phig[i] + 360.0)%360.0
+				if( anger > 180.0 ): anger -= 360.0
+				phierr.append(anger)
+				#print  " %7.3f   %7.3f   %7.3f"%((phis[i]+angdif+360.0)%360.0 , phig[i],anger)
+			#if imi == 4: break
+			allphier.append([[mic[0],mic[-1],flip],phierr])
+
+	print "number of segments belonging to filaments from which at least %i segments were windowed: "%THR, totsegs
+	print "number of segments oriented 50/50 wrt psi (and therefore could not be predicted):       ", tot_nopred
+	print "segments whose psi agreed with the majority of segments in its filament:                ", totpsicons
+	return  allphier
+
+
+def helical_consistency(p2i, p1):
+	"""
+	  Find overall phi angle and z shift difference between two sets of projection parameters for helical structure.
+	  The two sets have to be of the same length and it is assume that k'th element on the first
+	  list corresponds to the k'th element on the second list.
+	  Input: two lists [ [phi2, theta2, psi2, sx2, sy2], [phi1, theta1, psi1, sx1, sy1], ...].  Second list is considered reference.
+	  	 parametes for helical symmetry-- dp, pixel_size, dphi
+	  Output: , 3D_error between the two sets after adjustment 
+	  Note: all angles have to be in spider convention.
+	  """
+	from pixel_error import angle_diff
+	from math import cos,pi
+	from utilities import getvec
+	from pixel_error import angle_error
+	from EMAN2 import Vec2f
+	n =len(p1[0])
+	print n
+	qtm = -1.0e10
+	for lf in xrange(0,181,180):
+		p2 = []
+		p2.extend(p2i)
+		if( lf == 180):
+			tflip = Transform({"type":"spider","theta":180.0})
+			for j in xrange(n):
+				t2 = Transform({"type":"spider","phi":p2[0][j],"theta":p2[1][j],"psi":p2[2][j]})
+				t2.set_trans( Vec2f( -p2[3][j], -p2[4][j] ) )
+				t2 = t2*tflip
+				d = t2.get_params("spider")
+				p2[0][j] = d["phi"]
+				p2[1][j] = d["theta"]
+				p2[2][j] = d["psi"]
+				p2[3][j] = -d["tx"]
+				p2[4][j] = -d["ty"]
+		tt1 = [0.0]*n
+		tt2 = [0.0]*n
+		mirror = [False]*n
+		ln = 0
+		for j in xrange( n ):
+			t1 = getvec(p1[0][j],p1[1][j])
+			t2 = getvec(p2[0][j],p2[1][j])
+			tm = getvec(180.0+p2[0][j],180.0-p2[1][j])
+			tt1[j] = t1[0]*t2[0]+t1[1]*t2[1]+t1[2]*t2[2]
+			tt2[j] = t1[0]*tm[0]+t1[1]*tm[1]+t1[2]*tm[2]
+			if(abs(tt1[j])<1.0e-7): tt1[j] = 0.0
+			if(abs(tt2[j])<1.0e-7): tt2[j] = 0.0
+			if(tt1[j]>tt2[j]):
+				mirror[j] = True
+				ln+=1
+		print  " FLIP  ",lf
+		if(ln < n//2):
+			print "mirror  ",ln
+			for j in xrange( n ):
+				p2[0][j] += 180.0
+				p2[1][j]  = 180.0-p2[1][j]
+				p2[2][j]  = -p2[2][j]
+				p2[4][j]  = -p2[4][j]
+				mirror[j] = not(mirror[j])
+		else:
+			print " straight", ln
+		phi1 = []
+		phi2 = []
+		agree = []
+		for j in xrange(n):
+			if(mirror[j]):
+				phi1.append(p1[0][j])
+				phi2.append(p2[0][j])
+				agree.append(j)
+		print  len(phi1)
+		delta_phi = angle_diff( phi2, phi1 )
+		print "close form diff===", delta_phi
+
+		phi1 = []
+		phi2 = []
+		errorm = []
+		for j in xrange( len( p1[0]) ):
+			p2[0][j] = (p2[0][j] + delta_phi + 360)%360.0
+			if(mirror[j]):
+				phi1.append(p1[0][j])
+				phi2.append(p2[0][j])
+				errorm.append(angle_error( [ p2[0][j] ], [ p1[0][j] ]))
+		qt = sum(errorm)/len(errorm)
+		print  len(errorm),qt
+		if(qt > qtm):
+			qtm = qt
+			p2o = []
+			p2o.extend(p2)
+			errormo = []
+			phi1o = []
+			phi2o = []
+			errormo.extend(errorm)
+			phi1o.extend(phi1)
+			phi2o.extend(phi2)
+		
+	return p2o, errormo, agree, delta_phi, phi1o, phi2o
+
+	
+def getnewhelixcoords(hcoordsname, outdir, ratio,nx,ny, newpref="resampled_", boxsize=-1):
+	'''
+	
+	Input
+	
+		helixcoordsfile: Full path name of file with coordinates of boxed helices
+		
+		outdir: Full path name of directory in which to put new helix coordinates file.
+		
+		ratio: factor by which new image (micrograph) is resampled from old
+		
+		nx, ny: dimensions of old image (micrograph)
+		
+		newpref: prefix for attaching to fname to get name of new helix coordinates file
+	
+	Output:
+		Returns full path name of file containing new box coordinates
+	'''
+	import os
+	from utilities 		import read_text_row
+	from applications	import mapcoords
+	
+	fname = (hcoordsname.split('/'))[-1] # name of old coordinates files minus the path
+	newhcoordsname = os.path.join(outdir , newpref+fname) # full path name of new coordinates file to be created
+	f = open(newhcoordsname, 'w')
+	coords = read_text_row(hcoordsname) # old coordinates
+	ncoords = len(coords)
+	newcoords=[]
+	w = coords[0][2]
+	new_w = boxsize
+	if new_w < 0:
+		new_w = w*ratio
+	for i in xrange(ncoords):
+		xold = coords[i][0] + w/2
+		yold = coords[i][1] + w/2
+		xnew, ynew = mapcoords(xold,yold,ratio,nx,ny)
+		s = '%d\t%d\t%d\t%d\t%d\n'%(xnew-new_w/2,ynew-new_w/2, new_w, new_w, coords[i][4])
+		f.write(s)
+	return newhcoordsname	
+
 
 '''
 # These are some obsolete codes, we retain them just in case.
