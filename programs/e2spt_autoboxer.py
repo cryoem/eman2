@@ -735,8 +735,8 @@ def main():
 	data=sorted(data, key=itemgetter(1,2,3))
 	
 	print "rmsd round one DATA IS"
-		for d in data:
-			print d
+	for d in data:
+		print d
 		
 	
 	#for i in data:
