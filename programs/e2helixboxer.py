@@ -89,6 +89,9 @@ def main():
 	parser.add_argument("--gridding",      action="store_true", default=False, help="Use a gridding method for rotation operations on particles. Requires particles to be square.")
 	parser.add_argument("--save-ext",type=str,default="hdf",dest="save_ext",help="The default file extension to use when saving 'particle' images. This is simply a convenience for improved workflow. If a format other than HDF is used, metadata will be lost when saving.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	
+	parser.add_argument("--invert_contrast",      action="store_true", default=False, help="Invert contrast of micrograph of contrast of boxed filaments and particles are inverted")
+	
 	(options, args) = parser.parse_args()
 	
 	if options.helix_width < 1:
@@ -117,7 +120,7 @@ def main():
 		if ENABLE_GUI:
 			logid=E2init(sys.argv,options.ppid)
 			app = EMApp()
-			helixboxer = EMHelixBoxerWidget(args, app, options.helix_width,options.save_ext)
+			helixboxer = EMHelixBoxerWidget(args, app, options.helix_width,options.save_ext, options.invert_contrast)
 			helixboxer.show()
 			app.execute()
 			E2end(logid)
@@ -948,12 +951,14 @@ if ENABLE_GUI:
 		"""
 		the GUI widget which contains the settings for boxing helices and writing results to files
 		"""
-		def __init__(self, micrograph_filepaths, app, box_width=100, saveext="hdf"):
+		def __init__(self, micrograph_filepaths, app, box_width=100, saveext="hdf", invert_contrast=False):
 			"""
 			@param micrograph_filepath: the path to the image file for the micrograph
 			@param app: the application to which this widget belongs
 			"""
 			QtGui.QWidget.__init__(self)
+			
+			self.invert_contrast = invert_contrast
 			
 			if box_width<1 : box_width=100
 			self.box_width=box_width
@@ -1210,6 +1215,23 @@ if ENABLE_GUI:
 				if new_filepath != self.micrograph_filepath:
 					self.micrograph_filepath = new_filepath
 					micrograph = EMData(self.micrograph_filepath)
+					
+					if self.invert_contrast:
+						from utilities import info, model_blank
+						from EMAN2 	   import Util
+						# invert contrast of micrograph so average remains unchanged
+						print "Inverting contrast of micrograph"
+						mnx = micrograph.get_xsize()
+						mny = micrograph.get_ysize()
+						sttt = info(micrograph)
+						avgimg = model_blank(mnx, ny=mny, bckg=sttt[0])
+	
+						Util.sub_img(micrograph, avgimg) # subtract average
+						Util.mul_scalar(micrograph, -1.0) # multiply by -1
+						Util.add_img(micrograph, avgimg) # add back average
+						sttt2 = info(micrograph)
+						assert(sttt[0] == sttt2[0]), "Assert failed: average of micrograph should remain same after contrast inversion!"
+						
 					self.load_micrograph(micrograph)
 		def open_micrograph(self):
 			"""
