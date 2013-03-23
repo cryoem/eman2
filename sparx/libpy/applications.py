@@ -13494,7 +13494,7 @@ def windowmic(outdir, micname, hcoordsname, pixel_size, segnx, segny, ptcl_overl
 					Util.mul_scalar(prj, -1.0)
 				prj.write_image(otcl_images, j)
 				
-def windowallmic(dirid, micid, micsuffix, outdir, dp, pixel_size, boxsize='160 45', outstacknameall='bdb:data', hcoords_suffix = "_boxes.txt", ptcl_overlap=-1, inv_contrast=False, new_pixel_size=-1, rmax = -1.0, freq = -1):
+def windowallmic(dirid, micid, micsuffix, outdir, dp, pixel_size, boxsize='160 45', outstacknameall='bdb:data', hcoords_suffix = "_boxes.txt", ptcl_overlap=-1, inv_contrast=False, new_pixel_size=-1, rmax = -1.0, freq = -1, julian_boxID=""):
 	'''
 	
 	Windows segments from helices boxed from micrographs using e2helixboxer. 
@@ -13563,6 +13563,10 @@ def windowallmic(dirid, micid, micsuffix, outdir, dp, pixel_size, boxsize='160 4
 		freq: Cut-off frequency at which to high-pass filter micrographs before windowing. 
 		
 		      Default is -1, in which case, the micrographs will be high-pass filtered with cut-off frequency 1.0/segnx, where segnx is the target x dimension of the segments.
+		
+		julian_boxID: This is for Julian's box files where 256_1c_coordinates_XXX.txt correspond to micrograph 1c_256_hp1000_XXX.hdf
+		  			  micid should be micid = '1c_256_hp1000_'
+		  			  julian_boxID should be julian_boxID = '256_1c_coordinates_'
 		
 	Output
 	
@@ -13676,7 +13680,14 @@ def windowallmic(dirid, micid, micsuffix, outdir, dp, pixel_size, boxsize='160 4
 				continue
 			if filename.find(micid)>-1:
 				# v2 is a micrograph to window IF text file containing box coordinates exists
-				hcoordsname = filename + hcoords_suffix
+				
+				if len(julian_boxID) > 0:
+					# Assume here the number of the micrograph (which also identifies box file) follows the micid
+					mic_number = filename[len(micid):]
+					hcoordsname = julian_boxID + mic_number+'.txt'
+				else:
+					hcoordsname = filename + hcoords_suffix
+				
 				hcoordsname = os.path.join(os.path.join(topdir, v1), hcoordsname)
 				# If any helices were boxed from this micrograph, say mic0, then ALL the helix coordinates should be saved under mic0 + hcoords_suffix
 				# For example, if using default e2helixboxer naming convention, then coordinates of all helices boxed in mic0 would be in mic0_boxes.txt

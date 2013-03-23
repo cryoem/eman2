@@ -144,7 +144,8 @@ def main():
 	parser.add_option("--inv_contrast",       action="store_true",	 default=False,               help="True/False, default is False. If cryo, then set to true to invert contrast so particles show up bright against dark background.")
 	parser.add_option("--new_apix",           type="float", 		 default=-1.0,                help="New target pixel size to which the micrograph should be resampled. Default is -1, in which case there is no resampling.")
 	parser.add_option("--freq",               type="float", 		 default=-1.0,                help="Cut-off frequency at which to high-pass filter micrographs before windowing. Default is -1, in which case, the micrographs will be high-pass filtered with cut-off frequency 1.0/segnx, where segnx is the target x dimension of the segments.") 
-	
+	parser.add_option("--julian_boxID",              type="string",		 default="",                  help="This is for Julian's box files where 256_1c_coordinates_XXX.txt correspond to micrograph 1c_256_hp1000_XXX.hdf micid should be micid = '1c_256_hp1000_' and julian_boxID should be julian_boxID = '256_1c_coordinates_'")
+
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1 or len(args) > 5:
 		print "usage: " + usage + "\n"
@@ -156,7 +157,7 @@ def main():
 		if options.window:
 			from applications import windowallmic
 			outdir = args[0]
-			windowallmic(options.dirid, options.micid, options.micsuffix, outdir, options.dp, pixel_size=options.apix, boxsize=options.boxsize, outstacknameall=options.outstacknameall, hcoords_suffix = options.hcoords_suffix, ptcl_overlap=options.ptcl_overlap, inv_contrast=options.inv_contrast, new_pixel_size=options.new_apix, rmax = options.rmax, freq=options.freq)
+			windowallmic(options.dirid, options.micid, options.micsuffix, outdir, options.dp, pixel_size=options.apix, boxsize=options.boxsize, outstacknameall=options.outstacknameall, hcoords_suffix = options.hcoords_suffix, ptcl_overlap=options.ptcl_overlap, inv_contrast=options.inv_contrast, new_pixel_size=options.new_apix, rmax = options.rmax, freq=options.freq, julian_boxID = options.julian_boxID)
 			sys.exit()
 			
 		if len(options.hfsc) > 0:
