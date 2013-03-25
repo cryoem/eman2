@@ -12293,36 +12293,6 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 			else: delta = dst
 			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF=False, delta=delta)
 
-
-def predict_helical_params(stack, dp, dphi, pixel_size, outfile=''):
-	
-	from utilities import write_text_row
-	from applications import get_dist
-	
-	filaments = EMUtil.get_all_attributes(stack, 'filament')
-	coords    = EMUtil.get_all_attributes(stack, 'ptcl_source_coord')
-
-	N = len(filaments)
-	params = [[0,90,90,0,0] for ii in xrange(N)]
-	rise = dp/pixel_size  # in pixels
-	permitrange = rise/2.0
-	cfil = filaments[0]
-	start = 0
-	for i in xrange(1,N):
-		if(filaments[i] != cfil ):
-			cfil = filaments[i]
-			start = i
-		else:
-			dA = pixel_size * get_dist(coords[i], coords[start])
-			params[i][0] = (dA/dp*dphi)%360.0
-			params[i][4] = (dA%dp)/pixel_size # in pixels
-			if( params[i][4] > permitrange ): params[i][4] -= rise
-
-	if len(outfile) > 0:
-		write_text_row(params, outfile)
-
-	return params
-
 def volalixshift_MPI(stack, ref_vol, outdir, search_rng, pixel_size, dp, dphi, fract, rmax, rmin, maskfile = None, \
 	    maxit = 1, CTF = False, snr = 1.0, sym = "c1",  user_func_name = "helical", \
 	    npad = 2, debug = False, nearby=3):
@@ -13008,11 +12978,6 @@ def stack_disks(v, nx, ny, ref_nz, dphi, rise):
 
 	return heli
 
-def get_dist(c1, c2):
-	from math import sqrt
-	d = sqrt((c1[0] - c2[0])**2 + (c1[1] - c2[1])**2)
-	return d
-	
 def imgstat_hfsc( stack, file_prefix, fil_attr='filament'):
 	from utilities import write_text_file
 	from applications import ordersegments
@@ -13157,202 +13122,6 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 			mpi_send(gotfil, 1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 			if(gotfil == 1):
 				send_EMData(fullvol0, main_node, ivol+myid+70000)
-
-
-def ordersegments(stack, filament_attr = 'filament'):
-	'''
-	Input:
-	
-	stack: Input stack of images whose headers contain filament membership information and particle coordinates in the original micrograph (stored under attribute ptcl_source_coord).
-	filament_attr: Attribute under which filament membership ID is stored.
-	It is assumed the prtl coords are nonnegative
-	
-	Output: 
-	
-	Returns a list of lists, where each inner list consists of IDs of segments windowed from
-	a single filament ordered according to their relative positions on the filament.
-	
-	'''
-
-	def orderbymodule(xxp,yyp):
-		from math import atan,sin,cos,pi, atan2
-		from statistics import linreg
-		nq = len(xxp)
-		xs = sum(xxp)/nq
-		ys = sum(yyp)/nq
-		xp = [0.0]*nq
-		yp = [0.0]*nq
-		for i in xrange(nq):
-			xp[i] = xxp[i] - xs
-			yp[i] = yyp[i] - ys
-		try:
-			a,b = linreg(xp,yp)
-			alpha = pi/4-atan(a)
-		except:
-			a,b = linreg([(xp[i]-yp[i]) for i in xrange(nq)], [(xp[i]+yp[i]) for i in xrange(nq)])
-			alpha = atan(a)
-			#print "except"
-
-		cs = cos(alpha)
-		ss = sin(alpha)
-		qm = 1.e23
-		dd = [[0.0, 0] for i in xrange(nq)]
-		for i in xrange(nq):
-			xt =  cs*xp[i] - ss*yp[i]
-			yt =  ss*xp[i] + cs*yp[i]
-			xp[i] = xt; yp[i] = yt
-		xs = min(xp)
-		ys = min(yp)
-		for i in xrange(nq):
-			dd[i] = [(xp[i]-xs)**2+(yp[i]-ys)**2, i]
-		dd.sort()
-		if(atan2(yyp[dd[-1][1]]-yyp[dd[0][1]],xxp[dd[-1][1]]-xxp[dd[0][1]]) >0.0 ):  return [dd[i][1] for i in xrange(nq)]
-		else:                                                                        return [dd[nq -1 -i][1] for i in xrange(nq)]
-
-	allfilaments = EMUtil.get_all_attributes(stack, filament_attr)
-	for i in xrange(len(allfilaments)):
-		allfilaments[i] = [allfilaments[i],i]
-	allfilaments.sort()
-	filaments = []
-	current = allfilaments[0][0]
-	temp = [allfilaments[0][1]]
-	for i in xrange(1,len(allfilaments)):
-		if( allfilaments[i][0] == current ):
-			temp.extend([allfilaments[i][1]])
-		else:
-			filaments.append(temp)
-			current = allfilaments[i][0]
-			temp = [allfilaments[i][1]]
-	filaments.append(temp)
-
-	del allfilaments, temp
-	ptclcoords = EMUtil.get_all_attributes(stack, 'ptcl_source_coord')
-
-	nfil = len(filaments)
-
-	for i in xrange(nfil):
-		nsegs = len(filaments[i])
-		if(nsegs > 1):
-			ord = orderbymodule([ptclcoords[filaments[i][ii]][0] for ii in xrange(nsegs)],[ptclcoords[filaments[i][ii]][1] for ii in xrange(nsegs)])
-			filaments[i] = [filaments[i][ord[ii]] for ii in xrange(nsegs)]
-	return filaments	
-
-
-def mapcoords(x, y, r, nx, ny):
-	from math 			import ceil, floor
-	from applications 	import get_dist
-	import sys
-	'''
-	Input:
-	
-	(x,y): Coordinate in old image. 
-	r: ratio by which old image is resampled by. If r < 1, then pixel size of resampled image is original pixel size divided by r.
-	nx, ny: dimensions of old image
-	
-	Assumes coordinates are positive and run from 0 to nx-1 and 0 to ny-1, where nx and ny
-	are the x and y dimensions of the micrograph respectively.
-	
-	Output:
-	
-	x'',y'':	The pixel coordinate in the resampled image where
-	
-					(x',y') = (Util.round(x''/r), Util.round(y''/r))
-					
-				and (x',y') is the closest point to (x,y) over all other points (a,b) in the
-				old image where (a,b)=  (Util.round(a''/r), Util.round(b''/r)) for some
-				pixel coordinate (a'', b'') in resampled image.
-	'''	
-	
-	# Neighborhood of (x,y) in old image which contains a point (x',y') such that
-	# (x',y') = (Util.round(x''/r), Util.round(y''/r)) for some (x'', y'') in resampled image
-	if r > 1:
-		nbrhd = 1
-	else:
-		nbrhd = int(ceil(1.0/r))+1
-			
-	allxnew = []
-	allynew = []
-	
-	for i in xrange(-nbrhd, nbrhd+1):
-		xold = Util.round(x + i)
-		if xold < 0 or xold >= nx:
-			continue
-		# See if there is xnew in new image where xold == int(Util.round(xnew/r))
-		# If there is such a xnew, then xold == int(Util.round(xnew/r)) implies r*(xold-0.5) <= xnew < r*(xold+0.5)
-		lxnew = int(floor(r*(xold - 0.5)))
-		uxnew = int(ceil(r*(xold + 0.5))) 
-		for xn in xrange(lxnew, uxnew + 1):
-			if xold == Util.round(xn/r):
-				allxnew.append(xn)
-				
-	for j in xrange(-nbrhd, nbrhd+1):
-		yold = Util.round(y + j)
-		if yold < 0 or yold >= ny:
-			continue
-		lynew = int(floor(r*(yold - 0.5)))
-		uynew = int(ceil(r*(yold + 0.5)))
-		for yn in xrange(lynew, uynew + 1):
-			if yold == Util.round(yn/r):
-				allynew.append(yn)
-				
-	if len(allxnew) == 0 or len(allynew) == 0:
-		ERROR("Could not find mapping")
-	
-	mindist = -1
-	minxnew = -1
-	minynew = -1
-	
-	for xnew in allxnew:
-		for ynew in allynew:
-			xold = Util.round(xnew/r)
-			yold = Util.round(ynew/r)
-			dst = get_dist([x,y],[xold,yold])
-			if dst > mindist:
-				mindist = dst
-				minxnew = int(xnew)
-				minynew = int(ynew)
-					
-	return minxnew, minynew
-	
-def getnewhelixcoords(hcoordsname, outdir, ratio,nx,ny, newpref="resampled_", boxsize=-1):
-	'''
-	
-	Input
-	
-		helixcoordsfile: Full path name of file with coordinates of boxed helices
-		
-		outdir: Full path name of directory in which to put new helix coordinates file.
-		
-		ratio: factor by which new image (micrograph) is resampled from old
-		
-		nx, ny: dimensions of old image (micrograph)
-		
-		newpref: prefix for attaching to fname to get name of new helix coordinates file
-	
-	Output:
-		Returns full path name of file containing new box coordinates
-	'''
-	import os
-	from utilities 		import read_text_row
-	from applications	import mapcoords
-	
-	fname = (hcoordsname.split('/'))[-1] # name of old coordinates files minus the path
-	newhcoordsname = os.path.join(outdir , newpref+fname) # full path name of new coordinates file to be created
-	f = open(newhcoordsname, 'w')
-	coords = read_text_row(hcoordsname) # old coordinates
-	ncoords = len(coords)
-	newcoords=[]
-	w = coords[0][2]
-	new_w = boxsize
-	if new_w < 0:
-		new_w = w*ratio
-	for i in xrange(ncoords):
-		xold = coords[i][0] + w/2
-		yold = coords[i][1] + w/2
-		xnew, ynew = mapcoords(xold,yold,ratio,nx,ny)
-		s = '%d\t%d\t%d\t%d\t%d\n'%(xnew-new_w/2,ynew-new_w/2, new_w, new_w, coords[i][4])
-		f.write(s)
-	return newhcoordsname	
 	
 def windowmic(outdir, micname, hcoordsname, pixel_size, segnx, segny, ptcl_overlap, inv_contrast, new_pixel_size, rmax, freq):
 	'''
@@ -13494,7 +13263,7 @@ def windowmic(outdir, micname, hcoordsname, pixel_size, segnx, segny, ptcl_overl
 					Util.mul_scalar(prj, -1.0)
 				prj.write_image(otcl_images, j)
 				
-def windowallmic(dirid, micid, micsuffix, outdir, dp, pixel_size, boxsize='160 45', outstacknameall='bdb:data', hcoords_suffix = "_boxes.txt", ptcl_overlap=-1, inv_contrast=False, new_pixel_size=-1, rmax = -1.0, freq = -1, julian_boxID=""):
+def windowallmic(dirid, micid, micsuffix, outdir, dp, pixel_size, boxsize='160 45', outstacknameall='bdb:data', hcoords_suffix = "_boxes.txt", ptcl_overlap=-1, inv_contrast=False, new_pixel_size=-1, rmax = -1.0, freq = -1):
 	'''
 	
 	Windows segments from helices boxed from micrographs using e2helixboxer. 
@@ -13563,10 +13332,6 @@ def windowallmic(dirid, micid, micsuffix, outdir, dp, pixel_size, boxsize='160 4
 		freq: Cut-off frequency at which to high-pass filter micrographs before windowing. 
 		
 		      Default is -1, in which case, the micrographs will be high-pass filtered with cut-off frequency 1.0/segnx, where segnx is the target x dimension of the segments.
-		
-		julian_boxID: This is for Julian's box files where 256_1c_coordinates_XXX.txt correspond to micrograph 1c_256_hp1000_XXX.hdf
-		  			  micid should be micid = '1c_256_hp1000_'
-		  			  julian_boxID should be julian_boxID = '256_1c_coordinates_'
 		
 	Output
 	
@@ -13680,14 +13445,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, dp, pixel_size, boxsize='160 4
 				continue
 			if filename.find(micid)>-1:
 				# v2 is a micrograph to window IF text file containing box coordinates exists
-				
-				if len(julian_boxID) > 0:
-					# Assume here the number of the micrograph (which also identifies box file) follows the micid
-					mic_number = filename[len(micid):]
-					hcoordsname = julian_boxID + mic_number+'.txt'
-				else:
-					hcoordsname = filename + hcoords_suffix
-				
+				hcoordsname = filename + hcoords_suffix
 				hcoordsname = os.path.join(os.path.join(topdir, v1), hcoordsname)
 				# If any helices were boxed from this micrograph, say mic0, then ALL the helix coordinates should be saved under mic0 + hcoords_suffix
 				# For example, if using default e2helixboxer naming convention, then coordinates of all helices boxed in mic0 would be in mic0_boxes.txt
