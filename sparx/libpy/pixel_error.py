@@ -35,7 +35,7 @@ from global_def import *
 # scattered all over the places and there are a lot of duplications and confusions.
 #
 # This file contains the following functions:
-#  1. max_2D_pixel_error (originally max_pixel_error, also I changed its input format)
+#  1. pixel_error_2D (originally max_pixel_error, also I changed its input format)
 #  2. max_3D_pixel_error
 #  3. angle_diff
 #  4. align_diff_params
@@ -60,11 +60,11 @@ from global_def import *
 # file of header() or sxheader.py.
 # Per previous discussion, I decided not to support two stacks of images.
 
-def max_2D_pixel_error(ali_params1, ali_params2, r):
+def pixel_error_2D(ali_params1, ali_params2, r):
 	"""
 	Compute average squared 2D pixel error
 	"""
-	from math import sin, pi, sqrt
+	from math import sin, pi
 	return (sin((ali_params1[0]-ali_params2[0])/180.0*pi/2)*(2*r+1))**2 / 2 + (ali_params1[1]-ali_params2[1])**2 + (ali_params1[2]-ali_params2[2])**2
 
 
@@ -315,7 +315,7 @@ def ave_ali_err(data1, data2=None, r=25, suffix="_ideal"):
 		if abs(mirror1-mirror2) == mirror: 
 			mirror_same += 1
 			alpha12, sx12, sy12, mirror12 = combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
-			err += max_2D_pixel_error([alpha12, sx12, sy12], [alpha2, sx2, sy2], r)
+			err += pixel_error_2D([alpha12, sx12, sy12], [alpha2, sx2, sy2], r)
 	
 	return alphai, sxi, syi, mirror, float(mirror_same)/nima, err/mirror_same
 
@@ -343,7 +343,7 @@ def ave_ali_err_params(ali_params1, ali_params2, r=25):
 		if abs(mirror1-mirror2) == mirror: 
 			mirror_same += 1
 			alpha12, sx12, sy12, mirror12 = combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
-			err += max_2D_pixel_error([alpha12, sx12, sy12], [alpha2, sx2, sy2], r)
+			err += pixel_error_2D([alpha12, sx12, sy12], [alpha2, sx2, sy2], r)
 
 	return alphai, sxi, syi, mirror, float(mirror_same)/nima, err/mirror_same
 
@@ -390,7 +390,7 @@ def ave_ali_err_textfile(textfile1, textfile2, r=25):
 		if abs(mirror1-mirror2) == mirror: 
 			mirror_same += 1
 			alpha12, sx12, sy12, mirror12 = combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
-			err += max_2D_pixel_error([alpha12, sx12, sy12], [alpha2, sx2, sy2], r)
+			err += pixel_error_2D([alpha12, sx12, sy12], [alpha2, sx2, sy2], r)
 	
 	return alphai, sxi, syi, mirror, float(mirror_same)/nima, err/mirror_same
 
@@ -478,7 +478,7 @@ def ali_stable_list(ali_params1, ali_params2, pixel_error_threshold, r=25):
 		alpha2, sx2, sy2, mirror2 = ali_params2[i*4:i*4+4]
 		if abs(mirror1-mirror2) == mirror:
 			alpha12, sx12, sy12, mirror12 = combine_params2(alpha1, sx1, sy1, int(mirror1), alphai, sxi, syi, 0)
-			if max_2D_pixel_error([alpha12, sx12, sy12], [alpha2, sx2, sy2], r) < pixel_error_threshold: ali_list.append(1)
+			if pixel_error_2D([alpha12, sx12, sy12], [alpha2, sx2, sy2], r) < pixel_error_threshold: ali_list.append(1)
 			else: ali_list.append(0)
 		else: ali_list.append(0)
 

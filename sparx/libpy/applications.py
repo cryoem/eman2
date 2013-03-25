@@ -109,7 +109,7 @@ def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 	from utilities    import drop_image, get_image, get_input_from_string, get_params2D, set_params2D
 	from statistics   import fsc_mask, sum_oe, hist_list
 	from alignment    import Numrinit, ringwe, ali2d_single_iter
-	from pixel_error  import max_2D_pixel_error
+	from pixel_error  import pixel_error_2D
 	from fundamentals import fshift, fft, rot_avg_table
 	from utilities    import print_begin_msg, print_end_msg, print_msg
 	from utilities    import model_blank, model_circle
@@ -353,7 +353,7 @@ def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 				else:
 			        	alpha, sx, sy, mirror, scale = get_params2D(data[im]) 
 		        	if old_ali_params[im*4+3] == mirror:
-		        		this_error = max_2D_pixel_error(old_ali_params[im*4:im*4+3], [alpha, sx, sy], last_ring)
+		        		this_error = pixel_error_2D(old_ali_params[im*4:im*4+3], [alpha, sx, sy], last_ring)
 		        		pixel_error += this_error
 					pixel_error_list.append(this_error)
 					mirror_consistent += 1
@@ -382,7 +382,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
 	from statistics   import fsc_mask, sum_oe, hist_list, varf2d_MPI
 	from alignment    import Numrinit, ringwe, ali2d_single_iter
-	from pixel_error  import max_2D_pixel_error
+	from pixel_error  import pixel_error_2D
 	from numpy        import reshape, shape
 	from fundamentals import fshift, fft, rot_avg_table
 	from utilities    import get_params2D, set_params2D
@@ -724,7 +724,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 					else:
 						alpha, sx, sy, mirror, scale = get_params2D(data[im])
 			        	if old_ali_params[im*4+3] == mirror:
-		        			this_error = max_2D_pixel_error(old_ali_params[im*4:im*4+3], [alpha, sx, sy], last_ring)
+		        			this_error = pixel_error_2D(old_ali_params[im*4:im*4+3], [alpha, sx, sy], last_ring)
 		        			pixel_error += this_error
 						pixel_error_list.append(this_error)
 						mirror_consistent += 1
@@ -775,7 +775,7 @@ def ORGali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 	from utilities    import model_circle, drop_image, get_image, get_input_from_string, get_params2D
 	from statistics   import fsc_mask, sum_oe, hist_list
 	from alignment    import Numrinit, ringwe, ali2d_single_iter
-	from pixel_error  import max_2D_pixel_error
+	from pixel_error  import pixel_error_2D
 	from filter       import filt_ctf, filt_table, filt_tophatb
 	from fundamentals import fshift
 	from utilities    import print_begin_msg, print_end_msg, print_msg
@@ -967,7 +967,7 @@ def ORGali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 		        for im in xrange(nima):
 		        	alphan, sxn, syn, mirror, scale = get_params2D(data[im]) 
 		        	if old_ali_params[im][3] == mirror:
-		        		this_error = max_2D_pixel_error(old_ali_params[im][0], old_ali_params[im][1], old_ali_params[im][2], alphan, sxn, syn, last_ring)
+		        		this_error = pixel_error_2D(old_ali_params[im][0], old_ali_params[im][1], old_ali_params[im][2], alphan, sxn, syn, last_ring)
 		        		pixel_error += this_error
 					pixel_error_list.append(this_error)
 		        	else:
@@ -992,7 +992,7 @@ def ORGali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1"
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
 	from statistics   import fsc_mask, sum_oe, add_ave_varf_MPI, hist_list
 	from alignment    import Numrinit, ringwe, ali2d_single_iter
-	from pixel_error  import max_2D_pixel_error
+	from pixel_error  import pixel_error_2D
 	from filter       import filt_table, filt_ctf, filt_tophatb
 	from numpy        import reshape, shape
 	from fundamentals import fshift, fft, rot_avg_table
@@ -1304,7 +1304,7 @@ def ORGali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1"
 					else:
 						alpha, sx, sy, mirror, scale = get_params2D(data[im]) 
 			        	if old_ali_params[im*4+3] == mirror:
-		        			this_error = max_2D_pixel_error(old_ali_params[im*4:im*4+3], [alpha, sx, sy], last_ring)
+		        			this_error = pixel_error_2D(old_ali_params[im*4:im*4+3], [alpha, sx, sy], last_ring)
 		        			pixel_error += this_error
 						pixel_error_list.append(this_error)
 						mirror_consistent += 1
