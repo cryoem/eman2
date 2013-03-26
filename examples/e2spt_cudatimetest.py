@@ -153,28 +153,31 @@ def main():
 
 			retcpu=doit(corg,options)
 
-			for i in range(len(retcpu)):
-				step = retcpu[i][0]
-				name = options.path + "/" + options.ID + "CS"+ str(step).zfill(2)  + "_FS" + str( float(step)/2.0 ).zfill(4) + '_CPU.png'
-				cnums = numpy.array(retcpu[i][-1])
-				sizes = numpy.array(retcpu[i][1])
-				print "\n$$$$$$$\nThe step is", step
-				print "\n\n"
-				print "for which sizes to plot are", sizes
-				print "and cnums to plot are", cnums
-				print "\n"
-				plotter(sizes,cnums,name,step,step/2)				
-				plt.savefig(options.path + '/' + name)
-				plt.clf()
-				
-				if options.plotminima:
-					ret=minima(sizes,cnums)
-					sizesmin=ret[0]
-					cnumsmin=ret[1]
-					namemin=name.replace('.png','_MIN.png')
-					plotter(sizesmin,cnumsmin,namemin,step,step/2)
-					plt.savefig(options.path + '/' + namemin)
+			for set in retcpu:
+				data = retcpu[set]
+			
+				for i in range(len(data)):
+					step = data[i][0]
+					name = options.path + "/" + options.ID + '_' + set + "_CS"+ str(step).zfill(2)  + "_FS" + str( float(step)/2.0 ).zfill(4) + '_CPU.png'
+					cnums = numpy.array(data[i][-1])
+					sizes = numpy.array(data[i][1])
+					print "\n$$$$$$$\nThe step is", step
+					print "\n\n"
+					print "for which sizes to plot are", sizes
+					print "and cnums to plot are", cnums
+					print "\n"
+					plotter(sizes,cnums,name,step,step/2)				
+					plt.savefig(options.path + '/' + name)
 					plt.clf()
+				
+					if options.plotminima:
+						ret=minima(sizes,cnums)
+						sizesmin=ret[0]
+						cnumsmin=ret[1]
+						namemin=name.replace('.png','_MIN.png')
+						plotter(sizesmin,cnumsmin,namemin,step,step/2)
+						plt.savefig(options.path + '/' + namemin)
+						plt.clf()
 						
 		'''
 		Compute GPU alignment times and plot them
@@ -183,29 +186,32 @@ def main():
 			corg = 'GPU'
 
 			retgpu=doit(corg,options)
-
-			for i in range(len(retgpu)):
-				step = retgpu[i][0]
-				name = options.path + "/" + options.ID + "CS"+str(step).zfill(2) + "_FS"+str( float(step)/2 ).zfill(4) + '_GPU.png'
-				gnums = numpy.array(retgpu[i][-1])
-				sizes = numpy.array(retgpu[i][1])
-				print "\n$$$$$$$\nThe step is", step
-				print "\n\n"
-				print "for which sizes to plot are", sizes
-				print "and gnums to plot are", gnums
-				print '\n'
-				plotter(sizes,gnums,name,step,step/2)
-				plt.savefig(options.path + '/' + name)
-				plt.clf()
-	
-				if options.plotminima:
-					ret=minima(sizes,gnums)
-					sizesmin=ret[0]
-					gnumsmin=ret[1]
-					namemin=name.replace('.png','_MIN.png')
-					plotter(sizesmin,gnumsmin,namemin,step,step/2)
-					plt.savefig(options.path + '/' + namemin)
+			
+			for set in retgpu:
+				data = retgpu[set]
+			
+				for i in range(len(data)):
+					step = data[i][0]
+					name = options.path + "/" + options.ID + '_' + set + "_CS"+str(step).zfill(2) + "_FS"+str( float(step)/2 ).zfill(4) + '_GPU.png'
+					gnums = numpy.array(data[i][-1])
+					sizes = numpy.array(data[i][1])
+					print "\n$$$$$$$\nThe step is", step
+					print "\n\n"
+					print "for which sizes to plot are", sizes
+					print "and gnums to plot are", gnums
+					print '\n'
+					plotter(sizes,gnums,name,step,step/2)
+					plt.savefig(options.path + '/' + name)
 					plt.clf()
+	
+					if options.plotminima:
+						ret=minima(sizes,gnums)
+						sizesmin=ret[0]
+						gnumsmin=ret[1]
+						namemin=name.replace('.png','_MIN.png')
+						plotter(sizesmin,gnumsmin,namemin,step,step/2)
+						plt.savefig(options.path + '/' + namemin)
+						plt.clf()
 
 		'''
 		I you have both CPU and GPU times, compute the ratio and plot it
