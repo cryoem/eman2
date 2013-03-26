@@ -726,7 +726,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.contrast=contrast		
 		self.mod=mod
 		self.center=center			
-		
+		self.normalize=normalize
 		self.setWindowTitle("Main Window (e2spt_boxer.py)")
 
 #		self.setWindowTitle("e2spt_boxer.py")
@@ -1108,7 +1108,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				#img['origin_y'] = 0				
 				#img['origin_z'] = 0
 				
-				if normalize:
+				if self.normalize:
 					img.process_inplace(normalize)
 				#img=img.process('normalize.edgemean')
 
@@ -1164,7 +1164,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				#img['origin_x'] = 0						
 				#img['origin_y'] = 0				
 				#img['origin_z'] = 0
-				if normalize:
+				if self.normalize:
 					e.process_inplace(normalize)
 				#img=img.process('normalize.edgemean')
 			
@@ -1192,7 +1192,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				#img['origin_x'] = 0						
 				#img['origin_y'] = 0				
 				#img['origin_z'] = 0
-				if normalize:
+				if self.normalize:
 					img.process_inplace(normalize)
 				#img=img.process('normalize.edgemean')
 			
