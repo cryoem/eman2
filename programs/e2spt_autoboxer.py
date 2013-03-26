@@ -63,6 +63,8 @@ def main():
 	
 	parser.add_argument("--pruneccc", action='store_true', help="""Pruned based on ccc mean and sigma.""",default=False)
 	parser.add_argument("--invert", action='store_true', help="""Multiply tomogram subsections by -1 to invert the contrast BEFORE looking for particles.""",default=False)
+	parser.add_argument("--normalize", action='store_true', help="""Normalizes the tomogram before looking for particles.""",default=False)
+	parser.add_argument("--threshold", action='store_true', help="""Thresholds the tomogram so that all values < 0.0 are made 0 (in the proper contrast, protein is positive).""",default=False)
 	#parser.add_argument("--prunerepeated", action='store_true', help="""Prune potential particles that are too close to eachother and thus are likely repeated hits.""",default=False)
 	parser.add_argument("--pruneprj", action='store_true', help="""Generate a projection along the z-axis of potential particles, and compare to a projection of the template.""",default=False)
 	parser.add_argument("--keep", type=float, help="""Percentage of particles, expressed as a fraction, to keep right before writing the coordinates file and output stack.""",default=0.0)
@@ -226,9 +228,16 @@ def main():
 	'''
 	Apply any specified filters (preprocess, lowpass and/or highpass)
 	'''
+	
+	if options.invert:
+		print "Patience. Inverting tomogram's contrast"
+		tomogramfile = options.path + '/' + os.path.basename( tomogramfile ).replace('.','_inv.')
+		os.system('e2proc3d.py ' + options.tomogram + ' ' + tomogramfile + ' --mult=-1')
+		options.tomogram = tomogramfile
+		
 	if options.preprocess:
 		print "Patience. Applying this processor to tomogram:", options.preprocess
-		tomogramfile = options.path + '/' + tomogramfile.replace('.','_pr.')
+		tomogramfile = options.path + '/' + os.path.basename( tomogramfile ).replace('.','_pr.')
 		os.system('e2proc3d.py ' + options.tomogram + ' ' + tomogramfile + ' --process=' + options.preprocess)
 		options.tomogram = tomogramfile
 		
@@ -236,24 +245,35 @@ def main():
 		print "Patience. Applying lowpass filter to tomogram:", options.lowpass
 		print "Whose type is", type(options.lowpass)
 		
-		if options.path in tomogramfile:
-			tomogramfile = tomogramfile.replace('.','_lp.')
-		else:
-			tomogramfile = options.path + '/' + tomogramfile.replace('.','_lp.')
+		#if options.path in tomogramfile:
+		#	tomogramfile = tomogramfile.replace('.','_lp.')
+		#else:
+		tomogramfile = options.path + '/' + os.path.basename( tomogramfile ).replace('.','_lp.')
 		os.system('e2proc3d.py ' + options.tomogram + ' ' + tomogramfile + ' --process=' + options.lowpass)
 		options.tomogram = tomogramfile
 
 	if options.highpass:
 		print "Patience. Applying highpass filter to tomogram:", options.highpass
 		
-		if options.path in tomogramfile:
-			tomogramfile = tomogramfile.replace('.','_hp.')
-		else:
-			tomogramfile = options.path + '/' + tomogramfile.replace('.','_hp.')
-		
+		#if options.path in tomogramfile:
+		#	tomogramfile = tomogramfile.replace('.','_hp.')
+		#else:
+		tomogramfile = options.path + '/' + os.path.basename( tomogramfile ).replace('.','_hp.')
 		os.system('e2proc3d.py ' + options.tomogram + ' ' + tomogramfile + ' --process=' + options.highpass)
 		options.tomogram = tomogramfile
 	
+	if options.normalize:	
+		print "Patience. Normalizing tomogram."
+		tomogramfile = options.path + '/' + os.path.basename( tomogramfile ).replace('.','_norm.')
+		os.system('e2proc3d.py ' + options.tomogram + ' ' + tomogramfile + ' --process=normalize')
+		options.tomogram = tomogramfile
+	
+	if options.threshold:	
+		print "Patience. Thresholding tomogram."
+		tomogramfile = options.path + '/' + os.path.basename( tomogramfile ).replace('.','_thresh.')
+		os.system('e2proc3d.py ' + options.tomogram + ' ' + tomogramfile + ' --process=threshold.belowtozero:minval=0.0')
+		options.tomogram = tomogramfile
+
 	'''
 	Apply any masks if there are big carbon regions beyond the grid-hole and masking is specified.
 	'''
@@ -539,11 +559,12 @@ def main():
 	regionboxsize = z
 	if yshort:
 		regionboxsize = y
-	print "The volume of the tomogram is", x*y*z 
-	print "The volume if the subregions is", regionboxsize*regionboxsize*regionboxsize
+	
 	subcubes = int( (x*y*z) / (regionboxsize*regionboxsize*regionboxsize) )
-
+	
 	if options.verbose:
+		print "The volume of the tomogram is", x*y*z 
+		print "The volume of the subregions is", regionboxsize*regionboxsize*regionboxsize
 		print "Therefore, for boxing purposes, the tomogram will be divided into at least these many sections", subcubes
 	
 	transtemplate.process_inplace('xform.scale',{'scale':1,'clip':regionboxsize})
@@ -1654,6 +1675,9 @@ def scanposition(options,template,outputboxsize,yshort,xi,yi,zi,xc,yc,zc,sbn,x,y
 	
 	#subox.write_image('subregion' +str(sbn+1).zfill(3) + '.hdf',0)
 	#print "The dimensions of the EXTRACTED subox to write are", subox['nx'],subox['ny'],subox['nz']
+	
+	#if options.invert:
+	#	subox.mult(-1)
 	
 	#print"Count is", count
 	if subox['mean']:
