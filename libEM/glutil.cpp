@@ -453,7 +453,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 		
 		// start gaussian matching
 		float mean=abs(rangemax-2)/2;
-		float standdv=abs(mean)/4;
+		float standdv=abs(mean)/3;
 		gaussianpdf=new float[rangemax-2];
 		gaussiancdf=new float[rangemax-2];
 		gaussianlookup=new int[rangemax-2];
@@ -673,7 +673,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 							//p = graylookup[(int)(t - render_min)];
 							//graylookup[i]=(unsigned char)((maxgray-mingray-2)*grayhe[(int)(i*(rangemax-3)/(render_max-render_min))]/(rangemax-3)+1);
 							//p=(unsigned char)(grayhe[(int)((t - render_min)*(rangemax-3)/(render_max-render_min))]*(maxgray-mingray-2)/(rangemax-3)+1);
-							p=(unsigned char)(gaussianlookup[(int)(ceil((rangemax-2)*(t - render_min)/(render_max-render_min)))]*(maxgray-mingray-2)/(rangemax-3)+1);
+							p=(unsigned char)(gaussianlookup[(int)(floor((rangemax-2)*(t - render_min)/(render_max-render_min)))]*(maxgray-mingray-2)/(rangemax-3)+1);
 							//p=(unsigned char)gaussianlookup[(int)(ceil)((t - render_min)*(rangemax-3)/(render_max-render_min))]+1;
 						}
 						else{
@@ -732,7 +732,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 						if (flags&32){
 							//p = graylookup[(int)(t - render_min)];
 							//p=(unsigned char)(grayhe[(int)((t - render_min)*(rangemax-3)/(render_max-render_min))]*(maxgray-mingray-2)/(rangemax-3)+1);
-							p=(unsigned char)(gaussianlookup[(int)(ceil((rangemax-2)*(t - render_min)/(render_max-render_min)))]*(maxgray-mingray-2)/(rangemax-3)+1);
+							p=(unsigned char)(gaussianlookup[(int)(floor((rangemax-2)*(t - render_min)/(render_max-render_min)))]*(maxgray-mingray-2)/(rangemax-3)+1);
 							//p=(unsigned char)gaussianlookup[(int)(ceil)((t - render_min)*(rangemax-3)/(render_max-render_min))]+1;
 						}
 						else{
