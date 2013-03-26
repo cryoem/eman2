@@ -344,14 +344,16 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 	//////Begin of Histogram Equalization//////
 
 	const int rangemax=4096;
-	unsigned char* graylookup=NULL;
+	int gaussianwide=5000;
 	unsigned int* grayhe=NULL;
+	float* gaussianpdf=NULL;
+	float* gaussiancdf=NULL;
+	int* gaussianlookup=NULL;
 	if (flags&32){
 		int graypdf[rangemax]={0};//256	
-		unsigned int graycdf[rangemax-2]={0};//254
+		int graycdf[rangemax-2]={0};//254		
 		//unsigned int grayhe[rangemax-2]={0};//#number=254
 		grayhe = new unsigned int[rangemax-2];
-		graylookup = new unsigned char[(int)(render_max-render_min)];
 		//unsigned char graylookup[(int)(render_max-render_min)];//render_max-render_min
 		
 		for (int i=0; i<(int)(rangemax-2); i++) {
@@ -438,24 +440,52 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 				remy += addr;
 				if (remy > scale_n) {
 					remy -= scale_n;
-					l += nx;
+					l += nx; 
 				}
 			}
 		}
-				
+		
 		for (int i=0; i<(rangemax-2); i++) {//0~253
 			for (int j=0;j<(i+1);j++) {
 				graycdf[i]=graycdf[i]+graypdf[j+1];
 			}
 		}
 		
+		// start gaussian matching
+		float mean=abs(rangemax-2)/2;
+		float standdv=abs(mean)/4;
+		gaussianpdf=new float[rangemax-2];
+		gaussiancdf=new float[rangemax-2];
+		gaussianlookup=new int[rangemax-2];
+		
+		for (int i=0; i<(rangemax-2); i++){
+			gaussianpdf[i]=exp(-(i-mean)*(i-mean)/(2*standdv*standdv))/sqrt(standdv * standdv * 2 * M_PI);
+			
+			if(i!=0){
+				gaussiancdf[i]=gaussiancdf[i-1]+gaussianpdf[i];
+			}
+			else{
+				gaussiancdf[i]=gaussianpdf[i];
+			}
+		}
+		
+		for (int i=0; i<(rangemax-2); i++) {
+			gaussiancdf[i]=graycdf[rangemax-3]*gaussiancdf[i]/gaussiancdf[rangemax-3];
+		}
+		
+		for (int i=0; i<(rangemax-2); i++){
+			for (int j=0; j<(rangemax-2); j++){
+				if (graycdf[i]<=gaussiancdf[j]){
+					gaussianlookup[i]=j;
+					break;
+				}
+			}
+		}
+		
 		for (int i=0; i<(rangemax-2); i++) {			
 			grayhe[i]=floor(0.5+(((double)(rangemax-3)*graycdf[i])/graycdf[rangemax-3]));
 		}
-
-		for (int i=0; i<(int)(render_max-render_min); i++) {
-			graylookup[i]=(unsigned char)((maxgray-mingray-2)*grayhe[(int)(i*(rangemax-3)/(render_max-render_min))]/(rangemax-3)+1);
-		}
+		
 	} 
 		
 	//////End of Histogram Equalization///////	
@@ -642,7 +672,9 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 						if (flags&32){
 							//p = graylookup[(int)(t - render_min)];
 							//graylookup[i]=(unsigned char)((maxgray-mingray-2)*grayhe[(int)(i*(rangemax-3)/(render_max-render_min))]/(rangemax-3)+1);
-							p=(unsigned char)(grayhe[(int)((t - render_min)*(rangemax-3)/(render_max-render_min))]*(maxgray-mingray-2)/(rangemax-3)+1);								
+							//p=(unsigned char)(grayhe[(int)((t - render_min)*(rangemax-3)/(render_max-render_min))]*(maxgray-mingray-2)/(rangemax-3)+1);
+							p=(unsigned char)(gaussianlookup[(int)(ceil((rangemax-2)*(t - render_min)/(render_max-render_min)))]*(maxgray-mingray-2)/(rangemax-3)+1);
+							//p=(unsigned char)gaussianlookup[(int)(ceil)((t - render_min)*(rangemax-3)/(render_max-render_min))]+1;
 						}
 						else{
 							p=(unsigned char) (gs * (t - render_min));	
@@ -699,7 +731,9 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 					else {
 						if (flags&32){
 							//p = graylookup[(int)(t - render_min)];
-							p=(unsigned char)(grayhe[(int)((t - render_min)*(rangemax-3)/(render_max-render_min))]*(maxgray-mingray-2)/(rangemax-3)+1);
+							//p=(unsigned char)(grayhe[(int)((t - render_min)*(rangemax-3)/(render_max-render_min))]*(maxgray-mingray-2)/(rangemax-3)+1);
+							p=(unsigned char)(gaussianlookup[(int)(ceil((rangemax-2)*(t - render_min)/(render_max-render_min)))]*(maxgray-mingray-2)/(rangemax-3)+1);
+							//p=(unsigned char)gaussianlookup[(int)(ceil)((t - render_min)*(rangemax-3)/(render_max-render_min))]+1;
 						}
 						else{
 							p=(unsigned char) (gs * (t - render_min));	
@@ -763,8 +797,13 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 		glDrawPixels(ixsize,iysize,GL_LUMINANCE,GL_UNSIGNED_BYTE,(const GLvoid *)ret.data());
 	}
 
-	delete [] graylookup;
+
 	delete [] grayhe;
+	
+	delete[] gaussianpdf;
+	delete[] gaussiancdf;
+	delete[] gaussianlookup;
+	
 	return ret;
 }
 
