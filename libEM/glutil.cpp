@@ -672,11 +672,16 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 						if (flags&32){
 							//p = graylookup[(int)(t - render_min)];
 							//graylookup[i]=(unsigned char)((maxgray-mingray-2)*grayhe[(int)(i*(rangemax-3)/(render_max-render_min))]/(rangemax-3)+1);
-							//p=(unsigned char)(grayhe[(int)((t - render_min)*(rangemax-3)/(render_max-render_min))]*(maxgray-mingray-2)/(rangemax-3)+1);
-							p=(unsigned char)(gaussianlookup[(int)(floor((rangemax-2)*(t - render_min)/(render_max-render_min)))]*(maxgray-mingray-2)/(rangemax-3)+1);
+							if (flags&64)
+							{
+								p=(unsigned char)(gaussianlookup[(int)(floor((rangemax-2)*(t - render_min)/(render_max-render_min)))]*(maxgray-mingray-2)/(rangemax-3)+1);
+							}
+							else{
+								p=(unsigned char)(grayhe[(int)((t - render_min)*(rangemax-3)/(render_max-render_min))]*(maxgray-mingray-2)/(rangemax-3)+1);}
 							//p=(unsigned char)gaussianlookup[(int)(ceil)((t - render_min)*(rangemax-3)/(render_max-render_min))]+1;
 						}
-						else{
+						else
+						{
 							p=(unsigned char) (gs * (t - render_min));	
 						}
 						
@@ -731,8 +736,12 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 					else {
 						if (flags&32){
 							//p = graylookup[(int)(t - render_min)];
-							//p=(unsigned char)(grayhe[(int)((t - render_min)*(rangemax-3)/(render_max-render_min))]*(maxgray-mingray-2)/(rangemax-3)+1);
-							p=(unsigned char)(gaussianlookup[(int)(floor((rangemax-2)*(t - render_min)/(render_max-render_min)))]*(maxgray-mingray-2)/(rangemax-3)+1);
+							if (flags&64){
+								p=(unsigned char)(gaussianlookup[(int)(floor((rangemax-2)*(t - render_min)/(render_max-render_min)))]*(maxgray-mingray-2)/(rangemax-3)+1);
+							}
+							else{
+								p=(unsigned char)(grayhe[(int)((t - render_min)*(rangemax-3)/(render_max-render_min))]*(maxgray-mingray-2)/(rangemax-3)+1);
+							}
 							//p=(unsigned char)gaussianlookup[(int)(ceil)((t - render_min)*(rangemax-3)/(render_max-render_min))]+1;
 						}
 						else{
