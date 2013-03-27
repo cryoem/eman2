@@ -648,9 +648,8 @@ class EMImage2DWidget(EMGLWidget):
 		else : self.invert=0
 		self.updateGL()
 
-	def set_histogram(self,val):
-		if val: self.histogram=1
-		else : self.histogram=0
+	def set_histogram(self,mode):
+		self.histogram=mode
 		self.updateGL()
 
 	def set_FFT(self,val):
@@ -808,6 +807,8 @@ class EMImage2DWidget(EMGLWidget):
 			if not self.glflags.npt_textures_unsupported():
 				if self.histogram==1:
 					a=(1,(self.width()-1)/4*4+4,self.height(),GLUtil.render_amp8(self.data, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,34))
+				elif self.histogram==2:
+					a=(1,(self.width()-1)/4*4+4,self.height(),GLUtil.render_amp8(self.data, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,98))
 				else :
 					a=(1,(self.width()-1)/4*4+4,self.height(),GLUtil.render_amp8(self.data, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,2))
 			else :
@@ -1918,10 +1919,11 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.vbl2.addWidget(self.invtog,0,0,1,1)#0012
 
 
-		self.histoequal = QtGui.QPushButton("EqHist")
-		self.histoequal.setCheckable(1)
+		self.histoequal = QtGui.QComboBox(self)
+		self.histoequal.addItem("Normal")
+		self.histoequal.addItem("Hist Flat")
+		self.histoequal.addItem("Hist Gauss")
 		self.vbl2.addWidget(self.histoequal,0,1,1,1)
-
 
 		self.auto_contrast_button = QtGui.QPushButton("Auto contrast")
 		self.vbl2.addWidget(self.auto_contrast_button,1,0,1,2)
@@ -1999,7 +2001,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		QtCore.QObject.connect(self.gammas, QtCore.SIGNAL("valueChanged"), self.new_gamma)
 		QtCore.QObject.connect(self.pyinp, QtCore.SIGNAL("returnPressed()"),self.do_python)
 		QtCore.QObject.connect(self.invtog, QtCore.SIGNAL("toggled(bool)"), target.set_invert)
-		QtCore.QObject.connect(self.histoequal, QtCore.SIGNAL("toggled(bool)"), target.set_histogram)
+		QtCore.QObject.connect(self.histoequal, QtCore.SIGNAL("currentIndexChanged(int)"), target.set_histogram)
 		QtCore.QObject.connect(self.fftg, QtCore.SIGNAL("buttonClicked(int)"), target.set_FFT)
 		QtCore.QObject.connect(self.mmtab, QtCore.SIGNAL("currentChanged(int)"), target.set_mouse_mode)
 		QtCore.QObject.connect(self.auto_contrast_button, QtCore.SIGNAL("clicked(bool)"), target.auto_contrast)
