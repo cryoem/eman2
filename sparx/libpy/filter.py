@@ -441,21 +441,21 @@ def filt_ctf(img, ctf, dopad=True, sign=1, binary = 0):
 	"""
 	from EMAN2 import Processor
 	assert img.get_ysize() > 1
-	dict = ctf.to_dict()
-	dz = dict["defocus"]
-	cs = dict["cs"]
-	voltage = dict["voltage"]
-	pixel_size = dict["apix"]
-	b_factor = dict["bfactor"]
-	ampcont = dict["ampcont"]
-	dza = dict["dfdiff"]
-	azz = dict["dfang"]
+	dict        = ctf.to_dict()
+	dz          = dict["defocus"]
+	cs          = dict["cs"]
+	voltage     = dict["voltage"]
+	pixel_size  = dict["apix"]
+	b_factor    = dict["bfactor"]
+	ampcont     = dict["ampcont"]
+	dza         = dict["dfdiff"]
+	azz         = dict["dfang"]
 
-        if dopad and not img.is_complex():  ip = 1
-	else:                             ip = 0
+	if dopad and not img.is_complex():  ip = 1
+	else:                               ip = 0
 
 	params = {"filter_type": Processor.fourier_filter_types.CTF_,
-	 	"defocus" : dz,
+		"defocus" : dz,
 		"Cs": cs,
 		"voltage": voltage,
 		"Pixel_size": pixel_size,
