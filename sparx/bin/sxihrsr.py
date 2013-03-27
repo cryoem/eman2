@@ -74,7 +74,6 @@ def main():
 	parser.add_option("--apix",               type="float",			 default= -1.0,               help="pixel size in Angstroms")   
 	parser.add_option("--dp",                 type="float",			 default= -1.0,               help="delta z - translation in Angstroms")   
 	parser.add_option("--dphi",               type="float",			 default= -1.0,               help="delta phi - rotation in degrees")  
-	parser.add_option("--cons",               type="string",		 default="",  	              help="do local search taking into account helical consistency using the consistent parameters in the specified file")
 	parser.add_option("--recons_iter",        type="int",			 default= -1,                 help="Do reconstruction every recons_iter iterations. Default is -1, in which case only reconstruction of last iteration is done")   
 	parser.add_option("--ref_iter",           type="int",			 default= -1,                 help="Use the reconstruction from ever ref_iter as reference volume. Default is -1, in which case starting volume always used as reference volume")   
 	parser.add_option("--NOROUND",            action="store_true",   default=False,      		  help="Do NOT round parameters around which to perform local search according to step size")
@@ -146,6 +145,8 @@ def main():
 	parser.add_option("--freq",               type="float", 		 default=-1.0,                help="Cut-off frequency at which to high-pass filter micrographs before windowing. Default is -1, in which case, the micrographs will be high-pass filtered with cut-off frequency 1.0/segnx, where segnx is the target x dimension of the segments.") 
 	parser.add_option("--julian_boxID",              type="string",		 default="",                  help="This is for Julian's box files where 256_1c_coordinates_XXX.txt correspond to micrograph 1c_256_hp1000_XXX.hdf micid should be micid = '1c_256_hp1000_' and julian_boxID should be julian_boxID = '256_1c_coordinates_'")
 
+	parser.add_option("--local",                action="store_true",   default=False,      		  help="Do local search taking into account helical consistency")
+	
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1 or len(args) > 5:
 		print "usage: " + usage + "\n"
@@ -303,14 +304,12 @@ def main():
 			gendisks_MPI(args[0], mask3d, options.ref_nx, options.ref_nx, options.ref_nz, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, options.CTF, options.function, options.sym, options.gendisk)
 			global_def.BATCH = False
 		else:
-			if len(options.cons) > 0:
-				#from development import debugihrsrlocalcons_MPI
+			if options.local:
 				from development import ihrsrlocalcons_MPI
 				global_def.BATCH = True
 				if len(args) < 4:  mask = None
 				else:               mask = args[3]
-				#debugihrsrlocalcons_MPI(args[0], args[1], args[2], mask, options.cons, irp, oup, options.rs, xrp, options.ynumber, txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, rminp, rmaxp, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.apix, options.debug, y_restrict2, options.WRAP, options.recons_iter, options.ref_iter, options.NOROUND, options.fcutoff) 
-				ihrsrlocalcons_MPI(args[0], args[1], args[2], mask, options.cons, irp, oup, options.rs, xrp, options.ynumber, txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, rminp, rmaxp, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.apix, options.debug, y_restrict2, options.WRAP,options.fcutoff)
+				ihrsrlocalcons_MPI(args[0], args[1], args[2], mask, irp, oup, options.rs, xrp, options.ynumber, txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, rminp, rmaxp, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.apix, options.debug, y_restrict2,options.fcutoff)
 				global_def.BATCH = False
 			else:
 				from applications import ihrsr
