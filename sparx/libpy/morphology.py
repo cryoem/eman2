@@ -242,7 +242,7 @@ def threshold_maxval(img, maxval = 0.0):
 	return img.process( "threshold.clampminmax", {"minval": st[2], "maxval": maxval } )	
 
 ## CTF related functions
-def rotavg_ctf(img, defocus, voltage, Pixel_size, Cs, bfactor, wgh, amp, ang):
+def rotavg_ctf(img, defocus, Cs, voltage, Pixel_size, bfactor, wgh, amp, ang):
 	"""1D rotational average of a 2D power spectrum (img)
 	   based on estimated CTF parameters, including astigmatism amplitude and angle
 	"""
