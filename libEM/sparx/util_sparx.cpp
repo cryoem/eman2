@@ -18662,7 +18662,9 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 		ref_phi[iref] = crefim[iref]->get_attr("phi");
 	}
 	float nbrinp;
+	float nbrinp_mirror;
 	bool  use_ref;
+	bool  use_ref_mirror;
 	int   kx = int(2*xrng/step+0.5)/2;
 	//int ychoice = 0;
 	//int phichoice = 0;
@@ -18681,17 +18683,22 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 				//  compare with all reference images
 				// for iref in xrange(len(crefim)):
 				for ( iref = 0; iref < (int)crefim_len; iref++) {
-						// inner product of iref's Eulerian angles with that of the data
-					if (!mirror_only) nbrinp = n3[iref]*imn3 + n1[iref]*imn1 + n2[iref]*imn2;
-						// inner product of the mirror of iref's Eulerian angles with that of the data
-					else              nbrinp = n3[iref]*imn3 - n1[iref]*imn1 - n2[iref]*imn2;
-					if (nbrinp >= ant) use_ref = true;
-					else               use_ref = false;
+				
+					use_ref = false;
+					use_ref_mirror = false;
+				
+					// inner product of iref's Eulerian angles with that of the data
+					nbrinp = n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3;
+					if (nbrinp >= ant)   use_ref = true;
+						
+					// inner product of the mirror of iref's Eulerian angles with that of the data
+					nbrinp_mirror = n3[iref]*imn3 - n1[iref]*imn1 - n2[iref]*imn2;
+					if (nbrinp_mirror >= ant)  use_ref_mirror = true;
 
-					if(use_ref) {
+					if(use_ref || use_ref_mirror){
 						//cout << "  USED REF  "<<endl;
 						Dict retvals;
-						if (mirror_only == true) {
+						if (use_ref_mirror == true) {
 						    if ((psi-90.0f) < 90.0f) retvals = Crosrng_sm_psi(crefim[iref], cimage, numr,   0, 1, psi_max);
 						    else                     retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, 180, 1, psi_max); 
 						} else {
@@ -18706,8 +18713,8 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 							nref = iref;
 							ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
 							peak = static_cast<float>(qn);
-							if (!mirror_only)  mirror = 0;
-							else               mirror = 1;
+							if (use_ref_mirror)  mirror = 1;
+							else               mirror = 0;
 						}
 					}
 				}
@@ -18726,18 +18733,23 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 			Frngs(cimage, numr);
 			//  compare with all reference images
 			// for iref in xrange(len(crefim)):
-			for ( iref = 0; iref < (int)crefim_len; iref++)  {				
-					// inner product of iref's Eulerian angles with that of the data
-				if (!mirror_only) nbrinp = n3[iref]*imn3 + n1[iref]*imn1 + n2[iref]*imn2;
-					// inner product of the mirror of iref's Eulerian angles with that of the data
-				else              nbrinp = n3[iref]*imn3 - n1[iref]*imn1 - n2[iref]*imn2;
-				if (nbrinp >= ant) use_ref = true;
-				else               use_ref = false;
-
-				if(use_ref) {
+			for ( iref = 0; iref < (int)crefim_len; iref++)  {			
+				use_ref = false;
+				use_ref_mirror = false;
+				
+				// inner product of iref's Eulerian angles with that of the data
+				nbrinp = n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3;
+				if (nbrinp >= ant)   use_ref = true;
+						
+				// inner product of the mirror of iref's Eulerian angles with that of the data
+				nbrinp_mirror = n3[iref]*imn3 - n1[iref]*imn1 - n2[iref]*imn2;
+				if (nbrinp_mirror >= ant)  use_ref_mirror = true;
+							
+				
+				if(use_ref || use_ref_mirror) {
 						//cout << "  USED REF ynumber=0 "<<endl;
 					Dict retvals;
-					if (mirror_only == true) {
+					if (use_ref_mirror == true) {
 					    if ((psi-90.0f) < 90.0f) retvals = Crosrng_sm_psi(crefim[iref], cimage, numr,   0, 1, psi_max);
 					    else                     retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, 180, 1, psi_max); 
 					} else {
@@ -18752,8 +18764,8 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 						nref = iref;
 						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
 						peak = static_cast<float>(qn);
-						if (!mirror_only) mirror = 0;
-						else              mirror = 1;
+						if (use_ref_mirror)  mirror = 1;
+							else               mirror = 0;
 					}
 				}
 			} 
@@ -18786,26 +18798,23 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 				Normalize_ring( cimage, numr );
 	
 				Frngs(cimage, numr);
-				//  compare with all reference images
+				//  compare with all reference images within the specified neighborhood
 				// for iref in xrange(len(crefim)):
 				for ( iref = 0; iref < (int)crefim_len; iref++) {
 					use_ref = false;
-					if (!mirror_only) {
-						// inner product of iref's Eulerian angles with that of the data
-						nbrinp = n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3;
+					use_ref_mirror = false;
+					
+					// inner product of iref's Eulerian angles with that of the data
+					nbrinp = n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3;
+					if (nbrinp >= ant)   use_ref = true;
 						
-						if (nbrinp >= ant)   use_ref = true;
-						
-					} else if (mirror_only) {
-						// inner product of the mirror of iref's Eulerian angles with that of the data
-						nbrinp = n3[iref]*imn3 - n1[iref]*imn1 - n2[iref]*imn2;
-						if (nbrinp >= ant)  use_ref = true;
-					}
-					if(use_ref) {
-						//phichoice = phichoice + 1;
-						//cout << "  USED REF ynumber>0 "<<endl;
+					// inner product of the mirror of iref's Eulerian angles with that of the data
+					nbrinp_mirror = n3[iref]*imn3 - n1[iref]*imn1 - n2[iref]*imn2;
+					if (nbrinp_mirror >= ant)  use_ref_mirror = true;
+					
+					if(use_ref || use_ref_mirror) {
 						Dict retvals;
-						if (mirror_only == true) {
+						if (use_ref_mirror == true) {
 							if ((psi-90.0f) < 90.0f) retvals = Crosrng_sm_psi(crefim[iref], cimage, numr,   0, 1, psi_max);
 							else                     retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, 180, 1, psi_max); 
 						} else {
@@ -18820,8 +18829,8 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 							nref = iref;
 							ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
 							peak = static_cast<float>(qn);
-							if (!mirror_only)  mirror = 0;
-							else               mirror = 1;
+							if (use_ref_mirror)  mirror = 1;
+							else               mirror = 0;
 						}
 					}
 				}
