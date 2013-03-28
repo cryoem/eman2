@@ -2,6 +2,7 @@
 #
 # Author: John Flanagan (jfflanag@bcm.edu)
 # Copyright (c) 2000-2011 Baylor College of Medicine
+# Modified by Stephen Murray (scmurray@bcm.edu) 3/28/13
 
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -156,20 +157,20 @@ def main():
 	tiltimgs = EMData.read_images(options.tiltdata)
 	untiltimgs = EMData.read_images(options.untiltdata)
 	if len(tiltimgs) != len(untiltimgs):
-		print "The untilted image stack is not the same lenght as the tilted stack!!!"
+		print "The untilted image stack is not the same length as the tilted stack!!!"
 		exit(1)
 	
 	# write projection command to DB. If we rerun this program no need to reproject if it was done using same pars before
 	cdb = db_open_dict('bdb:cmdcache')
 	projparmas = "%s%f%s"%(options.volume,options.delta, options.sym)
-	try:
-		if (cdb.has_key('projparmas') and  cdb['projparmas'] == projparmas): raise IOError("Projection file does not exsist")
-		run("e2proc2d.py bdb:%s#projections_00 bdb:%s#projections_00"%(cdb['previouspath'], options.path))
-	except:	
-		# Do projections
-		e2projectcmd = "e2project3d.py %s --orientgen=eman:delta=%f:inc_mirror=1:perturb=0 --outfile=bdb:%s#projections_00 --projector=standard --sym=%s" % (options.volume,options.delta,options.path, options.sym) # Seems to work better when I check all possibilites	
-		if options.parallel: e2projectcmd += " --parallel=%s" %options.parallel
-		run(e2projectcmd)
+#	try:
+#		if (cdb.has_key('projparmas') and  cdb['projparmas'] == projparmas): raise IOError("Projection file does not exist")
+#		run("e2proc2d.py bdb:%s#projections_00 bdb:%s#projections_00"%(cdb['previouspath'], options.path))
+#	except:	
+	# Do projections
+	e2projectcmd = "e2project3d.py %s --orientgen=eman:delta=%f:inc_mirror=1:perturb=0 --outfile=bdb:%s#projections_00 --projector=standard --sym=%s" % (options.volume,options.delta,options.path, options.sym) # Seems to work better when I check all possibilites	
+	if options.parallel: e2projectcmd += " --parallel=%s" %options.parallel
+	run(e2projectcmd)
 	cdb['projparmas'] = projparmas
 	cdb['previouspath'] = options.path
 	cdb.close()
