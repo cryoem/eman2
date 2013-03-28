@@ -159,7 +159,7 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weig
 
 
 def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad=4, xysize=-1, zsize=-1):
-	from utilities import reduce_EMData_to_root
+	from utilities import reduce_EMData_to_root, pad
 	from EMAN2 import Reconstructors
 	from utilities import iterImagesList
 	import types
@@ -172,8 +172,10 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad=4, xysize=-1,
 
 	imgsize = prjlist.image().get_xsize()
 	if prjlist.image().get_ysize() != imgsize:
-		ERROR("input data has to be square","recons3d_4nn_MPI",1)
-
+		imgsize = max(imgsize, prjlist.image().get_ysize())
+		dopad = True
+	else:
+		dopad = False
 	prjlist.goToPrev()
 
 	fftvol = EMData()
@@ -201,12 +203,11 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad=4, xysize=-1,
 	if not (info is None): nimg = 0
 	while prjlist.goToNext():
 		prj = prjlist.image()
-		if prj.get_xsize() != imgsize or prj.get_ysize() != imgsize:
-			ERROR("inconsistent image size","recons3d_4nn_MPI",1)
 
 		active = prj.get_attr_default('active', 1)
 		if(active == 1):
 			xform_proj = prj.get_attr( "xform.projection" )
+			if dopad: prj = pad(prj, imgsize,imgsize, 1, "circumference")
 			r.insert_slice(prj, xform_proj )
 			if( not (info is None) ):
 				nimg += 1
@@ -254,6 +255,7 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 10.0, sign=1, symmetry="c
 	"""
 	import types
 	from EMAN2 import Reconstructors
+	from utilities import pad
 
 	# read first image to determine the size to use
 	if list_proj == []:	
@@ -265,19 +267,16 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 10.0, sign=1, symmetry="c
 		proj = EMData()
 		proj.read_image(stack_name, list_proj[0])
 	else:    proj = stack_name[list_proj[0]].copy()
-	
+
 	# convert angles to transform (rotation) objects
 	active = proj.get_attr_default('active', 1)
 	size   = proj.get_xsize()
-	"""
-	padffted = proj.get_attr_default("padffed", 0)
+	if proj.get_ysize() != size:
+		size = max(size, proj.get_ysize())
+		dopad = True
+	else:
+		dopad = False
 
-	if padffted == 1 :
-		size = size /npad
-
-	elif size != proj.get_ysize():
-		ERROR("input data has to be square","recons3d_4nn_ctf",1)
-	"""
 	# reconstructor
 	fftvol = EMData()
 	weight = EMData()
@@ -312,6 +311,7 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 10.0, sign=1, symmetry="c
 			active = proj.get_attr_default('active', 1)
 			if(active == 1):
 				xform_proj = proj.get_attr("xform.projection")
+				if dopad: proj = pad(proj, size, size, 1, "circumference")
 				r.insert_slice(proj, xform_proj )
 	else:
 		for i in xrange(len(list_proj)):
@@ -333,7 +333,7 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None, n
 			sign: sign of the CTF 
 			symmetry: point-group symmetry to be enforced, each projection will enter the reconstruction in all symmetry-related directions.
 	"""
-	from utilities import reduce_EMData_to_root
+	from utilities import reduce_EMData_to_root, pad
 	from EMAN2 import Reconstructors
 	from utilities import iterImagesList
 	import types
@@ -344,7 +344,10 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None, n
 		ERROR("empty input list","recons3d_4nn_ctf_MPI",1)
 	imgsize = prjlist.image().get_xsize()
 	if prjlist.image().get_ysize() != imgsize:
-		ERROR("input data has to be square","recons3d_4nn_ctf_MPI",1)
+		imgsize = max(imgsize, prjlist.image().get_ysize())
+		dopad = True
+	else:
+		dopad = False
 	prjlist.goToPrev()
 
 	fftvol = EMData()
@@ -372,18 +375,16 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None, n
 	if not (info is None): nimg = 0
 	while prjlist.goToNext():
 		prj = prjlist.image()
-		if prj.get_xsize() != imgsize or prj.get_ysize() != imgsize:
-			ERROR("inconsistent image size","recons3d_4nn_ctf_MPI",1)
-
 		active = prj.get_attr_default('active', 1)
 		if active == 1:
 			xform_proj = prj.get_attr( "xform.projection" )
+			if dopad: prj = pad(prj, imgsize,imgsize, 1, "circumference")
 			r.insert_slice(prj, xform_proj )
 		if not (info is None):
 			nimg += 1
 			info.write(" %4d inserted\n" %(nimg) )
 			info.flush()
-
+	del pad
 	if not (info is None): 
 		info.write( "begin reduce\n" )
 		info.flush()
