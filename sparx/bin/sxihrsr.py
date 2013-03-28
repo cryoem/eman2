@@ -62,7 +62,7 @@ def main():
 	parser.add_option("--rs",                 type="int",   		 default= 1,                  help="step between rings in rotational correlation >0  (set to 1)" ) 
 	parser.add_option("--xr",                 type="string",		 default= " 4  2 1  1   1",   help="range for translation search in x direction, search is +/-xr (Angstroms) ")
 	parser.add_option("--txs",                type="string",		 default= "1 1 1 0.5 0.25",   help="step size of the translation search in x directions, search is -xr, -xr+ts, 0, xr-ts, xr (Angstroms)")
-	parser.add_option("--y_restrict",         type="string",		 default= "-1 -1 -1 -1 -1",   help="range for translational search in y-direction, search is +/-y_restrict in Angstroms. This only applies to local search, i.e., when an is not -1. If y_restrict < 0, then the y search range is set such that it is the same ratio to dp as angular search range is to dphi. Default is -1.")
+	parser.add_option("--y_restrict",         type="string",		 default= "-1 -1 -1 -1 -1",   help="range for translational search in y-direction, search is +/-y_restrict in Angstroms. This only applies to local search, i.e., when an is not -1. If y_restrict < 0, then for ihrsrlocalcons (option --localcons local search with consistency), the y search range is set such that it is the same ratio to dp as angular search range is to dphi. For regular ihrsr, y search range is the full range when y_restrict< 0. Default is -1.")
 	parser.add_option("--ynumber",            type="string",		 default= "4 8 16 32 32",     help="even number of the translation search in y direction, search is (-dpp/2,-dpp/2+dpp/ny,,..,0,..,dpp/2-dpp/ny dpp/2]")
 	parser.add_option("--delta",              type="string",		 default= " 10 6 4  3   2",   help="angular step of reference projections")
 	parser.add_option("--an",                 type="string",		 default= "-1",               help="angular neighborhood for local searches")
@@ -145,7 +145,7 @@ def main():
 	parser.add_option("--freq",               type="float", 		 default=-1.0,                help="Cut-off frequency at which to high-pass filter micrographs before windowing. Default is -1, in which case, the micrographs will be high-pass filtered with cut-off frequency 1.0/segnx, where segnx is the target x dimension of the segments.") 
 	parser.add_option("--julian_boxID",              type="string",		 default="",                  help="This is for Julian's box files where 256_1c_coordinates_XXX.txt correspond to micrograph 1c_256_hp1000_XXX.hdf micid should be micid = '1c_256_hp1000_' and julian_boxID should be julian_boxID = '256_1c_coordinates_'")
 
-	parser.add_option("--local",                action="store_true",   default=False,      		  help="Do local search taking into account helical consistency")
+	parser.add_option("--localcons",                action="store_true",   default=False,      		  help="Do local search taking into account helical consistency")
 	
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1 or len(args) > 5:
@@ -304,7 +304,7 @@ def main():
 			gendisks_MPI(args[0], mask3d, options.ref_nx, options.ref_nx, options.ref_nz, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, options.CTF, options.function, options.sym, options.gendisk)
 			global_def.BATCH = False
 		else:
-			if options.local:
+			if options.localcons:
 				from development import ihrsrlocalcons_MPI
 				global_def.BATCH = True
 				if len(args) < 4:  mask = None
