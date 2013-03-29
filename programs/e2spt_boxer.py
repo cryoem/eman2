@@ -72,8 +72,11 @@ def main():
 	parser.add_argument("--apix",type=float,help="Use THIS A/pix value to display the tomogram (if filtering) and to write to the header of the extracted subvolumes, instead of using the apix value one stored in the tomogram's header.",default=0.0, guitype='floatbox', row=3, col=0, rowspan=1, colspan=1, mode="boxing['self.pm().getAPIX()']")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--helixboxer",action="store_true",default=False,help="Helix Boxer Mode", guitype='boolbox', row=2, col=2, rowspan=1, colspan=1, mode="boxing")
-	parser.add_argument("--normproc",type=str,help="""Normalization processor applied to particles before alignment. Default is None. 
-													Use --normproc=normalize or --normproc=normalize.edgemean.""", default=None)
+	parser.add_argument("--normproc",type=str,help="""Normalization processor applied to particles before extraction.
+													Use --normproc=normalize, --normproc=normalize.edgemean or --normalize.mask, from worst to best. 
+													If using the latter, you must provide --masknorm, otherwise, a default --masknorm=mask.sharp:outer_radius=-2 will be used.""", default=None)
+	parser.add_argument("--masknorm",type=str,help="Mask used to normalize particles before extraction. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
+	parser.add_argument("--thresh",type=str,help="Threshold particles before writing them out to get rid of too high and/or too low pixel values.", default=None)
 
 	#parser.add_argument('--bin', type=int, default=1, help="""Specify the binning/shrinking factor you want to use (for X,Y and Z) when opening the tomogram for boxing. \nDon't worry, the sub-volumes will be extracted from the UNBINNED tomogram. \nIf binx, biny or binz are also specified, they will override the general bin value for the corresponding X, Y or Z directions""", guitype='intbox', row=3, col=1, rowspan=1, colspan=1, mode="boxing")
 	
@@ -104,6 +107,16 @@ def main():
 
 	global options
 	(options, args) = parser.parse_args()
+	
+	
+	if options.normproc: 
+		options.normproc=parsemodopt(options.normproc)
+	
+	if options.masknorm: 
+		options.masknorm=parsemodopt(options.masknorm)
+		
+	if options.thresh: 
+		options.thresh=parsemodopt(options.thresh)
 	
 	
 	'''
@@ -259,7 +272,7 @@ shrunk and/or lowpass filtered).
 It is also called when boxing from the commandline, without GUI usage, as when you already have
 a coordinates file
 """
-def unbinned_extractor(boxsize,x,y,z,cshrink,invert,center,tomogram=argv[1]):
+def unbinned_extractor(options,boxsize,x,y,z,cshrink,invert,center,tomogram=argv[1]):
 	
 	tomo_header=EMData(tomogram,0,True)
 	print "Which has a size of", tomo_header['nx'],tomo_header['ny'],tomo_header['nz']
@@ -305,15 +318,8 @@ def unbinned_extractor(boxsize,x,y,z,cshrink,invert,center,tomogram=argv[1]):
 			print "Particle has the following mean AFTER contrast inversion", e['mean']			
 		
 		#It IS CONVENIENT to record any processing done on the particles as header parameters
-
-		#e['e2spt_tomogram'] = tomogram
 		
 		e['ptcl_source_image'] = os.path.basename(tomogram)
-		
-		#e['e2spt_coordx'] = x
-		#e['e2spt_coordy'] = y
-		#e['e2spt_coordz'] = z
-
 		e['ptcl_source_coord'] = (x,y,z)
 
 		#The origin WILL most likely be MESSED UP if you don't explicitely set it to ZERO.
@@ -330,9 +336,20 @@ def unbinned_extractor(boxsize,x,y,z,cshrink,invert,center,tomogram=argv[1]):
 		print "And the following mean BEFORE normalization", e['mean']
 		
 		if options.normproc:
-			e.process_inplace(options.normproc)
-			e['e2spt_normalization'] = options.normproc
-
+			if options.normproc[0]=="normalize.mask":
+				mask=EMData(e["nx"],e["ny"],e["nz"])
+				mask.to_one()
+				if options.masknorm:
+					mask.process_inplace(options.masknorm[0],options.masknorm[1])
+				options.normproc[1]["mask"]=mask
+			
+			e.process_inplace(options.normproc[0],options.normproc[1])
+			e['e2spt_normalization'] = str(options.normproc[0])+' '+str(options.normproc[1])
+		
+		if options.thresh:
+			print "The thresh to apply is", options.thresh
+			e.process_inplace(options.thresh[0],options.thresh[1])
+		
 		return(e)
 
 	else:
@@ -396,7 +413,7 @@ def commandline_tomoboxer(tomogram,options):
 			z = aux
 			print "Therefore, the swapped coordinates are", x, y, z
 
-		e = unbinned_extractor(options.boxsize,x,y,z,options.cshrink,options.invert,options.centerbox)
+		e = unbinned_extractor(options,options.boxsize,x,y,z,options.cshrink,options.invert,options.centerbox)
 		
 		fsp=os.path.basename(str(name))
 		
@@ -427,8 +444,8 @@ def commandline_tomoboxer(tomogram,options):
 			e['origin_y'] = 0				
 			e['origin_z'] = 0
 			
-			if options.normproc:
-				e.process_inplace(options.normproc)
+			#if options.normproc:
+			#	e.process_inplace(options.normproc)
 			#print "\nThe file name to write out to is", name
 			#print "And the particle number is %d\n" % i
 			#
@@ -1134,9 +1151,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				center=self.center
 			
 				if self.yshort:							
-					img = unbinned_extractor(bs,b[0],b[2],b[1],shrinkf,contrast,center) 	
+					img = unbinned_extractor(options,bs,b[0],b[2],b[1],shrinkf,contrast,center) 	
 				else:
-					img = unbinned_extractor(bs,b[0],b[1],b[2],shrinkf,contrast,center) 	
+					img = unbinned_extractor(options,bs,b[0],b[1],b[2],shrinkf,contrast,center) 	
 
 				if fsp[:4].lower()=="bdb:": 
 					img.write_image(os.path.join(options.path,"%s_%03d"%(fsp,i),0))
@@ -1185,9 +1202,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				center=self.center
 
 				if self.yshort:							
-					img = unbinned_extractor(bs,b[0],b[2],b[1],shrinkf,contrast,center) 	
+					img = unbinned_extractor(options,bs,b[0],b[2],b[1],shrinkf,contrast,center) 	
 				else:
-					img = unbinned_extractor(bs,b[0],b[1],b[2],shrinkf,contrast,center) 	
+					img = unbinned_extractor(options,bs,b[0],b[1],b[2],shrinkf,contrast,center) 	
 			
 				#img['origin_x'] = 0						
 				#img['origin_y'] = 0				
