@@ -175,7 +175,7 @@ def main():
 						sizesmin=ret[0]
 						cnumsmin=ret[1]
 						namemin=name.replace('.png','_MIN.png')
-						plotter(sizesmin,cnumsmin,namemin,step,step/2)
+						plotter(sizesmin,cnumsmin,namemin,step,step/2,,0,0,markernum=mn)
 						plt.savefig(options.path + '/' + namemin)
 						plt.clf()
 						
@@ -209,7 +209,7 @@ def main():
 						sizesmin=ret[0]
 						gnumsmin=ret[1]
 						namemin=name.replace('.png','_MIN.png')
-						plotter(sizesmin,gnumsmin,namemin,step,step/2)
+						plotter(sizesmin,gnumsmin,namemin,step,step/2,,0,0,markernum=mn)
 						plt.savefig(options.path + '/' + namemin)
 						plt.clf()
 
@@ -247,7 +247,7 @@ def main():
 						sizesmin=ret[0]
 						difsmin=ret[1]
 						namemin=name.replace('.png','_MIN.png')
-						plotter(sizesmin,difsmin,namemin,step,step/2)
+						plotter(sizesmin,difsmin,namemin,step,step/2,,0,0,markernum=mn)
 						plt.savefig(options.path + '/' + namemin)
 						plt.clf()
 		
@@ -270,7 +270,7 @@ def main():
 		
 		values={}
 		
-		#k=0
+		k=0
 		for F in files:
 			print "Working with this file now", F
 			name=os.path.basename(F).replace('.txt','.png')
@@ -290,11 +290,12 @@ def main():
 				#print "Thus size, value are", size, value
 			
 			if options.plotminima:
+				mn=k+1
 				ret=minima(sizes,valuesforthisfile)
 				sizesmin=ret[0]
 				valuesmin=ret[1]
 				namemin=name.replace('.png','_MIN.png')
-				plotter(sizesmin,valuesmin,namemin)
+				plotter(sizesmin,valuesmin,namemin,0,0,markernum=mn)
 				
 				if options.singleplot:
 					pass
@@ -312,7 +313,7 @@ def main():
 					plt.clf()
 			
 			#values.update({k:valuesforthisfile})
-			#k+=1
+			k+=1
 		
 		if options.singleplot:
 			
@@ -442,7 +443,10 @@ def doit(corg,options):
 '''
 FUNCTION TO PLOT RESULTS
 '''
-def plotter(xaxis,yaxis,name='',CS=0,FS=0):
+def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0):
+	
+	markers=['',7,4,5,6,'o','D','h','H','_','8','p',',','+','.','s','*','d',3,0,1,2,'1','3','4','2','v','<','>','^','|','x'] 
+	mark=markers[markernum]
 	
 	matplotlib.rc('xtick', labelsize=16) 
 	matplotlib.rc('ytick', labelsize=16) 
@@ -454,15 +458,11 @@ def plotter(xaxis,yaxis,name='',CS=0,FS=0):
 	pylab.xlabel('X Axis', fontsize=16, fontweight='bold')
 	pylab.ylabel('Y Axis', fontsize=16, fontweight='bold')
 	print "BOLD IS ON!"
-	
-	mark=''
-	if '_MIN.png' in name or '_min.png' in name:
-		mark='o'
 		
 	if options.colorlessplot:
-		plt.plot(xaxis, yaxis, linewidth=3, marker=mark,color = 'k')
+		plt.plot(xaxis, yaxis, linewidth=3, marker=mark,color = 'k',markersize=10)
 	else:
-		plt.plot(xaxis, yaxis, linewidth=3, marker=mark)
+		plt.plot(xaxis, yaxis, linewidth=3, marker=mark,markersize=10)
 
 	labelfory='Time (s)'
 	
