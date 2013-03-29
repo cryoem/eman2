@@ -1136,7 +1136,7 @@ def getnewhelixcoords(hcoordsname, outdir, ratio,nx,ny, newpref="resampled_", bo
 	'''
 	import os
 	from utilities 		import read_text_row
-	from applications	import mapcoords
+	from pixel_error	import mapcoords
 	
 	fname = (hcoordsname.split('/'))[-1] # name of old coordinates files minus the path
 	newhcoordsname = os.path.join(outdir , newpref+fname) # full path name of new coordinates file to be created
