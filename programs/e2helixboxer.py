@@ -108,7 +108,7 @@ def main():
 	parser.add_argument("--dp",                 type=float,			 default= -1.0,               help="delta z - translation in Angstroms")   
 	parser.add_argument("--dphi",               type=float,			 default= -1.0,               help="delta phi - rotation in degrees")  
 	parser.add_argument("--rmax",               type=float, 		 default= 80.0,               help="maximal radius for hsearch (Angstroms)")
-	parser.add_argument("--debug",              action="store_true",	 default=True,               help="If true, then intermediate files in output directory will not be deleted, otherwise all output directories where intermediate files were stored will be deleted. Default is True.")
+	parser.add_argument("--debug",              type=int,	 default=1,               help="If 1, then intermediate files in output directory will not be deleted; if 0, then all output directories where intermediate files were stored will be deleted. Default is 1.")
 
 	(options, args) = parser.parse_args()
 	
@@ -1567,7 +1567,7 @@ if ENABLE_GUI:
 			self.current_boxkey = None #We are done editing the box
 			self.initial_helix_box_data_tuple = None
 
-def windowallmic(dirid, micid, micsuffix, outdir, dp, pixel_size, boxsize='160 45', outstacknameall='bdb:data', hcoords_suffix = "_boxes.txt", ptcl_overlap=-1, inv_contrast=False, new_pixel_size=-1, rmax = -1.0, freq = -1, debug = True):
+def windowallmic(dirid, micid, micsuffix, outdir, dp, pixel_size, boxsize='160 45', outstacknameall='bdb:data', hcoords_suffix = "_boxes.txt", ptcl_overlap=-1, inv_contrast=False, new_pixel_size=-1, rmax = -1.0, freq = -1, debug = 1):
 	'''
 	
 	Windows segments from helices boxed from micrographs using e2helixboxer. 
@@ -1637,7 +1637,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, dp, pixel_size, boxsize='160 4
 		
 		      Default is -1, in which case, the micrographs will be high-pass filtered with cut-off frequency 1.0/segnx, where segnx is the target x dimension of the segments.
 		      
-		debug: If true, then do NOT delete output directories where intermediate files are stored. If false, then delete the output directories. Default is true.
+		debug: If 1, then do NOT delete output directories where intermediate files are stored. If 0, then delete the output directories. Default is 1.
 	Output
 	
 		outdir: In each micrograph directory, the program will write the stack of segments windowed from all micrographs in 
@@ -1742,8 +1742,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, dp, pixel_size, boxsize='160 4
 	for coutdir in outdirlist:
 		print_msg("Creating output directory %s\n"%coutdir)
 		os.mkdir(coutdir)
-	
-	outstackname_alldirs = []	
+		
 	for v1 in micdirlist:
 		# window all micrographs in directory v1 with micid
 		flist2 = os.listdir(os.path.join(topdir,v1))
@@ -1764,7 +1763,8 @@ def windowallmic(dirid, micid, micsuffix, outdir, dp, pixel_size, boxsize='160 4
 					windowmic(outstacknameall, coutdir, micname, hcoordsname, pixel_size, segnx, segny, ptcl_overlap, inv_contrast, new_pixel_size, rmax, freq)
 					
 	# If not debug mode, then remove all output directories 
-	if not(debug):
+	if debug == 0:
+		from subprocess import call
 		for coutdir in outdirlist:
 			cmd = "rm -ir %s"%coutdir
 			print_msg("cmd: %s"%cmd)
