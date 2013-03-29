@@ -51,6 +51,7 @@ def main():
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
 	parser.add_argument("--step",type=str,default="1,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 1,1 (first image skipped)")
 	parser.add_argument("--movie", action="store_true",help="Display a 5-frame averaged 'movie' of the frames",default=False)
+	parser.add_argument("--avgs", action="store_true",help="Testing",default=False)
 	parser.add_argument("--parallel", default=None, help="parallelism argument. This program supports only thread:<n>")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -119,17 +120,23 @@ def main():
 	# the user may provide multiple movies to process at once
 	for fsp in args:
 		if options.verbose : print "Processing ",fsp
-		outname=fsp.rsplit(".",1)[0]+"_proc.hdf"		# always output to an HDF file. Output contents vary with options
 		
 		n=EMUtil.get_image_count(fsp)
 		if n<3 : 
 			print "ERROR: {} has only {} images. Min 3 required.".format(fsp,n)
 			continue
+		if last<=0 : flast=n
+		else : flast=last
+		
+		process_movie(fsp,dark,gain,first,flast,step,options)
+		
+	E2end(pid)
+
+def process_movie(fsp,dark,gain,first,flast,step,options):
+		outname=fsp.rsplit(".",1)[0]+"_proc.hdf"		# always output to an HDF file. Output contents vary with options
 		
 		# bgsub and gain correct the stack
 		outim=[]
-		if last<=0 : flast=n
-		else : flast=last
 		for ii in xrange(first,flast,step):
 			if options.verbose:
 				print " {}/{}   \r".format(ii-first+1,flast-first+1),
@@ -147,6 +154,8 @@ def main():
 			outim.append(im)
 			#im.write_image(outname,ii-first)
 
+		nx=outim[0]["nx"]
+		ny=outim[0]["ny"]
 
 		# show a little movie of 5 averaged frames
 		if options.movie :
@@ -158,28 +167,90 @@ def main():
 				#im.process_inplace("filter.lowpass.gauss",{"cutoff_freq":.02})
 				mov.append(im)
 			display(mov)
+			
+			mov=[i.get_clip(Region(1000,500,2048,2048)) for i in mov]
+			s=sum(mov)
+			fsc=[i.calc_fourier_shell_correlation(s)[1025:2050] for i in mov]
+			plot(fsc)
+			
 		
-		# we iterate the process several times
-		outim2=[]
-		av=sum(outim)
-		av.mult(1.0/len(outim))
-		fav=[av]
-		for it in xrange(4):
+		# Generates different possibilites for resolution-weighted, but unaligned, averages
+		xy=XYData()
+		xy.set_size(2)
+		xy.set_x(0,0)
+		xy.set_y(0,1.0)
+		xy.set_x(1,0.707)
+		xy.set_y(1,0.0)
+		if options.avgs :
+			if options.verbose : print "Weighted average"
+			normim=EMData(nx/2+1,ny)
+			avgr=Averagers.get("weightedfourier",{"normimage":normim})
+			for i in xrange(min(len(outim),25)):						# only use the first second for the unweighted average
+				if options.verbose:
+					print " {}/{}   \r".format(i+1,len(outim)),
+					sys.stdout.flush()
+				xy.set_y(1,1.0)					# no weighting
+				outim[i]["avg_weight"]=xy
+				avgr.add_image(outim[i])
+			print ""
 
-			for im in outim:
-				dx,dy=zonealign(im,av)
-				im2=im.process("xform",{"transform":Transform({"type":"2d","tx":dx,"ty":dy})})
-				print "{}, {}".format(dx,dy)
-				outim2.append(im2)
+			av=avgr.finish()
+			av.write_image(outname[:-4]+"_a.hdf",0)
+#			display(normim)
 
-			print "-----"
-			
-			av=sum(outim2)
-			av.mult(1.0/len(outim))
-			fav.append(av)
+			# linear weighting with shifting 0 cutoff
+			xy.set_y(1,0.0)
+			for i in xrange(len(outim)):
+				if options.verbose:
+					print " {}/{}   \r".format(i+1,len(outim)),
+					sys.stdout.flush()
+				xy.set_x(1,0.025+0.8*(len(outim)-i)/len(outim))
+				outim[i]["avg_weight"]=xy
+				avgr.add_image(outim[i])
+			print ""
+
+			av=avgr.finish()
+			av.write_image(outname[:-4]+"_b.hdf",0)
+
+			# exponential falloff with shifting width
+			xy.set_size(64)
+			for j in xrange(64): xy.set_x(j,0.8*j/64.0)
+			for i in xrange(len(outim)):
+				if options.verbose:
+					print " {}/{}   \r".format(i+1,len(outim)),
+					sys.stdout.flush()
+				for j in xrange(64) : xy.set_y(j,exp(-j/(3.0+48.0*(len(outim)-i)/float(len(outim)))))
+#				plot(xy)
+				outim[i]["avg_weight"]=xy
+				avgr.add_image(outim[i])
+			print ""
+
+			av=avgr.finish()
+			av.write_image(outname[:-4]+"_c.hdf",0)
+
+
+		# we iterate the alignment process several times
+		if options.align_frames:
 			outim2=[]
-			
-		display(fav)
+			av=sum(outim)
+			av.mult(1.0/len(outim))
+			fav=[av]
+			for it in xrange(4):
+
+				for im in outim:
+					dx,dy=zonealign(im,av)
+					im2=im.process("xform",{"transform":Transform({"type":"2d","tx":dx,"ty":dy})})
+					print "{}, {}".format(dx,dy)
+					outim2.append(im2)
+
+				print "-----"
+				
+				av=sum(outim2)
+				av.mult(1.0/len(outim))
+				fav.append(av)
+				outim2=[]
+				
+			display(fav)
 
 		# show CCF between first and last frame
 		#cf=mov[0].calc_ccf(mov[-1])
@@ -221,7 +292,7 @@ def main():
 		#print "half vs half: ",dx,dy
 		
 		#dxn=dx/(ni/2.0)		# dx per n
-		#dyn=dy/(ni/2.0)
+		#dyn=dy/(ni/2.0)mpi_test.py
 		
 		#s1=sum(outim[:ni/4])
 		#s1.process_inplace("normalize.edgemean")
@@ -245,7 +316,6 @@ def main():
 		#print dx,dy
 		
 			
-		E2end(pid)
 
 def zonealign(s1,s2):
 	s1a=s1.copy()

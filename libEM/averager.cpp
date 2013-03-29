@@ -47,11 +47,9 @@ const string TomoAverager::NAME = "mean.tomo";
 const string MinMaxAverager::NAME = "minmax";
 const string AbsMaxMinAverager::NAME = "absmaxmin";
 const string IterationAverager::NAME = "iteration";
-const string WeightingAverager::NAME = "snr_weight";
-const string CtfCAverager::NAME = "ctfc";
-const string CtfCWAverager::NAME = "ctfcw";
 const string CtfCWautoAverager::NAME = "ctfw.auto";
 const string CtfCAutoAverager::NAME = "ctf.auto";
+const string FourierWeightAverager::NAME = "weightedfourier";
 
 template <> Factory < Averager >::Factory()
 {
@@ -59,13 +57,10 @@ template <> Factory < Averager >::Factory()
 	force_add<MinMaxAverager>();
 	force_add<AbsMaxMinAverager>();
 	force_add<IterationAverager>();
-//	force_add<WeightingAverager>();
-	// These commented out until we're happy they're working. (d.woolford, Feb 3rd 2009)
-//	force_add(&CtfCAverager::NEW);
-//	force_add(&CtfCWAverager::NEW);
 	force_add<CtfCWautoAverager>();
 	force_add<CtfCAutoAverager>();
 	force_add<TomoAverager>();
+	force_add<FourierWeightAverager>();
 //	force_add<XYZAverager>();
 }
 
@@ -296,13 +291,101 @@ EMData * ImageAverager::finish()
 
 		result->update();
 
-	}
+	}		
 	result->set_attr("ptcl_repr",nimg);
 
 	if (freenorm) { delete normimage; normimage=(EMData*)0; }
 
 	return result;
 }
+
+FourierWeightAverager::FourierWeightAverager()
+	: normimage(0), freenorm(0), nimg(0)
+{
+
+}
+
+void FourierWeightAverager::add_image(EMData * image)
+{
+	if (!image) {
+		return;
+	}
+
+
+
+	EMData *img=image->do_fft();
+	if (nimg >= 1 && !EMUtil::is_same_size(img, result)) {
+		LOGERR("%sAverager can only process same-size Image",
+			   get_name().c_str());
+		return;
+	}
+	
+	nimg++;
+
+	int nx = img->get_xsize();
+	int ny = img->get_ysize();
+	int nz = 1;
+//	size_t image_size = (size_t)nx * ny * nz;
+
+	XYData *weight=(XYData *)image->get_attr("avg_weight");
+	
+	if (nimg == 1) {
+		result = new EMData(nx,ny,nz);
+		result->set_complex(true);
+		result->to_zero();
+
+		normimage = params.set_default("normimage", (EMData*)0);
+		if (normimage==0) { normimage=new EMData(nx/2,ny,nz); freenorm=1; }
+		normimage->to_zero();
+	}
+
+	// We're using routines that handle complex image wraparound for us, so we iterate over the half-plane
+	for (int y=-ny/2; y<ny/2; y++) {
+		for (int x=0; x<nx/2; x++) {
+			std::complex<float> v=img->get_complex_at(x,y);
+			float r=Util::hypot2(y/(float)ny,x/(float)nx);
+			float wt=weight->get_yatx(r);
+			result->set_complex_at(x,y,result->get_complex_at(x,y)+v*wt);
+			normimage->set_value_at(x,y+ny/2,normimage->get_value_at(x,y+ny/2)+wt);
+		}
+	}
+
+	delete img;
+}
+
+EMData * FourierWeightAverager::finish()
+{
+	EMData *ret = (EMData *)0;
+	
+	if (result && nimg >= 1) {
+	// We're using routines that handle complex image wraparound for us, so we iterate over the half-plane
+		int nx = result->get_xsize();
+		int ny = result->get_ysize();
+		
+		for (int y=-ny/2; y<ny/2; y++) {
+			for (int x=0; x<nx/2; x++) {
+				float norm=normimage->get_value_at(x,y+ny/2);
+				if (norm<=0) result->set_complex_at(x,y,0.0f);
+				else result->set_complex_at(x,y,result->get_complex_at(x,y)/norm);
+			}
+		}
+
+		result->update();
+//		result->mult(1.0f/(float)result->get_attr("sigma"));
+//		result->write_image("tmp.hdf",0);
+//		printf("%g %g %g\n",(float)result->get_attr("sigma"),(float)result->get_attr("minimum"),(float)result->get_attr("maximum"));
+		ret=result->do_ift();
+		delete result;
+		result=(EMData*) 0;
+	}
+	ret->set_attr("ptcl_repr",nimg);
+
+	if (freenorm) { delete normimage; normimage=(EMData*)0; }
+	nimg=0;
+
+	return ret;
+}
+
 
 #if 0
 EMData *ImageAverager::average(const vector < EMData * >&image_list) const
@@ -985,603 +1068,6 @@ EMData *IterationAverager::average(const vector < EMData * >&image_list) const
 #endif
 
 
-CtfAverager::CtfAverager() :
-	sf(0), curves(0), need_snr(false), outfile(0),
-	image0_fft(0), image0_copy(0), snri(0), snrn(0),
-	tdr(0), tdi(0), tn(0),
-	filter(0), nimg(0), nx(0), ny(0), nz(0)
-{
-
-}
-
-void CtfAverager::add_image(EMData * image)
-{
-	if (!image) {
-		return;
-	}
-
-	if (nimg >= 1 && !EMUtil::is_same_size(image, result)) {
-		LOGERR("%sAverager can only process same-size Image",
-							 get_name().c_str());
-		return;
-	}
-
-	if (image->get_zsize() != 1) {
-		LOGERR("%sAverager: Only 2D images are currently supported",
-							 get_name().c_str());
-	}
-
-	string alg_name = get_name();
-
-	if (alg_name == "CtfCW" || alg_name == "CtfCWauto") {
-		if (image->get_ctf() != 0 && !image->has_ctff()) {
-			LOGERR("%sAverager: Attempted CTF Correction with no ctf parameters",
-								 get_name().c_str());
-		}
-	}
-	else {
-		if (image->get_ctf() != 0) {
-			LOGERR("%sAverager: Attempted CTF Correction with no ctf parameters",
-								 get_name().c_str());
-		}
-	}
-
-	nimg++;
-
-
-	if (nimg == 1) {
-		image0_fft = image->do_fft();
-
-		nx = image0_fft->get_xsize();
-		ny = image0_fft->get_ysize();
-		nz = image0_fft->get_zsize();
-
-		result = image->copy_head();
-		result->set_size(nx - 2, ny, nz);
-
-
-		if (alg_name == "Weighting" && curves) {
-			if (!sf) {
-				LOGWARN("CTF curve in file will contain relative, not absolute SNR!");
-			}
-			curves->set_size(Ctf::CTFOS * ny / 2, 3, 1);
-			curves->to_zero();
-		}
-
-
-		if (alg_name == "CtfC") {
-			filter = params["filter"];
-			if (filter == 0) {
-				filter = 22.0f;
-			}
-			float apix_y = image->get_attr_dict().get("apix_y");
-			float ds = 1.0f / (apix_y * ny * Ctf::CTFOS);
-			filter = 1.0f / (filter * ds);
-		}
-
-		if (alg_name == "CtfCWauto") {
-			int nxy2 = nx * ny/2;
-
-			snri = new float[ny / 2];
-			snrn = new float[ny / 2];
-			tdr = new float[nxy2];
-			tdi = new float[nxy2];
-			tn = new float[nxy2];
-
-			for (int i = 0; i < ny / 2; i++) {
-				snri[i] = 0;
-				snrn[i] = 0;
-			}
-
-			for (int i = 0; i < nxy2; i++) {
-				tdr[i] = 1;
-				tdi[i] = 1;
-				tn[i] = 1;
-			}
-		}
-
-		image0_copy = image0_fft->copy_head();
-		image0_copy->ap2ri();
-		image0_copy->to_zero();
-	}
-
-	Ctf::CtfType curve_type = Ctf::CTF_AMP;
-	if (alg_name == "CtfCWauto") {
-		curve_type = Ctf::CTF_AMP;
-	}
-
-	float *src = image->get_data();
-	image->ap2ri();
-	Ctf *image_ctf = image->get_ctf();
-	int ny2 = image->get_ysize();
-
-	vector<float> ctf1 = image_ctf->compute_1d(ny2,1.0f/(image_ctf->apix*image->get_ysize()), curve_type);
-
-	if (ctf1.size() == 0) {
-		LOGERR("Unexpected CTF correction problem");
-	}
-
-	ctf.push_back(ctf1);
-
-	vector<float> ctfn1;
-	if (sf) {
-		ctfn1 = image_ctf->compute_1d(ny2,1.0f/(image_ctf->apix*image->get_ysize()), Ctf::CTF_SNR, sf);
-	}
-	else {
-		ctfn1 = image_ctf->compute_1d(ny2,1.0f/(image_ctf->apix*image->get_ysize()), Ctf::CTF_SNR);
-	}
-
-	ctfn.push_back(ctfn1);
-
-	if (alg_name == "CtfCWauto") {
-		int j = 0;
-		for (int y = 0; y < ny; y++) {
-			for (int x = 0; x < nx / 2; x++, j += 2) {
-#ifdef	_WIN32
-				float r = (float)_hypot((float)x, (float)(y - ny / 2.0f));
-#else
-				float r = (float)hypot((float)x, (float)(y - ny / 2.0f));
-#endif	//_WIN32
-				int l = static_cast < int >(Util::fast_floor(r));
-
-				if (l >= 0 && l < ny / 2) {
-					int k = y*nx/2 + x;
-					tdr[k] *= src[j];
-					tdi[k] *= src[j + 1];
-#ifdef	_WIN32
-					tn[k] *= (float)_hypot(src[j], src[j + 1]);
-#else
-					tn[k] *= (float)hypot(src[j], src[j + 1]);
-#endif	//_WIN32
-				}
-			}
-		}
-	}
-
-
-	float *tmp_data = image0_copy->get_data();
-
-	int j = 0;
-	for (int y = 0; y < ny; y++) {
-		for (int x = 0; x < nx / 2; x++, j += 2) {
-			float r = Ctf::CTFOS * sqrt(x * x + (y - ny / 2.0f) * (y - ny / 2.0f));
-			int l = static_cast < int >(Util::fast_floor(r));
-			r -= l;
-
-			float f = 0;
-			if (l <= Ctf::CTFOS * ny / 2 - 2) {
-				f = (ctf1[l] * (1 - r) + ctf1[l + 1] * r);
-			}
-			tmp_data[j] += src[j] * f;
-			tmp_data[j + 1] += src[j + 1] * f;
-		}
-	}
-
-	EMData *image_fft = image->do_fft();
-	image_fft->update();
-	if(image_ctf) {delete image_ctf; image_ctf=0;}
-}
-
-EMData * CtfAverager::finish()
-{
-	int j = 0;
-	for (int y = 0; y < ny; y++) {
-		for (int x = 0; x < nx / 2; x++, j += 2) {
-#ifdef	_WIN32
-			float r = (float) _hypot(x, y - ny / 2.0f);
-#else
-			float r = (float) hypot(x, y - ny / 2.0f);
-#endif
-			int l = static_cast < int >(Util::fast_floor(r));
-			if (l >= 0 && l < ny / 2) {
-				int k = y*nx/2 + x;
-				snri[l] += (tdr[k] + tdi[k]/tn[k]);
-				snrn[l] += 1;
-			}
-		}
-	}
-
-	for (int i = 0; i < ny / 2; i++) {
-		snri[i] *= nimg / snrn[i];
-	}
-
-	if(strcmp(outfile, "") != 0) {
-		Util::save_data(0, 1, snri, ny / 2, outfile);
-	}
-
-
-	float *cd = 0;
-	if (curves) {
-		cd = curves->get_data();
-	}
-
-	for (int i = 0; i < Ctf::CTFOS * ny / 2; i++) {
-		float ctf0 = 0;
-		for (int j = 0; j < nimg; j++) {
-			ctf0 += ctfn[j][i];
-			if (ctf[j][i] == 0) {
-				ctf[j][i] = 1.0e-12f;
-			}
-
-			if (curves) {
-				cd[i] += ctf[j][i] * ctfn[j][i];
-				cd[i + Ctf::CTFOS * ny / 2] += ctfn[j][i];
-				cd[i + 2 * Ctf::CTFOS * ny / 2] += ctfn[j][i];
-			}
-		}
-
-		string alg_name = get_name();
-
-		if (alg_name == "CtfCW" && need_snr) {
-			snr[i] = ctf0;
-		}
-
-		float ctf1 = ctf0;
-		if (alg_name == "CtfCWauto") {
-			ctf1 = snri[i / Ctf::CTFOS];
-		}
-
-		if (ctf1 <= 0.0001f) {
-			ctf1 = 0.1f;
-		}
-
-		if (alg_name == "CtfC") {
-			for (int j = 0; j < nimg; j++) {
-				ctf[j][i] = exp(-i * i / (filter * filter)) * ctfn[j][i] / (fabs(ctf[j][i]) * ctf1);
-			}
-		}
-		else if (alg_name == "Weighting") {
-			for (int j = 0; j < nimg; j++) {
-				ctf[j][i] = ctfn[j][i] / ctf1;
-			}
-		}
-		else if (alg_name == "CtfCW") {
-			for (int j = 0; j < nimg; j++) {
-				ctf[j][i] = (ctf1 / (ctf1 + 1)) * ctfn[j][i] / (ctf[j][i] * ctf1);
-			}
-		}
-		else if (alg_name == "CtfCWauto") {
-			for (int j = 0; j < nimg; j++) {
-				ctf[j][i] = ctf1 * ctfn[j][i] / (fabs(ctf[j][i]) * ctf0);
-			}
-		}
-	}
-
-
-	if (curves) {
-		for (int i = 0; i < Ctf::CTFOS * ny / 2; i++) {
-			cd[i] /= cd[i + Ctf::CTFOS * ny / 2];
-		}
-		curves->update();
-	}
-
-	image0_copy->update();
-
-	float *result_data = result->get_data();
-	EMData *tmp_ift = image0_copy->do_ift();
-	float *tmp_ift_data = tmp_ift->get_data();
-	memcpy(result_data, tmp_ift_data, (nx - 2) * ny * sizeof(float));
-
-	tmp_ift->update();
-	result->update();
-	result->set_attr("ptcl_repr",nimg);
-
-	if( image0_copy )
-	{
-		delete image0_copy;
-		image0_copy = 0;
-	}
-
-	if (snri) {
-		delete[]snri;
-		snri = 0;
-	}
-
-	if (snrn) {
-		delete[]snrn;
-		snrn = 0;
-	}
-
-	if( snri )
-	{
-		delete [] snri;
-		snri = 0;
-	}
-	if( snrn )
-	{
-		delete [] snrn;
-		snrn = 0;
-	}
-	if( tdr )
-	{
-		delete [] tdr;
-		tdr = 0;
-	}
-	if( tdi )
-	{
-		delete [] tdi;
-		tdi = 0;
-	}
-	if( tn )
-	{
-		delete [] tn;
-		tn = 0;
-	}
-
-	return result;
-}
-
-#if 0
-EMData *CtfAverager::average(const vector < EMData * >&image_list) const
-{
-	if (image_list.size() == 0) {
-		return 0;
-	}
-
-	EMData *image0 = image_list[0];
-	if (image0->get_zsize() != 1) {
-		LOGERR("Only 2D images are currently supported");
-		return 0;
-	}
-
-	string alg_name = get_name();
-
-	if (alg_name == "CtfCW" || alg_name == "CtfCWauto") {
-		if (image0->get_ctf() != 0 && !image0->has_ctff()) {
-			LOGERR("Attempted CTF Correction with no ctf parameters");
-			return 0;
-		}
-	}
-	else {
-		if (image0->get_ctf() != 0) {
-			LOGERR("Attempted CTF Correction with no ctf parameters");
-			return 0;
-		}
-	}
-
-	size_t num_images = image_list.size();
-	vector < float >*ctf = new vector < float >[num_images];
-	vector < float >*ctfn = new vector < float >[num_images];
-	float **src = new float *[num_images];
-
-	Ctf::CtfType curve_type = Ctf::CTF_ABS_AMP;
-	if (alg_name == "CtfCWauto") {
-		curve_type = Ctf::CTF_AMP;
-	}
-
-	for (size_t i = 0; i < num_images; i++) {
-		EMData *image = image_list[i]->do_fft();
-		image->ap2ri();
-		src[i] = image->get_data();
-		Ctf *image_ctf = image->get_ctf();
-		int ny = image->get_ysize();
-		ctf[i] = image_ctf->compute_1d(ny, curve_type);
-
-		if (ctf[i].size() == 0) {
-			LOGERR("Unexpected CTF correction problem");
-			return 0;
-		}
-
-		if (sf) {
-			ctfn[i] = image_ctf->compute_1d(ny, Ctf::CTF_ABS_SNR, sf);
-		}
-		else {		result->set_attr("ptcl_repr",nimg);
-			ctfn[i] = image_ctf->compute_1d(ny, Ctf::CTF_RELATIVE_SNR);
-		}
-
-		if(image_ctf) {delete image_ctf; image_ctf=0;}
-	}
-
-	EMData *image0_fft = image0->do_fft();
-
-	int nx = image0_fft->get_xsize();
-	int ny = image0_fft->get_ysize();
-	int nz = image0_fft->get_zsize();
-
-	EMData *result = new EMData();
-	result->set_size(nx - 2, ny, nz);
-
-	float *cd = 0;
-	if (alg_name == "Weighting" && curves) {
-		if (!sf) {
-			LOGWARN("CTF curve in file will contain relative, not absolute SNR!");
-		}
-		curves->set_size(Ctf::CTFOS * ny / 2, 3, 1);
-		curves->to_zero();
-		cd = curves->get_data();
-	}
-
-	float filter = 0;
-	if (alg_name == "CtfC") {
-		filter = params["filter"];
-		if (filter == 0) {
-			filter = 22.0f;
-		}
-		float apix_y = image0->get_attr_dict().get("apix_y");
-		float ds = 1.0f / (apix_y * ny * Ctf::CTFOS);
-		filter = 1.0f / (filter * ds);
-	}
-
-	float *snri = 0;
-	float *snrn = 0;
-
-	if (alg_name == "CtfCWauto") {
-		snri = new float[ny / 2];
-		snrn = new float[ny / 2];
-
-		for (int i = 0; i < ny / 2; i++) {
-			snri[i] = 0;
-			snrn[i] = 0;
-		}
-
-		int j = 0;
-		for (int y = 0; y < ny; y++) {
-			for (int x = 0; x < nx / 2; x++, j += 2) {
-				float r = hypot(x, y - ny / 2.0f);
-				int l = static_cast < int >(Util::fast_floor(r));
-
-				if (l >= 0 && l < ny / 2) {
-					float tdr = 1;
-					float tdi = 1;
-					float tn = 1;
-
-					for (size_t i = 0; i < num_images; i++) {
-						tdr *= src[i][j];
-						tdi *= src[i][j + 1];
-						tn *= hypot(src[i][j], src[i][j + 1]);
-					}
-
-					tdr += tdi / tn;
-					snri[l] += tdr;
-					snrn[l] += 1;
-				}
-			}
-		}
-
-		for (int i = 0; i < ny / 2; i++) {
-			snri[i] *= num_images / snrn[i];
-		}
-		if (outfile != "") {
-			Util::save_data(0, 1, snri, ny / 2, outfile);
-		}
-	}
-
-	for (int i = 0; i < Ctf::CTFOS * ny / 2; i++) {
-		float ctf0 = 0;
-		for (size_t j = 0; j < num_images; j++) {
-			ctf0 += ctfn[j][i];
-			if (ctf[j][i] == 0) {
-				ctf[j][i] = 1.0e-12;
-			}
-
-			if (curves) {
-				cd[i] += ctf[j][i] * ctfn[j][i];
-				cd[i + Ctf::CTFOS * ny / 2] += ctfn[j][i];
-				cd[i + 2 * Ctf::CTFOS * ny / 2] += ctfn[j][i];
-			}
-		}
-
-		if (alg_name == "CtfCW" && need_snr) {
-			snr[i] = ctf0;
-		}
-
-		float ctf1 = ctf0;
-		if (alg_name == "CtfCWauto") {
-			ctf1 = snri[i / Ctf::CTFOS];
-		}
-
-		if (ctf1 <= 0.0001f) {
-			ctf1 = 0.1f;
-		}
-
-		if (alg_name == "CtfC") {
-			for (size_t j = 0; j < num_images; j++) {
-				ctf[j][i] = exp(-i * i / (filter * filter)) * ctfn[j][i] / (fabs(ctf[j][i]) * ctf1);
-			}
-		}
-		else if (alg_name == "Weighting") {
-			for (size_t j = 0; j < num_images; j++) {
-				ctf[j][i] = ctfn[j][i] / ctf1;
-			}
-		}
-		else if (alg_name == "CtfCW") {
-			for (size_t j = 0; j < num_images; j++) {
-				ctf[j][i] = (ctf1 / (ctf1 + 1)) * ctfn[j][i] / (ctf[j][i] * ctf1);
-			}
-		}
-		else if (alg_name == "CtfCWauto") {
-			for (size_t j = 0; j < num_images; j++) {
-				ctf[j][i] = ctf1 * ctfn[j][i] / (fabs(ctf[j][i]) * ctf0);
-			}
-		}
-	}
-
-
-	if (curves) {
-		for (int i = 0; i < Ctf::CTFOS * ny / 2; i++) {
-			cd[i] /= cd[i + Ctf::CTFOS * ny / 2];
-		}
-		curves->update();
-	}
-
-	EMData *image0_copy = image0_fft->copy_head();
-	image0_copy->ap2ri();
-
-	float *tmp_data = image0_copy->get_data();
-
-	int j = 0;
-	for (int y = 0; y < ny; y++) {
-		for (int x = 0; x < nx / 2; x++, j += 2) {
-			float r = Ctf::CTFOS * sqrt(x * x + (y - ny / 2.0f) * (y - ny / 2.0f));
-			int l = static_cast < int >(Util::fast_floor(r));
-			r -= l;
-
-			tmp_data[j] = 0;
-			tmp_data[j + 1] = 0;
-
-			for (size_t i = 0; i < num_images; i++) {
-				float f = 0;
-				if (l <= Ctf::CTFOS * ny / 2 - 2) {
-					f = (ctf[i][l] * (1 - r) + ctf[i][l + 1] * r);
-				}
-				tmp_data[j] += src[i][j] * f;
-				tmp_data[j + 1] += src[i][j + 1] * f;
-			}
-		}
-	}
-
-	image0_copy->update();
-
-	float *result_data = result->get_data();
-	EMData *tmp_ift = image0_copy->do_ift();
-	float *tmp_ift_data = tmp_ift->get_data();
-	memcpy(result_data, tmp_ift_data, (nx - 2) * ny * sizeof(float));
-
-	tmp_ift->update();
-
-	if( image0_copy )
-	{
-		delete image0_copy;
-		image0_copy = 0;
-	}
-
-	for (size_t i = 0; i < num_images; i++) {
-		EMData *img = image_list[i]->do_fft();
-		img->update();
-	}
-
-	if( src )
-	{
-		delete[]src;
-		src = 0;
-	}
-
-	if( ctf )
-	{
-		delete[]ctf;
-		ctf = 0;
-	}
-
-	if( ctfn )
-	{
-		delete[]ctfn;
-		ctfn = 0;
-	}
-
-	if (snri) {
-		delete[]snri;
-		snri = 0;
-	}
-
-	if (snrn) {
-		delete[]snrn;
-		snrn = 0;
-	}
-
-	result->update();
-	return result;
-}
-#endif
 
 
 void EMAN::dump_averagers()

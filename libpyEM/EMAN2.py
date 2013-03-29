@@ -203,34 +203,25 @@ This function is called to log the end of the current job. n is returned by E2in
 	return n
 
 def E2saveappwin(app,key,win):
-    """stores the window geometry using the application default mechanism for later restoration. Note that
-    this will only work with Qt windows"""
-    try:       
-        if key=="main":
-            pos=win.pos()
-            sz=win.size()
-            geom=(pos.x(),pos.y(),win.width(),win.height())
-        else:
-            pos=win.qt_parent.pos()
-            sz=win.qt_parent.size()
-            geom=(pos.x(),pos.y(),win.width(),win.height())
-           
-        E2setappval(app,key,geom)
-    except:
-        print "Error saving window location"
-   
+	"""stores the window geometry using the application default mechanism for later restoration. Note that
+	this will only work with Qt windows"""
+	try:
+		pos=win.pos()
+		sz=win.size()
+		geom=(pos.x(),pos.y(),win.width(),win.height())
+		E2setappval(app,key,geom)
+	except:
+		print "Error saving window location"
+	
 def E2loadappwin(app,key,win):
-    """restores a geometry saved with E2saveappwin"""
-    try:
-        geom=E2getappval(app,key)
-        if geom==None : raise Exception
-        if key=="main":
-            win.resize(geom[2],geom[3])
-            win.move(geom[0],geom[1])
-        else:
-            win.qt_parent.resize(geom[2],geom[3])
-            win.qt_parent.move(geom[0],geom[1])
-    except: return	
+	"""restores a geometry saved with E2saveappwin"""
+	try: 
+		geom=E2getappval(app,key)
+		if geom==None : raise Exception
+		win.resize(geom[2],geom[3])
+		win.move(geom[0],geom[1])
+	except: return
+	
 
 def E2setappval(app,key,value):
 	"""E2setappval
@@ -801,11 +792,16 @@ def plot(data,data2=None,data3=None,show=1,size=(800,600),path="plot.png"):
 				for i in range(data.get_xsize()): 
 					a.append(data3[i])
 				pylab.plot(a)
+		elif isinstance(data,XYData) :
+			pylab.plot(data.get_xlist(),data.get_ylist())
 		elif isinstance(data,list) or isinstance(data,tuple):
 			if isinstance(data[0],list) or isinstance(data[0],tuple) :
-				pylab.plot(data[0],data[1])
-				if data2!=None: pylab.plot(data2[0],data2[1])
-				if data3!=None: pylab.plot(data3[0],data3[1])
+				if len(data)>2 :
+					for d in data: pylab.plot(d)
+				else:
+					pylab.plot(data[0],data[1])
+					if data2!=None: pylab.plot(data2[0],data2[1])
+					if data3!=None: pylab.plot(data3[0],data3[1])
 			else:
 				try:
 					a=float(data[0])
@@ -816,7 +812,7 @@ def plot(data,data2=None,data3=None,show=1,size=(800,600),path="plot.png"):
 					print "List, but data isn't floats"
 					return
 		else :
-			print "I don't know how to plot that type"
+			print "I don't know how to plot that type (%s)"%(str(type(data)))
 			return
 		
 		pylab.savefig(path)

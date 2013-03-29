@@ -617,7 +617,13 @@ namespace EMAN
 		 */
 		static inline float hypot2(float x, float y)
 		{
-			return sqrtf(x * x + y * y);
+//			return sqrtf(x * x + y * y);
+#ifdef	_WIN32
+			return (float) _hypot(x, y);
+#else
+			return (float) hypot(x, y);
+#endif	//_WIN32
+			
 		}
 
 		/** Euclidean distance function squared in 3D: f(x,y,z) = (x*x + y*y + z*z);

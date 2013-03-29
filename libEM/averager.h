@@ -210,6 +210,51 @@ namespace EMAN
 		int freenorm;
 	};
 
+	/** FourierWeightAverager makes an average of a set of images in Fourier space using a per-image radial weight. The provided XYData object for each inserted
+	 * image should range from x=0 - 0.5*sqrt(2), and contains the radial weights from 0 - Nyquist at the point. If the x range is insufficient, values will be
+	 * clamped at the ends of the available x-range. 2-D Images only, but will work with rectangular images.
+     *@param normimage	After finish() will contain the sum of the weights in each Fourier location. Size must be ((nx+1)/2,y)
+     */
+	class FourierWeightAverager:public Averager
+	{
+	  public:
+		FourierWeightAverager();
+
+		void add_image( EMData * image);
+		EMData * finish();
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		string get_desc() const
+		{
+			return "Weighted mean of images in Fourier space. Each image must have weighting curve in its header, an XYData object called 'avg_weight'.";
+		}
+
+		static Averager *NEW()
+		{
+			return new FourierWeightAverager();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+//			d.put("weight", EMObject::XYDATA, "Radial weight. X: 0 - 0.5*sqrt(2). Y contains weights.");
+			d.put("normimage", EMObject::EMDATA, "After finish() will contain the sum of the weights in each Fourier location. Size must be ((nx+1)/2,y)");
+			return d;
+		}
+
+		static const string NAME;
+		
+	private:
+		EMData *normimage;
+		int freenorm;
+		int nimg;
+	};
+
+	
 	/** TomoAverager averages a list of volumes in Fourier space. It excludes values near zero
 	 * from the average, assuming they are part of the missing-cone/wedge. A threshold
      *@param thresh_sigma a number, multiplied by the standard deviation of the image, below-which values are considered zero
@@ -370,142 +415,6 @@ namespace EMAN
 		int nimg;
 	};
 
-	/** CtfAverager is the base Averager class for CTF correction or SNR weighting.
-    */
-	class CtfAverager:public Averager
-	{
-	  public:
-		CtfAverager();
-		void add_image( EMData * image);
-		EMData * finish();
-
-		vector < float >get_snr() const
-		{
-			return snr;
-		}
-
-	  protected:
-		XYData *sf;
-		EMData *curves;
-		bool need_snr;
-		const char *outfile;
-	  private:
-		mutable vector < float >snr;
-		EMData * image0_fft;
-		EMData * image0_copy;
-
-		vector<vector<float> > ctf;
-		vector<vector<float> > ctfn;
-
-		float *snri;
-		float *snrn;
-		float *tdr;
-		float *tdi;
-		float *tn;
-
-		float filter;
-		int nimg;
-		int nx;
-		int ny;
-		int nz;
-	};
-
-	/** WeightingAverager averages the images with SNR weighting, but no CTF correction.
-	 *@param curves
-	 *@param sf
-     */
-	class WeightingAverager:public CtfAverager
-	{
-	  public:
-		string get_name() const
-		{
-			return NAME;
-		}
-
-		string get_desc() const
-		{
-			return "SNR Weighted average without CTF amplitude correction";
-		}
-
-		static Averager *NEW()
-		{
-			return new WeightingAverager();
-		}
-
-		void set_params(const Dict & new_params)
-		{
-			params = new_params;
-			curves = params["curves"];
-			sf = params["sf"];
-		}
-
-		TypeDict get_param_types() const
-		{
-			TypeDict d;
-			d.put("curves", EMObject::EMDATA);
-			d.put("sf", EMObject::XYDATA);
-			return d;
-		}
-		
-		static const string NAME;
-	};
-
-	/** CtfCAverager averages the images with CTF correction.
-     */
-	class CtfCAverager:public CtfAverager
-	{
-	  public:
-		string get_name() const
-		{
-			return NAME;
-		}
-
-		string get_desc() const
-		{
-			return "CTF amplitude corrected average, including SNR weight, but result is unprocessed.";
-		}
-
-		static Averager *NEW()
-		{
-			return new CtfCAverager();
-		}
-		
-		static const string NAME;
-	};
-
-	/** CtfCWAverager averages the images with CTF correction.
-     */
-	class CtfCWAverager:public CtfAverager
-	{
-	  public:
-		string get_name() const
-		{
-			return NAME;
-		}
-
-		string get_desc() const
-		{
-			return "CTF amplitude corrected average, including SNR weight and Wiener filtration";
-		}
-
-		static Averager *NEW()
-		{
-			return new CtfCWAverager();
-		}
-
-		void set_params(const Dict & new_params)
-		{
-			params = new_params;
-			if ((int) params["need_snr"]) {
-				need_snr = true;
-			}
-			else {
-				need_snr = false;
-			}
-		}
-		
-		static const string NAME;
-	};
 
 	/** CtfCWautoAverager averages the images with CTF correction with a Wiener filter.
      *  The Weiner filter is estimated directly from the data.
