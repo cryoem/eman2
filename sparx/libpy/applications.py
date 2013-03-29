@@ -64,8 +64,6 @@ def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1"
 	from utilities    import file_type
 	import os
 
-	print_begin_msg("ali2d")
-	
 	# Comment by Zhengfan Yang on 09/03/10
 	# I have decided that outdir should be able to take None as parameter, if the user does not need an output directory.
 	# This is particularly useful in the ISAC program, nobody will care what is in the alignment and realignment directory.
@@ -74,6 +72,10 @@ def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1"
 	if outdir:
 		if os.path.exists(outdir):   ERROR('Output directory exists, please change the name and restart the program', "ali2d", 1)
 		os.mkdir(outdir)
+		import global_def
+		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+	print_begin_msg("ali2d")
+	
 
 	if file_type(stack) == "bdb":
 		from EMAN2db import db_open_dict
@@ -404,8 +406,10 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 		mpi_barrier(MPI_COMM_WORLD)
 
 	if myid == main_node:
-		print_begin_msg("ali2d_MPI")
 		if outdir:	os.mkdir(outdir)
+		import global_def
+		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+		print_begin_msg("ali2d_MPI")
 
 	xrng        = get_input_from_string(xr)
 	if  yr == "-1":  yrng = xrng
@@ -1016,6 +1020,8 @@ def ORGali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1"
 	if myid == main_node:
 		print_begin_msg("ali2d_c_MPI")
 		os.mkdir(outdir)
+		import global_def
+		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
 
 	xrng        = get_input_from_string(xr)
 	if  yr == "-1":  yrng = xrng
@@ -1381,6 +1387,8 @@ def local_ali2d(stack, outdir, maskfile = None, ou = -1, br = 1.75, center = 1, 
 	# create the output directory, if it does not existm
 	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "local_ali2d", 1)
 	os.mkdir(outdir)
+	import global_def
+	global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
 	
 	max_iter  = int(maxit)
 	last_ring = int(ou)
@@ -1554,6 +1562,8 @@ def mref_ali2d(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, y
 	# create the output directory, if it does not exist
 	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "mref_ali2d", 1)
 	os.mkdir(outdir)
+	import global_def
+	global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
 	
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit)
 	if max_iter == 0:
@@ -1807,8 +1817,10 @@ def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrn
 	mpi_barrier(MPI_COMM_WORLD)
 
 	if myid == main_node:
-		print_begin_msg("mref_ali2d_MPI")
 		os.mkdir(outdir)
+		import global_def
+		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+		print_begin_msg("mref_ali2d_MPI")
 
 	nima = EMUtil.get_image_count(stack)
 	
@@ -2757,10 +2769,12 @@ def ali2d_rotationaltop(outdir, stack, randomize = False, orient=True, ir = 4, o
 	from utilities    import file_type
 	import os
 
-	print_begin_msg("ali2d_rotational")
 	
 	if os.path.exists(outdir):   ERROR('Output directory exists, please change the name and restart the program', "ali2d_friedel", 1)
 	os.mkdir(outdir)
+	import global_def
+	global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+	print_begin_msg("ali2d_rotational")
 
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
 
@@ -2877,7 +2891,9 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 	
 	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali2d_cross_res", 1)
 	os.mkdir(outdir)
-		
+	import global_def
+	global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+
 	print_begin_msg("ali2d_cross_res")
 
 	import user_functions
@@ -3092,7 +3108,7 @@ def ali3d_a(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	from utilities      import model_circle, drop_image
 	from utilities      import get_image, get_input_from_string
 	from utilities      import get_arb_params, set_arb_params
-	from filter	    import filt_params, filt_btwl, filt_from_fsc, filt_table, fit_tanh, filt_tanl
+	from filter         import filt_params, filt_btwl, filt_from_fsc, filt_table, fit_tanh, filt_tanl
 	from alignment	    import proj_ali_incore, proj_ali_incore_local
 	from statistics     import fsc_mask
 	from fundamentals   import fft
@@ -3100,7 +3116,6 @@ def ali3d_a(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	import os
 	import types
 	from utilities      import print_begin_msg, print_end_msg, print_msg
-	print_begin_msg("ali3d_a")
 
 	import user_functions
 	user_func = user_functions.factory[user_func_name]
@@ -3110,6 +3125,9 @@ def ali3d_a(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 
 	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', " ali3d_a", 1)
 	os.mkdir(outdir)
+	import global_def
+	global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+	print_begin_msg("ali3d_a")
 
 	xrng        = get_input_from_string(xr)
 	if  yr == "-1":  yrng = xrng
@@ -3258,8 +3276,6 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	import os
 	import types
 	from utilities      import print_begin_msg, print_end_msg, print_msg
-	print_begin_msg("ali3d")
-
 	from alignment      import Numrinit, prepare_refrings
 	from projection     import prep_vol
 
@@ -3268,6 +3284,9 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 
 	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali3d", 1)
 	os.mkdir(outdir)
+	import global_def
+	global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+	print_begin_msg("ali3d")
 
 	xrng        = get_input_from_string(xr)
 	if  yr == "-1":  yrng = xrng
@@ -3428,10 +3447,12 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	
 	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali3d_MPI", 1, myid)
 	mpi_barrier(MPI_COMM_WORLD)
-	
+
 	if myid == main_node:
-		print_begin_msg("ali3d_MPI")
 		os.mkdir(outdir)
+		import global_def
+		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+		print_begin_msg("ali3d_MPI")
 	mpi_barrier(MPI_COMM_WORLD)
 
 	if debug:
@@ -3740,8 +3761,10 @@ def ali3dpsi_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 	mpi_barrier(MPI_COMM_WORLD)
 	
 	if myid == main_node:
-		print_begin_msg("ali3dpsi_MPI")
 		os.mkdir(outdir)
+		import global_def
+		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+		print_begin_msg("ali3dpsi_MPI")
 	mpi_barrier(MPI_COMM_WORLD)
 
 	if debug:
@@ -3980,13 +4003,15 @@ def mref_ali3d(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1, ir=
 	import types
 	# 2D alignment using rotational ccf in polar coords and linear
 	# interpolation	
-	print_begin_msg("mref_ali3d")
 
 	import user_functions
 	user_func = user_functions.factory[user_func_name]
 
 	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "mref_ali3d", 1)
 	os.mkdir(outdir)
+	import global_def
+	global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+	print_begin_msg("mref_ali3d")
 
 	xrng        = get_input_from_string(xr)
 	if  yr == "-1":  yrng = xrng
@@ -4225,6 +4250,8 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 
 	if myid == main_node:	
 		os.mkdir(outdir)
+		import global_def
+		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
 	mpi_barrier(MPI_COMM_WORLD)
 
 	from time import time	
@@ -4820,6 +4847,8 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 	if myid == main_node:	
 		print_begin_msg("mref_ali3d_MPI")
 		os.mkdir(outdir)
+		import global_def
+		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
 	mpi_barrier(MPI_COMM_WORLD)
 
 	from time import time	
@@ -5228,8 +5257,9 @@ def local_ali3dm_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25,
 	mpi_barrier(MPI_COMM_WORLD)
 	
 	if myid == main_node:
-		print_begin_msg("local_ali3dm_MPI")
 		os.mkdir(outdir)
+		import global_def
+		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
 	
 	mpi_barrier(MPI_COMM_WORLD)
 
@@ -5628,8 +5658,10 @@ def local_ali3dm_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, 
 	mpi_barrier(MPI_COMM_WORLD)
 
 	if(myid == main_node):
-		print_begin_msg("local_ali3dm_MPI")
+		import global_def
+		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
 		os.mkdir(outdir)
+		print_begin_msg("local_ali3dm_MPI")
 	
 	mpi_barrier(MPI_COMM_WORLD)
 
@@ -6007,6 +6039,8 @@ def local_ali3d(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, ce
 
 	if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program', "local_ali3d", 1)
 	os.mkdir(outdir)
+	import global_def
+	global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
 	
 	print_begin_msg('local_ali3d')
 
@@ -6235,8 +6269,10 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 	mpi_barrier(MPI_COMM_WORLD)
 
 	if myid == main_node:
-		print_begin_msg("local_ali3d_MPI")
 		os.mkdir(outdir)
+		import global_def
+		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+		print_begin_msg("local_ali3d_MPI")
 		import user_functions
 		user_func = user_functions.factory[user_func_name]
 		if CTF:
@@ -6866,6 +6902,8 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 
 	if myid == main_node:
 		os.mkdir(outdir)
+		import global_def
+		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
 	mpi_barrier(MPI_COMM_WORLD)
 
 
@@ -7619,6 +7657,8 @@ def gchelix_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 
 	if myid == main_node:
 		os.mkdir(outdir)
+		import global_def
+		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
 	mpi_barrier(MPI_COMM_WORLD)
 
 
@@ -8343,9 +8383,13 @@ def copyfromtif(indir, outdir=None, input_extension="tif", film_or_CCD="f", outp
 	if(type(outdir)          is types.StringType):
 		if os.path.exists(outdir) :   ERROR("Output directory exists, please change the name and restart the program","copyfromtif",1)
 		os.mkdir(outdir)	
+		import global_def
+		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
 	else: 	
 		outdir = ("micrographs")# default output directory
 		os.mkdir(outdir)
+		import global_def
+		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
 		
 	gridding       = False
 	Pixel_size_raw = scan_step/magnification
@@ -8411,10 +8455,14 @@ def copyfromtif_MPI(indir, outdir=None, input_extension="tif", film_or_CCD="f", 
 	if(type(outdir)          is types.StringType):
 		if os.path.exists(outdir): ERROR("Output directory exists, please change the name and restart the program","copyfromtif_MPI",1,myid)
 		os.mkdir(outdir)	
-	else: 	
+		import global_def
+		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+	else:
 		os.system(" rm -rf micrograph ")
 		outdir ="micrograph"# default output directory
 		os.mkdir(outdir)	
+		import global_def
+		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
 	gridding       = True
 	Pixel_size_raw = scan_step/magnification
 	if Pixel_size == 0 : Pixel_size = Pixel_size_raw
@@ -8845,6 +8893,8 @@ def pw2sp(indir, outdir = None, w =256, xo =50, yo = 50, xd = 0, yd = 0, r = 0, 
 	if(type(outdir)          is types.StringType):
 		if os.path.exists(outdir) is True: ERROR("Output directory exists, please change the name and restart the program","pw2sp",1)
 		os.mkdir(outdir)	
+		import global_def
+		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
 	else: 	os.system("mkdir power")
 	mask     = model_circle(int(r), int(w), int(w), nz=1)
 	mask    -= 1
@@ -8895,8 +8945,10 @@ def pw2sp_MPI(indir, outdir, w =256, xo =50, yo = 50, xd = 0, yd = 0, r = 0, pre
 	mpi_barrier(MPI_COMM_WORLD)
 
 	if myid == int(main_node):  # only main node do cleaning & creating jobs
-		print_begin_msg("pw2sp_MPI")
 		os.mkdir(outdir)
+		import global_def
+		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+		print_begin_msg("pw2sp_MPI")
 	mpi_barrier(MPI_COMM_WORLD)
 	
 	# get the total micrograph number 
@@ -10233,12 +10285,13 @@ def cml_find_structure_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 
 	# logfile
 	t_start = start_time()
-	print_begin_msg('find_struct')
-	print_msg('\n')
 
 	out_dir = out_dir.rstrip('/')
 	if os.path.exists(out_dir): ERROR('Output directory exists, please change the name and restart the program', "cml_find_structure_main", 1)
 	os.mkdir(out_dir)
+	import global_def
+	global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+	print_begin_msg('find_struct')
 
 	if rand_seed > 0: seed(rand_seed)
 	else:             seed()
@@ -10310,12 +10363,13 @@ def cml_find_structure_MPI2(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 	# logfile
 	if myid == main_node:
 		t_start = start_time()
-		print_begin_msg('find_struct')
-		print_msg('\n')
 
 		out_dir = out_dir.rstrip('/')
 		if os.path.exists(out_dir): ERROR('Output directory exists, please change the name and restart the program', "cml_find_structure_main", 1)
 		os.mkdir(out_dir)
+		import global_def
+		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+		print_begin_msg('find_struct')
 
 	if rand_seed > 0: seed(rand_seed)
 	else:             seed()
@@ -10395,8 +10449,10 @@ def cml_find_structure_MPI(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_see
 
 	if myid == main_node:
 		t_start = start_time()
-		print_begin_msg('find_struct')
 		os.mkdir(out_dir)
+		import global_def
+		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+		print_begin_msg('find_struct')
 
 
 	flag = 0
@@ -12326,8 +12382,10 @@ def volalixshift_MPI(stack, ref_vol, outdir, search_rng, pixel_size, dp, dphi, f
 	mpi_barrier(MPI_COMM_WORLD)
 	
 	if myid == main_node:
-		print_begin_msg("volalixshift_MPI")
 		os.mkdir(outdir)
+		import global_def
+		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+		print_begin_msg("volalixshift_MPI")
 	mpi_barrier(MPI_COMM_WORLD)
 
 	if debug:

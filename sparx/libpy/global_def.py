@@ -66,13 +66,13 @@ CACHE_DISABLE = False
 # variable for disabling gui use (set by default to True, which means use GUI. Change to False to disable GUI).
 GUIUSE = True
 
+global LOGFILE 
 LOGFILE = "logfile"
 from time import localtime, strftime
 timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
 LOGFILE = LOGFILE+timestring
 LOGFILE_HANDLE = 0
 IS_LOGFILE_OPEN = False
-
 '''   SYSTEM FUNCTIONS - please do not change the text below '''
 global SPARXVERSION
 SPARXVERSION = "SPARX v2.0" + ' (CVS' + CVSDATESTAMP[6:-2] +')'

@@ -2610,7 +2610,7 @@ def print_msg(msg):
 	import sys
 	import global_def
 	if (global_def.IS_LOGFILE_OPEN == False):
-		global_def.LOGFILE_HANDLE = open(LOGFILE,"w")
+		global_def.LOGFILE_HANDLE = open(global_def.LOGFILE,"w")
 		global_def.IS_LOGFILE_OPEN = True
 	if (global_def.BATCH):
 		global_def.LOGFILE_HANDLE.write(msg)		
@@ -3045,101 +3045,6 @@ def disable_bdb_cache():
 def enable_bdb_cache():
 	import EMAN2db
 	EMAN2db.BDB_CACHE_DISABLE = False
-
-def helical_consistency(p2i, p1):
-	"""
-	  Find overall phi angle and z shift difference between two sets of projection parameters for helical structure.
-	  The two sets have to be of the same length and it is assume that k'th element on the first
-	  list corresponds to the k'th element on the second list.
-	  Input: two lists [ [phi2, theta2, psi2, sx2, sy2], [phi1, theta1, psi1, sx1, sy1], ...].  Second list is considered reference.
-	  	 parametes for helical symmetry-- dp, pixel_size, dphi
-	  Output: , 3D_error between the two sets after adjustment 
-	  Note: all angles have to be in spider convention.
-	  """
-	from pixel_error import angle_diff
-	from math import cos,pi
-	from utilities import getvec
-	from pixel_error import angle_error
-	from EMAN2 import Vec2f
-	n =len(p1[0])
-	print n
-	qtm = -1.0e10
-	for lf in xrange(0,181,180):
-		p2 = []
-		p2.extend(p2i)
-		if( lf == 180):
-			tflip = Transform({"type":"spider","theta":180.0})
-			for j in xrange(n):
-				t2 = Transform({"type":"spider","phi":p2[0][j],"theta":p2[1][j],"psi":p2[2][j]})
-				t2.set_trans( Vec2f( -p2[3][j], -p2[4][j] ) )
-				t2 = t2*tflip
-				d = t2.get_params("spider")
-				p2[0][j] = d["phi"]
-				p2[1][j] = d["theta"]
-				p2[2][j] = d["psi"]
-				p2[3][j] = -d["tx"]
-				p2[4][j] = -d["ty"]
-		tt1 = [0.0]*n
-		tt2 = [0.0]*n
-		mirror = [False]*n
-		ln = 0
-		for j in xrange( n ):
-			t1 = getvec(p1[0][j],p1[1][j])
-			t2 = getvec(p2[0][j],p2[1][j])
-			tm = getvec(180.0+p2[0][j],180.0-p2[1][j])
-			tt1[j] = t1[0]*t2[0]+t1[1]*t2[1]+t1[2]*t2[2]
-			tt2[j] = t1[0]*tm[0]+t1[1]*tm[1]+t1[2]*tm[2]
-			if(abs(tt1[j])<1.0e-7): tt1[j] = 0.0
-			if(abs(tt2[j])<1.0e-7): tt2[j] = 0.0
-			if(tt1[j]>tt2[j]):
-				mirror[j] = True
-				ln+=1
-		print  " FLIP  ",lf
-		if(ln < n//2):
-			print "mirror  ",ln
-			for j in xrange( n ):
-				p2[0][j] += 180.0
-				p2[1][j]  = 180.0-p2[1][j]
-				p2[2][j]  = -p2[2][j]
-				p2[4][j]  = -p2[4][j]
-				mirror[j] = not(mirror[j])
-		else:
-			print " straight", ln
-		phi1 = []
-		phi2 = []
-		agree = []
-		for j in xrange(n):
-			if(mirror[j]):
-				phi1.append(p1[0][j])
-				phi2.append(p2[0][j])
-				agree.append(j)
-		print  len(phi1)
-		delta_phi = angle_diff( phi2, phi1 )
-		print "close form diff===", delta_phi
-
-		phi1 = []
-		phi2 = []
-		errorm = []
-		for j in xrange( len( p1[0]) ):
-			p2[0][j] = (p2[0][j] + delta_phi + 360)%360.0
-			if(mirror[j]):
-				phi1.append(p1[0][j])
-				phi2.append(p2[0][j])
-				errorm.append(angle_error( [ p2[0][j] ], [ p1[0][j] ]))
-		qt = sum(errorm)/len(errorm)
-		print  len(errorm),qt
-		if(qt > qtm):
-			qtm = qt
-			p2o = []
-			p2o.extend(p2)
-			errormo = []
-			phi1o = []
-			phi2o = []
-			errormo.extend(errorm)
-			phi1o.extend(phi1)
-			phi2o.extend(phi2)
-		
-	return p2o, errormo, agree, delta_phi, phi1o, phi2o
 
 def rotation_between_anglesets(agls1, agls2):
 	"""
