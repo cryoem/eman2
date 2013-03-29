@@ -86,6 +86,8 @@ def main():
 	parser.add_argument("--plotminima",action="store_true", help="Plot all cpus and/or gpus provided through --plotonly, in a single .png file.", default=False)
 	parser.add_argument("--colorlessplot",action="store_true", help="Plot all cpus and/or gpus provided through --plotonly, in a single .png file.", default=False)
 	
+	parser.add_argument("--subset",type=int, help="If --plotonly is on, this is the subset of lines (from 0 to --subset=n) in the files provided that will be kept for plotting.", default=0)
+
 	global options
 	
 	(options, args) = parser.parse_args()
@@ -153,6 +155,41 @@ def main():
 		retgpu=[]
 		if options.ID:
 			options.ID = options.ID + '_'
+							
+		'''
+		Compute GPU alignment times and plot them
+		'''
+		if options.gpu:
+			corg = 'GPU'
+
+			retgpu=doit(corg,options)
+			
+			for set in retgpu:
+				data = retgpu[set]
+			
+				for i in range(len(data)):
+					name = options.path + "/" + options.ID + '_' + set + "_CS"+ str(options.coarsestep).zfill(2)  + "_FS" + str( options.finestep ).zfill(4) + '_GPU.png'
+					gnums = numpy.array(data[i][-1])
+					sizes = numpy.array(data[i][1])
+					print "\n\n"
+					print "for which sizes to plot are", sizes
+					print "and gnums to plot are", gnums
+					print '\n'
+					plotter(sizes,gnums,name,options.coarsestep,options.finestep)
+					plt.savefig(options.path + '/' + name)
+					plt.clf()
+	
+					if options.plotminima:
+						ret=minima(sizes,gnums)
+						sizesmin=ret[0]
+						gnumsmin=ret[1]
+						namemin=name.replace('.png','_MIN.png')
+						markernum=0
+						if options.colorlessplot:
+							markernum=1
+						plotter(sizesmin,gnumsmin,namemin,options.coarsestep,options.finestep,0,0,markernum)
+						plt.savefig(options.path + '/' + namemin)
+						plt.clf()
 		
 		'''
 		Compute CPU alignment times and plot them
@@ -183,41 +220,13 @@ def main():
 						sizesmin=ret[0]
 						cnumsmin=ret[1]
 						namemin=name.replace('.png','_MIN.png')
-						plotter(sizesmin,cnumsmin,namemin,options.coarsestep,options.finestep,0,0,markernum=1)
+						markernum=0
+						if options.colorlessplot:
+							markernum=1
+						plotter(sizesmin,cnumsmin,namemin,options.coarsestep,options.finestep,0,0,markernum)
 						plt.savefig(options.path + '/' + namemin)
 						plt.clf()
-						
-		'''
-		Compute GPU alignment times and plot them
-		'''
-		if options.gpu:
-			corg = 'GPU'
-
-			retgpu=doit(corg,options)
-			
-			for set in retgpu:
-				data = retgpu[set]
-			
-				for i in range(len(data)):
-					name = options.path + "/" + options.ID + '_' + set + "_CS"+ str(options.coarsestep).zfill(2)  + "_FS" + str( options.finestep ).zfill(4) + '_GPU.png'
-					gnums = numpy.array(data[i][-1])
-					sizes = numpy.array(data[i][1])
-					print "\n\n"
-					print "for which sizes to plot are", sizes
-					print "and gnums to plot are", gnums
-					print '\n'
-					plotter(sizes,gnums,name,options.coarsestep,options.finestep)
-					plt.savefig(options.path + '/' + name)
-					plt.clf()
 	
-					if options.plotminima:
-						ret=minima(sizes,gnums)
-						sizesmin=ret[0]
-						gnumsmin=ret[1]
-						namemin=name.replace('.png','_MIN.png')
-						plotter(sizesmin,gnumsmin,namemin,options.coarsestep,options.finestep,0,0,markernum=1)
-						plt.savefig(options.path + '/' + namemin)
-						plt.clf()
 
 		'''
 		I you have both CPU and GPU times, compute the ratio and plot it
@@ -257,7 +266,10 @@ def main():
 								sizesmin=ret[0]
 								difsmin=ret[1]
 								namemin=name.replace('.png','_MIN.png')
-								plotter(sizesmin,difsmin,namemin,options.coarsestep,options.finestep,0,0,markernum=1)
+								markernum=0
+								if options.colorlessplot:
+									markernum=1
+								plotter(sizesmin,difsmin,namemin,options.coarsestep,options.finestep,0,0,markernum)
 								plt.savefig(options.path + '/' + namemin)
 								plt.clf()
 					else:
@@ -283,7 +295,16 @@ def main():
 		values={}
 		
 		k=0
+		absmax=0.0
+		absminmax=0.0
+		markn=0
+		linen=0
 		for F in files:
+			
+			if options.colorlessplot:
+				markn=k+1
+				linen=k
+			
 			print "Working with this file now", F
 			name=os.path.basename(F).replace('.txt','.png')
 			sizes=[]
@@ -293,21 +314,36 @@ def main():
 			lines = f.readlines()
 			f.close()
 			
+			num=0
 			for line in lines:
 				#print "Line is\n", line
 				size=line.split()[0]
 				sizes.append(int(size))
 				value=line.split()[-1].replace('\n','')
 				valuesforthisfile.append(float(value))
-				#print "Thus size, value are", size, value
+				if options.subset:
+					if int(num) >= int(options.subset):
+						break
+				num+=1
+				
+			if float(max(valuesforthisfile)) > absmax:
+				absmax = float(max(valuesforthisfile))
+				print "New ABSMAX is", absmax
+			
 			
 			if options.plotminima:
-				mn=k+1
 				ret=minima(sizes,valuesforthisfile)
 				sizesmin=ret[0]
 				valuesmin=ret[1]
+				
+				if float(max(valuesmin)) > absminmax:
+					absminmax = float(max(valuesmin))
+					
+					print "New ABSMINMAZ is", absmax
+					
 				namemin=name.replace('.png','_MIN.png')
-				plotter(sizesmin,valuesmin,namemin,0,0,markernum=mn)
+				print "before plotting, linen is", linen
+				plotter(sizesmin,valuesmin,namemin,0,0,markn,linen,absminmax)
 				
 				if options.singleplot:
 					pass
@@ -316,7 +352,8 @@ def main():
 					plt.clf()
 					
 			else:
-				plotter(sizes,valuesforthisfile,name)
+				print "before plotting, linen is", linen
+				plotter(sizes,valuesforthisfile,name,0,0,0,linen,absmax)
 				
 				if options.singleplot:
 					pass
@@ -457,7 +494,7 @@ def doit(corg,options):
 				
 		txt.close()
 	
-		data.add(id:[mults,times])
+		data.update({id:[mults,times]})
 		print "\n\nThe data to return is\n", data
 		print "\n"
 		return(data)
@@ -466,10 +503,16 @@ def doit(corg,options):
 '''
 FUNCTION TO PLOT RESULTS
 '''
-def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0):
+def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0):
+	print "in plotter, linen received is", linenum
 	
-	markers=['',7,4,5,6,'o','D','h','H','_','8','p',',','+','.','s','*','d',3,0,1,2,'1','3','4','2','v','<','>','^','|','x'] 
+	markers=['','o','D','H','x','h','8',7,4,5,6,'_','p',',','+','.','s','*','d',3,0,1,2,'1','3','4','2','v','<','>','^','|'] 
 	mark=markers[markernum]
+	
+	linestyles=['-','--','**']
+	linest=linestyles[linenum]
+	
+	print "Therefore linest is", linest
 	
 	matplotlib.rc('xtick', labelsize=16) 
 	matplotlib.rc('ytick', labelsize=16) 
@@ -477,15 +520,48 @@ def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0):
 	font = {'weight':'bold','size':16}
 	matplotlib.rc('font', **font)
 	
+	ax=plt.axes(frameon=False)
 	pylab.rc("axes", linewidth=2.0)
-	pylab.xlabel('X Axis', fontsize=16, fontweight='bold')
-	pylab.ylabel('Y Axis', fontsize=16, fontweight='bold')
+	pylab.xlabel('X Axis', fontsize=14, fontweight='bold')
+	pylab.ylabel('Y Axis', fontsize=14, fontweight='bold')
+
+	pylab.ylim([-10,ylimvalmax+10])
+	pylab.xlim([-10,max(xaxis)+10])
+	ax.get_xaxis().tick_bottom()
+	ax.get_yaxis().tick_left()
+	ax.axes.get_xaxis().set_visible(True)
+	ax.axes.get_yaxis().set_visible(True)
+	xmin, xmax = ax.get_xaxis().get_view_interval()
+	ymin, ymax = ax.get_yaxis().get_view_interval()
+	
+	print "ylimvalmax is", ylimvalmax
+	
+	if ylimvalmax:
+		ymax=ylimvalmax
+	
+	else:
+		ylimvalmax=max(yaxis)
+		print "YLIMVALMAX had to be reset!", ylimvalmax
+	ax.add_artist(Line2D((xmin, xmax+10), (ymin, ymin), color='k', linewidth=4))
+	ax.add_artist(Line2D((xmin, xmin), (ymin, ymax+10), color='k', linewidth=4))
+	ax.tick_params(axis='both',reset=False,which='both',length=8,width=3)
+
 	print "BOLD IS ON!"
+	LW=3
+	if not markernum:
+		LW=2
 		
 	if options.colorlessplot:
-		plt.plot(xaxis, yaxis, linewidth=3, marker=mark,color = 'k',markersize=10)
+		print "in colorless plot, linest is", linest
+		plt.plot(xaxis, yaxis, linewidth=LW,linestyle=linest,alpha=1,color='k',zorder=0)
+		#markeredgewidth=3
+		if mark:
+			plt.scatter(xaxis,yaxis,marker=mark,edgecolor='k',alpha=1,zorder=1,s=40,facecolor='white',linewidth=2)
 	else:
-		plt.plot(xaxis, yaxis, linewidth=3, marker=mark,markersize=10)
+		plt.plot(xaxis, yaxis, linewidth=LW,linestyle=linest,alpha=1,zorder=0)
+		#markeredgewidth=3
+		if mark:
+			plt.scatter(xaxis,yaxis,marker=mark,alpha=0.5,zorder=1,s=40,linewidth=2)
 
 	labelfory='Time (s)'
 	
