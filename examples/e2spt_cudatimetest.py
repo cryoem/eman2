@@ -50,7 +50,11 @@ import math
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = """Tests cpu vs gpu speed on subtomogram alignment."""
+	usage = """WARNING: Experimental script. 
+	Tests cpu vs gpu speed on subtomogram alignment, for one CCF between two boxes of noise at default orientation (no rotations), 
+	with and without alignment overhead, and plots the results against boxsize.
+	Full alignment scanning an entire icosahedral unit can be tested. The number of orientations visited depends on --coarsestep and --finestep,
+	and the way these parameters are used by e2spt_classaverage.py"""
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
