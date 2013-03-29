@@ -150,7 +150,7 @@ def main():
 		print_msg("%-70s:  %d\n"%("Radius of alignment                   ", radius))
 		print_msg("%-70s:  %d\n"%("Number of iterations within alignment ", ite))
 		print_msg("%-70s:  %d\n"%("Number of alignments for stability    ", num_ali))
-		print_msg("%-70s:  %d\n"%("Threshold of pixel error              ", thld_err))
+		print_msg("%-70s:  %f\n"%("Threshold of pixel error              ", thld_err))
 		print_msg("%-70s:  %s\n"%("Grouping method                       ", options.grouping))
 	st = time()
 	if options.grouping == "GRP":
