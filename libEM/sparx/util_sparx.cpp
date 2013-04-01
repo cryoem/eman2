@@ -18633,7 +18633,7 @@ vector<float> Util::multiref_polar_ali_helical(EMData* image, const vector< EMDa
 
 vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, float ant, float psi_max, string mode,
-                vector<int>numr, float cnx, float cny, int ynumber, bool mirror_only, float yrnglocal) {
+                vector<int>numr, float cnx, float cny, int ynumber, float yrnglocal) {
 
 	size_t crefim_len = crefim.size();
 
@@ -18666,37 +18666,59 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 	bool  use_ref;
 	bool  use_ref_mirror;
 	int   kx = int(2*xrng/step+0.5)/2;
-	//int ychoice = 0;
-	//int phichoice = 0;
-	//if ynumber==-1, use the old code which process x and y direction equally.
+	int ky, ky_rhs, ky_lhs;
+	float stepy;
 	if(ynumber==-1) {
-		int   ky = int(2*yrng/step+0.5)/2;
-		for (int i = -ky; i <= ky; i++) {
-			iy = i * step ;
+		//if ynumber==-1, use the old code which process x and y direction equally.
+		ky = int(2*yrng/step+0.5)/2;
+		stepy = step;
+		ky_rhs  = ky;
+		ky_lhs = -ky;
+	}
+	else{
+		// if ynumber is not -1, then it should be even or 0	
+		if (ynumber > 0) stepy=2*yrng/ynumber;
+		if (ynumber > 0){
+		
+			if (yrnglocal >= 0.0) {
+		   	 	ky_rhs = int(yrnglocal/stepy);
+				ky_lhs = -ky_rhs + 1;
+			}
+			else {
+				ky = int(ynumber/2);	
+				ky_rhs = ky;	
+				ky_lhs = -ky + 1;
+			}
+		}
+		else if (ynumber == 0) {
+			ky_rhs = 0;
+			ky_lhs = 0;
+		}
+	}
+	for (int i = ky_lhs; i <= ky_rhs; i++) {
+			iy = i * stepy ;
 			for (int j = -kx; j <= kx; j++)  {
 				ix = j*step ;
 				EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
-
 				Normalize_ring( cimage, numr );
-
+				
 				Frngs(cimage, numr);
-				//  compare with all reference images
+				//  Compare with All reference images within neighborhood ant
 				// for iref in xrange(len(crefim)):
 				for ( iref = 0; iref < (int)crefim_len; iref++) {
 				
 					use_ref = false;
 					use_ref_mirror = false;
-				
+					
 					// inner product of iref's Eulerian angles with that of the data
 					nbrinp = n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3;
 					if (nbrinp >= ant)   use_ref = true;
-						
+					
 					// inner product of the mirror of iref's Eulerian angles with that of the data
 					nbrinp_mirror = n3[iref]*imn3 - n1[iref]*imn1 - n2[iref]*imn2;
 					if (nbrinp_mirror >= ant)  use_ref_mirror = true;
-
 					if(use_ref || use_ref_mirror){
-						//cout << "  USED REF  "<<endl;
+						
 						Dict retvals;
 						if (use_ref_mirror == true) {
 						    if ((psi-90.0f) < 90.0f) retvals = Crosrng_sm_psi(crefim[iref], cimage, numr,   0, 1, psi_max);
@@ -18720,125 +18742,8 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 				}
 				delete cimage; cimage = 0;
 			}
-		}
-	} else if(ynumber==0) {
-	//if ynumber is given, it should be even. We need to check whether it is zero
-		sy = 0.0f;
-		for (int j = -kx; j <= kx; j++) {
-			ix = j*step ;
-			EMData* cimage = Polar2Dm(image, cnx+ix, cny, numr, mode);
-
-			Normalize_ring( cimage, numr );
-
-			Frngs(cimage, numr);
-			//  compare with all reference images
-			// for iref in xrange(len(crefim)):
-			for ( iref = 0; iref < (int)crefim_len; iref++)  {			
-				use_ref = false;
-				use_ref_mirror = false;
-				
-				// inner product of iref's Eulerian angles with that of the data
-				nbrinp = n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3;
-				if (nbrinp >= ant)   use_ref = true;
-						
-				// inner product of the mirror of iref's Eulerian angles with that of the data
-				nbrinp_mirror = n3[iref]*imn3 - n1[iref]*imn1 - n2[iref]*imn2;
-				if (nbrinp_mirror >= ant)  use_ref_mirror = true;
-							
-				
-				if(use_ref || use_ref_mirror) {
-						//cout << "  USED REF ynumber=0 "<<endl;
-					Dict retvals;
-					if (use_ref_mirror == true) {
-					    if ((psi-90.0f) < 90.0f) retvals = Crosrng_sm_psi(crefim[iref], cimage, numr,   0, 1, psi_max);
-					    else                     retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, 180, 1, psi_max); 
-					} else {
-					    if ((psi-90.0f) < 90.0f) retvals = Crosrng_sm_psi(crefim[iref], cimage, numr,   0, 0, psi_max);
-					    else                     retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, 180, 0, psi_max);
-					}
-					double qn = retvals["qn"];
-
-					if(qn >= peak) {
-						sx = -ix;
-						sy = -iy;
-						nref = iref;
-						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-						peak = static_cast<float>(qn);
-						if (use_ref_mirror)  mirror = 1;
-							else               mirror = 0;
-					}
-				}
-			} 
-			delete cimage; cimage = 0;
-		}		   	
-	} else {
-		int   ky = int(ynumber/2);		
-		float stepy=2*yrng/ynumber;
-		int ky_rhs = ky;
-		int ky_lhs = -ky + 1;
-		
-		// when yrnglocal is not equal to -1.0, the search range is limited to +/- yrnglocal
-		// leave step size the same
-       
-		if (yrnglocal >= 0.0) {
-		    ky_rhs = int(yrnglocal/stepy);
-			ky_lhs = -ky_rhs + 1;
-		}
-		
-
-		//std::cout<<"yrnglocal="<<yrnglocal<<"ynumber="<<ynumber<<"stepy=="<<stepy<<"stepx=="<<step<<std::endl;
-		//cout<<"ky stepy: "<<ky<<" "<<stepy<<endl;
-		for (int i = ky_lhs; i <= ky_rhs; i++) {
-			iy = i * stepy ;
-			//ychoice = ychoice+1;
-			for (int j = -kx; j <= kx; j++)	{
-				ix = j*step ;
-				EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
-	
-				Normalize_ring( cimage, numr );
-	
-				Frngs(cimage, numr);
-				//  compare with all reference images within the specified neighborhood
-				// for iref in xrange(len(crefim)):
-				for ( iref = 0; iref < (int)crefim_len; iref++) {
-					use_ref = false;
-					use_ref_mirror = false;
-					
-					// inner product of iref's Eulerian angles with that of the data
-					nbrinp = n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3;
-					if (nbrinp >= ant)   use_ref = true;
-						
-					// inner product of the mirror of iref's Eulerian angles with that of the data
-					nbrinp_mirror = n3[iref]*imn3 - n1[iref]*imn1 - n2[iref]*imn2;
-					if (nbrinp_mirror >= ant)  use_ref_mirror = true;
-					
-					if(use_ref || use_ref_mirror) {
-						Dict retvals;
-						if (use_ref_mirror == true) {
-							if ((psi-90.0f) < 90.0f) retvals = Crosrng_sm_psi(crefim[iref], cimage, numr,   0, 1, psi_max);
-							else                     retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, 180, 1, psi_max); 
-						} else {
-							if ((psi-90.0f) < 90.0f) retvals = Crosrng_sm_psi(crefim[iref], cimage, numr,   0, 0, psi_max);
-							else                     retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, 180, 0, psi_max);
-						}
-						double qn = retvals["qn"];
-
-						if(qn >= peak) {
-							sx = -ix;
-							sy = -iy;
-							nref = iref;
-							ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-							peak = static_cast<float>(qn);
-							if (use_ref_mirror)  mirror = 1;
-							else               mirror = 0;
-						}
-					}
-				}
-				delete cimage; cimage = 0;
-			}
-		}
 	}
-	
+						
 	float co, so, sxs, sys;
 	co = static_cast<float>( cos(ang*pi/180.0) );
 	so = static_cast<float>( -sin(ang*pi/180.0) );
