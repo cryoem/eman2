@@ -18666,7 +18666,7 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 	bool  use_ref;
 	bool  use_ref_mirror;
 	int   kx = int(2*xrng/step+0.5)/2;
-	int ky, ky_rhs, ky_lhs;
+	int ky;
 	float stepy;
 	
 	if (ynumber == 0) {
