@@ -18668,34 +18668,29 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 	int   kx = int(2*xrng/step+0.5)/2;
 	int ky, ky_rhs, ky_lhs;
 	float stepy;
-	if(ynumber==-1) {
-		//if ynumber==-1, use the old code which process x and y direction equally.
-		ky = int(2*yrng/step+0.5)/2;
-		stepy = step;
-		ky_rhs  = ky;
-		ky_lhs = -ky;
+	
+	if (ynumber == 0) {
+		ky = 0;
 	}
-	else{
-		// if ynumber is not -1, then it should be even or 0	
+	else { 
+	
 		if (ynumber > 0) stepy=2*yrng/ynumber;
-		if (ynumber > 0){
+		else if (ynumber == -1) stepy = step;
 		
-			if (yrnglocal >= 0.0) {
-		   	 	ky_rhs = int(yrnglocal/stepy);
-				ky_lhs = -ky_rhs + 1;
-			}
-			else {
-				ky = int(ynumber/2);	
-				ky_rhs = ky;	
-				ky_lhs = -ky + 1;
-			}
+		if (yrnglocal >= 0.0) {
+		   	ky = int(yrnglocal/stepy);
 		}
-		else if (ynumber == 0) {
-			ky_rhs = 0;
-			ky_lhs = 0;
+		else { // search range is not restricted
+			if (ynumber > 0) {
+				ky = int(ynumber/2);	
+			}
+			else{
+				ky = int(2*yrng/stepy+0.5)/2;	
+			}	
+					
 		}
 	}
-	for (int i = ky_lhs; i <= ky_rhs; i++) {
+	for (int i = -ky; i <= ky; i++) {
 			iy = i * stepy ;
 			for (int j = -kx; j <= kx; j++)  {
 				ix = j*step ;
