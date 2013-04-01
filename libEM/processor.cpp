@@ -5763,15 +5763,20 @@ void ToMassCenterProcessor::process_inplace(EMData * image)
 		if (nz > 1) {
 			dz = -(int)(floor(com[2] + 0.5f) - nz / 2);
 		}
-		image->translate(dx, dy, dz);
+		if (abs(dx)>=nx-1 || abs(dy)>=ny-1 || abs(dz)>=nz) {
+			printf("ERROR, center of mass outside image\n");
+		}
+		else {
+			image->translate(dx, dy, dz);
 
-		Transform t;
-		t.set_trans((float)dx,(float)dy,(float)dz);
+			Transform t;
+			t.set_trans((float)dx,(float)dy,(float)dz);
 
-		if (nz > 1) {
-			image->set_attr("xform.align3d",&t);
-		} else {
-			image->set_attr("xform.align2d",&t);
+			if (nz > 1) {
+				image->set_attr("xform.align3d",&t);
+			} else {
+				image->set_attr("xform.align2d",&t);
+			}
 		}
 	}
 	else {
@@ -5781,15 +5786,20 @@ void ToMassCenterProcessor::process_inplace(EMData * image)
 		if (nz > 1) {
 			dz = -(com[2] - nz / 2);
 		}
-		image->translate(dx, dy, dz);
+		if (fabs(dx)>=nx-1 || fabs(dy)>=ny-2 || fabs(dz)>=nz) {
+			printf("ERROR, center of mass outside image\n");
+		}
+		else {
+			image->translate(dx, dy, dz);
 
-		Transform t;
-		t.set_trans(dx,dy,dz);
+			Transform t;
+			t.set_trans(dx,dy,dz);
 
-		if (nz > 1) {
-			image->set_attr("xform.align3d",&t);
-		} else {
-			image->set_attr("xform.align2d",&t);
+			if (nz > 1) {
+				image->set_attr("xform.align3d",&t);
+			} else {
+				image->set_attr("xform.align2d",&t);
+			}
 		}
 	}
 }
