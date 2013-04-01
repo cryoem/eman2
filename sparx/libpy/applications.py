@@ -6933,7 +6933,8 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 	y_restrict       = get_input_from_string(y_restrict)
 	ynumber	    = get_input_from_string(ynumber)
 	for i in xrange(len(ynumber)):
-		if(ynumber[i]%2==1): ynumber[i]=ynumber[i]+1
+		if ynumber[i] >= 0:
+			if(ynumber[i]%2==1): ynumber[i]=ynumber[i]+1
 	yrng =[]
 
 	for i in xrange(len(xrng)): yrng.append(dp/2)
@@ -7192,7 +7193,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 						proj_ali_helical_90(data[im], refrings1, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], psi_max, finfo)
 					else:
 						peak1, phihi1, theta1, psi1, sxi1, syi1, t11 = \
-						proj_ali_helical_90_local(data[im], refrings1, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], an[N_step], psi_max, finfo)
+						proj_ali_helical_90_local(data[im], refrings1, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], an[N_step], psi_max, finfo, yrnglocal=y_restrict[N_step])
 					#print "  1  ",im, peak1, phihi1, theta1, psi1, sxi1, syi1
 				if( len(refrings2) > 0):
 					if  an[N_step] == -1:
@@ -7200,7 +7201,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 						proj_ali_helical(data[im], refrings2, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], psi_max, finfo)
 					else:
 						peak2, phihi2, theta2, psi2, sxi2, syi2, t12 = \
-						proj_ali_helical_local(data[im], refrings2, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], an[N_step], psi_max, finfo, sym_string=symmetry_string, yrnglocal=y_restrict[N_step])
+						proj_ali_helical_local(data[im], refrings2, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], an[N_step], psi_max, finfo, yrnglocal=y_restrict[N_step])
 					#print "  2  ",im, peak2, phihi2, theta2, psi2, sxi2, syi2
 				if peak1 is None: 
 					peak = peak2
@@ -7935,7 +7936,7 @@ def gchelix_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 						proj_ali_helical_90(data[im], refrings1, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], psi_max, finfo)
 					else:
 						peak1, phihi1, theta1, psi1, sxi1, syi1, t11 = \
-						proj_ali_helical_90_local(data[im], refrings1, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], an[N_step], psi_max, finfo)
+						proj_ali_helical_90_local(data[im], refrings1, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], an[N_step], psi_max, finfo, yrnglocal=y_restrict[N_step])
 					#print "  1  ",im, peak1, phihi1, theta1, psi1, sxi1, syi1
 				if( len(refrings2) > 0):
 					if  an[N_step] == -1:
@@ -7943,7 +7944,7 @@ def gchelix_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 						proj_ali_helical(data[im], refrings2, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], psi_max, finfo)
 					else:
 						peak2, phihi2, theta2, psi2, sxi2, syi2, t12 = \
-						proj_ali_helical_local(data[im], refrings2, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], an[N_step], psi_max, finfo, sym_string=symmetry_string, yrnglocal=y_restrict[N_step])
+						proj_ali_helical_local(data[im], refrings2, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], an[N_step], psi_max, finfo, yrnglocal=y_restrict[N_step])
 					#print "  2  ",im, peak2, phihi2, theta2, psi2, sxi2, syi2
 				if peak1 is None: 
 					peak = peak2
