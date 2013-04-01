@@ -6225,12 +6225,9 @@ EMData* EMData::delete_disconnected_regions(int ix, int iy, int iz) {
 #define    DGR_TO_RAD    		QUADPI/180
 
 EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_use, float radius, float minrad) {
-	if (3 != get_ndim())
-		throw ImageDimensionException("helicise needs a 3-D image.");
-	if (is_complex())
-		throw ImageFormatException("helicise requires a real image");
-	if(int(section_use*nz+0.5)>=nz-2)
-		throw ImageFormatException("Reduce section used for helicise");
+	if(3 != get_ndim())               throw ImageDimensionException("helicise needs a 3-D image.");
+	if(is_complex())                  throw ImageFormatException("helicise requires a real image");
+	if(int(section_use*nz+0.5)>=nz-2) throw ImageFormatException("Reduce section used for helicise");
 
 	EMData* result = this->copy_head();
 	result->to_zero();
@@ -6242,11 +6239,12 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 	//  calculations are done in Angstroms
 	float volen = nz*pixel_size;
 	float nzcp  = nzc*pixel_size;
-	float sectl = nz*pixel_size*section_use;
+	float sectl = nz*pixel_size*section_use;  //In Angstroms
 	float nb = nzcp - sectl/2.0f;
 	float ne = nzcp + sectl/2.0f;
-	int numst = int( nz*pixel_size/dp );
-	int numri = int(sectl/dp);
+	int numst = int( nz*pixel_size/dp );  // A
+	int numri = int(sectl/dp);             // pix
+	if(numri < 1)   throw ImageFormatException("Increase section used for helicise");
 
 	float r2, ir;
 	if(radius < 0.0f) r2 = (float)((nxc-1)*(nxc-1));
@@ -6262,13 +6260,14 @@ EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_u
 			if( z >= volen ) {
 				z = k*pixel_size + (ist-numst)*dp;
 				phi = (ist-numst)*dphi;
-			} 
+			}
 			float ca = cos(phi*(float)DGR_TO_RAD);
 			float sa = sin(phi*(float)DGR_TO_RAD);
 			if((z >= nb) && (z <= ne )) {
 				nq++;
 				if( nq > numri ) break;
 				float zz = z/pixel_size;
+				//cout <<" zz  "<<zz<<"  k  "<<k<<"  phi  "<<phi<<endl;
 				for (int j=0; j<ny; j++) {
 					int jy = j - nyc;
 					int jj = jy*jy;
