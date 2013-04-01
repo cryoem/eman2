@@ -7186,7 +7186,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 				"""
 				peak1 = None
 				peak2 = None
-				print myid, im, get_params_proj(data[im])
 				if( len(refrings1) > 0):
 					if  an[N_step] == -1:
 						peak1, phihi1, theta1, psi1, sxi1, syi1, t11 = \
