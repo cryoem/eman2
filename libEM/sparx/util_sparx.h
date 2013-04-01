@@ -935,7 +935,7 @@ public:
                 vector< int >numr, float cnx, float cny, int ynumber=-1);
 	static vector<float> multiref_polar_ali_helical_90_local(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, float ant, float psi_max, string mode,
-                vector< int >numr, float cnx, float cny, int ynumber=-1);
+                vector< int >numr, float cnx, float cny, int ynumber=-1, float yrnglocal=-1.0);
 
 	/** formerly known as apmq
 	 * Determine shift and rotation between image and many reference
