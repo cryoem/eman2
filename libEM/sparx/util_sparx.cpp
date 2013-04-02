@@ -18654,12 +18654,10 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 	vector<float> n1(crefim_len);
 	vector<float> n2(crefim_len);
 	vector<float> n3(crefim_len);
-	vector<float> ref_phi(crefim_len);
 	for ( iref = 0; iref < (int)crefim_len; iref++) {
 		n1[iref] = crefim[iref]->get_attr("n1");
 		n2[iref] = crefim[iref]->get_attr("n2");
-		n3[iref] = crefim[iref]->get_attr("n3");			
-		ref_phi[iref] = crefim[iref]->get_attr("phi");
+		n3[iref] = crefim[iref]->get_attr("n3");		
 	}
 	float nbrinp;
 	float nbrinp_mirror;
