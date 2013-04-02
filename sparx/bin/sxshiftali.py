@@ -44,7 +44,8 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack <maskfile> --search_rng=10 --maxit=max_iteration --CTF --snr=SNR --Fourvar=Fourier_variance --oneDx --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--search_rng",       type="int",  default=-1,             help="Used to compute the dimension of a \nnwx by nwx section of the 2D ccf which is \nwindowed out for peak search: \nnwx=2*search_rng+1 (nwx=nx if search_rng is -1))")
+	parser.add_option("--search_rng",       type="int",  default=-1,             help="Used to compute the dimension of a \nnwx by nwy section of the 2D ccf which is \nwindowed out for peak search: \nnwx=2*search_rng+1 (nwx=nx if search_rng is -1))")
+	parser.add_option("--search_rng_y",       type="int",  default=-1,             help="Used to compute the dimension of a \nnwx by nwy section of the 2D ccf which is \nwindowed out for peak search: \nnwy=2*search_rng_y+1 (nwy=ny if search_rng_y is -1)). This is ignored when oneDx flag is activated for x-shift search.")
 	parser.add_option("--maxit",    type="float",  default=100,             help="maximum number of iterations program will perform")
 	parser.add_option("--CTF",      action="store_true", default=False,   help="use CTF correction during centering ")
 	parser.add_option("--snr",      type="float",  default=1.0,           help="signal-to-noise ratio of the data (default is 1.0)")
@@ -74,13 +75,13 @@ def main():
 		sys.argv = mpi_init(len(sys.argv),sys.argv)
 
 		global_def.BATCH = True
-		shiftali_MPI(args[0], mask, options.maxit, options.CTF, options.snr, options.Fourvar,options.search_rng,options.oneDx)
+		shiftali_MPI(args[0], mask, options.maxit, options.CTF, options.snr, options.Fourvar,options.search_rng,options.oneDx,options.search_rng_y)
 		global_def.BATCH = False
 		
 		from mpi import mpi_finalize
 		mpi_finalize()
 
-def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=False, search_rng=-1, oneDx=False):  
+def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=False, search_rng=-1, oneDx=False, search_rng_y=-1):  
 	from applications import MPI_start_end
 	from utilities    import model_circle, model_blank, get_image, peak_search, get_im
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
@@ -258,6 +259,9 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 		if search_rng > 0: nwx = 2*search_rng+1
 		else:              nwx=nx
 		
+		if search_rng_y > 0: nwy = 2*search_rng_y+1
+		else:              nwy=ny
+		
 		not_zero = 0
 		for im in xrange(len(data)):
 			if oneDx:
@@ -268,7 +272,7 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 				sx_sum += p1_x
 
 			else:
-				p1 = peak_search(Util.window(ccf(data[im],tavg), nwx,nwx))
+				p1 = peak_search(Util.window(ccf(data[im],tavg), nwx,nwy))
 				p1_x = -int(p1[0][4])
 				p1_y = -int(p1[0][5])
 				ishift_x[im] = p1_x
@@ -307,7 +311,6 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 			data[im] = Processor.EMFourierFilter(data[im], params2)
 			shift_x[im] += p1_x
 			shift_y[im] += p1_y
-		
 		# stop if all shifts are zero
 		not_zero = mpi_reduce(not_zero, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)  
 		if myid == main_node:
