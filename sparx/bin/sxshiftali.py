@@ -352,5 +352,133 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 	else:           send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node: print_end_msg("shiftali_MPI")				
 
+def helishiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=False, search_rng=-1):  
+	from applications import MPI_start_end
+	from utilities    import model_circle, model_blank, get_image, peak_search, get_im
+	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
+	from statistics   import varf2d_MPI
+	from fundamentals import fft, ccf, rot_shift3D, rot_shift2D
+	from utilities    import get_params2D, set_params2D
+	from utilities    import print_msg, print_begin_msg, print_end_msg
+	import os
+	import sys
+	from mpi 	  	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from mpi 	  	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv
+	from mpi 	  	  import MPI_SUM, MPI_FLOAT, MPI_INT
+	from EMAN2	  	  import Processor
+	from time         import time	
+	from pixel_error  import ordersegments
+	from development  import chunks_distribution
+	
+	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
+	myid = mpi_comm_rank(MPI_COMM_WORLD)
+	main_node = 0
+		
+	ftp = file_type(stack)
+
+	if myid == main_node:
+		print_begin_msg("shiftali_MPI")
+
+	max_iter=int(maxit)
+
+	if( myid == 0):
+		infils = EMUtil.get_all_attributes(stack, "filament")
+		ptlcoords = EMUtil.get_all_attributes(stack, 'ptcl_source_coord')
+		filaments = ordersegments(infils, ptlcoords)
+		total_nfils = len(filaments)
+		inidl = [0]*total_nfils
+		for i in xrange(total_nfils):  inidl[i] = len(filaments[i])
+		linidl = sum(inidl)
+		tfilaments = []
+		for i in xrange(total_nfils):  tfilaments += filaments[i]
+		del filaments
+	else:
+		total_nfils = 0
+		linidl = 0
+	total_nfils = bcast_number_to_all(total_nfils, source_node = main_node)
+	if myid != main_node:
+		inidl = [-1]*total_nfils
+	inidl = bcast_list_to_all(inidl, source_node = main_node)
+	linidl = bcast_number_to_all(linidl, source_node = main_node)
+	if myid != main_node:
+		tfilaments = [-1]*linidl
+	tfilaments = bcast_list_to_all(tfilaments, source_node = main_node)
+	filaments = []
+	iendi = 0
+	for i in xrange(total_nfils):
+		isti = iendi
+		iendi = isti+inidl[i]
+		filaments.append(tfilaments[isti:iendi])
+	del tfilaments,inidl
+
+	if myid == main_node:
+		print "total number of filaments: ", total_nfils
+	if total_nfils< number_of_proc:
+		ERROR('number of CPUs (%i) is larger than the number of filaments (%i), please reduce the number of CPUs used'%(number_of_proc, total_nfils), "ehelix_MPI", 1,myid)
+
+	#  balanced load
+	temp = chunks_distribution([[len(filaments[i]), i] for i in xrange(len(filaments))], number_of_proc)[myid:myid+1][0]
+	#fstart, fend = MPI_start_end(total_nfils, number_of_proc, myid)
+	filaments = [filaments[temp[i][1]] for i in xrange(temp)]
+	nfils     = len(filaments)
+
+	#filaments = [[0,1]]
+	#print "filaments",filaments
+	list_of_particles = []
+	indcs = []
+	k = 0
+	for i in xrange(nfils):
+		list_of_particles += filaments[i]
+		k1 = k+len(filaments[i])
+		indcs.append([k,k1])
+		k = k1
+	
+	data = EMData.read_images(stack, list_of_particles)
+	nima = len(data)
+	nx = data[0].get_xsize()
+	ny = data[0].get_ysize()
+	if maskfile == None:
+		mrad = min(nx, ny)
+		mask = model_circle(mrad//2-2, nx, ny)
+	else:
+		mask = get_im(maskfile)
+
+	for im in xrange(nima):
+		data[im].set_attr('ID', list_of_particles[im])
+		if CTF:
+			ctf_params = data[im].get_attr("ctf")
+			st = Util.infomask(data[im], mask, False)
+			data[im] -= st[0]
+			data[im] = filt_ctf(data[im], ctf_params)
+			data[im].set_attr('ctf_applied', 1)
+
+	del list_of_particles		
+
+	total_iter = 0
+	cs = [0.0]*2
+
+	# fourier transform all images, and apply ctf if CTF
+	for im in xrange(len(data)):
+		if CTF:
+			ctf_params = data[im].get_attr("ctf")
+			data[im] = filt_ctf(fft(data[im]), ctf_params)
+		else:
+			data[im] = fft(data[im])
+	
+	for Iter in xrange(max_iter):
+	
+		# Calculate filament average
+		for ifil in xrange(nfils):
+			avg = EMData(nx, ny, 1, False)
+			filnima = 0
+			for im in xrange(indcs[ifil][0], indcs[ifil][1]):
+				Util.add_img(avg, data[im])
+				filnima += 1
+			tavg = Util.mult_scalar(avg, 1.0/float(filnima))
+			
+			# Calculate 1D ccf between each segment and filament average
+			for im in xrange(indcs[ifil][0], indcs[ifil][1]):
+				ctx = Util.window(ccf(data[im],tavg),nwx,1)
+
 if __name__ == "__main__":
 	main()
