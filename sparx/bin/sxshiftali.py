@@ -133,26 +133,30 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 		ima = EMData()
 		ima.read_image(stack, list_of_particles[0], True)
 		nx = ima.get_xsize()
+		ny = ima.get_ysize()
 		if CTF:	ctf_app = ima.get_attr_default('ctf_applied', 2)
 		del ima
 	else:
 		nx = 0
+		ny = 0
 		if CTF:	ctf_app = 0
 	nx = bcast_number_to_all(nx, source_node = main_node)
+	ny = bcast_number_to_all(ny, source_node = main_node)
 	if CTF:
 		ctf_app = bcast_number_to_all(ctf_app, source_node = main_node)
 		if ctf_app > 0:	ERROR("data cannot be ctf-applied", "shiftali_MPI", 1, myid)
 
 	if maskfile == None:
-		mask = model_circle(nx//2-2, nx, nx)
+		mrad = min(nx, ny)
+		mask = model_circle(mrad//2-2, nx, ny)
 	else:
 		mask = get_im(maskfile)
 
 	if CTF:
 		from filter import filt_ctf
 		from morphology   import ctf_img
-		ctf_abs_sum = EMData(nx, nx, 1, False)
-		ctf_2_sum = EMData(nx, nx, 1, False)
+		ctf_abs_sum = EMData(nx, ny, 1, False)
+		ctf_2_sum = EMData(nx, ny, 1, False)
 	else:
 		ctf_2_sum = None
 
@@ -172,7 +176,7 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 		data[im] -= st[0]
 		if CTF:
 			ctf_params = data[im].get_attr("ctf")
-			ctfimg = ctf_img(nx, ctf_params)
+			ctfimg = ctf_img(nx, ctf_params, ny=ny)
 			Util.add_img2(ctf_2_sum, ctfimg)
 			Util.add_img_abs(ctf_abs_sum, ctfimg)
 
@@ -215,7 +219,7 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 			start_time = time()
 			print_msg("Iteration #%4d\n"%(total_iter))
 		total_iter += 1
-		avg = EMData(nx, nx, 1, False)
+		avg = EMData(nx, ny, 1, False)
 		for im in data:  Util.add_img(avg, im)
 
 		reduce_EMData_to_root(avg, myid, main_node)
@@ -225,7 +229,7 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 				tavg = Util.divn_filter(avg, ctf_2_sum)
 			else:	 tavg = Util.mult_scalar(avg, 1.0/float(nima))
 		else:
-			tavg = EMData(nx, nx, 1, False)                               
+			tavg = EMData(nx, ny, 1, False)                               
 			cs = [0.0]*2
 
 		if Fourvar:
