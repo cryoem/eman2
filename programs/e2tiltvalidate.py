@@ -92,7 +92,7 @@ def main():
 	
 	parser.add_argument("--parallel",type=str,help="Parallelism string",default=None, guitype='strbox', row=9, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness", guitype='intbox', row=19, col=0, rowspan=1, colspan=1, mode="analysis")
 	
 	(options, args) = parser.parse_args()
 		
@@ -541,7 +541,7 @@ class EMValidationPlot(QtGui.QWidget):
 		box.addWidget(frame)
 		self.setLayout(box)
 		self.connect(self.polarplot, QtCore.SIGNAL('clusterStats'), self._on_stats)
-		self.connect(self.polarplot, QtCore.SIGNAL('pointIdenity(int)'), self._on_point)
+		self.connect(self.polarplot, QtCore.SIGNAL('pointIdentity(int)'), self._on_point)
 		
 	def _on_stats(self, stats):
 		""" Set the selected stats """

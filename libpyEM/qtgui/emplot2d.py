@@ -960,6 +960,9 @@ class EMPolarPlot2DWidget(EMGLWidget):
 			self.valradius = 1.0
 			self.add_shape("Circle",EMShape(("scrcircle",1,0,0,self.firstcx,self.height()-self.firstcy,self.valradius,2.0)))
 			self.updateGL()
+		elif event.buttons()&Qt.RightButton:
+		        print "Right Clicking Function Temporarily Disabled"
+#	        	self.find_image(self._computeTheta(x,y), self._computeRadius(x,y))
 		else:
 			# Find best image
 			self.find_image(self._computeTheta(x,y), self._computeRadius(x,y))
@@ -978,13 +981,15 @@ class EMPolarPlot2DWidget(EMGLWidget):
 	def find_image(self, theta, rad):
 		data = self.data["data"]
 		bestdist = float("infinity")
-		for i in xrange(len(data[0])):
+		for i in range(len(data[0])):
 			dist = data[1][i]**2 + rad**2 - 2*data[1][i]*rad*math.cos(data[0][i] - theta)
 			if dist < bestdist:
 				bestdist = dist
-				bestpoint = self.datap[i]
+				best = i
+#				bestpoint = self.datap[i]
+#		print data[0][best], data[1][best]
 		#print "This point correpsonds to image: %s"%bestpoint
-		self.emit(QtCore.SIGNAL("pointIdenity(int)"), bestpoint)
+#		self.emit(QtCore.SIGNAL("pointIdentity(int)"), bestpoint)
 				
 	def mouseMoveEvent(self, event):
 		if event.buttons()&Qt.LeftButton:
