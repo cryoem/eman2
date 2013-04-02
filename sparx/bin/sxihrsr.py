@@ -102,15 +102,18 @@ def main():
 
 	parser.add_option("--volalixshift",       action="store_true",   default=False,               help="Use volalixshift refinement")
 	parser.add_option("--searchxshift",       type="float",		     default= 0.0,                help="search range for x-shift determination: +/- searchxshift (Angstroms)")
-	parser.add_option("--nearby",             type="float",		     default= 6.0,                help="neighborhood in which to search for peaks in 1D ccf for x-shift search (Angstroms)")
+	parser.add_option("--nearby",             type="float",		     default= 6.0,                help="neighborhood within which to search for peaks in 1D ccf for x-shift search (Angstroms)")
 
-
+	#  ehelix
 	parser.add_option("--ehelix",             action="store_true",   default=False,               help="Use consistent helical refinement")
 	parser.add_option("--ywobble",            type="float",          default=0.0,                 help="wobble in y-directions (default = 0.0)")
+	parser.add_option("--nopsisearch",        action="store_true",   default=False,               help="Block searching for in-plane angle (default False)")
 
+	# diskali
 	parser.add_option("--diskali",            action="store_true",   default=False,               help="volume alignment")
 	parser.add_option("--zstep",              type="float",          default= 1,                  help="Step size for translational search along z (Angstroms)")   
 
+	# helicise
 	parser.add_option("--helicise",           action="store_true",	 default=False,               help="helicise input volume and save results to output volume")
 	parser.add_option( "--hfsc",              type="string",      	 default="",                  help="generate two list of image indices used to split segment stack into two for helical fsc calculation. The two lists will be stored in two text files named using file_prefix with '_even' and '_odd' suffixes respectively." )
 	parser.add_option( "--filament_attr",     type="string",      	 default="filament",          help="attribute under which filament identification is stored" )
@@ -259,7 +262,7 @@ def main():
 			else:               mask = args[3]
 			from development import ehelix_MPI
 			global_def.BATCH = True
-			ehelix_MPI(args[0], args[1], args[2], options.delta, options.psi_max, searchxshiftp, nearbyp, ywobble, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
+			ehelix_MPI(args[0], args[1], args[2], options.delta, options.psi_max, searchxshiftp, nearbyp, ywobble, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, not options.nopsisearch, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
 			global_def.BATCH = False
 
 		elif options.diskali:
