@@ -2248,6 +2248,8 @@ dirregex - default "", a regular expression for filtering filenames (directory n
 		self.updtimer.start(500)
 
 		self.result=None			# used in modal mode. Holds final selection
+		
+		E2loadappwin("e2display","main",self)
 
 	def busy(self):
 		"display a busy cursor"
@@ -2562,6 +2564,8 @@ dirregex - default "", a regular expression for filtering filenames (directory n
 #		self.wtree.setSelectionModel(myQItemSelection(self.curmodel))
 	
 	def closeEvent(self,event):
+		
+		E2saveappwin("e2display","main",self)
 		self.updthreadexit=True
 		for w in self.view2d+self.view2ds+self.view3d+self.viewplot2d+self.viewplot3d:
 			w.close()
