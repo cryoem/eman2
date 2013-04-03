@@ -88,12 +88,16 @@ def main():
 			disable_bdb_cache()
 
 		if(options.n):
-			from development import ali3d_n
+			from development import ali3d_hans
 			global_def.BATCH = True
-			ali3d_n(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
-			options.yr, options.ts, options.delta, options.an, options.deltapsi, options.startpsi,
-			options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
-			options.function, options.Fourvar, options.npad, options.debug, options.MPI, options.stoprnct, options.chunk)
+			ali3d_hans(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
+				options.yr, options.ts, options.delta, options.an, options.apsi, options.deltapsi, options.startpsi,
+				options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
+				options.function, options.Fourvar, options.npad, options.debug, options.MPI, options.stoprnct)
+			#ali3d_n(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
+			#options.yr, options.ts, options.delta, options.an, options.deltapsi, options.startpsi,
+			#options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
+			#options.function, options.Fourvar, options.npad, options.debug, options.MPI, options.stoprnct, options.chunk)
 			global_def.BATCH = False
 		elif options.searchpsi:
 			from applications import ali3dpsi_MPI

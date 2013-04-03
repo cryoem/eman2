@@ -18434,10 +18434,10 @@ vector<float> Util::hans(EMData* image, const vector< EMData* >& crefim,
 
 	Transform * t = image->get_attr("xform.projection");
 	float previousmax = image->get_attr("previousmax");
-	Dict d = t->get_params("spider");
-	if(t) {delete t; t=0;}
-	float phi   = d["phi"];
-	float theta = d["theta"];
+	//Dict d = t->get_params("spider");
+	//if(t) {delete t; t=0;}
+	//float phi   = d["phi"];
+	//float theta = d["theta"];
 	int   ky = int(2*yrng/step+0.5)/2;
 	int   kx = int(2*xrng/step+0.5)/2;
 	int   iref, nref=0, mirror=0;
@@ -18461,7 +18461,7 @@ vector<float> Util::hans(EMData* image, const vector< EMData* >& crefim,
 	vector<unsigned> listr(crefim_len);
 	for (unsigned i = 0; i < crefim_len; ++i) listr[i] = i;
 	for (unsigned i = 0; i < crefim_len; ++i) {
-		unsigned r = rand() % crefim_len;
+		unsigned r = Util::get_irand(0,crefim_len-1);
 		swap( listr[r], listr[i] );
 	}
 	
@@ -18472,13 +18472,12 @@ vector<float> Util::hans(EMData* image, const vector< EMData* >& crefim,
 		
 			EMData* cimage = cimages[i+ky][j+kx];
 			//  compare with all reference images
-			// for iref in xrange(len(crefim)):
-			for ( iref = 0; iref < (int)crefim_len; iref++) {
+			for ( int tiref = 0; tiref < (int)crefim_len; tiref++) {
+						iref = listr[tiref];
 						Dict retvals = Crosrng_ms(crefim[iref], cimage, numr);
 						double qn = retvals["qn"];
 						double qm = retvals["qm"];
 						if(qn >= previousmax || qm >= previousmax) {
-						
 							sx = -ix;
 							sy = -iy;
 							nref = iref;
@@ -18491,13 +18490,14 @@ vector<float> Util::hans(EMData* image, const vector< EMData* >& crefim,
 								peak = static_cast<float>( qm );
 								mirror = 1;
 							}
+							cout <<"  iref "<<iref<<"  tiref "<<tiref<<"   "<<previousmax<<"   "<<qn<<"   "<<qm<<endl;
 							goto my_label;
 						}
 			}
 	    }
 	}
 	
-my_label:
+	my_label:
 	for (unsigned i = 0; i < cimages.size(); ++i) {
 		for (unsigned j = 0; j < cimages[i].size(); ++j) {
 			delete cimages[i][j];
