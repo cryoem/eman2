@@ -44,14 +44,14 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack <maskfile> --search_rng=10 --maxit=max_iteration --CTF --snr=SNR --Fourvar=Fourier_variance --oneDx --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--search_rng",       type="int",  default=-1,             help="Used to compute the dimension of a \nnwx by nwy section of the 2D ccf which is \nwindowed out for peak search: \nnwx=2*search_rng+1 (nwx=nx if search_rng is -1))")
-	parser.add_option("--search_rng_y",       type="int",  default=-1,             help="Used to compute the dimension of a \nnwx by nwy section of the 2D ccf which is \nwindowed out for peak search: \nnwy=2*search_rng_y+1 (nwy=ny if search_rng_y is -1)). This is ignored when oneDx flag is activated for x-shift search.")
-	parser.add_option("--maxit",    type="float",  default=100,             help="maximum number of iterations program will perform")
-	parser.add_option("--CTF",      action="store_true", default=False,   help="use CTF correction during centering ")
-	parser.add_option("--snr",      type="float",  default=1.0,           help="signal-to-noise ratio of the data (default is 1.0)")
-	parser.add_option("--Fourvar",  action="store_true", default=False,   help="compute Fourier variance")
-	parser.add_option("--oneDx",  action="store_true", default=False,   help="Window out central line of 2D cross correlation for peak search")
-	parser.add_option("--MPI",      action="store_true", default=False,   help="use multiple processors ")
+	parser.add_option("--search_rng",       type="int",           default=-1,      help="Search range for x-shift")
+	parser.add_option("--search_rng_y",     type="int",           default=-1,      help="Search range for x-shift. Not used for 1D search (oneDx flag set).")
+	parser.add_option("--maxit",            type="int",           default=100,     help="Maximum number of iterations program will perform")
+	parser.add_option("--CTF",              action="store_true",  default=False,   help="Use CTF correction")
+	parser.add_option("--snr",              type="float",         default=1.0,     help="signal-to-noise ratio of the data (default is 1.0)")
+	parser.add_option("--Fourvar",          action="store_true",  default=False,   help="compute Fourier variance")
+	parser.add_option("--oneDx",            action="store_true",  default=False,   help="1D search along x-axis")
+	parser.add_option("--MPI",              action="store_true",  default=False,   help="use MPI")
 	(options, args) = parser.parse_args()
 	
 	if not(options.MPI):
@@ -75,7 +75,10 @@ def main():
 		sys.argv = mpi_init(len(sys.argv),sys.argv)
 
 		global_def.BATCH = True
-		shiftali_MPI(args[0], mask, options.maxit, options.CTF, options.snr, options.Fourvar,options.search_rng,options.oneDx,options.search_rng_y)
+		if options.oneDx:
+			helicalshiftali_MPI(args[0], mask, options.maxit, options.CTF, options.snr, options.Fourvar, options.search_rng)
+		else:
+			shiftali_MPI(args[0], mask, options.maxit, options.CTF, options.snr, options.Fourvar,options.search_rng,options.oneDx,options.search_rng_y)
 		global_def.BATCH = False
 		
 		from mpi import mpi_finalize
@@ -185,6 +188,17 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 		reduce_EMData_to_root(ctf_2_sum, myid, main_node)
 		reduce_EMData_to_root(ctf_abs_sum, myid, main_node)
 	else:  ctf_2_sum = None
+	if CTF:
+		if myid != main_node:
+			del ctf_2_sum
+			del ctf_abs_sum
+		else:
+			temp = EMData(nx, ny, 1, False)
+			for i in xrange(0,nx,2):
+				for j in xrange(ny):
+					temp.set_value_at(i,j,snr)
+			Util.add_img(ctf_2_sum, temp)
+			del temp
 
 	total_iter = 0
 	cs = [0.0]*2
@@ -196,7 +210,7 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 		t = data[im].get_attr('xform.align2d')
 		init_params.append(t)
 		p = t.get_params("2d")
-		data[im] = rot_shift2D(data[im], p['alpha'], sx=p['tx'], sy=p['ty'], mirror=p['mirror'], scale=p['scale'])		
+		data[im] = rot_shift2D(data[im], p['alpha'], sx=p['tx'], sy=p['ty'], mirror=p['mirror'], scale=p['scale'])
 	
 	# fourier transform all images, and apply ctf if CTF
 	for im in xrange(len(data)):
@@ -326,9 +340,8 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 		if not_zero_all == 0:
 			break
 		
-	for im in xrange(len(data)):
-		data[im] = fft(data[im])
-
+	#for im in xrange(len(data)): data[im] = fft(data[im])  This should not be required as only header information is used
+	# combine shifts found with the original parameters
 	for im in xrange(len(data)):		
 		t0 = init_params[im]
 		t1 = Transform()
@@ -352,12 +365,12 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 	else:           send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node: print_end_msg("shiftali_MPI")				
 
-def helishiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=False, search_rng=-1):  
+def helicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=False, search_rng=-1):
 	from applications import MPI_start_end
-	from utilities    import model_circle, model_blank, get_image, peak_search, get_im
+	from utilities    import model_circle, model_blank, get_image, peak_search, get_im, pad
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
 	from statistics   import varf2d_MPI
-	from fundamentals import fft, ccf, rot_shift3D, rot_shift2D
+	from fundamentals import fft, ccf, rot_shift3D, rot_shift2D, fshift
 	from utilities    import get_params2D, set_params2D
 	from utilities    import print_msg, print_begin_msg, print_end_msg
 	import os
@@ -365,10 +378,10 @@ def helishiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourva
 	from mpi 	  	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 	from mpi 	  	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv
 	from mpi 	  	  import MPI_SUM, MPI_FLOAT, MPI_INT
-	from EMAN2	  	  import Processor
 	from time         import time	
 	from pixel_error  import ordersegments
 	from development  import chunks_distribution
+	from math         import sqrt, atan2, tan
 	
 	nproc = mpi_comm_size(MPI_COMM_WORLD)
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
@@ -377,11 +390,10 @@ def helishiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourva
 	ftp = file_type(stack)
 
 	if myid == main_node:
-		print_begin_msg("shiftali_MPI")
+		print_begin_msg("helical-shiftali_MPI")
 
 	max_iter=int(maxit)
-
-		if( myid == 0):
+	if( myid == 0):
 		infils = EMUtil.get_all_attributes(stack, "filament")
 		ptlcoords = EMUtil.get_all_attributes(stack, 'ptcl_source_coord')
 		filaments = ordersegments(infils, ptlcoords)
@@ -431,53 +443,225 @@ def helishiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourva
 		k1 = k+len(filaments[i])
 		indcs.append([k,k1])
 		k = k1
-	
 	data = EMData.read_images(stack, list_of_particles)
-	nima = len(data)
+	ldata = len(data)
+	
 	nx = data[0].get_xsize()
 	ny = data[0].get_ysize()
 	if maskfile == None:
 		mrad = min(nx, ny)
-		mask = model_circle(mrad//2-2, nx, ny)
+		mask = pad( model_blank(2*mrad+1, ny), nx, ny, 1, 0.0)
 	else:
 		mask = get_im(maskfile)
 
-	for im in xrange(nima):
+	# apply initial xform.align2d parameters stored in header
+	init_params = []
+	for im in xrange(ldata):
+		t = data[im].get_attr('xform.align2d')
+		init_params.append(t)
+		p = t.get_params("2d")
+		data[im] = rot_shift2D(data[im], p['alpha'], p['tx'], p['ty'], p['mirror'], p['scale'])
+
+	if CTF:
+		from filter import filt_ctf
+		from morphology   import ctf_img
+		ctf_abs_sum = EMData(nx, ny, 1, False)
+		ctf_2_sum = EMData(nx, ny, 1, False)
+	else:
+		ctf_2_sum = None
+		ctf_abs_sum = None
+
+
+
+	from utilities import info
+
+	for im in xrange(ldata):
 		data[im].set_attr('ID', list_of_particles[im])
-		if CTF:
-			ctf_params = data[im].get_attr("ctf")
-			st = Util.infomask(data[im], mask, False)
-			data[im] -= st[0]
-			data[im] = filt_ctf(data[im], ctf_params)
-			data[im].set_attr('ctf_applied', 1)
-
-	del list_of_particles		
-
-	total_iter = 0
-	cs = [0.0]*2
-
-	# fourier transform all images, and apply ctf if CTF
-	for im in xrange(len(data)):
+		st = Util.infomask(data[im], mask, False)
+		data[im] -= st[0]
 		if CTF:
 			ctf_params = data[im].get_attr("ctf")
 			data[im] = filt_ctf(fft(data[im]), ctf_params)
+			data[im].set_attr('ctf_applied', 1)
+			ctfimg = ctf_img(nx, ctf_params, ny=ny)
+			Util.add_img2(ctf_2_sum, ctfimg)
+			Util.add_img_abs(ctf_abs_sum, ctfimg)
+		else:  data[im] = fft(data[im])
+
+	del list_of_particles		
+
+	if CTF:
+		reduce_EMData_to_root(ctf_2_sum, myid, main_node)
+		reduce_EMData_to_root(ctf_abs_sum, myid, main_node)
+	if CTF:
+		if myid != main_node:
+			del ctf_2_sum
+			del ctf_abs_sum
 		else:
-			data[im] = fft(data[im])
-	
+			temp = EMData(nx, ny, 1, False)
+			tsnr = 1./snr
+			for i in xrange(0,nx+2,2):
+				for j in xrange(ny):
+					temp.set_value_at(i,j,tsnr)
+					temp.set_value_at(i+1,j,0.0)
+			#info(ctf_2_sum)
+			Util.add_img(ctf_2_sum, temp)
+			#info(ctf_2_sum)
+			del temp
+
+	total_iter = 0
+	shift_x = [0.0]*ldata
+
 	for Iter in xrange(max_iter):
-	
-		# Calculate filament average
+		if myid == main_node:
+			start_time = time()
+			print_msg("Iteration #%4d\n"%(total_iter))
+		total_iter += 1
+		avg = EMData(nx, ny, 1, False)
+		for im in xrange(ldata):
+			Util.add_img(avg, fshift(data[im], shift_x[im]))
+
+		reduce_EMData_to_root(avg, myid, main_node)
+
+		if myid == main_node:
+			if CTF:  tavg = Util.divn_filter(avg, ctf_2_sum)
+			else:    tavg = Util.mult_scalar(avg, 1.0/float(nima))
+		else:
+			tavg = model_blank(nx,ny)
+
+		if Fourvar:
+			bcast_EMData_to_all(tavg, myid, main_node)
+			vav, rvar = varf2d_MPI(myid, data, tavg, mask, "a", CTF)
+
+		if myid == main_node:
+			if Fourvar:
+				tavg    = fft(Util.divn_img(fft(tavg), vav))
+				vav_r	= Util.pack_complex_to_real(vav)
+			# normalize and mask tavg in real space
+			tavg = fft(tavg)
+			stat = Util.infomask( tavg, mask, False )
+			tavg -= stat[0]
+			Util.mul_img(tavg, mask)
+			tavg.write_image("tavg.hdf",Iter)
+			# For testing purposes: shift tavg to some random place and see if the centering is still correct
+			#tavg = rot_shift3D(tavg,sx=3,sy=-4)
+
+		if Fourvar:  del vav
+		bcast_EMData_to_all(tavg, myid, main_node)
+		tavg = fft(tavg)
+
+		sx_sum = 0.0
+		nxc = nx//2
 		for ifil in xrange(nfils):
+			"""
+			# Calculate filament average
 			avg = EMData(nx, ny, 1, False)
 			filnima = 0
 			for im in xrange(indcs[ifil][0], indcs[ifil][1]):
 				Util.add_img(avg, data[im])
 				filnima += 1
 			tavg = Util.mult_scalar(avg, 1.0/float(filnima))
-			
+			"""
 			# Calculate 1D ccf between each segment and filament average
+			nsegms = indcs[ifil][1]-indcs[ifil][0]
+			ctx = [None]*nsegms
+			pcoords = [None]*nsegms
 			for im in xrange(indcs[ifil][0], indcs[ifil][1]):
-				ctx = Util.window(ccf(data[im],tavg),nwx,1)
+				ctx[im-indcs[ifil][0]] = Util.window(ccf(tavg, data[im]), nx, 1)
+				pcoords[im-indcs[ifil][0]] = data[im].get_attr('ptcl_source_coord')
+				#ctx[im-indcs[ifil][0]].write_image("ctx.hdf",im-indcs[ifil][0])
+				#print "  CTX  ",myid,im,Util.infomask(ctx[im-indcs[ifil][0]], None, True)
+			# search for best x-shift
+			cents = nsegms//2
+
+			dst = sqrt((pcoords[cents][0] - pcoords[0][0])**2 + (pcoords[cents][1] - pcoords[0][1])**2)
+			maxincline = atan2(float(search_rng),dst)
+			kang = int(dst*tan(maxincline)+0.5)
+			qm = -1.e23
+			for six in xrange(-search_rng, search_rng+1,1):
+				q0 = ctx[cents].get_value_at(six+nxc)
+				for incline in xrange(kang+1):
+					qt = q0
+					qu = q0
+					tang = tan(maxincline/kang*incline)
+					for kim in xrange(cents+1,nsegms):
+						dst = sqrt((pcoords[cents][0] - pcoords[kim][0])**2 + (pcoords[cents][1] - pcoords[kim][1])**2)
+						xl = dst*tang+six+nxc
+						ixl = int(xl)
+						dxl = xl - ixl
+						#print kim,xl,ixl,dxl
+						qt += (1.0-dxl)*ctx[kim].get_value_at(ixl) + dxl*ctx[kim].get_value_at(ixl+1)
+						xl = -dst*tang+six+nxc
+						ixl = int(xl)
+						dxl = xl - ixl
+						qu += (1.0-dxl)*ctx[kim].get_value_at(ixl) + dxl*ctx[kim].get_value_at(ixl+1)
+					for kim in xrange(cents):
+						dst = sqrt((pcoords[cents][0] - pcoords[kim][0])**2 + (pcoords[cents][1] - pcoords[kim][1])**2)
+						xl = -dst*tang+six+nxc
+						ixl = int(xl)
+						dxl = xl - ixl
+						qt += (1.0-dxl)*ctx[kim].get_value_at(ixl) + dxl*ctx[kim].get_value_at(ixl+1)
+						xl =  dst*tang+six+nxc
+						ixl = int(xl)
+						dxl = xl - ixl
+						qu += (1.0-dxl)*ctx[kim].get_value_at(ixl) + dxl*ctx[kim].get_value_at(ixl+1)
+					if( qt > qm ):
+						qm = qt
+						sib = six
+						bang = tang
+					if( qu > qm ):
+						qm = qu
+						sib = six
+						bang = -tang
+					#if incline == 0:  print  "incline = 0  ",six,tang,qt,qu
+				#print qm,six,sib,bang
+			#print " got results   ",indcs[ifil][0], indcs[ifil][1], ifil,myid,qm,sib,tang,bang,len(ctx),Util.infomask(ctx[0], None, True)
+			for im in xrange(indcs[ifil][0], indcs[ifil][1]):
+				kim = im-indcs[ifil][0]
+				dst = sqrt((pcoords[cents][0] - pcoords[kim][0])**2 + (pcoords[cents][1] - pcoords[kim][1])**2)
+				if(kim < cents):  xl = -dst*bang+sib
+				else:             xl =  dst*bang+sib
+				shift_x[im] = xl
+			# Average shift
+			sx_sum += shift_x[indcs[ifil][0]+cents]
+		#print myid,sx_sum,total_nfils
+		sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+		if myid == main_node:
+			sx_sum = float(sx_sum[0])/total_nfils
+			print_msg("Average shift  %6.2f\n"%(sx_sum))
+		else:
+			sx_sum = 0.0
+		sx_sum = 0.0
+		sx_sum = bcast_number_to_all(sx_sum, source_node = main_node)
+		for im in xrange(ldata):
+			shift_x[im] -= sx_sum
+			#print  "   %3d  %6.3f"%(im,shift_x[im])
+		#exit()
+
+
+	# combine shifts found with the original parameters
+	for im in xrange(ldata):		
+		t1 = Transform()
+		t1.set_params({"type":"2D","tx":shift_x[im]})
+		# combine t0 and t1
+		tt = t1*init_params[im]
+		data[im].set_attr("xform.align2d", tt)
+	# write out headers and STOP, under MPI writing has to be done sequentially
+	mpi_barrier(MPI_COMM_WORLD)
+	par_str = ["xform.align2d", "ID"]
+	if myid == main_node:
+		from utilities import file_type
+		if(file_type(stack) == "bdb"):
+			from utilities import recv_attr_dict_bdb
+			recv_attr_dict_bdb(main_node, stack, data, par_str, 0, ldata, nproc)
+		else:
+			from utilities import recv_attr_dict
+			recv_attr_dict(main_node, stack, data, par_str, 0, ldata, nproc)
+	else:           send_attr_dict(main_node, data, par_str, 0, ldata)
+	if myid == main_node: print_end_msg("helical-shiftali_MPI")				
+
+					
+
 
 if __name__ == "__main__":
 	main()
