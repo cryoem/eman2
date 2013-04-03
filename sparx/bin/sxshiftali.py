@@ -370,7 +370,7 @@ def helishiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourva
 	from pixel_error  import ordersegments
 	from development  import chunks_distribution
 	
-	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
+	nproc = mpi_comm_size(MPI_COMM_WORLD)
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
 		
@@ -381,7 +381,7 @@ def helishiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourva
 
 	max_iter=int(maxit)
 
-	if( myid == 0):
+		if( myid == 0):
 		infils = EMUtil.get_all_attributes(stack, "filament")
 		ptlcoords = EMUtil.get_all_attributes(stack, 'ptcl_source_coord')
 		filaments = ordersegments(infils, ptlcoords)
@@ -413,13 +413,12 @@ def helishiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourva
 
 	if myid == main_node:
 		print "total number of filaments: ", total_nfils
-	if total_nfils< number_of_proc:
-		ERROR('number of CPUs (%i) is larger than the number of filaments (%i), please reduce the number of CPUs used'%(number_of_proc, total_nfils), "ehelix_MPI", 1,myid)
+	if total_nfils< nproc:
+		ERROR('number of CPUs (%i) is larger than the number of filaments (%i), please reduce the number of CPUs used'%(nproc, total_nfils), "ehelix_MPI", 1,myid)
 
 	#  balanced load
-	temp = chunks_distribution([[len(filaments[i]), i] for i in xrange(len(filaments))], number_of_proc)[myid:myid+1][0]
-	#fstart, fend = MPI_start_end(total_nfils, number_of_proc, myid)
-	filaments = [filaments[temp[i][1]] for i in xrange(temp)]
+	temp = chunks_distribution([[len(filaments[i]), i] for i in xrange(len(filaments))], nproc)[myid:myid+1][0]
+	filaments = [filaments[temp[i][1]] for i in xrange(len(temp))]
 	nfils     = len(filaments)
 
 	#filaments = [[0,1]]
