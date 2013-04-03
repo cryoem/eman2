@@ -1470,6 +1470,8 @@ class GUIctf(QtGui.QWidget):
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mouseup")  ,self.imgmouseup)
 		self.guiplot.connect(self.guiplot,QtCore.SIGNAL("mousedown"),self.plotmousedown)
 		
+		
+		
 		self.guiim.mmode="app"
 
 		# This object is itself a widget we need to set up
@@ -1577,6 +1579,11 @@ class GUIctf(QtGui.QWidget):
 		self.resize(720,380) # figured these values out by printing the width and height in resize event
 		
 		
+		E2loadappwin("e2ctf","main",self)
+		E2loadappwin("e2ctf","image",self.guiim.qt_parent)
+		E2loadappwin("e2ctf","realimage",self.guirealim.qt_parent)
+		E2loadappwin("e2ctf","plot",self.guiplot.qt_parent)
+		
 		self.setWindowTitle("CTF")
 
 	def listkey(self,event):
@@ -1672,14 +1679,19 @@ class GUIctf(QtGui.QWidget):
 	def closeEvent(self,event):
 #		QtGui.QWidget.closeEvent(self,event)
 #		self.app.app.closeAllWindows()
+		E2saveappwin("e2ctf","main",self)
+		
 		if self.guiim != None:
+			E2saveappwin("e2ctf","image",self.guiim.qt_parent)
 			self.app().close_specific(self.guiim)
 			self.guiim = None 
 		if self.guiplot != None:
+			E2saveappwin("e2ctf","plot",self.guiplot.qt_parent)
 			self.app().close_specific(self.guiplot)
 		if self.guirealim != None:
+			E2saveappwin("e2ctf","realimage",self.guirealim.qt_parent)
 			self.app().close_specific(self.guirealim)
-
+		
 		event.accept()
 		self.app().close_specific(self)
 		self.emit(QtCore.SIGNAL("module_closed")) # this signal is important when e2ctf is being used by a program running its own event loop
