@@ -223,6 +223,7 @@ class RCTboxer:
 	def init_particles_window(self):
 		self.particles_window = ParticlesWindow(self)
 		self.parent_window.show_specific(self.particles_window.window)
+		E2loadappwin("e2rctboxer","particles",self.particles_window.window.qt_parent)
 		self.widgetlist.append(self.particles_window.window)
 		
 	# initialize tilited and untilted windows, if desired for tilted windows can be easily added
@@ -232,6 +233,7 @@ class RCTboxer:
 		self.widgetlist.append(self.untilt_win.window)
 		self.windowlist.append(self.untilt_win)
 		self.particles_window.addlist("untilted")
+		E2loadappwin("e2rctboxer","untilted",self.untilt_win.window.qt_parent)
 		
 	def load_untilt_image(self, filename):
 		self.untilt_win.load_image(filename)
@@ -242,6 +244,8 @@ class RCTboxer:
 		self.widgetlist.append(self.tilt_win.window)
 		self.windowlist.append(self.tilt_win)
 		self.particles_window.addlist("tilted")
+		E2loadappwin("e2rctboxer","tilted",self.tilt_win.window.qt_parent)
+
 		
 	def load_tilt_image(self, filename):
 		self.tilt_win.load_image(filename)
@@ -295,6 +299,7 @@ class ParticlesWindow:
 		self.window.set_mouse_mode("App")
 		self.window.setWindowTitle("Particles")
 		self.window.optimally_resize()
+
 		self.connect_signals()
 		self.listsofparts = []
 		self.numlists = 0
@@ -367,6 +372,7 @@ class ParticlesWindow:
 			window.update_particles()
 		
 	def module_closed(self):
+		E2saveappwin("e2rctboxer","particles",self.window.qt_parent)
 		pass
 		#if not self.closed:
 			#print "Saving particles"
@@ -417,7 +423,7 @@ class MainWin:
 		self.data=BigImageCache.get_object(filename).get_image(use_alternate=True)
 		self.window.set_data(self.data, filename)
 		self.window.force_display_update()
-		self.window.optimally_resize()
+		#self.window.optimally_resize()
 		self.load_database()
 		self.win_xsize = self.window.data.get_xsize()
 		self.win_ysize = self.window.data.get_ysize()
@@ -490,6 +496,8 @@ class MainWin:
 		pass
 		
 	def module_closed(self):
+
+		E2saveappwin("e2rctboxer",self.name,self.window.qt_parent)
 		self.boxes.close_db()
 		#print "Main module closed"
 	

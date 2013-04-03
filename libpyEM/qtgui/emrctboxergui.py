@@ -33,6 +33,7 @@ from EMAN2 import get_image_directory, dump_processors_list
 from PyQt4 import QtCore, QtGui
 from emrctstrategy import Strategy2IMGMan, Strategy2IMGPair
 from EMAN2db import db_open_dict
+from EMAN2 import *
 import os
 
 class ControlPannel(QtGui.QWidget):
@@ -69,9 +70,12 @@ class ControlPannel(QtGui.QWidget):
 		# Initialize tools
 		self.tools_stacked_widget.setCurrentIndex(self.db.get("toolidx",dfl=0))
 		self.current_tool_combobox.setCurrentIndex(self.db.get("toolidx",dfl=0))
+		E2loadappwin("e2rctboxer","main",self)
+#		E2loadappwin("e2rctboxer","maintab",self.wimage)
+#		E2loadappwin("e2rctboxer","processortab",self.wfft)
+#		E2loadappwin("e2rctboxer","filtertab",self.wplot)
 		
 	def get_main_tab(self):
-		
 		mainwidget = QtGui.QWidget()
 		vbox = QtGui.QVBoxLayout()
 		
@@ -130,6 +134,7 @@ class ControlPannel(QtGui.QWidget):
 		return filterwidget
 	
 	def get_processor_tab(self):
+		
 		processorwidget = QtGui.QWidget()
 		vboxa = QtGui.QVBoxLayout()
 		
@@ -364,6 +369,7 @@ class ControlPannel(QtGui.QWidget):
 			window.update_particles()
 	
 	def closeEvent(self,event):
+		E2saveappwin("e2rctboxer","main",self)
 		self.on_done()
 		
 	def on_write(self):
