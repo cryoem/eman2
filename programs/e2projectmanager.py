@@ -96,12 +96,13 @@ class EMProjectManager(QtGui.QMainWindow):
 		vsplitter.setSizes([1000,100])
 		
 		self.setCentralWidget(vsplitter)
-		
+		E2loadappwin("e2projectmanager","main",self)
 		#Update the project are construction
 		self.updateProject()
 		
 	def closeEvent(self, event):
 		""" Upon PM close, close the taskmanager and the logbook """
+		E2saveappwin("e2projectmanager","main",self)
 		if self.notebook: self.notebook.close()
 		if self.taskmanager: self.taskmanager.close()
 		if self.thehelp: self.thehelp.close()
