@@ -1922,15 +1922,15 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 	def done(self):
 		
 		if self.main_2d_window != None:
-			E2saveappwin("e2boxer","image",self.main_2d_window)
+			E2saveappwin("e2boxer","image",self.main_2d_window.qt_parent)
 			self.main_2d_window.close()
 		
 		if self.thumbs_window != None:
-			E2saveappwin("e2boxer","thumbs",self.thumbs_window)
+			E2saveappwin("e2boxer","thumbs",self.thumbs_window.qt_parent)
 			self.thumbs_window.close()
 		
 		if self.particles_window != None:
-			E2saveappwin("e2boxer","particles",self.particles_window)
+			E2saveappwin("e2boxer","particles",self.particles_window.qt_parent)
 			self.particles_window.close()
 
 		self.emit(PyQt4.QtCore.SIGNAL("module_closed"))
@@ -2061,13 +2061,13 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 		if self.main_2d_window != None:
 			get_application().show_specific(self.main_2d_window)
 			self.main_2d_window.optimally_resize()
-			E2loadappwin("e2boxer","image",self.main_2d_window)
+			E2loadappwin("e2boxer","image",self.main_2d_window.qt_parent)
 
 
 		if self.thumbs_window != None: 
 			get_application().show_specific(self.thumbs_window)
 			self.thumbs_window.optimally_resize()
-			E2loadappwin("e2boxer","thumbs",self.thumbs_window)
+			E2loadappwin("e2boxer","thumbs",self.thumbs_window.qt_parent)
 
 		if self.inspector != None: 
 			get_application().show_specific(self.inspector)
@@ -2077,7 +2077,7 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 		if self.particles_window != None: 
 			get_application().show_specific(self.particles_window)
 			self.particles_window.optimally_resize()
-			E2loadappwin("e2boxer","particles",self.particles_window)
+			E2loadappwin("e2boxer","particles",self.particles_window.qt_parent)
 
 
 	def __update_2d_window(self,file_name):
