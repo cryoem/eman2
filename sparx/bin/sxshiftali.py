@@ -393,7 +393,7 @@ def helicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fou
 		print_begin_msg("helical-shiftali_MPI")
 
 	max_iter=int(maxit)
-	if( myid == 0):
+	if( myid == main_node):
 		infils = EMUtil.get_all_attributes(stack, "filament")
 		ptlcoords = EMUtil.get_all_attributes(stack, 'ptcl_source_coord')
 		filaments = ordersegments(infils, ptlcoords)
@@ -401,6 +401,7 @@ def helicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fou
 		inidl = [0]*total_nfils
 		for i in xrange(total_nfils):  inidl[i] = len(filaments[i])
 		linidl = sum(inidl)
+		nima = linidl
 		tfilaments = []
 		for i in xrange(total_nfils):  tfilaments += filaments[i]
 		del filaments
