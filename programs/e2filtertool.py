@@ -475,6 +475,8 @@ class EMFilterTool(QtGui.QMainWindow):
 		self.timer=QTimer()
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeOut)
 		self.timer.start(100)
+		E2loadappwin("e2filtertool","main",self)
+
 #		QtCore.QObject.connect(self.boxesviewer,QtCore.SIGNAL("mx_image_selected"),self.img_selected)
 
 
@@ -642,6 +644,8 @@ class EMFilterTool(QtGui.QMainWindow):
 			self.viewer.insertNewNode('Data', self.sgdata, parentnode=self.viewer)
 			self.viewer.insertNewNode("Iso", isosurface, parentnode=self.sgdata)
 		
+		E2loadappwin("e2filtertool","image",self.viewer.qt_parent)
+
 		self.procChange(-1)
 
 	def save_current_processorset(self,name):
@@ -759,10 +763,13 @@ class EMFilterTool(QtGui.QMainWindow):
 		self.close()
 		
 	def closeEvent(self,event):
+		E2saveappwin("e2filtertool","main",self)
 		self.save_current_processorset(str(self.wsetname.currentText()))
 		
 #		print "Exiting"
-		if self.viewer!=None : self.viewer.close()
+		if self.viewer!=None : 
+			E2saveappwin("e2filtertool","image",self.viewer.qt_parent)
+			self.viewer.close()
 		event.accept()
 		#self.app().close_specific(self)
 		self.emit(QtCore.SIGNAL("module_closed")) # this signal is important when e2ctf is being used by a program running its own event loop
