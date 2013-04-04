@@ -9574,31 +9574,15 @@ def ssnr3d(stack, output_volume = None, ssnr_text_file = None, mask = None, refe
 	from filter                  import filt_ctf
 	from reconstruction          import recons3d_nn_SSNR, recons3d_4nn, recons3d_4nn_ctf
 	from projection              import prep_vol, prgs
-	from utilities               import print_begin_msg, print_end_msg, print_msg
-	
-	print_begin_msg("ssnr3d")
-
-	print_msg("Input stack                 : %s\n"%(stack))
-	print_msg("Output volume               : %s\n"%(output_volume))	
-	print_msg("SSNR text file              : %s\n"%(ssnr_text_file))
-	print_msg("Outer radius                : %i\n"%(ou))
-	print_msg("Ring width                  : %i\n"%(rw))
-	print_msg("Padding factor              : %i\n"%(npad))
-	print_msg("CTF correction              : %s\n"%(CTF))
-	print_msg("CTF sign                    : %i\n"%(sign))
-	print_msg("Symmetry group              : %s\n"%(sym))
 	
 	fring_width = float(rw)
 	if mask:
 		import  types
 		if type(mask) is types.StringType:
-			print_msg("Maskfile                    : %s\n"%(mask))
 			mask2D=get_im(mask)
 		else:
-			print_msg("Maskfile                    : user provided in-core mask\n")
 			mask2D = mask
 	else:
-		print_msg("Maskfile                    : None\n")
 		mask2D = None
 
 	[ssnr1, vol_ssnr1] = recons3d_nn_SSNR(stack, mask2D, rw, npad, sign, sym, CTF, random_angles)
@@ -9656,7 +9640,6 @@ def ssnr3d(stack, output_volume = None, ssnr_text_file = None, mask = None, refe
 		outf.write("".join(datstrings))
 	outf.close()
 
-	print_end_msg('ssnr3d')
 	
 	'''
 	qt = 0.0
