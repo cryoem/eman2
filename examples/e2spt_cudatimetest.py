@@ -473,7 +473,7 @@ def doit(corg,options):
 			ta=0
 			tb=0
 			if cmd:				
-				print "The instruction is", cmds[ele]
+				print "The instruction is", cmd
 				ta = time()
 				os.system(cmd)
 				tb = time()
