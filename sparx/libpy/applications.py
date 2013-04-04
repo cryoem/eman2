@@ -2772,30 +2772,22 @@ def ali2d_rotationaltop(outdir, stack, randomize = False, orient=True, ir = 4, o
 	
 	if os.path.exists(outdir):   ERROR('Output directory exists, please change the name and restart the program', "ali2d_friedel", 1)
 	os.mkdir(outdir)
-	import global_def
-	global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
-	print_begin_msg("ali2d_rotational")
-
+	
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
 
 	data2d = EMData.read_images(stack)
 	nima = len(data2d)
 
 	# default value for the last ring
-	if last_ring == -1:  last_ring = nx/2-2
-	print_msg("Number of images            : %s\n"%(nima))
-	print_msg("Output directory            : %s\n"%(outdir))
-	print_msg("Inner radius                : %i\n"%(first_ring))
-	print_msg("Outer radius                : %i\n"%(last_ring))
-	print_msg("Ring step                   : %i\n"%(rstep))
-	print_msg("Maximum iteration           : %i\n"%(max_iter))
+	if last_ring == -1:  
+		nx = data2d[0].get_xsize()
+		last_ring = nx/2-2
 	
 	tavg = ali2d_rotational(data2d, randomize, orient, first_ring, last_ring, rstep, psi_max, mode, max_iter)
 	tavg.write_image(os.path.join(outdir, "aqfinal.hdf"))
 	# write out headers
 	from utilities import write_headers
 	write_headers(stack, data2d, range(nima))
-	print_end_msg("ali2d_rotational")
 	
 
 def ali2d_rotational(data2d, randomize = False, orient=True, ir = 1, ou = -1, rs = 1, psi_max = 180.0, mode = "F", maxit = 10):
