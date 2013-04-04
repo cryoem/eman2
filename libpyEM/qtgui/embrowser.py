@@ -316,8 +316,6 @@ class EMFileType(object):
 		"Show a single 2-D image"
 		brws.busy()
 		
-		print "self.path=",self.path
-		
 		if self.nimg>1 : 
 			if self.n>=0 : data=EMData(self.path,self.n)
 			else : data=EMData.read_images(self.path)
