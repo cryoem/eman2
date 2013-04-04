@@ -600,6 +600,8 @@ class GUIEvalImage(QtGui.QWidget):
 		
 		# This deals with Z stacks and multi image files
 		fsp=str(self.setlist.item(val).text())
+		
+		
 		if "," in fsp : 
 			fsp,n=fsp.split(",")
 			self.data=EMData(fsp,int(n))	# read the image from disk
@@ -609,6 +611,11 @@ class GUIEvalImage(QtGui.QWidget):
 			self.data=EMData(fsp,0,False,Region(0,0,int(n),hdr["nx"],hdr["ny"],1))	# read the image from disk
 		else :
 			self.data=EMData(fsp,0)	# read the image from disk
+		
+		self.wimage.setWindowTitle("e2evalimage - " + fsp.split("/")[-1])
+		self.wfft.setWindowTitle("e2evalimage - 2D FFT - "+fsp.split("/")[-1])
+		self.wplot.setWindowTitle("e2evalimage - Plot - "+fsp.split("/")[-1])
+		
 		
 		if self.defaultapix!=None : self.data["apix_x"]=self.defaultapix
 		self.wimage.set_data(self.data)

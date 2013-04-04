@@ -1914,7 +1914,7 @@ class GUIctf(QtGui.QWidget):
 		except:
 			ssnr="?"
 		self.imginfo.setText("%s particles     SNR = %s"%(ptcl,ssnr))
-		
+	
 		if self.guiim != None: 
 #			print self.data
 			self.guiim.set_data(self.data[val][4])
@@ -1923,6 +1923,14 @@ class GUIctf(QtGui.QWidget):
 				self.guiiminit = False
 			self.guiim.updateGL()
 		self.update_plot()
+		
+		print "self.data[val]=",self.data[val][0].split('#')[-1]
+		
+		
+		self.guiim.qt_parent.setWindowTitle("e2ctf - 2D FFT - "+self.data[val][0].split('#')[-1])
+		self.guirealim.qt_parent.setWindowTitle("e2ctf - "+self.data[val][0].split('#')[-1])
+		self.guiplot.qt_parent.setWindowTitle("e2ctf - Plot - "+self.data[val][0].split('#')[-1])
+
 		
 		self.ptcldata=EMData.read_images(self.data[val][0],range(0,20))
 		self.guirealim.set_data(self.ptcldata)
