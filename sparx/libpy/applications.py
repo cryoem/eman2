@@ -9524,23 +9524,12 @@ def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=
 
 	from reconstruction import recons3d_4nn_ctf, recons3d_4nn
 	from utilities import drop_image
-	from utilities import print_begin_msg, print_end_msg, print_msg
 
-	print_begin_msg("recons3d_n")
-	print_msg("Input stack                 : %s\n"%(prj_stack))
-	print_msg("Output volume               : %s\n"%(vol_stack))
-	print_msg("Padding factor              : %i\n"%(npad))
-	print_msg("CTF correction              : %s\n"%(CTF))
-	print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
-	print_msg("CTF sign                    : %i\n"%(sign))
-	print_msg("Symmetry group              : %s\n\n"%(sym))
 	if(listfile):
 		from utilities import read_text_file
 		pid_list = read_text_file(listfile, 0)
 		pid_list = map(int, pid_list)
-		print_msg("Reconstruction for images listed in file : %s\n\n"%(listfile))
 	elif(group > -1):
-		print_msg("Reconstruction for group             : %i\n\n"%(group))
 		tmp_list = EMUtil.get_all_attributes(prj_stack, 'group')
 		pid_list = []
 		for i in xrange(len(tmp_list)):
@@ -9553,12 +9542,10 @@ def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=
 		drop_image(vol, vol_stack, "s")
 	else:
 		drop_image(vol, vol_stack)
-	print_end_msg("recons3d_n")
 
 def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, listfile, group, verbose,xysize, zsize):
 	from reconstruction import recons3d_4nn_ctf_MPI, recons3d_4nn_MPI
 	from utilities      import get_im, drop_image, bcast_number_to_all
-	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from string         import replace
 	from time           import time
 	from utilities      import iterImagesStack
@@ -9569,21 +9556,11 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, li
 	time_start = time()
 
 	if(myid == 0):
-		print_begin_msg("recons3d_n_MPI")
-		print_msg("Input stack  	       : %s\n"%(prj_stack))
-		print_msg("Output volume	       : %s\n"%(vol_stack))
-		print_msg("Padding factor	       : %i\n"%(npad))
-		print_msg("CTF correction	       : %s\n"%(CTF))
-		print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
-		print_msg("CTF sign		       : %i\n"%(sign))
-		print_msg("Symmetry group	       : %s\n\n"%(sym))
 		if(listfile):
 			from utilities import read_text_file
 			pid_list = read_text_file(listfile, 0)
 			pid_list = map(int, pid_list)
-			print_msg("Reconstruction for images listed in file : %s\n\n"%(listfile))
 		elif(group > -1):
-			print_msg("Reconstruction for group		: %i\n\n"%(group))
 			tmp_list = EMUtil.get_all_attributes(prj_stack, 'group')
 			pid_list = []
 			for i in xrange(len(tmp_list)):
