@@ -9364,12 +9364,7 @@ def transform2d(stack_data, stack_data_ali):
 # apply 2D alignment parameters stored in the header of the input stack file using gridding interpolation and create an output stack file
 	from fundamentals   import rot_shift2D
 	from utilities 	    import set_params2D, get_params2D, get_im
-	from utilities      import print_begin_msg, print_end_msg, print_msg
 	import os
-
-	print_begin_msg("transform2d")	
-	print_msg("Input stack                 : %s\n"%(stack_data))
-	print_msg("Output stack                : %s\n\n"%(stack_data_ali))
 
 	t = Transform({"type":"2D"})
 	nima = EMUtil.get_image_count(stack_data)
@@ -9379,7 +9374,6 @@ def transform2d(stack_data, stack_data_ali):
 		temp = rot_shift2D(data, al2d[0], al2d[1], al2d[2], al2d[3], al2d[4])
 		temp.set_attr("xform.align2d", t)
 		temp.write_image(stack_data_ali, im)
-	print_end_msg("transform2d")
 
 def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=4, sym="c1", listfile = "", group = -1, verbose=0, MPI=False,xysize=-1, zsize = -1):
 	if MPI:
