@@ -183,7 +183,7 @@ class EMFileType(object):
 	def plot2dApp(self,brws):
 		"Append self to current plot"
 		brws.busy()
-
+		
 		if self.n>=0 : data=EMData(self.path)
 		else : data=EMData(self.path,self.n)
 
@@ -194,6 +194,8 @@ class EMFileType(object):
 			target=EMPlot2DWidget()
 			brws.viewplot2d.append(target)
 			target.set_data(data,self.path.split("/")[-1].split("#")[-1])
+
+		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
 
 		brws.notbusy()
 		target.show()
@@ -209,6 +211,8 @@ class EMFileType(object):
 		target=EMPlot2DWidget()
 		brws.viewplot2d.append(target)
 		target.set_data(data,self.path.split("/")[-1].split("#")[-1])
+
+		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
 
 		brws.notbusy()
 		target.show()
@@ -234,6 +238,9 @@ class EMFileType(object):
 		target.initialViewportDims(data.getData().get_xsize())	# Scale viewport to object size
 		target.setCurrentSelection(iso)				# Set isosurface to display upon inspector loading
 		target.updateSG()	# this is needed because this might just be an addition to the SG rather than initialization
+		
+		target.setWindowTitle(self.path.split('/')[-1])
+
 		brws.notbusy()
 		target.show()
 		target.raise_()
@@ -255,7 +262,8 @@ class EMFileType(object):
 		target.initialViewportDims(data.getData().get_xsize())	# Scale viewport to object size
 		target.setCurrentSelection(iso)				# Set isosurface to display upon inspector loading
 		brws.notbusy()
-		
+		target.setWindowTitle(self.path.split('/')[-1])
+
 		target.show()
 		target.raise_()
 		
@@ -277,7 +285,9 @@ class EMFileType(object):
 			target.set_data(data)
 			if self.getSetsDB(): target.set_single_active_set(self.getSetsDB())
 			brws.view2ds.append(target)
-			
+		
+		target.qt_parent.setWindowTitle("Stack - "+self.path.split('/')[-1])
+		
 		brws.notbusy()
 		target.show()
 		target.raise_()
@@ -295,7 +305,9 @@ class EMFileType(object):
 		target.set_data(data)
 		if self.getSetsDB(): target.set_single_active_set(self.getSetsDB())
 		brws.view2ds.append(target)
-
+		
+		target.qt_parent.setWindowTitle("Stack - "+self.path.split('/')[-1])
+		
 		brws.notbusy()
 		target.show()
 		target.raise_()
@@ -303,6 +315,9 @@ class EMFileType(object):
 	def show2dSingle(self,brws):
 		"Show a single 2-D image"
 		brws.busy()
+		
+		print "self.path=",self.path
+		
 		if self.nimg>1 : 
 			if self.n>=0 : data=EMData(self.path,self.n)
 			else : data=EMData.read_images(self.path)
@@ -314,6 +329,8 @@ class EMFileType(object):
 		except: 
 			target=EMImage2DWidget(data)
 			brws.view2d.append(target)
+			
+		target.setWindowTitle(self.path.split('/')[-1])
 
 		brws.notbusy()
 		target.show()
@@ -329,6 +346,8 @@ class EMFileType(object):
 		
 		target=EMImage2DWidget(data)
 		brws.view2d.append(target)
+		
+		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
 
 		brws.notbusy()
 		target.show()
@@ -530,6 +549,8 @@ class EMPlotFileType(EMFileType):
 			brws.viewplot2d.append(target)
 			target.set_data(data,self.path.split("/")[-1].split("#")[-1])
 
+		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+
 		brws.notbusy()
 		target.show()
 		target.raise_()
@@ -553,6 +574,8 @@ class EMPlotFileType(EMFileType):
 		brws.viewplot2d.append(target)
 		target.set_data(data,self.path.split("/")[-1].split("#")[-1])
 
+		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+		
 		brws.notbusy()
 		target.show()
 		target.raise_()
