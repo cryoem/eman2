@@ -22158,7 +22158,7 @@ void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
 
 			int ipr = int(psi_max*maxrin/360.0f + 0.5f);
 			int incpsi = (dpsi == 270.0f) ? (maxrin/2) : (0);
-			float qn = -1.020f;
+			float qn = -1.0e20f;
 			for (int ips = -ipr; ips < ipr+1; ++ips) {
 				int tot = (ips + incpsi + maxrin)%maxrin;
 				float tval = temp->get_value_at(tot);
