@@ -87,7 +87,7 @@ def main():
 	from mpi          import mpi_barrier, mpi_send, mpi_recv, mpi_bcast, MPI_INT, mpi_finalize, MPI_FLOAT
 	from applications import MPI_start_end, within_group_refinement, ali2d_ras
 	from pixel_error  import multi_align_stability
-	from utilities    import print_begin_msg, print_end_msg, print_msg, send_EMData, recv_EMData
+	from utilities    import send_EMData, recv_EMData
 	from utilities    import get_image, bcast_number_to_all, set_params2D, get_params2D
 	from utilities    import group_proj_by_phitheta, model_circle, get_input_from_string
 
@@ -114,9 +114,6 @@ def main():
 	#if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "sxproj_stability", 1, myid)
 	#mpi_barrier(MPI_COMM_WORLD)
 
-	if myid == main_node:
-		print_begin_msg("sxproj_stability")
-		print_msg("%-70s:  %s\n"%("Input stack", stack))
 	
 	img_per_grp = options.img_per_group
 	radius = options.radius
@@ -145,13 +142,6 @@ def main():
 	if radius == -1: radius = nx/2-2
 	mask = model_circle(radius, nx, nx)
 
-	if myid == main_node:
-		print_msg("%-70s:  %d\n"%("Number of images per group            ", img_per_grp))
-		print_msg("%-70s:  %d\n"%("Radius of alignment                   ", radius))
-		print_msg("%-70s:  %d\n"%("Number of iterations within alignment ", ite))
-		print_msg("%-70s:  %d\n"%("Number of alignments for stability    ", num_ali))
-		print_msg("%-70s:  %f\n"%("Threshold of pixel error              ", thld_err))
-		print_msg("%-70s:  %s\n"%("Grouping method                       ", options.grouping))
 	st = time()
 	if options.grouping == "GRP":
 		if myid == main_node:
@@ -427,9 +417,6 @@ def main():
 				mpi_send(members, 3, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 			except:
 				mpi_send([-999.0,-999.0,-999.0], 3, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
-
-	if myid == main_node:
-		print_end_msg("sxproj_stability")
 
 	global_def.BATCH = False
 	mpi_barrier(MPI_COMM_WORLD)
