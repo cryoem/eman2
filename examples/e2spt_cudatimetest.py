@@ -122,12 +122,12 @@ def main():
 		options.path = "sptCudaTest_01"
 	
 	files=os.listdir(os.getcwd())
-	print "right before while loop"
+	#print "right before while loop"
 	while options.path in files:
-		print "in while loop, options.path is", options.path
+		#print "in while loop, options.path is", options.path
 		#path = options.path
 		if '_' not in options.path:
-			print "I will add the number"
+			#print "I will add the number"
 			options.path = options.path + '_00'
 		else:
 			jobtag=''
@@ -139,11 +139,11 @@ def main():
 						
 			options.path = '_'.join(components)
 			#options.path = path
-			print "The new options.path is", options.path
+			#print "The new options.path is", options.path
 
 	if options.path not in files:
 		
-		print "I will make the path", options.path
+		#print "I will make the path", options.path
 		os.system('mkdir ' + options.path)
 	
 	
@@ -155,41 +155,46 @@ def main():
 		retgpu=[]
 		if options.ID:
 			options.ID = options.ID + '_'
+		else:
+			options.ID=''
 							
 		'''
 		Compute GPU alignment times and plot them
 		'''
+		origdir=os.getcwd()
 		if options.gpu:
 			corg = 'GPU'
 
-			retgpu=doit(corg,options)
+			retgpu=doit(corg,options,origdir)
 			
-			for set in retgpu:
-				data = retgpu[set]
+			for dset in retgpu:
+				data = retgpu[dset]
 			
-				for i in range(len(data)):
-					name = options.path + "/" + options.ID + '_' + set + "_CS"+ str(options.coarsestep).zfill(2)  + "_FS" + str( options.finestep ).zfill(4) + '_GPU.png'
-					gnums = numpy.array(data[i][-1])
-					sizes = numpy.array(data[i][1])
-					print "\n\n"
-					print "for which sizes to plot are", sizes
-					print "and gnums to plot are", gnums
-					print '\n'
-					plotter(sizes,gnums,name,options.coarsestep,options.finestep)
-					plt.savefig(options.path + '/' + name)
+				#for i in range(len(data)):
+				name = options.path + "/" + options.ID + dset + "_CS"+ str(options.coarsestep).zfill(2)  + "_FS" + str( options.finestep ).zfill(2) + '_GPU.png'
+				#gnums = numpy.array(data[0])
+				#sizes = numpy.array(data[1])
+				sizes = data[0]				
+				gnums = data[1]				
+				#print "\n\n"
+				#print "BEFORE plotter sizes are", sizes
+				#print "BEFORE plotter GNUMS to plot are", gnums
+				#print '\n'
+				plotter(sizes,gnums,name,options.coarsestep,options.finestep)
+				plt.savefig(options.path + '/' + os.path.basename(name))
+				plt.clf()
+
+				if options.plotminima:
+					ret=minima(sizes,gnums)
+					sizesmin=ret[0]
+					gnumsmin=ret[1]
+					namemin=name.replace('.png','_MIN.png')
+					markernum=0
+					if options.colorlessplot:
+						markernum=1
+					plotter(sizesmin,gnumsmin,namemin,options.coarsestep,options.finestep,0,0,markernum)
+					plt.savefig(options.path + '/' + os.path.basename(namemin))
 					plt.clf()
-	
-					if options.plotminima:
-						ret=minima(sizes,gnums)
-						sizesmin=ret[0]
-						gnumsmin=ret[1]
-						namemin=name.replace('.png','_MIN.png')
-						markernum=0
-						if options.colorlessplot:
-							markernum=1
-						plotter(sizesmin,gnumsmin,namemin,options.coarsestep,options.finestep,0,0,markernum)
-						plt.savefig(options.path + '/' + namemin)
-						plt.clf()
 		
 		'''
 		Compute CPU alignment times and plot them
@@ -197,35 +202,38 @@ def main():
 		if options.cpu:
 			corg = 'CPU'
 
-			retcpu=doit(corg,options)
+			retcpu=doit(corg,options,origdir)
 
-			for set in retcpu:
-				data = retcpu[set]
+			for dset in retcpu:
+				data = retcpu[dset]
 			
-				for i in range(len(data)):
-					name = options.path + "/" + options.ID + '_' + set + "_CS"+ str(options.coarsestep).zfill(2)  + "_FS" + str( options.finestep ).zfill(4) + '_CPU.png'
-					cnums = numpy.array(data[i][-1])
-					sizes = numpy.array(data[i][1])
-					print "\n$$$$$$$\nThe coarse step is", options.coarsestep
-					print "\n\n"
-					print "for which sizes to plot are", sizes
-					print "and cnums to plot are", cnums
-					print "\n"
-					plotter(sizes,cnums,name,options.coarsestep,options.finestep)				
-					plt.savefig(options.path + '/' + name)
-					plt.clf()
+				#for i in range(len(data)):aidee
+				name = options.path + "/" + options.ID + dset + "_CS"+ str(options.coarsestep).zfill(2)  + "_FS" + str( options.finestep ).zfill(2) + '_CPU.png'
+				#cnums = numpy.array(data[i][-1])
+				#sizes = numpy.array(data[i][1])
+				sizes = data[0]				
+				cnums = data[1]
 				
-					if options.plotminima:
-						ret=minima(sizes,cnums)
-						sizesmin=ret[0]
-						cnumsmin=ret[1]
-						namemin=name.replace('.png','_MIN.png')
-						markernum=0
-						if options.colorlessplot:
-							markernum=1
-						plotter(sizesmin,cnumsmin,namemin,options.coarsestep,options.finestep,0,0,markernum)
-						plt.savefig(options.path + '/' + namemin)
-						plt.clf()
+				#print "\n$$$$$$$\nThe coarse step is", options.coarsestep
+				#print "\n\n"
+				#print "BEFORE plotter sizes to plot are", sizes
+				#print "BEFORE plotter CNUMS to plot are", cnums
+				#print "\n"
+				plotter(sizes,cnums,name,options.coarsestep,options.finestep)				
+				plt.savefig(options.path + '/' + os.path.basename(name))
+				plt.clf()
+			
+				if options.plotminima:
+					ret=minima(sizes,cnums)
+					sizesmin=ret[0]
+					cnumsmin=ret[1]
+					namemin=name.replace('.png','_MIN.png')
+					markernum=0
+					if options.colorlessplot:
+						markernum=1
+					plotter(sizesmin,cnumsmin,namemin,options.coarsestep,options.finestep,0,0,markernum)
+					plt.savefig(options.path + '/' + os.path.basename(namemin))
+					plt.clf()
 	
 
 		'''
@@ -235,43 +243,49 @@ def main():
 			if len(retcpu) == len(retgpu):
 
 				#steps=[]
-			
-				for setnum in range(len(retgpu)):
-					if len(retcpu[set]) == len(retgpu[set]):					
-						
-						retcpuC = retcpu[set]
-						retgpuC = retgpu[set]
-						for i in range(len(retcpu_current)):
-							name = options.path + "/" + options.ID + "CS"+ str(options.coarsestep).zfill(2)  + "_FS" + str( options.finestep ).zfill(2) + '_GPUvsCPU.png'
-							gnums = numpy.array(retgpuC[i][-1])
-							cnums = numpy.array(retcpuC[i][-1])
-							sizes = numpy.array(retgpuC[i][1])
-							difs = cnums/gnums
+				print "In comparing GPU and CPU, the len of each ret data is", len(retgpu), len(retcpu)
+				print "In fact, retcpu is", retcpu
+				print "In fact, retgpu is", retgpu
 
-							difsl = list(difs)
-							for i in range(len(difsl)):
-								difsl[i] = str(difsl[i]) + '\n'
-							f = open(name.replace('.png','.txt'),'w')
-							f.writelines(difsl)
-							f.close()
-		
-							print "\n$$$$$$$\nThe step is", step
-							print "\n\n"
-							plotter(sizes,difs,name,options.coarsestep,options.finestep)
-							plt.savefig(options.path + '/' + name)
+				for key in retgpu:
+					if len(retcpu[key]) == len(retgpu[key]):					
+						
+						retcpuC = retcpu[key]
+						retgpuC = retgpu[key]
+						#for i in range(len(retcpu_current)):
+						name = options.path + "/" + options.ID + key +  "_CS"+ str(options.coarsestep).zfill(2)  + "_FS" + str( options.finestep ).zfill(2) + '_GPUvsCPU.png'
+						gnums = numpy.array(retgpuC[1])
+						cnums = numpy.array(retcpuC[1])
+						#sizes = numpy.array(retgpuC[key])						
+
+						difs = cnums/gnums
+						sizes = retgpuC[0]
+						difs = list(difs)
+
+						difsl = list(difs)
+						for i in range(len(difsl)):
+							difsl[i] = str(difsl[i]) + '\n'
+						f = open(name.replace('.png','.txt'),'w')
+						f.writelines(difsl)
+						f.close()
+	
+						#print "\n$$$$$$$\nThe step is", step
+						#print "\n\n"
+						plotter(sizes,difs,name,options.coarsestep,options.finestep)
+						plt.savefig(options.path + '/' + os.path.basename(name))
+						plt.clf()
+	
+						if options.plotminima:
+							ret=minima(sizes,difs)
+							sizesmin=ret[0]
+							difsmin=ret[1]
+							namemin=name.replace('.png','_MIN.png')
+							markernum=0
+							if options.colorlessplot:
+								markernum=1
+							plotter(sizesmin,difsmin,namemin,options.coarsestep,options.finestep,0,0,markernum)
+							plt.savefig(options.path + '/' + os.path.basename(namemin))
 							plt.clf()
-		
-							if options.plotminima:
-								ret=minima(sizes,difs)
-								sizesmin=ret[0]
-								difsmin=ret[1]
-								namemin=name.replace('.png','_MIN.png')
-								markernum=0
-								if options.colorlessplot:
-									markernum=1
-								plotter(sizesmin,difsmin,namemin,options.coarsestep,options.finestep,0,0,markernum)
-								plt.savefig(options.path + '/' + namemin)
-								plt.clf()
 					else:
 						print "This gpu set does not have the same number of elements as the corresponding cpu set"
 						
@@ -348,7 +362,7 @@ def main():
 				if options.singleplot:
 					pass
 				else:
-					plt.savefig(options.path + '/' + namemin)
+					plt.savefig(options.path + '/' + os.path.basename(namemin))
 					plt.clf()
 					
 			else:
@@ -358,27 +372,30 @@ def main():
 				if options.singleplot:
 					pass
 				else:
-					plt.savefig(options.path + '/' + name)
+					plt.savefig(options.path + '/' + os.path.basename(name))
 					plt.clf()
 			
 			#values.update({k:valuesforthisfile})
 			k+=1
 		
 		if options.singleplot:
+
 			
-			plt.savefig(options.path + '/' + options.singleplot)
+			plt.savefig(options.path + '/' + os.path.basename(options.singleplot))
 			plt.clf()
-			print "I have saved a single plot to", options.path + '/' + options.singleplot
+			print "I have saved a single plot to", options.path + '/' + os.path.basename(options.singleplot)
 			
 	return()
 	
 '''
 FUNCTION TO COMPUTE ALIGNMENT TIMES
 '''
-def doit(corg,options):
+def doit(corg,options,originaldir):
 	c=os.getcwd()
-	f=os.listdir(c)
+	
 
+	f=os.listdir(c)
+	
 	mults = [12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,35,36,40,42,44,45,48,49,50,52,54,56,60,64,65,66,70,72,75,77,78,80,81,84,88,91,96,98,100,104,112,120,128,136,144,152,160,168,176,184,192,200,208,216,224,232,240,248,256]
 
 	if options.test:
@@ -398,6 +415,8 @@ def doit(corg,options):
 		#steps=[10]
 	
 	computer = options.ID
+	if computer:
+		computer += '_'
 	
 	data = {}
 	
@@ -416,69 +435,87 @@ def doit(corg,options):
 	if not options.onefulloff:
 		IDS.append('onefull')
 	
-	if options.oneccfoff:
+	if not options.oneccfoff:
 		IDS.append('oneccf')
 	
-	for id in IDS:
+	
+	#print "\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\nThe IDS and corg are", IDS, corg
+	#print "The len of IDs is", len(IDS)
+	#print "Individually, they are"
+	#for aide in IDS:
+	#	print "aide, corg are", aide,corg	
+	#print "\n&&&&&&&&&&&&&&&&&&&&&&&&\n"
+
+	for aidee in IDS:
+		#print "\n\n\n\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\nWorking with THIS id and corg", aidee,corg
+		#print "\n&&&&&&&&&&&&&&&&&&&&&&&&\n\n\n\n\n"
 		name=options.path + '/' + computer +'_' + corg + '.txt'
-		if id == 'oneicos':	
-			name = options.path + '/' + computer + '_oneicos_CS' + str(coarsestep).zfill(len(str(coarsestep))) + '_FS' + str(finestep) + '_' + corg + '.txt'
-		if id == 'onefull':
-			name = options.path + '/' + computer + '_onefull_CS' + str(coarsestep).zfill(len(str(coarsestep))) + '_' + corg + '.txt'
-		if id == 'oneccf':
-			name = options.path + '/' + computer + '_oneccf_CS' + str(coarsestep).zfill(len(str(coarsestep))) + '_' + corg + '.txt'
+		if aidee == 'oneicos':	
+			name = options.path + '/' + computer + 'oneicos_CS' + str(coarsestep).zfill(len(str(coarsestep))) + '_FS' + str(finestep) + '_' + corg + '.txt'
+		if aidee == 'onefull':
+			name = options.path + '/' + computer + 'onefull_CS' + str(coarsestep).zfill(len(str(coarsestep))) + '_' + corg + '.txt'
+		if aidee == 'oneccf':
+			name = options.path + '/' + computer + 'oneccf_CS' + str(coarsestep).zfill(len(str(coarsestep))) + '_' + corg + '.txt'
 		
 		txt = open(name,'w')
 		times=[]
+		cmd=''
 		for size in mults:
 			t=t1=t2=t1h=t2h=t1m=t2m=t1s=t2s=t1tot=t2tot=0
-
-			a=EMData(size,size,size)
-			a=a.process('testimage.noise.gauss')
-			
-			aname = 'a_stack.hdf'
-			a.write_image(options.path+ '/' + aname)
-
-			b=EMData(size,size,size)
-			b=b.process('testimage.noise.gauss')
-			bname = 'b_stack.hdf'
-			b.write_image(options.path+ '/' + bname)
-
-			out = 'garbage.hdf'
 			
 			setcuda=''
 			if corg=='gpu' or corg=='GPU':
-				setcuda= 'export NOCUDAINIT=0 && '
-				print "\n\n\n !!!! I Have turned cuda ON!!!\n\n\n"
+				setcuda= 'export NOCUDAINIT=0'
+				#print "\n\n\n !!!! I Have turned cuda ON!!!\n\n\n"
 			elif corg=='cpu' or corg=='CPU':
-				setcuda = 'export NOCUDAINIT=1 && '
-				print "\n\n\n !!!! I Have turned cuda OFF!!!\n\n\n"
+				setcuda = 'export NOCUDAINIT=1'
+				#print "\n\n\n !!!! I Have turned cuda OFF!!!\n\n\n"
 			else:
 				print "Something is wrong; you're supposed to select GPU or CPU. TERMINATING!"
 				sys.exit()
 		
 			cmd=''
-			if id == 'oneicos':		
-				cmd = setcuda + '''cd ''' + options.path + ''' && e2spt_classaverage.py --input=''' + aname + ''' --output=''' + out + ''' --ref=''' + bname + ''' --iter=1 --npeakstorefine=1 -v 0 --mask=mask.sharp:outer_radius=-2 --preprocess=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --align=rotate_translate_3d:search=6:delta=''' + str(coarsestep) + ''':dphi=''' + str(coarsestep) + ''':verbose=0:sym=icos --parallel=thread:1 --ralign=refine_3d_grid:delta=''' + str(finestep) + ''':range=''' + str( int(math.ceil(coarsestep/2.0)) ) + ''' --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --normproc=normalize.mask'''
+			abspath = originaldir + '/' + options.path
+			#print "\n\n\n@@@@@@@@@@@@@@@@@@@@@@@@@Abs path is", abspath
+			os.system('cd ' + abspath)
+			#print "But the dir I'm in is" + os.getcwd() + "@@@@@@@@@@@@@@@@@@@@@@@@@\n\n\n"
+			
+			a=EMData(size,size,size)
+			a=a.process('testimage.noise.gauss')
+			
+			aname = abspath+ '/' + 'a_stack.hdf'
+			a.write_image(aname)
+
+			b=EMData(size,size,size)
+			b=b.process('testimage.noise.gauss')
+			bname = abspath + '/' +'b_stack.hdf'
+			b.write_image(bname)
+
+			out = 'garbage.hdf'
+			
+			#print "aname is", aname
+			#print "bname is", bname
+
+			#paf = abspath + '/' + aidee
+			
+				#cmd = setcuda + ''' && e2spt_classaverage.py --input=''' + aname + ''' --output=''' + out + ''' --ref=''' + bname + ''' --iter=1 --npeakstorefine=1 -v 0 --mask=mask.sharp:outer_radius=-2 --preprocess=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --align=rotate_translate_3d:search=6:delta=''' + str(coarsestep) + ''':dphi=''' + str(coarsestep) + ''':verbose=0:sym=icos --parallel=thread:1 --ralign=refine_3d_grid:delta=''' + str(finestep) + ''':range=''' + str( int(math.ceil(coarsestep/2.0)) ) + ''' --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --normproc=normalize.mask --path=''' + paf
 				#cmds.update('icosali':cmd1)
 		
-			if id == 'onefull':
-				cmd = setcuda + '''cd ''' + options.path + ''' && e2spt_classaverage.py --input=''' + aname + ''' --output=''' + out + ''' --ref=''' + bname + ''' --iter=1 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --highpass=filter.highpass.gauss:cutoff_freq=0.01:apix=1.0 --preprocess=filter.lowpass.gauss:cutoff_freq=0.2:apix=1.0 --align=rotate_symmetry_3d:sym=c1 --parallel=thread:1 --ralign=None --averager=mean.tomo --aligncmp=ccc.tomo --normproc=normalize.mask'''
-				#cmds.update('onefull':cmd2)
-			
-			#if id == 'onefft':
-			#	cmd=''
-			#	#cmd = setcuda + '''cd ''' + options.path + ''' && e2spt_classaverage.py --input=''' + aname + ''' --output=''' + out + ''' --ref=''' + bname + ''' --iter=1 -v 0 --align=rotate_symmetry_3d:sym=c1 --parallel=thread:1 --ralign=None --averager=mean.tomo --aligncmp=ccc.tomo'''
-			
 			ta=0
 			tb=0
-			if cmd:				
-				print "The instruction is", cmd
+			sym='c1'
+			if aidee == 'onefull' or aidee == 'oneicos':	
+				if aidee == 'oneicos':
+					sym='icos'
+			
+				cmd = setcuda + ''' && cd ''' + abspath + ''' && e2spt_classaverage.py --input=''' + aname + ''' --output=''' + out + ''' --ref=''' + bname + ''' --iter=1 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --highpass=filter.highpass.gauss:cutoff_freq=0.01:apix=1.0 --preprocess=filter.lowpass.gauss:cutoff_freq=0.2:apix=1.0 --align=rotate_symmetry_3d:sym=''' + sym + ''' --parallel=thread:1 --ralign=None --averager=mean.tomo --aligncmp=ccc.tomo --normproc=normalize.mask --path=''' + aidee
+			
+				#print "The instruction is", cmd
 				ta = time()
 				os.system(cmd)
 				tb = time()
 	
-			elif id == 'oneccf':
+			elif aidee == 'oneccf':
 				a=EMData(aname,0)
 				b=EMData(bname,0)
 				ta = time()
@@ -487,32 +524,48 @@ def doit(corg,options):
 			
 			td = tb - ta
 			if td:
-				print "Excution time was", td
+				#print "Excution time was", td
 				times.append(float(td))
 				line2write= str(size) + ' ' + str(td)+'\n'
 				txt.write(line2write)
 				
 		txt.close()
 	
-		data.update({id:[mults,times]})
-		print "\n\nThe data to return is\n", data
-		print "\n"
-		return(data)
+		data.update({aidee:[mults,times]})
+		#print "\n\nThe data to return is\n", data
+		#print "\n"
+	return(data)
 
 
 '''
 FUNCTION TO PLOT RESULTS
 '''
 def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0):
-	print "in plotter, linen received is", linenum
+	#print "in plotter, linen received is", linenum
 	
+	if not xaxis or not yaxis:
+		#print "The plotter has received empty xaxis or yaxis arrays, see", 
+		sys.exit()
+
+	#print "IN PLOTTER X", xaxis
+	#print "IN PLOTTER Y", yaxis
+	#print "ylimvalmax RECEIVED in plotter is", ylimvalmax
+	
+	if ylimvalmax:
+		ymax=ylimvalmax
+	
+	else:
+		ylimvalmax=max(yaxis)
+		#print "YLIMVALMAX had to be reset!", ylimvalmax
+		ymax=ylimvalmax	
+
 	markers=['','o','D','H','x','h','8',7,4,5,6,'_','p',',','+','.','s','*','d',3,0,1,2,'1','3','4','2','v','<','>','^','|'] 
 	mark=markers[markernum]
 	
 	linestyles=['-','--','**']
 	linest=linestyles[linenum]
 	
-	print "Therefore linest is", linest
+	#print "Therefore linest is", linest
 	
 	matplotlib.rc('xtick', labelsize=16) 
 	matplotlib.rc('ytick', labelsize=16) 
@@ -534,19 +587,11 @@ def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0):
 	xmin, xmax = ax.get_xaxis().get_view_interval()
 	ymin, ymax = ax.get_yaxis().get_view_interval()
 	
-	print "ylimvalmax is", ylimvalmax
-	
-	if ylimvalmax:
-		ymax=ylimvalmax
-	
-	else:
-		ylimvalmax=max(yaxis)
-		print "YLIMVALMAX had to be reset!", ylimvalmax
 	ax.add_artist(Line2D((xmin, xmax+10), (ymin, ymin), color='k', linewidth=4))
 	ax.add_artist(Line2D((xmin, xmin), (ymin, ymax+10), color='k', linewidth=4))
 	ax.tick_params(axis='both',reset=False,which='both',length=8,width=3)
 
-	print "BOLD IS ON!"
+	#print "BOLD IS ON!"
 	LW=3
 	if not markernum:
 		LW=2
