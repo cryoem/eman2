@@ -96,7 +96,7 @@ def main():
 
 
 	(options, args) = parser.parse_args(arglist[1:])
-	if len(args) != 3:
+	if len(args) < 3 or len(args) > 4:
 		print "usage: " + usage + "\n"
 		print "Also includes various helical reconstruction related functionalities: " + usage2
 		print "Please run '" + progname + " -h' for detailed options"
