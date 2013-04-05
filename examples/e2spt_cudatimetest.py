@@ -268,6 +268,10 @@ def main():
 		
 		files=options.plotonly.split(',')
 		print "Will plot these files", files
+
+		if options.noplot:
+			print "ERROR: You cannot speficy 'plotonly' and 'noplot' at the same time."
+			sys.exit()
 		
 		values={}
 		
@@ -360,9 +364,11 @@ def preplot(options,tipo,data,key):
 	#print "BEFORE plotter sizes are", sizes
 	#print "BEFORE plotter GNUMS to plot are", gnums
 	#print '\n'
-	plotter(xdata,ydata,name,options.coarsestep,options.finestep)
-	plt.savefig(options.path + '/' + os.path.basename(name))
-	plt.clf()
+	
+	if not options.noplot:
+		plotter(xdata,ydata,name,options.coarsestep,options.finestep)
+		plt.savefig(options.path + '/' + os.path.basename(name))
+		plt.clf()
 	
 	textwriter(name,xdata,ydata)
 
@@ -374,9 +380,11 @@ def preplot(options,tipo,data,key):
 		markernum=0
 		if options.colorlessplot:
 			markernum=1
-		plotter(xdatamins,ydatamins,namemin,options.coarsestep,options.finestep,0,0,markernum)
-		plt.savefig(options.path + '/' + os.path.basename(namemin))
-		plt.clf()
+		
+		if not options.noplot:
+			plotter(xdatamins,ydatamins,namemin,options.coarsestep,options.finestep,0,0,markernum)
+			plt.savefig(options.path + '/' + os.path.basename(namemin))
+			plt.clf()
 
 		textwriter(namemin,xdatamins,ydatamins)
 
@@ -385,9 +393,10 @@ def preplot(options,tipo,data,key):
 		ydatasub=ydata[0:options.subset]
 		namesub=name.replace('.png','_SUB' + str(options.subset).zfill(3) + '.png')
 		
-		plotter(xdatasub,ydatasub,namesub,options.coarsestep,options.finestep)
-		plt.savefig(options.path + '/' + os.path.basename(namesub))
-		plt.clf()
+		if not options.noplot:
+			plotter(xdatasub,ydatasub,namesub,options.coarsestep,options.finestep)
+			plt.savefig(options.path + '/' + os.path.basename(namesub))
+			plt.clf()
 	
 		textwriter(namesub,xdatasub,ydatasub)
 
@@ -399,9 +408,11 @@ def preplot(options,tipo,data,key):
 			markernum=0
 			if options.colorlessplot:
 				markernum=1
-			plotter(xdatasubmins,ydatasubmins,namesubmin,options.coarsestep,options.finestep,0,0,markernum)
-			plt.savefig(options.path + '/' + os.path.basename(namemin))
-			plt.clf()
+			
+			if not options.noplot:			
+				plotter(xdatasubmins,ydatasubmins,namesubmin,options.coarsestep,options.finestep,0,0,markernum)
+				plt.savefig(options.path + '/' + os.path.basename(namemin))
+				plt.clf()
 	
 			textwriter(namesubmin,xdatasubmins,ydatasubmins)
 
