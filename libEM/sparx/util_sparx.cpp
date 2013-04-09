@@ -45,7 +45,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cassert>
-#include <boost/format.hpp>
 #include "emdata.h"
 #include "util.h"
 #include "fundamentals.h"
