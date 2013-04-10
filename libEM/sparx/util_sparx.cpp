@@ -18463,7 +18463,7 @@ vector<float> Util::hans(EMData* image, const vector< EMData* >& crefim,
 		unsigned r = Util::get_irand(0,crefim_len-1);
 		swap( listr[r], listr[i] );
 	}
-	
+
 	for (int i = -ky; i <= ky; i++) {
 	    iy = i * step ;
 	    for (int j = -kx; j <= kx; j++) {
