@@ -18431,7 +18431,7 @@ vector<float> Util::hans(EMData* image, const vector< EMData* >& crefim,
 	size_t crefim_len = crefim.size();
 	const float qv = static_cast<float>( pi/180.0 );
 
-	Transform * t = image->get_attr("xform.projection");
+	//Transform * t = image->get_attr("xform.projection");
 	float previousmax = image->get_attr("previousmax");
 	//Dict d = t->get_params("spider");
 	//if(t) {delete t; t=0;}
@@ -18489,7 +18489,7 @@ vector<float> Util::hans(EMData* image, const vector< EMData* >& crefim,
 								peak = static_cast<float>( qm );
 								mirror = 1;
 							}
-							cout <<"  iref "<<iref<<"  tiref "<<tiref<<"   "<<previousmax<<"   "<<qn<<"   "<<qm<<endl;
+							//cout <<"  iref "<<iref<<"  tiref "<<tiref<<"   "<<previousmax<<"   "<<qn<<"   "<<qm<<endl;
 							goto my_label;
 						}
 			}
