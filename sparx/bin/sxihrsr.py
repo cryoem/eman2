@@ -43,19 +43,7 @@ def main():
         	arglist.append( arg )
 	progname = os.path.basename(arglist[0])
 	usage = progname + " stack ref_vol outdir  <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --ynumber=y_numbers  --txs=translational_search_stepx  --delta=angular_step --an=angular_neighborhood --center=1 --maxit=max_iter --CTF --snr=1.0  --ref_a=S --sym=c1 --datasym=symdoc --new"
-	usage2 = progname + """ inputfile outputfile [options]
-        Examples:
-
-        Helicise input volume and save the result to output volume:
-        
-            sxihrsr.py input_vol.hdf output_vol.hdf --helicise --dp=27.6 --dphi=166.5 --fract=0.65 --rmax=70 --rmin=1 --apix=1.84         
-			
-            sxihrsr.py bdb:big_stack --hfsc='flst_' --filament_attr=filament
-			
-            sxihrsr.py bdb:big_stack --predict_helical='helical_params.txt' --dp=27.6 --dphi=166.5 --apix=1.84
-            
-            sxihrsr.py disk_to_stack.hdf --stackdisk='stacked_disks.hdf' --dphi=166.5 --dp=27.6 --ref_nx=160 --ref_ny=160 --ref_nz=220
-"""
+	
 	parser = OptionParser(usage,version=SPARXVERSION)
 	#parser.add_option("--ir",                 type="float", 	     default= -1,                 help="inner radius for rotational correlation > 0 (set to 1) (Angstroms)")
 	parser.add_option("--ou",                 type="float", 	     default= -1,                 help="outer radius for rotational 2D correlation < int(nx/2)-1 (set to the radius of the particle) (Angstroms)")
@@ -95,81 +83,14 @@ def main():
 	parser.add_option("--delta_theta",        type="float",		     default=1.0,                 help="delta theta for reference projection")
 	parser.add_option("--WRAP",               type="int",  		     default= 1,                  help="do helical wrapping")
 
-
-	parser.add_option("--volalixshift",       action="store_true",   default=False,               help="Use volalixshift refinement")
-	parser.add_option("--searchxshift",       type="float",		     default= 0.0,                help="search range for x-shift determination: +/- searchxshift (Angstroms)")
-	parser.add_option("--nearby",             type="float",		     default= 6.0,                help="neighborhood within which to search for peaks in 1D ccf for x-shift search (Angstroms)")
-
-	# diskali
-	parser.add_option("--diskali",            action="store_true",   default=False,               help="volume alignment")
-	parser.add_option("--zstep",              type="float",          default= 1,                  help="Step size for translational search along z (Angstroms)")   
-
-	# helicise
-	parser.add_option("--helicise",           action="store_true",	 default=False,               help="helicise input volume and save results to output volume")
-	parser.add_option( "--hfsc",              type="string",      	 default="",                  help="generate two list of image indices used to split segment stack into two for helical fsc calculation. The two lists will be stored in two text files named using file_prefix with '_even' and '_odd' suffixes respectively." )
-	parser.add_option( "--filament_attr",     type="string",      	 default="filament",          help="attribute under which filament identification is stored" )
-	parser.add_option( "--predict_helical",   type="string",      	 default="",                  help="Generate projection parameters consistent with helical symmetry")
-
-	# input options for generating disks
-	parser.add_option("--gendisk",            type="string",		 default="",                  help="Name of file under which generated disks will be saved to") 
-	parser.add_option("--ref_nx",             type="int",   		 default= 1,                  help="nx=ny volume size" ) 
-	parser.add_option("--ref_nz",             type="int",   		 default= 1,                  help="nz volume size - computed disks will be nx x ny x rise/apix" ) 
-
-	# get consistency
-	parser.add_option("--consistency",        type="string",		 default="",                  help="Name of parameters to get consistency statisticsf for") 
-	parser.add_option("--phithr",             type="float", 		 default= 2.0,                help="phi threshold for consistency check")  
-	parser.add_option("--ythr",               type="float", 		 default= 2.0,                help="y threshold (in Angstroms) for consistency check")  
-	parser.add_option("--segthr",             type="int", 		     default= 3,                  help="minimum number of segments/filament for consistency check")  
-
-	# stack disks
-	parser.add_option("--stackdisk",          type="string",		 default="",                  help="Name of file under which output volume will be saved to.")
-	parser.add_option("--ref_ny",             type="int",   		 default=-1,                  help="ny of output volume size. Default is ref_nx" ) 
-
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1 or len(args) > 5:
 		print "usage: " + usage + "\n"
-		print "Also includes various helical reconstruction related functionalities: " + usage2
 		print "Please run '" + progname + " -h' for detailed options"
 	else:
-		
-		if len(options.hfsc) > 0:
-			if len(args) != 1:
-				print  "Incorrect number of parameters"
-				sys.exit()
-			from applications import imgstat_hfsc
-			imgstat_hfsc( args[0], options.hfsc, options.filament_attr)
-			sys.exit()
-		
 		# Convert input arguments in the units/format as expected by ihrsr_MPI in applications.
 		if options.apix < 0:
 			print "Please enter pixel size"
-			sys.exit()
-
-		if len(options.stackdisk) > 0:
-			if len(args) != 1:
-				print  "Incorrect number of parameters"
-				sys.exit()
-			dpp = (float(options.dp)/options.apix)
-			rise = int(dpp)
-			if(float(rise) != dpp):
-				print "  dpp has to be integer multiplicity of the pixel size"
-				sys.exit()
-			from utilities import get_im
-			v = get_im(args[0])
-			from applications import stack_disks
-			ref_ny = options.ref_ny
-			if ref_ny < 0:
-				ref_ny = options.ref_nx
-			sv = stack_disks(v, options.ref_nx, ref_ny, options.ref_nz, options.dphi, rise)
-			sv.write_image(options.stackdisk)
-			sys.exit()
-		
-		if len(options.consistency) > 0:
-			if len(args) != 1:
-				print  "Incorrect number of parameters"
-				sys.exit()
-			from development import consistency_params	
-			consistency_params(args[0], options.consistency, options.dphi, options.dp, options.apix,phithr=options.phithr, ythr=options.ythr, THR=options.segthr)
 			sys.exit()
 
 		rminp = int((float(options.rmin)/options.apix) + 0.5)
@@ -196,82 +117,20 @@ def main():
 		for i in xrange(len(y_restrict)):
 			y_restrict2 += " "+str(float(y_restrict[i])/options.apix)
 
-		searchxshiftp = int( (options.searchxshift/options.apix) + 0.5)
-		nearbyp = int( (options.nearby/options.apix) + 0.5)
-		zstepp = int( (options.zstep/options.apix) + 0.5)
-
 		if options.MPI:
 			from mpi import mpi_init, mpi_finalize
 			sys.argv = mpi_init(len(sys.argv), sys.argv)
-
-		if len(options.predict_helical) > 0:
-			if len(args) != 1:
-				print  "Incorrect number of parameters"
-				sys.exit()
-			if options.dp < 0:
-				print "Helical symmetry paramter rise --dp should not be negative"
-				sys.exit()
-			from applications import predict_helical_params
-			predict_helical_params(args[0], options.dp, options.dphi, options.apix, options.predict_helical)
-			sys.exit()
-
-		if options.helicise:	
-			if len(args) != 2:
-				print "Incorrect number of parameters"
-				sys.exit()
-			if options.dp < 0:
-				print "Helical symmetry paramter rise --dp should not be negative"
-				sys.exit()
-			from utilities import get_im
-			vol = get_im(args[0])
-			hvol = vol.helicise(options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp)
-			hvol.write_image(args[1])
-			sys.exit()
-
 
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
 
-		if options.volalixshift:
-			if options.maxit > 1:
-				print "Inner iteration for x-shift determinatin is restricted to 1"
-				sys.exit()
-			if len(args) < 4:  mask = None
-			else:               mask = args[3]
-			from applications import volalixshift_MPI
-			global_def.BATCH = True
-			volalixshift_MPI(args[0], args[1], args[2], searchxshiftp, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug, nearbyp)
-			global_def.BATCH = False
-
-		if options.diskali:
-			#if options.maxit > 1:
-			#	print "Inner iteration for disk alignment is restricted to 1"
-			#	sys.exit()
-			if len(args) < 4:  mask = None
-			else:               mask = args[3]
-			global_def.BATCH = True
-			if(options.sym[:1] == "d" or options.sym[:1] == "D" ):
-				from development import diskaliD_MPI
-				diskaliD_MPI(args[0], args[1], args[2], mask, options.dp, options.dphi, options.apix, options.function, zstepp, options.fract, rmaxp, rminp, options.CTF, options.maxit, options.sym)
-			else:
-				from applications import diskali_MPI
-				diskali_MPI(args[0], args[1], args[2], mask, options.dp, options.dphi, options.apix, options.function, zstepp, options.fract, rmaxp, rminp, options.CTF, options.maxit, options.sym)
-			global_def.BATCH = False
-		elif len(options.gendisk)> 0:
-			from applications import gendisks_MPI
-			global_def.BATCH = True
-			if len(args) == 1:  mask3d = None
-			else:               mask3d = args[1]
-			gendisks_MPI(args[0], mask3d, options.ref_nx, options.ref_nx, options.ref_nz, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, options.CTF, options.function, options.sym, options.gendisk)
-			global_def.BATCH = False
-		else:
-			from applications import ihrsr
-			global_def.BATCH = True
-			if len(args) < 4:  mask = None
-			else:               mask = args[3]
-			ihrsr(args[0], args[1], args[2], mask, irp, oup, options.rs, xrp, options.ynumber, txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, rminp, rmaxp, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.apix, options.debug, options.MPI, options.WRAP, y_restrict2) 
-			global_def.BATCH = False
+		from applications import ihrsr
+		global_def.BATCH = True
+		if len(args) < 4:  mask = None
+		else:               mask = args[3]
+		ihrsr(args[0], args[1], args[2], mask, irp, oup, options.rs, xrp, options.ynumber, txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, rminp, rmaxp, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.apix, options.debug, options.MPI, options.WRAP, y_restrict2) 
+		global_def.BATCH = False
 
 		if options.MPI:
 			from mpi import mpi_finalize
