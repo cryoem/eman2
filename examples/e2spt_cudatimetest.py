@@ -356,7 +356,7 @@ def main():
 
 
 def preplot(options,tipo,data,key):
-
+	print "I am in PREPLOT"
 	name = options.path + "/" + options.ID + key + "_CS"+ str(options.coarsestep).zfill(2)  + "_FS" + str( options.finestep ).zfill(2) + '_' + tipo + '.png'
 	xdata = data[0]				
 	ydata = data[1]				
@@ -421,6 +421,8 @@ def preplot(options,tipo,data,key):
 
 def textwriter(name,xdata,ydata):
 
+	if not xdata or not ydata:
+		print "ERROR: Attempting to write an empty text file!"
 	#difsl = list(difs)
 	#for i in range(len(difsl)):
 	#	difsl[i] = str(difsl[i]) + '\n'
@@ -429,13 +431,17 @@ def textwriter(name,xdata,ydata):
 	#f.close()
 	
 	filename=name.replace('.png','.txt')
+	
+	print "I am in the text writer for this file", filename
+	
 	f=open(filename,'w')
 	lines=[]
 	for i in range(len(xdata)):
-		line2write= str(xdata[i]) + ' ' + str(ydata[i])+'\n'
+		line2write = str(xdata[i]) + ' ' + str(ydata[i])+'\n'
+		#print "THe line to write is"
 		lines.append(line2write)
 	
-	f.writelines(filename)
+	f.writelines(lines)
 	f.close()
 
 	return()
@@ -528,7 +534,8 @@ def doit(corg,options,originaldir):
 			else:
 				print "Something is wrong; you're supposed to select GPU or CPU. TERMINATING!"
 				sys.exit()
-		
+			
+			print "SETCUDA IS", setcuda
 			cmd=''
 			abspath = originaldir + '/' + options.path
 			#print "\n\n\n@@@@@@@@@@@@@@@@@@@@@@@@@Abs path is", abspath
@@ -565,7 +572,7 @@ def doit(corg,options,originaldir):
 			
 				cmd = setcuda + ''' && cd ''' + abspath + ''' && e2spt_classaverage.py --input=''' + aname + ''' --output=''' + out + ''' --ref=''' + bname + ''' --iter=1 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --highpass=filter.highpass.gauss:cutoff_freq=0.01:apix=1.0 --preprocess=filter.lowpass.gauss:cutoff_freq=0.2:apix=1.0 --align=rotate_symmetry_3d:sym=''' + sym + ''' --parallel=thread:1 --ralign=None --averager=mean.tomo --aligncmp=ccc.tomo --normproc=normalize.mask --path=''' + aidee
 			
-				#print "The instruction is", cmd
+				print "The instruction is", cmd
 				ta = time()
 				os.system(cmd)
 				tb = time()
