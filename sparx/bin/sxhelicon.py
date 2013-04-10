@@ -77,11 +77,11 @@ def main():
 	parser.add_option("--debug",              action="store_true",   default=False,               help="debug")
 	
 	parser.add_option("--searchxshift",       type="float",		     default= 0.0,                help="search range for x-shift determination: +/- searchxshift (Angstroms)")
-	parser.add_option("--nearby",             type="float",		     default= 6.0,                help="neighborhood within which to search for peaks in 1D ccf for x-shift search (Angstroms)")
+	parser.add_option("--xwobble",             type="float",		     default= 6.0,                help="neighborhood within which to search for peaks in 1D ccf for x-shift search (Angstroms)")
 
 	#  ehelix
 	parser.add_option("--ehelix",             action="store_true",   default=False,               help="Use consistent helical refinement")
-	parser.add_option("--ywobble",            type="float",          default=0.0,                 help="wobble in y-directions (default = 0.0)")
+	parser.add_option("--ywobble",            type="float",          default=0.0,                 help="wobble in y-directions (default = 0.0) in Angstroms")
 	parser.add_option("--nopsisearch",        action="store_true",   default=False,               help="Block searching for in-plane angle (default False)")
 
 	(options, args) = parser.parse_args(arglist[1:])
@@ -103,7 +103,7 @@ def main():
 		from utilities import get_input_from_string, get_im
 
 		searchxshiftp = int( (options.searchxshift/options.apix) + 0.5)
-		nearbyp = int( (options.nearby/options.apix) + 0.5)
+		xwobblep = int( (options.xwobble/options.apix) + 0.5)
 
 		if options.MPI:
 			from mpi import mpi_init, mpi_finalize
@@ -118,7 +118,7 @@ def main():
 		else:               mask = args[3]
 		from development import ehelix_MPI
 		global_def.BATCH = True
-		ehelix_MPI(args[0], args[1], args[2], options.delta, options.psi_max, searchxshiftp, nearbyp, ywobble, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, not options.nopsisearch, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
+		ehelix_MPI(args[0], args[1], args[2], options.delta, options.psi_max, searchxshiftp, xwobblep, ywobble, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, not options.nopsisearch, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
 		global_def.BATCH = False
 
 		if options.MPI:
