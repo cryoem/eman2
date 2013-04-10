@@ -43,19 +43,7 @@ def main():
         	arglist.append( arg )
 	progname = os.path.basename(arglist[0])
 	usage = progname + " stack ref_vol outdir  <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --ynumber=y_numbers  --txs=translational_search_stepx  --delta=angular_step --an=angular_neighborhood --center=1 --maxit=max_iter --CTF --snr=1.0  --ref_a=S --sym=c1 --datasym=symdoc --new"
-	usage2 = progname + """ inputfile outputfile [options]
-        Examples:
-
-        Helicise input volume and save the result to output volume:
-        
-            sxihrsr.py input_vol.hdf output_vol.hdf --helicise --dp=27.6 --dphi=166.5 --fract=0.65 --rmax=70 --rmin=1 --apix=1.84         
-			
-            sxihrsr.py bdb:big_stack --hfsc='flst_' --filament_attr=filament
-			
-            sxihrsr.py bdb:big_stack --predict_helical='helical_params.txt' --dp=27.6 --dphi=166.5 --apix=1.84
-            
-            sxihrsr.py disk_to_stack.hdf --stackdisk='stacked_disks.hdf' --dphi=166.5 --dp=27.6 --ref_nx=160 --ref_ny=160 --ref_nz=220
-"""
+	
 	parser = OptionParser(usage,version=SPARXVERSION)
 	#parser.add_option("--ir",                 type="float", 	     default= -1,                 help="inner radius for rotational correlation > 0 (set to 1) (Angstroms)")
 	parser.add_option("--ou",                 type="float", 	     default= -1,                 help="outer radius for rotational 2D correlation < int(nx/2)-1 (set to the radius of the particle) (Angstroms)")
@@ -98,7 +86,6 @@ def main():
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
 		print "usage: " + usage + "\n"
-		print "Also includes various helical reconstruction related functionalities: " + usage2
 		print "Please run '" + progname + " -h' for detailed options"
 	else:
 		
