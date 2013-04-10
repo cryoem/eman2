@@ -74,9 +74,6 @@ def main():
 	parser.add_option("--apix",               type="float",			 default= -1.0,               help="pixel size in Angstroms")   
 	parser.add_option("--dp",                 type="float",			 default= -1.0,               help="delta z - translation in Angstroms")   
 	parser.add_option("--dphi",               type="float",			 default= -1.0,               help="delta phi - rotation in degrees")  
-	parser.add_option("--recons_iter",        type="int",			 default= -1,                 help="Do reconstruction every recons_iter iterations. Default is -1, in which case only reconstruction of last iteration is done")   
-	parser.add_option("--ref_iter",           type="int",			 default= -1,                 help="Use the reconstruction from ever ref_iter as reference volume. Default is -1, in which case starting volume always used as reference volume")   
-	parser.add_option("--NOROUND",            action="store_true",   default=False,      		  help="Do NOT round parameters around which to perform local search according to step size")
 		
 	parser.add_option("--ndp",                type="int",            default= 12,                 help="In symmetrization search, number of delta z steps equas to 2*ndp+1") 
 	parser.add_option("--ndphi",              type="int",            default= 12,                 help="In symmetrization search,number of dphi steps equas to 2*ndphi+1")  
@@ -102,11 +99,6 @@ def main():
 	parser.add_option("--volalixshift",       action="store_true",   default=False,               help="Use volalixshift refinement")
 	parser.add_option("--searchxshift",       type="float",		     default= 0.0,                help="search range for x-shift determination: +/- searchxshift (Angstroms)")
 	parser.add_option("--nearby",             type="float",		     default= 6.0,                help="neighborhood within which to search for peaks in 1D ccf for x-shift search (Angstroms)")
-
-	#  ehelix
-	parser.add_option("--ehelix",             action="store_true",   default=False,               help="Use consistent helical refinement")
-	parser.add_option("--ywobble",            type="float",          default=0.0,                 help="wobble in y-directions (default = 0.0)")
-	parser.add_option("--nopsisearch",        action="store_true",   default=False,               help="Block searching for in-plane angle (default False)")
 
 	# diskali
 	parser.add_option("--diskali",            action="store_true",   default=False,               help="volume alignment")
@@ -182,8 +174,7 @@ def main():
 
 		rminp = int((float(options.rmin)/options.apix) + 0.5)
 		rmaxp = int((float(options.rmax)/options.apix) + 0.5)
-		ywobble = int(options.ywobble/options.apix+0.5)  # this should be full real.
-
+		
 		from utilities import get_input_from_string, get_im
 
 		xr = get_input_from_string(options.xr)
@@ -253,15 +244,7 @@ def main():
 			volalixshift_MPI(args[0], args[1], args[2], searchxshiftp, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug, nearbyp)
 			global_def.BATCH = False
 
-		if options.ehelix:
-			if len(args) < 4:  mask = None
-			else:               mask = args[3]
-			from development import ehelix_MPI
-			global_def.BATCH = True
-			ehelix_MPI(args[0], args[1], args[2], options.delta, options.psi_max, searchxshiftp, nearbyp, ywobble, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, not options.nopsisearch, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
-			global_def.BATCH = False
-
-		elif options.diskali:
+		if options.diskali:
 			#if options.maxit > 1:
 			#	print "Inner iteration for disk alignment is restricted to 1"
 			#	sys.exit()
