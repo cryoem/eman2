@@ -60,6 +60,7 @@ def main():
 	
 	parser.add_argument("--cpu", action='store_true', help="Will test SPT alignment using CPU.",default=False)
 	parser.add_argument("--gpu", action='store_true', help="Will test SPT alignment using GPU.",default=False)
+	parser.add_argument("--setcudadevice", type=str, help="The number of the cuda device you want to use (from 0, to the total amount of devices there are)",default=None)	
 	
 	parser.add_argument("--test", action='store_true', help="Will run a quick tests using a few box sizes.",default=False)
 	parser.add_argument("--medium", action='store_true', help="Will test boxsizes in multiples of 10 between 10 and 240.",default=False)
@@ -528,6 +529,8 @@ def doit(corg,options,originaldir):
 			if corg=='gpu' or corg=='GPU':
 				setcuda= 'export NOCUDAINIT=0'
 				#print "\n\n\n !!!! I Have turned cuda ON!!!\n\n\n"
+				if options.setcudadevice is not None:
+					setcuda = 'export SETCUDADEVICE=' + options.setcudadevice
 			elif corg=='cpu' or corg=='CPU':
 				setcuda = 'export NOCUDAINIT=1'
 				#print "\n\n\n !!!! I Have turned cuda OFF!!!\n\n\n"
