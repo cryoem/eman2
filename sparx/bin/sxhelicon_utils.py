@@ -55,7 +55,7 @@ def main():
             
             sxhelicon_utils.py disk_to_stack.hdf --stackdisk='stacked_disks.hdf' --dphi=166.5 --dp=27.6 --ref_nx=160 --ref_ny=160 --ref_nz=220
 """
-	parser = OptionParser(usage,version=SPARXVERSION)
+	parser = OptionParser(usage2,version=SPARXVERSION)
 	#parser.add_option("--ir",                 type="float", 	     default= -1,                 help="inner radius for rotational correlation > 0 (set to 1) (Angstroms)")
 	parser.add_option("--ou",                 type="float", 	     default= -1,                 help="outer radius for rotational 2D correlation < int(nx/2)-1 (set to the radius of the particle) (Angstroms)")
 	parser.add_option("--rs",                 type="int",   		 default= 1,                  help="step between rings in rotational correlation >0  (set to 1)" ) 
@@ -98,7 +98,10 @@ def main():
 	parser.add_option("--gendisk",            type="string",		 default="",                  help="Name of file under which generated disks will be saved to") 
 	parser.add_option("--ref_nx",             type="int",   		 default= 1,                  help="nx=ny volume size" ) 
 	parser.add_option("--ref_nz",             type="int",   		 default= 1,                  help="nz volume size - computed disks will be nx x ny x rise/apix" ) 
-
+	parser.add_option("--new_pixel_size",           type="float", 		 default= -1,                 help="desired pixel size of the output disks. The default is -1, in which case there is no resampling (unless --match_pixel_rise flag is True).")
+	parser.add_option("--maxerror",           type="float", 		 default= 0.1,                help="largest error to tolerate between (dp/new_pixel_size) and int(dp/new_pixel_size + 0.5), where new_pixel_size is the pixel size calculated when the option --match_pixel_rise flag is True.")
+	parser.add_option("--match_pixel_rise",   action="store_true",	 default=False,               help="calculate new pixel size such that the rise is approximately integer number of pixels given the new pixel size. This will be the pixel size of the output disks.")
+	
 	# get consistency
 	parser.add_option("--consistency",        type="string",		 default="",                  help="Name of parameters to get consistency statisticsf for") 
 	parser.add_option("--phithr",             type="float", 		 default= 2.0,                help="phi threshold for consistency check")  
@@ -237,11 +240,11 @@ def main():
 				diskali_MPI(args[0], args[1], args[2], mask, options.dp, options.dphi, options.apix, options.function, zstepp, options.fract, rmaxp, rminp, options.CTF, options.maxit, options.sym)
 			global_def.BATCH = False
 		elif len(options.gendisk)> 0:
-			from applications import gendisks_MPI
+			from development import gendisks_MPI
 			global_def.BATCH = True
 			if len(args) == 1:  mask3d = None
 			else:               mask3d = args[1]
-			gendisks_MPI(args[0], mask3d, options.ref_nx, options.ref_nx, options.ref_nz, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, options.CTF, options.function, options.sym, options.gendisk)
+			gendisks_MPI(args[0], mask3d, options.ref_nx, options.ref_nx, options.ref_nz, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, options.CTF, options.function, options.sym, options.gendisk, options.maxerror, options.new_pixel_size, options.match_pixel_rise)
 			global_def.BATCH = False
 		
 		if options.MPI:
