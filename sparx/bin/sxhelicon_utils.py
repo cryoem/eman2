@@ -44,6 +44,12 @@ def main():
 	progname = os.path.basename(arglist[0])
 	usage2 = progname + """ inputfile outputfile [options]
         Examples:
+		
+		Generate disks from filament based reconstructions:
+		
+			sxheader.py stk.hdf --params=xform.projection --import=params.txt
+			sxheader.py stk.hdf --params=active --one
+			mpirun -np 2 sxhelicon_utils.py stk.hdf --gendisk='bdb:disk' --ref_nx=100 --ref_ny=100 --ref_nz=200 --apix=1.84 --dp=27.6 --dphi=166.715 --fract=0.67 --rmin=0 --rmax=64 --function="[.,nofunc,helical3c]" --sym="c1" --MPI
 
         Helicise input volume and save the result to output volume:
         
