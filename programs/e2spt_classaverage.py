@@ -894,10 +894,12 @@ class Align3DTask(EMTask):
 		if options["transform"]:
 			if options["verbose"]:
 				print "Moving Xfrom", options["transform"]
-			options["align"][1]["initxform"] = options["transform"]
+			#options["align"][1]["inixform"] = options["transform"]
+			options["align"][1]["transform"] = options["transform"]
 			
 			if options["shrink"]>1:
-			 	options["align"][1]["initxform"].set_trans( options["align"][1]["initxform"].get_trans()/float(options["shrinkrefine"]) )
+			 	#options["align"][1]["inixform"].set_trans( options["align"][1]["inixform"].get_trans()/float(options["shrinkrefine"]) )
+				options["align"][1]["transform"].set_trans( options["align"][1]["transform"].get_trans()/float(options["shrinkrefine"]) )
 			
 		#	if
 		#	bestcoarse=[{"score":1.0,"xform.align3d":options["align"]}]
@@ -911,7 +913,8 @@ class Align3DTask(EMTask):
 				
 			#print "\n\n\nOptions['align'][1] is\n", options['align'][1]
 			#print "\n\n\nOptions['align'][0] is\n", options['align'][0]
-			options["align"][1].update({'initxform' : random_transform})
+			#options["align"][1].update({'inixform' : random_transform})
+			options["align"][1].update({'transform' : random_transform})
 		
 		if options["align"] == None:
 			bestcoarse=[{"score":1.0,"xform.align3d":Transform()}]
