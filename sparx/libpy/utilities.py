@@ -1726,12 +1726,18 @@ def write_text_row(data, file_name):
 		# It is a list of lists
 		for i in xrange(len(data)):
 			for j in xrange(len(data[i])):
-				outf.write("  %12.5g"%data[i][j])
+				if type(data[i][j]) == type(0):
+					outf.write("  %12d"%data[i][j])
+				else:
+					outf.write("  %12.5g"%data[i][j])
 			outf.write("\n")
 	else:
 		# Single list
 		for j in xrange(len(data)):
-			outf.write("  %12.5g"%data[j])
+			if type(data[j]) == type(0):
+				outf.write("  %12d\n"%data[j])
+			else:
+				outf.write("  %12.5g"%data[j])
 		outf.write("  \n")
 	outf.close()
 
