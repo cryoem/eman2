@@ -246,7 +246,7 @@ def main():
 				diskali_MPI(args[0], args[1], args[2], mask, options.dp, options.dphi, options.apix, options.function, zstepp, options.fract, rmaxp, rminp, options.CTF, options.maxit, options.sym)
 			global_def.BATCH = False
 		elif len(options.gendisk)> 0:
-			from development import gendisks_MPI
+			from applications import gendisks_MPI
 			global_def.BATCH = True
 			if len(args) == 1:  mask3d = None
 			else:               mask3d = args[1]
