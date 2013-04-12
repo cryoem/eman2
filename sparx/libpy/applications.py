@@ -12876,7 +12876,7 @@ def imgstat_hfsc( stack, file_prefix, fil_attr='filament'):
 	write_text_file(even_segs, file_prefix + '_even.txt')
 	write_text_file(odd_segs, file_prefix + '_odd.txt')	
 
-def match_pixel_rise(dz,px, nz=-1, ndisk=-1, rele=0.1, start=-900000, stop=900000):
+def match_pixel_rise(dz,px, nz=-1, ndisk=-1, rele=0.1, stop=900000):
 	'''
 	Error is calculated as:
 		error = ndisk*((( int(dz/q/px) - dz/q/px))**2)
@@ -12898,9 +12898,15 @@ def match_pixel_rise(dz,px, nz=-1, ndisk=-1, rele=0.1, start=-900000, stop=90000
 		ndisk = (int(dnz/dz)-1)//2
 	
 	q=1.0
-	for i in xrange(start, stop):
-		q = 1.0 - 0.000001*i
-		error = ndisk*((( int( (dz/q/px) + 0.5) - dz/q/px))**2)
-		if (error < rele): return q, error
+	for i in xrange(0, stop):
+		q  = 1.0 - 0.000001*i
+		q1 = 1.0 + 0.000001*i
+		error  = ndisk*((( int( (dz/q/px) + 0.5) - dz/q/px))**2)
+		error1 = ndisk*((( int( (dz/q1/px) + 0.5) - dz/q1/px))**2)
+		if error1 < error:
+			error = error1
+			q = q1
+		if (error < rele):
+			return q, error
 	return -1.0, -1.0
 
