@@ -12858,21 +12858,29 @@ def stack_disks(v, nx, ny, ref_nz, dphi, rise):
 
 def imgstat_hfsc( stack, file_prefix, fil_attr='filament'):
 	from utilities import write_text_file
-	from applications import ordersegments
+	from pixel_error import ordersegments,chunks_distribution
 	
-	filaments = ordersegments(stack, filament_attr = fil_attr, verify=False)
+	infils = EMUtil.get_all_attributes(stack, "filament")
+	ptlcoords = EMUtil.get_all_attributes(stack, 'ptcl_source_coord')
+	filaments = ordersegments(infils, ptlcoords)
 	
-	nfil = len(filaments)
+	
+	temp = chunks_distribution([[len(filaments[i]), i] for i in xrange(len(filaments))], 2)
+	tempeven = temp[0:1][0]
+	tempodd = temp[1:2][0]
+	filaments_even = [filaments[tempeven[i][1]] for i in xrange(len(tempeven))]
+	filaments_odd = [filaments[tempodd[i][1]] for i in xrange(len(tempodd))]
+	
+	nfileven = len(filaments_even)
+	nfilodd = len(filaments_odd)
 	
 	even_segs = []
 	odd_segs = []
 	
-	for ifil in xrange(nfil):
-		if ifil%2 == 0:
-			even_segs += filaments[ifil]
-		else:
-			odd_segs += filaments[ifil]
-	
+	for ifil in xrange(nfileven):
+		even_segs += filaments_even[ifil]
+	for ifil in xrange(nfilodd):
+		odd_segs += filaments_odd[ifil]
 	write_text_file(even_segs, file_prefix + '_even.txt')
 	write_text_file(odd_segs, file_prefix + '_odd.txt')	
 
@@ -13019,11 +13027,11 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 		filatable = [[] for i in xrange(nproc)]
 		for mid in xrange(nproc):
 			tmp = chunks[mid:mid+1][0]
-			tfilaments = [filaments[tmp[i][1]] for i in xrange(len(tmp))]
-			nfil = len(tfilaments)
+			tmpfilaments = [filaments[tmp[i][1]] for i in xrange(len(tmp))]
+			nfil = len(tmpfilaments)
 			filatable[mid] = [[] for j in xrange(nfil)]
 			for i in xrange(nfil):
-				a = get_im(stack, tfilaments[i][0])
+				a = get_im(stack, tmpfilaments[i][0])
 				filname = a.get_attr('filament')
 				filatable[mid][i] = filname
 				
