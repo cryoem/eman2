@@ -12956,7 +12956,7 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 			if q > 0:
 				new_pixel_size = q*pixel_size
 				break
-		print "new pixel size by match_pixel_rise: ",new_pixel_size
+		#print "new pixel size by match_pixel_rise: ",new_pixel_size
 	
 	if new_pixel_size < 0:  ERROR('match_pixel_size was not able to find a new pixel size with the desired maxerror', "gendisks_MPI", 1, myid)
 	mpi_barrier(MPI_COMM_WORLD)
