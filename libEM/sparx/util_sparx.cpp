@@ -32,7 +32,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  *
  */
-
+//  PAPVERS 04/12/2013
 #ifdef _WIN32
 #pragma warning(disable:4819)
 #include <malloc.h>
@@ -21978,9 +21978,9 @@ void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
 	vector<float> philocal(ndata, 0);
 	vector<float> phirlocal(ndata, 0);
 	vector<float> mphilocal(ndata, 0);
-	float dirma = -1.0e23;
+	float dirma = -1.0e23f;
 	for (int idir = -1; idir < 2; idir += 2) {
-		float tmax = -1.0e23;
+		float tmax = -1.0e23f;
 		float mpsi;
 		for (int ix = 1; ix < nwx-1; ++ix) {                                         //#  X shift
 			//#cout << "im: ", len(ccfs), ix,time()-start_time
@@ -21995,7 +21995,7 @@ void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
 					phirlocal[0] = fmod( 180.0f - qphi + ((int)(fabs((180.0f-qphi)/360.0f))+1)*360.0f , 360.0f );
 					//# we use the first segment as a reference, so there is no interpolation, just copy the correlation
 					//#  Select largest correlation within +/- range pixels from the location we explore
-					float mxm = -1.023;
+					float mxm = -1.0e23f;
 					float mxr;
 					for (int iux = max(1, ix - range); iux < min(nwx - 1, ix+range+1); ++iux) {    //#  X wobble
 						float qcf = ccfs[0][iphi]->get_value_at(iux,iy);
@@ -22005,7 +22005,7 @@ void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
 						}
 					}
 					if (! Dsym) {
-						mxr = -1.023;
+						mxr = -1.0e23f;
 						for (int iux = max(1, ix - range); iux < min(nwx - 1, ix+range+1); ++iux) {     //# Xr wobble
 							float qcf = ccfr[0][iphi]->get_value_at(iux,iy);
 							if (qcf > mxr) {
@@ -22032,7 +22032,7 @@ void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
 						int fiy = int(yiy);
 						float ydif = yiy - fiy;
 						float yrem = 1.0f - ydif;
-						float ciq = -1.023;
+						float ciq = -1.0e23f;
 						//# interpolate correlation at pphi
 						qphi = pphi/delta;
 						int ttphi = (int( qphi +  ((int)(abs(qphi/nphi))+1)*nphi+ 0.5))%nphi;
@@ -22056,7 +22056,6 @@ void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
 						mxm += ciq;
 						//# now for rotated
 						if (! Dsym) {
-							//# Assume for now inter-segment distances are multiples of rise -- jia
 							qphi = idir*(dst/rise)*dphi;
 							pphi = fmod(phirlocal[0] + qphi + ((int)(abs(qphi/360.0f))+1)*360.0f, 360.0f);                      //#  predicted phi for rotated 180 defs with full angular accuracy, not an integer
 							pix = six; //# predicted x shift
@@ -22069,13 +22068,12 @@ void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
 							fiy = int(yiy);
 							ydif = yiy - fiy;
 							yrem = 1.0f - ydif;
-							ciq = -1.023;
+							ciq = -1.0e23f;
 							//# interpolate correlation at pphi
+							qphi = pphi/delta;
+							int ttphi = (int( qphi +  ((int)(abs(qphi/nphi))+1)*nphi+ 0.5))%nphi;
 							for (int lphi = -phiwobble; lphi < phiwobble+1; ++lphi) {                                           //#  phi wobble
-								qphi = lphi*delta;
-								ttphi = fmod( pphi + qphi + (int(fabs(qphi/360.0f))+1)*360.0f , 360.0f);
-								qphi = fmod(540.0f-ttphi, 360.0f) / delta;
-								int tphi = (int( qphi + (int(fabs(qphi/nphi))+1)*nphi  + 0.5))%nphi;
+								int tphi = (ttphi+lphi+nphi)%nphi;
 								for (int iux = max(1, fix - range); iux < min(nwx - 1, fix+range+1); ++iux) {                   //#  X wobble
 									for (int iuy = max(1, fiy - ywobble); iuy < min(nwy - 1, fiy+ywobble+1); ++iuy) {           //#  Y wobble
 										float qcf = xrem*yrem*ccfr[im][tphi]->get_value_at(iux,iuy)
@@ -22086,7 +22084,7 @@ void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
 											ciq = qcf;
 											xrshiftlocal[im] = iux + xdif - nwxc;
 											yrshiftlocal[im] = iuy + ydif - nwyc;
-											phirlocal[im]    = ttphi;
+											phirlocal[im]    = ttphi*delta;
 										}
 									}
 								}
@@ -22157,7 +22155,7 @@ void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
 
 			int ipr = int(psi_max*maxrin/360.0f + 0.5f);
 			int incpsi = (dpsi == 270.0f) ? (maxrin/2) : (0);
-			float qn = -1.0e20f;
+			float qn = -1.0e23f;
 			for (int ips = -ipr; ips < ipr+1; ++ips) {
 				int tot = (ips + incpsi + maxrin)%maxrin;
 				float tval = temp->get_value_at(tot);
