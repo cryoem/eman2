@@ -32,7 +32,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  *
  */
-//  PAPVERS 04/12/2013
 #ifdef _WIN32
 #pragma warning(disable:4819)
 #include <malloc.h>
@@ -19960,10 +19959,9 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
-
+	cout <<"  VERSION  04/12/2013"<<endl;
 	int newx, newy, newz;
 	bool  keep_going;
-	cout << " entered   " <<endl;
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	//int size = nx*ny*nz;
 	EMData * img2 = new EMData();
