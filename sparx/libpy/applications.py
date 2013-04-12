@@ -12910,3 +12910,204 @@ def match_pixel_rise(dz,px, nz=-1, ndisk=-1, rele=0.1, stop=900000):
 			return q, error
 	return -1.0, -1.0
 
+def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fract=0.67, rmax=70, rmin=0, CTF=False, user_func_name = "helical", sym = "c1", dskfilename='bdb:disks', maxerror=0.01, new_pixel_size = -1, do_match_pixel_rise=False):
+	from mpi              import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier, MPI_INT, MPI_TAG_UB, MPI_FLOAT, mpi_recv, mpi_send, mpi_reduce, MPI_MAX
+	from utilities        import get_params_proj, read_text_row, model_cylinder,pad, set_params3D, get_params3D, model_blank, drop_image
+	from utilities        import reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, bcast_EMData_to_all, send_EMData, recv_EMData, bcast_list_to_all
+	from utilities        import send_attr_dict, file_type, sym_vol, get_im
+	from fundamentals     import resample, rot_shift3D
+	from applications     import MPI_start_end, match_pixel_rise
+	from pixel_error	  import ordersegments, chunks_distribution
+	from math             import fmod, atan, pi
+	from utilities        import model_blank
+	from filter           import filt_tanl, filt_ctf
+	import os
+	from statistics       import fsc_mask
+	from copy             import copy
+	from os               import sys
+	from time             import time
+	from alignment        import Numrinit, ringwe
+	from reconstruction   import recons3d_wbp, recons3d_4nn
+	from morphology       import ctf_2
+
+	myid  = mpi_comm_rank(MPI_COMM_WORLD)
+	nproc = mpi_comm_size(MPI_COMM_WORLD)
+	main_node = 0
+
+	mpi_barrier(MPI_COMM_WORLD)
+
+	if do_match_pixel_rise and (new_pixel_size > 0):
+		print "If resampling is desired, either set do_match_pixel_rise to True OR specify new_pixel_size, but not both at the same time."
+		print "If do_match_pixel_rise=True, the program will automatically calculate new pixel size of the output disks such that the rise will be ~ integer number of pixels in new pixel size."
+		print "If new_pixel_size is specified, then the output disks will be resampled so that resulting pixel size is new_pixel_size."
+		sys.exit()
+	dpp = (float(dp)/pixel_size)
+	rise = int(dpp)
+	
+	# If the rise is not multiple of pixel size and user DID NOT provide
+	# the new desired pixel size of the disk, then calculate it.
+	if do_match_pixel_rise:
+		# Calculate new pixel size such that dp/new_pixel_size is approximately an
+		# integer.
+		stop = int(maxerror * 10000 + 0.5) + 1
+		for i in xrange(1,stop):
+			err_thr = i/10000.0
+			q, error = match_pixel_rise(dp, pixel_size, ndisk=1, rele=err_thr)
+			if q > 0:
+				new_pixel_size = q*pixel_size
+				break
+		print "new pixel size by match_pixel_rise: ",new_pixel_size
+	
+	if new_pixel_size < 0:  ERROR('match_pixel_size was not able to find a new pixel size with the desired maxerror', "gendisks_MPI", 1, myid)
+	mpi_barrier(MPI_COMM_WORLD)
+	
+	if myid == 0:
+		if new_pixel_size > 0:
+			print "new_pixel_size calculated by match_pixel_rise: ", new_pixel_size
+			
+	if new_pixel_size > 0:
+		dpp = (float(dp)/new_pixel_size)
+		rise = int(dpp)
+	
+	# for resampling to polar rmin>1
+	rminpolar = max(1,rmin)
+	rr = ref_nz//2-2
+
+	import user_functions
+	user_func = user_functions.factory[user_func_name]
+	
+	if( myid == 0):
+		infils = EMUtil.get_all_attributes(stack, "filament")
+		ptlcoords = EMUtil.get_all_attributes(stack, 'ptcl_source_coord')
+		filaments = ordersegments(infils, ptlcoords)
+		total_nfils = len(filaments)
+		inidl = [0]*total_nfils
+		for i in xrange(total_nfils):  inidl[i] = len(filaments[i])
+		linidl = sum(inidl)
+		tfilaments = []
+		for i in xrange(total_nfils):  tfilaments += filaments[i]
+		del filaments
+	else:
+		total_nfils = 0
+		linidl = 0
+	total_nfils = bcast_number_to_all(total_nfils, source_node = main_node)
+	if myid != main_node:
+		inidl = [-1]*total_nfils
+	inidl = bcast_list_to_all(inidl, source_node = main_node)
+	linidl = bcast_number_to_all(linidl, source_node = main_node)
+	if myid != main_node:
+		tfilaments = [-1]*linidl
+	tfilaments = bcast_list_to_all(tfilaments, source_node = main_node)
+	filaments = []
+	iendi = 0
+	for i in xrange(total_nfils):
+		isti = iendi
+		iendi = isti+inidl[i]
+		filaments.append(tfilaments[isti:iendi])
+	del tfilaments,inidl
+
+	if myid == main_node:
+		print "total number of filaments: ", total_nfils
+	if total_nfils< nproc:
+		ERROR('number of CPUs (%i) is larger than the number of filaments (%i), please reduce the number of CPUs used'%(nproc, total_nfils), "ehelix_MPI", 1,myid)
+
+	#  balanced load
+	chunks = chunks_distribution([[len(filaments[i]), i] for i in xrange(len(filaments))], nproc)
+	
+	# make a table associating filament name with processor id
+	if myid == main_node:
+		filatable = [[] for i in xrange(nproc)]
+		for mid in xrange(nproc):
+			tmp = chunks[mid:mid+1][0]
+			tfilaments = [filaments[tmp[i][1]] for i in xrange(len(tmp))]
+			nfil = len(tfilaments)
+			filatable[mid] = [[] for j in xrange(nfil)]
+			for i in xrange(nfil):
+				a = get_im(stack, tfilaments[i][0])
+				filname = a.get_attr('filament')
+				filatable[mid][i] = filname
+				
+		#print filatable
+	temp = chunks[myid:myid+1][0]
+	filaments = [filaments[temp[i][1]] for i in xrange(len(temp))]
+	nfils     = len(filaments)
+	
+	#  Get the maximum number of filaments on any node
+	mfils = nfils
+	mfils = mpi_reduce(mfils, 1, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD)
+	if myid == main_node:  mfils = int(mfils[0])
+	mfils = mpi_bcast(mfils, 1, MPI_INT, 0, MPI_COMM_WORLD)
+	mfils = int(mfils[0])
+
+	list_of_particles = []
+	indcs = []
+	k = 0
+	for i in xrange(nfils):
+		list_of_particles += filaments[i]
+		k1 = k+len(filaments[i])
+		indcs.append([k,k1])
+		k = k1
+	data = EMData.read_images(stack, list_of_particles)
+	nima = len(data)
+	
+	data_nx = data[0].get_xsize()
+	data_ny = data[0].get_xsize()
+	mask2D  = pad(model_blank(2*int(rmax), data_ny, 1, 1.0), data_nx, data_ny, 1, 0.0)
+	for im in xrange(nima):
+		data[im].set_attr('ID', list_of_particles[im])
+		if CTF:
+			ctf_params = data[im].get_attr("ctf")
+			st = Util.infomask(data[im], mask2D, False)
+			data[im] -= st[0]
+			data[im] = filt_ctf(data[im], ctf_params)
+			data[im].set_attr('ctf_applied', 1)
+	del list_of_particles, mask2D
+
+	ref_data = [None, mask3d, None, None, None ]
+
+	# do full sized reconstruction with the projection parameters BEFORE they are modified by disk alignment step
+	if myid == main_node:  outvol = 0
+	start_time = time()
+	for ivol in xrange(mfils):
+		if( ivol < nfils ):
+			#print myid, ivol, data[indcs[ivol][0]].get_attr('filament')
+			fullvol0 = Util.window(recons3d_4nn(data, list_proj=range(indcs[ivol][0],indcs[ivol][1]), symmetry="c1", npad=2),  ref_nx, ref_ny, ref_nz, 0, 0, 0)
+			fullvol0 = fullvol0.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
+			fullvol0 = sym_vol(fullvol0, symmetry=sym)
+			ref_data[0] = fullvol0
+			fullvol0 = user_func(ref_data)
+			fullvol0 = fullvol0.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
+			fullvol0 = sym_vol(fullvol0, symmetry=sym)
+			if new_pixel_size > 0:
+				# resample the volume using ratio such that resulting pixel size is new_pixel_size
+				ratio = pixel_size/new_pixel_size
+				fullvol0 = resample(fullvol0, ratio)
+			fullvol0 = Util.window(fullvol0, ref_nx, ref_ny, rise)
+			
+			if mask3d != None:  Util.mul_img(fullvol0, mask3d)
+			gotfil = 1
+		else:
+			gotfil = 0
+		if(myid == main_node):
+			for i in xrange(nproc):
+				if(i != main_node):
+					didfil = mpi_recv(1, MPI_INT, i, MPI_TAG_UB, MPI_COMM_WORLD)
+					didfil = int(didfil[0])
+					if(didfil == 1):
+						fil = recv_EMData(i, ivol+i+70000)
+						fil.set_attr('filament',filatable[i][ivol])
+						fil.write_image(dskfilename, outvol)
+						#print i, ivol, filatable[i][ivol], "out: ",outvol
+						outvol += 1
+				else:
+					if( gotfil == 1 ):
+						fullvol0.set_attr('filament',filatable[main_node][ivol])
+						fullvol0.write_image(dskfilename, outvol)
+						#print main_node, ivol, filatable[main_node][ivol], "out: ",outvol
+						outvol += 1
+		else:
+			mpi_send(gotfil, 1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+			if(gotfil == 1):
+				send_EMData(fullvol0, main_node, ivol+myid+70000)
+	
+
