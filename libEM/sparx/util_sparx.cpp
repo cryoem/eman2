@@ -22068,7 +22068,7 @@ void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
 							yrem = 1.0f - ydif;
 							ciq = -1.0e23f;
 							//# interpolate correlation at pphi
-							qphi = pphi/delta;
+							qphi = (180.0f - pphi)/delta;
 							int ttphi = (int( qphi +  ((int)(abs(qphi/nphi))+1)*nphi+ 0.5))%nphi;
 							for (int lphi = -phiwobble; lphi < phiwobble+1; ++lphi) {                                           //#  phi wobble
 								int tphi = (ttphi+lphi+nphi)%nphi;
