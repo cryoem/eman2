@@ -22070,8 +22070,8 @@ void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
 							//# interpolate correlation at pphi
 							for (int lphi = -phiwobble; lphi < phiwobble+1; ++lphi) {                                           //#  phi wobble
 								qphi = lphi*delta;
-								ttphi = fmod( pphi + qphi + (int(fabs(qphi/360.0f))+1)*360.0f , 360.0f);
-								qphi = fmod(540.0f-ttphi, 360.0f) / delta;
+								float qtphi = fmod( pphi + qphi + (int(fabs(qphi/360.0f))+1)*360.0f , 360.0f);
+								qphi = fmod(540.0f-qtphi, 360.0f) / delta;
 								int tphi = (int( qphi + (int(fabs(qphi/nphi))+1)*nphi  + 0.5))%nphi;
 								for (int iux = max(1, fix - range); iux < min(nwx - 1, fix+range+1); ++iux) {                   //#  X wobble
 									for (int iuy = max(1, fiy - ywobble); iuy < min(nwy - 1, fiy+ywobble+1); ++iuy) {           //#  Y wobble
@@ -22083,7 +22083,7 @@ void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
 											ciq = qcf;
 											xrshiftlocal[im] = iux + xdif - nwxc;
 											yrshiftlocal[im] = iuy + ydif - nwyc;
-											phirlocal[im]    = ttphi;
+											phirlocal[im]    = qtphi;
 										}
 									}
 								}
