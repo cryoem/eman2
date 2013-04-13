@@ -19959,7 +19959,7 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
-	cout <<"  VERSION  04/13/2013"<<endl;
+	cout <<"  VERSION  04/13/2013  2:32pm"<<endl;
 	int newx, newy, newz;
 	bool  keep_going;
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
@@ -22083,7 +22083,7 @@ void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
 											ciq = qcf;
 											xrshiftlocal[im] = iux + xdif - nwxc;
 											yrshiftlocal[im] = iuy + ydif - nwyc;
-											phirlocal[im]    = qtphi;
+											phirlocal[im]    = int(qtphi/delta+0.5f)*delta;
 										}
 									}
 								}
