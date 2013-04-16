@@ -78,7 +78,7 @@ def main():
 			dark.write_image(options.dark.rsplit(".",1)[0]+"_sum.hdf")
 			sigd.write_image(options.dark.rsplit(".",1)[0]+"_sig.hdf")
 		#else: dark.mult(1.0/99.0)
-		dark.process_inplace("threshold.clampminmax.nsigma",{"nsigma":2.0})
+		dark.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
 		dark2=dark.process("normalize.unitlen")
 	else : dark=None
 	if options.gain : 
@@ -98,7 +98,7 @@ def main():
 			gain.write_image(options.gain.rsplit(".",1)[0]+"_sum.hdf")
 			sigg.write_image(options.gain.rsplit(".",1)[0]+"_sig.hdf")
 		#else: gain.mult(1.0/99.0)
-		gain.process_inplace("threshold.clampminmax.nsigma",{"nsigma":2.0})
+		gain.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
 	else : gain=None
 	if dark!=None and gain!=None : gain.sub(dark)												# dark correct the gain-reference
 	if gain!=None : 
@@ -160,8 +160,8 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 		# show a little movie of 5 averaged frames
 		if options.movie :
 			mov=[]
-			for i in xrange(5,len(outim),5):
-				im=sum(outim[i-5:i])
+			for i in xrange(6,len(outim),2):
+				im=sum(outim[i-6:i])
 	#			im.process_inplace("normalize.edgemean")
 				#im.write_image("movie%d.hdf"%(i/5-1),0)
 				#im.process_inplace("filter.lowpass.gauss",{"cutoff_freq":.02})
