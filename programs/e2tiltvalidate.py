@@ -517,7 +517,7 @@ class EMValidationPlot(QtGui.QWidget):
 		self.rmsdAxis = QtGui.QLineEdit("")
 		pointsLabel = QtGui.QLabel("Num points")
 		self.points = QtGui.QLineEdit("")
-		self.pointlabel = QtGui.QLabel("Right click to pick a point")
+		self.pointlabel = QtGui.QLabel("Right click to pick the nearest point")
 		
 		
 		frame = QtGui.QFrame()

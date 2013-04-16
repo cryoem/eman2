@@ -125,6 +125,7 @@ class EMPlot2DWidget(EMGLWidget):
 		self.main_display_list = 0
 		
 		self.resize(640,480)
+		self.particle_viewer = None
 	
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
@@ -961,12 +962,25 @@ class EMPolarPlot2DWidget(EMGLWidget):
 			self.add_shape("Circle",EMShape(("scrcircle",1,0,0,self.firstcx,self.height()-self.firstcy,self.valradius,2.0)))
 			self.updateGL()
 		elif event.buttons()&Qt.RightButton:
-		        print "Right Clicking Function Temporarily Disabled"
-#	        	self.find_image(self._computeTheta(x,y), self._computeRadius(x,y))
+			best = self.find_image(self._computeTheta(x,y), self._computeRadius(x,y))
+			if best == -1:
+				print "No Point Selected"
+			else:
+				data = self.data["data"]
+				self.valradius=4.0
+				cxx, cyy = self._computeXY(data[0][best], data[1][best])
+				self.add_shape("Circle",EMShape(("scrcircle",1,0,0, (self.width() / 2 + cxx), (self.height() / 2 + cyy), self.valradius, 2.0)))
+				self.updateGL()
+#				self.emit(QtCore.SIGNAL("clusterStats"), [meanAngle,meanRad,rmsdAngle,rmsdRad,pcount])
+				if event.modifiers()&Qt.ShiftModifier:
+						print "Shift Clicked!"
+						#if self.particle_viewer == None:
+							#first = True
+							#self.particle_viewer = EMImage2DWidget(data=None, application=get_application())
+							#self.particle_viewer.show()
+							
 		else:
-			# Find best image
 			self.find_image(self._computeTheta(x,y), self._computeRadius(x,y))
-	
 	def _computeRadius(self, x, y):
 		"""Return the radius of two x and y points """
 		radius = math.sqrt(x**2 + y**2)
@@ -976,8 +990,16 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		
 	def _computeTheta(self, x, y):
 		""" Compute the theta angle for a given x and y"""
-		return  -math.atan2(y,x)
-		
+		return -math.atan2(y,x)
+	
+	def _computeXY(self, theta, rad):
+		"""return x and y given theta and rad"""
+		scaling = self.width()*(self.plotdims.x1 - self.plotdims.x0)
+		rescaledrad = rad/(2.0*self.plotlim[3]/scaling)
+		x = math.cos(theta) * rescaledrad
+		y = math.sin(theta) * rescaledrad
+		return x, y
+
 	def find_image(self, theta, rad):
 		data = self.data["data"]
 		bestdist = float("infinity")
@@ -987,6 +1009,14 @@ class EMPolarPlot2DWidget(EMGLWidget):
 				bestdist = dist
 				best = i
 #				bestpoint = self.datap[i]
+#		print bestdist
+#		if  bestdist > 10:
+#			return 0
+#		else:
+		return best
+#		self.valradius=4.0
+#		self.add_shape("Circle",EMShape(("scrcircle",0,1,0,data[0][best], self.height()-data[1][best], self.valradius,2.0)))
+#		self.updateGL()
 #		print data[0][best], data[1][best]
 		#print "This point correpsonds to image: %s"%bestpoint
 #		self.emit(QtCore.SIGNAL("pointIdentity(int)"), bestpoint)
@@ -1207,7 +1237,6 @@ class EMPolarPlot2DWidget(EMGLWidget):
 					pointsizes = self.pointsizes
 				else:
 					pointsizes = self.pparm[i][3]
-					
 				ax.scatter(theta, r,s=pointsizes, color=scattercolor, lw=3)
 
 			if len(self.pparm[i]) == 8 and self.pparm[i][7] >= 0: 
