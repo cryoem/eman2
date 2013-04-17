@@ -12952,9 +12952,10 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 	if do_match_pixel_rise:
 		# Calculate new pixel size such that dp/new_pixel_size is approximately an
 		# integer.
-		stop = int(maxerror * 10000 + 0.5) + 1
-		for i in xrange(1,stop):
-			err_thr = i/10000.0
+		nsteps = 100000
+		stepsize = (float(maxerror)/nsteps)
+		for i in xrange(1, nsteps + 1):
+			err_thr = i * stepsize
 			q, error = match_pixel_rise(dp, pixel_size, ndisk=1, rele=err_thr)
 			if q > 0:
 				new_pixel_size = q*pixel_size
