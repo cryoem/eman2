@@ -12887,7 +12887,7 @@ def imgstat_hfsc( stack, file_prefix, fil_attr='filament'):
 def match_pixel_rise(dz,px, nz=-1, ndisk=-1, rele=0.1, stop=900000):
 	'''
 	Error is calculated as:
-		error = ndisk*((( int( (dz/q/px) + 0.5) - dz/q/px))**2)
+		error = ndisk*((( int( (dz/q/px) ) - dz/q/px))**2)
 	instead of:
 		error = ((int(ndisk*dz/q/px) - ndisk*dz/q/px)/px)**2
 		
@@ -12909,8 +12909,8 @@ def match_pixel_rise(dz,px, nz=-1, ndisk=-1, rele=0.1, stop=900000):
 	for i in xrange(0, stop):
 		q  = 1.0 - 0.000001*i
 		q1 = 1.0 + 0.000001*i
-		error  = ndisk*((( int( (dz/q/px) + 0.5) - dz/q/px))**2)
-		error1 = ndisk*((( int( (dz/q1/px) + 0.5) - dz/q1/px))**2)
+		error  = ndisk*((( int( (dz/q/px) ) - dz/q/px))**2)
+		error1 = ndisk*((( int( (dz/q1/px)) - dz/q1/px))**2)
 		if error1 < error:
 			error = error1
 			q = q1

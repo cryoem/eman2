@@ -105,7 +105,7 @@ def main():
 	parser.add_option("--ref_nx",             type="int",   		 default= 1,                  help="nx=ny volume size" ) 
 	parser.add_option("--ref_nz",             type="int",   		 default= 1,                  help="nz volume size - computed disks will be nx x ny x rise/apix" ) 
 	parser.add_option("--new_pixel_size",           type="float", 		 default= -1,                 help="desired pixel size of the output disks. The default is -1, in which case there is no resampling (unless --match_pixel_rise flag is True).")
-	parser.add_option("--maxerror",           type="float", 		 default= 0.1,                help="proportional to the maximum amount of error to tolerate between (dp/new_pixel_size) and int(dp/new_pixel_size + 0.5), where new_pixel_size is the pixel size calculated when the option --match_pixel_rise flag is True.")
+	parser.add_option("--maxerror",           type="float", 		 default= 0.1,                help="proportional to the maximum amount of error to tolerate between (dp/new_pixel_size) and int(dp/new_pixel_size ), where new_pixel_size is the pixel size calculated when the option --match_pixel_rise flag is True.")
 	parser.add_option("--match_pixel_rise",   action="store_true",	 default=False,               help="calculate new pixel size such that the rise is approximately integer number of pixels given the new pixel size. This will be the pixel size of the output disks.")
 	
 	# get consistency
