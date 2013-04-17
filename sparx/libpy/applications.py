@@ -12860,7 +12860,7 @@ def imgstat_hfsc( stack, file_prefix, fil_attr='filament'):
 	from utilities import write_text_file
 	from pixel_error import ordersegments,chunks_distribution
 	
-	infils = EMUtil.get_all_attributes(stack, "filament")
+	infils = EMUtil.get_all_attributes(stack, fil_attr)
 	ptlcoords = EMUtil.get_all_attributes(stack, 'ptcl_source_coord')
 	filaments = ordersegments(infils, ptlcoords)
 	
