@@ -12887,7 +12887,7 @@ def imgstat_hfsc( stack, file_prefix, fil_attr='filament'):
 def match_pixel_rise(dz,px, nz=-1, ndisk=-1, rele=0.1, stop=900000):
 	'''
 	Error is calculated as:
-		error = ndisk*((( int(dz/q/px) - dz/q/px))**2)
+		error = ndisk*((( int( (dz/q/px) + 0.5) - dz/q/px))**2)
 	instead of:
 		error = ((int(ndisk*dz/q/px) - ndisk*dz/q/px)/px)**2
 		
@@ -12945,15 +12945,10 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 	mpi_barrier(MPI_COMM_WORLD)
 
 	if do_match_pixel_rise and (new_pixel_size > 0):
-		print "If resampling is desired, either set do_match_pixel_rise to True OR specify new_pixel_size, but not both at the same time."
-		print "If do_match_pixel_rise=True, the program will automatically calculate new pixel size of the output disks such that the rise will be ~ integer number of pixels in new pixel size."
-		print "If new_pixel_size is specified, then the output disks will be resampled so that resulting pixel size is new_pixel_size."
-		sys.exit()
+		ERROR( "If resampling is desired, either set do_match_pixel_rise to True OR specify new_pixel_size, but not both at the same time.\n If do_match_pixel_rise=True, the program will automatically calculate new pixel size of the output disks such that the rise will be ~ integer number of pixels in new pixel size.\n If new_pixel_size is specified, then the output disks will be resampled so that resulting pixel size is new_pixel_size.", "gendisks_MPI", 1, myid)
 	dpp = (float(dp)/pixel_size)
 	rise = int(dpp)
 	
-	# If the rise is not multiple of pixel size and user DID NOT provide
-	# the new desired pixel size of the disk, then calculate it.
 	if do_match_pixel_rise:
 		# Calculate new pixel size such that dp/new_pixel_size is approximately an
 		# integer.
@@ -12966,12 +12961,13 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 				break
 		#print "new pixel size by match_pixel_rise: ",new_pixel_size
 	
-	if new_pixel_size < 0:  ERROR('match_pixel_size was not able to find a new pixel size with the desired maxerror', "gendisks_MPI", 1, myid)
+		if new_pixel_size < 0:  ERROR('match_pixel_size was not able to find a new pixel size with the desired maxerror', "gendisks_MPI", 1, myid)
+	
 	mpi_barrier(MPI_COMM_WORLD)
 	
 	if myid == 0:
 		if new_pixel_size > 0:
-			print "new_pixel_size calculated by match_pixel_rise: ", new_pixel_size
+			print "Output disks will be resampled to pixel size: ", new_pixel_size
 			
 	if new_pixel_size > 0:
 		dpp = (float(dp)/new_pixel_size)
@@ -13039,14 +13035,14 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 	temp = chunks[myid:myid+1][0]
 	filaments = [filaments[temp[i][1]] for i in xrange(len(temp))]
 	nfils     = len(filaments)
-	
 	#  Get the maximum number of filaments on any node
 	mfils = nfils
 	mfils = mpi_reduce(mfils, 1, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD)
 	if myid == main_node:  mfils = int(mfils[0])
 	mfils = mpi_bcast(mfils, 1, MPI_INT, 0, MPI_COMM_WORLD)
 	mfils = int(mfils[0])
-
+	if mfils < nfils:	
+		ERROR('Maximum number of filaments %d should not be less than nfils %d!'%(mfils, nfils), "ehelix_MPI", 1,myid)
 	list_of_particles = []
 	indcs = []
 	k = 0
@@ -13105,13 +13101,13 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 						fil = recv_EMData(i, ivol+i+70000)
 						fil.set_attr('filament',filatable[i][ivol])
 						fil.write_image(dskfilename, outvol)
-						#print i, ivol, filatable[i][ivol], "out: ",outvol
+						#print outvol, filatable[i][ivol]
 						outvol += 1
 				else:
 					if( gotfil == 1 ):
 						fullvol0.set_attr('filament',filatable[main_node][ivol])
 						fullvol0.write_image(dskfilename, outvol)
-						#print main_node, ivol, filatable[main_node][ivol], "out: ",outvol
+						#print outvol, filatable[main_node][ivol]
 						outvol += 1
 		else:
 			mpi_send(gotfil, 1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
