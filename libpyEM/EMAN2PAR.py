@@ -59,7 +59,9 @@ from cPickle import dumps,loads,dump,load
 from struct import pack,unpack
 
 # If we can't import it then we probably won't be trying to use MPI
-try : from mpi_eman import *
+try : 
+	from mpi import *
+	from mpi_eman import *
 except : pass
 
 # if there is a problem with zlib just don't compress
@@ -578,7 +580,9 @@ class EMMpiClient():
 	system."""
 
 	def __init__(self,scratchdir="/tmp",cache=True):
-		self.rank,self.nrank=mpi_init()
+		mpi_init(0, [])
+		self.rank=mpi_comm_rank(MPI_COMM_WORLD)
+		self.nrank=mpi_comm_size(MPI_COMM_WORLD)
 		self.scratchdir=scratchdir
 
 		self.queuedir=self.scratchdir+"/queue"
@@ -587,7 +591,6 @@ class EMMpiClient():
 			try: os.makedirs(self.cachedir)
 			except: pass
 		else: self.cachedir=None
-		
 		
 		self.lastupdate=0		# last time we sent an update to rank 0
 		if self.rank==0 : self.logfile=file(self.scratchdir+"/rank0.log","w")
@@ -617,8 +620,12 @@ class EMMpiClient():
 			allsrc=set(range(1,self.nrank))	# we use this to make sure we get a reply from all nodes
 			while (1):
 				if len(allsrc)==0 : break
-				l,src,tag = mpi_probe(-1,-1)
-				b=mpi_recv(src,tag)[0]
+				mpi_probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD)
+				starr = mpi_status()
+				src = (int)(starr[0])
+				tag = (int)(starr[1])
+				l = mpi_get_count(MPI_CHAR)
+				b=mpi_eman2_recv(src,tag)[0]
 				self.log("Rank %d = %s"%(src,str(b)[3:]))
 				if b[:2]!="OK" :
 					print "MPI: Failed receive from node=%d"%src
@@ -640,14 +647,14 @@ class EMMpiClient():
 				sys.stderr.flush()
 				sys.stdout.flush()
 				os._exit(1)
-			mpi_send("OK "+socket.gethostname(),0,0)
+			mpi_eman2_send("OK "+socket.gethostname(),0,0)
 
 	def mpi_send_com(self,target,com,data=None):
 		"""Syncronously sends a command to a specified target rank as a tuple, and waits for a
 		single object in reply (which is returned)."""
 		
-		mpi_send((com,data),target,1)
-		return mpi_recv(target,2)[0]
+		mpi_eman2_send((com,data),target,1)
+		return mpi_eman2_recv(target,2)[0]
 
 	def run(self,verbose):
 
@@ -758,10 +765,10 @@ class EMMpiClient():
 									mpi_bcast_send(dts)
 									if verbose>1: 
 										print "%d"%(time.time()-strt)
-									mpi_barrier()
+									mpi_barrier(MPI_COMM_WORLD)
 								dts=None	
 								mpi_bcast_send("DONE")
-								mpi_barrier()
+								mpi_barrier(MPI_COMM_WORLD)
 								
 								print "Caching %s done in %d seconds"%(data,time.time()-strt)
 						elif verbose>1 : print "Caching disabled, request ignored"
@@ -827,19 +834,20 @@ class EMMpiClient():
 						continue
 				
 				# Now look for any requests from existing running jobs
-				info=mpi_iprobe(-1,-1)
-				if info != None:
-					data,src,tag=mpi_recv(info[1],info[2])
+				info=mpi_iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD)
+				if info:
+					info = mpi_status()
+					data,src,tag=mpi_eman2_recv((int)(info[0]),(int)(info[1]))
 					com,data=data
 					if com=="DONE" :
-						mpi_send("OK",src,2)
+						mpi_eman2_send("OK",src,2)
 						taskid=self.rankjobs[src]
 						dump(data,file("%s/%07d.out"%(self.queuedir,taskid),"wb"),-1)
 						self.status[taskid]=100
 						self.rankjobs[src]=-1
 						self.log('Task %s complete on rank %d'%(taskid,src))
 					elif com=="PROG" :
-						mpi_send("OK",src,2)
+						mpi_eman2_send("OK",src,2)
 						if data[1]<0 or data[1]>99 :
 							print "Warning: Invalid progress report :",data
 						else : 
@@ -853,22 +861,22 @@ class EMMpiClient():
 		else :
 
 			while 1:
-				r=mpi_iprobe(0,-1)		# listen for a message from rank 0, this one doesn't block
-#				r=mpi_probe(0,-1)		# listen for a message from rank 0
+				r=mpi_iprobe(0, MPI_ANY_TAG, MPI_COMM_WORLD)		# listen for a message from rank 0, this one doesn't block
 				#if self.logfile!=None : self.logfile.write( "Listen response (%s)\n"%str(r))
-				if r!=None :
-					com,data=mpi_recv(r[1],r[2])[0]
+				if r:
+					r = mpi_status()
+					com,data=mpi_eman2_recv((int)(r[0]),(int)(r[1]))[0]
 					
 					if com=="EXIT":
 						if verbose>1 : print "rank %d: I was just told to exit"%self.rank
-						mpi_send("OK",0,2)			# we reply immediately, assuming we will kill our job and finalize
+						mpi_eman2_send("OK",0,2)			# we reply immediately, assuming we will kill our job and finalize
 						
 						break
 
 					if com=="CHKC":				# check cache for complete file
 						if self.logfile!=None : self.logfile.write( "CHKC\n")
 						if self.cachedir==None :		# caching disabled
-							mpi_send("DONT",0,2)
+							mpi_eman2_send("DONT",0,2)
 						else :
 							# data will contain (name,date,#images)
 							lname=self.pathtocache(data[0])
@@ -877,17 +885,17 @@ class EMMpiClient():
 								numim=EMUtil.get_image_count(lname)
 								#cdict=db_open_dict("bdb:%s#00image_counts"%self.cachedir,ro=True)
 								#parm=cdict[lname]
-								#if parm[0]<data[1] or parm[1]!=data[2] : mpi_send("NEED",0,2)		# if host data is newer or file count doesn't match then request it
+								#if parm[0]<data[1] or parm[1]!=data[2] : mpi_eman2_send("NEED",0,2)		# if host data is newer or file count doesn't match then request it
 								if mtime<data[1] or numim<data[2] : 
-									mpi_send("NEED",0,2)
+									mpi_eman2_send("NEED",0,2)
 									print "need ",data[0],lname,mtime,data[1],numim,data[2]	
-								else : mpi_send("DONT",0,2)											# otherwise don't
+								else : mpi_eman2_send("DONT",0,2)											# otherwise don't
 							except:
-								mpi_send("NEED",0,2)
+								mpi_eman2_send("NEED",0,2)
 
 					if com=="CACH":				# precaching stage, this will never get called if caching is disabled... hopefully
 						if self.logfile!=None : self.logfile.write( "CACH\n")
-						mpi_send("OK",0,2)		# say we're entering cache reception mode
+						mpi_eman2_send("OK",0,2)		# say we're entering cache reception mode
 						# data is (filename,rankwriters)
 						if self.rank in data[1] : fsp=self.pathtocache(data[0])			# all ranks must receive (since this is a broadcast), but not all ranks actually store the data
 						else: fsp=None
@@ -897,7 +905,7 @@ class EMMpiClient():
 						while 1:
 							# chunk will be "DONE" or (EMData,EMData,...)
 							chunk=mpi_bcast_recv(0)
-							mpi_barrier()			# We do this here so we can write while new data is arriving
+							mpi_barrier(MPI_COMM_WORLD)		# We do this here so we can write while new data is arriving
 
 							if chunk=="DONE" : break
 							if fsp!=None:
@@ -947,13 +955,13 @@ class EMMpiClient():
 							### Send the request for specific needed image data back to the server
 							# and write the returned data to the cache
 							if len(needlst)>0 : 
-								mpi_send(("NEED",needlst),0,2)
+								mpi_eman2_send(("NEED",needlst),0,2)
 								if verbose>2 : print "rank %d: I need data :"%self.rank,needlst
 
 
 								while 1:
-									ncom,ndata=mpi_recv(0,-1)[0]
-									mpi_send("OK",0,2)				# MPI may receive some of the new data while we write to disk
+									ncom,ndata=mpi_eman2_recv(0,-1)[0]
+									mpi_eman2_send("OK",0,2)				# MPI may receive some of the new data while we write to disk
 									
 									# unpack the received data into the appropriate cache file
 									for fsp,num,img in ndata:
@@ -962,7 +970,7 @@ class EMMpiClient():
 									if ncom=="LAST" : break			# the data we just wrote must have been the end of what we requested
 									
 							else :
-								mpi_send("OK",0,2)			# immediate reply so rank 0 can move on
+								mpi_eman2_send("OK",0,2)			# immediate reply so rank 0 can move on
 								
 							if verbose>2 : print "rank %d: I have the data I need"%self.rank
 						
@@ -1014,13 +1022,14 @@ class EMMpiClient():
 	def progress_callback(self,prog):
 		""" This gets progress callbacks from the task. We need to make sure we haven't been asked
 		to exit if we get this, and we want to update the progress on rank 0 """
-		r=mpi_iprobe(0,-1)		# listen for a message from rank 0
-		if r!=None :
-			com,data=mpi_recv(r[1],r[2])[0]
+		r=mpi_iprobe(0, MPI_ANY_TAG, MPI_COMM_WORLD)		# listen for a message from rank 0
+		if r :
+			r = mpi_status()
+			com,data=mpi_eman2_recv((int)(r[0]),(int)(r[1]))[0]
 			
 			if com=="EXIT":
 				print "rank %d: I was just told to exit during processing"%self.rank
-				mpi_send("OK",0,2)
+				mpi_eman2_send("OK",0,2)
 				mpi_finalize()
 				sys.exit(0)
 			else:
