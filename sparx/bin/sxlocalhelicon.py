@@ -63,7 +63,6 @@ def main():
 	parser.add_option("--apix",               type="float",			 default= -1.0,               help="pixel size in Angstroms")   
 	parser.add_option("--dp",                 type="float",			 default= -1.0,               help="delta z - translation in Angstroms")   
 	parser.add_option("--dphi",               type="float",			 default= -1.0,               help="delta phi - rotation in degrees")  
-	parser.add_option("--fcutoff",            type="float",          default= 0.15,               help="cut-off for low pass filtration, in absolute frequency")
 	parser.add_option("--MA",                 action="store_true",   default=False,      		  help="predict consistent parameters based on moving average")
 	
 	parser.add_option("--ndp",                type="int",            default= 12,                 help="In symmetrization search, number of delta z steps equas to 2*ndp+1") 
@@ -134,7 +133,7 @@ def main():
 		global_def.BATCH = True
 		if len(args) < 4:  mask = None
 		else:               mask = args[3]
-		ihrsrlocalcons_MPI(args[0], args[1], args[2], mask, irp, oup, options.rs, xrp, options.ynumber, txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, rminp, rmaxp, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.apix, options.debug, y_restrict2,options.fcutoff, options.MA, options.searchit)
+		ihrsrlocalcons_MPI(args[0], args[1], args[2], mask, irp, oup, options.rs, xrp, options.ynumber, txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, rminp, rmaxp, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.apix, options.debug, y_restrict2, options.MA, options.searchit)
 		global_def.BATCH = False
 			
 		if options.MPI:
