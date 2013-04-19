@@ -110,9 +110,9 @@ def main():
 							For example, if the input file contains models A and B, two output stacks with simulated subvolumes will be generated.""", default=None)
 				
 	parser.add_argument("--lowpass",type=str,help="""A lowpass filter (as in a processor from e2proc3d.py) apply to the model before generating simulated particles from it.
-							Type 'e2help.py processors' at the command line and find the options availbale from the processors list)""",default=None)
+							Type 'e2help.py processors' at the command line and find the options availbale from the processors list)""",default='None')
 	parser.add_argument("--highpass",type=str,help="""A lowpass filter (as in a processor from e2proc3d.py) apply to the model before generating simulated particles from it.
-							Type 'e2help.py processors' at the command line and find the options availbale from the processors list)""",default=None)
+							Type 'e2help.py processors' at the command line and find the options availbale from the processors list)""",default='None')
 							
 	parser.add_argument("--shrinkalign", type=int,default=0,help="Optionally shrink the input volume before the simulation if you want binned/down-sampled subtomograms.")
 	parser.add_argument("--shrinksim", type=int,default=0,help="Optionally shrink the input volume before the simulation if you want binned/down-sampled subtomograms.")
@@ -166,7 +166,7 @@ def main():
 										You must also provide --files or --filesdir.""")
 	parser.add_argument("--filesdir",type=str,default='',help="The directory where the files to analyze are")
 	
-	parser.add_argument("--iter",type=str,default='',help="Number of iterations of alignment")
+	parser.add_argument("--iter",type=str,default='1',help="Number of iterations of alignment")
 	
 	"""
 	Parameters to be passed on to e2spt_classaverage.py
