@@ -141,7 +141,18 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			data = EMData.read_images(stack)
 		mpi_barrier(MPI_COMM_WORLD)	
 	'''
-
+	"""
+	# Method 3:
+	alldata = EMData.read_images(stack)
+	ndaa = len(alldata)	
+	# alldata_n stores the original index of the particle (i.e., the index before running Generation 1)  
+	alldata_n = [0]*ndata
+	if generation > 1:
+		for i in xrange(ndata): alldata_n[i] = alldata[i].get_attr('data_n')
+	else:
+		for i in xrange(ndata): alldata_n[i] = i
+	nx = alldata[0].get_xsize()
+	"""
 	ali_params_filename = "ali_params_%d"%color
 
 	if myid == main_node:
