@@ -55,6 +55,7 @@ def main():
 	parser.add_option("--delta",              type="string",		 default= " 10 6 4  3   2",   help="angular step of reference projections")
 	parser.add_option("--an",                 type="string",		 default= "-1",               help="angular neighborhood for local searches")
 	parser.add_option("--maxit",              type="int",            default= 30,                 help="maximum number of iterations performed for each angular step (set to 30) ")
+	parser.add_option("--searchit",           type="int",            default= 1,                  help="number of iterations to predict/search before doing reconstruction and updating of reference volume. Default is 1. If maxit=3 and searchit=2, then for each of the 3 inner iterations, 2 iterations of prediction/search will be performed before generating reconstruction.")
 	parser.add_option("--CTF",                action="store_true",   default=False,      		  help="CTF correction")
 	parser.add_option("--snr",                type="float",          default= 1.0,                help="Signal-to-Noise Ratio of the data")	
 	parser.add_option("--MPI",                action="store_true",   default=False,               help="use MPI version")
@@ -133,7 +134,7 @@ def main():
 		global_def.BATCH = True
 		if len(args) < 4:  mask = None
 		else:               mask = args[3]
-		ihrsrlocalcons_MPI(args[0], args[1], args[2], mask, irp, oup, options.rs, xrp, options.ynumber, txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, rminp, rmaxp, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.apix, options.debug, y_restrict2,options.fcutoff, options.MA)
+		ihrsrlocalcons_MPI(args[0], args[1], args[2], mask, irp, oup, options.rs, xrp, options.ynumber, txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, rminp, rmaxp, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.apix, options.debug, y_restrict2,options.fcutoff, options.MA, options.searchit)
 		global_def.BATCH = False
 			
 		if options.MPI:
