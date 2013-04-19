@@ -846,7 +846,7 @@ public:
                 vector< int >numr, float cnx, float cny);
 
 	/* This is used in ISAC program to assigning particles equally to grops */
-	static vector<int> assign_groups(const vector<float>& d, int nref, int nima);
+	static vector<int> assign_groups(std::string matrix_address, int nref, int nima);
 
 	static inline void getvec(float phi, float theta, float& x, float& y, float& z, int option=0) {
 		float pi180 = M_PI/180.0f;

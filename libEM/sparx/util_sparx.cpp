@@ -17900,53 +17900,64 @@ vector<float> Util::multiref_polar_ali_2d_peaklist(EMData* image, const vector< 
 	return peak;
 }
 
-struct peak_table {
-	float value;
-	int index;
-	bool operator<(const peak_table& b) const { return value > b.value; }
+struct assign_groups_comparator {
+	const float * values;
+	bool operator() (int i,int j) { return (values[i] < values[j]); }
+	assign_groups_comparator(const float * v) : values(v) {}
 };
 
-vector<int> Util::assign_groups(const vector<float>& d, int nref, int nima) {
+vector<int> Util::assign_groups(std::string matrix_address, int nref, int nima)
+{
+	const float * matrix;
+	{ // convert memory address sent as string to pointer to float
+		size_t addr = 0;
+		for ( std::string::const_iterator i = matrix_address.begin();  i != matrix_address.end();  ++i ) {
+			int digit = *i - '0';
+			addr *= 10;
+			addr += digit;
+		}
+		matrix = reinterpret_cast<float*>(addr);
+	}
 
 	int kt = nref;
 	unsigned int maxasi = nima/nref;
-	vector< vector<int> > id_list;
-	id_list.resize(nref);
+	vector< vector<int> > id_list(nref);
 	int group, ima;
 
-	peak_table* dd = new peak_table[nref*nima];
-	for (int i=0; i<nref*nima; i++)  {
-		dd[i].value = d[i];
-		dd[i].index = i;
-	}
-	sort(dd, dd+nref*nima);
-	int begin = 0;
-
-	bool* del_row = new bool[nref];
-	for (int i=0; i<nref; i++) del_row[i] = false;
-	bool* del_column = new bool[nima];
-	for (int i=0; i<nima; i++) del_column[i] = false;
-	while (kt > 0) {
-		bool flag = true;
-		while (flag) {
-			int l = dd[begin].index;
-			group = l/nima;
-			ima = l%nima;
-			if (del_column[ima] || del_row[group]) begin++;
-			else flag = false;
+	{
+		int begin = 0;
+		// allocate and sort vector of indexes
+		std::vector<int> dd(nref*nima);
+		for (int i=0; i<nref*nima; i++)  {
+			dd[i] = i;
 		}
+		assign_groups_comparator comparator(matrix);
+		sort(dd.begin(), dd.end(), comparator);
+		// main loop
+		std::vector<bool> del_row(nref, false);
+		std::vector<bool> del_column(nima, false);
+		while (kt > 0) {
+			bool flag = true;
+			while (flag) {
+				int l = dd[begin];
+				group = l/nima;
+				ima = l%nima;
+				if (del_column[ima] || del_row[group]) begin++;
+				else flag = false;
+			}
 
-		id_list[group].push_back(ima);
-		if (kt > 1) {
-			if (id_list[group].size() < maxasi) group = -1;
-			else kt -= 1;
-		} else {
-			if (id_list[group].size() < maxasi+nima%nref) group = -1;
-			else kt -= 1;
-		}
-		del_column[ima] = true;
-		if (group != -1) {
-			del_row[group] = true;
+			id_list[group].push_back(ima);
+			if (kt > 1) {
+				if (id_list[group].size() < maxasi) group = -1;
+				else kt -= 1;
+			} else {
+				if (id_list[group].size() < maxasi+nima%nref) group = -1;
+				else kt -= 1;
+			}
+			del_column[ima] = true;
+			if (group != -1) {
+				del_row[group] = true;
+			}
 		}
 	}
 
@@ -17958,9 +17969,6 @@ vector<int> Util::assign_groups(const vector<float>& d, int nref, int nima) {
 			id_list_1.push_back(id_list[group][im]);
 	id_list_1.push_back(group);
 
-	delete[] del_row;
-	delete[] del_column;
-	delete[] dd;
 	return id_list_1;
 }
 
