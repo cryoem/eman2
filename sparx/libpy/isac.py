@@ -797,7 +797,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 #		if CTF: ctf2 = [[[0.0]*lctf for k in xrange(2)] for j in xrange(numref)]
 		peak_list = [[] for i in xrange(numref)]
 		#  nima is the total number of images, not the one on this node, tha latter is (image_end-image_start)
-		d = [0.0]*(numref*nima)
+		d = [0.0]*(numref*nima)  #      numpy array float32
 		# begin MPI section
 		for im in xrange(image_start, image_end):
 			alpha, sx, sy, mirror, scale = get_params2D(alldata[im])
@@ -816,9 +816,9 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		del ringref
 		del temp
 
-		d = mpi_reduce(d, numref*nima, MPI_FLOAT, MPI_SUM, main_node, comm)
+		d = mpi_reduce(d, numref*nima, MPI_FLOAT, MPI_SUM, main_node, comm)  #  RETURNS numpy array
 		if myid == main_node:
-			d = map(float, d)
+			d = map(float, d)  # DO NOT NEED THIS
 			id_list_long = Util.assign_groups(d, numref, nima)
 			id_list = [[] for i in xrange(numref)]
 			maxasi = nima/numref
