@@ -73,7 +73,7 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--helixboxer",action="store_true",default=False,help="Helix Boxer Mode", guitype='boolbox', row=2, col=2, rowspan=1, colspan=1, mode="boxing")
 	parser.add_argument("--normproc",type=str,help="""Normalization processor applied to particles before extraction.
-													Use --normproc=normalize, --normproc=normalize.edgemean or --normalize.mask, from worst to best. 
+													Use --normproc=normalize, --normproc=normalize.edgemean or --normalize.mask, depending on your specimen and purposes.
 													If using the latter, you must provide --masknorm, otherwise, a default --masknorm=mask.sharp:outer_radius=-2 will be used.""", default=None)
 	parser.add_argument("--masknorm",type=str,help="Mask used to normalize particles before extraction. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
 	parser.add_argument("--thresh",type=str,help="Threshold particles before writing them out to get rid of too high and/or too low pixel values.", default=None)
@@ -154,7 +154,7 @@ def main():
 		
 		print "I will make the path", options.path
 		os.system('mkdir ' + options.path)
-	
+	EMTomoBoxer
 	
 	
 		
