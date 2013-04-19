@@ -13032,7 +13032,7 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 				filname = a.get_attr('filament')
 				filatable[mid][i] = filname
 				
-		#print filatable
+	#print filatable
 	temp = chunks[myid:myid+1][0]
 	filaments = [filaments[temp[i][1]] for i in xrange(len(temp))]
 	nfils     = len(filaments)
@@ -13088,7 +13088,7 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 				ratio = pixel_size/new_pixel_size
 				fullvol0 = resample(fullvol0, ratio)
 			fullvol0 = Util.window(fullvol0, ref_nx, ref_ny, rise)
-			
+
 			if mask3d != None:  Util.mul_img(fullvol0, mask3d)
 			gotfil = 1
 		else:
