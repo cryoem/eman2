@@ -100,6 +100,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	# The other way is all nodes reading it one by one, we have to test to determine which way is better.
 	# The test shows that way 1 (18s) is way faster then way 2 (197s) on the test on 16 nodes.
 	# The drawback of way 1 is it cannot have all attibutes, but I assume this is not important.
+	'''
 	# Method 1:
 	if myid == main_node:
 		alldata = EMData.read_images(stack)
@@ -135,16 +136,8 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	mpi_barrier(MPI_COMM_WORLD)
 	'''
 	# Method 2:
-	for i in xrange(number_of_proc):
-		if myid == i:
-			print "Reading on node", i
-			data = EMData.read_images(stack)
-		mpi_barrier(MPI_COMM_WORLD)	
-	'''
-	"""
-	# Method 3:
 	alldata = EMData.read_images(stack)
-	ndaa = len(alldata)	
+	ndata = len(alldata)	
 	# alldata_n stores the original index of the particle (i.e., the index before running Generation 1)  
 	alldata_n = [0]*ndata
 	if generation > 1:
@@ -152,7 +145,17 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	else:
 		for i in xrange(ndata): alldata_n[i] = i
 	nx = alldata[0].get_xsize()
-	"""
+	data = [None]*ndata
+	tdummy = Transform({"type":"2D"})
+	for im in xrange(ndata):
+		# This is the absolute ID, the only time we use it is
+		# when setting the members of 4-way output. All other times, the id in 'members' is 
+		# the relative ID.
+		alldata[im].set_attr_dict({"xform.align2d": tdummy, "ID": im})
+		data[im] = alldata[im]
+	mpi_barrier(MPI_COMM_WORLD)
+
+
 	ali_params_filename = "ali_params_%d"%color
 
 	if myid == main_node:
