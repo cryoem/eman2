@@ -379,8 +379,7 @@ def helicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fou
 	from mpi 	  	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv
 	from mpi 	  	  import MPI_SUM, MPI_FLOAT, MPI_INT
 	from time         import time	
-	from pixel_error  import ordersegments
-	from development  import chunks_distribution
+	from pixel_error  import ordersegments, chunks_distribution
 	from math         import sqrt, atan2, tan
 	
 	nproc = mpi_comm_size(MPI_COMM_WORLD)
