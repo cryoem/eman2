@@ -3729,6 +3729,30 @@ def findall(val, lo):
 	return  u
 """
 
+# parameters: list of integers, number of processors
+def chunks_distribution(chunks, procs):
+	from heapq import heappush, heappop
+
+	# sort chunks in descending order
+	chunks.sort(reverse=True)
+
+	# create heap and list with solution    
+	results = []
+	heap = []
+	for p in xrange(procs):
+		results.append([])
+		heappush(heap, (0, p))
+
+	# main calculations
+	# following chunks are added to the least loaded processors
+	for c in chunks:
+		s, p = heappop(heap)
+		results[p].append(c)
+		s += c[0]
+		heappush(heap, (s, p))
+
+	return results
+
 """
 Iterators over sequence of images. They work for lists and stacks of images.
 Additional time cost: about 1 second per 10^6 iterations on 3 GHz processor.
