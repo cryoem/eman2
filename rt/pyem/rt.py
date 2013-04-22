@@ -35,9 +35,8 @@
 
 import os
 import glob
+import subprocess
+import sys
 
 for name in glob.glob('test_*.py'):
-    if os.name=='nt':
-        os.system('python %s'%name)
-    else:
-        os.system('./%s'%name)
+    subprocess.call([sys.executable, name])
