@@ -55,6 +55,10 @@ def main():
 	Output: Three micrographs stored in output directory		
 				 
 		sxhelical_demo.py tmp.hdf  mic --generate_micrograph --CTF --apix=1.84	
+	
+	Generate noisy cylinder with radius 35 pixels and box size 100 by 100 by 200
+	
+		sxhelical_demo.py ini.hdf --generate_noisycyl --boxsize="100,100,200" --rad=35
 	"""
 	parser = OptionParser(usage,version=SPARXVERSION)
 	
@@ -73,7 +77,7 @@ def main():
 	parser.add_option("--ac",					  type="float",				default=10.0, 					 help="Amplitude contrast (percentage, default=10)")
 	
 	# generate initial volume
-	parser.add_option("--generate_initvol",       action="store_true",      default=False,      		  	 help="Generate initial volume of noisy cylinder.")
+	parser.add_option("--generate_noisycyl",       action="store_true",      default=False,      		  	 help="Generate initial volume of noisy cylinder.")
 	parser.add_option("--boxsize",                type="string",		    default="100,100,200",           help="String containing x , y, z dimensions (separated by comma) in pixels")
 	parser.add_option("--rad",                    type="int",			    default=35,              	 	 help="Radius of initial volume in pixels")
 	
@@ -94,7 +98,7 @@ def main():
 				sys.exit()
 			generate_helimic(args[0], args[1], options.apix, options.CTF, options.Cs, options.voltage, options.ac, options.rand_seed)
 		
-		if options.generate_initvol:
+		if options.generate_noisycyl:
 			from utilities import model_cylinder, model_gauss_noise
 			outvol = args[0]
 			boxdims = options.boxsize.split(',')
