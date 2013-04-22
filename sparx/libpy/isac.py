@@ -856,9 +856,9 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		for j in xrange(numref):  refi[j].to_zero()
 		for im in xrange(image_start, image_end):
 			matchref = belongsto[im]
-			alphan = peak_list[matchref][(im-image_start)*4+0]
-			sxn = peak_list[matchref][(im-image_start)*4+1]
-			syn = peak_list[matchref][(im-image_start)*4+2]
+			alphan = float(peak_list[matchref][(im-image_start)*4+0])
+			sxn = float(peak_list[matchref][(im-image_start)*4+1])
+			syn = float(peak_list[matchref][(im-image_start)*4+2])
 			mn = int(peak_list[matchref][(im-image_start)*4+3])
 			if mn == 0: sx_sum[matchref] += sxn
 			else:	   sx_sum[matchref] -= sxn
@@ -889,9 +889,9 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 		for im in xrange(image_start, image_end):
 			matchref = belongsto[im]
-			alphan = peak_list[matchref][(im-image_start)*4+0]
-			sxn = peak_list[matchref][(im-image_start)*4+1]
-			syn = peak_list[matchref][(im-image_start)*4+2]
+			alphan = float(peak_list[matchref][(im-image_start)*4+0])
+			sxn = float(peak_list[matchref][(im-image_start)*4+1])
+			syn = float(peak_list[matchref][(im-image_start)*4+2])
 			mn = int(peak_list[matchref][(im-image_start)*4+3])
 			if mn == 0:
 				set_params2D(alldata[im], [alphan, sxn-sx_sum[matchref], syn-sy_sum[matchref], mn, scale])
