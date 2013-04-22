@@ -799,7 +799,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			Util.Applyws(cimage, numr, wr)
 			ringref.append(cimage)
 #		if CTF: ctf2 = [[[0.0]*lctf for k in xrange(2)] for j in xrange(numref)]
-		peak_list = [[] for i in xrange(numref)]
+		peak_list = [zeros(4*(image_end-image_start), dtype=float32) for i in xrange(numref)]
 		#  nima is the total number of images, not the one on this node, tha latter is (image_end-image_start)
 		d = zeros(numref*nima, dtype=float32)
 		# begin MPI section
@@ -815,7 +815,10 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			for iref in xrange(numref):
 				[alphan, sxn, syn, mn] = \
 				   combine_params2(0.0, -sxi, -syi, 0, temp[iref*5+1], temp[iref*5+2], temp[iref*5+3], int(temp[iref*5+4]))
-				peak_list[iref].extend([alphan, sxn, syn, mn])
+				peak_list[iref][(im-image_start)*4+0] = alphan
+				peak_list[iref][(im-image_start)*4+1] = sxn
+				peak_list[iref][(im-image_start)*4+2] = syn
+				peak_list[iref][(im-image_start)*4+3] = mn
 				d[iref*nima+im] = temp[iref*5]
 		del ringref
 		del temp
@@ -856,7 +859,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			alphan = peak_list[matchref][(im-image_start)*4+0]
 			sxn = peak_list[matchref][(im-image_start)*4+1]
 			syn = peak_list[matchref][(im-image_start)*4+2]
-			mn = peak_list[matchref][(im-image_start)*4+3]
+			mn = int(peak_list[matchref][(im-image_start)*4+3])
 			if mn == 0: sx_sum[matchref] += sxn
 			else:	   sx_sum[matchref] -= sxn
 			sy_sum[matchref] += syn
@@ -894,6 +897,8 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 				set_params2D(alldata[im], [alphan, sxn-sx_sum[matchref], syn-sy_sum[matchref], mn, scale])
 			else:
 				set_params2D(alldata[im], [alphan, sxn+sx_sum[matchref], syn-sy_sum[matchref], mn, scale])
+
+		del peak_list
 
 		for j in xrange(numref):
 			reduce_EMData_to_root(refi[j], myid, main_node, comm)
