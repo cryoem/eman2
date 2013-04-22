@@ -59,17 +59,16 @@ def main():
 	parser = OptionParser(usage,version=SPARXVERSION)
 	
 	# helicise the Atom coordinates
-	parser.add_option("--heli",                action="store_true",   default=False,      		  help="Helicise the atom coordinates of input pdb file according to input helical symmetry parameters. \n Input: pdb file containing atom coordinates to be helicised and helical symmetry parameters dp and dphi. \n Output: pdb file containing helicised atom coordinates"
-	parser.add_option("--dp",                 type="float",			 default= -1.0,               help="delta z - translation in Angstroms")   
-	parser.add_option("--dphi",               type="float",			 default= -1.0,               help="delta phi - rotation in degrees")  
+	parser.add_option("--heli",                   action="store_true",      default=False,      		  	 help="Helicise the atom coordinates of input pdb file according to input helical symmetry parameters. \n Input: pdb file containing atom coordinates to be helicised and helical symmetry parameters dp and dphi. \n Output: pdb file containing helicised atom coordinates")
+	parser.add_option("--dp",                     type="float",			    default= -1.0,              	 help="delta z - translation in Angstroms")   
+	parser.add_option("--dphi",                   type="float",			    default= -1.0,              	 help="delta phi - rotation in degrees")  
 	
 	# generate micrographs of helical filament
-	parser.add_option("--generate_micrograph",                action="store_true",   default=False,      		  help="Generate micrograph of helical filament from reference volume. Input: Reference Volume, output directory, Output: Three micrographs containing helical filaments stored in output directory")
-	parser.add_option("--CTF",              action="store_true",  default=False,   help="Use CTF correction")
-	parser.add_option("--apix",               type="float",			 default= -1,               help="pixel size in Angstroms")   
+	parser.add_option("--generate_micrograph",    action="store_true",      default=False,      		  	 help="Generate micrograph of helical filament from reference volume. Input: Reference Volume, output directory, Output: Three micrographs containing helical filaments stored in output directory")
+	parser.add_option("--CTF",              	  action="store_true",  	default=False,   				 help="Use CTF correction")
+	parser.add_option("--apix",               	  type="float",			 	default= -1,               	     help="pixel size in Angstroms")   
 	
 	(options, args) = parser.parse_args()
-		
 	if len(args) != 2:
 		print "usage: " + usage
 		print "Please run '" + progname + " -h' for detailed options"
@@ -88,7 +87,11 @@ def main():
 			sys.exit()
 			
 def helicise_pdb(inpdb, outpdb, dp, dphi):
-	
+	from math import cos, sin, pi
+	from copy import deepcopy
+	from numpy import zeros, float32, dot
+
+	dp = dp*-1.0
 	infile =open(inpdb,"r")
 	pall = infile.readlines()
 	infile.close()
@@ -143,3 +146,6 @@ def helicise_pdb(inpdb, outpdb, dp, dphi):
 	outfile.writelines(pnew)
 	outfile.writelines(pall[n-1:len(pall)])
 	outfile.close()
+	
+if __name__ == "__main__":
+	main()
