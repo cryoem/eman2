@@ -50,17 +50,17 @@ def main():
 	
 		sxhelical_demo.py 3MFP_1SU.pdb rnew.pdb --heli --dp=27.6 --dphi=166.5 \n
 	
-	Generate projections of helical filament from reference volume. 
+	Generate three micrographs, each micrograph contains one projection of a long filament.
 	Input: Reference Volume, output directory 
 	Output: Three micrographs stored in output directory		
 				 
 		sxhelical_demo.py tmp.hdf  mic --generate_micrograph --CTF --apix=1.84	
 	
-	Generate noisy cylinder with radius 35 pixels and box size 100 by 100 by 200
+	Generate noisy cylinder ini.hdf with radius 35 pixels and box size 100 by 100 by 200
 	
 		sxhelical_demo.py ini.hdf --generate_noisycyl --boxsize="100,100,200" --rad=35
 	
-	Generate rectangular 2D mask with width 60 pixels and image size 200 by 200 pixels
+	Generate rectangular 2D mask mask2d.hdf with width 60 pixels and image size 200 by 200 pixels
 	
 		sxhelical_demo.py mask2d.hdf --generate_mask --masksize="200,200" --maskwidth=60
 	
@@ -76,7 +76,7 @@ def main():
 	parser.add_option("--dphi",                   type="float",			    default= -1.0,              	 help="delta phi - rotation in degrees")  
 	
 	# generate micrographs of helical filament
-	parser.add_option("--generate_micrograph",    action="store_true",      default=False,      		  	 help="Generate micrograph of helical filament from reference volume. Input: Reference Volume, output directory, Output: Three micrographs containing helical filaments stored in output directory")
+	parser.add_option("--generate_micrograph",    action="store_true",      default=False,      		  	 help="Generate three micrographs where each micrograph contains one projection of a long filament. \n Input: Reference Volume, output directory \n Output: Three micrographs containing helical filament projections stored in output directory")
 	parser.add_option("--CTF",              	  action="store_true",  	default=False,   				 help="Use CTF correction")
 	parser.add_option("--apix",               	  type="float",			 	default= -1,               	     help="pixel size in Angstroms")   
 	parser.add_option("--rand_seed",              type="int",			    default=14567,              	 help="the seed used for generating random numbers (default 14567) for adding noise to the generated micrographs.")
