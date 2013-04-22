@@ -68,23 +68,25 @@ def main():
 	parser.add_option("--CTF",              	  action="store_true",  	default=False,   				 help="Use CTF correction")
 	parser.add_option("--apix",               	  type="float",			 	default= -1,               	     help="pixel size in Angstroms")   
 	parser.add_option("--rand_seed",              type="int",			    default=14567,              	 help="the seed used for generating random numbers (default 14567) for adding noise to the generated micrographs.")
+	parser.add_option("--Cs",               	  type="float",			 	default= 2.0,               	 help="Microscope Cs (spherical aberation)")
+	parser.add_option("--voltage",				  type="float",				default=200.0, 					 help="Microscope voltage in KV")
+	parser.add_option("--ac",					  type="float",				default=10.0, 					 help="Amplitude contrast (percentage, default=10)")
 	
 	(options, args) = parser.parse_args()
 	if len(args) != 2:
 		print "usage: " + usage
 		print "Please run '" + progname + " -h' for detailed options"
 	else:
-		if options.heli or options.generate_micrograph:
+		if options.heli:
 			if options.dp < 0 or options.dphi < 0:
 				print "Please enter helical symmetry parameters dp and dphi."
 				sys.exit()
-		if options.heli:
 			helicise_pdb(args[0], args[1], options.dp, options.dphi)
 		if options.generate_micrograph:
 			if options.apix <= 0:
 				print "Please enter pixel size."
 				sys.exit()
-			generate_helimic(args[0], args[1], options.dp, options.dphi, options.apix, options.CTF, options.rand_seed)
+			generate_helimic(args[0], args[1], options.apix, options.CTF, options.Cs, options.voltage, options.ac, options.rand_seed)
 		
 			
 def helicise_pdb(inpdb, outpdb, dp, dphi):
@@ -147,8 +149,16 @@ def helicise_pdb(inpdb, outpdb, dp, dphi):
 	outfile.writelines(pall[n-1:len(pall)])
 	outfile.close()
 
-def generate_helimic(refvol, outdir, dp, dphi, apix, CTF=False, rand_seed=14567):
-
+def generate_helimic(refvol, outdir, pixel, CTF=False, Cs=2.0,voltage = 200.0, ampcont = 10.0,rand_seed=14567):
+	
+	from utilities	 import model_blank, model_gauss, model_gauss_noise, pad
+	from random 	 import random
+	from projection  import prgs, prep_vol
+	from filter	     import filt_gaussl, filt_ctf
+	from EMAN2 	     import EMAN2Ctf
+	
+	if os.path.exists(outdir):   ERROR('Output directory exists, please change the name and restart the program', "sxhelical_demo", 1)
+	os.mkdir(outdir)
 	seed(14567)
 	angles =[]
 	for i in xrange(3):
@@ -162,25 +172,16 @@ def generate_helimic(refvol, outdir, dp, dphi, apix, CTF=False, rand_seed=14567)
 	ny = modelvol.get_ysize()
 	nz = modelvol.get_zsize()
 	
-	
-	
-	Cs      = 2.0
-	pixel   = options.apix
-	voltage = 200.0
-	ampcont = 10.0
-	
 	iprj    = 0
 	width = 500
 	xstart = 0
 	ystart = 0
 	
-	params = []
 	for idef in xrange(3,6):
-	
 	
 		mic = model_blank(2048, 2048)
 		defocus = idef*0.2
-		if options.CTF :
+		if CTF :
 			ctf = EMAN2Ctf()
 			ctf.from_dict( {"defocus":defocus, "cs":Cs, "voltage":voltage, "apix":pixel, "ampcont":ampcont, "bfactor":0.0} )
 	
@@ -202,16 +203,12 @@ def generate_helimic(refvol, outdir, dp, dphi, apix, CTF=False, rand_seed=14567)
 			s2y = 2.5*(i-1)
 	
 	
-			params.append( [phi, tht, psi, s2x, s2y])
-	
 			proj = prgs(volfts, kbz, [phi, tht, psi, -s2x, -s2y], kbx, kby)
 			proj = Util.window(proj, 320, nz)		
 			mic += pad(proj, 2048, 2048, 1, 0.0, int(750*(i-1)), int(20*(i-1)), 0)
 	
-				
-	
 		mic += model_gauss_noise(30.0,2048,2048)
-		if options.CTF :
+		if CTF :
 			#apply CTF
 			mic = filt_ctf(mic, ctf)
 	
