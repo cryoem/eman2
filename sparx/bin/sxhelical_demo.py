@@ -72,8 +72,13 @@ def main():
 	parser.add_option("--voltage",				  type="float",				default=200.0, 					 help="Microscope voltage in KV")
 	parser.add_option("--ac",					  type="float",				default=10.0, 					 help="Amplitude contrast (percentage, default=10)")
 	
+	# generate initial volume
+	parser.add_option("--generate_initvol",       action="store_true",      default=False,      		  	 help="Generate initial volume of noisy cylinder.")
+	parser.add_option("--boxsize",                type="string",		    default="100,100,200",           help="String containing x , y, z dimensions (separated by comma) in pixels")
+	parser.add_option("--rad",                    type="int",			    default=35,              	 	 help="Radius of initial volume in pixels")
+	
 	(options, args) = parser.parse_args()
-	if len(args) != 2:
+	if len(args) > 2:
 		print "usage: " + usage
 		print "Please run '" + progname + " -h' for detailed options"
 	else:
@@ -82,11 +87,30 @@ def main():
 				print "Please enter helical symmetry parameters dp and dphi."
 				sys.exit()
 			helicise_pdb(args[0], args[1], options.dp, options.dphi)
+		
 		if options.generate_micrograph:
 			if options.apix <= 0:
 				print "Please enter pixel size."
 				sys.exit()
 			generate_helimic(args[0], args[1], options.apix, options.CTF, options.Cs, options.voltage, options.ac, options.rand_seed)
+		
+		if options.generate_initvol:
+			from utilities import model_cylinder, model_gauss_noise
+			outvol = args[0]
+			boxdims = options.boxsize.split(',')
+			if len(boxdims) < 1 or len(boxdims) > 3:
+				print "Enter box size as string containing x , y, z dimensions (separated by comma) in pixels. E.g.: --boxsize='100,100,200'"
+				sys.exit()
+			nx= int(boxdims[0])
+			if len(boxdims) == 1:
+				ny = nx
+				nz = nx
+			else:
+				ny = int(boxdims[1])
+				if len(boxdims) == 3:
+					nz = int(boxdims[2])
+					
+			(model_cylinder(options.rad,nx, ny, nz)*model_gauss_noise(1.0, nx, ny, nz) ).write_image(outvol)
 		
 			
 def helicise_pdb(inpdb, outpdb, dp, dphi):
