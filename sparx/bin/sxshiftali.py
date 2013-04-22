@@ -584,7 +584,8 @@ def helicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fou
 				for incline in xrange(kang+1):
 					qt = q0
 					qu = q0
-					tang = tan(maxincline/kang*incline)
+					if(kang>0):  tang = tan(maxincline/kang*incline)
+					else:        tang = 0.0
 					for kim in xrange(cents+1,nsegms):
 						dst = sqrt((pcoords[cents][0] - pcoords[kim][0])**2 + (pcoords[cents][1] - pcoords[kim][1])**2)
 						xl = dst*tang+six+nxc
