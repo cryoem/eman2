@@ -574,9 +574,10 @@ def helicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fou
 			# search for best x-shift
 			cents = nsegms//2
 
-			dst = sqrt((pcoords[cents][0] - pcoords[0][0])**2 + (pcoords[cents][1] - pcoords[0][1])**2)
-			maxincline = atan2(float(search_rng),dst)
+			dst = sqrt(max((pcoords[cents][0] - pcoords[0][0])**2 + (pcoords[cents][1] - pcoords[0][1])**2, (pcoords[cents][0] - pcoords[-1][0])**2 + (pcoords[cents][1] - pcoords[-1][1])**2))
+			maxincline = atan2(ny//2-2-float(search_rng),dst)
 			kang = int(dst*tan(maxincline)+0.5)
+			#print  "  settings ",nsegms,cents,dst,search_rng,maxincline,kang
 			qm = -1.e23
 			for six in xrange(-search_rng, search_rng+1,1):
 				q0 = ctx[cents].get_value_at(six+nxc)
@@ -589,7 +590,7 @@ def helicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fou
 						xl = dst*tang+six+nxc
 						ixl = int(xl)
 						dxl = xl - ixl
-						#print kim,xl,ixl,dxl
+						#print "  A  ", ifil,six,incline,kim,xl,ixl,dxl
 						qt += (1.0-dxl)*ctx[kim].get_value_at(ixl) + dxl*ctx[kim].get_value_at(ixl+1)
 						xl = -dst*tang+six+nxc
 						ixl = int(xl)
