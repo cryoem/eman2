@@ -726,31 +726,6 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 
 	return stable_set, mir_stab_rate, sqrt(val)
 
-
-# parameters: list of integers, number of processors
-def chunks_distribution(chunks, procs):
-	from heapq import heappush, heappop
-
-	# sort chunks in descending order
-	chunks.sort(reverse=True)
-
-	# create heap and list with solution    
-	results = []
-	heap = []
-	for p in xrange(procs):
-		results.append([])
-		heappush(heap, (0, p))
-
-	# main calculations
-	# following chunks are added to the least loaded processors
-	for c in chunks:
-		s, p = heappop(heap)
-		results[p].append(c)
-		s += c[0]
-		heappush(heap, (s, p))
-
-	return results
-
 def ordersegments(infilaments, ptclcoords):
 	'''
 	Input:
