@@ -77,9 +77,15 @@ def main():
 	parser.add_option("--ac",					  type="float",				default=10.0, 					 help="Amplitude contrast (percentage, default=10)")
 	
 	# generate initial volume
-	parser.add_option("--generate_noisycyl",       action="store_true",      default=False,      		  	 help="Generate initial volume of noisy cylinder.")
+	parser.add_option("--generate_noisycyl",      action="store_true",      default=False,      		  	 help="Generate initial volume of noisy cylinder.")
 	parser.add_option("--boxsize",                type="string",		    default="100,100,200",           help="String containing x , y, z dimensions (separated by comma) in pixels")
 	parser.add_option("--rad",                    type="int",			    default=35,              	 	 help="Radius of initial volume in pixels")
+	
+	# generate 2D mask 
+	parser.add_option("--generate_mask",          action="store_true",      default=False,      		  	 help="Generate 2D rectangular mask.")
+	parser.add_option("--masksize",               type="string",		    default="200,200",               help="String containing x and y dimensions (separated by comma) in pixels")
+	parser.add_option("--maskwidth",              type="int",			    default=60,              	 	 help="Width of rectangular mask")
+	
 	
 	(options, args) = parser.parse_args()
 	if len(args) > 2:
@@ -116,7 +122,22 @@ def main():
 					
 			(model_cylinder(options.rad,nx, ny, nz)*model_gauss_noise(1.0, nx, ny, nz) ).write_image(outvol)
 		
-			
+		if options.generate_mask:
+			from utilities import model_blank, pad
+			outvol = args[0]
+			maskdims = options.masksize.split(',')
+			if len(maskdims) < 1 or len(maskdims) > 2:
+				print "Enter box size as string containing x , y dimensions (separated by comma) in pixels. E.g.: --boxsize='200,200'"
+				sys.exit()
+			nx= int(maskdims[0])
+			if len(maskdims) == 1:
+				ny = nx
+			else:
+				ny = int(maskdims[1])
+					
+			mask = pad(model_blank(options.maskwidth, ny, 1, 1.0), nx, ny, 1, 0.0)
+			mask.write_image(outvol)
+				
 def helicise_pdb(inpdb, outpdb, dp, dphi):
 	from math import cos, sin, pi
 	from copy import deepcopy
