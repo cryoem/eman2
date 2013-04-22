@@ -59,6 +59,14 @@ def main():
 	Generate noisy cylinder with radius 35 pixels and box size 100 by 100 by 200
 	
 		sxhelical_demo.py ini.hdf --generate_noisycyl --boxsize="100,100,200" --rad=35
+	
+	Generate rectangular 2D mask with width 60 pixels and image size 200 by 200 pixels
+	
+		sxhelical_demo.py mask2d.hdf --generate_mask --masksize="200,200" --maskwidth=60
+	
+	Apply the centering parameters to bdb:adata, normalize using average and standard deviation outside the mask, and output the new images to bdb:data
+		
+		sxhelical_demo.py bdb:adata bdb:data mask2d.py --applyparams
 	"""
 	parser = OptionParser(usage,version=SPARXVERSION)
 	
@@ -86,9 +94,11 @@ def main():
 	parser.add_option("--masksize",               type="string",		    default="200,200",               help="String containing x and y dimensions (separated by comma) in pixels")
 	parser.add_option("--maskwidth",              type="int",			    default=60,              	 	 help="Width of rectangular mask")
 	
+	# Apply 2D alignment parameters to input stack and output new images to output stack
+	parser.add_option("--applyparams",            action="store_true",      default=False,      		  	 help="Apply the centering parameters to input stack, normalize using average and standard deviation outside the mask, and output the new images to output stack")
 	
 	(options, args) = parser.parse_args()
-	if len(args) > 2:
+	if len(args) > 3:
 		print "usage: " + usage
 		print "Please run '" + progname + " -h' for detailed options"
 	else:
@@ -137,7 +147,24 @@ def main():
 					
 			mask = pad(model_blank(options.maskwidth, ny, 1, 1.0), nx, ny, 1, 0.0)
 			mask.write_image(outvol)
-				
+		
+		if options.applyparams:
+			stack = args[0]
+			newstack = args[1]
+			mask = args[2]
+			nima	=EMUtil.get_image_count(stack)
+			for im in xrange(nima):
+				prj = get_im(stack,im)
+				alpha, sx, sy, mirror, scale = get_params2D(prj)
+				prj = cyclic_shift(prj, int(sx))
+				set_params2D(prj, [0.0,0.,0.0,0,1])
+				stat = Util.infomask(prj , mask, False )
+				prj= (prj-stat[0])/stat[1]
+				ctf_params = prj.get_attr("ctf")
+				prj.set_attr('active', 1)
+				prj.set_attr('ctf_applied', 0)
+				prj.write_image(newstack, im)
+			
 def helicise_pdb(inpdb, outpdb, dp, dphi):
 	from math import cos, sin, pi
 	from copy import deepcopy
