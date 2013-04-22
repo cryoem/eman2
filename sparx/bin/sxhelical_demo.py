@@ -66,7 +66,7 @@ def main():
 	
 	Apply the centering parameters to bdb:adata, normalize using average and standard deviation outside the mask, and output the new images to bdb:data
 		
-		sxhelical_demo.py bdb:adata bdb:data mask2d.py --applyparams
+		sxhelical_demo.py bdb:adata bdb:data mask2d.hdf --applyparams
 	"""
 	parser = OptionParser(usage,version=SPARXVERSION)
 	
@@ -149,9 +149,11 @@ def main():
 			mask.write_image(outvol)
 		
 		if options.applyparams:
+			from utilities    import get_im, get_params2D, set_params2D
+			from fundamentals import cyclic_shift
 			stack = args[0]
 			newstack = args[1]
-			mask = args[2]
+			mask = get_im(args[2])
 			nima	=EMUtil.get_image_count(stack)
 			for im in xrange(nima):
 				prj = get_im(stack,im)
