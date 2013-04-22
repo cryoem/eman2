@@ -371,7 +371,7 @@ def helicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fou
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
 	from statistics   import varf2d_MPI
 	from fundamentals import fft, ccf, rot_shift3D, rot_shift2D, fshift
-	from utilities    import get_params2D, set_params2D
+	from utilities    import get_params2D, set_params2D, chunks_distribution
 	from utilities    import print_msg, print_begin_msg, print_end_msg
 	import os
 	import sys
@@ -379,7 +379,7 @@ def helicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fou
 	from mpi 	  	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv
 	from mpi 	  	  import MPI_SUM, MPI_FLOAT, MPI_INT
 	from time         import time	
-	from pixel_error  import ordersegments, chunks_distribution
+	from pixel_error  import ordersegments
 	from math         import sqrt, atan2, tan
 	
 	nproc = mpi_comm_size(MPI_COMM_WORLD)
