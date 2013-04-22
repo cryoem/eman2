@@ -12857,8 +12857,8 @@ def stack_disks(v, nx, ny, ref_nz, dphi, rise):
 	return heli
 
 def imgstat_hfsc( stack, file_prefix, fil_attr='filament'):
-	from utilities import write_text_file
-	from pixel_error import ordersegments,chunks_distribution
+	from utilities    import write_text_file, chunks_distribution
+	from pixel_error  import ordersegments
 	
 	infils = EMUtil.get_all_attributes(stack, fil_attr)
 	ptlcoords = EMUtil.get_all_attributes(stack, 'ptcl_source_coord')
@@ -12922,10 +12922,10 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 	from mpi              import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier, MPI_INT, MPI_TAG_UB, MPI_FLOAT, mpi_recv, mpi_send, mpi_reduce, MPI_MAX
 	from utilities        import get_params_proj, read_text_row, model_cylinder,pad, set_params3D, get_params3D, model_blank, drop_image
 	from utilities        import reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, bcast_EMData_to_all, send_EMData, recv_EMData, bcast_list_to_all
-	from utilities        import send_attr_dict, file_type, sym_vol, get_im
+	from utilities        import send_attr_dict, file_type, sym_vol, get_im, chunks_distribution
 	from fundamentals     import resample, rot_shift3D
 	from applications     import MPI_start_end, match_pixel_rise
-	from pixel_error	  import ordersegments, chunks_distribution
+	from pixel_error	  import ordersegments
 	from math             import fmod, atan, pi
 	from utilities        import model_blank
 	from filter           import filt_tanl, filt_ctf
