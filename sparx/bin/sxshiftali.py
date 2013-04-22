@@ -449,7 +449,7 @@ def helicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fou
 	nx = data[0].get_xsize()
 	ny = data[0].get_ysize()
 	if maskfile == None:
-		mrad = min(nx, ny)
+		mrad = min(nx, ny)//2-2
 		mask = pad( model_blank(2*mrad+1, ny), nx, ny, 1, 0.0)
 	else:
 		mask = get_im(maskfile)
