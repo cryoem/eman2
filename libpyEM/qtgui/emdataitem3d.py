@@ -673,6 +673,16 @@ class EMVolumeItem3D(EMItem3D):
 		"""
 		When the EMData changes for EMDataItem3D parent node, this method is called. It is responsible for updating the state of the slice node.
 		"""
+		
+		data = self.getParent().getData()
+		
+		self.minden = data.get_attr("minimum")
+		self.maxden = data.get_attr("maximum")
+		self.mean   = data.get_attr("mean")
+		self.sigma  = data.get_attr("sigma")
+		
+		self.histogram_data = data.calc_hist(256,self.minden, self.maxden)
+		
 		if self.texture_name != 0:
 			GL.glDeleteTextures(self.texture_name)
 		self.useDefaultBrightnessThreshold()
@@ -825,6 +835,7 @@ class EMVolumeItem3D(EMItem3D):
 		
 class EMVolumeInspector(EMInspectorControlShape):
 	def __init__(self, name, item3d):
+		
 		EMInspectorControlShape.__init__(self, name, item3d)
 		
 		QtCore.QObject.connect(self.brightness_slider, QtCore.SIGNAL("valueChanged"), self.onBrightnessSlider)
@@ -839,6 +850,16 @@ class EMVolumeInspector(EMInspectorControlShape):
 		min = data["minimum"]
 		max = data["maximum"]
 		
+##############################
+		
+		minden = self.item3d().minden
+		maxden = self.item3d().maxden
+		
+		#self.thr.setRange(minden, maxden)
+		#self.thr.setValue(self.item3d().isothr, True)
+		
+		self.histogram_widget.set_data(self.item3d().histogram_data,minden,maxden)
+################################
 		self.brightness_slider.setValue(self.item3d().brightness)
 		self.brightness_slider.setRange(-max, -min)
 		self.contrast_slider.setValue(self.item3d().contrast)
@@ -856,6 +877,9 @@ class EMVolumeInspector(EMInspectorControlShape):
 		
 	def addControls(self, gridbox):
 		""" add controls for the volumes """
+		self.histogram_widget = ImgHistogram(self)
+		self.histogram_widget.setObjectName("hist")
+		
 		volframe = QtGui.QFrame()
 		volframe.setFrameShape(QtGui.QFrame.StyledPanel)
 		vol_grid_layout = QtGui.QGridLayout()
@@ -863,12 +887,18 @@ class EMVolumeInspector(EMInspectorControlShape):
 		self.brightness_slider = ValSlider(label="Bright:")
 		self.contrast_slider = ValSlider(label="Contr:")
 		
-		vol_grid_layout.addWidget(self.brightness_slider, 0, 1, 1, 1)
-		vol_grid_layout.addWidget(self.contrast_slider, 1, 1, 1, 1)
+		vol_grid_layout.addWidget(self.histogram_widget, 0, 0, 1, 1)
+		vol_grid_layout.addWidget(self.brightness_slider, 1, 0, 1, 1)
+		vol_grid_layout.addWidget(self.contrast_slider, 2, 0, 1, 1)
 		vol_grid_layout.setRowStretch(2,1)
 
 		volframe.setLayout(vol_grid_layout)
 		gridbox.addWidget(volframe, 2, 0, 2, 1)
+		
+		
+		
+		if type(self) == EMVolumeInspector: self.updateItemControls()
+		#self.histogram_widget.setProbe(self.item3d().isothr) # The needs to be node AFTER the data is set
 	
 	def onBrightnessSlider(self):
 		self.item3d().brightness = self.brightness_slider.getValue()
@@ -885,6 +915,7 @@ class EMVolumeInspector(EMInspectorControlShape):
 
 class EMIsosurfaceInspector(EMInspectorControlShape):
 	def __init__(self, name, item3d):
+		
 		EMInspectorControlShape.__init__(self, name, item3d)	# for the iso inspector we need two grid cols for extra space....
 		
 		QtCore.QObject.connect(self.thr, QtCore.SIGNAL("valueChanged"), self.onThresholdSlider)
