@@ -850,7 +850,6 @@ class EMVolumeInspector(EMInspectorControlShape):
 		min = data["minimum"]
 		max = data["maximum"]
 		
-##############################
 		
 		minden = self.item3d().minden
 		maxden = self.item3d().maxden
@@ -859,7 +858,7 @@ class EMVolumeInspector(EMInspectorControlShape):
 		#self.thr.setValue(self.item3d().isothr, True)
 		
 		self.histogram_widget.set_data(self.item3d().histogram_data,minden,maxden)
-################################
+
 		self.brightness_slider.setValue(self.item3d().brightness)
 		self.brightness_slider.setRange(-max, -min)
 		self.contrast_slider.setValue(self.item3d().contrast)
