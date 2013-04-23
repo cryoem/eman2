@@ -646,7 +646,8 @@ class EMVolumeItem3D(EMItem3D):
 		self.texture_name = 0
 		self.colors = get_default_gl_colors()
 		self.isocolor = "bluewhite"
-	
+		self.isothr = None #Will be set in self.dataChanged()
+		
 		# color Needed for inspector to work John Flanagan
 		self.diffuse = self.colors[self.isocolor]["diffuse"]
 		self.specular = self.colors[self.isocolor]["specular"]
@@ -680,6 +681,13 @@ class EMVolumeItem3D(EMItem3D):
 		self.maxden = data.get_attr("maximum")
 		self.mean   = data.get_attr("mean")
 		self.sigma  = data.get_attr("sigma")
+		
+		if self.isothr: #there was data previously
+			normalized_threshold = (self.isothr - self.mean)/self.sigma
+		else:
+			normalized_threshold = 3.0
+			
+		self.isothr = self.mean+normalized_threshold*self.sigma
 		
 		self.histogram_data = data.calc_hist(256,self.minden, self.maxden)
 		
@@ -897,7 +905,7 @@ class EMVolumeInspector(EMInspectorControlShape):
 		
 		
 		if type(self) == EMVolumeInspector: self.updateItemControls()
-		#self.histogram_widget.setProbe(self.item3d().isothr) # The needs to be node AFTER the data is set
+		self.histogram_widget.setProbe(self.item3d().isothr) # The needs to be node AFTER the data is set
 	
 	def onBrightnessSlider(self):
 		self.item3d().brightness = self.brightness_slider.getValue()
@@ -1104,6 +1112,8 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		self.inspector().updateSceneGraph()
 	
 	def onHistogram(self, val):
+		print "self.item3d()=",self.item3d()
+		print "self.inspector()=",self.inspector() 
 		self.thr.setValue(val, quiet=1)
 		self.item3d().setThreshold(val)
 		self.inspector().updateSceneGraph()
