@@ -12936,7 +12936,7 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 	from os               import sys
 	from time             import time
 	from alignment        import Numrinit, ringwe
-	from reconstruction   import recons3d_wbp, recons3d_4nn
+	from reconstruction   import recons3d_4nn,recons3d_4nn_ctf
 	from morphology       import ctf_2
 
 	myid  = mpi_comm_rank(MPI_COMM_WORLD)
@@ -13058,8 +13058,10 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 	
 	data_nx = data[0].get_xsize()
 	data_ny = data[0].get_ysize()
-	mask2D  = pad(model_blank(2*int(rmax), data_ny, 1, 1.0), data_nx, data_ny, 1, 0.0)
+	data_nn = max(data_nx, data_ny)
+	mask2D  = pad(model_blank(2*int(rmax), data_nn, 1, 1.0), data_nn, data_nn, 1, 0.0)
 	for im in xrange(nima):
+		data[im] = pad(data[im], data_nn, data_nn, 1, 'circumference')
 		data[im].set_attr('ID', list_of_particles[im])
 		if CTF:
 			ctf_params = data[im].get_attr("ctf")
@@ -13077,7 +13079,11 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 	for ivol in xrange(mfils):
 		if( ivol < nfils ):
 			#print myid, ivol, data[indcs[ivol][0]].get_attr('filament')
-			fullvol0 = Util.window(recons3d_4nn(data, list_proj=range(indcs[ivol][0],indcs[ivol][1]), symmetry="c1", npad=2),  ref_nx, ref_ny, ref_nz, 0, 0, 0)
+			if CTF:
+				fullvol0 = Util.window(recons3d_4nn_ctf(data, list_proj=range(indcs[ivol][0],indcs[ivol][1]), symmetry="c1", npad=2),  ref_nx, ref_ny, ref_nz, 0, 0, 0)
+			else:
+				fullvol0 = Util.window(recons3d_4nn(data, list_proj=range(indcs[ivol][0],indcs[ivol][1]), symmetry="c1", npad=2),  ref_nx, ref_ny, ref_nz, 0, 0, 0)
+			
 			fullvol0 = fullvol0.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
 			fullvol0 = sym_vol(fullvol0, symmetry=sym)
 			ref_data[0] = fullvol0
