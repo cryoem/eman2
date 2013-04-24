@@ -13057,7 +13057,7 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 	nima = len(data)
 	
 	data_nx = data[0].get_xsize()
-	data_ny = data[0].get_xsize()
+	data_ny = data[0].get_ysize()
 	mask2D  = pad(model_blank(2*int(rmax), data_ny, 1, 1.0), data_nx, data_ny, 1, 0.0)
 	for im in xrange(nima):
 		data[im].set_attr('ID', list_of_particles[im])
