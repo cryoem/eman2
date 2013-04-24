@@ -82,7 +82,7 @@ def main():
 	parser.add_option("--debug",              action="store_true",   default=False,               help="debug")
 	parser.add_option("--initial_theta",      type="float",		     default=90.0,                help="intial theta for reference projection")
 	parser.add_option("--delta_theta",        type="float",		     default=1.0,                 help="delta theta for reference projection")
-
+	parser.add_option("--pad_segs",           action="store_true",   default=False,      		  help="pad rectangular segments to squares for processing")
 
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
@@ -133,7 +133,7 @@ def main():
 		global_def.BATCH = True
 		if len(args) < 4:  mask = None
 		else:               mask = args[3]
-		ihrsrlocalcons_MPI(args[0], args[1], args[2], mask, irp, oup, options.rs, xrp, options.ynumber, txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, rminp, rmaxp, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.apix, options.debug, y_restrict2, options.MA, options.searchit)
+		ihrsrlocalcons_MPI(args[0], args[1], args[2], mask, irp, oup, options.rs, xrp, options.ynumber, txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, rminp, rmaxp, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.apix, options.debug, y_restrict2, options.MA, options.searchit, options.pad_segs)
 		global_def.BATCH = False
 			
 		if options.MPI:
