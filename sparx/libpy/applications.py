@@ -6910,7 +6910,8 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 	data = EMData.read_images(stack, list_of_particles)
 	
 	data_nx = data[0].get_xsize()
-	data_ny = data[0].get_xsize()
+	data_ny = data[0].get_ysize()
+	data_nn = max(data_nx, data_ny)
 	mask2D  = pad(model_blank(2*int(rmax), data_ny, 1, 1.0), data_nx, data_ny, 1, 0.0)
 	
 	#if fourvar:  original_data = []
@@ -7056,18 +7057,18 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 				if( len(refrings1) > 0):
 					if  an[N_step] == -1:
 						peak1, phihi1, theta1, psi1, sxi1, syi1, t11 = \
-						proj_ali_helical_90(data[im], refrings1, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], psi_max, finfo)
+						proj_ali_helical_90(pad(data[im], data_nn, data_nn, 1, "circumference"), refrings1, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], psi_max, finfo)
 					else:
 						peak1, phihi1, theta1, psi1, sxi1, syi1, t11 = \
-						proj_ali_helical_90_local(data[im], refrings1, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], an[N_step], psi_max, finfo, yrnglocal=y_restrict[N_step])
+						proj_ali_helical_90_local(pad(data[im], data_nn, data_nn, 1, "circumference"), refrings1, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], an[N_step], psi_max, finfo, yrnglocal=y_restrict[N_step])
 					#print "  1  ",im, peak1, phihi1, theta1, psi1, sxi1, syi1
 				if( len(refrings2) > 0):
 					if  an[N_step] == -1:
 						peak2, phihi2, theta2, psi2, sxi2, syi2, t12 = \
-						proj_ali_helical(data[im], refrings2, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], psi_max, finfo)
+						proj_ali_helical(pad(data[im], data_nn, data_nn, 1, "circumference"), refrings2, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], psi_max, finfo)
 					else:
 						peak2, phihi2, theta2, psi2, sxi2, syi2, t12 = \
-						proj_ali_helical_local(data[im], refrings2, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], an[N_step], psi_max, finfo, yrnglocal=y_restrict[N_step])
+						proj_ali_helical_local(pad(data[im], data_nn, data_nn, 1, "circumference"), refrings2, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], an[N_step], psi_max, finfo, yrnglocal=y_restrict[N_step])
 					#print "  2  ",im, peak2, phihi2, theta2, psi2, sxi2, syi2
 				if peak1 is None: 
 					peak = peak2
@@ -7363,8 +7364,8 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 				print_msg("Time to write parameters = %d\n"%(time()-start_time))
 				start_time = time()
 
-			if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad, xysize = xysize, zsize = zsize)
-			else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, npad = npad, xysize = xysize, zsize = zsize)
+			if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad, xysize = nx, zsize = zsize)
+			else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, npad = npad, xysize = nx, zsize = zsize)
 
 			if myid == main_node:
 				print_msg("\n3D reconstruction time = %d\n"%(time()-start_time))
