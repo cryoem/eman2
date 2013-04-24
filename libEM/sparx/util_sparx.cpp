@@ -18471,39 +18471,39 @@ vector<float> Util::hans(EMData* image, const vector< EMData* >& crefim,
 		swap( listr[r], listr[i] );
 	}
 
-	for (int i = -ky; i <= ky; i++) {
-	    iy = i * step ;
-	    for (int j = -kx; j <= kx; j++) {
-			ix = j*step;
-		
-			EMData* cimage = cimages[i+ky][j+kx];
-			//  compare with all reference images
-			for ( int tiref = 0; tiref < (int)crefim_len; tiref++) {
-						iref = listr[tiref];
-						Dict retvals = Crosrng_ms(crefim[iref], cimage, numr);
-						double qn = retvals["qn"];
-						double qm = retvals["qm"];
-						if(qn >= previousmax || qm >= previousmax) {
-							sx = -ix;
-							sy = -iy;
-							nref = iref;
-							if (qn >= qm) {
-								ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-								peak = static_cast<float>( qn );
-								mirror = 0;
-							} else {
-								ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
-								peak = static_cast<float>( qm );
-								mirror = 1;
-							}
-							//cout <<"  iref "<<iref<<"  tiref "<<tiref<<"   "<<previousmax<<"   "<<qn<<"   "<<qm<<endl;
-							goto my_label;
-						}
+	bool found_better = false;
+	for ( int tiref = 0;  (tiref < (int)crefim_len) && (! found_better); tiref++) {
+		iref = listr[tiref];
+		float best_for_ref = -1.0E23f;
+		for (int i = -ky; i <= ky; i++) {
+			iy = i * step ;
+			for (int j = -kx; j <= kx; j++) {
+				ix = j*step;
+				EMData* cimage = cimages[i+ky][j+kx];
+				Dict retvals = Crosrng_ms(crefim[iref], cimage, numr);
+				double qn = retvals["qn"];
+				double qm = retvals["qm"];
+				if (qn >= best_for_ref || qm >= best_for_ref) {
+					sx = -ix;
+					sy = -iy;
+					nref = iref;
+					if (qn >= qm) {
+						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+						peak = static_cast<float>( qn );
+						mirror = 0;
+					} else {
+						ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
+						peak = static_cast<float>( qm );
+						mirror = 1;
+					}
+					best_for_ref = peak;
+					//cout <<"  iref "<<iref<<"  tiref "<<tiref<<"   "<<previousmax<<"   "<<qn<<"   "<<qm<<endl;
+				}
 			}
-	    }
+		}
+		found_better = (best_for_ref >= previousmax);
 	}
 	
-	my_label:
 	for (unsigned i = 0; i < cimages.size(); ++i) {
 		for (unsigned j = 0; j < cimages[i].size(); ++j) {
 			delete cimages[i][j];
@@ -18511,17 +18511,17 @@ vector<float> Util::hans(EMData* image, const vector< EMData* >& crefim,
 		}
 	}
 	
-	
-	float co, so, sxs, sys;
-	if(peak == previousmax) {
-		ang=0.0; sxs=0.0; sys=0.0; mirror=0;
-		nref = -1;
-	} else {
-		co =  cos(ang*qv);
-		so = -sin(ang*qv);
+	float sxs, sys;
+	if (found_better) {
+		float co =  cos(ang*qv);
+		float so = -sin(ang*qv);
 		sxs = sx*co - sy*so;
 		sys = sx*so + sy*co;
 		image->set_attr("previousmax",peak);
+	} else {
+		ang=0.0; sxs=0.0; sys=0.0; mirror=0;
+		nref = -1;
+		peak = previousmax;
 	}
 	vector<float> res;
 	res.push_back(ang);
