@@ -18451,7 +18451,7 @@ vector<float> Util::hans(EMData* image, const vector< EMData* >& crefim,
 	float peak = previousmax;
 	float ang=0.0f;
 	
-	vector< vector<EMData*> > cimages( 2*ky+1, vector<EMData*>(2*kx+1, NULL) );
+	vector< vector<EMData*> > cimages( 2*ky+1, vector<EMData*>(2*kx+1) );
 	
 	for (int i = -ky; i <= ky; i++) {
 	    iy = i * step ;
@@ -21954,10 +21954,10 @@ void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
 	std::vector< boost::shared_ptr<EMData> > objectsToDelete; // objects added to this vector are automatically deleted at the end of this function
 
 	vector<float> c0 = data[0]->get_attr("ptcl_source_coord");
-	vector< vector<EMData*> > ccfs(ndata, vector<EMData*>(nphi, NULL));
+	vector< vector<EMData*> > ccfs(ndata, vector<EMData*>(nphi));
 	vector< vector<EMData*> > ccfr(0);
 	if (! Dsym) {
-		ccfr.resize(ndata, vector<EMData*>(nphi, NULL));
+		ccfr.resize(ndata, vector<EMData*>(nphi));
 	}
 	for (int im = 0; im < ndata; ++im) {
 		for (int iphi = 0; iphi < nphi; ++iphi) {
