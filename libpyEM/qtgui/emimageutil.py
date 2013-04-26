@@ -38,6 +38,9 @@ from EMAN2 import *
 from valslider import ValSlider
 from emanimationutil import Animator
 import weakref
+import copy
+import sys
+import math
 
 class EMTransformPanel:
 	def __init__(self,target,parent):
@@ -355,12 +358,21 @@ class ImgHistogram(QtGui.QWidget):
 	""" A small fixed-size histogram widget"""
 	def __init__(self,parent):
 		QtGui.QWidget.__init__(self,parent)
+		
 		self.brush=QtGui.QBrush(Qt.black)
 		self.font=QtGui.QFont("Helvetica", 12);
 		self.probe=None
 		self.histdata=None
 		self.setMinimumSize(QtCore.QSize(258,128))
-	
+		self.volume = None
+		
+		self.upposition = 0
+		self.upcolor = 0
+		self.uppresent = 0
+		self.guiparent = parent
+		
+		self.mpressed = None
+
 	def set_data(self,data,minden,maxden):
 		self.histdata=data
 #		self.norm=max(self.histdata)
@@ -377,6 +389,7 @@ class ImgHistogram(QtGui.QWidget):
 		self.update()
 	
 	def setProbe(self, value):
+		self.volume = False
 		if (self.maxden-self.minden) != 0:
 			x = int(255.0*(value - self.minden)/(self.maxden-self.minden))
 			if x > 255: x = 255
@@ -385,9 +398,28 @@ class ImgHistogram(QtGui.QWidget):
 			self.probe=(x,self.histdata[x])
 		else:
 			self.threshold = value
+		
+		value=7
+		self.update()
+	def setColor(self,value):
+
+		self.upcolor[self.uppresent]=value
+		self.update()
+
+	def setDynamicProbe(self, position, color, present, value):
+		self.volume=True
+		
+		self.guiparent.level.setText("Level: %1.3f"%value)
+
+		self.upposition = position
+		self.upcolor = color
+		self.uppresent = present
+		
 		self.update()
 		
 	def paintEvent (self, event):
+		
+		
 		if self.histdata==None : return
 		p=QtGui.QPainter()
 		p.begin(self)
@@ -398,7 +430,8 @@ class ImgHistogram(QtGui.QWidget):
 			p.drawLine(i,127,i,127-j*126/self.norm)
 		
 		# If the user has dragged, we need to show a value
-		if self.probe :
+		
+		if (self.probe) and (self.volume == False):
 			p.setPen(Qt.blue)
 			p.drawLine(self.probe[0]+1,0,self.probe[0]+1,127-self.probe[1]*126/self.norm)
 			p.setPen(Qt.red)
@@ -410,29 +443,106 @@ class ImgHistogram(QtGui.QWidget):
 			#p.drawText(200,68,"%1.2f%%"%(100.0*float(self.probe[1])/self.total))
 			p.drawText(150,20,"thres=%1.2f"%self.threshold)
 			p.drawText(150,36,"p(t)=%1.2f%%"%(100.0*float(self.probe[1])/self.total))
-		
-		p.setPen(Qt.black)
-		p.drawRect(0,0,257,128)
-		p.end()
+			
+		else:
 
+			p.setPen(QtGui.QColor(0,0,0))
+			p.setBrush(QtGui.QBrush(Qt.SolidPattern))
+			p.setBrush(QtGui.QColor(self.upcolor[0][0],self.upcolor[0][1],self.upcolor[0][2]))
+			p.drawRect(self.upposition[0][0]-2.5,self.upposition[0][1]-2.5,5,5)
+			p.setBrush(QtGui.QBrush(Qt.NoBrush))
+			
+			p.setPen(QtGui.QColor(0,0,0))
+			p.setBrush(QtGui.QBrush(Qt.SolidPattern))
+			p.setBrush(QtGui.QColor(self.upcolor[1][0],self.upcolor[1][1],self.upcolor[1][2]))
+			p.drawRect(self.upposition[1][0]-2.5,self.upposition[1][1]-2.5,5,5)
+			p.setBrush(QtGui.QBrush(Qt.NoBrush))
+			
+			p.setPen(QtGui.QColor(0,0,0))
+			p.setBrush(QtGui.QBrush(Qt.SolidPattern))
+			p.setBrush(QtGui.QColor(self.upcolor[2][0],self.upcolor[2][1],self.upcolor[2][2]))
+			p.drawRect(self.upposition[2][0]-2.5,self.upposition[2][1]-2.5,5,5)
+			
+			p.setBrush(QtGui.QBrush(Qt.NoBrush))
+			
+			p.setPen(Qt.yellow)
+			presentx=self.upposition[self.uppresent][0]
+			presenty=self.upposition[self.uppresent][1]
+			self.uppositioned=sorted(self.upposition)
+			
+			p.drawLine(self.uppositioned[0][0],self.uppositioned[0][1],self.uppositioned[1][0],self.uppositioned[1][1])
+			p.drawLine(self.uppositioned[1][0],self.uppositioned[1][1],self.uppositioned[2][0],self.uppositioned[2][1])
+			
+			self.upcolorpreserve = copy.deepcopy(self.upcolor) 
+			for i in range(3):
+				if (self.uppositioned[i][0]==presentx) and (self.uppositioned[i][1]==presenty):
+					self.uppresent = i
+
+			presentthreshold = (self.upposition[self.uppresent][0]-3)/252.0*(self.maxden-self.minden)+self.minden
+			self.guiparent.level.setText("Level: %1.3f"%presentthreshold)
+			#self.guiparent.cappingcolor.setRgb(self.upcolor[self.uppresent])
+			
+			#p.setPen(QtGui.QColor(self.upcolor[1][0],self.upcolor[1][1],self.upcolor[1][2]))
+			#p.setPen(QtGui.QColor(self.upcolor[2][0],self.upcolor[2][1],self.upcolor[2][2]))
+
+		p.setPen(Qt.black)
+		p.drawRect(0,0,258,128)
+		p.end()
+	
 	def mousePressEvent(self, event):
-		if event.button()==Qt.LeftButton:
+		
+		if (event.button()==Qt.LeftButton) and (self.volume==False):
 			x=max(min(event.x()-1,255),0)
 			self.probe=(x,self.histdata[x])
 			self.threshold = (self.probe[0]/255.0*(self.maxden-self.minden)+self.minden)
-			self.emit(QtCore.SIGNAL("thresholdChanged(float)"), self.threshold)
+			if (self.volume == False):
+				self.emit(QtCore.SIGNAL("thresholdChanged(float)"), self.threshold)
+			self.update()
+		
+		if (event.button()==Qt.LeftButton) and (self.volume):
+			if ((event.x()-self.upposition[0][0])**2+(event.y()-self.upposition[0][1])**2)<49:
+				self.uppresent =0
+				self.mpressed = True
+			elif ((event.x()-self.upposition[1][0])**2+(event.y()-self.upposition[1][1])**2)<49:
+				self.uppresent =1
+				self.mpressed = True
+			elif ((event.x()-self.upposition[2][0])**2+(event.y()-self.upposition[2][1])**2)<49:
+				self.uppresent =2
+				self.mpressed = True
+			else: 
+				self.mpressed = False
+				
+			if (self.mpressed) :
+				self.upposition[self.uppresent][0]=event.x()
+				self.upposition[self.uppresent][1]=event.y()
+				if self.upposition[self.uppresent][0] > 255: self.upposition[self.uppresent][0] =255 
+				if self.upposition[self.uppresent][0] < 3: self.upposition[self.uppresent][0] =3
+				if self.upposition[self.uppresent][1] > 125: self.upposition[self.uppresent][1] =125 
+				if self.upposition[self.uppresent][1] < 3: self.upposition[self.uppresent][1] =3
+				
 			self.update()
 			
 	def mouseMoveEvent(self, event):
-		if event.buttons()&Qt.LeftButton:
+		if (event.buttons()&Qt.LeftButton) and (self.volume==False):
 			x=max(min(event.x()-1,255),0)
 			self.probe=(x,self.histdata[x])
 			self.threshold = (self.probe[0]/255.0*(self.maxden-self.minden)+self.minden)
 			self.emit(QtCore.SIGNAL("thresholdChanged(float)"), self.threshold)
 			self.update()
+		
+		if (Qt.LeftButton) and (self.volume):
+			if self.mpressed:
+				self.upposition[self.uppresent][0]=event.x()
+				self.upposition[self.uppresent][1]=event.y()
+				if self.upposition[self.uppresent][0] > 255: self.upposition[self.uppresent][0] =255 
+				if self.upposition[self.uppresent][0] < 3: self.upposition[self.uppresent][0] =3
+				if self.upposition[self.uppresent][1] > 125:self.upposition[self.uppresent][1] =125 
+				if self.upposition[self.uppresent][1] < 3: self.upposition[self.uppresent][1] =3
+				self.update()
 	
 	def mouseReleaseEvent(self, event):
 		#self.probe=None
+		self.mpressed = False
 		pass
 		
 class EMMetaDataTable(object):

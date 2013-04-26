@@ -41,6 +41,7 @@ from emimageutil import ImgHistogram
 from valslider import ValSlider, EMSpinWidget
 from emshapeitem3d import EMInspectorControlShape
 from emglobjects import get_default_gl_colors
+from valslider import ValSlider, EMLightControls, CameraControls, EMSpinWidget, EMQTColorWidget, EMANToolButton
 import os.path
 import sys
 import math
@@ -859,13 +860,13 @@ class EMVolumeInspector(EMInspectorControlShape):
 		max = data["maximum"]
 		
 		
-		minden = self.item3d().minden
-		maxden = self.item3d().maxden
+		self.minden = self.item3d().minden
+		self.maxden = self.item3d().maxden
 		
 		#self.thr.setRange(minden, maxden)
 		#self.thr.setValue(self.item3d().isothr, True)
 		
-		self.histogram_widget.set_data(self.item3d().histogram_data,minden,maxden)
+		self.histogram_widget.set_data(self.item3d().histogram_data,self.minden,self.maxden)
 
 		self.brightness_slider.setValue(self.item3d().brightness)
 		self.brightness_slider.setRange(-max, -min)
@@ -890,23 +891,72 @@ class EMVolumeInspector(EMInspectorControlShape):
 		volframe = QtGui.QFrame()
 		volframe.setFrameShape(QtGui.QFrame.StyledPanel)
 		vol_grid_layout = QtGui.QGridLayout()
-				
+		
+		probeframe = QtGui.QFrame()		
+		probeframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		probelayout = QtGui.QGridLayout()
+		probelayout.setAlignment(QtCore.Qt.AlignTop)
+		self.range = QtGui.QLabel("Range: %1.3f, %1.3f"%(self.item3d().minden,self.item3d().maxden))
+		self.level = QtGui.QLabel("Level: %1.3f"%self.item3d().isothr)
+		self.level.setFixedSize(100,40)
+		self.color = QtGui.QLabel("Color:")
+		self.cappingcolor = EMQTColorWidget(parent=self)
+
+		probelayout.addWidget(self.range, 0, 0, 1, 1)
+		probelayout.addWidget(self.level, 0, 1, 1, 1)
+		probelayout.addWidget(self.color, 0, 2, 1, 1)
+		probelayout.addWidget(self.cappingcolor, 0, 3, 1, 1)
+		probeframe.setLayout(probelayout)
+
+#		paramframe = QtGui.QFrame()
 		self.brightness_slider = ValSlider(label="Bright:")
 		self.contrast_slider = ValSlider(label="Contr:")
 		
 		vol_grid_layout.addWidget(self.histogram_widget, 0, 0, 1, 1)
-		vol_grid_layout.addWidget(self.brightness_slider, 1, 0, 1, 1)
-		vol_grid_layout.addWidget(self.contrast_slider, 2, 0, 1, 1)
-		vol_grid_layout.setRowStretch(2,1)
+		vol_grid_layout.addWidget(probeframe, 1,0,1,1,)
+		vol_grid_layout.addWidget(self.brightness_slider, 2, 0, 1, 1)
+		vol_grid_layout.addWidget(self.contrast_slider, 3, 0, 1, 1)
+		
+		self.level.setAlignment(QtCore.Qt.AlignCenter)
+		vol_grid_layout.setRowStretch(4,1)
+		vol_grid_layout.setColumnStretch(1,10)
+		vol_grid_layout.setColumnStretch(2,10)
 
 		volframe.setLayout(vol_grid_layout)
 		gridbox.addWidget(volframe, 2, 0, 2, 1)
-		
-		
-		
 		if type(self) == EMVolumeInspector: self.updateItemControls()
-		self.histogram_widget.setProbe(self.item3d().isothr) # The needs to be node AFTER the data is set
-	
+		
+		###
+		transp=0.85
+		self.probeposition=[[self.item3d().isothr,0],[(self.item3d().isothr+self.item3d().maxden)/2,transp],[self.item3d().maxden,transp]]
+		self.probepresent=0;
+
+		levelvalue =  self.probeposition[self.probepresent][0]
+		
+		if (self.maxden-self.minden) != 0:
+			for i in range(3):
+				self.probeposition[i][0] = int(255.0*(self.probeposition[i][0] - self.minden)/(self.maxden-self.minden))
+				self.probeposition[i][1] = int(125 - 125.0*(self.probeposition[i][1]))
+				if self.probeposition[i][0] > 255: self.probeposition[i][0] = 255
+				if self.probeposition[i][0] < 3: self.probeposition[i][0] = 3
+				if self.probeposition[i][1] > 125: self.probeposition[i][1]=125
+				if self.probeposition[i][1] < 3 : self.probeposition[i][1] =3
+		self.probecolor=[[255,255,255],[255,255,255],[255,255,255]]
+		
+		self.histogram_widget.setDynamicProbe(self.probeposition, self.probecolor, self.probepresent,levelvalue) # The needs to be node AFTER the data is set
+		
+		QtCore.QObject.connect(self.cappingcolor,QtCore.SIGNAL("newcolor(QColor)"),self._on_cap_color)
+
+	def _on_cap_color(self, color):
+		rgb = color.getRgb()
+		self.histogram_widget.setColor(rgb)
+
+		'''
+		self.scenegraph().makeCurrent()
+		self.scenegraph().camera.setCapColor(float(rgb[0])/255.0, float(rgb[1])/255.0, float(rgb[2])/255.0)
+		if self.scenegraph().camera.getCappingMode(): self.updateSceneGraph()
+		'''
+
 	def onBrightnessSlider(self):
 		self.item3d().brightness = self.brightness_slider.getValue()
 		self.item3d().force_texture_update = True
@@ -1070,6 +1120,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		# Set to default, but run only once and not in each base class
 		if type(self) == EMIsosurfaceInspector: self.updateItemControls()
 		self.histogram_widget.setProbe(self.item3d().isothr) # The needs to be node AFTER the data is set
+
 		
 	def onFileBrowse(self):
 		""" Find a color map file """
@@ -1112,8 +1163,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		self.inspector().updateSceneGraph()
 	
 	def onHistogram(self, val):
-		print "self.item3d()=",self.item3d()
-		print "self.inspector()=",self.inspector() 
+ 
 		self.thr.setValue(val, quiet=1)
 		self.item3d().setThreshold(val)
 		self.inspector().updateSceneGraph()
