@@ -8711,14 +8711,12 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 		# apply ctf, if ctf option is set and if we can create a valid CTF object
 		try:
 			from utilities import generate_ctf
-			ctf = generate_ctf([ctfs[i][0], ctfs[i][1], ctfs[i][2], ctfs[i][3], ctfs[i][4], ctfs[i][5]])
-			#ctf = EMAN2Ctf()
-			## order of values is the one applied in sxheader for import / export!
-			#ctf.from_dict({ "defocus":ctfs[i][0], "cs":ctfs[i][1], "voltage":ctfs[i][2], 
-			#		"apix":ctfs[i][3], "bfactor":ctfs[i][4], "ampcont":ctfs[i][5] })
+			if(len(ctfs[i]) == 6):  ctf = generate_ctf([ctfs[i][0], ctfs[i][1], ctfs[i][2], ctfs[i][3], ctfs[i][4], ctfs[i][5]])
+			elif(len(ctfs[i]) == 8):  ctf = generate_ctf([ctfs[i][0], ctfs[i][1], ctfs[i][2], ctfs[i][3], ctfs[i][4], ctfs[i][5], ctfs[i][6], ctfs[i][7]])
+			else:  1.0/0.0
 		except:
 			# there are no ctf values, so ignore this and set no values
-			proj.set_attr( "error",1)
+			ERROR("Incorrect ctf values","project3d",1)
 		else:
 			# setting of values worked, so apply ctf and set the header info correctly
 			proj = filt_ctf(proj,ctf)
