@@ -1533,47 +1533,44 @@ class ctf_store
 {
 public:
 
-    static void init( int winsize, const Ctf* ctf )
-    {
-        Dict params = ctf->to_dict();
+    static void init( int winsize, const Ctf* ctf ) {
+		Dict params = ctf->to_dict();
 
-        m_winsize = winsize;
+		m_winsize = winsize;
 
-	m_voltage = params["voltage"];
-	m_pixel   = params["apix"];
-	m_cs      = params["cs"];
-	m_ampcont = params["ampcont"];
-	m_bfactor = params["bfactor"];
-        m_defocus = params["defocus"];
-	m_dza     = params["dfdiff"];
-	m_azz     = params["dfang"];
-        m_winsize2= m_winsize*m_winsize;
-        m_vecsize = m_winsize2/4;
+		m_voltage = params["voltage"];
+		m_pixel   = params["apix"];
+		m_cs      = params["cs"];
+		m_ampcont = params["ampcont"];
+		m_bfactor = params["bfactor"];
+		m_defocus = params["defocus"];
+		m_dza     = params["dfdiff"];
+		m_azz     = params["dfang"];
+		m_winsize2= m_winsize*m_winsize;
+		m_vecsize = m_winsize2/4;
     }
 
-    static float get_ctf( int r2 ,int i, int j)
-    {
-        float  ak = std::sqrt( r2/float(m_winsize2) )/m_pixel;
-	if(m_dza == 0.0f)
-        	return Util::tf( m_defocus, ak, m_voltage, m_cs, m_ampcont, m_bfactor, 1);
-	else {
-		float az = atan2(float(j), float(i));
-		float dzz = m_defocus + m_dza/2.0f*sin(2*(az-m_azz*M_PI/180.0f - M_PI/2.0f));
-		return Util::tf( dzz, ak, m_voltage, m_cs, m_ampcont, m_bfactor, 1);
+    static float get_ctf( int r2 ,int i, int j) {
+		float  ak = std::sqrt( r2/float(m_winsize2) )/m_pixel;
+		if(m_dza == 0.0f)  return Util::tf( m_defocus, ak, m_voltage, m_cs, m_ampcont, m_bfactor, 1);
+		else {
+			float az = atan2(float(j), float(i));
+			float dzz = m_defocus - m_dza/2.0f*sin(2*(az+m_azz*M_PI/180.0f));
+			return Util::tf( dzz, ak, m_voltage, m_cs, m_ampcont, m_bfactor, 1);
+		}
 	}
-    }
 
 private:
 
-    static int m_winsize, m_winsize2, m_vecsize;
-    static float m_cs;
-    static float m_voltage;
-    static float m_pixel;
-    static float m_ampcont;
-    static float m_bfactor;
-    static float m_defocus;
-    static float m_dza;
-    static float m_azz;
+	static int m_winsize, m_winsize2, m_vecsize;
+	static float m_cs;
+	static float m_voltage;
+	static float m_pixel;
+	static float m_ampcont;
+	static float m_bfactor;
+	static float m_defocus;
+	static float m_dza;
+	static float m_azz;
 };
 
 
@@ -1588,41 +1585,39 @@ class ctf_store_new
 {
 public:
 
-    static void init( int winsize, const Ctf* ctf )
-    {
-        Dict params = ctf->to_dict();
+	static void init( int winsize, const Ctf* ctf ) {
+		Dict params = ctf->to_dict();
 
-        m_winsize = winsize;
+		m_winsize = winsize;
 
-	m_voltage = params["voltage"];
-	m_pixel   = params["apix"];
-	m_cs      = params["cs"];
-	m_ampcont = params["ampcont"];
-	m_bfactor = params["bfactor"];
-        m_defocus = params["defocus"];
-	m_dza     = params["dfdiff"];
-	m_azz     = params["dfang"];
-        m_winsize2= m_winsize*m_winsize;
-        m_vecsize = m_winsize2/4;
+		m_voltage = params["voltage"];
+		m_pixel   = params["apix"];
+		m_cs      = params["cs"];
+		m_ampcont = params["ampcont"];
+		m_bfactor = params["bfactor"];
+		m_defocus = params["defocus"];
+		m_dza     = params["dfdiff"];
+		m_azz     = params["dfang"];
+		m_winsize2= m_winsize*m_winsize;
+		m_vecsize = m_winsize2/4;
     }
 
-    static float get_ctf( float r2 )
-    {
-        float ak = std::sqrt( r2/float(m_winsize2) )/m_pixel;
-        return Util::tf( m_defocus, ak, m_voltage, m_cs, m_ampcont, m_bfactor, 1);
+    static float get_ctf( float r2 ) {  //  HAS TO BE CORRECTED AS astigmatism m_dza and m_azz is not used!!  PAP 04/27/2013
+		float ak = std::sqrt( r2/float(m_winsize2) )/m_pixel;
+		return Util::tf( m_defocus, ak, m_voltage, m_cs, m_ampcont, m_bfactor, 1);
     }
 
 private:
 
-    static int m_winsize, m_winsize2, m_vecsize;
-    static float m_cs;
-    static float m_voltage;
-    static float m_pixel;
-    static float m_ampcont;
-    static float m_bfactor;
-    static float m_defocus;
-    static float m_dza;
-    static float m_azz;
+	static int m_winsize, m_winsize2, m_vecsize;
+	static float m_cs;
+	static float m_voltage;
+	static float m_pixel;
+	static float m_ampcont;
+	static float m_bfactor;
+	static float m_defocus;
+	static float m_dza;
+	static float m_azz;
 };
 
 
@@ -1635,17 +1630,17 @@ float ctf_store_new::m_defocus, ctf_store_new::m_dza, ctf_store_new::m_azz;
 
 
 //  Helper functions for method nn4_ctf
-void EMData::onelinenn_ctf(int j, int n, int n2,
-		          EMData* w, EMData* bi, const Transform& tf, int mult) {//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
+void EMData::onelinenn_ctf(int j, int n, int n2, EMData* w, EMData* bi, const Transform& tf, int mult) {
+//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 
-        int remove = bi->get_attr_default( "remove", 0 );
+	int remove = bi->get_attr_default( "remove", 0 );
 
 	int jp = (j >= 0) ? j+1 : n+j+1;
 	// loop over x
 	for (int i = 0; i <= n2; i++) {
 	        int r2 = i*i+j*j;
 		if ( (r2<n*n/4) && !((0==i) && (j<0)) ) {
-		        float ctf = ctf_store::get_ctf( r2, i, j ); //This is in 2D projection plane
+			float ctf = ctf_store::get_ctf( r2, i, j ); //This is in 2D projection plane
 			float xnew = i*tf[0][0] + j*tf[1][0];
 			float ynew = i*tf[0][1] + j*tf[1][1];
 			float znew = i*tf[0][2] + j*tf[1][2];
@@ -2124,10 +2119,10 @@ void EMData::nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myf
 	vector<int> saved_offsets = get_array_offsets();
 	vector<int> myfft_saved_offsets = myfft->get_array_offsets();
 	set_array_offsets(0,1,1);
-       	myfft->set_array_offsets(0,1);
+	myfft->set_array_offsets(0,1);
 
 	Ctf* ctf = myfft->get_attr("ctf");
-        ctf_store::init( ny, ctf );
+	ctf_store::init( ny, ctf );
 	int iymin = is_fftodd() ? -ny/2 : -ny/2 + 1;
 	int iymax = ny/2;
 	int izmin = is_fftodd() ? -nz/2 : -nz/2 + 1;
@@ -2138,7 +2133,7 @@ void EMData::nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myf
 		for (int ix = 0; ix <= nxc; ix++) {
 			int r2 = ix*ix+iy*iy;
         		if (( 4*r2 < ny*ny ) && !( ix == 0 && iy < 0 ) ) {
-			        float  ctf = ctf_store::get_ctf( r2, ix, iy )*10.f;// ???PAP
+				float  ctf = ctf_store::get_ctf( r2, ix, iy )*10.f;// ???PAP
 				float xnew = ix*tf[0][0] + iy*tf[1][0];
 				float ynew = ix*tf[0][1] + iy*tf[1][1];
 				float znew = ix*tf[0][2] + iy*tf[1][2];
@@ -6221,7 +6216,7 @@ EMData* EMData::delete_disconnected_regions(int ix, int iy, int iz) {
 	return result;
 }
 
-#define    QUADPI      		        3.141592653589793238462643383279502884197
+#define    QUADPI      		    3.141592653589793238462643383279502884197
 #define    DGR_TO_RAD    		QUADPI/180
 
 EMData* EMData::helicise(float pixel_size, float dp, float dphi, float section_use, float radius, float minrad) {

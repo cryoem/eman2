@@ -3328,10 +3328,8 @@ int nn4_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform& 
 	
 	vector<Transform> tsym = t.get_sym_proj(m_symmetry);
 	for (unsigned int isym=0; isym < tsym.size(); isym++) {
-		if(ctf_applied) m_volume->nn_ctf_applied(m_wptr, padfft, tsym[isym], mult);
-				
+		if(ctf_applied) m_volume->nn_ctf_applied(m_wptr, padfft, tsym[isym], mult);		
 		else            m_volume->nn_ctf(m_wptr, padfft, tsym[isym], mult);
-		
         }
 
 
