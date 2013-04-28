@@ -424,7 +424,7 @@ def main():
 				modname = 'model' + str(i).zfill(5)
 				resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
 	
-		
+			resfiles = []
 			findir = os.listdir(resultsdir)
 			for f in findir:
 				if 'error.txt' in f:
