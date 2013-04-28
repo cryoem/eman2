@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Steven Ludtke, 02/15/2011 - using code and concepts drawn from Jesus Galaz's scripts
+# Author: Steven Ludtke, 02/15/2011, Jesus Galaz-Montoya 03/2011. Last modification: 04/2013
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -78,13 +78,20 @@ def main():
 	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", returnNone=True, default="mask.sharp:outer_radius=-2", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=11, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	parser.add_argument("--normproc",type=str,help="Normalization processor applied to particles before alignment. Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'", default="normalize.mask")
 	
-	parser.add_argument("--preprocess",type=str,help="Any processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--preprocess",type=str,help="Any processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--preprocessfine",type=str,help="Any processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.", default=None)
 	
-	parser.add_argument("--lowpass",type=str,help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=17, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--lowpass",type=str,help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=17, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--lowpassfine",type=str,help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.", default=None)
 
-	parser.add_argument("--highpass",type=str,help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=18, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--highpass",type=str,help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=18, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--highpassfine",type=str,help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.", default=None)
+
+	parser.add_argument("--postprocess",type=str,help="A processor to be applied to the FINAL volume after averaging the raw volumes in their FINAL orientations, after all iterations are done.",default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=16, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
-	parser.add_argument("--ncoarse", type=int, help="Deprecated", default=None)
+	parser.add_argument("--procfinelikecoarse",type=bool,default=True,help="Turn on with --procfinelikecoarse=False, and supply fine alignment parameters, such as --lowpassfine, --highpassfine, etc; to preprocess the particles for FINE alignment differently than for COARSE alignment.")
+	
+	parser.add_argument("--ncoarse", type=int, help="Deprecated. Use --npeakstorefine instead.", default=None)
 	parser.add_argument("--npeakstorefine", type=int, help="The number of best coarse alignments to refine in search of the best final alignment. Default=4.", default=4, guitype='intbox', row=9, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym[1]')
 	parser.add_argument("--align",type=str,help="This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=10:delta=15:dphi=15, specify 'None' to disable", returnNone=True, default="rotate_translate_3d:search=10:delta=15:dphi=15", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'3d\')', row=12, col=0, rowspan=1, colspan=3, nosharedb=True, mode="alignment,breaksym['rotate_symmetry_3d']")
 	parser.add_argument("--aligncmp",type=str,help="The comparator used for the --align aligner. Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.",default="ccc.tomo", guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=13, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
@@ -99,7 +106,6 @@ def main():
 	parser.add_argument("--randomizewedge",action="store_true", help="This parameter is EXPERIMENTAL. It randomizes the position of the particles BEFORE alignment, to minimize missing wedge bias and artifacts during symmetric alignment where only a fraction of space is scanned", default=False,)
 	parser.add_argument("--savepreprocessed",action="store_true", help="Will save stacks of preprocessed particles (one for coarse alignment and one for fine alignment if preprocessing options are different).", default=False,)
 	parser.add_argument("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False, guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
-	parser.add_argument("--postprocess",type=str,help="A processor to be applied to the volume after averaging the raw volumes, before subsequent iterations begin.",default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=16, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	parser.add_argument("--nocenterofmass", action="store_true", help="Disable Centering of mass of the subtomogram every iteration.", default=False, guitype='boolbox', row=6, col=2, rowspan=1, colspan=1, mode='alignment,breaksym')
 	
 	#parser.add_argument('--reverse_contrast', action="store_true", default=False, help=""" This multiplies the input particles by -1. Remember that EMAN2 **MUST** work with 'white protein' """)
@@ -107,12 +113,13 @@ def main():
 	parser.add_argument("--shrink", type=int,default=0,help="Optionally shrink the input volumes by an integer amount for coarse alignment.", guitype='shrinkbox', row=5, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
 	parser.add_argument("--shrinkrefine", type=int,default=0,help="Optionally shrink the input volumes by an integer amount for refine alignment.", guitype='intbox', row=5, col=2, rowspan=1, colspan=1, mode='alignment')
 	
-	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:1", guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default='', guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+
+	#parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:1", guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	#parser.add_argument("--automask",action="store_true",help="Applies a 3-D automask before centering. Can help with negative stain data, and other cases where centering is poor.")
 	#parser.add_argument("--resample",action="store_true",help="If set, will perform bootstrap resampling on the particle data for use in making variance maps.",default=False)
 	#parser.add_argument("--odd", default=False, help="Used by EMAN2 when running eotests. Includes only odd numbered particles in class averages.", action="store_true")
 	#parser.add_argument("--even", default=False, help="Used by EMAN2 when running eotests. Includes only even numbered particles in class averages.", action="store_true")
-	
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -123,10 +130,12 @@ def main():
 	parser.add_argument("--wedgeangle",type=float,help="Missing wedge angle",default=60.0)
 	parser.add_argument("--wedgei",type=float,help="Missingwedge begining", default=0.05)
 	parser.add_argument("--wedgef",type=float,help="Missingwedge ending", default=0.5)
-
+	
+	
 	(options, args) = parser.parse_args()
 	print "Wedge paramters ARE defined, see", options.wedgeangle, options.wedgei, options.wedgef
 
+	
 
 	if int(options.groups) > 1 and int(options.iter) > 1:
 		print "ERROR: --groups cannot be > 1 if --iter is > 1."
@@ -136,8 +145,8 @@ def main():
 		parser.print_help()
 		exit(0)
 		
-	if options.ncoarse!=None :
-		print "The ncoarse option has been renamed npeakstorefine"
+	if options.ncoarse:
+		print "ERROR: The ncoarse option has been renamed npeakstorefine"
 		sys.exit(1)
 	
 	if options.align: 
@@ -170,6 +179,9 @@ def main():
 		
 	if options.lowpass: 
 		options.lowpass=parsemodopt(options.lowpass)
+		
+	if options.lowpassfine: 
+		options.lowpassfine=parsemodopt(options.lowpassfine)
 	
 	if options.highpass: 
 		options.highpass=parsemodopt(options.highpass)
@@ -204,7 +216,7 @@ def main():
 	
 	if not options.path: 
 		options.path="bdb:"+numbered_path("spt",True)
-	
+		
 	hdr = EMData(options.input,0,True)
 	nx = hdr["nx"]
 	ny = hdr["ny"]
@@ -255,6 +267,8 @@ def main():
 
 	# Initialize parallelism if being used
 	if options.parallel :
+		print "\n\nINITIALIZING PARALLELISM!"
+		print "\n\n"
 		from EMAN2PAR import EMTaskCustomer
 		etc=EMTaskCustomer(options.parallel)
 		pclist=[options.input]
@@ -321,22 +335,30 @@ def main():
 				for j in range(0,nseed/(2**i),2):
 
 					# Unfortunately this tree structure limits the parallelism to the number of pairs at the current level :^(
-					task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
-						options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,transform,options.verbose-1,options.randomizewedge,options.wedgeangle,options.wedgei,options.wedgef)
-					tasks.append(task)
-
+					if options.parallel:
+						#task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
+						#	options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,transform,options.verbose-1,options.randomizewedge,options.wedgeangle,options.wedgei,options.wedgef)
+						task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options,transform)
+						tasks.append(task)
+					else:
+						print "No parallelism specified"
+						result=align3Dfunc(ref,p,options)
+						results.append(result)
+						
 				# Start the alignments for this level
-				tids=etc.send_tasks(tasks)
-				if options.verbose: 
-					print "%d tasks queued in seedtree level %d"%(len(tids),i) 
+				if options.parallel:
+					tids=etc.send_tasks(tasks)
+					if options.verbose: 
+						print "%d tasks queued in seedtree level %d"%(len(tids),i) 
 
-				# Wait for alignments to finish and get results
-				results=get_results(etc,tids,options.verbose)
+					# Wait for alignments to finish and get results
+					results=get_results(etc,tids,options.verbose)
 
-				if options.verbose>2 : 
-					print "Results:"
-					pprint(results)
+					if options.verbose>2 : 
+						print "Results:"
+						pprint(results)
 				
+				print "before make average results are", results
 				
 				make_average_pairs(infile,outfile,results,options.averager,options.nocenterofmass)
 				
@@ -351,30 +373,44 @@ def main():
 			# In 2-D class-averaging, each alignment is fast, so we send each node a class-average to make
 			# in 3-D each alignment is very slow, so we use a single ptcl->ref alignment as a task
 			tasks=[]
+			results=[]
 			for p in ptcls:
 				if options.inixforms:
 					transform = db["tomo_%04d"%p]
 				else:
 					transform = None
-				task=Align3DTask(ref,["cache",options.input,p],p,"Ptcl %d in iter %d"%(p,it),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
-					options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,transform,options.verbose-1,options.randomizewedge,options.wedgeangle,options.wedgei,options.wedgef)
-				tasks.append(task)
+				
+				if options.parallel:
+					#task=Align3DTask(ref,["cache",options.input,p],p,"Ptcl %d in iter %d"%(p,it),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
+					#	options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,transform,options.verbose-1,options.randomizewedge,options.wedgeangle,options.wedgei,options.wedgef)
+					task=Align3DTask(ref,["cache",options.input,p],p,"Ptcl %d in iter %d"%(p,it),options,transform)
+					tasks.append(task)
+				else:
+					print "No parallelism specified"
+					result=align3Dfunc(ref,p,options)
+					results.append(result)
 			
 			# start the alignments running
-			tids=etc.send_tasks(tasks)
-			if options.verbose: 
-				print "%d tasks queued in class %d iteration %d"%(len(tids),ic,it) 
+			if options.parallel:
+				tids=etc.send_tasks(tasks)
+				if options.verbose: 
+					print "%d tasks queued in class %d iteration %d"%(len(tids),ic,it) 
 
-			# Wait for alignments to finish and get results
-			results=get_results(etc,tids,options.verbose)
+				# Wait for alignments to finish and get results
+				results=get_results(etc,tids,options.verbose)
 
-			if options.verbose>2 : 
-				print "Results:"
-				pprint(results)
-			
-			
+				if options.verbose>2 : 
+					print "Results:"
+					pprint(results)
+			else:
+				print "No parallelism specified"
+				results=tasks
+				print "Results are", results
+						
 			#The reference for the next iteration should ALWAYS be the RAW AVERAGE of the aligned particles, since the reference will be "pre-processed" identically to the raw particles.
 			#There should be NO post-processing of the final averages, EXCEPT for visualization purposes (so, postprocessing is only applied to write out the output, if specified.
+			
+			print "\n\n\n\n\n\n\n\n\n\nBefore make average, results are", results
 			
 			ref = make_average(options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.sym,options.groups,options.breaksym,options.nocenterofmass,options.verbose,it)
 	
@@ -449,72 +485,93 @@ def postprocess(img,optmask,optnormproc,optpostprocess):
 		img.process_inplace(optpostprocess[0],optpostprocess[1])
 	return()
 
-"""
-def preprocessing(options,nptcl):
-	print "I am in the preprocessing function"
-	for i in range(nptcl):
-		image=EMData(options.input,i)
 
-		# Make the mask first, use it to normalize (optionally), then apply it 
-		mask=EMData(image["nx"],image["ny"],image["nz"])
-		mask.to_one()
+def preprocessing(options,image):
+	print "I am in the preprocessing function"
+	
+	'''
+	Make the mask first, use it to normalize (optionally), then apply it 
+	'''
+	mask=EMData(image["nx"],image["ny"],image["nz"])
+	mask.to_one()
+	
+	if options.mask:
+		if options.verbose:
+			print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
+		mask.process_inplace(options.mask[0],options.mask[1])
+	
+	# normalize
+	if options.normproc:
+		if options.normproc[0]=="normalize.mask": 
+			options.normproc[1]["mask"]=mask
 		
-		if options.mask:
-			if options.verbose:
-				print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
-			mask.process_inplace(options.mask[0],options.mask[1])
+		#fixedimage.process_inplace(options["normproc"][0],options["normproc"][1])
+		image.process_inplace(options.normproc[0],options.normproc[1])
+	
+	'''
+	#Mask after normalizing with the mask you just made, which is just a box full of 1s if no mask is specified
+	'''
+	#fixedimage.mult(mask)
+	image.mult(mask)
+	
+	baseimage = image.copy()
+	
+	#'''
+	#If normalizing, it's best to do normalize-mask-normalize-mask
+	#'''
+	#if options["normproc"]:
+	#	#if options["normproc"][0]=="normalize.mask": 
+	#	#	options["normproc"][1]["mask"]=mask
+	#	
+	#	fixedimage.process_inplace(options["normproc"][0],options["normproc"][1])
+	#	image.process_inplace(options["normproc"][0],options["normproc"][1])
+	#
+	#	fixedimage.mult(mask)
+	#	image.mult(mask)
+	
+	'''
+	#Preprocess, lowpass and/or highpass
+	'''
+	if options.preprocess:
+		#fixedimage.process_inplace(options["preprocess"][0],options["preprocess"][1])
+		image.process_inplace(options.preprocess[0],options.preprocess[1])
 		
-		# normalize
-		if options.normproc:
-			if options.normproc[0]=="normalize.mask": 
-				options.normproc[1]["mask"]=mask
-			
-			image.process_inplace(options.normproc[0],options.normproc[1])
+	if options.lowpass:
+		#fixedimage.process_inplace(options["lowpass"][0],options["lowpass"][1])
+		image.process_inplace(options.lowpass[0],options.lowpass[1])
 		
-		'''
-		#Mask after normalizing with the mask you just made, which is just a box full of 1s if no mask is specified
-		'''
-		image.mult(mask)
+	if options.highpass:
+		#fixedimage.process_inplace(options["highpass"][0],options["highpass"][1])
+		image.process_inplace(options.highpass[0],options.highpass[1])
+	
+	'''
+	#Shrinking both for initial alignment and reference
+	'''
+	if options.shrink and options.shrink > 1 :
+		#sfixedimage=fixedimage.process("math.meanshrink",{"n":options["shrink"]})
+		simage=image.process("math.meanshrink",{"n":options.shrink})
+	else:
+		#sfixedimage=fixedimage
+		simage=image
+	
+	s2image = simage
+	
+	if not options.procfinelikecoarse:
+		s2image = baseimage.copy()
+		if options.lowpassfine:		
+			s2image.process_inplace(options.lowpassfine[0],options.lowpassfine[1])
 		
-		'''
-		#If normalizing, it's best to do normalize-mask-normalize-mask
-		'''
-		if options.normproc:
-			image.process_inplace(options.normproc[0],options.normproc[1])
-			image.mult(mask)
+		if options.highpassfine:		
+			s2image.process_inplace(options.lowpassfine[0],options.lowpassfine[1])
 		
-		'''
-		#Preprocess, lowpass and/or highpass
-		'''
-		if options.preprocess != None:
-			image.process_inplace(options.preprocess[0],options.preprocess[1])
-			
-		if options.lowpass != None:
-			image.process_inplace(options.lowpass[0],options.lowpass[1])
-			
-		if options.highpass != None:
-			image.process_inplace(options.highpass[0],options.highpass[1])
+		if options.preprocessfine:		
+			s2image.process_inplace(options.lowpassfine[0],options.lowpassfine[1])
 		
-		'''
-		#Shrinking both for initial alignment and reference
-		'''
-		if options.shrink and options.shrink>1 :
-			simage=image.process("math.meanshrink",{"n":options.shrink})
-			simage.write_image(options.path + '/preprocessedCoarse',i)
-		else:
-			simage=image
-			simage.write_image(options.path + '/preprocessedCoarse',i)
-		
-		if options.shrinkrefine and options.shrinkrefine>1 :
-			if options.shrinkrefine == options.shrink:
-				s2image=simage
-			else:
-				s2image=image.process("math.meanshrink",{"n":options.shrinkrefine})
-				s2image.write_image(options.path + '/preprocessedFine',i)
-		else:
-			s2image=image
-	return()
-"""
+		if options.shrinkrefine and options.shrinkrefine > 1 :
+			s2image.process_inplace("math.meanshrink",{"n":options.shrinkrefine})
+	
+	return(simage,s2image)
+	
 
 def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,keepsig,symmetry,groups,breaksym,nocenterofmass,verbose=1,it=1):
 	"""Will take a set of alignments and an input particle stack filename and produce a new class-average.
@@ -735,7 +792,7 @@ def get_results(etc,tids,verbose):
 			if prog==-1 : nwait+=1
 			if prog==100 :
 				r=etc.get_results(tidsleft[i])		# results for a completed task
-				ptcl=r[0].options["ptcl"]			# get the particle number from the task rather than trying to work back to it
+				ptcl=r[0].classoptions["ptcl"]			# get the particle number from the task rather than trying to work back to it
 				results[ptcl]=r[1]["final"]			# this will be a list of (qual,Transform)
 				ncomplete+=1
 		
@@ -761,23 +818,26 @@ def wedgestats(volume,angle, wedgei, wedgef):
 class Align3DTask(EMTask):
 	"""This is a task object for the parallelism system. It is responsible for aligning one 3-D volume to another, with a variety of options"""
 
-	def __init__(self,fixedimage,image,ptcl,label,mask,normproc,preprocess,lowpass,highpass,npeakstorefine,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,transform,verbose,randomizewedge,wedgeangle,wedgei,wedgef):
+	#def __init__(self,fixedimage,image,ptcl,label,mask,normproc,preprocess,lowpass,highpass,npeakstorefine,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,transform,verbose,randomizewedge,wedgeangle,wedgei,wedgef):
+	def __init__(self,fixedimage,image,ptcl,label,options,transform):
+	
 		"""fixedimage and image may be actual EMData objects, or ["cache",path,number]
-	label is a descriptive string, not actually used in processing
-	ptcl is not used in executing the task, but is for reference
-	other parameters match command-line options from e2spt_classaverage.py
-	Rather than being a string specifying an aligner, 'align' may be passed in as a Transform object, representing a starting orientation for refinement"""
+		label is a descriptive string, not actually used in processing
+		ptcl is not used in executing the task, but is for reference
+		other parameters match command-line options from e2spt_classaverage.py
+		Rather than being a string specifying an aligner, 'align' may be passed in as a Transform object, representing a starting orientation for refinement"""
 		data={}
 		data={"fixedimage":fixedimage,"image":image}
+		
 		EMTask.__init__(self,"ClassAv3d",data,{},"")
 
-		self.options={"ptcl":ptcl,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"lowpass":lowpass,"highpass":highpass,"npeakstorefine":npeakstorefine,"align":align,"aligncmp":aligncmp,"ralign":ralign,"raligncmp":raligncmp,"shrink":shrink,"shrinkrefine":shrinkrefine,"transform":transform,"verbose":verbose,"randomizewedge":randomizewedge,"wedgeangle":wedgeangle,"wedgei":wedgei,"wedgef":wedgef}
+		self.classoptions={"options":options,"ptcl":ptcl,"label":label,"mask":options.mask,"normproc":options.normproc,"preprocess":options.preprocess,"lowpass":options.lowpass,"highpass":options.highpass,"npeakstorefine":options.npeakstorefine,"align":options.align,"aligncmp":options.aligncmp,"ralign":options.ralign,"raligncmp":options.raligncmp,"shrink":options.shrink,"shrinkrefine":options.shrinkrefine,"transform":transform,"verbose":options.verbose,"randomizewedge":options.randomizewedge,"wedgeangle":options.wedgeangle,"wedgei":options.wedgei,"wedgef":options.wedgef}
 	
 	def execute(self,callback=None):
 		"""This aligns one volume to a reference and returns the alignment parameters"""
-		options=self.options
-		if options["verbose"]: 
-			print "Aligning ",options["label"]
+		classoptions=self.classoptions
+		if classoptions["verbose"]: 
+			print "Aligning ",classoptions["label"]
 
 		if isinstance(self.data["fixedimage"],EMData):
 			fixedimage=self.data["fixedimage"]
@@ -789,100 +849,47 @@ class Align3DTask(EMTask):
 		else: 
 			image=EMData(self.data["image"][1],self.data["image"][2])
 		
-		# Preprocessing currently applied to both volumes. Often 'fixedimage' will be a reference, though, 
-		# so may need to rethink whether it should be treated identically. Similar issues in 2-D single particle
-		# refinement ... handled differently at the moment
+		"""
+		PREPROCESSING CALL 
+		Currently applied to both volumes. Often 'fixedimage' will be a reference, so may need to rethink whether it should be treated identically. 
+		Similar issues in 2-D single particle refinement ... handled differently at the moment
+		"""
 		
-		# Make the mask first, use it to normalize (optionally), then apply it 
-		mask=EMData(image["nx"],image["ny"],image["nz"])
-		mask.to_one()
-		
-		if options["mask"]:
-			if options["verbose"]:
-				print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options["mask"][0],options["mask"][1]) 
-			mask.process_inplace(options["mask"][0],options["mask"][1])
-		
-		# normalize
-		if options["normproc"]:
-			if options["normproc"][0]=="normalize.mask": 
-				options["normproc"][1]["mask"]=mask
-			
-			fixedimage.process_inplace(options["normproc"][0],options["normproc"][1])
-			image.process_inplace(options["normproc"][0],options["normproc"][1])
-		
-		'''
-		#Mask after normalizing with the mask you just made, which is just a box full of 1s if no mask is specified
-		'''
-		fixedimage.mult(mask)
-		image.mult(mask)
-		
-		'''
-		#If normalizing, it's best to do normalize-mask-normalize-mask
-		'''
-		if options["normproc"]:
-			#if options["normproc"][0]=="normalize.mask": 
-			#	options["normproc"][1]["mask"]=mask
-			
-			fixedimage.process_inplace(options["normproc"][0],options["normproc"][1])
-			image.process_inplace(options["normproc"][0],options["normproc"][1])
-		
-			fixedimage.mult(mask)
-			image.mult(mask)
-		
-		'''
-		#Preprocess, lowpass and/or highpass
-		'''
-		if options["preprocess"] != None:
-			fixedimage.process_inplace(options["preprocess"][0],options["preprocess"][1])
-			image.process_inplace(options["preprocess"][0],options["preprocess"][1])
-			
-		if options["lowpass"] != None:
-			fixedimage.process_inplace(options["lowpass"][0],options["lowpass"][1])
-			image.process_inplace(options["lowpass"][0],options["lowpass"][1])
-			
-		if options["highpass"] != None:
-			fixedimage.process_inplace(options["highpass"][0],options["highpass"][1])
-			image.process_inplace(options["highpass"][0],options["highpass"][1])
-		
-		'''
-		#Shrinking both for initial alignment and reference
-		'''
-		if options["shrink"] and options["shrink"]>1 :
-			sfixedimage=fixedimage.process("math.meanshrink",{"n":options["shrink"]})
-			simage=image.process("math.meanshrink",{"n":options["shrink"]})
+		if fixedimage and (classoptions['shrink'] or classoptions['normproc'] or classoptions['lowpass'] or classoptions['highpass'] or classoptions['mask'] or classoptions['preprocess'] or classoptions['lowpassfine'] or classoptions['highpassfine'] or classoptions['preprocessfine']):
+			retfixedimage = preprocessing(classoptions['options'],fixedimage)
+			sfixedimage = retfixedimage[0]
+			s2fixedimage = retfixedimage[1]
 		else:
-			sfixedimage=fixedimage
-			simage=image
-			
-		if options["shrinkrefine"] and options["shrinkrefine"]>1 :
-			if options["shrinkrefine"] == options["shrink"] :
-				s2fixedimage=sfixedimage
-				s2image=simage
-			else:
-				s2fixedimage=fixedimage.process("math.meanshrink",{"n":options["shrinkrefine"]})
-				s2image=image.process("math.meanshrink",{"n":options["shrinkrefine"]})
+			sfixedimage = fixedimage
+			s2fixedimage = fixedimage
+		
+		
+		if image and (classoptions['shrink'] or classoptions['normproc'] or classoptions['lowpass'] or classoptions['highpass'] or classoptions['mask'] or classoptions['preprocess'] or classoptions['lowpassfine'] or classoptions['highpassfine'] or classoptions['preprocessfine']):
+			retimage = preprocessing(classoptions['options'],image)
+			simage = retimage[0]
+			s2image = retimage[1]
 		else:
-			s2fixedimage=fixedimage
-			s2image=image
+			simage = image
+			s2image = image
 			
-		if options["verbose"]: 
+		if classoptions["verbose"]: 
 			print "Align size %d,  Refine Align size %d"%(sfixedimage["nx"],s2fixedimage["nx"])
 
-		if options["aligncmp"][0] == "fsc.tomo" or options["raligncmp"][0] == "fsc.tomo":
+		if classoptions["aligncmp"][0] == "fsc.tomo" or classoptions["raligncmp"][0] == "fsc.tomo":
 			print "THE FSC.TOMO comparator is on", 
-			retr = wedgestats(simage,options['wedgeangle'],options['wedgei'],options['wedgef'])
+			retr = wedgestats(simage,classoptions['wedgeangle'],classoptions['wedgei'],classoptions['wedgef'])
 			simage['spt_wedge_mean'] = retr[0]
 			simage['spt_wedge_sigma'] = retr[1]
 			
-			retr = wedgestats(sfixedimage,options['wedgeangle'],options['wedgei'],options['wedgef'])
+			retr = wedgestats(sfixedimage,classoptions['wedgeangle'],classoptions['wedgei'],classoptions['wedgef'])
 			sfixedimage['spt_wedge_mean'] = retr[0]
 			sfixedimage['spt_wedge_sigma'] = retr[1]
 			
-			retr = wedgestats(s2image,options['wedgeangle'],options['wedgei'],options['wedgef'])
+			retr = wedgestats(s2image,classoptions['wedgeangle'],classoptions['wedgei'],classoptions['wedgef'])
 			s2image ['spt_wedge_mean'] = retr[0]
 			s2image['spt_wedge_sigma'] = retr[1]
 			
-			retr = wedgestats(s2fixedimage,options['wedgeangle'],options['wedgei'],options['wedgef'])
+			retr = wedgestats(s2fixedimage,classoptions['wedgeangle'],classoptions['wedgei'],classoptions['wedgef'])
 			s2fixedimage['spt_wedge_mean'] = retr[0]
 			s2fixedimage['spt_wedge_sigma'] = retr[1]
 			
@@ -891,22 +898,22 @@ class Align3DTask(EMTask):
 		
 		
 		# In some cases we want to prealign the particles
-		if options["transform"]:
-			if options["verbose"]:
-				print "Moving Xfrom", options["transform"]
+		if classoptions["transform"]:
+			if classoptions["verbose"]:
+				print "Moving Xfrom", classoptions["transform"]
 			#options["align"][1]["inixform"] = options["transform"]
-			options["align"][1]["transform"] = options["transform"]
+			classoptions["align"][1]["transform"] = classoptions["transform"]
 			
-			if options["shrink"]>1:
+			if classoptions["shrink"]>1:
 			 	#options["align"][1]["inixform"].set_trans( options["align"][1]["inixform"].get_trans()/float(options["shrinkrefine"]) )
-				options["align"][1]["transform"].set_trans( options["align"][1]["transform"].get_trans()/float(options["shrinkrefine"]) )
+				classoptions["align"][1]["transform"].set_trans( classoptions["align"][1]["transform"].get_trans()/float(classoptions["shrinkrefine"]) )
 			
 		#	if
 		#	bestcoarse=[{"score":1.0,"xform.align3d":options["align"]}]
 		#		bestcoarse[0]["xform.align3d"].set_trans(bestcoarse[0]["xform.align3d"].get_trans()/float(options["shrinkrefine"]))	
 		# If None was passed in we skip coarse alignment and just do fine alignment
 		
-		elif options["randomizewedge"]:
+		elif classoptions["randomizewedge"]:
 			rand_orient = OrientGens.get("rand",{"n":1,"phitoo":1})		#Fetches the orientation generator
 			c1_sym = Symmetries.get("c1")					#Generates the asymmetric unit from which you wish to generate a random orientation
 			random_transform = rand_orient.gen_orientations(c1_sym)[0]	#Generates a random orientation (in a Transform object) using the generator and asymmetric unit specified 
@@ -914,9 +921,9 @@ class Align3DTask(EMTask):
 			#print "\n\n\nOptions['align'][1] is\n", options['align'][1]
 			#print "\n\n\nOptions['align'][0] is\n", options['align'][0]
 			#options["align"][1].update({'inixform' : random_transform})
-			options["align"][1].update({'transform' : random_transform})
+			classoptions["align"][1].update({'transform' : random_transform})
 		
-		if options["align"] == None:
+		if classoptions["align"] == None:
 			bestcoarse=[{"score":1.0,"xform.align3d":Transform()}]
 		
 		# If a Transform was passed in, skip coarse alignment
@@ -931,30 +938,30 @@ class Align3DTask(EMTask):
 			# Returns an ordered vector of Dicts of length options.npeakstorefine. The Dicts in the vector have keys "score" and "xform.align3d"
 			#random_transform = None
 			
-			bestcoarse = simage.xform_align_nbest(options["align"][0],sfixedimage,options["align"][1],options["npeakstorefine"],options["aligncmp"][0],options["aligncmp"][1])
+			bestcoarse = simage.xform_align_nbest(classoptions["align"][0],sfixedimage,classoptions["align"][1],classoptions["npeakstorefine"],classoptions["aligncmp"][0],classoptions["aligncmp"][1])
 			
 			# Scale translation
 			scaletrans=1.0
-			if options["ralign"] and options["shrinkrefine"] :
-				scaletrans=options["shrink"]/float(options["shrinkrefine"])
-			elif options["shrink"]:
-				scaletrans=float(options["shrink"])
+			if classoptions["ralign"] and classoptions["shrinkrefine"] :
+				scaletrans=classoptions["shrink"]/float(classoptions["shrinkrefine"])
+			elif classoptions["shrink"]:
+				scaletrans=float(classoptions["shrink"])
 				
 			if scaletrans>1.0:
 				for c in bestcoarse:
 					c["xform.align3d"].set_trans(c["xform.align3d"].get_trans()*scaletrans)
 
 		# verbose printout
-		if options["verbose"]>1 :
+		if classoptions["verbose"]>1 :
 			for i,j in enumerate(bestcoarse): 
 				print "coarse %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
 
-		if options["ralign"]!=None :
+		if classoptions["ralign"]!=None :
 			# Now loop over the individual peaks and refine each
 			bestfinal=[]
 			for bc in bestcoarse:
-				options["ralign"][1]["xform.align3d"] = bc["xform.align3d"]
-				ali = s2image.align(options["ralign"][0],s2fixedimage,options["ralign"][1],options["raligncmp"][0],options["raligncmp"][1])
+				classoptions["ralign"][1]["xform.align3d"] = bc["xform.align3d"]
+				ali = s2image.align(classoptions["ralign"][0],s2fixedimage,classoptions["ralign"][1],classoptions["raligncmp"][0],classoptions["raligncmp"][1])
 				
 				try: 					
 					bestfinal.append({"score":ali["score"],"xform.align3d":ali["xform.align3d"],"coarse":bc})
@@ -962,12 +969,12 @@ class Align3DTask(EMTask):
 				except:
 					bestfinal.append({"xform.align3d":bc["xform.align3d"],"score":1.0e10,"coarse":bc})
 					
-			if options["shrinkrefine"]>1 :
+			if classoptions["shrinkrefine"]>1 :
 				for c in bestfinal:
-					c["xform.align3d"].set_trans(c["xform.align3d"].get_trans()*float(options["shrinkrefine"]))
+					c["xform.align3d"].set_trans(c["xform.align3d"].get_trans()*float(classoptions["shrinkrefine"]))
 
 			# verbose printout of fine refinement
-			if options["verbose"]>1 :
+			if classoptions["verbose"]>1 :
 				for i,j in enumerate(bestfinal): 
 					print "fine %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
 
@@ -978,19 +985,24 @@ class Align3DTask(EMTask):
 											#because they come before the 'score' key of the dictionary (alphabetically)
 		bestfinal = sorted(bestfinal, key=itemgetter('score'))
 		
-		if options["verbose"]:
+		if classoptions["verbose"]:
 			print "\nThe best peaks sorted are"	#confirm the peaks are adequately sorted
 			for i in bestfinal:
 				print i
 		
 		if bestfinal[0]["score"] == 1.0e10 :
-			print "Error: all refine alignments failed for %s. May need to consider altering filter/shrink parameters. Using coarse alignment, but results are likely invalid."%self.options["label"]
+			print "Error: all refine alignments failed for %s. May need to consider altering filter/shrink parameters. Using coarse alignment, but results are likely invalid."%self.classoptions["label"]
 		
-		if options["verbose"]: 
+		if classoptions["verbose"]: 
 			print "Best %1.5g\t %s"%(bestfinal[0]["score"],str(bestfinal[0]["xform.align3d"]))
-			print "Done aligning ",options["label"]
+			print "Done aligning ",classoptions["label"]
 		
 		return {"final":bestfinal,"coarse":bestcoarse}
+
+
+def align3Dfunc(ref,p,options):
+	pass
+	return
 
 
 def classmx_ptcls(classmx,n):
