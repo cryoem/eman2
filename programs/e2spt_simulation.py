@@ -277,7 +277,9 @@ def main():
 		if options.output:
 			stackname = options.output
 		
+		print "BEFORE RET"
 		ret=subtomosim(options,randptcls, stackname)
+		print "AFTER RET"
 		if ret == 1:
 			os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))	
 		
@@ -376,6 +378,7 @@ and recounstructs a new 3D volume from the simulated tilt series.
 ====================
 '''	
 def subtomosim(options,ptcls,stackname):
+	print "INSIDE SUBTOMOSIM"
 
 	lower_bound = -1 * options.tiltrange
 	upper_bound = options.tiltrange
@@ -409,7 +412,6 @@ def subtomosim(options,ptcls,stackname):
 		px = random.uniform(-1* options.gridholesize/2 + ptcls[i]['nx']/2, options.gridholesize/2 - ptcls[i]['nx']/2)			#random distance in X of the particle's center from the tilt axis, at tilt=0
 																																#The center of a particle cannot be right at the edge of the tomogram; it has to be
 																																#at least ptcl_size/2 away from it
-			
 		alt = lower_bound
 		raw_projections = []
 		ctfed_projections = []
@@ -417,6 +419,7 @@ def subtomosim(options,ptcls,stackname):
 		randT = ptcls[i]['sptsim_randT']
 		
 		for j in range(nslices):
+			#print "Iterating over slices. Am in slice", j
 			t = Transform({'type':'eman','az':0,'alt':alt,'phi':0})				#Generate the projection orientation for each picture in the tilt series
 			
 			dz = -1 * px * numpy.sin(alt)							#Calculate the defocus shift per picture, per particle, depending on the 
@@ -457,29 +460,25 @@ def subtomosim(options,ptcls,stackname):
 				prj_fft.mult(prj_ctf)
 			
 			prj_r = prj_fft.do_ift()							#Go back to real space
-			
+			noise = ''
 			if options.snr and options.snr != 0.0 and options.snr != '0.0' and options.snr != '0':
-				#prj_r.process_inplace('math.addnoise',{'noise':options.snr})
-				
-				#prj_n = EMData(nx,ny)
-				#for i in range(options.snr):				
-				#	prj_n.process_inplace(options.noiseproc[0],options.noiseproc[1])
-				#	prj_r = prj_r + prj_n
-				#prj_n.write_image('NOISE_ptcl' + str(i).zfill(len(str(nslices))) + '.hdf',j)
-				
+				#print "Yes, there IS noise to add"
 				nx=prj_r['nx']
 				ny=prj_r['ny']
 				
-				print "Noise is"
+				#noise = 'noise string'
+				#print "Noise is", noise
 				noise = test_image(1,size=(nx,ny))
-				print noise
+				#print "noise now is img", noise
 				
 				noise2 = noise.process("filter.lowpass.gauss",{"cutoff_abs":.25})
 				noise.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.75})
-				noise = ( noise*3 + noise2*3 ) * options.snr
-	        	
-	        	print "noise is", noise
-	        	prj_r.add(noise)
+				noise = ( noise*3 + noise2*3 ) * int(options.snr)
+				print "noise after processing is", noise
+	        if noise:
+				prj_r.add(noise)
+	        elif options.snr:
+	        	print "WARNING: You specified snr but there's no noise to add, apparently!"
 
 			ctfed_projections.append(prj_r)		
 
@@ -557,3 +556,16 @@ def tomogramsim(options,tomogramdata):
 
 if __name__ == '__main__':
 	main()
+
+
+'''
+NOTES
+			#prj_r.process_inplace('math.addnoise',{'noise':options.snr})
+				
+				#prj_n = EMData(nx,ny)
+				#for i in range(options.snr):				
+				#	prj_n.process_inplace(options.noiseproc[0],options.noiseproc[1])
+				#	prj_r = prj_r + prj_n
+				#prj_n.write_image('NOISE_ptcl' + str(i).zfill(len(str(nslices))) + '.hdf',j)
+
+'''
