@@ -462,7 +462,6 @@ def subtomosim(options,ptcls,stackname):
 			prj_r = prj_fft.do_ift()							#Go back to real space
 			noise = ''
 			if options.snr and options.snr != 0.0 and options.snr != '0.0' and options.snr != '0':
-				#print "Yes, there IS noise to add"
 				nx=prj_r['nx']
 				ny=prj_r['ny']
 				
@@ -474,7 +473,6 @@ def subtomosim(options,ptcls,stackname):
 				noise2 = noise.process("filter.lowpass.gauss",{"cutoff_abs":.25})
 				noise.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.75})
 				noise = ( noise*3 + noise2*3 ) * int(options.snr)
-				print "noise after processing is", noise
 	        if noise:
 				prj_r.add(noise)
 	        elif options.snr:
