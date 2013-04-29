@@ -152,7 +152,7 @@ def main():
 	if options.align: 
 		options.align=parsemodopt(options.align)
 		# If symmetry is being specified, then we need to use it for the aligner too
-		if options.sym != None and options.align != None:
+		if options.sym:
 			options.align[1]['sym'] = options.sym
 			
 	if options.ralign: 
@@ -876,7 +876,7 @@ class Align3DTask(EMTask):
 			print "Align size %d,  Refine Align size %d"%(sfixedimage["nx"],s2fixedimage["nx"])
 
 		if classoptions["aligncmp"][0] == "fsc.tomo" or classoptions["raligncmp"][0] == "fsc.tomo":
-			print "THE FSC.TOMO comparator is on", 
+			print "THE FSC.TOMO comparator is on" 
 			retr = wedgestats(simage,classoptions['wedgeangle'],classoptions['wedgei'],classoptions['wedgef'])
 			simage['spt_wedge_mean'] = retr[0]
 			simage['spt_wedge_sigma'] = retr[1]

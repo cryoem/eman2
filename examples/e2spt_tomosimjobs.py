@@ -31,8 +31,6 @@
 #
 #
 
-
-
 from optparse import OptionParser
 from EMAN2 import *
 from sys import argv
