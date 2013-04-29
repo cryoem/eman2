@@ -348,6 +348,7 @@ def main():
 				ret=minima(sizes,valuesforthisfile)
 				sizesmin=ret[0]
 				valuesmin=ret[1]
+				yminnonconvex=ret[2]
 			
 				if float(max(valuesmin)) > absminmax:
 					absminmax = float(max(valuesmin))
@@ -361,7 +362,8 @@ def main():
 					k+=1
 					
 				idee=F.split('_')[0]
-				plotter(sizesmin,valuesmin,namepmin,0,0,markernum,0,absminmax,idee)
+				
+				plotter(sizesmin,valuesmin,namepmin,0,0,markernum,0,absminmax,idee,yminnonconvex)
 				plt.savefig(options.path + '/' + os.path.basename(namepmin))
 		
 				if not options.singleplot:
@@ -384,6 +386,7 @@ def main():
 				ret=minima(sizes,valuesforthisfile)
 				sizesmin=ret[0]
 				valuesmin=ret[1]
+				yminnonconvex=ret[2]
 				
 				indx=0
 				for i in sizesmin:
@@ -398,6 +401,7 @@ def main():
 							
 				sizesminsub = sizesmin[:indx]
 				valuesminsub = valuesmin[:indx]
+				yminnonconvexsub = yminnonconvex[:indx]
 				
 				if float(max(valuesminsub)) > absminsubmax:
 					absminsubmax = float(max(valuesminsub))
@@ -411,7 +415,7 @@ def main():
 					k+=1
 				
 				idee=F.split('_')[0]
-				plotter(sizesminsub,valuesminsub,namepminsub,0,0,markernum,0,absminsubmax,idee)
+				plotter(sizesminsub,valuesminsub,namepminsub,0,0,markernum,0,absminsubmax,idee,yminnonconvexsub)
 				plt.savefig(options.path + '/' + os.path.basename(namepminsub))
 		
 				if not options.singleplot:
@@ -425,34 +429,34 @@ def preplot(options,tipo,data,key):
 	name = options.path + "/" + options.ID + key + "_CS"+ str(options.coarsestep).zfill(2)  + "_FS" + str( options.finestep ).zfill(2) + '_' + tipo + '.png'
 	xdata = data[0]				
 	ydata = data[1]				
-	#print "\n\n"
-	#print "BEFORE plotter sizes are", sizes
-	#print "BEFORE plotter GNUMS to plot are", gnums
-	#print '\n'
 	
+	print "Still in preplot"
 	if not options.noplot:
 		plotter(xdata,ydata,name,options.coarsestep,options.finestep)
 		plt.savefig(options.path + '/' + os.path.basename(name))
 		plt.clf()
-	
+	print "Will call texwriter from preplot"
 	textwriter(name,xdata,ydata)
-
+	print "In preplot, plotminima is", options.plotminima
 	if options.plotminima:
 		ret=minima(xdata,ydata)
 		xdatamins=ret[0]
 		ydatamins=ret[1]
+		yminnonconvex=ret[2]
+		
+		print "In preplot, returned yminnonconvex is", yminnonconvex
 		namemin=name.replace('.png','_MIN.png')
 		markernum=0
 		
 		
 		if not options.noplot:
-			plotter(xdatamins,ydatamins,namemin,options.coarsestep,options.finestep,0,0,markernum)
+			plotter(xdatamins,ydatamins,namemin,options.coarsestep,options.finestep,markernum,0,0,'',yminnonconvex)
 			plt.savefig(options.path + '/' + os.path.basename(namemin))
 			plt.clf()
 		
 			if options.colorlessplot:
 				markernum=1
-				plotter(xdatamins,ydatamins,namemin,options.coarsestep,options.finestep,0,0,markernum)
+				plotter(xdatamins,ydatamins,namemin,options.coarsestep,options.finestep,markernum,0,0,'',yminnonconvex)
 				plt.savefig(options.path + '/' + os.path.basename(namemin.replace('.png','_colorless.png')))
 				plt.clf()
 		
@@ -471,21 +475,24 @@ def preplot(options,tipo,data,key):
 		textwriter(namesub,xdatasub,ydatasub)
 
 		if options.plotminima:
+			print "From preplot, I will call minima"
 			ret=minima(xdatasub,ydatasub)
 			xdatasubmins=ret[0]
 			ydatasubmins=ret[1]
+			yminnonconvexsub=ret[2]
+			print "I finshed calling minima, and it returned this yminnonconvexsub",yminnonconvexsub 
 			namesubmin=namesub.replace('.png','_MIN.png')
 			markernum=0
 			
 			
 			if not options.noplot:			
-				plotter(xdatasubmins,ydatasubmins,namesubmin,options.coarsestep,options.finestep,0,0,markernum)
+				plotter(xdatasubmins,ydatasubmins,namesubmin,options.coarsestep,options.finestep,markernum,0,0,'',yminnonconvexsub)
 				plt.savefig(options.path + '/' + os.path.basename(namemin))
 				plt.clf()
 				
 				if options.colorlessplot:
 					markernum=1
-					plotter(xdatasubmins,ydatasubmins,namesubmin,options.coarsestep,options.finestep,0,0,markernum)
+					plotter(xdatasubmins,ydatasubmins,namesubmin,options.coarsestep,options.finestep,markernum,0,0,'',yminnonconvexsub)
 					plt.savefig(options.path + '/' + os.path.basename(namemin.replace('.png','_colorless.png')))
 					plt.clf()
 	
@@ -543,7 +550,7 @@ def doit(corg,options,originaldir):
 	if options.medium:
 		mults=[]
 		for i in xrange(1,25):
-			mults.append(i*10)
+			mults.append(i*5)
 		#steps = [30]
 
 	if options.extensive:
@@ -708,7 +715,16 @@ def doit(corg,options,originaldir):
 '''
 FUNCTION TO PLOT RESULTS
 '''
-def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0,idee=''):
+def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0,idee='',yminnonconvex=[]):
+
+	print "\n\nreceived xaxis len is", len(xaxis)
+	print "\n\nreceived yminnonconvex len is", len(yminnonconvex)
+	
+	if len(xaxis) != len(yminnonconvex):
+		print "ERROR! xaxis and yminnonconvex are not equal in length, see"
+		print "xaxis is", xaxis
+		print "yminnonconvex is", yminnonconvex
+		#sys.exit()
 	#print "in plotter, linen received is", linenum
 	
 	if not xaxis or not yaxis:
@@ -765,16 +781,38 @@ def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0,ide
 		LW=2
 		
 	if options.colorlessplot:
-		print "in colorless plot, linest is", linest
-		plt.plot(xaxis, yaxis, linewidth=LW,linestyle=linest,alpha=1,color='k',zorder=0,label=idee)
-		legend(loc='upper left')
-		#markeredgewidth=3
+		
+		if not yminnonconvex:
+			
+			print "in colorless plot, linest is", linest
+			plt.plot(xaxis, yaxis, linewidth=LW,linestyle=linest,alpha=1,color='k',zorder=0,label=idee)
+			if idee:
+				print "Idee is", idee
+				legend(loc='upper left')
+		elif yminnonconvex:
+			plt.plot(xaxis, yminnonconvex, linewidth=LW,linestyle=linest,alpha=1,color='k',zorder=0,label=idee)
+			plt.scatter(xaxis,yaxis,marker='x',edgecolor='k',alpha=1,zorder=1,s=40,facecolor='white',linewidth=2)
+			if idee:
+				print "Idee is", idee
+				legend(loc='upper left')
+			
 		if mark:
 			plt.scatter(xaxis,yaxis,marker=mark,edgecolor='k',alpha=1,zorder=1,s=40,facecolor='white',linewidth=2)
 	else:
-		plt.plot(xaxis, yaxis, linewidth=LW,linestyle=linest,alpha=1,zorder=0,label=idee)
-		legend(loc='upper left')
-		#markeredgewidth=3
+		if not yminnonconvex:
+			print "I did NOT receive yminnonxonvex"
+			plt.plot(xaxis, yaxis, linewidth=LW,linestyle=linest,alpha=1,zorder=0,label=idee)
+			if idee:
+				print "Idee is", idee
+				legend(loc='upper left')
+		elif yminnonconvex:
+			print "I DID receive yminnonxonvex"
+			plt.plot(xaxis, yminnonconvex, linewidth=LW,linestyle=linest,alpha=1,zorder=0,label=idee)
+			if idee:
+				print "Idee is", idee
+				legend(loc='upper left')
+			plt.scatter(xaxis,yaxis,marker='x',alpha=0.5,zorder=1,s=40,linewidth=2)
+			
 		if mark:
 			plt.scatter(xaxis,yaxis,marker=mark,alpha=0.5,zorder=1,s=40,linewidth=2)
 
@@ -817,6 +855,13 @@ def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0,ide
 FUNCTION TO DETERMINE MINIMA to be plotted later, instead of plotting ALL values in alignment time plots
 '''
 def minima(sizes,vals):
+	print "\n\nI have entered minima!!!!!!!!!!!!!!!!!!!!!\n\n"
+	
+	
+	
+	#finalvals = []
+	#finalsizes = []
+	
 	
 	sizesmin=[sizes[0]]
 	valsmin=[vals[0]]
@@ -834,9 +879,12 @@ def minima(sizes,vals):
 			sizesmin.append(sizes[i])
 			valsmin.append(vals[i])
 			#print "I have appended this box, value", sizes[i], vals[i]
-	
-	return(sizesmin,valsmin)
 
+	minnonconvex=Util.nonconvex(valsmin,0)
+	print "In minima, the yminnonconvex to return is", minnonconvex
+	return(sizesmin,valsmin,minnonconvex)
+	
+	
 '''
 def eman2time():
 
