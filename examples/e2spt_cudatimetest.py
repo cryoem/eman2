@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus Galaz, 04/28/2012; last update 05/March/2013
+# Author: Jesus Galaz, 04/28/2012; last update 28/April/2013
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -62,12 +62,20 @@ def main():
 	parser.add_argument("--gpu", action='store_true', help="Will test SPT alignment using GPU.",default=False)
 	parser.add_argument("--setcudadevice", type=str, help="The number of the cuda device you want to use (from 0, to the total amount of devices there are)",default=None)	
 	
+	parser.add_argument("--profile", action='store_true', help="Will profile the internal call to e2spt_classaverage.py to see what processes are consuming the most time.",default=False)
+	parser.add_argument("--eman2dir", type=str, help="If profiling is on, you must provide the full path to your EMAN2 directory WITHOUT. For example, /Users/jgalaz/EMAN2",default='')
+
 	parser.add_argument("--test", action='store_true', help="Will run a quick tests using a few box sizes.",default=False)
 	parser.add_argument("--medium", action='store_true', help="Will test boxsizes in multiples of 10 between 10 and 240.",default=False)
 	parser.add_argument("--extensive", action='store_true', help="Will test EVERY box size between 12 and 256.",default=False)
-	
+	parser.add_argument("--singleboxsize", type=int, help="Will test SPT alignment for a single boxsize specified.",default=0)
+	parser.add_argument("--boxsizelist", type=str, help="Will test SPT alignment for a comma separated list of boxsizes.",default='')
+
 	parser.add_argument("--onefulloff", action='store_true', help="Will test time for one CCF (between two boxes with noise) with all processing overhead for EVERY box size between 12 and 256.",default=False)
-	parser.add_argument("--oneccfoff", action='store_true', help="Will test time for one CCF (between two boxes with noise)  without overhead, for EVERY box size between 12 and 256.",default=False)
+	parser.add_argument("--oneccfoff", action='store_true', help="Will test time for one CCF (between two boxes with noise)  without overhead (e2spt_classaverage.py isn't called), for EVERY box size between 12 and 256.",default=False)
+	parser.add_argument("--rotonlyoff", action='store_true', help="""Will test time for CCFs (between two boxes with noise) for as many orientations fit in an icosahedral unit 
+																	as determined by --coarsestep and --finestep, without any overhead (e2spt_classaverage.py isn't called), for EVERY box size between 12 and 256.""",default=False)
+	
 	parser.add_argument("--oneicosoff", action='store_true', help="""Will test alignment time for however many orientations fit in one icosahedral unit, 
 																	depending on --coarsestep and --finestep, for EVERY box size between 12 and 256.""",default=False)
 	
@@ -88,12 +96,15 @@ def main():
 	parser.add_argument("--colorlessplot",action="store_true", help="Plot all cpus and/or gpus provided through --plotonly, in a single .png file.", default=False)
 	
 	parser.add_argument("--subset",type=int, help="If --plotonly is on, this is the subset of lines (from 0 to --subset=n) in the files provided that will be kept for plotting.", default=0)
+	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default='')
 
 	global options
 	
 	(options, args) = parser.parse_args()
 	
-	
+	if options.profile and not options.eman2dir:
+		print "ERROR: --profile is on, yet you haven't provided the path to your EMAN2 directory."
+		sys.exit()
 	#print "options are", options
 	
 	logger = E2init(sys.argv, options.ppid)
@@ -181,27 +192,6 @@ def main():
 			for key in retcpu:
 				data = retcpu[key]
 				preplot(options,corg,data,key)
-				
-				#name = options.path + "/" + options.ID + dset + "_CS"+ str(options.coarsestep).zfill(2)  + "_FS" + str( options.finestep ).zfill(2) + '_CPU.png'
-				#sizes = data[0]				
-				#cnums = data[1]
-				
-				#plotter(sizes,cnums,name,options.coarsestep,options.finestep)				
-				#plt.savefig(options.path + '/' + os.path.basename(name))
-				#plt.clf()
-			
-				#if options.plotminima:
-				#	ret=minima(sizes,cnums)
-				#	sizesmin=ret[0]
-				#	cnumsmin=ret[1]
-				#	namemin=name.replace('.png','_MIN.png')
-				#	markernum=0
-				#	if options.colorlessplot:
-				#		markernum=1
-				#	plotter(sizesmin,cnumsmin,namemin,options.coarsestep,options.finestep,0,0,markernum)
-				#	plt.savefig(options.path + '/' + os.path.basename(namemin))
-				#	plt.clf()
-	
 
 		'''
 		I you have both CPU and GPU times, compute the ratio and plot it
@@ -216,7 +206,6 @@ def main():
 				
 				corg = 'GPUvsCPU'
 				
-
 				for key in retgpu:
 					if len(retcpu[key]) == len(retgpu[key]):					
 						
@@ -233,35 +222,14 @@ def main():
 						data=[sizes,difs]
 						preplot(options,corg,data,key)
 	
-						#print "\n$$$$$$$\nThe step is", step
-						#print "\n\n"
-						#plotter(sizes,difs,name,options.coarsestep,options.finestep)
-						#plt.savefig(options.path + '/' + os.path.basename(name))
-						#plt.clf()
-	
-						#if options.plotminima:
-						#	ret=minima(sizes,difs)
-						#	sizesmin=ret[0]
-						#	difsmin=ret[1]
-						#	namemin=name.replace('.png','_MIN.png')
-						#	markernum=0
-						#	if options.colorlessplot:
-						#		markernum=1
-						#	plotter(sizesmin,difsmin,namemin,options.coarsestep,options.finestep,0,0,markernum)
-						#	plt.savefig(options.path + '/' + os.path.basename(namemin))
-						#	plt.clf()
 					else:
 						print "This gpu set does not have the same number of elements as the corresponding cpu set"
-						
-				#print "I should be plotting this"
-
 			else:
 				print "For some sick reason, you don't have the same number of data points for gpu and cpu, therefore, you cannot compare them, see", len(retgpu), len(retcpu)
 				sys.exit()
 		else:
 			return()
 
-	
 	else:
 		'''
 		If options.plotonly received some files, parse them and plot them
@@ -274,19 +242,14 @@ def main():
 			print "ERROR: You cannot speficy 'plotonly' and 'noplot' at the same time."
 			sys.exit()
 		
-		values={}
+		mastervalues={}
 		
-		k=0
-		absmax=0.0
-		absminmax=0.0
-		markn=0
-		linen=0
+		k=0.0
+		
+		'''
+		Parse values for all files
+		'''
 		for F in files:
-			
-			if options.colorlessplot:
-				markn=k+1
-				linen=k
-			
 			print "Working with this file now", F
 			name=os.path.basename(F).replace('.txt','.png')
 			sizes=[]
@@ -296,63 +259,164 @@ def main():
 			lines = f.readlines()
 			f.close()
 			
-			num=0
 			for line in lines:
 				#print "Line is\n", line
 				size=line.split()[0]
 				sizes.append(int(size))
 				value=line.split()[-1].replace('\n','')
 				valuesforthisfile.append(float(value))
-				if options.subset:
-					if int(num) >= int(options.subset):
-						break
-				num+=1
-				
+			
+			mastervalues.update({F:[sizes,valuesforthisfile]})				
+			
+		'''
+		Plot the full extension values for all files
+		'''
+		plt.clf()
+		k=0
+		absmax=0.0
+		for F in mastervalues:
+			sizes = mastervalues[F][0]
+			valuesforthisfile = mastervalues[F][1]
+			
 			if float(max(valuesforthisfile)) > absmax:
 				absmax = float(max(valuesforthisfile))
 				print "New ABSMAX is", absmax
 			
+			namep = options.singleplot
+			if not options.singleplot:
+				namep = F.replace('.txt','.png')
 			
-			if options.plotminima:
+			markernum=0
+			if options.colorlessplot:
+				markernum=k
+				k+=1
+			
+			idee=F.split('_')[0]
+			plotter(sizes,valuesforthisfile,namep,0,0,markernum,0,absmax,idee)
+			plt.savefig(options.path + '/' + os.path.basename(namep))
+		
+			if not options.singleplot:
+				plt.clf()
+			
+		'''
+		Plot a subset of the extension for all files if options.subset is defined
+		'''
+		k=0
+		plt.clf()
+		abssubmax=0.0	
+		if options.subset:
+			for F in mastervalues:
+				sizes = mastervalues[F][0]
+				valuesforthisfile = mastervalues[F][1]
+			
+				sizessub = sizes[:options.subset]
+				valuessub = valuesforthisfile[:options.subset]
+			
+				if float(max(valuessub)) > abssubmax:
+					abssubmax = float(max(valuessub))
+					print "New ABSSUBMAX is", abssubmax
+			
+				namepsub = namep.replace('.png','_sub.png')
+			
+				markernum=0
+				if options.colorlessplot:
+					markernum=k
+					k+=1
+				
+				idee=F.split('_')[0]
+				plotter(sizessub,valuessub,namepsub,0,0,markernum,0,abssubmax,idee)
+				plt.savefig(options.path + '/' + os.path.basename(namepsub))
+			
+				if not options.singleplot:
+					plt.clf()
+		
+			
+		'''
+		Plot only the minima, either for full extension or a subset of the files' values
+		'''
+		k=0
+		plt.clf()
+		absminmax=0.0
+		if options.plotminima:
+			for F in mastervalues:	
+				if options.colorlessplot:
+					markn=k+1
+		
+				sizes = mastervalues[F][0]
+				valuesforthisfile = mastervalues[F][1]
+		
+				ret=minima(sizes,valuesforthisfile)
+				sizesmin=ret[0]
+				valuesmin=ret[1]
+			
+				if float(max(valuesmin)) > absminmax:
+					absminmax = float(max(valuesmin))
+					print "New ABSMINMAX is", absminmax
+				
+				namepmin=namep.replace('.png','_min.png')
+			
+				markernum=0
+				if options.colorlessplot:
+					markernum=k
+					k+=1
+					
+				idee=F.split('_')[0]
+				plotter(sizesmin,valuesmin,namepmin,0,0,markernum,0,absminmax,idee)
+				plt.savefig(options.path + '/' + os.path.basename(namepmin))
+		
+				if not options.singleplot:
+					plt.clf()
+			
+		'''
+		Plot minima for subset
+		'''
+		k=0
+		plt.clf()
+		absminsubmax=0.0
+		if options.plotminima and options.subset:
+			for F in mastervalues:	
+				if options.colorlessplot:
+					markn=k+1
+								
+				sizes = mastervalues[F][0]
+				valuesforthisfile = mastervalues[F][1]
+		
 				ret=minima(sizes,valuesforthisfile)
 				sizesmin=ret[0]
 				valuesmin=ret[1]
 				
-				if float(max(valuesmin)) > absminmax:
-					absminmax = float(max(valuesmin))
-					
-					print "New ABSMINMAZ is", absmax
-					
-				namemin=name.replace('.png','_MIN.png')
-				print "before plotting, linen is", linen
-				plotter(sizesmin,valuesmin,namemin,0,0,markn,linen,absminmax)
+				indx=0
+				for i in sizesmin:
+					if int(i) > int(options.subset):
+						print "i is larger than subset see", i, int(options.subset)
+						break
+					else:
+						print "I have added 1 to indx"
+						indx+=1
+						
+				print "Index is", indx
+							
+				sizesminsub = sizesmin[:indx]
+				valuesminsub = valuesmin[:indx]
 				
-				if options.singleplot:
-					pass
-				else:
-					plt.savefig(options.path + '/' + os.path.basename(namemin))
-					plt.clf()
-					
-			else:
-				print "before plotting, linen is", linen
-				plotter(sizes,valuesforthisfile,name,0,0,0,linen,absmax)
+				if float(max(valuesminsub)) > absminsubmax:
+					absminsubmax = float(max(valuesminsub))
+					print "New ABSMINSUBMAX is", absminsubmax
 				
-				if options.singleplot:
-					pass
-				else:
-					plt.savefig(options.path + '/' + os.path.basename(name))
-					plt.clf()
+				namepminsub = namepmin.replace('.png','_sub.png')
 			
-			#values.update({k:valuesforthisfile})
-			k+=1
+				markernum=0
+				if options.colorlessplot:
+					markernum=k
+					k+=1
+				
+				idee=F.split('_')[0]
+				plotter(sizesminsub,valuesminsub,namepminsub,0,0,markernum,0,absminsubmax,idee)
+				plt.savefig(options.path + '/' + os.path.basename(namepminsub))
 		
-		if options.singleplot:
-
-			
-			plt.savefig(options.path + '/' + os.path.basename(options.singleplot))
-			plt.clf()
-			print "I have saved a single plot to", options.path + '/' + os.path.basename(options.singleplot)
-			
+				if not options.singleplot:
+					plt.clf()
+		
 	return()
 
 
@@ -379,14 +443,19 @@ def preplot(options,tipo,data,key):
 		ydatamins=ret[1]
 		namemin=name.replace('.png','_MIN.png')
 		markernum=0
-		if options.colorlessplot:
-			markernum=1
+		
 		
 		if not options.noplot:
 			plotter(xdatamins,ydatamins,namemin,options.coarsestep,options.finestep,0,0,markernum)
 			plt.savefig(options.path + '/' + os.path.basename(namemin))
 			plt.clf()
-
+		
+			if options.colorlessplot:
+				markernum=1
+				plotter(xdatamins,ydatamins,namemin,options.coarsestep,options.finestep,0,0,markernum)
+				plt.savefig(options.path + '/' + os.path.basename(namemin.replace('.png','_colorless.png')))
+				plt.clf()
+		
 		textwriter(namemin,xdatamins,ydatamins)
 
 	if options.subset:
@@ -407,13 +476,18 @@ def preplot(options,tipo,data,key):
 			ydatasubmins=ret[1]
 			namesubmin=namesub.replace('.png','_MIN.png')
 			markernum=0
-			if options.colorlessplot:
-				markernum=1
+			
 			
 			if not options.noplot:			
 				plotter(xdatasubmins,ydatasubmins,namesubmin,options.coarsestep,options.finestep,0,0,markernum)
 				plt.savefig(options.path + '/' + os.path.basename(namemin))
 				plt.clf()
+				
+				if options.colorlessplot:
+					markernum=1
+					plotter(xdatasubmins,ydatasubmins,namesubmin,options.coarsestep,options.finestep,0,0,markernum)
+					plt.savefig(options.path + '/' + os.path.basename(namemin.replace('.png','_colorless.png')))
+					plt.clf()
 	
 			textwriter(namesubmin,xdatasubmins,ydatasubmins)
 
@@ -421,15 +495,9 @@ def preplot(options,tipo,data,key):
 
 
 def textwriter(name,xdata,ydata):
-
 	if not xdata or not ydata:
 		print "ERROR: Attempting to write an empty text file!"
-	#difsl = list(difs)
-	#for i in range(len(difsl)):
-	#	difsl[i] = str(difsl[i]) + '\n'
-	#f = open(name.replace('.png','.txt'),'w')
-	#f.writelines(difsl)
-	#f.close()
+		sys.exit()
 	
 	filename=name.replace('.png','.txt')
 	
@@ -455,11 +523,19 @@ FUNCTION TO COMPUTE ALIGNMENT TIMES
 def doit(corg,options,originaldir):
 	c=os.getcwd()
 	
-
 	f=os.listdir(c)
 	
-	mults = [12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,35,36,40,42,44,45,48,49,50,52,54,56,60,64,65,66,70,72,75,77,78,80,81,84,88,91,96,98,100,104,112,120,128,136,144,152,160,168,176,184,192,200,208,216,224,232,240,248,256]
-
+	#mults = [12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,35,36,40,42,44,45,48,49,50,52,54,56,60,64,65,66,70,72,75,77,78,80,81,84,88,91,96,98,100,104,112,120,128,136,144,152,160,168,176,184,192,200,208,216,224,232,240,248,256]
+	mults = []
+	
+	if options.singleboxsize:
+		mults.append(options.singleboxsize)
+		
+	if options.boxsizelist:
+		boxes=options.boxsizelist.split(',')
+		for box in boxes:
+			mults.append(int(box))
+			
 	if options.test:
 		mults = [32,64,96,128]
 		#steps = [30]
@@ -499,6 +575,9 @@ def doit(corg,options,originaldir):
 	
 	if not options.oneccfoff:
 		IDS.append('oneccf')
+		
+	if not options.rotonlyoff:
+		IDS.append('rotonly')
 	
 	
 	#print "\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\nThe IDS and corg are", IDS, corg
@@ -513,12 +592,14 @@ def doit(corg,options,originaldir):
 		#print "\n&&&&&&&&&&&&&&&&&&&&&&&&\n\n\n\n\n"
 		name=options.path + '/' + computer +'_' + corg + '.txt'
 		if aidee == 'oneicos':	
-			name = options.path + '/' + computer + 'oneicos_CS' + str(coarsestep).zfill(len(str(coarsestep))) + '_FS' + str(finestep) + '_' + corg + '.txt'
+			name = options.path + '/' + computer + 'oneicos_CS' + str(coarsestep).zfill(len(str(coarsestep))) + '_FS' + str(finestep).zfill(len(str(finestep))) + '_' + corg + '.txt'
 		if aidee == 'onefull':
-			name = options.path + '/' + computer + 'onefull_CS' + str(coarsestep).zfill(len(str(coarsestep))) + '_' + corg + '.txt'
+			name = options.path + '/' + computer + 'onefull_' + corg + '.txt'
 		if aidee == 'oneccf':
-			name = options.path + '/' + computer + 'oneccf_CS' + str(coarsestep).zfill(len(str(coarsestep))) + '_' + corg + '.txt'
-		
+			name = options.path + '/' + computer + 'oneccf_' + corg + '.txt'
+		if aidee == 'rotonly':
+			name = options.path + '/' + computer + 'rotonly_CS' + str(coarsestep).zfill(len(str(coarsestep))) + '_FS' + str(finestep).zfill(len(str(finestep))) + '_'+ corg + '.txt'
+			
 		#txt = open(name,'w')
 		times=[]
 		cmd=''
@@ -572,10 +653,20 @@ def doit(corg,options,originaldir):
 			if aidee == 'onefull' or aidee == 'oneicos':	
 				if aidee == 'oneicos':
 					sym='icos'
+				
+				parallel=options.parallel
+				profilecmd1='e2spt_classaverage.py'
+				profilecmd2=''
+				if options.profile:
+					profilecmd1 = "python -m cProfile -s time " + options.eman2dir + "/bin/e2spt_classaverage.py"
+					profilecmd2 = "> profiled_" + corg + '_box' + str(size).zfill(3) + '.txt' 
+					parallel=''
+					print "profilecmd1 is", profilecmd1
+					print "profilecmd2 is", profilecmd2
+									
+				cmd = setcuda + ''' && cd ''' + abspath + ''' && ''' + profilecmd1 + ''' --input=''' + aname + ''' --output=''' + out + ''' --ref=''' + bname + ''' --iter=1 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --highpass=filter.highpass.gauss:cutoff_freq=0.01:apix=1.0 --preprocess=filter.lowpass.gauss:cutoff_freq=0.2:apix=1.0 --align=rotate_symmetry_3d:sym=''' + sym + ''' --parallel=''' + parallel + ''' --ralign=None --averager=mean.tomo --aligncmp=ccc.tomo --normproc=normalize.mask --path=''' + aidee + ''' --verbose=''' + str(options.verbose) + ' ' + profilecmd2
 			
-				cmd = setcuda + ''' && cd ''' + abspath + ''' && e2spt_classaverage.py --input=''' + aname + ''' --output=''' + out + ''' --ref=''' + bname + ''' --iter=1 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --highpass=filter.highpass.gauss:cutoff_freq=0.01:apix=1.0 --preprocess=filter.lowpass.gauss:cutoff_freq=0.2:apix=1.0 --align=rotate_symmetry_3d:sym=''' + sym + ''' --parallel=thread:1 --ralign=None --averager=mean.tomo --aligncmp=ccc.tomo --normproc=normalize.mask --path=''' + aidee
-			
-				print "The instruction is", cmd
+				print "Therefore the instruction is", cmd
 				ta = time()
 				os.system(cmd)
 				tb = time()
@@ -586,7 +677,19 @@ def doit(corg,options,originaldir):
 				ta = time()
 				ccfab=a.calc_ccf(b)
 				tb = time()
-			
+				
+			elif aidee == 'rotonly':
+				a=EMData(aname,0)
+				b=EMData(bname,0)
+				
+				#--align=rotate_translate_3d:search=12:delta=12:dphi=12:verbose=1 --parallel=thread:8 --ralign=refine_3d_grid:delta=3:range=12:search=2
+				ta = time()
+				bestcoarse = a.xform_align_nbest('rotate_translate_3d',b,{'delta':int(options.coarsestep),'dphi':int(options.coarsestep),'search':10,'sym':'icos'},1,'ccc.tomo')
+				for bc in bestcoarse:
+					#classoptions["ralign"][1]["xform.align3d"] = bc["xform.align3d"]
+					ran=int(round(float(options.coarsestep)/2.0))
+					a.align('refine_3d_grid',b,{'delta':int(options.finestep),'range':ran,'search':3,'xform.align3d':bc['xform.align3d']},'ccc.tomo')
+				tb = time()
 			td = tb - ta
 			if td:
 				#print "Excution time was", td
@@ -605,7 +708,7 @@ def doit(corg,options,originaldir):
 '''
 FUNCTION TO PLOT RESULTS
 '''
-def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0):
+def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0,idee=''):
 	#print "in plotter, linen received is", linenum
 	
 	if not xaxis or not yaxis:
@@ -643,8 +746,8 @@ def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0):
 	pylab.xlabel('X Axis', fontsize=14, fontweight='bold')
 	pylab.ylabel('Y Axis', fontsize=14, fontweight='bold')
 
-	pylab.ylim([-10,ylimvalmax+10])
-	pylab.xlim([-10,max(xaxis)+10])
+	pylab.ylim([-1,ylimvalmax+10])
+	pylab.xlim([-1,max(xaxis)+10])
 	ax.get_xaxis().tick_bottom()
 	ax.get_yaxis().tick_left()
 	ax.axes.get_xaxis().set_visible(True)
@@ -663,12 +766,14 @@ def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0):
 		
 	if options.colorlessplot:
 		print "in colorless plot, linest is", linest
-		plt.plot(xaxis, yaxis, linewidth=LW,linestyle=linest,alpha=1,color='k',zorder=0)
+		plt.plot(xaxis, yaxis, linewidth=LW,linestyle=linest,alpha=1,color='k',zorder=0,label=idee)
+		legend(loc='upper left')
 		#markeredgewidth=3
 		if mark:
 			plt.scatter(xaxis,yaxis,marker=mark,edgecolor='k',alpha=1,zorder=1,s=40,facecolor='white',linewidth=2)
 	else:
-		plt.plot(xaxis, yaxis, linewidth=LW,linestyle=linest,alpha=1,zorder=0)
+		plt.plot(xaxis, yaxis, linewidth=LW,linestyle=linest,alpha=1,zorder=0,label=idee)
+		legend(loc='upper left')
 		#markeredgewidth=3
 		if mark:
 			plt.scatter(xaxis,yaxis,marker=mark,alpha=0.5,zorder=1,s=40,linewidth=2)
@@ -696,7 +801,9 @@ def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0):
 	#a = plt.gca()
 	#a.set_xlim(1,int(xaxis[-1]))
 	#a.set_ylim(0,max(yaxis)+0.25*max(xaxis))
-	#a.legend(stepslabel)
+	#if idee:
+	#	print "legend is", idee
+	#	plt.legend(idee,loc='upper left')
 	
 	#plt.xlim( (1,int(xaxis[-1]) ) )
 	#plt.ylim( ( 0,max(yaxis)+0.25*max(yaxis) ) )
