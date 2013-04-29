@@ -445,7 +445,9 @@ class ImgHistogram(QtGui.QWidget):
 			p.drawText(150,36,"p(t)=%1.2f%%"%(100.0*float(self.probe[1])/self.total))
 			
 		else:
-
+			#self.uppresent=0 
+			#self.upposition=[[185,121],[185,18],[255,18]] 
+			
 			p.setPen(QtGui.QColor(0,0,0))
 			p.setBrush(QtGui.QBrush(Qt.SolidPattern))
 			p.setBrush(QtGui.QColor(self.upcolor[0][0],self.upcolor[0][1],self.upcolor[0][2]))
@@ -473,11 +475,27 @@ class ImgHistogram(QtGui.QWidget):
 			p.drawLine(self.uppositioned[0][0],self.uppositioned[0][1],self.uppositioned[1][0],self.uppositioned[1][1])
 			p.drawLine(self.uppositioned[1][0],self.uppositioned[1][1],self.uppositioned[2][0],self.uppositioned[2][1])
 			
+			
 			self.upcolorpreserve = copy.deepcopy(self.upcolor) 
 			for i in range(3):
 				if (self.uppositioned[i][0]==presentx) and (self.uppositioned[i][1]==presenty):
 					self.uppresent = i
-
+			
+			
+			for i in range(3):
+				if self.upposition[0]==self.uppositioned[i]:
+					self.upcolor[0]=self.upcolorpreserve[i]
+					
+			for i in range(3):
+				if self.upposition[1]==self.uppositioned[i]:
+					self.upcolor[1]=self.upcolorpreserve[i]
+					
+			for i in range(3):
+				if self.upposition[2]==self.uppositioned[i]:
+					self.upcolor[2]=self.upcolorpreserve[i]		
+				
+			self.upposition.sort()
+			 
 			presentthreshold = (self.upposition[self.uppresent][0]-3)/252.0*(self.maxden-self.minden)+self.minden
 			self.guiparent.level.setText("Level: %1.3f"%presentthreshold)
 			#self.guiparent.cappingcolor.setRgb(self.upcolor[self.uppresent])
@@ -538,8 +556,9 @@ class ImgHistogram(QtGui.QWidget):
 				if self.upposition[self.uppresent][0] < 3: self.upposition[self.uppresent][0] =3
 				if self.upposition[self.uppresent][1] > 125:self.upposition[self.uppresent][1] =125 
 				if self.upposition[self.uppresent][1] < 3: self.upposition[self.uppresent][1] =3
+				
 				self.update()
-	
+				
 	def mouseReleaseEvent(self, event):
 		#self.probe=None
 		self.mpressed = False
