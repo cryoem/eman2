@@ -364,7 +364,7 @@ class ImgHistogram(QtGui.QWidget):
 		self.probe=None
 		self.histdata=None
 		self.setMinimumSize(QtCore.QSize(258,128))
-		self.volume = None
+		self.volume = False
 		
 		self.upposition = 0
 		self.upcolor = 0
@@ -390,6 +390,7 @@ class ImgHistogram(QtGui.QWidget):
 	
 	def setProbe(self, value):
 		self.volume = False
+		
 		if (self.maxden-self.minden) != 0:
 			x = int(255.0*(value - self.minden)/(self.maxden-self.minden))
 			if x > 255: x = 255
@@ -429,8 +430,17 @@ class ImgHistogram(QtGui.QWidget):
 		for i,j in enumerate(self.histdata):
 			p.drawLine(i,127,i,127-j*126/self.norm)
 		
+		if self.histdata==None : return
+		p=QtGui.QPainter()
+		p.begin(self)
+		p.setBackground(QtGui.QColor(16,16,16))
+		p.eraseRect(0,0,self.width(),self.height())
+		p.setPen(Qt.darkGray)
+		for i,j in enumerate(self.histdata):
+			p.drawLine(i,127,i,127-j*126/self.norm)
+
 		# If the user has dragged, we need to show a value
-		
+
 		if (self.probe) and (self.volume == False):
 			p.setPen(Qt.blue)
 			p.drawLine(self.probe[0]+1,0,self.probe[0]+1,127-self.probe[1]*126/self.norm)
@@ -444,7 +454,7 @@ class ImgHistogram(QtGui.QWidget):
 			p.drawText(150,20,"thres=%1.2f"%self.threshold)
 			p.drawText(150,36,"p(t)=%1.2f%%"%(100.0*float(self.probe[1])/self.total))
 			
-		else:
+		if  (self.upposition !=0)and (self.volume):
 			#self.uppresent=0 
 			#self.upposition=[[185,121],[185,18],[255,18]] 
 			
@@ -508,8 +518,8 @@ class ImgHistogram(QtGui.QWidget):
 		p.end()
 	
 	def mousePressEvent(self, event):
-		
-		if (event.button()==Qt.LeftButton) and (self.volume==False):
+
+		if (event.button()==Qt.LeftButton):
 			x=max(min(event.x()-1,255),0)
 			self.probe=(x,self.histdata[x])
 			self.threshold = (self.probe[0]/255.0*(self.maxden-self.minden)+self.minden)
