@@ -137,7 +137,7 @@ def main():
 	if options.path not in files:
 		
 		os.system('mkdir ' + options.path)
-	
+	print "path will be", options.path
 	
 	'''
 	If options.plotonly is off (no files provided) you actually have to measure alignment time....
@@ -263,6 +263,65 @@ def main():
 			if not options.singleplot:
 				namep = F.replace('.txt','.png')
 			
+			markernum=0
+			if options.colorlessplot:
+				markernum=k
+				k+=1
+			
+			idee=F.split('_')[0]
+			plotter(sizes,valuesforthisfile,namep,0,0,markernum,0,absmax,idee)
+			plt.savefig(options.path + '/' + os.path.basename(namep))
+		
+			if not options.singleplot:
+				plt.clf()
+			
+		'''
+		Plot a subset of the extension for all files if options.subset is defined
+		'''
+		k=0
+		plt.clf()
+		abssubmax=0.0	
+		if options.subset:
+			for F in mastervalues:
+				sizes = mastervalues[F][0]
+				valuesforthisfile = mastervalues[F][1]
+			
+				sizessub = sizes[:options.subset]
+				valuessub = valuesforthisfile[:options.subset]
+			
+				if float(max(valuessub)) > abssubmax:
+					abssubmax = float(max(valuessub))
+					print "New ABSSUBMAX is", abssubmax
+			
+				namepsub = namep.replace('.png','_sub.png')
+			
+				markernum=0
+				if options.colorlessplot:
+					markernum=k
+					k+=1
+				
+				idee=F.split('_')[0]
+				plotter(sizessub,valuessub,namepsub,0,0,markernum,0,abssubmax,idee)
+				plt.savefig(options.path + '/' + os.path.basename(namepsub))
+
+				if not options.singleplot:
+					plt.clf()
+		
+			
+		'''
+		Plot only the minima, either for full extension or a subset of the files' values
+		'''
+		k=0
+		plt.clf()
+		absminmax=0.0
+		if options.plotminima:
+			for F in mastervalues:	
+				if options.colorlessplot:
+					markn=k+1
+		
+				sizes = mastervalues[F][0]
+				valuesforthisfile = mastervalues[F][1]
+		
 			markernum=0
 			if options.colorlessplot:
 				markernum=k
@@ -529,13 +588,10 @@ def doit(corg,options,originaldir):
 			mults.append(int(box))
 			
 	if options.test:
-		mults = [32,64,96,128]
-		#steps = [30]
-
+		mults=[100,101,120,121,140,141]
+	
 	if options.medium:
-		mults=[]
-		for i in xrange(1,25):
-			mults.append(i*5)
+		mults = [16,32,64,96,97,98,128,129,130,180,181,182]
 		#steps = [30]
 
 	if options.extensive:
@@ -596,6 +652,10 @@ def doit(corg,options,originaldir):
 		times=[]
 		cmd=''
 		for size in mults:
+			print "\naligning size", size
+			print "for ID", aidee
+			print "alignment type", corg
+			print "\n"			
 			#t=t1=t2=t1h=t2h=t1m=t2m=t1s=t2s=t1tot=t2tot=0
 			
 			setcuda=''
@@ -664,13 +724,22 @@ def doit(corg,options,originaldir):
 				tb = time()
 	
 			elif aidee == 'oneccf':
+				if corg=='gpu' or corg=='GPU':
+					EMData.switchoncuda()
+					
 				a=EMData(aname,0)
 				b=EMData(bname,0)
 				ta = time()
 				ccfab=a.calc_ccf(b)
 				tb = time()
 				
+				if corg=='gpu' or corg=='GPU':
+					EMData.switchoffcuda()
+				
 			elif aidee == 'rotonly':
+				if corg=='gpu' or corg=='GPU':
+					EMData.switchoncuda()
+					
 				a=EMData(aname,0)
 				b=EMData(bname,0)
 				
@@ -682,6 +751,9 @@ def doit(corg,options,originaldir):
 					ran=int(round(float(options.coarsestep)/2.0))
 					a.align('refine_3d_grid',b,{'delta':int(options.finestep),'range':ran,'search':3,'xform.align3d':bc['xform.align3d']},'ccc.tomo')
 				tb = time()
+
+				if corg=='gpu' or corg=='GPU':
+					EMData.switchoffcuda()
 			td = tb - ta
 			if td:
 				#print "Excution time was", td
@@ -869,48 +941,6 @@ def minima(sizes,vals):
 	print "In minima, the yminnonconvex to return is", minnonconvex
 	return(sizesmin,valsmin,minnonconvex)
 	
-	
-'''
-def eman2time():
-
-		f=open('.eman2log.txt','r')
-		lines=f.readlines()
-		last=lines[-1]
-	
-		t1=last.split()[1]
-		print "\n\n\n@@@@@@@@@@@@@@@@@@@@@ The job started at time", t1
-
-		t1h=int(t1.split(':')[0].replace('/',''))
-		#print "The hours of time 1 are", t1h
-		#print "Or that times 3600", t1h*3600
-		t1m=int(t1.split(':')[1])
-		#print "The minutes of time 1 are", t1m
-		#print "Or that times 60", t1m*60
-
-		t1s=int(t1.split(':')[2])
-		#print "The seconds of time 1 are", t1s
-				
-		t1tot = t1h*3600 + t1m*60 + t1s
-		print "\n\n******************************* Therefore, in seconds, this was the time of starting t1tot=%d, %d*3600 + %d*60 + %d" % (t1tot,t1h,t1m,t1s)
-				
-		t2=last.split()[3]
-		print "\n\n\n@@@@@@@@@@@@@@@@@@@@The job finished at time", t2
-			
-		t2h=int(t2.split(':')[0].replace('/',''))
-		print 't2h is', t2h
-			
-		t2m=int(t2.split(':')[1])
-		print 't2m is', t2m
-			
-		t2s=int(t2.split(':')[2])
-		print 't2s is', t2s
-
-		t2tot = t2h*3600 + t2m*60 + t2s
-		print "\n\n******************************* Therefore, in seconds, this was the time of finishing t2tot=%d, %d*3600 + %d*60 + %d\n\n" % (t2tot,t2h,t2m,t2s)
-	
-		t = t2tot - t1tot
-	return(t)
-'''
 
 if '__main__' == __name__:
 	main()
