@@ -22500,66 +22500,35 @@ Dict Util::predict(float phig, float yg, float dst, float sgn, float ysgn, float
 	if (fmod(dst, dpp) <= 0.5*dpp)	{
 		predphi = fmod( phig + back*sgn * floor(dst/dpp)* dphi, float(360.0));
 		predy = yg + back*ysgn*(fmod(dst, dpp));
-		if (ysgn > 0){
-			if (predy > 0)
-				if (fmod(predy,dpp) > 0.5*dpp){
-					predy = predy - dpp;
-					predphi = fmod( (predphi + sgn*dphi),float(360.0));
-				}
-			else{
-				if (fmod(abs(predy), dpp) > 0.5*dpp) {
-					predy = predy + dpp;
-					predphi = fmod( (predphi - sgn*dphi), float(360.0));
-				}
+		if (predy > 0)
+			if (fmod(predy,dpp) > 0.5*dpp){
+				predy = predy - dpp;
+				predphi = fmod( (predphi + sgn*dphi),float(360.0));
 			}
-		}
 		else{
-			if (predy < 0){
-				if (fmod(abs(predy), dpp) > 0.5*dpp){
-					predy = predy + dpp;
-					predphi = fmod((predphi - sgn*dphi),float(360.0));
-				}
-			}
-			else{
-				if (fmod(abs(predy), dpp) > 0.5*dpp){
-					predy = predy - dpp;
-					predphi = fmod((predphi + sgn*dphi),float(360.0));
-				}
+			if (fmod(abs(predy), dpp) > 0.5*dpp) {
+				predy = predy + dpp;
+				predphi = fmod( (predphi - sgn*dphi), float(360.0));
 			}
 		}
+		
 	}				
 	else{
-		predphi = fmod ( (phig + back*sgn * (int(dst/dpp)* dphi + dphi)), float(360.0));
+		predphi = fmod ( (phig + back*sgn * (floor(dst/dpp)* dphi + dphi)), float(360.0));
 		predy = yg + back*ysgn*(fmod(dst,dpp) - dpp) ;
-		
-		if (ysgn < 0){
-			if (predy > 0){
-				if (fmod(predy, dpp) > 0.5*dpp){
-					predy = predy - dpp;
-					predphi = fmod( (predphi + sgn*dphi),float(360.0));
-				}
-			}
-			else{
-				if (fmod(abs(predy), dpp) > 0.5*dpp){
-					predy = predy + dpp;
-					predphi = fmod( (predphi - sgn*dphi), float(360.0));
-				}
+		if (predy > 0){
+			if (fmod(predy, dpp) > 0.5*dpp){
+				predy = predy - dpp;
+				predphi = fmod( (predphi + sgn*dphi),float(360.0));
 			}
 		}
 		else{
-			if (predy < 0){
-				if (fmod(abs(predy), dpp) > 0.5*dpp){
-					predy = predy + dpp;
-					predphi = fmod ( (predphi - sgn*dphi), float(360.0));
-				}
-			}
-			else{
-				if (fmod(abs(predy), dpp) > 0.5*dpp){
-					predy = predy - dpp;
-					predphi = fmod( (predphi + sgn*dphi),float(360.0));
-				}
+			if (fmod(abs(predy), dpp) > 0.5*dpp){
+				predy = predy + dpp;
+				predphi = fmod( (predphi - sgn*dphi), float(360.0));
 			}
 		}
+		
 	}
 	Dict retvals;
 	retvals["predy"] = predy;
