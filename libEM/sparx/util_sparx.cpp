@@ -22201,3 +22201,368 @@ void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
         data[im]->set_attr("xform.projection", &t);
 	}
 }
+
+void Util::constrained_helix_test( vector<EMData*> data, vector<EMData*> fdata, vector<EMData*> refproj, vector<EMData*> rotproj
+		, vector<float> dp_dphi_rise_delta, vector<int> nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc
+		, bool FindPsi, float psi_max, vector<EMData*> crefim, vector<int> numr, int maxrin, string mode, int cnx, int cny)
+{
+	if (dp_dphi_rise_delta.size() < 4) {
+		printf("Not enough parameters (dp_dphi_rise_delta)");
+		return;
+	}
+	if (nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc.size() < 9) {
+		printf("Not enough parameters (nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc)");
+		return;
+	}
+	float dpsi;
+	//float dp    = dp_dphi_rise_delta[0];
+	float dphi  = dp_dphi_rise_delta[1];
+	int   rise  = static_cast<int>(dp_dphi_rise_delta[2] + 0.2);
+	float delta = dp_dphi_rise_delta[3];
+	int  nphi      = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[0];
+	int  phiwobble = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[1];
+	int  range     = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[2];
+	int  ywobble   = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[3];
+	bool Dsym      = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[4];
+	int  nwx       = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[5];
+	int  nwy       = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[6];
+	int  nwxc      = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[7];
+	int  nwyc      = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[8];
+
+	const int ndata = data.size();
+
+	std::vector< boost::shared_ptr<EMData> > objectsToDelete; // objects added to this vector are automatically deleted at the end of this function
+
+	vector<float> c0 = data[0]->get_attr("ptcl_source_coord");
+	vector< vector<EMData*> > ccfs(ndata, vector<EMData*>(nphi));
+	vector< vector<EMData*> > ccfr(0);
+	if (! Dsym) {
+		ccfr.resize(ndata, vector<EMData*>(nphi));
+	}
+	for (int im = 0; im < ndata; ++im) {
+		for (int iphi = 0; iphi < nphi; ++iphi) {
+			std::auto_ptr<EMData> corr( correlation( refproj[iphi], fdata[im], CIRCULANT, true) );
+			ccfs[im][iphi] = Util::window( corr.get(), nwx, nwy);
+			objectsToDelete.push_back(boost::shared_ptr<EMData>(ccfs[im][iphi]));
+			if (! Dsym) {
+				std::auto_ptr<EMData> corr2( correlation( rotproj[iphi], fdata[im], CIRCULANT, true) );
+				ccfr[im][iphi] = Util::window( corr2.get(), nwx, nwy);
+				objectsToDelete.push_back(boost::shared_ptr<EMData>(ccfr[im][iphi]));
+			}
+		}
+	}
+	vector<float> dxshiftlocal(ndata, 0);
+	vector<float> dyshiftlocal(ndata, 0);
+	vector<float> dphilocal(ndata, 0);
+
+	vector<float> xshiftlocal(ndata, 0);
+	vector<float> xrshiftlocal(ndata, 0);
+	vector<float> mxshiftlocal(ndata, 0);
+	vector<float> yshiftlocal(ndata, 0);
+	vector<float> yrshiftlocal(ndata, 0);
+	vector<float> myshiftlocal(ndata, 0);
+	vector<float> philocal(ndata, 0);
+	vector<float> phirlocal(ndata, 0);
+	vector<float> mphilocal(ndata, 0);
+	float dirma = -1.0e23f;
+	for (int yidir = -1; yidir < 2; yidir += 2) {
+		for (int idir = -1; idir < 2; idir += 2) {
+			float tmax = -1.0e23f;
+			float mpsi;
+			for (int ix = 1; ix < nwx-1; ++ix) {                                         //#  X shift
+				//#cout << "im: ", len(ccfs), ix,time()-start_time
+				int six = ix - nwxc;
+				for (int iy = 1+ywobble; iy < nwy-ywobble-1; ++iy) {                     //#  Y shift
+					int siy = iy - nwyc;
+					yshiftlocal[0] = float(iy-nwyc);
+					yrshiftlocal[0] = float(iy-nwyc);
+					for (int iphi = 0; iphi < nphi; ++iphi) {                            //#  phi search
+						float qphi = iphi*delta;
+						philocal[0]  = qphi;
+						phirlocal[0] = fmod( 180.0f - qphi + ((int)(fabs((180.0f-qphi)/360.0f))+1)*360.0f , 360.0f );
+						//# we use the first segment as a reference, so there is no interpolation, just copy the correlation
+						//#  Select largest correlation within +/- range pixels from the location we explore
+						float mxm = -1.0e23f;
+						float mxr;
+						for (int iux = max(1, ix - range); iux < min(nwx - 1, ix+range+1); ++iux) {    //#  X wobble
+							float qcf = ccfs[0][iphi]->get_value_at(iux,iy);
+							if (qcf > mxm) {
+								mxm = qcf;
+								xshiftlocal[0] = float(iux-nwxc);
+							}
+						}
+						if (! Dsym) {
+							mxr = -1.0e23f;
+							for (int iux = max(1, ix - range); iux < min(nwx - 1, ix+range+1); ++iux) {     //# Xr wobble
+								float qcf = ccfr[0][iphi]->get_value_at(iux,iy);
+								if (qcf > mxr) {
+									mxr = qcf;
+									xrshiftlocal[0] = float(iux-nwxc);
+								}
+							}
+						}
+						for ( int im = 1; im < ndata; ++im) {                                                                             //#  predicted locations
+							//# dst is distance between segment 0 and current segment in pixels
+							vector<float> cim = data[im]->get_attr("ptcl_source_coord");
+							float dst = sqrt( (c0[0] - cim[0])*(c0[0] - cim[0]) + (c0[1] - cim[1])*(c0[1] - cim[1]));
+							//# predict for all remaining segments assuming number 0
+							qphi = idir*(dst/rise)*dphi;
+							//float pphi = fmod(philocal[0] + qphi + ((int)(abs(qphi/360.0f))+1)*360.0f , 360.0f);                          //#  predicted phi with full angular accuracy, not an integer
+							int pix = six; //# predicted x shift
+							//int piy = siy; //#  predicted y shift
+							Dict pret = predict(philocal[0], siy, dst, idir, yidir, rise, dphi, true);
+							int piy =int(pret["predy"]);
+							float pphi = pret["predphi"];
+							int xix = pix + nwxc;
+							int yiy = piy + nwyc;
+							//#  Local x search
+							int fix = int(xix);
+							float xdif = xix - fix;
+							float xrem = 1.0f - xdif;
+							int fiy = int(yiy);
+							float ydif = yiy - fiy;
+							float yrem = 1.0f - ydif;
+							float ciq = -1.0e23f;
+							//# interpolate correlation at pphi
+							qphi = pphi/delta;
+							int ttphi = (int( qphi +  ((int)(abs(qphi/nphi))+1)*nphi+ 0.5))%nphi;
+							for (int lphi = -phiwobble; lphi < phiwobble+1; ++lphi) {                                               //#  phi wobble
+								int tphi = (ttphi+lphi+nphi)%nphi;
+								for (int iux = max(1, fix - range); iux < min(nwx - 1, fix+range+1); ++iux) {                       //#  X wobble
+									for (int iuy = max(1, fiy - ywobble); iuy < min(nwy - 1, fiy+ywobble+1); ++iuy) {               //#  Y wobble
+										float qcf = xrem*yrem*ccfs[im][tphi]->get_value_at(iux,iuy)
+													+ xdif*yrem*ccfs[im][tphi]->get_value_at(iux+1,iuy)
+													+ xrem*ydif*ccfs[im][tphi]->get_value_at(iux,iuy+1)
+													+ xdif*ydif*ccfs[im][tphi]->get_value_at(iux+1,iuy+1);
+										if (qcf > ciq) {
+											ciq = qcf;
+											xshiftlocal[im] = iux + xdif - nwxc;
+											yshiftlocal[im] = iuy + ydif - nwyc;
+											philocal[im]    = tphi * delta;
+										}
+									}
+								}
+							}
+							mxm += ciq;
+							//# now for rotated
+							if (! Dsym) {
+								qphi = idir*(dst/rise)*dphi;
+								//pphi = fmod(phirlocal[0] + qphi + ((int)(abs(qphi/360.0f))+1)*360.0f, 360.0f);                      //#  predicted phi for rotated 180 defs with full angular accuracy, not an integer
+								pix = six; //# predicted x shift
+								//piy = siy; //#  predicted y shift
+								Dict pret = predict(phirlocal[0], siy, dst, idir, yidir, rise, dphi, true);
+							    piy =int(pret["predy"]);
+							    pphi = pret["predphi"];
+								xix = pix + nwxc;
+								yiy = piy + nwyc;
+								fix = int(xix);
+								xdif = xix - fix;
+								xrem = 1.0f - xdif;
+								fiy = int(yiy);
+								ydif = yiy - fiy;
+								yrem = 1.0f - ydif;
+								ciq = -1.0e23f;
+								//# interpolate correlation at pphi
+								for (int lphi = -phiwobble; lphi < phiwobble+1; ++lphi) {                                           //#  phi wobble
+									qphi = lphi*delta;
+									float qtphi = fmod( pphi + qphi + (int(fabs(qphi/360.0f))+1)*360.0f , 360.0f);
+									qphi = fmod(540.0f-qtphi, 360.0f) / delta;
+									int tphi = (int( qphi + (int(fabs(qphi/nphi))+1)*nphi  + 0.5))%nphi;
+									for (int iux = max(1, fix - range); iux < min(nwx - 1, fix+range+1); ++iux) {                   //#  X wobble
+										for (int iuy = max(1, fiy - ywobble); iuy < min(nwy - 1, fiy+ywobble+1); ++iuy) {           //#  Y wobble
+											float qcf = xrem*yrem*ccfr[im][tphi]->get_value_at(iux,iuy)
+														+ xdif*yrem*ccfr[im][tphi]->get_value_at(iux+1,iuy)
+														+ xrem*ydif*ccfr[im][tphi]->get_value_at(iux,iuy+1)
+														+ xdif*ydif*ccfr[im][tphi]->get_value_at(iux+1,iuy+1);
+											if (qcf > ciq) {
+												ciq = qcf;
+												xrshiftlocal[im] = iux + xdif - nwxc;
+												yrshiftlocal[im] = iuy + ydif - nwyc;
+												phirlocal[im]    = int(qtphi/delta+0.5f)*delta;
+											}
+										}
+									}
+								}
+								mxr += ciq;
+							} else {
+								mxr = mxm-1.e5;
+							}
+						}
+						if ( mxr > mxm ) {
+							if (mxr > tmax) {
+								tmax = mxr;
+								mpsi = 270.0f;
+								for (int im = 0; im < ndata; ++im) mxshiftlocal[im] = xrshiftlocal[im];
+								for (int im = 0; im < ndata; ++im) myshiftlocal[im] = yrshiftlocal[im];
+								for (int im = 0; im < ndata; ++im) mphilocal[im]    = fmod(540.0f-phirlocal[im], 360.0f);
+							}
+						} else {
+							if (mxm > tmax) {
+								tmax = mxm;
+								mpsi = 90.0f;
+								for (int im = 0; im < ndata; ++im) mxshiftlocal[im] = xshiftlocal[im];
+								for (int im = 0; im < ndata; ++im) myshiftlocal[im] = yshiftlocal[im];
+								for (int im = 0; im < ndata; ++im) mphilocal[im]    = philocal[im];
+							}
+						}
+					}
+				}
+			}
+			if (tmax > dirma) {
+				dirma = tmax;
+				dpsi = mpsi;
+				for (int im = 0; im < ndata; ++im) dxshiftlocal[im] = mxshiftlocal[im];
+				for (int im = 0; im < ndata; ++im) dyshiftlocal[im] = myshiftlocal[im];
+				for (int im = 0; im < ndata; ++im) dphilocal[im]    = mphilocal[im];
+			}
+		}
+	}
+
+	for (int im = 0; im < ndata; ++im) {
+		float psx  = dxshiftlocal[im];
+		float psy  = dyshiftlocal[im];
+		float pphi = dphilocal[im];
+		float epsi;
+		float bestang;
+		if (FindPsi) {
+			float qphi = pphi/delta;
+			int iphi = ( int(qphi + ((int)(abs(qphi/nphi))+1)*nphi + 0.5f))%nphi ;
+			//#cout <<  " ref number and current parameters reduced to 2D  ",iphi,0.0, psx, psy
+			Dict params = Util::get_transform_params(data[im], "xform.projection", "spider");
+			float opsi3 = params["psi"];
+			float opx3 = -static_cast<float>(params["tx"]);
+			float opy3 = -static_cast<float>(params["ty"]);
+			//#cout << " old 3D params in data ",ophi, otheta, opsi3, opx3, opy3
+			float gamma = (abs(opsi3 - 90) < abs(opsi3 - 270)) ? (90) : (270);
+			float oalpha, osx, osy;
+			compose_transform2(0, opx3, opy3, gamma-opsi3, 0, 0, oalpha, osx, osy); //# reduce 3D to 2D
+			//#cout << " old 3D params, -> 2D ",oalpha, osx, osy
+			//# combine previous with the current in plane
+			//#cout << " current 2D combined with old 2D rotation",oalpha, csx, csy
+			//#  Find what the shift is without the angle
+			float junk, nnsx, nnsy;
+			compose_transform2(0, psx, psy, -oalpha, 0, 0, junk, nnsx, nnsy);
+			//#cout << " 2D shift without angle ",nnsx, nnsy
+
+			std::auto_ptr<EMData> cimage( Util::Polar2Dm(data[im], cnx+nnsx, cny+nnsy, numr, mode) );
+			Util::Frngs(cimage.get(), numr);
+			std::auto_ptr<EMData> temp( Util::Crosrng_msg_s( cimage.get(), crefim[iphi], numr) );
+
+			int ipr = int(psi_max*maxrin/360.0f + 0.5f);
+			int incpsi = (dpsi == 270.0f) ? (maxrin/2) : (0);
+			float qn = -1.0e23f;
+			for (int ips = -ipr; ips < ipr+1; ++ips) {
+				int tot = (ips + incpsi + maxrin)%maxrin;
+				float tval = temp->get_value_at(tot);
+				if (tval > qn) {
+					qn = tval;
+					bestang = ang_n(tot+1.0f, mode, maxrin);
+				}
+			}
+			//#cout << " best angle ",bestang
+			bestang = fmod(bestang - (dpsi-90.0f) + 720.0f, 360.0f);
+			//#cout << " angle applied ",bestang
+			//#rot_shift2D(data[im],-bestang).write_image("rotated.hdf",im)
+			//std::auto_ptr<EMData> rot_data_im( data[im]->rot_scale_trans2D_background(-bestang, 0, 0, 1) );
+			//fdata[im] = (rot_data_im->is_complex()) ? (rot_data_im->do_ift()) : (rot_data_im->do_fft());
+
+			//#cout <<  " New composed 3D  ",dpsi,bestang, nnsx, nnsy
+
+			epsi = fmod(bestang+dpsi, 360.0f);
+			psx = nnsx;
+			psy = nnsy;
+			//#cout <<  " New composed 3D  ",pphi,90.0,epsi, psx, psy
+		} else {
+			epsi = dpsi;
+			bestang = 0;
+		}
+		data[im]->set_attr("bestang",fmod(720.0f-bestang, 360.0f));
+		//printf("  %7.2f  %7.2f  %7.2f  %7.2f  %7.2f\n", pphi, 90.0, epsi, psx, psy);
+		Dict t_params;
+		t_params["type"]  = "spider";
+		t_params["phi"]   = pphi;
+        t_params["theta"] = 90.0f;
+        t_params["psi"]   = epsi;
+        t_params["tx"]    = -psx;
+        t_params["ty"]    = -psy;
+        Transform t(t_params);
+        data[im]->set_attr("xform.projection", &t);
+	}
+}
+
+Dict Util::predict(float phig, float yg, float dst, float sgn, float ysgn, float dpp, float dphi, bool backpred){
+	
+	float back = 1.0;
+	if (!backpred)
+		back=-1.0;
+	float predphi;
+	float predy;
+	if (fmod(dst, dpp) <= 0.5*dpp)	{
+		predphi = fmod( phig + back*sgn * floor(dst/dpp)* dphi, float(360.0));
+		predy = yg + back*ysgn*(fmod(dst, dpp));
+		if (ysgn > 0){
+			if (predy > 0)
+				if (fmod(predy,dpp) > 0.5*dpp){
+					predy = predy - dpp;
+					predphi = fmod( (predphi + sgn*dphi),float(360.0));
+				}
+			else{
+				if (fmod(abs(predy), dpp) > 0.5*dpp) {
+					predy = predy + dpp;
+					predphi = fmod( (predphi - sgn*dphi), float(360.0));
+				}
+			}
+		}
+		else{
+			if (predy < 0){
+				if (fmod(abs(predy), dpp) > 0.5*dpp){
+					predy = predy + dpp;
+					predphi = fmod((predphi - sgn*dphi),float(360.0));
+				}
+			}
+			else{
+				if (fmod(abs(predy), dpp) > 0.5*dpp){
+					predy = predy - dpp;
+					predphi = fmod((predphi + sgn*dphi),float(360.0));
+				}
+			}
+		}
+	}				
+	else{
+		predphi = fmod ( (phig + back*sgn * (int(dst/dpp)* dphi + dphi)), float(360.0));
+		predy = yg + back*ysgn*(fmod(dst,dpp) - dpp) ;
+		
+		if (ysgn < 0){
+			if (predy > 0){
+				if (fmod(predy, dpp) > 0.5*dpp){
+					predy = predy - dpp;
+					predphi = fmod( (predphi + sgn*dphi),float(360.0));
+				}
+			}
+			else{
+				if (fmod(abs(predy), dpp) > 0.5*dpp){
+					predy = predy + dpp;
+					predphi = fmod( (predphi - sgn*dphi), float(360.0));
+				}
+			}
+		}
+		else{
+			if (predy < 0){
+				if (fmod(abs(predy), dpp) > 0.5*dpp){
+					predy = predy + dpp;
+					predphi = fmod ( (predphi - sgn*dphi), float(360.0));
+				}
+			}
+			else{
+				if (fmod(abs(predy), dpp) > 0.5*dpp){
+					predy = predy - dpp;
+					predphi = fmod( (predphi + sgn*dphi),float(360.0));
+				}
+			}
+		}
+	}
+	Dict retvals;
+	retvals["predy"] = predy;
+	retvals["predphi"] = predphi;
+	return retvals;
+}
