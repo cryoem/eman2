@@ -645,6 +645,7 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.def("list_mutation", &EMAN::Util::list_mutation, args("list", "rate", "min_val", "max_val", "K", "is_mirror"), "")
 		.def("get_transform_params", &EMAN::Util::get_transform_params, args("image", "xform", "convention"), "")
 		.def("constrained_helix", &EMAN::Util::constrained_helix, args("data", "fdata", "refproj", "rotproj", "dp_dphi_rise_delta", "nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc", "FindPsi", "psi_max", "crefim", "numr", "maxrin", "mode", "cnx", "cny"), "")
+		.def("constrained_helix_test", &EMAN::Util::constrained_helix_test, args("data", "fdata", "refproj", "rotproj", "dp_dphi_rise_delta", "nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc", "FindPsi", "psi_max", "crefim", "numr", "maxrin", "mode", "cnx", "cny"), "")
 		.staticmethod("point_is_in_triangle_2d")
 		.staticmethod("point_is_in_convex_polygon_2d")
 		.staticmethod("infomask")
@@ -821,6 +822,7 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.staticmethod("list_mutation")
 		.staticmethod("get_transform_params")
 		.staticmethod("constrained_helix")
+		.staticmethod("constrained_helix_test")
 	);
 
     scope* EMAN_Util_sincBlackman_scope = new scope(

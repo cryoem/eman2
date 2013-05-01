@@ -71,7 +71,9 @@ def main():
 	parser.add_option("--ehelix",             action="store_true",   default=False,               help="Use consistent helical refinement")
 	parser.add_option("--ywobble",            type="float",          default=0.0,                 help="wobble in y-directions (default = 0.0) in Angstroms")
 	parser.add_option("--nopsisearch",        action="store_true",   default=False,               help="Block searching for in-plane angle (default False)")
-
+	
+	parser.add_option("--test",              action="store_true",   default=False,               help="test code for where inter-segment distances are not multiples of rise")
+	
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
 		print "usage: " + usage + "\n"
@@ -103,10 +105,16 @@ def main():
 		
 		if len(args) < 4:  mask = None
 		else:               mask = args[3]
-		from development import ehelix_MPI
-		global_def.BATCH = True
-		ehelix_MPI(args[0], args[1], args[2], options.delta, options.psi_max, searchxshiftp, xwobblep, ywobble, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, not options.nopsisearch, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
-		global_def.BATCH = False
+		if options.test:
+			from development import ehelix_MPI_test
+			global_def.BATCH = True
+			ehelix_MPI_test(args[0], args[1], args[2], options.delta, options.psi_max, searchxshiftp, xwobblep, ywobble, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, not options.nopsisearch, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
+			global_def.BATCH = False
+		else:
+			from development import ehelix_MPI
+			global_def.BATCH = True
+			ehelix_MPI(args[0], args[1], args[2], options.delta, options.psi_max, searchxshiftp, xwobblep, ywobble, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, not options.nopsisearch, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
+			global_def.BATCH = False
 
 		if options.MPI:
 			from mpi import mpi_finalize
