@@ -480,9 +480,13 @@ def helicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fou
 		st = Util.infomask(data[im], mask, False)
 		data[im] -= st[0]
 		if CTF:
-			ctf_params = data[im].get_attr("ctf")
-			data[im] = filt_ctf(fft(data[im]), ctf_params)
-			data[im].set_attr('ctf_applied', 1)
+			qctf = data[im].get_attr("ctf_applied")
+			if qctf == 0:
+				ctf_params = data[im].get_attr("ctf")
+				data[im] = filt_ctf(fft(data[im]), ctf_params)
+				data[im].set_attr('ctf_applied', 1)
+			elif qctf != 1:
+				ERROR('Incorrectly set qctf flag', "helicalshiftali_MPI", 1,myid)
 			ctfimg = ctf_img(nx, ctf_params, ny=ny)
 			Util.add_img2(ctf_2_sum, ctfimg)
 			Util.add_img_abs(ctf_abs_sum, ctfimg)
