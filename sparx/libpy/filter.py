@@ -30,7 +30,7 @@
 
 from global_def import *
 
-def filt_median(f, nx, ny, nz, kernelshape = "BLOCK"):
+def filt_median(f, nx, ny, nz = 1, kernelshape = "BLOCK"):
 	"""
 	Name
 		filt_median - Calculate the median filtered image.
@@ -51,12 +51,9 @@ def filt_median(f, nx, ny, nz, kernelshape = "BLOCK"):
 	"""
 	from EMAN2 import kernel_shape, filt_median_
 
-	if kernelshape=="BLOCK":
-		return filt_median_(f,nx,ny,nz,kernel_shape.BLOCK)
-	elif kernelshape=="CIRCULAR":
-		return filt_median_(f,nx,ny,nz,kernel_shape.CIRCULAR)
-	elif kernelshape=="CROSS":
-		return filt_median_(f,nx,ny,nz,kernel_shape.CROSS)
+	if kernelshape=="BLOCK":         return filt_median_(f,nx,ny,nz,kernel_shape.BLOCK)
+	elif kernelshape=="CIRCULAR":    return filt_median_(f,nx,ny,nz,kernel_shape.CIRCULAR)
+	elif kernelshape=="CROSS":       return filt_median_(f,nx,ny,nz,kernel_shape.CROSS)
 	else: print "Unknown kernel shape."
 
 # Fourier filters
