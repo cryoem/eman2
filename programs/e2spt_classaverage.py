@@ -330,6 +330,7 @@ def main():
 				outfile="%s#seedtree_%d"%(options.path,i+1)
 			
 				tasks=[]
+				results=[]
 				transform = None
 				# loop over volumes in the current level
 				for j in range(0,nseed/(2**i),2):
@@ -342,7 +343,7 @@ def main():
 						tasks.append(task)
 					else:
 						print "No parallelism specified"
-						result=align3Dfunc(ref,p,options)
+						result=align3Dfunc(infile,j,infile,j+1,options)
 						results.append(result)
 						
 				# Start the alignments for this level
@@ -387,7 +388,7 @@ def main():
 					tasks.append(task)
 				else:
 					print "No parallelism specified"
-					result=align3Dfunc(ref,p,options)
+					result=align3Dfunc(ref,0,p,0,options)
 					results.append(result)
 			
 			# start the alignments running
@@ -1000,7 +1001,9 @@ class Align3DTask(EMTask):
 		return {"final":bestfinal,"coarse":bestcoarse}
 
 
-def align3Dfunc(ref,p,options):
+def align3Dfunc(ref,j,p,k,options):
+	print "Sorry; for now; you MUST use parallelism, through the --parallel option."
+	sys.exit()
 	pass
 	return
 
