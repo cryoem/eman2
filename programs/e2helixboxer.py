@@ -1747,6 +1747,13 @@ def windowallmic(dirid, micid, micsuffix, outdir, dp, pixel_size, boxsize='160 4
 		# window all micrographs in directory v1 with micid
 		flist2 = os.listdir(os.path.join(topdir,v1))
 		coutdir = os.path.join(os.path.join(topdir, v1), outdir)
+		# sort flist2 using case insensitive string comparison
+		flist2.sort(key=str.lower)
+		nfiles = len(flist2)
+		print_msg('Sorted file list in %s:\n'%v1)
+		for iii in xrange(nfiles):
+			print_msg('%s,'%flist2[iii])
+		print_msg('\n')
 		for i2, v2 in enumerate(flist2):
 			filename, fext = os.path.splitext(v2)
 			if fext[1:] != micsuffix:
