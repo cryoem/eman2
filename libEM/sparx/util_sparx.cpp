@@ -22311,10 +22311,10 @@ void Util::constrained_helix_test( vector<EMData*> data, vector<EMData*> fdata, 
 							int pix = six; //# predicted x shift
 							//int piy = siy; //#  predicted y shift
 							Dict pret = predict(philocal[0], siy, dst, idir, yidir, rise, dphi, true);
-							int piy =int(pret["predy"]);
+							float piy = pret["predy"];
 							float pphi = pret["predphi"];
 							int xix = pix + nwxc;
-							int yiy = piy + nwyc;
+							float yiy = piy + nwyc;
 							//#  Local x search
 							int fix = int(xix);
 							float xdif = xix - fix;
@@ -22351,7 +22351,7 @@ void Util::constrained_helix_test( vector<EMData*> data, vector<EMData*> fdata, 
 								pix = six; //# predicted x shift
 								//piy = siy; //#  predicted y shift
 								Dict pret = predict(phirlocal[0], siy, dst, idir, yidir, rise, dphi, true);
-							    piy =int(pret["predy"]);
+							    piy = pret["predy"];
 							    pphi = pret["predphi"];
 								xix = pix + nwxc;
 								yiy = piy + nwyc;
