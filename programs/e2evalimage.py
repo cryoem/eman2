@@ -345,7 +345,7 @@ class GUIEvalImage(QtGui.QWidget):
 		
 		self.timer=QTimer()
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeOut)
-		self.timer.start(0.1)
+		self.timer.start(100)
 		
 		self.setWindowTitle("e2evalimage - Control Panel")
 		
@@ -550,7 +550,7 @@ class GUIEvalImage(QtGui.QWidget):
 			except: pass
 		
 		# Spawn a thread to reprocess the data
-		if self.needupdate and self.procthread==None: 
+		if self.needupdate and self.procthread==None:
 			self.procthread=threading.Thread(target=self.recalc_real)
 			self.procthread.start()
 		

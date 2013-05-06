@@ -50,7 +50,9 @@ def main():
 	parser.add_argument("--dark",type=str,default=None,help="Perform dark image correction using the specified image file")
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
 	parser.add_argument("--step",type=str,default="1,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 1,1 (first image skipped)")
+	parser.add_argument("--frames",type=str,default="1,1",help="Save the dark/gain corrected frames")
 	parser.add_argument("--movie", action="store_true",help="Display a 5-frame averaged 'movie' of the frames",default=False)
+	parser.add_argument("--simpleavg", action="store_true",help="Will save a simple average of the dark/gain corrected frames (no alignment or weighting)",default=False)
 	parser.add_argument("--avgs", action="store_true",help="Testing",default=False)
 	parser.add_argument("--parallel", default=None, help="parallelism argument. This program supports only thread:<n>")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
@@ -71,6 +73,9 @@ def main():
 			a=Averagers.get("mean",{"sigma":sigd,"ignore0":1})
 			print "Summing dark"
 			for i in xrange(0,nd):
+				if options.verbose:
+					print " {}/{}   \r".format(i+1,nd),
+					sys.stdout.flush()
 				t=EMData(options.dark,i)
 				t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.0,"tozero":1})
 				a.add_image(t)
@@ -90,6 +95,9 @@ def main():
 			a=Averagers.get("mean",{"sigma":sigg,"ignore0":1})
 			print "Summing gain"
 			for i in xrange(0,nd):
+				if options.verbose:
+					print " {}/{}   \r".format(i+1,nd),
+					sys.stdout.flush()
 				t=EMData(options.gain,i)
 				#t.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4.0,"tozero":1})
 				t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.0,"tozero":1})
@@ -151,6 +159,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			im.process_inplace("threshold.clampminmax",{"minval":0,"maxval":im["mean"]+im["sigma"]*2.0,"tozero":1})		# TODO - not sure if 2 is really safe here, even on the high end
 #			im.mult(-1.0)
 			
+			if options.frames : im.write_image(outname[:-4]+"_corr.hdf",ii-first)
 			outim.append(im)
 			#im.write_image(outname,ii-first)
 
@@ -166,12 +175,34 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				#im.write_image("movie%d.hdf"%(i/5-1),0)
 				#im.process_inplace("filter.lowpass.gauss",{"cutoff_freq":.02})
 				mov.append(im)
+				
 			display(mov)
+
+			mov2=[]
+			for i in xrange(0,len(outim)-10,2):
+				im=sum(outim[i+5:i+10])-sum(outim[i:i+5])
+				mov2.append(im)
+				
+			display(mov2)
 			
 			mov=[i.get_clip(Region(1000,500,2048,2048)) for i in mov]
 			s=sum(mov)
-			fsc=[i.calc_fourier_shell_correlation(s)[1025:2050] for i in mov]
-			plot(fsc)
+#			fsc=[i.calc_fourier_shell_correlation(s)[1025:2050] for i in mov]
+#			plot(fsc)
+		
+		# A simple average
+		if options.simpleavg :
+			if options.verbose : print "Simple average"
+			avgr=Averagers.get("mean")
+			for i in xrange(len(outim)):						# only use the first second for the unweighted average
+				if options.verbose:
+					print " {}/{}   \r".format(i+1,len(outim)),
+					sys.stdout.flush()
+				avgr.add_image(outim[i])
+			print ""
+
+			av=avgr.finish()
+			av.write_image(outname[:-4]+"_mean.hdf",0)
 			
 		
 		# Generates different possibilites for resolution-weighted, but unaligned, averages

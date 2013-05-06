@@ -298,6 +298,7 @@ def e2getinstalldir() :
 		url=url.replace("\\","/")
 	return url
 
+		
 def numbered_path(prefix,makenew):
 	"""Finds the next numbered path to use for a given prefix. ie- prefix='refine' if refine_01/EMAN2DB 
 exists will produce refine_02 if makenew is set (and create refine_02) and refine_01 if not"""

@@ -518,8 +518,12 @@ Takes a path or bdb: specifier and returns the number of images in the reference
 			for i in keys:
 				if i in db : n+=1
 			return n
-		
-	return EMUtil.get_image_count_c(fsp)
+	try:
+		ret=EMUtil.get_image_count_c(fsp)
+	except:
+		print"Error with get_image_count on : ",fsp
+		raise Exception 
+	return ret
 
 EMUtil.get_image_count_c=staticmethod(EMUtil.get_image_count)
 EMUtil.get_image_count=staticmethod(db_get_image_count)
