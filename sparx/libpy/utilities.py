@@ -2099,7 +2099,7 @@ def reduce_array_to_root(data, myid, main_node = 0, comm = -1):
 '''
 
 def reduce_EMData_to_root(data, myid, main_node = 0, comm = -1):
-	from numpy import array, shape, reshape
+	from numpy import shape, reshape
 	from mpi   import mpi_reduce, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD, mpi_barrier
 	from utilities import get_image_data
 	
