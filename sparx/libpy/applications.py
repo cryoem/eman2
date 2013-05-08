@@ -10437,14 +10437,20 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 					il+=5
 			
 				elif p[:16] == "xform.projection":
-					if len(parmvalues) < il+5:
+					if len(parmvalues) < il+3:
 						print "Not enough parameters!"
 						return
 					phi = extract_value(parmvalues[il])
 					theta = extract_value(parmvalues[il+1])
 					psi = extract_value(parmvalues[il+2])
-					s2x = extract_value(parmvalues[il+3])
-					s2y = extract_value(parmvalues[il+4])
+					if len(parmvalues) > il+3:
+						s2x = extract_value(parmvalues[il+3])
+					else:
+						s2x = 0.0
+					if len(parmvalues) > il+4:
+						s2y = extract_value(parmvalues[il+4])
+					else:
+						s2y = 0.0
 					#set_params_proj(img, [phi, theta, psi, s2x, s2y], params[0])
 					t = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 					t.set_trans(Vec2f(-s2x, -s2y))
@@ -10452,7 +10458,7 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 						DB.set_attr(i, "xform.projection", t)
 					elif ext == "hdf":
 						EMUtil.write_hdf_attribute(stack, "xform.projection", t, i)
-					il+=5				
+					il = min(il+5, len(parmvalues))
 				elif p[:13] == "xform.align3d":
 					if len(parmvalues) < il+8:
 						print "Not enough parameters!"
