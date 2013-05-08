@@ -282,6 +282,8 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		if data:
 			self.set_data(data)
 		
+		self.auto_contrast = True
+		
 	def initializeGL(self):
 		glClearColor(0,0,0,0)
 				
@@ -607,7 +609,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		HOMEDB=EMAN2db.EMAN2DB.open_db()
 		HOMEDB.open_dict("display_preferences")
 		db = HOMEDB.display_preferences
-		auto_contrast = db.get("display_stack_auto_contrast",dfl=True)
+		#auto_contrast = db.get("display_stack_auto_contrast",dfl=True)
 		start_guess = db.get("display_stack_np_for_auto",dfl=20)
 		
 			
@@ -634,17 +636,18 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			sigma=1
 		else: mean/=float(nav)
 		
-		if auto_contrast:
+		if self.auto_contrast:
 			mn=max(m0,mean-3.0*sigma)
 			mx=min(m1,mean+4.0*sigma)
 		else:
 			mn=m0
 			mx=m1
-			
-		self.minden=mn
-		self.maxden=mx
-		self.mindeng=m0
-		self.maxdeng=m1
+		
+		if self.auto_contrast:	
+			self.minden=mn
+			self.maxden=mx
+			self.mindeng=m0
+			self.maxdeng=m1
 
 		if self.inspector: self.inspector.set_limits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 		
@@ -2263,6 +2266,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		if self.busy : return
 		self.busy=1
 		self.target().set_density_min(val)
+		self.target().auto_contrast = False
 
 		self.update_brightness_contrast()
 		self.busy=0
@@ -2272,18 +2276,21 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.busy=1
 		self.target().set_density_max(val)
 		self.update_brightness_contrast()
+		self.target().auto_contrast = False
 		self.busy=0
 	
 	def newBrt(self,val):
 		if self.busy : return
 		self.busy=1
 		self.update_min_max()
+		self.target().auto_contrast = False
 		self.busy=0
 		
 	def newCont(self,val):
 		if self.busy : return
 		self.busy=1
 		self.update_min_max()
+		self.target().auto_contrast = False
 		self.busy=0
 	
 	def newGamma(self,val):
