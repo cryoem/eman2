@@ -1024,8 +1024,11 @@ class EMDirEntry(object):
 			path=path+"/EMAN2DB/"+dictname+".bdb"
 			return os.stat(path)
 		else:
-			return os.stat(filename)
-			
+			try:
+				return os.stat(filename)
+			except:
+				return os.stat(".")				# this is just a failsafe for things like broken links
+				
 	def fillDetails(self, db):
 		"""Fills in the expensive metadata about this entry. Returns False if no update was necessary."""
 		if self.filetype!=None : return False		# must all ready be filled in
@@ -1080,23 +1083,28 @@ class EMDirEntry(object):
 			
 		# Ok, we need to try to figure out what kind of file this is
 		else:
-			head = file(self.path(),"rb").read(4096)		# Most FileTypes should be able to identify themselves using the first 4K block of a file
+			try: 
+				head = file(self.path(),"rb").read(4096)		# Most FileTypes should be able to identify themselves using the first 4K block of a file
 			
-			try: guesses=EMFileType.extbyft[os.path.splitext(self.path())[1]]		# This will get us a list of possible FileTypes for this extension
-			except: guesses=EMFileType.alltocheck
-			
-#			print "-------\n",guesses
-			for guess in guesses:
-				try : size,n,dim=guess.isValid(self.path(),head)		# This will raise an exception if isValid returns False
-				except: continue
+				try: guesses=EMFileType.extbyft[os.path.splitext(self.path())[1]]		# This will get us a list of possible FileTypes for this extension
+				except: guesses=EMFileType.alltocheck
 				
-				# If we got here, we found a match
-				self.filetype=guess.name()
-				self.dim=dim
-				self.nimg=n
-				self.size=size
-				break	
-			else:		# this only happens if no match was found
+	#			print "-------\n",guesses
+				for guess in guesses:
+					try : size,n,dim=guess.isValid(self.path(),head)		# This will raise an exception if isValid returns False
+					except: continue
+					
+					# If we got here, we found a match
+					self.filetype=guess.name()
+					self.dim=dim
+					self.nimg=n
+					self.size=size
+					break	
+				else:		# this only happens if no match was found
+					self.filetype="-"
+					self.dim="-"
+					self.nimg="-"
+			except:
 				self.filetype="-"
 				self.dim="-"
 				self.nimg="-"
