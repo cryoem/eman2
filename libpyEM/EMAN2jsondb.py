@@ -53,7 +53,7 @@ from libpyUtils2 import EMUtil
 # larger numbers will increase the amount of output
 DBDEBUG=0
 
-def json_open_dict(url):
+def js_open_dict(url):
 	"""Opens a JSON file as a dict-like database object. The interface is almost identical to the BDB db_* functions.
 If opened. Writes to JDB dictionaries may be somewhat inefficient due to the lack of a good model (as BDB has) for
 multithreaded access. Default behavior is to write the entire dictionary to disk when any element is changed. File
@@ -61,53 +61,53 @@ locking is attempted to avoid conflicts, but may not work in all situations. rea
 because file pointers are not held open beyond discrete transations. While it is possible to store images in JSON files
 it is not recommended due to inefficiency, and making files which are difficult to read."""
 
-	if url[-5:]!=".json" :
-		raise Exception,"JSON databases must have .json extension"
+	if url[-3:]!=".js" :
+		raise Exception,"JSON databases must have .js extension"
 	
-	return JSONDict.open_db(url)
+	return JSDict.open_db(url)
 
-def json_close_dict(url):
+def js_close_dict(url):
 	"""This will free some resources associated with the database. Not associated with closing a file pointer at present."""
 	
-	if url[-5:]!=".json" :
-		raise Exception,"JSON databases must have .json extension"
+	if url[-3:]!=".js" :
+		raise Exception,"JSON databases must have .js extension"
 	
-	ddb=JSONDict.get_db(url)
+	ddb=JSDict.get_db(url)
 	if ddb!=None : ddb.close()
 	
 	return
 
-def json_remove_dict(url):
+def js_remove_dict(url):
 	"""closes and deletes a database using the same specification as db_open_dict"""
 
-	if url[-5:]!=".json" :
-		raise Exception,"JSON databases must have .json extension"
+	if url[-3:]!=".js" :
+		raise Exception,"JSON databases must have .js extension"
 	
-	json_close_dict(url)
+	js_close_dict(url)
 	os.unlink(url)
 	
 	return
 
-def json_check_dict(url,readonly=True):
+def js_check_dict(url,readonly=True):
 	"""Checks for the existence of the named JSON file and insures that it can be opened for reading [and writing].
 It does not check the contents of the file, just for its exsistence and permissions."""
 
-	if url[-5:]!=".json" :
-		raise Exception,"JSON databases must have .json extension"
+	if url[-3:]!=".js" :
+		raise Exception,"JSON databases must have .js extension"
 	
 	if readonly and os.access(url,os.R_OK) : return True
 	if os.access(url,os.W_OK|os.R_OK) : return True
 	
 	return False
 	
-def json_list_dicts(url):
+def js_list_dicts(url):
 	"""Gives a list of readable json files at a given path."""
 	
 	try:
 		ld=os.listdir(url)
 	except: return []
 	
-	ld=[i for i in ld if i[-5:]==".json" and os.access("{}.{}".format(url,i),os.R_OK)]
+	ld=[i for i in ld if i[-3:]==".js" and os.access("{}.{}".format(url,i),os.R_OK)]
 	
 	return ld
 
@@ -168,7 +168,7 @@ except ImportError:
 #############
 
 ### FIXME - this class is not yet implemented. Still has the old BDB implementation
-class JSONTaskQueue:
+class JSTaskQueue:
 	"""This class is used to manage active and completed tasks through an
 	EMAN2DB object. Pass it an initialized EMAN2DB instance. Tasks are each
 	assigned a number unique in the local database. The active task 'max'
@@ -192,6 +192,15 @@ class JSONTaskQueue:
 		#if not self.active.has_key("max") : self.active["max"]=-1
 		#if not self.active.has_key("min") : self.active["min"]=0
 		#if not self.complete.has_key("max") : self.complete["max"]=0
+
+	def to_jsondict(self):
+		dct=dict(self.__dict__)		# copies the dict of the object
+		dct["__class__"]="JSTaskQueue"
+		return dct
+	
+	def from_jsondict(self,data):
+		del data["__class__"]
+		self.__dict__.update(data)
 	
 	def __len__(self) : return len(self.active)
 	
@@ -383,14 +392,59 @@ class JSONTaskQueue:
 		self.active[taskid]=None
 		EMTaskQueue.lock.release()
 
+class JSTask:
+	"""This class represents a task to be completed. Generally it will be subclassed. This is effectively
+	an abstract superclass to define common member variables and methods. Note that the data dictionary,
+	which contains a mix of actual data elements, and ["cache",filename,#|min,max|(list)] image references, will
+	be transparently remapped on the client to similar specifiers which are valid locally. Over the network
+	such data requests are remapped into data identifiers (did), then translated back into valid filenames
+	in the remote cache.  When subclassing this class, avoid defining new member variables, as EMTask objects
+	get transmitted over the network. Make use of command, data and options instead. """
+	def __init__(self,command=None,data=None,options=None,user=None,):
+		self.taskid=None		# unique task identifier (in this directory)
+		self.queuetime=None		# Time (as returned by time.time()) when task queued
+		self.starttime=None		# Time when execution began
+		self.progtime=None		# (time,% complete) from client
+		self.endtime=None		# Time when task completed
+		self.clientid=None		# id number of client where the job was executed
+		self.exechost=None		# hostname where task was executed
+		self.user=None			# Username from customer
+		self.group=None			# group this task is in for task management purposes
+		self.command=command	# This is a one word description of the purpose of the task, should be set in __init__
+		self.data=data			# dictionary of named data specifiers value may be (before transmission):
+								# - actual data object (no caching)
+								# - ['cache',filename,#]
+								# - ['cache',filename/url,min,max]  (max is exclusive, not inclusive)
+								# - ['cache',filename/url,(list)]
+								# (after transmission):
+								# - actual data item
+								# - ['cache',didEMD, did is a (modtime,int) tuple
+		self.modtimes={}		# Used by MPI parallelism. A dictionary of the last modification times of files specified for caching in data
+		self.options=options	# dictionary of options
+		self.wait_for=None		# in the active queue, this identifies an exited class which needs to be rerun when all wait_for jobs are complete
+		self.failcount=0		# Number of times this task failed to reach completion after starting
+		self.errors=[]			# a list of errors (strings) that occured during task execution. Normally empty !
+		self.ppid = os.getpid()		# Rrcords the PID to send to to children as PPID (sent to e2parallel.py)
+
+	def to_jsondict(self):
+		dct=dict(self.__dict__)		# copies the dict of the object
+		dct["__class__"]="JSTask"
+		return dct
+	
+	def from_jsondict(self,data):
+		del data["__class__"]
+		self.__dict__.update(data)
+
+
+	def execute(self): return
 
 
 ##########
-### This object represents a single .json file in the filesystem as a persistent dictionary
-### New JSONDicts should be created by calling the static open_db method.
+### This object represents a single .js file in the filesystem as a persistent dictionary
+### New JSDicts should be created by calling the static open_db method.
 ##########	
 	
-class JSONDict:
+class JSDict:
 	"""This class provides dict-like access to a JSON file on disk. It goes to some lengths to insure thread/process-safety, even if
 performance must be sacrificed. The only case where it may not work is when a remote filesystem which doesn't obey file-locking is used.
 Note that when opened, the entire JSON file is read into memory. For this reason (and others) it is not a good idea to store images
@@ -401,13 +455,13 @@ in JSON files."""
 	
 	@classmethod
 	def open_db(cls,path=None):
-		"""This should be used to create a JSONDict instance. It caches already open dictionaries to avoid redundancy and conflicts."""
+		"""This should be used to create a JSDict instance. It caches already open dictionaries to avoid redundancy and conflicts."""
 		
 		cls.lock.acquire()
 		
 		if not isinstance(path,str) : raise Exception,"Must specify path to open JSONDB"
-		if path[-5:]!=".json" :
-			raise Exception,"JSON databases must have .json extension ('{}')".format(path)
+		if path[-3:]!=".js" :
+			raise Exception,"JSON databases must have .js extension ('{}')".format(path)
 		
 		try: normpath=os.path.abspath(path)
 		except: raise Exception,"Cannot find path for {}".format(path)
@@ -416,19 +470,19 @@ in JSON files."""
 			cls.lock.release()
 			return cls.opendicts[normpath]
 		
-		ret=JSONDict(path)
+		ret=JSDict(path)
 		cls.lock.release()
 		return ret
 
 	@classmethod
 	def get_db(cls,path=None):
-		"""This will return an existing JSONDict for 'path' if any, otherwise None"""
+		"""This will return an existing JSDict for 'path' if any, otherwise None"""
 		
 		cls.lock.acquire()
 		
 		if not isinstance(path,str) : raise Exception,"Must specify path to open JSONDB"
-		if url[-5:]!=".json" :
-			raise Exception,"JSON databases must have .json extension ('{}')".format(url)
+		if url[-3:]!=".js" :
+			raise Exception,"JSON databases must have .js extension ('{}')".format(url)
 		
 		try: normpath=os.path.abspath(path)
 		except: raise Exception,"Cannot find path for {}".format(path)
@@ -448,7 +502,7 @@ Due to JSON module, there may be some data types which aren't permitted as value
 dictionary for the most part, for efficiency, you may consider using the setval() and get() methods which permit deferring
 synchronization with the disk file.
 
-There is no name/path separation as existed with BDB objects. 'path' is a full path to the .json file. A normalized version
+There is no name/path separation as existed with BDB objects. 'path' is a full path to the .js file. A normalized version
 of the path is stored as self.normpath"""
 		
 		from EMAN2 import e2getcwd
@@ -464,7 +518,7 @@ of the path is stored as self.normpath"""
 		
 		self.sync()
 
-	def __str__(self): return "<JSONDict instance: %s>" % self.path
+	def __str__(self): return "<JSDict instance: %s>" % self.path
 
 	def __del__(self):
 		if len(self.changes)>0 : self.sync()
@@ -481,7 +535,7 @@ of the path is stored as self.normpath"""
 			mt=os.stat(self.normpath).st_mtime
 		except:
 			try:
-				mt=os.stat(self.normpath[:-5]+"_tmp.json").st_mtime		# if we find this, then we probably caught the files at just the wrong instant when another thread was doing an update
+				mt=os.stat(self.normpath[:-5]+"_tmp.js").st_mtime		# if we find this, then we probably caught the files at just the wrong instant when another thread was doing an update
 				time.sleep(0.2)
 				mt=os.stat(self.normpath).st_mtime		# if it still doesn't exist, then the _tmp file may be an orphan we should ignore
 			except:
@@ -498,7 +552,7 @@ of the path is stored as self.normpath"""
 			jfile=file(self.normpath,"r")		# open the file
 			file_lock(jfile,readonly=True)		# lock it for reading
 			try:
-				self.data=json.load(jfile)			# parse the whole JSON file, which should be a single dictionary
+				self.data=json.load(jfile,object_hook=json_to_obj)			# parse the whole JSON file, which should be a single dictionary
 			except:
 				jfile.seek(0)
 				a=jfile.read()
@@ -512,19 +566,19 @@ of the path is stored as self.normpath"""
 		# If we have unprocessed changes, we need to apply them and write back to disk
 		if len(self.changes)>0:
 			try:
-				os.rename(self.normpath,self.normpath[:-5]+"_tmp.json")		# we back up the original file, just in case
+				os.rename(self.normpath,self.normpath[:-5]+"_tmp.js")		# we back up the original file, just in case
 			except:
-				raise Exception,"WARNING: file '{}' cannot be created, conflict in writing JSON files. You may consider reporting this if you don't know what happened.".format(self.normpath[:-5]+"_tmp.json")
+				raise Exception,"WARNING: file '{}' cannot be created, conflict in writing JSON files. You may consider reporting this if you don't know what happened.".format(self.normpath[:-5]+"_tmp.js")
 			jfile=file(self.normpath,"w")
 			file_lock(jfile,readonly=False)
 			self.data.update(self.changes)		# update the internal copy of the data
 			self.changes={}
 			for k in self.delkeys: del self.data[k]
 			self.delkeys=set()
-			json.dump(self.data,jfile,indent=1,sort_keys=True)			# write the whole dictionary back to disk
+			json.dump(self.data,jfile,indent=1,sort_keys=True,default=obj_to_json)			# write the whole dictionary back to disk
 			file_unlock(jfile)
 			jfile=None
-			os.unlink(self.normpath[:-5]+"_tmp.json")
+			os.unlink(self.normpath[:-5]+"_tmp.js")
 			
 		self.lasttime=os.stat(self.normpath).st_mtime	# make sure we include our recent change, if made
 
@@ -536,7 +590,7 @@ of the path is stored as self.normpath"""
 
 	def __contains__(self,key):
 		self.sync()
-		if key in self.data : return True
+		if str(key) in self.data : return True
 		return False
 
 	def keys(self):
@@ -553,7 +607,7 @@ of the path is stored as self.normpath"""
 	
 	def has_key(self,key):
 		self.sync()
-		if key in self.data : return True
+		if str(key) in self.data : return True
 		return False
 
 	def update(self,newdict):
@@ -565,23 +619,21 @@ performance than many individual changes."""
 
 	def get(self,key,noupdate=False):
 		"""Alternate method for retrieving records. Can avoid expensive update call upon request."""
+		key=str(key)
 		if noupdate :
 			if key in self.delkeys : raise KeyError
-			try: return repairval(self.changes[key])
-			except: return repairval(self.data[key])
+			try: return self.changes[key]
+			except: return self.data[key]
 			
 		self.sync()
-		return repairval(self.data[key])
+		return self.data[key]
 	
 	def setval(self,key,val,deferupdate=False):
 		'''Alternative to assignment operator. Permits deferred writing to improve performance.'''
-		if not isinstance(key,str) : raise Exception,"JSONDB keys must be strings"
+		# ok, decided to permit non-string keys to pass through and get converted to strings
+#		if not isinstance(key,str) : raise Exception,"JSONDB keys must be strings"
+		key=str(key)
 		if key in self.delkeys : self.delkeys.remove(key)
-		if isinstance(val,str) :
-			if val[0]=="$" : val="$"+value
-		elif not isinstance(val,int) and not isinstance(val,float) : 
-			try : tmp=json.dumps(val)
-			except: val="$ "+cPickle.dumps(val,protocol=0)
 		self.changes[key]=val
 		if not deferupdate : self.sync()
 
@@ -591,17 +643,29 @@ performance than many individual changes."""
 		if not deferupdate : self.sync()
 		
 
-JSONDict.__setitem__=JSONDict.setval
-JSONDict.__getitem__=JSONDict.get
-JSONDict.__delitem__=JSONDict.delete
+JSDict.__setitem__=JSDict.setval
+JSDict.__getitem__=JSDict.get
+JSDict.__delitem__=JSDict.delete
 
-def repairval(v):
-	"""Objects with no JSON representation are stored as pickled strings or other specialty types, with a $ prefix
-as an identifier"""
-	if not isinstance(v,str) and not isinstance(v,unicode): return v
-	if v[:2]=="$$" : return v[1:]
-	if v[:2]=="$ " : return cPickle.loads(str(v[2:]))
-	return v
+### We must explicitly list any classes which are willing to be stored non-pickled in JSON 
+jsonclasses = {
+	"JSTask":JSTask.from_jsondict,
+	"JSTaskQueue":JSTaskQueue.from_jsondict
+}
+
+def json_to_obj(jsdata):
+	"""converts a javascript object representation back to the original python object"""
+	
+	if jsdata.has_key("__pickle__") : return cPickle.loads(jsdata["__pickle__"])
+	elif jsdata.has_key("__class__") : return jsonclasses[jsdata["__class__"]](jsdata)
+	else: return jsdata
+	
+def obj_to_json(obj):
+	"""converts a python object to a supportable json type"""
+	try:
+		return obj.to_jsondict()
+	except:
+		return {"__pickle__":cPickle.dumps(obj)}
 
 __doc__ = \
 """This module provides a dict-like wrapper for JSON files on disk, with full support for file locking and other
