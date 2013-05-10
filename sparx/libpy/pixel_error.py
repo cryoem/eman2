@@ -879,44 +879,6 @@ def mapcoords(x, y, r, nx, ny):
 					
 	return minxnew, minynew
 
-
-
-def predict_helical_params(stack, dp, dphi, pixel_size, outfile=''):
-	
-	from utilities import write_text_row
-	from applications import get_dist
-
-	def get_dist(c1, c2):
-		from math import sqrt
-		d = sqrt((c1[0] - c2[0])**2 + (c1[1] - c2[1])**2)
-		return d
-
-	
-	filaments = EMUtil.get_all_attributes(stack, 'filament')
-	coords    = EMUtil.get_all_attributes(stack, 'ptcl_source_coord')
-
-	N = len(filaments)
-	params = [[0,90,90,0,0] for ii in xrange(N)]
-	rise = dp/pixel_size  # in pixels
-	permitrange = rise/2.0
-	cfil = filaments[0]
-	start = 0
-	for i in xrange(1,N):
-		if(filaments[i] != cfil ):
-			cfil = filaments[i]
-			start = i
-		else:
-			dA = pixel_size * get_dist(coords[i], coords[start])
-			params[i][0] = (dA/dp*dphi)%360.0
-			params[i][4] = (dA%dp)/pixel_size # in pixels
-			if( params[i][4] > permitrange ): params[i][4] -= rise
-
-	if len(outfile) > 0:
-		write_text_row(params, outfile)
-
-	return params
-
-
 def consistency_params(stack, dphi, dp, pixel_size, phithr=2.5, ythr=1.5, THR=3):
 	'''
 		stack        - contains coding of filaments and coordinates of segments ptcl_source_coord
@@ -1019,7 +981,7 @@ def consistency_params(stack, dphi, dp, pixel_size, phithr=2.5, ythr=1.5, THR=3)
 	print "segments whose psi agreed with the majority of segments in its filament:                ", totpsicons
 	return  allphier
 
-
+'''
 def helical_consistency(p2i, p1):
 	"""
 	  Find overall phi angle and z shift difference between two sets of projection parameters for helical structure.
@@ -1114,11 +1076,9 @@ def helical_consistency(p2i, p1):
 			phi2o.extend(phi2)
 		
 	return p2o, errormo, agree, delta_phi, phi1o, phi2o
-
-	
+,,,
+"""
 def getnewhelixcoords(hcoordsname, outdir, ratio,nx,ny, newpref="resampled_", boxsize=-1):
-	'''
-	
 	Input
 	
 		helixcoordsfile: Full path name of file with coordinates of boxed helices
@@ -1133,7 +1093,6 @@ def getnewhelixcoords(hcoordsname, outdir, ratio,nx,ny, newpref="resampled_", bo
 	
 	Output:
 		Returns full path name of file containing new box coordinates
-	'''
 	import os
 	from utilities 		import read_text_row
 	from pixel_error	import mapcoords
@@ -1155,11 +1114,10 @@ def getnewhelixcoords(hcoordsname, outdir, ratio,nx,ny, newpref="resampled_", bo
 		s = '%d\t%d\t%d\t%d\t%d\n'%(xnew-new_w/2,ynew-new_w/2, new_w, new_w, coords[i][4])
 		f.write(s)
 	return newhcoordsname	
-
-
+"""
 '''
 # These are some obsolete codes, we retain them just in case.
-
+'''
 def multi_align_stability(ali_params, mirror_consistency_threshold = 0.75, error_threshold = 1.0, individual_error_threshold = 1.0, print_individual = False):
 
 	def rot_shift(x, y, alpha, sx, sy):
