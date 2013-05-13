@@ -18830,23 +18830,33 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 					if(use_ref || use_ref_mirror){
 						
 						Dict retvals;
+						Dict retvals_mirror;
 						if (use_ref_mirror == true) {
-						    if ((psi-90.0f) < 90.0f) retvals = Crosrng_sm_psi(crefim[iref], cimage, numr,   0, 1, psi_max);
-						    else                     retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, 180, 1, psi_max); 
-						} else {
+						    if ((psi-90.0f) < 90.0f) retvals_mirror = Crosrng_sm_psi(crefim[iref], cimage, numr,   0, 1, psi_max);
+						    else                     retvals_mirror = Crosrng_sm_psi(crefim[iref], cimage, numr, 180, 1, psi_max); 
+						} 
+						if (use_ref == true) {
 						    if ((psi-90.0f) < 90.0f) retvals = Crosrng_sm_psi(crefim[iref], cimage, numr,   0, 0, psi_max);
 						    else                     retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, 180, 0, psi_max);
 						}
 						double qn = retvals["qn"];
-
-						if(qn >= peak) {
+						double qm = retvals_mirror["qn"];
+						
+						if(qn >= peak || qm >= peak) {
 							sx = -ix;
 							sy = -iy;
 							nref = iref;
-							ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-							peak = static_cast<float>(qn);
-							if (use_ref_mirror)  mirror = 1;
-							else               mirror = 0;
+							if (qn >= qm){
+								ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+								mirror = 0;
+								peak = static_cast<float>(qn);
+							}
+							else{
+								ang = ang_n(retvals_mirror["tot"], mode, numr[numr.size()-1]);
+								mirror = 1;
+								peak = static_cast<float>(qm);
+							}
+							
 						}
 					}
 				}
