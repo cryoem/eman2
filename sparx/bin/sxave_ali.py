@@ -46,6 +46,7 @@ def main():
 	parser.add_option("--active"     , action = "store_true", default=False, help="Perform average only for active images")
 	parser.add_option("--set_size"   , type   = "string"    , default=None , help="Save number of input images to parameter with given name")
 	parser.add_option("--set_members", type   = "string"    , default=None , help="Save list of id of input images to parameter named \"members\", id of input images are taken from parameter with given name")
+	parser.add_option("--filament"        , action = "store_true", default=False, help="Calculate stack of averages according to filament membership")
 	(options, args) = parser.parse_args()
 	if len(args) < 1 or len(args) > 2:
 		print "usage: " + usage
@@ -55,16 +56,28 @@ def main():
 			name_output = None
 		else:
 			name_output = args[1]
-
-		from applications import ave_ali
-
-		if global_def.CACHE_DISABLE:
-			from utilities import disable_bdb_cache
-			disable_bdb_cache()
-
-		global_def.BATCH = True
-		ave_ali(args[0], name_output, options.ali, options.active, options.set_size, options.set_members)
-		global_def.BATCH = False
+		
+		if options.filament:
+			from development import ave_ali_filament
+	
+			if global_def.CACHE_DISABLE:
+				from utilities import disable_bdb_cache
+				disable_bdb_cache()
+	
+			global_def.BATCH = True
+			ave_ali_filament(args[0], name_output, options.ali)
+			global_def.BATCH = False
+		
+		else:
+			from applications import ave_ali
+	
+			if global_def.CACHE_DISABLE:
+				from utilities import disable_bdb_cache
+				disable_bdb_cache()
+	
+			global_def.BATCH = True
+			ave_ali(args[0], name_output, options.ali, options.active, options.set_size, options.set_members)
+			global_def.BATCH = False
 
 if __name__ == "__main__":
 	        main()
