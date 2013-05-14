@@ -8600,7 +8600,7 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 	# try to parse the CTFs list. this is either not set (None), a filename or a list of values
 	if listctfs is None:
 		# not set, so simply ignore it 
-		pass
+		ctfs = None
 	elif (type(listctfs) is types.StringType):
 		# a string, so assume this is a filename and try to open the file
 		try:
@@ -8709,15 +8709,15 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 				proj += noise_ima
 
 		# apply ctf, if ctf option is set and if we can create a valid CTF object
-		try:
-			from utilities import generate_ctf
-			if(len(ctfs[i]) == 6):  ctf = generate_ctf([ctfs[i][0], ctfs[i][1], ctfs[i][2], ctfs[i][3], ctfs[i][4], ctfs[i][5]])
-			elif(len(ctfs[i]) == 8):  ctf = generate_ctf([ctfs[i][0], ctfs[i][1], ctfs[i][2], ctfs[i][3], ctfs[i][4], ctfs[i][5], ctfs[i][6], ctfs[i][7]])
-			else:  1.0/0.0
-		except:
-			# there are no ctf values, so ignore this and set no values
-			ERROR("Incorrect ctf values","project3d",1)
-		else:
+		if ctfs is not None:
+			try:
+				from utilities import generate_ctf
+				if(len(ctfs[i]) == 6):  ctf = generate_ctf([ctfs[i][0], ctfs[i][1], ctfs[i][2], ctfs[i][3], ctfs[i][4], ctfs[i][5]])
+				elif(len(ctfs[i]) == 8):  ctf = generate_ctf([ctfs[i][0], ctfs[i][1], ctfs[i][2], ctfs[i][3], ctfs[i][4], ctfs[i][5], ctfs[i][6], ctfs[i][7]])
+				else:  1.0/0.0
+			except:
+				# there are no ctf values, so ignore this and set no values
+				ERROR("Incorrect ctf values","project3d",1)
 			# setting of values worked, so apply ctf and set the header info correctly
 			proj = filt_ctf(proj,ctf)
 			proj.set_attr( "ctf",ctf)
