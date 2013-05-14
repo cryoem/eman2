@@ -981,6 +981,45 @@ def consistency_params(stack, dphi, dp, pixel_size, phithr=2.5, ythr=1.5, THR=3)
 	print "segments whose psi agreed with the majority of segments in its filament:                ", totpsicons
 	return  allphier
 
+def getnewhelixcoords(hcoordsname, outdir, ratio,nx,ny, newpref="resampled_", boxsize=-1):
+	"""
+	Input
+	
+		helixcoordsfile: Full path name of file with coordinates of boxed helices
+		
+		outdir: Full path name of directory in which to put new helix coordinates file.
+		
+		ratio: factor by which new image (micrograph) is resampled from old
+		
+		nx, ny: dimensions of old image (micrograph)
+		
+		newpref: prefix for attaching to fname to get name of new helix coordinates file
+	
+	Output:
+		Returns full path name of file containing new box coordinates
+	"""
+	import os
+	from utilities 		import read_text_row
+	from pixel_error	import mapcoords
+	
+	fname = (hcoordsname.split('/'))[-1] # name of old coordinates files minus the path
+	newhcoordsname = os.path.join(outdir , newpref+fname) # full path name of new coordinates file to be created
+	f = open(newhcoordsname, 'w')
+	coords = read_text_row(hcoordsname) # old coordinates
+	ncoords = len(coords)
+	newcoords=[]
+	w = coords[0][2]
+	new_w = boxsize
+	if new_w < 0:
+		new_w = w*ratio
+	for i in xrange(ncoords):
+		xold = coords[i][0] + w/2
+		yold = coords[i][1] + w/2
+		xnew, ynew = mapcoords(xold,yold,ratio,nx,ny)
+		s = '%d\t%d\t%d\t%d\t%d\n'%(xnew-new_w/2,ynew-new_w/2, new_w, new_w, coords[i][4])
+		f.write(s)
+	return newhcoordsname	
+
 '''
 def helical_consistency(p2i, p1):
 	"""
@@ -1076,45 +1115,7 @@ def helical_consistency(p2i, p1):
 			phi2o.extend(phi2)
 		
 	return p2o, errormo, agree, delta_phi, phi1o, phi2o
-,,,
-"""
-def getnewhelixcoords(hcoordsname, outdir, ratio,nx,ny, newpref="resampled_", boxsize=-1):
-	Input
-	
-		helixcoordsfile: Full path name of file with coordinates of boxed helices
-		
-		outdir: Full path name of directory in which to put new helix coordinates file.
-		
-		ratio: factor by which new image (micrograph) is resampled from old
-		
-		nx, ny: dimensions of old image (micrograph)
-		
-		newpref: prefix for attaching to fname to get name of new helix coordinates file
-	
-	Output:
-		Returns full path name of file containing new box coordinates
-	import os
-	from utilities 		import read_text_row
-	from pixel_error	import mapcoords
-	
-	fname = (hcoordsname.split('/'))[-1] # name of old coordinates files minus the path
-	newhcoordsname = os.path.join(outdir , newpref+fname) # full path name of new coordinates file to be created
-	f = open(newhcoordsname, 'w')
-	coords = read_text_row(hcoordsname) # old coordinates
-	ncoords = len(coords)
-	newcoords=[]
-	w = coords[0][2]
-	new_w = boxsize
-	if new_w < 0:
-		new_w = w*ratio
-	for i in xrange(ncoords):
-		xold = coords[i][0] + w/2
-		yold = coords[i][1] + w/2
-		xnew, ynew = mapcoords(xold,yold,ratio,nx,ny)
-		s = '%d\t%d\t%d\t%d\t%d\n'%(xnew-new_w/2,ynew-new_w/2, new_w, new_w, coords[i][4])
-		f.write(s)
-	return newhcoordsname	
-"""
+
 '''
 # These are some obsolete codes, we retain them just in case.
 '''
