@@ -81,7 +81,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 
 	parser.add_argument("--makevstack",type=str,help="Creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
 	parser.add_argument("--appendvstack",type=str,help="Appends to/creates a 'virtual' BDB stack with its own metadata, but the binary data taken from the (filtered) list of stacks",default=None)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--list",type=str,help="Specify the name of a file with a list of images to use in creation of virtual stacks. Please see source for details.",default=None)
 	parser.add_argument("--exlist",type=str,help="Specify the name of a file with a list of images to exclude in creation of virtual stacks. Please see source for details.",default=None)
 	parser.add_argument("--restore",type=str,help="Write changes in the derived virtual stack back to the original stack",default=None)
