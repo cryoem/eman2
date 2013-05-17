@@ -114,7 +114,7 @@ Usage: e2RCTboxer.py untilted.hdf tilted.hdf options.
 
 class RCTprocessor:
 	"""
-	Class to write partiucles and coords including some processing options
+	Class to write particles and coords including some processing options
 	"""
 	def __init__(self, args, options):
 		self.args = args
@@ -562,7 +562,7 @@ class EMBoxList:
 	def get_tiltdata_from_db(self):
 		#First check for the full path, if not present, then use the basename only
 		if self.db.has_key("tiltparams_"+self.entry):
-			self.db["tiltparams_"+self.entry]
+			return self.db["tiltparams_"+self.entry]
 		else:
 			return self.db["tiltparams_"+os.path.basename(self.entry)]
 		
