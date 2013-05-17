@@ -119,7 +119,7 @@ def main():
 			print "Must specify name of output directory where intermediate files are to be deposited."
 			return
 		outdir = args[0]
-		windowallmic(options.dirid, options.micid, options.micsuffix, outdir, options.dp, pixel_size=options.apix, boxsize=options.boxsize, outstacknameall=options.outstacknameall, hcoords_dir = options.hcoords_dir, hcoords_suffix = options.hcoords_suffix, ptcl_overlap=options.ptcl_overlap, inv_contrast=options.invert_contrast, new_pixel_size=options.new_apix, rmax = options.rmax, freq=options.freq, debug = options.debug)
+		windowallmic(options.dirid, options.micid, options.micsuffix, outdir, pixel_size=options.apix, dp=options.dp, boxsize=options.boxsize, outstacknameall=options.outstacknameall, hcoords_dir = options.hcoords_dir, hcoords_suffix = options.hcoords_suffix, ptcl_overlap=options.ptcl_overlap, inv_contrast=options.invert_contrast, new_pixel_size=options.new_apix, rmax = options.rmax, freq=options.freq, debug = options.debug)
 		return
 	
 	if options.helix_width < 1:
@@ -1568,7 +1568,7 @@ if ENABLE_GUI:
 			self.current_boxkey = None #We are done editing the box
 			self.initial_helix_box_data_tuple = None
 
-def windowallmic(dirid, micid, micsuffix, outdir, dp, pixel_size, boxsize='160 45', outstacknameall='bdb:data', hcoords_dir = "", hcoords_suffix = "_boxes.txt", ptcl_overlap=-1, inv_contrast=False, new_pixel_size=-1, rmax = -1.0, freq = -1, debug = 1):
+def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize='160 45', outstacknameall='bdb:data', hcoords_dir = "", hcoords_suffix = "_boxes.txt", ptcl_overlap=-1, inv_contrast=False, new_pixel_size=-1, rmax = -1.0, freq = -1, debug = 1):
 	'''
 	
 	Windows segments from helices boxed from micrographs using e2helixboxer. 
@@ -1719,7 +1719,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, dp, pixel_size, boxsize='160 4
 		new_pixel_size = pixel_size
 		
 	# Calculate overlap as ~1 rise in pixels if not set by user
-	if ptcl_overlap < 0:
+	if ptcl_overlap < 0 and dp >= 0:
 		ptcl_overlap = segny - int( (dp/new_pixel_size) + 0.5)
 		
 	print_msg("Overlap in pixels (using pixel size %f) between adjacent segments: %d\n"%(new_pixel_size, ptcl_overlap))
