@@ -1876,7 +1876,8 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, segnx, 
 	ptcl_coords  = "   --ptcl-coords="+ fptcl_coords
 	
 	#smic[-1] is micrograph name minus path
-	tmpfile = os.path.join(outdir,'filt_%s'%smic[-1])	
+	
+	tmpfile = os.path.join(outdir,'filt_%s.hdf'%filename)	
 	imgmic  = get_im(micname)
 	
 	if inv_contrast:
