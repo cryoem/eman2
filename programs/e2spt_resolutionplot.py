@@ -95,9 +95,11 @@ def main():
 	parser.add_argument("--boxsize", type=float, help="(Probably not needed for anything)", default=0)
 
 	parser.add_argument("--maxres", type=float, help="How far in resolution to extend the FSC curve on the x axis; for example, to see up to 20anstroms, provide --maxres=20. Default=15", default=15.0)
+	parser.add_argument("--thresholds", type=str, help="Comma separated values of thresholds to plot as horizontal lines. Default=0.5, to turn of supply 'None'. ", default=0.5)
+	
+	parser.add_argument("--smooth",action="store_true", help="Smooth out FSC curves.", default=False)
 
-
-	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID.",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	#parser.add_argument("--plotonly",action="store_true", help="Assumes vol1 and vol2 are already aligned and fsc files will be provided through --curves; thus skips alignment and fsc curve generation", default=False)
 	parser.add_argument("--fsconly",action="store_true", help="Assumes --input and --ref are already aligned with respect to each other and thus skips alignment", default=False)
@@ -108,12 +110,16 @@ def main():
 	
 	logger = E2init(sys.argv, options.ppid)
 
-
-	#if options.mask: 
-	#	options.mask=parsemodopt(options.mask)
+	if options.thresholds:
+			options.thresholds = options.thresholds.split(',')
+			print "Options.thresholds is", options.thresholds
 
 	#if options.lowpass: 
 	#	options.lowpass=parsemodopt(options.lowpass)
+		
+	#if options.normproc: 
+	#	options.lowpass=parsemodopt(options.normproc)
+
 
 	if not options.output and not options.plotonly:
 		print "ERROR: Unless you provide .txt files through --plotonly, you must specify an --output in .txt format."
@@ -254,7 +260,7 @@ def alignment(options):
 	print "align is", options.align
 	print "ralign is", options.ralign
 
-	alicmd = 'e2spt_classaverage.py --path=' + options.path + ' --input=' + str(options.input) + ' --output=' + alivolfile + ' --ref=' + str(options.ref) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + options.mask + ' --lowpass=' + options.lowpass + ' --align=' + options.align + ' --parallel=' + options.parallel + ' --ralign=' + options.ralign + ' --aligncmp=' + options.aligncmp + ' --raligncmp=' + options.raligncmp + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + options.normproc + ' --sym=' + options.sym + ' --breaksym'
+	alicmd = 'e2spt_classaverage.py --path=' + str(options.path) + ' --input=' + str(options.input) + ' --output=' + str(alivolfile) + ' --ref=' + str(options.ref) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + str(options.mask) + ' --lowpass=' + str(options.lowpass) + ' --align=' + options.align + ' --parallel=' + str(options.parallel) + ' --ralign=' + str(options.ralign) + ' --aligncmp=' + str(options.aligncmp) + ' --raligncmp=' + str(options.raligncmp) + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + str(options.normproc) + ' --sym=' + str(options.sym) + ' --breaksym'
 			
 	os.system(alicmd)
 	print "BEFORE ALIGNMENT, input was", options.input
@@ -289,6 +295,32 @@ def symmetrize(vol,options):
 		volsym.add(dc)
 	volsym.mult(1.0/nsym)	
 	return(volsym)
+
+
+def maxima(xaxis,yaxis):
+	print "\n\nI have entered maxima!!!!!!!!!!!!!!!!!!!!!\n\n"
+	
+	xes=[xaxis[0]]
+	ymaxes=[yaxis[0]]
+	
+	for i in xrange(0,len(yaxis) - 1 - 1 ):
+		aux = 0 
+		for j in xrange(i+1,len(yaxis) - 1 - 1 ):
+			if yaxis[j] > yaxis[i]:
+				aux=0
+				print "Because a downstream value is higher, I will break the loop, see", yaxis[j],yaxis[i]
+				break
+			else:
+				aux=1
+		if aux==1:
+			xes.append(xaxis[i])
+			ymaxes.append(yaxis[i])
+			#print "I have appended this box, value", sizes[i], vals[i]
+
+	#minnonconvex=Util.nonconvex(valsmin,0)
+	#print "In minima, the yminnonconvex to return is", minnonconvex
+	return(xes,ymaxes)
+	
 	
 		
 def fscplotter(fscs,options):
@@ -359,45 +391,15 @@ def fscplotter(fscs,options):
 			x.append(k)
 			k+=1
 			
-		#k=0
-		#x = []
-		#valuesF=[]
-		#inversefreqsF=[]
-		#inversefreqslabelsF=[]
 	
-		#for i in range(len(values)):
-			#print "1.0/inversefreqs[i] is", 1.0/inversefreqs[i]
-			#if 1.0/inversefreqs[i] > float(options.maxres):
-			#print "It was bigger than options.maxres, see", options.maxres
-		#	valuesF.append(values[i])
-		#	inversefreqsF.append(inversefreqs[i])
-		#	inversefreqslabelsF.append(inversefreqslabels[i])
-		#	x.append(float(k))
-		#	k+=1
-		
-		#x.append(x[-1]+1.0)
-		#values=valuesF
 		print "values are", values
-		#inversefreqs=inversefreqsF
-		#inversefreqslabels=inversefreqslabelsF
-				
+		
 		xticks = []
 		nele=len(values)
 		print "\n\nnele is", nele
 		import math
 		factorOfTicks = int(math.ceil(nele/10.0) + 1.0)
-		
-		#factorOfTicks = 1
-		#if nele >10 and nele <= 20:
-		#	factorOfTicks = 3
-		#if nele > 20 and nele <= 30:
-		#	factorOfTicks = 4
-		#if nele > 30 and nele <= 40:
-		#	factorOfTicks = 5
-		#if nele > 40 and nele <= 50:
-		#	factorOfTicks = 6
-		#if nele > 50:
-		#	factorOfTicks = 8
+	
 		
 		kk=0
 		print "factorOfTicksIs", factorOfTicks
@@ -520,21 +522,33 @@ def fscplotter(fscs,options):
 		#print "And there are these many in total", len(RGB_tuples)
 		#print "And at the moment, kont is", kont
 		#print "\n\n\n"
-		pylab.plot(x, values, color=RGB_tuples[kont], linewidth=2,alpha=0.5)
+		
+		
+		if options.smooth:
+			ret=maxima(x,values)
+			x=ret[0]
+			values=ret[1]
+			
+		pylab.plot(x, values, color=RGB_tuples[kont], linewidth=2,alpha=0.85)
 	
-		yy1=[0.5]*len(values)	
-		yy2=[0.143]*len(values)
-		#pylab.axhline(linewidth=0.5)
-		#pylab.axhline(linewidth=0.143)
-		
-		#ax1 = fig.add_subplot(111)
-
-		#ax1.axhline(linewidth=4, color="k")
-		#ax1.axvline(linewidth=4, color="k")
-		
-		pylab.plot(x, yy1, 'k--', linewidth=1)
-		pylab.plot(x, yy2, 'k--', linewidth=1)
-
+		'''
+		PLOT Threshold criteria as horizontal lines
+		'''
+		if options.thresholds:
+			for thresh in options.thresholds:
+				print "Current thresh is", thresh
+				if float(thresh) == 0.5:
+					yy1=[0.500]*len(values)	
+					pylab.plot(x, yy1, 'k--', linewidth=1)
+				
+				if float(thresh) == 0.143:
+					yy2=[0.143]*len(values)
+					pylab.plot(x, yy2, 'k--', linewidth=1)
+				
+				if float(thresh) == 0.33 or float(thresh) == 0.3 or float(thresh) == 0.333:
+					yy3=[0.333]*len(values)
+					pylab.plot(x,yy3, 'k--', linewidth=1)
+						
 		#fit = pylab.plot(x, yfit, 'r-')
 
 		ax = fig.add_subplot(111)
@@ -549,8 +563,6 @@ def fscplotter(fscs,options):
   		pylab.xlabel('X Axis', fontsize=16, fontweight='bold')
   		pylab.ylabel('Y Axis', fontsize=16, fontweight='bold')
 
-
-		
 		plt.xticks(x,inversefreqslabels)
 		print "Len of x and inversefreqslabels are", len(x), len(inversefreqslabels)
 
