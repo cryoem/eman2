@@ -990,10 +990,10 @@ EMData* EMData::symvol(string symString) {
 	svol->to_zero();
 	// actual work -- loop over symmetries and symmetrize
 	for (int isym = 0; isym < nsym; isym++) {
-	         Transform rm = sym.get_sym(symString, isym);
-		 EMData* symcopy = this -> rot_scale_trans(rm);
-		 *svol += (*symcopy);
-		 delete symcopy;
+		Transform rm = sym.get_sym(symString, isym);
+		EMData* symcopy = this -> rot_scale_trans(rm);
+		*svol += (*symcopy);
+		delete symcopy;
 	}
 	*svol /=  ((float) nsym);
 	svol->update();
