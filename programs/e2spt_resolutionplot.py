@@ -94,10 +94,12 @@ def main():
 	parser.add_argument("--apix", type=float, help="Provide --apix for automatic FSC calculation if you supply --plotonly and no volumes for --input and --ref, or if the apix of these is wrong.", default=1.0)
 	parser.add_argument("--boxsize", type=float, help="(Probably not needed for anything)", default=0)
 
-	parser.add_argument("--maxres", type=float, help="How far in resolution to extend the FSC curve on the x axis; for example, to see up to 20anstroms, provide --maxres=20. Default=15", default=15.0)
+	parser.add_argument("--maxres", type=float, help="How far in resolution to extend the FSC curve on the x axis; for example, to see up to 20anstroms, provide --maxres=1.0. Default=15", default=1.0)
 	parser.add_argument("--thresholds", type=str, help="Comma separated values of thresholds to plot as horizontal lines. Default=0.5, to turn of supply 'None'. ", default=0.5)
 	
 	parser.add_argument("--smooth",action="store_true", help="Smooth out FSC curves.", default=False)
+	parser.add_argument("--fit",type=int, help="Number of terms for polynomial fit.", default=None)
+
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID.",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -244,10 +246,6 @@ def alignment(options):
 			newaligner = newaligner[:-1]
 			options.align=newaligner
 	
-
-	
-	
-	
 	alivolfile = os.path.basename(options.input).split('.')[0] + '_VS_' + os.path.basename(options.ref).split('.')[0] + '.hdf'
 	print "alivolfile is", alivolfile
 	print "Path is", options.path
@@ -297,12 +295,94 @@ def symmetrize(vol,options):
 	return(volsym)
 
 
+"""
+SIGMOID FITTING
+"""
+def sigmoidfit(x,values):		
+	import numpy as np
+	import scipy
+	
+	def sigmoid(p,x):
+		x0,y0,c,k=p
+		y = c / (1 + np.exp(-k*(x-x0))) + y0
+		return y
+	
+	def residuals(p,x,y):
+		return y - sigmoid(p,x)
+	
+	def resize(arr,lower=0.0,upper=1.0):
+		arr=arr.copy()
+		if lower>upper: 
+			lower,upper=upper,lower
+		arr -= arr.min()
+		arr *= (upper-lower)/arr.max()
+		arr += lower
+		return arr
+	
+	xsig = np.array(x,dtype='float')
+	ysig = np.array(values,dtype='float')
+	
+	xsig = resize(-xsig,lower=0.3)
+	ysig = resize(ysig,lower=0.3)
+	print(xsig)
+	print(ysig)
+	p_guess=(np.median(xsig),np.median(ysig),1.0,1.0)
+	p, cov, infodict, mesg, ier = scipy.optimize.leastsq(residuals,p_guess,args=(xsig,ysig),full_output=1,warning=True)  
+	
+	xsig0,ysig0,c,k=p
+
+	x0 = {x0}
+	y0 = {y0}
+	c = {c}
+	k = {k}
+	format(xsig0=xsig0,ysig0=ysig0,c=c,k=k)
+
+	xsigp = np.linspace(0, 1.1, 1500)
+	pxsigp=sigmoid(p,xsigp)
+
+	print "\n\n\nPRESUMABLY THE SMOOTH CURVE IS pxsigp, with these many elements", len(pxsigp)
+	print "Which are", pxsigp
+	print "\n\n\n"
+
+	#plt.plot(xsig, ysig, '.', xsigp, pxsigp, '-')
+	#plt.savefig(options.output)
+
+	return(xsig,ysig)
+
 def maxima(xaxis,yaxis):
 	print "\n\nI have entered maxima!!!!!!!!!!!!!!!!!!!!!\n\n"
+	print "At this point xaxis and yaxis len are", len(xaxis), len(yaxis)
+	#xaxis=list(set(xaxis))
+	#yaxis=list(set(yaxis))	
+
+	#xes=[xaxis[0]]
+	#ymaxes=[yaxis[0]]
 	
-	xes=[xaxis[0]]
-	ymaxes=[yaxis[0]]
+	#xaxis=list(set(xaxis))
+	xes=[]
+	ymaxes=[]
 	
+	
+	for i in xrange(0,len(yaxis) -1):
+		val=yaxis[i]
+		print 'currrent value is', val
+		print 'and next is', yaxis[i+1]
+		if val - yaxis[i+1] < 0.0:
+			val = yaxis[i+1]
+			print 'therefore new val is', val
+		#print "Therfore final val is", val
+			
+		
+		ymaxes.append(val)
+		xes.append(xaxis[i])
+	
+	#ymaxes.append(yamxes[-2])
+	ymaxes.append(ymaxes[-1])
+			
+	#xes.append(xes[-2])
+	xes.append(xes[-1])
+	
+	'''
 	for i in xrange(0,len(yaxis) - 1 - 1 ):
 		aux = 0 
 		for j in xrange(i+1,len(yaxis) - 1 - 1 ):
@@ -313,12 +393,28 @@ def maxima(xaxis,yaxis):
 			else:
 				aux=1
 		if aux==1:
-			xes.append(xaxis[i])
 			ymaxes.append(yaxis[i])
-			#print "I have appended this box, value", sizes[i], vals[i]
+		else:
+			ymaxes.append(yaxis[j])
+		xes.append(xaxis[i])
+		#print "I have appended this box, value", sizes[i], vals[i]
 
+	ymaxes.append(ymaxes[-2])
+	ymaxes.append(ymaxes[-1])
+			
+	xes.append(xes[-2])
+	xes.append(xes[-1])
+	
 	#minnonconvex=Util.nonconvex(valsmin,0)
 	#print "In minima, the yminnonconvex to return is", minnonconvex
+	'''
+	
+	print "\nExiting maxima, xes len is", len(xes)
+	print "Exiting maxima, ymaxes len is", len(ymaxes)
+	print "\nExiting maxima, xes are", xes
+	print "Exiting maxima, ymaxes are", ymaxes
+	
+	#x=list(set(x))
 	return(xes,ymaxes)
 	
 	
@@ -348,7 +444,6 @@ def fscplotter(fscs,options):
 		if not options.boxsize:
 			options.boxsize = len(lines)
 
-		
 
 		values = []
 		inversefreqs = []
@@ -361,8 +456,13 @@ def fscplotter(fscs,options):
 				inverse = float( line.split()[0] )
 				
 				if inverse:
-					if 1.0/inverse > options.maxres:
-						newlines.append(line)
+					if options.maxres:
+						if 1.0/inverse > options.maxres:
+							newlines.append(line)
+						else:
+							pass
+					else:
+						pass
 				else:
 					firstline=True
 					newlines.append(line)
@@ -427,109 +527,160 @@ def fscplotter(fscs,options):
 				
 		fullinfo = {}
 
-		difs0p5 = []
-		difs0p143 = []
-
-		polycoeffs = numpy.polyfit(x, values, 30)
-		yfit = numpy.polyval(polycoeffs, x)
-
-		for i in range(len(yfit)):
-			dif0p5 = abs(yfit[i] - 0.5)
-			difs0p5.append(dif0p5)
-			fullinfo.update({dif0p5:i})
-			
-			dif0p143 = abs(yfit[i] - 0.143)
-			difs0p143.append(dif0p143)
-			fullinfo.update({dif0p143:i})
-		
-		difs0p5min1=min(difs0p5)
-		difs0p5.remove(difs0p5min1)
-		difs0p5min2=min(difs0p5)
-
-		difs0p143min1=min(difs0p143)
-		difs0p143.remove(difs0p143min1)
-		difs0p143min2=min(difs0p143)
-
-		fsc0p5minpixel1 = fullinfo[difs0p5min1]
-		fsc0p5minpixel2 = fullinfo[difs0p5min2]
-		fsc0p5pixel = (fsc0p5minpixel1 + fsc0p5minpixel2)/2
-		fsc0p5freq1 = inversefreqs[fsc0p5minpixel1]
-		fsc0p5freq2 = inversefreqs[fsc0p5minpixel2]
-
-		fsc0p143minpixel1 = fullinfo[difs0p143min1]
-		fsc0p143minpixel2 = fullinfo[difs0p143min2]
-		fsc0p143pixel = (fsc0p5minpixel1 + fsc0p143minpixel2)/2
-		fsc0p143freq1 = inversefreqs[fsc0p143minpixel1]
-		fsc0p143freq2 = inversefreqs[fsc0p143minpixel2]
-
-		fsc0p5freqavg = (fsc0p5freq1 + fsc0p5freq2)/2.0
-
-		fsc0p143freqavg = (fsc0p143freq1 + fsc0p143freq2)/2.0
-
-		fsc0p5resolution1 = ''
-		fsc0p5resolution1label=''
-
-		fsc0p143resolution1 = ''
-		fsc0p143resolution1label=''
-
-		if fsc0p5pixel and options.apix and options.boxsize:		
-			fsc0p5resolution1 = (float(options.apix) * float(options.boxsize)) / float(fsc0p5pixel)
-			fsc0p5resolution1label = "%.1f" % ( fsc0p5resolution1 )
-		else:
-			print "Method 1 for resolution calculation failed (there was a division by zero somewhere, or you forgot to provide --boxsize or --apix)"
-
-
-		if fsc0p143pixel and options.apix and options.boxsize:		
-			fsc0p143resolution1 = (float(options.apix) * float(options.boxsize)) / float(fsc0p143pixel)
-			fsc0p143resolution1label = "%.1f" % ( fsc0p143resolution1 )
-
-		elif not fsc0p5pixel:
-			print "Method 1 for resolution calculation failed (there was a division by zero somewhere)"
-
-		fsc0p5resolution2=''
-		fsc0p5resolution2label=''
-
-		if fsc0p5freqavg:	
-			fsc0p5resolution2 = 1/fsc0p5freqavg
-			fsc0p5resolution2label = "%.1f" % ( fsc0p5resolution2 )
-		else:
-			print "Method 2 for resolution calculation failed (there was a division by zero somewhere)"
-
-
-		fsc0p143resolution2=''
-		fsc0p143resolution2label=''
-
-		if fsc0p143freqavg:	
-			fsc0p143resolution2 = 1/fsc0p143freqavg
-			fsc0p143resolution2label = "%.1f" % ( fsc0p143resolution2 )
-
-		elif not fsc0p5resolution2:
-			print "Method 2 for resolution calculation failed (there was a division by zero somewhere)"
-
-
-		if sum(values)/len(values) == 1.0:
-			print "The particles you are aligning are exactly the same; cannot compute a reasonable FSC curve for a particle with itself! (but I'll plot the straight line anyway)."
-		else:
-			print "FSC0.5 resolution calculations 1 and 2 are", fsc0p5resolution1, fsc0p5resolution2
-			print "FSC0.143 resolution calculations 1 and 2 are", fsc0p143resolution1, fsc0p143resolution2
-		
-		
 		'''
-		ACTUAL PLOT
+		Smooth out dips in plot
 		'''
-		pylab.rc("axes", linewidth=2.0)
-		#print "\n\n\nThe selected color is", RGB_tuples[kont]
-		#print "And there are these many in total", len(RGB_tuples)
-		#print "And at the moment, kont is", kont
-		#print "\n\n\n"
-		
 		
 		if options.smooth:
 			ret=maxima(x,values)
 			x=ret[0]
 			values=ret[1]
+		
+		'''
+		Fit polynomial to plot
+		'''
+		if options.fit:
+			print "\n\n\nI will do a FIT!\n\n\n"
+			'''
+			Sigmoidal fit
+			'''
+			#ret=sigmoidfit(x,values)
+			#x=ret[0]
+			#values=ret[1]
 			
-		pylab.plot(x, values, color=RGB_tuples[kont], linewidth=2,alpha=0.85)
+			'''
+			Poly fit
+			'''
+			difs0p5 = []
+			difs0p143 = []
+
+			#x=list(set(x))
+	
+			polycoeffs = numpy.polyfit(x, values, options.fit)
+			yfit = numpy.polyval(polycoeffs, x)
+			
+			
+			print "After the fit, yfit are", yfit
+
+			for i in range(len(yfit)):
+				dif0p5 = abs(yfit[i] - 0.5)
+				difs0p5.append(dif0p5)
+				fullinfo.update({dif0p5:i})
+			
+				dif0p143 = abs(yfit[i] - 0.143)
+				difs0p143.append(dif0p143)
+				fullinfo.update({dif0p143:i})
+		
+			difs0p5min1=min(difs0p5)
+			difs0p5.remove(difs0p5min1)
+			difs0p5min2=min(difs0p5)
+
+			difs0p143min1=min(difs0p143)
+			difs0p143.remove(difs0p143min1)
+			difs0p143min2=min(difs0p143)
+
+			fsc0p5minpixel1 = fullinfo[difs0p5min1]
+			fsc0p5minpixel2 = fullinfo[difs0p5min2]
+			fsc0p5pixel = (fsc0p5minpixel1 + fsc0p5minpixel2)/2
+			fsc0p5freq1 = inversefreqs[fsc0p5minpixel1]
+			fsc0p5freq2 = inversefreqs[fsc0p5minpixel2]
+
+			fsc0p143minpixel1 = fullinfo[difs0p143min1]
+			fsc0p143minpixel2 = fullinfo[difs0p143min2]
+			fsc0p143pixel = (fsc0p5minpixel1 + fsc0p143minpixel2)/2
+			fsc0p143freq1 = inversefreqs[fsc0p143minpixel1]
+			fsc0p143freq2 = inversefreqs[fsc0p143minpixel2]
+
+			fsc0p5freqavg = (fsc0p5freq1 + fsc0p5freq2)/2.0
+
+			fsc0p143freqavg = (fsc0p143freq1 + fsc0p143freq2)/2.0
+
+			fsc0p5resolution1 = ''
+			fsc0p5resolution1label=''
+
+			fsc0p143resolution1 = ''
+			fsc0p143resolution1label=''
+
+			if fsc0p5pixel and options.apix and options.boxsize:		
+				fsc0p5resolution1 = (float(options.apix) * float(options.boxsize)) / float(fsc0p5pixel)
+				fsc0p5resolution1label = "%.1f" % ( fsc0p5resolution1 )
+			else:
+				print "Method 1 for resolution calculation failed (there was a division by zero somewhere, or you forgot to provide --boxsize or --apix)"
+
+
+			if fsc0p143pixel and options.apix and options.boxsize:		
+				fsc0p143resolution1 = (float(options.apix) * float(options.boxsize)) / float(fsc0p143pixel)
+				fsc0p143resolution1label = "%.1f" % ( fsc0p143resolution1 )
+
+			elif not fsc0p5pixel:
+				print "Method 1 for resolution calculation failed (there was a division by zero somewhere)"
+
+			fsc0p5resolution2=''
+			fsc0p5resolution2label=''
+
+			if fsc0p5freqavg:	
+				fsc0p5resolution2 = 1/fsc0p5freqavg
+				fsc0p5resolution2label = "%.1f" % ( fsc0p5resolution2 )
+			else:
+				print "Method 2 for resolution calculation failed (there was a division by zero somewhere)"
+
+
+			fsc0p143resolution2=''
+			fsc0p143resolution2label=''
+
+			if fsc0p143freqavg:	
+				fsc0p143resolution2 = 1/fsc0p143freqavg
+				fsc0p143resolution2label = "%.1f" % ( fsc0p143resolution2 )
+
+			elif not fsc0p5resolution2:
+				print "Method 2 for resolution calculation failed (there was a division by zero somewhere)"
+
+			if sum(values)/len(values) == 1.0:
+				print "The particles you are aligning are exactly the same; cannot compute a reasonable FSC curve for a particle with itself! (but I'll plot the straight line anyway)."
+			else:
+				print "FSC0.5 resolution calculations 1 and 2 are", fsc0p5resolution1, fsc0p5resolution2
+				print "FSC0.143 resolution calculations 1 and 2 are", fsc0p143resolution1, fsc0p143resolution2
+		
+		
+		
+			final0p5='NA'
+			if fsc0p5resolution2label:
+				final0p5 = fsc0p5resolution2label
+			elif fsc0p5resolution1label:
+				final0p5 = fsc0p5resolution1label
+
+			final0p143='NA'
+			if fsc0p143resolution2label:
+				final0p143 = fsc0p143resolution2label
+			elif fsc0p143resolution1label:
+				final0p143 = fsc0p143resolution1label	
+
+		
+			ww=open(plot_name.replace('.png','_RESvalues.txt'),'w')
+			resline1 = 'fsc0.5=' +fsc0p5resolution1label + ' , fsc0.143=' +fsc0p143resolution1label + '\n'
+			resline2 = 'fsc0.5=' +fsc0p5resolution2label + ' , fsc0.143=' +fsc0p143resolution2label+ '\n'
+			resline3 = 'fsc0.5=' +str(final0p5) + ' , fsc0.143=' + str(final0p143) + '\n'
+			reslines = [resline1, resline2, resline3]
+			ww.writelines(reslines)
+			ww.close()
+		
+		
+			values=yfit
+			#x=list(set(x))
+			
+			print "THerefore, valuues are", values
+			print "x len is", len(x)
+			print "yfit len is", len(yfit)
+			
+			print "x is", x
+			print "yfit is", yfit
+			
+			
+		'''
+		Actual PLOT
+		'''
+		pylab.rc("axes", linewidth=2.0)
+		pylab.plot(x, values, color=RGB_tuples[kont], linewidth=2,alpha=1.0)
 	
 		'''
 		PLOT Threshold criteria as horizontal lines
@@ -571,81 +722,11 @@ def fscplotter(fscs,options):
 		ax.xaxis.set_major_locator(MaxNLocator(nbins=len(xticks)))
 		pylab.setp(ax, xticklabels=xticks)
 
-		final0p5='NA'
-		if fsc0p5resolution2label:
-			final0p5 = fsc0p5resolution2label
-		elif fsc0p5resolution1label:
-			final0p5 = fsc0p5resolution1label
-
-		final0p143='NA'
-		if fsc0p143resolution2label:
-			final0p143 = fsc0p143resolution2label
-		elif fsc0p143resolution1label:
-			final0p143 = fsc0p143resolution1label	
-
-		
-		ww=open(plot_name.replace('.png','_RESvalues.txt'),'w')
-		resline1 = 'fsc0.5=' +fsc0p5resolution1label + ' , fsc0.143=' +fsc0p143resolution1label + '\n'
-		resline2 = 'fsc0.5=' +fsc0p5resolution2label + ' , fsc0.143=' +fsc0p143resolution2label+ '\n'
-		resline3 = 'fsc0.5=' +str(final0p5) + ' , fsc0.143=' + str(final0p143) + '\n'
-		reslines = [resline1, resline2, resline3]
-		ww.writelines(reslines)
-		ww.close()
 		
 		#pylab.annotate("FSC0.5 = "+str(final0p5)+" A", xy=(0, 1), xytext=(300, -30), xycoords='data', textcoords='offset points',bbox=dict(boxstyle="round", fc="0.8"))
 		#pylab.annotate("FSC0.143 = "+str(final0p143)+" A", xy=(0, 1), xytext=(300, -55), xycoords='data', textcoords='offset points',bbox=dict(boxstyle="round", fc="0.8"))
 		#pylab.annotate("Sampling ="+"%.2f"%(apix) + " A/pixel", xy=(0, 1), xytext=(300, -80), xycoords='data', textcoords='offset points',bbox=dict(boxstyle="round", fc="0.8"))
-			
-		"""
-		SIGMOID FITTING
-		"""
 		
-		#def sigmoid(p,x):
-		#    x0,y0,c,k=p
-		#    y = c / (1 + np.exp(-k*(x-x0))) + y0
-		#    return y
-		
-		#def residuals(p,x,y):
-		#    return y - sigmoid(p,x)
-		
-		#def resize(arr,lower=0.0,upper=1.0):
-		#    arr=arr.copy()
-		#    if lower>upper: lower,upper=upper,lower
-		#    arr -= arr.min()
-		#    arr *= (upper-lower)/arr.max()
-		#    arr += lower
-		#    return arr
-		
-		# raw data
-		#xsig = np.array(x,dtype='float')
-		#ysig = np.array(values,dtype='float')
-		
-		#xsig = resize(-xsig,lower=0.3)
-		#ysig = resize(ysig,lower=0.3)
-		#print(xsig)
-		#print(ysig)
-		#p_guess=(np.median(xsig),np.median(ysig),1.0,1.0)
-		#p, cov, infodict, mesg, ier = scipy.optimize.leastsq(residuals,p_guess,args=(xsig,ysig),full_output=1,warning=True)  
-		
-		#xsig0,ysig0,c,k=p
-		#print('''\
-		#x0 = {x0}
-		#y0 = {y0}
-		#c = {c}
-		#k = {k}
-		#format(xsig0=xsig0,ysig0=ysig0,c=c,k=k))
-
-		#xsigp = np.linspace(0, 1.1, 1500)
-		#pxsigp=sigmoid(p,xsigp)
-
-		#print "\n\n\nPRESUMABLY THE SMOOTH CURVE IS pxsigp, with these many elements", len(pxsigp)
-		#print "Which are", pxsigp
-		#print "\n\n\n"
-
-		# Plot the results
-		#plt.plot(xsig, ysig, '.', xsigp, pxsigp, '-')
-		
-		#plt.savefig(options.output)
 		
 		"""
 		SIGMOID FITTING
