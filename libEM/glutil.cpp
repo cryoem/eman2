@@ -343,22 +343,35 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 
 	//////Begin of Histogram Equalization//////
 
-	const int rangemax=4096;
+	const int rangemax=4082;
 	int gaussianwide=5000;
 	unsigned int* grayhe=NULL;
 	float* gaussianpdf=NULL;
 	float* gaussiancdf=NULL;
 	int* gaussianlookup=NULL;
+	
+	unsigned int* graypdftwo=NULL;
+	
+	bool binflag=0;
+	int binlocation=-1;
+	
 	if (flags&32){
-		int graypdf[rangemax]={0};//256	
-		int graycdf[rangemax-2]={0};//254		
+		int graypdf[rangemax]={0};//256
+		int graycdf[rangemax-2]={0};//254
 		//unsigned int grayhe[rangemax-2]={0};//#number=254
+		
+		graypdftwo = new unsigned int[maxgray-mingray];
 		grayhe = new unsigned int[rangemax-2];
 		//unsigned char graylookup[(int)(render_max-render_min)];//render_max-render_min
 		
 		for (int i=0; i<(int)(rangemax-2); i++) {
-		    grayhe[i] = 0;    // Initialize all elements to zero.
+			grayhe[i] = 0;    // Initialize all elements to zero.
 		}
+		
+		for (int i=0; i<(maxgray-mingray); i++) {//0~253
+			graypdftwo[i]=0;
+		}
+		
 		if (dsx != -1) {
 			int l = x0 + y0 * nx;
 			for (int j = ymax; j >= ymin; j--) {
@@ -385,6 +398,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 					else if (t >= render_max) graypdf[rangemax-1]++;			
 					else {
 						graypdf[(int)(ceil((rangemax-2)*(t - render_min)/(render_max-render_min)))]++;
+						graypdftwo[(unsigned char) (gs * (t - render_min))]++;
 					}
 					l += dsx;
 				}
@@ -450,6 +464,35 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 				graycdf[i]=graycdf[i]+graypdf[j+1];
 			}
 		}
+		
+		//graypdftwo binflag
+		binflag=0;
+		for (int i=1; i<(maxgray-mingray); i++) {//0~253
+			
+			if (((float)graypdftwo[i]/graycdf[rangemax-3])>0.2){
+				binflag=1;
+				binlocation=i;
+				break;
+			}
+		}		
+		
+		if (binflag==1){
+			for (int i=(binlocation*16+1); i<((binlocation+1)*16); i++) {
+				graypdf[i]=0;
+				//graypdf[i]=(graycdf[rangemax-3]-graypdftwo[binlocation])/(maxgray-mingray);
+			}
+
+			for (int i=0; i<(rangemax-2); i++) {//0~253
+				graycdf[i]=0;
+			}
+			
+			for (int i=0; i<(rangemax-2); i++) {//0~253
+				for (int j=0;j<(i+1);j++) {
+					graycdf[i]=graycdf[i]+graypdf[j+1];
+				}
+			}
+		}
+		
 		
 		// start gaussian matching
 		float mean=abs(rangemax-2)/2;
@@ -662,7 +705,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 					else if (t >= render_max) p = maxgray;
 					else if (gamma!=1.0) {
 						k=(int)(gs2 * (t-render_min));		// map float value to 0-4096 range
-						p = gammamap[k];					// apply gamma using precomputed gamma map
+						p = gammamap[k];// apply gamma using precomputed gamma map
 //						k = (int) (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma);
 //						k += mingray;
 //						k = static_cast<int>( (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma) );
@@ -682,7 +725,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 						}
 						else
 						{
-							p=(unsigned char) (gs * (t - render_min));	
+							p=(unsigned char) (gs * (t - render_min));
 						}
 						
 						p += mingray;
@@ -807,11 +850,11 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 	}
 
 
-	delete [] grayhe;
-	
+	delete[] grayhe;
 	delete[] gaussianpdf;
 	delete[] gaussiancdf;
 	delete[] gaussianlookup;
+	delete[] graypdftwo;
 	
 	return ret;
 }
