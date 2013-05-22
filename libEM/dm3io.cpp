@@ -534,10 +534,14 @@ int TagGroup::read(bool nodata)
 {
 	LOGVAR("TagGroup::read()");
 
+
 	int ntags = 0;
 	portable_fseek(in, sizeof(char) * 2, SEEK_CUR);
+	
 	fread(&ntags, sizeof(ntags), 1, in);
+	
 	ByteOrder::become_big_endian(&ntags);
+	
 	LOGVAR("DM3: ntags = %d\n", ntags);
 
 	int err = 0;
@@ -808,7 +812,7 @@ int DM3IO::read_data(float *rdata, int image_index, const Region * area, bool)
 
 	TagGroup root_group(dm3file, tagtable, "");
 	root_group.read(false);
-
+	
 	int nx = tagtable->get_xsize();
 	int ny = tagtable->get_ysize();
 
@@ -822,6 +826,7 @@ int DM3IO::read_data(float *rdata, int image_index, const Region * area, bool)
 	int data_type = tagtable->get_datatype();
 
 	int k = 0;
+	
 	for (int i = y0; i < y0 + ylen; i++) {
 		for (int j = x0; j < x0 + xlen; j++) {
 			switch (data_type) {
@@ -842,6 +847,9 @@ int DM3IO::read_data(float *rdata, int image_index, const Region * area, bool)
 				break;
 			case Gatan::DataType::UNSIGNED_INT32_DATA:
 				rdata[k] = (float) ((unsigned int *) data)[i * nx + j];
+				break;
+			case Gatan::DataType::REAL4_DATA:
+				rdata[k] = (float) ((float *) data)[i * nx + j];
 				break;
 			default:
 				string desc = string("unsupported DM3 data type") +
