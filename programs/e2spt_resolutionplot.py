@@ -348,6 +348,7 @@ def sigmoidfit(x,values):
 	#plt.savefig(options.output)
 
 	return(xsig,ysig)
+	
 
 def maxima(xaxis,yaxis):
 	print "\n\nI have entered maxima!!!!!!!!!!!!!!!!!!!!!\n\n"
