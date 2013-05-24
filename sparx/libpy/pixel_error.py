@@ -532,7 +532,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 					sx[j] = -args_list[j*3+1] + ali_params[j][i*4+1]*cosa[j] - ali_params[j][i*4+2]*sina[j]
 					sy[j] =  args_list[j*3+2] + ali_params[j][i*4+1]*sina[j] + ali_params[j][i*4+2]*cosa[j]
 			sqrtP = sqrt(sum_cosa**2+sum_sina**2)
-			sqr_pixel_error[i] = d*d/4.*(1-sqrtP/L) + sqerr(sx) + sqerr(sy)
+			sqr_pixel_error[i] = max( 0.0, d*d/4.*(1-sqrtP/L) + sqerr(sx) + sqerr(sy) )
 			# Get ave transform params
 			H = Transform({"type":"2D"})
 			H.set_matrix([sum_cosa/sqrtP, sum_sina/sqrtP, 0.0, sum(sx)/L, -sum_sina/sqrtP, sum_cosa/sqrtP, 0.0, sum(sy)/L, 0.0, 0.0, 1.0, 0.0])
@@ -714,10 +714,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	for i in xrange(nima):
 		if i in cleaned_part:
 			j = cleaned_part.index(i)
-			if pixel_error_after[j] > 0:
-				err = sqrt(pixel_error_after[j])
-			else:
-				err = 0.0
+			err = sqrt(pixel_error_after[j])
 			if err < err_thld:
 				stable_set.append([err, i, ave_params[j]])
 				val += err
