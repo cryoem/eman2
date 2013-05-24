@@ -673,7 +673,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	ali_params_cleaned = [[] for i in xrange(num_ali)]
 	cleaned_part = []
 	for j in xrange(nima2):
-		if sqrt(pixel_error_before[j]) > 3*err_thld:
+		if pixel_error_before[j] > 0 and sqrt(pixel_error_before[j]) > 3*err_thld:
 			pass  #print "  removed ",3*err_thld,j,sqrt(pixel_error_before[j])
 		else:
 			cleaned_part.append(mir_stab_part[j])
@@ -714,7 +714,10 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	for i in xrange(nima):
 		if i in cleaned_part:
 			j = cleaned_part.index(i)
-			err = sqrt(pixel_error_after[j])
+			if pixel_error_after[j] > 0:
+				err = sqrt(pixel_error_after[j])
+			else:
+				err = 0.0
 			if err < err_thld:
 				stable_set.append([err, i, ave_params[j]])
 				val += err
