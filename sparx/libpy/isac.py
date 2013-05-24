@@ -38,7 +38,6 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	from mpi          import mpi_bcast, mpi_barrier, mpi_send, mpi_recv, mpi_comm_split
 	from random       import randint, seed
 	from time         import localtime, strftime
-	from subprocess   import call
 	from applications import within_group_refinement
 	import os
 
@@ -264,8 +263,10 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				all_ali_params[3].append(mirror)
 				all_ali_params[4].append(scale)
 			if key == group_main_node:
-				call(['rm', '-f', ali_params_filename + "_" + str(mloop)])
-				write_text_file(all_ali_params, ali_params_filename + "_" + str(mloop))
+				final_ali_params_filename = ali_params_filename + "_" + str(mloop)
+				if os.path.exists(final_ali_params_filename):
+					os.remove(final_ali_params_filename)
+				write_text_file(all_ali_params, final_ali_params_filename)
 			del all_ali_params
 
 			# gather the data from the group main node to the main node
@@ -488,8 +489,10 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			all_ali_params[3].append(mirror)
 			all_ali_params[4].append(scale)
 		if key == group_main_node:
-			call(['rm', '-f', ali_params_filename + "_" + str(mloop)])
-			write_text_file(all_ali_params, ali_params_filename + "_" + str(mloop))
+			final_ali_params_filename = ali_params_filename + "_" + str(mloop)
+			if os.path.exists(final_ali_params_filename):
+				os.remove(final_ali_params_filename)
+			write_text_file(all_ali_params, final_ali_params_filename)
 
 		# gather refim to the main node
 		if key == group_main_node:
@@ -540,7 +543,9 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 #				refim[i].write_image("log_afterMatching_" + str(color) + "_" + str(mloop) + ".hdf", i)
 
 	if key == group_main_node:
-		call(['rm', '-f', ali_params_filename + "_" + str(mloop)])
+		final_ali_params_filename = ali_params_filename + "_" + str(mloop)
+		if os.path.exists(final_ali_params_filename):
+			os.remove(final_ali_params_filename)
 
 	if myid == main_node:
 		print "**********************************************************************"
@@ -557,7 +562,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	if myid == main_node:
 		STB_PART = match_independent_runs(alldata, refim, indep_run, thld_grp)
 		l_STB = len(STB_PART)
-		call(['mkdir', ali_params_dir])
+		os.mkdir(ali_params_dir)
 	else:
 		l_STB = 0
 	mpi_barrier(MPI_COMM_WORLD)
@@ -705,11 +710,11 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 	from utilities	import reduce_EMData_to_root, bcast_EMData_to_all
 	from utilities	import get_params2D, set_params2D
 	from random	   import seed, randint, jumpahead
-	from subprocess   import call
 	from mpi		  import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 	from mpi		  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_recv, mpi_send
 	from mpi		  import MPI_SUM, MPI_FLOAT, MPI_INT, MPI_TAG_UB
 	from numpy import zeros, float32
+	import os
 
 	if comm == -1: comm = MPI_COMM_WORLD		
 
@@ -1067,18 +1072,20 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		if myid == main_node:
 			#  I added a switch here.  I do not think we will need those in the future.  PAP 03/26
 			if outname != None:
-				call(['rm', '-f', outname+'%02d_%03d.hdf'%(color, Iter)])
+				final_outname = outname+'%02d_%03d.hdf'%(color, Iter)
+				if os.path.exists(final_outname):
+					os.remove(final_outname)
 			if check_stability:
 				# In this case, the attr 'members' is defined as the stable members, its setting is done
 				# in the code before
 				if outname != None:
 					for j in xrange(numref):
-						refi[j].write_image(outname+"%02d_%03d.hdf"%(color, Iter), j)
+						refi[j].write_image(final_outname, j)
 			else:
 				for j in xrange(numref):
 					refi[j].set_attr_dict({'members': id_list[j], 'n_objects': len(id_list[j])})
 					if outname != None:
-						refi[j].write_image(outname+"%02d_%03d.hdf"%(color, Iter), j)
+						refi[j].write_image(final_outname, j)
 		mpi_barrier(comm)
 
 	return refi
