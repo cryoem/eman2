@@ -245,7 +245,7 @@ def main():
 			
 			mastervalues.update({F:[sizes,valuesforthisfile]})				
 		
-		print "\n\n\n\n\n\n\n@@@@@@@@@@@@@@\nThe len of masteralues is", len(mastervalues)
+		print "\n\n\n\n\n\n\n@@@@@@@@@@@@@@\nThe len of mastervalues before FULL is", len(mastervalues)
 		print "@@@@@@@@@@@@@@@\n\n\n"
 		
 		'''
@@ -255,7 +255,7 @@ def main():
 		k=0
 		absmax=0.0
 		for F in mastervalues:
-			print "\n\n\n\n\n\n\n\n\n\n\n\n\n !!!!!!!!!!!!!!!!!!!!! \nWorking with this file now", F
+			print "\n\n\n\n\n\n\n\n\n\n\n\n\n !!!!!!!!!!!!!!!!!!!!! \nWorking with this file now for FULL plot", F
 			print "!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n\n\n\n"
 			sizes = mastervalues[F][0]
 			valuesforthisfile = mastervalues[F][1]
@@ -268,7 +268,7 @@ def main():
 			if not options.singleplot:
 				namep = F.replace('.txt','.png')
 			
-			print "The name for these plots will be", namep
+			print "The name for these FULL plots will be", namep
 			markernum=0
 			#if options.colorlessplot:
 			#	markernum=k
@@ -281,203 +281,150 @@ def main():
 			if not options.singleplot:
 				plt.clf()
 		
-			"""	
-			'''
-			Plot a subset of the extension for all files if options.subset is defined
-			'''
-			k=0
-			plt.clf()
-			abssubmax=0.0	
-			if options.subset:
-				for F in mastervalues:
-					sizes = mastervalues[F][0]
-					valuesforthisfile = mastervalues[F][1]
+		print "\n\n\n\n\n\n\n@@@@@@@@@@@@@@\nThe len of mastervalues before SUB is", len(mastervalues)
+		print "@@@@@@@@@@@@@@@\n\n\n"
+		k=0
+		plt.clf()
+		abssubmax=0.0	
+		if options.subset:
+			print "subset is on!"
 			
-					sizessub = sizes[:options.subset]
-					valuessub = valuesforthisfile[:options.subset]
+			for F in mastervalues:
+				print "\n\n\n\n\n\n\n\n\n\n\n\n\n !!!!!!!!!!!!!!!!!!!!! \nWorking with this file now for SUB plot", F
+				print "!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n\n\n\n"
+				sizes = mastervalues[F][0]
+				valuesforthisfile = mastervalues[F][1]
+		
+				sizessub = sizes[:options.subset]
+				valuessub = valuesforthisfile[:options.subset]
+		
+				if float(max(valuessub)) > abssubmax:
+					abssubmax = float(max(valuessub))
+					print "New ABSSUBMAX is", abssubmax
+		
+				namepsub = F.replace('.txt','_sub.png')
 			
-					if float(max(valuessub)) > abssubmax:
-						abssubmax = float(max(valuessub))
-						print "New ABSSUBMAX is", abssubmax
 			
-					namepsub = namep.replace('.png','_sub.png')
-			
-					markernum=0
-					if options.colorlessplot:
-						markernum=k
-						k+=1
-				
-					idee=F.split('_')[0]
-					plotter(sizessub,valuessub,namepsub,0,0,markernum,0,abssubmax,idee)
-					plt.savefig(options.path + '/' + os.path.basename(namepsub))
+				print "The name for these SUB plots will be", namepsub
 
-					if not options.singleplot:
-						plt.clf()
-				
-		
-			'''
-			Plot only the minima, either for full extension or a subset of the files' values
-			'''
-			k=0
-			plt.clf()
-			absminmax=0.0
-			if options.plotminima:
-				for F in mastervalues:	
-					if options.colorlessplot:
-						markn=k+1
-		
-					sizes = mastervalues[F][0]
-					valuesforthisfile = mastervalues[F][1]
-				
-					ret=minima(sizes,valuesforthisfile)
-				
-					sizesmin = ret[0]
-					valuesforthisfilemin = ret[1]
-					yminnonconvex = ret[2]
-				
-					if float(max(valuesmin)) > absminmax:
-						abssubmax = float(max(valuesmin))
-						print "New ABSSUBMAX is", absminmax
-				
-					namepmin = namep.replace('.png','_MIN.png')
-		
 				markernum=0
 				if options.colorlessplot:
-					markernum=k
+					#markernum=k
 					k+=1
 			
 				idee=F.split('_')[0]
-				plotter(sizes,valuesforthisfile,namep,0,0,markernum,0,absminmax,idee)
-				plt.savefig(options.path + '/' + os.path.basename(namepmin))
+				plotter(sizessub,valuessub,namepsub,0,0,markernum,0,abssubmax,idee)
+				plt.savefig(options.path + '/' + os.path.basename(namepsub))
 		
 				if not options.singleplot:
 					plt.clf()
-			"""
+	
+		
+		'''
+		Plot only the minima, either for full extension or a subset of the files' values
+		'''
+		
+		print "\n\n\n\n\n\n\n@@@@@@@@@@@@@@\nThe len of mastervalues before MIN is", len(mastervalues)
+		print "@@@@@@@@@@@@@@@\n\n\n"
+		k=0
+		plt.clf()
+		absminmax=0.0
+		if options.plotminima:
+			for F in mastervalues:
+				print "\n\n\n\n\n\n\n\n\n\n\n\n\n !!!!!!!!!!!!!!!!!!!!! \nWorking with this file now for MIN plot", F
+				print "!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n\n\n\n"	
+				if options.colorlessplot:
+					#markn=k+1
+					pass
+	
+				sizes = mastervalues[F][0]
+				valuesforthisfile = mastervalues[F][1]
+	
+				ret=minima(sizes,valuesforthisfile)
+				sizesmin=ret[0]
+				valuesmin=ret[1]
+				yminnonconvex=ret[2]
+		
+				if float(max(valuesmin)) > absminmax:
+					absminmax = float(max(valuesmin))
+					print "New ABSMINMAX is", absminmax
 			
-			'''
-			Plot a subset of the extension for all files if options.subset is defined
-			'''
-			k=0
-			plt.clf()
-			abssubmax=0.0	
-			if options.subset:
-				for F in mastervalues:
-					sizes = mastervalues[F][0]
-					valuesforthisfile = mastervalues[F][1]
-			
-					sizessub = sizes[:options.subset]
-					valuessub = valuesforthisfile[:options.subset]
-			
-					if float(max(valuessub)) > abssubmax:
-						abssubmax = float(max(valuessub))
-						print "New ABSSUBMAX is", abssubmax
-			
-					namepsub = namep.replace('.png','_sub.png')
-			
-					markernum=0
-					if options.colorlessplot:
-						#markernum=k
-						k+=1
+				namepmin=F.replace('.txt','_MIN.png')
 				
-					idee=F.split('_')[0]
-					plotter(sizessub,valuessub,namepsub,0,0,markernum,0,abssubmax,idee)
-					plt.savefig(options.path + '/' + os.path.basename(namepsub))
-			
-					if not options.singleplot:
-						plt.clf()
-		
-			
-			'''
-			Plot only the minima, either for full extension or a subset of the files' values
-			'''
-			k=0
-			plt.clf()
-			absminmax=0.0
-			if options.plotminima:
-				for F in mastervalues:	
-					if options.colorlessplot:
-						#markn=k+1
-						pass
-		
-					sizes = mastervalues[F][0]
-					valuesforthisfile = mastervalues[F][1]
-		
-					ret=minima(sizes,valuesforthisfile)
-					sizesmin=ret[0]
-					valuesmin=ret[1]
-					yminnonconvex=ret[2]
-			
-					if float(max(valuesmin)) > absminmax:
-						absminmax = float(max(valuesmin))
-						print "New ABSMINMAX is", absminmax
+				print "The name for these MIN plots will be", namepmin
+
+				markernum=0
+				if options.colorlessplot:
+					#markernum=k
+					k+=1
 				
-					namepmin=namep.replace('.png','_min.png')
+				idee=F.split('_')[0]
 			
-					markernum=0
-					if options.colorlessplot:
-						#markernum=k
-						k+=1
-					
-					idee=F.split('_')[0]
-				
-					plotter(sizesmin,valuesmin,namepmin,0,0,markernum,0,absminmax,idee,yminnonconvex)
-					plt.savefig(options.path + '/' + os.path.basename(namepmin))
+				plotter(sizesmin,valuesmin,namepmin,0,0,markernum,0,absminmax,idee,yminnonconvex)
+				plt.savefig(options.path + '/' + os.path.basename(namepmin))
+	
+				if not options.singleplot:
+					plt.clf()
 		
-					if not options.singleplot:
-						plt.clf()
-			
-			'''
-			Plot minima for subset
-			'''
-			k=0
-			plt.clf()
-			absminsubmax=0.0
-			if options.plotminima and options.subset:
-				for F in mastervalues:	
-					if options.colorlessplot:
-						#markn=k+1
-						pass
-								
-					sizes = mastervalues[F][0]
-					valuesforthisfile = mastervalues[F][1]
-		
-					ret=minima(sizes,valuesforthisfile)
-					sizesmin=ret[0]
-					valuesmin=ret[1]
-					yminnonconvex=ret[2]
-				
-					indx=0
-					for i in sizesmin:
-						if int(i) > int(options.subset):
-							print "i is larger than subset see", i, int(options.subset)
-							break
-						else:
-							print "I have added 1 to indx"
-							indx+=1
-						
-					print "Index is", indx
+		'''
+		Plot minima for subset
+		'''
+		k=0
+		plt.clf()
+		absminsubmax=0.0
+		print "\n\n\n\n\n\n\n@@@@@@@@@@@@@@\nThe len of mastervalues before SUBMIN is", len(mastervalues)
+		print "@@@@@@@@@@@@@@@\n\n\n"
+		if options.plotminima and options.subset:
+			for F in mastervalues:
+				print "\n\n\n\n\n\n\n\n\n\n\n\n\n !!!!!!!!!!!!!!!!!!!!! \nWorking with this file now for SUBMIN plot", F
+				print "!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n\n\n\n"
+				if options.colorlessplot:
+					#markn=k+1
+					pass
 							
-					sizesminsub = sizesmin[:indx]
-					valuesminsub = valuesmin[:indx]
-					yminnonconvexsub = yminnonconvex[:indx]
-				
-					if float(max(valuesminsub)) > absminsubmax:
-						absminsubmax = float(max(valuesminsub))
-						print "New ABSMINSUBMAX is", absminsubmax
-				
-					namepminsub = namepmin.replace('.png','_sub.png')
+				sizes = mastervalues[F][0]
+				valuesforthisfile = mastervalues[F][1]
+	
+				ret=minima(sizes,valuesforthisfile)
+				sizesmin=ret[0]
+				valuesmin=ret[1]
+				yminnonconvex=ret[2]
 			
-					markernum=0
-					if options.colorlessplot:
-						#markernum=k
-						k+=1
+				indx=0
+				for i in sizesmin:
+					if int(i) > int(options.subset):
+						print "i is larger than subset see", i, int(options.subset)
+						break
+					else:
+						print "I have added 1 to indx"
+						indx+=1
+					
+				print "Index is", indx
+						
+				sizesminsub = sizesmin[:indx]
+				valuesminsub = valuesmin[:indx]
+				yminnonconvexsub = yminnonconvex[:indx]
+			
+				if float(max(valuesminsub)) > absminsubmax:
+					absminsubmax = float(max(valuesminsub))
+					print "New ABSMINSUBMAX is", absminsubmax
+			
+				namepsubmin = F.replace('.txt','_sub_MIN.png')
 				
-					idee=F.split('_')[0]
-					plotter(sizesminsub,valuesminsub,namepminsub,0,0,markernum,0,absminsubmax,idee,yminnonconvexsub)
-					plt.savefig(options.path + '/' + os.path.basename(namepminsub))
+				print "The name for these FULL plots will be", namepsubmin
+
 		
-					if not options.singleplot:
-						plt.clf()
+				markernum=0
+				if options.colorlessplot:
+					#markernum=k
+					k+=1
+			
+				idee=F.split('_')[0]
+				plotter(sizesminsub,valuesminsub,namepsubmin,0,0,markernum,0,absminsubmax,idee,yminnonconvexsub)
+				plt.savefig(options.path + '/' + os.path.basename(namepsubmin))
+	
+				if not options.singleplot:
+					plt.clf()
 		
 	return()
 
@@ -669,8 +616,9 @@ def doit(corg,options,originaldir):
 			name = options.path + '/' + computer + 'oneccf_' + corg + '.txt'
 		if aidee == 'rotonly':
 			name = options.path + '/' + computer + 'rotonly_CS' + str(coarsestep).zfill(len(str(coarsestep))) + '_FS' + str(finestep).zfill(len(str(finestep))) + '_'+ corg + '.txt'
-			
-		#txt = open(name,'w')
+		
+		mastername = name.replace('.txt','_master.txt')
+		
 		times=[]
 		cmd=''
 		for size in mults:
@@ -780,9 +728,12 @@ def doit(corg,options,originaldir):
 			if td:
 				#print "Excution time was", td
 				times.append(float(td))
-				#line2write= str(size) + ' ' + str(td)+'\n'
+				line2write= str(size) + ' ' + str( float(td) )+'\n'
 				#txt.write(line2write)
-				
+				txt = open(mastername,'a')
+				txt.write( line2write )
+				txt.close()
+					
 		#txt.close()
 	
 		data.update({aidee:[mults,times]})
