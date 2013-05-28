@@ -17902,7 +17902,7 @@ vector<float> Util::multiref_polar_ali_2d_peaklist(EMData* image, const vector< 
 
 struct assign_groups_comparator {
 	const float * values;
-	bool operator() (int i,int j) { return (values[i] < values[j]); }
+	bool operator() (int i,int j) { return (values[i] > values[j]); }
 	assign_groups_comparator(const float * v) : values(v) {}
 };
 
