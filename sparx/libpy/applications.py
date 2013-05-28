@@ -10109,7 +10109,7 @@ def cml_find_structure_main(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 	if os.path.exists(out_dir): ERROR('Output directory exists, please change the name and restart the program', "cml_find_structure_main", 1)
 	os.mkdir(out_dir)
 	import global_def
-	global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+	global_def.LOGFILE =  os.path.join(out_dir, global_def.LOGFILE)
 	print_begin_msg('find_struct')
 
 	if rand_seed > 0: seed(rand_seed)
@@ -10187,7 +10187,7 @@ def cml_find_structure_MPI2(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_se
 		if os.path.exists(out_dir): ERROR('Output directory exists, please change the name and restart the program', "cml_find_structure_main", 1)
 		os.mkdir(out_dir)
 		import global_def
-		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+		global_def.LOGFILE =  os.path.join(out_dir, global_def.LOGFILE)
 		print_begin_msg('find_struct')
 
 	if rand_seed > 0: seed(rand_seed)
@@ -10270,7 +10270,7 @@ def cml_find_structure_MPI(stack, out_dir, ir, ou, delta, dpsi, lf, hf, rand_see
 		t_start = start_time()
 		os.mkdir(out_dir)
 		import global_def
-		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+		global_def.LOGFILE =  os.path.join(out_dir, global_def.LOGFILE)
 		print_begin_msg('find_struct')
 
 
