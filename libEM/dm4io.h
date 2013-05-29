@@ -106,6 +106,8 @@ namespace EMAN
 				BOOLEAN = 8,
 				CHAR = 9,
 				OCTET = 10,
+				OCTEU = 11,
+				OCTEV = 12,
 				STRUCT = 15,
 				STRING = 18,
 				ARRAY = 20
