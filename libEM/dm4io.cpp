@@ -333,7 +333,7 @@ int TagData::read_array_data(vector < int >item_types, bool nodata)
 
 	size_t buf_size = item_size * array_size;
 
-	if (item_types.size() == 1 && item_types[0] == USHORT) {
+	if (item_types.size() == 1 && item_types[0] == USHORT && nodata) {
 		string val = read_string(array_size);
 		tagtable->add(name, val);
 		LOGVAR("value: %s", val.c_str());
