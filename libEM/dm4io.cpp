@@ -221,6 +221,18 @@ string TagData::read_native(bool is_value_stored)
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%10e", val);
 	}
+	else if (tag_type == OCTEU) {
+		double val = 0;
+		fread(&val, sz, 1, in);
+		tagtable->become_host_endian(&val);
+		sprintf(val_str, "%10e", val);
+	}
+	else if (tag_type == OCTEV) {
+		double val = 0;
+		fread(&val, sz, 1, in);
+		tagtable->become_host_endian(&val);
+		sprintf(val_str, "%10e", val);
+	}
 	else {
 		LOGERR("invalid tag type: '%d'", tag_type);
 		exit(1);
@@ -239,7 +251,7 @@ vector < int >TagData::read_array_types()
 {
 	LOGVAR("TagData::read_array_types()");
 
-	int array_type = 0;
+	long array_type = 0;
 	fread(&array_type, sizeof(array_type), 1, in);
 
 	ByteOrder::become_big_endian(&array_type);
@@ -305,7 +317,7 @@ int TagData::read_array_data(vector < int >item_types, bool nodata)
 	}
 
 	int err = 0;
-	int array_size = 0;
+	long array_size = 0;
 
 	fread(&array_size, sizeof(array_size), 1, in);
 	ByteOrder::become_big_endian(&array_size);
@@ -357,8 +369,8 @@ vector < int >TagData::read_struct_types()
 {
 	LOGVAR("TagData::read_struct_types()");
 
-	unsigned int namelength = 0;
-	unsigned int nfields = 0;
+	long namelength = 0;
+	long nfields = 0;
 
 	fread(&namelength, sizeof(namelength), 1, in);
 	ByteOrder::become_big_endian(&namelength);
@@ -375,10 +387,10 @@ vector < int >TagData::read_struct_types()
 		fread(&namelength, sizeof(namelength), 1, in);
 		ByteOrder::become_big_endian(&namelength);
 
-		int field_type = 0;
+		long field_type = 0;
 		fread(&field_type, sizeof(field_type), 1, in);
 		ByteOrder::become_big_endian(&field_type);
-
+		
 		LOGVAR("%dth namelength = %d, type = '%s'",
 			   i, namelength, GatanDM4::to_str((Type) field_type));
 		field_types.push_back(field_type);
@@ -392,8 +404,10 @@ int TagData::read_any(bool nodata)
 	int err = 0;
 
 	fread(&tag_type, sizeof(tag_type), 1, in);
+	
 	ByteOrder::become_big_endian(&tag_type);
-	LOGVAR("tag type = '%s'\n", GatanDM4::to_str((Type) tag_type));
+	LOGVAR("TagData::read_any tag type = '%s'\n", GatanDM4::to_str((Type) tag_type));
+
 
 	if (tag_type == ARRAY) {
 		vector < int >item_types = read_array_types();
@@ -403,8 +417,11 @@ int TagData::read_any(bool nodata)
 		vector < int >field_types = read_struct_types();
 
 		for (unsigned int i = 0; i < field_types.size(); i++) {
+			
 			tag_type = static_cast < Type > (field_types[i]);
+			
 			string val = read_native(false);
+			
 			char int_str[32];
 			sprintf(int_str, " #%d", i);
 			string fieldname = name + string(int_str);
@@ -412,6 +429,7 @@ int TagData::read_any(bool nodata)
 		}
 	}
 	else if (tag_type == STRING) {
+
 		int str_sz = 0;
 		fread(&str_sz, sizeof(str_sz), 1, in);
 		ByteOrder::become_big_endian(&str_sz);
@@ -443,6 +461,13 @@ int TagData::read(bool nodata)
 	const char *DATA_TYPE_MARK = "%%%%";
 	const size_t mark_sz = strlen(DATA_TYPE_MARK);
 	char *mark = new char[mark_sz + 1];
+
+	long interval;
+	
+	fread(&interval, sizeof(interval), 1, in);
+
+	ByteOrder::become_big_endian(&interval);
+	
 	fread(mark, mark_sz, 1, in);
 	mark[mark_sz] = '\0';
 
@@ -479,6 +504,7 @@ size_t TagData::typesize(int t) const
 	size_t size = 0;
 	Type type = static_cast < Type > (t);
 
+	
 	switch (type) {
 	case SHORT:
 		size = sizeof(short);
@@ -504,6 +530,12 @@ size_t TagData::typesize(int t) const
 	case CHAR:
 	case OCTET:
 		size = sizeof(char);
+		break;
+	case OCTEU:
+		size = sizeof(double);
+		break;
+	case OCTEV:
+		size = sizeof(double);
 		break;
 	default:
 		LOGERR("no such type: '%d'\n", type);
@@ -534,12 +566,26 @@ int TagEntry::read(bool nodata)
 	fread(&tag_type, sizeof(char), 1, in);
 
 	if (tag_type != GROUP_TAG && tag_type != DATA_TAG) {
-		LOGERR("TagEntry::read() invalid tag type: %d", tag_type);
-		return 1;
+		portable_fseek(in, sizeof(char) * 7, SEEK_CUR);
+		fread(&tag_type, sizeof(char), 1, in);
 	}
+
+	if (tag_type != GROUP_TAG && tag_type != DATA_TAG) {
+		tag_type =fgetc(in);
+		if (tag_type ==EOF)
+		{
+			return 1;
+		}
+		else{
+			LOGERR("TagEntry::read() invalid tag type: %d", tag_type);
+			return 1;
+		}
+	}
+
 
 	short name_len = 0;
 	fread(&name_len, sizeof(short), 1, in);
+
 	ByteOrder::become_big_endian(&name_len);
 
 	if (name_len != 0) {
@@ -565,17 +611,20 @@ int TagEntry::read(bool nodata)
 		   name.c_str(), name_len, GatanDM4::to_str((EntryType) tag_type));
 
 	if (tag_type == DATA_TAG) {
+
 		TagData tag_data(in, tagtable, name);
 		err = tag_data.read(nodata);
 	}
 	else if (tag_type == GROUP_TAG) {
+
 		TagGroup group(in, tagtable, name);
 		err = group.read(nodata);
 	}
 
+/*	
 	long tot_size = 0;	//size of DataType record + size of data
 	fread(&tot_size, sizeof(long), 1, in);
-
+*/
 	return err;
 }
 
@@ -595,14 +644,31 @@ int TagGroup::read(bool nodata)
 	LOGVAR("TagGroup::read()");
 
 	long ntags = 0;
+	
 	portable_fseek(in, sizeof(char) * 2, SEEK_CUR);
+
 	fread(&ntags, sizeof(ntags), 1, in);
+	
 	ByteOrder::become_big_endian(&ntags);
+
 	LOGVAR("DM4: ntags = %d\n", ntags);
 
 	int err = 0;
-
+	char flagend;
 	for (int i = 0; i < ntags; i++) {
+		/*
+		portable_fseek(in, sizeof(char) * 9, SEEK_CUR);
+		fread(&flagend, sizeof(char), 1, in);
+		
+		if (flagend ==EOF){
+			break;
+		}
+		else{
+			portable_fseek(in, -sizeof(char) * 10, SEEK_CUR);;
+		}
+		
+		*/
+		
 		TagEntry tag_entry(in, tagtable, this);
 		err = tag_entry.read(nodata);
 
@@ -839,6 +905,12 @@ int DM4IO::read_data(float *rdata, int image_index, const Region * area, bool)
 			case GatanDM4::DataType::UNSIGNED_INT32_DATA:
 				rdata[k] = (float) ((unsigned int *) data)[i * nx + j];
 				break;
+			case GatanDM4::DataType::REAL4_DATA:
+				rdata[k] = (float) ((float *) data)[i * nx + j];
+				break;
+			case GatanDM4::DataType::REAL8_DATA:
+				rdata[k] = (double) ((float *) data)[i * nx + j];
+				break;				
 			default:
 				string desc = string("unsupported DM3 data type") +
 					string(GatanDM4::to_str((GatanDM4::DataType::GatanDataType) data_type));
