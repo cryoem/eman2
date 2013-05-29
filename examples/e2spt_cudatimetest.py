@@ -85,7 +85,7 @@ def main():
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_argument("--path",type=str,default=None,help="Directory to store results in. The default is a numbered series of directories containing the prefix 'sptsimjob'; for example, sptsimjob_02 will be the directory by default if 'sptsimjob_01' already exists.")
+	parser.add_argument("--path",type=str,default='sptCudaTest',help="Directory to store results in. The default is a numbered series of directories containing the prefix 'sptCudaTest'; for example, sptCudaTest_01 will be the directory by default if 'sptCudaTest_00' already exists.")
 	parser.add_argument("--noplot", action='store_true', help="To run jobs on a cluster or other interfaces that don't support plotting, turn this option on.",default=False)
 	
 	parser.add_argument("--plotonly",type=str, help="""If you already have the time variation with boxsize (for a particular cpu or gpu) in a text file in rows of 'boxsize,time', 
@@ -117,27 +117,36 @@ def main():
 		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
 		sys.exit(1)
 
-	if not options.path: 
-		options.path = "sptCudaTest_01"
+	#if not options.path: 
+	#	options.path = "sptCudaTest_01"
 	
-	files=os.listdir(os.getcwd())
-	while options.path in files:
-		if '_' not in options.path:
-			options.path = options.path + '_00'
-		else:
-			jobtag=''
-			components=options.path.split('_')
-			if components[-1].isdigit():
-				components[-1] = str(int(components[-1])+1).zfill(2)
-			else:
-				components.append('00')
-						
-			options.path = '_'.join(components)
-
-	if options.path not in files:
+	#files=os.listdir(os.getcwd())
+	#while options.path in files:
+	#	if '_' not in options.path:
+	#		options.path = options.path + '_00'
+	#	else:
+	#		jobtag=''
+	#		components=options.path.split('_')
+	#		if components[-1].isdigit():
+	#			components[-1] = str(int(components[-1])+1).zfill(2)
+	#		else:
+	#			components.append('00')
+	#					
+	#		options.path = '_'.join(components)
+	
+	if not options.path: 
+		options.path = numbered_path("spt",True)
+	
+	elif options.path:
+		options.path = numbered_path( options.path ,True)
 		
+		#if options.path[:4].lower()!="bdb:":
+		#	options.path="bdb:"+options.path
+
+	files=os.listdir(os.getcwd())
+	if options.path not in files:
 		os.system('mkdir ' + options.path)
-	print "path will be", options.path
+	print "Path will be", options.path
 	
 	'''
 	If options.plotonly is off (no files provided) you actually have to measure alignment time....
