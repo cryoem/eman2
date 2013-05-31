@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Steven Ludtke, 02/15/2011, Jesus Galaz-Montoya 03/2011. Last modification: 04/2013
+# Author: Steven Ludtke, 02/15/2011, Jesus Galaz-Montoya 03/2011. Last modification: 05/2013
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -134,6 +134,7 @@ def main():
 	
 	(options, args) = parser.parse_args()
 	print "Wedge paramters ARE defined, see", options.wedgeangle, options.wedgei, options.wedgef
+	print "you do NOT have to use PARALLELISM"
 
 	
 
@@ -186,6 +187,9 @@ def main():
 	if options.highpass: 
 		options.highpass=parsemodopt(options.highpass)
 		
+	if options.highpassfine: 
+		options.highpassfine=parsemodopt(options.highpassfine)
+		
 	if options.postprocess: 
 		options.postprocess=parsemodopt(options.postprocess)
 
@@ -203,19 +207,14 @@ def main():
 		options.shrink = options.shrinkrefine
 		print "It makes no sense for shrinkrefine to be larger than shrink; therefore, shrink will be made to match shrinkrefine"
 	
-		
-	if options.path and options.path[:4].lower()!="bdb:":
-		#if options.path == '.':
-		#	findir=os.listdir(os.getcwd())
-		#	if "res" not in findir:
-		#		os.mkdir('res')
-		#	else:
-		#		options.path = 'res'
-			 
-		options.path="bdb:"+options.path
-	
 	if not options.path: 
 		options.path="bdb:"+numbered_path("spt",True)
+	
+	elif options.path:
+		options.path=numbered_path( options.path ,True)
+		
+		if options.path[:4].lower()!="bdb:":
+			options.path="bdb:"+options.path
 		
 	hdr = EMData(options.input,0,True)
 	nx = hdr["nx"]
@@ -265,7 +264,9 @@ def main():
 			print "Error: do not use --keepsig with one particle, also keep should be 1.0 if specified"
 			sys.exit(1)
 
-	# Initialize parallelism if being used
+	'''
+	Initialize parallelism if being used
+	'''
 	if options.parallel :
 		print "\n\nINITIALIZING PARALLELISM!"
 		print "\n\n"
@@ -323,8 +324,9 @@ def main():
 					emdata.set_attr("test_xfm",db["tomo_%04d"%i])
 				emdata.write_image("%s#seedtree_0"%options.path,i)
 
-			
-			# Outer loop covering levels in the converging binary tree
+			'''
+			#Outer loop covering levels in the converging binary tree
+			'''
 			for i in range(nseediter):
 				infile="%s#seedtree_%d"%(options.path,i)
 				outfile="%s#seedtree_%d"%(options.path,i+1)
@@ -333,20 +335,23 @@ def main():
 				results=[]
 				transform = None
 				# loop over volumes in the current level
+				
 				for j in range(0,nseed/(2**i),2):
 
-					# Unfortunately this tree structure limits the parallelism to the number of pairs at the current level :^(
+					#Unfortunately this tree structure limits the parallelism to the number of pairs at the current level :^(
 					if options.parallel:
 						#task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
 						#	options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,transform,options.verbose-1,options.randomizewedge,options.wedgeangle,options.wedgei,options.wedgef)
+						
 						task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options,transform)
 						tasks.append(task)
 					else:
 						print "No parallelism specified"
-						result=align3Dfunc(infile,j,infile,j+1,options)
-						results.append(result)
-						
-				# Start the alignments for this level
+						result=align3Dfunc(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options,transform)
+						results.append(result['final'])
+				'''		
+				#Start the alignments for this level
+				'''
 				if options.parallel:
 					tids=etc.send_tasks(tasks)
 					if options.verbose: 
@@ -358,9 +363,13 @@ def main():
 					if options.verbose>2 : 
 						print "Results:"
 						pprint(results)
-				
-				print "before make average results are", results
-				
+				else:
+					print "No parallelism specified"
+					#results=tasks
+					if options.verbose>2 : 
+						print "Results:" 
+						pprint(results)
+								
 				make_average_pairs(infile,outfile,results,options.averager,options.nocenterofmass)
 				
 			ref=EMData(outfile,0)		# result of the last iteration
@@ -388,8 +397,9 @@ def main():
 					tasks.append(task)
 				else:
 					print "No parallelism specified"
-					result=align3Dfunc(ref,0,p,0,options)
-					results.append(result)
+					result=align3Dfunc(ref,["cache",options.input,p],p,"Ptcl %d in iter %d"%(p,it),options,transform)
+					
+					results.append(result['final'])
 			
 			# start the alignments running
 			if options.parallel:
@@ -405,8 +415,10 @@ def main():
 					pprint(results)
 			else:
 				print "No parallelism specified"
-				results=tasks
-				print "Results are", results
+				#results=tasks
+				if options.verbose>2 : 
+					print "Results:" 
+					pprint(results)
 						
 			#The reference for the next iteration should ALWAYS be the RAW AVERAGE of the aligned particles, since the reference will be "pre-processed" identically to the raw particles.
 			#There should be NO post-processing of the final averages, EXCEPT for visualization purposes (so, postprocessing is only applied to write out the output, if specified.
@@ -691,6 +703,17 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 				print "Keep threshold : %f (mean=%f  sigma=%f)"%(thresh,mean,sig)
 
 		if keep:
+			#print "p[0]['score'] is", align_parms[0]['score']
+			print "Len of align_parms is", len(align_parms)
+			
+			for p in align_parms:
+				if 'score' in p[0]:
+					print "\nscore!"
+				else:
+					print "\nscore not in p[0]"
+					print "see, p[0] is", p[0]
+					sys.exit()
+			
 			val=[p[0]["score"] for p in align_parms]
 			val.sort()
 			thresh=val[int(keep*len(align_parms))-1]
@@ -752,7 +775,8 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 		if not nocenterofmass:
 			avg.process_inplace("xform.centerofmass")
 		
-		return avg		
+		return avg
+			
 
 def make_average_pairs(ptcl_file,outfile,align_parms,averager,nocenterofmass):
 	"""Will take a set of alignments and an input particle stack filename and produce a new set of class-averages over pairs"""
@@ -792,9 +816,9 @@ def get_results(etc,tids,verbose):
 		for i,prog in enumerate(proglist):
 			if prog==-1 : nwait+=1
 			if prog==100 :
-				r=etc.get_results(tidsleft[i])		# results for a completed task
+				r=etc.get_results(tidsleft[i])			# results for a completed task
 				ptcl=r[0].classoptions["ptcl"]			# get the particle number from the task rather than trying to work back to it
-				results[ptcl]=r[1]["final"]			# this will be a list of (qual,Transform)
+				results[ptcl]=r[1]["final"]				# this will be a list of (qual,Transform)
 				ncomplete+=1
 		
 		tidsleft=[j for i,j in enumerate(tidsleft) if proglist[i]!=100]		# remove any completed tasks from the list we ask about
@@ -817,6 +841,7 @@ def wedgestats(volume,angle, wedgei, wedgef):
 
 
 class Align3DTask(EMTask):
+	print "\n\nESTOY EN la MIERDA clase!!!!!\n\n"
 	"""This is a task object for the parallelism system. It is responsible for aligning one 3-D volume to another, with a variety of options"""
 
 	#def __init__(self,fixedimage,image,ptcl,label,mask,normproc,preprocess,lowpass,highpass,npeakstorefine,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,transform,verbose,randomizewedge,wedgeangle,wedgei,wedgef):
@@ -832,13 +857,12 @@ class Align3DTask(EMTask):
 		
 		EMTask.__init__(self,"ClassAv3d",data,{},"")
 
-		self.classoptions={"options":options,"ptcl":ptcl,"label":label,"mask":options.mask,"normproc":options.normproc,"preprocess":options.preprocess,"lowpass":options.lowpass,"highpass":options.highpass,"npeakstorefine":options.npeakstorefine,"align":options.align,"aligncmp":options.aligncmp,"ralign":options.ralign,"raligncmp":options.raligncmp,"shrink":options.shrink,"shrinkrefine":options.shrinkrefine,"transform":transform,"verbose":options.verbose,"randomizewedge":options.randomizewedge,"wedgeangle":options.wedgeangle,"wedgei":options.wedgei,"wedgef":options.wedgef}
+		#self.classoptions={"options":options,"ptcl":ptcl,"label":label,"mask":options.mask,"normproc":options.normproc,"preprocess":options.preprocess,"lowpass":options.lowpass,"highpass":options.highpass,"npeakstorefine":options.npeakstorefine,"align":options.align,"aligncmp":options.aligncmp,"ralign":options.ralign,"raligncmp":options.raligncmp,"shrink":options.shrink,"shrinkrefine":options.shrinkrefine,"transform":transform,"verbose":options.verbose,"randomizewedge":options.randomizewedge,"wedgeangle":options.wedgeangle,"wedgei":options.wedgei,"wedgef":options.wedgef}
+		self.classoptions={"options":options,"ptcl":ptcl,"label":label,"transform":transform}
 	
 	def execute(self,callback=None):
 		"""This aligns one volume to a reference and returns the alignment parameters"""
 		classoptions=self.classoptions
-		if classoptions["verbose"]: 
-			print "Aligning ",classoptions["label"]
 
 		if isinstance(self.data["fixedimage"],EMData):
 			fixedimage=self.data["fixedimage"]
@@ -849,6 +873,8 @@ class Align3DTask(EMTask):
 			image=self.data["image"]
 		else: 
 			image=EMData(self.data["image"][1],self.data["image"][2])
+		
+		'''
 		
 		"""
 		PREPROCESSING CALL 
@@ -864,7 +890,6 @@ class Align3DTask(EMTask):
 			sfixedimage = fixedimage
 			s2fixedimage = fixedimage
 		
-		
 		if image and (classoptions['shrink'] or classoptions['normproc'] or classoptions['lowpass'] or classoptions['highpass'] or classoptions['mask'] or classoptions['preprocess'] or classoptions['lowpassfine'] or classoptions['highpassfine'] or classoptions['preprocessfine']):
 			retimage = preprocessing(classoptions['options'],image)
 			simage = retimage[0]
@@ -872,10 +897,10 @@ class Align3DTask(EMTask):
 		else:
 			simage = image
 			s2image = image
-			
-		if classoptions["verbose"]: 
-			print "Align size %d,  Refine Align size %d"%(sfixedimage["nx"],s2fixedimage["nx"])
 
+		"""
+		If FSC.TOMO is used as a comparator, the particles need to have the statistics of their missing wedges calculated
+		"""
 		if classoptions["aligncmp"][0] == "fsc.tomo" or classoptions["raligncmp"][0] == "fsc.tomo":
 			print "THE FSC.TOMO comparator is on" 
 			retr = wedgestats(simage,classoptions['wedgeangle'],classoptions['wedgei'],classoptions['wedgef'])
@@ -897,115 +922,247 @@ class Align3DTask(EMTask):
 			#print "The mean and sigma for subvolume %d are: mean=%f, sigma=%f" % (i,mean,sigma)
 			#a.write_image(stack,i)
 		
+		'''
 		
-		# In some cases we want to prealign the particles
-		if classoptions["transform"]:
-			if classoptions["verbose"]:
-				print "Moving Xfrom", classoptions["transform"]
-			#options["align"][1]["inixform"] = options["transform"]
-			classoptions["align"][1]["transform"] = classoptions["transform"]
-			
-			if classoptions["shrink"]>1:
-			 	#options["align"][1]["inixform"].set_trans( options["align"][1]["inixform"].get_trans()/float(options["shrinkrefine"]) )
-				classoptions["align"][1]["transform"].set_trans( classoptions["align"][1]["transform"].get_trans()/float(classoptions["shrinkrefine"]) )
-			
-		#	if
-		#	bestcoarse=[{"score":1.0,"xform.align3d":options["align"]}]
-		#		bestcoarse[0]["xform.align3d"].set_trans(bestcoarse[0]["xform.align3d"].get_trans()/float(options["shrinkrefine"]))	
-		# If None was passed in we skip coarse alignment and just do fine alignment
+		"""
+		CALL the alignment function
+		"""
 		
-		elif classoptions["randomizewedge"]:
-			rand_orient = OrientGens.get("rand",{"n":1,"phitoo":1})		#Fetches the orientation generator
-			c1_sym = Symmetries.get("c1")					#Generates the asymmetric unit from which you wish to generate a random orientation
-			random_transform = rand_orient.gen_orientations(c1_sym)[0]	#Generates a random orientation (in a Transform object) using the generator and asymmetric unit specified 
-				
-			#print "\n\n\nOptions['align'][1] is\n", options['align'][1]
-			#print "\n\n\nOptions['align'][0] is\n", options['align'][0]
-			#options["align"][1].update({'inixform' : random_transform})
-			classoptions["align"][1].update({'transform' : random_transform})
-		
-		if classoptions["align"] == None:
-			bestcoarse=[{"score":1.0,"xform.align3d":Transform()}]
-		
-		# If a Transform was passed in, skip coarse alignment
-		#elif isinstance(options["align"],Transform):
-		#		
-		#	bestcoarse=[{"score":1.0,"xform.align3d":options["align"]}]
-		#	if options["shrinkrefine"]>1: 
-		#		bestcoarse[0]["xform.align3d"].set_trans(bestcoarse[0]["xform.align3d"].get_trans()/float(options["shrinkrefine"]))
-		# This is the default behavior, seed orientations come from coarse alignment
-	
-		else:
-			# Returns an ordered vector of Dicts of length options.npeakstorefine. The Dicts in the vector have keys "score" and "xform.align3d"
-			#random_transform = None
-			
-			bestcoarse = simage.xform_align_nbest(classoptions["align"][0],sfixedimage,classoptions["align"][1],classoptions["npeakstorefine"],classoptions["aligncmp"][0],classoptions["aligncmp"][1])
-			
-			# Scale translation
-			scaletrans=1.0
-			if classoptions["ralign"] and classoptions["shrinkrefine"] :
-				scaletrans=classoptions["shrink"]/float(classoptions["shrinkrefine"])
-			elif classoptions["shrink"]:
-				scaletrans=float(classoptions["shrink"])
-				
-			if scaletrans>1.0:
-				for c in bestcoarse:
-					c["xform.align3d"].set_trans(c["xform.align3d"].get_trans()*scaletrans)
+		#ret=alignment(simage,s2image,sfixedimage,s2fixedimage,classoptions,transform)
+		ret=alignment(fixedimage,image,classoptions['ptcl'],classoptions['label'],classoptions['options'],classoptions['transform'])
 
-		# verbose printout
-		if classoptions["verbose"]>1 :
-			for i,j in enumerate(bestcoarse): 
-				print "coarse %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
-
-		if classoptions["ralign"]!=None :
-			# Now loop over the individual peaks and refine each
-			bestfinal=[]
-			for bc in bestcoarse:
-				classoptions["ralign"][1]["xform.align3d"] = bc["xform.align3d"]
-				ali = s2image.align(classoptions["ralign"][0],s2fixedimage,classoptions["ralign"][1],classoptions["raligncmp"][0],classoptions["raligncmp"][1])
-				
-				try: 					
-					bestfinal.append({"score":ali["score"],"xform.align3d":ali["xform.align3d"],"coarse":bc})
-										
-				except:
-					bestfinal.append({"xform.align3d":bc["xform.align3d"],"score":1.0e10,"coarse":bc})
-					
-			if classoptions["shrinkrefine"]>1 :
-				for c in bestfinal:
-					c["xform.align3d"].set_trans(c["xform.align3d"].get_trans()*float(classoptions["shrinkrefine"]))
-
-			# verbose printout of fine refinement
-			if classoptions["verbose"]>1 :
-				for i,j in enumerate(bestfinal): 
-					print "fine %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
-
-		else: 
-			bestfinal = bestcoarse
-		
-		from operator import itemgetter						#If you just sort 'bestfinal' it will be sorted based on the 'coarse' key in the dictionaries of the list
-											#because they come before the 'score' key of the dictionary (alphabetically)
-		bestfinal = sorted(bestfinal, key=itemgetter('score'))
-		
-		if classoptions["verbose"]:
-			print "\nThe best peaks sorted are"	#confirm the peaks are adequately sorted
-			for i in bestfinal:
-				print i
-		
-		if bestfinal[0]["score"] == 1.0e10 :
-			print "Error: all refine alignments failed for %s. May need to consider altering filter/shrink parameters. Using coarse alignment, but results are likely invalid."%self.classoptions["label"]
-		
-		if classoptions["verbose"]: 
-			print "Best %1.5g\t %s"%(bestfinal[0]["score"],str(bestfinal[0]["xform.align3d"]))
-			print "Done aligning ",classoptions["label"]
+		bestfinal=ret[0]
+		bestcoarse=ret[1]
 		
 		return {"final":bestfinal,"coarse":bestcoarse}
 
 
-def align3Dfunc(ref,j,p,k,options):
-	print "Sorry; for now; you MUST use parallelism, through the --parallel option."
-	sys.exit()
-	pass
-	return
+#def align3Dfunc(ref,j,p,k,classoptions):
+
+def align3Dfunc(fixedimage,image,ptcl,label,classoptions,transform):
+	"""This aligns one volume to a reference and returns the alignment parameters"""
+
+	if classoptions.verbose: 
+		print "Aligning ",label
+	
+	print "In align3Dfunc fixed image and its type are" , fixedimage, type(fixedimage)
+	if type(fixedimage) is list:
+		fixedimage=EMData(fixedimage[1],fixedimage[2])
+	
+	if type(image) is list:
+		image=EMData(image[1],image[2])
+	
+	'''
+	
+	"""
+	PREPROCESSING CALL 
+	Currently applied to both volumes. Often 'fixedimage' will be a reference, so may need to rethink whether it should be treated identically. 
+	Similar issues in 2-D single particle refinement ... handled differently at the moment
+	"""
+	
+	if fixedimage and (classoptions.shrink or classoptions.normproc or classoptions.lowpass or classoptions.highpass or classoptions.mask or classoptions.preprocess or classoptions.lowpassfine or classoptions.highpassfine or classoptions.preprocessfine):
+		retfixedimage = preprocessing(classoptions,fixedimage)
+		sfixedimage = retfixedimage[0]
+		s2fixedimage = retfixedimage[1]
+	else:
+		sfixedimage = fixedimage
+		s2fixedimage = fixedimage
+	
+	if image and (classoptions.shrink or classoptions.normproc or classoptions.lowpass or classoptions.highpass or classoptions.mask or classoptions.preprocess or classoptions.lowpassfine or classoptions.highpassfine or classoptions.preprocessfine):
+		retimage = preprocessing(classoptions,image)
+		simage = retimage[0]
+		s2image = retimage[1]
+	else:
+		simage = image
+		s2image = image
+
+	"""
+	If FSC.TOMO is used as a comparator, the particles need to have the statistics of their missing wedges calculated
+	"""
+	if classoptions.aligncmp[0] == "fsc.tomo" or classoptions.raligncmp[0] == "fsc.tomo":
+		print "THE FSC.TOMO comparator is on" 
+		retr = wedgestats(simage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
+		simage['spt_wedge_mean'] = retr[0]
+		simage['spt_wedge_sigma'] = retr[1]
+		
+		retr = wedgestats(sfixedimage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
+		sfixedimage['spt_wedge_mean'] = retr[0]
+		sfixedimage['spt_wedge_sigma'] = retr[1]
+		
+		retr = wedgestats(s2image,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
+		s2image ['spt_wedge_mean'] = retr[0]
+		s2image['spt_wedge_sigma'] = retr[1]
+		
+		retr = wedgestats(s2fixedimage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
+		s2fixedimage['spt_wedge_mean'] = retr[0]
+		s2fixedimage['spt_wedge_sigma'] = retr[1]
+		
+		#print "The mean and sigma for subvolume %d are: mean=%f, sigma=%f" % (i,mean,sigma)
+		#a.write_image(stack,i)
+	'''
+	
+	"""
+	CALL the alignment function
+	"""
+	
+	#ret=alignment(simage,s2image,sfixedimage,s2fixedimage,classoptions,transform)
+	ret=alignment(fixedimage,image,ptcl,label,classoptions,transform)
+
+	bestfinal=ret[0]
+	bestcoarse=ret[1]
+	
+	return {"final":bestfinal,"coarse":bestcoarse}
+	#return {"final":bestfinal,"coarse":bestcoarse}
+
+
+
+
+#def alignment(simage,s2image,sfixedimage,s2fixedimage,classoptions,transform):
+def alignment(fixedimage,image,ptcl,label,classoptions,transform):
+	
+	if classoptions.verbose: 
+		print "Aligning ",label
+	
+	"""
+	PREPROCESSING CALL 
+	Currently applied to both volumes. Often 'fixedimage' will be a reference, so may need to rethink whether it should be treated identically. 
+	Similar issues in 2-D single particle refinement ... handled differently at the moment
+	"""
+	
+	if fixedimage and (classoptions.shrink or classoptions.normproc or classoptions.lowpass or classoptions.highpass or classoptions.mask or classoptions.preprocess or classoptions.lowpassfine or classoptions.highpassfine or classoptions.preprocessfine):
+		retfixedimage = preprocessing(classoptions,fixedimage)
+		sfixedimage = retfixedimage[0]
+		s2fixedimage = retfixedimage[1]
+	else:
+		sfixedimage = fixedimage
+		s2fixedimage = fixedimage
+	
+	if image and (classoptions.shrink or classoptions.normproc or classoptions.lowpass or classoptions.highpass or classoptions.mask or classoptions.preprocess or classoptions.lowpassfine or classoptions.highpassfine or classoptions.preprocessfine):
+		retimage = preprocessing(classoptions,image)
+		simage = retimage[0]
+		s2image = retimage[1]
+	else:
+		simage = image
+		s2image = image
+
+	"""
+	If FSC.TOMO is used as a comparator, the particles need to have the statistics of their missing wedges calculated
+	"""
+	if classoptions.aligncmp[0] == "fsc.tomo" or classoptions.raligncmp[0] == "fsc.tomo":
+		print "THE FSC.TOMO comparator is on" 
+		retr = wedgestats(simage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
+		simage['spt_wedge_mean'] = retr[0]
+		simage['spt_wedge_sigma'] = retr[1]
+		
+		retr = wedgestats(sfixedimage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
+		sfixedimage['spt_wedge_mean'] = retr[0]
+		sfixedimage['spt_wedge_sigma'] = retr[1]
+		
+		retr = wedgestats(s2image,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
+		s2image ['spt_wedge_mean'] = retr[0]
+		s2image['spt_wedge_sigma'] = retr[1]
+		
+		retr = wedgestats(s2fixedimage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
+		s2fixedimage['spt_wedge_mean'] = retr[0]
+		s2fixedimage['spt_wedge_sigma'] = retr[1]
+		
+		#print "The mean and sigma for subvolume %d are: mean=%f, sigma=%f" % (i,mean,sigma)
+		#a.write_image(stack,i)
+		
+	if classoptions.verbose: 
+		print "Align size %d,  Refine Align size %d"%(sfixedimage["nx"],s2fixedimage["nx"])
+	
+	#In some cases we want to prealign the particles
+	if transform:
+		if classoptions.verbose:
+			print "Moving Xfrom", transform
+		#options["align"][1]["inixform"] = options["transform"]
+		classoptions.align[1]["transform"] = transform
+		
+		if classoptions.shrink>1:
+			#options["align"][1]["inixform"].set_trans( options["align"][1]["inixform"].get_trans()/float(options["shrinkrefine"]) )
+			classoptions.align[1]["transform"].set_trans( classoptions.align[1]["transform"].get_trans()/float(classoptions.shrinkrefine) )
+		
+	elif classoptions.randomizewedge:
+		rand_orient = OrientGens.get("rand",{"n":1,"phitoo":1})		#Fetches the orientation generator
+		c1_sym = Symmetries.get("c1")					#Generates the asymmetric unit from which you wish to generate a random orientation
+		random_transform = rand_orient.gen_orientations(c1_sym)[0]	#Generates a random orientation (in a Transform object) using the generator and asymmetric unit specified 
+		classoptions.align[1].update({'transform' : random_transform})
+	
+	if classoptions.align == None:
+		bestcoarse=[{"score":1.0,"xform.align3d":Transform()}]
+
+	else:
+		'''
+		Returns an ordered vector of Dicts of length options.npeakstorefine. 
+		The Dicts in the vector have keys "score" and "xform.align3d" 
+		'''
+		
+		bestcoarse = simage.xform_align_nbest(classoptions.align[0],sfixedimage,classoptions.align[1],classoptions.npeakstorefine,classoptions.aligncmp[0],classoptions.aligncmp[1])
+		
+		# Scale translation
+		scaletrans=1.0
+		if classoptions.ralign and classoptions.shrinkrefine:
+			scaletrans=classoptions.shrink/float(classoptions.shrinkrefine)
+		elif classoptions.shrink:
+			scaletrans=float(classoptions.shrink)
+			
+		if scaletrans>1.0:
+			for c in bestcoarse:
+				c["xform.align3d"].set_trans(c["xform.align3d"].get_trans()*scaletrans)
+
+	# verbose printout
+	if classoptions.verbose > 1 :
+		for i,j in enumerate(bestcoarse): 
+			print "coarse %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
+
+	if classoptions.ralign != None :
+		# Now loop over the individual peaks and refine each
+		bestfinal=[]
+		for bc in bestcoarse:
+			classoptions.ralign[1]["xform.align3d"] = bc["xform.align3d"]
+			ali = s2image.align(classoptions.ralign[0],s2fixedimage,classoptions.ralign[1],classoptions.raligncmp[0],classoptions.raligncmp[1])
+			
+			print "\nThe score returned from ralign is", ali['score']
+			try: 					
+				bestfinal.append({"score":ali["score"],"xform.align3d":ali["xform.align3d"],"coarse":bc})
+				print "\nThe appended score is", bestfinal[0]['score']					
+			except:
+				bestfinal.append({"score":1.0e10,"xform.align3d":bc["xform.align3d"],"coarse":bc})
+				print "\nThe appended score is", bestfinal[0]['score']
+				
+		if classoptions.shrinkrefine>1 :
+			for c in bestfinal:
+				c["xform.align3d"].set_trans(c["xform.align3d"].get_trans()*float(classoptions["shrinkrefine"]))
+
+		# verbose printout of fine refinement
+		if classoptions.verbose>1 :
+			for i,j in enumerate(bestfinal): 
+				print "fine %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
+
+	else: 
+		bestfinal = bestcoarse
+		print "\nTherewas no fine alignment; therefore, score is", bestfinal[0]['score']
+	
+	from operator import itemgetter						#If you just sort 'bestfinal' it will be sorted based on the 'coarse' key in the dictionaries of the list
+														#because they come before the 'score' key of the dictionary (alphabetically)
+	bestfinal = sorted(bestfinal, key=itemgetter('score'))
+	
+	if classoptions.verbose:
+		print "\nThe best peaks sorted are"	#confirm the peaks are adequately sorted
+		for i in bestfinal:
+			print i
+	
+	if bestfinal[0]["score"] == 1.0e10 :
+		print "Error: all refine alignments failed for %s. May need to consider altering filter/shrink parameters. Using coarse alignment, but results are likely invalid."%self.classoptions["label"]
+	
+	if classoptions.verbose: 
+		print "Best %1.5g\t %s"%(bestfinal[0]["score"],str(bestfinal[0]["xform.align3d"]))
+		print "Done aligning ",label
+	
+	print "\nScore to return from ALIGNMENT is", bestfinal[0]["score"]
+	return (bestfinal,bestcoarse)
+	
 
 
 def classmx_ptcls(classmx,n):
