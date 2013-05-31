@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus Galaz, 04/28/2012; last update 24/Feb/2013
+# Author: Jesus Galaz, 04/28/2012; last update 31/May/2013
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -95,7 +95,7 @@ def main():
 	parser.add_argument("--boxsize", type=float, help="(Probably not needed for anything)", default=0)
 
 	parser.add_argument("--maxres", type=float, help="How far in resolution to extend the FSC curve on the x axis; for example, to see up to 20anstroms, provide --maxres=1.0. Default=15", default=1.0)
-	parser.add_argument("--thresholds", type=str, help="Comma separated values of thresholds to plot as horizontal lines. Default=0.5, to turn of supply 'None'. ", default=0.5)
+	parser.add_argument("--thresholds", type=str, help="Comma separated values of thresholds to plot as horizontal lines. Default=0.5, to turn of supply 'None'. ", default='0.5')
 	
 	parser.add_argument("--smooth",action="store_true", help="Smooth out FSC curves.", default=False)
 	parser.add_argument("--fit",type=int, help="Number of terms for polynomial fit.", default=None)
