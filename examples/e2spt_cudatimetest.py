@@ -68,10 +68,11 @@ def main():
 	parser.add_argument("--test", action='store_true', help="Will run a quick tests using a few box sizes.",default=False)
 	parser.add_argument("--medium", action='store_true', help="Will test boxsizes in multiples of 10 between 10 and 240.",default=False)
 	parser.add_argument("--extensive", action='store_true', help="Will test EVERY box size between 12 and 256.",default=False)
-	parser.add_argument("--singleboxsize", type=int, help="Will test SPT alignment for a single boxsize specified.",default=0)
+	parser.add_argument("--boxsizerange", type=str, help="Separate the first and the last boxsizes to sample with a hyphen; for example, 16-48. Recall that the upper end of any range in python is not included.",default='')
 	parser.add_argument("--boxsizelist", type=str, help="Will test SPT alignment for a comma separated list of boxsizes.",default='')
 
-	parser.add_argument("--onefulloff", action='store_true', help="Will test time for one CCF (between two boxes with noise) with all processing overhead for EVERY box size between 12 and 256.",default=False)
+	parser.add_argument("--onefulloff", action='store_true', help="""Will test time for one CCF (between two boxes with noise) with all
+									 processing overhead for EVERY box size between 12 and 256.""",default=False)
 	parser.add_argument("--oneccfoff", action='store_true', help="Will test time for one CCF (between two boxes with noise)  without overhead (e2spt_classaverage.py isn't called), for EVERY box size between 12 and 256.",default=False)
 	parser.add_argument("--rotonlyoff", action='store_true', help="""Will test time for CCFs (between two boxes with noise) for as many orientations fit in an icosahedral unit 
 																	as determined by --coarsestep and --finestep, without any overhead (e2spt_classaverage.py isn't called), for EVERY box size between 12 and 256.""",default=False)
@@ -557,22 +558,26 @@ def doit(corg,options,originaldir):
 	#mults = [12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,35,36,40,42,44,45,48,49,50,52,54,56,60,64,65,66,70,72,75,77,78,80,81,84,88,91,96,98,100,104,112,120,128,136,144,152,160,168,176,184,192,200,208,216,224,232,240,248,256]
 	mults = []
 	
-	if options.singleboxsize:
-		mults.append(options.singleboxsize)
+	if options.boxsizerange:
+		lowerend = int( options.boxsizerange.split('-')[0] )
+		upperend = int( options.boxsizerange.split('-')[1] ) 
+		mults=[i for i in xrange( lowerend , upperend ) ]
+		print "Lower and upper ends of range are", lowerend, upperend
+		print "Therefore, mults are", mults
 		
-	if options.boxsizelist:
+	elif options.boxsizelist:
 		boxes=options.boxsizelist.split(',')
 		for box in boxes:
 			mults.append(int(box))
 			
-	if options.test:
+	elif options.test:
 		mults=[100,101,120,121,140,141]
 	
-	if options.medium:
+	elif options.medium:
 		mults = [16,32,64,96,97,98,128,129,130,180,181,182]
 		#steps = [30]
 
-	if options.extensive:
+	elif options.extensive:
 		mults = []
 		for i in xrange(12,257):
 			mults.append(i)
