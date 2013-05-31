@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus Galaz, 28/March/2013
+# Author: Jesus Galaz, 28/March/2013. Updated: 31/May/2013
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -123,11 +123,12 @@ def main():
 						a.write_image(options.output,i)	
 
 		if options.stem:
-			if not options.stemval:
-				print "ERROR: If supplying --stem, you must also supply --stemval."
-				sys.exit()
-			else:
+			try:
 				v=options.stemval
+			except:
+				if not options.stemval:
+					print "ERROR: If supplying --stem, you must also supply --stemval."
+					sys.exit()	
 			
 			aux3=0	
 			for param in existingps:
