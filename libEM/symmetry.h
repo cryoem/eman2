@@ -892,7 +892,7 @@ namespace EMAN {
 		 */
 		virtual Transform get_sym(const int n) const;
 
-		/** Gets the total number of unique roational symmetry operations associated with this symmetry
+		/** Gets the total number of unique rotational symmetry operations associated with this symmetry
 		 * For icosahedral symmetry, this is 60
 		 * @return 60
 		 */
