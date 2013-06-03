@@ -1701,22 +1701,19 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize='
 	if len(boxdims)!= 2:
 		print "boxsize cannot specify more than two dimensions"
 		return
-	
+
 	try:
 		segnx = int(boxdims[0])
 		segny = int(boxdims[1])
 	except:
 		print "Specified dimensions in boxsize are not valid integers."
 		return
-	
-	if freq < 0:
-		freq = 1.0/segnx
+
+	if freq < 0: freq = 1.0/segnx
 		
-	if micsuffix[0] == '.':
-		micsuffix = micsuffix[1:]
+	if micsuffix[0] == '.': micsuffix = micsuffix[1:]
 	
-	if new_pixel_size < 0:
-		new_pixel_size = pixel_size
+	if new_pixel_size < 0: new_pixel_size = pixel_size
 		
 	# Calculate overlap as ~1 rise in pixels if not set by user
 	if ptcl_overlap < 0 and dp >= 0:
@@ -1741,11 +1738,11 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize='
 			print 'Output directory %s  exists, please change the name and restart the program'%coutdir
 			return
 		outdirlist.append(coutdir)
-		
+
 	for coutdir in outdirlist:
 		print_msg("Creating output directory %s\n"%coutdir)
 		os.mkdir(coutdir)
-		
+
 	for v1 in micdirlist:
 		# window all micrographs in directory v1 with micid
 		flist2 = os.listdir(os.path.join(topdir,v1))
@@ -1774,7 +1771,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize='
 					micname = os.path.join(os.path.join(topdir,v1), v2)
 					print_msg("\n\nPreparing to window helices from micrograph %s with box coordinate file %s\n\n"%(micname, hcoordsname))
 					windowmic(outstacknameall, coutdir, micname, hcoordsname, pixel_size, segnx, segny, ptcl_overlap, inv_contrast, new_pixel_size, rmax, freq)
-					
+
 	# If not debug mode, then remove all output directories 
 	if debug == 0:
 		from subprocess import call
@@ -1827,7 +1824,7 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, segnx, 
 	from filter	  	  import filt_gaussh
 	from pixel_error  import getnewhelixcoords
 	from EMAN2 	      import EMUtil, Util
-	
+
 	# micname is full path name
 	# smic[-1] is micrograph name minus path
 	smic = micname.split('/')
@@ -1840,7 +1837,7 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, segnx, 
 		has_ctf = True
 	if has_ctf:
 		ctf = dummy.get_attr('ctf')
-		
+
 	if new_pixel_size != pixel_size:
 		# Resample micrograph, map coordinates, and window segments from resampled micrograph using new coordinates
 		# Set ctf along with new pixel size in resampled micrograph
@@ -1857,12 +1854,12 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, segnx, 
 			img.set_attr('ctf', ctf)
 		micname = os.path.join(outdir,'resampled_%s'%smic[-1])
 		img.write_image(micname)
-		
+
 		smic = micname.split('/')
-		
+
 		# now need to get new coordinates file and set hcoordsname to that
 		hcoordsname = getnewhelixcoords(hcoordsname, outdir, resample_ratio,nx,ny, newpref="resampled_", boxsize=segnx)
-		
+
 	# filename is name of micrograph minus the path and extension
 	filename = (smic[-1].split('.'))[0] 
 	
@@ -1881,49 +1878,36 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, segnx, 
 	imgmic  = get_im(micname)
 	
 	if inv_contrast:
-		from utilities import info, model_blank
-		mnx = imgmic.get_xsize()
-		mny = imgmic.get_ysize()
-		sttt = info(imgmic)
-		avgimg = model_blank(mnx, ny=mny, bckg=sttt[0])
-		Util.sub_img(imgmic, avgimg) # subtract average
+		sttt = Util.infomask(imgmic, None, True)
 		Util.mul_scalar(imgmic, -1.0) # multiply by -1
-		Util.add_img(imgmic, avgimg) # add back average
-		
-		sttt2 = info(imgmic)
-		assert(abs(sttt[0] - sttt2[0])<0.0001), "Assert failed: average of micrograph should remain same after contrast inversion!"
+		imgmic += 2*stt[0]
 						
 	filt_gaussh(imgmic, freq).write_image(tmpfile)  # remove frequencies too low for the box size
 	
 	# Set box coordinates in e2helixboxer database
 	db_load_helix_coords(tmpfile, hcoordsname, False, segnx)
-	
+
 	# Window the segments
 	# If square segments, use gridding, else, use default of bilinear rotation
-	dogridding = False
-	if segnx == segny:
-		dogridding = True
-	
+	if segnx == segny: dogridding = True
+	else:              dogridding = False
+
 	db_save_particle_coords(tmpfile, fptcl_coords, ptcl_overlap, segny, segnx)
 	db_save_particles(tmpfile, fimgs_0, ptcl_overlap, segny, segnx, True, True, dogridding, "multiple")
-	
-	if rmax < 0:
-		rmaxp = int(segnx/2 - 2)
-	else:
-		rmaxp = int( (rmax/new_pixel_size)  + 0.5)
-		
+
+	if rmax < 0:  rmaxp = int(segnx/2 - 2)
+	else:         rmaxp = int( (rmax/new_pixel_size)  + 0.5)
+
 	mask = pad(model_blank(rmaxp*2, segny, 1, 1.0), segnx, segny, 1, 0.0)
-	
-	a=read_text_row(hcoordsname)
+
+	a = read_text_row(hcoordsname)
 	if len(a)%2 != 0:
 		print "Number of rows in helix coordinates file %s should be even!"%hcoordsname
 		return
 	nhelices = len(a)/2
-	
-	try:
-		iseg = EMUtil.get_image_count(outstacknameall)
-	except:
-		iseg = 0
+
+	try:      iseg = EMUtil.get_image_count(outstacknameall)
+	except:   iseg = 0
 		
 	for h in xrange(nhelices):
 		ptcl_images  =imgs_0+"_%i.hdf"%h # This is what e2helixboxer outputs, only 'hdf' format is handled.
@@ -1940,10 +1924,10 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, segnx, 
 					prj.set_attr("ctf", ctf)
 					prj.set_attr("ctf_applied", 0)
 				stat = Util.infomask( prj, mask, False )
-				prj = (prj-stat[0])#/stat[1]
+				prj -= stat[0]
 				prj.write_image(otcl_images, j)
 				prj.write_image(outstacknameall, iseg)
 				iseg += 1
-				
+
 if __name__ == '__main__':
 	main()
