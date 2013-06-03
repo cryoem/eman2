@@ -101,6 +101,18 @@ def main():
 
 	global options
 	
+	if options.test and options.extensive:
+		print "ERROR: You cannot specify --test and --extensive simultaneously"
+		sys.exit()
+	
+	if options.test and options.medium:
+		print "ERROR: You cannot specify --test and --medium simultaneously"
+		sys.exit()
+
+	if options.extensive and options.medium:
+		print "ERROR: You cannot specify --extensive and --medium simultaneously"
+		sys.exit()
+
 	(options, args) = parser.parse_args()
 	
 	if options.profile and not options.eman2dir:
@@ -621,7 +633,7 @@ def doit(corg,options,originaldir):
 	for aidee in IDS:
 		#print "\n\n\n\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\nWorking with THIS id and corg", aidee,corg
 		#print "\n&&&&&&&&&&&&&&&&&&&&&&&&\n\n\n\n\n"
-		name=options.path + '/' + computer +'_' + corg + '.txt'
+		name=options.path + '/' + computer + corg + '.txt'
 		if aidee == 'oneicos':	
 			name = options.path + '/' + computer + 'oneicos_CS' + str(coarsestep).zfill(len(str(coarsestep))) + '_FS' + str(finestep).zfill(len(str(finestep))) + '_' + corg + '.txt'
 		if aidee == 'onefull':
@@ -647,7 +659,7 @@ def doit(corg,options,originaldir):
 				setcuda= 'export NOCUDAINIT=0'
 				#print "\n\n\n !!!! I Have turned cuda ON!!!\n\n\n"
 				if options.setcudadevice is not None:
-					setcuda = 'export SETCUDADEVICE=' + options.setcudadevice
+					setcuda += '&& export SETCUDADEVICE=' + options.setcudadevice
 			elif corg=='cpu' or corg=='CPU':
 				setcuda = 'export NOCUDAINIT=1'
 				#print "\n\n\n !!!! I Have turned cuda OFF!!!\n\n\n"
