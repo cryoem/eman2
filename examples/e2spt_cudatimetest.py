@@ -91,6 +91,10 @@ def main():
 	
 	parser.add_argument("--plotonly",type=str, help="""If you already have the time variation with boxsize (for a particular cpu or gpu) in a text file in rows of 'boxsize,time', 
 												provide the txt file(s) separated by commas --plotonly=file1.txt,file2.txt,file3.txt etc...""", default=None)
+
+	parser.add_argument("--logplot", action='store_true', help="If on, the y-axis of plots will be on log scale.",default=False)
+	parser.add_argument("--legend", action='store_true', help="If on, a legend will appear on the plot to denote each curve.",default=False)											
+											
 	parser.add_argument("--singleplot",type=str, help="Provide the name of the .png file to plot all cpus and/or gpus provided through --plotonly, in a single .png file.", default='')
 	
 	parser.add_argument("--plotminima",action="store_true", help="Plot all cpus and/or gpus provided through --plotonly, in a single .png file.", default=False)
@@ -100,6 +104,8 @@ def main():
 	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default='')
 
 	global options
+
+	(options, args) = parser.parse_args()
 	
 	if options.test and options.extensive:
 		print "ERROR: You cannot specify --test and --extensive simultaneously"
@@ -113,7 +119,7 @@ def main():
 		print "ERROR: You cannot specify --extensive and --medium simultaneously"
 		sys.exit()
 
-	(options, args) = parser.parse_args()
+
 	
 	if options.profile and not options.eman2dir:
 		print "ERROR: --profile is on, yet you haven't provided the path to your EMAN2 directory."
@@ -806,32 +812,44 @@ def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0,ide
 	linestyles=['-','--','**']
 	linest=linestyles[linenum]
 	
-	#print "Therefore linest is", linest
 	
+	
+	
+	
+	
+
+
+	'''
+	FORMAT AXES
+	'''
 	matplotlib.rc('xtick', labelsize=16) 
 	matplotlib.rc('ytick', labelsize=16) 
 	
 	font = {'weight':'bold','size':16}
 	matplotlib.rc('font', **font)
 	
-	ax=plt.axes(frameon=False)
+	#ax=plt.axes(frameon=False)
 	pylab.rc("axes", linewidth=2.0)
 	pylab.xlabel('X Axis', fontsize=14, fontweight='bold')
 	pylab.ylabel('Y Axis', fontsize=14, fontweight='bold')
 
-	pylab.ylim([-1,ylimvalmax+10])
+	#pylab.ylim([-1,ylimvalmax+10])
 	pylab.xlim([-1,max(xaxis)+10])
-	ax.get_xaxis().tick_bottom()
-	ax.get_yaxis().tick_left()
-	ax.axes.get_xaxis().set_visible(True)
-	ax.axes.get_yaxis().set_visible(True)
-	xmin, xmax = ax.get_xaxis().get_view_interval()
-	ymin, ymax = ax.get_yaxis().get_view_interval()
 	
-	ax.add_artist(Line2D((xmin, xmax+10), (ymin, ymin), color='k', linewidth=4))
-	ax.add_artist(Line2D((xmin, xmin), (ymin, ymax+10), color='k', linewidth=4))
-	ax.tick_params(axis='both',reset=False,which='both',length=8,width=3)
-
+	#ax.get_xaxis().tick_bottom()
+	#ax.get_yaxis().tick_left()
+	#ax.axes.get_xaxis().set_visible(True)
+	#ax.axes.get_yaxis().set_visible(True)
+	
+	#xmin, xmax = ax.get_xaxis().get_view_interval()
+	#ymin, ymax = ax.get_yaxis().get_view_interval()
+	
+	#ax.add_artist(Line2D((xmin, xmax+10), (ymin, ymin), color='k', linewidth=4))
+	#ax.add_artist(Line2D((xmin, xmin), (ymin, ymax+10), color='k', linewidth=4))
+	#ax.tick_params(axis='both',reset=False,which='both',length=8,width=3)
+	
+	
+	
 	#print "BOLD IS ON!"
 	LW=3
 	if not markernum:
@@ -843,13 +861,13 @@ def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0,ide
 			
 			print "in colorless plot, linest is", linest
 			plt.plot(xaxis, yaxis, linewidth=LW,linestyle=linest,alpha=1,color='k',zorder=0,label=idee)
-			if idee:
-				print "Idee is", idee
+			if idee and options.legend:
+				#print "Idee is", idee
 				legend(loc='upper left')
 		elif yminnonconvex:
 			plt.plot(xaxis, yminnonconvex, linewidth=LW,linestyle=linest,alpha=1,color='k',zorder=0,label=idee)
 			plt.scatter(xaxis,yaxis,marker='x',edgecolor='k',alpha=1,zorder=1,s=40,facecolor='white',linewidth=2)
-			if idee:
+			if idee and options.legend:
 				print "Idee is", idee
 				legend(loc='upper left')
 			
@@ -859,19 +877,24 @@ def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0,ide
 		if not yminnonconvex:
 			print "I did NOT receive yminnonxonvex"
 			plt.plot(xaxis, yaxis, linewidth=LW,linestyle=linest,alpha=1,zorder=0,label=idee)
-			if idee:
+			if idee and options.legend:
 				print "Idee is", idee
 				legend(loc='upper left')
 		elif yminnonconvex:
 			print "I DID receive yminnonxonvex"
 			plt.plot(xaxis, yminnonconvex, linewidth=LW,linestyle=linest,alpha=1,zorder=0,label=idee)
-			if idee:
+			if idee and options.legend:
 				print "Idee is", idee
 				legend(loc='upper left')
 			plt.scatter(xaxis,yaxis,marker='x',alpha=0.5,zorder=1,s=40,linewidth=2)
 			
 		if mark:
 			plt.scatter(xaxis,yaxis,marker=mark,alpha=0.5,zorder=1,s=40,linewidth=2)
+
+		
+	if options.logplot:
+		plt.yscale('log')
+
 
 	labelfory='Time (s)'
 	
@@ -890,6 +913,8 @@ def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0,ide
 	
 	plt.ylabel(labelfory)
 	plt.xlabel("Box side-length (pixels)")
+	
+	
 
 	#plt.legend(['y = x', 'y = 2x', 'y = 3x', 'y = 4x'], loc='upper left')
 	
