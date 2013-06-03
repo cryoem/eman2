@@ -1716,11 +1716,10 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize='
 	if new_pixel_size < 0: new_pixel_size = pixel_size
 		
 	# Calculate overlap as ~1 rise in pixels if not set by user
-	if ptcl_overlap < 0 and dp >= 0:
-		ptcl_overlap = segny - int( (dp/new_pixel_size) + 0.5)
-		
+	if ptcl_overlap < 0 and dp >= 0: ptcl_overlap = segny - int( (dp/new_pixel_size) + 0.5)
+
 	print_msg("Overlap in pixels (using pixel size %f) between adjacent segments: %d\n"%(new_pixel_size, ptcl_overlap))
-	
+
 	topdir = os.getcwd()
 	flist = os.listdir(topdir)
 	outdirlist = [] # List of output directories to create (after checking they do not already exist)
@@ -1761,10 +1760,8 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize='
 			if filename.find(micid)>-1:
 				# v2 is a micrograph to window IF text file containing box coordinates exists
 				hcoordsname = filename + hcoords_suffix
-				if len(hcoords_dir) > 0:
-					hcoordsname = os.path.join(hcoords_dir, hcoordsname)
-				else:
-					hcoordsname = os.path.join(os.path.join(topdir, v1), hcoordsname)
+				if len(hcoords_dir) > 0: hcoordsname = os.path.join(hcoords_dir, hcoordsname)
+				else:                    hcoordsname = os.path.join(os.path.join(topdir, v1), hcoordsname)
 				# If any helices were boxed from this micrograph, say mic0, then ALL the helix coordinates should be saved under mic0 + hcoords_suffix
 				# For example, if using default e2helixboxer naming convention, then coordinates of all helices boxed in mic0 would be in mic0_boxes.txt
 				if( os.path.exists(hcoordsname) ):
@@ -1833,10 +1830,8 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, segnx, 
 	dummy = EMData()
 	dummy.read_image(micname, 0, True)
 	l = dummy.get_attr_dict()
-	if 'ctf' in l.keys():
-		has_ctf = True
-	if has_ctf:
-		ctf = dummy.get_attr('ctf')
+	if 'ctf' in l.keys():  has_ctf = True
+	if has_ctf:            ctf = dummy.get_attr('ctf')
 
 	if new_pixel_size != pixel_size:
 		# Resample micrograph, map coordinates, and window segments from resampled micrograph using new coordinates
