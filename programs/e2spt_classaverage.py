@@ -41,6 +41,7 @@ from random import choice
 from pprint import pprint
 from EMAN2db import EMTask
 
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog <output> [options]
@@ -135,6 +136,7 @@ def main():
 	(options, args) = parser.parse_args()
 	print "Wedge paramters ARE defined, see", options.wedgeangle, options.wedgei, options.wedgef
 	print "you do NOT have to use PARALLELISM"
+	print "\n\noptions.parallel is", options.parallel
 
 	
 
@@ -422,9 +424,7 @@ def main():
 						
 			#The reference for the next iteration should ALWAYS be the RAW AVERAGE of the aligned particles, since the reference will be "pre-processed" identically to the raw particles.
 			#There should be NO post-processing of the final averages, EXCEPT for visualization purposes (so, postprocessing is only applied to write out the output, if specified.
-			
-			print "\n\n\n\n\n\n\n\n\n\nBefore make average, results are", results
-			
+						
 			ref = make_average(options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.sym,options.groups,options.breaksym,options.nocenterofmass,options.verbose,it)
 	
 			if options.groups > 1:
@@ -501,6 +501,9 @@ def postprocess(img,optmask,optnormproc,optpostprocess):
 
 def preprocessing(options,image):
 	print "I am in the preprocessing function"
+	
+	
+	print "\n$$$$$$$\nIn preprocessing, received options and image, types", type(options), type(image)
 	
 	'''
 	Make the mask first, use it to normalize (optionally), then apply it 
@@ -583,6 +586,8 @@ def preprocessing(options,image):
 		if options.shrinkrefine and options.shrinkrefine > 1 :
 			s2image.process_inplace("math.meanshrink",{"n":options.shrinkrefine})
 	
+	print "Returning simage and shrunk s2image from preprocessing, types", type(simage), type(s2image)
+		
 	return(simage,s2image)
 	
 
@@ -841,7 +846,6 @@ def wedgestats(volume,angle, wedgei, wedgef):
 
 
 class Align3DTask(EMTask):
-	print "\n\nESTOY EN la MIERDA clase!!!!!\n\n"
 	"""This is a task object for the parallelism system. It is responsible for aligning one 3-D volume to another, with a variety of options"""
 
 	#def __init__(self,fixedimage,image,ptcl,label,mask,normproc,preprocess,lowpass,highpass,npeakstorefine,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,transform,verbose,randomizewedge,wedgeangle,wedgei,wedgef):
@@ -1030,6 +1034,7 @@ def alignment(fixedimage,image,ptcl,label,classoptions,transform):
 	"""
 	
 	if fixedimage and (classoptions.shrink or classoptions.normproc or classoptions.lowpass or classoptions.highpass or classoptions.mask or classoptions.preprocess or classoptions.lowpassfine or classoptions.highpassfine or classoptions.preprocessfine):
+		print "Sending fixedimage to preprocessing"
 		retfixedimage = preprocessing(classoptions,fixedimage)
 		sfixedimage = retfixedimage[0]
 		s2fixedimage = retfixedimage[1]
@@ -1038,6 +1043,7 @@ def alignment(fixedimage,image,ptcl,label,classoptions,transform):
 		s2fixedimage = fixedimage
 	
 	if image and (classoptions.shrink or classoptions.normproc or classoptions.lowpass or classoptions.highpass or classoptions.mask or classoptions.preprocess or classoptions.lowpassfine or classoptions.highpassfine or classoptions.preprocessfine):
+		print "Sending image to preprocessing"
 		retimage = preprocessing(classoptions,image)
 		simage = retimage[0]
 		s2image = retimage[1]
@@ -1073,6 +1079,9 @@ def alignment(fixedimage,image,ptcl,label,classoptions,transform):
 		print "Align size %d,  Refine Align size %d"%(sfixedimage["nx"],s2fixedimage["nx"])
 	
 	#In some cases we want to prealign the particles
+	
+	
+	
 	if transform:
 		if classoptions.verbose:
 			print "Moving Xfrom", transform
@@ -1130,10 +1139,15 @@ def alignment(fixedimage,image,ptcl,label,classoptions,transform):
 			except:
 				bestfinal.append({"score":1.0e10,"xform.align3d":bc["xform.align3d"],"coarse":bc})
 				print "\nThe appended score is", bestfinal[0]['score']
+		
+		print "Best final is", bestfinal
 				
 		if classoptions.shrinkrefine>1 :
 			for c in bestfinal:
-				c["xform.align3d"].set_trans(c["xform.align3d"].get_trans()*float(classoptions["shrinkrefine"]))
+			
+				newtrans = c["xform.align3d"].get_trans() * float(classoptions.shrinkrefine)
+				print "New trans and type are", newtrans, type(newtrans)
+				c["xform.align3d"].set_trans(newtrans)
 
 		# verbose printout of fine refinement
 		if classoptions.verbose>1 :
