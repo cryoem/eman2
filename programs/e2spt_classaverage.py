@@ -213,7 +213,11 @@ def main():
 		options.path="bdb:"+numbered_path("spt",True)
 	
 	elif options.path:
-		options.path=numbered_path( options.path ,True)
+		findir = os.listdir( os.getcwd() )
+		if options.path in findir:
+			options.path=numbered_path( options.path ,True)
+		else:
+			os.system('mkdir ' + options.path)
 		
 		if options.path[:4].lower()!="bdb:":
 			options.path="bdb:"+options.path
