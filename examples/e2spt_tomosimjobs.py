@@ -171,6 +171,11 @@ def main():
 	"""
 	parser.add_argument("--raligncmp",type=str,default='ccc.tomo',help="Comparator to use for missing wedge compensation during fine alignment.")
 	parser.add_argument("--aligncmp",type=str,default='ccc.tomo',help="Comparator to use for missing wedge compensation during coarse alignment.")
+	
+	parser.add_argument("--comparators",type=str,default='',help="""Supply comparators to COMPARE, separated my a comma. For example --comparators=ccc,ccc.tomo,fsc.tomo:sigmas=0.005 .
+																	If supplied, --raligncmp and --aligncmp will be ignored.""")
+	
+	
 	parser.add_argument("--parallel",type=str,default='thread:7',help="Parallelization to use.")
 
 	(options, args) = parser.parse_args()	
@@ -181,263 +186,35 @@ def main():
 	Make the directory where to create the database where the results will be stored
 	'''
 	
-	if not options.path: 
-		#options.path="bdb:"+numbered_path("sptavsa",True)
-		options.path = "sptsimjob_01"
-	
 	rootpath = os.getcwd()
 	
-	files=os.listdir(rootpath)
-
-	while options.path in files:
-		if '_' not in options.path:
-			options.path = options.path + '_00'
-		else:
-			jobtag=''
-			components=options.path.split('_')
-			if components[-1].isdigit():
-				components[-1] = str(int(components[-1])+1).zfill(2)
-			else:
-				components.append('00')
-						
-			options.path = '_'.join(components)
-
-
-	if options.path not in files:
-		os.system('mkdir ' + options.path)	
 	
+	'''
+	If COMPUTING alignment ERRORS
+	'''
 	if not options.plotonly:
-	
-		if "/" not in options.input:
-			options.input = rootpath + "/" + options.input
-	
-		#if options.testalignment:	
-		#	resultsdir = 'results_ali_errors'
-		#	os.system('cd ' + options.path + ' && mkdir ' + resultsdir)
-	
-		snrl = options.snrlowerlimit
-		snru = options.snrupperlimit
-		snrch = options.snrchange
-
-		tiltrangel = options.tiltrangelowerlimit
-		tiltrangeu = options.tiltrangeupperlimit
-		tiltrangech = options.tiltrangechange
-
-		#tiltstepl = options.tiltsteplowerlimit
-		#tiltstepu = options.tiltstepupperlimit
-		#tiltstepch = options.tiltstepchange
-		
-		tiltstep = options.tiltstep
-		
-		if options.nsliceschange and options.nsliceslowerlimit and options.nslicesupperlimit:
-			nslicesl = options.nsliceslowerlimit
-			nslicesu = options.nslicesupperlimit
-			nslicesch = options.nsliceschange
-			nslices = nslicesl
+		if options.comparators:
+			comps = options.comparators.split(',')
 			
-			if options.tiltstep:
-				print """ERROR: You must supply EITHER parameters for --nslices change and lower and upper limits, OR --tiltstep. 
-				DO NOT supply parameters for both."""
-				sys.exit()
-				
-		elif not options.tiltstep:
-			print """ERROR: You must supply parameters EITHER for --nslices change and lower and upper limits, OR --tiltstep."""
-			sys.exit()
-		
-		nrefs = EMUtil.get_image_count(options.input)
-		kk=0
-		tiltrange = tiltrangel
-		while tiltrange <tiltrangeu:
-			#print "tiltrage is", tiltrange
-			tiltrangetag = ("%d" %(tiltrange) ).zfill(3)
+			originalpath = options.path
 			
-			if options.tiltstep:
-				print "Tilt step is", tiltstep
-				print "Tilt range is", tiltrange
-				nslices = (2 * tiltrange) / tiltstep
-				print "Therefore, 2*tiltrange/tiltstep is nslices",nslices
-				nslicesu = nslices + 1
-				#nslicestag = str(int(nslices)).zfill(3)
-
-			while nslices < nslicesu:
-				#if not options.tiltstep:
-				nslicestag = ("%d" %(nslices)).zfill(3)
-				
-				#tiltstep = round(2.0 * tiltrange / tiltstep,1)
-				#if options.nsliceschange and options.nsliceslowerlimit and options.nslicesupperlimit:
-				#	#print "The number of slices is", tiltstep
-				#	#tiltsteptag = str( round(2.0 * tiltrange / tiltstep,1) ).zfill(5)
-				#	tiltsteptag = ("%.2f" %( round(2.0 * tiltrange / tiltstep,1) ) ).zfill(5)
-				#else:
-				#	t=1
-				#	#print "The tilt step is", tiltstep
-
-				snr=snrl
-				while snr < snru:
-					print "The conditions to simulate are tiltrange=%d, nslices=%d, snr=%.2f" % (tiltrange,nslices,snr)
-					#print "Snr is", snr
-					#rootpath = os.getcwd()
-
-					for d in range(nrefs):
-						modeltag = ''
-						#subpath = rootpath + '/' + options.path + '/' +'TR' + str(tiltrange).zfill(5) + '_TS' + tiltsteptag + '_SNR' + str(snr).zfill(5)
-						
-						snrtag = ("%.2f" %(snr) ).zfill(5)
-						subpath = rootpath + '/' + options.path + '/' +'TR' + tiltrangetag + '_NS' + nslicestag + '_SNR' + snrtag
-						"%.2f"
-					
-						inputdata = options.input
-
-						if nrefs > 1:
-							modeltag = 'model' + str(d).zfill(len(str(nrefs)))
-							subpath += '_' + modeltag
-
-							model = EMData(options.input,d)
-							newname = rootpath + '/' + options.path + '/' + inputdata.split('/')[-1].replace('.hdf','_' + modeltag + '.hdf')
-							model.write_image(newname,0)
-
-							#inputdata = newname.split('/')[-1] #UPDATE
-
-						subtomos =  subpath.split('/')[-1] + '.hdf'
-
-						jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --nslices=' + str(nslices) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrinksim) + ' --finalboxsize=' + str(options.finalboxsize) + ' --verbose=' + str(options.verbose)
-
-						#if options.nsliceschange and options.nsliceslowerlimit and options.nslicesupperlimit:
-						#	#print "\n\n\n$$$$$$$$$$$$$$\nYou hvae provided the number of slices\n$$$$$$$$\n\n\n",tiltstep
-						#	jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --nslices=' + str(tiltstep) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrinksim) + ' --finalboxsize=' + str(options.finalboxsize)
-
-						if options.simref:
-							jobcmd += ' --simref'
-						if options.addnoise:
-							jobcmd += ' --addnoise'
-						if options.saveprjs:
-							jobcmd += ' --saveprjs'
-						if options.negativecontrast:
-							jobcmd += ' --negativecontrast'
-
-						jobcmd += ' --path=' + subpath.split('/')[-1]				
-
-						cmd = 'cd ' + options.path + ' && ' + jobcmd
-
-						resultsfiles=[]
-
-						if options.testalignment:
-
-							cmd = cmd + ' && cd ' + subpath
-
-							ref = inputdata.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf')
-
-							output=subtomos.replace('.hdf', '_avg.hdf')
-							#print "\n\n$$$$$$$$$$$$$$$$$$$$$$\nRef name is\n$$$$$$$$$$$$$$$$$$$\n", ref
-
-							#print "\n\%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%noutput name is\n", output
-
-							alipath1=output.split('/')[-1].replace('_avg.hdf','_ali')
-							alipath2= subpath + '/' + output.replace('_avg.hdf','_ali')
-							#print "\n##################################\nAlipath1 for results will be\n", alipath1
-							#print "\n##################################\nAlipath2 for results will be\n", alipath2
-							
-							
-							#parser.add_argument("--wedgeangle",type=float,help="Missing wedge angle",default=60.0)
-							#parser.add_argument("--wedgei",type=float,help="Missingwedge begining", default=0.05)
-							#parser.add_argument("--wedgef",type=float,help="Missingwedge ending", default=0.5)
-							
-							alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --npeakstorefine=4 -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=" + str(options.verbose) + " --parallel=" + options.parallel + " --ralign=refine_3d_grid:delta=3:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=" + str(options.shrinkalign) + " --shrinkrefine=" + str(options.shrinkalign) +" --savesteps --saveali --normproc=normalize"  + ' --iter=' + str(options.iter)
-
-							if options.quicktest:
-								alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_symmetry_3d:sym=c1:verbose=" + str(options.verbose) + " --parallel=" + options.parallel + " --ralign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=3 --savesteps --saveali --normproc=normalize" + ' --iter=' + str(options.iter)
-
-							if 'fsc.tomo' in options.aligncmp or 'fsc.tomo' in options.raligncmp:
-								print "YOU are selecting FSC.TOMO, therefore, wedgeangle needs to be specified", tiltrange
-								alicmd += ' --wedgeangle=' + str(tiltrange)
-								
-							aliptcls = output.replace('_avg.hdf','_ptcls_ali.hdf')
-
-							#print "\n\aliptcls name is\n", aliptcls
-
-							extractcmd = " && cd " + alipath2 + " && e2proc3d.py bdb:class_ptcl " + aliptcls
-
-							resultsfile=aliptcls.replace('_ptcls_ali.hdf','_ali_error.txt')
-							
-							#print "\n@@@@@@@\n@@@@@@@\n@@@@@@@@@\n@@@@@@@ Results file is %s \n@@@@@@@\n@@@@@@@\n@@@@@@@@@\n@@@@@@@" %(resultsfile)
-
-							solutioncmd = " && e2spt_transformdistance.py --input=" + aliptcls + ' --output=' + resultsfile
-
-							rfilecmd =  ' && mv ' + resultsfile + ' ' +  rootpath + '/' + options.path
-
-							cmd = cmd + alicmd + extractcmd + solutioncmd + rfilecmd
-							
-							#if 'mpi' in options.parallel:
-							#	genpbs(cmd,kk)
-								#a=open('temp.pbs',r)
-								#a.write(cmd)
-								#a.close()
-							kk+=1
-
-						#print "\n\n\n*********************The command to execute is \n %s \n*********************\n" %(cmd)
-
-						#if 'mpi' in options.parallel:
-							
-						#	os.system('qsub temp'+str(kk)+'.pbs')
-						#else:
-						
-						
-						if options.verbose:
-							print "The command is", cmd
-						os.system(cmd)
-
-					snr += snrch
-
-				if options.tiltstep:
-					nslices += tiltstep
-				else:
-					nslices += nslicesch
-
-			tiltrange += tiltrangech
-
-		if nrefs > 1:
-			for i in range(nrefs):
-
-				modname = 'model' + str(i).zfill(5)
-				#print "\nI will make this moddir", modname
-				cmdd='cd ' + options.path + ' && mkdir ' + modname + ' && mv *' + modname + '* ' + modname
-				#print "\nBy executing this command", cmdd
-				os.system(cmdd)
-
-			for i in range(nrefs):
-				modname = 'model' + str(i).zfill(5)
-
-				resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
-				#print "\n\n\n\n*******************\nResults dir is\n", resultsdir
-
-				os.system('mkdir ' +  resultsdir + ' && cd ' + options.path + '/' + modname + ' && mv *error.txt ' + resultsdir)
-
+			for comp in comps:
+				options.aligncmp = comp
+				options.raligncmp = comp
+				compID = comp.split(':')[0].replace('.','P')
+				options.path = originalpath + '_' + compID
+				compute(options,rootpath)
+		
 		else:
-			print "\n\n***************\nThere was only one reference\n************\n\n"
-			
-			resultsdir = rootpath + '/' + options.path + '/results_ali_error'
-			os.system('mkdir ' + resultsdir + ' && cd ' + options.path + ' && mv *error.txt ' + resultsdir)
+			compute(options,rootpath)
 		
-			
-		resultsdir = rootpath + '/' + options.path + '/results_ali_error' 	
-		
-		for i in range(nrefs):
-			if nrefs > 1:
-				modname = 'model' + str(i).zfill(5)
-				resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
-	
-			resfiles = []
-			findir = os.listdir(resultsdir)
-			for f in findir:
-				if 'error.txt' in f:
-					resfiles.append(f)
-			
-			resfiles.sort()
-			
-			resfiles_analysis(options,resfiles,resultsdir,modelnum=i)
-			
+		'''
+		If ONLY PLOTTING previously computed alignment error files
+		'''		
 	elif options.plotonly:
 		print "\n\nI'm in PLOTONLY \n\n"
+		
+		makepath(options,rootpath)
 		
 		files=[]
 		if options.files:
@@ -456,7 +233,7 @@ def main():
 		if files:
 			resultsdir = rootpath + '/' + options.path
 			files.sort()
-			print "\n\nAnd these are the files", files
+			print "\n\nAnd these the files", files
 			print "\n\n"
 			resfiles_analysis(options,files,resultsdir,0)
 		
@@ -464,6 +241,263 @@ def main():
 	E2end(logger)
 	return()
 	
+
+def makepath(options,rootpath):
+	if not options.path: 
+		#options.path="bdb:"+numbered_path("sptavsa",True)
+		options.path = "sptsimjob_01"
+	
+	files=os.listdir(rootpath)
+
+	while options.path in files:
+		if '_' not in options.path:
+			options.path = options.path + '_00'
+		else:
+			jobtag=''
+			components=options.path.split('_')
+			if components[-1].isdigit():
+				components[-1] = str(int(components[-1])+1).zfill(2)
+			else:
+				components.append('00')
+						
+			options.path = '_'.join(components)
+
+	if options.path not in files:
+		os.system('mkdir ' + options.path)
+	return()
+
+
+def compute(options,rootpath):
+	
+	makepath(options,rootpath)
+	
+	if "/" not in options.input:
+		options.input = rootpath + "/" + options.input
+
+	#if options.testalignment:	
+	#	resultsdir = 'results_ali_errors'
+	#	os.system('cd ' + options.path + ' && mkdir ' + resultsdir)
+
+	snrl = options.snrlowerlimit
+	snru = options.snrupperlimit
+	snrch = options.snrchange
+
+	tiltrangel = options.tiltrangelowerlimit
+	tiltrangeu = options.tiltrangeupperlimit
+	tiltrangech = options.tiltrangechange
+
+	#tiltstepl = options.tiltsteplowerlimit
+	#tiltstepu = options.tiltstepupperlimit
+	#tiltstepch = options.tiltstepchange
+	
+	tiltstep = options.tiltstep
+	
+	if options.nsliceschange and options.nsliceslowerlimit and options.nslicesupperlimit:
+		nslicesl = options.nsliceslowerlimit
+		nslicesu = options.nslicesupperlimit
+		nslicesch = options.nsliceschange
+		nslices = nslicesl
+		
+		if options.tiltstep:
+			print """ERROR: You must supply EITHER parameters for --nslices change and lower and upper limits, OR --tiltstep. 
+			DO NOT supply parameters for both."""
+			sys.exit()
+			
+	elif not options.tiltstep:
+		print """ERROR: You must supply parameters EITHER for --nslices change and lower and upper limits, OR --tiltstep."""
+		sys.exit()
+	
+	nrefs = EMUtil.get_image_count(options.input)
+	kk=0
+	tiltrange = tiltrangel
+	while tiltrange <tiltrangeu:
+		#print "tiltrage is", tiltrange
+		tiltrangetag = ("%d" %(tiltrange) ).zfill(3)
+		
+		if options.tiltstep:
+			print "Tilt step is", tiltstep
+			print "Tilt range is", tiltrange
+			nslices = (2 * tiltrange) / tiltstep
+			print "Therefore, 2*tiltrange/tiltstep is nslices",nslices
+			nslicesu = nslices + 1
+			#nslicestag = str(int(nslices)).zfill(3)
+
+		while nslices < nslicesu:
+			#if not options.tiltstep:
+			nslicestag = ("%d" %(nslices)).zfill(3)
+			
+			#tiltstep = round(2.0 * tiltrange / tiltstep,1)
+			#if options.nsliceschange and options.nsliceslowerlimit and options.nslicesupperlimit:
+			#	#print "The number of slices is", tiltstep
+			#	#tiltsteptag = str( round(2.0 * tiltrange / tiltstep,1) ).zfill(5)
+			#	tiltsteptag = ("%.2f" %( round(2.0 * tiltrange / tiltstep,1) ) ).zfill(5)
+			#else:
+			#	t=1
+			#	#print "The tilt step is", tiltstep
+
+			snr=snrl
+			while snr < snru:
+				print "The conditions to simulate are tiltrange=%d, nslices=%d, snr=%.2f" % (tiltrange,nslices,snr)
+				#print "Snr is", snr
+				#rootpath = os.getcwd()
+
+				for d in range(nrefs):
+					modeltag = ''
+					#subpath = rootpath + '/' + options.path + '/' +'TR' + str(tiltrange).zfill(5) + '_TS' + tiltsteptag + '_SNR' + str(snr).zfill(5)
+					
+					snrtag = ("%.2f" %(snr) ).zfill(5)
+					subpath = rootpath + '/' + options.path + '/' +'TR' + tiltrangetag + '_NS' + nslicestag + '_SNR' + snrtag
+					"%.2f"
+				
+					inputdata = options.input
+
+					if nrefs > 1:
+						modeltag = 'model' + str(d).zfill(len(str(nrefs)))
+						subpath += '_' + modeltag
+
+						model = EMData(options.input,d)
+						newname = rootpath + '/' + options.path + '/' + inputdata.split('/')[-1].replace('.hdf','_' + modeltag + '.hdf')
+						model.write_image(newname,0)
+
+						#inputdata = newname.split('/')[-1] #UPDATE
+
+					subtomos =  subpath.split('/')[-1] + '.hdf'
+
+					jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --nslices=' + str(nslices) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrinksim) + ' --finalboxsize=' + str(options.finalboxsize) + ' --verbose=' + str(options.verbose)
+
+					#if options.nsliceschange and options.nsliceslowerlimit and options.nslicesupperlimit:
+					#	#print "\n\n\n$$$$$$$$$$$$$$\nYou hvae provided the number of slices\n$$$$$$$$\n\n\n",tiltstep
+					#	jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --nslices=' + str(tiltstep) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrinksim) + ' --finalboxsize=' + str(options.finalboxsize)
+
+					if options.simref:
+						jobcmd += ' --simref'
+					if options.addnoise:
+						jobcmd += ' --addnoise'
+					if options.saveprjs:
+						jobcmd += ' --saveprjs'
+					if options.negativecontrast:
+						jobcmd += ' --negativecontrast'
+
+					jobcmd += ' --path=' + subpath.split('/')[-1]				
+
+					cmd = 'cd ' + options.path + ' && ' + jobcmd
+
+					resultsfiles=[]
+
+					if options.testalignment:
+
+						cmd = cmd + ' && cd ' + subpath
+
+						ref = inputdata.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf')
+
+						output=subtomos.replace('.hdf', '_avg.hdf')
+						#print "\n\n$$$$$$$$$$$$$$$$$$$$$$\nRef name is\n$$$$$$$$$$$$$$$$$$$\n", ref
+
+						#print "\n\%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%noutput name is\n", output
+
+						alipath1=output.split('/')[-1].replace('_avg.hdf','_ali')
+						alipath2= subpath + '/' + output.replace('_avg.hdf','_ali')
+						#print "\n##################################\nAlipath1 for results will be\n", alipath1
+						#print "\n##################################\nAlipath2 for results will be\n", alipath2
+						
+						
+						#parser.add_argument("--wedgeangle",type=float,help="Missing wedge angle",default=60.0)
+						#parser.add_argument("--wedgei",type=float,help="Missingwedge begining", default=0.05)
+						#parser.add_argument("--wedgef",type=float,help="Missingwedge ending", default=0.5)
+						
+						alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --npeakstorefine=4 -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=" + str(options.verbose) + " --parallel=" + options.parallel + " --ralign=refine_3d_grid:delta=3:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=" + str(options.shrinkalign) + " --shrinkrefine=" + str(options.shrinkalign) +" --savesteps --saveali --normproc=normalize"  + ' --iter=' + str(options.iter)
+
+						if options.quicktest:
+							alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_symmetry_3d:sym=c1:verbose=" + str(options.verbose) + " --parallel=" + options.parallel + " --ralign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=3 --savesteps --saveali --normproc=normalize" + ' --iter=' + str(options.iter)
+
+						if 'fsc.tomo' in options.aligncmp or 'fsc.tomo' in options.raligncmp:
+							print "YOU are selecting FSC.TOMO, therefore, wedgeangle needs to be specified", tiltrange
+							alicmd += ' --wedgeangle=' + str(tiltrange)
+							
+						aliptcls = output.replace('_avg.hdf','_ptcls_ali.hdf')
+
+						#print "\n\aliptcls name is\n", aliptcls
+
+						extractcmd = " && cd " + alipath2 + " && e2proc3d.py bdb:class_ptcl " + aliptcls
+
+						resultsfile=aliptcls.replace('_ptcls_ali.hdf','_ali_error.txt')
+						
+						#print "\n@@@@@@@\n@@@@@@@\n@@@@@@@@@\n@@@@@@@ Results file is %s \n@@@@@@@\n@@@@@@@\n@@@@@@@@@\n@@@@@@@" %(resultsfile)
+
+						solutioncmd = " && e2spt_transformdistance.py --input=" + aliptcls + ' --output=' + resultsfile
+
+						rfilecmd =  ' && mv ' + resultsfile + ' ' +  rootpath + '/' + options.path
+
+						cmd = cmd + alicmd + extractcmd + solutioncmd + rfilecmd
+						
+						#if 'mpi' in options.parallel:
+						#	genpbs(cmd,kk)
+							#a=open('temp.pbs',r)
+							#a.write(cmd)
+							#a.close()
+						kk+=1
+
+					#print "\n\n\n*********************The command to execute is \n %s \n*********************\n" %(cmd)
+
+					#if 'mpi' in options.parallel:
+						
+					#	os.system('qsub temp'+str(kk)+'.pbs')
+					#else:
+					
+					if options.verbose:
+						print "The command is", cmd
+					os.system(cmd)
+
+				snr += snrch
+
+			if options.tiltstep:
+				nslices += tiltstep
+			else:
+				nslices += nslicesch
+
+		tiltrange += tiltrangech
+
+	if nrefs > 1:
+		for i in range(nrefs):
+
+			modname = 'model' + str(i).zfill(5)
+			#print "\nI will make this moddir", modname
+			cmdd='cd ' + options.path + ' && mkdir ' + modname + ' && mv *' + modname + '* ' + modname
+			#print "\nBy executing this command", cmdd
+			os.system(cmdd)
+
+		for i in range(nrefs):
+			modname = 'model' + str(i).zfill(5)
+
+			resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
+			#print "\n\n\n\n*******************\nResults dir is\n", resultsdir
+
+			os.system('mkdir ' +  resultsdir + ' && cd ' + options.path + '/' + modname + ' && mv *error.txt ' + resultsdir)
+
+	else:
+		print "\n\n***************\nThere was only one reference\n************\n\n"
+		
+		resultsdir = rootpath + '/' + options.path + '/results_ali_error'
+		os.system('mkdir ' + resultsdir + ' && cd ' + options.path + ' && mv *error.txt ' + resultsdir)
+	
+		
+	resultsdir = rootpath + '/' + options.path + '/results_ali_error' 	
+	
+	for i in range(nrefs):
+		if nrefs > 1:
+			modname = 'model' + str(i).zfill(5)
+			resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
+
+		resfiles = []
+		findir = os.listdir(resultsdir)
+		for f in findir:
+			if 'error.txt' in f:
+				resfiles.append(f)
+		
+		resfiles.sort()
+		
+		resfiles_analysis(options,resfiles,resultsdir,modelnum=i)
+	return()
 	
 
 def resfiles_analysis(options,resfiles,resultsdir,modelnum=0):
