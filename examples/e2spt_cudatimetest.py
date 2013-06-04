@@ -137,34 +137,30 @@ def main():
 		sys.exit(1)
 
 	#if not options.path: 
-	#	options.path = "sptCudaTest_01"
-	
-	#files=os.listdir(os.getcwd())
-	#while options.path in files:
-	#	if '_' not in options.path:
-	#		options.path = options.path + '_00'
-	#	else:
-	#		jobtag=''
-	#		components=options.path.split('_')
-	#		if components[-1].isdigit():
-	#			components[-1] = str(int(components[-1])+1).zfill(2)
-	#		else:
-	#			components.append('00')
-	#					
-	#		options.path = '_'.join(components)
-	
-	if not options.path: 
-		options.path = numbered_path("spt",True)
-	
-	elif options.path:
-		options.path = numbered_path( options.path ,True)
+	#	options.path = numbered_path("spt",True)
+	#
+	#elif options.path:
+	#	options.path = numbered_path( options.path ,True)
 		
 		#if options.path[:4].lower()!="bdb:":
 		#	options.path="bdb:"+options.path
 
-	files=os.listdir(os.getcwd())
-	if options.path not in files:
-		os.system('mkdir ' + options.path)
+	#files=os.listdir(os.getcwd())
+	#if options.path not in files:
+	#	os.system('mkdir ' + options.path)
+	
+	
+	if not options.path: 
+		options.path = numbered_path("sptTimeTest",True)
+	
+	elif options.path:
+		findir = os.listdir( os.getcwd() )
+		if options.path in findir:
+			options.path = numbered_path(options.path,True)
+		else:
+			os.system('mkdir ' + options.path)
+	
+	
 	print "Path will be", options.path
 	
 	'''
@@ -779,6 +775,13 @@ FUNCTION TO PLOT RESULTS
 '''
 def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0,idee='',yminnonconvex=[]):
 
+	#yaxislog=[]
+	if options.logplot:
+		
+		yaxis = [ math.log10(y) for y in yaxis ]	
+		yminnonconvex = [ math.log10(ym) for ym in yminnonconvex ]
+		print "I've taken the log of yaxis"
+	
 	print "\n\nreceived xaxis len is", len(xaxis)
 	print "\n\nreceived yminnonconvex len is", len(yminnonconvex)
 	
@@ -829,6 +832,7 @@ def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0,ide
 	matplotlib.rc('font', **font)
 	
 	#ax=plt.axes(frameon=False)
+	ax=plt.axes()
 	pylab.rc("axes", linewidth=2.0)
 	pylab.xlabel('X Axis', fontsize=14, fontweight='bold')
 	pylab.ylabel('Y Axis', fontsize=14, fontweight='bold')
@@ -836,8 +840,8 @@ def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0,ide
 	#pylab.ylim([-1,ylimvalmax+10])
 	pylab.xlim([-1,max(xaxis)+10])
 	
-	#ax.get_xaxis().tick_bottom()
-	#ax.get_yaxis().tick_left()
+	ax.get_xaxis().tick_bottom()
+	ax.get_yaxis().tick_left()
 	#ax.axes.get_xaxis().set_visible(True)
 	#ax.axes.get_yaxis().set_visible(True)
 	
@@ -846,7 +850,7 @@ def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0,ide
 	
 	#ax.add_artist(Line2D((xmin, xmax+10), (ymin, ymin), color='k', linewidth=4))
 	#ax.add_artist(Line2D((xmin, xmin), (ymin, ymax+10), color='k', linewidth=4))
-	#ax.tick_params(axis='both',reset=False,which='both',length=8,width=3)
+	ax.tick_params(axis='both',reset=False,which='both',length=8,width=3)
 	
 	
 	
@@ -940,7 +944,6 @@ def minima(sizes,vals):
 	print "\n\nI have entered minima!!!!!!!!!!!!!!!!!!!!!\n\n"
 	
 	
-	
 	#finalvals = []
 	#finalsizes = []
 	
@@ -950,7 +953,7 @@ def minima(sizes,vals):
 	
 	for i in xrange(0,len(vals) - 1 - 1 ):
 		aux = 0 
-		for j in xrange(i+1,len(vals) - 1 - 1 ):
+		for j in xrange(i+1,len(vals) - 1 ):
 			if vals[j]< vals[i]:
 				aux=0
 				#print "Because a downstream value is lower, I will break the loop, see", vals[j],vals[i]
@@ -958,8 +961,41 @@ def minima(sizes,vals):
 			else:
 				aux=1
 		if aux==1:
-			sizesmin.append(sizes[i])
-			valsmin.append(vals[i])
+			if i < len(vals) - 3:				#All points can be handled the same way except the last three.
+				sizesmin.append(sizes[i])
+				valsmin.append(vals[i])
+			
+			elif i == len(vals) - 3:			#For the last three, you scan all possible combinations 
+				
+				if vals[i] < vals[i+1]:
+				
+					if vals[i] < vals [i+2]:
+						sizesmin.append(sizes[i])
+						valsmin.append(valsmin[i])				
+						
+						if vals[i+1] < vals[i+2]:
+							sizesmin.append(sizes[i+1])
+							valsmin.append(valsmin[i+1])
+						
+							sizesmin.append(sizes[i+2])
+							valsmin.append(valsmin[i+2])
+						elif vals[i+1] > vals[i+2]:
+							sizesmin.append(sizes[i+2])
+							valsmin.append(valsmin[i+2])
+									
+					
+					elif vals[i] > vals[i+2]:
+						sizesmin.append(sizes[i+2])
+						valsmin.append(valsmin[i+2])
+				
+				elif vals[i] > vals[i+1]:
+					if vals[i+1] < vals[i+2]:
+						sizesmin.append(sizes[i+1])
+						valsmin.append(valsmin[i+1])
+					elif valis[i+1] > vals[1+2]:
+						sizesmin.append(sizes[i+2])
+						valsmin.append(valsmin[i+2])
+								
 			#print "I have appended this box, value", sizes[i], vals[i]
 
 	minnonconvex=Util.nonconvex(valsmin,0)
