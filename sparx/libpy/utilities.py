@@ -3827,3 +3827,121 @@ class iterImagesStack:
 		self.position -= 1
 		return (self.position >= 0)
 
+
+from cPickle import dumps,loads
+from zlib import compress,decompress
+from struct import pack,unpack
+
+def pack_message(data):
+	"""Convert data for transmission efficiently"""
+
+	if isinstance(data,str):
+		if len(data)>256 : return "C"+compress(data,1)
+		else : return "S"+data
+	else :
+		d2x=dumps(data,-1)
+		if len(d2x)>256 : return "Z"+compress(d2x,1)
+		else : return "O"+d2x
+
+	
+def unpack_message(msg):
+	"""Unpack a data payload prepared by pack_message"""
+	
+	if msg[0]=="C" : return decompress((msg[1:]).tostring())
+	elif msg[0]=="S" : return (msg[1:]).tostring()
+	elif msg[0]=="Z" : return loads(decompress((msg[1:]).tostring()))
+	elif msg[0]=="O" : return loads((msg[1:]).tostring())
+	else :
+		print "ERROR: Invalid MPI message. Please contact developers. (%s)"%str(msg[:20])
+		raise Exception("unpack_message")
+
+
+statistics_send_recv = dict()
+
+def update_tag(communicator, target_rank):   # TODO - it doesn't work when communicators are destroyed and recreated
+	return 123456
+	global statistics_send_recv
+	if not statistics_send_recv.has_key(communicator):
+		from mpi import mpi_comm_size
+		statistics_send_recv[communicator] = [0] * mpi_comm_size(communicator)
+	statistics_send_recv[communicator][target_rank] += 1
+	return statistics_send_recv[communicator][target_rank]
+
+# ===================================== WRAPPER FOR MPI
+
+def wrap_mpi_send(data, destination, communicator = None):
+	from mpi import mpi_send, MPI_COMM_WORLD, MPI_CHAR
+
+	if communicator == None:
+		communicator = MPI_COMM_WORLD
+		
+	msg = pack_message(data)
+	tag = update_tag(communicator, destination)
+	#from mpi import mpi_comm_rank
+	#print communicator, mpi_comm_rank(communicator), "send to", destination, tag
+	mpi_send(msg, len(msg), MPI_CHAR, destination, tag, communicator) # int MPI_Send( void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm )
+
+
+def wrap_mpi_recv(source, communicator = None):
+	from mpi import mpi_recv, MPI_COMM_WORLD, MPI_CHAR, mpi_probe, mpi_get_count
+
+	if communicator == None:
+		communicator = MPI_COMM_WORLD
+	
+	tag = update_tag(communicator, source)
+	#from mpi import mpi_comm_rank
+	#print communicator, mpi_comm_rank(communicator), "recv from", source, tag
+	mpi_probe(source, tag, communicator)
+	n = mpi_get_count(MPI_CHAR)
+	msg = mpi_recv(n, MPI_CHAR, source, tag, communicator)
+	return unpack_message(msg)
+
+
+def wrap_mpi_bcast(data, root, communicator = None):
+	from mpi import mpi_bcast, MPI_COMM_WORLD, mpi_comm_rank, MPI_CHAR
+	
+	if communicator == None:
+		communicator = MPI_COMM_WORLD
+	
+	rank = mpi_comm_rank(communicator)
+	
+	if rank == root:
+		msg = pack_message(data)
+		n = pack("I",len(msg))
+	else:
+		msg = None
+		n = None
+		
+	n = mpi_bcast(n, 4, MPI_CHAR, root, communicator)  # int MPI_Bcast ( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm ) 
+	n=unpack("I",n)[0]
+	msg = mpi_bcast(msg, n, MPI_CHAR, root, communicator)  # int MPI_Bcast ( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm ) 
+	return unpack_message(msg)
+
+
+# data must be a python list (numpy array also should be implemented)
+def wrap_mpi_gatherv(data, root, communicator = None):
+	from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
+
+	if communicator == None:
+		communicator = MPI_COMM_WORLD
+	
+	rank = mpi_comm_rank(communicator)
+	procs = mpi_comm_size(communicator)
+	
+	out_array = None
+	if rank == root:
+		if type(data) is list:
+			out_array = []
+			for p in xrange(procs):
+				if p == rank:
+					out_array.extend(data)
+				else:
+					recv_data = wrap_mpi_recv(p, communicator)
+					out_array.extend(recv_data)
+		else:
+			raise Exception("wrap_mpi_gatherv: type of data not supported")
+	else:
+		wrap_mpi_send(data, root, communicator)
+	
+	return out_array
+
