@@ -853,6 +853,8 @@ def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0,ide
 	#ax.add_artist(Line2D((xmin, xmin), (ymin, ymax+10), color='k', linewidth=4))
 	ax.tick_params(axis='both',reset=False,which='both',length=8,width=3)
 	
+	
+	
 	#print "BOLD IS ON!"
 	LW=3
 	if not markernum:
