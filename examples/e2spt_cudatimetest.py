@@ -156,7 +156,9 @@ def main():
 	elif options.path:
 		findir = os.listdir( os.getcwd() )
 		if options.path in findir:
+			print "The path already exists"
 			options.path = numbered_path(options.path,True)
+			print "Therefore the new path is", options.path
 		else:
 			os.system('mkdir ' + options.path)
 	
@@ -780,8 +782,7 @@ def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0,ide
 		
 		yaxis = [ math.log10(y) for y in yaxis ]	
 		yminnonconvex = [ math.log10(ym) for ym in yminnonconvex ]
-		print "I've taken the log of yaxis"
-	
+		
 	print "\n\nreceived xaxis len is", len(xaxis)
 	print "\n\nreceived yminnonconvex len is", len(yminnonconvex)
 	
@@ -801,7 +802,7 @@ def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0,ide
 	#print "IN PLOTTER Y", yaxis
 	#print "ylimvalmax RECEIVED in plotter is", ylimvalmax
 	
-	if ylimvalmax:
+	if ylimvalmax and not options.logplot:
 		ymax=ylimvalmax
 	
 	else:
@@ -852,8 +853,6 @@ def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0,ide
 	#ax.add_artist(Line2D((xmin, xmin), (ymin, ymax+10), color='k', linewidth=4))
 	ax.tick_params(axis='both',reset=False,which='both',length=8,width=3)
 	
-	
-	
 	#print "BOLD IS ON!"
 	LW=3
 	if not markernum:
@@ -880,13 +879,16 @@ def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0,ide
 	else:
 		if not yminnonconvex:
 			print "I did NOT receive yminnonxonvex"
+			
 			plt.plot(xaxis, yaxis, linewidth=LW,linestyle=linest,alpha=1,zorder=0,label=idee)
+			
 			if idee and options.legend:
 				print "Idee is", idee
 				legend(loc='upper left')
 		elif yminnonconvex:
 			print "I DID receive yminnonxonvex"
 			plt.plot(xaxis, yminnonconvex, linewidth=LW,linestyle=linest,alpha=1,zorder=0,label=idee)
+			
 			if idee and options.legend:
 				print "Idee is", idee
 				legend(loc='upper left')
@@ -895,9 +897,8 @@ def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0,ide
 		if mark:
 			plt.scatter(xaxis,yaxis,marker=mark,alpha=0.5,zorder=1,s=40,linewidth=2)
 
-		
-	if options.logplot:
-		plt.yscale('log')
+	#if options.logplot:
+	#	plt.yscale('log')
 
 
 	labelfory='Time (s)'
@@ -911,14 +912,13 @@ def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0,ide
 		if 'cpu' in name or 'CPU' in name and 'gpu' not in name and 'GPU' not in name:
 			tag='cpu 3D alignment Time'
 			labelfory='Time (s)'
-	
+		if options.logplot:
+			labelfory = "LOG( " + labelfory + " )"
 		stepslabel='\ncoarse step=' + str(CS) + ' : fine step=' + str(FS)
 		plt.title(tag + ' VS box-size' + stepslabel)
 	
 	plt.ylabel(labelfory)
 	plt.xlabel("Box side-length (pixels)")
-	
-	
 
 	#plt.legend(['y = x', 'y = 2x', 'y = 3x', 'y = 4x'], loc='upper left')
 	

@@ -214,7 +214,7 @@ def main():
 	elif options.plotonly:
 		print "\n\nI'm in PLOTONLY \n\n"
 		
-		makepath(options,rootpath)
+		options = makepath(options,rootpath)
 		
 		files=[]
 		if options.files:
@@ -264,12 +264,12 @@ def makepath(options,rootpath):
 
 	if options.path not in files:
 		os.system('mkdir ' + options.path)
-	return()
+	return(options)
 
 
 def compute(options,rootpath):
 	
-	makepath(options,rootpath)
+	options = makepath(options,rootpath)
 	
 	if "/" not in options.input:
 		options.input = rootpath + "/" + options.input
