@@ -31,6 +31,7 @@ import glob
 import datetime
 import argparse
 
+VERSION = 1.0
 
 ##### Helper functions #####
 
@@ -482,10 +483,10 @@ class MacUpload(Builder):
         cmd(scp)
 
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('commands',    help='Build commands', nargs='+')
+    parser.add_argument('--version',   action='version', version=VERSION)
     parser.add_argument('--target',    help='Build target', default=os.getenv('TARGET'))
     parser.add_argument('--root',      help='Build system root', default='/build')
     parser.add_argument('--clean',     help='Make clean', type=int, default=1)
@@ -496,7 +497,8 @@ if __name__ == "__main__":
     parser.add_argument('--scpdest',   help='Upload: scp destination directory', default='/home/zope-extdata/reposit/ncmi/software/counter_222/software_86')
     
     args = parser.parse_args()
-    target = TARGETS[args.target](args)
+    print "EMAN2 Nightly Build -- Version: %s -- Target: %s -- Date: %s"%(VERSION, args.target, datetime.datetime.utcnow().isoformat())
+    target = TARGETS.get(args.target, Target)(args)
     target.run(args.commands)
 
 
