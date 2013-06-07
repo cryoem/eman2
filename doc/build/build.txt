@@ -30,17 +30,16 @@ A build command executes one step of the process. Available build commands are c
 The complete process is as follows:
 
 	# Load platform specific environment variables.
-	source /build/vars.sh
+	source vars.sh
 
 	# Run cvs checkout command to get current trunk source.
-	/build/build.py checkout
+	build.py checkout
 
 	# Run build command to run CMake and install into /build/stage/...
-	/build/build.py build
+	build.py build
 
-	# Generate a distribution .tar.gz or .dmg in /build/images/... and upload.
-	/build/build.py upload
-	
+	# Create distribution, package, and upload
+	build.py install package upload
 	
 ===== Checkout =====
 

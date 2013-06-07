@@ -168,17 +168,19 @@ class Target(object):
             c(self.args).run()
 
     def run(self, commands):
-        if 'checkout' in commands:
-            self.checkout()
-        if 'build' in commands:
-            self.build()
-        if 'upload' in commands:
-            self.upload()
+        for i in commands:
+            getattr(self, i)()
         
     def checkout(self):
         self._run([Checkout])
 
     def build(self):
+        self._run([CMakeBuild])
+    
+    def install(self):
+        self._run([FixLinks, FixInterpreter, CopyShrc, CopyExtlib, FixInstallNames])
+       
+    def package(self):
         raise NotImplementedError
         
     def upload(self):
@@ -226,7 +228,13 @@ class MacTarget(Target):
     """    
     
     def build(self):
-        self._run([CMakeBuild, FixLinks, FixInterpreter, CopyShrc, CopyExtlib, FixInstallNames])
+        self._run([CMakeBuild])
+    
+    def install(self):
+        self._run([FixLinks, FixInterpreter, CopyShrc, CopyExtlib, FixInstallNames])
+        
+    def package(self):
+        self._run([MacPackage])
     
     def upload(self):
         self._run([MacUpload])
@@ -250,8 +258,9 @@ class LinuxTarget(Target):
     export LD_LIBRARY_PATH=$EMAN2DIR/lib:$EMAN2DIR/extlib/lib:$EMAN2DIR/extlib/qt4/lib:$EMAN2DIR/extlib/python/lib:$LD_LIBRARY_PATH
     """
 
-    def build(self): 
-        self._run([CMakeBuild, CopyShrc, CopyExtlib])
+    def install(self): 
+        self._run([CopyShrc, CopyExtlib])
+       
 
 
 class Linux64Target(LinuxTarget):
@@ -451,13 +460,18 @@ class FixInstallNames(Builder):
                     except: pass
 
 
-class UnixUpload(Builder):
+class UnixPackage(Builder):
     def run(self):
-        # Make tgz and upload
+        # Make tgz
         raise NotImplementedError
 
-
-class MacUpload(Builder):
+class UnixUpload(Builder):
+    def run(self):
+        # Upload
+        raise NotImplementedError
+    
+        
+class MacPackage(Builder):
     def run(self):
         log("Building disk image")
         mkdirs(os.path.join(self.args.cwd_images))
@@ -473,11 +487,15 @@ class MacUpload(Builder):
         volname = "%s %s for Mac OS X %s, built on %s"%(self.args.cvsmodule.upper(), self.args.cvstag, self.args.target_desc, now)
         imgname = "%s.%s.%s.dmg"%(self.args.cvsmodule, self.args.cvstag, self.args.target_desc)
         img = os.path.join(self.args.cwd_images, imgname)
-
         hdi = ['hdiutil', 'create', '-ov', '-srcfolder', self.args.cwd_stage, '-volname', volname, img]
         cmd(hdi)
 
+
+class MacUpload(Builder):
+    def run(self):
         log("Uploading disk image")
+        imgname = "%s.%s.%s.dmg"%(self.args.cvsmodule, self.args.cvstag, self.args.target_desc)
+        img = os.path.join(self.args.cwd_images, imgname)
         scpdest = "eman@%s:%s/%s"%(self.args.scphost, self.args.scpdest, imgname)
         scp = ['scp', img, scpdest]
         cmd(scp)
