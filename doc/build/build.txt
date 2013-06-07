@@ -1,11 +1,11 @@
 ===== Overview =====
 
-The nightly build system exists in:
+The nightly build system is specified by the $BROOT environment variable, by default:
 	/build
-	
-It contains the following subdirectories:
+
+It contains the following:
 	/build/var.sh					Shell script to set various environment variables (TARGET, CFLAGS, PREFIX, LD_LIBRARY_PATH, etc.)
-	/build/shared/scripts			Shared NFS directory: Build scripts
+    /build/build.py                 The build script
 	/build/shared/src				Shared NFS directory: Source for dependencies (e.g. libgsl-1.15.tar.gz)
 	/build/src						Build area for dependencies
 	/build/local					Install prefix for dependencies (e.g. --prefix=/build/local)
@@ -19,7 +19,7 @@ It contains the following subdirectories:
 ===== Build script =====
 
 The main script for managing the build process is:
-	/build/shared/scripts/build.py <command>
+	build.py <command>
 	
 The build.py script defines a number of target platforms and build commands. The script is organized into a number of target and command classes and is well documented.
 
@@ -33,13 +33,13 @@ The complete process is as follows:
 	source /build/vars.sh
 
 	# Run cvs checkout command to get current trunk source.
-	/build/shared/scripts/build.py checkout
+	/build/build.py checkout
 
 	# Run build command to run CMake and install into /build/stage/...
-	/build/shared/scripts/build.py build
+	/build/build.py build
 
 	# Generate a distribution .tar.gz or .dmg in /build/images/... and upload.
-	/build/shared/scripts/build.py upload
+	/build/build.py upload
 	
 	
 ===== Checkout =====
