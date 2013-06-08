@@ -31,7 +31,7 @@ import glob
 import datetime
 import argparse
 
-VERSION = 1.0
+VERSION = 1.1
 
 ##### Helper functions #####
 
@@ -108,7 +108,7 @@ class Target(object):
 
     # These will be turned back into file references...
     # INSTALL.txt
-    install = """Instructions for installing EMAN2."""
+    installtxt = """Instructions for installing EMAN2."""
     # eman2.bashrc
     bashrc = "#!/bin/sh"
     # eman2.cshrc
@@ -125,7 +125,7 @@ class Target(object):
         # Add a bunch of attributes to the args Namespace
         args.python = self.python
         args.distname = '%s.%s'%(args.cvsmodule, args.cvstag)
-        args.install = self.install
+        args.installtxt = self.installtxt
         args.bashrc = self.bashrc
         args.cshrc = self.cshrc
         args.target_desc = self.target_desc
@@ -191,7 +191,7 @@ class Target(object):
 class MacTarget(Target):
     """Generic Mac target."""
     
-    install = """Welcome to EMAN2 for Mac OS X.
+    installtxt = """Welcome to EMAN2 for Mac OS X.
 
     Installing EMAN2 is simple. 
 
@@ -352,7 +352,7 @@ class CopyShrc(Builder):
          mkdirs(os.path.join(self.args.cwd_stage))
          mkdirs(os.path.join(self.args.cwd_rpath))
          with open(os.path.join(self.args.cwd_stage, 'INSTALL.txt'), 'w') as f:
-             f.write(self.args.install)
+             f.write(self.args.installtxt)
          with open(os.path.join(self.args.cwd_rpath, 'eman2.bashrc'), 'w') as f:
              f.write(self.args.bashrc)
          with open(os.path.join(self.args.cwd_rpath, 'eman2.cshrc'), 'w') as f:
