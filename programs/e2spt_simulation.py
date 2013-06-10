@@ -109,8 +109,10 @@ def main():
 	parser.add_argument("--simref",action="store_true",default=False,help="This will make a simulated particle in the same orientation as the original input (or reference).")
 	parser.add_argument("--negativecontrast",action="store_true",default=False,help="This will make the simulated particles be like real EM data before contrast reversal. Otherwise, 'white protein' (positive density values) will be used.")
 
-	parser.add_argument("--nslices", type=int,default=0,help="""This will determine the tilt step between slices, depending on tiltrange, For example, to simulate a 2 deg tilt step supply --nslices=61 --tiltrange=60.
-									Recall that --tiltrange goes from - to + the supplied value, and that there is a central slice or projection at 0 deg.""")	
+	parser.add_argument("--nslices", type=int,default=0,help="""This will determine the tilt step between slices, depending on tiltrange.
+									For example, to simulate a 2 deg tilt step supply --nslices=61 --tiltrange=60.
+									Recall that --tiltrange goes from - to + the supplied value, and that there is a central slice or projection at 0 deg,
+									for symmetrical tilt series.""")	
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -386,7 +388,7 @@ def subtomosim(options,ptcls,stackname):
 	#nslices = int(round((upper_bound - lower_bound)/ options.tiltstep))
 	#if options.nslices:
 	nslices = options.nslices
-	tiltstep = round(( float(upper_bound) - float(lower_bound) )/ float(nslices),2)	
+	tiltstep = round(( float(upper_bound) - float(lower_bound) )/ float(nslices - 1),2)	
 	
 	#nslices = int(round((upper_bound - lower_bound)/ options.tiltstep))		
 	
@@ -400,6 +402,9 @@ def subtomosim(options,ptcls,stackname):
 		outname = stackname.split('/')[-1]
 	
 	tomogramdata=[]
+	
+	print "\n\n\n%%%%%%%%%%%%%%%%The number of particles are", len(ptcls)
+	print "\n\n\n"
 	for i in range(len(ptcls)):
 		if options.verbose:
 			print "Generating projections for particle #", i
@@ -418,33 +423,40 @@ def subtomosim(options,ptcls,stackname):
 		
 		randT = ptcls[i]['sptsim_randT']
 		
+		#print "Will process particle i", i
+		#print "Nslices are", nslices
+		#print "Lower bound is", lower_bound
+		
 		for j in range(nslices):
-			#print "Iterating over slices. Am in slice", j
-			t = Transform({'type':'eman','az':0,'alt':alt,'phi':0})				#Generate the projection orientation for each picture in the tilt series
+			realalt = alt + j*tiltstep
 			
-			dz = -1 * px * numpy.sin(alt)							#Calculate the defocus shift per picture, per particle, depending on the 
-													#particle's position relative to the tilt axis. For particles left of the tilt axis,
-													#px is negative. With negative alt [left end of the ice down, right end up], 
-													#dz should be negative.
+			#print "Real alt is", realalt
+			#print "Iterating over slices. Am in tiltstep, slice, alt", tiltstep,j,realalt
+			
+			t = Transform({'type':'eman','az':0,'alt':realalt,'phi':0})				#Generate the projection orientation for each picture in the tilt series
+			
+			dz = -1 * px * numpy.sin(realalt)							#Calculate the defocus shift per picture, per particle, depending on the 
+																	#particle's position relative to the tilt axis. For particles left of the tilt axis,
+																	#px is negative. With negative alt [left end of the ice down, right end up], 
+																	#dz should be negative.
 			defocus = options.defocus + dz
 						
 			prj = ptcls[i].project("standard",t)
 			prj.set_attr('xform.projection',t)
 			prj['apix_x']=apix
 			prj['apix_y']=apix
-			prj['sptsim_tiltangle']=alt
+			prj['sptsim_tiltangle']=realalt
 			
 			#print "The size of the prj is", prj['nx']
 			
-			prj.process_inplace('normalize')
+			#prj.process_inplace('normalize')
 			
 			if options.saveprjs:
-				if options.path in stackname:
+				if options.path + '/' in stackname:
 					prj.write_image( stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsRAW.hdf') , j)					#Write projections stack for particle i
 				else:
 					prj.write_image( options.path + '/' + stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsRAW.hdf') , j)					#Write projections stack for particle i
-				
-				
+					
 			raw_projections.append(prj)
 					
 			prj_fft = prj.do_fft()
@@ -461,9 +473,12 @@ def subtomosim(options,ptcls,stackname):
 			
 			prj_r = prj_fft.do_ift()							#Go back to real space
 			noise = ''
+			
 			if options.snr and options.snr != 0.0 and options.snr != '0.0' and options.snr != '0':
 				nx=prj_r['nx']
 				ny=prj_r['ny']
+				
+				print "I will make noise"
 				
 				#noise = 'noise string'
 				#print "Noise is", noise
@@ -473,37 +488,56 @@ def subtomosim(options,ptcls,stackname):
 				noise2 = noise.process("filter.lowpass.gauss",{"cutoff_abs":.25})
 				noise.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.75})
 				noise = ( noise*3 + noise2*3 ) * int(options.snr)
-	        if noise:
-				prj_r.add(noise)
-	        elif options.snr:
-	        	print "WARNING: You specified snr but there's no noise to add, apparently!"
+				
+				if noise:
+					print "I will add noise"
+					prj_r.add(noise)
+				
+				elif options.snr:
+					print "WARNING: You specified snr but there's no noise to add, apparently!"
 
 			ctfed_projections.append(prj_r)		
-
+			print "Appended ctfed prj in slice j", j
+			
 			if options.saveprjs and options.applyctf or options.saveprjs and options.snr:
-				if options.path in stackname:
+				if options.path + '/' in stackname:
 					prj_r.write_image( stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsEDITED.hdf') , j)
 				else:
 					prj_r.write_image(options.path + '/' + stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsEDITED.hdf') , j)	
-			
 						
-			alt += tiltstep
+			#alt += tiltstep
+			#print "\nAt end of loop after adding tiltstep, tiltstep,alt are", tiltstep,realalt
+			#print "\n$$$$$$$$$"
+		
+		print "\n########I am done with all the slices for particle", i
 		
 		box = ptcls[i].get_xsize()
 		
 		if options.finalboxsize:
 			box = options.finalboxsize
 		
+		print "The boxsize to use is", options.finalboxsize
+		
 		r = Reconstructors.get(options.reconstructor[0],{'size':(box,box,box),'sym':'c1','verbose':True,'mode':'gauss_2'})
 		#r = Reconstructors.get(options.reconstructor[0],options.reconstructor[1])
 		r.setup()
 		
+		print "There are these many projections to add to backprojection after all processing", len(ctfed_projections)
+		
+		k=0
 		for p in ctfed_projections:
+			print "Adding projection k", k
+			print "Whose min and max are", p['minimum'], p['maximum']
 			#print "The size of the prj to insert is", p['nx']
 			p = r.preprocess_slice(p,p['xform.projection'])
 			r.insert_slice(p,p['xform.projection'],1.0)
+			k+=1
+			
+		print "\n\n!!!!!!Will reconstruct the volume for particle i",i
 		
 		rec = r.finish(True)
+		
+		print "The mean of the reconstructed particle is", rec['mean']
 		#mname = parameters['model'].split('/')[-1].split('.')[0]
 		#name = 'rec_' + mname + '#' + str(i).zfill(len(str(len(particles)))) + '.hdf'
 		
@@ -518,6 +552,7 @@ def subtomosim(options,ptcls,stackname):
 			tomogramdata.append({'ptcl':rec,'px':px,'py':py,'pz':pz})
 		
 		#print "The apix of rec is", rec['apix_x']
+		
 		rec.write_image(options.path + '/' + outname,i)
 	
 	if options.tomogramoutput:
