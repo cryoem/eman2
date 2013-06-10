@@ -78,6 +78,7 @@ def main():
 	parser.add_argument("--fitminima",action="store_true",help="Fit ascending minima (as in a cuda time-test plot", default=False)
 	parser.add_argument("--ascending",action="store_true",help="Necessary only if fitting ASCENDING maxima", default=False)
 	parser.add_argument("--descending",action="store_true",help="Necessary only if fitting DESCENDING minima", default=False)
+	parser.add_argument("--savetxt",action="store_true",help="Will save a .txt file for polynomial fitted data, fitted minima, maxima, smoothed data, etc.", default=False)
 
 	parser.add_argument("--singleplot",action="store_true",help="All graphs for THE SAME curve (minima, maxima, raw data, etc) will be on the same plot.", default=False)
 	parser.add_argument("--ID",type=str, help="""Descriptive tag to identify/label a certain run of the program.""",default='')
@@ -110,6 +111,10 @@ def main():
 		if options.logplot:
 			logy = [ math.log10(y) for y in rawaxes[1] ]	
 			rawaxes[1] = logy
+				
+			if options.savetxt:
+				logname=name.replace('.txt','_LOG.txt')
+				textwriter(rawaxes[0],logy,options,logname)
 		
 		rawdata = {'name':name,'rawaxes':rawaxes}
 		raws.append(rawdata)
@@ -125,16 +130,29 @@ def main():
 			maxdata = {'name':name,'maxaxes':maxaxes}
 			maxs.append(maxdata)
 			
+			if options.savetxt:
+				maxname=name.replace('.txt','_MAX.txt')
+				textwriter(maxaxes[0],maxaxes[1],options,maxname)
+			
+			
 		if options.fitminima:
 			minaxes=fitminima(xaxis,yaxis,options)
 			mindata = {'name':name,'minaxes':minaxes}
 			mins.append(mindata)
+			
+			if options.savetxt:
+				minname=name.replace('.txt','_MIN.txt')
+				textwriter(minaxes[0],minaxes[1],options,minname)
 	
 		if options.polyfitdeg:
 			polyaxes=polyfit(xaxis,yaxis,options)
 			polydata = {'name':name,'polyaxes':polyaxes}
 			polys.append(polydata)			
-	
+			
+			if options.savetxt:
+				polyname=name.replace('.txt','_MIN.txt')
+				textwriter(polyaxes[0],polyaxes[1],options,polyname)
+			
 		completedata={'name':name,'rawaxes':rawaxes,'maxaxes':maxaxes,'minaxes':minaxes,'polyaxes':polyaxes}
 		completes.append(completedata)		
 	
@@ -229,7 +247,7 @@ def curveparser(F,options):
 	
 	for line in lines:
 		x=line.split()[0]
-		xaxis.append( int(x) )
+		xaxis.append( float(x) )
 		y=line.split()[-1].replace('\n','')
 		yaxis.append( float(y) )
 	
@@ -247,6 +265,28 @@ def curveparser(F,options):
 			del(yaxis[ int(i) ])	
 			
 	return[xaxis,yaxis]
+
+
+def textwriter(xdata,ydata,options,name):
+	if len(xdata) == 0 or len(ydata) ==0:
+		print "ERROR: Attempting to write an empty text file!"
+		sys.exit()
+	
+	filename=options.path + '/' + name
+	
+	print "I am in the text writer for this file", filename
+	
+	f=open(filename,'w')
+	lines=[]
+	for i in range(len(xdata)):
+		line2write = str(xdata[i]) + ' ' + str(ydata[i])+'\n'
+		#print "THe line to write is"
+		lines.append(line2write)
+	
+	f.writelines(lines)
+	f.close()
+
+	return()
 
 	
 def plotter(xaxis,yaxis,options):
@@ -353,6 +393,7 @@ def polyfit(xaxis,yaxis,options):
 	polycoeffs = numpy.polyfit(xaxis, yaxis, options.polyfitdeg)
 	yfit = numpy.polyval(polycoeffs, xaxis)
 	print "The fitted y values are", yfit
+
 	return[xaxis,yfit]
 
 
