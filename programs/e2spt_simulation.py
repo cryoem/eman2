@@ -407,7 +407,7 @@ def subtomosim(options,ptcls,stackname):
 	print "\n\n\n"
 	for i in range(len(ptcls)):
 		if options.verbose:
-			#print "Generating projections for particle #", i
+			print "Generating projections for particle #", i
 
 		apix = ptcls[i]['apix_x']
 		
