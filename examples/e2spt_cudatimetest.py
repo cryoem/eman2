@@ -578,8 +578,8 @@ def doit(corg,options,originaldir):
 		#print "of type", type(options.boxsizes)
 	
 		if '-' in options.boxsizes and '.txt' not in options.boxsizes:
-			lowerend = int( options.boxsizerange.split('-')[0] )
-			upperend = int( options.boxsizerange.split('-')[1] ) 
+			lowerend = int( options.boxsizes.split('-')[0] )
+			upperend = int( options.boxsizes.split('-')[1] ) 
 			mults=[i for i in xrange( lowerend , upperend ) ]
 			print "Lower and upper ends of range are", lowerend, upperend
 			print "Therefore, boxsizes are", mults
@@ -588,9 +588,9 @@ def doit(corg,options,originaldir):
 			f=open(options.boxsizes,'r')
 			lines=f.readlines()
 			for line in lines:
-				ele=line.replace('\n','').replace(' ','')
+				ele=line.replace('\n','').replace(' ','').split(',')[0]
 				if ele:
-					mults.append( int(ele) )
+					mults.append( int( float(ele) ) )
 			f.close()
 			
 			print "Boxsizes read from file are", mults
