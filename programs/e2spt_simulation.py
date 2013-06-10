@@ -407,7 +407,7 @@ def subtomosim(options,ptcls,stackname):
 	print "\n\n\n"
 	for i in range(len(ptcls)):
 		if options.verbose:
-			print "Generating projections for particle #", i
+			#print "Generating projections for particle #", i
 
 		apix = ptcls[i]['apix_x']
 		
@@ -478,7 +478,7 @@ def subtomosim(options,ptcls,stackname):
 				nx=prj_r['nx']
 				ny=prj_r['ny']
 				
-				print "I will make noise"
+				#print "I will make noise"
 				
 				#noise = 'noise string'
 				#print "Noise is", noise
@@ -490,14 +490,14 @@ def subtomosim(options,ptcls,stackname):
 				noise = ( noise*3 + noise2*3 ) * int(options.snr)
 				
 				if noise:
-					print "I will add noise"
+					#print "I will add noise"
 					prj_r.add(noise)
 				
 				elif options.snr:
 					print "WARNING: You specified snr but there's no noise to add, apparently!"
 
 			ctfed_projections.append(prj_r)		
-			print "Appended ctfed prj in slice j", j
+			#print "Appended ctfed prj in slice j", j
 			
 			if options.saveprjs and options.applyctf or options.saveprjs and options.snr:
 				if options.path + '/' in stackname:
@@ -509,14 +509,14 @@ def subtomosim(options,ptcls,stackname):
 			#print "\nAt end of loop after adding tiltstep, tiltstep,alt are", tiltstep,realalt
 			#print "\n$$$$$$$$$"
 		
-		print "\n########I am done with all the slices for particle", i
+		#print "\n########I am done with all the slices for particle", i
 		
 		box = ptcls[i].get_xsize()
 		
 		if options.finalboxsize:
 			box = options.finalboxsize
 		
-		print "The boxsize to use is", options.finalboxsize
+		#print "The boxsize to use is", options.finalboxsize
 		
 		r = Reconstructors.get(options.reconstructor[0],{'size':(box,box,box),'sym':'c1','verbose':True,'mode':'gauss_2'})
 		#r = Reconstructors.get(options.reconstructor[0],options.reconstructor[1])
@@ -526,18 +526,18 @@ def subtomosim(options,ptcls,stackname):
 		
 		k=0
 		for p in ctfed_projections:
-			print "Adding projection k", k
-			print "Whose min and max are", p['minimum'], p['maximum']
+			#print "Adding projection k", k
+			#print "Whose min and max are", p['minimum'], p['maximum']
 			#print "The size of the prj to insert is", p['nx']
 			p = r.preprocess_slice(p,p['xform.projection'])
 			r.insert_slice(p,p['xform.projection'],1.0)
 			k+=1
 			
-		print "\n\n!!!!!!Will reconstruct the volume for particle i",i
+		#print "\n\n!!!!!!Will reconstruct the volume for particle i",i
 		
 		rec = r.finish(True)
 		
-		print "The mean of the reconstructed particle is", rec['mean']
+		#print "The mean of the reconstructed particle is", rec['mean']
 		#mname = parameters['model'].split('/')[-1].split('.')[0]
 		#name = 'rec_' + mname + '#' + str(i).zfill(len(str(len(particles)))) + '.hdf'
 		
