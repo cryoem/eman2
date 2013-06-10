@@ -2,7 +2,7 @@
 
 #
 # Author: Jesus Galaz, 04/28/2012; last update 28/April/2013
-# Copyright (c) 2011 Baylor College of Medicine
+# Copyright (c) 2013 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -68,8 +68,10 @@ def main():
 	parser.add_argument("--test", action='store_true', help="Will run a quick tests using a few box sizes.",default=False)
 	parser.add_argument("--medium", action='store_true', help="Will test boxsizes in multiples of 10 between 10 and 240.",default=False)
 	parser.add_argument("--extensive", action='store_true', help="Will test EVERY box size between 12 and 256.",default=False)
-	parser.add_argument("--boxsizerange", type=str, help="Separate the first and the last boxsizes to sample with a hyphen; for example, 16-48. Recall that the upper end of any range in python is not included.",default='')
-	parser.add_argument("--boxsizelist", type=str, help="Will test SPT alignment for a comma separated list of boxsizes.",default='')
+	parser.add_argument("--boxsizes", type=str, help="""For a SINGLE AND CONTINUOUS range, separate the first and the last boxsizes to sample with a hyphen; for example, 16-48. 
+														Following python's conventions, the first index is 0, and the upper end of any range is not included.
+														For specific boxes, separate the values with a comma, or provide a .txt file with a list of box sizes.""",default='')
+	#parser.add_argument("--boxsizelist", type=str, help="Will test SPT alignment for a comma separated list of boxsizes.",default='')
 
 	parser.add_argument("--onefulloff", action='store_true', help="""Will test time for one CCF (between two boxes with noise) with all
 									 processing overhead for EVERY box size between 12 and 256.""",default=False)
@@ -81,6 +83,8 @@ def main():
 																	depending on --coarsestep and --finestep, for EVERY box size between 12 and 256.""",default=False)
 	
 	parser.add_argument("--ID", type=str, help="Tag files generated on a particular computer.",default='')
+	parser.add_argument("--sym", type=str, help="Confine alignment time test(s) to scanning an asymmetric unit with --coarsestep and --finestep sampling.",default='c1')
+
 	parser.add_argument("--coarsestep", type=int, help="Step size for coarse alignment.",default=30)
 	parser.add_argument("--finestep", type=int, help="Step size for fine alignment.",default=15)
 	
@@ -132,35 +136,8 @@ def main():
 	Make the directory where to create the database where the results will be stored
 	'''
 	
-	if options.path and ("/" in options.path or "#" in options.path) :
-		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
-		sys.exit(1)
-
-	#if not options.path: 
-	#	options.path = numbered_path("spt",True)
-	#
-	#elif options.path:
-	#	options.path = numbered_path( options.path ,True)
-		
-		#if options.path[:4].lower()!="bdb:":
-		#	options.path="bdb:"+options.path
-
-	#files=os.listdir(os.getcwd())
-	#if options.path not in files:
-	#	os.system('mkdir ' + options.path)
-	
-	
-	if not options.path: 
-		options.path = numbered_path("sptTimeTest",True)
-	
-	elif options.path:
-		findir = os.listdir( os.getcwd() )
-		if options.path in findir:
-			print "The path already exists"
-			options.path = numbered_path(options.path,True)
-			print "Therefore the new path is", options.path
-		else:
-			os.system('mkdir ' + options.path)
+	rootpath = os.getcwd()
+	options = makepath(options,rootpath)
 	
 	
 	print "Path will be", options.path
@@ -455,6 +432,28 @@ def main():
 	return()
 
 
+def makepath(options,rootpath):
+	
+	files=os.listdir(rootpath)
+
+	while options.path in files:
+		if '_' not in options.path:
+			options.path = options.path + '_00'
+		else:
+			jobtag=''
+			components=options.path.split('_')
+			if components[-1].isdigit():
+				components[-1] = str(int(components[-1])+1).zfill(2)
+			else:
+				components.append('00')
+						
+			options.path = '_'.join(components)
+
+	if options.path not in files:
+		os.system('mkdir ' + options.path)
+	return options
+
+
 def preplot(options,tipo,data,key):
 	print "I am in PREPLOT"
 	name = options.path + "/" + options.ID + key + "_CS"+ str(options.coarsestep).zfill(2)  + "_FS" + str( options.finestep ).zfill(2) + '_' + tipo + '.png'
@@ -574,17 +573,32 @@ def doit(corg,options,originaldir):
 	#mults = [12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,35,36,40,42,44,45,48,49,50,52,54,56,60,64,65,66,70,72,75,77,78,80,81,84,88,91,96,98,100,104,112,120,128,136,144,152,160,168,176,184,192,200,208,216,224,232,240,248,256]
 	mults = []
 	
-	if options.boxsizerange:
-		lowerend = int( options.boxsizerange.split('-')[0] )
-		upperend = int( options.boxsizerange.split('-')[1] ) 
-		mults=[i for i in xrange( lowerend , upperend ) ]
-		print "Lower and upper ends of range are", lowerend, upperend
-		print "Therefore, mults are", mults
-		
-	elif options.boxsizelist:
-		boxes=options.boxsizelist.split(',')
-		for box in boxes:
-			mults.append(int(box))
+	if options.boxsizes:
+		#print "Boxsizes is", options.boxsizes
+		#print "of type", type(options.boxsizes)
+	
+		if '-' in options.boxsizes and '.txt' not in options.boxsizes:
+			lowerend = int( options.boxsizerange.split('-')[0] )
+			upperend = int( options.boxsizerange.split('-')[1] ) 
+			mults=[i for i in xrange( lowerend , upperend ) ]
+			print "Lower and upper ends of range are", lowerend, upperend
+			print "Therefore, boxsizes are", mults
+	
+		elif '.txt' in options.boxsizes:
+			f=open(options.boxsizes,'r')
+			lines=f.readlines()
+			for line in lines:
+				ele=line.replace('\n','').replace(' ','')
+				if ele:
+					mults.append( int(ele) )
+			f.close()
+			
+			print "Boxsizes read from file are", mults
+	
+		elif "," in options.boxsizes:			
+			boxes=options.boxsizes.split(',')
+			for box in boxes:
+				mults.append( int(box) )
 			
 	elif options.test:
 		mults=[100,101,120,121,140,141]
@@ -745,7 +759,7 @@ def doit(corg,options,originaldir):
 				
 				#--align=rotate_translate_3d:search=12:delta=12:dphi=12:verbose=1 --parallel=thread:8 --ralign=refine_3d_grid:delta=3:range=12:search=2
 				ta = time()
-				bestcoarse = a.xform_align_nbest('rotate_translate_3d',b,{'delta':int(options.coarsestep),'dphi':int(options.coarsestep),'search':10,'sym':'icos'},1,'ccc.tomo')
+				bestcoarse = a.xform_align_nbest('rotate_translate_3d',b,{'delta':int(options.coarsestep),'dphi':int(options.coarsestep),'search':10,'sym':options.sym},1,'ccc.tomo')
 				for bc in bestcoarse:
 					#classoptions["ralign"][1]["xform.align3d"] = bc["xform.align3d"]
 					ran=int(round(float(options.coarsestep)/2.0))
@@ -852,8 +866,6 @@ def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0,ide
 	#ax.add_artist(Line2D((xmin, xmax+10), (ymin, ymin), color='k', linewidth=4))
 	#ax.add_artist(Line2D((xmin, xmin), (ymin, ymax+10), color='k', linewidth=4))
 	ax.tick_params(axis='both',reset=False,which='both',length=8,width=3)
-	
-	
 	
 	#print "BOLD IS ON!"
 	LW=3
@@ -969,34 +981,37 @@ def minima(sizes,vals):
 			
 			elif i == len(vals) - 3:			#For the last three, you scan all possible combinations 
 				
+				#print "Plotting minima. Analyzing last three values, the len of all values is", len(vals)
+				#print "i, i+1 and i+2 are", i, i+1, i+2
+				#print "Len of sizes is", len(sizes)	
 				if vals[i] < vals[i+1]:
 				
 					if vals[i] < vals [i+2]:
 						sizesmin.append(sizes[i])
-						valsmin.append(valsmin[i])				
+						valsmin.append(vals[i])				
 						
 						if vals[i+1] < vals[i+2]:
 							sizesmin.append(sizes[i+1])
-							valsmin.append(valsmin[i+1])
+							valsmin.append(vals[i+1])
 						
 							sizesmin.append(sizes[i+2])
-							valsmin.append(valsmin[i+2])
+							valsmin.append(vals[i+2])
 						elif vals[i+1] > vals[i+2]:
 							sizesmin.append(sizes[i+2])
-							valsmin.append(valsmin[i+2])
+							valsmin.append(vals[i+2])
 									
 					
 					elif vals[i] > vals[i+2]:
 						sizesmin.append(sizes[i+2])
-						valsmin.append(valsmin[i+2])
+						valsmin.append(vals[i+2])
 				
 				elif vals[i] > vals[i+1]:
 					if vals[i+1] < vals[i+2]:
 						sizesmin.append(sizes[i+1])
-						valsmin.append(valsmin[i+1])
+						valsmin.append(vals[i+1])
 					elif valis[i+1] > vals[1+2]:
 						sizesmin.append(sizes[i+2])
-						valsmin.append(valsmin[i+2])
+						valsmin.append(vals[i+2])
 								
 			#print "I have appended this box, value", sizes[i], vals[i]
 
