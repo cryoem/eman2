@@ -41,9 +41,11 @@ def main():
 	usage = """e2spt_tomogramfiltrator.py
 	This program pads a tomogram to filter it and then crops it back to the original size to avoid aliasing effects that occur when filtering straight with e2proc3d.py
 	"""
-			
+		
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	
+
+	parser.add_argument("--output", type=str, help="""File name for the filtered tomogram.""", default=None)
+
 	parser.add_argument("--tomogram", type=str, help="The name of the input volume stack. MUST be HDF or BDB, since volume stack support is required.", default=None, guitype='filebox', browser='EMSubTomosTable(withmodal=True,multiselect=False)', row=0, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	parser.add_argument("--lowpass",type=str,help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=17, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	parser.add_argument("--highpass",type=str,help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=18, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
@@ -51,24 +53,23 @@ def main():
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")	
-	
-	if options.preprocess: 
-		options.preprocess=parsemodopt(options.preprocess)
-		
-	if options.lowpass: 
-		options.lowpass=parsemodopt(options.lowpass)
-	
-	if options.highpass: 
-		options.highpass=parsemodopt(options.highpass)
-		
+
 	(options, args) = parser.parse_args()
 
-	print "The resolution to filter at is", res
+	if options.preprocess: 
+		options.preprocess=parsemodopt(options.preprocess)
+	
+	if options.lowpass: 
+		options.lowpass=parsemodopt(options.lowpass)
+
+	if options.highpass: 
+		options.highpass=parsemodopt(options.highpass)
+
 	a=EMData()
 	a.read_image(options.tomogram) 
-    x = a["nx"]
-    y = a["ny"]
-    z = a["nz"]
+	x = a["nx"]
+	y = a["ny"]
+	z = a["nz"]
 	print "The dimensions of the tomogram are", x,y,z
 
 	pady = int(y*0.30)
@@ -93,33 +94,41 @@ def main():
 	print "The new dimensions are ", x2,y2,z2
 	#factor = 1.0/float(res)
 	#b=a.process("filter.lowpass.gauss",{"cutoff_freq":factor})
-	
+
 	'''
 	#Preprocess, lowpass and/or highpass
 	'''
 	if options.preprocess:
-		b.process_inplace(options.preprocess[0],options.preprocess[1])
-		
-	if options.lowpass:
-		b.process_inplace(options.lowpass[0],options.lowpass[1])
-		
-	if options.highpass:
-		b.process_inplace(options.highpass[0],options.highpass[1])
+		a.process_inplace(options.preprocess[0],options.preprocess[1])
 	
-	r2 = Region(padx,pady,padz,x,y,z)
-	b.clip_inplace(r2)
+	if options.lowpass:
+		a.process_inplace(options.lowpass[0],options.lowpass[1])
+	
+	if options.highpass:
+		a.process_inplace(options.highpass[0],options.highpass[1])
 
-	filtered_tomo = tomo.replace(".rec","_lp" + str(int(res)) + ".rec")
-	if ".mrc" in tomo[-1,-5]:
-		filtered_tomo = tomo.replace(".mrc","_lp" + str(int(res)) + ".mrc")
-		
+	r2 = Region(padx,pady,padz,x,y,z)
+	a.clip_inplace(r2)
+
+	tomo = options.tomogram
+	outname = tomo.replace('.','_LP.')
+	if options.output:
+		outname = options.output
+	#else:
+	#	if '.mrc' in outname:
+	#		outname = outname.replace('.mrc','_LP.mrc')
+	#	if '.hdf' in outname:
+	#		outname = outname.replace('.hdf','_LP.hdf')
+	#	if '.rec' in outname:
+	#		outname = outname.replace(".rec","_LP.rec")
+
 	#filtered_tomo = filtered_tomo.replace(".","_new.")
-	x3 = b['nx']
-	y3 = b['ny']
-	z3 = b['nz']
+	x3 = a['nx']
+	y3 = a['ny']
+	z3 = a['nz']
 	print "The filtered tomogram has been clipped presumably to the original size", x3,y3,z3
-	print "The name of the filtered tomogram is", filtered_tomo
-	b.write_image(filtered_tomo)
+	print "The name of the filtered tomogram is", outname
+	a.write_image(outname)
 
 	return()
 
