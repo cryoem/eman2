@@ -1180,9 +1180,12 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 			bg_1d_low=low_bg_curve(bg_1d,ds)
 			bglowsub=[im_1d[s]-bg_1d_low[s] for s in range(len(im_1d))]	# background subtracted curve, using a non-convex version of the background 
 			best[0][1][1]=500.0		# restart the fit with B=200.0
-			if hasgoodsf: sim=Simplex(ctf_cmp_a,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0],rng))
-			else: sim=Simplex(ctf_cmp,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0],rng))
-			oparm=sim.minimize(epsilon=.00000001,monitor=0)
+			try:
+				if hasgoodsf: sim=Simplex(ctf_cmp_a,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0],rng))
+				else: sim=Simplex(ctf_cmp,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0],rng))
+				oparm=sim.minimize(epsilon=.00000001,monitor=0)
+			except:
+				print "Serious autofitting error on this image. Preserved an initial guess, but you will need to fit manually."
 			if fabs(df-oparm[0][0])/oparm[0][0]<.001:
 				best[0]=(oparm[1],oparm[0])
 				break
