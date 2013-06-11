@@ -265,7 +265,9 @@ int AmiraIO::read_data(float * rdata, int, const Region *, bool)
 	size_t size = (size_t)nx*ny*nz;
 	switch(dt) {
 	case EMUtil::EM_FLOAT:
+		
 		fread(rdata,nx*nz,ny*sizeof(float),amira_file);
+		
 		if( (is_big_endian && ByteOrder::is_host_big_endian()) && !(is_big_endian || ByteOrder::is_host_big_endian()) ) {
 			char tmpdata;
 			char *cdata=(char*)rdata;
@@ -278,8 +280,25 @@ int AmiraIO::read_data(float * rdata, int, const Region *, bool)
 				tmpdata=cdata[4*i+2];
 				cdata[4*i+2]=cdata[4*i+1];
 				cdata[4*i+1] = tmpdata;
+				
+				
 			}
 		}
+		
+		float* copydata;
+		copydata=new float[size];
+		
+		for (size_t i=0;i<size;i++){
+			copydata[i]=rdata[i];	
+		}
+		
+		for (int i=0;i<ny;i++){
+			for (int j=0;j<nx;j++){
+				rdata[i*nx+j]=copydata[(ny-1-i)*nx+j];
+				}
+		}
+		delete[] copydata;
+		
 		break;
 	case EMUtil::EM_SHORT:
 	{
@@ -297,6 +316,22 @@ int AmiraIO::read_data(float * rdata, int, const Region *, bool)
 			for(size_t i=0; i<size; ++i) rdata[i] = float(datashort[i]);
 			free(datashort);
 		}
+		
+		
+		float* copydata;
+		copydata=new float[size];
+		
+		for (size_t i=0;i<size;i++){
+			copydata[i]=rdata[i];	
+		}
+		
+		for (int i=0;i<ny;i++){
+			for (int j=0;j<nx;j++){
+				rdata[i*nx+j]=copydata[(ny-1-i)*nx+j];
+				}
+		}
+		delete[] copydata;
+		
 	}
 		break;
 	case EMUtil::EM_CHAR:
@@ -305,6 +340,21 @@ int AmiraIO::read_data(float * rdata, int, const Region *, bool)
 		fread(databyte,nx*nz,ny*sizeof(char),amira_file);
 		for(size_t i=0; i<size; ++i) rdata[i] = float(databyte[i]);
 		free(databyte);
+		
+		float* copydata;
+		copydata=new float[size];
+		
+		for (size_t i=0;i<size;i++){
+			copydata[i]=rdata[i];	
+		}
+		
+		for (int i=0;i<ny;i++){
+			for (int j=0;j<nx;j++){
+				rdata[i*nx+j]=copydata[(ny-1-i)*nx+j];
+				}
+		}
+		delete[] copydata;
+		
 	}
 		break;
 	default:
@@ -322,7 +372,22 @@ int AmiraIO::write_data(float *data, int image_index, const Region*, EMUtil::EMD
 
 	check_write_access(rw_mode, image_index, 1, data);
 //	ByteOrder::become_big_endian(data, nx * ny * nz);
-
+	size_t size = (size_t)nx*ny*nz;
+	
+	float* copydata;
+	copydata=new float[size];
+	
+	for (size_t i=0;i<size;i++){
+		copydata[i]=data[i];	
+	}
+	
+	for (int i=0;i<ny;i++){
+		for (int j=0;j<nx;j++){
+			data[i*nx+j]=copydata[(ny-1-i)*nx+j];
+			}
+	}
+	delete[] copydata;	
+	
 	if (fwrite(data, nx * nz, ny * sizeof(float), amira_file) != ny * sizeof(float)) {
 		throw ImageWriteException(filename, "incomplete file write in AmiraMesh file");
 	}
