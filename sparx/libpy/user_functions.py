@@ -168,7 +168,7 @@ def ref_ali3dm( refdata ):
 		v = filt_tanl(v, 0.4, 0.1)
 		v *= mask
 		v.write_image(os.path.join(outdir, "volf%04d.hdf"%total_iter), iref)
-					
+
 def ref_ali3dm_ali_50S( refdata ):
 	from filter       import fit_tanh, filt_tanl
 	from utilities    import get_im
@@ -408,8 +408,8 @@ def reference3( ref_data ):
 
 def reference4( ref_data ):
 	from utilities      import print_msg
-	from filter         import fit_tanh, filt_tanl
-	from fundamentals   import fshift
+	from filter         import fit_tanh, filt_tanl, filt_gaussl
+	from fundamentals   import fshift, fft
 	from morphology     import threshold
 	#  Prepare the reference in 3D alignment, i.e., low-pass filter and center.
 	#  Input: list ref_data
@@ -426,14 +426,14 @@ def reference4( ref_data ):
 	stat = Util.infomask(ref_data[2], ref_data[0], False)
 	volf = ref_data[2] - stat[0]
 	Util.mul_scalar(volf, 1.0/stat[1])
-	#volf = threshold(volf)
+	volf = threshold(volf)
 	#Util.mul_img(volf, ref_data[0])
 	#fl, aa = fit_tanh(ref_data[3])
-	fl = 0.40
+	fl = 0.25
 	aa = 0.1
-	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
+	#msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
 	print_msg(msg)
-	volf = filt_tanl(volf, fl, aa)
+	volf = fft(filt_gaussl(filt_tanl(fft(volf),0.25,0.2),0.06))
 	if ref_data[1] == 1:
 		cs = volf.phase_cog()
 		msg = "Center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
