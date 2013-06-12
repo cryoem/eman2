@@ -1184,13 +1184,14 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 				if hasgoodsf: sim=Simplex(ctf_cmp_a,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0],rng))
 				else: sim=Simplex(ctf_cmp,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0],rng))
 				oparm=sim.minimize(epsilon=.00000001,monitor=0)
+				if fabs(df-oparm[0][0])/oparm[0][0]<.001:
+					best[0]=(oparm[1],oparm[0])
+					break
+				best[0]=(oparm[1],oparm[0])
+				if verbose: print "After BG correction, value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
 			except:
 				print "Serious autofitting error on this image. Preserved an initial guess, but you will need to fit manually."
-			if fabs(df-oparm[0][0])/oparm[0][0]<.001:
-				best[0]=(oparm[1],oparm[0])
 				break
-			best[0]=(oparm[1],oparm[0])
-			if verbose: print "After BG correction, value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
 	else:
 		if verbose: print "Best value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
 		# rerun the simplex with the new background
