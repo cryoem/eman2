@@ -420,7 +420,7 @@ def reference4( ref_data ):
 	#  Output: filtered, centered, and masked reference image
 	#  apply filtration (FSC) to reference image:
 
-	print_msg("reference4\n")
+	#print_msg("reference4\n")
 	cs = [0.0]*3
 
 	stat = Util.infomask(ref_data[2], ref_data[0], False)
@@ -432,8 +432,8 @@ def reference4( ref_data ):
 	fl = 0.25
 	aa = 0.1
 	#msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
-	print_msg(msg)
-	volf = fft(filt_gaussl(filt_tanl(fft(volf),0.25,0.2),0.06))
+	#print_msg(msg)
+	volf = fft(filt_gaussl(filt_tanl(fft(volf),0.35,0.2),0.3))
 	if ref_data[1] == 1:
 		cs = volf.phase_cog()
 		msg = "Center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
