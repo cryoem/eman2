@@ -352,7 +352,7 @@ def main():
 						task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options,transform)
 						tasks.append(task)
 					else:
-						print "No parallelism specified"
+						#print "No parallelism specified"
 						result=align3Dfunc(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options,transform)
 						results.append(result['final'])
 				'''		
@@ -370,7 +370,7 @@ def main():
 						print "Results:"
 						pprint(results)
 				else:
-					print "No parallelism specified"
+					#print "No parallelism specified"
 					#results=tasks
 					if options.verbose>2 : 
 						print "Results:" 
@@ -402,7 +402,7 @@ def main():
 					task=Align3DTask(ref,["cache",options.input,p],p,"Ptcl %d in iter %d"%(p,it),options,transform)
 					tasks.append(task)
 				else:
-					print "No parallelism specified"
+					#print "No parallelism specified"
 					result=align3Dfunc(ref,["cache",options.input,p],p,"Ptcl %d in iter %d"%(p,it),options,transform)
 					
 					results.append(result['final'])
@@ -420,7 +420,7 @@ def main():
 					print "Results:"
 					pprint(results)
 			else:
-				print "No parallelism specified"
+				#print "No parallelism specified"
 				#results=tasks
 				if options.verbose>2 : 
 					print "Results:" 
@@ -504,10 +504,10 @@ def postprocess(img,optmask,optnormproc,optpostprocess):
 
 
 def preprocessing(options,image):
-	print "I am in the preprocessing function"
+	#print "I am in the preprocessing function"
 	
 	
-	print "\n$$$$$$$\nIn preprocessing, received options and image, types", type(options), type(image)
+	#print "\n$$$$$$$\nIn preprocessing, received options and image, types", type(options), type(image)
 	
 	'''
 	Make the mask first, use it to normalize (optionally), then apply it 
@@ -590,7 +590,7 @@ def preprocessing(options,image):
 		if options.shrinkrefine and options.shrinkrefine > 1 :
 			s2image.process_inplace("math.meanshrink",{"n":options.shrinkrefine})
 	
-	print "Returning simage and shrunk s2image from preprocessing, types", type(simage), type(s2image)
+	#print "Returning simage and shrunk s2image from preprocessing, types", type(simage), type(s2image)
 		
 	return(simage,s2image)
 	
@@ -611,10 +611,10 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 		for i in range(groups - 1):
 			threshs.append(val[int((i+1)*(1.0/groups)*len(align_parms)) -1])
 			guinea_particles.append(int((i+1)*(1.0/groups)*len(align_parms)) -1)
-		print "Therefore, based on the size of the set, the coefficients that will work as thresholds are", threshs	
-		print "While the guineapig particles where these came from were", guinea_particles
-		print "Out of a total of these many particles", len(align_parms)
-		print "Therefor each group will contain approximately these many particles", len(align_parms)/groups
+		#print "Therefore, based on the size of the set, the coefficients that will work as thresholds are", threshs	
+		#print "While the guineapig particles where these came from were", guinea_particles
+		#print "Out of a total of these many particles", len(align_parms)
+		#print "Therefor each group will contain approximately these many particles", len(align_parms)/groups
 	
 		threshs.sort()
 				
@@ -632,22 +632,25 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 			if ptcl_parms[0]["score"] > threshs[-1]: 
 				groupslist[-1].append(ptcl)
 				includedlist[-1].append(i)			
-				print "Particle %d assigned to last group!" %(i)
-				print "The threshold criteria was %f, and the particle's cc score was %f" %(threshs[-1], ptcl_parms[0]["score"])
+				if verbose:
+					print "Particle %d assigned to last group!" %(i)
+					print "The threshold criteria was %f, and the particle's cc score was %f" %(threshs[-1], ptcl_parms[0]["score"])
 				
 			elif ptcl_parms[0]["score"] < threshs[0]: 
 				groupslist[0].append(ptcl)
 				includedlist[0].append(i)
-				print "Particle %d assigned to first group!" %(i)
-				print "The threshold criteria was %f, and the particle's cc score was %f" %(threshs[0], ptcl_parms[0]["score"])
+				if verbose:
+					print "Particle %d assigned to first group!" %(i)
+					print "The threshold criteria was %f, and the particle's cc score was %f" %(threshs[0], ptcl_parms[0]["score"])
 			
 			else:
 				for kk in range(len(threshs)-1):
 					if ptcl_parms[0]["score"] > threshs[kk] and ptcl_parms[0]["score"] < threshs[kk+1]:
 						groupslist[kk+1].append(ptcl)
 						includedlist[kk+1].append(i)
-						print "Particle %d assigned to group number %d!" %(i,kk+1)
-						print "The threshold criteria was %f, and the particle's cc score was %f" %(threshs[kk+1], ptcl_parms[0]["score"])
+						if verbose:
+							print "Particle %d assigned to group number %d!" %(i,kk+1)
+							print "The threshold criteria was %f, and the particle's cc score was %f" %(threshs[kk+1], ptcl_parms[0]["score"])
 
 			db["tomo_%04d"%i] = ptcl_parms[0]['xform.align3d']
 			if saveali:
@@ -841,7 +844,7 @@ def get_results(etc,tids,verbose):
 
 
 def wedgestats(volume,angle, wedgei, wedgef):
-	print "RECEIEVE, in wedge statistics, angle, wedgei and wedgef", angle, wedgei, wedgef
+	#print "RECEIEVED, in wedge statistics, angle, wedgei and wedgef", angle, wedgei, wedgef
 	vfft = volume.do_fft()
 	wedge = vfft.getwedge(angle, wedgei, wedgef)		
 	mean = vfft.get_attr('spt_wedge_mean')
@@ -882,56 +885,6 @@ class Align3DTask(EMTask):
 		else: 
 			image=EMData(self.data["image"][1],self.data["image"][2])
 		
-		'''
-		
-		"""
-		PREPROCESSING CALL 
-		Currently applied to both volumes. Often 'fixedimage' will be a reference, so may need to rethink whether it should be treated identically. 
-		Similar issues in 2-D single particle refinement ... handled differently at the moment
-		"""
-		
-		if fixedimage and (classoptions['shrink'] or classoptions['normproc'] or classoptions['lowpass'] or classoptions['highpass'] or classoptions['mask'] or classoptions['preprocess'] or classoptions['lowpassfine'] or classoptions['highpassfine'] or classoptions['preprocessfine']):
-			retfixedimage = preprocessing(classoptions['options'],fixedimage)
-			sfixedimage = retfixedimage[0]
-			s2fixedimage = retfixedimage[1]
-		else:
-			sfixedimage = fixedimage
-			s2fixedimage = fixedimage
-		
-		if image and (classoptions['shrink'] or classoptions['normproc'] or classoptions['lowpass'] or classoptions['highpass'] or classoptions['mask'] or classoptions['preprocess'] or classoptions['lowpassfine'] or classoptions['highpassfine'] or classoptions['preprocessfine']):
-			retimage = preprocessing(classoptions['options'],image)
-			simage = retimage[0]
-			s2image = retimage[1]
-		else:
-			simage = image
-			s2image = image
-
-		"""
-		If FSC.TOMO is used as a comparator, the particles need to have the statistics of their missing wedges calculated
-		"""
-		if classoptions["aligncmp"][0] == "fsc.tomo" or classoptions["raligncmp"][0] == "fsc.tomo":
-			print "THE FSC.TOMO comparator is on" 
-			retr = wedgestats(simage,classoptions['wedgeangle'],classoptions['wedgei'],classoptions['wedgef'])
-			simage['spt_wedge_mean'] = retr[0]
-			simage['spt_wedge_sigma'] = retr[1]
-			
-			retr = wedgestats(sfixedimage,classoptions['wedgeangle'],classoptions['wedgei'],classoptions['wedgef'])
-			sfixedimage['spt_wedge_mean'] = retr[0]
-			sfixedimage['spt_wedge_sigma'] = retr[1]
-			
-			retr = wedgestats(s2image,classoptions['wedgeangle'],classoptions['wedgei'],classoptions['wedgef'])
-			s2image ['spt_wedge_mean'] = retr[0]
-			s2image['spt_wedge_sigma'] = retr[1]
-			
-			retr = wedgestats(s2fixedimage,classoptions['wedgeangle'],classoptions['wedgei'],classoptions['wedgef'])
-			s2fixedimage['spt_wedge_mean'] = retr[0]
-			s2fixedimage['spt_wedge_sigma'] = retr[1]
-			
-			#print "The mean and sigma for subvolume %d are: mean=%f, sigma=%f" % (i,mean,sigma)
-			#a.write_image(stack,i)
-		
-		'''
-		
 		"""
 		CALL the alignment function
 		"""
@@ -960,54 +913,6 @@ def align3Dfunc(fixedimage,image,ptcl,label,classoptions,transform):
 	if type(image) is list:
 		image=EMData(image[1],image[2])
 	
-	'''
-	
-	"""
-	PREPROCESSING CALL 
-	Currently applied to both volumes. Often 'fixedimage' will be a reference, so may need to rethink whether it should be treated identically. 
-	Similar issues in 2-D single particle refinement ... handled differently at the moment
-	"""
-	
-	if fixedimage and (classoptions.shrink or classoptions.normproc or classoptions.lowpass or classoptions.highpass or classoptions.mask or classoptions.preprocess or classoptions.lowpassfine or classoptions.highpassfine or classoptions.preprocessfine):
-		retfixedimage = preprocessing(classoptions,fixedimage)
-		sfixedimage = retfixedimage[0]
-		s2fixedimage = retfixedimage[1]
-	else:
-		sfixedimage = fixedimage
-		s2fixedimage = fixedimage
-	
-	if image and (classoptions.shrink or classoptions.normproc or classoptions.lowpass or classoptions.highpass or classoptions.mask or classoptions.preprocess or classoptions.lowpassfine or classoptions.highpassfine or classoptions.preprocessfine):
-		retimage = preprocessing(classoptions,image)
-		simage = retimage[0]
-		s2image = retimage[1]
-	else:
-		simage = image
-		s2image = image
-
-	"""
-	If FSC.TOMO is used as a comparator, the particles need to have the statistics of their missing wedges calculated
-	"""
-	if classoptions.aligncmp[0] == "fsc.tomo" or classoptions.raligncmp[0] == "fsc.tomo":
-		print "THE FSC.TOMO comparator is on" 
-		retr = wedgestats(simage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
-		simage['spt_wedge_mean'] = retr[0]
-		simage['spt_wedge_sigma'] = retr[1]
-		
-		retr = wedgestats(sfixedimage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
-		sfixedimage['spt_wedge_mean'] = retr[0]
-		sfixedimage['spt_wedge_sigma'] = retr[1]
-		
-		retr = wedgestats(s2image,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
-		s2image ['spt_wedge_mean'] = retr[0]
-		s2image['spt_wedge_sigma'] = retr[1]
-		
-		retr = wedgestats(s2fixedimage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
-		s2fixedimage['spt_wedge_mean'] = retr[0]
-		s2fixedimage['spt_wedge_sigma'] = retr[1]
-		
-		#print "The mean and sigma for subvolume %d are: mean=%f, sigma=%f" % (i,mean,sigma)
-		#a.write_image(stack,i)
-	'''
 	
 	"""
 	CALL the alignment function
@@ -1144,7 +1049,8 @@ def alignment(fixedimage,image,ptcl,label,classoptions,transform):
 				bestfinal.append({"score":1.0e10,"xform.align3d":bc["xform.align3d"],"coarse":bc})
 				print "\nThe appended score is", bestfinal[0]['score']
 		
-		print "Best final is", bestfinal
+		if classoptions.verbose:
+			print "Best final is", bestfinal
 				
 		if classoptions.shrinkrefine>1 :
 			for c in bestfinal:
@@ -1160,7 +1066,8 @@ def alignment(fixedimage,image,ptcl,label,classoptions,transform):
 
 	else: 
 		bestfinal = bestcoarse
-		print "\nTherewas no fine alignment; therefore, score is", bestfinal[0]['score']
+		if classoptions.verbose:
+			print "\nThere was no fine alignment; therefore, score is", bestfinal[0]['score']
 	
 	from operator import itemgetter						#If you just sort 'bestfinal' it will be sorted based on the 'coarse' key in the dictionaries of the list
 														#because they come before the 'score' key of the dictionary (alphabetically)
@@ -1178,7 +1085,7 @@ def alignment(fixedimage,image,ptcl,label,classoptions,transform):
 		print "Best %1.5g\t %s"%(bestfinal[0]["score"],str(bestfinal[0]["xform.align3d"]))
 		print "Done aligning ",label
 	
-	print "\nScore to return from ALIGNMENT is", bestfinal[0]["score"]
+	#print "\nScore to return from ALIGNMENT is", bestfinal[0]["score"]
 	return (bestfinal,bestcoarse)
 	
 

@@ -135,7 +135,7 @@ def main():
 	files=os.listdir(os.getcwd())
 	while options.path in files:
 		if '_' not in options.path:
-			print "I will add the number"
+			#print "I will add the number"
 			options.path = options.path + '_00'
 		else:
 			jobtag=''
@@ -146,11 +146,11 @@ def main():
 				components.append('00')
 						
 			options.path = '_'.join(components)
-			print "The new options.path is", options.path
+			#print "The new options.path is", options.path
 
 	if options.path not in files:
 		
-		print "I will make the path", options.path
+		#print "I will make the path", options.path
 		os.system('mkdir ' + options.path)
 	
 	
@@ -219,8 +219,8 @@ def main():
 
 		randptcls = []
 		model = EMData(options.input,0,True)
-		print "\n\nAAAAAAAAAA\n\nThe apix of the model is", model['apix_x']
-		print "\n\nAAAAAAAAAAAAA\n\n"
+		#print "\n\nAAAAAAAAAA\n\nThe apix of the model is", model['apix_x']
+		#print "\n\nAAAAAAAAAAAAA\n\n"
 		newsize = model['nx']
 		oldx = model['nx']
 	
@@ -255,8 +255,8 @@ def main():
 		model['origin_z'] = 0
 		
 		#model = EMData(options.input,0,True)
-		print "\n\nCCCCCCCCCCCC\n\nThe apix of the FINAL model is", model['apix_x']
-		print "\n\nCCCCCCCCCCCCC\n\n"
+		#print "\n\nCCCCCCCCCCCC\n\nThe apix of the FINAL model is", model['apix_x']
+		#print "\n\nCCCCCCCCCCCCC\n\n"
 		
 		'''
 		Transform gridholesize and icethickness to pixels
@@ -279,9 +279,9 @@ def main():
 		if options.output:
 			stackname = options.output
 		
-		print "BEFORE RET"
+		#print "BEFORE RET"
 		ret=subtomosim(options,randptcls, stackname)
-		print "AFTER RET"
+		#print "AFTER RET"
 		if ret == 1:
 			os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))	
 		
@@ -307,7 +307,7 @@ the size of the set and is defined by the user
 '''
 def randomizer(options, model, stackname):
 	
-	print "I am inside the RANDOMIZER"
+	#print "I am inside the RANDOMIZER"
 	
 	if options.verbose:
 		print "You have requested to generate %d particles with random orientations and translations" %(options.nptcls)
@@ -361,7 +361,7 @@ def randomizer(options, model, stackname):
 														#alignment programs can "undo" the random rotation in spt_randT accurately or not
 			if options.saverandstack:	
 				
-				print "The stackname to use is", stackname
+				#print "The stackname to use is", stackname
 				b.write_image(options.path + '/' + stackname.split('/')[-1],i)
 
 			randptcls.append(b)
@@ -380,7 +380,7 @@ and recounstructs a new 3D volume from the simulated tilt series.
 ====================
 '''	
 def subtomosim(options,ptcls,stackname):
-	print "INSIDE SUBTOMOSIM"
+	#print "INSIDE SUBTOMOSIM"
 
 	lower_bound = -1 * options.tiltrange
 	upper_bound = options.tiltrange
@@ -403,8 +403,8 @@ def subtomosim(options,ptcls,stackname):
 	
 	tomogramdata=[]
 	
-	print "\n\n\n%%%%%%%%%%%%%%%%The number of particles are", len(ptcls)
-	print "\n\n\n"
+	#print "\n\n\n%%%%%%%%%%%%%%%%The number of particles are", len(ptcls)
+	#print "\n\n\n"
 	for i in range(len(ptcls)):
 		if options.verbose:
 			print "Generating projections for particle #", i
@@ -522,7 +522,7 @@ def subtomosim(options,ptcls,stackname):
 		#r = Reconstructors.get(options.reconstructor[0],options.reconstructor[1])
 		r.setup()
 		
-		print "There are these many projections to add to backprojection after all processing", len(ctfed_projections)
+		#print "There are these many projections to add to backprojection after all processing", len(ctfed_projections)
 		
 		k=0
 		for p in ctfed_projections:
