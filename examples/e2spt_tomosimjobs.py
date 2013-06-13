@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus Galaz, 02/21/2012 - using code and concepts drawn from Jesus Galaz's scripts
+# Author: Jesus Galaz-Montoya, 2012. Last update: 6/2013.
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -98,6 +98,8 @@ def main():
 
 	parser.add_argument("--nsliceschange", type=int,default=None,help="Change with which the nslices parameter in e2spt_simulation.py will be varied. Will only work if --nslicesupperlimit and --nsliceslowerlimit are different than zero.")
 	
+	#parser.add_argument("--simstack",type=str,default=None,help="If you already have an .hdf stack of subtomograms generated with e2spt_simulation.py, you can provide it here to test for different alignment parameters.")
+
 	"""
 	Parameters to be passed on to e2spt_simulation.py
 	"""
@@ -107,13 +109,6 @@ def main():
 							If the input file is a stack, simulatd subvolumes will be generated from each model in the stack and written to different output stacks.
 							For example, if the input file contains models A and B, two output stacks with simulated subvolumes will be generated.""", default=None)
 				
-	parser.add_argument("--lowpass",type=str,help="""A lowpass filter (as in a processor from e2proc3d.py) apply to the model before generating simulated particles from it.
-							Type 'e2help.py processors' at the command line and find the options availbale from the processors list)""",default='None')
-	parser.add_argument("--highpass",type=str,help="""A lowpass filter (as in a processor from e2proc3d.py) apply to the model before generating simulated particles from it.
-							Type 'e2help.py processors' at the command line and find the options availbale from the processors list)""",default='None')
-							
-	parser.add_argument("--shrinkalign", type=int,default=0,help="Optionally shrink the input volume before the simulation if you want binned/down-sampled subtomograms.")
-	parser.add_argument("--shrinksim", type=int,default=0,help="Optionally shrink the input volume before the simulation if you want binned/down-sampled subtomograms.")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	parser.add_argument("--nptcls", type=int,default=10,help="Number of simulated subtomograms tu generate per referece.")
@@ -151,7 +146,6 @@ def main():
 
 	parser.add_argument("--notrandomize",action="store_true",default=False,help="This will prevent the simulated particles from being rotated and translated into random orientations.")
 	parser.add_argument("--simref",action="store_true",default=False,help="This will make a simulated particle in the same orientation as the original input (or reference).")
-	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--negativecontrast",action="store_true",default=False,help="This will make the simulated particles be like real EM data before contrast reversal. Otherwise, 'white protein' (positive density values) will be used.")
 
 	parser.add_argument("--testalignment",action="store_true",default=False,help="This will run e2spt_classaverage.py to test the alignment of the particles against the simulated reference.")
@@ -174,9 +168,17 @@ def main():
 	
 	parser.add_argument("--comparators",type=str,default='',help="""Supply comparators to COMPARE, separated my a comma. For example --comparators=ccc,ccc.tomo,fsc.tomo:sigmas=0.005 .
 																	If supplied, --raligncmp and --aligncmp will be ignored.""")
-	
+	parser.add_argument("--lowpass",type=str,help="""A lowpass filter (as in a processor from e2proc3d.py) apply to the model before generating simulated particles from it.
+							Type 'e2help.py processors' at the command line and find the options availbale from the processors list)""",default='None')
+	parser.add_argument("--highpass",type=str,help="""A lowpass filter (as in a processor from e2proc3d.py) apply to the model before generating simulated particles from it.
+							Type 'e2help.py processors' at the command line and find the options availbale from the processors list)""",default='None')
+							
+	parser.add_argument("--shrinkalign", type=int,default=0,help="Optionally shrink the input volume before the simulation if you want binned/down-sampled subtomograms.")
+	parser.add_argument("--shrinksim", type=int,default=0,help="Optionally shrink the input volume before the simulation if you want binned/down-sampled subtomograms.")
 	
 	parser.add_argument("--parallel",type=str,default='thread:7',help="Parallelization to use.")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+
 
 	(options, args) = parser.parse_args()	
 	
@@ -193,20 +195,20 @@ def main():
 	If COMPUTING alignment ERRORS
 	'''
 	if not options.plotonly:
-		if options.comparators:
-			comps = options.comparators.split(',')
-			
-			originalpath = options.path
-			
-			for comp in comps:
-				options.aligncmp = comp
-				options.raligncmp = comp
-				compID = comp.split(':')[0].replace('.','P')
-				options.path = originalpath + '_' + compID
-				compute(options,rootpath)
-		
-		else:
-			compute(options,rootpath)
+		#if options.comparators:
+		#	comps = options.comparators.split(',')
+		#	
+		#	originalpath = options.path
+		#	
+		#	for comp in comps:
+		#		options.aligncmp = comp
+		#		options.raligncmp = comp
+		#		compID = comp.split(':')[0].replace('.','P')
+		#		options.path = originalpath + '_' + compID
+		#		simloop(options,rootpath)
+		#
+		#else:
+		simloop(options,rootpath)
 		
 		'''
 		If ONLY PLOTTING previously computed alignment error files
@@ -267,13 +269,15 @@ def makepath(options,rootpath):
 	return(options)
 
 
-def compute(options,rootpath):
+def simloop(options,rootpath):
 	
-	options = makepath(options,rootpath)
+	if not options.comparators:
+		options = makepath(options,rootpath)
 	
 	if "/" not in options.input:
 		options.input = rootpath + "/" + options.input
-
+	
+	print "\nInside simloop, options.path is", options.path
 	#if options.testalignment:	
 	#	resultsdir = 'results_ali_errors'
 	#	os.system('cd ' + options.path + ' && mkdir ' + resultsdir)
@@ -308,7 +312,10 @@ def compute(options,rootpath):
 		sys.exit()
 	
 	nrefs = EMUtil.get_image_count(options.input)
-	kk=0
+	#kk=0
+	
+	originalpath = rootpath + '/' + options.path
+	
 	tiltrange = tiltrangel
 	while tiltrange <tiltrangeu:
 		#print "tiltrage is", tiltrange
@@ -318,7 +325,7 @@ def compute(options,rootpath):
 			print "Tilt step is", tiltstep
 			print "Tilt range is", tiltrange
 			nslices = (2 * tiltrange) / tiltstep
-			print "Therefore, 2*tiltrange/tiltstep is nslices",nslices
+			#print "Therefore, 2*tiltrange/tiltstep is nslices",nslices
 			nslicesu = nslices + 1
 			#nslicestag = str(int(nslices)).zfill(3)
 
@@ -337,116 +344,48 @@ def compute(options,rootpath):
 
 			snr=snrl
 			while snr < snru:
-				print "The conditions to simulate are tiltrange=%d, nslices=%d, snr=%.2f" % (tiltrange,nslices,snr)
+				#print "The conditions to simulate are tiltrange=%d, nslices=%d, snr=%.2f" % (tiltrange,nslices,snr)
 				#print "Snr is", snr
 				#rootpath = os.getcwd()
-
-				for d in range(nrefs):
-					modeltag = ''
-					#subpath = rootpath + '/' + options.path + '/' +'TR' + str(tiltrange).zfill(5) + '_TS' + tiltsteptag + '_SNR' + str(snr).zfill(5)
-					
-					snrtag = ("%.2f" %(snr) ).zfill(5)
-					subpath = rootpath + '/' + options.path + '/' +'TR' + tiltrangetag + '_NS' + nslicestag + '_SNR' + snrtag
-					"%.2f"
 				
-					inputdata = options.input
-
-					if nrefs > 1:
-						modeltag = 'model' + str(d).zfill(len(str(nrefs)))
-						subpath += '_' + modeltag
-
-						model = EMData(options.input,d)
-						newname = rootpath + '/' + options.path + '/' + inputdata.split('/')[-1].replace('.hdf','_' + modeltag + '.hdf')
-						model.write_image(newname,0)
-
-						#inputdata = newname.split('/')[-1] #UPDATE
-
-					subtomos =  subpath.split('/')[-1] + '.hdf'
-
-					jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --nslices=' + str(nslices) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrinksim) + ' --finalboxsize=' + str(options.finalboxsize) + ' --verbose=' + str(options.verbose)
-
-					#if options.nsliceschange and options.nsliceslowerlimit and options.nslicesupperlimit:
-					#	#print "\n\n\n$$$$$$$$$$$$$$\nYou hvae provided the number of slices\n$$$$$$$$\n\n\n",tiltstep
-					#	jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --nslices=' + str(tiltstep) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrinksim) + ' --finalboxsize=' + str(options.finalboxsize)
-
-					if options.simref:
-						jobcmd += ' --simref'
-					if options.addnoise:
-						jobcmd += ' --addnoise'
-					if options.saveprjs:
-						jobcmd += ' --saveprjs'
-					if options.negativecontrast:
-						jobcmd += ' --negativecontrast'
-
-					jobcmd += ' --path=' + subpath.split('/')[-1]				
-
-					cmd = 'cd ' + options.path + ' && ' + jobcmd
-
-					resultsfiles=[]
-
-					if options.testalignment:
-
-						cmd = cmd + ' && cd ' + subpath
-
-						ref = inputdata.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf')
-
-						output=subtomos.replace('.hdf', '_avg.hdf')
-						#print "\n\n$$$$$$$$$$$$$$$$$$$$$$\nRef name is\n$$$$$$$$$$$$$$$$$$$\n", ref
-
-						#print "\n\%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%noutput name is\n", output
-
-						alipath1=output.split('/')[-1].replace('_avg.hdf','_ali')
-						alipath2= subpath + '/' + output.replace('_avg.hdf','_ali')
-						#print "\n##################################\nAlipath1 for results will be\n", alipath1
-						#print "\n##################################\nAlipath2 for results will be\n", alipath2
-						
-						
-						#parser.add_argument("--wedgeangle",type=float,help="Missing wedge angle",default=60.0)
-						#parser.add_argument("--wedgei",type=float,help="Missingwedge begining", default=0.05)
-						#parser.add_argument("--wedgef",type=float,help="Missingwedge ending", default=0.5)
-						
-						alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --npeakstorefine=4 -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=" + str(options.verbose) + " --parallel=" + options.parallel + " --ralign=refine_3d_grid:delta=3:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=" + str(options.shrinkalign) + " --shrinkrefine=" + str(options.shrinkalign) +" --savesteps --saveali --normproc=normalize"  + ' --iter=' + str(options.iter)
-
-						if options.quicktest:
-							alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_symmetry_3d:sym=c1:verbose=" + str(options.verbose) + " --parallel=" + options.parallel + " --ralign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=3 --savesteps --saveali --normproc=normalize" + ' --iter=' + str(options.iter)
-
-						if 'fsc.tomo' in options.aligncmp or 'fsc.tomo' in options.raligncmp:
-							print "YOU are selecting FSC.TOMO, therefore, wedgeangle needs to be specified", tiltrange
-							alicmd += ' --wedgeangle=' + str(tiltrange)
-							
-						aliptcls = output.replace('_avg.hdf','_ptcls_ali.hdf')
-
-						#print "\n\aliptcls name is\n", aliptcls
-
-						extractcmd = " && cd " + alipath2 + " && e2proc3d.py bdb:class_ptcl " + aliptcls
-
-						resultsfile=aliptcls.replace('_ptcls_ali.hdf','_ali_error.txt')
-						
-						#print "\n@@@@@@@\n@@@@@@@\n@@@@@@@@@\n@@@@@@@ Results file is %s \n@@@@@@@\n@@@@@@@\n@@@@@@@@@\n@@@@@@@" %(resultsfile)
-
-						solutioncmd = " && e2spt_transformdistance.py --input=" + aliptcls + ' --output=' + resultsfile
-
-						rfilecmd =  ' && mv ' + resultsfile + ' ' +  rootpath + '/' + options.path
-
-						cmd = cmd + alicmd + extractcmd + solutioncmd + rfilecmd
-						
-						#if 'mpi' in options.parallel:
-						#	genpbs(cmd,kk)
-							#a=open('temp.pbs',r)
-							#a.write(cmd)
-							#a.close()
-						kk+=1
-
-					#print "\n\n\n*********************The command to execute is \n %s \n*********************\n" %(cmd)
-
-					#if 'mpi' in options.parallel:
-						
-					#	os.system('qsub temp'+str(kk)+'.pbs')
-					#else:
+				snrtag = ("%.2f" %(snr) ).zfill(5)
+				
+				if options.comparators:
+					comps = options.comparators.split(',')
 					
-					if options.verbose:
-						print "The command is", cmd
-					os.system(cmd)
+					thestack=[]
+					themodel=[]
+					samestackformany=0
+					for comp in comps:
+						print "Comparator is", comp
+						print "Whereas originalpath is", originalpath
+						options.aligncmp = comp
+						options.raligncmp = comp
+						compID = comp.split(':')[0].replace('.','P')
+						options.path = originalpath + '_' + compID
+						
+						findir=os.getcwd()
+						if options.path not in findir:
+							os.system('mkdir ' + options.path)
+						
+						print "\n\n$$$$$$$$$$\nThe stack thestack BEFORE sending is", thestack
+
+						#simloop(options,rootpath)
+						print "And path is", options.path
+						ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,samestackformany=samestackformany,thesestacks=thestack,thesemodels=themodel)
+						if samestackformany == 0:
+							thestack=ret[0]
+							themodel=ret[1]
+							
+						
+						print "Samestackformany is", samestackformany
+						print "Therefore, ret is", ret
+						print "And the stack thestack AFTER sending is", thestack
+						print "$$$$$$$$$$$$$$$$$$"
+							
+						samestackformany+=1
+				else:
+					ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,samestackformany=samestackformany,thesestacks=thestack)
 
 				snr += snrch
 
@@ -469,7 +408,10 @@ def compute(options,rootpath):
 		for i in range(nrefs):
 			modname = 'model' + str(i).zfill(5)
 
-			resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
+			resultsdir = options.path + '/' + modname + '/results_ali_error_' + modname
+			if rootpath not in resultsdir:
+				resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
+			
 			#print "\n\n\n\n*******************\nResults dir is\n", resultsdir
 
 			os.system('mkdir ' +  resultsdir + ' && cd ' + options.path + '/' + modname + ' && mv *error.txt ' + resultsdir)
@@ -477,16 +419,33 @@ def compute(options,rootpath):
 	else:
 		print "\n\n***************\nThere was only one reference\n************\n\n"
 		
-		resultsdir = rootpath + '/' + options.path + '/results_ali_error'
+		resultsdir = options.path + '/results_ali_error'
+		
+		#print "\nthe results dir is LINE 409", resultsdir
+		#print "\nWhile optionspath is LINE 410", options.path
+		
+		if rootpath not in resultsdir:
+			resultsdir = rootpath + '/' + options.path + '/results_ali_error'
+		
 		os.system('mkdir ' + resultsdir + ' && cd ' + options.path + ' && mv *error.txt ' + resultsdir)
 	
+	resultsdir = options.path + '/results_ali_error' 
+	if rootpath not in resultsdir:
+		resultsdir = rootpath + '/' + options.path + '/results_ali_error' 	
+	
+	#print "\before looping ver references"
+	#print "\nthe results dir is LINE 422", resultsdir
+	#print "\nWhile optionspath is LINE 423", options.path
+	#print "\n and rootpath is", rootpath
 		
-	resultsdir = rootpath + '/' + options.path + '/results_ali_error' 	
 	
 	for i in range(nrefs):
 		if nrefs > 1:
 			modname = 'model' + str(i).zfill(5)
-			resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
+			
+			resultsdir = options.path + '/' + modname + '/results_ali_error_' + modname
+			if rootpath not in resultsdir:
+				resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
 
 		resfiles = []
 		findir = os.listdir(resultsdir)
@@ -499,6 +458,164 @@ def compute(options,rootpath):
 		resfiles_analysis(options,resfiles,resultsdir,modelnum=i)
 	return()
 	
+
+
+def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,samestackformany=0,thesestacks=[],thesemodels=[]):
+	thisstack=''
+	thissimodel=''
+	for d in range(nrefs):
+		modeltag = ''
+		#subpath = rootpath + '/' + options.path + '/' +'TR' + str(tiltrange).zfill(5) + '_TS' + tiltsteptag + '_SNR' + str(snr).zfill(5)
+		
+		subpath = options.path + '/' +'TR' + tiltrangetag + '_NS' + nslicestag + '_SNR' + snrtag
+
+		if rootpath not in subpath:
+			subpath = rootpath + '/' + options.path + '/' +'TR' + tiltrangetag + '_NS' + nslicestag + '_SNR' + snrtag
+		
+		"%.2f"
+	
+		inputdata = options.input
+
+		if nrefs > 1:
+			modeltag = 'model' + str(d).zfill(len(str(nrefs)))
+			subpath += '_' + modeltag
+
+			model = EMData(options.input,d)
+			
+			newname = options.path + '/' + inputdata.split('/')[-1].replace('.hdf','_' + modeltag + '.hdf')
+
+			if rootpath not in newname:
+				newname = rootpath + '/' + options.path + '/' + inputdata.split('/')[-1].replace('.hdf','_' + modeltag + '.hdf')
+			model.write_image(newname,0)
+
+			#inputdata = newname.split('/')[-1] #UPDATE
+
+		subtomos =  subpath.split('/')[-1] + '.hdf'
+		
+		cmd = ''
+		if samestackformany < 1:
+			thisstack = subtomos
+			thissimmodel = inputdata
+			
+			#print "\n\n\n@@@@@@@@@@@@@@@@@@\nstackformany is", samestackformany
+			#print "Therefore I WILL run a job for e2spt_simulation"
+			#print "@@@@@@@@@@@@\n\n"
+			
+			jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --nslices=' + str(nslices) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrinksim) + ' --finalboxsize=' + str(options.finalboxsize) + ' --verbose=' + str(options.verbose)
+		
+			if options.simref:
+				jobcmd += ' --simref'
+			if options.addnoise:
+				jobcmd += ' --addnoise'
+			if options.saveprjs:
+				jobcmd += ' --saveprjs'
+			if options.negativecontrast:
+				jobcmd += ' --negativecontrast'
+
+			jobcmd += ' --path=' + subpath.split('/')[-1]				
+
+			cmd = 'cd ' + options.path + ' && ' + jobcmd
+
+		elif samestackformany > 0:
+			print "Thesemodels when stackformany more than 0, and its type, are", thesemodels, type(thesemodels)
+			print "Therefore for this model", d
+			print "THEMODEL, thesemodels[d], would be", thesemodels[d]
+			os.system('mkdir ' + subpath)
+			cmd = 'cp ' + str(thesestacks[d]) + ' ' + subpath+ '/' + subtomos.replace('.hdf','_ptcls.hdf')
+			
+			simmodel = subpath + '/' + inputdata.split('/')[0].replace('.hdf','_sptsimMODEL_SIM.hdf') 
+			
+			cmd = cmd + ' && cp ' + str(thesemodels[d]) + ' ' + simmodel
+			
+			print "\n\n\nCCCCCCCCCC\nstackformany is", samestackformany
+			print "Therefore I WILL NOT run a job for e2spt_simulation, and will rather copy the previous MODEL",  str(thesemodels[d])
+			print "TO", simmodel 
+			print "CCCCCCCCCCCCCn\n"
+
+		resultsfiles=[]
+
+		if options.testalignment:
+
+			cmd = cmd + ' && cd ' + subpath
+
+			ref = inputdata.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf')
+			if samestackformany > 0:
+				ref = thesemodels[d].split('/')[-1]
+
+			output=subtomos.replace('.hdf', '_avg.hdf')
+			#print "\n\n$$$$$$$$$$$$$$$$$$$$$$\nRef name is\n$$$$$$$$$$$$$$$$$$$\n", ref
+
+			#print "\n\%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%noutput name is\n", output
+
+			alipath1=output.split('/')[-1].replace('_avg.hdf','_ali')
+			alipath2= subpath + '/' + output.replace('_avg.hdf','_ali')
+			#print "\n##################################\nAlipath1 for results will be\n", alipath1
+			#print "\n##################################\nAlipath2 for results will be\n", alipath2
+			
+			
+			#parser.add_argument("--wedgeangle",type=float,help="Missing wedge angle",default=60.0)
+			#parser.add_argument("--wedgei",type=float,help="Missingwedge begining", default=0.05)
+			#parser.add_argument("--wedgef",type=float,help="Missingwedge ending", default=0.5)
+			
+			alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --npeakstorefine=4 -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=" + str(options.verbose) + " --parallel=" + options.parallel + " --ralign=refine_3d_grid:delta=3:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=" + str(options.shrinkalign) + " --shrinkrefine=" + str(options.shrinkalign) +" --savesteps --saveali --normproc=normalize"  + ' --iter=' + str(options.iter)
+
+			if options.quicktest:
+				alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_symmetry_3d:sym=c1:verbose=" + str(options.verbose) + " --parallel=" + options.parallel + " --ralign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=3 --savesteps --saveali --normproc=normalize" + ' --iter=' + str(options.iter)
+
+			if 'fsc.tomo' in options.aligncmp or 'fsc.tomo' in options.raligncmp:
+				#print "YOU are selecting FSC.TOMO, therefore, wedgeangle needs to be specified", tiltrange
+				alicmd += ' --wedgeangle=' + str(tiltrange)
+				
+			aliptcls = output.replace('_avg.hdf','_ptcls_ali.hdf')
+
+			#print "\n\aliptcls name is\n", aliptcls
+
+			extractcmd = " && cd " + alipath2 + " && e2proc3d.py bdb:class_ptcl " + aliptcls
+
+			resultsfile=aliptcls.replace('_ptcls_ali.hdf','_ali_error.txt')
+			
+			#print "\n@@@@@@@\n@@@@@@@\n@@@@@@@@@\n@@@@@@@ Results file is %s \n@@@@@@@\n@@@@@@@\n@@@@@@@@@\n@@@@@@@" %(resultsfile)
+
+			solutioncmd = " && e2spt_transformdistance.py --input=" + aliptcls + ' --output=' + resultsfile
+
+			rfilecmd =  ' && mv ' + resultsfile + ' ' + options.path
+			if rootpath not in rfilecmd:
+				rfilecmd =  ' && mv ' + resultsfile + ' ' +  rootpath + '/' + options.path
+
+				
+
+			cmd = cmd + alicmd + extractcmd + solutioncmd + rfilecmd
+			
+			#if 'mpi' in options.parallel:
+			#	genpbs(cmd,kk)
+				#a=open('temp.pbs',r)
+				#a.write(cmd)
+				#a.close()
+			#kk+=1
+
+		#print "\n\n\n*********************The command to execute is \n %s \n*********************\n" %(cmd)
+
+		#if 'mpi' in options.parallel:
+			
+		#	os.system('qsub temp'+str(kk)+'.pbs')
+		#else:
+		
+		if options.verbose:
+			print "The command is", cmd
+		os.system(cmd)
+
+		if samestackformany == 0:
+			thisstack = subpath + '/' + thisstack.split('/')[-1].replace('.hdf','_ptcls.hdf')
+			thissimmodel = subpath + '/' + thissimmodel.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf') 
+			thesestacks.append(thisstack)
+			thesemodels.append(thissimmodel)
+	
+	if samestackformany == 0:
+		return [thesestacks,thesemodels]
+	else:
+		return []
+
+
 
 def resfiles_analysis(options,resfiles,resultsdir,modelnum=0):
 	print "Inside resfiles_analysis"
@@ -595,130 +712,6 @@ def resfiles_analysis(options,resfiles,resultsdir,modelnum=0):
 	
 	print "Done with resfiles_analysis"
 	return()
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-
-'''
-		for ff in resfiles:
-			print "\n\nI'm analyzing file %d\n\n" %(d)	
-			if len(resfiles) > 1:
-				modname = 'file' + str(d).zfill(2) + 'plots'
-				resultsdir = rootpath + '/' + options.path + '/' + modname
-				os.system('mkdir ' + resultsdir)
-				
-				print "\n\nSupposedly I made this results dir %s\n\n" %(resultsdir)
-			else:
-				print "\n\nThere's only one file therefore resultsdir is %s\n\n" %(resultsdir)
-				print "\n\nSee, files are", resfiles
-			
-			ang_errors = []
-			trans_errors = []
-		
-			snrs = []
-			trs = []
-			tss = []
-		
-			twoD_tr_ts_points = []
-			twoD_snr_tr_points = []	
-			twoD_snr_ts_points = []
-			
-			threeD_points = []
-			
-			fff = open(ff,'r')
-			lines = fff.readlines()
-			
-		
-			for line in lines:
-				tr = float( line.split('tr=')[-1].split(' ')[0] )
-				trs.append(tr)
-	
-				snr = float( line.split('snr=')[-1].split(' ')[0] )
-				snrs.append(snr)
-				
-				ts = float( line.split('ts=')[-1].split(' ')[0] )
-				tss.append(ts)
-				
-				ang = float( line.split('angular_error=')[-1].split(' ')[0] )
-				ang_errors.append(ang)
-				
-				trans = float( line.split('translational_error=')[-1].split(' ')[0] )
-				trans_errors.append(trans)
-				
-				threeD_points.append({'tilt range':tr,'tilt step':ts,'noise level':snr,'angular_error':ang,'translational_error':trans})
-				twoD_tr_ts_points.append({'tilt range':tr,'tilt step':ts,'angular_error':ang,'translational_error':trans})
-				twoD_snr_tr_points.append({'tilt range':tr,'noise level':snr,'angular_error':ang,'translational_error':trans})
-				twoD_snr_ts_points.append({'tilt step':ts,'noise level':snr,'angular_error':ang,'translational_error':trans})
-				
-			
-			if len(set(snrs)) == 1: 
-				if len(set(trs)) == 1:
-					angfilename = resultsdir+'/' + resultsdir.split('/')[-2] + '_angular_error_varNS_' + str(d).zfill(2) + '.txt'
-					oneD_plot(tss,ang_errors,angfilename.replace('.txt','.png'),'tilt step')
-					writeresultsfile(tss,ang_errors,angfilename)
-					
-					transfilename = angfilename.replace('angular','translational')
-					oneD_plot(tss,trans_errors,transfilename.replace('.txt','.png'),'tilt step')
-					writeresultsfile(tss,trans_errors,transfilename)
-					
-				if len(set(tss)) == 1:
-					angfilename = resultsdir+'/' + resultsdir.split('/')[-2] + '_angular_error_varTR_' + str(d).zfill(2) + '.txt'
-					oneD_plot(trs,ang_errors,angfilename.replace('.txt','.png'),'tilt range')
-					writeresultsfile(trs,ang_errors,angfilename)
-					
-					transfilename = angfilename.replace('angular','translational')
-					oneD_plot(trs,trans_errors,transfilename.replace('.txt','.png'),'tilt range')
-					writeresultsfile(trs,trans_errors,transfilename)
-					
-			if len(set(trs)) == 1: 
-				if len(set(tss)) == 1:
-					angfilename = resultsdir+'/' + resultsdir.split('/')[-2] + '_angular_error_varSNR_' + str(d).zfill(2) + '.txt'
-					oneD_plot(snrs,ang_errors,angfilename.replace('.txt','.png'),'noise level')
-					writeresultsfile(snrs,ang_errors,angfilename)
-					
-					transfilename = angfilename.replace('angular','translational')
-					oneD_plot(snrs,trans_errors,transfilename.replace('.txt','.png'),'noise level')
-					writeresultsfile(snrs,trans_errors,transfilename)
-			
-					
-			if len(set(snrs)) == 1 and len(set(trs)) > 1 and len(set(tss)) > 1:
-				twoD_plot(twoD_tr_ts_points,val1='tilt range',val2='tilt step',location=resultsdir +'/')
-			
-			if len(set(trs)) == 1 and len(set(snrs)) > 1 and len(set(tss)) > 1:
-				twoD_plot(twoD_snr_ts_points,val1='noise level',val2='tilt step',location=resultsdir +'/')
-			
-			if len(set(tss)) == 1 and len(set(trs)) > 1 and len(set(snrs)) > 1:
-				twoD_plot(twoD_snr_tr_points,val1='noise level',val2='tilt range',location=resultsdir +'/')
-			
-			if len(set(tss)) > 1 and len(set(trs)) > 1 and len(set(snrs)) > 1:
-				threeD_plot(threeD_points,resultsdir +'/')
-		
-			d=+1
-'''		
-	
 
 
 
