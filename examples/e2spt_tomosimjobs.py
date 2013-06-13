@@ -362,6 +362,10 @@ def simloop(options,rootpath):
 						options.aligncmp = comp
 						options.raligncmp = comp
 						compID = comp.split(':')[0].replace('.','P')
+						
+						if 'fsc.tomo' in comp:
+							compID = comp.split(':')[0].replace('.','P') +  comp.split(':')[1].replace('sigmas=','Sigmas').replace('.','P')
+						
 						options.path = originalpath + '_' + compID
 						
 						findir=os.getcwd()
@@ -398,64 +402,185 @@ def simloop(options,rootpath):
 
 	if nrefs > 1:
 		for i in range(nrefs):
-
-			modname = 'model' + str(i).zfill(5)
-			#print "\nI will make this moddir", modname
-			cmdd='cd ' + options.path + ' && mkdir ' + modname + ' && mv *' + modname + '* ' + modname
-			#print "\nBy executing this command", cmdd
-			os.system(cmdd)
+			
+			if options.comparators:
+				comps = options.comparators.split(',')
+				for comp in comps:
+					print "Comparator is", comp
+					print "Whereas originalpath is", originalpath
+					options.aligncmp = comp
+					options.raligncmp = comp
+					compID = comp.split(':')[0].replace('.','P')
+					if 'fsc.tomo' in comp:
+						compID = comp.split(':')[0].replace('.','P') +  comp.split(':')[1].replace('sigmas=','Sigmas').replace('.','P')
+						
+					options.path = originalpath + '_' + compID
+					
+					modname = 'model' + str(i).zfill(5)
+					#print "\nI will make this moddir", modname
+					cmdd='cd ' + options.path + ' && mkdir ' + modname + ' && mv *' + modname + '* ' + modname
+					#print "\nBy executing this command", cmdd
+					os.system(cmdd)
+			
+			else:
+				modname = 'model' + str(i).zfill(5)
+				#print "\nI will make this moddir", modname
+				cmdd='cd ' + options.path + ' && mkdir ' + modname + ' && mv *' + modname + '* ' + modname
+				#print "\nBy executing this command", cmdd
+				os.system(cmdd)
 
 		for i in range(nrefs):
-			modname = 'model' + str(i).zfill(5)
-
-			resultsdir = options.path + '/' + modname + '/results_ali_error_' + modname
-			if rootpath not in resultsdir:
-				resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
 			
-			#print "\n\n\n\n*******************\nResults dir is\n", resultsdir
+			if options.comparators:
+				comps = options.comparators.split(',')
+				for comp in comps:
+					print "Comparator is", comp
+					print "Whereas originalpath is", originalpath
+					options.aligncmp = comp
+					options.raligncmp = comp
+					compID = comp.split(':')[0].replace('.','P')
+					
+					if 'fsc.tomo' in comp:
+						compID = comp.split(':')[0].replace('.','P') +  comp.split(':')[1].replace('sigmas=','Sigmas').replace('.','P')
+					
+					options.path = originalpath + '_' + compID
+					
+				modname = 'model' + str(i).zfill(5)
 
-			os.system('mkdir ' +  resultsdir + ' && cd ' + options.path + '/' + modname + ' && mv *error.txt ' + resultsdir)
+				resultsdir = options.path + '/' + modname + '/results_ali_error_' + modname
+				if rootpath not in resultsdir:
+					resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
+			
+				#print "\n\n\n\n*******************\nResults dir is\n", resultsdir
+
+				os.system('mkdir ' +  resultsdir + ' && cd ' + options.path + '/' + modname + ' && mv *error.txt ' + resultsdir)
+			else:			
+			
+				modname = 'model' + str(i).zfill(5)
+
+				resultsdir = options.path + '/' + modname + '/results_ali_error_' + modname
+				if rootpath not in resultsdir:
+					resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
+			
+				#print "\n\n\n\n*******************\nResults dir is\n", resultsdir
+
+				os.system('mkdir ' +  resultsdir + ' && cd ' + options.path + '/' + modname + ' && mv *error.txt ' + resultsdir)
 
 	else:
-		print "\n\n***************\nThere was only one reference\n************\n\n"
 		
-		resultsdir = options.path + '/results_ali_error'
+		if options.comparators:
+			comps = options.comparators.split(',')
+			for comp in comps:
+				print "Comparator is", comp
+				print "Whereas originalpath is", originalpath
+				options.aligncmp = comp
+				options.raligncmp = comp
+				compID = comp.split(':')[0].replace('.','P')
+				
+				if 'fsc.tomo' in comp:
+					compID = comp.split(':')[0].replace('.','P') +  comp.split(':')[1].replace('sigmas=','Sigmas').replace('.','P')
+				
+				options.path = originalpath + '_' + compID
 		
-		#print "\nthe results dir is LINE 409", resultsdir
-		#print "\nWhile optionspath is LINE 410", options.path
+				print "\n\n***************\nThere was only one reference\n************\n\n"
 		
-		if rootpath not in resultsdir:
-			resultsdir = rootpath + '/' + options.path + '/results_ali_error'
+				resultsdir = options.path + '/results_ali_error'
 		
-		os.system('mkdir ' + resultsdir + ' && cd ' + options.path + ' && mv *error.txt ' + resultsdir)
+				#print "\nthe results dir is LINE 409", resultsdir
+				#print "\nWhile optionspath is LINE 410", options.path
+		
+				if rootpath not in resultsdir:
+					resultsdir = rootpath + '/' + options.path + '/results_ali_error'
+		
+				os.system('mkdir ' + resultsdir + ' && cd ' + options.path + ' && mv *error.txt ' + resultsdir)	
+		
+		else:
+			print "\n\n***************\nThere was only one reference\n************\n\n"
+		
+			resultsdir = options.path + '/results_ali_error'
+		
+			#print "\nthe results dir is LINE 409", resultsdir
+			#print "\nWhile optionspath is LINE 410", options.path
+		
+			if rootpath not in resultsdir:
+				resultsdir = rootpath + '/' + options.path + '/results_ali_error'
+		
+			os.system('mkdir ' + resultsdir + ' && cd ' + options.path + ' && mv *error.txt ' + resultsdir)
 	
+	
+	"""
 	resultsdir = options.path + '/results_ali_error' 
 	if rootpath not in resultsdir:
 		resultsdir = rootpath + '/' + options.path + '/results_ali_error' 	
-	
+	"""
 	#print "\before looping ver references"
 	#print "\nthe results dir is LINE 422", resultsdir
 	#print "\nWhile optionspath is LINE 423", options.path
 	#print "\n and rootpath is", rootpath
-		
+	
+	resultsdir=''	
 	
 	for i in range(nrefs):
-		if nrefs > 1:
-			modname = 'model' + str(i).zfill(5)
+		
+		if options.comparators:
+			comps = options.comparators.split(',')
+			for comp in comps:
+				print "Comparator is", comp
+				print "Whereas originalpath is", originalpath
+				options.aligncmp = comp
+				options.raligncmp = comp
+				compID = comp.split(':')[0].replace('.','P')
+				
+				if 'fsc.tomo' in comp:
+					compID = comp.split(':')[0].replace('.','P') +  comp.split(':')[1].replace('sigmas=','Sigmas').replace('.','P')
+				
+				options.path = originalpath + '_' + compID
+				
+				if nrefs > 1:
+					modname = 'model' + str(i).zfill(5)
 			
-			resultsdir = options.path + '/' + modname + '/results_ali_error_' + modname
-			if rootpath not in resultsdir:
-				resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
+					resultsdir = options.path + '/' + modname + '/results_ali_error_' + modname
+					if rootpath not in resultsdir:
+						resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
+		
+				else:
+					resultsdir = options.path + '/results_ali_error' 
+					if rootpath not in resultsdir:
+						resultsdir = rootpath + '/' + options.path + '/results_ali_error' 
+		
+				resfiles = []
+				findir = os.listdir(resultsdir)
+				for f in findir:
+					if 'error.txt' in f:
+						resfiles.append(f)
+		
+				resfiles.sort()
+		
+				resfiles_analysis(options,resfiles,resultsdir,modelnum=i)
+					
+		else:
+			if nrefs > 1:
+				modname = 'model' + str(i).zfill(5)
+			
+				resultsdir = options.path + '/' + modname + '/results_ali_error_' + modname
+				if rootpath not in resultsdir:
+					resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
+		
+			else:
+				resultsdir = options.path + '/results_ali_error' 
+				if rootpath not in resultsdir:
+					resultsdir = rootpath + '/' + options.path + '/results_ali_error' 
+		
+			resfiles = []
+			findir = os.listdir(resultsdir)
+			for f in findir:
+				if 'error.txt' in f:
+					resfiles.append(f)
+		
+			resfiles.sort()
+		
+			resfiles_analysis(options,resfiles,resultsdir,modelnum=i)
 
-		resfiles = []
-		findir = os.listdir(resultsdir)
-		for f in findir:
-			if 'error.txt' in f:
-				resfiles.append(f)
-		
-		resfiles.sort()
-		
-		resfiles_analysis(options,resfiles,resultsdir,modelnum=i)
 	return()
 	
 
