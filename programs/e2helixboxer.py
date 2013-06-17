@@ -137,7 +137,7 @@ def main():
 	else:
 		px_length = options.ptcl_length
 		
-	if options.ptcl_overlap < 1:
+	if options.ptcl_overlap < 0:
 		px_overlap = None
 	else:
 		px_overlap = options.ptcl_overlap
@@ -644,8 +644,6 @@ def db_save_particle_coords(micrograph_filepath, output_filepath = None, px_over
 		px_width = helix_width
 	if not px_length:
 		px_length = px_width
-	if not px_overlap:
-		px_overlap = 0.9*px_length
 	assert px_overlap < px_length
 	helix_particle_coords_dict = {}
 	for helix_coords in helix_coords_list:
