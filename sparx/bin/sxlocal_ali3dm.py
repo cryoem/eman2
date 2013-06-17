@@ -60,7 +60,7 @@ def main():
 	parser.add_option("--function", type="string",	     default="ref_ali3dm",  help="user function")
 	parser.add_option("--fourvar",  action="store_true", default=False,         help="use fourier variance.")
 	parser.add_option("--debug",    action="store_true", default=False,         help="debug mode ")
-	parser.add_option("--npad",     type="int",          default=4,             help="npad")
+	parser.add_option("--npad",     type="int",          default=2,             help="npad")
 
 	
 	(options, args) = parser.parse_args(arglist[1:])
