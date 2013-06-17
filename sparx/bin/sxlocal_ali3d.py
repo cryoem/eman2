@@ -56,7 +56,7 @@ def main():
 	parser.add_option("--snr",      type="float", 	     default=1,       help="SNR > 0.0 (set to 1.0)")
 	parser.add_option("--sym",      type="string",       default="c1",    help="symmetry group (set to c1)")
 	parser.add_option("--function", type="string",       default="ref_ali3d", help="name of the user-supplied reference preparation function")
-	parser.add_option("--npad",     type="int",          default= 4,      help="padding size for 3D reconstruction")
+	parser.add_option("--npad",     type="int",          default= 2,      help="padding size for 3D reconstruction")
 	parser.add_option("--debug",    action="store_true", default=False,   help="Debug printout")
 	parser.add_option("--MPI",      action="store_true", default=False,   help="use MPI version")
 	parser.add_option("--fourvar",  action="store_true", default=False,   help="compute Fourier variance")
