@@ -1625,7 +1625,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize='
 		
 		hcoords_dir: Full path name of directory containing coordinates of ALL helices boxed from the micrograph.
 						
-		ptcl_overlap: Integer. Overlap between adjacent segments windowed from a single boxed helix. If ptcl_overlap < 0, then the
+		ptcl_overlap: Integer. Overlap in pixels between adjacent segments windowed from a single boxed helix. If ptcl_overlap < 0, then the
 			          program will set it so the distance between adjacent segments is ~ one rise in pixels: int( (dp/new_pixel_size) + 0.5)
 		
 		inv_contrast: True/False, default is False. If cryo, then set to true to invert contrast so particles show up bright against dark background. 
@@ -1797,7 +1797,7 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, segnx, 
 			
 			segny: Integer. y-dimension of segments to be windowed.
 			
-			ptcl_overlap: Integer. Overlap between adjacent segments windowed from a single boxed helix. If ptcl_overlap < 0, then the
+			ptcl_overlap: Integer. Overlap in pixels between adjacent segments windowed from a single boxed helix. If ptcl_overlap < 0, then the
 				          program will set it so the distance between adjacent segments is rise in pixels.
 				          
 			inv_contrast: True/False, default is False. If cryo, then set to true to invert contrast so particles show up bright against dark background. 
