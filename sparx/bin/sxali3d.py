@@ -64,7 +64,7 @@ def main():
 	parser.add_option("--function", type="string", default="ref_ali3d",         help="name of the reference preparation function (ref_ali3d)")
 	parser.add_option("--MPI",      action="store_true", default=False,         help="whether to use MPI version")
 	parser.add_option("--Fourvar",  action="store_true", default=False,         help="compute Fourier variance")
-	parser.add_option("--npad",     type="int",    default= 4,                  help="padding size for 3D reconstruction")
+	parser.add_option("--npad",     type="int",    default= 2,                  help="padding size for 3D reconstruction")
 	parser.add_option("--debug",    action="store_true", default=False,         help="debug")
 	parser.add_option("--nh",       action="store_true", default=False,         help="new - hans")
 	parser.add_option("--ns",       action="store_true", default=False,         help="new - saturn")
