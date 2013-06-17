@@ -217,7 +217,7 @@ def main():
 			if options.dp < 0:
 				print "Helical symmetry paramter rise --dp should not be negative"
 				sys.exit()
-			from utilities import get_im
+			from utilities import get_im, sym_vol
 			vol = get_im(args[0])
 			vol = sym_vol(vol, options.sym)
 			hvol = vol.helicise(options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp)
