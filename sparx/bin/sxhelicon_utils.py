@@ -118,6 +118,14 @@ def main():
 	parser.add_option("--stackdisk",          type="string",		 default="",                  help="Name of file under which output volume will be saved to.")
 	parser.add_option("--ref_ny",             type="int",   		 default=-1,                  help="ny of output volume size. Default is ref_nx" ) 
 
+	# symmetry search
+	parser.add_option("--symsearch",          type="int",   		 default= 10,    	  	      help="Do symmetry search for the specified number of iterations." ) 
+	parser.add_option("--ndp",                type="int",            default= 12,                 help="In symmetrization search, number of delta z steps equas to 2*ndp+1") 
+	parser.add_option("--ndphi",              type="int",            default= 12,                 help="In symmetrization search,number of dphi steps equas to 2*ndphi+1")  
+	parser.add_option("--dp_step",            type="float",          default= 0.1,                help="delta z (Angstroms) step  for symmetrization")  
+	parser.add_option("--dphi_step",          type="float",          default= 0.1,                help="dphi step for symmetrization")
+	parser.add_option("--datasym",            type="string",		 default="datasym.txt",       help="symdoc")
+	
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1 or len(args) > 5:
 		print "Various helical reconstruction related functionalities: " + usage2
@@ -245,6 +253,17 @@ def main():
 				from applications import diskali_MPI
 				diskali_MPI(args[0], args[1], args[2], mask, options.dp, options.dphi, options.apix, options.function, zstepp, options.fract, rmaxp, rminp, options.CTF, options.maxit, options.sym)
 			global_def.BATCH = False
+		
+		if options.symsearch > 0:
+			from development import symsearch_MPI
+			if len(args) < 3:	
+				mask = None
+			else:
+				mask= args[2]
+			global_def.BATCH = True
+			symsearch_MPI(args[0], args[1], mask, options.symsearch, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, rminp, rmaxp, options.fract, options.sym, options.function, options.datasym, options.apix, options.debug)
+			global_def.BATCH = False
+			
 		elif len(options.gendisk)> 0:
 			from applications import gendisks_MPI
 			global_def.BATCH = True
