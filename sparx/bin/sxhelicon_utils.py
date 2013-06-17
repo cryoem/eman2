@@ -219,7 +219,9 @@ def main():
 				sys.exit()
 			from utilities import get_im
 			vol = get_im(args[0])
+			vol = sym_vol(vol, options.sym)
 			hvol = vol.helicise(options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp)
+			hvol = sym_vol(hvol, options.sym)
 			hvol.write_image(args[1])
 			sys.exit()
 
