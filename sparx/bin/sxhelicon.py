@@ -94,7 +94,7 @@ def main():
 		if options.dp < 0 or options.dphi < 0:
 			# read helical symmetry parameters from symdoc
 			from utilities import read_text_row
-			hparams=read_text_row('datasym.txt')
+			hparams=read_text_row(options.symdoc)
 			dp = hparams[0][0]
 			dphi = hparams[0][1]
 		else:
