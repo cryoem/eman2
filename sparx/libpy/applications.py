@@ -6733,7 +6733,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 	pixel_size, debug, y_restrict, WRAP):
 
 	from alignment      import Numrinit, prepare_refrings, proj_ali_helical, proj_ali_helical_90, proj_ali_helical_local, proj_ali_helical_90_local, helios,helios7
-	from utilities      import model_circle, get_image, drop_image, get_input_from_string, pad, model_blank
+	from utilities      import model_circle, get_image, drop_image, get_input_from_string, pad, model_blank, sym_vol
 	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all
 	from utilities      import send_attr_dict
 	from utilities      import get_params_proj, set_params_proj, file_type
@@ -7456,9 +7456,12 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 				fofo = open(os.path.join(outdir,datasym),'a')
 				fofo.write('  %12.4f   %12.4f\n'%(dp,dphi))
 				fofo.close()
+				vol = vol.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
+				vol = sym_vol(vol, symmetry=sym)
 				ref_data = [vol, mask3D]
 				#if  fourvar:  ref_data.append(varf)
 				vol = user_func(ref_data)
+				vol = sym_vol(vol, symmetry=sym)
 				vol = vol.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
 
 				drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(total_iter)))
