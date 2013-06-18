@@ -54,6 +54,7 @@ def main():
 	parser.add_option("--apix",               type="float",			 default= -1.0,               help="pixel size in Angstroms")   
 	parser.add_option("--dp",                 type="float",			 default= -1.0,               help="delta z - translation in Angstroms")   
 	parser.add_option("--dphi",               type="float",			 default= -1.0,               help="delta phi - rotation in degrees")  
+	parser.add_option("--symdoc",             type="string",		 default="",      	    	  help="text file containing helical symmetry parameters dp and dphi")
 	
 	parser.add_option("--psi_max",            type="float", 		 default= 10.0,               help="maximum psi - how far rotation in plane can can deviate from 90 or 270 degrees")   
 	parser.add_option("--rmin",               type="float", 		 default= 0.0,                help="minimal radius for hsearch (Angstroms)")   
@@ -84,7 +85,22 @@ def main():
 		if options.apix < 0:
 			print "Please enter pixel size"
 			sys.exit()
-
+		
+		if len(options.symdoc) < 1:
+			if options.dp < 0 or options.dphi < 0:
+				print "Enter helical symmetry parameters either using --symdoc or --dp and --dphi"
+				sys.exit()
+			
+		if options.dp < 0 or options.dphi < 0:
+			# read helical symmetry parameters from symdoc
+			from utilities import read_text_row
+			hparams=read_text_row('datasym.txt')
+			dp = hparams[0][0]
+			dphi = hparams[0][1]
+		else:
+			dp = options.dp
+			dphi =options.dphi
+		
 		rminp = int((float(options.rmin)/options.apix) + 0.5)
 		rmaxp = int((float(options.rmax)/options.apix) + 0.5)
 		ywobble = int(options.ywobble/options.apix+0.5)  # this should be full real.
@@ -108,12 +124,12 @@ def main():
 		if options.test:
 			from development import ehelix_MPI_test
 			global_def.BATCH = True
-			ehelix_MPI_test(args[0], args[1], args[2], options.delta, options.psi_max, searchxshiftp, xwobblep, ywobble, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, not options.nopsisearch, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
+			ehelix_MPI_test(args[0], args[1], args[2], options.delta, options.psi_max, searchxshiftp, xwobblep, ywobble, options.apix, dp, dphi, options.fract, rmaxp, rminp, not options.nopsisearch, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
 			global_def.BATCH = False
 		else:
 			from development import ehelix_MPI
 			global_def.BATCH = True
-			ehelix_MPI(args[0], args[1], args[2], options.delta, options.psi_max, searchxshiftp, xwobblep, ywobble, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, not options.nopsisearch, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
+			ehelix_MPI(args[0], args[1], args[2], options.delta, options.psi_max, searchxshiftp, xwobblep, ywobble, options.apix, dp, dphi, options.fract, rmaxp, rminp, not options.nopsisearch, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
 			global_def.BATCH = False
 
 		if options.MPI:
