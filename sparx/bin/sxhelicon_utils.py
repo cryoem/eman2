@@ -125,6 +125,7 @@ def main():
 	parser.add_option("--dp_step",            type="float",          default= 0.1,                help="delta z (Angstroms) step  for symmetrization")  
 	parser.add_option("--dphi_step",          type="float",          default= 0.1,                help="dphi step for symmetrization")
 	parser.add_option("--datasym",            type="string",		 default="datasym.txt",       help="symdoc")
+	parser.add_option("--symdoc",             type="string",		 default="",      	    	  help="text file containing helical symmetry parameters dp and dphi")
 	
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1 or len(args) > 5:
@@ -257,13 +258,29 @@ def main():
 			global_def.BATCH = False
 		
 		if options.symsearch:
+		
+			if len(options.symdoc) < 1:
+				if options.dp < 0 or options.dphi < 0:
+					print "Enter helical symmetry parameters either using --symdoc or --dp and --dphi"
+					sys.exit()
+			
+			if options.dp < 0 or options.dphi < 0:
+				# read helical symmetry parameters from symdoc
+				from utilities import read_text_row
+				hparams=read_text_row('datasym.txt')
+				dp = hparams[0][0]
+				dphi = hparams[0][1]
+			else:
+				dp   = options.dp
+				dphi = options.dphi
+			
 			from development import symsearch_MPI
 			if len(args) < 3:	
 				mask = None
 			else:
 				mask= args[2]
 			global_def.BATCH = True
-			symsearch_MPI(args[0], args[1], mask, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, rminp, rmaxp, options.fract, options.sym, options.function, options.datasym, options.apix, options.debug)
+			symsearch_MPI(args[0], args[1], mask, dp, options.ndp, options.dp_step, dphi, options.ndphi, options.dphi_step, rminp, rmaxp, options.fract, options.sym, options.function, options.datasym, options.apix, options.debug)
 			global_def.BATCH = False
 			
 		elif len(options.gendisk)> 0:
