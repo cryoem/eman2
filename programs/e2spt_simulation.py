@@ -433,7 +433,7 @@ def subtomosim(options,ptcls,stackname):
 			#print "Real alt is", realalt
 			#print "Iterating over slices. Am in tiltstep, slice, alt", tiltstep,j,realalt
 			
-			t = Transform({'type':'eman','az':0,'alt':realalt,'phi':0})				#Generate the projection orientation for each picture in the tilt series
+			t = Transform({'type':'eman','az':90,'alt':realalt,'phi':0})				#Generate the projection orientation for each picture in the tilt series
 			
 			dz = -1 * px * numpy.sin(realalt)							#Calculate the defocus shift per picture, per particle, depending on the 
 																	#particle's position relative to the tilt axis. For particles left of the tilt axis,
