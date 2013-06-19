@@ -131,7 +131,7 @@ def main():
 	parser.add_argument("--wedgeangle",type=float,help="Missing wedge angle",default=60.0)
 	parser.add_argument("--wedgei",type=float,help="Missingwedge begining", default=0.05)
 	parser.add_argument("--wedgef",type=float,help="Missingwedge ending", default=0.5)
-	
+	parser.add_argument("--fitwedgepost", action="store_true", help="Fit the missing wedge AFTER preprocessing the subvolumes, not before, IF using the fsc.tomo comparator for --aligncmp or --raligncmp.", default=False)
 	
 	(options, args) = parser.parse_args()
 	print "Wedge paramters ARE defined, see", options.wedgeangle, options.wedgei, options.wedgef
@@ -931,10 +931,29 @@ def align3Dfunc(fixedimage,image,ptcl,label,classoptions,transform):
 
 
 #def alignment(simage,s2image,sfixedimage,s2fixedimage,classoptions,transform):
+
 def alignment(fixedimage,image,ptcl,label,classoptions,transform):
 	
 	if classoptions.verbose: 
 		print "Aligning ",label
+	
+	
+	
+	"""
+	If FSC.TOMO is used as a comparator, the particles need to have the statistics of their missing wedges calculated.
+	This can be done to the RAW particles (at this point), or the preprocessed particles (further down), through --fitwedgepost
+	"""
+	
+	if not classoptions.fitwedgepost:
+		if classoptions.aligncmp[0] == "fsc.tomo" or classoptions.raligncmp[0] == "fsc.tomo":
+			print "THE FSC.TOMO comparator is on, on PRE mode" 
+			retri = wedgestats(image,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
+			image['spt_wedge_mean'] = retri[0]
+			image['spt_wedge_sigma'] = retri[1]
+		
+			retrf = wedgestats(fixedimage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
+			fixedimage['spt_wedge_mean'] = retrf[0]
+			fixedimage['spt_wedge_sigma'] = retrf[1]
 	
 	"""
 	PREPROCESSING CALL 
@@ -963,26 +982,28 @@ def alignment(fixedimage,image,ptcl,label,classoptions,transform):
 	"""
 	If FSC.TOMO is used as a comparator, the particles need to have the statistics of their missing wedges calculated
 	"""
-	if classoptions.aligncmp[0] == "fsc.tomo" or classoptions.raligncmp[0] == "fsc.tomo":
-		print "THE FSC.TOMO comparator is on" 
-		retr = wedgestats(simage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
-		simage['spt_wedge_mean'] = retr[0]
-		simage['spt_wedge_sigma'] = retr[1]
+	
+	if classoptions.fitwedgepost:
+		if classoptions.aligncmp[0] == "fsc.tomo" or classoptions.raligncmp[0] == "fsc.tomo":
+			print "THE FSC.TOMO comparator is on on POST mode" 
+			retr = wedgestats(simage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
+			simage['spt_wedge_mean'] = retr[0]
+			simage['spt_wedge_sigma'] = retr[1]
 		
-		retr = wedgestats(sfixedimage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
-		sfixedimage['spt_wedge_mean'] = retr[0]
-		sfixedimage['spt_wedge_sigma'] = retr[1]
+			retr = wedgestats(sfixedimage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
+			sfixedimage['spt_wedge_mean'] = retr[0]
+			sfixedimage['spt_wedge_sigma'] = retr[1]
 		
-		retr = wedgestats(s2image,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
-		s2image ['spt_wedge_mean'] = retr[0]
-		s2image['spt_wedge_sigma'] = retr[1]
+			retr = wedgestats(s2image,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
+			s2image ['spt_wedge_mean'] = retr[0]
+			s2image['spt_wedge_sigma'] = retr[1]
 		
-		retr = wedgestats(s2fixedimage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
-		s2fixedimage['spt_wedge_mean'] = retr[0]
-		s2fixedimage['spt_wedge_sigma'] = retr[1]
+			retr = wedgestats(s2fixedimage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
+			s2fixedimage['spt_wedge_mean'] = retr[0]
+			s2fixedimage['spt_wedge_sigma'] = retr[1]
 		
-		#print "The mean and sigma for subvolume %d are: mean=%f, sigma=%f" % (i,mean,sigma)
-		#a.write_image(stack,i)
+			#print "The mean and sigma for subvolume %d are: mean=%f, sigma=%f" % (i,mean,sigma)
+			#a.write_image(stack,i)
 		
 	if classoptions.verbose: 
 		print "Align size %d,  Refine Align size %d"%(sfixedimage["nx"],s2fixedimage["nx"])
