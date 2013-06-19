@@ -179,6 +179,8 @@ def main():
 	parser.add_argument("--parallel",type=str,default='thread:7',help="Parallelization to use.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
+	parser.add_argument("--fitwedgepost", action="store_true", help="Fit the missing wedge AFTER preprocessing the subvolumes, not before, IF using the fsc.tomo comparator for --aligncmp or --raligncmp.", default=False)
+
 
 	(options, args) = parser.parse_args()	
 	
@@ -690,6 +692,9 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			if 'fsc.tomo' in options.aligncmp or 'fsc.tomo' in options.raligncmp:
 				#print "YOU are selecting FSC.TOMO, therefore, wedgeangle needs to be specified", tiltrange
 				alicmd += ' --wedgeangle=' + str(tiltrange)
+				
+			if options.fitwedgepost:
+				alicmd += ' --fitwedgepost'
 				
 			aliptcls = output.replace('_avg.hdf','_ptcls_ali.hdf')
 
