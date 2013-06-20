@@ -576,7 +576,10 @@ def preprocessing(options,image):
 	
 	s2image = simage
 	
-	if not options.procfinelikecoarse:
+	if options.ralign and not options.procfinelikecoarse:
+		if options.verbose:
+			print "The fine alignment image will be processed differently from the coarse alignment image"
+	
 		s2image = baseimage.copy()
 		if options.lowpassfine:		
 			s2image.process_inplace(options.lowpassfine[0],options.lowpassfine[1])
@@ -947,13 +950,15 @@ def alignment(fixedimage,image,ptcl,label,classoptions,transform):
 	if not classoptions.fitwedgepost:
 		if classoptions.aligncmp[0] == "fsc.tomo" or classoptions.raligncmp[0] == "fsc.tomo":
 			print "THE FSC.TOMO comparator is on, on PRE mode" 
-			retri = wedgestats(image,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
-			image['spt_wedge_mean'] = retri[0]
-			image['spt_wedge_sigma'] = retri[1]
+			if 'spt_wedge_mean' not in image.get_attr_dict() or 'spt_wedge_sigma' not in image.get_attr_dict(): 
+				retri = wedgestats(image,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
+				image['spt_wedge_mean'] = retri[0]
+				image['spt_wedge_sigma'] = retri[1]
 		
-			retrf = wedgestats(fixedimage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
-			fixedimage['spt_wedge_mean'] = retrf[0]
-			fixedimage['spt_wedge_sigma'] = retrf[1]
+			if 'spt_wedge_mean' not in fixedimage.get_attr_dict() or 'spt_wedge_sigma' not in fixedimage.get_attr_dict(): 
+				retrf = wedgestats(fixedimage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
+				fixedimage['spt_wedge_mean'] = retrf[0]
+				fixedimage['spt_wedge_sigma'] = retrf[1]
 	
 	"""
 	PREPROCESSING CALL 
@@ -985,7 +990,7 @@ def alignment(fixedimage,image,ptcl,label,classoptions,transform):
 	
 	if classoptions.fitwedgepost:
 		if classoptions.aligncmp[0] == "fsc.tomo" or classoptions.raligncmp[0] == "fsc.tomo":
-			print "THE FSC.TOMO comparator is on on POST mode" 
+			print "THE FSC.TOMO comparator is on, on POST mode" 
 			retr = wedgestats(simage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
 			simage['spt_wedge_mean'] = retr[0]
 			simage['spt_wedge_sigma'] = retr[1]
@@ -994,13 +999,18 @@ def alignment(fixedimage,image,ptcl,label,classoptions,transform):
 			sfixedimage['spt_wedge_mean'] = retr[0]
 			sfixedimage['spt_wedge_sigma'] = retr[1]
 		
-			retr = wedgestats(s2image,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
-			s2image ['spt_wedge_mean'] = retr[0]
-			s2image['spt_wedge_sigma'] = retr[1]
+			if classoptions.ralign and classoptions.shrink != classoptions.shrinkrefine:
+				print "Shrink and shrink refine are", classoptions.shrink != classoptions.shrinkrefine
+				retr = wedgestats(s2image,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
+				s2image ['spt_wedge_mean'] = retr[0]
+				s2image['spt_wedge_sigma'] = retr[1]
 		
-			retr = wedgestats(s2fixedimage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
-			s2fixedimage['spt_wedge_mean'] = retr[0]
-			s2fixedimage['spt_wedge_sigma'] = retr[1]
+				retr = wedgestats(s2fixedimage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
+				s2fixedimage['spt_wedge_mean'] = retr[0]
+				s2fixedimage['spt_wedge_sigma'] = retr[1]
+			else:
+				s2image=simage
+				s2fixedimage=sfixedimage
 		
 			#print "The mean and sigma for subvolume %d are: mean=%f, sigma=%f" % (i,mean,sigma)
 			#a.write_image(stack,i)
