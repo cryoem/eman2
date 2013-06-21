@@ -297,7 +297,7 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 10.0, sign=1, symmetry="c
 			rx = 1.0
 			ry = 1.0
 			rz = float(zsize)/size
-		
+
 		params["sizeprojection"] = size
 		params["xratio"] = rx
 		params["yratio"] = ry
@@ -1018,8 +1018,7 @@ def recons3d_sirt(stack_name, list_proj, radius, lam=1.0e-4, maxit=100, symmetry
 					symangles[0] = angdict["phi"]
 					symangles[1] = angdict["theta"]
 					symangles[2] = angdict["psi"]
-					myparams = {"anglelist":symangles,
-					     	    "radius":radius}
+					myparams = {"anglelist":symangles, "radius":radius}
 					bvol += data.backproject("chao", myparams)
 			old_rnorm = bnorm = sqrt(bvol.cmp("dot",bvol,{"mask":mask3d,"negative":0}))
 			grad  = bvol
@@ -1037,8 +1036,7 @@ def recons3d_sirt(stack_name, list_proj, radius, lam=1.0e-4, maxit=100, symmetry
 					symangles[0] = angdict["phi"]
 					symangles[1] = angdict["theta"]
 					symangles[2] = angdict["psi"]
-					myparams = {"anglelist":symangles,
-					    	    "radius":radius}
+					myparams = {"anglelist":symangles, "radius":radius}
 					data  = xvol.project("chao", myparams) 
 					pxvol += data.backproject("chao",myparams)
 			grad  = bvol - pxvol
@@ -1071,8 +1069,7 @@ def recons3d_wbp(stack_name, list_proj, method = "general", const=1.0E4, symmetr
 
 	ny = B.get_ysize()  # have to take ysize, because xsize is different for real and fft images
 
-	if radius == None:
-		radius = (ny - 1) // 2
+	if radius == None: radius = (ny - 1) // 2
 
 	CUBE = EMData()
 	CUBE.set_size(ny, ny, ny)
