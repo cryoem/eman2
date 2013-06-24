@@ -2036,17 +2036,17 @@ void EMData::insert_rect_slice_ctf_applied(EMData* w, EMData* myfft,const Transf
 
 
 /*
-Data::onelinenn_ctf(int j, int n, int n2,
-		          EMData* w, EMData* bi, const Transform& tf, int mult) {//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
+Data::onelinenn_ctf(int j, int n, int n2, EMData* w, EMData* bi, const Transform& tf, int mult) {
+//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 
-        int remove = bi->get_attr_default( "remove", 0 );
+	int remove = bi->get_attr_default( "remove", 0 );
 
 	int jp = (j >= 0) ? j+1 : n+j+1;
 	// loop over x
 	for (int i = 0; i <= n2; i++) {
 	        int r2 = i*i+j*j;
 		if ( (r2<n*n/4) && !( (0==i) && (j<0) ) ) {
-		        float  ctf = ctf_store::get_ctf( r2 );
+			float  ctf = ctf_store::get_ctf( r2 );
 			float xnew = i*tf[0][0] + j*tf[1][0];
 			float ynew = i*tf[0][1] + j*tf[1][1];
 			float znew = i*tf[0][2] + j*tf[1][2];
@@ -2069,13 +2069,13 @@ Data::onelinenn_ctf(int j, int n, int n2,
 					if (iyn >= 0) iya = iyn + 1;
 					else          iya = n + iyn + 1;
 
-                                        if(remove > 0 ) {
-                                            cmplx(ixn,iya,iza) -= btq*ctf*float(mult);
-					    (*w)(ixn,iya,iza) -= ctf*ctf*mult;
-                                        } else {
-				            cmplx(ixn,iya,iza) += btq*ctf*float(mult);
-					    (*w)(ixn,iya,iza) += ctf*ctf*mult;
-                                        }
+					if(remove > 0 ) {
+						cmplx(ixn,iya,iza) -= btq*ctf*float(mult);
+						(*w)(ixn,iya,iza)  -= ctf*ctf*mult;
+					} else {
+						cmplx(ixn,iya,iza) += btq*ctf*float(mult);
+						(*w)(ixn,iya,iza)  += ctf*ctf*mult;
+					}
 
 				       //	std::cout<<"    "<<j<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<"  "<<ctf<<std::endl;
 				} else {
@@ -2086,13 +2086,13 @@ Data::onelinenn_ctf(int j, int n, int n2,
 					if (iyn > 0) iyt = n - iyn + 1;
 					else         iyt = -iyn + 1;
 
-                                        if( remove > 0 ) {
+                    if( remove > 0 ) {
 					    cmplx(-ixn,iyt,izt) -= conj(btq)*ctf*float(mult);
-					    (*w)(-ixn,iyt,izt) -= ctf*ctf*float(mult);
-                                        } else {
+					    (*w)(-ixn,iyt,izt)  -= ctf*ctf*float(mult);
+                    } else {
 					    cmplx(-ixn,iyt,izt) += conj(btq)*ctf*float(mult);
-					    (*w)(-ixn,iyt,izt) += ctf*ctf*float(mult);
-                                        }
+					    (*w)(-ixn,iyt,izt)  += ctf*ctf*float(mult);
+					}
 
 				        //	std::cout<<" *  " << j << "  " <<-ixn << "  " << iyt << "  " << izt << "  " << ctf <<std::endl;
 				}
@@ -2213,64 +2213,43 @@ void EMData::nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myf
 			int r2 = ix*ix+iy*iy;
         		if (( 4*r2 < ny*ny ) && !( ix == 0 && iy < 0 ) )
 			{
-			        float  ctf = ctf_store::get_ctf( defocus, r2 );
+				float  ctf = ctf_store::get_ctf( defocus, r2 );
 				float xnew = ix*tf[0][0] + iy*tf[1][0];
 				float ynew = ix*tf[0][1] + iy*tf[1][1];
 				float znew = ix*tf[0][2] + iy*tf[1][2];
 				std::complex<float> btq;
-				if (xnew < 0.0)
-				{
+				if (xnew < 0.0) {
 					xnew = -xnew; // ensures xnew>=0.0
 					ynew = -ynew;
 					znew = -znew;
 					btq = conj(myfft->cmplx(ix,jp));
-				} else
-				{
+				} else {
 					btq = myfft->cmplx(ix,jp);
 				}
 				int ixn = int(xnew + 0.5 + nx) - nx; // ensures ixn >= 0
 				int iyn = int(ynew + 0.5 + ny) - ny;
 				int izn = int(znew + 0.5 + nz) - nz;
 				if ((ixn <= nxc) && (iyn >= iymin) && (iyn <= iymax) && (izn >= izmin) && (izn <= izmax)) {
-					if (ixn >= 0)
-					{
+					if (ixn >= 0) {
 						int iza, iya;
-						if (izn >= 0)
-						{
-							iza = izn + 1;
-						} else
-						{
-							iza = nz + izn + 1;
-						}
-						if (iyn >= 0)
-						{
-							iya = iyn + 1;
-						} else
-						{
-							iya = ny + iyn + 1;
-						}
+						if (izn >= 0)	iza = izn + 1;
+						else			iza = nz + izn + 1;
+
+						if (iyn >= 0)	iya = iyn + 1;
+						else			iya = ny + iyn + 1;
+
 						cmplx(ixn,iya,iza)    += btq*ctf;
 						(*wptr)(ixn,iya,iza)  += ctf*ctf;
 						(*wptr3)(ixn,iya,iza) += 1.0;
-					}
-					else
-					{
+					} else {
 						int izt, iyt;
-						if (izn > 0)
-						{
-							izt = nz - izn + 1;
-						} else
-						{
-							izt = -izn + 1;
-						}
-						if (iyn > 0)
-						{
-							iyt = ny - iyn + 1;
-						} else
-						{
-							iyt = -iyn + 1;
-						}
-						cmplx(-ixn,iyt,izt)    += conj(btq)*ctf;
+						if (izn > 0)	izt = nz - izn + 1;
+						else			izt = -izn + 1;
+
+						if (iyn > 0)	iyt = ny - iyn + 1;
+						else			iyt = -iyn + 1;
+
+\						cmplx(-ixn,iyt,izt)    += conj(btq)*ctf;
 						(*wptr)(-ixn,iyt,izt)  += ctf*ctf;
 						(*wptr3)(-ixn,iyt,izt) += 1.0;
 					}
@@ -2324,7 +2303,6 @@ void EMData::symplane0_rect(EMData* w) {
 	nz=get_zsize();
 	int nzc=nz/2;
 	int nyc=ny/2;
-
 	
 	// let's treat the local data as a matrix
 	vector<int> saved_offsets = get_array_offsets();

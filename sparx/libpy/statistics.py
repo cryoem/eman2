@@ -2025,19 +2025,19 @@ def im_diff(im1, im2, mask = None):
 	from utilities import model_circle, get_im
 	if type(im1) == types.StringType : im1 = get_im(im1)
 	if type(im2) == types.StringType : im2 = get_im(im2) 
-	if type(mask) == types.ClassType : l = Util.im_diff(im1, im2, mask)
-	else:   
+	if mask != None :
 		nx = im1.get_xsize()
 		ny = im1.get_ysize()
 		nz = im1.get_zsize()
 		if   type(mask) == types.FloatType or type(mask) == types.IntType: m = model_circle(mask, nx, ny, nz)
 		elif type(mask) == types.StringType:   m = get_im(mask)
-		else:
-			if   im1.get_ndim() == 3: radius = min(nx,ny,nz)//2 - 1
-			elif im1.get_ndim() == 2: radius = min(nx,ny)//2    - 1
-			else:                     radius = int(nx)//2       - 1
-			m = model_circle(radius, nx, ny, nz)
-		l = Util.im_diff(im1, im2, m)
+		else: m = mask
+	else:
+		if   im1.get_ndim() == 3: radius = min(nx,ny,nz)//2 - 1
+		elif im1.get_ndim() == 2: radius = min(nx,ny)//2    - 1
+		else:                     radius = int(nx)//2       - 1
+		m = model_circle(radius, nx, ny, nz)
+	l = Util.im_diff(im1, im2, m)
 	return  l["imdiff"], l["A"], l["B"]
 
 
