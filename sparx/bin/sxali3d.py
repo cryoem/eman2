@@ -68,6 +68,7 @@ def main():
 	parser.add_option("--debug",    action="store_true", default=False,         help="debug")
 	parser.add_option("--nh",       action="store_true", default=False,         help="new - hans")
 	parser.add_option("--ns",       action="store_true", default=False,         help="new - saturn")
+	parser.add_option("--ns2",      action="store_true", default=False,         help="new - saturn2")
 	parser.add_option("--chunk",    type="float",  default= 0.2,                help="percentage of data used for alignment")
 	parser.add_option("--rantest",  action="store_true", default=False,         help="rantest")
 	parser.add_option("--searchpsi",action="store_true", default= False,        help="psi refinement")
@@ -92,6 +93,14 @@ def main():
 			global_def.BATCH = True
 			from development import  ali3d_saturn
 			ali3d_saturn(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
+				options.yr, options.ts, options.delta, options.an, options.apsi, options.deltapsi, options.startpsi,
+				options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
+				options.function, options.Fourvar, options.npad, options.debug, options.MPI, options.stoprnct)
+			global_def.BATCH = False
+		elif(options.ns2):
+			global_def.BATCH = True
+			from development import  ali3d_saturn2
+			ali3d_saturn2(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
 				options.yr, options.ts, options.delta, options.an, options.apsi, options.deltapsi, options.startpsi,
 				options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
 				options.function, options.Fourvar, options.npad, options.debug, options.MPI, options.stoprnct)
