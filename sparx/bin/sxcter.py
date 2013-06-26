@@ -42,9 +42,9 @@ def main():
         for arg in sys.argv:
         	arglist.append( arg )
 	progname = os.path.basename(arglist[0])
-	usage = progname + " stack ref_vol outdir  <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --ynumber=y_numbers  --txs=translational_search_stepx  --delta=angular_step --an=angular_neighborhood --center=1 --maxit=max_iter --CTF --snr=1.0  --ref_a=S --sym=c1 --datasym=symdoc --new"
+	usage = progname + " <stack> outdir1 outdir2 --indir --nameroot --nx --apix --Cs --voltage --ac --kboot --MPI"
 	'''
-	mpirun -np 1 sxcter.py --indir=. --nameroot=micrograph_PSC23_A8A_1GD_11112_135 --nx=256 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --kboot=16 --MPI
+	mpirun -np 1 sxcter.py pwrot partres --indir=. --nameroot=micrograph_PSC23_A8A_1GD_11112_135 --nx=256 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --kboot=16 --MPI
 	'''
 	parser = OptionParser(usage,version=SPARXVERSION)
 	
@@ -60,10 +60,25 @@ def main():
 	parser.add_option("--MPI",               	  action="store_true",   	default=False,              	 help="use MPI version")
 	parser.add_option("--debug",               	  action="store_true",   	default=False,              	 help="debug")
 	
-	parser.add_option("--outpwrot",          	  type="string",		    default= "pwrot",     			 help="output directory pwrot")
-	parser.add_option("--outpartres",          	  type="string",		    default= "partres",     		 help="output directory partres")
-	
 	(options, args) = parser.parse_args(arglist[1:])
+	
+	if len(args) <2 or len(args) > 3:
+		print "see usage"
+		sys.exit()
+	
+	stack = None
+	
+	if len(args) == 3:
+		if options.MPI:
+			print "Please use single processor version if specifying a stack."
+			sys.exit()
+		stack = args[0]
+		out1 = args[1]
+		out2 = args[2]
+		
+	if len(args) == 2:
+		out1 = args[0]
+		out2 = args[1]
 	
 	if options.apix < 0:
 		print "Enter pixel size"
@@ -79,7 +94,7 @@ def main():
 
 	from development import cter
 	global_def.BATCH = True
-	cter(options.indir, options.nameroot, options.nx, voltage=300.0, Pixel_size=options.apix, Cs = options.Cs, wgh=options.ac, kboot=options.kboot, MPI=options.MPI, DEBug = options.debug, outpwrot=options.outpwrot, outpartres=options.outpartres)
+	cter(stack, out1, out2, options.indir, options.nameroot, options.nx, voltage=300.0, Pixel_size=options.apix, Cs = options.Cs, wgh=options.ac, kboot=options.kboot, MPI=options.MPI, DEBug = options.debug)
 	global_def.BATCH = False
 
 	if options.MPI:
