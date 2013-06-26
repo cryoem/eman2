@@ -60,6 +60,9 @@ def main():
 	parser.add_option("--MPI",               	  action="store_true",   	default=False,              	 help="use MPI version")
 	parser.add_option("--debug",               	  action="store_true",   	default=False,              	 help="debug")
 	
+	parser.add_option("--outpwrot",          	  type="string",		    default= "pwrot",     			 help="output directory pwrot")
+	parser.add_option("--outpartres",          	  type="string",		    default= "partres",     		 help="output directory partres")
+	
 	(options, args) = parser.parse_args(arglist[1:])
 	
 	if options.apix < 0:
@@ -76,7 +79,7 @@ def main():
 
 	from development import cter
 	global_def.BATCH = True
-	cter(options.indir, options.nameroot, options.nx, voltage=300.0, Pixel_size=options.apix, Cs = options.Cs, wgh=options.ac, kboot=options.kboot, MPI=options.MPI, DEBug = options.debug)
+	cter(options.indir, options.nameroot, options.nx, voltage=300.0, Pixel_size=options.apix, Cs = options.Cs, wgh=options.ac, kboot=options.kboot, MPI=options.MPI, DEBug = options.debug, outpwrot=options.outpwrot, outpartres=options.outpartres)
 	global_def.BATCH = False
 
 	if options.MPI:
