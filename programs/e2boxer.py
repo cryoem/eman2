@@ -95,8 +95,66 @@ e2boxer.py ????.mrc --boxsize=256
  	parser.add_argument("--gauss_autoboxer",type=str,help="Name of autoboxed file whose autoboxing parameters (obtained via some previous run of Gauss autoboxer via the GUI) should be used for automatic boxing.",default=None)
 	parser.add_argument("--do_ctf",type=str,help="Name of file whose ctf estimation parameters (obtained via some previous run of Gauss autoboxer via the GUI) should be used for automatic ctf estimation.",default=None)
 
+	# ctf estimation using cter
+	parser.add_argument("--cter",               action="store_true",     default=False,                  help="CTF estimation using cter")
+	parser.add_argument("--indir",              type=str,				 default= ".",     				 help="Directory containing micrographs to be processed.")
+	parser.add_argument("--nameroot",         	type=str,		 		 default= "",     				 help="Prefix of micrographs to be processed.")
+	parser.add_argument("--nx",				  	type=int,		 		 default=256, 					 help="Size of window to use (should be slightly larger than particle box size)")
+	
+	parser.add_argument("--Cs",               	type=float,	 			 default= 2.0,               	 help="Microscope Cs (spherical aberation)")
+	parser.add_argument("--voltage",		  	type=float,	 		     default=300.0, 			     help="Microscope voltage in KV")
+	parser.add_argument("--ac",				  	type=float,	 		     default=10.0, 					 help="Amplitude contrast (percentage, default=10)")
+	parser.add_argument("--kboot",			  	type=int,			     default=16, 					 help="kboot")
+	parser.add_argument("--MPI",                action="store_true",   	 default=False,              	 help="use MPI version")
+	parser.add_argument("--debug",              action="store_true",   	 default=False,              	 help="debug mode")
+	parser.add_argument("--apix",               type=float,				 default= -1.0,                  help="pixel size in Angstroms")   
+	
 	(options, args) = parser.parse_args()
 
+	if options.cter:
+		from global_def import SPARXVERSION
+		import global_def
+		if len(args) <2 or len(args) > 3:
+			print "see usage"
+			sys.exit()
+		
+		stack = None
+		
+		if len(args) == 3:
+			if options.MPI:
+				print "Please use single processor version if specifying a stack."
+				sys.exit()
+			stack = args[0]
+			out1 = args[1]
+			out2 = args[2]
+			
+		if len(args) == 2:
+			out1 = args[0]
+			out2 = args[1]
+		
+		if options.apix < 0:
+			print "Enter pixel size"
+			sys.exit()
+		
+		if options.MPI:
+			from mpi import mpi_init, mpi_finalize
+			sys.argv = mpi_init(len(sys.argv), sys.argv)
+	
+		if global_def.CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()
+	
+		from morphology import cter
+		global_def.BATCH = True
+		cter(stack, out1, out2, options.indir, options.nameroot, options.nx, voltage=300.0, Pixel_size=options.apix, Cs = options.Cs, wgh=options.ac, kboot=options.kboot, MPI=options.MPI, DEBug = options.debug)
+		global_def.BATCH = False
+	
+		if options.MPI:
+			from mpi import mpi_finalize
+			mpi_finalize()
+	
+		return
+	
 	logid=E2init(sys.argv,options.ppid)
 	db = db_open_dict(EMBOXERBASE_DB)
 	cache_box_size = True
