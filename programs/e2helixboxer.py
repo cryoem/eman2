@@ -96,22 +96,80 @@ def main():
 	
 	# window segments from boxed filaments (or 'helices' in e2helixboxer lingo)
 	parser.add_argument("--window",             action="store_true",	 default=False,               help="window segments from boxed filaments (or helices in e2helixboxer lingo)")
-	parser.add_argument("--dirid",              type=str,		 default="",                  help="A string for identifying directories containing relevant micrographs. Any directory containing dirid as a contiguous string will be searched for micrographs. These micrographs are assumed to be those which were used to box the helices which are to be windowed.")
-	parser.add_argument("--micid",              type=str,		 default="",                  help="A string for identifying the name (minus extension) of relevant micrographs.")
-	parser.add_argument("--micsuffix",          type=str,		 default="",                  help="A string denoting micrograph type. Currently only handles suffix types, e.g. 'hdf', 'ser' etc.")
-	parser.add_argument("--boxsize",            type=str,		 default="160,45",            help="String containing x and y dimensions (separated by comma) in pixels of segments to be windowed. E.g. boxsize='160,45' specifies a rectangular segment with x dimension equal to 160 pixels and y dimension equal to 45 pixels. Pixel size is assumed to be new_pixel_size.")
-	parser.add_argument("--outstacknameall",    type=str,		 default="bdb:data",          help="File name plus path and type (only handles bdb and hdf right now) under which ALL windowed segments from ALL micrograph directories will be saved, e.g. 'bdb:adata' or 'adata.hdf'")
-	parser.add_argument("--hcoords_dir",        type=str,		 default="",        		  help="Directory containing helix box coordinates")
-	parser.add_argument("--hcoords_suffix",     type=str,		 default="_boxes.txt",        help="String identifier which when concatenated with a micrograph name (minus extension) gives the name of the text file containing coordinates of ALL helices boxed from the micrograph. If there is no such file, helices boxed from the micrograph will not be windowed. Default is '_boxes.txt', so if mic0.hdf is a micrograph, then the text file containing coordinates of the helices boxed in it is mic0_boxes.txt. The coordinate file is assumed to be in the format used by e2helixboxer.")
-	parser.add_argument("--new_apix",           type=float, 		 default=-1.0,                help="New target pixel size to which the micrograph should be resampled. Default is -1, in which case there is no resampling.")
-	parser.add_argument("--freq",               type=float, 		 default=-1.0,                help="Cut-off frequency at which to high-pass filter micrographs before windowing. Default is -1, in which case, the micrographs will be high-pass filtered with cut-off frequency 1.0/segnx, where segnx is the target x dimension of the segments.") 
-	parser.add_argument("--apix",               type=float,			 default= -1.0,               help="pixel size in Angstroms")   
-	parser.add_argument("--dp",                 type=float,			 default= -1.0,               help="delta z - translation in Angstroms")   
-	parser.add_argument("--dphi",               type=float,			 default= -1.0,               help="delta phi - rotation in degrees")  
-	parser.add_argument("--rmax",               type=float, 		 default= 80.0,               help="maximal radius for hsearch (Angstroms)")
-	parser.add_argument("--debug",              type=int,	 default=1,               help="If 1, then intermediate files in output directory will not be deleted; if 0, then all output directories where intermediate files were stored will be deleted. Default is 1.")
+	parser.add_argument("--dirid",              type=str,				 default="",                  help="A string for identifying directories containing relevant micrographs. Any directory containing dirid as a contiguous string will be searched for micrographs. These micrographs are assumed to be those which were used to box the helices which are to be windowed.")
+	parser.add_argument("--micid",              type=str,				 default="",                  help="A string for identifying the name (minus extension) of relevant micrographs.")
+	parser.add_argument("--micsuffix",          type=str,				 default="",                  help="A string denoting micrograph type. Currently only handles suffix types, e.g. 'hdf', 'ser' etc.")
+	parser.add_argument("--boxsize",            type=str,				 default="160,45",            help="String containing x and y dimensions (separated by comma) in pixels of segments to be windowed. E.g. boxsize='160,45' specifies a rectangular segment with x dimension equal to 160 pixels and y dimension equal to 45 pixels. Pixel size is assumed to be new_pixel_size.")
+	parser.add_argument("--outstacknameall",    type=str,				 default="bdb:data",          help="File name plus path and type (only handles bdb and hdf right now) under which ALL windowed segments from ALL micrograph directories will be saved, e.g. 'bdb:adata' or 'adata.hdf'")
+	parser.add_argument("--hcoords_dir",        type=str,				 default="",        		  help="Directory containing helix box coordinates")
+	parser.add_argument("--hcoords_suffix",     type=str,				 default="_boxes.txt",        help="String identifier which when concatenated with a micrograph name (minus extension) gives the name of the text file containing coordinates of ALL helices boxed from the micrograph. If there is no such file, helices boxed from the micrograph will not be windowed. Default is '_boxes.txt', so if mic0.hdf is a micrograph, then the text file containing coordinates of the helices boxed in it is mic0_boxes.txt. The coordinate file is assumed to be in the format used by e2helixboxer.")
+	parser.add_argument("--new_apix",           type=float,  			 default=-1.0,                help="New target pixel size to which the micrograph should be resampled. Default is -1, in which case there is no resampling.")
+	parser.add_argument("--freq",               type=float, 			 default=-1.0,                help="Cut-off frequency at which to high-pass filter micrographs before windowing. Default is -1, in which case, the micrographs will be high-pass filtered with cut-off frequency 1.0/segnx, where segnx is the target x dimension of the segments.") 
+	parser.add_argument("--apix",               type=float,				 default= -1.0,               help="pixel size in Angstroms")   
+	parser.add_argument("--dp",                 type=float,				 default= -1.0,               help="delta z - translation in Angstroms")   
+	parser.add_argument("--dphi",               type=float,				 default= -1.0,               help="delta phi - rotation in degrees")  
+	parser.add_argument("--rmax",               type=float, 			 default= 80.0,               help="maximal radius for hsearch (Angstroms)")
+	parser.add_argument("--dbg",                type=int,	 			 default=1,                   help="If 1, then intermediate files in output directory will not be deleted; if 0, then all output directories where intermediate files were stored will be deleted. Default is 1.")
 
+	# ctf estimation using cter
+	parser.add_argument("--cter",               action="store_true",     default=False,                  help="CTF estimation using cter")
+	parser.add_argument("--indir",              type=str,				 default= ".",     				 help="Directory containing micrographs to be processed.")
+	parser.add_argument("--nameroot",         	type=str,		 		 default= "",     				 help="Prefix of micrographs to be processed.")
+	parser.add_argument("--nx",				  	type=int,		 		 default=256, 					 help="Size of window to use (should be slightly larger than particle box size)")
+	
+	parser.add_argument("--Cs",               	type=float,	 			 default= 2.0,               	 help="Microscope Cs (spherical aberation)")
+	parser.add_argument("--voltage",		  	type=float,	 		     default=300.0, 			     help="Microscope voltage in KV")
+	parser.add_argument("--ac",				  	type=float,	 		     default=10.0, 					 help="Amplitude contrast (percentage, default=10)")
+	parser.add_argument("--kboot",			  	type=int,			     default=16, 					 help="kboot")
+	parser.add_argument("--MPI",                action="store_true",   	 default=False,              	 help="use MPI version")
+	parser.add_argument("--debug",              action="store_true",   	 default=False,              	 help="debug mode")
+	
 	(options, args) = parser.parse_args()
+	
+	if options.cter:
+		from global_def import SPARXVERSION
+		import global_def
+		if len(args) <2 or len(args) > 3:
+			print "see usage"
+			sys.exit()
+		
+		stack = None
+		
+		if len(args) == 3:
+			if options.MPI:
+				print "Please use single processor version if specifying a stack."
+				sys.exit()
+			stack = args[0]
+			out1 = args[1]
+			out2 = args[2]
+			
+		if len(args) == 2:
+			out1 = args[0]
+			out2 = args[1]
+		
+		if options.apix < 0:
+			print "Enter pixel size"
+			sys.exit()
+		
+		if options.MPI:
+			from mpi import mpi_init, mpi_finalize
+			sys.argv = mpi_init(len(sys.argv), sys.argv)
+	
+		if global_def.CACHE_DISABLE:
+			from utilities import disable_bdb_cache
+			disable_bdb_cache()
+	
+		from morphology import cter
+		global_def.BATCH = True
+		cter(stack, out1, out2, options.indir, options.nameroot, options.nx, voltage=300.0, Pixel_size=options.apix, Cs = options.Cs, wgh=options.ac, kboot=options.kboot, MPI=options.MPI, DEBug = options.debug)
+		global_def.BATCH = False
+	
+		if options.MPI:
+			from mpi import mpi_finalize
+			mpi_finalize()
+	
+		return
+	
 	
 	# Window filaments 
 	if options.window:
@@ -119,7 +177,7 @@ def main():
 			print "Must specify name of output directory where intermediate files are to be deposited."
 			return
 		outdir = args[0]
-		windowallmic(options.dirid, options.micid, options.micsuffix, outdir, pixel_size=options.apix, dp=options.dp, boxsize=options.boxsize, outstacknameall=options.outstacknameall, hcoords_dir = options.hcoords_dir, hcoords_suffix = options.hcoords_suffix, ptcl_overlap=options.ptcl_overlap, inv_contrast=options.invert_contrast, new_pixel_size=options.new_apix, rmax = options.rmax, freq=options.freq, debug = options.debug)
+		windowallmic(options.dirid, options.micid, options.micsuffix, outdir, pixel_size=options.apix, dp=options.dp, boxsize=options.boxsize, outstacknameall=options.outstacknameall, hcoords_dir = options.hcoords_dir, hcoords_suffix = options.hcoords_suffix, ptcl_overlap=options.ptcl_overlap, inv_contrast=options.invert_contrast, new_pixel_size=options.new_apix, rmax = options.rmax, freq=options.freq, debug = options.dbg)
 		return
 	
 	if options.helix_width < 1:
