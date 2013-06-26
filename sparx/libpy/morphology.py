@@ -1946,7 +1946,7 @@ def defocusgett(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1, f_s
 	"""
 	from utilities  import generate_ctf
 	import numpy as np
-	from morphology import ctf_2, bracket_def, defocus_baseline_fit, ctflimit
+	from morphology import ctf_2, bracket_def, defocus_baseline_fit, ctflimit, simpw1d, goldsearch_astigmatism
 
 	#print "CTF params:", voltage, Pixel_size, Cs, wgh, f_start, f_stop, round_off, nr1, nr2, parent
 
@@ -2204,15 +2204,15 @@ def make_real(t):
 	ny2 = nx//2
 	q = model_blank(nx,nx)
 	for iy in xrange(0,nx):
-			jy = ny2-iy
-			if(jy<0): jy += nx
-			jm = nx-jy
-			if( jy == 0 ): jm = 0
-			for ix in xrange(0,nx,2):
-				tr = t.get_value_at(ix,iy)
-				jx = ix//2
-				q.set_value_at(jx+ny2, jm, tr)
-				q.set_value_at(ny2-jx, jy, tr)
+		jy = ny2-iy
+		if(jy<0): jy += nx
+		jm = nx-jy
+		if( jy == 0 ): jm = 0
+		for ix in xrange(0,nx,2):
+			tr = t.get_value_at(ix,iy)
+			jx = ix//2
+			q.set_value_at(jx+ny2, jm, tr)
+			q.set_value_at(ny2-jx, jy, tr)
 	return q
 
 
@@ -2240,7 +2240,7 @@ def fastigmatism(amp, data):
 
 def fastigmatism1(amp, data):
 	
-	from morphology import ctf2_rimg
+	from morphology import ctf_rimg
 	from utilities import generate_ctf
 	
 	nx = data[0].get_xsize()
@@ -2266,7 +2266,7 @@ def fastigmatism1(amp, data):
 
 def fastigmatism2(amp, data):
 	
-	from morphology import ctf2_rimg
+	from morphology import ctf_rimg
 	from utilities import generate_ctf
 	from alignment import ornq
 	
