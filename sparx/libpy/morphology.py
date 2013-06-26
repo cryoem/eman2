@@ -1407,3 +1407,948 @@ def refine_with_mask(vol):
 	vol *= mask
 	return vol
 '''
+
+def cter(stack, outpwrot, outpartres, indir, nameroot, nx, voltage=300.0, Pixel_size=2.29, Cs = 2.0, wgh=10.0, kboot=16, MPI=False, DEBug= False):
+	'''
+	Input
+		stack	 : name of image stack (such as boxed particles) to be processed instead of micrographs.
+		indir    : Directory containing micrographs to be processed.
+		nameroot : Prefix of micrographs to be processed.
+	    nx       : Size of window to use (should be slightly larger than particle box size)
+	'''
+	from applications import MPI_start_end
+	from utilities import read_text_file, write_text_file, get_im, model_blank, model_circle, amoeba, generate_ctf
+	from sys import exit
+	import numpy as np
+	import os
+	from mpi  import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier
+	from fundamentals import tilemic, rot_avg_table
+	from morphology import threshold, bracket_original, bracket_def, bracket, goldsearch_astigmatism, defocus_baseline_fit, simpw1d, movingaverage, localvariance, defocusgett, ctf_222, defocus_guessn, defocusgett_, defocusget_from_crf, make_real, fastigmatism, fastigmatism1, fastigmatism2, fastigmatism3, simctf, simctf2, simctf2out, fupw,ctf2_rimg
+	from alignment import Numrinit, ringwe
+	from statistics import table_stat
+	from pixel_error import angle_ave
+	
+	if MPI:
+		myid = mpi_comm_rank(MPI_COMM_WORLD)
+		ncpu = mpi_comm_size(MPI_COMM_WORLD)
+		if stack != None:
+			ERROR('Please use single processor version for stack mode', " ", 1)
+		main_node = 0
+		if myid == main_node:
+			if os.path.exists(outpwrot) or os.path.exists(outpartres):
+				ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+			os.mkdir(outpwrot)
+			os.mkdir(outpartres)
+		mpi_barrier(MPI_COMM_WORLD)
+	else:
+		if os.path.exists(outpwrot) or os.path.exists(outpartres):
+			ERROR('Output directory exists, please change the name and restart the program', " ")
+		os.mkdir(outpwrot)
+		os.mkdir(outpartres)
+	
+	if stack == None:
+		lenroot = len(nameroot)
+		flist  = os.listdir(indir)
+		namics = []
+		for i in xrange(len(flist)):
+			if( flist[i][:lenroot] == nameroot ):
+				namics.append(os.path.join(indir,flist[i]))
+		nmics = len(namics)
+		
+		if MPI:
+			set_start, set_end = MPI_start_end(nmics, ncpu, myid)
+		else:
+			set_start = 0
+			set_end = len(namics)
+	else:
+		data = EMData.read_images(stack)
+		nima = len(data)
+		for i in xrange(nima):
+			pw2.append(periodogram(data[i]))
+		nx = pw2[0].get_xsize()
+		set_start = 0
+		set_end = 1
+				
+	totresi = []
+	for ifi in xrange(set_start,set_end):
+		#print  " tilemic ", ifi,namics[ifi]
+		if stack == None:
+			pw2 = tilemic(get_im(namics[ifi]), win_size=nx, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0)
+		nimi = len(pw2)
+		adefocus = [0.0]*kboot
+		aamplitu = [0.0]*kboot
+		aangle   = [0.0]*kboot
+	
+		allroo = []
+		for imi in xrange(nimi):
+			allroo.append(rot_avg_table(pw2[imi]))
+		lenroo = len(allroo[0])
+		#print time(),nimi
+	
+		#try:
+		for nboot in xrange(kboot):
+			if(nboot == 0): boot = range(nimi)
+			else:
+				from random import randint
+				for imi in xrange(nimi): boot[imi] = randint(0,nimi-1)
+			qa = model_blank(nx, nx)
+			roo  = np.zeros(lenroo, np.float32)
+			sroo = np.zeros(lenroo, np.float32)
+			aroo = np.zeros(lenroo, np.float32)
+
+			for imi in xrange(nimi):
+				Util.add_img(qa, pw2[boot[imi]])
+				temp1 = np.array(allroo[boot[imi]])
+				roo += temp1
+				temp2 = movingaverage(temp1, 10)
+				aroo += temp2
+				sroo += temp2**2
+			sroo[0] = sroo[1]
+			aroo[0] = aroo[1]
+			sroo = (sroo-aroo**2/nimi)/nimi
+			aroo /= nimi
+			roo  /= nimi
+			qa /= nimi
+
+			#  Find a break point
+			bp = 1.e23
+			for i in xrange(5,lenroo-5):
+				#t1 = linreg(sroo[:i])
+				#t2 = linreg(sroo[i:])
+				#tt = t1[1][0] + t2[1][0]
+				xtt = np.array(range(i),np.float32)
+				zet = np.poly1d( np.polyfit(xtt,sroo[:i],2) )
+				t1 = sum((sroo[:i]-zet(xtt))**2)
+				xtt = np.array(range(i,lenroo),np.float32)
+				zet = np.poly1d( np.polyfit(xtt,sroo[i:],2) )
+				tt = t1 + sum((sroo[i:]-zet(xtt))**2)
+				if( tt < bp ):
+					bp = tt
+					istart = i
+			#istart = 25
+			#print istart
+			"""
+			hi = hist_list(sroo,2)
+			# hi[0][1] is the threshold
+			for i in xrange(1,len(sroo)):
+				if(sroo[i] < hi[0][1]):
+					istart = i
+					break
+			"""
+			#write_text_file([roo.tolist(),aroo.tolist(),sroo.tolist()], "sroo%03d.txt"%ifi)
+			rooc = roo.tolist()
+			f_start = istart/(Pixel_size*nx)
+			#print namics[ifi],istart,f_start
+
+			defc, subpw, ctf2, baseline, envelope, istart, istop = defocusgett(rooc, nx, voltage=voltage, Pixel_size=Pixel_size, Cs=Cs, ampcont=wgh, f_start=f_start, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None, DEBug=DEBug)
+			if DEBug:
+				if stack == None:  
+					print "  RESULT ",namics[ifi],defc, istart, istop
+				else:
+					print "  RESULT ",defc, istart, istop
+				
+			if DEBug:
+				freq = range(len(subpw))
+				for i in xrange(len(freq)):  freq[i] = float(i)/nx/Pixel_size
+				write_text_file([freq, subpw.tolist(), ctf2, envelope.tolist(), baseline.tolist()],"ravg%05d.txt"%ifi)
+			#mpi_barrier(MPI_COMM_WORLD)
+
+			#exit()
+			bg = baseline.tolist()
+			en = envelope.tolist()
+
+			bckg = model_blank(nx, nx, 1, 1)
+			envl = model_blank(nx, nx, 1, 1)
+
+			from math import sqrt
+			nc = nx//2
+			bg.append(bg[-1])
+			en.append(en[-1])
+			for i in xrange(nx):
+				for j in xrange(nx):
+					r = sqrt((i-nc)**2 + (j-nc)**2)
+					ir = int(r)
+					if(ir<nc):
+						dr = r - ir
+						bckg.set_value_at(i,j,  (1.-dr)*bg[ir] + dr*bg[ir+1] )
+						envl.set_value_at(i,j,  (1.-dr)*en[ir] + dr*en[ir+1] )
+
+			#qa.write_image("rs1.hdf")
+
+			mask = model_circle(istop-1,nx,nx)*(model_blank(nx,nx,1,1.0)-model_circle(istart,nx,nx))
+			qse = threshold((qa-bckg))#*envl
+			#(qse*mask).write_image("rs2.hdf")
+			#qse.write_image("rs3.hdf")
+			##  SIMULATION
+			#bang = 0.7
+			#qse = ctf2_rimg(nx, generate_ctf([defc,Cs,voltage,Pixel_size,0.0,wgh, bang, 37.0]) )
+			#qse.write_image("rs3.hdf")
+
+
+
+			cnx = nx//2+1
+			cny = cnx
+			mode = "H"
+			numr = Numrinit(istart, istop, 1, mode)
+			wr   = ringwe(numr, mode)
+
+			crefim = Util.Polar2Dm(qse*mask, cnx, cny, numr, mode)
+			Util.Frngs(crefim, numr)
+			Util.Applyws(crefim, numr, wr)
+
+			#pc = ctf2_rimg(nx,generate_ctf([defc,Cs,voltage,Pixel_size,0.0,wgh]))
+			#print ccc(pc*envl, subpw, mask)
+
+			bang = 0.0
+			bamp = 0.0
+			bdef = defc
+			bold = 1.e23
+			while( True):
+				#  in simctf2 data[3] is astigmatism amplitude
+				"""
+				data = [qse, mask, nx, bamp, Cs, voltage, Pixel_size, wgh, bang]
+				#astdata = [crefim, numr, nx, bdef, Cs, voltage, Pixel_size, wgh, bang]
+				for qqq in xrange(200):
+					qbdef = 1.0 + qqq*0.001
+					print " VALUE AT THE BEGGINING OF while LOOP  ",qbdef,simctf2(qbdef, data)#,fastigmatism3(bamp,astdata)
+				"""
+				"""
+				bamp = 0.7
+				bang = 37.0
+
+				data = [qse, mask, nx, bamp, Cs, voltage, Pixel_size, wgh, bang]
+				astdata = [crefim, numr, nx, bdef, Cs, voltage, Pixel_size, wgh, bang]
+				print " VALUE AT THE BEGGINING OF while LOOP  ",bdef,bamp,bang,simctf2(bdef, data),fastigmatism3(bamp,astdata,mask)
+				#print  simctf2out(1.568,data)
+				#exit()
+
+				for kdef in xrange(14000,17000,10):
+					dz = kdef/10000.0
+					ard = [qse, mask, nx, bamp, Cs, voltage, Pixel_size, wgh, bang]
+					#print ard
+					aqd = [crefim, numr, nx, dz, Cs, voltage, Pixel_size, wgh, bang]
+					#print aqd
+					print  dz,simctf2(dz,ard),fastigmatism3(bamp,aqd,mask)
+					#print aqd[-1]
+				exit()
+				"""
+				data = [qse, mask, nx, bamp, Cs, voltage, Pixel_size, wgh, bang]
+				h = 0.05*bdef
+				amp1,amp2 = bracket_def(simctf2, data, bdef*0.9, h)
+				#print "bracketing of the defocus  ",amp1, amp2
+				#print " ttt ",time()-srtt
+				#print "bracketing of the defocus  ",amp1,amp2,simctf2(amp1, data),simctf2(amp2, data),h
+				amp1, val2 = goldsearch_astigmatism(simctf2, data, amp1, amp2, tol=1.0e-3)
+				#print "golden defocus ",amp1, val2,simctf2(amp1, data)
+				#bdef, bcc = goldsearch_astigmatism(simctf2, data, amp1, amp2, tol=1.0e-3)
+				#print "correction of the defocus  ",bdef,bcc
+				#print " ttt ",time()-srtt
+				"""
+				crot2 = rotavg_ctf(ctf2_rimg(nx,generate_ctf([bdef, Cs, voltage, Pixel_size, 0.0, wgh, bamp, bang])), bdef, Cs, voltage, Pixel_size, wgh, bamp, bang)
+				pwrot = rotavg_ctf(qa-bckg, bdef, Cs, voltage, Pixel_size, wgh, bamp, bang)
+				write_text_file([range(len(subroo)),asubroo, ssubroo, sen, pwrot, crot2],"rotinf%04d.txt"%ifi)
+				qse.write_image("qse.hdf")
+				mask.write_image("mask.hdf")
+				exit()
+				"""
+
+				astdata = [crefim, numr, nx, bdef, Cs, voltage, Pixel_size, wgh, bang]
+				h = 0.01
+				amp1,amp2 = bracket(fastigmatism3, astdata, h)
+				#print "  astigmatism bracket  ",amp1,amp2,astdata[-1]
+				#print " ttt ",time()-srtt
+				bamp, bcc = goldsearch_astigmatism(fastigmatism3, astdata, amp1, amp2, tol=1.0e-3)
+				junk = fastigmatism3(bamp,astdata)
+				bang = astdata[-1]
+
+				#print astdata[-1]
+				#print  fastigmatism3(0.0,astdata)
+				#print astdata[-1]
+				#temp = 0.0
+				#print bdef, Cs, voltage, Pixel_size, temp, wgh, bamp, bang, -bcc
+				#data = [qse, mask, nx, bamp, Cs, voltage, Pixel_size, wgh, bang]
+				#astdata = [crefim, numr, nx, bdef, Cs, voltage, Pixel_size, wgh, bang]
+				#print " VALUE WITHIN the while LOOP  ",bdef,bamp,bang,simctf2(bdef, data),fastigmatism3(bamp,astdata)
+				#print "  golden search ",bamp,data[-1], fastigmatism3(bamp,data), fastigmatism3(0.0,data)
+				#print " ttt ",time()-srtt
+				#bamp = 0.5
+				#bang = 277
+
+				dama = amoeba([bdef,bamp],[0.2,0.2], fupw, 1.e-4,1.e-4,500, astdata)
+				if DEBug:  print "AMOEBA    ",dama
+				bdef = dama[0][0]
+				bamp = dama[0][1]
+				astdata = [crefim, numr, nx, bdef, Cs, voltage, Pixel_size, wgh, bang]
+				junk = fastigmatism3(bamp, astdata)
+				bang = astdata[-1]
+				if DEBug:  print " after amoeba ", bdef, bamp, bang
+				#  The looping here is blocked as one shot at amoeba is good enough.  To unlock it, remove - from bold.
+				if(bcc < -bold): bold = bcc
+				else:           break
+
+
+			#data = [qse, mask, nx, bamp, Cs, voltage, Pixel_size, wgh, bang]
+			#print " VALUE AFTER the while LOOP  ",bdef,bamp,bang,simctf2(bdef, data),fastigmatism3(bamp,astdata)
+			#temp = 0.0
+			#print ifi,bdef, Cs, voltage, Pixel_size, temp, wgh, bamp, bang, -bcc
+			#freq = range(len(subpw))
+			#for i in xrange(len(freq)):  freq[i] = float(i)/nx/Pixel_size
+			#ctf2 = ctf_2(nx,generate_ctf([bdef,Cs,voltage,Pixel_size,0.0,wgh]))[:len(freq)]
+			#write_text_file([freq, subpw.tolist(), ctf2, envelope.tolist(), baseline.tolist()],"ravg/ravg%05d.txt"%ifi)
+			#print " >>>> ",nx, bdef, bamp, Cs, voltage, Pixel_size, wgh, bang
+			#data = [qse, mask, nx, bamp, Cs, voltage, Pixel_size, wgh, bang]
+			#print  simctf2out(bdef, data)
+			#exit()
+			adefocus[nboot] = bdef
+			aamplitu[nboot] = bamp
+			aangle[nboot]   = bang
+			#from sys import exit
+			#exit()
+
+		#print " ttt ",time()-srtt
+		#from sys import exit
+		#exit()
+		ad1,ad2,ad3,ad4 = table_stat(adefocus)
+		reject = []
+		thr = 3*sqrt(ad3)
+		for i in xrange(len(adefocus)):
+			if(abs(adefocus[i]-ad1)>thr):
+				print adefocus[i],ad1,thr
+				reject.append(i)
+		if(len(reject)>0):
+			if stack == None:
+				print "  Number of rejects  ",namics[ifi],len(reject)
+			else:
+				print "  Number of rejects  ",len(reject)
+			for i in xrange(len(reject)-1,-1,-1):
+				print i
+				del adefocus[i]
+				del aamplitu[i]
+				del aangle[i]
+		if(len(adefocus)<2):
+			if stack == None:
+				print "  After rejection of outliers too few estimated defocus values for :",namics[ifi]
+			else:
+				print "  After rejection of outliers too few estimated defocus values"
+		else:
+			#print "adefocus",adefocus
+			#print  "aamplitu",aamplitu
+			#print "aangle",aangle
+			ad1,ad2,ad3,ad4 = table_stat(adefocus)
+			bd1,bd2,bd3,bd4 = table_stat(aamplitu)
+			cd1,cd2 = angle_ave(aangle)
+			temp = 0.0
+			if stack == None:
+				print  namics[ifi],ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1, sqrt(max(0.0,ad2)),sqrt(max(0.0,bd2)),cd2 
+			else:
+				print  ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1, sqrt(max(0.0,ad2)),sqrt(max(0.0,bd2)),cd2 
+			if stack == None:
+				totresi.append( [ namics[ifi],ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1, sqrt(max(0.0,ad2)),sqrt(max(0.0,bd2)),cd2 ])
+			else:
+				totresi.append( [ 0,ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1, sqrt(max(0.0,ad2)),sqrt(max(0.0,bd2)),cd2 ])
+			#if ifi == 4 : break
+			"""
+			for i in xrange(len(ssubroo)):
+				asubroo[i] /= kboot
+				ssubroo[i]  = sqrt(max(0.0, ssubroo[i]-kboot*asubroo[i]**2)/kboot)
+				sen[i]     /= kboot
+			"""
+			lnsb = len(subpw)
+			try:		crot2 = rotavg_ctf(ctf2_rimg(nx,generate_ctf([ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1])), ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1)[:lnsb]
+			except:		crot2 = [0.0]*lnsb
+			try:		pwrot2 = rotavg_ctf(threshold(qa-bckg), ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1)[:lnsb]
+			except:		pwrot2 = [0.0]*lnsb
+			try:		crot1 = rotavg_ctf(ctf2_rimg(nx,generate_ctf([ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1])), ad1, Cs, voltage, Pixel_size, temp, wgh, 0.0, 0.0)[:lnsb]
+			except:		crot1 = [0.0]*lnsb
+			try:		pwrot1 = rotavg_ctf(threshold(qa-bckg), ad1, Cs, voltage, Pixel_size, temp, wgh, 0.0, 0.0)[:lnsb]
+			except:		pwrot1 = [0.0]*lnsb
+			freq = range(lnsb)
+			for i in xrange(len(freq)):  freq[i] = float(i)/nx/Pixel_size
+			fou = os.path.join(outpwrot,  "rotinf%04d.txt"%ifi)
+			#  #1 - rotational averages without astigmatism, #2 - with astigmatism
+			write_text_file([range(len(crot1)),freq,pwrot1,crot1, pwrot2,crot2],fou)
+			
+			if stack == None:
+				cmd = "echo "+"    "+namics[ifi]+"  >>  "+fou
+			else:
+				cmd = "echo "+"    "+"  >>  "+fou
+			os.system(cmd)
+		#except:
+			#print  namics[ifi],"     FAILED"
+	#from utilities import write_text_row
+	if MPI:
+		outf = open( os.path.join(outpartres,"partres_%05d"%myid), "w")
+	else:
+		outf = open( os.path.join(outpartres,"partres"), "w")
+	for i in xrange(len(totresi)):
+		for k in xrange(1,len(totresi[i])): outf.write("  %12.5g"%totresi[i][k])
+		outf.write("  %s\n"%totresi[i][0])
+	outf.close()
+	
+########################################
+# functions used by ctfer
+# Later on make sure these functions don't conflict with those used
+# in the cross resolution program getastcrfNOE.py
+########################################
+def bracket_original(f, x1, h):
+	c = 1.618033989 
+	f1 = f(x1)
+	x2 = x1 + h; f2 = f(x2)
+	# Determine downhill direction and change sign of h if needed
+	if f2 > f1:
+		h = -h
+		x2 = x1 + h; f2 = f(x2)
+		# Check if minimum between x1 - h and x1 + h
+		if f2 > f1: return x2,x1 - h 
+	# Search loop
+	for i in range (100):    
+		h = c*h
+		x3 = x2 + h; f3 = f(x3)
+		if f3 > f2: return x1,x3
+		x1 = x2; x2 = x3
+		f1 = f2; f2 = f3
+	print "Bracket did not find a mimimum"
+
+
+ 
+def bracket_def(f, dat, x1, h):
+	c = 1.618033989 
+	f1 = f(x1, dat)
+	x2 = x1 + h
+	f2 = f(x2, dat)
+	#print x1,f1,x2,f2
+	# Determine downhill direction and change sign of h if needed
+	if f2 > f1:
+		#print  h
+		h = -h
+		x2 = x1 + h
+		f2 = f(x2, dat)
+		# Check if minimum between x1 - h and x1 + h
+		if f2 > f1: return x2,x1 - h 
+	# Search loop
+	for i in range (100):
+		h = c*h
+		x3 = x2 + h; f3 = f(x3, dat)
+		#print i,x1,f1,x2,f2,x3,f3
+		if f3 > f2: return x1,x3
+		x1 = x2; x2 = x3
+		f1 = f2; f2 = f3
+	print "Bracket did not find a mimimum"
+
+
+def bracket(f, dat, h):
+	c = 1.618033989
+	x1 = 0.0
+	f1 = f(x1, dat)
+	x2 = x1 + h
+	f2 = f(x2, dat)
+	# Search loop
+	for i in range (100):    
+		h = c*h
+		x3 = x2 + h
+		f3 = f(x3, dat)
+		#print i,x1,f1,x2,f2,x3,f3
+		if f3 > f2: return x1,x3
+		x1 = x2; x2 = x3
+		f1 = f2; f2 = f3
+	print "Bracket did not find a mimimum"
+ 
+def goldsearch_astigmatism(f, dat, a, b, tol=1.0e-3):
+	from math import log, ceil
+	nIter = int(ceil(-2.078087*log(tol/abs(b-a)))) # Eq. (10.4)
+	R = 0.618033989
+	C = 1.0 - R
+	# First telescoping
+	x1 = R*a + C*b; x2 = C*a + R*b
+	f1 = f(x1, dat); f2 = f(x2, dat)
+	# Main loop
+	for i in range(nIter):
+		if f1 > f2:
+			a = x1
+			x1 = x2; f1 = f2
+			x2 = C*a + R*b; f2 = f(x2, dat)
+		else:
+			b = x2
+			x2 = x1; f2 = f1
+			x1 = R*a + C*b; f1 = f(x1, dat)
+	if f1 < f2: return x1,f1
+	else: return x2,f2
+
+def defocus_baseline_fit(roo, i_start, i_stop, nrank, iswi):
+	"""
+		    iswi = 2 using polynomial n rank to fit envelope function
+			iswi = 3 using polynomial n rank to fit background
+			The background fit is done between i_start, i_stop, but the entire baseline curve is evaluated and subtracted
+	"""
+	import numpy as np
+	from morphology import imf_params_cl1
+	
+	TMP = imf_params_cl1(roo[i_start:i_stop], nrank, iswi)
+	nroo = len(roo)
+	baseline   = np.zeros(nroo, np.float32)
+	ord = len(TMP[-1])
+	from math import exp
+	freqstep = TMP[0][1]
+	for i in xrange(len(roo)):
+		freq = freqstep*(i-i_start)
+		tmp = TMP[-1][-1]
+		for j in xrange(1,ord): tmp += TMP[-1][j-1]*freq**j
+		baseline[i] = tmp
+	return np.exp(baseline)
+
+def simpw1d(defocus, data):
+	import numpy as np
+	from morphology import ctf_2
+	from utilities import generate_ctf
+	
+	#[defocus, Cs, volt, Pixel_size, 0.0, ampcont]
+	# data[1] - envelope
+	ct = data[1]*np.array( ctf_2(data[2], generate_ctf([defocus, data[4], data[5], data[6], 0.0, data[7], 0.0, 0.0]))[data[8]:data[9]], np.float32)
+	return  2.0-sum(data[0]*ct)/np.linalg.norm(ct,2)
+
+def movingaverage(data, window_size, skip = 3):
+	import numpy as np
+	ld = len(data)
+	qt = sum(data[skip:skip+4])/3.0
+	tt = type(data[0])
+	qt = np.concatenate( ( np.array([qt]*(window_size+skip), tt), data[skip:], np.tile(data[-1],(window_size)) ))
+	out = np.empty(ld, np.float32)
+	nc1 = window_size - window_size//2
+	nc2 = window_size + window_size//2 +1
+	for i in xrange(ld):   out[i] = sum(qt[i+nc1:i+nc2])
+	return out*np.float32(1.0/window_size)
+
+
+def localvariance(data, window_size, skip = 3):
+	import numpy as np
+	ld = len(data)
+	qt = sum(data[skip:skip+4])/3.0
+	tt = type(data[0])
+	qt = np.concatenate( ( np.array([qt]*(window_size+skip), tt), data[skip:], np.tile(data[-1],(window_size)) ))
+	out = np.empty(ld, np.float32)
+	nc1 = window_size - window_size//2
+	nc2 = window_size + window_size//2 +1
+	qnorm = np.float32(1.0/window_size)
+	for i in xrange(ld):
+		sav = sum(qt[i+nc1:i+nc2])*qnorm
+		sdv = sum(qt[i+nc1:i+nc2]**2)
+		out[i] = (qt[i] - sav)/np.sqrt(sdv*qnorm - sav*sav)
+	out += min(out)
+	return out
+
+def defocusgett(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1, f_start=-1.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None, DEBug=False):
+	"""
+	
+		1. Estimate envelope function and baseline noise using constrained simplex method
+		   so as to extract CTF imprints from 1D power spectrum
+		2. Based one extracted ctf imprints, perform exhaustive defocus searching to get 
+		   defocus which matches the extracted CTF imprints 
+	"""
+	from utilities  import generate_ctf
+	import numpy as np
+	from morphology import ctf_2, bracket_def, defocus_baseline_fit, ctflimit
+
+	#print "CTF params:", voltage, Pixel_size, Cs, wgh, f_start, f_stop, round_off, nr1, nr2, parent
+
+	if f_start == 0 : 	    i_start = 0
+	else: 			        i_start = int(Pixel_size*nx*f_start+0.5)
+	if f_stop <= f_start :
+		i_stop  = len(roo)
+		adjust_fstop = True
+	else:
+		i_stop  = min(len(roo), int(Pixel_size*nx*f_stop+0.5))
+		adjust_fstop = False
+
+	nroo = len(roo)
+
+	#print "f_start, i_start, f_stop, i_stop:", f_start, i_start, f_stop, i_stop-1
+	#TE  = defocus_env_baseline_fit(roo, i_start, i_stop, int(nr1), 4)
+	#baseline = defocus_baseline_fit(roo, i_start, i_stop, int(nr2), 3)
+
+	baseline = defocus_baseline_fit(roo, i_start,nroo, int(nr2), 3)
+	subpw = np.array(roo, np.float32) - baseline
+	subpw[0] = subpw[1]
+	#write_text_file([roo,baseline,subpw],"dbg.txt")
+	#print "IN defocusgett  ",np.min(subpw),np.max(subpw)
+	for i in xrange(len(subpw)):  subpw[i] = max(subpw[i],0.0)
+	#print "IN defocusgett  ",np.min(subpw),np.max(subpw)
+	#envelope = movingaverage(  subpw   , nroo//4, 3)
+	envelope = np.array([1.0]*500, np.float32)
+	#write_text_file([roo,baseline,subpw],"dbgt.txt")
+
+	#print "IN defocusgett  ",np.min(subpw),np.max(subpw),np.min(envelope)
+	#envelope = np.ones(nroo, np.float32)
+	defocus = 0.0
+	data = [subpw[i_start:i_stop], envelope[i_start:i_stop], nx, defocus, Cs, voltage, Pixel_size, ampcont, i_start, i_stop]
+	#for i in xrange(nroo):
+	#	print  i,"   ",roo[i],"   ",baseline[i],"   ",subpw[i],"   ",envelope[i]
+	h = 0.1
+	#def1, def2 = bracket(simpw1d, data, h)
+	#if DEBug:  print "first bracket ",def1, def2,simpw1d(def1, data),simpw1d(def2, data)
+	#def1=0.1
+	ndefs = 18
+	defound = []
+	for  idef in xrange(ndefs):
+		def1 = (idef+1)*0.5
+		def1, def2 = bracket_def(simpw1d, data, def1, h)
+		if DEBug:  print "second bracket ",idef,def1, def2,simpw1d(def1, data),simpw1d(def2, data),h
+		def1, val2 = goldsearch_astigmatism(simpw1d, data, def1, def2, tol=1.0e-3)
+		if DEBug:  print "golden ",idef,def1, val2,simpw1d(def1, data)
+		if def1>0.0:  defound.append([val2,def1])
+	defound.sort()
+	del defound[3:]
+	def1 = defound[0][1]
+	if adjust_fstop:
+		from morphology import ctflimit
+		newstop,fnewstop = ctflimit(nx, def1, Cs, voltage, Pixel_size)
+		if DEBug:  print  "newstop  ",int(newstop*0.7),fnewstop*0.7,i_stop,newstop
+		if( newstop != i_stop):
+			i_stop = newstop
+			data = [subpw[i_start:i_stop], envelope[i_start:i_stop], nx, defocus, Cs, voltage, Pixel_size, ampcont, i_start, i_stop]
+			"""
+			def1, def2 = bracket_def(simpw1d, data, def1, h)
+			if(def1 > def2):
+				temp = def1
+				def1 = def2
+				def2 = temp
+			print "adjusted bracket ",def1, def2,simpw1d(def1, data)
+			"""
+			h = 0.05
+			for idef in xrange(3):
+				def1, def2 = bracket_def(simpw1d, data, defound[idef][1], h)
+				if DEBug:  print " adjusted def ",def1,def2
+				def1, val2 = goldsearch_astigmatism(simpw1d, data, def1, def2, tol=1.0e-3)
+				if DEBug:  print "adjusted golden ",def1, val2,simpw1d(def1, data)
+				if def1>0.0:  defound[idef] = [val2,def1]
+			defound.sort()
+			def1 = defound[0][1]
+	if DEBug: print " ultimate defocus",def1,defound
+
+	#defocus = defocus_guessn(Res_roo, voltage, Cs, Pixel_size, ampcont, i_start, i_stop, 2, round_off)
+	#print simpw1d(def1, data),simpw1d(4.372, data)
+	"""
+	def1 = 0.02
+	def2 = 10.
+	def1, def2 = goldsearch_astigmatism(simpw1d, data, def1, def2, tol=1.0e-3)
+	print "golden ",def1, def2,simpw1d(def1, data)
+	"""
+	if DEBug:
+		qm = 1.e23
+		toto = []
+		for i in xrange(1000,100000,5):
+			dc = float(i)/10000.0
+			qt = simpw1d(dc, data)
+			toto.append([dc,qt])
+			if(qt<qm):
+				qm=qt
+				defi = dc
+		write_text_row(toto,"toto1.txt")
+		print " >>>>>>>>>  ",defi,simpw1d(defi, data)#,generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont])
+		#def1 = defi
+	#exit()
+	ctf2 = ctf_2(nx, generate_ctf([def1, Cs, voltage, Pixel_size, 0.0, ampcont]))
+
+	return def1, subpw, ctf2, baseline, envelope, i_start, i_stop
+
+
+def ctf_222(nx, ctf):
+	"""
+		Generate a list of 1D CTF^2 values 
+		Input
+			nx: image size to which CTF will be applied.
+			ctf: ctf object created using generate_ctf
+		Output
+			a list of CTF2 values.
+	"""
+	dict       = ctf.to_dict()
+	dz         = dict["defocus"]
+	cs         = dict["cs"]
+	voltage    = dict["voltage"]
+	pixel_size = dict["apix"]
+	b_factor   = dict["bfactor"]
+	ampcont    = dict["ampcont"]
+
+	ctf_2  = []
+	scl    = 1.0/pixel_size/nx
+	length = int(1.7321*float(nx/2)) + 2
+	ctf_2 = [0.0]*length
+	for i in xrange(length):
+		ctf_val = Util.tf(dz, i*scl, voltage, cs, ampcont, b_factor)
+		print  i,dz, i*scl, voltage, cs, ampcont,ctf_val*ctf_val
+		ctf_2[i] = ctf_val*ctf_val
+	return ctf_2
+
+
+def defocus_guessn(roo, volt, Cs, Pixel_size, ampcont, istart, i_stop):
+	"""
+		Use specified frequencies area (istart-istop)to estimate defocus
+		1.  The searching range is limited to dz_low (.1um) ~ dz_high (20 um).
+		    The user can modify this limitation accordingly
+		2.  changing nloop can speed up the estimation
+		3.  defocus_estimation_method = 1  use squared error
+		    defocus_estimation_method = 2  use normalized inner product
+		Input:
+		  Res_roo - background-subtracted Power Spectrum
+		  Res_TE  - background-subtracted Envelope
+	"""
+	
+	from math import sqrt
+	from utilities import generate_ctf
+	from morphology import ctf_2
+	
+	import numpy as np
+
+	data = np.array(roo,np.float32)
+
+	envelope = movingaverage(data, 60)
+	nx  = int(len(roo)*2)
+	nn = len(data)
+	goal = -1.e23
+	for d in xrange(20000,56000,10):
+		dz = d/10000.
+		ct = np.array( ctf_2(nx, generate_ctf([dz, Cs, volt, Pixel_size, 0.0, ampcont]))[:nn], np.float32)
+		ct = (ct - sum(ct)/nn)*envelope
+		g = sum(ct[istart:]*sub[istart:])/sum(ct[istart:])
+		#print d,dz,g
+		if(g>goal):
+			defocus = d
+			goal = g
+			#print " ****************************************** ", defocus, goal,istart
+	#from utilities import write_text_file
+	#write_text_file([sub,envelope,ct,temp],"oto.txt")
+	ct = np.array( ctf_2(nx, generate_ctf([defocus, Cs, volt, Pixel_size, 0.0, ampcont]))[:nn], np.float32)
+	temp = ct
+	ct = (ct - sum(ct)/nn)*envelope
+	for i in xrange(nn):  print  sub[i],envelope[i],ct[i],temp[i]
+	from sys import exit
+	exit()
+	#defocus = int( defocus/round_off )*round_off
+	return defocus
+
+
+
+def defocusgett_(roo, voltage=300.0, Pixel_size=1.0, Cs=2.0, wgh=0.1, f_start=0.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None):
+	"""
+	
+		1. Estimate envelope function and baseline noise using constrained simplex method
+		   so as to extract CTF imprints from 1D power spectrum
+		2. Based one extracted ctf imprints, perform exhaustive defocus searching to get 
+		   defocus which matches the extracted CTF imprints 
+	"""
+	from utilities  import generate_ctf
+	from morphology import defocus_env_baseline_fit, defocus_guess, ctf_2, defocus_guessn
+	
+	#print "CTF params:", voltage, Pixel_size, Cs, wgh, f_start, f_stop, round_off, nr1, nr2, parent
+
+	defocus = defocus_guessn(roo, voltage, Cs, Pixel_size, wgh, f_start)
+
+	nx  = int(len(roo)*2)
+	#ctf = ctf_1d(nx, generate_ctf([defocus, Cs, voltage, Pixel_size, 0.0, wgh]))
+	ctf2 = ctf_2(nx, generate_ctf([defocus, Cs, voltage, Pixel_size, 0.0, wgh]))
+	"""
+	if (parent is not None):
+		parent.ctf_data=[roo, Res_roo, Res_TE]
+		parent.i_start = i_start
+		parent.i_stop  = i_stop
+		from utilities import write_text_file
+		write_text_file([range(len(roo)), roo, Res_roo, Res_TE, ctf], "procpw.txt")
+	else:
+		from utilities import write_text_file
+		write_text_file([range(len(roo)), roo, Res_roo, Res_TE, ctf, TE, Pn1], "procpw.txt")
+	"""
+	return defocus, [], ctf2, [],[],0,0
+
+
+
+def defocusget_from_crf(roo, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=10., f_start=0.0, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6):
+	"""
+	
+		1. Estimate envelope function and baseline noise using constrained simplex method
+		   so as to extract CTF imprints from 1D power spectrum
+		2. Based one extracted ctf imprints, perform exhaustive defocus searching to get 
+		   defocus which matches the extracted CTF imprints 
+	"""
+	from utilities  import generate_ctf, ctf_1d
+	from morphology import defocus_env_baseline_fit, defocus_guess, defocus_guess1
+	
+	#print "CTF params:", voltage, Pixel_size, Cs, wgh, f_start, f_stop, round_off, nr1, nr2, parent
+	if f_start == 0 : 	i_start = 0
+	else: 			    i_start = int(Pixel_size*2.*len(roo)*f_start)
+	if f_stop <= f_start :
+		i_stop  = len(roo)
+	else: 
+		i_stop  = int(Pixel_size*2.*len(roo)*f_stop)
+		if i_stop > len(roo): i_stop  = len(roo)
+
+	#print "f_start, i_start, f_stop, i_stop:", f_start, i_start, f_stop, i_stop-1
+	rot2 = [0.0]*len(roo)
+	for i in xrange(len(roo)):  rot2[i] = abs(roo[i])
+	TE  = defocus_env_baseline_fit(rot2, i_start, i_stop, int(nr1), 4)
+
+	defocus = defocus_guess1(roo, TE, voltage, Cs, Pixel_size, wgh, i_start, i_stop, 2, round_off)
+
+	nx  = int(len(roo)*2)
+	ctf = ctf_1d(nx, generate_ctf([defocus, Cs, voltage, Pixel_size, 0.0, ampcont]))
+
+	#from utilities import write_text_file
+	#write_text_file([range(len(roo)), roo, ctf, TE], "procrf.txt")
+
+	return defocus, TE, ctf, i_start, i_stop
+
+
+
+def make_real(t):
+	from utilities import model_blank
+	
+	nx = t.get_ysize()
+	ny2 = nx//2
+	q = model_blank(nx,nx)
+	for iy in xrange(0,nx):
+			jy = ny2-iy
+			if(jy<0): jy += nx
+			jm = nx-jy
+			if( jy == 0 ): jm = 0
+			for ix in xrange(0,nx,2):
+				tr = t.get_value_at(ix,iy)
+				jx = ix//2
+				q.set_value_at(jx+ny2, jm, tr)
+				q.set_value_at(ny2-jx, jy, tr)
+	return q
+
+
+def fastigmatism(amp, data):
+	from morphology import ctf2_rimg
+	from utilities import generate_ctf
+	
+	nx = data[0].get_xsize()
+	qt = 0.5*nx**2
+	bcc = -1.0
+	for j in xrange(90):
+		ang = j
+		pc = ctf2_rimg(nx, generate_ctf([data[3], data[4], data[5], data[6], 0.0, data[7], amp, ang]) )
+		cuc = (pc*data[1]).cmp("dot", data[0], {"mask":data[2], "negative":0, "normalize":1})
+		if( cuc > bcc ):
+			bcc = cuc
+			bamp = amp
+			bang = ang
+			#print bdef,bamp,bang,bcc
+		#else:
+		#	print bdef,amp,ang,cuc
+	data[-1] = bang
+	return  -bcc
+
+
+def fastigmatism1(amp, data):
+	
+	from morphology import ctf2_rimg
+	from utilities import generate_ctf
+	
+	nx = data[0].get_xsize()
+	qt = 0.5*nx**2
+	bcc = -1.0
+	for j in xrange(90):
+		ang = j
+		pc = ctf_rimg(nx, generate_ctf([data[3], data[4], data[5], data[6], 0.0, data[7], amp, ang]) )
+		cuc = (pc*data[1]).cmp("dot", data[0], {"mask":data[2], "negative":0, "normalize":1})
+		if( cuc > bcc ):
+			bcc = cuc
+			bamp = amp
+			bang = ang
+			#print bdef,bamp,bang,bcc
+		#else:
+		#	print bdef,amp,ang,cuc
+	#pc.write_image("pc.hdf")
+	#data[0].write_image("true.hdf")
+	data[-1] = bang
+	return  -bcc
+
+
+
+def fastigmatism2(amp, data):
+	
+	from morphology import ctf2_rimg
+	from utilities import generate_ctf
+	from alignment import ornq
+	
+	cnx = data[2]//2+1
+	#qt = 0.5*nx**2
+	pc = ctf_rimg(data[2], generate_ctf([data[3], data[4], data[5], data[6], 0.0, data[7], amp, 0.0]) )
+	ang, sxs, sys, mirror, peak = ornq(pc, crefim, 0.0, 0.0, 1, "H", numr, cnx, cnx)
+	data[-1] = ang
+	return  -peak
+
+
+def fastigmatism3(amp, data):
+	from morphology import ctf2_rimg
+	from utilities import generate_ctf
+	from alignment import ornq
+	
+	cnx = data[2]//2+1
+	#qt = 0.5*nx**2
+	pc = ctf2_rimg(data[2], generate_ctf([data[3], data[4], data[5], data[6], 0.0, data[7], amp, 0.0]) )
+	ang, sxs, sys, mirror, peak = ornq(pc, data[0], 0.0, 0.0, 1, "H", data[1], cnx, cnx)
+	#print  ang, sxs, sys, mirror, peak
+	#exit()
+	data[-1] = ang
+	return  -peak
+
+
+def simctf(amp, data):
+	from morphology import ctf2_rimg
+	from utilities import generate_ctf
+	
+	nx = data[2]
+	qt = 0.5*nx**2
+	pc = ctf_rimg(nx, generate_ctf([amp, data[4], data[5], data[6], 0.0, data[7], data[3], data[8]]) )
+	bcc = pc.cmp("dot", data[0], {"mask":data[1], "negative":0, "normalize":1})
+	return  -bcc
+
+
+
+def simctf2(dz, data):
+	from morphology import ctf2_rimg
+	from utilities import generate_ctf
+	
+	#nx = data[2]
+	#qt = 0.5*nx**2
+	#print  data
+	#print dz, data[4], data[5], data[6], 0.0, data[7], data[3], data[8]
+	pc = ctf2_rimg(data[2], generate_ctf([dz, data[4], data[5], data[6], 0.0, data[7], data[3], data[8]]) )
+	bcc = pc.cmp("dot", data[0], {"mask":data[1], "negative":0, "normalize":0})
+	#print " simctf2   ",amp,-bcc
+	return  -bcc
+
+
+
+def simctf2out(dz, data):
+	from morphology import ctf2_rimg, localvariance
+	from utilities import generate_ctf, model_blank, pad
+	
+	nx = data[2]
+	qt = 0.5*nx**2
+	pc = ctf2_rimg(nx, generate_ctf([dz, data[4], data[5], data[6], 0.0, data[7], data[3], data[8]]) )
+	pc.write_image("ocou2.hdf")
+	normpw = localvariance(  data[0]   , nx//8, 0)#has to be changed
+
+	(normpw*data[1]).write_image("ocou1.hdf")
+	mm = pad(model_blank(nx//2,nx,1,1.0),nx,nx,1,0.0,-nx//4)
+	s = Util.infomask(pc, None, True)
+	pc -= s[0]
+	pc /= s[1]
+	dout = model_blank(nx,nx)
+	dout += pc*mm
+	s = Util.infomask(normpw, data[1], True)
+	dout += ((normpw-s[0])/s[1])*(model_blank(nx,nx,1,1)-mm)*data[1]
+	dout.write_image("ocou3.hdf")
+	bcc = pc.cmp("dot", data[0], {"mask":data[1], "negative":0, "normalize":0})
+	#print " simctf2   ",amp,-bcc
+	return  -bcc
+
+
+def fupw(args,data):
+	from morphology import fastigmatism3
+	return -fastigmatism3(args[1],[data[0], data[1], data[2], args[0], data[4], data[5], data[6], data[7], data[8]])
+
+########################################
+# end of functions used by ctfer
+########################################
