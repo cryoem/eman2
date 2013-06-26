@@ -44,7 +44,7 @@ def main():
 	progname = os.path.basename(arglist[0])
 	usage = progname + " stack ref_vol outdir  <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --ynumber=y_numbers  --txs=translational_search_stepx  --delta=angular_step --an=angular_neighborhood --center=1 --maxit=max_iter --CTF --snr=1.0  --ref_a=S --sym=c1 --datasym=symdoc --new"
 	'''
-	mpirun -np 1 /Users/jiafang/EMAN2/src/eman2/sparx/bin/sxcter.py --indir=/Users/jiafang/siddu/mics --nameroot=micrograph_PSC23_A8A_1GD_11112_135 --nx=256 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --kboot=16 --MPI --debug
+	mpirun -np 1 sxcter.py --indir=. --nameroot=micrograph_PSC23_A8A_1GD_11112_135 --nx=256 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --kboot=16 --MPI
 	'''
 	parser = OptionParser(usage,version=SPARXVERSION)
 	
