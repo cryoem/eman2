@@ -1796,7 +1796,7 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx, voltage=300.0, Pixel_
 	outf.close()
 	
 	if guimic != None:
-		return totresi[0], totresi[6], totresi[7], totresi[8], totresi[9], totresi[10]
+		return totresi[0][1], totresi[0][7], totresi[0][8], totresi[0][9], totresi[0][10], totresi[0][11]
 		
 ########################################
 # functions used by ctfer
