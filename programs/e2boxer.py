@@ -2162,7 +2162,7 @@ class GaussPanel:
 			
 			hbl_fed = QtGui.QHBoxLayout()
 			
-			fstart_label = QtGui.QLabel("F_start:")
+			fstart_label = QtGui.QLabel("F_start (not used for CTER):")
 			hbl_fed.addWidget(fstart_label)
 			if gbdb['ctf_fstart'] == None:
 				self.ctf_f_start = QtGui.QLineEdit('0.020')
@@ -2170,16 +2170,11 @@ class GaussPanel:
 				self.ctf_f_start = QtGui.QLineEdit(str(gbdb['ctf_fstart']))
 			hbl_fed.addWidget(self.ctf_f_start)
 			
-			estimated_defocus_label = QtGui.QLabel("Estimated defocus:")
-			hbl_fed.addWidget(estimated_defocus_label)
-			self.estdef = QtGui.QLineEdit('')
-			hbl_fed.addWidget(self.estdef)
-			
 			vbl.addLayout(hbl_fed)
 		
 			hbl_fs = QtGui.QHBoxLayout()
 			
-			fstop_label = QtGui.QLabel("F_stop:")
+			fstop_label = QtGui.QLabel("F_stop (not used for CTER):")
 			hbl_fs.addWidget(fstop_label)
 			if gbdb['ctf_fstop'] == None:
 				self.ctf_f_stop = QtGui.QLineEdit('0.500')
@@ -2188,14 +2183,73 @@ class GaussPanel:
 			hbl_fs.addWidget(self.ctf_f_stop)
 			
 			vbl.addLayout(hbl_fs)
+			
+			# cter kboot
+			hbl_kboot = QtGui.QHBoxLayout()
+			kboot_label = QtGui.QLabel("kboot (only for CTER):")
+			hbl_kboot.addWidget(kboot_label)
+			if gbdb['ctf_kboot'] == None:
+				self.ctf_kboot = QtGui.QLineEdit('16')
+			else:
+				self.ctf_kboot = QtGui.QLineEdit(str(gbdb['ctf_kboot']))
+			hbl_kboot.addWidget(self.ctf_kboot)
+			vbl.addLayout(hbl_kboot)
+			
+			hbl_estdef = QtGui.QHBoxLayout()
+			estimated_defocus_label = QtGui.QLabel("Estimated defocus:")
+			hbl_estdef.addWidget(estimated_defocus_label)
+			self.estdef = QtGui.QLineEdit('')
+			hbl_estdef.addWidget(self.estdef)
+			vbl.addLayout(hbl_estdef)
+			
+			hbl_astamp = QtGui.QHBoxLayout()
+			astig_amp_label = QtGui.QLabel("Estimated astigmatism amplitude\n (only for CTER):")
+			hbl_astamp.addWidget(astig_amp_label)
+			self.astamp = QtGui.QLineEdit('')
+			hbl_astamp.addWidget(self.astamp)
+			vbl.addLayout(hbl_astamp)
+			
+			hbl_astagl = QtGui.QHBoxLayout()
+			astig_angle_label = QtGui.QLabel("Estimated astigmatism angle \n(only for CTER)")
+			hbl_astagl.addWidget(astig_angle_label)
+			self.astagl = QtGui.QLineEdit('')
+			hbl_astagl.addWidget(self.astagl)
+			vbl.addLayout(hbl_astagl)
+			
+			hbl_deferr = QtGui.QHBoxLayout()
+			deferr_label = QtGui.QLabel("Estimated defocus error \n(only for CTER):")
+			hbl_deferr.addWidget(deferr_label)
+			self.deferr = QtGui.QLineEdit('')
+			hbl_deferr.addWidget(self.deferr)
+			vbl.addLayout(hbl_deferr)
+			
+			hbl_astaglerr = QtGui.QHBoxLayout()
+			astaglerr_label = QtGui.QLabel("Estimated astigmatism angle error \n(only for CTER):")
+			hbl_astaglerr.addWidget(astaglerr_label)
+			self.astaglerr = QtGui.QLineEdit('')
+			hbl_astaglerr.addWidget(self.astaglerr)
+			vbl.addLayout(hbl_astaglerr)
+			
+			hbl_astamperr = QtGui.QHBoxLayout()
+			astamperr_label = QtGui.QLabel("Estimated astigmatism amplitude error \n (only for CTER):")
+			hbl_astamperr.addWidget(astamperr_label)
+			self.astamperr = QtGui.QLineEdit('')
+			hbl_astamperr.addWidget(self.astamperr)
+			vbl.addLayout(hbl_astamperr)
+			
 			hbl_ctf = QtGui.QHBoxLayout()
 			self.estimate_ctf=QtGui.QPushButton("Estimate CTF")
 			hbl_ctf.addWidget(self.estimate_ctf)
 			
 			self.inspect_button=QtGui.QPushButton("Inspect CTF")
 			hbl_ctf.addWidget(self.inspect_button)
-			
+		
 			vbl.addLayout(hbl_ctf)
+			
+			hbl_ctf_cter = QtGui.QHBoxLayout()
+			self.estimate_ctf_cter =QtGui.QPushButton("Estimate CTF using CTER")
+			hbl_ctf_cter.addWidget(self.estimate_ctf_cter)
+			vbl.addLayout(hbl_ctf_cter)
 					
 			QtCore.QObject.connect(self.pixel_input_edit,QtCore.SIGNAL("editingFinished()"),self.new_pixel_input)
 			QtCore.QObject.connect(self.pixel_output_edit,QtCore.SIGNAL("editingFinished()"),self.new_pixel_output)
@@ -2208,7 +2262,6 @@ class GaussPanel:
 			QtCore.QObject.connect(self.thr_low_edit,QtCore.SIGNAL("editingFinished()"),self.new_thr_low)
 			QtCore.QObject.connect(self.thr_hi_edit,QtCore.SIGNAL("editingFinished()"),self.new_thr_hi)
 			
-			
 			QtCore.QObject.connect(self.estimate_ctf,QtCore.SIGNAL("clicked(bool)"), self.calc_ctf)
 			QtCore.QObject.connect(self.inspect_button,QtCore.SIGNAL("clicked(bool)"), self.inspect_ctf)
 			QtCore.QObject.connect(self.ctf_window_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_window)
@@ -2219,6 +2272,9 @@ class GaussPanel:
 			QtCore.QObject.connect(self.ctf_ampcont,QtCore.SIGNAL("editingFinished()"),self.new_ctf_ampcont)
 			QtCore.QObject.connect(self.ctf_f_start,QtCore.SIGNAL("editingFinished()"),self.new_ctf_f_start)
 			QtCore.QObject.connect(self.ctf_f_stop,QtCore.SIGNAL("editingFinished()"),self.new_ctf_f_stop)
+			
+			QtCore.QObject.connect(self.estimate_ctf_cter,QtCore.SIGNAL("clicked(bool)"), self.calc_ctf_cter)
+			
 		return self.widget
 	
 	def gauss_width_changed(self, v):
@@ -2483,7 +2539,100 @@ class GaussPanel:
 				self.ctf_inspector_gone=False
 			else:
 				pass
-				
+	
+	def calc_ctf_cter(self):
+		# calculate ctf of ORIGINAL micrograph using cter in gui mode
+		# this must mean cter is being calculated on a single micrograph!
+		
+		print "starting cter"
+		# get the current image
+		from utilities import get_im
+		#image_name = self.target().boxable.get_image_name()
+		#img = BigImageCache.get_image_directly( image_name )
+		image_name = self.target().target().file_names[0]
+		img = get_im(image_name)
+	
+		# conversion from text necessary
+		try:
+			ctf_window_size  = int(self.ctf_window_size.text())
+			input_pixel_size = float(self.pixel_input_edit.text())
+			output_pixel_size = float(self.pixel_output_edit.text())
+			ctf_edge_size    = int(self.ctf_edge_size.text())
+			ctf_overlap_size = int(self.ctf_overlap_size.text())
+			ctf_volt         = float(self.ctf_volt.text())
+			ctf_cs           = float(self.ctf_cs.text())
+			ctf_ampcont      = float(self.ctf_ampcont.text())
+			ctf_kboot        = int(self.ctf_kboot.text())
+			
+		except ValueError,extras:
+			# conversion of a value failed!
+			print "integer conversion failed."
+			if not(extras.args is None):
+				print extras.args[0]
+			return
+		except:
+			print "error"
+			return
+		
+		fname, fext = os.path.splitext(image_name)
+		outpwrot = 'pwrot_%s'%fname
+		outpartres = 'partres_%s'%fname
+		
+		if os.path.exists(outpwrot) or os.path.exists(outpartres):
+			print "Please remove or rename %s and or %s"%(outpwrot,outpartres)
+			return
+		
+		from morphology import cter
+		defocus, ast_amp, ast_agl, error_defocus, error_astamp, error_astagl = cter(None, outpwrot, outpartres, None, None, ctf_window_size, voltage=ctf_volt, Pixel_size=input_pixel_size, Cs = ctf_cs, wgh=ctf_ampcont, kboot=ctf_kboot, MPI=False, DEBug= False, overlap_x = ctf_overlap_size, overlap_y = ctf_overlap_size, edge_x = ctf_edge_size, edge_y = ctf_edge_size, guimic=image_name)
+	
+		self.estdef.setText(str(defocus))
+		self.estdef.setEnabled(False)
+		
+		self.astamp.setText(str(ast_amp))
+		self.astamp.setEnabled(False)
+		
+		self.astagl.setText(str(ast_agl))
+		self.astagl.setEnabled(False)
+		
+		self.deferr.setText(str(error_defocus))
+		self.deferr.setEnabled(False)
+		
+		self.astamperr.setText(str(error_astamp))
+		self.astamperr.setEnabled(False)
+		
+		self.astaglerr.setText(str(error_astagl))
+		self.astaglerr.setEnabled(False)
+		
+		# XXX: wgh?? amp_cont static to 0?
+		# set image properties, in order to save ctf values
+		from utilities import set_ctf
+		set_ctf(img, [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl])
+		# and rewrite image 
+		img.write_image(image_name)
+		print [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl]
+		# get alternate, and set its ctf
+		altimg=BigImageCache.get_object(image_name).get_image(use_alternate=True)
+		set_ctf(altimg, [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl])
+		BigImageCache.get_object(image_name).register_alternate(altimg)
+		print [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl]
+ 		print "CTF estimation using CTER done."
+ 		#print "Estimated defocus value: ", defocus
+		
+		##############################################################################
+		#### save ctf estimation parameters to db for command line batch processing
+		gbdb = db_open_dict(GaussPanel.GDB_NAME)
+		ctfdict = {'pixel_input':input_pixel_size,'pixel_output':output_pixel_size,'ctf_window':ctf_window_size,'ctf_edge':ctf_edge_size,'ctf_overlap':ctf_overlap_size,'ctf_ampcont':ctf_ampcont,'ctf_volt':ctf_volt,'ctf_cs':ctf_cs, 'ctf_kboot':ctf_kboot}
+		#print "calc_ctf image_name: ", image_name
+		if gbdb.has_key(image_name):
+			olddict=gbdb[image_name]
+			gbdb[image_name] = dict((olddict).items() + ctfdict.items() ) # merge the two dictionaries with conflict resolution resolved in favorr of the latest ctf parameters
+		else:
+			gbdb[image_name]=ctfdict
+		
+		del img
+		del altimg
+			
+			
 						
 class GaussBoxer:
 	
