@@ -2272,6 +2272,7 @@ class GaussPanel:
 			QtCore.QObject.connect(self.ctf_ampcont,QtCore.SIGNAL("editingFinished()"),self.new_ctf_ampcont)
 			QtCore.QObject.connect(self.ctf_f_start,QtCore.SIGNAL("editingFinished()"),self.new_ctf_f_start)
 			QtCore.QObject.connect(self.ctf_f_stop,QtCore.SIGNAL("editingFinished()"),self.new_ctf_f_stop)
+			QtCore.QObject.connect(self.ctf_kboot,QtCore.SIGNAL("editingFinished()"),self.new_ctf_kboot)
 			
 			QtCore.QObject.connect(self.estimate_ctf_cter,QtCore.SIGNAL("clicked(bool)"), self.calc_ctf_cter)
 			
@@ -2395,7 +2396,13 @@ class GaussPanel:
 		volt=self.ctf_volt.text()
 		gbdb = db_open_dict(GaussPanel.GDB_NAME)
 		gbdb['ctf_volt']=float(volt)
-	
+		
+	def new_ctf_kboot(self):
+		if self.busy: return
+		kboot=self.ctf_kboot.text()
+		gbdb = db_open_dict(GaussPanel.GDB_NAME)
+		gbdb['ctf_kboot']=float(kboot)
+		
 	def new_ctf_overlap_size(self):
 		if self.busy: return
 		ov=self.ctf_overlap_size.text()
