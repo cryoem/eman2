@@ -1408,13 +1408,15 @@ def refine_with_mask(vol):
 	return vol
 '''
 
-def cter(stack, outpwrot, outpartres, indir, nameroot, nx, voltage=300.0, Pixel_size=2.29, Cs = 2.0, wgh=10.0, kboot=16, MPI=False, DEBug= False):
+def cter(stack, outpwrot, outpartres, indir, nameroot, nx, voltage=300.0, Pixel_size=2.29, Cs = 2.0, wgh=10.0, kboot=16, MPI=False, DEBug= False, overlap_x = 50, overlap_y=50 , edge_x = 0, edge_y=0, guimic=None):
 	'''
 	Input
 		stack	 : name of image stack (such as boxed particles) to be processed instead of micrographs.
 		indir    : Directory containing micrographs to be processed.
 		nameroot : Prefix of micrographs to be processed.
 	    nx       : Size of window to use (should be slightly larger than particle box size)
+	    
+	    guimic	 : 
 	'''
 	from applications import MPI_start_end
 	from utilities import read_text_file, write_text_file, get_im, model_blank, model_circle, amoeba, generate_ctf
@@ -1428,6 +1430,10 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx, voltage=300.0, Pixel_
 	from statistics import table_stat
 	from pixel_error import angle_ave
 	
+	# Case of a single micrograph from gui mode
+	if guimic != None:
+		MPI = False
+		
 	if MPI:
 		myid = mpi_comm_rank(MPI_COMM_WORLD)
 		ncpu = mpi_comm_size(MPI_COMM_WORLD)
@@ -1447,12 +1453,15 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx, voltage=300.0, Pixel_
 		os.mkdir(outpartres)
 	
 	if stack == None:
-		lenroot = len(nameroot)
-		flist  = os.listdir(indir)
-		namics = []
-		for i in xrange(len(flist)):
-			if( flist[i][:lenroot] == nameroot ):
-				namics.append(os.path.join(indir,flist[i]))
+		if guimic == None:
+			lenroot = len(nameroot)
+			flist  = os.listdir(indir)
+			namics = []
+			for i in xrange(len(flist)):
+				if( flist[i][:lenroot] == nameroot ):
+					namics.append(os.path.join(indir,flist[i]))
+		else:
+			namics = [guimic]
 		nmics = len(namics)
 		
 		if MPI:
@@ -1465,15 +1474,16 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx, voltage=300.0, Pixel_
 		nima = len(data)
 		for i in xrange(nima):
 			pw2.append(periodogram(data[i]))
-		nx = pw2[0].get_xsize()
+		nx = pw2[0].get_xsize()	
 		set_start = 0
 		set_end = 1
 				
 	totresi = []
 	for ifi in xrange(set_start,set_end):
 		#print  " tilemic ", ifi,namics[ifi]
+		
 		if stack == None:
-			pw2 = tilemic(get_im(namics[ifi]), win_size=nx, overlp_x=50, overlp_y=50, edge_x=0, edge_y=0)
+			pw2 = tilemic(get_im(namics[ifi]), win_size=nx, overlp_x=overlap_x, overlp_y=overlap_y, edge_x=edge_x, edge_y=edge_y)
 		nimi = len(pw2)
 		adefocus = [0.0]*kboot
 		aamplitu = [0.0]*kboot
@@ -1785,6 +1795,9 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx, voltage=300.0, Pixel_
 		outf.write("  %s\n"%totresi[i][0])
 	outf.close()
 	
+	if guimic != None:
+		return totresi[0], totresi[6], totresi[7], totresi[8], totresi[9], totresi[10]
+		
 ########################################
 # functions used by ctfer
 # Later on make sure these functions don't conflict with those used
