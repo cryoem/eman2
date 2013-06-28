@@ -110,7 +110,8 @@ def main():
 	parser.add_argument("--dphi",               type=float,				 default= -1.0,               help="delta phi - rotation in degrees")  
 	parser.add_argument("--rmax",               type=float, 			 default= 80.0,               help="maximal radius for hsearch (Angstroms)")
 	parser.add_argument("--dbg",                type=int,	 			 default=1,                   help="If 1, then intermediate files in output directory will not be deleted; if 0, then all output directories where intermediate files were stored will be deleted. Default is 1.")
-
+	parser.add_argument("--ptcl-dst", 	        type=int, 	             dest="ptcl_dst", 			  help="Distance between windowed squares in pixels", default=-1)
+	
 	# ctf estimation using cter
 	parser.add_argument("--cter",               action="store_true",     default=False,                  help="CTF estimation using cter")
 	parser.add_argument("--indir",              type=str,				 default= ".",     				 help="Directory containing micrographs to be processed.")
@@ -177,7 +178,7 @@ def main():
 			print "Must specify name of output directory where intermediate files are to be deposited."
 			return
 		outdir = args[0]
-		windowallmic(options.dirid, options.micid, options.micsuffix, outdir, pixel_size=options.apix, dp=options.dp, boxsize=options.boxsize, outstacknameall=options.outstacknameall, hcoords_dir = options.hcoords_dir, hcoords_suffix = options.hcoords_suffix, ptcl_overlap=options.ptcl_overlap, inv_contrast=options.invert_contrast, new_pixel_size=options.new_apix, rmax = options.rmax, freq=options.freq, debug = options.dbg)
+		windowallmic(options.dirid, options.micid, options.micsuffix, outdir, pixel_size=options.apix, dp=options.dp, boxsize=options.boxsize, outstacknameall=options.outstacknameall, hcoords_dir = options.hcoords_dir, hcoords_suffix = options.hcoords_suffix, ptcl_dst=options.ptcl_dst, inv_contrast=options.invert_contrast, new_pixel_size=options.new_apix, rmax = options.rmax, freq=options.freq, debug = options.dbg)
 		return
 	
 	if options.helix_width < 1:
@@ -1856,7 +1857,7 @@ if ENABLE_GUI:
 			self.current_boxkey = None #We are done editing the box
 			self.initial_helix_box_data_tuple = None
 
-def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=256, outstacknameall='bdb:data', hcoords_dir = "", hcoords_suffix = "_boxes.txt", ptcl_overlap=-1, inv_contrast=False, new_pixel_size=-1, rmax = -1.0, freq = -1, debug = 1):
+def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=256, outstacknameall='bdb:data', hcoords_dir = "", hcoords_suffix = "_boxes.txt", ptcl_dst=-1, inv_contrast=False, new_pixel_size=-1, rmax = -1.0, freq = -1, debug = 1):
 	'''
 	
 	Windows segments from helices boxed from micrographs using e2helixboxer. 
@@ -1910,8 +1911,8 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=2
 		
 		hcoords_dir: Full path name of directory containing coordinates of ALL helices boxed from the micrograph.
 						
-		ptcl_overlap: Integer. Overlap in pixels between adjacent segments windowed from a single boxed helix. If ptcl_overlap < 0, then the
-			          program will set it so the distance between adjacent segments is ~ one rise in pixels: int( (dp/new_pixel_size) + 0.5)
+		ptcl_dst: Integer. Distance in pixels between adjacent squares windowed from a single boxed helix.
+			      If ptcl_dst < 0, then the program will set it so ptcl_dst is ~ one rise in pixels: int( (dp/new_pixel_size) + 0.5)
 		
 		inv_contrast: True/False, default is False. If cryo, then set to true to invert contrast so particles show up bright against dark background. 
 		
@@ -1969,7 +1970,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=2
 		
 		The pixel size of the segments is 1.84 and the box size is 200 by 200.
 		
-		windowallmic(dirid='mic', micid='mic', micsuffix='hdf', outdir='out',  dp=27.6, pixel_size=1.2, boxsize=200, outstacknameall='bdb:adata', hcoords_suffix = "_boxes.txt", ptcl_overlap=196, inv_contrast=False, new_pixel_size=1.84, rmax = 60.0)
+		windowallmic(dirid='mic', micid='mic', micsuffix='hdf', outdir='out',  dp=27.6, pixel_size=1.2, boxsize=200, outstacknameall='bdb:adata', hcoords_suffix = "_boxes.txt", ptcl_dst=4, inv_contrast=False, new_pixel_size=1.84, rmax = 60.0)
 	'''
 	import os
 	from utilities      import print_begin_msg, print_end_msg, print_msg
@@ -1988,9 +1989,10 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=2
 	
 	if new_pixel_size < 0: new_pixel_size = pixel_size
 		
-	# Calculate overlap as ~1 rise in pixels if not set by user
-	if ptcl_overlap < 0 and dp >= 0: ptcl_overlap = segny - int( (dp/new_pixel_size) + 0.5)
-
+	# Calculate distance between adjacent squares as ~1 rise in pixels if not set by user
+	if ptcl_dst < 0 and dp >= 0: ptcl_dst = int( (dp/new_pixel_size) + 0.5)
+	ptcl_overlap = boxsize - ptcl_dst
+	
 	print_msg("Overlap in pixels (using pixel size %f) between adjacent segments: %d\n"%(new_pixel_size, ptcl_overlap))
 
 	topdir = os.getcwd()
