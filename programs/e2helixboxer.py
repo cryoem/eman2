@@ -99,7 +99,7 @@ def main():
 	parser.add_argument("--dirid",              type=str,				 default="",                  help="A string for identifying directories containing relevant micrographs. Any directory containing dirid as a contiguous string will be searched for micrographs. These micrographs are assumed to be those which were used to box the helices which are to be windowed.")
 	parser.add_argument("--micid",              type=str,				 default="",                  help="A string for identifying the name (minus extension) of relevant micrographs.")
 	parser.add_argument("--micsuffix",          type=str,				 default="",                  help="A string denoting micrograph type. Currently only handles suffix types, e.g. 'hdf', 'ser' etc.")
-	parser.add_argument("--boxsize",            type=str,				 default="160,45",            help="String containing x and y dimensions (separated by comma) in pixels of segments to be windowed. E.g. boxsize='160,45' specifies a rectangular segment with x dimension equal to 160 pixels and y dimension equal to 45 pixels. Pixel size is assumed to be new_pixel_size.")
+	parser.add_argument("--boxsize",            type=int,				 default=256,            	  help="x and y dimension in pixels of square area to be windowed out from filament. Pixel size is assumed to be new_pixel_size.")
 	parser.add_argument("--outstacknameall",    type=str,				 default="bdb:data",          help="File name plus path and type (only handles bdb and hdf right now) under which ALL windowed segments from ALL micrograph directories will be saved, e.g. 'bdb:adata' or 'adata.hdf'")
 	parser.add_argument("--hcoords_dir",        type=str,				 default="",        		  help="Directory containing helix box coordinates")
 	parser.add_argument("--hcoords_suffix",     type=str,				 default="_boxes.txt",        help="String identifier which when concatenated with a micrograph name (minus extension) gives the name of the text file containing coordinates of ALL helices boxed from the micrograph. If there is no such file, helices boxed from the micrograph will not be windowed. Default is '_boxes.txt', so if mic0.hdf is a micrograph, then the text file containing coordinates of the helices boxed in it is mic0_boxes.txt. The coordinate file is assumed to be in the format used by e2helixboxer.")
@@ -1856,7 +1856,7 @@ if ENABLE_GUI:
 			self.current_boxkey = None #We are done editing the box
 			self.initial_helix_box_data_tuple = None
 
-def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize='160 45', outstacknameall='bdb:data', hcoords_dir = "", hcoords_suffix = "_boxes.txt", ptcl_overlap=-1, inv_contrast=False, new_pixel_size=-1, rmax = -1.0, freq = -1, debug = 1):
+def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=256, outstacknameall='bdb:data', hcoords_dir = "", hcoords_suffix = "_boxes.txt", ptcl_overlap=-1, inv_contrast=False, new_pixel_size=-1, rmax = -1.0, freq = -1, debug = 1):
 	'''
 	
 	Windows segments from helices boxed from micrographs using e2helixboxer. 
@@ -1886,10 +1886,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize='
 		
 		pixel_size: The pixel size of the micrographs which were used to box the helices.
 		
-		boxsize: String containing x and y dimensions (separated by comma) in pixels of segments to be windowed.
-				 
-				 E.g. boxsize='160,45' specifies a rectangular segment with x dimension equal
-				 	  to 160 and y dimension equal to 45.
+		boxsize: Dimension of square window size. 
 				 
 		outstacknameall: File name with full path and type (only handles bdb and hdf right now) 
 						 under which ALL windowed segments from ALL micrograph directories 
@@ -1984,20 +1981,8 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize='
 	if not(outstacknameall[0:4] == 'bdb:' or outstacknameall[-3:] == 'hdf'):
 		print "%s must be in bdb or hdf format"%outstacknameall
 		return
-	
-	boxdims = boxsize.split(',')
-	if len(boxdims)!= 2:
-		print "boxsize cannot specify more than two dimensions"
-		return
 
-	try:
-		segnx = int(boxdims[0])
-		segny = int(boxdims[1])
-	except:
-		print "Specified dimensions in boxsize are not valid integers."
-		return
-
-	if freq < 0: freq = 1.0/segnx
+	if freq < 0: freq = 1.0/boxsize
 		
 	if micsuffix[0] == '.': micsuffix = micsuffix[1:]
 	
@@ -2055,7 +2040,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize='
 				if( os.path.exists(hcoordsname) ):
 					micname = os.path.join(os.path.join(topdir,v1), v2)
 					print_msg("\n\nPreparing to window helices from micrograph %s with box coordinate file %s\n\n"%(micname, hcoordsname))
-					windowmic(outstacknameall, coutdir, micname, hcoordsname, pixel_size, segnx, segny, ptcl_overlap, inv_contrast, new_pixel_size, rmax, freq)
+					windowmic(outstacknameall, coutdir, micname, hcoordsname, pixel_size, boxsize, ptcl_overlap, inv_contrast, new_pixel_size, rmax, freq)
 
 	# If not debug mode, then remove all output directories 
 	if debug == 0:
@@ -2065,7 +2050,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize='
 			print_msg("cmd: %s"%cmd)
 			call(cmd, shell=True)
 
-def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, segnx, segny, ptcl_overlap, inv_contrast, new_pixel_size, rmax, freq):
+def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize, ptcl_overlap, inv_contrast, new_pixel_size, rmax, freq):
 	'''
 	
 	INPUT
@@ -2081,9 +2066,7 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, segnx, 
 			
 			pixel_size: The pixel size of the micrographs in which the helices were boxed.
 			
-			segnx: Integer. x-dimension of segments to be windowed.
-			
-			segny: Integer. y-dimension of segments to be windowed.
+			boxsize: Integer. x and y-dimension of segments to be windowed.
 			
 			ptcl_overlap: Integer. Overlap in pixels between adjacent segments windowed from a single boxed helix. If ptcl_overlap < 0, then the
 				          program will set it so the distance between adjacent segments is rise in pixels.
@@ -2141,7 +2124,7 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, segnx, 
 		smic = micname.split('/')
 
 		# now need to get new coordinates file and set hcoordsname to that
-		hcoordsname = getnewhelixcoords(hcoordsname, outdir, resample_ratio,nx,ny, newpref="resampled_", boxsize=segnx)
+		hcoordsname = getnewhelixcoords(hcoordsname, outdir, resample_ratio,nx,ny, newpref="resampled_", boxsize=boxsize)
 
 	# filename is name of micrograph minus the path and extension
 	filename = (smic[-1].split('.'))[0] 
@@ -2168,20 +2151,15 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, segnx, 
 	filt_gaussh(imgmic, freq).write_image(tmpfile)  # remove frequencies too low for the box size
 	
 	# Set box coordinates in e2helixboxer database
-	db_load_helix_coords(tmpfile, hcoordsname, False, segnx)
+	db_load_helix_coords(tmpfile, hcoordsname, False, boxsize)
 
-	# Window the segments
-	# If square segments, use gridding, else, use default of bilinear rotation
-	if segnx == segny: dogridding = True
-	else:              dogridding = False
+	db_save_particle_coords(tmpfile, fptcl_coords, ptcl_overlap, boxsize, boxsize)
+	db_save_particles(tmpfile, fimgs_0, ptcl_overlap, boxsize, boxsize, True, True, True, "multiple")
 
-	db_save_particle_coords(tmpfile, fptcl_coords, ptcl_overlap, segny, segnx)
-	db_save_particles(tmpfile, fimgs_0, ptcl_overlap, segny, segnx, True, True, dogridding, "multiple")
-
-	if rmax < 0:  rmaxp = int(segnx/2 - 2)
+	if rmax < 0:  rmaxp = int(boxsize/2 - 2)
 	else:         rmaxp = int( (rmax/new_pixel_size)  + 0.5)
 
-	mask = pad(model_blank(rmaxp*2, segny, 1, 1.0), segnx, segny, 1, 0.0)
+	mask = pad(model_blank(rmaxp*2, boxsize, 1, 1.0),boxsize, boxsize,1, 0.0)
 
 	a = read_text_row(hcoordsname)
 	if len(a)%2 != 0:
