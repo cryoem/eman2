@@ -1042,6 +1042,16 @@ if ENABLE_GUI:
 			"""
 			QtGui.QWidget.__init__(self)
 			
+			self.doctf = False
+			self.winsize = 512
+			self.cs = 2.0
+			self.edge = 0.0
+			self.volt = 300.0
+			self.kboot = 16
+			self.ov = 0
+			self.ac = 10.0
+			self.pixelsize = 1.0
+			
 			self.invert_contrast = invert_contrast
 			
 			if box_width<1 : box_width=100
@@ -1112,7 +1122,7 @@ if ENABLE_GUI:
 			self.img_quality_combobox.addItems(qualities)
 			self.img_quality_combobox.setCurrentIndex(2)
 			self.img_quality_label.setBuddy(self.img_quality_combobox)
-	
+			
 			self.micrograph_table = QtGui.QTableWidget(1,2)
 			self.micrograph_table.setHorizontalHeaderLabels(["Micrograph", "Boxed Helices"])
 			
@@ -1128,7 +1138,7 @@ if ENABLE_GUI:
 			qualityLayout.addWidget(self.img_quality_combobox)
 				
 			self.vbl = QtGui.QVBoxLayout(self)
-			self.vbl.setMargin(0)
+			self.vbl.setMargin(30)
 			self.vbl.setSpacing(6)
 			self.vbl.setObjectName("vbl")
 			self.vbl.addWidget(self.menu_bar)
@@ -1136,7 +1146,229 @@ if ENABLE_GUI:
 			self.vbl.addLayout(qualityLayout)
 			self.vbl.addWidget(self.micrograph_table)
 			self.vbl.addWidget(self.status_bar)
+			
+			# add input fields for CTF estimation
+			hbl_doctf = QtGui.QHBoxLayout()
+			self.doctf_chk = QtGui.QCheckBox("CTF Estimation using CTER                                                           ")
+			self.doctf_chk.setToolTip("CTF Estimation using CTER")
+			self.doctf_chk.setChecked(self.doctf)
+			hbl_doctf.addWidget(self.doctf_chk)
+			self.vbl.addLayout(hbl_doctf)
+			
+			QtCore.QObject.connect(self.doctf_chk,QtCore.SIGNAL("clicked(bool)"),self.doctf_checked)
+
+		def doctf_checked(self,val):
+			if not(self.doctf):
+				self.doctf = val
+			
+				if val:
+					hgctf = QtGui.QHBoxLayout()
+					ctftitle = QtGui.QLabel("<b>Parameters of CTF estimation</b>")
+					hgctf.addWidget(ctftitle)
+					self.vbl.addLayout(hgctf)
+					
+					hbl_wscs = QtGui.QHBoxLayout()
+					window_size_label = QtGui.QLabel("Window size:")
+					hbl_wscs.addWidget(window_size_label)
+					self.ctf_window_size = QtGui.QLineEdit('512')
+					hbl_wscs.addWidget(self.ctf_window_size)
+					
+					cs_label = QtGui.QLabel("Cs:")
+					hbl_wscs.addWidget(cs_label)
+					self.ctf_cs = QtGui.QLineEdit('2.0')
+					hbl_wscs.addWidget(self.ctf_cs)
+					self.vbl.addLayout(hbl_wscs)
+					
+					
+					hbl_esv = QtGui.QHBoxLayout()
+					edge_size_label = QtGui.QLabel("Edge size:")
+					hbl_esv.addWidget(edge_size_label)
+					self.ctf_edge_size = QtGui.QLineEdit('0')
+					hbl_esv.addWidget(self.ctf_edge_size)
+					
+					voltage_label = QtGui.QLabel("Voltage:")
+					hbl_esv.addWidget(voltage_label)
+					self.ctf_volt = QtGui.QLineEdit('200.0')
+					hbl_esv.addWidget(self.ctf_volt)
+					self.vbl.addLayout(hbl_esv)
+					
+					hbl_oac = QtGui.QHBoxLayout()
+					overlap_label = QtGui.QLabel("Overlap:")
+					hbl_oac.addWidget(overlap_label)
+					self.ctf_overlap_size = QtGui.QLineEdit('50')
+					hbl_oac.addWidget(self.ctf_overlap_size)
+					
+					amplitude_contrast_label = QtGui.QLabel("Amplitude Contrast:")
+					hbl_oac.addWidget(amplitude_contrast_label)
+					self.ctf_ampcont = QtGui.QLineEdit('10.0')
+					hbl_oac.addWidget(self.ctf_ampcont)
+					self.vbl.addLayout(hbl_oac)
+					
+					hbl_kboot = QtGui.QHBoxLayout()
+					kboot_label = QtGui.QLabel("kboot (only for CTER):")
+					hbl_kboot.addWidget(kboot_label)
+					self.ctf_kboot = QtGui.QLineEdit('16')
+					hbl_kboot.addWidget(self.ctf_kboot)
+					
+					pixel_label = QtGui.QLabel("Pixel size:")
+					hbl_kboot.addWidget(pixel_label)
+					self.ctf_pixel = QtGui.QLineEdit('1.0')
+					hbl_kboot.addWidget(self.ctf_pixel)
+					
+					self.vbl.addLayout(hbl_kboot)
+					
+					hbl_estdef = QtGui.QHBoxLayout()
+					estimated_defocus_label = QtGui.QLabel("Estimated defocus:")
+					hbl_estdef.addWidget(estimated_defocus_label)
+					self.estdef = QtGui.QLineEdit('')
+					hbl_estdef.addWidget(self.estdef)
+					self.vbl.addLayout(hbl_estdef)
+					
+					hbl_astamp = QtGui.QHBoxLayout()
+					astig_amp_label = QtGui.QLabel("Estimated astigmatism amplitude\n (only for CTER):")
+					hbl_astamp.addWidget(astig_amp_label)
+					self.astamp = QtGui.QLineEdit('')
+					hbl_astamp.addWidget(self.astamp)
+					self.vbl.addLayout(hbl_astamp)
+					
+					hbl_astagl = QtGui.QHBoxLayout()
+					astig_angle_label = QtGui.QLabel("Estimated astigmatism angle \n(only for CTER)")
+					hbl_astagl.addWidget(astig_angle_label)
+					self.astagl = QtGui.QLineEdit('')
+					hbl_astagl.addWidget(self.astagl)
+					self.vbl.addLayout(hbl_astagl)
+					
+					hbl_deferr = QtGui.QHBoxLayout()
+					deferr_label = QtGui.QLabel("Estimated defocus error \n(only for CTER):")
+					hbl_deferr.addWidget(deferr_label)
+					self.deferr = QtGui.QLineEdit('')
+					hbl_deferr.addWidget(self.deferr)
+					self.vbl.addLayout(hbl_deferr)
+					
+					hbl_astaglerr = QtGui.QHBoxLayout()
+					astaglerr_label = QtGui.QLabel("Estimated astigmatism angle error \n(only for CTER):")
+					hbl_astaglerr.addWidget(astaglerr_label)
+					self.astaglerr = QtGui.QLineEdit('')
+					hbl_astaglerr.addWidget(self.astaglerr)
+					self.vbl.addLayout(hbl_astaglerr)
+					
+					hbl_astamperr = QtGui.QHBoxLayout()
+					astamperr_label = QtGui.QLabel("Estimated astigmatism amplitude error \n (only for CTER):")
+					hbl_astamperr.addWidget(astamperr_label)
+					self.astamperr = QtGui.QLineEdit('')
+					hbl_astamperr.addWidget(self.astamperr)
+					self.vbl.addLayout(hbl_astamperr)
+					
+					hbl_ctf_cter = QtGui.QHBoxLayout()
+					self.estimate_ctf_cter =QtGui.QPushButton("Estimate CTF using CTER")
+					hbl_ctf_cter.addWidget(self.estimate_ctf_cter)
+					self.vbl.addLayout(hbl_ctf_cter)
+					
+					QtCore.QObject.connect(self.ctf_window_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_window)
+					QtCore.QObject.connect(self.ctf_cs,QtCore.SIGNAL("editingFinished()"),self.new_ctf_cs)
+					QtCore.QObject.connect(self.ctf_edge_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_edge)
+					QtCore.QObject.connect(self.ctf_volt,QtCore.SIGNAL("editingFinished()"),self.new_ctf_volt)
+					QtCore.QObject.connect(self.ctf_overlap_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_overlap_size)
+					QtCore.QObject.connect(self.ctf_ampcont,QtCore.SIGNAL("editingFinished()"),self.new_ctf_ampcont)
+					QtCore.QObject.connect(self.ctf_kboot,QtCore.SIGNAL("editingFinished()"),self.new_ctf_kboot)
+					QtCore.QObject.connect(self.ctf_pixel,QtCore.SIGNAL("editingFinished()"),self.new_ctf_pixel)
+					QtCore.QObject.connect(self.estimate_ctf_cter,QtCore.SIGNAL("clicked(bool)"), self.calc_ctf_cter)
 	
+		def new_ctf_pixel(self):
+			self.pixelsize=self.ctf_pixel.text()
+			
+		def new_ctf_window(self):
+			self.winsize=self.ctf_window_size.text()
+
+		def new_ctf_cs(self):
+			self.cs=self.ctf_cs.text()
+			
+		def new_ctf_edge(self):
+			self.edge=self.ctf_edge_size.text()
+		
+		def new_ctf_volt(self):
+			self.volt=self.ctf_volt.text()
+			
+		def new_ctf_kboot(self):
+			self.kboot=self.ctf_kboot.text()
+			
+		def new_ctf_overlap_size(self):
+			self.ov=self.ctf_overlap_size.text()
+		
+		def new_ctf_ampcont(self):
+			self.ac=self.ctf_ampcont.text()
+		
+		def calc_ctf_cter(self):
+			# calculate ctf of ORIGINAL micrograph using cter in gui mode
+			# this must mean cter is being calculated on a single micrograph!
+			from utilities import get_im
+			
+			print "starting cter"
+			
+			# get the current micrograph
+			image_name = self.micrograph_filepath
+			img = get_im(image_name)
+			
+			try:
+				ctf_window_size  = int(self.ctf_window_size.text())
+				input_pixel_size = float(self.ctf_pixel.text())
+				ctf_edge_size    = int(self.ctf_edge_size.text())
+				ctf_overlap_size = int(self.ctf_overlap_size.text())
+				ctf_volt         = float(self.ctf_volt.text())
+				ctf_cs           = float(self.ctf_cs.text())
+				ctf_ampcont      = float(self.ctf_ampcont.text())
+				ctf_kboot        = int(self.ctf_kboot.text())
+				
+			except ValueError,extras:
+				# conversion of a value failed!
+				print "integer conversion failed."
+				if not(extras.args is None):
+					print extras.args[0]
+				return
+			except:
+				print "error"
+				return
+			
+			fname, fext = os.path.splitext(image_name)
+			outpwrot = 'pwrot_%s'%fname
+			outpartres = 'partres_%s'%fname
+			
+			if os.path.exists(outpwrot) or os.path.exists(outpartres):
+				print "Please remove or rename %s and or %s"%(outpwrot,outpartres)
+				return
+			
+			from morphology import cter
+			defocus, ast_amp, ast_agl, error_defocus, error_astamp, error_astagl = cter(None, outpwrot, outpartres, None, None, ctf_window_size, voltage=ctf_volt, Pixel_size=input_pixel_size, Cs = ctf_cs, wgh=ctf_ampcont, kboot=ctf_kboot, MPI=False, DEBug= False, overlap_x = ctf_overlap_size, overlap_y = ctf_overlap_size, edge_x = ctf_edge_size, edge_y = ctf_edge_size, guimic=image_name)
+		
+			self.estdef.setText(str(defocus))
+			self.estdef.setEnabled(False)
+			
+			self.astamp.setText(str(ast_amp))
+			self.astamp.setEnabled(False)
+			
+			self.astagl.setText(str(ast_agl))
+			self.astagl.setEnabled(False)
+			
+			self.deferr.setText(str(error_defocus))
+			self.deferr.setEnabled(False)
+			
+			self.astamperr.setText(str(error_astamp))
+			self.astamperr.setEnabled(False)
+			
+			self.astaglerr.setText(str(error_astagl))
+			self.astaglerr.setEnabled(False)
+			
+			# XXX: wgh?? amp_cont static to 0?
+			# set image properties, in order to save ctf values
+			from utilities import set_ctf
+			set_ctf(img, [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl])
+			# and rewrite image 
+			img.write_image(image_name)
+			print [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl]
+			
+			print [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl]
+			print "CTF estimation using CTER done."
+						
 		def color_boxes(self):
 			"""
 			Sets the colors of the boxes, with the current box being colored differently from the other boxes.
@@ -1979,6 +2211,6 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, segnx, 
 				prj.write_image(otcl_images, j)
 				prj.write_image(outstacknameall, iseg)
 				iseg += 1
-
+			
 if __name__ == '__main__':
 	main()
