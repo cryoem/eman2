@@ -1408,7 +1408,7 @@ def refine_with_mask(vol):
 	return vol
 '''
 
-def cter(stack, outpwrot, outpartres, indir, nameroot, nx, voltage=300.0, Pixel_size=2.29, Cs = 2.0, wgh=10.0, kboot=16, MPI=False, DEBug= False, overlap_x = 50, overlap_y=50 , edge_x = 0, edge_y=0, guimic=None):
+def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_stop = -1.0, voltage=300.0, Pixel_size=2.29, Cs = 2.0, wgh=10.0, kboot=16, MPI=False, DEBug= False, overlap_x = 50, overlap_y=50 , edge_x = 0, edge_y=0, guimic=None):
 	'''
 	Input
 		stack	 : name of image stack (such as boxed particles) to be processed instead of micrographs.
@@ -1519,24 +1519,27 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx, voltage=300.0, Pixel_
 			aroo /= nimi
 			roo  /= nimi
 			qa /= nimi
-
-			#  Find a break point
-			bp = 1.e23
-			for i in xrange(5,lenroo-5):
-				#t1 = linreg(sroo[:i])
-				#t2 = linreg(sroo[i:])
-				#tt = t1[1][0] + t2[1][0]
-				xtt = np.array(range(i),np.float32)
-				zet = np.poly1d( np.polyfit(xtt,sroo[:i],2) )
-				t1 = sum((sroo[:i]-zet(xtt))**2)
-				xtt = np.array(range(i,lenroo),np.float32)
-				zet = np.poly1d( np.polyfit(xtt,sroo[i:],2) )
-				tt = t1 + sum((sroo[i:]-zet(xtt))**2)
-				if( tt < bp ):
-					bp = tt
-					istart = i
-			#istart = 25
-			#print istart
+			
+			if f_start < 0:
+			
+				#  Find a break point
+				bp = 1.e23
+				for i in xrange(5,lenroo-5):
+					#t1 = linreg(sroo[:i])
+					#t2 = linreg(sroo[i:])
+					#tt = t1[1][0] + t2[1][0]
+					xtt = np.array(range(i),np.float32)
+					zet = np.poly1d( np.polyfit(xtt,sroo[:i],2) )
+					t1 = sum((sroo[:i]-zet(xtt))**2)
+					xtt = np.array(range(i,lenroo),np.float32)
+					zet = np.poly1d( np.polyfit(xtt,sroo[i:],2) )
+					tt = t1 + sum((sroo[i:]-zet(xtt))**2)
+					if( tt < bp ):
+						bp = tt
+						istart = i
+				#istart = 25
+				#print istart
+				f_start = istart/(Pixel_size*nx)
 			"""
 			hi = hist_list(sroo,2)
 			# hi[0][1] is the threshold
@@ -1547,10 +1550,10 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx, voltage=300.0, Pixel_
 			"""
 			#write_text_file([roo.tolist(),aroo.tolist(),sroo.tolist()], "sroo%03d.txt"%ifi)
 			rooc = roo.tolist()
-			f_start = istart/(Pixel_size*nx)
+			
 			#print namics[ifi],istart,f_start
 
-			defc, subpw, ctf2, baseline, envelope, istart, istop = defocusgett(rooc, nx, voltage=voltage, Pixel_size=Pixel_size, Cs=Cs, ampcont=wgh, f_start=f_start, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None, DEBug=DEBug)
+			defc, subpw, ctf2, baseline, envelope, istart, istop = defocusgett(rooc, nx, voltage=voltage, Pixel_size=Pixel_size, Cs=Cs, ampcont=wgh, f_start=f_start, f_stop=f_stop, round_off=1.0, nr1=3, nr2=6, parent=None, DEBug=DEBug)
 			if DEBug:
 				if stack == None:  
 					print "  RESULT ",namics[ifi],defc, istart, istop
