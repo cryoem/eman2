@@ -31,8 +31,14 @@ import glob
 import datetime
 import argparse
 
-_cvsid = "$Id$"
-VERSION = 1.3
+
+# Automatically update version from CVS ID.
+VERSION = None
+CVSID = "$Id$"
+try:
+    VERSION = CVSID.split(" ")[2]
+except:
+    pass
 
 ##### Helper functions #####
 
@@ -108,12 +114,15 @@ class Target(object):
     target_desc = 'source'
 
     # These will be turned back into file references...
+
     # INSTALL.txt
     installtxt = """Instructions for installing EMAN2."""
+
     # eman2.bashrc
-    bashrc = "#!/bin/sh"
+    bashrc = None
+
     # eman2.cshrc
-    cshrc = "#!/bin/csh"
+    cshrc = None
     
     def __init__(self, args):
         args = self.update_args(args)
@@ -212,21 +221,23 @@ class MacTarget(Target):
     Please visit the EMAN2 homepage at http://blake.bcm.tmc.edu/emanwiki/EMAN2 for usage documentation.
     """    
     
+    eman2install = None
+    
     bashrc = """#!/bin/sh
-    export EMAN2DIR=/Applications/EMAN2/
-    export PATH=$EMAN2DIR/bin:$EMAN2DIR/extlib/bin:$PATH
-    export PYTHONPATH=$EMAN2DIR/lib:$EMAN2DIR/bin:$EMAN2DIR/extlib/site-packages:$PYTHONPATH
-    """
+export EMAN2DIR=/Applications/EMAN2/
+export PATH=$EMAN2DIR/bin:$EMAN2DIR/extlib/bin:$PATH
+export PYTHONPATH=$EMAN2DIR/lib:$EMAN2DIR/bin:$EMAN2DIR/extlib/site-packages:$PYTHONPATH
+"""
 
     cshrc = """#!/bin/csh
-    setenv EMAN2DIR /Applications/EMAN2
-    set path=(${EMAN2DIR}/bin ${EMAN2DIR}/extlib/bin $path)
-    if ( $?PYTHONPATH ) then
-    else
-    setenv PYTHONPATH
-    endif
-    setenv PYTHONPATH ${EMAN2DIR}/lib:${EMAN2DIR}/bin:${EMAN2DIR}/extlib/site-packages:${PYTHONPATH}
-    """    
+setenv EMAN2DIR /Applications/EMAN2
+set path=(${EMAN2DIR}/bin ${EMAN2DIR}/extlib/bin $path)
+if ( $?PYTHONPATH ) then
+else
+setenv PYTHONPATH
+endif
+setenv PYTHONPATH ${EMAN2DIR}/lib:${EMAN2DIR}/bin:${EMAN2DIR}/extlib/site-packages:${PYTHONPATH}
+"""    
     
     def build(self):
         self._run([CMakeBuild])
@@ -253,13 +264,6 @@ class LionTarget(MacTarget):
 
 class LinuxTarget(Target):
     target_desc = 'linux'
-    bashrc = """#!/bin/sh
-    export EMAN2DIR=$HOME/EMAN2/
-    export PATH=$EMAN2DIR/bin:$EMAN2DIR/extlib/bin:$PATH
-    export PYTHONPATH=$EMAN2DIR/lib:$EMAN2DIR/bin:$EMAN2DIR/extlib/site-packages:$PYTHONPATH
-    export LD_LIBRARY_PATH=$EMAN2DIR/lib:$EMAN2DIR/extlib/lib:$EMAN2DIR/extlib/qt4/lib:$EMAN2DIR/extlib/python/lib:$LD_LIBRARY_PATH
-    """
-
     def install(self): 
         self._run([CopyShrc, CopyExtlib])
     def package(self):
@@ -353,16 +357,18 @@ class CopyExtlib(Builder):
 # Build sub-command.
 class CopyShrc(Builder):
     def run(self):
-         log("Copying INSTALL.txt and shell rc files")
-         mkdirs(os.path.join(self.args.cwd_stage))
-         mkdirs(os.path.join(self.args.cwd_rpath))
-         with open(os.path.join(self.args.cwd_stage, 'INSTALL.txt'), 'w') as f:
-             f.write(self.args.installtxt)
-         with open(os.path.join(self.args.cwd_rpath, 'eman2.bashrc'), 'w') as f:
-             f.write(self.args.bashrc)
-         with open(os.path.join(self.args.cwd_rpath, 'eman2.cshrc'), 'w') as f:
-             f.write(self.args.cshrc)
-
+        log("Copying INSTALL.txt and shell rc files")
+        mkdirs(os.path.join(self.args.cwd_stage))
+        mkdirs(os.path.join(self.args.cwd_rpath))
+        if self.args.installtxt:
+            with open(os.path.join(self.args.cwd_stage, 'INSTALL.txt'), 'w') as f:
+                f.write(self.args.installtxt)
+        if self.args.bashrc:
+            with open(os.path.join(self.args.cwd_rpath, 'eman2.bashrc'), 'w') as f:
+                f.write(self.args.bashrc)
+        if self.args.cshrc:
+            with open(os.path.join(self.args.cwd_rpath, 'eman2.cshrc'), 'w') as f:
+                 f.write(self.args.cshrc)
 
 # Build sub-command.
 class FixInterpreter(Builder):
@@ -469,10 +475,20 @@ class UnixPackage(Builder):
     def run(self):
         log("Building tarball")
         mkdirs(os.path.join(self.args.cwd_images))
+
+        # Create a symlink to /Applications
+        print "Linking extlib/python to Python/ in cwd: ", self.args.cwd_rpath
+        cmd(['ln', '-s', 'extlib/python', 'Python'], cwd=self.args.cwd_rpath)
+
+        print "Copying install.sh as eman2-installer. NOTE: HARDCODED PATH, FIX!!"
+        installsh_in  = os.path.join(self.args.root, 'install.sh')
+        installsh_out = os.path.join(self.args.cwd_rpath, 'eman2-installer')
+        shutil.copy(installsh_in, installsh_out)
+        cmd(['chmod', 'a+x', installsh_out])
         
         now = datetime.datetime.now().strftime('%Y-%m-%d')   
         with open(os.path.join(self.args.cwd_rpath, 'build_date.'+now), 'w') as f:
-            f.write("Built on %s"%now)
+            f.write("EMAN2 %s built on %s."%(self.args.cvstag, now))
 
         imgname = "%s.%s.%s.tar.gz"%(self.args.cvsmodule, self.args.release, self.args.target_desc)
         img = os.path.join(self.args.cwd_images, imgname)
@@ -493,7 +509,7 @@ class MacPackage(Builder):
         
         now = datetime.datetime.now().strftime('%Y-%m-%d')   
         with open(os.path.join(self.args.cwd_rpath, 'build_date.'+now), 'w') as f:
-            f.write("Built on %s"%now)
+            f.write("EMAN2 %s built on %s."%(self.args.cvstag, now))
 
         # Create a symlink to /Applications
         print "Linking to /Applications in cwd: ", self.args.cwd_stage

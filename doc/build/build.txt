@@ -93,9 +93,9 @@ User accounts on the host machine and guest VMs are "eman" with the standard pas
 
 In each VM, a nightly cron job executes to prepare and upload the builds:
 
-	0 12 * * * source /build/vars.sh; /build/shared/scripts/build.py checkout
-	5 12 * * * source /build/vars.sh; /build/shared/scripts/build.py build
-	0 17 * * * source /build/vars.sh; /build/shared/scripts/build.py upload
+	0 12 * * * source /build/vars.sh; /build/build.py checkout
+	5 12 * * * source /build/vars.sh; /build/build.py build install package
+	0 17 * * * source /build/vars.sh; /build/build.py upload
 
 The cron scripts assume that public key SSH authentication is working to both the CVS server and the web server.
 
