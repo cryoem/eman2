@@ -2160,33 +2160,10 @@ class GaussPanel:
 			vbl.addLayout(hbl_oac)
 			
 			
-			hbl_fed = QtGui.QHBoxLayout()
-			
-			fstart_label = QtGui.QLabel("F_start (not used for CTER):")
-			hbl_fed.addWidget(fstart_label)
-			if gbdb['ctf_fstart'] == None:
-				self.ctf_f_start = QtGui.QLineEdit('0.020')
-			else:
-				self.ctf_f_start = QtGui.QLineEdit(str(gbdb['ctf_fstart']))
-			hbl_fed.addWidget(self.ctf_f_start)
-			
-			vbl.addLayout(hbl_fed)
-		
-			hbl_fs = QtGui.QHBoxLayout()
-			
-			fstop_label = QtGui.QLabel("F_stop (not used for CTER):")
-			hbl_fs.addWidget(fstop_label)
-			if gbdb['ctf_fstop'] == None:
-				self.ctf_f_stop = QtGui.QLineEdit('0.500')
-			else:
-				self.ctf_f_stop = QtGui.QLineEdit(str(gbdb['ctf_fstop']))
-			hbl_fs.addWidget(self.ctf_f_stop)
-			
-			vbl.addLayout(hbl_fs)
-			
+
 			# cter kboot
 			hbl_kboot = QtGui.QHBoxLayout()
-			kboot_label = QtGui.QLabel("kboot (only for CTER):")
+			kboot_label = QtGui.QLabel("kboot:")
 			hbl_kboot.addWidget(kboot_label)
 			if gbdb['ctf_kboot'] == None:
 				self.ctf_kboot = QtGui.QLineEdit('16')
@@ -2202,54 +2179,46 @@ class GaussPanel:
 			hbl_estdef.addWidget(self.estdef)
 			vbl.addLayout(hbl_estdef)
 			
+			hbl_estdeferr = QtGui.QHBoxLayout()
+			deferr_label = QtGui.QLabel("Estimated defocus error:")
+			hbl_estdeferr.addWidget(deferr_label)
+			self.deferr = QtGui.QLineEdit('')
+			hbl_estdeferr.addWidget(self.deferr)
+			vbl.addLayout(hbl_estdeferr)
+			
 			hbl_astamp = QtGui.QHBoxLayout()
-			astig_amp_label = QtGui.QLabel("Estimated astigmatism amplitude\n (only for CTER):")
+			astig_amp_label = QtGui.QLabel("Estimated astigmatism \namplitude:")
 			hbl_astamp.addWidget(astig_amp_label)
 			self.astamp = QtGui.QLineEdit('')
 			hbl_astamp.addWidget(self.astamp)
 			vbl.addLayout(hbl_astamp)
 			
-			hbl_astagl = QtGui.QHBoxLayout()
-			astig_angle_label = QtGui.QLabel("Estimated astigmatism angle \n(only for CTER)")
-			hbl_astagl.addWidget(astig_angle_label)
-			self.astagl = QtGui.QLineEdit('')
-			hbl_astagl.addWidget(self.astagl)
-			vbl.addLayout(hbl_astagl)
-			
-			hbl_deferr = QtGui.QHBoxLayout()
-			deferr_label = QtGui.QLabel("Estimated defocus error \n(only for CTER):")
-			hbl_deferr.addWidget(deferr_label)
-			self.deferr = QtGui.QLineEdit('')
-			hbl_deferr.addWidget(self.deferr)
-			vbl.addLayout(hbl_deferr)
-			
-			hbl_astaglerr = QtGui.QHBoxLayout()
-			astaglerr_label = QtGui.QLabel("Estimated astigmatism angle error \n(only for CTER):")
-			hbl_astaglerr.addWidget(astaglerr_label)
-			self.astaglerr = QtGui.QLineEdit('')
-			hbl_astaglerr.addWidget(self.astaglerr)
-			vbl.addLayout(hbl_astaglerr)
-			
 			hbl_astamperr = QtGui.QHBoxLayout()
-			astamperr_label = QtGui.QLabel("Estimated astigmatism amplitude error \n (only for CTER):")
+			astamperr_label = QtGui.QLabel("Estimated astigmatism \namplitude error:")
 			hbl_astamperr.addWidget(astamperr_label)
 			self.astamperr = QtGui.QLineEdit('')
 			hbl_astamperr.addWidget(self.astamperr)
 			vbl.addLayout(hbl_astamperr)
 			
-			hbl_ctf = QtGui.QHBoxLayout()
-			self.estimate_ctf=QtGui.QPushButton("Estimate CTF")
-			hbl_ctf.addWidget(self.estimate_ctf)
+			hbl_astagl = QtGui.QHBoxLayout()
+			astig_angle_label = QtGui.QLabel("Estimated astigmatism \nangle")
+			hbl_astagl.addWidget(astig_angle_label)
+			self.astagl = QtGui.QLineEdit('')
+			hbl_astagl.addWidget(self.astagl)
+			vbl.addLayout(hbl_astagl)
 			
-			self.inspect_button=QtGui.QPushButton("Inspect CTF")
-			hbl_ctf.addWidget(self.inspect_button)
-		
-			vbl.addLayout(hbl_ctf)
+			hbl_astaglerr = QtGui.QHBoxLayout()
+			astaglerr_label = QtGui.QLabel("Estimated astigmatism \nangle error:")
+			hbl_astaglerr.addWidget(astaglerr_label)
+			self.astaglerr = QtGui.QLineEdit('')
+			hbl_astaglerr.addWidget(self.astaglerr)
+			vbl.addLayout(hbl_astaglerr)
 			
 			hbl_ctf_cter = QtGui.QHBoxLayout()
 			self.estimate_ctf_cter =QtGui.QPushButton("Estimate CTF using CTER")
 			hbl_ctf_cter.addWidget(self.estimate_ctf_cter)
 			vbl.addLayout(hbl_ctf_cter)
+			
 					
 			QtCore.QObject.connect(self.pixel_input_edit,QtCore.SIGNAL("editingFinished()"),self.new_pixel_input)
 			QtCore.QObject.connect(self.pixel_output_edit,QtCore.SIGNAL("editingFinished()"),self.new_pixel_output)
@@ -2262,16 +2231,12 @@ class GaussPanel:
 			QtCore.QObject.connect(self.thr_low_edit,QtCore.SIGNAL("editingFinished()"),self.new_thr_low)
 			QtCore.QObject.connect(self.thr_hi_edit,QtCore.SIGNAL("editingFinished()"),self.new_thr_hi)
 			
-			QtCore.QObject.connect(self.estimate_ctf,QtCore.SIGNAL("clicked(bool)"), self.calc_ctf)
-			QtCore.QObject.connect(self.inspect_button,QtCore.SIGNAL("clicked(bool)"), self.inspect_ctf)
 			QtCore.QObject.connect(self.ctf_window_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_window)
 			QtCore.QObject.connect(self.ctf_cs,QtCore.SIGNAL("editingFinished()"),self.new_ctf_cs)
 			QtCore.QObject.connect(self.ctf_edge_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_edge)
 			QtCore.QObject.connect(self.ctf_volt,QtCore.SIGNAL("editingFinished()"),self.new_ctf_volt)
 			QtCore.QObject.connect(self.ctf_overlap_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_overlap_size)
 			QtCore.QObject.connect(self.ctf_ampcont,QtCore.SIGNAL("editingFinished()"),self.new_ctf_ampcont)
-			QtCore.QObject.connect(self.ctf_f_start,QtCore.SIGNAL("editingFinished()"),self.new_ctf_f_start)
-			QtCore.QObject.connect(self.ctf_f_stop,QtCore.SIGNAL("editingFinished()"),self.new_ctf_f_stop)
 			QtCore.QObject.connect(self.ctf_kboot,QtCore.SIGNAL("editingFinished()"),self.new_ctf_kboot)
 			
 			QtCore.QObject.connect(self.estimate_ctf_cter,QtCore.SIGNAL("clicked(bool)"), self.calc_ctf_cter)
@@ -2551,7 +2516,7 @@ class GaussPanel:
 		# calculate ctf of ORIGINAL micrograph using cter in gui mode
 		# this must mean cter is being calculated on a single micrograph!
 		
-		print "starting cter"
+		print "Starting CTER"
 		# get the current image
 		from utilities import get_im
 		#image_name = self.target().boxable.get_image_name()
@@ -2591,24 +2556,24 @@ class GaussPanel:
 		
 		from morphology import cter
 		defocus, ast_amp, ast_agl, error_defocus, error_astamp, error_astagl = cter(None, outpwrot, outpartres, None, None, ctf_window_size, voltage=ctf_volt, Pixel_size=input_pixel_size, Cs = ctf_cs, wgh=ctf_ampcont, kboot=ctf_kboot, MPI=False, DEBug= False, overlap_x = ctf_overlap_size, overlap_y = ctf_overlap_size, edge_x = ctf_edge_size, edge_y = ctf_edge_size, guimic=image_name)
-	
+		
 		self.estdef.setText(str(defocus))
-		self.estdef.setEnabled(False)
+		self.estdef.setEnabled(True)
 		
 		self.astamp.setText(str(ast_amp))
-		self.astamp.setEnabled(False)
+		self.astamp.setEnabled(True)
 		
 		self.astagl.setText(str(ast_agl))
-		self.astagl.setEnabled(False)
+		self.astagl.setEnabled(True)
 		
 		self.deferr.setText(str(error_defocus))
-		self.deferr.setEnabled(False)
+		self.deferr.setEnabled(True)
 		
 		self.astamperr.setText(str(error_astamp))
-		self.astamperr.setEnabled(False)
+		self.astamperr.setEnabled(True)
 		
 		self.astaglerr.setText(str(error_astagl))
-		self.astaglerr.setEnabled(False)
+		self.astaglerr.setEnabled(True)
 		
 		# XXX: wgh?? amp_cont static to 0?
 		# set image properties, in order to save ctf values
