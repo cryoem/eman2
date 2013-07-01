@@ -1,0 +1,121 @@
+#!/bin/bash
+
+# Purpose: Assist to install eman2 binary release.
+# Usage: eman2-installer
+# Date: 9/1/2004, by Liwei Peng
+# Date: 10/25/2007, modified by Grant Tang for EMAN2
+# Date: 1/28/2009, modified by Grant Tang for EMAN2 Pythn2.6
+# Date: 2/12/2009, change back to Python 2.5.4, Grant Tang
+# Date: 9/1/2009, --disable_cache, Grant Tang
+# Date: 6/30/2013, Significant updates by Ian Rees for new build system.
+
+usage()
+{
+	echo "usage: `basename $0` [--disable_cache]"
+	echo "       --disable_cache: no cahce and no GUI"
+	exit 0
+}
+
+setup_shell() {
+	# Setup bashrc or cshrc
+	MYSHELL=`basename ${SHELL}`
+	RCFILE=""
+	if test ${MYSHELL} = "tcsh" || test ${MYSHELL} = "csh"; then
+		RCFILE=".cshrc"
+		setup_csh ${EMAN2DIR}/eman2${RCFILE}
+	elif test ${MYSHELL} = "bash" || test ${MYSHELL} = "sh"; then
+		RCFILE=".bashrc"
+		setup_bash ${EMAN2DIR}/eman2$RCFILE
+	elif test ${MYSHELL} = "zsh"; then
+		RCFILE=".zshrc"
+		setup_bash ${EMAN2DIR}/eman2$RCFILE
+	else
+		echo "Unkown shell. You will need set up your enviroment variables manually."
+	fi
+	if test "X${RCFILE}" != "X"; then
+    	echo "Please add the following line to the end of your ${HOME}/${RCFILE} :"
+    	echo "source ${EMAN2DIR}/eman2${RCFILE}"
+	fi
+}
+
+setup_csh() {
+	OUT=$1
+	echo "setenv EMAN2DIR ${EMAN2DIR}" > ${OUT}
+	echo 'setenv PATH ${EMAN2DIR}/bin:${PATH}' >> ${OUT}
+	echo 'if ($?PYTHONPATH == 0) then' >> ${OUT}
+	echo '    setenv PYTHONPATH ${EMAN2DIR}/lib:${EMAN2DIR}/bin:${EMAN2DIR}/extlib/site-packages' >> ${OUT}
+	echo 'else' >> ${OUT}
+	echo '    setenv PYTHONPATH ${EMAN2DIR}/lib:${EMAN2DIR}/bin:${EMAN2DIR}/extlib/site-packages:${PYTHONPATH}' >> ${OUT}
+	echo 'endif' >> ${OUT}		
+	echo 'if ($?LD_LIBRARY_PATH == 0) then' >> ${OUT}
+	echo '    setenv LD_LIBRARY_PATH ${EMAN2DIR}/lib:${EMAN2DIR}/extlib/lib:${EMAN2DIR}/extlib/qt4/lib:${EMAN2DIR}/extlib/python/lib' >> ${OUT}
+	echo 'else' >> ${OUT}
+	echo '    setenv LD_LIBRARY_PATH ${EMAN2DIR}/lib:${EMAN2DIR}/extlib/lib:${EMAN2DIR}/extlib/qt4/lib:${EMAN2DIR}/extlib/python/lib:${LD_LIBRARY_PATH}' >> ${OUT}
+	echo 'endif' >> ${OUT}
+}
+
+setup_bash()
+{
+	OUT=$1
+	echo "export EMAN2DIR=${EMAN2DIR}" > ${OUT}
+	echo 'export PATH=${EMAN2DIR}/bin:$PATH' >> ${OUT}
+	echo 'export PYTHONPATH=${EMAN2DIR}/lib:${EMAN2DIR}/bin:${EMAN2DIR}/extlib/site-packages:${PYTHONPATH}' >> ${OUT}
+	echo 'export LD_LIBRARY_PATH=${EMAN2DIR}/lib:${EMAN2DIR}/extlib/lib:${EMAN2DIR}/extlib/qt4/lib:${EMAN2DIR}/extlib/python/lib:$LD_LIBRARY_PATH' >> ${OUT}
+}
+
+setup_python()
+{
+	# sed -i "s%^\#\!.*python$%\#\!${EMAN2PYTHON}%" {} \;
+	EMAN2PYTHON=$1
+	find ${EMAN2DIR}/test ${EMAN2DIR}/bin ${EMAN2DIR}/lib ${EMAN2DIR}/examples -name "*.py" \
+		-exec sed -i -E "s%^\#\!.*python.*$%\#\!${EMAN2PYTHON}%" {} \;
+	find ${EMAN2DIR}/test ${EMAN2DIR}/bin ${EMAN2DIR}/lib ${EMAN2DIR}/examples -name "*.py" \
+		-exec chmod a+x {} \;
+}
+
+disable_cache()
+{
+	cd ${EMAN2DIR}/lib
+	echo "start substituting..."
+	cp global_def.py global_def.py.bak
+	rm -f global_def.py
+	sed -e 's/CACHE_DISABLE = False/CACHE_DISABLE = True/' -e 's/GUIUSE = True/GUIUSE = False/' global_def.py.bak > global_def.py
+	rm -f  global_def.py.bak
+	cd ${EMAN2DIR}
+}
+
+main()
+{
+	# Use the run directory as the EMAN2DIR.
+	export EMAN2DIR=`pwd`
+	export EMAN2PYTHON=${EMAN2DIR}/extlib/python/bin/python
+	
+	# Setup the Python interpreter
+	if [ -f $EMAN2PYTHON ]
+		then
+			setup_python $EMAN2PYTHON
+		fi
+
+	# Setup bashrc or cshrc
+	setup_shell
+
+	# This is for Fedora Linux's SELinux limitation on shared libraries
+	cd ${EMAN2DIR}/lib
+	if [ -x /usr/bin/chcon ]; then
+		chcon -t texrel_shlib_t *.so 2>/dev/null >/dev/null
+	fi
+	cd ${EMAN2DIR}
+
+	# # This is for Pawel's cluster working
+	local value1=$1	
+	if [[ "${value1}" = "--disable_cache" ]]; then
+		disable_cache
+	fi
+
+	#for mpi_eman compilation
+	# cd ${EMAN2DIR}/mpi_eman
+    # sed -i 's,/usr/include/python2.6,${EMAN2DIR}/Python/include/python2.7,g' Makefile.*
+}
+
+main $1
+exit 0
