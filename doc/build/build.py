@@ -10,15 +10,15 @@
 # 
 #   <target>/
 #       co/
-#           <cvsmodule>.<cvstag>/                               EMAN2 source from CVS, e.g. "eman2.daily", "eman2.EMAN2_0_5"
+#           <cvsmodule>.<release>/                               EMAN2 source from CVS, e.g. "eman2.daily", "eman2.EMAN2_0_5"
 #       local/                
 #           [lib,bin,include,doc,share,qt4,...]                 PREFIX for dependency library installs -- think /usr/local
 #       extlib/
-#           <cvsmodule>.<cvstag>/[lib,bin,site-packages,...]    Stripped down copy of local/ that only includes required libraries.
+#           <cvsmodule>.<release>/[lib,bin,site-packages,...]    Stripped down copy of local/ that only includes required libraries.
 #       build/
-#           <cvsmodule>.<cvstag>/                               CMake configure and build directory
+#           <cvsmodule>.<release>/                               CMake configure and build directory
 #       stage/
-#           <cvsmodule>.<cvstag>/                               Staging area for distribution
+#           <cvsmodule>.<release>/                               Staging area for distribution
 #               EMAN2/[bin,lib,extlib,...]                      EMAN2 installation
 #       images/                                                 Completed, packaged distributions
 #
@@ -31,7 +31,8 @@ import glob
 import datetime
 import argparse
 
-VERSION = 1.1
+_cvsid = "$Id$"
+VERSION = 1.3
 
 ##### Helper functions #####
 
@@ -124,7 +125,7 @@ class Target(object):
     def update_args(self, args):
         # Add a bunch of attributes to the args Namespace
         args.python = self.python
-        args.distname = '%s.%s'%(args.cvsmodule, args.cvstag)
+        args.distname = '%s.%s'%(args.cvsmodule, args.release)
         args.installtxt = self.installtxt
         args.bashrc = self.bashrc
         args.cshrc = self.cshrc
@@ -251,6 +252,7 @@ class LionTarget(MacTarget):
 
 
 class LinuxTarget(Target):
+    target_desc = 'linux'
     bashrc = """#!/bin/sh
     export EMAN2DIR=$HOME/EMAN2/
     export PATH=$EMAN2DIR/bin:$EMAN2DIR/extlib/bin:$PATH
@@ -260,10 +262,13 @@ class LinuxTarget(Target):
 
     def install(self): 
         self._run([CopyShrc, CopyExtlib])
-       
+    def package(self):
+        self._run([UnixPackage])
+           
 
 
 class Linux64Target(LinuxTarget):
+    target_desc = 'linux64'
     pass 
     
 
@@ -462,8 +467,18 @@ class FixInstallNames(Builder):
 
 class UnixPackage(Builder):
     def run(self):
-        # Make tgz
-        raise NotImplementedError
+        log("Building tarball")
+        mkdirs(os.path.join(self.args.cwd_images))
+        
+        now = datetime.datetime.now().strftime('%Y-%m-%d')   
+        with open(os.path.join(self.args.cwd_rpath, 'build_date.'+now), 'w') as f:
+            f.write("Built on %s"%now)
+
+        imgname = "%s.%s.%s.tar.gz"%(self.args.cvsmodule, self.args.release, self.args.target_desc)
+        img = os.path.join(self.args.cwd_images, imgname)
+        hdi = ['tar', '-czf', img, 'EMAN2']
+        cmd(hdi, cwd=self.args.cwd_stage)
+
 
 class UnixUpload(Builder):
     def run(self):
@@ -485,7 +500,7 @@ class MacPackage(Builder):
         cmd(['ln', '-s', '/Applications', 'Applications'], cwd=self.args.cwd_stage)
 
         volname = "%s %s for Mac OS X %s, built on %s"%(self.args.cvsmodule.upper(), self.args.cvstag, self.args.target_desc, now)
-        imgname = "%s.%s.%s.dmg"%(self.args.cvsmodule, self.args.cvstag, self.args.target_desc)
+        imgname = "%s.%s.%s.dmg"%(self.args.cvsmodule, self.args.release, self.args.target_desc)
         img = os.path.join(self.args.cwd_images, imgname)
         hdi = ['hdiutil', 'create', '-ov', '-srcfolder', self.args.cwd_stage, '-volname', volname, img]
         cmd(hdi)
@@ -494,7 +509,7 @@ class MacPackage(Builder):
 class MacUpload(Builder):
     def run(self):
         log("Uploading disk image")
-        imgname = "%s.%s.%s.dmg"%(self.args.cvsmodule, self.args.cvstag, self.args.target_desc)
+        imgname = "%s.%s.%s.dmg"%(self.args.cvsmodule, self.args.release, self.args.target_desc)
         img = os.path.join(self.args.cwd_images, imgname)
         scpdest = "eman@%s:%s/%s"%(self.args.scphost, self.args.scpdest, imgname)
         scp = ['scp', img, scpdest]
@@ -511,6 +526,7 @@ if __name__ == "__main__":
     parser.add_argument('--cvsroot',   help='CVS: root', default="eman@blake.grid.bcm.edu:/usr/local/CVS/CVS")
     parser.add_argument('--cvsmodule', help='CVS: module', default='eman2')
     parser.add_argument('--cvstag',    help='CVS: tag', default='daily')
+    parser.add_argument('--release',   help='Release', default='daily')
     parser.add_argument('--scphost',   help='Upload: scp host', default='10.10.9.104')
     parser.add_argument('--scpdest',   help='Upload: scp destination directory', default='/home/zope-extdata/reposit/ncmi/software/counter_222/software_86')
     
