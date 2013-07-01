@@ -61,8 +61,10 @@ def main():
 	parser.add_option("--debug",               	  action="store_true",   	default=False,              	 help="debug")
 	parser.add_option("--overlap_x",			  type="int",				default=50, 					 help="overlap x")
 	parser.add_option("--overlap_y",			  type="int",				default=50, 					 help="overlap y")
-	parser.add_option("--edge_x",			  type="int",				default=0, 					 help="edge x")
-	parser.add_option("--edge_y",			  type="int",				default=0, 					 help="edge y")
+	parser.add_option("--edge_x",			  	  type="int",				default=0, 					     help="edge x")
+	parser.add_option("--edge_y",			      type="int",				default=0, 					     help="edge y")
+	parser.add_option("--f_start",                type="float",			 	default=-1.0,               	 help="starting frequency")   
+	parser.add_option("--f_stop",                 type="float",			 	default=-1.0,               	 help="stop frequency")
 
 	(options, args) = parser.parse_args(arglist[1:])
 	
@@ -98,7 +100,7 @@ def main():
 
 	from morphology import cter
 	global_def.BATCH = True
-	cter(stack, out1, out2, options.indir, options.nameroot, options.nx, voltage=300.0, Pixel_size=options.apix, Cs = options.Cs, wgh=options.ac, kboot=options.kboot, MPI=options.MPI, DEBug = options.debug, overlap_x = options.overlap_x, overlap_y = options.overlap_y, edge_x = options.edge_x, edge_y = options.edge_y, guimic=None)
+	cter(stack, out1, out2, options.indir, options.nameroot, options.nx, f_start=options.f_start, f_stop=options.f_stop, voltage=300.0, Pixel_size=options.apix, Cs = options.Cs, wgh=options.ac, kboot=options.kboot, MPI=options.MPI, DEBug = options.debug, overlap_x = options.overlap_x, overlap_y = options.overlap_y, edge_x = options.edge_x, edge_y = options.edge_y, guimic=None)
 	global_def.BATCH = False
 
 	if options.MPI:
