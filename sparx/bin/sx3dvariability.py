@@ -61,7 +61,7 @@ def main():
 	parser.add_option("--abs", 			type="float"       ,	default=0.0  ,				help="minimum average absolute change of voxels' values (stop criterion of reconstruction process)" )
 	parser.add_option("--squ", 			type="float"       ,	default=0.0  ,				help="minimum average squared change of voxels' values (stop criterion of reconstruction process)" )
 	parser.add_option("--sym" , 		type="string"      ,	default="c1" ,				help="symmetry")
-	parser.add_option("--VAR" , 		action="store_true",	default=False,				help="stack on input consists of variances")
+	parser.add_option("--VAR" , 		action="store_true",	default=False,				help="stack on input consists of 2D variances")
 	parser.add_option("--SND",			action="store_true",	default=False,				help="compute squared normalized differences")
 	parser.add_option("--CTF",			action="store_true",	default=False,				help="use CFT correction")
 	parser.add_option("--VERBOSE",		action="store_true",	default=False,				help="comments")
@@ -73,7 +73,7 @@ def main():
 	parser.add_option("--ave2D",		type="string"	   ,	default=False,				help="write to the disk a stack of 2D averages")
 	parser.add_option("--var2D",		type="string"	   ,	default=False,				help="write to the disk a stack of 2D variances")
 	parser.add_option("--ave3D",		type="string"	   ,	default=False,				help="write to the disk reconstructed 3D average")
-	parser.add_option("--var3D",		type="string"	   ,	default=False,				help="compute 3D variance (time consuming!)")
+	parser.add_option("--var3D",		type="string"	   ,	default=False,				help="compute 3D variability (time consuming!)")
 	parser.add_option("--no_norm",		action="store_true",	default=False,				help="do not use normalization")
 	parser.add_option("--MPI" , 		action="store_true",	default=False,				help="use MPI version")
 
@@ -96,22 +96,22 @@ def main():
 	if len(args) == 1:
 		stack = args[0]
 	else:
-		ERROR("Incomplete list of arguments", "sxvariances3d", 1, myid=myid)
+		ERROR("Incomplete list of arguments", "sx3dvariability", 1, myid=myid)
 		exit()
 	if not options.MPI:
-		ERROR("Non-MPI not supported!", "sx3Dvariance", myid=myid)
+		ERROR("Non-MPI not supported!", "sx3dvariability", myid=myid)
 		exit()
 	if options.VAR and options.SND:
-		ERROR("Only one of var and SND can be set!", "sx3Dvariance", myid=myid)
+		ERROR("Only one of var and SND can be set!", "sx3dvariability", myid=myid)
 		exit()
 	if options.VAR and (options.ave2D or options.ave3D or options.var2D): 
-		ERROR("When VAR is set, the program cannot output ave2D, ave3D or var2D", "sx3Dvariance", myid=myid)
+		ERROR("When VAR is set, the program cannot output ave2D, ave3D or var2D", "sx3dvariability", myid=myid)
 		exit()
 	if options.SND and (options.ave2D or options.ave3D):
-		ERROR("When SND is set, the program cannot output ave2D or ave3D", "sx3Dvariance", myid=myid)
+		ERROR("When SND is set, the program cannot output ave2D or ave3D", "sx3dvariability", myid=myid)
 		exit()
 	if options.nvec > 0 and options.ave3D == None:
-		ERROR("When doing PCA analysis, one must set ave3D", "sx3Dvariance", myid=myid)
+		ERROR("When doing PCA analysis, one must set ave3D", "sx3dvariability", myid=myid)
 		exit()
 		 
 
@@ -121,7 +121,7 @@ def main():
 	global_def.BATCH = True
 
 	if myid == main_node:
-		print_begin_msg("sx3Dvariance")
+		print_begin_msg("sx3dvariability")
 		print_msg("%-70s:  %s\n"%("Input stack", stack))
 	
 	img_per_grp = options.img_per_grp
@@ -510,7 +510,7 @@ def main():
 
 	if  options.var3D:
 		if myid == main_node and options.VERBOSE:
-			print "Reconstructing 3D variance volume"
+			print "Reconstructing 3D variability volume"
 
 		t6 = time()
 		radiusvar = options.radiusvar
@@ -521,7 +521,7 @@ def main():
 			res.write_image(options.var3D)
 
 		if myid == main_node:
-			print_msg("%-70s:  %.2f\n"%("Reconstructing 3D variance took [s]", time()-t6))
+			print_msg("%-70s:  %.2f\n"%("Reconstructing 3D variability took [s]", time()-t6))
 			if options.VERBOSE:
 				print "Reconstruction took: %.2f [min]"%((time()-t6)/60)
 
@@ -529,7 +529,7 @@ def main():
 			print_msg("%-70s:  %.2f\n"%("Total time for these computations [s]", time()-t0))
 			if options.VERBOSE:
 				print "Total time for these computations: %.2f [min]"%((time()-t0)/60)
-			print_end_msg("sx3Dvariance")
+			print_end_msg("sx3dvariability")
 
 	global_def.BATCH = False
 
