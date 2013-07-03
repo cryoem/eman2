@@ -75,6 +75,10 @@ def main():
 	
 	parser.add_option("--test",              action="store_true",   default=False,               help="test code for where inter-segment distances are not multiples of rise")
 	
+	# ehelix streak
+	parser.add_option("--seg_ny",              type="int",            default= 45,                 help="y dimension of desired segment size")
+	parser.add_option("--streak",              action="store_true",   default=False,               help="test changes to adjust for streaks in cases of narrow segments")
+	
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
 		print "usage: " + usage + "\n"
@@ -127,10 +131,17 @@ def main():
 			ehelix_MPI_test(args[0], args[1], args[2], options.delta, options.psi_max, searchxshiftp, xwobblep, ywobble, options.apix, dp, dphi, options.fract, rmaxp, rminp, not options.nopsisearch, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
 			global_def.BATCH = False
 		else:
-			from development import ehelix_MPI
-			global_def.BATCH = True
-			ehelix_MPI(args[0], args[1], args[2], options.delta, options.psi_max, searchxshiftp, xwobblep, ywobble, options.apix, dp, dphi, options.fract, rmaxp, rminp, not options.nopsisearch, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
-			global_def.BATCH = False
+			if options.streak:
+				from development import ehelix_streak_MPI
+				global_def.BATCH = True
+				ehelix_streak_MPI(args[0], args[1], args[2], options.seg_ny, options.delta, options.psi_max, searchxshiftp, xwobblep, ywobble, options.apix, dp, dphi, options.fract, rmaxp, rminp, not options.nopsisearch, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
+				global_def.BATCH = False
+
+			else:
+				from development import ehelix_MPI
+				global_def.BATCH = True
+				ehelix_MPI(args[0], args[1], args[2], options.delta, options.psi_max, searchxshiftp, xwobblep, ywobble, options.apix, dp, dphi, options.fract, rmaxp, rminp, not options.nopsisearch, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
+				global_def.BATCH = False
 
 		if options.MPI:
 			from mpi import mpi_finalize
