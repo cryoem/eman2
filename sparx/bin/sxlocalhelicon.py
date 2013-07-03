@@ -65,19 +65,12 @@ def main():
 	parser.add_option("--dphi",               type="float",			 default= -1.0,               help="delta phi - rotation in degrees")  
 	parser.add_option("--MA",                 action="store_true",   default=False,      		  help="predict consistent parameters based on moving average")
 	
-	parser.add_option("--ndp",                type="int",            default= 12,                 help="In symmetrization search, number of delta z steps equas to 2*ndp+1") 
-	parser.add_option("--ndphi",              type="int",            default= 12,                 help="In symmetrization search,number of dphi steps equas to 2*ndphi+1")  
-	parser.add_option("--dp_step",            type="float",          default= 0.1,                help="delta z (Angstroms) step  for symmetrization")  
-	parser.add_option("--dphi_step",          type="float",          default= 0.1,                help="dphi step for symmetrization")
-	   
 	parser.add_option("--psi_max",            type="float", 		 default= 10.0,               help="maximum psi - how far rotation in plane can can deviate from 90 or 270 degrees")   
 	parser.add_option("--rmin",               type="float", 		 default= 0.0,                help="minimal radius for hsearch (Angstroms)")   
 	parser.add_option("--rmax",               type="float", 		 default= 80.0,               help="maximal radius for hsearch (Angstroms)")
 	parser.add_option("--fract",              type="float", 		 default= 0.7,                help="fraction of the volume used for helical search")
 	parser.add_option("--sym",                type="string",		 default= "c1",               help="symmetry of the structure")
 	parser.add_option("--function",           type="string",		 default="helical",  	      help="name of the reference preparation function")
-	parser.add_option("--datasym",            type="string",		 default="datasym.txt",       help="symdoc")
-	parser.add_option("--nise",               type="int",   		 default= 200,                help="start symmetrization after nise steps")
 	parser.add_option("--npad",               type="int",   		 default= 2,                  help="padding size for 3D reconstruction")
 	parser.add_option("--debug",              action="store_true",   default=False,               help="debug")
 	parser.add_option("--initial_theta",      type="float",		     default=90.0,                help="intial theta for reference projection")
@@ -95,7 +88,6 @@ def main():
 		if options.apix < 0:
 			print "Please enter pixel size"
 			sys.exit()
-
 
 		rminp = int((float(options.rmin)/options.apix) + 0.5)
 		rmaxp = int((float(options.rmax)/options.apix) + 0.5)
@@ -134,7 +126,7 @@ def main():
 		global_def.BATCH = True
 		if len(args) < 4:  mask = None
 		else:               mask = args[3]
-		ihrsrlocalcons_MPI(args[0], args[1], args[2], mask, irp, oup, options.rs, xrp, options.ynumber, txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, rminp, rmaxp, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.apix, options.debug, y_restrict2, options.MA, options.searchit, options.pad_segs,options.test)
+		ihrsrlocalcons_MPI(args[0], args[1], args[2], mask, irp, oup, options.rs, xrp, options.ynumber, txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.dphi, options.psi_max, rminp, rmaxp, options.fract, options.npad,options.sym, options.function, options.apix, options.debug, y_restrict2, options.MA, options.searchit, options.pad_segs,options.test)
 		global_def.BATCH = False
 			
 		if options.MPI:
