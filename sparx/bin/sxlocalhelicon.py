@@ -86,9 +86,11 @@ def main():
 		
 		# Convert input arguments in the units/format as expected by ihrsr_MPI in applications.
 		if options.apix < 0:
-			print "Please enter pixel size"
+			print "Please specify pixel size --apix"
 			sys.exit()
-
+		if options.dp < 0 or options.dphi < 0:
+			print "Please specify helical symmetry parameters --dp and --dphi "
+			sys.exit()
 		rminp = int((float(options.rmin)/options.apix) + 0.5)
 		rmaxp = int((float(options.rmax)/options.apix) + 0.5)
 		
