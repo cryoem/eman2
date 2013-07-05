@@ -42,10 +42,22 @@ def main():
         for arg in sys.argv:
         	arglist.append( arg )
 	progname = os.path.basename(arglist[0])
-	usage = progname + " <stack> outdir1 outdir2 --indir --nameroot --nx --apix --Cs --voltage --ac --kboot --MPI"
-	'''
-	mpirun -np 1 sxcter.py pwrot partres --indir=. --nameroot=micrograph_PSC23_A8A_1GD_11112_135 --nx=256 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --kboot=16 --MPI
-	'''
+	usage = progname + """ stack outdir1 outdir2 --indir --nameroot --nx --apix --Cs --voltage --ac --kboot --MPI
+
+	Process micrographs:
+	
+		Specify directory and prefix of micrographs to process through --indir and --nameroot
+		Specify output directories pwrot and partres as arguments.
+		
+			mpirun -np 1 sxcter.py pwrot partres --indir=. --nameroot=micrograph_PSC23_A8A_1GD_11112_135 --nx=256 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --kboot=16 --MPI
+
+	Process stack:
+	
+		Specify name of stack and output directories as arguments.
+			sxcter.py bdb:stack pwrot partres --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --kboot=16
+
+	
+	"""
 	parser = OptionParser(usage,version=SPARXVERSION)
 	
 	parser.add_option("--indir",            	  type="string",		    default= ".",     				 help="Directory containing micrographs to be processed.")
@@ -69,7 +81,7 @@ def main():
 	(options, args) = parser.parse_args(arglist[1:])
 	
 	if len(args) <2 or len(args) > 3:
-		print "see usage"
+		print "see usage " + usage
 		sys.exit()
 	
 	stack = None
