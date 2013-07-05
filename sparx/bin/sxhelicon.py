@@ -76,9 +76,8 @@ def main():
 	parser.add_option("--test",              action="store_true",   default=False,               help="test code for where inter-segment distances are not multiples of rise")
 	
 	# ehelix streak
-	parser.add_option("--seg_ny",              type="int",            default= 45,                 help="y dimension of desired segment size")
+	parser.add_option("--seg_ny",              type="int",            default= 45,                 help="y dimension of desired segment size, should be related to fract in that fract ~ seg_ny/ny, where ny is dimension of input projections.")
 	parser.add_option("--streak",              action="store_true",   default=False,               help="test changes to adjust for streaks in cases of narrow segments")
-	parser.add_option("--fract1",              type="float", 		 default= 0.1,                help="fract for first helicising...should not exceed seg_ny/nz, where nz is height of reference volume")
 	
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
@@ -135,7 +134,7 @@ def main():
 			if options.streak:
 				from development import ehelix_streak_MPI
 				global_def.BATCH = True
-				ehelix_streak_MPI(args[0], args[1], args[2], options.seg_ny, options.fract1, options.delta, options.psi_max, searchxshiftp, xwobblep, ywobble, options.apix, dp, dphi, options.fract, rmaxp, rminp, not options.nopsisearch, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
+				ehelix_streak_MPI(args[0], args[1], args[2], options.seg_ny, options.delta, options.psi_max, searchxshiftp, xwobblep, ywobble, options.apix, dp, dphi, options.fract, rmaxp, rminp, not options.nopsisearch, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
 				global_def.BATCH = False
 
 			else:
