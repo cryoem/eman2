@@ -1418,6 +1418,7 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 	    
 	    guimic	 : 
 	'''
+	from EMAN2 import periodogram
 	from applications import MPI_start_end
 	from utilities import read_text_file, write_text_file, get_im, model_blank, model_circle, amoeba, generate_ctf
 	from sys import exit
