@@ -1470,6 +1470,7 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 			set_start = 0
 			set_end = len(namics)
 	else:
+		pw2 = []
 		data = EMData.read_images(stack)
 		nima = len(data)
 		for i in xrange(nima):
