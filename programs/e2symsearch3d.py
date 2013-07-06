@@ -35,7 +35,7 @@
 from EMAN2 import *
 import math
 import os
-from EMAN2db import EMTask
+from EMAN2jsondb import JSTask,jsonclasses
 import sys
 
 def main():
@@ -172,10 +172,10 @@ class SymALignStrategy(Strategy):
 		return bestxform
 		
 		
-class SymAlignTask(EMTask):
+class SymAlignTask(JSTask):
 	def __init__(self, volume, sym, comp, xform):
 		data = {"volume":volume}
-		EMTask.__init__(self,"CmpTilt",data,{},"")
+		JSTask.__init__(self,"CmpTilt",data,{},"")
 		
 		self.sym = sym
 		self.cmp=comp
@@ -184,5 +184,8 @@ class SymAlignTask(EMTask):
 	def execute(self,callback=None):
 		symalign = self.data['volume'].align('symalignquat',self.data['volume'],{"sym":self.sym,"xform.align3d":self.xform},self.cmp[0],self.cmp[1])
 		return {"symalign":symalign}
+	
+jsonclasses["SymAlignTask"]=SymAlignTask.from_jsondict
+
 if __name__ == "__main__":
     main()

@@ -57,13 +57,11 @@ def main():
 	# Import boxes
 	if options.import_boxes:
 		# Check to make sure there are micrographs
-		boxesdir = os.path.join(".","e2boxercache")
-		if not os.access(boxesdir, os.R_OK):
-			os.mkdir("e2boxercache")
+		if not os.access("info", os.R_OK):
+			os.mkdir("info")
 		# Do imports
 		# we add boxsize/2 to the coords since box files are stored with origin being the lower left side of the box, but in EMAN2 origin is in the center
 		if options.box_type == 'boxes':
-			db = db_open_dict('bdb:e2boxercache#boxes')
 			micros=os.listdir("micrographs")
 			for filename in args:
 				boxlist = []
@@ -71,63 +69,49 @@ def main():
 				for line in fh.readlines():
 					fields = line.split()
 					boxlist.append([float(fields[0])+float(fields[3])/2, float(fields[1])+float(fields[3])/2, 'manual'])
-				boxname=os.path.splitext(os.path.basename(filename))[0]
-				if "%s.%s"%(boxname,options.extension) in micros :  
-					db["micrographs/%s.%s"%(boxname,options.extension)] = boxlist
-				elif "%s_filt.%s"%(boxname,options.extension) in micros : 
-					db["micrographs/%s_filt.%s"%(boxname,options.extension)]=boxlist
-				else:
-					mat=[i for i in micros if boxname in i]
-					if len(mat)==0 : 
-						print "Warning: no matching micrograph for ",boxname
-						continue
-					elif len(mat)>1 : print "Warning: Ambiguous file naming convention. %s matches %s. Using %s"%(boxname,mat,mat[0])
-					db["micrographs/%s"%mat[0]]=boxlist
 					
-			db_close_dict(db)
+				js_open_dict(info_name(filename))["boxes"]=boxlist
+				if not "{}.hdf".format(base_name(filename)) in micros:
+					print "Warning: Imported boxes for {}, but micrographs/{}.hdf does not exist".format(base_name(filename),base_name(filename))
+				
 		elif options.box_type == 'tiltedboxes':
-			db = db_open_dict('bdb:e2boxercache#boxestilted')
+			
 			for filename in args:
 				boxlist = []
 				fh = open(filename, 'r')
 				for line in fh.readlines():
 					fields = line.split()
 					boxlist.append([float(fields[0])+float(fields[3])/2, float(fields[1])+float(fields[3])/2, 'tilted'])
-				db[os.path.splitext(os.path.basename(filename))[0]+options.extension] = boxlist
-			db_close_dict(db)
+				js_open_dict(info_name(filename))["boxes_tilted"]=boxlist
+				
 		elif options.box_type == 'untiltedboxes':		
-			db = db_open_dict('bdb:e2boxercache#boxesuntilted')
 			for filename in args:
 				boxlist = []
 				fh = open(filename, 'r')
 				for line in fh.readlines():
 					fields = line.split()
 					boxlist.append([float(fields[0])+float(fields[3])/2, float(fields[1])+float(fields[3])/2, 'untilted'])
-				db[os.path.splitext(os.path.basename(filename))[0]+options.extension] = boxlist
-			db_close_dict(db)
+				js_open_dict(info_name(filename))["boxes_untilted"]=boxlist
+
 		else : print "ERROR: Unknown box_type"
 			
 	# Import particles
 	if options.import_particles:
-		partsdir = os.path.join(".","particles")
-		if not os.access(partsdir, os.R_OK):
+		if not os.access("particles", os.R_OK):
 			os.mkdir("particles")
 			
-		VanHeelHash = {}
-		for filename in args:
-			# If this is an IMAGIC file process both hed and img files regardless of whether or not they are both listed
-			if filename[-4:].upper() == ".HED" or filename[-4:].upper() == ".IMG":
-				if not VanHeelHash.has_key(filename[:-4]):
-					globed = glob.glob(filename[:-4]+'*')
-					vhglobed = filter(lambda x: x[-4:].upper() == ".HED", globed)
-					for vh in vhglobed:
-						launch_childprocess("e2proc2d.py %s bdb:particles#%s"%(vh,os.path.splitext(os.path.basename(vh))[0]))
-						print ("e2proc2d.py %s bdb:particles#%s"%(vh,os.path.splitext(os.path.basename(vh))[0]))
-					VanHeelHash[filename[:-4]] = 1
-			else:
-				launch_childprocess("e2proc2d.py %s bdb:particles#%s"%(filename,os.path.splitext(os.path.basename(filename))[0]))
-				print ("e2proc2d.py %s bdb:particles#%s"%(filename,os.path.splitext(os.path.basename(filename))[0]))
-				
+		fset=set([base_name(i) for i in args])
+		if len(fset)!=len(args):
+			print "ERROR: You specified multiple files to import with the same base name, eg - a10/abc123.spi and a12/abc123.spi. If you have multiple images with the same \
+name, you will need to modify your naming convention (perhaps by prefixing the date) before importing. If the input files are in IMAGIC format, so you have .hed and .img files \
+with the same name, you should specify only the .hed files (no renaming is necessary)."
+			sys.exit(1)
+			
+		for fsp in args:
+			if EMData(fsp,0,True)["nz"]>1 :
+				run("e2proc2d.py {} particles/{}.hdf --threed2twod".format(fsp,base_name(fsp)))
+			else: run("e2proc2d.py {} particles/{}.hdf".format(fsp,base_name(fsp)))
+	   
 	# Import tomograms
 	if options.import_tomos:
 		tomosdir = os.path.join(".","rawtomograms")
@@ -141,6 +125,19 @@ def main():
 			if options.importation == "link":
 				os.symlink(filename,os.path.join(tomosdir,os.path.basename(filename)))
 	E2end(logid)
-			
+		
+def run(command):
+	"Mostly here for debugging, allows you to control how commands are executed (os.system is normal)"
+
+	print "{}: {}".format(time.ctime(time.time()),command)
+	ret=launch_childprocess(command)
+
+	# We put the exit here since this is what we'd do in every case anyway. Saves replication of error detection code above.
+	if ret !=0 :
+		print "Error running: ",command
+		sys.exit(1)
+
+	return
+
 if __name__ == "__main__":
 	main()

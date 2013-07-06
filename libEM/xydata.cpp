@@ -56,6 +56,8 @@ XYData::XYData()
 
 void XYData::update()
 {
+	if (data.size()==0) return;
+	
 	std::sort(data.begin(), data.end());
 
 	ymin = FLT_MAX;
@@ -80,8 +82,9 @@ int XYData::read_file(const string & filename)
 {
 	FILE *in = fopen(filename.c_str(), "rb");
 	if (!in) {
-		LOGERR("cannot open xydata file '%s'", filename.c_str());
-		return 1;
+		throw FileAccessException(filename.c_str());
+//		LOGERR("cannot open xydata file '%s'", filename.c_str());
+//		return 1;
 	}
 
 	char buf[MAXPATHLEN];
@@ -197,6 +200,31 @@ void XYData::set_xy_list(const vector<float>& xlist, const vector<float>& ylist)
 void XYData::set_size(size_t n)
 {
 	data.resize(n, Pair(0.0f, 0.0f));
+}
+
+vector<float>  XYData::get_state() const {
+	vector<float> list;
+	vector<Pair>::const_iterator cit;
+	for(cit=data.begin(); cit!=data.end(); ++cit) {
+		list.push_back( (*cit).x);
+		list.push_back( (*cit).y);
+	}
+
+	return list;
+	
+}
+
+void  XYData::set_state(vector<float> list) {
+	if(list.size()%2==1) {
+		throw InvalidParameterException("Invalid pickled data");
+	}
+
+	data.clear();
+	for(unsigned int i=0; i<list.size(); i+=2) {
+		data.push_back(Pair(list[i], list[i+1]));
+	}
+
+	update();
 }
 
 vector<float> XYData::get_xlist() const

@@ -327,9 +327,7 @@ def main():
 			elif option1 == "setsf":
 				sf=XYData()
 				sf.read_file(options.setsf)
-				
 				data.process_inplace("filter.setstrucfac",{"apix":apix,"strucfac":sf})
-				
 				#dataf = data.do_fft()
 				#curve = dataf.calc_radial_dist(ny, 0, 0.5,True)
 				#filt=[]                 

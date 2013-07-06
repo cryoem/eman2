@@ -186,7 +186,7 @@ for option1 in optionList:
 	elif option1 == "randomizemodel":
 		if options.randomizemodel != 0:
 			s1 = "e2proc3d.py " + E2FA + "/3DMapInOut.mrc " + E2FA + "/3DMapInOut.mrc --process=filter.lowpass.randomphase:apix=" + str(tmp['apix']) + ":cutoff_freq=" + str(1/options.randomizemodel)
-			call(s1, cd shell=True)
+			call(s1, shell=True)
 
 OUTFILE2 = E2FA + "/card.txt"          # Cards required by FA
 f = open(OUTFILE2, 'w')      # card.txt to be placed in the E2FA subdirectory created above

@@ -350,13 +350,13 @@ def EMSelectorBaseTemplate(Type):
 		
 		def ok_button_clicked(self,bool):
 			''' Slot for OK button '''
-			print "EMSelectorBase.ok_button_clicked"
+			#print "EMSelectorBase.ok_button_clicked"
 			self.emit(QtCore.SIGNAL("ok"),self.selections)
 			self.emit(QtCore.SIGNAL("oky"))
 		
 		def cancel_button_clicked(self,bool):
 			''' Slot for Cancel button '''
-			print "EMSelectorBase.cancel_button_clicked"
+			#print "EMSelectorBase.cancel_button_clicked"
 			self.emit(QtCore.SIGNAL("cancel"),self.selections)
 		
 		
@@ -2199,7 +2199,7 @@ if __name__ == '__main__':
 	
 	em_selector = EMSelectorDialog()
 	files = em_selector.exec_()
-	print files
-	print "Press Ctrl-C to exit" #FIXME: figure out why Ctrl-C is required to terminate the program
+	#print files
+	#print "Press Ctrl-C to exit" #FIXME: figure out why Ctrl-C is required to terminate the program
 	em_app.exit(0)
 	em_app.execute() 

@@ -58,20 +58,20 @@ def get_eulers_from(filename):
 			continue
 			#print "image",i,"doesn't have the xform.projection attribute"
 			#return None
-		
+
 		eulers.append(p)
-		
+
 	return eulers
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """prog 
-	
+	usage = """prog
+
 	Presents a graphical representation of the orientation distribution of the particles in a single particle
 	reconstruction. This is displayed as a single asymmetric unit on a sphere, with cylinders of varying height
 	representing the number of particles found in each orientation. Middle-click will produce a control-panel
-	as usual, and clicking on a single peak will permit viewing the class-average and related projection 
-	(and particles). 
+	as usual, and clicking on a single peak will permit viewing the class-average and related projection
+	(and particles).
 
 	Normally launched without arguments from a e2workflow project directory.
 
@@ -85,36 +85,41 @@ def main():
 
 	global options
 	(options, args) = parser.parse_args()
-	
-	
+
+
 	logid=E2init(sys.argv,options.ppid)
-	
+
 	em_app = EMApp()
 	window = EMEulerWidget(file_name = options.eulerdata)
 	em_app.show_specific(window)
 	em_app.execute()
-	
+
 	E2end(logid)
 
 class EMEulerWidget(EMSymViewerWidget):
 	def __init__(self, auto=True,sparse_mode=False, file_name = ""):
 		EMSymViewerWidget.__init__(self, filename=file_name)
-			
+
 		#Replacing the EM3DSymModel that was created in the base class
 		euler_explorer = EMEulerExplorer(self, auto, sparse_mode, file_name = file_name)
 		self.model = euler_explorer
 		euler_explorer.regen_dl()
 
+def sadd(d,a,b):
+	if a==None : return None
+	if b==None : return d+"/"+a
+	return d+"/"+a+b
+
 class EMEulerExplorer(EM3DSymModel,Animator):
-	
+
 	def mousePressEvent(self,event):
 		if self.events_mode == "inspect":
 			self.current_hit = self.get_hit(event)
-			if self.current_hit == None: 
+			if self.current_hit == None:
 				EM3DSymModel.mousePressEvent(self,event)
 		else:
 			EM3DSymModel.mousePressEvent(self,event)
-	
+
 	def mouseReleaseEvent(self,event):
 		if self.events_mode == "inspect":
 			if self.current_hit != None:
@@ -125,19 +130,19 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 			else:
 				#EM3DSymModel.mouseReleaseEvent(self,event)
 				EM3DModel.mouseReleaseEvent(self, event) #behavior in EM3DSymModel is not what we want (needed in sibling classes?)
-				
+
 			self.current_hit = None
 		else:
 				#EM3DSymModel.mouseReleaseEvent(self,event)
 				EM3DModel.mouseReleaseEvent(self, event) #behavior in EM3DSymModel is not what we want (needed in sibling classes?)
 
-		
+
 	def mouseMoveEvent(self,event):
 		if self.events_mode == "inspect" and self.current_hit:
 			pass
 		else:
 			EM3DSymModel.mouseMoveEvent(self,event)
-		
+
 	def get_hit(self,event):
 		v = self.vdtools.wview.tolist()
 		self.get_gl_widget().makeCurrent() # prevents a stack underflow
@@ -155,7 +160,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 ##				print (reslt-val).length()
 #				return i
 #		print vv
-#		
+#
 		# the problem with this approach is that depth testing is not part of picking
 		sb = [0 for i in xrange(0,512)]
 		glSelectBuffer(512)
@@ -173,7 +178,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 		glPopMatrix()
 		glMatrixMode(GL_MODELVIEW)
 		glFlush()
-		
+
 		intersection = None
 		hits = list(glRenderMode(GL_RENDER))
 		for hit in hits:
@@ -181,12 +186,12 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 			if len(c) > 0:
 				intersection = c[0]-1
 				break
-		
+
 		return intersection
 
-	
+
 	def keyPressEvent(self,event):
-		
+
 		if event.key() == Qt.Key_F1:
 			self.display_web_help("http://blake.bcm.edu/emanwiki/EMAN2/Programs/e2eulerxplor")
 		elif event.key() == Qt.Key_F :
@@ -196,18 +201,18 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 			self.updateGL()
 		else:
 			EM3DSymModel.keyPressEvent(self,event)
-	
+
 	def __init__(self, gl_widget=None, auto=True,sparse_mode=False, file_name = ""):
 		self.current_hit = None
 		self.events_mode_list = ["navigate", "inspect"]
 		self.events_mode = self.events_mode_list[1]
-		
-		
+
+
 		self.init_lock = True # a lock indicated that we are still in the __init__ function
 		self.au_data = None # This will be a dictionary, keys will be refinement directories, values will be something like available iterations for visual study
 		if auto: # this a flag that tells the eulerxplorer to search for refinement data and automatically add elements to the inspector, if so
 			self.gen_refinement_data()
-		
+
 		EM3DSymModel.__init__(self, gl_widget, eulerfilename=file_name)
 		Animator.__init__(self)
 		self.height_scale = 8.0 # This is a value used in EM3DSymModel which scales the height of the displayed cylinders - I made it 8 because it seemed fine. The user can change it anyhow
@@ -224,69 +229,67 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 		self.da = None# This is an EMData object storing the angle of the alignments for all particles. Generated by e2classaverage
 		self.dflip = None # This is an EMData object storing whether or not tthe alignment involved a flip, for all particles. Generated by e2classaverage
 		self.classes = None # This is an EMData object storing which class(es) a particle belongs to. Generated by e2classaverage
-		self.inclusions = None # This is and EMDAta storing a boolean that indicates the particle was actually included in the final average. Generated by e2classaverage 
-		
+		self.inclusions = None # This is and EMDAta storing a boolean that indicates the particle was actually included in the final average. Generated by e2classaverage
+
 		self.average = None # This the class average itself, an EMData object
 		self.projection = None # This is the projection itelse, an EMData object
 		self.class_idx = None # This is the idx of the current class being studied in the interface
-			
+
 		self.previous_len = -1 # To keep track of the number of class averages that were previously viewable. This helps to make sure we can switch to the same class average in the context of a different refinement iteration
 		self.mirror_eulers = False
 		if sparse_mode:
 			self.mirror_eulers = True # If True the drawn Eulers are are also rendered on the opposite side of the sphere - see EM3DSymModel.make_sym_dl_lis
-				
+
 		# Grab the symmetry from the workflow database if possible
-		sym = "icos"
-		if db_check_dict("bdb:emform.e2refine"):
-			db = db_open_dict("bdb:emform.e2refine",ro=True)
-			if db.has_key("symname") and db.has_key("symnumber"):
-				sym = db["symname"] + db["symnumber"]
-			#db_close_dict("bdb:emform.e2refine")
-		
+		sym = "c1"
+		if js_check_dict("refine_01/0_refine_parms.json"):
+			try: sym = str(js_open_dict("refine_01/0_refine_parms.json")["sym"])
+			except: pass
+
 		# Have to tell the EM3DSymModel that there is a new sym
 		self.set_symmetry(sym)
-		
-		# this object will have 
+
+		# this object will have
 		if self.au_data != None:
 			combo_entries = self.au_data.keys()
 			combo_entries.sort()
 			combo_entries.reverse()
-			
+
 			if len(combo_entries) > 0:
 				au = combo_entries[0]
 				cls = self.au_data[au][0][0]
 				self.au_selected(au,cls)
-				self.mirror_eulers = True 
-						
+				self.mirror_eulers = True
+
 		self.init_lock = False
 		self.force_update=True # Force a display udpdate in EMImage3DSymModule
-		
+
 		QtCore.QObject.connect(self, QtCore.SIGNAL("point_selected"), self.au_point_selected)
-		
+
 	def __del__(self):
 		EM3DSymModel.__del__(self) # this is here for documentation purposes - beware that the del function is important
 
 	def initializeGL(self):
 		glEnable(GL_NORMALIZE)
-	
+
 	def generate_current_display_list(self,force=False):
 		'''
 		Redefinition of EMImage3DSymModule.generate_current_display_list
-		
+
 		'''
 		if self.init_lock: return 0
 		if self.au_data == None or len(self.au_data) == 0:
 			EM3DSymModel.generate_current_display_list(self,force)
-		
+
 		self.init_basic_shapes()
 		if self.nomirror == True : val = 0
 		else: val = 1
 		self.trace_great_arcs(self.sym_object.get_asym_unit_points(val))
 		self.trace_great_triangles(val)
-		
+
 		self.eulers = self.specified_eulers
 		if self.eulers == None:	return 0
-		
+
 #		if not self.colors_specified: self.point_colors = []
 #		else: self.point_colors = self.specified_colors
 #		self.points = []
@@ -294,19 +297,19 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 #			p = i.transpose()*Vec3f(0,0,self.radius)
 #			self.points.append(p)
 #			if not self.colors_specified: self.point_colors.append((0.34615, 0.3143, 0.0903,1))
-		
+
 		self.make_sym_dl_list(self.eulers)
 		return 1
 	def get_data_dims(self):
 		return (2*self.radius,2*self.radius,2*self.radius)
-	
+
 	def width(self): return 2*self.radius
 	def height(self): return 2*self.radius
 	def depth(self): return 2*self.radius
-	
+
 	def gen_refinement_data(self):
 		dirs,files = get_files_and_directories()
-		
+
 		dirs.sort()
 		for i in range(len(dirs)-1,-1,-1):
 			if len(dirs[i]) != 9:
@@ -316,10 +319,10 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 			else:
 				try: int(dirs[i][7:])
 				except: dirs.pop(i)
-		
+
 		self.dirs = dirs
 		print dirs
-		
+
 		self.au_data = {}
 		for dir in self.dirs:
 			d = self.check_refine_db_dir(dir)
@@ -330,48 +333,35 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 		names = [s1,s2,s3,s4,s5]
 		data = {}
 		data[dir] = []
-		register_db_name = "bdb:"+dir+"#register"
-		# needs to exist
-		if not db_check_dict(register_db_name):return {}
-		db = db_open_dict(register_db_name,ro=True)
-		if not db.has_key("cmd_dict"): return {}
-		# need to be able to get the input data
-		cmd = db["cmd_dict"]
-		if cmd == None or not cmd.has_key("input"): return {}
-		
-		for i in range(0,99):
-			last_bit = "%02d"%i
-			fail = False
-			r = []
-			# cmd dictionary needs to be stored
-			
-			for name in names:
-				if name==None :
-					r.append(None)
-					continue
-				db_name = "bdb:"+dir+"#"+name+"_"+last_bit
-				if not db_check_dict(db_name):
-					fail= True
-					#print "Failed on ",name," in ",db_name
-					break
-				else: r.append(db_name)
+		register_js_name = "{}/0_refine_parms.json".format(dir)
 
-			if not fail:
-				data[dir].append(r)
-			else : break
+		files=os.listdir(dir)
+		try:
+			nums=[int(i[7:9]) for i in files if "threed" in i and "even" not in i and "odd" not in i]
+			maxnum=max(nums)
+		except :
+			print "Nothing in ",dir
+			return {}
+
+		for i in xrange(1,maxnum+1):
+			exte="_{:02d}_even.hdf".format(i)
+			exto="_{:02d}_odd.hdf".format(i)
+			data[dir].append([sadd(dir,s1,exte),sadd(dir,s2,exte),sadd(dir,s3,exte),sadd(dir,s4,exte),sadd(dir,s5,exte)])
+			data[dir].append([sadd(dir,s1,exto),sadd(dir,s2,exto),sadd(dir,s3,exto),sadd(dir,s4,exto),sadd(dir,s5,exto)])
+
 		return data
-	
+
 	def set_projection_file(self,projection_file): self.projection_file = projection_file
 	def get_inspector(self):
-		if not self.inspector : 
+		if not self.inspector :
 			if (self.au_data == None or len(self.au_data) == 0) and self.mirror_eulers == False: #self.mirror_eulers thing is a little bit of a hack, it's tied to the sparse_mode flag in the init function, which is used by euler_display in EMAN2.py
 				self.inspector=EMAsymmetricUnitInspector(self,True,True)
-			else: 
+			else:
 				self.inspector=EMAsymmetricUnitInspector(self)
 			QtCore.QObject.connect(self.inspector,QtCore.SIGNAL("au_selected"),self.au_selected)
 		return self.inspector
 
-	
+
 	def au_selected(self,refine_dir,cls):
 		self.refine_dir = refine_dir
 		get_application().setOverrideCursor(Qt.BusyCursor)
@@ -380,49 +370,33 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 			if d[0] == cls:
 				data = d;
 				break
-			
+
 		if len(data) == 0:
 			error("error, no data for %s %s, returning" %(refine_dir,cls))
 #			print "error, no data for",au,cls,"returning"
 			self.events_handlers["inspect"].reset()
 			get_application().setOverrideCursor(Qt.ArrowCursor)
 			return
-		
-		register_db_name = "bdb:"+refine_dir+"#register"
-		if not db_check_dict(register_db_name):
-			error("The %s database does not exist" %register_db_name )
+
+		try :
+			self.particle_file=js_open_dict(refine_dir+"/0_refine_parms.json")["input"]
+		except:
+			error("No data in "+refine_dir )
 			self.events_handlers["inspect"].reset()
 			get_application().setOverrideCursor(Qt.ArrowCursor)
 			return
-		
-		db = db_open_dict(register_db_name)
-		if not db.has_key("cmd_dict"):
-			error("The %s database must have the cmd entry" %register_db_name )
-			self.events_handlers["inspect"].reset()
-			get_application().setOverrideCursor(Qt.ArrowCursor)
-			return
-		
-		cmd = db["cmd_dict"]
-		
-		if not cmd.has_key("input"):
-			error("The %s database must have the cmd entry" %register_db_name )
-			self.events_handlers["inspect"].reset()
-			get_application().setOverrideCursor(Qt.ArrowCursor)
-			return
-		
-		self.particle_file  = cmd["input"]
-		
+
 		self.average_file = cls
 		self.projection_file = data[4]
 		self.alignment_file = data[2]
 		self.clsdb = data[1]
-		
+
 		self.dx = None
 		self.dy = None
 		self.da = None
 		self.dflip = None
 		self.classes = None
-		
+
 		eulers = get_eulers_from(self.average_file)
 		#s = Symmetries.get("d7")
 		#eulers = s.gen_orientations("rand",{"n":EMUtil.get_image_count(self.average_file)})
@@ -434,7 +408,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 		#print len(a),len(eulers)
 		#b = [a[i].set_attr("xform.projection",eulers[i]) for i in range(len(eulers))]
 		#b = [a[i].set_attr("ptcl_repr",1) for i in range(len(eulers))]
-		
+
 		self.set_emdata_list_as_data(EMLightWeightParticleCache.from_file(self.average_file),"ptcl_repr")
 		#self.set_emdata_list_as_data(EMDataListCache(self.average_file),"ptcl_repr")
 #		self.set_emdata_list_as_data(a,"ptcl_repr")
@@ -446,7 +420,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 		self.previous_len = len(eulers)
 		if not self.init_lock:self.updateGL()
 		get_application().setOverrideCursor(Qt.ArrowCursor)
-		
+
 	def __get_file_headers(self,filename):
 		headers = []
 		n = EMUtil.get_image_count(filename)
@@ -455,9 +429,9 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 			e.read_image(filename,i,True)
 			headers.append(e)
 		return headers
-	
+
 	def au_point_selected(self,i,event=None):
-		if i == None: 
+		if i == None:
 			if event != None and event.modifiers()&Qt.ShiftModifier:
 				if self.special_euler != None:
 					self.special_euler = None
@@ -481,7 +455,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 			except:
 				self.class_idx = -1
 		else: return
-		
+
 		#if self.projection  == None and self.average == None: return
 		first = False
 		if self.proj_class_viewer == None:
@@ -492,15 +466,15 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 #			self.proj_class_viewer.set_mouse_mode("App" )
 			QtCore.QObject.connect(self.proj_class_viewer,QtCore.SIGNAL("mx_image_selected"), self.mx_image_selected)
 			get_application().show_specific(self.proj_class_viewer)
-			
+
 			self.proj_class_single = EMImage2DWidget(image=None,application=get_application())
 			QtCore.QObject.connect(self.proj_class_single,QtCore.SIGNAL("module_closed"),self.on_mx_view_closed)
 #			QtCore.QObject.connect(self.proj_class_single,QtCore.SIGNAL("mx_image_selected"), self.mx_image_selected)
 			get_application().show_specific(self.proj_class_single)
-			
+
 		disp = []
 		if self.projection != None: disp.append(self.projection)
-		if self.average != None and self.projection!=None: 
+		if self.average != None and self.projection!=None:
 			# ok, this really should be put into its own processor
 			#dataf = self.projection.do_fft()
 			#apix=self.projection["apix_x"]
@@ -519,41 +493,41 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 			filt.process_inplace("filter.matchto",{"to":self.projection})
 
 			disp.append(filt)
-			
+
 		if self.average!=None:
 			disp.append(self.average)
 
 		self.proj_class_viewer.set_data(disp)
 		self.proj_class_single.set_data(disp)
-		
+
 		self.proj_class_viewer.updateGL()
 		self.proj_class_single.updateGL()
 		if self.particle_viewer != None:
 			self.mx_image_selected(None,None)
 		if first: self.proj_class_viewer.optimally_resize()
-		
+
 		if i != self.special_euler:
 			self.special_euler = i
 			self.force_update = True
-		
+
 		if not self.init_lock: self.updateGL()
-		
-		
+
+
 	def on_mx_view_closed(self):
 		self.proj_class_viewer = None
 		self.proj_class_single = None
-		
+
 	def on_particle_mx_view_closed(self):
 		self.particle_viewer = None
-	
+
 	def animation_done_event(self,animation):
 		pass
-	
+
 	def alignment_time_animation(self,transforms):
 		if len(transforms) < 2: return
 		animation = OrientationListAnimation(self,transforms,self.radius)
 		self.register_animatable(animation)
-			
+
 	def particle_selected(self,event,lc):
 		if lc != None:
 			d = lc[3]
@@ -564,15 +538,15 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 			for l in data:
 				for s in l:
 					stag = get_file_tag(s)
-					
+
 					if len(stag) > 11 and stag[:11] == "projections":
 						prj.append(s)
 					elif len(stag) > 10 and stag[:10] == "cls_result":
 						cls_result.append(s)
-						
+
 			transforms = []
 			if len(prj) != len(cls_result): RunTimeError("The number of cls_result files does not match the number of projection files?")
-			
+
 			e = EMData()
 			for i,cr in enumerate(cls_result):
 				r = Region(0,ptcl_idx,1,1)
@@ -580,14 +554,14 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 				p = int(e.get(0))
 				e.read_image(prj[i],p,True)
 				transforms.append(e["xform.projection"])
-				
+
 			self.alignment_time_animation(transforms)
 
 	def mx_image_selected(self,event,lc):
 #		self.arc_anim_points = None
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		if lc != None: self.sel = lc[0]
-		
+
 		if self.average != None:
 			included = []
 			if self.average.has_attr("class_ptcl_idxs"):
@@ -595,10 +569,10 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 			excluded = []
 			if self.average.has_attr("exc_class_ptcl_idxs"):
 				excluded = self.average["exc_class_ptcl_idxs"]
-				
+
 			all = included + excluded
 			#all.sort()
-			
+
 			bdata = []
 			data = []
 			idx_included = []
@@ -608,15 +582,15 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 				bdata.append([self.particle_file,val,[ApplyAttribute("Img #",val)]])
 				idx_included.append(running_idx)
 				running_idx += 1
-			
+
 			idx_excluded = []
 			for val in excluded:
 				bdata.append([self.particle_file,val,[ApplyAttribute("Img #",val)]])
 				idx_excluded.append(running_idx)
 				running_idx += 1
-	
+
 			data = EMLightWeightParticleCache(bdata)
-			
+
 			first = False
 			if self.particle_viewer == None:
 				first = True
@@ -625,14 +599,14 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 				QtCore.QObject.connect(self.particle_viewer,QtCore.SIGNAL("module_closed"),self.on_particle_mx_view_closed)
 				QtCore.QObject.connect(self.particle_viewer,QtCore.SIGNAL("mx_image_selected"), self.particle_selected)
 				get_application().show_specific(self.particle_viewer)
-		
-			
+
+
 			self.check_images_in_memory()
-			
+
 			if self.sel== 0 or self.alignment_file == None:
 				self.particle_viewer.set_data(data)
 			else:
-				
+
 				for i,[name,idx,f] in enumerate(bdata):
 					index = -1
 					if self.classes.get_xsize() == 1:
@@ -646,12 +620,12 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 						print "couldn't find"
 						get_application().setOverrideCursor(Qt.ArrowCursor)
 						return
-				
+
 					x = self.dx.get(index,idx)
 					y = self.dy.get(index,idx)
 					a = self.da.get(index,idx)
 					m = self.dflip.get(index,idx)
-					
+
 					t = Transform({"type":"2d","alpha":a,"mirror":int(m)})
 					t.set_trans(x,y)
 					from emimagemx import ApplyTransform
@@ -659,20 +633,20 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 					#data[i].transform(t)
 				self.particle_viewer.set_data(data)
 
-			
+
 			if first:
 				self.particle_viewer.updateGL()
 				self.particle_viewer.optimally_resize()
-			
+
 			self.particle_viewer.clear_sets(False)
 			self.particle_viewer.enable_set("Excluded",idx_excluded,True,False)
 			self.particle_viewer.enable_set("Included",idx_included,False,False)
 			self.particle_viewer.updateGL()
-			
+
 			get_application().setOverrideCursor(Qt.ArrowCursor)
-			
+
 			self.updateGL()
-			
+
 	def check_images_in_memory(self):
 		if self.alignment_file != None:
 			if self.dx == None:
@@ -687,16 +661,16 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 				self.classes  = EMData(self.alignment_file,0)
 			if self.inclusions == None:
 				self.inclusions  = EMData(self.alignment_file,1)
-			
-		
+
+
 	def set_events_mode(self,mode):
 		if not mode in self.events_mode_list:
 			print "error, unknown events mode", mode
 			return
-		
+
 		else:
 			self.events_mode = mode
-			
+
 	def closeEvent(self,event):
 		if self.inspector !=None: self.inspector.close()
 		if self.proj_class_viewer !=None: self.proj_class_viewer.close()
@@ -713,21 +687,21 @@ def set_included_1(e):
 def set_included_0(e):
 	e.set_attr("included",0)
 	e.mxset = [0]
-	
+
 
 
 class EMAsymmetricUnitInspector(EMSymInspector):
 	def __init__(self,target,enable_trace=False,enable_og=False) :
 		EMSymInspector.__init__(self,target,enable_trace=enable_trace,enable_og=enable_og)
-		
+
 		if target.au_data != None and len(target.au_data) > 0:
 			self.add_au_table()
-		
+
 	def add_au_table(self):
-		
+
 		self.au_tab= QtGui.QWidget()
 		self.au_tab.vbl = QtGui.QVBoxLayout(self.au_tab)
-		
+
 		self.au_data = self.target().au_data
 		combo_entries = self.au_data.keys()
 		combo_entries.sort()
@@ -735,59 +709,59 @@ class EMAsymmetricUnitInspector(EMSymInspector):
 		self.combo = QtGui.QComboBox(self)
 		for e in combo_entries:
 			self.combo.addItem(e)
-			
+
 		self.connect(self.combo,QtCore.SIGNAL("currentIndexChanged(QString&)"),self.on_combo_change)
 		self.connect(self.combo,QtCore.SIGNAL("currentIndexChanged(const QString&)"),self.on_combo_change)
-			
+
 		self.au_tab.vbl.addWidget(self.combo)
 		self.refine_dir = combo_entries[0]
-		
+
 		self.list_widget = QtGui.QListWidget(None)
-		
+
 		self.list_widget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
 		self.list_widget.setMouseTracking(True)
 		QtCore.QObject.connect(self.list_widget,QtCore.SIGNAL("itemClicked(QListWidgetItem *)"),self.list_widget_item_clicked)
-	
+
 		self.update_classes_list(first_time=True)
 		self.au_tab.vbl.addWidget(self.list_widget)
 		self.tabwidget.insertTab(0,self.au_tab,"Refinement")
 		self.tabwidget.setCurrentIndex(0)
-	
+
 	def on_combo_change(self,s):
 		self.refine_dir = str(s)
 		self.update_classes_list()
-	
+
 	def update_classes_list(self,first_time=False):
 		selected_items = self.list_widget.selectedItems() # need to preserve the selection
-		
+
 		s_text = None
 		if len(selected_items) == 1 :
 			s_text = str(selected_items[0].text())
-			if len(s_text) > 4: s_text = s_text[-4:] 
-			
+			if len(s_text) > 4: s_text = s_text[-4:]
+
 		self.list_widget.clear()
 		for i,vals in enumerate(self.au_data[self.refine_dir]):
 			choice = vals[0]
-			
+
 			a = QtGui.QListWidgetItem(str(choice),self.list_widget)
 			if first_time and i == 0:
 				self.list_widget.setItemSelected(a,True)
 			elif len(choice) > 4 and (choice[-4:] == s_text):
 				self.list_widget.setItemSelected(a,True)
-				
+
 		selected_items = self.list_widget.selectedItems() # need to preserve the selection
 		if len(selected_items) == 1:
 			self.emit(QtCore.SIGNAL("au_selected"),self.refine_dir,str(selected_items[0].text()))
-	
+
 	def list_widget_item_clicked(self,item):
 		self.emit(QtCore.SIGNAL("au_selected"),self.refine_dir,str(item.text()))
-	
+
 	def on_mouse_mode_clicked(self,bool):
 		for button in self.mouse_mode_buttons:
 			if button.isChecked():
 				self.target().set_events_mode(str(button.text()))
-				
-	
+
+
 
 if __name__ == '__main__':
 	main()

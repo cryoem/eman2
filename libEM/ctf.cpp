@@ -551,17 +551,29 @@ string EMAN2Ctf::to_string() const
 
 void EMAN2Ctf::from_dict(const Dict & dict)
 {
+//	printf("st\n");	
 	defocus = (float)dict["defocus"];
+//	printf("df\n");
 	dfdiff = (float)dict["dfdiff"];
+//	printf("dfd\n");
 	dfang = (float)dict["dfang"];
+//	printf("dfa\n");
 	bfactor = (float)dict["bfactor"];
+//	printf("bf\n");
 	ampcont = (float)dict["ampcont"];
+//	printf("ac\n");
 	voltage = (float)dict["voltage"];
+//	printf("vo\n");
 	cs = (float)dict["cs"];
+//	printf("cs\n");
 	apix = (float)dict["apix"];
+//	printf("ap\n");
 	dsbg = (float)dict["dsbg"];
+//	printf("ds\n");
 	background = dict["background"];
+//	printf("bg\n");
 	snr = dict["snr"];
+	printf("done\n");
 }
 
 Dict EMAN2Ctf::to_dict() const

@@ -572,7 +572,7 @@ class EMProjectDataDict:
 
 			tmp = {}
 			tmp[filt] = n
-			if use_file_tag: dict[get_file_tag(n)] = tmp
+			if use_file_tag: dict[base_name(n)] = tmp
 			else: dict[n] = tmp
 			
 			
@@ -664,7 +664,7 @@ class EMProjectDataDict:
 #		data_dict = project_db.get(spr_ptcls_dict,dfl={})
 #		acted = False
 #		for key, value in data_dict.items():
-#			tag = get_file_tag(key)
+#			tag = base_name(key)
 #			print tag,key
 #			if tag != key:
 #				acted = True
@@ -880,7 +880,7 @@ Note that the data cannot be filtered unless it is imported."
 				full_names = [table_widget.convert_text(name) for name in names]
 				db_full_names = [table_widget.convert_text(name) for name in names]
 				if self.using_file_tags:
-					db_full_names = [get_file_tag(table_widget.convert_text(name)) for name in names]
+					db_full_names = [base_name(table_widget.convert_text(name)) for name in names]
 					
 				#print names
 				#print project_names
@@ -1388,8 +1388,8 @@ class ParticleWorkFlowTask(WorkFlowTask):
 				
 				from emform import get_table_items_in_column
 				entries = get_table_items_in_column(table_widget,0)
-				entrie_tags = [get_file_tag(str(i.text())) for i in entries]
-				file_tags = [get_file_tag(i) for i in files]
+				entrie_tags = [base_name(str(i.text())) for i in entries]
+				file_tags = [base_name(i) for i in files]
 				error_messages = []
 				for idx,tag in enumerate(file_tags):
 					if tag in entrie_tags:
@@ -1473,8 +1473,8 @@ class CTFColumns:
 		if db_check_dict("bdb:e2ctf.parms"):
 			ctf_db = db_open_dict("bdb:e2ctf.parms",ro=True)
 			try:
-#				print name,get_file_tag(name),ctf_db[get_file_tag(name)]
-				quality = ctf_db[get_file_tag(name).split("_ctf")[0]][3]
+#				print name,base_name(name),ctf_db[base_name(name)]
+				quality = ctf_db[base_name(name).split("_ctf")[0]][3]
 				return "%d" %quality
 			except:
 				pass
@@ -1493,7 +1493,7 @@ class CTFDBColumns(CTFColumns):
 					if db_check_dict("bdb:e2ctf.parms"):
 						ctf_db = db_open_dict("bdb:e2ctf.parms",ro=False)
 						try:
-							vals = ctf_db[get_file_tag(name)][0]
+							vals = ctf_db[base_name(name)][0]
 							ctf = EMAN2Ctf()
 							ctf.from_string(vals)
 							self.ctf_cache[name] = ctf
@@ -1508,7 +1508,7 @@ class CTFDBColumns(CTFColumns):
 		if db_check_dict("bdb:e2ctf.parms"):
 			ctf_db = db_open_dict("bdb:e2ctf.parms",ro=False)
 			try:
-				quality = ctf_db[get_file_tag(name)][3]
+				quality = ctf_db[base_name(name)][3]
 				return "%d" %quality
 			except:
 				pass
@@ -1625,7 +1625,7 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 				#name_map[name] = name
 			#else:
 			
-			new_name = "bdb:particles#"+get_file_tag(name)
+			new_name = "bdb:particles#"+base_name(name)
 			if file_exists(new_name):
 				i = 0
 				while 1:
@@ -1747,7 +1747,7 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 #				print list_of_names
 				project_db = db_open_dict("bdb:project")
 				project_names = project_db.get(self.project_list,dfl=[])
-				project_name_tags = [get_file_tag(name) for name in project_names]
+				project_name_tags = [base_name(name) for name in project_names]
 #				print project_names,project_name_tags
 
 				for name in list_of_names:
@@ -1756,15 +1756,15 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 						return
 				
 #				for name in list_of_names:
-#					if get_file_tag(name) in project_name_tags:
+#					if base_name(name) in project_name_tags:
 #						EMErrorMessageDisplay.run(["%s is already in the project" %name])
 #						return
 
-				err_list=[i for i in list_of_names if (get_file_tag(i) in project_name_tags)]
+				err_list=[i for i in list_of_names if (base_name(i) in project_name_tags)]
 				if len(err_list)>0 : EMErrorMessageDisplay.run(["%s are already in the project"%(",".join(err_list))])
 
 				# only include files not already in the project
-				list_of_names=[i for i in list_of_names if not (get_file_tag(i) in project_name_tags)]
+				list_of_names=[i for i in list_of_names if not (base_name(i) in project_name_tags)]
 						
 				# if we make it here we're good
 				# first add entries to the table
@@ -1792,8 +1792,8 @@ class EMParticleImportTask(ParticleWorkFlowTask):
 					
 					from emform import get_table_items_in_column
 					entries = get_table_items_in_column(table_widget,0)
-					entrie_tags = [get_file_tag(str(i.text())) for i in entries]
-					file_tags = [get_file_tag(i) for i in files]
+					entrie_tags = [base_name(str(i.text())) for i in entries]
+					file_tags = [base_name(i) for i in files]
 #					print file_tags
 					error_messages = []
 					for idx,tag in enumerate(file_tags):
@@ -2743,7 +2743,7 @@ class E2CTFWorkFlowTask(EMParticleReportTask):
 		
 		def __get_num_filtered(self,name,filt):
 			
-			tag = get_file_tag(name)
+			tag = base_name(name)
 			if self.db_map.has_key(tag):
 				val = self.db_map[tag]
 				if val.has_key(filt):
@@ -2753,7 +2753,7 @@ class E2CTFWorkFlowTask(EMParticleReportTask):
 			return ""
 		
 		def __get_dim_filtered(self,name,filt):
-			tag = get_file_tag(name)
+			tag = base_name(name)
 			if self.db_map.has_key(tag):
 				val = self.db_map[tag]
 				if val.has_key(filt):
@@ -3510,9 +3510,9 @@ this stage. It is used for display purposes only !"
 #			particles = self.particles_map[self.particles_name_map[choice]]
 #			for name in particles:
 #				if self.name_map.has_key(name):
-#					name_map[name] = get_file_tag(self.name_map[name])
+#					name_map[name] = base_name(self.name_map[name])
 #				else:
-#					name_map[name] = get_file_tag(name)
+#					name_map[name] = base_name(name)
 					
 			self.emit(QtCore.SIGNAL("replace_task"),E2ParticleExamineTask(particles,self.name_map),"Particle Set Examination")
 		
@@ -3598,9 +3598,9 @@ class E2MakeSetChooseDataTask(E2ParticleExamineChooseDataTask):
 			for filt_name, particles in self.particles_map.items():
 				for name in particles:
 					if self.name_map.has_key(name):
-						name_map[name] = get_file_tag(self.name_map[name])
+						name_map[name] = base_name(self.name_map[name])
 					else:
-						name_map[name] = get_file_tag(name)
+						name_map[name] = base_name(name)
 			particles = self.particles_map[self.particles_name_map[choice]]
 			
 			self.emit(QtCore.SIGNAL("replace_task"),E2MakeSetTask(particles,name_map,self.name_map),"Make Particle Sets")

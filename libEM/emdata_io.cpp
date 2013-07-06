@@ -117,33 +117,21 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 				if (rdata!=0) EMUtil::em_free(rdata);
 				rdata=0;
 			}
-				
+
 		}
 	}
-
-#ifndef IMAGEIO_CACHE
-	if( imageio )
-	{
-#ifdef HDFIO_CACHE
-		if(dynamic_cast<HdfIO2*>(imageio)==NULL && dynamic_cast<HdfIO*>(imageio)==NULL) {
-#endif	//HDFIO_CACHE
-			delete imageio;
-			imageio = 0;
-#ifdef HDFIO_CACHE
-		}
-#endif	//HDFIO_CACHE
-	}
-#endif	//IMAGEIO_CACHE
-
+    
+	EMUtil::close_imageio(filename, imageio);
+	imageio = 0;
 	EXITFUNC;
 }
 
 void EMData::read_binedimage(const string & filename, int img_index, int binfactor, bool fast, bool is_3d)
 {
 	ENTERFUNC;
-	
+
 	ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY);
-	
+
 	if (!imageio) {
 		throw ImageFormatException("cannot create an image io");
 	}
@@ -173,21 +161,21 @@ void EMData::read_binedimage(const string & filename, int img_index, int binfact
 			attr_dict.erase("nx");
 			attr_dict.erase("ny");
 			attr_dict.erase("nz");
-			
+
 			// At this point nx, ny and nz are all reduced by binfactor
 			set_size(nx/binfactor, ny/binfactor, nz/binfactor);
 
 			//here is where we read in the binned data
 			EMData* tempdata = new EMData();
 			size_t sizeofslice = nx*ny*sizeof(float);
-			
+
 			//zbin factor use 1 to speed binning(but don't benfit by averaging in Z)
 			int zbin = binfactor;
 			if(fast) zbin = 1;
 			//verbose
 			float percent = 0.1f;
 			for(int k = 0; k < ori_nz; k+=binfactor){
-				if(k > ori_nz*percent){	
+				if(k > ori_nz*percent){
 					cout << float(k)/float(ori_nz) << "% Done!" << endl;
 					percent+=0.1f;
 				}
@@ -201,26 +189,14 @@ void EMData::read_binedimage(const string & filename, int img_index, int binfact
 				EMUtil::em_memcpy(get_data()+offset,tempdata->get_data(),sizeofslice);
 				delete binregion;
 			}
-			
+
 			delete tempdata;
 			update();
 		}
 	}
 
-#ifndef IMAGEIO_CACHE
-	if( imageio )
-	{
-#ifdef HDFIO_CACHE
-		if(dynamic_cast<HdfIO2*>(imageio)==NULL && dynamic_cast<HdfIO*>(imageio)==NULL) {
-#endif	//HDFIO_CACHE
-			delete imageio;
-			imageio = 0;
-#ifdef HDFIO_CACHE
-		}
-#endif	//HDFIO_CACHE
-	}
-#endif	//IMAGEIO_CACHE
-
+    EMUtil::close_imageio(filename, imageio);
+	imageio = 0;
 	EXITFUNC;
 }
 
@@ -255,26 +231,17 @@ void EMData::write_image(const string & filename, int img_index,
 	attr_dict["nz"] = nz;
 	attr_dict["changecount"] = changecount;
 
-#ifndef HDFIO_CACHE
-	if (Util::is_file_exist(filename)) {
-		LOGVAR("file exists");
-		if (!header_only && region == 0) {
-			ImageIO * tmp_imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY,
-														imgtype);
-			if (tmp_imageio->is_single_image_format()) {
-				rwmode = ImageIO::WRITE_ONLY;
-			}
-
-#ifndef IMAGEIO_CACHE
-			if( tmp_imageio )
-			{
-				delete tmp_imageio;
-				tmp_imageio = 0;
-			}
-#endif	//IMAGEIO_CACHE
-		}
-	}
-#endif	//HDFIO_CACHE
+    // Check if this is a write only format.
+    if (Util::is_file_exist(filename)) {
+        if (!header_only && region == 0) {
+            ImageIO * tmp_imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY, imgtype);
+            if (tmp_imageio->is_single_image_format()) {
+                rwmode = ImageIO::WRITE_ONLY;
+            }
+            EMUtil::close_imageio(filename, tmp_imageio);
+            tmp_imageio = 0;
+        }
+    }
 
 	LOGVAR("getimageio %d",rwmode);
 	ImageIO *imageio = EMUtil::get_imageio(filename, rwmode, imgtype);
@@ -386,20 +353,8 @@ void EMData::write_image(const string & filename, int img_index,
 		imageio->flush();
 	}
 
-#ifndef IMAGEIO_CACHE
-	if( imageio )
-	{
-#ifdef HDFIO_CACHE
-		if(dynamic_cast<HdfIO2*>(imageio)==NULL && dynamic_cast<HdfIO*>(imageio)==NULL) {
-#endif	//HDFIO_CACHE
-			delete imageio;
-			imageio = 0;
-#ifdef HDFIO_CACHE
-		}
-#endif	//HDFIO_CACHE
-	}
-#endif	//IMAGEIO_CACHE
-
+    EMUtil::close_imageio(filename, imageio);
+	imageio = 0;
 	EXITFUNC;
 }
 
@@ -456,7 +411,7 @@ vector < shared_ptr<EMData> > EMData::read_images(const string & filename, vecto
 	size_t num_img = img_indices.size();
 
 	for (size_t i = 0; i < num_img; i++) {
-		if (img_indices[i] < 0 && img_indices[i] >= total_img) {
+		if (img_indices[i] < 0 || img_indices[i] >= total_img) {
 			throw OutofRangeException(0, total_img, img_indices[i], "image index");
 		}
 	}

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu), 
+# Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu),
 # David Woolford 2007-2008 (woolford@bcm.edu)
 # Copyright (c) 2000-2008 Baylor College of Medicine
 #
@@ -49,38 +49,38 @@ def get_usage():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + """ [options]
 	Reconstructs 3D volumes using a set of 2D images. Euler angles are extracted from the 2D image headers and symmetry is imposed. Several reconstruction methods are available (see e2help.py reconstructors) - the fourier method is the default and recommended reconstructor.
-	
+
 	WARNING - the icosahedral symmetry axes are aligned differently in eman1 and eman2 - that means
 	using this script to reconstruct icosahedral class averages from eman1 will give very bad results.
-	Contact the developers for the simple solution. 
-	
+	Contact the developers for the simple solution.
+
 	A simple example of usage is:
-	
+
 	e2make3d.py --input=classes.img --sym=c3 --output=recon.mrc --pad=128
-	
+
 	Because there are several default settings, this is more or less equivalent to:
-	
+
 	e2make3d.py --input=classes.img --sym=c3 --output=recon.mrc --pad=128 --keep=1 --recon=fourier --iter=3
-	
+
 	Because the padding is always done using zeroes it is best if your data (or preferably
-	the edge pixels of your data) have mean zero. If you are unsure whether your data are 
+	the edge pixels of your data) have mean zero. If you are unsure whether your data are
 	appropriately normalized you can add the --preprocess flag
-	
+
 	e2make3d.py --input=classes.img --sym=c3 --output=recon.mrc --pad=128 --preprocess=normalize.edgemean
-	
+
 	You can add as many --preprocess arguments as you like, which are applied in
 	the order in which they are specified, before padding occurs.
-	
-	If you specify a value of the keep parameter that is not one, i.e. --keep=0.9, it 
+
+	If you specify a value of the keep parameter that is not one, i.e. --keep=0.9, it
 	allows for the automatic exclusion of those images that agree poorly with the rest
 	of the data set.
-	
+
 	If constructing large volumes use the --lowmem option.
 	"""
 	return usage
 
 def print_usage():
-	
+
 	usage = get_usage()
 	print "usage " + usage;
 	print "Please run '" + progname + " -h' for detailed options"
@@ -100,12 +100,12 @@ def main():
 
 	parser.add_argument("--recon", dest="recon_type", default="fourier", help="Reconstructor to use see e2help.py reconstructors -v. Default is fourier:mode=gauss_2")
 	parser.add_argument("--keep", type=float, dest="keep", help="The fraction of slices to keep, based on quality scores (1.0 = use all slices). See keepsig.",default=1.0)
-	parser.add_argument("--keepsig",action="store_true",default=False, dest="keepsig", help="If set, keep will be interpreted as a standard deviation coefficient instead of as a percentage.")	
+	parser.add_argument("--keepsig",action="store_true",default=False, dest="keepsig", help="If set, keep will be interpreted as a standard deviation coefficient instead of as a percentage.")
 	parser.add_argument("--keepabs",action="store_true",default=False, dest="keepabs", help="If set, keep will refer to the absolute quality of the class-average, not a local quality relative to other similar sized classes.")
 	parser.add_argument("--no_wt", action="store_true", dest="no_wt", default=False, help="This argument turns automatic weighting off causing all images to be weighted by 1. If this argument is not specified images inserted into the reconstructed volume are weighted by the number of particles that contributed to them (i.e. as in class averages), which is extracted from the image header (as the ptcl_repr attribute).")
 	parser.add_argument("--iter", type=int, dest="iter", default=2, help="Set the number of iterations (default is 2). Iterative reconstruction improves the overall normalization of the 2D images as they are inserted into the reconstructed volume, and allows for the exclusion of the poorer quality images.")
 	parser.add_argument("--force", "-f",dest="force",default=False, action="store_true",help="deprecated")
-	
+
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
 	parser.add_argument("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)
@@ -115,22 +115,22 @@ def main():
 	parser.add_argument("--setsf",type=str,help="Force the structure factor to match a 'known' curve prior to postprocessing (<filename>, auto or none). default=none",default="none")
 	parser.add_argument("--postprocess", metavar="processor_name(param1=value1:param2=value2)", type=str, action="append", help="postprocessor to be applied to the 3D volume once the reconstruction is completed. There can be more than one postprocessor, and they are applied in the order in which they are specified. See e2help.py processors for a complete list of available processors.")
 	parser.add_argument("--apix",metavar="A/pix",type=float,help="A/pix value for output, overrides automatic values",default=None)
-	
+
 	parser.add_argument("--start", default=None,type=str, help="This is a starting model for FFT reconstruction")
 	parser.add_argument("--startweight", default=1.0,type=float, help="This is the starting model weight")
 	# Database Metadata storage
-	parser.add_argument("--dbls",type=str,default=None,help="data base list storage, used by the workflow. You can ignore this argument.")
+#	parser.add_argument("--dbls",type=str,default=None,help="data base list storage, used by the workflow. You can ignore this argument.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	
+
 	(options, args) = parser.parse_args()
 
 	if options.nofilecheck: options.check = True
-	
+
 	# make sure that the user has atleast specified an input file
 #	if len(args) <1:
 #		parser.error("No input file specified")
 #	options.input = args[0]
-	
+
 	if (not options.keep and not options.keepsig):
 		print "Warning, neither the keep nor the keepsig argument was specified. Setting keep=1 (keeping 100% of inserted slices)"
 		options.keep=1
@@ -146,20 +146,21 @@ def main():
 	# get basic image parameters
 	tmp=EMData()
 	tmp.read_image(options.input,0,True)
-	try:
-		n=1
-		while tmp["ptcl_repr"]==0 :
-			tmp.read_image(options.input,n,True)
-			n+=1
-	except: pass
-	
+	if not options.no_wt :
+		try:
+			n=1
+			while tmp["ptcl_repr"]==0 :
+				tmp.read_image(options.input,n,True)
+				n+=1
+		except: pass
+
 	nx=tmp["nx"]
 	ny=tmp["ny"]
 	nslice=tmp["nz"]
 	if options.apix!=None : apix=options.apix
 	else : apix=tmp["apix_x"]
-	
-	
+
+
 	if options.verbose>0: print "Image dimensions %d x %d"%(nx,ny)
 
 	# parse the padding options, to make sure we have a 2 or 3 tuple for each
@@ -197,14 +198,14 @@ def main():
 		exit(1)
 
 	data=initialize_data(options.input,options.input_model,options.tlt,options.pad,options.no_wt,options.lowmem,options.preprocess)
-	
+
 	# Get the reconstructor and initialize it correctly
 	a = parsemodopt(options.recon_type)
 	a[1]["size"]=padvol
 	a[1]["sym"] = options.sym
 	a[1]["verbose"] = options.verbose - 1
 	recon=Reconstructors.get(a[0], a[1])
-	
+
 	start=None
 	if options.start :
 		start=EMData(options.start,0)
@@ -217,47 +218,46 @@ def main():
 	output=reconstruct(data,recon,options.preprocess,options.pad,options.iter,options.keep,options.keepsig,start,options.startweight,options.verbose-1,options.keepabs)
 	#
 	########################################################3
-	
+
 	# clip to the requested final dimensions
 	if output["nx"]!=outsize[0] or output["ny"]!=outsize[1] or output["nz"]!=outsize[2] :
 		output.clip_inplace(Region((output["nx"]-outsize[0])/2,(output["ny"]-outsize[1])/2,(output["nz"]-outsize[2])/2, outsize[0],outsize[1],outsize[2]))
-	
+
 	if options.apix!=None : apix=options.apix
 	output["apix_x"]=apix
 	output["apix_y"]=apix
 	output["apix_z"]=apix
-	
+
 	# Structure factor setting
 	if options.setsf.lower() != "none" :
 		if options.setsf.lower()!="auto" :
-			sfcurve=XYData()
-			sfcurve.read_file(options.setsf)
-			for i in range(sfcurve.get_size()):
-				v=sfcurve.get_y(i)
-				if v<=0 :
-					print "Warning values <=0 found in structure factor file. Please remove."
-#					sfcurve2.set_y(i,-10.0)
-#				else : sfcurve2.set_y(i,log10(v))
-			sfcurve.update()
+			try:
+				sfcurve=XYData()
+				sfcurve.read_file(options.setsf)
+				for i in range(sfcurve.get_size()):
+					v=sfcurve.get_y(i)
+					if v<=0 :
+						print "Warning values <=0 found in structure factor file. Please remove."
+				sfcurve.update()
+			except:
+				print "ERROR: Specified structure factor ({}) not found.".format(options.setsf)
+				sys.exit(1)
 		else:
 			try:
-				db_misc=db_open_dict("bdb:e2ctf.misc",True)
-				m=db_misc["strucfac"]
-				print "Using previously generated structure factor from bdb:e2ctf.misc"
-				sfcurve=XYData()		# this is really slow and stupid
-				for i,j in enumerate(m):
-					sfcurve.set_x(i,j[0])
-					sfcurve.set_y(i,j[1])
-#					sfcurve.set_y(i,log10(j[1]))
-				
+				sfcurve=XYData()
+				sfcurve.read_file("strucfac.txt")
+				for i in range(sfcurve.get_size()):
+					v=sfcurve.get_y(i)
+					if v<=0 :
+						print "Warning values <=0 found in structure factor file. Please remove."
 				sfcurve.update()
 			except : sfcurve=None
-		
+
 		if sfcurve==None:
 			print "ERROR : Structure factor read failed. Not applying structure factor"
 		else:
 			output.process_inplace("filter.setstrucfac",{"apix":apix,"strucfac":sfcurve})
-	
+
 	if options.postprocess != None:
 		for p in options.postprocess:
 			try:
@@ -266,36 +266,20 @@ def main():
 				output.process_inplace(str(processorname), param_dict)
 			except:
 				print "warning - application of the post processor",p," failed. Continuing anyway"
-	
+
 #	output.process_inplace("normalize.circlemean")
 
 	# just remove the output file
 	if file_exists(options.output):
 		remove_file(options.output)
-	
+
 	# write the reconstruction to disk
 	output.write_image(options.output,0)
 	if options.verbose>0:
 			print "Output File: "+options.output
 
-	if options.dbls:
-		pdb = db_open_dict("bdb:project")
-		tmp_d = pdb.get(options.dbls, dfl={})
-		if isinstance(tmp_d,list): # this was added June 2009 - it's a back compatibility measure. We used to store these things as lists, but now it's dicts
-			d = {}
-			for name in tmp_d:
-				s = {}
-				s["Original Data"] = name
-				d[name] = s
-			
-			tmp_d = d
-		s = {}
-		s["Original Data"] = options.output
-		tmp_d[options.output] = s
-		pdb[options.dbls] = tmp_d
-
 	E2end(logger)
-	
+
 	print "Exiting"
 
 def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,lowmem,preprocess):
@@ -313,7 +297,7 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,lowmem,preproces
 	print n_input," input images"
 
 	data=[]
-	
+
 	# The TLT file will override anything stored in the image itself, implies no_weights
 	if tltfile:
 		f=file(tltfile,'r')
@@ -321,7 +305,7 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,lowmem,preproces
 		for i,line in enumerate(lines):
 			elem={"xform":Transform({"type":"eman","az":90,"alt":float(line),"phi":90}),"weight":1.0}
 			elem["filename"]=inputfile
-			if nslice>1 : 
+			if nslice>1 :
 				elem["filenum"]=0
 				elem["fileslice"]=i
 				elem["nx"]=nx
@@ -333,7 +317,7 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,lowmem,preproces
 				if nslice>1 : elem["data"]=get_processed_image(inputfile,0,i,preprocess,pad,nx,ny)
 				else : elem["data"]=get_processed_image(inputfile,i,-1,preprocess,pad,nx,ny)
 			data.append(elem)
-			
+
 		if len(data)!=n_input and len(data)!=nslice :
 			print "Error : %d images and only %d lines in .tlt file"%(n_input,len(data))
 			exit(1)
@@ -347,26 +331,26 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,lowmem,preproces
 			try: elem={"xform":tmp["xform.projection"]}
 			except : continue
 				#raise Exception,"Image %d doesn't have orientation information in its header"%i
-						
+
 			# skip any particles targeted at a different model
 			if inputmodel != None and tmp["model_id"]!=inputmodel : continue
-			
+
 			if no_weights: elem["weight"]=1.0
-			else : 
+			else :
 				try: elem["weight"]=float(tmp["ptcl_repr"])
 				except: elem["weight"]=1.0
 				# This is bad if you have actual empty classes...
 				#if elem["weight"]<=0 :
 					#print "Warning, weight %1.2f on particle %d. Setting to 1.0"%(elem["weight"],i)
 					#elem["weight"]=1.0
-				
+
 			elem["filename"]=inputfile
 			elem["filenum"]=i
 			elem["fileslice"]=-1
 			if not lowmem:
 				elem["data"]=tmp
 				tmp=EMData()
-				
+
 			data.append(elem)
 
 		print "Using %d images"%len(data)
@@ -374,11 +358,11 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,lowmem,preproces
 
 def get_processed_image(filename,nim,nsl,preprocess,pad,nx=0,ny=0):
 	"""This function will read an image from disk and preprocess it. nim is the number of the image in
-	the file. nsl is the number of a slice within the image if it is 3-D, pass -1 to avoid Region reading. 
-	nx and ny are the x and y dimensions of a single image on disk, required only for slice reading. 
-	preprocess takes a list of command-line processor strings. pad is a 2-tuple with 
+	the file. nsl is the number of a slice within the image if it is 3-D, pass -1 to avoid Region reading.
+	nx and ny are the x and y dimensions of a single image on disk, required only for slice reading.
+	preprocess takes a list of command-line processor strings. pad is a 2-tuple with
 	the dimensions the image should be zero-padded to."""
-	
+
 	ret=EMData()
 	if nsl>=0 : ret.read_image(filename,nim,False,Region(0,0,nsl,nx,ny,1))
 	else : ret.read_image(filename,nim)
@@ -393,36 +377,36 @@ def get_processed_image(filename,nim,nsl,preprocess,pad,nx=0,ny=0):
 
 	if pad[0]!=ret.get_xsize() or pad[1]!=ret.get_ysize() :
 		ret.clip_inplace(Region((ret.get_xsize()-pad[0])/2,(ret.get_ysize()-pad[1])/2, pad[0], pad[1]))
-	
+
 	return ret
-	
+
 def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=None,startweight=0,verbose=0,keepabs=False):
 	"""Do an actual reconstruction using an already allocated reconstructor, and a data list as produced
 	by initialize_data(). preprocess is a list of processor strings to be applied to the image data in the
 	event that it hasn't already been read into the data array. start and startweight are optional parameters
 	to seed the reconstruction with some non-zero values."""
-	
+
 	for it in xrange(niter) :
 		excluded=[]
 		included=[]
 		output=None		# deletes the results from the previous iteration if any
-		
+
 		if verbose>0: print "Initializing the reconstructor ..."
 
 		if start : recon.setup(start,startweight)
 		else : recon.setup()
-		
+
 		if verbose>0:print "Inserting Slices (%d)"%len(data)
-		
+
 		ptcl=0
 		for i,elem in enumerate(data):
 			if not elem.has_key("norm") : elem["norm"]=1.0
-			
+
 			# If the image is below the quality cutoff, skip it
 			try:
-				if (keepabs and elem["reconstruct_absqual"]<qcutoff) or (not keepabs and elem["reconstruct_qual"]<qcutoff) or elem["weight"]==0 : 
+				if (keepabs and elem["reconstruct_absqual"]<qcutoff) or (not keepabs and elem["reconstruct_qual"]<qcutoff) or elem["weight"]==0 :
 					if verbose>0 : print i," *  (%1.3g)"%(elem["reconstruct_qual"])
-					if it==niter-1 : 
+					if it==niter-1 :
 						if elem["fileslice"]<0 : excluded.append(elem["filenum"])
 						else : excluded.append(elem["fileslice"])
 					continue
@@ -432,7 +416,7 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 			else : included.append(elem["fileslice"])
 
 			# get the image to insert
-			try: 
+			try:
 				img=elem["data"]
 				if img["sigma"]==0 : contine
 				if not img.has_attr("reconstruct_preproc") :
@@ -449,29 +433,29 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 				img.mult(elem["norm"])
 	#		img["n"]=i
 	#		if i==7 : display(img)
-			
+
 			rd=elem["xform"].get_rotation("eman")
 			if verbose>0 : print " %d/%d\r"%(i,len(data)),
 			sys.stdout.flush()
 	#		print "%d.\t%6.2f  %6.2f  %6.2f    %6.2g\t%6.4g\t%6.4g"%(i,rd["az"],rd["alt"],rd["phi"],elem["weight"],img["mean"],img["sigma"])
 			ptcl+=elem["weight"]
-			
+
 			# Actual slice insertion into the volume
 	#		if i==len(data)-1 : display(img)
 			recon.insert_slice(img,elem["xform"],elem["weight"])
-		
+
 		if it!=niter-1:
 			if verbose>0: print "\t   az      alt    phi  \t tweight      norm     absqual    weight"
 			for i,elem in enumerate(data):
-				
+
 				try:
-					if (keepabs and elem["reconstruct_absqual"]<qcutoff) or (not keepabs and elem["reconstruct_qual"]<qcutoff) or elem["weight"]==0: 
+					if (keepabs and elem["reconstruct_absqual"]<qcutoff) or (not keepabs and elem["reconstruct_qual"]<qcutoff) or elem["weight"]==0:
 						if verbose>0 : print i," *"
 #						continue
 				except: pass
-				
+
 				# get the image to insert
-				try: 
+				try:
 					img=elem["data"]
 				except:
 					if elem["fileslice"]>=0 : img=get_processed_image(elem["filename"],elem["filenum"],elem["fileslice"],preprocess,pad,elem["nx"],elem["ny"])
@@ -488,7 +472,7 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 					elem["reconstruct_absqual"]=0
 					if verbose>0 : print ""
 					continue
-				
+
 				dosub=True
 				try:
 					if (keepabs and elem["reconstruct_absqual"]<qcutoff) or (not keepabs and elem["reconstruct_qual"]<qcutoff) or elem["weight"]==0: dosub=False
@@ -501,12 +485,12 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 					elem[i]=img[i]
 					if verbose>0 : print "%8.3g  "%elem[i],
 				elem["norm"]*=img["reconstruct_norm"]
-				
+
 				if verbose>0 : print "%d"%int(elem["weight"])
 
 			# Convert absolute qualities to relative qualities by local averaging vs classes with similar numbers of particles
 			squal=sorted([[data[i]["weight"],data[i]["reconstruct_absqual"],0,i,data[i]] for i in xrange(len(data))])
-			
+
 			# compute a running average of qualities (sorted by weight), then measure each value vs. the local average
 			qlist=[]
 			for i in range(len(squal)):
@@ -516,10 +500,11 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 					continue
 				sub=[squal[j][1] for j in xrange(max(0,i-10),min(i+10,len(squal)))]
 				squal[i][2]=sum(sub)/len(sub)
-				try: 
+				try:
 					squal[i][4]["reconstruct_qual"]=squal[i][1]/squal[i][2]
 					qlist.append(squal[i][1]/squal[i][2])
 				except :
+					traceback.print_exc()
 					print "##############  ",sub, squal[i], i,len(squal)
 					squal[i][4]["reconstruct_qual"]=-1
 					qlist.append(-1)
@@ -563,6 +548,6 @@ def reconstruct(data,recon,preprocess,pad,niter=2,keep=1.0,keepsig=False,start=N
 	if verbose>0 : print "Finished Reconstruction"
 
 	return output
-	
+
 if __name__=="__main__":
 	main()

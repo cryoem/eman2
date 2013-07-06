@@ -39,7 +39,7 @@ import sys
 import random
 from random import choice
 from pprint import pprint
-from EMAN2db import EMTask
+from EMAN2jsondb import JSTask,jsonclasses
 
 
 def main():
@@ -855,7 +855,7 @@ def wedgestats(volume,angle, wedgei, wedgef):
 	return(mean,sigma)
 
 
-class Align3DTask(EMTask):
+class Align3DTask(JSTask):
 	"""This is a task object for the parallelism system. It is responsible for aligning one 3-D volume to another, with a variety of options"""
 
 	#def __init__(self,fixedimage,image,ptcl,label,mask,normproc,preprocess,lowpass,highpass,npeakstorefine,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,transform,verbose,randomizewedge,wedgeangle,wedgei,wedgef):
@@ -869,7 +869,7 @@ class Align3DTask(EMTask):
 		data={}
 		data={"fixedimage":fixedimage,"image":image}
 		
-		EMTask.__init__(self,"ClassAv3d",data,{},"")
+		JSTask.__init__(self,"ClassAv3d",data,{},"")
 
 		#self.classoptions={"options":options,"ptcl":ptcl,"label":label,"mask":options.mask,"normproc":options.normproc,"preprocess":options.preprocess,"lowpass":options.lowpass,"highpass":options.highpass,"npeakstorefine":options.npeakstorefine,"align":options.align,"aligncmp":options.aligncmp,"ralign":options.ralign,"raligncmp":options.raligncmp,"shrink":options.shrink,"shrinkrefine":options.shrinkrefine,"transform":transform,"verbose":options.verbose,"randomizewedge":options.randomizewedge,"wedgeangle":options.wedgeangle,"wedgei":options.wedgei,"wedgef":options.wedgef}
 		self.classoptions={"options":options,"ptcl":ptcl,"label":label,"transform":transform}
@@ -1080,45 +1080,73 @@ def alignment(fixedimage,image,ptcl,label,classoptions,transform):
 				bestfinal.append({"score":1.0e10,"xform.align3d":bc["xform.align3d"],"coarse":bc})
 				print "\nThe appended score is", bestfinal[0]['score']
 		
-		if classoptions.verbose:
-			print "Best final is", bestfinal
+#<<<<<<< e2spt_classaverage.py
+		#if classoptions.verbose:
+			#print "Best final is", bestfinal
 				
-		if classoptions.shrinkrefine>1 :
-			for c in bestfinal:
+		#if classoptions.shrinkrefine>1 :
+			#for c in bestfinal:
 			
-				newtrans = c["xform.align3d"].get_trans() * float(classoptions.shrinkrefine)
-				print "New trans and type are", newtrans, type(newtrans)
-				c["xform.align3d"].set_trans(newtrans)
+				#newtrans = c["xform.align3d"].get_trans() * float(classoptions.shrinkrefine)
+				#print "New trans and type are", newtrans, type(newtrans)
+				#c["xform.align3d"].set_trans(newtrans)
 
-		# verbose printout of fine refinement
-		if classoptions.verbose>1 :
-			for i,j in enumerate(bestfinal): 
-				print "fine %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
+		## verbose printout of fine refinement
+		#if classoptions.verbose>1 :
+			#for i,j in enumerate(bestfinal): 
+				#print "fine %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
 
-	else: 
-		bestfinal = bestcoarse
-		if classoptions.verbose:
-			print "\nThere was no fine alignment; therefore, score is", bestfinal[0]['score']
+	#else: 
+		#bestfinal = bestcoarse
+		#if classoptions.verbose:
+			#print "\nThere was no fine alignment; therefore, score is", bestfinal[0]['score']
 	
-	from operator import itemgetter						#If you just sort 'bestfinal' it will be sorted based on the 'coarse' key in the dictionaries of the list
-														#because they come before the 'score' key of the dictionary (alphabetically)
-	bestfinal = sorted(bestfinal, key=itemgetter('score'))
+	#from operator import itemgetter						#If you just sort 'bestfinal' it will be sorted based on the 'coarse' key in the dictionaries of the list
+														##because they come before the 'score' key of the dictionary (alphabetically)
+	#bestfinal = sorted(bestfinal, key=itemgetter('score'))
 	
-	if classoptions.verbose:
-		print "\nThe best peaks sorted are"	#confirm the peaks are adequately sorted
-		for i in bestfinal:
-			print i
+	#if classoptions.verbose:
+		#print "\nThe best peaks sorted are"	#confirm the peaks are adequately sorted
+		#for i in bestfinal:
+			#print i
 	
-	if bestfinal[0]["score"] == 1.0e10 :
-		print "Error: all refine alignments failed for %s. May need to consider altering filter/shrink parameters. Using coarse alignment, but results are likely invalid."%self.classoptions["label"]
+	#if bestfinal[0]["score"] == 1.0e10 :
+		#print "Error: all refine alignments failed for %s. May need to consider altering filter/shrink parameters. Using coarse alignment, but results are likely invalid."%self.classoptions["label"]
 	
-	if classoptions.verbose: 
-		print "Best %1.5g\t %s"%(bestfinal[0]["score"],str(bestfinal[0]["xform.align3d"]))
-		print "Done aligning ",label
+	#if classoptions.verbose: 
+		#print "Best %1.5g\t %s"%(bestfinal[0]["score"],str(bestfinal[0]["xform.align3d"]))
+		#print "Done aligning ",label
 	
-	#print "\nScore to return from ALIGNMENT is", bestfinal[0]["score"]
-	return (bestfinal,bestcoarse)
+	##print "\nScore to return from ALIGNMENT is", bestfinal[0]["score"]
+	#return (bestfinal,bestcoarse)
 	
+#=======
+		from operator import itemgetter						#If you just sort 'bestfinal' it will be sorted based on the 'coarse' key in the dictionaries of the list
+											#because they come before the 'score' key of the dictionary (alphabetically)
+		bestfinal = sorted(bestfinal, key=itemgetter('score'))
+		
+		if classoptions["verbose"]:
+			print "\nThe best peaks sorted are"	#confirm the peaks are adequately sorted
+			for i in bestfinal:
+				print i
+		
+		if bestfinal[0]["score"] == 1.0e10 :
+			print "Error: all refine alignments failed for %s. May need to consider altering filter/shrink parameters. Using coarse alignment, but results are likely invalid."%self.classoptions["label"]
+		
+		if classoptions["verbose"]: 
+			print "Best %1.5g\t %s"%(bestfinal[0]["score"],str(bestfinal[0]["xform.align3d"]))
+			print "Done aligning ",classoptions["label"]
+		
+		return {"final":bestfinal,"coarse":bestcoarse}
+
+jsonclasses["Align3DTask"]=Align3DTask.from_jsondict
+
+def align3Dfunc(ref,j,p,k,options):
+	print "Sorry; for now; you MUST use parallelism, through the --parallel option."
+	sys.exit()
+	pass
+	return
+#>>>>>>> 1.19.2.1
 
 
 def classmx_ptcls(classmx,n):

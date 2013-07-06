@@ -452,7 +452,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "Evaluates the SNR of the particle using a masking method similar to that used in the CTF analysis process. The image is not changed. The resulting value is placed in the particle dictionary as eval_maskedsnr";
 		}
-		
+
 		static const string NAME;
 
 		protected:
@@ -797,7 +797,7 @@ The basic design of EMAN Processors: <br>\
 	class CtfSimProcessor:public Processor
 	{
 	  public:
-		string get_name() const			
+		string get_name() const
 		{
 			return NAME;
 		}
@@ -845,7 +845,7 @@ The basic design of EMAN Processors: <br>\
 	class Wiener2DFourierProcessor:public Processor
 	{
 	  public:
-		string get_name() const			
+		string get_name() const
 		{
 			return NAME;
 		}
@@ -954,7 +954,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			TypeDict d = FourierAnlProcessor::get_param_types();
 			d.put("bfactor", EMObject::FLOAT, "B-factor in terms of e^-(B s^2/4)");
-			d.put("noisecutoff", EMObject::FLOAT, "Spatial frequency past which inverse-B will not be applied");
+			d.put("noisecutoff", EMObject::FLOAT, "Spatial frequency past which inverse-B will not be applied, default=1/6A");
 //			d.put("adaptnoise", EMObject::INT, "Dual linear fit separating lower resolution signal from higher resolution noise. Noise region not upweighted.");
 			d.put("verbose", EMObject::INT, "Print information about the determined B-factor");
 			return d;
@@ -1066,7 +1066,7 @@ The basic design of EMAN Processors: <br>\
 	};
 
 	/**processor radial function: f(x) = ((x^2 - s^2)/s^4)e^-(x^2/2s^2)
-	 *@param sigma LoG sigma 
+	 *@param sigma LoG sigma
 	 */
 	class LoGFourierProcessor:public FourierProcessor
 	{
@@ -1110,7 +1110,7 @@ The basic design of EMAN Processors: <br>\
 	  private:
 		float sigma;
 	};
-	
+
 	/**processor radial function: f(x) = 1/sqrt(2*pi)*[1/sigma1*exp-(x^2/2*sigma1^2) - 1/sigma2*exp-(x^2/2*sigma2^2)]
 	 *@param sigma1 DoG sigma1
 	 *@param sigma1 DoG sigma2
@@ -1160,7 +1160,7 @@ The basic design of EMAN Processors: <br>\
 		float sigma1;
 		float sigma2;
 	};
-	
+
 	/**The base class for real space processor working on individual pixels. The processor won't consider the pixel's coordinates and neighbors.
 	 */
 	class RealPixelProcessor:public Processor
@@ -1614,7 +1614,7 @@ The basic design of EMAN Processors: <br>\
 			 */
 			Region get_clip_region(vector<int>& translation, const EMData* const image) const;
 	};
-	
+
 	 /** Applies a symmetry to a 3D model. The model must be on aligned to its symmetry axis(via align3d or other mechanism)
 	 *@author Steve Ludtke and John Flanagan
 	 *@date June 2011
@@ -1650,9 +1650,9 @@ The basic design of EMAN Processors: <br>\
 			}
 
 			static const string NAME;
-		
+
 	};
-	
+
 	/** Scale the image with control over the output dimensions
 	 *@author David Woolford
 	 *@date June 2009
@@ -2371,9 +2371,6 @@ The basic design of EMAN Processors: <br>\
 				outer_radius_square = INT_MAX;
 			}
 
-			if (params.has_key("xc")) xc = params["xc"];
-			if (params.has_key("yc")) yc = params["yc"];
-			if (params.has_key("zc")) zc = params["zc"];
 			if (params.has_key("dx")) dx = params["dx"];
 			if (params.has_key("dy")) dy = params["dy"];
 			if (params.has_key("dz")) dz = params["dz"];
@@ -2414,7 +2411,7 @@ The basic design of EMAN Processors: <br>\
 			process_dist_pixel(pixel, dist);
 		}
 
-		virtual void process_dist_pixel(float *pixel, float dist) const = 0;
+		virtual void process_dist_pixel(float *pixel, float dist) const = 0;		// note that this function gets the distance SQUARED !
 
 		int inner_radius;
 		int outer_radius;
@@ -2694,9 +2691,10 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	  public:
 		TypeDict get_param_types() const
 		{
-			TypeDict d = CircularMaskProcessor::get_param_types();
+//			TypeDict d = CircularMaskProcessor::get_param_types();
+			TypeDict d;
 			d.put("gauss_width", EMObject::FLOAT, "Used to calculate the constant factor - gauss_width / (ny*ny)" );
-			d.put("ring_width", EMObject::INT, "The width of the mask ring.");
+//			d.put("ring_width", EMObject::INT, "The width of the mask ring.");
 			return d;
 		}
 
@@ -2720,6 +2718,10 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	  protected:
 		void calc_locals(EMData *)
 		{
+			xc = Util::fast_floor(nx/2.0f) + dx;
+			yc = Util::fast_floor(ny/2.0f) + dy;
+			zc = Util::fast_floor(nz/2.0f) + dz;
+
 			float gauss_width = params["gauss_width"];
 			slice_value = gauss_width / (ny * ny);
 		}
@@ -3859,6 +3861,13 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		string get_desc() const
 		{
 			return "Fill zeroes at edges with nearest horizontal/vertical value.";
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("nonzero", EMObject::BOOL, "If set, will look for constant non-zero values to fill");
+			return d;
 		}
 
 		static const string NAME;
@@ -5229,6 +5238,49 @@ Next, the mask is expanded by 'nshells'+'nshellsgauss'/2 voxels. Finally a gauss
 		static const string NAME;
 	};
 
+
+	/** This processor will apply a Wiener filter to a volume based on a provided FSC curve. The assumption is that the FSC curve
+	 * represents a "gold standard" FSC between two 1/2 sets, and that the filter is being applied to the combined average.
+	 * @param snrmult This multiplier is applied to the computed SNR before Wiener filtration. This permits the filter to be applied to 1/2 images, etc. Default=1.0
+	 * @param fscfile File containing the FSC curve to use
+	 * @param sscale This rescales the S axis to produce empirical under/overfiltration. sscale=1.1 for example will extend the resolution (underfilter) by 10%. Default=1.0
+	 */
+	class FSCFourierProcessor:public Processor
+	{
+	  public:
+		virtual EMData* process(EMData const *image);
+		virtual void process_inplace(EMData *image);
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		static Processor *NEW()
+		{
+			return new FSCFourierProcessor();
+		}
+
+		virtual string get_desc() const
+		{
+			return "This processor will apply a Wiener filter to a volume based on a provided FSC curve. The assumption is that the FSC curve represents \
+a gold standard FSC between two 1/2 sets, and that the filter is being applied to the combined average. Hence the default fscmult of 2, \
+since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined halves is twice as high.";
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("snrmult", EMObject::FLOAT, "This multiplier is applied to the computed SNR before Wiener filtration. This permits the filter to be applied to 1/2 images, etc. Default=2.0");
+			d.put("sscale", EMObject::FLOAT, "This rescales the S axis to produce empirical under/overfiltration. sscale=1.1 for example will extend the resolution (underfilter) by 10%. Default=1.0");
+			d.put("fscfile", EMObject::STRING, "filename of a file containing the FSC curve to use for the SNR computation");
+			return d;
+		}
+
+		static const string NAME;
+	};
+
+
 	/** Processor the images by the estimated SNR in each image.if parameter 'wiener' is 1, then wiener processor the images using the estimated SNR with CTF amplitude correction.
 	 * @param wiener if set to 1,  then use wiener processor to process the images using the estimated SNR with CTF amplitude correction
 	 * @param snrfile structure factor file name
@@ -5376,7 +5428,7 @@ Next, the mask is expanded by 'nshells'+'nshellsgauss'/2 voxels. Finally a gauss
 		static const string NAME;
 	};
 
-	
+
 	/**This processor attempts to perform a 'local normalization' so low density and high density features will be on a more even playing field in an isosurface display. threshold is an isosurface threshold at which all desired features are visible, radius is a normalization size similar to an lp= value.
 	 *@param threshold an isosurface threshold at which all desired features are visible
 	 *@param radius a normalization size similar to an lp= value
@@ -5792,7 +5844,7 @@ Next, the mask is expanded by 'nshells'+'nshellsgauss'/2 voxels. Finally a gauss
 
 		virtual string get_desc() const
 		{
-			return "Filters the image so its 1-D power spectrum matches a supplied X-Y curve";
+			return "Filters the image so its 1-D power spectrum matches a supplied S,Y curve. If the S axis does not extend to Nyquist, only a uniform scaling will be applied beyond the end of the supplied curve. ";
 		}
 
 		static Processor *NEW()
@@ -7076,7 +7128,7 @@ Next, the mask is expanded by 'nshells'+'nshellsgauss'/2 voxels. Finally a gauss
 	public:
 		virtual EMData* process(const EMData* const image);
 		virtual void process_inplace(EMData * image);
-		
+
 		virtual string get_name() const
 		{
 			return NAME;
@@ -7095,9 +7147,9 @@ Next, the mask is expanded by 'nshells'+'nshellsgauss'/2 voxels. Finally a gauss
 			d.put("kernel", EMObject::FLOATARRAY, "the convolution kernel");
 			return d;
 		}
-		static const string NAME;	
+		static const string NAME;
 	};
-	
+
 	class RotateInFSProcessor : public Processor
 		{
 		public:
@@ -7119,7 +7171,7 @@ Next, the mask is expanded by 'nshells'+'nshellsgauss'/2 voxels. Finally a gauss
 			}
 			virtual TypeDict get_param_types() const
 			{
-				TypeDict d;	
+				TypeDict d;
 				d.put("transform", EMObject::TRANSFORM, "transform");
 				d.put("interpCutoff", EMObject::FLOAT, "cutoff for interpolation");
 //				d.put("offset", EMObject::FLOAT, "offset for FT centering");
@@ -7128,7 +7180,7 @@ Next, the mask is expanded by 'nshells'+'nshellsgauss'/2 voxels. Finally a gauss
 			}
 			static const string NAME;
 		};
-	
+
 #ifdef SPARX_USING_CUDA
 	/* class MPI CUDA kmeans processor
 	 * 2009-02-13 17:34:45 JB first version

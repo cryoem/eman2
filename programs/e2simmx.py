@@ -34,7 +34,6 @@
 # e2simmx.py  02/03/2007	Steven Ludtke
 # This program computes a similarity matrix between two sets of images
 
-from EMAN2db import db_check_dict, EMTask
 from EMAN2 import *
 from math import *
 import os
@@ -55,9 +54,9 @@ def opt_rectangular_subdivision(x,y,n):
 		Note that this routine needs a little bit of work - it returns good results when
 		x >> y or y >> x, but when y ~= x it's not quite optimal. Good, but not optimal.
 		'''
-		
+
 		print "Matrix size %d x %d into %d regions -> "%(x,y,n),
-		candidates = []	
+		candidates = []
 
 		# x,ysub is the number of x,y subdivisions
 		# we insure that xsub<x and ysub<y, and that xsub>=1 and ysub>=1
@@ -67,13 +66,13 @@ def opt_rectangular_subdivision(x,y,n):
 		for xsub in range(1,x):
 			ysub=int(ceil(float(n/xsub)))
 			if ysub>y or ysub<1 : continue		# can't have more subdivisions than rows
-			
+
 			# the ceil() makes us overestimate cases uneven division, but that breaks the tie in a good way
-			cost=(ceil(float(x)/xsub)+ceil(float(y)/ysub))*xsub*ysub	
+			cost=(ceil(float(x)/xsub)+ceil(float(y)/ysub))*xsub*ysub
 			candidates.append((cost,(xsub,ysub)))
-		
+
 		if len(candidates)==0:  return (x,y)		# should only happen if we have more processors than similarity matrix pixels
-		
+
 		candidates.sort()
 		#print candidates
 		print " %d x %d blocks -> %d subprocesses (%d x %d each)"%(candidates[0][1][0],candidates[0][1][1],candidates[0][1][0]*candidates[0][1][1],x/candidates[0][1][0],y/candidates[0][1][1])
@@ -93,8 +92,8 @@ class EMParallelSimMX:
 		self.options = options
 		self.args = args
 		self.logger = logger
-		
-	
+
+
 		from EMAN2PAR import EMTaskCustomer
 		self.etc=EMTaskCustomer(options.parallel)
 		if options.colmasks!=None : self.etc.precache([args[0],args[1],options.colmasks])
@@ -102,9 +101,9 @@ class EMParallelSimMX:
 		self.num_cpus = self.etc.cpu_est()
 		if self.num_cpus < 32: # lower limit
 			self.num_cpus = 32
-		
+
 		self.__task_options = None
-	
+
 	def __get_task_options(self,options):
 		'''
 		Get the options required by each task as a dict
@@ -115,23 +114,23 @@ class EMParallelSimMX:
 			d["align"] = parsemodopt(options.align)
 			d["aligncmp"] = parsemodopt(options.aligncmp)
 			d["cmp"] = parsemodopt(options.cmp)
-			
-			if hasattr(options,"ralign") and options.ralign != None: 
+
+			if hasattr(options,"ralign") and options.ralign != None:
 				d["ralign"] = parsemodopt(options.ralign)
 				d["raligncmp"] = parsemodopt(options.raligncmp)  # raligncmp must be specified if using ralign
-			else: 
+			else:
 				d["ralign"] = None
 				d["raligncmp"] = None
 			d["prefilt"]=options.prefilt
-			
+
 			if hasattr(options,"shrink") and options.shrink != None: d["shrink"] = options.shrink
 			else: d["shrink"] = None
 
-			
+
 			self.__task_options = d
-			
+
 		return self.__task_options
-	
+
 	def __init_memory(self,options):
 		'''
 		@param options is always self.options - the initialization argument. Could be changed.
@@ -146,13 +145,13 @@ class EMParallelSimMX:
 		'''
 		self.clen=EMUtil.get_image_count(self.args[0])
 		self.rlen=EMUtil.get_image_count(self.args[1])
-		
+
 		output = self.args[2]
-		
+
 		if file_exists(output) and not options.fillzero:
 			if options.force: remove_file(output)
 			else: raise RuntimeError("The output file exists. Please remove it or specify the force option")
-		
+
 		e = EMData(self.clen,self.rlen)
 		e.to_zero()
 		e.set_attr(PROJ_FILE_ATTR,self.args[0])
@@ -162,32 +161,32 @@ class EMParallelSimMX:
 		if not options.fillzero : e.write_image(output,0)
 		for i in range(1,n):
 			e.write_image(output,i)
-	
+
 	def __get_blocks(self):
 		'''
 		Gets the blocks that will be processed in parallel, these are essentially ranges
 		'''
-		
+
 		steve_factor = 3 # increase number of jobs a bit for better distribution
 		total_jobs = steve_factor*self.num_cpus
-		
+
 		[col_div,row_div] = opt_rectangular_subdivision(self.clen,self.rlen,total_jobs)
-		
-	
+
+
 		block_c = self.clen/col_div
 		block_r = self.rlen/row_div
-		
+
 		residual_c = self.clen-block_c*col_div # residual left over by integer division
 
 		blocks = []
-		
+
 		current_c = 0
 		for c in xrange(0,col_div):
 			last_c = current_c + block_c
 			if residual_c > 0:
 				last_c += 1
 				residual_c -= 1
-					
+
 			current_r = 0
 			residual_r = self.rlen-block_r*row_div # residual left over by integer division
 			for r in xrange(0,row_div) :
@@ -195,17 +194,17 @@ class EMParallelSimMX:
 				if residual_r > 0:
 					last_r += 1
 					residual_r -= 1
-			
-			
+
+
 				blocks.append([current_c,last_c,current_r,last_r])
 				current_r = last_r
-				
+
 			current_c = last_c
-		
+
 #		print col_div,row_div,col_div*row_div
 #		print self.clen,self.rlen,residual_c,residual_r
 		return blocks
-	
+
 	def execute(self):
 		'''
 		The main function to be called
@@ -214,12 +213,12 @@ class EMParallelSimMX:
 			self.__init_memory(self.options)
 			blocks = self.__get_blocks()
 #			print blocks
-	
+
 #			self.check_blocks(blocks) # testing function can be removed at some point
-			
+
 			tasks=[]
 			for bn,block in enumerate(blocks):
-				
+
 				data = {}
 				data["references"] = ("cache",self.args[0],block[0],block[1])
 				data["particles"] = ("cache",self.args[1],block[2],block[3])
@@ -243,16 +242,16 @@ class EMParallelSimMX:
 								rng.append((i,st+block[0],j-1+block[0]))
 								inr=0
 						if inr :
-							rng.append((i,st,j))
+							rng.append((i,st+block[0],j+block[0]))
 					data["partial"]=rng
 #					print "%d) %s\t"%(bn,str(block)),rng
-				
+
 				if self.options.fillzero and len(data["partial"])==0 : continue		# nothing to compute in this block, skip it completely
 				else :
 					task = EMSimTaskDC(data=data,options=self.__get_task_options(self.options))
 					#print "Est %d CPUs"%etc.cpu_est()
 					tasks.append(task)
-			
+
 			# This just verifies that all particles have at least one class
 			#a=set()
 			#for i in tasks:
@@ -265,7 +264,7 @@ class EMParallelSimMX:
 			print "%d/%d         "%(bn,len(blocks))
 			self.tids=self.etc.send_tasks(tasks)
 			print len(self.tids)," tasks submitted"
-#			
+#
 			while 1:
 				if len(self.tids) == 0: break
 				print len(self.tids),"simmx tasks left in main loop   \r",
@@ -275,7 +274,7 @@ class EMParallelSimMX:
 					st = st_vals[i]
 					if st==100:
 						tid = self.tids[i]
-						
+
 						try:
 							rslts = self.etc.get_results(tid)
 #							display(rslts[1]["rslt_data"][0])
@@ -287,18 +286,18 @@ class EMParallelSimMX:
 							continue
 						if self.logger != None:
 							E2progress(self.logger,1.0-len(self.tids)/float(len(blocks)))
-							if self.options.verbose>0: 
+							if self.options.verbose>0:
 								print "%d/%d\r"%(len(self.tids),len(blocks))
 								sys.stdout.flush()
-								
+
 						self.tids.pop(i)
 					print len(self.tids),"simmx tasks left in main loop   \r",
 					sys.stdout.flush()
 
-				
+
 				time.sleep(10)
 			print "\nAll simmx tasks complete "
-			
+
 			# if using fillzero, we must fix the -1.0e38 values placed into empty cells
 			if self.options.fillzero :
 				l=EMData(self.args[2],0,True)
@@ -312,22 +311,22 @@ class EMParallelSimMX:
 					fill=l["maximum"]+.0001
 					l.process_inplace("threshold.belowtominval",{"minval":-1.0e37,"newval":fill})
 					l.write_image(self.args[2],0,EMUtil.ImageType.IMAGE_UNKNOWN,False,Region(0,r,clen,1))
-				
-				print "Filling complete"
-					
 
-			
+				print "Filling complete"
+
+
+
 		else: raise NotImplementedError("The parallelism option you specified (%s) is not supported" %self.options.parallel )
-				
+
 	def __store_output_data(self,rslts):
 		'''
 		Store output data to internal images (matrices)
 		@param a dictionary return by the EMSimTaskDC
 		'''
-	
+
 		result_data = rslts["rslt_data"]
 		output = self.args[2]
-		
+
 		insertion_c = rslts["min_ref_idx"]
 		insertion_r = rslts["min_ptcl_idx"]
 		result_mx = result_data[0]
@@ -336,16 +335,16 @@ class EMParallelSimMX:
 		# Note this is region io - the init_memory function made sure the images exist and are the right dimensions (on disk)
 		for i,mxout in enumerate(result_data):
 			mxout.write_image(output,i,EMUtil.ImageType.IMAGE_UNKNOWN,False,r)
-		
-			
 
-from EMAN2db import EMTask
-class EMSimTaskDC(EMTask):
+
+
+from EMAN2jsondb import JSTask,jsonclasses
+class EMSimTaskDC(JSTask):
 	'''
-	Originally added to encapsulate a similarity matrix generation task 
+	Originally added to encapsulate a similarity matrix generation task
 	'''
 	def __init__(self,command="e2simmx.py",data=None,options=None):
-		EMTask.__init__(self,command,data,options)
+		JSTask.__init__(self,command,data,options)
 		# options should have these keys:
 		# align - the main aligner, a list of two strings
 		# alligncmp - the main align cmp - a list of two strings
@@ -354,13 +353,13 @@ class EMSimTaskDC(EMTask):
 		# cmp - the final cmp - a list of two strings
 		# shrink - a shrink value (int), may be None or unspecified - shrink the data by an integer amount prior to computing similarity scores
 
-	
+
 		# data should have
 		# particles - a Task-style cached list of input images
 		# references - a Task-style cached list of reference images
-		
+
 		self.sim_data = {} # this will store the eventual results
-		
+
 	def __init_memory(self,options):
 		'''
 		This function assigns critical attributes
@@ -370,26 +369,26 @@ class EMSimTaskDC(EMTask):
 		shrink = None
 		if options.has_key("shrink") and options["shrink"] != None and options["shrink"] > 1:
 			shrink = options["shrink"]
-		
+
 		ref_data_name=self.data["references"][1]
 		ref_indices = image_range(*self.data["references"][2:])
-		
+
 		if self.data.has_key("colmasks") :
 			ref_masks_name=self.data["colmasks"][1]
 		else : ref_masks_name=None
-		
+
 		if self.data.has_key("mask") :
 			mask=EMData(self.data["mask"][1],self.data["mask"][2])
 			if shrink != None : mask.process_inplace("math.meanshrink",{"n":options["shrink"]})
 		else : mask=None
-		
+
 #		print self.data["references"][2:]
 		refs = {}
 		for idx in ref_indices:
 			image = EMData(ref_data_name,idx)
 			if shrink != None:
 				image.process_inplace("math.meanshrink",{"n":options["shrink"]})
-				
+
 			if ref_masks_name==None :
 				refs[idx] = (image,None)
 			else :
@@ -397,10 +396,10 @@ class EMSimTaskDC(EMTask):
 				if shrink != None:
 					mask.process_inplace("math.meanshrink",{"n":options["shrink"]})
 				refs[idx] = (image,mask)
-			
+
 		ptcl_data_name=self.data["particles"][1]
 		ptcl_indices = image_range(*self.data["particles"][2:])
-			
+
 		ptcls = {}
 		for idx in ptcl_indices:
 			try: image = EMData(ptcl_data_name,idx)
@@ -412,14 +411,14 @@ class EMSimTaskDC(EMTask):
 # removed 8/2/12 stevel. Don't want to apply mask before alignment
 #			if mask!=None : image.mult(mask)
 			ptcls[idx] = image
-			
+
 		# Note that 'refs' is now a dictionary of tuples: (reference,mask) or (reference,None)
 		return refs,ptcls,shrink,mask
-			
+
 	def __cmp_one_to_many(self,ptcl,refs,mask,partial=None,progress_callback=None,cbi=0,cbn=1):
-	
+
 		options = self.options
-		
+
 		data = {}
 		cbli=0
 		for ref_idx,ref in refs.items():
@@ -441,10 +440,10 @@ class EMSimTaskDC(EMTask):
 					ref[0].mult(ref[1])											# remask after setsf
 			if options.has_key("align") and options["align"] != None:
 				aligned=ref[0].align(options["align"][0],ptcl,options["align"][1],options["aligncmp"][0],options["aligncmp"][1])
-	
+
 				if options.has_key("ralign") and options["ralign"] != None: # potentially employ refine alignment
 					refine_parms=options["ralign"][1]
-					if ref[1]!=None : 
+					if ref[1]!=None :
 						#print "using mask, and ",mask
 						refine_parms["xform.align2d"] = aligned.get_attr("xform.align2d").inverse()
 						ref[0].del_attr("xform.align2d")
@@ -456,51 +455,51 @@ class EMSimTaskDC(EMTask):
 					else:
 						refine_parms["xform.align2d"] = aligned.get_attr("xform.align2d")
 						ref[0].del_attr("xform.align2d")
-						aligned = ref[0].align(options["ralign"][0],ptcl,refine_parms,options["raligncmp"][0],options["raligncmp"][1])		
-					
-			
-				if mask!=None : 
+						aligned = ref[0].align(options["ralign"][0],ptcl,refine_parms,options["raligncmp"][0],options["raligncmp"][1])
+
+
+				if mask!=None :
 					aligned.mult(mask)
 					ptcl2=ptcl.copy()
 					ptcl2.mult(mask)
 					t =  aligned.get_attr("xform.align2d")
 					t.invert()
 					data[ref_idx] = (ptcl2.cmp(options["cmp"][0],aligned,options["cmp"][1]),t)
-					
+
 				else:
 					t =  aligned.get_attr("xform.align2d")
 					t.invert()
 					data[ref_idx] = (ptcl.cmp(options["cmp"][0],aligned,options["cmp"][1]),t)
 			else:
 				data[ref_idx] = (ptcl.cmp(options["cmp"][0],ref,options["cmp"][1]),None)
-			
+
 		return data
-	
+
 	def dummycb(self,prog): return True
-	
+
 	def execute(self,progress_callback=None):
 		if progress_callback==None: progress_callback=self.dummycb
 		if not progress_callback(0) : return None
 		refs,ptcls,shrink,mask = self.__init_memory(self.options)
-		
-		
+
+
 		sim_data = {} # It's going to be our favorite thing, a dictionary of dictionaries
-		
+
 		min_ptcl_idx = None
 		n = float(len(ptcls))
 		i = 0
 		for ptcl_idx,ptcl in ptcls.items():
 			if min_ptcl_idx == None or ptcl_idx < min_ptcl_idx:
-				min_ptcl_idx = ptcl_idx 
-			
+				min_ptcl_idx = ptcl_idx
+
 			if self.data.has_key("partial") :
 				sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcls[ptcl_idx],refs,mask,[ii for ii in self.data["partial"] if ii[0]==ptcl_idx],progress_callback,i,n)
 			else : sim_data[ptcl_idx] = self.__cmp_one_to_many(ptcls[ptcl_idx],refs,mask,None,progress_callback,i,n)
 			i+=1
 			if not progress_callback(int(100*i/n)) : return None
-		
-			
-			
+
+
+
 		d = {}
 #		d["sim_data"] = sim_data
 		result_data = []
@@ -513,12 +512,12 @@ class EMSimTaskDC(EMTask):
 			e = EMData(len(refs),len(ptcls))
 			e.to_zero()
 			result_data.append(e)
-		
+
 		min_ref_idx = None
 		for ref_idx in refs.keys():
 			if min_ref_idx == None or ref_idx < min_ref_idx:
 				min_ref_idx = ref_idx
-		
+
 		for r,dd in sim_data.items():
 			for c,data in dd.items():
 				comp = data[0]
@@ -531,8 +530,8 @@ class EMSimTaskDC(EMTask):
 						result_data[1].set(rc,rr,0)
 						result_data[2].set(rc,rr,0)
 						result_data[3].set(rc,rr,0)
-						result_data[4].set(rc,rr,0)					
-						result_data[5].set(rc,rr,0)					
+						result_data[4].set(rc,rr,0)
+						result_data[5].set(rc,rr,0)
 					else :
 						params = tran.get_params("2d")
 						scale_correction = 1.0
@@ -542,18 +541,20 @@ class EMSimTaskDC(EMTask):
 						result_data[3].set(rc,rr,params["alpha"])
 						result_data[4].set(rc,rr,params["mirror"])
 						result_data[5].set(rc,rr,params["scale"])
-					
+
 		for r in result_data: r.update()
-		
+
 		# This is to catch any NaNs - yes this is a problem but this is a temporary work around
 		result_data[0].process_inplace("math.finite",{"to":1e24})
-		
-				
+
+
 		d["rslt_data"] = result_data
 		d["min_ref_idx"] = min_ref_idx
 		d["min_ptcl_idx"] = min_ptcl_idx
-		return d 
-	
+		return d
+
+jsonclasses["EMSimTaskDC"]=EMSimTaskDC.from_jsondict
+
 #	def get_return_data(self):
 #		d = {}
 #		d["sim_data"] = self.sim_data
@@ -595,57 +596,57 @@ def main():
 	parser.add_argument("--parallel",type=str,help="Parallelism string",default=None)
 
 	(options, args) = parser.parse_args()
-	
+
 	if len(args)<3 : parser.error("Input and output files required")
-	
+
 	if (options.check): options.verbose = 1 # turn verbose on if the user is only checking...
-		
+
 	options.reffile=args[0]
 	options.datafile = args[1]
 	options.outfile = args[2]
-	
+
 	error = check(options,True)
-	
+
 	if options.verbose>0:
 		if (error):
 			print "e2simmx.py command line arguments test.... FAILED"
 		else:
 			print "e2simmx.py command line arguments test.... PASSED"
-		
+
 	if error : exit(1)
 	if options.check: exit(0)
-	
+
 	E2n=E2init(sys.argv, options.ppid)
-	
+
 	if options.parallel:
 		parsimmx = EMParallelSimMX(options,args,E2n)
 		parsimmx.execute()
 		E2end(E2n)
 		sys.exit(0)
-		
-	
+
+
 	# just remove the file - if the user didn't specify force then the error should have been found in the check function
 	if file_exists(options.outfile):
 		if (options.force):
 			remove_file(options.outfile)
-	
+
 	options.align=parsemodopt(options.align)
 	options.aligncmp=parsemodopt(options.aligncmp)
 	options.ralign=parsemodopt(options.ralign)
 	options.raligncmp=parsemodopt(options.raligncmp)
 	options.cmp=parsemodopt(options.cmp)
 
-	if options.exclude: 
+	if options.exclude:
 		try:
 			excl=file(options.exclude,"r").readlines()
 			excl=[int(i) for i in excl]
 			excl=set(excl)
 		except: print "Warning: exclude file failed"		# it's ok if this fails
-		
+
 
 	clen=EMUtil.get_image_count(args[0])
 	rlen=EMUtil.get_image_count(args[1])
-	
+
 	if options.init:
 		a=EMData()
 		a.set_size(clen,rlen,1)
@@ -655,7 +656,7 @@ def main():
 			for i in range(1,6): a.write_image(args[2],i)
 		E2end(E2n)
 		sys.exit(0)
-	
+
 	# Compute range in c and r
 	if options.range :
 		crange=options.range.split(",")[0:4:2]
@@ -674,7 +675,7 @@ def main():
 	mxout[0].set_attr(PART_FILE_ATTR,args[1])
 	mxout[0].set_size(crange[1]-crange[0],rrange[1]-rrange[0],1)
 	mxout[0].to_zero()
-	if options.saveali : 
+	if options.saveali :
 		mxout.append(mxout[0].copy()) # dx
 		mxout.append(mxout[0].copy()) # dy
 		mxout.append(mxout[0].copy()) # alpha (angle)
@@ -697,7 +698,7 @@ def main():
 		for image,imagem in cimgs:
 			image.process_inplace("math.meanshrink",{"n":options.shrink})
 			if imagem!=None : imagem.process_inplace("math.meanshrink",{"n":options.shrink})
-	
+
 #	if (options.lowmem):
 	rimg=EMData()
 #	else:
@@ -708,37 +709,37 @@ def main():
 #			# I chose this way in the end for memory efficiency. There's probably a better way to do it
 #			for image in rimages:
 #				image.process_inplace("math.meanshrink",{"n":options.shrink})
-		
+
 	#dimages =  EMData.read_images(args[1],range(*rrange))
 	#d = [ image.process_inplace("math.meanshrink",{"n":options.shrink}) for image in dimages]
-	
+
 	if options.mask==None : mask=None
 	else : mask=EMData(options.mask,0)
-	
+
 	for r in range(*rrange):
 		if options.exclude and r in excl : continue
-		
-		if options.verbose>0: 
+
+		if options.verbose>0:
 			print "%d/%d\r"%(r,rrange[1]),
 			sys.stdout.flush()
-		
+
 		# With the fillzero option, we only compute values where there is a zero in the existing matrix
 		if options.fillzero :
 			ss=EMData()
 			ss.read_image(args[2],0,False,Region(crange[0],r,crange[1]-crange[0]+1,1))
 			subset=[i for i in range(ss["nx"]) if ss[i,0]==0]
 		else : subset=None
-		
+
 #		if ( options.lowmem ):
 		rimg.read_image(args[1],r)
-		if options.shrink != None: # the check function guarantees that shrink is an integer greater than 
+		if options.shrink != None: # the check function guarantees that shrink is an integer greater than
 			rimg.process_inplace("math.meanshrink",{"n":options.shrink})
 			if mask!=None : mask.process_inplace("math.meanshring",{"n":options.shrink})
 
 		if mask!=None : rimg.mult(mask) 		# cimgs are masked in cmponetomany
 #		else:
 #			rimg = rimages[r]
-		
+
 		E2progress(E2n,float(r-rrange[0])/(rrange[1]-rrange[0]))
 		shrink = options.shrink
 		if options.verbose>1 : print "%d. "%r,
@@ -746,7 +747,7 @@ def main():
 		for c,v in enumerate(row):
 			if row==None : mxout[0].set_value_at(c,r,0,-1.0e30)
 			else: mxout[0].set_value_at(c,r,0,v[0])
-		
+
 		# This is to catch any NaNs - yes this is a problem but this is a temporary work around
 		mxout[0].process_inplace("math.finite",{"to":1e24})
 		if options.saveali :
@@ -763,17 +764,17 @@ def main():
 					mxout[3].set_value_at(c,r,0,v[3])
 					mxout[4].set_value_at(c,r,0,v[4])
 					mxout[5].set_value_at(c,r,0,v[5])
-	
+
 	if options.verbose>0 : print"\nSimilarity computation complete"
-	
+
 	# write the results into the full-sized matrix
 	if crange==[0,clen] and rrange==[0,rlen] :
 		for i,j in enumerate(mxout) : j.write_image(args[2],i)
 	else :
 		for i,j in enumerate(mxout) : j.write_image(args[2],i,IMAGE_UNKNOWN,0,Region(crange[0],rrange[0],0,crange[1]-crange[0],rrange[1]-rrange[0],1))
-	
+
 	E2end(E2n)
-	
+
 def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ralign=None, alircmp=("dot",{}),shrink=None,mask=None,subset=None,prefilt=False,verbose=0):
 	"""Compares one image (target) to a list of many images (reflist). Returns """
 
@@ -782,7 +783,7 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 	for i,r in enumerate(reflist):
 		#print i,r
 		if r[0]["sigma"]==0 : continue				# bad reference
-		if subset!=None and i not in subset : 
+		if subset!=None and i not in subset :
 			ret[i]=None
 			continue
 		if prefilt :
@@ -795,9 +796,9 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 			ta=r[0].align(align[0],target,align[1],alicmp[0],alicmp[1])
 			if verbose>3: print ta.get_attr("xform.align2d")
 			#ta.debug_print_params()
-			
+
 			if ralign and ralign[0]:
-				if r[1]!=None : 
+				if r[1]!=None :
 					#print "(single) using mask, and ",mask
 					ralign[1]["xform.align2d"] = ta.get_attr("xform.align2d").inverse()
 					r[0].del_attr("xform.align2d")
@@ -810,18 +811,18 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 					ralign[1]["xform.align2d"] = ta.get_attr("xform.align2d")
 					r[0].del_attr("xform.align2d")
 					ta = r[0].align(ralign[0],target,ralign[1],alircmp[0],alircmp[1])
-					
+
 				if verbose>3: print ta.get_attr("xform.align2d")
 
-			
+
 			t =  ta.get_attr("xform.align2d")
 			t.invert()
 			p = t.get_params("2d")
-			
+
 			scale_correction = 1.0
 			if shrink != None: scale_correction = float(shrink)
 
-			if mask!=None : 
+			if mask!=None :
 				ta.mult(mask)
 				ptcl2=target.copy()
 				ptcl2.mult(mask)
@@ -829,12 +830,12 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 			else:
 				ret[i]=(target.cmp(cmp[0],ta,cmp[1]),scale_correction*p["tx"],scale_correction*p["ty"],p["alpha"],p["mirror"],p["scale"])
 #			ta.write_image("dbug.hdf",-1)
-			
+
 		else :
 			ret[i]=(target.cmp(cmp[0],r[0],cmp[1]),0,0,0,1.0,False)
-		
+
 		if verbose>2 : print ret[i][0],
-	
+
 	if verbose>2 : print ""
 	if verbose==2 :
 		print "Best: ",sorted([(ret[i][0],i) for i in range(len(ret))])[0]
@@ -844,15 +845,15 @@ def check(options,verbose):
 	print "in check"
 	error = False
 	if ( options.nofilecheck == False ):
-		if not file_exists(options.datafile) and not db_check_dict(options.datafile):
+		if not file_exists(options.datafile):
 			if verbose>0:
 				print "Error: the file expected to contain the particle images (%s) does not exist." %(options.datafile)
 			error = True
-		if not file_exists(options.reffile) and not db_check_dict(options.reffile):
+		if not file_exists(options.reffile):
 			if verbose>0:
 				print "Error: the file expected to contain the projection images (%s) does not exist." %(options.reffile)
 			error = True
-		
+
 		if ( file_exists(options.datafile) and file_exists(options.reffile) ):
 			(xsize, ysize ) = gimme_image_dimensions2D(options.datafile);
 			(pxsize, pysize ) = gimme_image_dimensions2D(options.reffile);
@@ -864,13 +865,13 @@ def check(options,verbose):
 				if verbose>0:
 					print "Error - the (y) dimension of the reference images %d does not match that of the particle data %d" %(ysize,pysize)
 				error = True
-				
+
 		if  file_exists(options.outfile):
 			if ( not options.force):
 				if verbose>0:
 					print "Error: File %s exists, will not write over - specify the force option" %options.outfile
 				error = True
-	
+
 	if (options.cmp == None or options.cmp == ""):
 		if verbose>0:
 			print "Error: the --cmp argument must be specified"
@@ -878,17 +879,17 @@ def check(options,verbose):
 	else:
 		if ( check_eman2_type(options.cmp,Cmps,"Comparitor") == False ):
 			error = True
-	
+
 	if (options.shrink != None):
 		if options.shrink == 1:
 			options.shrink = None # just leave it as None please
 			print "Warning, setting shrink to 1 does nothing. If you don't want shrinking to occur just forget the shrink argument"
-			
+
 		if options.shrink <= 1:
 			print "Error: shrink must be greater than 1"
 			error = True
 
-	
+
 	if (options.saveali):
 		if   (options.align == None or options.align == ""):
 			if verbose>0:
@@ -897,7 +898,7 @@ def check(options,verbose):
 		else:
 			if ( check_eman2_type(options.align, Aligners,"Aligner") == False ):
 				error = True
-		
+
 		if ( (options.aligncmp == None or options.aligncmp == "") and options.saveali):
 			if verbose>0:
 				print "Error: the --aligncmp argument must be specified if --saveali is specificed"
@@ -905,28 +906,28 @@ def check(options,verbose):
 		else:
 			if ( check_eman2_type(options.aligncmp,Cmps,"Comparitor") == False ):
 				error = True
-		
-	
+
+
 		if ( options.ralign != None and options.ralign != ""):
-			
+
 			if ( check_eman2_type(options.ralign,Aligners,"Aligner") == False ):
 				error = True
-			
+
 			if ( options.raligncmp == None or options.raligncmp == ""):
 				if verbose>0:
 					print "Error: the --raligncmp argument must be specified if --ralign is specificed"
 			else:
 				if ( check_eman2_type(options.raligncmp,Cmps,"Comparitor") == False ):
 					error = True
-	
+
 	if hasattr(options,"parallel") and options.parallel != None:
   		if len(options.parallel) < 2:
   			print "The parallel option %s does not make sense" %options.parallel
   			error = True
-	
+
 	return error
-	
-	
-	
+
+
+
 if __name__ == "__main__":
     main()

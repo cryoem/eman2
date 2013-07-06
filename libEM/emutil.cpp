@@ -45,11 +45,6 @@
 #include <boost/shared_ptr.hpp>
 using boost::shared_ptr;
 
-#ifdef	HDFIO_CACHE
-	#include <boost/filesystem.hpp>
-	#include <boost/version.hpp>
-#endif	//HDFIO_CACHE
-
 #ifdef WIN32
 	#include <windows.h>
 	#define MAXPATHLEN (MAX_PATH*4)
@@ -520,19 +515,8 @@ int EMUtil::get_image_count(const string & filename)
 		nimg = imageio->get_nimg();
 	}
 
-#ifndef IMAGEIO_CACHE
-	if( imageio )
-	{
-#ifdef HDFIO_CACHE
-		if(dynamic_cast<HdfIO2*>(imageio)==NULL && dynamic_cast<HdfIO*>(imageio)==NULL) {
-#endif	//HDFIO_CACHE
-			delete imageio;
-			imageio = 0;
-#ifdef HDFIO_CACHE
-		}
-#endif	//HDFIO_CACHE
-	}
-#endif	//IMAGEIO_CACHE
+    EMUtil::close_imageio(filename, imageio);
+	imageio = 0;
 
 	EXITFUNC;
 	return nimg;
@@ -543,29 +527,30 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 							 ImageType image_type)
 {
 	ENTERFUNC;
+    //printf("EMUtil::get_imageio\n");    
 	Assert(filename != "");
 	Assert(rw == ImageIO::READ_ONLY ||
 		   rw == ImageIO::READ_WRITE ||
 		   rw == ImageIO::WRITE_ONLY);
 
 	ImageIO *imageio = 0;
-#ifdef IMAGEIO_CACHE
-	imageio = GlobalCache::instance()->get_imageio(filename, rw);
-	if (imageio) {
-		return imageio;
-	}
-#endif
+    int persist = 0;
+
+    #ifdef IMAGEIO_CACHE
+    imageio = GlobalCache::instance()->get_imageio(filename, rw);
+    if (imageio) {
+    	return imageio;
+    }
+    #endif    
 
 	ImageIO::IOMode rw_mode = static_cast < ImageIO::IOMode > (rw);
-
 	if (image_type == IMAGE_UNKNOWN) {
 		if(rw == ImageIO::WRITE_ONLY || rw == ImageIO::READ_WRITE) {
 			throw ImageFormatException("writing to this image format not supported.");
 		}
-
 		image_type = get_image_type(filename);
 	}
-
+    
 	switch (image_type) {
 #ifdef ENABLE_V4L2
 	case IMAGE_V4L:
@@ -594,52 +579,17 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 		break;
 #endif
 #ifdef EM_HDF5
-	#ifdef	HDFIO_CACHE
 	case IMAGE_HDF:
-	{
-		bool readonly;
-		if(rw == ImageIO::READ_ONLY) {
-			readonly = true;
-		}
-		else{
-			readonly = false;
-		}
-
-		boost::filesystem::path p(filename);
-
-#if BOOST_VERSION >= 104600 && BOOST_FILESYSTEM_VERSION >= 3
-		boost::filesystem::path full_p = boost::filesystem::absolute(p);
-#else
-		boost::filesystem::path full_p = boost::filesystem::complete(p);
-#endif
-
-		FileItem * fitem = HDFCache::instance()->get_file(full_p.string());
-		if(fitem && readonly==fitem->get_readonly()) {
-			imageio = fitem->get_imgio();
-		}
-		else {
-			imageio = new HdfIO2(filename, rw_mode);
-			if (((HdfIO2 *)imageio)->init_test()==-1) {
-				delete imageio;
-				imageio = new HdfIO(filename, rw_mode);
-			}
-
-			if (imageio !=NULL) {
-				FileItem * fitem = new FileItem(full_p.string(), imageio, time(0), readonly);
-				HDFCache::instance()->add_file(fitem);
-			}
-		}
-	}
-		break;
-	#else	//HDFIO_CACHE
-	case IMAGE_HDF:
+        persist = 30;
+        if (rw_mode != ImageIO::READ_ONLY) {
+            persist = 3;
+        }
 		imageio = new HdfIO2(filename, rw_mode);
 		if (((HdfIO2 *)imageio)->init_test()==-1) {
 			delete imageio;
 			imageio = new HdfIO(filename, rw_mode);
 		}
 		break;
-	#endif	//HDFIO_CACHE
 #endif	//EM_HDF5
 	case IMAGE_LST:
 		imageio = new LstIO(filename, rw_mode);
@@ -708,14 +658,30 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 	default:
 		break;
 	}
-#ifdef IMAGEIO_CACHE
-	GlobalCache::instance()->add_imageio(filename, rw, imageio);
-#endif
+    
+    #ifdef IMAGEIO_CACHE    
+    if (persist > 0) {
+        GlobalCache::instance()->add_imageio(filename, rw, persist, imageio);        
+    }
+    #endif  
 	EXITFUNC;
 	return imageio;
 }
 
-
+void *EMUtil::close_imageio(const string & filename, const ImageIO * io)
+{
+    //printf("EMUtil::close_imageio\n");
+    #ifdef IMAGEIO_CACHE
+    if (GlobalCache::instance()->contains(filename)) {
+        GlobalCache::instance()->close_imageio(filename);        
+    } else {
+        delete io;
+    }
+    #else
+    delete io;
+    #endif
+}
+                                 
 
 const char *EMUtil::get_imagetype_name(ImageType t)
 {

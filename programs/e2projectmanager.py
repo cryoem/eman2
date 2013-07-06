@@ -36,7 +36,6 @@ from PyQt4.QtCore import Qt
 from pmicons import *
 import os, json, re, glob, signal
 import subprocess
-from EMAN2db import db_open_dict
 from empmwidgets import *
 from valslider import EMQTColorWidget
 from embrowser import EMBrowserWidget
@@ -82,10 +81,14 @@ class EMProjectManager(QtGui.QMainWindow):
 		grid.addWidget(guilabel, 1,1)
 				
 		# Make the GUI, Tree and ToolBar
-		grid.addWidget(self.makeStackedWidget(),2,0,2,1)
+		grid.addWidget(self.makeStackedWidget()   ,2,0,2,1)
 		grid.addWidget(self.makeStackedGUIwidget(),2,1,1,1)
-		grid.addWidget(self.makeGUIToolButtons(),2,2,1,1)
+		grid.addWidget(self.makeGUIToolButtons()  ,2,2,1,1)
 		grid.addWidget(self.makeCMDButtonsWidget(),3,1,1,1)
+		
+		grid.setColumnStretch(0,0)
+		grid.setColumnStretch(1,1)
+		grid.setColumnStretch(2,0)
 		
 		# Make status bar
 		self.statusbar = EMAN2StatusBar("Welcome to the EMAN2 Project Manager","font-weight:bold;")
@@ -111,8 +114,8 @@ class EMProjectManager(QtGui.QMainWindow):
 		"""
 		Load the PM database. This is a global database. Each user on each machine has one
 		"""
-		self.pm_projects_db = db_open_dict("bdb:project")
-		self.pn_project_name = self.pm_projects_db.get("project_name",dfl=self.pn_project_name_default)
+		self.pm_projects_db = js_open_dict("info/project.json")
+		self.pn_project_name = self.pm_projects_db.setdefault("project_name",dfl=self.pn_project_name_default)
 	
 	def _load_icons(self):
 		"""
@@ -334,8 +337,11 @@ class EMProjectManager(QtGui.QMainWindow):
 		""" 
 		Launch the browser 
 		"""
-		self.window = EMBrowserWidget(withmodal=False,multiselect=False)
-		self.window.show()
+		win=EMBrowserWidget(withmodal=False,multiselect=False)
+		win.show()
+		win.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+		#self.window = EMBrowserWidget(withmodal=False,multiselect=False)
+		#self.window.show()
 	
 	def _on_helpbutton(self, state):
 		"""
@@ -801,28 +807,28 @@ class EMProjectManager(QtGui.QMainWindow):
 	def getCS(self):
 		""" Return the project CS """
 		try:
-			return self.pm_projects_db.get("global.microscope_cs",dfl=0.0)
+			return self.pm_projects_db.setdefault("global.microscope_cs",dfl=2.0)
 		except:
 			return ""
 		
 	def getVoltage(self):
 		""" Return the project Voltage """
 		try:
-			return self.pm_projects_db.get("global.microscope_voltage",dfl=0.0)
+			return self.pm_projects_db.setdefault("global.microscope_voltage",dfl=200.0)
 		except:
 			return ""
 		
 	def getAPIX(self):
 		""" Return the project Apix """
 		try:
-			return self.pm_projects_db.get("global.apix",dfl=1.0)
+			return self.pm_projects_db.setdefault("global.apix",dfl=1.0)
 		except:
 			return ""
 	
 	def getMass(self):
 		""" Return the particle mass """
 		try:
-			return self.pm_projects_db.get("global.particle_mass", dfl=800.0)
+			return self.pm_projects_db.setdefault("global.particle_mass", dfl=500.0)
 		except:
 			return ""
 		
@@ -845,11 +851,11 @@ class EMProjectManager(QtGui.QMainWindow):
 		Update the Project. Make sure buttons, DB, title and icon observe the PM state
 		"""
 		# Set Name, use db value, otherwise whatever the default is set to 
-		self.pn_project_name = self.pm_projects_db.get("project_name", dfl=self.pn_project_name_default)
+		self.pn_project_name = self.pm_projects_db.setdefault("project_name", dfl=self.pn_project_name_default)
 		self.PMProjectNameBanner.setText("Project Name: "+self.pn_project_name)
 
 		# Set Icon, use db value, otherwise whatever the default is set to 
-		self.pm_icon = self.pm_projects_db.get("project_icon", dfl=self.pm_icon_default)
+		self.pm_icon = self.pm_projects_db.setdefault("project_icon", dfl=self.pm_icon_default)
 		self.PMIcon.setIcon(self.pm_icon)
 
 		# Set buttons
@@ -1148,7 +1154,7 @@ class NoteBook(QtGui.QWidget):
 		""" Return the toolbar widget """
 		tbwidget = QtGui.QWidget()
 		hbox = QtGui.QHBoxLayout()
-		self.dbdict = db_open_dict("bdb:"+self.pm().getPMCWD()+"#notebook")
+		self.dbdict = js_open_dict(self.pm().getPMCWD()+"/info/notebook.json")
 		
 		# font type
 		self.fontdb = QtGui.QFontDatabase()
@@ -1667,7 +1673,7 @@ class PMGUIWidget(QtGui.QScrollArea):
 		self.widgethash = {}
 		self.cwd  = pm.pm_cwd	# The working directory that were in
 		self.program = program
-		self.db = db_open_dict("bdb:"+str(self.cwd)+"#"+program)
+		self.db = js_open_dict("{}/info/pm/{}.json".format(str(self.cwd),self.program))
 		self.pm = weakref.ref(pm)
 		self.mode = mode
 		
@@ -1737,7 +1743,8 @@ class PMGUIWidget(QtGui.QScrollArea):
 	def getDefault(self, option, nodb = False):
 		""" return the default value according to the folowing rules"""
 		# If there is a DB and its usage is desired the default will be the DB value
-		if not nodb and self.db[option['name']+self.getSharingMode(option)] != None: return self.db[option['name']+self.getSharingMode(option)]	# Return the default if it exists in the DB
+		k=option['name']+self.getSharingMode(option)
+		if not nodb and self.db.has_key(k): return self.db[k]	# Return the default if it exists in the DB
 		default = ""
 		if 'default' in option: default = option['default']
 		if type(default) == str and "self.pm()" in default: default = eval(default)	# eval CS, apix, voltage, etc, a bit of a HACK, but it works
@@ -1802,15 +1809,13 @@ class PMGUIWidget(QtGui.QScrollArea):
 		thiscwd = self.pm().pm_cwd
 		if thiscwd != self.cwd:
 			self.cwd = thiscwd
-			self.db = db_open_dict("bdb:"+str(self.cwd)+"#"+self.program)
+			self.db = js_open_dict("{}/info/pm/{}.json".format(str(self.cwd),self.program))
 		# Might enable serval dbs to be loaded, but we will implment this later
 		for widget in self.widgetlist:
 			# If this is not a value holding widget continue (bool widget, herader, etc)
 			if widget.getArgument() == None: continue
-			if self.db[widget.getName()+widget.getMode()] == None:
-				widget.setValue(widget.initdefault, quiet=True)
-			else:
-				widget.setValue(self.db[widget.getName()+widget.getMode()], quiet=True)
+			try: widget.setValue(self.db[widget.getName()+widget.getMode()], quiet=True)
+			except: widget.setValue(widget.initdefault, quiet=True)
 	
 	def updateGUIFromCmd(self, cmd):
 		""" Update the GUI from a command """
@@ -2074,6 +2079,14 @@ class ProjectDialog(QtGui.QDialog):
 		
 if __name__ == "__main__":
 	import sys
+	
+	if os.path.isdir("EMAN2DB") and os.path.isfile("EMAN2DB/project.bdb") :
+		print """ERROR: This appears to be an EMAN2.0x project directory. EMAN2.1 uses a number
+of different conventions. To use e2projectmanager with an older project, you will need to
+first upgrade the project with e2projectupdate21.py. You can still use the e2display.py
+GUI directly to browse the contents of old-style projects."""
+		sys.exit(1)
+	
 	from emapplication import EMApp
 	app = EMApp()
 	#app = QtGui.QApplication(sys.argv)

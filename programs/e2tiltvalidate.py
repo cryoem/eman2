@@ -34,7 +34,7 @@
 
 from EMAN2 import *
 import os, math
-from EMAN2db import EMTask
+from EMAN2jsondb import JSTask,jsonclasses
 	
 def main():
 	"""Program to validate a reconstruction by the Richard Henderson tilt validation method. A volume to validate, a small stack (~100 imgs) of untilted and ~10-15 degree
@@ -360,7 +360,7 @@ class ComputeTilts:
 				self.classifyfile[i].write_image("bdb:%s#classify_00"%self.options.path,i)
 	
 # Function to compute a similarity map for a given image
-class CompareToTiltTask(EMTask):
+class CompareToTiltTask(JSTask):
 	""" A parallelized version to compute contout plots """
 	def __init__(self, volume, tilted, imgnum, eulerxform, zrot, distplot, tiltrange, tiltstep, options):
 		if options.shrink:
@@ -369,7 +369,7 @@ class CompareToTiltTask(EMTask):
 			data = {"volume":shrunkvol,"tilted":shrunktilted}
 		else:
 			data = {"volume":volume,"tilted":tilted}
-		EMTask.__init__(self,"CmpTilt",data,options,"")
+		JSTask.__init__(self,"CmpTilt",data,options,"")
 		
 		self.imgnum = imgnum
 		self.eulerxform=eulerxform
@@ -401,6 +401,8 @@ class CompareToTiltTask(EMTask):
 		# Find the peak
 		maxpeak = scoremx_blur.calc_min_location()
 		self.distplot.set_value_at(maxpeak[0], maxpeak[1], self.distplot.get_value_at(maxpeak[0], maxpeak[1]) + 1.0)
+
+jsonclasses["CompareToTiltTask"]=CompareToTiltTask.from_jsondict
 
 def run(command):
 	"Execute a command with optional verbose output"		    

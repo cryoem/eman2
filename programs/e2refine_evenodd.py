@@ -33,8 +33,6 @@
 
 
 from EMAN2 import *
-from EMAN2fsc import *
-from EMAN2db import db_open_dict, db_close_dict, db_check_dict
 from math import *
 import os
 import sys
@@ -149,55 +147,16 @@ def main():
 		sys.exit(1)
 
 	# create the even and odd data sets
-	# note that this is very inefficient if not using bdb: as a source 
-	print "### Creating virtual stacks for even/odd data"
-	if options.input[:4].lower()=="bdb:" :
-		eset=options.input+"_even"
-		oset=options.input+"_odd"
-		
-		# This creates the even/odd input data sets so we can just use the stock 'e2refine.py' command for refinement
-		if db_check_dict(eset) :
-			print "Warning: %s already exists. Trusting that this file is correct and complete."%eset
-		else:
-			error = launch_childprocess("e2bdb.py %s --makevstack=%s --step=0,2"%(options.input,eset))
-	
-		if db_check_dict(oset) :
-			print "Warning: %s already exists. Trusting that this file is correct and complete."%oset
-		else:
-			error = launch_childprocess("e2bdb.py %s --makevstack=%s --step=1,2"%(options.input,oset))
-	else:
-		print "Sorry, at the moment this program supports only BDB format input particle stacks !"
-		sys.exit(1)
+	eset,oset=image_eosplit(options.input)
 
 	if options.usefilt!=None :
-		if options.usefilt[:4].lower()=="bdb:" :
-			efset=options.usefilt+"_even"
-			ofset=options.usefilt+"_odd"
-			
-			# This creates the even/odd input data sets so we can just use the stock 'e2refine.py' command for refinement
-			if db_check_dict(efset) :
-				print "Warning: %s already exists. Trusting that this file is correct and complete."%efset
-			else:
-				error = launch_childprocess("e2bdb.py %s --makevstack=%s --step=0,2"%(options.usefilt,efset))
-		
-			if db_check_dict(ofset) :
-				print "Warning: %s already exists. Trusting that this file is correct and complete."%ofset
-			else:
-				error = launch_childprocess("e2bdb.py %s --makevstack=%s --step=1,2"%(options.usefilt,ofset))
-		else:
-			print "Sorry, at the moment this program supports only BDB format usefilt particle stacks !"
-			sys.exit(1)
-
-
-		if options.path==None :
-			print "The --path argument is required, and must point to the 'parent' refinement for the desired resolution test, ie --path=refine_05"
-			sys.exit(1)
+		efset,ofset==image_eosplit(options.usefilt)
 
 	# Prepare the starting models for each run
 	# each model will have different random phases beyond the specified resolution
 	print "### Preparing initial models for refinement, phase-randomized at %1.1f A resolution"%options.randomres
-	launch_childprocess("e2proc3d.py %s bdb:%s_even#initial_model --process=filter.lowpass.randomphase:cutoff_freq=%1.4f"%(options.model,options.path,1.0/options.randomres))
-	launch_childprocess("e2proc3d.py %s bdb:%s_odd#initial_model --process=filter.lowpass.randomphase:cutoff_freq=%1.4f"%(options.model,options.path,1.0/options.randomres))
+	launch_childprocess("e2proc3d.py %s %s_even/initial_model.hdf --process=filter.lowpass.randomphase:cutoff_freq=%1.4f"%(options.model,options.path,1.0/options.randomres))
+	launch_childprocess("e2proc3d.py %s %s_odd/initial_model.hdf --process=filter.lowpass.randomphase:cutoff_freq=%1.4f"%(options.model,options.path,1.0/options.randomres))
 	
 	# Ok, now we're ready to run the actual refinements !
 	argv=sys.argv[1:]
@@ -214,7 +173,7 @@ def main():
 	# run even refinement
 	print "### Starting even data refinement"
 	argv[ipath]="--path=%s"%(options.path+"_even")
-	argv[imodel]="--model=bdb:%s_even#initial_model"%options.path
+	argv[imodel]="--model=%s_even/initial_model.hdf"%options.path
 	argv[iinp]="--input=%s"%eset
 	if iuf>0: argv[iuf]="--usefilt=%s"%efset
 	launch_childprocess("e2refine.py "+" ".join(argv))
@@ -222,7 +181,7 @@ def main():
 	# run odd refinement
 	print "### Starting odd data refinement"
 	argv[ipath]="--path=%s"%(options.path+"_odd")
-	argv[imodel]="--model=bdb:%s_odd#initial_model"%options.path
+	argv[imodel]="--model=%s_odd/initial_model.hdf"%options.path
 	argv[iinp]="--input=%s"%oset
 	if iuf>0: argv[iuf]="--usefilt=%s"%ofset
 	launch_childprocess("e2refine.py "+" ".join(argv))
@@ -232,18 +191,39 @@ def main():
 		# do a refine alignment of each odd map to the corresponding even map before resolution calc
 		try:
 			print "aligning iteration %d"%i
-			launch_childprocess("e2proc3d.py bdb:%s_odd#threed_filt_%02d bdb:%s_odd#threed_filt_%02d --alignref=bdb:%s_even#threed_filt_%02d --align=refine_3d"%(options.path,i,options.path,i,options.path,i))
+			launch_childprocess("e2proc3d.py %s_odd/threed_filt_%02d.hdf tmp1.hdf --alignref=%s_even/threed_filt_%02d.hdf --align=refine_3d"%(options.path,i,options.path,i))
+			launch_childprocess("e2proc3d.py %s_odd/threed_filt_%02d.hdf tmp2.hdf --process=xform.flip:axis=z --alignref=%s_even/threed_filt_%02d.hdf --align=refine_3d"%(options.path,i,options.path,i))
 		except:
 			print "Alignment failed"
 			
-		try:
-			db_compute_fsc(EMData("bdb:%s_even#threed_filt_%02d"%(options.path,i)), EMData("bdb:%s_odd#threed_filt_%02d"%(options.path,i)), e2refine.get_apix_used(options), options.path, "conv_even_odd_%02d"%i)
-		except:
-			print "Could not compute FSC for iteration %d"%i
+		# Pick the best handedness
+		a=EMData("tmp1.hdf",0)
+		b=EMData("tmp2.hdf",0)
+		c=EMData("%s_even/threed_filt_%02d.hdf"%(options.path,i))
+		ca=c.cmp(a,"ccc")
+		cb=c.cmp(b,"ccc")
+		if ca<cb :
+			print "correct hand detected"
+			os.unlink("%s_odd/threed_filt_%02d.hdf"%(options.path,i))
+			os.rename("tmp1.hdf","%s_odd/threed_filt_%02d.hdf"%(i,options.path))
+			os.unlink("tmp2.hdf")
+		else :
+			print "handedness flip required"
+			os.unlink("%s_odd/threed_filt_%02d.hdf"%(options.path,i))
+			os.rename("tmp2.hdf","%s_odd/threed_filt_%02d.hdf"%(i,options.path))
+			os.unlink("tmp1.hdf")
+
+		# Compute FSC convergence plot
+		com="e2proc3d.py {path}_even/threed_filt_{iter:02d}.hdf {path}/fsc_eo_{iter:02d}.txt --apix={apix} --calcfsc={path}_odd/threed_filt_{iter:02d}.hdf".format(path=options.path,iter=i,apix=apix)
+		if ( launch_childprocess(com) != 0 ):
+			print "Failed to execute %s" %com
+			exit_refine(1,logid)
 
 	# measure resolution curve
-	print "### Computing resolution curve as fsc_gold_%s.txt"%options.path[-2:]
-	launch_childprocess("e2proc3d.py bdb:%s_even#threed_filt_%02d fsc_gold_%s.txt --calcfsc=bdb:%s_odd#threed_filt_%02d"%(options.path,options.iter-1,options.path[-2:],options.path,options.iter-1))
+	com="e2proc3d.py {path}_even/threed_filt_{iter:02d}.hdf {path}/fsc_gold.txt --apix={apix} --calcfsc={path}_odd/threed_filt_{iter:02d}.hdf".format(path=options.path,iter=options.iter-1,apix=apix)
+	if ( launch_childprocess(com) != 0 ):
+		print "Failed to execute %s" %com
+		exit_refine(1,logid)
 
 
 	E2end(logid)

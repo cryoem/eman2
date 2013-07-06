@@ -39,7 +39,7 @@ import sys
 import random
 from random import choice
 from pprint import pprint
-from EMAN2db import EMTask
+from EMAN2jsondb import JSTask,jsonclasses
 from operator import itemgetter	
 
 def main():
@@ -868,7 +868,7 @@ def get_results(etc,tids,verbose):
 	return results
 
 
-class Align3DTaskAVSA(EMTask):
+class Align3DTaskAVSA(JSTask):
 	"""This is a task object for the parallelism system. It is responsible for aligning one 3-D volume to another, with a variety of options"""
 
 	def __init__(self,fixedimagestack,imagestack,comparison,ptcl1,ptcl2,p1n,p2n,label,mask,normproc,preprocess,lowpass,highpass,npeakstorefine,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,verbose):
@@ -879,7 +879,7 @@ class Align3DTaskAVSA(EMTask):
 	Rather than being a string specifying an aligner, 'align' may be passed in as a Transform object, representing a starting orientation for refinement"""
 		data={}
 		data={"fixedimage":fixedimagestack,"image":imagestack}
-		EMTask.__init__(self,"ClassAv3d",data,{},"")
+		JSTask.__init__(self,"ClassAv3d",data,{},"")
 
 		self.options={"comparison":comparison,"ptcl1":ptcl1,"ptcl2":ptcl2,"p1number":p1n,"p2number":p2n,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"lowpass":lowpass,"highpass":highpass,"npeakstorefine":npeakstorefine,"align":align,"aligncmp":aligncmp,"ralign":ralign,"raligncmp":raligncmp,"shrink":shrink,"shrinkrefine":shrinkrefine,"verbose":verbose}
 	
@@ -1044,6 +1044,8 @@ class Align3DTaskAVSA(EMTask):
 			print "Done aligning ",options["label"]
 		
 		return {"final":bestfinal,"coarse":bestcoarse}
+
+jsonclasses["Align3DTaskAVSA"]=Align3DTaskAVSA.from_jsondict
 
 if __name__ == '__main__':
 	main()

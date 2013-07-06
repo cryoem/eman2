@@ -155,34 +155,35 @@ int LstFastIO::calc_ref_image_index(int image_index)
 #ifdef WIN32
 		sep = '\\';
 #endif
-		if (ref_image_path[0] == sep) {
+// 		if (ref_image_path[0] == sep) {
 			strcpy(fullpath, ref_image_path);
-		}
-		else {
-			if (strrchr(filename.c_str(), sep)) {
-				strcpy(fullpath, filename.c_str());
-			}
-			else {
-#ifndef WIN32
-				getcwd(fullpath, MAXPATHLEN);
-#else
-				//GetCurrentDirectory(MAXPATHLEN, fullpath);
-#endif
-			}
-
-			char *p_basename = strrchr(fullpath, sep);
-			if (p_basename) {
-				//p_basename++;
-				//*p_basename = '\0';
-				char ssep[2];
-				ssep[0] = sep;
-				ssep[1] = '\0';
-				strcat(fullpath, ssep);
-				strcat(fullpath, ref_image_path);
-			}
-		}
+// 		}
+// 		else {
+// 			if (strrchr(filename.c_str(), sep)) {
+// 				strcpy(fullpath, filename.c_str());
+// 			}
+// 			else {
+// #ifndef WIN32
+// 				getcwd(fullpath, MAXPATHLEN);
+// #else
+// 				//GetCurrentDirectory(MAXPATHLEN, fullpath);
+// #endif
+// 			}
+// 
+// 			char *p_basename = strrchr(fullpath, sep);
+// 			if (p_basename) {
+// 				//p_basename++;
+// 				//*p_basename = '\0';
+// 				char ssep[2];
+// 				ssep[0] = sep;
+// 				ssep[1] = '\0';
+// 				strcat(fullpath, ssep);
+// 				strcat(fullpath, ref_image_path);
+// 			}
+// 		}
 
 		ref_filename = string(fullpath);
+		if (!Util::is_file_exist(ref_filename)) throw FileAccessException(ref_filename);
 		imageio = EMUtil::get_imageio(ref_filename, rw_mode);
 
 		last_ref_index = ref_image_index;
@@ -201,6 +202,8 @@ int LstFastIO::read_header(Dict & dict, int image_index, const Region * area, bo
 	check_read_access(image_index);
 	int ref_image_index = calc_ref_image_index(image_index);
 	int err = imageio->read_header(dict, ref_image_index, area, is_3d);
+	dict.put("data_source",ref_filename);
+	dict.put("data_n",image_index);
 	EXITFUNC;
 	return err;
 }

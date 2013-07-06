@@ -45,9 +45,10 @@ from EMAN2_cppwrap import *
 from pyemtbx.imagetypes import *
 from pyemtbx.box import *
 from e2version import *
-import EMAN2db
+import EMAN2db, EMAN2jsondb
 import argparse, copy
 import glob
+
 
 import threading
 #from Sparx import *
@@ -60,6 +61,7 @@ HOMEDB=None
 #try:
 #import EMAN2db
 from EMAN2db import EMAN2DB,db_open_dict,db_close_dict,db_remove_dict,db_list_dicts,db_check_dict,db_parse_path,db_convert_path,db_get_image_info,e2gethome, e2getcwd
+from EMAN2jsondb import JSDict,js_open_dict,js_close_dict,js_remove_dict,js_list_dicts,js_check_dict
 #except:
 #	HOMEDB=None
 
@@ -75,7 +77,7 @@ try:
 except:
 	GUIMode=False
 	app = 0
-	
+
 GUIbeingdragged=None
 originalstdout = sys.stdout
 
@@ -88,7 +90,7 @@ def emdata_to_string(self):
 	or network communication. The EMData object is pickled, then compressed wth zlib. Restore with
 	static method from_string()."""
 	return zlib.compress(cPickle.dumps(self,-1),3)	# we use a lower compression mode for speed
-	
+
 def emdata_from_string(s):
 	"""This will restore a serialized compressed EMData object as prepared by as_string()"""
 	return cPickle.loads(zlib.decompress(s))
@@ -117,7 +119,7 @@ def stopautoflush():
 	sys.stdout = originalstdout
 
 # These map standard names for data types to internal representation, and provide a minimum and maximum value for each type
-file_mode_map={ 
+file_mode_map={
 	"int8"  :EMUtil.EMDataType.EM_CHAR,
 	"uint8" :EMUtil.EMDataType.EM_UCHAR,
 	"int16" :EMUtil.EMDataType.EM_SHORT,
@@ -151,9 +153,9 @@ def E2init(argv, ppid=-1) :
 This function is called to log information about the current job to the local logfile. The flags stored for each process
 are pid, start, args, progress and end. progress is from 0.0-1.0 and may or may not be updated. end is not set until the process
 is complete. If the process is killed, 'end' may never be set."""
-		
+
 	# We go to the end of the file. Record the location, then write a fixed length string
-	try: 
+	try:
 		hist=file(".eman2log.txt","r+")
 		hist.seek(0,os.SEEK_END)
 	except:
@@ -164,10 +166,10 @@ is complete. If the process is killed, 'end' may never be set."""
 
 #	hist.flush()
 	hist.close()
-	
-	if EMAN2db.BDB_CACHE_DISABLE :
-		print "Note: Cache disabled"
-		
+
+	#if EMAN2db.BDB_CACHE_DISABLE :
+		#print "Note: Cache disabled"
+
 	return n
 
 def E2progress(n,progress):
@@ -175,7 +177,7 @@ def E2progress(n,progress):
 set to indicate an error exit."""
 	if EMAN2db.BDB_CACHE_DISABLE : return
 
-	try: 
+	try:
 		hist=file(".eman2log.txt","r+")
 		hist.seek(n+20)
 	except:
@@ -183,7 +185,7 @@ set to indicate an error exit."""
 	hist.write("%3d%%         "%(int(progress*100.0)))
 #	hist.flush()
 	hist.close()
-	
+
 	return n
 
 def E2end(n):
@@ -191,7 +193,7 @@ def E2end(n):
 This function is called to log the end of the current job. n is returned by E2init"""
 	if EMAN2db.BDB_CACHE_DISABLE : return
 
-	try: 
+	try:
 		hist=file(".eman2log.txt","r+")
 		hist.seek(n+20)
 	except:
@@ -199,13 +201,13 @@ This function is called to log the end of the current job. n is returned by E2in
 	hist.write("%s"%(local_datetime()))
 #	hist.flush()
 	hist.close()
-	
+
 	return n
 
 def E2saveappwin(app,key,win):
 	"""stores the window geometry using the application default mechanism for later restoration. Note that
 	this will only work with Qt windows"""
-	try:	   
+	try:
 		pos=win.pos()
 		sz=win.size()
 		geom=(pos.x(),pos.y(),win.width(),win.height())
@@ -213,7 +215,7 @@ def E2saveappwin(app,key,win):
 		E2setappval(app,key,geom)
 	except:
 		print "Error saving window location"
-	
+
 def E2loadappwin(app,key,win):
 	"""restores a geometry saved with E2saveappwin"""
 	try:
@@ -221,8 +223,8 @@ def E2loadappwin(app,key,win):
 		if geom==None : raise Exception
 		win.resize(geom[2],geom[3])
 		win.move(geom[0],geom[1])
-	except: return	
-	
+	except: return
+
 
 def E2setappval(app,key,value):
 	"""E2setappval
@@ -231,10 +233,10 @@ When settings are read, the local value is checked first, then if necessary, the
 	try:
 		app.replace(".","_")
 		key.replace(".","_")
-	except: 
+	except:
 		print "Error with E2setappval, app and key must be strings"
 		return
-	
+
 	try:
 		db=shelve.open(".eman2settings")
 		db[app+"."+key]=value
@@ -248,7 +250,7 @@ When settings are read, the local value is checked first, then if necessary, the
 		os.mkdir(dir)
 	except:
 		return
-		
+
 	try:
 		db=shelve.open(dir+"/appdefaults")
 		db[app+"."+key]=value
@@ -264,10 +266,10 @@ This function will get an application default by first checking the local direct
 	try:
 		app.replace(".","_")
 		key.replace(".","_")
-	except: 
+	except:
 		print "Error with E2getappval, app and key must be strings"
 		return None
-	
+
 	try:
 		db=shelve.open(".eman2settings")
 		ret=db[app+"."+key]
@@ -275,7 +277,7 @@ This function will get an application default by first checking the local direct
 		return ret
 	except:
 		pass
-	
+
 	try:
 		dir=e2gethome()
 		dir+="/.eman2"
@@ -285,7 +287,7 @@ This function will get an application default by first checking the local direct
 
 		return ret
 	except: pass
-	
+
 	return None
 
 
@@ -298,9 +300,9 @@ def e2getinstalldir() :
 		url=url.replace("\\","/")
 	return url
 
-		
+
 def numbered_path(prefix,makenew):
-	"""Finds the next numbered path to use for a given prefix. ie- prefix='refine' if refine_01/EMAN2DB 
+	"""Finds the next numbered path to use for a given prefix. ie- prefix='refine' if refine_01/EMAN2DB
 exists will produce refine_02 if makenew is set (and create refine_02) and refine_01 if not"""
 	n=1
 	while os.access("%s_%02d/EMAN2DB"%(prefix,n),os.F_OK) : n+=1
@@ -318,7 +320,7 @@ def get_numbered_directories(prefix,wd=e2getcwd()):
 	'''
 	dirs, files = get_files_and_directories(wd)
 	dirs.sort()
-	l = len(prefix) 
+	l = len(prefix)
 	for i in range(len(dirs)-1,-1,-1):
 		if len(dirs[i]) != l+2:# plus two because we only check for two numbered directories
 			dirs.pop(i)
@@ -327,9 +329,9 @@ def get_numbered_directories(prefix,wd=e2getcwd()):
 		else:
 			try: int(dirs[i][l:])
 			except: dirs.pop(i)
-	
+
 	# allright everything left in dirs is "refine_??" where the ?? is castable to an int, so we should be safe now
-	
+
 	return dirs
 
 def get_prefixed_directories(prefix,wd=e2getcwd()):
@@ -346,10 +348,10 @@ def get_image_directory():
 	pf = get_platform()
 	dtag = get_dtag()
 	if pf != "Windows":
-		return os.getenv("EMAN2DIR")+ dtag + "images" + dtag + "macimages" + dtag 
+		return os.getenv("EMAN2DIR")+ dtag + "images" + dtag + "macimages" + dtag
 	else:
 		return os.getenv("EMAN2DIR")+ dtag + "images" + dtag
-	
+
 def get_dtag():
 #	pfrm = get_platform()
 #	if pfrm == "Windows": return "\\"
@@ -360,8 +362,8 @@ def get_files_and_directories(path=".",include_hidden=False):
 	if path == ".": l_path = "./"
 	else: l_path = path
 	if len(l_path) == 0: path = get_dtag()
-	elif l_path[-1] not in ["/","\\"]: l_path += get_dtag() 
-	
+	elif l_path[-1] not in ["/","\\"]: l_path += get_dtag()
+
 	dirs = []
 	files = []
 	try:
@@ -369,13 +371,13 @@ def get_files_and_directories(path=".",include_hidden=False):
 	except: # something is wrong with the path
 		#print "path failed",l_path
 		return dirs,files
-	
+
 	for name in entries:
 		if len(name) == 0: continue
-		if not include_hidden: 
+		if not include_hidden:
 			if name[0] == ".":
 				continue
-		
+
 		try:
 			if os.path.isdir(l_path+name):
 				dirs.append(name)
@@ -384,28 +386,28 @@ def get_files_and_directories(path=".",include_hidden=False):
 		except:
 			pass # something was wrong with the directory
 	return dirs,files
-		
+
 
 def numbered_bdb(bdb_url):
 	'''
 	give something like "bdb:refine_01#class_indices (which means bdb:refine_01#class_indices_??.bdb files exist)
-	
+
 	will return the next available name bdb:refine_01#class_indices_?? (minus the bdb)
 	'''
-	
+
 	useful_info = db_parse_path(bdb_url)
 
 	d = get_dtag()
 	file_name_begin = useful_info[0] + d + "EMAN2DB" + d + useful_info[1] + "_"
-	  
+
 	for i in range(0,10):
 		for j in range(0,10):
 			name = file_name_begin+str(i)+str(j)+".bdb"
 			if os.path.exists(name): continue
-			else: 
+			else:
 				return "bdb:"+useful_info[0]+"#"+useful_info[1] + "_"+str(i)+str(j)
 
-	
+
 def get_header(filename,i):
 	if filename[0:4] == "bdb:":
 		db = db_open_dict(filename)
@@ -424,7 +426,7 @@ def remove_image(fsp):
 		try: db_remove_dict(fsp)
 		except: pass
 		return
-	
+
 	try:
 		os.unlink(fsp)
 		if fsp[-4:]==".hed" : os.unlink(fsp[:-3]+"img")
@@ -438,7 +440,7 @@ def good_size(size):
 	sizes=[16,24,32, 36, 40, 42, 44, 48, 50, 52, 54, 56, 60, 64, 66, 70, 72, 84, 96, 98, 100, 104, 112, 120, 128,130, 132, 140, 150, 154, 168, 180, 182, 192, 196, 208, 210, 220, 224, 240, 250, 256,260, 288, 300, 330, 352, 360, 384, 416, 440, 448, 450, 480, 512]
 	for i in sizes :
 		if i>=size: return i
-	
+
 	return Util.calc_best_fft_size(int(size))
 
 def re_filter_list(listtofilter, regex, invert=False):
@@ -450,38 +452,38 @@ def re_filter_list(listtofilter, regex, invert=False):
 	for key in listtofilter:
 		if bool(r1.search(key)) ^ invert: returndict[key] = listtofilter[key]
 	return returndict
-		
+
 class EMArgumentParser(argparse.ArgumentParser):
 	""" subclass of argparser to masquerade as optparser and run the GUI """
 	def __init__(self, prog=None,usage=None,description=None,epilog=None,version=None,parents=[],formatter_class=argparse.HelpFormatter,prefix_chars='-',fromfile_prefix_chars=None,argument_default=None,conflict_handler='error',add_help=True):
 		argparse.ArgumentParser.__init__(self,prog=prog,usage=usage,description=description,epilog=epilog,parents=parents,formatter_class=formatter_class,prefix_chars=prefix_chars,fromfile_prefix_chars=fromfile_prefix_chars,argument_default=argument_default,conflict_handler=conflict_handler,add_help=add_help)
-		
+
 		# A list of options to add to the GUI
 		self.optionslist = []
 		self.tablist = []
-		
+
 		# This stuff is to make argparser masquerade as optparser
-		if version:			 
+		if version:
 			self.add_argument('--version', action='version', version=version)
 		self.add_argument("postionalargs", nargs="*")
-		
+
 	def parse_args(self):
 		""" Masquerade as optpaser parse options """
 		parsedargs = argparse.ArgumentParser.parse_args(self)
 		return (parsedargs, parsedargs.postionalargs)
-	
+
 	def add_pos_argument(self, **kwargs):
 		""" Add a position argument, needed only for the GUI """
 		kwargs["positional"]=True
 		self.optionslist.append(copy.deepcopy(kwargs))
-		
+
 	def add_header(self, **kwargs):
 		""" for the header, you need, title, row, col"""
 		kwargs["guitype"]="header"
 		self.optionslist.append(copy.deepcopy(kwargs))
-		
+
 	def add_argument(self, *args, **kwargs):
-		
+
 		if "guitype" in kwargs:
 			if args[0][:2] == "--":
 				kwargs["name"] = args[0][2:]
@@ -504,13 +506,13 @@ class EMArgumentParser(argparse.ArgumentParser):
 			if "dirbasename" in kwargs: del kwargs["dirbasename"]
 			if "nosharedb" in kwargs: del kwargs["nosharedb"]
 			if "returnNone" in kwargs: del kwargs["returnNone"]
-		
+
 
 		argparse.ArgumentParser.add_argument(self, *args, **kwargs)
-		
+
 	def getGUIOptions(self):
 		return self.optionslist
-		
+
 def parsesym(optstr):
 	# FIXME - this function is no longer necessary since I overwrite the Symmetry3D::get function (on the c side). d.woolford
 	[sym, dict] = parsemodopt(optstr)
@@ -523,11 +525,11 @@ def parsesym(optstr):
 
 parseparmobj1=re.compile("([^\(]*)\(([^\)]*)\)")	# This parses test(n=v,n2=v2) into ("test","n=v,n2=v2")
 parseparmobj2=re.compile("([^=,]*)=([^,]*)")		# This parses "n=v,n2=v2" into [("n","v"),("n2","v2")]
-parseparmobj3=re.compile("[^:]\w*=*[-\w.]*") # This parses ("a:v1=2:v2=3") into ("a", "v1=2", "v2=3") 
+parseparmobj3=re.compile("[^:]\w*=*[-\w.]*") # This parses ("a:v1=2:v2=3") into ("a", "v1=2", "v2=3")
 parseparmobj4=re.compile("\w*[^=][\w.]*") # This parses ("v1=2") into ("v1", "2")
 
 def parse_transform(optstr):
-	"""This is used so the user can provide the rotation information and get the transform matrix in a convenient form. 
+	"""This is used so the user can provide the rotation information and get the transform matrix in a convenient form.
 	It will parse "dot0,dot1,dot2" and type:name=val:name=val:... then return the tranform matrix t=transform(az,alt,phi)"""
 
 	# We first check for the 'EMAN-style' special case
@@ -541,68 +543,50 @@ def parse_transform(optstr):
 	# Now we must assume that we have a type:name=val:... specification
 	tpl=optstr.split(":")
 	parms={"type":tpl[0]}
-	
+
 	# loop over parameters and add them to the dictionary
 	for parm in tpl[1:]:
 		s=parm.split("=")
 		try : parms[s[0]]=float(s[1])
 		except :
 			raise Exception,"Invalid transform parameter: %s"%parm
-		
+
 	try: ret=Transform(parms)
 	except:
 		raise Exception,"Invalid transform: %s"%optstr
-	
+
 	return ret
-	
+
 def parsemodopt(optstr):
 	"""This is used so the user can provide the name of a comparator, processor, etc. with options
 	in a convenient form. It will parse "dot:normalize=1:negative=0" and return
 	("dot",{"normalize":1,"negative":0})"""
-	
+
 	if not optstr or len(optstr)==0 : return (None,{})
 	if optstr.lower()=="none" : return None					# special case doesn't return a tuple
-	
-	if optstr.find('bdb:') == -1 and optstr.find('BDB:') == -1:
-		p_1 = re.findall( parseparmobj3, optstr )
-	else:
-		name = optstr.split(':')[0]
-		p_1 = [name]
-		param_option = optstr.split(name+':')[1]
-		l = param_option.split(':')
-		l2 = []
-		l2i = 0
-		for i in range(len(l)):
-			if l[i].find('=') != -1:
-				l2.append(l[i])
-			else:
-				l2[l2i-1] += ':'+l[i]
-				l2i -= 1
-			l2i += 1
-		p_1 += l2
-        
-	if len(p_1)==0: return (optstr,{})
-	
-	r2 = {}
-	for i in range (1, len(p_1)):
-		args = re.findall( parseparmobj4, p_1[i] )
-		if len(args) != 2:
-			print "ERROR: Command line parameter options failed"
-			print "\tSpecify parameters using this syntax - optiontype:p1=v1:p2=v2 etc"
-			print "\tThe problems arguments are:"
-			print args
-			return (None,None)
-		
-		v = args[1]
+
+	opstr=optstr.replace("bdb:","bdb%").replace("BDB:","bdb%")		# so we can use : like we we want to
+
+	op2=opstr.split(":")
+	if len(op2)==1 : return (op2[0],{})		# name with no options
+
+	r2={}
+	for p in op2[1:]:
+		try: k,v=p.split("=")
+		except:
+			print "ERROR: Command line parameter parsing failed on ",optstr
+			print "must have the form name:key=value:key=value"
+			return(None,None)
+
+		v=v.replace("bdb%","bdb:")
 		try: v=int(v)
 		except:
 			try: v=float(v)
 			except:
-				if v[0]=='"' and v[-1]=='"' : v=j[1][1:-1]
-		
-		r2[args[0]] = v
+				if v[0]=='"' and v[-1]=='"' : v=v[1:-1]
+		r2[k]=v
 
-	return (p_1[0], r2)
+	return (op2[0],r2)
 
 def parsedict(dictstr):
 	cmpparms = {}
@@ -613,7 +597,7 @@ def parsedict(dictstr):
 	        except:
 	                cmpparms[keyval[0]] = keyval[1]
 	return cmpparms
-	
+
 parseparmobj_op = re.compile("\+=|-=|\*=|\/=|%=")
 parseparmobj_logical = re.compile(">=|<=|==|~=|!=|<|>") 	# finds the logical operators <=, >=, ==, ~=, !=, <, >
 parseparmobj_op_words = re.compile("\w*[^=+-\/\*%][\w.]*") # splits ("v1?2") into ("v1","2") where ? can be any combination of the characters "=!<>~"
@@ -621,47 +605,47 @@ parseparmobj_logical_words = re.compile("\w*[^=!<>~][\w.]*") # splits ("v1?2") i
 def parsemodopt_logical(optstr):
 
 	if not optstr or len(optstr)==0 : return (None)
-	
+
 	p_1 = re.findall( parseparmobj_logical_words, optstr )
-	
+
 	if len(p_1)==0: return (optstr,{})
 	if ( len(p_1) != 2 ):
 		print "ERROR: parsemodopt_logical currently only supports single logical expressions"
 		print "Could not handle %s" %optstr
 		return (None,None,None)
-	
+
 	p_2 = re.findall( parseparmobj_logical, optstr )
-	
+
 	if ( len(p_2) != 1 ):
 		print "ERROR: could not find logical expression in %s" %optstr
 		return (None,None,None)
-	
-	
+
+
 	if ( p_2[0] not in ["==", "<=", ">=", "!=", "~=", "<", ">"] ):
 		print "ERROR: parsemodopt_logical %s could not extract logical expression" %(p_2[0])
 		print "Must be one of \"==\", \"<=\", \">=\", \"<\", \">\" \"!=\" or \~=\" "
 		return (None,None,None)
 
 	return (p_1[0], p_2[0], p_1[1])
-	
+
 def parsemodopt_operation(optstr):
 
 	if not optstr or len(optstr)==0 : return (None)
-	
+
 	p_1 = re.findall( parseparmobj_op_words, optstr )
 	if len(p_1)==0: return (optstr,{})
-	
+
 	if ( len(p_1) != 2 ):
 		print "ERROR: parsemodopt_logical currently only supports single logical expressions"
 		print "Could not handle %s" %optstr
 		return (None,None,None)
-	
+
 	p_2 = re.findall( parseparmobj_op, optstr )
 	if ( len(p_2) != 1 ):
 		print "ERROR: could not find logical expression in %s" %optstr
 		return (None,None,None)
-	
-	
+
+
 	if ( p_2[0] not in ["+=", "-=", "*=", "/=", "%="]):
 		print "ERROR: parsemodopt_logical %s could not extract logical expression" %(p_2[0])
 		print "Must be one of", "+=", "-=", "*=", "/=", "%="
@@ -670,9 +654,9 @@ def parsemodopt_operation(optstr):
 	return (p_1[0], p_2[0], p_1[1])
 
 def read_number_file(path):
-	"""This will read a text file containing a list of integers. The integers may be separated by any character(s). Any contiguous 
+	"""This will read a text file containing a list of integers. The integers may be separated by any character(s). Any contiguous
 	sequence of (0-9) in the file will be treated as a number. '#' is NOT respected as a comment character."""
-	
+
 	try:
 		regex = re.compile("[0-9]+")
 		return [int(i) for i in regex.findall(file(path,"r").read())]
@@ -687,14 +671,14 @@ def display(img,force_2d=False,force_plot=False):
 		if isinstance(img,tuple) : img=list(img)
 		image = emimage.EMImageWidget(img,None,app,force_2d,force_plot)
 		image.show()
-		try: 
+		try:
 			image.optimally_resize()
 		except: pass
 		return image
 	else:
 		# In non interactive GUI mode, this will display an image or list of images with e2display
 		fsp="bdb:%s/.eman2dir#tmp"%e2gethome()
-		
+
 		db_remove_dict(fsp)
 		d=db_open_dict(fsp)
 		if isinstance(img,list) or isinstance(img,tuple) :
@@ -728,14 +712,14 @@ def browse():
 		#app.show_specific(browser)
 	else:
 		os.system("e2display.py")
-		
+
 class EMImage(object):
 	"""This is basically a factory class that will return an instance of the appropriate EMImage* class """
 	def __new__(cls,data=None,old=None,parent=1):
 		"""This will create a new EMImage* object depending on the type of 'data'. If
 		old= is provided, and of the appropriate type, it will be used rather than creating
 		a new instance."""
-		if GUIMode:	
+		if GUIMode:
 			import emimage
 			image = emimage.EMImageWidget(data,old,app)
 			image.show()
@@ -758,7 +742,7 @@ def plot_image_similarity(im1,im2,skipzero=True,skipnearzero=False):
 		if skipnearzero and (fabs(im1[i])<s1/10.0 or fabs(im2[i])<s2/10.0) : continue
 		x.append(im1[i])
 		y.append(im2[i])
-		
+
 	plot((x,y))
 	return (x,y)
 
@@ -781,17 +765,17 @@ def plot(data,data2=None,data3=None,show=1,size=(800,600),path="plot.png"):
 		pylab.figure(figsize=(size[0]/72.0,size[1]/72.0),dpi=72)
 		if isinstance(data,EMData) :
 			a=[]
-			for i in range(data.get_xsize()): 
+			for i in range(data.get_xsize()):
 				a.append(data[i])
 			pylab.plot(a)
 			if data2!=None:
 				a=[]
-				for i in range(data2.get_xsize()): 
+				for i in range(data2.get_xsize()):
 					a.append(data2[i])
 				pylab.plot(a)
 			if data3!=None:
 				a=[]
-				for i in range(data.get_xsize()): 
+				for i in range(data.get_xsize()):
 					a.append(data3[i])
 				pylab.plot(a)
 		elif isinstance(data,XYData) :
@@ -816,15 +800,15 @@ def plot(data,data2=None,data3=None,show=1,size=(800,600),path="plot.png"):
 		else :
 			print "I don't know how to plot that type (%s)"%(str(type(data)))
 			return
-		
+
 		pylab.savefig(path)
 		if show:
 			try: os.system("display "+path)
 			except: pass
-	
+
 def kill_process(pid):
 	'''
-	platform independent way of killing a process 
+	platform independent way of killing a process
 	'''
 	import os
 	import platform
@@ -852,14 +836,14 @@ def launch_childprocess(cmd):
 	Convenience function to lauch child processes
 	'''
 	p = subprocess.Popen(str(cmd)+" --ppid=%d"%os.getpid(), shell=True)
-	
+
 	if get_platform() == 'Windows':
 		error = p.wait()	#os.waitpid does not work on windows
 	else:
 		error = os.waitpid(p.pid, 0)[1]
-	
+
 	return error
-	
+
 def process_running(pid):
 	'''
 	Platform independent way of checking if a process is running, based on the pid
@@ -883,7 +867,7 @@ def process_running(pid):
 			return 1
 		except:
 			return 0
-			
+
 def memory_stats():
 	'''
 	Returns [total memory in GB,available memory in GB]
@@ -905,7 +889,7 @@ def memory_stats():
 				mem_avail = float(ma[1])/1000000.0
 		except:
 			pass
-		
+
 	elif platform_string == "Darwin":
 		import commands
 		status_total, output_total = commands.getstatusoutput("sysctl hw.memsize")
@@ -917,7 +901,7 @@ def memory_stats():
 				try:
 					mem_total = float(total_strings[1])/1000000000.0 # on Mac the output value is in bytes, not kilobytes (as in Linux)
 				except:pass # mem_total is just -1
-		
+
 		used_strings = output_used.split()
 		mem_used = -1
 		if len(used_strings) >=2:
@@ -926,10 +910,10 @@ def memory_stats():
 				try:
 					mem_used = float(used_strings[1])/1000000000.0 # on Mac the output value is in bytes, not kilobytes (as in Linux)
 				except:pass # mem_used is just -1
-		
+
 		if mem_used != -1 and mem_total != -1:
 			mem_avail = mem_total - mem_used
-			
+
 	return [mem_total,mem_avail]
 
 def free_space(p=os.getcwd()):
@@ -972,8 +956,8 @@ def num_cpus():
 				try:
 					cores = int(strings[1])
 				except:pass # mem_used is just -1
-				
-		if cores < 1: 
+
+		if cores < 1:
 			print "warning, the number of cpus was negative (%i), this means the MAC system command (sysctl) has been updated and EMAN2 has not accommodated for this. Returning 1 for the number of cores." %cores
 			cores = 1 # just for safety, something could have gone wrong. Maybe we should raise instead
 		return cores
@@ -984,16 +968,16 @@ def num_cpus():
 
 def gimme_image_dimensions2D( imagefilename ):
 	"""returns the dimensions of the first image in a file (2-D)"""
-	
+
 	e = EMData()
 	e.read_image(imagefilename,0,True)
 	return (e.get_xsize(),e.get_ysize())
 
 # get the three dimensions of a an image
 def gimme_image_dimensions3D( imagefilename ):
-	
+
 	#pdb.set_trace()
-	
+
 	read_header_only = True
 	e = EMData()
 	e.read_image(imagefilename,0, read_header_only)
@@ -1001,7 +985,7 @@ def gimme_image_dimensions3D( imagefilename ):
 	xsize = d["nx"]
 	ysize = d["ny"]
 	zsize = d["nz"]
-	
+
 	return (xsize, ysize,zsize)
 
 def get_supported_3d_stack_formats():
@@ -1009,7 +993,7 @@ def get_supported_3d_stack_formats():
 	@return a list of the IMAGE formats in EMAN2 that support 3D stacks
 	Return is formatted like ['hdf','spi']
 	Note using http://blake.bcm.tmc.edu/emanwiki/EMAN2ImageFormats as of April 23 2009
-	Note that "bdb:" is not returned though, represented an aberration. Currently the 
+	Note that "bdb:" is not returned though, represented an aberration. Currently the
 	calling function must be aware of this
 	@Note - it would be nice if this was automatic, not hard coded.
 	'''
@@ -1021,7 +1005,7 @@ def get_supported_2d_stack_formats():
 	@return a list of the IMAGE formats in EMAN2 that support 2D stacks
 	Return is formatted like ['hdf','spi']
 	Note using http://blake.bcm.tmc.edu/emanwiki/EMAN2ImageFormats as of April 23 2009
-	Note that "bdb:" is not returned though, represented an aberration. Currently the 
+	Note that "bdb:" is not returned though, represented an aberration. Currently the
 	calling function must be aware of this
 	@Note - it would be nice if this was automatic, not hard coded.
 	'''
@@ -1032,7 +1016,7 @@ def get_supported_2d_write_formats():
 	'''
 	@return a list of the IMAGE formats in EMAN2 that can write to disk as a 2D image
 	Note using http://blake.bcm.tmc.edu/emanwiki/EMAN2ImageFormats as of July 1 2009
-	Note that "bdb:" is not returned though, represented an aberration. Currently the 
+	Note that "bdb:" is not returned though, represented an aberration. Currently the
 	calling function must be aware of this
 	@Note - it would be nice if this was automatic, not hard coded.
 	'''
@@ -1043,7 +1027,7 @@ def get_supported_3d_formats():
 	@return a list of the IMAGE formats in EMAN2 that 3D images
 	Return is formatted like ['hdf','spi']
 	Note using http://blake.bcm.tmc.edu/emanwiki/EMAN2ImageFormats as of April 23 2009
-	Note that "bdb:" is not returned though, represented an aberration. Currently the 
+	Note that "bdb:" is not returned though, represented an aberration. Currently the
 	calling function must be aware of this
 	@Note - it would be nice if this was automatic, not hard coded.
 	'''
@@ -1055,19 +1039,19 @@ def remove_file( file_name, img_couples_too=True ):
 	Adapted so that if you want to remove an img/hed couple it will automatically remove both.
 	You can disable the img coupling feature with the the image_couples_too flag
 	'''
-	
+
 	if ( os.path.exists(file_name) ):
-		
+
 		parts = file_name.split('.')
-		
+
 		file_tag = parts[len(parts)-1]
-			
+
 		if ( file_tag == 'hed' or file_tag == 'img' ):
 			# get everything that isn't the tag
 			name = ''
 			for i in range(0,len(parts)-1):
 				name = name + parts[i] + '.'
-			
+
 			if img_couples_too:
 				os.remove(name+'hed')
 				os.remove(name+'img')
@@ -1079,7 +1063,7 @@ def remove_file( file_name, img_couples_too=True ):
 				shutil.rmtree(file_name)
 			else:
 				raise RuntimeError("Unknown url %s" %url)
-			
+
 		return True
 	elif db_check_dict(file_name):
 		db_remove_dict(file_name)
@@ -1097,29 +1081,29 @@ def local_datetime(secs=-1):
 #	return "%04d/%02d/%02d %02d:%02d:%02d"%t[:6]
 
 def timestamp_diff(t1,t2):
-	"""Takes two timestamps in local_datetime() format and subtracts them, result in seconds. 
+	"""Takes two timestamps in local_datetime() format and subtracts them, result in seconds.
 	difftime() available for convenient display."""
 	from time import strptime,mktime
-	
+
 	try:
 		tt1=mktime(strptime(t1,"%Y/%m/%d %H:%M:%S"))
 		tt2=mktime(strptime(t2,"%Y/%m/%d %H:%M:%S"))
 	except:
 #		print "time error ",t1,t2
 		return 0
-	
+
 	return tt2-tt1
 
 def difftime(secs):
 	"""Returns a string representation of a time difference in seconds as a Dd hh:mm:ss style string"""
-	
+
 	d=int(floor(secs/86400))
 	secs-=d*86400
 	h=int(floor(secs/3600))
 	secs-=h*3600
 	m=int(floor(secs/60))
 	secs=int(secs-m*60)
-	
+
 	if d>0 : return "%dd %2d:%02d:%02d"%(d,h,m,secs)
 	if h>0 : return "%2d:%02d:%02d"%(h,m,secs)
 	return "   %2d:%02d"%(m,secs)
@@ -1131,14 +1115,14 @@ def gm_time_string():
 	Returns gm time as a string. For example if it's 11:13 pm on the 18th of June 2008 this will return something like '23:13:25.14 18-6-2008'
 	The use of '/' is intentionally avoided
 	'''
-	
+
 	from time import gmtime,time
 	a = time()
 	b = gmtime(a)
 	astr = str(a)
 	idx = str.find(astr,'.')
 	decimalseconds = astr[idx:len(astr)]
-	
+
 	val = str(b[3])+':'+str(b[4])+':'+str(b[5])+decimalseconds +' '+str(b[2])+'-'+str(b[1])+'-'+str(b[0])
 	return val
 
@@ -1148,11 +1132,10 @@ def is_2d_image_mx(filename):
 	Note that a single 2D image is by definition a in "image matrix" that has only one member
 	'''
 	if not file_exists(filename): return False, "File doesn't exist : "+filename
-	
-	read_header_only = True
+
 	a = EMData()
 	# this is guaranteed not to raise unless the image has been removed from disk since the last call to check_files_are_em_images
-	a.read_image(filename,0,read_header_only)
+	a.read_image(filename,0,True)
 	if a.get_ndim() != 2:
 		return False, "Image is not 2D :", filename
 	elif EMUtil.get_image_count(filename) < 1:
@@ -1171,7 +1154,7 @@ def check_files_are_2d_images(filenames):
 		for name in filenames:
 			if EMUtil.get_image_count(name) > 1:
 				return False, "Image contains more than one image :", name
-			
+
 			else:
 				read_header_only = True
 				a = EMData()
@@ -1179,9 +1162,9 @@ def check_files_are_2d_images(filenames):
 				a.read_image(name,0,read_header_only)
 				if a.get_ndim() != 2:
 					return False, "Image is not 2D :", name
-				
+
 		return True, "Images are all valid and 2D"
-			
+
 
 def check_files_are_em_images(filenames):
 	'''
@@ -1194,14 +1177,14 @@ def check_files_are_em_images(filenames):
 		  		is_db = db_check_dict(file)
 		  		if not is_db: raise
 		  	except: return False, "File doesn't exist:"+file
-		  	
+
 		read_header_only = True
 		a = EMData()
 		try:
 			a.read_image(file,0,read_header_only)
 		except:
 			return False, "File is not a valid EM image:"+file
-			
+
 	return True,"images are fine"
 
 def abs_path(name):
@@ -1214,21 +1197,63 @@ def abs_path(name):
 	else:
 		return os.path.abspath(name)
 
+### FIXME
+### The same basic function has apparently been written 3 times: get_file_tag, item_name, and base_name
+### Trying to make base_name() in conjunction with info_name() (path to info/basname.js) the canonical one...
+
+# a function for stripping a the file tag from the end of a string.
+# is if given image.mrc this functions strips the '.mrc' and returns 'image'
+def strip_file_tag(file_name):
+	# FIXME it's probably easiest to do this with regular expressions...
+	'''
+	FIXME - could replace with Util.remove_filename_ext()
+	'''
+	print "Using deprecated strip_file_tag function, please remove"
+
+	for i in range(len(file_name)-1,-1,-1):
+		if file_name[i] == '.':
+			break
+	else:
+		print "never found the full stop in", file_name
+		return None
+
+	return file_name[0:i]
+
+def get_file_tag(file_name):
+	"""Returns the file identifier associated with a path, ie for "/home/stevel/abc1234.mrc" would return abc1234
+or for "bdb:hello99?1,2,3" would return hello99
+	"""
+	print "Using deprecated get_file_tag function, please switch to base_name()"
+
+	if file_name[:4].lower()=="bdb:" :
+		dname=file_name.find("#")+1
+		if dname==0 :dname=4
+		dtail=file_name.find("?")
+		if dtail>-1 : return file_name[dname:dtail]
+		return file_name[dname:]
+
+	dname=file_name.rfind("/")+1
+	ddot=file_name.rfind(".")
+	if ddot==-1 : return file_name[dname:]
+	return file_name[dname:ddot]
+
 def item_name(file_name):
 	"""
 	This will return an 'item name' for a path. This is generally the last element of the path without any extensions, eg:
 	"/home/test/abc.hdf" -> abc
 	"bdb:test#mytest" -> mytest
-	
+
 	see also: get_file_tag
 	"""
-	
+	print "Using deprecated item_name function, please switch to base_name()"
+
+
 	file_name=str(file_name)
 	if "\\" in file_name : file_name=file_name.replace("\\","/")
 
 	if file_name[:4].lower()=="bdb:":
 		s=file_name.split("#")
-		if len(s)==1 : 
+		if len(s)==1 :
 			if not "/" in file_name : return file_name[4:]
 			return file_name.split("/")[-1]
 		return s[-1]
@@ -1236,21 +1261,24 @@ def item_name(file_name):
 		s=file_name.split("/")[-1]
 		return s.rsplit(".",1)[0]
 
-def base_name( file_name,bdb_keep_dir=False ):
+def base_name( file_name,extension=False,bdb_keep_dir=False ):
 	'''
 	wraps os.path.basename but returns something sensible for bdb syntax
 	'''
-	
-	if db_check_dict(file_name):
+	if extension : print "base_name() with extension. please check"
+	if bdb_keep_dir : print "base_name() with bdb_keep_dir. please check"
+
+	file_name=str(file_name)
+	if file_name[:4].lower()=="bdb:" :
 		vals = file_name.split("#")
-		if bdb_keep_dir: 
+		if bdb_keep_dir:
 			dirs = vals[0].split("/")
 			if dirs[-1] == "": # if so the last entry was "/", and we need to get rid of the last entry in dirs to ensure the bdb_keep_dir functonality works as expected
 				dirs = dirs[:-1]
 		if len(vals) == 1: return file_name # this is as simple as it gets
 		else:
 			v = vals[-1]
-			
+
 			# strip out the EMAN2DB
 			# assumption that only one "EMAN2DB" exists in the string
 			for cand in ["EMAN2DB/","EMAN2DB"]:
@@ -1264,9 +1292,14 @@ def base_name( file_name,bdb_keep_dir=False ):
 					return "bdb:"+dirs[-1]+"#"+v
 				else: return file_name
 			else:
-				return "bdb:"+v
+				return "bdb:"+v.split("__")[0]
 	else:
-		return os.path.basename(file_name)
+		if extension : return os.path.basename(file_name)
+		else : return os.path.splitext(os.path.basename(file_name))[0].split("__")[0].replace("_ptcls","")		# double underscore is used to mark tags added to micrograph names
+
+def info_name(file_name):
+	"""This will return the name of the info file associated with a given image file, in the form info/basename_info.js"""
+	return "info/{}_info.json".format(base_name(file_name))
 
 def file_exists( file_name ):
 	'''
@@ -1275,11 +1308,11 @@ def file_exists( file_name ):
 	checks for the existence of both images
 	Also checks if the argument is a valid dictionary
 	'''
-	
+
 	if ( os.path.exists(file_name) ):
 		parts = file_name.split('.')
 		file_tag = parts[len(parts)-1]
-		
+
 		# get everything that isn't the tag
 		name = ''
 		for i in range(0,len(parts)-1):
@@ -1303,44 +1336,12 @@ def file_exists( file_name ):
 				return True
 			else: return False
 		except: return False
-	
-# a function for stripping a the file tag from the end of a string.
-# is if given image.mrc this functions strips the '.mrc' and returns 'image'
-def strip_file_tag(file_name):
-	# FIXME it's probably easiest to do this with regular expressions...
-	'''
-	FIXME - could replace with Util.remove_filename_ext()
-	'''
-	for i in range(len(file_name)-1,-1,-1):
-		if file_name[i] == '.':
-			break
-	else:
-		print "never found the full stop in", file_name
-		return None
-	
-	return file_name[0:i]
 
-def get_file_tag(file_name):
-	"""Returns the file identifier associated with a path, ie for "/home/stevel/abc1234.mrc" would return abc1234
-or for "bdb:hello99?1,2,3" would return hello99
-	"""
-
-	if file_name[:4].lower()=="bdb:" :
-		dname=file_name.find("#")+1
-		if dname==0 :dname=4
-		dtail=file_name.find("?")
-		if dtail>-1 : return file_name[dname:dtail]
-		return file_name[dname:]
-	
-	dname=file_name.rfind("/")+1
-	ddot=file_name.rfind(".")
-	if ddot==-1 : return file_name[dname:]
-	return file_name[dname:ddot]
 
 def strip_after_dot(file_name):
 	""" a function for stripping the contents of a filename so that all
 	 that remains is up to the first '.'
-	 eg if given image.sh4. mrc this functions strips the 'sh4.mrc' and returns 'image'	
+	 eg if given image.sh4. mrc this functions strips the 'sh4.mrc' and returns 'image'
 	 FIXME it's probably easiest to do this with regular expressions... """
 	idx = str.find(file_name,'.')
 	return file_name[0:idx]
@@ -1357,31 +1358,22 @@ def get_platform():
 			return platform.system()
 		except:
 			pass
-	
-if get_platform() == "Darwin": 
+
+if get_platform() == "Darwin":
 	glut_inited = True # this is a hack for the time being
 
-def remove_directories_from_name(file_name):
+def remove_directories_from_name(file_name,ntk=0):
 	'''
 	Removes the directories from a file name.
-	If the file_name is "/a/b/c.d", "c.d" is returned
-	If the file_name is "/a/b/c/" (last character is '/'), "c" is returned
-	If the file_name is "/a/b/c" , "e" is returned
-	Works on Windows, Linux and Darwin)
+	ntk indicates how many trailing path elements to keep from the normalized path
 	'''
-	import platform
-	pfm = get_platform() # will be Linux, Darwin or Windows, even Java
-	if pfm == "Windows":
-		idx = file_name.rfind('\\')
-	else:
-		idx = file_name.rfind('/')
-		
-	if idx == -1: return file_name
-	elif idx == (len(file_name)-1): #If the file_name is "/a/b/c/" (last character is '/'), "c" is returned
-		f = file_name[0:-1]
-		return remove_directories_from_name(f)
-	else: return file_name[idx+1:]
-
+	base=os.path.basename(file_name)
+	if ntk>0 :
+		full=os.path.abspath(file_name)
+		if "\\" in full : pre="\\".join(full.split("\\")[-ntk-1:-1])
+		else : pre="/".join(full.split("/")[-ntk-1:-1])
+		return pre+"/"+base
+	return base
 
 def name_has_no_tag(file_name):
 	'''
@@ -1392,10 +1384,10 @@ def name_has_no_tag(file_name):
 	'''
 	idx1 = file_name.rfind("/")
 	idx2 = file_name.rfind(".")
-	
-	if idx1 >= idx2: return True # -1 == -1 
+
+	if idx1 >= idx2: return True # -1 == -1
 	else: return False
-	
+
 
 def check_eman2_type(modoptstring, object, objectname, verbose=True):
 	''' a function for testing whether a type of Averager, Aligner, Comparitor, Projector, Reconstructor etc
@@ -1408,12 +1400,12 @@ def check_eman2_type(modoptstring, object, objectname, verbose=True):
 		if verbose:
 			print "Error: expecting a string but got python None, was looking for a type of %s" %objectname
 		return False
-	 
+
 	if modoptstring == "":
 		if verbose:
 			print "Error: expecting a string was not empty, was looking for a type of %s" %objectname
 		return False
-	
+
 	try:
 		p = parsemodopt(modoptstring)
 		if p[0] == None:
@@ -1432,7 +1424,7 @@ def check_eman2_type_string(modoptstring, object, objectname):
 	''' a function for testing whether a type of Averager, Aligner, Comparitor, Projector, Reconstructor etc
 	can be created from the command line string. Returns false if there are problems
 	examples
-	error =  check_eman2_type_string(options.simaligncmp,Cmps,"Comparitor") 
+	error =  check_eman2_type_string(options.simaligncmp,Cmps,"Comparitor")
 	if error != None:
 		 print error
 		 exit(1)
@@ -1441,10 +1433,10 @@ def check_eman2_type_string(modoptstring, object, objectname):
 	'''
 	if modoptstring == None:
 		return "Error: expecting a string but got python None, was looking for a type of %s" %objectname
-	 
+
 	if modoptstring == "":
 		return "Error: expecting a string was not empty, was looking for a type of %s" %objectname
-	
+
 	try:
 		p = parsemodopt(modoptstring)
 		if p[0] == None:
@@ -1452,7 +1444,7 @@ def check_eman2_type_string(modoptstring, object, objectname):
 		object.get(p[0], p[1])
 	except RuntimeError:
 		return "Error: the specified %s (%s) does not exist or cannot be constructed" %(objectname, modoptstring)
-		
+
 
 	return None
 
@@ -1487,13 +1479,13 @@ def write_test_refine_data(num_im=1000):
 		image.translate(dx,dy,0)
 		image.process_inplace("math.addnoise",{"noise":1})
 		image.write_image("bdb:starting_data#ptcls",-1)
-	
+
 	threed.write_image("bdb:refine_1#starting_model",-1)
-	
+
 def write_test_boxing_images(name="test_box",num_im=10,type=0,n=100):
 	'''
-	
-	'''	
+
+	'''
 	if type == 0:
 		window_size=(128,128)
 		image_size=(4096,4096)
@@ -1503,7 +1495,7 @@ def write_test_boxing_images(name="test_box",num_im=10,type=0,n=100):
 	elif type == 2:
 		window_size=(128,128)
 		image_size=(8964,13356)
-	
+
 	for i in range(num_im):
 		im = test_boxing_image(window_size,image_size,n)
 		im.write_image(name+"_"+str(i)+".mrc",0,EMUtil.ImageType.IMAGE_UNKNOWN, False,None,EMUtil.EMDataType.EM_SHORT)
@@ -1516,7 +1508,7 @@ def test_boxing_image(window_size=(128,128),image_size=(4096,4096),n=100):
 	(of the scurve image), the size of the large returned image, and the number of inserted scurve images.
 	'''
 	ret = EMData(*image_size)
-	
+
 	x_limit = window_size[0]
 	y_limit = window_size[0]
 	scurve = test_image(0,window_size)
@@ -1524,40 +1516,40 @@ def test_boxing_image(window_size=(128,128),image_size=(4096,4096),n=100):
 		window = scurve.copy()
 		da = Util.get_frand(0,360)
 		flip = Util.get_irand(0,1)
-		
+
 		t = Transform({"type":"2d","alpha":da})
 		t.set_mirror(flip)
 		window.transform(t)
 		#if flip:
 			#window.process_inplace("xform.flip",{"axis":"x"})
-		
+
 		p = (Util.get_irand(x_limit,image_size[0]-x_limit),Util.get_irand(y_limit,image_size[1]-y_limit))
-		
+
 		ret.insert_clip(window,p)
-		
-	
+
+
 	noise = EMData(*image_size)
 	noise.process_inplace("testimage.noise.gauss")
 	ret.add(noise)
-	
+
 	return ret
 
 def test_image_array(subim,size=(0,0),n_array=(1,1)):
 	"""This will build a packed array of 2-D images (subim) into a new
-image of the specified size. The number of subimages in X and y can be 
+image of the specified size. The number of subimages in X and y can be
 independently defined. This is useful for making simulated 2-D crystals
 (with an orthogonal geometry). Size will default to just fit the specified
 number of subimages"""
 	if size==(0,0): size=(subim.get_xsize()*n_array[0],subim.get_ysize()*n_array[1])
 
 	out=EMData(*size)
-	
+
 	for x in range(n_array[0]):
 		for y in range(n_array[1]):
 			out.insert_clip(subim,(size[0]/2+int((x-n_array[0]/2.0)*subim.get_xsize()),size[1]/2+int((y-n_array[1]/2.0)*subim.get_ysize())))
 
 	return out
-	
+
 def test_image(type=0,size=(128,128)):
 	"""Returns a simple standard test image
 	type=0  scurve
@@ -1620,11 +1612,11 @@ def test_image(type=0,size=(128,128)):
 		#t.set_mirror(Util.get_irand(0,1))
 		ret.transform(t)
 	else:
-		raise	
-	
-	
+		raise
+
+
 	return ret
-	
+
 def test_image_3d(type=0,size=(128,128,128)):
 	"""Returns a simple standard test image
 	type=0  axes
@@ -1649,58 +1641,58 @@ def test_image_3d(type=0,size=(128,128,128)):
 		tmp = EMData()
 		tmp.set_size(*size)
 		tmp.process_inplace("testimage.sphericalwave",{"wavelength":size[0]/7.0,"phase":0})
-		
+
 		a = tmp.copy()
 		a.translate(size[0]/7.0,size[1]/7.0,0)
 		ret.process_inplace("testimage.sphericalwave",{"wavelength":size[0]/11.0,"phase":0})
 		ret.add(a)
-		
+
 		a = tmp.copy()
 		a.translate(-size[0]/7.0,size[1]/7.0,0)
 		ret.add(a)
-		
+
 		a = tmp.copy()
 		a.translate(-size[0]/7.0,-size[1]/7.0,0)
 		ret.add(a)
-		
+
 		a = tmp.copy()
 		a.translate(size[0]/7.0,-size[1]/7.0,0)
 		ret.add(a)
-		
+
 		ret.process_inplace("normalize")
-		
-	elif type==2:		
+
+	elif type==2:
 		ret.process_inplace("testimage.tomo.objects")
 	elif type==3:
 		ret.process_inplace("testimage.squarecube",{"fill":1,"edge_length":size[0]/2})
 	elif type==4:
 		ret.process_inplace("testimage.circlesphere",{"radius":int(size[0]*.375)})
 	elif type==5:
-		
+
 		t = Transform({"type":"eman","az":60,"alt":30})
 		ret.process_inplace("testimage.ellipsoid",{"a":size[0]/3,"b":size[1]/5,"c":size[2]/4,"transform":t})
-		
+
 		t = Transform({"type":"eman","az":-45})
 		t.set_trans(0,0,0)
 		ret.process_inplace("testimage.ellipsoid",{"a":size[0]/2,"b":size[1]/16,"c":size[2]/16,"transform":t,"fill":0})
-		
+
 		t.set_trans(0,0,size[2]/6)
 		ret.process_inplace("testimage.ellipsoid",{"a":size[0]/2,"b":size[1]/16,"c":size[2]/16,"transform":t,"fill":0})
-		
+
 		t.set_trans(0,0,-size[2]/6)
 		ret.process_inplace("testimage.ellipsoid",{"a":size[0]/2,"b":size[1]/16,"c":size[2]/16,"transform":t,"fill":0})
-		
+
 		t = Transform({"type":"eman","alt":-45})
 		t.set_trans(-size[0]/8,size[1]/4,0)
 		ret.process_inplace("testimage.ellipsoid",{"a":size[0]/16,"b":size[1]/2,"c":size[2]/16,"transform":t,"fill":0})
-		
+
 		t = Transform({"type":"eman","alt":-45})
 		t.set_trans(size[0]/8,-size[1]/3.5)
 		ret.process_inplace("testimage.ellipsoid",{"a":size[0]/16,"b":size[1]/2,"c":size[2]/16,"transform":t,"fill":0})
-		
+
 	elif type==6 :
 		ret.process_inplace("testimage.noise.gauss")
-		
+
 	return ret
 
 # get a font renderer
@@ -1722,33 +1714,33 @@ def get_3d_font_renderer():
 	except ImportError:
 		#print "Unable to import EMFTGL. The FTGL library may not be installed. Text on 3D and some 2D viewers may not work."
 		return None
-	
+
 class EMAbstractFactory:
-	''' 
+	'''
 	see http://blake.bcm.edu/emanwiki/Eman2FactoriesInPython
 	'''
-	
+
 	def register(self, methodName, constructor, *args, **kargs):
 		"""register a constructor"""
 		_args = [constructor]
 		_args.extend(args)
 #		setattr(self, methodName,Functor(_args, kargs))
  		setattr(self, methodName, EMFunctor(*_args, **kargs))
-		
+
 	def unregister(self, methodName):
 		"""unregister a constructor"""
 		delattr(self, methodName)
-		
+
 class EMFunctor:
-	''' 
+	'''
 	Taken from http://code.activestate.com/recipes/86900/
-	'''	  
+	'''
 	def __init__(self, function, *args, **kargs):
 		assert callable(function), "function should be a callable obj"
 		self._function = function
 		self._args = args
 		self._kargs = kargs
-		
+
 	def __call__(self, *args, **kargs):
 		"""call function"""
 		_args = list(self._args)
@@ -1766,9 +1758,9 @@ def isosurface(marchingcubes, threshhold, smooth=False):
 # determines if all of the data dimensions are a power of val
 # e.g. if ( data_dims_power_of(emdata,2) print "the dimensions of the image are all a power of 2"
 def data_dims_power_of(data,val):
-	
+
 	test_cases = [data.get_xsize()]
-	
+
 	if ( data.get_ndim() >= 2 ):
 		test_cases.append(data.get_ysize())
 	if ( data.get_ndim == 3):
@@ -1777,9 +1769,9 @@ def data_dims_power_of(data,val):
 	for i in test_cases:
 		x = i
 		while ( x > 1 and x % val == 0 ): x /= val
-		if x != 1: 
+		if x != 1:
 			return False
-		
+
 	return True
 
 def pixelprint(self) : return 'Pixel(%d,%d,%d,%g)'%(self.x,self.y,self.z,self.value)
@@ -1798,18 +1790,18 @@ def vec3fprint(self) : return "Vec3f(%1.2f,%1.2f,%1.2f)"%(self[0],self[1],self[2
 Vec3f.__repr__=vec3fprint
 Vec3f.__str__=vec3fprint
 
-def xformprint(self) : 
+def xformprint(self) :
 	try :
 		p=self.get_params("2d")
 		return "Transform({'tx':%1.2f,'ty':%1.2f,'alpha':%1.3f,'mirror':%1d,'scale':%1.4f,'type':'2d'})"%(p["tx"],p["ty"],p["alpha"],int(p["mirror"]),p["scale"])
 	except:
 		p=self.get_params("eman")
 		return "Transform({'az':%1.3f,'alt':%1.3f,'phi':%1.3f,'tx':%1.2f,'ty':%1.2f,'tz':%1.2f,'mirror':%1d,'scale':%1.4f,'type':'eman'})"%(p["az"],p["alt"],p["phi"],p["tx"],p["ty"],p["tz"],int(p["mirror"]),p["scale"])
-		
+
 Transform.__repr__=xformprint
 Transform.__str__=xformprint
 
-def regionprint(self) : 
+def regionprint(self) :
 	try : return "Region(%s)"%self.get_string().replace(";",",")
 	except: return "Region(Error)"
 Region.__repr__=regionprint
@@ -1827,21 +1819,21 @@ def clear_dead_cudajobs():
 		except OSError:
 			print "removing deadfile ", lock
 			os.unlink(lock)
-	
+
 def set_emdata_array(img, array):
 	"""
-	Return a new EMData object, set its data with a list of float, all all attribute are the same as input image. 
+	Return a new EMData object, set its data with a list of float, all all attribute are the same as input image.
 	The array's size must be the same as the img's size, i.e. nx*ny or nx*ny*nz.
 	img - a EMData object
 	array - a list of float data
 	"""
 	import numpy
 	dict = img.get_attr_dict()
-	
+
 	if len(array) != dict['nz']*dict['ny']*dict['nx']:
 		print "Error: Array's size does not match nx*ny*nz"
 		return
-	
+
 	numpy_array = numpy.reshape(numpy.array(array, numpy.float32), (dict['nz'], dict['ny'], dict['nx']))
 	new_img = EMNumPy.numpy2em(numpy_array)
 	new_img.set_attr_dict(dict)
@@ -1854,6 +1846,201 @@ def initializeCUDAdevice():
 		EMData.cuda_initialize()
 	except:
 		pass
+
+class LSXFile:
+	"""This class will manage writing entries to LSX files, which are text files with a defined record length for
+rapid access. Each line contains an image number, a filename, and an optional comment, referencing a particle
+in another actual image file. Files MUST use the Unix /n convention, not the Windows (/r/n) convention.
+
+The file begins with
+#LSX
+# Whole file comment, one line of any length
+# Line length (including \n)
+number<\t>filename<\t>comment
+...
+"""
+	def __init__(self,path):
+		self.path=path
+
+		try: self.ptr=file(path,"r+")		# file exists
+		except:
+			try: os.makedirs(os.path.dirname(path))
+			except: pass
+			self.ptr=file(path,"w+")	# file doesn't exist
+			self.ptr.write("#LSX\n# This file is in fast LST format. All lines after the next line have exactly the number of characters shown on the next line. This MUST be preserved if editing.\n# 20\n")
+
+		self.ptr.seek(0)
+		l=self.ptr.readline()
+		if l==0 or l!="#LSX\n" : raise Exception,"ERROR: The file {} is not in #LSX format".format(self.path)
+		self.filecomment=self.ptr.readline()
+		try: self.linelen=int(self.ptr.readline()[1:])
+		except:
+			print "ERROR: invalid line length in #LSX file {}".format(self.path)
+			raise Exception
+		self.seekbase=self.ptr.tell()
+
+		self.normalize()
+
+	def __del__(self):
+		self.normalize()
+
+	def write(self,n,nextfile,extfile,comment=None):
+		"""Writes a record to any location in a valid #LSX file.
+n : image number in #LSX file, -1 appends, as does n>= current file len
+nextfile : the image number in the referenced image file
+extfile : the path to the referenced image file (can be relative or absolute, depending on purpose)
+comment : optional comment string"""
+
+		if comment==None : outln="{}\t{}".format(nextfile,extfile)
+		else: outln="{}\t{}\t{}".format(nextfile,extfile,comment)
+		if len(outln)+1>self.linelen : self.rewrite(len(outln))
+
+
+		fmtstr="{{:<{}}}\n".format(self.linelen-1)	# string for formatting
+		outln=fmtstr.format(outln)					# padded output line
+
+		if n<0 or n>=self.n :
+			self.ptr.seek(0,os.SEEK_END)		# append
+			self.n+=1
+		else : self.ptr.seek(self.seekbase+self.linelen*n)		# otherwise find the correct location
+
+		self.ptr.write(outln)
+
+	def read(self,n):
+		"""Reads the nth record in the file. Note that this does not read the referenced image, which can be
+performed with read_image either here or in the EMData class. Returns a tuple (n extfile,extfile,comment)"""
+		if n>=self.n : raise Exception,"Attempt to read record {} from #LSX with {} records".format(n,self.n)
+		self.ptr.seek(self.seekbase+self.linelen*n)
+		ln=self.ptr.readline().strip().split("\t")
+		if len(ln)==2 : ln.append(None)
+		ln[0]=int(ln[0])
+
+		return ln
+
+	def read_image(self,n):
+		"""This reads the image referenced by the nth record in the #LSX file. The same task can be accomplished with EMData.read_image,
+but this method prevents multiple open/close operations on the #LSX file."""
+
+		n,fsp,cmt=self.read(n)
+		ret=EMData(fsp,n)
+		if cmt!=None and len(cmt)>0 : ret["lst_comment"]=cmt
+
+		return ret
+
+	def normalize(self):
+		"""This will read the entire file and insure that the line-length parameter is valid. If it is not,
+it will rewrite the file with a valid line-length. """
+
+		self.ptr.seek(self.seekbase)
+		self.n=0
+		while 1:
+			ln=self.ptr.readline()
+			if len(ln)==0 :break
+			if len(ln)!=self.linelen :
+				self.rewrite()
+				break
+			self.n+=1
+
+	def rewrite(self,minlen=0):
+		"""This will reprocess the entire file to make sure the line length is correct. It does take 2 passes,
+but should only be used infrequently, so it should be fine. If specified, minlen is the shortest permissible
+line length. Used when a line must be added in the middle of the file."""
+
+		self.ptr.seek(0)
+
+		tmpfile=file(self.path+".tmp","w")
+		# copy the header lines
+		tmpfile.write(self.ptr.readline())
+		tmpfile.write(self.ptr.readline())
+		self.ptr.readline()
+
+		# we read the entire file, checking the length of each line
+		maxlen=minlen
+		while 1:
+			ln=self.ptr.readline().strip()
+			if len(ln)==0 : break
+			maxlen=max(maxlen,len(ln))
+
+		self.linelen=maxlen+1+4						# we make the lines 4 characters longer than necessary to reduce rewrite calls as "n" gets bigger
+		tmpfile.write("# {}\n".format(self.linelen))	# the new line length
+		newseekbase=tmpfile.tell()
+
+		fmtstr="{{:<{}}}\n".format(self.linelen-1)	# string for formatting
+
+		self.ptr.seek(self.seekbase)
+		while 1:
+			ln=self.ptr.readline().strip()
+			if len(ln)==0 : break
+			tmpfile.write(fmtstr.format(ln))
+
+		# close both files
+		tmpfile=None
+		self.ptr=None
+		self.seekbase=newseekbase
+
+		# rename the temporary file over the original
+		os.unlink(self.path)
+		os.rename(self.path+".tmp",self.path)
+		self.ptr=file(self.path,"r+")
+
+#		print "rewrite ",self.linelen
+
+def image_eosplit(filename):
+	"""This will take an input image stack in LSX or normal image format and produce output .lst (LSX)
+files corresponding to even and odd numbered particles. It will return a tuple with two filenames
+corresponding to each 1/2 of the data."""
+
+	# create the even and odd data sets
+	print "### Creating virtual stacks for even/odd data"
+	if file(filename,"r").read(4)=="#LSX" :				# LSX (fast LST) format
+		eset=filename.rsplit(".",1)[0]
+		oset=eset+"_odd.lst"
+		eset+="_even.lst"
+		oute=file(eset,"w")
+		outo=file(oset,"w")
+		inf=file(filename,"r")
+
+		# copy the first 3 lines to both files
+		for i in range(3):
+			l=inf.readline()
+			oute.write(l)
+			outo.write(l)
+
+		# then split the rest
+		i=0
+		while True:
+			l=inf.readline()
+			if l=="" : break
+			if i%2==0 : oute.write(l)
+			else: outo.write(l)
+			i+=1
+
+		oute=None
+		outo=None
+	else :								# This means we have a regular image file as an input
+		n=EMUtil.get_image_count(filename)
+		if filename[:4].lower()=="bdb:" :
+			eset=filename[4:].convert("#","/")+"_even.lst"
+			oset=filename[4:].convert("#","/")+"_odd.lst"
+		else:
+			eset=filename.rsplit(".",1)[0]+"_even.lst"
+			oset=filename.rsplit(".",1)[0]+"_odd.lst"
+
+		try : os.unlink(eset)
+		except: pass
+
+		oute=LSXFile(eset)
+		for i in xrange(0,n,2): oute.write(-1,i,filename)
+		oute=None
+
+		try : os.unlink(oset)
+		except: pass
+
+		oute=LSXFile(oset)
+		for i in xrange(1,n,2): oute.write(-1,i,filename)
+		oute=None
+
+	return (eset,oset)
 
 __doc__ = \
 "EMAN classes and routines for image/volume processing in \n\

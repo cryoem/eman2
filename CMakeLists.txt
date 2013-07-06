@@ -56,7 +56,7 @@ OPTION(ENABLE_BOUNDS_CHECKING "enable bounds checking support" OFF)
 OPTION(ENABLE_RT "enable RT support" ON)
 
 OPTION(ENABLE_IOCACHE "enable ImageIO caching" OFF)
-OPTION(ENABLE_HDFIOCACHE "enable HDF5 file caching" OFF)
+# OPTION(ENABLE_HDFIOCACHE "enable HDF5 file caching" OFF)
 
 #flags for optimization level. You can only turn one of following option to ON, or leave all of them to OFF.
 OPTION(ENABLE_DEBUG "enable debug support" OFF)
@@ -188,9 +188,9 @@ IF(ENABLE_IOCACHE)
 	ADD_DEFINITIONS(-DIMAGEIO_CACHE)
 ENDIF(ENABLE_IOCACHE)
 
-IF(ENABLE_HDFIOCACHE)
-    ADD_DEFINITIONS(-DHDFIO_CACHE)
-ENDIF(ENABLE_HDFIOCACHE)
+# IF(ENABLE_HDFIOCACHE)
+#     ADD_DEFINITIONS(-DHDFIO_CACHE)
+# ENDIF(ENABLE_HDFIOCACHE)
 
 SET(INCLUDE_DIRS 
 	${EMAN_SOURCE_DIR}/libEM 
@@ -486,17 +486,17 @@ ELSE(PYTHON_INCLUDE_PATH)
     MESSAGE("ERROR: Python.h not found")
 ENDIF(PYTHON_INCLUDE_PATH)
 
-IF(ENABLE_HDFIOCACHE)
-    IF(APPLE)
-        CHECK_OPTIONAL_LIB(BOOST_THREAD boost_thread boost/thread.hpp)
-        CHECK_OPTIONAL_LIB(BOOST_FILESYSTEM boost_filesystem boost/filesystem.hpp)
-        CHECK_OPTIONAL_LIB(BOOST_SYSTEM boost_system boost/filesystem.hpp)
-    ELSE(APPLE)
-        CHECK_OPTIONAL_LIB(BOOST_THREAD boost_thread-mt boost/thread.hpp)
-        CHECK_OPTIONAL_LIB(BOOST_FILESYSTEM boost_filesystem-mt boost/filesystem.hpp)
-        CHECK_OPTIONAL_LIB(BOOST_SYSTEM boost_system-mt boost/filesystem.hpp)
-    ENDIF(APPLE)
-ENDIF(ENABLE_HDFIOCACHE)
+# IF(ENABLE_HDFIOCACHE)
+#    IF(APPLE)
+#        CHECK_OPTIONAL_LIB(BOOST_THREAD boost_thread boost/thread.hpp)
+#        CHECK_OPTIONAL_LIB(BOOST_FILESYSTEM boost_filesystem boost/filesystem.hpp)
+#        CHECK_OPTIONAL_LIB(BOOST_SYSTEM boost_system boost/filesystem.hpp)
+#    ELSE(APPLE)
+#        CHECK_OPTIONAL_LIB(BOOST_THREAD boost_thread-mt boost/thread.hpp)
+#        CHECK_OPTIONAL_LIB(BOOST_FILESYSTEM boost_filesystem-mt boost/filesystem.hpp)
+#        CHECK_OPTIONAL_LIB(BOOST_SYSTEM boost_system-mt boost/filesystem.hpp)
+#    ENDIF(APPLE)
+# ENDIF(ENABLE_HDFIOCACHE)
 
 MARK_AS_ADVANCED(FORCE CMAKE_BACKWARDS_COMPATIBILITY)
 

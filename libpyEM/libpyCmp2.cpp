@@ -149,6 +149,7 @@ BOOST_PYTHON_MODULE(libpyCmp2)
 
     scope* EMAN_XYData_scope = new scope(
     class_< EMAN::XYData >("XYData", "XYData defines a 1D (x,y) data set.", init<  >())
+        .enable_pickling()
         .def(init< const EMAN::XYData& >())
         .def("read_file", &EMAN::XYData::read_file)
         .def("write_file", &EMAN::XYData::write_file)
@@ -167,6 +168,8 @@ BOOST_PYTHON_MODULE(libpyCmp2)
         .def("set_size", &EMAN::XYData::set_size)
         .def("get_xlist", &EMAN::XYData::get_xlist)
         .def("get_ylist", &EMAN::XYData::get_ylist)
+        .def("__getstate__", &EMAN::XYData::get_state)
+        .def("__setstate__", &EMAN::XYData::set_state)
     );
 
     class_< EMAN::XYData::Pair >("Pair", "a pair of float x and y", init< const EMAN::XYData::Pair& >())

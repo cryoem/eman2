@@ -1,21 +1,19 @@
 High priority
 2.1
-7/21/12		Automatic filter selection at ctf stage
-7/21/12		BDB->HDF
-7/21/12		Develop JSON files
-7/22/12		Same mask for all projections ?
+6/27/13		Deal with shrunk particles
+6/27/13		DDD movies, allow 'usefilt'-like behavior for low/high dose particles
+6/27/13		boxing
 7/22/12		Counting in filename entry in GUI (was taking a LOOONG time). Fix with new caching system.
 8/2/12		More dimensions in tilt validate
 8/9/12		Astigmatism ?
 
 7/27/12		RCT .box import broken in projectmanager (temporarily removed)
 7/22/12		2d plotting of 1d image in browser broken
-7/27/12		Can't browse BDB dictionary contents
 8/1/12		Need to re-examine CTF fitting. Should be able to get better B-factors
 8/1/12		New options for better masking during alignment and classification to make smoother alignment energy function
 8/2/12		min/max not shown in browser info window
 8/2/12		Update wiki output files for twostage, automaskalign options.
-8/13/12		When 3D windows are closed, don't reuse them 
+8/13/12		When 3D windows are closed, don't reuse them
 8/14/12		parallel make3d
 8/14/12		monte-carlo initial model generator
 8/17/12		Registration system in GUI
@@ -47,3 +45,8 @@ Complete
 ?/?/?		8/9/12	e2procpdb.py - Lin
 2/26/13		9/27/12	3D fallback for old OpenGL - Lin
 1/2013		9/6/12	Histogram normalization in image display - Lin
+7/21/12		Automatic filter selection at ctf stage
+7/21/12		BDB->HDF
+7/21/12		Develop JSON files
+7/22/12		Same mask for all projections ?
+7/27/12		Can't browse BDB dictionary contents

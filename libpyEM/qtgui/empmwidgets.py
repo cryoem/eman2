@@ -43,7 +43,6 @@ from emselector import EMSelectorDialog	# This will be replaced by something mor
 import re, os, glob
 from embrowser import EMBrowserWidget
 from empmtabwidgets import *
-import EMAN2fsc
 
 class PMComboBox(QtGui.QComboBox):
 	""" Reimplment the QComboBox to remove wheel widget activation """
@@ -411,18 +410,20 @@ class PMFileNameWidget(PMBaseWidget):
 
 	def _on_cancel(self):
 		self.window.close()
+		self.window=None
 
 	def _on_ok(self):
 		filename = ""
 		for f in self.window.getResult():
 			filename += (" "+f)
 		self.setValue(filename[1:])
-		self.window.close()
+		self.window=None
 
 	def _on_clicked(self):
 		self.window = eval(self.browser)
 		QtCore.QObject.connect(self.window, QtCore.SIGNAL("ok"),self._on_ok)
 		QtCore.QObject.connect(self.window, QtCore.SIGNAL("cancel"),self._on_cancel)
+		self.window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 		self.window.show()
 
 	def getValue(self):
@@ -436,13 +437,13 @@ class PMFileNameWidget(PMBaseWidget):
 		if not self.getPositional():
 			filename = filename.replace(" ",",")
 		# In some cases a file is optional
-		if self.checkfileexist:
-			# We need to check if the field is blank
-			if filename == "":
-				self._onBadFile(filename, quiet)
-				return
-			# In not blank then check to ensure each file is 'ok'. Not that a list of files is accepted
-			if not self._checkfiles(filename): return
+		#if self.checkfileexist:
+			## We need to check if the field is blank
+			#if filename == "":
+				#self._onBadFile(filename, quiet)
+				#return
+			## In not blank then check to ensure each file is 'ok'. Not that a list of files is accepted
+			#if not self._checkfiles(filename): return
 
 		# If all is well, then  we are happy
 		self.filename = filename
@@ -829,7 +830,7 @@ class PMFSCTableWidget(PMTableBase):
 
 		# table stuff
 		self.tablewidget.setColumnCount(4)
-		self.tablewidget.setHorizontalHeaderLabels(["ref dir", "iter", "refine_even_odd", "eotest"])
+		self.tablewidget.setHorizontalHeaderLabels(["Refine", "# Iter", "Masked .143", "Unmasked .143"])
 		self.tablewidget.horizontalHeader().setResizeMode(QtGui.QHeaderView.ResizeToContents)
 		self.tablewidget.horizontalHeader().setHighlightSections(False)
 		self.tablewidget.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)	# select rows
@@ -860,19 +861,19 @@ class PMFSCTableWidget(PMTableBase):
 			self.tablewidget.setCurrentItem(wlist[0])
 
 	def loadFSC(self, row, col):
-		""" dispaly the FSC curve. This is a callback for double clicking"""
+		""" display the FSC curve. This is a callback for double clicking"""
 		if not self.tablewidget.item(row, 1):
 			msg = "Rubbish!!! No FSC curves to plot."
 			print msg
 			self.emit(QtCore.SIGNAL("pmmessage(QString)"),"Rubbish!!! No FSC curves to plot.")
 			return
-		# load FSC options
-		fsccmd = "e2plotFSC.py %s --plotconvergence"%self.tablewidget.item(row, 0).text()
-		if self.tablewidget.item(row, 2):
-			fsccmd+=" --ploteoconvergence"
-		if self.tablewidget.item(row, 3):
-			fsccmd+=" --plote2eotest"
-
+		
+		fsccmd=["e2display.py --plot"]
+		path=str(self.tablewidget.item(row, 0).text())
+		fls=["{}/{}".format(path,i) for i in os.listdir(path) if i[:11]=="fsc_masked_"]
+		fsccmd.extend(sorted(fls))
+		fsccmd=" ".join(fsccmd)
+		
 		# Now load the FSC curves
 		msg = "Loading FSC curves, please wait..."
 		print msg
@@ -891,56 +892,37 @@ class PMFSCTableWidget(PMTableBase):
 			qwi_dirname = QtGui.QTableWidgetItem(str(directory))
 			self.tablewidget.setItem(i, 0, qwi_dirname)
 
-			#load info from DB
-			db_name = "bdb:"+str(directory)+"#convergence.results"
-			if not db_check_dict(db_name):
-				continue
-			db = db_open_dict(db_name,ro=True)
-			keys = db.keys()
+			fscs=sorted([ii for ii in os.listdir(directory) if ii[:11]=="fsc_masked_"])
+			niter=len(fscs)
+			if "fsc_masked_00.txt" in fscs : niter-=1
+			
+			self.tablewidget.setItem(i, 1, QtGui.QTableWidgetItem(str(niter)))
+			
+			try:
+				# We use a running average of 5 points to compute the threshold
+				xyd=XYData()
+				xyd.read_file("{}/{}".format(directory,fscs[-1]))
+				for ii in xrange(2,xyd.get_size()-2):
+					v=(xyd.get_y(ii-2)+xyd.get_y(ii-1)+xyd.get_y(ii)+xyd.get_y(ii+1)+xyd.get_y(ii+2))/5.0
+					if v<0.143 : break
+				
+				self.tablewidget.setItem(i,2,QtGui.QTableWidgetItem("{:1.1f}".format(1.0/xyd.get_x(ii-1))))
+			except:
+				self.tablewidget.setItem(i,2,QtGui.QTableWidgetItem("?"))
 
-			# count iterations, refinement
-			rcount = 0
-			ccount = 0
-			for key in keys:
-				if "init_00_fsc" == key:
-					rcount+=1
-					#do I need to increment ccount too?
-					continue
-				if ("%02d_%02d_fsc"%(rcount,rcount+1)) == key:
-					rcount+=1
-					continue
-				if ("conv_even_odd_%02d"%(ccount+1)) == key :
-					ccount+=1
+			try:
+				# We use a running average of 5 points to compute the threshold
+				xyd=XYData()
+				xyd.read_file("{}/fsc_un{}".format(directory,fscs[-1][4:]))
+				for ii in xrange(2,xyd.get_size()-2):
+					v=(xyd.get_y(ii-2)+xyd.get_y(ii-1)+xyd.get_y(ii)+xyd.get_y(ii+1)+xyd.get_y(ii+2))/5.0
+					if v<0.143 : break
+				
+				self.tablewidget.setItem(i,3,QtGui.QTableWidgetItem("{:1.1f}".format(1.0/xyd.get_x(ii-1))))
+			except:
+				self.tablewidget.setItem(i,3,QtGui.QTableWidgetItem("?"))
 
-			# no need for further processing
-			if rcount == 0 and ccount == 0:
-				continue
-			# load refinement results
-			if rcount > 0:
-				qwi_iterations = QtGui.QTableWidgetItem(str(rcount))
-				qwi_iterations.setTextAlignment(QtCore.Qt.AlignCenter)
-				self.tablewidget.setItem(i, 1, qwi_iterations)
-
-			# get res estimates, I jacked this from David
-			reo = EMAN2fsc.get_e2refine_even_odd_results_list(keys)
-			eo = EMAN2fsc.get_e2eotest_results_list(keys)
-
-			if len(reo) > 0:
-				# get the latest one, this will be the last as guaranteed by sorted results
-				last_res = reo[-1]
-				[xaxis,yaxis] = db[last_res]
-				resolution = self.find_first_point_5_crossing(xaxis,yaxis,.143)	# with this test, the .143 threshold is reasonable
-				qwi_res = QtGui.QTableWidgetItem(str(resolution))
-				qwi_res.setTextAlignment(QtCore.Qt.AlignCenter)
-				self.tablewidget.setItem(i, 2, qwi_res)
-
-			if len(eo) > 0:
-				last_res = eo[-1]
-				[xaxis,yaxis] = db[last_res]
-				resolution = self.find_first_point_5_crossing(xaxis,yaxis)
-				qwi_eotest = QtGui.QTableWidgetItem(str(resolution))
-				qwi_eotest.setTextAlignment(QtCore.Qt.AlignCenter)
-				self.tablewidget.setItem(i, 3, qwi_eotest)
+			
 
 	# I lifted this code from Daivids SPR workflow module
 	def find_first_point_5_crossing(self,xaxis,yaxis,thr=0.5):

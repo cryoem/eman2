@@ -33,8 +33,6 @@
 
 
 from EMAN2 import *
-from EMAN2fsc import *
-from EMAN2db import db_open_dict, db_close_dict, db_check_dict
 from math import *
 import os
 import sys
@@ -117,14 +115,14 @@ def main():
 	parser.add_argument("--m3diter", type=int, default=2, help="The number of times the 3D reconstruction should be iterated", guitype='intbox', row=39, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--m3dpreprocess", type=str, default="normalize.edgemean", help="Normalization processor applied before 3D reconstruction", guitype='combobox', choicelist='re_filter_list(dump_processors_list(),\'normalize\')', row=40, col=0, rowspan=1, colspan=2, mode="refinement")
 	parser.add_argument("--m3dpostprocess", type=str, default=None, help="Post processor to be applied to the 3D volume once the reconstruction is completed", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter.lowpass|filter.highpass\')', row=42, col=0, rowspan=1, colspan=3, mode="refinement")
-	parser.add_argument("--m3dpostprocess2", type=str, default=None, help="A second post processor to be applied to the 3D volume once the reconstruction is completed")
+	parser.add_argument("--m3dpostprocess2", type=str, default=None, help="A second post processor to be applied to the 3D volume once the reconstruction is completed",guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter.lowpass|filter.highpass\')', row=43, col=0, rowspan=1, colspan=3, mode="refinement")
 	
 	#lowmem!
 	parser.add_argument("--lowmem", default=False, action="store_true",help="Make limited use of memory when possible - useful on lower end machines", guitype='boolbox', row=3, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value> EX thread:4",default=None, guitype='strbox', row=3, col=0, rowspan=1, colspan=2, mode="refinement")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
-	(options, args) = parser.parse_args()
+	(options, arg) = parser.parse_args()
 	error = False
 	if check(options,True) == True : 
 		error = True
@@ -159,8 +157,8 @@ def main():
 		options.path = numbered_path("refine",True)
 
 	# store the inputs arguments forever in the refinement directory
-	db = db_open_dict("bdb:"+options.path+"#register")
-	db["cmd_dict"] = options.__dict__
+	db = js_open_dict(options.path+"/0_refine_parms.json")
+	db.update(vars(options))
 		
 	# this is the main refinement loop
 	
@@ -287,16 +285,26 @@ def main():
 		#plot = fsc[third:2*third]
 		#error = fsc[2*third:]
 		
-		if i == 0:
-			s = "init_00"
-		else:
-			s1 = str(i-1)
-			s2 = str(i)
-			if len(s1) == 1: s1 = "0" + s1
-			if len(s2) == 1: s2 = "0" + s2
-			s = s1 + "_" + s2
+		# Compute FSC convergence plot
+		if i==0 :
+			com="e2proc3d.py {model} {path}/fsc_xx_00.txt --apix={apix} --calcfsc={path}/threed_filt_00.hdf".format(model=options.model,path=options.path,apix=apix)
+		else :
+			com="e2proc3d.py {path}/threed_filt_{iterm1:02d}.hdf {path}/fsc_{iterm1:02d}_{iter:02d}.txt --apix={apix} --calcfsc={path}/threed_filt_{iter:02d}.hdf".format(path=options.path,iterm1=i-1,iter=i,apix=apix)
+		if ( launch_childprocess(com) != 0 ):
+			print "Failed to execute %s" %com
+			exit_refine(1,logid)
 		
-		db_compute_fsc(a, b, apix, options.path, s+"_fsc") 
+		
+		#if i == 0:
+			#s = "init_00"
+		#else:
+			#s1 = str(i-1)
+			#s2 = str(i)
+			#if len(s1) == 1: s1 = "0" + s1
+			#if len(s2) == 1: s2 = "0" + s2
+			#s = s1 + "_" + s2
+		
+		#db_compute_fsc(a, b, apix, options.path, s+"_fsc") 
 		#convergence_db_name = "bdb:"+options.path+"#convergence.results"
 		#db = db_open_dict(convergence_db_name)
 		
@@ -315,21 +323,25 @@ def get_apix_used(options):
 	Else the project db is checked for the global.apix parameter
 	Else you just get 1
 	'''
-	apix = 1.0
+	apix = 0.0
 	if options.apix: apix = options.apix # check function checks whether or not this value is positive, non zero
 	else:
-		img=EMData(options.input,0)
+		img=EMData(options.input,0,True)
 		try: apix=img["ctf"].apix
 		except: apix=img["apix_x"]
 
+	if apix<=0 :
+		try:
+			prj=js_open_dict("info/project.json")
+			apix=prj["global.apix"]
+		except:
+			print "WARNING: Could not find a valid A/pix value anywhere. Defaulting to 1.0."
+			apix=1.0
+
 	return apix
 		
-def number_options_file(i,file,options,attr):
-	name = "bdb:"+options.path+"#" + file+"_"
-	if i < 10:
-		name += "0"
-	
-	name += str(i)
+def number_options_file(i,fsp,options,attr):
+	name = "{}/{}_{:02d}.hdf".format(options.path,fsp,i)
 	setattr(options,attr,name)
 	
 def exit_refine(n,logid):
@@ -520,7 +532,7 @@ def get_maskproj_cmd(options,check=False):
 	else:
 		print "WARNING: automaskalign option specified, but automask not found. Generating non-zero mask from %s. This is normal in the first iteration."%options.model
 		if options.model[:4].lower()=="bdb:" : model=options.model+"_mask"
-		else: model=options.model.rsplit(".",1)[0]+"_mask."+options.model.rsplit(".",1)[1]
+		else: model=options.model.rsplit(".",1)[0]+"_mask.hdf"
 		launch_childprocess("e2proc3d.py %s %s --process=threshold.notzero"%(options.model,model))
 		
 	e2projcmd = "e2project3d.py %s -f --sym=%s --projector=%s --outfile=%s --orientgen=%s --postprocess=normalize.circlemean" %(model,options.sym,options.projector,options.projmask,options.orientgen)
@@ -671,15 +683,15 @@ def check(options,verbose=0):
 			except:
 				print "A/pix unknown, assuming scale same as relative box size"
 				scale=float(xsize)/xsize3d
-			if scale>1 : cmd="e2proc3d.py %s bdb:%s#initial_model --clip=%d,%d,%d --scale=%1.5f"%(options.model,options.path,xsize,xsize,xsize,scale)
-			else :       cmd="e2proc3d.py %s bdb:%s#initial_model --scale=%1.5f --clip=%d,%d,%d"%(options.model,options.path,scale,xsize,xsize,xsize)
+			if scale>1 : cmd="e2proc3d.py %s %s/initial_model.hdf --clip=%d,%d,%d --scale=%1.5f"%(options.model,options.path,xsize,xsize,xsize,scale)
+			else :       cmd="e2proc3d.py %s %s/initial_model.hdf --scale=%1.5f --clip=%d,%d,%d"%(options.model,options.path,scale,xsize,xsize,xsize)
 			print cmd
 			launch_childprocess(cmd)
-			options.model="bdb:%s#initial_model"%options.path
+			options.model="%s/initial_model.hdf"%options.path
 			
 	if hasattr(options,"parallel") and options.parallel != None:
   		if len(options.parallel) < 2:
-  			print "The parallel option %s does not make sense" %options.parallel
+  			print "The parallel option %s does not make sense. Please see http://blake.bcm.edu/emanwiki/EMAN2/Parallel" %options.parallel
   			error = True
  
 	if (options.verbose>0):

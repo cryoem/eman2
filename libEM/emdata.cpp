@@ -2675,7 +2675,6 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 						l = (int) floor(r + 1);
 					}
 
-
 					float f = 0;
 					if (l >= n - 2) {
 						f = array[n - 1];
@@ -2690,6 +2689,7 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 						}
 					}
 
+//if (k%5000==0) printf("%d %d %d   %f\n",i,j,m,f);
 					data[k] *= f;
 					data[k + 1] *= f;
 				}

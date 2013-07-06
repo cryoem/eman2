@@ -363,11 +363,13 @@ def main():
 				dd=d.process("math.rotationalsubtract")
 				f=dd.do_fft()
 				#f=d.do_fft()
+				if d["apix_x"]<=0 : raise Exception,"Error: 'calccont' requires an A/pix value, which is missing in the input images"
 				lopix=int(d["nx"]*d["apix_x"]/200.0)
 				hipix=int(d["nx"]*d["apix_x"]/25.0)
 				r=f.calc_radial_dist(d["ny"]/2,0,1.0,1)
 				lo=sum(r[lopix:hipix])/(hipix-lopix)
 				hi=sum(r[hipix+1:-1])/(len(r)-hipix-2)
+				print lopix, hipix, lo, hi
 				d["eval_contrast_lowres"]=lo/hi
 #				print lopix,hipix,lo,hi,lo/hi
 				

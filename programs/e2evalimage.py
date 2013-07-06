@@ -76,7 +76,7 @@ power spectrum in various ways."""
 
 	parser.add_pos_argument(name="image",help="Image to process with e2evalimage.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=2, mode="eval")
 	parser.add_header(name="evalimageheader", help='Options below this label are specific to e2evalimage', title="### e2evalimage options ###", default=None, row=1, col=0, rowspan=1, colspan=2, mode="eval")
-	
+
 	parser.add_argument("--gui",action="store_true",help="This is a GUI-only program. This option is provided for self-consistency",default=True)
 	parser.add_argument("--apix",type=float,help="Angstroms per pixel for all images",default=None, guitype='floatbox', row=3, col=0, rowspan=1, colspan=1, mode="eval['self.pm().getAPIX()']")
 	parser.add_argument("--voltage",type=float,help="Microscope voltage in KV",default=None, guitype='floatbox', row=3, col=1, rowspan=1, colspan=1, mode="eval['self.pm().getVoltage()']")
@@ -85,9 +85,9 @@ power spectrum in various ways."""
 	parser.add_argument("--box",type=int,help="Box size in grid mode ",default=512, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="eval")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	
+
 	(options, args) = parser.parse_args()
-	
+
 	logid=E2init(sys.argv,options.ppid)
 
 	from emapplication import EMApp
@@ -99,26 +99,27 @@ power spectrum in various ways."""
 	E2end(logid)
 
 
-		
+
 class GUIEvalImage(QtGui.QWidget):
 	def __init__(self,images,voltage=None,apix=None,cs=None,ac=10.0,box=512):
 		"""Implements the CTF fitting dialog using various EMImage and EMPlot2D widgets
-		'data' is a list of (filename,ctf,im_1d,bg_1d,im_2d,bg_2d)
+		'data' is a list of (filename,ctf,im_1d,bg_1d,quality)
+		'parms' is [box size,ctf,box coord,set of excluded boxnums,quality,oversampling]
 		"""
 		try:
 			from emimage2d import EMImage2DWidget
 		except:
 			print "Cannot import EMAN image GUI objects (EMImage2DWidget)"
 			sys.exit(1)
-		try: 
+		try:
 			from emplot2d import EMPlot2DWidget
 		except:
 			print "Cannot import EMAN plot GUI objects (is matplotlib installed?)"
 			sys.exit(1)
-		
+
 		QtGui.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
-		
+
 		self.data=None
 		self.curset=0
 		self.calcmode=1
@@ -126,22 +127,22 @@ class GUIEvalImage(QtGui.QWidget):
 		self.f2danmode=0
 		self.plotmode=0
 		self.curfilename = None
-		
+
 		self.ringrad=1
 		self.xpos1=(10,0)
 		self.xpos2=(0,10)
 #		self.db = db_open_dict('bdb:mgquality')
-		
+
 		self.defaultvoltage=voltage
 		self.defaultapix=apix
 		self.defaultcs=cs
 		self.defaultac=ac
-		
+
 		# Per image parameters to keep track of
-		# for each image [box size,ctf,box coord,set of excluded boxnums,quality]
+		# for each image [box size,ctf,box coord,set of excluded boxnums,quality,oversampling]
 		self.parms=[]
-		db_fparms=db_open_dict("bdb:e2ctf.frameparms",True)
-		
+#		db_fparms=db_open_dict("bdb:e2ctf.frameparms",True)
+
 		# This little block of code deals with Z stacks of images and multiple image files,
 		# rewriting the name(s) with an enumeration including ;number or ,number
 		newimages=[]
@@ -156,12 +157,14 @@ class GUIEvalImage(QtGui.QWidget):
 					for j in xrange(n): newimages.append(i+";%d"%j)
 				else : newimages.append(i)
 		images=newimages
-		
+
 		# Now we try to restore old image information
 		for i in images:
-			try: 
-				parms=db_fparms[item_name(i)]
-				if parms==None : raise Exception
+			try:
+				pd=js_open_dict(info_name(i))
+				parms=pd["ctf_frame"]
+				parms[4]=pd["quality"]
+#				if parms==None : raise Exception
 			except:
 				ctf = EMAN2Ctf()
 				ctf.from_dict({'defocus':0.0,'dfdiff':0.0,'dfang':0.0,'bfactor':200.0,'ampcont':self.defaultac,'voltage':200.0,'cs':4.1,'apix':1.0,'dsbg':-1})
@@ -169,19 +172,19 @@ class GUIEvalImage(QtGui.QWidget):
 				if self.defaultcs!=None : ctf.cs=self.defaultcs
 				if self.defaultapix!=None : ctf.apix=self.defaultapix
 				parms=[int(box),ctf,(256,256),set(),5,1]
-				print "no parms for ",item_name(i)
-			
+				print "Initialize new parms for: ",base_name(i)
+
 			self.parms.append(parms)
-		
+
 		self.wimage=EMImage2DWidget()
 		self.wimage.setWindowTitle("e2evalimage - Micrograph")
-		
+
 		self.wfft=EMImage2DWidget()
 		self.wfft.setWindowTitle("e2evalimage - 2D FFT")
 
 		self.wplot=EMPlot2DWidget()
 		self.wplot.setWindowTitle("e2evalimage - Plot")
-		
+
 		self.wimage.connect(self.wimage,QtCore.SIGNAL("mousedown"),self.imgmousedown)
 		self.wimage.connect(self.wimage,QtCore.SIGNAL("mousedrag"),self.imgmousedrag)
 		self.wimage.connect(self.wimage,QtCore.SIGNAL("mouseup")  ,self.imgmouseup)
@@ -189,7 +192,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.wfft.connect(self.wfft,QtCore.SIGNAL("mousedrag"),self.fftmousedrag)
 		self.wfft.connect(self.wfft,QtCore.SIGNAL("mouseup")  ,self.fftmouseup)
 		self.wplot.connect(self.wplot,QtCore.SIGNAL("mousedown"),self.plotmousedown)
-		
+
 		self.wimage.mmode="app"
 		self.wfft.mmode="app"
 
@@ -197,27 +200,27 @@ class GUIEvalImage(QtGui.QWidget):
 		self.gbl = QtGui.QGridLayout(self)
 		self.gbl.setMargin(8)
 		self.gbl.setSpacing(6)
-		
+
 		# plot list and plot mode combobox
 		self.setlist=QtGui.QListWidget(self)
 		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
 		for i in images:
 			self.setlist.addItem(i)
 		self.gbl.addWidget(self.setlist,0,0,10,2)
-		
+
 		self.lcalcmode=QtGui.QLabel("Region:",self)
 		self.gbl.addWidget(self.lcalcmode,10,0)
-		
+
 		self.scalcmode=QtGui.QComboBox(self)
 		self.scalcmode.addItem("Single Region")
 		self.scalcmode.addItem("Tiled Boxes")
 		self.scalcmode.setCurrentIndex(1)
 		self.gbl.addWidget(self.scalcmode,10,1)
-		
+
 
 		self.lcalcmode=QtGui.QLabel("2D FFT:",self)
 		self.gbl.addWidget(self.lcalcmode,11,0)
-		
+
 		self.s2dmode=QtGui.QComboBox(self)
 		self.s2dmode.addItem("Power Spectrum")
 		self.s2dmode.addItem("Bg Subtracted")
@@ -226,7 +229,7 @@ class GUIEvalImage(QtGui.QWidget):
 
 		self.lcalcmode=QtGui.QLabel("Annotate:",self)
 		self.gbl.addWidget(self.lcalcmode,12,0)
-		
+
 		self.s2danmode=QtGui.QComboBox(self)
 		self.s2danmode.addItem("Ctf Zeroes")
 		self.s2danmode.addItem("Resolution Ring")
@@ -237,7 +240,7 @@ class GUIEvalImage(QtGui.QWidget):
 
 		self.lcalcmode=QtGui.QLabel("Plot:",self)
 		self.gbl.addWidget(self.lcalcmode,13,0)
-		
+
 		self.splotmode=QtGui.QComboBox(self)
 		self.splotmode.addItem("Bgsub and Fit")
 		self.splotmode.addItem("Fg and Bg")
@@ -245,18 +248,18 @@ class GUIEvalImage(QtGui.QWidget):
 		self.splotmode.addItem("Fg, 45 deg slices")
 		self.splotmode.addItem("SSNR (NOT BY PTCL !)")
 		self.gbl.addWidget(self.splotmode,13,1)
-		
+
 		# ValSliders for CTF parameters
-		
+
 		#self.samp = ValSlider(self,(0,5.0),"Amp:",0)
 		#self.vbl.addWidget(self.samp)
-				
+
 		self.sdefocus=ValSlider(self,(0,5),"Defocus:",0.0,90)
 		self.gbl.addWidget(self.sdefocus,0,2,1,3)
-		
+
 		self.sbfactor=ValSlider(self,(0,1600),"B factor:",200.0,90)
 		self.gbl.addWidget(self.sbfactor,1,2,1,3)
-		
+
 		self.sampcont=ValSlider(self,(0,100),"% AC",10.0,90)
 		if self.defaultac!=None : self.sampcont.setValue(self.defaultac)
 		self.gbl.addWidget(self.sampcont,2,2,1,3)
@@ -279,10 +282,10 @@ class GUIEvalImage(QtGui.QWidget):
 		self.svoltage=ValBox(self,(0,500),"Voltage (kV):",200,90)
 		if self.defaultvoltage!=None : self.svoltage.setValue(self.defaultvoltage)
 		self.gbl.addWidget(self.svoltage,11,2)
-				
+
 		self.scs=ValBox(self,(0,5),"Cs (mm):",4.1,90)
 		if self.defaultcs!=None : self.scs.setValue(self.defaultcs)
-		self.gbl.addWidget(self.scs,12,2)		
+		self.gbl.addWidget(self.scs,12,2)
 
 		self.sboxsize=ValBox(self,(0,500),"Box Size:",256,90)
 		self.sboxsize.intonly=True
@@ -298,19 +301,19 @@ class GUIEvalImage(QtGui.QWidget):
 
 		self.bbox=QtGui.QGroupBox("Project")
 		self.gbl.addWidget(self.bbox,10,4,4,1)
-		
+
 		self.bvbl=QtGui.QVBoxLayout()
 		self.bbox.setLayout(self.bvbl)
 
 		self.bimport=QtGui.QPushButton("Import")
 		self.bvbl.addWidget(self.bimport)
-		
+
 		self.cinvert=CheckBox(None,"Invert")
 		self.bvbl.addWidget(self.cinvert)
-		
+
 		self.cxray=CheckBox(None,"X-ray Pixels")
 		self.bvbl.addWidget(self.cxray)
-		
+
 		QtCore.QObject.connect(self.bimport, QtCore.SIGNAL("clicked(bool)"),self.doImport)
 		QtCore.QObject.connect(self.sdefocus, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.sbfactor, QtCore.SIGNAL("valueChanged"), self.newCTF)
@@ -332,8 +335,8 @@ class GUIEvalImage(QtGui.QWidget):
 		#QtCore.QObject.connect(self.recallparms,QtCore.SIGNAL("clicked(bool)"),self.on_recall_params)
 		#QtCore.QObject.connect(self.refit,QtCore.SIGNAL("clicked(bool)"),self.on_refit)
 		#QtCore.QObject.connect(self.output,QtCore.SIGNAL("clicked(bool)"),self.on_output)
-		
-		
+
+
 		self.resize(720,380) # figured these values out by printing the width and height in resize event
 
 		### This section is responsible for background updates
@@ -342,13 +345,13 @@ class GUIEvalImage(QtGui.QWidget):
 		self.needredisp=False
 		self.procthread=None
 		self.errors=None		# used to communicate errors back from the reprocessing thread
-		
+
 		self.timer=QTimer()
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeOut)
 		self.timer.start(100)
-		
+
 		self.setWindowTitle("e2evalimage - Control Panel")
-		
+
 		self.wimage.show()
 		self.wfft.show()
 		self.wplot.show()
@@ -358,7 +361,7 @@ class GUIEvalImage(QtGui.QWidget):
 		E2loadappwin("e2evalimage","plot",self.wplot.qt_parent)
 #		self.recalc()
 
-		
+
 	def closeEvent(self,event):
 #		QtGui.QWidget.closeEvent(self,event)
 		E2saveappwin("e2evalimage","main",self)
@@ -372,7 +375,7 @@ class GUIEvalImage(QtGui.QWidget):
 		#app=QtGui.qApp
 		#if self.wimage != None:
 			#app.close_specific(self.wimage)
-			#self.wimage = None 
+			#self.wimage = None
 		#if self.wfft != None:
 			#app.close_specific(self.wfft)
 		#if self.wplot != None:
@@ -384,7 +387,7 @@ class GUIEvalImage(QtGui.QWidget):
 #		if self.wplot == None: return # it's closed/not visible
 
 		if self.incalc : return		# no plot updates during a recomputation
-		
+
 		parms=self.parms[self.curset]
 		apix=self.sapix.getValue()
 		ds=1.0/(apix*parms[0]*parms[5])
@@ -392,17 +395,17 @@ class GUIEvalImage(QtGui.QWidget):
 		bg1d=array(ctf.background)
 		r=len(ctf.background)
 		s=arange(0,ds*r,ds)
-		
+
 		# This updates the FFT CTF-zero circles
 		if self.f2danmode==0 :
 			fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)
 			shp={}
 			nz=0
 			for i in range(1,len(fit)):
-				if fit[i-1]*fit[i]<=0.0: 
+				if fit[i-1]*fit[i]<=0.0:
 					nz+=1
 					shp["z%d"%i]=EMShape(("circle",0.0,0.0,1.0/nz,r,r,i,1.0))
-			
+
 			self.wfft.del_shapes()
 			self.wfft.add_shapes(shp)
 			self.wfft.updateGL()
@@ -419,7 +422,7 @@ class GUIEvalImage(QtGui.QWidget):
 			for a in range(-5,6):
 				for b in range(-5,6):
 					shp["m%d%d"%(a,b)]=EMShape(("circle",1.0,0.0,0.0,a*self.xpos1[0]+b*self.xpos2[0]+self.fft["nx"]/2-1,a*self.xpos1[1]+b*self.xpos2[1]+self.fft["ny"]/2,3,1.0))
-					
+
 			self.wfft.del_shapes()
 			self.wfft.add_shapes(shp)
 			self.wfft.add_shape("xtllbl",EMShape(("scrlabel",1.0,0.3,0.3,10,10,"Unit Cell: %1.2f,%1.2f"%(1.0/(hypot(*self.xpos1)*ds),1.0/(hypot(*self.xpos2)*ds)),60.0,2.0)))
@@ -428,31 +431,31 @@ class GUIEvalImage(QtGui.QWidget):
 		else:
 			self.wfft.del_shapes()
 			self.wfft.updateGL()
-			
+
 
 		# Now update the plots for the correct plot mode
-		if self.plotmode==0: 
+		if self.plotmode==0:
 			try: bgsub=self.fft1d-bg1d
 			except:
 				print "Error computing bgsub on this image"
 				return
 			self.wplot.set_data((s,bgsub),"fg-bg",quiet=True,color=0)
-			
+
 			fit=array(ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP))		# The fit curve
 			fit=fit*fit			# squared
 
 			# auto-amplitude for b-factor adjustment
 			rto,nrto=0,0
-			for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)): 
-				if bgsub[i]>0 : 
+			for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)):
+				if bgsub[i]>0 :
 					rto+=fit[i]
 					nrto+=fabs(bgsub[i])
 			if nrto==0 : rto=1.0
 			else : rto/=nrto
 			fit=[fit[i]/rto for i in range(len(s))]
-			
+
 #			print ctf_cmp((self.sdefocus.value,self.sbfactor.value,rto),(ctf,bgsub,int(.04/ds)+1,min(int(0.15/ds),len(s)-1),ds,self.sdefocus.value))
-			
+
 			self.wplot.set_data((s,fit),"fit",color=1)
 			self.wplot.setAxisParms("s (1/"+ "$\AA$" +")","Intensity (a.u)")
 		elif self.plotmode==1:
@@ -471,20 +474,20 @@ class GUIEvalImage(QtGui.QWidget):
 			self.wplot.set_data((s[3:],bgsuba[1][3:]),"fg 45-90",quiet=True,color=3)
 			self.wplot.set_data((s[3:],bgsuba[2][3:]),"fg 90-135",quiet=True,color=4)
 			self.wplot.set_data((s[3:],bgsuba[3][3:]),"fg 135-180",quiet=True,color=6)
-			
+
 			fit=array(ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP))		# The fit curve
 			fit=fit*fit			# squared
 
 			# auto-amplitude for b-factor adjustment
 			rto,nrto=0,0
-			for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)): 
-				if bgsub[i]>0 : 
+			for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)):
+				if bgsub[i]>0 :
 					rto+=fit[i]
 					nrto+=fabs(bgsub[i])
 			if nrto==0 : rto=1.0
 			else : rto/=nrto
 			fit/=rto
-			
+
 			self.wplot.set_data((s,fit),"fit",color=1)
 			self.wplot.setAxisParms("s (1/"+ "$\AA$" + ")","Intensity (a.u)")
 
@@ -494,129 +497,134 @@ class GUIEvalImage(QtGui.QWidget):
 			#bgsuba=[array(self.fft1dang[i])-bg1d for i in xrange(4)]
 			fg=self.fft1d
 			fga=[array(self.fft1dang[i]) for i in xrange(4)]
-			
+
 			for i in xrange(4): fga[i][0]=0
 			self.wplot.set_data((s,fg),"fg",quiet=True,color=0)
 			self.wplot.set_data((s,fga[0]),"fg 0-45",quiet=True,color=2)
 			self.wplot.set_data((s,fga[1]),"fg 45-90",quiet=True,color=3)
 			self.wplot.set_data((s,fga[2]),"fg 90-135",quiet=True,color=4)
 			self.wplot.set_data((s,fga[3]),"fg 135-180",quiet=True,color=6)
-			
+
 			#fit=array(ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP))		# The fit curve
 			#fit=fit*fit			# squared
 
 			## auto-amplitude for b-factor adjustment
 			#rto,nrto=0,0
-			#for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)): 
-				#if bgsub[i]>0 : 
+			#for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)):
+				#if bgsub[i]>0 :
 					#rto+=fit[i]
 					#nrto+=fabs(bgsub[i])
 			#if nrto==0 : rto=1.0
 			#else : rto/=nrto
 			#fit/=rto
-			
+
 			#self.wplot.set_data((s,fit),"fit",color=1)
 			#self.wplot.setAxisParms("s (1/"+ "$\AA$" + ")","Intensity (a.u)")
-		if self.plotmode==4: 
+		if self.plotmode==4:
 			if min(bg1d)<=0.0 : bg1d+=min(bg1d)+max(bg1d)/10000.0
 			ssnr=(self.fft1d-bg1d)/bg1d
 			self.wplot.set_data((s,ssnr),"SSNR",quiet=True,color=0)
-			
+
 			#fit=array(ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP))		# The fit curve
 			#fit=fit*fit			# squared
 
 			## auto-amplitude for b-factor adjustment
 			#rto,nrto=0,0
-			#for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)): 
-				#if bgsub[i]>0 : 
+			#for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)):
+				#if bgsub[i]>0 :
 					#rto+=fit[i]
 					#nrto+=fabs(bgsub[i])
 			#if nrto==0 : rto=1.0
 			#else : rto/=nrto
 			#fit=[fit[i]/rto for i in range(len(s))]
-			
+
 ##			print ctf_cmp((self.sdefocus.value,self.sbfactor.value,rto),(ctf,bgsub,int(.04/ds)+1,min(int(0.15/ds),len(s)-1),ds,self.sdefocus.value))
-			
+
 			#self.wplot.set_data((s,fit),"fit",color=1)
 			self.wplot.setAxisParms("s (1/"+ "$\AA$" + ")","Est. SSNR")
 
 
 	def timeOut(self):
 		if self.busy : return
-		
+
 		# Redisplay before spawning thread for more interactive display
 		if self.needredisp :
 			try: self.redisplay()
 			except: pass
-		
+
 		# Spawn a thread to reprocess the data
 		if self.needupdate and self.procthread==None:
 			self.procthread=threading.Thread(target=self.recalc_real)
 			self.procthread.start()
-		
+
 		if self.errors:
 			QtGui.QMessageBox.warning(None,"Error","The following processors encountered errors during processing of 1 or more images:"+"\n".join(self.errors))
 			self.errors=None
 
 	def doImport(self,val):
 		"""Imports the currently selected image into a project"""
-		print "import ",item_name(self.setlist.item(self.curset).text())
-		
+		print "import ",base_name(self.setlist.item(self.curset).text())
+
 		# This is just the (presumably) unique portion of the filename
-		item=item_name(self.setlist.item(self.curset).text())
-		
+		item=base_name(self.setlist.item(self.curset).text())
+
 		# create directory if necessary
 		if not os.access("micrographs",os.R_OK) :
 			try : os.mkdir("micrographs")
-			except: 
+			except:
 				QtGui.QMessageBox.warning(self,"Error !","Cannot create micrographs directory")
 				return
-			
+
 		#db=db_open_dict("bdb:micrographs#%s"%item)
 		self.data["ctf"]=self.parms[val][1]
 		self.cxray
 		if self.cinvert.getValue()!=0 : self.data.mult(-1)
 		if self.cxray.getValue() : self.data.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4,"tomean":1})
 		self.data.write_image("micrographs/%s.hdf"%item)
-		
-		
-		db_parms=db_open_dict("bdb:e2ctf.parms")
-		db_parms[item]=[self.parms[val][1].to_string(),self.fft1d,self.parms[val][1].background,self.parms[val][4]]
+		self.writeCurParm()
+
+#		js_open_dict(info_name(item))["ctf"]=[self.parms[val][1],None,None,None,None]
+# 		db_parms=db_open_dict("bdb:e2ctf.parms")
+# 		db_parms[item]=[self.parms[val][1].to_string(),self.fft1d,self.parms[val][1].background,self.parms[val][4]]
 
 	def writeCurParm(self):
 		"Called to store the current parameters for this image to the frameparms database"
-		db_fparms=db_open_dict("bdb:e2ctf.frameparms")
-		curtag=item_name(str(self.setlist.item(self.curset).text()))
-		db_fparms[curtag]=self.parms[self.curset]
+		parms=self.parms[self.curset]
+		js=js_open_dict(info_name(self.curfilename))
+		js.setval("ctf_frame",parms,True)
+		js.setval("quality",parms[4])
+# 		db_fparms=db_open_dict("bdb:e2ctf.frameparms")
+# 		curtag=item_name(str(self.setlist.item(self.curset).text()))
+# 		db_fparms[curtag]=self.parms[self.curset]
 
 	def newSet(self,val):
 		"called when a new data set is selected from the list"
-		
+
 		# Write the current image parameters to the database
 		if val!=self.curset : self.writeCurParm()
-		
+
 		# now set the new item
 		self.curset=val
-		
+
 		# This deals with Z stacks and multi image files
 		fsp=str(self.setlist.item(val).text())
-		
-		
-		if "," in fsp : 
+
+
+		if "," in fsp :
 			fsp,n=fsp.split(",")
 			self.data=EMData(fsp,int(n))	# read the image from disk
-		elif ";" in fsp : 
+		elif ";" in fsp :
 			fsp,n=fsp.split(";")
 			hdr=EMData(fsp,0,True)
 			self.data=EMData(fsp,0,False,Region(0,0,int(n),hdr["nx"],hdr["ny"],1))	# read the image from disk
 		else :
 			self.data=EMData(fsp,0)	# read the image from disk
-		
+
 		self.wimage.setWindowTitle("e2evalimage - " + fsp.split("/")[-1])
 		self.wfft.setWindowTitle("e2evalimage - 2D FFT - "+fsp.split("/")[-1])
 		self.wplot.setWindowTitle("e2evalimage - Plot - "+fsp.split("/")[-1])
-		
-		
+
+
 		if self.defaultapix!=None : self.data["apix_x"]=self.defaultapix
 		self.wimage.set_data(self.data)
 		self.curfilename = str(self.setlist.item(val).text())
@@ -643,8 +651,8 @@ class GUIEvalImage(QtGui.QWidget):
 		self.scs.setValue(ctf.cs,True)
 		self.sboxsize.setValue(self.parms[val][0],True)
 		self.squality.setValue(self.parms[val][4],True)
-		
-		#if self.guiim != None: 
+
+		#if self.guiim != None:
 ##			print self.data
 			#self.guiim.set_data(self.data[val][4])
 			#if self.guiiminit:
@@ -664,9 +672,9 @@ class GUIEvalImage(QtGui.QWidget):
 		if self.data==None :
 			self.procthread=None
 			return
-	
+
 		self.incalc=True	# to avoid incorrect plot updates
-		
+
 		# To simplify expressions
 		parms=self.parms[self.curset]
 		apix=self.sapix.getValue()
@@ -676,11 +684,11 @@ class GUIEvalImage(QtGui.QWidget):
 
 		# Mode where user drags the box around the parent image
 		if self.calcmode==0:
-			
+
 			# extract the data and do an fft
 			clip=self.data.get_clip(Region(parms[2][0],parms[2][1],parms[0],parms[0]))
 			clip.process_inplace("normalize.edgemean")
-			
+
 			if parms[5]>1 :
 				clip=clip.get_clip(Region(0,0,parms[0]*parms[5],parms[0]*parms[5]))		# since we aren't using phases, doesn't matter if we center it or not
 			self.fft=clip.do_fft()
@@ -697,7 +705,7 @@ class GUIEvalImage(QtGui.QWidget):
 				for y in range(self.data["ny"]/parms[0]-1):
 					# User deselected this one
 					if int(x+y*nx) in parms[3] : continue
-					
+
 					# read the data and make the FFT
 					clip=self.data.get_clip(Region(x*parms[0]+parms[0]/2,y*parms[0]+parms[0]/2,parms[0],parms[0]))
 					clip.process_inplace("normalize.edgemean")
@@ -709,12 +717,12 @@ class GUIEvalImage(QtGui.QWidget):
 					if self.fft==None: self.fft=fft
 					else: self.fft+=fft
 					nbx+=1
-			
+
 			self.fft.mult(1.0/(nbx*parms[0]**2))
 			self.fft.process_inplace("math.sqrt")
 			self.fft["is_intensity"]=0				# These 2 steps are done so the 2-D display of the FFT looks better. Things would still work properly in 1-D without it
 #			self.fft.mult(1.0/(nbx*parms[0]**2))
-			
+
 		self.fftbg=self.fft.process("math.nonconvex")
 		self.fft1d=self.fft.calc_radial_dist(self.fft.get_ysize()/2,0.0,1.0,1)	# note that this handles the ri2inten averages properly
 		if self.plotmode==2 or self.plotmode==3:
@@ -736,23 +744,23 @@ class GUIEvalImage(QtGui.QWidget):
 		self.procthread=None
 #		dbquality = self.db[os.path.basename(self.curfilename)]
 #		print dbquality
-		item=item_name(self.curfilename)
-		db=db_open_dict("bdb:e2ctf.parms")
-		if db[item]==None or db[item[3]]==None : db[item]=[parms[1].to_string(),self.fft1d,parms[1].background,5]
-#		print item,db[item][3]
-		try: self.squality.setValue(int(db[item[3]]))
-		except: self.squality.setValue(5)
-		
+# 		item=item_name(self.curfilename)
+# 		db=db_open_dict("bdb:e2ctf.parms")
+# 		if db[item]==None or db[item[3]]==None : db[item]=[parms[1].to_string(),self.fft1d,parms[1].background,5]
+# #		print item,db[item][3]
+# 		try: self.squality.setValue(int(db[item[3]]))
+# 		except: self.squality.setValue(5)
+
 	def redisplay(self):
-		
+
 		if self.incalc: return
-		
+
 		self.needredisp=False
 		self.busy=True
 		parms=self.parms[self.curset]
 		apix=self.sapix.getValue()
 		ds=1.0/(apix*parms[0]*parms[5])
-		
+
 
 		# Fitting not done yet. Need to make 2D background somehow
 		if parms[1].defocus==0:
@@ -762,21 +770,21 @@ class GUIEvalImage(QtGui.QWidget):
 				print "CTF Autofit Failed"
 				traceback.print_exc()
 				parms[1].defocus=1.0
-				
+
 			self.sdefocus.setValue(parms[1].defocus,True)
 			self.sbfactor.setValue(parms[1].bfactor,True)
 			self.sampcont.setValue(parms[1].ampcont,True)
-			
+
 		self.wimage.show()
 		self.wfft.show()
 		self.wplot.show()
-		
+
 		self.update_plot()
 
 		# To simplify expressions
-		
+
 		if self.calcmode==0:
-			# update the box display on the image 
+			# update the box display on the image
 			self.wimage.del_shapes()
 			self.wimage.add_shape("box",EMShape(("rect",.3,.9,.3,parms[2][0],parms[2][1],parms[2][0]+parms[0],parms[2][1]+parms[0],1)))
 			self.wimage.updateGL()
@@ -788,14 +796,14 @@ class GUIEvalImage(QtGui.QWidget):
 				for y in range(self.data["ny"]/parms[0]-1):
 					# User deselected this one
 					if int(x+y*nx) in parms[3] : continue
-					
+
 					# Make a shape for this box
 					shp["box%02d%02d"%(x,y)]=EMShape(("rect",.3,.9,.3,(x+.5)*parms[0],(y+.5)*parms[0],(x+1.5)*parms[0],(y+1.5)*parms[0],1))
-					
+
 			self.wimage.del_shapes()
 			self.wimage.add_shapes(shp)
 			self.wimage.updateGL()
-			
+
 		if self.f2dmode>0 :
 			if self.f2dmode==1 : self.wfft.set_data(self.fft-self.fftbg)
 			else : self.wfft.set_data(self.fftbg)
@@ -820,7 +828,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.plotmode=mode
 		self.wplot.set_data(None,replace=True,quiet=True)	# clear the data so plots are properly redisplayed, but don't update the display
 		self.needredisp=True
-		
+
 	def newBox(self):
 		parms=self.parms[self.curset]
 		parms[0]=self.sboxsize.value
@@ -832,7 +840,7 @@ class GUIEvalImage(QtGui.QWidget):
 	def newQualityFactor(self):
 		parms=self.parms[self.curset]
 		parms[4]=self.squality.value
-		
+
 
 	def newCTF(self) :
 		parms=self.parms[self.curset]
@@ -843,7 +851,7 @@ class GUIEvalImage(QtGui.QWidget):
 		parms[1].voltage=self.svoltage.value
 		parms[1].cs=self.scs.value
 		self.needredisp=True
-		
+
 
 	def imgmousedown(self,event) :
 		if self.calcmode==0:
@@ -853,7 +861,7 @@ class GUIEvalImage(QtGui.QWidget):
 			self.recalc()
 			self.needredisp=True
 		#self.guiim.add_shape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])
-		
+
 	def imgmousedrag(self,event) :
 		if self.calcmode==0:
 			m=self.wimage.scr_to_img((event.x(),event.y()))
@@ -861,11 +869,11 @@ class GUIEvalImage(QtGui.QWidget):
 			parms[2]=(m[0]-parms[0]/2,m[1]-parms[0]/2)
 			self.needredisp=True
 			self.recalc()
-		
+
 		# box deletion when shift held down
 		#if event.modifiers()&Qt.ShiftModifier:
 			#for i,j in enumerate(self.boxes):
-		
+
 	def imgmouseup(self,event) :
 		m=self.wimage.scr_to_img((event.x(),event.y()))
 		if self.calcmode==1:
@@ -876,11 +884,11 @@ class GUIEvalImage(QtGui.QWidget):
 			else: parms[3].add(grid)
 			self.needredisp=True
 			self.recalc()
-			
-			
+
+
 	def fftmousedown(self,event,m) :
 		#m=self.wfft.scr_to_img((event.x(),event.y()))
-		
+
 		if self.f2danmode==1:
 			self.ringrad=hypot(m[0]-self.fft["nx"]/2,m[1]-self.fft["ny"]/2)
 			self.needredisp=True
@@ -889,12 +897,12 @@ class GUIEvalImage(QtGui.QWidget):
 			else: self.xpos1=((m[0]-self.fft["nx"]/2)/3.0,(m[1]-self.fft["ny"]/2)/3.0)
 			self.needredisp=True
 
-			
+
 		#self.guiim.add_shape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])
-		
+
 	def fftmousedrag(self,event,m) :
 		#m=self.wfft.scr_to_img((event.x(),event.y()))
-		
+
 		if self.f2danmode==1:
 			self.ringrad=hypot(m[0]-self.fft["nx"]/2,m[1]-self.fft["ny"]/2)
 			self.needredisp=True
@@ -905,7 +913,7 @@ class GUIEvalImage(QtGui.QWidget):
 		# box deletion when shift held down
 		#if event.modifiers()&Qt.ShiftModifier:
 			#for i,j in enumerate(self.boxes):
-		
+
 	def fftmouseup(self,event,m) :
 		"up"
 		#m=self.wfft.scr_to_img((event.x(),event.y()))

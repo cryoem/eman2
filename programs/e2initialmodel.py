@@ -38,7 +38,7 @@ from math import *
 import os
 import sys
 from e2simmx import cmponetomany
-from EMAN2db import db_open_dict, db_list_dicts
+from EMAN2jsondb import JSTask,jsonclasses
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -61,18 +61,22 @@ def main():
 	parser.add_argument("--tries", type=int, default=10, help="The number of different initial models to generate in search of a good one", guitype='intbox', row=2, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Optionally shrink the input particles by an integer amount prior to reconstruction. Default=0, no shrinking", guitype='shrinkbox', row=2, col=2, rowspan=1, colspan=1)
 	parser.add_argument("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos",default="c1", guitype='symbox', row=4, col=0, rowspan=1, colspan=3)
-	parser.add_argument("--savemore",action="store_true",help="Will cause intermediate results to be written to flat files",default=False, guitype='boolbox', expert=True, row=5, col=0, rowspan=1, colspan=1)
+#	parser.add_argument("--savemore",action="store_true",help="Will cause intermediate results to be written to flat files",default=False, guitype='boolbox', expert=True, row=5, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--orientgen",type=str, default="eman",help="The type of orientation generator. Default is safe. See e2help.py orientgens", guitype='combobox', choicelist='dump_orientgens_list()', expert=True, row=2, col=2, rowspan=1, colspan=1)
+	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel",default="thread:1", guitype='strbox', row=6, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	# Database Metadata storage
-	parser.add_argument("--dbls",type=str,default=None,help="data base list storage, used by the workflow. You can ignore this argument.")
+	#parser.add_argument("--dbls",type=str,default=None,help="data base list storage, used by the workflow. You can ignore this argument.")
 	
 	(options, args) = parser.parse_args()
 	verbose=options.verbose
 
-	ptcls=EMData.read_images(options.input)
+	try: ptcls=EMData.read_images(options.input)
+	except:
+		print "Error: bad input file"
+		exit(1)
 	apix=ptcls[0]["apix_x"]
 	if options.shrink>1 : apix*=options.shrink
 
@@ -87,15 +91,10 @@ def main():
 	print "Models will be %1.3f A/pix"%apix
 
 	try:
-		db_misc=db_open_dict("bdb:e2ctf.misc",True)
-		m=db_misc["strucfac"]
-		print "Using previously generated structure factor from bdb:e2ctf.misc"
-		sfcurve=XYData()		# this is really slow and stupid
-		for i,j in enumerate(m):
-			sfcurve.set_x(i,j[0])
-			sfcurve.set_y(i,j[1])
-		
-		sfcurve.update()
+			sfcurve=XYData()
+			sfcurve.read_file("strucfac.txt")
+			
+			sfcurve.update()
 	except : sfcurve=None
 
 
@@ -113,26 +112,90 @@ def main():
 	
 	try: os.mkdir("initial_models")
 	except: pass
-	dcts=db_list_dicts("bdb:initial_models")
-	for ii in range(1,100):
-		for jj in dcts: 
-			if "model_%02d"%ii in jj : break
-		else: break
-	results_name="bdb:initial_models#model_%02d"%ii
-	print results_name
-	ptcls[0].write_image(results_name+"_01",0)		# If someone runs a second job, this makes sure they use different output files
+	iters=[int(i[10:12]) for i in os.listdir("initial_models") if i[:10]=="particles_"]
+	try : newiter=max(iters)+1
+	except : newiter=0
+	results_name="initial_models/model_%02d"%newiter
+	particles_name="initial_models/particles_%02d.hdf"%newiter
 
-	# We make one new reconstruction for each loop of t 
-	for t in range(options.tries):
-		if verbose>0: print "Try %d"%t
+	# we write the pre-processed "particles" (usually class-averages) to disk, both as a record and to prevent collisions
+	for i,p in enumerate(ptcls):
+		p.write_image(particles_name,i)
+
+	# parallelism
+	from EMAN2PAR import EMTaskCustomer			# we need to put this here to avoid a circular reference
+
+	etc=EMTaskCustomer(options.parallel)
+	pclist=[particles_name]
+
+	etc.precache(pclist)		# make sure the input particles are precached on the compute nodes
+
+	tasks=[]
+	for t in xrange(options.tries):
+		tasks.append(InitMdlTask(particles_name,len(ptcls),orts,t,sfcurve,options.iter,options.sym,options.verbose))
+
+	taskids=etc.send_tasks(tasks)
+	alltaskids=taskids[:]			# we keep a copy for monitoring progress
+
+	# This loop runs until all subtasks are complete (via the parallelism system
+	ltime=0
+	while len(taskids)>0 :
+		time.sleep(0.1)
+		curstat=etc.check_task(taskids)			# a list of the progress on each task
+		if options.verbose>1 :
+			if time.time()-ltime>1 : 
+				print "progress: ",curstat
+				ltime=time.time()
+		for i,j in enumerate(curstat):
+			if j==100 :
+				rslt=etc.get_results(taskids[i])		# read the results back from a completed task as a one item dict
+				results.append(rslt[1]["result"])
+				if options.verbose==1 : print "Task {} ({}) complete".format(i,taskids[i])
+				
+		# filter out completed tasks. We can't do this until after the previous loop completes
+		taskids=[taskids[i] for i in xrange(len(taskids)) if curstat[i]!=100]
+		
+
+	# Write out the final results
+	results.sort()
+	for i,j in enumerate(results):
+		out_name = results_name+"_%02d.hdf"%(i+1)
+		j[1].write_image(out_name,0)
+		j[4].write_image(results_name+"_%02d_init.hdf"%(i+1),0)
+		print out_name,j[1]["quality"],j[0],j[1]["apix_x"]
+		for k,l in enumerate(j[3]): l[0].write_image(results_name+"_%02d_proj.hdf"%(i+1),k)	# set of projection images
+		for k,l in enumerate(j[2]): 
+			l.process("normalize").write_image(results_name+"_%02d_aptcl.hdf"%(i+1),k*2)						# set of aligned particles
+			j[3][l["match_n"]][0].process("normalize").write_image(results_name+"_%02d_aptcl.hdf"%(i+1),k*2+1)	# set of projections matching aligned particles
+		
+	
+	E2end(logid)
+
+class InitMdlTask(JSTask):
+	
+	def __init__(self,ptclfile=None,ptcln=0,orts=[],tryid=0,strucfac=None,niter=5,sym="c1",verbose=0) :  
+		data={"images":["cache",ptclfile,(0,ptcln)],"strucfac":strucfac,"orts":orts}
+		JSTask.__init__(self,"InitMdl",data,{"tryid":tryid,"iter":niter,"sym":sym,"verbose":verbose},"")
+		
+	
+	def execute(self,progress=None):
+		sfcurve=self.data["strucfac"]
+		ptcls=EMData.read_images(self.data["images"][1])
+		orts=self.data["orts"]
+		options=self.options
+		verbose=options["verbose"]
+		boxsize=ptcls[0].get_xsize()
+		apix=ptcls[0]["apix_x"]
+		
+		# We make one new reconstruction for each loop of t 
 		threed=[make_random_map(boxsize,sfcurve)]		# initial model
-		apply_sym(threed[0],options.sym)		# with the correct symmetry
+		apply_sym(threed[0],options["sym"])		# with the correct symmetry
 		
 		# This is the refinement loop
-		for it in range(options.iter):
-			E2progress(logid,(it+t*options.iter)/float(options.tries*options.iter))
+		for it in range(options["iter"]):
+			if progress != None: progress(it*100/options["iter"])
 			if verbose>0 : print "Iteration %d"%it
-			if options.savemore : threed[it].write_image("imdl.%02d.%02d.mrc"%(t,it))
+#			if options.savemore : threed[it].write_image("imdl.%02d.%02d.mrc"%(t,it))
 			projs=[(threed[it].project("standard",ort),None) for ort in orts]		# projections
 			for i in projs : i[0].process_inplace("normalize.edgemean")
 			if verbose>2: print "%d projections"%len(projs)
@@ -166,7 +229,7 @@ def main():
 			# 3-D reconstruction
 			pad=(boxsize*3/2)
 			pad-=pad%8
-			recon=Reconstructors.get("fourier", {"sym":options.sym,"size":[pad,pad,pad]})
+			recon=Reconstructors.get("fourier", {"sym":options["sym"],"size":[pad,pad,pad]})
 			
 			# insert slices into initial volume
 			recon.setup()
@@ -223,47 +286,14 @@ def main():
 				#aptcls[i].write_image("x.%d.hed"%t,i*2+1)
 		#display(threed[-1])
 		#threed[-1].write_image("x.mrc")
-		if verbose>0 : print "Model %d complete. Quality = %1.4f (%1.4f)"%(t,bss,qual)
+		if verbose>0 : print "Model %d complete. Quality = %1.4f (%1.4f)"%(options["tryid"],bss,qual)
 
-		results.append((bss,threed[-1],aptcls,projs,threed[0]))
-		results.sort()
-		
-		#dct=db_open_dict(results_name)
-		#for i,j in enumerate(results): dct[i]=j[1]
-		#dct.close()
-		
-		for i,j in enumerate(results):
-			out_name = results_name+"_%02d"%(i+1)
-			j[1].write_image(out_name,0)
-			j[4].write_image(results_name+"_%02d_init"%(i+1),0)
-			print out_name,j[1]["quality"],j[0],j[1]["apix_x"]
-			if options.dbls: # database list storage
-				pdb = db_open_dict("bdb:project")
-				old_data = pdb.get(options.dbls,dfl={})
-				if isinstance(old_data,list): # in June 2009 we decided we'd transition the lists to dicts - so this little loop is for back compatibility
-					d = {}
-					for name in old_data:
-						s = {}
-						s["Original Data"] = name
-						d[name] = s
-					old_data = d
-				
-				s = {}
-				s["Original Data"] = out_name
-				old_data[out_name] = s
-				pdb[options.dbls] = old_data
-			for k,l in enumerate(j[3]): l[0].write_image(results_name+"_%02d_proj"%(i+1),k)	# set of projection images
-			for k,l in enumerate(j[2]): 
-				l.process("normalize").write_image(results_name+"_%02d_aptcl"%(i+1),k*2)						# set of aligned particles
-				j[3][l["match_n"]][0].process("normalize").write_image(results_name+"_%02d_aptcl"%(i+1),k*2+1)	# set of projections matching aligned particles
-			
-#		threed[-1].write_image("x.%d.mrc"%t)
-		
-#		display(aptcls)
+#		if progress!=None : progress(100)		# this should be done automatically when we return
+		return {"result":(bss,threed[-1],aptcls,projs,threed[0])}
 			
 			
-	E2end(logid)
 
+jsonclasses["InitMdlTask"]=InitMdlTask.from_jsondict
 
 def make_random_map(boxsize,sfcurve=None):
 	"""This will make a map consisting of random noise, low-pass filtered and center-weighted for use

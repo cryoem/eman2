@@ -107,7 +107,7 @@ map< EMObject::ObjectType, string> EMObject::init()
 		mymap[TRANSFORMARRAY] = "TRANSFORMARRAY";
 		first_construction = false;
 	}
-	
+
 	return mymap;
 }
 

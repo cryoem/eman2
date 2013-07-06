@@ -108,6 +108,10 @@ namespace EMAN
 
 		vector<float> get_ylist() const;
 
+		vector<float> get_state() const;
+		
+		void set_state(vector<float>);
+
 		void set_xy_list(const vector<float>& xlist, const vector<float>& ylist);
 
 		size_t get_size() const

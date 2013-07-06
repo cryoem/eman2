@@ -7,7 +7,7 @@
 # code is distributed with EMAN2. While you may use your own institution for the copyright notice
 # the terms of the GPL/BSD license permit us to redistribute it.
 
-#****************UPDATED for RELION 1.1 RELEASE on 12/4/12******************
+#****************UPDATED for RELION 1.2 RELEASE on 7/1/12******************
 
 #import block
 from EMAN2 import *
@@ -35,7 +35,7 @@ Examples:
 print "Running e2refinetorelion3d.py"
 # Required Program Options and Parameters (GUI and Command Line)
 parser = EMArgumentParser(usage, version=EMANVERSION)
-parser.add_header(name="relionversion", help="This module will only work with Relion-1.1", title="This module will only work with Relion v1.1", row=0, col=0, rowspan=1, colspan=3)
+parser.add_header(name="relionversion", help="This module will only work with Relion-1.2", title="This module will only work with Relion v1.1", row=0, col=0, rowspan=1, colspan=3)
 parser.add_header(name="relion3dheader", help="Options below this label are specific to e2refinetorelion3d", title="   ### e2refinetorelion3d.py Options ###", row=1, col=0, rowspan=1, colspan=3)
 #I/O Options
 parser.add_header(name="io", help="Options in this section pertain to I/O", title="---I/O Options---", row=2, col=0, rowspan=1, colspan=1) 
@@ -141,7 +141,7 @@ if num_images > nz:
 else:
 	num_ptcl = nz
 	mrc = True
-project_db = db_open_dict("bdb:.#project")
+project_db = js_open_dict("info/project.json")
 
 if not header.get_attr_dict().__contains__('data_source'):
 	print "The input stack/database of particles is invalid - it does not contain information tying each particle to a micrograph. Please provide another input file"
@@ -195,7 +195,7 @@ else:
 set_orig = set_name
 #set_db = db_open_dict(set_orig)
 i = 0
-old_src = EMData(set_name,0)['data_source']
+old_src = EMData(set_name,0).get_attr_dict()['data_source']
 s =  "e2proc2d.py " + set_orig + " " + E2RLN + "/ptcl_stack.hdf --verbose="+str(options.verbose)
 call(s,shell=True)
 ctf_corr = 0
@@ -208,78 +208,79 @@ for option1 in optionList:
 		asample = True
 if ctf_corr == 1:
 
-	dblist = db_list_dicts("bdb:./sets")	
+	dblist = os.listdir("sets")	
 	for db in dblist:
-		db_src=set_name.replace("bdb:./sets#",'').replace("_original_data",'')
-		if not db.find(db_src):
-			db_set=EMData("bdb:./sets#"+db,0,True)
-			if db_set.get_attr_dict().__contains__('ctf') and (EMUtil.get_image_count("bdb:sets#"+db) == num_images):
+		db_src=set_name.replace(".lst",'').replace("sets/",'')
+		if db.find(db_src) == -1:
+			db_set=EMData("sets/" +db,0,True)
+			if db_set.get_attr_dict().__contains__('ctf') and (EMUtil.get_image_count("sets/"+db) == num_images):
 				ctf_value=True
-#				defocus = db_set['ctf'].to_dict()['defocus']*1000
+				amplitude_contrast = float(db_set['ctf'].to_dict()['ampcont']) / 10				
+				#defocus = db_set['ctf'].to_dict()['defocus']*1000
 				break
 	print "CTF information being pulled from: " + db
 	s = "relion_star_loopheader rlnImageName rlnMicrographName rlnDefocusU rlnDefocusV rlnDefocusAngle rlnVoltage rlnSphericalAberration rlnAmplitudeContrast > " + E2RLN + "/all_images.star"
-	if db_set.get_attr_dict().__contains__('ctf'):
-		amplitude_contrast = float(db_set['ctf'].to_dict()['ampcont']) / 10
+	
 else:
 	s = "relion_star_loopheader rlnImageName rlnMicrographName rlnVoltage rlnAmplitudeContrast > " + E2RLN + "/all_images.star"
 call(s,shell=True)
-
 print "Converting EMAN2 Files to Formats Compatible with RELION"
 temp = EMData(set_name,0)
 #print '# \tMicrograph \t\tDefocus \tVoltage CS \tAPIX'
 for k in range(num_ptcl):
 #	print k, '\t',temp['data_source'].split('?')[0].split('#')[1],'\t', temp['defocus'],'\t', temp['voltage'],'\t', temp['cs'],'\t', '1.8'	
-	src = EMData(set_name,k)['data_source']
+	src = EMData(set_name,k).get_attr_dict()['data_source']
+	#print "***" + str(src) + "***" + str(old_src)
+	########## Cleared to here##############
 	if (src != old_src):
-		temp=EMData("bdb:./sets#"+db,k-1)
-		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".hdf --verbose="+str(options.verbose)+" --step=" + str(i) + ",1 --last=" + str(k-1)
+		temp=EMData("sets/"+db,k-1)
+		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + base_name(old_src) + ".hdf --verbose="+str(options.verbose)+" --step=" + str(i) + ",1 --last=" + str(k-1)
 		call(s, shell=True)
 		if (k-i-1) == 0:
-			s = "e2proc2d.py " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose="+str(options.verbose) + " --process=normalize.edgemean"
+			s = "e2proc2d.py " + E2RLN + "/" + base_name(old_src) + ".hdf " + E2RLN + "/" + base_name(old_src) + ".mrc --verbose="+str(options.verbose) + " --process=normalize.edgemean"
                         call(s, shell=True)
 		else:
-			s = "e2proc2d.py " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose=" + str(options.verbose) + " --process=normalize.edgemean --twod2threed" 
+			s = "e2proc2d.py " + E2RLN + "/" + base_name(old_src) + ".hdf " + E2RLN + "/" + base_name(old_src) + ".mrc --verbose=" + str(options.verbose) + " --process=normalize.edgemean --twod2threed" 
 			call(s, shell=True)
-		s1 = E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrc"
+		s1 = E2RLN + "/" + base_name(old_src) + ".mrc"
 		stemp="e2proc3d.py " + s1 + " " + s1 + " --process=normalize"
 		call(stemp, shell=True)
-		s2 = E2RLN + "/stacks/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs"
+		s2 = E2RLN + "/stacks/" + base_name(old_src) + ".mrcs"
 		shutil.move(s1, s2)
 		amplitude_contrast=str(temp['ctf'].to_dict()['ampcont']/100)
 		if ctf_corr == 1:
 			defocus1 = defocus2 = str(temp['ctf'].to_dict()['defocus']*1000)
-			s = "relion_star_datablock_stack " + str(k-i) + " " + E2RLN + "/stacks/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + E2RLN + "/stacks/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + str(defocus1) + " " + str(defocus2) + " 0 " + str(voltage) + " " + str(cs) + " " + str(amplitude_contrast) + " >> " + E2RLN + "/all_images.star"
+			s = "relion_star_datablock_stack " + str(k-i) + " " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + str(defocus1) + " " + str(defocus2) + " 0 " + str(voltage) + " " + str(cs) + " " + str(amplitude_contrast) + " >> " + E2RLN + "/all_images.star"
 		else:
-			s = "relion_star_datablock_stack " + str(k-i) + " " + E2RLN + "/stacks/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + E2RLN + "/stacks/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + str(voltage) + " " + str(amplitude_contrast) + "  >> " + E2RLN + "/all_images.star" 
+			s = "relion_star_datablock_stack " + str(k-i) + " " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + str(voltage) + " " + str(amplitude_contrast) + "  >> " + E2RLN + "/all_images.star" 
 		call(s,shell=True)
-		s = "rm " + E2RLN + "/" + old_src.split('?')[0].replace('bdb:particles#','') + ".hdf" 
+		s = "rm " + E2RLN + "/" + base_name(old_src) + ".hdf" 
 		call(s,shell=True)
 		i = k
 		old_src = src
 	elif (k+1) == num_ptcl:
 		diff = k-i
-		temp=EMData("bdb:./sets#"+db,k)
-		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".hdf --verbose="+str(options.verbose)+" --step=" + str(i) + ",1 --last=" + str(k)
+		temp=EMData("sets/"+db,k)
+		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + base_name(src) + ".hdf --verbose="+str(options.verbose)+" --step=" + str(i) + ",1 --last=" + str(k)
 		call(s, shell=True)
 		if (k-i-1) == 0:
-			s = "e2proc2d.py " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose="+str(options.verbose) + " --process=normalize.edgemean"
+			s = "e2proc2d.py " + E2RLN + "/" + base_name(src) + ".hdf " + E2RLN + "/" + base_name(src) + ".mrc --verbose="+str(options.verbose) + " --process=normalize.edgemean"
 		else:
-			s = "e2proc2d.py " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".hdf " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".mrc --verbose="+str(options.verbose) + " --process=normalize.edgemean --twod2threed"
+			s = "e2proc2d.py " + E2RLN + "/" + base_name(src) + ".hdf " + E2RLN + "/" + base_name(src) + ".mrc --verbose="+str(options.verbose) + " --process=normalize.edgemean --twod2threed"
 		call(s, shell=True)
-		s1 = E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".mrc"
+		s1 = E2RLN + "/" + base_name(src) + ".mrc"
 		stemp="e2proc3d.py " + s1 + " " + s1 + " --process=normalize"
 		call(stemp, shell=True)
-		s2 = E2RLN + "/stacks/" + src.split('?')[0].replace('bdb:particles#','') + ".mrcs"
+		s2 = E2RLN + "/stacks/" + base_name(src) + ".mrcs"
 		shutil.move(s1, s2)
 		amplitude_contrast=str(temp['ctf'].to_dict()['ampcont']/100)
 		if ctf_corr == 1:
 			defocus1 = defocus2 = str(temp['ctf'].to_dict()['defocus']*1000)
-			s = "relion_star_datablock_stack " + str(k-i+1) + " " + E2RLN + "/stacks/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + E2RLN + "/stacks/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + str(defocus1) + " " + str(defocus2) + " 0 " + str(voltage) + " " + str(cs) + " " + str(amplitude_contrast) + " >> " + E2RLN + "/all_images.star"
+			s = "relion_star_datablock_stack " + str(k-i+1) + " " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + str(defocus1) + " " + str(defocus2) + " 0 " + str(voltage) + " " + str(cs) + " " + str(amplitude_contrast) + " >> " + E2RLN + "/all_images.star"
 		else:
-			s = "relion_star_datablock_stack " + str(k-i+1) + " " +  E2RLN + "/stacks/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + E2RLN + "/stacks/" + old_src.split('?')[0].replace('bdb:particles#','') + ".mrcs " + str(voltage) + " " + amplitude_contrast + "  >> " + E2RLN + "/all_images.star" 
+			s = "relion_star_datablock_stack " + str(k-i+1) + " " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + str(voltage) + " " + amplitude_contrast + "  >> " + E2RLN + "/all_images.star" 
 		call(s,shell=True)
-		s = "rm " + E2RLN + "/" + src.split('?')[0].replace('bdb:particles#','') + ".hdf" 
+		s = "rm " + E2RLN + "/" + base_name(src) + ".hdf" 
 		call(s,shell=True)
 		i = k
 		old_src = src
@@ -304,7 +305,7 @@ RUNDIR = E2RLN + "/run" + run_dir
 os.mkdir(RUNDIR)
 
 #Parse the options and create the command to run Relion
-s = RELION_RUN + "--i " + E2RLN + "/all_images.star --o " + RUNDIR + "/" + E2RLN + " --angpix " + str(apix) + " --auto_sampling --split_random_halves --norm"
+s = RELION_RUN + "--i " + E2RLN + "/all_images.star --o " + RUNDIR + "/" + E2RLN + " --angpix " + str(apix) + " --auto_refine --split_random_halves --norm"
 grey = oversample = 0
 
 for option1 in optionList:
@@ -430,7 +431,8 @@ if oversample:
 
 print "Generating qsub file"
 ###### create files to make the runs ######
-qsub_file = current_dir + "/qsub.pbs"
+qsub_file = current_dir + "/" + E2RLN + "/run01/qsub.pbs"
+print qsub_file
 f = open(qsub_file, 'w')
 f.write("""#!/bin/sh
 

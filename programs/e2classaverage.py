@@ -42,7 +42,7 @@ from random import choice
 
 READ_HEADER_ONLY = True
 
-from EMAN2db import EMTask, db_check_dict
+from EMAN2jsondb import JSTask,jsonclasses
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -285,7 +285,7 @@ def main():
 	print "Class averaging complete"
 	E2end(logger)
 
-class ClassAvTask(EMTask):
+class ClassAvTask(JSTask):
 	"""This task will create a single task-average"""
 
 	def __init__(self,imagefile,imagenums,usefilt=None,ref=None,niter=1,normproc=("normalize.edgemean",{}),prefilt=0,align=("rotate_translate_flip",{}),
@@ -293,7 +293,7 @@ class ClassAvTask(EMTask):
 		if usefilt==None : usefilt=imagefile
 		data={"images":["cache",imagefile,imagenums],"usefilt":["cache",usefilt,imagenums]}
 		if ref!=None : data["ref"]=["cache",ref,n]
-		EMTask.__init__(self,"ClassAv",data,{},"")
+		JSTask.__init__(self,"ClassAv",data,{},"")
 		
 		self.options={"niter":niter, "normproc":normproc, "prefilt":prefilt, "align":align, "aligncmp":aligncmp,
 			"ralign":ralign,"raligncmp":raligncmp,"averager":averager,"scmp":scmp,"keep":keep,"keepsig":keepsig,
@@ -364,6 +364,8 @@ class ClassAvTask(EMTask):
 			except: pass
 		
 		return {"average":avg,"info":ptcl_info,"n":options["n"]}
+
+jsonclasses["ClassAvTask"]=ClassAvTask.from_jsondict
 
 def get_image(images,n,normproc=("normalize.edgemean",{})):
 	"""used to get an image from a descriptor as provided to class_average function. Always a copy of the actual image."""
@@ -675,7 +677,7 @@ def check(options,verbose=0):
 		if options.ref != None and not file_exists(options.ref):
 			print "Error: the file expected to contain the reference images (%s) does not exist" %(options.ref)
 			error = True
-		elif options.ref and (os.path.exists(options.input) or db_check_dict(options.input)):
+		elif options.ref and os.path.exists(options.input):
 			(xsize, ysize ) = gimme_image_dimensions2D(options.input);
 			(pxsize, pysize ) = gimme_image_dimensions2D(options.ref);
 			if ( xsize != pxsize ):

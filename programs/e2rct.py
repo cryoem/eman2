@@ -142,6 +142,7 @@ def main():
 					options.stagetilt = tiltimgs[i].get_attr("tiltangle")
 				if options.tiltaxis:
 					tiltcorrection = tiltimgs[i].get_attr_default("tiltaxis",0.0)
+					print p["alpha"], tiltcorrection
 				x.set_rotation({"type":"eman", "az":(p["alpha"]-tiltcorrection), "alt":options.stagetilt}) # Use supplied if available
 				tiltimgs[i].set_attr("xform.projection", x)
 				

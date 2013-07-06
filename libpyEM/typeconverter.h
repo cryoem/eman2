@@ -340,9 +340,17 @@ namespace EMAN {
 			long l = python::len(k);
 
 			for(long i = 0; i < l; i++) {
-				std::string key = python::extract<std::string>(k[i]);
-				EMObject val = python::extract<EMObject>(v[i]);
-				result.put(key, val);
+				result.put(python::extract<string>(python::str(k[i]).encode()), python::extract<EMObject>(v[i]));
+// 				const char * type_name = k[i].ob_type->tp_name;
+// 				if (strcmp(type_name,"string")==0) {
+// 					result.put(python::extract<std::string>(k[i]), python::extract<EMObject>(v[i]));
+// 				} else if (strcmp(type_name,"unicode")==0) {
+// 					result.put(python::extract<string>(python::str(k[i]).encode()), python::extract<EMObject>(v[i]));
+// 				}
+// 				else throw TypeException("Invalid type for Dict key","")
+// 				std::string key = python::extract<std::string>(k[i]);
+// 				EMObject val = python::extract<EMObject>(v[i]);
+// 				result.put(key, val);
 			}
 
 		}
@@ -597,7 +605,8 @@ namespace EMAN {
 		static void* convertible(PyObject* obj_ptr)
 		{
 			const char * type_name = obj_ptr->ob_type->tp_name;
-			if (type_name == 0 || strcmp(type_name, "str") != 0) {
+
+			if (type_name == 0 || (strcmp(type_name, "str") != 0 && strcmp(type_name, "unicode") != 0)) {
 				return 0;
 			}
 			return obj_ptr;
@@ -613,11 +622,22 @@ namespace EMAN {
 
 			data->convertible = storage;
 			EMObject& result = *((EMObject*) storage);
-			string str = python::extract<string>(obj_ptr);
-			result = EMObject(str);
+			
+			python::extract<std::string> s1(obj_ptr);
+			python::extract<std::wstring> s2(obj_ptr);
+			std::string s;
+			if (s1.check()) s = python::extract<string>(obj_ptr);
+			else {
+				if (s2.check()) {
+					std::wstring ws;
+					ws = python::extract<std::wstring>(obj_ptr);
+					s.assign(ws.begin(), ws.end());
+				}
+			}
+			result = EMObject(s);
 		}
     };
-
+	
 	struct emobject_emdata_from_python
     {
 		emobject_emdata_from_python()

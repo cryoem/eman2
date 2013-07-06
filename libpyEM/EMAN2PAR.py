@@ -46,7 +46,8 @@ import getpass
 import select
 
 from EMAN2 import test_image,EMData,abs_path,local_datetime,EMUtil,Util,get_platform
-from EMAN2db import EMTask,EMTaskQueue,db_open_dict,db_remove_dict,e2filemodtime,db_check_dict
+from EMAN2db import e2filemodtime
+from EMAN2jsondb import JSTask,JSTaskQueue,js_open_dict
 from e2classaverage import ClassAvTask
 from e2spt_classaverage import Align3DTask
 from e2tiltvalidate import CompareToTiltTask
@@ -54,6 +55,7 @@ from e2symsearch3d import SymAlignTask
 from e2simmx import EMSimTaskDC
 from e2project3d import EMProject3DTaskDC
 from e2spt_hac import Align3DTaskAVSA
+from e2initialmodel import InitMdlTask
 import SocketServer
 from cPickle import dumps,loads,dump,load
 from struct import pack,unpack
@@ -346,7 +348,7 @@ class EMTaskHandler:
 	"""This is the actual server object which talks to clients and customers. It coordinates task execution
  acts as a data clearinghouse. This parent class doesn't contain any real functionality. Subclasses are always
  used for acutual servers."""
-	queue=EMTaskQueue(None)
+	queue=JSTaskQueue(None)
 	
 	def __init__(self,path=None):
 		self.queue=EMTaskHandler.queue
@@ -371,11 +373,11 @@ def image_range(a,b=None):
 	else: 
 		for i in a : yield i
 
-class EMTestTask(EMTask):
+class EMTestTask(JSTask):
 	"""This is a simple example of a EMTask subclass that actually does something"""
 	
 	def __init__(self):
-		EMTask.__init__(self)
+		JSTask.__init__(self)
 		self.command="test_task"
 	
 	def execute(self):
@@ -458,7 +460,7 @@ accessible to the server."""
 	# Utility routines
 	def test(self,data):
 		print "Test message (%d) : %s"%(self.verbose,data)
-		return EMTask()
+		return JSTask()
 
 	def quit(self):
 		pass
@@ -492,7 +494,7 @@ class EMLocalTaskHandler():
 
 	def add_task(self,task):
 		EMLocalTaskHandler.lock.acquire()
-		if not isinstance(task,EMTask) : raise Exception,"Non-task object passed to EMLocalTaskHandler for execution"
+		if not isinstance(task,JSTask) : raise Exception,"Non-task object passed to EMLocalTaskHandler for execution"
 		dump(task,file("%s/%07d"%(self.scratchdir,self.maxid),"wb"),-1)
 		ret=self.maxid
 		self.maxid+=1

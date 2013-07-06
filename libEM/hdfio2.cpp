@@ -35,7 +35,7 @@
 
 #ifdef EM_HDF5
 
-//#define DEBUGHDF	1
+// #define DEBUGHDF	1
 
 #include "hdfio2.h"
 #include "geometry.h"
@@ -87,7 +87,7 @@ HdfIO2::~HdfIO2()
 		H5Fclose(file);
     }
 #ifdef DEBUGHDF
-	printf("HDf close\n");
+	printf("HDF: close\n");
 #endif
 }
 
@@ -326,12 +326,12 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
     //at the beginning of write_header(), since the  "imageid_max" need be updated correctly.
 	if( H5Adelete(loc,name) < 0 ) {
 #ifdef DEBUGHDF
-		LOGERR("Attribute %s deletion error in write_attr().\n", name);
+		LOGERR("HDF: Attribute %s deletion error in write_attr().\n", name);
 #endif
 	}
 	else {
 #ifdef DEBUGHDF
-		printf("delete attribute %s successfully in write_attr().\n", name);
+		printf("HDF: delete attribute %s successfully in write_attr().\n", name);
 #endif
 	}
 	hid_t attr = H5Acreate(loc,name,type,spc,H5P_DEFAULT);
@@ -446,7 +446,7 @@ void HdfIO2::init()
 		return;
 	}
 #ifdef DEBUGHDF
-	printf("init\n");
+	printf("HDF: init\n");
 #endif
 
 	H5Eset_auto(0, 0);	// Turn off console error logging.
@@ -464,7 +464,7 @@ void HdfIO2::init()
 			}
 			else {
 #ifdef DEBUGHDF
-				printf("File truncated or new file created\n");
+				printf("HDF: File truncated or new file created\n");
 #endif
 			}
 		}
@@ -480,6 +480,9 @@ void HdfIO2::init()
 		if (group<0) throw ImageWriteException(filename,"Unable to add image group (/MDF/images) to HDF5 file");
 		write_attr(group,"imageid_max",EMObject(-1));
 	}
+	// FIXME - This section was added by Grant, presumably because DirectElectron was storing metadata items
+	// associated with the entire image group, so he automatically calls them "DDD".*, but this doesn't
+	// seem a good permanent solution...
 	else {	//read the meta attributes for all images
 		int nattr=H5Aget_num_attrs(group);
 
@@ -488,9 +491,11 @@ void HdfIO2::init()
 			hid_t attr=H5Aopen_idx(group, i);
 			H5Aget_name(attr,127,name);
 
-			EMObject val=read_attr(attr);
-			meta_attr_dict["DDD."+string(name)]=val;
-
+			if (strcmp(name,"imageid_max")!=0) {
+				EMObject val=read_attr(attr);
+				meta_attr_dict["DDD."+string(name)]=val;
+			}
+			
 			H5Aclose(attr);
 		}
 
@@ -508,7 +513,7 @@ int HdfIO2::init_test()
 		return 1;
 	}
 #ifdef DEBUGHDF
-	printf("init_test\n");
+	printf("HDF: init_test\n");
 #endif
 
 	H5Eset_auto(0, 0);	// Turn off console error logging.
@@ -541,7 +546,7 @@ bool HdfIO2::is_valid(const void *first_block)
 		char signature[8] = { 137,72,68,70,13,10,26,10 };
 		if (strncmp((const char *)first_block,signature,8)==0) return true;
 		// const char* f=(const char *)first_block;
-		// printf("bad hdf signature %d %d %d %d %d %d %d %d",f[0],f[1],f[2],f[3],f[4],f[5],f[6],f[7]);
+		// printf("HDF: bad hdf signature %d %d %d %d %d %d %d %d",f[0],f[1],f[2],f[3],f[4],f[5],f[6],f[7]);
 		return false;
 	}
 	EXITFUNC;
@@ -563,14 +568,14 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 	}
 
 #ifdef DEBUGHDF
-	printf("read_head %d\n", image_index);
+	printf("HDF: read_head %d\n", image_index);
 #endif
 	int i;
 	// Each image is in a group for later expansion. Open the group
 	char ipath[50];
 	sprintf(ipath,"/MDF/images/%d", image_index);
 	hid_t igrp=H5Gopen(file, ipath);
-
+	if (igrp<0) throw ImageWriteException(filename,"Image does not exist");
 	int nattr=H5Aget_num_attrs(igrp);
 
 	char name[ATTR_NAME_LEN];
@@ -586,7 +591,7 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 			dict[name+5]=val;
 		}
 		catch(...) {
-			printf("Error reading HDF attribute %s\n",name+5);
+			printf("HDF: Error reading HDF attribute %s\n",name+5);
 		}
 		H5Aclose(attr);
 	}
@@ -678,7 +683,7 @@ int HdfIO2::erase_header(int image_index)
 
 	init();
 #ifdef DEBUGHDF
-	printf("erase_head %d\n",image_index);
+	printf("HDF: erase_head %d\n",image_index);
 #endif
 	int i;
 	// Each image is in a group for later expansion. Open the group
@@ -708,7 +713,7 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 {
 	ENTERFUNC;
 #ifdef DEBUGHDF
-	printf("read_data %d\n",image_index);
+	printf("HDF: read_data %d\n",image_index);
 #endif
 
 	char ipath[50];
@@ -922,7 +927,7 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 						EMUtil::EMDataType, bool)
 {
 #ifdef DEBUGHDF
-	printf("write_head %d\n",image_index);
+	printf("HDF: write_head %d\n",image_index);
 #endif
 	ENTERFUNC;
 	init();
@@ -1032,7 +1037,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	}
 
 #ifdef DEBUGHDF
-	printf("write_data %d\n",image_index);
+	printf("HDF: write_data %d\n",image_index);
 #endif
 
 	if (image_index<0) {

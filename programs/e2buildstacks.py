@@ -35,7 +35,7 @@ from EMAN2 import *
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """prog [options] <micrgrpah1, microgaph2....>
+	usage = """prog [options] <micrograph1, micrograph2....>
 	Use e2bdb.py or e2proc2d.py to build particle sets
 	"""
 	

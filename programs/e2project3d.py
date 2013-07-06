@@ -38,7 +38,7 @@
 
 import sys, math, os, random
 from EMAN2 import *
-from EMAN2db import db_check_dict, EMTask
+from EMAN2jsondb import JSTask,jsonclasses
 deg2rad = math.pi / 180.0
 rad2deg = 180.0 / math.pi
 DEBUG = False
@@ -174,11 +174,9 @@ class EMParallelProject3D:
 		
 		return True
 			
-	
-from EMAN2db import EMTask
-class EMProject3DTaskDC(EMTask):
+class EMProject3DTaskDC(JSTask):
 	def __init__(self,command="e2project3d.py",data=None,options=None):
-		EMTask.__init__(self,command,data,options)
+		JSTask.__init__(self,command,data,options)
 		
 		# data has these keys:
 		# input - which is the name of the threed model - a Task-style cache
@@ -214,7 +212,8 @@ class EMProject3DTaskDC(EMTask):
 		#d = {}
 		#d["projections"] = projections
 		return projections
-	
+
+jsonclasses["EMProject3DTaskDC"]=EMProject3DTaskDC.from_jsondict
 
 def main():
 	progname = os.path.basename(sys.argv[0])

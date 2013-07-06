@@ -82,8 +82,11 @@ object emdata_getitem(object self, object key) {
 	extract<string> k(key);
 	if (k.check()) return object(s.get_attr(k));
 
+	extract<std::wstring> k2(key);
+	if (k2.check()) return object(s.get_attr(extract<string>(str(key).encode())));
+	
     // not a tuple or an int, so bail
-    throw TypeException("Expected 1, 2, or 3 *integer* indices", "");
+    throw TypeException("Need x,y,z or attribute key", "");
 }
 
 void emdata_setitem(object self, object key, object val) {
@@ -100,6 +103,7 @@ void emdata_setitem(object self, object key, object val) {
     extract<tuple> t(key);
     if (t.check()) {
         int size = len(key);
+//		printf("good2\n");
         if (3 == size) {
             int ix = extract<int>(key[0]);
             int iy = extract<int>(key[1]);
@@ -128,13 +132,20 @@ void emdata_setitem(object self, object key, object val) {
             throw ImageDimensionException("Need 1, 2, or 3 indices.");
         }
     }
-	extract<string> k(key);
+	extract<std::string> k(key);
 	extract<EMAN::EMObject> v(val);
-	if (k.check() && v.check())
-		s.set_attr(k,v);
+	if (k.check() && v.check()) {
+		s.set_attr(extract<string>(key),v);
 		return;
+	}
+	
+	extract<std::wstring> k2(key);
+	if (k2.check() && v.check()) {
+		s.set_attr(extract<string>(str(key).encode()),v);
+		return;
+	}
 
-    throw TypeException("Expected 1, 2, or 3 integer indices", "");
+	
+    throw TypeException("Need x,y,z or attribute key", "");
 }
-
 

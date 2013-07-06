@@ -1135,10 +1135,12 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		if file_path:
 			self.item3d().setCmapData(file_path)
 		self.openbrowser.close()
+		self.openbrowser=None
 		
 	def _onopen_cancel(self):
 		""" Never mind....."""
 		self.openbrowser.close()
+		self.openbrowser=None
 		
 	def onColorByMap(self):
 		""" Display colors map """

@@ -33,7 +33,6 @@
 
 
 from EMAN2 import *
-from EMAN2db import db_open_dict, db_close_dict, db_check_dict
 from optparse import OptionParser
 from math import *
 import os
@@ -163,8 +162,8 @@ def main():
 		options.path = numbered_path("multi",True)
 
 	# store the inputs arguments forever in the refinement directory
-	db = db_open_dict("bdb:"+options.path+"#register")
-	db["cmd_dict"] = options.__dict__
+	db = js_open_dict(options.path+"/0_refine_parms.json")
+	db.update(args(options))
 		
 	# this is the main refinement loop
 	
@@ -215,7 +214,7 @@ def main():
 		try : previous_models = options.filtered_models
 		except : previous_models = options.models
 
-		options.models=["bdb:%s#threed_%02d_%02d"%(options.path,i,j) for j in range(len(previous_models))]
+		options.models=["%s/threed_%02d_%02d.hdf"%(options.path,i,j) for j in range(len(previous_models))]
 		print options.models
 		new_models = options.models
 		cmd=get_make3d_cmd(options)
@@ -226,8 +225,8 @@ def main():
 
 		progress += 1.0
 
-		options.mask_images=["bdb:%s#threed_mask_%02d_%02d"%(options.path,i,j) for j in range(len(previous_models))]
-		options.filtered_models=["bdb:%s#threed_filt_%02d_%02d"%(options.path,i,j) for j in range(len(previous_models))]
+		options.mask_images=["%s/threed_mask_%02d_%02d.hdf"%(options.path,i,j) for j in range(len(previous_models))]
+		options.filtered_models=["%s/threed_filt_%02d_%02d.hdf"%(options.path,i,j) for j in range(len(previous_models))]
 
 		for ii,p in enumerate(previous_models):
 			n=new_models[ii]
@@ -261,8 +260,8 @@ def main():
 			else:
 				s="%02d_%02d_%02d"%(ii,i-1,i)
 			
-			convergence_db_name = "bdb:"+options.path+"#convergence.results"
-			db = db_open_dict(convergence_db_name)
+			convergence_db_name = options.path+"/convergence_results.json"
+			db = js_open_dict(convergence_db_name)
 			
 			tmpaxis = [x/apix for x in xaxis]
 			db[s+"_fsc"] = [tmpaxis,plot]
@@ -279,23 +278,25 @@ def get_apix_used(options):
 	Else the project db is checked for the global.apix parameter
 	Else you just get 1
 	'''
-	apix = 1.0
+	apix = 0.0
 	if options.apix: apix = options.apix # check function checks whether or not this value is positive, non zero
-	elif db_check_dict("bdb:project"):
-		# this is a temporary workaround to get things working in the workflow
-		db2 = db_open_dict("bdb:project")
-		apix = db2.get("global.apix",dfl=1)
-		db_close_dict("bdb:project")
-		if apix == 0: apix = 1
-	#else apix is 1 !
+	else:
+		img=EMData(options.input,0,True)
+		try: apix=img["ctf"].apix
+		except: apix=img["apix_x"]
+
+	if apix<=0 :
+		try:
+			prj=js_open_dict("info/project.json")
+			apix=prj["global.apix"]
+		except:
+			print "WARNING: Could not find a valid A/pix value anywhere. Defaulting to 1.0."
+			apix=1.0
+
 	return apix
 		
 def number_options_file(i,file,options,attr):
-	name = "bdb:"+options.path+"#" + file+"_"
-	if i < 10:
-		name += "0"
-	
-	name += str(i)
+	name = "{}/{}_{:02d}.hdf".format(options.path,fsp,i)
 	setattr(options,attr,name)
 	
 def exit_refine(n,logid):

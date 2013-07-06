@@ -51,8 +51,9 @@
 using std::string;
 using std::binary_function;
 
-const static int CHECK_INTERVAL = 10;	//seconds for thread to check if the opened file need been closed
+const static int CHECK_INTERVAL = 5;	//seconds for thread to check if the opened file need been closed
 const static int ACCESS_TIME_THRESHOLD = 30;	//seconds since the last access to close HDF image file
+const static int ACCESS_WRITE_TIME_THRESHOLD = 5;	//seconds since the last access to close HDF image file
 
 namespace EMAN
 {

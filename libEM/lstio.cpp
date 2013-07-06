@@ -163,32 +163,32 @@ int LstIO::calc_ref_image_index(int image_index)
 #ifdef WIN32
 		sep = '\\';
 #endif
-		if (ref_image_path[0] == sep) {
+// 		if (ref_image_path[0] == sep) {
 			strcpy(fullpath, ref_image_path);
-		}
-		else {
-			if (strrchr(filename.c_str(), sep)) {
-				strcpy(fullpath, filename.c_str());
-			}
-			else {
-#ifndef WIN32
-				getcwd(fullpath, MAXPATHLEN);
-#else
-				//GetCurrentDirectory(MAXPATHLEN, fullpath);
-#endif
-			}
-
-			char *p_basename = strrchr(fullpath, sep);
-			if (p_basename) {
-				//p_basename++;
-				//*p_basename = '\0';
-				char ssep[2];
-				ssep[0] = sep;
-				ssep[1] = '\0';
-				strcat(fullpath, ssep);
-				strcat(fullpath, ref_image_path);
-			}
-		}
+// 		}
+// 		else {
+// 			if (strrchr(filename.c_str(), sep)) {
+// 				strcpy(fullpath, filename.c_str());
+// 			}
+// 			else {
+// #ifndef WIN32
+// 				getcwd(fullpath, MAXPATHLEN);
+// #else
+// 				//GetCurrentDirectory(MAXPATHLEN, fullpath);
+// #endif
+// 			}
+// 
+// 			char *p_basename = strrchr(fullpath, sep);
+// 			if (p_basename) {
+// 				//p_basename++;
+// 				//*p_basename = '\0';
+// 				char ssep[2];
+// 				ssep[0] = sep;
+// 				ssep[1] = '\0';
+// 				strcat(fullpath, ssep);
+// 				strcat(fullpath, ref_image_path);
+// 			}
+// 		}
 
 		ref_filename = string(fullpath);
 		imageio = EMUtil::get_imageio(ref_filename, rw_mode);
