@@ -151,9 +151,9 @@ def main():
 			else:
 				print "Couldn't find any parameters with the stem", options.stem
 	
-	if aux2 !=0:
+	if aux2 !=0 or aux3 !=0:
 		print "Parameters successfully changed."
-	else:
+	elif aux2 == 0 or aux3 == 0:
 		print "No parameters seem to have changed."	
 				
 	return()	
