@@ -152,12 +152,15 @@ It is strongly suggested that you run 'e2bdb.py -c' prior to running this progra
 	if options.verbose : print "Converting sets:"
 	dcts=db_list_dicts("bdb:sets")
 	for dct in dcts:
-		lst=LSXFile("{}/sets/{}.lst".format(dest,dct))
-		src=db_open_dict("bdb:sets#{}".format(dct))
-		if options.verbose>1 : print "\t",dct
-		for i in xrange(len(src)):
-			attr=src.get_header(i)
-			lst.write(i,attr["data_n"],"particles/{}.hdf".format(attr["data_source"].split("#")[-1].replace("_ctf","__ctf")))
+		try:
+			lst=LSXFile("{}/sets/{}.lst".format(dest,dct))
+			src=db_open_dict("bdb:sets#{}".format(dct))
+			if options.verbose>1 : print "\t",dct
+			for i in xrange(len(src)):
+				attr=src.get_header(i)
+				lst.write(i,attr["data_n"],"particles/{}.hdf".format(attr["data_source"].split("#")[-1].replace("_ctf","__ctf")))
+		except:
+			print "Unable to convert set: ",dct
 
 	# This handles generic conversion of subdirectories
 	for d in dl:
