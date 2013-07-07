@@ -157,6 +157,9 @@ def main():
 		# If symmetry is being specified, then we need to use it for the aligner too
 		if options.sym:
 			options.align[1]['sym'] = options.sym
+	
+	#if options.ralign and not options.raligncmp:
+	#	options.raligncmp = options.aligncmp	
 			
 	if options.ralign: 
 		options.ralign=parsemodopt(options.ralign)
@@ -194,6 +197,8 @@ def main():
 		
 	if options.postprocess: 
 		options.postprocess=parsemodopt(options.postprocess)
+		
+	
 
 	if options.resultmx : 
 		print "Sorry, resultmx not implemented yet"
@@ -594,7 +599,6 @@ def preprocessing(options,image):
 			s2image.process_inplace("math.meanshrink",{"n":options.shrinkrefine})
 	
 	#print "Returning simage and shrunk s2image from preprocessing, types", type(simage), type(s2image)
-		
 	return(simage,s2image)
 	
 
@@ -811,7 +815,11 @@ def make_average_pairs(ptcl_file,outfile,align_parms,averager,nocenterofmass):
 		
 		if not nocenterofmass:
 			avg.process_inplace("xform.centerofmass")
-
+		
+		avg['origin_x']=0
+		avg['origin_y']=0
+		avg['origin_z']=0
+		
 		avg.write_image(outfile,i)
 		
 
@@ -901,8 +909,6 @@ class Align3DTask(JSTask):
 		return {"final":bestfinal,"coarse":bestcoarse}
 
 
-#def align3Dfunc(ref,j,p,k,classoptions):
-
 def align3Dfunc(fixedimage,image,ptcl,label,classoptions,transform):
 	"""This aligns one volume to a reference and returns the alignment parameters"""
 
@@ -928,19 +934,13 @@ def align3Dfunc(fixedimage,image,ptcl,label,classoptions,transform):
 	bestcoarse=ret[1]
 	
 	return {"final":bestfinal,"coarse":bestcoarse}
-	#return {"final":bestfinal,"coarse":bestcoarse}
 
 
-
-
-#def alignment(simage,s2image,sfixedimage,s2fixedimage,classoptions,transform):
 
 def alignment(fixedimage,image,ptcl,label,classoptions,transform):
 	
 	if classoptions.verbose: 
 		print "Aligning ",label
-	
-	
 	
 	"""
 	If FSC.TOMO is used as a comparator, the particles need to have the statistics of their missing wedges calculated.
@@ -1020,8 +1020,6 @@ def alignment(fixedimage,image,ptcl,label,classoptions,transform):
 	
 	#In some cases we want to prealign the particles
 	
-	
-	
 	if transform:
 		if classoptions.verbose:
 			print "Moving Xfrom", transform
@@ -1075,78 +1073,52 @@ def alignment(fixedimage,image,ptcl,label,classoptions,transform):
 			print "\nThe score returned from ralign is", ali['score']
 			try: 					
 				bestfinal.append({"score":ali["score"],"xform.align3d":ali["xform.align3d"],"coarse":bc})
-				print "\nThe appended score is", bestfinal[0]['score']					
+				print "\nThe appended score in TRY is", bestfinal[0]['score']					
 			except:
 				bestfinal.append({"score":1.0e10,"xform.align3d":bc["xform.align3d"],"coarse":bc})
-				print "\nThe appended score is", bestfinal[0]['score']
+				print "\nThe appended score in EXCEPT is", bestfinal[0]['score']
 		
-#<<<<<<< e2spt_classaverage.py
-		#if classoptions.verbose:
-			#print "Best final is", bestfinal
+		if classoptions.verbose:
+			print "Best final is", bestfinal
 				
-		#if classoptions.shrinkrefine>1 :
-			#for c in bestfinal:
+		if classoptions.shrinkrefine>1 :
+			for c in bestfinal:
 			
-				#newtrans = c["xform.align3d"].get_trans() * float(classoptions.shrinkrefine)
-				#print "New trans and type are", newtrans, type(newtrans)
-				#c["xform.align3d"].set_trans(newtrans)
+				newtrans = c["xform.align3d"].get_trans() * float(classoptions.shrinkrefine)
+				print "New trans and type are", newtrans, type(newtrans)
+				c["xform.align3d"].set_trans(newtrans)
 
-		## verbose printout of fine refinement
-		#if classoptions.verbose>1 :
-			#for i,j in enumerate(bestfinal): 
-				#print "fine %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
+		#verbose printout of fine refinement
+		if classoptions.verbose>1 :
+			for i,j in enumerate(bestfinal): 
+				print "fine %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
 
-	#else: 
-		#bestfinal = bestcoarse
-		#if classoptions.verbose:
-			#print "\nThere was no fine alignment; therefore, score is", bestfinal[0]['score']
+	else: 
+		bestfinal = bestcoarse
+		if classoptions.verbose:
+			print "\nThere was no fine alignment; therefore, score is", bestfinal[0]['score']
 	
-	#from operator import itemgetter						#If you just sort 'bestfinal' it will be sorted based on the 'coarse' key in the dictionaries of the list
+	from operator import itemgetter						#If you just sort 'bestfinal' it will be sorted based on the 'coarse' key in the dictionaries of the list
 														##because they come before the 'score' key of the dictionary (alphabetically)
-	#bestfinal = sorted(bestfinal, key=itemgetter('score'))
+	bestfinal = sorted(bestfinal, key=itemgetter('score'))
 	
-	#if classoptions.verbose:
-		#print "\nThe best peaks sorted are"	#confirm the peaks are adequately sorted
-		#for i in bestfinal:
-			#print i
+	if classoptions.verbose:
+		print "\nThe best peaks sorted are"	#confirm the peaks are adequately sorted
+		for i in bestfinal:
+			print i
 	
-	#if bestfinal[0]["score"] == 1.0e10 :
-		#print "Error: all refine alignments failed for %s. May need to consider altering filter/shrink parameters. Using coarse alignment, but results are likely invalid."%self.classoptions["label"]
+	if bestfinal[0]["score"] == 1.0e10 :
+		print "Error: all refine alignments failed for %s. May need to consider altering filter/shrink parameters. Using coarse alignment, but results are likely invalid."%self.classoptions["label"]
 	
-	#if classoptions.verbose: 
-		#print "Best %1.5g\t %s"%(bestfinal[0]["score"],str(bestfinal[0]["xform.align3d"]))
-		#print "Done aligning ",label
+	if classoptions.verbose: 
+		print "Best %1.5g\t %s"%(bestfinal[0]["score"],str(bestfinal[0]["xform.align3d"]))
+		print "Done aligning ",label
 	
-	##print "\nScore to return from ALIGNMENT is", bestfinal[0]["score"]
-	#return (bestfinal,bestcoarse)
+	#print "\nScore to return from ALIGNMENT is", bestfinal[0]["score"]
+	return (bestfinal,bestcoarse)
 	
-#=======
-		from operator import itemgetter						#If you just sort 'bestfinal' it will be sorted based on the 'coarse' key in the dictionaries of the list
-											#because they come before the 'score' key of the dictionary (alphabetically)
-		bestfinal = sorted(bestfinal, key=itemgetter('score'))
-		
-		if classoptions["verbose"]:
-			print "\nThe best peaks sorted are"	#confirm the peaks are adequately sorted
-			for i in bestfinal:
-				print i
-		
-		if bestfinal[0]["score"] == 1.0e10 :
-			print "Error: all refine alignments failed for %s. May need to consider altering filter/shrink parameters. Using coarse alignment, but results are likely invalid."%self.classoptions["label"]
-		
-		if classoptions["verbose"]: 
-			print "Best %1.5g\t %s"%(bestfinal[0]["score"],str(bestfinal[0]["xform.align3d"]))
-			print "Done aligning ",classoptions["label"]
-		
-		return {"final":bestfinal,"coarse":bestcoarse}
 
 jsonclasses["Align3DTask"]=Align3DTask.from_jsondict
-
-def align3Dfunc(ref,j,p,k,options):
-	print "Sorry; for now; you MUST use parallelism, through the --parallel option."
-	sys.exit()
-	pass
-	return
-#>>>>>>> 1.19.2.1
 
 
 def classmx_ptcls(classmx,n):
