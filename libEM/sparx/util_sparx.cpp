@@ -18501,7 +18501,7 @@ vector<float> Util::hans(EMData* image, const vector< EMData* >& crefim,
 				}
 			}
 		}
-		found_better = (best_for_ref >= previousmax);
+		found_better = (best_for_ref > previousmax);
 	}
 	
 	for (unsigned i = 0; i < cimages.size(); ++i) {
