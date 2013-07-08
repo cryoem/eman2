@@ -3136,6 +3136,58 @@ def rotation_between_anglesets(agls1, agls2):
 
 	return dictR['phi'], dictR['theta'], dictR['psi']
 
+
+def angle_between_projections_directions(proj1, proj2):
+	"""
+	  It returns angle between two projections directions.
+	  INPUT: two lists: [phi1, theta1] , [phi2, theta2]
+	  OUTPUT: angle (in degrees)
+	"""
+	from math import sin, cos, acos, pi
+	phi1 = proj1[0] * (pi/180.0)
+	phi2 = proj2[0] * (pi/180.0)
+	theta1 = proj1[1] * (pi/180.0)
+	theta2 = proj2[1] * (pi/180.0)
+	st1 = sin(theta1)
+	st2 = sin(theta2)
+	ct1 = cos(theta1)
+	ct2 = cos(theta2)
+	cp1cp2_sp1sp2 = cos(phi1 - phi2)
+	temp = st1 * st2 * cp1cp2_sp1sp2 + ct1 * ct2
+	if temp < -1.0:
+		temp = -1.0
+	if temp > 1.0:
+		temp = 1.0
+	return acos( temp ) * (180.0 / pi)
+
+
+def angles_between_anglesets(angleset1, angleset2):
+	"""
+	  It returns list of angles describing differences between the given anglesets (rotations of anglesets don't matter).
+	  The function works as follow:
+	  1. use the rotation_between_anglesets function to find the transformation between the anglesets
+	  2. apply the transformation to the first angleset (to fit it into the second angleset)
+	  3. calculate angles between corresponding projections directions from the anglesets 
+	  INPUT: each of the parameters should be a list of pairs [phi, theta] (additional parameters (pdi, shifts) don't influence on the results)
+	  OUTPUT: list of floats - angles in degrees (the n-th element of the list equals the angle between n-th projections directions from the anglesets)
+	"""
+	from EMAN2 import Transform
+	rot = rotation_between_anglesets(angleset1, angleset2)
+	angles = []
+	angle_errors = []
+	for i in xrange(len(angleset1)):
+		prj = angleset1[i]
+		T1 = Transform({"type":"spider","phi":prj[0],"theta":prj[1],"psi":prj[2],"tx":0.0,"ty":0.0,"tz":0.0,"mirror":0,"scale":1.0})
+		T2 = Transform({"type":"spider","phi":rot[0],"theta":rot[1],"psi":rot[2],"tx":0.0,"ty":0.0,"tz":0.0,"mirror":0,"scale":1.0})
+		T = T1*T2
+		phi = T.get_params("spider")["phi"]
+		theta = T.get_params("spider")["theta"]
+		psi = T.get_params("spider")["psi"]
+		angles.append([phi, theta, psi])
+		angle_errors.append( angle_between_projections_directions(angles[i], angleset2[i]) )
+	return angle_errors
+
+
 def get_pixel_size(img):
 	"""
 	  Retrieve pixel size from the header.
