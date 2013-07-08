@@ -112,7 +112,7 @@ def main():
 
 	from morphology import cter
 	global_def.BATCH = True
-	cter(stack, out1, out2, options.indir, options.nameroot, options.nx, f_start=options.f_start, f_stop=options.f_stop, voltage=300.0, Pixel_size=options.apix, Cs = options.Cs, wgh=options.ac, kboot=options.kboot, MPI=options.MPI, DEBug = options.debug, overlap_x = options.overlap_x, overlap_y = options.overlap_y, edge_x = options.edge_x, edge_y = options.edge_y, guimic=None)
+	cter(stack, out1, out2, options.indir, options.nameroot, options.nx, f_start=options.f_start, f_stop=options.f_stop, voltage=options.voltage, Pixel_size=options.apix, Cs = options.Cs, wgh=options.ac, kboot=options.kboot, MPI=options.MPI, DEBug = options.debug, overlap_x = options.overlap_x, overlap_y = options.overlap_y, edge_x = options.edge_x, edge_y = options.edge_y, guimic=None)
 	global_def.BATCH = False
 
 	if options.MPI:
