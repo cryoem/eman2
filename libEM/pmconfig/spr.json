@@ -208,37 +208,6 @@
         "CHILDREN": []
       },
       {
-        "ICON": "refine",
-        "TABLE": "EMRefineTable(withmodal=False,multiselect=False)",
-        "NAME": "Frealign",
-        "CHILDREN": [
-          {
-            "ICON": "refine",
-            "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2refinetofrealign",
-            "PROGRAM": "e2refinetofrealign.py",
-            "NAME": "FreAlign Refinement - e2refinetofrealign",
-	    "NOTELEVEL": "1",
-            "CHILDREN": []
-          },
-          {
-            "ICON": "refine",
-            "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2runfrealign",
-            "PROGRAM": "e2runfrealign.py",
-            "NAME": "Run e2runfrealign",
-	    "NOTELEVEL": "1",
-            "CHILDREN": []
-          },
-          {
-            "ICON": "refine",
-            "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2refinefromfrealign",
-            "PROGRAM": "e2refinefromfrealign.py",
-            "NAME": "Run e2refinefromfrealign",
-	    "NOTELEVEL": "1",
-            "CHILDREN": []
-          }
-        ]
-      },
-      {
 	"ICON": "refine",
 	"PROGRAM": "e2refinetorelion3d.py",
         "WIZARD":"/lib/pmconfig/relion3d.json",
