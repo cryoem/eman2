@@ -22224,17 +22224,17 @@ static std::vector<int> shuffled_range(int first, int last)
 	return v;
 }
 
-bool Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector<EMData*> refproj, vector<EMData*> rotproj
+int Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector<EMData*> refproj, vector<EMData*> rotproj
 		, vector<float> dp_dphi_rise_delta, vector<int> nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc
 		, bool FindPsi, float psi_max, vector<EMData*> crefim, vector<int> numr, int maxrin, string mode, int cnx, int cny)
 {
 	if (dp_dphi_rise_delta.size() < 4) {
 		printf("Not enough parameters (dp_dphi_rise_delta)");
-		return false;
+		return -1;
 	}
 	if (nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc.size() < 9) {
 		printf("Not enough parameters (nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc)");
-		return false;
+		return -1;
 	}
 	float dpsi;
 	//float dp    = dp_dphi_rise_delta[0];
@@ -22293,6 +22293,7 @@ bool Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
 		tempidir[0] = 1;
 		tempidir[1] = -1;
 	}
+	int blah = 0;
 	int idir;
 	for (int ind_idir = 0; ind_idir < 2; ++ind_idir) {
 		idir = tempidir[ind_idir];
@@ -22338,6 +22339,7 @@ bool Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
 					std::vector<int> tempupdown = shuffled_range(0,1);
 					for (int ind_updown = 0; ind_updown < 2; ++ind_updown) {
 						int updown = tempupdown[ind_updown];
+						++blah;
 						if ( updown == 0 ) {
 							// Straight
 							for ( int im = 1; im < ndata; ++im) {                                                                             //#  predicted locations
@@ -22458,7 +22460,7 @@ bool Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
 		}
 	}
 	// if got here, it did not find anything better and should return
-	return false;
+	return -1;
 label_constrained_helix_after_loops:
 
 	// if found better should end up here
@@ -22536,7 +22538,7 @@ label_constrained_helix_after_loops:
 		Transform t(t_params);
 		data[im]->set_attr("xform.projection", &t);
 	}
-	return true;
+	return blah;
 }
 
 void Util::constrained_helix_test( vector<EMData*> data, vector<EMData*> fdata, vector<EMData*> refproj, vector<EMData*> rotproj
