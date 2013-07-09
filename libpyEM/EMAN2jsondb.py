@@ -70,7 +70,7 @@ it is not recommended due to inefficiency, and making files which are difficult 
 def js_close_dict(url):
 	"""This will free some resources associated with the database. Not associated with closing a file pointer at present."""
 
-	if url[-5:]!=".jsos" :
+	if url[-5:]!=".json" :
 		raise Exception,"JSON databases must have .json extension"
 
 	ddb=JSDict.get_db(url)
