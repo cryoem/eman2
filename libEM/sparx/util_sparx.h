@@ -1069,7 +1069,7 @@ public:
 	 *  It allows to omit problem with passing Transform object through C++/Python layer (It causes memory leak). */
 	static Dict get_transform_params(EMData* image, string xform, string convention);
 
-	static void constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector<EMData*> refproj, vector<EMData*> rotproj
+	static bool constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector<EMData*> refproj, vector<EMData*> rotproj
 			, vector<float> dp_dphi_rise_delta, vector<int> nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc
 			, bool FindPsi, float psi_max, vector<EMData*> crefim, vector<int> numr, int maxrin, string mode, int cnx, int cny);
 	static void constrained_helix_test( vector<EMData*> data, vector<EMData*> fdata, vector<EMData*> refproj, vector<EMData*> rotproj
