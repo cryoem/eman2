@@ -386,11 +386,18 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 					if (dsx==1) t=image_data[l];
 					else {						// This block does local pixel averaging for nicer reduced views
 						t=0;
+						
+						if ((l+dsx+dsy) > lmax) {
+							break;
+						}
+						
 						for (int iii=0; iii<dsx; iii++) {
 							for (int jjj=0; jjj<dsy; jjj+=nx) {
 								t+=image_data[l+iii+jjj];
 							}
 						}
+						
+						
 						t/=dsx*(dsy/nx);
 					}
 
@@ -427,6 +434,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 					if (addi<=1) t = image_data[l];
 					else {						// This block does local pixel averaging for nicer reduced views
 						t=0;
+						
 						for (int jjj=0; jjj<addj; jjj++) {
 							for (int iii=0; iii<addi; iii++) {
 								t+=image_data[l+iii+jjj*nx];
@@ -693,6 +701,11 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 					if (dsx==1) t=image_data[l];
 					else {						// This block does local pixel averaging for nicer reduced views
 						t=0;
+						
+						if ((l+dsx+dsy) > lmax) {
+							break;
+						}
+						
 						for (int iii=0; iii<dsx; iii++) {
 							for (int jjj=0; jjj<dsy; jjj+=nx) {
 								t+=image_data[l+iii+jjj];
