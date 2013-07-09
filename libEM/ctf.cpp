@@ -573,7 +573,7 @@ void EMAN2Ctf::from_dict(const Dict & dict)
 	background = dict["background"];
 //	printf("bg\n");
 	snr = dict["snr"];
-	printf("done\n");
+//	printf("done\n");
 }
 
 Dict EMAN2Ctf::to_dict() const
