@@ -563,7 +563,7 @@ JSDicts are open at one time."""
 		cls.lock.acquire()
 
 		if not isinstance(path,str) : raise Exception,"Must specify path to open JSONDB"
-		if url[-5:]!=".json" :
+		if path[-5:]!=".json" :
 			raise Exception,"JSON databases must have .json extension ('{}')".format(url)
 
 		try: normpath=os.path.abspath(path)
