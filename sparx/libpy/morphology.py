@@ -1416,20 +1416,20 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 		nameroot : Prefix of micrographs to be processed.
 	    nx       : Size of window to use (should be slightly larger than particle box size)
 	    
-	    guimic	 : 
+	    guimic	 :
 	'''
-	from EMAN2 import periodogram
-	from applications import MPI_start_end
-	from utilities import read_text_file, write_text_file, get_im, model_blank, model_circle, amoeba, generate_ctf
-	from sys import exit
+	from   EMAN2 import periodogram
+	from   applications import MPI_start_end
+	from   utilities import read_text_file, write_text_file, get_im, model_blank, model_circle, amoeba, generate_ctf
+	from   sys import exit
 	import numpy as np
 	import os
-	from mpi  import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier
-	from fundamentals import tilemic, rot_avg_table
-	from morphology import threshold, bracket_original, bracket_def, bracket, goldsearch_astigmatism, defocus_baseline_fit, simpw1d, movingaverage, localvariance, defocusgett, ctf_222, defocus_guessn, defocusgett_, defocusget_from_crf, make_real, fastigmatism, fastigmatism1, fastigmatism2, fastigmatism3, simctf, simctf2, simctf2out, fupw,ctf2_rimg
-	from alignment import Numrinit, ringwe
-	from statistics import table_stat
-	from pixel_error import angle_ave
+	from   mpi  import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier
+	from   fundamentals import tilemic, rot_avg_table
+	from   morphology import threshold, bracket_original, bracket_def, bracket, goldsearch_astigmatism, defocus_baseline_fit, simpw1d, movingaverage, localvariance, defocusgett, ctf_222, defocus_guessn, defocusgett_, defocusget_from_crf, make_real, fastigmatism, fastigmatism1, fastigmatism2, fastigmatism3, simctf, simctf2, simctf2out, fupw,ctf2_rimg
+	from   alignment import Numrinit, ringwe
+	from   statistics import table_stat
+	from   pixel_error import angle_ave
 	
 	# Case of a single micrograph from gui mode
 	if guimic != None:
@@ -1520,7 +1520,7 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 			sroo = (sroo-aroo**2/nimi)/nimi
 			aroo /= nimi
 			roo  /= nimi
-			qa /= nimi
+			qa   /= nimi
 			
 			if f_start < 0:
 			
@@ -1736,7 +1736,6 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 			else:
 				print "  Number of rejects  ",len(reject)
 			for i in xrange(len(reject)-1,-1,-1):
-				print i
 				del adefocus[i]
 				del aamplitu[i]
 				del aangle[i]
@@ -1753,14 +1752,56 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 			bd1,bd2,bd3,bd4 = table_stat(aamplitu)
 			cd1,cd2 = angle_ave(aangle)
 			temp = 0.0
+			stdavad1 = np.sqrt(kboot*max(0.0,ad2))
+			stdavbd1 = np.sqrt(kboot*max(0.0,bd2))
+			cd2 *= np.sqrt(kboot)
+			#  Estimate the point at which (sum_errordz ctf_1(dz+errordz))^2 falls to 0.5
+			import random as rqt
+
+			supe = model_blank(nx,nx)
+			niter=1000
+			for it in xrange(niter):
+				Util.add_img(supe, Util.ctf_rimg(nx, nx, 1, ad1+rqt.gauss(0.0,stdavad1), Cs, voltage, Pixel_size, 0.0, wgh, bd1 + rqt.gauss(0.0,stdavbd1), cd1 + rqt.gauss(0.0,cd2), 1))
+
+			supe /= niter
+			pwrot2 = rotavg_ctf(supe, ad1, Cs, voltage, Pixel_size, 0.0, wgh, bd1, cd1)
+			for i in xrange(len(pwrot2)):  pwrot2[i] = pwrot2[i]**2
+
+			ibec = 0
+			for it in xrange(len(pwrot2)-1,0,-1):
+				if pwrot2[it]>0.5 :
+					ibec = it
+					break
+			from morphology import ctf_1d
+			ct = generate_ctf([ad1, Cs, voltage, Pixel_size, temp, wgh,0.0,0.0])
+			cq = ctf_1d(nx, ct)
+			ni = min(len(cq),nx//2)
+
+			supe = [0.0]*ni
+			niter=1000
+			for i in xrange(niter):
+				cq = generate_ctf([ad1+rqt.gauss(0.0,stdavad1),Cs, voltage, Pixel_size, 0.0, wgh,0.0,0.0])
+				ci = ctf_1d(nx, cq)[:ni]
+				for l in xrange(ni):  supe[l] +=ci[l]
+
+			for l in xrange(ni):  supe[l] = (supe[l]/niter)**2
+
+			ib1 = 0
+			for it in xrange(len(supe)-1,0,-1):
+				if supe[it]>0.5 :
+					ib1 = it
+					break
+			ibec = ibec/(Pixel_size*nx)
+			ib1  = ib1/(Pixel_size*nx)
+			
 			if stack == None:
-				print  namics[ifi],ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1, sqrt(max(0.0,ad2)),sqrt(max(0.0,bd2)),cd2 
+				print  namics[ifi], ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec
 			else:
-				print  ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1, sqrt(max(0.0,ad2)),sqrt(max(0.0,bd2)),cd2 
+				print               ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec
 			if stack == None:
-				totresi.append( [ namics[ifi],ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1, sqrt(max(0.0,ad2)),sqrt(max(0.0,bd2)),cd2 ])
+				totresi.append( [ namics[ifi], ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec  ])
 			else:
-				totresi.append( [ 0,ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1, sqrt(max(0.0,ad2)),sqrt(max(0.0,bd2)),cd2 ])
+				totresi.append( [ 0, ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec  ])
 			#if ifi == 4 : break
 			"""
 			for i in xrange(len(ssubroo)):
@@ -1782,11 +1823,9 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 			fou = os.path.join(outpwrot,  "rotinf%04d.txt"%ifi)
 			#  #1 - rotational averages without astigmatism, #2 - with astigmatism
 			write_text_file([range(len(crot1)),freq,pwrot1,crot1, pwrot2,crot2],fou)
-			
-			if stack == None:
-				cmd = "echo "+"    "+namics[ifi]+"  >>  "+fou
-			else:
-				cmd = "echo "+"    "+"  >>  "+fou
+
+			if stack == None:     cmd = "echo "+"    "+namics[ifi]+"  >>  "+fou
+			else:                 cmd = "echo "+"    "+"  >>  "+fou
 			os.system(cmd)
 		#except:
 			#print  namics[ifi],"     FAILED"
@@ -1799,12 +1838,12 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 		for k in xrange(1,len(totresi[i])): outf.write("  %12.5g"%totresi[i][k])
 		outf.write("  %s\n"%totresi[i][0])
 	outf.close()
-	
+
 	if guimic != None:
 		return totresi[0][1], totresi[0][7], totresi[0][8], totresi[0][9], totresi[0][10], totresi[0][11]
 		
 ########################################
-# functions used by ctfer
+# functions used by cter
 # Later on make sure these functions don't conflict with those used
 # in the cross resolution program getastcrfNOE.py
 ########################################
@@ -2186,8 +2225,8 @@ def defocusget_from_crf(roo, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=10.,
 		2. Based one extracted ctf imprints, perform exhaustive defocus searching to get 
 		   defocus which matches the extracted CTF imprints 
 	"""
-	from utilities  import generate_ctf, ctf_1d
-	from morphology import defocus_env_baseline_fit, defocus_guess, defocus_guess1
+	from utilities  import generate_ctf
+	from morphology import defocus_env_baseline_fit, defocus_guess, defocus_guess1, ctf_1d
 	
 	#print "CTF params:", voltage, Pixel_size, Cs, wgh, f_start, f_stop, round_off, nr1, nr2, parent
 	if f_start == 0 : 	i_start = 0

@@ -86,7 +86,7 @@ def angle_ave(angle1):
 	It also computes a measure of dispersion (incorrect).
 	'''
 	from math import cos, sin, pi, atan2, degrees, radians, sqrt
-	
+
 	nima = len(angle1)
 
 	cosi = 0.0
@@ -104,7 +104,7 @@ def angle_ave(angle1):
 		elif qt < -180.0:   qt += 360.
 		stdv += qt*qt
 	stdv = sqrt(stdv/nima)
-	
+
 	return alphai, stdv
 
 
