@@ -53,13 +53,8 @@ from   random  import seed
 rand_seed = Util.get_randnum_seed()
 seed(rand_seed)
 
-print "RANDSEED: ", rand_seed
-
 rand_seed = Util.get_randnum_seed()
 Util.set_randnum_seed(rand_seed)
-
-print "RANDSEED: ", rand_seed
-
 
 # BATCH flag should generally be set to False, which indicates that the output should be both displayed on the screen and written to the log file.
 # However, the user may change it to True (either here or in other programs) so that the output is only written to the log file.
