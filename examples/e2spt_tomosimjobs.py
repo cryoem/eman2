@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus Galaz-Montoya, 2012. Last update: 6/2013.
+# Author: Jesus Galaz-Montoya, 2012. Last update: 7/8/2013.
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -182,6 +182,10 @@ def main():
 	parser.add_argument("--fitwedgepost", action="store_true", help="Fit the missing wedge AFTER preprocessing the subvolumes, not before, IF using the fsc.tomo comparator for --aligncmp or --raligncmp.", default=False)
 
 
+	parser.add_argument("--wedgeangle",type=float,help="Missing wedge angle",default=59.0)
+	parser.add_argument("--wedgei",type=float,help="Missingwedge begining", default=0.1)
+	parser.add_argument("--wedgef",type=float,help="Missingwedge ending", default=0.9)
+
 	(options, args) = parser.parse_args()	
 	
 	logger = E2init(sys.argv, options.ppid)
@@ -268,6 +272,7 @@ def makepath(options,rootpath):
 
 	if options.path not in files:
 		os.system('mkdir ' + options.path)
+		
 	return(options)
 
 
@@ -384,10 +389,10 @@ def simloop(options,rootpath):
 							themodel=ret[1]
 							
 						
-						print "Samestackformany is", samestackformany
-						print "Therefore, ret is", ret
-						print "And the stack thestack AFTER sending is", thestack
-						print "$$$$$$$$$$$$$$$$$$"
+						#print "Samestackformany is", samestackformany
+						#print "Therefore, ret is", ret
+						#print "And the stack thestack AFTER sending is", thestack
+						#print "$$$$$$$$$$$$$$$$$$"
 							
 						samestackformany+=1
 				else:
@@ -402,123 +407,10 @@ def simloop(options,rootpath):
 
 		tiltrange += tiltrangech
 
-	if nrefs > 1:
-		for i in range(nrefs):
 			
-			if options.comparators:
-				comps = options.comparators.split(',')
-				for comp in comps:
-					print "Comparator is", comp
-					print "Whereas originalpath is", originalpath
-					options.aligncmp = comp
-					options.raligncmp = comp
-					compID = comp.split(':')[0].replace('.','P')
-					if 'fsc.tomo' in comp:
-						compID = comp.split(':')[0].replace('.','P') +  comp.split(':')[1].replace('sigmas=','Sigmas').replace('.','P')
-						
-					options.path = originalpath + '_' + compID
-					
-					modname = 'model' + str(i).zfill(5)
-					#print "\nI will make this moddir", modname
-					cmdd='cd ' + options.path + ' && mkdir ' + modname + ' && mv *' + modname + '* ' + modname
-					#print "\nBy executing this command", cmdd
-					os.system(cmdd)
-			
-			else:
-				modname = 'model' + str(i).zfill(5)
-				#print "\nI will make this moddir", modname
-				cmdd='cd ' + options.path + ' && mkdir ' + modname + ' && mv *' + modname + '* ' + modname
-				#print "\nBy executing this command", cmdd
-				os.system(cmdd)
-
-		for i in range(nrefs):
-			
-			if options.comparators:
-				comps = options.comparators.split(',')
-				for comp in comps:
-					print "Comparator is", comp
-					print "Whereas originalpath is", originalpath
-					options.aligncmp = comp
-					options.raligncmp = comp
-					compID = comp.split(':')[0].replace('.','P')
-					
-					if 'fsc.tomo' in comp:
-						compID = comp.split(':')[0].replace('.','P') +  comp.split(':')[1].replace('sigmas=','Sigmas').replace('.','P')
-					
-					options.path = originalpath + '_' + compID
-					
-				modname = 'model' + str(i).zfill(5)
-
-				resultsdir = options.path + '/' + modname + '/results_ali_error_' + modname
-				if rootpath not in resultsdir:
-					resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
-			
-				#print "\n\n\n\n*******************\nResults dir is\n", resultsdir
-
-				os.system('mkdir ' +  resultsdir + ' && cd ' + options.path + '/' + modname + ' && mv *error.txt ' + resultsdir)
-			else:			
-			
-				modname = 'model' + str(i).zfill(5)
-
-				resultsdir = options.path + '/' + modname + '/results_ali_error_' + modname
-				if rootpath not in resultsdir:
-					resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
-			
-				#print "\n\n\n\n*******************\nResults dir is\n", resultsdir
-
-				os.system('mkdir ' +  resultsdir + ' && cd ' + options.path + '/' + modname + ' && mv *error.txt ' + resultsdir)
-
-	else:
-		
-		if options.comparators:
-			comps = options.comparators.split(',')
-			for comp in comps:
-				print "Comparator is", comp
-				print "Whereas originalpath is", originalpath
-				options.aligncmp = comp
-				options.raligncmp = comp
-				compID = comp.split(':')[0].replace('.','P')
-				
-				if 'fsc.tomo' in comp:
-					compID = comp.split(':')[0].replace('.','P') +  comp.split(':')[1].replace('sigmas=','Sigmas').replace('.','P')
-				
-				options.path = originalpath + '_' + compID
-		
-				print "\n\n***************\nThere was only one reference\n************\n\n"
-		
-				resultsdir = options.path + '/results_ali_error'
-		
-				#print "\nthe results dir is LINE 409", resultsdir
-				#print "\nWhile optionspath is LINE 410", options.path
-		
-				if rootpath not in resultsdir:
-					resultsdir = rootpath + '/' + options.path + '/results_ali_error'
-		
-				os.system('mkdir ' + resultsdir + ' && cd ' + options.path + ' && mv *error.txt ' + resultsdir)	
-		
-		else:
-			print "\n\n***************\nThere was only one reference\n************\n\n"
-		
-			resultsdir = options.path + '/results_ali_error'
-		
-			#print "\nthe results dir is LINE 409", resultsdir
-			#print "\nWhile optionspath is LINE 410", options.path
-		
-			if rootpath not in resultsdir:
-				resultsdir = rootpath + '/' + options.path + '/results_ali_error'
-		
-			os.system('mkdir ' + resultsdir + ' && cd ' + options.path + ' && mv *error.txt ' + resultsdir)
-	
-	
 	"""
-	resultsdir = options.path + '/results_ali_error' 
-	if rootpath not in resultsdir:
-		resultsdir = rootpath + '/' + options.path + '/results_ali_error' 	
+	After running simulation and alignment commands, the results need to be compiled, parsed/analyzed and plotted
 	"""
-	#print "\before looping ver references"
-	#print "\nthe results dir is LINE 422", resultsdir
-	#print "\nWhile optionspath is LINE 423", options.path
-	#print "\n and rootpath is", rootpath
 	
 	resultsdir=''	
 	
@@ -539,16 +431,16 @@ def simloop(options,rootpath):
 				options.path = originalpath + '_' + compID
 				
 				if nrefs > 1:
-					modname = 'model' + str(i).zfill(5)
+					modname = 'model' + str(i).zfill(len(str(nrefs)))
 			
-					resultsdir = options.path + '/' + modname + '/results_ali_error_' + modname
+					resultsdir = options.path + '/' + modname + '/results_' + modname
 					if rootpath not in resultsdir:
-						resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
+						resultsdir = rootpath + '/' + resultsdir
 		
 				else:
-					resultsdir = options.path + '/results_ali_error' 
+					resultsdir = options.path + '/results' 
 					if rootpath not in resultsdir:
-						resultsdir = rootpath + '/' + options.path + '/results_ali_error' 
+						resultsdir = rootpath + '/' + resultsdir 
 		
 				resfiles = []
 				findir = os.listdir(resultsdir)
@@ -562,16 +454,16 @@ def simloop(options,rootpath):
 					
 		else:
 			if nrefs > 1:
-				modname = 'model' + str(i).zfill(5)
-			
-				resultsdir = options.path + '/' + modname + '/results_ali_error_' + modname
+				modname = 'model' +  str(i).zfill(len(str(nrefs)))
+				
+				resultsdir = options.path + '/' + modname + '/results_' + modname
 				if rootpath not in resultsdir:
-					resultsdir = rootpath + '/' + options.path + '/' + modname + '/results_ali_error_' + modname
+					resultsdir = rootpath + '/' + resultsdir
 		
 			else:
-				resultsdir = options.path + '/results_ali_error' 
+				resultsdir = options.path + '/results' 
 				if rootpath not in resultsdir:
-					resultsdir = rootpath + '/' + options.path + '/results_ali_error' 
+					resultsdir = rootpath + '/' + resultsdir
 		
 			resfiles = []
 			findir = os.listdir(resultsdir)
@@ -590,6 +482,11 @@ def simloop(options,rootpath):
 def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,samestackformany=0,thesestacks=[],thesemodels=[]):
 	thisstack=''
 	thissimodel=''
+	
+	modeldir = options.path
+	resultsdir = options.path + '/results'
+	inputdata = options.input
+	
 	for d in range(nrefs):
 		modeltag = ''
 		#subpath = rootpath + '/' + options.path + '/' +'TR' + str(tiltrange).zfill(5) + '_TS' + tiltsteptag + '_SNR' + str(snr).zfill(5)
@@ -599,24 +496,43 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 		if rootpath not in subpath:
 			subpath = rootpath + '/' + options.path + '/' +'TR' + tiltrangetag + '_NS' + nslicestag + '_SNR' + snrtag
 		
-		"%.2f"
-	
-		inputdata = options.input
-
+		subdirs = os.listdir(options.path)
+		
 		if nrefs > 1:
 			modeltag = 'model' + str(d).zfill(len(str(nrefs)))
-			subpath += '_' + modeltag
-
-			model = EMData(options.input,d)
+			#subpath += '_' + modeltag
 			
-			newname = options.path + '/' + inputdata.split('/')[-1].replace('.hdf','_' + modeltag + '.hdf')
+			
+			modeldir = options.path + '/' + modeltag
+			
+			if rootpath not in modeldir:
+				modeldir = rootpath + '/' + modeldir
+		
+			if modeltag not in subdirs:
+				os.system('mkdir ' + modeldir)
+			
+			resultsdir = modeldir + '/results_' + modeltag
+				
+			subpath = modeldir + '/' + 'TR' + tiltrangetag + '_NS' + nslicestag + '_SNR' + snrtag #CHANGED
+			
+			#os.system('mkdir ' + subpath)
+			
+			print "I've just made this subpath for this specific model and conditions", subpath
+			
+			model = EMData(options.input,d)
 
-			if rootpath not in newname:
-				newname = rootpath + '/' + options.path + '/' + inputdata.split('/')[-1].replace('.hdf','_' + modeltag + '.hdf')
+			newname = modeldir + '/' + inputdata.split('/')[-1].replace('.hdf','_' + modeltag + '.hdf') #CHANGED
+			
 			model.write_image(newname,0)
-
+			inputdata = newname
+			print "\nModel is here", newname
+			print '\n'
+			
 			#inputdata = newname.split('/')[-1] #UPDATE
-
+		
+		if resultsdir not in subdirs:
+			os.system('mkdir ' + resultsdir)
+		
 		subtomos =  subpath.split('/')[-1] + '.hdf'
 		
 		cmd = ''
@@ -627,6 +543,9 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			#print "\n\n\n@@@@@@@@@@@@@@@@@@\nstackformany is", samestackformany
 			#print "Therefore I WILL run a job for e2spt_simulation"
 			#print "@@@@@@@@@@@@\n\n"
+			
+			print "\nSimulated particles are here", subtomos
+			print '\n'
 			
 			jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --nslices=' + str(nslices) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrinksim) + ' --finalboxsize=' + str(options.finalboxsize) + ' --verbose=' + str(options.verbose)
 		
@@ -641,7 +560,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 
 			jobcmd += ' --path=' + subpath.split('/')[-1]				
 
-			cmd = 'cd ' + options.path + ' && ' + jobcmd
+			cmd = 'cd ' + modeldir + ' && ' + jobcmd
 
 		elif samestackformany > 0:
 			print "Thesemodels when stackformany more than 0, and its type, are", thesemodels, type(thesemodels)
@@ -659,9 +578,11 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			print "TO", simmodel 
 			print "CCCCCCCCCCCCCn\n"
 
-		resultsfiles=[]
+		#resultsfiles=[]
 
 		if options.testalignment:
+			print "\n\n$$$$$$$$$\nI will test alignment and for that will cd into SUBPATH", subpath
+			print "$$$$$$$$\n\n"
 
 			cmd = cmd + ' && cd ' + subpath
 
@@ -672,17 +593,14 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			output=subtomos.replace('.hdf', '_avg.hdf')
 			#print "\n\n$$$$$$$$$$$$$$$$$$$$$$\nRef name is\n$$$$$$$$$$$$$$$$$$$\n", ref
 
-			#print "\n\%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%noutput name is\n", output
+			print "\n\%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%noutput name is\n", output
 
 			alipath1=output.split('/')[-1].replace('_avg.hdf','_ali')
-			alipath2= subpath + '/' + output.replace('_avg.hdf','_ali')
+			#alipath2= subpath + '/' + output.replace('_avg.hdf','_ali')
+			alipath2 = subpath + '/' + alipath1
 			#print "\n##################################\nAlipath1 for results will be\n", alipath1
 			#print "\n##################################\nAlipath2 for results will be\n", alipath2
 			
-			
-			#parser.add_argument("--wedgeangle",type=float,help="Missing wedge angle",default=60.0)
-			#parser.add_argument("--wedgei",type=float,help="Missingwedge begining", default=0.05)
-			#parser.add_argument("--wedgef",type=float,help="Missingwedge ending", default=0.5)
 			
 			alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --npeakstorefine=4 -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=" + str(options.verbose) + " --parallel=" + options.parallel + " --ralign=refine_3d_grid:delta=3:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=" + str(options.shrinkalign) + " --shrinkrefine=" + str(options.shrinkalign) +" --savesteps --saveali --normproc=normalize"  + ' --iter=' + str(options.iter)
 
@@ -691,7 +609,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 
 			if 'fsc.tomo' in options.aligncmp or 'fsc.tomo' in options.raligncmp:
 				#print "YOU are selecting FSC.TOMO, therefore, wedgeangle needs to be specified", tiltrange
-				alicmd += ' --wedgeangle=' + str(tiltrange)
+				alicmd += ' --wedgeangle=' + str(tiltrange)  + ' --wedgei=' + str(options.wedgei) + ' --wedgef=' + str(options.wedgef)
 				
 			if options.fitwedgepost:
 				alicmd += ' --fitwedgepost'
@@ -702,17 +620,15 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 
 			extractcmd = " && cd " + alipath2 + " && e2proc3d.py bdb:class_ptcl " + aliptcls
 
-			resultsfile=aliptcls.replace('_ptcls_ali.hdf','_ali_error.txt')
+			resultsfile = aliptcls.replace('_ptcls_ali.hdf','_ali_error.txt')
 			
 			#print "\n@@@@@@@\n@@@@@@@\n@@@@@@@@@\n@@@@@@@ Results file is %s \n@@@@@@@\n@@@@@@@\n@@@@@@@@@\n@@@@@@@" %(resultsfile)
 
 			solutioncmd = " && e2spt_transformdistance.py --input=" + aliptcls + ' --output=' + resultsfile
 
-			rfilecmd =  ' && mv ' + resultsfile + ' ' + options.path
+			rfilecmd =  ' && mv ' + resultsfile + ' ' + resultsdir
 			if rootpath not in rfilecmd:
-				rfilecmd =  ' && mv ' + resultsfile + ' ' +  rootpath + '/' + options.path
-
-				
+				rfilecmd =  ' && mv ' + resultsfile + ' ' +  rootpath + '/' + resultsdir
 
 			cmd = cmd + alicmd + extractcmd + solutioncmd + rfilecmd
 			
@@ -801,31 +717,31 @@ def resfiles_analysis(options,resfiles,resultsdir,modelnum=0):
 	
 	if len(set(snrs)) == 1: 
 		if len(set(trs)) == 1:
-			angfilename = resultsdir+'/' + resultsdir.split('/')[-2] + '_angular_error_varNS_model' + str(modelnum).zfill(2) + '.txt'
-			oneD_plot(tss,ang_errors,angfilename.replace('.txt','.png'),'tilt step')
+			angfilename = resultsdir+'/' + resultsdir.split('/')[-2] + '_angular_error_varNS.txt'
+			oneD_plot(tss,ang_errors,angfilename.replace('.txt','.png'),'tilt step','angular error')
 			writeresultsfile(tss,ang_errors,angfilename)
 			
 			transfilename = angfilename.replace('angular','translational')
-			oneD_plot(tss,trans_errors,transfilename.replace('.txt','.png'),'tilt step')
+			oneD_plot(tss,trans_errors,transfilename.replace('.txt','.png'),'tilt step','translational error')
 			writeresultsfile(tss,trans_errors,transfilename)
 			
 		if len(set(tss)) == 1:
-			angfilename = resultsdir+'/' + resultsdir.split('/')[-2] + '_angular_error_varTR_model' + str(modelnum).zfill(2) + '.txt'
-			oneD_plot(trs,ang_errors,angfilename.replace('.txt','.png'),'tilt range')
+			angfilename = resultsdir+'/' + resultsdir.split('/')[-2] + '_angular_error_varTR.txt'
+			oneD_plot(trs,ang_errors,angfilename.replace('.txt','.png'),'tilt range','angular error')
 			writeresultsfile(trs,ang_errors,angfilename)
 			
 			transfilename = angfilename.replace('angular','translational')
-			oneD_plot(trs,trans_errors,transfilename.replace('.txt','.png'),'tilt range')
+			oneD_plot(trs,trans_errors,transfilename.replace('.txt','.png'),'tilt range','translational error')
 			writeresultsfile(trs,trans_errors,transfilename)
 			
 	if len(set(trs)) == 1: 
 		if len(set(tss)) == 1:
-			angfilename = resultsdir+'/' + resultsdir.split('/')[-2] + '_angular_error_varSNR_model' + str(modelnum).zfill(2) + '.txt'
-			oneD_plot(snrs,ang_errors,angfilename.replace('.txt','.png'),'noise level')
+			angfilename = resultsdir+'/' + resultsdir.split('/')[-2] + '_angular_error_varSNR.txt'
+			oneD_plot(snrs,ang_errors,angfilename.replace('.txt','.png'),'noise level','angular error')
 			writeresultsfile(snrs,ang_errors,angfilename)
 			
 			transfilename = angfilename.replace('angular','translational')
-			oneD_plot(snrs,trans_errors,transfilename.replace('.txt','.png'),'noise level')
+			oneD_plot(snrs,trans_errors,transfilename.replace('.txt','.png'),'noise level','translational error')
 			writeresultsfile(snrs,trans_errors,transfilename)
 			
 	if len(set(snrs)) == 1 and len(set(trs)) > 1 and len(set(tss)) > 1:
@@ -902,12 +818,16 @@ def writeresultsfile(x,y,filename):
 	return()
 
 
-def oneD_plot(points,errors,name,concept):
+def oneD_plot(points,errors,name,xlabel,ylabel):
 	print "INSIDE oneD plotter"
-	title=name.split('/')[-1].replace('.png','').replace('_',' ')
+	titlee=name.split('/')[-1].replace('.png','').replace('_',' ')
 	#plt.title(title)
-	plt.xlabel(concept,fontweight='bold')
-	plt.ylabel(title,fontweight='bold')
+	
+	fig = plt.figure()
+	fig.suptitle(titlee)
+	
+	plt.xlabel(xlabel,fontweight='bold')
+	plt.ylabel(ylabel,fontweight='bold')
 	#plt.xlim([min(points)-min(points)*0.1,max(points)+max(points)*0.1])
 	plt.xlim( [min(points),max(points)+max(points)*0.1] )
 	plt.ylim( [0,max(errors)+max(errors)*0.1] )
