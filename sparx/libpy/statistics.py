@@ -10452,4 +10452,23 @@ def fit_ctf(crossresolution, ctf_params, rangedef = -1.0, i1 = 0, i2 = 0, chisqu
 			best_def = defi
 			qt = disc
 	return best_def
-	
+
+def randprojdir(ang, sigma):
+	""" 
+		Randomize projection angles
+		ang - projection directions in rows
+		output - same as ang, but with first two positions (phi, theta) dispersed using gaussian noise with sigma
+	"""
+	import random as rdq
+	l = len(ang[0])
+	aout = []
+	for n in xrange(len(ang)):
+		t = Transform({"type":"spider","phi":ang[n][0],"theta":ang[n][1],"psi":0.0})
+		r = Transform({"type":"spider","phi":rdq.random()*360.0,"theta":abs(rdq.gauss(0.0,sigma)),"psi":0.0})
+		r = r*t
+		d = r.get_params("spider")
+		aout.append([d["phi"],d["theta"]] + [ang[n][k] for k in xrange(2,l)])
+
+	return aout
+
+
