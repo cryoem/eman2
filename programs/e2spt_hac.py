@@ -39,13 +39,20 @@ import sys
 import random
 from random import choice
 from pprint import pprint
+
 from EMAN2jsondb import JSTask,jsonclasses
+
 from operator import itemgetter	
+
+from e2spt_classaverage import sptmakepath
+
 
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog <output> [options]
-
+	
+	This program depends on e2spt_classaverage.py because it imports the preprocessing and alignment functions from it.
+	
 	STILL HEAVILY UNDER DEVELOPMENT.
 	This program produces a final average of a dataset (and mutually exclusive classes of a given size [in terms of a minimum # of particles in each class]),
 	where all particles have been subjected to all vs all alignments and hierarchical ascendent classification.
@@ -116,15 +123,37 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
+	parser.add_argument("--procfinelikecoarse",type=bool,default=True,help="Turn on with --procfinelikecoarse=False, and supply fine alignment parameters, such as --lowpassfine, --highpassfine, etc; to preprocess the particles for FINE alignment differently than for COARSE alignment.")
+	parser.add_argument("--randomizewedge",action="store_true", help="This parameter is EXPERIMENTAL. It randomizes the position of the particles BEFORE alignment, to minimize missing wedge bias and artifacts during symmetric alignment where only a fraction of space is scanned", default=False,)
+
+
+	'''
+	Parameters to compensate for the missing wedge using --cpm=fsc.tomo
+	'''
+	parser.add_argument("--wedgeangle",type=float,help="""Missing wedge angle, calculated as 90 minus the value yo provide, times 2. 
+														For example, --wedgeangle=60 will represent a wedge of size (90-60)*2=60.
+														--wedgeangle=70, results in a narrower wedge of size (90-70)*2=40.
+														In reality, you should enter here the range of your DATA COLLECTION.
+														I.e., if you collected your tiltseries from -60 to 60, enter --wedgeangle=60.""",default=60.0)
+	parser.add_argument("--wedgei",type=float,help="Missingwedge begining (in terms of its 'height' along Z. If you specify 0, the wedge will start right at the origin.", default=0.15)
+	parser.add_argument("--wedgef",type=float,help="Missingwedge ending (in terms of its 'height' along Z. If you specify 1, the wedge will go all the way to the edge of the box.", default=0.9)
+	parser.add_argument("--fitwedgepost", action="store_true", help="Fit the missing wedge AFTER preprocessing the subvolumes, not before, IF using the fsc.tomo comparator for --aligncmp or --raligncmp.", default=False)
+	
+
+
+
+
 	(options, args) = parser.parse_args()
 
 	if options.align: 
 		options.align=parsemodopt(options.align)
+	
 	if options.ralign: 
 		options.ralign=parsemodopt(options.ralign)
 	
 	if options.aligncmp: 
 		options.aligncmp=parsemodopt(options.aligncmp)
+	
 	if options.raligncmp: 
 		options.raligncmp=parsemodopt(options.raligncmp)
 	
@@ -152,60 +181,15 @@ def main():
 	'''
 	Make the directory where to create the database where the results will be stored
 	'''
-	
-	#if options.path and ("/" in options.path or "#" in options.path) :
-	#	print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
-	#	sys.exit(1)
 		
-	#if options.path and options.path[:4].lower()!="bdb:": 
-	#	options.path="bdb:"+options.path
+	options = sptmakepath(options,'spt_hac')
 
-	#if not options.path: 
-	#	#options.path="bdb:"+numbered_path("sptavsa",True)
-	#	options.path = "sptsim_01"
-	
-	
-	if options.path and ("/" in options.path or "#" in options.path) :
-		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
-		sys.exit(1)
-
-	if not options.path: 
-		#options.path="bdb:"+numbered_path("sptavsa",True)
-		options.path = "sptsim_01"
-	
-	files=os.listdir(os.getcwd())
-	print "right before while loop"
-	while options.path in files:
-		print "in while loop, options.path is", options.path
-		#path = options.path
-		if '_' not in options.path:
-			print "I will add the number"
-			options.path = options.path + '_00'
-		else:
-			jobtag=''
-			components=options.path.split('_')
-			if components[-1].isdigit():
-				components[-1] = str(int(components[-1])+1).zfill(2)
-			else:
-				components.append('00')
-						
-			options.path = '_'.join(components)
-			#options.path = path
-			print "The new options.path is", options.path
-
-	if options.path not in files:
-		
-		print "I will make the path", options.path
-		os.system('mkdir ' + options.path)
-	
-	
 	group_ranges=[]
 	data_files = []
 	
 	nptcl = EMUtil.get_image_count(options.input)
 	entirestack = options.input
 	originalpath = options.path
-	
 	
 	logger = E2init(sys.argv,options.ppid)
 
@@ -260,6 +244,8 @@ def main():
 
 			options.input = groupPATH
 		
+		#print "\nTHe len of options is ", len(options)
+		print "\n\nAnd options are", options
 		allvsall(options)
 		if options.exclusive_class_min:
 			exclusive_classes(options)
@@ -337,14 +323,18 @@ def allvsall(options):
 	print "These are path and input received in allvsall", options.path, options.input
 	
 	print "With these many particles in it", EMUtil.get_image_count(options.input)
+	
+	print "\nI will load the header of a particle."
+	
 	hdr = EMData(options.input,0,True)
-	nx = hdr["nx"]
-	ny = hdr["ny"]
-	nz = hdr["nz"]
+	nx = int(hdr["nx"])
+	ny = int(hdr["ny"])
+	nz = int(hdr["nz"])
 	if nx!=ny or ny!=nz :
 		print "ERROR, input volumes are not cubes"
 		sys.exit(1)
 	
+	print "Officialy counting number of particles"
 	nptcl = EMUtil.get_image_count(options.input)
 	if nptcl<3: 
 		print "ERROR: at least 3 particles are required in the input stack for all vs all. Otherwise, to align 2 particles (one to the other or to a model) use e2spt_classaverage.py"
@@ -357,6 +347,7 @@ def allvsall(options):
 											#{particle_id : [EMData,{index1:totalTransform1, index2:totalTransform2...}]} elements
 											#The totalTransform needs to be calculated for each particle after each round, to avoid multiple interpolations
 	
+	print "Starting the loop"
 	for i in range(nptcl):								#In the first round, all the particles in the input stack are "new" and should have an identity transform associated to them
 		a=EMData(options.input,i)
 		totalt=Transform()
@@ -426,6 +417,8 @@ def allvsall(options):
 		
 		allptclsRound = {}							
 		
+		
+		print "\nInitialize parallelism"
 		if options.parallel:							# Initialize parallelism if being used
 			from EMAN2PAR import EMTaskCustomer
 			etc=EMTaskCustomer(options.parallel)
@@ -443,6 +436,7 @@ def allvsall(options):
 		jj=0									#Counter to track the number of comparisons (also the number of tasks to parallelize)
 		roundtag = 'round' + str(k).zfill(fillfactor) + '_'			#The round tag needs to change as the iterations/rounds progress
 		
+		print "\n Start all vs all comparisons"
 		for ptcl1, compare in newptclsmap:
 			for ptcl2 in compare:
 				
@@ -452,8 +446,20 @@ def allvsall(options):
 				#if options.verbose > 2:
 				print "Setting the following comparison: %s vs %s in ALL VS ALL" %(reftag,particletag)
 				
-				task = Align3DTaskAVSA(newstack,newstack, jj, reftag, particletag, ptcl1, ptcl2,"Aligning particle#%s VS particle#%s in iteration %d" % (reftag,particletag,k),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
-				options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
+				
+				
+				
+				
+				
+				
+				
+				#def __init__(self,fixedimagestack,imagestack,comparison, ptcl1, ptcl2, p1n, p2n,label,options,transform):
+				
+				task = Align3DTaskAVSA(newstack,newstack, jj, reftag, particletag, ptcl1, ptcl2,"Aligning particle#%s VS particle#%s in iteration %d" % (reftag,particletag,k),options)
+
+				
+				#task = Align3DTaskAVSA(newstack,newstack, jj, reftag, particletag, ptcl1, ptcl2,"Aligning particle#%s VS particle#%s in iteration %d" % (reftag,particletag,k),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
+				#options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
 				
 				tasks.append(task)
 				
@@ -484,8 +490,11 @@ def allvsall(options):
 					#if options.verbose > 2:
 					print "Setting the following comparison: %s vs %s in ALL VS ALL" %(refkey,particlekey)
 					
-					task = Align3DTaskAVSA(newstack,options.path + '/oldptclstack.hdf',jj , refkey, particlekey, ptcl1, ptcl2,"Aligning particle round#%d_%d VS particle#%s, in iteration %d" % (k,ptcl1,particlekey.split('_')[0] + str(ptcl2),k),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
-					options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
+					#task = Align3DTaskAVSA( newstack, options.path + '/oldptclstack.hdf', jj , refkey, particlekey, ptcl1, ptcl2,"Aligning particle round#%d_%d VS particle#%s, in iteration %d" % (k,ptcl1,particlekey.split('_')[0] + str(ptcl2),k),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
+					#options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
+					
+					task = Align3DTaskAVSA( newstack, options.path + '/oldptclstack.hdf', jj , refkey, particlekey, ptcl1, ptcl2,"Aligning particle round#%d_%d VS particle#%s, in iteration %d" % (k,ptcl1,particlekey.split('_')[0] + str(ptcl2),k),options)
+					
 					
 					tasks.append(task)
 										
@@ -497,6 +506,7 @@ def allvsall(options):
 		print "%d tasks queued in iteration %d"%(len(tids),k) 
 		
 		results = get_results(etc,tids,options.verbose)				#Wait for alignments to finish and get results
+		#results = ret[0]
 		results = results + surviving_results					#The total results to process/analyze includes results (comparisons) from previous rounds that were not used
 		results = sorted(results, key=itemgetter('score'))			#Sort/rank the results by score
 		
@@ -847,12 +857,12 @@ def get_results(etc,tids,verbose):
 			
 			if prog==100:
 				r=etc.get_results(tidsleft[i])						# results for a completed task
-				comparison=r[0].options["comparison"]					# get the comparison number from the task rather than trying to work back to it
+				comparison=r[0].classoptions["comparison"]					# get the comparison number from the task rather than trying to work back to it
 				
 				results[comparison]=r[1]["final"][0]					# this will be a list of (qual,Transform), containing the BEST peak ONLY
 				
-				results[comparison]['ptcl1']=r[0].options['ptcl1']			#Associate the result with the pair of particles involved
-				results[comparison]['ptcl2']=r[0].options['ptcl2']
+				results[comparison]['ptcl1']=r[0].classoptions['ptcl1']			#Associate the result with the pair of particles involved
+				results[comparison]['ptcl2']=r[0].classoptions['ptcl2']
 
 				ncomplete+=1
 		
@@ -870,37 +880,77 @@ def get_results(etc,tids,verbose):
 
 class Align3DTaskAVSA(JSTask):
 	"""This is a task object for the parallelism system. It is responsible for aligning one 3-D volume to another, with a variety of options"""
+	
+	
+	print "All vs all align task"
+	
+	
+	#def __init__(self,fixedimagestack,imagestack,comparison,ptcl1,ptcl2,p1n,p2n,label,mask,normproc,preprocess,lowpass,highpass,npeakstorefine,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,verbose):
 
-	def __init__(self,fixedimagestack,imagestack,comparison,ptcl1,ptcl2,p1n,p2n,label,mask,normproc,preprocess,lowpass,highpass,npeakstorefine,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,verbose):
-		"""fixedimage and image may be actual EMData objects, or ["cache",path,number]
-	label is a descriptive string, not actually used in processing
-	ptcl is not used in executing the task, but is for reference
-	other parameters match command-line options from e2spt_classaverage.py
-	Rather than being a string specifying an aligner, 'align' may be passed in as a Transform object, representing a starting orientation for refinement"""
+	def __init__(self,fixedimagestack,imagestack,comparison, ptcl1, ptcl2, p1n, p2n,label,classoptions):
+		
 		data={}
 		data={"fixedimage":fixedimagestack,"image":imagestack}
 		JSTask.__init__(self,"ClassAv3d",data,{},"")
 
-		self.options={"comparison":comparison,"ptcl1":ptcl1,"ptcl2":ptcl2,"p1number":p1n,"p2number":p2n,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"lowpass":lowpass,"highpass":highpass,"npeakstorefine":npeakstorefine,"align":align,"aligncmp":aligncmp,"ralign":ralign,"raligncmp":raligncmp,"shrink":shrink,"shrinkrefine":shrinkrefine,"verbose":verbose}
+		#self.options={"comparison":comparison,"ptcl1":ptcl1,"ptcl2":ptcl2,"p1number":p1n,"p2number":p2n,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"lowpass":lowpass,"highpass":highpass,"npeakstorefine":npeakstorefine,"align":align,"aligncmp":aligncmp,"ralign":ralign,"raligncmp":raligncmp,"shrink":shrink,"shrinkrefine":shrinkrefine,"verbose":verbose}
+		self.classoptions={"comparison":comparison,"ptcl1":ptcl1,"ptcl2":ptcl2,"p1number":p1n,"p2number":p2n,"label":label,"classoptions":classoptions}
 	
 	def execute(self,callback=None):
+		
 		"""This aligns one volume to a reference and returns the alignment parameters"""
+		#classoptions=self.classoptions
+		options=self.classoptions
+		
+		"""
+		CALL the alignment function
+		"""
+		
+		print "Will import alignment"
+		from e2spt_classaverage import alignment
+				
+		print "I have imported alignment and will call it"
+		
+		#def alignment(fixedimage,image,ptcl,label,classoptions,transform):
+		
+		fixedimage = EMData( self.data["fixedimage"], options['p1number'] )
+		image = EMData( self.data["image"], options['p2number'] )
+		
+		ret=alignment( fixedimage, image, options['label'], options['classoptions'],None)
+		
+		bestfinal=ret[0]
+		bestcoarse=ret[1]
+		
+		return {"final":bestfinal,"coarse":bestcoarse}
+		
+		
+		
+		
+		'''
+		This aligns one volume to a reference and returns the alignment parameters
+		LOAD PARTICLES
+		'''
+		"""
 		options=self.options
 		if options["verbose"]>1: 
 			print "Aligning ",options["label"]
 		
 		fixedimage=EMData(self.data["fixedimage"],options['p1number'])
-		fn=EMUtil.get_image_count(self.data["fixedimage"])
+		
+		#fn=EMUtil.get_image_count(self.data["fixedimage"])
 		
 		#if type(self.data) != libpyEMData2.EMData:
 		#	print 
 		
 		image = EMData(self.data["image"],options['p2number'])
-		iin = EMUtil.get_image_count(self.data["image"])
+		#iin = EMUtil.get_image_count(self.data["image"])
+		"""
+	
 		
-		
-		
-		
+		'''
+		PREPROCESSING
+		'''
+		"""
 		# Make the mask first, use it to normalize (optionally), then apply it 
 		mask=EMData(int(image["nx"]),int(image["ny"]),int(image["nz"]))
 		mask.to_one()
@@ -987,7 +1037,12 @@ class Align3DTaskAVSA(JSTask):
 			print "Because it was greater than 2 or not integer, I will exit"
 			sys.exit()  
 			print "Align size %d,  Refine Align size %d"%(sfixedimage["nx"],s2fixedimage["nx"])
-
+		"""
+		
+		'''
+		ALIGNMENT
+		'''
+		"""
 		#If a Transform was passed in, we skip coarse alignment
 		if isinstance(options["align"],Transform):
 			bestcoarse=[{"score":1.0,"xform.align3d":options["align"]}]
@@ -1044,6 +1099,8 @@ class Align3DTaskAVSA(JSTask):
 			print "Done aligning ",options["label"]
 		
 		return {"final":bestfinal,"coarse":bestcoarse}
+		
+		"""
 
 jsonclasses["Align3DTaskAVSA"]=Align3DTaskAVSA.from_jsondict
 

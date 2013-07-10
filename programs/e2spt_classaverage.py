@@ -1163,7 +1163,7 @@ def alignment(fixedimage,image,label,classoptions,transform):
 	
 	if classoptions.verbose: 
 		print "Best %1.5g\t %s"%(bestfinal[0]["score"],str(bestfinal[0]["xform.align3d"]))
-		print "Done aligning ",label
+		print "Inside ALIGNMENT function in e2spt_classaverage, done aligning ",label
 	
 	#print "\nScore to return from ALIGNMENT is", bestfinal[0]["score"]
 	return (bestfinal,bestcoarse)
