@@ -2,7 +2,7 @@
 
 '''
 ====================
-Author: Jesus Galaz - 2011, Last update: 02/2011
+Author: Jesus Galaz - 2011, Last update: July/08/2013
 ====================
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -43,7 +43,9 @@ import math
 
 def main():
 
-	usage = """e2spt_simulation.py <options> . The options should be supplied in "--option=value", replacing "option" for a valid option name, and "value" for an acceptable value for that option. This program produces simulated sub volumes in random orientations from a given PDB or EM file. The output is ALWAYS in HDF format, since it's the only format supported by E2SPT programs.
+	usage = """e2spt_simulation.py <options>.
+	 This program DEPENDS on e2spt_classaverage.py from which it imports the sptmakepath function.
+	 The options should be supplied in "--option=value", replacing "option" for a valid option name, and "value" for an acceptable value for that option. This program produces simulated sub volumes in random orientations from a given PDB or EM file. The output is ALWAYS in HDF format, since it's the only format supported by E2SPT programs.
 	"""
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)	
@@ -120,10 +122,16 @@ def main():
 	
 	logger = E2init(sys.argv, options.ppid)
 
+	
 	'''
 	Make the directory where to create the database where the results will be stored
 	'''
 	
+	from e2spt_classaverage import sptmakepath
+	
+	options = sptmakepath(options,'sptsim')
+	
+	"""
 	if options.path and ("/" in options.path or "#" in options.path) :
 		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
 		sys.exit(1)
@@ -152,8 +160,9 @@ def main():
 		
 		#print "I will make the path", options.path
 		os.system('mkdir ' + options.path)
+	"""
 	
-	
+
 	'''
 	Parse the options
 	'''
@@ -204,6 +213,10 @@ def main():
 		options.input = workname
 	
 	tag = ''
+	
+		
+	if not options.finalboxsize:
+		options.finalboxsize = EMData(options.input,0,True)['nx']
 	
 	originalpath = options.path
 	for i in range(nrefs):
