@@ -128,17 +128,19 @@ def main():
 	'''
 	Parameters to compensate for the missing wedge using --cpm=fsc.tomo
 	'''
-	parser.add_argument("--wedgeangle",type=float,help="Missing wedge angle",default=60.0)
-	parser.add_argument("--wedgei",type=float,help="Missingwedge begining", default=0.05)
-	parser.add_argument("--wedgef",type=float,help="Missingwedge ending", default=0.5)
+	parser.add_argument("--wedgeangle",type=float,help="""Missing wedge angle, calculated as 90 minus the value yo provide, times 2. 
+														For example, --wedgeangle=60 will represent a wedge of size (90-60)*2=60.
+														--wedgeangle=70, results in a narrower wedge of size (90-70)*2=40.
+														In reality, you should enter here the range of your DATA COLLECTION.
+														I.e., if you collected your tiltseries from -60 to 60, enter --wedgeangle=60.""",default=60.0)
+	parser.add_argument("--wedgei",type=float,help="Missingwedge begining (in terms of its 'height' along Z. If you specify 0, the wedge will start right at the origin.", default=0.15)
+	parser.add_argument("--wedgef",type=float,help="Missingwedge ending (in terms of its 'height' along Z. If you specify 1, the wedge will go all the way to the edge of the box.", default=0.9)
 	parser.add_argument("--fitwedgepost", action="store_true", help="Fit the missing wedge AFTER preprocessing the subvolumes, not before, IF using the fsc.tomo comparator for --aligncmp or --raligncmp.", default=False)
 	
 	(options, args) = parser.parse_args()
 	print "Wedge paramters ARE defined, see", options.wedgeangle, options.wedgei, options.wedgef
 	print "you do NOT have to use PARALLELISM"
 	print "\n\noptions.parallel is", options.parallel
-
-	
 
 	if int(options.groups) > 1 and int(options.iter) > 1:
 		print "ERROR: --groups cannot be > 1 if --iter is > 1."
@@ -197,8 +199,6 @@ def main():
 		
 	if options.postprocess: 
 		options.postprocess=parsemodopt(options.postprocess)
-		
-	
 
 	if options.resultmx : 
 		print "Sorry, resultmx not implemented yet"
@@ -214,18 +214,10 @@ def main():
 		options.shrink = options.shrinkrefine
 		print "It makes no sense for shrinkrefine to be larger than shrink; therefore, shrink will be made to match shrinkrefine"
 	
-	if not options.path: 
-		options.path="bdb:"+numbered_path("spt",True)
-	
-	elif options.path:
-		findir = os.listdir( os.getcwd() )
-		if options.path in findir:
-			options.path=numbered_path( options.path ,True)
-		else:
-			os.system('mkdir ' + options.path)
-		
-		if options.path[:4].lower()!="bdb:":
-			options.path="bdb:"+options.path
+	'''
+	Make the directory where to create the database where the results will be stored
+	'''
+	sptmakepath(options,'')	
 		
 	hdr = EMData(options.input,0,True)
 	nx = hdr["nx"]
@@ -290,13 +282,17 @@ def main():
 		etc.precache(pclist)
 
 	if options.inixforms: 
-		db = db_open_dict("bdb:%s#%s"%(options.inixforms,"tomo_xforms"))
+		#db = db_open_dict("bdb:%s#%s"%(options.inixforms,"tomo_xforms"))
+		
+		#js = js_open_dict("%s#%s" % (options.inixforms, "tomo_xforms"))
+		js = js_open_dict(options.inixforms)
 			
 	#########################################
 	# This is where the actual class-averaging process begins
 	#########################################
 
-	# outer loop over classes, ic=class number
+	#outer loop over classes, ic=class number
+	
 	for ic in range(ncls):
 		if ncls==1: 
 			ptcls=range(nptcl)				# start with a list of particle numbers in this class
@@ -331,9 +327,9 @@ def main():
 			for i,j in enumerate(ptcls[:nseed]):
 				emdata = EMData(options.input,j)
 				if options.inixforms:
-					emdata.process_inplace("xform",{"transform":db["tomo_%04d"%i]})
-					emdata.set_attr("test_xfm",db["tomo_%04d"%i])
-				emdata.write_image("%s#seedtree_0"%options.path,i)
+					emdata.process_inplace("xform",{"transform":js["tomo_%04d"%i]})
+					emdata.set_attr("test_xfm",js["tomo_%04d"%i])
+				emdata.write_image("%s/seedtree_0.hdf"%options.path,i)
 
 			'''
 			#Outer loop covering levels in the converging binary tree
@@ -386,7 +382,7 @@ def main():
 			ref=EMData(outfile,0)		# result of the last iteration
 			
 			if options.savesteps :
-				ref.write_image("%s#class_%02d"%(options.path,ic),-1)
+				ref.write_image("%s#class_%02d.hdf"%(options.path,ic),-1)
 		
 		# Now we iteratively refine a single class
 		
@@ -397,7 +393,7 @@ def main():
 			results=[]
 			for p in ptcls:
 				if options.inixforms:
-					transform = db["tomo_%04d"%p]
+					transform = js["tomo_%04d"%p]
 				else:
 					transform = None
 				
@@ -444,17 +440,17 @@ def main():
 						if options.postprocess:
 							ppref = refc.copy()
 							postprocess(ppref,None,options.normproc,options.postprocess)
-							ppref.write_image("%s/class_%02d"%(options.path,i),it)
+							ppref.write_image("%s/class_%02d.hdf"%(options.path,i),it)
 						else:
-							refc.write_image("%s/class_%02d"%(options.path,i),it)
+							refc.write_image("%s/class_%02d.hdf"%(options.path,i),it)
 			else:
 				if options.savesteps:
 					if options.postprocess:
 						ppref = ref.copy()
 						postprocess(ppref,None,options.normproc,options.postprocess)
-						ppref.write_image("%s/class_%02d"%(options.path,ic),it)
+						ppref.write_image("%s/class_%02d.hdf"%(options.path,ic),it)
 					else:
-						ref.write_image("%s/class_%02d"%(options.path,ic),it)
+						ref.write_image("%s/class_%02d.hdf"%(options.path,ic),it)
 
 		if options.verbose: 
 			print "Preparing final average"
@@ -469,10 +465,12 @@ def main():
 			ref['origin_z']=0
 			
 			outdir = options.path
-			if 'bdb:' in options.path:
-				outdir = options.path.replace('bdb:','')
+			#if 'bdb:' in options.path:
+			#	outdir = options.path.replace('bdb:','')
+			
 			if outdir[-1] != '/':
 				outdir += '/'
+			
 			finaloutput = outdir + options.output
 			
 			if options.verbose:
@@ -480,8 +478,9 @@ def main():
 			ref.write_image(finaloutput,0)
 
 	if options.inixforms: 
-		db_close_dict(db)
-	
+		#js_close_dict(js)
+		js.close()
+		
 	E2end(logger)
 
 
@@ -508,6 +507,45 @@ def postprocess(img,optmask,optnormproc,optpostprocess):
 	return()
 
 
+def sptmakepath(options, stem='spt'):
+	if options.verbose:
+		print "Sptmakepath function called"
+	
+	if options.path and ("/" in options.path or "#" in options.path):
+		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
+		sys.exit(1)
+
+	if not options.path:		
+		options.path = stem + '_01'
+		if options.verbose:
+			print "--path was not specified, therefore it will have the default value", options.path 
+
+	files=os.listdir(os.getcwd())
+
+	while options.path in files:
+		if '_' not in options.path:
+			options.path = options.path + '_00'
+		else:
+			jobtag=''
+			components=options.path.split('_')
+			if components[-1].isdigit():
+				components[-1] = str(int(components[-1])+1).zfill(2)
+			else:
+				components.append('00')
+						
+			options.path = '_'.join(components)
+			#options.path = path
+			print "The new options.path is", options.path
+
+	if options.path not in files:
+		if options.verbose:
+			print "I will make THIS path", options.path
+		os.system('mkdir ' + options.path)
+	
+	return options
+	
+
+
 def preprocessing(options,image):
 	#print "I am in the preprocessing function"
 	
@@ -517,7 +555,7 @@ def preprocessing(options,image):
 	'''
 	Make the mask first, use it to normalize (optionally), then apply it 
 	'''
-	mask=EMData(image["nx"],image["ny"],image["nz"])
+	mask=EMData( int(image["nx"]), int(image["ny"]), int(image["nz"]) )
 	mask.to_one()
 	
 	if options.mask:
@@ -631,7 +669,11 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 			groupslist.append([])
 			includedlist.append([])
 		
-		db = db_open_dict("%s#%s"%(path,"tomo_xforms"))
+		#db = db_open_dict("%s#%s"%(path,"tomo_xforms"))
+	
+		jsdict = path + '/tomo_xforms.json'
+		js = js_open_dict(jsdict) #Load the orientations of particles. These should in theory be stored in the particles' headers themselves...
+				
 		for i,ptcl_parms in enumerate(align_parms):
 			ptcl=EMData(ptcl_file,i)
 			ptcl.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
@@ -659,7 +701,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 							print "Particle %d assigned to group number %d!" %(i,kk+1)
 							print "The threshold criteria was %f, and the particle's cc score was %f" %(threshs[kk+1], ptcl_parms[0]["score"])
 
-			db["tomo_%04d"%i] = ptcl_parms[0]['xform.align3d']
+			js["tomo_%04d"%i] = ptcl_parms[0]['xform.align3d']
 			if saveali:
 				ptcl['origin_x'] = 0
 				ptcl['origin_y'] = 0		
@@ -669,7 +711,9 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 				#ptcl['spt_ali_param'] = ptcl_parms[0]['xform.align3d']
 				ptcl['xform.align3d'] = ptcl_parms[0]['xform.align3d']
 				
-		db_close_dict(db)
+		#js_close_dict(jsdict)
+		js.close()
+		
 		avgs=[]
 		
 		for i in range(len(groupslist)):
@@ -686,7 +730,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 					groupslist[i][j]['origin_y'] = 0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
 					groupslist[i][j]['origin_z'] = 0
 					
-					classname = path+"/class_" + str(i).zfill(len(str(len(groupslist)))) + "_ptcl"
+					classname = path+"/class_" + str(i).zfill(len(str(len(groupslist)))) + "_ptcl.hdf"
 					groupslist[i][j].write_image(classname,j)
 					
 			avg=avgr.finish()
@@ -706,7 +750,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 			avgs.append(avg)
 			
 			if averager[0] == 'mean':
-				variance.write_image(path+"/class_varmap_group_%d"%i,it)
+				variance.write_image(path+"/class_varmap_group_%d.hdf"%i,it)
 		return avgs
 
 	else:
@@ -747,10 +791,16 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 		included=[]
 		
 		
-		print "The path the save the alignments is", path
+		print "The path to save the alignments is", path
 		#sys.exit()
 		
-		db = db_open_dict("%s#%s"%(path,"tomo_xforms"))
+		#db = db_open_dict("%s#%s"%(path,"tomo_xforms"))
+		
+		jsdict = path + '/tomo_xforms.json'
+		js = js_open_dict(jsdict)
+		
+		#js = js_open_dict(path + '/tomo_xforms.js')
+		
 		for i,ptcl_parms in enumerate(align_parms):
 			ptcl=EMData(ptcl_file,i)
 			ptcl.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
@@ -759,7 +809,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 				avgr.add_image(ptcl)
 				included.append(i)
 
-			db["tomo_%04d"%i] = ptcl_parms[0]['xform.align3d']
+			js["tomo_%04d"%i] = ptcl_parms[0]['xform.align3d']
 			if saveali:
 				ptcl['origin_x'] = 0
 				ptcl['origin_y'] = 0		# jesus - the origin needs to be reset to ZERO to avoid display issues in Chimera
@@ -773,11 +823,12 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 				#ptcl['spt_ali_param'] = ptcl_parms[0]['xform.align3d']
 				ptcl['xform.align3d'] = ptcl_parms[0]['xform.align3d']
 				
-				classname=path+"/class_ptcl"
+				classname=path+"/class_ptcl.hdf"
 				#print "The class name is", classname
 				#sys.exit()
 				ptcl.write_image(classname,i)	
-		db_close_dict(db)
+		#js_close_dict(jsdict)
+		js.close()
 		
 		if verbose: 
 			print "Kept %d / %d particles in average"%(len(included),len(align_parms))
@@ -789,7 +840,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 		avg["class_ptcl_src"]=ptcl_file
 		
 		if averager[0] == 'mean':
-			variance.write_image(path+"/class_varmap",it)
+			variance.write_image(path+"/class_varmap.hdf",it)
 					
 		if not nocenterofmass:
 			avg.process_inplace("xform.centerofmass")
@@ -901,7 +952,7 @@ class Align3DTask(JSTask):
 		"""
 		
 		#ret=alignment(simage,s2image,sfixedimage,s2fixedimage,classoptions,transform)
-		ret=alignment(fixedimage,image,classoptions['ptcl'],classoptions['label'],classoptions['options'],classoptions['transform'])
+		ret=alignment(fixedimage,image,classoptions['label'],classoptions['options'],classoptions['transform'])
 
 		bestfinal=ret[0]
 		bestcoarse=ret[1]
@@ -928,7 +979,7 @@ def align3Dfunc(fixedimage,image,ptcl,label,classoptions,transform):
 	"""
 	
 	#ret=alignment(simage,s2image,sfixedimage,s2fixedimage,classoptions,transform)
-	ret=alignment(fixedimage,image,ptcl,label,classoptions,transform)
+	ret=alignment(fixedimage,image,label,classoptions,transform)
 
 	bestfinal=ret[0]
 	bestcoarse=ret[1]
@@ -937,7 +988,7 @@ def align3Dfunc(fixedimage,image,ptcl,label,classoptions,transform):
 
 
 
-def alignment(fixedimage,image,ptcl,label,classoptions,transform):
+def alignment(fixedimage,image,label,classoptions,transform):
 	
 	if classoptions.verbose: 
 		print "Aligning ",label
