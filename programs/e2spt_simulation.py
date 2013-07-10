@@ -77,7 +77,7 @@ def main():
 									The random translation will be picked between -transrage and +transrange; --txrange, --tyrange and --tzrange overwrite --transrange for each specified direction.""")
 	
 	#parser.add_argument("--tiltstep", type=float,default=5.0,help="Degrees between each image in the simulated tilt series for each subtomogram.")
-	parser.add_argument("--tiltrange", type=float,default=5.0,help="""Maximum angular value at which the highest tilt picture will be simulated. Projections will be simulated from -tiltrange to +titlrange. 
+	parser.add_argument("--tiltrange", type=float,default=60,help="""Maximum angular value at which the highest tilt picture will be simulated. Projections will be simulated from -tiltrange to +titlrange. 
 									For example, if simulating a tilt series collected from -60 to 60 degrees, enter a --tiltrange value of 60. 
 									Note that this parameter will determine the size of the missing wedge.""")
 	parser.add_argument("--applyctf", action="store_true",default=False,help="If on, it applies ctf to the projections in the simulated tilt series based on defocus, cs, and voltage parameters.")
@@ -111,7 +111,7 @@ def main():
 	parser.add_argument("--simref",action="store_true",default=False,help="This will make a simulated particle in the same orientation as the original input (or reference).")
 	parser.add_argument("--negativecontrast",action="store_true",default=False,help="This will make the simulated particles be like real EM data before contrast reversal. Otherwise, 'white protein' (positive density values) will be used.")
 
-	parser.add_argument("--nslices", type=int,default=0,help="""This will determine the tilt step between slices, depending on tiltrange.
+	parser.add_argument("--nslices", type=int,default=61,help="""This will determine the tilt step between slices, depending on tiltrange.
 									For example, to simulate a 2 deg tilt step supply --nslices=61 --tiltrange=60.
 									Recall that --tiltrange goes from - to + the supplied value, and that there is a central slice or projection at 0 deg,
 									for symmetrical tilt series.""")	
