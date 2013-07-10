@@ -335,8 +335,8 @@ def main():
 			#Outer loop covering levels in the converging binary tree
 			'''
 			for i in range(nseediter):
-				infile="%s#seedtree_%d"%(options.path,i)
-				outfile="%s#seedtree_%d"%(options.path,i+1)
+				infile="%s/seedtree_%d.hdf"%(options.path,i)
+				outfile="%s/seedtree_%d.hdf"%(options.path,i+1)
 			
 				tasks=[]
 				results=[]
