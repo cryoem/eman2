@@ -39,9 +39,7 @@ import sys
 import random
 from random import choice
 from pprint import pprint
-
 from EMAN2jsondb import JSTask,jsonclasses
-
 from operator import itemgetter	
 
 from e2spt_classaverage import sptmakepath
