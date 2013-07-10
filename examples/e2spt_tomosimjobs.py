@@ -49,6 +49,9 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
+from e2spt_classaverage import sptmakepath
+
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog <output> [options]
@@ -190,10 +193,6 @@ def main():
 	
 	logger = E2init(sys.argv, options.ppid)
 	
-	'''
-	Make the directory where to create the database where the results will be stored
-	'''
-	
 	rootpath = os.getcwd()
 	
 	
@@ -201,19 +200,7 @@ def main():
 	If COMPUTING alignment ERRORS
 	'''
 	if not options.plotonly:
-		#if options.comparators:
-		#	comps = options.comparators.split(',')
-		#	
-		#	originalpath = options.path
-		#	
-		#	for comp in comps:
-		#		options.aligncmp = comp
-		#		options.raligncmp = comp
-		#		compID = comp.split(':')[0].replace('.','P')
-		#		options.path = originalpath + '_' + compID
-		#		simloop(options,rootpath)
-		#
-		#else:
+		
 		simloop(options,rootpath)
 		
 		'''
@@ -222,7 +209,11 @@ def main():
 	elif options.plotonly:
 		print "\n\nI'm in PLOTONLY \n\n"
 		
-		options = makepath(options,rootpath)
+		'''
+		Make the directory where to store the results. Sptakepath exists in e2spt_classaverage.py
+		'''
+		
+		options = sptmakepath(options,'spt_tomosimjobs')
 		
 		files=[]
 		if options.files:
@@ -249,24 +240,25 @@ def main():
 	E2end(logger)
 	return()
 	
-
+'''
 def makepath(options,rootpath):
+	
 	if not options.path: 
 		#options.path="bdb:"+numbered_path("sptavsa",True)
-		options.path = "sptsimjob_01"
+		options.path = "sptsim_01"
 	
 	files=os.listdir(rootpath)
 
 	while options.path in files:
 		if '_' not in options.path:
-			options.path = options.path + '_00'
+			options.path = options.path + '_01'
 		else:
 			jobtag=''
 			components=options.path.split('_')
 			if components[-1].isdigit():
 				components[-1] = str(int(components[-1])+1).zfill(2)
 			else:
-				components.append('00')
+				components.append('01')
 						
 			options.path = '_'.join(components)
 
@@ -274,12 +266,12 @@ def makepath(options,rootpath):
 		os.system('mkdir ' + options.path)
 		
 	return(options)
-
+'''
 
 def simloop(options,rootpath):
 	
 	if not options.comparators:
-		options = makepath(options,rootpath)
+		options = sptmakepath(options,'spt_tomosimjob')
 	
 	if "/" not in options.input:
 		options.input = rootpath + "/" + options.input
