@@ -6053,7 +6053,6 @@ float Util::tf(float dzz, float ak, float voltage, float cs, float wgh, float b_
 
 	float ctfv = static_cast<float>( sin(M_PI*(g1-g2)+phase)*sign );
 	if(b_factor != 0.0f)  ctfv *= exp(-b_factor*ak2/4.0f);
-
 	return ctfv;
 }
 
@@ -22388,7 +22387,7 @@ int Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector
 							// The parameters are stored only for the first segment, the remaining ones will have to be recomputed
 							if(mxm > previousmax) {
 								previousmax = mxm;
-								dpsi = 90.0;
+								dpsi = 90.0f;
 								for (int im = 0; im < ndata; ++im) dxshiftlocal[im] = xshiftlocal[im];
 								for (int im = 0; im < ndata; ++im) dyshiftlocal[im] = yshiftlocal[im];
 								for (int im = 0; im < ndata; ++im) dphilocal[im]    = philocal[im];
@@ -22844,15 +22843,14 @@ Dict Util::predict(float phig, float yg, float dst, float sgn, float ysgn, float
 				predy = predy - dpp;
 				predphi = fmod( (predphi + sgn*dphi),float(360.0));
 			}
-		}else{
+		} else {
 			if (fmod(abs(predy), dpp) > 0.5*dpp) {
 				predy = predy + dpp;
 				predphi = fmod( (predphi - sgn*dphi), float(360.0));
 			}
 		}
 		
-	}				
-	else{
+	} else {
 		predphi = fmod ( (phig + back*sgn * (floor(dst/dpp)* dphi + dphi)), float(360.0));
 		predy = yg + back*ysgn*(fmod(dst,dpp) - dpp) ;
 		if (predy > 0){
@@ -22860,8 +22858,7 @@ Dict Util::predict(float phig, float yg, float dst, float sgn, float ysgn, float
 				predy = predy - dpp;
 				predphi = fmod( (predphi + sgn*dphi),float(360.0));
 			}
-		}
-		else{
+		} else {
 			if (fmod(abs(predy), dpp) > 0.5*dpp){
 				predy = predy + dpp;
 				predphi = fmod( (predphi - sgn*dphi), float(360.0));

@@ -1761,21 +1761,20 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 			supe = model_blank(nx,nx)
 			niter=1000
 			for it in xrange(niter):
-				Util.add_img(supe, Util.ctf_rimg(nx, nx, 1, ad1+rqt.gauss(0.0,stdavad1), Cs, voltage, Pixel_size, 0.0, wgh, bd1 + rqt.gauss(0.0,stdavbd1), cd1 + rqt.gauss(0.0,cd2), 1))
-
+				Util.add_img(supe, Util.ctf_rimg(nx, nx, 1, ad1+rqt.gauss(0.0,stdavad1), Pixel_size, voltage, Cs, 0.0, wgh, bd1 + rqt.gauss(0.0,stdavbd1), cd1 + rqt.gauss(0.0,cd2), 1))
+			ni = nx//2
 			supe /= niter
 			pwrot2 = rotavg_ctf(supe, ad1, Cs, voltage, Pixel_size, 0.0, wgh, bd1, cd1)
-			for i in xrange(len(pwrot2)):  pwrot2[i] = pwrot2[i]**2
+			for i in xrange(ni):  pwrot2[i] = pwrot2[i]**2
 
 			ibec = 0
-			for it in xrange(len(pwrot2)-1,0,-1):
+			for it in xrange(ni-1,0,-1):
 				if pwrot2[it]>0.5 :
 					ibec = it
 					break
 			from morphology import ctf_1d
 			ct = generate_ctf([ad1, Cs, voltage, Pixel_size, temp, wgh,0.0,0.0])
 			cq = ctf_1d(nx, ct)
-			ni = min(len(cq),nx//2)
 
 			supe = [0.0]*ni
 			niter=1000
@@ -1787,12 +1786,14 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 			for l in xrange(ni):  supe[l] = (supe[l]/niter)**2
 
 			ib1 = 0
-			for it in xrange(len(supe)-1,0,-1):
+			for it in xrange(ni-1,0,-1):
 				if supe[it]>0.5 :
 					ib1 = it
 					break
 			ibec = ibec/(Pixel_size*nx)
 			ib1  = ib1/(Pixel_size*nx)
+			#from utilities import write_text_file
+			#write_text_file([range(ni), supe[:ni],pwrot2[:ni]],"fifi.txt")
 			
 			if stack == None:
 				print  namics[ifi], ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec
