@@ -7663,7 +7663,7 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 
 // Fill out the duplicated weights
 	for(i = 1; i<=n; i++){
-		mt =- indx[i-1];
+		mt -= indx[i-1];
 		if (mt>0){
 			k = good[mt-1];
 //  This is a duplicated entry, get the already calculated
@@ -22442,17 +22442,15 @@ int Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector
 									}
 									mxr += ciq;
 								}
-							} else {
-								mxr = mxm-1.e5;
-							}
-							if (mxr > previousmax) {
-								previousmax = mxr;
-								mpsi = 270.0f;
-								for (int im = 0; im < ndata; ++im) mxshiftlocal[im] = xrshiftlocal[im];
-								for (int im = 0; im < ndata; ++im) myshiftlocal[im] = yrshiftlocal[im];
-								for (int im = 0; im < ndata; ++im) mphilocal[im]    = fmod(540.0f-phirlocal[im], 360.0f);
-								// Bail out
-								goto label_constrained_helix_after_loops;
+								if (mxr > previousmax) {
+									previousmax = mxr;
+									mpsi = 270.0f;
+									for (int im = 0; im < ndata; ++im) mxshiftlocal[im] = xrshiftlocal[im];
+									for (int im = 0; im < ndata; ++im) myshiftlocal[im] = yrshiftlocal[im];
+									for (int im = 0; im < ndata; ++im) mphilocal[im]    = fmod(540.0f-phirlocal[im], 360.0f);
+									// Bail out
+									goto label_constrained_helix_after_loops;
+								}
 							}
 						}
 					}
@@ -22841,12 +22839,12 @@ Dict Util::predict(float phig, float yg, float dst, float sgn, float ysgn, float
 	if (fmod(dst, dpp) <= 0.5*dpp)	{
 		predphi = fmod( phig + back*sgn * floor(dst/dpp)* dphi, float(360.0));
 		predy = yg + back*ysgn*(fmod(dst, dpp));
-		if (predy > 0)
+		if (predy > 0) {
 			if (fmod(predy,dpp) > 0.5*dpp){
 				predy = predy - dpp;
 				predphi = fmod( (predphi + sgn*dphi),float(360.0));
 			}
-		else{
+		}else{
 			if (fmod(abs(predy), dpp) > 0.5*dpp) {
 				predy = predy + dpp;
 				predphi = fmod( (predphi - sgn*dphi), float(360.0));
