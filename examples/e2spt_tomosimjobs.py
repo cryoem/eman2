@@ -186,7 +186,7 @@ def main():
 
 
 	parser.add_argument("--wedgeangle",type=float,help="Missing wedge angle",default=59.0)
-	parser.add_argument("--wedgei",type=float,help="Missingwedge begining", default=0.1)
+	parser.add_argument("--wedgei",type=float,help="Missingwedge begining", default=0.15)
 	parser.add_argument("--wedgef",type=float,help="Missingwedge ending", default=0.9)
 
 	(options, args) = parser.parse_args()	
@@ -599,9 +599,13 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			if options.quicktest:
 				alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_symmetry_3d:sym=c1:verbose=" + str(options.verbose) + " --parallel=" + options.parallel + " --ralign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=3 --savesteps --saveali --normproc=normalize" + ' --iter=' + str(options.iter)
 
+			
+			#You want --wedgeangle (or data collection range) to be a bit bigger than it actually is
+			#so that the missing wedge is smaller than it actually is, to ensure there will be no overlap with any data.
+			#This is effectively accomplished by adding 1 (or more) to 'tiltrange'
 			if 'fsc.tomo' in options.aligncmp or 'fsc.tomo' in options.raligncmp:
 				#print "YOU are selecting FSC.TOMO, therefore, wedgeangle needs to be specified", tiltrange
-				alicmd += ' --wedgeangle=' + str(tiltrange)  + ' --wedgei=' + str(options.wedgei) + ' --wedgef=' + str(options.wedgef)
+				alicmd += ' --wedgeangle=' + str(tiltrange+1)  + ' --wedgei=' + str(options.wedgei) + ' --wedgef=' + str(options.wedgef)
 				
 			if options.fitwedgepost:
 				alicmd += ' --fitwedgepost'
@@ -610,7 +614,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 
 			#print "\n\aliptcls name is\n", aliptcls
 
-			extractcmd = " && cd " + alipath2 + " && e2proc3d.py bdb:class_ptcl " + aliptcls
+			extractcmd = " && cd " + alipath2 + " && e2proc3d.py class_ptcl.hdf " + aliptcls
 
 			resultsfile = aliptcls.replace('_ptcls_ali.hdf','_ali_error.txt')
 			
