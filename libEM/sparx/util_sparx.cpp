@@ -22227,7 +22227,7 @@ int Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector
 		, vector<float> dp_dphi_rise_delta, vector<int> nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc
 		, bool FindPsi, float psi_max, vector<EMData*> crefim, vector<int> numr, int maxrin, string mode, int cnx, int cny)
 {	
-	cout <<"  VERSION  07/10/2013  10:34am"<<endl;
+	cout <<"  VERSION  07/11/2013  10:34am"<<endl;
 	
 	if (dp_dphi_rise_delta.size() < 4) {
 		printf("Not enough parameters (dp_dphi_rise_delta)");
