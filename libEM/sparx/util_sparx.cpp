@@ -22227,7 +22227,7 @@ int Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector
 		, vector<float> dp_dphi_rise_delta, vector<int> nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc
 		, bool FindPsi, float psi_max, vector<EMData*> crefim, vector<int> numr, int maxrin, string mode, int cnx, int cny)
 {	
-	cout <<"  VERSION  07/11/2013  10:34am"<<endl;
+	cout <<"  VERSION  07/11/2013  11:34am"<<endl;
 	
 	if (dp_dphi_rise_delta.size() < 4) {
 		printf("Not enough parameters (dp_dphi_rise_delta)");
@@ -22259,9 +22259,8 @@ int Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector
 	vector<float> c0 = data[0]->get_attr("ptcl_source_coord");
 	vector< vector<EMData*> > ccfs(ndata, vector<EMData*>(nphi));
 	vector< vector<EMData*> > ccfr(0);
-	if (! Dsym) {
-		ccfr.resize(ndata, vector<EMData*>(nphi));
-	}
+	if (! Dsym)  ccfr.resize(ndata, vector<EMData*>(nphi));
+
 	for (int im = 0; im < ndata; ++im) {
 		for (int iphi = 0; iphi < nphi; ++iphi) {
 			std::auto_ptr<EMData> corr( correlation( refproj[iphi], fdata[im], CIRCULANT, true) );
