@@ -22227,7 +22227,7 @@ int Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector
 		, vector<float> dp_dphi_rise_delta, vector<int> nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc
 		, bool FindPsi, float psi_max, vector<EMData*> crefim, vector<int> numr, int maxrin, string mode, int cnx, int cny)
 {	
-	cout <<"  VERSION  07/11/2013  11:34am"<<endl;
+	cout <<"  VERSION  07/11/2013  12:00pm"<<endl;
 	
 	if (dp_dphi_rise_delta.size() < 4) {
 		printf("Not enough parameters (dp_dphi_rise_delta)");
@@ -22255,6 +22255,8 @@ int Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector
 	const int ndata = data.size();
 
 	std::vector< boost::shared_ptr<EMData> > objectsToDelete; // objects added to this vector are automatically deleted at the end of this function
+	bool * docomp = new bool[ndata*nphi];
+	bool * doromp = new bool[ndata*nphi];
 
 	vector<float> c0 = data[0]->get_attr("ptcl_source_coord");
 	vector< vector<EMData*> > ccfs(ndata, vector<EMData*>(nphi));
@@ -22263,16 +22265,35 @@ int Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector
 
 	for (int im = 0; im < ndata; ++im) {
 		for (int iphi = 0; iphi < nphi; ++iphi) {
-			std::auto_ptr<EMData> corr( correlation( refproj[iphi], fdata[im], CIRCULANT, true) );
-			ccfs[im][iphi] = Util::window( corr.get(), nwx, nwy);
+			//std::auto_ptr<EMData> corr( correlation( refproj[iphi], fdata[im], CIRCULANT, true) );
+			//ccfs[im][iphi] = Util::window( dummy, nwx, nwy);
+			docomp[im*nphi + iphi] = true;
 			objectsToDelete.push_back(boost::shared_ptr<EMData>(ccfs[im][iphi]));
 			if (! Dsym) {
-				std::auto_ptr<EMData> corr2( correlation( rotproj[iphi], fdata[im], CIRCULANT, true) );
-				ccfr[im][iphi] = Util::window( corr2.get(), nwx, nwy);
+				//std::auto_ptr<EMData> corr2( correlation( rotproj[iphi], fdata[im], CIRCULANT, true) );
+				//ccfr[im][iphi] = Util::window( corr2.get(), nwx, nwy);
+				doromp[im*nphi + iphi] = true;
 				objectsToDelete.push_back(boost::shared_ptr<EMData>(ccfr[im][iphi]));
 			}
 		}
 	}
+
+	/*
+	for (int im = 0; im < ndata; ++im) {
+		for (int iphi = 0; iphi < nphi; ++iphi) {
+			if ( docomp[im*nphi + iphi] ) {
+				std::auto_ptr<EMData> corr( correlation( refproj[iphi], fdata[im], CIRCULANT, true) );
+				ccfs[im][iphi] = Util::window( corr.get(), nwx, nwy);
+				docomp[im*nphi + iphi] = false;
+			}
+			if (! Dsym) {
+				std::auto_ptr<EMData> corr2( correlation( rotproj[iphi], fdata[im], CIRCULANT, true) );
+				ccfr[im][iphi] = Util::window( corr2.get(), nwx, nwy);
+			}
+		}
+	}
+	cout<<"  ccfs computed "<<endl;
+	*/
 	vector<float> dxshiftlocal(ndata, 0);
 	vector<float> dyshiftlocal(ndata, 0);
 	vector<float> dphilocal(ndata, 0);
@@ -22296,7 +22317,7 @@ int Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector
 		idir = tempidir[ind_idir];
 		float mpsi;
 		std::vector<int> tempix = shuffled_range(1,nwx-2);
-		for (int ind_ix = 0; ind_ix < tempix.size(); ++ind_ix) {                             //#  X shift
+		for (unsigned int ind_ix = 0; ind_ix < tempix.size(); ++ind_ix) {                             //#  X shift
 			int ix = tempix[ind_ix];
 			//#cout << "im: ", len(ccfs), ix,time()-start_time
 			int six = ix - nwxc;
@@ -22314,6 +22335,12 @@ int Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector
 					phirlocal[0] = fmod( 180.0f - qphi + ((int)(fabs((180.0f-qphi)/360.0f))+1)*360.0f , 360.0f );
 					//# we use the first segment as a reference, so there is no interpolation, just copy the correlation
 					//#  Select largest correlation within +/- range pixels from the location we explore
+			if ( docomp[iphi] ) {
+			//cout<<"  initalize   A "<<iphi<<endl;
+				std::auto_ptr<EMData> corr( correlation( refproj[iphi], fdata[0], CIRCULANT, true) );
+				ccfs[0][iphi] = Util::window( corr.get(), nwx, nwy);
+				docomp[iphi] = false;
+			}
 					float mxm = -1.0e23f;
 					float mxr;
 					for (int iux = max(1, ix - range); iux < min(nwx - 1, ix+range+1); ++iux) {    //#  X wobble
@@ -22324,6 +22351,12 @@ int Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector
 						}
 					}
 					if (! Dsym) {
+			if ( doromp[iphi] ) {
+			//cout<<"  initalize   B "<<iphi<<endl;
+				std::auto_ptr<EMData> corr( correlation( rotproj[iphi], fdata[0], CIRCULANT, true) );
+				ccfr[0][iphi] = Util::window( corr.get(), nwx, nwy);
+				doromp[iphi] = false;
+			}
 						mxr = -1.0e23f;
 						for (int iux = max(1, ix - range); iux < min(nwx - 1, ix+range+1); ++iux) {     //# Xr wobble
 							float qcf = ccfr[0][iphi]->get_value_at(iux,iy);
@@ -22363,6 +22396,12 @@ int Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector
 								int ttphi = (int( qphi +  ((int)(abs(qphi/nphi))+1)*nphi+ 0.5))%nphi;
 								for (int lphi = -phiwobble; lphi < phiwobble+1; ++lphi) {                                               //#  phi wobble
 									int tphi = (ttphi+lphi+nphi)%nphi;
+			if ( docomp[im*nphi + iphi] ) {
+			//cout<<"  initalize   C "<<im<<"    "<<iphi<<endl;
+				std::auto_ptr<EMData> corr( correlation( refproj[tphi], fdata[im], CIRCULANT, true) );
+				ccfs[im][tphi] = Util::window( corr.get(), nwx, nwy);
+				docomp[im*nphi + tphi] = false;
+			}
 									for (int iux = max(1, fix - range); iux < min(nwx - 1, fix+range+1); ++iux) {                       //#  X wobble
 										for (int iuy = max(1, fiy - ywobble); iuy < min(nwy - 1, fiy+ywobble+1); ++iuy) {               //#  Y wobble
 											float qcf = xrem*yrem*ccfs[im][tphi]->get_value_at(iux,iuy)
@@ -22420,6 +22459,12 @@ int Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector
 										float qtphi = fmod( pphi + qphi + (int(fabs(qphi/360.0f))+1)*360.0f , 360.0f);
 										qphi = fmod(540.0f-qtphi, 360.0f) / delta;
 										int tphi = (int( qphi + (int(fabs(qphi/nphi))+1)*nphi  + 0.5))%nphi;
+			if ( doromp[im*nphi + iphi] ) {
+			//cout<<"  initalize   D "<<im<<"    "<<iphi<<endl;
+				std::auto_ptr<EMData> corr( correlation( rotproj[tphi], fdata[im], CIRCULANT, true) );
+				ccfr[im][tphi] = Util::window( corr.get(), nwx, nwy);
+				doromp[im*nphi + tphi] = false;
+			}
 										for (int iux = max(1, fix - range); iux < min(nwx - 1, fix+range+1); ++iux) {                   //#  X wobble
 											for (int iuy = max(1, fiy - ywobble); iuy < min(nwy - 1, fiy+ywobble+1); ++iuy) {           //#  Y wobble
 												float qcf = xrem*yrem*ccfr[im][tphi]->get_value_at(iux,iuy)
@@ -22455,6 +22500,8 @@ int Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector
 		}
 	}
 	// if got here, it did not find anything better and should return
+	delete[] docomp;
+	delete[] doromp;
 	return -1;
 label_constrained_helix_after_loops:
 
@@ -22533,6 +22580,8 @@ label_constrained_helix_after_loops:
 		Transform t(t_params);
 		data[im]->set_attr("xform.projection", &t);
 	}
+	delete[] docomp;
+	delete[] doromp;
 	return blah;
 }
 
