@@ -240,33 +240,6 @@ def main():
 	E2end(logger)
 	return()
 	
-'''
-def makepath(options,rootpath):
-	
-	if not options.path: 
-		#options.path="bdb:"+numbered_path("sptavsa",True)
-		options.path = "sptsim_01"
-	
-	files=os.listdir(rootpath)
-
-	while options.path in files:
-		if '_' not in options.path:
-			options.path = options.path + '_01'
-		else:
-			jobtag=''
-			components=options.path.split('_')
-			if components[-1].isdigit():
-				components[-1] = str(int(components[-1])+1).zfill(2)
-			else:
-				components.append('01')
-						
-			options.path = '_'.join(components)
-
-	if options.path not in files:
-		os.system('mkdir ' + options.path)
-		
-	return(options)
-'''
 
 def simloop(options,rootpath):
 	
