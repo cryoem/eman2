@@ -22255,8 +22255,8 @@ int Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector
 	const int ndata = data.size();
 
 	std::vector< boost::shared_ptr<EMData> > objectsToDelete; // objects added to this vector are automatically deleted at the end of this function
-	bool * docomp = new bool[ndata*nphi];
-	bool * doromp = new bool[ndata*nphi];
+	std::vector<bool> docomp(ndata*nphi);
+	std::vector<bool> doromp(ndata*nphi);
 
 	vector<float> c0 = data[0]->get_attr("ptcl_source_coord");
 	vector< vector<EMData*> > ccfs(ndata, vector<EMData*>(nphi));
@@ -22500,8 +22500,6 @@ int Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector
 		}
 	}
 	// if got here, it did not find anything better and should return
-	delete[] docomp;
-	delete[] doromp;
 	return -1;
 label_constrained_helix_after_loops:
 
@@ -22580,8 +22578,6 @@ label_constrained_helix_after_loops:
 		Transform t(t_params);
 		data[im]->set_attr("xform.projection", &t);
 	}
-	delete[] docomp;
-	delete[] doromp;
 	return blah;
 }
 
