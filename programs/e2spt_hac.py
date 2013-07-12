@@ -39,7 +39,9 @@ import sys
 import random
 from random import choice
 from pprint import pprint
+
 from EMAN2jsondb import JSTask,jsonclasses
+
 from operator import itemgetter	
 
 from e2spt_classaverage import sptmakepath
@@ -878,9 +880,6 @@ def get_results(etc,tids,verbose):
 
 class Align3DTaskAVSA(JSTask):
 	"""This is a task object for the parallelism system. It is responsible for aligning one 3-D volume to another, with a variety of options"""
-	
-	
-	print "All vs all align task"
 	
 	
 	#def __init__(self,fixedimagestack,imagestack,comparison,ptcl1,ptcl2,p1n,p2n,label,mask,normproc,preprocess,lowpass,highpass,npeakstorefine,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,verbose):
