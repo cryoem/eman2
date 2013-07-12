@@ -100,15 +100,15 @@ e2boxer.py ????.mrc --boxsize=256
 	parser.add_argument("--indir",              type=str,				 default= ".",     				 help="Directory containing micrographs to be processed.")
 	parser.add_argument("--nameroot",         	type=str,		 		 default= "",     				 help="Prefix of micrographs to be processed.")
 	parser.add_argument("--nx",				  	type=int,		 		 default=256, 					 help="Size of window to use (should be slightly larger than particle box size)")
-	
+
 	parser.add_argument("--Cs",               	type=float,	 			 default= 2.0,               	 help="Microscope Cs (spherical aberation)")
 	parser.add_argument("--voltage",		  	type=float,	 		     default=300.0, 			     help="Microscope voltage in KV")
 	parser.add_argument("--ac",				  	type=float,	 		     default=10.0, 					 help="Amplitude contrast (percentage, default=10)")
 	parser.add_argument("--kboot",			  	type=int,			     default=16, 					 help="kboot")
 	parser.add_argument("--MPI",                action="store_true",   	 default=False,              	 help="use MPI version")
 	parser.add_argument("--debug",              action="store_true",   	 default=False,              	 help="debug mode")
-	parser.add_argument("--apix",               type=float,				 default= -1.0,                  help="pixel size in Angstroms")   
-	
+	parser.add_argument("--apix",               type=float,				 default= -1.0,                  help="pixel size in Angstroms")
+
 	(options, args) = parser.parse_args()
 
 	if options.cter:
@@ -117,9 +117,9 @@ e2boxer.py ????.mrc --boxsize=256
 		if len(args) <2 or len(args) > 3:
 			print "see usage"
 			sys.exit()
-		
+
 		stack = None
-		
+
 		if len(args) == 3:
 			if options.MPI:
 				print "Please use single processor version if specifying a stack."
@@ -127,34 +127,34 @@ e2boxer.py ????.mrc --boxsize=256
 			stack = args[0]
 			out1 = args[1]
 			out2 = args[2]
-			
+
 		if len(args) == 2:
 			out1 = args[0]
 			out2 = args[1]
-		
+
 		if options.apix < 0:
 			print "Enter pixel size"
 			sys.exit()
-		
+
 		if options.MPI:
 			from mpi import mpi_init, mpi_finalize
 			sys.argv = mpi_init(len(sys.argv), sys.argv)
-	
+
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
-	
+
 		from morphology import cter
 		global_def.BATCH = True
 		cter(stack, out1, out2, options.indir, options.nameroot, options.nx, voltage=300.0, Pixel_size=options.apix, Cs = options.Cs, wgh=options.ac, kboot=options.kboot, MPI=options.MPI, DEBug = options.debug)
 		global_def.BATCH = False
-	
+
 		if options.MPI:
 			from mpi import mpi_finalize
 			mpi_finalize()
-	
+
 		return
-	
+
 	logid=E2init(sys.argv,options.ppid)
 	db = js_open_dict(EMBOXERBASE_DB)
 	cache_box_size = True
@@ -309,8 +309,7 @@ def write_output(args,options,logid, database="e2boxercache"):
 				bx = box_list[0]
 				if bx.type == GaussBoxer.AUTO_NAME and options.gauss_autoboxer == None:
 					print 'For automatic boxing using Gauss Boxer, particles should be written at the time of autoboxing either by 1) activating "Write Output" button in GUI mode, or 2) adding --write_ptcls when autoboxing in command line mode'
-					print 'Nothing will be written. Exiting...'
-					return
+					print 'I will continue and write particles, but results may not be as expected.'
 
 			# if box type is GaussBoxer.AUTO_NAME, the pre-process and possibly decimate image using params in db
 			# only need to do this if write_ptcls is called on its own
@@ -2129,13 +2128,11 @@ class GaussPanel:
 			hbl_kboot = QtGui.QHBoxLayout()
 			kboot_label = QtGui.QLabel("kboot:")
 			hbl_kboot.addWidget(kboot_label)
-			if gbdb['ctf_kboot'] == None:
-				self.ctf_kboot = QtGui.QLineEdit('16')
-			else:
-				self.ctf_kboot = QtGui.QLineEdit(str(gbdb['ctf_kboot']))
+
+			self.ctf_kboot = QtGui.QLineEdit(str(gbdb.setdefault('ctf_kboot',"16")))
 			hbl_kboot.addWidget(self.ctf_kboot)
 			vbl.addLayout(hbl_kboot)
-			
+
 			hbl_estdef = QtGui.QHBoxLayout()
 			hbl_fed = QtGui.QHBoxLayout()
 
@@ -2146,51 +2143,51 @@ class GaussPanel:
 
 			#estimated_defocus_label = QtGui.QLabel("Estimated defocus:")
 			#hbl_estdef.addWidget(estimated_defocus_label)
-			#self.estdef = QtGui.QLineEdit('')
+			self.estdef = QtGui.QLineEdit('')
 			hbl_estdef.addWidget(self.estdef)
 			vbl.addLayout(hbl_estdef)
-			
+
 			hbl_estdeferr = QtGui.QHBoxLayout()
 			deferr_label = QtGui.QLabel("Estimated defocus error:")
 			hbl_estdeferr.addWidget(deferr_label)
 			self.deferr = QtGui.QLineEdit('')
 			hbl_estdeferr.addWidget(self.deferr)
 			vbl.addLayout(hbl_estdeferr)
-			
+
 			hbl_astamp = QtGui.QHBoxLayout()
 			astig_amp_label = QtGui.QLabel("Estimated astigmatism \namplitude:")
 			hbl_astamp.addWidget(astig_amp_label)
 			self.astamp = QtGui.QLineEdit('')
 			hbl_astamp.addWidget(self.astamp)
 			vbl.addLayout(hbl_astamp)
-			
+
 			hbl_astamperr = QtGui.QHBoxLayout()
 			astamperr_label = QtGui.QLabel("Estimated astigmatism \namplitude error:")
 			hbl_astamperr.addWidget(astamperr_label)
 			self.astamperr = QtGui.QLineEdit('')
 			hbl_astamperr.addWidget(self.astamperr)
 			vbl.addLayout(hbl_astamperr)
-			
+
 			hbl_astagl = QtGui.QHBoxLayout()
 			astig_angle_label = QtGui.QLabel("Estimated astigmatism \nangle")
 			hbl_astagl.addWidget(astig_angle_label)
 			self.astagl = QtGui.QLineEdit('')
 			hbl_astagl.addWidget(self.astagl)
 			vbl.addLayout(hbl_astagl)
-			
+
 			hbl_astaglerr = QtGui.QHBoxLayout()
 			astaglerr_label = QtGui.QLabel("Estimated astigmatism \nangle error:")
 			hbl_astaglerr.addWidget(astaglerr_label)
 			self.astaglerr = QtGui.QLineEdit('')
 			hbl_astaglerr.addWidget(self.astaglerr)
 			vbl.addLayout(hbl_astaglerr)
-			
+
 			hbl_ctf_cter = QtGui.QHBoxLayout()
 			self.estimate_ctf_cter =QtGui.QPushButton("Estimate CTF using CTER")
 			hbl_ctf_cter.addWidget(self.estimate_ctf_cter)
 			vbl.addLayout(hbl_ctf_cter)
-			
-					
+
+
 
 			#hbl_fed.addWidget(self.estdef)
 
@@ -2224,8 +2221,8 @@ class GaussPanel:
 			QtCore.QObject.connect(self.gauss_width, QtCore.SIGNAL("editingFinished()"), self.gauss_width_edited)
 			QtCore.QObject.connect(self.thr_low_edit,QtCore.SIGNAL("editingFinished()"),self.new_thr_low)
 			QtCore.QObject.connect(self.thr_hi_edit,QtCore.SIGNAL("editingFinished()"),self.new_thr_hi)
-			QtCore.QObject.connect(self.estimate_ctf,QtCore.SIGNAL("clicked(bool)"), self.calc_ctf)
-			QtCore.QObject.connect(self.inspect_button,QtCore.SIGNAL("clicked(bool)"), self.inspect_ctf)
+#			QtCore.QObject.connect(self.estimate_ctf,QtCore.SIGNAL("clicked(bool)"), self.calc_ctf)
+#			QtCore.QObject.connect(self.inspect_button,QtCore.SIGNAL("clicked(bool)"), self.inspect_ctf)
 			QtCore.QObject.connect(self.ctf_window_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_window)
 			QtCore.QObject.connect(self.ctf_cs,QtCore.SIGNAL("editingFinished()"),self.new_ctf_cs)
 			QtCore.QObject.connect(self.ctf_edge_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_edge)
@@ -2233,9 +2230,9 @@ class GaussPanel:
 			QtCore.QObject.connect(self.ctf_overlap_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_overlap_size)
 			QtCore.QObject.connect(self.ctf_ampcont,QtCore.SIGNAL("editingFinished()"),self.new_ctf_ampcont)
 			QtCore.QObject.connect(self.ctf_kboot,QtCore.SIGNAL("editingFinished()"),self.new_ctf_kboot)
-			
+
 			QtCore.QObject.connect(self.estimate_ctf_cter,QtCore.SIGNAL("clicked(bool)"), self.calc_ctf_cter)
-			
+
 		return self.widget
 
 	def gauss_width_changed(self, v):
@@ -2362,7 +2359,7 @@ class GaussPanel:
 		kboot=self.ctf_kboot.text()
 		gbdb = db_open_dict(GaussPanel.GDB_NAME)
 		gbdb['ctf_kboot']=float(kboot)
-		
+
 	def new_ctf_overlap_size(self):
 		if self.busy: return
 		ov=self.ctf_overlap_size.text()
@@ -2506,11 +2503,11 @@ class GaussPanel:
 				self.ctf_inspector_gone=False
 			else:
 				pass
-	
+
 	def calc_ctf_cter(self):
 		# calculate ctf of ORIGINAL micrograph using cter in gui mode
 		# this must mean cter is being calculated on a single micrograph!
-		
+
 		print "Starting CTER"
 		# get the current image
 		from utilities import get_im
@@ -2518,7 +2515,7 @@ class GaussPanel:
 		#img = BigImageCache.get_image_directly( image_name )
 		image_name = self.target().target().file_names[0]
 		img = get_im(image_name)
-	
+
 		# conversion from text necessary
 		try:
 			ctf_window_size  = int(self.ctf_window_size.text())
@@ -2530,7 +2527,7 @@ class GaussPanel:
 			ctf_cs           = float(self.ctf_cs.text())
 			ctf_ampcont      = float(self.ctf_ampcont.text())
 			ctf_kboot        = int(self.ctf_kboot.text())
-			
+
 		except ValueError,extras:
 			# conversion of a value failed!
 			print "integer conversion failed."
@@ -2540,41 +2537,41 @@ class GaussPanel:
 		except:
 			print "error"
 			return
-		
+
 		fname, fext = os.path.splitext(image_name)
 		outpwrot = 'pwrot_%s'%fname
 		outpartres = 'partres_%s'%fname
-		
+
 		if os.path.exists(outpwrot) or os.path.exists(outpartres):
 			print "Please remove or rename %s and or %s"%(outpwrot,outpartres)
 			return
-		
+
 		from morphology import cter
 		defocus, ast_amp, ast_agl, error_defocus, error_astamp, error_astagl = cter(None, outpwrot, outpartres, None, None, ctf_window_size, voltage=ctf_volt, Pixel_size=input_pixel_size, Cs = ctf_cs, wgh=ctf_ampcont, kboot=ctf_kboot, MPI=False, DEBug= False, overlap_x = ctf_overlap_size, overlap_y = ctf_overlap_size, edge_x = ctf_edge_size, edge_y = ctf_edge_size, guimic=image_name)
-		
+
 		self.estdef.setText(str(defocus))
 		self.estdef.setEnabled(True)
-		
+
 		self.astamp.setText(str(ast_amp))
 		self.astamp.setEnabled(True)
-		
+
 		self.astagl.setText(str(ast_agl))
 		self.astagl.setEnabled(True)
-		
+
 		self.deferr.setText(str(error_defocus))
 		self.deferr.setEnabled(True)
-		
+
 		self.astamperr.setText(str(error_astamp))
 		self.astamperr.setEnabled(True)
-		
+
 		self.astaglerr.setText(str(error_astagl))
 		self.astaglerr.setEnabled(True)
-		
+
 		# XXX: wgh?? amp_cont static to 0?
 		# set image properties, in order to save ctf values
 		from utilities import set_ctf
 		set_ctf(img, [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl])
-		# and rewrite image 
+		# and rewrite image
 		img.write_image(image_name)
 		print [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl]
 		# get alternate, and set its ctf
@@ -2584,7 +2581,7 @@ class GaussPanel:
 		print [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl]
  		print "CTF estimation using CTER done."
  		#print "Estimated defocus value: ", defocus
-		
+
 		##############################################################################
 		#### save ctf estimation parameters to db for command line batch processing
 		gbdb = db_open_dict(GaussPanel.GDB_NAME)
@@ -2595,12 +2592,12 @@ class GaussPanel:
 			gbdb[image_name] = dict((olddict).items() + ctfdict.items() ) # merge the two dictionaries with conflict resolution resolved in favorr of the latest ctf parameters
 		else:
 			gbdb[image_name]=ctfdict
-		
+
 		del img
 		del altimg
-			
-			
-						
+
+
+
 class GaussBoxer:
 
 	CACHE_MAX = 10 # Each image has its last CACHE_MAX SwarmBoxer instance stored (or retrievable) automatically
