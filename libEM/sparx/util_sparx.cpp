@@ -22313,7 +22313,6 @@ int Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector
 	int idir;
 	for (int ind_idir = 0; ind_idir < 2; ++ind_idir) {
 		idir = tempidir[ind_idir];
-		float mpsi;
 		std::vector<int> tempix = shuffled_range(1,nwx-2);
 		for (unsigned int ind_ix = 0; ind_ix < tempix.size(); ++ind_ix) {                             //#  X shift
 			int ix = tempix[ind_ix];
@@ -22486,7 +22485,7 @@ int Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector
 								}
 								if (mxr > previousmax) {
 									previousmax = mxr;
-									mpsi = 270.0f;
+									dpsi = 270.0f;
 									for (int im = 0; im < ndata; ++im) dxshiftlocal[im] = xrshiftlocal[im];
 									for (int im = 0; im < ndata; ++im) dyshiftlocal[im] = yrshiftlocal[im];
 									for (int im = 0; im < ndata; ++im) dphilocal[im]    = fmod(540.0f-phirlocal[im], 360.0f);
