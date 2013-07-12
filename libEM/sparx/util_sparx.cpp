@@ -22268,12 +22268,10 @@ int Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector
 			//std::auto_ptr<EMData> corr( correlation( refproj[iphi], fdata[im], CIRCULANT, true) );
 			//ccfs[im][iphi] = Util::window( dummy, nwx, nwy);
 			docomp[im*nphi + iphi] = true;
-			objectsToDelete.push_back(boost::shared_ptr<EMData>(ccfs[im][iphi]));
 			if (! Dsym) {
 				//std::auto_ptr<EMData> corr2( correlation( rotproj[iphi], fdata[im], CIRCULANT, true) );
 				//ccfr[im][iphi] = Util::window( corr2.get(), nwx, nwy);
 				doromp[im*nphi + iphi] = true;
-				objectsToDelete.push_back(boost::shared_ptr<EMData>(ccfr[im][iphi]));
 			}
 		}
 	}
@@ -22340,6 +22338,7 @@ int Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector
 				std::auto_ptr<EMData> corr( correlation( refproj[iphi], fdata[0], CIRCULANT, true) );
 				ccfs[0][iphi] = Util::window( corr.get(), nwx, nwy);
 				docomp[iphi] = false;
+				objectsToDelete.push_back(boost::shared_ptr<EMData>(ccfs[0][iphi]));
 			}
 					float mxm = -1.0e23f;
 					float mxr;
@@ -22356,6 +22355,7 @@ int Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector
 				std::auto_ptr<EMData> corr( correlation( rotproj[iphi], fdata[0], CIRCULANT, true) );
 				ccfr[0][iphi] = Util::window( corr.get(), nwx, nwy);
 				doromp[iphi] = false;
+				objectsToDelete.push_back(boost::shared_ptr<EMData>(ccfr[0][iphi]));
 			}
 						mxr = -1.0e23f;
 						for (int iux = max(1, ix - range); iux < min(nwx - 1, ix+range+1); ++iux) {     //# Xr wobble
@@ -22401,6 +22401,7 @@ int Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector
 				std::auto_ptr<EMData> corr( correlation( refproj[tphi], fdata[im], CIRCULANT, true) );
 				ccfs[im][tphi] = Util::window( corr.get(), nwx, nwy);
 				docomp[im*nphi + tphi] = false;
+				objectsToDelete.push_back(boost::shared_ptr<EMData>(ccfs[im][tphi]));
 			}
 									for (int iux = max(1, fix - range); iux < min(nwx - 1, fix+range+1); ++iux) {                       //#  X wobble
 										for (int iuy = max(1, fiy - ywobble); iuy < min(nwy - 1, fiy+ywobble+1); ++iuy) {               //#  Y wobble
@@ -22464,6 +22465,7 @@ int Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector
 				std::auto_ptr<EMData> corr( correlation( rotproj[tphi], fdata[im], CIRCULANT, true) );
 				ccfr[im][tphi] = Util::window( corr.get(), nwx, nwy);
 				doromp[im*nphi + tphi] = false;
+				objectsToDelete.push_back(boost::shared_ptr<EMData>(ccfr[im][tphi]));
 			}
 										for (int iux = max(1, fix - range); iux < min(nwx - 1, fix+range+1); ++iux) {                   //#  X wobble
 											for (int iuy = max(1, fiy - ywobble); iuy < min(nwy - 1, fiy+ywobble+1); ++iuy) {           //#  Y wobble
