@@ -292,9 +292,11 @@ def main():
 	
 	for ic in range(ncls):
 		if ncls==1: 
-			ptcls=range(nptcl)				# start with a list of particle numbers in this class
+			#ptcls=range(nptcl)	
+			ptclnums=range(nptcl)				# start with a list of particle numbers in this class
 		else: 
-			ptcls=classmx_ptcls(classmx,ic)			# This gets the list from the classmx
+			#ptcls=classmx_ptcls(classmx,ic)
+			ptclnums=classmx_ptcls(classmx,ic)			# This gets the list from the classmx
 		
 		if options.verbose and ncls>1: 
 			print "###### Beggining class %d(%d)/%d"%(ic+1,ic,ncls)
@@ -311,7 +313,7 @@ def main():
 			# individual alignments we use a slightly different strategy than in 2-D. We make a binary tree from the first 2^n particles and
 			# compute pairwise alignments until we get an average out. 
 		
-			nseed=2**int(floor(log(len(ptcls),2)))	# we stick with powers of 2 for this to make the tree easier to collapse
+			nseed=2**int(floor(log(len(ptclnums),2)))	# we stick with powers of 2 for this to make the tree easier to collapse
 			if nseed>64 : 
 				nseed=64
 				print "Limiting seeding to the first 64 images"
@@ -321,7 +323,7 @@ def main():
 				print "Seedtree to produce initial reference. Using %d particles in a %d level tree"%(nseed,nseediter)
 			
 			# We copy the particles for this class into bdb:seedtree_0
-			for i,j in enumerate(ptcls[:nseed]):
+			for i,j in enumerate(ptclnums[:nseed]):
 				emdata = EMData(options.input,j)
 				if options.inixforms:
 					emdata.process_inplace("xform",{"transform":js["tomo_%04d"%i]})
@@ -388,10 +390,13 @@ def main():
 			# in 3-D each alignment is very slow, so we use a single ptcl->ref alignment as a task
 			tasks=[]
 			results=[]
-			for p in ptcls:
+			for ptclnum in ptclnums:
 				if options.inixforms:
 					print "\n\n\n\n\n\n@@@@@@@@@@@\nI have received inixfors and therefore the transform is"
-					transform = js["tomo_%04d"%p]
+					tomoID = "tomo_" + str(ptclnum).zfill( len(str( len(ptclnums) )) )
+					#transform = js["tomo_%04d"%ptclnum]
+					transform = js[tomoID]
+					
 					print transform
 					print "Of type", type(transform)
 					
@@ -401,11 +406,11 @@ def main():
 				if options.parallel:
 					#task=Align3DTask(ref,["cache",options.input,p],p,"Ptcl %d in iter %d"%(p,it),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
 					#	options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,transform,options.verbose-1,options.randomizewedge,options.wedgeangle,options.wedgei,options.wedgef)
-					task=Align3DTask(ref,["cache",options.input,p],p,"Ptcl %d in iter %d"%(p,it),options,transform)
+					task=Align3DTask(ref,["cache",options.input,ptclnum],ptclnum,"Ptcl %d in iter %d"%(ptclnum,it),options,transform)
 					tasks.append(task)
 				else:
 					#print "No parallelism specified"
-					result=align3Dfunc(ref,["cache",options.input,p],p,"Ptcl %d in iter %d"%(p,it),options,transform)
+					result=align3Dfunc(ref,["cache",options.input,ptclnum],ptclnum,"Ptcl %d in iter %d"%(ptclnum,it),options,transform)
 					
 					results.append(result['final'])
 			
@@ -669,8 +674,8 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 			groupslist.append([])
 			includedlist.append([])
 			
-		jsdict = path + '/tomo_xforms.json'
-		js = js_open_dict(jsdict) #Load the orientations of particles. These should in theory be stored in the particles' headers themselves...
+		#jsdict = path + '/tomo_xforms.json'
+		#js = js_open_dict(jsdict) #Write particle orientations to json database. This should happen on a per-particle basis, in each task.
 				
 		for i,ptcl_parms in enumerate(align_parms):
 			ptcl=EMData(ptcl_file,i)
@@ -699,7 +704,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 							print "Particle %d assigned to group number %d!" %(i,kk+1)
 							print "The threshold criteria was %f, and the particle's cc score was %f" %(threshs[kk+1], ptcl_parms[0]["score"])
 
-			js["tomo_%04d"%i] = ptcl_parms[0]['xform.align3d']
+			#js["tomo_%04d"%i] = ptcl_parms[0]['xform.align3d']
 			if saveali:
 				ptcl['origin_x'] = 0
 				ptcl['origin_y'] = 0		
@@ -709,8 +714,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 				#ptcl['spt_ali_param'] = ptcl_parms[0]['xform.align3d']
 				ptcl['xform.align3d'] = ptcl_parms[0]['xform.align3d']
 				
-		#js_close_dict(jsdict)
-		js.close()
+		#js.close()
 		
 		avgs=[]
 		
@@ -791,8 +795,8 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 		
 		print "The path to save the alignments is", path
 				
-		jsdict = path + '/tomo_xforms.json'
-		js = js_open_dict(jsdict)
+		#jsdict = path + '/tomo_xforms.json'
+		#js = js_open_dict(jsdict)
 				
 		for i,ptcl_parms in enumerate(align_parms):
 			ptcl=EMData(ptcl_file,i)
@@ -803,7 +807,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 				avgr.add_image(ptcl)
 				included.append(i)
 
-			js["tomo_%04d"%i] = ptcl_parms[0]['xform.align3d']
+			#js["tomo_%04d"%i] = ptcl_parms[0]['xform.align3d']
 			if saveali:
 				ptcl['origin_x'] = 0
 				ptcl['origin_y'] = 0		# jesus - the origin needs to be reset to ZERO to avoid display issues in Chimera
@@ -821,8 +825,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 				#print "The class name is", classname
 				#sys.exit()
 				ptcl.write_image(classname,i)	
-		#js_close_dict(jsdict)
-		js.close()
+		#js.close()
 		
 		if verbose: 
 			print "Kept %d / %d particles in average"%(len(included),len(align_parms))
@@ -912,7 +915,7 @@ class Align3DTask(JSTask):
 	"""This is a task object for the parallelism system. It is responsible for aligning one 3-D volume to another, with a variety of options"""
 
 	#def __init__(self,fixedimage,image,ptcl,label,mask,normproc,preprocess,lowpass,highpass,npeakstorefine,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,transform,verbose,randomizewedge,wedgeangle,wedgei,wedgef):
-	def __init__(self,fixedimage,image,ptcl,label,options,transform):
+	def __init__(self,fixedimage,image,ptclnum,label,options,transform):
 	
 		"""fixedimage and image may be actual EMData objects, or ["cache",path,number]
 		label is a descriptive string, not actually used in processing
@@ -925,7 +928,7 @@ class Align3DTask(JSTask):
 		JSTask.__init__(self,"ClassAv3d",data,{},"")
 
 		#self.classoptions={"options":options,"ptcl":ptcl,"label":label,"mask":options.mask,"normproc":options.normproc,"preprocess":options.preprocess,"lowpass":options.lowpass,"highpass":options.highpass,"npeakstorefine":options.npeakstorefine,"align":options.align,"aligncmp":options.aligncmp,"ralign":options.ralign,"raligncmp":options.raligncmp,"shrink":options.shrink,"shrinkrefine":options.shrinkrefine,"transform":transform,"verbose":options.verbose,"randomizewedge":options.randomizewedge,"wedgeangle":options.wedgeangle,"wedgei":options.wedgei,"wedgef":options.wedgef}
-		self.classoptions={"options":options,"ptcl":ptcl,"label":label,"transform":transform}
+		self.classoptions={"options":options,"ptclnum":ptclnum,"label":label,"transform":transform}
 	
 	def execute(self,callback=None):
 		"""This aligns one volume to a reference and returns the alignment parameters"""
@@ -946,7 +949,7 @@ class Align3DTask(JSTask):
 		"""
 		
 		#ret=alignment(simage,s2image,sfixedimage,s2fixedimage,classoptions,transform)
-		ret=alignment(fixedimage,image,classoptions['label'],classoptions['options'],classoptions['transform'])
+		ret=alignment(fixedimage,image,classoptions['label'],classoptions['options'],classoptions['ptclnum'],classoptions['transform'])
 
 		bestfinal=ret[0]
 		bestcoarse=ret[1]
@@ -954,7 +957,7 @@ class Align3DTask(JSTask):
 		return {"final":bestfinal,"coarse":bestcoarse}
 
 
-def align3Dfunc(fixedimage,image,ptcl,label,classoptions,transform):
+def align3Dfunc(fixedimage,image,ptclnum,label,classoptions,transform):
 	"""This aligns one volume to a reference and returns the alignment parameters"""
 
 	if classoptions.verbose: 
@@ -973,7 +976,7 @@ def align3Dfunc(fixedimage,image,ptcl,label,classoptions,transform):
 	"""
 	
 	#ret=alignment(simage,s2image,sfixedimage,s2fixedimage,classoptions,transform)
-	ret=alignment(fixedimage,image,label,classoptions,transform)
+	ret=alignment(fixedimage,image,label,classoptions,ptclnum,transform)
 
 	bestfinal=ret[0]
 	bestcoarse=ret[1]
@@ -982,7 +985,7 @@ def align3Dfunc(fixedimage,image,ptcl,label,classoptions,transform):
 
 
 
-def alignment(fixedimage,image,label,classoptions,transform):
+def alignment(fixedimage,image,label,classoptions,ptclnum,transform):
 	
 	if classoptions.verbose: 
 		print "Aligning ",label
@@ -1126,6 +1129,7 @@ def alignment(fixedimage,image,label,classoptions,transform):
 		print "Will to fine alignment, over these many peaks", len(bestcoarse)
 		# Now loop over the individual peaks and refine each
 		bestfinal=[]
+		peaknum=0
 		for bc in bestcoarse:
 			classoptions.ralign[1]["xform.align3d"] = bc["xform.align3d"]
 			ali = s2image.align(classoptions.ralign[0],s2fixedimage,classoptions.ralign[1],classoptions.raligncmp[0],classoptions.raligncmp[1])
@@ -1137,7 +1141,8 @@ def alignment(fixedimage,image,label,classoptions,transform):
 			except:
 				bestfinal.append({"score":1.0e10,"xform.align3d":bc["xform.align3d"],"coarse":bc})
 				print "\nThe appended score in EXCEPT is", bestfinal[0]['score']
-		
+			peaknum+=1
+			
 		if classoptions.verbose:
 			print "Best final is", bestfinal
 				
@@ -1175,6 +1180,19 @@ def alignment(fixedimage,image,label,classoptions,transform):
 		print "Inside ALIGNMENT function in e2spt_classaverage, done aligning ",label
 	
 	#print "\nScore to return from ALIGNMENT is", bestfinal[0]["score"]
+	
+	'''
+	Write particle orientations to json database
+	'''
+	jsdictpath = classoptions.path + '/tomo_xforms.json'
+	js = js_open_dict(jsdictpath) #Write particle orientations to json database.
+	
+	nptcls = EMUtil.get_image_count(classoptions.input)
+	#tomoID = "tomo_%" + str(len(str(nptcls))) + "d" % classoptions.ptcl
+	tomoID = "tomo_" + str(ptclnum).zfill( len( str(nptcls) ) )
+	js[tomoID] = bestfinal[0]['xform.align3d']
+	js.close 
+	
 	return (bestfinal,bestcoarse)
 	
 
