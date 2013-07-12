@@ -282,9 +282,6 @@ def main():
 		etc.precache(pclist)
 
 	if options.inixforms: 
-		#db = db_open_dict("bdb:%s#%s"%(options.inixforms,"tomo_xforms"))
-		
-		#js = js_open_dict("%s#%s" % (options.inixforms, "tomo_xforms"))
 		js = js_open_dict(options.inixforms)
 			
 	#########################################
@@ -393,7 +390,11 @@ def main():
 			results=[]
 			for p in ptcls:
 				if options.inixforms:
+					print "\n\n\n\n\n\n@@@@@@@@@@@\nI have received inixfors and therefore the transform is"
 					transform = js["tomo_%04d"%p]
+					print transform
+					print "Of type", type(transform)
+					
 				else:
 					transform = None
 				
@@ -478,7 +479,6 @@ def main():
 			ref.write_image(finaloutput,0)
 
 	if options.inixforms: 
-		#js_close_dict(js)
 		js.close()
 		
 	E2end(logger)
@@ -668,9 +668,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 		for i in range(groups):
 			groupslist.append([])
 			includedlist.append([])
-		
-		#db = db_open_dict("%s#%s"%(path,"tomo_xforms"))
-	
+			
 		jsdict = path + '/tomo_xforms.json'
 		js = js_open_dict(jsdict) #Load the orientations of particles. These should in theory be stored in the particles' headers themselves...
 				
@@ -792,19 +790,15 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 		
 		
 		print "The path to save the alignments is", path
-		#sys.exit()
-		
-		#db = db_open_dict("%s#%s"%(path,"tomo_xforms"))
-		
+				
 		jsdict = path + '/tomo_xforms.json'
 		js = js_open_dict(jsdict)
-		
-		#js = js_open_dict(path + '/tomo_xforms.js')
-		
+				
 		for i,ptcl_parms in enumerate(align_parms):
 			ptcl=EMData(ptcl_file,i)
 			ptcl.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
-						
+			print "I have applied this transform before averaging", ptcl_parms[0]["xform.align3d"]			
+			
 			if ptcl_parms[0]["score"]<=thresh: 
 				avgr.add_image(ptcl)
 				included.append(i)
@@ -1072,10 +1066,16 @@ def alignment(fixedimage,image,label,classoptions,transform):
 	#In some cases we want to prealign the particles
 	
 	if transform:
+		print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nThere WAS a transform, see", transform
+		print "And its type is", type(transform)
 		if classoptions.verbose:
 			print "Moving Xfrom", transform
 		#options["align"][1]["inixform"] = options["transform"]
-		classoptions.align[1]["transform"] = transform
+		if classoptions.align:
+			print "There was classoptions.align"
+			print "and classoptions.align[1] is", classoptions.align[1]
+			if classoptions.align[1]:
+				classoptions.align[1]["transform"] = transform
 		
 		if classoptions.shrink>1:
 			#options["align"][1]["inixform"].set_trans( options["align"][1]["inixform"].get_trans()/float(options["shrinkrefine"]) )
@@ -1085,16 +1085,24 @@ def alignment(fixedimage,image,label,classoptions,transform):
 		rand_orient = OrientGens.get("rand",{"n":1,"phitoo":1})		#Fetches the orientation generator
 		c1_sym = Symmetries.get("c1")					#Generates the asymmetric unit from which you wish to generate a random orientation
 		random_transform = rand_orient.gen_orientations(c1_sym)[0]	#Generates a random orientation (in a Transform object) using the generator and asymmetric unit specified 
-		classoptions.align[1].update({'transform' : random_transform})
+		if classoptions.align:
+			classoptions.align[1].update({'transform' : random_transform})
+		else:
+			transform = random_transform
 	
-	if classoptions.align == None:
-		bestcoarse=[{"score":1.0,"xform.align3d":Transform()}]
+	if not classoptions.align:
+		if not transform:
+			bestcoarse=[{"score":1.0e10,"xform.align3d":Transform()}]
+		else:
+			bestcoarse=[{"score":1.0e10,"xform.align3d":transform}]	
 
 	else:
 		'''
 		Returns an ordered vector of Dicts of length options.npeakstorefine. 
 		The Dicts in the vector have keys "score" and "xform.align3d" 
 		'''
+		
+		print "Will do coarse alignment"
 		
 		bestcoarse = simage.xform_align_nbest(classoptions.align[0],sfixedimage,classoptions.align[1],classoptions.npeakstorefine,classoptions.aligncmp[0],classoptions.aligncmp[1])
 		
@@ -1114,7 +1122,8 @@ def alignment(fixedimage,image,label,classoptions,transform):
 		for i,j in enumerate(bestcoarse): 
 			print "coarse %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
 
-	if classoptions.ralign != None :
+	if classoptions.ralign:
+		print "Will to fine alignment, over these many peaks", len(bestcoarse)
 		# Now loop over the individual peaks and refine each
 		bestfinal=[]
 		for bc in bestcoarse:
@@ -1158,7 +1167,7 @@ def alignment(fixedimage,image,label,classoptions,transform):
 		for i in bestfinal:
 			print i
 	
-	if bestfinal[0]["score"] == 1.0e10 :
+	if bestfinal[0]["score"] == 1.0e10 and classoptions.ralign:
 		print "Error: all refine alignments failed for %s. May need to consider altering filter/shrink parameters. Using coarse alignment, but results are likely invalid."%self.classoptions["label"]
 	
 	if classoptions.verbose: 
