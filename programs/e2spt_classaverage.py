@@ -947,9 +947,9 @@ class Align3DTask(JSTask):
 		"""
 		CALL the alignment function
 		"""
-		
-		#ret=alignment(simage,s2image,sfixedimage,s2fixedimage,classoptions,transform)
-		ret=alignment(fixedimage,image,classoptions['label'],classoptions['options'],classoptions['ptclnum'],classoptions['transform'])
+		nptcls = EMUtil.get_image_count(classoptions.input)
+		xformslabel = 'tomo_' + str(classoptions.ptclnum).zfill( len( str(nptcls) ) )
+		ret=alignment(fixedimage,image,classoptions['label'],classoptions['options'],xformslabel,classoptions['transform'])
 
 		bestfinal=ret[0]
 		bestcoarse=ret[1]
@@ -976,7 +976,10 @@ def align3Dfunc(fixedimage,image,ptclnum,label,classoptions,transform):
 	"""
 	
 	#ret=alignment(simage,s2image,sfixedimage,s2fixedimage,classoptions,transform)
-	ret=alignment(fixedimage,image,label,classoptions,ptclnum,transform)
+	nptcls = EMUtil.get_image_count(classoptions.input)
+	#tomoID = "tomo_%" + str(len(str(nptcls))) + "d" % classoptions.ptcl
+	xformslabel = 'tomo_' + str(ptclnum).zfill( len( str(nptcls) ) )
+	ret=alignment(fixedimage,image,label,classoptions,xformslabel,transform)
 
 	bestfinal=ret[0]
 	bestcoarse=ret[1]
@@ -985,7 +988,7 @@ def align3Dfunc(fixedimage,image,ptclnum,label,classoptions,transform):
 
 
 
-def alignment(fixedimage,image,label,classoptions,ptclnum,transform):
+def alignment(fixedimage,image,label,classoptions,xformslabel,transform):
 	
 	if classoptions.verbose: 
 		print "Aligning ",label
@@ -1187,10 +1190,7 @@ def alignment(fixedimage,image,label,classoptions,ptclnum,transform):
 	jsdictpath = classoptions.path + '/tomo_xforms.json'
 	js = js_open_dict(jsdictpath) #Write particle orientations to json database.
 	
-	nptcls = EMUtil.get_image_count(classoptions.input)
-	#tomoID = "tomo_%" + str(len(str(nptcls))) + "d" % classoptions.ptcl
-	tomoID = "tomo_" + str(ptclnum).zfill( len( str(nptcls) ) )
-	js[tomoID] = bestfinal[0]['xform.align3d']
+	js[xformslabel] = bestfinal[0]['xform.align3d']
 	js.close 
 	
 	return (bestfinal,bestcoarse)
