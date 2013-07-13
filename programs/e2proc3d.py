@@ -135,8 +135,8 @@ def main():
 								help="Translate map by dx,dy,dz ")
 	parser.add_option("--align", metavar="aligner_name:param1=value1:param2=value2", type="string", action="append",
 								help="Align input map to reference specified with --alignref. As with processors, a sequence of aligners is permitted")
-	parser.add_option("--ralignz", action="store_true",action="append",
-								help="Refine Z alignment within +-10 pixels (for C symmetries)")
+	parser.add_option("--ralignz", type=str ,action="append",
+								help="Refine Z alignment within +-10 pixels (for C symmetries), specify name of alignment reference here not with --alignref")
 	parser.add_option("--alignref", metavar="filename", type="string", default=None, help="Alignment reference volume. May only be specified once.")
 
 	parser.add_option("--rot",type=str,metavar="az,alt,phi or convention:par=val:...",help="Rotate map. Specify az,alt,phi or convention:par=val:par=val:...  eg - mrc:psi=22:theta=15:omega=7", action="append",default=None)
@@ -363,13 +363,11 @@ def main():
 				index_d[option1] += 1
 
 			elif option1 == "ralignz":
-				if alignref==None :
-					print "Error, no alignment reference specified with --alignref"
-					sys.exit(1)
+				zalignref=EMData(index_d[option1],0)
 				ary=[]
 				for z in xrange(-10,11):
 					zimg=data.process("xform.translate.int",{"trans":(0,0,z)})
-					ary.append(alignref.cmp("ccc",zimg),z)
+					ary.append(zalignref.cmp("ccc",zimg),z)
 
 				data=data.process("xform.translate.int",{"trans":(0,0,min(ary)[1])})
 
