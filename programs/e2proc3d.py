@@ -363,13 +363,15 @@ def main():
 				index_d[option1] += 1
 
 			elif option1 == "ralignz":
-				zalignref=EMData(index_d[option1],0)
+#				print "ralignz ",options.ralignz[index_d[option1]]
+				zalignref=EMData(options.ralignz[index_d[option1]],0)
 				ary=[]
 				for z in xrange(-10,11):
 					zimg=data.process("xform.translate.int",{"trans":(0,0,z)})
-					ary.append(zalignref.cmp("ccc",zimg),z)
+					ary.append((zalignref.cmp("ccc",zimg),z))
 
 				data=data.process("xform.translate.int",{"trans":(0,0,min(ary)[1])})
+				if options.verbose>0 : print "Z alignment: ",min(ary)[1]
 
 			elif option1 == "align":
 				if alignref==None :

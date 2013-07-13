@@ -540,8 +540,8 @@ Based on your requested resolution and box-size, I will use an angular sampling 
  		evenfile="{path}/threed_{itr:02d}_even.hdf".format(path=options.path,itr=it)
  		oddfile="{path}/threed_{itr:02d}_odd.hdf".format(path=options.path,itr=it)
  		combfile="{path}/threed_{itr:02d}.hdf".format(path=options.path,itr=it)
-		run("e2refine_postprocess.py --even {path}/threed_{it:02d}_even.hdf --odd {path}/threed_{it:02d}_odd.hdf --output {path}/threed_{it:02d}.hdf --align --mass {mass} --iter {it} {amask3d} --underfilter".format(
-			path=options.path,it=it,mass=options.mass,amask3d=amask3d))
+		run("e2refine_postprocess.py --even {path}/threed_{it:02d}_even.hdf --odd {path}/threed_{it:02d}_odd.hdf --output {path}/threed_{it:02d}.hdf --align --mass {mass} --iter {it} {amask3d} --sym={sym} --underfilter".format(
+			path=options.path,it=it,mass=options.mass,amask3d=amask3d,sym=options.sym))
 
 
 		db.update({"last_map":combfile,"last_even":evenfile,"last_odd":oddfile})
