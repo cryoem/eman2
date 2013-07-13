@@ -142,7 +142,12 @@ def main():
 	if options.path and ("/" in options.path or "#" in options.path) :
 		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
 		sys.exit(1)
-	if not options.path : options.path=numbered_path("r2d",not options.resume)
+	if options.path == None:
+		fls=[int(i[-2:]) for i in os.listdir(".") if i[:4]=="r2d_" and len(i)==6]
+		if len(fls)==0 : fls=[0]
+		options.path = "r2d_{:02d}".format(max(fls)+1)
+		try: os.mkdir(options.path)
+		except: pass
 
 	logid=E2init(sys.argv,options.ppid)
 
@@ -184,7 +189,6 @@ def main():
 
 		# MSA on the footprints
 		fpbasis=options.path+"/input_fp_basis.hdf"
-		fpbasis=fpbasis.split("/")[-1]
 		run("e2msa.py %s %s --normalize --nbasis=%0d"%(fpfile,fpbasis,options.nbasisfp))
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)

@@ -250,7 +250,9 @@ class JSTaskQueue:
 
 	def __init__(self,path=None):
 		"""path should point to the directory where the disk-based task queue will reside without bdb:"""
-		if path==None or len(path)==0 : path="."
+		if path==None or len(path)==0 :
+			path="tmp"
+			if not os.path.isdir("tmp") : os.mkdir("tmp")
 		self.path=path
 		self.active=js_open_dict("%s/tasks_active.json"%path)		# active tasks keyed by id
 		self.complete=file("%s/tasks_complete.txt"%path,"a")	# complete task log
@@ -529,7 +531,7 @@ JSDicts are open at one time."""
 
 		cls.lock.acquire()
 
-		if not isinstance(path,str) : 
+		if not isinstance(path,str) :
 			cls.lock.release()
 			raise Exception,"Must specify path to open JSONDB"
 		if path[-5:]!=".json" :
@@ -537,7 +539,7 @@ JSDicts are open at one time."""
 			raise Exception,"JSON databases must have .json extension ('{}')".format(path)
 
 		try: normpath=os.path.abspath(path)
-		except: 
+		except:
 			cls.lock.release()
 			raise Exception,"Cannot find path for {}".format(path)
 
@@ -549,7 +551,7 @@ JSDicts are open at one time."""
 		except:
 			cls.lock.release()
 			raise Exception,"Unable to open "+path
-		
+
 		cls.lock.release()
 
 #		print "JSON: {} open {} kb".format(len(cls.opendicts),sum([i.filesize for i in cls.opendicts.values()])/1024)

@@ -799,8 +799,16 @@ class EMStackFileType(EMFileType):
 		if path[:2]=="./" : path=path[2:]
 		EMFileType.__init__(self,path)	# the current path this FileType is representing
 		self.nimg=EMUtil.get_image_count(path)
-		im0=EMData(path,0,True)
-		self.dim=(im0["nx"],im0["ny"],im0["nz"])
+		try: im0=EMData(path,0,True)
+		except:
+			for i in xrange(1,10):
+				try: im0=EMData(path,i,True)
+				except: continue
+				break
+		try: self.dim=(im0["nx"],im0["ny"],im0["nz"])
+		except:
+			print "First 10 images all missing in ",path
+			self.dim="?"
 
 	def actions(self):
 		"Returns a list of (name,callback) tuples detailing the operations the user can call on the current file"
@@ -1149,7 +1157,7 @@ Returns 0 if nothing was done
 				self.dim="-"
 				self.nimg="-"
 
-		if cache!=None : 
+		if cache!=None :
 			try: cache.setval(cachename,(time.time(),self.dim,self.filetype,self.nimg,self.size),True)
 			except: pass
 		return 1
@@ -1705,8 +1713,8 @@ class EMBDBInfoPane(EMInfoPane):
 		self.wheadtree.clear()
 		trg=self.bdb.get_header(key)
 
-		if trg==None and key!="...":
 			#print "Warning: tried to read unavailable key: %s"%key
+		if trg==None and key!="...":
 			#print self.bdb.keys()
 			self.addTreeItem("*None*")
 			return

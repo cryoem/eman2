@@ -59,6 +59,7 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--automask3d", default=None, type=str,help="Default=auto. Specify as a processor, eg - mask.auto3d:threshold=1.1:radius=30:nshells=5:nshellsgauss=5.", )
 	parser.add_argument("--underfilter",action="store_true",default=False,help="This will shift the computed Wiener filter to be about 10% more resolution than has been achieved.")
+	parser.add_argument("--sym", dest="sym", type=str,default="c1", help="Symmetry so we can decide how to align the particle.")
 
 	(options, args) = parser.parse_args()
 
@@ -74,12 +75,16 @@ def main():
 	combfile=options.output
 	path=os.path.dirname(combfile)
 	if options.align :
+		if options.sym.lower() in ("icos","tet","oct") or options.sym[0].lower()=="d" : align="" 	# no alignment with higher symmetries
+		elif options.sym[0].lower()=="c" : align=align="--alignref={path}/tmp0.hdf --ralignz".format(path=path)		# z alignment only
+		else: align="--alignref={path}/tmp0.hdf --align=refine_3d".format(path=path)	# full 3-D alignment for C1
+
 		cmd="e2proc3d.py {evenfile} {path}/tmp0.hdf --process=filter.lowpass.gauss:cutoff_freq=.05".format(path=path,evenfile=evenfile)
 		run(cmd)
-		cmd="e2proc3d.py {oddfile} {path}/tmp1.hdf --process=filter.lowpass.gauss:cutoff_freq=.05 --alignref={path}/tmp0.hdf --align=refine_3d".format(path=path,oddfile=oddfile)
+		cmd="e2proc3d.py {oddfile} {path}/tmp1.hdf --process=filter.lowpass.gauss:cutoff_freq=.05 {align}".format(path=path,oddfile=oddfile,align=align)
 		run(cmd)
 		# in case the handedness got swapped due to too much randomization, we need to double-check the inverted handedness in the alignment
-		cmd="e2proc3d.py {oddfile} {path}/tmp2.hdf --process=filter.lowpass.gauss:cutoff_freq=.05 --process=xform.flip:axis=z --alignref={path}/tmp0.hdf --align=refine_3d".format(path=path,oddfile=oddfile)
+		cmd="e2proc3d.py {oddfile} {path}/tmp2.hdf --process=filter.lowpass.gauss:cutoff_freq=.05 --process=xform.flip:axis=z {align}".format(path=path,oddfile=oddfile,align=align)
 		run(cmd)
 		# now we have to check which of the two handednesses produced the better alignment
 		# Pick the best handedness
@@ -126,7 +131,7 @@ def main():
 	### Masking
 	if options.automask3d==None :
 		amask3d="--process=mask.auto3d:threshold={thresh}:radius={radius}:nshells={shells}:nshellsgauss={gshells}:nmaxseed={seed}".format(
-			thresh=sigmanz*.8,radius=nx/10,shells=int(nx*.05+.5),gshells=int(nx*.05),seed=16)
+			thresh=sigmanz*.7,radius=nx/10,shells=int(nx*.1+.5),gshells=int(nx*.05),seed=16)
 	else:
 		amask3d=options.automask3d
 

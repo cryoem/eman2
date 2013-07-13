@@ -42,7 +42,7 @@ from EMAN2jsondb import JSTask,jsonclasses
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """prog [options] 
+	usage = """prog [options]
 	This program will take a set of reference-free class-averages (or other projections) and generate a set of possible
 	3-D initial models. It does this by heavily downsampling the data, then running a number of very fast, full iterative
 	refinements, each seeded with a random starting model. The results are sorted in order of apparent agreement with the
@@ -66,10 +66,10 @@ def main():
 	parser.add_argument("--orientgen",type=str, default="eman",help="The type of orientation generator. Default is safe. See e2help.py orientgens", guitype='combobox', choicelist='dump_orientgens_list()', expert=True, row=2, col=2, rowspan=1, colspan=1)
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel",default="thread:1", guitype='strbox', row=6, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	
+
 	# Database Metadata storage
 	#parser.add_argument("--dbls",type=str,default=None,help="data base list storage, used by the workflow. You can ignore this argument.")
-	
+
 	(options, args) = parser.parse_args()
 	verbose=options.verbose
 
@@ -80,11 +80,11 @@ def main():
 	apix=ptcls[0]["apix_x"]
 	if options.shrink>1 : apix*=options.shrink
 
-	for i in range(len(ptcls)): 
+	for i in range(len(ptcls)):
 		ptcls[i].process_inplace("normalize.edgemean",{})
-		if options.shrink>1 : 
+		if options.shrink>1 :
 			ptcls[i]=ptcls[i].process("math.meanshrink",{"n":options.shrink})
-	if ptcls[0]["nx"]>64 : print "WARNING: using a box-size >64 is not optimial for making initial models. Suggest using --shrink="
+	if ptcls[0]["nx"]>160 : print "WARNING: using a large box size may be slow. Suggest trying --shrink="
 	if not ptcls or len(ptcls)==0 : parser.error("Bad input file")
 	boxsize=ptcls[0].get_xsize()
 	if verbose>0 : print "%d particles %dx%d"%(len(ptcls),boxsize,boxsize)
@@ -93,7 +93,7 @@ def main():
 	try:
 			sfcurve=XYData()
 			sfcurve.read_file("strucfac.txt")
-			
+
 			sfcurve.update()
 	except : sfcurve=None
 
@@ -109,7 +109,7 @@ def main():
 
 	logid=E2init(sys.argv,options.ppid)
 	results=[]
-	
+
 	try: os.mkdir("initial_models")
 	except: pass
 	iters=[int(i[10:12]) for i in os.listdir("initial_models") if i[:10]=="particles_"]
@@ -143,7 +143,7 @@ def main():
 		time.sleep(0.1)
 		curstat=etc.check_task(taskids)			# a list of the progress on each task
 		if options.verbose>1 :
-			if time.time()-ltime>1 : 
+			if time.time()-ltime>1 :
 				print "progress: ",curstat
 				ltime=time.time()
 		for i,j in enumerate(curstat):
@@ -151,10 +151,10 @@ def main():
 				rslt=etc.get_results(taskids[i])		# read the results back from a completed task as a one item dict
 				results.append(rslt[1]["result"])
 				if options.verbose==1 : print "Task {} ({}) complete".format(i,taskids[i])
-				
+
 		# filter out completed tasks. We can't do this until after the previous loop completes
 		taskids=[taskids[i] for i in xrange(len(taskids)) if curstat[i]!=100]
-		
+
 
 	# Write out the final results
 	results.sort()
@@ -164,20 +164,20 @@ def main():
 		j[4].write_image(results_name+"_%02d_init.hdf"%(i+1),0)
 		print out_name,j[1]["quality"],j[0],j[1]["apix_x"]
 		for k,l in enumerate(j[3]): l[0].write_image(results_name+"_%02d_proj.hdf"%(i+1),k)	# set of projection images
-		for k,l in enumerate(j[2]): 
+		for k,l in enumerate(j[2]):
 			l.process("normalize").write_image(results_name+"_%02d_aptcl.hdf"%(i+1),k*2)						# set of aligned particles
 			j[3][l["match_n"]][0].process("normalize").write_image(results_name+"_%02d_aptcl.hdf"%(i+1),k*2+1)	# set of projections matching aligned particles
-		
-	
+
+
 	E2end(logid)
 
 class InitMdlTask(JSTask):
-	
-	def __init__(self,ptclfile=None,ptcln=0,orts=[],tryid=0,strucfac=None,niter=5,sym="c1",verbose=0) :  
+
+	def __init__(self,ptclfile=None,ptcln=0,orts=[],tryid=0,strucfac=None,niter=5,sym="c1",verbose=0) :
 		data={"images":["cache",ptclfile,(0,ptcln)],"strucfac":strucfac,"orts":orts}
 		JSTask.__init__(self,"InitMdl",data,{"tryid":tryid,"iter":niter,"sym":sym,"verbose":verbose},"")
-		
-	
+
+
 	def execute(self,progress=None):
 		sfcurve=self.data["strucfac"]
 		ptcls=EMData.read_images(self.data["images"][1])
@@ -186,11 +186,11 @@ class InitMdlTask(JSTask):
 		verbose=options["verbose"]
 		boxsize=ptcls[0].get_xsize()
 		apix=ptcls[0]["apix_x"]
-		
-		# We make one new reconstruction for each loop of t 
+
+		# We make one new reconstruction for each loop of t
 		threed=[make_random_map(boxsize,sfcurve)]		# initial model
 		apply_sym(threed[0],options["sym"])		# with the correct symmetry
-		
+
 		# This is the refinement loop
 		for it in range(options["iter"]):
 			if progress != None: progress(it*100/options["iter"])
@@ -199,7 +199,7 @@ class InitMdlTask(JSTask):
 			projs=[(threed[it].project("standard",ort),None) for ort in orts]		# projections
 			for i in projs : i[0].process_inplace("normalize.edgemean")
 			if verbose>2: print "%d projections"%len(projs)
-			
+
 			# determine particle orientation
 			bss=0.0
 			bslst=[]
@@ -214,7 +214,7 @@ class InitMdlTask(JSTask):
 				ptcls[i]["match_n"]=n
 				ptcls[i]["match_qual"]=bs[0]
 				ptcls[i]["xform.projection"]=orts[n]	# best orientation set in the original particle
-			
+
 			bslst.sort()					# sorted list of all particle qualities
 			bslst.reverse()
 			aptcls=[]
@@ -223,21 +223,21 @@ class InitMdlTask(JSTask):
 				n=ptcls[bslst[i][1]]["match_n"]
 				aptcls.append(ptcls[bslst[i][1]].align("rotate_translate_flip",projs[n][0],{},"ccc",{}))
 				if it<2 : aptcls[-1].process_inplace("xform.centerofmass",{})
-			
+
 			bss/=len(ptcls)
 
 			# 3-D reconstruction
 			pad=(boxsize*3/2)
 			pad-=pad%8
 			recon=Reconstructors.get("fourier", {"sym":options["sym"],"size":[pad,pad,pad]})
-			
+
 			# insert slices into initial volume
 			recon.setup()
 			for p in aptcls:
 				p2=p.get_clip(Region(-(pad-boxsize)/2,-(pad-boxsize)/2,pad,pad))
 				p3=recon.preprocess_slice(p2,p["xform.projection"])
 				recon.insert_slice(p3,p["xform.projection"],p.get_attr_default("ptcl_repr",1.0))
-				
+
 			# check particle qualities
 			quals=[]
 			for i,p in enumerate(aptcls):
@@ -247,11 +247,11 @@ class InitMdlTask(JSTask):
 				p.mult(p3["reconstruct_norm"])
 				p["reconstruct_absqual"]=p3["reconstruct_absqual"]
 				quals.append(p3["reconstruct_absqual"])
-				
+
 			quals.sort()
 			qual_cutoff=quals[len(quals)/8]		#not using this right now
 			qual=sum(quals)
-			
+
 			mdl=recon.finish(True)
 
 			# insert normalized slices
@@ -262,9 +262,9 @@ class InitMdlTask(JSTask):
 				recon.insert_slice(p3,p["xform.projection"],p.get_attr_default("ptcl_repr",1.0))
 
 			threed.append(recon.finish(True))
-		
+
 			if verbose>1 : print "Iter %d \t %1.4g (%1.4g)"%(it,bss,qual)
-			
+
 			threed[-1].process_inplace("xform.centerofmass")
 			threed[-1]=threed[-1].get_clip(Region((pad-boxsize)/2,(pad-boxsize)/2,(pad-boxsize)/2,boxsize,boxsize,boxsize))
 			threed[-1].process_inplace("mask.gaussian",{"inner_radius":boxsize/3.0,"outer_radius":boxsize/12.0})
@@ -282,7 +282,7 @@ class InitMdlTask(JSTask):
 #			display(threed[-1])
 			#debugging output
 			#for i in range(len(aptcls)):
-				#projs[aptcls[i]["match_n"]].write_image("x.%d.hed"%t,i*2) 
+				#projs[aptcls[i]["match_n"]].write_image("x.%d.hed"%t,i*2)
 				#aptcls[i].write_image("x.%d.hed"%t,i*2+1)
 		#display(threed[-1])
 		#threed[-1].write_image("x.mrc")
@@ -290,15 +290,15 @@ class InitMdlTask(JSTask):
 
 #		if progress!=None : progress(100)		# this should be done automatically when we return
 		return {"result":(bss,threed[-1],aptcls,projs,threed[0])}
-			
-			
+
+
 
 jsonclasses["InitMdlTask"]=InitMdlTask.from_jsondict
 
 def make_random_map(boxsize,sfcurve=None):
 	"""This will make a map consisting of random noise, low-pass filtered and center-weighted for use
 	as a random starting model in initial model generation. Note that the mask is eliptical and has random aspect."""
-	
+
 	ret=EMData(boxsize,boxsize,boxsize)
 	ret.process_inplace("testimage.noise.gauss",{"mean":0.02,"sigma":1.0})
 	#if sfcurve!=None:
@@ -307,9 +307,9 @@ def make_random_map(boxsize,sfcurve=None):
 	ret.process_inplace("xform.centerofmass",{})
 #	ret.process_inplace("mask.gaussian",{"inner_radius":boxsize/3.0,"outer_radius":boxsize/12.0})
 	ret.process_inplace("mask.gaussian.nonuniform",{"radius_x":boxsize/random.uniform(2.0,5.0),"radius_y":boxsize/random.uniform(2.0,5.0),"radius_z":boxsize/random.uniform(2.0,5.0)})
-	
+
 	return ret
-	
+
 def apply_sym(data,sym):
 	"""applies a symmetry to a 3-D volume in-place"""
 	xf = Transform()
@@ -320,8 +320,8 @@ def apply_sym(data,sym):
 		dc=ref.copy()
 		dc.transform(xf.get_sym(sym,i))
 		data.add(dc)
-	data.mult(1.0/nsym)	
-	
+	data.mult(1.0/nsym)
+
 
 if __name__ == "__main__":
     main()
