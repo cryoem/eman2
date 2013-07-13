@@ -402,7 +402,7 @@ def allvsall(options):
 		
 		nnew = len(newptcls)
 		if k == (int(options.iter) - 1) or (nnew + len(oldptcls) ) == 1 :
-			print "This is the final round,k"
+			print "This is the final round", k
 			if options.saveali:
 				print "You selected ; therefore, I will write the latest state of all particles in the inpust stack."
 			
@@ -455,7 +455,7 @@ def allvsall(options):
 				
 				#def __init__(self,fixedimagestack,imagestack,comparison, ptcl1, ptcl2, p1n, p2n,label,options,transform):
 				
-				task = Align3DTaskAVSA(newstack,newstack, jj, reftag, particletag, ptcl1, ptcl2,"Aligning particle#%s VS particle#%s in iteration %d" % (reftag,particletag,k),options)
+				task = Align3DTaskAVSA(newstack,newstack, jj, reftag, particletag, ptcl1, ptcl2,"Aligning particle#%s VS particle#%s in iteration %d" % (reftag,particletag,k),options,k)
 
 				
 				#task = Align3DTaskAVSA(newstack,newstack, jj, reftag, particletag, ptcl1, ptcl2,"Aligning particle#%s VS particle#%s in iteration %d" % (reftag,particletag,k),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
@@ -493,7 +493,7 @@ def allvsall(options):
 					#task = Align3DTaskAVSA( newstack, options.path + '/oldptclstack.hdf', jj , refkey, particlekey, ptcl1, ptcl2,"Aligning particle round#%d_%d VS particle#%s, in iteration %d" % (k,ptcl1,particlekey.split('_')[0] + str(ptcl2),k),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
 					#options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
 					
-					task = Align3DTaskAVSA( newstack, options.path + '/oldptclstack.hdf', jj , refkey, particlekey, ptcl1, ptcl2,"Aligning particle round#%d_%d VS particle#%s, in iteration %d" % (k,ptcl1,particlekey.split('_')[0] + str(ptcl2),k),options)
+					task = Align3DTaskAVSA( newstack, options.path + '/oldptclstack.hdf', jj , refkey, particlekey, ptcl1, ptcl2,"Aligning particle round#%d_%d VS particle#%s, in iteration %d" % (k,ptcl1,particlekey.split('_')[0] + str(ptcl2),k),options,k)
 					
 					
 					tasks.append(task)
@@ -515,7 +515,7 @@ def allvsall(options):
 		if options.verbose > 0:
 			print "In iteration %d the SORTED results are:", k
 			for i in results:
-				print "%s VS %s , score=%f, transform=%s" %(i['ptcl1'], i['ptcl2'], i['score'], i['xform.align3d'] )
+				print "%s VS %s , score=%f, transform=%s" %(i['ptclA'], i['ptclB'], i['score'], i['xform.align3d'] )
 		
 		print "\n\n\n\nIn iteration %d, the total number of comparisons in the ranking list, either new or old that survived, is %d" % (k, len(results))
 		
@@ -527,17 +527,17 @@ def allvsall(options):
 		print "I'm in the averager!!!!!!!!!!!!"
 		
 		for z in range(len(results)):
-			if results[z]['ptcl1'] not in tried and results[z]['ptcl2'] not in tried:
-				tried.add(results[z]['ptcl1'])							#If the two particles in the pair have not been tried, and they're the next "best pair", they MUST be averaged
-				tried.add(results[z]['ptcl2'])							#Add both to "tried" AND "used" 
-				used.add(results[z]['ptcl1'])		
-				used.add(results[z]['ptcl2'])
+			if results[z]['ptclA'] not in tried and results[z]['ptclB'] not in tried:
+				tried.add(results[z]['ptclA'])							#If the two particles in the pair have not been tried, and they're the next "best pair", they MUST be averaged
+				tried.add(results[z]['ptclB'])							#Add both to "tried" AND "used" 
+				used.add(results[z]['ptclA'])		
+				used.add(results[z]['ptclB'])
 													
 				avgr = Averagers.get(options.averager[0], options.averager[1])			#Call the averager
 				
 				avg_ptcls = []
 								
-				ptcl1 = allptclsMatrix[k][results[z]['ptcl1']][0]				
+				ptcl1 = allptclsMatrix[k][results[z]['ptclA']][0]				
 														#You always add all the past particles that went into a particular particle (being
 														#averaged in the current round) freshly from the raw stack to the averager (with
 														#the appropriate transforms they've undergone, of course. Thus, YOU DON'T have to
@@ -546,7 +546,7 @@ def allvsall(options):
 
 				#print "\n\n\nThe indexes in particle 1 are", ptcl1['spt_ptcl_indxs']
 				
-				ptcl1info = allptclsMatrix[k][results[z]['ptcl1']]
+				ptcl1info = allptclsMatrix[k][results[z]['ptclA']]
 				#print "\n\nptcl1 info attached is", ptcl1info
 				
 				ptcl1_indxs_transforms = ptcl1info[-1]
@@ -579,13 +579,13 @@ def allvsall(options):
 						
 				#avgr.add_image(ptcl1)								#Add particle 1 to the average
 				
-				ptcl2 = allptclsMatrix[k][results[z]['ptcl2']][0]
+				ptcl2 = allptclsMatrix[k][results[z]['ptclB']][0]
 						
 				resultingt = results[z]["xform.align3d"]					
 					
 				print "\n\n\nThe indexes in particle 2 are", ptcl2['spt_ptcl_indxs']
 				
-				ptcl2info = allptclsMatrix[k][results[z]['ptcl2']]
+				ptcl2info = allptclsMatrix[k][results[z]['ptclB']]
 				
 				print "\n\nptcl2 info attached is", ptcl2info
 					
@@ -760,16 +760,16 @@ def allvsall(options):
 				
 				mm+=1
 				
-			if results[z]['ptcl1'] not in tried:						#If a particle appeared in the ranking list but its pair was already taken, the particle must be classified as "tried"
-				tried.add(results[z]['ptcl1'])						#because you don't want to average it with any other available particle lower down the list that is available
+			if results[z]['ptclA'] not in tried:						#If a particle appeared in the ranking list but its pair was already taken, the particle must be classified as "tried"
+				tried.add(results[z]['ptclA'])						#because you don't want to average it with any other available particle lower down the list that is available
 													#We only average "UNIQUE BEST PAIRS" (the first occurance in the ranking list of BOTH particles in a pair).
-			if results[z]['ptcl2'] not in tried:
-				tried.add(results[z]['ptcl2'])
+			if results[z]['ptclB'] not in tried:
+				tried.add(results[z]['ptclB'])
 		
 		
 		surviving_results = []
 		for z in range(len(results)):
-			if results[z]['ptcl1'] not in used and results[z]['ptcl2'] not in used:
+			if results[z]['ptclA'] not in used and results[z]['ptclB'] not in used:
 				surviving_results.append(results[z])			
 		
 		surviving_newptcls = {}
@@ -861,8 +861,8 @@ def get_results(etc,tids,verbose):
 				
 				results[comparison]=r[1]["final"][0]					# this will be a list of (qual,Transform), containing the BEST peak ONLY
 				
-				results[comparison]['ptcl1']=r[0].classoptions['ptcl1']			#Associate the result with the pair of particles involved
-				results[comparison]['ptcl2']=r[0].classoptions['ptcl2']
+				results[comparison]['ptclA']=r[0].classoptions['ptclA']			#Associate the result with the pair of particles involved
+				results[comparison]['ptclB']=r[0].classoptions['ptclB']
 
 				ncomplete+=1
 		
@@ -884,14 +884,14 @@ class Align3DTaskAVSA(JSTask):
 	
 	#def __init__(self,fixedimagestack,imagestack,comparison,ptcl1,ptcl2,p1n,p2n,label,mask,normproc,preprocess,lowpass,highpass,npeakstorefine,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,verbose):
 
-	def __init__(self,fixedimagestack,imagestack,comparison, ptcl1, ptcl2, p1n, p2n,label,classoptions):
+	def __init__(self,fixedimagestack,imagestack,comparison, ptclA, ptclB, pAn, pBn,label,classoptions, round):
 		
 		data={}
 		data={"fixedimage":fixedimagestack,"image":imagestack}
 		JSTask.__init__(self,"ClassAv3d",data,{},"")
 
 		#self.options={"comparison":comparison,"ptcl1":ptcl1,"ptcl2":ptcl2,"p1number":p1n,"p2number":p2n,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"lowpass":lowpass,"highpass":highpass,"npeakstorefine":npeakstorefine,"align":align,"aligncmp":aligncmp,"ralign":ralign,"raligncmp":raligncmp,"shrink":shrink,"shrinkrefine":shrinkrefine,"verbose":verbose}
-		self.classoptions={"comparison":comparison,"ptcl1":ptcl1,"ptcl2":ptcl2,"p1number":p1n,"p2number":p2n,"label":label,"classoptions":classoptions}
+		self.classoptions={"comparison":comparison,"ptclA":ptclA,"ptclB":ptclB,"pAn":pAn,"pBn":pBn,"label":label,"classoptions":classoptions, 'round':round}
 	
 	def execute(self,callback=None):
 		
@@ -900,7 +900,7 @@ class Align3DTaskAVSA(JSTask):
 		options=self.classoptions
 		
 		"""
-		CALL the alignment function
+		CALL the alignment function, which is imported from e2spt_classaverage
 		"""
 		
 		print "Will import alignment"
@@ -910,10 +910,18 @@ class Align3DTaskAVSA(JSTask):
 		
 		#def alignment(fixedimage,image,ptcl,label,classoptions,transform):
 		
-		fixedimage = EMData( self.data["fixedimage"], options['p1number'] )
-		image = EMData( self.data["image"], options['p2number'] )
+		fixedimage = EMData( self.data["fixedimage"], options['pAn'] )
+		image = EMData( self.data["image"], options['pBn'] )
 		
-		ret=alignment( fixedimage, image, options['label'], options['classoptions'],None)
+		nptcls = EMUtil.get_image_count( options['classoptions'].input )
+		
+		if options['classoptions'].groups:
+			nptcls = ( nptcls / int(options['classoptions'].groups) ) + nptcls % int(options['classoptions'].groups)
+		
+		potentialcomps = ( nptcls * (nptcls - 1) )/ 2
+		
+		xformslabel = 'round' + str(options['round']).zfill( len( str(options['classoptions'].iter))) + '_comparison' + str(options['comparison']).zfill( len( str(potentialcomps) ) ) + '_ptclA' + str(options['pAn']).zfill( len(str(nptcls))) + '_ptclB' + str(options['pBn']).zfill( len(str(nptcls)))
+		ret=alignment( fixedimage, image, options['label'], options['classoptions'],xformslabel,None)
 		
 		bestfinal=ret[0]
 		bestcoarse=ret[1]
