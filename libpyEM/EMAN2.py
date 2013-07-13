@@ -175,7 +175,7 @@ is complete. If the process is killed, 'end' may never be set."""
 def E2progress(n,progress):
 	"""Updates the progress fraction (0.0-1.0) for a running job. Negative values may optionally be
 set to indicate an error exit."""
-	if EMAN2db.BDB_CACHE_DISABLE : return
+#	if EMAN2db.BDB_CACHE_DISABLE : return		# THIS MUST REMAIN DISABLED NOW THAT THE CACHE IS DISABLED PERMANENTLY !!!
 
 	try:
 		hist=file(".eman2log.txt","r+")
@@ -191,7 +191,7 @@ set to indicate an error exit."""
 def E2end(n):
 	"""E2end(n)
 This function is called to log the end of the current job. n is returned by E2init"""
-	if EMAN2db.BDB_CACHE_DISABLE : return
+#	if EMAN2db.BDB_CACHE_DISABLE : return		# THIS MUST REMAIN DISABLED NOW THAT THE CACHE IS DISABLED PERMANENTLY !!!
 
 	try:
 		hist=file(".eman2log.txt","r+")
