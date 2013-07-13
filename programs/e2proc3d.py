@@ -371,6 +371,7 @@ def main():
 					ary.append((zalignref.cmp("ccc",zimg),z))
 
 				data=data.process("xform.translate.int",{"trans":(0,0,min(ary)[1])})
+				data["xform.align3d"]=Transform({"type":"eman","tz":min(ary)[1]})
 				if options.verbose>0 : print "Z alignment: ",min(ary)[1]
 
 			elif option1 == "align":

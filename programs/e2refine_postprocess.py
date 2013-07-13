@@ -94,11 +94,13 @@ def main():
 		ca=c.cmp("ccc",a)
 		cb=c.cmp("ccc",b)
 		if ca<cb :
-			ali=a["xform.align3d"]
+			try: ali=a["xform.align3d"]
+			except: ali=Transform()
 			o=EMData(oddfile,0)
 			print "correct hand detected ",ali
 		else :
-			ali=b["xform.align3d"]
+			try: ali=b["xform.align3d"]
+			except: ali=Transform()
 			o=EMData(oddfile,0)
 			o.process_inplace("xform.flip",{"axis":"z"})
 			print "handedness flip required",ali
