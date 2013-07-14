@@ -22395,7 +22395,7 @@ int Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector
 								int ttphi = (int( qphi +  ((int)(abs(qphi/nphi))+1)*nphi+ 0.5))%nphi;
 								for (int lphi = -phiwobble; lphi < phiwobble+1; ++lphi) {                                               //#  phi wobble
 									int tphi = (ttphi+lphi+nphi)%nphi;
-			if ( docomp[im*nphi + iphi] ) {
+			if ( docomp[im*nphi + tphi] ) {
 			//cout<<"  initalize   C "<<im<<"    "<<iphi<<endl;
 				std::auto_ptr<EMData> corr( correlation( refproj[tphi], fdata[im], CIRCULANT, true) );
 				ccfs[im][tphi] = Util::window( corr.get(), nwx, nwy);
@@ -22459,7 +22459,7 @@ int Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector
 										float qtphi = fmod( pphi + qphi + (int(fabs(qphi/360.0f))+1)*360.0f , 360.0f);
 										qphi = fmod(540.0f-qtphi, 360.0f) / delta;
 										int tphi = (int( qphi + (int(fabs(qphi/nphi))+1)*nphi  + 0.5))%nphi;
-			if ( doromp[im*nphi + iphi] ) {
+			if ( doromp[im*nphi + tphi] ) {
 			//cout<<"  initalize   D "<<im<<"    "<<iphi<<endl;
 				std::auto_ptr<EMData> corr( correlation( rotproj[tphi], fdata[im], CIRCULANT, true) );
 				ccfr[im][tphi] = Util::window( corr.get(), nwx, nwy);
