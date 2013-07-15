@@ -136,7 +136,8 @@ def main():
 	parser.add_argument("--wedgei",type=float,help="Missingwedge begining (in terms of its 'height' along Z. If you specify 0, the wedge will start right at the origin.", default=0.15)
 	parser.add_argument("--wedgef",type=float,help="Missingwedge ending (in terms of its 'height' along Z. If you specify 1, the wedge will go all the way to the edge of the box.", default=0.9)
 	parser.add_argument("--fitwedgepost", action="store_true", help="Fit the missing wedge AFTER preprocessing the subvolumes, not before, IF using the fsc.tomo comparator for --aligncmp or --raligncmp.", default=False)
-	
+	parser.add_argument("--writewedge", action="store_true", help="Write a subvolume with the shape of the fitted missing wedge if --raligncmp or --aligncmp are fsc.tomo. Default is 'True'. To turn off supply --writewedge=False.", default=True)
+
 	(options, args) = parser.parse_args()
 	print "Wedge paramters ARE defined, see", options.wedgeangle, options.wedgei, options.wedgef
 	print "you do NOT have to use PARALLELISM"
@@ -902,10 +903,19 @@ def get_results(etc,tids,verbose):
 	return results
 
 
-def wedgestats(volume,angle, wedgei, wedgef):
+def wedgestats(volume,angle, wedgei, wedgef, options):
 	#print "RECEIEVED, in wedge statistics, angle, wedgei and wedgef", angle, wedgei, wedgef
 	vfft = volume.do_fft()
-	wedge = vfft.getwedge(angle, wedgei, wedgef)		
+	wedge = vfft.getwedge(angle, wedgei, wedgef)
+	
+	if options.writewedge:
+		wedge.process_inplace('xform.phaseorigin.tocenter')
+		symwedge = wedge.process('xform.mirror', {'axis':'x'})
+		finalwedge = wedge + symwedge
+	
+		wedgename = options.path + '/wedge.hdf'
+		finalwedge.write_image(wedgename,0)
+	
 	mean = vfft.get_attr('spt_wedge_mean')
 	sigma = vfft.get_attr('spt_wedge_sigma')
 	return(mean,sigma)
@@ -1002,12 +1012,12 @@ def alignment(fixedimage,image,label,classoptions,xformslabel,transform):
 		if classoptions.aligncmp[0] == "fsc.tomo" or classoptions.raligncmp[0] == "fsc.tomo":
 			print "THE FSC.TOMO comparator is on, on PRE mode" 
 			if 'spt_wedge_mean' not in image.get_attr_dict() or 'spt_wedge_sigma' not in image.get_attr_dict(): 
-				retri = wedgestats(image,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
+				retri = wedgestats(image,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef,classoptions)
 				image['spt_wedge_mean'] = retri[0]
 				image['spt_wedge_sigma'] = retri[1]
 		
 			if 'spt_wedge_mean' not in fixedimage.get_attr_dict() or 'spt_wedge_sigma' not in fixedimage.get_attr_dict(): 
-				retrf = wedgestats(fixedimage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
+				retrf = wedgestats(fixedimage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef,classoptions)
 				fixedimage['spt_wedge_mean'] = retrf[0]
 				fixedimage['spt_wedge_sigma'] = retrf[1]
 	
@@ -1042,21 +1052,21 @@ def alignment(fixedimage,image,label,classoptions,xformslabel,transform):
 	if classoptions.fitwedgepost:
 		if classoptions.aligncmp[0] == "fsc.tomo" or classoptions.raligncmp[0] == "fsc.tomo":
 			print "THE FSC.TOMO comparator is on, on POST mode" 
-			retr = wedgestats(simage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
+			retr = wedgestats(simage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef,classoptions)
 			simage['spt_wedge_mean'] = retr[0]
 			simage['spt_wedge_sigma'] = retr[1]
 		
-			retr = wedgestats(sfixedimage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
+			retr = wedgestats(sfixedimage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef,classoptions)
 			sfixedimage['spt_wedge_mean'] = retr[0]
 			sfixedimage['spt_wedge_sigma'] = retr[1]
 		
 			if classoptions.ralign and classoptions.shrink != classoptions.shrinkrefine:
 				print "Shrink and shrink refine are", classoptions.shrink != classoptions.shrinkrefine
-				retr = wedgestats(s2image,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
+				retr = wedgestats(s2image,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef,classoptions)
 				s2image ['spt_wedge_mean'] = retr[0]
 				s2image['spt_wedge_sigma'] = retr[1]
 		
-				retr = wedgestats(s2fixedimage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef)
+				retr = wedgestats(s2fixedimage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef,classoptions)
 				s2fixedimage['spt_wedge_mean'] = retr[0]
 				s2fixedimage['spt_wedge_sigma'] = retr[1]
 			else:
