@@ -54,7 +54,10 @@ from e2tiltvalidate import CompareToTiltTask
 from e2symsearch3d import SymAlignTask
 from e2simmx import EMSimTaskDC
 from e2project3d import EMProject3DTaskDC
+
 from e2spt_hac import Align3DTaskAVSA
+from e2spt_simulation import SubtomoSimTask
+
 from e2initialmodel import InitMdlTask
 import SocketServer
 from cPickle import dumps,loads,dump,load
