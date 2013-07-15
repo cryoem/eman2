@@ -888,7 +888,7 @@ class Align3DTaskAVSA(JSTask):
 		
 		data={}
 		data={"fixedimage":fixedimagestack,"image":imagestack}
-		JSTask.__init__(self,"ClassAv3d",data,{},"")
+		JSTask.__init__(self,"SptHac",data,{},"")
 
 		#self.options={"comparison":comparison,"ptcl1":ptcl1,"ptcl2":ptcl2,"p1number":p1n,"p2number":p2n,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"lowpass":lowpass,"highpass":highpass,"npeakstorefine":npeakstorefine,"align":align,"aligncmp":aligncmp,"ralign":ralign,"raligncmp":raligncmp,"shrink":shrink,"shrinkrefine":shrinkrefine,"verbose":verbose}
 		self.classoptions={"comparison":comparison,"ptclA":ptclA,"ptclB":ptclB,"pAn":pAn,"pBn":pBn,"label":label,"classoptions":classoptions, 'round':round}
