@@ -133,6 +133,10 @@ def main():
 	
 	options = sptmakepath(options,'sptsim')
 	
+	rootpath = os.getcwd()
+	
+	if rootpath not in options.path:
+		options.path = rootpath + '/' + options.path
 
 	'''
 	Parse the options
@@ -536,6 +540,7 @@ class SubtomoSimTask(JSTask):
 			
 				if noise:
 					print "I will add noise"
+					noise.process_inplace('normalize')
 					prj_r.add(noise)
 			
 				elif options.snr:
