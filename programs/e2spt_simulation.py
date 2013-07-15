@@ -40,6 +40,7 @@ import operator
 import random
 import numpy
 import math
+from EMAN2jsondb import JSTask,jsonclasses
 
 def main():
 
@@ -117,7 +118,8 @@ def main():
 									for symmetrical tilt series.""")	
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-
+	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default='thread:1')
+	
 	(options, args) = parser.parse_args()	
 	
 	logger = E2init(sys.argv, options.ppid)
@@ -228,7 +230,7 @@ def main():
 		model = EMData(options.input,0)
 		#print "after editing, apix of model is", model['apix_x']
 
-		if options.filter != None:
+		if options.filter:
 			model.process_inplace(options.filter[0],options.filter[1])
 		
 		model.process_inplace('normalize')
@@ -319,7 +321,7 @@ def randomizer(options, model, stackname):
 			
 			random_transform = Transform()	
 			if not options.notrandomize:
-				rand_orient = OrientGens.get("rand",{"n":1, "phitoo":1})				#Generate a random orientation (randomizes all 3 euler angles)
+				rand_orient = OrientGens.get("rand",{"n":1, "phitoo":1})						#Generate a random orientation (randomizes all 3 euler angles)
 				c1_sym = Symmetries.get("c1")
 				random_transform = rand_orient.gen_orientations(c1_sym)[0]
 
@@ -364,148 +366,209 @@ and recounstructs a new 3D volume from the simulated tilt series.
 def subtomosim(options,ptcls,stackname):
 	#print "INSIDE SUBTOMOSIM"
 
-	lower_bound = -1 * options.tiltrange
-	upper_bound = options.tiltrange
+	'''
+	Initialize parallelism if being used
+	'''
+	if options.parallel :
+		print "\n\nINITIALIZING PARALLELISM!"
+		print "\n\n"
+		from EMAN2PAR import EMTaskCustomer
+		etc=EMTaskCustomer(options.parallel)
+		
+
 	
-	#nslices = int(round((upper_bound - lower_bound)/ options.tiltstep))
-	#if options.nslices:
-	nslices = options.nslices
-	tiltstep = round(( float(upper_bound) - float(lower_bound) )/ float(nslices - 1),2)	
-	
-	#nslices = int(round((upper_bound - lower_bound)/ options.tiltstep))		
 	
 	if options.verbose:
 		print "There are these many particles in the set", len(ptcls)
-		print "And these many slices to simulate each subtomogram", nslices
+		print "And these many slices to simulate each subtomogram", options.nslices
 	
 	outname = stackname.replace('.hdf','_ptcls.hdf')
 	
 	if len(ptcls) == 1 and '_SIM.hdf' in stackname:
 		outname = stackname.split('/')[-1]
 	
-	tomogramdata=[]
+	#tomogramdata=[]
 	
 	#print "\n\n\n%%%%%%%%%%%%%%%%The number of particles are", len(ptcls)
 	#print "\n\n\n"
+	tasks=[]
 	for i in range(len(ptcls)):
+	
+		#if options.parallel:			
+		task=SubtomoSimTask(ptcls[i],i,options,outname)
+		tasks.append(task)
+	
+	tids=etc.send_tasks(tasks)
+	
+	results = get_results(etc,tids,options)
+	
+	if options.tomogramoutput:
+		tomogramsim(options,results)
+
+	return(1)
+	
+	
+	
+class SubtomoSimTask(JSTask):
+	"""This is a task object for the parallelism system. It is responsible for generating a simulated subtomogram."""	
+	
+	def __init__(self,image,ptclnum,options,outname):
+	
+		"""fixedimage and image may be actual EMData objects, or ["cache",path,number]
+		label is a descriptive string, not actually used in processing
+		ptcl is not used in executing the task, but is for reference
+		other parameters match command-line options from e2spt_classaverage.py
+		Rather than being a string specifying an aligner, 'align' may be passed in as a Transform object, representing a starting orientation for refinement"""
+		#data={}
+		#data={"fixedimage":fixedimage,"image":image}
+		data={"image":image}
+		
+		JSTask.__init__(self,"SubTomoSim",data,{},"")
+
+		#self.classoptions={"options":options,"ptcl":ptcl,"label":label,"mask":options.mask,"normproc":options.normproc,"preprocess":options.preprocess,"lowpass":options.lowpass,"highpass":options.highpass,"npeakstorefine":options.npeakstorefine,"align":options.align,"aligncmp":options.aligncmp,"ralign":options.ralign,"raligncmp":options.raligncmp,"shrink":options.shrink,"shrinkrefine":options.shrinkrefine,"transform":transform,"verbose":options.verbose,"randomizewedge":options.randomizewedge,"wedgeangle":options.wedgeangle,"wedgei":options.wedgei,"wedgef":options.wedgef}
+		self.classoptions={"options":options,"ptclnum":ptclnum,"outname":outname}
+	
+	def execute(self,callback=None):
+		"""This simulates a subtomogram and saves projections before and after adding noise if instructed to."""
+		options=self.classoptions['options']
+		
+		i = self.classoptions['ptclnum']
+		
+		image = self.data['image']
+		
+		outname = self.classoptions['outname']
+		
 		if options.verbose:
 			print "Generating projections for particle #", i
 
-		apix = ptcls[i]['apix_x']
+		#apix = ptcls[i]['apix_x']
+		apix = image['apix_x']
+		
+		
+		
+		
+		
+		lower_bound = -1 * options.tiltrange
+		upper_bound = options.tiltrange
+	
+		nslices = options.nslices
+		tiltstep = round(( float(upper_bound) - float(lower_bound) )/ float(nslices - 1),2)	
+	
+		#nslices = int(round((upper_bound - lower_bound)/ options.tiltstep))	
 		
 		#print "\n\nBBBBBBBBBB\n\nThe apix of the simulated ptcl is", apix
 		#print "\n\nBBBBBBBBBB\n\n"
-		
-		px = random.uniform(-1* options.gridholesize/2 + ptcls[i]['nx']/2, options.gridholesize/2 - ptcls[i]['nx']/2)			#random distance in X of the particle's center from the tilt axis, at tilt=0
+	
+		px = random.uniform(-1* options.gridholesize/2 + image['nx']/2, options.gridholesize/2 - image['nx']/2)			#random distance in X of the particle's center from the tilt axis, at tilt=0
 																																#The center of a particle cannot be right at the edge of the tomogram; it has to be
 																																#at least ptcl_size/2 away from it
 		alt = lower_bound
 		raw_projections = []
 		ctfed_projections = []
-		
-		randT = ptcls[i]['sptsim_randT']
-		
+	
+		randT = image['sptsim_randT']
+	
 		#print "Will process particle i", i
 		#print "Nslices are", nslices
 		#print "Lower bound is", lower_bound
-		
+	
 		for j in range(nslices):
 			realalt = alt + j*tiltstep
-			
+		
 			#print "Real alt is", realalt
 			#print "Iterating over slices. Am in tiltstep, slice, alt", tiltstep,j,realalt
-			
+		
 			t = Transform({'type':'eman','az':90,'alt':realalt,'phi':0})				#Generate the projection orientation for each picture in the tilt series
-			
+		
 			dz = -1 * px * numpy.sin(realalt)							#Calculate the defocus shift per picture, per particle, depending on the 
 																	#particle's position relative to the tilt axis. For particles left of the tilt axis,
 																	#px is negative. With negative alt [left end of the ice down, right end up], 
 																	#dz should be negative.
 			defocus = options.defocus + dz
-						
-			prj = ptcls[i].project("standard",t)
+					
+			prj = image.project("standard",t)
 			prj.set_attr('xform.projection',t)
 			prj['apix_x']=apix
 			prj['apix_y']=apix
 			prj['sptsim_tiltangle']=realalt
-			
+		
 			#print "The size of the prj is", prj['nx']
-			
+		
 			prj.process_inplace('normalize')
-			
+		
 			if options.saveprjs:
 				if options.path + '/' in stackname:
 					prj.write_image( stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsRAW.hdf') , j)					#Write projections stack for particle i
 				else:
 					prj.write_image( options.path + '/' + stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsRAW.hdf') , j)					#Write projections stack for particle i
-					
+				
 			raw_projections.append(prj)
-					
+				
 			prj_fft = prj.do_fft()
-			
+		
 			if options.negativecontrast:
 				prj_fft.mult(-1)								#Reverse the contrast, as in "authentic" cryoEM data		
-			
+		
 			if options.applyctf:
 				ctf = EMAN2Ctf()
 				ctf.from_dict({'defocus':options.defocus,'bfactor':100,'ampcont':0.05,'apix':apix,'voltage':options.voltage,'cs':options.cs})	
 				prj_ctf = prj_fft.copy()	
 				ctf.compute_2d_complex(prj_ctf,Ctf.CtfType.CTF_AMP)
 				prj_fft.mult(prj_ctf)
-			
+		
 			prj_r = prj_fft.do_ift()							#Go back to real space
 			noise = ''
-			
+		
 			if options.snr and options.snr != 0.0 and options.snr != '0.0' and options.snr != '0':
 				nx=prj_r['nx']
 				ny=prj_r['ny']
-				
+			
 				#print "I will make noise"
-				
+			
 				#noise = 'noise string'
 				#print "Noise is", noise
 				noise = test_image(1,size=(nx,ny))
 				#print "noise now is img", noise
-				
+			
 				noise2 = noise.process("filter.lowpass.gauss",{"cutoff_abs":.25})
 				noise.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.75})
 				noise = ( noise*3 + noise2*3 ) * int(options.snr)
-				
+			
 				if noise:
 					print "I will add noise"
 					prj_r.add(noise)
-				
+			
 				elif options.snr:
 					print "WARNING: You specified snr but there's no noise to add, apparently!"
 
 			ctfed_projections.append(prj_r)		
 			#print "Appended ctfed prj in slice j", j
-			
+		
 			if options.saveprjs and options.applyctf or options.saveprjs and options.snr:
 				if options.path + '/' in stackname:
 					prj_r.write_image( stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsEDITED.hdf') , j)
 				else:
 					prj_r.write_image(options.path + '/' + stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsEDITED.hdf') , j)	
-						
+					
 			#alt += tiltstep
 			#print "\nAt end of loop after adding tiltstep, tiltstep,alt are", tiltstep,realalt
 			#print "\n$$$$$$$$$"
-		
+	
 		#print "\n########I am done with all the slices for particle", i
-		
-		box = ptcls[i].get_xsize()
-		
+	
+		box = image.get_xsize()
+	
 		if options.finalboxsize:
 			box = options.finalboxsize
-		
+	
 		#print "The boxsize to use is", options.finalboxsize
-		
+	
 		r = Reconstructors.get(options.reconstructor[0],{'size':(box,box,box),'sym':'c1','verbose':True,'mode':'gauss_2'})
 		#r = Reconstructors.get(options.reconstructor[0],options.reconstructor[1])
 		r.setup()
-		
+	
 		#print "There are these many projections to add to backprojection after all processing", len(ctfed_projections)
-		
+	
 		k=0
 		for p in ctfed_projections:
 			#print "Adding projection k", k
@@ -514,33 +577,70 @@ def subtomosim(options,ptcls,stackname):
 			p = r.preprocess_slice(p,p['xform.projection'])
 			r.insert_slice(p,p['xform.projection'],1.0)
 			k+=1
-			
+		
 		#print "\n\n!!!!!!Will reconstruct the volume for particle i",i
-		
+	
 		rec = r.finish(True)
-		
+	
 		#print "The mean of the reconstructed particle is", rec['mean']
 		#mname = parameters['model'].split('/')[-1].split('.')[0]
 		#name = 'rec_' + mname + '#' + str(i).zfill(len(str(len(particles)))) + '.hdf'
-		
+	
 		rec['apix_x']=apix
 		rec['apix_y']=apix
 		rec['apix_z']=apix
 		rec['sptsim_randT'] = randT
-		
-		if options.tomogramoutput:
-			py = random.uniform(0 + ptcls[i]['nx']/2, options.gridholesize - ptcls[i]['nx']/2)									#random distance in Y of the particle's center from the bottom edge in the XY plane, at tilt=0
-			pz = random.uniform(0 + ptcls[i]['nx']/2, options.icethickness - ptcls[i]['nx']/2) 
-			tomogramdata.append({'ptcl':rec,'px':px,'py':py,'pz':pz})
+	
 		
 		#print "The apix of rec is", rec['apix_x']
-		
-		rec.write_image(options.path + '/' + outname,i)
+
 	
-	if options.tomogramoutput:
-		tomogramsim(options,tomogramdata)
+		rec.write_image(options.path + '/' + outname,i)
+
+		if options.tomogramoutput:
+			py = random.uniform(0 + image['nx']/2, options.gridholesize - image['nx']/2)									#random distance in Y of the particle's center from the bottom edge in the XY plane, at tilt=0
+			pz = random.uniform(0 + image['nx']/2, options.icethickness - image['nx']/2) 		
+			return {'ptcl':rec,'px':px,'py':py,'pz':pz}
+			
+		else:
+			return
+
+
+jsonclasses["SubtomoSimTask"]=SubtomoSimTask.from_jsondict
+
+
+def get_results(etc,tids,options):
+	"""This will get results for a list of submitted tasks. Won't return until it has all requested results.
+	aside from the use of options["ptcl"] this is fairly generalizable code. """
+	
+	# wait for them to finish and get the results
+	# results for each will just be a list of (qual,Transform) pairs
+	results=[0]*len(tids)		# storage for results
+	ncomplete=0
+	tidsleft=tids[:]
+	while 1:
+		time.sleep(5)
+		proglist=etc.check_task(tidsleft)
+		nwait=0
+		for i,prog in enumerate(proglist):
+			if prog==-1 : nwait+=1
+			if prog==100 :
+				r=etc.get_results(tidsleft[i])					# results for a completed task
+				
+				if r:
+					ptclnum = r[0].classoptions["ptclnum"]			# get the particle number from the task rather than trying to work back to it
+					results[ptclnum] = r[0]						# this will be a list of (qual,Transform)
+				ncomplete+=1
 		
-	return(1)	
+		tidsleft=[j for i,j in enumerate(tidsleft) if proglist[i]!=100]		# remove any completed tasks from the list we ask about
+		if options.verbose:
+			print "  %d tasks, %d complete, %d waiting to start        \r"%(len(tids),ncomplete,nwait)
+			sys.stdout.flush()
+	
+		if len(tidsleft)==0: break
+		
+	return results
+
 
 
 def tomogramsim(options,tomogramdata):
@@ -568,6 +668,8 @@ def tomogramsim(options,tomogramdata):
 	T.process_inplace('math.addnoise',{'noise':1})
 	tomogrampath = options.path + '/' + options.tomogramoutput
 	T.write_image(tomogrampath,0)
+	
+
 
 if __name__ == '__main__':
 	main()
