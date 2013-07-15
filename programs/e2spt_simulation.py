@@ -131,37 +131,6 @@ def main():
 	
 	options = sptmakepath(options,'sptsim')
 	
-	"""
-	if options.path and ("/" in options.path or "#" in options.path) :
-		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
-		sys.exit(1)
-
-	if not options.path: 
-		#options.path="bdb:"+numbered_path("sptavsa",True)
-		options.path = "sptsim_01"
-	
-	files=os.listdir(os.getcwd())
-	while options.path in files:
-		if '_' not in options.path:
-			#print "I will add the number"
-			options.path = options.path + '_00'
-		else:
-			jobtag=''
-			components=options.path.split('_')
-			if components[-1].isdigit():
-				components[-1] = str(int(components[-1])+1).zfill(2)
-			else:
-				components.append('00')
-						
-			options.path = '_'.join(components)
-			#print "The new options.path is", options.path
-
-	if options.path not in files:
-		
-		#print "I will make the path", options.path
-		os.system('mkdir ' + options.path)
-	"""
-	
 
 	'''
 	Parse the options
@@ -462,7 +431,7 @@ def subtomosim(options,ptcls,stackname):
 			
 			#print "The size of the prj is", prj['nx']
 			
-			#prj.process_inplace('normalize')
+			prj.process_inplace('normalize')
 			
 			if options.saveprjs:
 				if options.path + '/' in stackname:
@@ -503,7 +472,7 @@ def subtomosim(options,ptcls,stackname):
 				noise = ( noise*3 + noise2*3 ) * int(options.snr)
 				
 				if noise:
-					#print "I will add noise"
+					print "I will add noise"
 					prj_r.add(noise)
 				
 				elif options.snr:
