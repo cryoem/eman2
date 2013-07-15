@@ -114,9 +114,9 @@ def main():
 	parser.add_argument("--shrink", type=int,default=0,help="Optionally shrink the input volumes by an integer amount for coarse alignment.", guitype='shrinkbox', row=5, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
 	parser.add_argument("--shrinkrefine", type=int,default=0,help="Optionally shrink the input volumes by an integer amount for refine alignment.", guitype='intbox', row=5, col=2, rowspan=1, colspan=1, mode='alignment')
 	
-	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default='', guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	#parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default='', guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 
-	#parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:1", guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:1", guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	#parser.add_argument("--automask",action="store_true",help="Applies a 3-D automask before centering. Can help with negative stain data, and other cases where centering is poor.")
 	#parser.add_argument("--resample",action="store_true",help="If set, will perform bootstrap resampling on the particle data for use in making variance maps.",default=False)
 	#parser.add_argument("--odd", default=False, help="Used by EMAN2 when running eotests. Includes only odd numbered particles in class averages.", action="store_true")
@@ -139,9 +139,10 @@ def main():
 	parser.add_argument("--writewedge", action="store_true", help="Write a subvolume with the shape of the fitted missing wedge if --raligncmp or --aligncmp are fsc.tomo. Default is 'True'. To turn off supply --writewedge=False.", default=True)
 
 	(options, args) = parser.parse_args()
-	print "Wedge paramters ARE defined, see", options.wedgeangle, options.wedgei, options.wedgef
-	print "you do NOT have to use PARALLELISM"
-	print "\n\noptions.parallel is", options.parallel
+	
+	if 'fsc.tomo' in options.aligncmp or 'fsc.tomo' in options.raligncmp:
+		print "Wedge paramters ARE defined, see", options.wedgeangle, options.wedgei, options.wedgef
+	
 
 	if int(options.groups) > 1 and int(options.iter) > 1:
 		print "ERROR: --groups cannot be > 1 if --iter is > 1."
@@ -889,7 +890,7 @@ def get_results(etc,tids,verbose):
 			if prog==-1 : nwait+=1
 			if prog==100 :
 				r=etc.get_results(tidsleft[i])			# results for a completed task
-				ptcl=r[0].classoptions["ptcl"]			# get the particle number from the task rather than trying to work back to it
+				ptcl=r[0].classoptions["ptclnum"]			# get the particle number from the task rather than trying to work back to it
 				results[ptcl]=r[1]["final"]				# this will be a list of (qual,Transform)
 				ncomplete+=1
 		
@@ -957,8 +958,11 @@ class Align3DTask(JSTask):
 		"""
 		CALL the alignment function
 		"""
-		nptcls = EMUtil.get_image_count(classoptions.input)
-		xformslabel = 'tomo_' + str(classoptions.ptclnum).zfill( len( str(nptcls) ) )
+		nptcls = EMUtil.get_image_count(classoptions['options'].input)
+		
+		print "classoptions are", classoptions
+		
+		xformslabel = 'tomo_' + str(classoptions['ptclnum']).zfill( len( str(nptcls) ) )
 		ret=alignment(fixedimage,image,classoptions['label'],classoptions['options'],xformslabel,classoptions['transform'])
 
 		bestfinal=ret[0]
