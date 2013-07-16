@@ -1120,8 +1120,13 @@ Returns 0 if nothing was done
 		if self.nimg>0 :
 			try: tmp=EMData(self.path(),0,True)		# try to read an image header for the file
 			except :
-				print "Error : no first image in %s."%self.path()
-				tmp=EMData(self.path(),1,True)
+				for i in xrange(1,10):
+					try: tmp=EMData(self.path(),i,True)
+					except: continue
+					break
+				if i==9 :
+					print "Error: all of the first 10 images are missing !"
+					return
 
 			if tmp["ny"]==1 : self.dim=str(tmp["nx"])
 			elif tmp["nz"]==1 : self.dim="%d x %d"%(tmp["nx"],tmp["ny"])

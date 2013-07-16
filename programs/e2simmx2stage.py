@@ -75,11 +75,11 @@ def main():
 	parser.add_argument("--force", "-f",dest="force",default=True, action="store_true",help="Deprecated. Value ignored")
 
 	(options, args) = parser.parse_args()
-	
+
 	if len(args)<6 : parser.error("Please specify all filenames : <c input> <r input> <output> <ref simmx> <stg1 refs> <stg1 simmx>")
-	
+
 	E2n=E2init(sys.argv,options.ppid)
-	
+
 
 	clen=EMUtil.get_image_count(args[0])
 	rlen=EMUtil.get_image_count(args[1])
@@ -90,43 +90,45 @@ def main():
 	if not options.finalstage :
 		############### Step 1 - classify the reference images
 
+		E2progress(E2n,0.001)
 		# compute the reference self-similarity matrix
 		cmd="e2simmx.py %s %s %s --shrink=%d --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali --force --verbose=%d"%(args[0],args[0],args[3],options.shrinks1, options.verbose-1)
 		if options.prefilt : cmd+=" --prefilt"
 		if options.parallel!=None : cmd+=" --parallel="+options.parallel
 		print "executing ",cmd
 		launch_childprocess(cmd)
-		
+
+		E2progress(E2n,0.10)
 		# Go through the reference self-simmx and determine the most self-dissimilar set of references
 		print "Finding %d dissimilar classification centers"%clen_stg1
 		ref_simmx=EMData(args[3],0)
 		ref_orts=EMData.read_images(args[3],(1,2,3,4))
-		centers=[0]		# start with the first (generally a top view) image regardless 
+		centers=[0]		# start with the first (generally a top view) image regardless
 		for i in xrange(clen_stg1-1) :
 			best=(0,-1)
 			for j in xrange(clen):
 				if j in centers : continue
-				
+
 				#here we find the sum of the distances to this point
 				#simsum=0
-				#for k in centers: 
+				#for k in centers:
 					#simsum+=ref_simmx[j,k]
-					
+
 				# here we find the distance to the closest matching existing point
 				# so we find the point with the largest minimum distance to its nearest neighbor
 				simsum=1.0e30
 				for k in centers:
 					if ref_simmx[j,k]<simsum: simsum=ref_simmx[j,k]
-					
+
 				if best[1]<0 or simsum>best[0] : best=(simsum,j)
 			centers.append(best[1])
-			
+
 	#	print centers
 		# Re-sort references by similarity
 		print "Sort references"
 		for i in range(1,clen_stg1-1):
 			for j in range(i+1,clen_stg1):
-				if ref_simmx[centers[i-1],centers[i]]>ref_simmx[centers[i-1],centers[j]] : centers[i],centers[j]=centers[j],centers[i] 
+				if ref_simmx[centers[i-1],centers[i]]>ref_simmx[centers[i-1],centers[j]] : centers[i],centers[j]=centers[j],centers[i]
 
 		# now associate each reference with the closest center
 		print "Associating references with centers"
@@ -155,7 +157,8 @@ def main():
 			avg["class_ptcl_idxs"]=i
 			avg["class_ptcl_src"]=args[0]
 			avg.write_image(args[4],ii)
-				
+
+		E2progress(E2n,0.15)
 		############### Step 2 - classify the particles against the averaged references
 		print "First stage particle classification"
 		cmd="e2simmx.py %s %s %s --shrink=%d --align=%s --aligncmp=%s  --cmp=%s  --saveali --force --verbose=%d"%(args[4],args[1],args[5],options.shrinks1,
@@ -169,8 +172,9 @@ def main():
 	else :
 		# reread classification info
 		classes=[i["class_ptcl_idxs"] for i in EMData.read_images(args[4],None,True)]
-		
 
+
+	E2progress(E2n,0.60)
 	############### Step 3 - classify particles against subset of original projections
 	# Now we need to convert this small classification into a 'seed' for the large classification matrix for simplicity
 	print "Seeding full classification matrix (%d x %d) -> %s"%(clen,rlen,args[2])
@@ -182,18 +186,18 @@ def main():
 		# find the best classes from the coarse search
 		vals=[(mxstg1[cls1,ptcl],cls1) for cls1 in range(clen_stg1)]
 		vals.sort()
-		
+
 		# then set the corresponding values in the best 4 stage 1 classes in the full matrix to 0
 		for j in xrange(4):
 			for i in classes[vals[j][1]]: mx[i,ptcl]=0.0
-			
+
 	mx.update()
 	mx.write_image(args[2],0)
 #	mx.write_image("bdb:refine_02#simmx_00_x",0)
 
 	mx.to_zero()
 	if options.saveali:
-		for i in xrange(1,6): 
+		for i in xrange(1,6):
 			mx.write_image(args[2],i)		# seed alignment data with nothing
 #			mx.write_image("bdb:refine_02#simmx_00_x",i)
 
@@ -202,29 +206,30 @@ def main():
 	cmd = "e2simmx.py %s %s %s -f --saveali --cmp=%s --align=%s --aligncmp=%s --fillzero --nofilecheck --force --verbose=%d"  %(args[0],args[1],args[2],options.cmp,options.align,options.aligncmp, options.verbose-1)
 	if options.mask!=None : cmd += " --mask=%s"%options.mask
 	if options.colmasks!=None : cmd += " --colmasks=%s"%options.colmasks
-	
+
 	if ( options.ralign != None ):
 		cmd += " --ralign=%s --raligncmp=%s" %(options.ralign,options.raligncmp)
-	
+
 	if options.verbose>0:
 		cmd += " --verbose=%d"%(options.verbose-1)
-	
+
 	if options.prefilt : cmd+=" --prefilt"
 	if options.parallel: cmd += " --parallel=%s" %options.parallel
-	
-	#if (options.lowmem): e2simmxcmd += " --lowmem"	
-	
+
+	#if (options.lowmem): e2simmxcmd += " --lowmem"
+
 	if (options.shrink):
 		cmd += " --shrink="+str(options.shrink)
-		
+
 	print "executing ",cmd
 	launch_childprocess(cmd)
-	
+
+	E2progress(E2n,1.0)
 
 #	E2progress(E2n,float(r-rrange[0])/(rrange[1]-rrange[0]))
-	
+
 	E2end(E2n)
-	
+
 
 if __name__ == "__main__":
     main()

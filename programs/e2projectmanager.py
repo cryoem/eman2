@@ -1429,11 +1429,11 @@ class TaskManager(QtGui.QWidget):
 			if command=="e2projectmanager.py" : raise Exception
 		except:
 			# If the process is not running nor complete then list it as crashed
-#			if  loc:
-#				fout=open(self.pm().getPMCWD()+"/.eman2log.txt","r+")
-#				fout.seek(loc+20)
-#				fout.write("crashed            ")
-#				fout.close()
+			if  loc:
+				fout=open(self.pm().getPMCWD()+"/.eman2log.txt","r+")
+				fout.seek(loc+20)
+				fout.write("crashed            ")
+				fout.close()
 			return False
 
 		return True
@@ -1508,10 +1508,10 @@ class TaskManager(QtGui.QWidget):
 		listitems = self.getListItems()
 		for t in self.tasks:
 			if t[1] in listitems.keys():
-				listitems[t[1]].setText("%s  %s(%s)  %s"%(t[2][5:16],t[3][:4],t[1],t[4]))
+				listitems[t[1]].setText("%s  %s (%s)  %s"%(t[2][5:16],t[3][:4],t[1],t[4]))
 				del(listitems[t[1]])
 				continue
-			listwigetitem = PMQListWidgetItem("%s  %s(%s)  %s"%(t[2][5:16],t[3][:4],t[1],t[4]))
+			listwigetitem = PMQListWidgetItem("%s  %s (%s)  %s"%(t[2][5:16],t[3][:4],t[1],t[4]))
 			listwigetitem.setPID(t[1])
 			listwigetitem.setPPID(t[5])
 			listwigetitem.setProgramName(t[4])

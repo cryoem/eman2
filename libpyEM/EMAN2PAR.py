@@ -64,7 +64,7 @@ from cPickle import dumps,loads,dump,load
 from struct import pack,unpack
 
 # If we can't import it then we probably won't be trying to use MPI
-try : 
+try :
 	from mpi import *
 	from mpi_eman import *
 except : pass
@@ -92,14 +92,14 @@ class EMTaskCustomer:
 	"""This will communicate with the specified task server on behalf of an application needing to
 	have tasks completed"""
 	def __init__(self,target):
-		"""Specify the type and target host of the parallelism server to use. 
+		"""Specify the type and target host of the parallelism server to use.
 	dc[:hostname[:port]] - default hostname localhost, default port 9990
 	thread:nthreads[:scratch_dir]
 	mpi:ncpu[:scratch_dir_on_nodes]
 	"""
 		target=target.lower()
 		self.servtype=target.split(":")[0]
-		
+
 		if self.servtype=="dc" :
 			self.addr=target.split(":")[1:]
 			if len(self.addr)==0 : self.addr=("",9990)
@@ -117,8 +117,8 @@ class EMTaskCustomer:
 			self.maxthreads=int(target.split(":")[1])
 			try: self.scratchdir=target.split(":")[2]
 			except: self.scratchdir="/tmp"
-			try: 
-				if target.split(":")[3].lower()=="nocache" : 
+			try:
+				if target.split(":")[3].lower()=="nocache" :
 					self.cache=False
 					print "Caching disabled at user request"
 				else: self.cache=True
@@ -140,11 +140,11 @@ class EMTaskCustomer:
 		time.sleep(delay)
 		try:
 			x=EMDCsendonecom(self.addr,"TEST",None)
-			if (x[0]=="TEST") : 
+			if (x[0]=="TEST") :
 				print "%s: Server is ok now"%time.ctime()
 				return
 		except: pass
-		
+
 		self.wait_for_server(delay*2)
 		return
 
@@ -152,21 +152,21 @@ class EMTaskCustomer:
 		"""This will cause a list of files to be precached on the compute nodes before actual computation begins"""
 		if self.servtype=="dc" :
 			filelist=[abs_path(i) for i in filelist]
-			
+
 			try: EMDCsendonecom(self.addr,"CACH",filelist)
 			except:
 				self.wait_for_server()
 				EMDCsendonecom(self.addr,"CACH",filelist)
 		elif self.servtype=="mpi":
 			self.handler.precache(filelist)
-			
+
 	def cpu_est(self,wait=True):
 		"""Returns an estimate of the number of available CPUs based on the number
 		of different nodes we have talked to. Doesn't handle multi-core machines as
 		separate entities yet. If wait is set, it will not return until ncpu > 1"""
 		if self.servtype =="thread" : return self.maxthreads
 		if self.servtype =="mpi" : return self.maxthreads-1
-		
+
 		if self.servtype=="dc" :
 			n=0
 			while (n==0) :
@@ -181,17 +181,17 @@ class EMTaskCustomer:
 					n=EMDCsendonecom(self.addr,"NCPU",None)
 					signal.alarm(0)
 				if not wait : return n
-				if n==0 : 
+				if n==0 :
 					print "Server reports no CPUs available. I will try again in 60 sec"
 			return n
 
 	def new_group(self):
 		"""request a new group id from the server for use in grouping subtasks"""
-		
+
 		if self.servtype in ("thread","mpi"):
 			self.groupn+=1
 			return self.groupn
-		
+
 		if self.servtype=="dc" :
 			try: return EMDCsendonecom(self.addr,"NGRP",None)
 			except:
@@ -203,11 +203,11 @@ class EMTaskCustomer:
 		if self.servtype in ("thread","mpi") :
 			self.handler.stop()
 			raise Exception,"MPI/Threaded parallelism doesn't support respawning tasks"
-		
+
 		if self.servtype=="dc":
 			while (1):
 				signal.alarm(120)
-				try: 
+				try:
 					ret=EMDCsendonecom(self.addr,"RQUE",tid)
 					signal.alarm(0)
 					return ret
@@ -224,11 +224,11 @@ class EMTaskCustomer:
 		for task in tasks:
 			try: task.user=getpass.getuser()
 			except: task.user="anyone"
-		
+
 		if self.servtype in ("thread","mpi"):
 			return [self.handler.add_task(t) for t in tasks]
 
-			
+
 		if self.servtype=="dc" :
 			for task in tasks:
 				for k in task.data:
@@ -239,7 +239,7 @@ class EMTaskCustomer:
 					except: pass
 
 			# Try to open a socket until we succeed
-			try: 
+			try:
 				signal.alarm(360)		# sometime there is a lot of congestion here...
 				ret=EMDCsendonecom(self.addr,"TSKS",tasks)
 				signal.alarm(0)
@@ -251,18 +251,18 @@ class EMTaskCustomer:
 				self.wait_for_server()
 				signal.alarm(0)
 				return EMDCsendonecom(self.addr,"TSKS",tasks)
-		
+
 		raise Exception,"Unknown server type"
 
 	def send_task(self,task):
 		"""Send a task to the server. Returns a taskid."""
-		
+
 		try: task.user=getpass.getuser()
 		except: task.user="anyone"
-		
+
 		if self.servtype in ("thread","mpi"):
 			return self.handler.add_task(task)
-		
+
 		if self.servtype=="dc" :
 			for k in task.data:
 				try :
@@ -270,8 +270,8 @@ class EMTaskCustomer:
 						task.data[k]=list(task.data[k])
 						task.data[k][1]=abs_path(task.data[k][1])
 				except: pass
-				
-			try: 
+
+			try:
 				signal.alarm(120)
 				ret=EMDCsendonecom(self.addr,"TASK",task)
 				signal.alarm(0)
@@ -291,7 +291,7 @@ class EMTaskCustomer:
 		that hasn't been started. 0-99 for tasks that have begun, but not completed. 100 for completed tasks."""
 		if self.servtype in ("thread","mpi") :
 			return self.handler.check_task(taskid_list)
-		
+
 		if self.servtype=="dc":
 			try:
 				signal.alarm(180)
@@ -305,13 +305,13 @@ class EMTaskCustomer:
 				return EMDCsendonecom(self.addr,"STAT",taskid_list)
 		print self.servtype
 		raise Exception,"Unknown server type"
-	
+
 	def get_results(self,taskid,retry=True):
 		"""Get the results for a completed task. Returns a tuple (task object,dictionary}."""
-		
+
 		if self.servtype in ("thread","mpi") :
 			return self.handler.get_results(taskid)
-		
+
 		if self.servtype=="dc":
 			try:
 				signal.alarm(180)
@@ -319,10 +319,10 @@ class EMTaskCustomer:
 				sockf.write("RSLT")
 				sendobj(sockf,taskid)
 				sockf.flush()
-				
+
 				signal.alarm(180)
 				task=recvobj(sockf)
-				
+
 				k=0
 				rd={}
 				while 1:
@@ -331,7 +331,7 @@ class EMTaskCustomer:
 					if k==None: break
 					v=recvobj(sockf)
 					rd[k]=v
-				
+
 #				print "TASK ",task.__dict__
 #				print "RESULT ",rd
 				sockf.write("ACK ")
@@ -352,44 +352,44 @@ class EMTaskHandler:
  acts as a data clearinghouse. This parent class doesn't contain any real functionality. Subclasses are always
  used for acutual servers."""
 	queue=JSTaskQueue(None)
-	
+
 	def __init__(self,path=None):
 		self.queue=EMTaskHandler.queue
 #		self.queue=EMTaskQueue(path)
-		
+
 class EMTaskClient:
 	"""This class executes tasks on behalf of the server. This parent class implements the actual task functionality.
 Communications are handled by subclasses."""
 	def __init__(self):
 		self.myid=random.randint(1,2000000000)
-	
+
 	def process_task(self,task,callback):
 		"""This method implements the actual image processing by calling appropriate module functions"""
-		
+
 		return task.execute(callback)
-	
+
 def image_range(a,b=None):
 	"""This is an iterator which handles the (#), (min,max), (1,2,3,...) image number convention for passed data"""
 	if b!=None:
 		for i in range(a,b): yield i
 	elif isinstance(a,int) : yield a
-	else: 
+	else:
 		for i in a : yield i
 
 class EMTestTask(JSTask):
 	"""This is a simple example of a EMTask subclass that actually does something"""
-	
+
 	def __init__(self):
 		JSTask.__init__(self)
 		self.command="test_task"
-	
+
 	def execute(self):
 		# test command. takes a set of images, inverts them and returns the results
 		# data should contain one element "input"
 		data=self.data["input"]
 		cname=data[1]
 		cache=db_open_dict(cname)
-		
+
 		ret=[]
 		for i in image_range(*data[2:]):		# this allows us to iterate over the specified image numbers
 			ret.append(cache[i]*-1)
@@ -409,13 +409,13 @@ def runXMLRPCServer(port,verbose):
 	try: EMDCTaskHandler.verbose=int(verbose)
 	except: EMDCTaskHandler.verbose=0
 
-	if port!=None and port>0 : 
+	if port!=None and port>0 :
 		server = SimpleXMLRPCServer(("", port),SimpleXMLRPCRequestHandler,False,allow_none=True)
 		print "Server started on %s port %d"%(socket.gethostname(),port)
 	# EMAN2 will use ports in the range 9900-9999
 	else :
 		for port in range(9990,10000):
-			try: 
+			try:
 				server = SimpleXMLRPCServer(("", port),SimpleXMLRPCRequestHandler,False,allow_none=True)
 				print "Server started on %s port %d"%(socket.gethostname(),port)
 			except:
@@ -435,31 +435,31 @@ class XMLRPCTaskHandler(EMTaskHandler):
 		EMTaskHandler.__init__(self)
 		self.verbose=verbose
 
-	# Customer routines 
+	# Customer routines
 	def customer_task_add(self,task):
-		"""Enqueue a new task to be executed. Any data passed by reference in the task.data must be 
+		"""Enqueue a new task to be executed. Any data passed by reference in the task.data must be
 accessible to the server."""
 		pass
-	
+
 	def customer_task_check(self,tidlist):
 		"""Check a set of tasks for completion. Returns a list of completed task ids from tidlist."""
 		pass
-	
+
 	def customer_task_results(self,tid):
 		"""Retrieve the return value from a completed task. This should be done only once per task. """
 		pass
-	
+
 	# Client routines
 	def client_task_get(self):
 		"""This is how the client asks the server for work to perform. A task object will be returned."""
 		pass
-	
+
 	def client_data_get(self,did):
 		pass
-	
+
 	def client_task_status(self,state):
 		pass
-	
+
 	# Utility routines
 	def test(self,data):
 		print "Test message (%d) : %s"%(self.verbose,data)
@@ -484,11 +484,11 @@ class EMLocalTaskHandler():
 		self.nextid=0
 		self.doexit=0
 
-	
+
 		os.makedirs(self.scratchdir)
 		self.thr=threading.Thread(target=self.run)
 		self.thr.start()
-	
+
 	def stop(self):
 		"""Called externally (by the Customer) to nicely shut down the task handler"""
 		self.doexit=1
@@ -503,7 +503,7 @@ class EMLocalTaskHandler():
 		self.maxid+=1
 		EMLocalTaskHandler.lock.release()
 		return ret
-	
+
 	def check_task(self,id_list):
 		"""Checks a list of tasks for completion. Note that progress is not currently
 		handled, so results are always -1, 0 or 100 """
@@ -513,33 +513,33 @@ class EMLocalTaskHandler():
 			elif i in self.completed : ret.append(100)
 			else: ret.append(0)
 		return ret
-	
+
 	def get_results(self,taskid):
 		"""This returns a (task,dictionary) tuple for a task, and cleans up files"""
 #		print "Retrieve ",taskid
 		if taskid not in self.completed : raise Exception,"Task %d not complete !!!"%taskid
-		
+
 		task=load(file("%s/%07d"%(self.scratchdir,taskid),"rb"))
 		results=load(file("%s/%07d.out"%(self.scratchdir,taskid),"rb"))
-	
+
 		os.unlink("%s/%07d.out"%(self.scratchdir,taskid))
 		os.unlink("%s/%07d"%(self.scratchdir,taskid))
 		self.completed.remove(taskid)
-		
+
 		return (task,results)
-		
+
 	def run(self):
-		
+
 		while(1):
 			time.sleep(1)		# only go active at most 1/second
 			if self.doexit==1:
 #				shutil.rmtree(self.scratchdir)
 				break
-			
+
 			for i,p in enumerate(self.running):
 				# Check to see if the task is complete
 				if p[0].poll()!=None :
-					
+
 					# This means that the task failed to execute properly
 					if p[0].returncode!=0 :
 						print "Error running task : ",p[1]
@@ -547,14 +547,14 @@ class EMLocalTaskHandler():
 						sys.stderr.flush()
 						sys.stdout.flush()
 						os._exit(1)
-					
+
 #					print "Task complete ",p[1]
 					# if we get here, the task completed
 					self.completed.add(p[1])
 					del(EMLocalTaskHandler.allrunning[p[1]])
-			
+
 			self.running=[i for i in self.running if i[1] not in self.completed]	# remove completed tasks
-			
+
 			while self.nextid<self.maxid and len(self.running)<self.maxthreads:
 #				print "Launch task ",self.nextid
 				EMLocalTaskHandler.lock.acquire()
@@ -568,7 +568,7 @@ class EMLocalTaskHandler():
 				EMLocalTaskHandler.allrunning[self.nextid] = proc
 				self.nextid+=1
 				EMLocalTaskHandler.lock.release()
-			
+
 
 #######################
 #  Here we define the classes for MPI parallelism
@@ -591,18 +591,18 @@ class EMMpiClient():
 		self.scratchdir=scratchdir
 
 		self.queuedir=self.scratchdir+"/queue"
-		if cache: 
+		if cache:
 			self.cachedir=self.scratchdir+"/cache"
 			try: os.makedirs(self.cachedir)
 			except: pass
 		else: self.cachedir=None
-		
+
 		self.lastupdate=0		# last time we sent an update to rank 0
 		if self.rank==0 : self.logfile=file(self.scratchdir+"/rank0.log","w")
 		elif self.rank==1 : self.logfile=file(self.scratchdir+"/rank1.log","w")
 #		elif self.rank==12 : self.logfile=file(self.scratchdir+"/rank12.log","a")
 		else: self.logfile=None
-		
+
 		self.rankmap={}			# key=rank, value=hostname
 		self.noderanks={}		# key=hostname, value=rank. Provides one rank/node to be used when precaching
 
@@ -614,14 +614,14 @@ class EMMpiClient():
 	def test(self,verbose):
 		"""This routine will test MPI communications by broadcasting HELO to all of the cpus,
 		then waiting for an OK response."""
-		
+
 		if verbose and self.rank==0: print "Testing MPI Communications"
 
 		# A little test to make sure MPI communications are really established. Also identifies node names
 		# for each rank
 		if self.rank==0:
 			mpi_bcast_send("HELO")
-			
+
 			allsrc=set(range(1,self.nrank))	# we use this to make sure we get a reply from all nodes
 			while (1):
 				if len(allsrc)==0 : break
@@ -638,15 +638,15 @@ class EMMpiClient():
 					sys.stderr.flush()
 					sys.stdout.flush()
 					os._exit(1)
-				
+
 				self.rankmap[src]=str(b)[3:]
 				self.noderanks[str(b)[3:]]=src		# we just need 1 random rank on each node
 				allsrc.remove(src)
-			
+
 			if verbose>1 : print "Successful HELO to all MPI nodes !"
 		else:
 			a=mpi_bcast_recv(0)
-			if a!="HELO" : 
+			if a!="HELO" :
 				print "MPI: Failed receive on node=%d"%self.rank
 				mpi_finalize()
 				sys.stderr.flush()
@@ -657,7 +657,7 @@ class EMMpiClient():
 	def mpi_send_com(self,target,com,data=None):
 		"""Syncronously sends a command to a specified target rank as a tuple, and waits for a
 		single object in reply (which is returned)."""
-		
+
 		mpi_eman2_send((com,data),target,1)
 		return mpi_eman2_recv(target,2)[0]
 
@@ -667,7 +667,7 @@ class EMMpiClient():
 		if self.rank==0:
 			if verbose: print "MPI running on %d processors"%self.nrank
 			self.log("MPI on %d processors"%self.nrank)
-			
+
 			# FIFOs to talk to the controlling process, creation order is important !
 			#self.fmcon=file("%s/tompi"%self.scratchdir,"rb",0)
 			#self.tocon=file("%s/fmmpi"%self.scratchdir,"wb",0)
@@ -678,7 +678,7 @@ class EMMpiClient():
 			self.mpisock.connect("%s/mpisock"%self.scratchdir)
 			self.mpifile=self.mpisock.makefile()
 			self.log("Connected to Controller")
-			
+
 			# Initial handshake to make sure we're both here
 			if (self.mpifile.read(4)!="HELO") :
 				print "Fatal error establishing MPI controller communications"
@@ -695,7 +695,7 @@ class EMMpiClient():
 			self.maxjob=-1						# current highest job number waiting for execution
 			self.nextjob=1						# next job waiting to run
 			self.status={}						# status of each job
-			
+
 			while 1:
 				# Look for a command from our controlling process
 				if select.select([self.mpifile],[],[],0)[0]:
@@ -707,10 +707,10 @@ class EMMpiClient():
 						for i in range(1,self.nrank):
 							r=self.mpi_send_com(i,"EXIT")
 							if r!="OK" : print "Error: Unexpected reply when shutting down from rank %d"%i
-						
+
 						self.mpifile.close()
 						self.mpisock.close()
-							
+
 						break
 					elif com=="NEWJ" :
 						dump("OK",self.mpifile,-1)
@@ -718,19 +718,19 @@ class EMMpiClient():
 						if verbose>1 : print "New job %d from customer"%data
 						self.log("New job %d from customer"%data)
 						self.maxjob=data	# this is the highest number job currently assigned
-						
+
 					elif com=="CHEK" :
 						for i in xrange(len(data)):
 							if data[i] not in self.status : data[i]=-1
 							else: data[i]=self.status[data[i]]
-				
+
 						dump(data,self.mpifile,-1)
 						self.mpifile.flush()
 					elif com=="CACH" :
 						if verbose>1 : print "Cache request from customer: ",data
 						dump("OK",self.mpifile,-1)
 						self.mpifile.flush()
-						
+
 						if self.cachedir!=None :
 							# check each node to see if it needs the data
 							needed=False
@@ -742,57 +742,57 @@ class EMMpiClient():
 									needed=True
 									break
 							if not needed and verbose>1: print "Nobody needs the data"
-							
+
 							# broadcast the data if necessary
 							if needed:
 								writers=set(self.noderanks.values())
 								if verbose>1 : print "These ranks will write: ",writers
-								
+
 								# start by putting all of the ranks in caching mode
 								for i in xrange(1,self.nrank):
 									r=self.mpi_send_com(i,"CACH",(data,writers))
 									if r!="OK" : print "ERROR: Rank %d won't cache !"%i
 	#								if verbose>1 : print "rank %d ready"%i
-									
+
 								# now send the actual cache data
 								im0=EMData(data,0)
 								ningrp=max(1,50000000/(im0["nx"]*im0["ny"]*im0["nz"]))	# how many images will it take to get 200 megs
-							
+
 								if verbose>1 : print "Caching %d images in chunks of %d"%(cacheinfo[2],ningrp)
 								# send in ~200 meg chunks
 								strt=time.time()
 								for i in xrange(0,cacheinfo[2],ningrp):
-									if verbose>1: 
+									if verbose>1:
 										print " %d - %d\t%d\t%d\t"%(i,i+ningrp,i/ningrp,int(time.time()-strt)),
 									dts=EMData.read_images(data,range(i,min(i+ningrp,cacheinfo[2])))
-									if verbose>1: 
+									if verbose>1:
 										print "%d\t"%(time.time()-strt),
 									mpi_bcast_send(dts)
-									if verbose>1: 
+									if verbose>1:
 										print "%d"%(time.time()-strt)
 									mpi_barrier(MPI_COMM_WORLD)
-								dts=None	
+								dts=None
 								mpi_bcast_send("DONE")
 								mpi_barrier(MPI_COMM_WORLD)
-								
+
 								print "Caching %s done in %d seconds"%(data,time.time()-strt)
 						elif verbose>1 : print "Caching disabled, request ignored"
-							
+
 					else : print "Unknown command from client '%s'"%com
 					continue
-					
-				
+
+
 				# Finally, see if we have any jobs that need to be executed
 				if self.nextjob<=self.maxjob :
-					
+
 					if -1 in self.rankjobs :
 						rank=self.rankjobs.index(-1)
 						if verbose>1 : print "Sending job %d to rank %d (%d idle)"%(self.nextjob,rank,self.rankjobs.count(-1))
-						
+
 						task = load(file("%s/%07d"%(self.queuedir,self.nextjob),"rb"))
 						self.log("Sending task %d to rank %d (%s)"%(self.nextjob,rank,str(type(task))))
 						r=self.mpi_send_com(rank,"EXEC",task)
-						
+
 						if r=="OK" : pass
 						# The rank needs data to proceed, we get ("NEED",(file,#|min,max|(#'s)),...)
 						elif r[0]=="NEED" :
@@ -806,11 +806,11 @@ class EMMpiClient():
 							while 1:
 								try: img=imgs.next()
 								except: break
-								
+
 								# Build up a list of (name,#,EMData) tuples
 								d2s.append((img[0],img[1],EMData(img[0],img[1])))
 								ds+=d2s[-1][2]["nx"]*d2s[-1][2]["ny"]*d2s[-1][2]["nz"]
-								
+
 								# Until we have ~200 megs of data to transmit in one chunk
 								if ds>50000000 :
 									r=self.mpi_send_com(rank,"DATA",d2s)
@@ -821,7 +821,7 @@ class EMMpiClient():
 										os._exit(1)
 									d2s=[]
 									ds=0
-							
+
 							# Send anything left at the end, and terminate the data transfer
 							r=self.mpi_send_com(rank,"LAST",d2s)
 							if r!="OK" :
@@ -829,15 +829,15 @@ class EMMpiClient():
 								sys.stderr.flush()
 								sys.stdout.flush()
 								os._exit(1)
-						
+
 							if verbose>1 : print "Send requested data to rank %d"%rank
-							
+
 						# if we got here, the task should be running
 						self.rankjobs[rank]=self.nextjob
 						self.nextjob+=1
 						self.log("Sending task rank %d done"%(rank))
 						continue
-				
+
 				# Now look for any requests from existing running jobs
 				info=mpi_iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD)
 				if info:
@@ -855,13 +855,13 @@ class EMMpiClient():
 						mpi_eman2_send("OK",src,2)
 						if data[1]<0 or data[1]>99 :
 							print "Warning: Invalid progress report :",data
-						else : 
+						else :
 							try : self.status[data[0]]=data[1]
 							except: print "Warning: Invalid progress report :",data
 					continue
-				
+
 				time.sleep(2)
-				
+
 		# all other ranks handle executing jobs
 		else :
 
@@ -871,11 +871,11 @@ class EMMpiClient():
 				if r:
 					r = mpi_status()
 					com,data=mpi_eman2_recv((int)(r[0]),(int)(r[1]))[0]
-					
+
 					if com=="EXIT":
 						if verbose>1 : print "rank %d: I was just told to exit"%self.rank
 						mpi_eman2_send("OK",0,2)			# we reply immediately, assuming we will kill our job and finalize
-						
+
 						break
 
 					if com=="CHKC":				# check cache for complete file
@@ -891,9 +891,9 @@ class EMMpiClient():
 								#cdict=db_open_dict("bdb:%s#00image_counts"%self.cachedir,ro=True)
 								#parm=cdict[lname]
 								#if parm[0]<data[1] or parm[1]!=data[2] : mpi_eman2_send("NEED",0,2)		# if host data is newer or file count doesn't match then request it
-								if mtime<data[1] or numim<data[2] : 
+								if mtime<data[1] or numim<data[2] :
 									mpi_eman2_send("NEED",0,2)
-									print "need ",data[0],lname,mtime,data[1],numim,data[2]	
+									print "need ",data[0],lname,mtime,data[1],numim,data[2]
 								else : mpi_eman2_send("DONT",0,2)											# otherwise don't
 							except:
 								mpi_eman2_send("NEED",0,2)
@@ -904,8 +904,8 @@ class EMMpiClient():
 						# data is (filename,rankwriters)
 						if self.rank in data[1] : fsp=self.pathtocache(data[0])			# all ranks must receive (since this is a broadcast), but not all ranks actually store the data
 						else: fsp=None
-						
-						
+
+
 						n=0
 						while 1:
 							# chunk will be "DONE" or (EMData,EMData,...)
@@ -921,13 +921,13 @@ class EMMpiClient():
 										im.write_image(fsp,n)
 									except: pass
 									n+=1
-							
+
 
 					if com=="EXEC":
 						if self.logfile!=None : self.logfile.write( "EXEC\n")
 						if verbose>1 : print "rank %d: I just got a task to execute (%s):"%(self.rank,socket.gethostname()),data
 						task=data		# just for clarity
-						if not isinstance(task,EMTask) : raise Exception,"Non-task object passed to MPI for execution !"
+						if not isinstance(task,JSTask) : raise Exception,"Non-task object passed to MPI for execution !"
 
 						self.taskfile="%s/taskexe.%d"%(self.queuedir,os.getpid())
 						self.taskout="%s/taskout.%d"%(self.queuedir,os.getpid())
@@ -937,18 +937,18 @@ class EMMpiClient():
 							needlst=[]
 							for k in task.data:
 								i=task.data[k]
-								try: 
+								try:
 									if i[0]!="cache" : raise Exception
 								except: continue
-								
+
 								# if we're here, then we have a 'cache' object
 								# if true, we need to ask for everything in this file
-								try : 
+								try :
 									if not db_check_dict(self.pathtocache(i[1])) or task.modtimes[i[1]]>e2filemodtime(self.pathtocache(i[1])):	raise Exception
 								except:
 									needlst.append(i[1:])
 									continue
-								
+
 								# enumerate all individual images in the specified list and check the cache for them
 								db=db_open_dict(self.pathtocache(i[1]))
 								neednums=[j for j in imgnumenum(i[1:]) if not db.has_key(j)]	# list of images missing in the cache
@@ -956,10 +956,10 @@ class EMMpiClient():
 									if neednums[-1]-neednums[0]==len(neednums)-1 : 			# if we have a complete range, convert to min/max
 										needlst.append((i[1],neednums[0],neednums[-1]+1))
 									else : needlst.append((i[1],tuple(neednums)))
-							
+
 							### Send the request for specific needed image data back to the server
 							# and write the returned data to the cache
-							if len(needlst)>0 : 
+							if len(needlst)>0 :
 								mpi_eman2_send(("NEED",needlst),0,2)
 								if verbose>2 : print "rank %d: I need data :"%self.rank,needlst
 
@@ -967,30 +967,30 @@ class EMMpiClient():
 								while 1:
 									ncom,ndata=mpi_eman2_recv(0,-1)[0]
 									mpi_eman2_send("OK",0,2)				# MPI may receive some of the new data while we write to disk
-									
+
 									# unpack the received data into the appropriate cache file
 									for fsp,num,img in ndata:
 										img.write_image(self.pathtocache(fsp),num)
-										
+
 									if ncom=="LAST" : break			# the data we just wrote must have been the end of what we requested
-									
+
 							else :
 								mpi_eman2_send("OK",0,2)			# immediate reply so rank 0 can move on
-								
+
 							if verbose>2 : print "rank %d: I have the data I need"%self.rank
-						
+
 							### Ok, we should have everything we need. Let's get the actual job started now
-							
+
 							# Fix the cache filenames in our task
 							for i in task.data:
 								j=task.data[i]
-								try: 
+								try:
 									if j[0]!="cache" : raise Exception
 								except: continue
-								
+
 								task.data[i]=list(task.data[i])
 								task.data[i][1]=self.pathtocache(task.data[i][1])		# if caching is disabled this just returns the original filename
-							
+
 						# Execute the task
 						self.task=task	# for the callback
 						try: ret=task.execute(self.progress_callback)
@@ -1010,20 +1010,20 @@ class EMMpiClient():
 						#except: pass
 						#dump(task,file(self.taskfile,"w"),-1)		# write the task to disk
 
- 
+
 						#cmd="e2parallel.py localclient --taskin=%s --taskout=%s"%(self.taskfile,self.taskout)
-						
+
 						#self.job=subprocess.Popen(cmd, stdin=None, stdout=None, stderr=None, shell=True)
 						#if verbose>2 : print "rank %d: started my job:"%self.rank,cmd
-					
+
 #						if verbose>2 : print "rank %d: running but not done"%self.rank
-				else: 
+				else:
 					time.sleep(0.1)
 #					if self.logfile!=None : self.logfile.write( "Sleep\n")
 #					if verbose>2 : print "rank %d: waiting"%self.rank
 
 		mpi_finalize()
-	
+
 	def progress_callback(self,prog):
 		""" This gets progress callbacks from the task. We need to make sure we haven't been asked
 		to exit if we get this, and we want to update the progress on rank 0 """
@@ -1031,7 +1031,7 @@ class EMMpiClient():
 		if r :
 			r = mpi_status()
 			com,data=mpi_eman2_recv((int)(r[0]),(int)(r[1]))[0]
-			
+
 			if com=="EXIT":
 				print "rank %d: I was just told to exit during processing"%self.rank
 				mpi_eman2_send("OK",0,2)
@@ -1043,7 +1043,7 @@ class EMMpiClient():
 				sys.stderr.flush()
 				sys.stdout.flush()
 				os._exit(1)
-				
+
 		if time.time()-self.lastupdate>120 :
 			ret=self.mpi_send_com(0,"PROG",(self.task.taskid,prog))
 			if ret!="OK" : print "Warning: got '%s' instead of OK from my progress report"%str(ret)
@@ -1052,37 +1052,37 @@ class EMMpiClient():
 
 	def pathtocache(self,path):
 		"""This will convert a remote filename to a local (unique) cache-file bdb:path"""
-		
+
 		if self.cachedir==None : return path	# caching disabled, return original filename
-		
+
 		# We strip out any punctuation, particularly '/', and take the last 40 characters, which hopefully gives us something unique
 		return "%s/%s.hdf"%(self.cachedir,path.translate(None,"#/\\:.!@$%^&*()-_=+")[-40:])
 
 	def pathtocachename(self,path):
 		"""This will convert a remote filename to a local (unique) cache-file name"""
-		
+
 		# We strip out any punctuation, particularly '/', and take the last 40 characters, which hopefully gives us something unique
 		return str(path.translate(None,"#/\\:.!@$%^&*()-_=+")[-40:]+".hdf")
 
 #	def pathtocache(self,path):
 #		"""This will convert a remote filename to a local (unique) cache-file bdb:path"""
-		
+
 #		# We strip out any punctuation, particularly '/', and take the last 40 characters, which hopefully gives us something unique
 #		return "bdb:%s#%s"%(self.cachedir,path.translate(None,"#/\\:.!@$%^&*()-_=+")[-40:])
 
 #	def pathtocachename(self,path):
 #		"""This will convert a remote filename to a local (unique) cache-file name"""
-		
+
 #		# We strip out any punctuation, particularly '/', and take the last 40 characters, which hopefully gives us something unique
 #		return str(path.translate(None,"#/\\:.!@$%^&*()-_=+")[-40:])
 
 def filesenum(lst):
 	"""This is a generator that takes a list of (name,#), (name,(#,#,#)), or (name,min,max) specifiers
 	and yields (name,#) until the list is exhausted"""
-	
+
 	for i in lst:
 		for j in fileenum(i): yield j
-	
+
 def fileenum(lst):
 	"""This is a generator that takes a single (name,#), (name,(#,#,#)), or (name,min,max) specifier
 	and yields (name,#) until the numbers are exhausted"""
@@ -1092,7 +1092,7 @@ def fileenum(lst):
 		yield lst
 	else :
 		for i in lst[1]: yield (lst[0],i)
-		
+
 def imgnumenum(lst):
 	"""like fileenum, but skips the 'name' references on return"""
 	if len(lst)==3 :
@@ -1101,7 +1101,7 @@ def imgnumenum(lst):
 		yield lst[1]
 	else :
 		for i in lst[1]: yield i
-	
+
 
 
 class EMMpiTaskHandler():
@@ -1113,13 +1113,13 @@ class EMMpiTaskHandler():
 	def __init__(self,ncpus=2,scratchdir="/tmp",cache=True):
 		try: user=getpass.getuser()
 		except: user="anyone"
-		
+
 		self.scratchdir="%s/eman2mpi-%s"%(scratchdir,user)
 		self.queuedir=self.scratchdir+"/queue"
 		if cache: self.cachedir=self.scratchdir+"/cache"
 		else: self.cachedir=None
 		try: os.makedirs(self.queuedir)
-		except: 
+		except:
 			#print "makedirs queue failed (%s). May have failed because already exists. "%self.queuedir
 			pass
 
@@ -1128,7 +1128,7 @@ class EMMpiTaskHandler():
 
 		mpiout=file("%s/mpiout.txt"%self.scratchdir,"w")
 		mpierr=file("%s/mpierr.txt"%self.scratchdir,"w")
-		
+
 		# Named pipes we use to communicate with rank 0 of the MPI job
 		# Unfortunately this isn't windows compatible as far as I know :^(
 		#try : os.unlink("%s/tompi"%self.scratchdir)
@@ -1144,22 +1144,22 @@ class EMMpiTaskHandler():
 
 		self.mpisock=socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 		self.mpisock.bind("%s/mpisock"%self.scratchdir)
-		
+
 		# Launch the MPI subprocess
 		if cache : cache=" --cache"
 		else: cache=""
 		cmd="mpirun -n %d e2parallel.py mpiclient --scratchdir=%s %s -v 2 </dev/null"%(ncpus,self.scratchdir,cache)
-		
+
 		self.mpitask=subprocess.Popen(cmd, stdin=None, stdout=mpiout, stderr=mpierr, shell=True)
 
 		self.mpisock.listen(1)
 		self.mpiconn, self.mpiaddr = self.mpisock.accept()
 		self.mpifile=self.mpiconn.makefile()
-		
+
 		# order is important here, since opening for reading will block until the other end opens for writing
 		#self.tompi=file("%s/tompi"%self.scratchdir,"wb",0)
 		#self.fmmpi=file("%s/fmmpi"%self.scratchdir,"rb",0)
-		
+
 		# Send a HELO and wait for a reply. We then know that the MPI system is setup and available
 		print "Say HELO to MPI rank 0"
 		self.mpifile.write("HELO")
@@ -1171,13 +1171,13 @@ class EMMpiTaskHandler():
 			sys.stdout.flush()
 			os._exit(1)
 		print "Rank 0 said HELO back"
-			
+
 		print "MPI subsystem initialized"
 
 	def stop(self):
 		"""Called externally (by the Customer) to nicely shut down the task handler"""
 		self.sendcom("EXIT")
-		
+
 		self.mpifile.close()
 		self.mpiconn.close()
 		shutil.rmtree(self.queuedir,True)
@@ -1186,49 +1186,49 @@ class EMMpiTaskHandler():
 		"""Called by the customer to initiate precaching on the nodes. """
 		for i in filelist:
 			self.sendcom("CACH",i)
-		
+
 	def sendcom(self,com,data=None):
 		"""Transmits a command to MPI rank 0 and waits for a single object in reply"""
 		dump((com,data),self.mpifile,-1)
 		self.mpifile.flush()
-		
+
 		return load(self.mpifile)
 
 	def add_task(self,task):
-		if not isinstance(task,EMTask) : raise Exception,"Non-task object passed to EMLocalTaskHandler for execution"
-		
+		if not isinstance(task,JSTask) : raise Exception,"Non-task object passed to EMLocalTaskHandler for execution"
+
 		# Add last modification times for cache entries
 		for k in task.data:
 			i=task.data[k]
-			try : 
+			try :
 				if i[0]!="cache" : raise Exception
 			except: pass
 			else :
 				task.modtimes[i[1]]=e2filemodtime(i[1])
-				
+
 		task.taskid=self.maxid
-		
+
 		dump(task,file("%s/%07d"%(self.queuedir,self.maxid),"wb"),-1)
 		ret=self.maxid
 		self.sendcom("NEWJ",self.maxid)
 
 		self.maxid+=1
-		
+
 		return ret
-	
+
 	def check_task(self,id_list):
 		"""Checks a list of tasks for completion."""
-		
+
 		chk=self.sendcom("CHEK",id_list)
 		for i,j in enumerate(id_list):
 			self.completed[j]=chk[i]
-		
+
 		return chk
-	
+
 	def get_results(self,taskid):
 		"""This returns a (task,dictionary) tuple for a task, and cleans up files"""
 #		print "Retrieve ",taskid
-		
+
 		try :
 			task=load(file("%s/%07d"%(self.queuedir,taskid),"rb"))
 			results=load(file("%s/%07d.out"%(self.queuedir,taskid),"rb"))
@@ -1239,8 +1239,8 @@ class EMMpiTaskHandler():
 			traceback.print_exc()
 			print "Error: asked for results on incomplete job"
 			return None
-	
-		
+
+
 		return (task,results)
 
 #######################
@@ -1277,7 +1277,7 @@ def openEMDCsock(addr,clientid=0, retry=3):
 	sockf.write(pack("<II",EMAN2PARVER,clientid))
 	sockf.write(addr)
 	sockf.flush()
-	if sockf.read(4)=="BADV" : 
+	if sockf.read(4)=="BADV" :
 		print "ERROR: Server version mismatch ",socket.gethostname()
 		sys.exit(1)
 
@@ -1290,7 +1290,7 @@ oseq=1
 
 def broadcast(sock,obj):
 	"""This will broadcast an object through a bound datagram socket on port 9989 by serializing the
-	the packets into a set of 1k hunks, assums MTU > 1k. Packets contain 
+	the packets into a set of 1k hunks, assums MTU > 1k. Packets contain
 	PKLD+uid+totlen+objseq+pktseq+1kdata """
 	global oseq
 	p=dumps(obj,-1)
@@ -1306,16 +1306,16 @@ def broadcast(sock,obj):
 #	for seq in xrange(1+(len(p)-1)/1024):
 #		sock.sendto(hdr+pack("<I",seq)+p[seq*1024:(seq+1)*1024],("<broadcast>",9989))
 	oseq+=1
-	
+
 def recv_broadcast(sock):
 	"""This will receive an object sent using broadcast(). If a partial object is received, then a new object starts,
 	the first object will be abandoned, and the second (successful) object will be returned"""
-	
+
 	myuid=os.getuid()
 	curobjseq=-1
 	curpktseq=-1
 	while 1:
-		pkt=sock.recv(1044)		# 20 byte header + 1024 bytes of data 
+		pkt=sock.recv(1044)		# 20 byte header + 1024 bytes of data
 		mag,uid,totlen,objseq,pktseq=unpack("<4sIIII",pkt[:20])
 		if mag !="EMAN" or uid!=myuid: continue			# not for us
 		if pktseq!=0 and objseq!=curobjseq  : continue	# for us, but in the middle of a transmission and we missed some
@@ -1325,7 +1325,7 @@ def recv_broadcast(sock):
 		else :
 			if pktseq!=curpktseq+1 : continue			# we missed some, or got the repeat :^(
 			payload+=pkt[20:]
-		if len(payload)==totlen : 
+		if len(payload)==totlen :
 			ret=payload
 			payload=""
 			return ret
@@ -1333,7 +1333,7 @@ def recv_broadcast(sock):
 
 def sendstr(sock,obj):
 	"""Sends a string on a socket. obj must be a string or None. A string of zero length is equivalent to None. Use recvstr() to receive"""
-	if obj==None or len(obj)==0: 
+	if obj==None or len(obj)==0:
 		sock.write(pack("<I",0))
 		return
 	sock.write(pack("<I",len(obj)))
@@ -1342,7 +1342,7 @@ def sendstr(sock,obj):
 def recvstr(sock):
 	"""Receives a (compressed) string on a socket. obj must be a string. Use sendstr() to receive"""
 	l=sock.read(4)
-	try : 
+	try :
 		datlen=unpack("<I",l)[0]
 	except:
 		print "Format error in unpacking (%d) '%s'"%(len(l),l)
@@ -1353,7 +1353,7 @@ def recvstr(sock):
 
 def sendobj(sock,obj):
 	"""Sends an object as a (binary) size then a binary pickled object to a socket file object"""
-	if obj==None : 
+	if obj==None :
 		sock.write(pack("<I",0))
 		return
 	strobj=dumps(obj,-1)
@@ -1363,7 +1363,7 @@ def sendobj(sock,obj):
 def recvobj(sock):
 	"""receives a packed length followed by a binary (pickled) object from a socket file object and returns"""
 	l=sock.read(4)
-	try : 
+	try :
 		datlen=unpack("<I",l)[0]
 	except:
 		print "Format error in unpacking (%d) '%s'"%(len(l),l)
@@ -1386,7 +1386,7 @@ def EMDCsendonecom(addr,cmd,data,clientid=0):
 	sockf.write(cmd)
 	sendobj(sockf,data)
 	sockf.flush()
-	
+
 	ret=recvobj(sockf)
 	sockf.close()
 	return ret
@@ -1415,18 +1415,18 @@ class DCThreadingMixIn:
 
 	def process_request(self, request, client_address):
 		"""Start a new thread to process the request."""
-		
+
 		N=DCThreadingMixIn.N
 		DCThreadingMixIn.N+=1
 		count=0
-		
+
 		# Handled in the thread now
 		#if threading.active_count()>10:
-		#while threading.active_count()>8 and count<10: 
+		#while threading.active_count()>8 and count<10:
 			#time.sleep(2)
 			#count +=1
-			
-		
+
+
 		t = threading.Thread(target = self.process_request_thread,
 								args = (request, client_address))
 		t.setName(str(N))
@@ -1437,19 +1437,19 @@ class ThreadingTCPServer(DCThreadingMixIn, SocketServer.TCPServer): pass
 
 def runEMDCServer(port,verbose,killclients=False):
 	"""This will create a ThreadingTCPServer instance and execute it"""
-	
+
 	# place to put results
 	try:
 		os.makedirs("results")
 	except:
 		pass
-	
+
 	try: EMDCTaskHandler.verbose=int(verbose)
 	except: EMDCTaskHandler.verbose=0
 	EMDCTaskHandler.killclients=killclients
 	EMDCTaskHandler.clients=db_open_dict("bdb:clients")
 
-	if port!=None and port>0 : 
+	if port!=None and port>0 :
 		server=None
 		while server==None:
 			try:
@@ -1463,7 +1463,7 @@ def runEMDCServer(port,verbose,killclients=False):
 	# EMAN2 will use ports in the range 9900-9999
 	else :
 		for port in range(9990,10000):
-			try: 
+			try:
 				server = SocketServer.ThreadingTCPServer(("", port), EMDCTaskHandler)
 #				server = SocketServer.TCPServer(("", port), EMDCTaskHandler)
 				print "Server started on %s port %d"%(socket.gethostname(),port)
@@ -1486,7 +1486,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 	tasklock=threading.Lock()
 #	dbugfile=file("debug.out","w")
 	rotate=('/','-','\\','|')
-	
+
 	def __init__(self, request, client_address, server):
 		# if a port is specified, just try to open it directly. No error detection
 
@@ -1502,7 +1502,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 		for k in EMDCTaskHandler.clients.keys():
 			if k=="maxrec" : continue
 			c=EMDCTaskHandler.clients[k]
-			
+
 			try:
 				if time.time()-c[1]>300 or k==0 :
 					if self.verbose : print "Removing client %d"%k
@@ -1527,7 +1527,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 	close"""
 
 		if self.verbose>1 : print "Thread %s start"%threading.currentThread().getName()
-		
+
 		# periodic housekeeping, but not if too busy
 		if threading.activeCount()>=DCMAXTHREADS :  EMDCTaskHandler.lasthk = time.time()
 		if time.time()-EMDCTaskHandler.lasthk>30 :
@@ -1558,7 +1558,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 		if msg!="EMAN" : raise Exception,"Non EMAN client"
 
 		ver=unpack("<I",self.sockf.read(4))[0]
-		if ver!=EMAN2PARVER : 
+		if ver!=EMAN2PARVER :
 			self.sockf.write("BADV")
 			self.sockf.flush()
 			raise Exception,"Version mismatch in parallelism (%d!=%d)"%(ver,EMAN2PARVER)
@@ -1572,21 +1572,21 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			if len(cmd)<4 :
 				if self.verbose>1 : print "connection closed %s"%(str(client_addr))
 				break
-			
+
 			if cmd=="ACK " :
 				print "Warning : Out of band ACK"
 				continue		# some sort of protocol error, just ignore
 
 			data = recvobj(self.sockf)
-				
-			if self.verbose : 
+
+			if self.verbose :
 				if cmd=="RDYT" :
 					EMDCTaskHandler.rtcount+=1
 					print " %s  (%d)   \r"%(EMDCTaskHandler.rotate[EMDCTaskHandler.rtcount%4],len(EMDCTaskHandler.clients.bdb)-1),
 					sys.stdout.flush()
 				elif cmd=="DATA" :
 					EMDCTaskHandler.datacount+=1
-					if EMDCTaskHandler.datacount%100==0 : 
+					if EMDCTaskHandler.datacount%100==0 :
 						print"*** %d data   \r"%EMDCTaskHandler.datacount,
 						sys.stdout.flush()
 				elif cmd=="STAT" :
@@ -1599,7 +1599,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				else :
 					try: print "Command %s (%s): %s (%d)  "%(str(client_addr),str(client_id),cmd,len(data))
 					except: print "Command %s (%s): %s (-)  "%(str(client_addr),str(client_id),cmd)
-			
+
 			######################  These are issued by clients
 			# Ready for a task
 			if cmd=="RDYT" :
@@ -1609,7 +1609,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					r=self.sockf.read(4)
 					print "Client killed"
 					break
-				
+
 				# keep track of clients
 #				EMDCTaskHandler.clients[client_id]=(self.client_address[0],time.time(),cmd)
 				EMDCTaskHandler.clients[client_id]=(client_addr,time.time(),cmd)
@@ -1622,7 +1622,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					if self.verbose>1 : print "Telling client to wait ",client_addr
 					EMDCTaskHandler.tasklock.release()
 					return
-				
+
 				#### This implements precaching of large data files
 				try :
 					files=self.queue.precache["files"]
@@ -1632,13 +1632,13 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 						lst=["CACHE",[]]
 						for i in files:
 							lst[1].append(self.queue.todid(i))
-							
+
 						# send the list of objects to the client and get back a list of which ones the client needs
 						sendobj(self.sockf,lst)
 						self.sockf.flush()
 						needed=recvobj(self.sockf)
-						
-						
+
+
 						# if none are needed, clear out the list of needed files
 						if len(needed)==0:
 							sendobj(self.sockf,[]) 		# empty chain list
@@ -1647,10 +1647,10 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 							self.queue.caching=False
 						else :
 							if self.verbose : print "Precaching ",needed
-							
+
 							# send a list of all clients to try to talk to
 							allclients=set()
-							for i in EMDCTaskHandler.clients.keys(): 
+							for i in EMDCTaskHandler.clients.keys():
 								if i=="maxrec" : continue
 								allclients.add(EMDCTaskHandler.clients[i][0])
 							allclients=list(allclients)
@@ -1674,7 +1674,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 									if self.verbose and j%100==0 :
 										print "\r Caching %s: %d / %d        "%(name,j+1,n),
 										sys.stdout.flush()
-										
+
 						if self.verbose : print "\nDone caching\n"
 						sendstr(self.sockf,"DONE")
 						self.sockf.flush()
@@ -1688,10 +1688,10 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				except:
 					self.queue.caching=False
 					traceback.print_exc()
-				
+
 				#### Now we get back to sending an actual task
 				EMDCTaskHandler.tasklock.acquire()
-				
+
 				# Get the first task and send it (pickled)
 				task=self.queue.get_task(client_id)		# get the next task
 
@@ -1701,12 +1701,12 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					sendobj(self.sockf,task)
 					if self.verbose>1: print "Send task: ",task.taskid
 				self.sockf.flush()
-				
+
 				# check for an ACK, if not, requeue
 				r=["HUH",0]
 				try:
 					r=recvobj(self.sockf)
-					if r[0]!="ACK " : 
+					if r[0]!="ACK " :
 						EMDCTaskHandler.tasklock.release()
 						raise Exception
 				except:
@@ -1720,21 +1720,21 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 #					EMDCTaskHandler.dbugfile.flush()
 				EMDCTaskHandler.tasklock.release()
 
-			
+
 			# Job is completed, results returned
 			elif cmd=="DONE" :
 				# the first object we get is the task identifier
 				tid=data
-				
+
 				if self.verbose>1 : print "DONE task (%08X) "%client_id,tid
-				
+
 				# keep track of clients
 				EMDCTaskHandler.clients[client_id]=(client_addr,time.time(),cmd)
-				
+
 				# then we get a sequence of key,value objects, ending with a final None key
 #				result=db_open_dict("bdb:%s#result_%d"%(self.queue.path,tid))
 				result=file("%s/results/%07d"%(self.queue.path,tid),"w")
-				
+
 				cnt=0
 				while (1) :
 					try:
@@ -1764,7 +1764,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			# Returns requested object
 			elif cmd=="DATA" :
 				# if the server is congested, we slow down the data flow to the clients a bit to produce better threading
-				#if threading.active_count()>DCMAXTHREADS : 
+				#if threading.active_count()>DCMAXTHREADS :
 					#if random.randint(1,10)==1 : time.sleep(1)
 				try:
 					fsp=self.queue.didtoname[data[1]]
@@ -1776,11 +1776,11 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					if self.verbose : print "Error sending %s(%d)"%(fsp,data[2])
 				self.sockf.flush()
 				EMDCTaskHandler.clients[client_id]=(client_addr,time.time(),cmd)
-				
+
 			# Notify that a task has been aborted
 			# request should be taskid
 			# no return
-			elif cmd=="ABOR" : 
+			elif cmd=="ABOR" :
 				self.queue.task_rerun(data)
 				if self.verbose : print "Task execution abort : ",data
 				del EMDCTaskHandler.clients[client_id]		# assume this client is going away unless we hear from it again
@@ -1810,7 +1810,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			elif cmd=="TEST":
 				sendobj(self.sockf,("TEST",data))
 				self.sockf.flush()
-				
+
 			# Cause this server to exit (cleanly)
 			# actually this may be partially broken...
 			elif cmd=="QUIT" :
@@ -1820,7 +1820,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				if self.verbose : print "Server exited cleanly"
 				break
 #				sys.exit(0)
-			
+
 			################### These are issued by customers
 			# A new task to enqueue
 			# the request contains the EMTask object
@@ -1828,13 +1828,13 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 			elif cmd=="TASK":
 				tid=self.queue.add_task(data)
 				if self.verbose>1 : print "new TASK %s.%s"%(data.command,str(data.data))
-				try: 
+				try:
 					sendobj(self.sockf,tid)
 					self.sockf.flush()
-				except: 
+				except:
 					sendobj(self.sockf,None)
 					self.sockf.flush()
-				
+
 #				EMDCTaskHandler.dbugfile.write("Task %5d queued [%s]\n"%(tid,local_datetime()))
 
 			################### These are issued by customers
@@ -1848,21 +1848,21 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					task.group=grp
 					tids.append(self.queue.add_task(task))
 					if self.verbose>1 : print "new TASK %s.%s"%(task.command,str(data.data))
-				try: 
+				try:
 					sendobj(self.sockf,tids)
 					self.sockf.flush()
-				except: 
+				except:
 					sendobj(self.sockf,None)
 					self.sockf.flush()
-				
+
 #				EMDCTaskHandler.dbugfile.write("Tasks %5d - %5d queued [%s]\n"%(tids[0],tids[-1],local_datetime()))
-				
+
 			# This will requeue a task which has already been run (and may be completed)
 			# This will generally happen if there was some unexpected error in the returned results
-			# and should not ever really be necessary. It is likely indicative of some sort of 
+			# and should not ever really be necessary. It is likely indicative of some sort of
 			# problem with one of the compute nodes
 			elif cmd=="RQUE":
-				if data!= None : 
+				if data!= None :
 					self.queue.task_rerun(data)
 					if self.verbose : print "Requeuing ",data
 					sendobj(self.sockf,"OK")
@@ -1883,16 +1883,16 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				sendobj(self.sockf,len(EMDCTaskHandler.clients.bdb)-1)
 				self.sockf.flush()
 				if self.verbose : print len(EMDCTaskHandler.clients.bdb)-1," clients reported"
-				
+
 			elif cmd=="NGRP" :
 				sendobj(self.sockf,self.queue.add_group())
 				self.sockf.flush()
-			
+
 			# Cancel a pending task
 			# request contains the taskid to cancel
 			elif cmd=="CNCL":
 				self.queue.task_aborted(data)
-				
+
 			# status request
 			# request contains a list/tuple of taskids
 			# return is a list/tuple with the same number of elements containing % complete for each task
@@ -1901,7 +1901,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				ret=[self.queue.task_check(i) for i in data]
 				sendobj(self.sockf,ret)
 				self.sockf.flush()
-			
+
 			# Retreieve results for completed task
 			# request contains taskid
 			# return is a task object followed by a series of key/value pairs terminating with a None key
@@ -1921,7 +1921,7 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 					#sendobj(self.sockf,k)
 					#sendobj(self.sockf,result[k])
 					#if self.verbose>3 : print k,result[k]
-					
+
 				result=file("%s/results/%07d"%(self.queue.path,data),"r")
 				while 1:
 					try:
@@ -1933,10 +1933,10 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 						break
 					if self.verbose>3 : print k,v
 				result.close()
-				
+
 				sendobj(self.sockf,None)
 				self.sockf.flush()
-				
+
 				try:
 					if self.sockf.read(4)!="ACK " : raise Exception
 #					db_remove_dict("bdb:%s#result_%d"%(self.queue.path,data))
@@ -1945,8 +1945,8 @@ class EMDCTaskHandler(EMTaskHandler,SocketServer.BaseRequestHandler):
 				except:
 					if self.verbose: print "No ACK on RSLT. Keeping results for retry."
 #					EMDCTaskHandler.dbugfile.write("Results for task %5d FAILED [%s]\n"%(data,local_datetime()))
-					
-				
+
+
 			else :
 				sendobj(self.sockf,"ERROR: Unknown command")
 				self.sockf.flush()
@@ -1975,7 +1975,7 @@ def DCclient_alarm2(signum=None,stack=None):
 class EMDCTaskClient(EMTaskClient):
 	"""Distributed Computing Task Client. This client will connect to an EMDCTaskServer, request jobs to run
  and run them ..."""
- 
+
 	def __init__(self,server,port,verbose=0,myid=None):
 		EMTaskClient.__init__(self)
 		self.addr=(server,port)
@@ -1990,43 +1990,43 @@ class EMDCTaskClient(EMTaskClient):
 		with an integer in the range 0-100. 100 means about to exit, 0 means not started yet. A -1 indicates an error has occurred and the request
 		is being aborted. If this function returns False, the client should abort the task in progress."""
 		ret=True
-		
+
 		signal.alarm(60)
-		if time.time()-self.lastupdate>120 : 
-			if self.task==None : 
+		if time.time()-self.lastupdate>120 :
+			if self.task==None :
 				signal.alarm(0)
-				return True 
+				return True
 			try:
 				ret=EMDCsendonecom(self.addr,"PROG",(self.task.taskid,progress),clientid=self.myid)
 				self.lastupdate=time.time()
 			except: pass
-		
+
 		signal.alarm(0)
 		if ret=="ABOR": return False
-		
+
 		return True
 
 	def cachewriter(self,cq):
 		"""This writes the incoming broadcast cache data in a separate thread so we don't miss any broadcasts.
 		Not using it any more with new chain scheme."""
-		
+
 		n=0
 		lname=""
 		while 1:
 			if len(cq)==0 : continue
 #			print len(cq), " in cache list"
 			img=cq.pop()
-			if img==None : 
+			if img==None :
 				if len(cq)==0 : break
 				cq.insert(0,None)
-			
+
 			# The data item should be a pickled tuple (time,rand,img#,image)
 			try : img=loads(decompress(img))
 			except : continue			# bad pickle :^(
 			try : cname="bdb:cache_%d.%d"%(img[0],img[1])
 			except : continue			# data wasn't what we expected
-			
-			if cname!=lname : 
+
+			if cname!=lname :
 				if self.verbose : print "Receiving cache data ",cname
 				f=db_open_dict(cname)
 				lname=cname
@@ -2050,13 +2050,13 @@ class EMDCTaskClient(EMTaskClient):
 				break
 			sockout=socket.socket()
 			signal.alarm(5)
-			try : 
+			try :
 				sockout.connect((nexthost,9989))
 				sockoutf=sockout.makefile()
 				sendobj(sockoutf,hostlist)				# First thing we do is send the next node in the chain a list of the remaining nodes
 				sockoutf.flush()
 				fail=0
-			except: 
+			except:
 #				traceback.print_exc()
 				print "connect %s to %s failed"%(socket.gethostname(),nexthost)
 
@@ -2066,7 +2066,7 @@ class EMDCTaskClient(EMTaskClient):
 
 	def listencache(self):
 		"""This will listen for cached data (idle for up to 30 seconds) or sleep for 30 seconds if someone else on this node is listening"""
-		
+
 		try:
 			sock=socket.socket()
 			sock.bind(("",9989))
@@ -2103,22 +2103,22 @@ class EMDCTaskClient(EMTaskClient):
 		except:pass
 #		print "chainlist: ",chainlist
 		sockout,sockoutf=self.connectfromlist(chainlist)		# try to establish a connection to one of them
-		
-		try: 
+
+		try:
 			ret=None
 			lname=""
 			nrecv=0
 			while 1 :
 				if nrecv==0 : signal.alarm(15)		# if we haven't gotten anything yet, only wait a little while
 				else : signal.alarm(30)				# if we've been receiving data, wait longer for more
-				
+
 #				cq.append(recv_broadcast(sock))		# too slow
 #				ret=Util.recv_broadcast(sock.fileno())
 
 				ret=None
 				try:
 					ret=recvstr(sockf)		# this should contain time,rint,img#,image in a compressed pickled string
-					
+
 					if ret=="DONE" or len(ret)==0: break
 					sockf.write("ACK ")			# We do the ACK immediately along the chain for performance
 					sockf.flush()
@@ -2127,7 +2127,7 @@ class EMDCTaskClient(EMTaskClient):
 					traceback.print_exc()
 					print "**** error receiving data on ",socket.gethostname()
 					break
-				
+
 				signal.alarm(60)				# Longer timeout for retransmitting down the chain
 				# Send the image down the chain
 				if sockout!=None :
@@ -2138,18 +2138,18 @@ class EMDCTaskClient(EMTaskClient):
 						traceback.print_exc()
 						print "Chain broken ! (%s)"%socket.gethostname()
 						sockout=None
-						
+
 				# The data item should be a pickled tuple (time,rand,img#,image)
 				try : img=loads(decompress(ret))
-				except : 
+				except :
 					print "ERROR (%s): Bad data on chain"%socket.gethostname()
 					continue			# bad pickle :^(
 				try : cname="bdb:cache_%d.%d"%(img[0],img[1])
-				except : 
+				except :
 					print "ERROR (%s): Bad data object on chain"%socket.gethostname()
 					continue			# data wasn't what we expected
-				
-				if cname!=lname : 
+
+				if cname!=lname :
 					if self.verbose : print "Receiving cache data ",cname
 					f=db_open_dict(cname)
 					lname=cname
@@ -2164,14 +2164,14 @@ class EMDCTaskClient(EMTaskClient):
 						print "Chain broken (NACK) ! (%s)"%socket.gethostname()
 						sockout=None
 
-				
-		except: 
+
+		except:
 			traceback.print_exc()		# we shouldn't really get an exception here
 			print "**** Exception in outer chain loop"
-		
+
 		if self.verbose :
 			print nrecv," total items cached"
-		
+
 		# Tell the chain we're done
 		if sockout!=None :
 			try:
@@ -2198,13 +2198,13 @@ class EMDCTaskClient(EMTaskClient):
 			try: z=cache.get_header(0)
 			except: needed.append(i)
 			if z==None : needed.append(i)
-			
+
 
 		sendobj(sockf,needed)
 		sockf.flush()
 		if self.verbose : print "Caching phase, need : ",needed
 #		if len(needed)==0 : return
-		
+
 		#bcast=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)	# One client will broadcast the data on its subnet for mass distribution
 		#bcast.bind(("",9989))
 		#bcast.setsockopt(socket.SOL_SOCKET,socket.SO_BROADCAST,1)
@@ -2214,7 +2214,7 @@ class EMDCTaskClient(EMTaskClient):
 		except: pass
 #		print "chainlist (%s): %s"%(socket.gethostbyname(socket.gethostname()),chainlist)
 		sockout,sockoutf=self.connectfromlist(chainlist)		# try to establish a connection to one of them
-		
+
 		lname=""
 		n=0
 #		t0,t1,t2,t3=0,0,0,0
@@ -2222,11 +2222,11 @@ class EMDCTaskClient(EMTaskClient):
 		while 1:
 			signal.alarm(60)
 			xmit=recvstr(sockf)		# this should contain time,rint,img#,image
-			
+
 			if xmit=="DONE" : break
 			try : img=loads(decompress(xmit))
 			except : print "ERROR : Bad cache data from server"
-			
+
 			# immediate ACK so the server can prepare the next packet
 			sockf.write("ACK ")
 			sockf.flush()
@@ -2235,11 +2235,11 @@ class EMDCTaskClient(EMTaskClient):
 			except :
 				print "Invalid cache data '",img,"'"
 				break
-			if cname!=lname : 
+			if cname!=lname :
 				if self.verbose : print "Receiving cache data ",cname
 				f=db_open_dict(cname)
 				lname=cname
-				
+
 			# Send the image down the chain
 			if sockout!=None :
 				try:
@@ -2250,11 +2250,11 @@ class EMDCTaskClient(EMTaskClient):
 				except:
 					print "Chain broken ! (%s)"%socket.gethostname()
 					sockout=None
-					
+
 			f[img[2]]=img[3]		# Save the image in the local cache
-			
+
 			n+=1
-		
+
 		# Tell the chain we're done
 		if sockout!=None :
 			try:
@@ -2262,10 +2262,10 @@ class EMDCTaskClient(EMTaskClient):
 				sockoutf.flush()
 #				sockout.close()
 			except: pass
-			
+
 		signal.alarm(0)
 #		print "Done precaching"
-		
+
 
 	def run(self,dieifidle=86400,dieifnoserver=86400,onejob=False):
 		"""This is the actual client execution block. dieifidle is an integer number of seconds after
@@ -2285,11 +2285,11 @@ class EMDCTaskClient(EMTaskClient):
 				sockf.write("RDYT")
 				sendobj(sockf,None)
 				sockf.flush()
-			
+
 				# Get a task from the server
 				task=recvobj(sockf)
 				if self.verbose>1 : print "Task: ",task
-				
+
 				# This means the server wants to use us to precache files on all of the clients, we won't
 				# get a task until we finish this
 				if isinstance(task,list) and task[0]=="CACHE" :
@@ -2324,14 +2324,14 @@ class EMDCTaskClient(EMTaskClient):
 					sys.stdout.flush()
 				sockf.close()
 				sock.close()
-				if time.time()-lastjob>dieifidle : 
+				if time.time()-lastjob>dieifidle :
 					print "Idle too long. Terminating"
 					retcode=4
 					break
 				self.listencache()		# We will listen for precached data for 15 seconds (or sleep if another thread is listening)
 				continue
 			sockf.flush()
-			
+
 			# Translate and retrieve (if necessary) data for task
 			for k,i in task.data.items():
 				if self.verbose>1 : print "Data translate ",k,i
@@ -2340,10 +2340,10 @@ class EMDCTaskClient(EMTaskClient):
 					cname="bdb:cache_%d.%d"%(i[1][0],i[1][1])
 					cache=db_open_dict(cname)
 					if self.verbose>2 : print "Open cache : ",cname
-					
+
 					for j in image_range(*i[2:]):
 #						if not cache.has_key(j):
-						try: 
+						try:
 							z=cache.get_header(j)
 							if z==None : raise Exception
 						except:
@@ -2351,12 +2351,12 @@ class EMDCTaskClient(EMTaskClient):
 #							print j,cache[j]
 
 						z=cache[j]		# this is here to raise an exception if something went funny in the data retrieval
-							
+
 					i[1]=cname
 #				except: pass
 			sockf.close()
 			sock.close()
-			
+
 			# Execute translated task
 #			try:
 			ret=self.process_task(task,self.imalive)
@@ -2385,7 +2385,7 @@ class EMDCTaskClient(EMTaskClient):
 					print "Failed in 10 attempts to send results, aborting (%d)"%task.taskid
 					retcode=10
 					break
-					
+
 				try:
 					sock,sockf=openEMDCsock(self.addr,clientid=self.myid,retry=10)
 					sockf.write("DONE")
@@ -2423,31 +2423,31 @@ class EMDCTaskClient(EMTaskClient):
 				except:
 					print "Error on flush (%d)"%task.taskid
 					retry=True
-				
+
 				try:
 					sockf.close()
 					sock.close()
 				except:
 					print "Error on close (%d)"%task.taskid
 					retry=True
-				
+
 			signal.alarm(0)
-			
+
 			if retrycount>10 : break			# if we completely failed once, this client should die
-			
+
 			if self.verbose : print "Task returned %d"%task.taskid
 			if self.verbose>2 : print "Results :",ret
-			
-			if onejob : 
+
+			if onejob :
 				retcode=0		# this means it's ok to spawn more jobs, the current job was a success
 				break
-			
+
 			lastjob=time.time()
 			time.sleep(3)
-		
+
 		if retcode : print "Client on %s exiting. Bye !"%socket.gethostname()
 		return retcode
-		
+
 	def get_data(self,sockf,did,imnum):
 		"""request data from the server on an open connection"""
 		signal.alarm(240)
@@ -2456,7 +2456,7 @@ class EMDCTaskClient(EMTaskClient):
 		sendobj(sockf,["cache",did,imnum])
 		sockf.flush()
 		try: ret=recvobj(sockf)
-		except : 
+		except :
 			print "ERROR on %s: could not retrieve %s : %d, retry"%(socket.gethostname(),str(did),imnum)
 			time.sleep(3)
 			sockf.write("DATA")
@@ -2466,6 +2466,6 @@ class EMDCTaskClient(EMTaskClient):
 		signal.alarm(0)
 
 		return ret
-		
+
 	#		self.sockf=
-		
+

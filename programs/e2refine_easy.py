@@ -131,6 +131,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--sep", type=int, help="The number of classes each particle can contribute towards (normally 1). Increasing will improve SNR, but produce rotational blurring.", default=1, guitype='intbox', row=16, col=1, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--classkeep",type=float,help="The fraction of particles to keep in each class, based on the similarity score. (default=0.9 -> 90%%)", default=0.9, guitype='floatbox', row=16, col=2, rowspan=1, colspan=2, mode="refinement")
 	parser.add_argument("--classautomask",default=False, action="store_true", help="This will apply an automask to the class-average during iterative alignment for better accuracy. The final class averages are unmasked.",guitype='boolbox', row=18, col=0, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--prethreshold",default=False, action="store_true", help="Applies a threshold to the volume just before generating projections. A sort of aggressive solvent flattening for the reference.",guitype='boolbox', row=18, col=0, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--m3dkeep", type=float, help="The fraction of slices to keep in e2make3d.py. Default=0.8 -> 80%%", default=0.8, guitype='floatbox', row=18, col=1, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--m3dpostprocess", type=str, default="", help="Default=none. An arbitrary post-processor to run after all other automatic processing.", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter.lowpass|filter.highpass\')', row=20, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel",default=None, guitype='strbox', row=24, col=0, rowspan=1, colspan=2, mode="refinement")
@@ -161,7 +162,7 @@ not need to specify any of the following other than the ones already listed abov
 	# options associated with e2classaverage.py
 #	parser.add_header(name="caheader", help='Options below this label are specific to e2classaverage', title="### e2classaverage options ###", row=22, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--classkeepsig", default=False, action="store_true", help="Change the keep (\'--keep\') criterion from fraction-based to sigma-based.")
-	parser.add_argument("--classiter", type=int, help="Default=auto. The number of iterations to perform.",default=1)
+	parser.add_argument("--classiter", type=int, help="Default=auto. The number of iterations to perform.",default=-1)
 	parser.add_argument("--classalign",type=str,default="rotate_translate_flip",help="Default=auto. If doing more than one iteration, this is the name and parameters of the 'aligner' used to align particles to the previous class average.")
 	parser.add_argument("--classaligncmp",type=str,help="Default=auto. This is the name and parameters of the comparitor used by the fist stage aligner.",default=None)
 	parser.add_argument("--classralign",type=str,help="Default=auto. The second stage aligner which refines the results of the first alignment in class averaging.", default=None)
@@ -326,7 +327,20 @@ maps.")
 			effbox=nx*apix*2/options.targetres
 			astep=90.0/ceil(90.0/sqrt(4300/effbox))		# This rounds to the best angular step divisible by 90 degrees
 			options.orientgen="eman:delta={:1.3f}:inc_mirror=0:perturb=1".format(astep)
-			if options.targetres>15 : options.classiter=3		# increase classiter for this case
+			if options.classiter<0 :
+				if options.targetres>12.0 :
+					options.classiter=3
+					append_html("<p>Your desired resolution is below 1/2 Nyquist, and you requested a resolution of <12 A, so we will initially set --classiter to 3. This will help \
+low resolution refinements converge more rapidly. If you run more than 2 iterations and the map seems to have converged fairly well, this will be decreased.</p>")
+				elif options.targetres>8.0 :
+					options.classiter=2
+					append_html("<p>Your desired resolution is below 1/2 Nyquist, and you requested a resolution of <8 A, so we will initially set --classiter to 2. This balances \
+rapid convergence with the subnanometer resolution goal. If you run more than 2 iterations and the map seems to have converged fairly well, this will be decreased.</p>")
+				else :
+					options.classiter=1
+					append_html("<p>Your desired resolution is below 1/2 Nyquist, and you requested a high resolution, so we will initially set --classiter to 1. This balances \
+rapid convergence with the resolution goal. If you run more than 2 iterations and the map seems to have converged fairly well, this will be decreased.</p>")
+
 			append_html("<p>Automatically selecting a good angular spacing for the refinement. The resolution you are requesting ({}) is quite conservative given the \
 sampling ({}) of your data. If this is simply an initial refinement designed to get the overall shape of the structure correct, this is fine. If this is your final resolution \
 target, you may wish to consider downsampling the data and importing into a new project, as too much oversampling is both <i>extremely</i> inefficient, and in some cases will \
@@ -339,9 +353,17 @@ even lead to worse structures. Based on your requested resolution and box-size, 
 			options.orientgen="eman:delta={:1.3f}:inc_mirror=0:perturb=1".format(astep)
 			append_html("<p>Based on your requested resolution and box-size, I will use an angular sampling of {} deg. For details, please see \
 <a href=http://blake.bcm.edu/emanwiki/EMAN2/AngStep>http://blake.bcm.edu/emanwiki/EMAN2/AngStep</a></p>".format(options.targetres,apix,astep))
+			if options.classiter<0 :
+				options.classiter=1
+				append_html("<p>Your desired resolution is between 1/2 and 3/4 Nyquist, so we will set --classiter to 1. Leaving this above 0 \
+will help avoid noise bias in early rounds, but it may be reduced at zero if convergence seems to have been achieved.</p>")
 
 		# target resolution is beyond 3/4 Nyquist
 		else :
+			if options.classiter<0 :
+				options.classiter=1
+				append_html("<p>Your desired resolution is beyond 3/4 Nyquist. Regardless, we will set --classiter to 1 initially. Leaving this above 0 \
+will help avoid noise bias, but it may be reduced at zero if convergence seems to have been achieved.</p>")
 			astep=90.0/ceil(90.0/sqrt(4300/nx))		# This rounds to the best angular step divisible by 90 degrees
 			options.orientgen="eman:delta={:1.3f}:inc_mirror=0:perturb=1".format(astep)
 			append_html("<p>The resolution you are requesting is beyond 2/3 Nyquist. This is normally not recommended, as it represents insufficient sampling to give a good representation of your \
@@ -442,6 +464,9 @@ Based on your requested resolution and box-size, I will use an angular sampling 
 	if options.automask3d : amask3d = options.automask3d
 	else : amask3d=""
 
+	if options.prethreshold : prethreshold="--prethreshold"
+	else : prethreshold=""
+
 	# store the input arguments forever in the refinement directory
 	db = js_open_dict(options.path+"/0_refine_parms.json")
 	db.update(vars(options))
@@ -453,11 +478,11 @@ Based on your requested resolution and box-size, I will use an angular sampling 
 		append_html("<h4>Beginning iteration {} at {}</h4>".format(it,time.ctime(time.time())),True)
 
 		### 3-D Projections
-		cmd = "e2project3d.py {path}/threed_{itrm1:02d}_even.hdf  --outfile {path}/projections_{itr:02d}_even.hdf -f --projector {projector} --orientgen {orient} --sym {sym} --postprocess normalize.circlemean {parallel} {verbose}".format(
-			path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=options.sym,parallel=parallel,verbose=verbose)
+		cmd = "e2project3d.py {path}/threed_{itrm1:02d}_even.hdf  --outfile {path}/projections_{itr:02d}_even.hdf -f --projector {projector} --orientgen {orient} --sym {sym} --postprocess normalize.circlemean {prethr} {parallel} {verbose}".format(
+			path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=options.sym,prethr=prethreshold,parallel=parallel,verbose=verbose)
 		run(cmd)
-		cmd = "e2project3d.py  {path}/threed_{itrm1:02d}_odd.hdf --outfile {path}/projections_{itr:02d}_odd.hdf -f --projector {projector} --orientgen {orient} --sym {sym} --postprocess normalize.circlemean {parallel} {verbose}".format(
-			path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=options.sym,parallel=parallel,verbose=verbose)
+		cmd = "e2project3d.py  {path}/threed_{itrm1:02d}_odd.hdf --outfile {path}/projections_{itr:02d}_odd.hdf -f --projector {projector} --orientgen {orient} --sym {sym} --postprocess normalize.circlemean {prethr} {parallel} {verbose}".format(
+			path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=options.sym,prethr=prethreshold,parallel=parallel,verbose=verbose)
 		run(cmd)
 		progress += 1.0
 		E2progress(logid,progress/total_procs)
