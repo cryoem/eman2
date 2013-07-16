@@ -1237,7 +1237,7 @@ def alignment(fixedimage,image,label,classoptions,xformslabel,transform,prog='e2
 		'''
 		jsAliScores = classoptions.path + '/subtomo_scores' + str(classoptions.refinemultireftag) + '.json'
 		jsA = js_open_dict (jsAliScores)
-		jsA[xformslabel] = bestfinal[0]['score']
+		jsA[xformslabel] = str(bestfinal[0]['score'])
 	
 	return (bestfinal,bestcoarse)
 	
