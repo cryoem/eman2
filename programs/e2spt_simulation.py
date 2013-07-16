@@ -53,6 +53,7 @@ def main():
 	
 	parser.add_argument("--path",type=str,default=None,help="Directory to store results in. The default is a numbered series of directories containing the prefix 'sptsim'; for example, sptsim_02 will be the directory by default if 'sptsim_01' already exists.")
 	parser.add_argument("--output",type=str,default=None,help="Name of the output stack for the simulated subtomograms.")
+	parser.add_argument("--randstack",type=str,default=None,help="If you already have a stack of particles (presumably in random orientations) you can supply it here.")
 	parser.add_argument("--tomogramoutput",type=str,default=None,help="This will generate a simulated tilt series and tomogram containing the entire set of subtomograms.")
 
 	parser.add_argument("--input", type=str, help="""The name of the input volume from which simulated subtomograms will be generated. 
@@ -258,9 +259,18 @@ def main():
 		
 		stackname = options.input.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
 		if options.output:
-			stackname = options.output
-
-		randptcls = randomizer(options, model, stackname)
+			stackname = options.output.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
+				
+		randptcls = []
+		if options.randstack:
+			print "\n\nI will not generate a randstack but will read it from", options.randstack
+			nr=EMUtil.get_image_count(options.randstack)
+			print "There are these many particles in the randstack", nr
+			for np in range(nr):
+				a=EMData(options.randstack,np)
+				randptcls.append(a)
+		else:
+			randptcls = randomizer(options, model, stackname)
 		
 		#stackname = options.input.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf')
 		
@@ -270,8 +280,9 @@ def main():
 		#print "BEFORE RET"
 		ret=subtomosim(options,randptcls, stackname)
 		#print "AFTER RET"
-		if ret == 1:
-			os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))	
+		
+		#if ret == 1:
+		#	os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))	
 		
 		if options.simref:
 			name = options.input.replace('.hdf','_SIM.hdf')
@@ -348,9 +359,15 @@ def randomizer(options, model, stackname):
 			b['xform.align3d'] = Transform()							#This parameter should be set to the identity transform since it can be used later to determine whether
 														#alignment programs can "undo" the random rotation in spt_randT accurately or not
 			if options.saverandstack:	
-				
+
 				#print "The stackname to use is", stackname
-				b.write_image(options.path + '/' + stackname.split('/')[-1],i)
+				randstackname = options.path + '/' + stackname.split('/')[-1]
+				print "\n\n\n\n\nI will save randstack! Using THE PATH in e2spt_simulation and stackname both of which together are", randstackname
+				print "options path received is", options.path
+				print "Whereas stackname is", stackname
+				print "Therefore stackname.split('/')[-1] is", stackname.split('/')[-1]
+				
+				b.write_image(randstackname,i)
 
 			randptcls.append(b)
 
@@ -539,7 +556,7 @@ class SubtomoSimTask(JSTask):
 				noise = ( noise*3 + noise2*3 ) * int(options.snr)
 			
 				if noise:
-					print "I will add noise"
+					#print "I will add noise"
 					noise.process_inplace('normalize')
 					prj_r.add(noise)
 			
