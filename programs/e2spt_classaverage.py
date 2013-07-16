@@ -75,7 +75,7 @@ def main():
 	parser.add_argument("--refinemultireftag", type=str, help="DO NOT USE THIS PARAMETER. It is passed on from e2spt_refinemulti.py if needed.", default='')
 
 	
-	parser.add_argument("--makeaverage",action="store_true", help="If e2spt_refinemulti.py is calling e2spt_classaverage.py, the latter need not average any particles, but rather only yield the alignment results.", default=True)
+	parser.add_argument("--donotaverage",action="store_true", help="If e2spt_refinemulti.py is calling e2spt_classaverage.py, the latter need not average any particles, but rather only yield the alignment results.", default=False)
 	
 	parser.add_argument("--iter", type=int, help="The number of iterations to perform. Default is 1.", default=1, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym')
 	parser.add_argument("--savesteps",action="store_true", help="If set, will save the average after each iteration to class_#.hdf. Each class in a separate file. Appends to existing files.",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='alignment,breaksym')
@@ -154,7 +154,7 @@ def main():
 		print "ERROR: --groups cannot be > 1 if --iter is > 1."
 		
 	#print help 
-	if options.input == None:
+	if not options.input:
 		parser.print_help()
 		exit(0)
 		
@@ -240,10 +240,11 @@ def main():
 		if hdr["nx"]!=nx or hdr["ny"]!=ny or hdr["nz"]!=nz : 
 			print "Error, ref volume not same size as input volumes"
 			sys.exit(1)
-			
-	if '.' not in options.output:					
-		print "Error in output name. It must end in a valid format, like '.hdf'; make sure you didn't mistake a comma for a dot"
-		sys.exit(1)
+	
+	if not options.donotaverage:		
+		if '.' not in options.output:					
+			print "Error in output name. It must end in a valid format, like '.hdf'; make sure you didn't mistake a comma for a dot"
+			sys.exit(1)
 		
 	logger = E2init(sys.argv, options.ppid)
 	
@@ -371,7 +372,10 @@ def main():
 			#The reference for the next iteration should ALWAYS be the RAW AVERAGE of the aligned particles, since the reference will be "pre-processed" identically to the raw particles.
 			#There should be NO post-processing of the final averages, EXCEPT for visualization purposes (so, postprocessing is only applied to write out the output, if specified.
 			
-			if options.makeaverage:					
+			print "\n\n\nOptions.donotaverage is", options.donotaverage
+			print "\n\n\n"
+			
+			if not options.donotaverage:					
 				ref = make_average(options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.sym,options.groups,options.breaksym,options.nocenterofmass,options.verbose,it)
 	
 			if options.groups > 1:
@@ -386,7 +390,7 @@ def main():
 						else:
 							refc.write_image("%s/class_%02d.hdf"%(options.path,i),it)
 			else:
-				if options.savesteps:
+				if options.savesteps and not options.donotaverage:
 					if options.postprocess:
 						ppref = ref.copy()
 						postprocess(ppref,None,options.normproc,options.postprocess)
@@ -401,7 +405,7 @@ def main():
 			print "You supplied a reference file that has more than one reference in it! EXITING."
 			sys.exit()
 		
-		else:									
+		elif not options.donotaverage:									
 			ref['origin_x']=0
 			ref['origin_y']=0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
 			ref['origin_z']=0
@@ -980,7 +984,7 @@ class Align3DTask(JSTask):
 		"""
 		nptcls = EMUtil.get_image_count(classoptions['options'].input)
 		
-		print "classoptions are", classoptions
+		#print "classoptions are", classoptions
 		
 		xformslabel = 'tomo_' + str(classoptions['ptclnum']).zfill( len( str(nptcls) ) )
 		ret=alignment(fixedimage,image,classoptions['label'],classoptions['options'],xformslabel,classoptions['transform'],'e2spt_classaverage')
