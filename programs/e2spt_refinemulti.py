@@ -39,7 +39,7 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <stack>
 
-	WARNING: This program still under development.
+	WARNING: This program still EXPERIMENTAL (It's under heavy development)	
 	
 	Refinement of a 3D-volume stack against multiple models. The initial models can be provided in a stack, OR generated from the data itself.
 	
