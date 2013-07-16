@@ -142,8 +142,8 @@ def main():
 	
 	parser.add_argument("--finalboxsize", type=int,default=0,help="""The final box size to clip the subtomograms to.""")								
 
-	parser.add_argument("--snr",type=int,help="Weighing noise factor for noise added to the image. Only words if --addnoise is on.",default=5)
-	parser.add_argument("--addnoise",action="store_true",default=False,help="If on, it adds random noise to the particles")
+	parser.add_argument("--snr",type=int,help="Weighing noise factor for noise added to the image.",default=0)
+	#parser.add_argument("--addnoise",action="store_true",default=False,help="If on, it adds random noise to the particles")
 	
 	parser.add_argument("--sym",type=str,default='c1',help="If your particle is symmetrical, you should randomize it's orientation withing the asymmetric unit only. Thus, provide the symmetry.")
 
@@ -185,9 +185,11 @@ def main():
 	parser.add_argument("--fitwedgepost", action="store_true", help="Fit the missing wedge AFTER preprocessing the subvolumes, not before, IF using the fsc.tomo comparator for --aligncmp or --raligncmp.", default=False)
 
 
-	parser.add_argument("--wedgeangle",type=float,help="Missing wedge angle",default=59.0)
-	parser.add_argument("--wedgei",type=float,help="Missingwedge begining", default=0.15)
+	parser.add_argument("--wedgeangle",type=float,help="Missing wedge angle",default=60)
+	parser.add_argument("--wedgei",type=float,help="Missingwedge begining", default=0.10)
 	parser.add_argument("--wedgef",type=float,help="Missingwedge ending", default=0.9)
+	parser.add_argument("--writewedge", action="store_true", help="Write a subvolume with the shape of the fitted missing wedge if --raligncmp or --aligncmp are fsc.tomo. Default is 'True'. To turn on supply --writewedge", default=False)
+
 
 	(options, args) = parser.parse_args()	
 	
@@ -315,6 +317,9 @@ def simloop(options,rootpath):
 			#	#print "The tilt step is", tiltstep
 
 			snr=snrl
+			
+			noiseround=0
+			firstrandstack = ''
 			while snr < snru:
 				#print "The conditions to simulate are tiltrange=%d, nslices=%d, snr=%.2f" % (tiltrange,nslices,snr)
 				#print "Snr is", snr
@@ -322,12 +327,15 @@ def simloop(options,rootpath):
 				
 				snrtag = ("%.2f" %(snr) ).zfill(5)
 				
+				samestackformany=0
+				thestack=[]
+				themodel=[]
+				
 				if options.comparators:
 					comps = options.comparators.split(',')
 					
-					thestack=[]
-					themodel=[]
-					samestackformany=0
+					
+					
 					for comp in comps:
 						print "Comparator is", comp
 						print "Whereas originalpath is", originalpath
@@ -348,21 +356,27 @@ def simloop(options,rootpath):
 
 						#simloop(options,rootpath)
 						print "And path is", options.path
-						ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,samestackformany=samestackformany,thesestacks=thestack,thesemodels=themodel)
+						
+						ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,noiseround,firstrandstack,samestackformany=samestackformany,thesestacks=thestack,thesemodels=themodel)
+						
 						if samestackformany == 0:
-							thestack=ret[0]
-							themodel=ret[1]
+							thestack = ret[0]
+							themodel = ret[1]
+							firstrandstack = ret[2]
 							
 						
-						#print "Samestackformany is", samestackformany
+						print "Samestackformany is", samestackformany
 						#print "Therefore, ret is", ret
 						#print "And the stack thestack AFTER sending is", thestack
 						#print "$$$$$$$$$$$$$$$$$$"
 							
 						samestackformany+=1
+					
 				else:
-					ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,samestackformany=samestackformany,thesestacks=thestack)
-
+					ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,noiseround,firstrandstack,samestackformany=samestackformany,thesestacks=thestack)
+					if noiseround == 0:
+						firstrandstack = ret[2]
+				noiseround+= 1
 				snr += snrch
 
 			if options.tiltstep:
@@ -436,15 +450,18 @@ def simloop(options,rootpath):
 				if 'error.txt' in f:
 					resfiles.append(f)
 		
-			resfiles.sort()
-		
-			resfiles_analysis(options,resfiles,resultsdir,modelnum=i)
+			if len(resfiles) < 2:
+				print "Some of your jobs failed. There seems to be only ONE results file, and thus no variability of either SNR, TR, or TS"
+				sys.exit()
+			else:
+				resfiles.sort()		
+				resfiles_analysis(options,resfiles,resultsdir,modelnum=i)
 
 	return()
 	
 
 
-def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,samestackformany=0,thesestacks=[],thesemodels=[]):
+def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,noiseround,firstrandstack,samestackformany=0,thesestacks=[],thesemodels=[]):
 	thisstack=''
 	thissimodel=''
 	
@@ -501,6 +518,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 		subtomos =  subpath.split('/')[-1] + '.hdf'
 		
 		cmd = ''
+		
 		if samestackformany < 1:
 			thisstack = subtomos
 			thissimmodel = inputdata
@@ -512,18 +530,38 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			print "\nSimulated particles are here", subtomos
 			print '\n'
 			
-			jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --nslices=' + str(nslices) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrinksim) + ' --finalboxsize=' + str(options.finalboxsize) + ' --verbose=' + str(options.verbose) + ' --parallel=' + str(options.parallel)
-		
+			jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --nslices=' + str(nslices) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrinksim) + ' --finalboxsize=' + str(options.finalboxsize) + ' --verbose=' + str(options.verbose) + ' --parallel=' + str(options.parallel) + ' --path=' + subpath.split('/')[-1]
+			
+			snrl = options.snrlowerlimit
+			snru = options.snrupperlimit
+			snrch = options.snrchange
+			  
+			if noiseround < 1 and snru - snrl > snrch:
+				jobcmd += ' --saverandstack'
+				
+				#nrefs = EMUtil.get_image_count(inputdata)
+				tag=''
+				if nrefs>1:
+					tag = str(d).zfill(len(str(nrefs)))
+					
+				firstrandstack =  subpath + '/' + subtomos.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
+				
+				#firstrandstack =  subpath.split('/')[-1] + '/' + inputdata.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
+				print "\n\nThe firstrandstack name in e2spt_tomosimjobs when noiseround is 0, is", firstrandstack
+			
+			if noiseround > 0 and firstrandstack:
+				print "\n\nThe randstack to PROVIDE because noiseround > 1 is", firstrandstack
+				randstackcmd = ' --randstack=' + firstrandstack
+				jobcmd += randstackcmd
+			
 			if options.simref:
 				jobcmd += ' --simref'
-			if options.addnoise:
-				jobcmd += ' --addnoise'
+			#if snr:
+			#	jobcmd += ' --addnoise'
 			if options.saveprjs:
 				jobcmd += ' --saveprjs'
 			if options.negativecontrast:
-				jobcmd += ' --negativecontrast'
-
-			jobcmd += ' --path=' + subpath.split('/')[-1]				
+				jobcmd += ' --negativecontrast'				
 
 			cmd = 'cd ' + modeldir + ' && ' + jobcmd
 
@@ -544,7 +582,10 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			print "CCCCCCCCCCCCCn\n"
 
 		#resultsfiles=[]
-
+		
+		
+		
+		
 		if options.testalignment:
 			print "\n\n$$$$$$$$$\nI will test alignment and for that will cd into SUBPATH", subpath
 			print "$$$$$$$$\n\n"
@@ -577,11 +618,16 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			#so that the missing wedge is smaller than it actually is, to ensure there will be no overlap with any data.
 			#This is effectively accomplished by adding 1 (or more) to 'tiltrange'
 			if 'fsc.tomo' in options.aligncmp or 'fsc.tomo' in options.raligncmp:
-				#print "YOU are selecting FSC.TOMO, therefore, wedgeangle needs to be specified", tiltrange
+				print "\n\n\n\n\n\n\n\n$$$$$$$$$$$$$$$$\nYOU are selecting FSC.TOMO, therefore, wedgeangle needs to be specified", tiltrange+1
 				alicmd += ' --wedgeangle=' + str(tiltrange+1)  + ' --wedgei=' + str(options.wedgei) + ' --wedgef=' + str(options.wedgef)
 				
 			if options.fitwedgepost:
+				print "\n\nYou have selected --fitwedgwepost"
 				alicmd += ' --fitwedgepost'
+			
+			if options.writewedge:
+				alicmd += ' --writewedge'
+			
 				
 			aliptcls = output.replace('_avg.hdf','_ptcls_ali.hdf')
 
@@ -608,7 +654,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 				#a.close()
 			#kk+=1
 
-		#print "\n\n\n*********************The command to execute is \n %s \n*********************\n" %(cmd)
+		print "\n\n\n*********************The command to execute is \n %s \n*********************\n" %(cmd)
 
 		#if 'mpi' in options.parallel:
 			
@@ -626,7 +672,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			thesemodels.append(thissimmodel)
 	
 	if samestackformany == 0:
-		return [thesestacks,thesemodels]
+		return [thesestacks,thesemodels,firstrandstack]
 	else:
 		return []
 
@@ -684,8 +730,19 @@ def resfiles_analysis(options,resfiles,resultsdir,modelnum=0):
 		twoD_snr_tr_points.append({'tilt range':tr,'noise level':snr,'angular_error':ang,'translational_error':trans})
 		twoD_snr_ts_points.append({'tilt step':ts,'noise level':snr,'angular_error':ang,'translational_error':trans})
 	
+	print "The len(set(snrs)) is", len(set(snrs))
+	
+	print "The len(set(trs)) is", len(set(trs))
+			
+	print "The len(set(tss)) is", len(set(tss))
+	
+	if len(set(snrs)) == 1 and len(set(tss)) == 1 and len(set(trs)) == 1:
+		print "Some of your jobs failed. There seems to be only ONE results file, and thus no variability of either SNR, TR, or TS"
+		sys.exit()
+		
+	
 	if len(set(snrs)) == 1: 
-		if len(set(trs)) == 1:
+		if len(set(trs)) == 1 and len(set(tss)) > 1:
 			angfilename = resultsdir+'/' + resultsdir.split('/')[-2] + '_angular_error_varNS.txt'
 			oneD_plot(tss,ang_errors,angfilename.replace('.txt','.png'),'tilt step','angular error')
 			writeresultsfile(tss,ang_errors,angfilename)
@@ -694,7 +751,7 @@ def resfiles_analysis(options,resfiles,resultsdir,modelnum=0):
 			oneD_plot(tss,trans_errors,transfilename.replace('.txt','.png'),'tilt step','translational error')
 			writeresultsfile(tss,trans_errors,transfilename)
 			
-		if len(set(tss)) == 1:
+		if len(set(tss)) == 1 and len(set(trs)) > 1:
 			angfilename = resultsdir+'/' + resultsdir.split('/')[-2] + '_angular_error_varTR.txt'
 			oneD_plot(trs,ang_errors,angfilename.replace('.txt','.png'),'tilt range','angular error')
 			writeresultsfile(trs,ang_errors,angfilename)
@@ -702,9 +759,9 @@ def resfiles_analysis(options,resfiles,resultsdir,modelnum=0):
 			transfilename = angfilename.replace('angular','translational')
 			oneD_plot(trs,trans_errors,transfilename.replace('.txt','.png'),'tilt range','translational error')
 			writeresultsfile(trs,trans_errors,transfilename)
-			
+	
 	if len(set(trs)) == 1: 
-		if len(set(tss)) == 1:
+		if len(set(tss)) == 1 and len(set(snrs)) > 1:
 			angfilename = resultsdir+'/' + resultsdir.split('/')[-2] + '_angular_error_varSNR.txt'
 			oneD_plot(snrs,ang_errors,angfilename.replace('.txt','.png'),'noise level','angular error')
 			writeresultsfile(snrs,ang_errors,angfilename)
