@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Steven Ludtke, 02/15/2011, Jesus Galaz-Montoya 03/2011. Last modification: 05/2013
+# Author: Steven Ludtke, 02/15/2011, Jesus Galaz-Montoya 03/2011. Last modification: 15/July/2013
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -68,9 +68,15 @@ def main():
 	parser.add_argument("--input", type=str, help="The name of the input volume stack. MUST be HDF or BDB, since volume stack support is required.", default=None, guitype='filebox', browser='EMSubTomosTable(withmodal=True,multiselect=False)', row=0, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	parser.add_argument("--output", type=str, help="The name of the output class-average stack. MUST be HDF or BDB, since volume stack support is required.", default=None, guitype='strbox', row=2, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	parser.add_argument("--oneclass", type=int, help="Create only a single class-average. Specify the class number.",default=None)
-	parser.add_argument("--classmx", type=str, help="The name of the classification matrix specifying how particles in 'input' should be grouped. If omitted, all particles will be averaged.", default=None)
+	parser.add_argument("--classmx", type=str, help="The name of the classification matrix specifying how particles in 'input' should be grouped. If omitted, all particles will be averaged.", default='')
 	parser.add_argument("--ref", type=str, help="Reference image(s). Used as an initial alignment reference and for final orientation adjustment if present. This is typically the projections that were used for classification.", default=None, guitype='filebox', browser='EMBrowserWidget(withmodal=True,multiselect=True)', filecheck=False, row=1, col=0, rowspan=1, colspan=3, mode='alignment')
 	parser.add_argument("--resultmx",type=str,help="Specify an output image to store the result matrix. This is in the same format as the classification matrix. http://blake.bcm.edu/emanwiki/EMAN2/ClassmxFiles", default=None)
+	
+	parser.add_argument("--refinemultireftag", type=str, help="DO NOT USE THIS PARAMETER. It is passed on from e2spt_refinemulti.py if needed.", default='')
+
+	
+	parser.add_argument("--makeaverage",action="store_true", help="If e2spt_refinemulti.py is calling e2spt_classaverage.py, the latter need not average any particles, but rather only yield the alignment results.", default=True)
+	
 	parser.add_argument("--iter", type=int, help="The number of iterations to perform. Default is 1.", default=1, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym')
 	parser.add_argument("--savesteps",action="store_true", help="If set, will save the average after each iteration to class_#.hdf. Each class in a separate file. Appends to existing files.",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='alignment,breaksym')
 	parser.add_argument("--saveali",action="store_true", help="If set, will save the aligned particle volumes in class_ptcl.hdf. Overwrites existing file.",default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
@@ -104,8 +110,8 @@ def main():
 	parser.add_argument("--breaksym",action="store_true", help="Break symmetry. Do not apply symmetrization after averaging", default=False, guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, nosharedb=True, mode=',breaksym[True]')
 	
 	parser.add_argument("--groups",type=int,help="WARNING: This parameter is EXPERIMENTAL, and will only work if --iter=1. It's the number of final averages you want from the set after ONE iteration of alignment. Particles will be separated in groups based on their correlation to the reference",default=0)
-	parser.add_argument("--randomizewedge",action="store_true", help="This parameter is EXPERIMENTAL. It randomizes the position of the particles BEFORE alignment, to minimize missing wedge bias and artifacts during symmetric alignment where only a fraction of space is scanned", default=False,)
-	parser.add_argument("--savepreprocessed",action="store_true", help="Will save stacks of preprocessed particles (one for coarse alignment and one for fine alignment if preprocessing options are different).", default=False,)
+	parser.add_argument("--randomizewedge",action="store_true", help="This parameter is EXPERIMENTAL. It randomizes the position of the particles BEFORE alignment, to minimize missing wedge bias and artifacts during symmetric alignment where only a fraction of space is scanned", default=False)
+	parser.add_argument("--savepreprocessed",action="store_true", help="Will save stacks of preprocessed particles (one for coarse alignment and one for fine alignment if preprocessing options are different).", default=False)
 	parser.add_argument("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False, guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
 	parser.add_argument("--nocenterofmass", action="store_true", help="Disable Centering of mass of the subtomogram every iteration.", default=False, guitype='boolbox', row=6, col=2, rowspan=1, colspan=1, mode='alignment,breaksym')
 	
@@ -285,11 +291,13 @@ def main():
 
 	if options.inixforms: 
 		js = js_open_dict(options.inixforms)
-			
+	
+	'''		
 	#########################################
 	# This is where the actual class-averaging process begins
 	#########################################
-
+	'''
+	
 	#outer loop over classes, ic=class number
 	
 	for ic in range(ncls):
@@ -303,90 +311,18 @@ def main():
 		if options.verbose and ncls>1: 
 			print "###### Beggining class %d(%d)/%d"%(ic+1,ic,ncls)
 		
-		# prepare a reference either by reading from disk or bootstrapping
+		
+		'''
+		Prepare a reference either by reading from disk or bootstrapping
+		'''
 		if options.ref: 
-			ref=EMData(options.ref,ic)
-		else :
-			if nptcl==1 : 
-				print "Error: More than 1 particle required if no reference specified"
-				sys.exit(1)
-			
-			# we need to make an initial reference. Due to the parallelism scheme we're using in 3-D and the slow speed of the
-			# individual alignments we use a slightly different strategy than in 2-D. We make a binary tree from the first 2^n particles and
-			# compute pairwise alignments until we get an average out. 
+			ref = EMData(options.ref,ic)
+		else:
+			ref = binaryTreeRef(options,nptcl)
 		
-			nseed=2**int(floor(log(len(ptclnums),2)))	# we stick with powers of 2 for this to make the tree easier to collapse
-			if nseed>64 : 
-				nseed=64
-				print "Limiting seeding to the first 64 images"
-
-			nseediter=int(log(nseed,2))			# number of iterations we'll need
-			if options.verbose: 
-				print "Seedtree to produce initial reference. Using %d particles in a %d level tree"%(nseed,nseediter)
-			
-			# We copy the particles for this class into bdb:seedtree_0
-			for i,j in enumerate(ptclnums[:nseed]):
-				emdata = EMData(options.input,j)
-				if options.inixforms:
-					emdata.process_inplace("xform",{"transform":js["tomo_%04d"%i]})
-					emdata.set_attr("test_xfm",js["tomo_%04d"%i])
-				emdata.write_image("%s/seedtree_0.hdf"%options.path,i)
-
-			'''
-			#Outer loop covering levels in the converging binary tree
-			'''
-			for i in range(nseediter):
-				infile="%s/seedtree_%d.hdf"%(options.path,i)
-				outfile="%s/seedtree_%d.hdf"%(options.path,i+1)
-			
-				tasks=[]
-				results=[]
-				transform = None
-				# loop over volumes in the current level
-				
-				for j in range(0,nseed/(2**i),2):
-
-					#Unfortunately this tree structure limits the parallelism to the number of pairs at the current level :^(
-					if options.parallel:
-						#task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
-						#	options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,transform,options.verbose-1,options.randomizewedge,options.wedgeangle,options.wedgei,options.wedgef)
-						
-						task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options,transform)
-						tasks.append(task)
-					else:
-						#print "No parallelism specified"
-						result=align3Dfunc(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options,transform)
-						results.append(result['final'])
-				'''		
-				#Start the alignments for this level
-				'''
-				if options.parallel:
-					tids=etc.send_tasks(tasks)
-					if options.verbose: 
-						print "%d tasks queued in seedtree level %d"%(len(tids),i) 
-
-					# Wait for alignments to finish and get results
-					results=get_results(etc,tids,options.verbose)
-
-					if options.verbose>2 : 
-						print "Results:"
-						pprint(results)
-				else:
-					#print "No parallelism specified"
-					#results=tasks
-					if options.verbose>2 : 
-						print "Results:" 
-						pprint(results)
-								
-				make_average_pairs(infile,outfile,results,options.averager,options.nocenterofmass)
-				
-			ref=EMData(outfile,0)		# result of the last iteration
-			
-			if options.savesteps :
-				ref.write_image("%s#class_%02d.hdf"%(options.path,ic),-1)
-		
-		# Now we iteratively refine a single class
-		
+		'''
+		Now we iteratively refine a single class
+		'''
 		for it in range(options.iter):
 			# In 2-D class-averaging, each alignment is fast, so we send each node a class-average to make
 			# in 3-D each alignment is very slow, so we use a single ptcl->ref alignment as a task
@@ -394,9 +330,7 @@ def main():
 			results=[]
 			for ptclnum in ptclnums:
 				if options.inixforms:
-					print "\n\n\n\n\n\n@@@@@@@@@@@\nI have received inixfors and therefore the transform is"
 					tomoID = "tomo_" + str(ptclnum).zfill( len(str( len(ptclnums) )) )
-					#transform = js["tomo_%04d"%ptclnum]
 					transform = js[tomoID]
 					
 					print transform
@@ -406,8 +340,6 @@ def main():
 					transform = None
 				
 				if options.parallel:
-					#task=Align3DTask(ref,["cache",options.input,p],p,"Ptcl %d in iter %d"%(p,it),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
-					#	options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,transform,options.verbose-1,options.randomizewedge,options.wedgeangle,options.wedgei,options.wedgef)
 					task=Align3DTask(ref,["cache",options.input,ptclnum],ptclnum,"Ptcl %d in iter %d"%(ptclnum,it),options,transform)
 					tasks.append(task)
 				else:
@@ -425,20 +357,22 @@ def main():
 				# Wait for alignments to finish and get results
 				results=get_results(etc,tids,options.verbose)
 
-				if options.verbose>2 : 
-					print "Results:"
-					pprint(results)
-			else:
+				#if options.verbose>2 : 
+				#	print "Results:"
+				#	pprint(results)
+			#else:
 				#print "No parallelism specified"
 				#results=tasks
-				if options.verbose>2 : 
-					print "Results:" 
-					pprint(results)
+			
+			if options.verbose > 2: 
+				print "Results:" 
+				pprint(results)
 						
 			#The reference for the next iteration should ALWAYS be the RAW AVERAGE of the aligned particles, since the reference will be "pre-processed" identically to the raw particles.
 			#There should be NO post-processing of the final averages, EXCEPT for visualization purposes (so, postprocessing is only applied to write out the output, if specified.
-						
-			ref = make_average(options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.sym,options.groups,options.breaksym,options.nocenterofmass,options.verbose,it)
+			
+			if options.makeaverage:					
+				ref = make_average(options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.sym,options.groups,options.breaksym,options.nocenterofmass,options.verbose,it)
 	
 			if options.groups > 1:
 				for i in range(len(ref)):
@@ -489,6 +423,90 @@ def main():
 		js.close()
 		
 	E2end(logger)
+
+
+def binarytreeref(options,nptcl):
+
+	if nptcl==1: 
+		print "Error: More than 1 particle required if no reference provided through --ref."
+		sys.exit(1)
+			
+	# we need to make an initial reference. Due to the parallelism scheme we're using in 3-D and the slow speed of the
+	# individual alignments we use a slightly different strategy than in 2-D. We make a binary tree from the first 2^n particles and
+	# compute pairwise alignments until we get an average out. 
+
+	nseed=2**int(floor(log(len(ptclnums),2)))	# we stick with powers of 2 for this to make the tree easier to collapse
+	if nseed>64 : 
+		nseed=64
+		print "Limiting seeding to the first 64 images"
+
+	nseediter=int(log(nseed,2))			# number of iterations we'll need
+	if options.verbose: 
+		print "Seedtree to produce initial reference. Using %d particles in a %d level tree"%(nseed,nseediter)
+	
+	# We copy the particles for this class into bdb:seedtree_0
+	for i,j in enumerate(ptclnums[:nseed]):
+		emdata = EMData(options.input,j)
+		if options.inixforms:
+			emdata.process_inplace("xform",{"transform":js["tomo_%04d"%i]})
+			emdata.set_attr("test_xfm",js["tomo_%04d"%i])
+		emdata.write_image("%s/seedtree_0.hdf"%options.path,i)
+
+	'''
+	#Outer loop covering levels in the converging binary tree
+	'''
+	for i in range(nseediter):
+		infile="%s/seedtree_%d.hdf"%(options.path,i)
+		outfile="%s/seedtree_%d.hdf"%(options.path,i+1)
+	
+		tasks=[]
+		results=[]
+		transform = None
+		# loop over volumes in the current level
+		
+		for j in range(0,nseed/(2**i),2):
+
+			#Unfortunately this tree structure limits the parallelism to the number of pairs at the current level :^(
+			if options.parallel:
+				#task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
+				#	options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,transform,options.verbose-1,options.randomizewedge,options.wedgeangle,options.wedgei,options.wedgef)
+				
+				task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options,transform)
+				tasks.append(task)
+			else:
+				#print "No parallelism specified"
+				result=align3Dfunc(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options,transform)
+				results.append(result['final'])
+		'''		
+		#Start the alignments for this level
+		'''
+		if options.parallel:
+			tids=etc.send_tasks(tasks)
+			if options.verbose: 
+				print "%d tasks queued in seedtree level %d"%(len(tids),i) 
+
+			# Wait for alignments to finish and get results
+			results=get_results(etc,tids,options.verbose)
+
+			if options.verbose>2 : 
+				print "Results:"
+				pprint(results)
+		else:
+			#print "No parallelism specified"
+			#results=tasks
+			if options.verbose>2 : 
+				print "Results:" 
+				pprint(results)
+						
+		make_average_pairs(infile,outfile,results,options.averager,options.nocenterofmass)
+		
+	ref=EMData(outfile,0)		# result of the last iteration
+	
+	if options.savesteps :
+		ref.write_image("%s#class_%02d.hdf"%(options.path,ic),-1)
+	
+	return ref
+	
 
 
 def postprocess(img,optmask,optnormproc,optpostprocess):
@@ -921,7 +939,9 @@ def wedgestats(volume,angle, wedgei, wedgef, options):
 	sigma = vfft.get_attr('spt_wedge_sigma')
 	return(mean,sigma)
 
-
+'''
+CLASS TO PARALLELIZE ALIGNMENTS
+'''
 class Align3DTask(JSTask):
 	"""This is a task object for the parallelism system. It is responsible for aligning one 3-D volume to another, with a variety of options"""
 
@@ -963,14 +983,16 @@ class Align3DTask(JSTask):
 		print "classoptions are", classoptions
 		
 		xformslabel = 'tomo_' + str(classoptions['ptclnum']).zfill( len( str(nptcls) ) )
-		ret=alignment(fixedimage,image,classoptions['label'],classoptions['options'],xformslabel,classoptions['transform'])
+		ret=alignment(fixedimage,image,classoptions['label'],classoptions['options'],xformslabel,classoptions['transform'],'e2spt_classaverage')
 
 		bestfinal=ret[0]
 		bestcoarse=ret[1]
 		
 		return {"final":bestfinal,"coarse":bestcoarse}
 
-
+'''
+FUNCTION FOR RUNNING ALIGNMENTS WITHOUT PARALLELISM
+'''
 def align3Dfunc(fixedimage,image,ptclnum,label,classoptions,transform):
 	"""This aligns one volume to a reference and returns the alignment parameters"""
 
@@ -993,7 +1015,7 @@ def align3Dfunc(fixedimage,image,ptclnum,label,classoptions,transform):
 	nptcls = EMUtil.get_image_count(classoptions.input)
 	#tomoID = "tomo_%" + str(len(str(nptcls))) + "d" % classoptions.ptcl
 	xformslabel = 'tomo_' + str(ptclnum).zfill( len( str(nptcls) ) )
-	ret=alignment(fixedimage,image,label,classoptions,xformslabel,transform)
+	ret=alignment(fixedimage,image,label,classoptions,xformslabel,transform,'e2spt_classaverage')
 
 	bestfinal=ret[0]
 	bestcoarse=ret[1]
@@ -1001,8 +1023,10 @@ def align3Dfunc(fixedimage,image,ptclnum,label,classoptions,transform):
 	return {"final":bestfinal,"coarse":bestcoarse}
 
 
-
-def alignment(fixedimage,image,label,classoptions,xformslabel,transform):
+'''
+FUNCTION THAT DOES THE ACTUAL ALIGNMENT OF TWO GIVEN SUBVOLUMES -This is also used by e2spt_hac.py, any modification to it or its used parameters should be made with caution
+'''
+def alignment(fixedimage,image,label,classoptions,xformslabel,transform,prog='e2spt_classaverage'):
 	
 	if classoptions.verbose: 
 		print "Aligning ",label
@@ -1198,14 +1222,22 @@ def alignment(fixedimage,image,label,classoptions,xformslabel,transform):
 	
 	#print "\nScore to return from ALIGNMENT is", bestfinal[0]["score"]
 	
-	'''
-	Write particle orientations to json database
-	'''
-	jsdictpath = classoptions.path + '/tomo_xforms.json'
-	js = js_open_dict(jsdictpath) #Write particle orientations to json database.
+	if prog=='e2spt_classaverage':
+		'''
+		Write particle orientations to json database
+		'''
+		jsdictpath = classoptions.path + '/tomo_xforms'+ str(classoptions.refinemultireftag) + '.json'
+		js = js_open_dict(jsdictpath) #Write particle orientations to json database.
 	
-	js[xformslabel] = bestfinal[0]['xform.align3d']
-	js.close 
+		js[xformslabel] = bestfinal[0]['xform.align3d']
+		js.close 
+	
+		'''
+		Write a file with alignment scores per particle
+		'''
+		jsAliScores = classoptions.path + '/subtomo_scores' + str(classoptions.refinemultireftag) + '.json'
+		jsA = js_open_dict (jsAliScores)
+		jsA[xformslabel] = bestfinal[0]['score']
 	
 	return (bestfinal,bestcoarse)
 	
@@ -1214,10 +1246,11 @@ jsonclasses["Align3DTask"]=Align3DTask.from_jsondict
 
 
 def classmx_ptcls(classmx,n):
-	"""Scans a classmx file to determine which images are in a specific class. classmx may be a filename or an EMData object.
+	"""Scans a classmx file to determine which images are in a specific class. Classmx may be a filename or an EMData object.
 	returns a list of integers"""
 	
-	if isinstance(classmx,str) : classmx=EMData(classmx,0)
+	if isinstance(classmx,str): 
+		classmx=EMData(classmx,0)
 	
 	plist=[i.y for i in classmx.find_pixels_with_value(float(n))]
 	
