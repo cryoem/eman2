@@ -133,10 +133,10 @@ def main():
 														--wedgeangle=70, results in a narrower wedge of size (90-70)*2=40.
 														In reality, you should enter here the range of your DATA COLLECTION.
 														I.e., if you collected your tiltseries from -60 to 60, enter --wedgeangle=60.""",default=60.0)
-	parser.add_argument("--wedgei",type=float,help="Missingwedge begining (in terms of its 'height' along Z. If you specify 0, the wedge will start right at the origin.", default=0.15)
+	parser.add_argument("--wedgei",type=float,help="Missingwedge begining (in terms of its 'height' along Z. If you specify 0, the wedge will start right at the origin.", default=0.10)
 	parser.add_argument("--wedgef",type=float,help="Missingwedge ending (in terms of its 'height' along Z. If you specify 1, the wedge will go all the way to the edge of the box.", default=0.9)
 	parser.add_argument("--fitwedgepost", action="store_true", help="Fit the missing wedge AFTER preprocessing the subvolumes, not before, IF using the fsc.tomo comparator for --aligncmp or --raligncmp.", default=False)
-	parser.add_argument("--writewedge", action="store_true", help="Write a subvolume with the shape of the fitted missing wedge if --raligncmp or --aligncmp are fsc.tomo. Default is 'True'. To turn off supply --writewedge=False.", default=True)
+	parser.add_argument("--writewedge", action="store_true", help="Write a subvolume with the shape of the fitted missing wedge if --raligncmp or --aligncmp are fsc.tomo. Default is 'True'. To turn on supply --writewedge", default=False)
 
 	(options, args) = parser.parse_args()
 	
@@ -913,8 +913,8 @@ def wedgestats(volume,angle, wedgei, wedgef, options):
 		wedge.process_inplace('xform.phaseorigin.tocenter')
 		symwedge = wedge.process('xform.mirror', {'axis':'x'})
 		finalwedge = wedge + symwedge
-	
-		wedgename = options.path + '/wedge.hdf'
+		
+		wedgename = os.getcwd() + '/' + options.path + '/wedge.hdf'
 		finalwedge.write_image(wedgename,0)
 	
 	mean = vfft.get_attr('spt_wedge_mean')
