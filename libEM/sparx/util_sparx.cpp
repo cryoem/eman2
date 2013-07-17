@@ -21931,8 +21931,8 @@ static void compose_transform2(float psi1, float sx1, float sy1, float psi2, flo
 	out_sy  = d["ty"];
 }
 
-/*
-void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector<EMData*> refproj, vector<EMData*> rotproj
+
+void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> fdata, vector<EMData*> refproj, vector<EMData*> rotproj
 		, vector<float> dp_dphi_rise_delta, vector<int> nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc
 		, bool FindPsi, float psi_max, vector<EMData*> crefim, vector<int> numr, int maxrin, string mode, int cnx, int cny)
 {
@@ -22210,7 +22210,7 @@ void Util::constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vecto
         Transform t(t_params);
         data[im]->set_attr("xform.projection", &t);
 	}
-}*/
+}
 
 static std::vector<int> shuffled_range(int first, int last)
 {
