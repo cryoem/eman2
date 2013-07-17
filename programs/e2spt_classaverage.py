@@ -564,7 +564,8 @@ def sptmakepath(options, stem='spt'):
 						
 			options.path = '_'.join(components)
 			#options.path = path
-			print "The new options.path is", options.path
+	
+	print "The new options.path is", options.path
 
 	if options.path not in files:
 		if options.verbose:
@@ -1061,7 +1062,7 @@ def alignment(fixedimage,image,label,classoptions,xformslabel,transform,prog='e2
 	"""
 	
 	if fixedimage and (classoptions.shrink or classoptions.normproc or classoptions.lowpass or classoptions.highpass or classoptions.mask or classoptions.preprocess or classoptions.lowpassfine or classoptions.highpassfine or classoptions.preprocessfine):
-		print "Sending fixedimage to preprocessing"
+		#print "Sending fixedimage to preprocessing"
 		retfixedimage = preprocessing(classoptions,fixedimage)
 		sfixedimage = retfixedimage[0]
 		s2fixedimage = retfixedimage[1]
@@ -1231,19 +1232,20 @@ def alignment(fixedimage,image,label,classoptions,xformslabel,transform,prog='e2
 		'''
 		Write particle orientations to json database
 		'''
-		jsdictpath = classoptions.path + '/tomo_xforms'+ str(classoptions.refinemultireftag) + '.json'
-		js = js_open_dict(jsdictpath) #Write particle orientations to json database.
+		jsAliParamsPath = classoptions.path + '/tomo_xforms'+ str(classoptions.refinemultireftag) + '.json'
+		jsA = js_open_dict(jsAliParamsPath) #Write particle orientations to json database.
 	
-		js[xformslabel] = bestfinal[0]['xform.align3d']
-		js.close 
+		jsA[xformslabel] = bestfinal[0]['xform.align3d']
+		jsA.close 
 	
 		'''
 		Write a file with alignment scores per particle
 		'''
-		jsAliScores = classoptions.path + '/subtomo_scores' + str(classoptions.refinemultireftag) + '.json'
-		jsA = js_open_dict (jsAliScores)
-		jsA[xformslabel] = str(bestfinal[0]['score'])
-	
+		jsAliScoresPath = classoptions.path + '/subtomo_scores' + str(classoptions.refinemultireftag) + '.json'
+		jsB = js_open_dict (jsAliScoresPath)
+		jsB[xformslabel] = str(bestfinal[0]['score'])
+		jsB.close()
+		
 	return (bestfinal,bestcoarse)
 	
 
