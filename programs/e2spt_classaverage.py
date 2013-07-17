@@ -98,7 +98,7 @@ def main():
 	
 	parser.add_argument("--procfinelikecoarse",type=bool,default=True,help="Turn on with --procfinelikecoarse=False, and supply fine alignment parameters, such as --lowpassfine, --highpassfine, etc; to preprocess the particles for FINE alignment differently than for COARSE alignment.")
 	
-	parser.add_argument("--ncoarse", type=int, help="Deprecated. Use --npeakstorefine instead.", default=None)
+	#parser.add_argument("--ncoarse", type=int, help="Deprecated. Use --npeakstorefine instead.", default=None)
 	parser.add_argument("--npeakstorefine", type=int, help="The number of best coarse alignments to refine in search of the best final alignment. Default=4.", default=4, guitype='intbox', row=9, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym[1]')
 	parser.add_argument("--align",type=str,help="This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=10:delta=15:dphi=15, specify 'None' to disable", returnNone=True, default="rotate_translate_3d:search=10:delta=15:dphi=15", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'3d\')', row=12, col=0, rowspan=1, colspan=3, nosharedb=True, mode="alignment,breaksym['rotate_symmetry_3d']")
 	parser.add_argument("--aligncmp",type=str,help="The comparator used for the --align aligner. Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.",default="ccc.tomo", guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=13, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
@@ -158,9 +158,9 @@ def main():
 		parser.print_help()
 		exit(0)
 		
-	if options.ncoarse:
-		print "ERROR: The ncoarse option has been renamed npeakstorefine"
-		sys.exit(1)
+	#if options.ncoarse:
+	#	print "ERROR: The ncoarse option has been renamed npeakstorefine"
+	#	sys.exit(1)
 	
 	if options.align: 
 		options.align=parsemodopt(options.align)
@@ -797,10 +797,11 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 			
 			for p in align_parms:
 				if 'score' in p[0]:
-					print "\nscore!"
+					pass
+					#print "\nscore!"
 				else:
-					print "\nscore not in p[0]"
-					print "see, p[0] is", p[0]
+					print "\nIn e2spt_classaverage.py, score not in p[0]"
+					#print "see, p[0] is", p[0]
 					sys.exit()
 			
 			val=[p[0]["score"] for p in align_parms]
@@ -825,7 +826,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 		for i,ptcl_parms in enumerate(align_parms):
 			ptcl=EMData(ptcl_file,i)
 			ptcl.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
-			print "I have applied this transform before averaging", ptcl_parms[0]["xform.align3d"]			
+			#print "I have applied this transform before averaging", ptcl_parms[0]["xform.align3d"]			
 			
 			if ptcl_parms[0]["score"]<=thresh: 
 				avgr.add_image(ptcl)
@@ -1069,7 +1070,7 @@ def alignment(fixedimage,image,label,classoptions,xformslabel,transform,prog='e2
 		s2fixedimage = fixedimage
 	
 	if image and (classoptions.shrink or classoptions.normproc or classoptions.lowpass or classoptions.highpass or classoptions.mask or classoptions.preprocess or classoptions.lowpassfine or classoptions.highpassfine or classoptions.preprocessfine):
-		print "Sending image to preprocessing"
+		#print "Sending image to preprocessing"
 		retimage = preprocessing(classoptions,image)
 		simage = retimage[0]
 		s2image = retimage[1]
@@ -1150,7 +1151,7 @@ def alignment(fixedimage,image,label,classoptions,xformslabel,transform,prog='e2
 		The Dicts in the vector have keys "score" and "xform.align3d" 
 		'''
 		
-		print "Will do coarse alignment"
+		#print "Will do coarse alignment"
 		
 		bestcoarse = simage.xform_align_nbest(classoptions.align[0],sfixedimage,classoptions.align[1],classoptions.npeakstorefine,classoptions.aligncmp[0],classoptions.aligncmp[1])
 		
@@ -1171,7 +1172,7 @@ def alignment(fixedimage,image,label,classoptions,xformslabel,transform,prog='e2
 			print "coarse %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
 
 	if classoptions.ralign:
-		print "Will to fine alignment, over these many peaks", len(bestcoarse)
+		#print "Will to fine alignment, over these many peaks", len(bestcoarse)
 		# Now loop over the individual peaks and refine each
 		bestfinal=[]
 		peaknum=0
@@ -1179,13 +1180,13 @@ def alignment(fixedimage,image,label,classoptions,xformslabel,transform,prog='e2
 			classoptions.ralign[1]["xform.align3d"] = bc["xform.align3d"]
 			ali = s2image.align(classoptions.ralign[0],s2fixedimage,classoptions.ralign[1],classoptions.raligncmp[0],classoptions.raligncmp[1])
 			
-			print "\nThe score returned from ralign is", ali['score']
+			#print "\nThe score returned from ralign is", ali['score']
 			try: 					
 				bestfinal.append({"score":ali["score"],"xform.align3d":ali["xform.align3d"],"coarse":bc})
-				print "\nThe appended score in TRY is", bestfinal[0]['score']					
+				#print "\nThe appended score in TRY is", bestfinal[0]['score']					
 			except:
 				bestfinal.append({"score":1.0e10,"xform.align3d":bc["xform.align3d"],"coarse":bc})
-				print "\nThe appended score in EXCEPT is", bestfinal[0]['score']
+				#print "\nThe appended score in EXCEPT is", bestfinal[0]['score']
 			peaknum+=1
 			
 		if classoptions.verbose:
