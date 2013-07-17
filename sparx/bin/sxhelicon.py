@@ -73,7 +73,8 @@ def main():
 	parser.add_option("--ywobble",            type="float",          default=0.0,                 help="wobble in y-directions (default = 0.0) in Angstroms")
 	parser.add_option("--nopsisearch",        action="store_true",   default=False,               help="Block searching for in-plane angle (default False)")
 	
-	parser.add_option("--test",              action="store_true",   default=False,               help="test code for where inter-segment distances are not multiples of rise")
+	parser.add_option("--test",               action="store_true",   default=False,               help="test code for where inter-segment distances are not multiples of rise")
+	parser.add_option("--exhaustive",         action="store_true",   default=False,               help="Use old version of constrained_helix without SHC")
 	
 	# ehelix streak
 	parser.add_option("--seg_ny",              type="int",            default= 45,                 help="y dimension of desired segment size, should be related to fract in that fract ~ seg_ny/ny, where ny is dimension of input projections.")
@@ -132,7 +133,7 @@ def main():
 		else:
 			from development import ehelix_MPI
 			global_def.BATCH = True
-			ehelix_MPI(args[0], args[1], args[2], options.seg_ny, options.delta, options.psi_max, searchxshiftp, xwobblep, ywobble, options.apix, dp, dphi, options.fract, rmaxp, rminp, not options.nopsisearch, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
+			ehelix_MPI(args[0], args[1], args[2], options.seg_ny, options.delta, options.psi_max, searchxshiftp, xwobblep, ywobble, options.apix, dp, dphi, options.fract, rmaxp, rminp, not options.nopsisearch, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug, options.exhaustive)
 			global_def.BATCH = False
 
 		if options.MPI:
