@@ -219,15 +219,41 @@ def main():
 		
 		#print "Command is", alicmd
 		
-		p=subprocess.Popen( alicmd, shell=True,stdout=subprocess.PIPE)
-		returnedtxt = p.communicate()
+		p=subprocess.Popen( alicmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		
-		if options.verbose:
-			print "\n\n\n\n\n\n"
-			lines=returnedtxt.split('\n')
-			for line in lines:
-				print line
-			print "\n\n\n\n\n\n\n"
+		
+		'''
+		Option B
+		'''
+		#while True:
+		#	line = p.stdout.readline()
+  		#	if not line: 
+  		#		break
+  		#	else:
+  		#		print line.replace('\n','')
+		
+		
+		'''
+		Option A
+		'''
+		for line in iter(p.stdout.readline, ''):
+			print line.replace('\n','')
+		
+		p.communicate()
+		
+		p.stdout.close()
+		
+		"""	
+		
+		
+		#returnedtxt = p.communicate()
+		"""
+		#if options.verbose:
+		#	print "\n\n\n\n\n\n"
+		#	lines=returnedtxt.split('\n')
+		#	for line in lines:
+		#		print line
+		#	print "\n\n\n\n\n\n\n"
 		
 		#if '.json' in options.transform:
 		
