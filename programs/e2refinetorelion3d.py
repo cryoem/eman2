@@ -219,10 +219,10 @@ if ctf_corr == 1:
 				#defocus = db_set['ctf'].to_dict()['defocus']*1000
 				break
 	print "CTF information being pulled from: " + db
-	s = "relion_star_loopheader rlnImageName rlnMicrographName rlnDefocusU rlnDefocusV rlnDefocusAngle rlnVoltage rlnSphericalAberration rlnAmplitudeContrast > " + E2RLN + "/all_images.star"
+	s = "star_loopheader rlnImageName rlnMicrographName rlnDefocusU rlnDefocusV rlnDefocusAngle rlnVoltage rlnSphericalAberration rlnAmplitudeContrast > " + E2RLN + "/all_images.star"
 	
 else:
-	s = "relion_star_loopheader rlnImageName rlnMicrographName rlnVoltage rlnAmplitudeContrast > " + E2RLN + "/all_images.star"
+	s = "star_loopheader rlnImageName rlnMicrographName rlnVoltage rlnAmplitudeContrast > " + E2RLN + "/all_images.star"
 call(s,shell=True)
 print "Converting EMAN2 Files to Formats Compatible with RELION"
 temp = EMData(set_name,0)
@@ -250,9 +250,9 @@ for k in range(num_ptcl):
 		amplitude_contrast=str(temp['ctf'].to_dict()['ampcont']/100)
 		if ctf_corr == 1:
 			defocus1 = defocus2 = str(temp['ctf'].to_dict()['defocus']*10000)
-			s = "relion_star_datablock_stack " + str(k-i) + " " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + str(defocus1) + " " + str(defocus2) + " 0 " + str(voltage) + " " + str(cs) + " " + str(amplitude_contrast) + " >> " + E2RLN + "/all_images.star"
+			s = "star_datablock_stack " + str(k-i) + " " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + str(defocus1) + " " + str(defocus2) + " 0 " + str(voltage) + " " + str(cs) + " " + str(amplitude_contrast) + " >> " + E2RLN + "/all_images.star"
 		else:
-			s = "relion_star_datablock_stack " + str(k-i) + " " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + str(voltage) + " " + str(amplitude_contrast) + "  >> " + E2RLN + "/all_images.star" 
+			s = "star_datablock_stack " + str(k-i) + " " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + str(voltage) + " " + str(amplitude_contrast) + "  >> " + E2RLN + "/all_images.star" 
 		call(s,shell=True)
 		s = "rm " + E2RLN + "/" + base_name(old_src) + ".hdf" 
 		call(s,shell=True)
@@ -276,9 +276,9 @@ for k in range(num_ptcl):
 		amplitude_contrast=str(temp['ctf'].to_dict()['ampcont']/100)
 		if ctf_corr == 1:
 			defocus1 = defocus2 = str(temp['ctf'].to_dict()['defocus']*1000)
-			s = "relion_star_datablock_stack " + str(k-i+1) + " " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + str(defocus1) + " " + str(defocus2) + " 0 " + str(voltage) + " " + str(cs) + " " + str(amplitude_contrast) + " >> " + E2RLN + "/all_images.star"
+			s = "star_datablock_stack " + str(k-i+1) + " " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + str(defocus1) + " " + str(defocus2) + " 0 " + str(voltage) + " " + str(cs) + " " + str(amplitude_contrast) + " >> " + E2RLN + "/all_images.star"
 		else:
-			s = "relion_star_datablock_stack " + str(k-i+1) + " " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + str(voltage) + " " + amplitude_contrast + "  >> " + E2RLN + "/all_images.star" 
+			s = "star_datablock_stack " + str(k-i+1) + " " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + str(voltage) + " " + amplitude_contrast + "  >> " + E2RLN + "/all_images.star" 
 		call(s,shell=True)
 		s = "rm " + E2RLN + "/" + base_name(src) + ".hdf" 
 		call(s,shell=True)
