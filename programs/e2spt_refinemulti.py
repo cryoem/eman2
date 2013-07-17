@@ -35,6 +35,8 @@ from EMAN2 import *
 
 from e2spt_classaverage import sptmakepath
 
+import subprocess
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <stack>
@@ -192,22 +194,128 @@ def main():
 	options.input = '../' + options.input 		#The program goes into --path to execute the alignment command; therefore, --input will be one level furtherback
 	
 	k=0
+	reftags = []
+	masterInfo = {}
 	for ref in refsfiles:
+		print "Aligning data to ref number", k
 		ref = rootpath + '/' + ref
 		
-		cmd = 'cd ' + options.path + ' && e2spt_classaverage.py --ref=' + ref + ' --path=' + ref.split('/')[-1].replace('.hdf','')
+		thisRefinementPath = ref.split('/')[-1].replace('.hdf','')
+		
+		alicmd = 'cd ' + options.path + ' && e2spt_classaverage.py --ref=' + ref + ' --path=' + thisRefinementPath
 	
 		names = dir(options)
 		for name in names:
 			if getattr(options,name) and 'refs' not in name and "__" not in name and "_" not in name and 'path' not in name and str(getattr(options,name)) != 'True':	
 				#if "__" not in name and "_" not in name and str(getattr(options,name)) and 'path' not in name and str(getattr(options,name)) != 'False' and str(getattr(options,name)) != 'True' and str(getattr(options,name)) != 'None':			
-				cmd += ' --' + name + '=' + str(getattr(options,name))
-		cmd += ' --donotaverage'
-		cmd += ' --refinemultireftag=' + str(k)		
-		print "Command is", cmd
-
-		os.system(cmd)
+				alicmd += ' --' + name + '=' + str(getattr(options,name))
+		alicmd += ' --donotaverage'
+		
+		tag = str(k).zfill( len( str ( nrefs )))
+		reftag = 'ref' + tag
+		reftags.append(reftag)
+	
+		alicmd += ' --refinemultireftag=' + tag		
+		
+		#print "Command is", alicmd
+		
+		p=subprocess.Popen( alicmd, shell=True,stdout=subprocess.PIPE)
+		returnedtxt = p.communicate()
+		
+		if options.verbose:
+			print "\n\n\n\n\n\n"
+			lines=returnedtxt.split('\n')
+			for line in lines:
+				print line
+			print "\n\n\n\n\n\n\n"
+		
+		#if '.json' in options.transform:
+		
+		scoresFile = options.path + '/' + thisRefinementPath + '/subtomo_scores' + tag + '.json'
+		scores = js_open_dict(scoresFile)
+		nscores = len(scores)
+		
+		print "\n\nThe scores file to read is", scoresFile
+		print "I read these many scores", nscores
+		print "scores are", scores
+		
+		#for ele in scores:
+		#	print "one score element is", ele
+		#	#print "And therefore score is", scores[ele]
+			
+		print "\n\n"
+		
+		aliParamsFile = options.path + '/' + thisRefinementPath + '/tomo_xforms' + tag + '.json'
+		aliParams = js_open_dict(aliParamsFile)
+		nparams = len(aliParams)
+		
+		#print "The aliParams file to read is", aliParamsFile
+		#print "I read these many params", nparams
+		
+		if nparams != nscores:
+			print "nscores is", nscores
+			print "nparams is", nparams
+			print "WARNING! They should be the same."	
+		
+		for i in range(nparams):
+			ptclID = "tomo_" + str(i).zfill( len(str( nparams )) )
+			ptclScore = float( scores[ptclID] )
+			ptclAliParams = aliParams[ptclID]
+			
+			infolist = [ptclScore,ptclAliParams,reftag]
+			
+			if k==0:
+				masterInfo.update({ ptclID: [] })
+			
+			#print "\n\nptclID to update is", ptclID
+			#print "infolist to append is", infolist
+			#print "BEFORE appending, masterInfo[ ptclID ] is", masterInfo[ ptclID ]
+			#print "Of type", type(masterInfo[ ptclID ])
+			
+			value = masterInfo[ ptclID ]
+			value.append(infolist)
+			#print "Therfore value is", value
+			#print "Of type", type(value)
+			#print "\n\n"
+			masterInfo.update({ ptclID: value })
+			
+			#print "masterInfo has been updated and now is",masterInfo
 		k+=1
+		
+				
+	from operator import itemgetter						
+	
+	print "I've aligned all the particles in the data set to all the references and will now classify them from the masterInfo dict", masterInfo
+	
+	classes = {}
+	for reftag in reftags:
+		classes.update({ reftag : [] })
+	
+	for ele in masterInfo:
+		sortedPtclInfo = sorted( masterInfo[ele], key=itemgetter(0))	#Sorted works because you want the scores from SMALLEST to BIGGEST. Remember, the MORE NEGATIVE (smaller) the better score in EMAN2
+		bestPtclInfo = sortedPtclInfo[0]
+		bestreftag = bestPtclInfo[-1]	
+		bestAliParams = bestPtclInfo[1]
+		
+		print "\n\nFor particle", ele
+		print "The sorted data is", sortedPtclInfo
+		print "\n\n"
+		
+		value = classes[ bestreftag ]
+		value.append( [ele,bestAliParams] )
+		classes.update({ bestreftag : value })
+		
+	for klass in classes:
+		print "\n\nThe particles and their aliparams, for this class", klass
+		print "are:", classes[ klass ]
+		
+				
+		
+		#os.system(cmd)
+		
+		
+		
+		
 		
 	logger = E2init(sys.argv,options.ppid)
 	
