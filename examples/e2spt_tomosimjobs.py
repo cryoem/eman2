@@ -161,8 +161,6 @@ def main():
 										You must also provide --files or --filesdir.""")
 	parser.add_argument("--filesdir",type=str,default='',help="The directory where the files to analyze are")
 	
-	parser.add_argument("--iter",type=str,default='1',help="Number of iterations of alignment")
-	
 	"""
 	Parameters to be passed on to e2spt_classaverage.py
 	"""
@@ -178,6 +176,9 @@ def main():
 							
 	parser.add_argument("--shrinkalign", type=int,default=0,help="Optionally shrink the input volume before the simulation if you want binned/down-sampled subtomograms.")
 	parser.add_argument("--shrinksim", type=int,default=0,help="Optionally shrink the input volume before the simulation if you want binned/down-sampled subtomograms.")
+	
+	parser.add_argument("--npeakstorefine", type=int, help="The number of best coarse alignments to refine in search of the best final alignment. Default=1.", default=1)
+	parser.add_argument("--iter",type=str,default='1',help="Number of iterations of alignment")
 	
 	parser.add_argument("--parallel",type=str,default='thread:1',help="Parallelization to use.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -290,6 +291,9 @@ def simloop(options,rootpath):
 	
 	originalpath = rootpath + '/' + options.path
 	
+	simround=0
+	firstrandstack = ''
+	
 	tiltrange = tiltrangel
 	while tiltrange <tiltrangeu:
 		#print "tiltrage is", tiltrange
@@ -318,8 +322,6 @@ def simloop(options,rootpath):
 
 			snr=snrl
 			
-			noiseround=0
-			firstrandstack = ''
 			while snr < snru:
 				#print "The conditions to simulate are tiltrange=%d, nslices=%d, snr=%.2f" % (tiltrange,nslices,snr)
 				#print "Snr is", snr
@@ -357,7 +359,7 @@ def simloop(options,rootpath):
 						#simloop(options,rootpath)
 						print "And path is", options.path
 						
-						ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,noiseround,firstrandstack,samestackformany=samestackformany,thesestacks=thestack,thesemodels=themodel)
+						ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany=samestackformany,thesestacks=thestack,thesemodels=themodel)
 						
 						if samestackformany == 0:
 							thestack = ret[0]
@@ -373,10 +375,10 @@ def simloop(options,rootpath):
 						samestackformany+=1
 					
 				else:
-					ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,noiseround,firstrandstack,samestackformany=samestackformany,thesestacks=thestack)
-					if noiseround == 0:
+					ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany=samestackformany,thesestacks=thestack)
+					if simround == 0:
 						firstrandstack = ret[2]
-				noiseround+= 1
+				
 				snr += snrch
 
 			if options.tiltstep:
@@ -385,6 +387,7 @@ def simloop(options,rootpath):
 				nslices += nslicesch
 
 		tiltrange += tiltrangech
+		simround+= 1
 
 			
 	"""
@@ -461,7 +464,7 @@ def simloop(options,rootpath):
 	
 
 
-def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,noiseround,firstrandstack,samestackformany=0,thesestacks=[],thesemodels=[]):
+def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany=0,thesestacks=[],thesemodels=[]):
 	thisstack=''
 	thissimodel=''
 	
@@ -512,7 +515,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			
 			#inputdata = newname.split('/')[-1] #UPDATE
 		
-		if resultsdir not in subdirs:
+		if resultsdir not in subdirs and 'resluts' not in subdirs:
 			os.system('mkdir ' + resultsdir)
 		
 		subtomos =  subpath.split('/')[-1] + '.hdf'
@@ -532,11 +535,11 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			
 			jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --nslices=' + str(nslices) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrinksim) + ' --finalboxsize=' + str(options.finalboxsize) + ' --verbose=' + str(options.verbose) + ' --parallel=' + str(options.parallel) + ' --path=' + subpath.split('/')[-1]
 			
-			snrl = options.snrlowerlimit
-			snru = options.snrupperlimit
-			snrch = options.snrchange
+			#snrl = options.snrlowerlimit
+			#snru = options.snrupperlimit
+			#snrch = options.snrchange
 			  
-			if noiseround < 1 and snru - snrl > snrch:
+			if simround < 1:
 				jobcmd += ' --saverandstack'
 				
 				#nrefs = EMUtil.get_image_count(inputdata)
@@ -547,10 +550,10 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 				firstrandstack =  subpath + '/' + subtomos.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
 				
 				#firstrandstack =  subpath.split('/')[-1] + '/' + inputdata.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
-				print "\n\nThe firstrandstack name in e2spt_tomosimjobs when noiseround is 0, is", firstrandstack
+				print "\n\nThe firstrandstack name in e2spt_tomosimjobs when simround is 0, is", firstrandstack
 			
-			if noiseround > 0 and firstrandstack:
-				print "\n\nThe randstack to PROVIDE because noiseround > 1 is", firstrandstack
+			if simround > 0 and firstrandstack:
+				print "\n\nThe randstack to PROVIDE because simround > 1 is", firstrandstack
 				randstackcmd = ' --randstack=' + firstrandstack
 				jobcmd += randstackcmd
 			
@@ -584,10 +587,9 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 		#resultsfiles=[]
 		
 		
-		
-		
 		if options.testalignment:
 			print "\n\n$$$$$$$$$\nI will test alignment and for that will cd into SUBPATH", subpath
+			print "This is SIMROUND number", simround 
 			print "$$$$$$$$\n\n"
 
 			cmd = cmd + ' && cd ' + subpath
@@ -608,10 +610,10 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			#print "\n##################################\nAlipath2 for results will be\n", alipath2
 			
 			
-			alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --npeakstorefine=4 -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=" + str(options.verbose) + " --parallel=" + options.parallel + " --ralign=refine_3d_grid:delta=3:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=" + str(options.shrinkalign) + " --shrinkrefine=" + str(options.shrinkalign) +" --savesteps --saveali --normproc=normalize"  + ' --iter=' + str(options.iter)
+			alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=0 --parallel=" + options.parallel + " --ralign=refine_3d_grid:delta=3:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=" + str(options.shrinkalign) + " --shrinkrefine=" + str(options.shrinkalign) +" --savesteps --saveali --normproc=normalize"  + ' --iter=' + str(options.iter) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose)
 
 			if options.quicktest:
-				alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_symmetry_3d:sym=c1:verbose=" + str(options.verbose) + " --parallel=" + options.parallel + " --ralign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=3 --savesteps --saveali --normproc=normalize" + ' --iter=' + str(options.iter)
+				alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=" + options.parallel + " --ralign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=3 --normproc=normalize" + ' --iter=' + str(options.iter) + ' --npeakstorefine=1'
 
 			
 			#You want --wedgeangle (or data collection range) to be a bit bigger than it actually is
@@ -634,12 +636,30 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			#print "\n\aliptcls name is\n", aliptcls
 
 			extractcmd = " && cd " + alipath2 + " && e2proc3d.py class_ptcl.hdf " + aliptcls
-
+			
+			if options.iter > 1:
+				finalrefindx = int(options.iter) -2
+				extractcmd += ' && e2proc3d.py class_00.hdf finalref.hdf --first=' + str(finalrefindx) + ' --last=' + str(finalrefindx)
+				
+				finalrefname = alipath2 + '/finalref.hdf'
+				
+				finalRefVsOriginalRefPath = alipath2 + '/finalRef_vs_OriginalRef'
+				
+				
+				
+				extractcmd += " && e2spt_classaverage.py --path=" + finalRefVsOriginalRefPath + " --input=" + finalrefname + " --output=finalrefali.hdf" + " --ref=" + ref + " --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=" + str(options.verbose) + " --parallel=" + options.parallel + " --ralign=refine_3d_grid:delta=3:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=" + str(options.shrinkalign) + " --shrinkrefine=" + str(options.shrinkalign) +" --savesteps --saveali --normproc=normalize"  + ' --iter=' + str(options.iter) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose)
+				
+				finalrefali = finalRefVsOriginalRefPath + '/finalref_ali.hdf'
+				
+			
 			resultsfile = aliptcls.replace('_ptcls_ali.hdf','_ali_error.txt')
 			
 			#print "\n@@@@@@@\n@@@@@@@\n@@@@@@@@@\n@@@@@@@ Results file is %s \n@@@@@@@\n@@@@@@@\n@@@@@@@@@\n@@@@@@@" %(resultsfile)
 
 			solutioncmd = " && e2spt_transformdistance.py --input=" + aliptcls + ' --output=' + resultsfile
+			
+			if options.iter > 1:
+				solutioncmd += ' --transform=' + finalRefVsOriginalRefPath + '/tomo_xforms.json'
 
 			rfilecmd =  ' && mv ' + resultsfile + ' ' + resultsdir
 			if rootpath not in rfilecmd:
