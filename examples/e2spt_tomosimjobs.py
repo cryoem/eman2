@@ -609,6 +609,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			#print "\n##################################\nAlipath1 for results will be\n", alipath1
 			#print "\n##################################\nAlipath2 for results will be\n", alipath2
 			
+			subtomos = subpath + '/' + subtomos
 			
 			alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=0 --parallel=" + options.parallel + " --ralign=refine_3d_grid:delta=3:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=" + str(options.shrinkalign) + " --shrinkrefine=" + str(options.shrinkalign) +" --savesteps --saveali --normproc=normalize"  + ' --iter=' + str(options.iter) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose)
 
