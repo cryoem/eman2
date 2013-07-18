@@ -246,7 +246,8 @@ def main():
 
 def simloop(options,rootpath):
 	
-	if not options.comparators:
+	comps = options.comparators.split(',')
+	if not options.comparators or len(comps) == 1:
 		options = sptmakepath(options,'spt_tomosimjob')
 	
 	if "/" not in options.input:
@@ -292,11 +293,12 @@ def simloop(options,rootpath):
 	originalpath = options.path
 	
 	simround=0
-	compPATHS={}
+	
 	firstrandstack = ''
 	
 	iters=str(options.iter).split(',')
-	comps = options.comparators.split(',')
+	
+	compPATHS={}
 	
 	tiltrange = tiltrangel
 	while tiltrange <tiltrangeu:
@@ -393,6 +395,10 @@ def simloop(options,rootpath):
 					else:
 						options.raligncmp = comps[0]
 						options.aligncmp = comps[0]
+						print "There's comps but length was less than one!"
+						ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany,thestack,[],0)
+						if simround == 0:
+							firstrandstack = ret[2]
 				
 				elif len(iters) > 1:
 					
