@@ -295,10 +295,11 @@ def main():
 		#	os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))	
 		
 		if options.simref:
-			name = options.input.replace('.hdf','_SIM.hdf')
+			name = options.input.replace('.hdf','_SIM.hdf').split('/')[-1]
 			model['sptsim_randT'] = Transform()
 			model['xform.align3d'] = Transform()
 			ret = subtomosim(options,[model],name)
+			
 			
 			if ret == 1:
 				os.system('e2proc3d.py ' + name + ' ' + name + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))	
@@ -402,7 +403,7 @@ def subtomosim(options,ptcls,stackname):
 	Initialize parallelism if being used
 	'''
 	if options.parallel :
-		print "\n\n(e2spt_simulation.py) INITIALIZING PARALLELISM!"
+		print "\n\n(e2spt_simulation.py) INITIALIZING PARALLELISM, for this name (stack, or reference)", stackname
 		print "\n\n"
 		from EMAN2PAR import EMTaskCustomer
 		etc=EMTaskCustomer(options.parallel)
@@ -425,7 +426,6 @@ def subtomosim(options,ptcls,stackname):
 	#print "\n\n\n"
 	tasks=[]
 	for i in range(len(ptcls)):
-	
 		#if options.parallel:			
 		task=SubtomoSimTask(ptcls[i],i,options,outname)
 		tasks.append(task)
@@ -434,10 +434,32 @@ def subtomosim(options,ptcls,stackname):
 	
 	results = get_results(etc,tids,options)
 	
+	pn = 0
+	
+	#print "I have these many particles from results", len(results)
+	#print "From outname", outname
+
+	for particle in results:
+		finaloutname = outname
+		
+		if options.path not in outname:
+			finaloutname = options.path + '/' + outname
+		
+		#print "\n\n\n\n\n\nn\\n\n\nn\\nn\n\n\n\n\n THe final outname rigth before writing is", finaloutname
+		#print "because options.path is", options.path
+		#print "and outname is", outname
+		#print "And the particle is", particle
+		#print "And its type is", type(particle)
+		#print "And its index is", pn
+		
+		particle.write_image(finaloutname,pn)
+		pn+=1
+	
 	if options.tomogramoutput:
 		tomogramsim(options,results)
 
-	return(1)
+	
+	return 1
 	
 	
 	
@@ -462,6 +484,7 @@ class SubtomoSimTask(JSTask):
 	
 	def execute(self,callback=None):
 		"""This simulates a subtomogram and saves projections before and after adding noise if instructed to."""
+		classoptions=self.classoptions
 		options=self.classoptions['options']
 		
 		i = self.classoptions['ptclnum']
@@ -475,10 +498,6 @@ class SubtomoSimTask(JSTask):
 
 		#apix = ptcls[i]['apix_x']
 		apix = image['apix_x']
-		
-		
-		
-		
 		
 		lower_bound = -1 * options.tiltrange
 		upper_bound = options.tiltrange
@@ -614,7 +633,8 @@ class SubtomoSimTask(JSTask):
 		#print "\n\n!!!!!!Will reconstruct the volume for particle i",i
 	
 		rec = r.finish(True)
-	
+		print "\n(e2spt_simulation) I have finished simulating particle number", i
+		print "\n"
 		#print "The mean of the reconstructed particle is", rec['mean']
 		#mname = parameters['model'].split('/')[-1].split('.')[0]
 		#name = 'rec_' + mname + '#' + str(i).zfill(len(str(len(particles)))) + '.hdf'
@@ -626,17 +646,21 @@ class SubtomoSimTask(JSTask):
 	
 		
 		#print "The apix of rec is", rec['apix_x']
-
-	
-		rec.write_image(options.path + '/' + outname,i)
-
-		if options.tomogramoutput:
-			py = random.uniform(0 + image['nx']/2, options.gridholesize - image['nx']/2)									#random distance in Y of the particle's center from the bottom edge in the XY plane, at tilt=0
-			pz = random.uniform(0 + image['nx']/2, options.icethickness - image['nx']/2) 		
-			return {'ptcl':rec,'px':px,'py':py,'pz':pz}
+		
+		print "\nThe outname to write the particle i", i 
+		finaloutname = options.path + '/' + outname
+		
+		print "is, finaloutname", finaloutname
 			
-		else:
-			return
+		#rec.write_image(finaloutname,i)
+
+		#if options.tomogramoutput:
+		#	py = random.uniform(0 + image['nx']/2, options.gridholesize - image['nx']/2)									#random distance in Y of the particle's center from the bottom edge in the XY plane, at tilt=0
+		#	pz = random.uniform(0 + image['nx']/2, options.icethickness - image['nx']/2) 		
+		#	return {'ptcl':rec,'px':px,'py':py,'pz':pz}
+		#	
+		#else:
+		return rec
 
 
 jsonclasses["SubtomoSimTask"]=SubtomoSimTask.from_jsondict
@@ -661,8 +685,9 @@ def get_results(etc,tids,options):
 				r=etc.get_results(tidsleft[i])					# results for a completed task
 				
 				if r:
-					ptclnum = r[0].classoptions["ptclnum"]			# get the particle number from the task rather than trying to work back to it
-					results[ptclnum] = r[0]						# this will be a list of (qual,Transform)
+					#print "r is", r
+					ptcl=r[0].classoptions["ptclnum"]		# get the particle number from the task rather than trying to work back to it
+					results[ptcl] = r[1]						# this will be a list of (qual,Transform)
 				ncomplete+=1
 		
 		tidsleft=[j for i,j in enumerate(tidsleft) if proglist[i]!=100]		# remove any completed tasks from the list we ask about
