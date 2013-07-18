@@ -110,9 +110,9 @@ def main():
 	
 	if options.transform:
 		if '.json' in options.transform:
-			js = js_open_dict(options.inixforms)
+			js = js_open_dict(options.transform)
 			tnums = len(js)
-			tomoID = "tomo_" + str(0).zfill( len(str( len(tnums) )) )
+			tomoID = "tomo_" + str(0).zfill( len(str( tnums )) )
 			compensatoryT = js[tomoID]
 					
 			print "compensatoryT is", compensatoryT
