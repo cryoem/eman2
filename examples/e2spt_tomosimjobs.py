@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus Galaz-Montoya, 2012. Last update: 7/8/2013.
+# Author: Jesus Galaz-Montoya, 2012. Last update: 7/15/2013.
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -178,7 +178,7 @@ def main():
 	parser.add_argument("--shrinksim", type=int,default=0,help="Optionally shrink the input volume before the simulation if you want binned/down-sampled subtomograms.")
 	
 	parser.add_argument("--npeakstorefine", type=int, help="The number of best coarse alignments to refine in search of the best final alignment. Default=1.", default=1)
-	parser.add_argument("--iter",type=str,default='1',help="Number of iterations of alignment")
+	parser.add_argument("--iter",type=str,default='1',help="Number of iterations of alignment. If you want to test MULTIPLE iteration values, supply a comma separated list; e.g., --iter=1,2,3,4 or --iter=2,4,8 ...etc.")
 	
 	parser.add_argument("--parallel",type=str,default='thread:1',help="Parallelization to use.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -289,10 +289,14 @@ def simloop(options,rootpath):
 	nrefs = EMUtil.get_image_count(options.input)
 	#kk=0
 	
-	originalpath = rootpath + '/' + options.path
+	originalpath = options.path
 	
 	simround=0
+	compPATHS={}
 	firstrandstack = ''
+	
+	iters=str(options.iter).split(',')
+	comps = options.comparators.split(',')
 	
 	tiltrange = tiltrangel
 	while tiltrange <tiltrangeu:
@@ -333,49 +337,105 @@ def simloop(options,rootpath):
 				thestack=[]
 				themodel=[]
 				
+				
 				if options.comparators:
-					comps = options.comparators.split(',')
-					
-					
-					
-					for comp in comps:
-						print "Comparator is", comp
-						print "Whereas originalpath is", originalpath
-						options.aligncmp = comp
-						options.raligncmp = comp
-						compID = comp.split(':')[0].replace('.','P')
+					if len(comps) > 1:
+						for comp in comps:
+							print "Comparator is", comp
+							print "Whereas root is", originalpath
+							options.aligncmp = comp
+							options.raligncmp = comp
+							compID = comp.split(':')[0].replace('.','P')
 						
-						if 'fsc.tomo' in comp:
-							compID = comp.split(':')[0].replace('.','P') +  comp.split(':')[1].replace('sigmas=','Sigmas').replace('.','P')
+							if 'fsc.tomo' in comp:
+								compID = comp.split(':')[0].replace('.','P') +  comp.split(':')[1].replace('sigmas=','Sigmas').replace('.','P')
 						
-						options.path = originalpath + '_' + compID
+							#options.path = originalpath + '_' + compID
 						
-						findir=os.getcwd()
-						if options.path not in findir:
-							os.system('mkdir ' + options.path)
-						
-						print "\n\n$$$$$$$$$$\nThe stack thestack BEFORE sending is", thestack
+							#findir=os.getcwd()
+							#if options.path not in findir:
+							#	os.system('mkdir ' + options.path)
+							
+							
+							
+							if simround == 0:
+								options.path = originalpath + compID
+								pathstem = options.path
+							
+								options = sptmakepath( options, pathstem )
+								options.path = rootpath + '/' + options.path
+								
+								compPATHS.update({ compID : options.path })
+								
+								print "THE NEW PATH IS",  options.path
+								print "because compID is", compID
+								print "because comp is", comp
+							
+							elif simround > 0:
+								print "compPATHS are", compPATHS
+								options.path = compPATHS[ compID ]
+							
+							print "\n\n$$$$$$$$$$\nThe stack thestack BEFORE sending is", thestack
 
-						#simloop(options,rootpath)
-						print "And path is", options.path
+							#simloop(options,rootpath)
+							print "\n\n\nPPPPPPPPPPPPPP\nAnd path is", options.path
 						
-						ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany=samestackformany,thesestacks=thestack,thesemodels=themodel)
+							ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany,thestack,themodel,0)
+						
+							if samestackformany == 0:
+								thestack = ret[0]
+								themodel = ret[1]
+								firstrandstack = ret[2]
+						
+							print "Samestackformany is", samestackformany
+							
+							samestackformany+=1
+					else:
+						options.raligncmp = comps[0]
+						options.aligncmp = comps[0]
+				
+				elif len(iters) > 1:
+					
+					itersint =[ int(it) for it in iters]
+					itmax = max(itersint)			
+					itersint.sort()
+					
+					#iters = [ str(it) for it in itersint]
+					
+					itround = 0
+					for it in itersint:
+						#print "ITERATIONS TO DO ARE", it
+						
+						if itround == 0:
+							options.iter = str(it)
+						else:
+							options.iter = str(itersint[itround] - itersint[itround-1])
+						
+						print "\nThe literal iterations to do were supposed to be", it
+						print "And because itround is", itround
+						print "The actual iterations necessary are", options.iter	
+						
+						itID = '_ITERS' + str(it).zfill( len( str(itmax)))
+						options.path = originalpath + '_' + itID
+						
+						print "The path to use is", options.path
+		
+						ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany,thestack,themodel,1)
 						
 						if samestackformany == 0:
 							thestack = ret[0]
-							themodel = ret[1]
-							firstrandstack = ret[2]
-							
-						
+							#firstrandstack = ret[2]
+	
+						themodel = ret[1]
+										
 						print "Samestackformany is", samestackformany
-						#print "Therefore, ret is", ret
-						#print "And the stack thestack AFTER sending is", thestack
-						#print "$$$$$$$$$$$$$$$$$$"
-							
+						
 						samestackformany+=1
+						
+						itround += 1
 					
 				else:
-					ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany=samestackformany,thesestacks=thestack)
+					ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany,thestack,[],0)
 					if simround == 0:
 						firstrandstack = ret[2]
 				
@@ -410,7 +470,24 @@ def simloop(options,rootpath):
 				if 'fsc.tomo' in comp:
 					compID = comp.split(':')[0].replace('.','P') +  comp.split(':')[1].replace('sigmas=','Sigmas').replace('.','P')
 				
-				options.path = originalpath + '_' + compID
+				potentialdirs=[]
+				findir = os.listdir(rootpath)
+				filterID = originalpath + compID
+				for f in findir:
+					if filterID in f:
+						potentialdirs.append(f)
+				
+				thisone = originalpath
+				if potentialdirs:
+					potentialdirs.sort()
+					thisone = potentialdirs[-1]	
+				
+				
+				print "In simloop after alignments, to ANALYZE results, the RESULTS dir WITHOUT hyphen should be based on options.path which is", options.path
+				print "based on the originalpath", originalpath
+				print "or now rather on the thisone path", thisone
+				
+				options.path = thisone
 				
 				if nrefs > 1:
 					modname = 'model' + str(i).zfill(len(str(nrefs)))
@@ -425,6 +502,7 @@ def simloop(options,rootpath):
 						resultsdir = rootpath + '/' + resultsdir 
 		
 				resfiles = []
+				
 				findir = os.listdir(resultsdir)
 				for f in findir:
 					if 'error.txt' in f:
@@ -476,12 +554,27 @@ def runcmd(cmd):
 	return
 
 
-def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany=0,thesestacks=[],thesemodels=[]):
+def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany=0,thesestacks=[],thesemodels=[],itersMode=0):
 	thisstack=''
 	thissimodel=''
+	#finalAvgPath=''
 	
-	modeldir = rootpath + '/' + options.path
-	resultsdir = rootpath + '/'+ options.path + '/results'
+	finalAvgs=[]
+	
+	modeldir = options.path
+	if rootpath not in modeldir:
+		modeldir = rootpath + '/' + modeldir
+	
+			
+	resultsdir = options.path + '/results'
+	
+	if rootpath not in resultsdir:
+		resultsdir = rootpath + '/' + resultsdir
+
+	print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n ! ! ! ! ! ! ! ! ! ! ! ! ! ! \n The results dir to make should be", resultsdir
+	print "Options path is", options.path
+	print"\n ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+	
 	inputdata = options.input
 	
 	for d in range(nrefs):
@@ -494,6 +587,8 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			subpath = rootpath + '/' + options.path + '/' +'TR' + tiltrangetag + '_NS' + nslicestag + '_SNR' + snrtag
 		
 		subdirs = os.listdir(options.path)
+		
+		resultsbase = 'results'
 		
 		if nrefs > 1:
 			modeltag = 'model' + str(d).zfill(len(str(nrefs)))
@@ -508,8 +603,12 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			if modeltag not in subdirs:
 				os.system('mkdir ' + modeldir)
 			
-			resultsdir = modeldir + '/results_' + modeltag
-				
+			resultsbase = 'results_' + modeltag
+
+			resultsdir = modeldir + '/' + resultsbase
+			
+			subdirs = os.listdir(modeldir)
+			
 			subpath = modeldir + '/' + 'TR' + tiltrangetag + '_NS' + nslicestag + '_SNR' + snrtag #CHANGED
 			
 			#os.system('mkdir ' + subpath)
@@ -525,9 +624,11 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			print "\nModel is here", newname
 			print '\n'
 			
-			#inputdata = newname.split('/')[-1] #UPDATE
+		print "\n\nHowever, for this specific model, the resultsdir to make should be", resultsdir
+		print "And it should be amongst subdirs", subdirs
 		
-		
+		if resultsbase not in subdirs:
+			os.system('mkdir ' + resultsdir)
 		
 		subtomos =  subpath.split('/')[-1] + '.hdf'
 		
@@ -581,22 +682,25 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			runcmd( cmd1a )
 	
 		elif samestackformany > 0:
-			print "Thesemodels when stackformany more than 0, and its type, are", thesemodels, type(thesemodels)
+			print "Thesemodels when stackformany > 0, and its type, are", thesemodels, type(thesemodels)
 			print "Therefore for this model", d
 			print "THEMODEL, thesemodels[d], would be", thesemodels[d]
 			os.system('mkdir ' + subpath)
 			cmd1b = 'cp ' + str(thesestacks[d]) + ' ' + subpath+ '/' + subtomos.replace('.hdf','_ptcls.hdf')
 			
-			simmodel = subpath + '/' + inputdata.split('/')[0].replace('.hdf','_sptsimMODEL_SIM.hdf') 
+			simmodel = subpath + '/' + inputdata.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf') 
+			
+			if itersMode:
+				simmodel = subpath + '/' + thesemodels[d].split('/')[-1].replace('.hdf','_previousITER.hdf')
 			
 			cmd1b = cmd1b + ' && cp ' + str(thesemodels[d]) + ' ' + simmodel
 			
 			runcmd( cmd1b )
 			
-			#print "\n\n\nCCCCCCCCCC\nstackformany is", samestackformany
-			#print "Therefore I WILL NOT run a job for e2spt_simulation, and will rather copy the previous MODEL",  str(thesemodels[d])
-			#print "TO", simmodel 
-			#print "CCCCCCCCCCCCCn\n"
+			print "\n\n\nCCCCCCCCCC\nstackformany is", samestackformany
+			print "Therefore I WILL NOT run a job for e2spt_simulation, and will rather copy the previous MODEL",  str(thesemodels[d])
+			print "TO", simmodel 
+			print "CCCCCCCCCCCCCn\n"
 
 		#resultsfiles=[]
 		
@@ -610,8 +714,13 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			cmd2 = 'cd ' + subpath
 
 			ref = inputdata.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf')
+				
 			if samestackformany > 0:
 				ref = thesemodels[d].split('/')[-1]
+	
+				if itersMode:
+					#ref = subpath + '/' + thesemodels[d].split('/')[-1].replace('.hdf','_previousITER.hdf')
+					ref = thesemodels[d].split('/')[-1].replace('.hdf','_previousITER.hdf')
 
 			output=subtomos.replace('.hdf', '_avg.hdf')
 			#print "\n\n$$$$$$$$$$$$$$$$$$$$$$\nRef name is\n$$$$$$$$$$$$$$$$$$$\n", ref
@@ -653,7 +762,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			
 			aliptcls = output.replace('_avg.hdf','_ptcls_ali.hdf')
 			
-			
+			finalAvgPath = alipath2 + '/' + output
 			
 			
 			#print "\n\aliptcls name is\n", aliptcls
@@ -681,8 +790,8 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 
 
 			#resultsdir = ''
-			if resultsdir.split('/')[-1] not in subdirs and 'results' not in subdirs:
-				os.system('mkdir ' + resultsdir)
+			#if resultsdir.split('/')[-1] not in subdirs and 'results' not in subdirs:
+			#	os.system('mkdir ' + resultsdir)
 			
 			solutioncmd = "e2spt_transformdistance.py --input=" + alipath2 + '/' + aliptcls + ' --output=' + resultsdir + '/' + resultsfile
 			
@@ -731,14 +840,22 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 
 		if samestackformany == 0:
 			thisstack = subpath + '/' + thisstack.split('/')[-1].replace('.hdf','_ptcls.hdf')
-			thissimmodel = subpath + '/' + thissimmodel.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf') 
-			thesestacks.append(thisstack)
-			thesemodels.append(thissimmodel)
+			thesestacks.append(thisstack)			
+			
+			if not itersMode:			
+				thissimmodel = subpath + '/' + thissimmodel.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf')
+				thesemodels.append(thissimmodel)
 	
-	if samestackformany == 0:
-		return [thesestacks,thesemodels,firstrandstack]
-	else:
-		return []
+		if itersMode:
+			finalAvgs.append(finalAvgPath)
+			
+	if itersMode:
+		thesemodels = finalAvgs
+	
+	#if samestackformany == 0:
+	return [thesestacks,thesemodels,firstrandstack]
+	#else:
+	#	return ['',thesemodels,'']
 
 
 
