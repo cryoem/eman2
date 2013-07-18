@@ -194,8 +194,16 @@ def main():
 	if not options.finalboxsize:
 		options.finalboxsize = EMData(options.input,0,True)['nx']
 	
+	if options.verbose:
+		print "These many particles will be simulated, for each of the supplied references/models", options.nptcls
+		print "There are these many references/models", nrefs
+		
 	originalpath = options.path
+	kkk=0
 	for i in range(nrefs):
+		if options.verbose:
+			print "Generating simulated subtomograms for reference number", kkk
+	
 		if nrefs>1:
 			modelfilename = options.input.split('/')[-1].replace('.hdf','_model' + str(i).zfill(2) + '.hdf')
 			options.path = originalpath + '/model' + str(i).zfill(2)
@@ -281,6 +289,8 @@ def main():
 		ret=subtomosim(options,randptcls, stackname)
 		#print "AFTER RET"
 		
+	
+		
 		#if ret == 1:
 		#	os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))	
 		
@@ -292,7 +302,8 @@ def main():
 			
 			if ret == 1:
 				os.system('e2proc3d.py ' + name + ' ' + name + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))	
-	
+		kkk+=1
+		
 	E2end(logger)
 					
 	return()
@@ -391,7 +402,7 @@ def subtomosim(options,ptcls,stackname):
 	Initialize parallelism if being used
 	'''
 	if options.parallel :
-		print "\n\nINITIALIZING PARALLELISM!"
+		print "\n\n(e2spt_simulation.py) INITIALIZING PARALLELISM!"
 		print "\n\n"
 		from EMAN2PAR import EMTaskCustomer
 		etc=EMTaskCustomer(options.parallel)
@@ -400,8 +411,8 @@ def subtomosim(options,ptcls,stackname):
 	
 	
 	if options.verbose:
-		print "There are these many particles in the set", len(ptcls)
-		print "And these many slices to simulate each subtomogram", options.nslices
+		
+		print "(e2spt_simulation) There are these many slices to produce to simulate each subtomogram", options.nslices
 	
 	outname = stackname.replace('.hdf','_ptcls.hdf')
 	
