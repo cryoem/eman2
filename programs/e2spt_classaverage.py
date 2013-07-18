@@ -235,7 +235,7 @@ def main():
 		print "ERROR, input volumes are not cubes"
 		sys.exit(1)
 	
-	if options.ref!=None :
+	if options.ref:
 		hdr = EMData(options.ref,0,True)
 		if hdr["nx"]!=nx or hdr["ny"]!=ny or hdr["nz"]!=nz : 
 			print "Error, ref volume not same size as input volumes"
@@ -319,7 +319,7 @@ def main():
 		if options.ref: 
 			ref = EMData(options.ref,ic)
 		else:
-			ref = binaryTreeRef(options,nptcl)
+			ref = binaryTreeRef(options,nptcl,ptclnums,etc)
 		
 		'''
 		Now we iteratively refine a single class
@@ -429,7 +429,7 @@ def main():
 	E2end(logger)
 
 
-def binarytreeref(options,nptcl):
+def binaryTreeRef(options,nptcl,ptclnums,etc):
 
 	if nptcl==1: 
 		print "Error: More than 1 particle required if no reference provided through --ref."
