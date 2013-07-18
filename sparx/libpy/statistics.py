@@ -10470,5 +10470,3 @@ def randprojdir(ang, sigma):
 		aout.append([d["phi"],d["theta"]] + [ang[n][k] for k in xrange(2,l)])
 
 	return aout
-
-
