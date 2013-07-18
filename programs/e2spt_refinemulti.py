@@ -221,10 +221,15 @@ def main():
 		
 		p=subprocess.Popen( alicmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		
+		'''
+		Option A
+		'''
+		for line in iter(p.stdout.readline, ''):
+			print line.replace('\n','')
 		
-		'''
-		Option B
-		'''
+		#'''
+		#Option B
+		#'''
 		#while True:
 		#	line = p.stdout.readline()
   		#	if not line: 
@@ -232,31 +237,10 @@ def main():
   		#	else:
   		#		print line.replace('\n','')
 		
-		
-		'''
-		Option A
-		'''
-		for line in iter(p.stdout.readline, ''):
-			print line.replace('\n','')
-		
-		p.communicate()
-		
-		p.stdout.close()
-		
-		"""	
-		
-		
 		#returnedtxt = p.communicate()
-		"""
-		#if options.verbose:
-		#	print "\n\n\n\n\n\n"
-		#	lines=returnedtxt.split('\n')
-		#	for line in lines:
-		#		print line
-		#	print "\n\n\n\n\n\n\n"
-		
-		#if '.json' in options.transform:
-		
+		p.communicate()	
+		p.stdout.close()
+			
 		scoresFile = options.path + '/' + thisRefinementPath + '/subtomo_scores' + tag + '.json'
 		scores = js_open_dict(scoresFile)
 		nscores = len(scores)

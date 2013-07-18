@@ -280,7 +280,7 @@ def main():
 	Initialize parallelism if being used
 	'''
 	if options.parallel :
-		print "\n\nINITIALIZING PARALLELISM!"
+		print "\n\n(e2spt_classaverage.py) INITIALIZING PARALLELISM!"
 		print "\n\n"
 		from EMAN2PAR import EMTaskCustomer
 		etc=EMTaskCustomer(options.parallel)
