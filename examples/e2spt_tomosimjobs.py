@@ -247,8 +247,13 @@ def main():
 def simloop(options,rootpath):
 	
 	comps = options.comparators.split(',')
+	iters=str(options.iter).split(',')
+	print "ITers are", iters
+	print "Therefore len(iters) is", len(iters)
+	
 	if not options.comparators or len(comps) == 1:
-		options = sptmakepath(options,'spt_tomosimjob')
+		if len(iters) < 2:
+			options = sptmakepath(options,'spt_tomosimjob')
 	
 	if "/" not in options.input:
 		options.input = rootpath + "/" + options.input
@@ -296,9 +301,10 @@ def simloop(options,rootpath):
 	
 	firstrandstack = ''
 	
-	iters=str(options.iter).split(',')
+	
 	
 	compPATHS={}
+	iterPATHS={}
 	
 	tiltrange = tiltrangel
 	while tiltrange <tiltrangeu:
@@ -339,6 +345,10 @@ def simloop(options,rootpath):
 				thestack=[]
 				themodel=[]
 				
+				if len(iters) > 1 and options.comparators:
+					print """ERROR: You can't test MULTIPLE iteration numbers, AND MULTIPLE comparators at the same time.
+							To test a SINGLE comparator with MULTIPLE ITERATION NUMBERS, supply the comparator via --aligncmp and --raligncmp."""
+					sys.exit()
 				
 				if options.comparators:
 					if len(comps) > 1:
@@ -392,7 +402,8 @@ def simloop(options,rootpath):
 							print "Samestackformany is", samestackformany
 							
 							samestackformany+=1
-					else:
+					
+					elif len(iters) == 1:
 						options.raligncmp = comps[0]
 						options.aligncmp = comps[0]
 						print "There's comps but length was less than one!"
@@ -421,8 +432,27 @@ def simloop(options,rootpath):
 						print "And because itround is", itround
 						print "The actual iterations necessary are", options.iter	
 						
-						itID = '_ITERS' + str(it).zfill( len( str(itmax)))
-						options.path = originalpath + '_' + itID
+						iterID = 'ITERS' + str(it).zfill( len( str(itmax)))
+						
+						if simround == 0:
+							options.path = originalpath + iterID
+							pathstem = options.path
+							
+							options = sptmakepath( options, pathstem )
+							options.path = rootpath + '/' + options.path
+							
+							iterPATHS.update({ iterID : options.path })
+							
+							print "THE NEW PATH IS",  options.path
+							print "because compID is", iterID
+							print "because iter is", it
+						
+						elif simround > 0:
+							print "iterPATHS are", iterPATHS
+							options.path = iterPATHS[ iterID ]
+					
+						
+						#options.path = originalpath + '_' + itID
 						
 						print "The path to use is", options.path
 		
@@ -462,36 +492,64 @@ def simloop(options,rootpath):
 	
 	resultsdir=''	
 	
+	print "\n\n\n\n========================================================================================\n\n\n\n"
+	print "All ALIGNMENTS ARE DONE! It is now a matter of analyzing the results"
+	print "\n\n\n\n========================================================================================\n\n\n\n"
+
+	
 	for i in range(nrefs):
+		print "\n\n\n\n I will analyze alignments results for ref number", i
 		
-		if options.comparators:
-			comps = options.comparators.split(',')
+		comps = options.comparators.split(',')
+		#iters = str(options.iter).split(',')
+		
+		print "len(iterPATHS) is", len(iterPATHS)
+
+		if options.comparators and len(comps) >1 :
+			
+			compFilts = []
 			for comp in comps:
-				print "Comparator is", comp
-				print "Whereas originalpath is", originalpath
-				options.aligncmp = comp
-				options.raligncmp = comp
+				
 				compID = comp.split(':')[0].replace('.','P')
 				
 				if 'fsc.tomo' in comp:
 					compID = comp.split(':')[0].replace('.','P') +  comp.split(':')[1].replace('sigmas=','Sigmas').replace('.','P')
+				compFilt = originalpath + compID
+				compFilts.append( compFilt )
+			
+			compFilts = set(compFilts)
+			
+			
+			for filt in compFilts:
+				print "\nComparator filt and refnum are", filt,i
+				print "Whereas originalpath, refnum are", originalpath,i
+				print "\n"
+				
+				otherFilts = compFilts - set(filt)
+				#options.aligncmp = comp
+				#options.raligncmp = comp
+				
+
+				#print "\nTherefore compID is", compID
+				#print "\n"
 				
 				potentialdirs=[]
 				findir = os.listdir(rootpath)
-				filterID = originalpath + compID
+				#filterID = originalpath + compID
+				
 				for f in findir:
-					if filterID in f:
+					if filt == f.split('_')[0]:
 						potentialdirs.append(f)
 				
-				thisone = originalpath
-				if potentialdirs:
+				thisone = filt
+				if len(potentialdirs) > 1:
 					potentialdirs.sort()
 					thisone = potentialdirs[-1]	
 				
 				
-				print "In simloop after alignments, to ANALYZE results, the RESULTS dir WITHOUT hyphen should be based on options.path which is", options.path
-				print "based on the originalpath", originalpath
-				print "or now rather on the thisone path", thisone
+				print "In simloop after alignments, to ANALYZE results, the RESULTS dir WITHOUT hyphen should be based on filt",filt
+				#print "based on the originalpath", originalpath
+				#print "or now rather on the thisone path", thisone
 				
 				options.path = thisone
 				
@@ -517,7 +575,38 @@ def simloop(options,rootpath):
 				resfiles.sort()
 		
 				resfiles_analysis(options,resfiles,resultsdir,modelnum=i)
-					
+		
+		elif len(iterPATHS) > 1:
+			print "\n\n\nThere are these many iterPAHTS", len(iterPATHS)
+			print "Which are", iterPATHS
+			
+			for ele in iterPATHS:
+				print "Analyzing THIS element of iterPATHS", ele
+				options.path = iterPATHS[ele]
+				
+				if nrefs > 1:
+					modname = 'model' + str(i).zfill(len(str(nrefs)))
+			
+					resultsdir = options.path + '/' + modname + '/results_' + modname
+					if rootpath not in resultsdir:
+						resultsdir = rootpath + '/' + resultsdir
+		
+				else:
+					resultsdir = options.path + '/results' 
+					if rootpath not in resultsdir:
+						resultsdir = rootpath + '/' + resultsdir 
+		
+				resfiles = []
+				
+				findir = os.listdir(resultsdir)
+				for f in findir:
+					if 'error.txt' in f:
+						resfiles.append(f)
+		
+				resfiles.sort()
+		
+				resfiles_analysis(options,resfiles,resultsdir,modelnum=i)			
+		
 		else:
 			if nrefs > 1:
 				modname = 'model' +  str(i).zfill(len(str(nrefs)))
@@ -578,7 +667,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 		resultsdir = rootpath + '/' + resultsdir
 
 	print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n ! ! ! ! ! ! ! ! ! ! ! ! ! ! \n The results dir to make should be", resultsdir
-	print "Options path is", options.path
+	print "(e2spt_tomosimjobs) (function gencmds) Options path is", options.path
 	print"\n ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
 	
 	inputdata = options.input
@@ -826,9 +915,9 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 		
 		if options.verbose:
 			if cmd1a:
-				print "cmd1a (jobcmd) was:", cmd1a
+				print "cmd1a (jobcmd) was:\n", cmd1a
 			elif cmd1b:
-				print "cmd1b (to copy randstack before simulation) was", cmd1b
+				print "cmd1b (to copy randstack before simulation) was:\n", cmd1b
 			print "\ncmd2 (alicmd) was:\n", cmd2
 			print "\nextractcmd was:\n", extractcmd
 			print "\nsolutioncmd was:\n", solutioncmd
