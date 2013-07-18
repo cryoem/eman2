@@ -462,14 +462,26 @@ def simloop(options,rootpath):
 
 	return()
 	
+'''
+FUNCTION TO RUN A COMMAND AT THE COMMAND LINE FROM A SCRIPT
+'''
+def runcmd(cmd):
+	p=subprocess.Popen( cmd , shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	
+	for line in iter(p.stdout.readline, ''):
+		print line.replace('\n','')
+
+	p.communicate()	
+	p.stdout.close()
+	return
 
 
 def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany=0,thesestacks=[],thesemodels=[]):
 	thisstack=''
 	thissimodel=''
 	
-	modeldir = options.path
-	resultsdir = options.path + '/results'
+	modeldir = rootpath + '/' + options.path
+	resultsdir = rootpath + '/'+ options.path + '/results'
 	inputdata = options.input
 	
 	for d in range(nrefs):
@@ -515,12 +527,11 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			
 			#inputdata = newname.split('/')[-1] #UPDATE
 		
-		if resultsdir not in subdirs and 'resluts' not in subdirs:
-			os.system('mkdir ' + resultsdir)
+		
 		
 		subtomos =  subpath.split('/')[-1] + '.hdf'
 		
-		cmd = ''
+		cmd1a = cmd1b = ''
 		
 		if samestackformany < 1:
 			thisstack = subtomos
@@ -565,34 +576,38 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 				jobcmd += ' --saveprjs'
 			if options.negativecontrast:
 				jobcmd += ' --negativecontrast'				
-
-			cmd = 'cd ' + modeldir + ' && ' + jobcmd
-
+			
+			cmd1a = 'cd ' + modeldir + ' && ' + jobcmd
+			runcmd( cmd1a )
+	
 		elif samestackformany > 0:
 			print "Thesemodels when stackformany more than 0, and its type, are", thesemodels, type(thesemodels)
 			print "Therefore for this model", d
 			print "THEMODEL, thesemodels[d], would be", thesemodels[d]
 			os.system('mkdir ' + subpath)
-			cmd = 'cp ' + str(thesestacks[d]) + ' ' + subpath+ '/' + subtomos.replace('.hdf','_ptcls.hdf')
+			cmd1b = 'cp ' + str(thesestacks[d]) + ' ' + subpath+ '/' + subtomos.replace('.hdf','_ptcls.hdf')
 			
 			simmodel = subpath + '/' + inputdata.split('/')[0].replace('.hdf','_sptsimMODEL_SIM.hdf') 
 			
-			cmd = cmd + ' && cp ' + str(thesemodels[d]) + ' ' + simmodel
+			cmd1b = cmd1b + ' && cp ' + str(thesemodels[d]) + ' ' + simmodel
 			
-			print "\n\n\nCCCCCCCCCC\nstackformany is", samestackformany
-			print "Therefore I WILL NOT run a job for e2spt_simulation, and will rather copy the previous MODEL",  str(thesemodels[d])
-			print "TO", simmodel 
-			print "CCCCCCCCCCCCCn\n"
+			runcmd( cmd1b )
+			
+			#print "\n\n\nCCCCCCCCCC\nstackformany is", samestackformany
+			#print "Therefore I WILL NOT run a job for e2spt_simulation, and will rather copy the previous MODEL",  str(thesemodels[d])
+			#print "TO", simmodel 
+			#print "CCCCCCCCCCCCCn\n"
 
 		#resultsfiles=[]
 		
-		
+		cmd2 = extractcmd = solutioncmd = rfilecmd = ''
 		if options.testalignment:
 			print "\n\n$$$$$$$$$\nI will test alignment and for that will cd into SUBPATH", subpath
 			print "This is SIMROUND number", simround 
 			print "$$$$$$$$\n\n"
 
-			cmd = cmd + ' && cd ' + subpath
+			#cmd = cmd + ' && cd ' + subpath
+			cmd2 = 'cd ' + subpath
 
 			ref = inputdata.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf')
 			if samestackformany > 0:
@@ -614,7 +629,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=0 --parallel=" + options.parallel + " --ralign=refine_3d_grid:delta=3:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=" + str(options.shrinkalign) + " --shrinkrefine=" + str(options.shrinkalign) +" --savesteps --saveali --normproc=normalize"  + ' --iter=' + str(options.iter) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose)
 
 			if options.quicktest:
-				alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " -v 0 --mask=mask.sharp:outer_radius=-4 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=" + options.parallel + " --ralign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=3 --normproc=normalize" + ' --iter=' + str(options.iter) + ' --npeakstorefine=1'
+				alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=" + options.parallel + " --ralign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=3 --normproc=normalize" + ' --iter=' + str(options.iter) + ' --npeakstorefine=1 --savesteps --saveali'
 
 			
 			#You want --wedgeangle (or data collection range) to be a bit bigger than it actually is
@@ -631,42 +646,59 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			if options.writewedge:
 				alicmd += ' --writewedge'
 			
-				
+			
+			cmd2 = cmd2 + alicmd
+			runcmd( cmd2 )	
+			
+			
 			aliptcls = output.replace('_avg.hdf','_ptcls_ali.hdf')
-
+			
+			
+			
+			
 			#print "\n\aliptcls name is\n", aliptcls
 
-			extractcmd = " && cd " + alipath2 + " && e2proc3d.py class_ptcl.hdf " + aliptcls
-			
-			if options.iter > 1:
+			extractcmd = "cd " + alipath2 + " && e2proc3d.py class_ptcl.hdf " + aliptcls
+			#finalRefVsOriginalRefPath = ''
+			if int(options.iter) > 1:
 				finalrefindx = int(options.iter) -2
 				extractcmd += ' && e2proc3d.py class_00.hdf finalref.hdf --first=' + str(finalrefindx) + ' --last=' + str(finalrefindx)
 				
 				finalrefname = alipath2 + '/finalref.hdf'
 				
-				finalRefVsOriginalRefPath = alipath2 + '/finalRef_vs_OriginalRef'
 				
+				if not options.quicktest:
+					extractcmd += " && cd " + alipath2 + " && e2spt_classaverage.py --path=finalRef_vs_OriginalRef --input=" + finalrefname + " --output=finalrefali.hdf" + " --ref=" + subpath + '/' + ref + " --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=0 --parallel=" + options.parallel + " --ralign=refine_3d_grid:delta=3:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=" + str(options.shrinkalign) + " --shrinkrefine=" + str(options.shrinkalign) +" --savesteps --saveali --normproc=normalize"  + ' --iter=1 --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose)
 				
-				
-				extractcmd += " && e2spt_classaverage.py --path=" + finalRefVsOriginalRefPath + " --input=" + finalrefname + " --output=finalrefali.hdf" + " --ref=" + ref + " --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=" + str(options.verbose) + " --parallel=" + options.parallel + " --ralign=refine_3d_grid:delta=3:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=" + str(options.shrinkalign) + " --shrinkrefine=" + str(options.shrinkalign) +" --savesteps --saveali --normproc=normalize"  + ' --iter=' + str(options.iter) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose)
-				
-				finalrefali = finalRefVsOriginalRefPath + '/finalref_ali.hdf'
-				
+				elif options.quicktest:
+					extractcmd += " && cd " + alipath2 + " && e2spt_classaverage.py --path=finalRef_vs_OriginalRef --input=" + finalrefname + " --output=finalrefali.hdf" + " --ref=" + subpath + '/' + ref + " -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=" + options.parallel + " --ralign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=3 --normproc=normalize --iter=1 --npeakstorefine=1 --savesteps --saveali"
+			
+			runcmd( extractcmd )
 			
 			resultsfile = aliptcls.replace('_ptcls_ali.hdf','_ali_error.txt')
 			
 			#print "\n@@@@@@@\n@@@@@@@\n@@@@@@@@@\n@@@@@@@ Results file is %s \n@@@@@@@\n@@@@@@@\n@@@@@@@@@\n@@@@@@@" %(resultsfile)
 
-			solutioncmd = " && e2spt_transformdistance.py --input=" + aliptcls + ' --output=' + resultsfile
+
+			#resultsdir = ''
+			if resultsdir.split('/')[-1] not in subdirs and 'results' not in subdirs:
+				os.system('mkdir ' + resultsdir)
 			
-			if options.iter > 1:
+			solutioncmd = "e2spt_transformdistance.py --input=" + alipath2 + '/' + aliptcls + ' --output=' + resultsdir + '/' + resultsfile
+			
+			if int(options.iter) > 1:
+				finalRefVsOriginalRefPath = alipath2 + '/finalRef_vs_OriginalRef'
+				#finalrefaliptcls = finalRefVsOriginalRefPath + '/finalref_ali.hdf'
+				
 				solutioncmd += ' --transform=' + finalRefVsOriginalRefPath + '/tomo_xforms.json'
+			
+			runcmd( solutioncmd )
+			
+			#rfilecmd =  'mv ' + resultsfile + ' ' + resultsdir
+			#if rootpath not in rfilecmd:
+			#	rfilecmd =  'mv ' + resultsfile + ' ' +  rootpath + '/' + resultsdir
 
-			rfilecmd =  ' && mv ' + resultsfile + ' ' + resultsdir
-			if rootpath not in rfilecmd:
-				rfilecmd =  ' && mv ' + resultsfile + ' ' +  rootpath + '/' + resultsdir
-
-			cmd = cmd + alicmd + extractcmd + solutioncmd + rfilecmd
+			#runcmd( rfilecmd )
 			
 			#if 'mpi' in options.parallel:
 			#	genpbs(cmd,kk)
@@ -674,17 +706,28 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 				#a.write(cmd)
 				#a.close()
 			#kk+=1
-
-		print "\n\n\n*********************The command to execute is \n %s \n*********************\n" %(cmd)
+		
+		#cmds = cmd2 + extractcmd + solutioncmd + rfilecmd
+		
+		if options.verbose:
+			if cmd1a:
+				print "cmd1a (jobcmd) was:", cmd1a
+			elif cmd1b:
+				print "cmd1b (to copy randstack before simulation) was", cmd1b
+			print "\ncmd2 (alicmd) was:\n", cmd2
+			print "\nextractcmd was:\n", extractcmd
+			print "\nsolutioncmd was:\n", solutioncmd
+			#print "rfilecmd was:", rfilecmd
+		#print "\n\n\n*********************The command to execute is \n %s \n*********************\n" %(cmd)
 
 		#if 'mpi' in options.parallel:
 			
 		#	os.system('qsub temp'+str(kk)+'.pbs')
 		#else:
 		
-		if options.verbose:
-			print "The command is", cmd
-		os.system(cmd)
+		#if options.verbose:
+		#	print "The command is", cmd
+		#os.system(cmd)
 
 		if samestackformany == 0:
 			thisstack = subpath + '/' + thisstack.split('/')[-1].replace('.hdf','_ptcls.hdf')
