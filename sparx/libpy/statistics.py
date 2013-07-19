@@ -1839,7 +1839,7 @@ def varf3d_MPI(prjlist, ssnr_text_file = None, mask2D = None, reference_structur
 	else:                              recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF)
 	del re_prjlist
 
-	if myid == 0:
+	if myid == 0 and ssnr_text_file != None:
 		outf = file(ssnr_text_file, "w")
 		for i in xrange(len(ssnr2[0])):
 			datstrings = []
