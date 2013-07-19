@@ -434,12 +434,12 @@ def subtomosim(options,ptcls,stackname):
 	
 	results = get_results(etc,tids,options)
 	
-	pn = 0
+	#pn = 0
 	
 	#print "I have these many particles from results", len(results)
 	#print "From outname", outname
 
-	for particle in results:
+	for pn in range(len(results)):
 		finaloutname = outname
 		
 		if options.path not in outname:
@@ -452,8 +452,8 @@ def subtomosim(options,ptcls,stackname):
 		#print "And its type is", type(particle)
 		#print "And its index is", pn
 		
-		particle.write_image(finaloutname,pn)
-		pn+=1
+		results[pn].write_image(finaloutname,pn)
+		#pn+=1
 	
 	if options.tomogramoutput:
 		tomogramsim(options,results)
