@@ -54,6 +54,8 @@ def main():
 	parser.add_argument("--vols2", type=str, help="Comma-separated filenames of the .hdf volumes whose rotational correlation plot you want to compute against the volumes provided through --vols1.", default=None)
 
 	parser.add_argument("--output", type=str, help="Name for the .txt file with the results and the corresponding .png plot")
+	parser.add_argument("--sym", type=str, help="Symmetry to apply after all preprocessing.",default='c1')
+
 	
 	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
 	parser.add_argument("--preprocess",type=str,help="Any processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.", default=None)
@@ -296,6 +298,20 @@ def rotcccplot(v1,v2,options):
 				twoD_plot(plotname,values,options)
 	return()
 	
+
+def symmetrize(vol,options):
+	sym = options.sym
+	xf = Transform()
+	xf.to_identity()
+	nsym=xf.get_nsym(sym)
+	volsym=vol.copy()
+	for i in range(1,nsym):
+		dc=vol.copy()
+		t=xf.get_sym(sym,i)
+		dc.transform(t)
+		volsym.add(dc)
+	volsym.mult(1.0/nsym)	
+	return(volsym)
 	
 	
 def plotter(options,azs,values,title,ts,loop,absMIN,absMAX):
@@ -470,7 +486,24 @@ def preprocess(vol,options):
 	if options.shrink!=None and options.shrink > 1 :
 		print "Shrinking"
 		vol=vol.process("math.meanshrink",{"n":options.shrink})
+	
+		mask = EMData(vol["nx"],vol["ny"],vol["nz"])
+		mask.to_one()
+		radius =  vol['nx']/2 - 2
+		print "The radius is",
+		if options.mask:
+			#print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options["mask"][0],options["mask"][1]) 
+			mask.process_inplace( 'mask.sharp' , { 'outer_radius' : radius})
+
+	
+	if options.sym and options.sym!= 'c1' and options.sym != 'C1':
+		vol=symmetrize(vol,options)
+		
+	
 	print "Leaving preprocessing function"
+	
+	
+	
 	return(vol)
 	
 
