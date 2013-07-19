@@ -1788,7 +1788,7 @@ def varf3d(prjlist,ssnr_text_file = None, mask2D = None, reference_structure = N
 	#from morphology import threshold_to_minval
 	#return  threshold_to_minval(Util.subn_img(Util.pack_complex_to_real(vol_ssnr1), Util.pack_complex_to_real(vol_ssnr2)), 1.0)
 
-def varf3d_MPI(prjlist, ssnr_text_file = None, mask2D = None, reference_structure = None, ou = -1, rw = 1.0, npad = 1, CTF = False, sign = 1, sym ="c1", myid = 0):
+def varf3d_MPI(prjlist, ssnr_text_file = None, mask2D = None, reference_structure = None, ou = -1, rw = 1.0, npad = 1, CTF = False, sign = 1, sym ="c1", myid = 0, mpi_comm = None):
 	"""
 	  Calculate variance in Fourier space of an object reconstructed from projections
 
@@ -1800,8 +1800,13 @@ def varf3d_MPI(prjlist, ssnr_text_file = None, mask2D = None, reference_structur
 	from reconstruction import   recons3d_nn_SSNR_MPI, recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
 	from utilities      import   bcast_EMData_to_all, model_blank
 	from projection     import   prep_vol, prgs
-	if myid == 0: [ssnr1, vol_ssnr1] = recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF)
-	else:                              recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF)
+	from mpi import MPI_COMM_WORLD
+	
+	if mpi_comm == None:
+		mpi_comm = MPI_COMM_WORLD
+	
+	if myid == 0: [ssnr1, vol_ssnr1] = recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, mpi_comm=mpi_comm)
+	else:                              recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, mpi_comm=mpi_comm)
 
 	nx  = prjlist[0].get_xsize()
 	if ou == -1: radius = int(nx/2) - 2
@@ -1809,16 +1814,18 @@ def varf3d_MPI(prjlist, ssnr_text_file = None, mask2D = None, reference_structur
 	if(reference_structure == None):
 		if CTF :
 			snr = 1.0#e20
-			if myid == 0 : reference_structure = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym)
+			if myid == 0 :
+				reference_structure = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, mpi_comm=mpi_comm)
 			else :
-				recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym)
+				recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, mpi_comm=mpi_comm)
 				reference_structure = model_blank(nx, nx, nx)
 		else  :
-			if myid == 0 :  reference_structure = recons3d_4nn_MPI(myid, prjlist, sym)
+			if myid == 0 :
+				reference_structure = recons3d_4nn_MPI(myid, prjlist, sym, mpi_comm=mpi_comm)
 			else :
-				recons3d_4nn_MPI(myid, prjlist, sym)
+				recons3d_4nn_MPI(myid, prjlist, sym, mpi_comm=mpi_comm)
 				reference_structure = model_blank(nx, nx, nx)
-		bcast_EMData_to_all(reference_structure, myid, 0)
+		bcast_EMData_to_all(reference_structure, myid, 0, mpi_comm)
 	#if myid == 0:  reference_structure.write_image("refer.hdf",0)
 	#vol *= model_circle(radius, nx, nx, nx)
 	volft,kb = prep_vol(reference_structure)
@@ -1835,8 +1842,8 @@ def varf3d_MPI(prjlist, ssnr_text_file = None, mask2D = None, reference_structur
 			proj.set_attr('sign', 1)
 		re_prjlist.append(proj)
 	del volft
-	if myid == 0: [ssnr2, vol_ssnr2] = recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF)
-	else:                              recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF)
+	if myid == 0: [ssnr2, vol_ssnr2] = recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF, mpi_comm=mpi_comm)
+	else:                              recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF, mpi_comm=mpi_comm)
 	del re_prjlist
 
 	if myid == 0 and ssnr_text_file != None:
@@ -1880,6 +1887,7 @@ def varf3d_MPI(prjlist, ssnr_text_file = None, mask2D = None, reference_structur
 		#from morphology import threshold_to_minval
 		#return  threshold_to_minval( Util.subn_img(Util.pack_complex_to_real(vol_ssnr1), Util.pack_complex_to_real(vol_ssnr2)), 1.0)
 	else:  return  model_blank(2,2,2)
+
 
 def ccc(img1, img2, mask=None):
 	"""Cross-correlation coefficient.	   
