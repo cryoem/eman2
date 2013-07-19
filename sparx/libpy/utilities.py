@@ -1950,13 +1950,16 @@ def estimate_3D_center(data):
 	return float(K[0][0]), float(K[1][0]), float(K[2][0]), float(K[3][0]), float(K[4][0])
 
 
-def estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node):
+def estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node, mpi_comm=None):
 	from math import cos, sin, pi
 	from numpy import matrix
 	from numpy import linalg
 	from mpi import MPI_COMM_WORLD
 	from mpi import mpi_recv, mpi_send, MPI_FLOAT
 	from applications import MPI_start_end
+
+	if mpi_comm == None:
+		mpi_comm = MPI_COMM_WORLD
 
 	ali_params_series = []
 	for im in data:
@@ -1972,8 +1975,9 @@ def estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node):
 			if proc != main_node:
 				image_start_proc, image_end_proc = MPI_start_end(nima, number_of_proc, proc)
 				n_params = (image_end_proc - image_start_proc)*5
-				temp = mpi_recv(n_params, MPI_FLOAT, proc, proc, MPI_COMM_WORLD)
-				for nn in xrange(n_params): 	ali_params_series.append(float(temp[nn]))
+				temp = mpi_recv(n_params, MPI_FLOAT, proc, proc, mpi_comm)
+				for nn in xrange(n_params):
+					ali_params_series.append(float(temp[nn]))
 
 		ali_params = []
 		N = len(ali_params_series)/5
@@ -2004,9 +2008,10 @@ def estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node):
 	else:
 		image_start_proc, image_end_proc = MPI_start_end(nima, number_of_proc, myid)
 		n_params = (image_end_proc - image_start_proc)*5
-		mpi_send(ali_params_series, n_params, MPI_FLOAT, main_node, myid, MPI_COMM_WORLD)
+		mpi_send(ali_params_series, n_params, MPI_FLOAT, main_node, myid, mpi_comm)
 		
 		return 0.0, 0.0, 0.0, 0.0, 0.0	
+
 
 def rotate_3D_shift(data, shift3d):
 
@@ -2101,9 +2106,8 @@ def reduce_array_to_root(data, myid, main_node = 0, comm = -1):
 def reduce_EMData_to_root(data, myid, main_node = 0, comm = -1):
 	from numpy import shape, reshape
 	from mpi   import mpi_reduce, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD, mpi_barrier
-	from utilities import get_image_data
 	
-	if comm == -1:  comm = MPI_COMM_WORLD
+	if comm == -1 or comm == None:  comm = MPI_COMM_WORLD
 
 	array = get_image_data(data)
 	n     = shape(array)
@@ -2121,12 +2125,13 @@ def reduce_EMData_to_root(data, myid, main_node = 0, comm = -1):
 		if myid == main_node:
 			array1d[block_begin:block_end] = tmpsum[0:block_size]
 
+
 def bcast_EMData_to_all(tavg, myid, source_node = 0, comm = -1):
 	from EMAN2 import EMNumPy
 	from numpy import array, shape, reshape
 	from mpi   import mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
 
-	if comm == -1: comm = MPI_COMM_WORLD
+	if comm == -1 or comm == None: comm = MPI_COMM_WORLD
 	tavg_data = EMNumPy.em2numpy(tavg)
 	n = shape(tavg_data)
 	ntot = 1
