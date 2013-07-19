@@ -75,7 +75,7 @@ def main():
 								     Default value is set by --transrange, but --txrange will overwrite it if specified.""")
 	parser.add_argument("--tzrange", type=int,default=None,help="""Maximum number of pixels to randomly translate each subtomogram in Z. The random translation will be picked between -tzrange and +tzrange.
 								     Default value is set by --transrange, but --txrange will overwrite it if specified.""")
-	parser.add_argument("--transrange", type=int,default=4,help="""Maximum number of pixels to randomly translate each subtomogram in all X, Y and Z. 
+	parser.add_argument("--transrange", type=int,default=0,help="""Maximum number of pixels to randomly translate each subtomogram in all X, Y and Z. 
 									The random translation will be picked between -transrage and +transrange; --txrange, --tyrange and --tzrange overwrite --transrange for each specified direction.""")
 	
 	#parser.add_argument("--tiltstep", type=float,default=5.0,help="Degrees between each image in the simulated tilt series for each subtomogram.")
@@ -351,10 +351,12 @@ def randomizer(options, model, stackname):
 				rand_orient = OrientGens.get("rand",{"n":1, "phitoo":1})						#Generate a random orientation (randomizes all 3 euler angles)
 				c1_sym = Symmetries.get("c1")
 				random_transform = rand_orient.gen_orientations(c1_sym)[0]
-
-				randtx = random.randrange(-1 * options.transrange, options.transrange)			#Generate random translations
-				randty = random.randrange(-1 * options.transrange, options.transrange)
-				randtz = random.randrange(-1 * options.transrange, options.transrange)
+				
+				randtx = randty = randtz = 0	
+				if options.transrange:
+					randtx = random.randrange(-1 * options.transrange, options.transrange)			#Generate random translations
+					randty = random.randrange(-1 * options.transrange, options.transrange)
+					randtz = random.randrange(-1 * options.transrange, options.transrange)
 
 				if options.txrange:
 					randtx = random.randrange(-1 * options.txrange, options.txrange)	
@@ -362,8 +364,9 @@ def randomizer(options, model, stackname):
 					randty = random.randrange(-1 * options.tyrange, options.tyrange)
 				if options.tzrange:
 					randtz = random.randrange(-1 * options.tzrange, options.tzrange)
-
-				random_transform.translate(randtx, randty, randtz)
+				
+				if randtx or randty or randtz:
+					random_transform.translate(randtx, randty, randtz)
 
 				b.transform(random_transform)		
 
@@ -436,8 +439,8 @@ def subtomosim(options,ptcls,stackname):
 	
 	#pn = 0
 	
-	#print "I have these many particles from results", len(results)
-	#print "From outname", outname
+	print "I have these many particles from results", len(results)
+	print "From outname", outname
 
 	for pn in range(len(results)):
 		finaloutname = outname
@@ -445,12 +448,12 @@ def subtomosim(options,ptcls,stackname):
 		if options.path not in outname:
 			finaloutname = options.path + '/' + outname
 		
-		#print "\n\n\n\n\n\nn\\n\n\nn\\nn\n\n\n\n\n THe final outname rigth before writing is", finaloutname
-		#print "because options.path is", options.path
-		#print "and outname is", outname
-		#print "And the particle is", particle
-		#print "And its type is", type(particle)
-		#print "And its index is", pn
+		print "\n\n\n\n\n\nn\\n\n\nn\\nn\n\n\n\n\n THe final outname rigth before writing is", finaloutname
+		print "because options.path is", options.path
+		print "and outname is", outname
+		print "And the particle is", results[pn]
+		print "And its type is", type( results[pn])
+		print "And its index is", pn
 		
 		results[pn].write_image(finaloutname,pn)
 		#pn+=1
@@ -486,6 +489,7 @@ class SubtomoSimTask(JSTask):
 		"""This simulates a subtomogram and saves projections before and after adding noise if instructed to."""
 		classoptions=self.classoptions
 		options=self.classoptions['options']
+		stackname = self.classoptions['outname']
 		
 		i = self.classoptions['ptclnum']
 		
@@ -651,6 +655,7 @@ class SubtomoSimTask(JSTask):
 		finaloutname = options.path + '/' + outname
 		
 		print "is, finaloutname", finaloutname
+		print "rec to return is", rec
 			
 		#rec.write_image(finaloutname,i)
 
