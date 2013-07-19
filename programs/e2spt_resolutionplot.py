@@ -98,7 +98,7 @@ def main():
 	parser.add_argument("--thresholds", type=str, help="Comma separated values of thresholds to plot as horizontal lines. Default=0.5, to turn of supply 'None'. ", default='0.5')
 	
 	parser.add_argument("--smooth",action="store_true", help="Smooth out FSC curves.", default=False)
-	parser.add_argument("--fit",type=int, help="Number of terms for polynomial fit.", default=None)
+	parser.add_argument("--polydegree",type=int, help="Degree of the polynomial to fit.", default=None)
 
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID.",default=-1)
