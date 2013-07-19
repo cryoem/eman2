@@ -148,7 +148,9 @@ def main():
 	parser.add_argument("--sym",type=str,default='c1',help="If your particle is symmetrical, you should randomize it's orientation withing the asymmetric unit only. Thus, provide the symmetry.")
 
 	parser.add_argument("--notrandomize",action="store_true",default=False,help="This will prevent the simulated particles from being rotated and translated into random orientations.")
-	parser.add_argument("--simref",action="store_true",default=False,help="This will make a simulated particle in the same orientation as the original input (or reference).")
+	parser.add_argument("--simref",action="store_true",default=False,help="""This will make a simulated particle in the same orientation as the original input (or reference), 
+																			and will be used as the model/reference to test alignments if --testalignment is on.
+																			To have e2spt_classaverage.py make its own reference, simply do not supply this parameter.""")
 	parser.add_argument("--negativecontrast",action="store_true",default=False,help="This will make the simulated particles be like real EM data before contrast reversal. Otherwise, 'white protein' (positive density values) will be used.")
 
 	parser.add_argument("--testalignment",action="store_true",default=False,help="This will run e2spt_classaverage.py to test the alignment of the particles against the simulated reference.")
@@ -306,6 +308,10 @@ def simloop(options,rootpath):
 	compPATHS={}
 	iterPATHS={}
 	
+	itersMode = 0
+	if not options.simref:
+		itersMode = 1
+	
 	tiltrange = tiltrangel
 	while tiltrange <tiltrangeu:
 		#print "tiltrage is", tiltrange
@@ -392,11 +398,13 @@ def simloop(options,rootpath):
 							#simloop(options,rootpath)
 							print "\n\n\nPPPPPPPPPPPPPP\nAnd path is", options.path
 						
-							ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany,thestack,themodel,0)
+							ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany,thestack,themodel,itersMode)
 						
 							if samestackformany == 0:
 								thestack = ret[0]
 								themodel = ret[1]
+							
+							if simround == 0:
 								firstrandstack = ret[2]
 						
 							print "Samestackformany is", samestackformany
@@ -407,11 +415,13 @@ def simloop(options,rootpath):
 						options.raligncmp = comps[0]
 						options.aligncmp = comps[0]
 						print "There's comps but length was less than one!"
-						ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany,thestack,[],0)
+						ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany,thestack,themodel,itersMode)
 						if simround == 0:
 							firstrandstack = ret[2]
 				
 				elif len(iters) > 1:
+					
+					itersMode = 1
 					
 					itersint =[ int(it) for it in iters]
 					itmax = max(itersint)			
@@ -456,13 +466,17 @@ def simloop(options,rootpath):
 						
 						print "The path to use is", options.path
 		
-						ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany,thestack,themodel,1)
+						ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany,thestack,themodel,itersMode)
 						
 						if samestackformany == 0:
 							thestack = ret[0]
-							#firstrandstack = ret[2]
-	
+						
 						themodel = ret[1]
+						
+						if simround == 0:
+							firstrandstack = ret[2]
+	
+						
 										
 						print "Samestackformany is", samestackformany
 						
@@ -471,7 +485,7 @@ def simloop(options,rootpath):
 						itround += 1
 					
 				else:
-					ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany,thestack,[],0)
+					ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany,thestack,themodel,itersMode)
 					if simround == 0:
 						firstrandstack = ret[2]
 				
@@ -737,7 +751,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			#print "Therefore I WILL run a job for e2spt_simulation"
 			#print "@@@@@@@@@@@@\n\n"
 			
-			print "\nSimulated particles are here", subtomos
+			print "\n(e2spt_tomosimjobs.py) (gencmds function) Simulated particles are here", subtomos
 			print '\n'
 			
 			jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --nslices=' + str(nslices) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrinksim) + ' --finalboxsize=' + str(options.finalboxsize) + ' --verbose=' + str(options.verbose) + ' --parallel=' + str(options.parallel) + ' --path=' + subpath.split('/')[-1]
@@ -808,7 +822,9 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			#cmd = cmd + ' && cd ' + subpath
 			cmd2 = 'cd ' + subpath
 
-			ref = inputdata.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf')
+			ref=''
+			if options.simref:
+				ref = inputdata.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf')
 				
 			if samestackformany > 0:
 				ref = thesemodels[d].split('/')[-1]
@@ -862,22 +878,44 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			
 			#print "\n\aliptcls name is\n", aliptcls
 
-			extractcmd = "cd " + alipath2 + " && e2proc3d.py class_ptcl.hdf " + aliptcls
+			extractcmd0 = "cd " + alipath2 + " && e2proc3d.py class_ptcl.hdf " + aliptcls
+			runcmd( extractcmd0 )
 			#finalRefVsOriginalRefPath = ''
+			
+			#originalref = ref
+			#refprepcmd=''
+			extractcmd1 = extractcmd2 = refprepcmd = ''		
 			if int(options.iter) > 1:
 				finalrefindx = int(options.iter) -2
-				extractcmd += ' && e2proc3d.py class_00.hdf finalref.hdf --first=' + str(finalrefindx) + ' --last=' + str(finalrefindx)
+				extractcmd1 = 'cd ' + alipath2 +' && e2proc3d.py class_0.hdf finalref.hdf --first=' + str(finalrefindx) + ' --last=' + str(finalrefindx)
 				
+				runcmd( extractcmd1 )
+
 				finalrefname = alipath2 + '/finalref.hdf'
 				
 				
+				prepRefFromOrigModel = ''
+				refToCompensate = ''
+				
+				if not options.simref:
+					prepRefFromOrigModel = subpath + '/' + options.input.split('/')[-1].replace('.hdf','_REFPREP.hdf')
+					refprepcmd = 'e2spt_refprep.py --input=' + finalrefname + ' --output=' + prepRefFromOrigModel + ' --ref=' + options.input
+					
+					refToCompensate = prepRefFromOrigModel
+					runcmd( refprepcmd )	
+					
+				else:
+					refToCompensate = subpath + '/' + ref
+					
+					
+				
 				if not options.quicktest:
-					extractcmd += " && cd " + alipath2 + " && e2spt_classaverage.py --path=finalRef_vs_OriginalRef --input=" + finalrefname + " --output=finalrefali.hdf" + " --ref=" + subpath + '/' + ref + " --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=0 --parallel=" + options.parallel + " --ralign=refine_3d_grid:delta=3:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=" + str(options.shrinkalign) + " --shrinkrefine=" + str(options.shrinkalign) +" --savesteps --saveali --normproc=normalize"  + ' --iter=1 --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose)
+					extractcmd2 = "cd " + alipath2 + " && e2spt_classaverage.py --path=finalRef_vs_OriginalRef --input=" + finalrefname + " --output=finalrefali.hdf --ref=" + refToCompensate + " --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=0 --parallel=" + options.parallel + " --ralign=refine_3d_grid:delta=3:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=" + str(options.shrinkalign) + " --shrinkrefine=" + str(options.shrinkalign) +" --savesteps --saveali --normproc=normalize"  + ' --iter=1 --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose)
 				
 				elif options.quicktest:
-					extractcmd += " && cd " + alipath2 + " && e2spt_classaverage.py --path=finalRef_vs_OriginalRef --input=" + finalrefname + " --output=finalrefali.hdf" + " --ref=" + subpath + '/' + ref + " -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=" + options.parallel + " --ralign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=3 --normproc=normalize --iter=1 --npeakstorefine=1 --savesteps --saveali"
-			
-			runcmd( extractcmd )
+					extractcmd2 = "cd " + alipath2 + " && e2spt_classaverage.py --path=finalRef_vs_OriginalRef --input=" + finalrefname + " --output=finalrefali.hdf --ref=" + refToCompensate + " -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=" + options.parallel + " --ralign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=3 --normproc=normalize --iter=1 --npeakstorefine=1 --savesteps --saveali"
+				
+				runcmd( extractcmd2 )
 			
 			resultsfile = aliptcls.replace('_ptcls_ali.hdf','_ali_error.txt')
 			
@@ -919,8 +957,15 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			elif cmd1b:
 				print "cmd1b (to copy randstack before simulation) was:\n", cmd1b
 			print "\ncmd2 (alicmd) was:\n", cmd2
-			print "\nextractcmd was:\n", extractcmd
+			if not options.simref and int(options.iter) >1:
+				print "\nrefprepcmd was:\n",refprepcmd
+			print "\nextractcmd0 was:\n", extractcmd0
+			if extractcmd1:
+				print "\nextractcmd1 was:\n",extractcmd1
+			if extractcmd2:
+				print "\nextractcmd2 was:\n",extractcmd2
 			print "\nsolutioncmd was:\n", solutioncmd
+
 			#print "rfilecmd was:", rfilecmd
 		#print "\n\n\n*********************The command to execute is \n %s \n*********************\n" %(cmd)
 
