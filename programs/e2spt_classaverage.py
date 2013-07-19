@@ -319,7 +319,7 @@ def main():
 		if options.ref: 
 			ref = EMData(options.ref,ic)
 		else:
-			ref = binaryTreeRef(options,nptcl,ptclnums,etc)
+			ref = binaryTreeRef(options,nptcl,ptclnums,etc,ic)
 		
 		'''
 		Now we iteratively refine a single class
@@ -383,20 +383,30 @@ def main():
 					refc=ref[i]
 					
 					if options.savesteps:
+						refname = options.path + '/class_' + str(i).zfill( len( str(i) )) + '.hdf'
 						if options.postprocess:
 							ppref = refc.copy()
 							postprocess(ppref,None,options.normproc,options.postprocess)
-							ppref.write_image("%s/class_%02d.hdf"%(options.path,i),it)
+							ppref.write_image(refname,it)
+							#ppref.write_image("%s/class_%02d.hdf"%(options.path,i),it)
 						else:
-							refc.write_image("%s/class_%02d.hdf"%(options.path,i),it)
+							refc.write_image(refname,it)
+							#refc.write_image("%s/class_%02d.hdf"%(options.path,i),it)
 			else:
 				if options.savesteps and not options.donotaverage:
+					refname = options.path + '/class_' + str(ic).zfill( len( str(ic) )) + '.hdf'
 					if options.postprocess:
 						ppref = ref.copy()
 						postprocess(ppref,None,options.normproc,options.postprocess)
-						ppref.write_image("%s/class_%02d.hdf"%(options.path,ic),it)
+						
+						
+						#ppref.write_image("%s/class_%02d.hdf"%(options.path,ic),it)
+						ppref.write_image(refname,it)
+					
 					else:
-						ref.write_image("%s/class_%02d.hdf"%(options.path,ic),it)
+						#refname = options.path + '/class_' + str(ic).zfill( len( str(ic) )) + '.hdf'
+						ref.write_image(refname,it)
+						#ref.write_image("%s/class_%02d.hdf"%(options.path,ic),it)
 
 		if options.verbose: 
 			print "Preparing final average"
@@ -429,7 +439,7 @@ def main():
 	E2end(logger)
 
 
-def binaryTreeRef(options,nptcl,ptclnums,etc):
+def binaryTreeRef(options,nptcl,ptclnums,etc,ic):
 
 	if nptcl==1: 
 		print "Error: More than 1 particle required if no reference provided through --ref."
@@ -507,7 +517,9 @@ def binaryTreeRef(options,nptcl,ptclnums,etc):
 	ref=EMData(outfile,0)		# result of the last iteration
 	
 	if options.savesteps :
-		ref.write_image("%s#class_%02d.hdf"%(options.path,ic),-1)
+		refname = options.path + '/class_' + str(ic).zfill( len( str(ic) )) + '.hdf'
+		#refname = "%s#class_%02d.hdf"%(options.path,ic)
+		ref.write_image(refname,-1)
 	
 	return ref
 	
