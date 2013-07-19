@@ -510,66 +510,121 @@ def simloop(options,rootpath):
 	print "All ALIGNMENTS ARE DONE! It is now a matter of analyzing the results"
 	print "\n\n\n\n========================================================================================\n\n\n\n"
 
-	
-	for i in range(nrefs):
-		print "\n\n\n\n I will analyze alignments results for ref number", i
+	if options.testalignment:
+		for i in range(nrefs):
+			print "\n\n\n\n I will analyze alignments results for ref number", i
 		
-		comps = options.comparators.split(',')
-		#iters = str(options.iter).split(',')
+			comps = options.comparators.split(',')
+			#iters = str(options.iter).split(',')
 		
-		print "len(iterPATHS) is", len(iterPATHS)
+			print "len(iterPATHS) is", len(iterPATHS)
 
-		if options.comparators and len(comps) >1 :
+			if options.comparators and len(comps) >1 :
 			
-			compFilts = []
-			for comp in comps:
+				compFilts = []
+				for comp in comps:
 				
-				compID = comp.split(':')[0].replace('.','P')
+					compID = comp.split(':')[0].replace('.','P')
 				
-				if 'fsc.tomo' in comp:
-					compID = comp.split(':')[0].replace('.','P') +  comp.split(':')[1].replace('sigmas=','Sigmas').replace('.','P')
-				compFilt = originalpath + compID
-				compFilts.append( compFilt )
+					if 'fsc.tomo' in comp:
+						compID = comp.split(':')[0].replace('.','P') +  comp.split(':')[1].replace('sigmas=','Sigmas').replace('.','P')
+					compFilt = originalpath + compID
+					compFilts.append( compFilt )
 			
-			compFilts = set(compFilts)
+				compFilts = set(compFilts)
 			
 			
-			for filt in compFilts:
-				print "\nComparator filt and refnum are", filt,i
-				print "Whereas originalpath, refnum are", originalpath,i
-				print "\n"
+				for filt in compFilts:
+					print "\nComparator filt and refnum are", filt,i
+					print "Whereas originalpath, refnum are", originalpath,i
+					print "\n"
 				
-				otherFilts = compFilts - set(filt)
-				#options.aligncmp = comp
-				#options.raligncmp = comp
+					otherFilts = compFilts - set(filt)
+					#options.aligncmp = comp
+					#options.raligncmp = comp
 				
 
-				#print "\nTherefore compID is", compID
-				#print "\n"
+					#print "\nTherefore compID is", compID
+					#print "\n"
 				
-				potentialdirs=[]
-				findir = os.listdir(rootpath)
-				#filterID = originalpath + compID
+					potentialdirs=[]
+					findir = os.listdir(rootpath)
+					#filterID = originalpath + compID
 				
-				for f in findir:
-					if filt == f.split('_')[0]:
-						potentialdirs.append(f)
+					for f in findir:
+						if filt == f.split('_')[0]:
+							potentialdirs.append(f)
 				
-				thisone = filt
-				if len(potentialdirs) > 1:
-					potentialdirs.sort()
-					thisone = potentialdirs[-1]	
+					thisone = filt
+					if len(potentialdirs) > 1:
+						potentialdirs.sort()
+						thisone = potentialdirs[-1]	
 				
 				
-				print "In simloop after alignments, to ANALYZE results, the RESULTS dir WITHOUT hyphen should be based on filt",filt
-				#print "based on the originalpath", originalpath
-				#print "or now rather on the thisone path", thisone
+					print "In simloop after alignments, to ANALYZE results, the RESULTS dir WITHOUT hyphen should be based on filt",filt
+					#print "based on the originalpath", originalpath
+					#print "or now rather on the thisone path", thisone
 				
-				options.path = thisone
+					options.path = thisone
 				
+					if nrefs > 1:
+						modname = 'model' + str(i).zfill(len(str(nrefs)))
+			
+						resultsdir = options.path + '/' + modname + '/results_' + modname
+						if rootpath not in resultsdir:
+							resultsdir = rootpath + '/' + resultsdir
+		
+					else:
+						resultsdir = options.path + '/results' 
+						if rootpath not in resultsdir:
+							resultsdir = rootpath + '/' + resultsdir 
+		
+					resfiles = []
+				
+					findir = os.listdir(resultsdir)
+					for f in findir:
+						if 'error.txt' in f:
+							resfiles.append(f)
+		
+					resfiles.sort()
+		
+					resfiles_analysis(options,resfiles,resultsdir,modelnum=i)
+		
+			elif len(iterPATHS) > 1:
+				print "\n\n\nThere are these many iterPAHTS", len(iterPATHS)
+				print "Which are", iterPATHS
+			
+				for ele in iterPATHS:
+					print "Analyzing THIS element of iterPATHS", ele
+					options.path = iterPATHS[ele]
+				
+					if nrefs > 1:
+						modname = 'model' + str(i).zfill(len(str(nrefs)))
+			
+						resultsdir = options.path + '/' + modname + '/results_' + modname
+						if rootpath not in resultsdir:
+							resultsdir = rootpath + '/' + resultsdir
+		
+					else:
+						resultsdir = options.path + '/results' 
+						if rootpath not in resultsdir:
+							resultsdir = rootpath + '/' + resultsdir 
+		
+					resfiles = []
+				
+					findir = os.listdir(resultsdir)
+					for f in findir:
+						if 'error.txt' in f:
+							resfiles.append(f)
+		
+					resfiles.sort()
+		
+					resfiles_analysis(options,resfiles,resultsdir,modelnum=i)			
+		
+			else:
 				if nrefs > 1:
-					modname = 'model' + str(i).zfill(len(str(nrefs)))
-			
+					modname = 'model' +  str(i).zfill(len(str(nrefs)))
+				
 					resultsdir = options.path + '/' + modname + '/results_' + modname
 					if rootpath not in resultsdir:
 						resultsdir = rootpath + '/' + resultsdir
@@ -577,75 +632,20 @@ def simloop(options,rootpath):
 				else:
 					resultsdir = options.path + '/results' 
 					if rootpath not in resultsdir:
-						resultsdir = rootpath + '/' + resultsdir 
-		
-				resfiles = []
-				
-				findir = os.listdir(resultsdir)
-				for f in findir:
-					if 'error.txt' in f:
-						resfiles.append(f)
-		
-				resfiles.sort()
-		
-				resfiles_analysis(options,resfiles,resultsdir,modelnum=i)
-		
-		elif len(iterPATHS) > 1:
-			print "\n\n\nThere are these many iterPAHTS", len(iterPATHS)
-			print "Which are", iterPATHS
-			
-			for ele in iterPATHS:
-				print "Analyzing THIS element of iterPATHS", ele
-				options.path = iterPATHS[ele]
-				
-				if nrefs > 1:
-					modname = 'model' + str(i).zfill(len(str(nrefs)))
-			
-					resultsdir = options.path + '/' + modname + '/results_' + modname
-					if rootpath not in resultsdir:
 						resultsdir = rootpath + '/' + resultsdir
 		
-				else:
-					resultsdir = options.path + '/results' 
-					if rootpath not in resultsdir:
-						resultsdir = rootpath + '/' + resultsdir 
-		
 				resfiles = []
-				
 				findir = os.listdir(resultsdir)
 				for f in findir:
 					if 'error.txt' in f:
 						resfiles.append(f)
 		
-				resfiles.sort()
-		
-				resfiles_analysis(options,resfiles,resultsdir,modelnum=i)			
-		
-		else:
-			if nrefs > 1:
-				modname = 'model' +  str(i).zfill(len(str(nrefs)))
-				
-				resultsdir = options.path + '/' + modname + '/results_' + modname
-				if rootpath not in resultsdir:
-					resultsdir = rootpath + '/' + resultsdir
-		
-			else:
-				resultsdir = options.path + '/results' 
-				if rootpath not in resultsdir:
-					resultsdir = rootpath + '/' + resultsdir
-		
-			resfiles = []
-			findir = os.listdir(resultsdir)
-			for f in findir:
-				if 'error.txt' in f:
-					resfiles.append(f)
-		
-			if len(resfiles) < 2:
-				print "Some of your jobs failed. There seems to be only ONE results file, and thus no variability of either SNR, TR, or TS"
-				sys.exit()
-			else:
-				resfiles.sort()		
-				resfiles_analysis(options,resfiles,resultsdir,modelnum=i)
+				if len(resfiles) < 2:
+					print "Some of your jobs failed. There seems to be only ONE results file, and thus no variability of either SNR, TR, or TS"
+					sys.exit()
+				else:
+					resfiles.sort()		
+					resfiles_analysis(options,resfiles,resultsdir,modelnum=i)
 
 	return()
 	
@@ -785,7 +785,10 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			if options.saveprjs:
 				jobcmd += ' --saveprjs'
 			if options.negativecontrast:
-				jobcmd += ' --negativecontrast'				
+				jobcmd += ' --negativecontrast'
+			
+			if options.notrandomize:
+				jobcmd += ' --notrandomize'				
 			
 			cmd1a = 'cd ' + modeldir + ' && ' + jobcmd
 			runcmd( cmd1a )
@@ -813,7 +816,10 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 
 		#resultsfiles=[]
 		
+		finalAvgPath = ''
+		print "finalAvgPath is", finalAvgPath
 		cmd2 = extractcmd = solutioncmd = rfilecmd = ''
+		extractcmd1 = extractcmd2 = refprepcmd = extractcmd0 = finalAvgPath = ''
 		if options.testalignment:
 			print "\n\n$$$$$$$$$\nI will test alignment and for that will cd into SUBPATH", subpath
 			print "This is SIMROUND number", simround 
@@ -884,7 +890,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			
 			#originalref = ref
 			#refprepcmd=''
-			extractcmd1 = extractcmd2 = refprepcmd = ''		
+					
 			if int(options.iter) > 1:
 				finalrefindx = int(options.iter) -2
 				extractcmd1 = 'cd ' + alipath2 +' && e2proc3d.py class_0.hdf finalref.hdf --first=' + str(finalrefindx) + ' --last=' + str(finalrefindx)
@@ -986,7 +992,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 				thissimmodel = subpath + '/' + thissimmodel.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf')
 				thesemodels.append(thissimmodel)
 	
-		if itersMode:
+		if itersMode and finalAvgPath:
 			finalAvgs.append(finalAvgPath)
 			
 	if itersMode:
