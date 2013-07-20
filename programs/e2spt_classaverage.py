@@ -595,7 +595,7 @@ def preprocessing(options,image):
 	#print "\n$$$$$$$\nIn preprocessing, received options and image, types", type(options), type(image)
 	
 	'''
-	Make the mask first, use it to normalize (optionally), then apply it 
+	Make the mask first, use it to normalize (optionally), then apply it. 
 	'''
 	mask=EMData( int(image["nx"]), int(image["ny"]), int(image["nz"]) )
 	mask.to_one()
@@ -604,11 +604,15 @@ def preprocessing(options,image):
 		if options.verbose:
 			print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
 		mask.process_inplace(options.mask[0],options.mask[1])
+		
 	
 	# normalize
 	if options.normproc:
 		if options.normproc[0]=="normalize.mask": 
 			options.normproc[1]["mask"]=mask
+
+		else:
+			image.mult(mask)
 		
 		#fixedimage.process_inplace(options["normproc"][0],options["normproc"][1])
 		image.process_inplace(options.normproc[0],options.normproc[1])
@@ -620,19 +624,7 @@ def preprocessing(options,image):
 	image.mult(mask)
 	
 	baseimage = image.copy()
-	
-	#'''
-	#If normalizing, it's best to do normalize-mask-normalize-mask
-	#'''
-	#if options["normproc"]:
-	#	#if options["normproc"][0]=="normalize.mask": 
-	#	#	options["normproc"][1]["mask"]=mask
-	#	
-	#	fixedimage.process_inplace(options["normproc"][0],options["normproc"][1])
-	#	image.process_inplace(options["normproc"][0],options["normproc"][1])
-	#
-	#	fixedimage.mult(mask)
-	#	image.mult(mask)
+
 	
 	'''
 	#Preprocess, lowpass and/or highpass
