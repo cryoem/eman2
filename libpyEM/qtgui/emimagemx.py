@@ -256,7 +256,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 #		self.sets_manager = EMMXSetsManager(self) # we need this for managing sets
 		self.deletion_manager = EMMXDeletionManager(self) # we need this for managing deleted particles
 		self.mouse_modes = ["App", "Del", "Drag", "Sets"]
-		self.mmode="Drag"
+		self.mmode="App"
 		self.class_window = None # used if people are looking at class averages and they double click, in which case a second window is opened showing the particles in the class
 
 		self.sets={}			# All available sets for the current data, key is set name, value is set of ints
@@ -2167,7 +2167,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.mouse_mode_but_grp.addButton(self.mdrag)
 #		self.mouse_mode_but_grp.addButton(self.mset)
 
-		self.mdrag.setChecked(True)
+		self.mapp.setChecked(True)
 
 
 		self.hbl = QtGui.QHBoxLayout()
@@ -2229,7 +2229,6 @@ class EMImageInspectorMX(QtGui.QWidget):
 		QtCore.QObject.connect(self.banim, QtCore.SIGNAL("clicked(bool)"), self.animation_clicked)
 
 	def add_panel(self,widget,name):
-		print "addpanel ",name
 		self.tabwidget.addTab(widget,name)
 
 		button = QtGui.QPushButton(name)
@@ -2538,6 +2537,7 @@ class EMMXSetsPanel(QtGui.QWidget):
 		self.setlist.clear()
 
 		for i,k in enumerate(keys):
+			print i,k
 			item=QtGui.QListWidgetItem(k)
 			item.setFlags(self.itemflags)
 			item.setTextColor(self.target().setcolors[i%len(self.target().setcolors)])

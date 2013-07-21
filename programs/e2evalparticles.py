@@ -468,8 +468,9 @@ class EMClassPtclTool(QtGui.QWidget):
 
 #		self.classes=EMData.read_images(self.curFile())
 		self.vclasses.set_data(self.curFile())
-		self.vclasses.set_single_active_set("selected")		# This makes the 'set' representing the selected class-averages current
+#		self.vclasses.set_single_active_set("selected")		# This makes the 'set' representing the selected class-averages current
 		self.vclasses.set_mouse_mode("App")
+		self.vclasses.enable_set(self,"evalptcl",[])
 
 		# This makes sure the particle file is in the list of choices and is selected
 		try:
