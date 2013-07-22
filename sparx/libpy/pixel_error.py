@@ -1019,6 +1019,120 @@ def getnewhelixcoords(hcoordsname, outdir, ratio,nx,ny, newpref="resampled_", bo
 		s = '%d\t%d\t%d\t%d\t%d\n'%(xnew-new_w/2,ynew-new_w/2, new_w, new_w, coords[i][4])
 		f.write(s)
 	return newhcoordsname	
+	
+def helical_params_err(params1, params2, fil_list):
+	'''
+	Input:
+		params1: First set of projection orientation parameters
+		params2: Second set of projection orientation parameters
+		fil_list: List of filament IDs, where i-th element on list is filament of i-th image.
+				  Assume fil_list is ordered, i.e., i-th element of fil_list is the filament ID
+				  of the i-th image in the stack.
+	
+	Output:
+		The phi angle difference is computed between params1 and params2 between those parameters
+		whose psi agree, and the angle is applied to params2.
+		
+		For each filament, the program computes the phi error averaged over the number 
+		of segments between params1 and the aligned params2.
+		
+		Returns a list of lists, where each inner list is [fil_ID, avg_phi_err], where fil_ID
+		is filament name, and avg_phi_err is the average phi error for the filament.
+	'''
+	from pixel_error import angle_diff
+	from EMAN2 import Vec2f
+	nima = len(params1)
+	# Identify those where psi agrees
+	phi1 = []
+	phi2 = []
+	fil_psisame = []
+	pos = []
+	pref = []
+	for i in xrange(nima):
+		if abs(params1[i][2] - params2[i][2]) < 90:
+			phi1.append(params1[i][0])
+			phi2.append(params2[i][0])
+			fil_psisame.append(fil_list[i])
+			pos.append(i)
+			pref.append(params2[i])
+
+	fag = len(fil_psisame)
+
+	tflip = Transform({"type":"spider","theta":180.0})
+	# Identify those where psi agrees
+	phi1 = []
+	phi2 = []
+	fil_psisame = []
+	pos = []
+	prot = []
+	pref = []
+	for i in xrange(nima):
+		t2 = Transform({"type":"spider","phi":params1[i][0],"theta":params1[i][1],"psi":params1[i][2]})
+		t2.set_trans( Vec2f( -params1[i][3], -params1[i][4] ) )
+		t2 = t2*tflip
+		d = t2.get_params("spider")
+		p1r = [d["phi"], d["theta"], d["psi"], -d["tx"], -d["ty"]]
+		if abs(p1r[2] - params2[i][2]) < 90:
+			phi1.append(p1r[0])
+			phi2.append(params2[i][0])
+			fil_psisame.append(fil_list[i])
+			pos.append(i)
+			prot.append(p1r)
+			pref.append(params2[i])
+	print len(prot),len(pref)
+	print prot[0],pref[0]
+			
+	nima2 = len(fil_psisame)
+	if(fag > nima2):
+		phi1 = []
+		phi2 = []
+		fil_psisame = []
+		pos = []
+		prot = []
+		pref = []
+		for i in xrange(nima):
+			if abs(params1[i][2] - params2[i][2]) < 90:
+				phi1.append(params1[i][0])
+				phi2.append(params2[i][0])
+				fil_psisame.append(fil_list[i])
+				pos.append(i)
+				prot.append(params1[i])
+				pref.append(params2[i])
+		nima2 = len(fil_psisame)
+	else:
+		print "better agreement afer upside-down rotation"
+		
+	# agls1psi and agls2psi agree in psi. 
+	print "Number of images which agree on psi between params1 and params2: ",nima2
+	print "Percentage of total number images being compared: ", nima2/float(len(params1))*100
+	
+	angdif = angle_diff(phi1, phi2)
+	print "angdif: ", angdif
+	
+	phierr_byfil = []
+
+	start_fil = None
+	i = 0
+	while (i < nima2):
+		ibeg = i
+		iend = i
+		cur_fil = fil_psisame[ibeg]
+		for k in xrange(ibeg+1,nima2):
+			if(cur_fil != fil_psisame[k]):
+				iend = k
+				break
+		if( ibeg == iend ):  iend = nima2-1
+		sum_phierr = 0.
+		for k in xrange(ibeg,iend):
+			phidf = abs(phi2[k] - (phi1[k] + angdif)%360.)
+			phidf = min(phidf, abs(360.0-phidf))
+			sum_phierr += phidf
+			prot[k][0] =  (phi1[k] + angdif)%360.
+		avg_phierr = sum_phierr/(iend-ibeg+1)
+		phierr_byfil.append([avg_phierr, cur_fil,ibeg,iend,pos[ibeg],pos[iend]])
+		i = iend+1
+
+	return phierr_byfil,prot,pref
 
 '''
 def helical_consistency(p2i, p1):
