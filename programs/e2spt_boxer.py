@@ -123,6 +123,11 @@ def main():
 	Create the path where subtomograms will be saved
 	'''
 	
+	from e2spt_classaverage import sptmakepath
+	
+	options = sptmakepath( options, 'sptboxer')
+	
+	'''
 	if options.path and ("/" in options.path or "#" in options.path) :
 		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
 		sys.exit(1)
@@ -155,6 +160,8 @@ def main():
 		print "I will make the path", options.path
 		os.system('mkdir ' + options.path)
 	EMTomoBoxer
+	'''
+	
 	
 	
 		
@@ -488,9 +495,12 @@ def commandline_tomoboxer(tomogram,options):
 			if options.bruteaverage:
 				avgr.add_image(e)
 		
-	if options.bruteaverage:	
+	if options.bruteaverage:
 		avg=avgr.finish()
-		avg.write_image(options.output.split('.')[0] + '_AVG.' + options.output.split('.')[-1])
+		if avg:
+			avg.write_image(options.path + '/' + options.output.split('.')[0] + '_AVG.' + options.output.split('.')[-1])
+		else:
+			print "The particles averaged into nothings; see", type(avg)
 			
 	return()
 
@@ -1129,9 +1139,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 					img.process_inplace(normalize)
 				#img=img.process('normalize.edgemean')
 
-				if fsp[:4].lower()=="bdb:": 
-					img.write_image(os.path.join(options.path,"%s_%03d"%(fsp,i)),0)
-				elif "." in fsp: 
+				#if fsp[:4].lower()=="bdb:": 
+				#	img.write_image(os.path.join(options.path,"%s_%03d"%(fsp,i)),0)
+				
+				if "." in fsp: 
 					img.write_image(os.path.join(options.path,"%s_%03d.%s"%(fsp.rsplit(".",1)[0],i,fsp.rsplit(".",1)[1])))
 				else:
 					QtGui.QMessageBox.warning(None,"Error","Please provide a valid image file extension. The numerical sequence will be inserted before the extension.")
@@ -1155,9 +1166,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				else:
 					img = unbinned_extractor(options,bs,b[0],b[1],b[2],shrinkf,contrast,center) 	
 
-				if fsp[:4].lower()=="bdb:": 
-					img.write_image(os.path.join(options.path,"%s_%03d"%(fsp,i),0))
-				elif "." in fsp: 
+				#if fsp[:4].lower()=="bdb:": 
+				#	img.write_image(os.path.join(options.path,"%s_%03d"%(fsp,i),0))
+				if "." in fsp: 
 					img.write_image(os.path.join(options.path,"%s_%03d.%s"%(fsp.rsplit(".",1)[0],i,fsp.rsplit(".",1)[1])))
 				else:
 					QtGui.QMessageBox.warning(None,"Error","Please provide a valid image file extension. The numerical sequence will be inserted before the extension.")
@@ -1168,9 +1179,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 	def menu_file_save_boxes_stack(self):
 		
-		fsp=os.path.join(options.path,os.path.basename(str(QtGui.QFileDialog.getSaveFileName(self, "Select output file (bdb and hdf only)"))))
-		if fsp[:4].lower()!="bdb:" and fsp[-4:].lower()!=".hdf" :
-			QtGui.QMessageBox.warning(None,"Error","3-D stacks supported only for bdb: and .hdf files")
+		fsp=os.path.join(options.path,os.path.basename(str(QtGui.QFileDialog.getSaveFileName(self, "Select output file (.hdf supported only)"))))
+		#if fsp[:4].lower()!="bdb:" and fsp[-4:].lower()!=".hdf" :
+		if fsp[-4:].lower()!=".hdf" :
+			QtGui.QMessageBox.warning(None,"Error","3-D stacks supported only for .hdf files")
 			return
 		
 		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
