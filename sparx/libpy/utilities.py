@@ -1757,13 +1757,16 @@ def read_text_file(file_name, ncol = 0):
 			vdata = split(line)
 			if data == []:
 				for i in xrange(len(vdata)):
-					data.append([float(vdata[i])])
+					try:     data.append([float(vdata[i])])
+					except:  data.append(vdata[i])
 			else:
 				for i in xrange(len(vdata)):
-					data[i].append(float(vdata[i]))			
+					try:  data[i].append(float(vdata[i]))
+					except:  data[i].append(vdata[i])
 		else:
-			vdata = float(split(line)[ncol])
-			data.append(vdata)
+			vdata = split(line)[ncol]
+			try:     data.append(float(vdata))
+			except:  data.append(vdata)
 		line = inf.readline()
 	return data
 
