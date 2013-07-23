@@ -1408,7 +1408,7 @@ def refine_with_mask(vol):
 	return vol
 '''
 
-def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_stop = -1.0, voltage=300.0, Pixel_size=2.29, Cs = 2.0, wgh=10.0, kboot=16, MPI=False, DEBug= False, overlap_x = 50, overlap_y=50 , edge_x = 0, edge_y=0, guimic=None):
+def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_stop = -1.0, voltage=300.0, Pixel_size=2.29, Cs = 2.0, wgh=10.0, kboot=16, MPI=False, DEBug= False, overlap_x = 50, overlap_y=50 , edge_x = 0, edge_y=0, guimic=None, set_ctf_header=False):
 	'''
 	Input
 		stack	 : name of image stack (such as boxed particles) to be processed instead of micrographs.
@@ -1828,6 +1828,13 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 			if stack == None:     cmd = "echo "+"    "+namics[ifi]+"  >>  "+fou
 			else:                 cmd = "echo "+"    "+"  >>  "+fou
 			os.system(cmd)
+		
+		if stack == None and set_ctf_header:
+			img = get_im(namics[ifi])
+			from utilities import set_ctf
+			set_ctf(img, [totresi[-1][1], Cs, voltage, Pixel_size, 0, wgh, totresi[-1][7], totresi[-1][8]])
+			# and rewrite image 
+			img.write_image(namics[ifi])
 		#except:
 			#print  namics[ifi],"     FAILED"
 	#from utilities import write_text_row
