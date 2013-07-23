@@ -2141,8 +2141,8 @@ class GaussPanel:
 			self.ctf_f_start = QtGui.QLineEdit(str(gbdb.setdefault('ctf_fstart',"0.020")))
 			hbl_fed.addWidget(self.ctf_f_start)
 
-			#estimated_defocus_label = QtGui.QLabel("Estimated defocus:")
-			#hbl_estdef.addWidget(estimated_defocus_label)
+			estimated_defocus_label = QtGui.QLabel("Estimated defocus:")
+			hbl_estdef.addWidget(estimated_defocus_label)
 			self.estdef = QtGui.QLineEdit('')
 			hbl_estdef.addWidget(self.estdef)
 			vbl.addLayout(hbl_estdef)
