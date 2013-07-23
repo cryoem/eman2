@@ -162,7 +162,7 @@ def main():
 	
 		from morphology import cter
 		global_def.BATCH = True
-		cter(stack, out1, out2, options.indir, options.nameroot, options.nx, voltage=300.0, Pixel_size=options.apix, Cs = options.Cs, wgh=options.ac, kboot=options.kboot, MPI=options.MPI, DEBug = options.debug)
+		cter(stack, out1, out2, options.indir, options.nameroot, options.nx, voltage=options.voltage, Pixel_size=options.apix, Cs = options.Cs, wgh=options.ac, kboot=options.kboot, MPI=options.MPI, DEBug = options.debug)
 		global_def.BATCH = False
 	
 		if options.MPI:
