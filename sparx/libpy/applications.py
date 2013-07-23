@@ -13133,3 +13133,386 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 				send_EMData(fullvol0, main_node, ivol+myid+70000)
 	
 
+def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, ywobble, pixel_size, dp, dphi, fract, rmax, rmin, FindPsi = True, maskfile = None, \
+	    maxit = 1, CTF = False, snr = 1.0, sym = "c1",  user_func_name = "helical", npad = 2, debug = False, doExhaustive=False):
+
+	from alignment       import Numrinit, prepare_refrings, proj_ali_incore, proj_ali_incore_local, proj_ali_incore_local_psi
+	from alignment       import ringwe, ang_n
+	from utilities       import model_circle, get_image, drop_image, get_input_from_string, peak_search, model_cylinder, pad, model_blank
+	from utilities       import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all
+	from utilities       import send_attr_dict, sym_vol, get_input_from_string
+	from utilities       import get_params_proj, set_params_proj, file_type, compose_transform2
+	from fundamentals    import rot_avg_image, ccf, fft, rot_shift2D
+	import os
+	import types
+	from utilities       import print_begin_msg, print_end_msg, print_msg, chunks_distribution
+	from mpi             import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
+	from mpi             import mpi_reduce, MPI_INT, MPI_SUM
+	from filter          import filt_ctf
+	from projection      import prep_vol, prgs
+	#from statistics      import hist_list, varf3d_MPI, fsc_mask
+	from applications	 import MPI_start_end, header
+	from pixel_error     import ordersegments
+	from time            import time
+	from copy 			 import copy
+	from math 			 import sqrt
+	'''
+	def rot2pad(imi, alpha=0.0, sx=0.0, sy=0.0):
+		from utilities    import pad
+		from fundamentals import rot_shift2D
+		lnx = imi.get_xsize()
+		lny = imi.get_ysize()
+		ln = max(lnx,lny)
+		if lnx == lny: return rot_shift2D(imi,alpha,sx,sy)
+		else:          return Util.window(rot_shift2D(pad(imi,ln,ln,1,"circumference"), alpha,sx,sy), lnx, lny,1, 0,0,0)
+	'''
+
+	nproc     = mpi_comm_size(MPI_COMM_WORLD)
+	myid      = mpi_comm_rank(MPI_COMM_WORLD)
+	main_node = 0
+
+	search_rng   = int(search_rng)
+	rng        = int(rng)
+	if(pixel_size < 0.0 or dp < 0.0 ):  ERROR('Helical symmetry parameters have to be provided', "ehelix_MPI", 1, myid)
+
+	if os.path.exists(outdir):  ERROR('Output directory %s  exists, please change the name and restart the program'%outdir, "ehelix_MPI", 1, myid)
+	mpi_barrier(MPI_COMM_WORLD)
+
+	if myid == main_node:
+		os.mkdir(outdir)
+		import global_def
+		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+		print_begin_msg("ehelix_MPI")
+	mpi_barrier(MPI_COMM_WORLD)
+
+	if debug:
+		from time import sleep
+		while not os.path.exists(outdir):
+			print  "Node ",myid,"  waiting..."
+			sleep(5)
+
+		info_file = os.path.join(outdir, "progress%04d"%myid)
+		finfo = open(info_file, 'w')
+	else:
+		finfo = None
+	max_iter = int(maxit)
+	
+	vol     = EMData()
+	vol.read_image(ref_vol)
+	nx      = vol.get_xsize()
+	ny      = vol.get_ysize()
+	nz      = vol.get_zsize()
+	
+	# Only handle square volumes now!
+	if nz < nx:
+		ERROR('Do not handle square volumes .... nz cannot be less than nx', "ehelix_MPI", 1, myid)
+	
+	# Pad to square
+	if nz > nx:
+		nx = nz
+		ny = nz	
+		vol = pad(vol, nx, ny,nz,background=0.0)
+	
+	
+	if(sym[0] == "d"  or sym[0] == "D"):  Dsym = True
+	else:                                 Dsym = False
+
+	#  For the time being only one delta!!!
+	delta       = get_input_from_string(delta)[0]
+
+	if myid == main_node:
+		import user_functions
+		user_func = user_functions.factory[user_func_name]
+
+		print_msg("Input stack                               : %s\n"%(stack))
+		print_msg("Reference volume                          : %s\n"%(ref_vol))	
+		print_msg("Output directory                          : %s\n"%(outdir))
+		print_msg("Maskfile                                  : %s\n"%(maskfile))
+		print_msg("Angular step                              : %s\n"%(delta))
+		print_msg("Search for psi                            : %s\n"%(FindPsi))
+		if FindPsi:  print_msg("Maximum range for psi search              : %s\n"%(psi_max))
+		print_msg("X-search range                            : %f\n"%(search_rng))
+		print_msg("X-search wobble                           : %f\n"%(rng))
+		print_msg("Pixel size [A]                            : %f\n"%(pixel_size))
+		print_msg("dp [A]                                    : %f\n"%(dp))
+		print_msg("dphi                                      : %f\n"%(dphi))
+		print_msg("Maximum iteration                         : %i\n"%(max_iter))
+		print_msg("CTF correction                            : %s\n"%(CTF))
+		print_msg("Signal-to-Noise Ratio                     : %f\n"%(snr))
+		print_msg("Symmetry group                            : %s\n"%(sym))
+		print_msg("seg_ny                        		     : %s\n\n"%(seg_ny))
+
+	if maskfile:
+		if type(maskfile) is types.StringType: mask3D = get_image(maskfile)
+		else:                                  mask3D = maskfile
+	else: mask3D = model_cylinder(rmax, nx, ny, nz)
+
+	fscmask = mask3D
+	if CTF:
+		from reconstruction import recons3d_4nn_ctf_MPI
+		from filter         import filt_ctf
+	else:	 from reconstruction import recons3d_4nn_MPI
+
+	if( myid == 0):
+		infils = EMUtil.get_all_attributes(stack, "filament")
+		ptlcoords = EMUtil.get_all_attributes(stack, 'ptcl_source_coord')
+		filaments = ordersegments(infils, ptlcoords)
+		total_nfils = len(filaments)
+		inidl = [0]*total_nfils
+		for i in xrange(total_nfils):  inidl[i] = len(filaments[i])
+		linidl = sum(inidl)
+		tfilaments = []
+		for i in xrange(total_nfils):  tfilaments += filaments[i]
+		del filaments
+	else:
+		total_nfils = 0
+		linidl = 0
+	total_nfils = bcast_number_to_all(total_nfils, source_node = main_node)
+	if myid != main_node:
+		inidl = [-1]*total_nfils
+	inidl = bcast_list_to_all(inidl, source_node = main_node)
+	linidl = bcast_number_to_all(linidl, source_node = main_node)
+	if myid != main_node:
+		tfilaments = [-1]*linidl
+	tfilaments = bcast_list_to_all(tfilaments, source_node = main_node)
+	filaments = []
+	iendi = 0
+	for i in xrange(total_nfils):
+		isti = iendi
+		iendi = isti+inidl[i]
+		filaments.append(tfilaments[isti:iendi])
+	del tfilaments,inidl
+
+	if myid == main_node:
+		print "total number of filaments: ", total_nfils
+	if total_nfils< nproc:
+		ERROR('number of CPUs (%i) is larger than the number of filaments (%i), please reduce the number of CPUs used'%(nproc, total_nfils), "ehelix_MPI", 1,myid)
+
+	#  balanced load
+	temp = chunks_distribution([[len(filaments[i]), i] for i in xrange(len(filaments))], nproc)[myid:myid+1][0]
+	filaments = [filaments[temp[i][1]] for i in xrange(len(temp))]
+	nfils     = len(filaments)
+
+	#filaments = [[0,1]]
+	#print "filaments",filaments
+	list_of_particles = []
+	indcs = []
+	k = 0
+	for i in xrange(nfils):
+		list_of_particles += filaments[i]
+		k1 = k+len(filaments[i])
+		indcs.append([k,k1])
+		k = k1
+	data = EMData.read_images(stack, list_of_particles)
+	nima = len(data)
+	print  " READ IMAGES ", myid,nima,nproc
+
+	rise = int(dp/pixel_size)
+
+	data_nx = data[0].get_xsize()
+	data_ny = data[0].get_ysize()
+	
+	if data_nx != data_ny:
+		ERROR('Input projections must be square.', "ehelix_streak_MPI", 1,myid)
+	
+	if(nx != data_ny):
+		ERROR('Height of reference volume must be same as dimension of input projections', "ehelix_streak_MPI", 1,myid)
+		
+	data_nn = max(data_nx, data_ny)
+	segmask = pad(model_blank(2*int(rmax), seg_ny, 1, 1.0), data_nx, data_ny, 1, 0.0)
+	fdata = [None]*nima
+	resetatone = False
+	for im in xrange(nima):
+		data[im].set_attr('ID', list_of_particles[im])
+		st = Util.infomask(data[im], segmask, False)
+		data[im] -= st[0]
+		data[im] /= st[1]
+		if CTF:
+			qctf = data[im].get_attr("ctf_applied")
+			if qctf == 0:
+				ctf_params = data[im].get_attr("ctf")
+				data[im] = filt_ctf(data[im], ctf_params)
+				data[im].set_attr('ctf_applied', 1)
+			elif qctf != 1:
+				ERROR('Incorrectly set qctf flag', "ehelix_MPI", 1,myid)
+		#  if FindPsi,  apply the angle to data[im], do fft and put in fdata[im]
+		if FindPsi:
+			phi,theta,psi,tsx,tsy = get_params_proj(data[im])
+			if( theta != 0.0):
+				if(abs(psi - 90.) < abs(psi - 270.0)):  gamma =  90.0
+				else:                                   gamma = 270.0
+				fdata[im] = fft( segmask*rot_shift2D(data[im], gamma-psi) )
+			else:
+				set_params_proj(data[im], [0.0, 90.0, 90.0, 0.0,0.0])
+				fdata[im] = fft( segmask*data[im] )
+		else:
+			set_params_proj(data[im], [0.0, 90.0, 90.0, 0.0,0.0])
+			fdata[im] = fft( segmask*data[im] )
+		'''
+		# check previous max and if does not exist set it to -1.e23
+		p = data[im].get_attr_default('previousmax',-1.0e23)
+		if( p == -1.0e23 ):
+			resetatone = True
+			data[im].set_attr('previousmax', p)
+		'''
+	del list_of_particles
+
+	if debug:
+		finfo.write( '%d loaded  \n' % nima )
+		finfo.flush()
+	if myid == main_node:
+		# initialize data for the reference preparation function
+		# No centering for helical reconstruction
+		ref_data = [None, mask3D, None, None, None ]
+
+	phiwobble = int(float(ywobble)/rise*dphi/delta+0.5)  # phiwobble is NOT in degrees, it is in nphi units
+
+	nwx = 2*search_rng+3
+	nwy = rise+2*ywobble+2
+	nwxc = nwx//2
+	nwyc = nwy//2
+	nphi = int(360.0/delta + 0.5)
+	#print  "  params  ",nwx,nwy,nwxc,nwyc,nphi
+	if FindPsi:
+		mode = "F"
+		cnx = data_nn//2+1
+		cny = cnx
+		numr = Numrinit(1, data_nn//2-2, 1, mode)
+		wr   = ringwe(numr, mode)
+		maxrin = numr[len(numr)-1]
+		crefim = [None]*nphi
+	else:
+		#  have to initialize them, otherwise problem with passing the arguments
+		mode = "F"
+		cnx = data_nx//2+1
+		cny = cnx
+		numr = []
+		wr   = []
+		maxrin = 0
+		crefim = []
+
+	terminate = 0
+	Iter = 0
+ 	while Iter < max_iter:
+		Iter += 1
+		if myid == main_node:
+			start_time = time()
+			print_msg("\nITERATION #%3d\n"%(Iter))
+
+		volft, kbz = prep_vol( vol )
+		del vol
+
+		refproj = [None]*nphi
+		if( not Dsym):  rotproj = [None]*nphi
+		else:           rotproj = []
+
+		for iphi in xrange(nphi):
+			refproj[iphi] = prgs( volft, kbz, [delta*iphi, 90.0, 90.0, 0.0, 0.0])
+			st = Util.infomask(refproj[iphi] , segmask, True)
+			refproj[iphi] -= st[0]
+			refproj[iphi] /= st[1]
+			refproj[iphi] = Util.muln_img(refproj[iphi], segmask )
+
+			if FindPsi:
+				temp = Util.Polar2Dm(refproj[iphi], cnx, cny, numr, mode)
+				Util.Frngs(temp, numr)
+				Util.Applyws(temp, numr, wr)
+				crefim[iphi] = temp
+			#  rotated in-plane by 180 are equivalent to rot_shift3D(vol,-90,180.0,90) with phi running as phi
+			if(not Dsym):  rotproj[iphi] = fft( segmask * (rot_shift2D(refproj[iphi],180.0)) )
+			refproj[iphi] = fft( segmask*(refproj[iphi]) )
+		del volft
+		#exit()
+		#if myid == main_node:  
+		astart_time = time()
+		terminate = 0
+		for ifil in xrange(nfils):
+			if myid == main_node:  start_time = time()
+			if myid == main_node:
+				print_msg("Process filament %4d %d\n"%(ifil,time()-start_time));start_time = time()
+			ldata = [data[im] for im in xrange(indcs[ifil][0],indcs[ifil][1])]
+			#for im in xrange(len(ldata)):  ldata[im].set_attr("bestang", 10000.0)
+			Util.constrained_helix_exhaustive(ldata, fdata[indcs[ifil][0]:indcs[ifil][1]], refproj, rotproj, [float(dp), float(dphi), float(rise), float(delta)], [int(nphi), int(phiwobble), int(rng), int(ywobble), int(Dsym), int(nwx), int(nwy), int(nwxc), int(nwyc)], FindPsi, float(psi_max), crefim, numr, int(maxrin), mode, int(cnx), int(cny))
+
+			'''
+			if doExhaustive:
+				Util.constrained_helix_exhaustive(ldata, fdata[indcs[ifil][0]:indcs[ifil][1]], refproj, rotproj, [float(dp), float(dphi), float(rise), float(delta)], [int(nphi), int(phiwobble), int(rng), int(ywobble), int(Dsym), int(nwx), int(nwy), int(nwxc), int(nwyc)], FindPsi, float(psi_max), crefim, numr, int(maxrin), mode, int(cnx), int(cny))
+				terminate = 0
+			else:
+				tempch = Util.constrained_helix(ldata, fdata[indcs[ifil][0]:indcs[ifil][1]], refproj, rotproj, [float(dp), float(dphi), float(rise), float(delta)], [int(nphi), int(phiwobble), int(rng), int(ywobble), int(Dsym), int(nwx), int(nwy), int(nwxc), int(nwyc)], FindPsi, float(psi_max), crefim, numr, int(maxrin), mode, int(cnx), int(cny))
+				#print "tempch, Iter, myid: ", tempch, Iter, myid
+				#tempch = constrained_helix_SHC(ldata, fdata[indcs[ifil][0]:indcs[ifil][1]], refproj, rotproj,  dp, dphi, rise, delta ,  nphi, phiwobble, rng, ywobble, Dsym, nwx, nwy, nwxc, nwyc , FindPsi, psi_max, crefim, numr, maxrin, mode, cnx, cny, myid, main_node)
+				if tempch > -1:
+					#if myid == main_node:
+					#	print_msg("tempch %d\n"%tempch)
+					terminate = 0
+			'''
+			for im in xrange(indcs[ifil][0], indcs[ifil][1]):
+				temp = Util.get_transform_params(ldata[im-indcs[ifil][0]], "xform.projection", "spider")
+				set_params_proj(data[im],[temp["phi"],temp["theta"],temp["psi"],-temp["tx"],-temp["ty"]])
+				#if not(doExhaustive):
+				#	if Iter == 1 and resetatone:  data[im].set_attr('previousmax',-1.0e23)
+
+			if FindPsi:
+				for im in xrange(indcs[ifil][0], indcs[ifil][1]):
+					fdata[im] = fft( segmask*rot_shift2D(data[im], ldata[im-indcs[ifil][0]].get_attr("bestang") ) )
+					#bestang = ldata[im-indcs[ifil][0]].get_attr("bestang")
+					#if( bestang < 10000.0): fdata[im] = fft( segmask*rot_shift2D(data[im], bestang ) )
+			#print  "Parameters computed for filament",myid,ifil,time()-start_time;start_time = time()
+			if myid == main_node:
+				print_msg("Parameters computed for filament %4d %d\n"%(ifil,time()-start_time));start_time = time()
+		del ldata
+		del refproj
+		if(not Dsym):  del rotproj
+		#print  "Time of alignment = ",myid,time()-astart_time
+		mpi_barrier(MPI_COMM_WORLD)
+
+		#  Should we continue??
+		terminate = mpi_reduce(terminate, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
+		terminate = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
+		terminate = int(terminate[0])
+		if terminate == nproc:
+			if myid == main_node: print_end_msg("ehelix_MPI")
+			return
+
+
+		#if myid == main_node:
+		#	print_msg("Time of alignment = %\n"%(time()-astart_time));start_time = time()
+		if CTF:  vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad)
+		else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, npad = npad)
+		if myid == main_node:
+			print_msg("3D reconstruction time = %d\n"%(time()-start_time));start_time = time()
+
+		if myid == main_node:
+			#vol.write_image(os.path.join(outdir, "vol%03d.hdf"%Iter))
+			vol = vol.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
+			vol = sym_vol(vol, symmetry=sym)
+			ref_data[0] = vol
+			vol = user_func(ref_data)
+			vol = vol.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
+			vol = sym_vol(vol, symmetry=sym)
+			vol.write_image(os.path.join(outdir, "volf%03d.hdf"%Iter))
+			#if(Iter == max_iter-1):  drop_image(vol, os.path.join(outdir, "volfshift.hdf"))
+
+		bcast_EMData_to_all(vol, myid, main_node)
+		# write out headers, under MPI writing has to be done sequentially
+		mpi_barrier(MPI_COMM_WORLD)
+		par_str = ['xform.projection', 'ID']   #, 'previousmax']
+		if myid == main_node:
+			start_time = time()
+			if(file_type(stack) == "bdb"):
+				from utilities import recv_attr_dict_bdb
+				recv_attr_dict_bdb(main_node, stack, data, par_str, 0, nima, nproc)
+			else:
+				from utilities import recv_attr_dict
+				recv_attr_dict(main_node, stack, data, par_str, 0, nima, nproc)
+			print_msg("Time to write header information= %d\n"%(time()-start_time))
+			start_time = time()
+		else:		send_attr_dict(main_node, data, par_str, 0, nima)
+		if myid == main_node:
+			# write params to text file
+			header(stack, params='xform.projection', fexport=os.path.join(outdir, "parameters%04d.txt"%Iter))
+			#header(stack, params='previousmax', fexport=os.path.join(outdir, "previousmax%04d.txt"%Iter))
+		mpi_barrier(MPI_COMM_WORLD)
+
+
