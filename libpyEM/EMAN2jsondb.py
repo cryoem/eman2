@@ -252,7 +252,8 @@ class JSTaskQueue:
 		"""path should point to the directory where the disk-based task queue will reside without bdb:"""
 		if path==None or len(path)==0 :
 			path="tmp"
-			if not os.path.isdir("tmp") : os.mkdir("tmp")
+			
+		if not os.path.isdir(path) : os.makedirs(path)
 		self.path=path
 		self.active=js_open_dict("%s/tasks_active.json"%path)		# active tasks keyed by id
 		self.complete=file("%s/tasks_complete.txt"%path,"a")	# complete task log

@@ -1270,29 +1270,12 @@ def base_name( file_name,extension=False,bdb_keep_dir=False ):
 
 	file_name=str(file_name)
 	if file_name[:4].lower()=="bdb:" :
-		vals = file_name.split("#")
+		vals = file_name[4:].split("#")
 		if bdb_keep_dir:
-			dirs = vals[0].split("/")
-			if dirs[-1] == "": # if so the last entry was "/", and we need to get rid of the last entry in dirs to ensure the bdb_keep_dir functonality works as expected
-				dirs = dirs[:-1]
-		if len(vals) == 1: return file_name # this is as simple as it gets
+			if len(vals)==1 : return vals[0]
+			return vals[0].split("/")[-1]+"/"+vals[-1]
 		else:
-			v = vals[-1]
-
-			# strip out the EMAN2DB
-			# assumption that only one "EMAN2DB" exists in the string
-			for cand in ["EMAN2DB/","EMAN2DB"]:
-				l = len(cand)
-				n = v.find(cand)
-				if  n != -1:
-					v = v[:n]+v[n+l:]
-					break # if we find one the first then there is no need to look at the second
-			if bdb_keep_dir:
-				if len(dirs) > 1:
-					return "bdb:"+dirs[-1]+"#"+v
-				else: return file_name
-			else:
-				return "bdb:"+v.split("__")[0]
+			return vals[-1]
 	else:
 		if extension : return os.path.basename(file_name)
 		else : return os.path.splitext(os.path.basename(file_name))[0].split("__")[0].replace("_ptcls","")		# double underscore is used to mark tags added to micrograph names
