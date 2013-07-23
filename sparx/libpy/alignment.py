@@ -932,6 +932,16 @@ def prepare_refrings( volft, kb, nz, delta, ref_a, sym, numr, MPI=False, phiEqps
 	from math         import sin, cos, pi
 	from applications import MPI_start_end
 	from utilities    import even_angles
+	from types import BooleanType
+
+	# mpi communicator can be sent by the MPI parameter
+	if type(MPI) is BooleanType:
+		if MPI:
+			from mpi import MPI_COMM_WORLD
+			mpi_comm = MPI_COMM_WORLD
+	else:
+		mpi_comm = MPI
+		MPI = True
 
 	# generate list of Eulerian angles for reference projections
 	#  phi, theta, psi
@@ -948,13 +958,13 @@ def prepare_refrings( volft, kb, nz, delta, ref_a, sym, numr, MPI=False, phiEqps
 	num_ref = len(ref_angles)
 
 	if MPI:
-		from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
-		myid = mpi_comm_rank( MPI_COMM_WORLD )
-		ncpu = mpi_comm_size( MPI_COMM_WORLD )
+		from mpi import mpi_comm_rank, mpi_comm_size
+		myid = mpi_comm_rank( mpi_comm )
+		ncpu = mpi_comm_size( mpi_comm )
 	else:
 		ncpu = 1
 		myid = 0
-	from applications import MPI_start_end
+	
 	ref_start, ref_end = MPI_start_end(num_ref, ncpu, myid)
 
 	refrings = []     # list of (image objects) reference projections in Fourier representation
@@ -989,7 +999,7 @@ def prepare_refrings( volft, kb, nz, delta, ref_a, sym, numr, MPI=False, phiEqps
 			for j in xrange(ncpu):
 				ref_start, ref_end = MPI_start_end(num_ref, ncpu, j)
 				if i >= ref_start and i < ref_end: rootid = j
-			bcast_EMData_to_all(refrings[i], myid, rootid)
+			bcast_EMData_to_all(refrings[i], myid, rootid, comm=mpi_comm)
 
 	for i in xrange(len(ref_angles)):
 		n1 = sin(ref_angles[i][1]*qv)*cos(ref_angles[i][0]*qv)
