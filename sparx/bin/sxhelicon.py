@@ -131,7 +131,7 @@ def main():
 			ehelix_MPI_test(args[0], args[1], args[2], options.delta, options.psi_max, searchxshiftp, xwobblep, ywobble, options.apix, dp, dphi, options.fract, rmaxp, rminp, not options.nopsisearch, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
 			global_def.BATCH = False
 		else:
-			from development import ehelix_MPI
+			from applications import ehelix_MPI
 			global_def.BATCH = True
 			ehelix_MPI(args[0], args[1], args[2], options.seg_ny, options.delta, options.psi_max, searchxshiftp, xwobblep, ywobble, options.apix, dp, dphi, options.fract, rmaxp, rminp, not options.nopsisearch, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug, options.exhaustive)
 			global_def.BATCH = False
