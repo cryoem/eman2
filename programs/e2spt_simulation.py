@@ -125,7 +125,7 @@ def main():
 	
 	logger = E2init(sys.argv, options.ppid)
 
-	
+	print "e2spt_simulation received these many slices", options.nslices
 	'''
 	Make the directory where to create the database where the results will be stored
 	'''

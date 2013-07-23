@@ -122,7 +122,7 @@ def main():
 	
 	#parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default='', guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 
-	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:1", guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default=None, guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	#parser.add_argument("--automask",action="store_true",help="Applies a 3-D automask before centering. Can help with negative stain data, and other cases where centering is poor.")
 	#parser.add_argument("--resample",action="store_true",help="If set, will perform bootstrap resampling on the particle data for use in making variance maps.",default=False)
 	#parser.add_argument("--odd", default=False, help="Used by EMAN2 when running eotests. Includes only odd numbered particles in class averages.", action="store_true")
@@ -289,6 +289,8 @@ def main():
 		if options.ref: 
 			pclist.append(options.ref)
 		etc.precache(pclist)
+	else:
+		etc=''
 
 	if options.inixforms: 
 		js = js_open_dict(options.inixforms)
@@ -319,7 +321,7 @@ def main():
 		if options.ref: 
 			ref = EMData(options.ref,ic)
 		else:
-			ref = binaryTreeRef(options,nptcl,ptclnums,etc,ic)
+			ref = binaryTreeRef(options,nptcl,ptclnums,ic,etc)
 		
 		'''
 		Now we iteratively refine a single class
@@ -439,7 +441,7 @@ def main():
 	E2end(logger)
 
 
-def binaryTreeRef(options,nptcl,ptclnums,etc,ic):
+def binaryTreeRef(options,nptcl,ptclnums,ic,etc):
 
 	if nptcl==1: 
 		print "Error: More than 1 particle required if no reference provided through --ref."
@@ -1238,8 +1240,14 @@ def alignment(fixedimage,image,label,classoptions,xformslabel,transform,prog='e2
 		'''
 		jsAliParamsPath = classoptions.path + '/tomo_xforms'+ str(classoptions.refinemultireftag) + '.json'
 		jsA = js_open_dict(jsAliParamsPath) #Write particle orientations to json database.
-	
-		jsA[xformslabel] = bestfinal[0]['xform.align3d']
+		AliParams=bestfinal[0]['xform.align3d']
+		jsA[xformslabel] = AliParams
+		
+		if not classoptions.refinemultireftag:
+			print "e2spt_refinemulti not being used, therefore there is no tag"
+		#print "The ali params to save are", AliParams
+		#print "Which in string would be", str(AliParams)
+		
 		jsA.close 
 	
 		'''
@@ -1247,7 +1255,7 @@ def alignment(fixedimage,image,label,classoptions,xformslabel,transform,prog='e2
 		'''
 		jsAliScoresPath = classoptions.path + '/subtomo_scores' + str(classoptions.refinemultireftag) + '.json'
 		jsB = js_open_dict (jsAliScoresPath)
-		jsB[xformslabel] = str(bestfinal[0]['score'])
+		jsB[xformslabel] = float(bestfinal[0]['score'])
 		jsB.close()
 		
 	return (bestfinal,bestcoarse)

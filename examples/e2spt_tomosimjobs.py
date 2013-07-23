@@ -326,6 +326,7 @@ def simloop(options,rootpath):
 			#nslicestag = str(int(nslices)).zfill(3)
 
 		while nslices < nslicesu:
+			print "nslices is", nslices
 			#if not options.tiltstep:
 			nslicestag = ("%d" %(nslices)).zfill(3)
 			
