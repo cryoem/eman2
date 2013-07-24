@@ -351,9 +351,10 @@ class EMTaskHandler:
 	"""This is the actual server object which talks to clients and customers. It coordinates task execution
  acts as a data clearinghouse. This parent class doesn't contain any real functionality. Subclasses are always
  used for acutual servers."""
-	queue=JSTaskQueue(None)
+	queue=None
 
 	def __init__(self,path=None):
+		if EMTaskHandler.queue==None : EMTaskHandler.queue=JSTaskQueue(path)
 		self.queue=EMTaskHandler.queue
 #		self.queue=EMTaskQueue(path)
 
