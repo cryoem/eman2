@@ -13429,7 +13429,7 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 		for ifil in xrange(nfils):
 			if myid == main_node:  start_time = time()
 			if myid == main_node:
-				#print_msg("Process filament %4d %d\n"%(ifil,time()-start_time));start_time = time()
+				start_time = time()
 			ldata = [data[im] for im in xrange(indcs[ifil][0],indcs[ifil][1])]
 			#for im in xrange(len(ldata)):  ldata[im].set_attr("bestang", 10000.0)
 			Util.constrained_helix_exhaustive(ldata, fdata[indcs[ifil][0]:indcs[ifil][1]], refproj, rotproj, [float(dp), float(dphi), float(rise), float(delta)], [int(nphi), int(phiwobble), int(rng), int(ywobble), int(Dsym), int(nwx), int(nwy), int(nwxc), int(nwyc)], FindPsi, float(psi_max), crefim, numr, int(maxrin), mode, int(cnx), int(cny))
@@ -13460,7 +13460,7 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 					#if( bestang < 10000.0): fdata[im] = fft( segmask*rot_shift2D(data[im], bestang ) )
 			#print  "Parameters computed for filament",myid,ifil,time()-start_time;start_time = time()
 			if myid == main_node:
-				#print_msg("Parameters computed for filament %4d %d\n"%(ifil,time()-start_time));start_time = time()
+				start_time = time()
 		del ldata
 		del refproj
 		if(not Dsym):  del rotproj
