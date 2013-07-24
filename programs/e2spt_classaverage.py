@@ -821,6 +821,7 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 		variance = EMData(ptcl_file,0).copy_head()
 		if averager[0] == 'mean':
 			averager[1]['sigma'] = variance
+		
 		avgr=Averagers.get(averager[0], averager[1])
 		included=[]
 		
