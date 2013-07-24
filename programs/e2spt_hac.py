@@ -561,7 +561,7 @@ def allvsall(options):
 				compNum+=1
 		
 		if k == 0:
-			simmxFile = 'simmx_' + str( k ).zfill( len (str (options.iter))) + '.hdf'
+			simmxFile = options.path + '/simmx_' + str( k ).zfill( len (str (options.iter))) + '.hdf'
 			simmxScores.write_image(simmxFile,0)
 			simmxXs.write_image(simmxFile,1)
 			simmxYs.write_image(simmxFile,2)
