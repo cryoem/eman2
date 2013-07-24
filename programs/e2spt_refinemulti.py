@@ -158,7 +158,7 @@ def main():
 	parser.add_argument("--writewedge", action="store_true", help="Write a subvolume with the shape of the fitted missing wedge if --raligncmp or --aligncmp are fsc.tomo. Default is 'True'. To turn on supply --writewedge", default=False)		
 	
 	(options, args) = parser.parse_args()
-	
+
 	'''
 	Make the directory where to create the database where the results will be stored
 	'''
@@ -166,13 +166,16 @@ def main():
 
 	rootpath = os.getcwd()
 	
+	options.path = rootpath + '/' + options.path
+	
 	try:
 		hdr = EMData(options.input,0,True) #This is done just to test whether the input file exists where it should
+		boxsize = hdr['nx']
 	except:
 		print "ERROR: Can't find the file provided through --input"
 	
 	'''
-	Determine how many references there are and separate them if bundled up in one HDF file
+	Determine how many references there are and put them into one file classAvg.hdf, or classAvg_iterXX.hdf, if they come from separate files
 	'''
 	nrefs=0
 	
@@ -200,151 +203,348 @@ def main():
 	'''
 	
 	#filesindir = os.listdir(rootpath)
-
-	options.input = '../' + options.input 		#The program goes into --path to execute the alignment command; therefore, --input will be one level furtherback
+		
+	relativeInput = '../' + options.input
+	absoluteInput = rootpath + '/' + options.input
+	options.input = absoluteInput
+	avgs={}
 	
-	k=0
-	reftags = []
-	masterInfo = {}
-	for ref in refsfiles:
-		print "Aligning data to ref number", k
-		ref = rootpath + '/' + ref
-		
-		thisRefinementPath = ref.split('/')[-1].replace('.hdf','')
-		
-		alicmd = 'cd ' + options.path + ' && e2spt_classaverage.py --ref=' + ref + ' --path=' + thisRefinementPath
-	
-		names = dir(options)
-		for name in names:
-			if getattr(options,name) and 'refs' not in name and "__" not in name and "_" not in name and 'path' not in name and str(getattr(options,name)) != 'True':	
-				#if "__" not in name and "_" not in name and str(getattr(options,name)) and 'path' not in name and str(getattr(options,name)) != 'False' and str(getattr(options,name)) != 'True' and str(getattr(options,name)) != 'None':			
-				alicmd += ' --' + name + '=' + str(getattr(options,name))
-		alicmd += ' --donotaverage'
-		
-		tag = str(k).zfill( len( str ( nrefs )))
-		reftag = 'ref' + tag
-		reftags.append(reftag)
-	
-		alicmd += ' --refinemultireftag=' + tag		
-		
-		#print "Command is", alicmd
-		
-		p=subprocess.Popen( alicmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		
-		'''
-		Option A
-		'''
-		for line in iter(p.stdout.readline, ''):
-			print line.replace('\n','')
-		
-		#'''
-		#Option B
-		#'''
-		#while True:
-		#	line = p.stdout.readline()
-  		#	if not line: 
-  		#		break
-  		#	else:
-  		#		print line.replace('\n','')
-		
-		#returnedtxt = p.communicate()
-		p.communicate()	
-		p.stdout.close()
-			
-		scoresFile = options.path + '/' + thisRefinementPath + '/subtomo_scores' + tag + '.json'
-		scores = js_open_dict(scoresFile)
-		nscores = len(scores)
-		
-		print "\n\nThe scores file to read is", scoresFile
-		print "I read these many scores", nscores
-		print "scores are", scores
-		
-		#for ele in scores:
-		#	print "one score element is", ele
-		#	#print "And therefore score is", scores[ele]
-			
+	for it in range( options.iter ):
+		print "\n\nIteration", it
 		print "\n\n"
-		
-		aliParamsFile = options.path + '/' + thisRefinementPath + '/tomo_xforms' + tag + '.json'
-		aliParams = js_open_dict(aliParamsFile)
-		nparams = len(aliParams)
-		
-		#print "The aliParams file to read is", aliParamsFile
-		#print "I read these many params", nparams
-		
-		if nparams != nscores:
-			print "nscores is", nscores
-			print "nparams is", nparams
-			print "WARNING! They should be the same."	
-		
-		for i in range(nparams):
-			ptclID = "tomo_" + str(i).zfill( len(str( nparams )) )
-			ptclScore = float( scores[ptclID] )
-			ptclAliParams = aliParams[ptclID]
+				#The program goes into --path to execute the alignment command; therefore, --input will be one level furtherback
+	
+		if it > 0:
+			newrefsfiles=[]					
+			#avgsName =  'classAvgs.hdf'
+			#if options.savesteps and int( options.iter ) > 1 :
+			#	avgsName = 'classAvgs_iter' + str().zfill( len( str( options.iter ))) + '.hdf'
+	
+			newreffile = ''
+			for reftag in avgs:
+				if avgs[ reftag ]:
+					newref = avgs[ reftag ]
+					for ref in refsfiles:
+						if reftag in ref:
+							if '_iter' in ref:
+								newreffile = ref.split('_iter')[0] + '_iter' + str(it).zfill( len( str( options.iter ))) + '.hdf'
+							else:
+								newreffile = ref.replace('.hdf','_iter' + str(it).zfill( len( str( options.iter ))) + '.hdf')
+						
+							newref.write_image( newreffile, 0)
+				else:
+					for ref in refsfiles:
+						if reftag in ref:					
+							newreffile = ref
+				
+				newrefsfiles.append( newreffile )
+
+			refsfiles = newrefsfiles
 			
-			infolist = [ptclScore,ptclAliParams,reftag]
 			
-			if k==0:
-				masterInfo.update({ ptclID: [] })
+		k=0
+		reftags = []
+		masterInfo = {}
+		for ref in refsfiles:
+			print "Aligning data to ref number", k
+			#ref = ref
 			
-			#print "\n\nptclID to update is", ptclID
-			#print "infolist to append is", infolist
-			#print "BEFORE appending, masterInfo[ ptclID ] is", masterInfo[ ptclID ]
-			#print "Of type", type(masterInfo[ ptclID ])
+			#thisRefinementPath = ref.split('/')[-1].replace('.hdf','')
+		
+			alicmd ='cd ' + options.path + ' && e2spt_classaverage.py --ref=' + ref + ' --path=sptTMP' #+ ' --input=' + relativeInput
+	
+			names = dir(options)
+			for name in names:
+				if getattr(options,name) and 'refs' not in name and "__" not in name and "_" not in name and 'path' not in name and str(getattr(options,name)) != 'True':	
+					#if "__" not in name and "_" not in name and str(getattr(options,name)) and 'path' not in name and str(getattr(options,name)) != 'False' and str(getattr(options,name)) != 'True' and str(getattr(options,name)) != 'None':			
+					alicmd += ' --' + name + '=' + str(getattr(options,name))
+			alicmd += ' --donotaverage'
+		
+			tag = str(k).zfill( len( str ( nrefs )))
+			reftag = 'ref' + tag
+			reftags.append(reftag)
+	
+			alicmd += ' --refinemultireftag=' + tag	+ ' && mv ' + options.path + '/sptTMP/* ' + options.path + '/ && rm -r ' + options.path +'/sptTMP*'	
+		
+			#print "Command is", alicmd
+		
+			'''
+			Make sure the supbrocess that executes e2spt_classaverage.py ends before script continues
+			'''
 			
-			value = masterInfo[ ptclID ]
-			value.append(infolist)
-			#print "Therfore value is", value
-			#print "Of type", type(value)
+			#print "The command to execute is", alicmd
+			
+			p=subprocess.Popen( alicmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		
+			for line in iter(p.stdout.readline, ''):
+				print line.replace('\n','')
+		
+			#'''
+			#Option B
+			#'''
+			#while True:
+			#	line = p.stdout.readline()
+			#	if not line: 
+			#		break
+			#	else:
+			#		print line.replace('\n','')
+		
+			#returnedtxt = p.communicate()
+			text=p.communicate()	
+			p.stdout.close()
+		
+			print "Feedback from p was", text
+		
+			'''
+			Open scores file for current reference
+			'''
+			#scoresFile = options.path + '/' + thisRefinementPath + '/subtomo_scores' + tag + '.json'
+			scoresFile = options.path +'/subtomo_scores' + tag + '.json'
+			scores = js_open_dict(scoresFile)
+			nscores = len(scores)
+		
+			#print "\n\nThe scores file to read is", scoresFile
+			#print "I read these many scores", nscores
+			#print "scores are", scores
+		
+			#for ele in scores:
+			#	print "one score element is", ele
+			#	#print "And therefore score is", scores[ele]
+			
+			print "\n\n"
+		
+			'''
+			Open alignment results file for current reference
+			'''
+			#aliParamsFile = options.path + '/' + thisRefinementPath + '/tomo_xforms' + tag + '.json'
+			aliParamsFile = options.path + '/tomo_xforms' + tag + '.json'
+			aliParams = js_open_dict(aliParamsFile)
+			nparams = len(aliParams)
+		
+			#print "The aliParams file to read is", aliParamsFile
+			#print "I read these many params", nparams
+		
+			if nparams != nscores:
+				print "nscores is", nscores
+				print "nparams is", nparams
+				print "WARNING! They should be the same."	
+		
+			'''
+			Add info per particle for results from all references to a master dictionary, 'masterInfo'
+			'''
+			for i in range(nparams):
+				ptclID = "tomo_" + str(i).zfill( len(str( nparams )) )
+				ptclScore = float( scores[ptclID] )
+				ptclAliParams = aliParams[ptclID]
+			
+				infolist = [ ptclScore, ptclAliParams, reftag]
+			
+				if k==0:
+					masterInfo.update({ ptclID: [] })
+			
+				#print "\n\nptclID to update is", ptclID
+				#print "infolist to append is", infolist
+				#print "BEFORE appending, masterInfo[ ptclID ] is", masterInfo[ ptclID ]
+				#print "Of type", type(masterInfo[ ptclID ])
+			
+				value = masterInfo[ ptclID ]
+				value.append(infolist)
+			
+				#print "Therfore value is", value
+				#print "Of type", type(value)
+				#print "\n\n"
+			
+				masterInfo.update({ ptclID: value })
+			
+				#print "masterInfo has been updated and now is",masterInfo
+			k+=1
+		
+		'''
+		Analyze all results and classify particles based on them
+		'''			
+		from operator import itemgetter						
+	
+		print "I've aligned all the particles in the data set to all the references for iter %d and will now classify them from the masterInfo dict" %(it), masterInfo
+	
+		classes = {}
+		for reftag in reftags:
+			classes.update({ reftag : [] })
+	
+		for ele in masterInfo:
+			sortedPtclInfo = sorted( masterInfo[ele], key=itemgetter(0))	#Sorted works because you want the scores from SMALLEST to BIGGEST. Remember, the MORE NEGATIVE (smaller) the better score in EMAN2
+			bestPtclInfo = sortedPtclInfo[0]
+		
+			bestreftag = bestPtclInfo[-1]	
+			bestAliParams = bestPtclInfo[1]
+			bestScore = bestPtclInfo[0]
+		
+			#print "\n\nFor particle", ele
+			#print "The sorted data is", sortedPtclInfo
 			#print "\n\n"
-			masterInfo.update({ ptclID: value })
-			
-			#print "masterInfo has been updated and now is",masterInfo
-		k+=1
 		
-				
-	from operator import itemgetter						
+			ptclIndx = int( ele.split('_')[-1] )
+			value = classes[ bestreftag ]
+			value.append( [ ptclIndx, bestAliParams, bestScore] )
+			classes.update({ bestreftag : value })
 	
-	print "I've aligned all the particles in the data set to all the references and will now classify them from the masterInfo dict", masterInfo
-	
-	classes = {}
-	for reftag in reftags:
-		classes.update({ reftag : [] })
-	
-	for ele in masterInfo:
-		sortedPtclInfo = sorted( masterInfo[ele], key=itemgetter(0))	#Sorted works because you want the scores from SMALLEST to BIGGEST. Remember, the MORE NEGATIVE (smaller) the better score in EMAN2
-		bestPtclInfo = sortedPtclInfo[0]
-		bestreftag = bestPtclInfo[-1]	
-		bestAliParams = bestPtclInfo[1]
+		#klassIndx = 0
+		klassesLen = len(classes)
+		newAvgs = []
+		for klass in classes:
+			#print "\n\nThe particles and their aliparams, for this class", klass
+			#print "are:", classes[ klass ]
 		
-		print "\n\nFor particle", ele
-		print "The sorted data is", sortedPtclInfo
-		print "\n\n"
+			klassIndx = int( klass.replace('ref','') )
 		
-		value = classes[ bestreftag ]
-		value.append( [ele,bestAliParams] )
-		classes.update({ bestreftag : value })
+			#ptclsFinal = {}
+			#for key in klass:
+				#ptclnum = int)
+				#ptclTransform = klass[ key ]
+				#ptclsFinal.update({ ptclnum : ptclTransform })
 		
-	for klass in classes:
-		print "\n\nThe particles and their aliparams, for this class", klass
-		print "are:", classes[ klass ]
+			if classes[ klass ]:
+				ret = makeAverage( options, classes[klass], klassIndx, klassesLen)
+			else:
+				print "The klass %d was empty (no particles were assgined to it). You might have too many classes." % ( klassIndx )	
+				#dummyClassAvg=EMData(boxsize,boxsize,boxsize)
+				#dummyClassAvg.to_zero()
+				ret = None
+			avgs.update({ klass : ret })
 		
-				
+			#klassIndx += 1				
+			#os.system(cmd)
 		
-		#os.system(cmd)
-		
-		
-		
-		
-		
-	logger = E2init(sys.argv,options.ppid)
-	
-
-	
-	E2end(logger)
+		logger = E2init(sys.argv,options.ppid)	
+		E2end(logger)
 	
 	return()
+
+
+
+
+
+def makeAverage(options, klass, klassIndx, klassesLen):
+	"""Will take a set of alignments and an input particle stack filename and produce a new class-average.
+	Particles may be excluded based on the keep and keepsig parameters. If keepsig is not set, then keep represents
+	an absolute fraction of particles to keep (0-1). Otherwise it represents a sigma multiplier akin to e2classaverage.py"""
+
+	if options.averager: 
+		parsedAverager=parsemodopt(options.averager)
+		
+	print "\n\n\nTHe parsed averager is!!!", parsedAverager
+	print "\n"
+			
+	if options.keepsig:
+		# inefficient memory-wise
+		val = sum([ score[-1] for score in klass ])
+		val2 = sum([ score[-1]**2 for score in klass ])
+
+		mean = val/len( klass )
+		sig = sqrt( val2 /len(klass) - mean*mean )
+		thresh = mean + sig*options.keep
+		if options.verbose: 
+			print "Keep threshold : %f (mean=%f  sigma=%f)"%(thresh,mean,sig)
+
+	if options.keep:
+		#print "Len of align_parms is", len(klass)
+		
+		for score in klass:
+			if score[-1]:
+				pass
+				#print "\nscore!"
+			else:
+				print "\n(e2pt_refinemulti.py) (makeAverage) the score was 0, see", score[-1] 
+				#print "see, p[0] is", p[0]
+				#sys.exit()
+		
+		val = [ score[-1] for score in klass]
+		val.sort()
+		print "The len of val is", len(val)
+		print "these are the vals", val
+		print "Which shuld be the same as len(klass) see", len(klass)
+		print "The clossest position to threshold value based on keep", options.keep
+		threshIndx =  int (options.keep * len(klass) ) - 1 
+		print "is", threshIndx
+		
+		thresh = val[ threshIndx ]
+		if options.verbose: 
+			print "Keep threshold : %f (min=%f  max=%f)"%(thresh,val[0],val[-1])
+
+	'''
+	# Make variance image if available
+	variance = EMData( ptcl_file, 0 ).copy_head()
+	if options.averager[0] == 'mean':
+		options.averager[1]['sigma'] = variance
+	'''
 	
+	avgr = Averagers.get(parsedAverager[0], parsedAverager[1])
+	included = []
+	
+	print "The path to save the class average is", options.path
+			
+	#jsdict = path + '/tomo_xforms.json'
+	#js = js_open_dict(jsdict)
+			
+	for k in klass:
+		print "The index of the particle to add is",k[0]
+		print "And this its transform", k[1]
+		ptcl = EMData(options.input,k[0])
+		ptclTransform =k[1] 
+		ptcl.process_inplace("xform",{"transform" : ptclTransform})
+		
+		#print "I have applied this transform before averaging", ptcl_parms[0]["xform.align3d"]			
+		
+		if k[-1] <= thresh: 
+			avgr.add_image(ptcl)
+			included.append(k[0])
+
+		#js["tomo_%04d"%i] = ptcl_parms[0]['xform.align3d']
+		if options.saveali:
+			ptcl['origin_x'] = 0
+			ptcl['origin_y'] = 0		# jesus - the origin needs to be reset to ZERO to avoid display issues in Chimera
+			ptcl['origin_z'] = 0
+			ptcl['spt_score'] = k[-1]
+			
+			#print "\nThe score is", ptcl_parms[0]['score']
+			#print "Because the zero element is", ptcl_parms[0]
+			
+			ptcl['xform.align3d'] = Transform()
+			#ptcl['spt_ali_param'] = ptcl_parms[0]['xform.align3d']
+			ptcl['xform.align3d'] = ptclTransform
+			
+			classStack = options.path + "/class" + str( klassIndx ).zfill( len( str (klassesLen))) + "_ptcl.hdf"
+			#print "The class name is", classname
+			#sys.exit()
+			ptcl.write_image(classStack,k[0])	
+	#js.close()
+	
+	if options.verbose: 
+		print "Kept %d / %d particles in average"%(len(included),len(klass))
+
+	avg=avgr.finish()
+	#if options.symmetry and not options.breaksym:
+	#	avg=avg.process('xform.applysym',{'sym':options.symmetry})
+	
+	avg["class_ptcl_idxs"] = included
+	avg["class_ptcl_src"] = options.input
+	
+	#if options.averager[0] == 'mean' and variance:
+	#	variance.write_image(path+"/class_varmap.hdf",it)
+				
+	if not options.nocenterofmass:
+		avg.process_inplace("xform.centerofmass")
+	
+	avgsName =  options.path + '/classAvgs.hdf'
+	if options.savesteps and int( options.iter ) > 1 :
+		avgsName = options.path + '/classAvgs_iter' + str( klassIndx ).zfill( len( str( options.iter ))) + '.hdf'
+
+	avg.write_image(avgsName,klassIndx)
+		
+	return avg
+
+
+
+
 	
 if __name__ == '__main__':
 	main()
