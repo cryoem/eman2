@@ -127,6 +127,10 @@ def main():
 	parser.add_argument("--randomizewedge",action="store_true", help="This parameter is EXPERIMENTAL. It randomizes the position of the particles BEFORE alignment, to minimize missing wedge bias and artifacts during symmetric alignment where only a fraction of space is scanned", default=False,)
 
 
+	parser.add_argument("--minscore",type=float,help="""Percent of the maximum score to use as a threshold for the minimum score to allow.
+													For example, if the best pair in the first iteration yielded a score of 15.0, and you supply --minscore=0.666,
+													any pair wise alignments with a score lower than 15*0.666=10 will be forbidden.""", default=0.15)
+
 	'''
 	Parameters to compensate for the missing wedge using --cpm=fsc.tomo
 	'''
@@ -390,7 +394,7 @@ def allvsall(options):
 		rawptcl['xform.alignd3d']=Transform()
 		FinalAliStack.update({i:rawptcl})
 	
-	
+	maxScore = 1
 	for k in range(options.iter):							#Start the loop over the user-defined number of iterations
 		#avgname = options.path + '/round' + str(k).zfill(fillfactor) + '_averages.hdf'
 		newstack = options.path + '/round' + str(k-1).zfill(fillfactor) + '_averages.hdf'
@@ -446,18 +450,10 @@ def allvsall(options):
 				#if options.verbose > 2:
 				print "Setting the following comparison: %s vs %s in ALL VS ALL" %(reftag,particletag)
 				
-				
-				
-				
-				
-				
-				
-				
 				#def __init__(self,fixedimagestack,imagestack,comparison, ptcl1, ptcl2, p1n, p2n,label,options,transform):
 				
 				task = Align3DTaskAVSA(newstack,newstack, jj, reftag, particletag, ptcl1, ptcl2,"Aligning particle#%s VS particle#%s in iteration %d" % (reftag,particletag,k),options,k)
 
-				
 				#task = Align3DTaskAVSA(newstack,newstack, jj, reftag, particletag, ptcl1, ptcl2,"Aligning particle#%s VS particle#%s in iteration %d" % (reftag,particletag,k),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
 				#options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
 				
@@ -510,13 +506,78 @@ def allvsall(options):
 		results = results + surviving_results					#The total results to process/analyze includes results (comparisons) from previous rounds that were not used
 		results = sorted(results, key=itemgetter('score'))			#Sort/rank the results by score
 		
-		print "results are", results
+		#print "results are", results
+	
+		if k == 0:
+			plotX=[]
+			plotY=[]
+	
+			simmxScores = EMData(nptcls,nptcls)
+			simmxXs = EMData(nptcls,nptcls)
+			simmxYs = EMData(nptcls,nptcls)
+			simmxZs = EMData(nptcls,nptcls)
+			simmxAzs = EMData(nptcls,nptcls)
+			simmxAlts = EMData(nptcls,nptcls)
+			simmxPhis = EMData(nptcls,nptcls)
+			simmxScales = EMData(nptcls,nptcls)
+			
+			simmxScores.to_zero()
+			simmxXs.to_zero()
+			simmxYs.to_zero()
+			simmxZs.to_zero()
+			simmxAzs.to_zero()
+			simmxAlts.to_zero()
+			simmxPhis.to_zero()
+			simmxScales.to_one()
 		
-		if options.verbose > 0:
-			print "In iteration %d the SORTED results are:", k
-			for i in results:
+		compNum=0
+		for i in results:
+			if options.verbose > 0:
+				print "In iteration %d the SORTED results are:", k	
 				print "%s VS %s , score=%f, transform=%s" %(i['ptclA'], i['ptclB'], i['score'], i['xform.align3d'] )
+			
+			if k == 0:
+				if compNum == 0:
+					maxScore = i['score']
+				plotX.append( compNum )
+				plotY.append( i['score'] )
+				
+				indxA = int( i['ptclA'].split('_')[-1] )
+				indxB = int( i['ptclB'].split('_')[-1] )
+				simmxScores.set_value_at(indxA,indxB,i['score'])
+				
+				t= i['xform.align3d']
+				trans=t.get_trans()
+				rots=t.get_rotation()
+				
+				simmxXs.set_value_at(indxA,indxB,float(trans[0]))
+				simmxYs.set_value_at(indxA,indxB,float(trans[1]))
+				simmxZs.set_value_at(indxA,indxB,float(trans[2]))
+				simmxAzs.set_value_at(indxA,indxB,float(rots['az']))
+				simmxAlts.set_value_at(indxA,indxB,float(rots['alt']))
+				simmxPhis.set_value_at(indxA,indxB,float(rots['phi']))
+				simmxScales.set_value_at(indxA,indxB,float(i['score']))
+			
+				compNum+=1
 		
+		if k == 0:
+			simmxFile = 'simmx_' + str( k ).zfill( len (str (options.iter))) + '.hdf'
+			simmxScores.write_image(simmxFile,0)
+			simmxXs.write_image(simmxFile,1)
+			simmxYs.write_image(simmxFile,2)
+			simmxZs.write_image(simmxFile,3)
+			simmxAzs.write_image(simmxFile,4)
+			simmxAlts.write_image(simmxFile,5)
+			simmxPhis.write_image(simmxFile,6)	
+			simmxScales.write_image(simmxFile,7)
+			
+			from e2figureplot import plotter
+			plotter (plotX, plotY, options, 'scatter')
+			
+			plotName = simmxFile.replace('.hdf','_PLOT.png')
+			from e2figureplot import textwriter
+			textwriter(plotX, plotY, options, plotName)
+	
 		print "\n\n\n\nIn iteration %d, the total number of comparisons in the ranking list, either new or old that survived, is %d" % (k, len(results))
 		
 		tried = set()											#Tracks what particles have "appeared" on the list, whether averaged or not
@@ -527,6 +588,14 @@ def allvsall(options):
 		print "I'm in the averager!!!!!!!!!!!!"
 		
 		for z in range(len(results)):
+			if options.minscore:
+				score = results[z]['score']			
+				if score > maxScore * float( options.minscore ):
+					print "Breaking loop because the next comparison score", score
+					print "Is worse (larger, more positive, in EMAN2) than the specified percentage", options.minscore
+					print "Of the maximum score from the initial simmx matrix", maxScore
+					break
+			
 			if results[z]['ptclA'] not in tried and results[z]['ptclB'] not in tried:
 				tried.add(results[z]['ptclA'])							#If the two particles in the pair have not been tried, and they're the next "best pair", they MUST be averaged
 				tried.add(results[z]['ptclB'])							#Add both to "tried" AND "used" 
@@ -538,7 +607,7 @@ def allvsall(options):
 				avg_ptcls = []
 								
 				ptcl1 = allptclsMatrix[k][results[z]['ptclA']][0]				
-														#You always add all the past particles that went into a particular particle (being
+														#You always add all the past particles that went into a particular new particle (for all the particles being
 														#averaged in the current round) freshly from the raw stack to the averager (with
 														#the appropriate transforms they've undergone, of course. Thus, YOU DON'T have to
 														#worry about "multiplicity", since it takes care of itself by doing this.
@@ -743,7 +812,7 @@ def allvsall(options):
 
 				#	avg.mult(mask)
 				
-				avg.process_inplace('normalize.edgemean')
+				avg.process_inplace(options.normproc[0],options.normproc[1])
 				
 				avg.write_image(options.path + '/round' + str(k).zfill(fillfactor) + '_averages.hdf',mm)
 				
@@ -822,7 +891,8 @@ def allvsall(options):
 			gg+=1
 			
 		allptclsMatrix.append(allptclsRound)
-
+					
+		
 		print "And these many new averages", len(newptcls), len(averages)
 		
 		print "So there are these many old particles for the next round", len(oldptcls)
@@ -928,184 +998,6 @@ class Align3DTaskAVSA(JSTask):
 		
 		return {"final":bestfinal,"coarse":bestcoarse}
 		
-		
-		
-		
-		'''
-		This aligns one volume to a reference and returns the alignment parameters
-		LOAD PARTICLES
-		'''
-		"""
-		options=self.options
-		if options["verbose"]>1: 
-			print "Aligning ",options["label"]
-		
-		fixedimage=EMData(self.data["fixedimage"],options['p1number'])
-		
-		#fn=EMUtil.get_image_count(self.data["fixedimage"])
-		
-		#if type(self.data) != libpyEMData2.EMData:
-		#	print 
-		
-		image = EMData(self.data["image"],options['p2number'])
-		#iin = EMUtil.get_image_count(self.data["image"])
-		"""
-	
-		
-		'''
-		PREPROCESSING
-		'''
-		"""
-		# Make the mask first, use it to normalize (optionally), then apply it 
-		mask=EMData(int(image["nx"]),int(image["ny"]),int(image["nz"]))
-		mask.to_one()
-		
-		if options["mask"]:
-			#print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options["mask"][0],options["mask"][1]) 
-			mask.process_inplace(options["mask"][0],options["mask"][1])
-		
-		# normalize
-		if options["normproc"]:
-			if options["normproc"][0]=="normalize.mask": 
-				options["normproc"][1]["mask"]=mask
-			
-			fixedimage.process_inplace(options["normproc"][0],options["normproc"][1])
-			image.process_inplace(options["normproc"][0],options["normproc"][1])
-		
-		#Mask after normalizing with the mask you just made, which is just a box full of 1s if not mask is specified
-		fixedimage.mult(mask)
-		image.mult(mask)
-		
-		#If normalizing, it's best to do normalize-mask-normalize-mask
-		if options["normproc"]:
-			if options["normproc"][0]=="normalize.mask": 
-				options["normproc"][1]["mask"]=mask
-			
-			fixedimage.process_inplace(options["normproc"][0],options["normproc"][1])
-			image.process_inplace(options["normproc"][0],options["normproc"][1])
-		
-			fixedimage.mult(mask)
-			image.mult(mask)
-		
-		
-		#if options["mask"] != None:
-		#	mask.process_inplace(options["mask"][0],options["mask"][1])
-		
-		# normalize
-		#if options["normproc"] != None:
-		#	if options["normproc"][0]=="normalize.mask": 
-		#		options["normproc"][1]["mask"]=mask
-		#	fixedimage.process_inplace(options["normproc"][0],options["normproc"][1])
-		#	image.process_inplace(options["normproc"][0],options["normproc"][1])
-		#fixedimage.mult(mask)
-		#image.mult(mask)
-		
-		
-		
-		
-		# preprocess
-		if options["preprocess"] != None:
-			fixedimage.process_inplace(options["preprocess"][0],options["preprocess"][1])
-			image.process_inplace(options["preprocess"][0],options["preprocess"][1])
-		
-		# lowpass
-		if options["lowpass"] != None:
-			fixedimage.process_inplace(options["lowpass"][0],options["lowpass"][1])
-			image.process_inplace(options["lowpass"][0],options["lowpass"][1])
-
-
-		# highpass
-		if options["highpass"] != None:
-			fixedimage.process_inplace(options["highpass"][0],options["highpass"][1])
-			image.process_inplace(options["highpass"][0],options["highpass"][1])
-		
-		# Shrinking both for initial alignment and reference
-		if options["shrink"]!=None and options["shrink"]>1 :
-			sfixedimage=fixedimage.process("math.meanshrink",{"n":options["shrink"]})
-			simage=image.process("math.meanshrink",{"n":options["shrink"]})
-		else :
-			sfixedimage=fixedimage
-			simage=image
-			
-		if options["shrinkrefine"]!=None and options["shrinkrefine"]>1 :
-			if options["shrinkrefine"]==options["shrink"] :
-				s2fixedimage=sfixedimage
-				s2image=simage
-			else :
-				s2fixedimage=fixedimage.process("math.meanshrink",{"n":options["shrinkrefine"]})
-				s2image=image.process("math.meanshrink",{"n":options["shrinkrefine"]})
-		else :
-			s2fixedimage=fixedimage
-			s2image=image
-						 
-		if options["verbose"] >2:
-			print "Because it was greater than 2 or not integer, I will exit"
-			sys.exit()  
-			print "Align size %d,  Refine Align size %d"%(sfixedimage["nx"],s2fixedimage["nx"])
-		"""
-		
-		'''
-		ALIGNMENT
-		'''
-		"""
-		#If a Transform was passed in, we skip coarse alignment
-		if isinstance(options["align"],Transform):
-			bestcoarse=[{"score":1.0,"xform.align3d":options["align"]}]
-			if options["shrinkrefine"]>1: 
-				bestcoarse[0]["xform.align3d"].set_trans(bestcoarse[0]["xform.align3d"].get_trans()/float(options["shrinkrefine"]))
-		
-		#This is the default behavior, seed orientations come from coarse alignment
-		else:
-			# returns an ordered vector of Dicts of length options.npeakstorefine. The Dicts in the vector have keys "score" and "xform.align3d"
-			bestcoarse=simage.xform_align_nbest(options["align"][0],sfixedimage,options["align"][1],options["npeakstorefine"],options["aligncmp"][0],options["aligncmp"][1])
-			scaletrans=options["shrink"]/float(options["shrinkrefine"])
-			if scaletrans!=1.0:
-				for c in bestcoarse:
-					c["xform.align3d"].set_trans(c["xform.align3d"].get_trans()*scaletrans)
-
-		# verbose printout
-		if options["verbose"]>1 :
-			for i,j in enumerate(bestcoarse): print "coarse %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
-
-		if options["ralign"]!=None :
-			# Now loop over the individual peaks and refine each
-			bestfinal=[]
-			for bc in bestcoarse:
-				options["ralign"][1]["xform.align3d"]=bc["xform.align3d"]
-				ali=s2image.align(options["ralign"][0],s2fixedimage,options["ralign"][1],options["raligncmp"][0],options["raligncmp"][1])
-				
-				try: 
-					bestfinal.append({"score":ali["score"],"xform.align3d":ali["xform.align3d"],"coarse":bc})
-				except:
-					bestfinal.append({"xform.align3d":bc["xform.align3d"],"score":1.0e10,"coarse":bc})
-
-			if options["shrinkrefine"]>1 :
-				for c in bestfinal:
-					c["xform.align3d"].set_trans(c["xform.align3d"].get_trans()*float(options["shrinkrefine"]))
-
-			# verbose printout of fine refinement
-			if options["verbose"]>1 :
-				for i,j in enumerate(bestfinal): 
-					print "fine %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
-
-		else: 
-			bestfinal=bestcoarse
-		
-		#If you just sort 'bestfinal' it will be sorted based on the 'coarse' key in the dictionaries of the list
-		#because they come before the 'score' key of the dictionary (alphabetically)
-		
-		bestfinal = sorted(bestfinal, key=itemgetter('score'))
-		
-		if bestfinal[0]["score"] == 1.0e10 :
-			print "Error: all refine alignments failed for %s. May need to consider altering filter/shrink parameters. Using coarse alignment, but results are likely invalid."%self.options["label"]
-		
-		if options["verbose"]>1: 
-			print "Best %1.5g\t %s"%(bestfinal[0]["score"],str(bestfinal[0]["xform.align3d"])) 
-			print "Done aligning ",options["label"]
-		
-		return {"final":bestfinal,"coarse":bestcoarse}
-		
-		"""
 
 jsonclasses["Align3DTaskAVSA"]=Align3DTaskAVSA.from_jsondict
 
