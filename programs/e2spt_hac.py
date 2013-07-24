@@ -571,12 +571,12 @@ def allvsall(options):
 			simmxPhis.write_image(simmxFile,6)	
 			simmxScales.write_image(simmxFile,7)
 			
-			from e2figureplot import plotter
-			plotter (plotX, plotY, options, 'scatter')
+			#from e2figureplot import plotter
+			#plotter (plotX, plotY, options, 'scatter')
 			
-			plotName = simmxFile.replace('.hdf','_PLOT.png')
-			from e2figureplot import textwriter
-			textwriter(plotX, plotY, options, plotName)
+			#plotName = simmxFile.replace('.hdf','_PLOT.png')
+			#from e2figureplot import textwriter
+			#textwriter(plotX, plotY, options, plotName)
 	
 		print "\n\n\n\nIn iteration %d, the total number of comparisons in the ranking list, either new or old that survived, is %d" % (k, len(results))
 		
