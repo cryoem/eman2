@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Author: Jesus Galaz, 02/Feb/2013, last update 26/June/2013
+# Author: Jesus Galaz, 02/Feb/2013, last update 24/July/2013
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -61,26 +61,30 @@ def main():
 	parser.add_argument('--subset', type=int, default=0, help='''Specify how many sub-tiltseries (or particles) from the coordinates file you want to extract; e.g, if you specify 10, the first 10 particles will be boxed.\n0 means "box them all" because it makes no sense to box none''')
 	#parser.add_argument('--tomogramthickness',type=int,default=None,help='Z dimension of the reconstructed tomogram.')
 	parser.add_argument('--tomosides',type=str,default='',help='Comma separated values for the tomogram dimensions. Alternatively, provide the path to the tomogram itself through --tomogram.')
-	parser.add_argument('--tomgoram',type=str,default='',help='Path to the tomogram.')
-	parser.add_argument("--shrink", type=int,default=0,help="Optionally shrink the coordinates by a factor of --shrink=N to speed up the process. Might compromise accuracy if two points in the coordinates file are veyr close to eachother.")
-	
+	parser.add_argument('--tomogram',type=str,default='',help='Path to the tomogram.')
+	parser.add_argument("--shrink", type=int,default=1,help="Optionally shrink the coordinates by a factor of --shrink=N to speed up the process. Might compromise accuracy if two points in the coordinates file are very close to eachother.")
+	parser.add_argument('--cshrink', type=int, default=1, help='''Specifies the factor by which to multiply the coordinates in the coordinates file, so that they can be at the same scale as the tomogram.\n
+																For example, provide 2 if the coordinates are on a 2K x 2K scale,\nbut you want to extract the sub-volumes from the UN-shrunk 4K x 4K tomogram.''')
+	parser.add_argument("--everyother", type=int, help="Pick every other tilt. For example, --tilt=3 would pick every third tilt only.",default=-1)
+
 	(options, args) = parser.parse_args()
 	logger = E2init(sys.argv, options.ppid)
-	return
+	
+	
+	
+	from e2spt_classaverage import sptmakepath
+	
+	options = sptmakepath(options,'sptSubtilt')
+	
+	print "I've read the options"	
 	
 	#def subtiltextractor(parameters):
 	
-	if not options.tiltseries or not options.tiltangles or not options.coords or not options.tomogramthickness:
+	if not options.tiltseries or not options.tiltangles or not options.coords:
 		print "ERROR: You must provide ALL of the following options: --tiltseries, --tiltangles, --coords and --tomogramthickness."
 		sys.exit()
-		
-	if options.subset:
-		if options.subset > nptcls:
-			print "WARNING: The total amount of lines in the coordinates files is LESS than the subset of particles to box you specified; therefore, ALL particles will be extracted."
-		else:
-			nptcls=options.subset
 	
-	print "The size of the set of sub-tiltseries to extract is", nptcls
+
 	
 	#k=-1
 	#name = options.output
@@ -101,7 +105,7 @@ def main():
 	
 	ntiltangles = len(tiltangles)
 	
-	if int(nslices) != int(ntiltanges):
+	if int(nslices) != int(ntiltangles):
 		print """ERROR: The tiltangles file doesn't seem to correspond to the tiltseries provided.
 				The number of images in --tiltseries (z dimension of MRC stack) must be equal to the number
 				of lines in --tiltangles."""
@@ -118,35 +122,40 @@ def main():
 	
 	if options.tomosides:							#Read tomogram dimensions.
 		sides=options.tomosides.split(',')
-		tomox = sides[0]
-		tomoy = sides[1]
-		tomoz = sides[2]
+		tomox = int(sides[0])
+		tomoy = int(sides[1])
+		tomoz = int(sides[2])
 	
 	if options.tomogram:
 		tomohdr = EMData(options.tomogram,0,True)	#Read tomogram dimensions from tomogram header, if the tomogram is provided.
-		tomox = tomohdr['nx']
-		tomoy = tomohdr['ny']
-		tomoz = tomohdr['nz']
+		tomox = int(tomohdr['nx'])
+		tomoy = int(tomohdr['ny'])
+		tomoz = int(tomohdr['nz'])
 
-	if options.shrink:								#The 'MODEL' to build for the coordinates need not use the full size of the tomogram.
-		tomox = tomox/4.0
-		tomoy = tomoy/4.0
-		tomoz = tomoz/4.0
+	#if float( options.shrink ) > 1.0:								#The 'MODEL' to build for the coordinates need not use the full size of the tomogram.
+	#	tomox = int(tomox)/options.shrink
+	#	tomoy = int(tomoy)/options.shrink
+	#	tomoz = int(tomoz)/options.shrink
 	
-	tomovol = EMData(tomox,tomoy,tomoz)				#Create empty volume for the MODEL to build
-	tomovol.to_zero()								#Make sure it's empty
+	#tomovol = EMData(tomox,tomoy,tomoz)				#Create empty volume for the MODEL to build
+	#tomovol.to_zero()								#Make sure it's empty
 	
 	cfile = open(options.coords,'r')				#Open coordinates file
 	clines = cfile.readlines()						#Read its lines
 	cfile.close()									#Close the file
 	
 	'''
-	Iterate over the lines of the coordinates file.
+	"Clean the coordinate files lines (clines) if there's garbage in them.
 	Some people might manually make ABERRANT coordinates files with commas, tabs, or more than once space in between coordinates.
 	Each line needs to be parsed.
 	'''
-	p=1
+	cleanlines=[]
 	for line in clines:
+		
+		if options.subset:
+			if int(ptclNum) >= (options.subset):
+				break
+			
 		line =line.replace(", ",' ')	
 		line = line.replace(",",' ')
 		line = line.replace("x",'')
@@ -154,34 +163,179 @@ def main():
 		line = line.replace("z",'')
 		line = line.replace("=",'')
 		line = line.replace("_",' ')
-		line = line.replace("\n",' ')
+		line = line.replace("\n",'')
 		line = line.replace("\t",' ')
 		line = line.replace("  ",' ')
 		
-		line = line.split()		
+		finallineelements=line.split(' ')
+
+
+		if line and len(finallineelements) ==3:
+			cleanlines.append(line)
+		else:
+			print "Bad line removed", line
+			
+	'''
+	Iterate over the correct number of viable lines from the coordinates file.
+	'''
 	
-		xc = int(clines[i][0])				#Determine x y z coordinates for each line
-		yc = int(clines[i][1])
-		zc = int(clines[i][2])
+	nptcls=len(cleanlines)
+	if int(options.subset) > 0:
+		if int(options.subset) > len(cleanlines):
+			print """WARNING: The total amount of lines in the coordinates files is LESS than the subset of particles to box you specified; 
+							therefore, ALL particles will be extracted."""
+		else:
+			nptcls - int(options.subset)
+			print "The SUBSET of particles to work with is", nptcls
+	else:
+		print "The size of the ENTIRE SET of sub-tiltseries to extract is", nptcls
+
+	
+	print "There are these many clean lines", len(cleanlines)
+	print "Clean lines are", cleanlines
+	
+	everyotherfactor = 1
+	if options.everyother > 1:
+		everyotherfactor = options.everyother
 		
+	ptclNum=0
+	for line in cleanlines:
+	
+		line = line.split()	
+		
+		if len(line) == 3:
+			xc = float(line[0])				#Determine x y z coordinates for each line
+			yc = float(line[1])
+			zc = float(line[2])	
+			print "\n\n\n\n\n+=================\nAnalyzing particle number+================\n", ptclNum
+			print "\nRead these coordinates", xc,yc,zc
+		else:
+			print "There's an aberrant line in your file, see", line
+			sys.exit()
+		
+		if options.cshrink:
+			xc*=options.cshrink
+			yc*=options.cshrink
+			zc*=options.cshrink
+			
+			print "\nThe real coordinates after multiplying cshrink are", xc,yc,zc
+		
+		outIndx=0
 		for k in range(len(tiltangles)):
+		
 			
-			xcshift = xc - tomox/2.0
+			if k % everyotherfactor:
+				print "Skipping tilt",k
+					
+			else:
+				
+				angle = float( tiltangles[k] )
+				#print "\n\n\nTilt %d, ANGLE %f" %( k, angle )
+				#print "XC", xc
+				tAxisShift = tomox/2.0
+				#print "tAxisShift is", tAxisShift
+				xcToAxis = xc - tAxisShift
+				#print "Therefore, xcToAxis is", xcToAxis
+				#if k==0:
+				#	print "\nThe tilt axis goes through the middle, so xcoordinates need to be shifted by", xcshift
 			
-			#RY = math.array( [ [math.cos(tilt),0, -1 * math.sin(tilt), 0], [0,1,0,0], [math.sin(tilt), 0, math.cos(tilt), 0], [0,0,0,1] ] )
-			#zt = zc* math.cos(tiltangles[k]) - xcshift * math.sin(tiltangles[k])
+				#print "\nTilt axis shift (should be constant; first time applied it is negative", -tAxisShift
+				#print "Because TOMOX is", tomox
+				#print "Therefore, XC with respect TO tilt AXIS is", xcToAxis
+				#print "\n\nZC", zc
+				zSectionShift = tomoz/2.0
+				#print "zSectionShift", zSectionShift
+				zcToMidSection = zc - zSectionShift
+				#print "zcToMidSection",zcToMidSection
 			
-			xtshift = zc* math.sin(tiltangles[k) + xcshift * math.cos(tiltangles[k])
-			yt = yc
+				#print "ZC (constant)", zc
+				#print "Therefore zSectionShift is", zSectionShift
+				#print "Therefore, zcToMidSection", zcToMidSection
 			
-			xt = xtshift + tomox/2.0
+				#RY = math.array( [ [math.cos(tilt),0, -1 * math.sin(tilt), 0], [0,1,0,0], [math.sin(tilt), 0, math.cos(tilt), 0], [0,0,0,1] ] )
+				#zt = zc* math.cos(tiltangles[k]) - xcshift * math.sin(tiltangles[k])
+				
+				
 			
-			r = Region( (2*xt-options.boxsize)/2, (2*yt-options.boxsize)/2, k, options.boxsize, options.boxsize, k+1)
-			e = EMData()
-			e.read_image(options.tiltseries,0,False,r)
-			e.write_image('subtilt_' + str(p) + '.hdf',p-1)
-						
-		p+=1
+				
+				#print "sin(angle)", math.sin( math.radians(angle) )
+				#print "cos(angle)", math.cos( math.radians(angle) )
+				
+				cosTerm=xcToAxis * math.cos( math.radians(angle)  )
+				sinTerm=zcToMidSection * math.sin( math.radians(angle)  )
+				
+				#print "Cos term is", cosTerm
+				#print "Sin term is", sinTerm
+				
+				xtToAxis = zcToMidSection * math.sin( math.radians(angle)  ) + xcToAxis * math.cos( math.radians(angle)  )
+				
+				#print "Therefore the NEW coordinate is", xtToAxis
+				
+				#print "math.sin(angle) is", math.sin(angle)
+				#print "math.cos(angle) is", math.cos(angle)
+			
+				#print "\nTherefore, the TILTED X respect TO AXIS is", xtToAxis
+				
+				yt = yc
+				
+				#print "yt,yc", yt,yc
+				
+				xt = xtToAxis + tAxisShift
+				#print "The new corrected coordinate is", xt
+			
+				#zt = zcToMidSection + zSectionShift
+			
+				#print "\nHowever, after +tAxisShift, XT is", xt
+				##print "\n\n@@@@@@@@@\nTherefore the final coordinates of the tilt view to extract in 2D are xt,yt", xt,yt
+				#print "\n\n"
+			
+				if float(xt) < 0.0:
+					print "Something went awfully wrong; you have a negative X coordinate",xt
+					print "tomox and tomox/2.0 are", tomox,tomox/2.0
+				
+				if float(yt) < 0.0:
+					print "Something went awfully wrong; you have a negative Y coordinate",yt
+					print "yc is", yc
+				
+				if float(xt) < 0.0 or float(yt) < 0.0:
+					print "Either X or Y are negative, see", xt, yt
+					sys.exit()
+				
+				if float(xt) < float(options.boxsize)/2.0 or float(yt) < float(options.boxsize)/2.0:
+					print "Pick a smaller boxsize; otherwise, some of your particles will contain empty regions outside the image"
+					print "Particle is centered at", xt,yt
+					print "And boxsize/2 is", options.boxsize/2.0
+					sys.exit()
+				
+				r = Region( (2*xt-options.boxsize)/2, (2*yt-options.boxsize)/2, k, options.boxsize, options.boxsize, 1)
+				print "\n\n\nRRRRRRRRRR\nThe region to extract is", r
+				
+				print "\n\n"
+				e = EMData()
+				e.read_image(options.tiltseries,0,False,r)
+				#print "After reading it, nz is", e['nz']
+				e['tiltAngle']=angle
+				e['xt']=xt
+				e['yt']=yt
+				e['origin_x']=e['nx']/2.0
+				e['origin_y']=e['ny']/2.0
+				e['origin_z']=0
+				
+				if float( options.shrink ) > 1.0:
+					e.process_inplace('math.meanshrink',{'n':options.shrink})
+				#print "After shrinking, nz is", e['nz']
+				e.process_inplace('normalize')
+			
+				#print "I've read the 2D particle into the region, resulting in type", type(e)
+				#print "The mean and sigma are", e['mean'], e['sigma']
+				e.write_image(options.path + '/subtiltPtcl_' + str(ptclNum) + '.hdf',outIndx)
+				outIndx+=1
+				print "\n\n\n"
+		
+		#r = Region( (2*xm-box)/2, (2*ym-box)/2, 0, box, box,1)
+
+					
+		ptclNum+=1
 		
 		#		(cos q  0  -sin q   0)
 		#Ry(q) = (0      1    0      0)
@@ -191,27 +345,19 @@ def main():
 		
 		
 		
-		if options.shrink:					#Shrink them if the model will be smaller than the original tomgoram
-			xc = xc/4.o
-			yc = yc/4.0
-			zc = zc/4.0
+	#	if float( options.shrink) > 1.0:					#Shrink them if the model will be smaller than the original tomgoram
+	#		xc = xc/options.shrink
+	#		yc = yc/options.shrink
+	#		zc = zc/options.shrink
 			
-		tomovol.set_value_at(xc,yc,zc,1)	#Set the value of the center pixel where any particles were picked to 1.
+		#tomovol.set_value_at(xc,yc,zc,1)	#Set the value of the center pixel where any particles were picked to 1.
 		
 	
-	for tilt in tiltangles:
-		t=Transform({'type':'eman','az':0,'phi':0,'alt':tilt})
-		prj = tomovo.project('standard',t)
-		
-		for i in range(len(clines)):
-			
-		
-	
-	
-	
-	
-	
-	
+	#for tilt in tiltangles:
+	#	t=Transform({'type':'eman','az':0,'phi':0,'alt':tilt})
+	#	prj = tomovo.project('standard',t)
+	#	
+	#	for i in range(len(clines)):
 	
 	'''
 	
