@@ -77,7 +77,9 @@ def main():
 	parser.add_option("--exhaustive",         action="store_true",   default=False,               help="Use old version of constrained_helix without SHC")
 	
 	# ehelix streak
-	parser.add_option("--seg_ny",              type="int",            default= 45,                 help="y dimension of desired segment size, should be related to fract in that fract ~ seg_ny/ny, where ny is dimension of input projections.")
+	parser.add_option("--seg_ny",              type="int",           default= 45,                 help="y dimension of desired segment size, should be related to fract in that fract ~ seg_ny/ny, where ny is dimension of input projections.")
+	
+	parser.add_option("--stoprnct", 		   type="float",         default=5.0,                 help="Minimum percentage of particles that change orientation to stop the program") 
 	
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
@@ -133,7 +135,7 @@ def main():
 		else:
 			from applications import ehelix_MPI
 			global_def.BATCH = True
-			ehelix_MPI(args[0], args[1], args[2], options.seg_ny, options.delta, options.psi_max, searchxshiftp, xwobblep, ywobble, options.apix, dp, dphi, options.fract, rmaxp, rminp, not options.nopsisearch, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug, options.exhaustive)
+			ehelix_MPI(args[0], args[1], args[2], options.seg_ny, options.delta, options.psi_max, searchxshiftp, xwobblep, ywobble, options.apix, dp, dphi, options.fract, rmaxp, rminp, not options.nopsisearch, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug, options.exhaustive, termprec=options.stoprnct)
 			global_def.BATCH = False
 
 		if options.MPI:
