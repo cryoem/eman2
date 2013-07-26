@@ -13486,7 +13486,7 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 				temp = Util.get_transform_params(ldata[im-indcs[ifil][0]], "xform.projection", "spider")
 				set_params_proj(data[im],[temp["phi"],temp["theta"],temp["psi"],-temp["tx"],-temp["ty"]])
 				t2 = data[im].get_attr("xform.projection")
-				pixer[im]  = max_3D_pixel_error(t1[im-indcs[ifil][0]], t2, data_nn//2-2)
+				pixer[im]  = max_3D_pixel_error(t1[im-indcs[ifil][0]], t2, seg_ny//2-2)
 				#print data[im].get_attr('ID'),pixer[im], numr[-3]
 				#if not(doExhaustive):
 				#	if Iter == 1 and resetatone:  data[im].set_attr('previousmax',-1.0e23)
