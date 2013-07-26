@@ -80,6 +80,7 @@ def main():
 	parser.add_option("--seg_ny",              type="int",           default= 45,                 help="y dimension of desired segment size, should be related to fract in that fract ~ seg_ny/ny, where ny is dimension of input projections.")
 	
 	parser.add_option("--stoprnct", 		   type="float",         default=5.0,                 help="Minimum percentage of particles that change orientation to stop the program") 
+	parser.add_option("--lastringtest",        action="store_true",  default=False,               help="")
 	
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
@@ -127,10 +128,10 @@ def main():
 		
 		if len(args) < 4:  mask = None
 		else:               mask = args[3]
-		if options.test:
-			from development import ehelix_MPI_test
+		if options.lastringtest:
+			from development import ehelix_MPI_lastringtest
 			global_def.BATCH = True
-			ehelix_MPI_test(args[0], args[1], args[2], options.delta, options.psi_max, searchxshiftp, xwobblep, ywobble, options.apix, dp, dphi, options.fract, rmaxp, rminp, not options.nopsisearch, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
+			ehelix_MPI_lastringtest(args[0], args[1], args[2], options.seg_ny, options.delta, options.psi_max, searchxshiftp, xwobblep, ywobble, options.apix, dp, dphi, options.fract, rmaxp, rminp, not options.nopsisearch, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug, options.exhaustive, termprec=options.stoprnct)
 			global_def.BATCH = False
 		else:
 			from applications import ehelix_MPI
