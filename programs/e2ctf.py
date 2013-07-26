@@ -110,6 +110,7 @@ images far from focus."""
 #	parser.add_argument("--virtualout",type=str,help="Make a virtual stack copy of the input images with CTF parameters stored in the header. BDB only.",default=None)
 	parser.add_argument("--storeparm",action="store_true",help="Output files will include CTF info. CTF parameters are used from the database, rather than values that may be present in the input image header. Critical to use this when generating output !",default=False,guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode='genoutp[True]')
 	parser.add_argument("--oversamp",type=int,help="Oversampling factor",default=1, guitype='intbox', row=3, col=0, rowspan=1, colspan=2, mode='autofit')
+	parser.add_argument("--classify",type=int,help="Subclassify particles, hopefully by defocus, into n groups.",default=0)
 	parser.add_argument("--sf",type=str,help="The name of a file containing a structure factor curve. Specify 'none' to use the built in generic structure factor. Default=auto",default="auto",guitype='strbox',nosharedb=True,returnNone=True,row=8,col=1,rowspan=1,colspan=1, mode='autofit,tuning')
 	parser.add_argument("--debug",action="store_true",default=False)
 	parser.add_argument("--dbds",type=str,default=None,help="Obsolete option for old e2workflow. Present only to provide warning messages.")
@@ -187,12 +188,13 @@ images far from focus."""
 	options.filenames = args
 
 	### Power spectrum and CTF fitting
+	img_sets=None
 	if options.autofit:
 		img_sets=pspec_and_ctf_fit(options,debug) # converted to a function so to work with the workflow
 
 	### GUI - user can update CTF parameters interactively
 	if options.gui :
-		img_sets = get_gui_arg_img_sets(options.filenames)
+		if img_sets==None : img_sets = get_gui_arg_img_sets(options.filenames)
 
 		if options.sortdefocus:
 			img_sets.sort(key=get_df)
@@ -451,44 +453,51 @@ def pspec_and_ctf_fit(options,debug=False):
 		if options.verbose or debug : print "Processing ",filename
 		apix=options.apix
 		if apix<=0 : apix=EMData(filename,0,1)["apix_x"]
-		im_1d,bg_1d,im_2d,bg_2d,bg_1d_low=powspec_with_bg(filename,options.source_image,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp,apix=apix)
+		
+		# After this, PS contains a list of (im_1d,bg_1d,im_2d,bg_2d,bg_1d_low) tuples. If classify is <2 then this list will have only 1 tuple in it
+		if options.classify>1 : ps=split_powspec_with_bg(filename,options.source_image,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp,apix=apix,nclasses=options.classify)
+		else: ps=list(powspec_with_bg(filename,options.source_image,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp,apix=apix))
+		# im_1d,bg_1d,im_2d,bg_2d,bg_1d_low
 		ds=1.0/(apix*im_2d.get_ysize())
-		if not options.nosmooth : bg_1d=smooth_bg(bg_1d,ds)
-		if options.fixnegbg :
-			bg_1d=fixnegbg(bg_1d,im_1d,ds)		# This insures that we don't have unreasonable negative values
+		for j,p in enumerate(ps):
+			im_1d,bg_1d,im_2d,bg_2d,bg_1d_low=p
+			
+			if not options.nosmooth : bg_1d=smooth_bg(bg_1d,ds)
+			if options.fixnegbg :
+				bg_1d=fixnegbg(bg_1d,im_1d,ds)		# This insures that we don't have unreasonable negative values
 
-		if debug: Util.save_data(0,ds,bg_1d,"ctf.bgb4.txt")
+			if debug: Util.save_data(0,ds,bg_1d,"ctf.bgb4.txt")
 
-		# Fit the CTF parameters
-		if debug : print "Fit CTF"
-		if options.dfmax != None : dfhint=(.15,options.dfmax)
-		elif options.curdefocushint :
-			try:
-				ctf=js_parms["ctf"][0]
-				curdf=ctf.defocus
-				dfhint=(curdf-0.1,curdf+0.1)
-				print "Using existing defocus as hint :",dfhint
-			except :
+			# Fit the CTF parameters
+			if debug : print "Fit CTF"
+			if options.dfmax != None : dfhint=(.15,options.dfmax)
+			elif options.curdefocushint :
 				try:
-					curdf=js_parms["ctf_frame"][1].defocus
+					ctf=js_parms["ctf"][0]
+					curdf=ctf.defocus
 					dfhint=(curdf-0.1,curdf+0.1)
-					print "Using existing defocus from frame as hint :",dfhint
-				except:
-					dfhint=None
-					print "No existing defocus to start with"
-		else: dfhint=None
-		ctf=ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,options.voltage,options.cs,options.ac,apix,bgadj=not options.nosmooth,autohp=options.autohp,dfhint=dfhint,verbose=options.verbose)
+					print "Using existing defocus as hint :",dfhint
+				except :
+					try:
+						curdf=js_parms["ctf_frame"][1].defocus
+						dfhint=(curdf-0.1,curdf+0.1)
+						print "Using existing defocus from frame as hint :",dfhint
+					except:
+						dfhint=None
+						print "No existing defocus to start with"
+			else: dfhint=None
+			ctf=ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,options.voltage,options.cs,options.ac,apix,bgadj=not options.nosmooth,autohp=options.autohp,dfhint=dfhint,verbose=options.verbose)
 
-		if debug:
-			Util.save_data(0,ds,im_1d,"ctf.fg.txt")
-			Util.save_data(0,ds,bg_1d,"ctf.bg.txt")
-			Util.save_data(0,ds,ctf.snr,"ctf.snr.txt")
+			if debug:
+				Util.save_data(0,ds,im_1d,"ctf.fg.txt")
+				Util.save_data(0,ds,bg_1d,"ctf.bg.txt")
+				Util.save_data(0,ds,ctf.snr,"ctf.snr.txt")
 
-		try : qual=js_parms["quality"]
-		except :
-			qual=5
-			js_parms["quality"]=5
-		img_sets.append([filename,ctf,im_1d,bg_1d,im_2d,bg_2d,qual,bg_1d_low])
+			try : qual=js_parms["quality"]
+			except :
+				qual=5
+				js_parms["quality"]=5
+			img_sets.append([filename+"_"+str(j),ctf,im_1d,bg_1d,im_2d,bg_2d,qual,bg_1d_low])
 
 		# store the results back in the database. We omit the filename, quality and bg_1d_low (which can be easily recomputed)
 		js_parms["ctf"]=img_sets[-1][1:-2]
@@ -885,6 +894,132 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 	av1_1d=av1.calc_radial_dist(av1.get_ysize()/2,0.0,1.0,1)
 	av2_1d=av2.calc_radial_dist(av2.get_ysize()/2,0.0,1.0,1)
 
+	# added to make the 2D display look better. Should have no other impact at the time
+	# it's being added, though autofitting may rely on it in future, so it shouldn't be removed --steve (8/3/11)
+	av1.process_inplace("math.sqrt")
+	av1["is_intensity"]=0
+
+	av2.process_inplace("math.sqrt")
+	av2["is_intensity"]=0
+
+	# This is a new addition (2/4/10) to prevent negative BG subtracted curves near the origin
+	maxpix=int(apix*ys2/80.0)		# we do this up to ~80 A
+	for i in xrange(maxpix) :
+		if av2_1d[i]>av1_1d[i] : av2_1d[i]=av1_1d[i]		# we set the background equal to the foreground if it's too big
+
+	#db_close_dict(stackfile)	# safe for non-bdb files
+
+	return (av1_1d,av2_1d,av1,av2,low_bg_curve(av2_1d,ds))
+
+# img_sets : filename,ctf,im_1d,bg_1d,im_2d,bg_2d,qual,bg_1d_low
+def split_powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=1,apix=2,nclasses=2):
+	"""Same as powspec_with_bg, but also subclassifies the data into groups based on differences in the 1-D background subtracted power spectrum.
+Rather than returning a single tuple, returns a list of nclasses tuples.
+	"""
+
+	global masks
+
+	im=EMData(stackfile,0)
+	ys=im.get_ysize()*oversamp
+	ys2=im.get_ysize()
+	if radius<=0 : radius=ys2/2.6
+	n=EMUtil.get_image_count(stackfile)
+	nn=0
+	ds=1.0/(apix*ys)	# oversampled ds
+
+	# set up the inner and outer Gaussian masks
+	try:
+		mask1,ratio1,mask2,ratio2=masks[(ys,radius)]
+	except:
+		mask1=EMData(ys2,ys2,1)
+		mask1.to_one()
+		mask1.process_inplace("mask.gaussian",{"outer_radius":radius,"exponent":4.0})
+		mask2=mask1.copy()*-1+1
+#		mask1.process_inplace("mask.decayedge2d",{"width":4})
+		mask2.process_inplace("mask.decayedge2d",{"width":4})
+		mask1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
+		mask2.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
+		ratio1=mask1.get_attr("square_sum")/(ys*ys)	#/1.035
+		ratio2=mask2.get_attr("square_sum")/(ys*ys)
+		masks[(ys,radius)]=(mask1,ratio1,mask2,ratio2)
+#		display((mask1,mask2))
+
+	av_1d_n=[]
+	for i in range(n):
+		im1 = EMData()
+		if source_image!=None :
+			im1.read_image(stackfile,i,True)
+			try:
+				if im1["ptcl_source_image"]!=source_image : continue
+			except:
+				print "Image %d doesn't have the ptcl_source_image parameter. Skipping."%i
+				continue
+
+		im1.read_image(stackfile,i)
+		nn+=1
+#		im1=EMData(stackfile,i)
+
+		if edgenorm : im1.process_inplace("normalize.edgemean")
+		if oversamp>1 :
+#			print Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys)
+			im1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
+
+		im2=im1.copy()
+
+#		print im2.get_size(), im1.get_size()
+
+		im1*=mask1
+		imf=im1.do_fft()
+		imf.ri2inten()
+		if i==0:
+			av1=EMData(imf["nx"],imf["ny"],imf["nz"])	# we make a new object to avoid copying the header of imf
+			av1.set_complex(True)
+			av1.to_zero()
+		
+		av_1d=imf.calc_radial_dist(av1.get_ysize()/2,0.0,1.0,1)
+		av_1d_n.append(av_1d)
+		av1+=imf
+
+		im2*=mask2
+		imf=im2.do_fft()
+		imf.ri2inten()
+		if i==0:
+			av2=EMData(imf["nx"],imf["ny"],imf["nz"])
+			av2.set_complex(True)
+			av2.to_zero()
+		av2+=imf
+
+
+	av1/=(float(nn)*av1.get_ysize()*av1.get_ysize()*ratio1)
+	av1.set_value_at(0,0,0.0)
+	av1.set_complex(1)
+	av1["is_intensity"]=1
+	av1["ptcl_repr"]=nn
+
+	av2/=(float(nn)*av2.get_ysize()*av2.get_ysize()*ratio2)
+	av2.set_value_at(0,0,0.0)
+	av2.set_complex(1)
+	av2["is_intensity"]=1
+	av2["ptcl_repr"]=nn
+
+	av1_1d=av1.calc_radial_dist(av1.get_ysize()/2,0.0,1.0,1)
+	av2_1d=av2.calc_radial_dist(av2.get_ysize()/2,0.0,1.0,1)
+
+	n0=int(0.05/ds)		# N at 20 A. We ignore low resolution information due to interference of structure factor
+	bg=EMData(len(av2_1d)-n0,1,1)
+	for i in xrange(n0,len(av2_1d)): bg[i-n0]=av2_1d[i]
+	
+	# now BG subtract each particle 1-D average
+	for j in range(n):
+		# converts each list of radial values into an image
+		im=EMData(len(av2_1d)-n0,1,1)
+		for i in xrange(n0,len(av2_1d)): im[i-n0]=av_1d_n[j][i]/(av1["ny"]*av1["ny"]*ratio1)
+		im.write_image("presub.hdf",j)
+		im.sub(bg)
+		im.write_image("postsub.hdf",j)
+		av_1d_n[j]=im
+
+	sys.exit(1)
 	# added to make the 2D display look better. Should have no other impact at the time
 	# it's being added, though autofitting may rely on it in future, so it shouldn't be removed --steve (8/3/11)
 	av1.process_inplace("math.sqrt")

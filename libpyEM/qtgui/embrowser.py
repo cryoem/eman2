@@ -542,11 +542,11 @@ class EMPlotFileType(EMFileType):
 
 		try:
 			target=brws.viewplot2d[-1]
-			target.set_data(data,self.path.split("/")[-1].split("#")[-1])
+			target.set_data(data,remove_directories_from_name(self.path,1))
 		except:
 			target=EMPlot2DWidget()
 			brws.viewplot2d.append(target)
-			target.set_data(data,self.path.split("/")[-1].split("#")[-1])
+			target.set_data(data,remove_directories_from_name(self.path,1))
 
 		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
 
@@ -571,7 +571,7 @@ class EMPlotFileType(EMFileType):
 
 		target=EMPlot2DWidget()
 		brws.viewplot2d.append(target)
-		target.set_data(data,self.path.split("/")[-1].split("#")[-1])
+		target.set_data(data,remove_directories_from_name(self.path,1))
 
 		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
 
@@ -733,6 +733,19 @@ class EMImageFileType(EMFileType):
 		self.nimg=EMUtil.get_image_count(path)
 		im0=EMData(path,0,True)
 		self.dim=(im0["nx"],im0["ny"],im0["nz"])
+	def closeEvent(self,event):
+
+#		E2saveappwin("e2display","main",self)
+		self.updthreadexit=True
+		for w in self.view2d+self.view2ds+self.view3d+self.viewplot2d+self.viewplot3d:
+			w.close()
+
+		if self.infowin!=None:
+			self.infowin.close()
+
+		event.accept()
+		#self.app().close_specific(self)
+		self.emit(QtCore.SIGNAL("module_closed"))
 
 	@staticmethod
 	def name():
@@ -837,6 +850,7 @@ class EMStackFileType(EMFileType):
 				os.system("e2proc3d.py %s /tmp/vol.hdf"%self.path)		# Probably not a good hack to use, but it will do for now...
 				os.system("chimera /tmp/vol.hdf&")
 		else : print "Sorry, I don't know how to run Chimera on this platform"
+
 
 # These are set all together at the end rather than after each class for efficiency
 EMFileType.typesbyft = {
@@ -1636,6 +1650,7 @@ class EMBDBInfoPane(EMInfoPane):
 		self.view2d=[]
 		self.view3d=[]
 		self.view2ds=[]
+		self.viewplot2d=[]
 
 	def hideEvent(self,event) :
 		"If this pane is no longer visible close any child views"
@@ -2061,6 +2076,23 @@ class EMStackInfoPane(EMInfoPane):
 #		QtCore.QObject.connect(self.wbutedit, QtCore.SIGNAL('clicked(bool)'), self.buttonEdit)
 		self.view2d=[]
 		self.view3d=[]
+		self.view2ds=[]
+		self.viewplot2d=[]
+
+	def closeEvent(self,event):
+
+#		E2saveappwin("e2display","main",self)
+		self.updthreadexit=True
+		for w in self.view2d+self.view2ds+self.view3d+self.viewplot2d:
+			w.close()
+
+		if self.infowin!=None:
+			self.infowin.close()
+
+		event.accept()
+		#self.app().close_specific(self)
+		self.emit(QtCore.SIGNAL("module_closed"))
+
 
 	def hideEvent(self,event) :
 		"If this pane is no longer visible close any child views"

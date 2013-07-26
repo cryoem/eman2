@@ -99,13 +99,13 @@ def main():
 			try: com=spl[4].split()[0].split("/")[-1]
 			except : continue
 
-			if com in ("e2refine.py","e2project3d.py","e2simmx.py","e2simmx2stage.py","e2classify.py","e2classaverage.py","e2make3d.py") : hist.append((com,spl))
+			if com in ("e2refine.py","e2refine_easy.py","e2refinemulti.py","e2project3d.py","e2simmx.py","e2simmx2stage.py","e2classify.py","e2classaverage.py","e2make3d.py") : hist.append((com,spl))
 			
 		n=0
 		while n<len(hist):
 			com=hist[n][1][4]
 			ttime=timestamp_diff(hist[n][1][0],hist[n][1][1])
-			if hist[n][0]=="e2refine.py": 
+			if hist[n][0] in ("e2refine.py","e2refine_easy.py"): 
 				pl=com.find("--path=")
 				parl=com.find("--parallel=")
 				print "%s\t%1.2f hours\te2refine %s"%(difftime(ttime),ttime/3600.0,com[pl+7:].split()[0]),

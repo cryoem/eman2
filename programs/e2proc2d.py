@@ -105,6 +105,7 @@ def main():
 	parser.add_argument("--outtype", metavar="image-type", type=str, help="output image format, 'mrc', 'imagic', 'hdf', etc. if specify spidersingle will output single 2D image rather than 2D stack.")
 	parser.add_argument("--radon",  action="store_true", help="Do Radon transform")
 	parser.add_argument("--randomize", type=str, action="append",help="Randomly rotate/translate the image. Specify: da,dxy,flip  da is a uniform distribution over +-da degrees, dxy is a uniform distribution on x/y, if flip is 1, random handedness changes will occur")
+	parser.add_argument("--rotavg", action="store_true", help="Compute the 1-D rotational average of each image as a final step before writing the output", default=False)
 	parser.add_argument("--rotate", type=float, action="append", help="Rotate clockwise (in degrees)")
 	parser.add_argument("--rfp",  action="store_true", help="this is an experimental option")
 	parser.add_argument("--fp",  type=int, help="This generates rotational/translational 'footprints' for each input particle, the number indicates which algorithm to use (0-6)")
@@ -632,6 +633,12 @@ def main():
 							#print "I will unstack to HDF" #JESUS
 							
 					else:   #output a single 2D image or a 2D stack			
+						# optionally replace the output image with its rotational average
+						if options.rotavg:
+							rd=d.calc_radial_dist(d["nx"],0,0.5,0)
+							d=EMData(len(rd),1,1)
+							for x in xrange(len(rd)): d[x]=rd[x]
+						
 						if 'mrc8bit' in optionlist:
 							d.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
 						elif 'mrc16bit' in optionlist:

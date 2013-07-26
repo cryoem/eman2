@@ -194,6 +194,9 @@ class EMPlot2DWidget(EMGLWidget):
 
 		linetype and symtype are integers. -1 will disable either. Default is autoselect."""
 
+		#print "set_data ",key
+		#traceback.print_stack()
+
 		self.del_shapes()
 
 		self.needupd=1

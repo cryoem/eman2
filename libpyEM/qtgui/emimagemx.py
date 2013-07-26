@@ -497,13 +497,15 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 	def load_sets(self):
 		"""This will attempt to load the sets associated with the current filename"""
 		self.current_set=None
-		try:
-			js=js_open_dict(self.infoname)
-			self.sets=js["sets"]
-			for k in self.sets: self.sets[k]=set(self.sets[k])		# sets come in as lists, convert to true sets for speed
-#			self.sets_visible=dict(self.sets)						# dict() constructor acts as copy()
-			if "bad_particles" in self.sets : self.current_set="bad_particles"
-		except: self.sets={}
+		if js_check_dict(self.infoname) :
+			try:
+				js=js_open_dict(self.infoname)
+				self.sets=js["sets"]
+				for k in self.sets: self.sets[k]=set(self.sets[k])		# sets come in as lists, convert to true sets for speed
+	#			self.sets_visible=dict(self.sets)						# dict() constructor acts as copy()
+				if "bad_particles" in self.sets : self.current_set="bad_particles"
+			except: self.sets={}
+		else: self.sets={}
 		self.sets_visible={}
 		self.emit(QtCore.SIGNAL("setsChanged"))
 
