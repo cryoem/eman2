@@ -46,6 +46,13 @@ from operator import itemgetter
 
 from e2spt_classaverage import sptmakepath
 
+import matplotlib
+matplotlib.use('Agg')
+		 
+import matplotlib.pyplot as plt
+import pylab
+from pylab import *
+
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -508,27 +515,28 @@ def allvsall(options):
 		
 		#print "results are", results
 	
-		if k == 0:
-			plotX=[]
-			plotY=[]
+		#if k == 0:
+		
+		plotX=[]
+		plotY=[]
 	
-			simmxScores = EMData(nptcls,nptcls)
-			simmxXs = EMData(nptcls,nptcls)
-			simmxYs = EMData(nptcls,nptcls)
-			simmxZs = EMData(nptcls,nptcls)
-			simmxAzs = EMData(nptcls,nptcls)
-			simmxAlts = EMData(nptcls,nptcls)
-			simmxPhis = EMData(nptcls,nptcls)
-			simmxScales = EMData(nptcls,nptcls)
-			
-			simmxScores.to_zero()
-			simmxXs.to_zero()
-			simmxYs.to_zero()
-			simmxZs.to_zero()
-			simmxAzs.to_zero()
-			simmxAlts.to_zero()
-			simmxPhis.to_zero()
-			simmxScales.to_one()
+		simmxScores = EMData(nptcls,nptcls)
+		simmxXs = EMData(nptcls,nptcls)
+		simmxYs = EMData(nptcls,nptcls)
+		simmxZs = EMData(nptcls,nptcls)
+		simmxAzs = EMData(nptcls,nptcls)
+		simmxAlts = EMData(nptcls,nptcls)
+		simmxPhis = EMData(nptcls,nptcls)
+		simmxScales = EMData(nptcls,nptcls)
+		
+		simmxScores.to_one()
+		simmxXs.to_zero()
+		simmxYs.to_zero()
+		simmxZs.to_zero()
+		simmxAzs.to_zero()
+		simmxAlts.to_zero()
+		simmxPhis.to_zero()
+		simmxScales.to_one()
 		
 		compNum=0
 		for i in results:
@@ -536,48 +544,55 @@ def allvsall(options):
 				print "In iteration %d the SORTED results are:", k	
 				print "%s VS %s , score=%f, transform=%s" %(i['ptclA'], i['ptclB'], i['score'], i['xform.align3d'] )
 			
-			if k == 0:
-				if compNum == 0:
-					maxScore = i['score']
-				plotX.append( compNum )
-				plotY.append( i['score'] )
-				
-				indxA = int( i['ptclA'].split('_')[-1] )
-				indxB = int( i['ptclB'].split('_')[-1] )
-				simmxScores.set_value_at(indxA,indxB,i['score'])
-				
-				t= i['xform.align3d']
-				trans=t.get_trans()
-				rots=t.get_rotation()
-				
-				simmxXs.set_value_at(indxA,indxB,float(trans[0]))
-				simmxYs.set_value_at(indxA,indxB,float(trans[1]))
-				simmxZs.set_value_at(indxA,indxB,float(trans[2]))
-				simmxAzs.set_value_at(indxA,indxB,float(rots['az']))
-				simmxAlts.set_value_at(indxA,indxB,float(rots['alt']))
-				simmxPhis.set_value_at(indxA,indxB,float(rots['phi']))
-				simmxScales.set_value_at(indxA,indxB,float(i['score']))
+			#if k == 0:
 			
-				compNum+=1
+			if compNum == 0:
+				maxScore = i['score']
+			else:
+				compuNum = i['score']
+			
+			plotX.append( compNum )
+			plotY.append( i['score'] )
+			
+			indxA = int( i['ptclA'].split('_')[-1] )
+			indxB = int( i['ptclB'].split('_')[-1] )
+			simmxScores.set_value_at(indxA,indxB,i['score'])
+			
+			t= i['xform.align3d']
+			trans=t.get_trans()
+			rots=t.get_rotation()
+			
+			simmxXs.set_value_at(indxA,indxB,float(trans[0]))
+			simmxYs.set_value_at(indxA,indxB,float(trans[1]))
+			simmxZs.set_value_at(indxA,indxB,float(trans[2]))
+			simmxAzs.set_value_at(indxA,indxB,float(rots['az']))
+			simmxAlts.set_value_at(indxA,indxB,float(rots['alt']))
+			simmxPhis.set_value_at(indxA,indxB,float(rots['phi']))
+			simmxScales.set_value_at(indxA,indxB,float(i['score']))
 		
-		if k == 0:
-			simmxFile = options.path + '/simmx_' + str( k ).zfill( len (str (options.iter))) + '.hdf'
-			simmxScores.write_image(simmxFile,0)
-			simmxXs.write_image(simmxFile,1)
-			simmxYs.write_image(simmxFile,2)
-			simmxZs.write_image(simmxFile,3)
-			simmxAzs.write_image(simmxFile,4)
-			simmxAlts.write_image(simmxFile,5)
-			simmxPhis.write_image(simmxFile,6)	
-			simmxScales.write_image(simmxFile,7)
-			
-			#from e2figureplot import plotter
-			#plotter (plotX, plotY, options, 'scatter')
-			
-			#plotName = simmxFile.replace('.hdf','_PLOT.png')
-			#from e2figureplot import textwriter
-			#textwriter(plotX, plotY, options, plotName)
+			compNum+=1
 	
+		#if k == 0:
+		simmxFile = options.path + '/simmx_' + str( k ).zfill( len (str (options.iter))) + '.hdf'
+		simmxScores.write_image(simmxFile,0)
+		simmxXs.write_image(simmxFile,1)
+		simmxYs.write_image(simmxFile,2)
+		simmxZs.write_image(simmxFile,3)
+		simmxAzs.write_image(simmxFile,4)
+		simmxAlts.write_image(simmxFile,5)
+		simmxPhis.write_image(simmxFile,6)	
+		simmxScales.write_image(simmxFile,7)
+		
+		#from e2figureplot import plotter
+		
+		
+		print "Before calling plotter, x and y len are", len(plotX), len(plotY)
+		plotName = simmxFile.replace('.hdf','_PLOT.png')
+		plotter (plotX, plotY, options,plotName)
+	
+		#from e2figureplot import textwriter
+		textwriter(plotX, plotY, options, plotName)
+
 		print "\n\n\n\nIn iteration %d, the total number of comparisons in the ranking list, either new or old that survived, is %d" % (k, len(results))
 		
 		tried = set()											#Tracks what particles have "appeared" on the list, whether averaged or not
@@ -998,6 +1013,142 @@ class Align3DTaskAVSA(JSTask):
 		
 		return {"final":bestfinal,"coarse":bestcoarse}
 		
+		
+def textwriter(xdata,ydata,options,name):
+	if len(xdata) == 0 or len(ydata) ==0:
+		print "ERROR: Attempting to write an empty text file!"
+		sys.exit()
+	
+	if options.path not in name:
+		name=options.path + '/' + name
+	
+	print "I am in the text writer for this file", name
+	
+	f=open(name,'w')
+	lines=[]
+	for i in range(len(xdata)):
+		line2write = str(xdata[i]) + ' ' + str(ydata[i])+'\n'
+		#print "THe line to write is"
+		lines.append(line2write)
+	
+	f.writelines(lines)
+	f.close()
+
+	return()
+
+
+def plotter(xaxis,yaxis,options,name):
+	'''
+	FORMAT AXES
+	'''
+	matplotlib.rc('xtick', labelsize=16) 
+	matplotlib.rc('ytick', labelsize=16) 
+	
+	font = {'weight':'bold','size':16}
+	matplotlib.rc('font', **font)
+	
+	#ax=plt.axes(frameon=False)
+	ax=plt.axes()
+	pylab.rc("axes", linewidth=2.0)
+	
+	#yaxislabel = options.yaxislabel
+	#xaxislabel = options.yaxislabel
+	
+	#if not yaxislabel:
+	#	yaxislabel = "Y"
+	#if not xaxislabel:
+	#	xaxislabel = "X"
+	
+	#if options.logplot and yaxislabel:
+	#	if "log" not in yaxislabel and "LOG" not in yaxislabel:
+	#		yaxislabel = 'LOG(' + yaxislabel + ')'	
+	
+	pylab.xlabel('Comparison number (n)', fontsize=18, fontweight='bold')
+	pylab.ylabel('Normalized cross correlation score', fontsize=18, fontweight='bold')
+
+	#pylab.ylim([-1,ylimvalmax+10])
+	#xmin = min(xaxis)
+	
+	#pylab.xlim([-1,float(max(xaxis))+10])
+	
+	ax.get_xaxis().tick_bottom()
+	ax.get_yaxis().tick_left()
+	#ax.axes.get_xaxis().set_visible(True)
+	#ax.axes.get_yaxis().set_visible(True)
+	
+	#xmin, xmax = ax.get_xaxis().get_view_interval()
+	#ymin, ymax = ax.get_yaxis().get_view_interval()
+	
+	#ax.add_artist(Line2D((xmin, xmax+10), (ymin, ymin), color='k', linewidth=4))
+	#ax.add_artist(Line2D((xmin, xmin), (ymin, ymax+10), color='k', linewidth=4))
+	ax.tick_params(axis='both',reset=False,which='both',length=8,width=3)
+	
+	#markernum=''
+	#idee=''
+	
+	#print "BOLD IS ON!"
+	#LW=3
+	#if not markernum:
+	#	LW=2
+		
+	#if colorless:
+		#if not yminnonconvex:
+		#	
+		#	print "in colorless plot, linest is", linest
+	#	if mode not 'scatter':
+	#		linest='-'
+	#		plt.plot(xaxis, yaxis, linewidth=LW,linestyle=linest,alpha=1,color='k',zorder=0,label=idee)
+	#	else:
+	#		plt.scatter(xaxis,yaxis,marker='x',edgecolor='k',alpha=1,zorder=1,s=40,facecolor='white',linewidth=2)
+			
+		#	if idee and options.legend:
+		#		#print "Idee is", idee
+		#		legend(loc='upper left')
+		#elif yminnonconvex:
+		#plt.plot(xaxis, yaxis, linewidth=LW,linestyle=linest,alpha=1,color='k',zorder=0,label=idee)
+		#plt.scatter(xaxis,yaxis,marker='x',edgecolor='k',alpha=1,zorder=1,s=40,facecolor='white',linewidth=2)
+		
+	#	if idee and legend:
+	#		print "Idee is", idee
+	#		legend(loc='upper left')
+		
+		#if mark:
+		#	plt.scatter(xaxis,yaxis,marker=mark,edgecolor='k',alpha=1,zorder=1,s=40,facecolor='white',linewidth=2)
+	
+	#else:
+		#if not yminnonconvex:
+		#	print "I did NOT receive yminnonxonvex"
+		#	
+		
+		#if mode not scatter:
+		#	plt.plot(xaxis, yaxis, linewidth=LW,alpha=1,zorder=0,label=idee)
+		#else:
+	plt.scatter(xaxis,yaxis,marker='o',alpha=1,zorder=1,s=40,linewidth=2)
+	plt.plot(xaxis,[max(yaxis)]*len(xaxis),ls='-',linewidth=2)
+				
+		#	
+		#	if idee and options.legend:
+		#		print "Idee is", idee
+		#		legend(loc='upper left')
+		#elif yminnonconvex:
+		#	print "I DID receive yminnonxonvex"
+		#	plt.plot(xaxis, yaxis, linewidth=LW,linestyle=linest,alpha=1,zorder=0,label=idee)
+		
+		#if idee and legend:
+		#	print "Idee is", idee
+		#	legend(loc='upper left')
+			#plt.scatter(xaxis,yaxis,marker='x',alpha=0.5,zorder=1,s=40,linewidth=2)
+			
+		#if mark:
+		#	plt.scatter(xaxis,yaxis,marker=mark,alpha=0.5,zorder=1,s=40,linewidth=2)
+
+	if options.path not in name:
+		name = options.path + '/' + name
+
+	plt.savefig(name)	
+	plt.clf()
+	
+	return	
 
 jsonclasses["Align3DTaskAVSA"]=Align3DTaskAVSA.from_jsondict
 
