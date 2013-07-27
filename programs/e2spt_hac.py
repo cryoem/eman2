@@ -591,7 +591,7 @@ def allvsall(options):
 		plotter (plotX, plotY, options,plotName)
 	
 		#from e2figureplot import textwriter
-		textwriter(plotX, plotY, options, plotName)
+		textwriter(plotX, plotY, options, plotName.replace('.png','.txt') )
 
 		print "\n\n\n\nIn iteration %d, the total number of comparisons in the ranking list, either new or old that survived, is %d" % (k, len(results))
 		
