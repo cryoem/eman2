@@ -54,11 +54,15 @@ def main():
 	n = EMUtil.get_image_count(options.input)
 	indexes = list(xrange(n))
 	
+	if not options.output:
+		options.output = options.input.replace('.hdf','_scrambled.hdf')
+		
 	for i in range(n):
 		num = random.choice(indexes)		
 		a = EMData(options.input,num)
-		e.write_image(options.output,i)
-		indexes.pop(num)
+
+		a.write_image(options.output,i)
+		indexes.remove(num)
 		print "I have chosen taken particle %d from the original stack" %num
 		print "And have put it into index %d in the randomized stack" %i
 	print "DONE!"	
