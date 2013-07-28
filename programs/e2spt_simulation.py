@@ -152,28 +152,31 @@ def main():
 	'''
 	If PDB or MRC files are provided to similuate subtomograms, convert them to HDF
 	'''
-	
+
+	nrefs = EMUtil.get_image_count( options.input )
 	check=0
-	if '.pdb' in options.input:
-		pdbmodel = options.input
-		os.system('cp ' + pdbmodel + ' ' + options.path)
-		pdbmodel = options.path + '/' + pdbmodel.split('/')[-1]
-		mrcmodel = pdbmodel.replace('.pdb','.mrc')
-		os.system('e2pdb2mrc.py ' + pdbmodel + ' ' + mrcmodel + ' && rm ' + pdbmodel)
-		options.input = mrcmodel
-		check=1
 	
-	if '.mrc' in options.input:
-		mrcmodel = options.input
-		if check==0:
-			os.system('cp ' + mrcmodel + ' ' + options.path)
-			mrcmodel = options.path + '/' + mrcmodel.split('/')[-1]
-		hdfmodel = mrcmodel.replace('.mrc','.hdf')
-		os.system('e2proc3d.py ' + options.input + ' ' + hdfmodel + ' && rm ' + mrcmodel)
-		options.input = hdfmodel
-		check=1
+	if nrefs < 2:
+
+		if '.pdb' in options.input:
+			pdbmodel = options.input
+			os.system('cp ' + pdbmodel + ' ' + options.path)
+			pdbmodel = options.path + '/' + pdbmodel.split('/')[-1]
+			mrcmodel = pdbmodel.replace('.pdb','.mrc')
+			os.system('e2pdb2mrc.py ' + pdbmodel + ' ' + mrcmodel + ' && rm ' + pdbmodel)
+			options.input = mrcmodel
+			check=1
 	
-	nrefs = EMUtil.get_image_count(options.input)
+		if '.mrc' in options.input:
+			mrcmodel = options.input
+			if check==0:
+				os.system('cp ' + mrcmodel + ' ' + options.path)
+				mrcmodel = options.path + '/' + mrcmodel.split('/')[-1]
+			hdfmodel = mrcmodel.replace('.mrc','.hdf')
+			os.system('e2proc3d.py ' + options.input + ' ' + hdfmodel + ' && rm ' + mrcmodel)
+			options.input = hdfmodel
+			check=1
+	
 	
 	if '.hdf' in options.input:
 		hdfmodel = options.input
@@ -200,17 +203,24 @@ def main():
 		
 	originalpath = options.path
 	kkk=0
+	
+	originalinput = options.input
 	for i in range(nrefs):
 		if options.verbose:
 			print "Generating simulated subtomograms for reference number", kkk
 	
 		if nrefs>1:
-			modelfilename = options.input.split('/')[-1].replace('.hdf','_model' + str(i).zfill(2) + '.hdf')
+			modelfilename = originalinput.split('/')[-1].replace('.hdf','_model' + str(i).zfill(2) + '.hdf')
+		
 			options.path = originalpath + '/model' + str(i).zfill(2)
+		
 			os.system('mkdir ' + options.path)
 			#cmd = 'e2proc3d.py '  + options.input + ' ' + options.path + '/' + modelfilename + ' --first=' + str(i) + ' --last=' + str(i) + ' --append'
-			os.system('e2proc3d.py '  + options.input + ' ' + options.path + '/' + modelfilename + ' --first=' + str(i) + ' --last=' + str(i) + ' --append')
-			#print "This is the command to create the model", cmd
+			
+			os.system('e2proc3d.py '  + originalinput + ' ' + options.path + '/' + modelfilename + ' --first=' + str(i) + ' --last=' + str(i) + ' --append')
+			print "This is the command to create the model"
+			print 'e2proc3d.py '  + originalinput + ' ' + options.path + '/' + modelfilename + ' --first=' + str(i) + ' --last=' + str(i) + ' --append'
+			
 			options.input = options.path + '/' + modelfilename
 			tag = str(i).zfill(len(str(nrefs)))
 
@@ -377,10 +387,10 @@ def randomizer(options, model, stackname):
 
 				#print "The stackname to use is", stackname
 				randstackname = options.path + '/' + stackname.split('/')[-1]
-				print "\n\n\n\n\nI will save randstack! Using THE PATH in e2spt_simulation and stackname both of which together are", randstackname
-				print "options path received is", options.path
-				print "Whereas stackname is", stackname
-				print "Therefore stackname.split('/')[-1] is", stackname.split('/')[-1]
+				#print "\n\n\n\n\nI will save randstack! Using THE PATH in e2spt_simulation and stackname both of which together are", randstackname
+				#print "options path received is", options.path
+				#print "Whereas stackname is", stackname
+				#print "Therefore stackname.split('/')[-1] is", stackname.split('/')[-1]
 				
 				b.write_image(randstackname,i)
 
