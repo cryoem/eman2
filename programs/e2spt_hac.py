@@ -602,6 +602,11 @@ def allvsall(options):
 		mm=0												#Counter to track new particles/averages produced and write them to output
 		print "I'm in the averager!!!!!!!!!!!!"
 		
+		
+		roundRawInfoFile = options.path + '/aliInfo_'+ str( k ).zfill( len(str(options.iter)) ) + '.json'
+		roundInfoDict = js_open_dict(roundRawInfoFile) #Write particle orientations to json database.
+	
+		
 		for z in range(len(results)):
 			if options.minscore:
 				score = results[z]['score']			
@@ -610,6 +615,10 @@ def allvsall(options):
 					print "Is worse (larger, more positive, in EMAN2) than the specified percentage", options.minscore
 					print "Of the maximum score from the initial simmx matrix", maxScore
 					break
+			
+			#key = str(z).zfill( len( str(nptcls) ))
+			
+			roundInfoDict[ str(z) ] = []
 			
 			if results[z]['ptclA'] not in tried and results[z]['ptclB'] not in tried:
 				tried.add(results[z]['ptclA'])							#If the two particles in the pair have not been tried, and they're the next "best pair", they MUST be averaged
@@ -634,11 +643,18 @@ def allvsall(options):
 				#print "\n\nptcl1 info attached is", ptcl1info
 				
 				ptcl1_indxs_transforms = ptcl1info[-1]
+				
+				
+				
+				
+				
 				#print "\n\nptcl1_indexes_transforms is", ptcl1_indxs_transforms
 				#print "\n\n"
 								
 				for p in ptcl1['spt_ptcl_indxs']:											
 					pastt = ptcl1_indxs_transforms[p]
+					
+					
 					
 					subp1 = EMData(options.input,p)
 					
@@ -660,8 +676,15 @@ def allvsall(options):
 
 					indx_trans_pairs.update({p:pastt})
 					
+					roundInfoDict[ str(z) ].append( {p:pastt} )
+					
 						
 				#avgr.add_image(ptcl1)								#Add particle 1 to the average
+				
+				
+				
+				
+				
 				
 				ptcl2 = allptclsMatrix[k][results[z]['ptclB']][0]
 						
@@ -712,8 +735,11 @@ def allvsall(options):
 						print "I have CHANGED a particle2 in finalAliStack to have this transform", totalt
 
 					indx_trans_pairs.update({p:totalt})
+					roundInfoDict[ str(z) ].append( {p:pastt} )
 								
 				avg=avgr.finish()
+				
+				
 				
 				
 				
@@ -733,6 +759,7 @@ def allvsall(options):
 						pastt = ptcl1_indxs_transforms[p]
 						totalt = tcenter * pastt
 						indx_trans_pairs.update({p:totalt})
+						roundInfoDict[ str(z) ]={p:totalt}
 						
 						
 						subp1 = EMData(options.input,p)
@@ -752,6 +779,7 @@ def allvsall(options):
 						pastt = ptcl2_indxs_transforms[p]
 						totalt = tcenter * resultingt * pastt
 						indx_trans_pairs.update({p:totalt})
+						roundInfoDict[ str(z) ]={p:totalt}
 						
 						subp2 = EMData(options.input,p)
 						subp2.process_inplace("xform",{"transform":totalt})
@@ -843,13 +871,26 @@ def allvsall(options):
 				allptclsRound.update({avgtag : [avg,indx_trans_pairs]})
 				
 				mm+=1
+			
 				
 			if results[z]['ptclA'] not in tried:						#If a particle appeared in the ranking list but its pair was already taken, the particle must be classified as "tried"
 				tried.add(results[z]['ptclA'])						#because you don't want to average it with any other available particle lower down the list that is available
 													#We only average "UNIQUE BEST PAIRS" (the first occurance in the ranking list of BOTH particles in a pair).
 			if results[z]['ptclB'] not in tried:
 				tried.add(results[z]['ptclB'])
-		
+			
+			
+			
+			
+		roundInfoDict.close()
+			
+			
+			
+			
+			
+			
+			
+			
 		
 		surviving_results = []
 		for z in range(len(results)):
@@ -1041,6 +1082,14 @@ def plotter(xaxis,yaxis,options,name):
 	'''
 	FORMAT AXES
 	'''
+	
+	for i in range(len(yaxis)):
+		yaxis[i] = int( yaxis[i] )*-1
+	
+	xaxis.sort()
+	xaxis.reverse()
+		
+		
 	matplotlib.rc('xtick', labelsize=16) 
 	matplotlib.rc('ytick', labelsize=16) 
 	
@@ -1124,7 +1173,11 @@ def plotter(xaxis,yaxis,options,name):
 		#	plt.plot(xaxis, yaxis, linewidth=LW,alpha=1,zorder=0,label=idee)
 		#else:
 	plt.scatter(xaxis,yaxis,marker='o',alpha=1,zorder=1,s=40,linewidth=2)
-	plt.plot(xaxis,[max(yaxis)]*len(xaxis),ls='-',linewidth=2)
+	
+	
+	if options.minscore:
+		minval = options.minscore * max(yaxis)	
+		plt.plot(xaxis,[minval]*len(xaxis),ls='-',linewidth=2)
 				
 		#	
 		#	if idee and options.legend:

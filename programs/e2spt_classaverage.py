@@ -437,9 +437,15 @@ def main():
 
 	if options.inixforms: 
 		js.close()
-		
+	print "Will end logger"	
 	E2end(logger)
-
+	
+	print "logger ended"
+	sys.stdout.flush()
+	
+	return
+	
+	
 
 def binaryTreeRef(options,nptcl,ptclnums,ic,etc):
 
@@ -902,6 +908,7 @@ def make_average_pairs(ptcl_file,outfile,align_parms,averager,nocenterofmass):
 		avg['origin_z']=0
 		
 		avg.write_image(outfile,i)
+	return
 		
 
 def get_results(etc,tids,verbose):
@@ -1249,7 +1256,7 @@ def alignment(fixedimage,image,label,classoptions,xformslabel,transform,prog='e2
 		#print "The ali params to save are", AliParams
 		#print "Which in string would be", str(AliParams)
 		
-		jsA.close 
+		jsA.close() 
 	
 		'''
 		Write a file with alignment scores per particle
@@ -1258,6 +1265,9 @@ def alignment(fixedimage,image,label,classoptions,xformslabel,transform,prog='e2
 		jsB = js_open_dict (jsAliScoresPath)
 		jsB[xformslabel] = float(bestfinal[0]['score'])
 		jsB.close()
+	
+	elif prog == 'e2spt_hac':
+		pass
 		
 	return (bestfinal,bestcoarse)
 	
@@ -1280,3 +1290,4 @@ def classmx_ptcls(classmx,n):
 	
 if __name__ == "__main__":
     main()
+    sys.stdout.flush()
