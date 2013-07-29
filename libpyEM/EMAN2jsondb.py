@@ -504,7 +504,7 @@ class JSTask:
 
 
 ##########
-### This object represents a single .js file in the filesystem as a persistent dictionary
+### This object represents a single .json file in the filesystem as a persistent dictionary
 ### New JSDicts should be created by calling the static open_db method.
 ##########
 
@@ -679,7 +679,7 @@ of the path is stored as self.normpath"""
 			try:
 				os.rename(self.normpath,self.normpath[:-5]+"_tmp.json")		# we back up the original file, just in case
 			except:
-				raise Exception,"WARNING: file '{}' cannot be created, conflict in writing JSON files. You may consider reporting this if you don't know why this happened.".format(self.normpath[:-3]+"_tmp.js")
+				raise Exception,"WARNING: file '{}' cannot be created, conflict in writing JSON files. You may consider reporting this if you don't know why this happened.".format(self.normpath[:-3]+"_tmp.json")
 
 			### We do the updates and prepare the string in-ram. If someone else tries a write while we're doing this, it should raise the above exception
 			self.data.update(self.changes)		# update the internal copy of the data
