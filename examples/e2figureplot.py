@@ -33,9 +33,10 @@
 import os
 from EMAN2 import *
 from time import time
-		 
+
 import matplotlib
-matplotlib.use('Agg')
+matplotlib.use('Agg',warn=False)
+
 		 
 import matplotlib.pyplot as plt
 import pylab
@@ -289,7 +290,7 @@ def textwriter(xdata,ydata,options,name):
 	return()
 
 	
-def plotter(xaxis,yaxis,options):
+def plotter(xaxis,yaxis,options,mode,colorless=0,legend=''):
 	'''
 	FORMAT AXES
 	'''
@@ -343,20 +344,24 @@ def plotter(xaxis,yaxis,options):
 	if not markernum:
 		LW=2
 		
-	if options.colorlessplot:
+	if colorless:
 		#if not yminnonconvex:
 		#	
 		#	print "in colorless plot, linest is", linest
-		linest='-'
-		plt.plot(xaxis, yaxis, linewidth=LW,linestyle=linest,alpha=1,color='k',zorder=0,label=idee)
-		
+		if mode not 'scatter':
+			linest='-'
+			plt.plot(xaxis, yaxis, linewidth=LW,linestyle=linest,alpha=1,color='k',zorder=0,label=idee)
+		else:
+			plt.scatter(xaxis,yaxis,marker='x',edgecolor='k',alpha=1,zorder=1,s=40,facecolor='white',linewidth=2)
+			
 		#	if idee and options.legend:
 		#		#print "Idee is", idee
 		#		legend(loc='upper left')
 		#elif yminnonconvex:
 		#plt.plot(xaxis, yaxis, linewidth=LW,linestyle=linest,alpha=1,color='k',zorder=0,label=idee)
 		#plt.scatter(xaxis,yaxis,marker='x',edgecolor='k',alpha=1,zorder=1,s=40,facecolor='white',linewidth=2)
-		if idee and options.legend:
+		
+		if idee and legend:
 			print "Idee is", idee
 			legend(loc='upper left')
 		
@@ -368,8 +373,11 @@ def plotter(xaxis,yaxis,options):
 		#	print "I did NOT receive yminnonxonvex"
 		#	
 		
-		plt.plot(xaxis, yaxis, linewidth=LW,alpha=1,zorder=0,label=idee)
-		
+		if mode not scatter:
+			plt.plot(xaxis, yaxis, linewidth=LW,alpha=1,zorder=0,label=idee)
+		else:
+			plt.scatter(xaxis,yaxis,marker='x',alpha=1,zorder=1,s=40,linewidth=2)
+				
 		#	
 		#	if idee and options.legend:
 		#		print "Idee is", idee
@@ -378,7 +386,7 @@ def plotter(xaxis,yaxis,options):
 		#	print "I DID receive yminnonxonvex"
 		#	plt.plot(xaxis, yaxis, linewidth=LW,linestyle=linest,alpha=1,zorder=0,label=idee)
 		
-		if idee and options.legend:
+		if idee and legend:
 			print "Idee is", idee
 			legend(loc='upper left')
 			#plt.scatter(xaxis,yaxis,marker='x',alpha=0.5,zorder=1,s=40,linewidth=2)

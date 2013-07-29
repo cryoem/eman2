@@ -46,7 +46,8 @@ from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 
 import matplotlib
-matplotlib.use('Agg')
+matplotlib.use('Agg',warn=False)
+
 import matplotlib.pyplot as plt
 
 from e2spt_classaverage import sptmakepath

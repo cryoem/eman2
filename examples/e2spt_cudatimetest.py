@@ -35,9 +35,10 @@
 import os
 from EMAN2 import *
 from time import time
-		 
+
 import matplotlib
-matplotlib.use('Agg')
+matplotlib.use('Agg',warn=False)		 
+
 		 
 import matplotlib.pyplot as plt
 import pylab
