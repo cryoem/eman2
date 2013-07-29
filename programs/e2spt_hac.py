@@ -46,12 +46,6 @@ from operator import itemgetter
 
 from e2spt_classaverage import sptmakepath
 
-import matplotlib
-matplotlib.use('Agg')
-		 
-import matplotlib.pyplot as plt
-import pylab
-from pylab import *
 
 
 def main():
@@ -1079,6 +1073,15 @@ def textwriter(xdata,ydata,options,name):
 
 
 def plotter(xaxis,yaxis,options,name):
+
+	import matplotlib
+	matplotlib.use('Agg',warn=False)
+
+		 
+	import matplotlib.pyplot as plt
+	import pylab
+	#from pylab import *
+
 	'''
 	FORMAT AXES
 	'''
