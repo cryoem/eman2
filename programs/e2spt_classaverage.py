@@ -392,7 +392,7 @@ def main():
 					print "%d tasks queued in class %d iteration %d"%(len(tids),ic,it) 
 
 				# Wait for alignments to finish and get results
-				results=get_results(etc,tids,options.verbose)
+				results=get_results(etc,tids,options.verbose,jsA,jsB,len(ptclnums),1)
 
 				#if options.verbose>2 : 
 				#	print "Results:"
@@ -549,7 +549,8 @@ def binaryTreeRef(options,nptcl,ptclnums,ic,etc):
 				print "%d tasks queued in seedtree level %d"%(len(tids),i) 
 
 			# Wait for alignments to finish and get results
-			results=get_results(etc,tids,options.verbose)
+			
+			results=get_results(etc,tids,options.verbose,{},{},len(nptclnums),0)
 
 			if options.verbose>2 : 
 				print "Results:"
@@ -997,7 +998,7 @@ def make_average_pairs(ptcl_file,outfile,align_parms,averager,nocenterofmass):
 	return
 		
 
-def get_results(etc,tids,verbose):
+def get_results(etc,tids,verbose,jsA,jsB,nptcls,savealiparams=0):
 	"""This will get results for a list of submitted tasks. Won't return until it has all requested results.
 	aside from the use of options["ptcl"] this is fairly generalizable code. """
 	
@@ -1016,6 +1017,20 @@ def get_results(etc,tids,verbose):
 				r=etc.get_results(tidsleft[i])			# results for a completed task
 				ptcl=r[0].classoptions["ptclnum"]			# get the particle number from the task rather than trying to work back to it
 				results[ptcl]=r[1]["final"]				# this will be a list of (qual,Transform)
+				
+				#print "ptcl and type are", ptcl, type(ptcl)
+				
+				#print "results[ptcl] are", results[ptcl]
+				#print "because results are", results
+				
+				if savealiparams and results and results[ptcl]:
+					xformslabel = 'tomo_' + str( ptcl ).zfill( len( str(nptcls) ) )
+			
+					AliParams=results[ptcl][0]['xform.align3d']
+					
+					jsA.setval( xformslabel, AliParams )
+					jsB.setval( xformslabel, float(results[ptcl][0]['score']) )
+				
 				ncomplete+=1
 		
 		tidsleft=[j for i,j in enumerate(tidsleft) if proglist[i]!=100]		# remove any completed tasks from the list we ask about
@@ -1309,8 +1324,10 @@ def alignment(fixedimage,image,label,classoptions,xformslabel,transform,jsA={},j
 		'''
 	
 		#if jsA:
-		AliParams=bestfinal[0]['xform.align3d']
-		jsA[xformslabel] = AliParams
+		
+		###AliParams=bestfinal[0]['xform.align3d']
+		###jsA[xformslabel] = AliParams
+		
 		#else:
 		#	print "Cannot write alignment parameters because the .json dictionary to do so is empty, see", jsA
 		
@@ -1327,7 +1344,9 @@ def alignment(fixedimage,image,label,classoptions,xformslabel,transform,jsA={},j
 	
 		
 		
-		jsB[xformslabel] = float(bestfinal[0]['score'])
+		###jsB[xformslabel] = float(bestfinal[0]['score'])
+		
+		
 		#else:
 		#	print "Cannot write the alignment scores because the .json dictionary to do so is empty, see", jsB	
 		
