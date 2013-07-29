@@ -456,11 +456,11 @@ def pspec_and_ctf_fit(options,debug=False):
 		
 		# After this, PS contains a list of (im_1d,bg_1d,im_2d,bg_2d,bg_1d_low) tuples. If classify is <2 then this list will have only 1 tuple in it
 		if options.classify>1 : ps=split_powspec_with_bg(filename,options.source_image,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp,apix=apix,nclasses=options.classify)
-		else: ps=list(powspec_with_bg(filename,options.source_image,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp,apix=apix))
+		else: ps=list((powspec_with_bg(filename,options.source_image,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp,apix=apix),))
 		# im_1d,bg_1d,im_2d,bg_2d,bg_1d_low
-		ds=1.0/(apix*im_2d.get_ysize())
 		for j,p in enumerate(ps):
 			im_1d,bg_1d,im_2d,bg_2d,bg_1d_low=p
+			ds=1.0/(apix*im_2d.get_ysize())
 			
 			if not options.nosmooth : bg_1d=smooth_bg(bg_1d,ds)
 			if options.fixnegbg :

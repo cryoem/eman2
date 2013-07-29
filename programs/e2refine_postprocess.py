@@ -173,6 +173,12 @@ def main():
 	run("e2proc3d.py {combfile} {combfile} --process filter.wiener.byfsc:fscfile={path}/fsc_masked_{itr:02d}.txt:snrmult=2{underfilter} --multfile {path}/mask.hdf --process normalize.bymass:thr=1:mass={mass} {postproc}".format(
 		combfile=combfile,path=path,itr=options.iter,mass=options.mass,postproc=options.m3dpostprocess,underfilter=underfilter))
 
+	try:
+		os.unlink("{path}/tmp_even.hdf".format(path=path))
+		os.unlink("{path}/tmp_odd.hdf".format(path=path))
+	except:
+		pass
+
 	E2end(logid)
 
 def run(command):
