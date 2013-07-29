@@ -13134,12 +13134,12 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 	
 
 def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, ywobble, pixel_size, dp, dphi, fract, rmax, rmin, FindPsi = True, maskfile = None, \
-	    maxit = 1, CTF = False, snr = 1.0, sym = "c1",  user_func_name = "helical", npad = 2, debug = False, doExhaustive=False, termprec=5.0):
+	    maxit = 1, CTF = False, snr = 1.0, sym = "c1",  user_func_name = "helical", npad = 2, debug = False, doExhaustive=False):
 
 	from alignment       import Numrinit, prepare_refrings, proj_ali_incore, proj_ali_incore_local, proj_ali_incore_local_psi
 	from alignment       import ringwe, ang_n
 	from utilities       import model_circle, get_image, drop_image, get_input_from_string, peak_search, model_cylinder, pad, model_blank
-	from utilities       import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all, write_text_file
+	from utilities       import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all
 	from utilities       import send_attr_dict, sym_vol, get_input_from_string
 	from utilities       import get_params_proj, set_params_proj, file_type, compose_transform2
 	from fundamentals    import rot_avg_image, ccf, fft, rot_shift2D
@@ -13152,7 +13152,7 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 	from projection      import prep_vol, prgs
 	#from statistics      import hist_list, varf3d_MPI, fsc_mask
 	from applications	 import MPI_start_end, header
-	from pixel_error     import ordersegments, max_3D_pixel_error
+	from pixel_error     import ordersegments
 	from time            import time
 	from copy 			 import copy
 	from math 			 import sqrt
@@ -13240,8 +13240,7 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 		print_msg("CTF correction                            : %s\n"%(CTF))
 		print_msg("Signal-to-Noise Ratio                     : %f\n"%(snr))
 		print_msg("Symmetry group                            : %s\n"%(sym))
-		print_msg("seg_ny                        		     : %i\n\n"%(seg_ny))
-		print_msg("termprec                       		     : %f\n\n"%(termprec))
+		print_msg("seg_ny                        		     : %s\n\n"%(seg_ny))
 
 	if maskfile:
 		if type(maskfile) is types.StringType: mask3D = get_image(maskfile)
@@ -13289,34 +13288,6 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 	if total_nfils< nproc:
 		ERROR('number of CPUs (%i) is larger than the number of filaments (%i), please reduce the number of CPUs used'%(nproc, total_nfils), "ehelix_MPI", 1,myid)
 
-	#  this is needed for gathering of pixel errors
-	disps = []
-	recvcount = [] #recvcount[i] is number of images on proc i
-	total_nima = EMUtil.get_image_count(stack)
-	if myid == main_node:
-		maptoimgID = [0]*total_nima # maptoimgID[i] is the element in recvbuf corresponding to img ID i
-		recvbuford = [0.0]*total_nima
-		counter = 0
-	for im in xrange(nproc):
-		if im == main_node :  disps.append(0)
-		else:                 disps.append(disps[im-1] + recvcount[im-1])
-		
-		temp = chunks_distribution([[len(filaments[i]), i] for i in xrange(len(filaments))], nproc)[im:im+1][0]
-		filaments_im = [filaments[temp[i][1]] for i in xrange(len(temp))]
-		nfils_im = len(filaments_im)
-		nimgs = sum([len(filaments_im[i]) for i in xrange(nfils_im)])
-		recvcount.append(nimgs)
-		
-		if myid == main_node:
-			for ii in xrange(nfils_im):
-				numsegs = len(filaments_im[ii])
-				for jj in xrange(numsegs):
-					maptoimgID[int(filaments_im[ii][jj])] = counter
-					counter += 1	
-
-	if sum(recvcount) != total_nima:
-		ERROR("recvcount is not calculated correctly!", "ehelix_MPI", 1, myid)
-	
 	#  balanced load
 	temp = chunks_distribution([[len(filaments[i]), i] for i in xrange(len(filaments))], nproc)[myid:myid+1][0]
 	filaments = [filaments[temp[i][1]] for i in xrange(len(temp))]
@@ -13422,9 +13393,6 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 
 	terminate = 0
 	Iter = 0
-
-	pixer = [0.0]*nima
-	
  	while Iter < max_iter:
 		Iter += 1
 		if myid == main_node:
@@ -13462,9 +13430,6 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 			if myid == main_node:  start_time = time()
 			if myid == main_node:
 				start_time = time()
-			t1 = []
-			for im in xrange(indcs[ifil][0], indcs[ifil][1]):
-				t1.append(data[im].get_attr("xform.projection"))
 			ldata = [data[im] for im in xrange(indcs[ifil][0],indcs[ifil][1])]
 			#for im in xrange(len(ldata)):  ldata[im].set_attr("bestang", 10000.0)
 			Util.constrained_helix_exhaustive(ldata, fdata[indcs[ifil][0]:indcs[ifil][1]], refproj, rotproj, [float(dp), float(dphi), float(rise), float(delta)], [int(nphi), int(phiwobble), int(rng), int(ywobble), int(Dsym), int(nwx), int(nwy), int(nwxc), int(nwyc)], FindPsi, float(psi_max), crefim, numr, int(maxrin), mode, int(cnx), int(cny))
@@ -13485,9 +13450,6 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 			for im in xrange(indcs[ifil][0], indcs[ifil][1]):
 				temp = Util.get_transform_params(ldata[im-indcs[ifil][0]], "xform.projection", "spider")
 				set_params_proj(data[im],[temp["phi"],temp["theta"],temp["psi"],-temp["tx"],-temp["ty"]])
-				t2 = data[im].get_attr("xform.projection")
-				pixer[im]  = max_3D_pixel_error(t1[im-indcs[ifil][0]], t2, seg_ny//2-2)
-				#print data[im].get_attr('ID'),pixer[im], numr[-3]
 				#if not(doExhaustive):
 				#	if Iter == 1 and resetatone:  data[im].set_attr('previousmax',-1.0e23)
 
@@ -13496,7 +13458,6 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 					fdata[im] = fft( segmask*rot_shift2D(data[im], ldata[im-indcs[ifil][0]].get_attr("bestang") ) )
 					#bestang = ldata[im-indcs[ifil][0]].get_attr("bestang")
 					#if( bestang < 10000.0): fdata[im] = fft( segmask*rot_shift2D(data[im], bestang ) )
-				
 			#print  "Parameters computed for filament",myid,ifil,time()-start_time;start_time = time()
 			if myid == main_node:
 				start_time = time()
@@ -13505,41 +13466,16 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 		if(not Dsym):  del rotproj
 		#print  "Time of alignment = ",myid,time()-astart_time
 		mpi_barrier(MPI_COMM_WORLD)
-		
-		#output pixel errors
-		from mpi import mpi_gatherv
-		recvbuf = mpi_gatherv(pixer, nima, MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-		mpi_barrier(MPI_COMM_WORLD)
-		terminate = 0
-		if myid == main_node:
-			recvbuf = map(float, recvbuf)
-			for ii in xrange(total_nima):
-				recvbuford[ii] = recvbuf[maptoimgID[ii]]
-			write_text_file([range(len(recvbuford)), recvbuford], os.path.join(outdir, "pixer_%04d.txt"%(Iter)) )
-			from statistics import hist_list
-			lhist = 20
-			region, histo = hist_list(recvbuford, lhist)
-			if region[0] < 0.0:  region[0] = 0.0
-			msg = "      Histogram of pixel errors\n      ERROR       number of particles\n"
-			print_msg(msg)
-			for lhx in xrange(lhist):
-				msg = " %10.3f     %7d\n"%(region[lhx], histo[lhx])
-				print_msg(msg)
-			# Terminate if (100-termprec)% within 1 pixel error
-			im_same = 0
-			for lhx in xrange(lhist):
-				if region[lhx] > 1.0: break
-				im_same += histo[lhx]
-			precn = 100*float(total_nima-im_same)/float(total_nima)
-			msg = " Number of particles that changed orientations %7d, percentage of total: %5.1f\n"%(total_nima-im_same, precn)
-			print_msg(msg)
-			if precn <= termprec:  terminate = 1
-			#print "main_node iter, terminate: ", Iter, terminate
-			del region, histo
-		del recvbuf
+
+		#  Should we continue??
+		terminate = mpi_reduce(terminate, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
 		terminate = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
 		terminate = int(terminate[0])
-		#print "my id, Iter, terminate: ", myid, Iter, terminate
+		if terminate == nproc:
+			if myid == main_node: print_end_msg("ehelix_MPI")
+			return
+
+
 		#if myid == main_node:
 		#	print_msg("Time of alignment = %\n"%(time()-astart_time));start_time = time()
 		if CTF:  vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad)
@@ -13578,8 +13514,5 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 			header(stack, params='xform.projection', fexport=os.path.join(outdir, "parameters%04d.txt"%Iter))
 			#header(stack, params='previousmax', fexport=os.path.join(outdir, "previousmax%04d.txt"%Iter))
 		mpi_barrier(MPI_COMM_WORLD)
-		
-		if terminate > 0:
-			print_end_msg("ehelix_MPI")
-			return
+
 
