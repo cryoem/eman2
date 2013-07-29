@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
 #
-# Author: Steven Ludtke, 02/15/2011, Jesus Galaz-Montoya 03/2011. Last modification: 15/July/2013
+# Author: Jesus Galaz-Montoya 03/2011, (based on Steven Ludtke's initial implementation [02/15/2011] of Jesus's older scripts).
+# Last modification: 28/July/2013
+#
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -142,8 +144,8 @@ def main():
 														I.e., if you collected your tiltseries from -60 to 60, enter --wedgeangle=60.""",default=60.0)
 	parser.add_argument("--wedgei",type=float,help="Missingwedge begining (in terms of its 'height' along Z. If you specify 0, the wedge will start right at the origin.", default=0.10)
 	parser.add_argument("--wedgef",type=float,help="Missingwedge ending (in terms of its 'height' along Z. If you specify 1, the wedge will go all the way to the edge of the box.", default=0.9)
-	parser.add_argument("--fitwedgepost", action="store_true", help="Fit the missing wedge AFTER preprocessing the subvolumes, not before, IF using the fsc.tomo comparator for --aligncmp or --raligncmp.", default=False)
-	parser.add_argument("--writewedge", action="store_true", help="Write a subvolume with the shape of the fitted missing wedge if --raligncmp or --aligncmp are fsc.tomo. Default is 'True'. To turn on supply --writewedge", default=False)
+	#parser.add_argument("--fitwedgepost", action="store_true", help="Fit the missing wedge AFTER preprocessing the subvolumes, not before, IF using the fsc.tomo comparator for --aligncmp or --raligncmp.", default=True)
+	parser.add_argument("--writewedge", action="store_true", help="Write a subvolume with the shape of the fitted missing wedge if --raligncmp or --aligncmp are fsc.tomo. Default is 'False'. To turn on supply --writewedge", default=False)
 
 	(options, args) = parser.parse_args()
 	
@@ -632,7 +634,29 @@ def sptmakepath(options, stem='spt'):
 		os.system('mkdir ' + options.path)
 	
 	return options
+
+
+
+def filters(image,preprocess,lowpass,highpass,shrink):
+	'''
+	#Preprocess, lowpass and/or highpass
+	'''
+	if preprocess:
+		image.process_inplace(preprocess[0],preprocess[1])
+		
+	if lowpass:
+		image.process_inplace(lowpass[0],lowpass[1])
+		
+	if highpass:
+		image.process_inplace(highpass[0],highpass[1])
 	
+	'''
+	#Shrinking both for initial alignment and reference
+	'''
+	if shrink and int( shrink ) > 1 :
+		image.process_inplace("math.meanshrink",{"n":shrink})
+
+	return image	
 
 
 def preprocessing(options,image):
@@ -642,7 +666,7 @@ def preprocessing(options,image):
 	#print "\n$$$$$$$\nIn preprocessing, received options and image, types", type(options), type(image)
 	
 	'''
-	Make the mask first, use it to normalize (optionally), then apply it. 
+	Make the mask first 
 	'''
 	mask=EMData( int(image["nx"]), int(image["ny"]), int(image["nz"]) )
 	mask.to_one()
@@ -653,71 +677,94 @@ def preprocessing(options,image):
 		mask.process_inplace(options.mask[0],options.mask[1])
 		
 	
-	# normalize
+	'''
+	Set the 'mask' parameter for --normproc if normalize.mask is being used
+	'''
 	if options.normproc:
 		if options.normproc[0]=="normalize.mask": 
 			options.normproc[1]["mask"]=mask
+	
+	
+	'''
+	If the fsc.tomo comparator is being used, the particles need wedge statistics on their header.
+	Fitting the wedge has to happen after all processing steps that do NOT "put stuff" in the wedge.
+	'''
+	
+	simage = image.copy()
+	if 'fsc.tomo' == options.aligncmp[0]:
+		if options.normproc:
+			simage.process_inplace(options.normproc[0],options.normproc[1])
+		
+		if options.lowpass or options.highpass or options.preprocess or options.shrink:
+			simage = filters(image,options.preprocess,options.lowpass,options.highpass,options.shrink)
+		
+		retr = wedgestats(simage,options.wedgeangle,options.wedgei,options.wedgef,options)
+		simage['spt_wedge_mean'] = retr[0]
+		simage['spt_wedge_sigma'] = retr[1]
+		
+		if options.mask:
+			simage.mult(mask)
+	
+		'''
+		If any other comparator is specified, follow mask-normalize-mask scheme
+		'''
+	else:
+		if options.mask:
+			simage.mult(mask)
+		
+		if options.normproc:
+			simage.process_inplace(options.normproc[0],options.normproc[1])
+			
+		if options.mask:
+			simage.mult(mask)
+	
+		if options.lowpass or options.highpass or options.preprocess or options.shrink:
+			simage = filters(image,options.preprocess,options.lowpass,options.highpass,options.shrink)
+			
+	
+	'''
+	If there is a round of fine alignment, preprocess the particle for fine alignment
+	'''
+	s2image = image.copy()
+	if options.ralign:
+		if 'fsc.tomo' == options.raligncmp[0]:
+			
+			'''
+			If fine parameters are the same as coarse parameters, just copy the image for coarse alignment,'s', onto the image for fine alignment, 's2'
+			'''
+			done=0
+			if options.procfinelikecoarse or ( options.raligncmp == options.aligncmp and options.shrink == options.shrinkrefine and options.lowpass == options.lowpassfine and options.highpass == options.highpassfine and options.preprocess == options.preprocessfine):
+				s2image = simage.copy()
+				done=1
+			
+			if not done:									
+		
+				if options.normproc:
+					s2image.process_inplace(options.normproc[0],options.normproc[1])
+		
+				if options.lowpassfine or options.highpassfine or options.preprocessfine or options.shrinkrefine:
+					s2image = filters(image,options.preprocessfine,options.lowpassfine,options.highpassfine,options.shrinkrefine)
+	
+				retr = wedgestats(s2image,options.wedgeangle,options.wedgei,options.wedgef,options)
+				s2image['spt_wedge_mean'] = retr[0]
+				s2image['spt_wedge_sigma'] = retr[1]
+	
+				if options.mask:
+					s2image.mult(mask)
 
 		else:
-			image.mult(mask)
+			if options.mask:
+				s2image.mult(mask)
 		
-		#fixedimage.process_inplace(options["normproc"][0],options["normproc"][1])
-		image.process_inplace(options.normproc[0],options.normproc[1])
+			if options.normproc:
+				s2image.process_inplace(options.normproc[0],options.normproc[1])
+			
+			if options.mask:
+				s2image.mult(mask)
 	
-	'''
-	#Mask after normalizing with the mask you just made, which is just a box full of 1s if no mask is specified
-	'''
-	#fixedimage.mult(mask)
-	image.mult(mask)
-	
-	baseimage = image.copy()
+			if options.lowpassfine or options.highpassfine or options.preprocessfine or options.shrinkrefine:
+				s2image = filters(image,options.preprocessfine,options.lowpassfine,options.highpassfine,options.shrinkrefine)
 
-	
-	'''
-	#Preprocess, lowpass and/or highpass
-	'''
-	if options.preprocess:
-		#fixedimage.process_inplace(options["preprocess"][0],options["preprocess"][1])
-		image.process_inplace(options.preprocess[0],options.preprocess[1])
-		
-	if options.lowpass:
-		#fixedimage.process_inplace(options["lowpass"][0],options["lowpass"][1])
-		image.process_inplace(options.lowpass[0],options.lowpass[1])
-		
-	if options.highpass:
-		#fixedimage.process_inplace(options["highpass"][0],options["highpass"][1])
-		image.process_inplace(options.highpass[0],options.highpass[1])
-	
-	'''
-	#Shrinking both for initial alignment and reference
-	'''
-	if options.shrink and options.shrink > 1 :
-		#sfixedimage=fixedimage.process("math.meanshrink",{"n":options["shrink"]})
-		simage=image.process("math.meanshrink",{"n":options.shrink})
-	else:
-		#sfixedimage=fixedimage
-		simage=image
-	
-	s2image = simage
-	
-	if options.ralign and not options.procfinelikecoarse:
-		if options.verbose:
-			print "The fine alignment image will be processed differently from the coarse alignment image"
-	
-		s2image = baseimage.copy()
-		if options.lowpassfine:		
-			s2image.process_inplace(options.lowpassfine[0],options.lowpassfine[1])
-		
-		if options.highpassfine:		
-			s2image.process_inplace(options.lowpassfine[0],options.lowpassfine[1])
-		
-		if options.preprocessfine:		
-			s2image.process_inplace(options.lowpassfine[0],options.lowpassfine[1])
-		
-		if options.shrinkrefine and options.shrinkrefine > 1 :
-			s2image.process_inplace("math.meanshrink",{"n":options.shrinkrefine})
-	
-	#print "Returning simage and shrunk s2image from preprocessing, types", type(simage), type(s2image)
 	return(simage,s2image)
 	
 
@@ -1095,6 +1142,7 @@ def alignment(fixedimage,image,label,classoptions,xformslabel,transform,jsA={},j
 	This can be done to the RAW particles (at this point), or the preprocessed particles (further down), through --fitwedgepost
 	"""
 	
+	'''
 	if not classoptions.fitwedgepost:
 		if classoptions.aligncmp[0] == "fsc.tomo" or classoptions.raligncmp[0] == "fsc.tomo":
 			print "THE FSC.TOMO comparator is on, on PRE mode" 
@@ -1107,6 +1155,7 @@ def alignment(fixedimage,image,label,classoptions,xformslabel,transform,jsA={},j
 				retrf = wedgestats(fixedimage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef,classoptions)
 				fixedimage['spt_wedge_mean'] = retrf[0]
 				fixedimage['spt_wedge_sigma'] = retrf[1]
+	'''
 	
 	"""
 	PREPROCESSING CALL 
@@ -1132,33 +1181,6 @@ def alignment(fixedimage,image,label,classoptions,xformslabel,transform,jsA={},j
 		simage = image
 		s2image = image
 
-	"""
-	If FSC.TOMO is used as a comparator, the particles need to have the statistics of their missing wedges calculated
-	"""
-	
-	if classoptions.fitwedgepost:
-		if classoptions.aligncmp[0] == "fsc.tomo" or classoptions.raligncmp[0] == "fsc.tomo":
-			print "THE FSC.TOMO comparator is on, on POST mode" 
-			retr = wedgestats(simage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef,classoptions)
-			simage['spt_wedge_mean'] = retr[0]
-			simage['spt_wedge_sigma'] = retr[1]
-		
-			retr = wedgestats(sfixedimage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef,classoptions)
-			sfixedimage['spt_wedge_mean'] = retr[0]
-			sfixedimage['spt_wedge_sigma'] = retr[1]
-		
-			if classoptions.ralign and classoptions.shrink != classoptions.shrinkrefine:
-				print "Shrink and shrink refine are", classoptions.shrink != classoptions.shrinkrefine
-				retr = wedgestats(s2image,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef,classoptions)
-				s2image ['spt_wedge_mean'] = retr[0]
-				s2image['spt_wedge_sigma'] = retr[1]
-		
-				retr = wedgestats(s2fixedimage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef,classoptions)
-				s2fixedimage['spt_wedge_mean'] = retr[0]
-				s2fixedimage['spt_wedge_sigma'] = retr[1]
-			else:
-				s2image=simage
-				s2fixedimage=sfixedimage
 		
 			#print "The mean and sigma for subvolume %d are: mean=%f, sigma=%f" % (i,mean,sigma)
 			#a.write_image(stack,i)
