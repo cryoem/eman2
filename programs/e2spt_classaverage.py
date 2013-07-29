@@ -42,6 +42,7 @@ from pprint import pprint
 from EMAN2jsondb import JSTask,jsonclasses
 
 
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog <output> [options]
@@ -303,7 +304,38 @@ def main():
 	
 	#outer loop over classes, ic=class number
 	
+	
+	
+	current = os.getcwd()
+	print "I am trying to open from here", current
+	print "And the path is", options.path
+	
+	abspath= current + '/' + options.path
+	print "Thus the abs path could be", abspath
+	
+	
+	
 	for ic in range(ncls):
+		
+		
+		
+			
+		
+		
+		jsAliParamsPath = abspath + '/tomo_xforms'+ str(options.refinemultireftag) + '.json'
+		jsA = js_open_dict(jsAliParamsPath) #Write particle orientations to json database.
+		
+		jsAliScoresPath = abspath + '/subtomo_scores' + str(options.refinemultireftag) + '.json'
+		jsB = js_open_dict (jsAliScoresPath)
+		
+		
+		
+		
+		
+		
+		
+		
+		
 		if ncls==1: 
 			#ptcls=range(nptcl)	
 			ptclnums=range(nptcl)				# start with a list of particle numbers in this class
@@ -343,11 +375,11 @@ def main():
 					transform = None
 				
 				if options.parallel:
-					task=Align3DTask(ref,["cache",options.input,ptclnum],ptclnum,"Ptcl %d in iter %d"%(ptclnum,it),options,transform)
+					task=Align3DTask(ref,["cache",options.input,ptclnum],ptclnum,"Ptcl %d in iter %d"%(ptclnum,it),options,transform,jsA,jsB)
 					tasks.append(task)
 				else:
 					#print "No parallelism specified"
-					result=align3Dfunc(ref,["cache",options.input,ptclnum],ptclnum,"Ptcl %d in iter %d"%(ptclnum,it),options,transform)
+					result=align3Dfunc(ref,["cache",options.input,ptclnum],ptclnum,"Ptcl %d in iter %d"%(ptclnum,it),options,transform,jsA,jsB)
 					
 					results.append(result['final'])
 			
@@ -434,7 +466,14 @@ def main():
 			if options.verbose:
 				print "The file to write the final output to is", finaloutput
 			ref.write_image(finaloutput,0)
-
+		
+		
+		
+		jsA.close()
+		jsB.close()
+		 
+		
+		
 	if options.inixforms: 
 		js.close()
 	print "Will end logger"	
@@ -966,7 +1005,7 @@ class Align3DTask(JSTask):
 	"""This is a task object for the parallelism system. It is responsible for aligning one 3-D volume to another, with a variety of options"""
 
 	#def __init__(self,fixedimage,image,ptcl,label,mask,normproc,preprocess,lowpass,highpass,npeakstorefine,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,transform,verbose,randomizewedge,wedgeangle,wedgei,wedgef):
-	def __init__(self,fixedimage,image,ptclnum,label,options,transform):
+	def __init__(self,fixedimage,image,ptclnum,label,options,transform,jsA,jsB):
 	
 		"""fixedimage and image may be actual EMData objects, or ["cache",path,number]
 		label is a descriptive string, not actually used in processing
@@ -979,7 +1018,7 @@ class Align3DTask(JSTask):
 		JSTask.__init__(self,"ClassAv3d",data,{},"")
 
 		#self.classoptions={"options":options,"ptcl":ptcl,"label":label,"mask":options.mask,"normproc":options.normproc,"preprocess":options.preprocess,"lowpass":options.lowpass,"highpass":options.highpass,"npeakstorefine":options.npeakstorefine,"align":options.align,"aligncmp":options.aligncmp,"ralign":options.ralign,"raligncmp":options.raligncmp,"shrink":options.shrink,"shrinkrefine":options.shrinkrefine,"transform":transform,"verbose":options.verbose,"randomizewedge":options.randomizewedge,"wedgeangle":options.wedgeangle,"wedgei":options.wedgei,"wedgef":options.wedgef}
-		self.classoptions={"options":options,"ptclnum":ptclnum,"label":label,"transform":transform}
+		self.classoptions={"options":options,"ptclnum":ptclnum,"label":label,"transform":transform,"jsA":jsA,"jsB":jsB}
 	
 	def execute(self,callback=None):
 		"""This aligns one volume to a reference and returns the alignment parameters"""
@@ -1003,7 +1042,7 @@ class Align3DTask(JSTask):
 		#print "classoptions are", classoptions
 		
 		xformslabel = 'tomo_' + str(classoptions['ptclnum']).zfill( len( str(nptcls) ) )
-		ret=alignment(fixedimage,image,classoptions['label'],classoptions['options'],xformslabel,classoptions['transform'],'e2spt_classaverage')
+		ret=alignment(fixedimage,image,classoptions['label'],classoptions['options'],xformslabel,classoptions['transform'],classoptions['jsA'],classoptions['jsB'],'e2spt_classaverage')
 
 		bestfinal=ret[0]
 		bestcoarse=ret[1]
@@ -1013,7 +1052,7 @@ class Align3DTask(JSTask):
 '''
 FUNCTION FOR RUNNING ALIGNMENTS WITHOUT PARALLELISM
 '''
-def align3Dfunc(fixedimage,image,ptclnum,label,classoptions,transform):
+def align3Dfunc(fixedimage,image,ptclnum,label,classoptions,transform,jsA,jsB):
 	"""This aligns one volume to a reference and returns the alignment parameters"""
 
 	if classoptions.verbose: 
@@ -1046,7 +1085,7 @@ def align3Dfunc(fixedimage,image,ptclnum,label,classoptions,transform):
 '''
 FUNCTION THAT DOES THE ACTUAL ALIGNMENT OF TWO GIVEN SUBVOLUMES -This is also used by e2spt_hac.py, any modification to it or its used parameters should be made with caution
 '''
-def alignment(fixedimage,image,label,classoptions,xformslabel,transform,prog='e2spt_classaverage'):
+def alignment(fixedimage,image,label,classoptions,xformslabel,transform,jsA={},jsB={},prog='e2spt_classaverage'):
 	
 	if classoptions.verbose: 
 		print "Aligning ",label
@@ -1246,26 +1285,32 @@ def alignment(fixedimage,image,label,classoptions,xformslabel,transform,prog='e2
 		'''
 		Write particle orientations to json database
 		'''
-		jsAliParamsPath = classoptions.path + '/tomo_xforms'+ str(classoptions.refinemultireftag) + '.json'
-		jsA = js_open_dict(jsAliParamsPath) #Write particle orientations to json database.
+	
+		#if jsA:
 		AliParams=bestfinal[0]['xform.align3d']
 		jsA[xformslabel] = AliParams
+		#else:
+		#	print "Cannot write alignment parameters because the .json dictionary to do so is empty, see", jsA
 		
-		if not classoptions.refinemultireftag:
-			print "e2spt_refinemulti not being used, therefore there is no tag"
+		#if not classoptions.refinemultireftag:
+		#	print "e2spt_refinemulti not being used, therefore there is no tag"
 		#print "The ali params to save are", AliParams
 		#print "Which in string would be", str(AliParams)
 		
-		jsA.close() 
+		
 	
 		'''
 		Write a file with alignment scores per particle
 		'''
-		jsAliScoresPath = classoptions.path + '/subtomo_scores' + str(classoptions.refinemultireftag) + '.json'
-		jsB = js_open_dict (jsAliScoresPath)
-		jsB[xformslabel] = float(bestfinal[0]['score'])
-		jsB.close()
 	
+		
+		
+		jsB[xformslabel] = float(bestfinal[0]['score'])
+		#else:
+		#	print "Cannot write the alignment scores because the .json dictionary to do so is empty, see", jsB	
+		
+		
+		
 	elif prog == 'e2spt_hac':
 		pass
 		
