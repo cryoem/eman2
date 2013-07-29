@@ -18756,6 +18756,7 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 	int   iref, nref=-1, mirror=0;
 	float iy, ix, sx=0, sy=0;
 	float peak = -1.0E23f;
+	float neginf = -1.0E23f;
 	float ang=0.0f;
 	const float qv = static_cast<float>( pi/180.0 );
 	Transform * t = image->get_attr("xform.projection");
@@ -18838,8 +18839,10 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 						    if ((psi-90.0f) < 90.0f) retvals = Crosrng_sm_psi(crefim[iref], cimage, numr,   0, 0, psi_max);
 						    else                     retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, 180, 0, psi_max);
 						}
-						double qn = retvals["qn"];
-						double qm = retvals_mirror["qn"];
+						double qn = neginf - 2.0;
+						if (use_ref) qn = retvals["qn"];
+						double qm = neginf - 2.0;
+						if (use_ref_mirror) qm = retvals_mirror["qn"];
 						
 						if(qn >= peak || qm >= peak) {
 							sx = -ix;
