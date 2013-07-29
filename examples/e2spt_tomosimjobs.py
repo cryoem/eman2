@@ -186,7 +186,7 @@ def main():
 	parser.add_argument("--parallel",type=str,default='thread:1',help="Parallelization to use.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
-	parser.add_argument("--fitwedgepost", action="store_true", help="Fit the missing wedge AFTER preprocessing the subvolumes, not before, IF using the fsc.tomo comparator for --aligncmp or --raligncmp.", default=False)
+	#parser.add_argument("--fitwedgepost", action="store_true", help="Fit the missing wedge AFTER preprocessing the subvolumes, not before, IF using the fsc.tomo comparator for --aligncmp or --raligncmp.", default=False)
 
 
 	parser.add_argument("--wedgeangle",type=float,help="Missing wedge angle",default=60)
@@ -867,9 +867,9 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 				print "\n\n\n\n\n\n\n\n$$$$$$$$$$$$$$$$\nYOU are selecting FSC.TOMO, therefore, wedgeangle needs to be specified", tiltrange+1
 				alicmd += ' --wedgeangle=' + str(tiltrange+1)  + ' --wedgei=' + str(options.wedgei) + ' --wedgef=' + str(options.wedgef)
 				
-			if options.fitwedgepost:
-				print "\n\nYou have selected --fitwedgwepost"
-				alicmd += ' --fitwedgepost'
+			#if options.fitwedgepost:
+			#	print "\n\nYou have selected --fitwedgwepost"
+			#	alicmd += ' --fitwedgepost'
 			
 			if options.writewedge:
 				alicmd += ' --writewedge'
