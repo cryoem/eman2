@@ -319,23 +319,11 @@ def main():
 	
 	for ic in range(ncls):
 		
-		
-		
-			
-		
-		
 		jsAliParamsPath = abspath + '/tomo_xforms'+ str(options.refinemultireftag) + '.json'
 		jsA = js_open_dict(jsAliParamsPath) #Write particle orientations to json database.
 		
 		jsAliScoresPath = abspath + '/subtomo_scores' + str(options.refinemultireftag) + '.json'
 		jsB = js_open_dict (jsAliScoresPath)
-		
-		
-		
-		
-		
-		
-		
 		
 		
 		if ncls==1: 
@@ -704,6 +692,8 @@ def preprocessing(options,image):
 		simage['spt_wedge_sigma'] = retr[1]
 		
 		if options.mask:
+			if options.shrink:
+				mask.process_inplace('math.meanshrink',{'n':options.shrink})
 			simage.mult(mask)
 	
 		'''
@@ -751,6 +741,8 @@ def preprocessing(options,image):
 				s2image['spt_wedge_sigma'] = retr[1]
 	
 				if options.mask:
+					if options.shrinkrefine:
+						mask.process_inplace('math.meanshrink',{'n':options.shrinkrefine})
 					s2image.mult(mask)
 
 		else:
