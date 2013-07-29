@@ -37,7 +37,7 @@ from EMAN2 import *
 from time import time
 	
 import matplotlib
-matplotlib.use('Agg',warn=False)	 
+matplotlib.use('Agg')	 
 
 
 import matplotlib.pyplot as plt
