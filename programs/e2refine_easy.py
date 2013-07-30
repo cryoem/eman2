@@ -372,6 +372,7 @@ Based on your requested resolution and box-size, I will use an angular sampling 
 <a href=http://blake.bcm.edu/emanwiki/EMAN2/AngStep>http://blake.bcm.edu/emanwiki/EMAN2/AngStep</a></p>".format(options.targetres,apix,astep))
 	else :
 		append_html("<p>Using your specified orientation generator with angular step. You may consider reading this page: <a href=http://blake.bcm.edu/emanwiki/EMAN2/AngStep>http://blake.bcm.edu/emanwiki/EMAN2/AngStep</a></p></p>")
+		if options.classiter<0 : options.classiter=1
 
 	if options.simaligncmp==None : options.simaligncmp="ccc"
 	if options.simralign==None :
