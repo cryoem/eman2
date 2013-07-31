@@ -677,7 +677,7 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,edgenorm=Tru
 		except : ctf=default_ctf
 		if storeparm :
 			if stackfile[-4:].lower()!=".hdf" and stackfile[:4].lower()!="bdb:" :
-				print "Warning, --storeparm option ignored. Input file must be HDF or BDB for this option to work."
+				if i==0: print "Warning, --storeparm option ignored. Input file must be HDF or BDB for this option to work."
 			else :
 				ctf=default_ctf		# otherwise we're stuck with the values in the file forever
 				im1["ctf"]=ctf
