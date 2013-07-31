@@ -67,7 +67,7 @@ def main():
 	usage = """e2helixboxer.py --gui <micrograph1> <<micrograph2> <micrograph3> ...
 	e2helixboxer.py --gui --helix-width=<width> <micrograph1> <<micrograph2> <micrograph3> ...
 	e2helixboxer.py <options (not --gui)> <micrograph>    
-	e2helixboxer.py <outdir> --window --dirid='mic' --micid='mic' --micsuffix='hdf' --invert_contrast --dp=27.6 --apix=1.84 --boxsize='200,45' --outstacknameall='bdb:/Users/jiafang/helical_mpi/jdata' --hcoords_suffix='_boxes.txt' --ptcl-overlap=30 --rmax=92.0
+	e2helixboxer.py <outdir> --window --dirid='mic' --micid='mic' --micsuffix='hdf' --invert_contrast --dp=27.6 --apix=1.84 --boxsize='200,45' --outstacknameall='bdb:/Users/jiafang/helical_mpi/jdata' --hcoords_suffix='_boxes.txt' --ptcl-dst=30 --rmax=92.0
 
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
