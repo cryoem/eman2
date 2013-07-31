@@ -110,7 +110,7 @@ images far from focus."""
 #	parser.add_argument("--virtualout",type=str,help="Make a virtual stack copy of the input images with CTF parameters stored in the header. BDB only.",default=None)
 	parser.add_argument("--storeparm",action="store_true",help="Output files will include CTF info. CTF parameters are used from the database, rather than values that may be present in the input image header. Critical to use this when generating output !",default=False,guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode='genoutp[True]')
 	parser.add_argument("--oversamp",type=int,help="Oversampling factor",default=1, guitype='intbox', row=3, col=0, rowspan=1, colspan=2, mode='autofit')
-	parser.add_argument("--classify",type=int,help="Subclassify particles, hopefully by defocus, into n groups.",default=0)
+	parser.add_argument("--classify",type=int,help="Highly experimental ! Subclassify particles (hopefully by defocus) into n groups.",default=0)
 	parser.add_argument("--sf",type=str,help="The name of a file containing a structure factor curve. Specify 'none' to use the built in generic structure factor. Default=auto",default="auto",guitype='strbox',nosharedb=True,returnNone=True,row=8,col=1,rowspan=1,colspan=1, mode='autofit,tuning')
 	parser.add_argument("--debug",action="store_true",default=False)
 	parser.add_argument("--dbds",type=str,default=None,help="Obsolete option for old e2workflow. Present only to provide warning messages.")
@@ -125,7 +125,7 @@ images far from focus."""
 		sys.exit(1)
 
 	if options.allparticles:
-		args=["particles/"+i for i in os.listdir("particles") if "__ctf" not in i and i[0]!="."]
+		args=["particles/"+i for i in os.listdir("particles") if "__" not in i and i[0]!="." and ".hed" not in i ]
 		args.sort()
 		if options.verbose : print "%d particle stacks identified"%len(args)
 
@@ -458,9 +458,9 @@ def pspec_and_ctf_fit(options,debug=False):
 		if options.classify>1 : ps=split_powspec_with_bg(filename,options.source_image,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp,apix=apix,nclasses=options.classify)
 		else: ps=list((powspec_with_bg(filename,options.source_image,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp,apix=apix),))
 		# im_1d,bg_1d,im_2d,bg_2d,bg_1d_low
+		ds=1.0/(apix*ps[0][2].get_ysize())
 		for j,p in enumerate(ps):
 			im_1d,bg_1d,im_2d,bg_2d,bg_1d_low=p
-			ds=1.0/(apix*im_2d.get_ysize())
 			
 			if not options.nosmooth : bg_1d=smooth_bg(bg_1d,ds)
 			if options.fixnegbg :
@@ -799,7 +799,7 @@ def powspec(stackfile,source_image=None,mask=None,edgenorm=True):
 	return av
 
 masks={}		# mask cache for background/foreground masking
-def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=1,apix=2):
+def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=1,apix=2,ptclns=None):
 	"""This routine will read the images from the specified file, optionally edgenormalize,
 	then apply a gaussian mask with the specified radius then compute the average 2-D power
 	spectrum for the stack. It will also compute the average 2-D power spectrum using 1-mask + edge
@@ -837,7 +837,9 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 		masks[(ys,radius)]=(mask1,ratio1,mask2,ratio2)
 #		display((mask1,mask2))
 
+	av1,av2=None,None
 	for i in range(n):
+		if ptclns!=None and i not in ptclns :continue
 		im1 = EMData()
 		if source_image!=None :
 			im1.read_image(stackfile,i,True)
@@ -863,7 +865,7 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 		im1*=mask1
 		imf=im1.do_fft()
 		imf.ri2inten()
-		if i==0:
+		if av1==None:
 			av1=EMData(imf["nx"],imf["ny"],imf["nz"])	# we make a new object to avoid copying the header of imf
 			av1.set_complex(True)
 			av1.to_zero()
@@ -872,7 +874,7 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 		im2*=mask2
 		imf=im2.do_fft()
 		imf.ri2inten()
-		if i==0:
+		if av2==None:
 			av2=EMData(imf["nx"],imf["ny"],imf["nz"])
 			av2.set_complex(True)
 			av2.to_zero()
@@ -1009,15 +1011,76 @@ Rather than returning a single tuple, returns a list of nclasses tuples.
 	bg=EMData(len(av2_1d)-n0,1,1)
 	for i in xrange(n0,len(av2_1d)): bg[i-n0]=av2_1d[i]
 	
+	nvec=10
+	nxl=len(av2_1d)-n0
+	mask=EMData(nxl,1,1)
+	mask.to_one()
+#	pca=Analyzers.get("pca_large",{"mask":mask,"nvec":nvec})
+	
 	# now BG subtract each particle 1-D average
 	for j in range(n):
 		# converts each list of radial values into an image
-		im=EMData(len(av2_1d)-n0,1,1)
+		im=EMData(nxl,1,1)
 		for i in xrange(n0,len(av2_1d)): im[i-n0]=av_1d_n[j][i]/(av1["ny"]*av1["ny"]*ratio1)
-		im.write_image("presub.hdf",j)
+#		im.write_image("presub.hdf",j)
 		im.sub(bg)
-		im.write_image("postsub.hdf",j)
+		sm=0
+		for k in xrange(nxl*3/4,nxl): sm+=im[k]
+		sm/=nxl-nxl*3/4
+#		print sm
+		im.sub(sm)
+#		im.write_image("postsub.hdf",j)
 		av_1d_n[j]=im
+#		pca.insert_image(im)
+		
+#	result=pca.analyze()		# this gives us a basis for decomposing and classifying the images
+#	for j in range(nvec): result[j].process_inplace("normalize.unitlen")
+
+	# Instead of using a MSA data-based subspace, let's use the spectrum of different CTF curves instead
+	ctf=EMAN2Ctf()
+	ctf.bfactor=50.0		# These parameters do not need to be accurate, they are just used to make a nice set of overlapping CTF shaped curves
+	ctf.ampcont=10.0
+	ctf.voltage=200.0
+	ctf.cs=2.0
+	ctf.apix=apix
+	ctf.dsbg=ds
+	dfs=[5.0,4.2,3.5,2.8,2.1,1.7,1.4,1.1,0.9,0.6]		# a nice set of overlapping defocus values for classification
+	nvec=len(dfs)
+	result=[]
+	for i in xrange(nvec):
+		ctf.defocus=dfs[i]
+		vec=ctf.compute_1d(ys*2,ds,Ctf.CtfType.CTF_AMP,None)  # note that size is not the returned size, but 2*the returned size
+		result.append(EMData(nxl,1,1))
+		for j in xrange(n0,len(av2_1d)): result[-1][j-n0]=vec[j]
+		result[-1].write_image("cvec.hdf",-1)
+
+	# project into the subspace
+	prj_1d=[]
+	for j in range(n):
+		im=EMData(nvec,1,1)
+		for k in range(nvec): im[k]=av_1d_n[j].cmp("ccc",result[k])
+		im.write_image("postsub.proj.hdf",j)
+		prj_1d.append(im)
+	
+	#out=file("projs.txt","w")
+	#for y in range(n):
+		#for x in range(nvec):
+			#out.write("{}\t".format(prj_1d[y][x]))
+		         #out.write("\n")
+
+	# kmeans classification
+	km=Analyzers.get("kmeans",{"ncls":nclasses,"mininclass":5})
+	for im in prj_1d: km.insert_image(im)
+	cls=km.analyze()
+
+	plists={}
+	for i,im in enumerate(prj_1d):
+		try: plists[im["class_id"]].append(i)
+		except: plists[im["class_id"]]=[i]
+
+#	print plists
+
+	return [powspec_with_bg(stackfile,source_image,radius,edgenorm,oversamp,apix,plists[p]) for p in plists] 
 
 	sys.exit(1)
 	# added to make the 2D display look better. Should have no other impact at the time

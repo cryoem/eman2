@@ -93,6 +93,7 @@ def js_check_dict(url,readonly=True):
 	"""Checks for the existence of the named JSON file and insures that it can be opened for reading [and writing].
 It does not check the contents of the file, just for its exsistence and permissions."""
 
+	if url==None : return False
 	if url[-5:]!=".json" :
 		raise Exception,"JSON databases must have .json extension"
 
