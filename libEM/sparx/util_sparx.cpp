@@ -18750,7 +18750,7 @@ vector<float> Util::multiref_polar_ali_helical(EMData* image, const vector< EMDa
 vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, float ant, float psi_max, string mode,
                 vector<int>numr, float cnx, float cny, int ynumber, float yrnglocal) {
-	cout <<"  VERSION  07/29/2013  6:18pm"<<endl;
+	
 	size_t crefim_len = crefim.size();
 
 	int   iref, nref=-1, mirror=0;
