@@ -676,9 +676,12 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,edgenorm=Tru
 		try: ctf=im1["ctf"]
 		except : ctf=default_ctf
 		if storeparm :
-			ctf=default_ctf		# otherwise we're stuck with the values in the file forever
-			im1["ctf"]=ctf
-			im1.write_image(stackfile,i,EMUtil.ImageType.IMAGE_UNKNOWN,True)
+			if stackfile[-4:].lower()!=".hdf" and stackfile[:4].lower()!="bdb:" :
+				print "Warning, --storeparm option ignored. Input file must be HDF or BDB for this option to work."
+			else :
+				ctf=default_ctf		# otherwise we're stuck with the values in the file forever
+				im1["ctf"]=ctf
+				im1.write_image(stackfile,i,EMUtil.ImageType.IMAGE_UNKNOWN,True)
 		if type(ctf)==EMAN1Ctf : ctf=default_ctf	# EMAN1 ctf needs a structure factor for this to work
 
 
