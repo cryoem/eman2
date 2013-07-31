@@ -497,7 +497,8 @@ def pspec_and_ctf_fit(options,debug=False):
 			except :
 				qual=5
 				js_parms["quality"]=5
-			img_sets.append([filename+"_"+str(j),ctf,im_1d,bg_1d,im_2d,bg_2d,qual,bg_1d_low])
+			if j==0: img_sets.append([filename,ctf,im_1d,bg_1d,im_2d,bg_2d,qual,bg_1d_low])
+			else: img_sets.append([filename+"_"+str(j),ctf,im_1d,bg_1d,im_2d,bg_2d,qual,bg_1d_low])
 
 		# store the results back in the database. We omit the filename, quality and bg_1d_low (which can be easily recomputed)
 		js_parms["ctf"]=img_sets[-1][1:-2]
