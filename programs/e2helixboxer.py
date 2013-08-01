@@ -2146,12 +2146,12 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 	imgmic  = get_im(micname)
 	
 	if inv_contrast:
-		sttt = Util.infomask(imgmic, None, True)
+		stt = Util.infomask(imgmic, None, True)
 		Util.mul_scalar(imgmic, -1.0) # multiply by -1
 		imgmic += 2*stt[0]
-						
+
 	filt_gaussh(imgmic, freq).write_image(tmpfile)  # remove frequencies too low for the box size
-	
+
 	# Set box coordinates in e2helixboxer database
 	db_load_helix_coords(tmpfile, hcoordsname, False, boxsize)
 
