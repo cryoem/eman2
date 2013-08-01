@@ -513,7 +513,11 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		"""this will store all of the current sets in the appropriate _info.json file, if available"""
 		if self.infoname==None : return	# an in-ram stack of particles, no place to save to...
 
-		sets={i:tuple(self.sets[i]) for i in self.sets}				# convert sets into tuples for more legible files
+        # convert sets into tuples for more legible files
+		# sets={i:tuple(self.sets[i]) for i in self.sets}				
+		sets = dict((i,tuple(self.sets[i])) for i in self.sets)
+
+        # convert sets into tuples for more legible files
 		js_open_dict(self.infoname)["sets"]=sets
 
 	def clear_set(self,update_gl=True):
