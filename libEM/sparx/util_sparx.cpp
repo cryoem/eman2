@@ -19981,7 +19981,7 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
-	cout <<"  VERSION  07/15/2013  11:00am"<<endl;
+	cout <<"  VERSION  08/01/2013  10:30am"<<endl;
 	int newx, newy, newz;
 	bool  keep_going;
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
