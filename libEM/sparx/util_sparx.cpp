@@ -18471,7 +18471,8 @@ vector<float> Util::hans(EMData* image, const vector< EMData* >& crefim,
 	}
 
 	bool found_better = false;
-	for ( int tiref = 0;  (tiref < (int)crefim_len) && (! found_better); tiref++) {
+	size_t tiref = 0;
+	for ( ;  (tiref < crefim_len) && (! found_better); tiref++) {
 		iref = listr[tiref];
 		float best_for_ref = -1.0E23f;
 		for (int i = -ky; i <= ky; i++) {
@@ -18529,6 +18530,7 @@ vector<float> Util::hans(EMData* image, const vector< EMData* >& crefim,
 	res.push_back(static_cast<float>(mirror));
 	res.push_back(static_cast<float>(nref));
 	res.push_back(peak);
+	res.push_back(static_cast<float>(tiref));
 	return res;
 }
 
