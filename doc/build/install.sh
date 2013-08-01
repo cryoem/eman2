@@ -8,11 +8,12 @@
 # Date: 2/12/2009, change back to Python 2.5.4, Grant Tang
 # Date: 9/1/2009, --disable_cache, Grant Tang
 # Date: 6/30/2013, Significant updates by Ian Rees for new build system.
+# Date: 8/01/2013, changed disable_cache to disable_gui
 
 usage()
 {
-	echo "usage: `basename $0` [--disable_cache]"
-	echo "       --disable_cache: no cahce and no GUI"
+	echo "usage: `basename $0` [--disable_gui]"
+	echo "       --disable_gui: no GUI"
 	exit 0
 }
 
@@ -108,7 +109,7 @@ main()
 
 	# # This is for Pawel's cluster working
 	local value1=$1	
-	if [[ "${value1}" = "--disable_cache" ]]; then
+	if [[ "${value1}" = "--disable_gui" ]]; then
 		disable_cache
 	fi
 
