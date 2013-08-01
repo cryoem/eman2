@@ -81,9 +81,8 @@ def main():
 	
 	parser.add_argument("--db-add-hcoords", type=str, help="Append any unique helix coordinates to the database from the specified file (in EMAN1 *.box format). Use --helix-width to specify a width for all boxes.")
 	parser.add_argument("--db-set-hcoords", type=str, help="Replaces the helix coordinates in the database with the coordinates from the specified file (in EMAN1 *.box format). Use --helix-width to specify a width for all boxes.")
-	
+	parser.add_argument("--ptcl-dst", 	        type=int, 	             dest="ptcl_dst", 			  help="Distance between windowed squares in pixels", default=-1)
 	parser.add_argument("--helix-width", "-w", type=int, dest="helix_width", help="Helix width in pixels. Overrides widths saved in the database or in an input file.", default=-1)
-	parser.add_argument("--ptcl-overlap", type=int, dest="ptcl_overlap", help="Particle overlap in pixels", default=-1)
 	parser.add_argument("--ptcl-length", type=int, dest="ptcl_length", help="Particle length in pixels", default=-1)
 	parser.add_argument("--ptcl-width", type=int, dest="ptcl_width", help="Particle width in pixels", default=-1)
 	parser.add_argument("--ptcl-not-rotated", action="store_true", dest="ptcl_not_rotated", help="Particles are oriented as on the micrograph. They are square with length max(ptcl_length, ptcl_width).")
@@ -110,7 +109,6 @@ def main():
 	parser.add_argument("--dphi",               type=float,				 default= -1.0,               help="delta phi - rotation in degrees")  
 	parser.add_argument("--rmax",               type=float, 			 default= 80.0,               help="maximal radius for hsearch (Angstroms)")
 	parser.add_argument("--dbg",                type=int,	 			 default=1,                   help="If 1, then intermediate files in output directory will not be deleted; if 0, then all output directories where intermediate files were stored will be deleted. Default is 1.")
-	parser.add_argument("--ptcl-dst", 	        type=int, 	             dest="ptcl_dst", 			  help="Distance between windowed squares in pixels", default=-1)
 	
 	# ctf estimation using cter
 	parser.add_argument("--cter",               action="store_true",     default=False,                  help="CTF estimation using cter")
@@ -195,11 +193,11 @@ def main():
 		px_length = None
 	else:
 		px_length = options.ptcl_length
-		
-	if options.ptcl_overlap < 0:
-		px_overlap = None
+	
+	if options.ptcl_dst < 0:
+		px_dst = None
 	else:
-		px_overlap = options.ptcl_overlap
+		px_dst = options.ptcl_dst	
 	
 	logid=E2init(sys.argv)
 	
@@ -226,9 +224,9 @@ def main():
 			if options.helix_images:
 				db_save_helices(micrograph_filepath, options.helix_images, helix_width)
 			if options.ptcl_coords:
-				db_save_particle_coords(micrograph_filepath, options.ptcl_coords, px_overlap, px_length, px_width)
+				db_save_particle_coords(micrograph_filepath, options.ptcl_coords, px_dst, px_length, px_width)
 			if options.ptcl_images:
-				db_save_particles(micrograph_filepath, options.ptcl_images, px_overlap, px_length, px_width, not options.ptcl_not_rotated, options.ptcl_norm_edge_mean, options.gridding, options.ptcl_images_stack_mode)
+				db_save_particles(micrograph_filepath, options.ptcl_images, px_dst, px_length, px_width, not options.ptcl_not_rotated, options.ptcl_norm_edge_mean, options.gridding, options.ptcl_images_stack_mode)
 				
 			E2end(logid)
 		elif len(args) == 0:
@@ -313,13 +311,13 @@ def get_particle_centroids(helix_coords, px_overlap, px_length, px_width):
 	
 	return ptcl_coords
 
-def get_rotated_particles( micrograph, helix_coords, px_overlap = None, px_length = None, px_width = None, gridding = False , mic_name=""):
+def get_rotated_particles( micrograph, helix_coords, px_dst = None, px_length = None, px_width = None, gridding = False , mic_name=""):
 	"""
 	Gets the overlapping square/rectangular "particles" with "lengths" (could be less than "widths") 
 	parallel to the helical axis. They are then rotated so the "lengths" are vertical.
 	@param micrograph: EMData object for the micrograph
 	@param helix_coords: (x1,y1,x2,y2,width) tuple for a helix
-	@param px_overlap: length of overlap in pixels of the rectangular particles, measured along the line connecting particle centroids, defaults to 0.9*px_length
+	@param px_dst: length of overlap in pixels of the rectangular particles, measured along the line connecting particle centroids, defaults to 0.1*px_length
 	@param px_length: distance in pixels between the centroids of two adjacent particles, defaults to the width of the helix
 	@param px_width: width of the particles in pixels, defaults to px_length
 	@param gridding: use gridding method for rotation operation, requires square particles (px_length == px_width)
@@ -342,8 +340,10 @@ def get_rotated_particles( micrograph, helix_coords, px_overlap = None, px_lengt
 		px_width = w
 	if not px_length:
 		px_length = px_width
-	if not px_overlap:
+	if not px_dst:
 		px_overlap = 0.9*px_length
+	else:
+		px_overlap = px_length - px_dst
 	assert px_length > px_overlap, "The overlap must be smaller than the particle length"
 	
 	centroids = get_particle_centroids(helix_coords, px_overlap, px_length, px_width)
@@ -407,12 +407,12 @@ def get_rotated_particles( micrograph, helix_coords, px_overlap = None, px_lengt
 	
 	return particles
 
-def get_unrotated_particles(micrograph, helix_coords, px_overlap = None, px_length = None, px_width = None, mic_name=""):
+def get_unrotated_particles(micrograph, helix_coords, px_dst = None, px_length = None, px_width = None, mic_name=""):
 	"""
 	Gets the image data for each particle, without first rotating the helix and its corresponding particles to be vertical.
 	@param micrograph: EMData object that holds the image data for the helix
 	@param helix_coords: the (x1, y1, x2, y2, width) tuple (in pixels) that specifies the helix on the micrograph
-	@param px_overlap: the number of pixels of overlap between consecutive particles, overlap measured along the long-axis of the helix, defaults to 90% of max(px_length, px_width)
+	@param px_dst: the number of pixels between consecutive particles,measured along the long-axis of the helix, defaults to 10% of max(px_length, px_width)
 	@param px_length: the distance between consecutive particle midpoints in pixels, chosen to correspond with rotated case, defaults to helix width
 	@param px_width: corresponds to particle width in the rotated case, in the unrotated case only used to set length of the square to max(px_width, px_length), defaults to px_length
 	@return: a list of EMData objects for each unrotated particle in the helix 
@@ -426,9 +426,11 @@ def get_unrotated_particles(micrograph, helix_coords, px_overlap = None, px_leng
 		side = px_width
 	elif px_length:
 		side = px_length
-		
-	if not px_overlap:
+	
+	if not px_dst:
 		px_overlap = 0.9*side
+	else:
+		px_overlap = side - px_dst	
 	centroids = get_particle_centroids(helix_coords, px_overlap, side, side)
 	particles = []
 	rot_angle = get_helix_rotation_angle(*helix_coords)
@@ -693,7 +695,7 @@ def db_save_helices(micrograph_filepath, helix_filepath=None, helix_width = None
 		save_helix(helix, helix_filepath, i)
 		i+=1
 
-def db_save_particle_coords(micrograph_filepath, output_filepath = None, px_overlap = None, px_length = None, px_width = None):
+def db_save_particle_coords(micrograph_filepath, output_filepath = None, px_dst = None, px_length = None, px_width = None):
 	base = os.path.splitext( micrograph_filepath )[0]
 	if not output_filepath:
 		output_filepath = "%s_helix_ptcl_coords.txt" % (base)
@@ -703,6 +705,10 @@ def db_save_particle_coords(micrograph_filepath, output_filepath = None, px_over
 		px_width = helix_width
 	if not px_length:
 		px_length = px_width
+	if px_dst:
+		px_overlap = px_length - px_dst
+	else:
+		px_overlap = 0.9*px_length
 	assert px_overlap < px_length
 	helix_particle_coords_dict = {}
 	for helix_coords in helix_coords_list:
@@ -711,7 +717,7 @@ def db_save_particle_coords(micrograph_filepath, output_filepath = None, px_over
 	
 	save_particle_coords(helix_particle_coords_dict, output_filepath, micrograph_filepath, px_length, px_width)
 	
-def db_save_particles(micrograph_filepath, ptcl_filepath = None, px_overlap = None, px_length = None, px_width = None, rotated = True, do_edge_norm = False, gridding = False, stack_file_mode = "multiple" ):
+def db_save_particles(micrograph_filepath, ptcl_filepath = None, px_dst = None, px_length = None, px_width = None, rotated = True, do_edge_norm = False, gridding = False, stack_file_mode = "multiple" ):
 	micrograph_filename = os.path.basename(micrograph_filepath)
 	micrograph_name = os.path.splitext( micrograph_filename )[0]
 	if not ptcl_filepath:
@@ -725,9 +731,9 @@ def db_save_particles(micrograph_filepath, ptcl_filepath = None, px_overlap = No
 	for coords in helices_dict:
 		helix = helices_dict[coords]
 		if rotated:
-			helix_particles = get_rotated_particles(micrograph, coords, px_overlap, px_length, px_width, gridding, mic_name = micrograph_filename)
+			helix_particles = get_rotated_particles(micrograph, coords, px_dst, px_length, px_width, gridding, mic_name = micrograph_filename)
 		else:
-			helix_particles = get_unrotated_particles(micrograph, coords, px_overlap, px_length, px_width,mic_name = micrograph_filename)
+			helix_particles = get_unrotated_particles(micrograph, coords, px_dst, px_length, px_width,mic_name = micrograph_filename)
 		for ii in xrange(len(helix_particles)):
 			(helix_particles[ii]).set_attr("filament", micrograph_filename+"%04d"%nhelix)
 		nhelix = nhelix + 1
@@ -751,7 +757,7 @@ if ENABLE_GUI:
 			width = self.parentWidget().get_width()
 			self.ptcls_width_spinbox.setValue( width )
 			self.ptcls_length_spinbox.setValue( width )
-			self.ptcls_overlap_spinbox.setValue( int(0.9*width) )
+			self.ptcls_distance_spinbox.setValue( int(0.1*width) )
 			
 			
 			micrograph_filepath = self.parentWidget().micrograph_filepath
@@ -792,10 +798,10 @@ if ENABLE_GUI:
 			self.ptcls_groupbox = QtGui.QGroupBox(self.tr("Write &Particles:"))
 			self.ptcls_groupbox.setCheckable(True)
 			
-			ptcls_overlap_label = QtGui.QLabel(self.tr("&Overlap:"))
-			self.ptcls_overlap_spinbox = QtGui.QSpinBox()
-			self.ptcls_overlap_spinbox.setMaximum(10000)
-			ptcls_overlap_label.setBuddy(self.ptcls_overlap_spinbox)
+			ptcls_distance_label = QtGui.QLabel(self.tr("&Distance:"))
+			self.ptcls_distance_spinbox = QtGui.QSpinBox()
+			self.ptcls_distance_spinbox.setMaximum(10000)
+			ptcls_distance_label.setBuddy(self.ptcls_distance_spinbox)
 			ptcls_length_label = QtGui.QLabel(self.tr("&Length:"))
 			self.ptcls_length_spinbox = QtGui.QSpinBox()
 			self.ptcls_length_spinbox.setMaximum(10000)
@@ -860,9 +866,9 @@ if ENABLE_GUI:
 			
 			self.helices_groupbox.setLayout(helices_layout)
 			
-			ptcls_overlap_layout = QtGui.QHBoxLayout()
-			ptcls_overlap_layout.addWidget(ptcls_overlap_label)
-			ptcls_overlap_layout.addWidget(self.ptcls_overlap_spinbox)
+			ptcls_distance_layout = QtGui.QHBoxLayout()
+			ptcls_distance_layout.addWidget(ptcls_distance_label)
+			ptcls_distance_layout.addWidget(self.ptcls_distance_spinbox)
 			
 			ptcls_length_layout = QtGui.QHBoxLayout()
 			ptcls_length_layout.addWidget(ptcls_length_label)
@@ -906,7 +912,7 @@ if ENABLE_GUI:
 			self.ptcls_images_groupbox.setLayout(ptcls_images_layout)
 			
 			ptcls_opts_layout = QtGui.QVBoxLayout()
-			ptcls_opts_layout.addLayout(ptcls_overlap_layout)
+			ptcls_opts_layout.addLayout(ptcls_distance_layout)
 			ptcls_opts_layout.addLayout(ptcls_length_layout)
 			ptcls_opts_layout.addLayout(ptcls_width_layout)
 			ptcls_opts_layout.addWidget(self.ptcls_coords_groupbox)
@@ -989,9 +995,10 @@ if ENABLE_GUI:
 						save_helix(helix, helix_filepath, i)
 						i += 1
 			if self.ptcls_groupbox.isChecked():
-				px_overlap = self.ptcls_overlap_spinbox.value()
+				px_dst = self.ptcls_distance_spinbox.value()
 				px_length = self.ptcls_length_spinbox.value()
 				px_width = self.ptcls_width_spinbox.value()
+				px_overlap = None
 				if self.ptcls_images_groupbox.isChecked():
 					do_edge_norm = self.ptcls_edgenorm_checkbox.isChecked()
 					ptcl_filepath = str(self.ptcls_images_line_edit.text())
@@ -1007,20 +1014,25 @@ if ENABLE_GUI:
 					nhelix = 0
 					for coords_key in helices_dict:
 						if self.ptcls_bilinear_rotation_radiobutton.isChecked():
-							helix_particles = get_rotated_particles(micrograph, coords_key, px_overlap, px_length, px_width, gridding=False, mic_name=self.micrograph_filename)
+							helix_particles = get_rotated_particles(micrograph, coords_key, px_dst, px_length, px_width, gridding=False, mic_name=self.micrograph_filename)
+							px_overlap = px_length - px_dst
 						elif self.ptcls_gridding_rotation_radiobutton.isChecked():
 							side = max(px_length, px_width)
 							#need to prepare the fft volume for gridding at here
-							helix_particles = get_rotated_particles(micrograph, coords_key, px_overlap, side, side, gridding=True , mic_name=self.micrograph_filename)
+							helix_particles = get_rotated_particles(micrograph, coords_key, px_dst, side, side, gridding=True , mic_name=self.micrograph_filename)
+							px_overlap = side - px_dst
 						elif self.ptcls_no_rotation_radiobutton.isChecked():
 							side = max(px_length, px_width)
-							helix_particles = get_unrotated_particles(micrograph, coords_key, px_overlap, side, side, mic_name=self.micrograph_filename)
+							helix_particles = get_unrotated_particles(micrograph, coords_key, px_dst, side, side, mic_name=self.micrograph_filename)
+							px_overlap = side - px_dst
 						for ii in xrange(len(helix_particles)):
 							(helix_particles[ii]).set_attr("filament", self.micrograph_filename+"%04d"%nhelix)
 						nhelix = nhelix + 1
 						all_particles.append(helix_particles)
 					save_particles(all_particles, ptcl_filepath, do_edge_norm, stack_mode)
 				if self.ptcls_coords_groupbox.isChecked():
+					if not px_overlap:
+						px_overlap = px_length - px_dst
 					ptcl_coords_filepath = str(self.ptcls_coords_line_edit.text())
 					micrograph_filepath = self.parentWidget().micrograph_filepath
 					helix_particle_coords_dict = {}
