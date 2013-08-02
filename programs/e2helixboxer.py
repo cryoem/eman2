@@ -2005,7 +2005,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=2
 	if ptcl_dst < 0 and dp >= 0: ptcl_dst = int( (dp/new_pixel_size) + 0.5)
 	ptcl_overlap = boxsize - ptcl_dst
 	
-	print_msg("Overlap in pixels (using pixel size %f) between adjacent segments: %d\n"%(new_pixel_size, ptcl_overlap))
+	print_msg("Distance in pixels (using pixel size %f) between adjacent segments: %d\n"%(new_pixel_size, ptcl_dst))
 
 	topdir = os.getcwd()
 	flist = os.listdir(topdir)
