@@ -263,8 +263,8 @@ in the refinement directory. You can use Info with the browser or just read the 
 			sys.exit(1)
 	else:
 		try:
-			run("e2proc3d.py {model} {path}/threed_00_even.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq}".format(model=options.model,path=options.path,freq=1.0/(options.targetres*1.5)))
-			run("e2proc3d.py {model} {path}/threed_00_odd.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq}" .format(model=options.model,path=options.path,freq=1.0/(options.targetres*1.5)))
+			run("e2proc3d.py {model} {path}/threed_00_even.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} apix={apix}".format(model=options.model,path=options.path,freq=1.0/(options.targetres*1.5),apix=apix))
+			run("e2proc3d.py {model} {path}/threed_00_odd.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} apix={apix}" .format(model=options.model,path=options.path,freq=1.0/(options.targetres*1.5),apix=apix))
 			append_html("<p>Phase randomizing {model} at {res}. Input particles are from {infile}</p>".format(model=options.model,infile=options.input,res=options.targetres*1.5))
 			options.input=image_eosplit(options.input)
 		except:
