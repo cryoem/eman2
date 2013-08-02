@@ -1283,10 +1283,8 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_max=1
 	#  center is in SPIDER convention
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
-	phi, theta, psi, tx, ty = get_params_proj(data)
-	t1 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
-	t1.set_trans( Vec2f( -tx, -ty ) )
 	if finfo:
+		phi, theta, psi, tx, ty = get_params_proj(data)
 		finfo.write("Image id: %6d\n"%(ID))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
@@ -1311,9 +1309,9 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_max=1
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f\n\n" %(phi, theta, psi, s2x, s2y, peak))
 			finfo.flush()
-		return peak, phi, theta, psi, s2x, s2y, t1
+		return peak, phi, theta, psi, s2x, s2y
 	else:
-		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0
 
 def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, psi_max=180.0, finfo=None, yrnglocal=-1.0):
 	"""
@@ -1332,10 +1330,8 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
 	ant = cos(an*pi/180.0)
-	phi, theta, psi, tx, ty = get_params_proj(data)
-	t1 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
-	t1.set_trans( Vec2f( -tx, -ty ) )
 	if finfo:
+		phi, theta, psi, tx, ty = get_params_proj(data)
 		finfo.write("Image id: %6d\n"%(ID))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
@@ -1365,9 +1361,9 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f \n\n" %(phi, theta, psi, s2x, s2y, peak))
 			finfo.flush()
 
-		return peak, phi, theta, psi, s2x, s2y, t1
+		return peak, phi, theta, psi, s2x, s2y
 	else:
-		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0\
 
 def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_max=180.0, finfo=None):
 	"""
@@ -1385,10 +1381,8 @@ def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_ma
 	#  center is in SPIDER convention
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
-	phi, theta, psi, tx, ty = get_params_proj(data)
-	t1 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
-	t1.set_trans( Vec2f( -tx, -ty ) )
 	if finfo:
+		phi, theta, psi, tx, ty = get_params_proj(data)
 		finfo.write("Image id: %6d\n"%(ID))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
@@ -1407,9 +1401,9 @@ def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_ma
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f\n\n" %(phi, theta, psi, s2x, s2y, peak))
 			finfo.flush()
-		return peak, phi, theta, psi, s2x, s2y, t1
+		return peak, phi, theta, psi, s2x, s2y
 	else:
-		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0
 
 def proj_ali_helical_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, an, psi_max=180.0, finfo=None, yrnglocal=-1.0):
 	"""
@@ -1428,10 +1422,8 @@ def proj_ali_helical_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
 	ant = cos(an*pi/180.0)
-	phi, theta, psi, tx, ty = get_params_proj(data)
-	t1 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
-	t1.set_trans( Vec2f( -tx, -ty ) )
 	if finfo:
+		phi, theta, psi, tx, ty = get_params_proj(data)
 		finfo.write("Image id: %6d\n"%(ID))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
@@ -1449,9 +1441,9 @@ def proj_ali_helical_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f\n\n" %(phi, theta, psi, s2x, s2y, peak))
 			finfo.flush()
-		return peak, phi, theta, psi, s2x, s2y, t1
+		return peak, phi, theta, psi, s2x, s2y
 	else:
-		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0
 
 def ali_vol_func(params, data):
 	from utilities    import model_gauss
