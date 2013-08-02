@@ -7057,6 +7057,9 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 				"""
 				peak1 = None
 				peak2 = None
+				orgphi, orgtheta, orgpsi, orgtx, orgty = get_params_proj(data[im])
+				t1 = Transform({"type":"spider","phi":orgphi,"theta":orgtheta,"psi":orgpsi})
+				t1.set_trans( Vec2f( -orgtx, -orgty ) )
 				if( len(refrings1) > 0):
 					if  an[N_step] == -1:
 						peak1, phihi1, theta1, psi1, sxi1, syi1 = \
@@ -7080,7 +7083,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 					psi = psi2
 					sxi = sxi2
 					syi = syi2
-					t1 = t12
 				elif peak2 is None:
 					peak = peak1
 					phihi = phihi1
@@ -7088,7 +7090,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 					psi = psi1
 					sxi = sxi1
 					syi = syi1
-					t1 = t11
 				else:
 					if(peak1 >= peak2):
 						peak = peak1
@@ -7097,7 +7098,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 						psi = psi1
 						sxi = sxi1
 						syi = syi1
-						t1 = t11
 					else:
 						peak = peak2
 						phihi = phihi2
@@ -7105,7 +7105,6 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 						psi = psi2
 						sxi = sxi2
 						syi = syi2
-						t1 = t12
 				#print "  3  ",im, peak, phihi, theta, psi, sxi, syi
 				if(peak > -1.0e22):
 					if WRAP == 1:
