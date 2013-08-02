@@ -7057,9 +7057,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 				"""
 				peak1 = None
 				peak2 = None
-				orgphi, orgtheta, orgpsi, orgtx, orgty = get_params_proj(data[im])
-				t1 = Transform({"type":"spider","phi":orgphi,"theta":orgtheta,"psi":orgpsi})
-				t1.set_trans( Vec2f( -orgtx, -orgty ) )
+				t1 = data[im].get_attr("xform.projection")
 				if( len(refrings1) > 0):
 					if  an[N_step] == -1:
 						peak1, phihi1, theta1, psi1, sxi1, syi1 = \
