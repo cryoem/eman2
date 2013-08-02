@@ -7060,18 +7060,18 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 				if( len(refrings1) > 0):
 					if  an[N_step] == -1:
 						peak1, phihi1, theta1, psi1, sxi1, syi1 = \
-							proj_ali_helical_90(pad(data[im], data_nn, data_nn, 1, "circumference"), refrings1, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], psi_max, finfo)
+							proj_ali_helical_90(data[im], refrings1, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], psi_max, finfo)
 					else:
 						peak1, phihi1, theta1, psi1, sxi1, syi1 = \
-							proj_ali_helical_90_local(pad(data[im], data_nn, data_nn, 1, "circumference"), refrings1, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], an[N_step], psi_max, finfo, yrnglocal=y_restrict[N_step])
+							proj_ali_helical_90_local(data[im], refrings1, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], an[N_step], psi_max, finfo, yrnglocal=y_restrict[N_step])
 					#print "  1  ",im, peak1, phihi1, theta1, psi1, sxi1, syi1
 				if( len(refrings2) > 0):
 					if  an[N_step] == -1:
 						peak2, phihi2, theta2, psi2, sxi2, syi2 = \
-							proj_ali_helical(pad(data[im], data_nn, data_nn, 1, "circumference"), refrings2, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], psi_max, finfo)
+							proj_ali_helical(data[im], refrings2, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], psi_max, finfo)
 					else:
 						peak2, phihi2, theta2, psi2, sxi2, syi2 = \
-							proj_ali_helical_local(pad(data[im], data_nn, data_nn, 1, "circumference"), refrings2, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], an[N_step], psi_max, finfo, yrnglocal=y_restrict[N_step])
+							proj_ali_helical_local(data[im], refrings2, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], an[N_step], psi_max, finfo, yrnglocal=y_restrict[N_step])
 					#print "  2  ",im, peak2, phihi2, theta2, psi2, sxi2, syi2
 				if peak1 is None: 
 					peak = peak2
