@@ -1288,7 +1288,8 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_max=1
 		finfo.write("Image id: %6d\n"%(ID))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
-	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_helical(data, refrings, xrng, yrng, stepx, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber))
+	[ang, sxs, sys, mirror, iref, peak] = \
+		Util.multiref_polar_ali_helical(data, refrings, xrng, yrng, stepx, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber))
 	iref = int(iref)
 	#print  " IN ", ang, sxs, sys, mirror, iref, peak
 	if iref > -1:
@@ -1337,7 +1338,7 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 		finfo.flush()
 
 	[ang, sxs, sys, mirror, iref, peak] = \
-	Util.multiref_polar_ali_helical_local(data, refrings, xrng, yrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber), yrnglocal)
+		Util.multiref_polar_ali_helical_local(data, refrings, xrng, yrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber), yrnglocal)
 
 	iref = int(iref)
 
@@ -1387,7 +1388,8 @@ def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_ma
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
 
-	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_helical_90(data, refrings, xrng, yrng, stepx, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber))
+	[ang, sxs, sys, mirror, iref, peak] = \
+		Util.multiref_polar_ali_helical_90(data, refrings, xrng, yrng, stepx, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber))
 	iref = int(iref)
 	#print  " IN ", ang, sxs, sys, mirror, iref, peak
 	if iref > -1:
@@ -1428,7 +1430,8 @@ def proj_ali_helical_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
 
-	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_helical_90_local(data, refrings, xrng, yrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber), yrnglocal)
+	[ang, sxs, sys, mirror, iref, peak] = \
+		Util.multiref_polar_ali_helical_90_local(data, refrings, xrng, yrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber), yrnglocal)
 	iref = int(iref)
 	if iref > -1:
 		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
