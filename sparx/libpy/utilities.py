@@ -3169,7 +3169,7 @@ def angle_between_projections_directions(proj1, proj2):
 	return acos( temp ) * (180.0 / pi)
 
 
-def angles_between_anglesets(angleset1, angleset2):
+def angles_between_anglesets(angleset1, angleset2, indexes=None):
 	"""
 	  It returns list of angles describing differences between the given anglesets (rotations of anglesets don't matter).
 	  The function works as follow:
@@ -3178,8 +3178,19 @@ def angles_between_anglesets(angleset1, angleset2):
 	  3. calculate angles between corresponding projections directions from the anglesets 
 	  INPUT: each of the parameters should be a list of pairs [phi, theta] (additional parameters (pdi, shifts) don't influence on the results)
 	  OUTPUT: list of floats - angles in degrees (the n-th element of the list equals the angle between n-th projections directions from the anglesets)
+	  The third parameter (indexes) is optional and may be set to list of indexes. In that case only elements from given list are taken into account.
 	"""
 	from EMAN2 import Transform
+	
+	if indexes != None:
+		new_ang1 = []
+		new_ang2 = []
+		for i in indexes:
+			new_ang1.append(angleset1[i])
+			new_ang2.append(angleset2[i])
+		angleset1 = new_ang1
+		angleset2 = new_ang2
+	
 	rot = rotation_between_anglesets(angleset1, angleset2)
 	angles = []
 	angle_errors = []
