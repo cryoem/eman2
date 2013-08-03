@@ -125,7 +125,7 @@ def main():
 	
 	#parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default='', guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 
-	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default=None, guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:1", guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	#parser.add_argument("--automask",action="store_true",help="Applies a 3-D automask before centering. Can help with negative stain data, and other cases where centering is poor.")
 	#parser.add_argument("--resample",action="store_true",help="If set, will perform bootstrap resampling on the particle data for use in making variance maps.",default=False)
 	#parser.add_argument("--odd", default=False, help="Used by EMAN2 when running eotests. Includes only odd numbered particles in class averages.", action="store_true")
@@ -133,6 +133,16 @@ def main():
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+
+
+	parser.add_argument("--resume",type=str,default='',help="""tomo_fxorms.json file that contains alignment information for the particles in the set. 
+															If the information is incomplete (i.e., there are less elements in the file than particles in the stack),
+															on the first iteration the program will complete the file by working ONLY on particle indexes that are missing.
+															For subsequent iterations, all the particles will be used.""")
+															
+	parser.add_argument("--hacref",type=int,default=0,help="""Size of the SUBSET of particles to use to build an initial reference by calling e2spt_hac.py
+															which does Hierarchical Ascendant Classification (HAC) or 'all vs all' alignments.""") 
+
 
 	'''
 	Parameters to compensate for the missing wedge using --cpm=fsc.tomo
@@ -142,6 +152,7 @@ def main():
 														--wedgeangle=70, results in a narrower wedge of size (90-70)*2=40.
 														In reality, you should enter here the range of your DATA COLLECTION.
 														I.e., if you collected your tiltseries from -60 to 60, enter --wedgeangle=60.""",default=60.0)
+														
 	parser.add_argument("--wedgei",type=float,help="Missingwedge begining (in terms of its 'height' along Z. If you specify 0, the wedge will start right at the origin.", default=0.10)
 	parser.add_argument("--wedgef",type=float,help="Missingwedge ending (in terms of its 'height' along Z. If you specify 1, the wedge will go all the way to the edge of the box.", default=0.9)
 	#parser.add_argument("--fitwedgepost", action="store_true", help="Fit the missing wedge AFTER preprocessing the subvolumes, not before, IF using the fsc.tomo comparator for --aligncmp or --raligncmp.", default=True)
@@ -211,25 +222,39 @@ def main():
 	if options.postprocess: 
 		options.postprocess=parsemodopt(options.postprocess)
 
-	if options.resultmx : 
+	if options.resultmx: 
 		print "Sorry, resultmx not implemented yet"
 	
-	if options.resultmx!=None: 
-		options.storebad=True
-		
-	if options.path and ("/" in options.path or "#" in options.path) :
-		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
-		sys.exit(1)
-	
+	if options.resultmx != None: 
+		options.storebad = True
+			
 	if options.shrink < options.shrinkrefine:
 		options.shrink = options.shrinkrefine
 		print "It makes no sense for shrinkrefine to be larger than shrink; therefore, shrink will be made to match shrinkrefine"
 	
 	'''
-	Make the directory where to create the database where the results will be stored
+	Get rootpath to provide absoulute paths to iles.
+	Make the directory where to create the database where the results will be stored, if --resume is not provided.
 	'''
-	sptmakepath(options,'')	
-		
+	
+	rootpath = os.getcwd()
+	print "I am trying to open from here", rootpath
+	print "And the path is", options.path
+	
+	abspath= rootpath + '/' + options.path
+	print "Thus the abs path could be", abspath
+	
+	
+	if not options.resume:
+		options = sptmakepath(options,'spt')	
+	else:
+		if rootpath not in options.resume:
+			options.resume = rootpath + '/' + options.resume
+	
+		if not options.path:
+			print "ERROR: If you provide --resume, I need to know what working directory needs to be resumed. Provide it through --path"
+			sys.exit()
+				
 	hdr = EMData(options.input,0,True)
 	nx = hdr["nx"]
 	ny = hdr["ny"]
@@ -282,59 +307,68 @@ def main():
 	'''
 	Initialize parallelism if being used
 	'''
+	
+	
+
 	if options.parallel :
-		print "\n\n(e2spt_classaverage.py) INITIALIZING PARALLELISM!"
-		print "\n\n"
-		from EMAN2PAR import EMTaskCustomer
-		etc=EMTaskCustomer(options.parallel)
-		pclist=[options.input]
+	
+		if options.parallel == 'none' or options.parallel == 'None' or options.parallel == 'NONE':
+			options.parallel = ''
+			etc = ''
 		
-		if options.ref: 
-			pclist.append(options.ref)
-		etc.precache(pclist)
+		else:
+			print "\n\n(e2spt_classaverage.py) INITIALIZING PARALLELISM!"
+			print "\n\n"
+			from EMAN2PAR import EMTaskCustomer
+			etc=EMTaskCustomer(options.parallel)
+			pclist=[options.input]
+		
+			if options.ref: 
+				pclist.append(options.ref)
+			etc.precache(pclist)
 	else:
 		etc=''
 
 	if options.inixforms: 
-		js = js_open_dict(options.inixforms)
-	
+		preOrientationDict = js_open_dict(options.inixforms)
+		
+	resumeDict = {}
+	actualNums=[]
+	if options.resume: 
+		print "The resume dict to open is", options.resume
+		resumeDict = js_open_dict(options.resume)
+		
+		print "Resume dict is", resumeDict
+		for key in resumeDict.keys():
+			print "\n\nKKKKKKey is", key
+			
+			keyint = int ( key.split('_')[-1] )
+			print "\n\nkeyint is", keyint
+			
+			actualNums.append( keyint )
+		#actualNums = [int( key.split('_')[-1] ) for key in resumeDict ]
+		
+		print "ActualNums is", actualNums
+		actualNums = set(actualNums)
+		print "Which converted into set is", actualNums
+		
+		resumeDict.close()
+				
+
 	'''		
-	#########################################
-	# This is where the actual class-averaging process begins
-	#########################################
-	'''
-	
-	#outer loop over classes, ic=class number
-	
-	
-	
-	current = os.getcwd()
-	print "I am trying to open from here", current
-	print "And the path is", options.path
-	
-	abspath= current + '/' + options.path
-	print "Thus the abs path could be", abspath
-	
-	
+	This is where the actual class-averaging process begins.
+	Iterating over all the classes, 'ic'.
+	'''	
 	
 	for ic in range(ncls):
 		
-		jsAliParamsPath = abspath + '/tomo_xforms'+ str(options.refinemultireftag) + '.json'
-		jsA = js_open_dict(jsAliParamsPath) #Write particle orientations to json database.
-		
-		jsAliScoresPath = abspath + '/subtomo_scores' + str(options.refinemultireftag) + '.json'
-		jsB = js_open_dict (jsAliScoresPath)
-		
-		
 		if ncls==1: 
-			#ptcls=range(nptcl)	
-			ptclnums=range(nptcl)				# start with a list of particle numbers in this class
+			ptclnums=range(nptcl)						# Start with a list of particle numbers in this class
 		else: 
-			#ptcls=classmx_ptcls(classmx,ic)
 			ptclnums=classmx_ptcls(classmx,ic)			# This gets the list from the classmx
 		
 		if options.verbose and ncls>1: 
-			print "###### Beggining class %d(%d)/%d"%(ic+1,ic,ncls)
+			print "###### Processing class %d(%d)/%d"%(ic+1,ic,ncls)
 		
 		
 		'''
@@ -342,21 +376,74 @@ def main():
 		'''
 		if options.ref: 
 			ref = EMData(options.ref,ic)
-		else:
+		elif not options.hacref:
 			ref = binaryTreeRef(options,nptcl,ptclnums,ic,etc)
+		elif options.hacref:
+			pass
 		
 		'''
 		Now we iteratively refine a single class
 		'''
+		#resNum = 0
+		resumeDict = {}
 		for it in range(options.iter):
 			# In 2-D class-averaging, each alignment is fast, so we send each node a class-average to make
 			# in 3-D each alignment is very slow, so we use a single ptcl->ref alignment as a task
 			tasks=[]
 			results=[]
+				
+			'''
+			Define and open the .json dictionaries where alignment and score values will be stored, for each iteration,
+			and for each reference if using multiple model refinement
+			'''
+			jsAliParamsPath = abspath + '/tomo_xforms.json'
+			
+			print "This is the .json file to write", jsAliParamsPath
+			if options.refinemultireftag:
+				jsAliParamsPath = jsAliParamsPath.replace('.json','_' + str(options.refinemultireftag) + '.json')
+		
+			jsAliParamsPath = jsAliParamsPath.replace('.json', '_' + str(it).zfill( len(str(options.iter))) + '.json')
+		
+			jsA = js_open_dict(jsAliParamsPath) #Write particle orientations to json database.
+		
+			if options.resume and actualNums:
+				resumeDict = js_open_dict(options.resume)
+				#resNum += 1
+					
 			for ptclnum in ptclnums:
+	
+				if actualNums and ptclnum in actualNums:
+					print """Skipping this particle because you provided --resume and the alignment info for this particle is aready present.
+					Info for particle loaded into results""", ptclnum
+					
+					tomoID = "tomo_" + str(ptclnum).zfill( len(str( len(ptclnums) )) )
+					
+					if tomoID not in resumeDict.keys():
+						print "ERROR: This key is not in the file provided for --resume", tomoID
+						sys.exit() 
+					
+			
+					if len(resumeDict.keys()) > 0:
+					 	keys = resumeDict.keys()
+					 	
+					 	for key in keys:
+					 		if type(resumeDict[key]) is not list:					 
+								print """ERROR: Your tomo_xforms.json file seems to be incomplete. The value for the particle key is a Transform(), but should be a list.
+								The file should contain a dictionary where there's a 'key' for each particle, containing the word 'tomo_' followed by the particle's index 
+								(with as many digits as there are orders of magnitude in the set; for example
+								the first particle in a set of 10 would be 'tomo_0', but in a set of 10 to 100 it would be 'tomo_00', and in a set of 101 to 1000
+								it would be 'tomo_000'), and the 'value' of each key would be a list with two elements, [ Transform(), score ], where Transform
+								contains the alignment parameters between a particle and the reference, and score the cross correlation score for that alignment.""" 
+								sys.exit()
+							
+					results.append( [ {'xform.align3d': resumeDict[tomoID][0] , 'score':resumeDict[tomoID][1] } ] )
+				
+				
+				
+					
 				if options.inixforms:
 					tomoID = "tomo_" + str(ptclnum).zfill( len(str( len(ptclnums) )) )
-					transform = js[tomoID]
+					transform = preOrientationsDict[tomoID][0]
 					
 					print transform
 					print "Of type", type(transform)
@@ -365,11 +452,11 @@ def main():
 					transform = None
 				
 				if options.parallel:
-					task=Align3DTask(ref,["cache",options.input,ptclnum],ptclnum,"Ptcl %d in iter %d"%(ptclnum,it),options,transform,jsA,jsB)
+					task=Align3DTask(ref,["cache",options.input,ptclnum],ptclnum,"Ptcl %d in iter %d"%(ptclnum,it),options,transform)
 					tasks.append(task)
 				else:
 					#print "No parallelism specified"
-					result=align3Dfunc(ref,["cache",options.input,ptclnum],ptclnum,"Ptcl %d in iter %d"%(ptclnum,it),options,transform,jsA,jsB)
+					result=align3Dfunc(ref,["cache",options.input,ptclnum],ptclnum,"Ptcl %d in iter %d"%(ptclnum,it),options,transform)
 					
 					results.append(result['final'])
 			
@@ -380,7 +467,7 @@ def main():
 					print "%d tasks queued in class %d iteration %d"%(len(tids),ic,it) 
 
 				# Wait for alignments to finish and get results
-				results=get_results(etc,tids,options.verbose,jsA,jsB,len(ptclnums),1)
+				results=get_results(etc,tids,options.verbose,jsA,len(ptclnums),1)
 
 				#if options.verbose>2 : 
 				#	print "Results:"
@@ -431,7 +518,9 @@ def main():
 						#refname = options.path + '/class_' + str(ic).zfill( len( str(ic) )) + '.hdf'
 						ref.write_image(refname,it)
 						#ref.write_image("%s/class_%02d.hdf"%(options.path,ic),it)
-
+			
+			jsA.close()
+			
 		if options.verbose: 
 			print "Preparing final average"
 		
@@ -456,16 +545,19 @@ def main():
 			if options.verbose:
 				print "The file to write the final output to is", finaloutput
 			ref.write_image(finaloutput,0)
+			
+			if options.resume and actualNums:
+				resumeDict.close()
+			
+			actualNums = [] 		#Reset this so that when --resume is provided the incomplete jason file is 'fixed' considering the info in actualNums only once
 		
 		
-		
-		jsA.close()
-		jsB.close()
+			
 		 
 		
 		
 	if options.inixforms: 
-		js.close()
+		preOrientationsDict.close()
 	print "Will end logger"	
 	E2end(logger)
 	
@@ -538,7 +630,7 @@ def binaryTreeRef(options,nptcl,ptclnums,ic,etc):
 
 			# Wait for alignments to finish and get results
 			
-			results=get_results(etc,tids,options.verbose,{},{},len(nptclnums),0)
+			results=get_results(etc,tids,options.verbose,{},len(nptclnums),0)
 
 			if options.verbose>2 : 
 				print "Results:"
@@ -626,26 +718,26 @@ def sptmakepath(options, stem='spt'):
 
 
 
-def filters(image,preprocess,lowpass,highpass,shrink):
+def filters(fimage,preprocess,lowpass,highpass,shrink):
 	'''
 	#Preprocess, lowpass and/or highpass
 	'''
 	if preprocess:
-		image.process_inplace(preprocess[0],preprocess[1])
+		fimage.process_inplace(preprocess[0],preprocess[1])
 		
 	if lowpass:
-		image.process_inplace(lowpass[0],lowpass[1])
+		fimage.process_inplace(lowpass[0],lowpass[1])
 		
 	if highpass:
-		image.process_inplace(highpass[0],highpass[1])
+		fimage.process_inplace(highpass[0],highpass[1])
 	
 	'''
 	#Shrinking both for initial alignment and reference
 	'''
 	if shrink and int( shrink ) > 1 :
-		image.process_inplace("math.meanshrink",{"n":shrink})
+		fimage.process_inplace("math.meanshrink",{"n":shrink})
 
-	return image	
+	return fimage	
 
 
 def preprocessing(options,image):
@@ -661,8 +753,8 @@ def preprocessing(options,image):
 	mask.to_one()
 	
 	if options.mask:
-		if options.verbose:
-			print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
+		#if options.verbose:
+			#print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
 		mask.process_inplace(options.mask[0],options.mask[1])
 		
 	
@@ -680,12 +772,13 @@ def preprocessing(options,image):
 	'''
 	
 	simage = image.copy()
+	#rawmask = mask.copy()
 	if 'fsc.tomo' == options.aligncmp[0]:
 		if options.normproc:
 			simage.process_inplace(options.normproc[0],options.normproc[1])
 		
 		if options.lowpass or options.highpass or options.preprocess or options.shrink:
-			simage = filters(image,options.preprocess,options.lowpass,options.highpass,options.shrink)
+			simage = filters(simage,options.preprocess,options.lowpass,options.highpass,options.shrink)
 		
 		retr = wedgestats(simage,options.wedgeangle,options.wedgei,options.wedgef,options)
 		simage['spt_wedge_mean'] = retr[0]
@@ -693,14 +786,18 @@ def preprocessing(options,image):
 		
 		if options.mask:
 			if options.shrink:
-				mask.process_inplace('math.meanshrink',{'n':options.shrink})
-			simage.mult(mask)
+				maskCoarse = mask.copy()
+				maskCoarse.process_inplace('math.meanshrink',{'n':options.shrink})
+			simage.mult(maskCoarse)
 	
 		'''
 		If any other comparator is specified, follow mask-normalize-mask scheme
 		'''
 	else:
 		if options.mask:
+			#if options.shrink:
+			#	maskCoarse = mask.copy()
+			#	maskCoarse.process_inplace('math.meanshrink',{'n':options.shrink})
 			simage.mult(mask)
 		
 		if options.normproc:
@@ -710,7 +807,7 @@ def preprocessing(options,image):
 			simage.mult(mask)
 	
 		if options.lowpass or options.highpass or options.preprocess or options.shrink:
-			simage = filters(image,options.preprocess,options.lowpass,options.highpass,options.shrink)
+			simage = filters(simage,options.preprocess,options.lowpass,options.highpass,options.shrink)
 			
 	
 	'''
@@ -734,7 +831,8 @@ def preprocessing(options,image):
 					s2image.process_inplace(options.normproc[0],options.normproc[1])
 		
 				if options.lowpassfine or options.highpassfine or options.preprocessfine or options.shrinkrefine:
-					s2image = filters(image,options.preprocessfine,options.lowpassfine,options.highpassfine,options.shrinkrefine)
+					print "I will shrink refine!"
+					s2image = filters(s2image,options.preprocessfine,options.lowpassfine,options.highpassfine,options.shrinkrefine)
 	
 				retr = wedgestats(s2image,options.wedgeangle,options.wedgei,options.wedgef,options)
 				s2image['spt_wedge_mean'] = retr[0]
@@ -742,11 +840,17 @@ def preprocessing(options,image):
 	
 				if options.mask:
 					if options.shrinkrefine:
-						mask.process_inplace('math.meanshrink',{'n':options.shrinkrefine})
-					s2image.mult(mask)
+						maskFine = mask.copy()
+						maskFine.process_inplace('math.meanshrink',{'n':options.shrinkrefine})
+					s2image.mult(maskFine)
 
 		else:
 			if options.mask:
+				#if options.shrink:
+				#	mask.process_inplace('math.meanshrink',{'n':options.shrink})
+				
+				print "The sizes of the mask are", mask['nx'],mask['ny'],mask['nz']
+				print "The sizes of the refine particle BEFORE shrinking are", s2image['nx'],s2image['ny'],s2image['nz']
 				s2image.mult(mask)
 		
 			if options.normproc:
@@ -756,7 +860,7 @@ def preprocessing(options,image):
 				s2image.mult(mask)
 	
 			if options.lowpassfine or options.highpassfine or options.preprocessfine or options.shrinkrefine:
-				s2image = filters(image,options.preprocessfine,options.lowpassfine,options.highpassfine,options.shrinkrefine)
+				s2image = filters(s2image,options.preprocessfine,options.lowpassfine,options.highpassfine,options.shrinkrefine)
 
 	return(simage,s2image)
 	
@@ -765,6 +869,8 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 	"""Will take a set of alignments and an input particle stack filename and produce a new class-average.
 	Particles may be excluded based on the keep and keepsig parameters. If keepsig is not set, then keep represents
 	an absolute fraction of particles to keep (0-1). Otherwise it represents a sigma multiplier akin to e2classaverage.py"""
+	
+	print "(e2pt_classaverage.py)(make_average) The results to parse are", align_parms
 	
 	if groups > 1:
 		
@@ -990,7 +1096,7 @@ def make_average_pairs(ptcl_file,outfile,align_parms,averager,nocenterofmass):
 	return
 		
 
-def get_results(etc,tids,verbose,jsA,jsB,nptcls,savealiparams=0):
+def get_results(etc,tids,verbose,jsA,nptcls,savealiparams=0):
 	"""This will get results for a list of submitted tasks. Won't return until it has all requested results.
 	aside from the use of options["ptcl"] this is fairly generalizable code. """
 	
@@ -1019,9 +1125,8 @@ def get_results(etc,tids,verbose,jsA,jsB,nptcls,savealiparams=0):
 					xformslabel = 'tomo_' + str( ptcl ).zfill( len( str(nptcls) ) )
 			
 					AliParams=results[ptcl][0]['xform.align3d']
-					
-					jsA.setval( xformslabel, AliParams )
-					jsB.setval( xformslabel, float(results[ptcl][0]['score']) )
+					score = float(results[ptcl][0]['score'])
+					jsA.setval( xformslabel, [ AliParams , score ] )
 				
 				ncomplete+=1
 		
@@ -1059,7 +1164,7 @@ class Align3DTask(JSTask):
 	"""This is a task object for the parallelism system. It is responsible for aligning one 3-D volume to another, with a variety of options"""
 
 	#def __init__(self,fixedimage,image,ptcl,label,mask,normproc,preprocess,lowpass,highpass,npeakstorefine,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,transform,verbose,randomizewedge,wedgeangle,wedgei,wedgef):
-	def __init__(self,fixedimage,image,ptclnum,label,options,transform,jsA,jsB):
+	def __init__(self,fixedimage,image,ptclnum,label,options,transform):
 	
 		"""fixedimage and image may be actual EMData objects, or ["cache",path,number]
 		label is a descriptive string, not actually used in processing
@@ -1072,7 +1177,7 @@ class Align3DTask(JSTask):
 		JSTask.__init__(self,"ClassAv3d",data,{},"")
 
 		#self.classoptions={"options":options,"ptcl":ptcl,"label":label,"mask":options.mask,"normproc":options.normproc,"preprocess":options.preprocess,"lowpass":options.lowpass,"highpass":options.highpass,"npeakstorefine":options.npeakstorefine,"align":options.align,"aligncmp":options.aligncmp,"ralign":options.ralign,"raligncmp":options.raligncmp,"shrink":options.shrink,"shrinkrefine":options.shrinkrefine,"transform":transform,"verbose":options.verbose,"randomizewedge":options.randomizewedge,"wedgeangle":options.wedgeangle,"wedgei":options.wedgei,"wedgef":options.wedgef}
-		self.classoptions={"options":options,"ptclnum":ptclnum,"label":label,"transform":transform,"jsA":jsA,"jsB":jsB}
+		self.classoptions={"options":options,"ptclnum":ptclnum,"label":label,"transform":transform}
 	
 	def execute(self,callback=None):
 		"""This aligns one volume to a reference and returns the alignment parameters"""
@@ -1096,7 +1201,7 @@ class Align3DTask(JSTask):
 		#print "classoptions are", classoptions
 		
 		xformslabel = 'tomo_' + str(classoptions['ptclnum']).zfill( len( str(nptcls) ) )
-		ret=alignment(fixedimage,image,classoptions['label'],classoptions['options'],xformslabel,classoptions['transform'],classoptions['jsA'],classoptions['jsB'],'e2spt_classaverage')
+		ret=alignment(fixedimage,image,classoptions['label'],classoptions['options'],xformslabel,classoptions['transform'],'e2spt_classaverage')
 
 		bestfinal=ret[0]
 		bestcoarse=ret[1]
@@ -1106,7 +1211,7 @@ class Align3DTask(JSTask):
 '''
 FUNCTION FOR RUNNING ALIGNMENTS WITHOUT PARALLELISM
 '''
-def align3Dfunc(fixedimage,image,ptclnum,label,classoptions,transform,jsA,jsB):
+def align3Dfunc(fixedimage,image,ptclnum,label,classoptions,transform):
 	"""This aligns one volume to a reference and returns the alignment parameters"""
 
 	if classoptions.verbose: 
@@ -1139,7 +1244,7 @@ def align3Dfunc(fixedimage,image,ptclnum,label,classoptions,transform,jsA,jsB):
 '''
 FUNCTION THAT DOES THE ACTUAL ALIGNMENT OF TWO GIVEN SUBVOLUMES -This is also used by e2spt_hac.py, any modification to it or its used parameters should be made with caution
 '''
-def alignment(fixedimage,image,label,classoptions,xformslabel,transform,jsA={},jsB={},prog='e2spt_classaverage'):
+def alignment(fixedimage,image,label,classoptions,xformslabel,transform,prog='e2spt_classaverage'):
 	
 	if classoptions.verbose: 
 		print "Aligning ",label
@@ -1192,20 +1297,20 @@ def alignment(fixedimage,image,label,classoptions,xformslabel,transform,jsA={},j
 			#print "The mean and sigma for subvolume %d are: mean=%f, sigma=%f" % (i,mean,sigma)
 			#a.write_image(stack,i)
 		
-	if classoptions.verbose: 
-		print "Align size %d,  Refine Align size %d"%(sfixedimage["nx"],s2fixedimage["nx"])
+	#if classoptions.verbose: 
+	#	print "Align size %d,  Refine Align size %d"%(sfixedimage["nx"],s2fixedimage["nx"])
 	
 	#In some cases we want to prealign the particles
 	
 	if transform:
-		print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nThere WAS a transform, see", transform
-		print "And its type is", type(transform)
-		if classoptions.verbose:
-			print "Moving Xfrom", transform
+		#print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nThere WAS a transform, see", transform
+		#print "And its type is", type(transform)
+		#if classoptions.verbose:
+		#	print "Moving Xfrom", transform
 		#options["align"][1]["inixform"] = options["transform"]
 		if classoptions.align:
-			print "There was classoptions.align"
-			print "and classoptions.align[1] is", classoptions.align[1]
+			#print "There was classoptions.align"
+			#print "and classoptions.align[1] is", classoptions.align[1]
 			if classoptions.align[1]:
 				classoptions.align[1]["transform"] = transform
 		
@@ -1273,7 +1378,8 @@ def alignment(fixedimage,image,label,classoptions,xformslabel,transform,jsA={},j
 			peaknum+=1
 			
 		if classoptions.verbose:
-			print "Best final is", bestfinal
+			pass
+			#print "Best final is", bestfinal
 				
 		if classoptions.shrinkrefine>1 :
 			for c in bestfinal:
@@ -1297,55 +1403,18 @@ def alignment(fixedimage,image,label,classoptions,xformslabel,transform,jsA={},j
 	bestfinal = sorted(bestfinal, key=itemgetter('score'))
 	
 	if classoptions.verbose:
-		print "\nThe best peaks sorted are"	#confirm the peaks are adequately sorted
-		for i in bestfinal:
-			print i
+		#print "\nThe best peaks sorted are"	#confirm the peaks are adequately sorted
+		#for i in bestfinal:
+		#	print i
+		pass
 	
 	if bestfinal[0]["score"] == 1.0e10 and classoptions.ralign:
 		print "Error: all refine alignments failed for %s. May need to consider altering filter/shrink parameters. Using coarse alignment, but results are likely invalid."%self.classoptions["label"]
 	
 	if classoptions.verbose: 
-		print "Best %1.5g\t %s"%(bestfinal[0]["score"],str(bestfinal[0]["xform.align3d"]))
-		print "Inside ALIGNMENT function in e2spt_classaverage, done aligning ",label
-	
-	#print "\nScore to return from ALIGNMENT is", bestfinal[0]["score"]
-	
-	if prog=='e2spt_classaverage':
-		'''
-		Write particle orientations to json database
-		'''
-	
-		#if jsA:
-		
-		###AliParams=bestfinal[0]['xform.align3d']
-		###jsA[xformslabel] = AliParams
-		
-		#else:
-		#	print "Cannot write alignment parameters because the .json dictionary to do so is empty, see", jsA
-		
-		#if not classoptions.refinemultireftag:
-		#	print "e2spt_refinemulti not being used, therefore there is no tag"
-		#print "The ali params to save are", AliParams
-		#print "Which in string would be", str(AliParams)
-		
-		
-	
-		'''
-		Write a file with alignment scores per particle
-		'''
-	
-		
-		
-		###jsB[xformslabel] = float(bestfinal[0]['score'])
-		
-		
-		#else:
-		#	print "Cannot write the alignment scores because the .json dictionary to do so is empty, see", jsB	
-		
-		
-		
-	elif prog == 'e2spt_hac':
-		pass
+		#print "Best %1.5g\t %s"%(bestfinal[0]["score"],str(bestfinal[0]["xform.align3d"]))
+		#print "Inside ALIGNMENT function in e2spt_classaverage, done aligning ",label
+		pass	
 		
 	return (bestfinal,bestcoarse)
 	
