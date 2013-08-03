@@ -108,16 +108,16 @@ def main():
 			global_def.BATCH = False
 		elif(options.nh):
 			global_def.BATCH = True
-			from development import ali3d_hans
-			ali3d_hans(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
+			from development import ali3d_shc
+			ali3d_shc(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
 				options.yr, options.ts, options.delta, options.an, options.apsi, options.deltapsi, options.startpsi,
 				options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
 				options.function, options.Fourvar, options.npad, options.debug, options.MPI, options.stoprnct)
 			global_def.BATCH = False
 		elif(options.nh2):
 			global_def.BATCH = True
-			from development import ali3d_hans2
-			ali3d_hans2(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
+			from development import ali3d_shc2
+			ali3d_shc2(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
 				options.yr, options.ts, options.delta, options.an, options.apsi, options.deltapsi, options.startpsi,
 				options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
 				options.function, options.Fourvar, options.npad, options.debug, options.MPI, options.stoprnct)
