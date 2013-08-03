@@ -672,9 +672,9 @@ def fit_tanh(dres, low = 0.1):
 	if freq < 0.0:
 		# the curve never falls below 0.5, most likely something's wrong; however, return reasonable values
 		freq = 0.4
-		fall_off = 0.1
+		fall_off = 0.2
 		return freq, fall_off
-	
+
 	from utilities import amoeba
 	args   = [freq, 0.1]
 	scale  = [0.05, 0.05]
