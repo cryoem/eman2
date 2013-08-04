@@ -1041,7 +1041,7 @@ class Align3DTaskAVSA(JSTask):
 		potentialcomps = ( nptcls * (nptcls - 1) )/ 2
 		
 		xformslabel = 'round' + str(options['round']).zfill( len( str(options['classoptions'].iter))) + '_comparison' + str(options['comparison']).zfill( len( str(potentialcomps) ) ) + '_ptclA' + str(options['pAn']).zfill( len(str(nptcls))) + '_ptclB' + str(options['pBn']).zfill( len(str(nptcls)))
-		ret=alignment( fixedimage, image, options['label'], options['classoptions'],xformslabel,None,{},{},'e2spt_hac')
+		ret=alignment( fixedimage, image, options['label'], options['classoptions'],xformslabel,None,'e2spt_hac')
 		
 		bestfinal=ret[0]
 		bestcoarse=ret[1]
