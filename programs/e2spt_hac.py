@@ -1089,8 +1089,8 @@ def plotter(xaxis,yaxis,options,name):
 	for i in range(len(yaxis)):
 		yaxis[i] = int( yaxis[i] )*-1
 	
-	xaxis.sort()
-	xaxis.reverse()
+	#xaxis.sort()
+	#xaxis.reverse()
 		
 		
 	matplotlib.rc('xtick', labelsize=16) 
