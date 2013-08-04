@@ -94,7 +94,7 @@ def main():
 		#	print p
 		
 		if options.params:
-			paramterers=options.params.split(',')
+			parameters=options.params.split(',')
 			for param in parameters:
 				p=param.split(':')[0]
 				v=param.split(':')[-1]
