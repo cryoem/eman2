@@ -71,12 +71,12 @@ def main():
 		#print "lets see if .hdf is in it", '.hdf' in options.output[-4:0]
 		#print "Therefore not in it should be false, and it is...", '.hdf' not in options.output[-4:0]
 		#if '.hdf' not in options.output[-4:] and '.mrc' not in options.output[-4:] and 'bdb:' not in options.output[:5] and '.st' not in options.output[-4:] and '.ali' not in options.output[-4:] and '.rec' not in options.output[-4:]:
-		if options.output[-4:] not in formats and options.output[:4] not in 'bdb:':	
+		if options.output[-4:] not in formats:	
 			print "ERROR: The output filename must be in .hdf, bdb: or .mrc format (.st, .ali and .rec format endings are also allowed for MRC files)."
 			sys.exit()
 	
 	if options.addparam:
-		if '.mrc' in options.output[-4:] or '.rec' in options.output[-4:] or '.st' in options.output[-4:] or '.ali' in options.output[-4:] or ('bdb:' not in options.output[:4] and '.hdf' not in options.output[-4:]):
+		if '.mrc' in options.output[-4:] or '.rec' in options.output[-4:] or '.st' in options.output[-4:] or '.ali' in options.output[-4:] or '.hdf' not in options.output[-4:]:
 			print "ERROR: To add parameters to the header the format must be .hdf or bdb:"
 		
 	n=EMUtil.get_image_count(options.input)
@@ -118,7 +118,10 @@ def main():
 		
 				if aux != 0:
 					if not options.output:
-						a.write_image(options.input,i,EMUtil.ImageType.IMAGE_HDF,True)
+						if options.input.split('.')[-1] is 'hdf':
+							a.write_image(options.input,i,EMUtil.ImageType.IMAGE_HDF,True)
+						else:
+							a.write_image(options.input,-1,EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT)
 					else:
 						a.write_image(options.output,i)	
 
