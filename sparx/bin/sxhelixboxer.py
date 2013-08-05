@@ -64,10 +64,10 @@ E2HELIXBOXER_DB = "bdb:" # used to use "bdb:e2helixboxercache#"
 
 
 def main():
-	usage = """e2helixboxer.py --gui <micrograph1> <<micrograph2> <micrograph3> ...
-	e2helixboxer.py --gui --helix-width=<width> <micrograph1> <<micrograph2> <micrograph3> ...
-	e2helixboxer.py <options (not --gui)> <micrograph>    
-	e2helixboxer.py <outdir> --window --dirid='mic' --micid='mic' --micsuffix='hdf' --invert_contrast --dp=27.6 --apix=1.84 --boxsize='200,45' --outstacknameall='bdb:/Users/jiafang/helical_mpi/jdata' --hcoords_suffix='_boxes.txt' --ptcl-dst=30 --rmax=92.0
+	usage = """sxhelixboxer.py --gui <micrograph1> <<micrograph2> <micrograph3> ...
+	sxhelixboxer.py --gui --helix-width=<width> <micrograph1> <<micrograph2> <micrograph3> ...
+	sxhelixboxer.py <options (not --gui)> <micrograph>    
+	sxhelixboxer.py <outdir> --window --dirid='mic' --micid='mic' --micsuffix='hdf' --invert_contrast --dp=27.6 --apix=1.84 --boxsize='200,45' --outstacknameall='bdb:/Users/jiafang/helical_mpi/jdata' --hcoords_suffix='_boxes.txt' --ptcl-dst=30 --rmax=92.0
 
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
@@ -93,15 +93,15 @@ def main():
 	
 	parser.add_argument("--invert_contrast",      action="store_true", default=False, help="Invert contrast of micrograph of contrast of boxed filaments and particles are inverted")
 	
-	# window segments from boxed filaments (or 'helices' in e2helixboxer lingo)
-	parser.add_argument("--window",             action="store_true",	 default=False,               help="window segments from boxed filaments (or helices in e2helixboxer lingo)")
+	# window segments from boxed filaments (or 'helices' in sxhelixboxer lingo)
+	parser.add_argument("--window",             action="store_true",	 default=False,               help="window segments from boxed filaments (or helices in sxhelixboxer lingo)")
 	parser.add_argument("--dirid",              type=str,				 default="",                  help="A string for identifying directories containing relevant micrographs. Any directory containing dirid as a contiguous string will be searched for micrographs. These micrographs are assumed to be those which were used to box the helices which are to be windowed.")
 	parser.add_argument("--micid",              type=str,				 default="",                  help="A string for identifying the name (minus extension) of relevant micrographs.")
 	parser.add_argument("--micsuffix",          type=str,				 default="",                  help="A string denoting micrograph type. Currently only handles suffix types, e.g. 'hdf', 'ser' etc.")
 	parser.add_argument("--boxsize",            type=int,				 default=256,            	  help="x and y dimension in pixels of square area to be windowed out from filament. Pixel size is assumed to be new_pixel_size.")
 	parser.add_argument("--outstacknameall",    type=str,				 default="bdb:data",          help="File name plus path and type (only handles bdb and hdf right now) under which ALL windowed segments from ALL micrograph directories will be saved, e.g. 'bdb:adata' or 'adata.hdf'")
 	parser.add_argument("--hcoords_dir",        type=str,				 default="",        		  help="Directory containing helix box coordinates")
-	parser.add_argument("--hcoords_suffix",     type=str,				 default="_boxes.txt",        help="String identifier which when concatenated with a micrograph name (minus extension) gives the name of the text file containing coordinates of ALL helices boxed from the micrograph. If there is no such file, helices boxed from the micrograph will not be windowed. Default is '_boxes.txt', so if mic0.hdf is a micrograph, then the text file containing coordinates of the helices boxed in it is mic0_boxes.txt. The coordinate file is assumed to be in the format used by e2helixboxer.")
+	parser.add_argument("--hcoords_suffix",     type=str,				 default="_boxes.txt",        help="String identifier which when concatenated with a micrograph name (minus extension) gives the name of the text file containing coordinates of ALL helices boxed from the micrograph. If there is no such file, helices boxed from the micrograph will not be windowed. Default is '_boxes.txt', so if mic0.hdf is a micrograph, then the text file containing coordinates of the helices boxed in it is mic0_boxes.txt. The coordinate file is assumed to be in the format used by sxhelixboxer.")
 	parser.add_argument("--new_apix",           type=float,  			 default=-1.0,                help="New target pixel size to which the micrograph should be resampled. Default is -1, in which case there is no resampling.")
 	parser.add_argument("--freq",               type=float, 			 default=-1.0,                help="Cut-off frequency at which to high-pass filter micrographs before windowing. Default is -1, in which case, the micrographs will be high-pass filtered with cut-off frequency 1.0/segnx, where segnx is the target x dimension of the segments.") 
 	parser.add_argument("--apix",               type=float,				 default= -1.0,               help="pixel size in Angstroms")   
@@ -1074,7 +1074,7 @@ if ENABLE_GUI:
 			self.saveext=saveext
 			self.app = app
 			self.setWindowIcon(QtGui.QIcon(get_image_directory() +"green_boxes.png"))
-			self.setWindowTitle("e2helixboxer")
+			self.setWindowTitle("sxhelixboxer")
 			
 			self.main_image = None #Will be an EMImage2DWidget instance
 			self.helix_viewer = None #Will be an EMImage2DWidget instance
@@ -1873,7 +1873,7 @@ if ENABLE_GUI:
 def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=256, outstacknameall='bdb:data', hcoords_dir = "", hcoords_suffix = "_boxes.txt", ptcl_dst=-1, inv_contrast=False, new_pixel_size=-1, rmax = -1.0, freq = -1, debug = 1):
 	'''
 	
-	Windows segments from helices boxed from micrographs using e2helixboxer. 
+	Windows segments from helices boxed from micrographs. 
 	
 	Input
 		
@@ -1914,7 +1914,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=2
 						Default is '_boxes.txt', so if mic0.hdf is a micrograph, then the text file containing 
 						coordinates of the helices boxed in it is mic0_boxes.txt.
 						
-						The coordinate file is assumed to be in the format used by e2helixboxer, e.g.:
+						The coordinate file is assumed to be in the format used by sxhelixboxer, e.g.:
 						
 								x1-w/2           y1-w/2           w           w           -1
 							    x2-w/2           y2-w/2           w           w           -2
@@ -1964,7 +1964,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=2
 		is 50*1.2 Angstroms.
 		
 		The micrograph has already been boxed and mic0_boxes.txt contains the box coordinates
-		as output by e2helixboxer. 
+		as output by sxhelixboxer. 
 		
 		Suppose only one helix has been boxed in mic0.hdf.
 		
@@ -2051,7 +2051,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=2
 				if len(hcoords_dir) > 0: hcoordsname = os.path.join(hcoords_dir, hcoordsname)
 				else:                    hcoordsname = os.path.join(os.path.join(topdir, v1), hcoordsname)
 				# If any helices were boxed from this micrograph, say mic0, then ALL the helix coordinates should be saved under mic0 + hcoords_suffix
-				# For example, if using default e2helixboxer naming convention, then coordinates of all helices boxed in mic0 would be in mic0_boxes.txt
+				# For example, if using default sxhelixboxer naming convention, then coordinates of all helices boxed in mic0 would be in mic0_boxes.txt
 				if( os.path.exists(hcoordsname) ):
 					micname = os.path.join(os.path.join(topdir,v1), v2)
 					print_msg("\n\nPreparing to window helices from micrograph %s with box coordinate file %s\n\n"%(micname, hcoordsname))
@@ -2077,7 +2077,7 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 			
 			micname: String. Full path name of micrograph 
 			
-			hcoordsname: String. Full path name of file contaning coordinates of boxed helices (file assumed to be in format used by e2helixboxer).
+			hcoordsname: String. Full path name of file contaning coordinates of boxed helices (file assumed to be in format used by sxhelixboxer).
 			
 			pixel_size: The pixel size of the micrographs in which the helices were boxed.
 			
@@ -2145,7 +2145,7 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 	filename = (smic[-1].split('.'))[0]
 	
 	imgs_0 = filename+"_abox" # Base name for the segment stack corresponding to each boxed helix. If imgs_0='mic0_abox', then windowed segments from first windowed helix would be 'mic0_abox_0.hdf', the second 'mic0_abox_1.hdf' etc
-	fimgs_0 = os.path.join(outdir, imgs_0 + ".hdf") # This has to be hdf, e2helixboxer cannot write windowed out segments to bdb
+	fimgs_0 = os.path.join(outdir, imgs_0 + ".hdf") # This has to be hdf, sxhelixboxer cannot write windowed out segments to bdb
 		
 	ptcl_images  = "   --ptcl-images="+ fimgs_0
 	
@@ -2165,7 +2165,7 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 
 	filt_gaussh(imgmic, freq).write_image(tmpfile)  # remove frequencies too low for the box size
 
-	# Set box coordinates in e2helixboxer database
+	# Set box coordinates in sxhelixboxer database
 	db_load_helix_coords(tmpfile, hcoordsname, False, boxsize)
 
 	db_save_particle_coords(tmpfile, fptcl_coords, ptcl_overlap, boxsize, boxsize)
@@ -2186,7 +2186,7 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 	except:   iseg = 0
 		
 	for h in xrange(nhelices):
-		ptcl_images  = imgs_0+"_%i.hdf"%h # This is what e2helixboxer outputs, only 'hdf' format is handled.
+		ptcl_images  = imgs_0+"_%i.hdf"%h # This is what sxhelixboxer outputs, only 'hdf' format is handled.
 		otcl_images  = "bdb:%s/QT"%outdir+ ptcl_images[:-4]
 		ptcl_images  = os.path.join(outdir,ptcl_images)
 		if( os.path.exists(ptcl_images) ):
