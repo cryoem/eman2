@@ -47,21 +47,23 @@ def main():
 
         Symmetry search		
 
-        Helicise input volume and save the result to output volume:
+        * Helicise input volume and save the result to output volume:
             sxhelicon_utils.py input_vol.hdf output_vol.hdf --helicise --dp=27.6 --dphi=166.5 --fract=0.65 --rmax=70 --rmin=1 --apix=1.84         
 
-        Generate two lists of image indices used to split segment stack into halves for helical fsc calculation.			
+        * Generate two lists of image indices used to split segment stack into halves for helical fsc calculation.			
             sxhelicon_utils.py bdb:big_stack --hfsc='flst_' --filament_attr=filament
 
-        Predict segments' orientation parameters based on distances between segments and known helical symmetry
+        
+
+        * Predict segments' orientation parameters based on distances between segments and known helical symmetry
             sxhelicon_utils.py bdb:big_stack --predict_helical=helical_params.txt --dp=27.6 --dphi=166.5 --apix=1.84
             
-		Generate disks from filament based reconstructions:		
+		* Generate disks from filament based reconstructions:		
 			sxheader.py stk.hdf --params=xform.projection --import=params.txt
 			sxheader.py stk.hdf --params=active --one
 			mpirun -np 2 sxhelicon_utils.py stk.hdf --gendisk='bdb:disk' --ref_nx=100 --ref_ny=100 --ref_nz=200 --apix=1.84 --dp=27.6 --dphi=166.715 --fract=0.67 --rmin=0 --rmax=64 --function="[.,nofunc,helical3c]" --sym="c1" --MPI
 
-        Stack disks based on helical symmetry parameters
+        * Stack disks based on helical symmetry parameters
             sxhelicon_utils.py disk_to_stack.hdf --stackdisk=stacked_disks.hdf --dphi=166.5 --dp=27.6 --ref_nx=160 --ref_ny=160 --ref_nz=225 --apix=1.84
 """
 	parser = OptionParser(usage2,version=SPARXVERSION)
@@ -129,6 +131,8 @@ def main():
 	parser.add_option("--dphi_step",          type="float",          default= 0.1,                help="dphi step for symmetrization")
 	parser.add_option("--datasym",            type="string",		 default="datasym.txt",       help="symdoc")
 	parser.add_option("--symdoc",             type="string",		 default="",      	    	  help="text file containing helical symmetry parameters dp and dphi")
+
+	# filament statistics in the stack
 	
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1 or len(args) > 5:
