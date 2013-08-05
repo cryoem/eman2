@@ -60,7 +60,7 @@ A "particle" in this program is a square or rectangular region taken from a "hel
 within a helix. Usually, all particles from a micrograph will have the same dimensions.
 """
 
-E2HELIXBOXER_DB = "bdb:" # used to use "bdb:e2helixboxercache#"
+SXHELIXBOXER_DB = "bdb:" # used to use "bdb:e2helixboxercache#"
 
 
 def main():
@@ -613,9 +613,9 @@ def save_particles(particles, ptcl_filepath, do_edge_norm=False, stack_file_mode
 
 def db_get_item(micrograph_filepath, key):
 	"""
-	gets the value stored in the e2helixboxer database for the specified micrograph and key 
+	gets the value stored in the sxhelixboxer database for the specified micrograph and key 
 	"""
-	db_name = E2HELIXBOXER_DB + key
+	db_name = SXHELIXBOXER_DB + key
 	db = db_open_dict(db_name)
 	val = db[micrograph_filepath]
 	db_close_dict(db_name)
@@ -623,9 +623,9 @@ def db_get_item(micrograph_filepath, key):
 
 def db_set_item(micrograph_filepath, key, value):
 	"""
-	sets the value stored in the e2helixboxer database for the specified micrograph and key 
+	sets the value stored in the sxhelixboxer database for the specified micrograph and key 
 	"""
-	db_name = E2HELIXBOXER_DB + key
+	db_name = SXHELIXBOXER_DB + key
 	db = db_open_dict(db_name)
 	db[micrograph_filepath] = value
 	db_close_dict(db_name)
@@ -638,7 +638,7 @@ def db_get_helices_dict(micrograph_filepath, helix_width = None):
 	@return: a dictionary formed like {(x1, y1, x2, y2, width): particle_EMData_object, ...}
 	"""
 	micrograph = EMData(micrograph_filepath)
-	db = db_open_dict(E2HELIXBOXER_DB + "helixboxes")
+	db = db_open_dict(SXHELIXBOXER_DB + "helixboxes")
 	box_coords_list = db[micrograph_filepath]
 	if not box_coords_list:
 		return {}
@@ -678,7 +678,7 @@ def db_save_helix_coords(micrograph_filepath, output_filepath=None, helix_width 
 	micrograph_name = os.path.splitext( micrograph_filename )[0]
 	if not output_filepath:
 		output_filepath = os.getcwd() + micrograph_name + "_boxes.txt"
-	db = db_open_dict(E2HELIXBOXER_DB + "helixboxes")
+	db = db_open_dict(SXHELIXBOXER_DB + "helixboxes")
 	box_coords_list = db[micrograph_filepath]
 	save_helix_coords(box_coords_list, output_filepath, helix_width)
 
@@ -1657,55 +1657,55 @@ if ENABLE_GUI:
 			
 		def get_db_item(self, key):
 			"""
-			gets the value stored in the e2helixboxer database for the specified key and the current micrograph 
+			gets the value stored in the sxhelixboxer database for the specified key and the current micrograph 
 			"""
-			db_name = E2HELIXBOXER_DB + key
+			db_name = SXHELIXBOXER_DB + key
 			db = db_open_dict(db_name)
 			val = db[self.micrograph_filepath]
 			db_close_dict(db_name)
 			return val
 		def remove_db_item(self, key):
 			"""
-			removes the key and its value from the e2helixboxer database for the current micrograph
+			removes the key and its value from the sxhelixboxer database for the current micrograph
 			"""
-			db_name = E2HELIXBOXER_DB + key
+			db_name = SXHELIXBOXER_DB + key
 			db = db_open_dict(db_name)
 			db.pop(key)
 		def set_db_item(self, key, value):
 			"""
-			sets the value stored in the e2helixboxer database for the specified key and the current micrograph 
+			sets the value stored in the sxhelixboxer database for the specified key and the current micrograph 
 			"""
-			db_name = E2HELIXBOXER_DB + key
+			db_name = SXHELIXBOXER_DB + key
 			db = db_open_dict(db_name)
 			db[self.micrograph_filepath] = value
 			db_close_dict(db_name)
 		def get_image_quality(self):
 			"""
-			gets the value stored in the e2helixboxer database for image quality, which is the user's subjective
+			gets the value stored in the sxhelixboxer database for image quality, which is the user's subjective
 			evaluation of how good the micrograph is
 			"""
 			return self.get_db_item("quality")
 		def set_image_quality(self, quality):
 			"""
-			sets the value stored in the e2helixboxer database for image quality, which is the user's subjective
+			sets the value stored in the sxhelixboxer database for image quality, which is the user's subjective
 			evaluation of how good the micrograph is
 			"""
 			self.set_db_item("quality", quality)
 		def add_box_to_db(self, box_coords):
 			"""
-			adds the coordinates for a helix to the e2helixboxer database for the current micrograph
+			adds the coordinates for a helix to the sxhelixboxer database for the current micrograph
 			"""
 			assert len(box_coords) == 5, "box_coords must have 5 items"
-			db = db_open_dict(E2HELIXBOXER_DB + "helixboxes")
+			db = db_open_dict(SXHELIXBOXER_DB + "helixboxes")
 			boxList = db[self.micrograph_filepath] #Get a copy of the db in memory
 			boxList.append(tuple(box_coords))
 			db[self.micrograph_filepath] = boxList #Needed to save changes to disk
 		def remove_box_from_db(self, box_coords):
 			"""
-			removes the coordinates for a helix in the e2helixboxer database for the current micrograph
+			removes the coordinates for a helix in the sxhelixboxer database for the current micrograph
 			"""
 			assert len(box_coords) == 5, "box_coords must have 5 items"
-			db = db_open_dict(E2HELIXBOXER_DB + "helixboxes")
+			db = db_open_dict(SXHELIXBOXER_DB + "helixboxes")
 			boxList = db[self.micrograph_filepath] #Get a copy of the db in memory
 			boxList.remove(tuple(box_coords))
 			db[self.micrograph_filepath] = boxList #Needed to save changes to disk
