@@ -53,7 +53,11 @@ def main():
         * Generate two lists of image indices used to split segment stack into halves for helical fsc calculation.			
             sxhelicon_utils.py bdb:big_stack --hfsc='flst_' --filament_attr=filament
 
-        
+        * Map of filament distribution in the stack
+            sxhelicon_utils.py bdb:big_stack --filinfo=info.txt
+            The output file will contain four columns:
+                     1                    2                     3                         4
+            first image number     last image number      number of images         in the filament name
 
         * Predict segments' orientation parameters based on distances between segments and known helical symmetry
             sxhelicon_utils.py bdb:big_stack --predict_helical=helical_params.txt --dp=27.6 --dphi=166.5 --apix=1.84
@@ -94,6 +98,10 @@ def main():
 	parser.add_option("--volalixshift",       action="store_true",   default=False,               help="Use volalixshift refinement")
 	parser.add_option("--searchxshift",       type="float",		     default= 0.0,                help="search range for x-shift determination: +/- searchxshift (Angstroms)")
 	parser.add_option("--nearby",             type="float",		     default= 6.0,                help="neighborhood within which to search for peaks in 1D ccf for x-shift search (Angstroms)")
+
+	# filinfo
+	parser.add_option( "--filinfo",            type="string",      	 default="",                  help="Store in an output text file infomration about distribution of filaments in the stack." )
+
 
 	# diskali
 	parser.add_option("--diskali",            action="store_true",   default=False,               help="volume alignment")
@@ -139,13 +147,36 @@ def main():
 		print "Various helical reconstruction related functionalities: " + usage2
 		print "Please run '" + progname + " -h' for detailed options"
 	else:
-		
+
 		if len(options.hfsc) > 0:
 			if len(args) != 1:
 				print  "Incorrect number of parameters"
 				sys.exit()
 			from applications import imgstat_hfsc
 			imgstat_hfsc( args[0], options.hfsc, options.filament_attr)
+			sys.exit()
+		elif len(options.filinfo) > 0:
+			if len(args) != 1:
+				print  "Incorrect number of parameters"
+				sys.exit()
+			from EMAN2 import EMUtil
+			filams =  EMUtil.get_all_attributes(args[0], "filament")
+			ibeg = 0
+			filcur = filams[0]
+			n = len(filams)
+			inf = []
+			i = 1
+			while( i <= n):
+				if(i < n): fis = filams[i]
+				else: fis = ""
+				if( fis != filcur ):
+					iend = i-1
+					inf.append([ibeg,iend,iend-ibeg+1,filcur])
+					ibeg = i
+					filcur = fis
+				i += 1
+			from utilities import write_text_row
+			write_text_row(inf, options.filinfo)
 			sys.exit()
 		
 		# Convert input arguments in the units/format as expected by ihrsr_MPI in applications.

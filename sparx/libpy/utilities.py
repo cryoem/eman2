@@ -1726,18 +1726,24 @@ def write_text_row(data, file_name):
 		# It is a list of lists
 		for i in xrange(len(data)):
 			for j in xrange(len(data[i])):
-				if type(data[i][j]) == type(0):
+				qtp = type(data[i][j])
+				if qtp == type(0):
 					outf.write("  %12d"%data[i][j])
-				else:
+				elif qtp == type(0.0):
 					outf.write("  %12.5g"%data[i][j])
+				else:
+					outf.write("  %s"%data[i][j])
 			outf.write("\n")
 	else:
 		# Single list
 		for j in xrange(len(data)):
-			if type(data[j]) == type(0):
+			qtp = type(data[j])
+			if qtp == type(0):
 				outf.write("  %12d\n"%data[j])
-			else:
+			elif qtp == type(0.0):
 				outf.write("  %12.5g"%data[j])
+			else:
+				outf.write("  %s"%data[j])
 		outf.write("  \n")
 	outf.close()
 
@@ -1785,18 +1791,24 @@ def write_text_file(data, file_name):
 		# It is a list of lists
 		for i in xrange(len(data[0])):
 			for j in xrange(len(data)):
-				if type(data[j][i]) == type(0):
+				qtp = type(data[j][i])
+				if qtp == type(0):
 					outf.write("  %12d"%data[j][i])
-				else:
+				elif qtp == type(0.0):
 					outf.write("  %12.5g"%data[j][i])
+				else:
+					outf.write("  %s"%data[j][i])
 			outf.write("\n")
 	else:
 		# Single list
 		for j in xrange(len(data)):
-			if type(data[j]) == type(0):
+			qtp = type(data[j])
+			if qtp == type(0):
 				outf.write("  %12d\n"%data[j])
-			else:
+			elif qtp == type(0.0):
 				outf.write("  %12.5g\n"%data[j])
+			else:
+				outf.write("  %s\n"%data[j])
 	outf.close()
 
 def reconstitute_mask(image_mask_applied_file, new_mask_file, save_file_on_disk = True, saved_file_name = "image_in_reconstituted_mask.hdf"):
