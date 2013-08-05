@@ -2004,7 +2004,6 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=2
 		
 	# Calculate distance between adjacent squares as ~1 rise in pixels if not set by user
 	if ptcl_dst < 0 and dp >= 0: ptcl_dst = int( (dp/new_pixel_size) + 0.5)
-	ptcl_overlap = boxsize - ptcl_dst
 	
 	print_msg("Distance in pixels (using pixel size %f) between adjacent segments: %d\n"%(new_pixel_size, ptcl_dst))
 
@@ -2055,7 +2054,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=2
 				if( os.path.exists(hcoordsname) ):
 					micname = os.path.join(os.path.join(topdir,v1), v2)
 					print_msg("\n\nPreparing to window helices from micrograph %s with box coordinate file %s\n\n"%(micname, hcoordsname))
-					windowmic(outstacknameall, coutdir, micname, hcoordsname, pixel_size, boxsize, ptcl_overlap, inv_contrast, new_pixel_size, rmax, freq)
+					windowmic(outstacknameall, coutdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, inv_contrast, new_pixel_size, rmax, freq)
 
 	# If not debug mode, then remove all output directories 
 	if debug == 0:
@@ -2065,7 +2064,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=2
 			print_msg("cmd: %s"%cmd)
 			call(cmd, shell=True)
 
-def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize, ptcl_overlap, inv_contrast, new_pixel_size, rmax, freq):
+def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, inv_contrast, new_pixel_size, rmax, freq):
 	'''
 	
 	INPUT
@@ -2083,8 +2082,7 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 			
 			boxsize: Integer. x and y-dimension of segments to be windowed.
 			
-			ptcl_overlap: Integer. Overlap in pixels between adjacent segments windowed from a single boxed helix. If ptcl_overlap < 0, then the
-				          program will set it so the distance between adjacent segments is rise in pixels.
+			ptcl_dst: Integer. Distance in pixels between adjacent squares windowed from a single boxed helix.
 				          
 			inv_contrast: True/False, default is False. If cryo, then set to true to invert contrast so particles show up bright against dark background. 
 			
@@ -2107,7 +2105,8 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 	from filter	  	  import filt_gaussh
 	from pixel_error  import getnewhelixcoords
 	from EMAN2 	      import EMUtil, Util
-
+	from subprocess   import call
+	
 	# micname is full path name
 	# smic[-1] is micrograph name minus path
 	smic = micname.split('/')
@@ -2168,8 +2167,8 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 	# Set box coordinates in sxhelixboxer database
 	db_load_helix_coords(tmpfile, hcoordsname, False, boxsize)
 
-	db_save_particle_coords(tmpfile, fptcl_coords, ptcl_overlap, boxsize, boxsize)
-	db_save_particles(tmpfile, fimgs_0, ptcl_overlap, boxsize, boxsize, True, True, True, "multiple")
+	db_save_particle_coords(tmpfile, fptcl_coords, ptcl_dst, boxsize, boxsize)
+	db_save_particles(tmpfile, fimgs_0, ptcl_dst, boxsize, boxsize, True, True, True, "multiple")
 
 	if rmax < 0:  rmaxp = int(boxsize/2 - 2)
 	else:         rmaxp = int( (rmax/new_pixel_size)  + 0.5)
@@ -2184,7 +2183,12 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 
 	try:      iseg = EMUtil.get_image_count(outstacknameall)
 	except:   iseg = 0
-		
+	
+	# remove the filtered micrographs
+	cmd = "rm -r %s"%(tmpfile)
+	print_msg("%s\n"%cmd)
+	call(cmd, shell=True)
+			
 	for h in xrange(nhelices):
 		ptcl_images  = imgs_0+"_%i.hdf"%h # This is what sxhelixboxer outputs, only 'hdf' format is handled.
 		otcl_images  = "bdb:%s/QT"%outdir+ ptcl_images[:-4]
