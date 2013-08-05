@@ -69,6 +69,9 @@ def main():
 
         * Stack disks based on helical symmetry parameters
             sxhelicon_utils.py disk_to_stack.hdf --stackdisk=stacked_disks.hdf --dphi=166.5 --dp=27.6 --ref_nx=160 --ref_ny=160 --ref_nz=225 --apix=1.84
+		
+		* Do helical symmetry search:
+			mpirun -np 3 sxhelicon_utils.py volf0010.hdf outsymsearch --symsearch --dp=27.6 --dphi=166.715 --apix=1.84 --fract=0.65 --rmin=0 --rmax=92.0 --datasym=datasym.txt  --dp_step=0.92 --ndp=3 --dphi_step=1.0 --ndphi=10 --MPI
 """
 	parser = OptionParser(usage2,version=SPARXVERSION)
 	#parser.add_option("--ir",                 type="float", 	     default= -1,                 help="inner radius for rotational correlation > 0 (set to 1) (Angstroms)")
