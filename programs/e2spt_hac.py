@@ -74,6 +74,8 @@ def main():
 	parser.add_argument("--path",type=str,default=None,help="Directory to store results in. The default is a numbered series of directories containing the prefix 'sptsimjob'; for example, sptsimjob_02 will be the directory by default if 'sptsimjob_01' already exists.")
 	
 	parser.add_argument("--groups",type=int,default=1,help="Breaks the set into subgroups and does ALL vs ALL on the subgroups separately. Recommended when the set is > 100")
+	parser.add_argument("--clusters",type=int,default=1,help="Number of clusters to group the data in after the 1st iteration, based on correlation.")
+
 	
 	parser.add_argument("--autocenter",action="store_true", help="Autocenters each averaged pair on all rounds using their center of mass",default=False)
 
@@ -566,6 +568,18 @@ def allvsall(options):
 		simmxScales.to_one()
 		
 		compNum=0
+		
+		clusters = {}
+		usedSet=set([])
+		allPtclSet=set( [x for x in range(nptcls)] )
+		numPerSet = 0
+		if k == 0:
+			if options.clusters and int(options.clusters) > 1:
+				numPerSet = round( float(nptcls)/float(options.clusters) )
+				
+				for cn in range(options.clusters):
+					clusters.update({ cn:set([]) })
+			
 		for i in results:
 			if options.verbose > 0:
 				print "In iteration %d the SORTED results are:", k	
@@ -584,6 +598,22 @@ def allvsall(options):
 			indxA = int( i['ptclA'].split('_')[-1] )
 			indxB = int( i['ptclB'].split('_')[-1] )
 			simmxScores.set_value_at(indxA,indxB,i['score'])
+			
+			auxx=0
+			if k == 0:
+				if options.clusters and int(options.clusters) > 1:
+					for cn in range(options.clusters):
+						print "Clusters[cn] and its type are", clusters[cn], type(clusters[cn])
+						if len(clusters[cn]) < numPerSet:
+							if indxA not in usedSet:
+								print "IndxA as list is", [indxA]					
+								clusters[cn].update( [indxA] )
+								usedSet.update( [indxA] )
+						
+						if len(clusters[cn]) < numPerSet:	
+							if indxB not in usedSet:
+								clusters[cn].update( [indxB] )
+								usedSet.update( [indxB] )
 			
 			t= i['xform.align3d']
 			trans=t.get_trans()
@@ -910,6 +940,28 @@ def allvsall(options):
 			
 			roundInfoDict[ key ] = aliInfo
 	
+		
+		if k == 0:
+			if options.clusters and int(options.clusters) >1:
+				print "Clusters are", clusters
+				remnants = allPtclSet - usedSet
+			
+				if remnants:
+					print "Remnants are", remnants
+					lastCluster = int(options.clusters) - 1
+					print "THe last cluster indx is", lastCluster
+				
+					clusters[lastCluster].update(remnants)
+			
+				clustersDictFile = options.path + '/clusters.json'
+				clustersDict = js_open_dict( clustersDictFile )
+			
+				for cn in clusters:
+					clustersDict[ str(cn) ] = list(clusters[cn])
+			
+				clustersDict.close()
+				
+			
 			
 		roundInfoDict.close()
 			
