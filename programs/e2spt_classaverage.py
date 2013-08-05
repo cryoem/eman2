@@ -77,6 +77,10 @@ def main():
 	
 	parser.add_argument("--refinemultireftag", type=str, help="DO NOT USE THIS PARAMETER. It is passed on from e2spt_refinemulti.py if needed.", default='')
 
+	parser.add_argument("--radius", type=float, help="""Hydrodynamic radius of the particle in Angstroms. 
+													This will be used to automatically calculate the angular steps to use in search of the best alignment.
+													Make sure the apix is correct on the particles' headers, sine the radius will be converted from Angstroms to pixels.
+													Then, the fine angular step is equal to 360/(2*pi*radius), and the coarse angular step 4 times that""", default=0)
 	
 	parser.add_argument("--donotaverage",action="store_true", help="If e2spt_refinemulti.py is calling e2spt_classaverage.py, the latter need not average any particles, but rather only yield the alignment results.", default=False)
 	
@@ -172,15 +176,18 @@ def main():
 		parser.print_help()
 		exit(0)
 		
-	#if options.ncoarse:
-	#	print "ERROR: The ncoarse option has been renamed npeakstorefine"
-	#	sys.exit(1)
+
+	if options.radius:
+		options = calcAliStep(options)
+		
 	
-	if options.align: 
+	if options.align:
+		print "There's options.align", options.align
+		if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align:
+			options.align += ':sym' + str( options.sym )
+			print "And there's sym", options.sym
+			
 		options.align=parsemodopt(options.align)
-		# If symmetry is being specified, then we need to use it for the aligner too
-		if options.sym:
-			options.align[1]['sym'] = options.sym
 	
 	#if options.ralign and not options.raligncmp:
 	#	options.raligncmp = options.aligncmp	
@@ -360,7 +367,14 @@ def main():
 	Iterating over all the classes, 'ic'.
 	'''	
 	
-	for ic in range(ncls):
+	ic='nada'
+	print "ncls and its type are", ncls, type(ncls)
+	print "ic beforehand is", ic
+	
+	for i in range(10):
+		print i
+	
+	for ic in range(int(ncls)):
 		
 		if ncls==1: 
 			ptclnums=range(nptcl)						# Start with a list of particle numbers in this class
@@ -565,7 +579,49 @@ def main():
 	sys.stdout.flush()
 	
 	return
+
+
+def calcAliStep(options):
+
+	print "Options.radius is", options.radius
+	hdr = EMData( options.input,0,True )
+	apix = float( hdr['apix_x'] )
 	
+	if options.shrinkrefine and float(options.shrinkrefine) > 1.0:
+		apix = 2*apix
+		
+	radPix = options.radius / apix
+	fineStep = 360.0/(2.0*math.pi*radPix)
+	coarseStep = 4.0 * fineStep
+	
+	factor = 1
+	if options.shrink and float( options.shrink ) > 1.0:
+		print "There's options.shrink bigger than one see", options.shrink
+		factor = options.shrink
+		if options.shrinkrefine and float(options.shrinkrefine)>1.0:
+			print "There's options.shrinkrefine bigger than one see", options.shrinkrefine
+
+			factor = float(options.shrink) / float(options.shrinkrefine)
+		
+		coarseStep = coarseStep * factor
+		
+	rango = coarseStep / 2.0
+	
+	print "The radius in pixels at size for fine alignment (taking --shrinkrefine into account) is", radPix
+	print "Shrink is", options.shrink
+	print "Shrink refine is", options.shrinkrefine
+	print "Therefore factor is", factor
+	print "Therefore, the coarse step to use is", coarseStep
+	print "And the fine step to use is", fineStep
+	print "rango is", rango
+	
+	options.align = 'rotate_translate_3d:search=8:delta=' + str(coarseStep) + ':dphi=' + str(coarseStep)
+	if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align:
+		options.align += ':sym' + str(options.sym)
+		
+	options.ralign = 'refine_3d_grid:range=' + str(rango) + ':delta=' + str(fineStep) + ':search=2'
+	
+	return options
 	
 
 def binaryTreeRef(options,nptcl,ptclnums,ic,etc):
