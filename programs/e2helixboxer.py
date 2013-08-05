@@ -67,8 +67,6 @@ def main():
 	usage = """e2helixboxer.py --gui <micrograph1> <<micrograph2> <micrograph3> ...
 	e2helixboxer.py --gui --helix-width=<width> <micrograph1> <<micrograph2> <micrograph3> ...
 	e2helixboxer.py <options (not --gui)> <micrograph>    
-	e2helixboxer.py <outdir> --window --dirid='mic' --micid='mic' --micsuffix='hdf' --invert_contrast --dp=27.6 --apix=1.84 --boxsize='200,45' --outstacknameall='bdb:/Users/jiafang/helical_mpi/jdata' --hcoords_suffix='_boxes.txt' --ptcl-dst=30 --rmax=92.0
-
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--gui", action="store_true", help="Start the graphic user interface for boxing helices.")
@@ -81,8 +79,9 @@ def main():
 	
 	parser.add_argument("--db-add-hcoords", type=str, help="Append any unique helix coordinates to the database from the specified file (in EMAN1 *.box format). Use --helix-width to specify a width for all boxes.")
 	parser.add_argument("--db-set-hcoords", type=str, help="Replaces the helix coordinates in the database with the coordinates from the specified file (in EMAN1 *.box format). Use --helix-width to specify a width for all boxes.")
-	parser.add_argument("--ptcl-dst", 	        type=int, 	             dest="ptcl_dst", 			  help="Distance between windowed squares in pixels", default=-1)
+	
 	parser.add_argument("--helix-width", "-w", type=int, dest="helix_width", help="Helix width in pixels. Overrides widths saved in the database or in an input file.", default=-1)
+	parser.add_argument("--ptcl-overlap", type=int, dest="ptcl_overlap", help="Particle overlap in pixels", default=-1)
 	parser.add_argument("--ptcl-length", type=int, dest="ptcl_length", help="Particle length in pixels", default=-1)
 	parser.add_argument("--ptcl-width", type=int, dest="ptcl_width", help="Particle width in pixels", default=-1)
 	parser.add_argument("--ptcl-not-rotated", action="store_true", dest="ptcl_not_rotated", help="Particles are oriented as on the micrograph. They are square with length max(ptcl_length, ptcl_width).")
@@ -90,94 +89,7 @@ def main():
 	parser.add_argument("--gridding",      action="store_true", default=False, help="Use a gridding method for rotation operations on particles. Requires particles to be square.")
 	parser.add_argument("--save-ext",type=str,default="hdf",dest="save_ext",help="The default file extension to use when saving 'particle' images. This is simply a convenience for improved workflow. If a format other than HDF is used, metadata will be lost when saving.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	
-	parser.add_argument("--invert_contrast",      action="store_true", default=False, help="Invert contrast of micrograph of contrast of boxed filaments and particles are inverted")
-	
-	# window segments from boxed filaments (or 'helices' in e2helixboxer lingo)
-	parser.add_argument("--window",             action="store_true",	 default=False,               help="window segments from boxed filaments (or helices in e2helixboxer lingo)")
-	parser.add_argument("--dirid",              type=str,				 default="",                  help="A string for identifying directories containing relevant micrographs. Any directory containing dirid as a contiguous string will be searched for micrographs. These micrographs are assumed to be those which were used to box the helices which are to be windowed.")
-	parser.add_argument("--micid",              type=str,				 default="",                  help="A string for identifying the name (minus extension) of relevant micrographs.")
-	parser.add_argument("--micsuffix",          type=str,				 default="",                  help="A string denoting micrograph type. Currently only handles suffix types, e.g. 'hdf', 'ser' etc.")
-	parser.add_argument("--boxsize",            type=int,				 default=256,            	  help="x and y dimension in pixels of square area to be windowed out from filament. Pixel size is assumed to be new_pixel_size.")
-	parser.add_argument("--outstacknameall",    type=str,				 default="bdb:data",          help="File name plus path and type (only handles bdb and hdf right now) under which ALL windowed segments from ALL micrograph directories will be saved, e.g. 'bdb:adata' or 'adata.hdf'")
-	parser.add_argument("--hcoords_dir",        type=str,				 default="",        		  help="Directory containing helix box coordinates")
-	parser.add_argument("--hcoords_suffix",     type=str,				 default="_boxes.txt",        help="String identifier which when concatenated with a micrograph name (minus extension) gives the name of the text file containing coordinates of ALL helices boxed from the micrograph. If there is no such file, helices boxed from the micrograph will not be windowed. Default is '_boxes.txt', so if mic0.hdf is a micrograph, then the text file containing coordinates of the helices boxed in it is mic0_boxes.txt. The coordinate file is assumed to be in the format used by e2helixboxer.")
-	parser.add_argument("--new_apix",           type=float,  			 default=-1.0,                help="New target pixel size to which the micrograph should be resampled. Default is -1, in which case there is no resampling.")
-	parser.add_argument("--freq",               type=float, 			 default=-1.0,                help="Cut-off frequency at which to high-pass filter micrographs before windowing. Default is -1, in which case, the micrographs will be high-pass filtered with cut-off frequency 1.0/segnx, where segnx is the target x dimension of the segments.") 
-	parser.add_argument("--apix",               type=float,				 default= -1.0,               help="pixel size in Angstroms")   
-	parser.add_argument("--dp",                 type=float,				 default= -1.0,               help="delta z - translation in Angstroms")   
-	parser.add_argument("--dphi",               type=float,				 default= -1.0,               help="delta phi - rotation in degrees")  
-	parser.add_argument("--rmax",               type=float, 			 default= 80.0,               help="maximal radius for hsearch (Angstroms)")
-	parser.add_argument("--dbg",                type=int,	 			 default=1,                   help="If 1, then intermediate files in output directory will not be deleted; if 0, then all output directories where intermediate files were stored will be deleted. Default is 1.")
-	
-	# ctf estimation using cter
-	parser.add_argument("--cter",               action="store_true",     default=False,                  help="CTF estimation using the cter module from SPARX")
-	parser.add_argument("--indir",              type=str,				 default= ".",     				 help="Directory containing micrographs to be processed.")
-	parser.add_argument("--nameroot",         	type=str,		 		 default= "",     				 help="Prefix of micrographs to be processed.")
-	parser.add_argument("--nx",				  	type=int,		 		 default=256, 					 help="Size of window to use (should be slightly larger than particle box size)")
-	
-	parser.add_argument("--Cs",               	type=float,	 			 default= 2.0,               	 help="Microscope Cs (spherical aberation)")
-	parser.add_argument("--voltage",		  	type=float,	 		     default=300.0, 			     help="Microscope voltage in KV")
-	parser.add_argument("--ac",				  	type=float,	 		     default=10.0, 					 help="Amplitude contrast (percentage, default=10)")
-	parser.add_argument("--kboot",			  	type=int,			     default=16, 					 help="kboot")
-	parser.add_argument("--MPI",                action="store_true",   	 default=False,              	 help="use MPI version")
-	parser.add_argument("--debug",              action="store_true",   	 default=False,              	 help="debug mode")
-	
 	(options, args) = parser.parse_args()
-	
-	if options.cter:
-		from global_def import SPARXVERSION
-		import global_def
-		if len(args) <2 or len(args) > 3:
-			print "see usage"
-			sys.exit()
-		
-		stack = None
-		
-		if len(args) == 3:
-			if options.MPI:
-				print "Please use single processor version if specifying a stack."
-				sys.exit()
-			stack = args[0]
-			out1 = args[1]
-			out2 = args[2]
-			
-		if len(args) == 2:
-			out1 = args[0]
-			out2 = args[1]
-		
-		if options.apix < 0:
-			print "Enter pixel size"
-			sys.exit()
-		
-		if options.MPI:
-			from mpi import mpi_init, mpi_finalize
-			sys.argv = mpi_init(len(sys.argv), sys.argv)
-	
-		if global_def.CACHE_DISABLE:
-			from utilities import disable_bdb_cache
-			disable_bdb_cache()
-	
-		from morphology import cter
-		global_def.BATCH = True
-		cter(stack, out1, out2, options.indir, options.nameroot, options.nx, voltage=options.voltage, Pixel_size=options.apix, Cs = options.Cs, wgh=options.ac, kboot=options.kboot, MPI=options.MPI, DEBug = options.debug, set_ctf_header=True)
-		global_def.BATCH = False
-	
-		if options.MPI:
-			from mpi import mpi_finalize
-			mpi_finalize()
-	
-		return
-	
-	
-	# Window filaments 
-	if options.window:
-		if len(args) < 1:
-			print "Must specify name of output directory where intermediate files are to be deposited."
-			return
-		outdir = args[0]
-		windowallmic(options.dirid, options.micid, options.micsuffix, outdir, pixel_size=options.apix, dp=options.dp, boxsize=options.boxsize, outstacknameall=options.outstacknameall, hcoords_dir = options.hcoords_dir, hcoords_suffix = options.hcoords_suffix, ptcl_dst=options.ptcl_dst, inv_contrast=options.invert_contrast, new_pixel_size=options.new_apix, rmax = options.rmax, freq=options.freq, debug = options.dbg)
-		return
 	
 	if options.helix_width < 1:
 		helix_width = None
@@ -193,11 +105,11 @@ def main():
 		px_length = None
 	else:
 		px_length = options.ptcl_length
-	
-	if options.ptcl_dst < 0:
-		px_dst = None
+		
+	if options.ptcl_overlap < 1:
+		px_overlap = None
 	else:
-		px_dst = options.ptcl_dst	
+		px_overlap = options.ptcl_overlap
 	
 	logid=E2init(sys.argv)
 	
@@ -205,7 +117,7 @@ def main():
 		if ENABLE_GUI:
 			logid=E2init(sys.argv,options.ppid)
 			app = EMApp()
-			helixboxer = EMHelixBoxerWidget(args, app, options.helix_width,options.save_ext, options.invert_contrast)
+			helixboxer = EMHelixBoxerWidget(args, app, options.helix_width,options.save_ext)
 			helixboxer.show()
 			app.execute()
 			E2end(logid)
@@ -224,9 +136,9 @@ def main():
 			if options.helix_images:
 				db_save_helices(micrograph_filepath, options.helix_images, helix_width)
 			if options.ptcl_coords:
-				db_save_particle_coords(micrograph_filepath, options.ptcl_coords, px_dst, px_length, px_width)
+				db_save_particle_coords(micrograph_filepath, options.ptcl_coords, px_overlap, px_length, px_width)
 			if options.ptcl_images:
-				db_save_particles(micrograph_filepath, options.ptcl_images, px_dst, px_length, px_width, not options.ptcl_not_rotated, options.ptcl_norm_edge_mean, options.gridding, options.ptcl_images_stack_mode)
+				db_save_particles(micrograph_filepath, options.ptcl_images, px_overlap, px_length, px_width, not options.ptcl_not_rotated, options.ptcl_norm_edge_mean, options.gridding, options.ptcl_images_stack_mode)
 				
 			E2end(logid)
 		elif len(args) == 0:
@@ -311,13 +223,13 @@ def get_particle_centroids(helix_coords, px_overlap, px_length, px_width):
 	
 	return ptcl_coords
 
-def get_rotated_particles( micrograph, helix_coords, px_dst = None, px_length = None, px_width = None, gridding = False , mic_name=""):
+def get_rotated_particles( micrograph, helix_coords, px_overlap = None, px_length = None, px_width = None, gridding = False , mic_name=""):
 	"""
 	Gets the overlapping square/rectangular "particles" with "lengths" (could be less than "widths") 
 	parallel to the helical axis. They are then rotated so the "lengths" are vertical.
 	@param micrograph: EMData object for the micrograph
 	@param helix_coords: (x1,y1,x2,y2,width) tuple for a helix
-	@param px_dst: length of overlap in pixels of the rectangular particles, measured along the line connecting particle centroids, defaults to 0.1*px_length
+	@param px_overlap: length of overlap in pixels of the rectangular particles, measured along the line connecting particle centroids, defaults to 0.9*px_length
 	@param px_length: distance in pixels between the centroids of two adjacent particles, defaults to the width of the helix
 	@param px_width: width of the particles in pixels, defaults to px_length
 	@param gridding: use gridding method for rotation operation, requires square particles (px_length == px_width)
@@ -340,10 +252,8 @@ def get_rotated_particles( micrograph, helix_coords, px_dst = None, px_length = 
 		px_width = w
 	if not px_length:
 		px_length = px_width
-	if not px_dst:
+	if not px_overlap:
 		px_overlap = 0.9*px_length
-	else:
-		px_overlap = px_length - px_dst
 	assert px_length > px_overlap, "The overlap must be smaller than the particle length"
 	
 	centroids = get_particle_centroids(helix_coords, px_overlap, px_length, px_width)
@@ -407,12 +317,12 @@ def get_rotated_particles( micrograph, helix_coords, px_dst = None, px_length = 
 	
 	return particles
 
-def get_unrotated_particles(micrograph, helix_coords, px_dst = None, px_length = None, px_width = None, mic_name=""):
+def get_unrotated_particles(micrograph, helix_coords, px_overlap = None, px_length = None, px_width = None, mic_name=""):
 	"""
 	Gets the image data for each particle, without first rotating the helix and its corresponding particles to be vertical.
 	@param micrograph: EMData object that holds the image data for the helix
 	@param helix_coords: the (x1, y1, x2, y2, width) tuple (in pixels) that specifies the helix on the micrograph
-	@param px_dst: the number of pixels between consecutive particles,measured along the long-axis of the helix, defaults to 10% of max(px_length, px_width)
+	@param px_overlap: the number of pixels of overlap between consecutive particles, overlap measured along the long-axis of the helix, defaults to 90% of max(px_length, px_width)
 	@param px_length: the distance between consecutive particle midpoints in pixels, chosen to correspond with rotated case, defaults to helix width
 	@param px_width: corresponds to particle width in the rotated case, in the unrotated case only used to set length of the square to max(px_width, px_length), defaults to px_length
 	@return: a list of EMData objects for each unrotated particle in the helix 
@@ -426,11 +336,9 @@ def get_unrotated_particles(micrograph, helix_coords, px_dst = None, px_length =
 		side = px_width
 	elif px_length:
 		side = px_length
-	
-	if not px_dst:
+		
+	if not px_overlap:
 		px_overlap = 0.9*side
-	else:
-		px_overlap = side - px_dst	
 	centroids = get_particle_centroids(helix_coords, px_overlap, side, side)
 	particles = []
 	rot_angle = get_helix_rotation_angle(*helix_coords)
@@ -695,7 +603,7 @@ def db_save_helices(micrograph_filepath, helix_filepath=None, helix_width = None
 		save_helix(helix, helix_filepath, i)
 		i+=1
 
-def db_save_particle_coords(micrograph_filepath, output_filepath = None, px_dst = None, px_length = None, px_width = None):
+def db_save_particle_coords(micrograph_filepath, output_filepath = None, px_overlap = None, px_length = None, px_width = None):
 	base = os.path.splitext( micrograph_filepath )[0]
 	if not output_filepath:
 		output_filepath = "%s_helix_ptcl_coords.txt" % (base)
@@ -705,9 +613,7 @@ def db_save_particle_coords(micrograph_filepath, output_filepath = None, px_dst 
 		px_width = helix_width
 	if not px_length:
 		px_length = px_width
-	if px_dst:
-		px_overlap = px_length - px_dst
-	else:
+	if not px_overlap:
 		px_overlap = 0.9*px_length
 	assert px_overlap < px_length
 	helix_particle_coords_dict = {}
@@ -717,7 +623,7 @@ def db_save_particle_coords(micrograph_filepath, output_filepath = None, px_dst 
 	
 	save_particle_coords(helix_particle_coords_dict, output_filepath, micrograph_filepath, px_length, px_width)
 	
-def db_save_particles(micrograph_filepath, ptcl_filepath = None, px_dst = None, px_length = None, px_width = None, rotated = True, do_edge_norm = False, gridding = False, stack_file_mode = "multiple" ):
+def db_save_particles(micrograph_filepath, ptcl_filepath = None, px_overlap = None, px_length = None, px_width = None, rotated = True, do_edge_norm = False, gridding = False, stack_file_mode = "multiple" ):
 	micrograph_filename = os.path.basename(micrograph_filepath)
 	micrograph_name = os.path.splitext( micrograph_filename )[0]
 	if not ptcl_filepath:
@@ -731,9 +637,9 @@ def db_save_particles(micrograph_filepath, ptcl_filepath = None, px_dst = None, 
 	for coords in helices_dict:
 		helix = helices_dict[coords]
 		if rotated:
-			helix_particles = get_rotated_particles(micrograph, coords, px_dst, px_length, px_width, gridding, mic_name = micrograph_filename)
+			helix_particles = get_rotated_particles(micrograph, coords, px_overlap, px_length, px_width, gridding, mic_name = micrograph_filename)
 		else:
-			helix_particles = get_unrotated_particles(micrograph, coords, px_dst, px_length, px_width,mic_name = micrograph_filename)
+			helix_particles = get_unrotated_particles(micrograph, coords, px_overlap, px_length, px_width,mic_name = micrograph_filename)
 		for ii in xrange(len(helix_particles)):
 			(helix_particles[ii]).set_attr("filament", micrograph_filename+"%04d"%nhelix)
 		nhelix = nhelix + 1
@@ -757,7 +663,7 @@ if ENABLE_GUI:
 			width = self.parentWidget().get_width()
 			self.ptcls_width_spinbox.setValue( width )
 			self.ptcls_length_spinbox.setValue( width )
-			self.ptcls_distance_spinbox.setValue( int(0.1*width) )
+			self.ptcls_overlap_spinbox.setValue( int(0.9*width) )
 			
 			
 			micrograph_filepath = self.parentWidget().micrograph_filepath
@@ -798,10 +704,10 @@ if ENABLE_GUI:
 			self.ptcls_groupbox = QtGui.QGroupBox(self.tr("Write &Particles:"))
 			self.ptcls_groupbox.setCheckable(True)
 			
-			ptcls_distance_label = QtGui.QLabel(self.tr("&Distance:"))
-			self.ptcls_distance_spinbox = QtGui.QSpinBox()
-			self.ptcls_distance_spinbox.setMaximum(10000)
-			ptcls_distance_label.setBuddy(self.ptcls_distance_spinbox)
+			ptcls_overlap_label = QtGui.QLabel(self.tr("&Overlap:"))
+			self.ptcls_overlap_spinbox = QtGui.QSpinBox()
+			self.ptcls_overlap_spinbox.setMaximum(10000)
+			ptcls_overlap_label.setBuddy(self.ptcls_overlap_spinbox)
 			ptcls_length_label = QtGui.QLabel(self.tr("&Length:"))
 			self.ptcls_length_spinbox = QtGui.QSpinBox()
 			self.ptcls_length_spinbox.setMaximum(10000)
@@ -866,9 +772,9 @@ if ENABLE_GUI:
 			
 			self.helices_groupbox.setLayout(helices_layout)
 			
-			ptcls_distance_layout = QtGui.QHBoxLayout()
-			ptcls_distance_layout.addWidget(ptcls_distance_label)
-			ptcls_distance_layout.addWidget(self.ptcls_distance_spinbox)
+			ptcls_overlap_layout = QtGui.QHBoxLayout()
+			ptcls_overlap_layout.addWidget(ptcls_overlap_label)
+			ptcls_overlap_layout.addWidget(self.ptcls_overlap_spinbox)
 			
 			ptcls_length_layout = QtGui.QHBoxLayout()
 			ptcls_length_layout.addWidget(ptcls_length_label)
@@ -912,7 +818,7 @@ if ENABLE_GUI:
 			self.ptcls_images_groupbox.setLayout(ptcls_images_layout)
 			
 			ptcls_opts_layout = QtGui.QVBoxLayout()
-			ptcls_opts_layout.addLayout(ptcls_distance_layout)
+			ptcls_opts_layout.addLayout(ptcls_overlap_layout)
 			ptcls_opts_layout.addLayout(ptcls_length_layout)
 			ptcls_opts_layout.addLayout(ptcls_width_layout)
 			ptcls_opts_layout.addWidget(self.ptcls_coords_groupbox)
@@ -995,10 +901,9 @@ if ENABLE_GUI:
 						save_helix(helix, helix_filepath, i)
 						i += 1
 			if self.ptcls_groupbox.isChecked():
-				px_dst = self.ptcls_distance_spinbox.value()
+				px_overlap = self.ptcls_overlap_spinbox.value()
 				px_length = self.ptcls_length_spinbox.value()
 				px_width = self.ptcls_width_spinbox.value()
-				px_overlap = None
 				if self.ptcls_images_groupbox.isChecked():
 					do_edge_norm = self.ptcls_edgenorm_checkbox.isChecked()
 					ptcl_filepath = str(self.ptcls_images_line_edit.text())
@@ -1014,25 +919,20 @@ if ENABLE_GUI:
 					nhelix = 0
 					for coords_key in helices_dict:
 						if self.ptcls_bilinear_rotation_radiobutton.isChecked():
-							helix_particles = get_rotated_particles(micrograph, coords_key, px_dst, px_length, px_width, gridding=False, mic_name=self.micrograph_filename)
-							px_overlap = px_length - px_dst
+							helix_particles = get_rotated_particles(micrograph, coords_key, px_overlap, px_length, px_width, gridding=False, mic_name=self.micrograph_filename)
 						elif self.ptcls_gridding_rotation_radiobutton.isChecked():
 							side = max(px_length, px_width)
 							#need to prepare the fft volume for gridding at here
-							helix_particles = get_rotated_particles(micrograph, coords_key, px_dst, side, side, gridding=True , mic_name=self.micrograph_filename)
-							px_overlap = side - px_dst
+							helix_particles = get_rotated_particles(micrograph, coords_key, px_overlap, side, side, gridding=True , mic_name=self.micrograph_filename)
 						elif self.ptcls_no_rotation_radiobutton.isChecked():
 							side = max(px_length, px_width)
-							helix_particles = get_unrotated_particles(micrograph, coords_key, px_dst, side, side, mic_name=self.micrograph_filename)
-							px_overlap = side - px_dst
+							helix_particles = get_unrotated_particles(micrograph, coords_key, px_overlap, side, side, mic_name=self.micrograph_filename)
 						for ii in xrange(len(helix_particles)):
 							(helix_particles[ii]).set_attr("filament", self.micrograph_filename+"%04d"%nhelix)
 						nhelix = nhelix + 1
 						all_particles.append(helix_particles)
 					save_particles(all_particles, ptcl_filepath, do_edge_norm, stack_mode)
 				if self.ptcls_coords_groupbox.isChecked():
-					if not px_overlap:
-						px_overlap = px_length - px_dst
 					ptcl_coords_filepath = str(self.ptcls_coords_line_edit.text())
 					micrograph_filepath = self.parentWidget().micrograph_filepath
 					helix_particle_coords_dict = {}
@@ -1048,24 +948,12 @@ if ENABLE_GUI:
 		"""
 		the GUI widget which contains the settings for boxing helices and writing results to files
 		"""
-		def __init__(self, micrograph_filepaths, app, box_width=100, saveext="hdf", invert_contrast=False):
+		def __init__(self, micrograph_filepaths, app, box_width=100, saveext="hdf"):
 			"""
 			@param micrograph_filepath: the path to the image file for the micrograph
 			@param app: the application to which this widget belongs
 			"""
 			QtGui.QWidget.__init__(self)
-			
-			self.doctf = False
-			self.winsize = 512
-			self.cs = 2.0
-			self.edge = 0.0
-			self.volt = 300.0
-			self.kboot = 16
-			self.ov = 0
-			self.ac = 10.0
-			self.pixelsize = 1.0
-			
-			self.invert_contrast = invert_contrast
 			
 			if box_width<1 : box_width=100
 			self.box_width=box_width
@@ -1135,7 +1023,7 @@ if ENABLE_GUI:
 			self.img_quality_combobox.addItems(qualities)
 			self.img_quality_combobox.setCurrentIndex(2)
 			self.img_quality_label.setBuddy(self.img_quality_combobox)
-			
+	
 			self.micrograph_table = QtGui.QTableWidget(1,2)
 			self.micrograph_table.setHorizontalHeaderLabels(["Micrograph", "Boxed Helices"])
 			
@@ -1151,7 +1039,7 @@ if ENABLE_GUI:
 			qualityLayout.addWidget(self.img_quality_combobox)
 				
 			self.vbl = QtGui.QVBoxLayout(self)
-			self.vbl.setMargin(30)
+			self.vbl.setMargin(0)
 			self.vbl.setSpacing(6)
 			self.vbl.setObjectName("vbl")
 			self.vbl.addWidget(self.menu_bar)
@@ -1159,229 +1047,7 @@ if ENABLE_GUI:
 			self.vbl.addLayout(qualityLayout)
 			self.vbl.addWidget(self.micrograph_table)
 			self.vbl.addWidget(self.status_bar)
-			
-			# add input fields for CTF estimation
-			hbl_doctf = QtGui.QHBoxLayout()
-			self.doctf_chk = QtGui.QCheckBox("CTF Estimation using CTER                                                           ")
-			self.doctf_chk.setToolTip("CTF Estimation using CTER")
-			self.doctf_chk.setChecked(self.doctf)
-			hbl_doctf.addWidget(self.doctf_chk)
-			self.vbl.addLayout(hbl_doctf)
-			
-			QtCore.QObject.connect(self.doctf_chk,QtCore.SIGNAL("clicked(bool)"),self.doctf_checked)
-
-		def doctf_checked(self,val):
-			if not(self.doctf):
-				self.doctf = val
-			
-				if val:
-					hgctf = QtGui.QHBoxLayout()
-					ctftitle = QtGui.QLabel("<b>Parameters of CTF estimation</b>")
-					hgctf.addWidget(ctftitle)
-					self.vbl.addLayout(hgctf)
-					
-					hbl_wscs = QtGui.QHBoxLayout()
-					window_size_label = QtGui.QLabel("Window size:")
-					hbl_wscs.addWidget(window_size_label)
-					self.ctf_window_size = QtGui.QLineEdit('512')
-					hbl_wscs.addWidget(self.ctf_window_size)
-					
-					cs_label = QtGui.QLabel("Cs:")
-					hbl_wscs.addWidget(cs_label)
-					self.ctf_cs = QtGui.QLineEdit('2.0')
-					hbl_wscs.addWidget(self.ctf_cs)
-					self.vbl.addLayout(hbl_wscs)
-					
-					
-					hbl_esv = QtGui.QHBoxLayout()
-					edge_size_label = QtGui.QLabel("Edge size:")
-					hbl_esv.addWidget(edge_size_label)
-					self.ctf_edge_size = QtGui.QLineEdit('0')
-					hbl_esv.addWidget(self.ctf_edge_size)
-					
-					voltage_label = QtGui.QLabel("Voltage:")
-					hbl_esv.addWidget(voltage_label)
-					self.ctf_volt = QtGui.QLineEdit('200.0')
-					hbl_esv.addWidget(self.ctf_volt)
-					self.vbl.addLayout(hbl_esv)
-					
-					hbl_oac = QtGui.QHBoxLayout()
-					overlap_label = QtGui.QLabel("Overlap:")
-					hbl_oac.addWidget(overlap_label)
-					self.ctf_overlap_size = QtGui.QLineEdit('50')
-					hbl_oac.addWidget(self.ctf_overlap_size)
-					
-					amplitude_contrast_label = QtGui.QLabel("Amplitude Contrast:")
-					hbl_oac.addWidget(amplitude_contrast_label)
-					self.ctf_ampcont = QtGui.QLineEdit('10.0')
-					hbl_oac.addWidget(self.ctf_ampcont)
-					self.vbl.addLayout(hbl_oac)
-					
-					hbl_kboot = QtGui.QHBoxLayout()
-					kboot_label = QtGui.QLabel("kboot (only for CTER):")
-					hbl_kboot.addWidget(kboot_label)
-					self.ctf_kboot = QtGui.QLineEdit('16')
-					hbl_kboot.addWidget(self.ctf_kboot)
-					
-					pixel_label = QtGui.QLabel("Pixel size:")
-					hbl_kboot.addWidget(pixel_label)
-					self.ctf_pixel = QtGui.QLineEdit('1.0')
-					hbl_kboot.addWidget(self.ctf_pixel)
-					
-					self.vbl.addLayout(hbl_kboot)
-					
-					hbl_estdef = QtGui.QHBoxLayout()
-					estimated_defocus_label = QtGui.QLabel("Estimated defocus:")
-					hbl_estdef.addWidget(estimated_defocus_label)
-					self.estdef = QtGui.QLineEdit('')
-					hbl_estdef.addWidget(self.estdef)
-					self.vbl.addLayout(hbl_estdef)
-					
-					hbl_astamp = QtGui.QHBoxLayout()
-					astig_amp_label = QtGui.QLabel("Estimated astigmatism amplitude\n (only for CTER):")
-					hbl_astamp.addWidget(astig_amp_label)
-					self.astamp = QtGui.QLineEdit('')
-					hbl_astamp.addWidget(self.astamp)
-					self.vbl.addLayout(hbl_astamp)
-					
-					hbl_astagl = QtGui.QHBoxLayout()
-					astig_angle_label = QtGui.QLabel("Estimated astigmatism angle \n(only for CTER)")
-					hbl_astagl.addWidget(astig_angle_label)
-					self.astagl = QtGui.QLineEdit('')
-					hbl_astagl.addWidget(self.astagl)
-					self.vbl.addLayout(hbl_astagl)
-					
-					hbl_deferr = QtGui.QHBoxLayout()
-					deferr_label = QtGui.QLabel("Estimated defocus error \n(only for CTER):")
-					hbl_deferr.addWidget(deferr_label)
-					self.deferr = QtGui.QLineEdit('')
-					hbl_deferr.addWidget(self.deferr)
-					self.vbl.addLayout(hbl_deferr)
-					
-					hbl_astaglerr = QtGui.QHBoxLayout()
-					astaglerr_label = QtGui.QLabel("Estimated astigmatism angle error \n(only for CTER):")
-					hbl_astaglerr.addWidget(astaglerr_label)
-					self.astaglerr = QtGui.QLineEdit('')
-					hbl_astaglerr.addWidget(self.astaglerr)
-					self.vbl.addLayout(hbl_astaglerr)
-					
-					hbl_astamperr = QtGui.QHBoxLayout()
-					astamperr_label = QtGui.QLabel("Estimated astigmatism amplitude error \n (only for CTER):")
-					hbl_astamperr.addWidget(astamperr_label)
-					self.astamperr = QtGui.QLineEdit('')
-					hbl_astamperr.addWidget(self.astamperr)
-					self.vbl.addLayout(hbl_astamperr)
-					
-					hbl_ctf_cter = QtGui.QHBoxLayout()
-					self.estimate_ctf_cter =QtGui.QPushButton("Estimate CTF using CTER")
-					hbl_ctf_cter.addWidget(self.estimate_ctf_cter)
-					self.vbl.addLayout(hbl_ctf_cter)
-					
-					QtCore.QObject.connect(self.ctf_window_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_window)
-					QtCore.QObject.connect(self.ctf_cs,QtCore.SIGNAL("editingFinished()"),self.new_ctf_cs)
-					QtCore.QObject.connect(self.ctf_edge_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_edge)
-					QtCore.QObject.connect(self.ctf_volt,QtCore.SIGNAL("editingFinished()"),self.new_ctf_volt)
-					QtCore.QObject.connect(self.ctf_overlap_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_overlap_size)
-					QtCore.QObject.connect(self.ctf_ampcont,QtCore.SIGNAL("editingFinished()"),self.new_ctf_ampcont)
-					QtCore.QObject.connect(self.ctf_kboot,QtCore.SIGNAL("editingFinished()"),self.new_ctf_kboot)
-					QtCore.QObject.connect(self.ctf_pixel,QtCore.SIGNAL("editingFinished()"),self.new_ctf_pixel)
-					QtCore.QObject.connect(self.estimate_ctf_cter,QtCore.SIGNAL("clicked(bool)"), self.calc_ctf_cter)
 	
-		def new_ctf_pixel(self):
-			self.pixelsize=self.ctf_pixel.text()
-			
-		def new_ctf_window(self):
-			self.winsize=self.ctf_window_size.text()
-
-		def new_ctf_cs(self):
-			self.cs=self.ctf_cs.text()
-			
-		def new_ctf_edge(self):
-			self.edge=self.ctf_edge_size.text()
-		
-		def new_ctf_volt(self):
-			self.volt=self.ctf_volt.text()
-			
-		def new_ctf_kboot(self):
-			self.kboot=self.ctf_kboot.text()
-			
-		def new_ctf_overlap_size(self):
-			self.ov=self.ctf_overlap_size.text()
-		
-		def new_ctf_ampcont(self):
-			self.ac=self.ctf_ampcont.text()
-		
-		def calc_ctf_cter(self):
-			# calculate ctf of ORIGINAL micrograph using cter in gui mode
-			# this must mean cter is being calculated on a single micrograph!
-			from utilities import get_im
-			
-			print "starting cter"
-			
-			# get the current micrograph
-			image_name = self.micrograph_filepath
-			img = get_im(image_name)
-			
-			try:
-				ctf_window_size  = int(self.ctf_window_size.text())
-				input_pixel_size = float(self.ctf_pixel.text())
-				ctf_edge_size    = int(self.ctf_edge_size.text())
-				ctf_overlap_size = int(self.ctf_overlap_size.text())
-				ctf_volt         = float(self.ctf_volt.text())
-				ctf_cs           = float(self.ctf_cs.text())
-				ctf_ampcont      = float(self.ctf_ampcont.text())
-				ctf_kboot        = int(self.ctf_kboot.text())
-				
-			except ValueError,extras:
-				# conversion of a value failed!
-				print "integer conversion failed."
-				if not(extras.args is None):
-					print extras.args[0]
-				return
-			except:
-				print "error"
-				return
-			
-			fname, fext = os.path.splitext(image_name)
-			outpwrot = 'pwrot_%s'%fname
-			outpartres = 'partres_%s'%fname
-			
-			if os.path.exists(outpwrot) or os.path.exists(outpartres):
-				print "Please remove or rename %s and or %s"%(outpwrot,outpartres)
-				return
-			
-			from morphology import cter
-			defocus, ast_amp, ast_agl, error_defocus, error_astamp, error_astagl = cter(None, outpwrot, outpartres, None, None, ctf_window_size, voltage=ctf_volt, Pixel_size=input_pixel_size, Cs = ctf_cs, wgh=ctf_ampcont, kboot=ctf_kboot, MPI=False, DEBug= False, overlap_x = ctf_overlap_size, overlap_y = ctf_overlap_size, edge_x = ctf_edge_size, edge_y = ctf_edge_size, guimic=image_name)
-		
-			self.estdef.setText(str(defocus))
-			self.estdef.setEnabled(False)
-			
-			self.astamp.setText(str(ast_amp))
-			self.astamp.setEnabled(False)
-			
-			self.astagl.setText(str(ast_agl))
-			self.astagl.setEnabled(False)
-			
-			self.deferr.setText(str(error_defocus))
-			self.deferr.setEnabled(False)
-			
-			self.astamperr.setText(str(error_astamp))
-			self.astamperr.setEnabled(False)
-			
-			self.astaglerr.setText(str(error_astagl))
-			self.astaglerr.setEnabled(False)
-			
-			# XXX: wgh?? amp_cont static to 0?
-			# set image properties, in order to save ctf values
-			from utilities import set_ctf
-			set_ctf(img, [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl])
-			# and rewrite image 
-			img.write_image(image_name)
-			print [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl]
-			
-			print [defocus, ctf_cs, ctf_volt, input_pixel_size, 0, ctf_ampcont, ast_amp, ast_agl]
-			print "CTF estimation using CTER done."
-						
 		def color_boxes(self):
 			"""
 			Sets the colors of the boxes, with the current box being colored differently from the other boxes.
@@ -1544,23 +1210,6 @@ if ENABLE_GUI:
 				if new_filepath != self.micrograph_filepath:
 					self.micrograph_filepath = new_filepath
 					micrograph = EMData(self.micrograph_filepath)
-					
-					if self.invert_contrast:
-						from utilities import info, model_blank
-						from EMAN2 	   import Util
-						# invert contrast of micrograph so average remains unchanged
-						print "Inverting contrast of micrograph"
-						mnx = micrograph.get_xsize()
-						mny = micrograph.get_ysize()
-						sttt = info(micrograph)
-						avgimg = model_blank(mnx, ny=mny, bckg=sttt[0])
-	
-						Util.sub_img(micrograph, avgimg) # subtract average
-						Util.mul_scalar(micrograph, -1.0) # multiply by -1
-						Util.add_img(micrograph, avgimg) # add back average
-						sttt2 = info(micrograph)
-						assert(abs(sttt[0] - sttt2[0])<0.0001), "Assert failed: average of micrograph should remain same after contrast inversion!"
-						
 					self.load_micrograph(micrograph)
 		def open_micrograph(self):
 			"""
@@ -1869,340 +1518,5 @@ if ENABLE_GUI:
 			self.current_boxkey = None #We are done editing the box
 			self.initial_helix_box_data_tuple = None
 
-def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=256, outstacknameall='bdb:data', hcoords_dir = "", hcoords_suffix = "_boxes.txt", ptcl_dst=-1, inv_contrast=False, new_pixel_size=-1, rmax = -1.0, freq = -1, debug = 1):
-	'''
-	
-	Windows segments from helices boxed from micrographs using e2helixboxer. 
-	
-	Input
-		
-		dirid: A string for identifying directories containing relevant micrographs.
-		 
-			   Any directory containing dirid as a contiguous string will be searched
-		       for micrographs. 
-		       
-		       These micrographs are assumed to be those which were used to box the helices
-		       which are to be windowed.
-		       
-		       The pixel size of the micrographs should be pixel_size.
-		       
-		micid: A string for identifying the name (minus extension) of relevant micrographs.
-		       
-		micsuffix: A string denoting micrograph type. Currently only handles suffix types, i.e. 'hdf', 'ser' etc.
-		
-		outdir: Output directory to be created in EACH micrograph directory.
-		        
-		        The segments windowed from the helices boxed from the micrographs in the directory,
-		        and possibly resampled micrographs (if pixel size changed), will be put here.
-		
-		dp:  Helical symmetry parameter rise in Angstroms.
-		
-		pixel_size: The pixel size of the micrographs which were used to box the helices.
-		
-		boxsize: Dimension of square window size. 
-				 
-		outstacknameall: File name with full path and type (only handles bdb and hdf right now) 
-						 under which ALL windowed segments from ALL micrograph directories 
-						 will be saved, e.g. 'bdb:/home/project/adata' or '/home/project/adata.hdf'
-		
-		hcoords_suffix: String identifier which when concatenated with a micrograph name (minus extension) gives the name of the text file 
-						containing coordinates of ALL helices boxed from the micrograph.
-						
-					    If there is no such file, helices boxed from the micrograph will not be windowed.
-					    
-						Default is '_boxes.txt', so if mic0.hdf is a micrograph, then the text file containing 
-						coordinates of the helices boxed in it is mic0_boxes.txt.
-						
-						The coordinate file is assumed to be in the format used by e2helixboxer, e.g.:
-						
-								x1-w/2           y1-w/2           w           w           -1
-							    x2-w/2           y2-w/2           w           w           -2
-								...
-								
-						where (x1, y1) and (x2, y2) are the coordinates on the micrograph for the helical axis endpoints, and w is the width of the helix boxes
-		
-		hcoords_dir: Full path name of directory containing coordinates of ALL helices boxed from the micrograph.
-						
-		ptcl_dst: Integer. Distance in pixels between adjacent squares windowed from a single boxed helix.
-			      If ptcl_dst < 0, then the program will set it so ptcl_dst is ~ one rise in pixels: int( (dp/new_pixel_size) + 0.5)
-		
-		inv_contrast: True/False, default is False. If cryo, then set to true to invert contrast so particles show up bright against dark background. 
-		
-		new_pixel_size: Float. New target pixel size to which the micrograph should be resampled. 
-		
-		 			    Default is -1, in which case new_pixel_size is assumed to be same as pixel_size.
-	
-		rmax: Float. Radius of filament in Angstroms. 
-		
-		freq: Cut-off frequency at which to high-pass filter micrographs before windowing. 
-		
-		      Default is -1, in which case, the micrographs will be high-pass filtered with cut-off frequency 1.0/segnx, where segnx is the target x dimension of the segments.
-		      
-		debug: If 1, then do NOT delete output directories where intermediate files are stored. If 0, then delete the output directories. Default is 1.
-	Output
-	
-		outdir: In each micrograph directory, the program will write the stack of segments windowed from all micrographs in 
-		the directory to suddirectory outdir under the file name 'bdb:data'.
-		
-		outstacknameall: The program will concatenate segment stacks from ALL micrograph directories and write them 
-						 to the file name outstacknameall, e.g. outstacknameall='bdb:adata' or outstacknameall='adata.hdf'
-						 in the directory where windowallmic is invoked.
-						 
-						 Only hdf and bdb file types are currently handled.
-		
-	Example of use: 
-		
-		In directory mic, there is a micrograph mic0.hdf.
-		
-		windowallmic should be invoked in the directory that contains the relevant
-		micrograph directories. 
-		
-		In this example, windowallmic should be invoked from directory containing mic.
-		
-		The original pixel size is 1.2, and the radius of the helical filaments 
-		is 50*1.2 Angstroms.
-		
-		The micrograph has already been boxed and mic0_boxes.txt contains the box coordinates
-		as output by e2helixboxer. 
-		
-		Suppose only one helix has been boxed in mic0.hdf.
-		
-		Now it is desired to window segments from the boxed helices such that the pixel size 
-		of the segments is 1.84, and the distance between adjacent
-		segments is one rise in pixels (assuming new pixel size). The desired box size of 
-		the segments is 200 pixels by 200 pixels. 
-		
-		The change in pixel size may be because the helical 
-		symmetry parameters has changed, and most specifically the rise, which would entail 
-		a change in the pixel size to maintain the assumption that there are an integer number of pixels per rise.
-		
-		The following call to windowallmic with the input arguments set as below will
-		write bdb:adata to the directory where windowallmic is invoked, where bdb:adata is a stack
-		of segments windowed from the boxed helix in mic0.hdf.
-		
-		The pixel size of the segments is 1.84 and the box size is 200 by 200.
-		
-		windowallmic(dirid='mic', micid='mic', micsuffix='hdf', outdir='out',  dp=27.6, pixel_size=1.2, boxsize=200, outstacknameall='bdb:adata', hcoords_suffix = "_boxes.txt", ptcl_dst=4, inv_contrast=False, new_pixel_size=1.84, rmax = 60.0)
-	'''
-	import os
-	from utilities      import print_begin_msg, print_end_msg, print_msg
-	from e2helixboxer	import windowmic
-	from EMAN2 	        import EMUtil, Util
-	
-	print_begin_msg("windowallmic\n")
-	
-	if not(outstacknameall[0:4] == 'bdb:' or outstacknameall[-3:] == 'hdf'):
-		print "%s must be in bdb or hdf format"%outstacknameall
-		return
-
-	if freq < 0: freq = 1.0/boxsize
-		
-	if micsuffix[0] == '.': micsuffix = micsuffix[1:]
-	
-	if new_pixel_size < 0: new_pixel_size = pixel_size
-		
-	# Calculate distance between adjacent squares as ~1 rise in pixels if not set by user
-	if ptcl_dst < 0 and dp >= 0: ptcl_dst = int( (dp/new_pixel_size) + 0.5)
-	ptcl_overlap = boxsize - ptcl_dst
-	
-	print_msg("Distance in pixels (using pixel size %f) between adjacent segments: %d\n"%(new_pixel_size, ptcl_dst))
-
-	topdir = os.getcwd()
-	flist = os.listdir(topdir)
-	outdirlist = [] # List of output directories to create (after checking they do not already exist)
-	micdirlist = [] # List of all directories with dirid
-	# Create output directory in each micrograph directory, exit with error if one already exists
-	for i1, v1 in enumerate(flist):
-		if not(os.path.isdir(v1)):
-			continue
-		if v1.find(dirid) < 0:
-			continue
-		micdirlist.append(v1)
-		# v1 is a micrograph directory, create directory named outdir in v1
-		coutdir = os.path.join(os.path.join(topdir, v1),outdir)
-		if os.path.exists(coutdir):
-			print 'Output directory %s  exists, please change the name and restart the program'%coutdir
-			return
-		outdirlist.append(coutdir)
-
-	for coutdir in outdirlist:
-		print_msg("Creating output directory %s\n"%coutdir)
-		os.mkdir(coutdir)
-
-	for v1 in micdirlist:
-		# window all micrographs in directory v1 with micid
-		flist2 = os.listdir(os.path.join(topdir,v1))
-		coutdir = os.path.join(os.path.join(topdir, v1), outdir)
-		# sort flist2 using case insensitive string comparison
-		flist2.sort(key=str.lower)
-		nfiles = len(flist2)
-		print_msg('Sorted file list in %s:\n'%v1)
-		for iii in xrange(nfiles):
-			print_msg('%s,'%flist2[iii])
-		print_msg('\n')
-		for i2, v2 in enumerate(flist2):
-			filename, fext = os.path.splitext(v2)
-			if fext[1:] != micsuffix:
-				continue
-			if filename.find(micid)>-1:
-				# v2 is a micrograph to window IF text file containing box coordinates exists
-				hcoordsname = filename + hcoords_suffix
-				if len(hcoords_dir) > 0: hcoordsname = os.path.join(hcoords_dir, hcoordsname)
-				else:                    hcoordsname = os.path.join(os.path.join(topdir, v1), hcoordsname)
-				# If any helices were boxed from this micrograph, say mic0, then ALL the helix coordinates should be saved under mic0 + hcoords_suffix
-				# For example, if using default e2helixboxer naming convention, then coordinates of all helices boxed in mic0 would be in mic0_boxes.txt
-				if( os.path.exists(hcoordsname) ):
-					micname = os.path.join(os.path.join(topdir,v1), v2)
-					print_msg("\n\nPreparing to window helices from micrograph %s with box coordinate file %s\n\n"%(micname, hcoordsname))
-					windowmic(outstacknameall, coutdir, micname, hcoordsname, pixel_size, boxsize, ptcl_overlap, inv_contrast, new_pixel_size, rmax, freq)
-
-	# If not debug mode, then remove all output directories 
-	if debug == 0:
-		from subprocess import call
-		for coutdir in outdirlist:
-			cmd = "rm -ir %s"%coutdir
-			print_msg("cmd: %s"%cmd)
-			call(cmd, shell=True)
-
-def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize, ptcl_overlap, inv_contrast, new_pixel_size, rmax, freq):
-	'''
-	
-	INPUT
-			outstacknameall: File name with full path and type (only handles bdb and hdf right now) 
-						 under which ALL windowed segments from ALL micrograph directories 
-						 will be saved, e.g. 'bdb:adata' or 'adata.hdf'
-						 
-			outdir: Full path name of output directory in which to put segment stack. 
-			
-			micname: String. Full path name of micrograph 
-			
-			hcoordsname: String. Full path name of file contaning coordinates of boxed helices (file assumed to be in format used by e2helixboxer).
-			
-			pixel_size: The pixel size of the micrographs in which the helices were boxed.
-			
-			boxsize: Integer. x and y-dimension of segments to be windowed.
-			
-			ptcl_overlap: Integer. Overlap in pixels between adjacent segments windowed from a single boxed helix. If ptcl_overlap < 0, then the
-				          program will set it so the distance between adjacent segments is rise in pixels.
-				          
-			inv_contrast: True/False, default is False. If cryo, then set to true to invert contrast so particles show up bright against dark background. 
-			
-			new_pixel_size: Float. New target pixel size to which the micrograph should be resampled. 
-			
-			rmax: Float. Radius of filament in Angstroms. If rmax < 0, then it's set to segnx/2 - 2 in pixels using pixel size new_pixel_size.
-			
-			freq: Cut-off frequency at which to high-pass filter micrographs before windowing. 
-	
-	OUTPUT
-	
-	       A stack of windowed segments (in file format bdb) corresponding to EACH boxed helix in the input micrograph.
-	       
-	       Example: If the name of the micrograph is mic0.hdf, and there are two filaments boxed in mic0.hdf, then the program will write
-	       		    two stacks of segments to outdir: mic0_abox_0.hdf	and mic0_abox_1.hdf	 
-	       	    
-	'''
-	from utilities    import pad, model_blank, read_text_row, get_im, print_msg
-	from fundamentals import ramp, resample
-	from filter	  	  import filt_gaussh
-	from pixel_error  import getnewhelixcoords
-	from EMAN2 	      import EMUtil, Util
-
-	# micname is full path name
-	# smic[-1] is micrograph name minus path
-	smic = micname.split('/')
-	
-	has_ctf = False
-	dummy = EMData()
-	dummy.read_image(micname, 0, True)
-	l = dummy.get_attr_dict()
-	if 'ctf' in l.keys():  has_ctf = True
-	if has_ctf:            ctf = dummy.get_attr('ctf')
-
-	if new_pixel_size != pixel_size:
-		# Resample micrograph, map coordinates, and window segments from resampled micrograph using new coordinates
-		# Set ctf along with new pixel size in resampled micrograph
-		# set hcoordsname to name of new coordinates file, and set micname to resampled micrograph name
-		print_msg('Resample micrograph to pixel size %f and window segments from resampled micrograph\n'%new_pixel_size)
-		resample_ratio = pixel_size/new_pixel_size
-		# after resampling by resample_ratio, new pixel size will be pixel_size/resample_ratio = new_pixel_size
-		img = get_im(micname)
-		nx = img.get_xsize()
-		ny = img.get_ysize()
-		img = resample(img, resample_ratio)
-		if has_ctf:
-			ctf.apix=new_pixel_size
-			img.set_attr('ctf', ctf)
-		micname = os.path.join(outdir,'resampled_%s'%smic[-1])
-		img.write_image(micname)
-
-		smic = micname.split('/')
-
-		# now need to get new coordinates file and set hcoordsname to that
-		hcoordsname = getnewhelixcoords(hcoordsname, outdir, resample_ratio,nx,ny, newpref="resampled_", boxsize=boxsize)
-
-	# filename is name of micrograph minus the path and extension
-	filename = (smic[-1].split('.'))[0] 
-	
-	imgs_0 = filename+"_abox" # Base name for the segment stack corresponding to each boxed helix. If imgs_0='mic0_abox', then windowed segments from first windowed helix would be 'mic0_abox_0.hdf', the second 'mic0_abox_1.hdf' etc
-	fimgs_0 = os.path.join(outdir, imgs_0 + ".hdf") # This has to be hdf, e2helixboxer cannot write windowed out segments to bdb
-		
-	ptcl_images  = "   --ptcl-images="+ fimgs_0
-	
-	# Name of file under which coordinates of segments windowed from ALL helices boxed from the micrograph will be saved
-	fptcl_coords = os.path.join(outdir, filename + "_helix_ptcl_coords.txt") 
-	ptcl_coords  = "   --ptcl-coords="+ fptcl_coords
-	
-	#smic[-1] is micrograph name minus path
-	
-	tmpfile = os.path.join(outdir,'filt_%s.hdf'%filename)	
-	imgmic  = get_im(micname)
-	
-	if inv_contrast:
-		stt = Util.infomask(imgmic, None, True)
-		Util.mul_scalar(imgmic, -1.0) # multiply by -1
-		imgmic += 2*stt[0]
-
-	filt_gaussh(imgmic, freq).write_image(tmpfile)  # remove frequencies too low for the box size
-
-	# Set box coordinates in e2helixboxer database
-	db_load_helix_coords(tmpfile, hcoordsname, False, boxsize)
-
-	db_save_particle_coords(tmpfile, fptcl_coords, ptcl_overlap, boxsize, boxsize)
-	db_save_particles(tmpfile, fimgs_0, ptcl_overlap, boxsize, boxsize, True, True, True, "multiple")
-
-	if rmax < 0:  rmaxp = int(boxsize/2 - 2)
-	else:         rmaxp = int( (rmax/new_pixel_size)  + 0.5)
-
-	mask = pad(model_blank(rmaxp*2, boxsize, 1, 1.0),boxsize, boxsize,1, 0.0)
-
-	a = read_text_row(hcoordsname)
-	if len(a)%2 != 0:
-		print "Number of rows in helix coordinates file %s should be even!"%hcoordsname
-		return
-	nhelices = len(a)/2
-
-	try:      iseg = EMUtil.get_image_count(outstacknameall)
-	except:   iseg = 0
-		
-	for h in xrange(nhelices):
-		ptcl_images  =imgs_0+"_%i.hdf"%h # This is what e2helixboxer outputs, only 'hdf' format is handled.
-		otcl_images  = "bdb:%s/QT"%outdir+ ptcl_images[:-4]
-		ptcl_images  = os.path.join(outdir,ptcl_images)
-		if( os.path.exists(ptcl_images) ):
-			print_msg( "otcl_images: %s\n"%otcl_images)
-			print_msg( "ptcl_images: %s\n"%ptcl_images)
-			n1 = EMUtil.get_image_count(ptcl_images)
-			for j in xrange(n1):
-				prj =get_im(ptcl_images, j)
-				prj = ramp(prj)
-				if has_ctf:
-					prj.set_attr("ctf", ctf)
-					prj.set_attr("ctf_applied", 0)
-				stat = Util.infomask( prj, mask, False )
-				prj -= stat[0]
-				prj.write_image(otcl_images, j)
-				prj.write_image(outstacknameall, iseg)
-				iseg += 1
-			
 if __name__ == '__main__':
 	main()
