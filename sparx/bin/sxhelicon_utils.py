@@ -43,22 +43,25 @@ def main():
         	arglist.append( arg )
 	progname = os.path.basename(arglist[0])
 	usage2 = progname + """ inputfile outputfile [options]
-        Examples:
-		
-		Generate disks from filament based reconstructions:
-		
+        Functionalities:
+
+        Symmetry search		
+
+        Helicise input volume and save the result to output volume:
+            sxhelicon_utils.py input_vol.hdf output_vol.hdf --helicise --dp=27.6 --dphi=166.5 --fract=0.65 --rmax=70 --rmin=1 --apix=1.84         
+
+        Generate two lists of image indices used to split segment stack into halves for helical fsc calculation.			
+            sxhelicon_utils.py bdb:big_stack --hfsc='flst_' --filament_attr=filament
+
+        Predict segments' orientation parameters based on distances between segments and known helical symmetry
+            sxhelicon_utils.py bdb:big_stack --predict_helical=helical_params.txt --dp=27.6 --dphi=166.5 --apix=1.84
+            
+		Generate disks from filament based reconstructions:		
 			sxheader.py stk.hdf --params=xform.projection --import=params.txt
 			sxheader.py stk.hdf --params=active --one
 			mpirun -np 2 sxhelicon_utils.py stk.hdf --gendisk='bdb:disk' --ref_nx=100 --ref_ny=100 --ref_nz=200 --apix=1.84 --dp=27.6 --dphi=166.715 --fract=0.67 --rmin=0 --rmax=64 --function="[.,nofunc,helical3c]" --sym="c1" --MPI
 
-        Helicise input volume and save the result to output volume:
-        
-            sxhelicon_utils.py input_vol.hdf output_vol.hdf --helicise --dp=27.6 --dphi=166.5 --fract=0.65 --rmax=70 --rmin=1 --apix=1.84         
-			
-            sxhelicon_utils.py bdb:big_stack --hfsc='flst_' --filament_attr=filament
-			
-            sxhelicon_utils.py bdb:big_stack --predict_helical=helical_params.txt --dp=27.6 --dphi=166.5 --apix=1.84
-            
+        Stack disks based on helical symmetry parameters
             sxhelicon_utils.py disk_to_stack.hdf --stackdisk=stacked_disks.hdf --dphi=166.5 --dp=27.6 --ref_nx=160 --ref_ny=160 --ref_nz=225 --apix=1.84
 """
 	parser = OptionParser(usage2,version=SPARXVERSION)
@@ -96,7 +99,7 @@ def main():
 
 	# helicise
 	parser.add_option("--helicise",           action="store_true",	 default=False,               help="helicise input volume and save results to output volume")
-	parser.add_option( "--hfsc",              type="string",      	 default="",                  help="generate two list of image indices used to split segment stack into two for helical fsc calculation. The two lists will be stored in two text files named using file_prefix with '_even' and '_odd' suffixes respectively." )
+	parser.add_option( "--hfsc",              type="string",      	 default="",                  help="Generate two lists of image indices used to split segment stack into halves for helical fsc calculation. The lists will be stored in two text files named using file_prefix with '_even' and '_odd' suffixes, respectively." )
 	parser.add_option( "--filament_attr",     type="string",      	 default="filament",          help="attribute under which filament identification is stored" )
 	parser.add_option( "--predict_helical",   type="string",      	 default="",                  help="Generate projection parameters consistent with helical symmetry")
 
@@ -104,12 +107,12 @@ def main():
 	parser.add_option("--gendisk",            type="string",		 default="",                  help="Name of file under which generated disks will be saved to") 
 	parser.add_option("--ref_nx",             type="int",   		 default= 1,                  help="nx=ny volume size" ) 
 	parser.add_option("--ref_nz",             type="int",   		 default= 1,                  help="nz volume size - computed disks will be nx x ny x rise/apix" ) 
-	parser.add_option("--new_pixel_size",           type="float", 		 default= -1,                 help="desired pixel size of the output disks. The default is -1, in which case there is no resampling (unless --match_pixel_rise flag is True).")
+	parser.add_option("--new_pixel_size",     type="float", 		 default= -1,                 help="desired pixel size of the output disks. The default is -1, in which case there is no resampling (unless --match_pixel_rise flag is True).")
 	parser.add_option("--maxerror",           type="float", 		 default= 0.1,                help="proportional to the maximum amount of error to tolerate between (dp/new_pixel_size) and int(dp/new_pixel_size ), where new_pixel_size is the pixel size calculated when the option --match_pixel_rise flag is True.")
 	parser.add_option("--match_pixel_rise",   action="store_true",	 default=False,               help="calculate new pixel size such that the rise is approximately integer number of pixels given the new pixel size. This will be the pixel size of the output disks.")
 	
 	# get consistency
-	parser.add_option("--consistency",        type="string",		 default="",                  help="Name of parameters to get consistency statisticsf for") 
+	parser.add_option("--consistency",        type="string",		 default="",                  help="Name of parameters to get consistency statistics for") 
 	parser.add_option("--phithr",             type="float", 		 default= 2.0,                help="phi threshold for consistency check")  
 	parser.add_option("--ythr",               type="float", 		 default= 2.0,                help="y threshold (in Angstroms) for consistency check")  
 	parser.add_option("--segthr",             type="int", 		     default= 3,                  help="minimum number of segments/filament for consistency check")  
