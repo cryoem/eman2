@@ -355,6 +355,14 @@ maps.")
 	if options.pad<nx :
 		options.pad=good_size(nx*1.25)
 
+	# deal with symmetry and alignment
+	sym=options.sym.split(",")
+	if len(sym)==1 or len(set(sym))==1: 
+		if len(sym)==1 : sym=sym*options.nmodels
+		if options.sym[0].lower() in ("icos","tet","oct") or options.sym[0][0].lower()=="d" : align="" 	# no alignment with higher symmetries
+		elif options.sym[0][0].lower()=="c" and options.sym[0][1]!="1" : align=align=" --ralignz={path}/tmp0.hdf".format(path=path)		# z alignment only
+		else: align="--alignref={path}/tmp0.hdf --align=refine_3d".format(path=path)	# full 3-D alignment for C1
+
 	##################################
 	### prepare for the run
 	##################################
@@ -369,7 +377,7 @@ maps.")
 	else: prefilt=""
 
 	if options.simmask!=None :
-		makesimmask=False
+		makesimm,"last_even":evenfile,"last_odd":oddfile}ask=False
 		simmask="--mask {}".format(options.simmask)
 		append_html("<p>{simmask} was specified, so I will not automatically create a mask for each iteration.</p>".format(simmask=simmask))
 	else:
@@ -415,9 +423,9 @@ maps.")
 		append_html("<h4>Beginning iteration {} at {}</h4>".format(it,time.ctime(time.time())),True)
 
 		### 3-D Projections
-		models=["{path}/threed_{mdl}_{itrm1:02d}.hdf".format(path=options.path,itrm1=it-1,mdl=mdl) for mdl in xrange(options.nmodels)]
+		models=["{path}/threed_{itrm1:02d}_{mdl}.hdf".format(path=options.path,itrm1=it-1,mdl=mdl) for mdl in xrange(options.nmodels)]
 		run("e2project3d.py {mdls} --outfile {path}/projections_{itr:02d}.hdf -f --projector {projector} --orientgen {orient} --sym {sym} --postprocess normalize.circlemean {prethr} {parallel} {verbose}".format(
-			path=options.path,mdls=models,itrm1=it-1,mdl=i,itr=it,projector=options.projector,orient=options.orientgen,sym=options.sym,prethr=prethreshold,parallel=parallel,verbose=verbose))
+			path=options.path,mdls=models,itrm1=it-1,mdl=i,itr=it,projector=options.projector,orient=options.orientgen,sym=",".join(sym),prethr=prethreshold,parallel=parallel,verbose=verbose))
 
 		progress += 1.0
 		E2progress(logid,progress/total_procs)
@@ -469,22 +477,51 @@ maps.")
 		for mdl in xrange(options.nmodels):
 			cmd="e2make3d.py --input {path}/classes_{itr:02d}.hdf --iter 2 -f --sym {sym} --output {path}/threed_{itr:02d}_{mdl:02d}.hdf --recon {recon} --preprocess {preprocess} \
 {postprocess} --keep={m3dkeep} {keepsig} --apix={apix} --pad={m3dpad} {setsf} {verbose} --input_model {mdl}".format(
-				path=options.path, itr=it, sym=options.sym, recon=options.recon, preprocess=options.m3dpreprocess, postprocess=postprocess, m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
+				path=options.path, itr=it, sym=sym[mdl], recon=options.recon, preprocess=options.m3dpreprocess, postprocess=postprocess, m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
 				m3dpad=options.pad, setsf=m3dsetsf, apix=apix, verbose=verbose, mdl=mdl)
 			run(cmd)
 
 		progress += 1.0
 
-		### postprocessing
- 		evenfile="{path}/threed_{itr:02d}_even.hdf".format(path=options.path,itr=it)
- 		oddfile="{path}/threed_{itr:02d}_odd.hdf".format(path=options.path,itr=it)
- 		combfile="{path}/threed_{itr:02d}.hdf".format(path=options.path,itr=it)
-		run("e2refine_postprocess.py --even {path}/threed_{it:02d}_even.hdf --odd {path}/threed_{it:02d}_odd.hdf --output {path}/threed_{it:02d}.hdf --align --mass {mass} --iter {it} {amask3d} --sym={sym} --underfilter".format(
-			path=options.path,it=it,mass=options.mass,amask3d=amask3d,sym=options.sym))
+		#######################
+		### postprocessing, a bit different than e2refine_postprocess, and we need a lot of info, so we do it in-place
+		
+		# alignment
 
+		run("e2proc3d.py {path}/threed_{itr:02d}_{mdl:02d}.hdf {path}/tmp0.hdf --process=filter.lowpass.gauss:cutoff_freq=.05".format(path=path,itr=id,mdl=0))
+		for mdl in xrange(1,options.nmodels):
+			if options.verbose>0 : print "Aligning map ",mdl
+			run("e2proc3d.py {path}/threed_{itr:02d}_{mdl:02d}.hdf {path}/tmp1.hdf --process=filter.lowpass.gauss:cutoff_freq=.05 {align}".format(path=path,itr=id,mdl=mdl,align=align))
+			run("e2proc3d.py {path}/threed_{itr:02d}_{mdl:02d}.hdf {path}/tmp1f.hdf --process=filter.lowpass.gauss:cutoff_freq=.05 --process=xform.flip:axis=z {align}".format(path=path,itr=id,mdl=mdl.align=align))
+			
+			# now we have to check which of the two handednesses produced the better alignment
+			# Pick the best handedness
+			a=EMData("{path}/tmp1.hdf".format(path=path),0)
+			b=EMData("{path}/tmp2.hdf".format(path=path),0)
+			c=EMData("{path}/tmp0.hdf".format(path=path),0)
+			ca=c.cmp("ccc",a)
+			cb=c.cmp("ccc",b)
+			if ca<cb :
+				try: ali=a["xform.align3d"]
+				except: ali=Transform()
+				o=EMData(oddfile,0)
+				print "correct hand detected ",ali
+			else :
+				try: ali=b["xform.align3d"]
+				except: ali=Transform()
+				o=EMData(oddfile,0)
+				o.process_inplace("xform.flip",{"axis":"z"})
+				print "handedness flip required",ali
+			o.transform(ali)
 
-		db.update({"last_map":combfile,"last_even":evenfile,"last_odd":oddfile})
+			os.unlink(oddfile)
+			o.write_image(oddfile)
+			os.unlink("{path}/tmp1.hdf".format(path=path))
+			os.unlink("{path}/tmp2.hdf".format(path=path))
+			os.unlink("{path}/tmp0.hdf".format(path=path))
 
+		models=["threed_{itr:02d}_{mdl}.hdf".format(itr=it,mdl=mdl) for mdl in xrange(options.nmodels)]
+		db["last_map"]=models
 
 		E2progress(logid,progress/total_procs)
 
