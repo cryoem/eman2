@@ -268,9 +268,10 @@ def get_helix_from_coords(micrograph, x1, y1, x2, y2, width):
 	helix_dimensions = ( int(round(width)), int(round(length)), 1 )
 	helix = micrograph.get_rotated_clip( tr, helix_dimensions )
 	helix["ptcl_helix_coords"] = (x1, y1, x2, y2, width)
-	helix["xform.align2d"] = tr
-	helix["xform.projection"] = Transform()
+	helix["xform.align2d"]     = Transform()
+	helix["xform.projection"]  = Transform()
 	return helix
+
 def get_helix_rotation_angle(x1, y1, x2, y2, width):
 	l_vect = (x2-x1, y2-y1)
 	length = sqrt(l_vect[0]**2+l_vect[1]**2)
@@ -367,16 +368,14 @@ def get_rotated_particles( micrograph, helix_coords, px_dst = None, px_length = 
 		ny = ny + 20
 		
 	for centroid in centroids:
-		tr = Transform()
-		tr.set_trans(centroid)
-		tr.set_rotation({"type":"2d", "alpha":rot_angle})
 
 		ptcl_dimensions = ( int(round(px_width)), int(round(px_length)), 1 )
-		
-			
+	
 		# liner interpolation for rotation
-		if gridding == False:
-		
+		if gridding == False:	
+			tr = Transform()
+			tr.set_trans(centroid)
+			tr.set_rotation({"type":"2d", "alpha":rot_angle})
 			ptcl = micrograph.get_rotated_clip( tr, ptcl_dimensions )
 		else:
 			side1 = int(round(px_width))
@@ -400,9 +399,9 @@ def get_rotated_particles( micrograph, helix_coords, px_dst = None, px_length = 
 			ptcl = Util.window( ptcl, side1, side1, 1, 0, 0, 0) 
 		ptcl["ptcl_helix_coords"] = tuple(helix_coords)
 		ptcl["ptcl_source_coord"] = tuple(centroid)
-		ptcl["xform.align2d"] = tr
-		ptcl["xform.projection"] = Transform() 
-		ptcl["ptcl_source_image"]=mic_name
+		ptcl["xform.align2d"]     = Transform()
+		ptcl["xform.projection"]  = Transform()
+		ptcl["ptcl_source_image"] = mic_name
 		particles.append(ptcl)
 	
 	return particles
@@ -434,14 +433,14 @@ def get_unrotated_particles(micrograph, helix_coords, px_dst = None, px_length =
 	centroids = get_particle_centroids(helix_coords, px_overlap, side, side)
 	particles = []
 	rot_angle = get_helix_rotation_angle(*helix_coords)
-	tr = Transform({"type":"eman","alt":90,"phi":rot_angle}) #How to rotate a cylinder that is oriented along the z-axis to align it along the boxed helix
+	#tr = Transform({"type":"eman","alt":90,"phi":rot_angle}) #How to rotate a cylinder that is oriented along the z-axis to align it along the boxed helix
 	for centroid in centroids:
 		ptcl= micrograph.get_clip( Region(centroid[0]-side/2.0, centroid[1]-side/2.0, side, side) )
 		ptcl["ptcl_helix_coords"] = tuple(helix_coords)
 		ptcl["ptcl_source_coord"] = tuple(centroid)
-		ptcl["xform.projection"] = tr
-		ptcl["xform.align2d"] = Transform()
-		ptcl["ptcl_source_image"]=mic_name
+		ptcl["xform.projection"]  = Transform()
+		ptcl["xform.align2d"]     = Transform()
+		ptcl["ptcl_source_image"] = mic_name
 		particles.append(ptcl)
 	return particles
 
@@ -621,6 +620,7 @@ def db_get_item(micrograph_filepath, key):
 	val = db[micrograph_filepath]
 	db_close_dict(db_name)
 	return val
+
 def db_set_item(micrograph_filepath, key, value):
 	"""
 	sets the value stored in the e2helixboxer database for the specified micrograph and key 
@@ -629,6 +629,7 @@ def db_set_item(micrograph_filepath, key, value):
 	db = db_open_dict(db_name)
 	db[micrograph_filepath] = value
 	db_close_dict(db_name)
+
 def db_get_helices_dict(micrograph_filepath, helix_width = None):
 	"""
 	gets a dictionary of helices
@@ -649,6 +650,7 @@ def db_get_helices_dict(micrograph_filepath, helix_width = None):
 		helix["ptcl_source_image"] = micrograph_filepath
 		helices_dict[tuple(coords)] = helix
 	return helices_dict
+
 def db_load_helix_coords(micrograph_filepath, coords_filepath, keep_current_boxes = True, specified_width=None):
 	"""
 	@param micrograph_filepath: the path to the image file for the micrograph
@@ -740,7 +742,6 @@ def db_save_particles(micrograph_filepath, ptcl_filepath = None, px_dst = None, 
 		all_particles.append(helix_particles)
 	
 	save_particles(all_particles, ptcl_filepath, do_edge_norm, stack_file_mode)
-
 
 if ENABLE_GUI:
 	class EMWriteHelixFilesDialog(QtGui.QDialog):
@@ -1986,7 +1987,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=2
 	'''
 	import os
 	from utilities      import print_begin_msg, print_end_msg, print_msg
-	from e2helixboxer	import windowmic
+	from sxhelixboxer	import windowmic
 	from EMAN2 	        import EMUtil, Util
 	
 	print_begin_msg("windowallmic\n")
@@ -2141,7 +2142,7 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 		hcoordsname = getnewhelixcoords(hcoordsname, outdir, resample_ratio,nx,ny, newpref="resampled_", boxsize=boxsize)
 
 	# filename is name of micrograph minus the path and extension
-	filename = (smic[-1].split('.'))[0] 
+	filename = (smic[-1].split('.'))[0]
 	
 	imgs_0 = filename+"_abox" # Base name for the segment stack corresponding to each boxed helix. If imgs_0='mic0_abox', then windowed segments from first windowed helix would be 'mic0_abox_0.hdf', the second 'mic0_abox_1.hdf' etc
 	fimgs_0 = os.path.join(outdir, imgs_0 + ".hdf") # This has to be hdf, e2helixboxer cannot write windowed out segments to bdb
@@ -2173,7 +2174,7 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 	if rmax < 0:  rmaxp = int(boxsize/2 - 2)
 	else:         rmaxp = int( (rmax/new_pixel_size)  + 0.5)
 
-	mask = pad(model_blank(rmaxp*2, boxsize, 1, 1.0),boxsize, boxsize,1, 0.0)
+	mask = pad(model_blank(rmaxp*2, boxsize, 1, 1.0), boxsize, boxsize, 1, 0.0)
 
 	a = read_text_row(hcoordsname)
 	if len(a)%2 != 0:
@@ -2185,7 +2186,7 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 	except:   iseg = 0
 		
 	for h in xrange(nhelices):
-		ptcl_images  =imgs_0+"_%i.hdf"%h # This is what e2helixboxer outputs, only 'hdf' format is handled.
+		ptcl_images  = imgs_0+"_%i.hdf"%h # This is what e2helixboxer outputs, only 'hdf' format is handled.
 		otcl_images  = "bdb:%s/QT"%outdir+ ptcl_images[:-4]
 		ptcl_images  = os.path.join(outdir,ptcl_images)
 		if( os.path.exists(ptcl_images) ):
@@ -2193,7 +2194,7 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 			print_msg( "ptcl_images: %s\n"%ptcl_images)
 			n1 = EMUtil.get_image_count(ptcl_images)
 			for j in xrange(n1):
-				prj =get_im(ptcl_images, j)
+				prj = get_im(ptcl_images, j)
 				prj = ramp(prj)
 				if has_ctf:
 					prj.set_attr("ctf", ctf)
@@ -2203,6 +2204,6 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 				prj.write_image(otcl_images, j)
 				prj.write_image(outstacknameall, iseg)
 				iseg += 1
-			
+
 if __name__ == '__main__':
 	main()
