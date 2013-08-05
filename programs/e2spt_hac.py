@@ -81,6 +81,12 @@ def main():
 		
 	parser.add_argument("--iter", type=int, help="The number of iterations to perform. Default is 1.", default=1)
 	
+	parser.add_argument("--radius", type=float, help="""Hydrodynamic radius of the particle in Angstroms. 
+													This will be used to automatically calculate the angular steps to use in search of the best alignment.
+													Make sure the apix is correct on the particles' headers, sine the radius will be converted from Angstroms to pixels.
+													Then, the fine angular step is equal to 360/(2*pi*radius), and the coarse angular step 4 times that""", default=0)
+
+	
 	parser.add_argument("--exclusive_class_min", type=int, help="""The minimum multiplicity (number of particles that went into an average) to look for mutually exclusive classes/averages.
 									Two classes are mutually exclusive when non of the members in one are present in the other.
 									In HAC (hierarchical ascendant classification or "all vs all" alignments, classes MERGE, so a class
@@ -122,6 +128,7 @@ def main():
 	
 	#parser.add_argument("--procfinelikecoarse",type=bool,default=True,help="Turn on with --procfinelikecoarse=False, and supply fine alignment parameters, such as --lowpassfine, --highpassfine, etc; to preprocess the particles for FINE alignment differently than for COARSE alignment.")
 	
+	parser.add_argument("--sym", dest = "sym", default='c1', help = "Symmetry to impose - choices are: c<n>, d<n>, h<n>, tet, oct, icos")
 
 
 
@@ -148,7 +155,7 @@ def main():
 
 	parser.add_argument("--minscore",type=float,help="""Percent of the maximum score to use as a threshold for the minimum score to allow.
 													For example, if the best pair in the first iteration yielded a score of 15.0, and you supply --minscore=0.666,
-													any pair wise alignments with a score lower than 15*0.666=10 will be forbidden.""", default=0.15)
+													any pair wise alignments with a score lower than 15*0.666=10 will be forbidden.""", default=0)
 
 	'''
 	Parameters to compensate for the missing wedge using --cpm=fsc.tomo
@@ -161,14 +168,22 @@ def main():
 	parser.add_argument("--wedgei",type=float,help="Missingwedge begining (in terms of its 'height' along Z. If you specify 0, the wedge will start right at the origin.", default=0.15)
 	parser.add_argument("--wedgef",type=float,help="Missingwedge ending (in terms of its 'height' along Z. If you specify 1, the wedge will go all the way to the edge of the box.", default=0.9)
 	parser.add_argument("--fitwedgepost", action="store_true", help="Fit the missing wedge AFTER preprocessing the subvolumes, not before, IF using the fsc.tomo comparator for --aligncmp or --raligncmp.", default=False)
-	
-
-
-
 
 	(options, args) = parser.parse_args()
-
-	if options.align: 
+	
+	
+	
+	if options.radius:
+		from e2spt_classaverage import calcAliStep
+		options = calcAliStep(options)
+		
+	
+	if options.align:
+		print "There's options.align", options.align
+		if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align:
+			options.align += ':sym' + str( options.sym )
+			print "And there's sym", options.sym
+			
 		options.align=parsemodopt(options.align)
 	
 	if options.ralign: 
@@ -628,9 +643,9 @@ def allvsall(options):
 					print "Of the maximum score from the initial simmx matrix", maxScore
 					break
 			
-			#key = str(z).zfill( len( str(nptcls) ))
+			key = str(z).zfill( len( str( nptcls*(nptcls-1)/2 )) )
 			
-			roundInfoDict[ str(z) ] = []
+			aliInfo = {}
 			
 			if results[z]['ptclA'] not in tried and results[z]['ptclB'] not in tried:
 				tried.add(results[z]['ptclA'])							#If the two particles in the pair have not been tried, and they're the next "best pair", they MUST be averaged
@@ -688,8 +703,9 @@ def allvsall(options):
 
 					indx_trans_pairs.update({p:pastt})
 					
-					roundInfoDict[ str(z) ].append( {p:pastt} )
-					
+					aliInfo.update( {p:pastt} )
+				
+			
 						
 				#avgr.add_image(ptcl1)								#Add particle 1 to the average
 				
@@ -747,7 +763,7 @@ def allvsall(options):
 						print "I have CHANGED a particle2 in finalAliStack to have this transform", totalt
 
 					indx_trans_pairs.update({p:totalt})
-					roundInfoDict[ str(z) ].append( {p:pastt} )
+					aliInfo.update( {p:pastt} )
 								
 				avg=avgr.finish()
 				
@@ -771,7 +787,7 @@ def allvsall(options):
 						pastt = ptcl1_indxs_transforms[p]
 						totalt = tcenter * pastt
 						indx_trans_pairs.update({p:totalt})
-						roundInfoDict[ str(z) ]={p:totalt}
+						aliInfo.update({p:totalt})
 						
 						
 						subp1 = EMData(options.input,p)
@@ -791,7 +807,7 @@ def allvsall(options):
 						pastt = ptcl2_indxs_transforms[p]
 						totalt = tcenter * resultingt * pastt
 						indx_trans_pairs.update({p:totalt})
-						roundInfoDict[ str(z) ]={p:totalt}
+						aliInfo.update({p:totalt})
 						
 						subp2 = EMData(options.input,p)
 						subp2.process_inplace("xform",{"transform":totalt})
@@ -892,7 +908,8 @@ def allvsall(options):
 				tried.add(results[z]['ptclB'])
 			
 			
-			
+			roundInfoDict[ key ] = aliInfo
+	
 			
 		roundInfoDict.close()
 			
@@ -1193,7 +1210,8 @@ def plotter(xaxis,yaxis,options,name):
 		#if mode not scatter:
 		#	plt.plot(xaxis, yaxis, linewidth=LW,alpha=1,zorder=0,label=idee)
 		#else:
-	plt.scatter(xaxis,yaxis,marker='o',alpha=1,zorder=1,s=40,linewidth=2)
+		
+	plt.scatter(xaxis,yaxis,alpha=1,zorder=1,s=20)
 	
 	
 	if options.minscore:
