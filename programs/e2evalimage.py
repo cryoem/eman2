@@ -202,7 +202,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.gbl.setSpacing(6)
 
 		# plot list and plot mode combobox
-		self.setlist=QtGui.QListWidget(self)
+		self.setlist=e2ctf.MyListWidget(self)
 		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
 		for i in images:
 			self.setlist.addItem(i)
@@ -326,6 +326,7 @@ class GUIEvalImage(QtGui.QWidget):
 		QtCore.QObject.connect(self.sang45, QtCore.SIGNAL("valueChanged"), self.recalc_real)
 		QtCore.QObject.connect(self.squality,QtCore.SIGNAL("activated(int)"),self.newQualityFactor)
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
+		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("keypress"),self.listkey)
 		QtCore.QObject.connect(self.scalcmode,QtCore.SIGNAL("currentIndexChanged(int)"),self.newCalcMode)
 		QtCore.QObject.connect(self.s2dmode,QtCore.SIGNAL("currentIndexChanged(int)"),self.new2DMode)
 		QtCore.QObject.connect(self.s2danmode,QtCore.SIGNAL("currentIndexChanged(int)"),self.new2DAnMode)
@@ -360,6 +361,20 @@ class GUIEvalImage(QtGui.QWidget):
 		E2loadappwin("e2evalimage","fft",self.wfft.qt_parent)
 		E2loadappwin("e2evalimage","plot",self.wplot.qt_parent)
 #		self.recalc()
+
+	def listkey(self,event):
+
+		if event.key()>=Qt.Key_0 and event.key()<=Qt.Key_9 :
+			q=int(event.key())-Qt.Key_0
+			self.squality.setValue(q)
+		elif event.key() == Qt.Key_Left:
+			self.sdefocus.setValue(self.sdefocus.getValue()-0.03)
+		elif event.key() == Qt.Key_Right:
+			self.sdefocus.setValue(self.sdefocus.getValue()+0.03)
+		elif event.key()==Qt.Key_I :
+			self.doImport()
+		elif event.key()==Qt.Key_U :
+			self.unImport()
 
 
 	def closeEvent(self,event):
@@ -561,7 +576,13 @@ class GUIEvalImage(QtGui.QWidget):
 			QtGui.QMessageBox.warning(None,"Error","The following processors encountered errors during processing of 1 or more images:"+"\n".join(self.errors))
 			self.errors=None
 
-	def doImport(self,val):
+	def unImport(self,val=None):
+		print "unimport ",base_name(self.setlist.item(self.curset).text())
+		item=base_name(self.setlist.item(self.curset).text())
+		try: os.unlink("micrographs/%s.hdf"%item)
+		except: print "Couldn't delete micrographs/%s.hdf"%item
+
+	def doImport(self,val=None):
 		"""Imports the currently selected image into a project"""
 		print "import ",base_name(self.setlist.item(self.curset).text())
 
@@ -576,7 +597,7 @@ class GUIEvalImage(QtGui.QWidget):
 				return
 
 		#db=db_open_dict("bdb:micrographs#%s"%item)
-		self.data["ctf"]=self.parms[val][1]
+		self.data["ctf"]=self.parms[self.curset][1]
 		self.cxray
 		if self.cinvert.getValue()!=0 : self.data.mult(-1)
 		if self.cxray.getValue() : self.data.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4,"tomean":1})

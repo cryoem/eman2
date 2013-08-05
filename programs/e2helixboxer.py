@@ -111,7 +111,7 @@ def main():
 	parser.add_argument("--dbg",                type=int,	 			 default=1,                   help="If 1, then intermediate files in output directory will not be deleted; if 0, then all output directories where intermediate files were stored will be deleted. Default is 1.")
 	
 	# ctf estimation using cter
-	parser.add_argument("--cter",               action="store_true",     default=False,                  help="CTF estimation using cter")
+	parser.add_argument("--cter",               action="store_true",     default=False,                  help="CTF estimation using the cter module from SPARX")
 	parser.add_argument("--indir",              type=str,				 default= ".",     				 help="Directory containing micrographs to be processed.")
 	parser.add_argument("--nameroot",         	type=str,		 		 default= "",     				 help="Prefix of micrographs to be processed.")
 	parser.add_argument("--nx",				  	type=int,		 		 default=256, 					 help="Size of window to use (should be slightly larger than particle box size)")

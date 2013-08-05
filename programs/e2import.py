@@ -107,7 +107,8 @@ name, you will need to modify your naming convention (perhaps by prefixing the d
 with the same name, you should specify only the .hed files (no renaming is necessary)."
 			sys.exit(1)
 
-		for fsp in args:
+		for i,fsp in enumerate(args):
+			E2progress(logid,float(i)/len(args))
 			if EMData(fsp,0,True)["nz"]>1 :
 				run("e2proc2d.py {} particles/{}.hdf --threed2twod --inplace".format(fsp,base_name(fsp)))
 			else: run("e2proc2d.py {} particles/{}.hdf --inplace".format(fsp,base_name(fsp)))

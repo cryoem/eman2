@@ -1649,10 +1649,13 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			dropAction = drag.start()
 
 	def __drag_mode_mouse_double_click(self,event):
+		lc=self.scr_to_img((event.x(),event.y()))
+		self.mouse_double_click(event,lc)
+		
+	def mouse_double_click(self,event,lc=None):
 		'''
 		Inheriting classes to potentially define this function
 		'''
-		lc=self.scr_to_img((event.x(),event.y()))
 		if lc != None:
 			a = self.get_box_image(lc[0])
 			d = a.get_attr_dict()

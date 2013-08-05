@@ -284,6 +284,7 @@ class EMFileType(object):
 		except:
 			target=EMImageMXWidget()
 			target.set_data(self.path,os.path.basename(self.path))
+			QtCore.QObject.connect(target, QtCore.SIGNAL("mx_image_double"),target.mouse_double_click)		# this makes class average viewing work in app mode
 			#if self.getSetsDB(): target.set_single_active_set(self.getSetsDB())
 			brws.view2ds.append(target)
 
@@ -304,6 +305,7 @@ class EMFileType(object):
 
 		target=EMImageMXWidget()
 		target.set_data(data)
+		QtCore.QObject.connect(target, QtCore.SIGNAL("mx_image_double"),target.mouse_double_click)
 		#if self.getSetsDB(): target.set_single_active_set(self.getSetsDB())
 		brws.view2ds.append(target)
 

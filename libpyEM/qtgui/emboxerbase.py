@@ -2194,7 +2194,7 @@ class EMBoxerWriteOutputTask(WorkFlowTask):
 	def get_params(self):
 #		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=E2CTFGenericTask.documentation_string,choices=None))
 		from emdatastorage import ParamDef
-		db = jd_open_dict(self.form_db_name)
+		db = js_open_dict(self.form_db_name)
 
 		params = []
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))

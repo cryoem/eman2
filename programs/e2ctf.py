@@ -2189,8 +2189,13 @@ class GUIctf(QtGui.QWidget):
 		self.guiplot.qt_parent.setWindowTitle("e2ctf - Plot - "+self.data[val][0].split('#')[-1])
 
 		n=EMUtil.get_image_count(self.data[val][0])
-		self.ptcldata=EMData.read_images(self.data[val][0],range(0,min(20,n)))
-		self.guirealim.set_data(self.ptcldata)
+		if n>1:
+			self.ptcldata=EMData.read_images(self.data[val][0],range(0,min(20,n)))
+			im=sum(self.ptcldata)
+			im.mult(1.0/len(self.ptcldata))
+			self.ptcldata.insert(0,im)
+			self.guirealim.set_data(self.ptcldata)
+		else : self.guirealim.set_data([EMData()])
 
 	def newPlotMode(self,mode):
 		self.plotmode=mode

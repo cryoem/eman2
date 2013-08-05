@@ -178,15 +178,15 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				
 			display(mov)
 
-			mov2=[]
-			for i in xrange(0,len(outim)-10,2):
-				im=sum(outim[i+5:i+10])-sum(outim[i:i+5])
-				mov2.append(im)
+			#mov2=[]
+			#for i in xrange(0,len(outim)-10,2):
+				#im=sum(outim[i+5:i+10])-sum(outim[i:i+5])
+				#mov2.append(im)
 				
-			display(mov2)
+			#display(mov2)
 			
-			mov=[i.get_clip(Region(1000,500,2048,2048)) for i in mov]
-			s=sum(mov)
+			#mov=[i.get_clip(Region(1000,500,2048,2048)) for i in mov]
+			#s=sum(mov)
 #			fsc=[i.calc_fourier_shell_correlation(s)[1025:2050] for i in mov]
 #			plot(fsc)
 		
