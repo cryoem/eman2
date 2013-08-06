@@ -72,11 +72,11 @@ def main():
 	parser.add_argument("--apix",type=float,help="Use THIS A/pix value to display the tomogram (if filtering) and to write to the header of the extracted subvolumes, instead of using the apix value one stored in the tomogram's header.",default=0.0, guitype='floatbox', row=3, col=0, rowspan=1, colspan=1, mode="boxing['self.pm().getAPIX()']")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--helixboxer",action="store_true",default=False,help="Helix Boxer Mode", guitype='boolbox', row=2, col=2, rowspan=1, colspan=1, mode="boxing")
-	parser.add_argument("--normproc",type=str,help="""Normalization processor applied to particles before extraction.
+	parser.add_argument("--normproc",type=str,help="""Normalization processor applied to particles before extraction. Default is None.
 													Use --normproc=normalize, --normproc=normalize.edgemean or --normalize.mask, depending on your specimen and purposes.
-													If using the latter, you must provide --masknorm, otherwise, a default --masknorm=mask.sharp:outer_radius=-2 will be used.""", default=None)
-	parser.add_argument("--masknorm",type=str,help="Mask used to normalize particles before extraction. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
-	parser.add_argument("--thresh",type=str,help="Threshold particles before writing them out to get rid of too high and/or too low pixel values.", default=None)
+													If using the latter, you must provide --masknorm, otherwise, a default --masknorm=mask.sharp:outer_radius=-2 will be used.""", default='')
+	parser.add_argument("--masknorm",type=str,help="Mask used to normalize particles before extraction. Default is mask.sharp:outer_radius=-2", default='')
+	parser.add_argument("--thresh",type=float,help="Threshold particles before writing them out to get rid of too high and/or too low pixel values.", default=0.0)
 
 	#parser.add_argument('--bin', type=int, default=1, help="""Specify the binning/shrinking factor you want to use (for X,Y and Z) when opening the tomogram for boxing. \nDon't worry, the sub-volumes will be extracted from the UNBINNED tomogram. \nIf binx, biny or binz are also specified, they will override the general bin value for the corresponding X, Y or Z directions""", guitype='intbox', row=3, col=1, rowspan=1, colspan=1, mode="boxing")
 	
@@ -318,11 +318,6 @@ def unbinned_extractor(options,boxsize,x,y,z,cshrink,invert,center,tomogram=argv
 			r = Region((2*x - boxsize)/2,(2*y - boxsize)/2, (2*z - boxsize)/2, boxsize, boxsize, boxsize)
 			e = EMData()
 			e.read_image(tomogram,0,False,r)
-		if invert:
-			print "Particle has the following mean BEFORE contrast inversion", e['mean']			
-			print "Inverting contrast because --invert is", invert
-			e=e*-1
-			print "Particle has the following mean AFTER contrast inversion", e['mean']			
 		
 		#It IS CONVENIENT to record any processing done on the particles as header parameters
 		
@@ -343,6 +338,7 @@ def unbinned_extractor(options,boxsize,x,y,z,cshrink,invert,center,tomogram=argv
 		print "And the following mean BEFORE normalization", e['mean']
 		
 		if options.normproc:
+			print "WARNING! particle being normalied!"
 			if options.normproc[0]=="normalize.mask":
 				mask=EMData(e["nx"],e["ny"],e["nz"])
 				mask.to_one()
@@ -352,6 +348,13 @@ def unbinned_extractor(options,boxsize,x,y,z,cshrink,invert,center,tomogram=argv
 			
 			e.process_inplace(options.normproc[0],options.normproc[1])
 			e['e2spt_normalization'] = str(options.normproc[0])+' '+str(options.normproc[1])
+			print "This is the mean AFTER normalization", e['mean']
+		
+		if invert:
+			print "Particle has the following mean BEFORE contrast inversion", e['mean']			
+			print "Inverting contrast because --invert is", invert
+			e=e*-1
+			print "Particle has the following mean AFTER contrast inversion", e['mean']			
 		
 		if options.thresh:
 			print "The thresh to apply is", options.thresh

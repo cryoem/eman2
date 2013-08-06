@@ -90,7 +90,7 @@ def main():
 	parser.add_argument("--saveallalign",action="store_true", help="If set, will save the alignment parameters after each iteration",default=False, guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode='alignment,breaksym')
 	parser.add_argument("--sym", dest = "sym", default=None, help = "Symmetry to impose - choices are: c<n>, d<n>, h<n>, tet, oct, icos", guitype='symbox', row=9, col=1, rowspan=1, colspan=2, mode='alignment,breaksym')
 	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", returnNone=True, default="mask.sharp:outer_radius=-2", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=11, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
-	parser.add_argument("--normproc",type=str,help="Normalization processor applied to particles before alignment. Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'", default="normalize.mask")
+	parser.add_argument("--normproc",type=str,help="Normalization processor applied to particles before alignment. Default is to use normalize. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'", default="normalize")
 	
 	parser.add_argument("--preprocess",type=str,help="Any processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	parser.add_argument("--preprocessfine",type=str,help="Any processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.", default=None)
@@ -782,6 +782,7 @@ def filters(fimage,preprocess,lowpass,highpass,shrink):
 		fimage.process_inplace(preprocess[0],preprocess[1])
 		
 	if lowpass:
+		print "lowpass received in filters is is", lowpass
 		fimage.process_inplace(lowpass[0],lowpass[1])
 		
 	if highpass:
@@ -888,6 +889,7 @@ def preprocessing(options,image):
 		
 				if options.lowpassfine or options.highpassfine or options.preprocessfine or options.shrinkrefine:
 					print "I will shrink refine!"
+					print "Options.lowpassfine to pass is", options.lowpassfine
 					s2image = filters(s2image,options.preprocessfine,options.lowpassfine,options.highpassfine,options.shrinkrefine)
 	
 				retr = wedgestats(s2image,options.wedgeangle,options.wedgei,options.wedgef,options)
@@ -916,6 +918,7 @@ def preprocessing(options,image):
 				s2image.mult(mask)
 	
 			if options.lowpassfine or options.highpassfine or options.preprocessfine or options.shrinkrefine:
+				print "Options.lowpassfine to pass is", options.lowpassfine
 				s2image = filters(s2image,options.preprocessfine,options.lowpassfine,options.highpassfine,options.shrinkrefine)
 
 	return(simage,s2image)
