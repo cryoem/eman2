@@ -491,34 +491,39 @@ maps.")
 		run("e2proc3d.py {path}/threed_{itr:02d}_{mdl:02d}.hdf {path}/tmp0.hdf --process=filter.lowpass.gauss:cutoff_freq=.05".format(path=path,itr=id,mdl=0))
 		for mdl in xrange(1,options.nmodels):
 			if options.verbose>0 : print "Aligning map ",mdl
-			run("e2proc3d.py {path}/threed_{itr:02d}_{mdl:02d}.hdf {path}/tmp1.hdf --process=filter.lowpass.gauss:cutoff_freq=.05 {align}".format(path=path,itr=id,mdl=mdl,align=align))
-			run("e2proc3d.py {path}/threed_{itr:02d}_{mdl:02d}.hdf {path}/tmp1f.hdf --process=filter.lowpass.gauss:cutoff_freq=.05 --process=xform.flip:axis=z {align}".format(path=path,itr=id,mdl=mdl.align=align))
+			map2="{path}/threed_{itr:02d}_{mdl:02d}.hdf".format(path=path,itr=id,mdl=mdl)
+			run("e2proc3d.py {map2} {path}/tmp1.hdf --process=filter.lowpass.gauss:cutoff_freq=.05 {align}".format(path=path,map2=map2,align=align))
+			run("e2proc3d.py {map2} {path}/tmp1f.hdf --process=filter.lowpass.gauss:cutoff_freq=.05 --process=xform.flip:axis=z {align}".format(path=path,map2=map2,align=align))
 			
 			# now we have to check which of the two handednesses produced the better alignment
 			# Pick the best handedness
 			a=EMData("{path}/tmp1.hdf".format(path=path),0)
-			b=EMData("{path}/tmp2.hdf".format(path=path),0)
+			b=EMData("{path}/tmp1f.hdf".format(path=path),0)
 			c=EMData("{path}/tmp0.hdf".format(path=path),0)
 			ca=c.cmp("ccc",a)
 			cb=c.cmp("ccc",b)
+			o=EMData(map2,0)
 			if ca<cb :
 				try: ali=a["xform.align3d"]
 				except: ali=Transform()
-				o=EMData(oddfile,0)
-				print "correct hand detected ",ali
+				if verbose>0 : print "correct hand detected ",ali
 			else :
 				try: ali=b["xform.align3d"]
 				except: ali=Transform()
-				o=EMData(oddfile,0)
 				o.process_inplace("xform.flip",{"axis":"z"})
-				print "handedness flip required",ali
+				if verbose>0 : print "handedness flip required",ali
 			o.transform(ali)
 
-			os.unlink(oddfile)
-			o.write_image(oddfile)
+			os.unlink(map2)
+			o.write_image(map2,0)
 			os.unlink("{path}/tmp1.hdf".format(path=path))
-			os.unlink("{path}/tmp2.hdf".format(path=path))
-			os.unlink("{path}/tmp0.hdf".format(path=path))
+			os.unlink("{path}/tmp1f.hdf".format(path=path))
+			
+			# now compute FSC and use it to filter
+			o0=EMData("{path}/threed_{itr:02d}_{mdl:02d}.hdf".format(path=path,itr=id,mdl=0)),0)
+			
+			
+		os.unlink("{path}/tmp0.hdf".format(path=path))
 
 		models=["threed_{itr:02d}_{mdl}.hdf".format(itr=it,mdl=mdl) for mdl in xrange(options.nmodels)]
 		db["last_map"]=models
