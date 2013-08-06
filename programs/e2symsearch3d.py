@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: John Flanagan Sept 2011 (jfflanag@bcm.edu)
+# Author: John Flanagan Sept 2011 (jfflanag@bcm.edu); modified by Jesus Galaz-Montoya, August 2013
 # Copyright (c) 2000-2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -60,10 +60,30 @@ def main():
 	parser.add_argument("--cmp",type=str,help="The name of a 'cmp' to be used in comparing the symmtrized object to unsymmetrized", default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=7, col=0, rowspan=1, colspan=2, mode="align")
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None, guitype='strbox', row=8, col=0, rowspan=1, colspan=2, mode="align")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+
+	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
 	
+
 	(options, args) = parser.parse_args()
+
+
+	if options.mask: 
+		options.mask=parsemodopt(options.mask)
+
 	
-	if ".hdf" not in options.output and ".mrc" not in options.output and "bdb" not in options.output:
+	'''
+	Make the mask first 
+	'''
+	imagehdr = EMData(options.input,0,True)
+	mask=EMData( int(imagehdr["nx"]), int(imagehdr["ny"]), int(imagehdr["nz"]) )
+	mask.to_one()
+	
+	if options.mask:
+		#if options.verbose:
+			#print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
+		mask.process_inplace(options.mask[0],options.mask[1])
+	
+	if ".hdf" not in options.output and ".mrc" not in options.output:
 		print "ERROR. The output must contain a valid format ending, for example '.hdf.' TERMINATING!"
 		sys.exit()
 		
@@ -86,6 +106,9 @@ def main():
 	logid=E2init(sys.argv,options.ppid)
 	
 	volume = EMData(options.input)
+
+	if options.mask:
+		volume.mult(mask)
 	if options.shrink:
 		volume.process_inplace("math.meanshrink",{"n":options.shrink})
 		
@@ -152,7 +175,7 @@ class SymALignStrategy(Strategy):
 			
 			for i,prog in enumerate(proglist):
 				if prog==100:
-					print "Finished a MC trial"
+					print "Finished MC trial numer", i
 					r=self.etc.get_results(tids[i])
 					solns.append(r[1]["symalign"])
 					
