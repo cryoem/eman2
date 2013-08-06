@@ -109,7 +109,7 @@ def main():
 	#Does save ali save the stack off ALL currently UNAVERAGED particles???
 	
 	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
-	parser.add_argument("--normproc",type=str,help="Normalization processor applied to particles before alignment. Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'", default="normalize")
+	parser.add_argument("--normproc",type=str,help="Normalization processor applied to particles before alignment. Default is to use normalize. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'", default="normalize")
 
 	parser.add_argument("--preprocess",type=str,help="A processor (as in e2proc3d.py; could be masking, filtering, etc.) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.",default=None)
 	
@@ -208,12 +208,21 @@ def main():
 	
 	if options.preprocess: 
 		options.preprocess=parsemodopt(options.preprocess)
-	
+		
+	if options.preprocessfine: 
+		options.preprocessfine=parsemodopt(options.preprocessfine)
+		
 	if options.lowpass: 
 		options.lowpass=parsemodopt(options.lowpass)
-
+		
+	if options.lowpassfine: 
+		options.lowpassfine=parsemodopt(options.lowpassfine)
+	
 	if options.highpass: 
 		options.highpass=parsemodopt(options.highpass)
+		
+	if options.highpassfine: 
+		options.highpassfine=parsemodopt(options.highpassfine)
 
 	if options.postprocess: 
 		options.postprocess=parsemodopt(options.postprocess)
