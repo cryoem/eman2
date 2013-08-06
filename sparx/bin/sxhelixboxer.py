@@ -719,7 +719,9 @@ def db_save_particle_coords(micrograph_filepath, output_filepath = None, px_dst 
 	
 	save_particle_coords(helix_particle_coords_dict, output_filepath, micrograph_filepath, px_length, px_width)
 	
-def db_save_particles(micrograph_filepath, ptcl_filepath = None, px_dst = None, px_length = None, px_width = None, rotated = True, do_edge_norm = False, gridding = False, stack_file_mode = "multiple" ):
+def db_save_particles(micrograph_filepath, ptcl_filepath = None, px_dst = None, px_length = None, px_width = None, rotated = True, do_edge_norm = False, gridding = False, stack_file_mode = "multiple", do_filt = True, filt_freq = -1):
+	from filter 		import filt_gaussh
+	
 	micrograph_filename = os.path.basename(micrograph_filepath)
 	micrograph_name = os.path.splitext( micrograph_filename )[0]
 	if not ptcl_filepath:
@@ -729,6 +731,10 @@ def db_save_particles(micrograph_filepath, ptcl_filepath = None, px_dst = None, 
 	
 	all_particles = []
 	micrograph = EMData(micrograph_filepath)
+	if do_filt:
+		if filt_freq <= 0:
+			filt_freq = 1.0/px_length
+		micrograph = filt_gaussh(micrograph, filt_freq)		
 	nhelix = 0
 	for coords in helices_dict:
 		helix = helices_dict[coords]
@@ -2154,7 +2160,6 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 	
 	#smic[-1] is micrograph name minus path
 	
-	tmpfile = os.path.join(outdir,'filt_%s.hdf'%filename)	
 	imgmic  = get_im(micname)
 	
 	if inv_contrast:
@@ -2162,13 +2167,11 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 		Util.mul_scalar(imgmic, -1.0) # multiply by -1
 		imgmic += 2*stt[0]
 
-	filt_gaussh(imgmic, freq).write_image(tmpfile)  # remove frequencies too low for the box size
-
 	# Set box coordinates in sxhelixboxer database
-	db_load_helix_coords(tmpfile, hcoordsname, False, boxsize)
+	db_load_helix_coords(micname, hcoordsname, False, boxsize)
 
-	db_save_particle_coords(tmpfile, fptcl_coords, ptcl_dst, boxsize, boxsize)
-	db_save_particles(tmpfile, fimgs_0, ptcl_dst, boxsize, boxsize, True, True, True, "multiple")
+	db_save_particle_coords(micname, fptcl_coords, ptcl_dst, boxsize, boxsize)
+	db_save_particles(micname, fimgs_0, ptcl_dst, boxsize, boxsize, True, True, True, "multiple", do_filt = True, filt_freq = freq)
 
 	if rmax < 0:  rmaxp = int(boxsize/2 - 2)
 	else:         rmaxp = int( (rmax/new_pixel_size)  + 0.5)
@@ -2185,9 +2188,6 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 	except:   iseg = 0
 	
 	# remove the filtered micrographs
-	cmd = "rm -r %s"%(tmpfile)
-	print_msg("%s\n"%cmd)
-	call(cmd, shell=True)
 			
 	for h in xrange(nhelices):
 		ptcl_images  = imgs_0+"_%i.hdf"%h # This is what sxhelixboxer outputs, only 'hdf' format is handled.
