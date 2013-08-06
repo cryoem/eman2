@@ -286,7 +286,7 @@ def get_helix_rotation_angle(x1, y1, x2, y2, width):
 		rot_angle *= -1 #rotate the box clockwise
 	return rot_angle
 	
-def get_particle_centroids(helix_coords, px_overlap, px_length, px_width):
+def get_particle_centroids(helix_coords, px_overlap, px_length, px_width, is_rotated = False):
 	"""
 	Finds the centroids for each particle in a helix.
 	@param helix_coords: (x1, y1, x2, y2, width) -- the helix endpoints on the micrograph and width of the helix in pixels
@@ -307,7 +307,13 @@ def get_particle_centroids(helix_coords, px_overlap, px_length, px_width):
 	ptcl_coords = []
 	while l < helix_length - px_length/2.0 + px_step:
 		(x,y) = (x1 + l*l_uvect[0], y1 + l*l_uvect[1])
-		ptcl_coords.append((x,y))
+		if is_rotated:
+			dst1 = ((x - x1)**2 + (y - y1)**2)**0.5
+			dst2 = ((x - x2)**2 + (y - y2)**2)**0.5
+			if 2*min(dst1, dst2) >= px_length:
+				ptcl_coords.append((x,y))	
+		else:
+			ptcl_coords.append((x,y))	
 		l += px_step
 	
 	return ptcl_coords
@@ -347,7 +353,7 @@ def get_rotated_particles( micrograph, helix_coords, px_dst = None, px_length = 
 		px_overlap = px_length - px_dst
 	assert px_length > px_overlap, "The overlap must be smaller than the particle length"
 	
-	centroids = get_particle_centroids(helix_coords, px_overlap, px_length, px_width)
+	centroids = get_particle_centroids(helix_coords, px_overlap, px_length, px_width, is_rotated = True)
 	particles = []
 	if gridding == True:
 		assert int(round(px_width)) == int(round(px_length)), "The particle must be square for gridding method"
@@ -697,7 +703,7 @@ def db_save_helices(micrograph_filepath, helix_filepath=None, helix_width = None
 		save_helix(helix, helix_filepath, i)
 		i+=1
 
-def db_save_particle_coords(micrograph_filepath, output_filepath = None, px_dst = None, px_length = None, px_width = None):
+def db_save_particle_coords(micrograph_filepath, output_filepath = None, px_dst = None, px_length = None, px_width = None, do_rotation = False):
 	base = os.path.splitext( micrograph_filepath )[0]
 	if not output_filepath:
 		output_filepath = "%s_helix_ptcl_coords.txt" % (base)
@@ -714,7 +720,7 @@ def db_save_particle_coords(micrograph_filepath, output_filepath = None, px_dst 
 	assert px_overlap < px_length
 	helix_particle_coords_dict = {}
 	for helix_coords in helix_coords_list:
-		particle_centroids = get_particle_centroids(helix_coords, px_overlap, px_length, px_width)
+		particle_centroids = get_particle_centroids(helix_coords, px_overlap, px_length, px_width, is_rotated = do_rotation)
 		helix_particle_coords_dict[tuple(helix_coords)] = particle_centroids
 	
 	save_particle_coords(helix_particle_coords_dict, output_filepath, micrograph_filepath, px_length, px_width)
@@ -1044,7 +1050,7 @@ if ENABLE_GUI:
 					micrograph_filepath = self.parentWidget().micrograph_filepath
 					helix_particle_coords_dict = {}
 					for coords_key in helices_dict:
-						ptcl_coords_list = get_particle_centroids(coords_key, px_overlap, px_length, px_width)
+						ptcl_coords_list = get_particle_centroids(coords_key, px_overlap, px_length, px_width, is_rotated=not(self.ptcls_no_rotation_radiobutton.isChecked()))
 						helix_particle_coords_dict[coords_key] = ptcl_coords_list
 					save_particle_coords(helix_particle_coords_dict, ptcl_coords_filepath, micrograph_filepath, px_length, px_width)
 			
@@ -1876,7 +1882,7 @@ if ENABLE_GUI:
 			self.current_boxkey = None #We are done editing the box
 			self.initial_helix_box_data_tuple = None
 
-def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=256, outstacknameall='bdb:data', hcoords_dir = "", hcoords_suffix = "_boxes.txt", ptcl_dst=-1, inv_contrast=False, new_pixel_size=-1, rmax = -1.0, freq = -1, debug = 1):
+def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=256, outstacknameall='bdb:data', hcoords_dir = "", hcoords_suffix = "_boxes.txt", ptcl_dst=-1, inv_contrast=False, new_pixel_size=-1, rmax = -1.0, freq = -1, debug = 1, do_rotation = True, do_gridding=True):
 	'''
 	
 	Windows segments from helices boxed from micrographs. 
@@ -1998,6 +2004,9 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=2
 	
 	print_begin_msg("windowallmic\n")
 	
+	if not(do_rotation):
+		do_gridding = False
+		
 	if not(outstacknameall[0:4] == 'bdb:' or outstacknameall[-3:] == 'hdf'):
 		print "%s must be in bdb or hdf format"%outstacknameall
 		return
@@ -2060,7 +2069,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=2
 				if( os.path.exists(hcoordsname) ):
 					micname = os.path.join(os.path.join(topdir,v1), v2)
 					print_msg("\n\nPreparing to window helices from micrograph %s with box coordinate file %s\n\n"%(micname, hcoordsname))
-					windowmic(outstacknameall, coutdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, inv_contrast, new_pixel_size, rmax, freq)
+					windowmic(outstacknameall, coutdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, inv_contrast, new_pixel_size, rmax, freq, do_rotation, do_gridding)
 
 	# If not debug mode, then remove all output directories 
 	if debug == 0:
@@ -2070,7 +2079,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=2
 			print_msg("cmd: %s"%cmd)
 			call(cmd, shell=True)
 
-def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, inv_contrast, new_pixel_size, rmax, freq):
+def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, inv_contrast, new_pixel_size, rmax, freq, do_rotation, do_gridding):
 	'''
 	
 	INPUT
@@ -2170,8 +2179,8 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 	# Set box coordinates in sxhelixboxer database
 	db_load_helix_coords(micname, hcoordsname, False, boxsize)
 
-	db_save_particle_coords(micname, fptcl_coords, ptcl_dst, boxsize, boxsize)
-	db_save_particles(micname, fimgs_0, ptcl_dst, boxsize, boxsize, True, True, True, "multiple", do_filt = True, filt_freq = freq)
+	db_save_particle_coords(micname, fptcl_coords, ptcl_dst, boxsize, boxsize, do_rotation)
+	db_save_particles(micname, fimgs_0, ptcl_dst, boxsize, boxsize, do_rotation, True, do_gridding, "multiple", do_filt = True, filt_freq = freq)
 
 	if rmax < 0:  rmaxp = int(boxsize/2 - 2)
 	else:         rmaxp = int( (rmax/new_pixel_size)  + 0.5)
