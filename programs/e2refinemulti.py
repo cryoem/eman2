@@ -38,6 +38,7 @@ from math import *
 import os
 import sys
 import time
+from numpy import array
 
 # This is used to build the HTML status file. It's a global for convenience
 output_html=[]
@@ -488,7 +489,8 @@ maps.")
 		
 		# alignment
 
-		run("e2proc3d.py {path}/threed_{itr:02d}_{mdl:02d}.hdf {path}/tmp0.hdf --process=filter.lowpass.gauss:cutoff_freq=.05".format(path=path,itr=id,mdl=0))
+		run("e2proc3d.py {path}/threed_{itr:02d}_{mdl:02d}.hdf {path}/tmp0.hdf --process=filter.lowpass.gauss:cutoff_freq=.05".format(path=path,itr=it,mdl=0))
+		o0=EMData("{path}/threed_{itr:02d}_{mdl:02d}.hdf".format(path=path,itr=id,mdl=0)),0)
 		for mdl in xrange(1,options.nmodels):
 			if options.verbose>0 : print "Aligning map ",mdl
 			map2="{path}/threed_{itr:02d}_{mdl:02d}.hdf".format(path=path,itr=id,mdl=mdl)
@@ -519,13 +521,28 @@ maps.")
 			os.unlink("{path}/tmp1.hdf".format(path=path))
 			os.unlink("{path}/tmp1f.hdf".format(path=path))
 			
-			# now compute FSC and use it to filter
-			o0=EMData("{path}/threed_{itr:02d}_{mdl:02d}.hdf".format(path=path,itr=id,mdl=0)),0)
-			
-			
+			# now compute FSC
+			f=o0.calc_fourier_shell_correlation(o)
+			if mdl==1 : fm=array(f)
+			else : fm+=array(f)
+
+		# so we now have an average FSC curve between map 1 and each of the others (we should probably do all vs all, but don't)
+		fm/=(options.nmodels-1.0)
+		third = len(fm)/3
+		xaxis = fsc[0:third]
+		fsc = fm[third:2*third]
+		saxis = [x/apix for x in xaxis]
+		Util.save_data(saxis[1],saxis[1]-saxis[0],fsc[1:],"{path}/fsc_mutual_avg_{:02d}.txt".format(path=path,it))
+		
+		models=["threed_{itr:02d}_{mdl}.hdf".format(itr=it,mdl=mdl) for mdl in xrange(options.nmodels)]
+		
+		# we filter the maps, to a resolution ~20% higher than the FSC
+		for m in models:
+			run("e2proc3d.py {mod} {mod} --process filter.wiener.byfsc:fscfile={path}/fsc_mutual_avg_{it:02d}.txt:sscale=1.2 --process normalize.bymass:thr=1:mass={mass}".format(
+	mod=m,path=path,it=it,mass=options.mass,underfilter=underfilter)
+		
 		os.unlink("{path}/tmp0.hdf".format(path=path))
 
-		models=["threed_{itr:02d}_{mdl}.hdf".format(itr=it,mdl=mdl) for mdl in xrange(options.nmodels)]
 		db["last_map"]=models
 
 		E2progress(logid,progress/total_procs)

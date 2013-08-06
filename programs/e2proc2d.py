@@ -120,7 +120,7 @@ def main():
 	parser.add_argument("--swap", action="store_true", help="Swap the byte order", default=False)
 	parser.add_argument("--threed2threed", action="store_true", help="Process 3D image as a stack of 2D slices, then output as a 3D image", default=False)	
 	parser.add_argument("--threed2twod", action="store_true", help="Process 3D image as a stack of 2D slices, then output as a 2D stack", default=False)
-	parser.add_argument("--twod2threed", action="store_true", help="Process a stack of 2D images, then output as a 3D image.(Note: the output 3D file must be pre-existing dummy file with the right dimensions.)", default=False)
+	parser.add_argument("--twod2threed", action="store_true", help="Process a stack of 2D images, then output as a 3D image.", default=False)
 	parser.add_argument("--unstacking", action="store_true", help="Process a stack of 2D images, then output a a series of numbered single image files", default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <init>,<step>. Processes only a subset of the input data. For example, 0,2 would process only the even numbered particles")

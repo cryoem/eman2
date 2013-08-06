@@ -538,7 +538,7 @@ Based on your requested resolution and box-size, I will use an angular sampling 
 			classralign=classralign, prefilt=prefilt, verbose=verbose, parallel=parallel)
 		run(cmd)
 		cmd="e2classaverage.py --input {inputfile} --classmx {path}/classmx_{itr:02d}_odd.hdf --storebad --output {path}/classes_{itr:02d}_odd.hdf --ref {path}/projections_{itr:02d}_odd.hdf --iter {classiter} \
--f --resultmx {path}/cls_result_{itr:02d}_even.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
+-f --resultmx {path}/cls_result_{itr:02d}_odd.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
 --align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} {verbose} {parallel}".format(
 			inputfile=options.input[1], path=options.path, itr=it, classiter=options.classiter, normproc=options.classnormproc, averager=options.classaverager, classrefsf=classrefsf,
 			classautomask=classautomask,classkeep=options.classkeep, classkeepsig=classkeepsig, classcmp=options.classcmp, classalign=options.classalign, classaligncmp=options.classaligncmp,
