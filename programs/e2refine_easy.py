@@ -38,6 +38,7 @@ from math import *
 import os
 import sys
 import time
+import traceback
 
 # This is used to build the HTML status file. It's a global for convenience
 output_html=[]
@@ -263,12 +264,14 @@ in the refinement directory. You can use Info with the browser or just read the 
 			sys.exit(1)
 	else:
 		try:
-			run("e2proc3d.py {model} {path}/threed_00_even.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} apix={apix}".format(model=options.model,path=options.path,freq=1.0/(options.targetres*1.5),apix=apix))
-			run("e2proc3d.py {model} {path}/threed_00_odd.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} apix={apix}" .format(model=options.model,path=options.path,freq=1.0/(options.targetres*1.5),apix=apix))
+			run("e2proc3d.py {model} {path}/threed_00_even.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix}".format(model=options.model,path=options.path,freq=1.0/(options.targetres*1.5),apix=apix))
+			run("e2proc3d.py {model} {path}/threed_00_odd.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix}" .format(model=options.model,path=options.path,freq=1.0/(options.targetres*1.5),apix=apix))
 			append_html("<p>Phase randomizing {model} at {res}. Input particles are from {infile}</p>".format(model=options.model,infile=options.input,res=options.targetres*1.5))
 			options.input=image_eosplit(options.input)
 		except:
+			traceback.print_exc()
 			print "Error: Unable to prepare input files"
+			sys.exit(1)
 
 	repim=EMData(options.input[0],0)		# read a representative image to get some basic info
 	if repim.has_attr("ctf") : hasctf=True
@@ -538,7 +541,7 @@ Based on your requested resolution and box-size, I will use an angular sampling 
 			classralign=classralign, prefilt=prefilt, verbose=verbose, parallel=parallel)
 		run(cmd)
 		cmd="e2classaverage.py --input {inputfile} --classmx {path}/classmx_{itr:02d}_odd.hdf --storebad --output {path}/classes_{itr:02d}_odd.hdf --ref {path}/projections_{itr:02d}_odd.hdf --iter {classiter} \
--f --resultmx {path}/cls_result_{itr:02d}_odd.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
+-f --resultmx {path}/cls_result_{itr:02d}_even.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
 --align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} {verbose} {parallel}".format(
 			inputfile=options.input[1], path=options.path, itr=it, classiter=options.classiter, normproc=options.classnormproc, averager=options.classaverager, classrefsf=classrefsf,
 			classautomask=classautomask,classkeep=options.classkeep, classkeepsig=classkeepsig, classcmp=options.classcmp, classalign=options.classalign, classaligncmp=options.classaligncmp,
