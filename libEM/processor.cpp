@@ -3757,7 +3757,8 @@ void NormalizeRampNormVar::process_inplace(EMData * image)
 void NormalizeByMassProcessor::process_inplace(EMData * image)
 {
 	float mass = params.set_default("mass",-1.0f);
-
+	int verbose = params.set_default("verbose",0);
+	
 	if (mass <= 0) throw InvalidParameterException("You must specify a positive non zero mass");
 
 	float thr = params.set_default("thr",(float)image->get_attr("mean")+(float)image->get_attr("sigma"));
@@ -3771,6 +3772,7 @@ void NormalizeByMassProcessor::process_inplace(EMData * image)
 
 	if (step==0) throw InvalidParameterException("This image has sigma=0, cannot give it mass");
 
+	
 	int count=0;
 	size_t n = image->get_size();
 	float* d = image->get_data();

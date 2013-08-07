@@ -4311,6 +4311,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 				d.put("apix", EMObject::FLOAT,"Angstrom per pixel of the image. If not set will use the apix_x attribute of the image");
 				d.put("mass", EMObject::FLOAT,"The approximate mass of protein/structure in kilodaltons");
 				d.put("thr", EMObject::FLOAT,"The isosurface threshold which encapsulates the structure");
+				d.put("verbose", EMObject::INT,"If set will give details about the normalization");
 				return d;
 			}
 
