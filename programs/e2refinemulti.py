@@ -276,7 +276,7 @@ in the refinement directory. You can use Info with the browser or just read the 
 	# Fill in optional parameters
 
 	if hasctf:
-		if os.path.exists("strucfac.fromdata.txt") :
+		if os.path.exists("strucfac.txt") :
 			append_html("<p>Several different methods can be used for final amplitude correction in cryoEM. For refinemulti, we base the filter on the FSC \
 between the different output models. Second stage single-model refinement will use a different method.</p>")
 			postprocess=""
@@ -538,8 +538,8 @@ maps.")
 		
 		# we filter the maps, to a resolution ~20% higher than the FSC
 		for m in models:
-			run("e2proc3d.py {mod} {mod} --process filter.wiener.byfsc:fscfile={path}/fsc_mutual_avg_{it:02d}.txt:sscale=1.2 --process normalize.bymass:thr=1:mass={mass}".format(
-	mod=m,path=path,it=it,mass=options.mass,underfilter=underfilter)
+			run("e2proc3d.py {mod} {mod} {m3dsetsf} --process filter.wiener.byfsc:fscfile={path}/fsc_mutual_avg_{it:02d}.txt:sscale=1.2 --process normalize.bymass:thr=1:mass={mass}".format(
+	m3dsetsf=m3dsetsf,mod=m,path=path,it=it,mass=options.mass,underfilter=underfilter)
 		
 		os.unlink("{path}/tmp0.hdf".format(path=path))
 
