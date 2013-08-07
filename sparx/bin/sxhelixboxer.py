@@ -109,6 +109,7 @@ def main():
 	parser.add_argument("--dphi",               type=float,				 default= -1.0,               help="delta phi - rotation in degrees")  
 	parser.add_argument("--rmax",               type=float, 			 default= 80.0,               help="maximal radius for hsearch (Angstroms)")
 	parser.add_argument("--dbg",                type=int,	 			 default=1,                   help="If 1, then intermediate files in output directory will not be deleted; if 0, then all output directories where intermediate files were stored will be deleted. Default is 1.")
+	parser.add_argument("--topdir",             type=str,				 default="",                  help="Path name of directory containing relevant micrograph directories")
 	
 	# ctf estimation using cter
 	parser.add_argument("--cter",               action="store_true",     default=False,                  help="CTF estimation using the cter module from SPARX")
@@ -176,7 +177,10 @@ def main():
 			print "Must specify name of output directory where intermediate files are to be deposited."
 			return
 		outdir = args[0]
-		windowallmic(options.dirid, options.micid, options.micsuffix, outdir, pixel_size=options.apix, dp=options.dp, boxsize=options.boxsize, outstacknameall=options.outstacknameall, hcoords_dir = options.hcoords_dir, hcoords_suffix = options.hcoords_suffix, ptcl_dst=options.ptcl_dst, inv_contrast=options.invert_contrast, new_pixel_size=options.new_apix, rmax = options.rmax, freq=options.freq, debug = options.dbg)
+		tdir = options.topdir
+		if len(tdir) < 1:
+			tdir = None
+		windowallmic(options.dirid, options.micid, options.micsuffix, outdir, pixel_size=options.apix, dp=options.dp, boxsize=options.boxsize, outstacknameall=options.outstacknameall, hcoords_dir = options.hcoords_dir, hcoords_suffix = options.hcoords_suffix, ptcl_dst=options.ptcl_dst, inv_contrast=options.invert_contrast, new_pixel_size=options.new_apix, rmax = options.rmax, freq=options.freq, debug = options.dbg, topdir=tdir)
 		return
 	
 	if options.helix_width < 1:
@@ -1882,7 +1886,7 @@ if ENABLE_GUI:
 			self.current_boxkey = None #We are done editing the box
 			self.initial_helix_box_data_tuple = None
 
-def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=256, outstacknameall='bdb:data', hcoords_dir = "", hcoords_suffix = "_boxes.txt", ptcl_dst=-1, inv_contrast=False, new_pixel_size=-1, rmax = -1.0, freq = -1, debug = 1, do_rotation = True, do_gridding=True):
+def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=256, outstacknameall='bdb:data', hcoords_dir = "", hcoords_suffix = "_boxes.txt", ptcl_dst=-1, inv_contrast=False, new_pixel_size=-1, rmax = -1.0, freq = -1, debug = 1, do_rotation = True, do_gridding=True, topdir = None):
 	'''
 	
 	Windows segments from helices boxed from micrographs. 
@@ -1952,6 +1956,9 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=2
 		      Default is -1, in which case, the micrographs will be high-pass filtered with cut-off frequency 1.0/segnx, where segnx is the target x dimension of the segments.
 		      
 		debug: If 1, then do NOT delete output directories where intermediate files are stored. If 0, then delete the output directories. Default is 1.
+		
+		topdir: Directory containing all the relevant micrograph directories. If not specified, it will be taken as the directory from which windowing program is invoked.
+		
 	Output
 	
 		outdir: In each micrograph directory, the program will write the stack of segments windowed from all micrographs in 
@@ -1967,10 +1974,12 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=2
 		
 		In directory mic, there is a micrograph mic0.hdf.
 		
-		windowallmic should be invoked in the directory that contains the relevant
-		micrograph directories. 
+		The full path for the directory is: /Users/project/mic
 		
-		In this example, windowallmic should be invoked from directory containing mic.
+		If topdir is not specified, then windowallmic must be invoked in the directory that contains the relevant
+		micrograph directories, i.e., /Users/project
+		
+		Otherwise, if topdir is specified, e.g. as /Users/project, then the windowing program can be invoked from anywhere.
 		
 		The original pixel size is 1.2, and the radius of the helical filaments 
 		is 50*1.2 Angstroms.
@@ -1982,20 +1991,21 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=2
 		
 		Now it is desired to window segments from the boxed helices such that the pixel size 
 		of the segments is 1.84, and the distance between adjacent
-		segments is one rise in pixels (assuming new pixel size). The desired box size of 
-		the segments is 200 pixels by 200 pixels. 
+		segments is one rise in pixels (assuming new pixel size). 
+		
+		The desired box size of the segments is 200 pixels by 200 pixels. 
 		
 		The change in pixel size may be because the helical 
 		symmetry parameters has changed, and most specifically the rise, which would entail 
 		a change in the pixel size to maintain the assumption that there are an integer number of pixels per rise.
 		
-		The following call to windowallmic with the input arguments set as below will
+		The following call to windowallmic will
 		write bdb:adata to the directory where windowallmic is invoked, where bdb:adata is a stack
 		of segments windowed from the boxed helix in mic0.hdf.
 		
 		The pixel size of the segments is 1.84 and the box size is 200 by 200.
 		
-		windowallmic(dirid='mic', micid='mic', micsuffix='hdf', outdir='out',  dp=27.6, pixel_size=1.2, boxsize=200, outstacknameall='bdb:adata', hcoords_suffix = "_boxes.txt", ptcl_dst=4, inv_contrast=False, new_pixel_size=1.84, rmax = 60.0)
+		windowallmic(dirid='mic', micid='mic', micsuffix='hdf', outdir='out',  dp=27.6, pixel_size=1.2, boxsize=200, outstacknameall='bdb:adata', hcoords_suffix = "_boxes.txt", ptcl_dst=15, inv_contrast=False, new_pixel_size=1.84, rmax = 60.0, topdir='/Users/project')
 	'''
 	import os
 	from utilities      import print_begin_msg, print_end_msg, print_msg
@@ -2022,32 +2032,32 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=2
 	
 	print_msg("Distance in pixels (using pixel size %f) between adjacent segments: %d\n"%(new_pixel_size, ptcl_dst))
 
-	topdir = os.getcwd()
+	if topdir == None:
+		topdir = os.getcwd()
 	flist = os.listdir(topdir)
 	outdirlist = [] # List of output directories to create (after checking they do not already exist)
 	micdirlist = [] # List of all directories with dirid
 	# Create output directory in each micrograph directory, exit with error if one already exists
 	for i1, v1 in enumerate(flist):
-		if not(os.path.isdir(v1)):
+		topv1 = os.path.join(topdir,v1)
+		if not(os.path.isdir(topv1)):
 			continue
 		if v1.find(dirid) < 0:
 			continue
-		micdirlist.append(v1)
+		micdirlist.append(topv1)
 		# v1 is a micrograph directory, create directory named outdir in v1
-		coutdir = os.path.join(os.path.join(topdir, v1),outdir)
+		coutdir = os.path.join(topv1, outdir)
 		if os.path.exists(coutdir):
 			print 'Output directory %s  exists, please change the name and restart the program'%coutdir
 			return
 		outdirlist.append(coutdir)
-
 	for coutdir in outdirlist:
 		print_msg("Creating output directory %s\n"%coutdir)
 		os.mkdir(coutdir)
-
 	for v1 in micdirlist:
 		# window all micrographs in directory v1 with micid
-		flist2 = os.listdir(os.path.join(topdir,v1))
-		coutdir = os.path.join(os.path.join(topdir, v1), outdir)
+		flist2 = os.listdir(v1)
+		coutdir = os.path.join(v1, outdir)
 		# sort flist2 using case insensitive string comparison
 		flist2.sort(key=str.lower)
 		nfiles = len(flist2)
@@ -2063,11 +2073,11 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=2
 				# v2 is a micrograph to window IF text file containing box coordinates exists
 				hcoordsname = filename + hcoords_suffix
 				if len(hcoords_dir) > 0: hcoordsname = os.path.join(hcoords_dir, hcoordsname)
-				else:                    hcoordsname = os.path.join(os.path.join(topdir, v1), hcoordsname)
+				else:                    hcoordsname = os.path.join(v1, hcoordsname)
 				# If any helices were boxed from this micrograph, say mic0, then ALL the helix coordinates should be saved under mic0 + hcoords_suffix
 				# For example, if using default sxhelixboxer naming convention, then coordinates of all helices boxed in mic0 would be in mic0_boxes.txt
 				if( os.path.exists(hcoordsname) ):
-					micname = os.path.join(os.path.join(topdir,v1), v2)
+					micname = os.path.join(v1, v2)
 					print_msg("\n\nPreparing to window helices from micrograph %s with box coordinate file %s\n\n"%(micname, hcoordsname))
 					windowmic(outstacknameall, coutdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, inv_contrast, new_pixel_size, rmax, freq, do_rotation, do_gridding)
 
