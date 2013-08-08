@@ -41,7 +41,7 @@ def main():
 	Inputs are a list of micrograph base names, and must be in a "particles" directory. For example, particles/jj1234_ctf_flip.hdf would be specified simply as jj1234. Some
 	attempts will be made to correct improper specifications.
 
-	e2buildsets.py dh1234 dh2318 dh7965 --excludebad
+	e2buildsets.py dh1234 dh2318 dh7965 --excludebad --setname=myset
 
 	This will look in the particles directory for files such as:
 	dh1234_ptcls

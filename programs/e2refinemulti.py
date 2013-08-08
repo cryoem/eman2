@@ -202,7 +202,7 @@ not need to specify any of the following other than the ones already listed abov
 		sys.exit(1)
 
 	if options.path == None:
-		fls=[int(i[-2:]) for i in os.listdir(".") if i[:6]=="multi_" and len(i)==9]
+		fls=[int(i[-2:]) for i in os.listdir(".") if i[:6]=="multi_" and len(i)==8]
 		if len(fls)==0 : fls=[0]
 		options.path = "multi_{:02d}".format(max(fls)+1)
 
@@ -254,17 +254,17 @@ in the refinement directory. You can use Info with the browser or just read the 
 	xsize=hdr["nx"]
 	apix=hdr["apix_x"]
 	for i in range(options.nmodels):
-		xsize3d=EMData("{}/threed_00_{:02d}.hdf".format(options.path,i),0,True)["nx"]
+		xsize3d=EMData("{}/threed_00_{:02d}.hdf".format(options.path,i+1),0,True)["nx"]
 		if ( xsize3d != xsize ) :
 			append_html("The dimensions of the particles ( {ptcl}x{ptcl} ) do not match the dimensions of initial model {n} ( {vol}x{vol}x{vol} ). I will assume A/pix is correct in the model and rescale/resize accordingly.".format(ptcl=xsize,vol=xsize3d,n=i))
-			img3 = EMData("{}/threed_00_{:02d}".format(options.path,i),0,True)
+			img3 = EMData("{}/threed_00_{:02d}".format(options.path,i+1),0,True)
 			try:
 				scale=img3["apix_x"]/apix
 			except:
 				print "A/pix unknown, assuming scale same as relative box size"
 				scale=float(xsize)/xsize3d
-			if scale>1 : cmd="e2proc3d.py {path}/threed_00_{i:02d} {path}/threed_00_{i:02d} --clip={cl},{cl},{cl} --scale={sca:1.4f}".format(path=options.path,i=i,cl=nx,sca=scale)
-			else :       cmd="e2proc3d.py {path}/threed_00_{i:02d} {path}/threed_00_{i:02d} --scale={sca:1.4f} --clip={cl},{cl},{cl}".format(path=options.path,i=i,cl=nx,sca=scale)
+			if scale>1 : cmd="e2proc3d.py {path}/threed_00_{i:02d} {path}/threed_00_{i:02d} --clip={cl},{cl},{cl} --scale={sca:1.4f}".format(path=options.path,i=i+1,cl=nx,sca=scale)
+			else :       cmd="e2proc3d.py {path}/threed_00_{i:02d} {path}/threed_00_{i:02d} --scale={sca:1.4f} --clip={cl},{cl},{cl}".format(path=options.path,i=i+1,cl=nx,sca=scale)
 			run(cmd)
 
 	repim=EMData(options.input,0)		# read a representative image to get some basic info
@@ -423,7 +423,7 @@ maps.")
 		append_html("<h4>Beginning iteration {} at {}</h4>".format(it,time.ctime(time.time())),True)
 
 		### 3-D Projections
-		models=["{path}/threed_{itrm1:02d}_{mdl:02d}.hdf".format(path=options.path,itrm1=it-1,mdl=mdl) for mdl in xrange(options.nmodels)]
+		models=["{path}/threed_{itrm1:02d}_{mdl:02d}.hdf".format(path=options.path,itrm1=it-1,mdl=mdl+1) for mdl in xrange(options.nmodels)]
 		run("e2project3d.py {mdls} --outfile {path}/projections_{itr:02d}.hdf -f --projector {projector} --orientgen {orient} --sym {sym} --postprocess normalize.circlemean {prethr} {parallel} {verbose}".format(
 			path=options.path,mdls=" ".join(models),itrm1=it-1,mdl=i,itr=it,projector=options.projector,orient=options.orientgen,sym=",".join(sym),prethr=prethreshold,parallel=parallel,verbose=verbose))
 
@@ -463,7 +463,7 @@ maps.")
 
 		### Class-averaging
 		cmd="e2classaverage.py --input {inputfile} --classmx {path}/classmx_{itr:02d}.hdf --storebad --output {path}/classes_{itr:02d}.hdf --ref {path}/projections_{itr:02d}.hdf --iter {classiter} \
--f --resultmx {path}/cls_result_{itr:02d}_even.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
+-f --resultmx {path}/cls_result_{itr:02d}.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
 --align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} {verbose} {parallel}".format(
 			inputfile=options.input, path=options.path, itr=it, classiter=options.classiter, normproc=options.classnormproc, averager=options.classaverager, classrefsf=classrefsf,
 			classautomask=classautomask,classkeep=options.classkeep, classkeepsig=classkeepsig, classcmp=options.classcmp, classalign=options.classalign, classaligncmp=options.classaligncmp,
@@ -478,7 +478,7 @@ maps.")
 			cmd="e2make3d.py --input {path}/classes_{itr:02d}.hdf --iter 2 -f --sym {sym} --output {path}/threed_{itr:02d}_{mdl:02d}.hdf --recon {recon} --preprocess {preprocess} \
 {postprocess} --keep={m3dkeep} {keepsig} --apix={apix} --pad={m3dpad} {setsf} {verbose} --input_model {mdl}".format(
 				path=options.path, itr=it, sym=sym[mdl], recon=options.recon, preprocess=options.m3dpreprocess, postprocess=postprocess, m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
-				m3dpad=options.pad, setsf=m3dsetsf, apix=apix, verbose=verbose, mdl=mdl)
+				m3dpad=options.pad, setsf=m3dsetsf, apix=apix, verbose=verbose, mdl=mdl+1)
 			run(cmd)
 
 		progress += 1.0
@@ -489,10 +489,10 @@ maps.")
 		# alignment
 
 		run("e2proc3d.py {path}/threed_{itr:02d}_{mdl:02d}.hdf {path}/tmp0.hdf --process=filter.lowpass.gauss:cutoff_freq=.05".format(path=options.path,itr=it,mdl=0))
-		o0=EMData("{path}/threed_{itr:02d}_{mdl:02d}.hdf".format(path=options.path,itr=it,mdl=0),0)
+		o0=EMData("{path}/threed_{itr:02d}_{mdl:02d}.hdf".format(path=options.path,itr=it,mdl=1),0)
 		for mdl in xrange(1,options.nmodels):
 			if options.verbose>0 : print "Aligning map ",mdl
-			map2="{path}/threed_{itr:02d}_{mdl:02d}.hdf".format(path=options.path,itr=it,mdl=mdl)
+			map2="{path}/threed_{itr:02d}_{mdl:02d}.hdf".format(path=options.path,itr=it,mdl=mdl+1)
 			run("e2proc3d.py {map2} {path}/tmp1.hdf --process=filter.lowpass.gauss:cutoff_freq=.05 {align}".format(path=options.path,map2=map2,align=align))
 			run("e2proc3d.py {map2} {path}/tmp1f.hdf --process=filter.lowpass.gauss:cutoff_freq=.05 --process=xform.flip:axis=z {align}".format(path=options.path,map2=map2,align=align))
 			
@@ -517,8 +517,10 @@ maps.")
 
 			os.unlink(map2)
 			o.write_image(map2,0)
-			os.unlink("{path}/tmp1.hdf".format(path=options.path))
-			os.unlink("{path}/tmp1f.hdf".format(path=options.path))
+			try:
+				os.unlink("{path}/tmp1.hdf".format(path=options.path))
+				os.unlink("{path}/tmp1f.hdf".format(path=options.path))
+			except : pass
 			
 			# now compute FSC
 			f=o0.calc_fourier_shell_correlation(o)
@@ -528,19 +530,20 @@ maps.")
 		# so we now have an average FSC curve between map 1 and each of the others (we should probably do all vs all, but don't)
 		fm/=(options.nmodels-1.0)
 		third = len(fm)/3
-		xaxis = fsc[0:third]
+		xaxis = fm[0:third]
 		fsc = fm[third:2*third]
 		saxis = [x/apix for x in xaxis]
-		Util.save_data(saxis[1],saxis[1]-saxis[0],fsc[1:],"{path}/fsc_mutual_avg_{it:02d}.txt".format(path=options.path,it=it))
+		Util.save_data(float(saxis[1]),float(saxis[1]-saxis[0]),list(fsc[1:]),"{path}/fsc_mutual_avg_{it:02d}.txt".format(path=options.path,it=it))
 		
-		models=["threed_{itr:02d}_{mdl:02d}.hdf".format(itr=it,mdl=mdl) for mdl in xrange(options.nmodels)]
+		models=["threed_{itr:02d}_{mdl:02d}.hdf".format(itr=it,mdl=mdl+1) for mdl in xrange(options.nmodels)]
 		
 		# we filter the maps, to a resolution ~20% higher than the FSC
 		for m in models:
 			run("e2proc3d.py {mod} {mod} {m3dsetsf} --process filter.wiener.byfsc:fscfile={path}/fsc_mutual_avg_{it:02d}.txt:sscale=1.2 --process normalize.bymass:thr=1:mass={mass}".format(
-	m3dsetsf=m3dsetsf,mod=m,path=options.path,it=it,mass=options.mass,underfilter=underfilter))
+	m3dsetsf=m3dsetsf,mod=m,path=options.path,it=it,mass=options.mass))
 		
-		os.unlink("{path}/tmp0.hdf".format(path=options.path))
+		try : os.unlink("{path}/tmp0.hdf".format(path=options.path))
+		except: pass
 
 		db["last_map"]=models
 
