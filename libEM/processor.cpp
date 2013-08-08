@@ -3761,25 +3761,28 @@ void NormalizeByMassProcessor::process_inplace(EMData * image)
 	
 	if (mass <= 0) throw InvalidParameterException("You must specify a positive non zero mass");
 
-	float thr = params.set_default("thr",(float)image->get_attr("mean")+(float)image->get_attr("sigma"));
+	float tthr = params.set_default("thr",(float)image->get_attr("mean")+(float)image->get_attr("sigma"));
 
 	float apix = image->get_attr_default("apix_x",1.0f);
 	apix = params.set_default("apix",apix);
 
 	if (apix <= 0) throw InvalidParameterException("You must specify a positive non zero apix");
 
-	float step = ((float)image->get_attr("sigma"))/2.0f;
+	float step = ((float)image->get_attr("sigma"))/5.0f;
 
 	if (step==0) throw InvalidParameterException("This image has sigma=0, cannot give it mass");
 
 	
-	int count=0;
 	size_t n = image->get_size();
 	float* d = image->get_data();
 
+
+	float thr=(float)image->get_attr("mean")+(float)image->get_attr("sigma")/2.0;
+	int count=0;
 	for (size_t i=0; i<n; ++i) {
 		if (d[i]>=thr) ++count;
 	}
+	if (verbose) printf("apix=%1.3f\tmass=%1.1f\tthr=%1.2f\tstep=%1.3g\n",apix,mass,thr,step);
 
 	float max = image->get_attr("maximum");
 	float min = image->get_attr("minimum");
@@ -3793,6 +3796,7 @@ void NormalizeByMassProcessor::process_inplace(EMData * image)
 			}
 			err+=1;
 			if (err>1000) throw InvalidParameterException("Specified mass could not be achieved");
+			if (verbose>1) printf("%d\t%d\t%1.3f\t%1.2f\n",err,count,thr,count*apix*apix*apix*.81/1000.0);
 		}
 
 		step/=4.0;
@@ -3805,12 +3809,13 @@ void NormalizeByMassProcessor::process_inplace(EMData * image)
 			}
 			err+=1;
 			if (err>1000) throw InvalidParameterException("Specified mass could not be achieved");
+			if (verbose>1) printf("%d\t%d\t%1.3f\t%1.2f\n",err,count,thr,count*apix*apix*apix*.81/1000.0);
 
 		}
 		step/=4.0;
 	}
 
-	image->mult((float)1.0/thr);
+	image->mult((float)tthr/thr);
 	image->update();
 }
 
