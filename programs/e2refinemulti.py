@@ -216,13 +216,13 @@ not need to specify any of the following other than the ones already listed abov
 		model=EMData(options.model,0)
 		for i in range(options.nmodels):
 			model.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":.03})
-			model.write_image("{}/threed_00_{:02d}.hdf".format(options.path,i),0)
+			model.write_image("{}/threed_00_{:02d}.hdf".format(options.path,i+1),0)
 	else:
 		# or copy the specified starting models
 		options.nmodels=len(options.models)
 		for i,m in enumerate(options.models):
 			model=EMData(m,0)
-			model.write_image("{}/threed_00_{:02d}.hdf".format(options.path,i))
+			model.write_image("{}/threed_00_{:02d}.hdf".format(options.path,i+1))
 
 	progress = 0.0
 	total_procs = 5*options.iter

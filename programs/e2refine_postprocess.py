@@ -133,7 +133,7 @@ def main():
 	### Masking
 	if options.automask3d==None :
 		amask3d="--process=mask.auto3d:threshold={thresh}:radius={radius}:nshells={shells}:nshellsgauss={gshells}:nmaxseed={seed}".format(
-			thresh=sigmanz*.7,radius=nx/10,shells=int(nx*.07+.5),gshells=int(nx*.05),seed=16)
+			thresh=sigmanz*.85,radius=nx/10,shells=int(nx*.08+.5),gshells=int(nx*.06),seed=16)
 	else:
 		amask3d=options.automask3d
 
