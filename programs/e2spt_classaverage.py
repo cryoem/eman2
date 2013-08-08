@@ -214,6 +214,9 @@ def main():
 	if options.preprocess: 
 		options.preprocess=parsemodopt(options.preprocess)
 		
+	if options.preprocessfine: 
+		options.preprocessfine=parsemodopt(options.preprocessfine)
+		
 	if options.lowpass: 
 		options.lowpass=parsemodopt(options.lowpass)
 		

@@ -120,13 +120,21 @@ def main():
 	stack2processEd = options.stack2process.replace('.hdf','_ed.hdf')
 	if options.output:
 		stack2processEd = options.output
-
+	
+	
+	print "stack2processEd is", stack2processEd
+	
 	stack2processSample = EMData( options.stack2process, 0, True)
 	
 	cmd = 'e2proc3d.py ' + options.stack2process + ' ' + stack2processEd + ' && e2fixheaderparam.py --input=' + stack2processEd + ' --stem=origin --stemval=0' 
+	
+	print "This command will copy and create it", cmd
+	
 	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	text=p.communicate()	
 	p.stdout.close()
+	
+	print "Command executed. Feedback was", text
 	
 	if stack2processSample['nx'] != stack2processSample['ny'] or stack2processSample['nx'] != stack2processSample['nz'] or stack2processSample['ny'] != stack2processSample['nz']:	
 		x0 = stack2processSample['nx']
@@ -235,7 +243,7 @@ def main():
 		p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		text=p.communicate()	
 		p.stdout.close()
-		print "Feedback from shrink is", text
+		print "\nFeedback from SHRINK is", text
 		
 		
 		#ref.process_inplace("math.meanshrink",{"n":meanshrinkfactor_int})
@@ -246,8 +254,11 @@ def main():
 	
 	scalefactor = float( stack2processApix )/float( targetApix)
 	
-	if options.verbose:
-		print "The finer scale factor to apply is", scalefactor
+	
+	
+	#if options.verbose:
+	
+	print "The finer scale factor to apply is", scalefactor
 	
 	print "The final clip box is", targetBox
 	cmd = 'e2proc3d.py ' + str(stack2processEd) + ' ' + str(stack2processEd) + ' --process=xform.scale:scale=' + str(scalefactor) + ':clip=' + str(targetBox)
@@ -265,8 +276,13 @@ def main():
 	p.stdout.close()
 	print "Feedback from fix origina is", text
 
+	stack2processEdHdr = EMData(stack2processEd,0,True)
+	stack2processEdApix = float( stack2processEdHdr['apix_x'])
 	
-	if EMData(stack2processEd,0,True)['apix_x'] != EMData(options.refStack,0,True)['apix_x']:
+	refStackHdr = EMData(options.refStack,0,True)
+	refStackApix = float( refStackHdr['apix_x'])
+	print "stack2processEdApix and refStackApix are", stack2processEdApix,refStackApix
+	if stack2processEdApix != refStackApix:
 		cmd = 'e2fixheaderparam.py --input=' + stack2processEd + ' --stem=apix --stemval=' + str( targetApix ) 
 		p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		text=p.communicate()	
