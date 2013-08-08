@@ -2194,7 +2194,10 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 
 	if rmax < 0:  rmaxp = int(boxsize/2 - 2)
 	else:         rmaxp = int( (rmax/new_pixel_size)  + 0.5)
-
+	
+	# set rmax in pixels to default if user input rmax is greater than half the box size
+	if rmaxp > boxsize//2:
+		rmaxp = int(boxsize/2 - 2)
 	mask = pad(model_blank(rmaxp*2, boxsize, 1, 1.0), boxsize, boxsize, 1, 0.0)
 
 	a = read_text_row(hcoordsname)
