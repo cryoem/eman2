@@ -314,7 +314,7 @@ def get_particle_centroids(helix_coords, px_overlap, px_length, px_width, is_rot
 		if is_rotated:
 			dst1 = ((x - x1)**2 + (y - y1)**2)**0.5
 			dst2 = ((x - x2)**2 + (y - y2)**2)**0.5
-			if 2*min(dst1, dst2) >= px_length:
+			if 2*min(dst1, dst2) >= (px_length - 0.01):
 				ptcl_coords.append((x,y))	
 		else:
 			ptcl_coords.append((x,y))	
