@@ -77,7 +77,7 @@ def main():
 	parser.add_option("--delta_theta",        type="float",		     default=1.0,                 help="delta theta for reference projection")
 	parser.add_option("--test",               action="store_true",   default=False,      		  help="test")
 	parser.add_option("--boundaryavg",        action="store_true",   default=False,      		  help="boundaryavg")
-	parser.add_option("--MA_WRAP",            type="int",            default= 1,                  help="do wrapping in MA")
+	parser.add_option("--MA_WRAP",            type="int",            default= 1,                  help="do wrapping in MA if MA_WRAP=1, else no wrapping in MA. Default is 1.")
 	parser.add_option("--seg_ny",             type="int",            default= 256,                help="y dimension of desired segment size, should be related to fract in that fract ~ seg_ny/ny, where ny is dimension of input projections.")
 
 	(options, args) = parser.parse_args(arglist[1:])
