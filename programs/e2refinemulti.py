@@ -63,7 +63,6 @@ def write_html() :
 
 def main():
 	print "This program is still being converted to EMAN2.1. exiting"
-	sys.exit(1)
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options]
 
@@ -142,7 +141,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--nosingle",default=False, action="store_true", help="Normally the multi-model refinement will be followed by N single model refinements automatically. If this is set the job will finish after making the split data sets.",guitype='boolbox', row=18, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--m3dpostprocess", type=str, default="", help="Default=none. An arbitrary post-processor to run after all other automatic processing.", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter.lowpass|filter.highpass\')', row=20, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel",default=None, guitype='strbox', row=24, col=0, rowspan=1, colspan=2, mode="refinement")
-	parser.add_argument("--path", default=None, type=str,help="The name of a directory where results are placed. Default = create new refine_xx")
+	parser.add_argument("--path", default=None, type=str,help="The name of a directory where results are placed. Default = create new multi_xx")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 #	parser.add_argument("--usefilt", dest="usefilt", type=str,default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used in projection matching routines, and elsewhere.")
 
@@ -203,7 +202,7 @@ not need to specify any of the following other than the ones already listed abov
 		sys.exit(1)
 
 	if options.path == None:
-		fls=[int(i[-2:]) for i in os.listdir(".") if i[:7]=="refine_" and len(i)==9]
+		fls=[int(i[-2:]) for i in os.listdir(".") if i[:6]=="multi_" and len(i)==9]
 		if len(fls)==0 : fls=[0]
 		options.path = "multi_{:02d}".format(max(fls)+1)
 
@@ -216,14 +215,14 @@ not need to specify any of the following other than the ones already listed abov
 	if options.model!=None:
 		model=EMData(options.model,0)
 		for i in range(options.nmodels):
-			model.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":.04})
-			model.write_image("{}/threed_00_{:02d}".format(output_path,i),0)
+			model.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":.03})
+			model.write_image("{}/threed_00_{:02d}.hdf".format(options.path,i),0)
 	else:
 		# or copy the specified starting models
 		options.nmodels=len(options.models)
 		for i,m in enumerate(options.models):
 			model=EMData(m,0)
-			model.write_image("{}/threed_00_{:02d}".format(output_path,i))
+			model.write_image("{}/threed_00_{:02d}.hdf".format(options.path,i))
 
 	progress = 0.0
 	total_procs = 5*options.iter
@@ -251,24 +250,24 @@ in the refinement directory. You can use Info with the browser or just read the 
 
 	### Prepare initial models
 	# make sure the box sizes match
-	hdr=EMData(options.input,0,True)["nx"]
+	hdr=EMData(options.input,0,True)
 	xsize=hdr["nx"]
 	apix=hdr["apix_x"]
 	for i in range(options.nmodels):
-		xsize3d=EMData("{}/threed_00_{:02d}".format(output_path,i),0,True)["nx"]
+		xsize3d=EMData("{}/threed_00_{:02d}.hdf".format(options.path,i),0,True)["nx"]
 		if ( xsize3d != xsize ) :
 			append_html("The dimensions of the particles ( {ptcl}x{ptcl} ) do not match the dimensions of initial model {n} ( {vol}x{vol}x{vol} ). I will assume A/pix is correct in the model and rescale/resize accordingly.".format(ptcl=xsize,vol=xsize3d,n=i))
-			img3 = EMData("{}/threed_00_{:02d}".format(output_path,i),0,True)
+			img3 = EMData("{}/threed_00_{:02d}".format(options.path,i),0,True)
 			try:
 				scale=img3["apix_x"]/apix
 			except:
 				print "A/pix unknown, assuming scale same as relative box size"
 				scale=float(xsize)/xsize3d
-			if scale>1 : cmd="e2proc3d.py {path}/threed_00_{i:02d} {path}/threed_00_{i:02d} --clip={cl},{cl},{cl} --scale={sca:1.4f}"%(path=path,i=i,cl=nx,sca=scale)
-			else :       cmd="e2proc3d.py {path}/threed_00_{i:02d} {path}/threed_00_{i:02d} --scale={sca:1.4f} --clip={cl},{cl},{cl}"%(path=path,i=i,cl=nx,sca=scale)
+			if scale>1 : cmd="e2proc3d.py {path}/threed_00_{i:02d} {path}/threed_00_{i:02d} --clip={cl},{cl},{cl} --scale={sca:1.4f}".format(path=options.path,i=i,cl=nx,sca=scale)
+			else :       cmd="e2proc3d.py {path}/threed_00_{i:02d} {path}/threed_00_{i:02d} --scale={sca:1.4f} --clip={cl},{cl},{cl}".format(path=options.path,i=i,cl=nx,sca=scale)
 			run(cmd)
 
-	repim=EMData(options.input[0],0)		# read a representative image to get some basic info
+	repim=EMData(options.input,0)		# read a representative image to get some basic info
 	if repim.has_attr("ctf") : hasctf=True
 	else: hasctf=False
 	nx=repim["nx"]
@@ -360,9 +359,9 @@ maps.")
 	sym=options.sym.split(",")
 	if len(sym)==1 or len(set(sym))==1: 
 		if len(sym)==1 : sym=sym*options.nmodels
-		if options.sym[0].lower() in ("icos","tet","oct") or options.sym[0][0].lower()=="d" : align="" 	# no alignment with higher symmetries
-		elif options.sym[0][0].lower()=="c" and options.sym[0][1]!="1" : align=align=" --ralignz={path}/tmp0.hdf".format(path=path)		# z alignment only
-		else: align="--alignref={path}/tmp0.hdf --align=refine_3d".format(path=path)	# full 3-D alignment for C1
+		if sym[0].lower() in ("icos","tet","oct") or sym[0][0].lower()=="d" : align="" 	# no alignment with higher symmetries
+		elif sym[0][0].lower()=="c" and sym[0][1]!="1" : align=align=" --ralignz={path}/tmp0.hdf".format(path=options.path)		# z alignment only
+		else: align="--alignref={path}/tmp0.hdf --align=refine_3d".format(path=options.path)	# full 3-D alignment for C1
 
 	##################################
 	### prepare for the run
@@ -378,7 +377,7 @@ maps.")
 	else: prefilt=""
 
 	if options.simmask!=None :
-		makesimm,"last_even":evenfile,"last_odd":oddfile}ask=False
+		makesimmask=False
 		simmask="--mask {}".format(options.simmask)
 		append_html("<p>{simmask} was specified, so I will not automatically create a mask for each iteration.</p>".format(simmask=simmask))
 	else:
@@ -424,9 +423,9 @@ maps.")
 		append_html("<h4>Beginning iteration {} at {}</h4>".format(it,time.ctime(time.time())),True)
 
 		### 3-D Projections
-		models=["{path}/threed_{itrm1:02d}_{mdl}.hdf".format(path=options.path,itrm1=it-1,mdl=mdl) for mdl in xrange(options.nmodels)]
+		models=["{path}/threed_{itrm1:02d}_{mdl:02d}.hdf".format(path=options.path,itrm1=it-1,mdl=mdl) for mdl in xrange(options.nmodels)]
 		run("e2project3d.py {mdls} --outfile {path}/projections_{itr:02d}.hdf -f --projector {projector} --orientgen {orient} --sym {sym} --postprocess normalize.circlemean {prethr} {parallel} {verbose}".format(
-			path=options.path,mdls=models,itrm1=it-1,mdl=i,itr=it,projector=options.projector,orient=options.orientgen,sym=",".join(sym),prethr=prethreshold,parallel=parallel,verbose=verbose))
+			path=options.path,mdls=" ".join(models),itrm1=it-1,mdl=i,itr=it,projector=options.projector,orient=options.orientgen,sym=",".join(sym),prethr=prethreshold,parallel=parallel,verbose=verbose))
 
 		progress += 1.0
 		E2progress(logid,progress/total_procs)
@@ -449,7 +448,7 @@ maps.")
 
 		cmd = "e2simmx2stage.py {path}/projections_{itr:02d}.hdf {inputfile} {path}/simmx_{itr:02d}.hdf {path}/proj_simmx_{itr:02d}.hdf {path}/proj_stg1_{itr:02d}.hdf {path}/simmx_stg1_{itr:02d}.hdf --saveali --cmp {simcmp} \
 --align {simalign} --aligncmp {simaligncmp} {simralign} {shrinks1} {shrink} {prefilt} {simmask} {verbose} {parallel}".format(
-			path=options.path,itr=it,inputfile=options.input[0],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,
+			path=options.path,itr=it,inputfile=options.input,simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,
 			shrinks1=shrinks1,shrink=shrink,prefilt=prefilt,simmask=simmask,verbose=verbose,parallel=parallel)
 		run(cmd)
 		progress += 1.0
@@ -466,7 +465,7 @@ maps.")
 		cmd="e2classaverage.py --input {inputfile} --classmx {path}/classmx_{itr:02d}.hdf --storebad --output {path}/classes_{itr:02d}.hdf --ref {path}/projections_{itr:02d}.hdf --iter {classiter} \
 -f --resultmx {path}/cls_result_{itr:02d}_even.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
 --align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} {verbose} {parallel}".format(
-			inputfile=options.input[0], path=options.path, itr=it, classiter=options.classiter, normproc=options.classnormproc, averager=options.classaverager, classrefsf=classrefsf,
+			inputfile=options.input, path=options.path, itr=it, classiter=options.classiter, normproc=options.classnormproc, averager=options.classaverager, classrefsf=classrefsf,
 			classautomask=classautomask,classkeep=options.classkeep, classkeepsig=classkeepsig, classcmp=options.classcmp, classalign=options.classalign, classaligncmp=options.classaligncmp,
 			classralign=classralign, prefilt=prefilt, verbose=verbose, parallel=parallel)
 		run(cmd)
@@ -489,19 +488,19 @@ maps.")
 		
 		# alignment
 
-		run("e2proc3d.py {path}/threed_{itr:02d}_{mdl:02d}.hdf {path}/tmp0.hdf --process=filter.lowpass.gauss:cutoff_freq=.05".format(path=path,itr=it,mdl=0))
-		o0=EMData("{path}/threed_{itr:02d}_{mdl:02d}.hdf".format(path=path,itr=id,mdl=0)),0)
+		run("e2proc3d.py {path}/threed_{itr:02d}_{mdl:02d}.hdf {path}/tmp0.hdf --process=filter.lowpass.gauss:cutoff_freq=.05".format(path=options.path,itr=it,mdl=0))
+		o0=EMData("{path}/threed_{itr:02d}_{mdl:02d}.hdf".format(path=options.path,itr=it,mdl=0),0)
 		for mdl in xrange(1,options.nmodels):
 			if options.verbose>0 : print "Aligning map ",mdl
-			map2="{path}/threed_{itr:02d}_{mdl:02d}.hdf".format(path=path,itr=id,mdl=mdl)
-			run("e2proc3d.py {map2} {path}/tmp1.hdf --process=filter.lowpass.gauss:cutoff_freq=.05 {align}".format(path=path,map2=map2,align=align))
-			run("e2proc3d.py {map2} {path}/tmp1f.hdf --process=filter.lowpass.gauss:cutoff_freq=.05 --process=xform.flip:axis=z {align}".format(path=path,map2=map2,align=align))
+			map2="{path}/threed_{itr:02d}_{mdl:02d}.hdf".format(path=options.path,itr=it,mdl=mdl)
+			run("e2proc3d.py {map2} {path}/tmp1.hdf --process=filter.lowpass.gauss:cutoff_freq=.05 {align}".format(path=options.path,map2=map2,align=align))
+			run("e2proc3d.py {map2} {path}/tmp1f.hdf --process=filter.lowpass.gauss:cutoff_freq=.05 --process=xform.flip:axis=z {align}".format(path=options.path,map2=map2,align=align))
 			
 			# now we have to check which of the two handednesses produced the better alignment
 			# Pick the best handedness
-			a=EMData("{path}/tmp1.hdf".format(path=path),0)
-			b=EMData("{path}/tmp1f.hdf".format(path=path),0)
-			c=EMData("{path}/tmp0.hdf".format(path=path),0)
+			a=EMData("{path}/tmp1.hdf".format(path=options.path),0)
+			b=EMData("{path}/tmp1f.hdf".format(path=options.path),0)
+			c=EMData("{path}/tmp0.hdf".format(path=options.path),0)
 			ca=c.cmp("ccc",a)
 			cb=c.cmp("ccc",b)
 			o=EMData(map2,0)
@@ -518,8 +517,8 @@ maps.")
 
 			os.unlink(map2)
 			o.write_image(map2,0)
-			os.unlink("{path}/tmp1.hdf".format(path=path))
-			os.unlink("{path}/tmp1f.hdf".format(path=path))
+			os.unlink("{path}/tmp1.hdf".format(path=options.path))
+			os.unlink("{path}/tmp1f.hdf".format(path=options.path))
 			
 			# now compute FSC
 			f=o0.calc_fourier_shell_correlation(o)
@@ -532,16 +531,16 @@ maps.")
 		xaxis = fsc[0:third]
 		fsc = fm[third:2*third]
 		saxis = [x/apix for x in xaxis]
-		Util.save_data(saxis[1],saxis[1]-saxis[0],fsc[1:],"{path}/fsc_mutual_avg_{:02d}.txt".format(path=path,it))
+		Util.save_data(saxis[1],saxis[1]-saxis[0],fsc[1:],"{path}/fsc_mutual_avg_{it:02d}.txt".format(path=options.path,it=it))
 		
-		models=["threed_{itr:02d}_{mdl}.hdf".format(itr=it,mdl=mdl) for mdl in xrange(options.nmodels)]
+		models=["threed_{itr:02d}_{mdl:02d}.hdf".format(itr=it,mdl=mdl) for mdl in xrange(options.nmodels)]
 		
 		# we filter the maps, to a resolution ~20% higher than the FSC
 		for m in models:
 			run("e2proc3d.py {mod} {mod} {m3dsetsf} --process filter.wiener.byfsc:fscfile={path}/fsc_mutual_avg_{it:02d}.txt:sscale=1.2 --process normalize.bymass:thr=1:mass={mass}".format(
-	m3dsetsf=m3dsetsf,mod=m,path=path,it=it,mass=options.mass,underfilter=underfilter)
+	m3dsetsf=m3dsetsf,mod=m,path=options.path,it=it,mass=options.mass,underfilter=underfilter))
 		
-		os.unlink("{path}/tmp0.hdf".format(path=path))
+		os.unlink("{path}/tmp0.hdf".format(path=options.path))
 
 		db["last_map"]=models
 
