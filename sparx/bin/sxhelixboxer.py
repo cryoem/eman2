@@ -2026,7 +2026,15 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=2
 	if micsuffix[0] == '.': micsuffix = micsuffix[1:]
 	
 	if new_pixel_size < 0: new_pixel_size = pixel_size
-		
+	
+	if rmax < 0:  rmaxp = int(boxsize/2 - 2)
+	else:         rmaxp = int( (rmax/new_pixel_size)  + 0.5)
+	
+	# set rmax in pixels to default if user input rmax is greater than half the box size
+	if 2*rmaxp > boxsize:
+		print "ERROR...The box size should be no less than twice rmax in pixels. Current box size is %d and twice rmax in pixels is %d."%(boxsize, 2*rmaxp)
+		return
+			
 	# Calculate distance between adjacent squares as ~1 rise in pixels if not set by user
 	if ptcl_dst < 0 and dp >= 0: ptcl_dst = int( (dp/new_pixel_size) + 0.5)
 	
@@ -2079,7 +2087,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=2
 				if( os.path.exists(hcoordsname) ):
 					micname = os.path.join(v1, v2)
 					print_msg("\n\nPreparing to window helices from micrograph %s with box coordinate file %s\n\n"%(micname, hcoordsname))
-					windowmic(outstacknameall, coutdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, inv_contrast, new_pixel_size, rmax, freq, do_rotation, do_gridding)
+					windowmic(outstacknameall, coutdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, inv_contrast, new_pixel_size, rmaxp, freq, do_rotation, do_gridding)
 
 	# If not debug mode, then remove all output directories 
 	if debug == 0:
@@ -2089,7 +2097,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, dp = -1, boxsize=2
 			print_msg("cmd: %s"%cmd)
 			call(cmd, shell=True)
 
-def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, inv_contrast, new_pixel_size, rmax, freq, do_rotation, do_gridding):
+def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, inv_contrast, new_pixel_size, rmaxp, freq, do_rotation, do_gridding):
 	'''
 	
 	INPUT
@@ -2113,7 +2121,7 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 			
 			new_pixel_size: Float. New target pixel size to which the micrograph should be resampled. 
 			
-			rmax: Float. Radius of filament in Angstroms. If rmax < 0, then it's set to segnx/2 - 2 in pixels using pixel size new_pixel_size.
+			rmaxp: Integer. Radius of filament in pixels. 
 			
 			freq: Cut-off frequency at which to high-pass filter micrographs before windowing. 
 	
@@ -2192,13 +2200,6 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 	db_save_particle_coords(micname, fptcl_coords, ptcl_dst, boxsize, boxsize, do_rotation)
 	db_save_particles(micname, fimgs_0, ptcl_dst, boxsize, boxsize, do_rotation, True, do_gridding, "multiple", do_filt = True, filt_freq = freq)
 
-	if rmax < 0:  rmaxp = int(boxsize/2 - 2)
-	else:         rmaxp = int( (rmax/new_pixel_size)  + 0.5)
-	
-	# set rmax in pixels to default if user input rmax is greater than half the box size
-	if 2*rmaxp > boxsize:
-		print "ERROR...The box size should be no less than twice rmax in pixels. Current box size is %d and twice rmax in pixels is %d."%(boxsize, 2*rmaxp)
-		return
 	mask = pad(model_blank(rmaxp*2, boxsize, 1, 1.0), boxsize, boxsize, 1, 0.0)
 
 	a = read_text_row(hcoordsname)
