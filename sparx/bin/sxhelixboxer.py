@@ -2197,7 +2197,7 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 	
 	# set rmax in pixels to default if user input rmax is greater than half the box size
 	if 2*rmaxp > boxsize:
-		print "The box size should be no less than twice rmax in pixels. Current box size is %d and twice rmax in pixels is %d."%(boxsize, 2*rmaxp)
+		print "ERROR...The box size should be no less than twice rmax in pixels. Current box size is %d and twice rmax in pixels is %d."%(boxsize, 2*rmaxp)
 		return
 	mask = pad(model_blank(rmaxp*2, boxsize, 1, 1.0), boxsize, boxsize, 1, 0.0)
 
