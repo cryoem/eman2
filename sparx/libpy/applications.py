@@ -4169,7 +4169,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 		print_msg("User function                             : %s\n"%(user_func_name))
 		if(focus != None):  \
 		print_msg("Maskfile 3D for focused clustering        : %s\n"%(focus))
-		print_msg("Maskfile 2D                               : %s\n"%(maskfile))
+		print_msg("Overall 3D mask applied in user function  : %s\n"%(maskfile))
 		print_msg("Inner radius                              : %i\n"%(first_ring))
 		print_msg("Outer radius                              : %i\n"%(last_ring))
 		print_msg("Ring step                                 : %i\n"%(rstep))
@@ -4343,7 +4343,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 					if(focus != None):  mask2D = binarize( prgs( focus, kb, [phi,tht,psi,-s2x,-s2y]) )  #  Should be precalculated!!
 					peak = ref.cmp("ccc",data[im],{"mask":mask2D, "negative":0})
 					if not(finfo is None):
-						finfo.write( "ID,iref,peak: %6d %d %8.5f\n" % (list_of_particles[im],iref,peak) )
+						finfo.write( "ID, iref, peak: %6d %d %8.5f\n" % (list_of_particles[im],iref,peak) )
 				else:
 					if(an[N_step] == -1):
 						peak, pixel_error = proj_ali_incore(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step])
@@ -4351,7 +4351,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 						peak, pixel_error = proj_ali_incore_local(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], an[N_step])
 					if not(finfo is None):
 						phi,tht,psi,s2x,s2y = get_params_proj(data[im])
-						finfo.write( "ID,iref,peak,trans: %6d %d %f %f %f %f %f %f\n"%(list_of_particles[im],iref,peak,phi,tht,psi,s2x,s2y) )
+						finfo.write( "ID, iref, peak,t rans: %6d %d %f %f %f %f %f %f\n"%(list_of_particles[im],iref,peak,phi,tht,psi,s2x,s2y) )
 						finfo.flush()
 
 				peaks[iref][im] = peak
@@ -4416,6 +4416,9 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 
 
 		if myid == main_node:
+			from utilities import write_text_file
+			write_text_file(assigntorefa, "assigntorefa.txt")
+			write_text_file(dtot,"dtot.txt")
 			SA = False
 			asi = [[] for iref in xrange(numref)]
 			report_error = 0
