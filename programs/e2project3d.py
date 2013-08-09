@@ -306,7 +306,7 @@ def main():
 
 		n=0
 		for i,fsp in enumerate(args) :
-			job = EMParallelProject3D(options,fsp,options.sym[i],n,i,logger)
+			job = EMParallelProject3D(options,fsp,options.sym[i],n,i+1,logger)
 			n+=job.execute()
 			if options.verbose : print "Job %d finished. %d total projections."%(i,n)
 
@@ -327,7 +327,7 @@ def main():
 		# generate and save all the projections to disk - that's it, that main job is done
 		if ( options.verbose>0 ):
 			print "Generating and saving projections for ",fsp
-		generate_and_save_projections(options, data, eulers, options.smear,i)
+		generate_and_save_projections(options, data, eulers, options.smear,i+1)
 	if options.cuda: EMData.switchoffcuda()
 
 	if ( options.verbose>0 ):

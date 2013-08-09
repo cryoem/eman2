@@ -478,7 +478,7 @@ maps.")
 			cmd="e2make3d.py --input {path}/classes_{itr:02d}.hdf --iter 2 -f --sym {sym} --output {path}/threed_{itr:02d}_{mdl:02d}.hdf --recon {recon} --preprocess {preprocess} \
 {postprocess} --keep={m3dkeep} {keepsig} --apix={apix} --pad={m3dpad} {setsf} {verbose} --input_model {mdl}".format(
 				path=options.path, itr=it, sym=sym[mdl], recon=options.recon, preprocess=options.m3dpreprocess, postprocess=postprocess, m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
-				m3dpad=options.pad, setsf=m3dsetsf, apix=apix, verbose=verbose, mdl=mdl)
+				m3dpad=options.pad, setsf=m3dsetsf, apix=apix, verbose=verbose, mdl=mdl+1)
 			run(cmd)
 
 		progress += 1.0
