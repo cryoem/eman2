@@ -1063,7 +1063,7 @@ def helical_params_err(params1, params2, fil_list):
 	phi1 = []
 	phi2 = []
 	fil_psisame = []
-	pos = []
+	pos  = []
 	prot = []
 	pref = []
 	for i in xrange(nima):
