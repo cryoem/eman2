@@ -32,10 +32,10 @@ ftg={ "setup":"http://peak.telecommunity.com/dist/ez_setup.py",
 "sip":"http://www.riverbankcomputing.co.uk/static/Downloads/sip4/sip-4.9.tar.gz",
 "fftw":"http://www.fftw.org/fftw-3.2.1.tar.gz",
 "gsl":"http://mirror.anl.gov/pub/gnu/gsl/gsl-1.12.tar.gz",
-"jam":"http://internap.dl.sourceforge.net/sourceforge/boost/boost-jam-3.1.17.tgz",
-"boost":"http://internap.dl.sourceforge.net/sourceforge/boost/boost_1_39_0.tar.bz2",
+"jam":"http://iweb.dl.sourceforge.net/project/boost/boost-jam/3.1.18/boost-jam-3.1.18.tgz",
+"boost":"http://iweb.dl.sourceforge.net/project/boost/boost/1.54.0/boost_1_54_0.tar.bz2",
 "cmake":"http://www.cmake.org/files/v2.6/cmake-2.6.4.tar.gz",
-"hdf5":"ftp://ftp.hdfgroup.org/HDF5/current/src/hdf5-1.8.3.tar.gz",
+"hdf5":"ftp://ftp.hdfgroup.org/HDF5/current/src/hdf5-1.8.11.tar.gz",
 "tiff":"ftp://ftp.remotesensing.org/pub/libtiff/tiff-3.8.2.tar.gz",
 "pyopengl":"http://downloads.sourceforge.net/project/pyopengl/PyOpenGL/3.0.0/PyOpenGL-3.0.0.tar.gz"}
 
@@ -57,7 +57,7 @@ for i in ftg: fsp[i]=ftg[i].split("/")[-1]
 path=getenv("HOME")+"/EMAN2/src"
 try: makedirs(path)
 except: pass
-system("chown -R %s ~/EMAN2"%getenv("SUDO_USER"))
+#system("chown -R %s ~/EMAN2"%getenv("SUDO_USER"))
 
 chdir(path)
 print "Running in ",path
