@@ -478,7 +478,7 @@ maps.")
 			cmd="e2make3d.py --input {path}/classes_{itr:02d}.hdf --iter 2 -f --sym {sym} --output {path}/threed_{itr:02d}_{mdl:02d}.hdf --recon {recon} --preprocess {preprocess} \
 {postprocess} --keep={m3dkeep} {keepsig} --apix={apix} --pad={m3dpad} {setsf} {verbose} --input_model {mdl}".format(
 				path=options.path, itr=it, sym=sym[mdl], recon=options.recon, preprocess=options.m3dpreprocess, postprocess=postprocess, m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
-				m3dpad=options.pad, setsf=m3dsetsf, apix=apix, verbose=verbose, mdl=mdl+1)
+				m3dpad=options.pad, setsf=m3dsetsf, apix=apix, verbose=verbose, mdl=mdl)
 			run(cmd)
 
 		progress += 1.0
@@ -488,10 +488,10 @@ maps.")
 		
 		# alignment
 
-		run("e2proc3d.py {path}/threed_{itr:02d}_{mdl:02d}.hdf {path}/tmp0.hdf --process=filter.lowpass.gauss:cutoff_freq=.05".format(path=options.path,itr=it,mdl=0))
+		run("e2proc3d.py {path}/threed_{itr:02d}_{mdl:02d}.hdf {path}/tmp0.hdf --process=filter.lowpass.gauss:cutoff_freq=.05".format(path=options.path,itr=it,mdl=1))
 		o0=EMData("{path}/threed_{itr:02d}_{mdl:02d}.hdf".format(path=options.path,itr=it,mdl=1),0)
 		for mdl in xrange(1,options.nmodels):
-			if options.verbose>0 : print "Aligning map ",mdl
+			if options.verbose>0 : print "Aligning map ",mdl+1
 			map2="{path}/threed_{itr:02d}_{mdl:02d}.hdf".format(path=options.path,itr=it,mdl=mdl+1)
 			run("e2proc3d.py {map2} {path}/tmp1.hdf --process=filter.lowpass.gauss:cutoff_freq=.05 {align}".format(path=options.path,map2=map2,align=align))
 			run("e2proc3d.py {map2} {path}/tmp1f.hdf --process=filter.lowpass.gauss:cutoff_freq=.05 --process=xform.flip:axis=z {align}".format(path=options.path,map2=map2,align=align))
