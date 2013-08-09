@@ -58,7 +58,8 @@ def main():
 	parser.add_argument("--averager",type=str,help="The type of averager used to produce the class average. Default=mean",default="mean", guitype='combobox', choicelist='dump_averagers_list()', row=10, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None, guitype='strbox', row=11, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+
 	(options, args) = parser.parse_args()
 	
 	if options.averager: 
@@ -83,13 +84,12 @@ def main():
 	if options.path and ("/" in options.path or "#" in options.path) :
 		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
 		sys.exit(1)
-		
-	if options.path and options.path[:4].lower()!="bdb:": 
-		options.path="bdb:"+options.path
 	
-	if not options.path: 
-		options.path="bdb:"+numbered_path("sptsym",True)
+	from e2spt_classaverage import sptmakepath
 	
+	options = sptmakepath(options,'sptbysym')
+	
+
 	# Get the averager
 	avgr=Averagers.get(options.averager[0], options.averager[1])
 	
@@ -101,13 +101,13 @@ def main():
 		mask.process_inplace(options.mask[0],options.mask[1])
 	
 	# open transfrom DB
-	db = db_open_dict("%s#%s"%(options.path,"tomo_xforms"))
+	js = js_open_dict(options.path + '/tomo_xforms.json')
 	
 	# Align each particle to its symmetry axis
 	for i in xrange(EMUtil.get_image_count(options.input)):
 		# Copy image
-		inputfile = "%s#ptcl_to_align_%d"%(options.path,i)
-		outputfile = "%s#aligned_ptcl_%d"%(options.path,i)
+		inputfile = "%s/ptcl_to_align_%d.hdf"%(options.path,i)
+		outputfile = "%s/aligned_ptcl_%d.hdf"%(options.path,i)
 		model3d = EMData(options.input, i)
 		
 		# apply mask if desired
@@ -137,9 +137,11 @@ def main():
 		if options.parallel:
 			command += " --parallel=%s"%options.parallel
 		launch_childprocess(command)
-		db_remove_dict(inputfile)
 		
-		rawoutputfile = "%s#rawaligned_ptcl_%d"%(options.path,i)
+		#js_remove_dict(inputfile)
+		os.system('rm ' + inputfile)
+		
+		rawoutputfile = "%s/rawaligned_ptcl_%d.hdf"%(options.path,i)
 		symxform = EMData(outputfile).get_attr('symxform')
 		if options.applytoraw:
 
@@ -148,14 +150,16 @@ def main():
 			raw3d.write_image(rawoutputfile)
 			
 		# Append transform to DB
-		db["tomo_%04d"%i] = symxform
+		js["tomo_%04d"%i] = symxform
 		
 		# Add the volume to the avarage
 		avgr.add_image(EMData(outputfile))
 		
 	# Now make the avearage
 	average = avgr.finish()
-	average.write_image("%s/%s" % (options.path.replace('bdb:',''),options.output))
+	average.write_image(options.path + '/' + options.output, 0)
+	
+	return
 
 		
 if __name__ == "__main__":
