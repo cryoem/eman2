@@ -539,7 +539,7 @@ maps.")
 		
 		# we filter the maps, to a resolution ~20% higher than the FSC
 		for m in models:
-			run("e2proc3d.py {mod} {mod} {m3dsetsf} --process filter.wiener.byfsc:fscfile={path}/fsc_mutual_avg_{it:02d}.txt:sscale=1.2 --process normalize.bymass:thr=1:mass={mass}".format(
+			run("e2proc3d.py {path}/{mod} {path}/{mod} {m3dsetsf} --process filter.wiener.byfsc:fscfile={path}/fsc_mutual_avg_{it:02d}.txt:sscale=1.2 --process normalize.bymass:thr=1:mass={mass}".format(
 	m3dsetsf=m3dsetsf,mod=m,path=options.path,it=it,mass=options.mass))
 		
 		try : os.unlink("{path}/tmp0.hdf".format(path=options.path))
