@@ -1704,7 +1704,8 @@ def read_text_row(fnam, format="", skip=";"):
 						word.append(strg[k_start : k_stop])				
 			line=[]
 			for i in xrange(len(word)):
-				line.append(float(word[i]))
+				try:  line.append(float(word[i]))
+				except:  line.append(word[i])
 			data.append(line)
 		strg=inf.readline()
 	inf.close
@@ -1764,7 +1765,7 @@ def read_text_file(file_name, ncol = 0):
 			if data == []:
 				for i in xrange(len(vdata)):
 					try:     data.append([float(vdata[i])])
-					except:  data.append(vdata[i])
+					except:  data.append([vdata[i]])
 			else:
 				for i in xrange(len(vdata)):
 					try:  data[i].append(float(vdata[i]))

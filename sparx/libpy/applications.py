@@ -4416,9 +4416,6 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 
 
 		if myid == main_node:
-			from utilities import write_text_file
-			write_text_file(assigntorefa, "assigntorefa.txt")
-			write_text_file(dtot,"dtot.txt")
 			SA = False
 			asi = [[] for iref in xrange(numref)]
 			report_error = 0
