@@ -1149,7 +1149,8 @@ class EMMpiTaskHandler():
 		# Launch the MPI subprocess
 		if cache : cache=" --cache"
 		else: cache=""
-		cmd="mpirun -n %d e2parallel.py mpiclient --scratchdir=%s %s -v 2 </dev/null"%(ncpus,self.scratchdir,cache)
+		mpiopts=os.getenv("EMANMPIOPTS","-n %d"%ncpus)
+		cmd="mpirun %s e2parallel.py mpiclient --scratchdir=%s %s -v 2 </dev/null"%(mpiopts,self.scratchdir,cache)
 
 		self.mpitask=subprocess.Popen(cmd, stdin=None, stdout=mpiout, stderr=mpierr, shell=True)
 
