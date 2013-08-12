@@ -537,7 +537,7 @@ maps.")
 		
 		models=["threed_{itr:02d}_{mdl:02d}.hdf".format(itr=it,mdl=mdl+1) for mdl in xrange(options.nmodels)]
 		
-		# we filter the maps, to a resolution ~20% higher than the FSC
+		# we filter the maps, to a resolution ~20% higher than the inter-map FSC, so we don't hide the relative differences
 		for m in models:
 			run("e2proc3d.py {path}/{mod} {path}/{mod} {m3dsetsf} --process filter.wiener.byfsc:fscfile={path}/fsc_mutual_avg_{it:02d}.txt:sscale=1.2 --process normalize.bymass:thr=1:mass={mass}".format(
 	m3dsetsf=m3dsetsf,mod=m,path=options.path,it=it,mass=options.mass))
@@ -548,6 +548,27 @@ maps.")
 		db["last_map"]=models
 
 		E2progress(logid,progress/total_procs)
+
+	# try and generate an intelligent name for the split output sets
+	if options.input[:4]=="sets/" and options.input[-4:]==".lst" :
+		setname="{}_mul{}_it{:02d}".format(options.input[:-4],options.path[-2:],it)
+	else :
+		setname="sets/{}_mul{}_it{:02d}".format(options.input.split("/")[-1].replace(".","-"),options.path[-2:],it)
+		
+	# Now we split the data into sets for individual model refinements
+	run("e2classextract.py {path}/classes_{itr:02d}.hdf --refinemulti --sort --verbose=1 --setname={}".format(path=options.path,itr=it,setname))
+
+	print "e2refinemulti.py completed sucessfully, but you are not yet done. The particles going into each output map have been seperated into the sets listed above. \
+You now need to run a single model e2refine_easy job for each of these output sets to produce the final maps. The maps in {} are not optimal, and no gold standard \
+resolution has been determined for them.".format(options.path)
+	append_html("<p>e2refinemulti.py has now completed running, and experienced no detectable errors, but you aren't done yet. The multi-model refinement method is inherently somewhat instable, particularly if \
+the variability in your map you are trying to classify is continuous rather than discrete. What this means is, the final maps in {}, are not entirely optimal, and do not have gold standard resolutions associated \
+with them. Your next step should be to run a normal e2refine_easy run for the particles from each of the subgroups produced by this run of e2refinemulti. To facilitate that process, new particle sets have \
+been produced for you, called {}_m*. Just run e2refine_easy.py for each of these sets. </p>
+<p>Normally you would use the final map corresponding to each particle set as a starting model for these refinements, but \
+you may also consider doing a cross-validation on your individual maps. To do that, you would, for example, use the particles from map 1 as --input and the --model would be map 2, and vice versa. If \
+you recover a structure more like map 1 (using the particles from map 1), despite the incorrect starting model, that indicates that the particle classification was more than just noise bias, and should \
+increase your confidence in your result.>/p>")
 
 	E2end(logid)
 
