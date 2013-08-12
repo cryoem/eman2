@@ -42,6 +42,7 @@ using namespace EMAN::GatanDM4;
 
 const char *TagTable::IMAGE_WIDTH_TAG = "Dimensions #0";
 const char *TagTable::IMAGE_HEIGHT_TAG = "Dimensions #1";
+const char *TagTable::IMAGE_NIMG_TAG = "Dimensions #2";
 const char *TagTable::IMAGE_DATATYPE_TAG = "DataType";
 const char *TagTable::IMAGE_THUMB_INDEX_TAG = "ImageIndex";
 
@@ -77,6 +78,9 @@ void TagTable::add(const string & name, const string & value)
 	}
 	else if (name == IMAGE_THUMB_INDEX_TAG) {
 		set_thumb_index(atoi(value_str));
+	}
+	else if(name == IMAGE_NIMG_TAG){
+		img_counted=atoi(value_str);
 	}
 	else {
 		tags[name] = value;
@@ -126,6 +130,11 @@ void TagTable::dump() const
 int TagTable::get_xsize() const
 {
 	return x_list[img_index];
+}
+
+int TagTable::get_image_counted() const
+{
+	return img_counted;
 }
 
 int TagTable::get_ysize() const
@@ -756,7 +765,7 @@ void DM4IO::init()
 	}
 
 	tagtable->set_endian(is_big_endian);
-
+	
 	LOGDEBUG("dm3 ver = %d, image size = %d, is_big_endian = %d",
 			stream_version, recsize, (int) is_big_endian);
 
@@ -824,6 +833,7 @@ int DM4IO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	dict["ny"] = ylen;
 	dict["nz"] = 1;
 
+	dict["nimg"] = tagtable->get_image_counted();
 	dict["DM4.acq_date"] = tagtable->get_string("Acquisition Date");
 	dict["DM4.acq_time"] = tagtable->get_string("Acquisition Time");
 	dict["DM4.source"] = tagtable->get_string("Source");
@@ -944,6 +954,16 @@ int DM4IO::write_data(float *, int, const Region* , EMUtil::EMDataType, bool)
 	LOGWARN("DM4 write is not supported.");
 	EXITFUNC;
 	return 1;
+}
+
+int DM4IO::get_nimg()
+{
+	init();
+
+	TagGroup root_group(dm4file, tagtable, "");
+	root_group.read(true);
+	
+	return tagtable->get_image_counted();
 }
 
 void DM4IO::flush()

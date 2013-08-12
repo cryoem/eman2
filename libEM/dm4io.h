@@ -56,6 +56,7 @@ namespace EMAN
 			float get_float(const string & name);
 			double get_double(const string & name);
 
+			int get_image_counted() const;
 			int get_xsize() const;
 			int get_ysize() const;
 			int get_datatype() const;
@@ -77,11 +78,13 @@ namespace EMAN
 		  private:
 			static const char *IMAGE_WIDTH_TAG;
 			static const char *IMAGE_HEIGHT_TAG;
+			static const char *IMAGE_NIMG_TAG;
 			static const char *IMAGE_DATATYPE_TAG;
 			static const char *IMAGE_THUMB_INDEX_TAG;
 			void set_thumb_index(int i);
 
 		  private:
+			int img_counted;
 			int img_index;
 			bool is_big_endian;
 			std::map < string, string > tags;
@@ -153,7 +156,6 @@ namespace EMAN
 			string name;
 			int entry_id;
 		};
-
 
 		class TagEntry
 		{
@@ -255,6 +257,7 @@ namespace EMAN
 
 		DEFINE_IMAGEIO_FUNC;
 		static bool is_valid(const void *first_block);
+		int get_nimg();
 
 	  private:
 		enum { NUM_ID_INT = 4 };	//actually its int+long+int=16 bytes
