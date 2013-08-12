@@ -1496,7 +1496,7 @@ def proj_ali_helicon_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	else:
 		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0\
 
-def proj_ali_helion_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, an, psi_max=180.0, finfo=None, yrnglocal=-1.0):
+def proj_ali_helicon_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, an, psi_max=180.0, finfo=None, yrnglocal=-1.0):
 	"""
 	  psi_max - how much psi can differ from 90 or 270 degrees
 	"""
