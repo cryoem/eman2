@@ -18396,7 +18396,7 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 						mirror = 1;
 					}
 				}
-		    	}
+		    }
 		}  delete cimage; cimage = 0;
 	    }
 	}
@@ -18584,43 +18584,43 @@ vector<float> Util::multiref_polar_ali_2d_local_psi(EMData* image, const vector<
 	for (int i = -ky; i <= ky; i++) {
 	    iy = i * step ;
 	    for (int j = -kx; j <= kx; j++) {
-		ix = j*step;
-		EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+			ix = j*step;
+			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 
-		Normalize_ring(cimage, numr);
+			Normalize_ring(cimage, numr);
 
-		Frngs(cimage, numr);
-		//  compare with all reference images
-		// for iref in xrange(len(crefim)):
-		for (iref = 0; iref < (int)crefim_len; iref++) {
-			if (abs(n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3)>=ant) {
-				float refpsi = crefim[iref]->get_attr("psi");
-				if (nomirror) {
-		    		Dict retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, fmod(360.0+psi+refpsi, 360.0), 0, psi_max);
-			    	double qn = retvals["qn"];
-			    	if (qn >= peak) {
-						sx = -ix;
-						sy = -iy;
-						nref = iref;
-						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-						peak = static_cast<float>(qn);
-						mirror = 0;
-					}
-				} else {
-		    		Dict retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, fmod(360.0+psi-refpsi, 360.0), 1, psi_max);
-			    	double qn = retvals["qn"];
-			    	if (qn >= peak) {
-						sx = -ix;
-						sy = -iy;
-						nref = iref;
-						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-						peak = static_cast<float>(qn);
-						mirror = 1;
+			Frngs(cimage, numr);
+			//  compare with all reference images
+			// for iref in xrange(len(crefim)):
+			for (iref = 0; iref < (int)crefim_len; iref++) {
+				if (abs(n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3)>=ant) {
+					float refpsi = crefim[iref]->get_attr("psi");
+					if (nomirror) {
+						Dict retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, fmod(360.0+psi+refpsi, 360.0), 0, psi_max);
+						double qn = retvals["qn"];
+						if (qn >= peak) {
+							sx = -ix;
+							sy = -iy;
+							nref = iref;
+							ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+							peak = static_cast<float>(qn);
+							mirror = 0;
+						}
+					} else {
+						Dict retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, fmod(360.0+psi-refpsi, 360.0), 1, psi_max);
+						double qn = retvals["qn"];
+						if (qn >= peak) {
+							sx = -ix;
+							sy = -iy;
+							nref = iref;
+							ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+							peak = static_cast<float>(qn);
+							mirror = 1;
+						}
 					}
 				}
-		    }
-		}  delete cimage; cimage = 0;
-	    }
+			}  delete cimage; cimage = 0;
+		}
 	}
 	float co, so, sxs, sys;
 	if(peak == -1.0E23) {
@@ -18783,25 +18783,22 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 	bool  use_ref;
 	bool  use_ref_mirror;
 	int   kx = int(2*xrng/step+0.5)/2;
-	int ky;
+	int   ky;
 	float stepy;
 	
 	if (ynumber == 0) {
 		ky = 0;
-	}
-	else { 
-	
+	} else { 
+
 		if (ynumber > 0) stepy=2*yrng/ynumber;
 		else if (ynumber == -1) stepy = step;
 		
 		if (yrnglocal >= 0.0) {
 		   	ky = int(yrnglocal/stepy);
-		}
-		else { // search range is not restricted
+		} else { // search range is not restricted
 			if (ynumber > 0) {
 				ky = int(ynumber/2);	
-			}
-			else{
+			} else {
 				ky = int(2*yrng/stepy+0.5)/2;	
 			}	
 					
@@ -18834,18 +18831,18 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 						Dict retvals;
 						Dict retvals_mirror;
 						if (use_ref_mirror == true) {
-						    if ((psi-90.0f) < 90.0f) retvals_mirror = Crosrng_sm_psi(crefim[iref], cimage, numr,   0, 1, psi_max);
-						    else                     retvals_mirror = Crosrng_sm_psi(crefim[iref], cimage, numr, 180, 1, psi_max); 
-						} 
+						    if ((psi-90.0f) < 90.0f) retvals_mirror = Crosrng_sm_psi(crefim[iref], cimage, numr,   0.0f, 1, psi_max);
+						    else                     retvals_mirror = Crosrng_sm_psi(crefim[iref], cimage, numr, 180.0f, 1, psi_max); 
+						}
 						if (use_ref == true) {
-						    if ((psi-90.0f) < 90.0f) retvals = Crosrng_sm_psi(crefim[iref], cimage, numr,   0, 0, psi_max);
-						    else                     retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, 180, 0, psi_max);
+						    if ((psi-90.0f) < 90.0f) retvals = Crosrng_sm_psi(crefim[iref], cimage, numr,   0.0f, 0, psi_max);
+						    else                     retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, 180.0f, 0, psi_max);
 						}
 						double qn = jneginf;
 						if (use_ref) qn = retvals["qn"];
 						double qm = jneginf;
 						if (use_ref_mirror) qm = retvals_mirror["qn"];
-						
+
 						if(qn >= peak || qm >= peak) {
 							sx = -ix;
 							sy = -iy;
@@ -18854,20 +18851,18 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 								ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
 								mirror = 0;
 								peak = static_cast<float>(qn);
-							}
-							else{
+							} else {
 								ang = ang_n(retvals_mirror["tot"], mode, numr[numr.size()-1]);
 								mirror = 1;
 								peak = static_cast<float>(qm);
 							}
-							
 						}
 					}
 				}
 				delete cimage; cimage = 0;
 			}
 	}
-						
+
 	float co, so, sxs, sys;
 	co = static_cast<float>( cos(ang*pi/180.0) );
 	so = static_cast<float>( -sin(ang*pi/180.0) );
@@ -18896,11 +18891,11 @@ vector<float> Util::multiref_polar_ali_helical_90(EMData* image, const vector< E
 	float ang=0.0f;
 	int   kx = int(2*xrng/step+0.5)/2;
 	//if ynumber==-1, use the old code which process x and y direction equally.
-	
+
 	int ky;
 	float stepy;
 	int kystart;
-	
+
 	if (ynumber == -1) {
 	    ky = int(2*yrng/step+0.5)/2;
 	    stepy = step;
@@ -18938,12 +18933,11 @@ vector<float> Util::multiref_polar_ali_helical_90(EMData* image, const vector< E
 				if (qn_0 >= qn_180){
 					qn = qn_0;
 					qn_is_zero = true;
-				}
-				else{
+				} else {
 					qn = qn_180;
 					qn_is_zero = false; 
 				}
-					
+
 				if(qn >= peak) {
 					sx = -ix;
 					sy = -iy;
@@ -18951,13 +18945,11 @@ vector<float> Util::multiref_polar_ali_helical_90(EMData* image, const vector< E
 					
 					if (qn_is_zero){
 						ang = ang_n(retvals_0["tot"], mode, numr[numr.size()-1]);
-					}
-					else{
+					} else {
 						ang = ang_n(retvals_180["tot"], mode, numr[numr.size()-1]);
 					}
 					peak = static_cast<float>(qn);
 					mirror = 0;
-					 
 				}
 			}
 			delete cimage; cimage = 0;
@@ -19013,8 +19005,7 @@ vector<float> Util::multiref_polar_ali_helical_90_local(EMData* image, const vec
 	
 	if (ynumber == 0) {
 		ky = 0;
-	}
-	else { 
+	} else { 
 	
 		if (ynumber > 0) stepy=2*yrng/ynumber;
 		else if (ynumber == -1) stepy = step;
@@ -19025,11 +19016,9 @@ vector<float> Util::multiref_polar_ali_helical_90_local(EMData* image, const vec
 		else { // search range is not restricted
 			if (ynumber > 0) {
 				ky = int(ynumber/2);	
-			}
-			else{
+			} else {
 				ky = int(2*yrng/stepy+0.5)/2;	
-			}	
-					
+			}			
 		}
 	}
 	
@@ -19064,7 +19053,7 @@ vector<float> Util::multiref_polar_ali_helical_90_local(EMData* image, const vec
 			delete cimage; cimage = 0;
 		}
 	}
-	
+
 	float co, so, sxs, sys;
 	co = static_cast<float>( cos(ang*pi/180.0) );
 	so = static_cast<float>( -sin(ang*pi/180.0) );
@@ -19981,7 +19970,7 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
-	cout <<"  VERSION  08/01/2013  10:30am"<<endl;
+	cout <<"  VERSION  08/12/2013  10:30am"<<endl;
 	int newx, newy, newz;
 	bool  keep_going;
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();

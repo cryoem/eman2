@@ -1272,7 +1272,6 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_max=1
 	  psi_max - how much psi can differ from 90 or 270 degrees
 	"""
 	from utilities    import compose_transform2, get_params_proj
-	from EMAN2 import Vec2f
 	from math         import cos, sin, pi
 	
 	ID = data.get_attr("ID")
@@ -1319,7 +1318,6 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	  psi_max - how much psi can differ from 90 or 270 degrees
 	"""
 	from utilities    import compose_transform2, get_params_proj
-	from EMAN2 import Vec2f
 	from math         import cos, sin, pi
 	
 	ID = data.get_attr("ID")
@@ -1371,7 +1369,6 @@ def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_ma
 	  psi_max - how much psi can differ from 90 or 270 degrees
 	"""
 	from utilities    import compose_transform2, get_params_proj
-	from EMAN2 import Vec2f
 	from math         import cos, sin, pi
 
 	ID = data.get_attr("ID")
@@ -1412,7 +1409,6 @@ def proj_ali_helical_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 	  psi_max - how much psi can differ from 90 or 270 degrees
 	"""
 	from utilities    import compose_transform2, get_params_proj
-	from EMAN2 import Vec2f
 	from math         import cos, sin, pi
 	
 	ID = data.get_attr("ID")
