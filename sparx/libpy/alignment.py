@@ -1444,6 +1444,100 @@ def proj_ali_helical_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 	else:
 		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0
 
+#  HELICON functions
+def proj_ali_helicon_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, psi_max=180.0, finfo=None, yrnglocal=-1.0):
+	"""
+	  psi_max - how much psi can differ from 90 or 270 degrees
+	"""
+	from utilities    import compose_transform2, get_params_proj
+	from math         import cos, sin, pi
+	
+	ID = data.get_attr("ID")
+
+	mode = "F"
+	nx   = data.get_xsize()
+	ny   = data.get_ysize()
+	#  center is in SPIDER convention
+	cnx  = nx//2 + 1
+	cny  = ny//2 + 1
+	ant = cos(an*pi/180.0)
+	phi, theta, psi, tx, ty = get_params_proj(data)
+	if finfo:
+		finfo.write("Image id: %6d\n"%(ID))
+		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
+		finfo.flush()
+
+	[ang, sxs, sys, mirror, iref, peak] = \
+		Util.multiref_polar_ali_helicon_local(data, refrings, xrng, yrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber), yrnglocal)
+
+	iref = int(iref)
+
+	if iref > -1:
+		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
+		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
+		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		if  mirror:
+			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
+			theta = 180.0-refrings[iref].get_attr("theta")
+			psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
+		else:
+			phi   = refrings[iref].get_attr("phi")
+			theta = refrings[iref].get_attr("theta")
+			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
+		s2x   = sxb + tx
+		s2y   = syb + ty
+
+		if finfo:
+			finfo.write("ref phi: %9.4f\n"%(refrings[iref].get_attr("phi")))
+			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f \n\n" %(phi, theta, psi, s2x, s2y, peak))
+			finfo.flush()
+
+		return peak, phi, theta, psi, s2x, s2y
+	else:
+		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0\
+
+def proj_ali_helion_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, an, psi_max=180.0, finfo=None, yrnglocal=-1.0):
+	"""
+	  psi_max - how much psi can differ from 90 or 270 degrees
+	"""
+	from utilities    import compose_transform2, get_params_proj
+	from math         import cos, sin, pi
+	
+	ID = data.get_attr("ID")
+
+	mode = "F"
+	nx   = data.get_xsize()
+	ny   = data.get_ysize()
+	#  center is in SPIDER convention
+	cnx  = nx//2 + 1
+	cny  = ny//2 + 1
+	ant = cos(an*pi/180.0)
+	phi, theta, psi, tx, ty = get_params_proj(data)
+	if finfo:
+		finfo.write("Image id: %6d\n"%(ID))
+		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
+		finfo.flush()
+
+	[ang, sxs, sys, mirror, iref, peak] = \
+		Util.multiref_polar_ali_helicon_90_local(data, refrings, xrng, yrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber), yrnglocal)
+	iref = int(iref)
+	if iref > -1:
+		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		phi   = refrings[iref].get_attr("phi")
+		theta = refrings[iref].get_attr("theta")
+		psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
+		s2x   = sxb + tx
+		s2y   = syb + ty
+
+		if finfo:
+			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f\n\n" %(phi, theta, psi, s2x, s2y, peak))
+			finfo.flush()
+		return peak, phi, theta, psi, s2x, s2y
+	else:
+		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0
+
+
+
 def ali_vol_func(params, data):
 	from utilities    import model_gauss
 	from fundamentals import rot_shift3D, cyclic_shift
