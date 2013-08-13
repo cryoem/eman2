@@ -680,17 +680,19 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		This function will work if you give it a list of EMData objects, or if you give it the file name (as the first argument)
 		If this solution is undesirable one could easily split this function into two equivalents.
 		'''
+				
 		cache_size = -1
 		if isinstance(obj,EMMXDataCache): self.data = obj
 		else: self.data = self.__get_cache(obj,soft_delete)
 
+		
 		if self.data == None: return
 
 		if self.data.is_3d():
 			self.get_inspector()
 			self.inspector.enable_xyz()
 			self.data.set_xyz(str(self.inspector.xyz.currentText()))
-		else:
+		else:			
 			self.get_inspector()
 			self.inspector.disable_xyz()
 
@@ -709,6 +711,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 		self.force_display_update()
 		self.nimg=len(self.data)
+				
 		self.max_idx = len(self.data)
 		if self.nimg == 0: return # the list is empty
 
@@ -725,10 +728,15 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		m0=1.0e10
 		m1=-1.0e10
 		nav=0
-
+				
 		stp=max(len(self.data)/32,1)
 		for i in range(0,len(self.data),stp):		# we check ~32 images randomly spaced in the set
 			d = self.data.get_image_header(i)
+			
+			#print "\n"
+			#print d["maximum"]
+			#print "d=",d
+			
 			if d == None: continue
 			try:
 				mean+=d["mean"]
@@ -738,11 +746,22 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 				m1=max(m1,d["maximum"])
 			except: pass
 
+		#print "\n mn=",mn, "mx=",mx, "m0=",m0,"m1=",m1
+
 		if nav==0:
 			mean=0
 			sigma=1
 		else: mean/=float(nav)
 
+		try:
+			if ((filename.split('.')[-1]=="dm4") and (m0==1.0e10)):
+				data=EMData(filename)
+				m0=data.get_attr("minimum")
+				m1=data.get_attr("maximum")
+				mean=data.get_attr("mean")
+				sigma=data.get_attr("sigma")
+		except:	pass 
+		
 		if self.auto_contrast:
 			mn=max(m0,mean-3.0*sigma)
 			mx=min(m1,mean+4.0*sigma)
@@ -750,12 +769,15 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			mn=m0
 			mx=m1
 
+		#print "\n mn=",mn, "mx=",mx, "m0=",m0,"m1=",m1, "mean=",mean, "sigma=",sigma
+		#mn= -2.98711583766  mx= 4.0128849968 		m0= -12.1826601028 		m1= 4.72158241272
+		
 		if self.auto_contrast:
 			self.minden=mn
 			self.maxden=mx
 			self.mindeng=m0
 			self.maxdeng=m1
-
+		
 		if self.inspector:
 			self.inspector.set_limits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 
@@ -799,16 +821,15 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	def set_scale(self,newscale,update_gl=True):
 		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""
-
-		if self.data and len(self.data)>0 and (self.data.get_ysize()*newscale>self.height() or self.data.get_xsize()*newscale>self.view_width()):
+		
+		if self.data and len(self.data)>0 and (self.data.get_ysize()*newscale>self.height() or self.data.get_xsize()*newscale>self.view_width()):			
 			newscale=min(float(self.height())/self.data.get_ysize(),float(self.view_width())/self.data.get_xsize())
 			if self.inspector: self.inspector.scale.setValue(newscale)
 
 		oldscale = self.scale
 		self.scale=newscale
 		self.matrix_panel.update_panel_params(self.view_width(),self.height(),self.scale,self.data,self.origin[1],self)
-
-
+		
 		view_height = self.height()
 		panel_height = self.matrix_panel.height
 		if panel_height < view_height :
@@ -1105,8 +1126,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 								glPopMatrix()
 								iss  += 1
 						if not light: glEnable(GL_LIGHTING)
-#
-
 			for i in self.selected:
 				try:
 					data = self.coords[i]
@@ -1120,7 +1139,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 				except:
 					# this means the box isn't visible!
 					pass
-
+					
 			if self.inspector : self.inspector.set_hist(self.hist,self.minden,self.maxden)
 		else:
 			try:
@@ -2427,7 +2446,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.target().set_den_range(x0,x1)
 
 	def set_hist(self,hist,minden,maxden):
-		self.hist.set_data(hist,minden,maxden)
+		self.hist.set_data(hist,minden,maxden)		
 
 	def set_limits(self,lowlim,highlim,curmin,curmax):
 		self.lowlim=lowlim

@@ -269,7 +269,7 @@ class EMFileType(object):
 		target.raise_()
 
 	def show2dStack(self,brws):
-		"A set of 2-D images together in an existing window"
+		"A set of 2-D images together in an existing window"		
 		brws.busy()
 		#if self.dim[2]>1:
 			#data=[]
@@ -772,7 +772,10 @@ class EMImageFileType(EMFileType):
 				("Show Stack+","Show all images together in a new window",self.show2dStackNew),("Show 2D","Show in a scrollable 2D image window",self.show2dSingle),
 				("Show 2D+","Show all images, one at a time in a new window",self.show2dSingleNew),("Chimera","Open in chimera (if installed)",self.showChimera),
 				("FilterTool","Open in e2filtertool.py",self.showFilterTool),("Save As","Saves images in new file format",self.saveAs)]
-		# single 2-D
+		# 2-D stack
+		elif self.nimg>1:
+			return [("Show Stack","Show as set of 2-D Z slices",self.show2dStack), ("Show Stack+","Show all images together in a new window",self.show2dStackNew),("Show 2D","Show in a scrollable 2D image window",self.show2dSingle),
+				("Show 2D+","Show all images, one at a time in a new window",self.show2dSingleNew), ("FilterTool","Open in e2filtertool.py",self.showFilterTool),("Save As","Saves images in new file format",self.saveAs)]
 		elif  self.dim[1]>1 :
 			return [("Show 2D","Show in a 2D single image display",self.show2dSingle),("Show 2D+","Show in new 2D single image display",self.show2dSingleNew),("FilterTool","Open in e2filtertool.py",self.showFilterTool),("Save As","Saves images in new file format",self.saveAs)]
 		# single 1-D
