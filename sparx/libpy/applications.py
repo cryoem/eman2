@@ -13513,3 +13513,961 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 		mpi_barrier(MPI_COMM_WORLD)
 
 
+def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, ynumber,\
+						txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, dphi, psi_max,\
+						rmin, rmax, fract,  npad, sym, user_func_name, \
+						pixel_size, debug, y_restrict, MA, search_iter, boundaryavg=False, MA_WRAP=True):
+
+	from alignment      import Numrinit, prepare_refrings
+	from alignment      import proj_ali_helicon_local, proj_ali_helicon_90_local
+	from utilities      import model_circle, get_image, drop_image, get_input_from_string, pad, model_blank
+	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all
+	from utilities      import send_attr_dict, read_text_row, sym_vol
+	from utilities      import get_params_proj, set_params_proj, file_type, chunks_distribution
+	from fundamentals   import rot_avg_image
+	from applications 	import setfilori, setfilori_MA, prepare_refrings2
+	from pixel_error    import max_3D_pixel_error, ordersegments
+	import os
+	import types
+	from utilities      import print_begin_msg, print_end_msg, print_msg
+	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
+	from mpi            import mpi_recv,  mpi_send, MPI_TAG_UB
+	from mpi            import mpi_reduce, MPI_INT, MPI_SUM
+	from filter         import filt_ctf
+	from projection     import prep_vol, prgs
+	from statistics     import hist_list, varf3d_MPI
+	from applications   import MPI_start_end, header
+	from EMAN2 import Vec2f
+	from string    import lower,split
+	from math import cos, pi
+	from copy import copy
+	
+	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
+	myid           = mpi_comm_rank(MPI_COMM_WORLD)
+	main_node = 0
+
+	if myid == 0:
+		if os.path.exists(outdir):  nx = 1
+		else:  nx = 0
+	else:  nx = 0
+	ny = bcast_number_to_all(nx, source_node = main_node)
+
+	if ny == 1:  ERROR('Output directory exists, please change the name and restart the program', "localhelicon_MPI", 1,myid)
+	mpi_barrier(MPI_COMM_WORLD)
+
+	if myid == main_node:
+		os.mkdir(outdir)
+		import global_def
+		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+		print_begin_msg("localhelicon_MPI")
+	mpi_barrier(MPI_COMM_WORLD)
+
+	if debug:
+		from time import sleep
+		while not os.path.exists(outdir):
+			print  "Node ",myid,"  waiting..."
+			sleep(5)
+
+		info_file = os.path.join(outdir, "progress%04d"%myid)
+		finfo = open(info_file, 'w')
+	else:
+		finfo = None
+
+	symref = "s"+sym
+
+	ref_a= "P"
+	symmetryLower = sym.lower()
+	symmetry_string = split(symmetryLower)[0]
+
+	xrng        = get_input_from_string(xr)
+	y_restrict       = get_input_from_string(y_restrict)
+	ynumber	    = get_input_from_string(ynumber)
+	for i in xrange(len(ynumber)):
+		if ynumber[i] > 0:
+			if(ynumber[i]%2==1): ynumber[i]=ynumber[i]+1
+	yrng =[]
+
+	for i in xrange(len(xrng)): yrng.append(dp/2)
+
+	stepx        = get_input_from_string(txs)
+	delta       = get_input_from_string(delta)
+	lstp = min(len(xrng), len(yrng), len(stepx), len(delta))
+	an = get_input_from_string(an)
+	
+	if len(an) == 1:
+		aan = an[0]
+		an = [aan for ii in xrange(lstp)]
+	y_restrict = y_restrict[0:lstp]
+	for i in xrange(lstp):
+		if an[i] < 0 and y_restrict[i] < 0: 
+			ERROR('This is a local search, an and y_restrict should not both be -1', "localhelicon_MPI", 1,myid)
+
+		if y_restrict[i] < 0:
+			y_restrict[i] = (an[i]/dphi)*(dp/pixel_size)/2.0
+
+	 	if an[i] < 0:
+	 		an[i] = ((2.0*y_restrict[i])/(dp/pixel_size)) * dphi
+
+	first_ring  = int(ir)
+	rstep       = int(rs)
+	last_ring   = int(ou)
+	max_iter    = int(maxit)
+	search_iter = int(search_iter)
+	totmax_iter = max_iter * search_iter
+
+	vol     = EMData()
+	vol.read_image(ref_vol)
+	nx      = vol.get_xsize()
+	ny      = vol.get_ysize()
+	nz      = vol.get_zsize()
+
+	if nz < nx:
+		ERROR('Do not handle squat volumes .... nz cannot be less than nx', "localhelicon_MPI", 1, myid)
+
+	# Pad to square
+	if nz > nx:
+		nx = nz
+		ny = nz	
+		vol = pad(vol, nx, ny,nz,background=0.0)	
+	nmax = max(nx, ny, nz)
+
+	if myid == main_node:
+		import user_functions
+		user_func = user_functions.factory[user_func_name]
+
+		print_msg("Input stack                               : %s\n"%(stack))
+		print_msg("Reference volume                          : %s\n"%(ref_vol))	
+		print_msg("Output directory                          : %s\n"%(outdir))
+		print_msg("Maskfile                                  : %s\n"%(maskfile))
+		print_msg("Inner radius                              : %i\n"%(first_ring))
+		print_msg("Outer radius                              : %i\n"%(last_ring))
+		print_msg("Ring step                                 : %i\n"%(rstep))
+		print_msg("X search range                            : %s\n"%(xrng))
+		print_msg("Y search range                            : %s\n"%(y_restrict))
+		print_msg("Y number                                  : %s\n"%(ynumber))
+		print_msg("Translational stepx                       : %s\n"%(stepx))
+		print_msg("Angular step                              : %s\n"%(delta))
+		print_msg("Angular search range                      : %s\n"%(an))
+		print_msg("Initial Theta                             : %s\n"%(initial_theta))
+		print_msg("min radius for helical search (in pix)    : %5.4f\n"%(rmin))
+		print_msg("max radius for helical search (in pix)    : %5.4f\n"%(rmax))
+		print_msg("fraction of volume used for helical search: %5.4f\n"%(fract))
+		print_msg("initial symmetry - angle                  : %5.4f\n"%(dphi))
+		print_msg("initial symmetry - axial rise             : %5.4f\n"%(dp))
+		print_msg("Maximum iteration                         : %i\n"%(max_iter))
+		print_msg("Data with CTF                             : %s\n"%(CTF))
+		print_msg("Signal-to-Noise Ratio                     : %5.4f\n"%(snr))
+		print_msg("npad                                      : %i\n"%(npad))
+		print_msg("User function                             : %s\n"%(user_func_name))
+		print_msg("seg_ny                                    : %i\n"%(seg_ny))
+		
+	if maskfile:
+		if type(maskfile) is types.StringType: mask3D = get_image(maskfile)
+		else:                                  mask3D = maskfile
+	else: mask3D = None
+	#else: mask3D = model_circle(last_ring, nx, nx, nx)
+	
+	if CTF:
+		from reconstruction import recons3d_4nn_ctf_MPI
+		from filter         import filt_ctf
+	else:	 from reconstruction import recons3d_4nn_MPI
+	
+	if( myid == 0):
+		infils = EMUtil.get_all_attributes(stack, "filament")
+		ptlcoords = EMUtil.get_all_attributes(stack, 'ptcl_source_coord')
+		filaments = ordersegments(infils, ptlcoords)
+		total_nfils = len(filaments)
+		inidl = [0]*total_nfils
+		for i in xrange(total_nfils):  inidl[i] = len(filaments[i])
+		linidl = sum(inidl)
+		tfilaments = []
+		for i in xrange(total_nfils):  tfilaments += filaments[i]
+		del filaments
+	else:
+		total_nfils = 0
+		linidl = 0
+	total_nfils = bcast_number_to_all(total_nfils, source_node = main_node)
+	if myid != main_node:
+		inidl = [-1]*total_nfils
+	inidl = bcast_list_to_all(inidl, source_node = main_node)
+	linidl = bcast_number_to_all(linidl, source_node = main_node)
+	if myid != main_node:
+		tfilaments = [-1]*linidl
+	tfilaments = bcast_list_to_all(tfilaments, source_node = main_node)
+	filaments = []
+	iendi = 0
+	for i in xrange(total_nfils):
+		isti = iendi
+		iendi = isti+inidl[i]
+		filaments.append(tfilaments[isti:iendi])
+	del tfilaments,inidl
+
+	if myid == main_node:
+		print "total number of filaments: ", total_nfils
+	if total_nfils< number_of_proc:
+		ERROR('number of CPUs (%i) is larger than the number of filaments (%i), please reduce the number of CPUs used'%(number_of_proc, total_nfils), "localhelicon_MPI", 1,myid)
+
+	#  balanced load
+	temp = chunks_distribution([[len(filaments[i]), i] for i in xrange(len(filaments))], number_of_proc)[myid:myid+1][0]
+	filaments = [filaments[temp[i][1]] for i in xrange(len(temp))]
+	nfils     = len(filaments)
+	list_of_particles = []
+	indcs = []
+	k = 0
+	for i in xrange(nfils):
+		list_of_particles += filaments[i]
+		k1 = k+len(filaments[i])
+		indcs.append([k,k1])
+		k = k1
+	
+	if debug:
+		finfo.write("image_start, image_end: %d %d\n" %(image_start, image_end))
+		finfo.flush()
+
+	data = EMData.read_images(stack, list_of_particles)
+	nima = len(data)
+	data_nx = data[0].get_xsize()
+	data_ny = data[0].get_ysize()
+	if ((nx < data_nx) or (data_nx != data_ny)):
+		ERROR('Images should be square with nx and ny equal to nz of reference volume', "localhelicon_MPI", 1, myid)
+	data_nn = max(data_nx, data_ny)
+	
+	segmask = pad(model_blank(2*rmax+1, seg_ny, 1, 1.0), data_nx, data_ny, 1, 0.0)
+	
+	if last_ring < 0:
+		last_ring = (max(seg_ny, 2*int(rmax)))//2 - 2
+	
+	numr	= Numrinit(first_ring, last_ring, rstep, "F")
+
+	#if fourvar:  original_data = []
+	for im in xrange(nima):
+		data[im].set_attr('ID', list_of_particles[im])
+		sttt = Util.infomask(data[im], segmask, False)
+		data[im] -= sttt[0]
+		#if fourvar: original_data.append(data[im].copy())
+		if CTF:
+			st = data[im].get_attr_default("ctf_applied", 0)
+			if(st == 0):
+				ctf_params = data[im].get_attr("ctf")
+				data[im] = filt_ctf(data[im], ctf_params)
+				data[im].set_attr('ctf_applied', 1)
+
+	if debug:
+		finfo.write( '%d loaded  \n' % nima )
+		finfo.flush()
+
+	for i in xrange(len(xrng)): yrng[i]=dp/(2*pixel_size)
+
+	if myid == main_node:
+		print_msg("Pixel size in Angstroms                   : %5.4f\n"%(pixel_size))
+		print_msg("Y search range (pix) initialized as       : %s\n\n"%(yrng))
+
+	#  set attribute updown for each filament, up will be 0, down will be 1
+	for ivol in xrange(nfils):
+		seg_start = indcs[ivol][0]
+		seg_end   = indcs[ivol][1]
+		filamentupdown(data[seg_start: seg_end], pixel_size, dp, dphi)
+
+	from time import time
+
+	total_iter = 0
+	for ii in xrange(lstp):
+		if stepx[ii] == 0.0:
+			if xrng[ii] != 0.0:
+				ERROR('xrange step size cannot be zero', "localhelicon_MPI", 1,myid)
+			else:
+				stepx[ii] = 1.0 # this is to prevent division by zero in c++ code
+	# do the projection matching
+	ooiter = 0
+	for N_step in xrange(lstp):
+		terminate = 0
+		Iter = 0
+ 		while(Iter < totmax_iter and terminate == 0):
+			yrng[N_step]=float(dp)/(2*pixel_size) #will change it later according to dp
+			if(ynumber[N_step]==0): stepy = 0.0
+			else:                   stepy = (2*yrng[N_step]/ynumber[N_step])
+
+			pixer  = [0.0]*nima
+			modphi = [0.0]*nima
+			ooiter += 1
+			Iter += 1
+			if Iter%search_iter == 0:  total_iter += 1
+
+			# If the previous iteration did a reconstruction, then generate new refrings
+			if ( (Iter - 1) % search_iter == 0):
+
+				if myid == main_node:
+					start_time = time()
+					print_msg("\n (localhelicon_MPI) ITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.4f, xrange (Pixels) = %5.4f,stepx (Pixels) = %5.4f, yrng (Pixels) = %5.4f,  stepy (Pixels) = %5.4f, y_restrict (Pixels)=%5.4f, ynumber = %3d\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],stepx[N_step],yrng[N_step],stepy,y_restrict[N_step], ynumber[N_step]))
+
+				volft,kb = prep_vol( vol )
+				refrings = prepare_refrings2(  volft, kb, nmax, segmask, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero", initial_theta =initial_theta, delta_theta = delta_theta)
+				del volft,kb
+
+				if myid== main_node:
+					print_msg( "Time to prepare rings: %d\n" % (time()-start_time) )
+					start_time = time()
+				#split refrings to two list: refrings1 (even point-group symmetry AND theta = 90. ), 
+				#   or refrings2 ( odd point-group symmetry AND any theta (including theta=90), OR even point-group symmetry AND theta <> 90.
+				refrings1= []
+				refrings2= []
+				sn = int(symmetry_string[1:])
+				for i in xrange( len(refrings) ):
+					if( sn%2 ==0 and abs( refrings[i].get_attr('n3') ) <1.0e-6 ):
+						#  even point-group symmetry AND theta = 90. 
+						refrings1.append( refrings[i] )
+					else:
+						# odd point-group symmetry AND any theta (including theta=90), OR even point-group symmetry AND theta <> 90.
+						refrings2.append( refrings[i] )
+
+				del refrings
+			from numpy import float32
+			dpp = float32(float(dp)/pixel_size)
+			dpp = float( dpp )
+			dpp_half = dpp/2.0
+
+			for ivol in xrange(nfils):
+
+				seg_start = indcs[ivol][0]
+				seg_end   = indcs[ivol][1]
+				Torg = []
+				for im in xrange( seg_start, seg_end ):
+					Torg.append(data[im].get_attr('xform.projection'))
+					
+				if (seg_end - seg_start) > 1:
+					if MA:
+						setfilori_MA(data[seg_start: seg_end], pixel_size, dp, dphi, total_iter, symmetry_string, boundaryavg=boundaryavg, WRAP=MA_WRAP)
+					else:
+						setfilori(data[seg_start: seg_end], pixel_size, dp, dphi, total_iter, symmetry_string)
+
+				for im in xrange( seg_start, seg_end ):
+					peak1 = None
+					peak2 = None
+
+					if( len(refrings1) > 0):
+						peak1, phihi1, theta1, psi1, sxi1, syi1 = \
+							proj_ali_helicon_90_local(data[im], refrings1, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], an[N_step], psi_max, finfo, yrnglocal=y_restrict[N_step])
+
+					if( len(refrings2) > 0):
+						peak2, phihi2, theta2, psi2, sxi2, syi2 = \
+							proj_ali_helicon_local(data[im], refrings2, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], an[N_step], psi_max, finfo, yrnglocal=y_restrict[N_step])
+
+					if peak1 is None: 
+						peak = peak2
+						phihi = phihi2
+						theta = theta2
+						psi = psi2
+						sxi = sxi2
+						syi = syi2
+					elif peak2 is None:
+						peak = peak1
+						phihi = phihi1
+						theta = theta1
+						psi = psi1
+						sxi = sxi1
+						syi = syi1
+					else:
+						if(peak1 >= peak2):
+							peak = peak1
+							phihi = phihi1
+							theta = theta1
+							psi = psi1
+							sxi = sxi1
+							syi = syi1
+						else:
+							peak = peak2
+							phihi = phihi2
+							theta = theta2
+							psi = psi2
+							sxi = sxi2
+							syi = syi2
+
+					if(peak > -1.0e23):
+
+						# unique ranges of azimuthal angle for ortho-axial and non-ortho-axial projection directions are identified by [k0,k1) and [k2,k3), where k0, k1, k2, k3 are floats denoting azimuthal angles.
+						# Eulerian angles whose azimuthal angles are mapped into [k2, k3) are related to Eulerian angles whose azimuthal angles are mapped into [k0, k1) by an in-plane mirror operaton along the x-axis.
+
+						tp = Transform({"type":"spider","phi":phihi,"theta":theta,"psi":psi})
+						tp.set_trans( Vec2f( -sxi, -syi ) )
+
+						k0 =   0.0
+						k2 = 180.0
+						if( abs( tp.at(2,2) )<1.0e-6 ):
+							if (symmetry_string[0] =="c"):
+								if sn%2 == 0:  k1=360.0/sn
+								else:          k1=360.0/2/sn
+							elif (symmetry_string[0] =="d"):
+								if sn%2 == 0:  k1=360.0/2/sn
+								else:          k1=360.0/4/sn
+						else:
+							if (symmetry_string[0] =="c"):  k1=360.0/sn
+							if (symmetry_string[0] =="d"):  k1=360.0/2/sn
+						k3 = k1 +180.0
+
+						from utilities import get_sym
+						T = get_sym(symmetry_string[0:])
+	
+						d1tp = tp.get_params('spider')
+						sxnew    = -d1tp["tx"]
+						synew    = -d1tp["ty"]
+						phinew   =  d1tp['phi']
+						thetanew =  d1tp["theta"]
+						psinew   =  d1tp["psi"]
+						del d1tp
+
+						for i in xrange( len(T) ):
+							ttt = tp*Transform({"type":"spider","phi":T[i][0],"theta":T[i][1],"psi":T[i][2]})
+							d1  = ttt.get_params("spider")
+
+							if ( abs( tp.at(2,2) )<1.0e-6 ):
+								if( sn%2==1 ): # theta=90 and n odd, only one of the two region match
+
+									if( ( d1['phi'] >= k0 and d1['phi'] < k1 ) or ( d1['phi'] >= k2 and d1['phi'] < k3 )):
+
+										sxnew    = -d1["tx"]
+										synew    = -d1["ty"]
+										phinew   =  d1['phi']
+										thetanew =  d1["theta"]
+										psinew   =  d1["psi"]
+
+										# For boundary cases where phihi is exactly on the boundary of the unique range, there may be two symmetry related Eulerian angles which are both in the unique 
+										# range but whose psi differ by 180. 
+										# For example, (180,90,270) has two symmetry related angles in unique range: (180,90,270) and (180, 90, 90)
+										# In local search, psi should stay within neighborhood of original value, so take the symmetry related
+										# Eulerian angles in unique range which does not change psi by 180.
+										if an[N_step] != -1:
+											if abs(psinew - psi) < 90:
+												break
+								else: #for theta=90 and n even, there is no mirror version during aligment, so only consider region [k0,k1]
+
+									if( d1['phi'] >= float(k0) and d1['phi'] < float(k1)  ) :
+
+										sxnew    = - d1["tx"]
+										synew    = - d1["ty"]
+										phinew   = d1['phi']
+										thetanew = d1["theta"]
+										psinew   = d1["psi"]
+
+							else: #theta !=90, # if theta >90, put the projection into [k2,k3]. Otherwise put it into the region [k0,k1]
+
+								if( sn==1):
+									sxnew    = sxi
+									synew    = syi
+									phinew   = phihi
+									thetanew = theta
+									psinew   = psi
+								else:
+
+									if (tp.at(2,2) >0.0): #theta <90
+
+										if(  d1['phi'] >= float(k0) and d1['phi'] < float(k1)):
+											if( cos( pi*float( d1['theta'] )/180.0 )>0.0 ):
+
+												sxnew    = -d1["tx"]
+												synew    = -d1["ty"]
+												phinew   =  d1['phi']
+												thetanew =  d1["theta"]
+												psinew   =  d1["psi"]
+
+									else:
+										if(  d1['phi'] >= float(k2) and d1['phi'] < float(k3)):
+											if( cos( pi*float( d1['theta'] )/180.0 )<0.0 ):
+
+												sxnew    = -d1["tx"]
+												synew    = -d1["ty"]
+												phinew   =  d1['phi']
+												thetanew =  d1["theta"]
+												psinew   =  d1["psi"]
+
+							del ttt,d1
+
+						t2 = Transform({"type":"spider","phi":phinew,"theta":thetanew,"psi":psinew})
+						t2.set_trans(Vec2f(-sxnew, -synew))
+						data[im].set_attr("xform.projection", t2)
+						pixer[im]  = max_3D_pixel_error(Torg[im-seg_start], t2, numr[-3])
+						data[im].set_attr("pixerr", pixer[im])
+
+					else:
+						# peak not found, parameters not modified
+						pixer[im]  = 0.0
+						data[im].set_attr("pixerr", pixer[im])
+						data[im].set_attr('xform.projection', Torg[im-seg_start])
+					
+			if myid == main_node:
+				print_msg("Time of alignment = %d\n"%(time()-start_time))
+				start_time = time()
+
+			mpi_barrier(MPI_COMM_WORLD)
+			
+			terminate = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
+			terminate = int(terminate[0])
+
+			mpi_barrier(MPI_COMM_WORLD)
+			
+			if (Iter % search_iter == 0):
+				
+				if CTF:  vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad)
+				else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, npad = npad)
+
+				if myid == main_node:
+					print_msg("\n3D reconstruction time = %d\n"%(time()-start_time))
+					start_time = time()
+
+					drop_image(vol, os.path.join(outdir, "vol%04d.hdf"%(total_iter)))
+			
+					#  symmetry is imposed
+					vol = vol.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
+					print_msg("Imposed delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))
+					vol = sym_vol(vol, symmetry=sym)
+					ref_data = [vol, mask3D]
+					#if  fourvar:  ref_data.append(varf)
+					vol = user_func(ref_data)
+					vol = vol.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
+					vol = sym_vol(vol, symmetry=sym)
+					drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(total_iter)))
+					print_msg("\nSymmetry search and user function time = %d\n"%(time()-start_time))
+					start_time = time()
+				
+				# delete old refrings2 since the next iteration will generate new ones
+				# using current volume
+				del refrings2
+				del refrings1
+				bcast_EMData_to_all(vol, myid, main_node)
+			
+			mpi_barrier(MPI_COMM_WORLD)
+
+			# write out headers, under MPI writing has to be done sequentially
+			from mpi import mpi_recv, mpi_send, MPI_TAG_UB, MPI_COMM_WORLD, MPI_FLOAT
+			par_str = ['xform.projection', 'ID','pixerr']
+			if myid == main_node:
+				if(file_type(stack) == "bdb"):
+					from utilities import recv_attr_dict_bdb
+					recv_attr_dict_bdb(main_node, stack, data, par_str, 0, nima, number_of_proc)
+				else:
+					from utilities import recv_attr_dict
+					recv_attr_dict(main_node, stack, data, par_str, 0, nima, number_of_proc)
+			else:
+				send_attr_dict(main_node, data, par_str, 0, nima)
+			
+			if myid == main_node:
+				# write params to text file
+				header(stack, params='xform.projection', fexport=os.path.join(outdir, "parameters%04d.txt"%(ooiter)))
+				header(stack, params='pixerr', fexport=os.path.join(outdir, "pixelerror%04d.txt"%(ooiter)))
+
+def setfilori_MA(fildata, pixel_size, dp, dphi, iter, sym='c1', boundaryavg=False, WRAP=1):
+	from utilities		import get_params_proj, set_params_proj
+	from pixel_error 	import angle_diff
+	from applications	import filamentupdown
+	from copy 			import copy
+	from math 			import atan2, sin, cos, pi
+
+	def get_dist(c1, c2):
+		from math import sqrt
+		d = sqrt((c1[0] - c2[0])**2 + (c1[1] - c2[1])**2)
+		return d
+
+	if sym != 'c1':
+		ERROR("does not handle any point-group symmetry other than c1 for the time being.", 'setfilori_MA')
+
+	dpp 	= dp/pixel_size
+	ddphi   = pixel_size/dp*dphi
+	ns 		= len(fildata)
+	qv 		= pi/180.0
+
+	phig 	= [0.0]*ns # given phi
+	psig 	= [0.0]*ns # given psi
+	yg 		= [0.0]*ns # given y
+	xg 		= [0.0]*ns # given x
+	thetag	= [0.0]*ns # given theta
+
+	updown = fildata[0].get_attr("updown")
+
+	# check that inter-segment distances are multiples of the rise
+	# Only do this once in the first iteration
+	if iter == 1:
+		p0 = fildata[0].get_attr('ptcl_source_coord')
+		THR = 0.001
+		for im in xrange(1, ns):
+			distance = get_dist( fildata[im].get_attr('ptcl_source_coord'), p0 )%dpp
+			if (abs(distance - dpp) > THR) and (distance > THR):
+				ERROR('only handles case where inter-segment distances are ~ multiples of the rise', 'setfilori_MA')
+
+	for im in xrange(ns):
+		phig[im], thetag[im], psig[im] , xg[im], yg[im] = get_params_proj(fildata[im])
+		if abs(psig[im] - psig[0]) > 90:
+			ERROR('PSI should be pointing in the same direction for all segments belonging to same filament', 'setfilori_MA')
+
+	# forward predicted psi of segment i is current psi of segment i + 1
+	# backward predicted psi of segment i is current psi of segment i - 1
+	# For now set the new psi to the psi closest to the two predicted psi
+	conspsi = [0.0]*ns
+	for i in xrange(1,ns-1):
+		ff = psig[i+1]*qv
+		bb = psig[i-1]*qv
+		conspsi[i] = (atan2(  (sin(ff)+sin(bb)) , (cos(ff)+cos(bb)) )/qv)%360.0
+
+	if boundaryavg:
+		ff = psig[1]*qv
+		bb = psig[0]*qv
+		conspsi[0] = (atan2(  (sin(ff)+sin(bb)) , (cos(ff)+cos(bb)) )/qv)%360.0
+		ff = psig[ns-1]*qv
+		bb = psig[ns-2]*qv
+		conspsi[ns-1] = (atan2(  (sin(ff)+sin(bb)) , (cos(ff)+cos(bb)) )/qv)%360.0
+	else:
+		conspsi[0]    = psig[1]
+		conspsi[ns-1] = psig[ns-2]
+
+	# predict theta in same way as psi. 
+	constheta = [0.0]*ns
+	for i in xrange(1,ns-1):
+		ff = thetag[i+1]*qv
+		bb = thetag[i-1]*qv
+		constheta[i] = (atan2(  (sin(ff)+sin(bb)) , (cos(ff)+cos(bb)) )/qv)%360.0
+	if boundaryavg:
+		ff = thetag[1]*qv
+		bb = thetag[0]*qv
+		constheta[0] = (atan2(  (sin(ff)+sin(bb)) , (cos(ff)+cos(bb)) )/qv)%360.0
+		ff = thetag[ns-1]*qv
+		bb = thetag[ns-2]*qv
+		constheta[ns-1] = (atan2(  (sin(ff)+sin(bb)) , (cos(ff)+cos(bb)) )/qv)%360.0
+	else:
+		constheta[0]    = thetag[1]
+		constheta[ns-1] = thetag[ns-2]
+
+	consy = [0.0]*ns
+	for i in xrange(1,ns-1): consy[i] = (yg[i+1] + yg[i-1])/2.0
+	if boundaryavg:
+		consy[0]    = (yg[1] + yg[0])/2.0
+		consy[ns-1] = (yg[ns-1] + yg[ns-2])/2.0
+	else:
+		consy[0]    = yg[1]
+		consy[ns-1] = yg[ns-2]
+
+	consx = [0.0]*ns
+	for i in xrange(1,ns-1): consx[i] = (xg[i+1] + xg[i-1])/2.0
+	if boundaryavg:
+		consx[0]    = (xg[1] + xg[0])/2.0
+		consx[ns-1] = (xg[ns-1] + xg[ns-2])/2.0
+	else:
+		consx[0]    = xg[1]		
+		consx[ns-1] = xg[ns-2]
+
+	# Predict phi angles based on approximate distances calculated using theta=90 between nearby segments.
+	# (The other option is to calculate distance between segments using predicted theta. 
+	#   But for now, just use theta=90 since for reasonable deviations of theta from 90 (say +/- 10 degrees), 
+	#   and an intersegment distance of say >= 15 pixels, the difference theta makes is minimal.)
+
+	# Determine sign of dphi from given phi angles
+	# Assuming a sign for dphi, predict phi for each segment based on the preceding segment, 
+	#   and add up the errors per segment between predicted and given.
+	# The sign for dphi is the one that yields the smaller total error.
+
+	if updown == 1:    ddphi = -ddphi
+
+	consphi = [0.0]*ns
+
+	for i in xrange(1,ns-1):
+		ci    = fildata[i].get_attr('ptcl_source_coord')
+		fpred = qv*((phig[i+1] - get_dist(ci, fildata[i+1].get_attr('ptcl_source_coord'))*ddphi)%360.0)
+		bpred = qv*((phig[i-1] + get_dist(ci, fildata[i-1].get_attr('ptcl_source_coord'))*ddphi)%360.0)
+		consphi[i] = (atan2(  (sin(fpred)+sin(bpred)) , (cos(fpred)+cos(bpred)) )/qv)%360.0
+		#print i,phig[i-1],phig[i],phig[i+1],fpred,bpred,consphi[i]
+
+	if boundaryavg:
+		fpred = qv*((phig[1] - get_dist(fildata[0].get_attr('ptcl_source_coord'), fildata[1].get_attr('ptcl_source_coord'))*ddphi)%360.0)
+		bpred = qv*phig[0]
+		consphi[0] = (atan2(  (sin(fpred)+sin(bpred)) , (cos(fpred)+cos(bpred)) )/qv)%360.0
+		#print  ddphi, bpred,fpred,consphi[0]
+
+		bpred = qv*((phig[ns-2] + get_dist(fildata[ns-1].get_attr('ptcl_source_coord'), fildata[ns-2].get_attr('ptcl_source_coord'))*ddphi)%360.0)
+		fpred = qv*phig[ns-1]
+		consphi[ns-1] = (atan2(  (sin(fpred)+sin(bpred)) , (cos(fpred)+cos(bpred)) )/qv)%360.0
+		#print  ddphi, bpred,fpred,consphi[ns-1]
+	else:
+		c0   = fildata[0].get_attr('ptcl_source_coord')
+		c1   = fildata[1].get_attr('ptcl_source_coord')
+		consphi[0] = (phig[1] - get_dist(c0, c1)*ddphi)%360.0
+
+		cn1   = fildata[ns-1].get_attr('ptcl_source_coord')
+		cn2   = fildata[ns-2].get_attr('ptcl_source_coord')
+		consphi[ns-1] =  (phig[ns-2] + get_dist(cn1, cn2)*ddphi)%360.0
+
+	for im in xrange(ns):
+		iconsphi 	= consphi[im]
+		iconstheta 	= constheta[im]
+		iconspsi 	= conspsi[im]
+		iconsx 		= consx[im]
+		iconsy 		= consy[im]
+
+		aphi = 0.0
+		if WRAP == 1:
+			if abs(iconsy) >= dpp/2.0:
+				iconsy, aphi = yshift_to_phi(iconsy, iconspsi, pixel_size, dp, dphi)
+		set_params_proj(fildata[im], [(iconsphi + aphi)%360., iconstheta, iconspsi, iconsx, iconsy])
+
+def filamentupdown(fildata, pixel_size, dp, dphi):
+	def get_dist(c1, c2):
+		from math import sqrt
+		d = sqrt((c1[0] - c2[0])**2 + (c1[1] - c2[1])**2)
+		return d
+	from utilities import get_params_proj
+
+	ddphi = pixel_size/dp*dphi
+	ns = len(fildata)
+	phig 	= [0.0]*ns # given phi
+	for i in xrange(ns):
+		phig[i], theta, psi, s2x, s2y = get_params_proj(fildata[i])
+
+	pterr = 0.0 # total error between predicted angles and given angles
+	mterr = 0.0
+	for i in xrange(1, ns):
+		dim = get_dist(fildata[i].get_attr('ptcl_source_coord'), fildata[i-1].get_attr('ptcl_source_coord'))*ddphi
+		err    = ((phig[i-1] + dim)%360.0 - phig[i])%360.0
+		pterr += min(err, 360.0 - err)
+		err    = ((phig[i-1] - dim)%360.0 - phig[i])%360.0
+		mterr += min(err, 360.0 - err)
+
+	if pterr < mterr:    updown = 0
+	else:                updown = 1
+	for i in xrange(ns):  fildata[i].set_attr("updown",updown)
+	return
+
+def setfilori(fildata, pixel_size, dp, dphi, iter, sym='c1'):
+	from utilities		import get_params_proj, set_params_proj
+	from pixel_error 	import angle_diff
+	from copy import copy
+	
+	def get_dist(c1, c2):
+		from math import sqrt
+		d = sqrt((c1[0] - c2[0])**2 + (c1[1] - c2[1])**2)
+		return d
+		
+	'''
+	Input:
+	
+		fildata: list of EMData objects corresponding to segments of a single filament containing 
+			     projection orientation parameters (not necessarily consistent according to helical symmetry).
+		
+		dp: 	 rise in Angstroms
+		
+		dphi:    Azimuthal rotation
+		
+		Note   : The projection parameters in fildata should be "roughly" consistent in that 
+		         the psi should approximately agree, i.e., all ~90 or all ~270.
+				
+				 Inter-segment distances must be multiples of rise to facilitate
+				 calculation of consistent parameters.
+				 
+	Output:
+	
+		Sets xform.projection attribute in fildata to projection orientation directions which 
+		are consistent according to helical symmetry and which are "close" to the initial 
+		projection orientation parameters in fildata.
+		
+		Notes:
+	
+		1. psi of consistent parameters are calculated as the average of the given
+	  	   psi, which means they are closest to the given x-shifts/theta/psi in the least-squares sense.
+		
+		2. Assuming consistent y-shifts should be the same (which is the case when inter-segment
+		   distances are multiples of the rise) for all the segments, then consistent phi 
+		   angles are related as follows:
+	   
+	          predicted phi of segment i = predicted phi of segment 0 +/- dphi*(dist(i,0))/rise
+	   	   
+	   	   The sign depends on the relative orderingo of segments as they are windowed from 
+	   	   the filament and cannot be known beforehand.
+	   	   
+	   	   For instance, given a perfect helical filament, segment 0 could lie "above" 
+	   	   segment 1 or "below" it, which would determine whether dphi*(dist(1,0))/rise is 
+	   	   added or subtracted from the phi angle of segment 0 to obtain the phi angle
+	   	   of segment 1. 
+	   	    
+	 	   So there are two possible sets of consistent phi angles. We take the set of consistent phi
+	 	   angles that is the "closest" to the given phi angles (in fildata) after applying an overall rotation:
+		      			
+		      (i)  Use angle_diff to determine the relative angle between the consistent phi
+		           angles and the given phi angles.
+		      
+		      (ii) Apply the relative angle to the consistent angles, and find the overall 
+		           error between the resulting angles and the given phi angles as the sum 
+		           of the absolute errors between corresponding angles.
+		
+	        Use the consistent set of phi angles which yields the smallest overall error as determined in step (ii).      
+		
+		3. Consistent y-shifts is calculated as the average of the given y-shifts. This yields
+		   the consistent y-shift that is the closet to the given y-shifts in the least squares
+		   sense. 
+		   
+		   This is a direct consequence of the assumption that inter-segment distances are
+		   multiples of the rise, which implies that consistent y-shifts must be the same
+		   for all the segments.	   
+		   
+		   The consistent y-shift corresponds to an overrall movement of the entire filament.
+		   For instance, suppose the given y-shifts are ALL seven pixels, in which case
+		   the consistent y-shift would be seven pixels and thus correspond to a collective
+		   shift of seven pixels.
+		
+		   Due to helical symmetry, each shift by one rise corresponds to a rotation of dphi around helical axis.
+		   E.g., shifting all the segments up by one rise corresponds to a rotation by +/- dphi.
+		   
+		   A shift which is less than one rise cannot be compensated for by rotation.
+		   
+		   Hence, when the consistent y-shift is larger than one rise, a rotation corresponding
+		   to the number of integer rises contained in the y-shift is added to the consistent 
+		   phi angle of each segment, and the corresponding number of rises is subtracted
+		   from the original consistent y-shift.
+		   
+		   The above implies the consistent y-shift is always less than one rise.
+	'''
+	
+	if sym != 'c1':
+		ERROR("setfilori does not handle any point-group symmetry other than c1 right now.", 'setfilori')
+	
+	dpp = dp/pixel_size
+	ns = len(fildata)
+	sumpsi = 0.0
+	phig = [] # given phi
+	sumy = 0.0
+	
+	p0 = fildata[0].get_attr('ptcl_source_coord')
+	distances = [0.0]*ns
+	for i in xrange(1,ns):  distances[i] = get_dist( fildata[i].get_attr('ptcl_source_coord'), p0 )
+	
+	# check that inter-segment distances are multiples of the rise
+	# Only do this once in the first iteration
+	if iter == 1:
+		THR = 0.001
+		for im in xrange(1, ns):
+			if (abs(distances[im]%dpp - dpp) > THR) and (distances[im]%dpp > THR):
+				ERROR('setfilori currently only handles case where inter-segment distances are ~ multiples of the rise', 'setfilori')
+		
+	for im in xrange(ns):
+		phi, theta, psi, s2x, s2y = get_params_proj(fildata[im])
+		if im == 0:
+			PSI0 = psi
+		phig.append(phi)
+		sumy += s2y
+		sumpsi += psi
+		if abs(psi - PSI0) > 90:
+			ERROR('PSI should be approximately the same for all segments belonging to same filament', 'setfilori')
+			
+	# For now set the new psi to the psi closest to the psi from local search in the least squares sense (i.e., the average)
+	conspsi = sumpsi/ns
+	
+	# Find the single y-shift which is closest to all the y-shifts in least squares sense.
+	# When inter-segment distances are multiples of the rise, this is simply the average.
+	consy = sumy/ns
+	# Find consistent phi angles closest to given phi angles
+	terr = 1.e23
+	for idir in xrange(-1,2,2):
+		#  get phi's
+		ddphi = pixel_size/dp*idir*dphi
+		phis = [0.0]*ns
+		#print "  MIC  ",mic
+		for i in xrange(ns):
+			phis[i] = (distances[i]*ddphi)%360.0
+		# find the overall angle
+		angdif = angle_diff(phis,phig)
+		#print " angdif ",angdif
+		lerr = 0.0
+		newphi = []
+		for i in xrange(ns):
+			cphi = phis[i]+angdif
+			anger = (cphi - phig[i] + 360.0)%360.0
+			newphi.append(cphi)
+			if( anger > 180.0 ): anger -= 360.0
+			lerr += abs(anger)
+			#print  " %7.3f   %7.3f   %7.3f"%((phis[i]+angdif+360.0)%360.0 , phig[i],anger)
+		if(lerr < terr):
+			terr = lerr
+			consphi = copy(newphi)
+	
+	# Now we have consistent y-shift (which should be same for all segments since
+	# inter-segment distances are multiples of rise) and consistent phi angles.
+	
+	# If consistent y-shift is larger than or equal to one rise, translate it to rotation so
+	# that y-shift is less than one rise, and add the additional rotation to the consistent
+	# phi angles
+	
+	aphi = 0
+	if consy >= dpp:
+		consy, aphi = yshift_to_phi(consy, conspsi, pixel_size, dp, dphi)
+	if consy >= dpp/2.0:
+		print "need to check dpp/2.0"
+		sys.exit()
+	for im in xrange(ns):
+		phi, theta, psi, s2x, s2y = get_params_proj(fildata[im])
+		set_params_proj(fildata[im], [consphi[im] + aphi, theta, conspsi, s2x, consy])
+		
+def prepare_refrings2( volft, kb, nz, segmask, delta, ref_a, sym, numr, MPI=False, phiEqpsi = "Minus", kbx = None, kby = None, initial_theta = None, delta_theta = None):
+
+	from projection   import prep_vol, prgs
+	from math         import sin, cos, pi
+	from applications import MPI_start_end
+	from utilities    import even_angles
+	from alignment	  import ringwe
+	
+	# generate list of Eulerian angles for reference projections
+	#  phi, theta, psi
+	mode = "F"
+	if initial_theta is None:
+		ref_angles = even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+	else:
+		if delta_theta is None: delta_theta = 1.0
+		ref_angles = even_angles(delta, theta1 = initial_theta, theta2 = delta_theta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+	wr_four  = ringwe(numr, mode)
+	cnx = nz//2 + 1
+	cny = nz//2 + 1
+	qv = pi/180.
+	num_ref = len(ref_angles)
+
+	if MPI:
+		from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
+		myid = mpi_comm_rank( MPI_COMM_WORLD )
+		ncpu = mpi_comm_size( MPI_COMM_WORLD )
+	else:
+		ncpu = 1
+		myid = 0
+	from applications import MPI_start_end
+	ref_start, ref_end = MPI_start_end(num_ref, ncpu, myid)
+
+	refrings = []     # list of (image objects) reference projections in Fourier representation
+
+	sizex = numr[len(numr)-2] + numr[len(numr)-1]-1
+
+	for i in xrange(num_ref):
+		prjref = EMData()
+		prjref.set_size(sizex, 1, 1)
+		refrings.append(prjref)
+
+	if kbx is None:
+		for i in xrange(ref_start, ref_end):
+			prjref = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
+			Util.mul_img(prjref, segmask )
+			cimage = Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
+			Util.Normalize_ring(cimage, numr)
+			Util.Frngs(cimage, numr)
+			Util.Applyws(cimage, numr, wr_four)
+			refrings[i] = cimage
+	else:
+		print "don't handle this case"
+		sys.exit()
+	if MPI:
+		from utilities import bcast_EMData_to_all
+		for i in xrange(num_ref):
+			for j in xrange(ncpu):
+				ref_start, ref_end = MPI_start_end(num_ref, ncpu, j)
+				if i >= ref_start and i < ref_end: rootid = j
+			bcast_EMData_to_all(refrings[i], myid, rootid)
+
+	for i in xrange(len(ref_angles)):
+		n1 = sin(ref_angles[i][1]*qv)*cos(ref_angles[i][0]*qv)
+		n2 = sin(ref_angles[i][1]*qv)*sin(ref_angles[i][0]*qv)
+		n3 = cos(ref_angles[i][1]*qv)
+		refrings[i].set_attr_dict( {"n1":n1, "n2":n2, "n3":n3} )
+		refrings[i].set_attr("phi",   ref_angles[i][0])
+		refrings[i].set_attr("theta", ref_angles[i][1])
+		refrings[i].set_attr("psi",   ref_angles[i][2])
+
+	return refrings
