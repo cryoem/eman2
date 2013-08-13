@@ -13525,7 +13525,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 	from utilities      import send_attr_dict, read_text_row, sym_vol
 	from utilities      import get_params_proj, set_params_proj, file_type, chunks_distribution
 	from fundamentals   import rot_avg_image
-	from applications 	import setfilori, setfilori_MA, prepare_refrings2
+	from applications 	import setfilori, setfilori_MA, prepare_refrings2, setfilori_MA_arbdist, filamentupdown, filamentupdown_arbdist
 	from pixel_error    import max_3D_pixel_error, ordersegments
 	import os
 	import types
@@ -13761,13 +13761,13 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 	if myid == main_node:
 		print_msg("Pixel size in Angstroms                   : %5.4f\n"%(pixel_size))
 		print_msg("Y search range (pix) initialized as       : %s\n\n"%(yrng))
-
+	
 	#  set attribute updown for each filament, up will be 0, down will be 1
 	for ivol in xrange(nfils):
 		seg_start = indcs[ivol][0]
 		seg_end   = indcs[ivol][1]
 		filamentupdown(data[seg_start: seg_end], pixel_size, dp, dphi)
-
+		
 	from time import time
 
 	total_iter = 0
@@ -14471,3 +14471,219 @@ def prepare_refrings2( volft, kb, nz, segmask, delta, ref_a, sym, numr, MPI=Fals
 		refrings[i].set_attr("psi",   ref_angles[i][2])
 
 	return refrings
+
+		
+def predict(phig, yg, dst, sgn, ysgn, dpp, dphi, backpred=True):
+	
+	back = 1
+	if not(backpred):
+		back=-1
+		
+	if dst%dpp <= 0.5*dpp:
+		predphi = (phig + back*sgn * int(dst/dpp)* dphi)%360.0
+		predy = yg + back*ysgn*(dst%dpp)
+		
+		if predy > 0:
+			if predy% dpp > 0.5 *dpp:
+				predy = predy - dpp
+				predphi = (predphi + sgn*dphi)%360.
+		else:
+			if abs(predy)% dpp > 0.5 *dpp:
+				predy = predy + dpp
+				predphi = (predphi - sgn*dphi)%360.
+	
+					
+	else:
+		predphi = (phig + back*sgn * (int(dst/dpp)* dphi + dphi))%360.0
+		predy = yg + back*ysgn*((dst%dpp) - dpp) 
+		
+		if predy > 0:
+			if predy% dpp > 0.5 *dpp:
+				predy = predy - dpp
+				predphi = (predphi + sgn*dphi)%360.
+		else:
+			if abs(predy)% dpp > 0.5 *dpp:
+				predy = predy + dpp
+				predphi = (predphi - sgn*dphi)%360.
+
+	return predy, predphi
+	
+def setfilori_MA_arbdist(fildata, pixel_size, dp, dphi, iter, sym='c1', boundaryavg=False, WRAP=False):
+	from utilities		import get_params_proj, set_params_proj
+	from pixel_error 	import angle_diff
+	from applications	import filamentupdown, predict
+	from copy 			import copy
+	from math 			import atan2, sin, cos, pi
+
+	def get_dist(c1, c2):
+		from math import sqrt
+		d = sqrt((c1[0] - c2[0])**2 + (c1[1] - c2[1])**2)
+		return d
+
+	if sym != 'c1':
+		ERROR("does not handle any point-group symmetry other than c1 for the time being.", 'setfilori_MA')
+
+	dpp 	= dp/pixel_size
+	phisgn 	= 1
+	ysgn 	= 1
+	ns 		= len(fildata)
+	qv 		= pi/180.0
+
+	phig 	= [0.0]*ns # given phi
+	psig 	= [0.0]*ns # given psi
+	yg 		= [0.0]*ns # given y
+	xg 		= [0.0]*ns # given x
+	thetag	= [0.0]*ns # given theta
+
+	updown = fildata[0].get_attr("updown")
+	yupdown = fildata[0].get_attr("yupdown")
+	
+	for im in xrange(ns):
+		phig[im], thetag[im], psig[im] , xg[im], yg[im] = get_params_proj(fildata[im])
+		if abs(psig[im] - psig[0]) > 90:
+			ERROR('PSI should be pointing in the same direction for all segments belonging to same filament', 'setfilori_MA')
+
+	# forward predicted psi of segment i is current psi of segment i + 1
+	# backward predicted psi of segment i is current psi of segment i - 1
+	# For now set the new psi to the psi closest to the two predicted psi
+	conspsi = [0.0]*ns
+	for i in xrange(1,ns-1):
+		ff = psig[i+1]*qv
+		bb = psig[i-1]*qv
+		conspsi[i] = (atan2(  (sin(ff)+sin(bb)) , (cos(ff)+cos(bb)) )/qv)%360.0
+
+	if boundaryavg:
+		ff = psig[1]*qv
+		bb = psig[0]*qv
+		conspsi[0] = (atan2(  (sin(ff)+sin(bb)) , (cos(ff)+cos(bb)) )/qv)%360.0
+		ff = psig[ns-1]*qv
+		bb = psig[ns-2]*qv
+		conspsi[ns-1] = (atan2(  (sin(ff)+sin(bb)) , (cos(ff)+cos(bb)) )/qv)%360.0
+	else:
+		conspsi[0]    = psig[1]
+		conspsi[ns-1] = psig[ns-2]
+
+	# predict theta in same way as psi. 
+	constheta = [0.0]*ns
+	for i in xrange(1,ns-1):
+		ff = thetag[i+1]*qv
+		bb = thetag[i-1]*qv
+		constheta[i] = (atan2(  (sin(ff)+sin(bb)) , (cos(ff)+cos(bb)) )/qv)%360.0
+	if boundaryavg:
+		ff = thetag[1]*qv
+		bb = thetag[0]*qv
+		constheta[0] = (atan2(  (sin(ff)+sin(bb)) , (cos(ff)+cos(bb)) )/qv)%360.0
+		ff = thetag[ns-1]*qv
+		bb = thetag[ns-2]*qv
+		constheta[ns-1] = (atan2(  (sin(ff)+sin(bb)) , (cos(ff)+cos(bb)) )/qv)%360.0
+	else:
+		constheta[0]    = thetag[1]
+		constheta[ns-1] = thetag[ns-2]
+
+	consx = [0.0]*ns
+	for i in xrange(1,ns-1): consx[i] = (xg[i+1] + xg[i-1])/2.0
+	if boundaryavg:
+		consx[0]    = (xg[1] + xg[0])/2.0
+		consx[ns-1] = (xg[ns-1] + xg[ns-2])/2.0
+	else:
+		consx[0]    = xg[1]		
+		consx[ns-1] = xg[ns-2]
+
+	# Predict phi angles based on approximate distances calculated using theta=90 between nearby segments.
+	# (The other option is to calculate distance between segments using predicted theta. 
+	#   But for now, just use theta=90 since for reasonable deviations of theta from 90 (say +/- 10 degrees), 
+	#   and an intersegment distance of say >= 15 pixels, the difference theta makes is minimal.)
+
+	# Determine sign of dphi from given phi angles
+	# Assuming a sign for dphi, predict phi for each segment based on the preceding segment, 
+	#   and add up the errors per segment between predicted and given.
+	# The sign for dphi is the one that yields the smaller total error.
+
+	if updown == 1:    	phisgn = -1
+	if yupdown == 1:	ysgn = -1
+	consphi = [0.0]*ns
+	consy = [0.0]*ns
+	
+	for i in xrange(1,ns-1):
+		ci    = fildata[i].get_attr('ptcl_source_coord')
+		dstp1 = get_dist(ci, fildata[i+1].get_attr('ptcl_source_coord'))
+		dstm1 = get_dist(ci, fildata[i-1].get_attr('ptcl_source_coord'))
+		
+		bpredy, bpred = predict(phig[i-1], yg[i-1], dstm1, phisgn, ysgn, dpp, dphi, backpred=True)
+		fpredy, fpred = predict(phig[i+1], yg[i+1], dstp1, phisgn, ysgn, dpp, dphi, backpred=False)
+		
+		fpred = qv*fpred
+		bpred = qv*bpred
+		consphi[i] = (atan2(  (sin(fpred)+sin(bpred)) , (cos(fpred)+cos(bpred)) )/qv)%360.0
+		
+		consy[i] = (fpredy + bpredy)/2.0
+	
+	dst = get_dist(fildata[0].get_attr('ptcl_source_coord'), fildata[1].get_attr('ptcl_source_coord'))
+	fpredyFirst, fpredFirst = predict(phig[1], yg[1], dst, phisgn, ysgn, dpp, dphi, backpred=False)
+	fpredFirst = qv*fpredFirst
+
+	dst=get_dist(fildata[ns-1].get_attr('ptcl_source_coord'), fildata[ns-2].get_attr('ptcl_source_coord'))
+	bpredyLast, bpredLast = predict(phig[ns-2], yg[ns-2], dst, phisgn, ysgn, dpp, dphi, backpred=True)
+	bpredLast= qv*bpredLast
+	
+	consphi[0] = fpredFirst
+	consy[0] = fpredyFirst
+	consphi[ns-1] = bpredLast
+	consy[ns-1]= bpredyLast
+	
+	for im in xrange(ns):
+		iconsphi 	= consphi[im]
+		iconstheta 	= constheta[im]
+		iconspsi 	= conspsi[im]
+		iconsx 		= consx[im]
+		iconsy 		= consy[im]
+
+		set_params_proj(fildata[im], [(iconsphi)%360., iconstheta, iconspsi, iconsx, iconsy])
+
+def filamentupdown_arbdist(fildata, pixel_size, dp, dphi):
+	from applications import predict
+	def get_dist(c1, c2):
+		from math import sqrt
+		d = sqrt((c1[0] - c2[0])**2 + (c1[1] - c2[1])**2)
+		return d
+			
+	from utilities import get_params_proj
+
+	ns = len(fildata)
+	phig 	= [0.0]*ns # given phi
+	yg 		= [0.0]*ns
+	for i in xrange(ns):
+		phig[i], theta, psi, s2x, yg[i] = get_params_proj(fildata[i])
+	
+	SGN_PHI = 1
+	SGN_Y = 1
+	minerr = None
+	dpp = dp/pixel_size
+	for sgn in [-1,1]:
+		for ysgn in [-1,1]:
+			phierr=0.0
+			yerr = 0.0
+			for i in xrange(1, ns):
+				dst = get_dist(fildata[i].get_attr('ptcl_source_coord'), fildata[i-1].get_attr('ptcl_source_coord'))
+				
+				predy, predphi = predict(phig[i-1], yg[i-1], dst, sgn, ysgn, dpp, dphi, backpred=True)
+				
+				err = (predphi- phig[i])%360.0
+				phierr += min(err, 360.-err)
+				yerr += abs(predy - yg[i])
+				
+			if ((phierr+yerr) < minerr) or (minerr == None):
+				minerr = phierr+yerr
+				SGN_PHI = sgn
+				SGN_Y = ysgn
+				
+	if SGN_PHI==1:    updown = 0
+	else:                updown = 1
+	for i in xrange(ns):  fildata[i].set_attr("updown",updown)
+	
+	if SGN_Y==1:		yupdown = 0
+	else:                	yupdown = 1
+	for i in xrange(ns):  fildata[i].set_attr("yupdown",yupdown)
+	
+	return
+	
