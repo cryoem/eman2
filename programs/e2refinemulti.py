@@ -556,7 +556,7 @@ maps.")
 		setname="sets/{}_mul{}_it{:02d}".format(options.input.split("/")[-1].replace(".","-"),options.path[-2:],it)
 		
 	# Now we split the data into sets for individual model refinements
-	run("e2classextract.py {path}/classes_{itr:02d}.hdf --refinemulti --sort --verbose=1 --setname={}".format(path=options.path,itr=it,setname))
+	run("e2classextract.py {path}/classes_{itr:02d}.hdf --refinemulti --sort --verbose=1 --setname={set}".format(path=options.path,itr=it,set=setname))
 
 	print "e2refinemulti.py completed sucessfully, but you are not yet done. The particles going into each output map have been seperated into the sets listed above. \
 You now need to run a single model e2refine_easy job for each of these output sets to produce the final maps. The maps in {} are not optimal, and no gold standard \
