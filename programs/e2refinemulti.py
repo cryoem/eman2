@@ -564,7 +564,7 @@ resolution has been determined for them.".format(options.path)
 	append_html("<p>e2refinemulti.py has now completed running, and experienced no detectable errors, but you aren't done yet. The multi-model refinement method is inherently somewhat instable, particularly if \
 the variability in your map you are trying to classify is continuous rather than discrete. What this means is, the final maps in {}, are not entirely optimal, and do not have gold standard resolutions associated \
 with them. Your next step should be to run a normal e2refine_easy run for the particles from each of the subgroups produced by this run of e2refinemulti. To facilitate that process, new particle sets have \
-been produced for you, called {}_m*. Just run e2refine_easy.py for each of these sets. </p>
+been produced for you, called {}_m*. Just run e2refine_easy.py for each of these sets. </p>\
 <p>Normally you would use the final map corresponding to each particle set as a starting model for these refinements, but \
 you may also consider doing a cross-validation on your individual maps. To do that, you would, for example, use the particles from map 1 as --input and the --model would be map 2, and vice versa. If \
 you recover a structure more like map 1 (using the particles from map 1), despite the incorrect starting model, that indicates that the particle classification was more than just noise bias, and should \
