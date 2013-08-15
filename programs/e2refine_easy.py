@@ -323,6 +323,12 @@ maps.")
 		postprocess=""
 		m3dsetsf=""
 
+	if options.sym.lower()=="c1" and options.targetres>15 :
+		append_html("<p>Since you are not imposing symmetry, and your target resolution is low, there is a risk that the even and odd maps produced during refinement \
+may become significantly misaligned (more than a few degrees). Small misalignments are automatically corrected after each refinement iteration, but larger misalignments \
+are not. Given this risk, you may wish to check the even and odd maps after your refinement to insure that they are oriented identically. If they aren't, you may consider \
+running another round of e2refine_easy, using either the even or the odd map (rather than the averaged map) as a starting model, and reducing (smaller number, better \
+resolution) --targetres by ~25%. Hopefully this will eliminate the misalignment, and give a correct averaged map.</p>")
 
 	if options.orientgen==None :
 		# target resolution worse than 1/2 Nyquist

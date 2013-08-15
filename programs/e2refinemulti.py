@@ -78,6 +78,8 @@ Major features of this program:
 To run this program, you would normally specify only the following options:
   --model=<starting map to seed refinement>
   --nmodels=<number of starting models to generate from model>
+  --mapfragment          Optional. If specified will generate starting maps via segmentation and random exclusion
+                         instead of phase randomization. This option is appropriate for heterogenous assemblies.
   OR
   --models=<starting map 1>,<starting map 2>,...
 
@@ -123,6 +125,7 @@ not need to specify any of the following other than the ones already listed abov
 	#parser.add_header(name="multimodelheader", help='Options below this label are specific to e2refinemulti Model', title="### e2refinemulti model options ###", row=4, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--model", dest="model", type=str,default=None, help="The map to use as a starting point for refinement", guitype='filebox', browser='EMModelsTable(withmodal=True,multiselect=False)', filecheck=False, row=1, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--nmodels", dest = "nmodels", type = int, default=2, help = "The total number of refinement iterations to perform. Default=auto", guitype='intbox', row=3, col=2, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--mapfragment",default=False, action="store_true", help="Generate initial maps by randomly removing portions of the input map rather than by phase randomizing.",guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="refinement")
 	parser.add_header(name="orblock", help='Just a visual separation', title="- OR -", row=5, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--models", dest="models", type=str,default=None, help="The map to use as a starting point for refinement", guitype='filebox', browser='EMModelsTable(withmodal=True,multiselect=True)', filecheck=False, row=7, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--input", dest="input", default=None,type=str, help="The name of the image file containing the particle data", guitype='filebox', browser='EMSetsTable(withmodal=True,multiselect=False)', filecheck=False, row=8, col=0, rowspan=1, colspan=3, mode="refinement")
@@ -130,7 +133,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--targetres", default=12.0, type=float,help="Target resolution in A of the final single-model refinements.", guitype='floatbox', row=10, col=0, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--sym", dest = "sym", default="c1",help = "Specify symmetry - choices are: c<n>, d<n>, tet, oct, icos. You can specify either a single value or one for each model.", guitype='strbox', row=10, col=1, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--iter", dest = "iter", type = int, default=6, help = "The total number of refinement iterations to perform. Default=auto", guitype='intbox', row=10, col=2, rowspan=1, colspan=1, mode="refinement")
-	parser.add_argument("--mass", default=0, type=float,help="The ~mass of the particle in kilodaltons, used to run normalize.bymass. Due to resolution effects, not always the true mass.", guitype='floatbox', row=12, col=0, rowspan=1, colspan=1, mode="refinement['self.pm().getMass()']")
+	parser.add_argument("--mass", default=0, type=str,help="The ~mass of the particles in kilodaltons. May specify one number or one number for each map. Due to resolution effects, not always the true mass.", guitype='floatbox', row=12, col=0, rowspan=1, colspan=1, mode="refinement['self.pm().getMass()']")
 	parser.add_header(name="optional", help='Just a visual separation', title="Optional:", row=14, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--apix", default=0, type=float,help="The angstrom per pixel of the input particles. This argument is required if you specify the --mass argument. If unspecified (set to 0), the convergence plot is generated using either the project apix, or if not an apix of 1.", guitype='floatbox', row=16, col=0, rowspan=1, colspan=1, mode="refinement['self.pm().getAPIX()']")
 	parser.add_argument("--sep", type=int, help="The number of classes each particle can contribute towards (normally 1). Increasing will improve SNR, but produce rotational blurring.", default=1, guitype='intbox', row=16, col=1, rowspan=1, colspan=1, mode="refinement")
@@ -211,18 +214,41 @@ not need to specify any of the following other than the ones already listed abov
 	try: os.makedirs(output_path)
 	except: pass
 
+	# This initial mass processing must be here, since used below
+	options.mass=options.mass.split(",")
+	options.mass=[float(i) for i in options.mass]
+
+
 	# make randomized starting models
 	if options.model!=None:
 		model=EMData(options.model,0)
-		for i in range(options.nmodels):
-			model.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":.03})
-			model.write_image("{}/threed_00_{:02d}.hdf".format(options.path,i+1),0)
+		if options.mapfragment :
+			model.process_inplace("normalize.bymass",{"thr":1,"mass":options.mass[0]})
+			seg=model.process("segment.kmeans",{"ampweight":1,"nseg":options.nmodels+2,"thr":0.7})	# +2 is arbitrary, to decrease the amount of excluded mass
+			for i in range(options.nmodels):
+				seg2=seg.process("threshold.binaryrange",{"low":i-1.1,"high":i+1.1})	# by subtracting 1, we don't remove anything from the first map
+				seg2.process_inplace("math.linear",{"scale":-1.0,"shift":1.0})
+				model2=model*seg2
+				model2.write_image("{}/threed_00_{:02d}.hdf".format(options.path,i+1),0)
+			seg=None		# free up memory
+			seg2=None
+			model2=None
+		else:
+			for i in range(options.nmodels):
+				model.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":.02})
+				model.write_image("{}/threed_00_{:02d}.hdf".format(options.path,i+1),0)
 	else:
 		# or copy the specified starting models
 		options.nmodels=len(options.models)
 		for i,m in enumerate(options.models):
 			model=EMData(m,0)
 			model.write_image("{}/threed_00_{:02d}.hdf".format(options.path,i+1))
+
+	# can't finish the mass processing before we know nmodels
+	if len(options.mass)==1 : options.mass=options.mass*options.nmodels
+	if len(options.mass)!=options.nmodels :
+		print "ERROR: Must specify either a single --mass value or a list of <nmodels> comma separated masses."
+		sys.exit(1)
 
 	progress = 0.0
 	total_procs = 5*options.iter
@@ -540,7 +566,7 @@ maps.")
 		# we filter the maps, to a resolution ~20% higher than the inter-map FSC, so we don't hide the relative differences
 		for m in models:
 			run("e2proc3d.py {path}/{mod} {path}/{mod} {m3dsetsf} --process filter.wiener.byfsc:fscfile={path}/fsc_mutual_avg_{it:02d}.txt:sscale=1.2 --process normalize.bymass:thr=1:mass={mass}".format(
-	m3dsetsf=m3dsetsf,mod=m,path=options.path,it=it,mass=options.mass))
+	m3dsetsf=m3dsetsf,mod=m,path=options.path,it=it,mass=options.mass[m]))
 		
 		try : os.unlink("{path}/tmp0.hdf".format(path=options.path))
 		except: pass

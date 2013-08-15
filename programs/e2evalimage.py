@@ -598,7 +598,7 @@ class GUIEvalImage(QtGui.QWidget):
 
 		#db=db_open_dict("bdb:micrographs#%s"%item)
 		self.data["ctf"]=self.parms[self.curset][1]
-		self.cxray
+		
 		if self.cinvert.getValue()!=0 : self.data.mult(-1)
 		if self.cxray.getValue() : self.data.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4,"tomean":1})
 		self.data.write_image("micrographs/%s.hdf"%item)

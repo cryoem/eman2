@@ -201,6 +201,15 @@
         "CHILDREN": []
       },
       {
+        "ICON": "refine",
+        "MODE": "refinement",
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2refinemulti",
+        "PROGRAM": "e2refinemulti.py",
+        "NAME": "e2refinemult - multi-model refinement",
+	"NOTELEVEL": "1",
+        "CHILDREN": []
+      },
+      {
         "ICON": "eulers",
         "PROGRAM": "e2eulerxplor.py",
         "NAME": "Run e2eulerxplor",
