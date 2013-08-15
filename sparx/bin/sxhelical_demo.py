@@ -67,6 +67,10 @@ def main():
 	Apply the centering parameters to bdb:adata, normalize using average and standard deviation outside the mask, and output the new images to bdb:data
 		
 		sxhelical_demo.py bdb:adata bdb:data mask2d.hdf --applyparams
+	
+	Generate run through example script for helicon
+	
+		sxhelical_demo.py --generate_script --filename=run --seg_ny=180 --ptcl_dist=15 --fract=0.35
 	"""
 	parser = OptionParser(usage,version=SPARXVERSION)
 	
