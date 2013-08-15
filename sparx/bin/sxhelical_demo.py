@@ -97,11 +97,21 @@ def main():
 	# Apply 2D alignment parameters to input stack and output new images to output stack
 	parser.add_option("--applyparams",            action="store_true",      default=False,      		  	 help="Apply the centering parameters to input stack, normalize using average and standard deviation outside the mask, and output the new images to output stack")
 	
+	# Generate run script
+	parser.add_option("--generate_script",        action="store_true",      default=False,      		  	 help="Generate script for helicon run through example")
+	parser.add_option("--filename",               type="string",		    default="runhelicon",            help="Name of run script to generate")
+	parser.add_option("--seg_ny",                 type="int",			    default=180,              	     help="y-dimension of segment used for refinement")
+	parser.add_option("--ptcl_dist",              type="int",			    default=15,              	     help="Distance in pixels between adjacent segments windowed from same filament")
+	parser.add_option("--fract",               	  type="float",			 	default=0.35,               	 help="Fraction of the volume used for applying helical symmetry.")
+	
 	(options, args) = parser.parse_args()
 	if len(args) > 3:
 		print "usage: " + usage
 		print "Please run '" + progname + " -h' for detailed options"
 	else:
+		if options.generate_script:
+			generate_runscript(options.filename, options.seg_ny, options.ptcl_dist, options.fract)
+			
 		if options.heli:
 			if options.dp < 0 or options.dphi < 0:
 				print "Please enter helical symmetry parameters dp and dphi."
@@ -293,6 +303,126 @@ def generate_helimic(refvol, outdir, pixel, CTF=False, Cs=2.0,voltage = 200.0, a
 		mic += filt_gaussl(model_gauss_noise(17.5,2048,2048), 0.3)
 		
 		mic.write_image("%s/mic%1d.hdf"%(outdir, idef-3),0)
+
+def generate_runscript(filename, seg_ny, ptcl_dst, fract):
+
+	if ptcl_dst < 15:
+		print "Distance in pixels between adjacent segments should be at least one rise!"
+		sys.exit()
+	
+	print "Generating run script with the following parameters: \n"
+	print "y-dimension of segment used for refinement: %d"%seg_ny
+	print "Distance in pixels between adjacent segments: %d"%ptcl_dst
+	print "Fraction of structure used for applying helical symmetry: %.2f"%fract
+	
+	if os.path.exists(filename):
+		print "The file %s already exists. Either remove it or rename it..."%filename
+		sys.exit()
+		
+	f = open(filename, 'w')
+	f.write('#!/bin/csh\n')
+	f.write('\n')
+	f.write('set echo on\n')
+	f.write('\n')
+	f.write('#clean the previous outputs\n')
+	f.write('rm *.hdf *.txt *.bck rm *.pdb\n')
+	f.write('rm log*\n')
+	f.write('rm -rf mic result_*	\n')
+	f.write('rm -rf EMAN*\n')
+	f.write('\n')
+	f.write('# get the  previous runned results\n')
+	f.write('tar -zxvf answer.tar.gz\n')
+	f.write('\n')
+	f.write('#generate volume from pdb\n')
+	f.write('tar -zxvf 3MFP_1SU.tar.gz\n')
+	f.write('\n')
+	f.write('# Helicise the Atom coordinates\n')
+	f.write('# Input: pdb file containing atom coordinates to helicise (3MFP_1SU.pdb)\n')
+	f.write('# Output: pdb file containing helicised coordinates (rnew.pdb)\n')
+	f.write('sxhelical_demo.py 3MFP_1SU.pdb rnew.pdb --heli --dp=27.6 --dphi=166.715\n')
+	f.write('\n')
+	f.write('#generate the density map\n')
+	f.write('sxpdb2em.py rnew.pdb tmp.hdf --apix=1.84 --center=c \n')
+	f.write('\n')
+	f.write('# Generate three micrographs, where each micrograph contains one projection of a long filament.\n')
+	f.write('# Input: Reference volume from which projections are calculated (tmp.hdf)\n')
+	f.write('# Output: Output directory in which micrographs will be written (mic)\n')
+	f.write('sxhelical_demo.py tmp.hdf mic --generate_micrograph --CTF --apix=1.84\n')
+	f.write('\n')
+	f.write('# generate initial volume for later helical refinement\n')
+	f.write('# Output: A noisy cylinder written to the output file name (ini.hdf).\n')
+	f.write('sxhelical_demo.py ini.hdf --generate_noisycyl --boxsize="100,100,200" --rad=35\n')
+	f.write('\n')
+	f.write('# Estimate defocus value for each micrograph. This can be done either by GUI or pure command-line \n')
+	f.write('# 1. To estimate defocus by GUI:\n')
+	f.write('cd mic\n')
+	f.write('sxhelixboxer.py mic0.hdf --gui &\n')
+	f.write('\n')
+	f.write("# When the GUI starts up, there will be a checkbox at the bottom labelled 'CTF Estimation using CTER'. Check this box, and additional fields will appear in the GUI.\n")
+	f.write("# Under 'Parameters of CTF estimation,' enter 256 for 'Window size,' 2.0 for 'Cs, 10.0 for 'Amplitude Contrast,' 200 for 'Voltage', and 1.84 for Pixel size.\n")
+	f.write('# Click "Estimate CTF using CTER" button, and the estimated defocus will show up in the "Estimated defocus" box.\n')
+	f.write('# Now you can either estimate defocus for the remaining micrographs one by one using the GUI, or you can estimate defocus for the remaining micrographs in batch mode using \n')
+	f.write('# the parameters you entered in the GUI for mic0.hdf. \n')
+	f.write('# Make sure to remove any output directories (pwrot and partres followed by underscore and \n')
+	f.write('# then name of the micrograph, e.g., pwrot_mic0 and partres_mic0) generated in the previous run of CTF estimation using CTER.\n')
+	f.write('rm -r pwrot_mic0;rm -r partres_mic0\n')
+	f.write('sxhelixboxer.py mic*.hdf --gui &\n')
+	f.write('cd ..\n')
+	f.write('\n')
+	f.write('# 2. To estimate defocus by command-line\n')
+	f.write('cd mic\n')
+	f.write('sxhelixboxer.py pwrot partres --cter --indir=. --nameroot=mic --nx=200 --Cs=2.0 --voltage=200 --kboot=16 --apix=1.84 --ac=10.0 \n')
+	f.write('cd ..\n')
+	f.write('\n')
+	f.write('cd mic\n')
+	f.write('# have to open boxer\n')
+	f.write('# if want to save time, just close the window immediately and use saved coordinate\n')
+	f.write('# otherwise draw the box carefully to get the coordinate \n')
+	f.write('sxhelixboxer.py *.hdf --gui --helix-width=200 --ptcl-width=200\n')
+	f.write('cd ..\n')
+	f.write('\n')
+	f.write('# if use saved coordinate, please use below commands\n')
+	f.write('tar -zxvf saved_pos.tar.gz\n')
+	f.write('cp saved_db.tar.gz mic/.\n')
+	f.write('cp -r saved_pos/*box* mic/.\n')
+	f.write('rm -rf saved_pos\n')
+	f.write('cd mic\n')
+	f.write('tar -zxvf saved_db.tar.gz\n')
+	f.write('cd ..\n')
+	f.write('\n')
+	f.write('# Window segments from boxed helices\n')
+	f.write('# For more information on the windowing utility, see http://sparx-em.org/sparxwiki/windowallmic\n')
+	f.write('# distance between segments is 1 rise exactly\n')
+	f.write('sxhelixboxer.py houtdir --window --dirid=mic --micid=mic --micsuffix=hdf --dp=27.6 --apix=1.84 --boxsize=200 --outstacknameall=bdb:hadata --hcoords_suffix=_boxes.txt --ptcl-dst=%d --rmax=64\n'%ptcl_dst)
+	f.write('\n')
+	f.write('# Generate 2D mask for centering EM images\n')
+	f.write('# Output: 2D mask written to output file name provided (mask2d.hdf)\n')
+	f.write('sxhelical_demo.py mask2d.hdf --generate_mask --masksize="200,200" --maskwidth=70\n')
+	f.write('\n')
+	f.write('# center all the EM images\n')
+	f.write('# centering parameters will be saved in header, the input images will not be changed.\n')
+	f.write('sxheader.py bdb:hadata --params=active --one\n')
+	f.write('sxheader.py bdb:hadata --params=xform.align2d --zero\n')
+	f.write('mpirun -np 2 sxshiftali.py bdb:hadata mask2d.hdf --oneDx --search_rng=10 --maxit=20 --CTF --MPI\n')
+	f.write('\n')
+	f.write('# Apply the centering parameters stored in the header of each image in bdb:hadata to the image, \n')
+	f.write('# normalize using average and standard deviation outside the mask, and save the centered and normalized image to bdb:hdata\n')
+	f.write('# Input: Input stack containing 2D alignment parameters in the header (bdb:hadata)\n')
+	f.write('#		 Name of 2D mask to use for normalization\n')
+	f.write('# Output: Stack of images (bdb:hdata) after applying 2D alignment parameters to the images in input stack. \n')
+	f.write('sxhelical_demo.py bdb:hadata bdb:hdata mask2d.hdf --applyparams\n')
+	f.write('\n')
+	f.write('#Exhaustive search \n')
+	f.write('sxheader.py bdb:hdata --params=xform.projection --zero\n')
+	f.write('sxheader.py bdb:hdata --params=active --one\n')
+	f.write('mpirun -np 3 sxhelicon.py bdb:hdata ini.hdf result_helicon --CTF --seg_ny=%d --fract=%.2f --psi_max=2.0 --delta=1.0 --maxit=7 --function=[.,nofunc,helical3c] --searchxshift=3.68 --xwobble=1.84 --ywobble=0 --dp=27.6 --dphi=166.715 --apix=1.84 --rmin=0.0 --rmax=64 --MPI\n'%(seg_ny,fract))
+	f.write('\n')
+	f.write('#Local search \n')
+	f.write('sxheader.py bdb:hdata --params=xform.projection --import=result_helicon/parameters0007.txt\n')
+	f.write('mpirun -np 3 sxlocalhelicon.py bdb:hdata result_helicon/volf007.hdf result_local --CTF --seg_ny=%d --fract=%.2f --psi_max=2.0 --delta=1.0 --maxit=11 --function=[.,nofunc,helical3c] --boundaryavg --MA --MA_WRAP=0 --xr=3.68 --txs=1.84 --an=20 --ynumber=16 --dp=27.6 --dphi=166.715 --apix=1.84 --rmin=0.0 --rmax=64 --MPI\n'%(seg_ny,fract))
+	f.write('\n')
+	f.write('#Do helical symmetry search\n')
+	f.write('mpirun -np 3 sxhelicon_utils.py result_local/volf0011.hdf outsymsearch --symsearch --dp=27.6 --dphi=166.715 --apix=1.84 --fract=%.2f --rmin=0 --rmax=64.0 --datasym=datasym.txt --dp_step=0.92 --ndp=10 --dphi_step=1.0 --ndphi=10 --MPI\n'%(fract))
 	
 if __name__ == "__main__":
 	main()
