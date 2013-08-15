@@ -564,9 +564,9 @@ maps.")
 		models=["threed_{itr:02d}_{mdl:02d}.hdf".format(itr=it,mdl=mdl+1) for mdl in xrange(options.nmodels)]
 		
 		# we filter the maps, to a resolution ~20% higher than the inter-map FSC, so we don't hide the relative differences
-		for m in models:
+		for ii,m in enumerate(models):
 			run("e2proc3d.py {path}/{mod} {path}/{mod} {m3dsetsf} --process filter.wiener.byfsc:fscfile={path}/fsc_mutual_avg_{it:02d}.txt:sscale=1.2 --process normalize.bymass:thr=1:mass={mass}".format(
-	m3dsetsf=m3dsetsf,mod=m,path=options.path,it=it,mass=options.mass[m]))
+	m3dsetsf=m3dsetsf,mod=m,path=options.path,it=it,mass=options.mass[ii]))
 		
 		try : os.unlink("{path}/tmp0.hdf".format(path=options.path))
 		except: pass
