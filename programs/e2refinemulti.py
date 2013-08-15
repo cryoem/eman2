@@ -226,7 +226,7 @@ not need to specify any of the following other than the ones already listed abov
 			model.process_inplace("normalize.bymass",{"thr":1,"mass":options.mass[0]})
 			seg=model.process("segment.kmeans",{"ampweight":1,"nseg":options.nmodels+2,"thr":0.7})	# +2 is arbitrary, to decrease the amount of excluded mass
 			for i in range(options.nmodels):
-				seg2=seg.process("threshold.binaryrange",{"low":i-1.1,"high":i+1.1})	# by subtracting 1, we don't remove anything from the first map
+				seg2=seg.process("threshold.binaryrange",{"low":i-1.1,"high":i-0.9})	# by subtracting 1, we don't remove anything from the first map
 				seg2.process_inplace("math.linear",{"scale":-1.0,"shift":1.0})
 				model2=model*seg2
 				model2.write_image("{}/threed_00_{:02d}.hdf".format(options.path,i+1),0)
