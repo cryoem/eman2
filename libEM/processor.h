@@ -5662,7 +5662,7 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 	class WatershedProcessor:public Processor
 	{
 	  public:
-		virtual void process_inplace(EMData * image);
+		virtual EMData* process(const EMData* const image);
 
 		virtual string get_name() const
 		{
@@ -5676,24 +5676,20 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 
 		virtual string get_desc() const
 		{
-			return "Does a watershed";
+			return "Watershed segmentation. Warning: uses up to 2.5x the map size in RAM.";
 		}
 
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("xpoints", EMObject::FLOATARRAY,"x coordinates");
-			d.put("ypoints", EMObject::FLOATARRAY,"y coordinates");
-			d.put("zpoints", EMObject::FLOATARRAY,"z coordinates");
-			d.put("minval", EMObject::FLOAT,"min value");
+			d.put("nseg", EMObject::INT, "Number of segments to (attempt) to produce. The actual number may be fewer. (default=12)" );
+			d.put("thr",EMObject::FLOAT,"Isosurface threshold value. Pixels below this value will not be segmented. All voxels above this value will be segmented. (default=0.5)");
 			return d;
 		}
 
 		static const string NAME;
 
-	  private:
-		  vector<Vec3i > watershed(EMData* mask, EMData* image, const float& threshold, const Vec3i& cordinate, const int mask_value);
-		  vector<Vec3i > find_region(EMData* mask,const vector<Vec3i >& coords, const int mask_value, vector<Vec3i >& region);
+//	  private:
 
 	};
 

@@ -1390,153 +1390,6 @@ void PaintProcessor::process_inplace(EMData *image) {
 	image->update();
 }
 
-void WatershedProcessor::process_inplace(EMData * image) {
-	vector<float> xpoints = params["xpoints"];
-	vector<float> ypoints = params["ypoints"];
-	vector<float> zpoints = params["zpoints"];
-
-	vector<int> x(xpoints.begin(),xpoints.end());
-	vector<int> y(ypoints.begin(),ypoints.end());
-	vector<int> z(zpoints.begin(),zpoints.end());
-
-
-	// throw if vector lengths are unequal
-
-//	float maxval = -99999;
-	/*
-	for(unsigned int i = 0; i < xpoints.size(); ++i) {
-		float val = image->get_value_at(x[i],y[i],z[i]);
-		if (val > maxval) {
-			maxval = val;
-		}
-	}*/
-
-	float minval = params["minval"];
-
-	EMData* mask = new EMData(*image);
-	mask->to_zero();
-
-	// Set the original mask values
-	for(unsigned int i = 0; i < xpoints.size(); ++i) {
-		try {
-			mask->set_value_at(x[i],y[i],z[i], (float)(i+1));
-		} catch (...) {
-			continue;
-		}
-	}
-	mask->write_image("seeds2.mrc");
-//	int dis = 500;
-// 	float dx = (maxval-minval)/((float) dis - 1);
-
-
-//	for(int i = 0; i < dis; ++i) {
-//		float val = maxval-i*dx;
-
-		while( true ) {
-			bool cont= false;
-			for(unsigned int j = 0; j < xpoints.size(); ++j)
-			{
-
-				Vec3i coord(x[j],y[j],z[j]);
-				vector<Vec3i> region;
-				region.push_back(coord);
-				vector<Vec3i> find_region_input = region;
-				while (true) {
-					vector<Vec3i> v = find_region(mask,find_region_input, j+1, region);
-					if (v.size() == 0 ) break;
-					else find_region_input = v;
-				}
-
-				vector<Vec3i> tmp(region.begin(),region.end());
-				region.clear();
-				for(vector<Vec3i>::const_iterator it = tmp.begin(); it != tmp.end(); ++it ) {
-					vector<Vec3i> tmp2 = watershed(mask, image, minval, *it, j+1);
-					copy(tmp2.begin(),tmp2.end(),back_inserter(region));
-				}
-				if (region.size() != 0) cont = true;
-			}
-
-			if (!cont) break;
-		}
-//	}
-
-	memcpy(image->get_data(),mask->get_data(),sizeof(float)*image->get_size());
-	image->update();
-}
-
-
-vector<Vec3i > WatershedProcessor::find_region(EMData* mask,const vector<Vec3i >& coords, const int mask_value, vector<Vec3i >& region)
-{
-	static vector<Vec3i> two_six_connected;
-	if (two_six_connected.size() == 0) {
-		for(int i = -1; i <= 1; ++i) {
-			for(int j = -1; j <= 1; ++j) {
-				for(int  k = -1; k <= 1; ++k) {
-					if ( j != 0 || i != 0 || k != 0) {
-						two_six_connected.push_back(Vec3i(i,j,k));
-					}
-				}
-			}
-		}
-	}
-
-	vector<Vec3i> ret;
-	for(vector<Vec3i>::const_iterator it = two_six_connected.begin(); it != two_six_connected.end(); ++it ) {
-		for(vector<Vec3i>::const_iterator it2 = coords.begin(); it2 != coords.end(); ++it2 ) {
-			if  (mask->get_value_at((*it2)[0],(*it2)[1],(*it2)[2]) != mask_value) throw;
-			Vec3i c = (*it)+(*it2);
-
-			if ( c[0] < 0 || c[0] >= mask->get_xsize()) continue;
-			if ( c[1] < 0 || c[1] >= mask->get_ysize()) continue;
-			if ( c[2] < 0 || c[2] >= mask->get_zsize()) continue;
-
-			if( mask->get_value_at(c[0],c[1],c[2]) == mask_value ) {
-				if (find(ret.begin(),ret.end(),c) == ret.end()) {
-					if (find(region.begin(),region.end(),c) == region.end()) {
-						region.push_back(c);
-						ret.push_back(c);
-					}
-				}
-			}
-		}
-	}
-	return ret;
-}
-
-vector<Vec3i > WatershedProcessor::watershed(EMData* mask, EMData* image, const float&, const Vec3i& coordinate, const int mask_value)
-{
-	static vector<Vec3i> two_six_connected;
-	if (two_six_connected.size() == 0) {
-		for(int i = -1; i <= 1; ++i) {
-			for(int j = -1; j <= 1; ++j) {
-				for(int  k = -1; k <= 1; ++k) {
-					if ( j != 0 || i != 0 || k != 0) {
-						two_six_connected.push_back(Vec3i(i,j,k));
-					}
-				}
-			}
-		}
-	}
-
-	if  (mask->get_value_at(coordinate[0],coordinate[1],coordinate[2]) != mask_value) throw;
-
-	vector<Vec3i> ret;
-	for(vector<Vec3i>::const_iterator it = two_six_connected.begin(); it != two_six_connected.end(); ++it ) {
-		Vec3i c = (*it)+coordinate;
-
-		if ( c[0] < 0 || c[0] >= image->get_xsize()) continue;
-		if ( c[1] < 0 || c[1] >= image->get_ysize()) continue;
-		if ( c[2] < 0 || c[2] >= image->get_zsize()) continue;
-
-	//	cout << image->get_value_at(c[0],c[1],c[2] ) << " " << threshold << endl;
-		if( image->get_value_at(c[0],c[1],c[2]) != 0 && (mask->get_value_at(c[0],c[1],c[2]) == 0 )) {
-			//cout << "Added something " << mask_value << endl;
-			mask->set_value_at(c[0],c[1],c[2], (float)mask_value);
-			ret.push_back(c);
-		}
-	}
-	return ret;
-}
 
 
 void CircularMaskProcessor::calc_locals(EMData *)
@@ -8974,6 +8827,73 @@ void ScaleTransformProcessor::process_inplace(EMData* image) {
 			image->clip_inplace(r);
 		}
 	}
+}
+
+struct WSsortlist { float pix; short x,y,z; }
+int WScmp(const void *a, const void *b) return *((float*)a)-*((float*)b);
+
+EMData *WatershedProcessor::process(const EMData* const image) {
+	int nseg = params.set_default("nseg",12);
+	float thr = params.set_default("thr",0.5f);
+	
+	EMData *ret=EMData(image->get_xsize(),image->get_ysize(),image->get_zsize());
+	ret->to_zero();
+	
+	
+	int nx=image->get_xsize();
+	int ny=image->get_ysize();
+	int nz=image->get_zsize();
+	
+	// Count the number of above threshold pixels
+	size_t n2seg = 0;
+	for (int z=0; z<nz; z++) {
+		for (int y=0; y<ny; y++) {
+			for (int x=0; x<nx; x++) {
+				if (image->get_value_at(x,y,z)>=thr) n2seg++;
+			}
+		}
+	}
+	
+	// Extract the pixels for sorting
+	WSsortlist srt[n2seg];
+	size_t i=0;
+	for (int z=1; z<nz-1; z++) {
+		for (int y=1; y<ny-1; y++) {
+			for (int x=1; x<nx-1; x++) {
+				if (image->get_value_at(x,y,z)>=thr) {
+					srt[i].pix=image->get_value_at(x,y,z);
+					srt[i].x=x;
+					srt[i].y=y;
+					srt[i].z=z;
+				}
+			}
+		}
+	}
+
+	// actual sort
+	qsort(&srt,n2seg,sizeof(WSsortlist),WScmp);
+	
+	// now we start with the highest value and fill in the segments
+	float cseg=1.0;
+	for (i=0; i<n2seg; i++) {
+		int x=srt[i].x;
+		int y=srt[i].y;
+		int z=srt[i].z;
+		float lvl=0;
+		if (ret.get_value_at(x-1,y,z)!=0) lvl=ret.get_value_at(x-1,y,z);
+		else if (ret.get_value_at(x+1,y,z)!=0) lvl=ret.get_value_at(x+1,y,z);
+		else if (ret.get_value_at(x,y-1,z)!=0) lvl=ret.get_value_at(x,y-1,z);
+		else if (ret.get_value_at(x,y+1,z)!=0) lvl=ret.get_value_at(x,y+1,z);
+		else if (ret.get_value_at(x,y,z-1)!=0) lvl=ret.get_value_at(x,y,z-1);
+		else if (ret.get_value_at(x,y,z+1)!=0) lvl=ret.get_value_at(x,y,z+1);
+		if (lvl==0) { lvl=cseg; cseg+=1.0; }
+		ret->set_value_at_fast(x,y,z,lvl);
+	}
+	
+	// At this point we may have too many segments. If so, we need to fix this
+	
+	
+	
 }
 
 EMData* ScaleTransformProcessor::process(const EMData* const image) {
