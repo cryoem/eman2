@@ -331,6 +331,7 @@ def generate_runscript(filename, seg_ny, ptcl_dst, fract):
 	f.write('#clean the previous outputs\n')
 	f.write('rm *.hdf *.txt *.bck rm *.pdb\n')
 	f.write('rm log*\n')
+	f.write('rm -rf outsymsearch	\n')
 	f.write('rm -rf mic result_*	\n')
 	f.write('rm -rf EMAN*\n')
 	f.write('\n')
