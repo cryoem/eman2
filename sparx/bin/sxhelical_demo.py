@@ -331,7 +331,7 @@ def generate_runscript(filename, seg_ny, ptcl_dst, fract):
 	f.write('#clean the previous outputs\n')
 	f.write('rm *.hdf *.txt *.bck rm *.pdb\n')
 	f.write('rm log*\n')
-	f.write('rm -rf outsymsearch	\n')
+	#f.write('rm -rf outsymsearch	\n')
 	f.write('rm -rf mic result_*	\n')
 	f.write('rm -rf EMAN*\n')
 	f.write('\n')
@@ -426,8 +426,8 @@ def generate_runscript(filename, seg_ny, ptcl_dst, fract):
 	f.write('sxheader.py bdb:hdata --params=xform.projection --import=result_helicon/parameters0007.txt\n')
 	f.write('mpirun -np 3 sxlocalhelicon.py bdb:hdata result_helicon/volf007.hdf result_local --CTF --seg_ny=%d --fract=%.2f --psi_max=2.0 --delta=1.0 --maxit=11 --function=[.,nofunc,helical3c] --boundaryavg --MA --MA_WRAP=0 --xr=3.68 --txs=1.84 --an=20 --ynumber=16 --dp=27.6 --dphi=166.715 --apix=1.84 --rmin=0.0 --rmax=64 --MPI\n'%(seg_ny,fract))
 	f.write('\n')
-	f.write('#Do helical symmetry search\n')
-	f.write('mpirun -np 3 sxhelicon_utils.py result_local/volf0011.hdf outsymsearch --symsearch --dp=27.6 --dphi=166.715 --apix=1.84 --fract=%.2f --rmin=0 --rmax=64.0 --datasym=datasym.txt --dp_step=0.92 --ndp=10 --dphi_step=1.0 --ndphi=10 --MPI\n'%(fract))
+	#f.write('#Do helical symmetry search\n')
+	#f.write('mpirun -np 3 sxhelicon_utils.py result_local/volf0011.hdf outsymsearch --symsearch --dp=27.6 --dphi=166.715 --apix=1.84 --fract=%.2f --rmin=0 --rmax=64.0 --datasym=datasym.txt --dp_step=0.92 --ndp=10 --dphi_step=1.0 --ndphi=10 --MPI\n'%(fract))
 	
 if __name__ == "__main__":
 	main()
