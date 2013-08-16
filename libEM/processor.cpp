@@ -8919,7 +8919,6 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 		}		// This means we've made as many segments as we need, so we switch to flood-filling
 		ret->set_value_at_fast(x,y,z,lvl);
 	}
-	ret->write_image("seg1.hdf",0);
 	
 	// We have as many segments as we'll get, but not all voxels have been segmented, so we do a progressive flood fill in density order
 	size_t chg=1;
@@ -8947,8 +8946,12 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 		if (verbose) printf("%ld voxels changed\n",chg);
 	}
 	
-	if (cseg<=nseg) return ret;		// We don't have too many segments, so we just return now
+	if (segbymerge) {
+		if (cseg<segbymerge) return ret;
+	}
+	else if (cseg<=nseg) return ret;		// We don't have too many segments, so we just return now
 	
+	if (verbose) printf("Merging segments\n");
 	// If requested, we now merge segments with the most surface contact until we have the correct final number
 	if (segbymerge) {
 		int nsegstart=(int)cseg;	// number of segments we actually generated
