@@ -8997,7 +8997,7 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 					if (s1==s2) continue;				// ignore the diagonal
 					float v=mxd[s1+s2*nsegstart];
 					if (v==0) continue;					// empty segment
-					v/=(pow(mxd[s1+s1*nsegstart],0.6667)+pow(mxd[s2+s2*nsegstart],0.6667));	// normalize by the sum of the estimated surface areas (no shape effects)
+					v/=(pow(mxd[s1+s1*nsegstart],0.6667f)+pow(mxd[s2+s2*nsegstart],0.6667f));	// normalize by the sum of the estimated surface areas (no shape effects)
 					if (v>bestv) { bestv=v; sub1=s1; sub2=s2; }
 				}
 			}
