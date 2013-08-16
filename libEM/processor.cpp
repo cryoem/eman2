@@ -8898,7 +8898,6 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 		int x=srt[i].x;
 		int y=srt[i].y;
 		int z=srt[i].z;
-		printf("%d %d %d  %1.3g\n",x,y,z,srt[i].pix);
 		float lvl=0;
 		for (int zz=z-1; zz<=z+1; zz++) {
 			for (int yy=y-1; yy<=y+1; yy++) {
