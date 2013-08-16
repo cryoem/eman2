@@ -5663,6 +5663,7 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 	{
 	  public:
 		virtual EMData* process(const EMData* const image);
+		virtual void process_inplace(EMData*);
 
 		virtual string get_name() const
 		{
@@ -5676,7 +5677,7 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 
 		virtual string get_desc() const
 		{
-			return "Watershed segmentation. Warning: uses up to 2.5x the map size in RAM.";
+			return "Watershed segmentation. Warning: uses up to 2.5x the map size in RAM. This will segment all voxels above threshold except for a 1-voxel wide border on all edges.";
 		}
 
 		virtual TypeDict get_param_types() const
@@ -5684,6 +5685,8 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 			TypeDict d;
 			d.put("nseg", EMObject::INT, "Number of segments to (attempt) to produce. The actual number may be fewer. (default=12)" );
 			d.put("thr",EMObject::FLOAT,"Isosurface threshold value. Pixels below this value will not be segmented. All voxels above this value will be segmented. (default=0.5)");
+			d.put("segbymerge", EMObject::INT, "If set, will achieve the specified number of segments by progressively merging the most connected segments. Can produce very different results." );
+			d.put("verbose", EMObject::INT, "If set, will print console output while running" );
 			return d;
 		}
 
