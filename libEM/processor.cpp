@@ -8965,7 +8965,7 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 		while (segbymerge<nseg) {
 			mx->to_zero();
 			
-			for (i=start; i<n2seg; i++) {
+			for (i=0; i<n2seg; i++) {
 				int x=srt[i].x;
 				int y=srt[i].y;
 				int z=srt[i].z;
@@ -8979,7 +8979,7 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 							int v2=(int)ret->get_value_at(xx,yy,zz);
 							if (v2==sub2) v2=sub1;		// pretend that any sub2 values are actually sub1
 							if (v1==v2) continue;
-							mxd[v1+v2*nsegstart]++;
+							mxd[v1+v2*nsegstart]+=image->get_value_at(xx,yy,zz);		// We weight the connectivity by the image value
 						}
 					}
 				}
@@ -8995,16 +8995,20 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 			// we want to normalize the surface area elements so they are roughly proportional to the size of the segment, so we don't merge
 			// based on total contact area, but contact area as a fraction of the total area. 
 			float bestv=-1.0;
-			for (int s1=0; s1<nsegstart; s1++) {
-				for (int s2=0; s2<nsegstart; s2++) {
+			for (int s1=1; s1<nsegstart; s1++) {
+				for (int s2=1; s2<nsegstart; s2++) {
 					if (s1==s2) continue;				// ignore the diagonal
 					float v=mxd[s1+s2*nsegstart];
 					if (v==0) continue;					// empty segment
-					v/=(pow(mxd[s1+s1*nsegstart],0.6667f)+pow(mxd[s2+s2*nsegstart],0.6667f));	// normalize by the sum of the estimated surface areas (no shape effects)
+//					v/=(pow(mxd[s1+s1*nsegstart],0.6667f)+pow(mxd[s2+s2*nsegstart],0.6667f));	// normalize by the sum of the estimated surface areas (no shape effects)
+					v/=max(mxd[s1+s1*nsegstart],mxd[s2+s2*nsegstart]);	// normalize by the sum of the estimated surface areas (no shape effects)
 					if (v>bestv) { bestv=v; sub1=s1; sub2=s2; }
 				}
 			}
-			if (verbose) printf("Merging %d to %d\n",sub2,sub1);
+			float mv=0;
+			int mvl=0;
+			for (i=nsegstart+1; i<nsegstart*nsegstart; i+=nsegstart+1) if (mxd[i]>mv) { mv=mxd[i]; mvl=i/nsegstart; }
+			if (verbose) printf("Merging %d to %d (%1.0f, %d)\n",sub2,sub1,mv,mvl);
 			if (sub1==-1) {
 				if (verbose) printf("Unable to find segments to merge, aborting\n");
 				break;
