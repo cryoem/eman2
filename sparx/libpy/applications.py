@@ -13128,7 +13128,6 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 			mpi_send(gotfil, 1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 			if(gotfil == 1):
 				send_EMData(fullvol0, main_node, ivol+myid+70000)
-	
 
 def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, ywobble, pixel_size, dp, dphi, fract, rmax, rmin, FindPsi = True, maskfile = None, \
 	    maxit = 1, CTF = False, snr = 1.0, sym = "c1",  user_func_name = "helical", npad = 2, debug = False, doExhaustive=False):
@@ -13335,7 +13334,7 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 				data[im] = filt_ctf(data[im], ctf_params)
 				data[im].set_attr('ctf_applied', 1)
 			elif qctf != 1:
-				ERROR('Incorrectly set qctf flag', "helicon_MPI", 1,myid)
+				ERROR('Incorrectly set ctf flag', "helicon_MPI", 1,myid)
 		#  if FindPsi,  apply the angle to data[im], do fft and put in fdata[im]
 		if FindPsi:
 			phi,theta,psi,tsx,tsy = get_params_proj(data[im])
@@ -13434,7 +13433,7 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 			ldata = [data[im] for im in xrange(indcs[ifil][0],indcs[ifil][1])]
 			#for im in xrange(len(ldata)):  ldata[im].set_attr("bestang", 10000.0)
 			Util.constrained_helix_exhaustive(ldata, fdata[indcs[ifil][0]:indcs[ifil][1]], refproj, rotproj, [float(dp), float(dphi), rise, float(delta)], [int(nphi), int(phiwobble), int(rng), int(ywobble), int(Dsym), int(nwx), int(nwy), int(nwxc), int(nwyc)], FindPsi, float(psi_max), crefim, numr, int(maxrin), mode, int(cnx), int(cny))
-
+			#constrained_helix(data, fdata[indcs[ifil][0]:indcs[ifil][1]], refproj, rotproj, dp, dphi, rise, delta, nphi, phiwobble, rng, ywobble, Dsym, nwx, nwy, nwxc, nwyc, FindPsi, psi_max, crefim, numr, maxrin, mode, cnx, cny, myid, main_node)
 			'''
 			if doExhaustive:
 				Util.constrained_helix_exhaustive(ldata, fdata[indcs[ifil][0]:indcs[ifil][1]], refproj, rotproj, [float(dp), float(dphi), float(rise), float(delta)], [int(nphi), int(phiwobble), int(rng), int(ywobble), int(Dsym), int(nwx), int(nwy), int(nwxc), int(nwyc)], FindPsi, float(psi_max), crefim, numr, int(maxrin), mode, int(cnx), int(cny))
@@ -14154,7 +14153,7 @@ def setfilori_MA(fildata, pixel_size, dp, dphi, iter, sym='c1', boundaryavg=Fals
 	else:
 		sgn = 1
 
-	#  Y-shift - includea non-integer distance.
+	#  Y-shift - include non-integer distance.
 	consy = [0.0]*ns
 	for i in xrange(1,ns-1):
 		yb = (yg[i-1] + sgn*get_dist(coords[i-1], coords[i]))%dpp
