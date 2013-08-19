@@ -22149,9 +22149,9 @@ static void compose_transform2(float psi1, float sx1, float sy1, float psi2, flo
 }
 
 
-void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> fdata, vector<EMData*> refproj, vector<EMData*> rotproj
-		, vector<float> dp_dphi_rise_delta, vector<int> nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc
-		, bool FindPsi, float psi_max, vector<EMData*> crefim, vector<int> numr, int maxrin, string mode, int cnx, int cny)
+void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> fdata, vector<EMData*> refproj, vector<EMData*> rotproj,
+			vector<float> dp_dphi_rise_delta, vector<int> nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc,
+			bool FindPsi, float psi_max, vector<EMData*> crefim, vector<int> numr, int maxrin, string mode, int cnx, int cny)
 {
 	if (dp_dphi_rise_delta.size() < 4) {
 		printf("Not enough parameters (dp_dphi_rise_delta)");
@@ -22162,10 +22162,10 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 		return;
 	}
 	float dpsi;
-	//float dp    = dp_dphi_rise_delta[0];
-	float dphi  = dp_dphi_rise_delta[1];
-	int   rise  = static_cast<int>(dp_dphi_rise_delta[2] + 0.2);
-	float delta = dp_dphi_rise_delta[3];
+	//float dp     = dp_dphi_rise_delta[0];
+	float dphi     = dp_dphi_rise_delta[1];
+	int   rise     = dp_dphi_rise_delta[2];  // Float in pixels!
+	float delta    = dp_dphi_rise_delta[3];
 	int  nphi      = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[0];
 	int  phiwobble = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[1];
 	int  range     = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[2];
@@ -22183,9 +22183,8 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 	vector<float> c0 = data[0]->get_attr("ptcl_source_coord");
 	vector< vector<EMData*> > ccfs(ndata, vector<EMData*>(nphi));
 	vector< vector<EMData*> > ccfr(0);
-	if (! Dsym) {
-		ccfr.resize(ndata, vector<EMData*>(nphi));
-	}
+	if (! Dsym)  ccfr.resize(ndata, vector<EMData*>(nphi));
+
 	for (int im = 0; im < ndata; ++im) {
 		for (int iphi = 0; iphi < nphi; ++iphi) {
 			std::auto_ptr<EMData> corr( correlation( refproj[iphi], fdata[im], CIRCULANT, true) );
@@ -22198,6 +22197,7 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 			}
 		}
 	}
+
 	vector<float> dxshiftlocal(ndata, 0);
 	vector<float> dyshiftlocal(ndata, 0);
 	vector<float> dphilocal(ndata, 0);
@@ -22255,9 +22255,10 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 						qphi = idir*(dst/rise)*dphi;
 						float pphi = fmod(philocal[0] + qphi + ((int)(abs(qphi/360.0f))+1)*360.0f , 360.0f);                          //#  predicted phi with full angular accuracy, not an integer
 						int pix = six; //# predicted x shift
-						int piy = siy; //#  predicted y shift
+						float qdst = idir*dst;
+						float piy = fmod(siy + qdst + ((int)(abs(qdst/rise))+1)*rise ,rise); //#  predicted y shift
 						int xix = pix + nwxc;
-						int yiy = piy + nwyc;
+						float yiy = piy + nwyc;
 						//#  Local x search
 						int fix = int(xix);
 						float xdif = xix - fix;
@@ -22268,12 +22269,12 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 						float ciq = -1.0e23f;
 						//# interpolate correlation at pphi
 						qphi = pphi/delta;
-						int ttphi = (int( qphi +  ((int)(abs(qphi/nphi))+1)*nphi+ 0.5))%nphi;
+						int ttphi = (int( qphi + ((int)(abs(qphi/nphi))+1)*nphi+ 0.5))%nphi;
 						for (int lphi = -phiwobble; lphi < phiwobble+1; ++lphi) {                                               //#  phi wobble
 							int tphi = (ttphi+lphi+nphi)%nphi;
 							for (int iux = max(1, fix - range); iux < min(nwx - 1, fix+range+1); ++iux) {                       //#  X wobble
 								for (int iuy = max(1, fiy - ywobble); iuy < min(nwy - 1, fiy+ywobble+1); ++iuy) {               //#  Y wobble
-									float qcf = xrem*yrem*ccfs[im][tphi]->get_value_at(iux,iuy)
+									float qcf =   xrem*yrem*ccfs[im][tphi]->get_value_at(iux,iuy)
 												+ xdif*yrem*ccfs[im][tphi]->get_value_at(iux+1,iuy)
 												+ xrem*ydif*ccfs[im][tphi]->get_value_at(iux,iuy+1)
 												+ xdif*ydif*ccfs[im][tphi]->get_value_at(iux+1,iuy+1);
@@ -22292,7 +22293,8 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 							qphi = idir*(dst/rise)*dphi;
 							pphi = fmod(phirlocal[0] + qphi + ((int)(abs(qphi/360.0f))+1)*360.0f, 360.0f);                      //#  predicted phi for rotated 180 defs with full angular accuracy, not an integer
 							pix = six; //# predicted x shift
-							piy = siy; //#  predicted y shift
+							qdst = idir*dst;
+							piy = fmod(siy + qdst + ((int)(abs(qdst/rise))+1)*rise ,rise); //#  predicted y shift
 							xix = pix + nwxc;
 							yiy = piy + nwyc;
 							fix = int(xix);
