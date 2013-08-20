@@ -15,7 +15,7 @@ rm tmp.hdf
 # Generating 2D projections of a 3D model from an input hdf file.
 # It simulates the procedure of EM image acquisition process.
 # The output projections were disturbed with Gaussian noise.
-sxprocess.py ../model_structure.hdf data mic --generate_projections format="bdb":apix=5.2
+sxprocess.py ../model_structure.hdf data mic --generate_projections format="bdb:":apix=5.2
 
 # Before proceeding to automated particle picking mode, it is suggested that the user 
 # first use e2boxer in the interactive mode to determine the desired parameters by

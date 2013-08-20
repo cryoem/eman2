@@ -23,7 +23,7 @@ rm tmp.hdf
 # It simulates the procedure of EM image acquisition process.
 # The output projections were disturbed with Gaussian noise.
 # Each output file was computed with regard to various CTF settings.
-sxprocess.py ../model_structure.hdf data mic --generate_projections format="bdb":apix=5.2:CTF=True 
+sxprocess.py ../model_structure.hdf data mic --generate_projections format="bdb:":apix=5.2:CTF=True 
 
 # Before proceeding to automated particle picking mode, it is suggested that the user 
 # first use e2boxer in the interactive mode to determine the desired parameters by

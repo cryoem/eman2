@@ -203,11 +203,11 @@ def main():
 			
 		parmstr= 'dummy:'+options.generate_projections[0]
 		(processorname, param_dict) = parsemodopt(parmstr)
-		
+
 		parm_CTF = False
 		parm_format = 'bdb'
 		parm_apix = 2.5
-		
+
 		if 'CTF' in param_dict:
 			if param_dict['CTF'] == 'True':
 				parm_CTF = True
