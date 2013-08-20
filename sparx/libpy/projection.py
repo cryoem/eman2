@@ -30,7 +30,7 @@
 
 from global_def import *
 
-def project(volume, params, radius):
+def project(volume, params, radius=-1):
 	"""
 		Name
 			project - calculate 2-D projection of a 3-D volume
@@ -46,8 +46,9 @@ def project(volume, params, radius):
 	from utilities import set_params_proj
 	from EMAN2 import Processor
 
-        myparams = {"transform":Transform({"type":"spider","phi":params[0],"theta":params[1],"psi":params[2]}), "radius":radius}
-        proj = volume.project("pawel", myparams)
+	if(radius>0):	myparams = {"transform":Transform({"type":"spider","phi":params[0],"theta":params[1],"psi":params[2]}), "radius":radius}
+	else:			myparams = {"transform":Transform({"type":"spider","phi":params[0],"theta":params[1],"psi":params[2]})}
+	proj = volume.project("pawel", myparams)
 	if(params[3]!=0. or params[4]!=0.):
 		params2 = {"filter_type" : Processor.fourier_filter_types.SHIFT, "x_shift" : params[3], "y_shift" : params[4], "z_shift" : 0.0}
 		proj=Processor.EMFourierFilter(proj, params2)

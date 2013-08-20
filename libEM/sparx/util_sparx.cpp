@@ -20193,7 +20193,7 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
-	cout <<"  VERSION  08/12/2013  10:30am"<<endl;
+	cout <<"  VERSION  08/20/2013  10:30am"<<endl;
 	int newx, newy, newz;
 	bool  keep_going;
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
@@ -22113,7 +22113,6 @@ int Util::branch_factor_0(int* costlist, int* matchlist, int J, int T, int nPart
 	else B=1;
 	
 	return B;
-	
 
 }
 
