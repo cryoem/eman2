@@ -772,10 +772,10 @@ class EMImageFileType(EMFileType):
 				("Show Stack+","Show all images together in a new window",self.show2dStackNew),("Show 2D","Show in a scrollable 2D image window",self.show2dSingle),
 				("Show 2D+","Show all images, one at a time in a new window",self.show2dSingleNew),("Chimera","Open in chimera (if installed)",self.showChimera),
 				("FilterTool","Open in e2filtertool.py",self.showFilterTool),("Save As","Saves images in new file format",self.saveAs)]
-		# 2-D stack
-		elif self.nimg>1:
-			return [("Show Stack","Show as set of 2-D Z slices",self.show2dStack), ("Show Stack+","Show all images together in a new window",self.show2dStackNew),("Show 2D","Show in a scrollable 2D image window",self.show2dSingle),
-				("Show 2D+","Show all images, one at a time in a new window",self.show2dSingleNew), ("FilterTool","Open in e2filtertool.py",self.showFilterTool),("Save As","Saves images in new file format",self.saveAs)]
+		## 2-D stack, STEVE:  THIS SHOULD NOT BE HERE
+		#elif self.nimg>1:
+			#return [("Show Stack","Show as set of 2-D Z slices",self.show2dStack), ("Show Stack+","Show all images together in a new window",self.show2dStackNew),("Show 2D","Show in a scrollable 2D image window",self.show2dSingle),
+				#("Show 2D+","Show all images, one at a time in a new window",self.show2dSingleNew), ("FilterTool","Open in e2filtertool.py",self.showFilterTool),("Save As","Saves images in new file format",self.saveAs)]
 		elif  self.dim[1]>1 :
 			return [("Show 2D","Show in a 2D single image display",self.show2dSingle),("Show 2D+","Show in new 2D single image display",self.show2dSingleNew),("FilterTool","Open in e2filtertool.py",self.showFilterTool),("Save As","Saves images in new file format",self.saveAs)]
 		# single 1-D
@@ -802,7 +802,7 @@ class EMStackFileType(EMFileType):
 	@staticmethod
 	def name():
 		"The unique name of this FileType. Stored in EMDirEntry.filetype for each file."
-		return "Text"
+		return "Image Stack"
 	@staticmethod
 	def isValid(path,header):
 		"Returns (size,n,dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."
