@@ -2187,19 +2187,23 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 	
 	#smic[-1] is micrograph name minus path
 	
+	tmpfile = os.path.join(outdir,'filt_%s.hdf'%filename)
 	imgmic  = get_im(micname)
 	
 	if inv_contrast:
 		stt = Util.infomask(imgmic, None, True)
 		Util.mul_scalar(imgmic, -1.0) # multiply by -1
 		imgmic += 2*stt[0]
-
+	
+	imgmic.write_image(tmpfile)	
+	
 	# Set box coordinates in sxhelixboxer database
-	db_load_helix_coords(micname, hcoordsname, False, boxsize)
+	db_load_helix_coords(tmpfile, hcoordsname, False, boxsize)
 
-	db_save_particle_coords(micname, fptcl_coords, ptcl_dst, boxsize, boxsize, do_rotation)
-	db_save_particles(micname, fimgs_0, ptcl_dst, boxsize, boxsize, do_rotation, True, do_gridding, "multiple", do_filt = True, filt_freq = freq)
-
+	db_save_particle_coords(tmpfile, fptcl_coords, ptcl_dst, boxsize, boxsize, do_rotation)
+	db_save_particles(tmpfile, fimgs_0, ptcl_dst, boxsize, boxsize, do_rotation, True, do_gridding, "multiple", do_filt = True, filt_freq = freq)
+	os.remove(tmpfile)
+	
 	mask = pad(model_blank(rmaxp*2, boxsize, 1, 1.0), boxsize, boxsize, 1, 0.0)
 
 	a = read_text_row(hcoordsname)
