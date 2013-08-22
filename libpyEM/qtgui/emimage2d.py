@@ -1402,7 +1402,7 @@ class EMImage2DWidget(EMGLWidget):
 		self.inspector.ptareasignz.setText("Area Sig (!=0): %1.3f"%clp["sigma_nonzero"])
 		self.inspector.ptareaskew.setText("Area Skewness: %1.3f"%clp["skewness"])
 		self.inspector.ptareakurt.setText("Area Kurtosis: %1.3f"%clp["kurtosis"])
-
+		self.inspector.ptcoord.setText("Center Coord: %d, %d"%(x,y))
 
 	def mousePressEvent(self, event):
 		lc=self.scr_to_img(event.x(),event.y())
@@ -1790,6 +1790,8 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.ptareakurt= QtGui.QLabel("Kurtosis: ")
 		self.ptlay.addWidget(self.ptareakurt,5,0,Qt.AlignLeft)
 
+		self.ptcoord= QtGui.QLabel("Center Coord: ")
+		self.ptlay.addWidget(self.ptcoord,5,1,Qt.AlignLeft)
 		
 		# not really necessary since the pointbox accurately labels the pixel when zoomed in
 		#self.ptpixels= QtGui.QWidget()
