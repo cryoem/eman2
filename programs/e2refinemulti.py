@@ -283,14 +283,14 @@ in the refinement directory. You can use Info with the browser or just read the 
 		xsize3d=EMData("{}/threed_00_{:02d}.hdf".format(options.path,i+1),0,True)["nx"]
 		if ( xsize3d != xsize ) :
 			append_html("The dimensions of the particles ( {ptcl}x{ptcl} ) do not match the dimensions of initial model {n} ( {vol}x{vol}x{vol} ). I will assume A/pix is correct in the model and rescale/resize accordingly.".format(ptcl=xsize,vol=xsize3d,n=i))
-			img3 = EMData("{}/threed_00_{:02d}".format(options.path,i+1),0,True)
+			img3 = EMData("{}/threed_00_{:02d}.hdf".format(options.path,i+1),0,True)
 			try:
 				scale=img3["apix_x"]/apix
 			except:
 				print "A/pix unknown, assuming scale same as relative box size"
 				scale=float(xsize)/xsize3d
-			if scale>1 : cmd="e2proc3d.py {path}/threed_00_{i:02d} {path}/threed_00_{i:02d} --clip={cl},{cl},{cl} --scale={sca:1.4f}".format(path=options.path,i=i+1,cl=nx,sca=scale)
-			else :       cmd="e2proc3d.py {path}/threed_00_{i:02d} {path}/threed_00_{i:02d} --scale={sca:1.4f} --clip={cl},{cl},{cl}".format(path=options.path,i=i+1,cl=nx,sca=scale)
+			if scale>1 : cmd="e2proc3d.py {path}/threed_00_{i:02d}.hdf {path}/threed_00_{i:02d}.hdf --clip={cl},{cl},{cl} --scale={sca:1.4f}".format(path=options.path,i=i+1,cl=nx,sca=scale)
+			else :       cmd="e2proc3d.py {path}/threed_00_{i:02d}.hdf {path}/threed_00_{i:02d}.hdf --scale={sca:1.4f} --clip={cl},{cl},{cl}".format(path=options.path,i=i+1,cl=nx,sca=scale)
 			run(cmd)
 
 	repim=EMData(options.input,0)		# read a representative image to get some basic info
