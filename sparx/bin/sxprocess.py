@@ -172,8 +172,7 @@ def main():
 			return
 		dbkey = args[0]
 		print "database key under which params will be stored: ", dbkey
-		gbdbname = 'bdb:e2boxercache#gauss_box_DB'
-		gbdb = db_open_dict(gbdbname)
+		gbdb = js_open_dict("e2boxercache/gauss_box_DB.json")
 				
 		parmstr= 'dummy:'+options.makedb[0]
 		(processorname, param_dict) = parsemodopt(parmstr)

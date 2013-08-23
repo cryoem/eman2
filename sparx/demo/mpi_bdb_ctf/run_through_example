@@ -57,7 +57,8 @@ sxprocess.py demoparms --makedb 'gauss_width'=1.0:'pixel_input'=5.2:'pixel_outpu
 # Output: particles from the input micrographs mic*_ptcls.bdb
 e2boxer.py --gauss_autoboxer=demoparms --do_ctf=demoparms --write_ptcl --boxsize=64 --norm=normalize.ramp.normvar mic*.hdf
 
-sxcpy.py bdb:particles/mic0_ptcls bdb:particles/mic1_ptcls bdb:particles/mic2_ptcls bdb:particles/mic3_ptcls bdb:particles/mic4_ptcls bdb:data2
+sxcpy.py particles/mic0_ptcls.hdf particles/mic1_ptcls.hdf particles/mic2_ptcls.hdf particles/mic3_ptcls.hdf particles/mic4_ptcls.hdf bdb:data2
+sxcpy.py data.hdf bdb:data
 
 #  phase flip the data set before processing with sxisac since bdb:data has CTF but sxisac currently does not correct for CTF.
 sxprocess.py bdb:data bdb:flip_data --phase_flip
