@@ -1277,8 +1277,16 @@ def base_name( file_name,extension=False,bdb_keep_dir=False ):
 		else:
 			return vals[-1]
 	else:
-		if extension : return os.path.basename(file_name)
-		else : return os.path.splitext(os.path.basename(file_name))[0].split("__")[0].replace("_ptcls","")		# double underscore is used to mark tags added to micrograph names
+		apath=os.path.relpath(file_name).replace("\\","/").split("/")
+		# for specific directories, we want any references to the same micrograph to share an id
+		if len(apath)>1 and apath[-2] in ("sets","particles","micrographs","ddd") :
+			if extension : return os.path.basename(file_name)
+			else : return os.path.splitext(os.path.basename(file_name))[0].split("__")[0].replace("_ptcls","")		# double underscore is used to mark tags added to micrograph names
+		
+		# but for other files, like classes_xx which users might make selection lists on, we want to include the
+		# subdirectory name, to prevent mixing between different refinement directories
+		if extension : return "-".join(apath[-2:])
+		else : return "-".join(apath[-2:]).rsplit(".",1)[0]
 
 def info_name(file_name):
 	"""This will return the name of the info file associated with a given image file, in the form info/basename_info.js"""
