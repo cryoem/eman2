@@ -14,16 +14,17 @@ sxpdb2em.py ../tteftu_with_tRNA.pdb tmp.hdf --apix=5.2 --box=64
 # which case the proper values must be entered manually.
 ###################################################################
 
-e2proc3d.py tmp.hdf ../fmodel_structure.hdf --process=filter.lowpass.tanh:cutoff_abs=0.15:fall_off=0.2
+e2proc3d.py tmp.hdf ../fmodel_structure.hdf --process=filter.lowpass.tanh:cutoff_abs=0.15:fall_off=0.2 || exit
 
-e2proc3d.py tmp.hdf ../model_structure.hdf --process=filter.lowpass.tanh:cutoff_abs=0.45:fall_off=0.1
+e2proc3d.py tmp.hdf ../model_structure.hdf --process=filter.lowpass.tanh:cutoff_abs=0.45:fall_off=0.1 || exit
+
 rm tmp.hdf
 
-# Generate 2D projections of a 3D model from an input hdf file.
+# Generating 2D projections of a 3D model from an input hdf file.
 # It simulates the procedure of EM image acquisition process.
 # The output projections were disturbed with Gaussian noise.
 # Each output file was computed with regard to various CTF settings.
-sxprocess.py ../model_structure.hdf particles mic --generate_projections format="bdb":apix=5.2:CTF=True 
+sxprocess.py ../model_structure.hdf particles mic --generate_projections apix=5.2:CTF=True 
 
 # Before proceeding to automated particle picking mode, it is suggested that the user 
 # first use e2boxer in the interactive mode to determine the desired parameters by
@@ -55,8 +56,8 @@ sxprocess.py demoparms --makedb 'gauss_width'=1.0:'pixel_input'=5.2:'pixel_outpu
 # Pick particles and estimate CTF
 # Input: simulated micrographs mic*.hdf
 # Output: particles from the input micrographs mic*_ptcls.bdb
-e2boxer.py --gauss_autoboxer=demoparms --do_ctf=demoparms --write_ptcl --boxsize=64 --norm=normalize.ramp.normvar mic*.hdf
-sxcpy.py particles/mic0_ptcls.hdf particles/mic1_ptcls.hdf particles/mic2_ptcls.hdf particles/mic3_ptcls.hdf particles/mic4_ptcls.hdf bdb:data
+e2boxer.py --gauss_autoboxer=demoparms --do_ctf=demoparms --write_ptcl --boxsize=64 --norm=normalize.ramp.normvar mic*.hdf --format=bdb
+e2bdb.py bdb:particles#mic0_ptcls bdb:particles#mic1_ptcls bdb:particles#mic2_ptcls bdb:particles#mic3_ptcls bdb:particles#mic4_ptcls --makevstack=bdb:data
 
 #  phase flip the data set before processing with sxisac since bdb:data has CTF but sxisac currently does not correct for CTF.
 sxprocess.py bdb:data bdb:flip_data --phase_flip
@@ -97,6 +98,7 @@ sxheader.py bdb:data --params=xform.align2d --import=parmsflip
 sxcpy.py class_averages_generation_*.hdf class_averages.hdf
 
 # Determination of the initial structure using class averages and common-lines
+# TODO SHC - single
 mpirun -np 4 sxfind_struct.py class_averages.hdf structure --ou=30 --delta=6 --lf=0.05 --hf=0.25 --maxit=20 --rand_seed=10 --trials=4 --MPI 
 ###################################################################
 # To run gui version, enter the following in the command line:
@@ -108,16 +110,16 @@ mpirun -np 4 sxfind_struct.py class_averages.hdf structure --ou=30 --delta=6 --l
 ###################################################################
 
 # 3D reconstruction to compute initial structure based on Euler angles determined in the previous step 
-mpirun -np 4 sxrecons3d_n.py structure/structure.hdf ab_initio_vol.hdf --MPI 
+mpirun -np 4 sxrecons3d_n.py structure/structure.hdf ab_initio_vol.hdf --MPI || exit
 
 # Low-pass filtration of the initial structure
-e2proc3d.py ab_initio_vol.hdf ab_initio_volf.hdf --process=filter.lowpass.tanh:cutoff_abs=0.15:fall_off=0.2 
+e2proc3d.py ab_initio_vol.hdf ab_initio_volf.hdf --process=filter.lowpass.tanh:cutoff_abs=0.15:fall_off=0.2 || exit
 
 # 2D alignment parameters are transformed to 3D alignment parameters
-sxparams_2D_to_3D.py bdb:data 
+sxparams_2D_to_3D.py bdb:data || exit
 
 # 3D projection alignment - refinement of the initial structure
-mpirun -np 4 sxali3d.py bdb:data ab_initio_volf.hdf ali3d_d --ou=30 --xr='2.0 1.0 0.5' --ts='1.0 1 0.5' --delta='31 10 2' --an='-1 12 6' --maxit=2 --ref_a=P  --function="[..,demo_user_funcs,ali3d_reference3]" --CTF --MPI 
+mpirun -np 4 sxali3d.py bdb:data ab_initio_volf.hdf ali3d_d --ou=30 --xr='2.0 1.0 0.5' --ts='1.0 1 0.5' --delta='31 10 2' --an='-1 12 6' --maxit=2 --ref_a=P  --function="[..,demo_user_funcs,ali3d_reference3]" --CTF --MPI || exit
 ###################################################################
 # To run gui version, enter the following in the command line:
 # 	sxgui.py --demo=mpibdbctf &
@@ -128,7 +130,7 @@ mpirun -np 4 sxali3d.py bdb:data ab_initio_volf.hdf ali3d_d --ou=30 --xr='2.0 1.
 ###################################################################
 
 # Refinement of the 3D structure using high accuracy alignment
-mpirun -np 4 sxlocal_ali3d.py bdb:data ali3d_e --ou=30 --delta=2 --ts=2 --maxit=1 --chunk=0.25 --function="[..,demo_user_funcs,localali3d_reference3]" --center=0 --MPI --CTF --debug 
+mpirun -np 4 sxlocal_ali3d.py bdb:data ali3d_e --ou=30 --delta=2 --ts=2 --maxit=1 --chunk=0.25 --function="[..,demo_user_funcs,localali3d_reference3]" --center=0 --MPI --CTF --debug || exit
 ###################################################################
 # To run gui version, enter the following in the command line:
 # 	sxgui.py --demo=mpibdbctf &
