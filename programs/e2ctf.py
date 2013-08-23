@@ -65,7 +65,6 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 
 	usage = """prog [options] <input stack/image> ...
-
 Various CTF-related operations on images, including automatic fitting. Note that automatic fitting is limited to defocuses
 less than ~5 microns. Input particles should be unmasked and unfiltered. A minimum of ~20 percent padding around the
 particles is required for background extraction, even if this brings the edge of another particle into the box in some cases.
@@ -75,7 +74,10 @@ operations are performed on oversampled images if specified, but this will produ
 so, while oversampling can be useful for fitting, it is not recommended for phase-flipping.
 
 Increasing padding during the particle picking process will improve the accuracy of phase-flipping, particularly for
-images far from focus."""
+images far from focus.
+
+NOTE: This program should be run from the project directory, not from within the particles directory
+"""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
