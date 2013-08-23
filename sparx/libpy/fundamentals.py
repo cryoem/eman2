@@ -1112,8 +1112,8 @@ def window2d(img, isize_x, isize_y, opt="c", ix=0, iy=0):
 	from EMAN2 import Region
 	if(opt == "l"): reg = Region(ix, iy, isize_x, isize_y)
 	elif(opt == "c"):
-		mx = (lx-isize_x)//2
-		my = (ly-isize_y)//2
+		mx = lx//2-isize_x//2
+		my = ly//2-isize_y//2
 		reg = Region(mx, my, isize_x, isize_y)
 	elif(opt == "a"):
 		mx = ix-isize_x//2
