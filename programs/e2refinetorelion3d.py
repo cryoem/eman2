@@ -219,10 +219,10 @@ if ctf_corr == 1:
 				#defocus = db_set['ctf'].to_dict()['defocus']*1000
 				break
 	print "CTF information being pulled from: " + db
-	s = "star_loopheader rlnImageName rlnMicrographName rlnDefocusU rlnDefocusV rlnDefocusAngle rlnVoltage rlnSphericalAberration rlnAmplitudeContrast > " + E2RLN + "/all_images.star"
+	s = "relion_star_loopheader rlnImageName rlnMicrographName rlnDefocusU rlnDefocusV rlnDefocusAngle rlnVoltage rlnSphericalAberration rlnAmplitudeContrast > " + E2RLN + "/all_images.star"
 	
 else:
-	s = "star_loopheader rlnImageName rlnMicrographName rlnVoltage rlnAmplitudeContrast > " + E2RLN + "/all_images.star"
+	s = "relion_star_loopheader rlnImageName rlnMicrographName rlnVoltage rlnAmplitudeContrast > " + E2RLN + "/all_images.star"
 call(s,shell=True)
 print "Converting EMAN2 Files to Formats Compatible with RELION"
 temp = EMData(set_name,0)
