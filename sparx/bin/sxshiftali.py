@@ -228,7 +228,7 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 	shift_y = [0.0]*len(data)
 	ishift_x = [0.0]*len(data)
 	ishift_y = [0.0]*len(data)
-	
+
 	for Iter in xrange(max_iter):
 		if myid == main_node:
 			start_time = time()
@@ -264,10 +264,10 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 			# For testing purposes: shift tavg to some random place and see if the centering is still correct
 			#tavg = rot_shift3D(tavg,sx=3,sy=-4)
 			tavg = fft(tavg)
-			
+
 		if Fourvar:  del vav
 		bcast_EMData_to_all(tavg, myid, main_node)
-		
+
 		sx_sum=0 
 		sy_sum=0 
 		if search_rng > 0: nwx = 2*search_rng+1
@@ -275,7 +275,7 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 		
 		if search_rng_y > 0: nwy = 2*search_rng_y+1
 		else:              nwy=ny
-		
+
 		not_zero = 0
 		for im in xrange(len(data)):
 			if oneDx:
@@ -284,7 +284,6 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 				p1_x = -int(p1[0][3])
 				ishift_x[im] = p1_x
 				sx_sum += p1_x
-
 			else:
 				p1 = peak_search(Util.window(ccf(data[im],tavg), nwx,nwy))
 				p1_x = -int(p1[0][4])
@@ -293,16 +292,16 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 				ishift_y[im] = p1_y
 				sx_sum += p1_x
 				sy_sum += p1_y
-			
+
 			if not_zero == 0:
 				if (not(ishift_x[im] == 0.0)) or (not(ishift_y[im] == 0.0)):
 					not_zero = 1
-		
+
 		sx_sum = mpi_reduce(sx_sum, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)  
-		
+
 		if not oneDx:
 			sy_sum = mpi_reduce(sy_sum, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
-		
+
 		if myid == main_node:
 			sx_sum_total = int(sx_sum[0])
 			if not oneDx:
@@ -332,14 +331,13 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 		else:
 			not_zero_all = 0
 		not_zero_all = bcast_number_to_all(not_zero_all, source_node = main_node)
-		
+
 		if myid == main_node:
 			print_msg("Time of iteration = %12.2f\n"%(time()-start_time))
 			start_time = time()
-			
-		if not_zero_all == 0:
-			break
-		
+
+		if not_zero_all == 0:  break
+
 	#for im in xrange(len(data)): data[im] = fft(data[im])  This should not be required as only header information is used
 	# combine shifts found with the original parameters
 	for im in xrange(len(data)):		
