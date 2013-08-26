@@ -201,8 +201,6 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 			del temp
 
 	total_iter = 0
-	cs = [0.0]*2
-
 
 	# apply initial xform.align2d parameters stored in header
 	init_params = []
@@ -211,7 +209,7 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 		init_params.append(t)
 		p = t.get_params("2d")
 		data[im] = rot_shift2D(data[im], p['alpha'], sx=p['tx'], sy=p['ty'], mirror=p['mirror'], scale=p['scale'])
-	
+
 	# fourier transform all images, and apply ctf if CTF
 	for im in xrange(len(data)):
 		if CTF:
@@ -245,7 +243,6 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 			else:	 tavg = Util.mult_scalar(avg, 1.0/float(nima))
 		else:
 			tavg = EMData(nx, ny, 1, False)                               
-			cs = [0.0]*2
 
 		if Fourvar:
 			bcast_EMData_to_all(tavg, myid, main_node)
