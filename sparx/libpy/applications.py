@@ -6146,7 +6146,7 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 		if CTF:
 			ima = EMData()
 			ima.read_image(stack, 0)
-			ctf_applied = ima.get_attr("ctf_applied")
+			ctf_applied = ima.get_attr_default("ctf_applied", 0)
 			del ima
 			if ctf_applied == 1:  ERROR("local_ali3d does not work for CTF-applied data", "local_ali3d_MPI", 1,myid)
 	mpi_barrier(MPI_COMM_WORLD)
@@ -13330,7 +13330,7 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 		data[im] -= st[0]
 		data[im] /= st[1]
 		if CTF:
-			qctf = data[im].get_attr("ctf_applied")
+			qctf = data[im].get_attr_default("ctf_applied", 0)
 			if qctf == 0:
 				ctf_params = data[im].get_attr("ctf")
 				data[im] = filt_ctf(data[im], ctf_params)

@@ -66,7 +66,7 @@ def main():
 	parser.add_option("--Fourvar",  action="store_true", default=False,         help="compute Fourier variance")
 	parser.add_option("--npad",     type="int",    default= 2,                  help="padding size for 3D reconstruction (default=2)")
 	parser.add_option("--debug",    action="store_true", default=False,         help="debug")
-	parser.add_option("--nh",       action="store_true", default=False,         help="new - SHC")
+	parser.add_option("--shc",      action="store_true", default=False,         help="use SHC algorithm")
 	parser.add_option("--nh2",      action="store_true", default=False,         help="new - SHC2")
 	parser.add_option("--ns",       action="store_true", default=False,         help="new - saturn")
 	parser.add_option("--ns2",      action="store_true", default=False,         help="new - saturn2")
@@ -106,14 +106,17 @@ def main():
 				options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
 				options.function, options.Fourvar, options.npad, options.debug, options.MPI, options.stoprnct)
 			global_def.BATCH = False
-		elif(options.nh):
-			global_def.BATCH = True
-			from development import ali3d_shc
-			ali3d_shc(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
-				options.yr, options.ts, options.delta, options.an, options.apsi, options.deltapsi, options.startpsi,
-				options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
-				options.function, options.Fourvar, options.npad, options.debug, options.MPI, options.stoprnct)
-			global_def.BATCH = False
+		elif(options.shc):
+			if not options.MPI:
+				print "Only MPI version is implemented!!!"
+			else:
+				from alignment import ali3d_shcMPI
+				global_def.BATCH = True
+				ali3d_shcMPI(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
+					options.yr, options.ts, options.delta, options.an, options.apsi, options.deltapsi, options.startpsi,
+					options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
+					options.function, options.Fourvar, options.npad, options.debug, options.stoprnct)
+				global_def.BATCH = False
 		elif(options.nh2):
 			global_def.BATCH = True
 			from development import ali3d_shc2
