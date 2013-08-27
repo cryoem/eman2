@@ -53,7 +53,7 @@ def main():
 	parser.add_option("--y_restrict",         type="string",		 default= "-1 -1 -1 -1 -1",   help="range for translational search in y-direction, search is +/-y_restrict in Angstroms. This only applies to local search, i.e., when an is not -1. If y_restrict < 0, then for ihrsrlocalcons (option --localcons local search with consistency), the y search range is set such that it is the same ratio to dp as angular search range is to dphi. For regular ihrsr, y search range is the full range when y_restrict< 0. Default is -1.")
 	parser.add_option("--ynumber",            type="string",		 default= "4 8 16 32 32",     help="even number of the translation search in y direction, search is (-dpp/2,-dpp/2+dpp/ny,,..,0,..,dpp/2-dpp/ny dpp/2]")
 	parser.add_option("--delta",              type="string",		 default= " 10 6 4  3   2",   help="angular step of reference projections")
-	parser.add_option("--an",                 type="string",		 default= "-1",               help="angular neighborhood for local searches")
+	parser.add_option("--an",                 type="string",		 default= "-1",               help="angular neighborhood for local searches (default -1, meaning do exhaustive search)")
 	parser.add_option("--maxit",              type="int",            default= 30,                 help="maximum number of iterations performed for each angular step (default 30) ")
 	parser.add_option("--CTF",                action="store_true",   default=False,      		  help="CTF correction")
 	parser.add_option("--snr",                type="float",          default= 1.0,                help="Signal-to-Noise Ratio of the data (default 1)")	
@@ -63,7 +63,7 @@ def main():
 	parser.add_option("--dp",                 type="float",			 default= -1.0,               help="delta z - translation in Angstroms")   
 	parser.add_option("--dphi",               type="float",			 default= -1.0,               help="delta phi - rotation in degrees")  
 		
-	parser.add_option("--ndp",                type="int",            default= 12,                 help="In symmetrization search, number of delta z steps equas to 2*ndp+1") 
+	parser.add_option("--ndp",                type="int",            default= 12,                 help="In symmetrization search, number of delta z steps equals to 2*ndp+1") 
 	parser.add_option("--ndphi",              type="int",            default= 12,                 help="In symmetrization search,number of dphi steps equas to 2*ndphi+1")  
 	parser.add_option("--dp_step",            type="float",          default= 0.1,                help="delta z (Angstroms) step  for symmetrization")  
 	parser.add_option("--dphi_step",          type="float",          default= 0.1,                help="dphi step for symmetrization")
