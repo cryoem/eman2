@@ -77,6 +77,7 @@ single-model refinement.
 		for i in xrange(ncls):
 			try :
 				hdr=EMData(args[0],i,True)
+				inset=hdr["class_ptcl_src"]		# theoretically this could be different for different class-averages, but in practice no program does that
 				break
 			except : continue
 		
