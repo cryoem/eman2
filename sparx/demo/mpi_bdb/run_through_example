@@ -41,7 +41,7 @@ sxprocess.py ../model_structure.hdf particles mic --generate_projections apix=5.
 
 sxprocess.py demoparms --makedb 'gauss_width'=1.0:'pixel_input'=5.2:'pixel_output'=5.2:'thr_low'=4.0:'thr_hi'=60.0:"invert_contrast"=False:"use_variance"=True:"boxsize"=64
 e2boxer.py --gauss_autoboxer=demoparms --write_ptcl --boxsize=64 --norm=normalize.ramp.normvar mic*.hdf --format=bdb
-e2bdb.py bdb:particles#mic0_ptcls bdb:particles#mic1_ptcls bdb:particles#mic2_ptcls bdb:particles#mic3_ptcls bdb:particles#mic4_ptcls --makevstack=bdb:data
+e2bdb.py bdb:particles\#mic0_ptcls bdb:particles\#mic1_ptcls bdb:particles\#mic2_ptcls bdb:particles\#mic3_ptcls bdb:particles\#mic4_ptcls --makevstack=bdb:data
 
 sxheader.py bdb:data --params=active --one
 sxheader.py bdb:data --params=xform.align2d --zero
