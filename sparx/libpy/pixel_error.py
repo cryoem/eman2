@@ -83,7 +83,7 @@ def max_3D_pixel_error(t1, t2, r=1.0):
 	if( type(dummy) != type(t1)):
 		t = Transform({"type":"spider","phi":t1[0],"theta":t1[1],"psi":t1[2]})
 		t.set_trans(Vec2f(-t1[3], -t1[4]))
-	else: u = t1
+	else: t = t1
 	if( type(dummy) != type(t2)):
 		u = Transform({"type":"spider","phi":t2[0],"theta":t2[1],"psi":t2[2]})
 		u.set_trans(Vec2f(-t2[3], -t2[4]))

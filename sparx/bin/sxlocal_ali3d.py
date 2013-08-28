@@ -62,8 +62,8 @@ def main():
 	parser.add_option("--fourvar",  action="store_true", default=False,   help="compute Fourier variance")
 	(options, args) = parser.parse_args(arglist[1:])
 	if(len(args) < 2 or len(args) > 3):
-    		print "usage: " + usage
-    		print "Please run '" + progname + " -h' for detailed options"
+		print "usage: " + usage
+		print "Please run '" + progname + " -h' for detailed options"
 	else:
 	
 		if(len(args) == 2):
@@ -73,7 +73,7 @@ def main():
 
 		if options.MPI:
 			from mpi import mpi_init
-	   		sys.argv = mpi_init(len(sys.argv), sys.argv)
+			sys.argv = mpi_init(len(sys.argv), sys.argv)
 
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
@@ -93,8 +93,8 @@ def main():
 			options.npad, options.debug, options.MPI)
 		global_def.BATCH = False
 
-                if options.MPI:
-	                from mpi import mpi_finalize
+		if options.MPI:
+			from mpi import mpi_finalize
 			mpi_finalize()
 
 if __name__ == "__main__":
