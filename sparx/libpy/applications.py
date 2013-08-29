@@ -13517,7 +13517,6 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 			#header(stack, params='previousmax', fexport=os.path.join(outdir, "previousmax%04d.txt"%Iter))
 		mpi_barrier(MPI_COMM_WORLD)
 
-
 def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, ynumber,\
 						txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, dphi, psi_max,\
 						rmin, rmax, fract,  npad, sym, user_func_name, \
@@ -13530,7 +13529,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 	from utilities      import send_attr_dict, read_text_row, sym_vol
 	from utilities      import get_params_proj, set_params_proj, file_type, chunks_distribution
 	from fundamentals   import rot_avg_image
-	from applications 	import setfilori, setfilori_MA, prepare_refrings2, filamentupdown
+	from applications 	import setfilori_MA, prepare_refrings2, filamentupdown
 	from pixel_error    import max_3D_pixel_error, ordersegments
 	import os
 	import types
@@ -13653,7 +13652,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 		print_msg("Translational stepx                       : %s\n"%(stepx))
 		print_msg("Angular step                              : %s\n"%(delta))
 		print_msg("Angular search range                      : %s\n"%(an))
-		print_msg("Initial Theta                             : %s\n"%(initial_theta))
+		print_msg("Initial theta                             : %s\n"%(initial_theta))
 		print_msg("min radius for helical search (in pix)    : %5.4f\n"%(rmin))
 		print_msg("max radius for helical search (in pix)    : %5.4f\n"%(rmax))
 		print_msg("fraction of volume used for helical search: %5.4f\n"%(fract))
@@ -13840,7 +13839,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 					Torg.append(data[im].get_attr('xform.projection'))
 					
 				if (seg_end - seg_start) > 1:
-					setfilori_MA(data[seg_start: seg_end], pixel_size, dp, dphi, total_iter, symmetry_string, boundaryavg=boundaryavg, WRAP=MA_WRAP)
+					setfilori_MA(data[seg_start: seg_end], pixel_size, dp, dphi, symmetry_string, WRAP=1)
 
 				for im in xrange( seg_start, seg_end ):
 					peak1 = None
@@ -14084,7 +14083,7 @@ def filamentupdown(fildata, pixel_size, dp, dphi):
 	return
 
 
-def setfilori_MA(fildata, pixel_size, dp, dphi, iter, sym='c1', boundaryavg=False, WRAP=1):
+def setfilori_MA(fildata, pixel_size, dp, dphi, sym='c1', WRAP=1):
 	from utilities		import get_params_proj, set_params_proj
 	from pixel_error 	import angle_diff
 	from applications	import filamentupdown
@@ -14208,10 +14207,12 @@ def setfilori_MA(fildata, pixel_size, dp, dphi, iter, sym='c1', boundaryavg=Fals
 		iconsy 		= consy[im]
 
 		aphi = 0.0
-		if WRAP == 1:
-			if abs(iconsy) >= dpp/2.0:
-				iconsy, aphi = yshift_to_phi(iconsy, iconspsi, pixel_size, dp, dphi)
+		#if WRAP == 1:
+		#	if abs(iconsy) >= dpp/2.0:
+		#		iconsy, aphi = yshift_to_phi(iconsy, iconspsi, pixel_size, dp, dphi)
+		print im,get_params_proj(fildata[im])
 		set_params_proj(fildata[im], [(iconsphi + aphi)%360., iconstheta, iconspsi, iconsx, iconsy])
+		print im,get_params_proj(fildata[im])
 
 """
 def setfilori(fildata, pixel_size, dp, dphi, iter, sym='c1'):
