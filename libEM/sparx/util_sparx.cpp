@@ -44,6 +44,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cassert>
+#include <sstream>
 #include "emdata.h"
 #include "util.h"
 #include "fundamentals.h"
@@ -18532,6 +18533,159 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 	res.push_back(peak);
 	res.push_back(static_cast<float>(tiref));
 	return res;
+}
+
+
+static std::string toString(int i)
+{
+	std::ostringstream s;
+	s << i;
+	return s.str();
+}
+
+vector<float> Util::shc_multipeaks(EMData* image, const vector< EMData* >& crefim,
+                float xrng, float yrng, float step, float ant, string mode,
+                vector<int>numr, float cnx, float cny, int max_peaks_count)
+{
+	size_t crefim_len = crefim.size();
+	const float qv = static_cast<float>( pi/180.0 );
+
+	const float previousmax = image->get_attr("previousmax");
+	int   ky = int(2*yrng/step+0.5)/2;
+	int   kx = int(2*xrng/step+0.5)/2;
+	int   iref, nref=0, mirror=0;
+	float iy, ix, sx=0, sy=0;
+	float ang=0.0f;
+
+	vector< vector<EMData*> > cimages( 2*ky+1, vector<EMData*>(2*kx+1) );
+
+	for (int i = -ky; i <= ky; i++) {
+	    iy = i * step ;
+	    for (int j = -kx; j <= kx; j++) {
+			ix = j*step;
+			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+			Normalize_ring( cimage, numr );
+			Frngs(cimage, numr);
+			cimages[i+ky][j+kx] = cimage;
+		}
+	}
+
+	vector<unsigned> listr(crefim_len);
+	for (unsigned i = 0; i < crefim_len; ++i) listr[i] = i;
+	for (unsigned i = 0; i < crefim_len; ++i) {
+		unsigned r = Util::get_irand(0,crefim_len-1);
+		swap( listr[r], listr[i] );
+	}
+
+	std::vector<float> results;
+	size_t tiref = 0;
+	for ( ;  (tiref < crefim_len) && (results.size() / 7 < max_peaks_count); tiref++) {
+		iref = listr[tiref];
+		float peak = previousmax;
+		for (int i = -ky; i <= ky; i++) {
+			iy = i * step ;
+			for (int j = -kx; j <= kx; j++) {
+				ix = j*step;
+				EMData* cimage = cimages[i+ky][j+kx];
+				Dict retvals = Crosrng_ms(crefim[iref], cimage, numr);
+				double qn = retvals["qn"];
+				double qm = retvals["qm"];
+				if (qn > peak || qm > peak) {
+					sx = -ix;
+					sy = -iy;
+					nref = iref;
+					if (qn >= qm) {
+						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+						peak = static_cast<float>( qn );
+						mirror = 0;
+					} else {
+						ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
+						peak = static_cast<float>( qm );
+						mirror = 1;
+					}
+					//cout <<"  iref "<<iref<<"  tiref "<<tiref<<"   "<<previousmax<<"   "<<qn<<"   "<<qm<<endl;
+				}
+			}
+		}
+		if (peak > previousmax) {
+			const float co =  cos(ang*qv);
+			const float so = -sin(ang*qv);
+			const float sxs = sx*co - sy*so;
+			const float sys = sx*so + sy*co;
+			results.push_back(ang);
+			results.push_back(sxs);
+			results.push_back(sys);
+			results.push_back(static_cast<float>(mirror));
+			results.push_back(static_cast<float>(nref));
+			results.push_back(peak);
+			results.push_back(static_cast<float>(tiref));
+		}
+	}
+
+	for (unsigned i = 0; i < cimages.size(); ++i) {
+		for (unsigned j = 0; j < cimages[i].size(); ++j) {
+			delete cimages[i][j];
+			cimages[i][j] = NULL;
+		}
+	}
+
+	// sorting
+	unsigned no_of_solution = results.size() / 7;
+	for (unsigned i = 0; i < no_of_solution; ++i) {
+		unsigned max_peak_ind = i;
+		float max_peak_val = results[7*i+5];
+		for (unsigned j = i+1; j < no_of_solution; ++j) {
+			const float peak_j = results[7*j+5];
+			if (peak_j > max_peak_val) {
+				max_peak_val = peak_j;
+				max_peak_ind = j;
+			}
+		}
+		if (max_peak_ind != i) {
+			for (unsigned j = 0; j < 7; ++j) {
+				std::swap(results[7*i+j], results[7*max_peak_ind+j]);
+			}
+		}
+	}
+
+	// set new previous max
+	if ( no_of_solution > 0 ) {
+		image->set_attr("previousmax",results[7*0+5]);
+	}
+
+	// set weights
+	if ( no_of_solution < 2 ) {
+		image->set_attr("weight",1.0);
+	} else {
+		// the idea is like this:
+		// - the minimal weight should equal 1/no_of_solution of maximal weight
+		// - the sum of weights should equal 1.0
+		vector<float> w(no_of_solution);
+		for (unsigned i = 0; i < no_of_solution; ++i) {
+			w[i] = results[7*i+5];
+		}
+		float r = (w.front() - no_of_solution * w.back()) / (no_of_solution - 1);
+		float sum = 0;
+		for (unsigned i = 0; i < no_of_solution; ++i) {
+			w[i] += r;
+			sum += w[i];
+		}
+		for (unsigned i = 0; i < no_of_solution; ++i) {
+			w[i] /= sum;
+			if (i == 0) {
+				image->set_attr("weight",w[i]);
+			} else {
+				image->set_attr("weight" + toString(i),w[i]);
+			}
+		}
+	}
+
+	// remove unused parameters from the header
+	for (unsigned i = std::max(no_of_solution, 1u);  image->has_attr("weight" + toString(i));  ++i ) {
+		image->del_attr("weight" + toString(i));
+	}
+
+	return results;
 }
 
 

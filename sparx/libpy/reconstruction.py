@@ -60,6 +60,21 @@ def rec2D(  lines, idrange=None, snr=None ):
 	return r.finish(True)
 
 
+def insert_slices(reconstructor, proj):
+	xforms = [ proj.get_attr("xform.projection") ]
+	weights = [ proj.get_attr_default("weight", 1.0) ]
+	ixform = 0
+	while True:
+		ixform += 1
+		xform_proj = proj.get_attr_default("xform.projection" + str(ixform), None)
+		if xform_proj == None:
+			break
+		xforms.append(xform_proj)
+		weights.append(proj.get_attr_default("weight" + str(ixform), 1.0))
+	for i in xrange(len(xforms)):
+		reconstructor.insert_slice( proj, xforms[i], weights[i] )
+
+
 def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weighting=1, varsnr=True, xysize=-1, zsize = -1):
 	"""
 	Perform a 3-D reconstruction using Pawel's FFT Back Projection algorithm.
@@ -145,14 +160,12 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weig
 			proj.read_image(stack_name, list_proj[i])
 			active = proj.get_attr_default('active', 1)
 			if active == 1:
-				xform_proj = proj.get_attr("xform.projection")
-				r.insert_slice(proj, xform_proj )
+				insert_slices(r, proj)
 	else:
 		for i in list_proj:
 			active = stack_name[i].get_attr_default('active', 1)
 			if active == 1:
-				xform_proj = stack_name[i].get_attr("xform.projection")
-				r.insert_slice(stack_name[i], xform_proj )
+				insert_slices(r, stack_name[i])
 
 	dummy = r.finish(True)
 	return fftvol
@@ -210,9 +223,9 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad=4, xysize=-1,
 
 		active = prj.get_attr_default('active', 1)
 		if(active == 1):
-			xform_proj = prj.get_attr( "xform.projection" )
-			if dopad: prj = pad(prj, imgsize,imgsize, 1, "circumference")
-			r.insert_slice(prj, xform_proj )
+			if dopad: 
+				prj = pad(prj, imgsize,imgsize, 1, "circumference")
+			insert_slices(r, prj)
 			if( not (info is None) ):
 				nimg += 1
 				info.write("Image %4d inserted.\n" %(nimg) )
@@ -314,15 +327,14 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 10.0, sign=1, symmetry="c
 			proj.read_image(stack_name, list_proj[i])
 			active = proj.get_attr_default('active', 1)
 			if(active == 1):
-				xform_proj = proj.get_attr("xform.projection")
-				if dopad: proj = pad(proj, size, size, 1, "circumference")
-				r.insert_slice(proj, xform_proj )
+				if dopad: 
+					proj = pad(proj, size, size, 1, "circumference")
+				insert_slices(r, proj)
 	else:
 		for i in xrange(len(list_proj)):
 			active = stack_name[list_proj[i]].get_attr_default('active', 1)
 			if active == 1:
-				xform_proj = stack_name[list_proj[i]].get_attr("xform.projection")
-				r.insert_slice(stack_name[list_proj[i]], xform_proj )
+				insert_slices(r, stack_name[list_proj[i]])
 	dummy = r.finish(True)
 	return fftvol
 
@@ -385,9 +397,9 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None, n
 		prj = prjlist.image()
 		active = prj.get_attr_default('active', 1)
 		if active == 1:
-			xform_proj = prj.get_attr( "xform.projection" )
-			if dopad: prj = pad(prj, imgsize,imgsize, 1, "circumference")
-			r.insert_slice(prj, xform_proj )
+			if dopad: 
+				prj = pad(prj, imgsize,imgsize, 1, "circumference")
+			insert_slices(r, prj)
 		if not (info is None):
 			nimg += 1
 			info.write(" %4d inserted\n" %(nimg) )

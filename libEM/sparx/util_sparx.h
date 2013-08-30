@@ -920,6 +920,9 @@ public:
 	static vector<float> shc(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, float ant, string mode,
                 vector< int >numr, float cnx, float cny);
+	static vector<float> shc_multipeaks(EMData* image, const vector< EMData* >& crefim,
+	            float xrng, float yrng, float step, float ant, string mode,
+	            vector<int>numr, float cnx, float cny, int max_peaks_count);
 
 	/** formerly known as apmq
 	 * Determine shift and rotation between image and many reference
