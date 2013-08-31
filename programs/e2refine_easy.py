@@ -171,7 +171,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--classaverager",type=str,help="Default=auto. The averager used to generate the class averages. Default is \'mean\'.",default=None)
 	parser.add_argument("--classcmp",type=str,help="Default=auto. The name and parameters of the comparitor used to generate similarity scores, when class averaging.", default=None)
 	parser.add_argument("--classnormproc",type=str,default="normalize.edgemean",help="Default=auto. Normalization applied during class averaging")
-	parser.add_argument("--classrefsf",default=False, action="store_true", help="Default=True. Use the setsfref option in class averaging to produce better filtered averages.")
+	parser.add_argument("--classrefsf",default=False, action="store_true", help="Default=False. Use the setsfref option in class averaging to produce better filtered averages.")
 
 
 	#options associated with e2make3d.py

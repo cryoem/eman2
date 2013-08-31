@@ -911,9 +911,17 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 	av2["is_intensity"]=0
 
 	# This is a new addition (2/4/10) to prevent negative BG subtracted curves near the origin
-	maxpix=int(apix*ys2/80.0)		# we do this up to ~80 A
+	maxpix=int(apix*ys2/25.0)               # we do this up to ~80 A
+	avsnr=0
+	avc=0
+	for i in xrange(maxpix):
+		if av1_1d[i]>av2_1d[i] :
+			avsnr+=(av1_1d[i]-av2_1d[i])/av2_1d[i]
+			avc+=1
+	avsnr/=avc
+
 	for i in xrange(maxpix) :
-		if av2_1d[i]>av1_1d[i] : av2_1d[i]=av1_1d[i]		# we set the background equal to the foreground if it's too big
+		if av2_1d[i]>av1_1d[i] : av2_1d[i]=av1_1d[i]/(avsnr+1)          # we set the background equal to the foreground if it's too big
 
 	#db_close_dict(stackfile)	# safe for non-bdb files
 
@@ -1098,9 +1106,17 @@ Rather than returning a single tuple, returns a list of nclasses tuples.
 	av2["is_intensity"]=0
 
 	# This is a new addition (2/4/10) to prevent negative BG subtracted curves near the origin
-	maxpix=int(apix*ys2/80.0)		# we do this up to ~80 A
+	maxpix=int(apix*ys2/25.0)               # we do this up to ~80 A
+	avsnr=0
+	avc=0
+	for i in xrange(maxpix):
+		if av1_1d[i]>av2_1d[i] :
+			avsnr+=(av1_1d[i]-av2_1d[i])/av2_1d[i]
+			avc+=1
+	avsnr/=avc
+
 	for i in xrange(maxpix) :
-		if av2_1d[i]>av1_1d[i] : av2_1d[i]=av1_1d[i]		# we set the background equal to the foreground if it's too big
+		if av2_1d[i]>av1_1d[i] : av2_1d[i]=av1_1d[i]/(avsnr+1)          # we set the background equal to the foreground if it's too big
 
 	#db_close_dict(stackfile)	# safe for non-bdb files
 
