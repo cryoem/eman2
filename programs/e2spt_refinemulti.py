@@ -88,7 +88,7 @@ def main():
 	#parser.add_argument("--refinemultireftag", type=str, help="DO NOT USE THIS PARAMETER. It is passed on from e2spt_refinemulti.py if needed.", default='')
 	
 	
-	parser.add_argument("--radius", type=float, help="""Hydrodynamic radius of the particle in Angstroms. 
+	parser.add_argument("--radius", type=float, help="""Will make --align and --ralign None. Hydrodynamic radius of the particle in Angstroms. 
 													This will be used to automatically calculate the angular steps to use in search of the best alignment.
 													Make sure the apix is correct on the particles' headers, sine the radius will be converted from Angstroms to pixels.
 													Then, the fine angular step is equal to 360/(2*pi*radius), and the coarse angular step 4 times that""", default=0)
@@ -100,6 +100,12 @@ def main():
 	parser.add_argument("--sym", dest = "sym", default=None, help = "Symmetry to impose - choices are: c<n>, d<n>, h<n>, tet, oct, icos", guitype='symbox', row=9, col=1, rowspan=1, colspan=2, mode='alignment,breaksym')
 	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", returnNone=True, default="mask.sharp:outer_radius=-2", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=11, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	parser.add_argument("--normproc",type=str,help="Normalization processor applied to particles before alignment. Default is to use normalize. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'", default="normalize")
+	
+	
+	parser.add_argument("--threshold",type=str,help="""A threshold applied to the subvolumes after normalization. 
+													For example, --threshold=threshold.belowtozero:minval=0 makes all negative pixels equal 0, so that they do not contribute to the correlation score.""", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	
+	
 	
 	parser.add_argument("--preprocess",type=str,help="Any processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	parser.add_argument("--preprocessfine",type=str,help="Any processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.", default=None)
@@ -157,14 +163,17 @@ def main():
 														For example, --wedgeangle=60 will represent a wedge of size (90-60)*2=60.
 														--wedgeangle=70, results in a narrower wedge of size (90-70)*2=40.
 														In reality, you should enter here the range of your DATA COLLECTION.
-														I.e., if you collected your tiltseries from -60 to 60, enter --wedgeangle=60.""",default=60.0)
-	parser.add_argument("--wedgei",type=float,help="Missingwedge begining (in terms of its 'height' along Z. If you specify 0, the wedge will start right at the origin.", default=0.10)
-	parser.add_argument("--wedgef",type=float,help="Missingwedge ending (in terms of its 'height' along Z. If you specify 1, the wedge will go all the way to the edge of the box.", default=0.9)
-	parser.add_argument("--fitwedgepost", action="store_true", help="Fit the missing wedge AFTER preprocessing the subvolumes, not before, IF using the fsc.tomo comparator for --aligncmp or --raligncmp.", default=False)
+														I.e., if you collected your tiltseries from -60 to 60, enter --wedgeangle=60.""",default=None)
+	parser.add_argument("--wedgei",type=float,help="Missingwedge begining (in terms of its 'height' along Z. If you specify 0, the wedge will start right at the origin.", default=None)
+	parser.add_argument("--wedgef",type=float,help="Missingwedge ending (in terms of its 'height' along Z. If you specify 1, the wedge will go all the way to the edge of the box.", default=None)
+	#parser.add_argument("--fitwedgepost", action="store_true", help="Fit the missing wedge AFTER preprocessing the subvolumes, not before, IF using the fsc.tomo comparator for --aligncmp or --raligncmp.", default=False)
 	parser.add_argument("--writewedge", action="store_true", help="Write a subvolume with the shape of the fitted missing wedge if --raligncmp or --aligncmp are fsc.tomo. Default is 'True'. To turn on supply --writewedge", default=False)		
 	
 	(options, args) = parser.parse_args()
 
+	if options.radius:
+		options.align = None
+		options.ralign = None
 	'''
 	Make the directory where to create the database where the results will be stored
 	'''
@@ -185,7 +194,7 @@ def main():
 	'''
 	nrefs=0
 	
-	refsfiles = []
+	refsfiles = set([])
 
 	if ',' in options.refs:
 		refsorig = options.refs.split(',')
@@ -194,15 +203,14 @@ def main():
 			outref = options.path + '/' + refsorig[i].replace('.hdf','_ref' + str(i).zfill(len(str(nrefs))) + '.hdf' )
 			os.system('cp ' + refsorig[i] + ' ' + outref)		
 			#nrefs = len(refsorig)
-			refsfiles.append(outref)
 			
-			
+			refsfiles.update( [ outref ] )
 	else:
 		nrefs = EMUtil.get_image_count(options.refs)
 		for i in range(nrefs):
 			outref = options.path + '/' + options.refs.replace('.hdf','_ref' + str(i).zfill(len(str(nrefs))) + '.hdf' )
 			os.system('e2proc3d.py ' + options.refs + ' ' + outref + ' --first=' + str(i) + ' --last=' + str(i) )
-			refsfiles.append(outref)
+			refsfiles.update( [ outref ] )
 	
 	'''
 	Generate the commands to refine the data against each reference
@@ -214,6 +222,7 @@ def main():
 	absoluteInput = rootpath + '/' + options.input
 	options.input = absoluteInput
 	avgs={}
+	finalize=0
 	
 	for it in range( options.iter ):
 		print "\n\nIteration", it
@@ -221,15 +230,16 @@ def main():
 				#The program goes into --path to execute the alignment command; therefore, --input will be one level furtherback
 	
 		if it > 0:
-			newrefsfiles=[]					
+			newrefsfiles=set()				
 			#avgsName =  'classAvgs.hdf'
 			#if options.savesteps and int( options.iter ) > 1 :
 			#	avgsName = 'classAvgs_iter' + str().zfill( len( str( options.iter ))) + '.hdf'
 	
 			newreffile = ''
 			for reftag in avgs:
-				if avgs[ reftag ]:
+				if avgs[ reftag ] and avgs[reftag] != None and avgs[reftag]!='None':
 					newref = avgs[ reftag ]
+					
 					for ref in refsfiles:
 						if reftag in ref:
 							if '_iter' in ref:
@@ -238,15 +248,23 @@ def main():
 								newreffile = ref.replace('.hdf','_iter' + str(it).zfill( len( str( options.iter ))) + '.hdf')
 						
 							newref.write_image( newreffile, 0)
-				else:
-					for ref in refsfiles:
-						if reftag in ref:					
-							newreffile = ref
+				#else:
+				#	for ref in refsfiles:
+				#		if reftag in ref:					
+				#			newreffile = ref
 				
-				newrefsfiles.append( newreffile )
-
+				newrefsfiles.update( [newreffile] )
+			
 			refsfiles = newrefsfiles
 			
+			print "\n\n\n\nRRRRRRRRRRRRRR \n len refsfiles is and refsfiles are", len(refsfiles), refsfiles
+			print "\nRRRRRRRRRRRRRRRRR \n\n\n\n\n"
+			
+			if len(refsfiles) < 2:
+				finalize = 1
+				print "All particles preferred one average and therefore multirefine has failed/converged"
+				sys.exit()
+				
 			
 		k=0
 		reftags = []
@@ -261,7 +279,7 @@ def main():
 	
 			names = dir(options)
 			for name in names:
-				if getattr(options,name) and 'refs' not in name and "__" not in name and "_" not in name and 'path' not in name and str(getattr(options,name)) != 'True':	
+				if getattr(options,name) and 'refs' not in name and "__" not in name and "_" not in name and 'path' not in name and str(getattr(options,name)) != 'True' and 'iter' not in name:	
 					#if "__" not in name and "_" not in name and str(getattr(options,name)) and 'path' not in name and str(getattr(options,name)) != 'False' and str(getattr(options,name)) != 'True' and str(getattr(options,name)) != 'None':			
 					alicmd += ' --' + name + '=' + str(getattr(options,name))
 			alicmd += ' --donotaverage'
@@ -269,8 +287,14 @@ def main():
 			tag = str(k).zfill( len( str ( nrefs )))
 			reftag = 'ref' + tag
 			reftags.append(reftag)
-	
-			alicmd += ' --refinemultireftag=' + tag	+ ' && mv ' + options.path + '/sptTMP/* ' + options.path + '/ && rm -r ' + options.path +'/sptTMP*'	
+		
+			jsAliParamsPathActual = options.path + '/tomo_xforms.json'
+			
+			jsAliParamsPathNew = jsAliParamsPathActual.replace('.json','_' + reftag + '.json')
+			jsAliParamsPathNew = jsAliParamsPathNew.replace('.json', '_it' + str(it).zfill( len(str(options.iter))) + '.json')
+			
+			#print "(e2spt_refinemulti.py) The actual .json file with ali params will be", jsAliParamsPathNew
+			alicmd += ' --refinemultireftag=' + tag	+ ' && mv ' + options.path + '/sptTMP/* ' + options.path + '/ && rm -r ' + options.path +'/sptTMP* && mv ' + jsAliParamsPathActual + ' ' + jsAliParamsPathNew
 		
 			#print "Command is", alicmd
 		
@@ -299,48 +323,27 @@ def main():
 			text=p.communicate()	
 			p.stdout.close()
 		
-			print "Feedback from p was", text
+			#print "Feedback from p was", text
 		
-			'''
-			Open scores file for current reference
-			'''
-			#scoresFile = options.path + '/' + thisRefinementPath + '/subtomo_scores' + tag + '.json'
-			scoresFile = options.path +'/subtomo_scores' + tag + '.json'
-			scores = js_open_dict(scoresFile)
-			nscores = len(scores)
-		
-			#print "\n\nThe scores file to read is", scoresFile
-			#print "I read these many scores", nscores
-			#print "scores are", scores
-		
-			#for ele in scores:
-			#	print "one score element is", ele
-			#	#print "And therefore score is", scores[ele]
-			
-			print "\n\n"
 		
 			'''
 			Open alignment results file for current reference
 			'''
 			#aliParamsFile = options.path + '/' + thisRefinementPath + '/tomo_xforms' + tag + '.json'
-			aliParamsFile = options.path + '/tomo_xforms' + tag + '.json'
-			aliParams = js_open_dict(aliParamsFile)
+			#aliParamsFile = options.path + '/tomo_xforms' + tag + '.json'
+			aliParams = js_open_dict(jsAliParamsPathNew)
 			nparams = len(aliParams)
 		
-			#print "The aliParams file to read is", aliParamsFile
-			#print "I read these many params", nparams
-		
-			if nparams != nscores:
-				print "nscores is", nscores
-				print "nparams is", nparams
-				print "WARNING! They should be the same."	
+			#print "(e2spt_refinemulti.py) The aliParams file to read is", jsAliParamsPathNew
+			#print "(e2spt_refinemulti.py) I read these many params", nparams
+			#print "Which are", aliParams
 		
 			'''
 			Add info per particle for results from all references to a master dictionary, 'masterInfo'
 			'''
 			for i in range(nparams):
 				ptclID = "tomo_" + str(i).zfill( len(str( nparams )) )
-				ptclScore = float( scores[ptclID] )
+				ptclScore = float( aliParams[ptclID][-1] )
 				ptclAliParams = aliParams[ptclID]
 			
 				infolist = [ ptclScore, ptclAliParams, reftag]
@@ -361,7 +364,42 @@ def main():
 				#print "\n\n"
 			
 				masterInfo.update({ ptclID: value })
+				
+				
+				
+				'''
+				Open scores file for current reference
+				'''
+				#if it == int(options.iter)-1 or finalize:
+				#	print "(e2spt_refinemulti.py) This is the FINAL ITERATION! Will create scores file."
 			
+					#scoresFile = options.path + '/' + thisRefinementPath + '/subtomo_scores' + tag + '.json'
+				scoresFile = options.path +'/subtomo_FinalScores_' + reftag + '.json'
+				jsScores = js_open_dict(scoresFile)
+				jsScores.setval(ptclID,ptclScore )
+				jsScores.close()
+				
+				print "This is the scores file I've used", scoresFile 
+				print "and the ID,ptclScore I've written",ptclID,ptclScore
+				
+					#nscores = len(scores)
+				
+					#print "\n\nThe scores file to read is", scoresFile
+					#print "I read these many scores", nscores
+					#print "scores are", scores
+		
+					#for ele in scores:
+					#	print "one score element is", ele
+						#print "And therefore score is", scores[ele]
+					
+					#if nparams != nscores:
+					#	print "nscores is", nscores
+					#	print "nparams is", nparams
+					#	print "WARNING! They should be the same."	
+			
+					#print "\n\n"
+				
+				
 				#print "masterInfo has been updated and now is",masterInfo
 			k+=1
 		
@@ -392,10 +430,14 @@ def main():
 			value = classes[ bestreftag ]
 			value.append( [ ptclIndx, bestAliParams, bestScore] )
 			classes.update({ bestreftag : value })
+			
+			
+			
+			
 	
 		#klassIndx = 0
 		klassesLen = len(classes)
-		newAvgs = []
+		#print "(e2spt_refinemulti.py) THERE ARE THESE MANY surviving CLASSESS with particles",len(classes)
 		for klass in classes:
 			#print "\n\nThe particles and their aliparams, for this class", klass
 			#print "are:", classes[ klass ]
@@ -409,16 +451,34 @@ def main():
 				#ptclsFinal.update({ ptclnum : ptclTransform })
 		
 			if classes[ klass ]:
-				ret = makeAverage( options, classes[klass], klassIndx, klassesLen)
+				print "\n\nWill average. There are particles in the klass %d see" %( klassIndx ) 
+				print classes[klass]
+				print "\n\n"
+				ret = makeAverage( options, classes[klass], klassIndx, klassesLen, it, finalize)
 			else:
 				print "The klass %d was empty (no particles were assgined to it). You might have too many classes." % ( klassIndx )	
 				#dummyClassAvg=EMData(boxsize,boxsize,boxsize)
 				#dummyClassAvg.to_zero()
 				ret = None
+			
 			avgs.update({ klass : ret })
 		
 			#klassIndx += 1				
 			#os.system(cmd)
+		
+		nonNulls=0
+		for avg in avgs:
+			if avgs[ avg ] and avgs[ avg ] != None:
+				nonNulls +=1
+		
+		if nonNulls < 2:
+			print "e2spt_refinemulti.py has allocated all particles to one average and therefore has failed/converged. EXITING."
+			sys.exit()
+			
+			
+		
+		print "\n\n\n(e2spt_refinemulti.py) Final Averages are", avgs
+		print "\n\n\n"
 		
 		logger = E2init(sys.argv,options.ppid)	
 		E2end(logger)
@@ -429,7 +489,7 @@ def main():
 
 
 
-def makeAverage(options, klass, klassIndx, klassesLen):
+def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize):
 	"""Will take a set of alignments and an input particle stack filename and produce a new class-average.
 	Particles may be excluded based on the keep and keepsig parameters. If keepsig is not set, then keep represents
 	an absolute fraction of particles to keep (0-1). Otherwise it represents a sigma multiplier akin to e2classaverage.py"""
@@ -486,18 +546,24 @@ def makeAverage(options, klass, klassIndx, klassesLen):
 	avgr = Averagers.get(parsedAverager[0], parsedAverager[1])
 	included = []
 	
-	print "The path to save the class average is", options.path
+	#print "The path to save the class average is", options.path
 			
 	#jsdict = path + '/tomo_xforms.json'
 	#js = js_open_dict(jsdict)
 			
 	for k in klass:
-		print "The index of the particle to add is",k[0]
-		print "And this its transform", k[1]
+		#print "\n\nk in klass is", k
+		#print "\nThe index of the particle to add is",k[0]
+		#print "\nAnd this its transform", k[1][0]
 		ptcl = EMData(options.input,k[0])
-		ptclTransform =k[1] 
+		
+		#print "\n\n\n(e2spt_refinemuti.py) in makeAverage, ptcl and its type are",ptcl,type(ptcl)
+		
+		ptclTransform =k[1][0]
+		#print "And the ptcl transform is", ptclTransform
 		ptcl.process_inplace("xform",{"transform" : ptclTransform})
 		
+		#print "I've applied the transform"
 		#print "I have applied this transform before averaging", ptcl_parms[0]["xform.align3d"]			
 		
 		if k[-1] <= thresh: 
@@ -505,7 +571,11 @@ def makeAverage(options, klass, klassIndx, klassesLen):
 			included.append(k[0])
 
 		#js["tomo_%04d"%i] = ptcl_parms[0]['xform.align3d']
-		if options.saveali:
+		
+		if int(options.iter) -1 == iterNum:
+			finalize = 1
+		
+		if options.saveali and not finalize:
 			ptcl['origin_x'] = 0
 			ptcl['origin_y'] = 0		# jesus - the origin needs to be reset to ZERO to avoid display issues in Chimera
 			ptcl['origin_z'] = 0
@@ -517,6 +587,8 @@ def makeAverage(options, klass, klassIndx, klassesLen):
 			ptcl['xform.align3d'] = Transform()
 			#ptcl['spt_ali_param'] = ptcl_parms[0]['xform.align3d']
 			ptcl['xform.align3d'] = ptclTransform
+			
+			print "\n\nFinal iteration, and options.saveali on, so saving class_ptcls\n\n"
 			
 			classStack = options.path + "/class" + str( klassIndx ).zfill( len( str (klassesLen))) + "_ptcl.hdf"
 			#print "The class name is", classname
