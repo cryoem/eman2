@@ -92,6 +92,9 @@ def main():
 	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", returnNone=True, default="mask.sharp:outer_radius=-2", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=11, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	parser.add_argument("--normproc",type=str,help="Normalization processor applied to particles before alignment. Default is to use normalize. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'", default="normalize")
 	
+	parser.add_argument("--threshold",type=str,help="""A threshold applied to the subvolumes after normalization. 
+													For example, --threshold=threshold.belowtozero:minval=0 makes all negative pixels equal 0, so that they do not contribute to the correlation score.""", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	
 	parser.add_argument("--preprocess",type=str,help="Any processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	parser.add_argument("--preprocessfine",type=str,help="Any processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.", default=None)
 	
@@ -214,6 +217,9 @@ def main():
 	if options.preprocess: 
 		options.preprocess=parsemodopt(options.preprocess)
 		
+	if options.threshold: 
+		options.threshold=parsemodopt(options.threshold)
+		
 	if options.preprocessfine: 
 		options.preprocessfine=parsemodopt(options.preprocessfine)
 		
@@ -250,11 +256,7 @@ def main():
 	rootpath = os.getcwd()
 	print "I am trying to open from here", rootpath
 	print "And the path is", options.path
-	
-	abspath= rootpath + '/' + options.path
-	print "Thus the abs path could be", abspath
-	
-	
+
 	if not options.resume:
 		options = sptmakepath(options,'spt')	
 	else:
@@ -264,7 +266,10 @@ def main():
 		if not options.path:
 			print "ERROR: If you provide --resume, I need to know what working directory needs to be resumed. Provide it through --path"
 			sys.exit()
-				
+
+	abspath= rootpath + '/' + options.path
+	print "Thus the abs path could be", abspath
+					
 	hdr = EMData(options.input,0,True)
 	nx = hdr["nx"]
 	ny = hdr["ny"]
@@ -370,12 +375,12 @@ def main():
 	Iterating over all the classes, 'ic'.
 	'''	
 	
-	ic='nada'
+	#ic='nada'
 	print "ncls and its type are", ncls, type(ncls)
-	print "ic beforehand is", ic
+	#print "ic beforehand is", ic
 	
-	for i in range(10):
-		print i
+	#for i in range(10):
+	#	print i
 	
 	for ic in range(int(ncls)):
 		
@@ -415,12 +420,14 @@ def main():
 			'''
 			jsAliParamsPath = abspath + '/tomo_xforms.json'
 			
-			print "This is the .json file to write", jsAliParamsPath
-			if options.refinemultireftag:
-				jsAliParamsPath = jsAliParamsPath.replace('.json','_' + str(options.refinemultireftag) + '.json')
-		
-			jsAliParamsPath = jsAliParamsPath.replace('.json', '_' + str(it).zfill( len(str(options.iter))) + '.json')
-		
+			#if options.refinemultireftag:
+			#	jsAliParamsPath = jsAliParamsPath.replace('.json','_ref' + str(options.refinemultireftag) + '.json')
+			
+			if not options.refinemultireftag:
+				jsAliParamsPath = jsAliParamsPath.replace('.json', '_' + str(it).zfill( len(str(options.iter))) + '.json')
+			
+			print "(e2spt_classaverage.py) This is the .json file to write", jsAliParamsPath
+
 			jsA = js_open_dict(jsAliParamsPath) #Write particle orientations to json database.
 		
 			if options.resume and actualNums:
@@ -500,8 +507,8 @@ def main():
 			#The reference for the next iteration should ALWAYS be the RAW AVERAGE of the aligned particles, since the reference will be "pre-processed" identically to the raw particles.
 			#There should be NO post-processing of the final averages, EXCEPT for visualization purposes (so, postprocessing is only applied to write out the output, if specified.
 			
-			print "\n\n\nOptions.donotaverage is", options.donotaverage
-			print "\n\n\n"
+			#print "\n\n\nOptions.donotaverage is", options.donotaverage
+			#print "\n\n\n"
 			
 			if not options.donotaverage:					
 				ref = make_average(options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.sym,options.groups,options.breaksym,options.nocenterofmass,options.verbose,it)
@@ -580,6 +587,32 @@ def main():
 	
 	print "logger ended"
 	sys.stdout.flush()
+	
+	return
+
+
+'''
+Function to write the parameters used for every run of the program to parameters.txt inside the path specified by --path.
+*** Imported by many e2spt programs ***
+'''
+def writeParameters( options ):
+	
+	names = dir(options)
+	cmd = ''
+	lines = []
+	now = datetime.datetime.now()
+	lines.append(str(now)+'\n')
+	for name in names:
+		if getattr(options,name) and "__" not in name and "_" not in name:	
+			#if "__" not in name and "_" not in name and str(getattr(options,name)) and 'path' not in name and str(getattr(options,name)) != 'False' and str(getattr(options,name)) != 'True' and str(getattr(options,name)) != 'None':			
+			line = name + '=' + str(getattr(options,name))
+			lines.append(line+'\n')
+			cmd += ' --' + name + '=' + str(getattr(options,name))
+	
+	lines.append('\n'+cmd+'\n')
+	f=open(otpions.path + '\parameters.txt','w')
+	f.writelines(lines)
+	f.close()
 	
 	return
 
@@ -785,7 +818,7 @@ def filters(fimage,preprocess,lowpass,highpass,shrink):
 		fimage.process_inplace(preprocess[0],preprocess[1])
 		
 	if lowpass:
-		print "lowpass received in filters is is", lowpass
+		#print "lowpass received in filters is is", lowpass
 		fimage.process_inplace(lowpass[0],lowpass[1])
 		
 	if highpass:
@@ -849,7 +882,10 @@ def preprocessing(options,image):
 				maskCoarse = mask.copy()
 				maskCoarse.process_inplace('math.meanshrink',{'n':options.shrink})
 			simage.mult(maskCoarse)
-	
+		
+		if options.threshold:
+			simage.process_inplace(options.threshold[0],options.threshold[1])
+		
 		'''
 		If any other comparator is specified, follow mask-normalize-mask scheme
 		'''
@@ -868,7 +904,9 @@ def preprocessing(options,image):
 	
 		if options.lowpass or options.highpass or options.preprocess or options.shrink:
 			simage = filters(simage,options.preprocess,options.lowpass,options.highpass,options.shrink)
-			
+		
+		if options.threshold:
+			simage.process_inplace(options.threshold[0],options.threshold[1])	
 	
 	'''
 	If there is a round of fine alignment, preprocess the particle for fine alignment
@@ -891,8 +929,8 @@ def preprocessing(options,image):
 					s2image.process_inplace(options.normproc[0],options.normproc[1])
 		
 				if options.lowpassfine or options.highpassfine or options.preprocessfine or options.shrinkrefine:
-					print "I will shrink refine!"
-					print "Options.lowpassfine to pass is", options.lowpassfine
+					#print "I will shrink refine!"
+					#print "Options.lowpassfine to pass is", options.lowpassfine
 					s2image = filters(s2image,options.preprocessfine,options.lowpassfine,options.highpassfine,options.shrinkrefine)
 	
 				retr = wedgestats(s2image,options.wedgeangle,options.wedgei,options.wedgef,options)
@@ -904,14 +942,17 @@ def preprocessing(options,image):
 						maskFine = mask.copy()
 						maskFine.process_inplace('math.meanshrink',{'n':options.shrinkrefine})
 					s2image.mult(maskFine)
-
+				
+				if options.threshold:
+					s2image.process_inplace(options.threshold[0],options.threshold[1])	
+				
 		else:
 			if options.mask:
 				#if options.shrink:
 				#	mask.process_inplace('math.meanshrink',{'n':options.shrink})
 				
-				print "The sizes of the mask are", mask['nx'],mask['ny'],mask['nz']
-				print "The sizes of the refine particle BEFORE shrinking are", s2image['nx'],s2image['ny'],s2image['nz']
+				#print "The sizes of the mask are", mask['nx'],mask['ny'],mask['nz']
+				#print "The sizes of the refine particle BEFORE shrinking are", s2image['nx'],s2image['ny'],s2image['nz']
 				s2image.mult(mask)
 		
 			if options.normproc:
@@ -921,9 +962,12 @@ def preprocessing(options,image):
 				s2image.mult(mask)
 	
 			if options.lowpassfine or options.highpassfine or options.preprocessfine or options.shrinkrefine:
-				print "Options.lowpassfine to pass is", options.lowpassfine
+				#print "Options.lowpassfine to pass is", options.lowpassfine
 				s2image = filters(s2image,options.preprocessfine,options.lowpassfine,options.highpassfine,options.shrinkrefine)
-
+	
+			if options.threshold:
+				s2image.process_inplace(options.threshold[0],options.threshold[1])	
+	
 	return(simage,s2image)
 	
 
@@ -1447,7 +1491,7 @@ def alignment(fixedimage,image,label,classoptions,xformslabel,transform,prog='e2
 			for c in bestfinal:
 			
 				newtrans = c["xform.align3d"].get_trans() * float(classoptions.shrinkrefine)
-				print "New trans and type are", newtrans, type(newtrans)
+				#print "New trans and type are", newtrans, type(newtrans)
 				c["xform.align3d"].set_trans(newtrans)
 
 		#verbose printout of fine refinement
