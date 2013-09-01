@@ -171,9 +171,16 @@ def main():
 	
 	(options, args) = parser.parse_args()
 
+	try:
+		hdr = EMData(options.input,0,True) #This is done just to test whether the input file exists where it should
+		boxsize = hdr['nx']
+	except:
+		print "ERROR: Can't find the file provided through --input"
+
 	if options.radius:
 		options.align = None
 		options.ralign = None
+	
 	'''
 	Make the directory where to create the database where the results will be stored
 	'''
@@ -183,11 +190,11 @@ def main():
 	
 	options.path = rootpath + '/' + options.path
 	
-	try:
-		hdr = EMData(options.input,0,True) #This is done just to test whether the input file exists where it should
-		boxsize = hdr['nx']
-	except:
-		print "ERROR: Can't find the file provided through --input"
+	'''
+	Store parameters in parameters.txt file inside --path
+	'''
+	from e2spt_clasaverage import writeParameters
+	writeParameters(options)
 	
 	'''
 	Determine how many references there are and put them into one file classAvg.hdf, or classAvg_iterXX.hdf, if they come from separate files
