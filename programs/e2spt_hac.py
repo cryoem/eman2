@@ -178,19 +178,35 @@ def main():
 
 	(options, args) = parser.parse_args()
 	
-	
-	
+	'''
+	If --radius of the particle is provided, we calculate the optimal alignment steps for 
+	coarse and fine alignment rounds using --shrink and --shrinkrefine options and apix info
+	'''
 	if options.radius:
 		from e2spt_classaverage import calcAliStep
 		options = calcAliStep(options)
-		
-	
+			
 	if options.align:
 		print "There's options.align", options.align
 		if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align:
 			options.align += ':sym' + str( options.sym )
 			print "And there's sym", options.sym
-			
+
+	'''
+	Make the directory where to create the database where the results will be stored
+	'''
+	options = sptmakepath(options,'spt_hac')
+	
+	'''
+	Store parameters in parameters.txt file inside --path
+	'''
+	from e2spt_clasaverage import writeParameters
+	writeParameters(options)
+	
+	'''
+	Parse parameters
+	'''
+	if options.align:
 		options.align=parsemodopt(options.align)
 	
 	if options.ralign: 
@@ -210,12 +226,10 @@ def main():
 	
 	if options.mask: 
 		options.mask=parsemodopt(options.mask)
-	
-		
+			
 	if options.threshold: 
 		options.threshold=parsemodopt(options.threshold)
 		
-	
 	if options.preprocess: 
 		options.preprocess=parsemodopt(options.preprocess)
 		
@@ -236,12 +250,6 @@ def main():
 
 	if options.postprocess: 
 		options.postprocess=parsemodopt(options.postprocess)
-
-	'''
-	Make the directory where to create the database where the results will be stored
-	'''
-		
-	options = sptmakepath(options,'spt_hac')
 
 	group_ranges=[]
 	data_files = []
