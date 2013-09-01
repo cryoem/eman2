@@ -42,6 +42,7 @@ import random
 from random import choice
 from pprint import pprint
 from EMAN2jsondb import JSTask,jsonclasses
+import datetime
 
 
 
@@ -189,7 +190,43 @@ def main():
 		if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align:
 			options.align += ':sym' + str( options.sym )
 			print "And there's sym", options.sym
-			
+	
+	
+	
+	
+	'''
+	Get rootpath to provide absoulute paths to files.
+	Make the directory where to create the database where the results will be stored, if --resume is not provided.
+	'''
+	
+	rootpath = os.getcwd()
+	print "I am trying to open from here", rootpath
+	print "And the path is", options.path
+
+	if not options.resume:
+		options = sptmakepath(options,'spt')	
+	else:
+		if rootpath not in options.resume:
+			options.resume = rootpath + '/' + options.resume
+	
+		if not options.path:
+			print "ERROR: If you provide --resume, I need to know what working directory needs to be resumed. Provide it through --path"
+			sys.exit()
+
+	abspath= rootpath + '/' + options.path
+	print "Thus the abs path could be", abspath
+	
+	
+	'''
+	Store parameters in parameters.txt file inside --path
+	'''
+	writeParameters(options,'e2spt_classaverage.py')
+	
+	
+	'''
+	Parse parameters
+	'''
+	if options.align:
 		options.align=parsemodopt(options.align)
 	
 	#if options.ralign and not options.raligncmp:
@@ -248,27 +285,7 @@ def main():
 		options.shrink = options.shrinkrefine
 		print "It makes no sense for shrinkrefine to be larger than shrink; therefore, shrink will be made to match shrinkrefine"
 	
-	'''
-	Get rootpath to provide absoulute paths to iles.
-	Make the directory where to create the database where the results will be stored, if --resume is not provided.
-	'''
-	
-	rootpath = os.getcwd()
-	print "I am trying to open from here", rootpath
-	print "And the path is", options.path
 
-	if not options.resume:
-		options = sptmakepath(options,'spt')	
-	else:
-		if rootpath not in options.resume:
-			options.resume = rootpath + '/' + options.resume
-	
-		if not options.path:
-			print "ERROR: If you provide --resume, I need to know what working directory needs to be resumed. Provide it through --path"
-			sys.exit()
-
-	abspath= rootpath + '/' + options.path
-	print "Thus the abs path could be", abspath
 					
 	hdr = EMData(options.input,0,True)
 	nx = hdr["nx"]
@@ -595,10 +612,10 @@ def main():
 Function to write the parameters used for every run of the program to parameters.txt inside the path specified by --path.
 *** Imported by many e2spt programs ***
 '''
-def writeParameters( options ):
+def writeParameters( options, program ):
 	
 	names = dir(options)
-	cmd = ''
+	cmd = program
 	lines = []
 	now = datetime.datetime.now()
 	lines.append(str(now)+'\n')
@@ -610,7 +627,7 @@ def writeParameters( options ):
 			cmd += ' --' + name + '=' + str(getattr(options,name))
 	
 	lines.append('\n'+cmd+'\n')
-	f=open(otpions.path + '\parameters.txt','w')
+	f=open(options.path + '/parameters.txt','w')
 	f.writelines(lines)
 	f.close()
 	

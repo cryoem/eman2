@@ -193,8 +193,8 @@ def main():
 	'''
 	Store parameters in parameters.txt file inside --path
 	'''
-	from e2spt_clasaverage import writeParameters
-	writeParameters(options)
+	from e2spt_classaverage import writeParameters
+	writeParameters(options,'e2spt_refinemulti.py')
 	
 	'''
 	Determine how many references there are and put them into one file classAvg.hdf, or classAvg_iterXX.hdf, if they come from separate files
