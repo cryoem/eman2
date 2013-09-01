@@ -111,6 +111,11 @@ def main():
 	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
 	parser.add_argument("--normproc",type=str,help="Normalization processor applied to particles before alignment. Default is to use normalize. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'", default="normalize")
 
+	
+	parser.add_argument("--threshold",type=str,help="""A threshold applied to the subvolumes after normalization. 
+													For example, --threshold=threshold.belowtozero:minval=0 makes all negative pixels equal 0, so that they do not contribute to the correlation score.""", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	
+
 	parser.add_argument("--preprocess",type=str,help="A processor (as in e2proc3d.py; could be masking, filtering, etc.) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.",default=None)
 	
 	parser.add_argument("--lowpass",type=str,help="A processor (as in e2proc3d.py; could be masking, filtering, etc.) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.",default=None)
@@ -205,6 +210,11 @@ def main():
 	
 	if options.mask: 
 		options.mask=parsemodopt(options.mask)
+	
+		
+	if options.threshold: 
+		options.threshold=parsemodopt(options.threshold)
+		
 	
 	if options.preprocess: 
 		options.preprocess=parsemodopt(options.preprocess)
@@ -596,13 +606,13 @@ def allvsall(options):
 			
 			#if k == 0:
 			
-			if compNum == 0:
-				maxScore = i['score']
+			if compNum == 0.0:
+				maxScore = float( i['score'] )
 			else:
-				compuNum = i['score']
+				compNum = float( i['score'] )
 			
 			plotX.append( compNum )
-			plotY.append( i['score'] )
+			plotY.append( float( i['score'] ) )
 			
 			indxA = int( i['ptclA'].split('_')[-1] )
 			indxB = int( i['ptclB'].split('_')[-1] )
