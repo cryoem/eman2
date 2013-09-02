@@ -75,23 +75,23 @@ def main():
 	
 	parser.add_argument("--helix-coords", "-X", type=str, help="Save coordinates for helices to the file specified, which will have the EMAN1 *.box format:\t\t\tx1-w/2        y1-w/2        w        w        -1                    x2-w/2        y2-w/2        w        w        -2")
 	parser.add_argument("--helix-images", "-x", type=str, help="Save images of the helices. The file name specified will have helix numbers added to it.")
-	parser.add_argument("--ptcl-coords", "-P", type=str, help="Save coordinates of the centers of particles to the specified formatted text file")
-	parser.add_argument("--ptcl-images", "-p", type=str, help="Save images of the particles. The file name specified will have helix numbers (and particle numbers if the file type does not support image stacks) added to it.")
+	parser.add_argument("--ptcl-coords",  "-P", type=str, help="Save coordinates of the centers of particles to the specified formatted text file")
+	parser.add_argument("--ptcl-images",  "-p", type=str, help="Save images of the particles. The file name specified will have helix numbers (and particle numbers if the file type does not support image stacks) added to it.")
 	parser.add_argument("--ptcl-images-stack-mode", type=str, default="multiple", help="Options for saving particle images to stack files. 'single' uses one stack file, 'multiple' (default) uses one stack file per helix, 'none' uses a file for each particle and is always used when the output file format does not support image stacks.")
 	
-	parser.add_argument("--db-add-hcoords", type=str, help="Append any unique helix coordinates to the database from the specified file (in EMAN1 *.box format). Use --helix-width to specify a width for all boxes.")
-	parser.add_argument("--db-set-hcoords", type=str, help="Replaces the helix coordinates in the database with the coordinates from the specified file (in EMAN1 *.box format). Use --helix-width to specify a width for all boxes.")
-	parser.add_argument("--ptcl-dst", 	        type=int, 	             dest="ptcl_dst", 			  help="Distance between windowed squares in pixels", default=-1)
-	parser.add_argument("--helix-width", "-w", type=int, dest="helix_width", help="Helix width in pixels. Overrides widths saved in the database or in an input file.", default=-1)
-	parser.add_argument("--ptcl-length", type=int, dest="ptcl_length", help="Particle length in pixels", default=-1)
-	parser.add_argument("--ptcl-width", type=int, dest="ptcl_width", help="Particle width in pixels", default=-1)
-	parser.add_argument("--ptcl-not-rotated", action="store_true", dest="ptcl_not_rotated", help="Particles are oriented as on the micrograph. They are square with length max(ptcl_length, ptcl_width).")
-	parser.add_argument("--ptcl-norm-edge-mean", action="store_true", help="Apply the normalize.edgemean processor to each particle.")
-	parser.add_argument("--gridding",      action="store_true", default=False, help="Use a gridding method for rotation operations on particles. Requires particles to be square.")
-	parser.add_argument("--save-ext",type=str,default="hdf",dest="save_ext",help="The default file extension to use when saving 'particle' images. This is simply a convenience for improved workflow. If a format other than HDF is used, metadata will be lost when saving.")
-	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--db-add-hcoords",     type=str, help="Append any unique helix coordinates to the database from the specified file (in EMAN1 *.box format). Use --helix-width to specify a width for all boxes.")
+	parser.add_argument("--db-set-hcoords",     type=str, help="Replaces the helix coordinates in the database with the coordinates from the specified file (in EMAN1 *.box format). Use --helix-width to specify a width for all boxes.")
+	parser.add_argument("--ptcl-dst", 	        type=int, 	         dest="ptcl_dst", 			  help="Distance between windowed squares in pixels", default=-1)
+	parser.add_argument("--helix-width", "-w",  type=int,            dest="helix_width", help="Helix width in pixels. Overrides widths saved in the database or in an input file.", default=-1)
+	parser.add_argument("--ptcl-length",        type=int,            dest="ptcl_length", help="Particle length in pixels", default=-1)
+	parser.add_argument("--ptcl-width",         type=int,            dest="ptcl_width", help="Particle width in pixels", default=-1)
+	parser.add_argument("--ptcl-not-rotated",   action="store_true", dest="ptcl_not_rotated", help="Particles are oriented as on the micrograph. They are square with length max(ptcl_length, ptcl_width).")
+	parser.add_argument("--ptcl-norm-edge-mean",action="store_true", help="Apply the normalize.edgemean processor to each particle.")
+	parser.add_argument("--gridding",           action="store_true", default=False, help="Use a gridding method for rotation operations on particles. Requires particles to be square. (Used by default. If flag present, gridding will be turned off)")
+	parser.add_argument("--save-ext",           type=str,default="hdf",dest="save_ext",help="The default file extension to use when saving 'particle' images. This is simply a convenience for improved workflow. If a format other than HDF is used, metadata will be lost when saving.")
+	parser.add_argument("--ppid",               type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
-	parser.add_argument("--invert_contrast",      action="store_true", default=False, help="Invert contrast of micrograph of contrast of boxed filaments and particles are inverted")
+	parser.add_argument("--invert_contrast",     action="store_true", default=False, help="Invert contrast of micrograph of contrast of boxed filaments and particles are inverted")
 	
 	# window segments from boxed filaments (or 'helices' in sxhelixboxer lingo)
 	parser.add_argument("--window",             action="store_true",	 default=False,               help="window segments from boxed filaments (or helices in sxhelixboxer lingo)")
@@ -169,7 +169,8 @@ def main():
 			mpi_finalize()
 	
 		return
-	
+	# invert meaning of gridding
+	options.gridding = not options.gridding
 	
 	# Window filaments 
 	if options.window:
@@ -178,9 +179,12 @@ def main():
 			return
 		outdir = args[0]
 		tdir = options.topdir
-		if len(tdir) < 1:
-			tdir = None
-		windowallmic(options.dirid, options.micid, options.micsuffix, outdir, pixel_size=options.apix, dp=options.dp, boxsize=options.boxsize, outstacknameall=options.outstacknameall, hcoords_dir = options.hcoords_dir, hcoords_suffix = options.hcoords_suffix, ptcl_dst=options.ptcl_dst, inv_contrast=options.invert_contrast, new_pixel_size=options.new_apix, rmax = options.rmax, freq=options.freq, debug = options.dbg, topdir=tdir)
+		if len(tdir) < 1:  tdir = None
+
+ 		windowallmic(options.dirid, options.micid, options.micsuffix, outdir, pixel_size=options.apix, dp=options.dp, boxsize=options.boxsize, \
+				outstacknameall=options.outstacknameall, hcoords_dir = options.hcoords_dir, hcoords_suffix = options.hcoords_suffix, ptcl_dst=options.ptcl_dst, \
+				inv_contrast=options.invert_contrast, new_pixel_size=options.new_apix, rmax = options.rmax, freq=options.freq, \
+				debug = options.dbg, do_rotation = True, do_gridding=options.gridding, topdir=tdir)
 		return
 	
 	if options.helix_width < 1:
@@ -344,24 +348,21 @@ def get_rotated_particles( micrograph, helix_coords, px_dst = None, px_length = 
 	#Angle between l_uvect and y-axis: l_uvect (dot) j_hat = cos (rot_angle)
 	rot_angle = 180/pi*acos( l_uvect[1] )
 	#Whether we rotate clockwise or counterclockwise depends on the sign of l_uvect[0] (the x-component)
-	if l_uvect[0] < 0:
-		rot_angle *= -1 #rotate the box clockwise
+	if l_uvect[0] < 0: rot_angle *= -1 #rotate the box clockwise
 	
-	if not px_width:
-		px_width = w
-	if not px_length:
-		px_length = px_width
-	if not px_dst:
-		px_overlap = 0.9*px_length
-	else:
-		px_overlap = px_length - px_dst
+	if not px_width:  px_width = w
+	if not px_length: px_length = px_width
+	if not px_dst:    px_overlap = 0.9*px_length
+	else:             px_overlap = px_length - px_dst
 	assert px_length > px_overlap, "The overlap must be smaller than the particle length"
 	
 	centroids = get_particle_centroids(helix_coords, px_overlap, px_length, px_width, is_rotated = True)
 	particles = []
 	if gridding == True:
 		assert int(round(px_width)) == int(round(px_length)), "The particle must be square for gridding method"
-		gr_M = int(round(px_width)) + 20
+		side1 = int(px_width + 0.5)
+		gr_M  = int(side1*1.42+0.5)
+		enth  = (gr_M-side1)//2
 		gr_npad = 2
 		gr_N = gr_M*gr_npad
 		# support of the window
@@ -371,11 +372,9 @@ def get_rotated_particles( micrograph, helix_coords, px_dst = None, px_length = 
 		gr_v = gr_K/2.0/gr_N
 		from EMAN2 import Util
 		gr_kb = Util.KaiserBessel(gr_alpha, gr_K, gr_r, gr_v, gr_N)
-		nx = micrograph.get_xsize()
-		ny = micrograph.get_ysize()
-		micrograph = Util.pad(micrograph,nx +20 , ny +20, 1, 0, 0, 0,"circumference")
-		nx = nx + 20
-		ny = ny + 20
+		nxc = micrograph.get_xsize()//2
+		nyc = micrograph.get_ysize()//2
+
 		
 	for centroid in centroids:
 
@@ -387,32 +386,41 @@ def get_rotated_particles( micrograph, helix_coords, px_dst = None, px_length = 
 			tr.set_trans(centroid)
 			tr.set_rotation({"type":"2d", "alpha":rot_angle})
 			ptcl = micrograph.get_rotated_clip( tr, ptcl_dimensions )
+			ptcl["ptcl_helix_coords"] = tuple(helix_coords)
+			ptcl["ptcl_source_coord"] = tuple(centroid)
+			ptcl["xform.align2d"]     = Transform()
+			ptcl["xform.projection"]  = Transform()
+			ptcl["ptcl_source_image"] = mic_name
+			particles.append(ptcl)
+
 		else:
-			side1 = int(round(px_width))
-			side = side1 + 20
-			from EMAN2 import Util, Processor
-			ptcl = Util.window( micrograph, side, side, 1, int (round(centroid[0] + 10 - nx/2)), int (round(centroid[1] +10 - ny/2)), 0) 
-			mean1 = ptcl.get_attr('mean')
-			ptcl = ptcl - mean1
+			try:
+				from EMAN2 import Util, Processor
+				#print  micrograph.get_xsize(),micrograph.get_ysize(), px_width, side1, gr_M, enth,centroid[0],centroid[1],nxc,nyc,gridding
+				ptcl = Util.window( micrograph, gr_M, gr_M, 1, int(round(centroid[0] + enth - nxc)), int(round(centroid[1] + enth - nyc)), 0) 
+				mean1 = ptcl.get_attr('mean')
+				ptcl -= mean1
 				# first pad it with zeros in Fourier space
-			gr_q = ptcl.FourInterpol(gr_N, gr_N, 1, 0)
-			params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE,
-			"alpha":gr_alpha, "K":gr_K, "r":gr_r, "v":gr_v, "N":gr_N}
-			gr_q = Processor.EMFourierFilter(gr_q, params)
-			params = {"filter_type" : Processor.fourier_filter_types.TOP_HAT_LOW_PASS,
-				"cutoff_abs" : 0.25, "dopad" : False}
-			gr_q = Processor.EMFourierFilter(gr_q, params)
-			gr_q2 = gr_q.do_ift()
-			ptcl = gr_q2.rot_scale_conv_new_background( -rot_angle*pi/180.0, 0.0, 0.0, gr_kb, 1.0)
-			#cut it
-			ptcl = ptcl + mean1
-			ptcl = Util.window( ptcl, side1, side1, 1, 0, 0, 0) 
-		ptcl["ptcl_helix_coords"] = tuple(helix_coords)
-		ptcl["ptcl_source_coord"] = tuple(centroid)
-		ptcl["xform.align2d"]     = Transform()
-		ptcl["xform.projection"]  = Transform()
-		ptcl["ptcl_source_image"] = mic_name
-		particles.append(ptcl)
+				gr_q = ptcl.FourInterpol(gr_N, gr_N, 1, 0)
+				params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE,
+				"alpha":gr_alpha, "K":gr_K, "r":gr_r, "v":gr_v, "N":gr_N}
+				gr_q = Processor.EMFourierFilter(gr_q, params)
+				params = {"filter_type" : Processor.fourier_filter_types.TOP_HAT_LOW_PASS,
+					"cutoff_abs" : 0.25, "dopad" : False}
+				gr_q = Processor.EMFourierFilter(gr_q, params)
+				gr_q2 = gr_q.do_ift()
+				ptcl = gr_q2.rot_scale_conv_new_background( -rot_angle*pi/180.0, 0.0, 0.0, gr_kb, 1.0)
+				#cut it
+				ptcl += mean1
+				ptcl = Util.window( ptcl, side1, side1, 1, 0, 0, 0) 
+				ptcl["ptcl_helix_coords"] = tuple(helix_coords)
+				ptcl["ptcl_source_coord"] = tuple(centroid)
+				ptcl["xform.align2d"]     = Transform()
+				ptcl["xform.projection"]  = Transform()
+				ptcl["ptcl_source_image"] = mic_name
+				particles.append(ptcl)
+			except:
+				continue
 	
 	return particles
 

@@ -13434,8 +13434,9 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 				start_time = time()
 			ldata = [data[im] for im in xrange(indcs[ifil][0],indcs[ifil][1])]
 			#for im in xrange(len(ldata)):  ldata[im].set_attr("bestang", 10000.0)
-			Util.constrained_helix_exhaustive(ldata, fdata[indcs[ifil][0]:indcs[ifil][1]], refproj, rotproj, [float(dp), float(dphi), rise, float(delta)], [int(nphi), int(phiwobble), int(rng), int(ywobble), int(Dsym), int(nwx), int(nwy), int(nwxc), int(nwyc)], FindPsi, float(psi_max), crefim, numr, int(maxrin), mode, int(cnx), int(cny))
-			#constrained_helix(data, fdata[indcs[ifil][0]:indcs[ifil][1]], refproj, rotproj, dp, dphi, rise, delta, nphi, phiwobble, rng, ywobble, Dsym, nwx, nwy, nwxc, nwyc, FindPsi, psi_max, crefim, numr, maxrin, mode, cnx, cny, myid, main_node)
+			#Util.constrained_helix_exhaustive(ldata, fdata[indcs[ifil][0]:indcs[ifil][1]], refproj, rotproj, [float(dp), float(dphi), rise, float(delta)], [int(nphi), int(phiwobble), int(rng), int(ywobble), int(Dsym), int(nwx), int(nwy), int(nwxc), int(nwyc)], FindPsi, float(psi_max), crefim, numr, int(maxrin), mode, int(cnx), int(cny))
+			from development import constrained_helix
+			constrained_helix(data, fdata[indcs[ifil][0]:indcs[ifil][1]], refproj, rotproj, dp, dphi, rise, delta, nphi, phiwobble, rng, ywobble, Dsym, nwx, nwy, nwxc, nwyc, FindPsi, psi_max, crefim, numr, maxrin, mode, cnx, cny, myid, main_node)
 			'''
 			if doExhaustive:
 				Util.constrained_helix_exhaustive(ldata, fdata[indcs[ifil][0]:indcs[ifil][1]], refproj, rotproj, [float(dp), float(dphi), float(rise), float(delta)], [int(nphi), int(phiwobble), int(rng), int(ywobble), int(Dsym), int(nwx), int(nwy), int(nwxc), int(nwyc)], FindPsi, float(psi_max), crefim, numr, int(maxrin), mode, int(cnx), int(cny))
@@ -13839,7 +13840,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 					Torg.append(data[im].get_attr('xform.projection'))
 					
 				if (seg_end - seg_start) > 1:
-					setfilori_MA(data[seg_start: seg_end], pixel_size, dp, dphi, symmetry_string, WRAP=1)
+					setfilori_MA(data[seg_start: seg_end], pixel_size, dp, dphi, symmetry_string)
 
 				for im in xrange( seg_start, seg_end ):
 					peak1 = None
@@ -14055,6 +14056,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 				header(stack, params='xform.projection', fexport=os.path.join(outdir, "parameters%04d.txt"%(ooiter)))
 				header(stack, params='pixerr', fexport=os.path.join(outdir, "pixelerror%04d.txt"%(ooiter)))
 
+
 def filamentupdown(fildata, pixel_size, dp, dphi):
 	def get_dist(c1, c2):
 		from math import sqrt
@@ -14062,28 +14064,45 @@ def filamentupdown(fildata, pixel_size, dp, dphi):
 		return d
 	from utilities import get_params_proj
 
-	ddphi = pixel_size/dp*dphi
+	rise  = dp/pixel_size
 	ns = len(fildata)
 	phig 	= [0.0]*ns # given phi
+	coords = []*ns
 	for i in xrange(ns):
 		phig[i], theta, psi, s2x, s2y = get_params_proj(fildata[i])
-
+		coords.append(fildata[i].get_attr('ptcl_source_coord'))
+		#print i,phig[i], theta, psi, s2x, s2y
 	pterr = 0.0 # total error between predicted angles and given angles
 	mterr = 0.0
 	for i in xrange(1, ns):
-		dim = get_dist(fildata[i].get_attr('ptcl_source_coord'), fildata[i-1].get_attr('ptcl_source_coord'))*ddphi
-		err    = ((phig[i-1] + dim)%360.0 - phig[i])%360.0
+		dim0 = get_dist(coords[i-1], coords[0])
+		hdim = dim0/rise
+		hd = round(hdim)
+		phim1pred = (dphi*(hdim -hd))%360.0
+		phim1mred = (-dphi*(hdim -hd))%360.0  # this one for down turn
+		difphim1 = (phig[i-1]-phim1pred)%360.0
+		#print i,dim0,hdim,hd,phim1pred,phig[i-1],difphim1
+		dim1 = get_dist(coords[i], coords[0])
+		hdim = dim1/rise
+		hd = round(hdim)
+		phi1pred = (dphi*(hdim -hd) + difphim1)%360.0
+		err    = (phi1pred - phig[i])%360.0
 		pterr += min(err, 360.0 - err)
-		err    = ((phig[i-1] - dim)%360.0 - phig[i])%360.0
+		#print i,dim1,hdim,hd,phig[i-1],phig[i],min(err, 360.0 - err),pterr
+		
+		difphim1 = (phig[i-1]-phim1mred)%360.0
+		#print i,dim0,hdim,hd,phim1pred,phig[i-1],difphim1
+		phi1pred = (-dphi*(hdim -hd) + difphim1)%360.0
+		err    = (phi1pred - phig[i])%360.0
 		mterr += min(err, 360.0 - err)
-
+		#print i,dim1,hdim,hd,phig[i-1],phig[i],min(err, 360.0 - err),mterr
+	#print " ERRORS :",pterr,mterr
 	if pterr < mterr:    updown = 0
 	else:                updown = 1
 	for i in xrange(ns):  fildata[i].set_attr("updown",updown)
 	return
 
-
-def setfilori_MA(fildata, pixel_size, dp, dphi, sym='c1', WRAP=1):
+def setfilori_MA(fildata, pixel_size, dp, dphi, sym='c1'):
 	from utilities		import get_params_proj, set_params_proj
 	from pixel_error 	import angle_diff
 	from applications	import filamentupdown
@@ -14098,7 +14117,7 @@ def setfilori_MA(fildata, pixel_size, dp, dphi, sym='c1', WRAP=1):
 	if sym != 'c1':
 		ERROR("does not handle any point-group symmetry other than c1 for the time being.", 'setfilori_MA')
 
-	dpp 	= dp/pixel_size
+	rise 	= dp/pixel_size
 	ddphi   = pixel_size/dp*dphi
 	ns 		= len(fildata)
 	qv 		= pi/180.0
@@ -14109,13 +14128,12 @@ def setfilori_MA(fildata, pixel_size, dp, dphi, sym='c1', WRAP=1):
 	xg 		= [0.0]*ns # given x
 	thetag	= [0.0]*ns # given theta
 
-	updown = fildata[0].get_attr("updown")
-
 	coords = [[] for im in xrange(ns)]
-	for im in xrange(ns):
-		coords[im] = fildata[im].get_attr('ptcl_source_coord')
-		phig[im], thetag[im], psig[im] , xg[im], yg[im] = get_params_proj(fildata[im])
-		if abs(psig[im] - psig[0]) > 90:
+	for i in xrange(ns):
+		coords[i] = fildata[i].get_attr('ptcl_source_coord')
+		phig[i], thetag[i], psig[i] , xg[i], yg[i] = get_params_proj(fildata[i])
+		#print "%3d  %5.1f   %5.1f   %5.1f   %5.1f   %5.1f"%(i,phig[i], thetag[i], psig[i] , xg[i], yg[i])
+		if( abs(psig[i] - psig[0]) )> 90.0:
 			ERROR('PSI should be pointing in the same direction for all segments belonging to same filament', 'setfilori_MA')
 
 	# forward predicted psi of segment i is current psi of segment i + 1
@@ -14148,20 +14166,13 @@ def setfilori_MA(fildata, pixel_size, dp, dphi, sym='c1', WRAP=1):
 	bb = thetag[ns-2]*qv
 	constheta[ns-1] = (atan2(  (sin(ff)+sin(bb)) , (cos(ff)+cos(bb)) )/qv)%360.0
 
+
+	updown = fildata[0].get_attr("updown")
 	if updown == 1:
 		ddphi = -ddphi
 		sgn = -1
 	else:
 		sgn = 1
-
-	#  Y-shift - include non-integer distance.
-	consy = [0.0]*ns
-	for i in xrange(1,ns-1):
-		yb = (yg[i-1] + sgn*get_dist(coords[i-1], coords[i]))%dpp
-		yf = (yg[i+1] - sgn*get_dist(coords[i+1], coords[i]))%dpp
-		consy[i] = (yb + yf)/2.0
-	consy[0]    = ((yg[1] - sgn*get_dist(coords[1], coords[0]))%dpp + yg[0])/2.0
-	consy[ns-1] = (yg[ns-1] + (yg[ns-2]+ sgn*get_dist(coords[ns-2], coords[ns-1]))%dpp)/2.0
 
 	#  X-shift (straightforward)
 	consx = [0.0]*ns
@@ -14169,220 +14180,64 @@ def setfilori_MA(fildata, pixel_size, dp, dphi, sym='c1', WRAP=1):
 	consx[0]    = (xg[1] + xg[0])/2.0
 	consx[ns-1] = (xg[ns-1] + xg[ns-2])/2.0
 
+	#  Y-shift - include non-integer distance.
+
 	# Predict phi angles based on approximate distances calculated using theta=90 between nearby segments.
 	# (The other option is to calculate distance between segments using predicted theta. 
 	#   But for now, just use theta=90 since for reasonable deviations of theta from 90 (say +/- 10 degrees), 
 	#   and an intersegment distance of say >= 15 pixels, the difference theta makes is minimal.)
 
-	# Determine sign of dphi from given phi angles
-	# Assuming a sign for dphi, predict phi for each segment based on the preceding segment, 
-	#   and add up the errors per segment between predicted and given.
-	# The sign for dphi is the one that yields the smaller total error.
-
+	consy   = [0.0]*ns
 	consphi = [0.0]*ns
+	for i in xrange(ns):
+		if( i>0 ):
+			qyb = yg[i-1] + get_dist(coords[i-1], coords[i])
+			hqb = round(qyb/rise)
+			yb = qyb - hqb*rise
+			#print " Y ",i,qyb,hqb,yb
+		else:  yb = yg[0]
 
-	for i in xrange(1,ns-1):
-		ci    = fildata[i].get_attr('ptcl_source_coord')
-		fpred = qv*((phig[i+1] - get_dist(ci, fildata[i+1].get_attr('ptcl_source_coord'))*ddphi)%360.0)
-		bpred = qv*((phig[i-1] + get_dist(ci, fildata[i-1].get_attr('ptcl_source_coord'))*ddphi)%360.0)
-		consphi[i] = (atan2(  (sin(fpred)+sin(bpred)) , (cos(fpred)+cos(bpred)) )/qv)%360.0
-		#print i,phig[i-1],phig[i],phig[i+1],fpred,bpred,consphi[i]
+		if( i < ns-1 ):
+			qyf = yg[i+1] - get_dist(coords[i+1], coords[i])
+			hqf = round(qyf/rise)
+			yf = qyf - hqf*rise
+			#print "   Y",qyf,hqf,yf
+		else:	yf = yg[ns-1]
 
-	# Border phi angles
-	fpred = qv*((phig[1] - get_dist(fildata[0].get_attr('ptcl_source_coord'), fildata[1].get_attr('ptcl_source_coord'))*ddphi)%360.0)
-	bpred = qv*phig[0]
-	consphi[0] = (atan2(  (sin(fpred)+sin(bpred)) , (cos(fpred)+cos(bpred)) )/qv)%360.0
-	#print  ddphi, bpred,fpred,consphi[0]
+		consy[i] = (yb + yf)/2.0
+		#print "    YP",yg[max(0,i-1)],yg[min(i+1,ns-1)],yg[i],consy[i],"   >>>   ",yg[i]-consy[i]
 
-	bpred = qv*((phig[ns-2] + get_dist(fildata[ns-1].get_attr('ptcl_source_coord'), fildata[ns-2].get_attr('ptcl_source_coord'))*ddphi)%360.0)
-	fpred = qv*phig[ns-1]
-	consphi[ns-1] = (atan2(  (sin(fpred)+sin(bpred)) , (cos(fpred)+cos(bpred)) )/qv)%360.0
-	#print  ddphi, bpred,fpred,consphi[ns-1]
+	for i in xrange(ns):
+		if( i>0 ):
+			dim0 = get_dist(coords[i-1], coords[0])
+			hdim = dim0/rise
+			hd = round(hdim)
+			phim1pred = (sgn*dphi*(hdim -hd))%360.0
+			difphim1 = (phig[i-1]-phim1pred)%360.0
+			#print i,dim0,hdim,hd,phim1pred,phig[i-1],difphim1
+			dim1  = get_dist(coords[i], coords[0])
+			hdim1   = dim1/rise
+			hd1     = round(hdim1)
+			phipred = sgn*dphi*(hdim1 -hd1)
+			phi1predforward = qv*(( phipred + difphim1 )%360.0)
+		else:
+			phipred = 0.0
+			phi1predforward = qv*phig[0]
 
-	for im in xrange(ns):
-		iconsphi 	= consphi[im]
-		iconstheta 	= constheta[im]
-		iconspsi 	= conspsi[im]
-		iconsx 		= consx[im]
-		iconsy 		= consy[im]
 
-		aphi = 0.0
-		#if WRAP == 1:
-		#	if abs(iconsy) >= dpp/2.0:
-		#		iconsy, aphi = yshift_to_phi(iconsy, iconspsi, pixel_size, dp, dphi)
-		print im,get_params_proj(fildata[im])
-		set_params_proj(fildata[im], [(iconsphi + aphi)%360., iconstheta, iconspsi, iconsx, iconsy])
-		print im,get_params_proj(fildata[im])
-
-"""
-def setfilori(fildata, pixel_size, dp, dphi, iter, sym='c1'):
-	from utilities		import get_params_proj, set_params_proj
-	from pixel_error 	import angle_diff
-	from copy import copy
-	
-	def get_dist(c1, c2):
-		from math import sqrt
-		d = sqrt((c1[0] - c2[0])**2 + (c1[1] - c2[1])**2)
-		return d
-		
-	'''
-	Input:
-	
-		fildata: list of EMData objects corresponding to segments of a single filament containing 
-			     projection orientation parameters (not necessarily consistent according to helical symmetry).
-		
-		dp: 	 rise in Angstroms
-		
-		dphi:    Azimuthal rotation
-		
-		Note   : The projection parameters in fildata should be "roughly" consistent in that 
-		         the psi should approximately agree, i.e., all ~90 or all ~270.
-				
-				 Inter-segment distances must be multiples of rise to facilitate
-				 calculation of consistent parameters.
-				 
-	Output:
-	
-		Sets xform.projection attribute in fildata to projection orientation directions which 
-		are consistent according to helical symmetry and which are "close" to the initial 
-		projection orientation parameters in fildata.
-		
-		Notes:
-	
-		1. psi of consistent parameters are calculated as the average of the given
-	  	   psi, which means they are closest to the given x-shifts/theta/psi in the least-squares sense.
-		
-		2. Assuming consistent y-shifts should be the same (which is the case when inter-segment
-		   distances are multiples of the rise) for all the segments, then consistent phi 
-		   angles are related as follows:
-	   
-	          predicted phi of segment i = predicted phi of segment 0 +/- dphi*(dist(i,0))/rise
-	   	   
-	   	   The sign depends on the relative orderingo of segments as they are windowed from 
-	   	   the filament and cannot be known beforehand.
-	   	   
-	   	   For instance, given a perfect helical filament, segment 0 could lie "above" 
-	   	   segment 1 or "below" it, which would determine whether dphi*(dist(1,0))/rise is 
-	   	   added or subtracted from the phi angle of segment 0 to obtain the phi angle
-	   	   of segment 1. 
-	   	    
-	 	   So there are two possible sets of consistent phi angles. We take the set of consistent phi
-	 	   angles that is the "closest" to the given phi angles (in fildata) after applying an overall rotation:
-		      			
-		      (i)  Use angle_diff to determine the relative angle between the consistent phi
-		           angles and the given phi angles.
-		      
-		      (ii) Apply the relative angle to the consistent angles, and find the overall 
-		           error between the resulting angles and the given phi angles as the sum 
-		           of the absolute errors between corresponding angles.
-		
-	        Use the consistent set of phi angles which yields the smallest overall error as determined in step (ii).      
-		
-		3. Consistent y-shifts is calculated as the average of the given y-shifts. This yields
-		   the consistent y-shift that is the closet to the given y-shifts in the least squares
-		   sense. 
-		   
-		   This is a direct consequence of the assumption that inter-segment distances are
-		   multiples of the rise, which implies that consistent y-shifts must be the same
-		   for all the segments.	   
-		   
-		   The consistent y-shift corresponds to an overrall movement of the entire filament.
-		   For instance, suppose the given y-shifts are ALL seven pixels, in which case
-		   the consistent y-shift would be seven pixels and thus correspond to a collective
-		   shift of seven pixels.
-		
-		   Due to helical symmetry, each shift by one rise corresponds to a rotation of dphi around helical axis.
-		   E.g., shifting all the segments up by one rise corresponds to a rotation by +/- dphi.
-		   
-		   A shift which is less than one rise cannot be compensated for by rotation.
-		   
-		   Hence, when the consistent y-shift is larger than one rise, a rotation corresponding
-		   to the number of integer rises contained in the y-shift is added to the consistent 
-		   phi angle of each segment, and the corresponding number of rises is subtracted
-		   from the original consistent y-shift.
-		   
-		   The above implies the consistent y-shift is always less than one rise.
-	'''
-	
-	if sym != 'c1':
-		ERROR("setfilori does not handle any point-group symmetry other than c1 right now.", 'setfilori')
-	
-	dpp = dp/pixel_size
-	ns = len(fildata)
-	sumpsi = 0.0
-	phig = [] # given phi
-	sumy = 0.0
-	
-	p0 = fildata[0].get_attr('ptcl_source_coord')
-	distances = [0.0]*ns
-	for i in xrange(1,ns):  distances[i] = get_dist( fildata[i].get_attr('ptcl_source_coord'), p0 )
-	
-	# check that inter-segment distances are multiples of the rise
-	# Only do this once in the first iteration
-	if iter == 1:
-		THR = 0.001
-		for im in xrange(1, ns):
-			if (abs(distances[im]%dpp - dpp) > THR) and (distances[im]%dpp > THR):
-				ERROR('setfilori currently only handles case where inter-segment distances are ~ multiples of the rise', 'setfilori')
-		
-	for im in xrange(ns):
-		phi, theta, psi, s2x, s2y = get_params_proj(fildata[im])
-		if im == 0:
-			PSI0 = psi
-		phig.append(phi)
-		sumy += s2y
-		sumpsi += psi
-		if abs(psi - PSI0) > 90:
-			ERROR('PSI should be approximately the same for all segments belonging to same filament', 'setfilori')
-			
-	# For now set the new psi to the psi closest to the psi from local search in the least squares sense (i.e., the average)
-	conspsi = sumpsi/ns
-	
-	# Find the single y-shift which is closest to all the y-shifts in least squares sense.
-	# When inter-segment distances are multiples of the rise, this is simply the average.
-	consy = sumy/ns
-	# Find consistent phi angles closest to given phi angles
-	terr = 1.e23
-	for idir in xrange(-1,2,2):
-		#  get phi's
-		ddphi = pixel_size/dp*idir*dphi
-		phis = [0.0]*ns
-		#print "  MIC  ",mic
-		for i in xrange(ns):
-			phis[i] = (distances[i]*ddphi)%360.0
-		# find the overall angle
-		angdif = angle_diff(phis,phig)
-		#print " angdif ",angdif
-		lerr = 0.0
-		newphi = []
-		for i in xrange(ns):
-			cphi = phis[i]+angdif
-			anger = (cphi - phig[i] + 360.0)%360.0
-			newphi.append(cphi)
-			if( anger > 180.0 ): anger -= 360.0
-			lerr += abs(anger)
-			#print  " %7.3f   %7.3f   %7.3f"%((phis[i]+angdif+360.0)%360.0 , phig[i],anger)
-		if(lerr < terr):
-			terr = lerr
-			consphi = copy(newphi)
-	
-	# Now we have consistent y-shift (which should be same for all segments since
-	# inter-segment distances are multiples of rise) and consistent phi angles.
-	
-	# If consistent y-shift is larger than or equal to one rise, translate it to rotation so
-	# that y-shift is less than one rise, and add the additional rotation to the consistent
-	# phi angles
-	
-	aphi = 0
-	if consy >= dpp:
-		consy, aphi = yshift_to_phi(consy, conspsi, pixel_size, dp, dphi)
-	if consy >= dpp/2.0:
-		print "need to check dpp/2.0"
-		sys.exit()
-	for im in xrange(ns):
-		phi, theta, psi, s2x, s2y = get_params_proj(fildata[im])
-		set_params_proj(fildata[im], [consphi[im] + aphi, theta, conspsi, s2x, consy])
-"""
+		if( i < ns-1 ):
+			dim0 = get_dist(coords[i+1], coords[0])
+			hdim = dim0/rise
+			hd = round(hdim)
+			phim1pred = (sgn*dphi*(hdim -hd))%360.0
+			difphim1 = (phig[i+1]-phim1pred)%360.0
+			#print i,dim0,hdim,hd,phim1pred,phig[i-1],difphim1
+			phi1predbackward = qv*(( phipred + difphim1)%360.0)
+		else: phi1predbackward = qv*phig[ns-1]
+		consphi[i] = (atan2(  (sin(phi1predforward)+sin(phi1predbackward)) , (cos(phi1predforward)+cos(phi1predbackward)) )/qv)%360.0
+		#print " PHI ",i,phig[max(0,i-1)],phig[i],phig[min(i+1,ns-1)],phi1predforward/qv,phi1predbackward/qv,consphi[i],(round((phig[i]-consphi[i])*100)/100.)%360.
+		set_params_proj(fildata[i], [consphi[i], constheta[i], conspsi[i], consx[i], consy[i]])
+	return
 
 def prepare_refrings2( volft, kb, nz, segmask, delta, ref_a, sym, numr, MPI=False, phiEqpsi = "Minus", kbx = None, kby = None, initial_theta = None, delta_theta = None):
 
