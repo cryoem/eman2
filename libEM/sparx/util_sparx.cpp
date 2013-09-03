@@ -20348,6 +20348,9 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 		throw NullPointerException("NULL input image");
 	}
 	cout <<"  VERSION  08/20/2013  10:30am"<<endl;
+	float dummy;
+	dummy = ri;
+	cout <<  "   fmod   "<<fmod(qprob,dummy)<<endl;
 	int newx, newy, newz;
 	bool  keep_going;
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
