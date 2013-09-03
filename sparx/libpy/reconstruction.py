@@ -675,38 +675,36 @@ def bootstrap_nn(proj_stack, volume_stack, list_proj, niter, media="memory", npa
         #    output.write( "%d image read\n" % (j+1) )
         #    output.flush()
 
-        overall_start = time()
+	overall_start = time()
 	for i in xrange(niter):
 		iter_start = time()
-        	mults = nimages*[0]
+		mults = nimages*[0]
 		for j in xrange(nimages):
-        		imgid = randint(0,nimages-1)
-        		mults[imgid]=mults[imgid]+1
+			imgid = randint(0,nimages-1)
+			mults[imgid]=mults[imgid]+1
 
 		if CTF:
-        		params = {"size":size, "npad":npad, "symmetry":symmetry, "snr":snr, "sign":sign}
-        		r = Reconstructors.get("nn4_ctf", params);
+			params = {"size":size, "npad":npad, "symmetry":symmetry, "snr":snr, "sign":sign}
+			r = Reconstructors.get("nn4_ctf", params);
 		else:
 			params = {"size":size, "npad":npad, "symmetry":symmetry, "snr":snr}
 			r = Reconstructors.get("nn4", params);
-        	
 
-        	r.setup()
-        	if not(output is None):
+		r.setup()
+		if not(output is None):
 			output.write( "Bootstrap volume %8d " % i )
 			output.flush()
 
-        	store.restart()
+		store.restart()
 
-        	if not(output is None):
+		if not(output is None):
 			output.write( "Inserting images " )
-        		output.flush()
+			output.flush()
 
-        	for j in xrange(nimages):
+		for j in xrange(nimages):
 			if mults[j] > 0 :
-        			img_j = EMData()
-        			store.get_image( j, img_j );
-		    		img_j.set_attr( "mult", mults[j] );
+				img_j = EMData()
+				store.get_image( j, img_j );
 				phi_j = img_j.get_attr( "phi" )
 				tht_j = img_j.get_attr( "theta" )
 				psi_j = img_j.get_attr( "psi" )
@@ -720,8 +718,8 @@ def bootstrap_nn(proj_stack, volume_stack, list_proj, niter, media="memory", npa
 					ampcont = img_j.get_attr( "amp_contrast" )
 					bfactor = 0.0
 					set_ctf( img_j, [defocus, cs, voltage, pixel, bfactor, ampcont] )
-        		
-		    		r.insert_slice(img_j, tra_j)
+
+				r.insert_slice(img_j, tra_j, mults[j])
 
         			#[mean,sigma,min,max]= Util.infomask(img_j, None, False)
         			#output.write( "img %4d %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f\n" % (j, mean, sigma, min, max, phi, theta, psi) )
@@ -739,10 +737,10 @@ def bootstrap_nn(proj_stack, volume_stack, list_proj, niter, media="memory", npa
 
 		vol.write_image(volume_stack,i)
 
-        	if not(output is None):
+		if not(output is None):
 			output.write( " done!" )
 			output.write( " time %15.3f %15.3f \n" % (time()-iter_start,time()-overall_start) )
-        		output.flush()
+			output.flush()
 
 
 def recons3d_em(projections_stack, max_iterations_count = 100, radius = -1, min_avg_abs_voxel_change = 0.01, use_weights = False, symmetry = "c1"):

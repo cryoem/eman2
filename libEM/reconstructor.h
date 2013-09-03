@@ -1000,7 +1000,7 @@ namespace EMAN
 
 		void setup( const string& symmetry, int size, int npad );
 
-		int insert_padfft_slice( EMData* padded, const Transform& trans, int mult=1 );
+		int insert_padfft_slice( EMData* padded, const Transform& trans, float mult=1 );
 
 		static const string NAME;
 
@@ -1094,7 +1094,7 @@ namespace EMAN
 
 		void setup( const string& symmetry, int size, int npad );
 
-		int insert_padfft_slice( EMData* padded, const Transform& trans, int mult=1 );
+		int insert_padfft_slice( EMData* padded, const Transform& trans, float mult=1 );
 
 		static const string NAME;
 
@@ -1185,7 +1185,7 @@ namespace EMAN
 
 		void setup( const string& symmetry, int size, int npad);
 
-		int insert_padfft_slice( EMData* padded, const Transform& trans, int mult=1 );
+		int insert_padfft_slice( EMData* padded, const Transform& trans, float mult=1 );
 
 		static const string NAME;
 		
@@ -1268,9 +1268,9 @@ namespace EMAN
 
 		void setup( const string& symmetry, int size, int npad, float snr, int sign );
 
-		int insert_padfft_slice( EMData* padfft, const Transform& trans, int mult=1);
+		int insert_padfft_slice( EMData* padfft, const Transform& trans, float mult=1);
 
-		int insert_buffed_slice( const EMData* buffer, int mult );
+		int insert_buffed_slice( const EMData* buffer, float mult );
 		
 		static const string NAME;
 		
@@ -1362,9 +1362,9 @@ namespace EMAN
 
 		void setup( const string& symmetry, int size, int npad, float snr, int sign );
 
-		int insert_padfft_slice( EMData* padfft, const Transform& trans, int mult=1);
+		int insert_padfft_slice( EMData* padfft, const Transform& trans, float mult=1);
 
-		int insert_buffed_slice( const EMData* buffer, int mult );
+		int insert_buffed_slice( const EMData* buffer, float mult );
 		
 		static const string NAME;
 		
@@ -1457,7 +1457,7 @@ namespace EMAN
 		}
 		void setup( const string& symmetry, int size, int npad, float snr, int sign);
 
-		int insert_padfft_slice( EMData* padded, const Transform& trans, int mult=1 );
+		int insert_padfft_slice( EMData* padded, const Transform& trans, float mult=1 );
 
 		static const string NAME;     
                 

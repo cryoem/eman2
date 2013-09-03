@@ -1113,7 +1113,7 @@ void EMData::onelinenn(int j, int n, int n2, EMData* wptr, EMData* bi, const Tra
 }
 
 
-void EMData::onelinenn_mult(int j, int n, int n2, EMData* wptr, EMData* bi, const Transform& tf, int mult)
+void EMData::onelinenn_mult(int j, int n, int n2, EMData* wptr, EMData* bi, const Transform& tf, float mult)
 {
         //std::cout<<"   onelinenn  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 	int jp = (j >= 0) ? j+1 : n+j+1;
@@ -1146,8 +1146,8 @@ void EMData::onelinenn_mult(int j, int n, int n2, EMData* wptr, EMData* bi, cons
 			if (iyn >= 0) iya = iyn + 1;
 			else	      iya = n + iyn + 1;
 
-			cmplx(ixn,iya,iza) += btq*float(mult);
-			(*wptr)(ixn,iya,iza)+=float(mult);
+			cmplx(ixn,iya,iza) += btq * mult;
+			(*wptr)(ixn,iya,iza)+= mult;
 			
 			/*if ((ixn <= n2) && (iyn >= -n2) && (iyn <= n2)  && (izn >= -n2) && (izn <= n2)) {
 				if (ixn >= 0) {
@@ -1176,7 +1176,7 @@ void EMData::onelinenn_mult(int j, int n, int n2, EMData* wptr, EMData* bi, cons
 	}
 }
 
-void EMData::nn(EMData* wptr, EMData* myfft, const Transform& tf, int mult)
+void EMData::nn(EMData* wptr, EMData* myfft, const Transform& tf, float mult)
 {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"]; // # of complex elements along x
@@ -1193,15 +1193,15 @@ void EMData::nn(EMData* wptr, EMData* myfft, const Transform& tf, int mult)
 		for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn(iy, ny, nxc, wptr, myfft, tf);
 	} else {
 		for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn_mult(iy, ny, nxc, wptr, myfft, tf, mult);
-        }
+	}
 
-        set_array_offsets(saved_offsets);
+	set_array_offsets(saved_offsets);
 	myfft->set_array_offsets(myfft_saved_offsets);
 	EXITFUNC;
 }
 
 
-void EMData::insert_rect_slice(EMData* w, EMData* myfft, const Transform& trans, int sizeofprojection, float xratio, float yratio, float zratio, int npad, int mult)
+void EMData::insert_rect_slice(EMData* w, EMData* myfft, const Transform& trans, int sizeofprojection, float xratio, float yratio, float zratio, int npad, float mult)
 {
 	ENTERFUNC;
 	vector<int> saved_offsets = get_array_offsets();
@@ -1310,7 +1310,7 @@ void EMData::insert_rect_slice(EMData* w, EMData* myfft, const Transform& trans,
 				if (iyn >= 0) iya = iyn + 1;
 				else	      iya = ny + iyn + 1;
 
-				cmplx(ixn,iya,iza) += btq*float(mult);
+				cmplx(ixn,iya,iza) += btq * mult;
 				(*w)(ixn,iya,iza) += mult;
 					
 				}
@@ -1329,7 +1329,7 @@ void EMData::insert_rect_slice(EMData* w, EMData* myfft, const Transform& trans,
 
 
 
-void EMData::nn_SSNR(EMData* wptr, EMData* wptr2, EMData* myfft, const Transform& tf, int)
+void EMData::nn_SSNR(EMData* wptr, EMData* wptr2, EMData* myfft, const Transform& tf, float)
 {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"];
@@ -1630,7 +1630,7 @@ float ctf_store_new::m_defocus, ctf_store_new::m_dza, ctf_store_new::m_azz;
 
 
 //  Helper functions for method nn4_ctf
-void EMData::onelinenn_ctf(int j, int n, int n2, EMData* w, EMData* bi, const Transform& tf, int mult) {
+void EMData::onelinenn_ctf(int j, int n, int n2, EMData* w, EMData* bi, const Transform& tf, float mult) {
 //std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 
 	int remove = bi->get_attr_default( "remove", 0 );
@@ -1638,7 +1638,7 @@ void EMData::onelinenn_ctf(int j, int n, int n2, EMData* w, EMData* bi, const Tr
 	int jp = (j >= 0) ? j+1 : n+j+1;
 	// loop over x
 	for (int i = 0; i <= n2; i++) {
-	        int r2 = i*i+j*j;
+		int r2 = i*i+j*j;
 		if ( (r2<n*n/4) && !((0==i) && (j<0)) ) {
 			float ctf = ctf_store::get_ctf( r2, i, j ); //This is in 2D projection plane
 			float xnew = i*tf[0][0] + j*tf[1][0];
@@ -1663,10 +1663,10 @@ void EMData::onelinenn_ctf(int j, int n, int n2, EMData* w, EMData* bi, const Tr
 			else          iya = n + iyn + 1;
 
 			if(remove > 0 ) {
-				cmplx(ixn,iya,iza) -= btq*ctf*float(mult);
+				cmplx(ixn,iya,iza) -= btq*ctf*mult;
 				(*w)(ixn,iya,iza)  -= ctf*ctf*mult;
 			} else {
-				cmplx(ixn,iya,iza) += btq*ctf*float(mult);
+				cmplx(ixn,iya,iza) += btq*ctf*mult;
 				(*w)(ixn,iya,iza)  += ctf*ctf*mult;
  			}
 
@@ -1675,7 +1675,7 @@ void EMData::onelinenn_ctf(int j, int n, int n2, EMData* w, EMData* bi, const Tr
 }
 
 void EMData::onelinenn_ctf_applied(int j, int n, int n2,
-		          EMData* w, EMData* bi, const Transform& tf, int mult) {//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
+		          EMData* w, EMData* bi, const Transform& tf, float mult) {//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 
         int remove = bi->get_attr_default( "remove", 0 );
 
@@ -1709,10 +1709,10 @@ void EMData::onelinenn_ctf_applied(int j, int n, int n2,
 			else          iya = n + iyn + 1;
 
 			if( remove > 0 ) {
-				cmplx(ixn,iya,iza) -= btq*float(mult);
+				cmplx(ixn,iya,iza) -= btq*mult;
 				(*w)(ixn,iya,iza) -= mult*ctf*ctf;
 			} else {
-				cmplx(ixn,iya,iza) += btq*float(mult);
+				cmplx(ixn,iya,iza) += btq*mult;
 				(*w)(ixn,iya,iza) += mult*ctf*ctf;
 			}
 
@@ -1721,7 +1721,7 @@ void EMData::onelinenn_ctf_applied(int j, int n, int n2,
 }
 
 void
-EMData::nn_ctf(EMData* w, EMData* myfft, const Transform& tf, int mult) {
+EMData::nn_ctf(EMData* w, EMData* myfft, const Transform& tf, float mult) {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"]; // # of complex elements along x
 	// let's treat nr, bi, and local data as matrices
@@ -1742,7 +1742,7 @@ EMData::nn_ctf(EMData* w, EMData* myfft, const Transform& tf, int mult) {
 }
 
 void
-EMData::nn_ctf_applied(EMData* w, EMData* myfft, const Transform& tf, int mult) {
+EMData::nn_ctf_applied(EMData* w, EMData* myfft, const Transform& tf, float mult) {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"]; // # of complex elements along x
 	// let's treat nr, bi, and local data as matrices
@@ -1764,7 +1764,7 @@ EMData::nn_ctf_applied(EMData* w, EMData* myfft, const Transform& tf, int mult) 
 }
 
 
-void EMData::insert_rect_slice_ctf(EMData* w, EMData* myfft, const Transform& trans, int sizeofprojection, float xratio, float yratio, float zratio, int npad, int mult)
+void EMData::insert_rect_slice_ctf(EMData* w, EMData* myfft, const Transform& trans, int sizeofprojection, float xratio, float yratio, float zratio, int npad, float mult)
 {
 	ENTERFUNC;
 	vector<int> saved_offsets = get_array_offsets();
@@ -1878,10 +1878,10 @@ void EMData::insert_rect_slice_ctf(EMData* w, EMData* myfft, const Transform& tr
 				else	      iya = ny + iyn + 1;
 
 				if(remove > 0 ) {
-					cmplx(ixn,iya,iza) -= btq*ctf_value*float(mult);
+					cmplx(ixn,iya,iza) -= btq*ctf_value * mult;
 					(*w)(ixn,iya,iza) -= ctf_value*ctf_value*mult;
 					} else {
-					cmplx(ixn,iya,iza) += btq*ctf_value*float(mult);
+					cmplx(ixn,iya,iza) += btq*ctf_value * mult;
 					(*w)(ixn,iya,iza) += ctf_value*ctf_value*mult;
 					}
 					
@@ -1900,7 +1900,7 @@ void EMData::insert_rect_slice_ctf(EMData* w, EMData* myfft, const Transform& tr
 }
 
 
-void EMData::insert_rect_slice_ctf_applied(EMData* w, EMData* myfft,const Transform& trans,int sizeofprojection,float xratio,float yratio, float zratio, int npad,int mult)
+void EMData::insert_rect_slice_ctf_applied(EMData* w, EMData* myfft,const Transform& trans,int sizeofprojection,float xratio,float yratio, float zratio, int npad,float mult)
 {
 	ENTERFUNC;
 	vector<int> saved_offsets = get_array_offsets();
@@ -2013,10 +2013,10 @@ void EMData::insert_rect_slice_ctf_applied(EMData* w, EMData* myfft,const Transf
 				else	      iya = ny + iyn + 1;
 
 				if(remove > 0 ) {
-					cmplx(ixn,iya,iza) -= btq*float(mult);
+					cmplx(ixn,iya,iza) -= btq * mult;
 					(*w)(ixn,iya,iza) -= ctf_value*ctf_value*mult;
 					} else {
-					cmplx(ixn,iya,iza) += btq*float(mult);
+					cmplx(ixn,iya,iza) += btq * mult;
 					(*w)(ixn,iya,iza) += ctf_value*ctf_value*mult;
 					}
 					
@@ -2103,7 +2103,7 @@ Data::onelinenn_ctf(int j, int n, int n2, EMData* w, EMData* bi, const Transform
 */
 
 
-void EMData::nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myfft, const Transform& tf, int)
+void EMData::nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myfft, const Transform& tf, float)
 {
 	/***   Preparing terms for SSNR
 	      m_wvolume F^3D Wiener volume

@@ -2154,25 +2154,25 @@ void printImage( const EMData* line )
 
 
 
-int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform& t, const float) {
+int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform& t, const float mult) {
 	// sanity checks
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
 		return 1;
 	}
 
-        int padffted= slice->get_attr_default( "padffted", 0 );
-        if( m_ndim==3 ) {
+	int padffted= slice->get_attr_default( "padffted", 0 );
+	if( m_ndim==3 ) {
 		if ( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  ) {
 			// FIXME: Why doesn't this throw an exception?
 			LOGERR("Tried to insert a slice that is the wrong size.");
 			return 1;
 		}
-        } else {
+	} else {
 		Assert( m_ndim==2 );
 		if( slice->get_ysize() !=1 ) {
 			LOGERR( "for 2D reconstruction, a line is excepted" );
-        		return 1;
+			return 1;
 		}
 	}
 
@@ -2181,10 +2181,9 @@ int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform& t
 	if( padffted != 0 ) padfft = new EMData(*slice);
 	else                padfft = padfft_slice( slice, t,  m_npad );
 
-	int mult= slice->get_attr_default( "mult", 1 );
 	Assert( mult > 0 );
 
-        if( m_ndim==3 ) {
+	if( m_ndim==3 ) {
 		insert_padfft_slice( padfft, t, mult );
 	} else {
 		float alpha = padfft->get_attr( "alpha" );
@@ -2205,9 +2204,9 @@ int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform& t
 
 			if(iyn < 0 ) iyn += m_vnyp;
 
-			(*m_volume)( 2*ixn, iyn+1, 1 ) += btqr *float(mult);
-			(*m_volume)( 2*ixn+1, iyn+1, 1 ) += btqi * float(mult);
-			(*m_wptr)(ixn,iyn+1, 1) += float(mult);
+			(*m_volume)( 2*ixn, iyn+1, 1 ) += btqr * mult;
+			(*m_volume)( 2*ixn+1, iyn+1, 1 ) += btqi * mult;
+			(*m_wptr)(ixn,iyn+1, 1) += mult;
 		}
 
 	}
@@ -2215,7 +2214,7 @@ int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform& t
 	return 0;
 }
 
-int nn4Reconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, int mult )
+int nn4Reconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, float mult )
 {
 	Assert( padfft != NULL );
 
@@ -2541,7 +2540,7 @@ void nn4_rectReconstructor::buildNormVolume() {
 	m_wptr->set_array_offsets(0,1,1);
 }
 
-int nn4_rectReconstructor::insert_slice(const EMData* const slice, const Transform& t, const float) {
+int nn4_rectReconstructor::insert_slice(const EMData* const slice, const Transform& t, const float mult) {
 	// sanity checks
 
 
@@ -2573,7 +2572,6 @@ int nn4_rectReconstructor::insert_slice(const EMData* const slice, const Transfo
 	if( padffted != 0 ) padfft = new EMData(*slice);
 	else                padfft = padfft_slice( slice, t,  m_npad );
 
-	int mult= slice->get_attr_default( "mult", 1 );
 	Assert( mult > 0 );
 
         if( m_ndim==3 ) {
@@ -2634,9 +2632,9 @@ int nn4_rectReconstructor::insert_slice(const EMData* const slice, const Transfo
 			if(iyn < 0 ) iyn += m_vnyp;
 			if(m_count%100==0&&i==loop_range)
 				std::cout<<"xnn=="<<ixn<<"ynn=="<<iyn<<std::endl;
-			(*m_volume)( 2*ixn, iyn+1, 1 ) += btqr *float(mult);
-			(*m_volume)( 2*ixn+1, iyn+1, 1 ) += btqi * float(mult);
-			(*m_wptr)(ixn,iyn+1, 1) += float(mult);
+			(*m_volume)( 2*ixn, iyn+1, 1 ) += btqr * mult;
+			(*m_volume)( 2*ixn+1, iyn+1, 1 ) += btqi * mult;
+			(*m_wptr)(ixn,iyn+1, 1) += mult;
 		}
 
 
@@ -2648,7 +2646,7 @@ int nn4_rectReconstructor::insert_slice(const EMData* const slice, const Transfo
 
 
 
-int nn4_rectReconstructor::insert_padfft_slice( EMData* padded, const Transform& t, int mult )
+int nn4_rectReconstructor::insert_padfft_slice( EMData* padded, const Transform& t, float mult )
 {
 	Assert( padded != NULL );
 		
@@ -2947,7 +2945,7 @@ void nnSSNR_Reconstructor::buildNorm2Volume() {
 }
 
 
-int nnSSNR_Reconstructor::insert_slice(const EMData* const slice, const Transform& t, const float) {
+int nnSSNR_Reconstructor::insert_slice(const EMData* const slice, const Transform& t, const float mult) {
 	// sanity checks
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
@@ -2967,8 +2965,6 @@ int nnSSNR_Reconstructor::insert_slice(const EMData* const slice, const Transfor
 	if( padffted != 0 ) padfft = new EMData(*slice);
 	else		    padfft = padfft_slice( slice, t, m_npad );
 
-	int mult = slice->get_attr_default("mult", 1);
-
 	Assert( mult > 0 );
 	insert_padfft_slice( padfft, t, mult );
 
@@ -2976,7 +2972,7 @@ int nnSSNR_Reconstructor::insert_slice(const EMData* const slice, const Transfor
 	return 0;
 }
 
-int nnSSNR_Reconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, int mult )
+int nnSSNR_Reconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, float mult )
 {
 	Assert( padfft != NULL );
 	// insert slice for all symmetry related positions
@@ -3259,7 +3255,7 @@ void nn4_ctfReconstructor::buildNormVolume()
 
 }
 
-int nn4_ctfReconstructor::insert_slice(const EMData* const slice, const Transform& t, const float)
+int nn4_ctfReconstructor::insert_slice(const EMData* const slice, const Transform& t, const float mult)
 {
 	// sanity checks
 	if (!slice) {
@@ -3269,7 +3265,6 @@ int nn4_ctfReconstructor::insert_slice(const EMData* const slice, const Transfor
 
 	int buffed = slice->get_attr_default( "buffed", 0 );
         if( buffed > 0 ) {
-        	int mult = slice->get_attr_default( "mult", 1 );
         	insert_buffed_slice( slice, mult );
         	return 0;
         }
@@ -3287,8 +3282,6 @@ int nn4_ctfReconstructor::insert_slice(const EMData* const slice, const Transfor
 	if( padffted != 0 ) padfft = new EMData(*slice);
 	else                padfft = padfft_slice( slice, t, m_npad );
 
-	int mult= slice->get_attr_default("mult", 1);
-
 	Assert( mult > 0 );
 	insert_padfft_slice( padfft, t, mult );
 
@@ -3297,7 +3290,7 @@ int nn4_ctfReconstructor::insert_slice(const EMData* const slice, const Transfor
 	return 0;
 }
 
-int nn4_ctfReconstructor::insert_buffed_slice( const EMData* buffed, int mult )
+int nn4_ctfReconstructor::insert_buffed_slice( const EMData* buffed, float mult )
 {
 	const float* bufdata = buffed->get_data();
 	float* cdata = m_volume->get_data();
@@ -3306,11 +3299,11 @@ int nn4_ctfReconstructor::insert_buffed_slice( const EMData* buffed, int mult )
 	int npoint = buffed->get_xsize()/4;
 	for( int i=0; i < npoint; ++i ) {
 
-        	int pos2 = int( bufdata[4*i] );
-        	int pos1 = pos2 * 2;
-        	cdata[pos1  ] += bufdata[4*i+1]*mult;
-        	cdata[pos1+1] += bufdata[4*i+2]*mult;
-        	wdata[pos2  ] += bufdata[4*i+3]*mult;
+		int pos2 = int( bufdata[4*i] );
+		int pos1 = pos2 * 2;
+		cdata[pos1  ] += bufdata[4*i+1]*mult;
+		cdata[pos1+1] += bufdata[4*i+2]*mult;
+		wdata[pos2  ] += bufdata[4*i+3]*mult;
 /*
         std::cout << "pos1, pos2, ctfv1, ctfv2, ctf2: ";
         std::cout << pos1 << " " << bufdata[5*i+1] << " " << bufdata[5*i+2] << " ";
@@ -3320,7 +3313,7 @@ int nn4_ctfReconstructor::insert_buffed_slice( const EMData* buffed, int mult )
 	return 0;
 }
 
-int nn4_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, int mult )
+int nn4_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, float mult )
 {
 	Assert( padfft != NULL );
 	float tmp = padfft->get_attr_default("ctf_applied", 0);
@@ -3328,13 +3321,11 @@ int nn4_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform& 
 	
 	vector<Transform> tsym = t.get_sym_proj(m_symmetry);
 	for (unsigned int isym=0; isym < tsym.size(); isym++) {
-		if(ctf_applied) m_volume->nn_ctf_applied(m_wptr, padfft, tsym[isym], mult);		
+		if(ctf_applied) m_volume->nn_ctf_applied(m_wptr, padfft, tsym[isym], mult);
 		else            m_volume->nn_ctf(m_wptr, padfft, tsym[isym], mult);
-        }
-
+	}
 
 	return 0;
-
 }
 
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
@@ -3563,7 +3554,7 @@ void nn4_ctf_rectReconstructor::buildNormVolume()
 
 }
 
-int nn4_ctf_rectReconstructor::insert_slice(const EMData* const slice, const Transform& t, const float)
+int nn4_ctf_rectReconstructor::insert_slice(const EMData* const slice, const Transform& t, const float mult)
 {
 	// sanity checks
 	if (!slice) {
@@ -3572,16 +3563,15 @@ int nn4_ctf_rectReconstructor::insert_slice(const EMData* const slice, const Tra
 	}
 
 	int buffed = slice->get_attr_default( "buffed", 0 );
-        if( buffed > 0 ) {
-        	int mult = slice->get_attr_default( "mult", 1 );
-        	insert_buffed_slice( slice, mult );
-        	return 0;
-        }
+	if( buffed > 0 ) {
+		insert_buffed_slice( slice, mult );
+		return 0;
+	}
 
 	int padffted= slice->get_attr_default("padffted", 0);
 	//if( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  )
 	if( padffted==0 && (slice->get_xsize()!=slice->get_ysize())  )
-        {
+	{
 		// FIXME: Why doesn't this throw an exception?
 		LOGERR("Tried to insert a slice that is the wrong size.");
 		return 1;
@@ -3592,8 +3582,6 @@ int nn4_ctf_rectReconstructor::insert_slice(const EMData* const slice, const Tra
 	if( padffted != 0 ) padfft = new EMData(*slice);
 	else                padfft = padfft_slice( slice, t, m_npad );
 
-	int mult= slice->get_attr_default("mult", 1);
-
 	Assert( mult > 0 );
 	insert_padfft_slice( padfft, t, mult );
 
@@ -3602,7 +3590,7 @@ int nn4_ctf_rectReconstructor::insert_slice(const EMData* const slice, const Tra
 	return 0;
 }
 
-int nn4_ctf_rectReconstructor::insert_buffed_slice( const EMData* buffed, int mult )
+int nn4_ctf_rectReconstructor::insert_buffed_slice( const EMData* buffed, float mult )
 {
 	const float* bufdata = buffed->get_data();
 	float* cdata = m_volume->get_data();
@@ -3611,11 +3599,11 @@ int nn4_ctf_rectReconstructor::insert_buffed_slice( const EMData* buffed, int mu
 	int npoint = buffed->get_xsize()/4;
 	for( int i=0; i < npoint; ++i ) {
 
-        	int pos2 = int( bufdata[4*i] );
-        	int pos1 = pos2 * 2;
-        	cdata[pos1  ] += bufdata[4*i+1]*mult;
-        	cdata[pos1+1] += bufdata[4*i+2]*mult;
-        	wdata[pos2  ] += bufdata[4*i+3]*mult;
+		int pos2 = int( bufdata[4*i] );
+		int pos1 = pos2 * 2;
+		cdata[pos1  ] += bufdata[4*i+1]*mult;
+		cdata[pos1+1] += bufdata[4*i+2]*mult;
+		wdata[pos2  ] += bufdata[4*i+3]*mult;
 /*
         std::cout << "pos1, pos2, ctfv1, ctfv2, ctf2: ";
         std::cout << pos1 << " " << bufdata[5*i+1] << " " << bufdata[5*i+2] << " ";
@@ -3626,7 +3614,7 @@ int nn4_ctf_rectReconstructor::insert_buffed_slice( const EMData* buffed, int mu
 }
 
 
-int nn4_ctf_rectReconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, int mult )
+int nn4_ctf_rectReconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, float mult )
 {
 	Assert( padfft != NULL );
 	float tmp = padfft->get_attr("ctf_applied");
@@ -3865,7 +3853,7 @@ void nnSSNR_ctfReconstructor::buildNorm3Volume() {
 	m_wptr3->set_array_offsets(0,1,1);
 }
 
-int nnSSNR_ctfReconstructor::insert_slice(const EMData *const  slice, const Transform& t, const float) {
+int nnSSNR_ctfReconstructor::insert_slice(const EMData *const  slice, const Transform& t, const float mult) {
 	// sanity checks
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
@@ -3882,15 +3870,13 @@ int nnSSNR_ctfReconstructor::insert_slice(const EMData *const  slice, const Tran
 	if( padffted != 0 ) padfft = new EMData(*slice);
 	else                 padfft = padfft_slice( slice, t, m_npad );
 
-	int mult= slice->get_attr_default("mult", 1);
-
 	Assert( mult > 0 );
 	insert_padfft_slice( padfft, t, mult );
 
 	checked_delete( padfft );
 	return 0;
 }
-int nnSSNR_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, int mult )
+int nnSSNR_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, float mult )
 {
 	Assert( padfft != NULL );
 

@@ -135,7 +135,7 @@ EMData* mult_radial(EMData* radial);
 		 */
 		void onelinenn(int j, int n, int n2, EMData* wptr, EMData* bi, const Transform& tf);
 
-		void onelinenn_mult(int j, int n, int n2, EMData* wptr, EMData* bi, const Transform& tf, int mult);
+		void onelinenn_mult(int j, int n, int n2, EMData* wptr, EMData* bi, const Transform& tf, float mult);
 
 		/** Nearest Neighbor interpolation.
 		 *  Modifies the current object.
@@ -145,8 +145,8 @@ EMData* mult_radial(EMData* radial);
 		 * @param tf Transform reference
 		 * @param mult
 		 */
-		void nn(EMData* wptr, EMData* myfft, const Transform& tf, int mult=1);
-		void insert_rect_slice( EMData* w, EMData* myfft,const Transform& trans, int sizeofprojection, float xratio, float yratio, float zratio, int npad, int mult);
+		void nn(EMData* wptr, EMData* myfft, const Transform& tf, float mult=1);
+		void insert_rect_slice( EMData* w, EMData* myfft,const Transform& trans, int sizeofprojection, float xratio, float yratio, float zratio, int npad, float mult);
 
 		/** Nearest Neighbor interpolation, meanwhile return necessary data such as
 		 *  Kn, sum_k(F_k^n) ans sum_k(|F_k^n|^2)
@@ -158,7 +158,7 @@ EMData* mult_radial(EMData* radial);
 		 * @param tf Transform reference
 		 * @param mult
 		 */
-		void nn_SSNR(EMData* wptr, EMData* wptr2, EMData* myfft, const Transform& tf, int mult=1);
+		void nn_SSNR(EMData* wptr, EMData* wptr2, EMData* myfft, const Transform& tf, float mult=1);
 
 		/** Nearest Neighbor interpolation, meanwhile return necessary data such as
 		 *  Kn, sum_k(F_k^n) ans sum_k(|F_k^n|^2)
@@ -171,8 +171,8 @@ EMData* mult_radial(EMData* radial);
 		 * @param tf Transform reference
 		 * @param mult
 		 */
-/*   	void nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* wptr4, EMData* wptr5, EMData* myfft, EMData* m_wvolume, const Transform3D& tf, int mult=1); */
- 	 	void nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myfft, const Transform& tf, int mult=1);
+/*   	void nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* wptr4, EMData* wptr5, EMData* myfft, EMData* m_wvolume, const Transform3D& tf, float mult=1); */
+ 	 	void nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myfft, const Transform& tf, float mult=1);
 
    		   /**  Calculate Spectrum signal noise ratio (SSNR) accounting CTF correction
    		    *  a. 3D Wiener volume F_3D has been pre-calculated already. F_3D(k) = sum(k)(CTF_k*F_k)/{sum CTF_k^2 + 1/snr}
@@ -215,7 +215,7 @@ EMData* mult_radial(EMData* radial);
 		 * @param tf Transform reference
 		 * @param mult
 		 */
-		void onelinenn_ctf(int j, int n, int n2, EMData* w, EMData* bi, const Transform& tf, int mult);
+		void onelinenn_ctf(int j, int n, int n2, EMData* w, EMData* bi, const Transform& tf, float mult);
 
 		/** Nearest Neighbor interpolation.
 		 *  Modifies the current object.
@@ -225,12 +225,12 @@ EMData* mult_radial(EMData* radial);
 		 * @param tf Transform reference
 		 * @param mult
 		 */
-		void nn_ctf(EMData* w, EMData* myfft, const Transform& tf, int mult);
+		void nn_ctf(EMData* w, EMData* myfft, const Transform& tf, float mult);
                 /**
 		 helper function to insert rectangualr slice for ctf rect case
 		**/
-		void insert_rect_slice_ctf( EMData* w, EMData* myfft,const Transform& trans, int sizeofprojection, float xratio, float yratio, float zratio, int npad, int mult);
-		void insert_rect_slice_ctf_applied(EMData* w, EMData* myfft, const Transform& trans, int sizeofprojection, float xratio, float yratio, float zratio, int npad,int mult);
+		void insert_rect_slice_ctf( EMData* w, EMData* myfft,const Transform& trans, int sizeofprojection, float xratio, float yratio, float zratio, int npad, float mult);
+		void insert_rect_slice_ctf_applied(EMData* w, EMData* myfft, const Transform& trans, int sizeofprojection, float xratio, float yratio, float zratio, int npad,float mult);
 	
 
 		/** Helper function for method nn4_ctf.
@@ -244,7 +244,7 @@ EMData* mult_radial(EMData* radial);
 		 * @param tf Transform reference
 		 * @param mult
 		 */
-		void onelinenn_ctf_applied(int j, int n, int n2, EMData* w, EMData* bi, const Transform& tf, int mult);
+		void onelinenn_ctf_applied(int j, int n, int n2, EMData* w, EMData* bi, const Transform& tf, float mult);
 
 		/** Nearest Neighbor interpolation.
 		 *  Modifies the current object.
@@ -255,7 +255,7 @@ EMData* mult_radial(EMData* radial);
 		 * @param tf Transform reference
 		 * @param mult
 		 */
-		void nn_ctf_applied(EMData* w, EMData* myfft, const Transform& tf, int mult );
+		void nn_ctf_applied(EMData* w, EMData* myfft, const Transform& tf, float mult );
 
 		/** Symmetrize plane 0
 		 *  Modifies the current object.
