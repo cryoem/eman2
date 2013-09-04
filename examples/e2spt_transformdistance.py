@@ -2,7 +2,7 @@
 
 '''
 ====================
-Author: Jesus Galaz - 2012, Last update: 08/2012
+Author: Jesus Galaz - 2012, Last update: 08/2013
 ====================
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -90,11 +90,15 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
+	parser.add_argument("--nolog",action="store_true",type=str,help="Turn off recording of the command ran for this program onto the .eman2log.txt file",default=False) 
 	
 	(options, args) = parser.parse_args()
 	
-	logger = E2init(sys.argv, options.ppid)
-	
+	log=0
+	if not options.nolog:
+		logger = E2init(sys.argv, options.ppid)
+		log=1
+		
 	if  not options.input:
 		print "ERRO. You must supply and input stack."
 		sys.exit()
@@ -162,8 +166,11 @@ def main():
 	f.write(line)
 	f.close()
 	
+	if not options.nolog and log:
+		E2end(logger)
 	
 	return()
+	
 	
 '''
 ANGDIST - Calculates the distance between two transforms. Used to verify the answers provided by the aligner for simmulated data,
