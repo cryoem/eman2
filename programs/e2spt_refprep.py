@@ -44,7 +44,7 @@ def main():
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument('--stack2process', type=str, default='', help="Path to the stack that needs to be processed to match stack2.")
-	parser.add_argument('--refStack', type=str, default='', help="Path to the image or stack of images which stack2process will match after processing.")
+	parser.add_argument('--refstack', type=str, default='', help="Path to the image or stack of images which stack2process will match after processing.")
 	parser.add_argument('--output', type=str, default='', help="Specify the name of the file to which the edited stack2process will be written.")
 	parser.add_argument("--boxsize",type=int,help="If NOT specified, the reference's box size will match that of the data. If specified, both the reference and the data will be resized.",default=0)
 	parser.add_argument("--sym", type=str, default='', help='Will apply the specified symmetry to the edited stack2process.')
@@ -76,6 +76,14 @@ def main():
 		sys.exit() 
 	
 	check=0
+	
+	current = os.getcwd()
+	findir = os.listdir(current)
+	
+	if options.stack2process.split('/')[-1] not in findir:
+		os.system('cp ' + options.stack2process + ' ' + current)
+		options.stack2process = current + '/' + options.stack2process.split('/')[-1]
+		
 	if '.pdb' in options.stack2process:
 		pdbmodel = options.stack2process
 		pdbmodel = pdbmodel.split('/')[-1]
@@ -157,19 +165,19 @@ def main():
 			print "I have clipped the particles in stack2process to have a cubical and even-sided box size."
 
 	'''
-	If options.apix is supplied, first change the apix of refStack to that; then make stack2process match it
+	If options.apix is supplied, first change the apix of refstack to that; then make stack2process match it
 	'''
 	targetApix=0.0
 	cmd = ''
 	
-	print "Options refstack is", options.refStack
+	print "Options refstack is", options.refstack
 
 
-	if options.refStack:
-		targetApix = EMData(options.refStack,0,True)['apix_x']
+	if options.refstack:
+		targetApix = EMData(options.refstack,0,True)['apix_x']
 		
 		if options.apix:		
-			cmd = 'e2fixheaderparam.py --input=' + str (options.refStack) + ' --stem=apix --stemval=' + str( options.apix )
+			cmd = 'e2fixheaderparam.py --input=' + str (options.refstack) + ' --stem=apix --stemval=' + str( options.apix )
 			
 			p = subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 			text=p.communicate()
@@ -178,7 +186,7 @@ def main():
 			targetApix = float( options.apix )
 			
 	else:
-		print "You have NOT supplied refStack see", options.refStack
+		print "You have NOT supplied refStack see", options.refstack
 		if not options.apix:
 			print """ERROR: You must supply an image through --refStack to get the target apix for the edited stack2process, or specify this number through --apix. If all you want to do
 			is clip the box of stack2process, you ought to use e2proc3d.py <input> <output> --clip=newboxsize. If all you want to do is change the apix value on the header, you ought to
@@ -193,25 +201,25 @@ def main():
 	'''	
 	#if options.refStack:
 	
-	targetBox = EMData(options.refStack,0,True)['nx']
+	targetBox = EMData(options.refstack,0,True)['nx']
 	print "\n\nTargetBox is", targetBox
 	cmd = ''
 	if options.boxsize:
 		if int( options.boxsize ) != int( targetBox ):
-			refStackEd = options.refStack.replace('.hdf','_ed.hdf')
+			refStackEd = options.refstack.replace('.hdf','_ed.hdf')
 			
 			print "refStackEd is", refStackEd
 			
-			cmd ='e2proc3d.py ' + str(options.refStack) + ' ' + str(refStackEd) + ' --clip=' + str( options.boxsize )
+			cmd ='e2proc3d.py ' + str(options.refstack) + ' ' + str(refStackEd) + ' --clip=' + str( options.boxsize )
 			p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 			text=p.communicate()	
 			p.stdout.close()
 		
-			otpions.refStack = refStackEd
+			options.refstack = refStackEd
 
 		targetBox = options.boxsize
 	
-	if not options.refStack and not options.boxsize:
+	if not options.refstack and not options.boxsize:
 		print """ERROR: You must supply an image through --refStack to get the target boxsize for the edited stack2process, or specify this number through --boxsize. If all you want to do
 		is scale the data in refStack or stack2process by an integer amount, you ought to use e2proc3d.py <input> <output> --process=math.meanshrink:n="""
 		sys.exit()
@@ -229,7 +237,7 @@ def main():
 	meanshrinkfactor_int = int(round(meanshrinkfactor))
 	
 	if options.verbose:
-		print "The refStack apix is", EMData( options.refStack, 0, True)['apix_x']
+		print "The refStack apix is", EMData( options.refstack, 0, True)['apix_x']
 		print "And the target apix is", targetApix
 		print "Therefore, the meanshrink factor is", meanshrinkfactor
 		print "Which, for the first step of shrinking (using math.meanshrink), will be rounded to", meanshrinkfactor_int
@@ -279,7 +287,7 @@ def main():
 	stack2processEdHdr = EMData(stack2processEd,0,True)
 	stack2processEdApix = float( stack2processEdHdr['apix_x'])
 	
-	refStackHdr = EMData(options.refStack,0,True)
+	refStackHdr = EMData(options.refstack,0,True)
 	refStackApix = float( refStackHdr['apix_x'])
 	print "stack2processEdApix and refStackApix are", stack2processEdApix,refStackApix
 	if stack2processEdApix != refStackApix:
