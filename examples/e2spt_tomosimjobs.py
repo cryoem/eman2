@@ -943,7 +943,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			#if resultsdir.split('/')[-1] not in subdirs and 'results' not in subdirs:
 			#	os.system('mkdir ' + resultsdir)
 			
-			solutioncmd = "e2spt_transformdistance.py --input=" + alipath2 + '/' + aliptcls + ' --output=' + resultsdir + '/' + resultsfile
+			solutioncmd = "e2spt_transformdistance.py --nolog --input=" + alipath2 + '/' + aliptcls + ' --output=' + resultsdir + '/' + resultsfile
 			
 			if int(options.iter) > 1:
 				finalRefVsOriginalRefPath = alipath2 + '/finalRef_vs_OriginalRef'
