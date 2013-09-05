@@ -485,16 +485,16 @@ class UnixPackage(Builder):
         # print "Linking extlib/ to Python/ in cwd: ", self.args.cwd_rpath
         cmd(['ln', '-s', 'extlib', 'Python'], cwd=self.args.cwd_rpath)
 
-		log("... linking extlib/lib/python2.7/site-packages to extlib/site-packages")
-		shutil.move(
-			os.path.join(self.args.cwd_rpath_extlib, 'lib', 'python2.7', 'site-packages')
-			os.path.join(self.args.cwd_rpath_extlib, 'lib', 'python2.7', 'site-packages.original')
-			)
-		cmd(['ln', '-s', 'extlib/site-packages', 'extlib/lib/python2.7/site-packages'], cwd=self.args.cwd_rpath])
+        log("... linking extlib/lib/python2.7/site-packages to extlib/site-packages")
+        shutil.move(
+            os.path.join(self.args.cwd_rpath_extlib, 'lib', 'python2.7', 'site-packages'),
+            os.path.join(self.args.cwd_rpath_extlib, 'lib', 'python2.7', 'site-packages.original')
+	)
+        cmd(['ln', '-s', '../../site-packages', 'site-packages'], cwd=os.path.join(self.args.cwd_rpath, 'lib', 'python2.7'))
 
         # print "Copying install.sh as eman2-installer. NOTE: HARDCODED PATH, FIX!!"
         # installsh_in  = os.path.join(self.args.root, 'install.sh')
-		installsh_in = os.path.join(self.args.cwd_co_distname, 'doc', 'build', 'install.sh')
+	installsh_in = os.path.join(self.args.cwd_co_distname, 'doc', 'build', 'install.sh')
         installsh_out = os.path.join(self.args.cwd_rpath, 'eman2-installer')
         shutil.copy(installsh_in, installsh_out)
         cmd(['chmod', 'a+x', installsh_out])

@@ -44,15 +44,10 @@ setup_csh() {
 	echo "setenv EMAN2DIR ${EMAN2DIR}" > ${OUT}
 	echo 'setenv PATH ${EMAN2DIR}/bin:${PATH}' >> ${OUT}
 	echo 'if ($?PYTHONPATH == 0) then' >> ${OUT}
-	echo '    setenv PYTHONPATH ${EMAN2DIR}/lib:${EMAN2DIR}/bin:${EMAN2DIR}/extlib/site-packages' >> ${OUT}
+	echo '    setenv PYTHONPATH ${EMAN2DIR}/lib:${EMAN2DIR}/bin' >> ${OUT}
 	echo 'else' >> ${OUT}
-	echo '    setenv PYTHONPATH ${EMAN2DIR}/lib:${EMAN2DIR}/bin:${EMAN2DIR}/extlib/site-packages:${PYTHONPATH}' >> ${OUT}
+	echo '    setenv PYTHONPATH ${EMAN2DIR}/lib:${EMAN2DIR}/bin:${PYTHONPATH}' >> ${OUT}
 	echo 'endif' >> ${OUT}		
-	echo 'if ($?LD_LIBRARY_PATH == 0) then' >> ${OUT}
-	echo '    setenv LD_LIBRARY_PATH ${EMAN2DIR}/lib:${EMAN2DIR}/extlib/lib:${EMAN2DIR}/extlib/qt4/lib:${EMAN2DIR}/extlib/python/lib' >> ${OUT}
-	echo 'else' >> ${OUT}
-	echo '    setenv LD_LIBRARY_PATH ${EMAN2DIR}/lib:${EMAN2DIR}/extlib/lib:${EMAN2DIR}/extlib/qt4/lib:${EMAN2DIR}/extlib/python/lib:${LD_LIBRARY_PATH}' >> ${OUT}
-	echo 'endif' >> ${OUT}
 }
 
 setup_bash()
@@ -60,16 +55,14 @@ setup_bash()
 	OUT=$1
 	echo "export EMAN2DIR=${EMAN2DIR}" > ${OUT}
 	echo 'export PATH=${EMAN2DIR}/bin:$PATH' >> ${OUT}
-	echo 'export PYTHONPATH=${EMAN2DIR}/lib:${EMAN2DIR}/bin:${EMAN2DIR}/extlib/site-packages:${PYTHONPATH}' >> ${OUT}
-	echo 'export LD_LIBRARY_PATH=${EMAN2DIR}/lib:${EMAN2DIR}/extlib/lib:${EMAN2DIR}/extlib/qt4/lib:${EMAN2DIR}/extlib/python/lib:$LD_LIBRARY_PATH' >> ${OUT}
+	echo 'export PYTHONPATH=${EMAN2DIR}/lib:${EMAN2DIR}/bin:${PYTHONPATH}' >> ${OUT}
 }
 
 setup_python()
 {
-	# sed -i "s%^\#\!.*python$%\#\!${EMAN2PYTHON}%" {} \;
 	EMAN2PYTHON=$1
 	find ${EMAN2DIR}/test ${EMAN2DIR}/bin ${EMAN2DIR}/lib ${EMAN2DIR}/examples -name "*.py" \
-		-exec sed -i -E "s%^\#\!.*python.*$%\#\!${EMAN2PYTHON}%" {} \;
+		-exec sed -i "s%^\#\!.*python.*$%\#\!${EMAN2PYTHON}%" {} \;
 	find ${EMAN2DIR}/test ${EMAN2DIR}/bin ${EMAN2DIR}/lib ${EMAN2DIR}/examples -name "*.py" \
 		-exec chmod a+x {} \;
 }
@@ -89,7 +82,7 @@ main()
 {
 	# Use the run directory as the EMAN2DIR.
 	export EMAN2DIR=`pwd`
-	export EMAN2PYTHON=${EMAN2DIR}/extlib/python/bin/python
+	export EMAN2PYTHON=${EMAN2DIR}/extlib/bin/python
 	
 	# Setup the Python interpreter
 	if [ -f $EMAN2PYTHON ]
