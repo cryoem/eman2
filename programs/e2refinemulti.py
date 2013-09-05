@@ -78,7 +78,7 @@ To run this program, you would normally specify only the following options:
   --model=<starting map to seed refinement>
   --nmodels=<number of starting models to generate from model>
   --mapfragment          Optional. If specified will generate starting maps via segmentation and random exclusion
-                         instead of phase randomization. This option is appropriate for heterogenous assemblies.
+                         instead of phase randomization. This option may be appropriate for heterogenous assemblies.
   OR
   --models=<starting map 1>,<starting map 2>,...
 

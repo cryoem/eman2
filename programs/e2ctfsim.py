@@ -215,6 +215,8 @@ class GUIctfsim(QtGui.QWidget):
 		self.hbl_buttons.addWidget(self.newbut)
 		self.vbl.addLayout(self.hbl_buttons)
 
+		self.on_new_but()
+
 		QtCore.QObject.connect(self.sdefocus, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.sbfactor, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.sdfdiff, QtCore.SIGNAL("valueChanged"), self.newCTF)
@@ -230,15 +232,14 @@ class GUIctfsim(QtGui.QWidget):
 
 	   	QtCore.QObject.connect(self.newbut,QtCore.SIGNAL("clicked(bool)"),self.on_new_but)
 
-		self.on_new_but()
 
 		self.resize(720,380) # figured these values out by printing the width and height in resize event
 
 
-		E2loadappwin("e2ctf","main",self)
-		E2loadappwin("e2ctf","image",self.guiim.qt_parent)
+		E2loadappwin("e2ctfsim","main",self)
+		E2loadappwin("e2ctfsim","image",self.guiim.qt_parent)
 #		E2loadappwin("e2ctf","realimage",self.guirealim.qt_parent)
-		E2loadappwin("e2ctf","plot",self.guiplot.qt_parent)
+		E2loadappwin("e2ctfsim","plot",self.guiplot.qt_parent)
 
 		self.setWindowTitle("CTF")
 
@@ -251,9 +252,6 @@ class GUIctfsim(QtGui.QWidget):
 			self.sdefocus.setValue(self.sdefocus.getValue()-0.01)
 		elif event.key() == Qt.Key_Right:
 			self.sdefocus.setValue(self.sdefocus.getValue()+0.01)
-		elif event.key()==Qt.Key_S :
-			print "Save Parms ",str(self.setlist.item(self.curset).text())
-			self.on_save_params()
 		elif event.key()==Qt.Key_R :
 			self.on_recall_params()
 
@@ -267,6 +265,7 @@ class GUIctfsim(QtGui.QWidget):
 		ctf.ac=self.df_ac
 		ctf.samples=self.df_samples
 		self.data.append((str(len(self.setlist)+1),ctf))
+		self.curset=len(self.data)
 		self.update_data()
 		
 	def show_guis(self):
@@ -298,10 +297,6 @@ class GUIctfsim(QtGui.QWidget):
 		event.accept()
 		self.app().close_specific(self)
 		self.emit(QtCore.SIGNAL("module_closed")) # this signal is important when e2ctf is being used by a program running its own event loop
-
-	def newData(self,data):
-		self.data=data
-		self.update_data()
 
 	def update_data(self):
 		"""This will make sure the various widgets properly show the current data sets"""
@@ -337,13 +332,13 @@ class GUIctfsim(QtGui.QWidget):
 			
 		self.guiplot.setAxisParms("s (1/$\AA$)","CTF")
 
-	def newSet(self,val):
+	def newSet(self,val=0):
 		"called when a new data set is selected from the list"
 		self.curset=val
 
 		self.sdefocus.setValue(self.data[val][1].defocus,True)
 		self.sbfactor.setValue(self.data[val][1].bfactor,True)
-		self.sapix.setValue(self.data[val][1].apix)
+		self.sapix.setValue(self.data[val][1].apix,True)
 		self.sampcont.setValue(self.data[val][1].ampcont,True)
 		self.svoltage.setValue(self.data[val][1].voltage,True)
 		self.scs.setValue(self.data[val][1].cs,True)
@@ -377,12 +372,14 @@ class GUIctfsim(QtGui.QWidget):
 			#self.ptcldata.insert(0,im)
 			#self.guirealim.set_data(self.ptcldata)
 		#else : self.guirealim.set_data([EMData()])
+		self.update_plot()
 
 	def newPlotMode(self,mode):
 		self.plotmode=mode
 		self.update_plot()
 
 	def newCTF(self) :
+#		print traceback.print_stack()
 		self.data[self.curset][1].defocus=self.sdefocus.value
 		self.data[self.curset][1].bfactor=self.sbfactor.value
 		self.data[self.curset][1].dfdiff=self.sdfdiff.value

@@ -1950,6 +1950,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 			sname=name.replace(" ","_")
 			sname=sname.replace("(","_")
 			sname=sname.replace(")","")
+			sname=sname.split("/",-1)
 			data=self.target().data[name]
 			name2="plt_%s.txt"%(sname)
 			i=0

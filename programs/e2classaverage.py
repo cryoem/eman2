@@ -126,7 +126,7 @@ def main():
 
 	try:
 		classmx=EMData.read_images(options.classmx)		# we keep the entire classification matrix in memory, since we need to update it in most cases
-		ncls=int(classmx[0]["maximum"])
+		ncls=int(classmx[0]["maximum"])+1
 	except:
 		ncls=1
 		if options.resultmx!=None :
