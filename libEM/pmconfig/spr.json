@@ -125,14 +125,6 @@
         "WIZARD":"/lib/pmconfig/buildsets.json",
 	"NOTELEVEL": "1",
         "CHILDREN": []
-      },
-      {
-        "ICON": "multiple_images",
-        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2evalparticles",
-        "PROGRAM": "e2evalparticles.py",
-        "NAME": "Evaluate Particle Sets",
-	"NOTELEVEL": "1",
-        "CHILDREN": []
       }
     ]
   },
