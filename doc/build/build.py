@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # Ian Rees, 2012
 #
 # This is a new version of the EMAN2 build and post-install package management system.
@@ -30,7 +30,6 @@ import subprocess
 import glob
 import datetime
 import argparse
-
 
 # Automatically update version from CVS ID.
 VERSION = None
@@ -98,9 +97,6 @@ def check_output(*popenargs, **kwargs):
             cmd = popenargs[0]
         raise subprocess.CalledProcessError(retcode, cmd)            
     return output
-
-
-
 
 ##### Targets #####
 
@@ -196,8 +192,6 @@ class Target(object):
     def upload(self):
         raise NotImplementedError
     
-        
-
 class MacTarget(Target):
     """Generic Mac target."""
     
@@ -251,32 +245,25 @@ setenv PYTHONPATH ${EMAN2DIR}/lib:${EMAN2DIR}/bin:${EMAN2DIR}/extlib/site-packag
     def upload(self):
         self._run([MacUpload])
 
-
 class SnowLeopardTarget(MacTarget):
     python = "/usr/bin/python2.6"
     target_desc = 'snowleopard'
-    
-    
+        
 class LionTarget(MacTarget):
     python = "/usr/bin/python2.7"
     target_desc = 'lion'
 
-
 class LinuxTarget(Target):
     target_desc = 'linux'
     def install(self): 
-        self._run([CopyShrc, CopyExtlib])
+        self._run([CopyShrc, CopyExtlib, FixLinuxRpath])
     def package(self):
         self._run([UnixPackage])
            
-
-
 class Linux64Target(LinuxTarget):
     target_desc = 'linux64'
     pass 
     
-
-
 # TODO: Use a register() type system.
 TARGETS = {
     'i686-apple-darwin10': SnowLeopardTarget,
@@ -284,8 +271,6 @@ TARGETS = {
     'i686-redhat-linux': LinuxTarget,
     'x86_64-redhat-linux': Linux64Target
 }
-    
-
 
 ##### Builder Modules #####
 
@@ -300,7 +285,6 @@ class Builder(object):
     def run(self):
         """Each builder class must implement run()."""
         return NotImplementedError
-        
         
 # Checkout command.
 class Checkout(Builder):
@@ -318,7 +302,6 @@ class Checkout(Builder):
 
         cvs.append(self.args.cvsmodule)
         cmd(cvs, cwd=self.args.cwd_co)
-
 
 # Build sub-command.
 class CMakeBuild(Builder):
@@ -342,7 +325,6 @@ class CMakeBuild(Builder):
         print("Running make install")
         cmd(['make', 'install'], cwd=self.args.cwd_build)
         
-
 # Build sub-command.
 class CopyExtlib(Builder):
     def run(self):
@@ -352,7 +334,6 @@ class CopyExtlib(Builder):
             shutil.copytree(self.args.cwd_extlib, self.args.cwd_rpath_extlib, symlinks=True)        
         except:
             pass
-
 
 # Build sub-command.
 class CopyShrc(Builder):
@@ -386,7 +367,6 @@ class FixInterpreter(Builder):
                 with open(i, "w") as f:
                     f.writelines(data)
 
-
 # Build sub-command. Mac specific.
 class FixLinks(Builder):
     def run(self):
@@ -402,6 +382,32 @@ class FixLinks(Builder):
                 pass
         os.chdir(cwd)
 
+##### EXPERIMENTAL !!!! ######
+# Set rpath $ORIGIN so LD_LIBRARY_PATH is not needed on Linux.
+# This should work on all modern Linux systems.
+# However, the code below is a little hacky and could be cleaned up.
+class FixLinuxRpath(Builder):
+    def run(self):
+        log("Fixing rpath")
+        targets = set()
+        targets |= set(find_ext('.so', root=self.args.cwd_rpath))
+        targets |= set(find_ext('.dylib', root=self.args.cwd_rpath))
+        targets |= set(find_exec(root=self.args.cwd_rpath))
+
+        for target in sorted(targets):
+            if ".py" in target:
+                continue
+            xtarget = target.replace(self.args.cwd_rpath, '')
+            depth = len(xtarget.split('/'))-2
+            origins = ['$ORIGIN/']
+            base = "".join(["../"]*depth)
+            for i in ['extlib/lib']: #, 'extlib/python/lib', 'extlib/qt4/lib'
+                origins.append('$ORIGIN/'+base+i+'/')
+            try:
+                # print ['patchelf', '--set-rpath', ":".join(origins), target]
+                cmd(['patchelf', '--set-rpath', ":".join(origins), target])
+            except Exception, e:
+                print "Couldnt patchelf:", e        
         
 # Build sub-command. Mac specific.
 class FixInstallNames(Builder):
@@ -470,18 +476,25 @@ class FixInstallNames(Builder):
                     try: cmd(['install_name_tool', '-change', olib, lib, f])
                     except: pass
 
-
 class UnixPackage(Builder):
     def run(self):
         log("Building tarball")
         mkdirs(os.path.join(self.args.cwd_images))
 
         # Create a symlink to /Applications
-        print "Linking extlib/python to Python/ in cwd: ", self.args.cwd_rpath
-        cmd(['ln', '-s', 'extlib/python', 'Python'], cwd=self.args.cwd_rpath)
+        # print "Linking extlib/ to Python/ in cwd: ", self.args.cwd_rpath
+        cmd(['ln', '-s', 'extlib', 'Python'], cwd=self.args.cwd_rpath)
 
-        print "Copying install.sh as eman2-installer. NOTE: HARDCODED PATH, FIX!!"
-        installsh_in  = os.path.join(self.args.root, 'install.sh')
+		log("... linking extlib/lib/python2.7/site-packages to extlib/site-packages")
+		shutil.move(
+			os.path.join(self.args.cwd_rpath_extlib, 'lib', 'python2.7', 'site-packages')
+			os.path.join(self.args.cwd_rpath_extlib, 'lib', 'python2.7', 'site-packages.original')
+			)
+		cmd(['ln', '-s', 'extlib/site-packages', 'extlib/lib/python2.7/site-packages'], cwd=self.args.cwd_rpath])
+
+        # print "Copying install.sh as eman2-installer. NOTE: HARDCODED PATH, FIX!!"
+        # installsh_in  = os.path.join(self.args.root, 'install.sh')
+		installsh_in = os.path.join(self.args.cwd_co_distname, 'doc', 'build', 'install.sh')
         installsh_out = os.path.join(self.args.cwd_rpath, 'eman2-installer')
         shutil.copy(installsh_in, installsh_out)
         cmd(['chmod', 'a+x', installsh_out])
@@ -495,13 +508,11 @@ class UnixPackage(Builder):
         hdi = ['tar', '-czf', img, 'EMAN2']
         cmd(hdi, cwd=self.args.cwd_stage)
 
-
 class UnixUpload(Builder):
     def run(self):
         # Upload
         raise NotImplementedError
     
-        
 class MacPackage(Builder):
     def run(self):
         log("Building disk image")
@@ -521,7 +532,6 @@ class MacPackage(Builder):
         hdi = ['hdiutil', 'create', '-ov', '-srcfolder', self.args.cwd_stage, '-volname', volname, img]
         cmd(hdi)
 
-
 class MacUpload(Builder):
     def run(self):
         log("Uploading disk image")
@@ -530,7 +540,6 @@ class MacUpload(Builder):
         scpdest = "eman@%s:%s/%s"%(self.args.scphost, self.args.scpdest, imgname)
         scp = ['scp', img, scpdest]
         cmd(scp)
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

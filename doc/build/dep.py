@@ -9,7 +9,6 @@
 #   5) tiff, libpng -> matplotlib
 #   6) everything else
 
-
 import sys
 import os
 import re
@@ -136,8 +135,6 @@ class DistUtilsDependency(Dependency):
             args += ['--install-scripts', 'bin']
             args += ['--install-data', 'share']
         return args
-        
-        
 
 ##### Unique Build System Dependencies #####
 
@@ -287,7 +284,6 @@ class dep_pyqt4(SIPDependency):
         args += ['--no-designer-plugin']
         args += ['-e', 'QtGui', '-e', 'QtCore', '-e', 'QtOpenGL']
         return args
-    
 
 ##### AutoConf Dependencies #####
 
@@ -332,8 +328,6 @@ class dep_zlib(AutoConfDependency):
     # make -f win32/Makefile.gcc install SHARED_MODE=1 BINARY_PATH=$PREFIX/bin LIBRARY_PATH=$PREFIX/lib INCLUDE_PATH=$PREFIX/include 
     pass
 
-
-
 @Dependency.register('^fftw-3')
 class dep_fftw3(AutoConfDependency):
     def configure_args(self):
@@ -341,8 +335,7 @@ class dep_fftw3(AutoConfDependency):
         args += ['--enable-float', '--enable-sse2']
         if 'mingw' in self.args.target:
             args += ['--with-our-malloc16', '--with-windows-f77-mangling']
-        return args
-        
+        return args        
 
 @Dependency.register('^ftgl')
 class dep_ftgl(AutoConfDependency):
@@ -354,6 +347,8 @@ class dep_ftgl(AutoConfDependency):
 
 @Dependency.register('^Python')        
 class dep_python(AutoConfDependency):
+	# Argh, note, on Linux I need to set CPPFLAGS=CFLAGS and LD_LIBRARY_PATH=$PREFIX/lib
+	# to find OpenSSL.
     def configure_prefix(self):
         if self.args.prefix:
             return ['--prefix', join(self.args.prefix, 'python')]
@@ -361,8 +356,6 @@ class dep_python(AutoConfDependency):
         
     def configure_args(self):
         return ['--enable-unicode=ucs4']
-
-
 
 ##### DistUtils Packages #####
 
@@ -393,7 +386,6 @@ class dep_bsddb3(DistUtilsDependency):
 class dep_matplotlib(DistUtilsDependency):
     pass
     
-
 ##### For EMEN2 #####
 
 @Dependency.register('^setuptools')
@@ -424,6 +416,9 @@ class dep_dateutil(DistUtilsDependency):
 class dep_dateutil(DistUtilsDependency):
     pass
 
+@Dependency.register('^py-bcrypt')
+class dep_bcrypt(DistUtilsDependency):
+	pass
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
