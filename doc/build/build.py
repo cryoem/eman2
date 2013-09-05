@@ -490,7 +490,7 @@ class UnixPackage(Builder):
             os.path.join(self.args.cwd_rpath_extlib, 'lib', 'python2.7', 'site-packages'),
             os.path.join(self.args.cwd_rpath_extlib, 'lib', 'python2.7', 'site-packages.original')
 	)
-        cmd(['ln', '-s', '../../site-packages', 'site-packages'], cwd=os.path.join(self.args.cwd_rpath, 'lib', 'python2.7'))
+        cmd(['ln', '-s', '../../site-packages', 'site-packages'], cwd=os.path.join(self.args.cwd_rpath, 'extlib', 'lib', 'python2.7'))
 
         # print "Copying install.sh as eman2-installer. NOTE: HARDCODED PATH, FIX!!"
         # installsh_in  = os.path.join(self.args.root, 'install.sh')
