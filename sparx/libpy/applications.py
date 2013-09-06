@@ -13273,8 +13273,7 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 		inidl = [-1]*total_nfils
 	inidl = bcast_list_to_all(inidl, source_node = main_node)
 	linidl = bcast_number_to_all(linidl, source_node = main_node)
-	if myid != main_node:
-		tfilaments = [-1]*linidl
+	if myid != main_node: tfilaments = [-1]*linidl
 	tfilaments = bcast_list_to_all(tfilaments, source_node = main_node)
 	filaments = []
 	iendi = 0
@@ -13300,6 +13299,7 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 	indcs = []
 	k = 0
 	for i in xrange(nfils):
+		print " filaments ",i," >> ",filaments[i]
 		list_of_particles += filaments[i]
 		k1 = k+len(filaments[i])
 		indcs.append([k,k1])
@@ -14056,7 +14056,6 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 				header(stack, params='xform.projection', fexport=os.path.join(outdir, "parameters%04d.txt"%(ooiter)))
 				header(stack, params='pixerr', fexport=os.path.join(outdir, "pixelerror%04d.txt"%(ooiter)))
 
-
 def filamentupdown(fildata, pixel_size, dp, dphi):
 	def get_dist(c1, c2):
 		from math import sqrt
@@ -14066,43 +14065,37 @@ def filamentupdown(fildata, pixel_size, dp, dphi):
 
 	rise  = dp/pixel_size
 	ns = len(fildata)
-	phig 	= [0.0]*ns # given phi
+	phig   = [0.0]*ns # given phi
+	s2y    = [0.0]*ns
 	coords = []*ns
 	for i in xrange(ns):
-		phig[i], theta, psi, s2x, s2y = get_params_proj(fildata[i])
+		phig[i], theta, psi, s2x, s2y[i] = get_params_proj(fildata[i])
 		coords.append(fildata[i].get_attr('ptcl_source_coord'))
-		#print i,phig[i], theta, psi, s2x, s2y
+		#print i,phig[i], theta, psi, s2x, s2y[i]
 	pterr = 0.0 # total error between predicted angles and given angles
 	mterr = 0.0
 	for i in xrange(1, ns):
-		dim0 = get_dist(coords[i-1], coords[0])
-		hdim = dim0/rise
-		hd = round(hdim)
-		phim1pred = (dphi*(hdim -hd))%360.0
-		phim1mred = (-dphi*(hdim -hd))%360.0  # this one for down turn
-		difphim1 = (phig[i-1]-phim1pred)%360.0
-		#print i,dim0,hdim,hd,phim1pred,phig[i-1],difphim1
-		dim1 = get_dist(coords[i], coords[0])
-		hdim = dim1/rise
-		hd = round(hdim)
-		phi1pred = (dphi*(hdim -hd) + difphim1)%360.0
-		err    = (phi1pred - phig[i])%360.0
+		dd = get_dist(coords[i], coords[0])/rise
+		qd = round( s2y[0]/rise+dd )
+		phipred = (phig[0] + dphi*(dd - qd))%360.
+		err    = (phipred - phig[i])%360.0
 		pterr += min(err, 360.0 - err)
-		#print i,dim1,hdim,hd,phig[i-1],phig[i],min(err, 360.0 - err),pterr
+		#print "  U  %3d   %7.1f    %8.2f    %6.1f    %8.2f    %6.1f    %6.1f"%\
+		#(i, round(dd,1), round(qd,1), round(phipred,1), round(phig[i],1), round(min(err, 360.0 - err),1), round(pterr,1))
 		
-		difphim1 = (phig[i-1]-phim1mred)%360.0
-		#print i,dim0,hdim,hd,phim1pred,phig[i-1],difphim1
-		phi1pred = (-dphi*(hdim -hd) + difphim1)%360.0
-		err    = (phi1pred - phig[i])%360.0
+		qd = round( s2y[0]/rise-dd )
+		phipred = (phig[0] - dphi*(dd - qd))%360.
+		err    = (phipred - phig[i])%360.0
 		mterr += min(err, 360.0 - err)
-		#print i,dim1,hdim,hd,phig[i-1],phig[i],min(err, 360.0 - err),mterr
+		#print "  D  %3d   %7.1f    %8.2f    %6.1f    %8.2f    %6.1f    %6.1f"%\
+		#(i, round(dd,1), round(qd,1), round(phipred,1), round(phig[i],1), round(min(err, 360.0 - err),1), round(mterr,1))
 	#print " ERRORS :",pterr,mterr
 	if pterr < mterr:    updown = 0
 	else:                updown = 1
 	for i in xrange(ns):  fildata[i].set_attr("updown",updown)
 	return
 
-def setfilori_MA(fildata, pixel_size, dp, dphi, sym='c1'):
+def setfilori_MA(fildata, pixel_size, dp, dphi, sym='c1', WRAP=1):
 	from utilities		import get_params_proj, set_params_proj
 	from pixel_error 	import angle_diff
 	from applications	import filamentupdown
@@ -14191,51 +14184,44 @@ def setfilori_MA(fildata, pixel_size, dp, dphi, sym='c1'):
 	consphi = [0.0]*ns
 	for i in xrange(ns):
 		if( i>0 ):
-			qyb = yg[i-1] + get_dist(coords[i-1], coords[i])
+			# from i-1 predict i
+			dimf = get_dist(coords[i-1], coords[i])
+			qyb = yg[i-1] + sgn*dimf
 			hqb = round(qyb/rise)
 			yb = qyb - hqb*rise
-			#print " Y ",i,qyb,hqb,yb
+			#print " YF ",i,qyb,hqb,yb
 		else:  yb = yg[0]
 
 		if( i < ns-1 ):
-			qyf = yg[i+1] - get_dist(coords[i+1], coords[i])
+			dimb = get_dist(coords[i+1], coords[i])
+			qyf = yg[i+1] - sgn*dimb
 			hqf = round(qyf/rise)
 			yf = qyf - hqf*rise
-			#print "   Y",qyf,hqf,yf
+			#print "   YB",qyf,hqf,yf
 		else:	yf = yg[ns-1]
 
 		consy[i] = (yb + yf)/2.0
 		#print "    YP",yg[max(0,i-1)],yg[min(i+1,ns-1)],yg[i],consy[i],"   >>>   ",yg[i]-consy[i]
 
-	for i in xrange(ns):
 		if( i>0 ):
-			dim0 = get_dist(coords[i-1], coords[0])
-			hdim = dim0/rise
-			hd = round(hdim)
-			phim1pred = (sgn*dphi*(hdim -hd))%360.0
-			difphim1 = (phig[i-1]-phim1pred)%360.0
-			#print i,dim0,hdim,hd,phim1pred,phig[i-1],difphim1
-			dim1  = get_dist(coords[i], coords[0])
-			hdim1   = dim1/rise
-			hd1     = round(hdim1)
-			phipred = sgn*dphi*(hdim1 -hd1)
-			phi1predforward = qv*(( phipred + difphim1 )%360.0)
+			# from i-1 predict i
+			phipred = dphi*(dimf/rise - hqb)
+			phipredforward = qv*(( sgn*phipred + phig[i-1] )%360.0)
+			#print " F ",i,round(dimf,1),round(phig[i-1],1),round(phipred,1),round(phig[i],1),round(phipredforward/qv,1)
 		else:
 			phipred = 0.0
-			phi1predforward = qv*phig[0]
-
+			phipredforward = qv*phig[0]
 
 		if( i < ns-1 ):
-			dim0 = get_dist(coords[i+1], coords[0])
-			hdim = dim0/rise
-			hd = round(hdim)
-			phim1pred = (sgn*dphi*(hdim -hd))%360.0
-			difphim1 = (phig[i+1]-phim1pred)%360.0
-			#print i,dim0,hdim,hd,phim1pred,phig[i-1],difphim1
-			phi1predbackward = qv*(( phipred + difphim1)%360.0)
-		else: phi1predbackward = qv*phig[ns-1]
-		consphi[i] = (atan2(  (sin(phi1predforward)+sin(phi1predbackward)) , (cos(phi1predforward)+cos(phi1predbackward)) )/qv)%360.0
-		#print " PHI ",i,phig[max(0,i-1)],phig[i],phig[min(i+1,ns-1)],phi1predforward/qv,phi1predbackward/qv,consphi[i],(round((phig[i]-consphi[i])*100)/100.)%360.
+			# from i+1 predict i
+			phipred = dphi*(dimb/rise + hqf)
+			phipredbackward = qv*(( phig[i+1] - sgn*phipred)%360.0)
+			#print " B ",i,round(dimb,1),round(phig[i+1],1),round(phipred,1),round(phig[i],1),round(phipredbackward/qv,1)
+		else: phipredbackward = qv*phig[ns-1]
+		consphi[i] = (atan2(  (sin(phipredforward)+sin(phipredbackward)) , (cos(phipredforward)+cos(phipredbackward)) )/qv)%360.0
+		#print " PHI ",i,round(phig[max(0,i-1)],1),round(phig[i],1),round(phig[min(i+1,ns-1)],1), \
+		#round(phipredforward/qv,1),round(phipredbackward/qv,1),round(consphi[i],1),\
+		#"    >><>>>>> ",round((round((phig[i]-consphi[i])*100)/100.)%360.,1)
 		set_params_proj(fildata[i], [consphi[i], constheta[i], conspsi[i], consx[i], consy[i]])
 	return
 

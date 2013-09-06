@@ -812,6 +812,12 @@ def ordersegments(infilaments, ptclcoords):
 		if(nsegs > 1):
 			ord = orderbymodule([ptclcoords[filaments[i][ii]][0] for ii in xrange(nsegs)],[ptclcoords[filaments[i][ii]][1] for ii in xrange(nsegs)])
 			filaments[i] = [filaments[i][ord[ii]] for ii in xrange(nsegs)]
+			# To preserve the original order check indexes and invert if it appears to be inverted
+			if(filaments[i][0] > filaments[i][-1]):
+				for k in xrange(nsegs//2):
+					temp = filaments[i][k]
+					filaments[i][k] = filaments[i][nsegs-1-k]
+					filaments[i][nsegs-1-k]=temp
 	return filaments	
 
 
