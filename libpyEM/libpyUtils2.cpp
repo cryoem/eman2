@@ -655,6 +655,7 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.def("constrained_helix", &EMAN::Util::constrained_helix, args("data", "fdata", "refproj", "rotproj", "dp_dphi_rise_delta", "nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc", "FindPsi", "psi_max", "crefim", "numr", "maxrin", "mode", "cnx", "cny"), "")
 		.def("constrained_helix_exhaustive", &EMAN::Util::constrained_helix_exhaustive, args("data", "fdata", "refproj", "rotproj", "dp_dphi_rise_delta", "nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc", "FindPsi", "psi_max", "crefim", "numr", "maxrin", "mode", "cnx", "cny"), "")
 		.def("constrained_helix_arbdist", &EMAN::Util::constrained_helix_arbdist, args("data", "fdata", "refproj", "rotproj", "dp_dphi_rise_delta", "nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc", "FindPsi", "psi_max", "crefim", "numr", "maxrin", "mode", "cnx", "cny"), "")
+		.def("diff_between_matrix_of_3D_parameters_angles", &EMAN::Util::diff_between_matrix_of_3D_parameters_angles, args("all_params", "rotations"), "")
 		.staticmethod("point_is_in_triangle_2d")
 		.staticmethod("point_is_in_convex_polygon_2d")
 		.staticmethod("infomask")
@@ -836,6 +837,7 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.staticmethod("constrained_helix")
 		.staticmethod("constrained_helix_arbdist")
 		.staticmethod("constrained_helix_exhaustive")
+		.staticmethod("diff_between_matrix_of_3D_parameters_angles")
 	);
 
     scope* EMAN_Util_sincBlackman_scope = new scope(

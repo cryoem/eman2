@@ -23272,3 +23272,94 @@ Dict Util::predict(float phig, float yg, float dst, float sgn, float ysgn, float
 	retvals["predphi"] = predphi;
 	return retvals;
 }
+
+
+// fast function to create transform (data in degrees)
+inline Transform create_transform(float phi, float theta, float psi, float tx = 0, float ty = 0)
+{
+	std::vector<float> v(12);
+	const float deg2rad = 3.141592653592 / 180.0;
+
+	phi   *= deg2rad;
+	theta *= deg2rad;
+	psi   *= deg2rad;
+
+	v[0] = cos(psi) * cos(theta) * cos(phi) - sin(psi) * sin(phi);
+	v[1] = cos(psi) * cos(theta) * sin(phi) + sin(psi) * cos(phi);
+	v[2] = - cos(psi) * sin(theta);
+	v[3] = tx;
+
+	v[4] = - sin(psi) * cos(theta) * cos(phi) - cos(psi) * sin(phi);
+	v[5] = - sin(psi) * cos(theta) * sin(phi) + cos(psi) * cos(phi);
+	v[6] = sin(psi) * sin(theta);
+	v[7] = ty;
+
+	v[8] = sin(theta) * cos(phi);
+	v[9] = sin(theta) * sin(phi);
+	v[10] = cos(theta);
+	v[11] = 0;
+
+	Transform t(v);
+	return t;
+}
+
+// Calculate angles between param1 and param2 rotated by phi, theta, psi
+// param1/2: (phi0, theta0, psi0, x0, y0, phi1, theta1, psi1, x1, y1, phi2, ... )
+// returns n vales for n given projections
+inline void diff_between_3D_parameters_angles( std::vector<float> & param1, std::vector<float> & param2, float phi, float theta, float psi, std::vector<float> & result)
+{
+	const unsigned n = param1.size() / 5;
+	const float deg2rad = 3.141592653592 / 180.0;
+	Transform rot = create_transform(phi, theta, psi);
+	for ( unsigned i = 0;  i < n;  ++i ) {
+		Transform temp = create_transform(param2[5*i+0], param2[5*i+1], param2[5*i+2], param2[5*i+3], param2[5*i+4]) * rot;
+		Dict out = temp.get_params("spider");
+		// calculate angle between positions on the sphere
+		const float phi2   = static_cast<float>(out["phi"  ]) * deg2rad;
+		const float theta2 = static_cast<float>(out["theta"]) * deg2rad;
+		const float phi1   = param1[5*i+0] * deg2rad;
+		const float theta1 = param1[5*i+1] * deg2rad;
+		const float st1 = sin(theta1);
+		const float st2 = sin(theta2);
+		const float ct1 = cos(theta1);
+		const float ct2 = cos(theta2);
+		const float cp1cp2_sp1sp2 = cos(phi1 - phi2);
+		float val = st1 * st2 * cp1cp2_sp1sp2 + ct1 * ct2;
+		if (val < -1.0) {
+			val = -1.0;
+		} else if (val > 1.0) {
+			val = 1.0;
+		}
+		result[i] += acos( val ) / deg2rad;
+	}
+}
+
+
+std::vector<float> Util::diff_between_matrix_of_3D_parameters_angles( std::vector<float> all_params, std::vector<float> rotations )
+{
+	unsigned conf_count = 2;
+	for ( const unsigned t = rotations.size() / 3;  conf_count * (conf_count-1) / 2 < t; ++conf_count );
+	const unsigned projs_count = all_params.size() / 5 / conf_count;
+
+	std::vector< std::vector<float> > params(conf_count);
+	for (unsigned i = 0; i < conf_count; ++i) {
+		params[i].assign( all_params.begin() + i*projs_count*5, all_params.begin() + (i+1)*projs_count*5 );
+	}
+
+	std::vector<float> avg(projs_count, 0);
+
+	unsigned ir = 0;
+	for (unsigned i = 0; i < conf_count; ++i) {
+		for (unsigned j = 0; j < i; ++j) {
+			diff_between_3D_parameters_angles(params[i], params[j], rotations[ir*3], rotations[ir*3+1], rotations[ir*3+2], avg);
+			++ir;
+		}
+	}
+
+	for (unsigned k = 0; k < projs_count; ++k) {
+		avg[k] /= ( conf_count * (conf_count-1) / 2 );
+	}
+
+	return avg;
+}
+

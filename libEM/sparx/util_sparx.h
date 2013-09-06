@@ -1090,4 +1090,6 @@ public:
 			, bool FindPsi, float psi_max, vector<EMData*> crefim, vector<int> numr, int maxrin, string mode, int cnx, int cny);
 	static Dict predict(float phig, float yg, float dst, float sgn, float ysgn, float dpp, float dphi, bool backpred);
 	
+	static std::vector<float> diff_between_matrix_of_3D_parameters_angles( std::vector<float> all_params, std::vector<float> rotations );
+
 #endif	//util__sparx_h__
