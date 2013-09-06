@@ -125,6 +125,7 @@ class GUIctfsim(QtGui.QWidget):
 		self.df_cs=cs
 		self.df_ac=ac
 		self.df_samples=samples
+		self.img=None
 
 		QtGui.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
@@ -143,8 +144,6 @@ class GUIctfsim(QtGui.QWidget):
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedrag"),self.imgmousedrag)
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mouseup")  ,self.imgmouseup)
 		self.guiplot.connect(self.guiplot,QtCore.SIGNAL("mousedown"),self.plotmousedown)
-
-
 
 		self.guiim.mmode="app"
 
@@ -332,6 +331,9 @@ class GUIctfsim(QtGui.QWidget):
 			
 		self.guiplot.setAxisParms("s (1/$\AA$)","CTF")
 
+		ctf.compute_2d_complex(self.img,Ctf.CtfType.CTF_AMP,None)
+		self.guiim.set_data(self.img)
+
 	def newSet(self,val=0):
 		"called when a new data set is selected from the list"
 		self.curset=val
@@ -346,6 +348,12 @@ class GUIctfsim(QtGui.QWidget):
 		self.sdfang.setValue(self.data[val][1].dfang,True)
 		self.ssamples.setValue(self.data[val][1].samples,True)
 
+		# make new image if necessary
+		if self.img==None or self.img["ny"]!=self.data[val][1].samples :
+			self.img=EMData(self.data[val][1].samples+2,self.data[val][1].samples)
+			self.img.to_zero()
+			self.img.set_complex(1)
+			self.guiim.set_data(self.img)
 #		self.imginfo.setText("%s particles     SNR = %s"%(ptcl,ssnr))
 
 		#if self.guiim != None:
@@ -389,6 +397,12 @@ class GUIctfsim(QtGui.QWidget):
 		self.data[self.curset][1].voltage=self.svoltage.value
 		self.data[self.curset][1].cs=self.scs.value
 		self.data[self.curset][1].samples=self.ssamples.value
+		
+		if self.img==None or self.img["ny"]!=self.ssamples.value :
+			self.img=EMData(self.ssamples.value+2,self.ssamples.value)
+			self.img.to_zero()
+			self.img.set_complex(1)
+			self.guiim.set_data(self.img)
 		self.update_plot()
 
 	def realimgkey(self,event):

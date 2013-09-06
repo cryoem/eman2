@@ -282,12 +282,6 @@ namespace EMAN
 			return defocus+dfdiff/2.0*cos(2.0*ang-2.0*dfang);
 		}
 		
-		inline float gamma(float s,float ang)
-		{
-			float l=lambda();
-			return -M_PI/2.0*cs*1.0e7*pow(l,3.0f)*pow(s,4.0f)+M_PI*l*df(ang)*pow(s,2.0f);
-		}
-
 		inline float calc_noise(float s)
 		{
 			int si=(int)(s/dsbg);

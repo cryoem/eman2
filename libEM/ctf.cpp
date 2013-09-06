@@ -901,7 +901,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 
 	float *d = image->get_data();
 	float g1=M_PI/2.0*cs*1.0e7*pow(lambda(),3.0);		// s^4 coefficient for gamma, cached in a variable for simplicity (maybe speed? depends on the compiler)
-	float g2=M_PI*lambda()*defocus*10000.0;					// s^2 coefficient for gamma 
+	float g2=M_PI*lambda()*10000.0;					// s^2 coefficient for gamma 
 	float acac=acos(ampcont/100.0);					// instead of ac*cos(g)+sqrt(1-ac^2)*sin(g), we can use cos(g-acos(ac)) and save a trig op
 
 	if (type == CTF_BACKGROUND) {
@@ -924,8 +924,8 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 			for (int x = 0; x < nx / 2; x++) {
 				float s = (float)Util::hypot_fast(x,y ) * ds;
 				float gam;
-				if (dfdiff==0) gam=-g1*pow(s,4.0)+g2*pow(s,2.0);
-				else gam=gamma(s,atan2(y,x));
+				if (dfdiff==0) gam=-g1*pow(s,4.0)+g2*defocus*pow(s,2.0);
+				else gam=-g1*pow(s,4.0)+g2*df(atan2(y,x))*pow(s,2.0);
 				float v = cos(gam-acac)*exp(-(bfactor/4.0f * pow(s,2.0)));
 				d[x * 2 + ynx] = v;
 				d[x * 2 + ynx + 1] = 0;
@@ -939,8 +939,8 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 			for (int x = 0; x < nx / 2; x++) {
 				float s = (float)Util::hypot_fast(x,y ) * ds;
 				float gam;
-				if (dfdiff==0) gam=-g1*pow(s,4.0)+g2*pow(s,2.0);
-				else gam=gamma(s,atan2(y,x));
+				if (dfdiff==0) gam=-g1*pow(s,4.0)+g2*defocus*pow(s,2.0);
+				else gam=-g1*pow(s,4.0)+g2*df(atan2(y,x))*pow(s,2.0);
 				float v = cos(gam-acac);
 				d[x * 2 + ynx] = v<0?-1.0:1.0;
 				d[x * 2 + ynx + 1] = 0;
@@ -1026,8 +1026,8 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 			for (int x = 0; x < nx / 2; x++) {
 				float s = (float)Util::hypot_fast(x,y ) * ds;
 				float gam;
-				if (dfdiff==0) gam=-g1*pow(s,4.0)+g2*pow(s,2.0);
-				else gam=gamma(s,atan2(y,x));
+				if (dfdiff==0) gam=-g1*pow(s,4.0)+g2*defocus*pow(s,2.0);
+				else gam=-g1*pow(s,4.0)+g2*df(atan2(y,x))*pow(s,2.0);
 				float v = cos(gam-acac)*exp(-(bfactor/4.0f * pow(s,2.0)));
 				d[x * 2 + ynx] = v*v+calc_noise(s);
 				d[x * 2 + ynx + 1] = 0;
