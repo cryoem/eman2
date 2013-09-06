@@ -13299,7 +13299,6 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 	indcs = []
 	k = 0
 	for i in xrange(nfils):
-		print " filaments ",i," >> ",filaments[i]
 		list_of_particles += filaments[i]
 		k1 = k+len(filaments[i])
 		indcs.append([k,k1])
@@ -13436,7 +13435,7 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 			#for im in xrange(len(ldata)):  ldata[im].set_attr("bestang", 10000.0)
 			#Util.constrained_helix_exhaustive(ldata, fdata[indcs[ifil][0]:indcs[ifil][1]], refproj, rotproj, [float(dp), float(dphi), rise, float(delta)], [int(nphi), int(phiwobble), int(rng), int(ywobble), int(Dsym), int(nwx), int(nwy), int(nwxc), int(nwyc)], FindPsi, float(psi_max), crefim, numr, int(maxrin), mode, int(cnx), int(cny))
 			from development import constrained_helix
-			constrained_helix(data, fdata[indcs[ifil][0]:indcs[ifil][1]], refproj, rotproj, dp, dphi, rise, delta, nphi, phiwobble, rng, ywobble, Dsym, nwx, nwy, nwxc, nwyc, FindPsi, psi_max, crefim, numr, maxrin, mode, cnx, cny, myid, main_node)
+			constrained_helix(ldata, fdata[indcs[ifil][0]:indcs[ifil][1]], refproj, rotproj, dp, dphi, rise, delta, nphi, phiwobble, rng, ywobble, Dsym, nwx, nwy, nwxc, nwyc, FindPsi, psi_max, crefim, numr, maxrin, mode, cnx, cny, myid, main_node)
 			'''
 			if doExhaustive:
 				Util.constrained_helix_exhaustive(ldata, fdata[indcs[ifil][0]:indcs[ifil][1]], refproj, rotproj, [float(dp), float(dphi), float(rise), float(delta)], [int(nphi), int(phiwobble), int(rng), int(ywobble), int(Dsym), int(nwx), int(nwy), int(nwxc), int(nwyc)], FindPsi, float(psi_max), crefim, numr, int(maxrin), mode, int(cnx), int(cny))
