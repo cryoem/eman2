@@ -135,6 +135,10 @@ struct EMAN_Ctf_Wrapper: EMAN::Ctf
         return call_method< std::vector<float,std::allocator<float> > >(py_self, "compute_1d", p0, p1, p2, p3);
     }
 
+    std::vector<float,std::allocator<float> > compute_1d_fromimage(int p0, float p1, EMAN::EMData *p2) {
+        return call_method< std::vector<float,std::allocator<float> > >(py_self, "compute_1d_fromimage", p0, p1, p2);
+    }
+
     void compute_2d_real(EMAN::EMData* p0, EMAN::Ctf::CtfType p1, EMAN::XYData* p2) {
         call_method< void >(py_self, "compute_2d_real", p0, p1, p2);
     }
