@@ -690,22 +690,22 @@ vector <float> EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * sf
 	r.resize(np);
 
 	float s = 0;
-	float g1=M_PI/2.0*cs*1.0e7*pow(lambda(),3.0);		// s^4 coefficient for gamma, cached in a variable for simplicity (maybe speed? depends on the compiler)
-	float g2=M_PI*lambda()*defocus;					// s^2 coefficient for gamma 
+	float g1=M_PI/2.0*cs*1.0e7*pow(lambda(),3.0);	// s^4 coefficient for gamma, cached in a variable for simplicity (maybe speed? depends on the compiler)
+	float g2=M_PI*lambda()*defocus*10000.0;			// s^2 coefficient for gamma 
 	float acac=acos(ampcont/100.0);					// instead of ac*cos(g)+sqrt(1-ac^2)*sin(g), we can use cos(g-acos(ac)) and save a trig op
 	switch (type) {
 	case CTF_AMP:
 		for (int i = 0; i < np; i++) {
-			float gamma=g1*pow(s,4.0)+g2*pow(s,2.0);
-			r[i] = cos(gamma-acac);
+			float gam=-g1*pow(s,4.0)+g2*pow(s,2.0);
+			r[i] = cos(gam-acac)*exp(-(bfactor/4.0f * s * s));
 			s += ds;
 		}
 		break;
 
 	case CTF_SIGN:
 		for (int i = 0; i < np; i++) {
-			float gamma=g1*pow(s,4.0)+g2*pow(s,2.0);
-			r[i] = cos(gamma-acac)<0?-1.0:1.0;
+			float gam=-g1*pow(s,4.0)+g2*pow(s,2.0);
+			r[i] = cos(gam-acac)<0?-1.0:1.0;
 			s += ds;
 		}
 		break;
@@ -750,8 +750,8 @@ vector <float> EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * sf
 			float s0=s;
 			
 			for (int i = 0; i < np; i++) {
-				float gamma=g1*pow(s,4.0)+g2*pow(s,2.0);
-				tsnr[i] = cos(gamma-acac);		// ctf amp
+				float gam=-g1*pow(s,4.0)+g2*pow(s,2.0);
+				tsnr[i] = cos(gam-acac)*exp(-(bfactor/4.0f * s * s));		// ctf amp
 
 				// background value
 				float f = s/dsbg;
@@ -847,13 +847,13 @@ vector <float> EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * sf
 	case CTF_TOTAL:
 
 		for (int i = 0; i < np; i++) {
-			float gamma=g1*pow(s,4.0)+g2*pow(s,2.0);
+			float gam=-g1*pow(s,4.0)+g2*pow(s,2.0);
 			if (sf) {
-				r[i] = cos(gamma-acac);
+				r[i] = cos(gam-acac)*exp(-(bfactor/4.0f * pow(s,2.0)));
 				r[i] = r[i] * r[i] * sf->get_yatx(s) + calc_noise(s);
 			}
 			else {
-				r[i] = cos(gamma-acac);
+				r[i] = cos(gam-acac)*exp(-(bfactor/4.0f * pow(s,2.0)));
 				r[i] = r[i] * r[i] + calc_noise(s);
 			}
 			s += ds;
@@ -901,7 +901,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 
 	float *d = image->get_data();
 	float g1=M_PI/2.0*cs*1.0e7*pow(lambda(),3.0);		// s^4 coefficient for gamma, cached in a variable for simplicity (maybe speed? depends on the compiler)
-	float g2=M_PI*lambda()*defocus;					// s^2 coefficient for gamma 
+	float g2=M_PI*lambda()*defocus*10000.0;					// s^2 coefficient for gamma 
 	float acac=acos(ampcont/100.0);					// instead of ac*cos(g)+sqrt(1-ac^2)*sin(g), we can use cos(g-acos(ac)) and save a trig op
 
 	if (type == CTF_BACKGROUND) {
@@ -924,9 +924,9 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 			for (int x = 0; x < nx / 2; x++) {
 				float s = (float)Util::hypot_fast(x,y ) * ds;
 				float gam;
-				if (dfdiff==0) gam=g1*pow(s,4.0)+g2*pow(s,2.0);
+				if (dfdiff==0) gam=-g1*pow(s,4.0)+g2*pow(s,2.0);
 				else gam=gamma(s,atan2(y,x));
-				float v = cos(gam-acac);
+				float v = cos(gam-acac)*exp(-(bfactor/4.0f * pow(s,2.0)));
 				d[x * 2 + ynx] = v;
 				d[x * 2 + ynx + 1] = 0;
 			}
@@ -939,7 +939,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 			for (int x = 0; x < nx / 2; x++) {
 				float s = (float)Util::hypot_fast(x,y ) * ds;
 				float gam;
-				if (dfdiff==0) gam=g1*pow(s,4.0)+g2*pow(s,2.0);
+				if (dfdiff==0) gam=-g1*pow(s,4.0)+g2*pow(s,2.0);
 				else gam=gamma(s,atan2(y,x));
 				float v = cos(gam-acac);
 				d[x * 2 + ynx] = v<0?-1.0:1.0;
@@ -1026,11 +1026,12 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 			for (int x = 0; x < nx / 2; x++) {
 				float s = (float)Util::hypot_fast(x,y ) * ds;
 				float gam;
-				if (dfdiff==0) gam=g1*pow(s,4.0)+g2*pow(s,2.0);
+				if (dfdiff==0) gam=-g1*pow(s,4.0)+g2*pow(s,2.0);
 				else gam=gamma(s,atan2(y,x));
-				float v = cos(gam-acac);
+				float v = cos(gam-acac)*exp(-(bfactor/4.0f * pow(s,2.0)));
 				d[x * 2 + ynx] = v*v+calc_noise(s);
 				d[x * 2 + ynx + 1] = 0;
+//				if ((x==101||x==100) && y2==79) printf("%f %f %f %f\n",s,gam,v,d[x * 2 + ynx]);
 			}
 		}
 	}

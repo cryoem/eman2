@@ -17,7 +17,7 @@ ctf.bfactor=100.0
 ds=1.0/(ctf.apix*2*256)
 s=arange(0,ds*256,ds)
 ctf.dsbg=ds
-ctf.background=[.1]*256
+ctf.background=[.1]*364
 
 ctf.defocus=1.0
 curve=array(ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP))
