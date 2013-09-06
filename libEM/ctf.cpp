@@ -283,6 +283,17 @@ void EMAN1Ctf::compute_2d_real(EMData *, CtfType, XYData *)
 
 }
 
+vector <float> EMAN1Ctf::compute_1d_fromimage(int size, float ds, EMData *image)
+{
+	vector < float >r;
+
+	printf("Sorry, this function hasn't been implemented for EMAN1Ctf\n");
+	
+	int np=size/2;
+	r.resize(np);
+
+	return r;
+}
 
 
 void EMAN1Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
@@ -660,6 +671,7 @@ vector <float> EMAN2Ctf::compute_1d_fromimage(int size, float ds, EMData *image)
 	int np=size/2;
 	r.resize(np);
 
+	return r;
 }
 
 

@@ -99,7 +99,7 @@ namespace EMAN
 		// It will stretch/shrink the power spectrum as a function of angle to make a single coherent 1D CTF curve.
 		// The cost is that the shrinking means that the structure factor is being distorted to make this work. 
 		// Nonetheless, this is a useful tool in fitting astigmatic data
-		virtual vector <float>compute_1d_fromimage(int size, float ds, EMData *image=0);	
+		virtual vector <float>compute_1d_fromimage(int size, float ds, EMData *image=0) = 0;	
 		virtual void compute_2d_real(EMData * img, CtfType t, XYData * struct_factor = 0) = 0;
 		virtual void compute_2d_complex(EMData * img, CtfType t, XYData * struct_factor = 0) = 0;
 
@@ -135,6 +135,7 @@ namespace EMAN
 		~EMAN1Ctf();
 
 		vector < float >compute_1d(int size,float ds, CtfType type, XYData * struct_factor = 0);
+		vector <float>compute_1d_fromimage(int size, float ds, EMData *image=0);	
 		void compute_2d_real(EMData * image, CtfType type, XYData * struct_factor = 0);
 		void compute_2d_complex(EMData * image, CtfType type, XYData * struct_factor = 0);
 
