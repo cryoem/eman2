@@ -95,6 +95,11 @@ namespace EMAN
 		virtual vector<float> to_vector() const = 0;
 
 		virtual vector < float >compute_1d(int size,float ds, CtfType t, XYData * struct_factor = 0) = 0;
+		// This computes a 1D power spectrum from an image with astigmatism compensation. This is not entirely valid.
+		// It will stretch/shrink the power spectrum as a function of angle to make a single coherent 1D CTF curve.
+		// The cost is that the shrinking means that the structure factor is being distorted to make this work. 
+		// Nonetheless, this is a useful tool in fitting astigmatic data
+		virtual vector <float>compute_1d_fromimage(int size, float ds, EMData *image=0);	
 		virtual void compute_2d_real(EMData * img, CtfType t, XYData * struct_factor = 0) = 0;
 		virtual void compute_2d_complex(EMData * img, CtfType t, XYData * struct_factor = 0) = 0;
 
@@ -244,7 +249,8 @@ namespace EMAN
 		EMAN2Ctf(const vector<float>& vf) {from_vector(vf);}	//for unpickling
 		~EMAN2Ctf();
 
-		vector < float >compute_1d(int size,float ds, CtfType type, XYData * struct_factor = 0);
+		vector <float> compute_1d(int size,float ds, CtfType type, XYData * struct_factor = 0);
+		vector <float> compute_1d_fromimage(int size, float ds, EMData *image=0);
 		void compute_2d_real(EMData * image, CtfType type, XYData * struct_factor = 0);
 		void compute_2d_complex(EMData * image, CtfType type, XYData * struct_factor = 0);
 
@@ -261,49 +267,24 @@ namespace EMAN
 		bool equal(const Ctf * ctf1) const;
 
 	  private:
-		inline float calc_amp1()
-		{
-			return (sqrt(1 - ampcont * ampcont/10000.0f));
-		}
 
-		inline float calc_lambda()
+		// Electron wavelength in A
+		inline float lambda()
 		{
 			float lambda = 12.2639f / sqrt(voltage * 1000.0f + 0.97845f * voltage * voltage);
 			return lambda;
 		}
 
-		inline float calc_g1()
-		{
-			float lambda = calc_lambda();
-			float g1 = 2.5e6f * cs * lambda * lambda * lambda;
-			return g1;
+		// returns defocus as a function of angle
+		inline float df(float ang) {
+			if (dfdiff==0.0) return defocus;
+			return defocus+dfdiff/2.0*cos(2.0*ang-2.0*dfang);
 		}
-
-		inline float calc_g2()
+		
+		inline float gamma(float s,float ang)
 		{
-			float lambda = calc_lambda();
-			float g2 = 5000.0f * -defocus * lambda;
-			return g2;
-		}
-
-		inline float calc_gamma(float g1, float g2, float s)
-		{
-			float s2 = s * s;
-			float gamma = (float) (-2 * M_PI * (g1 * s2 * s2 + g2 * s2));
-			return gamma;
-		}
-
-		inline float calc_ctf1(float g, float gamma, float s)
-		{
-			float r = exp(-(bfactor/4.0f * s * s)) * (g * sin(gamma) + ampcont/100.0f * cos(gamma));
-			return r;
-		}
-
-		inline float calc_amplitude(float gamma)
-		{
-			float t1 = sqrt(1.0f - ampcont * ampcont/10000.0f) * sin(gamma);
-			float v = (t1 + ampcont/100.0f * cos(gamma));
-			return v;
+			float l=lambda();
+			return M_PI/2.0*cs*1.0e7*pow(l,3.0)*pow(s,4.0)+M_PI*l*df(ang)*pow(s,2.0);
 		}
 
 		inline float calc_noise(float s)

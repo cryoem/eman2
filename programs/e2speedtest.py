@@ -37,6 +37,7 @@ import math
 import time
 from pprint import pprint
 from random import uniform
+from numpy import array
 
 from EMAN2 import *
 
@@ -60,19 +61,16 @@ improved with time."""
 	parser.add_argument("--slow",action="store_true",help="rtf_slow alignment",default=False)
 	parser.add_argument("--best",action="store_true",help="rtf_best alignment",default=False)
 	parser.add_argument("--low",action="store_true",help="low level test",default=False)
-	parser.add_argument("--big",action="store_true",help="big size test",default=False)
-	parser.add_argument("--size",type=int,help="Size of particles, 96 default for comparisons",default=96)
+	parser.add_argument("--size",type=int,help="Size of particles, 192 default for comparisons",default=192)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 
 	SIZE = options.size
-	NTT = 315		# adjusted to keep new values with refine scaled to old values on reference machine
+	NTT = 105
 
 	print 'This could take a few minutes. Please be patient.'
-	if options.big:
-		SIZE = 256
 
 	print 'Initializing'
 
@@ -295,8 +293,10 @@ so in most cases it is not dealt with.'
 
 		return
 
+	tms=[]
 	t1 = time.clock()
-	for i in xrange(3):
+	for i in xrange(8):
+		t11 = time.clock()
 		for j in xrange(5, NTT):
 			if options.best:
 				tmp = data[i].align('rtf_best', data[j], {"flip":None, "maxshift":SIZE/8})
@@ -305,37 +305,29 @@ so in most cases it is not dealt with.'
 			else:
 				tmp = data[i].align('rotate_translate_flip', data[j], {})
 				data[i].del_attr("xform.align2d")
-				tmp2 = data[i].align('refinecg',data[j],{"verbose":0,"xform.align2d":tmp.get_attr("xform.align2d")},"ccc",{})
+				tmp2 = data[i].align('refine',data[j],{"verbose":0,"xform.align2d":tmp.get_attr("xform.align2d")},"ccc",{})
 
-			if j%10 == 0:
+			if j%5 == 0:
 				sys.stdout.write('.')
 				sys.stdout.flush()
+		tms.append(time.clock()-t11)
 		print
 	t2 = time.clock()
+	tms=array(tms)
 
 	ti = t2 - t1
 
-	if SIZE==96:
-		print 'For comparison (Values approximate. Repeated runs will give some variation.)'
-		print 'A 2011 MacBook Pro (2.2ghz core-i7) ----------------------------- 2900        (4 cores -> 11,500)'
-		print 'An Intel Xeon E5645 2.4Ghz SF ----------------------------------- 2900        (6 cores -> 17,500)'
-		print 'An Intel Core i5-2500 3.30GHz (depends on turbo) ---------------- 4800 - 5000 (4 cores -> 19,000 - 20,000)'
-		print 'An Intel Xeon X5675 3.07Ghz SF ---------------------------------- 4150        (6 cores -> 25,000)'
-		print 'An Intel Xeon E5-2670 2.6Ghz SF --------------------------------- 3350 - 3500 (8 cores -> 27,000 - 28,000)'
-		print 'An Intel Core i7-3960X 3.3Ghz SF -------------------------------- 5000 - 5350 (6 cores -> 30,000 - 32,000)'
-		print '\nConsider using --big for a more representative value with modern high resolution maps'
-
 	if SIZE==256:
 		print 'For comparison (Values approximate. Repeated runs will give some variation.)'
-		print 'A 2011 MacBook Pro (2.2ghz core-i7) ----------------------------- 480       (4 cores -> 1920)'
-		print 'An Intel Xeon E5645 2.4Ghz SF ----------------------------------- 460       (6 cores -> 2760)'
-		print 'An Intel Core i5-2500 3.30GHz (depends on turbo) ---------------- 830 - 900 (4 cores -> 3300 - 3600)'
-		print 'An Intel Xeon E5-2670 2.6Ghz SF --------------------------------- 530 - 550 (8 cores -> 4200 - 4400)'
-		print 'An Intel Xeon X5675 3.07Ghz SF ---------------------------------- 770       (6 cores -> 4600)'
-		print 'An Intel Core i7-3960X 3.3Ghz SF -------------------------------- 900 - 960 (6 cores -> 5400 - 5750)'
+		print 'A 2011 MacBook Pro (2.2ghz core-i7) -----------------------------'
+		print 'An Intel Xeon E5645 2.4Ghz SF -----------------------------------'
+		print 'An Intel Core i5-2500 3.30GHz (depends on turbo) ----------------'
+		print 'An Intel Xeon E5-2670 2.6Ghz SF ---------------------------------'
+		print 'An Intel Xeon X5675 3.07Ghz SF ----------------------------------'
+		print 'An Intel Core i7-3960X 3.3Ghz SF --------------------------------'
 
-	print '\nYour machines speed factor = %1.1f\n' % (25000.0 / ti)
-	print '\nThis repesents %1.2f (RTFAlign+RefineCG)/sec\n' % (3.0 * (NTT - 5.0) / ti)
+	print '\nYour machines speed factor = %1.4f +- %1.4f (%1.4f +- %1.5f sec)\n' % (2.3/tms.mean(),2.3/tms.mean()-2.3/(tms.mean()+tms.std()),tms.mean()/(NTT-5.0),tms.std()/(NTT-5.0))
+	print '\nThis repesents %1.2f (RTFAlign+Refine)/sec\n' % (5.0 * (NTT - 5.0) / ti)
 
 if __name__ == "__main__":
 	main()
