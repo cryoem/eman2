@@ -264,20 +264,21 @@ def main():
 			
 			refsfiles = newrefsfiles
 			
-			print "\n\n\n\nRRRRRRRRRRRRRR \n len refsfiles is and refsfiles are", len(refsfiles), refsfiles
-			print "\nRRRRRRRRRRRRRRRRR \n\n\n\n\n"
-			
 			if len(refsfiles) < 2:
 				finalize = 1
-				print "All particles preferred one average and therefore multirefine has failed/converged"
+				print "(e2spt_refinemulti.py, line 268) All particles preferred one average and therefore multirefine has failed/converged"
 				sys.exit()
 				
-			
+		
+		print "\n\n\n\nRRRRRRRRRRRRRR \n BEFORE alignment loop for all refts, len refsfiles is and refsfiles are", len(refsfiles), refsfiles
+		print "\nRRRRRRRRRRRRRRRRR \n\n\n\n\n"
+		
 		k=0
 		reftags = []
 		masterInfo = {}
 		for ref in refsfiles:
-			print "Aligning data to ref number", k
+			print "\n\n\n\n\n\n\n\n\nAAAAAAAAAAAAAAAAAAAAAAAA\nAligning data to ref,refnumber", ref,k
+			print "\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n\n\n\n\n"
 			#ref = ref
 			
 			#thisRefinementPath = ref.split('/')[-1].replace('.hdf','')
@@ -301,7 +302,13 @@ def main():
 			jsAliParamsPathNew = jsAliParamsPathNew.replace('.json', '_it' + str(it).zfill( len(str(options.iter))) + '.json')
 			
 			#print "(e2spt_refinemulti.py) The actual .json file with ali params will be", jsAliParamsPathNew
-			alicmd += ' --refinemultireftag=' + tag	+ ' && mv ' + options.path + '/sptTMP/* ' + options.path + '/ && rm -r ' + options.path +'/sptTMP* && mv ' + jsAliParamsPathActual + ' ' + jsAliParamsPathNew
+			
+			alicmd += ' --refinemultireftag=' + tag	+ ' && mv ' + options.path + '/sptTMP/* ' + options.path + '/ && rm -r ' + options.path +'/sptTMP* && cp ' + jsAliParamsPathActual + ' ' + jsAliParamsPathNew
+		
+		
+			
+			#alicmd += ' --refinemultireftag=' + tag	+ ' && cp ' + options.path + '/sptTMP/* ' + options.path + '/ && rm -r ' + options.path +'/sptTMP* && mv ' + jsAliParamsPathActual + ' ' + jsAliParamsPathNew
+
 		
 			#print "Command is", alicmd
 		
@@ -312,6 +319,7 @@ def main():
 			#print "The command to execute is", alicmd
 			
 			p=subprocess.Popen( alicmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		
 		
 			for line in iter(p.stdout.readline, ''):
 				print line.replace('\n','')
@@ -330,7 +338,12 @@ def main():
 			text=p.communicate()	
 			p.stdout.close()
 		
-			#print "Feedback from p was", text
+		
+			print "\n\n\nThis is the alicmd", alicmd
+			print "\ntomo_xforms.json should be in direct, see", os.listdir(options.path)
+			print"\n\n\n"
+			
+			print "Feedback from p was", text
 		
 		
 			'''

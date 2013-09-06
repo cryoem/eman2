@@ -425,6 +425,9 @@ def simloop(options,rootpath):
 					elif len(iters) == 1:
 						options.raligncmp = comps[0]
 						options.aligncmp = comps[0]
+						
+						itersMode = 0
+						
 						print "There's comps but length was less than one!"
 						ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany,thestack,themodel,itersMode)
 						if simround == 0:
@@ -496,6 +499,7 @@ def simloop(options,rootpath):
 						itround += 1
 					
 				else:
+					itersMode = 0
 					ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany,thestack,themodel,itersMode)
 					if simround == 0:
 						firstrandstack = ret[2]
@@ -691,9 +695,9 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 	if rootpath not in resultsdir:
 		resultsdir = rootpath + '/' + resultsdir
 
-	print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n ! ! ! ! ! ! ! ! ! ! ! ! ! ! \n The results dir to make should be", resultsdir
-	print "(e2spt_tomosimjobs) (function gencmds) Options path is", options.path
-	print"\n ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+	#print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n ! ! ! ! ! ! ! ! ! ! ! ! ! ! \n The results dir to make should be", resultsdir
+	#print "(e2spt_tomosimjobs) (function gencmds) Options path is", options.path
+	#print"\n ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
 	
 	inputdata = options.input
 	
@@ -733,7 +737,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			
 			#os.system('mkdir ' + subpath)
 			
-			print "I've just made this subpath for this specific model and conditions", subpath
+			#print "I've just made this subpath for this specific model and conditions", subpath
 			
 			model = EMData(options.input,d)
 
@@ -744,8 +748,8 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			print "\nModel is here", newname
 			print '\n'
 			
-		print "\n\nHowever, for this specific model, the resultsdir to make should be", resultsdir
-		print "And it should be amongst subdirs", subdirs
+		#print "\n\nHowever, for this specific model, the resultsdir to make should be", resultsdir
+		#print "And it should be amongst subdirs", subdirs
 		
 		if resultsbase not in subdirs:
 			os.system('mkdir ' + resultsdir)
@@ -762,8 +766,8 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			#print "Therefore I WILL run a job for e2spt_simulation"
 			#print "@@@@@@@@@@@@\n\n"
 			
-			print "\n(e2spt_tomosimjobs.py) (gencmds function) Simulated particles are here", subtomos
-			print '\n'
+			#print "\n(e2spt_tomosimjobs.py) (gencmds function) Simulated particles are here", subtomos
+			#print '\n'
 			
 			jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --nslices=' + str(nslices) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrinksim) + ' --finalboxsize=' + str(options.finalboxsize) + ' --verbose=' + str(options.verbose) + ' --parallel=' + str(options.parallel) + ' --path=' + subpath.split('/')[-1]
 			
@@ -805,9 +809,9 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			runcmd( cmd1a )
 	
 		elif samestackformany > 0:
-			print "Thesemodels when stackformany > 0, and its type, are", thesemodels, type(thesemodels)
-			print "Therefore for this model", d
-			print "THEMODEL, thesemodels[d], would be", thesemodels[d]
+			#print "Thesemodels when stackformany > 0, and its type, are", thesemodels, type(thesemodels)
+			#print "Therefore for this model", d
+			#print "THEMODEL, thesemodels[d], would be", thesemodels[d]
 			os.system('mkdir ' + subpath)
 			cmd1b = 'cp ' + str(thesestacks[d]) + ' ' + subpath+ '/' + subtomos.replace('.hdf','_ptcls.hdf')
 			
@@ -820,10 +824,10 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			
 			runcmd( cmd1b )
 			
-			print "\n\n\nCCCCCCCCCC\nstackformany is", samestackformany
-			print "Therefore I WILL NOT run a job for e2spt_simulation, and will rather copy the previous MODEL",  str(thesemodels[d])
-			print "TO", simmodel 
-			print "CCCCCCCCCCCCCn\n"
+			#print "\n\n\nCCCCCCCCCC\nstackformany is", samestackformany
+			#print "Therefore I WILL NOT run a job for e2spt_simulation, and will rather copy the previous MODEL",  str(thesemodels[d])
+			#print "TO", simmodel 
+			#print "CCCCCCCCCCCCCn\n"
 
 		#resultsfiles=[]
 		
@@ -831,6 +835,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 		print "finalAvgPath is", finalAvgPath
 		cmd2 = extractcmd = solutioncmd = rfilecmd = ''
 		extractcmd1 = extractcmd2 = refprepcmd = extractcmd0 = finalAvgPath = ''
+		
 		if options.testalignment:
 			print "\n\n$$$$$$$$$\nI will test alignment and for that will cd into SUBPATH", subpath
 			print "This is SIMROUND number", simround 
@@ -842,7 +847,13 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			ref=''
 			if options.simref:
 				ref = inputdata.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf')
-				
+			
+			else:
+				prepRefFromOrigModel = subpath + '/' + options.input.split('/')[-1].replace('.hdf','_REFPREP.hdf')
+				refprepcmd = 'e2spt_refprep.py --refstack=' + subtomos.replace('.hdf','_ptcls.hdf') + ' --output=' + prepRefFromOrigModel + ' --stack2process=' + options.input
+				runcmd( refprepcmd )
+				ref = prepRefFromOrigModel
+							
 			if samestackformany > 0:
 				ref = thesemodels[d].split('/')[-1]
 	
@@ -853,7 +864,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			output=subtomos.replace('.hdf', '_avg.hdf')
 			#print "\n\n$$$$$$$$$$$$$$$$$$$$$$\nRef name is\n$$$$$$$$$$$$$$$$$$$\n", ref
 
-			print "\n\%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%noutput name is\n", output
+			#print "\n\%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%noutput name is\n", output
 
 			alipath1=output.split('/')[-1].replace('_avg.hdf','_ali')
 			#alipath2= subpath + '/' + output.replace('_avg.hdf','_ali')
@@ -907,7 +918,9 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 				extractcmd1 = 'cd ' + alipath2 +' && e2proc3d.py class_0.hdf finalref.hdf --first=' + str(finalrefindx) + ' --last=' + str(finalrefindx)
 				
 				runcmd( extractcmd1 )
-
+				print "\n\n\n EXTRACT command 1 was", extractcmd1
+				print "\n\n\n"
+				
 				finalrefname = alipath2 + '/finalref.hdf'
 				
 				
@@ -916,7 +929,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 				
 				if not options.simref:
 					prepRefFromOrigModel = subpath + '/' + options.input.split('/')[-1].replace('.hdf','_REFPREP.hdf')
-					refprepcmd = 'e2spt_refprep.py --input=' + finalrefname + ' --output=' + prepRefFromOrigModel + ' --ref=' + options.input
+					refprepcmd = 'e2spt_refprep.py --refstack=' + finalrefname + ' --output=' + prepRefFromOrigModel + ' --stack2process=' + options.input
 					
 					refToCompensate = prepRefFromOrigModel
 					runcmd( refprepcmd )	
@@ -933,6 +946,10 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 					extractcmd2 = "cd " + alipath2 + " && e2spt_classaverage.py --path=finalRef_vs_OriginalRef --input=" + finalrefname + " --output=finalrefali.hdf --ref=" + refToCompensate + " -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=" + options.parallel + " --ralign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=3 --normproc=normalize --iter=1 --npeakstorefine=1 --savesteps --saveali"
 				
 				runcmd( extractcmd2 )
+			
+				print "\n\n\n EXTRACT command 2 was", extractcmd2
+				print "\n\n\n"
+				
 			
 			resultsfile = aliptcls.replace('_ptcls_ali.hdf','_ali_error.txt')
 			
@@ -953,6 +970,10 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			
 			runcmd( solutioncmd )
 			
+			print "\n\n\n SOLUTION command was", solutioncmd
+			print "\n\n\n"
+				
+			
 			#rfilecmd =  'mv ' + resultsfile + ' ' + resultsdir
 			#if rootpath not in rfilecmd:
 			#	rfilecmd =  'mv ' + resultsfile + ' ' +  rootpath + '/' + resultsdir
@@ -970,18 +991,18 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 		
 		if options.verbose:
 			if cmd1a:
-				print "cmd1a (jobcmd) was:\n", cmd1a
+				print "\n\ncmd1a (jobcmd) was:\n", cmd1a
 			elif cmd1b:
-				print "cmd1b (to copy randstack before simulation) was:\n", cmd1b
-			print "\ncmd2 (alicmd) was:\n", cmd2
+				print "\n\ncmd1b (to copy randstack before simulation) was:\n", cmd1b
+			print "\n\ncmd2 (alicmd) was:\n", cmd2
 			if not options.simref and int(options.iter) >1:
-				print "\nrefprepcmd was:\n",refprepcmd
-			print "\nextractcmd0 was:\n", extractcmd0
+				print "\n\nrefprepcmd was:\n",refprepcmd
+			print "\n\nextractcmd0 was:\n", extractcmd0
 			if extractcmd1:
-				print "\nextractcmd1 was:\n",extractcmd1
+				print "\n\nextractcmd1 was:\n",extractcmd1
 			if extractcmd2:
-				print "\nextractcmd2 was:\n",extractcmd2
-			print "\nsolutioncmd was:\n", solutioncmd
+				print "\n\nextractcmd2 was:\n",extractcmd2
+			print "\n\nsolutioncmd was:\n", solutioncmd
 
 			#print "rfilecmd was:", rfilecmd
 		#print "\n\n\n*********************The command to execute is \n %s \n*********************\n" %(cmd)
@@ -999,9 +1020,14 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			thisstack = subpath + '/' + thisstack.split('/')[-1].replace('.hdf','_ptcls.hdf')
 			thesestacks.append(thisstack)			
 			
-			if not itersMode:			
-				thissimmodel = subpath + '/' + thissimmodel.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf')
-				thesemodels.append(thissimmodel)
+			if not itersMode:
+				if options.simref:			
+					thissimmodel = subpath + '/' + thissimmodel.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf')
+					thesemodels.append(thissimmodel)
+				else:
+					thissmodel = prepRefFromOrigModel = subpath + '/' + options.input.split('/')[-1].replace('.hdf','_REFPREP.hdf')
+					thesemodels.append(thissmodel)
+					
 	
 		if itersMode and finalAvgPath:
 			finalAvgs.append(finalAvgPath)
