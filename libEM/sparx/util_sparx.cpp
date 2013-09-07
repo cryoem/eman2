@@ -20347,10 +20347,11 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
-	cout <<"  VERSION  08/20/2013  10:30am"<<endl;
+	cout <<"  VERSION  09/07/2013  11:30am"<<endl;
 	float dummy;
 	dummy = ri;
 	cout <<  "   fmod   "<<fmod(qprob,dummy)<<endl;
+	cout <<  "   round   "<<round(qprob)<<endl;
 	int newx, newy, newz;
 	bool  keep_going;
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
@@ -22381,7 +22382,9 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 				for (int iphi = 0; iphi < nphi; ++iphi) {                            //#  phi search
 					float qphi = iphi*delta;
 					philocal[0]  = qphi;
-					phirlocal[0] = fmod( 180.0f - qphi + ((int)(fabs((180.0f-qphi)/360.0f))+1)*360.0f , 360.0f );
+					qphi = 180.0f - qphi;
+					if(  qphi > 0.0f )     phirlocal[0] = fmod( qphi , 360.0f );
+					else if( qphi < 0.0f ) phirlocal[0] = 360.0f + fmod( qphi , 360.0f );
 					//# we use the first segment as a reference, so there is no interpolation, just copy the correlation
 					//#  Select largest correlation within +/- range pixels from the location we explore
 					float mxm = -1.0e23f;
@@ -22408,11 +22411,13 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 						vector<float> cim = data[im]->get_attr("ptcl_source_coord");
 						float dst = sqrt( (c0[0] - cim[0])*(c0[0] - cim[0]) + (c0[1] - cim[1])*(c0[1] - cim[1]));
 						//# predict for all remaining segments assuming number 0
-						qphi = idir*(dst/rise)*dphi;
-						float pphi = fmod(philocal[0] + qphi + ((int)(abs(qphi/360.0f))+1)*360.0f , 360.0f);                          //#  predicted phi with full angular accuracy, not an integer
-						int pix = six; //# predicted x shift
-						float qdst = idir*dst;
-						float piy = fmod(siy + qdst + ((int)(abs(qdst/rise))+1)*rise ,rise); //#  predicted y shift
+						float qd  = round((siy + dst)/rise);
+						float piy = siy + dst - rise*qd;                                    //#  predicted y shift
+						float pphi = -(philocal[0] - idir*dphi*qd);
+						if(pphi >= 360.0f)  pphi = fmod( pphi, 360.0f);
+						else if( pphi < 0.0f)  pphi = 360.0f + fmod( pphi, 360.0f);         //#  predicted phi with full angular accuracy, not an integer
+						int pix = six;                                                      //# predicted x shift
+
 						int xix = pix + nwxc;
 						float yiy = piy + nwyc;
 						//#  Local x search
@@ -22424,8 +22429,7 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 						float yrem = 1.0f - ydif;
 						float ciq = -1.0e23f;
 						//# interpolate correlation at pphi
-						qphi = pphi/delta;
-						int ttphi = (int( qphi + ((int)(abs(qphi/nphi))+1)*nphi+ 0.5))%nphi;
+						int ttphi = (int( pphi/delta + 0.5))%nphi;
 						for (int lphi = -phiwobble; lphi < phiwobble+1; ++lphi) {                                               //#  phi wobble
 							int tphi = (ttphi+lphi+nphi)%nphi;
 							for (int iux = max(1, fix - range); iux < min(nwx - 1, fix+range+1); ++iux) {                       //#  X wobble
@@ -22446,19 +22450,9 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 						mxm += ciq;
 						//# now for rotated
 						if (! Dsym) {
-							qphi = idir*(dst/rise)*dphi;
-							pphi = fmod(phirlocal[0] + qphi + ((int)(abs(qphi/360.0f))+1)*360.0f, 360.0f);                      //#  predicted phi for rotated 180 defs with full angular accuracy, not an integer
-							pix = six; //# predicted x shift
-							qdst = idir*dst;
-							piy = fmod(siy + qdst + ((int)(abs(qdst/rise))+1)*rise ,rise); //#  predicted y shift
-							xix = pix + nwxc;
-							yiy = piy + nwyc;
-							fix = int(xix);
-							xdif = xix - fix;
-							xrem = 1.0f - xdif;
-							fiy = int(yiy);
-							ydif = yiy - fiy;
-							yrem = 1.0f - ydif;
+							pphi = -(phirlocal[0] - idir*dphi*qd);                               //#  predicted phi for rotated 180 defs with full angular accuracy, not an integer
+							if(pphi >= 360.0f)  pphi = fmod( pphi, 360.0f);
+							else if( pphi < 0.0f)  pphi = 360.0f + fmod( pphi, 360.0f);         //#  predicted phi with full angular accuracy, not an integer
 							ciq = -1.0e23f;
 							//# interpolate correlation at pphi
 							for (int lphi = -phiwobble; lphi < phiwobble+1; ++lphi) {                                           //#  phi wobble
