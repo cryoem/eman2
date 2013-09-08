@@ -20347,7 +20347,7 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
-	cout <<"  VERSION  09/07/2013  11:30am"<<endl;
+	cout <<"  VERSION  09/08/2013  11:30am"<<endl;
 	float dummy;
 	dummy = ri;
 	cout <<  "   fmod   "<<fmod(qprob,dummy)<<endl;
@@ -22406,15 +22406,15 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 							}
 						}
 					}
-					for ( int im = 1; im < ndata; ++im) {                                                                             //#  predicted locations
+					for ( int im = 1; im < ndata; ++im) {                                       //#  predicted locations
 						//# dst is distance between segment 0 and current segment in pixels
 						vector<float> cim = data[im]->get_attr("ptcl_source_coord");
 						float dst = sqrt( (c0[0] - cim[0])*(c0[0] - cim[0]) + (c0[1] - cim[1])*(c0[1] - cim[1]));
 						//# predict for all remaining segments assuming number 0
 						float qd  = round((siy + dst)/rise);
 						float piy = siy + dst - rise*qd;                                    //#  predicted y shift
-						float pphi = -(philocal[0] - idir*dphi*qd);
-						if(pphi >= 360.0f)  pphi = fmod( pphi, 360.0f);
+						float pphi = (philocal[0] + idir*dphi*qd);
+						if(pphi >= 360.0f)     pphi = fmod( pphi, 360.0f);
 						else if( pphi < 0.0f)  pphi = 360.0f + fmod( pphi, 360.0f);         //#  predicted phi with full angular accuracy, not an integer
 						int pix = six;                                                      //# predicted x shift
 
@@ -22450,7 +22450,7 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 						mxm += ciq;
 						//# now for rotated
 						if (! Dsym) {
-							pphi = -(phirlocal[0] - idir*dphi*qd);                               //#  predicted phi for rotated 180 defs with full angular accuracy, not an integer
+							pphi = (phirlocal[0] + idir*dphi*qd);                               //#  predicted phi for rotated 180 defs with full angular accuracy, not an integer
 							if(pphi >= 360.0f)  pphi = fmod( pphi, 360.0f);
 							else if( pphi < 0.0f)  pphi = 360.0f + fmod( pphi, 360.0f);         //#  predicted phi with full angular accuracy, not an integer
 							ciq = -1.0e23f;
