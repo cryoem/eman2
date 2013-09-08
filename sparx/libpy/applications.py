@@ -14071,30 +14071,31 @@ def filamentupdown(fildata, pixel_size, dp, dphi):
 		phig[i], theta, psi, s2x, s2y[i] = get_params_proj(fildata[i])
 		coords.append(fildata[i].get_attr('ptcl_source_coord'))
 		#print i,phig[i], theta, psi, s2x, s2y[i]
-	pterr = 0.0 # total error between predicted angles and given angles
-	mterr = 0.0
+	terr = [0.0]*2 # total error between predicted angles and given angles
+	##serr = [0.0]*2  # shift error not needed, blocked with ##
 	for i in xrange(1, ns):
-		dd = get_dist(coords[i], coords[0])/rise
-		qd = round( s2y[0]/rise+dd )
-		phipred = (phig[0] + dphi*(dd - qd))%360.
-		err    = (phipred - phig[i])%360.0
-		pterr += min(err, 360.0 - err)
-		#print "  U  %3d   %7.1f    %8.2f    %6.1f    %8.2f    %6.1f    %6.1f"%\
-		#(i, round(dd,1), round(qd,1), round(phipred,1), round(phig[i],1), round(min(err, 360.0 - err),1), round(pterr,1))
-		
-		qd = round( s2y[0]/rise-dd )
-		phipred = (phig[0] - dphi*(dd - qd))%360.
-		err    = (phipred - phig[i])%360.0
-		mterr += min(err, 360.0 - err)
-		#print "  D  %3d   %7.1f    %8.2f    %6.1f    %8.2f    %6.1f    %6.1f"%\
-		#(i, round(dd,1), round(qd,1), round(phipred,1), round(phig[i],1), round(min(err, 360.0 - err),1), round(mterr,1))
-	#print " ERRORS :",pterr,mterr
-	if pterr < mterr:    updown = 0
-	else:                updown = 1
+		dist = get_dist(coords[0], coords[i])
+		qd = round((s2y[0] + dist)/rise)
+		##yn   = s2y[0] + dist - rise*qd
+		kl = -1
+		for sgn in xrange(-1,2,2):
+			phin   = (phig[0] - sgn*dphi*qd)%360.0
+			err    = (phin - phig[i])%360.0
+			##srr = abs(s2y[i]-yn)
+			kl += 1
+			##serr[kl] += srr
+			terr[kl] += min(err, 360.0 - err)
+			#print "    %3d   %2d   %7.1f    %7.1f   %7.1f   %6.1f    %8.2f    %8.1f"%\
+			#(i,kl, round(s2y[i]), round(yn,1), round(srr,1), round(phig[i],1), round(phin,1), round(min(err, 360.0 - err),1))
+
+	#print " ERRORS :",terr," \n        ",serr
+	if(terr[0] < terr[1]):  updown = 0
+	else:                   updown = 1
+	
 	for i in xrange(ns):  fildata[i].set_attr("updown",updown)
 	return
 
-def setfilori_MA(fildata, pixel_size, dp, dphi, sym='c1', WRAP=1):
+def setfilori_MA(fildata, pixel_size, dp, dphi, sym='c1'):
 	from utilities		import get_params_proj, set_params_proj
 	from pixel_error 	import angle_diff
 	from applications	import filamentupdown
@@ -14159,13 +14160,6 @@ def setfilori_MA(fildata, pixel_size, dp, dphi, sym='c1', WRAP=1):
 	constheta[ns-1] = (atan2(  (sin(ff)+sin(bb)) , (cos(ff)+cos(bb)) )/qv)%360.0
 
 
-	updown = fildata[0].get_attr("updown")
-	if updown == 1:
-		ddphi = -ddphi
-		sgn = -1
-	else:
-		sgn = 1
-
 	#  X-shift (straightforward)
 	consx = [0.0]*ns
 	for i in xrange(1,ns-1): consx[i] = (xg[i+1] + xg[i-1])/2.0
@@ -14179,49 +14173,48 @@ def setfilori_MA(fildata, pixel_size, dp, dphi, sym='c1', WRAP=1):
 	#   But for now, just use theta=90 since for reasonable deviations of theta from 90 (say +/- 10 degrees), 
 	#   and an intersegment distance of say >= 15 pixels, the difference theta makes is minimal.)
 
+	sgn = (1 - fildata[0].get_attr("updown")*2)
+
 	consy   = [0.0]*ns
 	consphi = [0.0]*ns
+	
+	
+	#per = 0.0
+	#yer = 0.0
+	
 	for i in xrange(ns):
 		if( i>0 ):
 			# from i-1 predict i
-			dimf = get_dist(coords[i-1], coords[i])
-			qyb = yg[i-1] + sgn*dimf
-			hqb = round(qyb/rise)
-			yb = qyb - hqb*rise
-			#print " YF ",i,qyb,hqb,yb
-		else:  yb = yg[0]
-
-		if( i < ns-1 ):
-			dimb = get_dist(coords[i+1], coords[i])
-			qyf = yg[i+1] - sgn*dimb
-			hqf = round(qyf/rise)
-			yf = qyf - hqf*rise
-			#print "   YB",qyf,hqf,yf
-		else:	yf = yg[ns-1]
-
-		consy[i] = (yb + yf)/2.0
-		#print "    YP",yg[max(0,i-1)],yg[min(i+1,ns-1)],yg[i],consy[i],"   >>>   ",yg[i]-consy[i]
-
-		if( i>0 ):
-			# from i-1 predict i
-			phipred = dphi*(dimf/rise - hqb)
-			phipredforward = qv*(( sgn*phipred + phig[i-1] )%360.0)
-			#print " F ",i,round(dimf,1),round(phig[i-1],1),round(phipred,1),round(phig[i],1),round(phipredforward/qv,1)
+			dist = get_dist(coords[i-1], coords[i])
+			qd = round((yg[i-1] + dist)/rise)
+			yb   = yg[i-1] + dist - rise*qd
+			#print  " YB ",yg[i-1],dist,qd,yb
+			phib = qv*((phig[i-1] + sgn*dphi*qd)%360.0)
 		else:
-			phipred = 0.0
-			phipredforward = qv*phig[0]
+			yb   = yg[0]
+			phib = qv*phig[0]
 
 		if( i < ns-1 ):
 			# from i+1 predict i
-			phipred = dphi*(dimb/rise + hqf)
-			phipredbackward = qv*(( phig[i+1] - sgn*phipred)%360.0)
-			#print " B ",i,round(dimb,1),round(phig[i+1],1),round(phipred,1),round(phig[i],1),round(phipredbackward/qv,1)
-		else: phipredbackward = qv*phig[ns-1]
-		consphi[i] = (atan2(  (sin(phipredforward)+sin(phipredbackward)) , (cos(phipredforward)+cos(phipredbackward)) )/qv)%360.0
-		#print " PHI ",i,round(phig[max(0,i-1)],1),round(phig[i],1),round(phig[min(i+1,ns-1)],1), \
-		#round(phipredforward/qv,1),round(phipredbackward/qv,1),round(consphi[i],1),\
-		#"    >><>>>>> ",round((round((phig[i]-consphi[i])*100)/100.)%360.,1)
+			dist = get_dist(coords[i+1], coords[i])
+			qd = round((yg[i+1] - dist)/rise)
+			yf   = yg[i+1] - dist - rise*qd
+			#print  " YF ",yg[i+1],dist,qd,yf
+			phif = qv*((phig[i+1] + sgn*dphi*qd)%360.0)
+		else:
+			yf   = yg[-1]
+			phif = qv*phig[-1]
+
+		consy[i] = (yb + yf)/2.0
+		#print "    YP",yg[max(0,i-1)], yg[min(i+1,ns-1)], yb,yf, yg[i],consy[i],"   >>>   ",yg[i]-consy[i]
+		consphi[i] = (atan2(  (sin(phib)+sin(phif)) , (cos(phib)+cos(phif)) )/qv)%360.0
+		#print " PHI ",i, round(phig[max(0,i-1)],1), round(phig[i],1), round(phig[min(i+1,ns-1)],1), \
+		#	round(phib/qv,1), round(phif/qv,1), round(consphi[i],1),\
+		#	"    >><>>>>> ",round((round((phig[i]-consphi[i])*100)/100.)%360.,1)
+		#yer += abs(yg[i]-consy[i])
+		#per += abs(phig[i]-consphi[i])
 		set_params_proj(fildata[i], [consphi[i], constheta[i], conspsi[i], consx[i], consy[i]])
+	#print yer, per
 	return
 
 def prepare_refrings2( volft, kb, nz, segmask, delta, ref_a, sym, numr, MPI=False, phiEqpsi = "Minus", kbx = None, kby = None, initial_theta = None, delta_theta = None):
