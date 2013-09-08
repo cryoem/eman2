@@ -14005,7 +14005,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 
 			mpi_barrier(MPI_COMM_WORLD)
 			
-			if (Iter % search_iter == 0):
+			if (Iter-1) % search_iter == 0):
 				
 				if CTF:  vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad)
 				else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, npad = npad)
@@ -14079,7 +14079,7 @@ def filamentupdown(fildata, pixel_size, dp, dphi):
 		##yn   = s2y[0] + dist - rise*qd
 		kl = -1
 		for sgn in xrange(-1,2,2):
-			phin   = (phig[0] - sgn*dphi*qd)%360.0
+			phin   = (phig[0] + sgn*dphi*qd)%360.0
 			err    = (phin - phig[i])%360.0
 			##srr = abs(s2y[i]-yn)
 			kl += 1
@@ -14089,7 +14089,7 @@ def filamentupdown(fildata, pixel_size, dp, dphi):
 			#(i,kl, round(s2y[i]), round(yn,1), round(srr,1), round(phig[i],1), round(phin,1), round(min(err, 360.0 - err),1))
 
 	#print " ERRORS :",terr," \n        ",serr
-	if(terr[0] < terr[1]):  updown = 0
+	if(terr[0] > terr[1]):  updown = 0
 	else:                   updown = 1
 	
 	for i in xrange(ns):  fildata[i].set_attr("updown",updown)
