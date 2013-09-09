@@ -14005,7 +14005,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 
 			mpi_barrier(MPI_COMM_WORLD)
 			
-			if (Iter-1) % search_iter == 0):
+			if (Iter-1) % search_iter == 0:
 				
 				if CTF:  vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad)
 				else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, npad = npad)
