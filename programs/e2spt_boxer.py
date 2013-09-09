@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Steven Ludtke  2/8/2011 (rewritten), Jesus Galaz-Montoya (updates/enhancements/fixes), LAST: 21/Feb/2013
+# Author: Steven Ludtke  2/8/2011 (rewritten), Jesus Galaz-Montoya (updates/enhancements/fixes), LAST: 9/sep/2013
 # Author: John Flanagan  9/7/2011 (helixboxer)
 # Copyright (c) 2011- Baylor College of Medicine
 #
@@ -125,46 +125,9 @@ def main():
 	
 	from e2spt_classaverage import sptmakepath
 	
-	options = sptmakepath( options, 'sptboxer')
+	if options.path:
+		options = sptmakepath( options, 'sptboxer')
 	
-	'''
-	if options.path and ("/" in options.path or "#" in options.path) :
-		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
-		sys.exit(1)
-
-	if not options.path: 
-		#options.path="bdb:"+numbered_path("sptavsa",True)
-		#options.path = "sptsim_01"
-		options.path = ''
-	
-	files=os.listdir(os.getcwd())
-	while options.path in files:
-		#path = options.path
-		if '_' not in options.path:
-			print "I will add the number"
-			options.path = options.path + '_00'
-		else:
-			jobtag=''
-			components=options.path.split('_')
-			if components[-1].isdigit():
-				components[-1] = str(int(components[-1])+1).zfill(2)
-			else:
-				components.append('00')
-						
-			options.path = '_'.join(components)
-			#options.path = path
-			print "The new options.path is", options.path
-
-	if options.path and options.path not in files:
-		
-		print "I will make the path", options.path
-		os.system('mkdir ' + options.path)
-	EMTomoBoxer
-	'''
-	
-	
-	
-		
 	if len(args) != 1: 
 		parser.error("You must specify a single volume data file on the command-line.")
 	if not file_exists(args[0]): 
@@ -188,7 +151,9 @@ def main():
 		#if not os.access(subtomosdir, os.R_OK) and options.format == 'single':
 		#	os.mkdir(options.path)
 		
-		print "OPTIONS.PATH IS!!!!\n\n\n", options.path
+		if options.path and options.verbose:
+			print "OPTIONS.PATH IS!!!!\n\n\n", options.path
+	
 		img = args[0]
 					
 		app = EMApp()
