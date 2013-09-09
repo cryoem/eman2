@@ -181,7 +181,7 @@ def main():
 		exit(0)
 		
 
-	if options.radius:
+	if options.radius and float(options.radius) > 0.0:
 		options = calcAliStep(options)
 		
 	
