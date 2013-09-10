@@ -408,7 +408,7 @@ def simloop(options,rootpath):
 
 							#simloop(options,rootpath)
 							print "\n\n\nPPPPPPPPPPPPPP\nAnd path is", options.path
-						
+							itersMode=0
 							ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany,thestack,themodel,itersMode)
 						
 							if samestackformany == 0:
@@ -850,9 +850,12 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			
 			else:
 				prepRefFromOrigModel = subpath + '/' + options.input.split('/')[-1].replace('.hdf','_REFPREP.hdf')
-				refprepcmd = 'e2spt_refprep.py --refstack=' + subtomos.replace('.hdf','_ptcls.hdf') + ' --output=' + prepRefFromOrigModel + ' --stack2process=' + options.input
+				refprepcmd = 'e2spt_refprep.py --refstack=' + subpath + '/' + subtomos.replace('.hdf','_ptcls.hdf') + ' --output=' + prepRefFromOrigModel + ' --stack2process=' + options.input
 				runcmd( refprepcmd )
 				ref = prepRefFromOrigModel
+				
+				print "\n\n\nRRRRRRRRRRRRRRRRRRRRRRRR\n\n\n REFPREP command was", refprepcmd
+				print "\nRRRRRRRRRRRRRRRRRRRRRRRRRRRR\n\n"
 							
 			if samestackformany > 0:
 				ref = thesemodels[d].split('/')[-1]
@@ -927,15 +930,24 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 				prepRefFromOrigModel = ''
 				refToCompensate = ''
 				
+				'''
+				#This makes NO SENSE AT ALL. With iter > 1, the reference should be the previous average. PERIOD.
+				
 				if not options.simref:
 					prepRefFromOrigModel = subpath + '/' + options.input.split('/')[-1].replace('.hdf','_REFPREP.hdf')
 					refprepcmd = 'e2spt_refprep.py --refstack=' + finalrefname + ' --output=' + prepRefFromOrigModel + ' --stack2process=' + options.input
 					
 					refToCompensate = prepRefFromOrigModel
-					runcmd( refprepcmd )	
+					runcmd( refprepcmd )
+					
+					print "\n\n\n REFPREP command was", refprepcmd
+					print "\n\n\n"
+				
 					
 				else:
-					refToCompensate = subpath + '/' + ref
+				'''
+				
+				refToCompensate = subpath + '/' + ref
 					
 					
 				
