@@ -1112,6 +1112,7 @@ class EMImage2DWidget(EMGLWidget):
 
 			for k in self.shapes.keys():
 				shape = self.shapes[k]
+				if not isinstance(shape,EMShape) : continue
 				glLineWidth(2)
 				if shape.isanimated:
 					isanimated = True
@@ -1130,6 +1131,9 @@ class EMImage2DWidget(EMGLWidget):
 		glPointSize(2)
 		for k,s in self.shapes.items():
 			if k == self.active[0]:
+				if not isinstance(s,EMShape) : 
+					print "Invalid shape in EMImage : ",s
+					continue
 				vals = s.shape[1:8]
 				vals[0:3] = self.active[1:4]
 				if s.shape[0] == "rect":
@@ -1175,6 +1179,20 @@ class EMImage2DWidget(EMGLWidget):
 					GL.glLineWidth(p[7])
 					GL.glTranslate(v[0],v[1],0)
 					GL.glScalef(p[6]*(v2[0]-v[0]),p[6]*(v2[1]-v[1]),1.0)
+					glCallList(self.circle_dl)
+					GL.glPopMatrix()
+				elif s.shape[0] == "ellipse":
+					GL.glPushMatrix()
+					p = s.shape
+					GL.glColor(*p[1:4])
+					v= (p[4],p[5])
+					v2=(p[4]+1,p[5]+1)
+					sc=v2[0]-v[0]
+					GL.glLineWidth(p[9])
+					GL.glTranslate(v[0],v[1],0)
+					GL.glScalef((v2[0]-v[0]),(v2[1]-v[1]),1.0)
+					GL.glRotatef(p[8],0,0,1.0)
+					GL.glScalef(p[6],p[7],1.0)
 					glCallList(self.circle_dl)
 					GL.glPopMatrix()
 				elif s.shape[0][:3]!="scr":

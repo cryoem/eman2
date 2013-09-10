@@ -71,6 +71,7 @@ class EMShape:
 		"line"          R  G  B  x0  y0    x1    y1    linew
 		"label"         R  G  B  x0  y0    text  size  linew
 		"circle"        R  G  B  x0  y0    r     linew
+		"ellipse"       R  G  B  x0  y0    r1    r2    ang1     linew
 		"scrrect"       R  G  B  x0  y0    x1    y1    linew
 		"scrline"       R  G  B  x0  y0    x1    y1    linew
 		"scrlabel"      R  G  B  x0  y0    text  size  linew
@@ -372,6 +373,17 @@ class EMShape:
 			GL.glLineWidth(s[7])
 			GL.glTranslate(v[0],v[1],0)
 			GL.glScalef(s[6]*(v2[0]-v[0]),s[6]*(v2[1]-v[1]),1.0)
+			GL.glCallList(EMShape.dlists)
+			GL.glPopMatrix()
+		elif s[0]=="ellipse":
+#			print s[6],v,v2
+			GL.glPushMatrix()
+			GL.glColor(*col)
+			GL.glLineWidth(s[9])
+			GL.glTranslate(v[0],v[1],0)
+			GL.glScalef((v2[0]-v[0]),(v2[1]-v[1]),1.0)
+			GL.glRotatef(s[8],0,0,1.0)
+			GL.glScalef(s[6],s[7],1.0)
 			GL.glCallList(EMShape.dlists)
 			GL.glPopMatrix()
 		else:

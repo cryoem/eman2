@@ -1251,6 +1251,7 @@ def zero(N,V,Cs,Z,AC):
 	acshift=-acos(sqrt(1-AC*AC/10000.0))	# phase shift in radians due to amplitude contrast
 	gamma=pi*N+acshift
 	l=elambda(V)
+#	print acshift,gamma,l,Cs*gamma*l*l*l+5.0*l*l*pi*Z*Z
 	return sqrt(-Z/(1000.0*Cs*l*l)+sqrt(Cs*gamma*l*l*l+5.0*l*l*pi*Z*Z)/(3963.327*Cs*l*l*l))
 	
 
@@ -1997,12 +1998,26 @@ class GUIctf(QtGui.QWidget):
 		# This updates the image circles
 		fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)
 		shp={}
-		nz=0
-		for i in range(1,len(fit)):
-			if fit[i-1]*fit[i]<=0.0:
-				nz+=1
-				shp["z%d"%i]=EMShape(("circle",0.0,0.0,1.0/nz,r,r,i,1.0))
-#				if nz==1: print ("circle",0.0,0.0,1.0/nz,r,r,i,1.0)
+		
+		# Old way of finding zeroes from the 1-d curve dynamically 
+		#nz=0
+		#for i in range(1,len(fit)):
+			#if fit[i-1]*fit[i]<=0.0:
+				#nz+=1
+				#shp["z%d"%i]=EMShape(("circle",0.0,0.0,1.0/nz,r,r,i,1.0))
+##				if nz==1: print ("circle",0.0,0.0,1.0/nz,r,r,i,1.0)
+
+		# We draw the first 5 zeroes with computed zero locations
+		for i in range(1,10):
+			if ctf.dfdiff>0 :
+				z1=zero(i,ctf.voltage,ctf.cs,ctf.defocus-ctf.dfdiff,ctf.ampcont)/ctf.dsbg
+				z2=zero(i,ctf.voltage,ctf.cs,ctf.defocus+ctf.dfdiff,ctf.ampcont)/ctf.dsbg
+				if z1>len(s) : break
+				shp["z%d"%i]=EMShape(("ellipse",0,0,1.0/i,r,r,z2,z1,ctf.dfang,1.0))				
+			else:
+				z=zero(i,ctf.voltage,ctf.cs,ctf.defocus,ctf.ampcont)/ctf.dsbg
+				if z>len(s) : break
+				shp["z%d"%i]=EMShape(("circle",0,0,1.0/i,r,r,z,1.0))
 
 		self.guiim.del_shapes()
 		self.guiim.add_shapes(shp)
