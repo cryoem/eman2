@@ -1231,7 +1231,8 @@ def oneD_plot(points,errors,name,xlabel,ylabel):
 	plt.xlabel(xlabel,fontweight='bold')
 	plt.ylabel(ylabel,fontweight='bold')
 	#plt.xlim([min(points)-min(points)*0.1,max(points)+max(points)*0.1])
-	plt.xlim( [min(points),max(points)+max(points)*0.1] )
+	
+	plt.xlim( [0,max(points)+max(points)*0.1] )
 	plt.ylim( [0,max(errors)+max(errors)*0.1] )
 	plt.tick_params(axis='both', which='major', labelsize=16)
 	plt.tick_params(axis='both', which='minor', labelsize=12)
@@ -1264,7 +1265,7 @@ def twoD_plot(points,val1,val2,location):
 	plt.title("Angular error")
 	plt.xlabel(val1)
 	plt.ylabel(val2)
-	plt.xlim([min(x)-min(x)*0.1,max(x)+max(x)*0.1])
+	plt.xlim(0,max(x)+max(x)*0.1])
 	plt.ylim([min(y)-min(y)*0.1,max(y)+max(y)*0.1])
 	for i in range(len(finalpoints)):
 		plt.plot(*zip(*[finalpoints[i]]),marker='o',markersize=4,color=color(ang_errors[i]))	
