@@ -74,6 +74,10 @@ def main():
 	parser.add_argument("--oneclass", type=int, help="Create only a single class-average. Specify the class number.",default=None)
 	parser.add_argument("--classmx", type=str, help="The name of the classification matrix specifying how particles in 'input' should be grouped. If omitted, all particles will be averaged.", default='')
 	parser.add_argument("--ref", type=str, help="Reference image(s). Used as an initial alignment reference and for final orientation adjustment if present. This is typically the projections that were used for classification.", default=None, guitype='filebox', browser='EMBrowserWidget(withmodal=True,multiselect=True)', filecheck=False, row=1, col=0, rowspan=1, colspan=3, mode='alignment')
+	
+	parser.add_argument("--refpreprocess",action="store_true",default=False,help="""This 
+		will preprocess the reference identically to the particles. It is off by default, but it is internally turned on when no reference is supplied.""")
+	
 	parser.add_argument("--resultmx",type=str,help="Specify an output image to store the result matrix. This is in the same format as the classification matrix. http://blake.bcm.edu/emanwiki/EMAN2/ClassmxFiles", default=None)
 	
 	parser.add_argument("--refinemultireftag", type=str, help="DO NOT USE THIS PARAMETER. It is passed on from e2spt_refinemulti.py if needed.", default='')
@@ -1324,7 +1328,16 @@ class Align3DTask(JSTask):
 		#print "classoptions are", classoptions
 		
 		xformslabel = 'tomo_' + str(classoptions['ptclnum']).zfill( len( str(nptcls) ) )
-		ret=alignment(fixedimage,image,classoptions['label'],classoptions['options'],xformslabel,classoptions['transform'],'e2spt_classaverage')
+		
+		refpreprocess=0
+		options=classoptions['options']
+		if not options.ref:
+			preprocessref=1
+		
+		if options.refpreprocess:
+			refpreprocess=1
+		
+		ret=alignment(fixedimage,image,classoptions['label'],classoptions['options'],xformslabel,classoptions['transform'],'e2spt_classaverage', refpreprocess)
 
 		bestfinal=ret[0]
 		bestcoarse=ret[1]
@@ -1356,7 +1369,16 @@ def align3Dfunc(fixedimage,image,ptclnum,label,classoptions,transform):
 	nptcls = EMUtil.get_image_count(classoptions.input)
 	#tomoID = "tomo_%" + str(len(str(nptcls))) + "d" % classoptions.ptcl
 	xformslabel = 'tomo_' + str(ptclnum).zfill( len( str(nptcls) ) )
-	ret=alignment(fixedimage,image,label,classoptions,xformslabel,transform,'e2spt_classaverage')
+	
+	refpreprocess=0
+	
+	if not classoptions.ref:
+		refpreprocess=1
+	
+	if classoptions.refpreprocess:
+		refpreprocess=1
+	
+	ret=alignment(fixedimage,image,label,classoptions,xformslabel,transform,'e2spt_classaverage', refpreprocess)
 
 	bestfinal=ret[0]
 	bestcoarse=ret[1]
@@ -1367,9 +1389,9 @@ def align3Dfunc(fixedimage,image,ptclnum,label,classoptions,transform):
 '''
 FUNCTION THAT DOES THE ACTUAL ALIGNMENT OF TWO GIVEN SUBVOLUMES -This is also used by e2spt_hac.py, any modification to it or its used parameters should be made with caution
 '''
-def alignment(fixedimage,image,label,classoptions,xformslabel,transform,prog='e2spt_classaverage'):
+def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_classaverage',refpreprocess=0):
 	
-	if classoptions.verbose: 
+	if options.verbose: 
 		print "Aligning ",label
 	
 	"""
@@ -1398,18 +1420,25 @@ def alignment(fixedimage,image,label,classoptions,xformslabel,transform,prog='e2
 	Similar issues in 2-D single particle refinement ... handled differently at the moment
 	"""
 	
-	if fixedimage and (classoptions.shrink or classoptions.normproc or classoptions.lowpass or classoptions.highpass or classoptions.mask or classoptions.preprocess or classoptions.lowpassfine or classoptions.highpassfine or classoptions.preprocessfine):
+	if refpreprocess and (options.shrink or options.normproc or options.lowpass or options.highpass or options.mask or options.preprocess or options.lowpassfine or options.highpassfine or options.preprocessfine):
 		#print "Sending fixedimage to preprocessing"
-		retfixedimage = preprocessing(classoptions,fixedimage)
+		retfixedimage = preprocessing(options,fixedimage)
 		sfixedimage = retfixedimage[0]
 		s2fixedimage = retfixedimage[1]
+	
 	else:
+		
+		if (options.ralign and 'fsc.tomo' in options.ralign[0]) or (options.align and 'fsc.tomo' in options.align[0]):
+			fixedimage['spt_wedge_mean']=-100000000000000000000.0
+			fixedimage['spt_wedge_sigma']=0.0
+		
 		sfixedimage = fixedimage
 		s2fixedimage = fixedimage
+		
 	
-	if image and (classoptions.shrink or classoptions.normproc or classoptions.lowpass or classoptions.highpass or classoptions.mask or classoptions.preprocess or classoptions.lowpassfine or classoptions.highpassfine or classoptions.preprocessfine):
+	if image and (options.shrink or options.normproc or options.lowpass or options.highpass or options.mask or options.preprocess or options.lowpassfine or options.highpassfine or options.preprocessfine):
 		#print "Sending image to preprocessing"
-		retimage = preprocessing(classoptions,image)
+		retimage = preprocessing(options,image)
 		simage = retimage[0]
 		s2image = retimage[1]
 	else:
@@ -1431,26 +1460,26 @@ def alignment(fixedimage,image,label,classoptions,xformslabel,transform,prog='e2
 		#if classoptions.verbose:
 		#	print "Moving Xfrom", transform
 		#options["align"][1]["inixform"] = options["transform"]
-		if classoptions.align:
+		if options.align:
 			#print "There was classoptions.align"
 			#print "and classoptions.align[1] is", classoptions.align[1]
-			if classoptions.align[1]:
-				classoptions.align[1]["transform"] = transform
+			if options.align[1]:
+				options.align[1]["transform"] = transform
 		
-		if classoptions.shrink>1:
+		if options.shrink>1:
 			#options["align"][1]["inixform"].set_trans( options["align"][1]["inixform"].get_trans()/float(options["shrinkrefine"]) )
-			classoptions.align[1]["transform"].set_trans( classoptions.align[1]["transform"].get_trans()/float(classoptions.shrinkrefine) )
+			options.align[1]["transform"].set_trans( options.align[1]["transform"].get_trans()/float(options.shrinkrefine) )
 		
-	elif classoptions.randomizewedge:
+	elif options.randomizewedge:
 		rand_orient = OrientGens.get("rand",{"n":1,"phitoo":1})		#Fetches the orientation generator
 		c1_sym = Symmetries.get("c1")					#Generates the asymmetric unit from which you wish to generate a random orientation
 		random_transform = rand_orient.gen_orientations(c1_sym)[0]	#Generates a random orientation (in a Transform object) using the generator and asymmetric unit specified 
-		if classoptions.align:
-			classoptions.align[1].update({'transform' : random_transform})
+		if options.align:
+			options.align[1].update({'transform' : random_transform})
 		else:
 			transform = random_transform
 	
-	if not classoptions.align:
+	if not options.align:
 		if not transform:
 			bestcoarse=[{"score":1.0e10,"xform.align3d":Transform()}]
 		else:
@@ -1464,32 +1493,32 @@ def alignment(fixedimage,image,label,classoptions,xformslabel,transform,prog='e2
 		
 		#print "Will do coarse alignment"
 		
-		bestcoarse = simage.xform_align_nbest(classoptions.align[0],sfixedimage,classoptions.align[1],classoptions.npeakstorefine,classoptions.aligncmp[0],classoptions.aligncmp[1])
+		bestcoarse = simage.xform_align_nbest(options.align[0],sfixedimage,options.align[1],options.npeakstorefine,options.aligncmp[0],options.aligncmp[1])
 		
 		# Scale translation
 		scaletrans=1.0
-		if classoptions.ralign and classoptions.shrinkrefine:
-			scaletrans=classoptions.shrink/float(classoptions.shrinkrefine)
-		elif classoptions.shrink:
-			scaletrans=float(classoptions.shrink)
+		if options.ralign and options.shrinkrefine:
+			scaletrans=options.shrink/float(options.shrinkrefine)
+		elif options.shrink:
+			scaletrans=float(options.shrink)
 			
 		if scaletrans>1.0:
 			for c in bestcoarse:
 				c["xform.align3d"].set_trans(c["xform.align3d"].get_trans()*scaletrans)
 
 	# verbose printout
-	if classoptions.verbose > 1 :
+	if options.verbose > 1 :
 		for i,j in enumerate(bestcoarse): 
 			print "coarse %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
 
-	if classoptions.ralign:
+	if options.ralign:
 		#print "Will to fine alignment, over these many peaks", len(bestcoarse)
 		# Now loop over the individual peaks and refine each
 		bestfinal=[]
 		peaknum=0
 		for bc in bestcoarse:
-			classoptions.ralign[1]["xform.align3d"] = bc["xform.align3d"]
-			ali = s2image.align(classoptions.ralign[0],s2fixedimage,classoptions.ralign[1],classoptions.raligncmp[0],classoptions.raligncmp[1])
+			options.ralign[1]["xform.align3d"] = bc["xform.align3d"]
+			ali = s2image.align(options.ralign[0],s2fixedimage,options.ralign[1],options.raligncmp[0],options.raligncmp[1])
 			
 			#print "\nThe score returned from ralign is", ali['score']
 			try: 					
@@ -1500,41 +1529,41 @@ def alignment(fixedimage,image,label,classoptions,xformslabel,transform,prog='e2
 				#print "\nThe appended score in EXCEPT is", bestfinal[0]['score']
 			peaknum+=1
 			
-		if classoptions.verbose:
+		if options.verbose:
 			pass
 			#print "Best final is", bestfinal
 				
-		if classoptions.shrinkrefine>1 :
+		if options.shrinkrefine>1 :
 			for c in bestfinal:
 			
-				newtrans = c["xform.align3d"].get_trans() * float(classoptions.shrinkrefine)
+				newtrans = c["xform.align3d"].get_trans() * float(options.shrinkrefine)
 				#print "New trans and type are", newtrans, type(newtrans)
 				c["xform.align3d"].set_trans(newtrans)
 
 		#verbose printout of fine refinement
-		if classoptions.verbose>1 :
+		if options.verbose>1 :
 			for i,j in enumerate(bestfinal): 
 				print "fine %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
 
 	else: 
 		bestfinal = bestcoarse
-		if classoptions.verbose:
+		if options.verbose:
 			print "\nThere was no fine alignment; therefore, score is", bestfinal[0]['score']
 	
 	from operator import itemgetter						#If you just sort 'bestfinal' it will be sorted based on the 'coarse' key in the dictionaries of the list
 														##because they come before the 'score' key of the dictionary (alphabetically)
 	bestfinal = sorted(bestfinal, key=itemgetter('score'))
 	
-	if classoptions.verbose:
+	if options.verbose:
 		#print "\nThe best peaks sorted are"	#confirm the peaks are adequately sorted
 		#for i in bestfinal:
 		#	print i
 		pass
 	
-	if bestfinal[0]["score"] == 1.0e10 and classoptions.ralign:
-		print "Error: all refine alignments failed for %s. May need to consider altering filter/shrink parameters. Using coarse alignment, but results are likely invalid."%self.classoptions["label"]
+	if bestfinal[0]["score"] == 1.0e10 and options.ralign:
+		print "Error: all refine alignments failed for %s. May need to consider altering filter/shrink parameters. Using coarse alignment, but results are likely invalid."%self.options["label"]
 	
-	if classoptions.verbose: 
+	if options.verbose: 
 		#print "Best %1.5g\t %s"%(bestfinal[0]["score"],str(bestfinal[0]["xform.align3d"]))
 		#print "Inside ALIGNMENT function in e2spt_classaverage, done aligning ",label
 		pass	
