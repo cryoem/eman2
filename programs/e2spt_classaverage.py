@@ -1425,7 +1425,7 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 	"""
 	
 	if not refpreprocess:
-		print "\nThere is NO ref preprocess!"
+		print "\nThere is NO refpreprocess! And there was a refernece. Therefore, dummy values will be enteres to the header if fsc.tomo is used."
 		if (options.ralign and 'fsc.tomo' in options.ralign[0]) or (options.align and 'fsc.tomo' in options.align[0]):
 			fixedimage['spt_wedge_mean']=-100000000000000000000.0
 			fixedimage['spt_wedge_sigma']=0.0
