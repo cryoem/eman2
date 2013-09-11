@@ -1424,11 +1424,11 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 	Similar issues in 2-D single particle refinement ... handled differently at the moment
 	"""
 	
-	#if not refpreprocess:
-	#	print "\nThere is NO refpreprocess! And there was a refernece. Therefore, dummy values will be enteres to the header if fsc.tomo is used."
-	#	if (options.ralign and 'fsc.tomo' in options.ralign[0]) or (options.align and 'fsc.tomo' in options.align[0]):
-	#		fixedimage['spt_wedge_mean']=-100000000000000000000.0
-	#		fixedimage['spt_wedge_sigma']=0.0
+	if options.ref and not refpreprocess:
+		print "\nThere is NO refpreprocess! And there was a refernece. Therefore, dummy values will be enteres to the header if fsc.tomo is used."
+		if (options.raligncmp and 'fsc.tomo' in options.raligncmp[0]) or (options.aligncmp and 'fsc.tomo' in options.aligncmp[0]):
+			fixedimage['spt_wedge_mean']=-100000000000000000000.0
+			fixedimage['spt_wedge_sigma']=0.0
 	
 	if refpreprocess and (options.shrink or options.normproc or options.lowpass or options.highpass or options.mask or options.preprocess or options.lowpassfine or options.highpassfine or options.preprocessfine):
 		#print "Sending fixedimage to preprocessing"
@@ -1449,15 +1449,22 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 		simage = retimage[0]
 		s2image = retimage[1]
 		
-		if options.ref and not refpreprocess and (options.ralign and 'fsc.tomo' in options.ralign[0]) or (options.align and 'fsc.tomo' in options.align[0]):
-			sfixedimage['spt_wedge_mean'] = simage['spt_wedge_mean']
-			sfixedimage['spt_wedge_sigma'] = simage['spt_wedge_sigma']
-			
-			s2fixedimage['spt_wedge_mean'] = s2image['spt_wedge_mean']
-			s2fixedimage['spt_wedge_sigma'] = s2image['spt_wedge_sigma']
 	else:
 		simage = image
 		s2image = image
+		
+	print "\noptions.raligncmp is", options.raligncmp
+	print "\noptions.aligncmp is", options.aligncmp
+	
+	#if options.ref and not refpreprocess and (options.raligncmp and 'fsc.tomo' in options.raligncmp[0]) or (options.aligncmp and 'fsc.tomo' in options.aligncmp[0]):
+	#	print "\nWill put dummy values for reference wedge"
+	#	sfixedimage['spt_wedge_mean'] = simage['spt_wedge_mean']
+	#	sfixedimage['spt_wedge_sigma'] = simage['spt_wedge_sigma']
+	#	
+	#	s2fixedimage['spt_wedge_mean'] = s2image['spt_wedge_mean']
+	#	s2fixedimage['spt_wedge_sigma'] = s2image['spt_wedge_sigma']
+
+
 
 		
 			#print "The mean and sigma for subvolume %d are: mean=%f, sigma=%f" % (i,mean,sigma)
