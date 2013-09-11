@@ -1277,8 +1277,38 @@ def wedgestats(volume,angle, wedgei, wedgef, options):
 		symwedge = wedge.process('xform.mirror', {'axis':'x'})
 		finalwedge = wedge + symwedge
 		
+		finalwedge.process_inplace('threshold.binary',{'value':0.0})
+
+		finalwedge_otherhalf = finalwedge.copy()
+		finalwedge_otherhalf.rotate(0,180,0)
+		
+		superfinal = finalwedge + finalwedge_otherhalf
+		
 		wedgename = os.getcwd() + '/' + options.path + '/wedge.hdf'
+		
 		finalwedge.write_image(wedgename,0)
+		
+		superfinal.write_image('wedgeFinal.hdf',0)
+		
+		'''
+		Compute fft amps of the vol and center
+		'''
+	
+		vfft.ri2ap()
+		amps = vfft.amplitude()
+		amps.process_inplace('xform.phaseorigin.tocenter')
+		symamps = amps.process('xform.mirror', {'axis':'x'})
+		finalamps = amps + symamps
+		
+		finalamps.write_image('fftamps.hdf',-1)
+		
+		'''
+		Mask finalamps with finalwedge
+		'''
+		superfinal.mult(-1)
+		inversewedge = superfinal.process('threshold.binary',{'value':-0.9})
+		maskedamps = finalamps.mult(inversewedge)
+		maskedamps.write_image('fftamps_maskedWedge.hdf',-1)		
 	
 	mean = vfft.get_attr('spt_wedge_mean')
 	sigma = vfft.get_attr('spt_wedge_sigma')
