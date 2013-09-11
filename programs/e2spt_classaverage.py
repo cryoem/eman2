@@ -1424,11 +1424,11 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 	Similar issues in 2-D single particle refinement ... handled differently at the moment
 	"""
 	
-	if not refpreprocess:
-		print "\nThere is NO refpreprocess! And there was a refernece. Therefore, dummy values will be enteres to the header if fsc.tomo is used."
-		if (options.ralign and 'fsc.tomo' in options.ralign[0]) or (options.align and 'fsc.tomo' in options.align[0]):
-			fixedimage['spt_wedge_mean']=-100000000000000000000.0
-			fixedimage['spt_wedge_sigma']=0.0
+	#if not refpreprocess:
+	#	print "\nThere is NO refpreprocess! And there was a refernece. Therefore, dummy values will be enteres to the header if fsc.tomo is used."
+	#	if (options.ralign and 'fsc.tomo' in options.ralign[0]) or (options.align and 'fsc.tomo' in options.align[0]):
+	#		fixedimage['spt_wedge_mean']=-100000000000000000000.0
+	#		fixedimage['spt_wedge_sigma']=0.0
 	
 	if refpreprocess and (options.shrink or options.normproc or options.lowpass or options.highpass or options.mask or options.preprocess or options.lowpassfine or options.highpassfine or options.preprocessfine):
 		#print "Sending fixedimage to preprocessing"
@@ -1443,11 +1443,18 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 		s2fixedimage = fixedimage
 		
 	
-	if image and (options.shrink or options.normproc or options.lowpass or options.highpass or options.mask or options.preprocess or options.lowpassfine or options.highpassfine or options.preprocessfine):
+	if options.shrink or options.normproc or options.lowpass or options.highpass or options.mask or options.preprocess or options.lowpassfine or options.highpassfine or options.preprocessfine or (options.ralign and 'fsc.tomo' in options.ralign[0]) or (options.align and 'fsc.tomo' in options.align[0]):
 		#print "Sending image to preprocessing"
 		retimage = preprocessing(options,image)
 		simage = retimage[0]
 		s2image = retimage[1]
+		
+		if options.ref and not refpreprocess and (options.ralign and 'fsc.tomo' in options.ralign[0]) or (options.align and 'fsc.tomo' in options.align[0]):
+			sfixedimage['spt_wedge_mean'] = simage['spt_wedge_mean']
+			sfixedimage['spt_wedge_sigma'] = simage['spt_wedge_sigma']
+			
+			s2fixedimage['spt_wedge_mean'] = s2image['spt_wedge_mean']
+			s2fixedimage['spt_wedge_sigma'] = s2image['spt_wedge_sigma']
 	else:
 		simage = image
 		s2image = image
