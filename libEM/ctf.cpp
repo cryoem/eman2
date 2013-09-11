@@ -664,14 +664,44 @@ void EMAN2Ctf::copy_from(const Ctf * new_ctf)
 	}
 }
 
+
 vector <float> EMAN2Ctf::compute_1d_fromimage(int size, float ds, EMData *image)
 {
-	vector < float >r;
+	vector <float> ret(size);
+	vector <float> norm(size);
+	
+	if (!image->is_complex() || !image->is_ri()) ImageFormatException("EMData::conj requires a complex, ri image");
+	
+	int nx=image->get_attr("nx");
+	int ny=image->get_attr("ny");
+	float *data=image->get_data();
+	
+	int x,y,i;
+	for (y=i=0; y<ny; y++) {
+		for (x=0; x<nx; x+=2,i+=2) {
+			if (x==0 && y>ny/2) continue;
+			float r=(float)(Util::hypot_fast(x/2,y<ny/2?y:ny-y));		// origin at 0,0; periodic
+			float a=(float)atan2(y<ny/2?y:ny-y,x/2);					// angle to point
+			r=stos2(r*ds,-dfdiff/2*cos(2.0*a-2.0*dfang))/ds;			// angle-based defocus -> convert s to remove astigmatism
+			int f=int(r);	// safe truncation, so floor isn't needed
+			r-=float(f);	// r is now the fractional spacing between bins
+			
+			float v=Util::hypot2(data[i],data[i+1]); 					//amplitude
+			if (f>=0 && f<size) {
+				ret[f]+=v*(1.0f-r);
+				norm[f]+=(1.0f-r);
+				if (f<size-1) {
+					ret[f+1]+=v*r;
+					norm[f+1]+=r;
+				}
+			}
+		}
+	}
 
-	int np=size/2;
-	r.resize(np);
+	for (i=0; i<size; i++) ret[i]/=norm[i]?norm[i]:1.0f;	// Normalize
 
-	return r;
+	
+	return ret;
 }
 
 

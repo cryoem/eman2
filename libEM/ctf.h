@@ -267,7 +267,12 @@ namespace EMAN
 		void copy_from(const Ctf * new_ctf);
 		bool equal(const Ctf * ctf1) const;
 
-	  private:
+		inline float stos2(float s,float dZ) {
+			float lmb=lambda();
+			return sqrt((defocus*1.0e4-sqrt(defocus*defocus*1.0e8 -2.0e11*cs*s*s*(defocus-dZ)*lmb*lmb+1.0e14*cs*cs*pow(s*lmb,4.0)))/(1.0e7*cs*lmb*lmb));
+		}
+	
+		private:
 
 		// Electron wavelength in A
 		inline float lambda()
