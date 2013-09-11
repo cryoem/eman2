@@ -1331,8 +1331,11 @@ class Align3DTask(JSTask):
 		
 		refpreprocess=0
 		options=classoptions['options']
+		
+		print "\nOptions.ref is", options.ref
 		if not options.ref:
-			preprocessref=1
+			print "\n(e2spt_classaverage, Align3DTask) There is no reference; therfore, refpreprocess should be turned on", refpreprocess
+			refpreprocess=1
 		
 		if options.refpreprocess:
 			refpreprocess=1
@@ -1374,7 +1377,8 @@ def align3Dfunc(fixedimage,image,ptclnum,label,classoptions,transform):
 	
 	if not classoptions.ref:
 		refpreprocess=1
-	
+		print "\n(e2spt_classaverage, align3Dfunc) There is no reference; therfore, refpreprocess should be turned on", refpreprocess
+
 	if classoptions.refpreprocess:
 		refpreprocess=1
 	
@@ -1420,18 +1424,21 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 	Similar issues in 2-D single particle refinement ... handled differently at the moment
 	"""
 	
+	if not refpreprocess:
+		print "\nThere is NO ref preprocess!"
+		if (options.ralign and 'fsc.tomo' in options.ralign[0]) or (options.align and 'fsc.tomo' in options.align[0]):
+			fixedimage['spt_wedge_mean']=-100000000000000000000.0
+			fixedimage['spt_wedge_sigma']=0.0
+	
 	if refpreprocess and (options.shrink or options.normproc or options.lowpass or options.highpass or options.mask or options.preprocess or options.lowpassfine or options.highpassfine or options.preprocessfine):
 		#print "Sending fixedimage to preprocessing"
+		
+		print "\nThere IS refpreprocess!"
 		retfixedimage = preprocessing(options,fixedimage)
 		sfixedimage = retfixedimage[0]
 		s2fixedimage = retfixedimage[1]
 	
 	else:
-		
-		if (options.ralign and 'fsc.tomo' in options.ralign[0]) or (options.align and 'fsc.tomo' in options.align[0]):
-			fixedimage['spt_wedge_mean']=-100000000000000000000.0
-			fixedimage['spt_wedge_sigma']=0.0
-		
 		sfixedimage = fixedimage
 		s2fixedimage = fixedimage
 		
