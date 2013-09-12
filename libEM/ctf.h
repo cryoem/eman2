@@ -72,7 +72,8 @@ namespace EMAN
 			CTF_SNR,			// Signal to noise ratio
 			CTF_SNR_SMOOTH,		// Signal to noise ratio, smoothed, algorithm may vary, but this should be more suitable for weighting
 			CTF_WIENER_FILTER,	// Weiner Filter = 1/(1+1/snr)
-			CTF_TOTAL			// AMP*AMP+NOISE
+			CTF_TOTAL,			// AMP*AMP+NOISE
+			CTF_FITREF			// CTF amplitude squared without B-factor and low resolution zeroed
 		};
 	  public:
 		virtual ~ Ctf()
@@ -99,7 +100,7 @@ namespace EMAN
 		// It will stretch/shrink the power spectrum as a function of angle to make a single coherent 1D CTF curve.
 		// The cost is that the shrinking means that the structure factor is being distorted to make this work. 
 		// Nonetheless, this is a useful tool in fitting astigmatic data
-		virtual vector <float>compute_1d_fromimage(int size, float ds, EMData *image=0) = 0;	
+		virtual vector <float>compute_1d_fromimage(int size, float ds, EMData *image) = 0;
 		virtual void compute_2d_real(EMData * img, CtfType t, XYData * struct_factor = 0) = 0;
 		virtual void compute_2d_complex(EMData * img, CtfType t, XYData * struct_factor = 0) = 0;
 
@@ -135,7 +136,7 @@ namespace EMAN
 		~EMAN1Ctf();
 
 		vector < float >compute_1d(int size,float ds, CtfType type, XYData * struct_factor = 0);
-		vector <float>compute_1d_fromimage(int size, float ds, EMData *image=0);	
+		vector <float>compute_1d_fromimage(int size, float ds, EMData *image);	
 		void compute_2d_real(EMData * image, CtfType type, XYData * struct_factor = 0);
 		void compute_2d_complex(EMData * image, CtfType type, XYData * struct_factor = 0);
 
@@ -251,7 +252,7 @@ namespace EMAN
 		~EMAN2Ctf();
 
 		vector <float> compute_1d(int size,float ds, CtfType type, XYData * struct_factor = 0);
-		vector <float> compute_1d_fromimage(int size, float ds, EMData *image=0);
+		vector <float> compute_1d_fromimage(int size, float ds, EMData *image);
 		void compute_2d_real(EMData * image, CtfType type, XYData * struct_factor = 0);
 		void compute_2d_complex(EMData * image, CtfType type, XYData * struct_factor = 0);
 
@@ -281,10 +282,10 @@ namespace EMAN
 			return lambda;
 		}
 
-		// returns defocus as a function of angle
+		// returns defocus as a function of angle. ang in radians !
 		inline float df(float ang) {
 			if (dfdiff==0.0) return defocus;
-			return defocus+dfdiff/2.0*cos(2.0*ang-2.0*dfang);
+			return defocus+dfdiff/2.0*cos(2.0*ang-2.0*M_PI/180.0*dfang);
 		}
 		
 		inline float calc_noise(float s)

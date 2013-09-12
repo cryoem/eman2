@@ -328,7 +328,7 @@ maps.")
 			astep=90.0/ceil(90.0/sqrt(4300/nx))		# This rounds to the best angular step divisible by 90 degrees
 			options.orientgen="eman:delta={:1.3f}:inc_mirror=0".format(astep)
 			append_html("<p>I will use an angular sampling of {} deg. For details, please see \
-<a href=http://blake.bcm.edu/emanwiki/EMAN2/AngStep>http://blake.bcm.edu/emanwiki/EMAN2/AngStep</a></p>".format(options.targetres,apix,astep))
+<a href=http://blake.bcm.edu/emanwiki/EMAN2/AngStep>http://blake.bcm.edu/emanwiki/EMAN2/AngStep</a></p>".format(astep))
 	else :
 		append_html("<p>Using your specified orientation generator with angular step. You may consider reading this page: <a href=http://blake.bcm.edu/emanwiki/EMAN2/AngStep>http://blake.bcm.edu/emanwiki/EMAN2/AngStep</a></p></p>")
 

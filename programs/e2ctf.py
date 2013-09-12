@@ -92,7 +92,8 @@ NOTE: This program should be run from the project directory, not from within the
 	parser.add_argument("--chunk",type=str,help="<chunksize>,<nchunk>. Will process files in groups of chunksize, and process the <nchunk>th group. eg - 100,3 will read files 300-399 ",default=None,guitype='strbox',row=1,col=1, mode='autofit,tuning,genoutp,gensf')
 	parser.add_argument("--gui",action="store_true",help="Start the GUI for interactive fitting",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="tuning[True]")
 	parser.add_argument("--autofit",action="store_true",help="Runs automated CTF fitting on the input images",default=False, guitype='boolbox', row=7, col=0, rowspan=1, colspan=1, mode='autofit[True]')
-	parser.add_argument("--curdefocushint",action="store_true",help="Rather than doing the defocus from scratch, use existing values in the project as a starting point",default=False, guitype='boolbox', row=7, col=1, rowspan=1, colspan=1, mode='autofit[True]')
+	parser.add_argument("--astigmatism",action="store_true",help="Includes astigmatism in automatic fitting",default=False, guitype='boolbox', row=7, col=1, rowspan=1, colspan=1, mode='autofit[True]')
+	parser.add_argument("--curdefocushint",action="store_true",help="Rather than doing the defocus from scratch, use existing values in the project as a starting point",default=False, guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, mode='autofit[True]')
 	parser.add_argument("--bgmask",type=int,help="Background is computed using a soft mask of the center/edge of each particle with the specified radius. Default radius is boxsize/2.6.",default=0)
 	parser.add_argument("--fixnegbg",action="store_true",help="Will perform a final background correction to avoid slight negative values near zeroes")
 	parser.add_argument("--computesf",action="store_true",help="Will determine the structure factor*envelope for the aggregate set of images", default=False, nosharedb=True, guitype='boolbox', row=8, col=0, rowspan=1, colspan=1, mode="autofit,tuning,gensf[True]")
@@ -1254,6 +1255,33 @@ def zero(N,V,Cs,Z,AC):
 #	print acshift,gamma,l,Cs*gamma*l*l*l+5.0*l*l*pi*Z*Z
 	return sqrt(-Z/(1000.0*Cs*l*l)+sqrt(Cs*gamma*l*l*l+5.0*l*l*pi*Z*Z)/(3963.327*Cs*l*l*l))
 	
+def ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1):
+	"""Refines the astigmatism parameters given a good initial fit. Modifies CTF object in-place."""
+	
+	# we start with some astigmatism or the process may not converge well
+	if ctf.dfdiff==0 : ctf.dfdiff=0.1
+	
+	bgsub=im_2d-bg_2d
+	bgcp=bgsub.copy()
+	sim=Simplex(ctf_stig_cmp,[ctf.dfdiff,ctf.dfang],[0.01,15.0],data=(bgsub,bgcp,ctf))
+	oparm=sim.minimize(epsilon=.00000001,monitor=0)
+	print oparm
+	
+
+def ctf_stig_cmp(parms,data):
+	
+	bgsub,bgcp,ctf=data
+
+	ctf.dfdiff,ctf.dfang=parms
+	ctf.bfactor=100.0
+	
+	ctf.compute_2d_complex(bgcp,Ctf.CtfType.CTF_FITREF,None)
+	
+	bgcp.write_image("a.hdf")
+	bgsub.write_image("b.hdf")
+	print parms,bgcp.cmp("dot",bgsub)
+	return bgcp.cmp("dot",bgsub)
+
 
 def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhint=None,verbose=1):
 	"""Determines CTF parameters given power spectra produced by powspec_with_bg()
@@ -1491,6 +1519,8 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 #	Util.save_data(0,ds,ctf.snr,"ctf.snr")
 #	Util.save_data(0,ds,bg_1d,"ctf.bg1d")
 
+	ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1)
+
 	return ctf
 
 def ctf_cmp(parms,data):
@@ -1702,7 +1732,7 @@ class MyListWidget(QtGui.QListWidget):
 class GUIctf(QtGui.QWidget):
 	def __init__(self,application,data,autohp=True,nosmooth=False):
 		"""Implements the CTF fitting dialog using various EMImage and EMPlot2D widgets
-		'data' is a list of (filename,ctf,im_1d,bg_1d,im_2d,bg_2d)
+		'data' is a list of (filename,EMAN2CTF,im_1d,bg_1d,im_2d,bg_2d,qual)
 		"""
 		try:
 			from emimage2d import EMImage2DWidget
@@ -1841,6 +1871,7 @@ class GUIctf(QtGui.QWidget):
 		QtCore.QObject.connect(self.refit,QtCore.SIGNAL("clicked(bool)"),self.on_refit)
 		QtCore.QObject.connect(self.output,QtCore.SIGNAL("clicked(bool)"),self.on_output)
 
+		self.neednewps=False
 		self.update_data()
 
 		self.resize(720,380) # figured these values out by printing the width and height in resize event
@@ -1995,6 +2026,30 @@ class GUIctf(QtGui.QWidget):
 			print "Trying to plot bad data (set %s): %s"%(str(val),str(ctf))
 			return
 
+		# recompute self.data[val][2] and [3] (FG and BG 1-D curves) if necessary
+		if self.neednewps :
+#			print "new ps"
+			# use astigmatism-aware computation here
+			fg=ctf.compute_1d_fromimage(len(s)*2, ds, self.data[val][4])
+			bg=ctf.compute_1d_fromimage(len(s)*2, ds, self.data[val][5])
+			
+			# here we adjust the background to make the zeroes zero
+			n=2
+			lz=int(zero(1,ctf.voltage,ctf.cs,ctf.defocus,ctf.ampcont)/ds+.5)
+			while 1:
+				z=int(zero(n,ctf.voltage,ctf.cs,ctf.defocus,ctf.ampcont)/ds+.5)
+				if z>len(s)-1 or z-lz<2: break
+				d1=fg[lz]-bg[lz]
+				d2=fg[z]-bg[z]
+#				print lz,d1,z,d2
+				for x in xrange(lz,z):
+					bg[x]+=(z-x)/float(z-lz)*d1+(x-lz)/float(z-lz)*d2
+				lz=z
+				n+=1
+			
+			self.data[val][2]=fg
+			self.data[val][3]=bg
+			
 		# This updates the image circles
 		fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)
 		shp={}
@@ -2195,6 +2250,7 @@ class GUIctf(QtGui.QWidget):
 		self.sdfdiff.setValue(self.data[val][1].dfdiff,True)
 		self.sdfang.setValue(self.data[val][1].dfang,True)
 		self.squality.setValue(self.data[val][6],True)
+		if self.sdfdiff.value!=0 : self.neednewps=True
 
 		try : ptcl=str(self.data[val][4]["ptcl_repr"])
 		except: ptcl="?"
@@ -2235,6 +2291,9 @@ class GUIctf(QtGui.QWidget):
 		self.update_plot()
 
 	def newCTF(self) :
+		if self.data[self.curset][1].dfdiff!=0 or self.data[self.curset][1].dfdiff!=self.sdfdiff.value:
+			if self.data[self.curset][1].dfdiff!=self.sdfdiff.value or self.data[self.curset][1].dfang!=self.sdfang.value or self.data[self.curset][1].defocus!=self.sdefocus.value : 
+				self.neednewps=True
 		self.data[self.curset][1].defocus=self.sdefocus.value
 		self.data[self.curset][1].bfactor=self.sbfactor.value
 		self.data[self.curset][1].dfdiff=self.sdfdiff.value

@@ -667,10 +667,13 @@ void EMAN2Ctf::copy_from(const Ctf * new_ctf)
 
 vector <float> EMAN2Ctf::compute_1d_fromimage(int size, float ds, EMData *image)
 {
+	size/=2;	// to be consistent with the next routine
 	vector <float> ret(size);
 	vector <float> norm(size);
 	
-	if (!image->is_complex() || !image->is_ri()) ImageFormatException("EMData::conj requires a complex, ri image");
+	if (!image->is_complex() || !image->is_ri()) ImageFormatException("EMAN2Ctf::compute_1d_fromimage requires a complex, ri image");
+	int isinten=image->get_attr_default("is_intensity",0);
+	if (isinten) ImageFormatException("EMAN2Ctf::compute_1d_fromimage does not take intensity images");
 	
 	int nx=image->get_attr("nx");
 	int ny=image->get_attr("ny");
@@ -681,12 +684,12 @@ vector <float> EMAN2Ctf::compute_1d_fromimage(int size, float ds, EMData *image)
 		for (x=0; x<nx; x+=2,i+=2) {
 			if (x==0 && y>ny/2) continue;
 			float r=(float)(Util::hypot_fast(x/2,y<ny/2?y:ny-y));		// origin at 0,0; periodic
-			float a=(float)atan2(y<ny/2?y:ny-y,x/2);					// angle to point
-			r=stos2(r*ds,-dfdiff/2*cos(2.0*a-2.0*dfang))/ds;			// angle-based defocus -> convert s to remove astigmatism
+			float a=(float)atan2(y<ny/2?y:ny-y,x/2);					// angle to point (radians)
+			r=stos2(r*ds,-dfdiff/2*cos(2.0*a-2.0*M_PI/180.0*dfang))/ds;			// angle-based defocus -> convert s to remove astigmatism, dfang in degrees
 			int f=int(r);	// safe truncation, so floor isn't needed
 			r-=float(f);	// r is now the fractional spacing between bins
 			
-			float v=Util::hypot2(data[i],data[i+1]); 					//amplitude
+			float v=Util::square_sum(data[i],data[i+1]); 				//intensity
 			if (f>=0 && f<size) {
 				ret[f]+=v*(1.0f-r);
 				norm[f]+=(1.0f-r);
@@ -930,7 +933,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 	image->to_one();
 
 	float *d = image->get_data();
-	float g1=M_PI/2.0*cs*1.0e7*pow(lambda(),3.0);		// s^4 coefficient for gamma, cached in a variable for simplicity (maybe speed? depends on the compiler)
+	float g1=M_PI/2.0*cs*1.0e7*pow(lambda(),3.0);	// s^4 coefficient for gamma, cached in a variable for simplicity (maybe speed? depends on the compiler)
 	float g2=M_PI*lambda()*10000.0;					// s^2 coefficient for gamma 
 	float acac=acos(ampcont/100.0);					// instead of ac*cos(g)+sqrt(1-ac^2)*sin(g), we can use cos(g-acos(ac)) and save a trig op
 
@@ -973,6 +976,27 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				else gam=-g1*pow(s,4.0)+g2*df(atan2(y,x))*pow(s,2.0);
 				float v = cos(gam-acac);
 				d[x * 2 + ynx] = v<0?-1.0:1.0;
+				d[x * 2 + ynx + 1] = 0;
+			}
+		}
+	}
+	else if (type == CTF_FITREF) {
+		for (int y = -ny/2; y < ny/2; y++) {
+			int y2=(y+ny)%ny;
+			int ynx = y2 * nx;
+
+			for (int x = 0; x < nx / 2; x++) {
+				float s = (float)Util::hypot_fast(x,y ) * ds;
+				if (s<.05) {
+					d[x * 2 + ynx] = 0;
+					d[x * 2 + ynx + 1] = 0;
+					continue;
+				}
+				float gam;
+				if (dfdiff==0) gam=-g1*pow(s,4.0)+g2*defocus*pow(s,2.0);
+				else gam=-g1*pow(s,4.0)+g2*df(atan2(y,x))*pow(s,2.0);
+				float v = cos(gam-acac);
+				d[x * 2 + ynx] = v*v;
 				d[x * 2 + ynx + 1] = 0;
 			}
 		}

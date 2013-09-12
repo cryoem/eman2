@@ -361,7 +361,7 @@ even lead to worse structures. Based on your requested resolution and box-size, 
 			astep=90.0/ceil(90.0/sqrt(4300/nx))		# This rounds to the best angular step divisible by 90 degrees
 			options.orientgen="eman:delta={:1.3f}:inc_mirror=0:perturb=1".format(astep)
 			append_html("<p>Based on your requested resolution and box-size, I will use an angular sampling of {} deg. For details, please see \
-<a href=http://blake.bcm.edu/emanwiki/EMAN2/AngStep>http://blake.bcm.edu/emanwiki/EMAN2/AngStep</a></p>".format(options.targetres,apix,astep))
+<a href=http://blake.bcm.edu/emanwiki/EMAN2/AngStep>http://blake.bcm.edu/emanwiki/EMAN2/AngStep</a></p>".format(astep))
 			if options.classiter<0 :
 				options.classiter=1
 				append_html("<p>Your desired resolution is between 1/2 and 3/4 Nyquist, so we will set --classiter to 1. Leaving this above 0 \
@@ -378,7 +378,7 @@ will help avoid noise bias, but it may be reduced at zero if convergence seems t
 			append_html("<p>The resolution you are requesting is beyond 2/3 Nyquist. This is normally not recommended, as it represents insufficient sampling to give a good representation of your \
 reconstructed map, and resolution can be difficult to accurately assess. The reconstruction will proceed, but generally speaking your A/pix should be less than 1/3 the targeted resolution. \
 Based on your requested resolution and box-size, I will use an angular sampling of {} deg. For details, please see \
-<a href=http://blake.bcm.edu/emanwiki/EMAN2/AngStep>http://blake.bcm.edu/emanwiki/EMAN2/AngStep</a></p>".format(options.targetres,apix,astep))
+<a href=http://blake.bcm.edu/emanwiki/EMAN2/AngStep>http://blake.bcm.edu/emanwiki/EMAN2/AngStep</a></p>".format(astep))
 	else :
 		append_html("<p>Using your specified orientation generator with angular step. You may consider reading this page: <a href=http://blake.bcm.edu/emanwiki/EMAN2/AngStep>http://blake.bcm.edu/emanwiki/EMAN2/AngStep</a></p></p>")
 		if options.classiter<0 : options.classiter=1

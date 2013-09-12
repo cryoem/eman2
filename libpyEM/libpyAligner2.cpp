@@ -178,6 +178,15 @@ struct EMAN_EMAN1Ctf_Wrapper: EMAN::EMAN1Ctf
         return EMAN::EMAN1Ctf::compute_1d(p0, p1, p2, p3);
     }
 
+    std::vector<float,std::allocator<float> > compute_1d_fromimage(int p0, float p1, EMAN::EMData* p2) {
+        return call_method< std::vector<float,std::allocator<float> > >(py_self, "compute_1d_fromimage", p0, p1, p2);
+    }
+
+    std::vector<float,std::allocator<float> > default_compute_1d_fromimage(int p0, float p1, EMAN::EMData* p2) {
+        return EMAN::EMAN1Ctf::compute_1d_fromimage(p0, p1, p2);
+    }
+
+    
     void compute_2d_real(EMAN::EMData* p0, EMAN::Ctf::CtfType p1, EMAN::XYData* p2) {
         call_method< void >(py_self, "compute_2d_real", p0, p1, p2);
     }
@@ -287,6 +296,14 @@ struct EMAN_EMAN2Ctf_Wrapper: EMAN::EMAN2Ctf
 
     std::vector<float,std::allocator<float> > default_compute_1d_3(int p0, float p1, EMAN::Ctf::CtfType p2, EMAN::XYData* p3) {
         return EMAN::EMAN2Ctf::compute_1d(p0, p1, p2, p3);
+    }
+
+    std::vector<float,std::allocator<float> > compute_1d_fromimage(int p0, float p1, EMAN::Ctf::CtfType p2, EMAN::XYData* p3) {
+        return call_method< std::vector<float,std::allocator<float> > >(py_self, "compute_1d_fromimage", p0, p1, p2, p3);
+    }
+
+    std::vector<float,std::allocator<float> > default_compute_1d_fromimage(int p0, float p1, EMAN::EMData* p2) {
+        return EMAN::EMAN2Ctf::compute_1d_fromimage(p0, p1, p2);
     }
 
     void compute_2d_real(EMAN::EMData* p0, EMAN::Ctf::CtfType p1, EMAN::XYData* p2) {
@@ -444,6 +461,7 @@ BOOST_PYTHON_MODULE(libpyAligner2)
         .def("from_vector", pure_virtual(&EMAN::Ctf::from_vector))
         .def("to_vector", pure_virtual(&EMAN::Ctf::to_vector))
         .def("compute_1d", pure_virtual(&EMAN::Ctf::compute_1d))
+        .def("compute_1d_fromimage", pure_virtual(&EMAN::Ctf::compute_1d_fromimage))
         .def("compute_2d_real", pure_virtual(&EMAN::Ctf::compute_2d_real))
         .def("compute_2d_complex", pure_virtual(&EMAN::Ctf::compute_2d_complex))
         .def("copy_from", pure_virtual(&EMAN::Ctf::copy_from))
@@ -458,6 +476,7 @@ BOOST_PYTHON_MODULE(libpyAligner2)
         .value("CTF_SNR_SMOOTH", EMAN::Ctf::CTF_SNR_SMOOTH)
         .value("CTF_WIENER_FILTER", EMAN::Ctf::CTF_WIENER_FILTER)
         .value("CTF_TOTAL", EMAN::Ctf::CTF_TOTAL)
+		.value("CTF_FITREF", EMAN::Ctf::CTF_FITREF)
     ;
 
 
@@ -484,6 +503,7 @@ BOOST_PYTHON_MODULE(libpyAligner2)
         .def_readwrite("apix", &EMAN::EMAN1Ctf::apix)
         .def("compute_1d", (std::vector<float,std::allocator<float> > (EMAN::EMAN1Ctf::*)(int, float, EMAN::Ctf::CtfType, EMAN::XYData*) )&EMAN::EMAN1Ctf::compute_1d, (std::vector<float,std::allocator<float> > (EMAN_EMAN1Ctf_Wrapper::*)(int, float, EMAN::Ctf::CtfType, EMAN::XYData*))&EMAN_EMAN1Ctf_Wrapper::default_compute_1d_3)
         .def("compute_1d", (std::vector<float,std::allocator<float> > (EMAN_EMAN1Ctf_Wrapper::*)(int, float, EMAN::Ctf::CtfType))&EMAN_EMAN1Ctf_Wrapper::default_compute_1d_2)
+        .def("compute_1d_fromimage", (std::vector<float,std::allocator<float> > (EMAN::EMAN1Ctf::*)(int, float, EMAN::EMData*) )&EMAN::EMAN1Ctf::compute_1d_fromimage, (std::vector<float,std::allocator<float> > (EMAN_EMAN1Ctf_Wrapper::*)(int, float, EMAN::EMData*))&EMAN_EMAN1Ctf_Wrapper::default_compute_1d_fromimage)
         .def("compute_2d_real", (void (EMAN::EMAN1Ctf::*)(EMAN::EMData*, EMAN::Ctf::CtfType, EMAN::XYData*) )&EMAN::EMAN1Ctf::compute_2d_real, (void (EMAN_EMAN1Ctf_Wrapper::*)(EMAN::EMData*, EMAN::Ctf::CtfType, EMAN::XYData*))&EMAN_EMAN1Ctf_Wrapper::default_compute_2d_real_3)
         .def("compute_2d_real", (void (EMAN_EMAN1Ctf_Wrapper::*)(EMAN::EMData*, EMAN::Ctf::CtfType))&EMAN_EMAN1Ctf_Wrapper::default_compute_2d_real_2)
         .def("compute_2d_complex", (void (EMAN::EMAN1Ctf::*)(EMAN::EMData*, EMAN::Ctf::CtfType, EMAN::XYData*) )&EMAN::EMAN1Ctf::compute_2d_complex, (void (EMAN_EMAN1Ctf_Wrapper::*)(EMAN::EMData*, EMAN::Ctf::CtfType, EMAN::XYData*))&EMAN_EMAN1Ctf_Wrapper::default_compute_2d_complex_3)
@@ -517,6 +537,7 @@ BOOST_PYTHON_MODULE(libpyAligner2)
 		.add_property("background", &EMAN::EMAN2Ctf::get_background, &EMAN::EMAN2Ctf::set_background)
         .def("compute_1d", (std::vector<float,std::allocator<float> > (EMAN::EMAN2Ctf::*)(int, float, EMAN::Ctf::CtfType, EMAN::XYData*) )&EMAN::EMAN2Ctf::compute_1d, (std::vector<float,std::allocator<float> > (EMAN_EMAN2Ctf_Wrapper::*)(int, float, EMAN::Ctf::CtfType, EMAN::XYData*))&EMAN_EMAN2Ctf_Wrapper::default_compute_1d_3)
         .def("compute_1d", (std::vector<float,std::allocator<float> > (EMAN_EMAN2Ctf_Wrapper::*)(int, float, EMAN::Ctf::CtfType))&EMAN_EMAN2Ctf_Wrapper::default_compute_1d_2)
+        .def("compute_1d_fromimage", (std::vector<float,std::allocator<float> > (EMAN::EMAN2Ctf::*)(int, float, EMAN::EMData*) )&EMAN::EMAN2Ctf::compute_1d, (std::vector<float,std::allocator<float> > (EMAN_EMAN2Ctf_Wrapper::*)(int, float, EMAN::EMData*))&EMAN_EMAN2Ctf_Wrapper::default_compute_1d_fromimage)
         .def("compute_2d_real", (void (EMAN::EMAN2Ctf::*)(EMAN::EMData*, EMAN::Ctf::CtfType, EMAN::XYData*) )&EMAN::EMAN2Ctf::compute_2d_real, (void (EMAN_EMAN2Ctf_Wrapper::*)(EMAN::EMData*, EMAN::Ctf::CtfType, EMAN::XYData*))&EMAN_EMAN2Ctf_Wrapper::default_compute_2d_real_3)
         .def("compute_2d_real", (void (EMAN_EMAN2Ctf_Wrapper::*)(EMAN::EMData*, EMAN::Ctf::CtfType))&EMAN_EMAN2Ctf_Wrapper::default_compute_2d_real_2)
         .def("compute_2d_complex", (void (EMAN::EMAN2Ctf::*)(EMAN::EMData*, EMAN::Ctf::CtfType, EMAN::XYData*) )&EMAN::EMAN2Ctf::compute_2d_complex, (void (EMAN_EMAN2Ctf_Wrapper::*)(EMAN::EMData*, EMAN::Ctf::CtfType, EMAN::XYData*))&EMAN_EMAN2Ctf_Wrapper::default_compute_2d_complex_3)
