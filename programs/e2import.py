@@ -36,7 +36,7 @@ from EMAN2 import *
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <micrgrpah1, microgaph2....
-	Import particles coordinats from box files. To work the box file name must be the same as the microgrpah name save the extension.
+	Import particles coordinates from box files. To work the box file name must be the same as the microgrpah name save the extension.
 	>"""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)

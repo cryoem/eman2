@@ -92,7 +92,7 @@ NOTE: This program should be run from the project directory, not from within the
 	parser.add_argument("--chunk",type=str,help="<chunksize>,<nchunk>. Will process files in groups of chunksize, and process the <nchunk>th group. eg - 100,3 will read files 300-399 ",default=None,guitype='strbox',row=1,col=1, mode='autofit,tuning,genoutp,gensf')
 	parser.add_argument("--gui",action="store_true",help="Start the GUI for interactive fitting",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="tuning[True]")
 	parser.add_argument("--autofit",action="store_true",help="Runs automated CTF fitting on the input images",default=False, guitype='boolbox', row=7, col=0, rowspan=1, colspan=1, mode='autofit[True]')
-	parser.add_argument("--astigmatism",action="store_true",help="Includes astigmatism in automatic fitting",default=False, guitype='boolbox', row=7, col=1, rowspan=1, colspan=1, mode='autofit[True]')
+	parser.add_argument("--astigmatism",action="store_true",help="Includes astigmatism in automatic fitting",default=False, guitype='boolbox', row=7, col=1, rowspan=1, colspan=1, mode='autofit[False]')
 	parser.add_argument("--curdefocushint",action="store_true",help="Rather than doing the defocus from scratch, use existing values in the project as a starting point",default=False, guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, mode='autofit[True]')
 	parser.add_argument("--bgmask",type=int,help="Background is computed using a soft mask of the center/edge of each particle with the specified radius. Default radius is boxsize/2.6.",default=0)
 	parser.add_argument("--fixnegbg",action="store_true",help="Will perform a final background correction to avoid slight negative values near zeroes")
@@ -490,6 +490,8 @@ def pspec_and_ctf_fit(options,debug=False):
 						print "No existing defocus to start with"
 			else: dfhint=None
 			ctf=ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,options.voltage,options.cs,options.ac,apix,bgadj=not options.nosmooth,autohp=options.autohp,dfhint=dfhint,verbose=options.verbose)
+			if options.astigmatism : ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1)
+
 
 			if debug:
 				Util.save_data(0,ds,im_1d,"ctf.fg.txt")
@@ -1258,29 +1260,59 @@ def zero(N,V,Cs,Z,AC):
 def ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1):
 	"""Refines the astigmatism parameters given a good initial fit. Modifies CTF object in-place."""
 	
-	# we start with some astigmatism or the process may not converge well
-	if ctf.dfdiff==0 : ctf.dfdiff=0.1
+	## we start with some astigmatism or the process may not converge well
+	#if ctf.dfdiff==0 : ctf.dfdiff=0.1
 	
 	bgsub=im_2d-bg_2d
 	bgcp=bgsub.copy()
-	sim=Simplex(ctf_stig_cmp,[ctf.dfdiff,ctf.dfang],[0.01,15.0],data=(bgsub,bgcp,ctf))
-	oparm=sim.minimize(epsilon=.00000001,monitor=0)
-	print oparm
+	#sim=Simplex(ctf_stig_cmp,[ctf.dfdiff,ctf.dfang],[0.01,15.0],data=(bgsub,bgcp,ctf))
+	#oparm=sim.minimize(epsilon=.00000001,monitor=0)
+	#print oparm
+
+	# Give a little arbitrary astigmatism for the angular search
+	if ctf.dfdiff==0 : ctf.dfdiff=ctf.defocus/20.0
 	
+	# coarse angular alignment
+	besta=(1.0e15,0)
+	for ang in xrange(0,180,15):
+		v=ctf_stig_cmp((ctf.dfdiff,ang,ctf.defocus),(bgsub,bgcp,ctf))
+		besta=min(besta,(v,ang))
+	ctf.dfang=besta[1]
+	print "best angle:", besta
+
+	# Fit dfdiff and defocus simultaneously by exhaustive search
+	bestd=(1.0e15,0,0)
+	dfcen=ctf.defocus
+	dfdcen=ctf.dfdiff
+	dfstep=ctf.defocus/100.0
+	for defocus in xrange(-10,11):
+		for dfdiff in xrange(-10,11):
+			v=ctf_stig_cmp((dfdcen+dfdiff*dfstep,ctf.dfang,dfcen+defocus*dfstep),(bgsub,bgcp,ctf))
+			bestd=min(bestd,(v,dfdcen+dfdiff*dfstep,dfcen+defocus*dfstep))
+	print "best dfdiff/defocus ",bestd
+	ctf.dfdiff=bestd[1]
+	ctf.defocus=bestd[2]
+
+	# fine angular alignment
+	for ang in xrange(besta[1]-14,besta[1]+15):
+		v=ctf_stig_cmp((ctf.dfdiff,ang,ctf.defocus),(bgsub,bgcp,ctf))
+		besta=min(besta,(v,ang))
+	ctf.dfang=besta[1]
+	print "best angle:", besta
 
 def ctf_stig_cmp(parms,data):
 	
 	bgsub,bgcp,ctf=data
 
-	ctf.dfdiff,ctf.dfang=parms
+	ctf.dfdiff,ctf.dfang,ctf.defocus=parms
 	ctf.bfactor=100.0
 	
 	ctf.compute_2d_complex(bgcp,Ctf.CtfType.CTF_FITREF,None)
 	
 	bgcp.write_image("a.hdf")
 	bgsub.write_image("b.hdf")
-	print parms,bgcp.cmp("dot",bgsub)
-	return bgcp.cmp("dot",bgsub)
+	print parms,bgcp.cmp("dot",bgsub,{"normalize":1})
+	return bgcp.cmp("dot",bgsub,{"normalize":1})
 
 
 def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhint=None,verbose=1):
@@ -1519,7 +1551,6 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 #	Util.save_data(0,ds,ctf.snr,"ctf.snr")
 #	Util.save_data(0,ds,bg_1d,"ctf.bg1d")
 
-	ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1)
 
 	return ctf
 
@@ -1942,7 +1973,13 @@ class GUIctf(QtGui.QWidget):
 	def on_refit(self):
 		# self.data[n] contains filename,EMAN2CTF,im_1d,bg_1d,im_2d,bg_2d,qual
 		tmp=list(self.data[self.curset])
+		
+		dfdiff=self.sdfdiff.value
+		dfang=self.sdfang.value
 		ctf=ctf_fit(tmp[2],tmp[3],tmp[7],tmp[4],tmp[5],tmp[1].voltage,tmp[1].cs,tmp[1].ampcont,tmp[1].apix,bgadj=not self.nosmooth,autohp=self.autohp,dfhint=self.sdefocus.value)
+		ctf.dfdiff=dfdiff
+		ctf.dfang=dfang
+		if ctf.dfdiff!=0 : ctf_fit_stig(tmp[4],tmp[5],ctf,True)
 
 		val = self.curset
 		name = base_name(str(self.setlist.item(val).text()))

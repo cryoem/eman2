@@ -1279,7 +1279,7 @@ def base_name( file_name,extension=False,bdb_keep_dir=False ):
 	else:
 		apath=os.path.relpath(file_name).replace("\\","/").split("/")
 		# for specific directories, we want any references to the same micrograph to share an id
-		if len(apath)>1 and apath[-2] in ("sets","particles","micrographs","ddd") :
+		if len(apath)>1 and apath[-2] in ("sets","particles","micrographs","ddd","raw") :
 			if extension : return os.path.basename(file_name)
 			else : return os.path.splitext(os.path.basename(file_name))[0].split("__")[0].replace("_ptcls","")		# double underscore is used to mark tags added to micrograph names
 		
