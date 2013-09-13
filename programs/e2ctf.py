@@ -1283,12 +1283,12 @@ def ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1):
 	# Fit dfdiff and defocus simultaneously by exhaustive search
 	bestd=(1.0e15,0,0)
 	dfcen=ctf.defocus
-	dfdcen=ctf.dfdiff
 	dfstep=ctf.defocus/100.0
+	dfdstep=ctf.dfdiff/10.0
 	for defocus in xrange(-10,11):
-		for dfdiff in xrange(-10,11):
-			v=ctf_stig_cmp((dfdcen+dfdiff*dfstep,ctf.dfang,dfcen+defocus*dfstep),(bgsub,bgcp,ctf))
-			bestd=min(bestd,(v,dfdcen+dfdiff*dfstep,dfcen+defocus*dfstep))
+		for dfdiff in xrange(0,21):
+			v=ctf_stig_cmp((dfdiff*dfstep,ctf.dfang,dfcen+defocus*dfstep),(bgsub,bgcp,ctf))
+			bestd=min(bestd,(v,dfdiff*dfstep,dfcen+defocus*dfstep))
 	print "best dfdiff/defocus ",bestd
 	ctf.dfdiff=bestd[1]
 	ctf.defocus=bestd[2]

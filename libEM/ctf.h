@@ -270,7 +270,7 @@ namespace EMAN
 
 		inline float stos2(float s,float dZ) {
 			float lmb=lambda();
-			return sqrt((defocus*1.0e4-sqrt(defocus*defocus*1.0e8 -2.0e11*cs*s*s*(defocus-dZ)*lmb*lmb+1.0e14*cs*cs*pow(s*lmb,4.0)))/(1.0e7*cs*lmb*lmb));
+			return sqrt((defocus*1.0e4f-sqrt(defocus*defocus*1.0e8f -2.0e11f*cs*s*s*(defocus-dZ)*lmb*lmb+1.0e14f*cs*cs*pow(s*lmb,4.0f)))/(1.0e7f*cs*lmb*lmb));
 		}
 	
 		private:
@@ -285,7 +285,7 @@ namespace EMAN
 		// returns defocus as a function of angle. ang in radians !
 		inline float df(float ang) {
 			if (dfdiff==0.0) return defocus;
-			return defocus+dfdiff/2.0*cos(2.0*ang-2.0*M_PI/180.0*dfang);
+			return defocus+dfdiff/2.0f*cos(2.0f*ang-2.0f*M_PI/180.0f*dfang);
 		}
 		
 		inline float calc_noise(float s)
