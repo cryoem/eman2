@@ -4029,3 +4029,8 @@ def wrap_mpi_gatherv(data, root, communicator = None):
 	
 	return out_array
 
+def get_dist(c1, c2):
+	from math import sqrt
+	d = sqrt((c1[0] - c2[0])**2 + (c1[1] - c2[1])**2)
+	return d
+

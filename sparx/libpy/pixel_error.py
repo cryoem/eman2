@@ -902,16 +902,9 @@ def consistency_params(stack, dphi, dp, pixel_size, phithr=2.5, ythr=1.5, THR=3)
 		stack        - contains coding of filaments and coordinates of segments ptcl_source_coord
 		fname_params - parameters whose consistency is tested
 	'''
-	from utilities import read_text_row, write_text_row
+	from utilities import read_text_row, write_text_row, get_dist
 	from applications import get_dist, ordersegments
 	from pixel_error import angle_diff
-
-
-	def get_dist(c1, c2):
-		from math import sqrt
-		d = sqrt((c1[0] - c2[0])**2 + (c1[1] - c2[1])**2)
-		return d
-
 
 	filaments = ordersegments(stack)
 	ptclcoords = EMUtil.get_all_attributes(stack, 'ptcl_source_coord')
@@ -919,7 +912,7 @@ def consistency_params(stack, dphi, dp, pixel_size, phithr=2.5, ythr=1.5, THR=3)
 	for i in xrange(len(params)):
 		d = params[i].get_params("spider")
 		params[i] = [d["phi"], d["theta"], d["psi"], -d["tx"], -d["ty"] ]
-	
+
 	N = len(filaments)
 	print "N: ", N
 	totsegs    = 0
@@ -1037,7 +1030,7 @@ def getnewhelixcoords(hcoordsname, outdir, ratio,nx,ny, newpref="resampled_", bo
 		s = '%d\t%d\t%d\t%d\t%d\n'%(xnew-new_w/2,ynew-new_w/2, new_w, new_w, coords[i][4])
 		f.write(s)
 	return newhcoordsname	
-	
+
 def helical_params_err(params1, params2, fil_list):
 	'''
 	Input:

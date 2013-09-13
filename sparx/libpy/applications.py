@@ -14056,11 +14056,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 				header(stack, params='pixerr', fexport=os.path.join(outdir, "pixelerror%04d.txt"%(ooiter)))
 
 def filamentupdown(fildata, pixel_size, dp, dphi):
-	def get_dist(c1, c2):
-		from math import sqrt
-		d = sqrt((c1[0] - c2[0])**2 + (c1[1] - c2[1])**2)
-		return d
-	from utilities import get_params_proj
+	from utilities import get_params_proj, get_dist
 
 	rise  = dp/pixel_size
 	ns = len(fildata)
@@ -14096,16 +14092,11 @@ def filamentupdown(fildata, pixel_size, dp, dphi):
 	return
 
 def setfilori_MA(fildata, pixel_size, dp, dphi, sym='c1'):
-	from utilities		import get_params_proj, set_params_proj
+	from utilities		import get_params_proj, set_params_proj, get_dist
 	from pixel_error 	import angle_diff
 	from applications	import filamentupdown
 	from copy 			import copy
 	from math 			import atan2, sin, cos, pi
-
-	def get_dist(c1, c2):
-		from math import sqrt
-		d = sqrt((c1[0] - c2[0])**2 + (c1[1] - c2[1])**2)
-		return d
 
 	if sym != 'c1':
 		ERROR("does not handle any point-group symmetry other than c1 for the time being.", 'setfilori_MA')
