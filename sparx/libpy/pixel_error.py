@@ -823,7 +823,7 @@ def ordersegments(infilaments, ptclcoords):
 
 def mapcoords(x, y, r, nx, ny):
 	from math 			import ceil, floor
-	from applications 	import get_dist
+	from utilities 	import get_dist
 	import sys
 	'''
 	Input:
@@ -903,7 +903,7 @@ def consistency_params(stack, dphi, dp, pixel_size, phithr=2.5, ythr=1.5, THR=3)
 		fname_params - parameters whose consistency is tested
 	'''
 	from utilities import read_text_row, write_text_row, get_dist
-	from applications import get_dist, ordersegments
+	from applications import ordersegments
 	from pixel_error import angle_diff
 
 	filaments = ordersegments(stack)
