@@ -13132,7 +13132,7 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 				send_EMData(fullvol0, main_node, ivol+myid+70000)
 
 def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, ywobble, pixel_size, dp, dphi, fract, rmax, rmin, FindPsi = True, maskfile = None, \
-	    maxit = 1, CTF = False, snr = 1.0, sym = "c1",  user_func_name = "helical", npad = 2, debug = False, doExhaustive=False):
+	    maxit = 1, CTF = False, snr = 1.0, sym = "c1",  user_func_name = "helical", npad = 2, debug = False):
 
 	from alignment       import Numrinit, prepare_refrings, proj_ali_incore, proj_ali_incore_local, proj_ali_incore_local_psi
 	from alignment       import ringwe, ang_n
@@ -13205,7 +13205,7 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 	
 	# Only handle square volumes now!
 	if nz < nx:
-		ERROR('Do not handle square volumes .... nz cannot be less than nx', "helicon_MPI", 1, myid)
+		ERROR('Only handles square volumes .... nz cannot be less than nx', "helicon_MPI", 1, myid)
 	
 	# Pad to square
 	if nz > nx:
@@ -13216,6 +13216,8 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 	
 	if(sym[0] == "d"  or sym[0] == "D"):  Dsym = True
 	else:                                 Dsym = False
+	# restriction of phi search for the first segment
+	symrestrict = int(sym[1])
 
 	#  For the time being only one delta!!!
 	delta       = get_input_from_string(delta)[0]
@@ -13241,7 +13243,7 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 		print_msg("CTF correction                            : %s\n"%(CTF))
 		print_msg("Signal-to-Noise Ratio                     : %f\n"%(snr))
 		print_msg("Symmetry group                            : %s\n"%(sym))
-		print_msg("seg_ny                        		     : %s\n\n"%(seg_ny))
+		print_msg("Segment height seg_ny                     : %s\n\n"%(seg_ny))
 
 	if maskfile:
 		if type(maskfile) is types.StringType: mask3D = get_image(maskfile)
@@ -13433,9 +13435,9 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 				start_time = time()
 			ldata = [data[im] for im in xrange(indcs[ifil][0],indcs[ifil][1])]
 			#for im in xrange(len(ldata)):  ldata[im].set_attr("bestang", 10000.0)
-			Util.constrained_helix_exhaustive(ldata, fdata[indcs[ifil][0]:indcs[ifil][1]], refproj, rotproj, [float(dp), float(dphi), rise, float(delta)], [int(nphi), int(phiwobble), int(rng), int(ywobble), int(Dsym), int(nwx), int(nwy), int(nwxc), int(nwyc)], FindPsi, float(psi_max), crefim, numr, int(maxrin), mode, int(cnx), int(cny))
+			Util.constrained_helix_exhaustive(ldata, fdata[indcs[ifil][0]:indcs[ifil][1]], refproj, rotproj, [float(dp), float(dphi), rise, float(delta)], [int(nphi), symrestrict, int(phiwobble), int(rng), int(ywobble), int(Dsym), int(nwx), int(nwy), int(nwxc), int(nwyc)], FindPsi, float(psi_max), crefim, numr, int(maxrin), mode, int(cnx), int(cny))
 			#from development import constrained_helix
-			#constrained_helix(ldata, fdata[indcs[ifil][0]:indcs[ifil][1]], refproj, rotproj, dp, dphi, rise, delta, nphi, phiwobble, rng, ywobble, Dsym, nwx, nwy, nwxc, nwyc, FindPsi, psi_max, crefim, numr, maxrin, mode, cnx, cny, myid, main_node)
+			#constrained_helix(ldata, fdata[indcs[ifil][0]:indcs[ifil][1]], refproj, rotproj, dp, dphi, rise, delta, nphi, symrestrict, phiwobble, rng, ywobble, Dsym, nwx, nwy, nwxc, nwyc, FindPsi, psi_max, crefim, numr, maxrin, mode, cnx, cny, myid, main_node)
 			'''
 			if doExhaustive:
 				Util.constrained_helix_exhaustive(ldata, fdata[indcs[ifil][0]:indcs[ifil][1]], refproj, rotproj, [float(dp), float(dphi), float(rise), float(delta)], [int(nphi), int(phiwobble), int(rng), int(ywobble), int(Dsym), int(nwx), int(nwy), int(nwxc), int(nwyc)], FindPsi, float(psi_max), crefim, numr, int(maxrin), mode, int(cnx), int(cny))
@@ -13839,7 +13841,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 					Torg.append(data[im].get_attr('xform.projection'))
 					
 				if (seg_end - seg_start) > 1:
-					setfilori_MA(data[seg_start: seg_end], pixel_size, dp, dphi, symmetry_string)
+					setfilori_MA(data[seg_start: seg_end], pixel_size, dp, dphi)
 
 				for im in xrange( seg_start, seg_end ):
 					peak1 = None
@@ -14091,15 +14093,15 @@ def filamentupdown(fildata, pixel_size, dp, dphi):
 	for i in xrange(ns):  fildata[i].set_attr("updown",updown)
 	return
 
-def setfilori_MA(fildata, pixel_size, dp, dphi, sym='c1'):
+def setfilori_MA(fildata, pixel_size, dp, dphi):
 	from utilities		import get_params_proj, set_params_proj, get_dist
 	from pixel_error 	import angle_diff
 	from applications	import filamentupdown
 	from copy 			import copy
 	from math 			import atan2, sin, cos, pi
 
-	if sym != 'c1':
-		ERROR("does not handle any point-group symmetry other than c1 for the time being.", 'setfilori_MA')
+	#if sym != 'c1':
+	#	ERROR("does not handle any point-group symmetry other than c1 for the time being.", 'setfilori_MA')
 
 	rise 	= dp/pixel_size
 	ddphi   = pixel_size/dp*dphi

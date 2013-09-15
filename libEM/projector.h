@@ -270,14 +270,14 @@ namespace EMAN
 		{
 			TypeDict d;
 			d.put("transform", EMObject::TRANSFORM);
-			d.put("origin_x", EMObject::INT);
-			d.put("origin_y", EMObject::INT);
-			d.put("origin_z", EMObject::INT);
-			d.put("radius", EMObject::INT);
+			d.put("origin_x",  EMObject::INT);
+			d.put("origin_y",  EMObject::INT);
+			d.put("origin_z",  EMObject::INT);
+			d.put("radius",    EMObject::INT);
 			d.put("anglelist", EMObject::FLOATARRAY);
 			d.put("angletype", EMObject::STRING);
-			d.put("theta", EMObject::FLOAT);
-			d.put("psi", EMObject::FLOAT);
+			d.put("theta",     EMObject::FLOAT);
+			d.put("psi",       EMObject::FLOAT);
 			return d;
 		}
 		

@@ -42,14 +42,14 @@ def main():
         for arg in sys.argv:
         	arglist.append( arg )
 	progname = os.path.basename(arglist[0])
-	usage = progname + " stack ref_vol outdir  <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --ynumber=y_numbers  --txs=translational_search_stepx  --delta=angular_step --an=angular_neighborhood --center=1 --maxit=max_iter --CTF --snr=1.0  --ref_a=S --sym=c1 --datasym=symdoc --new"
+	usage = progname + " stack ref_vol outdir  <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --txs=translational_search_stepx  --delta=angular_step --maxit=max_iter --CTF --snr=1.0  --ref_a=S --sym=c1 --datasym=symdoc"
 	
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--delta",              type="string",		 default= " 10 6 4  3   2",   help="angular step of reference projections")
 	parser.add_option("--maxit",              type="int",            default= 30,                 help="maximum number of iterations performed for each angular step (set to 30) ")
 	parser.add_option("--CTF",                action="store_true",   default=False,      		  help="CTF correction")
 	parser.add_option("--snr",                type="float",          default= 1.0,                help="Signal-to-Noise Ratio of the data")	
-	parser.add_option("--MPI",                action="store_true",   default=False,               help="use MPI version")
+	#parser.add_option("--MPI",                action="store_true",   default=False,               help="use MPI version")
 	#parser.add_option("--fourvar",           action="store_true",   default=False,               help="compute Fourier variance")
 	parser.add_option("--apix",               type="float",			 default= -1.0,               help="pixel size in Angstroms")   
 	parser.add_option("--dp",                 type="float",			 default= -1.0,               help="delta z - translation in Angstroms")   
@@ -59,29 +59,16 @@ def main():
 	parser.add_option("--psi_max",            type="float", 		 default= 10.0,               help="maximum psi - how far rotation in plane can can deviate from 90 or 270 degrees")   
 	parser.add_option("--rmin",               type="float", 		 default= 0.0,                help="minimal radius for hsearch (Angstroms)")   
 	parser.add_option("--rmax",               type="float", 		 default= 80.0,               help="maximal radius for hsearch (Angstroms)")
-	parser.add_option("--fract",              type="float", 		 default= 0.7,                help="fraction of the volume used for helical search")
-	parser.add_option("--sym",                type="string",		 default= "c1",               help="symmetry of the structure")
+	parser.add_option("--fract",              type="float", 		 default= 0.7,                help="fraction of the volume used for helical search. Default 0.7.")
+	parser.add_option("--sym",                type="string",		 default= "c1",               help="Poin-group symmetry of the structure. Default c1.")
 	parser.add_option("--function",           type="string",		 default="helical",  	      help="name of the reference preparation function")
 	parser.add_option("--npad",               type="int",   		 default= 2,                  help="padding size for 3D reconstruction")
 	parser.add_option("--debug",              action="store_true",   default=False,               help="debug")
-	
+	parser.add_option("--seg_ny",             type="int",            default= 45,                 help="Desired y dimension of segments.  Only central part of segments nseg_ny pixels long will be used in calculations.")
 	parser.add_option("--searchxshift",       type="float",		     default= 0.0,                help="search range for x-shift determination: +/- searchxshift (Angstroms)")
-	parser.add_option("--xwobble",             type="float",		     default= 6.0,                help="neighborhood within which to search for peaks in 1D ccf for x-shift search (Angstroms)")
-
-	#  ehelix
-	parser.add_option("--ehelix",             action="store_true",   default=False,               help="Use consistent helical refinement")
-	parser.add_option("--ywobble",            type="float",          default=0.0,                 help="wobble in y-directions (default = 0.0) in Angstroms")
+	parser.add_option("--xwobble",            type="float",		     default= 6.0,                help="neighborhood within which to search for peaks in 1D ccf for x-shift search (Angstroms)")
+	parser.add_option("--ywobble",            type="float",          default=0.0,                 help="wobble in y-directions (default = 0.0) in Angstroms")h
 	parser.add_option("--nopsisearch",        action="store_true",   default=False,               help="Block searching for in-plane angle (default False)")
-	
-	parser.add_option("--test",               action="store_true",   default=False,               help="test code for where inter-segment distances are not multiples of rise")
-	parser.add_option("--exhaustive",         action="store_true",   default=False,               help="Use old version of constrained_helix without SHC")
-	
-	# ehelix streak
-	parser.add_option("--seg_ny",              type="int",           default= 45,                 help="y dimension of desired segment size, should be related to fract in that fract ~ seg_ny/ny, where ny is dimension of input projections.")
-	
-	parser.add_option("--stoprnct", 		   type="float",         default=5.0,                 help="Minimum percentage of particles that change orientation to stop the program") 
-	parser.add_option("--lastringtest",        action="store_true",  default=False,               help="")
-	
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
 		print "usage: " + usage + "\n"
@@ -117,31 +104,28 @@ def main():
 		searchxshiftp = int( (options.searchxshift/options.apix) + 0.5)
 		xwobblep = int( (options.xwobble/options.apix) + 0.5)
 
-		if options.MPI:
+		try:
 			from mpi import mpi_init, mpi_finalize
 			sys.argv = mpi_init(len(sys.argv), sys.argv)
+		except:
+			ERROR('This program has only MPI version.  Please install MPI library.', 'sxhelicon')
+			sys.exit()
 
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
 
-		
-		if len(args) < 4:  mask = None
-		else:               mask = args[3]
-		if options.lastringtest:
-			from development import ehelix_MPI_lastringtest
-			global_def.BATCH = True
-			ehelix_MPI_lastringtest(args[0], args[1], args[2], options.seg_ny, options.delta, options.psi_max, searchxshiftp, xwobblep, ywobble, options.apix, dp, dphi, options.fract, rmaxp, rminp, not options.nopsisearch, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug, options.exhaustive, termprec=options.stoprnct)
-			global_def.BATCH = False
-		else:
-			from applications import ehelix_MPI
-			global_def.BATCH = True
-			ehelix_MPI(args[0], args[1], args[2], options.seg_ny, options.delta, options.psi_max, searchxshiftp, xwobblep, ywobble, options.apix, dp, dphi, options.fract, rmaxp, rminp, not options.nopsisearch, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug, options.exhaustive)
-			global_def.BATCH = False
 
-		if options.MPI:
-			from mpi import mpi_finalize
-			mpi_finalize()
+		if len(args) < 4:  mask = None
+		else:              mask = args[3]
+		from applications import ehelix_MPI
+		global_def.BATCH = True
+		ehelix_MPI(args[0], args[1], args[2], options.seg_ny, options.delta, options.psi_max, searchxshiftp, xwobblep, ywobble, options.apix, dp, dphi, options.fract, rmaxp, rminp, not options.nopsisearch, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
+		global_def.BATCH = False
+
+
+		from mpi import mpi_finalize
+		mpi_finalize()
 
 if __name__ == "__main__":
 	main()

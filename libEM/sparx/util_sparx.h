@@ -1079,16 +1079,9 @@ public:
 	 *  It allows to omit problem with passing Transform object through C++/Python layer (It causes memory leak). */
 	static Dict get_transform_params(EMData* image, string xform, string convention);
 
-	static int constrained_helix( vector<EMData*> data, vector<EMData*> fdata, vector<EMData*> refproj, vector<EMData*> rotproj
-			, vector<float> dp_dphi_rise_delta, vector<int> nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc
-			, bool FindPsi, float psi_max, vector<EMData*> crefim, vector<int> numr, int maxrin, string mode, int cnx, int cny);
-	static void constrained_helix_arbdist( vector<EMData*> data, vector<EMData*> fdata, vector<EMData*> refproj, vector<EMData*> rotproj
-			, vector<float> dp_dphi_rise_delta, vector<int> nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc
-			, bool FindPsi, float psi_max, vector<EMData*> crefim, vector<int> numr, int maxrin, string mode, int cnx, int cny);
 	static void constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> fdata, vector<EMData*> refproj, vector<EMData*> rotproj
 			, vector<float> dp_dphi_rise_delta, vector<int> nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc
 			, bool FindPsi, float psi_max, vector<EMData*> crefim, vector<int> numr, int maxrin, string mode, int cnx, int cny);
-	static Dict predict(float phig, float yg, float dst, float sgn, float ysgn, float dpp, float dphi, bool backpred);
 	
 	static std::vector<float> diff_between_matrix_of_3D_parameters_angles( std::vector<float> all_params, std::vector<float> rotations );
 
