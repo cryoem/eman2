@@ -143,7 +143,8 @@ namespace EMAN
 	  	 * @param weight A weighting factor for this slice, generally the number of particles in a class-average. May be ignored by some reconstructors
 		 * @return 0 if OK. 1 if error.
 		 */
-		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight=1.0) {throw;}
+		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight) {throw;}
+		int insert_slice(const EMData* const slice, const Transform & euler) { return this->insert_slice(slice, euler, 1.0f); }
 
 		/** Compares a slice to the current reconstruction volume and computes a normalization factor and
 		 * quality. Normalization and quality are returned via attributes set in the passed slice. You may freely mix calls
@@ -288,7 +289,7 @@ namespace EMAN
 
 			virtual void setup();
 
-			virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight=1.0);
+			virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight);
 
 			virtual EMData *finish(bool doift=true);
 
@@ -412,7 +413,7 @@ namespace EMAN
 		* @exception NullPointerException if the input EMData pointer is null
 		* @exception ImageFormatException if the image is complex as opposed to real
 		*/
-		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight=1.0);
+		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight);
 
 
 		/** Compares a slice to the current reconstruction volume and computes a normalization factor and
@@ -567,7 +568,7 @@ namespace EMAN
 		* @exception NullPointerException if the input EMData pointer is null
 		* @exception ImageFormatException if the image is complex as opposed to real
 		*/
-		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight=1.0);
+		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight);
 
 
 		/** Compares a slice to the current reconstruction volume and computes a normalization factor and
@@ -746,7 +747,7 @@ namespace EMAN
 		* @exception NullPointerException if the input EMData pointer is null
 		* @exception ImageFormatException if the image is complex as opposed to real
 		*/
-		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight=1.0);
+		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight);
 
 
 		/** Compares a slice to the current reconstruction volume and computes a normalization factor and
@@ -889,7 +890,7 @@ namespace EMAN
 	  	 * @param weight A weighting factor for this slice, generally the number of particles in a class-average. May be ignored by some reconstructors
 		 * @return 0 if OK. 1 if error.
 		 */
-		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight=1.0);
+		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight);
 
 		virtual EMData *finish(bool doift=true);
 
@@ -963,7 +964,7 @@ namespace EMAN
 	  	 * @param weight A weighting factor for this slice, generally the number of particles in a class-average. May be ignored by some reconstructors
 		 * @return 0 if OK. 1 if error.
 		 */
-		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight=1.0);
+		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight);
 
 		virtual EMData *finish(bool doift=true);
 
@@ -1051,7 +1052,7 @@ namespace EMAN
 	  	 * @param weight A weighting factor for this slice, generally the number of particles in a class-average. May be ignored by some reconstructors
 		 * @return 0 if OK. 1 if error.
 		 */
-		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight=1.0);
+		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight);
 
 		virtual EMData *finish(bool doift=true);
 
@@ -1149,7 +1150,7 @@ namespace EMAN
 	  	 * @param weight A weighting factor for this slice, generally the number of particles in a class-average. May be ignored by some reconstructors
 		 * @return 0 if OK. 1 if error.
 		 */
-		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight=1.0);
+		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight);
 
 		virtual EMData *finish(bool doift=true);
 
@@ -1231,7 +1232,7 @@ namespace EMAN
 		* @exception NullPointerException if the input EMData pointer is null
 		* @exception ImageFormatException if the image is complex as opposed to real
 		*/
-		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight=1.0);
+		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight);
 
 		virtual EMData *finish(bool doift=true);
 
@@ -1318,7 +1319,7 @@ namespace EMAN
 		* @exception NullPointerException if the input EMData pointer is null
 		* @exception ImageFormatException if the image is complex as opposed to real
 		*/
-		virtual int insert_slice(const EMData* const slice, const Transform & euler, const float weight=1.0);
+		virtual int insert_slice(const EMData* const slice, const Transform & euler, const float weight);
 
 		virtual EMData *finish(bool doift=true);
 
@@ -1417,7 +1418,7 @@ namespace EMAN
 		* @exception NullPointerException if the input EMData pointer is null
 		* @exception ImageFormatException if the image is complex as opposed to real
 		*/
-		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight=1.0);
+		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight);
 
 
 		virtual EMData *finish(bool doift=true);
