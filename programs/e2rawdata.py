@@ -87,7 +87,7 @@ def main():
 def get_proc2dcmd(options, filename):
 	""" Return a proc2d command """
 	if not options.inplace:
-		base = base_name(filename)
+		base = base_name(filename,nodir=True)
 		if options.format == 'bdb':
 			output = "bdb:micrographs#"+base
 		else:

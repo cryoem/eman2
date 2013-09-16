@@ -1261,9 +1261,10 @@ def item_name(file_name):
 		s=file_name.split("/")[-1]
 		return s.rsplit(".",1)[0]
 
-def base_name( file_name,extension=False,bdb_keep_dir=False ):
+def base_name( file_name,extension=False,bdb_keep_dir=False,nodir=False ):
 	'''
 	wraps os.path.basename but returns something sensible for bdb syntax
+	if nodir is set, then the last path element will never be included, otherwise it is included following a set of standard rules.
 	'''
 	if extension : print "base_name() with extension. please check"
 	if bdb_keep_dir : print "base_name() with bdb_keep_dir. please check"
@@ -1279,7 +1280,7 @@ def base_name( file_name,extension=False,bdb_keep_dir=False ):
 	else:
 		apath=os.path.relpath(file_name).replace("\\","/").split("/")
 		# for specific directories, we want any references to the same micrograph to share an id
-		if len(apath)>1 and apath[-2] in ("sets","particles","micrographs","ddd","raw") :
+		if nodir or (len(apath)>1 and apath[-2] in ("sets","particles","micrographs","ddd","raw")) :
 			if extension : return os.path.basename(file_name)
 			else : return os.path.splitext(os.path.basename(file_name))[0].split("__")[0].replace("_ptcls","")		# double underscore is used to mark tags added to micrograph names
 		
@@ -1288,9 +1289,9 @@ def base_name( file_name,extension=False,bdb_keep_dir=False ):
 		if extension : return "-".join(apath[-2:])
 		else : return "-".join(apath[-2:]).rsplit(".",1)[0]
 
-def info_name(file_name):
+def info_name(file_name,nodir=False):
 	"""This will return the name of the info file associated with a given image file, in the form info/basename_info.js"""
-	return "info/{}_info.json".format(base_name(file_name))
+	return "info/{}_info.json".format(base_name(file_name,nodir=nodir))
 
 def file_exists( file_name ):
 	'''

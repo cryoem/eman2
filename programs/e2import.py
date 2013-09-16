@@ -70,9 +70,9 @@ def main():
 					fields = line.split()
 					boxlist.append([float(fields[0])+float(fields[3])/2, float(fields[1])+float(fields[3])/2, 'manual'])
 
-				js_open_dict(info_name(filename))["boxes"]=boxlist
-				if not "{}.hdf".format(base_name(filename)) in micros:
-					print "Warning: Imported boxes for {}, but micrographs/{}.hdf does not exist".format(base_name(filename),base_name(filename))
+				js_open_dict(info_name(filename,nodir=True))["boxes"]=boxlist
+				if not "{}.hdf".format(base_name(filename,nodir=True)) in micros:
+					print "Warning: Imported boxes for {}, but micrographs/{}.hdf does not exist".format(base_name(filename),base_name(filename,True))
 
 		elif options.box_type == 'tiltedboxes':
 
@@ -82,7 +82,7 @@ def main():
 				for line in fh.readlines():
 					fields = line.split()
 					boxlist.append([float(fields[0])+float(fields[3])/2, float(fields[1])+float(fields[3])/2, 'tilted'])
-				js_open_dict(info_name(filename))["boxes_tilted"]=boxlist
+				js_open_dict(info_name(filename,nodir=True))["boxes_tilted"]=boxlist
 
 		elif options.box_type == 'untiltedboxes':
 			for filename in args:
@@ -91,7 +91,7 @@ def main():
 				for line in fh.readlines():
 					fields = line.split()
 					boxlist.append([float(fields[0])+float(fields[3])/2, float(fields[1])+float(fields[3])/2, 'untilted'])
-				js_open_dict(info_name(filename))["boxes_untilted"]=boxlist
+				js_open_dict(info_name(filename,nodir=True))["boxes_untilted"]=boxlist
 
 		else : print "ERROR: Unknown box_type"
 
