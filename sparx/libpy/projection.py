@@ -392,7 +392,7 @@ def plot_angles(agls):
 
 # interface between the simplex function to refine the angles and the function to compute the discrepancy
 # not used yet
-def cml_refine_agls_wrap(vec_in, data):
+def cml_refine_agls_wrap(vec_in, data, flag_weights = False):
 	# vec_in: [phi_i, theta_i, psi_i]
 	# data:   [Prj, Ori, iprj]
 
@@ -406,7 +406,7 @@ def cml_refine_agls_wrap(vec_in, data):
 	Ori[4*iprj+2] = psi
 
 	# compute the discrepancy
-	disc = cml_disc(Prj, Ori, True)
+	disc = cml_disc(Prj, Ori, True, flag_weights)
 
 	return -disc
 
@@ -855,7 +855,7 @@ def cml_find_structure(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_w
 			if g_debug: cml_export_progress(outdir, ite, iprj, best_iagl, best_psi * g_d_psi, best_disc, 'choose')
 
 		# if one change, compute new full disc
-		disc = cml_disc(Prj, Ori, Rot)
+		disc = cml_disc(Prj, Ori, Rot, flag_weights)
 
 		# display in the progress file
 		cml_export_txtagls(outdir, outname, Ori, disc, 'Ite: %03i' % (ite + 1))
@@ -1036,7 +1036,7 @@ def cml_find_structure2(Prj, Ori, Rot, outdir, outname, maxit, first_zero, flag_
 			if g_debug: cml_export_progress(outdir, ite, iprj, best_iagl, best_psi * g_d_psi, best_disc, 'choose')
 
 		# if one change, compute new full disc
-		disc = cml_disc(Prj, Ori, Rot)
+		disc = cml_disc(Prj, Ori, Rot, flag_weights)
 
 		# display in the progress file
 		if myid == main_node:
