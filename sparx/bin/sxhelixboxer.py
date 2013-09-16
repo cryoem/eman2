@@ -180,7 +180,7 @@ def main():
 		tdir = options.topdir
 		if len(tdir) < 1:  tdir = None
 
- 		windowallmic(options.dirid, options.micid, options.micsuffix, outdir, pixel_size=options.apix, boxsize=options.boxsize, minseg=options.miseg,\
+ 		windowallmic(options.dirid, options.micid, options.micsuffix, outdir, pixel_size=options.apix, boxsize=options.boxsize, minseg=options.minseg,\
 				outstacknameall=options.outstacknameall, hcoords_dir = options.hcoords_dir, hcoords_suffix = options.hcoords_suffix, ptcl_dst=options.ptcl_dst, \
 				inv_contrast=options.invert_contrast, new_pixel_size=options.new_apix, rmax = options.rmax, freq=options.freq, \
 				debug = options.dbg, do_rotation = True, do_gridding=options.gridding, topdir=tdir)
