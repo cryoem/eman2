@@ -1065,8 +1065,16 @@ class EMImage2DWidget(EMGLWidget):
 		if data == None: data = self.fft
 		#print data
 		if data != None:
-			pixel_x = self.scale*data.get_xsize()
-			pixel_y = self.scale*data.get_ysize()
+			try:
+				pixel_x = self.scale*data.get_xsize()
+				pixel_y = self.scale*data.get_ysize()
+			except:
+				try:
+					pixel_x = self.scale*data[0].get_xsize()
+					pixel_y = self.scale*data[0].get_ysize()
+				except:
+					pixel_x = 256
+					pixel_y = 256
 		else: return
 
 

@@ -1079,6 +1079,47 @@ vector<float> Util::nonconvex(const vector<float>&curve,int first) {
 	return ret;
 }
 
+vector<float> Util::windowdot(const vector<float>&curveA,const vector<float>&curveB,int window,int normA) {
+	if (window<=0) { printf("Warning, %d window in windowdot\n",window); window=1; }
+	
+	int ws=window*2+1;
+	vector<float> ret(curveA.size(),0.0f);
+	vector<float> suba(ws,0.0f);
+	vector<float> subb(ws,0.0f);
+	
+
+	for (int i=window; i<curveA.size()-window; i++) {
+		double asig=0,bsig=0,amean=0,bmean=0;
+		
+		// extract subcurves and compute stats
+		for (int j=0,k=i-window; k<=i+window; j++,k++) {
+			suba[j]=curveA[k];
+			subb[j]=curveB[k];
+			amean+=suba[j];
+			bmean+=subb[j];
+			asig +=suba[j]*suba[j];
+			bsig +=subb[j]*subb[j];
+		}
+		amean/=(double)ws;
+		bmean/=(double)ws;
+		asig=sqrt(asig/(double)ws-amean*amean);
+		bsig=sqrt(bsig/(double)ws-bmean*bmean);
+//		printf("%lf %lf %lf %lf\n",amean,asig,bmean,bsig);
+		
+		double dot=0;
+		// normalize vector(s) & compute dot
+		for (int j=0; j<ws; j++) {
+			subb[j]=(subb[j]-bmean)/bsig;
+			if (normA) suba[j]=(suba[j]-amean)/asig;
+			
+			dot+=suba[j]*subb[j];
+		}
+		ret[i]=dot/(float)ws;
+	}
+	return ret;
+}
+
+
 #ifndef _WIN32
 #include <sys/types.h>
 #include <sys/socket.h>

@@ -987,16 +987,22 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 
 			for (int x = 0; x < nx / 2; x++) {
 				float s = (float)Util::hypot_fast(x,y ) * ds;
-				if (s<.05) {
+				// We exclude very low frequencies from consideration due to the strong structure factor
+				if (s<.04) {
 					d[x * 2 + ynx] = 0;
 					d[x * 2 + ynx + 1] = 0;
 					continue;
 				}
+				// Rather than suddenly "turning on" the CTF, we do it gradually
+				float mf=1.0;
+				if (s<.05) {
+					mf=1.0-exp(-pow((s-.04)*300.0,2.0));
+				}
 				float gam;
 				if (dfdiff==0) gam=-g1*pow(s,4.0)+g2*defocus*pow(s,2.0);
 				else gam=-g1*pow(s,4.0)+g2*df(atan2(y,x))*pow(s,2.0);
-				float v = cos(gam-acac);
-				d[x * 2 + ynx] = v*v;
+				float v = cos(gam-acac)*exp(-(bfactor/4.0f * pow(s,2.0)));
+				d[x * 2 + ynx] = mf*v*v;
 				d[x * 2 + ynx + 1] = 0;
 			}
 		}

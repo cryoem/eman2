@@ -1417,16 +1417,28 @@ class EMBoxList:
 		'''
 		for i in l: self.pop(i)
 
-	def write_particles(self,input_file_name,out_file_name,box_size,invert=False,normproc=None):
-		
+	def write_particles(self,input_file_name,out_file_name,box_size,invert=False,normproc=None,noedges=False):
+		hdr=EMData(input_file_name,0,True)
+		xsize=hdr["nx"]
+		ysize=hdr["ny"]
 		db = js_open_dict('info/project.json')
 		try: apix = db.get('global.apix')
 		except:
 			try:
-				apix=EMData(input_file_name,0,True)["apix_x"]
+				apix=hdr["apix_x"]
 			except:
 				apix=1.0
+				
+		# If someone did a generate output with one box size, then later increased it and repeated the process_events
+		# with noedges set, then there could be some residual images with the wrong size left at the end of the file
+		try: os.unlink(out_file_name)
+		except: pass
+		
+		j=0
 		for i,box in enumerate(self.boxes):
+			if noedges :
+				if box[0]-box_size/2<0 or box[1]-box_size/2<0 or box[0]+box_size/2>=xsize or box[1]+box_size/2>=ysize : continue
+				
 			image = box.get_image(input_file_name,box_size)
 			if invert: image.mult(-1)
 			if str(normproc) != "None": image.process_inplace(normproc)
@@ -1436,7 +1448,8 @@ class EMBoxList:
 					image.set_attr('apix_y', float(apix))
 					image.set_attr('apix_z', float(apix))
 			except: pass
-			image.write_image(out_file_name,i)
+			image.write_image(out_file_name,j)
+			j+=1
 
 
 	def write_coordinates(self,input_file_name,out_file_name,box_size):

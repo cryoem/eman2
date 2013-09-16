@@ -571,6 +571,19 @@ namespace EMAN
 		*/
 		static vector<float> nonconvex(const vector<float>&curve,int first=3);
 
+		/** Computes a windowed dot product between curve A and curve B. Curve B is normalized, curve A can
+		 * be normalized or not. It thus gives either an absolute or relative indicator of similarity between
+		 * the two curves. 
+		 *
+		 * @param[in] curveA The data curve to be tested
+		 * @param[in] curveB Reference curve being compared to
+		 * @param[in] window 1/2 Width of local window function in samples, ie 4 -> 4+1+4 = 9 component vector
+		 * @param[in] normA A flag indicating whether A should be localized or not
+		 * @param[out] outcurve Returned data array
+		*/
+		static vector<float> windowdot(const vector<float>&curveA,const vector<float>&curveB,int window,int normA);
+
+		
 		static EMData* calc_bessel(const int n, const float& x);
 
 		/** Calculate a number's square.

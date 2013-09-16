@@ -43,6 +43,7 @@ import os
 import sys
 import weakref
 import traceback
+from numpy import array
 
 from Simplex import Simplex
 
@@ -492,6 +493,8 @@ def pspec_and_ctf_fit(options,debug=False):
 			ctf=ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,options.voltage,options.cs,options.ac,apix,bgadj=not options.nosmooth,autohp=options.autohp,dfhint=dfhint,verbose=options.verbose)
 			if options.astigmatism : ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1)
 
+			im_1d,bg_1d=calc_1dfrom2d(ctf,im_2d,bg_2d)
+			ctf.bfactor=ctf_fit_bfactor(list(array(im_1d)-array(bg_1d)),ds,ctf)
 
 			if debug:
 				Util.save_data(0,ds,im_1d,"ctf.fg.txt")
@@ -1175,6 +1178,69 @@ def smooth_bg(curve,ds):
 	return curve[:first]+[pow(curve[i-1]*curve[i]*curve[i+1],.33333) for i in range(first,len(curve)-2)]+[curve[-2],curve[-1]]
 #	return curve[:first]+[pow(curve[i-2]*curve[i-1]*curve[i]*curve[i+1]*curve[i+2],.2) for i in range(first,len(curve)-2)]+[curve[-2],curve[-1]]
 
+def smooth_by_ctf(curve,ds,ctf):
+	"""Smooths a curve based on an (already fit) CTF object, starting with the first zero. Assumes that locally the value should be the sum of
+	an offset and the ctf * a constant. This does make the curve have the general appearance of the CTF, locally.
+	Takes the curve, with the ds value for the curve and a CTF object, returns a new curve."""
+
+	curvea=array(curve)
+	bf=ctf.bfactor
+	ctf.bfactor=50
+	ccurv=array(ctf.compute_1d(len(curve)*2,ds,Ctf.CtfType.CTF_AMP))**2
+	ctf.bfactor=bf
+	z=int(zero(1,ctf.voltage,ctf.cs,ctf.defocus,ctf.ampcont)/ds+.5)				# location of first zero in terms of n
+	z=max(4,z)
+
+	ret=curve[:z]
+	for i in xrange(z,len(curve)-4):
+		lc =curvea[i-4:i+5]			# data to be smoothed
+		lcf=array(ccurv[i-4:i+5])	# reference CTF curve
+		lcf-=lcf.mean()				# so we can do a dot product
+		lcf/=(lcf**2).sum()			# unit length
+		ret.append(lc.mean()+lcf[4]*lcf.dot(lc))
+		print i*ds,lcf.dot(lc)
+		
+	ret+=curve[-4:]
+	Util.save_data(0,ds,curve,"a.txt")
+	Util.save_data(0,ds,ret,"b.txt")
+	Util.save_data(0,ds,list(ccurv),"c.txt")
+	return ret
+
+def ctf_fit_bfactor(curve,ds,ctf):
+	"""Determines a decent B-factor for the BG subtracted 'curve' (returns the new value). 'ctf' must represent a pretty accurate fit (other than B-factor)"""
+
+	bf=ctf.bfactor
+	ctf.bfactor=50
+	ccurv=ctf.compute_1d(len(curve)*2,ds,Ctf.CtfType.CTF_AMP)
+	ccurv=[f*f for f in ccurv]
+	ctf.bfactor=bf
+	
+	# We compute a windowed normalized running correlation coefficient between the data and the fit CTF
+	# window size depends on curve length
+	if len(curve)<64 : wdw=4
+	elif len(curve)<128 : wdw=6
+	elif len(curve)<256 : wdw=8
+	else : wdw=10
+	sim=Util.windowdot(curve,ccurv,wdw,1)
+	
+	#for i in xrange(len(curve)):
+		#print i*ds,a[i],curve[i],ccurv[i]
+	
+	risethr=0.75*max(sim[int(0.04/ds):])
+	# find the last point where the curve rises above 0.75 its max value
+	for i in xrange(len(curve)-wdw,int(0.04/ds),-1):
+		if sim[i]>risethr : break
+	
+	# now find the first place where it falls below 0.1
+	for i in xrange(i,len(curve)-wdw):
+		if sim[i]<0.1 : break
+	
+	maxres=1.0/(i*ds)
+	print "maxres ",maxres
+	
+	return maxres*maxres*6.0
+	
+
 def least_square(data):
 	"simple linear regression for y=mx+b on a list of (x,y) points. Use the C routine if you need speed."
 	sum,sum_x,sum_y,sum_xx,sum_xy=0,0,0,0,0
@@ -1256,9 +1322,38 @@ def zero(N,V,Cs,Z,AC):
 	l=elambda(V)
 #	print acshift,gamma,l,Cs*gamma*l*l*l+5.0*l*l*pi*Z*Z
 	return sqrt(-Z/(1000.0*Cs*l*l)+sqrt(Cs*gamma*l*l*l+5.0*l*l*pi*Z*Z)/(3963.327*Cs*l*l*l))
+
+def calc_1dfrom2d(ctf,fg2d,bg2d):
+	"""Computes adjusted 1-D power spectra from 2-D FG and BG data. Needs ctf object, since 1-D average uses astigmatism compensation.
+returns (fg1d,bg1d)"""
+	ds=ctf.dsbg
+#	r=len(ctf.background)
+#	s=[ds*i for i in range(r)]
+
+	fg=ctf.compute_1d_fromimage(len(ctf.background)*2, ds, fg2d)
+	bg=ctf.compute_1d_fromimage(len(ctf.background)*2, ds, bg2d)
+#			bg=smooth_by_ctf(bg,ds,ctf)					# still need to work on this routine, similar concept to SNR smoothing, but has some problems
+#	bglow=low_bg_curve(bg,ds)
 	
+	# here we adjust the background to make the zeroes zero
+	n=2
+	lz=int(zero(1,ctf.voltage,ctf.cs,ctf.defocus,ctf.ampcont)/ds+.5)
+	while 1:
+		z=int(zero(n,ctf.voltage,ctf.cs,ctf.defocus,ctf.ampcont)/ds+.5)
+		if z>len(ctf.background)-2 or z-lz<2: break
+		d1=min(fg[lz]-bg[lz],fg[lz-1]-bg[lz-1],fg[lz+1]-bg[lz+1])
+		d2=min(fg[z]-bg[z],fg[z-1]-bg[z-1],fg[z+1]-bg[z+1])
+#				print lz,d1,z,d2
+		for x in xrange(lz,z):
+			bg[x]+=(z-x)/float(z-lz)*d1+(x-lz)/float(z-lz)*d2
+		lz=z
+		n+=1
+	
+	return (fg,bg)
+
+
 def ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1):
-	"""Refines the astigmatism parameters given a good initial fit. Modifies CTF object in-place."""
+	"""Refines the astigmatism parameters given a good initial fit. Modifies CTF object in-place !!!  No return value."""
 	
 	## we start with some astigmatism or the process may not converge well
 	#if ctf.dfdiff==0 : ctf.dfdiff=0.1
@@ -1272,45 +1367,82 @@ def ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1):
 	# Give a little arbitrary astigmatism for the angular search
 	if ctf.dfdiff==0 : ctf.dfdiff=ctf.defocus/20.0
 	
+	oldb=ctf.bfactor
 	# coarse angular alignment
 	besta=(1.0e15,0)
+	ctf.bfactor=1000
 	for ang in xrange(0,180,15):
 		v=ctf_stig_cmp((ctf.dfdiff,ang,ctf.defocus),(bgsub,bgcp,ctf))
 		besta=min(besta,(v,ang))
 	ctf.dfang=besta[1]
-	print "best angle:", besta
+#	print "best angle:", besta
 
-	# Fit dfdiff and defocus simultaneously by exhaustive search
-	bestd=(1.0e15,0,0)
-	dfcen=ctf.defocus
-	dfstep=ctf.defocus/100.0
-	dfdstep=ctf.dfdiff/10.0
-	for defocus in xrange(-10,11):
-		for dfdiff in xrange(0,21):
-			v=ctf_stig_cmp((dfdiff*dfstep,ctf.dfang,dfcen+defocus*dfstep),(bgsub,bgcp,ctf))
-			bestd=min(bestd,(v,dfdiff*dfstep,dfcen+defocus*dfstep))
-	print "best dfdiff/defocus ",bestd
-	ctf.dfdiff=bestd[1]
-	ctf.defocus=bestd[2]
+	# Use a simplex minimizer to find the final fit
+	ctf.bfactor=200
+	sim=Simplex(ctf_stig_cmp,[ctf.dfdiff,ctf.dfang,ctf.defocus],[0.01,15.0,.01],data=(bgsub,bgcp,ctf))
+	oparm=sim.minimize(epsilon=.00000001,monitor=0)
+	
+	ctf.bfactor=oldb
+	ctf.dfdiff,ctf.dfang,ctf.defocus=oparm[0]		# final fit result
 
-	# fine angular alignment
-	for ang in xrange(besta[1]-14,besta[1]+15):
-		v=ctf_stig_cmp((ctf.dfdiff,ang,ctf.defocus),(bgsub,bgcp,ctf))
-		besta=min(besta,(v,ang))
-	ctf.dfang=besta[1]
-	print "best angle:", besta
+	
+
+	## extract points at maxima for B-factor estimation	
+	#ds=ctf.dsbg
+	#fg,bg=calc_1dfrom2d(ctf,im_2d,bg_2d)
+	#bglow=low_bg_curve(bg,ds)
+
+	#n=2
+	#lz=int(zero(1,ctf.voltage,ctf.cs,ctf.defocus,ctf.ampcont)/ds+.5)
+	#while 1:
+		#z=int(zero(n,ctf.voltage,ctf.cs,ctf.defocus,ctf.ampcont)/ds+.5)
+		#if z>len(ctf.background)-2 or n>30: break
+		#m=(z+lz)/2
+		#print m*ds,fg[m]-bg[m]
+		#lz=z
+		#n+=1
+
+	#print oparm
+	
+	## Print out smoothed fit values
+	#smooth_by_ctf(list(array(fg)-array(bg)),ds,ctf)
+
+	#ctf.bfactor=200
+	## Fit dfdiff and defocus simultaneously by exhaustive search
+	#outim=EMData(21,21)
+	#bestd=(1.0e15,0,0)
+	#dfcen=ctf.defocus
+	#dfstep=ctf.defocus/100.0
+	#dfdstep=ctf.dfdiff/10.0
+	#for defocus in xrange(-10,11):
+		#for dfdiff in xrange(0,21):
+			#v=ctf_stig_cmp((dfdiff*dfstep,ctf.dfang,dfcen+defocus*dfstep),(bgsub,bgcp,ctf))
+			#bestd=min(bestd,(v,dfdiff*dfstep,dfcen+defocus*dfstep))
+			#outim[defocus+10,dfdiff]=v
+	#print "best dfdiff/defocus ",bestd
+	#ctf.dfdiff=bestd[1]
+	#ctf.defocus=bestd[2]
+	#outim.update()
+	#outim.write_image("tst.hdf")
+
+	## fine angular alignment
+	#for ang in xrange(besta[1]-14,besta[1]+15):
+		#v=ctf_stig_cmp((ctf.dfdiff,ang,ctf.defocus),(bgsub,bgcp,ctf))
+		#besta=min(besta,(v,ang))
+	#ctf.dfang=besta[1]
+	#print "best angle:", besta
+	#ctf.bfactor=oldb
 
 def ctf_stig_cmp(parms,data):
 	
 	bgsub,bgcp,ctf=data
 
 	ctf.dfdiff,ctf.dfang,ctf.defocus=parms
-	ctf.bfactor=100.0
 	
 	ctf.compute_2d_complex(bgcp,Ctf.CtfType.CTF_FITREF,None)
 	
-	bgcp.write_image("a.hdf")
-	bgsub.write_image("b.hdf")
+	#bgcp.write_image("a.hdf",-1)
+	#bgsub.write_image("b.hdf",0)
 	print parms,bgcp.cmp("dot",bgsub,{"normalize":1})
 	return bgcp.cmp("dot",bgsub,{"normalize":1})
 
@@ -1763,7 +1895,7 @@ class MyListWidget(QtGui.QListWidget):
 class GUIctf(QtGui.QWidget):
 	def __init__(self,application,data,autohp=True,nosmooth=False):
 		"""Implements the CTF fitting dialog using various EMImage and EMPlot2D widgets
-		'data' is a list of (filename,EMAN2CTF,im_1d,bg_1d,im_2d,bg_2d,qual)
+		'data' is a list of (filename,EMAN2CTF,im_1d,bg_1d,im_2d,bg_2d,qual,bg_1d_low)
 		"""
 		try:
 			from emimage2d import EMImage2DWidget
@@ -1979,7 +2111,11 @@ class GUIctf(QtGui.QWidget):
 		ctf=ctf_fit(tmp[2],tmp[3],tmp[7],tmp[4],tmp[5],tmp[1].voltage,tmp[1].cs,tmp[1].ampcont,tmp[1].apix,bgadj=not self.nosmooth,autohp=self.autohp,dfhint=self.sdefocus.value)
 		ctf.dfdiff=dfdiff
 		ctf.dfang=dfang
-		if ctf.dfdiff!=0 : ctf_fit_stig(tmp[4],tmp[5],ctf,True)
+		if ctf.dfdiff!=0 : 
+			ctf_fit_stig(tmp[4],tmp[5],ctf,True)
+			tmp[2],tmp[3]=calc_1dfrom2d(ctf,tmp[4],tmp[5])			# update 1-D curves after astigmatism adjustment
+			
+		ctf.bfactor=ctf_fit_bfactor(list(array(tmp[2])-array(tmp[3])),ctf.dsbg,ctf)
 
 		val = self.curset
 		name = base_name(str(self.setlist.item(val).text()))
@@ -2055,7 +2191,7 @@ class GUIctf(QtGui.QWidget):
 		if self.guiplot == None: return # it's closed/not visible
 		val=self.curset
 		ctf=self.data[val][1]
-		ds=self.data[val][1].dsbg
+		ds=ctf.dsbg
 		r=len(ctf.background)
 		s=[ds*i for i in range(r)]
 
@@ -2063,29 +2199,11 @@ class GUIctf(QtGui.QWidget):
 			print "Trying to plot bad data (set %s): %s"%(str(val),str(ctf))
 			return
 
+		# With astigmatism support, the curves may need an update
 		# recompute self.data[val][2] and [3] (FG and BG 1-D curves) if necessary
 		if self.neednewps :
-#			print "new ps"
-			# use astigmatism-aware computation here
-			fg=ctf.compute_1d_fromimage(len(s)*2, ds, self.data[val][4])
-			bg=ctf.compute_1d_fromimage(len(s)*2, ds, self.data[val][5])
-			
-			# here we adjust the background to make the zeroes zero
-			n=2
-			lz=int(zero(1,ctf.voltage,ctf.cs,ctf.defocus,ctf.ampcont)/ds+.5)
-			while 1:
-				z=int(zero(n,ctf.voltage,ctf.cs,ctf.defocus,ctf.ampcont)/ds+.5)
-				if z>len(s)-1 or z-lz<2: break
-				d1=fg[lz]-bg[lz]
-				d2=fg[z]-bg[z]
-#				print lz,d1,z,d2
-				for x in xrange(lz,z):
-					bg[x]+=(z-x)/float(z-lz)*d1+(x-lz)/float(z-lz)*d2
-				lz=z
-				n+=1
-			
-			self.data[val][2]=fg
-			self.data[val][3]=bg
+			self.data[val][2],self.data[val][3]=calc_1dfrom2d(ctf,self.data[val][4],self.data[val][5])
+			self.data[val][7]=low_bg_curve(self.data[val][3],ds)
 			
 		# This updates the image circles
 		fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)

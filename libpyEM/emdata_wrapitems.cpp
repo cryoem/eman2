@@ -109,24 +109,24 @@ void emdata_setitem(object self, object key, object val) {
             int iy = extract<int>(key[1]);
             int iz = extract<int>(key[2]);
             if (s.is_complex())
-                s.cmplx(ix,iy,iz) = extract<std::complex<float> >(val);
+                s.set_complex_at(ix,iy,iz,extract<std::complex<float> >(val));
             else
-                s(ix,iy,iz) = extract<float>(val);
+                s.set_value_at(ix,iy,iz,extract<float>(val));
             return;
         } else if (2 == size) {
             int ix = extract<int>(key[0]);
             int iy = extract<int>(key[1]);
             if (s.is_complex())
-                s.cmplx(ix,iy) = extract<std::complex<float> >(val);
+                s.set_complex_at(ix,iy,extract<std::complex<float> >(val));
             else
-                s(ix,iy) = extract<float>(val);
+                s.set_value_at(ix,iy,extract<float>(val));
             return;
         } else if (1 == size) {
             int ix = extract<int>(key[0]);
             if (s.is_complex())
-                s.cmplx(ix) = extract<std::complex<float> >(val);
+                s.set_complex_at(ix,0,extract<std::complex<float> >(val));
             else
-                s(ix) = extract<float>(val);
+                s.set_value_at(ix,extract<float>(val));
             return;
         } else {
             throw ImageDimensionException("Need 1, 2, or 3 indices.");
