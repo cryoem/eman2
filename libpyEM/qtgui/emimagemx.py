@@ -2842,9 +2842,11 @@ class EMLightWeightParticleCache(EMMXDataCache):
 			self.refocus_cache(idx)
 
 		adj_idx = idx-self.cache_start
-		image = self.cache[adj_idx]
+		try: image = self.cache[adj_idx]
+		except: image=None
 		if image == None:
-			a = self.__load_item(idx,adj_idx)
+			try: a = self.__load_item(idx,adj_idx)
+			except: a=None
 			return a
 		else: return image
 
