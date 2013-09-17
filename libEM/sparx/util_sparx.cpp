@@ -22653,13 +22653,19 @@ inline void diff_between_3D_parameters_angles( std::vector<float> & param1, std:
 	}
 }
 
-
+// Calculate average angle error per projection for given sets of configurations and theirs pair-wise rotations
+// all_params: [ phi0, theta0, psi0, sx0, sy0, phi1, theta1, psi1, sx1, sy1, phi2, .... ] - contains (5*number_of_projections) elements
+// rotations: (phi_1_0, theta_1_0, psi_1_0, phi_2_0, theta_2_0, psi_2_0, phi_2_1, theta_2_1, psi_2_1, ... ) - contains (3*number_of_projections*(number_of_projections-1)/2) elements
+// returns: (number_of_projections) elements - average angles' errors (per projection)
 std::vector<float> Util::diff_between_matrix_of_3D_parameters_angles( std::vector<float> all_params, std::vector<float> rotations )
 {
+	// number of configurations (rotations is a bottom half of a square matrix)
 	unsigned conf_count = 2;
 	for ( const unsigned t = rotations.size() / 3;  conf_count * (conf_count-1) / 2 < t; ++conf_count );
+	// number of projections
 	const unsigned projs_count = all_params.size() / 5 / conf_count;
 
+	// decode sets of parameters
 	std::vector< std::vector<float> > params(conf_count);
 	for (unsigned i = 0; i < conf_count; ++i) {
 		params[i].assign( all_params.begin() + i*projs_count*5, all_params.begin() + (i+1)*projs_count*5 );
@@ -22670,7 +22676,7 @@ std::vector<float> Util::diff_between_matrix_of_3D_parameters_angles( std::vecto
 	unsigned ir = 0;
 	for (unsigned i = 0; i < conf_count; ++i) {
 		for (unsigned j = 0; j < i; ++j) {
-			diff_between_3D_parameters_angles(params[i], params[j], rotations[ir*3], rotations[ir*3+1], rotations[ir*3+2], avg);
+			diff_between_3D_parameters_angles(params[j], params[i], rotations[ir*3], rotations[ir*3+1], rotations[ir*3+2], avg);
 			++ir;
 		}
 	}
