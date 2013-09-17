@@ -1178,6 +1178,7 @@ def smooth_bg(curve,ds):
 	return curve[:first]+[pow(curve[i-1]*curve[i]*curve[i+1],.33333) for i in range(first,len(curve)-2)]+[curve[-2],curve[-1]]
 #	return curve[:first]+[pow(curve[i-2]*curve[i-1]*curve[i]*curve[i+1]*curve[i+2],.2) for i in range(first,len(curve)-2)]+[curve[-2],curve[-1]]
 
+### Note that the following function has been replaced by a C++ function in Util
 def smooth_by_ctf(curve,ds,ctf):
 	"""Smooths a curve based on an (already fit) CTF object, starting with the first zero. Assumes that locally the value should be the sum of
 	an offset and the ctf * a constant. This does make the curve have the general appearance of the CTF, locally.
@@ -1346,8 +1347,14 @@ returns (fg1d,bg1d)"""
 #				print lz,d1,z,d2
 		for x in xrange(lz,z):
 			bg[x]+=(z-x)/float(z-lz)*d1+(x-lz)/float(z-lz)*d2
+		if n==2 : lwd,lwz=d1,lz
 		lz=z
 		n+=1
+	
+	# deal with the points from the origin to the first zero
+	for x in xrange(lwz): bg[x]+=lwd
+	
+	for x in xrange(lz,len(ctf.background)) : bg[x]+=d2
 	
 	return (fg,bg)
 
