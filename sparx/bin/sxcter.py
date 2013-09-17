@@ -49,12 +49,12 @@ def main():
 		Specify directory and prefix of micrographs to process through --indir and --nameroot
 		Specify output directories pwrot and partres as arguments.
 		
-			mpirun -np 1 sxcter.py pwrot partres --indir=. --nameroot=micrograph_PSC23_A8A_1GD_11112_135 --nx=256 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --kboot=16 --MPI
+			mpirun -np 1 sxcter.py pwrot partres --indir=. --nameroot=micrograph_PSC23_A8A_1GD_11112_135 --nx=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --MPI
 
 	Process stack:
 	
 		Specify name of stack and output directories as arguments.
-			sxcter.py bdb:stack pwrot partres --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --kboot=16
+			sxcter.py bdb:stack pwrot partres --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0
 
 	
 	"""

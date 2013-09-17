@@ -67,7 +67,7 @@ def main():
 	usage = """sxhelixboxer.py --gui <micrograph1> <<micrograph2> <micrograph3> ...
 	sxhelixboxer.py --gui --helix-width=<width> <micrograph1> <<micrograph2> <micrograph3> ...
 	sxhelixboxer.py <options (not --gui)> <micrograph>    
-	sxhelixboxer.py <outdir> --window --dirid='mic' --micid='mic' --micsuffix='hdf' --invert_contrast --apix=1.84 --boxsize='200,45' --outstacknameall='bdb:/Users/jiafang/helical_mpi/jdata' --hcoords_suffix='_boxes.txt' --ptcl-dst=30 --rmax=92.0
+	sxhelixboxer.py <outdir> --window --dirid=mic --micid=mymic --micsuffix=hdf --invert_contrast --apix=1.84 --boxsize='200,45' --outstacknameall='bdb:/Users/jiafang/helical_mpi/jdata' --hcoords_suffix=_boxes.txt --ptcl-dst=30 --rmax=92.0
 
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
@@ -110,64 +110,13 @@ def main():
 	parser.add_argument("--dbg",                type=int,	 			 default=1,                   help="If 1, then intermediate files in output directory will not be deleted; if 0, then all output directories where intermediate files were stored will be deleted. Default is 1.")
 	parser.add_argument("--topdir",             type=str,				 default="",                  help="Path name of directory containing relevant micrograph directories")
 	
-	# ctf estimation using cter
-	parser.add_argument("--cter",               action="store_true",     default=False,                  help="CTF estimation using the cter module from SPARX")
-	parser.add_argument("--indir",              type=str,				 default= ".",     				 help="Directory containing micrographs to be processed.")
-	parser.add_argument("--nameroot",         	type=str,		 		 default= "",     				 help="Prefix of micrographs to be processed.")
-	parser.add_argument("--tilesize",		  	type=int,		 		 default=512, 					 help="Tile size for power spectrum estimation (should be slightly larger than segment size).  Default 512")
-	
-	parser.add_argument("--Cs",               	type=float,	 			 default= 2.0,               	 help="Microscope Cs (spherical aberation)")
-	parser.add_argument("--voltage",		  	type=float,	 		     default=300.0, 			     help="Microscope voltage in KV")
-	parser.add_argument("--ac",				  	type=float,	 		     default=10.0, 					 help="Amplitude contrast (percentage, default=10)")
-	parser.add_argument("--kboot",			  	type=int,			     default=16, 					 help="kboot")
-	parser.add_argument("--MPI",                action="store_true",   	 default=False,              	 help="use MPI version")
-	parser.add_argument("--debug",              action="store_true",   	 default=False,              	 help="debug mode")
+	# import ctf estimates done using cter
+	parser.add_argument("--importctf",          type=str,				 default= None,     		  help="File name with CTF parameters produced by sxcter.")
+	parser.add_argument("--defocuserror",       type=float,  			 default=1000000.0,           help="Exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent.  The error is computed as (std dev defocus)/defocus")
+	parser.add_argument("--astigmatismerror",   type=float,  			 default=360.0,               help="Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees.")
 	
 	(options, args) = parser.parse_args()
 	
-	if options.cter:
-		from global_def import SPARXVERSION
-		import global_def
-		if len(args) <2 or len(args) > 3:
-			print "see usage"
-			sys.exit()
-		
-		stack = None
-		
-		if len(args) == 3:
-			if options.MPI:
-				print "Please use single processor version if specifying a stack."
-				sys.exit()
-			stack = args[0]
-			out1 = args[1]
-			out2 = args[2]
-
-		if len(args) == 2:
-			out1 = args[0]
-			out2 = args[1]
-		
-		if options.apix < 0:
-			print "Enter pixel size"
-			sys.exit()
-
-		if options.MPI:
-			from mpi import mpi_init, mpi_finalize
-			sys.argv = mpi_init(len(sys.argv), sys.argv)
-
-		if global_def.CACHE_DISABLE:
-			from utilities import disable_bdb_cache
-			disable_bdb_cache()
-
-		from morphology import cter
-		global_def.BATCH = True
-		cter(stack, out1, out2, options.indir, options.nameroot, options.tilesize, voltage=options.voltage, Pixel_size=options.apix, Cs = options.Cs, wgh=options.ac, kboot=options.kboot, MPI=options.MPI, DEBug = options.debug, set_ctf_header=True)
-		global_def.BATCH = False
-
-		if options.MPI:
-			from mpi import mpi_finalize
-			mpi_finalize()
-
-		return
 	# invert meaning of gridding
 	options.gridding = not options.gridding
 
@@ -179,11 +128,13 @@ def main():
 		outdir = args[0]
 		tdir = options.topdir
 		if len(tdir) < 1:  tdir = None
+		if options.importctf:  cterr = [options.defocuserror/100.0, options.astigmatismerror]
+		else:                  cterr = None
 
  		windowallmic(options.dirid, options.micid, options.micsuffix, outdir, pixel_size=options.apix, boxsize=options.boxsize, minseg=options.minseg,\
 				outstacknameall=options.outstacknameall, hcoords_dir = options.hcoords_dir, hcoords_suffix = options.hcoords_suffix, ptcl_dst=options.ptcl_dst, \
 				inv_contrast=options.invert_contrast, new_pixel_size=options.new_apix, rmax = options.rmax, freq=options.freq, \
-				debug = options.dbg, do_rotation = True, do_gridding=options.gridding, topdir=tdir)
+				debug = options.dbg, do_rotation = True, do_gridding=options.gridding, topdir=tdir, importctf=options.importctf, cterr = cterr)
 		return
 
 	if options.helix_width < 1:
@@ -195,7 +146,7 @@ def main():
 		px_width = None
 	else:
 		px_width = options.ptcl_width
-		
+
 	if options.ptcl_length < 1:
 		px_length = None
 	else:
@@ -331,10 +282,10 @@ def get_rotated_particles( micrograph, helix_coords, px_dst = None, px_length = 
 	parallel to the helical axis. They are then rotated so the "lengths" are vertical.
 	@param micrograph: EMData object for the micrograph
 	@param helix_coords: (x1,y1,x2,y2,width) tuple for a helix
-	@param px_dst: length of overlap in pixels of the rectangular particles, measured along the line connecting particle centroids, defaults to 0.1*px_length
+	@param px_dst:    length of overlap in pixels of the rectangular particles, measured along the line connecting particle centroids, defaults to 0.1*px_length
 	@param px_length: distance in pixels between the centroids of two adjacent particles, defaults to the width of the helix
-	@param px_width: width of the particles in pixels, defaults to px_length
-	@param gridding: use gridding method for rotation operation, requires square particles (px_length == px_width)
+	@param px_width:  width of the particles in pixels, defaults to px_length
+	@param gridding:  use gridding method for rotation operation, requires square particles (px_length == px_width)
 	@return: a list of EMData particles
 	"""
 	(x1,y1,x2,y2,w) = helix_coords
@@ -360,27 +311,19 @@ def get_rotated_particles( micrograph, helix_coords, px_dst = None, px_length = 
 	if gridding == True:
 		assert int(round(px_width)) == int(round(px_length)), "The segment must be square for gridding method"
 		side1 = int(px_width + 0.5)
-		gr_M  = int(side1*1.42+0.5)
-		enth  = (gr_M-side1)//2
-		gr_npad = 2
-		gr_N = gr_M*gr_npad
-		# support of the window
-		gr_K = 6
-		gr_alpha = 1.75
-		gr_r = gr_M/2
-		gr_v = gr_K/2.0/gr_N
-		from EMAN2 import Util
-		gr_kb = Util.KaiserBessel(gr_alpha, gr_K, gr_r, gr_v, gr_N)
-		nxc = micrograph.get_xsize()//2
-		nyc = micrograph.get_ysize()//2
+		sidepadded = int(side1*1.42 + 0.5)
+		enth  = (sidepadded - side1)//2
+		nxc   = micrograph.get_xsize()//2
+		nyc   = micrograph.get_ysize()//2
+		#print  px_width,px_length,px_dst,side1,sidepadded,enth,nxc,nyc
+	else:
+		ptcl_dimensions = ( int(round(px_width)), int(round(px_length)), 1 )
 
-		
+
 	for centroid in centroids:
 
-		ptcl_dimensions = ( int(round(px_width)), int(round(px_length)), 1 )
-	
 		# liner interpolation for rotation
-		if gridding == False:	
+		if gridding == False:
 			tr = Transform()
 			tr.set_trans(centroid)
 			tr.set_rotation({"type":"2d", "alpha":rot_angle})
@@ -394,24 +337,10 @@ def get_rotated_particles( micrograph, helix_coords, px_dst = None, px_length = 
 
 		else:
 			try:
-				from EMAN2 import Util, Processor
-				#print  micrograph.get_xsize(),micrograph.get_ysize(), px_width, side1, gr_M, enth,centroid[0],centroid[1],nxc,nyc,gridding
-				ptcl = Util.window( micrograph, gr_M, gr_M, 1, int(round(centroid[0] + enth - nxc)), int(round(centroid[1] + enth - nyc)), 0) 
-				mean1 = ptcl.get_attr('mean')
-				ptcl -= mean1
-				# first pad it with zeros in Fourier space
-				gr_q = ptcl.FourInterpol(gr_N, gr_N, 1, 0)
-				params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE,
-				"alpha":gr_alpha, "K":gr_K, "r":gr_r, "v":gr_v, "N":gr_N}
-				gr_q = Processor.EMFourierFilter(gr_q, params)
-				params = {"filter_type" : Processor.fourier_filter_types.TOP_HAT_LOW_PASS,
-					"cutoff_abs" : 0.25, "dopad" : False}
-				gr_q = Processor.EMFourierFilter(gr_q, params)
-				gr_q2 = gr_q.do_ift()
-				ptcl = gr_q2.rot_scale_conv_new_background( -rot_angle*pi/180.0, 0.0, 0.0, gr_kb, 1.0)
-				#cut it
-				ptcl += mean1
-				ptcl = Util.window( ptcl, side1, side1, 1, 0, 0, 0) 
+				from EMAN2 import Util
+				from fundamentals import rot_shift2D
+				ptcl = Util.window( micrograph, sidepadded, sidepadded, 1, int(round(centroid[0] - nxc)), int(round(centroid[1] - nyc)), 0) 
+				ptcl = Util.window( rot_shift2D(ptcl, -rot_angle, interpolation_method="gridding"), side1, side1, 1, 0, 0, 0)
 				ptcl["ptcl_helix_coords"] = tuple(helix_coords)
 				ptcl["ptcl_source_coord"] = tuple(centroid)
 				ptcl["xform.align2d"]     = Transform()
@@ -1893,7 +1822,9 @@ if ENABLE_GUI:
 			self.current_boxkey = None #We are done editing the box
 			self.initial_helix_box_data_tuple = None
 
-def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, boxsize=256, minseg = 6, outstacknameall='bdb:data', hcoords_dir = "", hcoords_suffix = "_boxes.txt", ptcl_dst=-1, inv_contrast=False, new_pixel_size=-1, rmax = -1.0, freq = -1, debug = 1, do_rotation = True, do_gridding=True, topdir = None):
+def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, boxsize=256, minseg = 6, outstacknameall='bdb:data', \
+				hcoords_dir = "", hcoords_suffix = "_boxes.txt", ptcl_dst=-1, inv_contrast=False, new_pixel_size=-1, rmax = -1.0, freq = -1, debug = 1, \
+				do_rotation = True, do_gridding=True, topdir = None, importctf=None, cterr = None):
 	'''
 	
 	Windows segments from helices boxed from micrographs. 
@@ -2081,7 +2012,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, boxsize=256, minse
 				if( os.path.exists(hcoordsname) ):
 					micname = os.path.join(v1, v2)
 					print_msg("\n\nPreparing to window helices from micrograph %s with box coordinate file %s\n\n"%(micname, hcoordsname))
-					windowmic(outstacknameall, coutdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, minseg, inv_contrast, new_pixel_size, rmaxp, freq, do_rotation, do_gridding)
+					windowmic(outstacknameall, coutdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, minseg, inv_contrast, new_pixel_size, rmaxp, freq, do_rotation, do_gridding, importctf, cterr)
 
 	# If not debug mode, then remove all output directories 
 	if debug == 0:
@@ -2091,7 +2022,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, boxsize=256, minse
 			print_msg("cmd: %s"%cmd)
 			call(cmd, shell=True)
 
-def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, minseg, inv_contrast, new_pixel_size, rmaxp, freq, do_rotation, do_gridding):
+def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, minseg, inv_contrast, new_pixel_size, rmaxp, freq, do_rotation, do_gridding, importctf, cterr):
 	'''
 	
 	INPUT
@@ -2137,13 +2068,31 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 	# micname is full path name
 	# smic[-1] is micrograph name minus path
 	smic = micname.split('/')
-	
-	has_ctf = False
+	# filename is name of micrograph minus the path and extension
+	filename = (smic[-1].split('.'))[0]
+
+	if importctf:	
+		ctfs = read_text_row(importctf)
+		nx = True
+		for i in xrange(len(ctfs)):
+			smic = ctfs[i][-1].split('/')
+			ctfilename = (smic[-1].split('.'))[0]
+			if(ctfilename == filename):
+				ctfs = ctfs[i]
+				nx = False
+				break
+		if nx:  ERROR("Could not find the micrograph name in imported sxcter results %s"%filename,"sxhelixboxer",1)
+		if(ctfs[8]/ctfs[0] > cterr[0]):
+			print_msg('Defocus error %f exceeds the threshold. Micrograph %s rejected.\n'%(ctfs[8]/ctfs[0], filename))
+			return
+		if(ctfs[10] > cterr[1] ):
+			ctfs[6] = 0.0
+			ctfs[7] = 0.0
+
 	dummy = EMData()
 	dummy.read_image(micname, 0, True)
 	l = dummy.get_attr_dict()
-	if 'ctf' in l.keys():  has_ctf = True
-	if has_ctf:            ctf = dummy.get_attr('ctf')
+
 
 	if new_pixel_size != pixel_size:
 		# Resample micrograph, map coordinates, and window segments from resampled micrograph using new coordinates
@@ -2156,20 +2105,15 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 		nx = img.get_xsize()
 		ny = img.get_ysize()
 		img = resample(img, resample_ratio)
-		if has_ctf:
-			ctf.apix=new_pixel_size
-			img.set_attr('ctf', ctf)
 		micname = os.path.join(outdir,'resampled_%s'%smic[-1])
 		img.write_image(micname)
-
+		if importctf: ctf[3] = new_pixel_size
 		smic = micname.split('/')
-
+		# filename is name of micrograph minus the path and extension
+		filename = (smic[-1].split('.'))[0]
 		# now need to get new coordinates file and set hcoordsname to that
 		hcoordsname = getnewhelixcoords(hcoordsname, outdir, resample_ratio,nx,ny, newpref="resampled_", boxsize=boxsize)
 
-	# filename is name of micrograph minus the path and extension
-	filename = (smic[-1].split('.'))[0]
-	
 	imgs_0 = filename+"_abox" # Base name for the segment stack corresponding to each boxed helix. If imgs_0='mic0_abox', then windowed segments from first windowed helix would be 'mic0_abox_0.hdf', the second 'mic0_abox_1.hdf' etc
 	fimgs_0 = os.path.join(outdir, imgs_0 + ".hdf") # This has to be hdf, sxhelixboxer cannot write windowed out segments to bdb
 
@@ -2208,7 +2152,9 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 
 	#try:      iseg = EMUtil.get_image_count(outstacknameall)
 	#except:   iseg = 0
-
+	if importctf:
+		from utilities import generate_ctf
+		ctfs = generate_ctf(ctfs)
 	for h in xrange(nhelices):
 		ptcl_images  = imgs_0+"_%i.hdf"%h                         # This is what sxhelixboxer outputs, only 'hdf' format is handled.
 		otcl_images  = "bdb:%s/QT"%outdir+ ptcl_images[:-4]
@@ -2223,11 +2169,11 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 				for j in xrange(n1):
 					prj = get_im(ptcl_images, j)
 					prj = ramp(prj)
-					if has_ctf:
-						prj.set_attr("ctf", ctf)
-						prj.set_attr("ctf_applied", 0)
 					stat = Util.infomask( prj, mask, False )
 					prj -= stat[0]
+					if importctf:
+						prj.set_attr("ctf",ctfs)
+						prj.set_attr("ctf_applied", 0)
 					prj.write_image(otcl_images, j)
 					#prj.write_image(outstacknameall, iseg)
 					#iseg += 1
