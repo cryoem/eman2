@@ -12,15 +12,15 @@
 #       co/
 #           <cvsmodule>.<release>/                               EMAN2 source from CVS, e.g. "eman2.daily", "eman2.EMAN2_0_5"
 #       local/                
-#           [lib,bin,include,doc,share,qt4,...]                 PREFIX for dependency library installs -- think /usr/local
+#           [lib,bin,include,doc,share,qt4,...]                  PREFIX for dependency library installs -- think /usr/local
 #       extlib/
 #           <cvsmodule>.<release>/[lib,bin,site-packages,...]    Stripped down copy of local/ that only includes required libraries.
 #       build/
 #           <cvsmodule>.<release>/                               CMake configure and build directory
 #       stage/
 #           <cvsmodule>.<release>/                               Staging area for distribution
-#               EMAN2/[bin,lib,extlib,...]                      EMAN2 installation
-#       images/                                                 Completed, packaged distributions
+#               EMAN2/[bin,lib,extlib,...]                       EMAN2 installation
+#       images/                                                  Completed, packaged distributions
 #
 
 import os
@@ -42,6 +42,7 @@ except:
 ##### Helper functions #####
 
 def log(msg):
+    """Print a message."""
     print "=====", msg, "====="
 
 def find_exec(root='.'):
@@ -101,7 +102,13 @@ def check_output(*popenargs, **kwargs):
 ##### Targets #####
 
 class Target(object):
-    """Target-specific configuration and build commands."""
+    """Target-specific configuration and build commands.
+    
+    Each target defines some configuration for that platform,
+    and the methods checkout, build, install, postinstall,
+    upload, etc., can be customized to list the actions 
+    required for each platform.
+    """
 
     # All these attrs will be copied into the args Namespace.
     python = '/usr/bin/python'
@@ -264,7 +271,7 @@ class Linux64Target(LinuxTarget):
     target_desc = 'linux64'
     pass 
     
-# TODO: Use a register() type system.
+# TODO: Use a class decorator or somesuch.
 TARGETS = {
     'i686-apple-darwin10': SnowLeopardTarget,
     'i686-apple-darwin11': LionTarget,
@@ -489,12 +496,12 @@ class UnixPackage(Builder):
         shutil.move(
             os.path.join(self.args.cwd_rpath_extlib, 'lib', 'python2.7', 'site-packages'),
             os.path.join(self.args.cwd_rpath_extlib, 'lib', 'python2.7', 'site-packages.original')
-	)
+        )
         cmd(['ln', '-s', '../../site-packages', 'site-packages'], cwd=os.path.join(self.args.cwd_rpath, 'extlib', 'lib', 'python2.7'))
 
         # print "Copying install.sh as eman2-installer. NOTE: HARDCODED PATH, FIX!!"
         # installsh_in  = os.path.join(self.args.root, 'install.sh')
-	installsh_in = os.path.join(self.args.cwd_co_distname, 'doc', 'build', 'install.sh')
+        installsh_in = os.path.join(self.args.cwd_co_distname, 'doc', 'build', 'install.sh')
         installsh_out = os.path.join(self.args.cwd_rpath, 'eman2-installer')
         shutil.copy(installsh_in, installsh_out)
         cmd(['chmod', 'a+x', installsh_out])
