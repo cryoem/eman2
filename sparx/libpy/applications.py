@@ -1598,7 +1598,7 @@ def mref_ali2d(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, y
 	print_msg("CTF correction              : %s\n"%(CTF))
 	print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 	print_msg("Random seed                 : %i\n\n"%(rand_seed))
-
+	print_msg("User function               : %s\n"%(user_func_name))
 	output = sys.stdout
 
 	import user_functions
@@ -1862,7 +1862,7 @@ def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrn
 		print_msg("CTF correction              : %s\n"%(CTF))
 		print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 		print_msg("Random seed                 : %i\n\n"%(rand_seed))	
-
+		print_msg("User function               : %s\n"%(user_func_name))
 	import user_functions
 	user_func = user_functions.factory[user_func_name]
 
@@ -3194,6 +3194,7 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 	print_msg("Reference projection method : %s\n"%(ref_a))
 	print_msg("Symmetry group              : %s\n\n"%(sym))
+	print_msg("User function               : %s\n"%(user_func_name))
 
 	if maskfile :
 		if type(maskfile) is types.StringType: mask3D = get_image(maskfile)
@@ -3396,6 +3397,7 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 		print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 		print_msg("Reference projection method : %s\n"%(ref_a))
 		print_msg("Symmetry group              : %s\n\n"%(sym))
+		print_msg("User function               : %s\n"%(user_func_name))
 
 	if maskfile:
 		if type(maskfile) is types.StringType: mask3D = get_image(maskfile)
@@ -3933,6 +3935,7 @@ def mref_ali3d(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1, ir=
 	print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 	print_msg("Reference projection method : %s\n"%(ref_a))
 	print_msg("Symmetry group              : %s\n\n"%(sym))
+	print_msg("User function               : %s\n"%(user_func_name))
 
 	if(maskfile):
 		if(type(maskfile) is types.StringType):	 mask3D = get_image(maskfile)
@@ -4189,6 +4192,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 		print_msg("Reference projection method               : %s\n"%(ref_a))
 		print_msg("Symmetry group                            : %s\n\n"%(sym))
 		print_msg("Percentage of change for termination      : %f\n"%(termprec))
+		print_msg("User function                             : %s\n"%(user_func_name))
 
 	if(maskfile):
 		if(type(maskfile) is types.StringType): mask3D = get_image(maskfile)
@@ -4785,6 +4789,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 		print_msg("Reference projection method : %s\n"%(ref_a))
 		print_msg("Symmetry group              : %s\n\n"%(sym))
 		print_msg("Percentage of change for termination: %f\n"%(termprec))
+		print_msg("User function               : %s\n"%(user_func_name))
 
 	if maskfile:
 		if type(maskfile) is types.StringType: mask3D = get_image(maskfile)
@@ -5582,6 +5587,7 @@ def local_ali3dm_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, 
 		print_msg("Maskfile                    : %s\n"%(maskfile))
 		print_msg("Angular step                : %f\n"%(delta))
 		print_msg("Shift search range          : %f\n"%(ts))
+		print_msg("User function               : %s\n"%(user_func_name))
 
 	if(myid == main_node):
        		if(file_type(stack) == "bdb"):
@@ -5948,6 +5954,7 @@ def local_ali3d(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, ce
 	print_msg("Symmetry group              : %s\n"%(sym))
 	if chunk <= 0.0:  chunk = 1.0
 	print_msg("Chunk size                  : %f\n\n"%(chunk))
+	print_msg("User function               : %s\n"%(user_func_name))
 	
 	if maskfile:
 		import  types
@@ -6215,6 +6222,7 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 		print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 		print_msg("Symmetry group              : %s\n"%(sym))
 		print_msg("Chunk size                  : %f\n\n"%(chunk))
+		print_msg("User function               : %s\n"%(user_func_name))
 
 	if maskfile:
 		import  types
@@ -7487,7 +7495,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 	else:	       send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node: print_end_msg("ihrsr_MPI")
 
-
+'''
 def gchelix_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 	txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, ndp, dp_step, dphi, ndphi, dphi_step, psi_max,\
 	rmin, rmax, fract, nise, npad, sym, user_func_name, datasym,\
@@ -7749,12 +7757,12 @@ def gchelix_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 				else:
 					# odd point-group symmetry AND any theta (including theta=90), OR even point-group symmetry AND theta <> 90.
 					refrings2.append( refrings[i] )
-					'''
+					"""
 					if myid == main_node:
 						print_msg("\nphi = %5.2f, theta = %5.2f, psi=%5.2f\n"%( refrings[i].get_attr('phi'), refrings[i].get_attr('theta'), refrings[i].get_attr('psi') ) )
 					if myid == main_node:
 						print_msg("\nlen(ref1) = %4d, len(ref2) = %4d\n"%(len(refrings1), len(refrings2)) )
-					'''		
+					"""		
 			del refrings
 			from numpy import float32
 			dpp = float32(float(dp)/pixel_size)
@@ -8229,7 +8237,7 @@ def gchelix_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 		start_time = time()
 	else:	       send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node: print_end_msg("ihrsr_MPI")
-
+'''
 
 def copyfromtif(indir, outdir=None, input_extension="tif", film_or_CCD="f", output_extension="hdf", contrast_invert=1, Pixel_size=1, scanner_param_a=1,scanner_param_b=1, scan_step=63.5, magnification=40, MPI=False):
 	"""
@@ -13244,6 +13252,7 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 		print_msg("Signal-to-Noise Ratio                     : %f\n"%(snr))
 		print_msg("Symmetry group                            : %s\n"%(sym))
 		print_msg("Segment height seg_ny                     : %s\n\n"%(seg_ny))
+		print_msg("User function                             : %s\n"%(user_func_name))
 
 	if maskfile:
 		if type(maskfile) is types.StringType: mask3D = get_image(maskfile)

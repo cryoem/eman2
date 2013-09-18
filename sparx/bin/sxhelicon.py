@@ -42,7 +42,7 @@ def main():
         for arg in sys.argv:
         	arglist.append( arg )
 	progname = os.path.basename(arglist[0])
-	usage = progname + " stack ref_vol outdir  <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --txs=translational_search_stepx  --delta=angular_step --maxit=max_iter --CTF --snr=1.0  --ref_a=S --sym=c1 --datasym=symdoc"
+	usage = progname + " stack ref_vol outdir  <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --txs=translational_search_stepx  --delta=angular_step --maxit=max_iter --CTF --snr=1.0  --ref_a=S --sym=c1 --function=user_function --datasym=symdoc"
 	
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--delta",              type="string",		 default= " 10 6 4  3   2",   help="angular step of reference projections")
@@ -61,7 +61,7 @@ def main():
 	parser.add_option("--rmax",               type="float", 		 default= 80.0,               help="maximal radius for hsearch (Angstroms)")
 	parser.add_option("--fract",              type="float", 		 default= 0.7,                help="fraction of the volume used for helical search. Default 0.7.")
 	parser.add_option("--sym",                type="string",		 default= "c1",               help="Poin-group symmetry of the structure. Default c1.")
-	parser.add_option("--function",           type="string",		 default="helical",  	      help="name of the reference preparation function")
+	parser.add_option("--function",           type="string",		 default="helical",  	      help="name of the reference preparation function (Default: helical)")
 	parser.add_option("--npad",               type="int",   		 default= 2,                  help="padding size for 3D reconstruction")
 	parser.add_option("--debug",              action="store_true",   default=False,               help="debug")
 	parser.add_option("--seg_ny",             type="int",            default= 45,                 help="Desired y dimension of segments.  Only central part of segments nseg_ny pixels long will be used in calculations.")
