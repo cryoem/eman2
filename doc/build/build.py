@@ -266,6 +266,8 @@ class LinuxTarget(Target):
         self._run([CopyShrc, CopyExtlib, FixLinuxRpath])
     def package(self):
         self._run([UnixPackage])
+    def upload(self):
+        self._run([UnixUpload])
            
 class Linux64Target(LinuxTarget):
     target_desc = 'linux64'
@@ -517,8 +519,12 @@ class UnixPackage(Builder):
 
 class UnixUpload(Builder):
     def run(self):
-        # Upload
-        raise NotImplementedError
+        log("Uploading archive")
+        imgname = "%s.%s.%s.tar.gz"%(self.args.cvsmodule, self.args.release, self.args.target_desc)
+        img = os.path.join(self.args.cwd_images, imgname)
+        scpdest = "eman@%s:%s/%s"%(self.args.scphost, self.args.scpdest, imgname)
+        scp = ['scp', img, scpdest]
+        cmd(scp)
     
 class MacPackage(Builder):
     def run(self):
