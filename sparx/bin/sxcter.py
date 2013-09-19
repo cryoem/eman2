@@ -30,26 +30,29 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 #
+import global_def
+from  global_def import *
 
 
 def main():
 	import os
 	import sys
 	from optparse import OptionParser
-	from global_def import SPARXVERSION
-	import global_def
         arglist = []
         for arg in sys.argv:
         	arglist.append( arg )
 	progname = os.path.basename(arglist[0])
-	usage = progname + """ stack outdir1 outdir2 --indir --nameroot --nx --apix --Cs --voltage --ac --kboot --MPI
+	usage = progname + """ stack outdir1 outdir2 --indir --nameroot --micsuffix --wn --apix --Cs --voltage --ac --kboot --MPI
 
 	Process micrographs:
 	
-		Specify directory and prefix of micrographs to process through --indir and --nameroot
+		Specify directory and prefix and suffix (type) of micrographs to process through --indir, --nameroot, and --micsuffix
 		Specify output directories pwrot and partres as arguments.
 		
-			mpirun -np 1 sxcter.py pwrot partres --indir=. --nameroot=micrograph_PSC23_A8A_1GD_11112_135 --nx=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --MPI
+			mpirun -np 16 sxcter.py pwrot partres --indir=. --nameroot=micrograph_PSC23_A8A_1GD_11112_135 --micsuffixmrc --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --MPI
+		After the program stops, it is advisable to concatenate all output files in partres directory:
+		cd partres
+		cat */* >>allctfs.txt
 
 	Process stack:
 	
@@ -61,8 +64,9 @@ def main():
 	parser = OptionParser(usage,version=SPARXVERSION)
 	
 	parser.add_option("--indir",            	  type="string",		    default= ".",     				 help="Directory containing micrographs to be processed.")
-	parser.add_option("--nameroot",          	  type="string",		    default= "",     				 help="Prefix of micrographs to be processed.")
-	parser.add_option("--nx",				  	  type="int",				default=256, 					 help="Size of window to use (should be slightly larger than particle box size)")
+	parser.add_option("--nameroot",          	  type="string",		    default="",     				 help="Prefix of micrographs to be processed.")
+	parser.add_option("--micsuffix",              type=str,                 default="",                      help="A string denoting micrograph type. For example 'mrc', 'hdf', 'ser' ...")
+	parser.add_option("--wn",				  	  type="int",				default=512, 					 help="Size of window to use (should be slightly larger than particle box size, default 512)")
 	
 	parser.add_option("--apix",               	  type="float",			 	default= -1,               	     help="pixel size in Angstroms")   
 	parser.add_option("--Cs",               	  type="float",			 	default= 2.0,               	 help="Microscope Cs (spherical aberation)")
@@ -88,7 +92,7 @@ def main():
 	
 	if len(args) == 3:
 		if options.MPI:
-			print "Please use single processor version if specifying a stack."
+			ERROR("Please use single processor version if specifying a stack", "sxcter", 1)
 			sys.exit()
 		stack = args[0]
 		out1 = args[1]
@@ -99,7 +103,11 @@ def main():
 		out2 = args[1]
 	
 	if options.apix < 0:
-		print "Enter pixel size"
+		ERROR("Pixel size has to be specified", "sxcter", 1)
+		sys.exit()
+
+	if options.micsuffix == "" or options.nameroot == "":
+		ERROR("Micrograph prefix and suffix (type) have to be specified", "sxcter", 1)
 		sys.exit()
 	
 	if options.MPI:
@@ -112,7 +120,9 @@ def main():
 
 	from morphology import cter
 	global_def.BATCH = True
-	cter(stack, out1, out2, options.indir, options.nameroot, options.nx, f_start=options.f_start, f_stop=options.f_stop, voltage=options.voltage, Pixel_size=options.apix, Cs = options.Cs, wgh=options.ac, kboot=options.kboot, MPI=options.MPI, DEBug = options.debug, overlap_x = options.overlap_x, overlap_y = options.overlap_y, edge_x = options.edge_x, edge_y = options.edge_y, guimic=None)
+	cter(stack, out1, out2, options.indir, options.nameroot, options.micsuffix, options.wn, \
+		f_start=options.f_start, f_stop=options.f_stop, voltage=options.voltage, Pixel_size=options.apix, Cs = options.Cs, wgh=options.ac, kboot=options.kboot,\
+		 MPI=options.MPI, DEBug = options.debug, overlap_x = options.overlap_x, overlap_y = options.overlap_y, edge_x = options.edge_x, edge_y = options.edge_y, guimic=None)
 	global_def.BATCH = False
 
 	if options.MPI:

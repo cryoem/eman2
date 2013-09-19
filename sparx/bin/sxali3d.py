@@ -110,7 +110,7 @@ def main():
 			if not options.MPI:
 				print "Only MPI version is implemented!!!"
 			else:
-				from alignment import ali3d_shcMPI
+				from applications import ali3d_shcMPI
 				global_def.BATCH = True
 				ali3d_shcMPI(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
 					options.yr, options.ts, options.delta, options.an, options.apsi, options.deltapsi, options.startpsi,

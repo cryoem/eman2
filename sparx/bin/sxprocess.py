@@ -188,7 +188,7 @@ def main():
 		gbdb[dbkey] = dbdict
 		
 	if options.generate_projections:
-	
+
 		nargs = len(args)
 		if nargs != 3:
 			print "must provide name of input structure from which to generate projections, desired name of output projection stack, and desired prefix for output micrographs. Exiting..."
@@ -199,7 +199,7 @@ def main():
 		print 'input structure: ', inpstr
 		print 'output projection stack: ', outstk
 		print 'micrograph prefix: ', micpref
-			
+
 		parmstr= 'dummy:'+options.generate_projections[0]
 		(processorname, param_dict) = parsemodopt(parmstr)
 
@@ -210,19 +210,19 @@ def main():
 		if 'CTF' in param_dict:
 			if param_dict['CTF'] == 'True':
 				parm_CTF = True
-		
+
 		if 'format' in param_dict:
-			parm_format = param_dict['format'] 
-		
+			parm_format = param_dict['format']
+
 		if 'apix' in param_dict:
 			parm_apix = float(param_dict['apix'])
-		
+
 		boxsize = 64
 		if 'boxsize' in param_dict:
 			boxsize = int(param_dict['boxsize'])
-							
+
 		print "pixel size: ", parm_apix," format: ", parm_format," add CTF: ",parm_CTF," box size: ", boxsize
-		
+
 		scale_mult = 2500
 		sigma_add = 1.5
 		sigma_proj = 30.0
@@ -253,8 +253,8 @@ def main():
 		from utilities import drop_spider_doc, even_angles, model_gauss, delete_bdb, model_blank,pad,model_gauss_noise,set_params2D, set_params_proj
 		from projection import prep_vol,prgs
 		seed(14567)
-		delta = 40
-		angles = even_angles(delta,0.0,89.9,0.0,359.9,"P")
+		delta = 29
+		angles = even_angles(delta,0.0,89.9,0.0,359.9,"S")
 		nangle = len(angles)
 		
 		modelvol = EMData()
@@ -266,7 +266,7 @@ def main():
 		if nx != boxsize:
 			print "requested box dimension does not match dimension of the input model....Exiting"
 			sys.exit()
-			
+
 		nvol = 10
 		volfts = [None]*nvol
 		for i in xrange(nvol):
@@ -307,7 +307,7 @@ def main():
 		
 
 			for i in xrange(nangle):
-				for k in xrange(24):
+				for k in xrange(12):
 					dphi = 8.0*(random()-0.5)
 					dtht = 8.0*(random()-0.5)
 					psi  = 360.0*random()
@@ -326,7 +326,7 @@ def main():
 		
 					x = xstart + irow * width
 					y = ystart + icol * width
-	
+
 					mic += pad(proj, 4096, 4096, 1, 0.0, x-2048, y-2048, 0)
 			
 					proj = proj + model_gauss_noise( sigma_proj, nx, nx )

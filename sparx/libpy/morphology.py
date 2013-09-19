@@ -1408,7 +1408,7 @@ def refine_with_mask(vol):
 	return vol
 '''
 
-def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_stop = -1.0, voltage=300.0, Pixel_size=2.29, Cs = 2.0, wgh=10.0, kboot=16, MPI=False, DEBug= False, overlap_x = 50, overlap_y=50 , edge_x = 0, edge_y=0, guimic=None, set_ctf_header=False):
+def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= -1.0 , f_stop = -1.0, voltage=300.0, Pixel_size=2.29, Cs = 2.0, wgh=10.0, kboot=16, MPI=False, DEBug= False, overlap_x = 50, overlap_y=50 , edge_x = 0, edge_y=0, guimic=None, set_ctf_header=False):
 	'''
 	Input
 		stack	 : name of image stack (such as boxed particles) to be processed instead of micrographs.
@@ -1426,15 +1426,20 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 	import os
 	from   mpi  import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier
 	from   fundamentals import tilemic, rot_avg_table
-	from   morphology import threshold, bracket_original, bracket_def, bracket, goldsearch_astigmatism, defocus_baseline_fit, simpw1d, movingaverage, localvariance, defocusgett, ctf_222, defocus_guessn, defocusgett_, defocusget_from_crf, make_real, fastigmatism, fastigmatism1, fastigmatism2, fastigmatism3, simctf, simctf2, simctf2out, fupw,ctf2_rimg
+	from   morphology import threshold, bracket_original, bracket_def, bracket, goldsearch_astigmatism
+	from   morphology import defocus_baseline_fit, simpw1d, movingaverage, localvariance, defocusgett
+	from   morphology import ctf_222, defocus_guessn, defocusgett_, defocusget_from_crf, make_real
+	from   morphology import fastigmatism, fastigmatism1, fastigmatism2, fastigmatism3, simctf, simctf2, simctf2out, fupw,ctf2_rimg
 	from   alignment import Numrinit, ringwe
 	from   statistics import table_stat
 	from   pixel_error import angle_ave
-	
+	from   global_def import *
+	import global_def
+
 	# Case of a single micrograph from gui mode
 	if guimic != None:
 		MPI = False
-		
+
 	if MPI:
 		myid = mpi_comm_rank(MPI_COMM_WORLD)
 		ncpu = mpi_comm_size(MPI_COMM_WORLD)
@@ -1443,28 +1448,33 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 		main_node = 0
 		if myid == main_node:
 			if os.path.exists(outpwrot) or os.path.exists(outpartres):
-				ERROR('Output directory exists, please change the name and restart the program', " ", 1)
+				ERROR('Output directory exists, please change the name and restart the program', "cter", 1, myid)
 			os.mkdir(outpwrot)
 			os.mkdir(outpartres)
 		mpi_barrier(MPI_COMM_WORLD)
 	else:
 		if os.path.exists(outpwrot) or os.path.exists(outpartres):
-			ERROR('Output directory exists, please change the name and restart the program', " ")
+			ERROR('Output directory exists, please change the name and restart the program', "cter", 1, myid)
 		os.mkdir(outpwrot)
 		os.mkdir(outpartres)
-	
+
+	if micsuffix[0] == '.': micsuffix = micsuffix[1:]
 	if stack == None:
 		if guimic == None:
 			lenroot = len(nameroot)
 			flist  = os.listdir(indir)
 			namics = []
 			for i in xrange(len(flist)):
-				if( flist[i][:lenroot] == nameroot ):
+				if( flist[i][:lenroot] == nameroot and flist[i][-3:] == micsuffix):
 					namics.append(os.path.join(indir,flist[i]))
+			if(len(namics) == 0):
+				ERROR('There are no files whose names match the name root and suffix provided', "cter", 1, myid)
+			# sort list of micrographs using case insensitive string comparison
+			namics.sort(key=str.lower)
 		else:
 			namics = [guimic]
 		nmics = len(namics)
-		
+
 		if MPI:
 			set_start, set_end = MPI_start_end(nmics, ncpu, myid)
 		else:
@@ -1476,16 +1486,16 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 		nima = len(data)
 		for i in xrange(nima):
 			pw2.append(periodogram(data[i]))
-		nx = pw2[0].get_xsize()	
+		wn = pw2[0].get_xsize()	
 		set_start = 0
 		set_end = 1
-				
+
 	totresi = []
 	for ifi in xrange(set_start,set_end):
 		#print  " tilemic ", ifi,namics[ifi]
 		
 		if stack == None:
-			pw2 = tilemic(get_im(namics[ifi]), win_size=nx, overlp_x=overlap_x, overlp_y=overlap_y, edge_x=edge_x, edge_y=edge_y)
+			pw2 = tilemic(get_im(namics[ifi]), win_size=wn, overlp_x=overlap_x, overlp_y=overlap_y, edge_x=edge_x, edge_y=edge_y)
 		nimi = len(pw2)
 		adefocus = [0.0]*kboot
 		aamplitu = [0.0]*kboot
@@ -1503,7 +1513,7 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 			else:
 				from random import randint
 				for imi in xrange(nimi): boot[imi] = randint(0,nimi-1)
-			qa = model_blank(nx, nx)
+			qa = model_blank(wn, wn)
 			roo  = np.zeros(lenroo, np.float32)
 			sroo = np.zeros(lenroo, np.float32)
 			aroo = np.zeros(lenroo, np.float32)
@@ -1541,7 +1551,7 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 						istart = i
 				#istart = 25
 				#print istart
-				f_start = istart/(Pixel_size*nx)
+				f_start = istart/(Pixel_size*wn)
 			"""
 			hi = hist_list(sroo,2)
 			# hi[0][1] is the threshold
@@ -1555,7 +1565,7 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 			
 			#print namics[ifi],istart,f_start
 
-			defc, subpw, ctf2, baseline, envelope, istart, istop = defocusgett(rooc, nx, voltage=voltage, Pixel_size=Pixel_size, Cs=Cs, ampcont=wgh, f_start=f_start, f_stop=f_stop, round_off=1.0, nr1=3, nr2=6, parent=None, DEBug=DEBug)
+			defc, subpw, ctf2, baseline, envelope, istart, istop = defocusgett(rooc, wn, voltage=voltage, Pixel_size=Pixel_size, Cs=Cs, ampcont=wgh, f_start=f_start, f_stop=f_stop, round_off=1.0, nr1=3, nr2=6, parent=None, DEBug=DEBug)
 			if DEBug:
 				if stack == None:  
 					print "  RESULT ",namics[ifi],defc, istart, istop
@@ -1564,7 +1574,7 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 				
 			if DEBug:
 				freq = range(len(subpw))
-				for i in xrange(len(freq)):  freq[i] = float(i)/nx/Pixel_size
+				for i in xrange(len(freq)):  freq[i] = float(i)/wn/Pixel_size
 				write_text_file([freq, subpw.tolist(), ctf2, envelope.tolist(), baseline.tolist()],"ravg%05d.txt"%ifi)
 			#mpi_barrier(MPI_COMM_WORLD)
 
@@ -1572,15 +1582,15 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 			bg = baseline.tolist()
 			en = envelope.tolist()
 
-			bckg = model_blank(nx, nx, 1, 1)
-			envl = model_blank(nx, nx, 1, 1)
+			bckg = model_blank(wn, wn, 1, 1)
+			envl = model_blank(wn, wn, 1, 1)
 
 			from math import sqrt
-			nc = nx//2
+			nc = wn//2
 			bg.append(bg[-1])
 			en.append(en[-1])
-			for i in xrange(nx):
-				for j in xrange(nx):
+			for i in xrange(wn):
+				for j in xrange(wn):
 					r = sqrt((i-nc)**2 + (j-nc)**2)
 					ir = int(r)
 					if(ir<nc):
@@ -1590,18 +1600,18 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 
 			#qa.write_image("rs1.hdf")
 
-			mask = model_circle(istop-1,nx,nx)*(model_blank(nx,nx,1,1.0)-model_circle(istart,nx,nx))
+			mask = model_circle(istop-1,wn,wn)*(model_blank(wn,wn,1,1.0)-model_circle(istart,wn,wn))
 			qse = threshold((qa-bckg))#*envl
 			#(qse*mask).write_image("rs2.hdf")
 			#qse.write_image("rs3.hdf")
 			##  SIMULATION
 			#bang = 0.7
-			#qse = ctf2_rimg(nx, generate_ctf([defc,Cs,voltage,Pixel_size,0.0,wgh, bang, 37.0]) )
+			#qse = ctf2_rimg(wn, generate_ctf([defc,Cs,voltage,Pixel_size,0.0,wgh, bang, 37.0]) )
 			#qse.write_image("rs3.hdf")
 
 
 
-			cnx = nx//2+1
+			cnx = wn//2+1
 			cny = cnx
 			mode = "H"
 			numr = Numrinit(istart, istop, 1, mode)
@@ -1611,7 +1621,7 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 			Util.Frngs(crefim, numr)
 			Util.Applyws(crefim, numr, wr)
 
-			#pc = ctf2_rimg(nx,generate_ctf([defc,Cs,voltage,Pixel_size,0.0,wgh]))
+			#pc = ctf2_rimg(wn,generate_ctf([defc,Cs,voltage,Pixel_size,0.0,wgh]))
 			#print ccc(pc*envl, subpw, mask)
 
 			bang = 0.0
@@ -1621,8 +1631,8 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 			while( True):
 				#  in simctf2 data[3] is astigmatism amplitude
 				"""
-				data = [qse, mask, nx, bamp, Cs, voltage, Pixel_size, wgh, bang]
-				#astdata = [crefim, numr, nx, bdef, Cs, voltage, Pixel_size, wgh, bang]
+				data = [qse, mask, wn, bamp, Cs, voltage, Pixel_size, wgh, bang]
+				#astdata = [crefim, numr, wn, bdef, Cs, voltage, Pixel_size, wgh, bang]
 				for qqq in xrange(200):
 					qbdef = 1.0 + qqq*0.001
 					print " VALUE AT THE BEGGINING OF while LOOP  ",qbdef,simctf2(qbdef, data)#,fastigmatism3(bamp,astdata)
@@ -1631,23 +1641,23 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 				bamp = 0.7
 				bang = 37.0
 
-				data = [qse, mask, nx, bamp, Cs, voltage, Pixel_size, wgh, bang]
-				astdata = [crefim, numr, nx, bdef, Cs, voltage, Pixel_size, wgh, bang]
+				data = [qse, mask, wn, bamp, Cs, voltage, Pixel_size, wgh, bang]
+				astdata = [crefim, numr, wn, bdef, Cs, voltage, Pixel_size, wgh, bang]
 				print " VALUE AT THE BEGGINING OF while LOOP  ",bdef,bamp,bang,simctf2(bdef, data),fastigmatism3(bamp,astdata,mask)
 				#print  simctf2out(1.568,data)
 				#exit()
 
 				for kdef in xrange(14000,17000,10):
 					dz = kdef/10000.0
-					ard = [qse, mask, nx, bamp, Cs, voltage, Pixel_size, wgh, bang]
+					ard = [qse, mask, wn, bamp, Cs, voltage, Pixel_size, wgh, bang]
 					#print ard
-					aqd = [crefim, numr, nx, dz, Cs, voltage, Pixel_size, wgh, bang]
+					aqd = [crefim, numr, wn, dz, Cs, voltage, Pixel_size, wgh, bang]
 					#print aqd
 					print  dz,simctf2(dz,ard),fastigmatism3(bamp,aqd,mask)
 					#print aqd[-1]
 				exit()
 				"""
-				data = [qse, mask, nx, bamp, Cs, voltage, Pixel_size, wgh, bang]
+				data = [qse, mask, wn, bamp, Cs, voltage, Pixel_size, wgh, bang]
 				h = 0.05*bdef
 				amp1,amp2 = bracket_def(simctf2, data, bdef*0.9, h)
 				#print "bracketing of the defocus  ",amp1, amp2
@@ -1659,7 +1669,7 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 				#print "correction of the defocus  ",bdef,bcc
 				#print " ttt ",time()-srtt
 				"""
-				crot2 = rotavg_ctf(ctf2_rimg(nx,generate_ctf([bdef, Cs, voltage, Pixel_size, 0.0, wgh, bamp, bang])), bdef, Cs, voltage, Pixel_size, wgh, bamp, bang)
+				crot2 = rotavg_ctf(ctf2_rimg(wn,generate_ctf([bdef, Cs, voltage, Pixel_size, 0.0, wgh, bamp, bang])), bdef, Cs, voltage, Pixel_size, wgh, bamp, bang)
 				pwrot = rotavg_ctf(qa-bckg, bdef, Cs, voltage, Pixel_size, wgh, bamp, bang)
 				write_text_file([range(len(subroo)),asubroo, ssubroo, sen, pwrot, crot2],"rotinf%04d.txt"%ifi)
 				qse.write_image("qse.hdf")
@@ -1667,7 +1677,7 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 				exit()
 				"""
 
-				astdata = [crefim, numr, nx, bdef, Cs, voltage, Pixel_size, wgh, bang]
+				astdata = [crefim, numr, wn, bdef, Cs, voltage, Pixel_size, wgh, bang]
 				h = 0.01
 				amp1,amp2 = bracket(fastigmatism3, astdata, h)
 				#print "  astigmatism bracket  ",amp1,amp2,astdata[-1]
@@ -1681,8 +1691,8 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 				#print astdata[-1]
 				#temp = 0.0
 				#print bdef, Cs, voltage, Pixel_size, temp, wgh, bamp, bang, -bcc
-				#data = [qse, mask, nx, bamp, Cs, voltage, Pixel_size, wgh, bang]
-				#astdata = [crefim, numr, nx, bdef, Cs, voltage, Pixel_size, wgh, bang]
+				#data = [qse, mask, wn, bamp, Cs, voltage, Pixel_size, wgh, bang]
+				#astdata = [crefim, numr, wn, bdef, Cs, voltage, Pixel_size, wgh, bang]
 				#print " VALUE WITHIN the while LOOP  ",bdef,bamp,bang,simctf2(bdef, data),fastigmatism3(bamp,astdata)
 				#print "  golden search ",bamp,data[-1], fastigmatism3(bamp,data), fastigmatism3(0.0,data)
 				#print " ttt ",time()-srtt
@@ -1693,7 +1703,7 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 				if DEBug:  print "AMOEBA    ",dama
 				bdef = dama[0][0]
 				bamp = dama[0][1]
-				astdata = [crefim, numr, nx, bdef, Cs, voltage, Pixel_size, wgh, bang]
+				astdata = [crefim, numr, wn, bdef, Cs, voltage, Pixel_size, wgh, bang]
 				junk = fastigmatism3(bamp, astdata)
 				bang = astdata[-1]
 				if DEBug:  print " after amoeba ", bdef, bamp, bang
@@ -1702,16 +1712,16 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 				else:           break
 
 
-			#data = [qse, mask, nx, bamp, Cs, voltage, Pixel_size, wgh, bang]
+			#data = [qse, mask, wn, bamp, Cs, voltage, Pixel_size, wgh, bang]
 			#print " VALUE AFTER the while LOOP  ",bdef,bamp,bang,simctf2(bdef, data),fastigmatism3(bamp,astdata)
 			#temp = 0.0
 			#print ifi,bdef, Cs, voltage, Pixel_size, temp, wgh, bamp, bang, -bcc
 			#freq = range(len(subpw))
-			#for i in xrange(len(freq)):  freq[i] = float(i)/nx/Pixel_size
-			#ctf2 = ctf_2(nx,generate_ctf([bdef,Cs,voltage,Pixel_size,0.0,wgh]))[:len(freq)]
+			#for i in xrange(len(freq)):  freq[i] = float(i)/wn/Pixel_size
+			#ctf2 = ctf_2(wn, generate_ctf([bdef,Cs,voltage,Pixel_size,0.0,wgh]))[:len(freq)]
 			#write_text_file([freq, subpw.tolist(), ctf2, envelope.tolist(), baseline.tolist()],"ravg/ravg%05d.txt"%ifi)
-			#print " >>>> ",nx, bdef, bamp, Cs, voltage, Pixel_size, wgh, bang
-			#data = [qse, mask, nx, bamp, Cs, voltage, Pixel_size, wgh, bang]
+			#print " >>>> ",wn, bdef, bamp, Cs, voltage, Pixel_size, wgh, bang
+			#data = [qse, mask, wn, bamp, Cs, voltage, Pixel_size, wgh, bang]
 			#print  simctf2out(bdef, data)
 			#exit()
 			adefocus[nboot] = bdef
@@ -1758,11 +1768,11 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 			#  Estimate the point at which (sum_errordz ctf_1(dz+errordz))^2 falls to 0.5
 			import random as rqt
 
-			supe = model_blank(nx,nx)
+			supe = model_blank(wn, wn)
 			niter=1000
 			for it in xrange(niter):
-				Util.add_img(supe, Util.ctf_rimg(nx, nx, 1, ad1+rqt.gauss(0.0,stdavad1), Pixel_size, voltage, Cs, 0.0, wgh, bd1 + rqt.gauss(0.0,stdavbd1), cd1 + rqt.gauss(0.0,cd2), 1))
-			ni = nx//2
+				Util.add_img(supe, Util.ctf_rimg(wn, wn, 1, ad1+rqt.gauss(0.0,stdavad1), Pixel_size, voltage, Cs, 0.0, wgh, bd1 + rqt.gauss(0.0,stdavbd1), cd1 + rqt.gauss(0.0,cd2), 1))
+			ni = wn//2
 			supe /= niter
 			pwrot2 = rotavg_ctf(supe, ad1, Cs, voltage, Pixel_size, 0.0, wgh, bd1, cd1)
 			for i in xrange(ni):  pwrot2[i] = pwrot2[i]**2
@@ -1774,13 +1784,13 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 					break
 			from morphology import ctf_1d
 			ct = generate_ctf([ad1, Cs, voltage, Pixel_size, temp, wgh,0.0,0.0])
-			cq = ctf_1d(nx, ct)
+			cq = ctf_1d(wn, ct)
 
 			supe = [0.0]*ni
 			niter=1000
 			for i in xrange(niter):
 				cq = generate_ctf([ad1+rqt.gauss(0.0,stdavad1),Cs, voltage, Pixel_size, 0.0, wgh,0.0,0.0])
-				ci = ctf_1d(nx, cq)[:ni]
+				ci = ctf_1d(wn, cq)[:ni]
 				for l in xrange(ni):  supe[l] +=ci[l]
 
 			for l in xrange(ni):  supe[l] = (supe[l]/niter)**2
@@ -1790,8 +1800,8 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 				if supe[it]>0.5 :
 					ib1 = it
 					break
-			ibec = ibec/(Pixel_size*nx)
-			ib1  = ib1/(Pixel_size*nx)
+			ibec = ibec/(Pixel_size*wn)
+			ib1  = ib1/(Pixel_size*wn)
 			#from utilities import write_text_file
 			#write_text_file([range(ni), supe[:ni],pwrot2[:ni]],"fifi.txt")
 			
@@ -1811,16 +1821,16 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, nx,  f_start= -1.0 , f_st
 				sen[i]     /= kboot
 			"""
 			lnsb = len(subpw)
-			try:		crot2 = rotavg_ctf(ctf2_rimg(nx,generate_ctf([ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1])), ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1)[:lnsb]
+			try:		crot2 = rotavg_ctf(ctf2_rimg(wn, generate_ctf([ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1])), ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1)[:lnsb]
 			except:		crot2 = [0.0]*lnsb
 			try:		pwrot2 = rotavg_ctf(threshold(qa-bckg), ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1)[:lnsb]
 			except:		pwrot2 = [0.0]*lnsb
-			try:		crot1 = rotavg_ctf(ctf2_rimg(nx,generate_ctf([ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1])), ad1, Cs, voltage, Pixel_size, temp, wgh, 0.0, 0.0)[:lnsb]
+			try:		crot1 = rotavg_ctf(ctf2_rimg(wn, generate_ctf([ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1])), ad1, Cs, voltage, Pixel_size, temp, wgh, 0.0, 0.0)[:lnsb]
 			except:		crot1 = [0.0]*lnsb
 			try:		pwrot1 = rotavg_ctf(threshold(qa-bckg), ad1, Cs, voltage, Pixel_size, temp, wgh, 0.0, 0.0)[:lnsb]
 			except:		pwrot1 = [0.0]*lnsb
 			freq = range(lnsb)
-			for i in xrange(len(freq)):  freq[i] = float(i)/nx/Pixel_size
+			for i in xrange(len(freq)):  freq[i] = float(i)/wn/Pixel_size
 			fou = os.path.join(outpwrot,  "rotinf%04d.txt"%ifi)
 			#  #1 - rotational averages without astigmatism, #2 - with astigmatism
 			write_text_file([range(len(crot1)),freq,pwrot1,crot1, pwrot2,crot2],fou)

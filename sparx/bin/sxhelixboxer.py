@@ -2107,7 +2107,7 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 		img = resample(img, resample_ratio)
 		micname = os.path.join(outdir,'resampled_%s'%smic[-1])
 		img.write_image(micname)
-		if importctf: ctf[3] = new_pixel_size
+		if importctf: ctfs[3] = new_pixel_size
 		smic = micname.split('/')
 		# filename is name of micrograph minus the path and extension
 		filename = (smic[-1].split('.'))[0]
