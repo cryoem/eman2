@@ -1433,7 +1433,7 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 	from   alignment import Numrinit, ringwe
 	from   statistics import table_stat
 	from   pixel_error import angle_ave
-	from   global_def import *
+	from   global_def import ERROR
 	import global_def
 
 	# Case of a single micrograph from gui mode
