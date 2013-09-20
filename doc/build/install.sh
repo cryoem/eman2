@@ -47,7 +47,8 @@ setup_csh() {
 	echo '    setenv PYTHONPATH ${EMAN2DIR}/lib:${EMAN2DIR}/bin' >> ${OUT}
 	echo 'else' >> ${OUT}
 	echo '    setenv PYTHONPATH ${EMAN2DIR}/lib:${EMAN2DIR}/bin:${PYTHONPATH}' >> ${OUT}
-	echo 'endif' >> ${OUT}		
+	echo 'endif' >> ${OUT}
+	echo 'alias sparx sparx.py' >> ${OUT}
 }
 
 setup_bash()
@@ -56,6 +57,7 @@ setup_bash()
 	echo "export EMAN2DIR=${EMAN2DIR}" > ${OUT}
 	echo 'export PATH=${EMAN2DIR}/bin:$PATH' >> ${OUT}
 	echo 'export PYTHONPATH=${EMAN2DIR}/lib:${EMAN2DIR}/bin:${PYTHONPATH}' >> ${OUT}
+	echo 'alias sparx=sparx.py' >> ${OUT}
 }
 
 setup_python()
