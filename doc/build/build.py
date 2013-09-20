@@ -365,9 +365,7 @@ class FixInterpreter(Builder):
     """Fix the Python interpreter to point to /usr/bin/python<version>."""
     def run(self):
         log("Fixing Python interpreter hashbang")
-        # Add sparx script; find a way to have it found automatically.
-        sparx = os.path.join(self.args.cwd_rpath, 'bin', 'sparx') 
-        for i in find_ext('.py', root=self.args.cwd_rpath) + [sparx]:
+        for i in find_ext('.py', root=self.args.cwd_rpath):
             # print i
             with open(i) as f:
                 data = f.readlines()
