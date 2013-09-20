@@ -466,7 +466,9 @@ class EMImage2DWidget(EMGLWidget):
 			w = self.width()
 			h = self.height()
 		data = self.get_data_dims()
-		if data[0] == 0 or data[1] == 0: raise
+		if data[0] == 0 or data[1] == 0:
+			self.scale=1.0
+			return
 		scalew = float(w)/data[0]
 		scaleh = float(h)/data[1]
 		if scaleh < scalew:

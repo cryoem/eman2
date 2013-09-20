@@ -1930,6 +1930,7 @@ class GUIctf(QtGui.QWidget):
 		self.guiiminit = True # a flag that's used to auto resize the first time the gui's set_data function is called
 		self.guiplot=EMPlot2DWidget(application=self.app())
 		self.guirealim=EMImage2DWidget(application=self.app())	# This will show the original particle images
+		self.flipim=None
 
 		self.guirealim.connect(self.guirealim,QtCore.SIGNAL("keypress"),self.realimgkey)
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedown"),self.imgmousedown)
@@ -2224,11 +2225,18 @@ class GUIctf(QtGui.QWidget):
 				#shp["z%d"%i]=EMShape(("circle",0.0,0.0,1.0/nz,r,r,i,1.0))
 ##				if nz==1: print ("circle",0.0,0.0,1.0/nz,r,r,i,1.0)
 
+		if self.guiim != None and self.flipim != None:
+			ctf.compute_2d_complex(self.flipim,Ctf.CtfType.CTF_FITREF)
+			self.flipim.update()
+			self.guiim.set_data([self.data[val][4],self.flipim])
+#			self.guiim.set_data(self.data[val][4])
+
+
 		# We draw the first 5 zeroes with computed zero locations
 		for i in range(1,10):
 			if ctf.dfdiff>0 :
-				z1=zero(i,ctf.voltage,ctf.cs,ctf.defocus-ctf.dfdiff,ctf.ampcont)/ctf.dsbg
-				z2=zero(i,ctf.voltage,ctf.cs,ctf.defocus+ctf.dfdiff,ctf.ampcont)/ctf.dsbg
+				z1=zero(i,ctf.voltage,ctf.cs,ctf.defocus-ctf.dfdiff/2,ctf.ampcont)/ctf.dsbg
+				z2=zero(i,ctf.voltage,ctf.cs,ctf.defocus+ctf.dfdiff/2,ctf.ampcont)/ctf.dsbg
 				if z1>len(s) : break
 				shp["z%d"%i]=EMShape(("ellipse",0,0,1.0/i,r,r,z2,z1,ctf.dfang,1.0))				
 			else:
@@ -2425,6 +2433,8 @@ class GUIctf(QtGui.QWidget):
 
 		if self.guiim != None:
 #			print self.data
+			self.flipim=self.data[val][4].copy()
+#			self.guiim.set_data([self.data[val][4],self.flipim])
 			self.guiim.set_data(self.data[val][4])
 			if self.guiiminit:
 				self.guiim.optimally_resize()
