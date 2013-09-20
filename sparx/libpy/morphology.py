@@ -1774,6 +1774,7 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 				Util.add_img(supe, Util.ctf_rimg(wn, wn, 1, ad1+rqt.gauss(0.0,stdavad1), Pixel_size, voltage, Cs, 0.0, wgh, bd1 + rqt.gauss(0.0,stdavbd1), cd1 + rqt.gauss(0.0,cd2), 1))
 			ni = wn//2
 			supe /= niter
+			print "  BEFORE IT FAILS   ad1, Cs, voltage, Pixel_size, 0.0, wgh, bd1, cd1", ad1, Cs, voltage, Pixel_size, 0.0, wgh, bd1, cd1
 			pwrot2 = rotavg_ctf(supe, ad1, Cs, voltage, Pixel_size, 0.0, wgh, bd1, cd1)
 			for i in xrange(ni):  pwrot2[i] = pwrot2[i]**2
 
@@ -2117,6 +2118,7 @@ def defocusgett(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1, f_s
 			if(qt<qm):
 				qm=qt
 				defi = dc
+		from utilities import write_text_row
 		write_text_row(toto,"toto1.txt")
 		print " >>>>>>>>>  ",defi,simpw1d(defi, data)#,generate_ctf([defi, Cs, voltage, Pixel_size, 0.0, ampcont])
 		#def1 = defi

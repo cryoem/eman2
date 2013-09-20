@@ -100,7 +100,8 @@ e2boxer.py ????.mrc --boxsize=256
 	parser.add_argument("--cter",               action="store_true",     default=False,                  help="CTF estimation using cter")
 	parser.add_argument("--indir",              type=str,				 default= ".",     				 help="Directory containing micrographs to be processed.")
 	parser.add_argument("--nameroot",         	type=str,		 		 default= "",     				 help="Prefix of micrographs to be processed.")
-	parser.add_argument("--nx",				  	type=int,		 		 default=256, 					 help="Size of window to use (should be slightly larger than particle box size)")
+	parser.add_argument("--micsuffix",          type=str,                default="",                     help="A string denoting micrograph type. For example 'mrc', 'hdf', 'ser' ...")
+	parser.add_argument("--wn",				  	type=int,		 		 default=256, 					 help="Size of window to use (should be slightly larger than particle box size)")
 
 	parser.add_argument("--Cs",               	type=float,	 			 default= 2.0,               	 help="Microscope Cs (spherical aberation)")
 	parser.add_argument("--voltage",		  	type=float,	 		     default=300.0, 			     help="Microscope voltage in KV")
@@ -147,7 +148,8 @@ e2boxer.py ????.mrc --boxsize=256
 
 		from morphology import cter
 		global_def.BATCH = True
-		cter(stack, out1, out2, options.indir, options.nameroot, options.nx, voltage=300.0, Pixel_size=options.apix, Cs = options.Cs, wgh=options.ac, kboot=options.kboot, MPI=options.MPI, DEBug = options.debug)
+		cter(stack, out1, out2, options.indir, options.nameroot, options.micsuffix, options.wn, \
+			voltage=300.0, Pixel_size=options.apix, Cs = options.Cs, wgh=options.ac, kboot=options.kboot, MPI=options.MPI, DEBug = options.debug)
 		global_def.BATCH = False
 
 		if options.MPI:
