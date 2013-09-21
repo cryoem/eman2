@@ -95,7 +95,7 @@ namespace EMAN
 		virtual void from_vector(const vector<float>& vctf) = 0;
 		virtual vector<float> to_vector() const = 0;
 
-		virtual float zero(int n) = 0;
+		virtual float zero(int n) const = 0;
 
 		virtual vector < float >compute_1d(int size,float ds, CtfType t, XYData * struct_factor = 0) = 0;
 		// This computes a 1D power spectrum from an image with astigmatism compensation. This is not entirely valid.
@@ -154,7 +154,7 @@ namespace EMAN
 		void copy_from(const Ctf * new_ctf);
 		bool equal(const Ctf * ctf1) const;
 
-		float zero(int n);
+		float zero(int n) const;
 
 		float get_defocus() const
 		{
@@ -272,7 +272,7 @@ namespace EMAN
 		void copy_from(const Ctf * new_ctf);
 		bool equal(const Ctf * ctf1) const;
 
-		float zero(int n);
+		float zero(int n) const;
 
 		inline float stos2(float s,float dZ) {
 			float lmb=lambda();
@@ -282,19 +282,19 @@ namespace EMAN
 		private:
 
 		// Electron wavelength in A
-		inline float lambda()
+		inline float lambda() const
 		{
 			float lambda = 12.2639f / sqrt(voltage * 1000.0f + 0.97845f * voltage * voltage);
 			return lambda;
 		}
 
 		// returns defocus as a function of angle. ang in radians !
-		inline float df(float ang) {
+		inline float df(float ang) const {
 			if (dfdiff==0.0) return defocus;
 			return defocus+dfdiff/2.0f*cos(2.0f*ang-2.0f*M_PI/180.0f*dfang);
 		}
 		
-		inline float calc_noise(float s)
+		inline float calc_noise(float s) const
 		{
 			int si=(int)(s/dsbg);
 			if (si>(int)background.size()||si<0) return background.back();

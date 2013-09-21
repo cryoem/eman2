@@ -155,6 +155,11 @@ struct EMAN_Ctf_Wrapper: EMAN::Ctf
         return call_method< bool >(py_self, "equal", p0);
     }
 
+    float zero(int n) const {
+        return call_method< float >(py_self, "zero", n);
+    }
+
+    
     PyObject* py_self;
 };
 
@@ -270,9 +275,17 @@ struct EMAN_EMAN1Ctf_Wrapper: EMAN::EMAN1Ctf
     bool equal(const EMAN::Ctf* p0) const {
         return call_method< bool >(py_self, "equal", p0);
     }
-
+    
     bool default_equal(const EMAN::Ctf* p0) const {
         return EMAN::EMAN1Ctf::equal(p0);
+    }
+    
+    float zero(int p0) const {
+        return call_method< float >(py_self, "zero", p0);
+    }
+
+    float default_zero(int n) const {
+        return EMAN::EMAN1Ctf::zero(n);
     }
 
     PyObject* py_self;
@@ -394,6 +407,15 @@ struct EMAN_EMAN2Ctf_Wrapper: EMAN::EMAN2Ctf
         return EMAN::EMAN2Ctf::equal(p0);
     }
 
+    float zero(int p0) const {
+        return call_method< float >(py_self, "zero", p0);
+    }
+    
+    float default_zero(int n) const {
+        return EMAN::EMAN2Ctf::zero(n);
+    }
+
+    
     PyObject* py_self;
 };
 
@@ -466,6 +488,7 @@ BOOST_PYTHON_MODULE(libpyAligner2)
         .def("compute_2d_complex", pure_virtual(&EMAN::Ctf::compute_2d_complex))
         .def("copy_from", pure_virtual(&EMAN::Ctf::copy_from))
         .def("equal", pure_virtual(&EMAN::Ctf::equal))
+        .def("zero", pure_virtual(&EMAN::Ctf::zero))
     );
 
     enum_< EMAN::Ctf::CtfType >("CtfType")
@@ -516,6 +539,7 @@ BOOST_PYTHON_MODULE(libpyAligner2)
         .def("to_vector", (std::vector<float,std::allocator<float> > (EMAN::EMAN1Ctf::*)() const)&EMAN::EMAN1Ctf::to_vector, (std::vector<float,std::allocator<float> > (EMAN_EMAN1Ctf_Wrapper::*)() const)&EMAN_EMAN1Ctf_Wrapper::default_to_vector)
         .def("copy_from", (void (EMAN::EMAN1Ctf::*)(const EMAN::Ctf*) )&EMAN::EMAN1Ctf::copy_from, (void (EMAN_EMAN1Ctf_Wrapper::*)(const EMAN::Ctf*))&EMAN_EMAN1Ctf_Wrapper::default_copy_from)
         .def("equal", (bool (EMAN::EMAN1Ctf::*)(const EMAN::Ctf*) const)&EMAN::EMAN1Ctf::equal, (bool (EMAN_EMAN1Ctf_Wrapper::*)(const EMAN::Ctf*) const)&EMAN_EMAN1Ctf_Wrapper::default_equal)
+        .def("zero", (float (EMAN::EMAN1Ctf::*)(int) const)&EMAN::EMAN1Ctf::zero, (float (EMAN_EMAN1Ctf_Wrapper::*)(int) const)&EMAN_EMAN1Ctf_Wrapper::default_zero)
     ;
 
     class_< EMAN::EMAN2Ctf, bases< EMAN::Ctf > , EMAN_EMAN2Ctf_Wrapper >("EMAN2Ctf",
@@ -550,6 +574,7 @@ BOOST_PYTHON_MODULE(libpyAligner2)
         .def("to_vector", (std::vector<float,std::allocator<float> > (EMAN::EMAN2Ctf::*)() const)&EMAN::EMAN2Ctf::to_vector, (std::vector<float,std::allocator<float> > (EMAN_EMAN2Ctf_Wrapper::*)() const)&EMAN_EMAN2Ctf_Wrapper::default_to_vector)
         .def("copy_from", (void (EMAN::EMAN2Ctf::*)(const EMAN::Ctf*) )&EMAN::EMAN2Ctf::copy_from, (void (EMAN_EMAN2Ctf_Wrapper::*)(const EMAN::Ctf*))&EMAN_EMAN2Ctf_Wrapper::default_copy_from)
         .def("equal", (bool (EMAN::EMAN2Ctf::*)(const EMAN::Ctf*) const)&EMAN::EMAN2Ctf::equal, (bool (EMAN_EMAN2Ctf_Wrapper::*)(const EMAN::Ctf*) const)&EMAN_EMAN2Ctf_Wrapper::default_equal)
+        .def("zero", (float (EMAN::EMAN2Ctf::*)(int) const)&EMAN::EMAN2Ctf::zero, (float (EMAN_EMAN2Ctf_Wrapper::*)(int) const)&EMAN_EMAN2Ctf_Wrapper::default_zero)
     ;
 
 }
