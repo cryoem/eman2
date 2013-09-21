@@ -477,6 +477,8 @@ bool EMAN1Ctf::equal(const Ctf * ctf1) const
 	return false;
 }
 
+float EMAN1Ctf::zero(int n) { return 0; }
+
 /*************************************
 EMAN2Ctf
 *************************************/
@@ -1129,3 +1131,22 @@ bool EMAN2Ctf::equal(const Ctf * ctf1) const
 	}
 	return false;
 }
+
+float EMAN2Ctf::zero(int n) {
+vector <float>zeroes;
+float lam=lambda();
+
+for (int i=-15; i<16; i++) {
+	float r1=defocus*defocus*1.0e8 + cs*lam*1.0e7 - 2.0*cs*i*lam*1.0e7 - 2*cs*lam*acos(ampcont)/M_PI;
+	if (r1<0) continue;
+	float r2=defocus+sqrt(r1);
+	if (r2>0) zeroes.push_back(sqrt(r2/(cs*lam*lam)));
+	float r2a=defocus-sqrt(r1);
+	if (r2a>0) zeroes.push_back(sqrt(r2a/(cs*lam*lam)));
+}
+std::sort(zeroes.begin(),zeroes.end());
+
+return zeroes[n];
+}
+
+

@@ -95,6 +95,8 @@ namespace EMAN
 		virtual void from_vector(const vector<float>& vctf) = 0;
 		virtual vector<float> to_vector() const = 0;
 
+		virtual float zero(int n) = 0;
+
 		virtual vector < float >compute_1d(int size,float ds, CtfType t, XYData * struct_factor = 0) = 0;
 		// This computes a 1D power spectrum from an image with astigmatism compensation. This is not entirely valid.
 		// It will stretch/shrink the power spectrum as a function of angle to make a single coherent 1D CTF curve.
@@ -151,6 +153,8 @@ namespace EMAN
 
 		void copy_from(const Ctf * new_ctf);
 		bool equal(const Ctf * ctf1) const;
+
+		float zero(int n);
 
 		float get_defocus() const
 		{
@@ -267,6 +271,8 @@ namespace EMAN
 
 		void copy_from(const Ctf * new_ctf);
 		bool equal(const Ctf * ctf1) const;
+
+		float zero(int n);
 
 		inline float stos2(float s,float dZ) {
 			float lmb=lambda();
