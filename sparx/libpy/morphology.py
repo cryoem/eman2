@@ -1444,7 +1444,7 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 		myid = mpi_comm_rank(MPI_COMM_WORLD)
 		ncpu = mpi_comm_size(MPI_COMM_WORLD)
 		if stack != None:
-			ERROR('Please use single processor version for stack mode', " ", 1)
+			ERROR('Please use single processor version for stack mode', "cter", 1)
 		main_node = 0
 		if myid == main_node:
 			if os.path.exists(outpwrot) or os.path.exists(outpartres):
@@ -1493,7 +1493,7 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 	totresi = []
 	for ifi in xrange(set_start,set_end):
 		#print  " tilemic ", ifi,namics[ifi]
-		
+
 		if stack == None:
 			pw2 = tilemic(get_im(namics[ifi]), win_size=wn, overlp_x=overlap_x, overlp_y=overlap_y, edge_x=edge_x, edge_y=edge_y)
 		nimi = len(pw2)
@@ -1765,79 +1765,83 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 			stdavad1 = np.sqrt(kboot*max(0.0,ad2))
 			stdavbd1 = np.sqrt(kboot*max(0.0,bd2))
 			cd2 *= np.sqrt(kboot)
-			#  Estimate the point at which (sum_errordz ctf_1(dz+errordz))^2 falls to 0.5
-			import random as rqt
+			#  SANITY CHECK, do not produce anything if astigmatism amplitude larger than defocus or defocus is negative.
+			if(bd1 >= ad1 or ad1 < 0.0):
+				print "  Astigmatism amplitude larger than defocus or defocus is negative :",namics[ifi]
+			else:
+				#  Estimate the point at which (sum_errordz ctf_1(dz+errordz))^2 falls to 0.5
+				import random as rqt
 
-			supe = model_blank(wn, wn)
-			niter=1000
-			for it in xrange(niter):
-				Util.add_img(supe, Util.ctf_rimg(wn, wn, 1, ad1+rqt.gauss(0.0,stdavad1), Pixel_size, voltage, Cs, 0.0, wgh, bd1 + rqt.gauss(0.0,stdavbd1), cd1 + rqt.gauss(0.0,cd2), 1))
-			ni = wn//2
-			supe /= niter
-			pwrot2 = rotavg_ctf(supe, ad1, Cs, voltage, Pixel_size, 0.0, wgh, bd1, cd1)
-			for i in xrange(ni):  pwrot2[i] = pwrot2[i]**2
+				supe = model_blank(wn, wn)
+				niter=1000
+				for it in xrange(niter):
+					Util.add_img(supe, Util.ctf_rimg(wn, wn, 1, ad1+rqt.gauss(0.0,stdavad1), Pixel_size, voltage, Cs, 0.0, wgh, bd1 + rqt.gauss(0.0,stdavbd1), cd1 + rqt.gauss(0.0,cd2), 1))
+				ni = wn//2
+				supe /= niter
+				pwrot2 = rotavg_ctf(supe, ad1, Cs, voltage, Pixel_size, 0.0, wgh, bd1, cd1)
+				for i in xrange(ni):  pwrot2[i] = pwrot2[i]**2
 
-			ibec = 0
-			for it in xrange(ni-1,0,-1):
-				if pwrot2[it]>0.5 :
-					ibec = it
-					break
-			from morphology import ctf_1d
-			ct = generate_ctf([ad1, Cs, voltage, Pixel_size, temp, wgh,0.0,0.0])
-			cq = ctf_1d(wn, ct)
+				ibec = 0
+				for it in xrange(ni-1,0,-1):
+					if pwrot2[it]>0.5 :
+						ibec = it
+						break
+				from morphology import ctf_1d
+				ct = generate_ctf([ad1, Cs, voltage, Pixel_size, temp, wgh,0.0,0.0])
+				cq = ctf_1d(wn, ct)
 
-			supe = [0.0]*ni
-			niter=1000
-			for i in xrange(niter):
-				cq = generate_ctf([ad1+rqt.gauss(0.0,stdavad1),Cs, voltage, Pixel_size, 0.0, wgh,0.0,0.0])
-				ci = ctf_1d(wn, cq)[:ni]
-				for l in xrange(ni):  supe[l] +=ci[l]
+				supe = [0.0]*ni
+				niter=1000
+				for i in xrange(niter):
+					cq = generate_ctf([ad1+rqt.gauss(0.0,stdavad1),Cs, voltage, Pixel_size, 0.0, wgh,0.0,0.0])
+					ci = ctf_1d(wn, cq)[:ni]
+					for l in xrange(ni):  supe[l] +=ci[l]
 
-			for l in xrange(ni):  supe[l] = (supe[l]/niter)**2
+				for l in xrange(ni):  supe[l] = (supe[l]/niter)**2
 
-			ib1 = 0
-			for it in xrange(ni-1,0,-1):
-				if supe[it]>0.5 :
-					ib1 = it
-					break
-			ibec = ibec/(Pixel_size*wn)
-			ib1  = ib1/(Pixel_size*wn)
-			#from utilities import write_text_file
-			#write_text_file([range(ni), supe[:ni],pwrot2[:ni]],"fifi.txt")
+				ib1 = 0
+				for it in xrange(ni-1,0,-1):
+					if supe[it]>0.5 :
+						ib1 = it
+						break
+				ibec = ibec/(Pixel_size*wn)
+				ib1  = ib1/(Pixel_size*wn)
+				#from utilities import write_text_file
+				#write_text_file([range(ni), supe[:ni],pwrot2[:ni]],"fifi.txt")
 			
-			if stack == None:
-				print  namics[ifi], ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec
-			else:
-				print               ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec
-			if stack == None:
-				totresi.append( [ namics[ifi], ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec  ])
-			else:
-				totresi.append( [ 0, ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec  ])
-			#if ifi == 4 : break
-			"""
-			for i in xrange(len(ssubroo)):
-				asubroo[i] /= kboot
-				ssubroo[i]  = sqrt(max(0.0, ssubroo[i]-kboot*asubroo[i]**2)/kboot)
-				sen[i]     /= kboot
-			"""
-			lnsb = len(subpw)
-			try:		crot2 = rotavg_ctf(ctf2_rimg(wn, generate_ctf([ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1])), ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1)[:lnsb]
-			except:		crot2 = [0.0]*lnsb
-			try:		pwrot2 = rotavg_ctf(threshold(qa-bckg), ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1)[:lnsb]
-			except:		pwrot2 = [0.0]*lnsb
-			try:		crot1 = rotavg_ctf(ctf2_rimg(wn, generate_ctf([ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1])), ad1, Cs, voltage, Pixel_size, temp, wgh, 0.0, 0.0)[:lnsb]
-			except:		crot1 = [0.0]*lnsb
-			try:		pwrot1 = rotavg_ctf(threshold(qa-bckg), ad1, Cs, voltage, Pixel_size, temp, wgh, 0.0, 0.0)[:lnsb]
-			except:		pwrot1 = [0.0]*lnsb
-			freq = range(lnsb)
-			for i in xrange(len(freq)):  freq[i] = float(i)/wn/Pixel_size
-			fou = os.path.join(outpwrot,  "rotinf%04d.txt"%ifi)
-			#  #1 - rotational averages without astigmatism, #2 - with astigmatism
-			write_text_file([range(len(crot1)),freq,pwrot1,crot1, pwrot2,crot2],fou)
+				if stack == None:
+					print  namics[ifi], ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec
+				else:
+					print               ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec
+				if stack == None:
+					totresi.append( [ namics[ifi], ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec  ])
+				else:
+					totresi.append( [ 0, ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1, stdavad1, stdavbd1, cd2, ib1, ibec  ])
+				#if ifi == 4 : break
+				"""
+				for i in xrange(len(ssubroo)):
+					asubroo[i] /= kboot
+					ssubroo[i]  = sqrt(max(0.0, ssubroo[i]-kboot*asubroo[i]**2)/kboot)
+					sen[i]     /= kboot
+				"""
+				lnsb = len(subpw)
+				try:		crot2 = rotavg_ctf(ctf2_rimg(wn, generate_ctf([ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1])), ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1)[:lnsb]
+				except:		crot2 = [0.0]*lnsb
+				try:		pwrot2 = rotavg_ctf(threshold(qa-bckg), ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1)[:lnsb]
+				except:		pwrot2 = [0.0]*lnsb
+				try:		crot1 = rotavg_ctf(ctf2_rimg(wn, generate_ctf([ad1, Cs, voltage, Pixel_size, temp, wgh, bd1, cd1])), ad1, Cs, voltage, Pixel_size, temp, wgh, 0.0, 0.0)[:lnsb]
+				except:		crot1 = [0.0]*lnsb
+				try:		pwrot1 = rotavg_ctf(threshold(qa-bckg), ad1, Cs, voltage, Pixel_size, temp, wgh, 0.0, 0.0)[:lnsb]
+				except:		pwrot1 = [0.0]*lnsb
+				freq = range(lnsb)
+				for i in xrange(len(freq)):  freq[i] = float(i)/wn/Pixel_size
+				fou = os.path.join(outpwrot,  "rotinf%04d.txt"%ifi)
+				#  #1 - rotational averages without astigmatism, #2 - with astigmatism
+				write_text_file([range(len(crot1)),freq,pwrot1,crot1, pwrot2,crot2],fou)
 
-			if stack == None:     cmd = "echo "+"    "+namics[ifi]+"  >>  "+fou
-			else:                 cmd = "echo "+"    "+"  >>  "+fou
-			os.system(cmd)
+				if stack == None:     cmd = "echo "+"    "+namics[ifi]+"  >>  "+fou
+				else:                 cmd = "echo "+"    "+"  >>  "+fou
+				os.system(cmd)
 		
 		if stack == None and set_ctf_header:
 			img = get_im(namics[ifi])
