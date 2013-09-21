@@ -266,12 +266,18 @@ def unbinned_extractor(options,boxsize,x,y,z,cshrink,invert,center,tomogram=argv
 	#or if erroneous binning factors are provided
 
 	if e['mean'] != 0:
+		'''
+		Attempt to center particles. They must be masked to ensure other particles will not cause shifts in center of mass
+		'''
 		if center:
-			ec = e.process('xform.centerofmass')
+			rad = boxsize/2.0+1.0
+			ec = e.process('mask.sharp',{'outer_radius':rad})
+			ec.process_inplace('xform.centerofmass')
 			trans = ec['xform.align3d'].get_trans()
 			tx = trans[0]
 			ty = trans[1]
 			tz = trans[2]
+			
 			print "I will apply these translations in trying to center the particles with xform.centerofmass", tx,ty,tz
 			print "The old coordinates were", x, y, z
 
@@ -295,7 +301,9 @@ def unbinned_extractor(options,boxsize,x,y,z,cshrink,invert,center,tomogram=argv
 		e['origin_x'] = 0
 		e['origin_y'] = 0
 		e['origin_z'] = 0
-
+		
+		e['spt_originalstackname'] = options.output
+		
 		#Make sure the transform parameter on the header is "clean", so that any later processing transformations are meaningful
 		e['xform.align3d'] = Transform({"type":'eman','az':0,'alt':0,'phi':0,'tx':0,'ty':0,'tz':0})
 			
@@ -303,7 +311,7 @@ def unbinned_extractor(options,boxsize,x,y,z,cshrink,invert,center,tomogram=argv
 		print "And the following mean BEFORE normalization", e['mean']
 		
 		if options.normproc:
-			print "WARNING! particle being normalied!"
+			print "WARNING! particle being normalized!"
 			if options.normproc[0]=="normalize.mask":
 				mask=EMData(e["nx"],e["ny"],e["nz"])
 				mask.to_one()
@@ -312,7 +320,7 @@ def unbinned_extractor(options,boxsize,x,y,z,cshrink,invert,center,tomogram=argv
 				options.normproc[1]["mask"]=mask
 			
 			e.process_inplace(options.normproc[0],options.normproc[1])
-			e['e2spt_normalization'] = str(options.normproc[0])+' '+str(options.normproc[1])
+			e['spt_normalization'] = str(options.normproc[0])+' '+str(options.normproc[1])
 			print "This is the mean AFTER normalization", e['mean']
 		
 		if invert:
@@ -324,8 +332,20 @@ def unbinned_extractor(options,boxsize,x,y,z,cshrink,invert,center,tomogram=argv
 		if options.thresh:
 			print "The thresh to apply is", options.thresh
 			e.process_inplace(options.thresh[0],options.thresh[1])
+			
+		prjT = Transform({'type':'eman','az':0,'alt':0,'phi':0})
+		if options.yshort:
+			prjT = Transform({'type':'eman','az':-90,'alt':-90,'phi':0})
 		
-		return(e)
+		prj = e.project("standard",prjT)
+		prj.set_attr('xform.projection',prjT)
+		
+		apix = e['apix_x']
+		
+		prj['apix_x']=apix
+		prj['apix_y']=apix
+	
+		return(e,prj)
 
 	else:
 		print """WARNING! The particle was skipped (and not boxed) because it's mean was ZERO (which often indicates a box is empty).
@@ -355,7 +375,12 @@ def commandline_tomoboxer(tomogram,options):
 	
 	k=-1
 	name = options.output
-
+	if options.path and options.path not in name:
+		name = options.path + '/' + name
+		
+	if ".hdf" not in name and '.mrc' not in name:
+		print "Format ERROR: Only .hdf and .mrc supported."
+		sys.exit()
 
 	if options.bruteaverage:
 		avgr=Averagers.get('mean.tomo')
@@ -388,27 +413,15 @@ def commandline_tomoboxer(tomogram,options):
 			z = aux
 			print "Therefore, the swapped coordinates are", x, y, z
 
-		e = unbinned_extractor(options,options.boxsize,x,y,z,options.cshrink,options.invert,options.centerbox)
+		ret = unbinned_extractor(options,options.boxsize,x,y,z,options.cshrink,options.invert,options.centerbox)
 		
-		fsp=os.path.basename(str(name))
+		e=ret[0]
+		eprj=ret[1]
 		
 		if e:
 			print "There was a particle successfully returned, with the following box size and mean value"
 			print e['nx'],e['ny'],e['nz']
 			print e['mean']
-			
-			if options.output_format == 'single':
-				#k = 0
-				if 'bdb:' in options.output:
-					name = options.output.replace('bdb:','') + '_' + str(i).zfill(len(str(set)))
-				else:
-					name = options.output.split('.')[0] + '_' + str(i).zfill(len(str(set))) + '.' + options.output.split('.')[-1]
-
-			else:
-				print "The format is stack format!"
-				#k += 1
-				if 'bdb:' in options.output:
-					name = options.output.replace('bdb:','')
 			
 			if options.apix:
 				e['apix_x'] = options.apix
@@ -419,49 +432,43 @@ def commandline_tomoboxer(tomogram,options):
 			e['origin_y'] = 0				
 			e['origin_z'] = 0
 			
-			#if options.normproc:
-			#	e.process_inplace(options.normproc)
-			#print "\nThe file name to write out to is", name
-			#print "And the particle number is %d\n" % i
-			#
-			#print "!!!!!!\n!!!!!!!\n!!!!!!!\n fsp is", fsp 
-			
 			if options.output_format != 'single':
-					fsp = name
-					if options.path:
-						fsp = options.path + '/' + name
-					
-					if "bdb:" in options.output:
-						fsp='bdb:'+ fsp
-
-					if "bdb:" not in fsp and ".hdf" not in fsp:
-						print "ERROR: 3-D stacks supported only for bdb: and .hdf files"
-						sys.exit()
-					else:
-						print "!!!!!!\n!!!!!!!\n!!!!!!!\n STACK Image being written to!", fsp, i 
+				if '.mrc' in name:
+					print "ERROR: To save the data as a stack, .hdf format must be used."
+					sys.exit()
+				
+				e.write_image(name,i)
 						
-						e.write_image(fsp,i)
+				if options.verbose:
+					if i == 0:
+						print "!!!!!!\nSTACK outputfile is", name 
+					
+					print "\nWriting image number", i 
 
 			else:
-				fsp=name
-				#if options.path:
-				#		fsp = options.path + '/' + name
-				
-				print "In single mode, fsp is", fsp
-				
-				if "bdb:" in options.output: 
-					#e.write_image(os.path.join(options.path,"%s_%" + str(len(str(set))) + "d" %(fsp,k),0))
-					e.write_image("bdb:" + options.path + '/' + fsp,0)
-
-				elif ".hdf" in fsp or '.mrc' in fsp:
-					#e.write_image(os.path.join(options.path,"%s_%" + str(len(str(set))) + "d.%s"%(fsp.rsplit(".",1)[0],k,fsp.rsplit(".",1)[1])))
-					e.write_image(os.path.join(options.path,"%s.%s"%(fsp.rsplit(".",1)[0],fsp.rsplit(".",1)[1])))
-				else:
-					print "ERROR: Only .hdf, .mrc and bdb: formats are supported!"
-					sys.exit()
-			#e.write_image(name,k)
+				if '.hdf' in name:
+					nameSingle = name.replace('.hdf', '_' + str(i).zfill(len(str(set))) + '.hdf')
+				elif '.mrc' in name:
+					nameSingle = name.replace('.mrc', '_' + str(i).zfill(len(str(set))) + '.mrc')
+					
+				e.write_image(nameSingle,0)
+			
 			if options.bruteaverage:
 				avgr.add_image(e)
+		
+		if eprj:
+			nameprjs = options.output
+			if '.mrc' in options.output:
+				nameprjs = nameprjs.replace('.mrc','.hdf')
+			
+			if not options.yshort:
+				nameprjs = nameprjs.replace('.hdf','_prjsZ.hdf')
+			elif options.yshort:
+				nameprjs = nameprjs.replace('.hdf','_prjsY.hdf')
+			
+			if options.path not in nameprjs:
+				nameprjs = options.path + '/' + nameprjs
+			eprj.write_image(nameprjs,-1)
 		
 	if options.bruteaverage:
 		avg=avgr.finish()
@@ -1094,6 +1101,9 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	def menu_file_save_boxes(self):
 		fsp=os.path.basename(str(QtGui.QFileDialog.getSaveFileName(self, "Select output file (numbers added)")))
 
+		fspprjs=fsp.replace('.','_prjs.hdf')
+		prj=EMData() #Dummy
+
 		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
 		if options.helixboxer:
 			for i,b in enumerate(self.helixboxes):
@@ -1130,14 +1140,18 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				center=self.center
 			
 				if self.yshort:							
-					img = unbinned_extractor(options,bs,b[0],b[2],b[1],shrinkf,contrast,center) 	
+					ret = unbinned_extractor(options,bs,b[0],b[2],b[1],shrinkf,contrast,center) 	
+					img = ret[0]
+					prj = ret[1]
 				else:
-					img = unbinned_extractor(options,bs,b[0],b[1],b[2],shrinkf,contrast,center) 	
-
-				#if fsp[:4].lower()=="bdb:": 
-				#	img.write_image(os.path.join(options.path,"%s_%03d"%(fsp,i),0))
+					ret = unbinned_extractor(options,bs,b[0],b[1],b[2],shrinkf,contrast,center) 	
+					img = ret[0]
+					prj = ret[1]
+					
 				if "." in fsp: 
 					img.write_image(os.path.join(options.path,"%s_%03d.%s"%(fsp.rsplit(".",1)[0],i,fsp.rsplit(".",1)[1])))
+					prj.wirte_image(fspprjs,-1)
+					
 				else:
 					QtGui.QMessageBox.warning(None,"Error","Please provide a valid image file extension. The numerical sequence will be inserted before the extension.")
 					return
@@ -1149,9 +1163,14 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		fsp=os.path.join(options.path,os.path.basename(str(QtGui.QFileDialog.getSaveFileName(self, "Select output file (.hdf supported only)"))))
 		#if fsp[:4].lower()!="bdb:" and fsp[-4:].lower()!=".hdf" :
+		
+		
 		if fsp[-4:].lower()!=".hdf" :
 			QtGui.QMessageBox.warning(None,"Error","3-D stacks supported only for .hdf files")
 			return
+		
+		fspprjs=fsp.replace('.hdf','_prjs.hdf')
+		prj=EMData() #Dummy
 		
 		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
 		if options.helixboxer:
@@ -1182,10 +1201,14 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				center=self.center
 
 				if self.yshort:							
-					img = unbinned_extractor(options,bs,b[0],b[2],b[1],shrinkf,contrast,center) 	
+					ret = unbinned_extractor(options,bs,b[0],b[2],b[1],shrinkf,contrast,center) 	
+					img = ret[0]
+					prj = ret[1]
 				else:
-					img = unbinned_extractor(options,bs,b[0],b[1],b[2],shrinkf,contrast,center) 	
-			
+					ret = unbinned_extractor(options,bs,b[0],b[1],b[2],shrinkf,contrast,center) 	
+					img = ret[0]
+					prj = ret[1]
+					
 				#img['origin_x'] = 0						
 				#img['origin_y'] = 0				
 				#img['origin_z'] = 0
@@ -1194,7 +1217,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				#img=img.process('normalize.edgemean')
 			
 				img.write_image(fsp,i)
-			
+				prj.wirte_image(fspprjs,-1)
+				
 				progress.setValue(i+1)
 				if progress.wasCanceled(): 
 					break
