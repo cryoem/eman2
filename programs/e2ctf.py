@@ -1189,7 +1189,8 @@ def smooth_by_ctf(curve,ds,ctf):
 	ctf.bfactor=50
 	ccurv=array(ctf.compute_1d(len(curve)*2,ds,Ctf.CtfType.CTF_AMP))**2
 	ctf.bfactor=bf
-	z=int(zero(1,ctf.voltage,ctf.cs,ctf.defocus,ctf.ampcont)/ds+.5)				# location of first zero in terms of n
+#	z=int(zero(1,ctf.voltage,ctf.cs,ctf.defocus,ctf.ampcont)/ds+.5)				# location of first zero in terms of n
+	z=ctf.zero(0)
 	z=max(4,z)
 
 	ret=curve[:z]
@@ -1316,13 +1317,14 @@ def elambda(V):
 	"""returns relativistic electron wavelength. V in KV. Wavelength in A"""
 	return 12.3/sqrt(1000*V+0.97845*V*V)
 
-def zero(N,V,Cs,Z,AC):
-	"""Return the spatial frequency of the order N zero of the CTF with Voltage V, Cs in mm, Defocus Z (positive underfocus) and amplitude contrast AC (0-100)"""
-	acshift=-acos(sqrt(1-AC*AC/10000.0))	# phase shift in radians due to amplitude contrast
-	gamma=pi*N+acshift
-	l=elambda(V)
-#	print acshift,gamma,l,Cs*gamma*l*l*l+5.0*l*l*pi*Z*Z
-	return sqrt(-Z/(1000.0*Cs*l*l)+sqrt(Cs*gamma*l*l*l+5.0*l*l*pi*Z*Z)/(3963.327*Cs*l*l*l))
+# This isn't really right, a correct version is now implemented in the EMAN2Ctf object 
+#def zero(N,V,Cs,Z,AC):
+	#"""Return the spatial frequency of the order N zero of the CTF with Voltage V, Cs in mm, Defocus Z (positive underfocus) and amplitude contrast AC (0-100)"""
+	#acshift=-acos(sqrt(1-AC*AC/10000.0))	# phase shift in radians due to amplitude contrast
+	#gamma=pi*N+acshift
+	#l=elambda(V)
+##	print acshift,gamma,l,Cs*gamma*l*l*l+5.0*l*l*pi*Z*Z
+	#return sqrt(-Z/(1000.0*Cs*l*l)+sqrt(Cs*gamma*l*l*l+5.0*l*l*pi*Z*Z)/(3963.327*Cs*l*l*l))
 
 def calc_1dfrom2d(ctf,fg2d,bg2d):
 	"""Computes adjusted 1-D power spectra from 2-D FG and BG data. Needs ctf object, since 1-D average uses astigmatism compensation.
@@ -1338,9 +1340,11 @@ returns (fg1d,bg1d)"""
 	
 	# here we adjust the background to make the zeroes zero
 	n=2
-	lz=int(zero(1,ctf.voltage,ctf.cs,ctf.defocus,ctf.ampcont)/ds+.5)
+#	lz=int(zero(1,ctf.voltage,ctf.cs,ctf.defocus,ctf.ampcont)/ds+.5)
+	lz=int(ctf.zero(0)/ds+.5)
 	while 1:
-		z=int(zero(n,ctf.voltage,ctf.cs,ctf.defocus,ctf.ampcont)/ds+.5)
+#		z=int(zero(n,ctf.voltage,ctf.cs,ctf.defocus,ctf.ampcont)/ds+.5)
+		z=int(ctf.zero(n-1)/ds+.5)
 		if z>len(ctf.background)-2 or z-lz<2: break
 		d1=min(fg[lz]-bg[lz],fg[lz-1]-bg[lz-1],fg[lz+1]-bg[lz+1])
 		d2=min(fg[z]-bg[z],fg[z-1]-bg[z-1],fg[z+1]-bg[z+1])
@@ -1352,9 +1356,13 @@ returns (fg1d,bg1d)"""
 		n+=1
 	
 	# deal with the points from the origin to the first zero
-	for x in xrange(lwz): bg[x]+=lwd
+	try: 
+		for x in xrange(lwz): bg[x]+=lwd
+	except: pass
 	
-	for x in xrange(lz,len(ctf.background)) : bg[x]+=d2
+	try:
+		for x in xrange(lz,len(ctf.background)) : bg[x]+=d2
+	except: pass
 	
 	return (fg,bg)
 
@@ -1382,12 +1390,19 @@ def ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1):
 		v=ctf_stig_cmp((ctf.dfdiff,ang,ctf.defocus),(bgsub,bgcp,ctf))
 		besta=min(besta,(v,ang))
 	ctf.dfang=besta[1]
-#	print "best angle:", besta
+	print "best angle:", besta
 
 	# Use a simplex minimizer to find the final fit
 	ctf.bfactor=200
 	sim=Simplex(ctf_stig_cmp,[ctf.dfdiff,ctf.dfang,ctf.defocus],[0.01,15.0,.01],data=(bgsub,bgcp,ctf))
 	oparm=sim.minimize(epsilon=.00000001,monitor=0)
+	print "Coarse refine: defocus={:1.4f} dfdiff={:1.5f} dfang={:3.2f} defocusU={:1.4f} defocusV={:1.4f}".format(oparm[0][2],oparm[0][0],oparm[0][1],oparm[0][2]+oparm[0][0]/2,oparm[0][2]-oparm[0][0]/2)
+
+	# Use a simplex minimizer to refine the local neighborhood
+	ctf.bfactor=80
+	sim=Simplex(ctf_stig_cmp,oparm[0],[0.005,2.0,.005],data=(bgsub,bgcp,ctf))
+	oparm=sim.minimize(epsilon=.00000001,monitor=0)
+	print "  Fine refine: defocus={:1.4f} dfdiff={:1.5f} dfang={:3.2f} defocusU={:1.4f} defocusV={:1.4f}".format(oparm[0][2],oparm[0][0],oparm[0][1],oparm[0][2]+oparm[0][0]/2,oparm[0][2]-oparm[0][0]/2)
 	
 	ctf.bfactor=oldb
 	ctf.dfdiff,ctf.dfang,ctf.defocus=oparm[0]		# final fit result
@@ -1450,7 +1465,7 @@ def ctf_stig_cmp(parms,data):
 	
 	#bgcp.write_image("a.hdf",-1)
 	#bgsub.write_image("b.hdf",0)
-	print parms,bgcp.cmp("dot",bgsub,{"normalize":1})
+#	print parms,bgcp.cmp("dot",bgsub,{"normalize":1})
 	return bgcp.cmp("dot",bgsub,{"normalize":1})
 
 
@@ -1482,10 +1497,12 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 #	plot(bglowsub)
 	# We find the first minimum (also <1/50 max) after the value has fallen to 1/5 max
 	if isinstance(dfhint,float) : 
-		s0=max(2,int(zero(1,voltage,cs,dfhint,ac)/ds-3))
+#		s0=max(2,int(zero(1,voltage,cs,dfhint,ac)/ds-3))
+		s0=max(2,int(ctf.zero(0)/ds-3))
 		while (bglowsub[s0]>bglowsub[s0+1] or bglowsub[s0]>bglowsub[s0-1]) and s0<s1: s0+=1	# look for a minimum in the data curve
 	elif isinstance(dfhint,tuple) : 
-		s0=max(2,int(zero(1,voltage,cs,(dfhint[0]+dfhint[1])/2.0,ac)/ds-3))
+#		s0=max(2,int(zero(1,voltage,cs,(dfhint[0]+dfhint[1])/2.0,ac)/ds-3))
+		s0=max(2,int(ctf.zero(0)/ds-3))
 		while (bglowsub[s0]>bglowsub[s0+1] or bglowsub[s0]>bglowsub[s0-1]) and s0<s1: s0+=1	# look for a minimum in the data curve
 	else :
 		maxsub=max(bglowsub[int(.01/ds):])
@@ -1870,7 +1887,7 @@ try:
 	from PyQt4 import QtCore, QtGui, QtOpenGL
 	from PyQt4.QtCore import Qt
 	from emshape import *
-	from valslider import ValSlider
+	from valslider import ValSlider,CheckBox
 except:
 	print "Warning: PyQt4 must be installed to use the --gui option"
 	class dummy:
@@ -2015,11 +2032,13 @@ class GUIctf(QtGui.QWidget):
 		self.saveparms = QtGui.QPushButton("Save parms")
 		self.recallparms = QtGui.QPushButton("Recall")
 		self.refit = QtGui.QPushButton("Refit")
+		self.show2dfit = CheckBox(label="Show 2D Sim:",value=False)
 		self.output = QtGui.QPushButton("Output")
 		self.hbl_buttons.addWidget(self.refit)
 		self.hbl_buttons.addWidget(self.saveparms)
 		self.hbl_buttons.addWidget(self.recallparms)
 		self.hbl_buttons2 = QtGui.QHBoxLayout()
+		self.hbl_buttons2.addWidget(self.show2dfit)
 		self.hbl_buttons2.addWidget(self.output)
 		self.vbl.addLayout(self.hbl_buttons)
 		self.vbl.addLayout(self.hbl_buttons2)
@@ -2225,24 +2244,33 @@ class GUIctf(QtGui.QWidget):
 				#shp["z%d"%i]=EMShape(("circle",0.0,0.0,1.0/nz,r,r,i,1.0))
 ##				if nz==1: print ("circle",0.0,0.0,1.0/nz,r,r,i,1.0)
 
-		if self.guiim != None and self.flipim != None:
+		if self.show2dfit.getValue() and self.guiim != None and self.flipim != None:
 			ctf.compute_2d_complex(self.flipim,Ctf.CtfType.CTF_FITREF)
+			self.flipim.mult(self.data[val][4]["sigma"]/self.flipim["sigma"])
 			self.flipim.update()
 			self.guiim.set_data([self.data[val][4],self.flipim])
 #			self.guiim.set_data(self.data[val][4])
-
+		else:
+			self.guiim.set_data(self.data[val][4])
 
 		# We draw the first 5 zeroes with computed zero locations
 		for i in range(1,10):
 			if ctf.dfdiff>0 :
-				z1=zero(i,ctf.voltage,ctf.cs,ctf.defocus-ctf.dfdiff/2,ctf.ampcont)/ctf.dsbg
-				z2=zero(i,ctf.voltage,ctf.cs,ctf.defocus+ctf.dfdiff/2,ctf.ampcont)/ctf.dsbg
-				if z1>len(s) : break
-				shp["z%d"%i]=EMShape(("ellipse",0,0,1.0/i,r,r,z2,z1,ctf.dfang,1.0))				
+				#z1=zero(i,ctf.voltage,ctf.cs,ctf.defocus-ctf.dfdiff/2,ctf.ampcont)/ctf.dsbg
+				#z2=zero(i,ctf.voltage,ctf.cs,ctf.defocus+ctf.dfdiff/2,ctf.ampcont)/ctf.dsbg
+				d=ctf.defocus
+				ctf.defocus=d-ctf.dfdiff/2
+				z1=ctf.zero(i-1)/ctf.dsbg
+				ctf.defocus=d+ctf.dfdiff/2
+				z2=ctf.zero(i-1)/ctf.dsbg
+				ctf.defocus=d
+				if z2>len(s) : break
+				shp["z%d"%i]=EMShape(("ellipse",0,0,.75,r,r,z2,z1,ctf.dfang,1.0))				
 			else:
-				z=zero(i,ctf.voltage,ctf.cs,ctf.defocus,ctf.ampcont)/ctf.dsbg
+#				z=zero(i,ctf.voltage,ctf.cs,ctf.defocus,ctf.ampcont)/ctf.dsbg
+				z=ctf.zero(i-1)/ctf.dsbg
 				if z>len(s) : break
-				shp["z%d"%i]=EMShape(("circle",0,0,1.0/i,r,r,z,1.0))
+				shp["z%d"%i]=EMShape(("circle",0,0,.75,r,r,z,1.0))
 
 		self.guiim.del_shapes()
 		self.guiim.add_shapes(shp)

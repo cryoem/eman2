@@ -1140,9 +1140,9 @@ for (int i=-15; i<16; i++) {
 	float r1=defocus*defocus*1.0e8 + cs*lam*1.0e7 - 2.0*cs*i*lam*1.0e7 - 2*cs*1.0e7*lam*acos(ampcont/100.0)/M_PI;
 //	printf("%f\n",r1);
 	if (r1<0) continue;
-	float r2=defocus+sqrt(r1);
+	float r2=defocus*1.0e4+sqrt(r1);
 	if (r2>0) zeroes.push_back(sqrt(r2/(cs*lam*lam*1.0e7)));
-	float r2a=defocus-sqrt(r1);
+	float r2a=defocus*1.0e4-sqrt(r1);
 	if (r2a>0) zeroes.push_back(sqrt(r2a/(cs*lam*lam*1.0e7)));
 }
 if (zeroes.size()==0) return 0.0f;
