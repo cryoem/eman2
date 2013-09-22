@@ -45,7 +45,7 @@ e2bdb.py bdb:particles\#mic0_ptcls bdb:particles\#mic1_ptcls bdb:particles\#mic2
 
 sxheader.py bdb:data --params=active --one
 sxheader.py bdb:data --params=xform.align2d --zero
-mpirun -np 4 sxisac.py bdb:data --stab_ali=2 --init_iter=1 --main_iter=1 --match_second=1 --ou=30 --max_round=5 --img_per_grp=120 --thld_err=0.75 --generation=1 --MPI
+mpirun -np 16 sxisac.py bdb:data --stab_ali=2 --init_iter=1 --main_iter=1 --match_second=1 --ou=30 --max_round=5 --img_per_grp=60 --thld_err=0.75 --generation=1 --MPI    || exit
 ###################################################################<<<<<<< run_through_example
 # ISAC run with parameters given above is not sufficiently restrictive for EM data. Instead, one may try to use default parameters, in which case
 #   the program will be more stringent, but will run significantly longer.
@@ -77,7 +77,7 @@ mpirun -np 4 sxisac.py bdb:data --stab_ali=2 --init_iter=1 --main_iter=1 --match
 #  will not be automatically initialized with the approprite values, in 
 #  which case the proper values must be entered manually.
 ###################################################################
-sxcpy.py class_averages_generation_*.hdf bdb:class_averages
+sxcpy.py class_averages_generation_*.hdf bdb:class_averages    || exit
 
 
 
@@ -89,27 +89,27 @@ sxcpy.py class_averages_generation_*.hdf bdb:class_averages
 #  here shortly), please repeat the sequence of commands starting from sxheader.py.
 ###################################################################
 
-sxheader.py bdb:class_averages --params=active --one
-sxheader.py bdb:class_averages --params=xform.projection --rand_alpha
-sxrecons3d_n.py  bdb:class_averages  junk.hdf
-e2proc3d.py junk.hdf init1.hdf --process=filter.lowpass.tanh:cutoff_abs=0.15:fall_off=0.2
-rm junk.hdf
+sxheader.py bdb:class_averages --params=active --one    || exit
+sxheader.py bdb:class_averages --params=xform.projection --rand_alpha    || exit
+sxrecons3d_n.py  bdb:class_averages  junk.hdf    || exit
+e2proc3d.py junk.hdf init1.hdf --process=filter.lowpass.tanh:cutoff_abs=0.15:fall_off=0.2    || exit
+rm -f junk.hdf
 rm -rf outdirshc
-sxheader.py bdb:class_averages --params=stable --zero
-mpirun -np 12 sxali3d.py bdb:class_averages init1.hdf outdirshc --shc --ou=28 --xr=3.0 --delta=2.0 --maxit=100 --ref_a=S --function="[..,demo_user_funcs,ali3d_reference1]" --MPI &
+sxheader.py bdb:class_averages --params=stable --zero   || exit
+mpirun -np 12 sxali3d.py bdb:class_averages init1.hdf outdirshc --shc --ou=28 --xr=3.0 --delta=2.0 --maxit=100 --ref_a=S --function="[..,demo_user_funcs,ali3d_reference1]" --MPI   || exit
 
 
 # 3D projection alignment - refinement of the initial structure
-sxheader.py bdb:data --params=xform.projection --zero
+sxheader.py bdb:data --params=xform.projection --zero    || exit
 #  establish initial orientations of all projection data
-mpirun -np 12 sxali3d.py  bdb:data  outdirshc/volume_filt.hdf  outmatch --maxit=1  --ou=28 --xr=3.0 --delta=2.0 --MPI &
-sxheader.py bdb:data --params=xform.projection --export=outmatch/matchparams.txt
-sxheader.py bdb:data --params=stable --one
-mpirun -np 12 sxali3d.py bdb:data outdirshc/volume_filt.hdf poutdirshc --shc --ou=28 --xr=2.0 --delta=2.0 --maxit=100 --ref_a=S --function="[..,demo_user_funcs,ali3d_reference3]" --MPI &
+mpirun -np 12 sxali3d.py  bdb:data  outdirshc/volume_filt.hdf  outmatch --maxit=1  --ou=28 --xr=3.0 --delta=2.0 --MPI   || exit
+sxheader.py bdb:data --params=xform.projection --export=outmatch/matchparams.txt    || exit
+sxheader.py bdb:data --params=stable --one    || exit
+mpirun -np 12 sxali3d.py bdb:data outdirshc/volume_filt.hdf poutdirshc --shc --ou=28 --xr=2.0 --delta=2.0 --maxit=100 --ref_a=S --function="[..,demo_user_funcs,ali3d_reference3]" --MPI   || exit
 
 
 # Refinement of the 3D structure using high accuracy "local" alignment
-mpirun -np 4 sxlocal_ali3d.py bdb:data ali3d_e --ou=30 --delta=2 --maxit=1 --chunk=0.25 --function="[..,demo_user_funcs,localali3d_reference4]" --MPI  || exit
+mpirun -np 12 sxlocal_ali3d.py bdb:data ali3d_e --ou=30 --delta=2 --maxit=3 --chunk=0.25 --function="[..,demo_user_funcs,localali3d_reference4]" --MPI  || exit
 ###################################################################
 # To run gui version, enter the following in the command line:
 # 	sxgui.py --demo=mpibdb &
