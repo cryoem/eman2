@@ -323,10 +323,6 @@ def main():
 
 	nptcl=EMUtil.get_image_count(options.input)
 
-	if options.savepreprocessed and (options.mask or options.normproc or options.lowpass or options.highpass or options.preprocess or options.shrink or options.shrinkrefine):
-		print "I will call preprocessing function"
-		#preprocessing(options,nptcl)
-
 	if nptcl<1 : 
 		print "ERROR : at least 1 particle required in input stack"
 		sys.exit(1)
@@ -854,7 +850,7 @@ def filters(fimage,preprocess,lowpass,highpass,shrink):
 	return fimage	
 
 
-def preprocessing(options,image):
+def preprocessing(options,image,tag='ptcls'):
 	#print "I am in the preprocessing function"
 	
 	
@@ -897,6 +893,7 @@ def preprocessing(options,image):
 		retr = wedgestats(simage,options.wedgeangle,options.wedgei,options.wedgef,options)
 		simage['spt_wedge_mean'] = retr[0]
 		simage['spt_wedge_sigma'] = retr[1]
+		simage['spt_wedge_thresh'] = retr[2]
 		
 		if options.mask:
 			maskCoarse = mask.copy()
@@ -957,6 +954,7 @@ def preprocessing(options,image):
 				retr = wedgestats(s2image,options.wedgeangle,options.wedgei,options.wedgef,options)
 				s2image['spt_wedge_mean'] = retr[0]
 				s2image['spt_wedge_sigma'] = retr[1]
+				s2image['spt_wedge_thresh'] = retr[2]
 	
 				if options.mask:
 					if options.shrinkrefine:
@@ -989,6 +987,36 @@ def preprocessing(options,image):
 			if options.threshold:
 				s2image.process_inplace(options.threshold[0],options.threshold[1])	
 	
+	if options.savepreprocessed and (options.mask or options.normproc or options.lowpass or options.highpass or options.preprocess or options.shrink or options.shrinkrefine or options.lowpassfine or options.highpassfine or options.preprocessfine):
+			
+		if tag == 'ref':
+			preprocessedCoarse = options.ref.replace('.hdf','_preprocCoarse.hdf')
+			preprocessedFine = options.ref.replace('.hdf','_preprocFine.hdf')
+			
+			if options.path not in preprocessedCoarse:
+				preprocessedCoarse = options.path + '/' + preprocessedCoarse
+			if options.path not in preprocessedFine:
+				preprocessedFine = options.path + '/' + preprocessedFine
+			
+			indx=-1
+			if options.ref:
+				indx = 0
+			
+			simage.write_image(preprocessedCoarse,indx)
+			s2image.write_image(preprocessedFine,indx)
+			
+		elif tag == 'ptcls':
+			preprocessedCoarse = options.input.replace('.hdf','_preprocCoarse.hdf')
+			preprocessedFine = options.input.replace('.hdf','_preprocFine.hdf')						
+			
+			if options.path not in preprocessedCoarse:
+				preprocessedCoarse = options.path + '/' + preprocessedCoarse
+			if options.path not in preprocessedFine:
+				preprocessedFine = options.path + '/' + preprocessedFine
+			
+			simage.write_image(preprocessedCoarse,-1)
+			s2image.write_image(preprocessedFine,-1)
+
 	return(simage,s2image)
 	
 
@@ -1270,49 +1298,59 @@ def get_results(etc,tids,verbose,jsA,nptcls,savealiparams=0):
 def wedgestats(volume,angle, wedgei, wedgef, options):
 	#print "RECEIEVED, in wedge statistics, angle, wedgei and wedgef", angle, wedgei, wedgef
 	vfft = volume.do_fft()
+	print "Size of vfft is", vfft['nx'],vfft['ny'],vfft['nz']
 	wedge = vfft.getwedge(angle, wedgei, wedgef)
-	
-	if options.writewedge:
-		wedge.process_inplace('xform.phaseorigin.tocenter')
-		symwedge = wedge.process('xform.mirror', {'axis':'x'})
-		finalwedge = wedge + symwedge
-		
-		finalwedge.process_inplace('threshold.binary',{'value':0.0})
-
-		finalwedge_otherhalf = finalwedge.copy()
-		finalwedge_otherhalf.rotate(0,180,0)
-		
-		superfinal = finalwedge + finalwedge_otherhalf
-		
-		wedgename = os.getcwd() + '/' + options.path + '/wedge.hdf'
-		
-		finalwedge.write_image(wedgename,0)
-		
-		superfinal.write_image('wedgeFinal.hdf',0)
-		
-		'''
-		Compute fft amps of the vol and center
-		'''
-	
-		vfft.ri2ap()
-		amps = vfft.amplitude()
-		amps.process_inplace('xform.phaseorigin.tocenter')
-		symamps = amps.process('xform.mirror', {'axis':'x'})
-		finalamps = amps + symamps
-		
-		finalamps.write_image('fftamps.hdf',-1)
-		
-		'''
-		Mask finalamps with finalwedge
-		'''
-		superfinal.mult(-1)
-		inversewedge = superfinal.process('threshold.binary',{'value':-0.9})
-		maskedamps = finalamps.mult(inversewedge)
-		maskedamps.write_image('fftamps_maskedWedge.hdf',-1)		
 	
 	mean = vfft.get_attr('spt_wedge_mean')
 	sigma = vfft.get_attr('spt_wedge_sigma')
-	return(mean,sigma)
+
+	wedge.process_inplace('xform.phaseorigin.tocenter')
+	symwedge = wedge.process('xform.mirror', {'axis':'x'})
+	
+	#print "Size of symwedge is", symwedge['nx'],symwedge['ny'],symwedge['nz']
+	finalwedge = wedge + symwedge
+	
+	#finalwedge.process_inplace('threshold.binary',{'value':0.0})
+
+	#print "Size of finalwedge is", finalwedge['nx'],finalwedge['ny'],finalwedge['nz']
+	#finalwedge_otherhalf = finalwedge.copy()
+	#finalwedge_otherhalf.rotate(0,180,0)
+	
+	'''
+	Compute fft amps of the vol and center
+	'''
+	print "Size of vfft BEFORE real is", vfft['nx'],vfft['ny'],vfft['nz']
+	vfft.ri2ap()
+	ampsOrig = vfft.amplitude()
+	amps = ampsOrig.process('xform.phaseorigin.tocenter')
+	symamps = amps.process('xform.mirror', {'axis':'x'})
+	finalamps = amps + symamps
+		
+	#print "Size of amps is", amps['nx'],amps['ny'],amps['nz']
+	
+	sigmas = options.aligncmp[1]['sigmas']
+	print "Sigmas is", sigmas
+	
+	thresh = mean + sigmas * sigma
+	print "Therefore thresh is", thresh
+	
+	#print "Size of symamps is", symamps['nx'],symamps['ny'],symamps['nz']
+	
+	ampsThresh = finalamps.process('threshold.belowtozero',{'minval':thresh})
+	
+	#ampsOrigThresh.ap2ri()
+	#ampsOrigThresh.do_iff()
+
+	#print "Size of finalamps is", finalamps['nx'],finalamps['ny'],finalamps['nz']
+	
+	if options.writewedge:
+		wedgename = os.getcwd() + '/' + options.path + '/wedge.hdf'
+		finalwedge.write_image(wedgename,0)
+	
+		finalamps.write_image(os.getcwd() + '/' + options.path +'/fftamps.hdf',-1)
+		ampsThresh.write_image(os.getcwd() + '/' + options.path + '/fftampsThresh.hdf',-1)	
+	
+	return(mean,sigma,thresh)
 
 '''
 CLASS TO PARALLELIZE ALIGNMENTS
@@ -1429,37 +1467,20 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 		print "Aligning ",label
 	
 	"""
-	If FSC.TOMO is used as a comparator, the particles need to have the statistics of their missing wedges calculated.
-	This can be done to the RAW particles (at this point), or the preprocessed particles (further down), through --fitwedgepost
-	"""
-	
-	'''
-	if not classoptions.fitwedgepost:
-		if classoptions.aligncmp[0] == "fsc.tomo" or classoptions.raligncmp[0] == "fsc.tomo":
-			print "THE FSC.TOMO comparator is on, on PRE mode" 
-			if 'spt_wedge_mean' not in image.get_attr_dict() or 'spt_wedge_sigma' not in image.get_attr_dict(): 
-				retri = wedgestats(image,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef,classoptions)
-				image['spt_wedge_mean'] = retri[0]
-				image['spt_wedge_sigma'] = retri[1]
-		
-			if 'spt_wedge_mean' not in fixedimage.get_attr_dict() or 'spt_wedge_sigma' not in fixedimage.get_attr_dict(): 
-				retrf = wedgestats(fixedimage,classoptions.wedgeangle,classoptions.wedgei,classoptions.wedgef,classoptions)
-				fixedimage['spt_wedge_mean'] = retrf[0]
-				fixedimage['spt_wedge_sigma'] = retrf[1]
-	'''
-	
-	"""
 	PREPROCESSING CALL 
 	Currently applied to both volumes. Often 'fixedimage' will be a reference, so may need to rethink whether it should be treated identically. 
 	Similar issues in 2-D single particle refinement ... handled differently at the moment
 	"""
 	
 	if options.ref and not refpreprocess:
-		print "\nThere is NO refpreprocess! And there was a refernece. Therefore, dummy values will be enteres to the header if fsc.tomo is used."
+		print "\nThere is NO refpreprocess! And there was a reference. Therefore, dummy values will be enteres to the header if fsc.tomo is used."
 		if (options.raligncmp and 'fsc.tomo' in options.raligncmp[0]) or (options.aligncmp and 'fsc.tomo' in options.aligncmp[0]):
 			fixedimage['spt_wedge_mean']=-100000000000000000000.0
 			fixedimage['spt_wedge_sigma']=0.0
 	
+	'''
+	Preprocess the reference or "fixed image"
+	'''
 	if refpreprocess and (options.shrink or options.normproc or options.lowpass or options.highpass or options.mask or options.preprocess or options.lowpassfine or options.highpassfine or options.preprocessfine):
 		#print "Sending fixedimage to preprocessing"
 		
@@ -1473,6 +1494,9 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 		s2fixedimage = fixedimage
 		
 	
+	'''
+	Preprocess the particle or "moving image"
+	'''
 	if options.shrink or options.normproc or options.lowpass or options.highpass or options.mask or options.preprocess or options.lowpassfine or options.highpassfine or options.preprocessfine or (options.ralign and 'fsc.tomo' in options.ralign[0]) or (options.align and 'fsc.tomo' in options.align[0]):
 		#print "Sending image to preprocessing"
 		retimage = preprocessing(options,image)
