@@ -105,7 +105,7 @@ def main():
 			ERROR("Micrograph prefix and suffix (type) have to be specified", "sxcter", 1)
 			sys.exit()
 	else:
-		ERROR("Incorrect number of parameters,"sxcter",1)
+		ERROR("Incorrect number of parameters","sxcter",1)
 	
 	if options.apix < 0:
 		ERROR("Pixel size has to be specified", "sxcter", 1)
