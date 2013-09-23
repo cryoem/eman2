@@ -1265,7 +1265,7 @@ def twoD_plot(points,val1,val2,location):
 	plt.title("Angular error")
 	plt.xlabel(val1)
 	plt.ylabel(val2)
-	plt.xlim(0,max(x)+max(x)*0.1])
+	plt.xlim([0,max(x)+max(x)*0.1])
 	plt.ylim([min(y)-min(y)*0.1,max(y)+max(y)*0.1])
 	for i in range(len(finalpoints)):
 		plt.plot(*zip(*[finalpoints[i]]),marker='o',markersize=4,color=color(ang_errors[i]))	
