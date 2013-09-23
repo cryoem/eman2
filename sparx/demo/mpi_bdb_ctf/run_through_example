@@ -67,7 +67,7 @@ sxheader.py bdb:data --params=xform.align2d --zero
 sxheader.py bdb:flip_data --params=active --one
 sxheader.py bdb:flip_data --params=xform.align2d --zero
 
-mpirun -np 16 sxisac.py bdb:flip_data --stab_ali=2 --init_iter=1 --main_iter=1 --match_second=1 --ou=30 --max_round=5 --img_per_grp=60 --thld_err=0.75 --generation=1 --MPI
+mpirun -np 16 sxisac.py bdb:flip_data --stab_ali=2 --init_iter=1 --main_iter=1 --match_second=1 --ou=30 --max_round=5 --img_per_grp=60 --thld_err=1.75 --generation=1 --MPI
 ###################################################################<<<<<<< run_through_example
 # ISAC run with parameters given above is not sufficiently restrictive for EM data. Instead, one may try to use default parameters, in which case
 #  the program will be more stringent, but will run significantly longer.
@@ -112,8 +112,7 @@ e2proc3d.py junk.hdf init1.hdf --process=filter.lowpass.tanh:cutoff_abs=0.15:fal
 rm -f junk.hdf
 rm -rf outdirshc
 sxheader.py bdb:class_averages --params=stable --zero   || exit
-mpirun -np 12 sxali3d.py bdb:class_averages init1.hdf outdirshc --shc --ou=28 --xr=3.0 --delta=2.0 --maxit=100 --ref_a=S --function="[..,demo_user_funcs,ali3d_reference1]" --MPI   || exit
-
+mpirun -np 12 sxali3d.py bdb:class_averages init1.hdf outdirshc --shc --ou=28 --xr=3.0 --delta=2.0 --maxit=100 --function="[..,demo_user_funcs,ali3d_reference2]" --MPI   || exit
 
 # 3D projection alignment - refinement of the initial structure
 sxheader.py bdb:data --params=xform.projection --zero    || exit
@@ -121,7 +120,7 @@ sxheader.py bdb:data --params=xform.projection --zero    || exit
 mpirun -np 12 sxali3d.py  bdb:data  outdirshc/volume_filt.hdf  outmatch --CTF --maxit=1  --ou=28 --xr=3.0 --delta=2.0 --MPI   || exit
 sxheader.py bdb:data --params=xform.projection --export=outmatch/matchparams.txt    || exit
 sxheader.py bdb:data --params=stable --one    || exit
-mpirun -np 12 sxali3d.py bdb:data outdirshc/volume_filt.hdf poutdirshc --shc  --CTF  --ou=28 --xr=2.0 --delta=2.0 --maxit=100 --ref_a=S --function="[..,demo_user_funcs,ali3d_reference3]" --MPI   || exit
+mpirun -np 12 sxali3d.py bdb:data outdirshc/volume_filt.hdf poutdirshc --shc  --CTF  --ou=28 --xr=2.0 --delta=2.0 --maxit=100  --function="[..,demo_user_funcs,ali3d_reference3]" --MPI   || exit
 
 
 # Refinement of the 3D structure using high accuracy alignment

@@ -66,12 +66,12 @@ def ali3d_reference2( ref_data ):
 	Util.mul_img(volf, ref_data[0])
 	o = rops_table(get_im("../model_structure.hdf"))
 	n = rops_table(volf)
-	from math import sqrt
+	#from math import sqrt
 	ff = [0.0]*len(n)
-	for i in xrange(len(o)):  ff[i] = sqrt(o[i]/n[i])
+	for i in xrange(len(o)):  ff[i] = o[i]/n[i]
 	#fl, aa = fit_tanh1(ref_data[3], 0.1)
-	fl = 0.12
-	aa = 0.22
+	fl = 0.20
+	aa = 0.2
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
 	print_msg(msg)
 	volf = fft( filt_tanl( filt_table(fft(volf),ff), fl, aa) )
@@ -82,8 +82,10 @@ def ali3d_reference2( ref_data ):
 		volf  = fshift(volf, -cs[0], -cs[1], -cs[2])
 	return  volf, cs
 
+
+
 def ali3d_reference3( ref_data ):
-	from utilities      import print_msg, get_im
+	from utilities      import print_msg
 	from filter         import fit_tanh1, filt_tanl
 	from fundamentals   import fshift
 	from morphology     import threshold
