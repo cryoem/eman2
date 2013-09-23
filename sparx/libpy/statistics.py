@@ -8828,7 +8828,9 @@ def hist_list(data, nbin = -1, fminiu = None, fmaxiu = None):
 	fmini = min(data)
 
 	if fmaxi == fmini:
-		return [fmaxi]*nbin, [0]*nbin
+		hist = [0]*nbin
+		hist[0] = len(data)
+		return [fmaxi]*nbin, hist
 	if fminiu != None:
 		if fminiu < fmini : fmini = fminiu
 	if fmaxiu != None:

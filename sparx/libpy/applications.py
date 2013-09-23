@@ -4042,7 +4042,7 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 		
 		terminate = 0
 		Iter = 0
- 		while Iter < max_iter and terminate == 0:
+		while Iter < max_iter and terminate == 0:
 
 			Iter += 1
 			total_iter += 1
