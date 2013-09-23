@@ -193,10 +193,6 @@ def main():
 	
 	tag = ''
 	
-		
-	if not options.finalboxsize:
-		options.finalboxsize = EMData(options.input,0,True)['nx']
-	
 	if options.verbose:
 		print "These many particles will be simulated, for each of the supplied references/models", options.nptcls
 		print "There are these many references/models", nrefs
@@ -260,6 +256,10 @@ def main():
 		model['origin_x'] = 0									#Make sure the origin is set to zero, to avoid display issues with Chimera
 		model['origin_y'] = 0
 		model['origin_z'] = 0
+		
+		
+		if not options.finalboxsize:
+			options.finalboxsize = model['nx']
 		
 		#model = EMData(options.input,0,True)
 		#print "\n\nCCCCCCCCCCCC\n\nThe apix of the FINAL model is", model['apix_x']
@@ -623,9 +623,14 @@ class SubtomoSimTask(JSTask):
 		#print "\n########I am done with all the slices for particle", i
 	
 		box = image.get_xsize()
-	
+		
+		print "The box for IMAGE is with image.get_xsize", box
+		print "Whereas with image['nx']", image['nx']
+		box = image['nx']
+		
 		if options.finalboxsize:
 			box = options.finalboxsize
+			"\n\n\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n options.finalboxsize is", options.finalboxsize
 	
 		#print "The boxsize to use is", options.finalboxsize
 	
@@ -675,6 +680,8 @@ class SubtomoSimTask(JSTask):
 		#	return {'ptcl':rec,'px':px,'py':py,'pz':pz}
 		#	
 		#else:
+		
+		print "\n\n\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\nThe final boxsize of rec is", rec['nx'], box
 		return rec
 
 
