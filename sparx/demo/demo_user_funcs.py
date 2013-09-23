@@ -43,9 +43,9 @@ def ali3d_reference1( ref_data ):
 
 
 def ali3d_reference2( ref_data ):
-	from utilities      import print_msg
-	from filter         import fit_tanh1, filt_tanl
-	from fundamentals   import fshift
+	from utilities      import print_msg, get_im
+	from filter         import fit_tanh1, filt_tanl, filt_table
+	from fundamentals   import fshift, rops_table, fft
 	from morphology     import threshold
 	#  Prepare the reference in 3D alignment, i.e., low-pass filter and center.
 	#  Input: list ref_data
@@ -56,7 +56,7 @@ def ali3d_reference2( ref_data ):
 	#  Output: filtered, centered, and masked reference image
 	#  apply filtration (FSC) to reference image:
 
-	print_msg("reference1\n")
+	print_msg("reference2\n")
 	cs = [0.0]*3
 
 	stat = Util.infomask(ref_data[2], ref_data[0], False)
@@ -64,12 +64,17 @@ def ali3d_reference2( ref_data ):
 	Util.mul_scalar(volf, 1.0/stat[1])
 	volf = threshold(volf)
 	Util.mul_img(volf, ref_data[0])
+	o = rops_table(get_im("../model_structure.hdf"))
+	n = rops_table(volf)
+	from math import sqrt
+	ff = [0.0]*len(n)
+	for i in xrange(len(o)):  ff[i] = sqrt(o[i]/n[i])
 	#fl, aa = fit_tanh1(ref_data[3], 0.1)
-	fl = 0.10
-	aa = 0.2
+	fl = 0.12
+	aa = 0.22
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
 	print_msg(msg)
-	volf = filt_tanl(volf, fl, aa)
+	volf = fft( filt_tanl( filt_table(fft(volf),ff), fl, aa) )
 	if ref_data[1] == 1:
 		cs = volf.phase_cog()
 		msg = "Center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
@@ -78,7 +83,7 @@ def ali3d_reference2( ref_data ):
 	return  volf, cs
 
 def ali3d_reference3( ref_data ):
-	from utilities      import print_msg
+	from utilities      import print_msg, get_im
 	from filter         import fit_tanh1, filt_tanl
 	from fundamentals   import fshift
 	from morphology     import threshold

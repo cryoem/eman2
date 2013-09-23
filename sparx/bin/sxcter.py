@@ -98,16 +98,17 @@ def main():
 		out1 = args[1]
 		out2 = args[2]
 		
-	if len(args) == 2:
+	elif len(args) == 2:
 		out1 = args[0]
 		out2 = args[1]
+		if options.micsuffix == "" or options.nameroot == "":
+			ERROR("Micrograph prefix and suffix (type) have to be specified", "sxcter", 1)
+			sys.exit()
+	else:
+		ERROR("Incorrect number of parameters,"sxcter",1)
 	
 	if options.apix < 0:
 		ERROR("Pixel size has to be specified", "sxcter", 1)
-		sys.exit()
-
-	if options.micsuffix == "" or options.nameroot == "":
-		ERROR("Micrograph prefix and suffix (type) have to be specified", "sxcter", 1)
 		sys.exit()
 	
 	if options.MPI:
