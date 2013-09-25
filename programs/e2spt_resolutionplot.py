@@ -81,6 +81,11 @@ def main():
 	parser.add_argument("--align",type=str,help="This is the aligner used to align particles to the previous class average.", default="rotate_translate_3d:search=6:delta=12:dphi=12")
 	parser.add_argument("--aligncmp",type=str,help="The comparator used for the --align aligner. Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.",default="ccc.tomo")
 	
+	parser.add_argument("--radius", type=float, help="""Hydrodynamic radius of the particle in Angstroms. 
+													This will be used to automatically calculate the angular steps to use in search of the best alignment.
+													Make sure the apix is correct on the particles' headers, sine the radius will be converted from Angstroms to pixels.
+													Then, the fine angular step is equal to 360/(2*pi*radius), and the coarse angular step 4 times that""", default=0)
+	
 	parser.add_argument("--ralign",type=str,help="This is the second stage aligner used to refine the first alignment. Default is refine_3d:search=2:delta=3:range=12", default="refine_3d:search=2:delta=3:range=9")
 	parser.add_argument("--raligncmp",type=str,help="The comparator used by the second stage aligner. Default is the internal tomographic ccc",default="ccc.tomo")
 	
@@ -98,6 +103,9 @@ def main():
 	parser.add_argument("--thresholds", type=str, help="Comma separated values of thresholds to plot as horizontal lines. Default=0.5, to turn of supply 'None'. ", default='0.5')
 	
 	parser.add_argument("--smooth",action="store_true", help="Smooth out FSC curves.", default=False)
+	
+	parser.add_argument("--fit",action="store_true", help="Smooth out FSC curves.", default=False)
+	
 	parser.add_argument("--polydegree",type=int, help="Degree of the polynomial to fit.", default=None)
 
 
@@ -115,13 +123,6 @@ def main():
 	if options.thresholds:
 			options.thresholds = options.thresholds.split(',')
 			print "Options.thresholds is", options.thresholds
-
-	#if options.lowpass: 
-	#	options.lowpass=parsemodopt(options.lowpass)
-		
-	#if options.normproc: 
-	#	options.lowpass=parsemodopt(options.normproc)
-
 
 	if not options.output and not options.plotonly:
 		print "ERROR: Unless you provide .txt files through --plotonly, you must specify an --output in .txt format."
@@ -190,7 +191,12 @@ def main():
 
 
 def getfscs(options):
-	n = EMUtil.get_image_count(options.input)
+	options.input
+	print "\nFile is", options.input
+	fyle = options.input.split('/')[-1]
+	print "\n\n\n\n\nTo get image count from", fyle
+	
+	n = EMUtil.get_image_count( fyle )
 	
 	path = options.path
 	fscs = []
@@ -238,13 +244,18 @@ def alignment(options):
 	newaligner=''
 		
 	if 'sym='+options.sym not in aligner:
+		
 		for element in aligner:
+			newElement = element
 			if 'sym' in element:
-				element='sym=' +options.sym
-			newaligner=newaligner + element + ":"
+				newElement='sym=' +options.sym
+			newaligner=newaligner + newElement + ":"
+		
 		if newaligner[-1] == ':':
 			newaligner = newaligner[:-1]
 			options.align=newaligner
+	
+	print "\n\n\n\n\nTHE fixed aligner is", newaligner, options.align
 	
 	alivolfile = os.path.basename(options.input).split('.')[0] + '_VS_' + os.path.basename(options.ref).split('.')[0] + '.hdf'
 	print "alivolfile is", alivolfile
@@ -255,10 +266,19 @@ def alignment(options):
 	print "verbose is", options.verbose
 	print "mask is", options.mask
 	print "lowpass is", options.lowpass
-	print "align is", options.align
-	print "ralign is", options.ralign
+	print "\n\nalign and its type are", options.align, type(options.align)
+	print "\n\nralign is type are", options.ralign, type(options.ralign)
 
-	alicmd = 'e2spt_classaverage.py --path=' + str(options.path) + ' --input=' + str(options.input) + ' --output=' + str(alivolfile) + ' --ref=' + str(options.ref) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + str(options.mask) + ' --lowpass=' + str(options.lowpass) + ' --align=' + options.align + ' --parallel=' + str(options.parallel) + ' --ralign=' + str(options.ralign) + ' --aligncmp=' + str(options.aligncmp) + ' --raligncmp=' + str(options.raligncmp) + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + str(options.normproc) + ' --sym=' + str(options.sym) + ' --breaksym'
+	alicmd = 'e2spt_classaverage.py --path=' + str(options.path) + ' --input=' + str(options.input) + ' --output=' + str(alivolfile) + ' --ref=' + str(options.ref) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + str(options.mask) + ' --lowpass=' + str(options.lowpass) + ' --parallel=' + str(options.parallel) + ' --aligncmp=' + str(options.aligncmp) + ' --raligncmp=' + str(options.raligncmp) + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + str(options.normproc) + ' --sym=' + str(options.sym) + ' --breaksym'
+	
+	if options.radius:
+		alicmd += ' --' + str(options.radius)
+	
+	else:
+		alicmd += ' --align=' + str(options.align) + ' --ralign=' + str(options.ralign)
+	
+	
+	print "\n\n\n\n\n\nThe alig command to run is", alicmd
 			
 	os.system(alicmd)
 	print "BEFORE ALIGNMENT, input was", options.input
