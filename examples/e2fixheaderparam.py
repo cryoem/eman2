@@ -58,16 +58,13 @@ def main():
 	parser.add_argument("--stemval", type=str, help="""New value for all parameters containing --stem.""",default=None)
 
 	parser.add_argument("--valtype", type=str, help="""Type of the value to enforce. It can be: str, float, int, list, or transform.""",default='str')
-	parser.add_argument("--addparam", action='store_true', help="""If you want to add a new parameter to the header opposed to overwriting an existing one, turn this option on.""",default=False) 
+	#parser.add_argument("--addparam", action='store_true', help="""If you want to add a new parameter to the header opposed to overwriting an existing one, turn this option on.""",default=False) 
 	parser.add_argument("--addfilename", action='store_true', help="""Automatically adds the original filename of a file or stack to the header of each particle.
 																	--params will be overwritten if this option is on.""",default=False) 
 
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
 
 	(options, args) = parser.parse_args()
-	
-	print "Len args is", len(args)
-	print "And args are", args
 	
 	if not options.input:
 		print "ERROR: You must supply an input stack and it must be in HDF format."
@@ -78,6 +75,10 @@ def main():
 	outputbase = options.input.split('.')[0]
 	if options.output:
 		outputbase = options.output
+		
+		print "Output is", options.output
+	
+	files2process = []
 	
 	if '*' in options.input:
 		ts = options.input.split('*')
@@ -89,30 +90,41 @@ def main():
 		findir = os.listdir( current )
 		
 		ntags = len(tags)
-		k=0
+	
+		
 		for f in findir:
 			proceed=0
 			for tag in tags:
 				if tag in f:
 					proceed+=1
-			if int(proceed) == int(ntags):
-				options.input = f
-				if options.output:
-					options.output = outputbase.split('.hdf')[0] + str(k).zfill( 3 ) + '.hdf'
-				else:
-					options.output = f.split('.')[0] + str(k).zfill( 3 ) + '.hdf'
-					
-				if options.addfilename:
-					options.params = 'originalfile:' + f.split('/')[0]
-				print "Sending this file for fixing", f
-				fixer( options )
-				k+=1
+		
+			if '*' in options.input and int(proceed) == int(ntags):
+				#options.input = f
+				files2process.append( f )
+	else:
+		files2process.append( options.input )
+	
+	k=0
+	for fyle in files2process:
+		if options.output:
+			if len(files2process) > 1:
+				options.output = outputbase.split('.')[0] + str(k).zfill( len(files2process) ) + '.' +  outputbase.split('.')[-1]
+		else:
+			options.output = fyle.replace('.','_hdrEd.')
+			
+		if options.addfilename:
+			options.params = 'originalfile:' + fyle.split('/')[0]
+	
+		print "Sending this file for fixing", fyle
+		fixer( options )
+		k+=1
 				
 	return
-	
+		
 	
 def fixer(options):	
 	formats=['.hdf','.mrc','.st','.ali','.rec']
+	nonhdfformats = ['.mrc','.st','.ali','.rec']
 	
 	if options.output:
 		#print "options output isa", options.output
@@ -123,67 +135,95 @@ def fixer(options):
 			print "ERROR: The output filename must be in .hdf or .mrc format (.st, .ali and .rec format endings are also allowed for MRC files)."
 			sys.exit()
 	
-	if options.addparam:
-		if '.mrc' in options.input[-4:]:
-			tmp = options.input.replace('.mrc','.hdf')
-			cmd = 'e2proc3d.py ' + options.input + ' ' + tmp
-			p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			text=p.communicate()
-			p.stdout.close()
-			options.input = tmp
-			
-		if '.mrc' in options.output[-4:] or '.rec' in options.output[-4:] or '.st' in options.output[-4:] or '.ali' in options.output[-4:] or '.hdf' not in options.output[-4:]:
-			print "ERROR: To add parameters to the header the OUTPUT format must be .hdf"
-			sys.exit()
-			
-	n=EMUtil.get_image_count(options.input)
+	#if options.addparam:
 	
-	aux2=0
-	for i in range(n):
-		print "Fixing the header of particle", i
-		img = EMData(options.input,i,True)
-		if options.output:
-			img = EMData(options.input,i)
-		a=img
-		existingps=a.get_attr_dict()
-		#print "These are the existing params"
-		#for p in existingps:
-		#	print p
+
+			
+		#if '.mrc' in options.output[-4:] or '.rec' in options.output[-4:] or '.st' in options.output[-4:] or '.ali' in options.output[-4:] or '.hdf' not in options.output[-4:]:
+		#	print "ERROR: To add parameters to the header the OUTPUT format must be .hdf"
+		#	sys.exit()
+	
+	
+	
+	if options.input[-4:] == '.hdf':
+		n=EMUtil.get_image_count(options.input)
+	else:
+		n=1
 		
+	aux1=aux2=aux3=0
+	for i in range(n):
+		aux1=aux2=aux3=0
+		
+		indx=i
+		if options.input[-4:] == '.hdf':
+			print "Fixing the header of particle %d in the stack %s" %( indx, options.input )
+		else:
+			indx=0
+				
+		imgHdr = EMData(options.input,indx,True)
+		print "\nType of imgHdr is", type(imgHdr)
+		print "\n\n\nand imgHdr is", imgHdr
+		
+		existingps=imgHdr.get_attr_dict()
+		
+		aux1 = 0
+		aux2 = 0
 		if options.params:
-			parameters=options.params.split(',')
-			for param in parameters:
+			paramValPairs=options.params.split(',')
+			
+			p2add = []
+			for pair in paramValPairs:
+				p = pair.split(':')[0]
+				if p not in existingps:
+					p2add.append( p )
+			
+			if len(p2add) > 0 and options.input[-4:] in nonhdfformats:
+				tmp = options.input.split('.')[0] + '.hdf'
+				cmd = 'e2proc3d.py ' + options.input + ' ' + tmp
+				p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+				text=p.communicate()
+				p.stdout.close()
+				options.input = tmp
+
+				print """WARNING: You are trying to add parameters to a file format that does not allow this.
+						You can only add new parameters to .hdf files. 
+						A copy of the image will be created and saved as .hdf and the parameters will be added to it.
+						The parameters that are not originally on the header of the image are:"""
+				
+				for p2a in p2add:
+					print p2a
+						
+			for param in paramValPairs:
 				p=param.split(':')[0]
 				v=param.split(':')[-1]
 				if options.valtype:
 					v=valtyper(options,v)
 					
-				aux=0
-				if p not in existingps:
-					if not options.addparam:
-						print """ERROR: The parameter %d you are trying to modify does not exist in the header of the particles.
-								To add a new parameter to the header please include --addparam when running this program."""
-						sys.exit()		
-					elif options.addparam:
-						a[p]=v
-						aux=1
-						aux2=1
+				if p and p not in p2add:
+					previousParam = imgHdr[p]
+					
+					if v != previousParam:
+						aux1=1
+						imgHdr[p] = v
+				
+				if p and p in p2add:
+					aux2 = 1
+					imgHdr.set_attr(p,v)
+				
+			if not options.output:
+				if '.hdf' in options.input[-4:]:
+					imgHdr.write_image(options.input,indx,EMUtil.ImageType.IMAGE_HDF,True)
+	
+				elif options.input[-4:] in nonhdfformats:
+					imgHdr.write_image(options.input,-1,EMUtil.ImageType.IMAGE_MRC, True, None, EMUtil.EMDataType.EM_SHORT)
+				
 				else:
-					a[p]=v
-					aux=1
-					aux2=1
-		
-				if aux != 0:
-					if not options.output:
-						if 'hdf' in options.input.split('.')[-1]:
-							a.write_image(options.input,i,EMUtil.ImageType.IMAGE_HDF,True)
-						elif 'mrc' in options.input.split('.')[-1]:
-							a.write_image(options.input,-1,EMUtil.ImageType.IMAGE_MRC, True, None, EMUtil.EMDataType.EM_SHORT)
-						else:
-							print "ERROR: Only MRC and HDF formats supported"
-							sys.exit()
-					else:
-						a.write_image(options.output,i)	
+					print "ERROR: Only MRC (.mrc, .rec, .ali, .st) and HDF (.hdf) formats supported."
+					sys.exit()
+			else:
+				img = EMData(options.input,indx)
+				img.set_attr_dict(imgHdr.get_attr_dict())
+				img.write_image(options.output,indx)	
 
 		if options.stem:
 			try:
@@ -193,7 +233,7 @@ def fixer(options):
 					print "ERROR: If supplying --stem, you must also supply --stemval."
 					sys.exit()	
 			
-			aux3=0	
+			
 			for param in existingps:
 				#print "param being analyzed and its type are", param, type(param)
 				#print "for stem", options.stem
@@ -203,20 +243,32 @@ def fixer(options):
 					if options.valtype:
 						v=valtyper(options,v)
 				
-					a[param]=v
+					imgHdr[param]=v
 					aux3=1
 				
 			if aux3 !=0:
 				if not options.output:
-					a.write_image(options.input,i,EMUtil.ImageType.IMAGE_HDF,True)
+					if '.hdf' in options.input[-4:]:
+						imgHdr.write_image(options.input,indx,EMUtil.ImageType.IMAGE_HDF,True)				
+					elif options.input[-4:] in nonhdfformats:
+						imgHdr.write_image(options.input,-1,EMUtil.ImageType.IMAGE_MRC, True, None, EMUtil.EMDataType.EM_SHORT)
+				
 				else:
-					a.write_image(options.output,i)	
+					img = EMData(options.input,indx)
+					print "\nType of imgHdr is", type(imgHdr)
+					print "\n\n\nand imgHdr is", imgHdr
+					img.set_attr_dict(imgHdr.get_attr_dict())
+					img.write_image(options.output,indx)	
 			else:
 				print "Couldn't find any parameters with the stem", options.stem
 	
-	if aux2 !=0 or aux3 !=0:
-		print "Parameters successfully changed."
-	elif aux2 == 0 or aux3 == 0:
+	if aux1 !=0:
+		print "Former parameter value changed successfully!"
+	if aux2 !=0:
+		print "A new parameter added successfully!"	
+	if aux3 !=0:
+		print "Stem used successfully to change former parameters!"
+	elif aux1 == 0 and aux2 == 0 and aux3 == 0:
 		print "No parameters seem to have changed."	
 				
 	return	
