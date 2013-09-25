@@ -50,12 +50,12 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_argument("--input", type=str, help="""File or stack for which to fix header parameters. To indicate multiple files with a common string, use *.
-													For example, if you want to process all the .mrc files in a given directory, supply options.input=*.mrc""", default=None)
-	parser.add_argument("--output", type=str, help="""File to write the fixed stack to. If not provided, the stack in --input will be overwritten.""", default=None)
-	parser.add_argument("--params", type=str, help="""Comma separated pairs of parameter:value. The parameter will be changed to the value specified.""", default=None)
+													For example, if you want to process all the .mrc files in a given directory, supply options.input=*.mrc""", default='')
+	parser.add_argument("--output", type=str, help="""File to write the fixed stack to. If not provided, the stack in --input will be overwritten.""", default='')
+	parser.add_argument("--params", type=str, help="""Comma separated pairs of parameter:value. The parameter will be changed to the value specified.""", default='')
 	parser.add_argument("--stem", type=str, help="""Some parameters have common stems. For example, 'origin_x', 'origin_y', 'origin"x'. 
-												Supply the stem and all parameters containing it will be modified.""",default=None)
-	parser.add_argument("--stemval", type=str, help="""New value for all parameters containing --stem.""",default=None)
+												Supply the stem and all parameters containing it will be modified.""",default='')
+	parser.add_argument("--stemval", type=str, help="""New value for all parameters containing --stem.""",default='')
 
 	parser.add_argument("--valtype", type=str, help="""Type of the value to enforce. It can be: str, float, int, list, or transform.""",default='str')
 	#parser.add_argument("--addparam", action='store_true', help="""If you want to add a new parameter to the header opposed to overwriting an existing one, turn this option on.""",default=False) 
@@ -113,7 +113,10 @@ def main():
 			options.output = fyle.replace('.','_hdrEd.')
 			
 		if options.addfilename:
-			options.params = 'originalfile:' + fyle.split('/')[0]
+			if options.params:
+				options.params += ',originalfile:' + fyle.split('/')[0]
+			else:
+				options.params += 'originalfile:' + fyle.split('/')[0]			
 	
 		print "Sending this file for fixing", fyle
 		fixer( options )
@@ -165,6 +168,7 @@ def fixer(options):
 		print "\n\n\nand imgHdr is", imgHdr
 		
 		existingps=imgHdr.get_attr_dict()
+		print "\nExistingps are", existingps
 		
 		aux1 = 0
 		aux2 = 0
@@ -172,9 +176,12 @@ def fixer(options):
 			paramValPairs=options.params.split(',')
 			
 			p2add = []
+			print "!!!!!!!!!!!!!!!!!!!!\n!!!!!!!!!!!!!!!!!!!!Param pair vals are", paramValPairs
 			for pair in paramValPairs:
 				p = pair.split(':')[0]
+				print "\nParsed parameter", p
 				if p not in existingps:
+					print "latter was not present already!"
 					p2add.append( p )
 			
 			if len(p2add) > 0 and options.input[-4:] in nonhdfformats:
@@ -184,8 +191,10 @@ def fixer(options):
 				text=p.communicate()
 				p.stdout.close()
 				options.input = tmp
-
-				print """WARNING: You are trying to add parameters to a file format that does not allow this.
+				
+				print "\nThere are parameters to add and the format is non-hdf. Therefore, this image will be create", options.input
+				
+				print """\nWARNING: You are trying to add parameters to a file format that does not allow this.
 						You can only add new parameters to .hdf files. 
 						A copy of the image will be created and saved as .hdf and the parameters will be added to it.
 						The parameters that are not originally on the header of the image are:"""
@@ -200,16 +209,21 @@ def fixer(options):
 					v=valtyper(options,v)
 					
 				if p and p not in p2add:
+					print "Will consider changing this existing param", p
 					previousParam = imgHdr[p]
 					
 					if v != previousParam:
 						aux1=1
 						imgHdr[p] = v
+						print "\nNew value %s for previous parameter %s" %(v,p)
 				
+				print "\n\nThe params to add are", p2add
 				if p and p in p2add:
+					print "Will add this new parameter", p
 					aux2 = 1
 					imgHdr.set_attr(p,v)
-				
+					print "\nNew PARAMETER %s added with this value %s" %(p,v)
+						
 			if not options.output:
 				if '.hdf' in options.input[-4:]:
 					imgHdr.write_image(options.input,indx,EMUtil.ImageType.IMAGE_HDF,True)
@@ -221,9 +235,12 @@ def fixer(options):
 					print "ERROR: Only MRC (.mrc, .rec, .ali, .st) and HDF (.hdf) formats supported."
 					sys.exit()
 			else:
-				img = EMData(options.input,indx)
+				outindx = 0
+				if '.hdf' in options.output[-4:]:
+					outindx=indx
+				img = EMData(options.input,outindx)
 				img.set_attr_dict(imgHdr.get_attr_dict())
-				img.write_image(options.output,indx)	
+				img.write_image(options.output,outindx)	
 
 		if options.stem:
 			try:
