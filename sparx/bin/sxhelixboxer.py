@@ -67,7 +67,7 @@ def main():
 	usage = """sxhelixboxer.py --gui <micrograph1> <<micrograph2> <micrograph3> ...
 	sxhelixboxer.py --gui --helix-width=<width> <micrograph1> <<micrograph2> <micrograph3> ...
 	sxhelixboxer.py <options (not --gui)> <micrograph>    
-	sxhelixboxer.py <outdir> --window --dirid=mic --micid=mymic --micsuffix=hdf --invert_contrast --apix=1.84 --boxsize='200,45' --outstacknameall='bdb:/Users/jiafang/helical_mpi/jdata' --hcoords_suffix=_boxes.txt --ptcl-dst=30 --rmax=92.0
+	sxhelixboxer.py <outdir> --window --dirid=mic --micid=mymic --micsuffix=hdf --invert_contrast --apix=1.84 --boxsize='200,45' --hcoords_suffix=_boxes.txt --ptcl-dst=30 --rmax=92.0 --importctf=ctfestimates.txt
 
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
@@ -99,7 +99,7 @@ def main():
 	parser.add_argument("--micid",              type=str,				 default="",                  help="A string for identifying the name (minus extension) of relevant micrographs.")
 	parser.add_argument("--micsuffix",          type=str,				 default="",                  help="A string denoting micrograph type. Currently only handles suffix types, e.g. 'hdf', 'ser' etc.")
 	parser.add_argument("--boxsize",            type=int,				 default=256,            	  help="x and y dimension in pixels of square area to be windowed out from filament. Pixel size is assumed to be new_pixel_size.")
-	parser.add_argument("--outstacknameall",    type=str,				 default="bdb:data",          help="File name plus path and type (only handles bdb and hdf right now) under which ALL windowed segments from ALL micrograph directories will be saved, e.g. 'bdb:adata' or 'adata.hdf'")
+	#parser.add_argument("--outstacknameall",    type=str,				 default="bdb:data",          help="File name plus path and type (only handles bdb and hdf right now) under which ALL windowed segments from ALL micrograph directories will be saved, e.g. 'bdb:adata' or 'adata.hdf'")
 	parser.add_argument("--hcoords_dir",        type=str,				 default="",        		  help="Directory containing helix box coordinates")
 	parser.add_argument("--hcoords_suffix",     type=str,				 default="_boxes.txt",        help="String identifier which when concatenated with a micrograph name (minus extension) gives the name of the text file containing coordinates of ALL helices boxed from the micrograph. If there is no such file, helices boxed from the micrograph will not be windowed. Default is '_boxes.txt', so if mic0.hdf is a micrograph, then the text file containing coordinates of the helices boxed in it is mic0_boxes.txt. The coordinate file is assumed to be in the format used by sxhelixboxer.")
 	parser.add_argument("--new_apix",           type=float,  			 default=-1.0,                help="New target pixel size to which the micrograph should be resampled. Default is -1, in which case there is no resampling.")
@@ -130,7 +130,7 @@ def main():
 		if len(tdir) < 1:  tdir = None
 		if options.importctf:  cterr = [options.defocuserror/100.0, options.astigmatismerror]
 		else:                  cterr = None
-
+		options.outstacknameall = "bdb:data"  # this was disabled, to be removed later PAP
  		windowallmic(options.dirid, options.micid, options.micsuffix, outdir, pixel_size=options.apix, boxsize=options.boxsize, minseg=options.minseg,\
 				outstacknameall=options.outstacknameall, hcoords_dir = options.hcoords_dir, hcoords_suffix = options.hcoords_suffix, ptcl_dst=options.ptcl_dst, \
 				inv_contrast=options.invert_contrast, new_pixel_size=options.new_apix, rmax = options.rmax, freq=options.freq, \

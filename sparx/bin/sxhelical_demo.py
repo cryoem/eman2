@@ -168,7 +168,7 @@ def main():
 			stack = args[0]
 			newstack = args[1]
 			mask = get_im(args[2])
-			nima	=EMUtil.get_image_count(stack)
+			nima = EMUtil.get_image_count(stack)
 			for im in xrange(nima):
 				prj = get_im(stack,im)
 				alpha, sx, sy, mirror, scale = get_params2D(prj)
@@ -241,7 +241,7 @@ def helicise_pdb(inpdb, outpdb, dp, dphi):
 	outfile.writelines(pall[n-1:len(pall)])
 	outfile.close()
 
-def generate_helimic(refvol, outdir, pixel, CTF=False, Cs=2.0,voltage = 200.0, ampcont = 10.0,rand_seed=14567):
+def generate_helimic(refvol, outdir, pixel, CTF=False, Cs=2.0,voltage = 200.0, ampcont = 10.0, rand_seed=14567):
 	
 	from utilities	 import model_blank, model_gauss, model_gauss_noise, pad
 	from random 	 import random
@@ -276,7 +276,7 @@ def generate_helimic(refvol, outdir, pixel, CTF=False, Cs=2.0,voltage = 200.0, a
 		if CTF :
 			ctf = EMAN2Ctf()
 			ctf.from_dict( {"defocus":defocus, "cs":Cs, "voltage":voltage, "apix":pixel, "ampcont":ampcont, "bfactor":0.0} )
-	
+
 		sigma = 1.5 + random() # 1.5-2.5
 		addon = model_gauss(sigma, nx, ny, nz, sigma, sigma, nx/2, ny/2, nz/2 )
 		scale = 2500 * (0.5+random())
@@ -287,7 +287,7 @@ def generate_helimic(refvol, outdir, pixel, CTF=False, Cs=2.0,voltage = 200.0, a
 			dphi = 0.0 #8.0*(random()-0.5)
 			dtht = 0.0 #6.0*(random()-0.5)
 			psi  = 90+10*( i-1 )
-	
+
 			phi = angles[idef-3][0]+dphi
 			tht = angles[idef-3][1]-dtht
 	
