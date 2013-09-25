@@ -79,8 +79,8 @@ def main():
 	parser.add_option("--overlap_y",			  type="int",				default=50, 					 help="overlap y")
 	parser.add_option("--edge_x",			  	  type="int",				default=0, 					     help="edge x")
 	parser.add_option("--edge_y",			      type="int",				default=0, 					     help="edge y")
-	parser.add_option("--f_start",                type="float",			 	default=-1.0,               	 help="starting frequency")   
-	parser.add_option("--f_stop",                 type="float",			 	default=-1.0,               	 help="stop frequency")
+	parser.add_option("--f_start",                type="float",			 	default=-1.0,               	 help="starting frequency, units [1/A], (by default determined automatically)")   
+	parser.add_option("--f_stop",                 type="float",			 	default=-1.0,               	 help="stop frequency, units [1/A], (by default determined automatically)")
 
 	(options, args) = parser.parse_args(arglist[1:])
 	
