@@ -138,6 +138,7 @@ def main():
 	#parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default='', guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 
 	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:1", guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	
 	#parser.add_argument("--automask",action="store_true",help="Applies a 3-D automask before centering. Can help with negative stain data, and other cases where centering is poor.")
 	#parser.add_argument("--resample",action="store_true",help="If set, will perform bootstrap resampling on the particle data for use in making variance maps.",default=False)
 	#parser.add_argument("--odd", default=False, help="Used by EMAN2 when running eotests. Includes only odd numbered particles in class averages.", action="store_true")
@@ -192,11 +193,8 @@ def main():
 	if options.align:
 		print "There's options.align", options.align
 		if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align:
-			options.align += ':sym' + str( options.sym )
+			options.align += ':sym=' + str( options.sym )
 			print "And there's sym", options.sym
-	
-	
-	
 	
 	'''
 	Get rootpath to provide absoulute paths to files.
@@ -220,17 +218,16 @@ def main():
 	abspath= rootpath + '/' + options.path
 	print "Thus the abs path could be", abspath
 	
-	
 	'''
 	Store parameters in parameters.txt file inside --path
 	'''
 	writeParameters(options,'e2spt_classaverage.py')
 	
-	
 	'''
 	Parse parameters
 	'''
 	if options.align:
+		print "(e2spt_classaverage.py) --align to parse is", options.align
 		options.align=parsemodopt(options.align)
 	
 	#if options.ralign and not options.raligncmp:
@@ -238,6 +235,8 @@ def main():
 			
 	if options.ralign: 
 		options.ralign=parsemodopt(options.ralign)
+		print "(e2spt_classaverage.py) --ralign to parse is", options.ralign
+		
 	#print "\n\nTHE ALIGNERS ARE ", options.ralign, options.align
 	
 	if options.aligncmp: 
@@ -288,8 +287,6 @@ def main():
 	if options.shrink < options.shrinkrefine:
 		options.shrink = options.shrinkrefine
 		print "It makes no sense for shrinkrefine to be larger than shrink; therefore, shrink will be made to match shrinkrefine"
-	
-
 					
 	hdr = EMData(options.input,0,True)
 	nx = hdr["nx"]
@@ -1343,12 +1340,23 @@ def wedgestats(volume,angle, wedgei, wedgef, options):
 
 	#print "Size of finalamps is", finalamps['nx'],finalamps['ny'],finalamps['nz']
 	
+	print "\nType of wedge is", type(finalwedge)
+	print "\nType of amps is", type(finalamps)
+	print "\nType of ampsThresh is", type(ampsThresh)
+	
 	if options.writewedge:
+		
+		completePath = os.getcwd() + '/' + options.path
+		print "\nThe list of files in path is", os.listdir( completePath )
+		 
 		wedgename = os.getcwd() + '/' + options.path + '/wedge.hdf'
 		finalwedge.write_image(wedgename,0)
-	
-		finalamps.write_image(os.getcwd() + '/' + options.path +'/fftamps.hdf',-1)
-		ampsThresh.write_image(os.getcwd() + '/' + options.path + '/fftampsThresh.hdf',-1)	
+		
+		ampsname = os.getcwd() + '/' + options.path +'/fftamps.hdf'
+		finalamps.write_image(ampsname,-1)
+		
+		ampsThreshname = os.getcwd() + '/' + options.path + '/fftampsThresh.hdf'
+		ampsThresh.write_image(ampsThreshname,-1)	
 	
 	return(mean,sigma,thresh)
 

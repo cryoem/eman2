@@ -640,9 +640,10 @@ def allvsall(options):
 		usedSet=set([])
 		allPtclSet=set( [x for x in range(nptcls)] )
 		numPerSet = 0
+		
 		if k == 0:
 			if options.clusters and int(options.clusters) > 1:
-				numPerSet = round( float(nptcls)/float(options.clusters) )
+				numPerSet = round( float(nptcls)/float(options.clusters) )					#Cluster the particles in sets with an even number of particles
 				
 				for cn in range(options.clusters):
 					clusters.update({ cn:set([]) })
@@ -659,18 +660,21 @@ def allvsall(options):
 			else:
 				compNum = float( i['score'] )
 			
-			plotX.append( compNum )
+			#plotX.append( compNum )
 			plotY.append( float( i['score'] ) )
 			
 			indxA = int( i['ptclA'].split('_')[-1] )
 			indxB = int( i['ptclB'].split('_')[-1] )
-			simmxScores.set_value_at(indxA,indxB,i['score'])
 			
-			auxx=0
+			'''
+			Allocate particles in a comparison to a cluster so long as they haven't been allocated to another cluster.
+			All particles high on the SORTED list will fill in the highest clusters.
+			In theory, if the particles are good quality, particles should cluster with other like-particles from the first round.
+			'''
 			if k == 0:
 				if options.clusters and int(options.clusters) > 1:
 					for cn in range(options.clusters):
-						print "Clusters[cn] and its type are", clusters[cn], type(clusters[cn])
+						#print "Clusters[cn] and its type are", clusters[cn], type(clusters[cn])
 						if len(clusters[cn]) < numPerSet:
 							if indxA not in usedSet:
 								print "IndxA as list is", [indxA]					
@@ -682,7 +686,15 @@ def allvsall(options):
 								clusters[cn].update( [indxB] )
 								usedSet.update( [indxB] )
 			
-			t= i['xform.align3d']
+			
+			'''
+			Save the results of the similarity matrix to a simmx file
+			'''
+			simmxScores.set_value_at(indxA,indxB,i['score'])
+			
+			auxx=0
+			
+			t = i['xform.align3d']
 			trans=t.get_trans()
 			rots=t.get_rotation()
 			
@@ -710,8 +722,11 @@ def allvsall(options):
 		#from e2figureplot import plotter
 		
 		
-		print "Before calling plotter, x and y len are", len(plotX), len(plotY)
+		print "Before calling plotter, y len is", len(plotY)
 		plotName = simmxFile.replace('.hdf','_PLOT.png')
+		
+		plotX = [i for i in range(len(plotY))]
+		
 		plotter (plotX, plotY, options,plotName)
 	
 		#from e2figureplot import textwriter

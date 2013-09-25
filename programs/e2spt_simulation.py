@@ -248,18 +248,22 @@ def main():
 			
 		model = EMData(options.input,0)
 		#print "after editing, apix of model is", model['apix_x']
-
+				
+		if not options.finalboxsize:
+			options.finalboxsize = model['nx']
+			
+		else:
+			os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))
+			model = EMData(options.input,0)
+			
+		
 		if options.filter:
 			model.process_inplace(options.filter[0],options.filter[1])
 		
-		model.process_inplace('normalize')
+		#model.process_inplace('normalize')
 		model['origin_x'] = 0									#Make sure the origin is set to zero, to avoid display issues with Chimera
 		model['origin_y'] = 0
 		model['origin_z'] = 0
-		
-		
-		if not options.finalboxsize:
-			options.finalboxsize = model['nx']
 		
 		#model = EMData(options.input,0,True)
 		#print "\n\nCCCCCCCCCCCC\n\nThe apix of the FINAL model is", model['apix_x']
