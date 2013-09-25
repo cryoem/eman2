@@ -667,7 +667,7 @@ def calcAliStep(options):
 	
 	options.align = 'rotate_translate_3d:search=8:delta=' + str(coarseStep) + ':dphi=' + str(coarseStep)
 	if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align:
-		options.align += ':sym' + str(options.sym)
+		options.align += ':sym=' + str(options.sym)
 		
 	options.ralign = 'refine_3d_grid:range=' + str(rango) + ':delta=' + str(fineStep) + ':search=2'
 	
