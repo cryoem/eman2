@@ -68,7 +68,12 @@ def main():
 	#parser.add_argument("--nbasis", type=int, help="Basis vectors to use", default=3)
 
 	parser.add_argument("--refs", type=str, help="""This can either be an HDF stack, where each image will be treated as a separate model/reference, 
-													or a comma separatted list of individual images; e.g. --refs=ref1.hdf,ref2.hdf,ref3.hdf""", default=None)
+													or a comma separatted list of individual images; e.g. --refs=ref1.hdf,ref2.hdf,ref3.hdf.
+													""", default='')
+	
+	parser.add_argument("--nrefs", type=str, help="""Number of references to generate from the data for reference-free alignment. Default=1""", default=1)
+	parser.add_argument("--refgenmethod", type=str, help="""Method for generating the initial reference(s). Options are 'binarytree' and 'hac'. Default=binarytree""", default='binarytree') 
+
 	
 	'''
 	PARAMETERS TO BE PASSED ON TO e2spt_classaverage.py
@@ -202,6 +207,33 @@ def main():
 	nrefs=0
 	
 	refsfiles = set([])
+	
+	
+	
+	if not options.refs:
+		nrefs = int(options.nrefs)
+		
+		if nrefs > 1:
+			for i in range(nrefs):
+				nptcls = EMUtil.get_image_count(options.input)
+				ptclsPerGroup = nptcls/nrefs
+				
+				dividecmd = 'e2proc3d.py ' + options.input group1
+		
+		alicmd ='cd ' + options.path + ' && e2spt_classaverage.py ' + ' --path=sptTMP'
+
+		names = dir(options)
+		for name in names:
+			if getattr(options,name) and 'refs' not in name and "__" not in name and "_" not in name and 'path' not in name and str(getattr(options,name)) != 'True' and 'iter' not in name:	
+				#if "__" not in name and "_" not in name and str(getattr(options,name)) and 'path' not in name and str(getattr(options,name)) != 'False' and str(getattr(options,name)) != 'True' and str(getattr(options,name)) != 'None':			
+				alicmd += ' --' + name + '=' + str(getattr(options,name))
+		alicmd += ' --donotaverage'
+	
+
+	
+		p=subprocess.Popen( alicmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		text=p.communicate()	
+		p.stdout.close()
 
 	if ',' in options.refs:
 		refsorig = options.refs.split(',')
@@ -210,7 +242,7 @@ def main():
 			outref = options.path + '/' + refsorig[i].replace('.hdf','_ref' + str(i).zfill(len(str(nrefs))) + '.hdf' )
 			os.system('cp ' + refsorig[i] + ' ' + outref)		
 			#nrefs = len(refsorig)
-			
+		
 			refsfiles.update( [ outref ] )
 	else:
 		nrefs = EMUtil.get_image_count(options.refs)
@@ -218,7 +250,11 @@ def main():
 			outref = options.path + '/' + options.refs.replace('.hdf','_ref' + str(i).zfill(len(str(nrefs))) + '.hdf' )
 			os.system('e2proc3d.py ' + options.refs + ' ' + outref + ' --first=' + str(i) + ' --last=' + str(i) )
 			refsfiles.update( [ outref ] )
-	
+
+
+	#print "ERROR: You must provide at least one reference through --ref, or specify the number of references to generate from the data through --nrefs."
+		
+		
 	'''
 	Generate the commands to refine the data against each reference
 	'''
