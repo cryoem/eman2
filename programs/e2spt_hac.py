@@ -198,6 +198,11 @@ def main():
 													For example, if the best pair in the first iteration yielded a score of 15.0, and you supply --minscore=0.666,
 													any pair wise alignments with a score lower than 15*0.666=10 will be forbidden.""", default=0)
 
+	parser.add_argument("--savepreprocessed",action="store_true", help="""Will save stacks 
+		of preprocessed particles (one for coarse alignment and one for fine alignment if 
+		preprocessing options are different).""", default=False)
+
+
 	'''
 	Parameters to compensate for the missing wedge using --cpm=fsc.tomo
 	'''
