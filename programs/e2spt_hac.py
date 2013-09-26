@@ -221,6 +221,10 @@ def main():
 	parser.add_argument("--fitwedgepost", action="store_true", help="""Fit the missing wedge AFTER preprocessing the subvolumes, 
 		NOT before, IF using the fsc.tomo comparator for --aligncmp or --raligncmp.""", default=False)
 
+	parser.add_argument("--noplot", action='store_true', help="""Turn this option on to run 
+		jobs on a cluster or other interfaces that don't support plotting.""",default=False)
+
+
 	(options, args) = parser.parse_args()
 	
 	'''
@@ -728,11 +732,12 @@ def allvsall(options):
 		
 		
 		print "Before calling plotter, y len is", len(plotY)
-		plotName = simmxFile.replace('.hdf','_PLOT.png')
 		
+		plotName = simmxFile.replace('.hdf','_PLOT.png')
 		plotX = [i for i in range(len(plotY))]
 		
-		plotter (plotX, plotY, options,plotName)
+		if not options.noplot:
+			plotter (plotX, plotY, options,plotName)
 	
 		#from e2figureplot import textwriter
 		textwriter(plotX, plotY, options, plotName.replace('.png','.txt') )
