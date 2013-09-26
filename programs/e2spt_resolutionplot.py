@@ -102,9 +102,9 @@ def main():
 	parser.add_argument("--maxres", type=float, help="How far in resolution to extend the FSC curve on the x axis; for example, to see up to 20anstroms, provide --maxres=1.0. Default=15", default=1.0)
 	parser.add_argument("--thresholds", type=str, help="Comma separated values of thresholds to plot as horizontal lines. Default=0.5, to turn of supply 'None'. ", default='0.5')
 	
-	parser.add_argument("--smooth",action="store_true", help="Smooth out FSC curves.", default=False)
+	parser.add_argument("--smooth",action="store_true", help="Smooth out FSC curves by ignoring dips or local minima.", default=False)
 	
-	parser.add_argument("--fit",action="store_true", help="Smooth out FSC curves.", default=False)
+	#parser.add_argument("--fit",action="store_true", help="Smooth out FSC curves.", default=False)
 	
 	parser.add_argument("--polydegree",type=int, help="Degree of the polynomial to fit.", default=None)
 
@@ -121,8 +121,8 @@ def main():
 	logger = E2init(sys.argv, options.ppid)
 
 	if options.thresholds:
-			options.thresholds = options.thresholds.split(',')
-			print "Options.thresholds is", options.thresholds
+		options.thresholds = options.thresholds.split(',')
+		print "Options.thresholds is", options.thresholds
 
 	if not options.output and not options.plotonly:
 		print "ERROR: Unless you provide .txt files through --plotonly, you must specify an --output in .txt format."
@@ -132,8 +132,18 @@ def main():
 			sys.exit()
 		
 	findir=os.listdir(os.getcwd())
-	if options.path not in findir:
-		os.system('mkdir ' + options.path)
+
+	#if options.path not in findir:
+	#	os.system('mkdir ' + options.path)
+	
+	#print "Befere options are of type", type(options)
+	#print "\n\n\nand are", options
+	
+	from e2spt_classaverage import sptmakepath
+	options = sptmakepath(options,'sptres')
+	
+	#print "Returned options are of type", type(options)
+	#print "\n\n\nand are", options
 	
 	if options.plotonly:
 		curves = options.plotonly
@@ -191,10 +201,24 @@ def main():
 
 
 def getfscs(options):
+	
 	options.input
-	print "\nFile is", options.input
-	fyle = options.input.split('/')[-1]
-	print "\n\n\n\n\nTo get image count from", fyle
+	print "options.input is", options.input
+	fyle = 'alignment/' + options.input.split('/')[-1]
+	
+	
+	if options.path not in fyle:
+		fyle = options.path + '/' + fyle
+	
+	
+	current = os.getcwd()
+	
+	if current not in fyle:
+		fyle = current + '/' + fyle
+	
+	
+	print "\n\n\n\n\nThe fyle to get image count from is", fyle
+	print "Whereas current dir is", os.getcwd()
 	
 	n = EMUtil.get_image_count( fyle )
 	
@@ -202,7 +226,7 @@ def getfscs(options):
 	fscs = []
 	fscsm = []
 	for i in range(n):
-		ptcl = EMData(options.input,i)
+		ptcl = EMData( fyle ,i)
 		ref = EMData(options.ref,0)
 		fscfilename = path + '/' + options.output.replace('.txt','_' + str(i).zfill(len(str(n))) + '.txt')
 		if options.sym and options.sym is not 'c1' and options.sym is not 'C1':
@@ -268,11 +292,11 @@ def alignment(options):
 	print "lowpass is", options.lowpass
 	print "\n\nalign and its type are", options.align, type(options.align)
 	print "\n\nralign is type are", options.ralign, type(options.ralign)
-
-	alicmd = 'e2spt_classaverage.py --path=' + str(options.path) + ' --input=' + str(options.input) + ' --output=' + str(alivolfile) + ' --ref=' + str(options.ref) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + str(options.mask) + ' --lowpass=' + str(options.lowpass) + ' --parallel=' + str(options.parallel) + ' --aligncmp=' + str(options.aligncmp) + ' --raligncmp=' + str(options.raligncmp) + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + str(options.normproc) + ' --sym=' + str(options.sym) + ' --breaksym'
+	
+	alicmd = 'cd ' + options.path + ' && e2spt_classaverage.py --path=alignment --input=../' + str(options.input) + ' --output=' + str(alivolfile) + ' --ref=../' + str(options.ref) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + str(options.mask) + ' --lowpass=' + str(options.lowpass) + ' --parallel=' + str(options.parallel) + ' --aligncmp=' + str(options.aligncmp) + ' --raligncmp=' + str(options.raligncmp) + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + str(options.normproc) + ' --sym=' + str(options.sym) + ' --breaksym'
 	
 	if options.radius:
-		alicmd += ' --' + str(options.radius)
+		alicmd += ' --radius=' + str(options.radius)
 	
 	else:
 		alicmd += ' --align=' + str(options.align) + ' --ralign=' + str(options.ralign)
@@ -280,11 +304,21 @@ def alignment(options):
 	
 	print "\n\n\n\n\n\nThe alig command to run is", alicmd
 			
-	os.system(alicmd)
+	#os.system(alicmd)
+	
+	p=subprocess.Popen( alicmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	
+	#for line in iter(p.stdout.readline, ''):
+	#	print line.replace('\n','')
+
+	text=p.communicate()	
+	p.stdout.close()
+	
 	print "BEFORE ALIGNMENT, input was", options.input
 	print "BEFORE ALIGNMENT, ref was", options.ref
 	print "Returning this from ALIGNMENT", alivolfile
-	return options.path + '/' + alivolfile
+	
+	return os.getcwd() + '/' + options.path + '/alignment/' + alivolfile
 
 
 def calcfsc(v1,v2,fscfilename,options):
@@ -560,7 +594,7 @@ def fscplotter(fscs,options):
 		'''
 		Fit polynomial to plot
 		'''
-		if options.fit:
+		if options.polydegree:
 			print "\n\n\nI will do a FIT!\n\n\n"
 			'''
 			Sigmoidal fit
@@ -577,7 +611,7 @@ def fscplotter(fscs,options):
 
 			#x=list(set(x))
 	
-			polycoeffs = numpy.polyfit(x, values, options.fit)
+			polycoeffs = numpy.polyfit(x, values, options.polydegree)
 			yfit = numpy.polyval(polycoeffs, x)
 			
 			
