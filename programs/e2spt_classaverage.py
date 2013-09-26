@@ -641,7 +641,10 @@ def calcAliStep(options):
 		apix = 2*apix
 		
 	radPix = options.radius / apix
+	
 	fineStep = 360.0/(2.0*math.pi*radPix)
+	fineStepRounded = math.floor(fineStep*100.00)/100.00		#Round fine step DOWN to scan slightly more finally than theoretically needed
+	
 	coarseStep = 4.0 * fineStep
 	
 	factor = 1
@@ -654,22 +657,25 @@ def calcAliStep(options):
 			factor = float(options.shrink) / float(options.shrinkrefine)
 		
 		coarseStep = coarseStep * factor
-		
-	rango = coarseStep / 2.0
+	
+	CSrounded = math.floor( coarseStep * 100.00 )/100.00		#Round coarse step DOWN to scan slightly more finally than theoretically needed
+
+	rango = coarseStep / 2.0									#Round the range in fine alignments UP, to cover a larger area than theoretically needed
+	rangoRounded = math.ceil(rango*10.00)/10.00
 	
 	print "The radius in pixels at size for fine alignment (taking --shrinkrefine into account) is", radPix
 	print "Shrink is", options.shrink
 	print "Shrink refine is", options.shrinkrefine
 	print "Therefore factor is", factor
-	print "Therefore, the coarse step to use is", coarseStep
-	print "And the fine step to use is", fineStep
-	print "rango is", rango
+	print "Therefore, the coarse step and itself rounded are", coarseStep, CSrounded
+	print "And the fine step before and after rounding is", fineStep, fineStepRounded
+	print "rango and its rounded are", rango, rangoRounded
 	
-	options.align = 'rotate_translate_3d:search=8:delta=' + str(coarseStep) + ':dphi=' + str(coarseStep)
+	options.align = 'rotate_translate_3d:search=8:delta=' + str(CSrounded) + ':dphi=' + str(CSrounded)
 	if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align:
 		options.align += ':sym=' + str(options.sym)
 		
-	options.ralign = 'refine_3d_grid:range=' + str(rango) + ':delta=' + str(fineStep) + ':search=2'
+	options.ralign = 'refine_3d_grid:range=' + str(rangoRounded) + ':delta=' + str(fineStepRounded) + ':search=2'
 	
 	return options
 	
@@ -1328,8 +1334,8 @@ def wedgestats(volume,angle, wedgei, wedgef, options):
 	sigmas = options.aligncmp[1]['sigmas']
 	print "Sigmas is", sigmas
 	
-	thresh = mean + sigmas * sigma
-	print "Therefore thresh is", thresh
+	thresh = math.pow( mean + sigmas * sigma, 2.0 )
+	print "Therefore thresh = mean + (sigmas*sigma)^2 is", thresh
 	
 	#print "Size of symamps is", symamps['nx'],symamps['ny'],symamps['nz']
 	
@@ -1408,7 +1414,7 @@ class Align3DTask(JSTask):
 		refpreprocess=0
 		options=classoptions['options']
 		
-		print "\nOptions.ref is", options.ref
+		#print "\noptions.ref is", options.ref
 		if not options.ref:
 			print "\n(e2spt_classaverage, Align3DTask) There is no reference; therfore, refpreprocess should be turned on", refpreprocess
 			refpreprocess=1
@@ -1480,10 +1486,10 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 	Similar issues in 2-D single particle refinement ... handled differently at the moment
 	"""
 	
-	if options.ref and not refpreprocess:
-		print "\nThere is NO refpreprocess! And there was a reference. Therefore, dummy values will be enteres to the header if fsc.tomo is used."
+	if not refpreprocess:
+		print "\nThere is NO refpreprocess! And there was a reference. Therefore, dummy values will be entered to the header if fsc.tomo is used."
 		if (options.raligncmp and 'fsc.tomo' in options.raligncmp[0]) or (options.aligncmp and 'fsc.tomo' in options.aligncmp[0]):
-			fixedimage['spt_wedge_mean']=-100000000000000000000.0
+			fixedimage['spt_wedge_mean']=0.0
 			fixedimage['spt_wedge_sigma']=0.0
 	
 	'''
@@ -1515,8 +1521,8 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 		simage = image
 		s2image = image
 		
-	print "\noptions.raligncmp is", options.raligncmp
-	print "\noptions.aligncmp is", options.aligncmp
+	#print "\noptions.raligncmp is", options.raligncmp
+	#print "\noptions.aligncmp is", options.aligncmp
 	
 	#if options.ref and not refpreprocess and (options.raligncmp and 'fsc.tomo' in options.raligncmp[0]) or (options.aligncmp and 'fsc.tomo' in options.aligncmp[0]):
 	#	print "\nWill put dummy values for reference wedge"
