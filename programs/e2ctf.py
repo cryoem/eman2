@@ -1359,7 +1359,7 @@ returns (fg1d,bg1d)"""
 	try: 
 		for x in xrange(lwz): bg[x]+=lwd
 	except: pass
-	
+
 	try:
 		for x in xrange(lz,len(ctf.background)) : bg[x]+=d2
 	except: pass
@@ -1387,14 +1387,15 @@ def ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1):
 	besta=(1.0e15,0)
 	ctf.bfactor=1000
 	for ang in xrange(0,180,15):
-		v=ctf_stig_cmp((ctf.dfdiff,ang,ctf.defocus),(bgsub,bgcp,ctf))
+		v=ctf_stig_cmp((ctf.defocus+ctf.dfdiff,ctf.defocus-ctf.dfdiff,ctf.dfang),(bgsub,bgcp,ctf))
 		besta=min(besta,(v,ang))
 	ctf.dfang=besta[1]
 	print "best angle:", besta
 
 	# Use a simplex minimizer to find the final fit
+	# we minimize using defocusU and defocusV rather than defocus & dfdfiff
 	ctf.bfactor=200
-	sim=Simplex(ctf_stig_cmp,[ctf.dfdiff,ctf.dfang,ctf.defocus],[0.01,15.0,.01],data=(bgsub,bgcp,ctf))
+	sim=Simplex(ctf_stig_cmp,[ctf.defocus+ctf.dfdiff,ctf.defocus-ctf.dfdiff,ctf.dfang],[0.01,0.01,5.0],data=(bgsub,bgcp,ctf))
 	oparm=sim.minimize(epsilon=.00000001,monitor=0)
 	print "Coarse refine: defocus={:1.4f} dfdiff={:1.5f} dfang={:3.2f} defocusU={:1.4f} defocusV={:1.4f}".format(oparm[0][2],oparm[0][0],oparm[0][1],oparm[0][2]+oparm[0][0]/2,oparm[0][2]-oparm[0][0]/2)
 
@@ -1405,8 +1406,9 @@ def ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1):
 	print "  Fine refine: defocus={:1.4f} dfdiff={:1.5f} dfang={:3.2f} defocusU={:1.4f} defocusV={:1.4f}".format(oparm[0][2],oparm[0][0],oparm[0][1],oparm[0][2]+oparm[0][0]/2,oparm[0][2]-oparm[0][0]/2)
 	
 	ctf.bfactor=oldb
-	ctf.dfdiff,ctf.dfang,ctf.defocus=oparm[0]		# final fit result
-
+	dfmaj,dfmin,ctf.dfang=oparm[0]		# final fit result
+	ctf.defocus=(dfmaj+dfmin)/2.0
+	ctf.dfdiff=ctf.defocus-dfmin
 	
 
 	## extract points at maxima for B-factor estimation	
@@ -1456,17 +1458,27 @@ def ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1):
 	#ctf.bfactor=oldb
 
 def ctf_stig_cmp(parms,data):
+	"""energy function for fitting astigmatism, parms is (dfmaj, dfmin, dfang) instead of using the internal defocus/dfdiff"""
 	
 	bgsub,bgcp,ctf=data
 
-	ctf.dfdiff,ctf.dfang,ctf.defocus=parms
+	dfmaj,dfmin,ctf.dfang=parms
+	ctf.defocus=(dfmaj+dfmin)/2.0
+	ctf.dfdiff=ctf.defocus-dfmin
 	
 	ctf.compute_2d_complex(bgcp,Ctf.CtfType.CTF_FITREF,None)
 	
 	#bgcp.write_image("a.hdf",-1)
 	#bgsub.write_image("b.hdf",0)
-#	print parms,bgcp.cmp("dot",bgsub,{"normalize":1})
-	return bgcp.cmp("dot",bgsub,{"normalize":1})
+
+	penalty=0.0
+	if ctf.dfdiff<0 : penalty-=ctf.dfdiff
+	if ctf.dfdiff>ctf.defocus : penalty+=ctf.dfdiff-ctf.defocus
+	if dfmaj<0 : penalty-=dfmaj
+	if dfmin<0 : penalty-=dfmin
+	
+	print parms,bgcp.cmp("dot",bgsub,{"normalize":1}),penalty
+	return bgcp.cmp("dot",bgsub,{"normalize":1})+penalty
 
 
 def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhint=None,verbose=1):
