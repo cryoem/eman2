@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.7
 
 #
 # Author: Steven Ludtke (sludtke@bcm.edu)
@@ -1023,12 +1023,13 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 				for row in range(self.matrix_panel.ystart,self.matrix_panel.visiblerows):
 					for col in range(0,self.matrix_panel.visiblecols):
 						i = int((row)*self.matrix_panel.visiblecols+col)
+
+						if i >= n:
+							break
 						if self.data[i]==None:
 							print "Bad image in imagemx display: ",i
 							continue
 
-						#print i,n
-						if i >= n : break
 						tx = int((w+self.matrix_panel.min_sep)*(col) + x)
 						ty = int((h+self.matrix_panel.min_sep)*(row) + y)
 						real_y = ty # need this for set display
@@ -2817,6 +2818,9 @@ class EMLightWeightParticleCache(EMMXDataCache):
 		@param new_focus the value at which the current cache failed - i.e. the first value that was beyond the current cache limits
 		'''
 		new_cache_start = new_focus-self.cache_max/2
+		# Don't let cache start go negative; it will break.
+		if new_cache_start < 0:
+			new_cache_start = 0
 		if new_cache_start < self.cache_start and (new_cache_start + self.cache_max) > self.cache_start:
 			overlap = new_cache_start + self.cache_max - self.cache_start
 			cache = [None for i in range(0,self.cache_max-overlap)]
