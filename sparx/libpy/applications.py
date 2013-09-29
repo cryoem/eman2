@@ -14695,6 +14695,7 @@ def symsearch_MPI(ref_vol, outdir, maskfile, dp, ndp, dp_step, dphi, ndphi, dphi
 		os.mkdir(outdir)
 		import global_def
 		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+		print_begin_msg("symsearch_MPI")
 	mpi_barrier(MPI_COMM_WORLD)
 
 	nlprms = (2*ndp+1)*(2*ndphi+1)
@@ -14711,10 +14712,10 @@ def symsearch_MPI(ref_vol, outdir, maskfile, dp, ndp, dp_step, dphi, ndphi, dphi
 		finfo = open(info_file, 'w')
 	else:
 		finfo = None
-		
+
 	vol     = EMData()
 	vol.read_image(ref_vol)
-	
+
 	if myid == main_node:
 		import user_functions
 		user_func = user_functions.factory[user_func_name]
@@ -14761,7 +14762,7 @@ def symsearch_MPI(ref_vol, outdir, maskfile, dp, ndp, dp_step, dphi, ndphi, dphi
 	if myid == main_node:
 		for n in xrange(number_of_proc):
 			if n!=main_node: mpi_send(lprms[2*recvpara[2*n]:2*recvpara[2*n+1]], 2*(recvpara[2*n+1]-recvpara[2*n]), MPI_FLOAT, n, MPI_TAG_UB, MPI_COMM_WORLD)
-			else:    list_dps = lprms[2*recvpara[2*0]:2*recvpara[2*0+1]]
+			else:            list_dps = lprms[2*recvpara[2*0]:2*recvpara[2*0+1]]
 	else:
 		list_dps = mpi_recv((para_end-para_start)*2, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 
@@ -14795,8 +14796,8 @@ def symsearch_MPI(ref_vol, outdir, maskfile, dp, ndp, dp_step, dphi, ndphi, dphi
 		drop_image(vol, os.path.join(outdir, "vol.hdf"))
 
 		print_msg("New delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))		
-		
-		
+
+
 	if(myid==main_node):
 		fofo = open(os.path.join(outdir,datasym),'a')
 		fofo.write('  %12.4f   %12.4f\n'%(dp,dphi))
@@ -14810,7 +14811,7 @@ def symsearch_MPI(ref_vol, outdir, maskfile, dp, ndp, dp_step, dphi, ndphi, dphi
 		drop_image(vol, os.path.join(outdir, "volf.hdf"))
 		print_msg("\nSymmetry search and user function time = %d\n"%(time()-start_time))
 		start_time = time()
-	
+
 	# del varf
 	if myid == main_node: print_end_msg("symsearch_MPI")
 
