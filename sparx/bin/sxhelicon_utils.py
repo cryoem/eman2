@@ -136,15 +136,15 @@ def main():
 
 	# symmetry search
 	parser.add_option("--symsearch",          action="store_true",	 default=False, 	  	      help="Do helical symmetry search." ) 
-	parser.add_option("--ndp",                type="int",            default= 12,                 help="In symmetrization search, number of delta z steps equas to 2*ndp+1") 
-	parser.add_option("--ndphi",              type="int",            default= 12,                 help="In symmetrization search,number of dphi steps equas to 2*ndphi+1")  
-	parser.add_option("--dp_step",            type="float",          default= 0.1,                help="delta z (Angstroms) step  for symmetrization")  
-	parser.add_option("--dphi_step",          type="float",          default= 0.1,                help="dphi step for symmetrization")
+	parser.add_option("--ndp",                type="int",            default= 12,                 help="In symmetrization search, number of delta z steps equals to 2*ndp+1") 
+	parser.add_option("--ndphi",              type="int",            default= 12,                 help="In symmetrization search, number of dphi steps equals to 2*ndphi+1")  
+	parser.add_option("--dp_step",            type="float",          default= 0.1,                help="delta z step  for symmetrization [Angstroms] (default 0.1)")
+	parser.add_option("--dphi_step",          type="float",          default= 0.1,                help="dphi step for symmetrization [degrees] (default 0.1)")
 	parser.add_option("--datasym",            type="string",		 default="datasym.txt",       help="symdoc")
 	parser.add_option("--symdoc",             type="string",		 default="",      	    	  help="text file containing helical symmetry parameters dp and dphi")
 
 	# filament statistics in the stack
-	
+
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1 or len(args) > 5:
 		print "Various helical reconstruction related functionalities: " + usage2
@@ -315,7 +315,7 @@ def main():
 				dp   = options.dp
 				dphi = options.dphi
 			
-			from development import symsearch_MPI
+			from applications import symsearch_MPI
 			if len(args) < 3:	
 				mask = None
 			else:

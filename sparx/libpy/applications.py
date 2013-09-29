@@ -14652,3 +14652,165 @@ def prepare_refrings2( volft, kb, nz, segmask, delta, ref_a, sym, numr, MPI=Fals
 
 	return refrings
 
+
+def symsearch_MPI(ref_vol, outdir, maskfile, dp, ndp, dp_step, dphi, ndphi, dphi_step,\
+	rmin, rmax, fract, sym, user_func_name, datasym,\
+	pixel_size, debug):
+
+	from alignment      import Numrinit, prepare_refrings, proj_ali_helical, proj_ali_helical_90, proj_ali_helical_local, proj_ali_helical_90_local, helios,helios7
+	from utilities      import model_circle, get_image, drop_image, get_input_from_string, pad, model_blank, sym_vol
+	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all
+	from utilities      import send_attr_dict
+	from utilities      import get_params_proj, set_params_proj, file_type
+	from fundamentals   import rot_avg_image
+	from pixel_error    import max_3D_pixel_error
+	import os
+	import types
+	from utilities      import print_begin_msg, print_end_msg, print_msg
+	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
+	from mpi            import mpi_recv,  mpi_send, MPI_TAG_UB
+	from mpi            import mpi_reduce, MPI_INT, MPI_SUM
+	from filter         import filt_ctf
+	from projection     import prep_vol, prgs
+	from statistics     import hist_list, varf3d_MPI
+	from applications   import MPI_start_end
+	from EMAN2 import Vec2f
+	from string    import lower,split
+	from math import cos, pi
+
+	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
+	myid           = mpi_comm_rank(MPI_COMM_WORLD)
+	main_node = 0
+
+	if myid == 0:
+		if os.path.exists(outdir):  nx = 1
+		else:  nx = 0
+	else:  nx = 0
+	ny = bcast_number_to_all(nx, source_node = main_node)
+
+	if ny == 1:  ERROR('Output directory exists, please change the name and restart the program', "symsearch_MPI", 1,myid)
+	mpi_barrier(MPI_COMM_WORLD)
+
+	if myid == main_node:
+		os.mkdir(outdir)
+		import global_def
+		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+	mpi_barrier(MPI_COMM_WORLD)
+
+	nlprms = (2*ndp+1)*(2*ndphi+1)
+	if nlprms< number_of_proc:
+		ERROR('number of CPUs is larger than the number of helical search, please reduce it or at this moment modify ndp,dphi in the program', "ihrsr_MPI", 1,myid)
+
+	if debug:
+		from time import sleep
+		while not os.path.exists(outdir):
+			print  "Node ",myid,"  waiting..."
+			sleep(5)
+
+		info_file = os.path.join(outdir, "progress%04d"%myid)
+		finfo = open(info_file, 'w')
+	else:
+		finfo = None
+		
+	vol     = EMData()
+	vol.read_image(ref_vol)
+	
+	if myid == main_node:
+		import user_functions
+		user_func = user_functions.factory[user_func_name]
+
+		print_msg("Reference volume                          : %s\n"%(ref_vol))	
+		print_msg("Output directory                          : %s\n"%(outdir))
+		print_msg("Maskfile                                  : %s\n"%(maskfile))
+		print_msg("min radius for helical search (in pix)    : %5.4f\n"%(rmin))
+		print_msg("max radius for helical search (in pix)    : %5.4f\n"%(rmax))
+		print_msg("fraction of volume used for helical search: %5.4f\n"%(fract))
+		print_msg("initial symmetry - angle                  : %5.4f\n"%(dphi))
+		print_msg("initial symmetry - axial rise             : %5.4f\n"%(dp))
+		print_msg("symmetry output doc file                  : %s\n"%(datasym))
+		print_msg("User function                             : %s\n"%(user_func_name))
+
+	if maskfile:
+		if type(maskfile) is types.StringType: mask3D = get_image(maskfile)
+		else:                                  mask3D = maskfile
+	else: mask3D = None
+	#else: mask3D = model_circle(last_ring, nx, nx, nx)
+
+	from time import time
+	#from filter import filt_gaussl
+	#vol = filt_gaussl(vol, 0.25)
+	start_time = time()
+	if myid == main_node:
+		lprms = []
+		for i in xrange(-ndp,ndp+1,1):
+			for j in xrange(-ndphi,ndphi+1,1):
+				lprms.append( dp   + i*dp_step)
+				lprms.append( dphi + j*dphi_step)
+		#print "lprms===",lprms
+		recvpara = []
+		for im in xrange(number_of_proc):
+			helic_ib, helic_ie = MPI_start_end(nlprms, number_of_proc, im)
+			recvpara.append(helic_ib )
+			recvpara.append(helic_ie )
+
+	para_start, para_end = MPI_start_end(nlprms, number_of_proc, myid)
+
+	list_dps     = [0.0]*((para_end-para_start)*2)
+	list_fvalues = [-1.0]*((para_end-para_start)*1)
+
+	if myid == main_node:
+		for n in xrange(number_of_proc):
+			if n!=main_node: mpi_send(lprms[2*recvpara[2*n]:2*recvpara[2*n+1]], 2*(recvpara[2*n+1]-recvpara[2*n]), MPI_FLOAT, n, MPI_TAG_UB, MPI_COMM_WORLD)
+			else:    list_dps = lprms[2*recvpara[2*0]:2*recvpara[2*0+1]]
+	else:
+		list_dps = mpi_recv((para_end-para_start)*2, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+
+	list_dps = map(float, list_dps)
+
+	local_pos = [0.0, 0.0, -1.0e20]
+	for i in xrange(para_end-para_start):
+		fvalue = helios7(vol, pixel_size, list_dps[i*2], list_dps[i*2+1], fract, rmax, rmin)
+		if(fvalue >= local_pos[2]):
+			local_pos = [list_dps[i*2], list_dps[i*2+1], fvalue ]
+	if myid == main_node:
+		list_return = [0.0]*(3*number_of_proc)
+		for n in xrange(number_of_proc):
+			if n != main_node: list_return[3*n:3*n+3]                 = mpi_recv(3,MPI_FLOAT, n, MPI_TAG_UB, MPI_COMM_WORLD)
+			else:              list_return[3*main_node:3*main_node+3]  = local_pos[:]
+	else:
+		mpi_send(local_pos, 3, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+
+	if myid == main_node:	
+		maxvalue = list_return[2]
+		for i in xrange(number_of_proc):
+			if( list_return[i*3+2] >= maxvalue ):
+				maxvalue = list_return[i*3+2]
+				dp       = list_return[i*3+0]
+				dphi     = list_return[i*3+1]
+		dp   = float(dp)
+		dphi = float(dphi)
+		#print  "  GOT dp dphi",dp,dphi
+
+		vol  = vol.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
+		drop_image(vol, os.path.join(outdir, "vol.hdf"))
+
+		print_msg("New delta z and delta phi      : %s,    %s\n\n"%(dp,dphi))		
+		
+		
+	if(myid==main_node):
+		fofo = open(os.path.join(outdir,datasym),'a')
+		fofo.write('  %12.4f   %12.4f\n'%(dp,dphi))
+		fofo.close()
+		vol = sym_vol(vol, symmetry=sym)
+		ref_data = [vol, mask3D]
+		#if  fourvar:  ref_data.append(varf)
+		vol = user_func(ref_data)
+		vol = vol.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
+		vol = sym_vol(vol, symmetry=sym)
+		drop_image(vol, os.path.join(outdir, "volf.hdf"))
+		print_msg("\nSymmetry search and user function time = %d\n"%(time()-start_time))
+		start_time = time()
+	
+	# del varf
+	if myid == main_node: print_end_msg("symsearch_MPI")
+
