@@ -69,7 +69,7 @@ setup_python()
 	find ${EMAN2DIR}/test ${EMAN2DIR}/bin ${EMAN2DIR}/lib ${EMAN2DIR}/examples -name "*.py" \
 		-exec chmod a+x {} \;
     # ... and for SPARX
-	sed -i "s%^\#\!.*python.*$%\#\!${EMAN2PYTHON}%" ${EMAN2DIR}/bin/sparx
+	# sed -i "s%^\#\!.*python.*$%\#\!${EMAN2PYTHON}%" ${EMAN2DIR}/bin/sparx
 }
 
 disable_cache()
