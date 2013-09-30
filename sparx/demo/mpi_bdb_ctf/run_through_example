@@ -94,8 +94,10 @@ mpirun -np 16 sxisac.py bdb:flip_data --stab_ali=2 --init_iter=1 --main_iter=1 -
 # which case the proper values must be entered manually.
 ###################################################################
 
-sxcpy.py class_averages_generation_*.hdf bdb:class_averages  || exit
+sxcpy.py class_averages_generation_*.hdf bdb:class_averages_raw  || exit
 
+# additional filter - it helps to minimize disturbances caused by the CTF
+e2proc2d.py bdb:class_averages_raw bdb:class_averages --process=filter.homomorphic.tanh:cutoff_abs=0.03:fall_off=2.45:value_at_zero_frequency=12  || exit
 
 ###################################################################
 # Determine the initial structure using class averages and random initialization.
