@@ -9715,11 +9715,11 @@ def ali_vol_only_scale(vol, refv, mag_scale, radius=None, discrepancy = "ccc"):
 
 def rot_sym(infile, outfile, sym_gp="d4", \
 			radius=None, phi=0, theta=0, psi=0, phirange=20, thetarange=20, psirange=20, ftolerance=1.e-4, xtolerance=1.e-4):
-	
+
 	from alignment     import find_symm
 	from utilities     import drop_image, model_circle, sym_vol
 	from fundamentals  import  rot_shift3D
-	
+
 	e=EMData()
 	e.read_image(infile)
 	mask = EMData()
@@ -13801,8 +13801,6 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 		terminate = 0
 		for ifil in xrange(nfils):
 			if myid == main_node:  start_time = time()
-			if myid == main_node:
-				start_time = time()
 			ldata = [data[im] for im in xrange(indcs[ifil][0],indcs[ifil][1])]
 			#for im in xrange(len(ldata)):  ldata[im].set_attr("bestang", 10000.0)
 			Util.constrained_helix_exhaustive(ldata, fdata[indcs[ifil][0]:indcs[ifil][1]], refproj, rotproj, [float(dp), float(dphi), rise, float(delta)], [int(nphi), symrestrict, int(phiwobble), int(rng), int(ywobble), int(Dsym), int(nwx), int(nwy), int(nwxc), int(nwyc)], FindPsi, float(psi_max), crefim, numr, int(maxrin), mode, int(cnx), int(cny))
@@ -13833,14 +13831,15 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 					#bestang = ldata[im-indcs[ifil][0]].get_attr("bestang")
 					#if( bestang < 10000.0): fdata[im] = fft( segmask*rot_shift2D(data[im], bestang ) )
 			#print  "Parameters computed for filament",myid,ifil,time()-start_time;start_time = time()
-			if myid == main_node:
-				start_time = time()
+			if myid == main_node: start_time = time()
+
 		del ldata
 		del refproj
 		if(not Dsym):  del rotproj
 		#print  "Time of alignment = ",myid,time()-astart_time
 		mpi_barrier(MPI_COMM_WORLD)
 
+		"""
 		#  Should we continue??
 		terminate = mpi_reduce(terminate, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
 		terminate = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
@@ -13848,25 +13847,7 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 		if terminate == nproc:
 			if myid == main_node: print_end_msg("helicon_MPI")
 			return
-
-
-		#if myid == main_node:
-		#	print_msg("Time of alignment = %\n"%(time()-astart_time));start_time = time()
-		if CTF:  vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad)
-		else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, npad = npad)
-		if myid == main_node:
-			print_msg("3D reconstruction time = %d\n"%(time()-start_time));start_time = time()
-
-		if myid == main_node:
-			#vol.write_image(os.path.join(outdir, "vol%03d.hdf"%Iter))
-			vol = vol.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
-			vol = sym_vol(vol, symmetry=sym)
-			ref_data[0] = vol
-			vol = user_func(ref_data)
-			vol = vol.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
-			vol = sym_vol(vol, symmetry=sym)
-			vol.write_image(os.path.join(outdir, "volf%03d.hdf"%Iter))
-			#if(Iter == max_iter-1):  drop_image(vol, os.path.join(outdir, "volfshift.hdf"))
+		"""
 
 		bcast_EMData_to_all(vol, myid, main_node)
 		# write out headers, under MPI writing has to be done sequentially
@@ -13888,6 +13869,25 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 			header(stack, params='xform.projection', fexport=os.path.join(outdir, "parameters%04d.txt"%Iter))
 			#header(stack, params='previousmax', fexport=os.path.join(outdir, "previousmax%04d.txt"%Iter))
 		mpi_barrier(MPI_COMM_WORLD)
+
+		#if myid == main_node:
+		#	print_msg("Time of alignment = %\n"%(time()-astart_time));start_time = time()
+		if CTF:  vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad)
+		else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, npad = npad)
+		if myid == main_node:
+			print_msg("3D reconstruction time = %d\n"%(time()-start_time));start_time = time()
+
+		if myid == main_node:
+			#vol.write_image(os.path.join(outdir, "vol%03d.hdf"%Iter))
+			vol = vol.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
+			vol = sym_vol(vol, symmetry=sym)
+			ref_data[0] = vol
+			vol = user_func(ref_data)
+			vol = vol.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
+			vol = sym_vol(vol, symmetry=sym)
+			vol.write_image(os.path.join(outdir, "volf%03d.hdf"%Iter))
+
+	if myid == main_node: print_end_msg("helicon_MPI")
 
 def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, ynumber,\
 						txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, dphi, psi_max,\
