@@ -13797,7 +13797,7 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 		del volft
 		#exit()
 		#if myid == main_node:  
-		astart_time = time()
+		#astart_time = time()
 		terminate = 0
 		for ifil in xrange(nfils):
 			if myid == main_node:  start_time = time()
@@ -13831,13 +13831,14 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 					#bestang = ldata[im-indcs[ifil][0]].get_attr("bestang")
 					#if( bestang < 10000.0): fdata[im] = fft( segmask*rot_shift2D(data[im], bestang ) )
 			#print  "Parameters computed for filament",myid,ifil,time()-start_time;start_time = time()
-			if myid == main_node: start_time = time()
+		if myid == main_node:
+			print_msg("Alignment time = %d\n"%(time()-start_time));start_time = time()
 
 		del ldata
 		del refproj
 		if(not Dsym):  del rotproj
 		#print  "Time of alignment = ",myid,time()-astart_time
-		mpi_barrier(MPI_COMM_WORLD)
+		#mpi_barrier(MPI_COMM_WORLD)
 
 		"""
 		#  Should we continue??
@@ -13849,7 +13850,6 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 			return
 		"""
 
-		bcast_EMData_to_all(vol, myid, main_node)
 		# write out headers, under MPI writing has to be done sequentially
 		mpi_barrier(MPI_COMM_WORLD)
 		par_str = ['xform.projection', 'ID']   #, 'previousmax']
@@ -13886,7 +13886,7 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 			vol = vol.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
 			vol = sym_vol(vol, symmetry=sym)
 			vol.write_image(os.path.join(outdir, "volf%03d.hdf"%Iter))
-
+		bcast_EMData_to_all(vol, myid, main_node)
 	if myid == main_node: print_end_msg("helicon_MPI")
 
 def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, ynumber,\
