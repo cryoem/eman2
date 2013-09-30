@@ -77,10 +77,18 @@ def retree(path):
         os.makedirs(path)  
     
 def cmd(*popenargs, **kwargs):
-    print "Running:", 
-    print " ".join(*popenargs)
+    # print "Running:", 
+    # print " ".join(*popenargs)
+    kwargs['stdout'] = subprocess.PIPE
+    kwargs['stderr'] = subprocess.PIPE
     process = subprocess.Popen(*popenargs, **kwargs)
-    process.wait()  
+    # 
+    a, b = process.communicate()
+    exitcode = process.wait()
+    if exitcode:
+        print("WARNING: Command returned non-zero exit code: %s"%" ".join(*popenargs))
+        print a
+        print b
     
 def echo(*popenargs, **kwargs):
     print " ".join(popenargs)    
@@ -532,7 +540,7 @@ class MacPackage(Builder):
             f.write("EMAN2 %s built on %s."%(self.args.cvstag, now))
 
         # Create a symlink to /Applications
-        print "Linking to /Applications in cwd: ", self.args.cwd_stage
+        print("Linking to /Applications in cwd: %s"%self.args.cwd_stage)
         cmd(['ln', '-s', '/Applications', 'Applications'], cwd=self.args.cwd_stage)
 
         volname = "%s %s for Mac OS X %s, built on %s"%(self.args.cvsmodule.upper(), self.args.cvstag, self.args.target_desc, now)
@@ -565,7 +573,7 @@ if __name__ == "__main__":
     parser.add_argument('--scpdest',   help='Upload: scp destination directory', default='/home/zope-extdata/reposit/ncmi/software/counter_222/software_86')
     
     args = parser.parse_args()
-    print "EMAN2 Nightly Build -- Version: %s -- Target: %s -- Date: %s"%(VERSION, args.target, datetime.datetime.utcnow().isoformat())
+    print("EMAN2 Nightly Build -- Version: %s -- Target: %s -- Date: %s"%(VERSION, args.target, datetime.datetime.utcnow().isoformat()))
     target = TARGETS.get(args.target, Target)(args)
     target.run(args.commands)
 
