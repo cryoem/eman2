@@ -260,16 +260,25 @@ class GUIEvalImage(QtGui.QWidget):
 		self.sbfactor=ValSlider(self,(0,1600),"B factor:",200.0,90)
 		self.gbl.addWidget(self.sbfactor,1,2,1,3)
 
+		self.sdfdiff=ValSlider(self,(0,1),"DF Diff:",0,90)
+		self.gbl.addWidget(self.sdfdiff,2,2,1,3)
+
+		self.sdfang=ValSlider(self,(0,180),"Df Angle:",0,90)
+		self.gbl.addWidget(self.sdfang,3,2,1,3)
+		
 		self.sampcont=ValSlider(self,(0,100),"% AC",10.0,90)
 		if self.defaultac!=None : self.sampcont.setValue(self.defaultac)
-		self.gbl.addWidget(self.sampcont,2,2,1,3)
+		self.gbl.addWidget(self.sampcont,4,2,1,3)
 
 		self.sang45=ValSlider(self,(-22.5,22.5),"45 mode ang",0.0,90)
-		self.gbl.addWidget(self.sang45,3,2,1,3)
+		self.gbl.addWidget(self.sang45,5,2,1,3)
 
 		self.squality=ValSlider(self,(0,9),"Quality (0-9):",0,90)
 		self.squality.setIntonly(True)
-		self.gbl.addWidget(self.squality,4,2,1,3)
+		self.gbl.addWidget(self.squality,6,2,1,3)
+
+		self.brefit=QtGui.QPushButton("Refit")
+		self.gbl.addWidget(self.brefit,7,2)
 
 
 #		self.sapix=ValSlider(self,(.2,10),"A/Pix:",2,90)
@@ -315,8 +324,11 @@ class GUIEvalImage(QtGui.QWidget):
 		self.bvbl.addWidget(self.cxray)
 
 		QtCore.QObject.connect(self.bimport, QtCore.SIGNAL("clicked(bool)"),self.doImport)
+		QtCore.QObject.connect(self.brefit, QtCore.SIGNAL("clicked(bool)"),self.doRefit)
 		QtCore.QObject.connect(self.sdefocus, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.sbfactor, QtCore.SIGNAL("valueChanged"), self.newCTF)
+		QtCore.QObject.connect(self.sdfdiff, QtCore.SIGNAL("valueChanged"), self.newCTF)
+		QtCore.QObject.connect(self.sdfang, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.sapix, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.sampcont, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.svoltage, QtCore.SIGNAL("valueChanged"), self.newCTF)
@@ -576,6 +588,23 @@ class GUIEvalImage(QtGui.QWidget):
 			QtGui.QMessageBox.warning(None,"Error","The following processors encountered errors during processing of 1 or more images:"+"\n".join(self.errors))
 			self.errors=None
 
+	def doRefit(self):
+		parms=self.parms[self.curset]
+		apix=self.sapix.getValue()
+		ds=1.0/(apix*parms[0]*parms[5])
+		
+		try:
+			parms[1]=e2ctf.ctf_fit(self.fft1d,parms[1].background,parms[1].background,self.fft,self.fftbg,parms[1].voltage,parms[1].cs,parms[1].ampcont,apix,bgadj=False,autohp=True,verbose=1)
+		except:
+			print "CTF Autofit Failed"
+			traceback.print_exc()
+			parms[1].defocus=1.0
+
+		self.sdefocus.setValue(parms[1].defocus,True)
+		self.sbfactor.setValue(parms[1].bfactor,True)
+		self.sampcont.setValue(parms[1].ampcont,True)
+
+
 	def unImport(self,val=None):
 		print "unimport ",base_name(self.setlist.item(self.curset).text())
 		item=base_name(self.setlist.item(self.curset).text())
@@ -785,16 +814,7 @@ class GUIEvalImage(QtGui.QWidget):
 
 		# Fitting not done yet. Need to make 2D background somehow
 		if parms[1].defocus==0:
-			try:
-				parms[1]=e2ctf.ctf_fit(self.fft1d,parms[1].background,parms[1].background,self.fft,self.fftbg,parms[1].voltage,parms[1].cs,parms[1].ampcont,apix,bgadj=False,autohp=True,verbose=1)
-			except:
-				print "CTF Autofit Failed"
-				traceback.print_exc()
-				parms[1].defocus=1.0
-
-			self.sdefocus.setValue(parms[1].defocus,True)
-			self.sbfactor.setValue(parms[1].bfactor,True)
-			self.sampcont.setValue(parms[1].ampcont,True)
+			self.doRefit()
 
 		self.wimage.show()
 		self.wfft.show()
@@ -867,6 +887,8 @@ class GUIEvalImage(QtGui.QWidget):
 		parms=self.parms[self.curset]
 		parms[1].defocus=self.sdefocus.value
 		parms[1].bfactor=self.sbfactor.value
+		parms[1].dfdiff=self.sdfdiff.value
+		parms[1].dfang=self.sdfang.value
 		parms[1].apix=self.sapix.value
 		parms[1].ampcont=self.sampcont.value
 		parms[1].voltage=self.svoltage.value

@@ -43,7 +43,7 @@ import os
 import sys
 import weakref
 import traceback
-from numpy import array
+from numpy import array,arange
 
 from Simplex import Simplex
 
@@ -1238,7 +1238,7 @@ def ctf_fit_bfactor(curve,ds,ctf):
 		if sim[i]<0.1 : break
 	
 	maxres=1.0/(i*ds)
-	print "maxres ",maxres
+	print "maxres ",maxres," B -> ",maxres*maxres*6.0
 	
 	return maxres*maxres*6.0
 	
@@ -1397,16 +1397,17 @@ def ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1):
 	ctf.bfactor=200
 	sim=Simplex(ctf_stig_cmp,[ctf.defocus+ctf.dfdiff,ctf.defocus-ctf.dfdiff,ctf.dfang],[0.01,0.01,5.0],data=(bgsub,bgcp,ctf))
 	oparm=sim.minimize(epsilon=.00000001,monitor=0)
-	print "Coarse refine: defocus={:1.4f} dfdiff={:1.5f} dfang={:3.2f} defocusU={:1.4f} defocusV={:1.4f}".format(oparm[0][2],oparm[0][0],oparm[0][1],oparm[0][2]+oparm[0][0]/2,oparm[0][2]-oparm[0][0]/2)
+	dfmaj,dfmin,ctf.dfang=oparm[0]		# final fit result
+	print "Coarse refine: defocus={:1.4f} dfdiff={:1.5f} dfang={:3.2f} defocusU={:1.4f} defocusV={:1.4f}".format((dfmaj+dfmin)/2.0,dfmaj-dfmin,ctf.dfang,dfmaj,dfmin)
 
 	# Use a simplex minimizer to refine the local neighborhood
 	ctf.bfactor=80
 	sim=Simplex(ctf_stig_cmp,oparm[0],[0.005,2.0,.005],data=(bgsub,bgcp,ctf))
 	oparm=sim.minimize(epsilon=.00000001,monitor=0)
-	print "  Fine refine: defocus={:1.4f} dfdiff={:1.5f} dfang={:3.2f} defocusU={:1.4f} defocusV={:1.4f}".format(oparm[0][2],oparm[0][0],oparm[0][1],oparm[0][2]+oparm[0][0]/2,oparm[0][2]-oparm[0][0]/2)
+	dfmaj,dfmin,ctf.dfang=oparm[0]		# final fit result
+	print "  Fine refine: defocus={:1.4f} dfdiff={:1.5f} dfang={:3.2f} defocusU={:1.4f} defocusV={:1.4f}".format((dfmaj+dfmin)/2.0,dfmaj-dfmin,ctf.dfang,dfmaj,dfmin)
 	
 	ctf.bfactor=oldb
-	dfmaj,dfmin,ctf.dfang=oparm[0]		# final fit result
 	ctf.defocus=(dfmaj+dfmin)/2.0
 	ctf.dfdiff=ctf.defocus-dfmin
 	
@@ -1477,9 +1478,8 @@ def ctf_stig_cmp(parms,data):
 	if dfmaj<0 : penalty-=dfmaj
 	if dfmin<0 : penalty-=dfmin
 	
-	print parms,bgcp.cmp("dot",bgsub,{"normalize":1}),penalty
+#	print parms,bgcp.cmp("dot",bgsub,{"normalize":1}),penalty
 	return bgcp.cmp("dot",bgsub,{"normalize":1})+penalty
-
 
 def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhint=None,verbose=1):
 	"""Determines CTF parameters given power spectra produced by powspec_with_bg()
@@ -1490,237 +1490,300 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 	global sfcurve
 #	from bisect import insort_left
 
+	if dfhint==None : dfhint = (0.6,5.5,0.05)
+	elif isinstance(dfhint,float) : dfhint=(dfhint-.2, dfhint+.2,0.02)
+	else: dfhint=(dfhint[0],dfhint[1],0.05)
+	
 	ys=im_2d.get_ysize()
 	ds=1.0/(apix*ys)
 	if ac<0 or ac>100 :
 		print "Invalid %%AC, defaulting to 10"
 		ac=10.0
 
+	curve=[im_1d[i]-bg_1d[i] for i in xrange(len(im_1d))]
+
 	ctf=EMAN2Ctf()
-	ctf.from_dict({"defocus":1.0,"voltage":voltage,"bfactor":500.0,"cs":cs,"ampcont":ac,"apix":apix,"dsbg":ds,"background":bg_1d})
+	ctf.from_dict({"defocus":1.0,"voltage":voltage,"bfactor":150.0,"cs":cs,"ampcont":ac,"apix":apix,"dsbg":ds,"background":bg_1d,"dfdiff":0,"defang":0})
 
-	sf = [sfact(i*ds) for i in range(ys)]
+	if len(curve)<64 : wdw=4
+	elif len(curve)<128 : wdw=6
+	elif len(curve)<256 : wdw=8
+	else : wdw=10
+	
+	best=(-1,1.0)
 
-	bgsub=[im_1d[s]-bg_1d[s] for s in range(len(im_1d))]	# background subtracted curve, good until we readjust the background
-	bglowsub=[im_1d[s]-bg_1d_low[s] for s in range(len(im_1d))]	# background subtracted curve, using a non-convex version of the background
+	for rng in (0,1):
+		if rng==1: dfhint=(ctf.defocus-0.1,ctf.defocus+0.1,0.005)	 	#2 passes
+		
+		for df in arange(dfhint[0],dfhint[1],dfhint[2]):
+			ctf.defocus=df
+			ccurv=ctf.compute_1d(len(curve)*2,ds,Ctf.CtfType.CTF_AMP)
+			ccurv=[sfact2(ds*i)*ccurv[i]**2 for i in range(len(ccurv))]		# squared * structure factor
+			
+			# Recompute the background assuming the defocus is correct
+			im,bg=calc_1dfrom2d(ctf,im_2d,bg_2d)
+			curve=[im[i]-bg[i] for i in xrange(len(im_1d))]
 
-	s1=min(int(.167/ds),ys/3-4)
+			sim=Util.windowdot(curve,ccurv,wdw,1)
+			qual=sum(sim[int(.025/ds):int(.14/ds)])
+			if qual>best[0]: best=(qual,df)
+#			print df,sum(sim),sum(sim[int(.04/ds):int(.14/ds)])
 
-#	plot(bglowsub)
-	# We find the first minimum (also <1/50 max) after the value has fallen to 1/5 max
-	if isinstance(dfhint,float) : 
-#		s0=max(2,int(zero(1,voltage,cs,dfhint,ac)/ds-3))
-		s0=max(2,int(ctf.zero(0)/ds-3))
-		while (bglowsub[s0]>bglowsub[s0+1] or bglowsub[s0]>bglowsub[s0-1]) and s0<s1: s0+=1	# look for a minimum in the data curve
-	elif isinstance(dfhint,tuple) : 
-#		s0=max(2,int(zero(1,voltage,cs,(dfhint[0]+dfhint[1])/2.0,ac)/ds-3))
-		s0=max(2,int(ctf.zero(0)/ds-3))
-		while (bglowsub[s0]>bglowsub[s0+1] or bglowsub[s0]>bglowsub[s0-1]) and s0<s1: s0+=1	# look for a minimum in the data curve
-	else :
-		maxsub=max(bglowsub[int(.01/ds):])
-		for i in range(len(bglowsub)-1,0,-1):
-			if bglowsub[i]>maxsub/5.0 : break
-		s0=max(int(.01/ds),i)
-		while (bglowsub[s0]>bglowsub[s0+1] or bglowsub[s0+1]>maxsub/50.0) and s0<s1: s0+=1	# look for a minimum in the data curve
-		if s0==s1 : s0=int(.03/ds)
-	if verbose: print "Minimum at 1/%1.1f 1/A (%1.4f), highest s considered 1/%1.1f 1/A (%1.4f)"%(1.0/(s0*ds),s0*ds,1.0/(s1*ds),s1*ds)
+		ctf.defocus=best[1]
+		print "Best defocus: {:1.03f}".format(best[1])
 
-	# we now have a range from the first minimia to ~6 A. Adjust it to include a bit of data closer to the origin
-	for i in range(s0,s0*2/3,-1):
-		if bglowsub[i]>bglowsub[i-1] : break
-	s0m=s0									# save for a defocus estimate
-	s0=i
-
-	if verbose: print "s0 adjusted to 1/%1.1f 1/A"%(1.0/(s0*ds))
-
-	if s1<=s0 :
-		print "Error: couldn't fit this data set due to inability to locate appropriate minima"
-		return ctf	# This way we can still proceed to the GUI... a bit of a bad hack...
-
-	if debug:
-		dfout=file("ctf.df.txt","w")
-
-#	dfbest1=(0,-1.0e20)
-	dfbest1=[]
-
-	# This implies that we already have a general range for the defocus, so we limit the search
-	if isinstance(dfhint,float) :
-		dfhint=int(dfhint*20.0)
-		rng=range(dfhint-3,dfhint+4)
-		if verbose: print "Using defocus hint %1.2f (%1.2f - %1.2f)"%(dfhint/20.0,rng[0]/20.0,rng[-1]/20.0)
-	elif isinstance(dfhint,tuple) :
-		rng=(int(dfhint[0]*20.0),int(dfhint[1]*20.0))
-		if verbose: print "Using limited defocus range (%1.2f - %1.2f)"%(rng[0]/20.0,rng[-1]/20.0)
-	else:
-		rng=range(3,128)
-		if verbose: print "(%s) Using full defocus range (%1.2f - %1.2f)"%(str(dfhint),rng[0]/20.0,rng[-1]/20.0)
-
-
-	# This loop tries to find the best few possible defocuses
-	for dfi in rng:			# loop over defocus
-		df=dfi/20.0
-		ctf.defocus=df
-#		ctf.ampcont=ac
-		cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
-		norm=0
-		for fz in range(len(cc)):
-			if cc[fz]<0 : break
-
-		tot,tota,totb=0,0,0
-		zroa,zrob=0,0
-		for s in range(s0,s1):
-			# This is basicaly a dot product of the reference curve vs the simulation
-			a=(cc[s]**2)				# ctf curve ^2
-			b=bglowsub[s]					# bg subtracted intensity
-			tot+=a*b
-			tota+=a*a
-			totb+=b*b
-
-			# This computes the mean value near zeroes
-			#if a<.1 and s<ys/3:
-				#zroa+=(im_1d[s]-bg_1d[s])*s
-				#zrob+=1.0
-
-		tot/=sqrt(tota*totb)	# correct if we want a normalized dot product
-#		tot/=tota				# funnny 'normalization' which seems to help bring out the more likely peaks
-#		if zrob==0 : continue
-#		tot*=-(zroa/zrob)
-
-		dfbest1.append((tot,df))		# we keep all of the results, then process them at the end
-#		if tot>dfbest1[1] : dfbest1=(df,tot)
-		try :dfout.write("%1.2f\t%g\n"%(df,tot))
-		except : pass
-
-	# Now we find the best few defocus choices
-	dfbest1a=[]						# keep only peaks, and sort them
-	for i in range(1,len(dfbest1)-1):
-		if dfbest1[i]>dfbest1[i-1] and dfbest1[i]>dfbest1[i+1] : dfbest1a.append(dfbest1[i])		# keep only local peaks
-
-	if len(dfbest1a)==0 : dfbest1a=[max(dfbest1)]
-
-	dfbest1a.sort()
-	dfbest1a=dfbest1a[-5:]		# keep at most the best 5 peaks
-
-	if verbose: print "Initial defocus possibilities: ",
-	for i in dfbest1a: print i[1],
-	print
-
-	if len(dfbest1a)==1 :
-		best=[[0.0,[dfbest1a[0][1],300.0]]]
-	else :
-		# Next, we use a simplex minimizer to try for the best CTF parameters for each defocus
-		best=[]
-		for b1a in dfbest1a:
-			# our parameter set is (defocus,bfactor)
-			parm=[b1a[1],500.0]
-
-#			print "Initial guess : ",parm
-			sim=Simplex(ctf_cmp_2,parm,[.02,20.0],data=(ctf,bglowsub,s0,s1,ds,parm[0],rng))
-			oparm=sim.minimize(epsilon=.0000001,monitor=0)
-#			print "Optimized : ",oparm
-			best.append((oparm[1],oparm[0]))
-
-
-		# best now contains quality,(df,bfac) for each optimized answer
-		best.sort()
-#		if verbose: print "Best value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
-
-	ctf.defocus=best[0][1][0]
-	ctf.bfactor=best[0][1][1]
-#	cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
-#	Util.save_data(0,ds,cc,"ctf.ctf.txt")
-#	print best[0]
-
-	if bgadj:
-		bg2=bg_1d[:]
-		if verbose: print "BG adjustment using df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
-		for i in range(6):
-			# now we try to construct a better background based on the CTF zeroes being zero
-			df=best[0][1][0]
-			ctf.defocus=best[0][1][0]
-			ctf.bfactor=best[0][1][1]
-			cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
-#			bg2=bg_1d[:]
-			last=0,1.0
-			for x in range(1,len(bg2)-1) :
-				if cc[x]*cc[x+1]<0 :
-					if x<len(bg2)/2 :
-						# Below 1/2 nyquist, we work harder to avoid negative values
-						cur=(x,min(im_1d[x]/bg2[x],im_1d[x+1]/bg2[x+1],im_1d[x-1]/bg2[x-1],im_1d[x+2]/bg2[x+2]))
-					else:
-						# we search the two points 'at' the zero for the minimum
-						# if we're too aggressive about this, we will end up exaggerating the high
-						# resolution SNR
-						cur=(x,min(im_1d[x]/bg2[x],im_1d[x+1]/bg2[x+1]))
-
-					# once we have a pair of zeros we adjust the background values between
-					for xx in range(last[0],cur[0]):
-						w=(xx-last[0])/float(cur[0]-last[0])
-						bg_1d[xx]=bg2[xx]*(cur[1]*w+last[1]*(1.0-w))
-
-					last=cur
-			# cover the area from the last zero crossing to the end of the curve
-			for xx in range(last[0],len(bg2)):
-				bg_1d[xx]=bg2[xx]*last[1]
-
-	#	s0=int(.04/ds)+1
-	#	s1=min(int(0.15/ds),len(bg_1d)-1)
-
-			# rerun the simplex with the new background
-			bgsub=[im_1d[s]-bg_1d[s] for s in range(len(im_1d))]
-			bg_1d_low=low_bg_curve(bg_1d,ds)
-			bglowsub=[im_1d[s]-bg_1d_low[s] for s in range(len(im_1d))]	# background subtracted curve, using a non-convex version of the background
-			best[0][1][1]=500.0		# restart the fit with B=200.0
-			try:
-				if hasgoodsf: sim=Simplex(ctf_cmp_a,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0],rng))
-				else: sim=Simplex(ctf_cmp,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0],rng))
-				oparm=sim.minimize(epsilon=.00000001,monitor=0)
-				if fabs(df-oparm[0][0])/oparm[0][0]<.001:
-					best[0]=(oparm[1],oparm[0])
-					break
-				best[0]=(oparm[1],oparm[0])
-				if verbose: print "After BG correction, value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
-			except:
-				print "Serious fitting error. Retaining bad fit parameters so manual fitting is possible. This usually indicates a data problem."
-				break
-	else:
-		if verbose: print "Best value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
-		# rerun the simplex with the new background
-		best[0][1][1]=500.0		# restart the fit with B=200.0
-		if hasgoodsf : sim=Simplex(ctf_cmp_a,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0],rng))
-		else : sim=Simplex(ctf_cmp,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0],rng))
-		oparm=sim.minimize(epsilon=.0000001,monitor=0)
-		best[0]=(oparm[1],oparm[0])
-		if verbose: print "After BG correction, value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
-
-	snr=[snr_safe(im_1d[i],bg_1d[i]) for i in range(len(im_1d))]
-
-	# This will dramatically reduce the intensity of the initial sharp peak found in almost all single particle data
-	# this applies to the SNR curve only, downweighting the importance of this section of the spectrum without actually
-	# removing the information by filtering the image data. It will, of course also impact Wiener filters.
-	if autohp:
-		for x in range(2,len(snr)-2):
-			if snr[x]>snr[x+1] and snr[x+1]<snr[x+2] : break	# we find the first minimum
-
-		snr1max=max(snr[1:x])				# find the intensity of the first peak
-		snr2max=max(snr[x+2:len(snr)/2])		# find the next highest snr peak
-
-		for xx in range(1,x+1): snr[xx]*=0.5*snr2max/snr1max		# scale the initial peak to 50% of the next highest peak
-
-
-	# store the final results
-	ctf.snr=snr
-	ctf.defocus=best[0][1][0]
-	ctf.bfactor=best[0][1][1]
-
-	if verbose : print "Best DF = %1.3f   B-factor = %1.0f   avSNR = %1.4f"%(ctf.defocus,ctf.bfactor,(sum(ctf.snr)/float(len(ctf.snr))))
-
-
-#	Util.save_data(0,ds,ctf.snr,"ctf.snr")
-#	Util.save_data(0,ds,bg_1d,"ctf.bg1d")
-
+		# determine a good B-factor now that the defocus is pretty good
+		ctf.bfactor=ctf_fit_bfactor(curve,ds,ctf)
+	
+	im,bg=calc_1dfrom2d(ctf,im_2d,bg_2d)
+	if bgadj : 
+		for i in xrange(len(bg)): bg_1d[i]=bg[i]		# overwrite the input background with our final adjusted curve
+	ctf.background=bg_1d
+	
+	ctf.snr=[snr_safe(im[i],bg[i]) for i in range(len(im_1d))]
 
 	return ctf
+	
+#def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhint=None,verbose=1):
+	#"""Determines CTF parameters given power spectra produced by powspec_with_bg()
+	#The bgadj option will result in adjusting the bg_1d curve to better match the zeroes
+	#of the CTF (in which case bg_1d is modified in place)."""
+	## defocus estimation
+	#global debug
+	#global sfcurve
+##	from bisect import insort_left
+
+	#ys=im_2d.get_ysize()
+	#ds=1.0/(apix*ys)
+	#if ac<0 or ac>100 :
+		#print "Invalid %%AC, defaulting to 10"
+		#ac=10.0
+
+	#ctf=EMAN2Ctf()
+	#ctf.from_dict({"defocus":1.0,"voltage":voltage,"bfactor":500.0,"cs":cs,"ampcont":ac,"apix":apix,"dsbg":ds,"background":bg_1d})
+
+	#sf = [sfact(i*ds) for i in range(ys)]
+
+	#bgsub=[im_1d[s]-bg_1d[s] for s in range(len(im_1d))]	# background subtracted curve, good until we readjust the background
+	#bglowsub=[im_1d[s]-bg_1d_low[s] for s in range(len(im_1d))]	# background subtracted curve, using a non-convex version of the background
+
+	#s1=min(int(.167/ds),ys/3-4)
+
+##	plot(bglowsub)
+	## We find the first minimum (also <1/50 max) after the value has fallen to 1/5 max
+	#if isinstance(dfhint,float) : 
+##		s0=max(2,int(zero(1,voltage,cs,dfhint,ac)/ds-3))
+		#s0=max(2,int(ctf.zero(0)/ds-3))
+		#while (bglowsub[s0]>bglowsub[s0+1] or bglowsub[s0]>bglowsub[s0-1]) and s0<s1: s0+=1	# look for a minimum in the data curve
+	#elif isinstance(dfhint,tuple) : 
+##		s0=max(2,int(zero(1,voltage,cs,(dfhint[0]+dfhint[1])/2.0,ac)/ds-3))
+		#s0=max(2,int(ctf.zero(0)/ds-3))
+		#while (bglowsub[s0]>bglowsub[s0+1] or bglowsub[s0]>bglowsub[s0-1]) and s0<s1: s0+=1	# look for a minimum in the data curve
+	#else :
+		#maxsub=max(bglowsub[int(.01/ds):])
+		#for i in range(len(bglowsub)-1,0,-1):
+			#if bglowsub[i]>maxsub/5.0 : break
+		#s0=max(int(.01/ds),i)
+		#while (bglowsub[s0]>bglowsub[s0+1] or bglowsub[s0+1]>maxsub/50.0) and s0<s1: s0+=1	# look for a minimum in the data curve
+		#if s0==s1 : s0=int(.03/ds)
+	#if verbose: print "Minimum at 1/%1.1f 1/A (%1.4f), highest s considered 1/%1.1f 1/A (%1.4f)"%(1.0/(s0*ds),s0*ds,1.0/(s1*ds),s1*ds)
+
+	## we now have a range from the first minimia to ~6 A. Adjust it to include a bit of data closer to the origin
+	#for i in range(s0,s0*2/3,-1):
+		#if bglowsub[i]>bglowsub[i-1] : break
+	#s0m=s0									# save for a defocus estimate
+	#s0=i
+
+	#if verbose: print "s0 adjusted to 1/%1.1f 1/A"%(1.0/(s0*ds))
+
+	#if s1<=s0 :
+		#print "Error: couldn't fit this data set due to inability to locate appropriate minima"
+		#return ctf	# This way we can still proceed to the GUI... a bit of a bad hack...
+
+	#if debug:
+		#dfout=file("ctf.df.txt","w")
+
+##	dfbest1=(0,-1.0e20)
+	#dfbest1=[]
+
+	## This implies that we already have a general range for the defocus, so we limit the search
+	#if isinstance(dfhint,float) :
+		#dfhint=int(dfhint*20.0)
+		#rng=range(dfhint-3,dfhint+4)
+		#if verbose: print "Using defocus hint %1.2f (%1.2f - %1.2f)"%(dfhint/20.0,rng[0]/20.0,rng[-1]/20.0)
+	#elif isinstance(dfhint,tuple) :
+		#rng=(int(dfhint[0]*20.0),int(dfhint[1]*20.0))
+		#if verbose: print "Using limited defocus range (%1.2f - %1.2f)"%(rng[0]/20.0,rng[-1]/20.0)
+	#else:
+		#rng=range(3,128)
+		#if verbose: print "(%s) Using full defocus range (%1.2f - %1.2f)"%(str(dfhint),rng[0]/20.0,rng[-1]/20.0)
+
+
+	## This loop tries to find the best few possible defocuses
+	#for dfi in rng:			# loop over defocus
+		#df=dfi/20.0
+		#ctf.defocus=df
+##		ctf.ampcont=ac
+		#cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
+		#norm=0
+		#for fz in range(len(cc)):
+			#if cc[fz]<0 : break
+
+		#tot,tota,totb=0,0,0
+		#zroa,zrob=0,0
+		#for s in range(s0,s1):
+			## This is basicaly a dot product of the reference curve vs the simulation
+			#a=(cc[s]**2)				# ctf curve ^2
+			#b=bglowsub[s]					# bg subtracted intensity
+			#tot+=a*b
+			#tota+=a*a
+			#totb+=b*b
+
+			## This computes the mean value near zeroes
+			##if a<.1 and s<ys/3:
+				##zroa+=(im_1d[s]-bg_1d[s])*s
+				##zrob+=1.0
+
+		#tot/=sqrt(tota*totb)	# correct if we want a normalized dot product
+##		tot/=tota				# funnny 'normalization' which seems to help bring out the more likely peaks
+##		if zrob==0 : continue
+##		tot*=-(zroa/zrob)
+
+		#dfbest1.append((tot,df))		# we keep all of the results, then process them at the end
+##		if tot>dfbest1[1] : dfbest1=(df,tot)
+		#try :dfout.write("%1.2f\t%g\n"%(df,tot))
+		#except : pass
+
+	## Now we find the best few defocus choices
+	#dfbest1a=[]						# keep only peaks, and sort them
+	#for i in range(1,len(dfbest1)-1):
+		#if dfbest1[i]>dfbest1[i-1] and dfbest1[i]>dfbest1[i+1] : dfbest1a.append(dfbest1[i])		# keep only local peaks
+
+	#if len(dfbest1a)==0 : dfbest1a=[max(dfbest1)]
+
+	#dfbest1a.sort()
+	#dfbest1a=dfbest1a[-5:]		# keep at most the best 5 peaks
+
+	#if verbose: print "Initial defocus possibilities: ",
+	#for i in dfbest1a: print i[1],
+	#print
+
+	#if len(dfbest1a)==1 :
+		#best=[[0.0,[dfbest1a[0][1],300.0]]]
+	#else :
+		## Next, we use a simplex minimizer to try for the best CTF parameters for each defocus
+		#best=[]
+		#for b1a in dfbest1a:
+			## our parameter set is (defocus,bfactor)
+			#parm=[b1a[1],500.0]
+
+##			print "Initial guess : ",parm
+			#sim=Simplex(ctf_cmp_2,parm,[.02,20.0],data=(ctf,bglowsub,s0,s1,ds,parm[0],rng))
+			#oparm=sim.minimize(epsilon=.0000001,monitor=0)
+##			print "Optimized : ",oparm
+			#best.append((oparm[1],oparm[0]))
+
+
+		## best now contains quality,(df,bfac) for each optimized answer
+		#best.sort()
+##		if verbose: print "Best value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
+
+	#ctf.defocus=best[0][1][0]
+	#ctf.bfactor=best[0][1][1]
+##	cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
+##	Util.save_data(0,ds,cc,"ctf.ctf.txt")
+##	print best[0]
+
+	#if bgadj:
+		#bg2=bg_1d[:]
+		#if verbose: print "BG adjustment using df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
+		#for i in range(6):
+			## now we try to construct a better background based on the CTF zeroes being zero
+			#df=best[0][1][0]
+			#ctf.defocus=best[0][1][0]
+			#ctf.bfactor=best[0][1][1]
+			#cc=ctf.compute_1d(ys,ds,Ctf.CtfType.CTF_AMP)
+##			bg2=bg_1d[:]
+			#last=0,1.0
+			#for x in range(1,len(bg2)-1) :
+				#if cc[x]*cc[x+1]<0 :
+					#if x<len(bg2)/2 :
+						## Below 1/2 nyquist, we work harder to avoid negative values
+						#cur=(x,min(im_1d[x]/bg2[x],im_1d[x+1]/bg2[x+1],im_1d[x-1]/bg2[x-1],im_1d[x+2]/bg2[x+2]))
+					#else:
+						## we search the two points 'at' the zero for the minimum
+						## if we're too aggressive about this, we will end up exaggerating the high
+						## resolution SNR
+						#cur=(x,min(im_1d[x]/bg2[x],im_1d[x+1]/bg2[x+1]))
+
+					## once we have a pair of zeros we adjust the background values between
+					#for xx in range(last[0],cur[0]):
+						#w=(xx-last[0])/float(cur[0]-last[0])
+						#bg_1d[xx]=bg2[xx]*(cur[1]*w+last[1]*(1.0-w))
+
+					#last=cur
+			## cover the area from the last zero crossing to the end of the curve
+			#for xx in range(last[0],len(bg2)):
+				#bg_1d[xx]=bg2[xx]*last[1]
+
+	##	s0=int(.04/ds)+1
+	##	s1=min(int(0.15/ds),len(bg_1d)-1)
+
+			## rerun the simplex with the new background
+			#bgsub=[im_1d[s]-bg_1d[s] for s in range(len(im_1d))]
+			#bg_1d_low=low_bg_curve(bg_1d,ds)
+			#bglowsub=[im_1d[s]-bg_1d_low[s] for s in range(len(im_1d))]	# background subtracted curve, using a non-convex version of the background
+			#best[0][1][1]=500.0		# restart the fit with B=200.0
+			#try:
+				#if hasgoodsf: sim=Simplex(ctf_cmp_a,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0],rng))
+				#else: sim=Simplex(ctf_cmp,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0],rng))
+				#oparm=sim.minimize(epsilon=.00000001,monitor=0)
+				#if fabs(df-oparm[0][0])/oparm[0][0]<.001:
+					#best[0]=(oparm[1],oparm[0])
+					#break
+				#best[0]=(oparm[1],oparm[0])
+				#if verbose: print "After BG correction, value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
+			#except:
+				#print "Serious fitting error. Retaining bad fit parameters so manual fitting is possible. This usually indicates a data problem."
+				#break
+	#else:
+		#if verbose: print "Best value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
+		## rerun the simplex with the new background
+		#best[0][1][1]=500.0		# restart the fit with B=200.0
+		#if hasgoodsf : sim=Simplex(ctf_cmp_a,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0],rng))
+		#else : sim=Simplex(ctf_cmp,best[0][1],[.02,20.0],data=(ctf,bgsub,s0,s1,ds,best[0][1][0],rng))
+		#oparm=sim.minimize(epsilon=.0000001,monitor=0)
+		#best[0]=(oparm[1],oparm[0])
+		#if verbose: print "After BG correction, value is df=%1.3f  B=%1.1f"%(best[0][1][0],best[0][1][1])
+
+	#snr=[snr_safe(im_1d[i],bg_1d[i]) for i in range(len(im_1d))]
+
+	## This will dramatically reduce the intensity of the initial sharp peak found in almost all single particle data
+	## this applies to the SNR curve only, downweighting the importance of this section of the spectrum without actually
+	## removing the information by filtering the image data. It will, of course also impact Wiener filters.
+	#if autohp:
+		#for x in range(2,len(snr)-2):
+			#if snr[x]>snr[x+1] and snr[x+1]<snr[x+2] : break	# we find the first minimum
+
+		#snr1max=max(snr[1:x])				# find the intensity of the first peak
+		#snr2max=max(snr[x+2:len(snr)/2])		# find the next highest snr peak
+
+		#for xx in range(1,x+1): snr[xx]*=0.5*snr2max/snr1max		# scale the initial peak to 50% of the next highest peak
+
+
+	## store the final results
+	#ctf.snr=snr
+	#ctf.defocus=best[0][1][0]
+	#ctf.bfactor=best[0][1][1]
+
+	#if verbose : print "Best DF = %1.3f   B-factor = %1.0f   avSNR = %1.4f"%(ctf.defocus,ctf.bfactor,(sum(ctf.snr)/float(len(ctf.snr))))
+
+
+##	Util.save_data(0,ds,ctf.snr,"ctf.snr")
+##	Util.save_data(0,ds,bg_1d,"ctf.bg1d")
+
+
+	#return ctf
 
 def ctf_cmp(parms,data):
 	"""This function is a quality metric for a set of CTF parameters vs. data"""
@@ -2429,10 +2492,36 @@ class GUIctf(QtGui.QWidget):
 
 			#self.guiplot.set_data("fit",(s,fit))
 
-			self.guiplot.set_data((s,self.data[val][2]),"fg",True,True,color=1)
-			self.guiplot.set_data((s,self.data[val][3]),"bg",color=0)
-			self.guiplot.set_data((s,low_bg_curve(self.data[val][3],ds)),"lowbg",color=2)
-			self.guiplot.setAxisParms("s (1/"+ "$\AA$" +")","Intensity (a.u)")
+			bgsub=[self.data[val][2][i]-self.data[val][3][i] for i in range(len(self.data[val][2]))]
+			self.guiplot.set_data((s,bgsub),"fg-bg",True,True,color=0)
+
+			fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)		# The fit curve
+			fit=[sfact2(s[i])*fit[i]**2 for i in range(len(s))]		# squared * structure factor
+
+			# auto-amplitude for b-factor adjustment
+			rto,nrto=0,0
+			for i in range(int(.04/ds)+1,min(int(0.15/ds),len(s)-1)):
+				if bgsub[i]>0 :
+					rto+=fit[i]
+					nrto+=fabs(bgsub[i])
+			if nrto==0 : rto=1.0
+			else : rto/=nrto
+			fit=[fit[i]/rto for i in range(len(s))]
+			self.guiplot.set_data((s,fit),"fit",color=1)
+
+			if len(bgsub)<64 : wdw=4
+			elif len(bgsub)<128 : wdw=6
+			elif len(bgsub)<256 : wdw=8
+			else : wdw=10
+			sim=Util.windowdot(bgsub,fit,wdw,1)
+			self.guiplot.set_data((s,sim),"Local Sim",color=2)
+			
+			print sum(sim),sum(sim[int(.04/ds):int(.12/ds)])
+
+#			print ctf_cmp((self.sdefocus.value,self.sbfactor.value,rto),(ctf,bgsub,int(.04/ds)+1,min(int(0.15/ds),len(s)-1),ds,self.sdefocus.value))
+
+			self.guiplot.setAxisParms("s (1/"+ "$\AA$" + ")","Intensity (a.u)")
+			
 
 		# SNR Scaling
 		elif self.plotmode==8:
