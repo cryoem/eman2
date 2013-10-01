@@ -1333,8 +1333,9 @@ returns (fg1d,bg1d)"""
 #	r=len(ctf.background)
 #	s=[ds*i for i in range(r)]
 
-	fg=ctf.compute_1d_fromimage(len(ctf.background)*2, ds, fg2d)
-	bg=ctf.compute_1d_fromimage(len(ctf.background)*2, ds, bg2d)
+	fg=array(ctf.compute_1d_fromimage(len(ctf.background)*2, ds, fg2d))
+	bg=array(ctf.compute_1d_fromimage(len(ctf.background)*2, ds, bg2d))
+	bgc=bg.copy()
 #			bg=smooth_by_ctf(bg,ds,ctf)					# still need to work on this routine, similar concept to SNR smoothing, but has some problems
 #	bglow=low_bg_curve(bg,ds)
 	
@@ -1346,8 +1347,10 @@ returns (fg1d,bg1d)"""
 #		z=int(zero(n,ctf.voltage,ctf.cs,ctf.defocus,ctf.ampcont)/ds+.5)
 		z=int(ctf.zero(n-1)/ds+.5)
 		if z>len(ctf.background)-2 or z-lz<2: break
-		d1=min(fg[lz]-bg[lz],fg[lz-1]-bg[lz-1],fg[lz+1]-bg[lz+1])
-		d2=min(fg[z]-bg[z],fg[z-1]-bg[z-1],fg[z+1]-bg[z+1])
+		d1=min(fg[lz-1:lz+2]-bg[lz-1:lz+2])
+		d2=min(fg[ z-1: z+2]-bg[ z-1: z+2])
+		#d1=min(fg[lz]-bg[lz],fg[lz-1]-bg[lz-1],fg[lz+1]-bg[lz+1])
+		#d2=min(fg[z]-bg[z],fg[z-1]-bg[z-1],fg[z+1]-bg[z+1])
 #				print lz,d1,z,d2
 		for x in xrange(lz,z):
 			bg[x]+=(z-x)/float(z-lz)*d1+(x-lz)/float(z-lz)*d2
@@ -1356,15 +1359,13 @@ returns (fg1d,bg1d)"""
 		n+=1
 	
 	# deal with the points from the origin to the first zero
-	try: 
-		for x in xrange(lwz): bg[x]+=lwd
-	except: pass
+	bg[:lwz]+=lwd
 
-	try:
-		for x in xrange(lz,len(ctf.background)) : bg[x]+=d2
-	except: pass
+	# deal with the points from where the zeroes got too close together, just to make a smooth curve
+	for x in xrange(lz,len(ctf.background)) : 
+		bg[x]+=fg[x-2:x+3].mean()-bgc[x-2:x+3].mean()
 	
-	return (fg,bg)
+	return (list(fg),list(bg))
 
 
 def ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1):
@@ -1512,22 +1513,28 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 	
 	best=(-1,1.0)
 
+	# we might get better results if we readjusted the bg correction after each try, but it's reaaaaly slow
+	# so we compute an unadjusted bg one time, then do one local correction once the defocus is close
+	im=im_1d
+	bg=ctf.compute_1d_fromimage(len(ctf.background)*2, ds, bg_2d)
+	
 	for rng in (0,1):
 		if rng==1: dfhint=(ctf.defocus-0.1,ctf.defocus+0.1,0.005)	 	#2 passes
 		
+		curve=[im[i]-bg[i] for i in xrange(len(im_1d))]
 		for df in arange(dfhint[0],dfhint[1],dfhint[2]):
 			ctf.defocus=df
 			ccurv=ctf.compute_1d(len(curve)*2,ds,Ctf.CtfType.CTF_AMP)
 			ccurv=[sfact2(ds*i)*ccurv[i]**2 for i in range(len(ccurv))]		# squared * structure factor
 			
-			# Recompute the background assuming the defocus is correct
-			im,bg=calc_1dfrom2d(ctf,im_2d,bg_2d)
-			curve=[im[i]-bg[i] for i in xrange(len(im_1d))]
+			## Recompute the background assuming the defocus is correct
+			#im,bg=calc_1dfrom2d(ctf,im_2d,bg_2d)
+			#curve=[im[i]-bg[i] for i in xrange(len(im_1d))]
 
-			sim=Util.windowdot(curve,ccurv,wdw,1)
-			qual=sum(sim[int(.025/ds):int(.14/ds)])
+			sim=array(Util.windowdot(curve,ccurv,wdw,1))
+			qual=sim[int(ctf.zero(0)/ds):int(ctf.zero(5)/ds)].mean()
 			if qual>best[0]: best=(qual,df)
-#			print df,sum(sim),sum(sim[int(.04/ds):int(.14/ds)])
+#			print df,sum(sim),qual
 
 		ctf.defocus=best[1]
 		print "Best defocus: {:1.03f}".format(best[1])
@@ -1535,7 +1542,8 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 		# determine a good B-factor now that the defocus is pretty good
 		ctf.bfactor=ctf_fit_bfactor(curve,ds,ctf)
 	
-	im,bg=calc_1dfrom2d(ctf,im_2d,bg_2d)
+		im,bg=calc_1dfrom2d(ctf,im_2d,bg_2d)
+		
 	if bgadj : 
 		for i in xrange(len(bg)): bg_1d[i]=bg[i]		# overwrite the input background with our final adjusted curve
 	ctf.background=bg_1d
