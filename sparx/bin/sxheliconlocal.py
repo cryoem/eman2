@@ -42,7 +42,7 @@ def main():
         for arg in sys.argv:
         	arglist.append( arg )
 	progname = os.path.basename(arglist[0])
-	usage = progname + " stack ref_vol outdir  <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --ynumber=y_numbers  --txs=translational_search_stepx  --delta=angular_step --an=angular_neighborhood --center=1 --maxit=max_iter --CTF --snr=1.0  --ref_a=S --sym=c1 --datasym=symdoc --new"
+	usage = progname + " stack ref_vol outdir  <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --ynumber=y_numbers  --txs=translational_search_stepx  --delta=angular_step --an=angular_neighborhood --center=1 --maxit=max_iter --CTF --snr=1.0  --sym=c1 --datasym=symdoc"
 	
 	parser = OptionParser(usage,version=SPARXVERSION)
 	#parser.add_option("--ir",                 type="float", 	     default= -1,                 help="inner radius for rotational correlation > 0 (set to 1) (Angstroms)")
@@ -58,7 +58,7 @@ def main():
 	parser.add_option("--searchit",           type="int",            default= 1,                  help="number of iterations to predict/search before doing reconstruction and updating of reference volume. Default is 1. If maxit=3 and searchit=2, then for each of the 3 inner iterations, 2 iterations of prediction/search will be performed before generating reconstruction.")
 	parser.add_option("--CTF",                action="store_true",   default=False,      		  help="CTF correction")
 	parser.add_option("--snr",                type="float",          default= 1.0,                help="Signal-to-Noise Ratio of the data")	
-	parser.add_option("--MPI",                action="store_true",   default=False,               help="use MPI version")
+	#parser.add_option("--MPI",                action="store_true",   default=False,               help="use MPI version")
 	#parser.add_option("--fourvar",           action="store_true",   default=False,               help="compute Fourier variance")
 	parser.add_option("--apix",               type="float",			 default= -1.0,               help="pixel size in Angstroms")   
 	parser.add_option("--dp",                 type="float",			 default= -1.0,               help="delta z - translation in Angstroms")   
@@ -116,9 +116,8 @@ def main():
 		for i in xrange(len(y_restrict)):
 			y_restrict2 += " "+str(float(y_restrict[i])/options.apix)
 
-		if options.MPI:
-			from mpi import mpi_init, mpi_finalize
-			sys.argv = mpi_init(len(sys.argv), sys.argv)
+		from mpi import mpi_init, mpi_finalize
+		sys.argv = mpi_init(len(sys.argv), sys.argv)
 
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
