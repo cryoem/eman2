@@ -335,8 +335,8 @@ def helical( ref_data ):
 	nx = volf.get_xsize()
 	ny = volf.get_ysize()
 	nz = volf.get_zsize()
-	for i in xrange(nz):
-		volf.insert_clip(filt_tanl(volf.get_clip(Region(0,0,i,nx,ny,1)),0.4,0.1),[0,0,i])
+	#for i in xrange(nz):
+	#	volf.insert_clip(filt_tanl(volf.get_clip(Region(0,0,i,nx,ny,1)),0.4,0.1),[0,0,i])
 	"""
 	volf = threshold(volf)
 	fl = 0.2#0.17
