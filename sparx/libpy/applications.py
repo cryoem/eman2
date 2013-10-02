@@ -13741,7 +13741,7 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 	phiwobble = int(float(ywobble)/rise*dphi/delta+0.5)  # phiwobble is NOT in degrees, it is in nphi units
 
 	nwx = 2*search_rng+3
-	nwy = int(rise+0.5)+2*ywobble+2
+	nwy = int(ceil(rise)+2*ywobble+2)
 	nwxc = nwx//2
 	nwyc = nwy//2
 	nphi = int(360.0/delta + 0.5)
@@ -13977,12 +13977,8 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 	for i in xrange(lstp):
 		if an[i] < 0 and y_restrict[i] < 0: 
 			ERROR('This is a local search, an and y_restrict should not both be -1', "localhelicon_MPI", 1,myid)
-
-		if y_restrict[i] < 0:
-			y_restrict[i] = (an[i]/dphi)*(dp/pixel_size)/2.0
-
-	 	if an[i] < 0:
-	 		an[i] = ((2.0*y_restrict[i])/(dp/pixel_size)) * dphi
+		if y_restrict[i] < 0:  y_restrict[i] = (an[i]/dphi)*(dp/pixel_size)/2.0
+	 	if an[i] < 0:           an[i] = ((2.0*y_restrict[i])/(dp/pixel_size)) * dphi
 
 	first_ring  = int(ir)
 	rstep       = int(rs)
@@ -14015,8 +14011,8 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 		print_msg("Reference volume                          : %s\n"%(ref_vol))	
 		print_msg("Output directory                          : %s\n"%(outdir))
 		print_msg("Maskfile                                  : %s\n"%(maskfile))
-		print_msg("Inner radius                              : %i\n"%(first_ring))
-		print_msg("Outer radius                              : %i\n"%(last_ring))
+		print_msg("Inner radius for psi angle search         : %i\n"%(first_ring))
+		print_msg("Outer radius for psi angle search         : %i\n"%(last_ring))
 		print_msg("Ring step                                 : %i\n"%(rstep))
 		print_msg("X search range                            : %s\n"%(xrng))
 		print_msg("Y search range                            : %s\n"%(y_restrict))
@@ -14024,18 +14020,22 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 		print_msg("Translational stepx                       : %s\n"%(stepx))
 		print_msg("Angular step                              : %s\n"%(delta))
 		print_msg("Angular search range                      : %s\n"%(an))
-		print_msg("Initial theta                             : %s\n"%(initial_theta))
-		print_msg("min radius for helical search (in pix)    : %5.4f\n"%(rmin))
-		print_msg("max radius for helical search (in pix)    : %5.4f\n"%(rmax))
-		print_msg("fraction of volume used for helical search: %5.4f\n"%(fract))
-		print_msg("initial symmetry - angle                  : %5.4f\n"%(dphi))
-		print_msg("initial symmetry - axial rise             : %5.4f\n"%(dp))
-		print_msg("Maximum iteration                         : %i\n"%(max_iter))
+		print_msg("Intial theta for out-of-plane tilt search : %s\n"%(initial_theta))
+		print_msg("Delta theta for out-of-plane tilt search  : %s\n"%(delta_theta))
+		print_msg("Min radius for application of helical symmetry (in pix)    : %5.4f\n"%(rmin))
+		print_msg("Max radius for application of helical symmetry (in pix)    : %5.4f\n"%(rmax))
+		print_msg("Fraction of volume used for application of helical symmetry: %5.4f\n"%(fract))
+		print_msg("Helical symmetry - axial rise   [A]       : %5.4f\n"%(dp))
+		print_msg("Helical symmetry - angle                  : %5.4f\n"%(dphi))
+		print_msg("Maximum number of iterations              : %i\n"%(max_iter))
+		print_msg("Number of iterations to predict/search before doing reconstruction and updating of reference volume : %i\n"%(search_iter))
 		print_msg("Data with CTF                             : %s\n"%(CTF))
 		print_msg("Signal-to-Noise Ratio                     : %5.4f\n"%(snr))
 		print_msg("npad                                      : %i\n"%(npad))
 		print_msg("User function                             : %s\n"%(user_func_name))
-		print_msg("seg_ny                                    : %i\n"%(seg_ny))
+		print_msg("Pixel size [A]                            : %f\n"%(pixel_size))
+		print_msg("Point-group symmetry group                : %s\n"%(sym))
+		print_msg("Segment height seg_ny                     : %s\n\n"%(seg_ny))
 		
 	if maskfile:
 		if type(maskfile) is types.StringType: mask3D = get_image(maskfile)
