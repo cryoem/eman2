@@ -516,7 +516,8 @@ class EMCTFParticlesEntry(EMDirEntry):
 				self.badparticlecount=0
 			try:
 				ctf=db["ctf"][0]
-				self.defocus = "%.3f" % ctf.defocus
+				if ctf.dfdiff==0 : self.defocus = "%.3f" % ctf.defocus
+				else : self.defocus = "%.3f (%.3f, %.1f)" % (ctf.defocus,ctf.dfdiff,ctf.dfang)
 				self.bfactor = "%.3f" % ctf.bfactor
 				self.sampling = str(len(ctf.snr))
 				s0=max(2,int(1.0/(100.0*ctf.dsbg)))

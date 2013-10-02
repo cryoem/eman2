@@ -92,21 +92,22 @@ NOTE: This program should be run from the project directory, not from within the
 	parser.add_argument("--minqual",type=int,help="Files with a quality value lower than specified will be skipped",default=0,guitype='intbox', row=2, col=1, mode='autofit,tuning,genoutp,gensf')
 	parser.add_argument("--chunk",type=str,help="<chunksize>,<nchunk>. Will process files in groups of chunksize, and process the <nchunk>th group. eg - 100,3 will read files 300-399 ",default=None,guitype='strbox',row=1,col=1, mode='autofit,tuning,genoutp,gensf')
 	parser.add_argument("--gui",action="store_true",help="Start the GUI for interactive fitting",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="tuning[True]")
-	parser.add_argument("--autofit",action="store_true",help="Runs automated CTF fitting on the input images",default=False, guitype='boolbox', row=7, col=0, rowspan=1, colspan=1, mode='autofit[True]')
-	parser.add_argument("--astigmatism",action="store_true",help="Includes astigmatism in automatic fitting",default=False, guitype='boolbox', row=7, col=1, rowspan=1, colspan=1, mode='autofit[False]')
+	parser.add_argument("--autofit",action="store_true",help="Runs automated CTF fitting on the input images",default=False, guitype='boolbox', row=8, col=0, rowspan=1, colspan=1, mode='autofit[True]')
+	parser.add_argument("--astigmatism",action="store_true",help="Includes astigmatism in automatic fitting",default=False, guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode='autofit[False]')
 	parser.add_argument("--curdefocushint",action="store_true",help="Rather than doing the defocus from scratch, use existing values in the project as a starting point",default=False, guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, mode='autofit[True]')
 	parser.add_argument("--bgmask",type=int,help="Background is computed using a soft mask of the center/edge of each particle with the specified radius. Default radius is boxsize/2.6.",default=0)
 	parser.add_argument("--fixnegbg",action="store_true",help="Will perform a final background correction to avoid slight negative values near zeroes")
-	parser.add_argument("--computesf",action="store_true",help="Will determine the structure factor*envelope for the aggregate set of images", default=False, nosharedb=True, guitype='boolbox', row=8, col=0, rowspan=1, colspan=1, mode="autofit,tuning,gensf[True]")
+	parser.add_argument("--computesf",action="store_true",help="Will determine the structure factor*envelope for the aggregate set of images", default=False, nosharedb=True, guitype='boolbox', row=9, col=0, rowspan=1, colspan=1, mode="autofit,tuning,gensf[True]")
 	parser.add_argument("--apix",type=float,help="Angstroms per pixel for all images",default=0, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="autofit['self.pm().getAPIX()']")
 	parser.add_argument("--voltage",type=float,help="Microscope voltage in KV",default=0, guitype='floatbox', row=4, col=1, rowspan=1, colspan=1, mode="autofit['self.pm().getVoltage()']")
 	parser.add_argument("--cs",type=float,help="Microscope Cs (spherical aberation)",default=0, guitype='floatbox', row=5, col=0, rowspan=1, colspan=1, mode="autofit['self.pm().getCS()']")
 	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage, default=10)",default=10, guitype='floatbox', row=5, col=1, rowspan=1, colspan=1, mode='autofit')
-	parser.add_argument("--dfmax",type=float,help="Maximum defocus for autofitting (default=6.4)",default=None)
-	parser.add_argument("--autohp",action="store_true",help="Automatic high pass filter of the SNR only to remove initial sharp peak, phase-flipped data is not directly affected (default false)",default=False, guitype='boolbox', row=6, col=0, rowspan=1, colspan=1, mode='autofit[True]')
+	parser.add_argument("--defocusmin",type=float,help="Minimum autofit defocus",default=0.6, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode="autofit[0.6]")
+	parser.add_argument("--defocusmax",type=float,help="Maximum autofit defocus",default=4, guitype='floatbox', row=6, col=1, rowspan=1, colspan=1, mode='autofit[4.0]')
+	parser.add_argument("--autohp",action="store_true",help="Automatic high pass filter of the SNR only to remove initial sharp peak, phase-flipped data is not directly affected (default false)",default=False, guitype='boolbox', row=7, col=0, rowspan=1, colspan=1, mode='autofit[True]')
 	parser.add_argument("--invert",action="store_true",help="Invert the contrast of the particles in output files (default false)",default=False)
 	parser.add_argument("--nonorm",action="store_true",help="Suppress per image real-space normalization",default=False)
-	parser.add_argument("--nosmooth",action="store_true",help="Disable smoothing of the background (running-average of the log with adjustment at the zeroes of the CTF)",default=False, guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='autofit')
+	parser.add_argument("--nosmooth",action="store_true",help="Disable smoothing of the background (running-average of the log with adjustment at the zeroes of the CTF)",default=False, guitype='boolbox', row=7, col=1, rowspan=1, colspan=1, mode='autofit')
 	parser.add_argument("--refinebysnr",action="store_true",help="Refines the defocus value by looking at the high resolution smoothed SNR. Requires good starting defocus. Important: also replaces the SNR with a smoothed version.",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode='genoutp')
 	parser.add_argument("--phaseflip",action="store_true",help="Perform phase flipping after CTF determination and writes to specified file.",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='genoutp[True]')
 	parser.add_argument("--phasefliphp",action="store_true",help="Perform phase flipping with auto-high pass filter",default=False, guitype='boolbox', row=5, col=0, rowspan=1, colspan=1, mode='genoutp')
@@ -115,7 +116,7 @@ NOTE: This program should be run from the project directory, not from within the
 	parser.add_argument("--storeparm",action="store_true",help="Output files will include CTF info. CTF parameters are used from the database, rather than values that may be present in the input image header. Critical to use this when generating output !",default=False,guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode='genoutp[True]')
 	parser.add_argument("--oversamp",type=int,help="Oversampling factor",default=1, guitype='intbox', row=3, col=0, rowspan=1, colspan=2, mode='autofit')
 	parser.add_argument("--classify",type=int,help="Highly experimental ! Subclassify particles (hopefully by defocus) into n groups.",default=0)
-	parser.add_argument("--sf",type=str,help="The name of a file containing a structure factor curve. Specify 'none' to use the built in generic structure factor. Default=auto",default="auto",guitype='strbox',nosharedb=True,returnNone=True,row=8,col=1,rowspan=1,colspan=1, mode='autofit,tuning')
+	parser.add_argument("--sf",type=str,help="The name of a file containing a structure factor curve. Specify 'none' to use the built in generic structure factor. Default=auto",default="auto",guitype='strbox',nosharedb=True,returnNone=True,row=9,col=1,rowspan=1,colspan=1, mode='autofit,tuning')
 	parser.add_argument("--debug",action="store_true",default=False)
 	parser.add_argument("--dbds",type=str,default=None,help="Obsolete option for old e2workflow. Present only to provide warning messages.")
 	parser.add_argument("--source_image",type=str,default=None,help="Filters particles only with matching ptcl_source_image parameters in the header")
@@ -474,8 +475,7 @@ def pspec_and_ctf_fit(options,debug=False):
 
 			# Fit the CTF parameters
 			if debug : print "Fit CTF"
-			if options.dfmax != None : dfhint=(.15,options.dfmax)
-			elif options.curdefocushint :
+			if options.curdefocushint :
 				try:
 					ctf=js_parms["ctf"][0]
 					curdf=ctf.defocus
@@ -489,7 +489,7 @@ def pspec_and_ctf_fit(options,debug=False):
 					except:
 						dfhint=None
 						print "No existing defocus to start with"
-			else: dfhint=None
+			else: dfhint=(options.defocusmin,options.defocusmax)
 			ctf=ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,options.voltage,options.cs,options.ac,apix,bgadj=not options.nosmooth,autohp=options.autohp,dfhint=dfhint,verbose=options.verbose)
 			if options.astigmatism : ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1)
 
@@ -542,6 +542,13 @@ def refine_and_smoothsnr(options,strfact,debug=False):
 			ctf=orig[0]
 		except:
 			print "Error: no fit data for {}. Skipping.".format(name)
+			skipped+=1
+			continue
+
+		if orig.dfdiff!=0 :
+			print "Skipping {}. SSNR based refinement not available for astigmatic images.".format(name)
+			skipped+=1
+			continue
 
 		olddf.append(ctf.defocus)
 		im_1d=orig[1]
@@ -574,7 +581,7 @@ def refine_and_smoothsnr(options,strfact,debug=False):
 
 		if logid : E2progress(logid,float(i+1)/len(options.filenames))
 
-	if skipped>0 : print "Warning: %d files skipped, because they were already smoothed"%skipped
+	if skipped>0 : print "Warning: %d files skipped"%skipped
 	if len(olddf)>0 : print "Mean defocus adjustment : %1.4f um"%((sum([fabs(olddf[ii]-newdf[ii]) for ii in xrange(len(olddf))]))/len(olddf))
 
 
@@ -862,6 +869,13 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 				continue
 
 		im1.read_image(stackfile,i)
+		
+		# Images with flat edges due to boxing too close to the edge can adversely impact the power spectrum
+		im1.process_inplace("mask.zeroedgefill",{"nonzero":1})		# This tries to deal with particles that were boxed off the edge of the micrograph
+		if im1.has_attr("hadzeroedge") and im1["hadzeroedge"]!=0:
+			print "Skipped particle with bad edge ({}:{})".format(stackfile,i)
+			continue
+
 		nn+=1
 #		im1=EMData(stackfile,i)
 
@@ -917,13 +931,19 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 	av2["is_intensity"]=0
 
 	# This is a new addition (2/4/10) to prevent negative BG subtracted curves near the origin
-	maxpix=int(apix*ys2/25.0)               # we do this up to ~80 A
+	maxpix=int(0.04/ds)               # we do this up to ~80 A
 	avsnr=0
 	avc=0
 	for i in xrange(maxpix):
 		if av1_1d[i]>av2_1d[i] :
 			avsnr+=(av1_1d[i]-av2_1d[i])/av2_1d[i]
 			avc+=1
+	
+	if avc==0 :
+		print "Failed to readjust background in {}. Returning what I can..."
+		return (av1_1d,av2_1d,av1,av2,low_bg_curve(av2_1d,ds))
+		
+		
 	avsnr/=avc
 
 	for i in xrange(maxpix) :
@@ -1546,6 +1566,8 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 		
 	if bgadj : 
 		for i in xrange(len(bg)): bg_1d[i]=bg[i]		# overwrite the input background with our final adjusted curve
+		bglow=low_bg_curve(bg,ds)
+		for i in xrange(len(bg)): bg_1d_low[i]=bglow[i]
 	ctf.background=bg_1d
 	
 	ctf.snr=[snr_safe(im[i],bg[i]) for i in range(len(im_1d))]
@@ -2223,9 +2245,11 @@ class GUIctf(QtGui.QWidget):
 		ctf.dfang=dfang
 		if ctf.dfdiff!=0 : 
 			ctf_fit_stig(tmp[4],tmp[5],ctf,True)
-			tmp[2],tmp[3]=calc_1dfrom2d(ctf,tmp[4],tmp[5])			# update 1-D curves after astigmatism adjustment
+			
+		tmp[2],tmp[3]=calc_1dfrom2d(ctf,tmp[4],tmp[5])			# update 1-D curves (impacted if astigmatism changed)
 			
 		ctf.bfactor=ctf_fit_bfactor(list(array(tmp[2])-array(tmp[3])),ctf.dsbg,ctf)
+		ctf.snr=[snr_safe(tmp[2][i],tmp[3][i]) for i in range(len(tmp[2]))]
 
 		val = self.curset
 		name = base_name(str(self.setlist.item(val).text()))
@@ -2314,6 +2338,7 @@ class GUIctf(QtGui.QWidget):
 		if self.neednewps :
 			self.data[val][2],self.data[val][3]=calc_1dfrom2d(ctf,self.data[val][4],self.data[val][5])
 			self.data[val][7]=low_bg_curve(self.data[val][3],ds)
+			ctf.snr=[snr_safe(self.data[val][2][i],self.data[val][3][i]) for i in range(r)]
 			
 		# This updates the image circles
 		fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)

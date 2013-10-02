@@ -63,11 +63,13 @@ def safe_int(v):
 		return -sys.maxint-1
 
 def safe_float(v):
-	""" Performs a safe conversion from a string to an int. If a non int is presented we return the lowest possible value """
+	""" Performs a safe conversion from a string to a float. If a non float is presented we return the lowest possible value """
 	try:
 		return float(v)
-	except (ValueError, TypeError):
-		return sys.float_info.min
+	except:
+		try: return float(v.split()[0])
+		except:
+			return sys.float_info.min
 
 def isprint(s):
 	"returns True if the string contains only printable ascii characters"
