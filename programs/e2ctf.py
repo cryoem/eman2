@@ -1491,7 +1491,7 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 	global sfcurve
 #	from bisect import insort_left
 
-	if dfhint==None : dfhint = (0.6,5.5,0.05)
+	if dfhint==None : dfhint = (0.5,5.5,0.05)
 	elif isinstance(dfhint,float) : dfhint=(dfhint-.2, dfhint+.2,0.02)
 	else: dfhint=(dfhint[0],dfhint[1],0.05)
 	

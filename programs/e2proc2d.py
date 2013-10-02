@@ -298,7 +298,7 @@ def main():
 				#d.read_image(infile,0, HEADER_AND_DATA, roi)
 				d.set_size(tomo_ny,tomo_nz,1)
 
-		
+
 		sigma = d.get_attr("sigma").__float__()
 		if sigma == 0:
 			if options.threed2threed or options.threed2twod:

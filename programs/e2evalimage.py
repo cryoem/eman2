@@ -603,6 +603,8 @@ class GUIEvalImage(QtGui.QWidget):
 		self.sdefocus.setValue(parms[1].defocus,True)
 		self.sbfactor.setValue(parms[1].bfactor,True)
 		self.sampcont.setValue(parms[1].ampcont,True)
+		
+		self.update_plot()
 
 
 	def unImport(self,val=None):

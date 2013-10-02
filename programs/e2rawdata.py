@@ -49,10 +49,12 @@ def main():
 	parser.add_argument("--invert",action="store_true",help="Invert contrast",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='filter[True]')
 	parser.add_argument("--edgenorm",action="store_true",help="Edge normalize",default=False, guitype='boolbox', row=2, col=1, rowspan=1, colspan=1, mode='filter[True]')
 	parser.add_argument("--xraypixel",action="store_true",help="Filter X-ray pixels",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode='filter[True]')
-	parser.add_argument("--inplace",action="store_true",help="Do processing inplace",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='filter[False]')
+	parser.add_argument("--ctfest",action="store_true",help="Estimate defocus from whole micrograph",default=False, guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode='filter[True]')
 	parser.add_argument("--moverawdata",action="store_true",help="Move raw data to directory ./raw_micrographs after filtration",default=False)
-	parser.add_argument("--suffix",type=str,help="Filename suffix",default="",guitype='strbox', row=5, col=0, rowspan=1, colspan=2, mode='filter')
-	parser.add_argument("--format", help="Format of the output particles images, should be bdb,img,spi or hdf", default="hdf", guitype='combobox', choicelist="['bdb','hdf','img','spi']", row=6, col=0, rowspan=1, colspan=2, mode="filter")
+	parser.add_argument("--apix",type=float,help="Angstroms per pixel for all images",default=None, guitype='floatbox', row=5, col=0, rowspan=1, colspan=1, mode="filter['self.pm().getAPIX()']")
+	parser.add_argument("--voltage",type=float,help="Microscope voltage in KV",default=None, guitype='floatbox', row=5, col=1, rowspan=1, colspan=1, mode="filter['self.pm().getVoltage()']")
+	parser.add_argument("--cs",type=float,help="Microscope Cs (spherical aberation)",default=None, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode="filter['self.pm().getCS()']")
+	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage, default=10)",default=10, guitype='floatbox', row=6, col=1, rowspan=1, colspan=1, mode="filter")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -76,34 +78,62 @@ def main():
 		originalsdir = os.path.join(".","raw_micrographs")
 		if not os.access(originalsdir, os.R_OK):
 			os.mkdir("raw_micrographs")
+			
 	for i,arg in enumerate(args):
-		launch_childprocess(get_proc2dcmd(options, arg))
+		base = base_name(arg,nodir=True)
+		output = os.path.join(os.path.join(".","micrographs"),base+".hdf")
+		cmd = "e2proc2d.py %s %s --inplace"%(arg,output)
+
+		if options.invert: cmd += " --mult=-1"
+		if options.edgenorm: cmd += " --process=normalize.edgemean"
+		if options.xraypixel: cmd += " --process=threshold.clampminmax.nsigma:nsigma=4"
+		
+		launch_childprocess(cmd)
 		if options.moverawdata:
-			if arg[:4].upper() != "BDB:": os.rename(arg,os.path.join(originalsdir,os.path.basename(arg)))
+			os.rename(arg,os.path.join(originalsdir,os.path.basename(arg)))
+			
+		# We estimate the defocus and B-factor (no astigmatism) from the micrograph and store it in info and the header
+		if options.ctfest :
+			d=EMData(output,0)
+			if d["nx"]<1200 or d["ny"]<1200 : 
+				print "CTF estimation will only work with images at least 1200x1200 in size"
+				sys.exit(1)
+			import e2ctf
+			
+			ds=1.0/(options.apix*512)
+			ffta=None
+			nbx=0
+			for x in range(100,d["nx"]-512,512):
+				for y in range(100,d["ny"]-512,512):
+					clip=d.get_clip(Region(x,y,512,512))
+					clip.process_inplace("normalize.edgemean")
+					fft=clip.do_fft()
+					fft.ri2inten()
+					if ffta==None: ffta=fft
+					else: ffta+=fft
+					nbx+=1
+
+			ffta.mult(1.0/(nbx*512**2))
+			ffta.process_inplace("math.sqrt")
+			ffta["is_intensity"]=0				# These 2 steps are done so the 2-D display of the FFT looks better. Things would still work properly in 1-D without it
+
+			fftbg=ffta.process("math.nonconvex")
+			fft1d=ffta.calc_radial_dist(ffta.get_ysize()/2,0.0,1.0,1)	# note that this handles the ri2inten averages properly
+
+			# Compute 1-D curve and background
+			bg_1d=e2ctf.low_bg_curve(fft1d,ds)
+
+			ctf=e2ctf.ctf_fit(fft1d,bg_1d,bg_1d,ffta,fftbg,options.voltage,options.cs,options.ac,options.apix,1)
+			#ctf.background=bg_1d
+			#ctf.dsbg=ds
+			db=js_open_dict(info_name(arg))
+			db["ctf_frame"]=[512,ctf,(256,256),set(),5,1]
+			print info_name(arg),ctf
+
 		E2progress(logid,(float(i)/float(len(args))))
 
 	E2end(logid)
 
-def get_proc2dcmd(options, filename):
-	""" Return a proc2d command """
-	if not options.inplace:
-		base = base_name(filename,nodir=True)
-		if options.format == 'bdb':
-			output = "bdb:micrographs#"+base
-		else:
-			output = os.path.join(os.path.join(".","micrographs"),base+options.suffix+"."+options.format)
-
-	if options.inplace:
-		cmd = "e2proc2d.py %s --inplace"%filename
-	else:
-		cmd = "e2proc2d.py %s %s --inplace"%(filename,output)
-
-	if options.invert: cmd += " --mult=-1"
-	if options.edgenorm: cmd += " --process=normalize.edgemean"
-#	if options.xraypixel: cmd += " --process=threshold.clampminmax.nsigma:nsigma=4:tomean=1"
-	if options.xraypixel: cmd += " --process=threshold.clampminmax.nsigma:nsigma=4"
-
-	return cmd
 
 if __name__ == "__main__":
 	main()
