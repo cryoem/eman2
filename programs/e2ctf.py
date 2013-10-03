@@ -1409,7 +1409,7 @@ def ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1):
 	besta=(1.0e15,0)
 	ctf.bfactor=500
 	for ang in xrange(0,180,15):
-		v=ctf_stig_cmp((ctf.defocus+ctf.dfdiff/2.0,ctf.defocus-ctf.dfdiff/2.0,ctf.dfang),(bgsub,bgcp,ctf))
+		v=ctf_stig_cmp((ctf.defocus+ctf.dfdiff/2.0,ctf.defocus-ctf.dfdiff/2.0,ang),(bgsub,bgcp,ctf))
 		besta=min(besta,(v,ang))
 	ctf.dfang=besta[1]
 	print "best angle:", besta
