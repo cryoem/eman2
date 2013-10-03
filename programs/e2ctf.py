@@ -1407,9 +1407,9 @@ def ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1):
 	oldb=ctf.bfactor
 	# coarse angular alignment
 	besta=(1.0e15,0)
-	ctf.bfactor=1000
+	ctf.bfactor=500
 	for ang in xrange(0,180,15):
-		v=ctf_stig_cmp((ctf.defocus+ctf.dfdiff,ctf.defocus-ctf.dfdiff,ctf.dfang),(bgsub,bgcp,ctf))
+		v=ctf_stig_cmp((ctf.defocus+ctf.dfdiff/2.0,ctf.defocus-ctf.dfdiff/2.0,ctf.dfang),(bgsub,bgcp,ctf))
 		besta=min(besta,(v,ang))
 	ctf.dfang=besta[1]
 	print "best angle:", besta
@@ -1417,21 +1417,21 @@ def ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1):
 	# Use a simplex minimizer to find the final fit
 	# we minimize using defocusU and defocusV rather than defocus & dfdfiff
 	ctf.bfactor=200
-	sim=Simplex(ctf_stig_cmp,[ctf.defocus+ctf.dfdiff,ctf.defocus-ctf.dfdiff,ctf.dfang],[0.01,0.01,5.0],data=(bgsub,bgcp,ctf))
+	sim=Simplex(ctf_stig_cmp,[ctf.defocus+ctf.dfdiff/2.0,ctf.defocus-ctf.dfdiff/2.0,ctf.dfang],[0.01,0.01,5.0],data=(bgsub,bgcp,ctf))
 	oparm=sim.minimize(epsilon=.00000001,monitor=0)
 	dfmaj,dfmin,ctf.dfang=oparm[0]		# final fit result
-	print "Coarse refine: defocus={:1.4f} dfdiff={:1.5f} dfang={:3.2f} defocusU={:1.4f} defocusV={:1.4f}".format((dfmaj+dfmin)/2.0,dfmaj-dfmin,ctf.dfang,dfmaj,dfmin)
+	print "Coarse refine: defocus={:1.4f} dfdiff={:1.5f} dfang={:3.2f} defocusU={:1.4f} defocusV={:1.4f}".format((dfmaj+dfmin)/2.0,(dfmaj-dfmin),ctf.dfang,dfmaj,dfmin)
 
 	# Use a simplex minimizer to refine the local neighborhood
 	ctf.bfactor=80
 	sim=Simplex(ctf_stig_cmp,oparm[0],[0.005,2.0,.005],data=(bgsub,bgcp,ctf))
 	oparm=sim.minimize(epsilon=.00000001,monitor=0)
 	dfmaj,dfmin,ctf.dfang=oparm[0]		# final fit result
-	print "  Fine refine: defocus={:1.4f} dfdiff={:1.5f} dfang={:3.2f} defocusU={:1.4f} defocusV={:1.4f}".format((dfmaj+dfmin)/2.0,dfmaj-dfmin,ctf.dfang,dfmaj,dfmin)
+	print "  Fine refine: defocus={:1.4f} dfdiff={:1.5f} dfang={:3.2f} defocusU={:1.4f} defocusV={:1.4f}".format((dfmaj+dfmin)/2.0,(dfmaj-dfmin),ctf.dfang,dfmaj,dfmin)
 	
 	ctf.bfactor=oldb
 	ctf.defocus=(dfmaj+dfmin)/2.0
-	ctf.dfdiff=ctf.defocus-dfmin
+	ctf.dfdiff=dfmaj-dfmin
 	
 
 	## extract points at maxima for B-factor estimation	
@@ -1487,7 +1487,7 @@ def ctf_stig_cmp(parms,data):
 
 	dfmaj,dfmin,ctf.dfang=parms
 	ctf.defocus=(dfmaj+dfmin)/2.0
-	ctf.dfdiff=ctf.defocus-dfmin
+	ctf.dfdiff=dfmaj-dfmin
 	
 	ctf.compute_2d_complex(bgcp,Ctf.CtfType.CTF_FITREF,None)
 	
@@ -1496,11 +1496,11 @@ def ctf_stig_cmp(parms,data):
 
 	penalty=0.0
 	if ctf.dfdiff<0 : penalty-=ctf.dfdiff
-	if ctf.dfdiff>ctf.defocus : penalty+=ctf.dfdiff-ctf.defocus
+	#if ctf.dfdiff>ctf.defocus : penalty+=ctf.dfdiff-ctf.defocus
 	if dfmaj<0 : penalty-=dfmaj
 	if dfmin<0 : penalty-=dfmin
 	
-#	print parms,bgcp.cmp("dot",bgsub,{"normalize":1}),penalty
+#	print parms,ctf.defocus,ctf.dfdiff,bgcp.cmp("dot",bgsub,{"normalize":1}),penalty
 	return bgcp.cmp("dot",bgsub,{"normalize":1})+penalty
 
 def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhint=None,verbose=1):
