@@ -20347,7 +20347,7 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
-	cout <<"  VERSION  09/30/2013  10:00 am"<<endl;
+	cout <<"  VERSION  10/01/2013  7:00 pm"<<endl;
 	float dummy;
 	dummy = ri;
 	cout <<  "   fmod   "<<fmod(qprob,dummy)<<endl;
@@ -22320,19 +22320,19 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 	}
 	float dpsi;
 	//float dp       = dp_dphi_rise_delta[0];
-	float dphi       = dp_dphi_rise_delta[1];
-	int   rise       = dp_dphi_rise_delta[2];  // Float in pixels!
-	float delta      = dp_dphi_rise_delta[3];
-	int  nphi        = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[0];
-	int  symrestrict = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[1];
-	int  phiwobble   = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[2];
-	int  range       = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[3];
-	int  ywobble     = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[4];
-	bool Dsym        = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[5];
-	int  nwx         = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[6];
-	int  nwy         = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[7];
-	int  nwxc        = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[8];
-	int  nwyc        = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[9];
+	float dphi        = dp_dphi_rise_delta[1];
+	float rise        = dp_dphi_rise_delta[2];  // Float in pixels!
+	float delta       = dp_dphi_rise_delta[3];
+	int   nphi        = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[0];
+	int   symrestrict = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[1];
+	int   phiwobble   = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[2];
+	int   range       = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[3];
+	int   ywobble     = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[4];
+	bool  Dsym        = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[5];
+	int   nwx         = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[6];
+	int   nwy         = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[7];
+	int   nwxc        = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[8];
+	int   nwyc        = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[9];
 
 	const int ndata = data.size();
 
@@ -22378,7 +22378,7 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 			int six = ix - nwxc;
 			for (int iy = 1+ywobble; iy < nwy-ywobble-1; ++iy) {                     //#  Y shift
 				int siy = iy - nwyc;
-				yshiftlocal[0] = float(iy-nwyc);
+				yshiftlocal[0]  = float(iy-nwyc);
 				yrshiftlocal[0] = float(iy-nwyc);
 				for (int iphi = 0; iphi < nphi/symrestrict; ++iphi) {               //#  phi search, first segment has phi range restricted by point-group symmetry
 					float qphi = iphi*delta;
@@ -22407,6 +22407,7 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 							}
 						}
 					}
+					//cout << "  QST "<<iphi<< "  "<<mxm<< "  "<<mxr<<endl;
 					for ( int im = 1; im < ndata; ++im) {                                       //#  predicted locations
 						//# dst is distance between segment 0 and current segment in pixels
 						vector<float> cim = data[im]->get_attr("ptcl_source_coord");
@@ -22414,6 +22415,7 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 						//# predict for all remaining segments assuming number 0
 						float qd  = round((siy + dst)/rise);
 						float piy = siy + dst - rise*qd;                                    //#  predicted y shift
+						//cout<<siy<<"  "<<dst<<"  "<<rise<<"  "<<qd<<"  "<<piy<<"  "<<siy<<"  "<<siy<<"  "<<endl;
 						float pphi = (philocal[0] + idir*dphi*qd);
 						if(pphi >= 360.0f)     pphi = fmod( pphi, 360.0f);
 						else if( pphi < 0.0f)  pphi = 360.0f + fmod( pphi, 360.0f);         //#  predicted phi with full angular accuracy, not an integer
@@ -22439,6 +22441,7 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 												+ xdif*yrem*ccfs[im][tphi]->get_value_at(iux+1,iuy)
 												+ xrem*ydif*ccfs[im][tphi]->get_value_at(iux,iuy+1)
 												+ xdif*ydif*ccfs[im][tphi]->get_value_at(iux+1,iuy+1);
+			//cout << lphi<< "  "<< tphi<<  "  "<<iux<< "  "<<iuy<< "  "<<fiy<< "  "<<ywobble<< "  "<<nwy<< "  "<<qcf<<endl;
 									if (qcf > ciq) {
 										ciq = qcf;
 										xshiftlocal[im] = iux + xdif - nwxc;
@@ -22448,6 +22451,8 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 								}
 							}
 						}
+						//cout << "  St "<<iphi<< "  "<<mxm<< "  "<<ciq<< "  "<<mxm+ciq<< "  "<<endl;
+						//cout << im<< "  "<< ttphi<<  "  "<<phiwobble<< "  "<<ywobble<< "  "<<fiy<<endl;
 						mxm += ciq;
 						//# now for rotated
 						if (! Dsym) {
@@ -22501,6 +22506,7 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 				}
 			}
 		}
+		//cout << idir<< "  "<< tmax<< endl;
 		if (tmax > dirma) {
 			dirma = tmax;
 			dpsi = mpsi;
