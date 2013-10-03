@@ -483,7 +483,8 @@ def pspec_and_ctf_fit(options,debug=False):
 					print "Using existing defocus as hint :",dfhint
 				except :
 					try:
-						curdf=js_parms["ctf_frame"][1].defocus
+						ctf=js_parms["ctf_frame"][1]
+						curdf=ctf.defocus
 						dfhint=(curdf-0.1,curdf+0.1)
 						print "Using existing defocus from frame as hint :",dfhint
 					except:
@@ -545,7 +546,7 @@ def refine_and_smoothsnr(options,strfact,debug=False):
 			skipped+=1
 			continue
 
-		if orig.dfdiff!=0 :
+		if ctf.dfdiff!=0 :
 			print "Skipping {}. SSNR based refinement not available for astigmatic images.".format(name)
 			skipped+=1
 			continue

@@ -50,11 +50,14 @@ def main():
 	parser.add_argument("--edgenorm",action="store_true",help="Edge normalize",default=False, guitype='boolbox', row=2, col=1, rowspan=1, colspan=1, mode='filter[True]')
 	parser.add_argument("--xraypixel",action="store_true",help="Filter X-ray pixels",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode='filter[True]')
 	parser.add_argument("--ctfest",action="store_true",help="Estimate defocus from whole micrograph",default=False, guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode='filter[True]')
+	parser.add_argument("--astigmatism",action="store_true",help="Includes astigmatism in automatic fitting",default=False, guitype='boolbox', row=3, col=2, rowspan=1, colspan=1, mode='filter[False]')
 	parser.add_argument("--moverawdata",action="store_true",help="Move raw data to directory ./raw_micrographs after filtration",default=False)
 	parser.add_argument("--apix",type=float,help="Angstroms per pixel for all images",default=None, guitype='floatbox', row=5, col=0, rowspan=1, colspan=1, mode="filter['self.pm().getAPIX()']")
 	parser.add_argument("--voltage",type=float,help="Microscope voltage in KV",default=None, guitype='floatbox', row=5, col=1, rowspan=1, colspan=1, mode="filter['self.pm().getVoltage()']")
 	parser.add_argument("--cs",type=float,help="Microscope Cs (spherical aberation)",default=None, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode="filter['self.pm().getCS()']")
 	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage, default=10)",default=10, guitype='floatbox', row=6, col=1, rowspan=1, colspan=1, mode="filter")
+	parser.add_argument("--defocusmin",type=float,help="Minimum autofit defocus",default=0.6, guitype='floatbox', row=8, col=0, rowspan=1, colspan=1, mode="filter[0.6]")
+	parser.add_argument("--defocusmax",type=float,help="Maximum autofit defocus",default=4, guitype='floatbox', row=8, col=1, rowspan=1, colspan=1, mode='filter[4.0]')
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -123,7 +126,9 @@ def main():
 			# Compute 1-D curve and background
 			bg_1d=e2ctf.low_bg_curve(fft1d,ds)
 
-			ctf=e2ctf.ctf_fit(fft1d,bg_1d,bg_1d,ffta,fftbg,options.voltage,options.cs,options.ac,options.apix,1)
+			ctf=e2ctf.ctf_fit(fft1d,bg_1d,bg_1d,ffta,fftbg,options.voltage,options.cs,options.ac,options.apix,1,dfhint=(options.defocusmin,options.defocusmax))
+			if options.astigmatism : e2ctf.ctf_fit_stig(ffta,fftbg,ctf)
+			
 			#ctf.background=bg_1d
 			#ctf.dsbg=ds
 			db=js_open_dict(info_name(arg))
