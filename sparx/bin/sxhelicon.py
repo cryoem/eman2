@@ -66,8 +66,9 @@ def main():
 	parser.add_option("--debug",              action="store_true",   default=False,               help="debug")
 	parser.add_option("--seg_ny",             type="int",            default= 45,                 help="Desired y dimension of segments.  Only central part of segments nseg_ny pixels long will be used in calculations.")
 	parser.add_option("--searchxshift",       type="float",		     default= 0.0,                help="search range for x-shift determination: +/- searchxshift (Angstroms)")
-	parser.add_option("--xwobble",            type="float",		     default= 6.0,                help="neighborhood within which to search for peaks in 1D ccf for x-shift search (Angstroms)")
-	parser.add_option("--ywobble",            type="float",          default=0.0,                 help="wobble in y-directions (default = 0.0) in Angstroms")
+	parser.add_option("--xwobble",            type="float",		     default=0.0,                 help="wobble in y-directions (default = 0.0) (Angstroms)")
+	parser.add_option("--ywobble",            type="float",          default=0.0,                 help="wobble in y-directions (default = 0.0) (Angstroms)")
+	parser.add_option("--phiwobble",          type="float",          default=0.0,                 help="wobble of azimuthal angle (default = 0.0) (degrees)")
 	parser.add_option("--nopsisearch",        action="store_true",   default=False,               help="Block searching for in-plane angle (default False)")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
@@ -120,7 +121,9 @@ def main():
 		else:              mask = args[3]
 		from applications import ehelix_MPI
 		global_def.BATCH = True
-		ehelix_MPI(args[0], args[1], args[2], options.seg_ny, options.delta, options.psi_max, searchxshiftp, xwobblep, ywobble, options.apix, dp, dphi, options.fract, rmaxp, rminp, not options.nopsisearch, mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
+		ehelix_MPI(args[0], args[1], args[2], options.seg_ny, options.delta, options.phiwobble, options.psi_max,\
+		 searchxshiftp, xwobblep, ywobble, options.apix, dp, dphi, options.fract, rmaxp, rminp, not options.nopsisearch,\
+		  mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
 		global_def.BATCH = False
 
 
