@@ -13740,6 +13740,7 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, psi_max, search_rng, rng, 
 
 	phiwobble = int(float(ywobble)/rise*dphi/delta+0.5)  # phiwobble is NOT in degrees, it is in nphi units
 
+	from math import ceil
 	nwx = 2*search_rng+3
 	nwy = int(ceil(rise)+2*ywobble+2)
 	nwxc = nwx//2
