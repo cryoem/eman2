@@ -13605,6 +13605,7 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, phiwobble, psi_max, search
 			print_msg("Maximum range for psi search              : %s\n"%(psi_max))
 		print_msg("X-search range                            : %f\n"%(search_rng))
 		print_msg("X-search wobble                           : %f\n"%(rng))
+		print_msg("Y-search wobble                           : %f\n"%(ywobble))
 		print_msg("Pixel size [A]                            : %f\n"%(pixel_size))
 		print_msg("dp [A]                                    : %f\n"%(dp))
 		print_msg("dphi                                      : %f\n"%(dphi))
