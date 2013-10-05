@@ -13744,7 +13744,7 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, phiwobble, psi_max, search
 
 	from math import ceil
 	nwx = 2*search_rng+3
-	nwy = int(ceil(rise)+2*ywobble+2)
+	nwy = int(ceil(rise/2)*2+1+2*ywobble+2)
 	nwxc = nwx//2
 	nwyc = nwy//2
 	nphi = int(360.0/delta + 0.5)
