@@ -3,13 +3,13 @@
 from EMAN2 import *
 from sys import argv
 
-print "<EMX>"
+print '<EMX version="1.0">'
 for f in sorted(argv[1:]):
-	base=base_name(f,nodir=True)
+	base=base_name(f,nodir=True)[:-5]
 	db=js_open_dict(f)
 	try:
-		#ctf=db["ctf"][0]
-		ctf=db["ctf_frame"][1]
+		ctf=db["ctf"][0]
+		#ctf=db["ctf_frame"][1]
 	except:
 		continue
 
