@@ -68,6 +68,7 @@ def main():
 	parser.add_option("--searchxshift",       type="float",		     default= 0.0,                help="search range for x-shift determination: +/- searchxshift (Angstroms)")
 	parser.add_option("--xwobble",            type="float",		     default=0.0,                 help="wobble in y-directions (default = 0.0) (Angstroms)")
 	parser.add_option("--ywobble",            type="float",          default=0.0,                 help="wobble in y-directions (default = 0.0) (Angstroms)")
+	parser.add_option("--ystep",              type="float",          default=0.0,                 help="step is in y-directions (default = pixel size) (Angstroms)")
 	parser.add_option("--phiwobble",          type="float",          default=0.0,                 help="wobble of azimuthal angle (default = 0.0) (degrees)")
 	parser.add_option("--nopsisearch",        action="store_true",   default=False,               help="Block searching for in-plane angle (default False)")
 	(options, args) = parser.parse_args(arglist[1:])
@@ -90,20 +91,25 @@ def main():
 			# read helical symmetry parameters from symdoc
 			from utilities import read_text_row
 			hparams=read_text_row(options.symdoc)
-			dp = hparams[0][0]
+			dp  = hparams[0][0]
 			dphi = hparams[0][1]
 		else:
-			dp = options.dp
-			dphi =options.dphi
+			dp   = options.dp
+			dphi = options.dphi
 		
 		rminp = int((float(options.rmin)/options.apix) + 0.5)
 		rmaxp = int((float(options.rmax)/options.apix) + 0.5)
-		ywobble = int(options.ywobble/options.apix+0.5)  # this should be full real.
 
 		from utilities import get_input_from_string, get_im
 
 		searchxshiftp = int( (options.searchxshift/options.apix) + 0.5)
 		xwobblep = int( (options.xwobble/options.apix) + 0.5)
+		ywobble = int(options.ywobble/options.apix+0.5)  # this should be full real.
+		if( options.ystep <= 0.0 ):  ystep = 1.0
+		else:                        ystep = options.ystep/options.apix
+		if( dp/2.0 < ywobble):
+			ERROR('ywobble has to be smaller than dp/2.', 'sxhelicon')
+			sys.exit()
 
 		try:
 			from mpi import mpi_init, mpi_finalize
@@ -122,7 +128,7 @@ def main():
 		from applications import ehelix_MPI
 		global_def.BATCH = True
 		ehelix_MPI(args[0], args[1], args[2], options.seg_ny, options.delta, options.phiwobble, options.psi_max,\
-		 searchxshiftp, xwobblep, ywobble, options.apix, dp, dphi, options.fract, rmaxp, rminp, not options.nopsisearch,\
+		 searchxshiftp, xwobblep, ywobble, ystep, options.apix, dp, dphi, options.fract, rmaxp, rminp, not options.nopsisearch,\
 		  mask, options.maxit, options.CTF, options.snr, options.sym,  options.function, options.npad, options.debug)
 		global_def.BATCH = False
 
