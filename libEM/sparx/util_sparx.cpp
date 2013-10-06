@@ -20347,7 +20347,7 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
-	cout <<"  VERSION  10/01/2013  7:00 pm"<<endl;
+	cout <<"  VERSION  10/05/2013  7:00 pm"<<endl;
 	float dummy;
 	dummy = ri;
 	cout <<  "   fmod   "<<fmod(qprob,dummy)<<endl;
@@ -22323,16 +22323,17 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 	float dphi        = dp_dphi_rise_delta[1];
 	float rise        = dp_dphi_rise_delta[2];  // Float in pixels!
 	float delta       = dp_dphi_rise_delta[3];
+	int ywobble     = int(dp_dphi_rise_delta[4]); //ywobble in pixels, code will have to be changed
+	float ystep       = dp_dphi_rise_delta[5];
 	int   nphi        = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[0];
 	int   symrestrict = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[1];
 	int   phiwobble   = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[2];
 	int   range       = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[3];
-	int   ywobble     = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[4];
-	bool  Dsym        = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[5];
-	int   nwx         = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[6];
-	int   nwy         = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[7];
-	int   nwxc        = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[8];
-	int   nwyc        = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[9];
+	bool  Dsym        = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[4];
+	int   nwx         = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[5];
+	int   nwy         = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[6];
+	int   nwxc        = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[7];
+	int   nwyc        = nphi_phiwobble_range_ywobble_Dsym_nwx_nwy_nwxc_nwyc[8];
 
 	const int ndata = data.size();
 
@@ -22376,10 +22377,23 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 		for (int ix = 1; ix < nwx-1; ++ix) {                                         //#  X shift
 			//#cout << "im: ", len(ccfs), ix,time()-start_time
 			int six = ix - nwxc;
-			for (int iy = 1+ywobble; iy < nwy-ywobble-1; ++iy) {                     //#  Y shift
-				int siy = iy - nwyc;
-				yshiftlocal[0]  = float(iy-nwyc);
-				yrshiftlocal[0] = float(iy-nwyc);
+			float siy = -rise/2.0f - ystep + ywobble;
+			//for (int iy = 1+ywobble; iy < nwy-ywobble-1; ++iy)
+			while( siy < rise/2.0 - ystep - ywobble ) {                     //#  Y shift
+				siy += ystep;
+				yshiftlocal[0]  = siy;
+				yrshiftlocal[0] = siy;
+
+				float yiy = siy + nwyc;
+				int   fiy = int(yiy);
+				float ydif = yiy - fiy;
+				float yrem = 1.0 - ydif;
+				int   iuy = fiy;
+
+				float xrem = 1.0f;
+				float xdif = 0.0f;
+
+
 				for (int iphi = 0; iphi < nphi/symrestrict; ++iphi) {               //#  phi search, first segment has phi range restricted by point-group symmetry
 					float qphi = iphi*delta;
 					philocal[0]  = qphi;
@@ -22391,7 +22405,11 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 					float mxm = -1.0e23f;
 					float mxr;
 					for (int iux = max(1, ix - range); iux < min(nwx - 1, ix+range+1); ++iux) {    //#  X wobble
-						float qcf = ccfs[0][iphi]->get_value_at(iux,iy);
+						//float qcf = ccfs[0][iphi]->get_value_at(iux,iy);
+						float qcf =   xrem*yrem*ccfs[0][iphi]->get_value_at(iux,iuy)
+									+ xdif*yrem*ccfs[0][iphi]->get_value_at(iux+1,iuy)
+									+ xrem*ydif*ccfs[0][iphi]->get_value_at(iux,iuy+1)
+									+ xdif*ydif*ccfs[0][iphi]->get_value_at(iux+1,iuy+1);
 						if (qcf > mxm) {
 							mxm = qcf;
 							xshiftlocal[0] = float(iux-nwxc);
@@ -22400,7 +22418,11 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 					if (! Dsym) {
 						mxr = -1.0e23f;
 						for (int iux = max(1, ix - range); iux < min(nwx - 1, ix+range+1); ++iux) {     //# Xr wobble
-							float qcf = ccfr[0][iphi]->get_value_at(iux,iy);
+							//float qcf = ccfr[0][iphi]->get_value_at(iux,iy);
+							float qcf =   xrem*yrem*ccfr[0][iphi]->get_value_at(iux,iuy)
+										+ xdif*yrem*ccfr[0][iphi]->get_value_at(iux+1,iuy)
+										+ xrem*ydif*ccfr[0][iphi]->get_value_at(iux,iuy+1)
+										+ xdif*ydif*ccfr[0][iphi]->get_value_at(iux+1,iuy+1);
 							if (qcf > mxr) {
 								mxr = qcf;
 								xrshiftlocal[0] = float(iux-nwxc);
