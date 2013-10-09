@@ -104,7 +104,7 @@ def main():
 
 		searchxshiftp = int( (options.searchxshift/options.apix) + 0.5)
 		xwobblep = int( (options.xwobble/options.apix) + 0.5)
-		ywobble = int(options.ywobble/options.apix+0.5)  # this should be full real.
+		ywobble = options.ywobble/options.apix
 		if( options.ystep <= 0.0 ):  ystep = 1.0
 		else:                        ystep = options.ystep/options.apix
 		if( dp/2.0 < ywobble):
