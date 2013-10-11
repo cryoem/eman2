@@ -51,7 +51,7 @@ single-model refinement.
 	parser.add_argument("--excludebad",action="store_true",help="Excludes the particles from the generated set(s). They are included by default.",default=False)
 	parser.add_argument("--noderef",action="store_true",help="If particle file was .lst, normally the output .lst will reference the original image file. With this option, the output will reference the .lst file instead, creating a lst pointing to another lst.",default=False)
 	parser.add_argument("--sort",action="store_true",help="If set, output .lst file will be sorted. The default is to leave the output grouped by class-average.",default=False)
-	
+
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
@@ -60,7 +60,7 @@ single-model refinement.
 	if not options.refinemulti and options.classlist==None :
 		print "Please specify one of --refinemulti or --classlist=<listfile>"
 		sys.exit(1)
-		
+
 	try:
 		ncls=EMUtil.get_image_count(args[0])
 		if ncls<1 : raise Exception
@@ -80,25 +80,25 @@ single-model refinement.
 				inset=hdr["class_ptcl_src"]		# theoretically this could be different for different class-averages, but in practice no program does that
 				break
 			except : continue
-		
+
 		# find the existing set/stack containing the particle data used to make the averages
 		inset=hdr["class_ptcl_src"]		# theoretically this could be different for different class-averages, but in practice no program does that
-		
+
 		if inset.lower()[:4]=="bdb:" :
 			print "Sorry, this program only works with EMAN2.1+, and cannot deal with BDB style sets"
 			sys.exit(1)
-		
+
 		# This seems a bit odd, as after this point, inset could be either a string or an LSXFile object, but it is useful later
 		if not options.noderef and inset[-4:]==".lst" : inset=LSXFile(inset)
-		
+
 		outlst={}
 		for c in xrange(ncls):
 			try : h=EMData(args[0],c,True)
 			except:
 				if options.verbose>0 : print "Bad class-average: ",c
 				continue
-			
-			# this is a list of all of the particle indices from the input set (inset). 
+
+			# this is a list of all of the particle indices from the input set (inset).
 			# We may need to dereference these to the original file if inset is already a .lst file (as it normally will be)
 			ptcl=[]
 			try : ptcl.extend(h["class_ptcl_idxs"])
@@ -106,7 +106,7 @@ single-model refinement.
 			if not options.excludebad :
 				try: ptcl.extend(h["exc_class_ptcl_idxs"])
 				except: pass
-				
+
 			if len(ptcl)==0 :
 				if options.verbose>0 : print "No particles in class-average: ",c
 				continue
@@ -116,7 +116,7 @@ single-model refinement.
 			except:
 				print "No model_id in class average {}. Was this classes file created with e2refinemulti.py ?".format(c)
 				sys.exit(1)
-				
+
 			if not outlst.has_key(mdl) :
 				if options.setname!=None :
 					if options.setname[-4:]==".lst" : fsp="{}_m{}.lst".format(options.setname[:-4],mdl)
@@ -135,7 +135,7 @@ single-model refinement.
 				else :
 					nextf,extf,com=inset.read(p)	# read the original information for this particle from the old set
 					outlst[mdl].write(-1,nextf,extf)
-					
+
 		if options.sort :
 			for k in outlst:
 				ptcls=[]
@@ -143,15 +143,82 @@ single-model refinement.
 					nextf,extf,com=outlst[k].read(i)
 					ptcls.append((extf,nextf))
 				ptcls.sort()
-				
+
 				for i,v in enumerate(ptcls):
 					outlst[k].write(i,v[1],v[0])
-					
+
 		if options.verbose>0 :
 			print "Output files:"
 			for k in sorted(outlst.keys()) : print "model_id = {} : {} ({})".format(k,outlst[k].path,outlst[k].n)
-					
-					
+
+	elif options.classlist:
+		# Read the file containing class-average numbers
+		try:
+			clsnums=[int(i) for i in re.split("[\s,;]*",file(options.classlist,"r").read()) if len(i)>0 and i[0]!="#"]
+		except:
+			print "Error: Could not read and parse classlist file. Must be a comma/whitespace separated list of integers."
+			sys.exit(1)
+
+		# find the existing set/stack containing the particle data used to make the averages
+		for c in clsnums:
+			try :
+				hdr=EMData(args[0],c,True)
+				inset=hdr["class_ptcl_src"]		# theoretically this could be different for different class-averages, but in practice no program does that
+				break
+			except : continue
+
+		if inset.lower()[:4]=="bdb:" :
+			print "Sorry, this program only works with EMAN2.1+, and cannot deal with BDB style sets"
+			sys.exit(1)
+
+		# This seems a bit odd, as after this point, inset could be either a string or an LSXFile object, but it is useful later
+		if not options.noderef and inset[-4:]==".lst" : inset=LSXFile(inset)
+
+		# make the output file
+		if options.setname!=None:
+			outlst=LSXFile(options.setname)
+		else :
+			outlst=LSXFile("subset.lst")
+
+		# iterate over the classes
+		for c in clsnums:
+			try : h=EMData(args[0],c,True)
+			except:
+				if options.verbose>0 : print "Bad class-average: ",c
+				continue
+
+			# this is a list of all of the particle indices from the input set (inset).
+			# We may need to dereference these to the original file if inset is already a .lst file (as it normally will be)
+			ptcl=[]
+			try : ptcl.extend(h["class_ptcl_idxs"])
+			except: pass
+			if not options.excludebad :
+				try: ptcl.extend(h["exc_class_ptcl_idxs"])
+				except: pass
+
+			if len(ptcl)==0 :
+				if options.verbose>0 : print "No particles in class-average: ",c
+				continue
+
+			#### This is where we actually generate the new sets
+			for p in sorted(ptcl):
+				if isinstance(inset,str) :
+					outlst.write(-1,p,inset)
+				else :
+					nextf,extf,com=inset.read(p)	# read the original information for this particle from the old set
+					outlst.write(-1,nextf,extf)
+
+		if options.sort :
+			ptcls=[]
+			for i in xrange(outlst.n):
+				nextf,extf,com=outlst.read(i)
+				ptcls.append((extf,nextf))
+			ptcls.sort()
+
+			for i,v in enumerate(ptcls):
+				outlst.write(i,v[1],v[0])
+
+
 	else :
 		print "Sorry, this mode is not yet complete. Please email sludtke@bcm.edu"
 		sys.exit(1)
