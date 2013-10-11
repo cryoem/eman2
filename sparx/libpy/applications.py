@@ -13325,8 +13325,9 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 
 	if do_match_pixel_rise and (new_pixel_size > 0):
 		ERROR( "If resampling is desired, either set do_match_pixel_rise to True OR specify new_pixel_size, but not both at the same time.\n If do_match_pixel_rise=True, the program will automatically calculate new pixel size of the output disks such that the rise will be ~ integer number of pixels in new pixel size.\n If new_pixel_size is specified, then the output disks will be resampled so that resulting pixel size is new_pixel_size.", "gendisks_MPI", 1, myid)
-	dpp = (float(dp)/pixel_size)
-	rise = int(dpp)
+	from math import ceil
+	dpp = float(dp)/pixel_size
+	rise = int(ceil(dpp))
 	
 	if do_match_pixel_rise:
 		# Calculate new pixel size such that dp/new_pixel_size is approximately an
