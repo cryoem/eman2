@@ -13344,15 +13344,15 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 		if new_pixel_size < 0:  ERROR('match_pixel_size was not able to find a new pixel size with the desired maxerror', "gendisks_MPI", 1, myid)
 	
 	mpi_barrier(MPI_COMM_WORLD)
-	
+
 	if myid == 0:
 		if new_pixel_size > 0:
 			print "Output disks will be resampled to pixel size: ", new_pixel_size
-			
+
 	if new_pixel_size > 0:
 		dpp = (float(dp)/new_pixel_size)
 		rise = int(dpp)
-	
+
 	# for resampling to polar rmin>1
 	rminpolar = max(1,rmin)
 	rr = ref_nz//2-2
@@ -13410,7 +13410,7 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 				a = get_im(stack, tmpfilaments[i][0])
 				filname = a.get_attr('filament')
 				filatable[mid][i] = filname
-				
+
 	#print filatable
 	temp = chunks[myid:myid+1][0]
 	filaments = [filaments[temp[i][1]] for i in xrange(len(temp))]
@@ -13422,7 +13422,7 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 	mfils = mpi_bcast(mfils, 1, MPI_INT, 0, MPI_COMM_WORLD)
 	mfils = int(mfils[0])
 	if mfils < nfils:	
-		ERROR('Maximum number of filaments %d should not be less than nfils %d!'%(mfils, nfils), "ehelix_MPI", 1,myid)
+		ERROR('Maximum number of filaments %d should not be less than nfils %d!'%(mfils, nfils), "gendisks_MPI", 1,myid)
 	list_of_particles = []
 	indcs = []
 	k = 0
@@ -13461,7 +13461,7 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 				fullvol0 = Util.window(recons3d_4nn_ctf(data, list_proj=range(indcs[ivol][0],indcs[ivol][1]), symmetry="c1", npad=2),  ref_nx, ref_ny, ref_nz, 0, 0, 0)
 			else:
 				fullvol0 = Util.window(recons3d_4nn(data, list_proj=range(indcs[ivol][0],indcs[ivol][1]), symmetry="c1", npad=2),  ref_nx, ref_ny, ref_nz, 0, 0, 0)
-			
+
 			fullvol0 = fullvol0.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
 			fullvol0 = sym_vol(fullvol0, symmetry=sym)
 			ref_data[0] = fullvol0

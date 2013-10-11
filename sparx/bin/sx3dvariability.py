@@ -52,7 +52,7 @@ def main():
 		return  alpha, sx, sy, m
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " prj_stack  --ave2D= --var2D=  --ave3D= --var3D= --freq= --fall_off= --npad= --sym=symmetry --MPI --CTF"
+	usage = progname + " prj_stack  --ave2D= --var2D=  --ave3D= --var3D= --freq= --img_per_grp= --fall_off=  --sym=symmetry --MPI --CTF"
 	parser = OptionParser(usage, version=SPARXVERSION)
 
 	parser.add_option("--radiuspca", 	type="int"         ,	default=-1   ,				help="radius for PCA" )
@@ -144,9 +144,6 @@ def main():
 
 	if myid == main_node:
 		print_msg("%-70s:  %d\n"%("Number of projection", nima))
-		print_msg("%-70s:  %d\n"%("nx", nx))
-		print_msg("%-70s:  %d\n"%("ny", ny))
-		if options.VERBOSE:  print "Number of projections:", nima
 		
 	img_begin, img_end = MPI_start_end(nima, number_of_proc, myid)
 

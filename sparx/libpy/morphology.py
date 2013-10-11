@@ -1531,9 +1531,9 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 			aroo /= nimi
 			roo  /= nimi
 			qa   /= nimi
-			
+
 			if f_start < 0:
-			
+
 				#  Find a break point
 				bp = 1.e23
 				for i in xrange(5,lenroo-5):
