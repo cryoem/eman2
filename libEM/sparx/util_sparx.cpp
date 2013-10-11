@@ -3554,6 +3554,171 @@ c
 	return retvals;
 }
 
+static std::vector<int> shuffled_range(int first, int last)
+{
+	std::vector<int> v(last - first + 1);
+	for (unsigned i = 0; i < v.size(); ++i) v[i] = first + i;
+	for (unsigned i = 0; i < v.size(); ++i) {
+		unsigned r = Util::get_irand(0,v.size()-1);
+		std::swap( v[r], v[i] );
+	}
+	return v;
+}
+
+static Dict Crosrng_rand_ms(EMData* circ1p, EMData* circ2p, vector<int> numr, float previous_max)
+{
+	int nring = numr.size()/3;
+	//int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
+	int maxrin = numr[numr.size()-1];
+	double qn; float tot;
+	float *circ1 = circ1p->get_data();
+	float *circ2 = circ2p->get_data();
+/*
+c
+c  checks both straight & mirrored positions
+c
+c  input - fourier transforms of rings!!
+c  circ1 already multiplied by weights!
+c
+*/
+
+	// dimension		 circ1(lcirc),circ2(lcirc)
+
+	// t(maxrin), q(maxrin), t7(-3:3)  //maxrin+2 removed
+	double *t, *q, t7[7];
+
+	int   jc, numr3i, numr2i, i, j, k, jtot = 0;
+	float t1, t2, t3, t4, c1, c2, d1, d2, pos;
+
+	qn  = 0.0f;
+	tot = 0.0f;
+#ifdef _WIN32
+	const int ip = -(int)(log((float)maxrin)/log(2.0f));
+#else
+	const int ip = -(int)(log2(maxrin));
+#endif	//_WIN32
+  //for (j=1; j<=maxrin;j++) cout <<"  "<<j<<"   "<<circ1(j)<<"   "<<circ2(j) <<endl;
+
+	//  c - straight  = circ1 * conjg(circ2)
+	//  zero q array
+
+	q = (double*)calloc(maxrin,sizeof(double));
+
+	//   t - mirrored  = conjg(circ1) * conjg(circ2)
+	//   zero t array
+	t = (double*)calloc(maxrin,sizeof(double));
+
+   //   premultiply  arrays ie( circ12 = circ1 * circ2) much slower
+	for (i=1; i<=nring; i++) {
+
+		numr3i = numr(3,i);   // Number of samples of this ring
+		numr2i = numr(2,i);   // The beginning point of this ring
+
+		t1   = circ1(numr2i) * circ2(numr2i);
+		q(1) += t1;
+		t(1) += t1;
+
+		t1   = circ1(numr2i+1) * circ2(numr2i+1);
+		if (numr3i == maxrin)  {
+			q(2) += t1;
+			t(2) += t1;
+		} else {
+			q(numr3i+1) += t1;
+			t(numr3i+1) += t1;
+		}
+
+		for (j=3; j<=numr3i; j += 2) {
+			jc     = j+numr2i-1;
+
+// Here, (c1+c2i)*conj(d1+d2i) = (c1*d1+c2*d2)+(-c1*d2+c2*d1)i
+//   			          ----- -----    ----- -----
+//      			   t1     t2      t3    t4
+// Here, conj(c1+c2i)*conj(d1+d2i) = (c1*d1-c2*d2)+(-c1*d2-c2*d1)i
+//     		                      ----- -----    ----- -----
+//     			               t1    t2       t3    t4
+
+			c1     = circ1(jc);
+			c2     = circ1(jc+1);
+			d1     = circ2(jc);
+			d2     = circ2(jc+1);
+
+			t1     = c1 * d1;
+			t2     = c2 * d2;
+			t3     = c1 * d2;
+			t4     = c2 * d1;
+
+			q(j)   += t1 + t2;
+			q(j+1) += -t3 + t4;
+			t(j)   += t1 - t2;
+			t(j+1) += -t3 - t4;
+		}
+	}
+	//for (j=1; j<=maxrin; j++) cout <<"  "<<j<<"   "<<q(j) <<"   "<<t(j) <<endl;
+	Util::fftr_d(q,ip);
+	// mirrored
+	Util::fftr_d(t,ip);
+
+	std::vector<int> angles = shuffled_range(0, 2*maxrin-1);  // [0..maxrin) - not-mirrored, [maxrin..2*maxrin) - mirrored
+	bool mirrored = false;
+	jtot = -1;
+	for (int pos_j=0; pos_j < 2*maxrin; pos_j++) {//cout <<"  "<<j<<"   "<<q(j-1) <<endl;
+		j = angles[pos_j] + 1;
+		if (j <= maxrin) {
+			// not mirrored
+			if (q(j) > previous_max) {
+				qn  = q(j);
+				jtot = j;
+				break;
+			}
+		} else {
+			// mirrored
+			j -= maxrin;
+			if ( t(j) > previous_max ) {
+				mirrored = true;
+				qn   = t(j);
+				jtot = j;
+				break;
+			}
+		}
+	}
+
+	if (jtot < 0) {
+		// no solutions
+		free(t);
+		free(q);
+		Dict retvals;
+		return retvals;
+	}
+
+	// interpolation
+	if (! mirrored) {
+		for (k=-3; k<=3; k++) {
+			j = ((jtot+k+maxrin-1)%maxrin)+1;
+			t7(k+4) = q(j);
+		}
+	} else {
+		for (k=-3; k<=3; k++)  {
+			j = ((jtot+k+maxrin-1)%maxrin) + 1;
+			t7(k+4) = t(j);
+		}
+	}
+
+	// interpolate
+	Util::prb1d(t7,7,&pos);
+	tot = (float)(jtot)+pos;
+	// Do not interpolate
+	//tot = (float)(jtot);
+
+	free(t);
+	free(q);
+
+	Dict retvals;
+	retvals["qn"] = qn;
+	retvals["tot"] = tot;
+	retvals["mirror"] = (mirrored) ? (1) : (0);
+	return retvals;
+}
+
 Dict Util::Crosrng_ms_delta(EMData* circ1p, EMData* circ2p, vector<int> numr, float delta_start, float delta) {
 	int nring = numr.size()/3;
 	//int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
@@ -18454,13 +18619,13 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 	vector< vector<EMData*> > cimages( 2*ky+1, vector<EMData*>(2*kx+1) );
 	
 	for (int i = -ky; i <= ky; i++) {
-	    iy = i * step ;
-	    for (int j = -kx; j <= kx; j++) {
+		iy = i * step ;
+		for (int j = -kx; j <= kx; j++) {
 			ix = j*step;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 			Normalize_ring( cimage, numr );
 			Frngs(cimage, numr);
-			cimages[i+ky][j+kx] = cimage;			
+			cimages[i+ky][j+kx] = cimage;
 		}
 	}
 	
@@ -18475,34 +18640,25 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 	size_t tiref = 0;
 	for ( ;  (tiref < crefim_len) && (! found_better); tiref++) {
 		iref = listr[tiref];
-		float best_for_ref = -1.0E23f;
-		for (int i = -ky; i <= ky; i++) {
-			iy = i * step ;
-			for (int j = -kx; j <= kx; j++) {
-				ix = j*step;
-				EMData* cimage = cimages[i+ky][j+kx];
-				Dict retvals = Crosrng_ms(crefim[iref], cimage, numr);
-				double qn = retvals["qn"];
-				double qm = retvals["qm"];
-				if (qn >= best_for_ref || qm >= best_for_ref) {
-					sx = -ix;
-					sy = -iy;
-					nref = iref;
-					if (qn >= qm) {
-						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-						peak = static_cast<float>( qn );
-						mirror = 0;
-					} else {
-						ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
-						peak = static_cast<float>( qm );
-						mirror = 1;
-					}
-					best_for_ref = peak;
-					//cout <<"  iref "<<iref<<"  tiref "<<tiref<<"   "<<previousmax<<"   "<<qn<<"   "<<qm<<endl;
-				}
+		std::vector<int> shifts = shuffled_range( 0, (2*kx+1) * (2*ky+1) - 1 );
+		for ( unsigned nodeId = 0;  nodeId < shifts.size();  ++nodeId ) {
+			int i = ( shifts[nodeId] % (2*ky+1) ) - ky;
+			int j = ( shifts[nodeId] / (2*ky+1) ) - kx;
+			iy = i * step;
+			ix = j * step;
+			EMData* cimage = cimages[i+ky][j+kx];
+			Dict retvals = Crosrng_rand_ms(crefim[iref], cimage, numr, previousmax);
+			if (retvals.has_key("qn")) {
+				sx = -ix;
+				sy = -iy;
+				nref = iref;
+				ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+				peak = static_cast<float>( retvals["qn"] );
+				mirror = static_cast<int>( retvals["mirror"] );
+				found_better = true;
+				break;
 			}
 		}
-		found_better = (best_for_ref > previousmax);
 	}
 	
 	for (unsigned i = 0; i < cimages.size(); ++i) {
@@ -22628,17 +22784,6 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
         Transform t(t_params);
         data[im]->set_attr("xform.projection", &t);
 	}
-}
-
-static std::vector<int> shuffled_range(int first, int last)
-{
-	std::vector<int> v(last - first + 1);
-	for (unsigned i = 0; i < v.size(); ++i) v[i] = first + i;
-	for (unsigned i = 0; i < v.size(); ++i) {
-		unsigned r = Util::get_irand(0,v.size()-1);
-		std::swap( v[r], v[i] );
-	}
-	return v;
 }
 
 // fast function to create transform (data in degrees)
