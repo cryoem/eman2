@@ -13297,7 +13297,7 @@ def match_pixel_rise(dz,px, nz=-1, ndisk=-1, rele=0.1, stop=900000):
 			return q, error
 	return -1.0, -1.0
 
-def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fract=0.67, rmax=70, rmin=0, CTF=False, user_func_name = "helical", sym = "c1", dskfilename='bdb:disks', maxerror=0.01, new_pixel_size = -1, do_match_pixel_rise=False):
+def gendisks_MPI(stack, mask3d, ref_nx, pixel_size, dp, dphi, fract=0.67, rmax=70, rmin=0, CTF=False, user_func_name = "helical", sym = "c1", dskfilename='bdb:disks', maxerror=0.01, new_pixel_size = -1, do_match_pixel_rise=False):
 	from mpi              import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier, MPI_INT, MPI_TAG_UB, MPI_FLOAT, mpi_recv, mpi_send, mpi_reduce, MPI_MAX
 	from utilities        import get_params_proj, read_text_row, model_cylinder,pad, set_params3D, get_params3D, model_blank, drop_image
 	from utilities        import reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, bcast_EMData_to_all, send_EMData, recv_EMData, bcast_list_to_all
@@ -13341,9 +13341,8 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 				new_pixel_size = q*pixel_size
 				break
 		#print "new pixel size by match_pixel_rise: ",new_pixel_size
-	
 		if new_pixel_size < 0:  ERROR('match_pixel_size was not able to find a new pixel size with the desired maxerror', "gendisks_MPI", 1, myid)
-	
+
 	mpi_barrier(MPI_COMM_WORLD)
 
 	if myid == 0:
@@ -13352,12 +13351,10 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 
 	if new_pixel_size > 0:
 		dpp = (float(dp)/new_pixel_size)
-		rise = int(dpp)
-
-	# for resampling to polar rmin>1
-	rminpolar = max(1,rmin)
-	rr = ref_nz//2-2
-
+		rise = int(ceil(dpp))
+		ratio = pixel_size/new_pixel_size
+	from sys import exit
+	exit()
 	import user_functions
 	user_func = user_functions.factory[user_func_name]
 	
@@ -13398,7 +13395,7 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 
 	#  balanced load
 	chunks = chunks_distribution([[len(filaments[i]), i] for i in xrange(len(filaments))], nproc)
-	
+
 	# make a table associating filament name with processor id
 	if myid == main_node:
 		filatable = [[] for i in xrange(nproc)]
@@ -13434,7 +13431,7 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 		k = k1
 	data = EMData.read_images(stack, list_of_particles)
 	nima = len(data)
-	
+
 	data_nx = data[0].get_xsize()
 	data_ny = data[0].get_ysize()
 	data_nn = max(data_nx, data_ny)
@@ -13452,16 +13449,20 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 
 	ref_data = [None, mask3d, None, None, None ]
 
-	# do full sized reconstruction with the projection parameters BEFORE they are modified by disk alignment step
+	if new_pixel_size > 0:
+		if(ref_nx <0): ref_nx = int(data_nn*ratio+0.5)
+	else:
+		if(ref_nx <0): ref_nx = data_nn
+
 	if myid == main_node:  outvol = 0
 	start_time = time()
 	for ivol in xrange(mfils):
 		if( ivol < nfils ):
 			#print myid, ivol, data[indcs[ivol][0]].get_attr('filament')
 			if CTF:
-				fullvol0 = Util.window(recons3d_4nn_ctf(data, list_proj=range(indcs[ivol][0],indcs[ivol][1]), symmetry="c1", npad=2),  ref_nx, ref_ny, ref_nz, 0, 0, 0)
+				fullvol0 = recons3d_4nn_ctf(data, list_proj=range(indcs[ivol][0],indcs[ivol][1]), symmetry="c1", npad=2)
 			else:
-				fullvol0 = Util.window(recons3d_4nn(data, list_proj=range(indcs[ivol][0],indcs[ivol][1]), symmetry="c1", npad=2),  ref_nx, ref_ny, ref_nz, 0, 0, 0)
+				fullvol0 = recons3d_4nn(data, list_proj=range(indcs[ivol][0],indcs[ivol][1]), symmetry="c1", npad=2)
 
 			fullvol0 = fullvol0.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
 			fullvol0 = sym_vol(fullvol0, symmetry=sym)
@@ -13471,14 +13472,13 @@ def gendisks_MPI(stack, mask3d, ref_nx, ref_ny, ref_nz, pixel_size, dp, dphi, fr
 			fullvol0 = sym_vol(fullvol0, symmetry=sym)
 			if new_pixel_size > 0:
 				# resample the volume using ratio such that resulting pixel size is new_pixel_size
-				ratio = pixel_size/new_pixel_size
 				fullvol0 = resample(fullvol0, ratio)
-			fullvol0 = Util.window(fullvol0, ref_nx, ref_ny, rise)
-
+			fullvol0 = Util.window(fullvol0, ref_nx, ref_nx, rise)
 			if mask3d != None:  Util.mul_img(fullvol0, mask3d)
 			gotfil = 1
 		else:
 			gotfil = 0
+		#print "did volume ",myid,gotfil,ref_nx, ref_ny, rise
 		if(myid == main_node):
 			for i in xrange(nproc):
 				if(i != main_node):

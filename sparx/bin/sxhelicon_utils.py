@@ -118,8 +118,8 @@ def main():
 
 	# input options for generating disks
 	parser.add_option("--gendisk",            type="string",		 default="",                  help="Name of file under which generated disks will be saved to") 
-	parser.add_option("--ref_nx",             type="int",   		 default= 1,                  help="nx=ny volume size" ) 
-	parser.add_option("--ref_nz",             type="int",   		 default= 1,                  help="nz volume size - computed disks will be nx x ny x rise/apix" ) 
+	parser.add_option("--ref_nx",             type="int",   		 default= -1,                 help="nx=ny volume size" ) 
+	parser.add_option("--ref_nz",             type="int",   		 default= -1,                 help="nz volume size - computed disks will be nx x ny x rise/apix" ) 
 	parser.add_option("--new_pixel_size",     type="float", 		 default= -1,                 help="desired pixel size of the output disks. The default is -1, in which case there is no resampling (unless --match_pixel_rise flag is True).")
 	parser.add_option("--maxerror",           type="float", 		 default= 0.1,                help="proportional to the maximum amount of error to tolerate between (dp/new_pixel_size) and int(dp/new_pixel_size ), where new_pixel_size is the pixel size calculated when the option --match_pixel_rise flag is True.")
 	parser.add_option("--match_pixel_rise",   action="store_true",	 default=False,               help="calculate new pixel size such that the rise is approximately integer number of pixels given the new pixel size. This will be the pixel size of the output disks.")
@@ -193,7 +193,7 @@ def main():
 				sys.exit()
 			dpp = (float(options.dp)/options.apix)
 			rise = int(dpp)
-			if(float(rise) != dpp):
+			if(abs(float(rise) - dpp)>1.0e-3):
 				print "  dpp has to be integer multiplicity of the pixel size"
 				sys.exit()
 			from utilities import get_im
@@ -332,7 +332,7 @@ def main():
 			if options.dp < 0:
 				print "Helical symmetry paramter rise --dp must be explictly set!"
 				sys.exit()
-			gendisks_MPI(args[0], mask3d, options.ref_nx, options.ref_nx, options.ref_nz, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, options.CTF, options.function, options.sym, options.gendisk, options.maxerror, options.new_pixel_size, options.match_pixel_rise)
+			gendisks_MPI(args[0], mask3d, options.ref_nx, options.apix, options.dp, options.dphi, options.fract, rmaxp, rminp, options.CTF, options.function, options.sym, options.gendisk, options.maxerror, options.new_pixel_size, options.match_pixel_rise)
 			global_def.BATCH = False
 		
 		if options.MPI:
