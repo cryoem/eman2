@@ -2468,7 +2468,7 @@ def shc(data, refrings, numr, xrng, yrng, step, an, finfo=None):
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 			finfo.flush()
-		return peak, pixel_error, number_of_checked_refs
+		return peak, pixel_error, number_of_checked_refs, iref
 	else:
-		return -1.0e23, 0.0, number_of_checked_refs
+		return -1.0e23, 0.0, number_of_checked_refs, iref
 
