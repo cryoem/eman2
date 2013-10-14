@@ -4083,7 +4083,8 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 
 			#=========================================================================
 			# alignment
-			iter_indexes = shuffle(range(nima))
+			iter_indexes = range(nima)
+			shuffle(iter_indexes)
 			for im in iter_indexes:
 				peak, pixer[im], number_of_checked_refs, iref = shc(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],finfo)
 				if iref > -1:
