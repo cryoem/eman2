@@ -4091,7 +4091,7 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 					n2 = refrings[iref].get_attr("n2")
 					n3 = refrings[iref].get_attr("n3")
 					to_be_deleted = []
-					for irr in len(refrings):
+					for irr in xrange(len(refrings)):
 						nn1 = refrings[irr].get_attr("n1")
 						nn2 = refrings[irr].get_attr("n2")
 						nn3 = refrings[irr].get_attr("n3")
