@@ -3856,7 +3856,7 @@ def ali3dpsi_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
             xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1", apsi = "-1", deltapsi = "-1", startpsi = "-1",
 	    center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym = "c1",  user_func_name = "ref_ali3d",
-	    fourvar = True, npad = 4, debug = False, termprec = 0.0, gamma=0.5):
+	    fourvar = True, npad = 4, debug = False, termprec = 0.0, gamma=-1):
 
 	from alignment       import Numrinit, prepare_refrings, proj_ali_incore, proj_ali_incore_local, proj_ali_incore_local_psi, shc
 	from utilities       import model_circle, get_image, drop_image, get_input_from_string
@@ -3872,7 +3872,8 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 	from math            import sqrt, acos, radians
 	from random          import shuffle
 
-	gamma = radians(gamma)
+	if gamma > 0:
+		gamma = radians(gamma)
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
@@ -4087,7 +4088,7 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 			shuffle(iter_indexes)
 			for im in iter_indexes:
 				peak, pixer[im], number_of_checked_refs, iref = shc(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],finfo)
-				if iref > -1:
+				if gamma > 0:
 					n1 = refrings[iref].get_attr("n1")
 					n2 = refrings[iref].get_attr("n2")
 					n3 = refrings[iref].get_attr("n3")
@@ -4102,6 +4103,9 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 						to_be_deleted.sort(reverse=True)
 						for irr in to_be_deleted:
 							del refrings[irr]
+				else:
+					if gamma == 0:
+						del refrings[iref]
 			#=========================================================================
 
 			if myid == main_node:

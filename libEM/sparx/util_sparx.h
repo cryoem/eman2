@@ -917,6 +917,9 @@ public:
 	static vector<float> multiref_polar_ali_2d_local(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, float ant, string mode,
                 vector< int >numr, float cnx, float cny);
+	/* Returns first match with peak greater than previousmax or the best match in whole space (when there are no peaks > previousmax).
+	 * The reference rings are checked in random order.
+	 * */
 	static vector<float> shc(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, float ant, string mode,
                 vector< int >numr, float cnx, float cny);
