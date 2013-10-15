@@ -344,7 +344,7 @@ def helical( ref_data ):
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
 	print_msg(msg)
 	volf = filt_tanl(volf, fl, aa)
-	return  volf
+	return  volf,[0.,0.,0.]
 
 def helical2( ref_data ):
 	from utilities      import print_msg
