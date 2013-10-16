@@ -110,7 +110,8 @@ def main():
 			if len(files2process) > 1:
 				options.output = outputbase.split('.')[0] + str(k).zfill( len(files2process) ) + '.' +  outputbase.split('.')[-1]
 		else:
-			options.output = fyle.replace('.','_hdrEd.')
+			#options.output = fyle.replace('.','_hdrEd.')
+			options.output = options.input
 			
 		if options.addfilename:
 			if options.params:
