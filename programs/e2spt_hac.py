@@ -46,6 +46,12 @@ from operator import itemgetter
 
 from e2spt_classaverage import sptmakepath
 
+import matplotlib
+matplotlib.use('Agg',warn=False)
+
+import matplotlib.pyplot as plt
+import pylab
+
 
 
 def main():
@@ -196,7 +202,7 @@ def main():
 
 	parser.add_argument("--minscore",type=float,help="""Percent of the maximum score to use as a threshold for the minimum score to allow.
 													For example, if the best pair in the first iteration yielded a score of 15.0, and you supply --minscore=0.666,
-													any pair wise alignments with a score lower than 15*0.666=10 will be forbidden.""", default=0)
+													any pair wise alignments with a score lower than 15*0.666=10 will be forbidden.""", default=0.0)
 
 	parser.add_argument("--savepreprocessed",action="store_true", help="""Will save stacks 
 		of preprocessed particles (one for coarse alignment and one for fine alignment if 
@@ -221,8 +227,9 @@ def main():
 	parser.add_argument("--fitwedgepost", action="store_true", help="""Fit the missing wedge AFTER preprocessing the subvolumes, 
 		NOT before, IF using the fsc.tomo comparator for --aligncmp or --raligncmp.""", default=False)
 
-	parser.add_argument("--noplot", action='store_true', help="""Turn this option on to run 
-		jobs on a cluster or other interfaces that don't support plotting.""",default=False)
+	parser.add_argument("--plotccc", action='store_true', help="""Turn this option on to generate
+		a plot of the ccc scores for all comparisons for the FIRST iteration of all vs all.
+		Running on a cluster or via ssh remotely might not support plotting.""",default=False)
 
 
 	(options, args) = parser.parse_args()
@@ -670,10 +677,14 @@ def allvsall(options):
 				compNum = float( i['score'] )
 			
 			#plotX.append( compNum )
-			plotY.append( float( i['score'] ) )
+			thisScore = float( i['score'] ) 
+			plotY.append( thisScore )
 			
 			indxA = int( i['ptclA'].split('_')[-1] )
 			indxB = int( i['ptclB'].split('_')[-1] )
+
+			print "\n(e2spt_hac.py, before plotter) Score appended to plot! and its type, and for pair", thisScore, type(thisScore), indxA, indxB
+
 			
 			'''
 			Allocate particles in a comparison to a cluster so long as they haven't been allocated to another cluster.
@@ -736,7 +747,7 @@ def allvsall(options):
 		plotName = simmxFile.replace('.hdf','_PLOT.png')
 		plotX = [i for i in range(len(plotY))]
 		
-		if not options.noplot:
+		if options.plotccc:
 			plotter (plotX, plotY, options,plotName)
 	
 		#from e2figureplot import textwriter
@@ -1256,25 +1267,21 @@ def textwriter(xdata,ydata,options,name):
 
 
 def plotter(xaxis,yaxis,options,name):
-
-	import matplotlib
-	matplotlib.use('Agg',warn=False)
-
-		 
-	import matplotlib.pyplot as plt
-	import pylab
-	#from pylab import *
+	plt.clf()
+	#import matplotlib
+	#matplotlib.use('Agg',warn=False)
+ 
+	#import matplotlib.pyplot as plt
+	#import pylab
 
 	'''
 	FORMAT AXES
 	'''
 	
 	for i in range(len(yaxis)):
-		yaxis[i] = int( yaxis[i] )*-1
-	
-	#xaxis.sort()
-	#xaxis.reverse()
-		
+		print "\n\nBefore conversion, original score is", yaxis[i]
+		yaxis[i] = float( yaxis[i] )*-1.0
+		print "\n\nAfter conversion, original score is", yaxis[i]
 		
 	matplotlib.rc('xtick', labelsize=16) 
 	matplotlib.rc('ytick', labelsize=16) 
@@ -1282,89 +1289,27 @@ def plotter(xaxis,yaxis,options,name):
 	font = {'weight':'bold','size':16}
 	matplotlib.rc('font', **font)
 	
-	#ax=plt.axes(frameon=False)
 	ax=plt.axes()
 	pylab.rc("axes", linewidth=2.0)
-	
-	#yaxislabel = options.yaxislabel
-	#xaxislabel = options.yaxislabel
-	
-	#if not yaxislabel:
-	#	yaxislabel = "Y"
-	#if not xaxislabel:
-	#	xaxislabel = "X"
-	
-	#if options.logplot and yaxislabel:
-	#	if "log" not in yaxislabel and "LOG" not in yaxislabel:
-	#		yaxislabel = 'LOG(' + yaxislabel + ')'	
 	
 	pylab.xlabel('Comparison number (n)', fontsize=18, fontweight='bold')
 	pylab.ylabel('Normalized cross correlation score', fontsize=18, fontweight='bold')
 
-	#pylab.ylim([-1,ylimvalmax+10])
-	#xmin = min(xaxis)
-	
-	#pylab.xlim([-1,float(max(xaxis))+10])
-	
 	ax.get_xaxis().tick_bottom()
 	ax.get_yaxis().tick_left()
-	#ax.axes.get_xaxis().set_visible(True)
-	#ax.axes.get_yaxis().set_visible(True)
-	
-	#xmin, xmax = ax.get_xaxis().get_view_interval()
-	#ymin, ymax = ax.get_yaxis().get_view_interval()
-	
-	#ax.add_artist(Line2D((xmin, xmax+10), (ymin, ymin), color='k', linewidth=4))
-	#ax.add_artist(Line2D((xmin, xmin), (ymin, ymax+10), color='k', linewidth=4))
+
 	ax.tick_params(axis='both',reset=False,which='both',length=8,width=3)
 	
-	#markernum=''
-	#idee=''
-	
-	#print "BOLD IS ON!"
-	#LW=3
-	#if not markernum:
-	#	LW=2
-		
-	#if colorless:
-		#if not yminnonconvex:
-		#	
-		#	print "in colorless plot, linest is", linest
-	#	if mode not 'scatter':
-	#		linest='-'
-	#		plt.plot(xaxis, yaxis, linewidth=LW,linestyle=linest,alpha=1,color='k',zorder=0,label=idee)
-	#	else:
-	#		plt.scatter(xaxis,yaxis,marker='x',edgecolor='k',alpha=1,zorder=1,s=40,facecolor='white',linewidth=2)
-			
-		#	if idee and options.legend:
-		#		#print "Idee is", idee
-		#		legend(loc='upper left')
-		#elif yminnonconvex:
-		#plt.plot(xaxis, yaxis, linewidth=LW,linestyle=linest,alpha=1,color='k',zorder=0,label=idee)
-		#plt.scatter(xaxis,yaxis,marker='x',edgecolor='k',alpha=1,zorder=1,s=40,facecolor='white',linewidth=2)
-		
-	#	if idee and legend:
-	#		print "Idee is", idee
-	#		legend(loc='upper left')
-		
-		#if mark:
-		#	plt.scatter(xaxis,yaxis,marker=mark,edgecolor='k',alpha=1,zorder=1,s=40,facecolor='white',linewidth=2)
-	
-	#else:
-		#if not yminnonconvex:
-		#	print "I did NOT receive yminnonxonvex"
-		#	
-		
-		#if mode not scatter:
-		#	plt.plot(xaxis, yaxis, linewidth=LW,alpha=1,zorder=0,label=idee)
-		#else:
+	print "\n\n\nThe values to plot are"
+	for ele in range(len(xaxis)):
+		print xaxis[ele],yaxis[ele]
 		
 	plt.scatter(xaxis,yaxis,alpha=1,zorder=1,s=20)
 	
 	
-	if options.minscore:
-		minval = options.minscore * max(yaxis)	
-		plt.plot(xaxis,[minval]*len(xaxis),ls='-',linewidth=2)
+	#if options.minscore:
+	#	minval = options.minscore * max(yaxis)	
+	#	plt.plot(xaxis,[minval]*len(xaxis),ls='-',linewidth=2)
 				
 		#	
 		#	if idee and options.legend:
