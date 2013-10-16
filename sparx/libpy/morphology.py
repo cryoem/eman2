@@ -1500,14 +1500,13 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 		adefocus = [0.0]*kboot
 		aamplitu = [0.0]*kboot
 		aangle   = [0.0]*kboot
-	
+
 		allroo = []
 		for imi in xrange(nimi):
 			allroo.append(rot_avg_table(pw2[imi]))
 		lenroo = len(allroo[0])
 		#print time(),nimi
-	
-		#try:
+
 		for nboot in xrange(kboot):
 			if(nboot == 0): boot = range(nimi)
 			else:
@@ -1609,8 +1608,6 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 			#qse = ctf2_rimg(wn, generate_ctf([defc,Cs,voltage,Pixel_size,0.0,wgh, bang, 37.0]) )
 			#qse.write_image("rs3.hdf")
 
-
-
 			cnx = wn//2+1
 			cny = cnx
 			mode = "H"
@@ -1677,18 +1674,18 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 				exit()
 				"""
 
-				astdata = [crefim, numr, wn, bdef, Cs, voltage, Pixel_size, wgh, bang]
+				astdata = [crefim, numr, wn, bdef, Cs, voltage, Pixel_size, wgh, bang, mask]
 				h = 0.01
 				amp1,amp2 = bracket(fastigmatism3, astdata, h)
 				#print "  astigmatism bracket  ",amp1,amp2,astdata[-1]
 				#print " ttt ",time()-srtt
 				bamp, bcc = goldsearch_astigmatism(fastigmatism3, astdata, amp1, amp2, tol=1.0e-3)
 				junk = fastigmatism3(bamp,astdata)
-				bang = astdata[-1]
+				bang = astdata[8]
 
-				#print astdata[-1]
+				#print astdata[8]
 				#print  fastigmatism3(0.0,astdata)
-				#print astdata[-1]
+				#print astdata[8]
 				#temp = 0.0
 				#print bdef, Cs, voltage, Pixel_size, temp, wgh, bamp, bang, -bcc
 				#data = [qse, mask, wn, bamp, Cs, voltage, Pixel_size, wgh, bang]
@@ -1703,9 +1700,9 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 				if DEBug:  print "AMOEBA    ",dama
 				bdef = dama[0][0]
 				bamp = dama[0][1]
-				astdata = [crefim, numr, wn, bdef, Cs, voltage, Pixel_size, wgh, bang]
+				astdata = [crefim, numr, wn, bdef, Cs, voltage, Pixel_size, wgh, bang, mask]
 				junk = fastigmatism3(bamp, astdata)
-				bang = astdata[-1]
+				bang = astdata[8]
 				if DEBug:  print " after amoeba ", bdef, bamp, bang
 				#  The looping here is blocked as one shot at amoeba is good enough.  To unlock it, remove - from bold.
 				if(bcc < -bold): bold = bcc
@@ -2360,16 +2357,24 @@ def fastigmatism2(amp, data):
 
 def fastigmatism3(amp, data):
 	from morphology import ctf2_rimg
-	from utilities import generate_ctf
-	from alignment import ornq
+	from utilities  import generate_ctf
+	from alignment  import ornq
+	from math       import sqrt
+	#  data[0] - crefim
+	#  data[1] - numr
+	#  data[2] - nx (image is square)
+	#  data[8] - astigmatism amplitude
+	#  data[9] - mask defining the region of interest
 	
 	cnx = data[2]//2+1
 	#qt = 0.5*nx**2
 	pc = ctf2_rimg(data[2], generate_ctf([data[3], data[4], data[5], data[6], 0.0, data[7], amp, 0.0]) )
+	st = Util.infomask(pc, data[9], True)
+	Util.mul_scalar(pc, 1.0/st[0])
 	ang, sxs, sys, mirror, peak = ornq(pc, data[0], 0.0, 0.0, 1, "H", data[1], cnx, cnx)
 	#print  ang, sxs, sys, mirror, peak
 	#exit()
-	data[-1] = ang
+	data[8] = ang
 	return  -peak
 
 
@@ -2383,8 +2388,6 @@ def simctf(amp, data):
 	bcc = pc.cmp("dot", data[0], {"mask":data[1], "negative":0, "normalize":1})
 	return  -bcc
 
-
-
 def simctf2(dz, data):
 	from morphology import ctf2_rimg
 	from utilities import generate_ctf
@@ -2394,11 +2397,9 @@ def simctf2(dz, data):
 	#print  data
 	#print dz, data[4], data[5], data[6], 0.0, data[7], data[3], data[8]
 	pc = ctf2_rimg(data[2], generate_ctf([dz, data[4], data[5], data[6], 0.0, data[7], data[3], data[8]]) )
-	bcc = pc.cmp("dot", data[0], {"mask":data[1], "negative":0, "normalize":0})
+	bcc = pc.cmp("dot", data[0], {"mask":data[1], "negative":0, "normalize":1})
 	#print " simctf2   ",amp,-bcc
 	return  -bcc
-
-
 
 def simctf2out(dz, data):
 	from morphology import ctf2_rimg, localvariance
@@ -2420,14 +2421,14 @@ def simctf2out(dz, data):
 	s = Util.infomask(normpw, data[1], True)
 	dout += ((normpw-s[0])/s[1])*(model_blank(nx,nx,1,1)-mm)*data[1]
 	dout.write_image("ocou3.hdf")
-	bcc = pc.cmp("dot", data[0], {"mask":data[1], "negative":0, "normalize":0})
+	bcc = pc.cmp("dot", data[0], {"mask":data[1], "negative":0, "normalize":1})
 	#print " simctf2   ",amp,-bcc
 	return  -bcc
 
 
 def fupw(args,data):
 	from morphology import fastigmatism3
-	return -fastigmatism3(args[1],[data[0], data[1], data[2], args[0], data[4], data[5], data[6], data[7], data[8]])
+	return -fastigmatism3(args[1],[data[0], data[1], data[2], args[0], data[4], data[5], data[6], data[7], data[8], data[9]])
 
 ########################################
 # end of functions used by ctfer
@@ -2640,19 +2641,19 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 	#f_stop  = 0.24
 	
 	#lenroot = len(nameroot)
-	
-	
+
+
 	#ll = read_text_file("lookup",-1)
 	#ll = [[367], [12031], [25]]
 	ll = read_text_file("lookup")
-	
+
 	#set_start, set_end = MPI_start_end(len(ll[0]), ncpu, myid)
 	#for k in xrange(3):
 	#	ll[k] = map(int,ll[k])[set_start:set_end]
-	
+
 	volft,kb = prep_vol(get_im(refvol))
-	
-	
+
+
 	totresi = []
 	for ifi in xrange(len(ll)):
 		#  There should be somthing here that excludes sets with too few images
@@ -2666,11 +2667,11 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 		if UseOldDef:
 			defold, csi, volti, apixi, bfcti, ampconti, astampi, astangi = get_ctf(d[0])
 			if DEBug:  print " USING OLD CTF  ",defold, csi, volti, apixi, bfcti, ampconti, astampi, astangi
-	
+
 		fa  = [None]*nimi
 		fb  = [None]*nimi
 		fbc = [None]*nimi
-	
+
 		for imi in xrange(nimi):
 			phi,theta,psi,tx,ty = get_params_proj(d[imi])
 			# next is test
@@ -2686,7 +2687,7 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 			fbc[imi] = fb[imi].conjg()
 			# next is test
 			#fa[imi] = filt_ctf(fa[imi] , generate_ctf([defold, Cs, voltage, Pixel_size, 0.0, wgh, 0.9, 77.]),False) + fft(model_gauss_noise(2., nx,nx)) 
-	
+
 		del d  # I do not think projections are needed anymore
 		adefocus = [0.0]*kboot
 		aamplitu = [0.0]*kboot
@@ -2712,10 +2713,10 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 					t  = make_real( Util.muln_img(fa[imi], fbc[imi]) )
 					Util.mul_scalar(t, 1.0/(float(nx)**4))
 					Util.add_img(qs , t)
-	
+
 					Util.add_img(qa, periodogram(fa[imi]))
 					Util.add_img(qb, periodogram(fb[imi]))
-	
+
 				for k in xrange(len(temp)):  crf1d[k] /= nimi
 				"""
 				sroo[0] = sroo[1]
@@ -2739,7 +2740,7 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 							tqa[ir]   += (1.0-dr)*qqa
 							tqa[ir+1] +=       dr*qqa
 				for i in xrange(nc+1): tqa[i] = sqrt(max(tqa[i],0.0))
-	
+
 				divs = model_blank(nx, nx, 1, 1.0)
 				for i in xrange(nx):
 					for j in xrange(nx):
@@ -2753,8 +2754,8 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 				qs.set_value_at(ny2,ny2,1.0)
 				#if(nboot == 0): write_text_file(crf1d,"crf1d.txt")
 				#if(nboot == 0): qs.write_image("rs2.hdf")
-	
-	
+
+
 				sroo = rot_avg_table(qs)
 				lenroo = len(sroo)
 				#  Find a break point
@@ -2763,14 +2764,14 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 					if( sroo[i] <0.0 ):
 						istart = max(3,i//2)
 						break
-	
+
 				#istart = 25
 				#print istart
 	
 				f_start = istart/(Pixel_size*nx)
 				#print namics[ifi],istart,f_start
-	
-	
+
+
 				if UseOldDef:
 					envelope, istart, istop = envelopegett_crf(defold, crf1d, nx, voltage=voltage, Pixel_size=Pixel_size, Cs=Cs, ampcont=wgh, f_start=f_start, f_stop=-1.0, round_off=1.0, nr1=3, nr2=6, parent=None, DEBug=DEBug)
 					defc = defold
@@ -2795,7 +2796,7 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 							dr = r - ir
 							envl.set_value_at(i,j,  (1.-dr)*en[ir] + dr*en[ir+1] )
 				"""
-	
+
 				#exit()
 				#istop = nx//4
 				#mask = model_circle(istop-1,nx,nx)*(model_blank(nx,nx,1,1.0)-model_circle(istart,nx,nx))
@@ -2806,23 +2807,23 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 				#bang = 0.7
 				#qse = ctf2_rimg(nx, generate_ctf([defc,Cs,voltage,Pixel_size,0.0,wgh, bang, 37.0]) )
 				#qse.write_image("rs3.hdf")
-	
+
 				mask = model_circle(istop-1,nx,nx)*(model_blank(nx,nx,1,1.0)-model_circle(istart,nx,nx))
 				qse = qs #* envl
 				#if(nboot == 0): (qs*mask).write_image("rs5.hdf")
-	
-	
+
+
 				cnx = nx//2+1
 				cny = cnx
 				mode = "H"
 				numr = Numrinit(istart, istop, 1, mode)
 				wr   = ringwe(numr, mode)
-	
+
 				crefim = Util.Polar2Dm(qse, cnx, cny, numr, mode)
 				Util.Frngs(crefim, numr)
 				Util.Applyws(crefim, numr, wr)
-	
-	
+
+
 				"""
 				astdata = [crefim, numr, nx, 1.1, Cs, voltage, Pixel_size, wgh, 0.]
 				junk = fastigmatism2(0.5,astdata)
@@ -2830,10 +2831,10 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 				print "   IHIHIHIHIHI   ",bang,junk
 				#exit()
 				"""
-	
+
 				#pc = ctf2_rimg(nx,generate_ctf([defc,Cs,voltage,Pixel_size,0.0,wgh]))
 				#print ccc(pc*envl, subpw, mask)
-	
+
 				bang = 0.0
 				bamp = 0.0
 				bdef = defc
@@ -2873,25 +2874,25 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 					#bamp = 0.5
 					#bang = 277
 					dama = amoeba([bdef, bamp],[0.2,0.2], fufu, 1.e-4,1.e-4,500, astdata)
-	
+
 					if DEBug:  print "AMOEBA    ",nboot,dama
 					bdef = dama[0][0]
 					bamp = dama[0][1]
 					astdata = [crefim, numr, nx, bdef, Cs, voltage, Pixel_size, wgh, bang]
-					junk = fastigmatism2(bamp,astdata)
+					junk = fastigmatism2(bamp, astdata)
 					bang = astdata[-1]
 					if DEBug:  print " after amoeba ", nboot,bdef, bamp, bang
 					#  The looping here is blocked as one shot at amoeba is good enough.  To unlock it, remove - from bold.
 					if(bcc < -bold): bold = bcc
 					else:           break
-	
+
 				adefocus[nboot] = bdef
 				aamplitu[nboot] = bamp
 				aangle[nboot]   = bang
 				#from sys import exit
 				if DEBug:  print "this is what I found  ",nboot,bdef,bamp,bang
 				#exit()
-	
+
 			#print " ttt ",time()-srtt
 			#from sys import exit
 			#exit()
