@@ -72,7 +72,7 @@ def main():
 													""", default='')
 	
 	parser.add_argument("--nrefs", type=str, help="""Number of references to generate from the data for reference-free alignment. Default=1""", default=1)
-	parser.add_argument("--refgenmethod", type=str, help="""Method for generating the initial reference(s). Options are 'binarytree' and 'hac'. Default=binarytree""", default='binarytree') 
+	parser.add_argument("--refsgenmethod", type=str, help="""Method for generating the initial reference(s). Options are 'binarytree' and 'hac'. Default=binarytree""", default='binarytree') 
 
 	
 	'''
@@ -195,6 +195,13 @@ def main():
 	
 	options.path = rootpath + '/' + options.path
 	
+	relativeInput = '../' + options.input
+	absoluteInput = rootpath + '/' + options.input
+	options.input = absoluteInput
+	avgs={}
+	finalize=0
+	originalPath = rootpath + '/' + options.path
+	
 	'''
 	Store parameters in parameters.txt file inside --path
 	'''
@@ -202,54 +209,43 @@ def main():
 	writeParameters(options,'e2spt_refinemulti.py')
 	
 	'''
-	Determine how many references there are and put them into one file classAvg.hdf, or classAvg_iterXX.hdf, if they come from separate files
+	Determine how many references there are and put them into one file classAvg.hdf, or 
+	classAvg_iterXX.hdf, if they come from separate files
 	'''
 	nrefs=0
 	
 	refsfiles = set([])
 	
-	
-	
 	if not options.refs:
-		nrefs = int(options.nrefs)
-		
-		if nrefs > 1:
-			for i in range(nrefs):
-				nptcls = EMUtil.get_image_count(options.input)
-				ptclsPerGroup = nptcls/nrefs
-				
-				dividecmd = 'e2proc3d.py ' + options.input group1
-		
-		alicmd ='cd ' + options.path + ' && e2spt_classaverage.py ' + ' --path=sptTMP'
+		'''
+		If no references are provided, the program has to generate them, using the method
+		specified through --refsgenmethod
+		'''
+		genrefs( options, originalPath)
 
-		names = dir(options)
-		for name in names:
-			if getattr(options,name) and 'refs' not in name and "__" not in name and "_" not in name and 'path' not in name and str(getattr(options,name)) != 'True' and 'iter' not in name:	
-				#if "__" not in name and "_" not in name and str(getattr(options,name)) and 'path' not in name and str(getattr(options,name)) != 'False' and str(getattr(options,name)) != 'True' and str(getattr(options,name)) != 'None':			
-				alicmd += ' --' + name + '=' + str(getattr(options,name))
-		alicmd += ' --donotaverage'
-	
-
-	
-		p=subprocess.Popen( alicmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		text=p.communicate()	
-		p.stdout.close()
-
-	if ',' in options.refs:
-		refsorig = options.refs.split(',')
-		nrefs = len(refsorig)
-		for i in range(nrefs):
-			outref = options.path + '/' + refsorig[i].replace('.hdf','_ref' + str(i).zfill(len(str(nrefs))) + '.hdf' )
-			os.system('cp ' + refsorig[i] + ' ' + outref)		
-			#nrefs = len(refsorig)
-		
-			refsfiles.update( [ outref ] )
 	else:
-		nrefs = EMUtil.get_image_count(options.refs)
-		for i in range(nrefs):
-			outref = options.path + '/' + options.refs.replace('.hdf','_ref' + str(i).zfill(len(str(nrefs))) + '.hdf' )
-			os.system('e2proc3d.py ' + options.refs + ' ' + outref + ' --first=' + str(i) + ' --last=' + str(i) )
-			refsfiles.update( [ outref ] )
+		refsFylesOrig = options.refs.split(',')
+		
+		#if ',' in options.refs:
+		#refsorig = options.refs.split(',')
+		
+		if len(refsFylesOrig) > 1:
+			nrefs = len(refsFylesOrig)
+			
+			i=0
+			for refFyle in refsFylesOrig:
+				outref = options.path + '/' + os.path.basename(refFyle).replace('.hdf','_ref' + str(i).zfill(len(str(nrefs))) + '.hdf' )
+				os.system('cp ' + refFyle + ' ' + outref)		
+				#nrefs = len(refsorig)
+		
+				refsfiles.update( [ outref ] )
+				i+=1
+		else:
+			nrefs = EMUtil.get_image_count( options.refs )
+			for i in range(nrefs):
+				outref = options.path + '/' + options.refs.replace('.hdf','_ref' + str(i).zfill(len(str(nrefs))) + '.hdf' )
+				os.system('e2proc3d.py ' + options.refs + ' ' + outref + ' --first=' + str(i) + ' --last=' + str(i) )
+				refsfiles.update( [ outref ] )
 
 
 	#print "ERROR: You must provide at least one reference through --ref, or specify the number of references to generate from the data through --nrefs."
@@ -257,15 +253,7 @@ def main():
 		
 	'''
 	Generate the commands to refine the data against each reference
-	'''
-	
-	#filesindir = os.listdir(rootpath)
-		
-	relativeInput = '../' + options.input
-	absoluteInput = rootpath + '/' + options.input
-	options.input = absoluteInput
-	avgs={}
-	finalize=0
+	'''		
 	
 	for it in range( options.iter ):
 		print "\n\nIteration", it
@@ -542,9 +530,80 @@ def main():
 	return()
 
 
+def genrefs( options, originalPath ):
+	
+	nptcls = EMUtil.get_image_count( options.input )
 
+	refsFyles = []
+	if options.refsgenmethod == 'binarytree':
+		
+		nrefs = int(options.nrefs)
+		
+		if nrefs > 1:
+		
+			groupsize = int( nptcls/options.nrefs )
+		
+			for i in range(options.nrefs):			
+				bottom_range = i * groupsize
+				top_range = (i+1) * groupsize
+			
+				if i == options.nrefs - 1:
+					top_range = nptcls
+		
+				#groupPATH = options.input
+				if options.nrefs > 1:
+					groupID = 'group' + str(i+1).zfill(len(str(options.nrefs)))
+					groupDIR = originalPath + '/' + groupID
+					groupStack = options.input.replace('.hdf','group' + str(i+1).zfill(len(str(options.nrefs) ) ) + 'ptcls.hdf')
+					
+					divisioncmd = 'e2proc3d.py ' + options.input + ' ' + groupStack + '--append --first=' + str(bottom_range) + ' --last=' + str(top_range)
+				
+					alicmd ='e2spt_classaverage.py ' + ' --path=' + groupID
 
+					names = dir(options)
+					for name in names:
+						if getattr(options,name) and 'refs' not in name and "__" not in name and "_" not in name and 'path' not in name and str(getattr(options,name)) != 'True' and 'iter' not in name:	
+							#if "__" not in name and "_" not in name and str(getattr(options,name)) and 'path' not in name and str(getattr(options,name)) != 'False' and str(getattr(options,name)) != 'True' and str(getattr(options,name)) != 'None':			
+							alicmd += ' --' + name + '=' + str(getattr(options,name))
+			
+					alicmd += ' --output=' + groupID + 'avg.hdf --path=' + groupID
+				
+					alicmd += ' && mv ' + groupStack + ' ' + groupID
 
+					finalBinTreeCmd = divisioncmd + ' && ' + alicmd
+				
+					p=subprocess.Popen( finalBinTreeCmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+					text=p.communicate()	
+					p.stdout.close()
+				
+					refFyle = originalPath + '/' + groupID + '/' + groupID + 'avg.hdf'
+					refsFyles.append( refFyle )
+	
+	elif options.refsgenmethod == 'hac':
+		avsacmd ='e2spt_hac.py --path=sptTMP'
+
+		names = dir(options)
+		for name in names:
+			if getattr(options,name) and 'refs' not in name and "__" not in name and "_" not in name and 'path' not in name and str(getattr(options,name)) != 'True' and 'iter' not in name:	
+				#if "__" not in name and "_" not in name and str(getattr(options,name)) and 'path' not in name and str(getattr(options,name)) != 'False' and str(getattr(options,name)) != 'True' and str(getattr(options,name)) != 'None':			
+				avsacmd += ' --' + name + '=' + str(getattr(options,name))
+		avsacmd += ' --autocenter --groups=' + str(options.nrefs) + ' && mv ' + options.path + '/sptTMP/* ' + options.path + ' && rm -r sptTMP'
+		
+		p=subprocess.Popen( avsacmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		text=p.communicate()	
+		p.stdout.close()
+		
+		for i in range(options.nrefs):
+			groupID = 'group' + str(i+1).zfill(len(str(options.nrefs)))
+			os.system('mv ' + options.path + '/' + groupID + '/finalAvg.hdf ' +  options.path + '/' + groupID +  '/' + groupID + 'avg.hdf')
+		
+				
+			refFyle = originalPath + '/' + groupID + '/' + groupID + 'avg.hdf'
+			refsFyles.append( refFyle )
+
+	return refsFyles
+	
+	
 def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize):
 	"""Will take a set of alignments and an input particle stack filename and produce a new class-average.
 	Particles may be excluded based on the keep and keepsig parameters. If keepsig is not set, then keep represents
