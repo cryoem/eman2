@@ -698,7 +698,7 @@ def allvsall(options):
 			All particles high on the SORTED list will fill in the highest clusters.
 			In theory, if the particles are good quality, particles could cluster with other 
 			like-particles from the first round, particularly if their masses are different.
-			For particles of similar mass this might not work
+			For particles of similar mass this might not work.
 			'''
 			if k == 0:
 				if options.clusters and int(options.clusters) > 1:
@@ -1067,7 +1067,13 @@ def allvsall(options):
 					print "THe last cluster indx is", lastCluster
 				
 					clusters[lastCluster].update(remnants)
-			
+				
+				
+				#for clust in clusters:
+					
+				
+				
+				
 				clustersDictFile = options.path + '/clusters.json'
 				clustersDict = js_open_dict( clustersDictFile )
 			

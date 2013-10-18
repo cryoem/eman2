@@ -1066,6 +1066,11 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 	
 	print "(e2pt_classaverage.py)(make_average) The results to parse are", align_parms
 	
+	
+	
+	
+	
+	
 	if groups > 1:
 		
 		val=[p[0]["score"] for p in align_parms]
