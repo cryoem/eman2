@@ -57,6 +57,9 @@ def main():
 	parser.add_argument("--onlyy",action='store_true',default=False,help="Only projection of the XZ plane will be generated [another 'side view'].")
 	parser.add_argument("--onlyz",action='store_true',default=False,help="Only projection of the XY plane will be generated a 'top view']")
 	
+	parser.add_argument("--shrink",type=int,default=False,help="Integer value to shrink the models by before generating projections.")
+
+	
 	parser.add_argument("--saverotvol",action='store_true',default=False,help="Will save the volume in each rotated position used to generate a projection.")
 
 	parser.add_argument("--input", type=str, help="""The name of the input volume from which you want to generate orthogonal projections.
@@ -207,7 +210,6 @@ def main():
 	'''
 	Read input
 	'''
-
 	models=options.input.split(',')
 	
 	rootpath = os.getcwd()
@@ -221,15 +223,24 @@ def main():
 			newpath = path + '/' + model.split('.')[0]
 			os.system('mkdir ' + newpath)
 		
+		kstack=0
 		for i in range(n):
 			subpath = newpath
+			submodelname = subpath + '/' + model.split('.')[0] + '_prjs.hdf'
 			if n > 1:
-				subpath = newpath + '/ptcl' + str(i).zfill(len(str(n)))
-				os.system('mkdir ' + subpath) 
+				if not options.onlyx and not options.onlyy and not options.onlyz:
+					subpath = newpath + '/ptcl' + str(i).zfill(len(str(n)))
+					os.system('mkdir ' + subpath)
+					submodelname = subpath + '/' + model.split('.')[0] + '_ptcl' + str(i).zfill(len(str(n))) + '_prjs.hdf'
+				else:
+					if options.onlyx:
+						submodelname = subpath + '/' + model.split('.')[0] + '_Xprjs.hdf'
+					if options.onlyy:
+						submodelname = subpath + '/' + model.split('.')[0] + '_Yprjs.hdf'
+					if options.onlyz:
+						submodelname = subpath + '/' + model.split('.')[0] + '_Zprjs.hdf'
 		
 			submodel = EMData(model,i)	
-			
-			submodelname = subpath + '/' + model.split('.')[0] + '_ptcl' + str(i).zfill(len(str(n))) + '_prjs.hdf'
 			
 			apix = submodel['apix_x']
 			'''
@@ -257,7 +268,7 @@ def main():
 			submodel.mult(mask)
 			
 			'''
-			#If normalizing, it's best to do normalize-mask-normalize-mask
+			#If normalizing, it's best to do mask-normalize-mask
 			'''
 			if options.normproc:
 				#if options["normproc"][0]=="normalize.mask": 
@@ -270,7 +281,10 @@ def main():
 			if options.lowpass:
 				submodel.process_inplace(options.lowpass[0],options.lowpass[1])
 			
-			k=0
+			if options.shrink:
+				submodel.process_inplace('math.meanshrink',{'n':options.shrink})
+			
+			kindividual=0
 			for d in projectiondirections:	
 				print "\nThis is the projection direction", d
 				print "And this the corresponding transform",projectiondirections[d]		
@@ -289,7 +303,20 @@ def main():
 				if options.angles:
 					if options.tag:
 						tag=options.tag
+				
+				if options.onlyx or options.onlyy or options.onlyz:
+					if options.onlyx:
+						tag ='onlyx'
+					elif options.onlyy:
+						tag ='onlyy'
+					elif options.onlyz:
+						tag ='onlyz'
 					
+					k = kstack
+				
+				else:
+					k = kindividual
+						
 				prj.write_image(submodelname.replace('.','_' + tag + '.'),k)
 				
 				#print "Options.saverotvol is", options.saverotvol
@@ -301,7 +328,8 @@ def main():
 					#print "I will save the rotated volume to this file", volname
 					submodel_rot.write_image( volname , 0)
 					
-				k+=1
+				kindividual+=1
+				kstack+=1
 			
 	return()	
 
