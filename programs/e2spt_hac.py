@@ -319,7 +319,7 @@ def main():
 	for i in range(options.groups):	
 		#if options.groups > 1:
 		if options.groups * 3 > nptcl:
-			print "ERROR: You need at least 3 particles per groups to do all vs all within each group."
+			print "ERROR: You need at least 3 particles per group to do all vs all within each group."
 			print "You asked for %d groups; thus, the stack needs to have more than %d particles, but it only has %d" % (options.groups,3*options.groups,nptcl)
 			print "Reduce the number of groups requested or provide a larger stack."
 			sys.exit()
@@ -333,9 +333,13 @@ def main():
 			groupPATH = entirestack
 			if options.groups > 1:
 				groupDIR = originalpath + '/group' + str(i+1).zfill(len(str(options.groups)))
-				groupID = 'group' + str(i+1).zfill(len(str(options.groups))) + '_raw.hdf'
+				groupID = 'group' + str(i+1).zfill(len(str(options.groups))) + 'ptcls.hdf'
 				groupPATH = groupDIR + '/' + groupID
 				os.system('mkdir ' + groupDIR)				
+				
+				#groupID = 'group' + str(i+1).zfill(len(str(options.nrefs)))
+				#groupDIR = originalPath + '/' + groupID
+				#groupStack = options.input.replace('.hdf','group' + str(i+1).zfill(len(str(options.nrefs))) + 'ptcls.hdf'
 
 				options.path = groupDIR
 
@@ -631,6 +635,7 @@ def allvsall(options):
 		
 		plotX=[]
 		plotY=[]
+		compsInfo = []
 	
 		simmxScores = EMData(nptcls,nptcls)
 		simmxXs = EMData(nptcls,nptcls)
@@ -682,6 +687,8 @@ def allvsall(options):
 			
 			indxA = int( i['ptclA'].split('_')[-1] )
 			indxB = int( i['ptclB'].split('_')[-1] )
+			
+			compsInfo.append( [thisScore,indxA,indxB] )
 
 			print "\n(e2spt_hac.py, before plotter) Score appended to plot! and its type, and for pair", thisScore, type(thisScore), indxA, indxB
 
@@ -689,7 +696,9 @@ def allvsall(options):
 			'''
 			Allocate particles in a comparison to a cluster so long as they haven't been allocated to another cluster.
 			All particles high on the SORTED list will fill in the highest clusters.
-			In theory, if the particles are good quality, particles should cluster with other like-particles from the first round.
+			In theory, if the particles are good quality, particles could cluster with other 
+			like-particles from the first round, particularly if their masses are different.
+			For particles of similar mass this might not work
 			'''
 			if k == 0:
 				if options.clusters and int(options.clusters) > 1:
@@ -751,7 +760,7 @@ def allvsall(options):
 			plotter (plotX, plotY, options,plotName)
 	
 		#from e2figureplot import textwriter
-		textwriter(plotX, plotY, options, plotName.replace('.png','.txt') )
+		textwriter(plotX, compsInfo, options, plotName.replace('.png','.txt') )
 
 		print "\n\n\n\nIn iteration %d, the total number of comparisons in the ranking list, either new or old that survived, is %d" % (k, len(results))
 		
@@ -762,10 +771,8 @@ def allvsall(options):
 		mm=0												#Counter to track new particles/averages produced and write them to output
 		print "I'm in the averager!!!!!!!!!!!!"
 		
-		
 		roundRawInfoFile = options.path + '/aliInfo_'+ str( k ).zfill( len(str(options.iter)) ) + '.json'
 		roundInfoDict = js_open_dict(roundRawInfoFile) #Write particle orientations to json database.
-	
 		
 		for z in range(len(results)):
 			if options.minscore:
@@ -1022,6 +1029,9 @@ def allvsall(options):
 				
 				avg.write_image(options.path + '/round' + str(k).zfill(fillfactor) + '_averages.hdf',mm)
 				
+				if len(results) == 1:
+					avg.write_image(options.path + '/finalAvg.hdf',0)
+
 				if options.saveali:
 					for oo in range(len(avg_ptcls)):
 						avg_ptcls[oo].write_image(options.path + '/round' + str(k).zfill(fillfactor) + '_average' + str(mm).zfill(fillfactor)  + '_ptcls.hdf',oo)
@@ -1256,7 +1266,7 @@ def textwriter(xdata,ydata,options,name):
 	f=open(name,'w')
 	lines=[]
 	for i in range(len(xdata)):
-		line2write = str(xdata[i]) + ' ' + str(ydata[i])+'\n'
+		line2write = 'comparison#' + str(xdata[i]) + ' ptclA #' + str(ydata[i][-2]) + ' vs ptclB #' + str(ydata[i][-1])+ ' score=' + str(ydata[i][0]) + '\n'
 		#print "THe line to write is"
 		lines.append(line2write)
 	
