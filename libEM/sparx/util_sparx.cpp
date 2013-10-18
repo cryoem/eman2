@@ -54,6 +54,7 @@ using namespace EMAN;
 #include "steepest.h"
 #include "emassert.h"
 #include "randnum.h"
+#include "mcqd.h"
 
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_sf_bessel.h>
@@ -22872,3 +22873,33 @@ std::vector<float> Util::diff_between_matrix_of_3D_parameters_angles( std::vecto
 	return avg;
 }
 
+std::vector<int> Util::max_clique(std::vector<int> edges)
+{
+	const int size = *(max_element(edges.begin(), edges.end()));
+	bool **conn = new bool*[size];
+	for (int i=0; i < size; i++) {
+		conn[i] = new bool[size];
+		for (int j = 0; j < size; ++j) {
+			conn[i][j] = false;
+		}
+	}
+	for (unsigned i = 1; i < edges.size(); ++i) {
+		int v1 = edges[i-1];
+		int v2 = edges[i];
+		conn[v1][v2] = conn[v2][v1] = true;
+	}
+	Maxclique m(conn, size);
+	int *qmax;
+	int qsize;
+	m.mcq(qmax, qsize);
+	std::vector<int> result(qsize);
+	for (int i = 0;  i < qsize; ++i ) {
+		result[i] = qmax[i];
+	}
+	delete [] qmax;
+	for (int i=0;i<size;i++) {
+		delete [] conn[i];
+	}
+	delete [] conn;
+	return result;
+}

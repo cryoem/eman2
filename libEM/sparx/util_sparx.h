@@ -1088,4 +1088,9 @@ public:
 	
 	static std::vector<float> diff_between_matrix_of_3D_parameters_angles( std::vector<float> all_params, std::vector<float> rotations );
 
+	/** Calculates max_clique in undirected graph, input: edges coded as pair of integers (integers correspond to vertices, must be >=0)
+	 *  Returns: vertices (integers) belonging to max clique
+	 * */
+	static std::vector<int> max_clique(std::vector<int> edges);
+
 #endif	//util__sparx_h__
