@@ -22875,7 +22875,7 @@ std::vector<float> Util::diff_between_matrix_of_3D_parameters_angles( std::vecto
 
 std::vector<int> Util::max_clique(std::vector<int> edges)
 {
-	const int size = *(max_element(edges.begin(), edges.end()));
+	const int size = *(max_element(edges.begin(), edges.end())) + 1;
 	bool **conn = new bool*[size];
 	for (int i=0; i < size; i++) {
 		conn[i] = new bool[size];

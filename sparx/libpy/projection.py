@@ -191,7 +191,7 @@ def prgq( volft, kb, nx, delta, ref_a, sym, MPI=False):
 	  Generate set of projections based on even angles
 	  The command returns list of ffts of projections
 	"""
-        from projection   import prep_vol, prgs
+	from projection   import prep_vol, prgs
 	from applications import MPI_start_end
 	from utilities    import even_angles, model_blank
 	from fundamentals import fft
