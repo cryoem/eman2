@@ -71,16 +71,23 @@ def main():
 													or a comma separatted list of individual images; e.g. --refs=ref1.hdf,ref2.hdf,ref3.hdf.
 													""", default='')
 	
-	parser.add_argument("--nrefs", type=str, help="""Number of references to generate from the data for reference-free alignment. Default=1""", default=1)
+	parser.add_argument("--nrefs", type=int, help="""Number of references to generate from the data for reference-free alignment. Default=1""", default=1)
 	parser.add_argument("--refsgenmethod", type=str, help="""Method for generating the initial reference(s). Options are 'binarytree' and 'hac'. Default=binarytree""", default='binarytree') 
-
+	#parser.add_argument("--refpreprocess",action="store_true",default=False,help="""This 
+	#	will preprocess the reference identically to the particles. It is off by default, but it is internally turned on when no reference is supplied.""")
+	
 	
 	'''
 	PARAMETERS TO BE PASSED ON TO e2spt_classaverage.py
 	'''
 	
 	parser.add_header(name="caheader", help='Options below this label are specific to e2spt_classaverage', title="### e2spt_classaverage options ###", default=None, guitype='filebox', row=3, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
-	parser.add_argument("--path",type=str,default='spt_refinemulti',help="Directory to store results in. The default is a numbered series of directories containing the prefix 'spt_refinemulti'; for example, spt_refinemulti02 will be the directory by default if 'spt_refinemulti01' already exists.")
+	
+	parser.add_argument("--path",type=str,default='',help="""Directory to store results in. 
+		The default is a numbered series of directories containing the prefix 'spt_refinemulti'; 
+		for example, spt_refinemulti02 will be the directory by default if 'spt_refinemulti01' 
+		already exists.""")
+	
 	parser.add_argument("--input", type=str, help="The name of the input volume stack. MUST be HDF or BDB, since volume stack support is required.", default=None, guitype='filebox', browser='EMSubTomosTable(withmodal=True,multiselect=False)', row=0, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	parser.add_argument("--output", type=str, help="The name of the output class-average stack. MUST be in  .hdf format, since volume stack support is required.", default=None, guitype='strbox', row=2, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	#parser.add_argument("--oneclass", type=int, help="Create only a single class-average. Specify the class number.",default=None)
@@ -186,21 +193,28 @@ def main():
 		options.align = None
 		options.ralign = None
 	
+		
+	#print "\n\n\n(e2spt_refinemulti.py) options.refpreprocess is", options.refpreprocess
+	#print "\n\n\n"
+	
 	'''
 	Make the directory where to create the database where the results will be stored
 	'''
+	
+	print "(e2spt_refinemulti.py) BEFORE sptmakepath, otions.path is", options.path
+	
 	options = sptmakepath(options,'spt_refinemulti')
 
+	print "(e2spt_refinemulti.py) AFTER sptmakepath, otions.path is", options.path
+
 	rootpath = os.getcwd()
-	
-	options.path = rootpath + '/' + options.path
-	
+
 	relativeInput = '../' + options.input
 	absoluteInput = rootpath + '/' + options.input
 	options.input = absoluteInput
 	avgs={}
 	finalize=0
-	originalPath = rootpath + '/' + options.path
+	originalCompletePath = rootpath + '/' + options.path
 	
 	'''
 	Store parameters in parameters.txt file inside --path
@@ -221,8 +235,23 @@ def main():
 		If no references are provided, the program has to generate them, using the method
 		specified through --refsgenmethod
 		'''
-		genrefs( options, originalPath)
-
+		
+		print "(e2spt_refinemulti.py) No references provided; therefore, genrefs function will be called"
+		ret = genrefs( options, originalCompletePath)
+		
+		print "\n(e2spt_refinemulti.py) Back to main, genrefs has returned", ret
+		
+		for rf in ret:
+			actualFyle = os.path.basename(rf)
+			actualFyleFixed = actualFyle.replace('group','ref').replace('avg','')
+			rf2add = originalCompletePath + '/' + actualFyleFixed
+			os.system('cp ' + rf + ' ' + rf2add)
+			
+			refsfiles.update( [rf2add] )
+		
+		
+		
+		
 	else:
 		refsFylesOrig = options.refs.split(',')
 		
@@ -234,7 +263,7 @@ def main():
 			
 			i=0
 			for refFyle in refsFylesOrig:
-				outref = options.path + '/' + os.path.basename(refFyle).replace('.hdf','_ref' + str(i).zfill(len(str(nrefs))) + '.hdf' )
+				outref = originalCompletePath + '/' + os.path.basename(refFyle).replace('.hdf','_ref' + str(i).zfill(len(str(nrefs))) + '.hdf' )
 				os.system('cp ' + refFyle + ' ' + outref)		
 				#nrefs = len(refsorig)
 		
@@ -243,7 +272,7 @@ def main():
 		else:
 			nrefs = EMUtil.get_image_count( options.refs )
 			for i in range(nrefs):
-				outref = options.path + '/' + options.refs.replace('.hdf','_ref' + str(i).zfill(len(str(nrefs))) + '.hdf' )
+				outref = originalCompletePath + '/' + options.refs.replace('.hdf','_ref' + str(i).zfill(len(str(nrefs))) + '.hdf' )
 				os.system('e2proc3d.py ' + options.refs + ' ' + outref + ' --first=' + str(i) + ' --last=' + str(i) )
 				refsfiles.update( [ outref ] )
 
@@ -307,7 +336,7 @@ def main():
 			
 			#thisRefinementPath = ref.split('/')[-1].replace('.hdf','')
 		
-			alicmd ='cd ' + options.path + ' && e2spt_classaverage.py --ref=' + ref + ' --path=sptTMP' #+ ' --input=' + relativeInput
+			alicmd ='cd ' + originalCompletePath + ' && e2spt_classaverage.py --ref=' + ref + ' --path=sptTMP' #+ ' --input=' + relativeInput
 	
 			names = dir(options)
 			for name in names:
@@ -316,18 +345,24 @@ def main():
 					alicmd += ' --' + name + '=' + str(getattr(options,name))
 			alicmd += ' --donotaverage'
 		
-			tag = str(k).zfill( len( str ( nrefs )))
+			#if options.refpreprocess:
+			alicmd += ' --refpreprocess'
+				
+			#tag = str(k).zfill( len( str ( nrefs )))
+			
+			tag = os.path.basename(ref).split('ref')[-1].split('_')[0].replace('.hdf','').zfill( len( str ( len(refsfiles) )))
+			
 			reftag = 'ref' + tag
 			reftags.append(reftag)
 		
-			jsAliParamsPathActual = options.path + '/tomo_xforms.json'
+			jsAliParamsPathActual = originalCompletePath + '/tomo_xforms.json'
 			
 			jsAliParamsPathNew = jsAliParamsPathActual.replace('.json','_' + reftag + '.json')
 			jsAliParamsPathNew = jsAliParamsPathNew.replace('.json', '_it' + str(it).zfill( len(str(options.iter))) + '.json')
 			
 			#print "(e2spt_refinemulti.py) The actual .json file with ali params will be", jsAliParamsPathNew
 			
-			alicmd += ' --refinemultireftag=' + tag	+ ' && mv ' + options.path + '/sptTMP/* ' + options.path + '/ && rm -r ' + options.path +'/sptTMP* && cp ' + jsAliParamsPathActual + ' ' + jsAliParamsPathNew
+			alicmd += ' --refinemultireftag=' + tag	+ ' && mv ' + originalCompletePath + '/sptTMP/* ' + originalCompletePath + '/ && rm -r ' + originalCompletePath +'/sptTMP* && cp ' + jsAliParamsPathActual + ' ' + jsAliParamsPathNew
 		
 		
 			
@@ -364,7 +399,7 @@ def main():
 		
 		
 			print "\n\n\nThis is the alicmd", alicmd
-			print "\ntomo_xforms.json should be in direct, see", os.listdir(options.path)
+			print "\ntomo_xforms.json should be in direct, see", os.listdir(originalCompletePath)
 			print"\n\n\n"
 			
 			print "Feedback from p was", text
@@ -410,41 +445,16 @@ def main():
 				masterInfo.update({ ptclID: value })
 				
 				
-				
 				'''
 				Open scores file for current reference
 				'''
-				#if it == int(options.iter)-1 or finalize:
-				#	print "(e2spt_refinemulti.py) This is the FINAL ITERATION! Will create scores file."
-			
-					#scoresFile = options.path + '/' + thisRefinementPath + '/subtomo_scores' + tag + '.json'
-				scoresFile = options.path +'/subtomo_FinalScores_' + reftag + '.json'
+				scoresFile = originalCompletePath +'/subtomo_FinalScores_' + reftag + '.json'
 				jsScores = js_open_dict(scoresFile)
-				jsScores.setval(ptclID,ptclScore )
+				
+				jsScores.setval(ptclID, 'score='+str(ptclScore) + ' vs ref=' + ref  )
+				
 				jsScores.close()
 				
-				print "This is the scores file I've used", scoresFile 
-				print "and the ID,ptclScore I've written",ptclID,ptclScore
-				
-					#nscores = len(scores)
-				
-					#print "\n\nThe scores file to read is", scoresFile
-					#print "I read these many scores", nscores
-					#print "scores are", scores
-		
-					#for ele in scores:
-					#	print "one score element is", ele
-						#print "And therefore score is", scores[ele]
-					
-					#if nparams != nscores:
-					#	print "nscores is", nscores
-					#	print "nparams is", nparams
-					#	print "WARNING! They should be the same."	
-			
-					#print "\n\n"
-				
-				
-				#print "masterInfo has been updated and now is",masterInfo
 			k+=1
 		
 		'''
@@ -456,6 +466,7 @@ def main():
 	
 		classes = {}
 		for reftag in reftags:
+			print "\n\n\n\n\n\n\n\n\nRRRRRRRRRR\nreftag is", reftag
 			classes.update({ reftag : [] })
 	
 		for ele in masterInfo:
@@ -466,17 +477,10 @@ def main():
 			bestAliParams = bestPtclInfo[1]
 			bestScore = bestPtclInfo[0]
 		
-			#print "\n\nFor particle", ele
-			#print "The sorted data is", sortedPtclInfo
-			#print "\n\n"
-		
 			ptclIndx = int( ele.split('_')[-1] )
 			value = classes[ bestreftag ]
 			value.append( [ ptclIndx, bestAliParams, bestScore] )
 			classes.update({ bestreftag : value })
-			
-			
-			
 			
 	
 		#klassIndx = 0
@@ -498,7 +502,13 @@ def main():
 				print "\n\nWill average. There are particles in the klass %d see" %( klassIndx ) 
 				print classes[klass]
 				print "\n\n"
-				ret = makeAverage( options, classes[klass], klassIndx, klassesLen, it, finalize)
+				ret = makeAverage( options, classes[klass], klassIndx, klassesLen, it, finalize, originalCompletePath)
+				
+				if ret:
+					avgsName =  originalCompletePath + '/classAvgs.hdf'
+					if options.savesteps and int( options.iter ) > 1 :
+						avgsName = originalCompletePath + '/classAvgs_iter' + str( it ).zfill( len( str( options.iter ))) + '.hdf'						
+					ret.write_image(avgsName,-1)
 			else:
 				print "The klass %d was empty (no particles were assgined to it). You might have too many classes." % ( klassIndx )	
 				#dummyClassAvg=EMData(boxsize,boxsize,boxsize)
@@ -530,64 +540,82 @@ def main():
 	return()
 
 
-def genrefs( options, originalPath ):
+def genrefs( options, originalCompletePath ):
 	
 	nptcls = EMUtil.get_image_count( options.input )
-
+	print "\n(e2spt_refinemulti.py) Inside genrefs, originalPath is", originalCompletePath
+	
 	refsFyles = []
-	if options.refsgenmethod == 'binarytree':
-		
-		nrefs = int(options.nrefs)
-		
+	nrefs = int(options.nrefs)
+	
+	if options.refsgenmethod == 'binarytree' or 'binary' in refsgenmethod:
+				
+		print "\n(e2spt_refinemulti.py) (genrefs) refsgenmethod and nrefs are", options.refsgenmethod, nrefs	
+
 		if nrefs > 1:
 		
-			groupsize = int( nptcls/options.nrefs )
-		
-			for i in range(options.nrefs):			
-				bottom_range = i * groupsize
-				top_range = (i+1) * groupsize
+			groupsize = int( int(nptcls)/int(options.nrefs) )
+			print "\nTherefore, groupsize is", groupsize
 			
+			for i in range(nrefs):
+				print "\nIterating over nrefs; i is", i
+							
+				bottom_range = i * groupsize
+				top_range = (i+1) * groupsize - 1	#Since e2proc3d.py includes the top range
+													#for a set of 16 particles, for example
+													#the top range would be index 15, becuase
+													#numeration starts at 0. Therefore, you need to
+													#subtract 1 to "top_range" if separating the particles
+													#using e2proc3d.py
 				if i == options.nrefs - 1:
-					top_range = nptcls
-		
-				#groupPATH = options.input
-				if options.nrefs > 1:
-					groupID = 'group' + str(i+1).zfill(len(str(options.nrefs)))
-					groupDIR = originalPath + '/' + groupID
-					groupStack = options.input.replace('.hdf','group' + str(i+1).zfill(len(str(options.nrefs) ) ) + 'ptcls.hdf')
-					
-					divisioncmd = 'e2proc3d.py ' + options.input + ' ' + groupStack + '--append --first=' + str(bottom_range) + ' --last=' + str(top_range)
+					top_range = nptcls - 1
+				print "\nbottom and top ranges are", bottom_range, top_range
 				
-					alicmd ='e2spt_classaverage.py ' + ' --path=' + groupID
+				#groupPATH = options.input
+				if nrefs > 1:
+					groupID = 'group' + str(i+1).zfill(len(str(options.nrefs)))
+					
+					#groupDIR = originalPath + '/' + options.path + '/' + groupID
+					
+					groupStack = originalCompletePath + '/' + os.path.basename(options.input).replace('.hdf','group' + str(i+1).zfill(len(str(options.nrefs) ) ) + 'ptcls.hdf')
+					
+					divisioncmd = 'e2proc3d.py ' + options.input + ' ' + groupStack + ' --append --first=' + str(bottom_range) + ' --last=' + str(top_range)
+					
+				
+					alicmd ='cd ' + originalCompletePath + ' && e2spt_classaverage.py --path=' + groupID + ' --input=' + groupStack
 
 					names = dir(options)
 					for name in names:
-						if getattr(options,name) and 'refs' not in name and "__" not in name and "_" not in name and 'path' not in name and str(getattr(options,name)) != 'True' and 'iter' not in name:	
+						if getattr(options,name) and 'refs' not in name and 'iter' not in name and 'output' not in name and 'input' not in name and "__" not in name and "_" not in name and 'path' not in name and str(getattr(options,name)) != 'True' and 'iter' not in name:	
 							#if "__" not in name and "_" not in name and str(getattr(options,name)) and 'path' not in name and str(getattr(options,name)) != 'False' and str(getattr(options,name)) != 'True' and str(getattr(options,name)) != 'None':			
 							alicmd += ' --' + name + '=' + str(getattr(options,name))
-			
-					alicmd += ' --output=' + groupID + 'avg.hdf --path=' + groupID
+					
+					alicmd += ' --output=' + groupID + 'avg.hdf --iter=1'
 				
-					alicmd += ' && mv ' + groupStack + ' ' + groupID
+					#alicmd += ' && mv ' + groupStack + ' ' + groupID
 
 					finalBinTreeCmd = divisioncmd + ' && ' + alicmd
-				
+					
+					print "\nfinalBinTreeCmd is", finalBinTreeCmd
+					
 					p=subprocess.Popen( finalBinTreeCmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 					text=p.communicate()	
 					p.stdout.close()
 				
-					refFyle = originalPath + '/' + groupID + '/' + groupID + 'avg.hdf'
+					refFyle = originalCompletePath + '/' + groupID + '/' + groupID + 'avg.hdf'
 					refsFyles.append( refFyle )
-	
+		print "\nI have finished building references with the binary tree method"
+		
 	elif options.refsgenmethod == 'hac':
 		avsacmd ='e2spt_hac.py --path=sptTMP'
-
+		print "(e2spt_refinemulti.py) (genrefs) refsgenmethod and nrefs are", options.refsgenmethod, nrefs
+	
 		names = dir(options)
 		for name in names:
 			if getattr(options,name) and 'refs' not in name and "__" not in name and "_" not in name and 'path' not in name and str(getattr(options,name)) != 'True' and 'iter' not in name:	
 				#if "__" not in name and "_" not in name and str(getattr(options,name)) and 'path' not in name and str(getattr(options,name)) != 'False' and str(getattr(options,name)) != 'True' and str(getattr(options,name)) != 'None':			
 				avsacmd += ' --' + name + '=' + str(getattr(options,name))
-		avsacmd += ' --autocenter --groups=' + str(options.nrefs) + ' && mv ' + options.path + '/sptTMP/* ' + options.path + ' && rm -r sptTMP'
+		avsacmd += ' --autocenter --groups=' + nrefs + ' && mv ' + originalCompletePath + '/sptTMP/* ' + originalCompletePath + ' && rm -r sptTMP'
 		
 		p=subprocess.Popen( avsacmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		text=p.communicate()	
@@ -595,16 +623,19 @@ def genrefs( options, originalPath ):
 		
 		for i in range(options.nrefs):
 			groupID = 'group' + str(i+1).zfill(len(str(options.nrefs)))
-			os.system('mv ' + options.path + '/' + groupID + '/finalAvg.hdf ' +  options.path + '/' + groupID +  '/' + groupID + 'avg.hdf')
+			os.system('mv ' + originalCompletePath + '/' + groupID + '/finalAvg.hdf ' +  originalCompletePath + '/' + groupID +  '/' + groupID + 'avg.hdf')
 		
 				
-			refFyle = originalPath + '/' + groupID + '/' + groupID + 'avg.hdf'
+			refFyle = originalCompletePath + '/' + groupID + '/' + groupID + 'avg.hdf'
 			refsFyles.append( refFyle )
+		print "I have finished building references with the hac method"
+		
+	print "\nDone building references. The returned references are", refsFyles
 
 	return refsFyles
 	
 	
-def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize):
+def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize, originalCompletePath):
 	"""Will take a set of alignments and an input particle stack filename and produce a new class-average.
 	Particles may be excluded based on the keep and keepsig parameters. If keepsig is not set, then keep represents
 	an absolute fraction of particles to keep (0-1). Otherwise it represents a sigma multiplier akin to e2classaverage.py"""
@@ -666,49 +697,54 @@ def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize):
 	#jsdict = path + '/tomo_xforms.json'
 	#js = js_open_dict(jsdict)
 			
+	ptclsAdded = 0
 	for k in klass:
-		#print "\n\nk in klass is", k
-		#print "\nThe index of the particle to add is",k[0]
-		#print "\nAnd this its transform", k[1][0]
-		ptcl = EMData(options.input,k[0])
+		print "klass is", klass
 		
-		#print "\n\n\n(e2spt_refinemuti.py) in makeAverage, ptcl and its type are",ptcl,type(ptcl)
+		if klass and len(klass) > 0:
+			#print "\n\nk in klass is", k
+			#print "\nThe index of the particle to add is",k[0]
+			#print "\nAnd this its transform", k[1][0]
+			ptcl = EMData(options.input,k[0])
 		
-		ptclTransform =k[1][0]
-		#print "And the ptcl transform is", ptclTransform
-		ptcl.process_inplace("xform",{"transform" : ptclTransform})
+			#print "\n\n\n(e2spt_refinemuti.py) in makeAverage, ptcl and its type are",ptcl,type(ptcl)
 		
-		#print "I've applied the transform"
-		#print "I have applied this transform before averaging", ptcl_parms[0]["xform.align3d"]			
+			ptclTransform =k[1][0]
+			#print "And the ptcl transform is", ptclTransform
+			ptcl.process_inplace("xform",{"transform" : ptclTransform})
 		
-		if k[-1] <= thresh: 
-			avgr.add_image(ptcl)
-			included.append(k[0])
+			#print "I've applied the transform"
+			#print "I have applied this transform before averaging", ptcl_parms[0]["xform.align3d"]			
+		
+			if k[-1] <= thresh: 
+				avgr.add_image(ptcl)
+				included.append(k[0])
+				ptclsAdded += 1
 
-		#js["tomo_%04d"%i] = ptcl_parms[0]['xform.align3d']
+			#js["tomo_%04d"%i] = ptcl_parms[0]['xform.align3d']
 		
-		if int(options.iter) -1 == iterNum:
-			finalize = 1
+			if int(options.iter) -1 == iterNum:
+				finalize = 1
 		
-		if options.saveali and not finalize:
-			ptcl['origin_x'] = 0
-			ptcl['origin_y'] = 0		# jesus - the origin needs to be reset to ZERO to avoid display issues in Chimera
-			ptcl['origin_z'] = 0
-			ptcl['spt_score'] = k[-1]
+			if options.saveali and not finalize:
+				ptcl['origin_x'] = 0
+				ptcl['origin_y'] = 0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
+				ptcl['origin_z'] = 0
+				ptcl['spt_score'] = k[-1]
 			
-			#print "\nThe score is", ptcl_parms[0]['score']
-			#print "Because the zero element is", ptcl_parms[0]
+				#print "\nThe score is", ptcl_parms[0]['score']
+				#print "Because the zero element is", ptcl_parms[0]
 			
-			ptcl['xform.align3d'] = Transform()
-			#ptcl['spt_ali_param'] = ptcl_parms[0]['xform.align3d']
-			ptcl['xform.align3d'] = ptclTransform
+				ptcl['xform.align3d'] = Transform()
+				#ptcl['spt_ali_param'] = ptcl_parms[0]['xform.align3d']
+				ptcl['xform.align3d'] = ptclTransform
 			
-			print "\n\nFinal iteration, and options.saveali on, so saving class_ptcls\n\n"
+				print "\n\nFinal iteration, and options.saveali on, so saving class_ptcls\n\n"
 			
-			classStack = options.path + "/class" + str( klassIndx ).zfill( len( str (klassesLen))) + "_ptcl.hdf"
-			#print "The class name is", classname
-			#sys.exit()
-			ptcl.write_image(classStack,k[0])	
+				classStack = originalCompletePath + "/class" + str( klassIndx ).zfill( len( str (klassesLen))) + "_ptcl.hdf"
+				#print "The class name is", classname
+				#sys.exit()
+				ptcl.write_image(classStack,-1)	
 	#js.close()
 	
 	if options.verbose: 
@@ -727,14 +763,14 @@ def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize):
 	if not options.nocenterofmass:
 		avg.process_inplace("xform.centerofmass")
 	
-	avgsName =  options.path + '/classAvgs.hdf'
-	if options.savesteps and int( options.iter ) > 1 :
-		avgsName = options.path + '/classAvgs_iter' + str( klassIndx ).zfill( len( str( options.iter ))) + '.hdf'
-
-	avg.write_image(avgsName,klassIndx)
+	
+	
+	if ptclsAdded > 0:
+		#avg.write_image(avgsName,klassIndx)
 		
-	return avg
-
+		return avg
+	else:
+		return 0
 
 
 
