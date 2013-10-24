@@ -173,9 +173,9 @@ def main():
 	parser.add_argument("--comparators",type=str,default='',help="""Supply comparators to COMPARE, separated my a comma. For example --comparators=ccc,ccc.tomo,fsc.tomo:sigmas=0.005 .
 																	If supplied, --raligncmp and --aligncmp will be ignored.""")
 	parser.add_argument("--lowpass",type=str,help="""A lowpass filter (as in a processor from e2proc3d.py) apply to the model before generating simulated particles from it.
-							Type 'e2help.py processors' at the command line and find the options availbale from the processors list)""",default='None')
+							Type 'e2help.py processors' at the command line and find the options availbale from the processors list)""",default='')
 	parser.add_argument("--highpass",type=str,help="""A lowpass filter (as in a processor from e2proc3d.py) apply to the model before generating simulated particles from it.
-							Type 'e2help.py processors' at the command line and find the options availbale from the processors list)""",default='None')
+							Type 'e2help.py processors' at the command line and find the options availbale from the processors list)""",default='')
 							
 	parser.add_argument("--shrinkalign", type=int,default=0,help="Optionally shrink the input volume before the simulation if you want binned/down-sampled subtomograms.")
 	parser.add_argument("--shrinksim", type=int,default=0,help="Optionally shrink the input volume before the simulation if you want binned/down-sampled subtomograms.")
@@ -260,8 +260,8 @@ def simloop(options,rootpath):
 	
 	comps = options.comparators.split(',')
 	iters=str(options.iter).split(',')
-	print "ITers are", iters
-	print "Therefore len(iters) is", len(iters)
+	#print "ITers are", iters
+	#print "Therefore len(iters) is", len(iters)
 	
 	if not options.comparators or len(comps) == 1:
 		if len(iters) < 2:
@@ -328,15 +328,15 @@ def simloop(options,rootpath):
 		tiltrangetag = ("%d" %(tiltrange) ).zfill(3)
 		
 		if options.tiltstep:
-			print "Tilt step is", tiltstep
-			print "Tilt range is", tiltrange
+			#print "Tilt step is", tiltstep
+			#print "Tilt range is", tiltrange
 			nslices = (2 * tiltrange) / tiltstep
 			#print "Therefore, 2*tiltrange/tiltstep is nslices",nslices
 			nslicesu = nslices + 1
 			#nslicestag = str(int(nslices)).zfill(3)
 
 		while nslices < nslicesu:
-			print "nslices is", nslices
+			#print "nslices is", nslices
 			#if not options.tiltstep:
 			nslicestag = ("%d" %(nslices)).zfill(3)
 			
@@ -428,7 +428,7 @@ def simloop(options,rootpath):
 						
 						itersMode = 0
 						
-						print "There's comps but length was less than one!"
+						#print "There's comps but length was less than one!"
 						ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany,thestack,themodel,itersMode)
 						if simround == 0:
 							firstrandstack = ret[2]
@@ -505,14 +505,18 @@ def simloop(options,rootpath):
 						firstrandstack = ret[2]
 				
 				snr += snrch
+				print "\n\nThe snr has increased by", snrch
+				print "And thus will be for the next round", snr
 
 			if options.tiltstep:
 				nslices += tiltstep
 			else:
 				nslices += nslicesch
-
+			
+			simround+= 1
+		
 		tiltrange += tiltrangech
-		simround+= 1
+		
 
 			
 	"""
@@ -550,7 +554,7 @@ def simloop(options,rootpath):
 			
 			
 				for filt in compFilts:
-					print "\nComparator filt and refnum are", filt,i
+					#print "\nComparator filt and refnum are", filt,i
 					print "Whereas originalpath, refnum are", originalpath,i
 					print "\n"
 				
@@ -576,7 +580,7 @@ def simloop(options,rootpath):
 						thisone = potentialdirs[-1]	
 				
 				
-					print "In simloop after alignments, to ANALYZE results, the RESULTS dir WITHOUT hyphen should be based on filt",filt
+					#print "In simloop after alignments, to ANALYZE results, the RESULTS dir WITHOUT hyphen should be based on filt",filt
 					#print "based on the originalpath", originalpath
 					#print "or now rather on the thisone path", thisone
 				
@@ -606,11 +610,11 @@ def simloop(options,rootpath):
 					resfiles_analysis(options,resfiles,resultsdir,modelnum=i)
 		
 			elif len(iterPATHS) > 1:
-				print "\n\n\nThere are these many iterPAHTS", len(iterPATHS)
-				print "Which are", iterPATHS
+				#print "\n\n\nThere are these many iterPAHTS", len(iterPATHS)
+				#print "Which are", iterPATHS
 			
 				for ele in iterPATHS:
-					print "Analyzing THIS element of iterPATHS", ele
+					#print "Analyzing THIS element of iterPATHS", ele
 					options.path = iterPATHS[ele]
 				
 					if nrefs > 1:
@@ -878,9 +882,12 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			subtomos = subpath + '/' + subtomos
 			
 			alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --radius=" + str(options.radius) + " --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=0 --parallel=" + options.parallel + " --ralign=refine_3d_grid:delta=3:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=" + str(options.shrinkalign) + " --shrinkrefine=" + str(options.shrinkalign) +" --savesteps --saveali --normproc=" + str(options.normproc)  + ' --iter=' + str(options.iter) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose)
-
+			
+			if options.shrinkalign or options.lowpass or options.highpass:
+				alicmd += ' --refpreprocess'
+			
 			if options.quicktest:
-				alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --radius=" + str(options.radius) + " -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=" + options.parallel + " --ralign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=3 --normproc=" + str(options.normproc) + ' --iter=' + str(options.iter) + ' --npeakstorefine=1 --savesteps --saveali'
+				alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --radius=" + str(options.radius) + " -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=" + options.parallel + " --ralign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=3 --normproc=" + str(options.normproc) + ' --iter=' + str(options.iter) + ' --npeakstorefine=1 --savesteps --saveali --refpreprocess'
 
 			
 			#You want --wedgeangle (or data collection range) to be a bit bigger than it actually is
@@ -954,8 +961,11 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 				if not options.quicktest:
 					extractcmd2 = "cd " + alipath2 + " && e2spt_classaverage.py --path=finalRef_vs_OriginalRef --input=" + finalrefname + " --output=finalrefali.hdf --ref=" + refToCompensate + " --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=0 --parallel=" + options.parallel + " --ralign=refine_3d_grid:delta=3:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=" + str(options.shrinkalign) + " --shrinkrefine=" + str(options.shrinkalign) +" --savesteps --saveali --normproc=" + str(options.normproc)  + ' --iter=1 --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose)
 				
+					if options.shrinkalign or options.lowpass or options.highpass:
+						extractcmd2 += ' --refpreprocess'
+				
 				elif options.quicktest:
-					extractcmd2 = "cd " + alipath2 + " && e2spt_classaverage.py --path=finalRef_vs_OriginalRef --input=" + finalrefname + " --output=finalrefali.hdf --ref=" + refToCompensate + " -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=" + options.parallel + " --ralign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=3 --normproc=" + str(options.normproc) + " --iter=1 --npeakstorefine=1 --savesteps --saveali"
+					extractcmd2 = "cd " + alipath2 + " && e2spt_classaverage.py --path=finalRef_vs_OriginalRef --input=" + finalrefname + " --output=finalrefali.hdf --ref=" + refToCompensate + " -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=" + options.parallel + " --ralign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=3 --normproc=" + str(options.normproc) + " --iter=1 --npeakstorefine=1 --savesteps --saveali --refpreprocess"
 				
 				runcmd( extractcmd2 )
 			
