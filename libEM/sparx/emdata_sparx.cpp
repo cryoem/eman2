@@ -128,7 +128,7 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
 		for (int m=0; m <=mMax; m++){
 		//    if m==mMax, tic, end
 			std::complex <float> tempF(0.0f,-1.0f);
-			std::complex <float> overallFactor = pow(tempF,m);  //(-i)^m ;  % I dropped off the 2 pi
+			std::complex <float> overallFactor = (std::complex <float>) pow(tempF,m);  //(-i)^m ;  % I dropped off the 2 pi
 			std::complex <float> mI(0.0f,static_cast<float>(m));
 			for (int ii=0; ii< RIntMax; ii++){ rhoOfRandmTemp[ii]=0;}
 			for (int jx=0; jx <Center ; jx++) {

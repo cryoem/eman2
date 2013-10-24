@@ -389,8 +389,8 @@ void EMData::print_image(const string str, ostream& out) {
 		out << "(z = " << iz << " slice)" << std::endl;
 		for (int ix = 0; ix < nx; ix++) {
 			for (int iy = 0; iy < ny; iy++) {
-				out << setiosflags(std::ios::fixed)
-					<< setiosflags(std::ios_base::scientific)
+				out << std::setiosflags(std::ios::fixed)
+					<< std::setiosflags(std::ios_base::scientific)
 					<< std::setw(12)
 					 << std::setprecision(5) << (*this)(ix,iy,iz) << "  ";
 				if (((iy+1) % 6) == 0) {
