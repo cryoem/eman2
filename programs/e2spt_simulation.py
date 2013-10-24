@@ -355,17 +355,33 @@ def randomizer(options, model, stackname):
 	randptcls = []
 	
 	if options.orthogonal:
-		for i in range(3):
+		for i in range(4):
 			b = model.copy()
 			
 			if i==0:
+				b['sptsim_randT'] = Transform()
+				b['xform.align3d'] = Transform()
 				randptcls.append(b)
-
+			
+			#if i == 1:
+			#	b.rotate(90,0,0)
+			#	t = Transform({'type':'eman','az':0,'alt':90,'phi':0})
+			#	b['sptsim_randT'] = t
+			#	b['xform.align3d'] = Transform()				
+			#	randptcls.append(b)
+			
 			if i == 1:
 				b.rotate(0,90,0)
+				t = Transform({'type':'eman','az':0,'alt':90,'phi':0})
+				b['sptsim_randT'] = t
+				b['xform.align3d'] = Transform()				
 				randptcls.append(b)
+				
 			if i == 2:
-				b.rotate(0,90,90)
+				b.rotate(90,90,90)
+				t = Transform({'type':'eman','az':0,'alt':90,'phi':90})
+				b['sptsim_randT'] = t
+				b['xform.align3d'] = Transform()
 				randptcls.append(b)
 			
 	else:	
@@ -620,7 +636,7 @@ class SubtomoSimTask(JSTask):
 			
 				if noise:
 					#print "I will add noise"
-					noise.process_inplace('normalize')
+					#noise.process_inplace('normalize')
 					prj_r.add(noise)
 			
 				elif options.snr:
