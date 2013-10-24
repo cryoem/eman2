@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.7
 
 #
 # Author: Jesus Galaz-Montoya 03/2011, (based on Steven Ludtke's initial implementation [02/15/2011] of Jesus's older scripts).
@@ -179,6 +179,9 @@ def main():
 
 	if int(options.groups) > 1 and int(options.iter) > 1:
 		print "ERROR: --groups cannot be > 1 if --iter is > 1."
+	
+	print "\n\n\n(e2spt_classaverage.py) options.refpreprocess is", options.refpreprocess
+	print "\n\n\n"
 		
 	#print help 
 	if not options.input:
@@ -412,13 +415,8 @@ def main():
 		'''
 		if options.ref: 
 			ref = EMData(options.ref,ic)
-			print "\n\n(e2spt_classaverage3d.py) I've read the reference from file"
-			print "Ref header is",  ref.get_attr_dict()
-			
 		elif not options.hacref:
 			ref = binaryTreeRef(options,nptcl,ptclnums,ic,etc)
-			print "\n\n(e2spt_classaverage.py) I have generated a reference using the binary tree approach."
-			print "Ref header is", ref.get_attr_dict()
 		elif options.hacref:
 			pass
 		
@@ -428,8 +426,6 @@ def main():
 		#resNum = 0
 		resumeDict = {}
 		for it in range(options.iter):
-			print "\n\n\n++++++++++++++++++++++++++++++INTERATION %d++++++++++++++++++++++++++++++++++++++++" %(it)
-			print "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n\n"
 			# In 2-D class-averaging, each alignment is fast, so we send each node a class-average to make
 			# in 3-D each alignment is very slow, so we use a single ptcl->ref alignment as a task
 			tasks=[]
@@ -684,6 +680,11 @@ def calcAliStep(options):
 		
 	options.ralign = 'refine_3d_grid:range=' + str(rangoRounded) + ':delta=' + str(fineStepRounded) + ':search=2'
 	
+	if options.verbose:
+		if options.verbose > 3:
+			options.align += ':verbose=1'
+			options.ralign += ':verbose=1'
+	
 	return options
 	
 
@@ -861,7 +862,7 @@ def filters(fimage,preprocess,lowpass,highpass,shrink):
 
 
 def preprocessing(options,image,tag='ptcls'):
-	print "\n(e2spt_classaverage.py) I am in the preprocessing function"
+	#print "I am in the preprocessing function"
 	
 	
 	#print "\n$$$$$$$\nIn preprocessing, received options and image, types", type(options), type(image)
@@ -900,17 +901,10 @@ def preprocessing(options,image,tag='ptcls'):
 		if options.lowpass or options.highpass or options.preprocess or options.shrink:
 			simage = filters(simage,options.preprocess,options.lowpass,options.highpass,options.shrink)
 		
-		retr=[0.0001,0.0001,0.0001]
-		if tag == 'ptcls':
-			retr = wedgestats(simage,options.wedgeangle,options.wedgei,options.wedgef,options)
-			simage['spt_wedge_mean'] = retr[0]
-			simage['spt_wedge_sigma'] = retr[1]
-			simage['spt_wedge_thresh'] = retr[2]
-		else:
-			simage['spt_wedge_mean'] = 0.0
-			simage['spt_wedge_sigma'] = 0.0
-			simage['spt_wedge_thresh'] = 0.0
-			
+		retr = wedgestats(simage,options.wedgeangle,options.wedgei,options.wedgef,options)
+		simage['spt_wedge_mean'] = retr[0]
+		simage['spt_wedge_sigma'] = retr[1]
+		simage['spt_wedge_thresh'] = retr[2]
 		
 		if options.mask:
 			maskCoarse = mask.copy()
@@ -947,21 +941,18 @@ def preprocessing(options,image,tag='ptcls'):
 	If there is a round of fine alignment, preprocess the particle for fine alignment
 	'''
 	s2image = image.copy()
-	
-	coarseEqualFine = 1
 	if options.ralign:
 		if 'fsc.tomo' == options.raligncmp[0]:
 			
 			'''
 			If fine parameters are the same as coarse parameters, just copy the image for coarse alignment,'s', onto the image for fine alignment, 's2'
 			'''
-			same=0
+			done=0
 			if options.procfinelikecoarse or ( options.raligncmp == options.aligncmp and options.shrink == options.shrinkrefine and options.lowpass == options.lowpassfine and options.highpass == options.highpassfine and options.preprocess == options.preprocessfine):
 				s2image = simage.copy()
-				same=1
+				done=1
 			
-			if not same:
-				coarseEqualFine = 0									
+			if not done:									
 		
 				if options.normproc:
 					s2image.process_inplace(options.normproc[0],options.normproc[1])
@@ -971,16 +962,10 @@ def preprocessing(options,image,tag='ptcls'):
 					#print "Options.lowpassfine to pass is", options.lowpassfine
 					s2image = filters(s2image,options.preprocessfine,options.lowpassfine,options.highpassfine,options.shrinkrefine)
 	
-				retr=[0.0001,0.0001,0.0001]
-				if tag=='ptcls':
-					retr = wedgestats(s2image,options.wedgeangle,options.wedgei,options.wedgef,options)
-					s2image['spt_wedge_mean'] = retr[0]
-					s2image['spt_wedge_sigma'] = retr[1]
-					s2image['spt_wedge_thresh'] = retr[2]					
-				else:
-					s2image['spt_wedge_mean'] = 0.0
-					s2image['spt_wedge_sigma'] = 0.0
-					s2image['spt_wedge_thresh'] = 0.0
+				retr = wedgestats(s2image,options.wedgeangle,options.wedgei,options.wedgef,options)
+				s2image['spt_wedge_mean'] = retr[0]
+				s2image['spt_wedge_sigma'] = retr[1]
+				s2image['spt_wedge_thresh'] = retr[2]
 	
 				if options.mask:
 					if options.shrinkrefine:
@@ -1014,47 +999,34 @@ def preprocessing(options,image,tag='ptcls'):
 				s2image.process_inplace(options.threshold[0],options.threshold[1])	
 	
 	if options.savepreprocessed and (options.mask or options.normproc or options.lowpass or options.highpass or options.preprocess or options.shrink or options.shrinkrefine or options.lowpassfine or options.highpassfine or options.preprocessfine):
-		
-		indx=image['source_n']	
+			
 		if tag == 'ref':
-			indx = 0
-			preprocessedCoarse = 'avgPreprocCoarse.hdf'
-			preprocessedFine = 'avgPreprocFine.hdf'
+			preprocessedCoarse = options.ref.replace('.hdf','_preprocCoarse.hdf')
+			preprocessedFine = options.ref.replace('.hdf','_preprocFine.hdf')
 			
-			if options.ref:
-				preprocessedCoarse = options.ref.replace('.hdf','_preprocCoarse.hdf')
-				preprocessedFine = options.ref.replace('.hdf','_preprocFine.hdf')
-			
-			current = os.getcwd()
 			if options.path not in preprocessedCoarse:
 				preprocessedCoarse = options.path + '/' + preprocessedCoarse
-				
-				if current not in preprocessedCoarse:
-					preprocessedCoarse = current+ '/' + preprocessedCoarse
-				
 			if options.path not in preprocessedFine:
 				preprocessedFine = options.path + '/' + preprocessedFine
-				
-				if current not in preprocessedFine:
-					preprocessedFine = current+ '/' + preprocessedFine
-					
-			print "\n\nPath to save preprocessed ref", preprocessedCoarse, preprocessedFine
+			
+			indx=-1
+			if options.ref:
+				indx = 0
+			
 			simage.write_image(preprocessedCoarse,indx)
 			s2image.write_image(preprocessedFine,indx)
 			
 		elif tag == 'ptcls':
-			preprocessedCoarse = options.input.replace('.hdf','_preprocCoarse.hdf')				
+			preprocessedCoarse = options.input.replace('.hdf','_preprocCoarse.hdf')
+			preprocessedFine = options.input.replace('.hdf','_preprocFine.hdf')						
 			
 			if options.path not in preprocessedCoarse:
 				preprocessedCoarse = options.path + '/' + preprocessedCoarse
+			if options.path not in preprocessedFine:
+				preprocessedFine = options.path + '/' + preprocessedFine
 			
-			if not coarseEqualFine:
-				preprocessedFine = options.input.replace('.hdf','_preprocFine.hdf')		
-				if options.path not in preprocessedFine:
-					preprocessedFine = options.path + '/' + preprocessedFine
-					s2image.write_image(preprocessedFine,indx)
-			
-			simage.write_image(preprocessedCoarse,indx)
+			simage.write_image(preprocessedCoarse,-1)
+			s2image.write_image(preprocessedFine,-1)
 
 	return(simage,s2image)
 	
@@ -1065,11 +1037,6 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 	an absolute fraction of particles to keep (0-1). Otherwise it represents a sigma multiplier akin to e2classaverage.py"""
 	
 	print "(e2pt_classaverage.py)(make_average) The results to parse are", align_parms
-	
-	
-	
-	
-	
 	
 	if groups > 1:
 		
@@ -1369,18 +1336,14 @@ def wedgestats(volume,angle, wedgei, wedgef, options):
 	amps = ampsOrig.process('xform.phaseorigin.tocenter')
 	symamps = amps.process('xform.mirror', {'axis':'x'})
 	finalamps = amps + symamps
-	
-	finalamps['spt_wedge_mean']=mean
-	finalamps['spt_wedge_sigma']=sigma
 		
 	#print "Size of amps is", amps['nx'],amps['ny'],amps['nz']
 	
 	sigmas = options.aligncmp[1]['sigmas']
 	print "Sigmas is", sigmas
 	
-	thresh = mean + sigmas * sigma
-	thresh2 = math.pow( mean + sigmas * sigma, 2.0 )
-	print "Therefore thresh = (mean + sigmas*sigma)^2 is", thresh
+	thresh = math.pow( mean + sigmas * sigma, 2.0 )
+	print "Therefore thresh = mean + (sigmas*sigma)^2 is", thresh
 	
 	#print "Size of symamps is", symamps['nx'],symamps['ny'],symamps['nz']
 	
@@ -1391,25 +1354,23 @@ def wedgestats(volume,angle, wedgei, wedgef, options):
 
 	#print "Size of finalamps is", finalamps['nx'],finalamps['ny'],finalamps['nz']
 	
-	#print "\nType of wedge is", type(finalwedge)
-	#print "\nType of amps is", type(finalamps)
-	print "\n\n\n THRESH to filter AMPS is", thresh, type( thresh )
+	print "\nType of wedge is", type(finalwedge)
+	print "\nType of amps is", type(finalamps)
+	print "\nType of ampsThresh is", type(ampsThresh)
 	
 	if options.writewedge:
 		
 		completePath = os.getcwd() + '/' + options.path
 		print "\nThe list of files in path is", os.listdir( completePath )
 		 
-		if volume['source_n']==0:															#You only need to write the wedge once
-			wedgename = os.getcwd() + '/' + options.path + '/wedge.hdf'
-			finalwedge.write_image(wedgename,0)
+		wedgename = os.getcwd() + '/' + options.path + '/wedge.hdf'
+		finalwedge.write_image(wedgename,0)
 		
-		indx = volume['source_n']
 		ampsname = os.getcwd() + '/' + options.path +'/fftamps.hdf'
-		finalamps.write_image(ampsname,indx)
+		finalamps.write_image(ampsname,-1)
 		
 		ampsThreshname = os.getcwd() + '/' + options.path + '/fftampsThresh.hdf'
-		ampsThresh.write_image(ampsThreshname,indx)	
+		ampsThresh.write_image(ampsThreshname,-1)	
 	
 	return(mean,sigma,thresh)
 
@@ -1511,9 +1472,6 @@ def align3Dfunc(fixedimage,image,ptclnum,label,classoptions,transform):
 	if classoptions.refpreprocess:
 		refpreprocess=1
 	
-	#if not refpreprocess:
-	#	fixedimage.process_inplace('normalize')
-	
 	ret=alignment(fixedimage,image,label,classoptions,xformslabel,transform,'e2spt_classaverage', refpreprocess)
 
 	bestfinal=ret[0]
@@ -1536,11 +1494,11 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 	Similar issues in 2-D single particle refinement ... handled differently at the moment
 	"""
 	
-	#if not refpreprocess:
-	#	print "\nThere is NO refpreprocess! And there was a reference. Therefore, dummy values will be entered to the header if fsc.tomo is used."
-	#	if (options.raligncmp and 'fsc.tomo' in options.raligncmp[0]) or (options.aligncmp and 'fsc.tomo' in options.aligncmp[0]):
-	#		fixedimage['spt_wedge_mean']=0.0000001
-	#		fixedimage['spt_wedge_sigma']=0.0000001
+	if not refpreprocess:
+		print "\nThere is NO refpreprocess! And there was a reference. Therefore, dummy values will be entered to the header if fsc.tomo is used."
+		if (options.raligncmp and 'fsc.tomo' in options.raligncmp[0]) or (options.aligncmp and 'fsc.tomo' in options.aligncmp[0]):
+			fixedimage['spt_wedge_mean']=0.0
+			fixedimage['spt_wedge_sigma']=0.0
 	
 	'''
 	Preprocess the reference or "fixed image"
@@ -1549,22 +1507,13 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 		#print "Sending fixedimage to preprocessing"
 		
 		print "\nThere IS refpreprocess!"
-		retfixedimage = preprocessing(options,fixedimage,'ref')
-		
+		retfixedimage = preprocessing(options,fixedimage)
 		sfixedimage = retfixedimage[0]
 		s2fixedimage = retfixedimage[1]
 	
 	else:
 		sfixedimage = fixedimage
 		s2fixedimage = fixedimage
-		
-		sfixedimage['spt_wedge_mean'] = 0.0
-		sfixedimage['spt_wedge_sigma'] = 0.0
-		sfixedimage['spt_wedge_thresh'] = 0.0
-		
-		s2fixedimage['spt_wedge_mean'] = 0.0
-		s2fixedimage['spt_wedge_sigma'] = 0.0
-		s2fixedimage['spt_wedge_thresh'] = 0.0
 		
 	
 	'''
@@ -1641,6 +1590,7 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 		
 		#print "Will do coarse alignment"
 		
+		print "Right before alignment, the boxsize of the COARSE image is", simage['nx'],simage['ny'],simage['nz']
 		bestcoarse = simage.xform_align_nbest(options.align[0],sfixedimage,options.align[1],options.npeakstorefine,options.aligncmp[0],options.aligncmp[1])
 		
 		# Scale translation
@@ -1666,6 +1616,8 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 		peaknum=0
 		for bc in bestcoarse:
 			options.ralign[1]["xform.align3d"] = bc["xform.align3d"]
+			
+			print "Right before alignment, the boxsize of the REFINE image is", s2image['nx'],s2image['ny'],s2image['nz']
 			ali = s2image.align(options.ralign[0],s2fixedimage,options.ralign[1],options.raligncmp[0],options.raligncmp[1])
 			
 			#print "\nThe score returned from ralign is", ali['score']
