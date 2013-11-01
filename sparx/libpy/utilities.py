@@ -3220,6 +3220,61 @@ def angles_between_anglesets(angleset1, angleset2, indexes=None):
 	return angle_errors
 
 
+def phi_theta_to_xyz(ang):
+	from math import sin, cos, pi
+	phi   = ang[0] * (pi / 180.0)
+	theta = ang[1] * (pi / 180.0)
+	z = cos(theta)
+	x = sin(theta) * cos(phi)
+	y = sin(theta) * sin(phi)
+	return [x, y, z]
+
+
+def xyz_to_phi_theta(xyz):
+	from math import pi, acos, sqrt
+	x = xyz[0]
+	y = xyz[1]
+	z = xyz[2]
+	z = max( -1.0, min(1.0, z) )
+	theta = acos(z)
+	sin_theta = sqrt(1 - z*z)
+	if theta > 180.0:
+		sin_theta *= -1
+	if abs(sin_theta) >= 0.001:
+		v_sin = max( -1.0, min(1.0, y / sin_theta) )
+		v_cos = max( -1.0, min(1.0, x / sin_theta) )
+		phi = acos( v_cos )
+		if v_sin < 0.0:
+			phi = 2*pi - phi
+	else:
+		phi = 0.0
+	return [phi * (180.0/pi), theta * (180.0/pi), 0.0]
+	
+# input: list of triplets (phi, theta, psi)
+# output: average triplet: (phi, theta, psi)
+def average_angles(angles):
+	from math import sqrt
+	# convert to x, y, z
+	ex = 0.0
+	ey = 0.0
+	ez = 0.0
+	sum_psi = 0.0
+	for ang in angles:
+		xyz = phi_theta_to_xyz(ang)
+		ex += xyz[0]
+		ey += xyz[1]
+		ez += xyz[2]
+		sum_psi += ang[2]
+	ex /= len(ang)
+	ey /= len(ang)
+	ez /= len(ang)
+	divider = sqrt(ex*ex + ey*ey + ez*ez)
+	xyz = [ ex/divider, ey/divider, ez/divider ]
+	r = xyz_to_phi_theta(xyz)
+	r[2] = sum_psi / len(angles)  # TODO - correct psi calculations !!!!
+	return r
+
+
 def get_pixel_size(img):
 	"""
 	  Retrieve pixel size from the header.
