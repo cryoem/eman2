@@ -955,7 +955,7 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 	
 	if mpi_rank == 0:
 		write_text_row(out_params, log.prefix + "params.txt")
-		drop_image(out_vol[i], log.prefix + "volf.hdf")
+		drop_image(out_vol, log.prefix + "volf.hdf")
 	
 	return out_params, out_vol, out_peaks
 
