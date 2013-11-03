@@ -109,7 +109,7 @@ def js_list_dicts(url):
 		ld=os.listdir(url)
 	except: return []
 
-	ld=[i for i in ld if i[-5:]==".json" and os.access("{}.{}".format(url,i),os.R_OK)]
+	ld=[i for i in ld if i[-5:]==".json" and os.access("{}/{}".format(url,i),os.R_OK)]
 
 	return ld
 

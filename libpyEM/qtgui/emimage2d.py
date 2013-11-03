@@ -2128,7 +2128,7 @@ class EMImageInspector2D(QtGui.QWidget):
 			self.pyinp.setText("")
 		except:
 			import traceback
-			traceback.print_stack()
+			traceback.print_exc()
 			r="Error executing. Access the image as 'img', for example \nimg['mean'] will yield the mean image value"
 #		print r
 

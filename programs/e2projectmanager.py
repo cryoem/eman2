@@ -1347,7 +1347,8 @@ class PMTextEdit(QtGui.QTextEdit):
 			self.setPMFontWeight(QtGui.QFont.Bold)
 		else:
 			self.setPMFontWeight(QtGui.QFont.Normal)
-		self.setPMFontSize(int(self.parent().fontsizecb.currentText()))
+		try : self.setPMFontSize(int(self.parent().fontsizecb.currentText()))
+		except: self.setPMFontSize(10)
 		self.setPMTextColor(self.parent().fontcolor.getColor())
 		self.setPMFontFamily(self.parent().fontfamily.currentText())
 		self.setPMFontItalic(self.parent().italicbutton.isDown())

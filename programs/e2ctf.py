@@ -1380,7 +1380,11 @@ returns (fg1d,bg1d)"""
 		n+=1
 	
 	# deal with the points from the origin to the first zero
-	bg[:lwz]+=lwd
+	try : bg[:lwz]+=lwd
+	except:
+		print "ERROR in flattening background. This should only occur if the defocus is either too close or too far from focus with the current box-size and sampling."
+		return (list(fg),list(bg))
+
 
 	# deal with the points from where the zeroes got too close together, just to make a smooth curve
 	for x in xrange(lz,len(ctf.background)) : 

@@ -2342,6 +2342,7 @@ from PyQt4 import QtGui
 class EMBoxerInspector(QtGui.QWidget):
 
 	PTCL_SHAPE_MAP = {}
+	PTCL_SHAPE_MAP["none"] = "hidden"
 	PTCL_SHAPE_MAP["square"] = "rect"
 	PTCL_SHAPE_MAP["square with marker"] = "rectpoint"
 	PTCL_SHAPE_MAP["circle"] = "rcircle"
