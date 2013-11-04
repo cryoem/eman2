@@ -12,29 +12,30 @@ class mpi_env_type:
 
 def kernel(projections, stable_subset, target_threshold, options, minimal_subset_size, number_of_runs, number_of_winners, mpi_env, log, prefix=""):
 	from multi_shc import multi_shc, find_common_subset_3
-	from utilities import wrap_mpi_bcast, write_text_row, wrap_mpi_gatherv
+	from utilities import wrap_mpi_bcast, write_text_row, write_text_file, wrap_mpi_gatherv, average_angles
 	from itertools import combinations
+	import os
 	
 	if log == None:
 		from logger import Logger
 		log = Logger()
 	
-	# number of runs
-	m = number_of_runs	
-	
 	stable_subset = wrap_mpi_bcast(stable_subset, 0, mpi_env.main_comm)
 	
 	if mpi_env.main_rank == 0:
-		log.add("Start ", m, "* 3SHC")
-		for i in xrange(m):
-			log.add("3SHC --> " + log.prefix + "#" + prefix + "_" + str(i))
+		log.add("Start ", number_of_runs, "* 3SHC")
+		for i in xrange(number_of_runs):
+			log.add("3SHC --> " + log.prefix + prefix + "_" + str(i))
 
 	completed_mshc = 0
 	params = []
-	while completed_mshc < m:
-		runs_to_do = min([ (m - completed_mshc), mpi_env.subcomms_count ])
+	while completed_mshc < number_of_runs:
+		runs_to_do = min([ (number_of_runs - completed_mshc), mpi_env.subcomms_count ])
 		if mpi_env.subcomm_id < runs_to_do:
-			out_params, out_vol, out_peaks = multi_shc(projections, stable_subset, 3, options, mpi_env.sub_comm, log=log.sublog(prefix + "_" + str(completed_mshc + mpi_env.subcomm_id)))
+			out_dir = prefix + "_" + str(completed_mshc + mpi_env.subcomm_id)
+			if mpi_env.sub_rank == 0:
+				os.mkdir(log.prefix + out_dir)
+			out_params, out_vol, out_peaks = multi_shc(projections, stable_subset, 3, options, mpi_env.sub_comm, log=log.sublog(out_dir + "/"))
 		else:
 			out_params = None
 		if mpi_env.main_rank in mpi_env.subcomms_roots and mpi_env.subcomm_id < runs_to_do:
@@ -50,6 +51,7 @@ def kernel(projections, stable_subset, target_threshold, options, minimal_subset
 	# find common subset
 	if mpi_env.main_rank == 0:
 		log.add("Calculate common subset")
+		best_confs = []
 		largest_subset = []
 		largest_subset_error = 999.0
 		msg = ""
@@ -61,6 +63,7 @@ def kernel(projections, stable_subset, target_threshold, options, minimal_subset
 			subset_thr, subset_size, err_thr, err_size = find_common_subset_3(input_params, target_threshold, minimal_subset_size, thresholds=True)
 			msg += str(len(subset_size)) + "(" + str(err_size) + ") "
 			if len(subset_size) > len(largest_subset) or ( len(subset_size) == len(largest_subset) and err_size < largest_subset_error):
+				best_confs = confs
 				largest_subset = subset_size
 				largest_subset_error = err_size
 		log.add(msg)
@@ -69,6 +72,11 @@ def kernel(projections, stable_subset, target_threshold, options, minimal_subset
 		new_stable_subset = []
 		for i in subset:
 			new_stable_subset.append(stable_subset[i])
+		log.add("Best solutions (winners): ", best_confs)
+		winners_params = [ params[i] for i in best_confs ]
+		average_params = average_angles(winners_params)
+		write_text_file(new_stable_subset, log.prefix + prefix + "_indexes.txt")
+		write_text_row(average_params, log.prefix + prefix + "_params.txt")
 	else:
 		threshold = None
 		new_stable_subset = None
@@ -374,6 +382,7 @@ def expand_step(projections, stable_subset, stable_threshold, options, tries_per
 	from applications import MPI_start_end
 	from multi_shc import multi_shc
 	from utilities import wrap_mpi_recv, wrap_mpi_send, wrap_mpi_bcast, wrap_mpi_gatherv
+	import os
 	
 	if log == None:
 		from logger import Logger
@@ -414,9 +423,11 @@ def expand_step(projections, stable_subset, stable_threshold, options, tries_per
 	params = []
 	for iAS in xrange(len(assigned_subsets)):
 		if mpi_env.sub_rank == 0:
-			log.add("3SHC --> " + log.prefix + "#" + str(iteration) + "_expanding_" + str(mpi_env.subcomm_id) + "_" + str(iAS))
+			out_dir = str(iteration) + "_expanding_" + str(mpi_env.subcomm_id) + "_" + str(iAS)
+			os.mkdir(log.prefix + out_dir)
+			log.add("3SHC --> " + log.prefix + out_dir)
 		subset = assigned_subsets[iAS]
-		out_p, out_vol, out_peaks = multi_shc(projections, subset, 3, options, mpi_comm=mpi_env.sub_comm, log=log.sublog(str(iteration) + "_expanding_" + str(mpi_env.subcomm_id) + "_" + str(iAS)))
+		out_p, out_vol, out_peaks = multi_shc(projections, subset, 3, options, mpi_comm=mpi_env.sub_comm, log=log.sublog(out_dir + "/"))
 		if mpi_env.sub_rank == 0:
 			assert( len(subset) == len(out_p) )
 		if mpi_env.sub_rank == 0:

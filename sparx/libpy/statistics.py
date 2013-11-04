@@ -1114,8 +1114,8 @@ def aves_wiener(input_stack, mode="a", SNR=1.0):
 
 	if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "aves_wiener", 1)
 
-	nx2 = nx2
-	ny2 = ny2
+	nx2 = nx*2
+	ny2 = ny*2
 	ave       = EMData(nx2, ny2, 1, False)
 	ctf_2_sum = EMData(nx2, ny2, 1, False)
 	snrsqrt = sqrt(SNR)

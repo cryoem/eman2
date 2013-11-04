@@ -25,7 +25,7 @@ def wrap_mpi_split(mpi_comm, number_of_subcomm):
 def main():
 	from EMAN2 import EMData
 	from utilities import write_text_file
-	from mpi import mpi_init, mpi_finalize, MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size, mpi_comm_split
+	from mpi import mpi_init, mpi_finalize, MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size, mpi_comm_split, mpi_barrier
 	from logger import Logger, BaseLogger_Files
 	from air import air
 	import sys
@@ -54,6 +54,7 @@ def main():
 	parser.add_option("--function", type="string", default="ref_ali3d",         help="name of the reference preparation function (ref_ali3d by default)")
 	parser.add_option("--npad",     type="int",    default= 2,                  help="padding size for 3D reconstruction (default=2)")
 	parser.add_option("--MPI",      action="store_true", default=True,          help="whether to use MPI version - this is always set to True")
+	parser.add_option("--proc_mshc",type="int",    default=3,                   help="number of MPI processes per multiSHC, 3 is minimum (default=3)")
 	(options, args) = parser.parse_args(sys.argv[1:])
 	
 	if len(args) < 4:
@@ -65,19 +66,22 @@ def main():
 	mpi_init(0, [])
 	
 	mpi_size = mpi_comm_size(MPI_COMM_WORLD)
+	mpi_rank = mpi_comm_rank(MPI_COMM_WORLD)
 	
-	if mpi_size < 12:
-		print "Number of processes can't be smaller than 12"
+	proc_per_mshc = int(options.proc_mshc)
+	
+	if mpi_size < proc_per_mshc:
+		print "Number of processes can't be smaller than value given as the parameter --proc_mshc"
 		mpi_finalize()
 		return
 	
 	log = Logger(BaseLogger_Files())
 	
-	projs = EMData.read_images(sys.argv[1])
-	minimal_subset_size = int(sys.argv[2])
-	target_threshold = float(sys.argv[3])
+	projs = EMData.read_images(args[0])
+	minimal_subset_size = int(args[1])
+	target_threshold = float(args[2])
+	outdir = args[3]
 	
-	outdir = args[1]
 	if mpi_rank == 0:
 		if os.path.exists(outdir):
 			ERROR('Output directory exists, please change the name and restart the program', "sxmulti_shc", 1)
@@ -93,7 +97,7 @@ def main():
 		outdir += "/"
 	log.prefix = outdir
 	
-	me = wrap_mpi_split(MPI_COMM_WORLD, 4)
+	me = wrap_mpi_split(MPI_COMM_WORLD, mpi_size / proc_per_mshc )
 
 	options.user_func = user_functions.factory[options.function]
 
