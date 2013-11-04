@@ -120,25 +120,6 @@ def shrink_step(projections, stable_subset, target_threshold, options, min_stabl
 	return stable_subset, stable_threshold
 
 
-def dist_full(par1, par2):
-	from math import sin, cos, acos, pi
-	phi1 = par1[0] * (pi/180.0)
-	phi2 = par2[0] * (pi/180.0)
-	theta1 = par1[1] * (pi/180.0)
-	theta2 = par2[1] * (pi/180.0)
-	st1 = sin(theta1)
-	st2 = sin(theta2)
-	ct1 = cos(theta1)
-	ct2 = cos(theta2)
-	cp1cp2_sp1sp2 = cos(phi1 - phi2)
-	temp = st1 * st2 * cp1cp2_sp1sp2 + ct1 * ct2
-	if temp < -1.0:
-		temp = -1.0
-	if temp > 1.0:
-		temp = 1.0
-	return acos( temp ) * (180.0 / pi)
-
-
 #calculate t1*t2
 def mult_transform(v1, v2):
 	from EMAN2 import Transform
@@ -148,19 +129,15 @@ def mult_transform(v1, v2):
 	return [ T.get_params("spider")["phi"], T.get_params("spider")["theta"], T.get_params("spider")["psi"] ]
 
 
-def wrap_rotation_between_anglesets(ang1, ang2):
-	from utilities import rotation_between_anglesets
+def calculate_diff(ang1, ang2):
+	from utilities import angle_between_projections_directions, rotation_between_anglesets
 	
 	phi, theta, psi = rotation_between_anglesets(ang1, ang2)
-	return [phi, theta, psi]
-
-
-def calculate_diff(ang1, ang2):
-	rot = wrap_rotation_between_anglesets(ang1, ang2)
+	rot = [phi, theta, psi]
 	n = len(ang1)
 	diff = []
 	for k in xrange(n):
-		diff.append( dist_full( mult_transform(ang1[k],rot), ang2[k] ) )
+		diff.append( angle_between_projections_directions( mult_transform(ang1[k],rot), ang2[k] ) )
 	return diff
 
 
@@ -175,34 +152,6 @@ def find_max_clique(edges):
 		edges_cpp.append(edg[1])
 	
 	c = Util.max_clique(edges_cpp)
-	
-	'''
-	import networkx as nx
-	n = 0
-	for e in edges:
-		n = max([ n, e[0], e[1] ])
-	
-	g = nx.Graph()
-	g.add_nodes_from(range(n))
-
-	for e in edges:
-		g.add_edge(e[0], e[1])
-	
-	ss = []
-	#c = max_clique(g)
-	#print c
-	cl = list(nx.find_cliques(g))
-	for c in cl:
-		ss.append(len(c))
-
-	ms = max(ss)
-	print "Max clique:", ms
-	
-	for cc in cl:
-		if len(cc) == ms:
-			c = list(cc)
-			break
-	'''
 	c.sort()
 	return c
 
@@ -421,7 +370,7 @@ def generate_subsets(list_of_indicies, trg_subset_size, number_of_repetitions):
 # stable_threshold -> threshold error to use during recalculation of stable subset - the same for all processes in main communicator
 # OUTPUT:
 # new stable subset -> set of indices - the same for all processes in main communicator
-def expand_step(projections, stable_subset, stable_threshold, options, tries_per_unstable=4, mpi_env=None, log, iteration=-1):
+def expand_step(projections, stable_subset, stable_threshold, options, tries_per_unstable=4, mpi_env=None, log=None, iteration=-1):
 	from applications import MPI_start_end
 	from multi_shc import multi_shc
 	from utilities import wrap_mpi_recv, wrap_mpi_send, wrap_mpi_bcast, wrap_mpi_gatherv
@@ -501,7 +450,7 @@ def expand_step(projections, stable_subset, stable_threshold, options, tries_per
 	return new_stable_subset
 
 
-def full_proc(projs, minimal_subset_size, target_threshold, options, number_of_runs, number_of_winners, mpi_env, log, prefix):
+def air(projs, minimal_subset_size, target_threshold, options, number_of_runs, number_of_winners, mpi_env, log):
 	from utilities import wrap_mpi_bcast
 	
 	subset = range(len(projs))
