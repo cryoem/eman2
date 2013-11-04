@@ -421,8 +421,8 @@ def expand_step(projections, stable_subset, stable_threshold, options, tries_per
 	# run SHC (in each sub-communicator separately)
 	params = []
 	for iAS in xrange(len(assigned_subsets)):
+		out_dir = str(iteration) + "_expanding_" + str(mpi_env.subcomm_id) + "_" + str(iAS)
 		if mpi_env.sub_rank == 0:
-			out_dir = str(iteration) + "_expanding_" + str(mpi_env.subcomm_id) + "_" + str(iAS)
 			os.mkdir(log.prefix + out_dir)
 			log.add("3SHC --> " + log.prefix + out_dir)
 		subset = assigned_subsets[iAS]
