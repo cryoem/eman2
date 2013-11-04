@@ -46,8 +46,6 @@ def kernel(projections, stable_subset, target_threshold, options, minimal_subset
 			params.extend(params_temp)
 		completed_mshc += runs_to_do
 
-	log.synch()
-
 	# find common subset
 	if mpi_env.main_rank == 0:
 		log.add("Calculate common subset")
@@ -73,8 +71,10 @@ def kernel(projections, stable_subset, target_threshold, options, minimal_subset
 		for i in subset:
 			new_stable_subset.append(stable_subset[i])
 		log.add("Best solutions (winners): ", best_confs)
-		winners_params = [ params[i] for i in best_confs ]
-		average_params = average_angles(winners_params)
+		average_params = []
+		for i in subset:
+			temp = [ params[j][i] for j in best_confs ]
+			average_params.append(average_angles(temp))
 		write_text_file(new_stable_subset, log.prefix + prefix + "_indexes.txt")
 		write_text_row(average_params, log.prefix + prefix + "_params.txt")
 	else:
@@ -117,7 +117,6 @@ def shrink_step(projections, stable_subset, target_threshold, options, min_stabl
 			log.add("Threshold", stable_threshold)
 			terminate = (out_subset == stable_subset)
 			stable_subset = out_subset
-		log.synch()
 		terminate = wrap_mpi_bcast(terminate, 0, mpi_env.main_comm)
 		if terminate:
 			break
