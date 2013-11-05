@@ -101,7 +101,7 @@ def main():
 
 	options.user_func = user_functions.factory[options.function]
 
-	new_subset, new_threshold = air(projs, minimal_subset_size, target_threshold, options, number_of_runs=8, number_of_winners=3, mpi_env=me, log=log)
+	new_subset, new_threshold = air(projs, minimal_subset_size, target_threshold, options, number_of_runs=6, number_of_winners=3, mpi_env=me, log=log)
 
 	if mpi_rank == 0:
 		log.add("Output threshold =", new_threshold)
