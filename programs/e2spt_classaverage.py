@@ -1,4 +1,4 @@
-#!/usr/bin/python2.7
+#!/usr/bin/env python
 
 #
 # Author: Jesus Galaz-Montoya 03/2011, (based on Steven Ludtke's initial implementation [02/15/2011] of Jesus's older scripts).
