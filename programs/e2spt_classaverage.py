@@ -87,6 +87,14 @@ def main():
 													Make sure the apix is correct on the particles' headers, sine the radius will be converted from Angstroms to pixels.
 													Then, the fine angular step is equal to 360/(2*pi*radius), and the coarse angular step 4 times that""", default=0)
 	
+	parser.add_argument("--search", type=float,default=8.0,help=""""During COARSE alignment
+		translational search in X, Y and Z, in pixels. Only works when --radius is provided.
+		Otherwise, search parameters are provided with the aligner, through --align.""")
+	
+	parser.add_argument("--searchfine", type=float,default=2.0,help=""""During FINE alignment
+		translational search in X, Y and Z, in pixels. Only works when --radius is provided.
+		Otherwise, search parameters are provided with the aligner, through --ralign.""")
+	
 	parser.add_argument("--donotaverage",action="store_true", help="If e2spt_refinemulti.py is calling e2spt_classaverage.py, the latter need not average any particles, but rather only yield the alignment results.", default=False)
 	
 	parser.add_argument("--iter", type=int, help="The number of iterations to perform. Default is 1.", default=1, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym')
@@ -171,6 +179,10 @@ def main():
 	#parser.add_argument("--fitwedgepost", action="store_true", help="Fit the missing wedge AFTER preprocessing the subvolumes, not before, IF using the fsc.tomo comparator for --aligncmp or --raligncmp.", default=True)
 	parser.add_argument("--writewedge", action="store_true", help="Write a subvolume with the shape of the fitted missing wedge if --raligncmp or --aligncmp are fsc.tomo. Default is 'False'. To turn on supply --writewedge", default=False)
 
+	parser.add_argument("--plotccc", action='store_true', help="""Turn this option on to generate
+		a plot of the ccc scores during each iteration.
+		Running on a cluster or via ssh remotely might not support plotting.""",default=False)
+
 	(options, args) = parser.parse_args()
 	
 	if 'fsc.tomo' in options.aligncmp or 'fsc.tomo' in options.raligncmp:
@@ -190,6 +202,7 @@ def main():
 		
 
 	if options.radius and float(options.radius) > 0.0:
+		print "(e2spt_classaverage.py)(main) before calling calcAliStep, options.input is", options.input
 		options = calcAliStep(options)
 		
 	
@@ -224,7 +237,7 @@ def main():
 	'''
 	Store parameters in parameters.txt file inside --path
 	'''
-	writeParameters(options,'e2spt_classaverage.py')
+	writeParameters(options,'e2spt_classaverage.py', 'sptclassavg')
 	
 	'''
 	Parse parameters
@@ -612,8 +625,8 @@ def main():
 Function to write the parameters used for every run of the program to parameters.txt inside the path specified by --path.
 *** Imported by many e2spt programs ***
 '''
-def writeParameters( options, program ):
-	
+def writeParameters( options, program, tag ):
+	print "Tag received in writeParameters is", tag
 	names = dir(options)
 	cmd = program
 	lines = []
@@ -626,8 +639,9 @@ def writeParameters( options, program ):
 			lines.append(line+'\n')
 			cmd += ' --' + name + '=' + str(getattr(options,name))
 	
+	parmFile = 'parameters_' + tag + '.txt'
 	lines.append('\n'+cmd+'\n')
-	f=open(options.path + '/parameters.txt','w')
+	f=open(options.path + '/' + parmFile,'w')
 	f.writelines(lines)
 	f.close()
 	
@@ -636,7 +650,9 @@ def writeParameters( options, program ):
 
 def calcAliStep(options):
 
-	print "Options.radius is", options.radius
+	print "\n\n(e2spt_classaverage.py)(calcAliStep) options.radius is", options.radius
+	print "(e2spt_classaverage.py)(calcAliStep) options.input is", options.input
+
 	hdr = EMData( options.input,0,True )
 	apix = float( hdr['apix_x'] )
 	
@@ -674,11 +690,55 @@ def calcAliStep(options):
 	print "And the fine step before and after rounding is", fineStep, fineStepRounded
 	print "rango and its rounded are", rango, rangoRounded
 	
-	options.align = 'rotate_translate_3d:search=8:delta=' + str(CSrounded) + ':dphi=' + str(CSrounded)
+	
+	searchC = hdr['nx']/2.0 - 2.0
+	searchF = 2
+	
+	if options.search:
+		searchC = options.search
+	
+	else:
+		if options.mask:
+			if 'mask.sharp' in options.mask[0]:
+				if 'outer_radius' in options.mask[1]:
+					om = options.mask[1]['outer_radius']
+				
+					if '-' in str(om):
+						om = hdr['nx']/2 + om
+					searchC = om/2.0
+	
+		if options.shrink and options.shrink > 1:
+			searchC = int( searchC / options.shrink )
+		
+		
+	if options.searchfine:
+		searchF = options.searchfine	
+		
+	#else:
+	#	if options.maskfine:
+	#		if 'mask.sharp' in options.maskfine[0]:
+	#			if 'outer_radius' in options.maskfine[1]:
+	#				om = options.maskfine[1]['outer_radius']
+	#			
+	#				if '-' in str(om):
+	#
+	#	if options.shrinkrefine and options.shrinkrefine > 1:
+	#		searchF = int( searchF / options.shrink )
+	
+	options.align = 'rotate_translate_3d:search=' + str(searchC) +':delta=' + str(CSrounded) + ':dphi=' + str(CSrounded)
 	if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align:
 		options.align += ':sym=' + str(options.sym)
 		
-	options.ralign = 'refine_3d_grid:range=' + str(rangoRounded) + ':delta=' + str(fineStepRounded) + ':search=2'
+	options.ralign = 'refine_3d_grid:range=' + str(rangoRounded) + ':delta=' + str(fineStepRounded) + ':search=' + str(searchF)
+	
+	
+	
+	
+	#options.align = 'rotate_translate_3d:search=8:delta=' + str(CSrounded) + ':dphi=' + str(CSrounded)
+	#if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align:
+	#	options.align += ':sym=' + str(options.sym)
+		
+	#options.ralign = 'refine_3d_grid:range=' + str(rangoRounded) + ':delta=' + str(fineStepRounded) + ':search=2'
 	
 	if options.verbose:
 		if options.verbose > 3:
