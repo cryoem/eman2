@@ -72,12 +72,12 @@ def main():
 	
 	stacks2process = options.stack2process.split(',')
 	
-	for stack2process in stacks2process:
+	for stack2p in stacks2process:
 		
-		options.stack2process = stack2process
+		options.stack2process = stack2p
 		
 		if len(stacks2process) > 1 or not options.output:
-			options.output = stack2process.split('.')[0] + '_PREP.hdf'
+			options.output = stack2p.split('.')[0] + '_PREP.hdf'
 			
 		print "Options.output is", options.output
 
@@ -133,7 +133,7 @@ def main():
 		nStack2process = EMUtil.get_image_count( options.stack2process )
 	
 		if options.verbose:
-			print "(e2spt_refprep.py) There are these many particles in stack2process to be edited",nStack2process
+			print "\n\n(e2spt_refprep.py) There are these many particles in stack2process to be edited",nStack2process
 	
 		'''
 		Make all sides of the reference box equally sized and even, if they're not
@@ -144,19 +144,19 @@ def main():
 			stack2processEd = options.output
 	
 	
-		print "(e2spt_refprep.py) stack2processEd is", stack2processEd
+		#print "(e2spt_refprep.py) stack2processEd is", stack2processEd
 	
 		stack2processSample = EMData( options.stack2process, 0, True)
 	
 		cmd = 'e2proc3d.py ' + options.stack2process + ' ' + stack2processEd + ' && e2fixheaderparam.py --input=' + stack2processEd + ' --stem=origin --stemval=0' 
 	
-		print "(e2spt_refprep.py) This command will copy and create it", cmd
+		#print "(e2spt_refprep.py) This command will copy and create it", cmd
 	
 		p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		text=p.communicate()	
 		p.stdout.close()
 	
-		print "(e2spt_refprep.py) Command executed. Feedback was", text
+		#print "(e2spt_refprep.py) Command executed. Feedback was", text
 	
 		if stack2processSample['nx'] != stack2processSample['ny'] or stack2processSample['nx'] != stack2processSample['nz'] or stack2processSample['ny'] != stack2processSample['nz']:	
 			x0 = stack2processSample['nx']
@@ -176,7 +176,7 @@ def main():
 			#ref.clip_inplace(R)
 			
 			if options.verbose:
-				print "(e2spt_refprep.py) I have clipped the particles in stack2process to have a cubical and even-sided box size."
+				print "\n(e2spt_refprep.py) I have clipped the particles in stack2process to have a cubical and even-sided box size."
 
 		'''
 		If options.apix is supplied, first change the apix of refstack to that; then make stack2process match it
@@ -184,8 +184,7 @@ def main():
 		targetApix = 1.0
 		targetBox = stack2processSample['nx']
 		
-		print "(e2spt_refprep.py) Options refstack is", options.refstack
-
+		print "\n(e2spt_refprep.py) Options refstack is", options.refstack
 
 		if options.refstack:
 		
@@ -196,11 +195,9 @@ def main():
 				text=p.communicate()
 				p.stdout.close()
 			
-				
-			
 			refmatch(options, stack2processEd, stack2processSample)
 			
-			refpostprocessing(stack2process, stack2processEd, options )
+			refpostprocessing(options.stack2process, stack2processEd, options )
 		
 		
 		else:
@@ -249,7 +246,7 @@ def refmatch( options , stack2processEd, stack2processSample):
 
 	targetApix = EMData(options.refstack,0,True)['apix_x']
 	
-	if options.Apix:
+	if options.apix:
 		targetApix = float( options.apix )
 
 	targetBox = EMData(options.refstack,0,True)['nx']
@@ -271,36 +268,36 @@ def refmatch( options , stack2processEd, stack2processSample):
 
 		targetBox = options.boxsize
 
-	if not options.refstack and not options.boxsize:
-		print """(e2spt_refprep.py) ERROR: You must supply an image through --refStack to get the target boxsize for the edited stack2process, or specify this number through --boxsize. If all you want to do
-		is scale the data in refStack or stack2process by an integer amount, you ought to use e2proc3d.py <input> <output> --process=math.meanshrink:n="""
-		sys.exit()
+	#if not options.refstack and not options.boxsize:
+	#	print """(e2spt_refprep.py) ERROR: You must supply an image through --refStack to get the target boxsize for the edited stack2process, or specify this number through --boxsize. If all you want to do
+	#	is scale the data in refStack or stack2process by an integer amount, you ought to use e2proc3d.py <input> <output> --process=math.meanshrink:n="""
+	#	sys.exit()
 
 	cmd = 'e2fixheaderparam.py --input=' + stack2processEd + ' --stem=origin --stemval=0 && e2fixheaderparam.py --input=' + stack2processEd + " --params=MRC.nxstart:0,MRC.nystart:0,MRC.nzstart:0"
 	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	text=p.communicate()	
 	p.stdout.close()
-	print "(e2spt_refprep.py) Feedback from fix origina is", text
+	#print "\n(e2spt_refprep.py) Feedback from fix original is", text
 
-	stack2processEdHdr = EMData(stack2processEd,0,True)
-	stack2processEdApix = float( stack2processEdHdr['apix_x'])
+	#stack2processEdHdr = EMData(stack2processEd,0,True)
+	#stack2processEdApix = float( stack2processEdHdr['apix_x'])
 
-	refStackHdr = EMData(options.refstack,0,True)
-	refStackApix = float( refStackHdr['apix_x'])
-	print "(e2spt_refprep.py) stack2processEdApix and refStackApix are", stack2processEdApix,refStackApix
-	if stack2processEdApix != refStackApix:
-		cmd = 'e2fixheaderparam.py --input=' + stack2processEd + ' --stem=apix --stemval=' + str( targetApix ) 
-		p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		text=p.communicate()	
-		p.stdout.close()
-		print "Feedback from fix apix is", text
+	#refStackHdr = EMData(options.refstack,0,True)
+	#refStackApix = float( refStackHdr['apix_x'])
+	#print "\n(e2spt_refprep.py) stack2processEdApix and refStackApix are", stack2processEdApix,refStackApix
+	#if stack2processEdApix != refStackApix:
+	#	cmd = 'e2fixheaderparam.py --input=' + stack2processEd + ' --stem=apix --stemval=' + str( targetApix ) 
+	#	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	#	text=p.communicate()	
+	#	p.stdout.close()
+	#	print "Feedback from fix apix is", text
 
 
 	#ref.process_inplace("xform.scale",{"scale":scalefactor,"clip":target_boxsize})
 
 	preciseShrink( options, stack2processSample, stack2processEd, targetApix, targetBox)
 	if options.verbose:
-		print "(e2spt_refprep.py) The stack2process has now been precisely shrunk."
+		print "\n(e2spt_refprep.py) The stack2process %shas now been precisely shrunk" %(stack2processEd)
 	
 	return
 	
@@ -313,27 +310,29 @@ def preciseShrink( options, stack2processSample, stack2processEd, targetApix, ta
 
 	stack2processApix = float( stack2processSample['apix_x'] )
 	if options.verbose:
-		print "(e2spt_refprep.py) I've read the apix of the particles in stack2process, which is", stack2processApix
+		print "\n(e2spt_refprep.py) I've read the apix of the particles in stack2process, which is", stack2processApix
 
 	meanshrinkfactor = float( targetApix )/float(stack2processApix)
-	meanshrinkfactor_int = int(round(meanshrinkfactor))
+	#meanshrinkfactor_int = int(round(meanshrinkfactor))
+
+	meanshrinkfactor_int = int(meanshrinkfactor)
 
 	if options.verbose:
-		print "(e2spt_refprep.py) The refStack apix is", EMData( options.refstack, 0, True)['apix_x']
+		print "\n(e2spt_refprep.py) The refStack apix is", EMData( options.refstack, 0, True)['apix_x']
 		print "(e2spt_refprep.py) And the target apix is", targetApix
 		print "(e2spt_refprep.py) Therefore, the meanshrink factor is", meanshrinkfactor
 		print "(e2spt_refprep.py) Which, for the first step of shrinking (using math.meanshrink), will be rounded to", meanshrinkfactor_int
 
 	cmd = ''
 	if meanshrinkfactor_int > 1:
-		print "(e2spt_refprep.py) About to shrink"
+		print "\n\n\n\n(e2spt_refprep.py) About to MEAN shrink becuase meanshrink factor is", meabshrinkfactor
 		print "(e2spt_refprep.py) The type of stack2process is", type( stack2processSample )
 	
 		cmd = 'e2proc3d.py ' + str(stack2processEd) + ' ' + str(stack2processEd) + ' --process=math.meanshrink:n=' + str(meanshrinkfactor_int)
 		p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		text=p.communicate()	
 		p.stdout.close()
-		print "\n(e2spt_refprep.py) Feedback from SHRINK is", text
+		#print "\n(e2spt_refprep.py) Feedback from SHRINK is", text
 	
 	
 		#ref.process_inplace("math.meanshrink",{"n":meanshrinkfactor_int})
@@ -344,14 +343,18 @@ def preciseShrink( options, stack2processSample, stack2processEd, targetApix, ta
 
 	scalefactor = float( stack2processApix )/float( targetApix)
 
-	print "(e2spt_refprep.py) The finer scale factor to apply is", scalefactor
-
+	print "\n\n\n\n(e2spt_refprep.py) The finer scale factor to apply is", scalefactor
+	
+	print "Right before, apix is", EMData(stack2processEd,0,True)['apix_x']
 	print "(e2spt_refprep.py) The final clip box is", targetBox
 	cmd = 'e2proc3d.py ' + str(stack2processEd) + ' ' + str(stack2processEd) + ' --process=xform.scale:scale=' + str(scalefactor) + ':clip=' + str(targetBox)
 	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	text=p.communicate()	
 	p.stdout.close()
-	print "(e2spt_refprep.py) Feedback from scale and clip is", text
+	
+	print "Right after, apix is", EMData(stack2processEd,0,True)['apix_x']
+
+	#print "(e2spt_refprep.py) Feedback from scale and clip is", text
 
 
 	print "\n\n!!!!!!!!!!!!\n(e2spt_refprep.py) stack2porcessEd should have been clipped by now, let's see", EMData(stack2processEd,0,True)['nx']
