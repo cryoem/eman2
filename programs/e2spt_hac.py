@@ -257,7 +257,7 @@ def main():
 	Store parameters in parameters.txt file inside --path
 	'''
 	from e2spt_classaverage import writeParameters
-	writeParameters(options,'e2spt_hac.py')
+	writeParameters(options,'e2spt_hac.py', 'hac')
 	
 	'''
 	Parse parameters
@@ -528,7 +528,13 @@ def allvsall(options):
 		print "\n\n"
 		
 		nnew = len(newptcls)
-		if k == (int(options.iter) - 1) or (nnew + len(oldptcls) ) == 1 :
+		#if k == (int(options.iter) - 1) or (nnew + len(oldptcls) ) == 1 :
+		
+		#if nnew + len(oldtptcls) == 1:
+		#	print "TERMINATING: There's only one particle left; the algorithm has converged; TERMINATING"
+		#	#sys.exit()
+			
+		if k == (int(options.iter) - 1) or (nnew + len(oldptcls) ) < 3 :
 			print "This is the final round", k
 			if options.saveali:
 				print "You selected ; therefore, I will write the latest state of all particles in the inpust stack."
@@ -539,7 +545,7 @@ def allvsall(options):
 					print "Wrote this ptcl to final stack", key
 		
 		if nnew + len(oldptcls) == 1:						#Stop the loop if the data has converged and you're left with one final particle (an average of all)
-			print "The all vs all algorithm has converged into one average"
+			print "TERMINATING: There's only one particle left; the algorithm has converged; TERMINATING"
 			break
 		
 		allptclsRound = {}							
@@ -589,7 +595,7 @@ def allvsall(options):
 		There are no "new" and "old" particles in the first round; thus the loop below is needed only for k>0
 		'''
 				
-		if k > 0:
+		if k > 0 and len(oldptcls) > 0 and nnew > 0:
 		
 			oldtags = {}
 			nold = EMUtil.get_image_count(options.path + '/oldptclstack.hdf')
