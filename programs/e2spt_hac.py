@@ -100,6 +100,14 @@ def main():
 		Make sure the apix is correct on the particles' headers, sine the radius will be converted from Angstroms to pixels.
 		Then, the fine angular step is equal to 360/(2*pi*radius), and the coarse angular step 4 times that""", default=0)
 	
+	parser.add_argument("--search", type=float,default=8.0,help=""""During COARSE alignment
+		translational search in X, Y and Z, in pixels. Only works when --radius is provided.
+		Otherwise, search parameters are provided with the aligner, through --align.""")
+	
+	parser.add_argument("--searchfine", type=float,default=2.0,help=""""During FINE alignment
+		translational search in X, Y and Z, in pixels. Only works when --radius is provided.
+		Otherwise, search parameters are provided with the aligner, through --ralign.""")
+
 	parser.add_argument("--exclusive_class_min", type=int, help="""The minimum multiplicity 
 		(number of particles that went into an average) to look for mutually exclusive classes/averages.
 		Two classes are mutually exclusive when non of the members in one are present in the other.
