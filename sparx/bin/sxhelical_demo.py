@@ -255,20 +255,20 @@ def generate_helimic(refvol, outdir, pixel, CTF=False, Cs=2.0,voltage = 200.0, a
 	angles =[]
 	for i in xrange(3):
 		angles.append( [0.0+60.0*i, 90.0-i*5, 90.0, 0.0, 0.0] )
-	
-	nangle = len(angles)
+
+	nangle   = len(angles)
 	modelvol = EMData()
 	modelvol.read_image(refvol)
-	
+
 	nx = modelvol.get_xsize()
 	ny = modelvol.get_ysize()
 	nz = modelvol.get_zsize()
-	
+
 	iprj    = 0
 	width = 500
 	xstart = 0
 	ystart = 0
-	
+
 	for idef in xrange(3,6):
 	
 		mic = model_blank(2048, 2048)
@@ -286,26 +286,25 @@ def generate_helimic(refvol, outdir, pixel, CTF=False, Cs=2.0,voltage = 200.0, a
 		for k in xrange(1):
 			dphi = 0.0 #8.0*(random()-0.5)
 			dtht = 0.0 #6.0*(random()-0.5)
-			psi  = 90+10*( i-1 )
+			psi  = 90 + 10*( i-1 )
 
-			phi = angles[idef-3][0]+dphi
-			tht = angles[idef-3][1]-dtht
-	
+			phi = angles[idef-3][0] + dphi
+			tht = angles[idef-3][1] - dtht
+
 			s2x = 2.5*(i-1)
 			s2y = 2.5*(i-1)
-	
-	
+
 			proj = prgs(volfts, kbz, [phi, tht, psi, -s2x, -s2y], kbx, kby)
 			proj = Util.window(proj, 320, nz)		
 			mic += pad(proj, 2048, 2048, 1, 0.0, int(750*(i-1)), int(20*(i-1)), 0)
-	
+
 		mic += model_gauss_noise(30.0,2048,2048)
 		if CTF :
 			#apply CTF
 			mic = filt_ctf(mic, ctf)
-	
+
 		mic += filt_gaussl(model_gauss_noise(17.5,2048,2048), 0.3)
-		
+
 		mic.write_image("%s/mic%1d.hdf"%(outdir, idef-3),0)
 
 def generate_runscript(filename, seg_ny, ptcl_dst, fract):

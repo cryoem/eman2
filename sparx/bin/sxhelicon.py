@@ -62,7 +62,7 @@ def main():
 	parser.add_option("--fract",              type="float", 		 default= 0.7,                help="fraction of the volume used for helical search. Default 0.7.")
 	parser.add_option("--sym",                type="string",		 default= "c1",               help="Poin-group symmetry of the structure. Default c1.")
 	parser.add_option("--function",           type="string",		 default="helical",  	      help="name of the reference preparation function (Default: helical)")
-	parser.add_option("--npad",               type="int",   		 default= 2,                  help="padding size for 3D reconstruction")
+	parser.add_option("--npad",               type="int",   		 default= 2,                  help="padding size for 3D reconstruction (Default: 2)")
 	parser.add_option("--debug",              action="store_true",   default=False,               help="debug")
 	parser.add_option("--seg_ny",             type="int",            default= 45,                 help="Desired y dimension of segments.  Only central part of segments nseg_ny pixels long will be used in calculations.")
 	parser.add_option("--searchxshift",       type="float",		     default= 0.0,                help="search range for x-shift determination: +/- searchxshift (Angstroms)")
