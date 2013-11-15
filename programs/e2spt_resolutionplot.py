@@ -63,7 +63,12 @@ def main():
 	parser.add_argument("--sym", type=str, default='c1', help = """Will symmetrize --ref and limit alignment of other structure --input against it to searching the asymmetric unit only. 
 								Then, after alignment, --input will be symmetrized as well, and the FSC will be calculated. 
 								Note that this will only work IF --ref is ALREADY aligned to the symmetry axis as defined by EMAN2.""")
-	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
+	
+	parser.add_argument("--maskali",type=str,help="""Mask processor applied to particles 
+		before alignment. Default is mask.sharp:outer_radius=-2""", default="mask.sharp:outer_radius=-2")
+	parser.add_argument("--maskfsc",type=str,help="""Mask processor applied to particles 
+		before fsc computation. Default is mask.sharp:outer_radius=-2""", default="mask.sharp:outer_radius=-2")
+			
 	parser.add_argument("--normproc",type=str,help="""Normalization processor applied to particles before alignment. 
 													Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. 
 													If you want to turn this option off specify \'None\'""", default="normalize.mask")
@@ -119,6 +124,10 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	logger = E2init(sys.argv, options.ppid)
+
+
+	if options.maskfsc: 
+		options.maskfsc=parsemodopt(options.maskfsc)
 
 	if options.thresholds:
 		options.thresholds = options.thresholds.split(',')
@@ -234,6 +243,18 @@ def getfscs(options):
 			ref = symmetrize(ref,options)
 			#fscfilename = options.output.replace('.txt','_' + str(i).zfill(len(str(n))) + '_' + options.sym + '.txt')
 			fscfilename = fscfilename.replace('.txt', '_' + options.sym + '.txt')
+		
+		if options.maskfsc:
+		
+			'''
+			Make the mask first 
+			'''
+			mask=EMData( int(ptcl["nx"]), int(ptcl["ny"]), int(ptcl["nz"]) )
+			mask.to_one()
+			mask.process_inplace(options.maskfsc[0],options.maskfsc[1])
+			
+			ptcl.mult(mask)
+			ref.mult(mask)
 			
 		calcfsc(ptcl,ref,fscfilename,options)
 		
@@ -282,18 +303,18 @@ def alignment(options):
 	print "\n\n\n\n\nTHE fixed aligner is", newaligner, options.align
 	
 	alivolfile = os.path.basename(options.input).split('.')[0] + '_VS_' + os.path.basename(options.ref).split('.')[0] + '.hdf'
-	print "alivolfile is", alivolfile
-	print "Path is", options.path
-	print "input is", options.input
-	print "ref is", options.ref
-	print "npeakstorefine is", options.npeakstorefine
-	print "verbose is", options.verbose
-	print "mask is", options.mask
-	print "lowpass is", options.lowpass
-	print "\n\nalign and its type are", options.align, type(options.align)
-	print "\n\nralign is type are", options.ralign, type(options.ralign)
+	#print "alivolfile is", alivolfile
+	#print "Path is", options.path
+	#print "input is", options.input
+	#print "ref is", options.ref
+	#print "npeakstorefine is", options.npeakstorefine
+	#print "verbose is", options.verbose
+	#print "maskali is", options.maskali
+	#print "lowpass is", options.lowpass
+	#print "\n\nalign and its type are", options.align, type(options.align)
+	#print "\n\nralign is type are", options.ralign, type(options.ralign)
 	
-	alicmd = 'cd ' + options.path + ' && e2spt_classaverage.py --path=alignment --input=../' + str(options.input) + ' --output=' + str(alivolfile) + ' --ref=../' + str(options.ref) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + str(options.mask) + ' --lowpass=' + str(options.lowpass) + ' --parallel=' + str(options.parallel) + ' --aligncmp=' + str(options.aligncmp) + ' --raligncmp=' + str(options.raligncmp) + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + str(options.normproc) + ' --sym=' + str(options.sym) + ' --breaksym'
+	alicmd = 'cd ' + options.path + ' && e2spt_classaverage.py --path=alignment --input=../' + str(options.input) + ' --output=' + str(alivolfile) + ' --ref=../' + str(options.ref) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + str(options.maskali) + ' --lowpass=' + str(options.lowpass) + ' --parallel=' + str(options.parallel) + ' --aligncmp=' + str(options.aligncmp) + ' --raligncmp=' + str(options.raligncmp) + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + str(options.normproc) + ' --sym=' + str(options.sym) + ' --breaksym'
 	
 	if options.radius:
 		alicmd += ' --radius=' + str(options.radius)
