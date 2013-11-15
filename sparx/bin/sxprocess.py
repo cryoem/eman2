@@ -32,41 +32,55 @@
 #
 
 # $Id$
-
 from EMAN2 import *
-import sys
-import os.path
-import math
-import random
-import pyemtbx.options
-import time
-from random   import random, seed, randint
+from sparx import *
+
 
 def main():
+	import sys
+	import os.path
+	import math
+	import random
+	import pyemtbx.options
+	import time
+	from   random   import random, seed, randint
+	from   optparse import OptionParser
+	from   global_def import SPARXVERSION
+	import global_def
+
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + """ [options] <inputfile> <outputfile>
 
-	Generic 2-D image processing and file format conversion program. Acts on stacks of 2-D images
-	(multiple images in one file). 
+	Generic 2-D image processing programs.
 
-	Examples:
+	Functionality:
 
-	phase flip a stack of images and write output to new file:
-	sxprocess.py input_stack.hdf output_stack.hdf --phase_flip	
-	
-	generate a stack of projections bdb:data and micrographs with prefix mic (i.e., mic0.hdf, mic1.hdf etc) from structure input_structure.hdf, with CTF applied to both projections and micrographs:
+	1.  phase flip a stack of images and write output to new file:
+	sxprocess.py input_stack.hdf output_stack.hdf --phase_flip
+
+	2.  compute average power spectrum of a stack of 2-D images with optional padding (option wn) with zeroes.
+	sxprocess.py input_stack.hdf powerspectrum.hdf --pw [--wn=1024]
+
+	3.  Order a 2-D stack of image based on pair-wise similarity (computed as a cross-correlation coefficent).
+	sxprocess.py input_stack.hdf output_stack.hdf --order
+
+	4. generate a stack of projections bdb:data and micrographs with prefix mic (i.e., mic0.hdf, mic1.hdf etc) from structure input_structure.hdf, with CTF applied to both projections and micrographs:
 	sxprocess.py input_structure.hdf data mic --generate_projections format="bdb":apix=5.2:CTF=True:boxsize=64 	
 """
 
-	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--order", action="store_true", help="Two arguments are required: name of input stack and desired name of output stack. The output stack is the input stack sorted by similarity in terms of cross-correlation coefficent.", default=False)
-	parser.add_argument("--phase_flip", action="store_true", help="Phase flip the input stack", default=False)
-	parser.add_argument("--makedb", metavar="param1=value1:param2=value2", type=str,
+	parser = OptionParser(usage,version=SPARXVERSION)
+	parser.add_option("--order", action="store_true", help="Two arguments are required: name of input stack and desired name of output stack. The output stack is the input stack sorted by similarity in terms of cross-correlation coefficent.", default=False)
+	parser.add_option("--pw", action="store_true", help="compute average power spectrum of a stack of 2-D images with optional padding (option wn) with zeroes", default=False)
+	parser.add_option("--wn", type="int", default=-1, help="Size of window to use (should be larger/equal than particle box size, default padding to max(nx,ny))")
+	parser.add_option("--phase_flip", action="store_true", help="Phase flip the input stack", default=False)
+	parser.add_option("--makedb", metavar="param1=value1:param2=value2", type=str,
 					action="append",  help="One argument is required: name of key with which the database will be created. Fill in database with parameters specified as follows: --makedb param1=value1:param2=value2, e.g. 'gauss_width'=1.0:'pixel_input'=5.2:'pixel_output'=5.2:'thr_low'=1.0")
-	parser.add_argument("--generate_projections", metavar="param1=value1:param2=value2", type=str,
+	parser.add_option("--generate_projections", metavar="param1=value1:param2=value2", type=str,
 					action="append", help="Three arguments are required: name of input structure from which to generate projections, desired name of output projection stack, and desired prefix for micrographs (e.g. if prefix is 'mic', then micrographs mic0.hdf, mic1.hdf etc will be generated). Optional arguments specifying format, apix, box size and whether to add CTF effects can be entered as follows after --generate_projections: format='bdb':apix=5.2:CTF=True:boxsize=100, or format='hdf', etc., where format is bdb or hdf, apix (pixel size) is a float, CTF is True or False, and boxsize denotes the dimension of the box (assumed to be a square). If an optional parameter is not specified, it will default as follows: format='bdb', apix=2.5, CTF=False, boxsize=64.")
 	(options, args) = parser.parse_args()
-	
+
+	global_def.BATCH = True
+
 	if options.order:
 		nargs = len(args)
 		if nargs != 2:
@@ -78,8 +92,6 @@ def main():
 		from statistics import ccc
 		stack = args[0]
 		new_stack = args[1]
-		print "input stack: ", stack
-		print "output stack: ", new_stack
 		
 		d = EMData.read_images(stack)
 		for i in xrange(len(d)):
@@ -115,8 +127,6 @@ def main():
 		
 		instack = args[0]
 		outstack = args[1]
-		print "input stack: ", instack
-		print "output (phase flipped) stack: ", outstack
 		nima = EMUtil.get_image_count(instack)
 		from filter import filt_ctf
 		for i in xrange(nima):
@@ -164,6 +174,31 @@ def main():
 			tmp.set_attr_dict({"ctf":ctf})
 			
 			tmp.write_image(outstack, i)
+
+	if options.pw:
+		nargs = len(args)
+		if nargs != 2:
+			ERROR("must provide name of input and output file!", "pw", 1)
+			return
+		d = get_im(args[0])
+		nx = d.get_xsize()
+		ny = d.get_ysize()
+		wn = int(options.wn)
+		if wn == -1:  wn = max(nx,ny)
+		else:
+			if( (wn<nx) or (wn<ny) ):  ERROR("window size cannot be smaller than the image size","pw",1)
+		n = EMUtil.get_image_count(args[0])
+		from utilities import model_blank, pad
+		from EMAN2 import periodogram
+		p = model_blank(wn,wn)
+		for i in xrange(n):
+			d = get_im(args[0],i)
+			st = Util.infomask(d, None, True)
+			d -= st[0]
+			p += periodogram(pad(d,wn,wn,1,0.))
+		p/=n
+		p.write_image(args[1])
+		sys.exit()
 			
 	if options.makedb != None:
 		nargs = len(args)
@@ -196,9 +231,6 @@ def main():
 		inpstr = args[0]
 		outstk = args[1]
 		micpref = args[2]
-		print 'input structure: ', inpstr
-		print 'output projection stack: ', outstk
-		print 'micrograph prefix: ', micpref
 
 		parmstr= 'dummy:'+options.generate_projections[0]
 		(processorname, param_dict) = parsemodopt(parmstr)
