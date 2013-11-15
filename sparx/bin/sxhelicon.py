@@ -42,7 +42,7 @@ def main():
         for arg in sys.argv:
         	arglist.append( arg )
 	progname = os.path.basename(arglist[0])
-	usage = progname + " stack ref_vol outdir  <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --txs=translational_search_stepx  --delta=angular_step --maxit=max_iter --CTF --snr=1.0  --ref_a=S --sym=c1 --function=user_function --datasym=symdoc"
+	usage = progname + " stack ref_vol outdir  <maskfile> parameters listed below"
 	
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--delta",              type="string",		 default= " 10 6 4  3   2",   help="angular step of reference projections")
