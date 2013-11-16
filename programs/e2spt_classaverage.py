@@ -132,7 +132,10 @@ def main():
 	parser.add_argument("--inixforms",type=str,help="directory containing a dict of transform to apply before reference generation", default="", guitype='dirbox', dirbasename='spt_|sptsym_', row=7, col=0,rowspan=1, colspan=2, nosharedb=True, mode='breaksym')
 	parser.add_argument("--breaksym",action="store_true", help="Break symmetry. Do not apply symmetrization after averaging", default=False, guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, nosharedb=True, mode=',breaksym[True]')
 	
-	parser.add_argument("--groups",type=int,help="WARNING: This parameter is EXPERIMENTAL, and will only work if --iter=1. It's the number of final averages you want from the set after ONE iteration of alignment. Particles will be separated in groups based on their correlation to the reference",default=0)
+	parser.add_argument("--groups",type=int,help="""This parameter will 
+		split the data into a user defined number of groups. For purposes of gold-standard FSC
+		computation later, select --group=2.""",default=0)
+		
 	parser.add_argument("--randomizewedge",action="store_true", help="This parameter is EXPERIMENTAL. It randomizes the position of the particles BEFORE alignment, to minimize missing wedge bias and artifacts during symmetric alignment where only a fraction of space is scanned", default=False)
 	parser.add_argument("--savepreprocessed",action="store_true", help="Will save stacks of preprocessed particles (one for coarse alignment and one for fine alignment if preprocessing options are different).", default=False)
 	parser.add_argument("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False, guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
@@ -189,8 +192,8 @@ def main():
 		print "Wedge paramters ARE defined, see", options.wedgeangle, options.wedgei, options.wedgef
 	
 
-	if int(options.groups) > 1 and int(options.iter) > 1:
-		print "ERROR: --groups cannot be > 1 if --iter is > 1."
+	#if int(options.groups) > 1 and int(options.iter) > 1:
+	#	print "ERROR: --groups cannot be > 1 if --iter is > 1."
 	
 	print "\n\n\n(e2spt_classaverage.py) options.refpreprocess is", options.refpreprocess
 	print "\n\n\n"
@@ -327,7 +330,8 @@ def main():
 	
 	try: 
 		classmx = EMData.read_images(options.classmx)		# we keep the entire classification matrix in memory, since we need to update it in most cases
-		ncls = int(classmx[0]["maximum"])
+		#ncls = int(classmx[0]["maximum"])
+		ncls = int(classmx[0]['nx'])
 	except:
 		ncls=1
 		#if options.resultmx!=None :
@@ -335,7 +339,12 @@ def main():
 			#sys.exit(1)
 
 	nptcl=EMUtil.get_image_count(options.input)
-
+	
+	if options.classmx and options.groups:
+		print """ERROR: --groups is used to separate the data arbitrarily into classes.
+				It should not be provided if you supply --classmx, and vice versa."""
+		sys.exit(1)
+		
 	if nptcl<1 : 
 		print "ERROR : at least 1 particle required in input stack"
 		sys.exit(1)
@@ -353,8 +362,6 @@ def main():
 	Initialize parallelism if being used
 	'''
 	
-	
-
 	if options.parallel :
 	
 		if options.parallel == 'none' or options.parallel == 'None' or options.parallel == 'NONE':
@@ -399,37 +406,131 @@ def main():
 		
 		resumeDict.close()
 				
+	groupsize = nptcl
+	ngroups = options.groups
+	
+	classmxFile = options.path + '/classmx_' + str( 0 ).zfill( len (str (options.iter))) + '.hdf'
+	
+	if options.classmx:
+		classmxFile = options.classmx
+	else:
+		options.classmx = classmxFile
+	
+	classmxScores = EMData(ngroups,nptcl)
+	classmxWeights = EMData(ngroups,nptcl)
+	classmxXs = EMData(ngroups,nptcl)
+	classmxYs = EMData(ngroups,nptcl)
+	classmxZs = EMData(ngroups,nptcl)
+	classmxAzs = EMData(ngroups,nptcl)
+	classmxAlts = EMData(ngroups,nptcl)
+	classmxPhis = EMData(ngroups,nptcl)
+	classmxScales = EMData(ngroups,nptcl)
 
+	classmxScores.to_zero()
+	classmxWeights.to_one() 
+	classmxXs.to_zero()
+	classmxYs.to_zero()
+	classmxZs.to_zero()
+	classmxAzs.to_zero()
+	classmxAlts.to_zero()
+	classmxPhis.to_zero()
+	classmxScales.to_one()
+
+	if int(options.groups) > 1:
+		ncls = ngroups
+		
+		groupsize = int( int(nptcl)/int(options.groups) )
+	
+		if options.verbose > 3:
+			print "(e2spt_classaverage.py) (main) options.groups is", options.groups
+			print "(e2spt_classaverage.py) (main) And groupsize therefore is", groupsize
+	
+		for i in range(options.groups):
+			print "\nIterating over n groups; i is", i
+					
+			bottom_range = i * groupsize
+			top_range = (i+1) * groupsize		#Since e2proc3d.py includes the top range
+												#for a set of 16 particles, for example
+												#the top range would be index 15, becuase
+												#numeration starts at 0. Therefore, you need to
+												#subtract 1 to "top_range" if separating the particles
+												#using e2proc3d.py. Not the case here though.
+			if i == options.groups - 1:
+				top_range = nptcl
+			print "\nbottom and top ranges are", bottom_range, top_range
+		
+				
+			for j in xrange(bottom_range, top_range):
+				classmxScores.set_value_at(i,j,float(1))	#If a particle belongs to a class
+															#It will have a non-zero score for
+															#that class. Be it 1, for now.
+															#This will change later, after alignment.
+	classmxScores.write_image(classmxFile,0)
+	classmxWeights.write_image(classmxFile,1)
+	classmxXs.write_image(classmxFile,2)
+	classmxYs.write_image(classmxFile,3)
+	classmxZs.write_image(classmxFile,4)
+	classmxAzs.write_image(classmxFile,5)
+	classmxAlts.write_image(classmxFile,6)
+	classmxPhis.write_image(classmxFile,7)	
+	classmxScales.write_image(classmxFile,8)
+	
+		
+		
+		
+		
+	#		#groupPATH = options.input
+	#		if nrefs > 1:
+	#			groupID = 'group' + str(i+1).zfill(len(str(options.nrefs)))
+	#		
+	#			#groupDIR = originalPath + '/' + options.path + '/' + groupID
+	#		
+	#			groupStack = originalCompletePath + '/' + os.path.basename(options.input).replace('.hdf','group' + str(i+1).zfill(len(str(options.nrefs) ) ) + 'ptcls.hdf')
+	#		
+	#			divisioncmd = 'e2proc3d.py ' + options.input + ' ' + groupStack + ' --append --first=' + str(bottom_range) + ' --last=' + str(top_range)
+				
 	'''		
 	This is where the actual class-averaging process begins.
 	Iterating over all the classes, 'ic'.
 	'''	
 	
-	#ic='nada'
-	print "ncls and its type are", ncls, type(ncls)
-	#print "ic beforehand is", ic
 	
-	#for i in range(10):
-	#	print i
+	originalOutput = options.output
 	
 	for ic in range(int(ncls)):
 		
 		if ncls==1: 
 			ptclnums=range(nptcl)						# Start with a list of particle numbers in this class
-		else: 
-			ptclnums=classmx_ptcls(classmx,ic)			# This gets the list from the classmx
+		elif ncls >1:
+			classmx = EMData.read_images(options.classmx)
+			print "The classmx file to read is", options.classmx
+			print "Therefore, the classmx before classmx_ptcls, type is", type (classmx)
+			
+			options.output = originalOutput.replace('.hdf', '_' + str(ic).zfill( len (str (ncls))) + '.hdf')
+			
+			#ptclnums=classmx_ptcls(classmx,ic)			# This gets the list from the classmx
+			
+			ptclnums=[]
+			scoresImg = classmx[0]
+			for i in range(scoresImg['ny']):
+				score = scoresImg.get_value_at(ic,i)
+				if score:
+					ptclnums.append(i)
+			
 		
-		if options.verbose and ncls>1: 
+		if options.verbose: 
 			print "###### Processing class %d(%d)/%d"%(ic+1,ic,ncls)
-		
+			print "Particls numbers for this class are", ptclnums
 		
 		'''
 		Prepare a reference either by reading from disk or bootstrapping
 		'''
 		if options.ref: 
-			ref = EMData(options.ref,ic)
+			#ref = EMData(options.ref,ic)
+			ref = EMData(options.ref,0)
 		elif not options.hacref:
-			ref = binaryTreeRef(options,nptcl,ptclnums,ic,etc)
+			nptclForRef = len(ptclnums)
+			ref = binaryTreeRef(options,nptclForRef,ptclnums,ic,etc)
 		elif options.hacref:
 			pass
 		
@@ -441,6 +542,9 @@ def main():
 		for it in range(options.iter):
 			# In 2-D class-averaging, each alignment is fast, so we send each node a class-average to make
 			# in 3-D each alignment is very slow, so we use a single ptcl->ref alignment as a task
+			
+			classmxFile = options.path + '/classmx_' + str( it ).zfill( len (str (options.iter))) + '.hdf'
+
 			tasks=[]
 			results=[]
 				
@@ -520,8 +624,12 @@ def main():
 				if options.verbose: 
 					print "%d tasks queued in class %d iteration %d"%(len(tids),ic,it) 
 
-				# Wait for alignments to finish and get results
-				results=get_results(etc,tids,options.verbose,jsA,len(ptclnums),1)
+				"""Wait for alignments to finish and get results"""
+				#results=get_results(etc,tids,options.verbose,jsA,len(ptclnums),1)
+				results=get_results(etc,tids,options.verbose,jsA, nptcl ,1)
+
+
+
 
 				#if options.verbose>2 : 
 				#	print "Results:"
@@ -541,39 +649,91 @@ def main():
 			#print "\n\n\n"
 			
 			if not options.donotaverage:					
-				ref = make_average(options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.sym,options.groups,options.breaksym,options.nocenterofmass,options.verbose,it)
+				ref = make_average(options,ic,options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.sym,options.groups,options.breaksym,options.nocenterofmass,options.verbose,it)
 	
-			if options.groups > 1:
-				for i in range(len(ref)):
-					refc=ref[i]
-					
-					if options.savesteps:
-						refname = options.path + '/class_' + str(i).zfill( len( str(i) )) + '.hdf'
-						if options.postprocess:
-							ppref = refc.copy()
-							postprocess(ppref,None,options.normproc,options.postprocess)
-							ppref.write_image(refname,it)
-							#ppref.write_image("%s/class_%02d.hdf"%(options.path,i),it)
-						else:
-							refc.write_image(refname,it)
-							#refc.write_image("%s/class_%02d.hdf"%(options.path,i),it)
-			else:
-				if options.savesteps and not options.donotaverage:
-					refname = options.path + '/class_' + str(ic).zfill( len( str(ic) )) + '.hdf'
-					if options.postprocess:
-						ppref = ref.copy()
-						postprocess(ppref,None,options.normproc,options.postprocess)
-						
-						
-						#ppref.write_image("%s/class_%02d.hdf"%(options.path,ic),it)
-						ppref.write_image(refname,it)
-					
-					else:
-						#refname = options.path + '/class_' + str(ic).zfill( len( str(ic) )) + '.hdf'
-						ref.write_image(refname,it)
-						#ref.write_image("%s/class_%02d.hdf"%(options.path,ic),it)
+			#if options.groups > 1:
+			#	for i in range(len(ref)):
+			#		refc=ref[i]
+			#		
+			#		if options.savesteps:
+			#			refname = options.path + '/class_' + str(i).zfill( len( str(i) )) + '.hdf'
+			#			if options.postprocess:
+			#				ppref = refc.copy()
+			#				postprocess(ppref,None,options.normproc,options.postprocess)
+			#				ppref.write_image(refname,it)
+			#				#ppref.write_image("%s/class_%02d.hdf"%(options.path,i),it)
+			#			else:
+			#				refc.write_image(refname,it)
+			#				#refc.write_image("%s/class_%02d.hdf"%(options.path,i),it)
+			#else:
 			
+			if options.savesteps and not options.donotaverage:
+				refname = options.path + '/class_' + str(ic).zfill( len( str(ic) )) + '.hdf'
+				ref.write_image(refname,it)
+				if options.postprocess:
+					ppref = ref.copy()
+					maskPP = "mask.sharp:outer_radius=-2"
+					maskPP=parsemodopt(maskPP)
+	
+					ppref = postprocess(ppref,maskPP,options.normproc,options.postprocess)
+
+					refnamePP = refname.replace('.hdf', '_postproc.hdf')
+					
+					#ppref.write_image("%s/class_%02d.hdf"%(options.path,ic),it)
+					ppref.write_image(refnamePP,it)
+			
+				#else:
+				#	#refname = options.path + '/class_' + str(ic).zfill( len( str(ic) )) + '.hdf'
+				#	
+				#	#ref.write_image("%s/class_%02d.hdf"%(options.path,ic),it)
+		
 			jsA.close()
+		
+		
+			iii=0
+			for r in results:
+				if r and r[0]:	
+					score = r[0]['score']
+					classmxScores.set_value_at(ic,iii,score)
+					
+					weight=1.0
+					classmxWeights.set_value_at(ic,iii,weight)
+					
+					t = r[0]['xform.align3d']
+					trans=t.get_trans()
+					rots=t.get_rotation()
+					
+					tx=trans[0]
+					classmxXs.set_value_at(ic,iii,tx)
+					
+					ty=trans[1]
+					classmxYs.set_value_at(ic,iii,ty)
+					
+					tz=trans[2]
+					classmxZs.set_value_at(ic,iii,tz)
+					
+					az=rots['az']
+					classmxAzs.set_value_at(ic,iii,az)
+					
+					alt=rots['alt']
+					classmxAlts.set_value_at(ic,iii,alt)
+					
+					phi=rots['phi']
+					classmxPhis.set_value_at(ic,iii,phi)
+					
+					scale=1.0
+					classmxScales.set_value_at(ic,iii,scale)
+				iii+=1
+										
+			classmxScores.write_image(classmxFile,0)
+			classmxWeights.write_image(classmxFile,1)
+			classmxXs.write_image(classmxFile,2)
+			classmxYs.write_image(classmxFile,3)
+			classmxZs.write_image(classmxFile,4)
+			classmxAzs.write_image(classmxFile,5)
+			classmxAlts.write_image(classmxFile,6)
+			classmxPhis.write_image(classmxFile,7)	
+			classmxScales.write_image(classmxFile,8)
 			
 		if options.verbose: 
 			print "Preparing final average"
@@ -606,7 +766,7 @@ def main():
 			actualNums = [] 		#Reset this so that when --resume is provided the incomplete jason file is 'fixed' considering the info in actualNums only once
 		
 		
-			
+		ic+=1	
 		 
 		
 		
@@ -741,16 +901,16 @@ def calcAliStep(options):
 	#options.ralign = 'refine_3d_grid:range=' + str(rangoRounded) + ':delta=' + str(fineStepRounded) + ':search=2'
 	
 	if options.verbose:
-		if options.verbose > 3:
+		if options.verbose > 9:
 			options.align += ':verbose=1'
 			options.ralign += ':verbose=1'
 	
 	return options
 	
 
-def binaryTreeRef(options,nptcl,ptclnums,ic,etc):
+def binaryTreeRef(options,nptclForRef,ptclnums,ic,etc):
 
-	if nptcl==1: 
+	if nptclForRef==1: 
 		print "Error: More than 1 particle required if no reference provided through --ref."
 		sys.exit(1)
 			
@@ -773,14 +933,14 @@ def binaryTreeRef(options,nptcl,ptclnums,ic,etc):
 		if options.inixforms:
 			emdata.process_inplace("xform",{"transform":js["tomo_%04d"%i]})
 			emdata.set_attr("test_xfm",js["tomo_%04d"%i])
-		emdata.write_image("%s/seedtree_0.hdf"%options.path,i)
+		emdata.write_image("%s/seedtree_0_cl%d.hdf" % (options.path,ic), i)
 
 	'''
 	#Outer loop covering levels in the converging binary tree
 	'''
 	for i in range(nseediter):
-		infile="%s/seedtree_%d.hdf"%(options.path,i)
-		outfile="%s/seedtree_%d.hdf"%(options.path,i+1)
+		infile="%s/seedtree_%d_cl%d.hdf"%(options.path,i,ic)
+		outfile="%s/seedtree_%d_cl%d.hdf"%(options.path,i+1,ic)
 	
 		tasks=[]
 		results=[]
@@ -808,9 +968,12 @@ def binaryTreeRef(options,nptcl,ptclnums,ic,etc):
 			if options.verbose: 
 				print "%d tasks queued in seedtree level %d"%(len(tids),i) 
 
-			# Wait for alignments to finish and get results
-			
-			results=get_results(etc,tids,options.verbose,{},len(ptclnums),0)
+			"""Wait for alignments to finish and get results"""
+			#results=get_results(etc,tids,options.verbose,{},len(ptclnums),0)
+
+			results=get_results(etc,tids,options.verbose,jsA, nptcl ,1)
+
+
 
 			if options.verbose>2 : 
 				print "Results:"
@@ -822,7 +985,7 @@ def binaryTreeRef(options,nptcl,ptclnums,ic,etc):
 				print "Results:" 
 				pprint(results)
 						
-		make_average_pairs(infile,outfile,results,options.averager,options.nocenterofmass)
+		make_average_pairs(options,ic,infile,outfile,results,options.averager,options.nocenterofmass)
 		
 	ref=EMData(outfile,0)		# result of the last iteration
 	
@@ -835,27 +998,27 @@ def binaryTreeRef(options,nptcl,ptclnums,ic,etc):
 	
 
 
-def postprocess(img,optmask,optnormproc,optpostprocess):
+def postprocess(img,mask,normproc,postprocess):
 	"""Postprocesses a volume in-place"""
 	
 	# Make a mask, use it to normalize (optionally), then apply it 
-	mask=EMData(img["nx"],img["ny"],img["nz"])
-	mask.to_one()
-	if optmask != None:
-		mask.process_inplace(optmask[0],optmask[1])
+	maskimg=EMData(img["nx"],img["ny"],img["nz"])
+	maskimg.to_one()
+	if mask:
+		maskimg.process_inplace(mask[0],mask[1])
 		
 	# normalize
-	if optnormproc != None:
-		if optnormproc[0]=="normalize.mask": 
-			optnormproc[1]["mask"]=mask
-		img.process_inplace(optnormproc[0],optnormproc[1])
+	if normproc:
+		if normproc[0]=="normalize.mask": 
+			normproc[1]["mask"]=maskimg
+		img.process_inplace(normproc[0],normproc[1])
 
-	img.mult(mask)
+	img.mult(maskimg)
 	
 	# Postprocess filter
-	if optpostprocess!=None : 
-		img.process_inplace(optpostprocess[0],optpostprocess[1])
-	return()
+	if postprocess: 
+		img.process_inplace(postprocess[0],postprocess[1])
+	return img
 
 
 def sptmakepath(options, stem='spt'):
@@ -1091,168 +1254,80 @@ def preprocessing(options,image,tag='ptcls'):
 	return(simage,s2image)
 	
 
-def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,keepsig,symmetry,groups,breaksym,nocenterofmass,verbose=1,it=1):
+def make_average(options,ic,ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,keepsig,symmetry,groups,breaksym,nocenterofmass,verbose=1,it=1):
 	"""Will take a set of alignments and an input particle stack filename and produce a new class-average.
 	Particles may be excluded based on the keep and keepsig parameters. If keepsig is not set, then keep represents
 	an absolute fraction of particles to keep (0-1). Otherwise it represents a sigma multiplier akin to e2classaverage.py"""
 	
 	print "(e2pt_classaverage.py)(make_average) The results to parse are", align_parms
 	
-	if groups > 1:
+	#else:
+	if keepsig:
+		# inefficient memory-wise
 		
-		val=[p[0]["score"] for p in align_parms]
-		
-		val.sort()
-		threshs = []
-		guinea_particles=[]
-		print "The number of groups you have requested is", groups
-		for i in range(groups - 1):
-			threshs.append(val[int((i+1)*(1.0/groups)*len(align_parms)) -1])
-			guinea_particles.append(int((i+1)*(1.0/groups)*len(align_parms)) -1)
-		#print "Therefore, based on the size of the set, the coefficients that will work as thresholds are", threshs	
-		#print "While the guineapig particles where these came from were", guinea_particles
-		#print "Out of a total of these many particles", len(align_parms)
-		#print "Therefor each group will contain approximately these many particles", len(align_parms)/groups
-	
-		threshs.sort()
-				
-		groupslist=[]
-		includedlist=[]
-		for i in range(groups):
-			groupslist.append([])
-			includedlist.append([])
+		vals=[]
+		vals2=[]
+		for p in align_params:
+			if p and p[0]:
+				vals.append(p[0]['score'])
+				vals2.append(p[0]['score']**2)
 			
-		#jsdict = path + '/tomo_xforms.json'
-		#js = js_open_dict(jsdict) #Write particle orientations to json database. This should happen on a per-particle basis, in each task.
-				
-		for i,ptcl_parms in enumerate(align_parms):
-			ptcl=EMData(ptcl_file,i)
-			ptcl.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
+		val=sum(vals)
+		val2=sum(vals2)
+		#val=sum([p[0]["score"] for p in align_parms])
+		#val2=sum([p[0]["score"]**2 for p in align_parms])
 
-			if ptcl_parms[0]["score"] > threshs[-1]: 
-				groupslist[-1].append(ptcl)
-				includedlist[-1].append(i)			
-				if verbose:
-					print "Particle %d assigned to last group!" %(i)
-					print "The threshold criteria was %f, and the particle's cc score was %f" %(threshs[-1], ptcl_parms[0]["score"])
-				
-			elif ptcl_parms[0]["score"] < threshs[0]: 
-				groupslist[0].append(ptcl)
-				includedlist[0].append(i)
-				if verbose:
-					print "Particle %d assigned to first group!" %(i)
-					print "The threshold criteria was %f, and the particle's cc score was %f" %(threshs[0], ptcl_parms[0]["score"])
-			
+		mean=val/len(align_parms)
+		sig=sqrt(val2/len(align_parms)-mean*mean)
+		thresh=mean+sig*keep
+		if verbose: 
+			print "Keep threshold : %f (mean=%f  sigma=%f)"%(thresh,mean,sig)
+
+	if keep:
+		#print "p[0]['score'] is", align_parms[0]['score']
+		print "Len of align_parms is", len(align_parms)
+		
+		vals=[]
+		for p in align_parms:
+			if 'score' in p[0]:
+				pass
+				#print "\nscore!"
 			else:
-				for kk in range(len(threshs)-1):
-					if ptcl_parms[0]["score"] > threshs[kk] and ptcl_parms[0]["score"] < threshs[kk+1]:
-						groupslist[kk+1].append(ptcl)
-						includedlist[kk+1].append(i)
-						if verbose:
-							print "Particle %d assigned to group number %d!" %(i,kk+1)
-							print "The threshold criteria was %f, and the particle's cc score was %f" %(threshs[kk+1], ptcl_parms[0]["score"])
-
-			#js["tomo_%04d"%i] = ptcl_parms[0]['xform.align3d']
-			if saveali:
-				ptcl['origin_x'] = 0
-				ptcl['origin_y'] = 0		
-				ptcl['origin_z'] = 0
-				ptcl['spt_score'] = ptcl_parms[0]['score']
-				ptcl['xform.align3d'] = Transform()
-				#ptcl['spt_ali_param'] = ptcl_parms[0]['xform.align3d']
-				ptcl['xform.align3d'] = ptcl_parms[0]['xform.align3d']
-				
-		#js.close()
-		
-		avgs=[]
-		
-		for i in range(len(groupslist)):
-			variance = (groupslist[0][0]).copy_head()
-			if averager[0] == 'mean':
-				averager[1]['sigma'] = variance
-			avgr=Averagers.get(averager[0], averager[1])
-			
-			for j in range(len(groupslist[i])):
-				avgr.add_image(groupslist[i][j])
-				
-				if saveali:
-					groupslist[i][j]['origin_x'] = 0
-					groupslist[i][j]['origin_y'] = 0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
-					groupslist[i][j]['origin_z'] = 0
-					
-					classname = path+"/class_" + str(i).zfill(len(str(len(groupslist)))) + "_ptcl.hdf"
-					groupslist[i][j].write_image(classname,j)
-					
-			avg=avgr.finish()
-
-			avg["class_ptcl_idxs"]=includedlist[i]
-			avg["class_ptcl_src"]=ptcl_file
-			
-			if symmetry and not breaksym:
-				avg=avg.process('xform.applysym',{'sym':symmetry})
-			
-			
-			if not nocenterofmass: 
-				avg.process_inplace("xform.centerofmass")
-				if verbose:
-					print "I will apply centerofmass"
-			
-			avgs.append(avg)
-			
-			if averager[0] == 'mean':
-				variance.write_image(path+"/class_varmap_group_%d.hdf"%i,it)
-		return avgs
-
-	else:
-		if keepsig:
-			# inefficient memory-wise
-			val=sum([p[0]["score"] for p in align_parms])
-			val2=sum([p[0]["score"]**2 for p in align_parms])
-
-			mean=val/len(align_parms)
-			sig=sqrt(val2/len(align_parms)-mean*mean)
-			thresh=mean+sig*keep
-			if verbose: 
-				print "Keep threshold : %f (mean=%f  sigma=%f)"%(thresh,mean,sig)
-
-		if keep:
-			#print "p[0]['score'] is", align_parms[0]['score']
-			print "Len of align_parms is", len(align_parms)
-			
-			for p in align_parms:
-				if 'score' in p[0]:
-					pass
-					#print "\nscore!"
-				else:
-					print "\nIn e2spt_classaverage.py, score not in p[0]"
+				if p and p[0]:
+					print "\nIn e2spt_classaverage.py, score not in a non-empty element of p, p[0]", p, p[0]
 					#print "see, p[0] is", p[0]
 					sys.exit()
+		
+			if p and p[0]:
+				vals.append(p[0]['score'])
 			
-			val=[p[0]["score"] for p in align_parms]
-			val.sort()
-			thresh=val[int(keep*len(align_parms))-1]
-			if verbose: 
-				print "Keep threshold : %f (min=%f  max=%f)"%(thresh,val[0],val[-1])
+			#val=[p[0]["score"] for p in align_parms]
+		vals.sort()
+		thresh=vals[ int( keep * len(vals) ) - 1]
+		if verbose: 
+			print "Keep threshold : %f (min=%f  max=%f)"%(thresh,vals[0],vals[-1])
 
-		# Make variance image if available
-		variance = EMData(ptcl_file,0).copy_head()
-		if averager[0] == 'mean':
-			averager[1]['sigma'] = variance
+	"""Make variance image if available"""
+	variance = EMData(ptcl_file,0).copy_head()
+	if averager[0] == 'mean':
+		averager[1]['sigma'] = variance
+	
+	avgr=Averagers.get(averager[0], averager[1])
+	included=[]
+	
+	#print "The path to save the alignments is", path
+	#jsdict = path + '/tomo_xforms.json'
+	#js = js_open_dict(jsdict)
+	
+	kk=0		
+	for i,ptcl_parms in enumerate(align_parms):
+		ptcl=EMData(ptcl_file,i)
 		
-		avgr=Averagers.get(averager[0], averager[1])
-		included=[]
+		if ptcl_parms and ptcl_parms[0]:
 		
-		
-		print "The path to save the alignments is", path
-				
-		#jsdict = path + '/tomo_xforms.json'
-		#js = js_open_dict(jsdict)
-				
-		for i,ptcl_parms in enumerate(align_parms):
-			ptcl=EMData(ptcl_file,i)
 			ptcl.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
 			#print "I have applied this transform before averaging", ptcl_parms[0]["xform.align3d"]			
-			
+		
 			if ptcl_parms[0]["score"]<=thresh: 
 				avgr.add_image(ptcl)
 				included.append(i)
@@ -1263,37 +1338,47 @@ def make_average(ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,k
 				ptcl['origin_y'] = 0		# jesus - the origin needs to be reset to ZERO to avoid display issues in Chimera
 				ptcl['origin_z'] = 0
 				ptcl['spt_score'] = ptcl_parms[0]['score']
-				
+			
 				#print "\nThe score is", ptcl_parms[0]['score']
 				#print "Because the zero element is", ptcl_parms[0]
-				
+			
 				ptcl['xform.align3d'] = Transform()
 				#ptcl['spt_ali_param'] = ptcl_parms[0]['xform.align3d']
 				ptcl['xform.align3d'] = ptcl_parms[0]['xform.align3d']
-				
-				classname=path+"/class_ptcl.hdf"
+			
+				classname = path + "/class_" +  str(ic).zfill( len( str(ic) )) + "_ptcl.hdf"
 				#print "The class name is", classname
 				#sys.exit()
-				ptcl.write_image(classname,i)	
-		#js.close()
-		
-		if verbose: 
-			print "Kept %d / %d particles in average"%(len(included),len(align_parms))
-
-		avg=avgr.finish()
-		if symmetry and not breaksym:
-			avg=avg.process('xform.applysym',{'sym':symmetry})
-		avg["class_ptcl_idxs"]=included
-		avg["class_ptcl_src"]=ptcl_file
-		
-		if averager[0] == 'mean':
-			variance.write_image(path+"/class_varmap.hdf",it)
+				
+				indx=i
+				if options.groups > 1:
+					indx=kk
 					
-		if not nocenterofmass:
-			avg.process_inplace("xform.centerofmass")
-		
-		return avg
+				ptcl.write_image(classname,indx)
 			
+			kk+=1
+			
+					
+	#js.close()
+	
+	if verbose: 
+		print "Kept %d / %d particles in average"%(len(included),len(align_parms))
+
+	avg=avgr.finish()
+	if symmetry and not breaksym:
+		avg=avg.process('xform.applysym',{'sym':symmetry})
+	avg["class_ptcl_idxs"]=included
+	avg["class_ptcl_src"]=ptcl_file
+	
+	if averager[0] == 'mean':
+		varmapname = path + '/class_' + str(ic).zfill( len( str(ic) )) + '_varmap.hdf'
+		variance.write_image( varmapname , it)
+				
+	if not nocenterofmass:
+		avg.process_inplace("xform.centerofmass")
+	
+	return avg
+		
 
 def make_average_pairs(ptcl_file,outfile,align_parms,averager,nocenterofmass):
 	"""Will take a set of alignments and an input particle stack filename and produce a new set of class-averages over pairs"""
@@ -1328,7 +1413,10 @@ def get_results(etc,tids,verbose,jsA,nptcls,savealiparams=0):
 	
 	# wait for them to finish and get the results
 	# results for each will just be a list of (qual,Transform) pairs
-	results=[0]*len(tids)		# storage for results
+	#results=[0]*len(tids)		# storage for results
+
+	results=[ [ '' ] ]*nptcls
+	
 	ncomplete=0
 	tidsleft=tids[:]
 	while 1:
@@ -1336,11 +1424,13 @@ def get_results(etc,tids,verbose,jsA,nptcls,savealiparams=0):
 		proglist=etc.check_task(tidsleft)
 		nwait=0
 		for i,prog in enumerate(proglist):
-			if prog==-1 : nwait+=1
-			if prog==100 :
-				r=etc.get_results(tidsleft[i])			# results for a completed task
+			if prog==-1: 
+				nwait+=1
+			
+			if prog==100:
+				r=etc.get_results(tidsleft[i])				# results for a completed task
 				ptcl=r[0].classoptions["ptclnum"]			# get the particle number from the task rather than trying to work back to it
-				results[ptcl]=r[1]["final"]				# this will be a list of (qual,Transform)
+				results[ptcl]=r[1]["final"]					# this will be a list of (qual,Transform)
 				
 				#print "ptcl and type are", ptcl, type(ptcl)
 				
@@ -1737,7 +1827,7 @@ jsonclasses["Align3DTask"]=Align3DTask.from_jsondict
 def classmx_ptcls(classmx,n):
 	"""Scans a classmx file to determine which images are in a specific class. Classmx may be a filename or an EMData object.
 	returns a list of integers"""
-	
+	print "Classmx and its type received in classmx_ptcls are", classmx, type(classmx)
 	if isinstance(classmx,str): 
 		classmx=EMData(classmx,0)
 	
