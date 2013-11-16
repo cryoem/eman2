@@ -408,6 +408,8 @@ def main():
 				
 	groupsize = nptcl
 	ngroups = options.groups
+	if not options.groups:
+		ngroups=1
 	
 	classmxFile = options.path + '/classmx_' + str( 0 ).zfill( len (str (options.iter))) + '.hdf'
 	
@@ -498,7 +500,7 @@ def main():
 	originalOutput = options.output
 	
 	for ic in range(int(ncls)):
-		
+		classize=nptcl
 		if ncls==1: 
 			ptclnums=range(nptcl)						# Start with a list of particle numbers in this class
 		elif ncls >1:
@@ -517,6 +519,8 @@ def main():
 				if score:
 					ptclnums.append(i)
 			
+			if ic == 0:
+				classize=len(ptclnums)
 		
 		if options.verbose: 
 			print "###### Processing class %d(%d)/%d"%(ic+1,ic,ncls)
@@ -530,7 +534,7 @@ def main():
 			ref = EMData(options.ref,0)
 		elif not options.hacref:
 			nptclForRef = len(ptclnums)
-			ref = binaryTreeRef(options,nptclForRef,ptclnums,ic,etc)
+			ref = binaryTreeRef(options,nptclForRef,ptclnums,ic,etc,classize)
 		elif options.hacref:
 			pass
 		
@@ -908,8 +912,9 @@ def calcAliStep(options):
 	return options
 	
 
-def binaryTreeRef(options,nptclForRef,ptclnums,ic,etc):
-
+def binaryTreeRef(options,nptclForRef,ptclnums,ic,etc,classize):
+	
+	factor=ic * classize
 	if nptclForRef==1: 
 		print "Error: More than 1 particle required if no reference provided through --ref."
 		sys.exit(1)
@@ -928,19 +933,41 @@ def binaryTreeRef(options,nptclForRef,ptclnums,ic,etc):
 		print "Seedtree to produce initial reference. Using %d particles in a %d level tree"%(nseed,nseediter)
 	
 	# We copy the particles for this class into bdb:seedtree_0
+	'''
 	for i,j in enumerate(ptclnums[:nseed]):
 		emdata = EMData(options.input,j)
-		if options.inixforms:
-			emdata.process_inplace("xform",{"transform":js["tomo_%04d"%i]})
-			emdata.set_attr("test_xfm",js["tomo_%04d"%i])
-		emdata.write_image("%s/seedtree_0_cl%d.hdf" % (options.path,ic), i)
-
+		
+		#if options.inixforms:
+		#	emdata.process_inplace("xform",{"transform":js["tomo_%04d"%i]})
+		#	emdata.set_attr("test_xfm",js["tomo_%04d"%i])
+		
+		seedfile = "%s/seedtree_0_cl_%d.hdf" % (options.path,ic)
+		emdata.write_image(seedfile, i)
+		
+		print "Creating this seed file for this class", seedfile, ic
+	'''
+	
+	#for i in range( ptclnums[:nseed] ):
+	
+	ii=0
+	seedfile = options.path + '/seedtree_0_cl_' + str(ic) + '.hdf'
+	for j in ptclnums[:nseed]:
+		emdata = EMData(options.input,j)
+		emdata.write_image(seedfile,ii)
+		print "have taken particle %d and written it into index %d of the seedfile" %(j,ii)
+		ii+=1
+		print "Creating this seed file for this class", seedfile, ic
+	
+	
 	'''
 	#Outer loop covering levels in the converging binary tree
 	'''
 	for i in range(nseediter):
-		infile="%s/seedtree_%d_cl%d.hdf"%(options.path,i,ic)
-		outfile="%s/seedtree_%d_cl%d.hdf"%(options.path,i+1,ic)
+		infile="%s/seedtree_%d_cl_%d.hdf"%(options.path,i,ic)
+		print "Infile will be", infile
+		
+		outfile="%s/seedtree_%d_cl_%d.hdf"%(options.path,i+1,ic)
+		print "Outfile will be", outfile
 	
 		tasks=[]
 		results=[]
@@ -969,9 +996,9 @@ def binaryTreeRef(options,nptclForRef,ptclnums,ic,etc):
 				print "%d tasks queued in seedtree level %d"%(len(tids),i) 
 
 			"""Wait for alignments to finish and get results"""
-			#results=get_results(etc,tids,options.verbose,{},len(ptclnums),0)
+			results=get_results(etc,tids,options.verbose,{},len(ptclnums),0,'binarytree')
 
-			results=get_results(etc,tids,options.verbose,{},nptcl,0)
+			#results=get_results(etc,tids,options.verbose,{},nptclForRef,0)
 
 
 
@@ -985,7 +1012,7 @@ def binaryTreeRef(options,nptclForRef,ptclnums,ic,etc):
 				print "Results:" 
 				pprint(results)
 						
-		make_average_pairs(options,ic,infile,outfile,results,options.averager,options.nocenterofmass)
+		make_average_pairs(options,infile,outfile,results,options.averager,options.nocenterofmass)
 		
 	ref=EMData(outfile,0)		# result of the last iteration
 	
@@ -1380,42 +1407,63 @@ def make_average(options,ic,ptcl_file,path,align_parms,averager,saveali,savealla
 	return avg
 		
 
-def make_average_pairs(ptcl_file,outfile,align_parms,averager,nocenterofmass):
+def make_average_pairs(options,ptcl_file,outfile,align_parms,averager,nocenterofmass):
 	"""Will take a set of alignments and an input particle stack filename and produce a new set of class-averages over pairs"""
 	
+	current = os.getcwd()
+	print "\n(e2spt_classaverage.py) (make_average_pairs) current directory is", current
+	findir = os.listdir(current)
+	print "\noptions.path is", options.path
+	findirpath = os.listdir(options.path)
+	print "\nThe particle file where the particles ought to be read from is", ptcl_file
+	print "\nLets see if ptcl_file is in path. Files in path are", findirpath
+	
+	print "\nalign_parms are", align_parms
+	print "\nTheir len", len(align_parms)
+	
+	
 	for i,ptcl_parms in enumerate(align_parms):
+		
+		print "\ni, ptcl_parms are", i, ptcl_parms
+		
+		#if ptcl_parms:
 		ptcl0=EMData(ptcl_file,i*2)
+		
 		ptcl1=EMData(ptcl_file,i*2+1)
 		ptcl1.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
-
+	
+		#ptcl1.process_inplace("xform",{"transform":align_parms[0]["xform.align3d"]})
+	
 		# While this is only 2 images, we still use the averager in case something clever is going on
 		avgr=Averagers.get(averager[0], averager[1])
 		avgr.add_image(ptcl0)
 		avgr.add_image(ptcl1)
-		
+	
 		avg=avgr.finish()
 		#postprocess(avg,optmask,optnormproc,optpostprocess)		#There should be NO postprocessing of the intermediate averages
-		
+	
 		if not nocenterofmass:
 			avg.process_inplace("xform.centerofmass")
-		
+	
 		avg['origin_x']=0
 		avg['origin_y']=0
 		avg['origin_z']=0
-		
+	
 		avg.write_image(outfile,i)
 	return
 		
 
-def get_results(etc,tids,verbose,jsA,nptcls,savealiparams=0):
+def get_results(etc,tids,verbose,jsA,nptcls,savealiparams=0,ref=''):
 	"""This will get results for a list of submitted tasks. Won't return until it has all requested results.
 	aside from the use of options["ptcl"] this is fairly generalizable code. """
 	
 	# wait for them to finish and get the results
 	# results for each will just be a list of (qual,Transform) pairs
-	#results=[0]*len(tids)		# storage for results
-
+	
 	results=[ [ '' ] ]*nptcls
+	
+	if ref == 'binarytree':
+		results=[0]*len(tids)		# storage for results
 	
 	ncomplete=0
 	tidsleft=tids[:]
