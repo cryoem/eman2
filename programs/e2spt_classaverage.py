@@ -971,7 +971,7 @@ def binaryTreeRef(options,nptclForRef,ptclnums,ic,etc):
 			"""Wait for alignments to finish and get results"""
 			#results=get_results(etc,tids,options.verbose,{},len(ptclnums),0)
 
-			results=get_results(etc,tids,options.verbose,jsA, nptcl ,1)
+			results=get_results(etc,tids,options.verbose,{},nptcl,0)
 
 
 
