@@ -916,7 +916,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			
 			#print "\n\aliptcls name is\n", aliptcls
 
-			extractcmd0 = "cd " + alipath2 + " && e2proc3d.py class_ptcl.hdf " + aliptcls
+			extractcmd0 = "cd " + alipath2 + " && e2proc3d.py class_0_ptcl.hdf " + aliptcls
 			runcmd( extractcmd0 )
 			#finalRefVsOriginalRefPath = ''
 			
