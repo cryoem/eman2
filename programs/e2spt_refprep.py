@@ -325,7 +325,7 @@ def preciseShrink( options, stack2processSample, stack2processEd, targetApix, ta
 
 	cmd = ''
 	if meanshrinkfactor_int > 1:
-		print "\n\n\n\n(e2spt_refprep.py) About to MEAN shrink becuase meanshrink factor is", meabshrinkfactor
+		print "\n\n\n\n(e2spt_refprep.py) About to MEAN shrink becuase meanshrink factor is", meanshrinkfactor
 		print "(e2spt_refprep.py) The type of stack2process is", type( stack2processSample )
 	
 		cmd = 'e2proc3d.py ' + str(stack2processEd) + ' ' + str(stack2processEd) + ' --process=math.meanshrink:n=' + str(meanshrinkfactor_int)
