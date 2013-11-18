@@ -48,7 +48,7 @@ def main():
 	Input: pdb file containing atom coordinates to be helicised and helical symmetry parameters dp and dphi. 
 	Output: pdb file containing helicised atom coordinates
 	
-		sxhelical_demo.py 3MFP_1SU.pdb rnew.pdb --heli --dp=27.6 --dphi=166.5 \n
+		sxhelical_demo.py 3MFP_1SU.pdb rnew.pdb --heli --dp=27.6 --dphi=166.5
 	
 	Generate three micrographs, each micrograph contains one projection of a long filament.
 	Input: Reference Volume, output directory 
@@ -87,6 +87,7 @@ def main():
 	parser.add_option("--Cs",               	  type="float",			 	default= 2.0,               	 help="Microscope Cs (spherical aberation)")
 	parser.add_option("--voltage",				  type="float",				default=200.0, 					 help="Microscope voltage in KV")
 	parser.add_option("--ac",					  type="float",				default=10.0, 					 help="Amplitude contrast (percentage, default=10)")
+	parser.add_option("--nonoise",                action="store_true",      default=False,      		  	 help="Do not add noise to the micrograph.")
 	
 	# generate initial volume
 	parser.add_option("--generate_noisycyl",      action="store_true",      default=False,      		  	 help="Generate initial volume of noisy cylinder.")
@@ -121,13 +122,13 @@ def main():
 				print "Please enter helical symmetry parameters dp and dphi."
 				sys.exit()
 			helicise_pdb(args[0], args[1], options.dp, options.dphi)
-		
+
 		if options.generate_micrograph:
 			if options.apix <= 0:
 				print "Please enter pixel size."
 				sys.exit()
-			generate_helimic(args[0], args[1], options.apix, options.CTF, options.Cs, options.voltage, options.ac, options.rand_seed)
-		
+			generate_helimic(args[0], args[1], options.apix, options.CTF, options.Cs, options.voltage, options.ac, options.nonoise, options.rand_seed)
+
 		if options.generate_noisycyl:
 			from utilities import model_cylinder, model_gauss_noise
 			outvol = args[0]
@@ -145,7 +146,7 @@ def main():
 					nz = int(boxdims[2])
 					
 			(model_cylinder(options.rad,nx, ny, nz)*model_gauss_noise(1.0, nx, ny, nz) ).write_image(outvol)
-		
+
 		if options.generate_mask:
 			from utilities import model_blank, pad
 			outvol = args[0]
@@ -180,7 +181,7 @@ def main():
 				prj.set_attr('active', 1)
 				prj.set_attr('ctf_applied', 0)
 				prj.write_image(newstack, im)
-			
+
 def helicise_pdb(inpdb, outpdb, dp, dphi):
 	from math import cos, sin, pi
 	from copy import deepcopy
@@ -241,9 +242,9 @@ def helicise_pdb(inpdb, outpdb, dp, dphi):
 	outfile.writelines(pall[n-1:len(pall)])
 	outfile.close()
 
-def generate_helimic(refvol, outdir, pixel, CTF=False, Cs=2.0,voltage = 200.0, ampcont = 10.0, rand_seed=14567):
+def generate_helimic(refvol, outdir, pixel, CTF=False, Cs=2.0,voltage = 200.0, ampcont = 10.0, nonoise = False, rand_seed=14567):
 	
-	from utilities	 import model_blank, model_gauss, model_gauss_noise, pad
+	from utilities	 import model_blank, model_gauss, model_gauss_noise, pad, get_im
 	from random 	 import random
 	from projection  import prgs, prep_vol
 	from filter	     import filt_gaussl, filt_ctf
@@ -251,21 +252,21 @@ def generate_helimic(refvol, outdir, pixel, CTF=False, Cs=2.0,voltage = 200.0, a
 	
 	if os.path.exists(outdir):   ERROR('Output directory exists, please change the name and restart the program', "sxhelical_demo", 1)
 	os.mkdir(outdir)
-	seed(14567)
+	seed(rand_seed)
+	Util.set_randnum_seed(rand_seed)
 	angles =[]
 	for i in xrange(3):
-		angles.append( [0.0+60.0*i, 90.0-i*5, 90.0, 0.0, 0.0] )
+		angles.append( [0.0+60.0*i, 90.0-i*5, 0.0, 0.0, 0.0] )
 
 	nangle   = len(angles)
-	modelvol = EMData()
-	modelvol.read_image(refvol)
 
-	nx = modelvol.get_xsize()
-	ny = modelvol.get_ysize()
-	nz = modelvol.get_zsize()
-
-	iprj    = 0
-	width = 500
+	volfts = get_im(refvol)
+	nx = volfts.get_xsize()
+	ny = volfts.get_ysize()
+	nz = volfts.get_zsize()
+	volfts, kbx, kby, kbz = prep_vol( volfts )
+	iprj   = 0
+	width  = 500
 	xstart = 0
 	ystart = 0
 
@@ -276,34 +277,21 @@ def generate_helimic(refvol, outdir, pixel, CTF=False, Cs=2.0,voltage = 200.0, a
 		if CTF :
 			ctf = EMAN2Ctf()
 			ctf.from_dict( {"defocus":defocus, "cs":Cs, "voltage":voltage, "apix":pixel, "ampcont":ampcont, "bfactor":0.0} )
-
-		sigma = 1.5 + random() # 1.5-2.5
-		addon = model_gauss(sigma, nx, ny, nz, sigma, sigma, nx/2, ny/2, nz/2 )
-		scale = 2500 * (0.5+random())
-		model = modelvol + scale*addon
-		volfts, kbx, kby, kbz = prep_vol( model )
-		i = idef - 3
+		
+		i = idef - 4
 		for k in xrange(1):
-			dphi = 0.0 #8.0*(random()-0.5)
-			dtht = 0.0 #6.0*(random()-0.5)
-			psi  = 90 + 10*( i-1 )
+			psi  = 90 + 10*i
 
-			phi = angles[idef-3][0] + dphi
-			tht = angles[idef-3][1] - dtht
-
-			s2x = 2.5*(i-1)
-			s2y = 2.5*(i-1)
-
-			proj = prgs(volfts, kbz, [phi, tht, psi, -s2x, -s2y], kbx, kby)
+			proj = prgs(volfts, kbz, [angles[idef-3][0], angles[idef-3][1], psi, 0.0, 0.0], kbx, kby)
 			proj = Util.window(proj, 320, nz)		
-			mic += pad(proj, 2048, 2048, 1, 0.0, int(750*(i-1)), int(20*(i-1)), 0)
+			mic += pad(proj, 2048, 2048, 1, 0.0, 750*i, 20*i, 0)
 
-		mic += model_gauss_noise(30.0,2048,2048)
+		if not nonoise:  mic += model_gauss_noise(30.0,2048,2048)
 		if CTF :
 			#apply CTF
 			mic = filt_ctf(mic, ctf)
 
-		mic += filt_gaussl(model_gauss_noise(17.5,2048,2048), 0.3)
+		if not nonoise:  mic += filt_gaussl(model_gauss_noise(17.5,2048,2048), 0.3)
 
 		mic.write_image("%s/mic%1d.hdf"%(outdir, idef-3),0)
 
