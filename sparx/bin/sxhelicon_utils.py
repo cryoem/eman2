@@ -51,7 +51,7 @@ def main():
             sxhelicon_utils.py input_vol.hdf output_vol.hdf --helicise --dp=27.6 --dphi=166.5 --fract=0.65 --rmax=70 --rmin=1 --apix=1.84         
 
         * Generate two lists of image indices used to split segment stack into halves for helical fsc calculation.			
-            sxhelicon_utils.py bdb:big_stack --hfsc='flst_' --filament_attr=filament
+            sxhelicon_utils.py bdb:big_stack --hfsc='flst' --filament_attr=filament
 
         * Map of filament distribution in the stack
             sxhelicon_utils.py bdb:big_stack --filinfo=info.txt
@@ -112,9 +112,9 @@ def main():
 
 	# helicise
 	parser.add_option("--helicise",           action="store_true",	 default=False,               help="helicise input volume and save results to output volume")
-	parser.add_option( "--hfsc",              type="string",      	 default="",                  help="Generate two lists of image indices used to split segment stack into halves for helical fsc calculation. The lists will be stored in two text files named using file_prefix with '_even' and '_odd' suffixes, respectively." )
-	parser.add_option( "--filament_attr",     type="string",      	 default="filament",          help="attribute under which filament identification is stored" )
-	parser.add_option( "--predict_helical",   type="string",      	 default="",                  help="Generate projection parameters consistent with helical symmetry")
+	parser.add_option("--hfsc",              type="string",      	 default="",                  help="Generate two lists of image indices used to split segment stack into halves for helical fsc calculation. The lists will be stored in two text files named using file_prefix with '_even' and '_odd' suffixes, respectively." )
+	parser.add_option("--filament_attr",     type="string",      	 default="filament",          help="attribute under which filament identification is stored" )
+	parser.add_option("--predict_helical",   type="string",      	 default="",                  help="Generate projection parameters consistent with helical symmetry")
 
 	# input options for generating disks
 	parser.add_option("--gendisk",            type="string",		 default="",                  help="Name of file under which generated disks will be saved to") 
@@ -205,7 +205,7 @@ def main():
 			sv = stack_disks(v, options.ref_nx, ref_ny, options.ref_nz, options.dphi, rise)
 			sv.write_image(options.stackdisk)
 			sys.exit()
-		
+
 		if len(options.consistency) > 0:
 			if len(args) != 1:
 				print  "Incorrect number of parameters"

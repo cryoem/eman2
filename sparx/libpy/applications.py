@@ -13942,10 +13942,10 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 	from projection     import prep_vol, prgs
 	from statistics     import hist_list, varf3d_MPI
 	from applications   import MPI_start_end, header
-	from EMAN2 import Vec2f
-	from string    import lower,split
-	from math import cos, pi
-	from copy import copy
+	from EMAN2          import Vec2f
+	from string         import lower,split
+	from math           import cos, pi
+	from copy           import copy
 	
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
@@ -14124,10 +14124,6 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 		k1 = k+len(filaments[i])
 		indcs.append([k,k1])
 		k = k1
-	
-	if debug:
-		finfo.write("image_start, image_end: %d %d\n" %(image_start, image_end))
-		finfo.flush()
 
 	data = EMData.read_images(stack, list_of_particles)
 	nima = len(data)
@@ -14173,6 +14169,11 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 		seg_end   = indcs[ivol][1]
 		filamentupdown(data[seg_start: seg_end], pixel_size, dp, dphi)
 		
+
+	if debug:
+		finfo.write("seg_start, seg_end: %d %d\n" %(seg_start, seg_end))
+		finfo.flush()
+
 	from time import time
 
 	total_iter = 0
@@ -14254,7 +14255,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 						peak2, phihi2, theta2, psi2, sxi2, syi2 = \
 							proj_ali_helicon_local(data[im], refrings2, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], an[N_step], psi_max, finfo, yrnglocal=y_restrict[N_step])
 
-					if peak1 is None: 
+					if peak1 is None:
 						peak = peak2
 						phihi = phihi2
 						theta = theta2
@@ -14796,9 +14797,9 @@ def symsearch_MPI(ref_vol, outdir, maskfile, dp, ndp, dp_step, dphi, ndphi, dphi
 	from projection     import prep_vol, prgs
 	from statistics     import hist_list, varf3d_MPI
 	from applications   import MPI_start_end
-	from EMAN2 import Vec2f
-	from string    import lower,split
-	from math import cos, pi
+	from EMAN2          import Vec2f
+	from string         import lower,split
+	from math           import cos, pi
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
@@ -14924,6 +14925,7 @@ def symsearch_MPI(ref_vol, outdir, maskfile, dp, ndp, dp_step, dphi, ndphi, dphi
 		fofo = open(os.path.join(outdir,datasym),'a')
 		fofo.write('  %12.4f   %12.4f\n'%(dp,dphi))
 		fofo.close()
+		"""
 		vol = sym_vol(vol, symmetry=sym)
 		ref_data = [vol, mask3D]
 		#if  fourvar:  ref_data.append(varf)
@@ -14933,6 +14935,7 @@ def symsearch_MPI(ref_vol, outdir, maskfile, dp, ndp, dp_step, dphi, ndphi, dphi
 		drop_image(vol, os.path.join(outdir, "volf.hdf"))
 		print_msg("\nSymmetry search and user function time = %d\n"%(time()-start_time))
 		start_time = time()
+		"""
 
 	# del varf
 	if myid == main_node: print_end_msg("symsearch_MPI")

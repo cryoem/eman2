@@ -120,7 +120,6 @@ def main():
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
 
-		
 		from applications import localhelicon_MPI
 		global_def.BATCH = True
 		if len(args) < 4:  mask = None
@@ -131,7 +130,7 @@ def main():
 			rminp, rmaxp, options.fract, options.npad,options.sym, options.function,\
 			options.apix, options.debug, y_restrict2, options.searchit)
 		global_def.BATCH = False
-			
+	
 		from mpi import mpi_finalize
 		mpi_finalize()
 
