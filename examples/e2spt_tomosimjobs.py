@@ -269,6 +269,7 @@ def simloop(options,rootpath):
 	
 	if "/" not in options.input:
 		options.input = rootpath + "/" + options.input
+		print "\n\n\n\n\nI am going to make path", options.path
 	
 	print "\nInside simloop, options.path is", options.path
 	#if options.testalignment:	
@@ -393,6 +394,7 @@ def simloop(options,rootpath):
 							
 								options = sptmakepath( options, pathstem )
 								options.path = rootpath + '/' + options.path
+								print "\n\n\n\n\n\n\n\nSimround is 0 and therefore I made path", options.path
 								
 								compPATHS.update({ compID : options.path })
 								
@@ -504,6 +506,7 @@ def simloop(options,rootpath):
 					if simround == 0:
 						firstrandstack = ret[2]
 				
+				simround+= 1
 				snr += snrch
 				print "\n\nThe snr has increased by", snrch
 				print "And thus will be for the next round", snr
@@ -513,7 +516,7 @@ def simloop(options,rootpath):
 			else:
 				nslices += nslicesch
 			
-			simround+= 1
+		
 		
 		tiltrange += tiltrangech
 		
