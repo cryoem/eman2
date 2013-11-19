@@ -263,6 +263,7 @@ class EMProcessorWidget(QtGui.QWidget):
 			proc_cat=proc
 			proc_scat="---"
 		
+		print proc,enabled,disabled,proc_cat,proc_scat
 		
 		self.wcat.setCurrentIndex(self.wcat.findText(proc_cat))
 #		self.eventCatSel(0)

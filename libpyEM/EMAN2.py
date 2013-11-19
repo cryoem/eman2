@@ -568,7 +568,7 @@ def parsemodopt(optstr):
 	opstr=optstr.replace("bdb:","bdb%").replace("BDB:","bdb%")		# so we can use : like we we want to
 
 	op2=opstr.split(":")
-	if len(op2)==1 : return (op2[0],{})		# name with no options
+	if len(op2)==1 or op2[1]=="" : return (op2[0],{})		# name with no options
 
 	r2={}
 	for p in op2[1:]:
