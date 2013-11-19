@@ -40,24 +40,15 @@ EMANVERSION="EMAN 2.1 alpha3"
 CVSDATESTAMP="$Date$"
 
 def main():
-    print EMANVERSION + ' (CVS' + CVSDATESTAMP[6:-2] +')' 
+	print EMANVERSION + ' (CVS' + CVSDATESTAMP[6:-2] +')' 
     
-    if sys.platform=='linux2':
-        cmd = 'cat /etc/*-release'
-            
-        p = Popen(cmd, shell=True, bufsize=1024, stdin=PIPE, stdout=PIPE, stderr=STDOUT, close_fds=True)
-        (fin, fout) = (p.stdin, p.stdout)
-        result = fout.read().strip()
+	if sys.platform=='linux2':
+		print 'Your EMAN2 is running on: ', platform.platform(), os.uname()[2], os.uname()[-1]    
+
+	elif sys.platform=='darwin':
+		print 'Your EMAN2 is running on: Mac OS', platform.mac_ver()[0], platform.mac_ver()[2]
         
-        if os.path.exists('/etc/lsb-release'):
-            print 'Your EMAN2 is running on: ', result.split('"')[1], os.uname()[2], os.uname()[-1]    
-        else:
-            print 'Your EMAN2 is running on: ', result, os.uname()[2], os.uname()[-1]
-            
-    elif sys.platform=='darwin':
-        print 'Your EMAN2 is running on: Mac OS', platform.mac_ver()[0], platform.mac_ver()[2]
-        
-    elif sys.platform=='win32':
+	elif sys.platform=='win32':
 		ver = sys.getwindowsversion()
 		ver_format = ver[3], ver[0], ver[1]
 		win_version = {
@@ -84,7 +75,7 @@ def main():
     	
 		print 'Your EMAN2 is running on: ', winsysver, winsystype
     	
-    print 'Your Python version is: ', os.sys.version.split()[0]
+	print 'Your Python version is: ', os.sys.version.split()[0]
 
 if __name__== "__main__":
-    main()
+	main()
