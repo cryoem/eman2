@@ -986,7 +986,7 @@ class EMRawDataModel(EMFileItemModel):
 class EMRawDataEntry(EMDirEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
 
-	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.dim, lambda x:safe_int(x.mgquality))
+	col=(lambda x:int(x.index),lambda x:x.name,lambda x:x.dim, lambda x:safe_int(x.quality))
 
 	def __init__(self,root,name,i,parent=None,hidedot=True,dirregex=None):
 		EMDirEntry.__init__(self,root,name,i,parent=parent,hidedot=hidedot,dirregex=dirregex)

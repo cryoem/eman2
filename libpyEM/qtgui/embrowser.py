@@ -972,7 +972,7 @@ class EMDirEntry(object):
 
 		if self.__children==None or len(self.__children)==0 or isinstance(self.__children[0],str): return
 
-		if len(ret)==0 : print "findsel"
+#		if len(ret)==0 : print "findsel"
 
 		for i, child in enumerate(self.__children):
 			try :
