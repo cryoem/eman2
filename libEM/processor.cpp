@@ -102,6 +102,7 @@ const string RangeThresholdProcessor::NAME = "threshold.binaryrange";
 const string SigmaProcessor::NAME = "math.sigma";
 const string LogProcessor::NAME = "math.log";
 const string MaskSharpProcessor::NAME = "mask.sharp";
+const string MaskSoftProcessor::NAME = "mask.soft";
 const string MaskEdgeMeanProcessor::NAME = "mask.ringmean";
 const string MaskNoiseProcessor::NAME = "mask.noise";
 const string MaskGaussProcessor::NAME = "mask.gaussian";
@@ -308,6 +309,7 @@ template <> Factory < Processor >::Factory()
 	force_add<PaintProcessor>();
 	force_add<WatershedProcessor>();
 	force_add<MaskSharpProcessor>();
+	force_add<MaskSoftProcessor>();
 	force_add<MaskEdgeMeanProcessor>();
 	force_add<MaskNoiseProcessor>();
 	force_add<MaskGaussProcessor>();

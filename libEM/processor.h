@@ -2472,6 +2472,58 @@ The basic design of EMAN Processors: <br>\
 		float value;
 	};
 
+	/**step cutoff to a user-given value in both inner and outer circles.
+	 *@param value step cutoff to this value
+	 */
+	class MaskSoftProcessor:public CircularMaskProcessor
+	{
+	  public:
+		MaskSoftProcessor():value(0)
+		{
+		}
+
+		string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new MaskSoftProcessor();
+		}
+
+		void set_params(const Dict & new_params)
+		{
+			CircularMaskProcessor::set_params(new_params);
+			value = params.set_default("value",0.0f);
+			width = params.set_default("width",4.0f);
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d = CircularMaskProcessor::get_param_types();
+			d.put("value", EMObject::FLOAT, "cutoff to this value. default=0");
+			d.put("width", EMObject::FLOAT, "1/e width of Gaussian falloff (both inner and outer) in pixels. default=4");
+			return d;
+		}
+
+		string get_desc() const
+		{
+			return "Outer (optionally also inner) mask to a user-provided value with a soft Gaussian edge.";
+		}
+
+		static const string NAME;
+
+	  protected:
+		void process_dist_pixel(float *pixel, float dist) const
+		{
+			if (dist>=inner_radius_square && dist<=outer_radius_square) return;
+			
+			if (dist<inner_radius_square) *pixel=value+(*pixel-value)*exp(-pow((inner_radius-sqrt(dist))/width,2.0f));
+			else *pixel=value+(*pixel-value)*exp(-pow((sqrt(dist)-outer_radius)/width,2.0f));
+		}
+
+		float value,width;
+	};
 
 	/**A step cutoff to the the mean value in a ring centered on the outer radius
 	 *@param ring_width The width of the mask ring.
