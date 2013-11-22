@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Steven Ludtke  2/8/2011 (rewritten), Jesus Galaz-Montoya (updates/enhancements/fixes), LAST: 9/sep/2013
+# Author: Steven Ludtke  2/8/2011 (rewritten), Jesus Galaz-Montoya (updates/enhancements/fixes), LAST: November/21/2013
 # Author: John Flanagan  9/7/2011 (helixboxer)
 # Copyright (c) 2011- Baylor College of Medicine
 #
@@ -348,7 +348,7 @@ def unbinned_extractor(options,boxsize,x,y,z,cshrink,invert,center,tomogram=argv
 		return(e,prj)
 
 	else:
-		print """WARNING! The particle was skipped (and not boxed) because it's mean was ZERO (which often indicates a box is empty).
+		print """\nWARNING! The particle was skipped (and not boxed) because it's mean was ZERO (which often indicates a box is empty).
 			Your coordinates file and/or the shrinking factors specified might be MESSED UP, or you might need to swap Y and Z, or
 			the particles are being normalized before they should 
 			"""
@@ -415,61 +415,64 @@ def commandline_tomoboxer(tomogram,options):
 
 		ret = unbinned_extractor(options,options.boxsize,x,y,z,options.cshrink,options.invert,options.centerbox)
 		
-		e=ret[0]
-		eprj=ret[1]
+		if ret:
+			e=ret[0]
+			eprj=ret[1]
 		
-		if e:
-			print "There was a particle successfully returned, with the following box size and mean value"
-			print e['nx'],e['ny'],e['nz']
-			print e['mean']
+			if e:
+				print "There was a particle successfully returned, with the following box size and mean value"
+				print e['nx'],e['ny'],e['nz']
+				print e['mean']
 			
-			if options.apix:
-				e['apix_x'] = options.apix
-				e['apix_y'] = options.apix
-				e['apix_z'] = options.apix
+				if options.apix:
+					e['apix_x'] = options.apix
+					e['apix_y'] = options.apix
+					e['apix_z'] = options.apix
 			
-			e['origin_x'] = 0						
-			e['origin_y'] = 0				
-			e['origin_z'] = 0
+				e['origin_x'] = 0						
+				e['origin_y'] = 0				
+				e['origin_z'] = 0
 			
-			if options.output_format != 'single':
-				if '.mrc' in name:
-					print "ERROR: To save the data as a stack, .hdf format must be used."
-					sys.exit()
+				if options.output_format != 'single':
+					if '.mrc' in name:
+						print "ERROR: To save the data as a stack, .hdf format must be used."
+						sys.exit()
 				
-				e.write_image(name,i)
+					e.write_image(name,i)
 						
-				if options.verbose:
-					if i == 0:
-						print "!!!!!!\nSTACK outputfile is", name 
+					if options.verbose:
+						if i == 0:
+							print "!!!!!!\nSTACK outputfile is", name 
 					
-					print "\nWriting image number", i 
+						print "\nWriting image number", i 
 
-			else:
-				if '.hdf' in name:
-					nameSingle = name.replace('.hdf', '_' + str(i).zfill(len(str(set))) + '.hdf')
-				elif '.mrc' in name:
-					nameSingle = name.replace('.mrc', '_' + str(i).zfill(len(str(set))) + '.mrc')
+				else:
+					if '.hdf' in name:
+						nameSingle = name.replace('.hdf', '_' + str(i).zfill(len(str(set))) + '.hdf')
+					elif '.mrc' in name:
+						nameSingle = name.replace('.mrc', '_' + str(i).zfill(len(str(set))) + '.mrc')
 					
-				e.write_image(nameSingle,0)
+					e.write_image(nameSingle,0)
 			
-			if options.bruteaverage:
-				avgr.add_image(e)
+				if options.bruteaverage:
+					avgr.add_image(e)
 		
-		if eprj:
-			nameprjs = options.output
-			if '.mrc' in options.output:
-				nameprjs = nameprjs.replace('.mrc','.hdf')
+			if eprj:
+				nameprjs = options.output
+				if '.mrc' in options.output:
+					nameprjs = nameprjs.replace('.mrc','.hdf')
 			
-			if not options.yshort:
-				nameprjs = nameprjs.replace('.hdf','_prjsZ.hdf')
-			elif options.yshort:
-				nameprjs = nameprjs.replace('.hdf','_prjsY.hdf')
+				if not options.yshort:
+					nameprjs = nameprjs.replace('.hdf','_prjsZ.hdf')
+				elif options.yshort:
+					nameprjs = nameprjs.replace('.hdf','_prjsY.hdf')
 			
-			if options.path not in nameprjs:
-				nameprjs = options.path + '/' + nameprjs
-			eprj.write_image(nameprjs,-1)
-		
+				if options.path not in nameprjs:
+					nameprjs = options.path + '/' + nameprjs
+				eprj.write_image(nameprjs,-1)
+		else:
+			print "\n(e2spt_boxer.py) WARNING: unbinned_extractor function returned NOTHING for this box",x,y,z
+					
 	if options.bruteaverage:
 		avg=avgr.finish()
 		if avg:
