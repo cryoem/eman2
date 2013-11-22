@@ -385,6 +385,7 @@ def commandline_tomoboxer(tomogram,options):
 	if options.bruteaverage:
 		avgr=Averagers.get('mean.tomo')
 	
+	jj=0
 	for i in range(set):
 	
 		#Some people might manually make ABERRANT coordinates files with commas, tabs, or more than once space in between coordinates
@@ -438,7 +439,7 @@ def commandline_tomoboxer(tomogram,options):
 						print "ERROR: To save the data as a stack, .hdf format must be used."
 						sys.exit()
 				
-					e.write_image(name,i)
+					e.write_image(name,jj)
 						
 					if options.verbose:
 						if i == 0:
@@ -447,16 +448,19 @@ def commandline_tomoboxer(tomogram,options):
 						print "\nWriting image number", i 
 
 				else:
+					nameSingle = name
 					if '.hdf' in name:
-						nameSingle = name.replace('.hdf', '_' + str(i).zfill(len(str(set))) + '.hdf')
+						nameSingle = name.replace('.hdf', '_' + str(jj).zfill(len(str(set))) + '.hdf')
 					elif '.mrc' in name:
-						nameSingle = name.replace('.mrc', '_' + str(i).zfill(len(str(set))) + '.mrc')
+						nameSingle = name.replace('.mrc', '_' + str(jj).zfill(len(str(set))) + '.mrc')
 					
 					e.write_image(nameSingle,0)
 			
 				if options.bruteaverage:
 					avgr.add_image(e)
-		
+				
+				jj+=1
+				
 			if eprj:
 				nameprjs = options.output
 				if '.mrc' in options.output:
@@ -478,7 +482,7 @@ def commandline_tomoboxer(tomogram,options):
 		if avg:
 			avg.write_image(options.path + '/' + options.output.split('.')[0] + '_AVG.' + options.output.split('.')[-1])
 		else:
-			print "The particles averaged into nothings; see", type(avg)
+			print "The particles averaged into nothing; see", type(avg)
 			
 	return()
 
