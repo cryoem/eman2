@@ -39,6 +39,7 @@ Low priority
 
 
 Complete
+11/22/13	Revamp CMakeList
 11/22/13	Added slider for sequential viewing in 3D
 11/22/13	Added mask.soft
 7/13/13		Tweaked refine_easy parameters a bit more
