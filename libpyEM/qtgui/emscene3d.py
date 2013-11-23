@@ -2057,16 +2057,22 @@ class EMInspector3D(QtGui.QWidget):
 		self.tree_widget = EMQTreeWidget(parent)
 		self.tree_widget.setHeaderLabel("Choose a item")
 		tvbox.addWidget(self.tree_widget)
-		self.tree_node_button_add = QtGui.QPushButton("Add Node")
-		self.tree_node_button_remove = QtGui.QPushButton("Remove Node")
+		self.tree_node_button_add = QtGui.QPushButton("Add Object")
+		self.tree_node_button_remove = QtGui.QPushButton("Remove Object")
+		self.tree_node_slider = ValSlider(label="Seq:")
+		self.tree_node_slider.setIntonly(True)
+		self.tree_node_slider.setRange(0,1)
+		self.tree_node_slider.setValue(0)
 		tvbox.addWidget(self.tree_node_button_add)
 		tvbox.addWidget(self.tree_node_button_remove)
+		tvbox.addWidget(self.tree_node_slider)
 		
 		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("itemClicked(QTreeWidgetItem*,int)"), self._tree_widget_click)
 		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("visibleItem(QTreeWidgetItem*)"), self._tree_widget_visible)
 		QtCore.QObject.connect(self.tree_widget, QtCore.SIGNAL("editItem(QTreeWidgetItem*)"), self._tree_widget_edit)
 		QtCore.QObject.connect(self.tree_node_button_remove, QtCore.SIGNAL("clicked()"), self._tree_widget_remove)
 		QtCore.QObject.connect(self.tree_node_button_add, QtCore.SIGNAL("clicked()"), self._on_add_button)
+		QtCore.QObject.connect(self.tree_node_slider, QtCore.SIGNAL("valueChanged", self._slider_change))
 		
 		return tvbox
 	
@@ -2103,16 +2109,25 @@ class EMInspector3D(QtGui.QWidget):
 		for child in item.getAllSelectedNodes()[1:]: 	# Lop the node itself off
 			child.EMQTreeWidgetItem.setSelectionState(False)
 	
-	def _recursiveAdd(self, parentitem, parentnode):
+	def _slider_change(self):
+		mdl=int(self.tree_node_slider.getValue())
+		for i,child in enumerate(self.scenegraph().getChildren()):
+			if i==mdl: child.setVisibleItem(True)
+			else: child.setVisibleItem(False)
+		
+		self.scenegraph().updateSG()
+
+	def _recursiveAdd(self, parentitem, parentnode,depth=0):
 		"""
 		Helper function to laod the SG
 		"""
-		for child in parentnode.getChildren():
+		for child in parentnodm3dpostprocesse.getChildren():
 			if not child.getLabel(): child.setLabel(child.name)
 			addeditem = self.addTreeNode(child.getLabel(), child, parentitem)
-			self._recursiveAdd(addeditem, child)
+			self._recursiveAdd(addeditem, child,depth+1)
 		# Expand the data items
 		if parentitem.childCount() > 0: parentitem.setExpanded(True)
+		self.tree_node_slider.setRange(0,len(parentnode.getChildren()-1))
 		
 	def loadSG(self):
 		"""
@@ -2123,7 +2138,7 @@ class EMInspector3D(QtGui.QWidget):
 		
 	def addTreeNode(self, name, item3d, parentitem=None, insertionindex=-1):
 		"""
-		Add a node (item3d) to the TreeWidget if not parent node, otherwise add a child to parent node
+		Add a node (item3d) tm3dpostprocesso the TreeWidget if not parent node, otherwise add a child to parent node
 		We need to get a GUI for the treeitem. The treeitem and the GUI need know each other so they can talk
 		The Treeitem also needs to know the node, so it can talk to the node.
 		You can think of this as a three way conversation (the alterative it to use a mediator, but that is not worth it w/ only three players)
@@ -2254,7 +2269,7 @@ class EMInspector3D(QtGui.QWidget):
 		self.texttool.setIcon(QtGui.QIcon(QtGui.QPixmap(texticon)))
 		self.texttool.setToolTip("Insert Text\nHot Key: X")
 		self.datatool = EMANToolButton()
-		self.datatool.setIcon(QtGui.QIcon(QtGui.QPixmap(dataicon)))
+		self.datatool.setIcom3dpostprocessn(QtGui.QIcon(QtGui.QPixmap(dataicon)))
 		self.datatool.setToolTip("Insert Data\nHot Key: E")
 		self.apptool = EMANToolButton()
 		self.apptool.setIcon(QtGui.QIcon(QtGui.QPixmap(appicon)))
@@ -2277,7 +2292,7 @@ class EMInspector3D(QtGui.QWidget):
 		tvbox.addWidget(self.datatool)
 		tvbox.addWidget(self.apptool)
 		tvbox.setAlignment(QtCore.Qt.AlignLeft)
-		
+		m3dpostprocess
 		QtCore.QObject.connect(self.rotatetool, QtCore.SIGNAL("clicked(int)"), self._rotatetool_clicked)
 		QtCore.QObject.connect(self.translatetool, QtCore.SIGNAL("clicked(int)"), self._transtool_clicked)
 		QtCore.QObject.connect(self.ztranslate, QtCore.SIGNAL("clicked(int)"), self._ztranstool_clicked)
@@ -2291,7 +2306,7 @@ class EMInspector3D(QtGui.QWidget):
 		QtCore.QObject.connect(self.cylindertool, QtCore.SIGNAL("clicked(int)"), self._cylindertool_clicked)
 		QtCore.QObject.connect(self.conetool, QtCore.SIGNAL("clicked(int)"), self._conetool_clicked)
 		QtCore.QObject.connect(self.texttool, QtCore.SIGNAL("clicked(int)"), self._texttool_clicked)
-		QtCore.QObject.connect(self.datatool, QtCore.SIGNAL("clicked(int)"), self._datatool_clicked)
+		QtCore.QObject.m3dpostprocessconnect(self.datatool, QtCore.SIGNAL("clicked(int)"), self._datatool_clicked)
 		QtCore.QObject.connect(self.apptool, QtCore.SIGNAL("clicked(int)"), self._apptool_clicked)
 			
 		return tvbox
@@ -2324,7 +2339,7 @@ class EMInspector3D(QtGui.QWidget):
 		self.scenegraph().setMouseMode("cube")
 		
 	def _spheretool_clicked(self, state):
-		self.scenegraph().setMouseMode("sphere")
+		self.scenegraphm3dpostprocess().setMouseMode("sphere")
 		
 	def _cylindertool_clicked(self, state):
 		self.scenegraph().setMouseMode("cylinder")

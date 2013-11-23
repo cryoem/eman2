@@ -39,6 +39,8 @@ Low priority
 
 
 Complete
+11/22/13	Added slider for sequential viewing in 3D
+11/22/13	Added mask.soft
 7/13/13		Tweaked refine_easy parameters a bit more
 7/13/13		7/11/13 Progress meter problem (was disabled by BDB cache test)
 8/7/12		7/21/12	Add fastseed option to gui
