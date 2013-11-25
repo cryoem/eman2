@@ -204,7 +204,13 @@ class ValSlider(QtGui.QWidget):
 	
 	def setIntonly(self,flag):
 		self.intonly=flag
-		if flag : self.rounding=0
+		if flag : 
+			self.rounding=0
+			self.text.setMinimumSize(QtCore.QSize(50,0))
+		else:
+			self.rounding=3
+			self.text.setMinimumSize(QtCore.QSize(80,0))
+			
 		self.updateboth()
 		
 	def textChange(self):
@@ -272,7 +278,8 @@ class ValSlider(QtGui.QWidget):
 	def updatet(self):
 		self.ignore=1
 		#self.text.setText(str(self.value)[:self.text.width()/10-1]) # Stupido!!! This will turn a sci number to a real
-		self.text.setText(str(round(self.value,self.rounding)))
+		if self.intonly : self.text.setText(str(int(self.value)))
+		else : self.text.setText(str(round(self.value,self.rounding)))
 		self.ignore=0
 		
 	def updateboth(self):
