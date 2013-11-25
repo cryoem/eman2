@@ -1206,7 +1206,8 @@ def model_square(d, nx, ny, nz=1):
 
 def model_gauss(xsigma, nx, ny=1, nz=1, ysigma=None, zsigma=None, xcenter=None, ycenter=None, zcenter=None):
 	"""
-	Create a centered Gaussian image having standard deviation "sigma".
+	Create an image of a Gaussian function with standard deviation "xsigma,ysigma,zsigma"
+	 and centered at (xcenter,ycenter,zcenter), by default the center is image center.
 	"""
 	e = EMData()
 	e.set_size(nx, ny, nz)

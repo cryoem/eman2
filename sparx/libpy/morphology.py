@@ -1801,8 +1801,8 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 					if supe[it]>0.5 :
 						ib1 = it
 						break
-				ibec = ibec/(Pixel_size*wn)
-				ib1  = ib1/(Pixel_size*wn)
+				ibec = ibec/(Pixel_size*wn)  #  with astigmatism
+				ib1  = ib1/(Pixel_size*wn)   #  no astigmatism
 				#from utilities import write_text_file
 				#write_text_file([range(ni), supe[:ni],pwrot2[:ni]],"fifi.txt")
 			
