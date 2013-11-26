@@ -57,7 +57,8 @@ def main():
 	parser.add_argument("--align",action="store_true",default=False,help="Will do o->e alignment and test for handedness flips. Should not be repeated as it overwrites the odd file with the aligned result.")
 	parser.add_argument("--m3dpostprocess", type=str, default="", help="Default=none. An arbitrary post-processor to run after all other automatic processing.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--automask3d", default=None, type=str,help="Default=auto. Specify as a processor, eg - mask.auto3d:threshold=1.1:radius=30:nshells=5:nshellsgauss=5.", )
+	parser.add_argument("--automask3d", default=None, type=str,help="Default=auto. Specify as a processor, eg - mask.auto3d:threshold=1.1:radius=30:nshells=5:nshellsgauss=5." )
+	parser.add_argument("--automask3d2", default=None, type=str,help="Default=None. Specify as a processor. This will be applied to the mask produced by the first automask." )
 	parser.add_argument("--underfilter",action="store_true",default=False,help="This will shift the computed Wiener filter to be about 10% more resolution than has been achieved.")
 	parser.add_argument("--sym", dest="sym", type=str,default="c1", help="Symmetry so we can decide how to align the particle.")
 
@@ -67,6 +68,9 @@ def main():
 
 	if options.underfilter: underfilter=":sscale=1.1"
 	else: underfilter=""
+
+	if options.m3dpostprocess==None : m3dpostproc=""
+	else : m3dpostproc="--process "+options.m3dpostprocess
 
 	### Post-processing ###
 	### Even/Odd Alignment
@@ -132,13 +136,16 @@ def main():
 
 	### Masking
 	if options.automask3d==None :
-		amask3d="--process=mask.auto3d:threshold={thresh}:radius={radius}:nshells={shells}:nshellsgauss={gshells}:nmaxseed={seed}".format(
+		amask3d="--process mask.auto3d:threshold={thresh}:radius={radius}:nshells={shells}:nshellsgauss={gshells}:nmaxseed={seed}".format(
 			thresh=sigmanz*.85,radius=nx/10,shells=int(nx*.08+.5),gshells=int(nx*.06),seed=16)
 	else:
-		amask3d=options.automask3d
+		amask3d="--process "+options.automask3d
 
-	run("e2proc3d.py {cfile} {path}/mask.hdf {mask}:return_mask=1".format(path=path,cfile=combfile,mask=amask3d))
+	if options.automask3d2==None : amask3d2=""
+	else : amask3d2="--process "+options.automask3d2
 
+	run("e2proc3d.py {cfile} {path}/mask.hdf {mask}:return_mask=1 {amask3d2}".format(path=path,cfile=combfile,mask=amask3d,amask3d2=amask3d2))
+	
 	### Masked FSC
 	run("e2proc3d.py {evenfile} {path}/tmp_even.hdf --multfile {path}/mask.hdf".format(evenfile=evenfile,path=path))
 	run("e2proc3d.py {oddfile} {path}/tmp_odd.hdf --multfile {path}/mask.hdf".format(oddfile=oddfile,path=path))
@@ -171,7 +178,7 @@ def main():
 	# Note that the snrmult=4 below should really be 2 (due to the averaging of the 2 maps), the 4 is a somewhat arbitrary compensation for the .143 cutoff being a bit low
 	nx,ny,nz=combined["nx"],combined["ny"],combined["nz"]
 	run("e2proc3d.py {combfile} {combfile} --process filter.wiener.byfsc:fscfile={path}/fsc_masked_{itr:02d}.txt:snrmult=2{underfilter} --multfile {path}/mask.hdf --process normalize.bymass:thr=1:mass={mass} {postproc}".format(
-		combfile=combfile,path=path,itr=options.iter,mass=options.mass,postproc=options.m3dpostprocess,underfilter=underfilter))
+		combfile=combfile,path=path,itr=options.iter,mass=options.mass,postproc=m3dpostproc,underfilter=underfilter))
 
 	try:
 		os.unlink("{path}/tmp_even.hdf".format(path=path))

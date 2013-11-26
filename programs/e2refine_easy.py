@@ -134,7 +134,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--classautomask",default=False, action="store_true", help="This will apply an automask to the class-average during iterative alignment for better accuracy. The final class averages are unmasked.",guitype='boolbox', row=18, col=0, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--prethreshold",default=False, action="store_true", help="Applies a threshold to the volume just before generating projections. A sort of aggressive solvent flattening for the reference.",guitype='boolbox', row=18, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--m3dkeep", type=float, help="The fraction of slices to keep in e2make3d.py. Default=0.8 -> 80%%", default=0.8, guitype='floatbox', row=18, col=1, rowspan=1, colspan=1, mode="refinement")
-	parser.add_argument("--m3dpostprocess", type=str, default="", help="Default=none. An arbitrary post-processor to run after all other automatic processing. Maps are autofiltered, so a low-pass filter is not required here.", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter.lowpass|filter.highpass\')', row=20, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--m3dpostprocess", type=str, default=None, help="Default=none. An arbitrary post-processor to run after all other automatic processing. Maps are autofiltered, so a low-pass filter should not normally be used here.", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter.lowpass|filter.highpass\')', row=20, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel",default=None, guitype='strbox', row=24, col=0, rowspan=1, colspan=2, mode="refinement")
 	parser.add_argument("--path", default=None, type=str,help="The name of a directory where results are placed. Default = create new refine_xx")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -143,6 +143,7 @@ not need to specify any of the following other than the ones already listed abov
 	# options associated with e2project3d.py
 #	parser.add_header(name="projectheader", help='Options below this label are specific to e2project', title="### e2project options ###", row=12, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--automask3d", default=None, type=str,help="Default=auto. Specify as a processor, eg - mask.auto3d:threshold=1.1:radius=30:nshells=5:nshellsgauss=5.", )
+	parser.add_argument("--automask3d2", default=None, type=str,help="Default=none. If specified, this mask will be multiplied by the result of the first mask, eg - using mask.soft to mask out the center of a virus.", )
 	parser.add_argument("--projector", dest = "projector", default = "standard",help = "Default=standard. Projector to use with parameters.")
 	parser.add_argument("--orientgen", type = str, default=None,help = "Default=auto. Orientation generator for projections, eg - eman:delta=5.0:inc_mirror=0:perturb=1")
 
@@ -471,9 +472,16 @@ Based on your requested resolution and box-size, I will use an angular sampling 
 	if options.m3dkeepsig : m3dkeepsig="--keepsig"
 	else: m3dkeepsig=""
 
-	if options.automask3d : amask3d = options.automask3d
-	else : amask3d=""
+	if options.automask3d==None : amask3d=""
+	else : amask3d="--automask3d "+options.automask3d
+	
+	if options.automask3d2==None : amask3d2=""
+	else : amask3d2="--automask3d2 "+options.automask3d2
 
+
+	if options.m3dpostprocess==None : m3dpostproc=""
+	else : m3dpostproc="--process "+options.m3dpostprocess
+	
 	if options.prethreshold : prethreshold="--prethreshold"
 	else : prethreshold=""
 
@@ -575,8 +583,8 @@ Based on your requested resolution and box-size, I will use an angular sampling 
  		evenfile="{path}/threed_{itr:02d}_even.hdf".format(path=options.path,itr=it)
  		oddfile="{path}/threed_{itr:02d}_odd.hdf".format(path=options.path,itr=it)
  		combfile="{path}/threed_{itr:02d}.hdf".format(path=options.path,itr=it)
-		run("e2refine_postprocess.py --even {path}/threed_{it:02d}_even.hdf --odd {path}/threed_{it:02d}_odd.hdf --output {path}/threed_{it:02d}.hdf --align --mass {mass} --iter {it} {amask3d} --sym={sym} --underfilter".format(
-			path=options.path,it=it,mass=options.mass,amask3d=amask3d,sym=options.sym))
+		run("e2refine_postprocess.py --even {path}/threed_{it:02d}_even.hdf --odd {path}/threed_{it:02d}_odd.hdf --output {path}/threed_{it:02d}.hdf --align --mass {mass} --iter {it} {amask3d} {amask3d2} {m3dpostproc} --sym={sym} --underfilter".format(
+			path=options.path,it=it,mass=options.mass,amask3d=amask3d,sym=options.sym,amask3d2=amask3d2,m3dpostproc=m3dpostproc))
 
 
 		db.update({"last_map":combfile,"last_even":evenfile,"last_odd":oddfile})

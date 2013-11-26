@@ -75,13 +75,19 @@ def main():
 			print "Second image not same size as first, clipping"
 			im2=im2.get_clip(Region(0,0,im1["nx"],im1["ny"]))
 		
-		im1.process_inplace("normalize")
-		im2.process_inplace("normalize")
+		im1.process_inplace("normalize.edgemean")
+		im1.process_inplace("filter.highpass.gauss",{"cutoff_abs":.01})
+		im2.process_inplace("normalize.edgemean")
+		im2.process_inplace("filter.highpass.gauss",{"cutoff_abs":.01})
 		
 		ali=im2.align(align[0],im1,align[1],"ccc",{})
 
 		if options.verbose>1 : print "Refineing"
 		ali=im2.align("refine",im1,{"xform.align2d":ali.get_attr("xform.align2d")},"ccc",{})
+		xform=ali["xform.align2d"]
+		ali=EMData(args[i+1],0)
+		ali.process_inplace("normalize.edgemean")
+		ali.process_inplace("xform",{"transform":xform})
 
 		a=args[i+1].rsplit(".",1)
 		a[0]=a[0]+"_ali"
