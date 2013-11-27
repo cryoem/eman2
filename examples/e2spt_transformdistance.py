@@ -73,7 +73,13 @@ def main():
 							
 	#parser.add_argument("--refused", type=str, help="""Original reference/model from which the particles were simulated. """, default=None)
 	
-	parser.add_argument("--transform",type=str,default=None,help="""Transform to apply to particles before measuring error respect to randT on their header.
+	parser.add_argument("--angles",type=str,default='',help="""To sets of 3 euler angles 
+		representing two rotational orientations between which you want to calculate the
+		absolute angular distance (the one rotation that, using quaternions, would bring
+		you from the first orientation, to the second). The 6 euler angles are provides as 
+		--angles=az0,alt0,phi0,az1,alt1,phi1""")
+	
+	parser.add_argument("--transform",type=str,default='',help="""Transform to apply to particles before measuring error respect to randT on their header.
 							You can supply the parameters in the form --transform=type:eman,az:azval,alt:altval,phi:phival,tx:txval,ty:tyval,tz:tzval, with appropriate values for all
 							6 variables (the right side after az:,alt:,phi:,tx:,ty: and tz:). Note that you only have to provide non-zero variables and type:eman.
 							Alternatively the transform can be read from the first line of a tomo_xforms.json file, --transform=tomo_xforms.json.
@@ -99,72 +105,83 @@ def main():
 		logger = E2init(sys.argv, options.ppid)
 		log=1
 		
-	if  not options.input:
-		print "ERRO. You must supply and input stack."
+	if  not options.input and not options.angles:
+		print """ERROR. You must supply either a 3-D image stack (previously ran through 
+		e2spt_classaverage.py using --input, or two rotational orientations using --angles."""
 		sys.exit()
 	
-	nptcls = EMUtil.get_image_count(options.input)
+	if options.input:
+		nptcls = EMUtil.get_image_count(options.input)
 	
-	print "I will calculate the distance of these many particles", nptcls
+		print "I will calculate the distance of these many particles", nptcls
 	
-	angles=[]
-	translations=[]
+		angularDistances=[]
+		translations=[]
 	
-	compensatoryT = None
+		compensatoryT = None
 	
-	if options.transform:
-		if '.json' in options.transform:
-			js = js_open_dict(options.transform)
-			tnums = len(js)
-			tomoID = "tomo_" + str(0).zfill( len(str( tnums )) )
-			compensatoryT = js[tomoID]
+		if options.transform:
+			if '.json' in options.transform:
+				js = js_open_dict(options.transform)
+				tnums = len(js)
+				tomoID = "tomo_" + str(0).zfill( len(str( tnums )) )
+				compensatoryT = js[tomoID]
 					
-			print "compensatoryT is", compensatoryT
-		elif '.json' not in options.transform:
-			params = options.transform.split(',')
-			print "These are the supplied transform params", params
-			pdict={}
-			for p in params:	
-				key = p.split(':')[0]
-				value = p.split(':')[-1]
-				if 'type' not in key:
-					value = float( value )
-				pdict.update({ key : value })
-			compensatoryT = Transform(pdict)	
+				print "compensatoryT is", compensatoryT
+			elif '.json' not in options.transform:
+				params = options.transform.split(',')
+				print "These are the supplied transform params", params
+				pdict={}
+				for p in params:	
+					key = p.split(':')[0]
+					value = p.split(':')[-1]
+					if 'type' not in key:
+						value = float( value )
+					pdict.update({ key : value })
+				compensatoryT = Transform(pdict)	
 	
-	for i in range(nptcls):
-		print "In e2spt_transformdistance, I am working on ptcl number", i
-		ptcl = EMData(options.input,i, True)
-		simT = ptcl['sptsim_randT']
-		#solutionT = ptcl['spt_ali_param']	#If the solution IS an aproximate solution, its inverse should be almost equal to simT (or 'spt_randT' in particle headers), and thus
-							#the distance between simT and solutionT.inverse() should be small.
-		solutionT = ptcl['xform.align3d']
+		for i in range(nptcls):
+			print "In e2spt_transformdistance, I am working on ptcl number", i
+			ptcl = EMData(options.input,i, True)
+			simT = ptcl['sptsim_randT']
+			#solutionT = ptcl['spt_ali_param']	#If the solution IS an aproximate solution, its inverse should be almost equal to simT (or 'spt_randT' in particle headers), and thus
+								#the distance between simT and solutionT.inverse() should be small.
+			solutionT = ptcl['xform.align3d']
 		
-		if compensatoryT:
-			solutionT = compensatoryT * solutionT
+			if compensatoryT:
+				solutionT = compensatoryT * solutionT
 		
-		solutionTinverse = solutionT.inverse()
+			solutionTinverse = solutionT.inverse()
 		
-		angles.append(angdist(simT,solutionTinverse))
+			angularDistances.append(angdist(simT,solutionTinverse))
 	
-		transX = pow(simT.get_trans()[0] - solutionTinverse.get_trans()[0],2)
-		transY = pow(simT.get_trans()[1] - solutionTinverse.get_trans()[1],2)
-		transZ = pow(simT.get_trans()[2] - solutionTinverse.get_trans()[2],2)
-		trans = sqrt(transX + transY + transZ)
-		print "The translational distance is", trans
-		translations.append(trans)	
+			transX = pow(simT.get_trans()[0] - solutionTinverse.get_trans()[0],2)
+			transY = pow(simT.get_trans()[1] - solutionTinverse.get_trans()[1],2)
+			transZ = pow(simT.get_trans()[2] - solutionTinverse.get_trans()[2],2)
+			trans = sqrt(transX + transY + transZ)
+			print "The translational distance is", trans
+			translations.append(trans)	
 	
-	avgA = sum(angles)/len(angles)
-	avgT = sum(translations)/len(translations)
-	print "The average angular and translational ditances are", avgA, avgT
-	resultsfile = options.input.replace('.hdf', '_RESULTS.txt')
-	if options.output:
-		resultsfile = options.output
+		avgA = sum(angularDistances)/len(angularDistances)
+		avgT = sum(translations)/len(translations)
+		print "The average angular and translational ditances are", avgA, avgT
+		resultsfile = options.input.replace('.hdf', '_RESULTS.txt')
+		if options.output:
+			resultsfile = options.output
 	
-	f=open(resultsfile,'w')
-	line='average angular distance=' + str(avgA) + '\n'+ 'average translational error=' + str(avgT) +'\n'
-	f.write(line)
-	f.close()
+		f=open(resultsfile,'w')
+		line='average angular distance=' + str(avgA) + '\n'+ 'average translational error=' + str(avgT) +'\n'
+		f.write(line)
+		f.close()
+	
+	elif options.angles:
+		angles=options.angles.split(',')
+		
+		t1 = Transform({'type':'eman','az':float(angles[0]),'alt':float(angles[1]),'phi':float(angles[2]) })
+		t2 = Transform({'type':'eman','az':float(angles[3]),'alt':float(angles[4]),'phi':float(angles[5]) })
+		t2i = t2.inverse()
+		aDistance = angdist(t1,t2i)
+		print "The angular distance between t1=" + str(t1) + " and t2=" + str(t2) + "is: " + str(aDistance)
 	
 	if not options.nolog and log:
 		E2end(logger)
