@@ -179,8 +179,8 @@ def main():
 		
 		t1 = Transform({'type':'eman','az':float(angles[0]),'alt':float(angles[1]),'phi':float(angles[2]) })
 		t2 = Transform({'type':'eman','az':float(angles[3]),'alt':float(angles[4]),'phi':float(angles[5]) })
-		t2i = t2.inverse()
-		aDistance = angdist(t1,t2i)
+		#t2i = t2.inverse()
+		aDistance = angdist(t1,t2)
 		print "The angular distance between t1=" + str(t1) + " and t2=" + str(t2) + "is: " + str(aDistance)
 	
 	if not options.nolog and log:
