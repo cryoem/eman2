@@ -308,7 +308,7 @@ in the refinement directory. You can use Info with the browser or just read the 
 and filter.wiener.byfsc which performs a low-pass Wiener filter based on the computed FSC curve between even/odd maps. \
 While this filtration can work reasonably well, you may find that it over-exagerates low-resolution terms over multiple iterations. \
 To avoid this, compute a structure factor.</p>")
-			postprocess="--postprocess filter.lowpass.autob"
+			postprocess="--m3dpostprocess filter.lowpass.autob"
 			m3dsetsf=""
 	elif apix>=6.5 :
 		append_html("<p>A/pix value >6.5. With such a large A/pix some of the post-processing sharpening filters need to be disabled, so you are effectively\
@@ -480,7 +480,7 @@ Based on your requested resolution and box-size, I will use an angular sampling 
 
 
 	if options.m3dpostprocess==None : m3dpostproc=""
-	else : m3dpostproc="--process "+options.m3dpostprocess
+	else : m3dpostproc="--m3dpostprocess "+options.m3dpostprocess
 	
 	if options.prethreshold : prethreshold="--prethreshold"
 	else : prethreshold=""
