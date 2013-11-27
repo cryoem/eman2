@@ -115,9 +115,9 @@ def main():
 			
 		if options.addfilename:
 			if options.params:
-				options.params += ',originalfile:' + fyle.split('/')[0]
+				options.params += ',tag_originalfile:' + fyle.split('/')[0]
 			else:
-				options.params += 'originalfile:' + fyle.split('/')[0]			
+				options.params += 'tag_originalfile:' + fyle.split('/')[0]			
 	
 		print "Sending this file for fixing", fyle
 		fixer( options )

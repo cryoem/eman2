@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus Galaz  July/16/2013
+# Author: Jesus Galaz-Montoya  November/21/2013
 # Copyright (c) 2011- Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -46,20 +46,24 @@ def main():
 	Refinement of a 3D-volume stack against multiple models. The initial models can be provided in a stack, OR generated from the data itself.
 	
 	When no reference is provided, you define a number of models greater than 1 to use (for example, 2, 3, 4 or more).
-	[If you want to refine the data against ONE model, use e2spt_classaverage.py]
-	The data set is divded into that same number of groups (4).
-	 
-	An initial model will be generated with the data in each group.
-	Then, the entire data set will be refined against all 4 initial models.
+	[If you want to refine the data against ONE model, use e2spt_refine.py]
+	The data set is divded into that specified number of groups.
 	
-	You can increase the number of references used for each iteration by specifying the --addmodel parameter.
-	This will take the "best initial model" (the one that most particles prefered) and include it as an initial model for the next round of refinement.
-	For exampe, if you start with two references A and B, two averages will come out of aligning the data against them, avgA and avgB.
-	So if --addmodel is on, instead of only using avgA and avgB as references for the next refinement round, the best of A and B will also be used,
+	An initial model will be generated with the particles assigned to each group.
+	Then, the entire data set will be refined against all initial models.
+	
+	You can increase the number of references used for each iteration by specifying the 
+	--addmodel parameter.
+	This will take the "best initial model" (the one that most particles preferred) and include it as an initial model for the next round of refinement.
+	For exampe, if you start with two references A and B, 
+	two averages will come out of aligning the data against them, A' and B'.
+	So if --addmodel is on, instead of only using A' and B' as references for the next 
+	refinement round, the best of A and B will also be used,
 	which means you will refine the data against 3 models in the next round, not just 2.
 	
-	If you supply a single reference/model then --addmodel MUST be supplied too; otherwise, to refine a data set against a single model use
-	e2spt_classaverage.py
+	If you supply a single reference/model then --addmodel will be ASSUMED to be True; 
+	otherwise, to refine a data set against a single model use
+	e2spt_refine.py
 	 """
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
@@ -87,6 +91,12 @@ def main():
 		The default is a numbered series of directories containing the prefix 'spt_refinemulti'; 
 		for example, spt_refinemulti02 will be the directory by default if 'spt_refinemulti01' 
 		already exists.""")
+	
+	parser.add_argument("--syms", type=str, help="""List comma-separated symmetries to apply
+		separately on the different references. For example, if you provide --syms=d8,d7
+		and provide 2 references via --nrefs=2 or supply two references via --refs=r1.hdf,r2.hdf, 
+		d8 symmetry will be applied to the first reference and d7 to the second after each iteration
+		of refinement (the final average in one iteration becomes a reference for the next).""", default='')
 	
 	parser.add_argument("--input", type=str, help="The name of the input volume stack. MUST be HDF or BDB, since volume stack support is required.", default=None, guitype='filebox', browser='EMSubTomosTable(withmodal=True,multiselect=False)', row=0, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	parser.add_argument("--output", type=str, help="The name of the output class-average stack. MUST be in  .hdf format, since volume stack support is required.", default=None, guitype='strbox', row=2, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
@@ -181,6 +191,11 @@ def main():
 	#parser.add_argument("--fitwedgepost", action="store_true", help="Fit the missing wedge AFTER preprocessing the subvolumes, not before, IF using the fsc.tomo comparator for --aligncmp or --raligncmp.", default=False)
 	parser.add_argument("--writewedge", action="store_true", help="Write a subvolume with the shape of the fitted missing wedge if --raligncmp or --aligncmp are fsc.tomo. Default is 'True'. To turn on supply --writewedge", default=False)		
 	
+	parser.add_argument("--plotccc", action='store_true', help="""Turn this option on to generate
+		a plot of the ccc scores both during model generation with e2spt_classaverage.py or
+		e2spt_hac.py and for refinement results of e2spt_refinemulti.py.
+		Running on a cluster or via ssh remotely might not support plotting.""",default=False)
+	
 	(options, args) = parser.parse_args()
 
 	try:
@@ -208,19 +223,26 @@ def main():
 	print "(e2spt_refinemulti.py) AFTER sptmakepath, otions.path is", options.path
 
 	rootpath = os.getcwd()
-
-	relativeInput = '../' + options.input
-	absoluteInput = rootpath + '/' + options.input
-	options.input = absoluteInput
+	
+	originalCompletePath = rootpath + '/' + options.path
+		
+	if '/' not in options.input:
+		#relativeInput = '../' + options.input
+		#absoluteInput = rootpath + '/' + options.input
+		#options.input = absoluteInput
+		originalCompleteStack = rootpath + '/' + options.input
+		options.input = originalCompleteStack
+	
 	avgs={}
 	finalize=0
-	originalCompletePath = rootpath + '/' + options.path
+
+	
 	
 	'''
 	Store parameters in parameters.txt file inside --path
 	'''
 	from e2spt_classaverage import writeParameters
-	writeParameters(options,'e2spt_refinemulti.py')
+	writeParameters(options,'e2spt_refinemulti.py', 'refinemulti')
 	
 	'''
 	Determine how many references there are and put them into one file classAvg.hdf, or 
@@ -323,28 +345,49 @@ def main():
 				sys.exit()
 				
 		
-		print "\n\n\n\nRRRRRRRRRRRRRR \n BEFORE alignment loop for all refts, len refsfiles is and refsfiles are", len(refsfiles), refsfiles
-		print "\nRRRRRRRRRRRRRRRRR \n\n\n\n\n"
+		#print "\n\n\n\nRRRRRRRRRRRRRR \n BEFORE alignment loop for all refts, len refsfiles is and refsfiles are", len(refsfiles), refsfiles
+		#print "\nRRRRRRRRRRRRRRRRR \n\n\n\n\n"
 		
 		k=0
 		reftags = []
 		masterInfo = {}
+		
+		if options.syms and it == 0:
+			options.syms = options.syms.split(',')
+		
+			if len(options.syms) != len(refsfiles):
+				if len(options.syms) > len(refsfiles):
+					options.syms = options.syms[0,len(refsfiles)]
+				elif len(options.syms) < len(resfiles):
+				
+					howMany = len(refsfiles) - len(options.syms)
+				
+					for pi in range(howMany):
+						options.syms.append('c1')
+			
 		for ref in refsfiles:
-			print "\n\n\n\n\n\n\n\n\nAAAAAAAAAAAAAAAAAAAAAAAA\nAligning data to ref,refnumber", ref,k
-			print "\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n\n\n\n\n"
+			#print "\n\n\n\n\n\n\n\n\nAAAAAAAAAAAAAAAAAAAAAAAA\nAligning data to ref,refnumber", ref,k
+			#print "\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n\n\n\n\n"
 			#ref = ref
 			
 			#thisRefinementPath = ref.split('/')[-1].replace('.hdf','')
-		
+			
+			sym=''
+			if options.syms:
+				sym = options.syms[k]
+			
 			alicmd ='cd ' + originalCompletePath + ' && e2spt_classaverage.py --ref=' + ref + ' --path=sptTMP' #+ ' --input=' + relativeInput
 	
 			names = dir(options)
 			for name in names:
-				if getattr(options,name) and 'refs' not in name and "__" not in name and "_" not in name and 'path' not in name and str(getattr(options,name)) != 'True' and 'iter' not in name:	
+				if getattr(options,name) and 'refs' not in name and 'syms' not in name and "__" not in name and "_" not in name and 'path' not in name and str(getattr(options,name)) != 'True' and 'iter' not in name:	
 					#if "__" not in name and "_" not in name and str(getattr(options,name)) and 'path' not in name and str(getattr(options,name)) != 'False' and str(getattr(options,name)) != 'True' and str(getattr(options,name)) != 'None':			
 					alicmd += ' --' + name + '=' + str(getattr(options,name))
 			alicmd += ' --donotaverage'
-		
+			
+			if options.sym:
+				alicmd += ' --sym=' + sym
+			
 			#if options.refpreprocess:
 			alicmd += ' --refpreprocess'
 				
@@ -548,74 +591,80 @@ def genrefs( options, originalCompletePath ):
 	refsFyles = []
 	nrefs = int(options.nrefs)
 	
-	if options.refsgenmethod == 'binarytree' or 'binary' in refsgenmethod:
+	groupsize = nptcls
+	if nrefs > 1:
+		groupsize = int( int(nptcls)/int(options.nrefs) )
+	
+	print "\nTherefore, groupsize is", groupsize
+	
+	if options.refsgenmethod == 'binarytree' or 'binary' in options.refsgenmethod:
 				
 		print "\n(e2spt_refinemulti.py) (genrefs) refsgenmethod and nrefs are", options.refsgenmethod, nrefs	
 
-		if nrefs > 1:
-		
-			groupsize = int( int(nptcls)/int(options.nrefs) )
-			print "\nTherefore, groupsize is", groupsize
 			
-			for i in range(nrefs):
-				print "\nIterating over nrefs; i is", i
-							
-				bottom_range = i * groupsize
-				top_range = (i+1) * groupsize - 1	#Since e2proc3d.py includes the top range
-													#for a set of 16 particles, for example
-													#the top range would be index 15, becuase
-													#numeration starts at 0. Therefore, you need to
-													#subtract 1 to "top_range" if separating the particles
-													#using e2proc3d.py
-				if i == options.nrefs - 1:
-					top_range = nptcls - 1
-				print "\nbottom and top ranges are", bottom_range, top_range
+		for i in range(nrefs):
+			print "\nIterating over nrefs; i is", i
+						
+			bottom_range = i * groupsize
+			top_range = (i+1) * groupsize - 1	#Since e2proc3d.py includes the top range
+												#for a set of 16 particles, for example
+												#the top range would be index 15, becuase
+												#numeration starts at 0. Therefore, you need to
+												#subtract 1 to "top_range" if separating the particles
+												#using e2proc3d.py
+			if i == options.nrefs - 1:
+				top_range = nptcls - 1
+			print "\nbottom and top ranges are", bottom_range, top_range
+			
+			#groupPATH = options.input
+			if nrefs > 1:
+				groupID = 'group' + str(i+1).zfill(len(str(options.nrefs)))
 				
-				#groupPATH = options.input
-				if nrefs > 1:
-					groupID = 'group' + str(i+1).zfill(len(str(options.nrefs)))
-					
-					#groupDIR = originalPath + '/' + options.path + '/' + groupID
-					
-					groupStack = originalCompletePath + '/' + os.path.basename(options.input).replace('.hdf','group' + str(i+1).zfill(len(str(options.nrefs) ) ) + 'ptcls.hdf')
-					
-					divisioncmd = 'e2proc3d.py ' + options.input + ' ' + groupStack + ' --append --first=' + str(bottom_range) + ' --last=' + str(top_range)
-					
+				#groupDIR = originalPath + '/' + options.path + '/' + groupID
 				
-					alicmd ='cd ' + originalCompletePath + ' && e2spt_classaverage.py --path=' + groupID + ' --input=' + groupStack
+				groupStack = originalCompletePath + '/' + os.path.basename(options.input).replace('.hdf','group' + str(i+1).zfill(len(str(options.nrefs) ) ) + 'ptcls.hdf')
+				
+				divisioncmd = 'e2proc3d.py ' + options.input + ' ' + groupStack + ' --append --first=' + str(bottom_range) + ' --last=' + str(top_range)
+				
+			
+				alicmd ='cd ' + originalCompletePath + ' && e2spt_classaverage.py --path=' + groupID + ' --input=' + groupStack
 
-					names = dir(options)
-					for name in names:
-						if getattr(options,name) and 'refs' not in name and 'iter' not in name and 'output' not in name and 'input' not in name and "__" not in name and "_" not in name and 'path' not in name and str(getattr(options,name)) != 'True' and 'iter' not in name:	
-							#if "__" not in name and "_" not in name and str(getattr(options,name)) and 'path' not in name and str(getattr(options,name)) != 'False' and str(getattr(options,name)) != 'True' and str(getattr(options,name)) != 'None':			
-							alicmd += ' --' + name + '=' + str(getattr(options,name))
-					
-					alicmd += ' --output=' + groupID + 'avg.hdf --iter=1'
+				names = dir(options)
+				for name in names:
+					if getattr(options,name) and 'refs' not in name and 'syms' not in name and 'iter' not in name and 'output' not in name and 'input' not in name and "__" not in name and "_" not in name and 'path' not in name and str(getattr(options,name)) != 'True' and 'iter' not in name:	
+						#if "__" not in name and "_" not in name and str(getattr(options,name)) and 'path' not in name and str(getattr(options,name)) != 'False' and str(getattr(options,name)) != 'True' and str(getattr(options,name)) != 'None':			
+						alicmd += ' --' + name + '=' + str(getattr(options,name))
 				
-					#alicmd += ' && mv ' + groupStack + ' ' + groupID
+				alicmd += ' --output=' + groupID + 'avg.hdf --iter=1'
+			
+				#alicmd += ' && mv ' + groupStack + ' ' + groupID
 
-					finalBinTreeCmd = divisioncmd + ' && ' + alicmd
-					
-					print "\nfinalBinTreeCmd is", finalBinTreeCmd
-					
-					p=subprocess.Popen( finalBinTreeCmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-					text=p.communicate()	
-					p.stdout.close()
+				finalBinTreeCmd = divisioncmd + ' && ' + alicmd
 				
-					refFyle = originalCompletePath + '/' + groupID + '/' + groupID + 'avg.hdf'
-					refsFyles.append( refFyle )
+				print "\nfinalBinTreeCmd is", finalBinTreeCmd
+				
+				p=subprocess.Popen( finalBinTreeCmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+				text=p.communicate()	
+				p.stdout.close()
+			
+				refFyle = originalCompletePath + '/' + groupID + '/' + groupID + 'avg.hdf'
+				refsFyles.append( refFyle )
 		print "\nI have finished building references with the binary tree method"
 		
 	elif options.refsgenmethod == 'hac':
-		avsacmd ='e2spt_hac.py --path=sptTMP'
+		avsacmd ='cd ' +  originalCompletePath + ' && e2spt_hac.py --path=sptTMP'
 		print "(e2spt_refinemulti.py) (genrefs) refsgenmethod and nrefs are", options.refsgenmethod, nrefs
 	
 		names = dir(options)
 		for name in names:
-			if getattr(options,name) and 'refs' not in name and "__" not in name and "_" not in name and 'path' not in name and str(getattr(options,name)) != 'True' and 'iter' not in name:	
+			if getattr(options,name) and 'keep' not in name and 'syms' not in name and 'refs' not in name and 'iter' not in name and "__" not in name and "_" not in name and 'path' not in name and str(getattr(options,name)) != 'True' and 'iter' not in name:	
 				#if "__" not in name and "_" not in name and str(getattr(options,name)) and 'path' not in name and str(getattr(options,name)) != 'False' and str(getattr(options,name)) != 'True' and str(getattr(options,name)) != 'None':			
 				avsacmd += ' --' + name + '=' + str(getattr(options,name))
-		avsacmd += ' --autocenter --groups=' + nrefs + ' && mv ' + originalCompletePath + '/sptTMP/* ' + originalCompletePath + ' && rm -r sptTMP'
+		#avsacmd += ' --autocenter --groups=' + str(nrefs) + ' --iter=' + str(groupsize) + ' && mv ' + originalCompletePath + '/sptTMP/* ' + originalCompletePath + ' && rm -r sptTMP'
+
+		avsacmd += ' --autocenter --groups=' + str(nrefs) + ' --iter=' + str(groupsize)  + ' && mv ' + originalCompletePath + '/sptTMP/* ' + originalCompletePath + ' && rm -r sptTMP'
+
+		print "\n\n\n\n\n(e2spt_refinemulti.py) (genrefs) the command for hac ref generation is", avsacmd
 		
 		p=subprocess.Popen( avsacmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		text=p.communicate()	
@@ -726,7 +775,7 @@ def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize, origin
 			if int(options.iter) -1 == iterNum:
 				finalize = 1
 		
-			if options.saveali and not finalize:
+			if options.saveali and finalize:
 				ptcl['origin_x'] = 0
 				ptcl['origin_y'] = 0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
 				ptcl['origin_z'] = 0

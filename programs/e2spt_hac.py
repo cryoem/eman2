@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus Galaz, 07/2011; modified 01/March/2013
+# Author: Jesus Galaz-Montoya, 07/2011; modified 05/November/2013
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the

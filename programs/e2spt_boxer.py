@@ -302,7 +302,7 @@ def unbinned_extractor(options,boxsize,x,y,z,cshrink,invert,center,tomogram=argv
 		e['origin_y'] = 0
 		e['origin_z'] = 0
 		
-		e['spt_originalstackname'] = options.output
+		e['spt_originalstack'] = options.output
 		
 		#Make sure the transform parameter on the header is "clean", so that any later processing transformations are meaningful
 		e['xform.align3d'] = Transform({"type":'eman','az':0,'alt':0,'phi':0,'tx':0,'ty':0,'tz':0})
@@ -438,7 +438,8 @@ def commandline_tomoboxer(tomogram,options):
 					if '.mrc' in name:
 						print "ERROR: To save the data as a stack, .hdf format must be used."
 						sys.exit()
-				
+					
+					#e['spt_originalstack']=name
 					e.write_image(name,jj)
 						
 					if options.verbose:
@@ -453,7 +454,7 @@ def commandline_tomoboxer(tomogram,options):
 						nameSingle = name.replace('.hdf', '_' + str(jj).zfill(len(str(set))) + '.hdf')
 					elif '.mrc' in name:
 						nameSingle = name.replace('.mrc', '_' + str(jj).zfill(len(str(set))) + '.mrc')
-					
+					#e['spt_originalstack']= nameSingle
 					e.write_image(nameSingle,0)
 			
 				if options.bruteaverage:
@@ -473,6 +474,7 @@ def commandline_tomoboxer(tomogram,options):
 			
 				if options.path not in nameprjs:
 					nameprjs = options.path + '/' + nameprjs
+				eprj['spt_originalstack']=nameprjs.split('/')[-1]
 				eprj.write_image(nameprjs,-1)
 		else:
 			print "\n(e2spt_boxer.py) WARNING: unbinned_extractor function returned NOTHING for this box",x,y,z
@@ -480,6 +482,7 @@ def commandline_tomoboxer(tomogram,options):
 	if options.bruteaverage:
 		avg=avgr.finish()
 		if avg:
+			avg['spt_originalstack']=name.split('/')[-1]
 			avg.write_image(options.path + '/' + options.output.split('.')[0] + '_AVG.' + options.output.split('.')[-1])
 		else:
 			print "The particles averaged into nothing; see", type(avg)
