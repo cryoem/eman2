@@ -52,7 +52,7 @@ def main():
 		return  alpha, sx, sy, m
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " prj_stack  --ave2D= --var2D=  --ave3D= --var3D= --freq= --img_per_grp= --fall_off=  --sym=symmetry --MPI --CTF"
+	usage = progname + " prj_stack  --ave2D= --var2D=  --ave3D= --var3D= --img_per_grp= --freq= --fall_off=  --sym=symmetry --MPI --CTF"
 	parser = OptionParser(usage, version=SPARXVERSION)
 
 	parser.add_option("--radiuspca", 	type="int"         ,	default=-1   ,				help="radius for PCA" )
@@ -186,7 +186,7 @@ def main():
 		from applications	import pca
 		from statistics		import avgvar, avgvar_ctf, ccc
 		from filter		    import filt_tanl
-		from morphology		import threshold
+		from morphology		import threshold, square_root
 		from projection 	import project, prep_vol, prgs
 		from sets		    import Set
 
@@ -359,6 +359,8 @@ def main():
 			var = model_blank(nx,ny)
 			for q in grp_imgdata:  Util.add_img2( var, q )
 			Util.mul_scalar( var, 1.0/(len(grp_imgdata)-1))
+			# Switch to std dev
+			var = square_root(threshold(var))
 			#if options.CTF:	ave, var = avgvar_ctf(grp_imgdata, mode="a")
 			#else:	            ave, var = avgvar(grp_imgdata, mode="a")
 			"""
@@ -366,7 +368,7 @@ def main():
 				ave.write_image("avgv.hdf",i)
 				var.write_image("varv.hdf",i)
 			"""
-			var = threshold(var)
+			
 			set_params_proj(ave, [phiM, thetaM, 0.0, 0.0, 0.0])
 			set_params_proj(var, [phiM, thetaM, 0.0, 0.0, 0.0])
 
@@ -493,15 +495,19 @@ def main():
 				for i in xrange(number_of_proc):
 					if i == main_node :
 						for im in xrange(len(varList)):
-							aveList[im].write_image(options.var2D, km)
+							varList[im].write_image(options.var2D, km)
 							km += 1
 					else:
 						nl = mpi_recv(1, MPI_INT, i, MPI_TAG_UB, MPI_COMM_WORLD)
 						nl = int(nl[0])
+						for im in xrange(nl):
+							ave = recv_EMData(i, im+i+70000)
+							ave.write_image(options.var2D, km)
+							km += 1
 			else:
-				mpi_send(len(aveList), 1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+				mpi_send(len(varList), 1, MPI_INT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
 				for im in xrange(len(varList)):
-					send_EMData(varList[im],)#  What with the attributes??
+					send_EMData(varList[im], main_node, im+myid+70000)#  What with the attributes??
 
 		mpi_barrier(MPI_COMM_WORLD)
 
