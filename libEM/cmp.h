@@ -371,7 +371,7 @@ namespace EMAN
 
 		virtual string get_desc() const
 		{
-			return "Fsc with consideration given for the missing wedge";
+			return "EXPERIMENTAL - Fsc with consideration given for the missing wedge. Not ready for routine use.";
 		}
 
 		static Cmp *NEW()
