@@ -17526,7 +17526,7 @@ EMData* Util::muln_img(EMData* img, EMData* img1)
 		throw NullPointerException("NULL input image");
 	}
 	/* ==============   output = img * img1   ================ */
-
+	/* =====complex =   output = img * conjg(img1)   ================ */
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	size_t size = (size_t)nx*ny*nz;
 	EMData * img2   = img->copy_head();
@@ -20507,7 +20507,7 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 	EMData * img2 = new EMData();
 	img2->set_size(nx,ny,nz);
 	img2->to_zero();
-	float *img_ptr  =img->get_data();
+	float *img_ptr  = img->get_data();
 	float *img2_ptr = img2->get_data();
 	int r2 = ro*ro;
 	int r3 = r2*ro;
@@ -22903,3 +22903,36 @@ std::vector<int> Util::max_clique(std::vector<int> edges)
 	delete [] conn;
 	return result;
 }
+
+
+#define img_ptr(i,j,k)  img_ptr[i+(j+(k*ny))*(size_t)nx]
+#define img2_ptr(i,j,k) img2_ptr[i+(j+(k*ny))*(size_t)nx]
+float Util::local_inner_product(EMData* image1, EMData* image2, int lx, int ly, int lz, int w) {
+	int nx=image1->get_xsize(),ny=image1->get_ysize(),nz=image1->get_zsize();
+
+	float *img_ptr  = image1->get_data();
+	float *img2_ptr = image2->get_data();
+
+	int lop = w/2;
+
+	float lip = 0.0f;
+	float nrm1 = 0.0f;
+	float nrm2 = 0.0f;
+
+	for (int k=-lop; k<=lop; k++) {
+		int kz = lz + k;
+		for (int j=-lop; j<=lop; j++) {
+			int ky = ly +j;
+			for (int i=-lop; i<=lop; i++) {
+				int kx = lx + i;
+				nrm1 += img_ptr(kx, ky, kz)*img_ptr(kx, ky, kz);
+				nrm2 += img2_ptr(kx, ky, kz)*img2_ptr(kx, ky, kz);			
+				lip  += img_ptr(kx, ky, kz)*img2_ptr(kx, ky, kz);
+			}
+		}
+	}
+	return lip/sqrt(nrm1*nrm2);
+}
+#undef img_ptr
+#undef img2_ptr
+

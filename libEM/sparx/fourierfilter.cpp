@@ -79,7 +79,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 		// 2x padding (hard-wired)
 		npad = 2;
 	} else if (2 == dopad) {
-        	npad = 4;
+        npad = 4;
 	} else {
 		// invalid entry
 		LOGERR("The dopad parameter must be 0 (false) or 1 (true)");
