@@ -619,11 +619,11 @@ def main():
 					transform = None
 				
 				if options.parallel:
-					task=Align3DTask(ref,["cache",options.input,ptclnum],ptclnum,"Ptcl %d in iter %d"%(ptclnum,it),options,transform)
+					task=Align3DTask(ref,["cache",options.input,ptclnum],ptclnum,"Ptcl %d in iter %d"%(ptclnum,it),options,transform,it)
 					tasks.append(task)
 				else:
 					#print "No parallelism specified"
-					result=align3Dfunc(ref,["cache",options.input,ptclnum],ptclnum,"Ptcl %d in iter %d"%(ptclnum,it),options,transform)
+					result=align3Dfunc(ref,["cache",options.input,ptclnum],ptclnum,"Ptcl %d in iter %d"%(ptclnum,it),options,transform,it)
 					
 					results.append(result['final'])
 			
@@ -1032,11 +1032,11 @@ def binaryTreeRef(options,nptclForRef,ptclnums,ic,etc,classize):
 				#task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
 				#	options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,transform,options.verbose-1,options.randomizewedge,options.wedgeangle,options.wedgei,options.wedgef)
 				
-				task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options,transform)
+				task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options,transform,0)
 				tasks.append(task)
 			else:
 				#print "No parallelism specified"
-				result=align3Dfunc(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options,transform)
+				result=align3Dfunc(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options,transform,0)
 				results.append(result['final'])
 		'''		
 		#Start the alignments for this level
@@ -1630,7 +1630,7 @@ class Align3DTask(JSTask):
 	"""This is a task object for the parallelism system. It is responsible for aligning one 3-D volume to another, with a variety of options"""
 
 	#def __init__(self,fixedimage,image,ptcl,label,mask,normproc,preprocess,lowpass,highpass,npeakstorefine,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,transform,verbose,randomizewedge,wedgeangle,wedgei,wedgef):
-	def __init__(self,fixedimage,image,ptclnum,label,options,transform):
+	def __init__(self,fixedimage,image,ptclnum,label,options,transform,currentIter):
 	
 		"""fixedimage and image may be actual EMData objects, or ["cache",path,number]
 		label is a descriptive string, not actually used in processing
@@ -1671,12 +1671,14 @@ class Align3DTask(JSTask):
 		refpreprocess=0
 		options=classoptions['options']
 		
-		#print "\noptions.ref is", options.ref
 		if not options.ref:
 			print "\n(e2spt_classaverage, Align3DTask) There is no reference; therfore, refpreprocess should be turned on", refpreprocess
 			refpreprocess=1
 		
 		if options.refpreprocess:
+			refpreprocess=1
+
+		if int(options.iter) > 1 and currentIter > 0:
 			refpreprocess=1
 		
 		ret=alignment(fixedimage,image,classoptions['label'],classoptions['options'],xformslabel,classoptions['transform'],'e2spt_classaverage', refpreprocess)
@@ -1689,10 +1691,10 @@ class Align3DTask(JSTask):
 '''
 FUNCTION FOR RUNNING ALIGNMENTS WITHOUT PARALLELISM
 '''
-def align3Dfunc(fixedimage,image,ptclnum,label,classoptions,transform):
+def align3Dfunc(fixedimage,image,ptclnum,label,options,transform,currentIter):
 	"""This aligns one volume to a reference and returns the alignment parameters"""
 
-	if classoptions.verbose: 
+	if options.verbose: 
 		print "Aligning ",label
 	
 	print "In align3Dfunc fixed image and its type are" , fixedimage, type(fixedimage)
@@ -1707,21 +1709,22 @@ def align3Dfunc(fixedimage,image,ptclnum,label,classoptions,transform):
 	CALL the alignment function
 	"""
 	
-	#ret=alignment(simage,s2image,sfixedimage,s2fixedimage,classoptions,transform)
-	nptcls = EMUtil.get_image_count(classoptions.input)
-	#tomoID = "tomo_%" + str(len(str(nptcls))) + "d" % classoptions.ptcl
+	nptcls = EMUtil.get_image_count(options.input)
 	xformslabel = 'tomo_' + str(ptclnum).zfill( len( str(nptcls) ) )
 	
 	refpreprocess=0
 	
-	if not classoptions.ref:
+	if not options.ref:
 		refpreprocess=1
 		print "\n(e2spt_classaverage, align3Dfunc) There is no reference; therfore, refpreprocess should be turned on", refpreprocess
 
-	if classoptions.refpreprocess:
+	if options.refpreprocess:
 		refpreprocess=1
 	
-	ret=alignment(fixedimage,image,label,classoptions,xformslabel,transform,'e2spt_classaverage', refpreprocess)
+	if int(options.iter) > 1 and currentIter > 0:
+		refpreprocess=1
+	
+	ret=alignment(fixedimage,image,label,options,xformslabel,transform,'e2spt_classaverage', refpreprocess)
 
 	bestfinal=ret[0]
 	bestcoarse=ret[1]
