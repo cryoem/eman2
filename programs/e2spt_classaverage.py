@@ -858,7 +858,7 @@ def calcAliStep(options):
 	
 	fineStep = 360.0/(2.0*math.pi*radPixF)
 	if options.precision > 1.0:
-		finseStep *= options.precision
+		fineStep *= options.precision
 	
 	fineStepRounded = math.floor(fineStep*100.00)/100.00					#Round fine step DOWN to scan slightly more finally than theoretically needed
 	
@@ -905,24 +905,27 @@ def calcAliStep(options):
 	
 	if options.search:
 		searchC = options.search
-	
+		print "searchC is", searchC
 	else:
-		if options.mask:
+		if int(options.search) == 0:
+			searchC = 0
+			print "searchC is", searchC	
+		elif options.mask:
 			if 'mask.sharp' in options.mask[0]:
 				if 'outer_radius' in options.mask[1]:
 					om = options.mask[1]['outer_radius']
-				
+			
 					if '-' in str(om):
 						om = hdr['nx']/2 + om
 					searchC = om/2.0
 					print "\nBecause the radius for the mask is", om
 					print "searchC is", searchC
 					print "\n"
-					
-		if options.shrink and options.shrink > 1:
+				
+		if options.shrink and float(options.shrink) > 1.0:
 			searchC = int( searchC / options.shrink )
-		
-		print "\nBecause shrink >1.0, searchC is actually", searchC
+	
+			print "\nBecause shrink >1.0, searchC is actually", searchC
 		
 	if options.searchfine:
 		searchF = options.searchfine
@@ -1766,11 +1769,11 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 	else:
 		sfixedimage = fixedimage
 
-		if options.shrink:
+		if float(options.shrink) > 1.0:
 			sfixedimage = fixedimage.process('math.meanshrink',{'n':options.shrink})		
 		s2fixedimage = fixedimage
 
-		if options.shrinkrefine:
+		if float(options.shrinkrefine) > 1.0:
 			s2fixedimage = fixedimage.process('math.meanshrink',{'n':options.shrinkrefine})
 		
 		
